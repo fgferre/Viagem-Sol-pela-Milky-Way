@@ -7,8 +7,11 @@ que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
 **A REGRA DE LEITURA — são DOIS arquivos, e não se leem do mesmo jeito
 (25/08, item 98).**
 
-- **Este arquivo é o VIVO, e é ele que se lê INTEIRO** antes de trabalhar.
-  Só mora aqui o que ainda exige obra ou uma decisão dele.
+- **Este arquivo é o VIVO.** Só mora aqui o que ainda exige obra ou uma
+  decisão dele. **Na janela de quem coordena, lê-se o BASTÃO, a fila que
+  vale, e o item da vez** — o resto se mira com `grep`/trecho (item
+  **106**, 28/08). O "inteiro" de 25/08 era o contraste com o MUSEU, não
+  a ordem de despejar ~1.800 linhas em toda retomada.
 - **[`PENDENCIAS-ARQUIVO.md`](PENDENCIAS-ARQUIVO.md) é o MUSEU:** a história
   completa e verbatim dos itens fechados, com o número intacto.
   **Consulta pontual por número (`grep -n '^\*\*61\.' docs/PENDENCIAS-ARQUIVO.md`),
@@ -33,15 +36,26 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 106.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 107.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
-  *(O **104** saiu em 26/08: a costura sombra do anel → noite, queixa dele.)*
+  *(O **106** saiu em 28/08: a lei curta da sessão, no `AGENTS.md`.)*
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
 ---
 
-## O BASTÃO — onde a rodada parou (27/08)
+## O BASTÃO — onde a rodada parou (28/08)
+
+**28/08 — A SESSÃO CARA VIROU LEI, NÃO CAMPANHA.** Palavras dele: as
+sessões estão longas demais, gastando milhões de tokens em tarefa
+simples; a solução tem de valer para qualquer modelo, não para um
+instrumento. Isso é o item **106**, e fechou no mesmo dia: a lei mora
+no `AGENTS.md` (§1 e §18). Não se apagam os testes; não se constrói um
+motor de orçamento. O que falta no **99** (dono nos arquivos, teto de
+15 min) acontece quando uma obra TOCAR o teste — não numa varredura.
+A fila de produto segue **75** → **100**. O que espera o olho dele não
+mudou: a folha da lente (**86**) com a vista de abertura (**61**), a
+foto da borda (**70**), a fita do **83**.
 
 **27/08 — O 87 POUSOU E SAIU DA FILA.** A abertura do telefone com a fonte
 grande passou a ROLAR, sem encolher nada (a escolha dele em 25/08, Q6); o
@@ -57,8 +71,8 @@ typecheck + lint + testes dos tocados, com os transversais do
 cadastro). Medido nesta máquina: 2.435 casos de unidade, typecheck
 2,9 s, lint 5,5 s. A dieta NÃO fecha: falta dono na maior parte dos
 arquivos, e o teto de 15 min da rodada visual ainda é porteiro de
-papel. **A fila que vale agora continua no 99** (o resto da dieta) →
-**75** → **100**.
+papel. **A fila daquele dia seguia no 99** (o resto da dieta) →
+**75** → **100**. *(28/08: o que vale está no topo deste bastão.)*
 
 **27/08, TERCEIRA LEVA — A CAUSA 2 DO 70 POUSOU.** O ponto de estrela
 passa a ser preso 1 px dentro da tela e o brilho é avaliado na posição
@@ -66,8 +80,8 @@ verdadeira (catálogo, cascas e planetas, o mesmo `STAR_FRAG`). Juiz:
 `scripts/visual/ponto-na-borda.mjs`. Medido em 1128×1080: Rigil
 Kentaurus cruza a borda e o pico da faixa cai 2,6% no passo (234 →
 228 de 255), depois desce aos poucos com o rabo da PSF; foto
-`capturas/item70-borda-depois-v3.png`. A fila que vale agora começa
-no **99** → **75** → **100**.
+`capturas/item70-borda-depois-v3.png`. A fila daquele dia começava
+no **99** → **75** → **100**. *(28/08: o que vale está no topo deste bastão.)*
 
 **27/08, SEGUNDA LEVA — AS FOTOS DO (3) ESTÃO NA MESA, à espera do olho
 dele.** A sessão única de captura saiu: `capturas/item86-lente-ab.png`
@@ -78,8 +92,8 @@ a 58°). **Achado da sessão, que ele precisa saber antes de julgar:** com a
 lente mais aberta o teto do zoom cai de 226,84 para ~133,7 UA e a
 abertura natural desce de ~8,9 para ~5,2 UA — está nas etiquetas das
 pranchas. Nenhuma linha de código pousou; a escolha é dele.
-**A fila que vale agora começa no (5):** o **99** (a dieta dos juízes)
-→ **75** → **100**.
+**A fila daquele dia começava no (5):** o **99** (a dieta dos juízes)
+→ **75** → **100**. *(28/08: o que vale está no topo deste bastão.)*
 
 **A FILA DE 23/08 — SUPERADA (a que vale é a da PRÓXIMA CONVERSA, mais
 abaixo); fica como história, e era DECISÃO DELE.** Entrou aqui em 23/08 como
@@ -148,7 +162,9 @@ FECHARAM.)*
 > na **MESMA sessão de captura**~~ (27/08 — **as fotos saíram e estão na
 > mesa**: `capturas/item86-lente-ab.png` e `capturas/item61-abertura-folha.png`;
 > falta o olho dele) → ~~**(4)** o **70**, causa 2 (o ponto que
-> morre na borda)~~ (27/08 — pousou; a foto espera o olho dele) → **(5)** o **99** (a dieta dos juízes — primeira fatia em 27/08; o resto segue) → **(6)** o **75**
+> morre na borda)~~ (27/08 — pousou; a foto espera o olho dele) → ~~**(5)** o **99**
+> (a dieta dos juízes — primeira fatia em 27/08)~~ (28/08 — o resto do 99
+> acontece no TOQUE, não em campanha; item **106**) → **(6)** o **75**
 > (o motor de filmes) → o item **100**.
 
 **O QUE ESPERA O OLHO DELE — e a dívida virou quase nada em 25/08.** As
@@ -280,7 +296,10 @@ porque o fecho não abriu obra nova.
 
 **E ainda em 27/08 saiu o 105** (a prova 19 do toque duplo que escolhia
 o próprio alvo), dentro da primeira fatia da dieta dos juízes (item
-**99**). O próximo número livre segue **106**.
+**99**). O próximo número livre naquele dia seguia **106**.
+
+**E em 28/08 saiu o 106** (a lei curta da sessão, no `AGENTS.md`), no
+mesmo dia em que nasceu. O próximo número livre segue **107**.
 
 ---
 
@@ -514,7 +533,8 @@ peças de chão, nenhuma delas mata juiz em silêncio:
    lista testes e juízes visuais, cobra Serve na amostra, imprime quem
    está sem dono. Medido nesta máquina: **2.435** casos de unidade em 75
    arquivos, typecheck 2,9 s, lint 5,5 s. A maior parte ainda está SEM
-   DONO — classificar o resto é a próxima fatia, e ninguém morre antes.
+   DONO — classificar o resto acontece no TOQUE (28/08), e ninguém morre
+   antes.
 2. **O portão de commit existe** (`npm run gate`): typecheck + lint +
    testes dos arquivos tocados, mais os transversais do cadastro da luz
    e dos símbolos proibidos. Foi exatamente essa lacuna que deixou o
@@ -530,8 +550,23 @@ peças de chão, nenhuma delas mata juiz em silêncio:
 responder MORRE, com a morte justificada no censo); fundir redundantes;
 sabotagem amostral dos velhos para valer (hoje é uma amostra de seis);
 porteiro do teto de 15 min que recuse juiz novo sem aposentar alguém
-(hoje o teto está escrito, não trava). O 75 espera esta dieta emagrecer
-os portões.
+(hoje o teto está escrito, não trava).
+**28/08, ele puxou de volta:** a prioridade é o tamanho da sessão (item
+**106**), não uma campanha de classificação. O que falta aqui acontece
+quando uma obra TOCAR o arquivo — não se abre sessão só para classificar.
+O 75 **não espera** uma varredura: os portões em camadas já são lei
+(`npm run gate` no commit; suíte cheia no fechamento).
+
+**106. Sessões longas demais, milhões de tokens em tarefa simples —
+FECHADO em 28/08, no mesmo dia em que nasceu.** Palavras dele: *"as
+sessoes estao longas demais, gastando milhoes de tokens para tarefas
+simples"*; e a solução *"tem que ser holistica e nao focada num
+determinado harness"*. Não se apagam os testes; não se constrói um
+sistema de orçamento. A lei curta entrou no `AGENTS.md` (§1 e §18):
+obra pequena se faz sozinha; modelo caro só no diagnóstico e no
+julgamento; agente recebe pacote curto; uma falha, um conserto; a
+janela cara lê o bastão, a fila e o item da vez. Vale para qualquer
+modelo. A casa desta lei é o `AGENTS.md`, não este item.
 
 **102.** Girar em volta do objeto selecionado era péssimo — **FECHADO em
 26/08**. Ele decidiu o desenho no chat, e a frase é a lei: *"quero que
@@ -1717,6 +1752,11 @@ aposentados); cada item movido deixou aqui uma entrada curta apontando para
 lá; o cabeçalho ganhou as **duas regras novas** (a de leitura e a do
 número); e o `AGENTS.md` — que é a primeira coisa que todo agente lê —
 ganhou as duas, apontando para cá em vez de duplicar a história.
+
+**28/08, ele refinou a LEITURA, não a forma** (item **106**): o vivo
+continua sendo este arquivo e o museu o outro. A janela cara lê o
+bastão, a fila e o item da vez — não as ~1.800 linhas. A forma (um
+vivo, um museu, git é o diário) não se re-litiga.
 
 **O QUE FICA ABERTO DENTRO DESTE ITEM** — o resto do plano de 14/08,
 conferido contra o código em 25/08:
