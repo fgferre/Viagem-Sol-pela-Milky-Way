@@ -46,6 +46,15 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (28/08)
 
+**28/08 — O 75 COMEÇOU, EM FATIA PEQUENA.** Os movimentos reutilizáveis
+da câmera saíram do roteiro e moram em `cinematic/movimentos.ts`; o filme
+atual já os usa, com as mesmas contas. A comparação da câmera no corte
+inteiro e uma vista com HUD deram idênticas; houve também conferência de
+um trecho em play no navegador. **Ainda não existe o leitor do roteiro
+simples.** Esse é o próximo passo do **75**, com as instruções de autoria;
+a conversão do filme atual vem depois, como ele pediu. A fila segue
+**75** → **100**. Provas e limites estão no próprio item.
+
 **28/08 — A SESSÃO CARA VIROU LEI, NÃO CAMPANHA.** Palavras dele: as
 sessões estão longas demais, gastando milhões de tokens em tarefa
 simples; a solução tem de valer para qualquer modelo, não para um
@@ -826,8 +835,8 @@ A/B*.
 
 **A história completa está no ARQUIVO, item 70.**
 
-**75. Motor de filmes por roteiro — ideia dele para implementação
-futura, 22/08.** Palavras dele, inteiras:
+**75. Motor de filmes por roteiro — em implementação.** Proposta dele
+de 22/08, nas palavras inteiras:
 
 > *"Digo mais, deveríamos ser capazes de criar filmes, os filmes nao
 > deveriam ser milhares de linhas de codigo, deveriam ser na verdade um
@@ -859,6 +868,24 @@ ACRESCENTA ao que estava escrito é a parte da câmera — trocar de lente,
 usar zoom, virar e se mover por "algoritmos claros de movimento
 inteligente cinematográfico" — e o destinatário: o motor é ferramenta do
 agente, com instruções.
+
+**Primeira base pronta (28/08):** `movimentos.ts` reúne as trajetórias,
+curvas de aceleração e mudanças de olhar que estavam em `journey.ts`.
+Foi extração, não nova receita: o filme atual importa as mesmas peças.
+Não há dependência nova, formato de roteiro novo nem migração concluída.
+O próximo passo é o leitor de movimentos nomeados com as instruções de
+autoria; o critério de saída continua no `PLANO-CINEMA.md`.
+
+**Prova desta fatia:** `capturas/item75-movimentos/` guarda o programa
+`prova.mjs`, os dois lados da comparação e os resultados dos testes.
+Typecheck e lint passaram; a suíte teve 2.435 testes aprovados e um
+teste já desativado, sem falhas (`suite.json`).
+Posição, mira, lente, inclinação e movimento contínuo do rig deram os
+mesmos doubles no corte inteiro; legendas e metadados também coincidem.
+`antes.png` e `depois.png` são a mesma vista com HUD, pixel a pixel.
+`navegador.json` e `play.png` registram o trecho rodando. **Limite:** isso
+não substitui o A/B completo, de disco zerado, da migração; não é uma
+exibição contínua do filme inteiro no navegador.
 
 **77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
 FALTA SÓ O OLHO DELE.** A órbita é o DADO,

@@ -106,7 +106,8 @@ src/
 │  ├─ selo.ts               selo de honestidade
 │  ├─ fases.ts              o que cada fase escreve
 │  ├─ cartography/          modelo galáctico + bakes + medidas
-│  ├─ cinematic/            journey.ts (filme) + atlasRig.ts + cameraRig.ts
+│  ├─ cinematic/            journey.ts (filme) + movimentos.ts (trajetórias
+│  │                        reutilizáveis) + atlasRig.ts + cameraRig.ts
 │  ├─ core/                 engine, post
 │  └─ world/
 │     ├─ stellarBody.ts     Sol = instância nº 1 (núcleo em sol/)
