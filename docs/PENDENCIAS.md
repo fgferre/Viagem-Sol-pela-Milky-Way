@@ -892,6 +892,31 @@ Ler `assuntos` ainda não resolve o item 82:
 a prioridade dos nomes em cena segue sendo a regra existente.
 O critério de saída continua no `PLANO-CINEMA.md`.
 
+**28/08 — reforço dele sobre o motor:** "o motor tem que pensar em
+animacoes de transicao entre pontos e forma legais de fazer esses
+movimentos". E perguntou: "será que já nao tem libraires gratis prontas?"
+A escolha das peças de transição deve comparar as opções prontas e
+gratuitas com o que o Three.js já oferece; não pressupor implementação
+própria. O roteiro continua responsável pela intenção cinematográfica.
+
+**Direção técnica após a consulta:** priorizar as curvas nativas do
+Three.js — `CubicBezierCurve3` para controles explícitos e
+`CatmullRomCurve3` para trajetos por vários pontos. Hoje a Bézier ainda
+é calculada em `movimentos.ts`; aproveitar a biblioteca é obra pendente,
+não algo já concluído. As receitas de aproximação, passagem, contorno e
+ligação entre planos devem combinar essas peças com mira, lente e ritmo,
+preservando o relógio único e a busca por qualquer instante do filme.
+Comparação nas fontes primárias: [curvas do Three.js](https://threejs.org/docs/pages/Curve.html)
+e [trajetos por pontos](https://threejs.org/docs/pages/CatmullRomCurve3.html);
+[camera-controls](https://github.com/yomotsu/camera-controls) oferece
+transições de câmera e enquadramento; [Tween.js](https://github.com/tweenjs/tween.js)
+oferece interpolação e ritmos; [GSAP](https://gsap.com/docs/v3/GSAP/Timeline/)
+oferece composição temporal e busca na sequência. Os três primeiros
+usam MIT; o [GSAP é gratuito, com licença própria](https://github.com/greensock/GSAP).
+Nenhum pacote novo foi instalado. Adotar outro coordenador temporal só
+se trouxer uma capacidade que o relógio e a montagem existentes não
+cubram; não substituir a direção cinematográfica por mera suavização.
+
 **Preparação e marcos vieram na quarta fatia (28/08):** `apoiosDoRoteiro`
 lê `preload` e `qa`, usando os inícios já calculados pelos planos.
 `preAquecimento` tira a regra do corpo do Director: no filme ela segue
