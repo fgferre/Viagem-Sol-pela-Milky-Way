@@ -36,9 +36,9 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 107.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 108.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
-  *(O **106** saiu em 28/08: a lei curta da sessão, no `AGENTS.md`.)*
+  *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`.)*
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
@@ -53,9 +53,12 @@ instrumento. Isso é o item **106**, e fechou no mesmo dia: a lei mora
 no `AGENTS.md` (§1 e §18). Não se apagam os testes; não se constrói um
 motor de orçamento. O que falta no **99** (dono nos arquivos, teto de
 15 min) acontece quando uma obra TOCAR o teste — não numa varredura.
-A fila de produto segue **75** → **100**. O que espera o olho dele não
-mudou: a folha da lente (**86**) com a vista de abertura (**61**), a
-foto da borda (**70**), a fita do **83**.
+No mesmo dia ele cravou o **107**: quando a janela estiver longa e
+for hora de encerrar, varre-se duplicata, código morto, lixo e
+emaranhado do CONJUNTO da sessão — não se repete a prova. A fila de
+produto segue **75** → **100**. O que espera o olho dele não mudou:
+a folha da lente (**86**) com a vista de abertura (**61**), a foto da
+borda (**70**), a fita do **83**.
 
 **27/08 — O 87 POUSOU E SAIU DA FILA.** A abertura do telefone com a fonte
 grande passou a ROLAR, sem encolher nada (a escolha dele em 25/08, Q6); o
@@ -299,7 +302,9 @@ o próprio alvo), dentro da primeira fatia da dieta dos juízes (item
 **99**). O próximo número livre naquele dia seguia **106**.
 
 **E em 28/08 saiu o 106** (a lei curta da sessão, no `AGENTS.md`), no
-mesmo dia em que nasceu. O próximo número livre segue **107**.
+mesmo dia em que nasceu; e no mesmo dia saiu o **107** (a varredura de
+fecho: duplicata, lixo e emaranhado, não repetir a prova). O próximo
+número livre segue **108**.
 
 ---
 
@@ -567,6 +572,16 @@ obra pequena se faz sozinha; modelo caro só no diagnóstico e no
 julgamento; agente recebe pacote curto; uma falha, um conserto; a
 janela cara lê o bastão, a fila e o item da vez. Vale para qualquer
 modelo. A casa desta lei é o `AGENTS.md`, não este item.
+
+**107. Ao encerrar conversa longa, varrer o que a sessão deixou —
+FECHADO em 28/08, no mesmo dia.** Palavras dele: garantir que na
+sessão *nada tenha sido criado em duplicidade, ao invés de adaptar
+itens que já existem*, gerando um emaranhado; *não deixar código
+morto, lixo, desenho complexo de arquitetura* — o projeto é tocado
+por várias IAs e ele não programa. A lei mora no `AGENTS.md` (§13):
+cinco perguntas sobre o CONJUNTO da sessão; sessão longa manda o
+*diff* a um leitor fresco e barato, nunca a conversa; um conserto e
+fecha. Não é suíte. Não é segundo revisor da mesma prova.
 
 **102.** Girar em volta do objeto selecionado era péssimo — **FECHADO em
 26/08**. Ele decidiu o desenho no chat, e a frase é a lei: *"quero que
