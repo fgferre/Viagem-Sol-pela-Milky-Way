@@ -1,6 +1,31 @@
 {
   "planos": [
     {
+      "camera": {
+        "duracao": 8,
+        "movimento": {
+          "tipo": "curva",
+          "de": "paradaDoVazio",
+          "controle1": [70, 160, -70],
+          "controle2": [30, -40, -30],
+          "para": "portaoAntares"
+        },
+        "mira": { "tipo": "pan-cedo", "de": "Sol", "para": "Antares", "ate": 0.3 },
+        "lente": [34, 50],
+        "ritmo": "glide",
+        "efeitoDeVelocidade": { "tipo": "pulso", "amplitude": 0.45 },
+        "inclinacao": { "tipo": "pulso", "amplitude": 0.07 }
+      },
+      "assuntos": ["Antares"],
+      "destino": "Antares",
+      "legendas": [{
+        "em": 0.38,
+        "texto": "ANTARES",
+        "subtexto": "brasa a 550 anos-luz, no alinhamento do centro da galáxia",
+        "duracao": 4.8
+      }]
+    },
+    {
       "qa": { "lancamento": 0.5 },
       "camera": {
         "duracao": 6,

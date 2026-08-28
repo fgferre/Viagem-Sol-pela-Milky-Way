@@ -46,13 +46,13 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (28/08)
 
-**28/08 — O 75 JÁ LÊ A ABERTURA E SIRIUS.** A hélice reutilizável
-separa a distância exponencial da suavidade da volta e da lente;
-parâmetros nomeados preservam a calibração solar em uma fonte só.
-`abertura.json` reúne as três cenas iniciais, além das sequências já
-convertidas do cinturão e do mergulho. **Filme convertido: 10 de 25
-cenas, 83 de 193 segundos (cerca de 43% da duração).** **Motor: ainda
-parcial** — faltam movimentos específicos, composições restantes e a
+**28/08 — O 75 JÁ LÊ ÓRION E A VIRADA DE ANTARES.** `orion.json` reúne
+a chegada e a órbita de Betelgeuse, o raspão de Rigel e a dobradiça
+CASA; a virada para Antares abre o `mergulho.json`. Nenhum movimento
+novo foi preciso: curva, órbita, reta e mira cedo bastaram. **Filme
+convertido: 15 de 25 cenas, 116 de 193 segundos (cerca de 60% da
+duração).** **Motor: ainda parcial** — faltam os trechos de curva e as
+combinações da fuga/subida, o mergulho de volta e o take Lua→Terra, e a
 direção dos nomes em cena. O trajeto não costura automaticamente planos
 diferentes. Instruções no `PLANO-CINEMA.md`; provas no item. A fila
 segue **75** → **100**.
@@ -957,6 +957,21 @@ chegou a **10 de 25 cenas, 83 de 193 s**, medida por
 `capturas/item75-helice/medir.mjs`. A imagem desta etapa é preservada;
 retorno solar, passagem Lua–Terra e composições restantes ainda exigem obra.
 
+**Órion e a virada de Antares vieram na oitava fatia (28/08):**
+`orion.json` reúne a chegada e a órbita de Betelgeuse (a órbita é o
+movimento `orbita`, sem código novo), o raspão de Rigel e a dobradiça
+CASA; a virada para Antares antecede o lançamento no `mergulho.json`.
+Nenhuma peça nova de motor: curva, órbita, reta e as miras existentes
+bastaram. Os pontos calculados (órbitas de Betelgeuse, controle do
+raspão, parada do vazio) seguem nomeados em `journey.ts` — um número
+derivado de constante digitado no JSON já custou uma repescagem (o
+arredondado difere no último bit). A conversão chegou a **15 de 25
+cenas, 116 de 193 s**, medida por `capturas/item75-orion/medir.mjs`.
+O teste de ligação do mergulho acompanhou o plano novo. Faltam: os
+holds e a travessia do Ato IV, a fuga/subida (trecho de curva e
+combinações de efeitos), a deriva, o mergulho de volta e o take da
+casa — estes três últimos pedem movimentos que ainda não são dados.
+
 **Prova da primeira fatia:** `capturas/item75-movimentos/` guarda o programa
 `prova.mjs`, os dois lados da comparação e os resultados dos testes.
 Typecheck e lint passaram; a suíte teve 2.435 testes aprovados e um
@@ -1058,6 +1073,25 @@ sabotagens independentes reprovaram; referência verde, patches e saídas
 estão em `auditoria/`.
 **Limite:** prova focal no navegador, não exibição integral nem A/B de
 cache zerado; os percentuais continuam sendo de conversão, não do motor.
+
+**Prova de Órion:** `capturas/item75-orion/` guarda o antes/depois do
+`prova.mjs`: posição, mira, lente, inclinação, efeito, rig contínuo e
+edição idênticos no filme inteiro (mesmo sha256 dos dois lados). A
+vista com HUD da órbita de Betelgeuse (`t=63`) é igual em RGB, canal a
+canal (`imagem.json`, antes de worktree limpa). `play.json` percorre o
+trecho em play real de 55 a 90 s — amostrado de 66,4 a 90,4, pois o
+filme já corre durante o assentamento — com duas capturas conferidas
+(saída da órbita de Betelgeuse; a virada com a linha de destino de
+Antares). A única correção da fatia foi o ponto
+de controle do raspão de Rigel: digitado arredondado no JSON, divergia
+no último bit; virou âncora calculada. Typecheck e lint passaram
+(`verificacoes.json`); os testes focados terminaram verdes após o
+ajuste de índice do teste de ligação, e a suíte única do fechamento
+terminou com 2.458 aprovados, um já desativado e nenhuma falha
+(`suite.json`). **Sem testes novos, sem sabotagem devida** — a fatia
+não criou peça de motor; o guarda é o bit a bit do filme inteiro.
+**Limite:** prova focal no navegador, não exibição integral nem A/B de
+cache zerado; percentuais de conversão, não de prontidão do motor.
 
 **77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
 FALTA SÓ O OLHO DELE.** A órbita é o DADO,

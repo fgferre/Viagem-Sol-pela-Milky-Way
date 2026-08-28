@@ -58,8 +58,8 @@ import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_SOL_PC } from '../escala';
 import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
 import { ORIGEM } from './enquadramento';
 import {
-  bezier, distanciaExponencial, easeOut, glide, line, linear, lookPan,
-  panLook, panThenHold, settle, settleFreeze, smooth, still,
+  bezier, distanciaExponencial, easeOut, glide, linear,
+  panLook, settleFreeze, smooth, still,
   type PosFn,
 } from './movimentos';
 import { lerSequencia, type Shot } from './lerSequencia';
@@ -67,6 +67,7 @@ import { lerApoiosDoPlano, montarApoiosDoRoteiro } from './apoiosDoRoteiro';
 import apoiosDaViagem from './roteiros/apoiosDaViagem.json';
 import abertura from './roteiros/abertura.json';
 import cinturao from './roteiros/cinturao.json';
+import orion from './roteiros/orion.json';
 import mergulho from './roteiros/mergulho.json';
 
 // ---- Quadros de MEDIÇÃO (não alterar sem atualizar scripts/visual/
@@ -214,12 +215,6 @@ const BET_ORBIT_OUT = new THREE.Vector3()
   .addScaledVector(EZ, 3.5);
 // Rigel de raspão (fly-under: passamos 6 pc abaixo dela, sem parar)
 const RIGEL_PASS = RIGEL.clone().add(new THREE.Vector3(-4, 14, -9));
-const RIGEL_PATH = bezier(
-  BET_ORBIT_OUT,
-  new THREE.Vector3(18, 190, 6),
-  RIGEL.clone().add(new THREE.Vector3(-10, -6, -14)),
-  RIGEL_PASS
-);
 const LOOKBACK_2 = new THREE.Vector3(52, 296, -52); // a parada do vazio
 
 // Ato III — Antares como portão: quase-parada diante da brasa vermelha
@@ -532,102 +527,29 @@ const SHOTS: Shot[] = [
     // Recuo no meio do passo lateral: arco de revelação, com as mesmas pontas.
     curvaDoDesvio: BELT_VIEW.clone().lerp(BELT_BREAK, 0.5).addScaledVector(BELT_AXIS, -4),
   }),
-  {
-    // Betelgeuse À FRENTE: ela nasce do bordo inferior e INCHA — de 95
-    // a 14 pc o diâmetro aparente cresce ~7×, e é esse crescimento que
-    // vende "engoliria a órbita de Júpiter" antes de a legenda dizer
-    dur: 5,
-    pos: bezier(
-      BELT_BREAK,
-      new THREE.Vector3(-4, 80, 0),
-      new THREE.Vector3(0, 125, -2),
-      BET_ORBIT_IN
-    ),
-    look: panThenHold(ALNILAM, BETELGEUSE, 0.25),
-    fov0: 50, fov1: 62,
-    ease: glide,
-    warp: (k) => 0.35 * Math.sin(Math.PI * k),
-    target: ['Betelgeuse'],
-    dest: 'Betelgeuse',
-  },
-  {
-    // a passagem da supergigante: o mesmo arco fechando (r 14→7 pc),
-    // órbita de ASSUNTO declarada — contemplar o alvo não é voar de lado
-    dur: 6,
-    pos: (k, out) => {
-      const r = THREE.MathUtils.lerp(14, 7, k);
-      const a = THREE.MathUtils.lerp(1.9, -0.4, k); // sentido horário
-      const h = THREE.MathUtils.lerp(-6, 3.5, k);
-      out.copy(BETELGEUSE);
-      out.addScaledVector(EX, Math.cos(a) * r);
-      out.addScaledVector(EY, Math.sin(a) * r);
-      out.addScaledVector(EZ, h);
-      return out;
-    },
-    look: still(BETELGEUSE),
-    fov0: 62, fov1: 38,
-    ease: glide,
-    target: ['Betelgeuse'],
-    quiet: true,
-    lingua: 'assunto',
-    captions: [
-      { at: 0.08, text: 'BETELGEUSE', sub: 'supergigante vermelha à beira de explodir — engoliria a órbita de Júpiter', dur: 5.4 },
-    ],
-  },
-  {
-    // Rigel de raspão, DE FRENTE: o olhar vira rápido de Betelgeuse
-    // para ela e a silhueta azul cresce até passar por cima
-    dur: 7,
-    pos: RIGEL_PATH,
-    look: lookPan(RIGEL_PATH, BETELGEUSE, RIGEL, 0.45),
-    fov0: 38, fov1: 60,
-    ease: glide,
-    warp: (k) => 0.3 * Math.sin(Math.PI * k),
-    roll: (k) => -0.08 * Math.sin(Math.PI * k),
-    target: ['Rigel'],
-    captions: [{ at: 0.25, text: 'RIGEL', sub: 'supergigante azul a 12.000 K — 40.000 sóis em poucos milhões de anos', dur: 5 }],
-  },
-  {
-    // a dobradiça: desacelera, meia-volta RÁPIDA de 180° e o VAZIO — o
-    // quadro onde o Sol deveria estar. Acento traseiro DECLARADO, curto.
-    // O fim do giro já entrega o Escorpião pela borda.
-    dur: 7,
-    pos: line(RIGEL_PASS, LOOKBACK_2),
-    look: panThenHold(RIGEL, ORIGEM, 0.4),
-    fov0: 60, fov1: 34,
-    ease: settle,
-    target: ['SOL'],
-    quiet: true,
-    lingua: 'tras',
-    captions: [{ at: 0.35, text: 'CASA', sub: 'a 800 anos-luz o Sol caiu para magnitude 12: invisível a olho nu', dur: 4.4 }],
-  },
+  // Betelgeuse À FRENTE: ela nasce do bordo inferior e INCHA — de 95 a
+  // 14 pc o diâmetro aparente cresce ~7×, e é esse crescimento que vende
+  // "engoliria a órbita de Júpiter" antes de a legenda dizer. Depois a
+  // passagem da supergigante em órbita de ASSUNTO (contemplar o alvo não
+  // é voar de lado), Rigel de raspão em fly-under (6 pc abaixo, sem
+  // parar) e a dobradiça: meia-volta RÁPIDA de 180° para o VAZIO onde o
+  // Sol deveria estar — acento traseiro declarado e curto, cujo fim já
+  // entrega o Escorpião pela borda.
+  ...lerSequencia(orion, {
+    desvio: BELT_BREAK, Alnilam: ALNILAM, Betelgeuse: BETELGEUSE,
+    entradaOrbitaBetelgeuse: BET_ORBIT_IN, saidaOrbitaBetelgeuse: BET_ORBIT_OUT,
+    controleRigel: RIGEL.clone().add(new THREE.Vector3(-10, -6, -14)),
+    raspaoRigel: RIGEL_PASS, Rigel: RIGEL, Sol: ORIGEM, paradaDoVazio: LOOKBACK_2,
+  }),
 
   // ================= ATO III — O MERGULHO =================
-  {
-    // a virada para Antares, DE FRENTE: o olhar vira rápido do vazio de
-    // casa para o portão do centro, e Antares cresce de brasa a farol
-    // com o bojo dourado subindo atrás — geometria real do céu
-    dur: 8,
-    pos: bezier(
-      LOOKBACK_2,
-      new THREE.Vector3(70, 160, -70),
-      new THREE.Vector3(30, -40, -30),
-      ANT_GATE
-    ),
-    look: panThenHold(ORIGEM, ANTARES, 0.3),
-    fov0: 34, fov1: 50,
-    ease: glide,
-    warp: (k) => 0.45 * Math.sin(Math.PI * k),
-    roll: (k) => 0.07 * Math.sin(Math.PI * k),
-    target: ['Antares'],
-    dest: 'Antares',
-    captions: [
-      { at: 0.38, text: 'ANTARES', sub: 'brasa a 550 anos-luz, no alinhamento do centro da galáxia', dur: 4.8 },
-    ],
-  },
-  // Lançamento, duas ondas de poeira e frenagem no aglomerado.
-  // O roteiro recebe as âncoras calculadas, sem copiar a ciência para o JSON.
+  // A virada para Antares, DE FRENTE (o olhar vira rápido do vazio de
+  // casa para o portão do centro, com o bojo dourado subindo atrás —
+  // geometria real do céu), o lançamento, as duas ondas de poeira e a
+  // frenagem no aglomerado. O roteiro recebe as âncoras calculadas, sem
+  // copiar a ciência para o JSON.
   ...lerSequencia(mergulho, {
+    paradaDoVazio: LOOKBACK_2, Sol: ORIGEM,
     portaoAntares: ANT_GATE, Antares: ANTARES, saidaAntares: ANT_PASS,
     passagemAlta: ANTARES.clone().add(new THREE.Vector3(8, 16, 10)),
     passagemBaixa: ANTARES.clone().add(new THREE.Vector3(5.5, 3, 3)),

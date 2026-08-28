@@ -100,10 +100,13 @@ o contrato de autoria, o `NORTE.md` e o histórico do Git serão as fontes de ve
 Um exemplo vivo é [`cinturao.json`](../src/three/cinematic/roteiros/cinturao.json):
 **A BOLHA LOCAL**, **AS TRÊS MARIAS** e **UM PASSO AO LADO**, com câmera
 e edição juntas. O corredor da Bolha declara inclinação e pulso; o
-passo lateral usa um trajeto curvo por pontos. O outro exemplo,
-[`mergulho.json`](../src/three/cinematic/roteiros/mergulho.json), contém
-lançamento, travessias de Sagitário e Scutum e frenagem antes do centro,
-com rampas e pulsos de velocidade. A
+passo lateral usa um trajeto curvo por pontos. O
+[`orion.json`](../src/three/cinematic/roteiros/orion.json) reúne a
+chegada e a órbita de Betelgeuse, o raspão de Rigel e a dobradiça CASA.
+O [`mergulho.json`](../src/three/cinematic/roteiros/mergulho.json) abre
+com a virada para Antares e contém o lançamento, as travessias de
+Sagitário e Scutum e a frenagem antes do centro, com rampas e pulsos de
+velocidade. A
 [`abertura.json`](../src/three/cinematic/roteiros/abertura.json) reúne a
 parede solar, a saída em hélice e a passagem por Sirius.
 `lerSequencia` lê `{ "planos": [...] }` e `journey.ts` encaixa a lista no

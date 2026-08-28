@@ -1,0 +1,88 @@
+{
+  "planos": [
+    {
+      "camera": {
+        "duracao": 5,
+        "movimento": {
+          "tipo": "curva",
+          "de": "desvio",
+          "controle1": [-4, 80, 0],
+          "controle2": [0, 125, -2],
+          "para": "entradaOrbitaBetelgeuse"
+        },
+        "mira": { "tipo": "pan-cedo", "de": "Alnilam", "para": "Betelgeuse", "ate": 0.25 },
+        "lente": [50, 62],
+        "ritmo": "glide",
+        "efeitoDeVelocidade": { "tipo": "pulso", "amplitude": 0.35 }
+      },
+      "assuntos": ["Betelgeuse"],
+      "destino": "Betelgeuse"
+    },
+    {
+      "camera": {
+        "duracao": 6,
+        "movimento": {
+          "tipo": "orbita",
+          "centro": "Betelgeuse",
+          "raio": [14, 7],
+          "angulo": [1.9, -0.4],
+          "altura": [-6, 3.5]
+        },
+        "mira": { "tipo": "fixo", "ponto": "Betelgeuse" },
+        "lente": [62, 38],
+        "ritmo": "glide"
+      },
+      "assuntos": ["Betelgeuse"],
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [{
+        "em": 0.08,
+        "texto": "BETELGEUSE",
+        "subtexto": "supergigante vermelha à beira de explodir — engoliria a órbita de Júpiter",
+        "duracao": 5.4
+      }]
+    },
+    {
+      "camera": {
+        "duracao": 7,
+        "movimento": {
+          "tipo": "curva",
+          "de": "saidaOrbitaBetelgeuse",
+          "controle1": [18, 190, 6],
+          "controle2": "controleRigel",
+          "para": "raspaoRigel"
+        },
+        "mira": { "tipo": "pan-direcao", "de": "Betelgeuse", "para": "Rigel", "ate": 0.45 },
+        "lente": [38, 60],
+        "ritmo": "glide",
+        "efeitoDeVelocidade": { "tipo": "pulso", "amplitude": 0.3 },
+        "inclinacao": { "tipo": "pulso", "amplitude": -0.08 }
+      },
+      "assuntos": ["Rigel"],
+      "legendas": [{
+        "em": 0.25,
+        "texto": "RIGEL",
+        "subtexto": "supergigante azul a 12.000 K — 40.000 sóis em poucos milhões de anos",
+        "duracao": 5
+      }]
+    },
+    {
+      "camera": {
+        "duracao": 7,
+        "movimento": { "tipo": "reta", "de": "raspaoRigel", "para": "paradaDoVazio" },
+        "mira": { "tipo": "pan-cedo", "de": "Rigel", "para": "Sol", "ate": 0.4 },
+        "lente": [60, 34],
+        "ritmo": "settle"
+      },
+      "assuntos": ["SOL"],
+      "fundoSilencioso": true,
+      "olhar": "tras",
+      "legendas": [{
+        "em": 0.35,
+        "texto": "CASA",
+        "subtexto": "a 800 anos-luz o Sol caiu para magnitude 12: invisível a olho nu",
+        "duracao": 4.4
+      }]
+    }
+  ]
+}

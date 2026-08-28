@@ -378,12 +378,13 @@ describe('lerPlanoDeCamera — item 75', () => {
     }
   });
 
-  it('as quatro cenas do mergulho respondem ao JSON, incluindo rampas no giro e no pós-processamento', async () => {
+  it('as cinco cenas do mergulho respondem ao JSON, incluindo rampas no giro e no pós-processamento', async () => {
     const { auditarRoteiro: auditarAntes } = await import('./journey');
     const antes = auditarAntes();
-    const indice = antes.captions.find((c) => c.text === 'O MERGULHO')!.shotIndex - 1;
+    const indice = antes.captions.find((c) => c.text === 'ANTARES')!.shotIndex;
     const inicio = antes.shots[indice].t0;
     const efeitos = [
+      { tipo: 'fixo', valor: 0.5 },
       { tipo: 'rampa', de: 0.1, para: 0.9, ritmo: 'quadratic' },
       { tipo: 'pulso', amplitude: 0.4, base: 0.2 },
       { tipo: 'pulso', amplitude: 0.3, base: 0.15, frequencia: 0.9 },
@@ -408,9 +409,10 @@ describe('lerPlanoDeCamera — item 75', () => {
       const { JourneyRig, galacticUp } = await import('./cameraRig');
       const depois = auditarRoteiro();
       expect(depois.shotCount).toBe(antes.shotCount);
-      expect(depois.duration).toBe(antes.duration + 3);
+      expect(depois.duration).toBe(antes.duration + 1);
       const k = 0.25;
       const esperados = [
+        0.5,
         THREE.MathUtils.lerp(0.1, 0.9, k * k),
         0.2 + 0.4 * Math.sin(Math.PI * k),
         0.15 + 0.3 * Math.sin(Math.PI * k * 0.9),
