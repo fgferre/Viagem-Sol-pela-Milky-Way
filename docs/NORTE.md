@@ -580,8 +580,10 @@ Teardown que falha não leva os outros junto (`passoBlindado`).
   baixados) sem o visitante chegar perto de nada, e a coda do filme
   fazia o mesmo a partir de REVEAL_T com os dez corpos que ela nunca
   resolve. Hoje pré-aquecem: no Atlas, o corpo EM FOCO e, se o foco é
-  uma lua, o pai (o degrau da lua enquadra os dois); no filme, TERRA e
-  LUA a partir de REVEAL_T, e só elas. Medido depois: o Atlas sem foco
+  uma lua, o pai (o degrau da lua enquadra os dois); no filme, o roteiro
+  declara os corpos e o momento. `apoiosDaViagem.json` pede TERRA e LUA
+  no estilingue (REVEAL_T), e só elas; `preAquecimento` aplica a dose.
+  Medido depois: o Atlas sem foco
   abre com **0 texel de corpo** (54,1 MiB, que são a galáxia e os dois
   mapas) e `?foco=terra&ver=corpo` fica em 582 MiB contra 1.216.
   **O NÚMERO QUE AUTORIZOU**, com o cache HTTP desligado e o

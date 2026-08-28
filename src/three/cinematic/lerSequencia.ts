@@ -1,6 +1,7 @@
 // Item 75: sequência JSON → planos usados pelo relógio único de Journey.
 import type { Vector3 } from 'three';
-import { erro, numero, objeto } from './dadosDoRoteiro';
+import { booleano, erro, lista, numero, objeto, opcional, texto } from './dadosDoRoteiro';
+import { lerApoiosDoPlano, type ApoiosDoPlano } from './apoiosDoRoteiro';
 import { lerPlanoDeCamera, type CameraDoPlano } from './lerPlanoDeCamera';
 
 interface ShotCaption {
@@ -14,7 +15,7 @@ interface ShotCaption {
   bridge?: boolean;
 }
 
-export interface Shot extends CameraDoPlano {
+export interface Shot extends CameraDoPlano, ApoiosDoPlano {
   /** intensidade de warp (vinheta/CA/bloom), decisão de direção por shot */
   warp?: (k: number) => number;
   /** banking em radianos (positivo = horário); 0 nos holds por contrato */
@@ -36,25 +37,6 @@ export interface Shot extends CameraDoPlano {
    * frente de quem não declarou e o limite de duração de quem declarou.
    */
   lingua?: 'frente' | 'assunto' | 'tras';
-}
-
-function lista(valor: unknown, campo: string): unknown[] {
-  if (!Array.isArray(valor)) return erro(campo, 'deve ser uma lista');
-  return valor;
-}
-
-function texto(valor: unknown, campo: string): string {
-  if (typeof valor !== 'string' || !valor.trim()) return erro(campo, 'deve ser texto não vazio');
-  return valor;
-}
-
-function opcional<T>(valor: unknown, campo: string, ler: (v: unknown, c: string) => T): T | undefined {
-  return valor === undefined ? undefined : ler(valor, campo);
-}
-
-function booleano(valor: unknown, campo: string): boolean {
-  if (typeof valor !== 'boolean') return erro(campo, 'deve ser true ou false');
-  return valor;
 }
 
 function legenda(valor: unknown, campo: string): ShotCaption {
@@ -88,6 +70,7 @@ export function lerSequencia(
     }
     return {
       ...lerPlanoDeCamera(p.camera, pontos),
+      ...lerApoiosDoPlano(p, campo),
       captions: opcional(p.legendas, `${campo}.legendas`, (v, c) =>
         Array.from(lista(v, c), (item, j) => legenda(item, `${c}[${j}]`))),
       target: opcional(p.assuntos, `${campo}.assuntos`, (v, c) =>

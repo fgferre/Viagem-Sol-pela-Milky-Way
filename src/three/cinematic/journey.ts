@@ -63,6 +63,8 @@ import {
   type PosFn,
 } from './movimentos';
 import { lerSequencia, type Shot } from './lerSequencia';
+import { lerApoiosDoPlano, montarApoiosDoRoteiro } from './apoiosDoRoteiro';
+import apoiosDaViagem from './roteiros/apoiosDaViagem.json';
 import cinturao from './roteiros/cinturao.json';
 
 // ---- Quadros de MEDIÇÃO (não alterar sem atualizar scripts/visual/
@@ -874,6 +876,7 @@ const SHOTS: Shot[] = [
     // declarado e curto. É o único adeus que o buraco negro ganha.
     // A curva sai RADIAL (C1 no azimute da rasante). glide parte e
     // chega parado — casa com a rasante e com a subida.
+    ...lerApoiosDoPlano(apoiosDaViagem.estilingue),
     dur: 5,
     pos: (k, out) => SLING(k * FUGA_ATE, out),
     look: still(GAL.GC_POS),
@@ -914,6 +917,7 @@ const SHOTS: Shot[] = [
     // HOLD DE MEDIÇÃO — perfil (posição/mira/fov/roll EXATOS das
     // rodadas 16–25; o instante deriva de STARTS — ver CAPTURE_T).
     // Quietude curta: o quadro é a mensagem, 5 s bastam.
+    ...lerApoiosDoPlano(apoiosDaViagem.perfil),
     dur: 5,
     pos: still(GATE_EDGE_POS),
     look: still(GATE_LOOK),
@@ -946,6 +950,7 @@ const SHOTS: Shot[] = [
   {
     // HOLD DE MEDIÇÃO — face-on (posição/mira/fov/roll EXATOS; o
     // instante deriva de STARTS — ver CAPTURE_T)
+    ...lerApoiosDoPlano(apoiosDaViagem.face),
     dur: 5,
     pos: still(GATE_FACE_POS),
     look: still(GATE_LOOK),
@@ -1034,6 +1039,7 @@ const STARTS: number[] = [];
   }
 }
 const JOURNEY_DURATION = STARTS[STARTS.length - 1] + SHOTS[SHOTS.length - 1].dur;
+export const APOIOS_DO_FILME = montarApoiosDoRoteiro(SHOTS, STARTS);
 
 // legendas achatadas em janelas absolutas [t0, t0+dur)
 const CAPTION_WINDOWS = SHOTS.flatMap((s, i) =>
@@ -1110,12 +1116,10 @@ export function auditarRoteiro(): JourneyScriptAudit {
   };
 }
 
-/** shot do hold de perfil / face-on — capturas no MEIO do hold */
-const EDGE_HOLD = SHOTS.findIndex((s) => s.captions?.[0]?.text === 'ELA NÃO É PLANA');
-const FACE_HOLD = SHOTS.findIndex((s) => s.captions?.[0]?.text === 'NOSSA GALÁXIA');
+/** Marcos nomeados do roteiro; mantém o arredondamento dos juízes existentes. */
 export const CAPTURE_T = {
-  edge: Math.round(STARTS[EDGE_HOLD] + SHOTS[EDGE_HOLD].dur / 2),
-  face: Math.round(STARTS[FACE_HOLD] + SHOTS[FACE_HOLD].dur / 2),
+  edge: Math.round(APOIOS_DO_FILME.instanteDeQA('edge')),
+  face: Math.round(APOIOS_DO_FILME.instanteDeQA('face')),
 };
 /** início do Ato IV — o botão "Ver a galáxia" salta para cá. Achado pelo
  *  NOME do beat (a fuga do estilingue), não por índice mágico: a conta de

@@ -46,14 +46,14 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (28/08)
 
-**28/08 — O 75 JÁ LÊ UMA SEQUÊNCIA COM LEGENDAS.** `lerSequencia`
-reúne câmera e edição no JSON vivo `roteiros/cinturao.json`: **AS TRÊS
-MARIAS** e **UM PASSO AO LADO**. A ordem dos planos, os textos e os dados
-de direção alimentam o relógio e a barra existentes. O antigo piloto
-isolado foi incorporado, sem cópia paralela. Instruções de autoria no
-`PLANO-CINEMA.md`. **Não é ainda o motor de um filme inteiro:** faltam
-preload, marcadores de QA, recursos de câmera específicos e a direção
-dos nomes em cena; a conversão integral vem depois. A fila segue
+**28/08 — O 75 JÁ PREPARA RECURSOS E LÊ MARCOS VISUAIS.** Além da
+sequência com câmera e legendas, o roteiro agora declara o preparo
+de Terra/Lua e os pontos de conferência. `apoiosDaViagem.json` alimenta
+o carregamento existente; `cinturao.json` também tem marcos nomeados.
+Os momentos de preparação e os dois quadros antigos foram mantidos.
+Instruções de autoria no `PLANO-CINEMA.md`. **Não é ainda o motor de
+um filme inteiro:** faltam inclinação/efeitos, movimentos específicos
+e a direção dos nomes em cena; a conversão integral vem depois. A fila segue
 **75** → **100**. Provas e limites estão no próprio item.
 
 **28/08 — A SESSÃO CARA VIROU LEI, NÃO CAMPANHA.** Palavras dele: as
@@ -886,10 +886,19 @@ os dados entram na mesma montagem de `Journey`: cortes, janelas e
 capítulos continuam derivados, sem outro relógio. Instruções e limites
 de autoria estão no `PLANO-CINEMA.md`.
 Não há dependência nova, segundo motor nem migração integral concluída.
-Faltam preload, marcadores de QA, inclinação/efeitos e os movimentos
-específicos restantes. Ler `assuntos` ainda não resolve o item 82:
+Faltam inclinação/efeitos e os movimentos específicos restantes.
+Ler `assuntos` ainda não resolve o item 82:
 a prioridade dos nomes em cena segue sendo a regra existente.
 O critério de saída continua no `PLANO-CINEMA.md`.
+
+**Preparação e marcos vieram na quarta fatia (28/08):** `apoiosDoRoteiro`
+lê `preload` e `qa`, usando os inícios já calculados pelos planos.
+`preAquecimento` tira a regra do corpo do Director: no filme ela segue
+os dados; no Atlas mantém foco e pai da lua. `apoiosDaViagem.json` pede
+Terra/Lua e efemérides no estilingue e nomeia os quadros de perfil/face.
+`CAPTURE_T` passa a ler esses nomes com o arredondamento existente;
+os pinos continuam em **153 e 167 s**. O cinturão já declara seus
+próprios marcos no mesmo formato. Não nasceu outro carregador.
 
 **Prova da primeira fatia:** `capturas/item75-movimentos/` guarda o programa
 `prova.mjs`, os dois lados da comparação e os resultados dos testes.
@@ -930,6 +939,20 @@ cache zerado nem a prioridade dos três nomes em cena. Os quatro testes
 novos e a ligação de câmera adaptada reprovaram nas cinco sabotagens
 independentes; `auditoria/` guarda os patches e trechos das saídas, com
 referência verde na mesma cópia física isolada.
+
+**Prova da preparação:** `capturas/item75-apoios/` guarda os marcos e a
+comparação da política de carga (`apoios.json`, `medir-apoios.mjs`), a
+câmera/edição idênticas no corte inteiro e o quadro da Terra idêntico
+em RGB (`imagem.json`). O perfil foi aberto pelo marco calculado;
+o trecho seguiu em play (`marco-e-play.json`, `play.png`). Typecheck
+e lint passaram; a suíte única terminou com 2.449 aprovados, um já
+desativado e nenhuma falha (`suite.json`). Os quatro testes novos
+reprovaram em cinco sabotagens independentes, incluindo ignorar o JSON
+no Director e fixar os tempos de QA; saídas integrais e patches em
+`auditoria/`. A redundância de uma asserção foi retirada e a correção
+passou (`correcao.json`). **Limite:** prepara corpos e efemérides já
+existentes; não cria novos recursos. Não é exibição integral, A/B de
+cache zerado nem conversão das câmeras restantes.
 
 **77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
 FALTA SÓ O OLHO DELE.** A órbita é o DADO,

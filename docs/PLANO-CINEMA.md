@@ -113,6 +113,8 @@ Cada entrada tem `camera`, descrita abaixo, e estes campos opcionais:
 | `fundoSilencioso` | `true` silencia as etiquetas de fundo; omitido, continua false |
 | `destino` | Nome para a linha de rumo com distância viva |
 | `olhar` | Declara a língua do plano: `frente` (padrão), `assunto` ou `tras`; a orientação efetiva continua definida por `camera.mira` |
+| `preload` | Preparação a partir do início do plano: `corpos` (lista de IDs do palco) e/ou `efemerides: true` |
+| `qa` | Objeto com nomes únicos de conferência e suas frações de tempo no plano, por exemplo `{ "paralaxe": 0.5 }` |
 
 `legendas.em` usa a fração do **tempo de relógio**, independente do ritmo
 do movimento. Uma janela é aberta na entrada e fechada no fim; buscar
@@ -127,6 +129,34 @@ os movimentos já disponíveis e forneça os pontos nomeados na chamada
 de `lerSequencia`. A montagem copia os dados, não acompanha alterações
 posteriores no objeto original. Remover ou acrescentar planos recalcula
 os horários dos seguintes e os capítulos da barra automaticamente.
+
+### Preparação e pontos de conferência
+
+`preload` é uma intenção, não uma URL nem uma chamada de rede no roteiro.
+`corpos` usa os IDs que `montarCorposDoPalco` registra (`earth`, `moon`,
+`mars` etc.); o leitor valida o formato, não a existência do ID no palco.
+`efemerides: true` pede a fonte de posições antes de ela aparecer em cena.
+Os pedidos se acumulam desde o início de cada plano; repetir um corpo
+não adia seu primeiro pedido. Buscar um instante à frente ou voltar
+pela barra consulta o tempo atual, sem depender do histórico de play.
+Isso não força descarte de textura ao voltar: o carregador existente
+continua dono da residência e do gate de tamanho.
+
+`qa` usa frações de relógio entre 0 e 1 (exclusivo), não o ritmo suavizado
+da câmera. Nome repetido no filme ou consulta a marco ausente é erro.
+`montarApoiosDoRoteiro` recebe os mesmos inícios dos planos que `Journey`
+já calculou; `APOIOS_DO_FILME.instanteDeQA(nome)` devolve o segundo
+correspondente, para usar com a porta existente `?t=…&shot=1`.
+Não há controle novo para o visitante. `CAPTURE_T` continua arredondando
+os marcos `edge` e `face` ao segundo inteiro, como os juízes antigos.
+
+O exemplo do cinturão já declara `cinturao` e `paralaxe`. Os apoios dos
+planos ainda não convertidos vêm de
+[`apoiosDaViagem.json`](../src/three/cinematic/roteiros/apoiosDaViagem.json):
+Terra, Lua e efemérides no estilingue; `edge` no perfil e `face` na vista
+de frente. `lerApoiosDoPlano` lê esses mesmos campos, sem outro formato.
+Ao converter essas câmeras, os apoios passam para seus planos no JSON;
+não se mantém uma cópia paralela.
 
 ### Câmera de cada plano
 
@@ -173,10 +203,10 @@ interrompem a montagem com o campo indicado no erro. Não há `eval`, código
 embutido no roteiro, dependência nova nem controle novo para o visitante.
 
 **Limite desta base:** só a sequência do cinturão foi convertida; o motor
-para um filme completo ainda não terminou. Preload, marcadores de QA,
-inclinação e efeitos ainda não são lidos do JSON. `assuntos` transporta
+para um filme completo ainda não terminou. Inclinação, efeitos e os
+movimentos específicos restantes ainda não são lidos do JSON. `assuntos` transporta
 os nomes para a regra atual, mas não resolve a direção de etiquetas do
 item 82 — as três precisam falar juntas. Esses recursos e os movimentos
 específicos que faltam vêm antes da migração integral e do A/B de disco
 zerado. Validação focal:
-`npx vitest run src/three/cinematic/lerSequencia.test.ts src/three/cinematic/lerPlanoDeCamera.test.ts`.
+`npx vitest run src/three/cinematic/lerSequencia.test.ts src/three/cinematic/lerPlanoDeCamera.test.ts src/three/cinematic/apoiosDoRoteiro.test.ts`.

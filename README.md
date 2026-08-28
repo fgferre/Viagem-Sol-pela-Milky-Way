@@ -98,7 +98,7 @@ src/
 │  ├─ director/             os módulos do director: escada (a navegação
 │  │                        por degraus), solNoQuadro, maquinaDoTempo,
 │  │                        rotulos, gestos, carregamento, prontidao,
-│  │                        veu, nuvensSemente
+│  │                        preAquecimento, veu, nuvensSemente
 │  ├─ estrela.ts            a repartição da lei (LEI-DA-ESTRELA)
 │  ├─ luzDaCasa.ts          as constantes da luz (expoM0, sigmaPx)
 │  ├─ atlasConfig.ts        camadas e os corpos/luas buscáveis
@@ -108,6 +108,7 @@ src/
 │  ├─ cartography/          modelo galáctico + bakes + medidas
 │  ├─ cinematic/            journey.ts (filme) + lerSequencia.ts (JSON editorial)
 │  │                        + lerPlanoDeCamera.ts (câmera de cada plano)
+│  │                        + apoiosDoRoteiro.ts (preload e marcos de QA)
 │  │                        + movimentos.ts (trajetórias reutilizáveis)
 │  │                        + atlasRig.ts + cameraRig.ts
 │  ├─ core/                 engine, post

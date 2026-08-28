@@ -1,6 +1,7 @@
 {
   "planos": [
     {
+      "qa": { "cinturao": 0.5 },
       "camera": {
         "duracao": 6,
         "movimento": { "tipo": "fixo", "ponto": "mirante" },
@@ -19,6 +20,7 @@
       }]
     },
     {
+      "qa": { "paralaxe": 0.5 },
       "camera": {
         "duracao": 6,
         "movimento": { "tipo": "reta", "de": "mirante", "para": "desvio" },
