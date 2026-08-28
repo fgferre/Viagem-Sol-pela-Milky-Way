@@ -48,6 +48,18 @@ grande passou a ROLAR, sem encolher nada (a escolha dele em 25/08, Q6); o
 juiz de acessibilidade ganhou as três provas das pontas e a sabotagem
 confirma que elas mordem. Foto: `capturas/item87-abertura-rolagem-v2.png`.
 
+**27/08, QUARTA LEVA — A PRIMEIRA FATIA DO 99 POUSOU.** O toque duplo
+no aparelho (item **105**) passou a MIRAR Marte, em vez de escolher o
+vizinho; o cadastro da luz ganhou o prender da borda que o item 70
+tinha deixado de fora; nasceu o censo dos juízes
+(`scripts/censo-dos-juizes.mjs`) e o portão de commit (`npm run gate`:
+typecheck + lint + testes dos tocados, com os transversais do
+cadastro). Medido nesta máquina: 2.435 casos de unidade, typecheck
+2,9 s, lint 5,5 s. A dieta NÃO fecha: falta dono na maior parte dos
+arquivos, e o teto de 15 min da rodada visual ainda é porteiro de
+papel. **A fila que vale agora continua no 99** (o resto da dieta) →
+**75** → **100**.
+
 **27/08, TERCEIRA LEVA — A CAUSA 2 DO 70 POUSOU.** O ponto de estrela
 passa a ser preso 1 px dentro da tela e o brilho é avaliado na posição
 verdadeira (catálogo, cascas e planetas, o mesmo `STAR_FRAG`). Juiz:
@@ -136,7 +148,7 @@ FECHARAM.)*
 > na **MESMA sessão de captura**~~ (27/08 — **as fotos saíram e estão na
 > mesa**: `capturas/item86-lente-ab.png` e `capturas/item61-abertura-folha.png`;
 > falta o olho dele) → ~~**(4)** o **70**, causa 2 (o ponto que
-> morre na borda)~~ (27/08 — pousou; a foto espera o olho dele) → **(5)** o **99** (a dieta dos juízes) → **(6)** o **75**
+> morre na borda)~~ (27/08 — pousou; a foto espera o olho dele) → **(5)** o **99** (a dieta dos juízes — primeira fatia em 27/08; o resto segue) → **(6)** o **75**
 > (o motor de filmes) → o item **100**.
 
 **O QUE ESPERA O OLHO DELE — e a dívida virou quase nada em 25/08.** As
@@ -265,6 +277,10 @@ obra nova.
 **E em 27/08 saiu o 87** (a rolagem do véu da abertura), por obra, no
 caminho que ele escolheu em 25/08 — o próximo número livre segue **106**,
 porque o fecho não abriu obra nova.
+
+**E ainda em 27/08 saiu o 105** (a prova 19 do toque duplo que escolhia
+o próprio alvo), dentro da primeira fatia da dieta dos juízes (item
+**99**). O próximo número livre segue **106**.
 
 ---
 
@@ -491,6 +507,32 @@ viraram **lei imediata** no `AGENTS.md` (§12 e §13) — não esperam esta obra
 O que resta ao item: a peça 1 (o censo com preço e dono) e a 4 (anti-deriva
 com sabotagem amostral dos velhos), mais o teto em minutos com porteiro.
 
+**27/08, PRIMEIRA FATIA — O ANDAIME POUSOU, A DIETA NÃO FECHA.** Quatro
+peças de chão, nenhuma delas mata juiz em silêncio:
+
+1. **O censo existe** (`scripts/censo-dos-juizes.mjs`, `npm run censo`):
+   lista testes e juízes visuais, cobra Serve na amostra, imprime quem
+   está sem dono. Medido nesta máquina: **2.435** casos de unidade em 75
+   arquivos, typecheck 2,9 s, lint 5,5 s. A maior parte ainda está SEM
+   DONO — classificar o resto é a próxima fatia, e ninguém morre antes.
+2. **O portão de commit existe** (`npm run gate`): typecheck + lint +
+   testes dos arquivos tocados, mais os transversais do cadastro da luz
+   e dos símbolos proibidos. Foi exatamente essa lacuna que deixou o
+   `pontoNaBorda.ts` do item 70 de fora do cadastro com a suíte "dos
+   tocados" verde.
+3. **Anti-deriva amostral:** o "19 camadas" deixa de ser pino decorado
+   (a gaveta deriva da tabela); a amostra de juízes velhos declara
+   Serve; apagar a linha faz o censo acusar; o juiz do harness ainda
+   morde o sinal quebrado.
+4. **O item 105 fechou** no mesmo commit: a prova 19 mira Marte.
+
+**O que falta para o 99 sair da lista:** dono em cada arquivo (quem não
+responder MORRE, com a morte justificada no censo); fundir redundantes;
+sabotagem amostral dos velhos para valer (hoje é uma amostra de seis);
+porteiro do teto de 15 min que recuse juiz novo sem aposentar alguém
+(hoje o teto está escrito, não trava). O 75 espera esta dieta emagrecer
+os portões.
+
 **102.** Girar em volta do objeto selecionado era péssimo — **FECHADO em
 26/08**. Ele decidiu o desenho no chat, e a frase é a lei: *"quero que
 seja navegação livre e sem travas para qualquer dos lados sem nenhum
@@ -504,20 +546,10 @@ verde. **O que sobra é o olho dele, no app, com o dedo e sem vídeo** — o
 que se julga aqui é TATO, e tato não se julga em gravação; se o que ele
 sentir não for o que a frase pedia, é item NOVO. História no ARQUIVO.
 
-**105.** A prova 19 do `atlas-smoke` (o toque duplo, no aparelho) falha de
-vez em quando, e não é do produto: é do INSTRUMENTO. Ela toca um ponto e
-usa o corpo mais próximo do toque; medido em 26/08, quatro corridas
-seguidas do mesmo binário deram três vezes *"Marte (vizinho a 39 px)"* e o
-toque duplo desceu ao degrau `corpo`, e uma vez *"Terra (vizinho a 76 px)"*
-com a câmera parada no `orbita` — o toque caiu longe demais do rótulo e
-não pegou ninguém. A falhada foi a PRIMEIRA depois de reiniciar o servidor
-de desenvolvimento (grafo de módulos frio, primeira carga mais lenta), o
-que casa com a teoria: o que muda é onde os rótulos assentam no instante
-do toque, não o gesto. A prova navega com URL e data pinadas e põe as
-próprias métricas, então nada da prova anterior vaza para ela. **O
-conserto é fazer a prova MIRAR um corpo em vez de tocar um ponto e aceitar
-quem estiver perto** — juiz que escolhe o próprio alvo mede coisas
-diferentes em corridas diferentes. Entra na dieta dos juízes (item 99).
+**105.** A prova 19 do `atlas-smoke` (o toque duplo, no aparelho) falhava
+de vez em quando — **FECHADO em 27/08**, na primeira fatia do item **99**:
+a prova mira Marte pelo nome, espera o rótulo assentar e relê a posição
+na hora do gesto. História no ARQUIVO.
 
 **103.** A porta do BRILHO no selo parou de virar — **FECHADO em 26/08**
 (`4ce0169`). **A calibração era inocente** (medido: o defeito reproduz

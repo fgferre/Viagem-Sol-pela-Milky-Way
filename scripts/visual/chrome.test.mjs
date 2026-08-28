@@ -1,3 +1,4 @@
+// Serve: chão — o sinal de prontidão quebrado no alvo padrão é ERRO, não silêncio
 // O juízo do fallback do harness, sem subir Chrome e sem tocar na GPU
 // (importar `chrome.mjs` ainda exige o binário instalado — ele resolve o
 // caminho no topo do módulo, de propósito).

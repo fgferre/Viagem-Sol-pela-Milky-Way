@@ -1,3 +1,4 @@
+// Serve: chão — a gaveta desenha a tabela única; número de camadas sai dela, não daqui
 // ============================================================
 // O CONFIG ÚNICO existe para não haver duas listas de camadas. Estes
 // testes cobram exatamente isso: que a gaveta desenhe a tabela da casa
@@ -105,11 +106,9 @@ describe('a tabela de camadas da casa', () => {
     // comentário podre — `bakeDiscLayers` roda inteiro de qualquer
     // jeito. Quem marcar uma camada como `viva: false` quebra aqui e
     // vai ter de provar que o mundo precisa MESMO ser reconstruído.
-    // 19 = as 13 de sempre + as quatro que eram só-URL até o item 33
-    // (nosun/nodust/noco/noforge), todas lidas por quadro desde sempre,
-    // + as LINHAS DE ÓRBITA (`noorbitas`, item 77, 23/08) + os NOMES NA
-    // TELA (`nonomes`, item 82, 24/08).
-    expect(CAMADAS.length).toBe(19);
+    // a conta SAI da tabela; o 19 que morava aqui era o pino que o item
+    // 99 nomeia — "17 camadas" mudava a cada obra. Quem acresce uma
+    // linha acresce na tabela, e a gaveta (atlas-smoke / a11y) deriva.
     expect(CAMADAS.filter((c) => !c.viva)).toEqual([]);
   });
 

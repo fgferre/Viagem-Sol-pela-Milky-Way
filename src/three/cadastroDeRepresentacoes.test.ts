@@ -1,3 +1,4 @@
+// Serve: lei — todo emissor de gl_PointSize tem linha no cadastro, senão a luz mente
 // ============================================================
 // O CADASTRO DE REPRESENTAÇÕES — o teste que o mantém verdadeiro.
 //

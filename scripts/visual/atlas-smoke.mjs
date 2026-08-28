@@ -1,3 +1,4 @@
+// Serve: dono — o portal do Atlas, a navegação e o toque no aparelho fazem o que ele pediu
 // O PORTAL DO ATLAS EM NAVEGADOR REAL — ida e volta, medida em PIXEL.
 //
 //   node scripts/visual/atlas-smoke.mjs
@@ -77,6 +78,15 @@ const PASSOS_DA_EXPOSICAO_REAL = Number(
   )?.[1]
 );
 const FATOR_DA_EXPOSICAO_REAL = 2 ** PASSOS_DA_EXPOSICAO_REAL;
+
+/** a conta SAI da tabela única — pino decorado de "17/18/19" era a deriva do item 99. */
+const N_CAMADAS = (() => {
+  const bloco = readFileSync(new URL('../../src/three/atlasConfig.ts', import.meta.url), 'utf8')
+    .match(/export const CAMADAS:[\s\S]*?\n\];/)?.[0];
+  const n = (bloco?.match(/\bflag:/g) || []).length;
+  if (n < 1) throw new Error('CAMADAS não achada em atlasConfig.ts');
+  return n;
+})();
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const PIN = 'shot=2&q=cinema';
@@ -601,11 +611,9 @@ try {
     [...document.querySelectorAll('[data-dialogo="camadas"] .atlas-gaveta-linha')]
       .map((e) => e.textContent.trim())
   )`));
-  // 18 desde o item 77: as 13 de sempre, as quatro que eram só-URL
-  // (nosun/nodust/noco/noforge) e as linhas de órbita. Quem PINA o número contra a tabela
-  // única é `atlasConfig.test.ts` (`CAMADAS.length`); aqui ele serve só
-  // para a gaveta não deixar nenhuma de fora na hora de desenhar.
-  conferir(camadas.length === 19, `a gaveta oferece ${camadas.length} camadas`);
+  // a conta SAI da tabela única (`N_CAMADAS`, lido de atlasConfig.ts).
+  // Pino decorado de 17/18/19 era a deriva que o item 99 nomeia.
+  conferir(camadas.length === N_CAMADAS, `a gaveta oferece ${camadas.length} camadas (tabela: ${N_CAMADAS})`);
   // AS TRÊS FAMÍLIAS, com a contagem que cada uma mostra: é o resumo do
   // grupo, e ele tem de bater com as caixas ligadas de verdade — um
   // número decorado seria a gaveta contando outra coisa que não a cena.
@@ -622,7 +630,7 @@ try {
   conferir(
     familias.length === 3
       && familias.every((f) => f.conta === `${f.ligadas}/${f.linhas}`)
-      && familias.reduce((n, f) => n + f.linhas, 0) === 19,
+      && familias.reduce((n, f) => n + f.linhas, 0) === N_CAMADAS,
     `as três famílias e a contagem de cada uma — `
       + familias.map((f) => `${f.rotulo} (${f.conta})`).join(' · ')
   );
@@ -2164,85 +2172,83 @@ try {
   // (a) e (b): o TOQUE escolhe e o TOQUE DUPLO vai, com o tremor que um
   // dedo tem de verdade.
   //
-  // O ALVO É O RÓTULO MAIS ISOLADO da tela, e isso é medida e não
-  // capricho: a primeira versão desta prova pegava o PRIMEIRO rótulo
-  // sobre o canvas, que na abertura é o Sol — e a 390×844 o sistema
-  // inteiro cabe num punhado de pixels (medido: Sol em 195,384 ·
-  // Mercúrio 197,383 · Vênus 196,382 · Marte 197,381 · Terra 193,386).
-  // Com os vizinhos a 2 px, um tremor de 12 px muda qual nome está mais
-  // PERTO do dedo, e o toque escolhia Mercúrio — o que não é defeito do
-  // gesto, é o hit-test fazendo exatamente o que promete. Escolhendo o
-  // rótulo mais solto da tela, a prova volta a medir o LIMIAR.
+  // O ALVO É MARTE, PELO NOME — item 105. A versão que escolhia o
+  // rótulo mais isolado media coisas diferentes em corridas diferentes:
+  // quatro do mesmo binário deram três vezes Marte (vizinho a 39 px) e
+  // uma vez Terra (vizinho a 76 px) com a câmera parada no `orbita`,
+  // porque o toque caiu longe do rótulo. A falhada foi a primeira
+  // depois de reiniciar o servidor (grafo de módulos frio). Juiz que
+  // escolhe o próprio alvo não é juiz.
   //
-  // E ELE TEM DE ESTAR SOBRE O CANVAS: num telefone a ficha é uma folha
-  // de baixo (item 62), então boa parte da tela NÃO é céu — um rótulo
-  // perfeitamente desenhado atrás dela nunca foi tocável.
-  // `elementFromPoint` é quem responde isso.
+  // Marte é um dos quatro corpos com nome na abertura (prova 15c) e
+  // foi o que a prova antiga acertava quando os rótulos tinham
+  // assentado. A prova ESPERA o rótulo assentar (duas leituras a
+  // ≤ 2 px) e relê a posição na hora do gesto.
   //
-  // E TEM DE CONTINUAR SENDO CÉU DEPOIS DO PRIMEIRO TOQUE — a metade que
-  // faltava, descoberta em 24/08 (item 82). O `elementFromPoint` era
-  // consultado com a ficha FECHADA e respondia "céu"; o primeiro toque
-  // então ABRIA a folha de baixo, que engolia aquele ponto, e o segundo
-  // toque do par caía sobre a ficha em vez do céu. O par nunca chegava
-  // ao gesto, e o veredito acusava o PRODUTO por um defeito do
-  // INSTRUMENTO (medido: a câmera andava 2,6e-16 do raio, que é "não
-  // andou"). O defeito era antigo e estava dormindo: enquanto o alvo
-  // mais solto calhava de cair longe da folha, ninguém o via. A régua de
-  // relevância mudou QUEM está desenhado a 390×844, o alvo passou a ser
-  // o "Sol" a 45% da altura, e o que dormia acordou.
-  //
-  // O REMÉDIO É MEDIR A CONDIÇÃO DE VERDADE, não adivinhar uma fração de
-  // tela: a folha muda de altura com o CONTEÚDO da ficha — a de Marte
-  // tem sete seções e é a mais alta que existe, a da Terra é a mais
-  // baixa —, então um `y < 0,5` decorado erraria no primeiro alvo de
-  // outro corpo. Percorrem-se os candidatos do mais SOLTO para o mais
-  // apertado e, para cada um, faz-se o teste que o par vai enfrentar:
-  // toca-se UMA vez, e pergunta-se se aquele ponto continua sendo céu
-  // com a ficha DAQUELE objeto aberta. O primeiro que passa é o alvo.
-  await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
-  await sessao.assentar();
-  const sobreOCanvas = async () => JSON.parse(await sessao.js(`JSON.stringify(
+  // E ELE TEM DE ESTAR SOBRE O CANVAS, e CONTINUAR SENDO CÉU DEPOIS
+  // DO PRIMEIRO TOQUE — a metade que faltava, descoberta em 24/08
+  // (item 82). A ficha de Marte é a mais alta que existe (sete
+  // seções); se o rótulo ficar debaixo da folha, a prova FALHA com
+  // essa frase, em vez de ir às compras noutro corpo.
+  const ALVO_DO_TOQUE = 'corpo:mars';
+  const NOME_DO_ALVO = 'Marte';
+  const rotulosNoCeu = async () => JSON.parse(await sessao.js(`JSON.stringify(
     window.__director.rotulos.alvos
       .filter((l) => l.desenhado === true && l.opacity >= 0.15)
-      .map((l) => ({ nome: l.name, x: Math.round(l.x * innerWidth),
+      .map((l) => ({ nome: l.name, key: l.key, x: Math.round(l.x * innerWidth),
         y: Math.round(l.y * innerHeight) }))
       .filter((l) => {
         const e = document.elementFromPoint(l.x, l.y);
         return Boolean(e && e.classList.contains('scene-canvas'));
       })
   )`));
-  const candidatos = await sobreOCanvas();
-  // do mais SOLTO para o mais apertado: a solidão é a distância ao
-  // vizinho mais próximo, e é ela que faz a prova medir o LIMIAR do
-  // dedo em vez de medir o hit-test escolhendo o vizinho errado
-  for (const l of candidatos) {
-    const d = Math.min(...candidatos.filter((o) => o !== l)
-      .map((o) => Math.hypot(o.x - l.x, o.y - l.y)));
-    l.vizinho = Number.isFinite(d) ? Math.round(d) : 0;
-  }
-  candidatos.sort((a, b) => b.vizinho - a.vizinho);
-  let nome = null;
-  for (const candidato of candidatos) {
+  const rotuloDoAlvo = async () => {
+    const lista = await rotulosNoCeu();
+    const alvo = lista.find((l) => l.key === ALVO_DO_TOQUE);
+    if (!alvo) return null;
+    const d = Math.min(...lista.filter((o) => o.key !== ALVO_DO_TOQUE)
+      .map((o) => Math.hypot(o.x - alvo.x, o.y - alvo.y)));
+    alvo.vizinho = Number.isFinite(d) ? Math.round(d) : 0;
+    return alvo;
+  };
+  const esperarAlvoAssentar = async () => {
+    let ultimo = null;
+    for (let i = 0; i < 24; i++) {
+      const a = await rotuloDoAlvo();
+      await dorme(250);
+      const b = await rotuloDoAlvo();
+      if (a && b && Math.hypot(a.x - b.x, a.y - b.y) <= 2) return b;
+      ultimo = b;
+    }
+    return ultimo;
+  };
+  await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
+  await sessao.assentar();
+  let nome = await esperarAlvoAssentar();
+  if (!nome) {
+    conferir(false, `toque: ${NOME_DO_ALVO} não está desenhado sobre o canvas a 390×844`);
+  } else if (nome.vizinho < 16) {
+    conferir(false, `toque: ${NOME_DO_ALVO} está a ${nome.vizinho} px do vizinho`
+      + ` — a prova não mede o limiar de 12 px`);
+  } else {
     await Promise.all([
-      dedo('touchStart', [{ x: candidato.x, y: candidato.y, id: 1 }]),
+      dedo('touchStart', [{ x: nome.x, y: nome.y, id: 1 }]),
       dedo('touchEnd', []),
     ]);
     await sessao.assentar();
     const aindaCeu = await sessao.js(`(() => {
-      const e = document.elementFromPoint(${candidato.x}, ${candidato.y});
+      const e = document.elementFromPoint(${nome.x}, ${nome.y});
       return String(Boolean(e && e.classList.contains('scene-canvas')));
     })()`);
-    // volta ao ZERO: o par corre sem a ficha que o reconhecimento abriu
     await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
     await sessao.assentar();
-    if (aindaCeu === 'true') {
-      nome = candidato;
-      break;
-    }
-  }
-  if (!nome) {
-    conferir(false, 'toque: nenhum rótulo sobre o canvas a 390×844');
-  } else {
+    nome = await esperarAlvoAssentar();
+    if (aindaCeu !== 'true') {
+      conferir(false, `toque: o rótulo de ${NOME_DO_ALVO} fica debaixo da ficha`
+        + ` depois do primeiro toque — a prova não mede o par`);
+    } else if (!nome) {
+      conferir(false, `toque: ${NOME_DO_ALVO} sumiu depois do reset`);
+    } else {
     /**
      * UM TOQUE QUE ANDA 12 px de quarteirão — o que um dedo faz —, e os
      * três eventos vão JUNTOS ao navegador.
@@ -2293,18 +2299,24 @@ try {
     // mergulho faz é VOAR.
     await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
     await sessao.assentar();
-    const doZero = await ondeEstaACamera();
-    await tocar();
-    await tocar();
-    await dorme(1500);
-    await sessao.assentar();
-    const cameraDoDuplo = await ondeEstaACamera();
-    conferir(
-      andou(cameraDoDuplo, doZero) > 1e-3,
-      `o TOQUE DUPLO VAI: a câmera reposicionou (andou`
-        + ` ${andou(cameraDoDuplo, doZero).toExponential(2)} do raio,`
-        + ` degrau ${await sessao.js('window.__director.escadaViva.degrau')})`
-    );
+    nome = await esperarAlvoAssentar();
+    if (!nome) {
+      conferir(false, `toque duplo: ${NOME_DO_ALVO} sumiu depois do reset`);
+    } else {
+      const doZero = await ondeEstaACamera();
+      await tocar();
+      await tocar();
+      await dorme(1500);
+      await sessao.assentar();
+      const cameraDoDuplo = await ondeEstaACamera();
+      conferir(
+        andou(cameraDoDuplo, doZero) > 1e-3,
+        `o TOQUE DUPLO VAI em ${NOME_DO_ALVO}: a câmera reposicionou (andou`
+          + ` ${andou(cameraDoDuplo, doZero).toExponential(2)} do raio,`
+          + ` degrau ${await sessao.js('window.__director.escadaViva.degrau')})`
+      );
+    }
+    }
   }
 
   // (c) A PINÇA — e daqui para baixo NÃO SE NAVEGA (ver a nota acima).

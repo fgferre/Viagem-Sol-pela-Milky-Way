@@ -288,7 +288,14 @@ acrescentar uma cegueira acrescenta um item, e mais nada:
   não é controle.
 
 Como rodar — e quanto cada um cobra. `npm run dev` primeiro: todos falam
-com o dev server em `127.0.0.1:5173`. Os minutos são MEDIDOS nesta máquina
+com o dev server em `127.0.0.1:5173`. **Desde 27/08 o commit não roda a
+suíte inteira:** `npm run gate` é o portão rápido (typecheck + lint +
+testes dos arquivos tocados, mais os transversais do cadastro da luz).
+A suíte cheia (`npm test`) é uma vez, no fechamento da etapa. Os juízes
+de imagem seguem a coluna "Quando roda" abaixo. O censo vivo é `npm run
+censo` (item 99). O teto da rodada visual continua ~15 min (item 57):
+juiz novo declara Serve e Custo, ou aposenta alguém.
+Os minutos são MEDIDOS nesta máquina
 em 21/08, com o servidor já no ar; noutra máquina são ordem de grandeza,
 nunca oráculo. Escolher qual rodar é a regra que já está escrita — a prova
 tem de tocar o que a mudança tocou —, e a coluna do preço é o que faltava

@@ -40,7 +40,9 @@ pacotes extras. Em produção o app usa Three.js, React e React DOM.
 npm run dev       # http://localhost:5173
 npm run build     # typecheck + build em dist/
 npm run preview   # serve o build → http://localhost:4173
-npm test          # vitest
+npm test          # vitest (a suíte de unidade)
+npm run gate      # o rápido de cada commit: typecheck + lint + testes dos tocados
+npm run censo     # quem são os juízes, a quem servem, quem está sem dono
 ```
 
 O `dist/` serve em qualquer estático — caminhos relativos.

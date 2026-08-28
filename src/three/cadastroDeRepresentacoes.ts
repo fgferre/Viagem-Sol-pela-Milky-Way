@@ -132,6 +132,23 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'a DIREÇÃO da dependência, não o número',
   },
   {
+    id: 'ponto-na-borda',
+    nome: 'prender o ponto 1 px dentro do clip (item 70, causa 2)',
+    arquivos: ['src/three/shaders/pontoNaBorda.ts'],
+    consomeL1: false,
+    leiVelhaApagada: false,
+    fatorDeBrilho: 1,
+    destino: 'instrumento',
+    migracao: 'M3',
+    emiteGlPointSize: true,
+    razao:
+      'não é fonte nova: o GLSL é injetado no vertex do catálogo, das cascas ' +
+      'e dos planetas. Escreve gl_PointSize para o sprite crescer quando o ' +
+      'vértice é preso, e a PSF é avaliada na posição verdadeira. Sem esta ' +
+      'linha o cadastro fica cego ao arquivo que o item 70 nasceu — foi o ' +
+      'buraco que a primeira fatia do item 99 fechou',
+  },
+  {
     id: 'heroes',
     nome: 'o clarão de asas (orçamento de fontes fortes) — hoje SÓ o Sol',
     arquivos: ['src/three/world/clarao.ts', 'src/three/director/solNoQuadro.ts'],

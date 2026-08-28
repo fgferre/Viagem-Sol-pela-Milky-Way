@@ -3751,6 +3751,27 @@ shader mudasse; ele agora lê o `main` e amarra o argumento.
 
 ---
 
+**105.** A prova 19 do `atlas-smoke` (o toque duplo, no aparelho) falha de
+vez em quando, e não é do produto: é do INSTRUMENTO. Ela toca um ponto e
+usa o corpo mais próximo do toque; medido em 26/08, quatro corridas
+seguidas do mesmo binário deram três vezes *"Marte (vizinho a 39 px)"* e o
+toque duplo desceu ao degrau `corpo`, e uma vez *"Terra (vizinho a 76 px)"*
+com a câmera parada no `orbita` — o toque caiu longe demais do rótulo e
+não pegou ninguém. A falhada foi a PRIMEIRA depois de reiniciar o servidor
+de desenvolvimento (grafo de módulos frio, primeira carga mais lenta), o
+que casa com a teoria: o que muda é onde os rótulos assentam no instante
+do toque, não o gesto. A prova navega com URL e data pinadas e põe as
+próprias métricas, então nada da prova anterior vaza para ela. **O
+conserto é fazer a prova MIRAR um corpo em vez de tocar um ponto e aceitar
+quem estiver perto** — juiz que escolhe o próprio alvo mede coisas
+diferentes em corridas diferentes. Entra na dieta dos juízes (item 99).
+**FECHADO em 27/08**, na primeira fatia do item 99: a prova mira Marte
+pelo nome (`corpo:mars`), espera o rótulo assentar (duas leituras a
+≤ 2 px) e relê a posição na hora do gesto. Se o rótulo ficar debaixo da
+ficha, a prova falha com essa frase — não vai às compras noutro corpo.
+
+---
+
 **102. Girar em volta do objeto selecionado é péssimo — e o NASA Eyes faz
 melhor.** (Aberto em 25/08 com o Eyes como régua; **FECHADO em 26/08**,
 quando ele decidiu o desenho e o giro livre pousou como lei única.)

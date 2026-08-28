@@ -1,3 +1,4 @@
+// Serve: lei — a pupila e os símbolos mortos não ressuscitam
 // ============================================================
 // OS SÍMBOLOS PROIBIDOS — a varredura INVERTIDA da Lei da Estrela.
 //

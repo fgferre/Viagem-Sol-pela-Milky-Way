@@ -1,3 +1,4 @@
+// Serve: dono — o HUD se usa de teclado e no telefone, e a gaveta não mente o número de camadas
 // O JUIZ DE ACESSIBILIDADE DO HUD — em navegador real, por CDP.
 //
 //   node scripts/visual/a11y.mjs
@@ -29,6 +30,7 @@
 // Diálogo novo que nasça no módulo é julgado no mesmo dia, sem uma linha
 // a mais aqui. Diálogo que nasça FORA do módulo não se declara e não é
 // julgado — e é por isso que todo diálogo do Atlas nasce nele.
+import { readFileSync } from 'node:fs';
 import { abrirSessao, APP_PADRAO, dorme, esperarPor } from './chrome.mjs';
 // A PERNA DO CELULAR mora em arquivo próprio desde 23/08 (§11 do AGENTS):
 // eram 546 linhas com seis partes e constantes próprias dentro deste juiz.
@@ -49,6 +51,13 @@ const PIN = 'q=cinema&shot=1';
  * declarar o número junto dela dava ReferenceError.
  */
 const TETO_DA_LINHA_PX = 24;
+const N_CAMADAS = (() => {
+  const bloco = readFileSync(new URL('../../src/three/atlasConfig.ts', import.meta.url), 'utf8')
+    .match(/export const CAMADAS:[\s\S]*?\n\];/)?.[0];
+  const n = (bloco?.match(/\bflag:/g) || []).length;
+  if (n < 1) throw new Error('CAMADAS não achada em atlasConfig.ts');
+  return n;
+})();
 
 
 const falhas = [];
@@ -494,12 +503,12 @@ async function julgarGavetaDeCamadas(s, onde) {
     return;
   }
   conferir(
-    g.caixas === 19 && g.semNome === 0,
+    g.caixas === N_CAMADAS && g.semNome === 0,
     `${onde} · camadas: ${g.caixas} caixas na gaveta, ${g.semNome} sem rótulo`
   );
   const soma = g.familias.reduce((n, f) => n + f.linhas, 0);
   conferir(
-    g.familias.length === 3 && soma === 19
+    g.familias.length === 3 && soma === N_CAMADAS
       && g.familias.every((f) => f.papel === 'group' && f.rotulo),
     `${onde} · camadas: três famílias repartem as ${soma}`
       + ` — ${g.familias.map((f) => f.rotulo || '(sem nome)').join(' · ')}`
