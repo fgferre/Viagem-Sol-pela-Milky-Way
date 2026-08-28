@@ -8,7 +8,7 @@ import {
 } from './movimentos';
 import cinturao from './roteiros/cinturao.json';
 
-const passoAoLado = cinturao.planos[1].camera;
+const passoAoLado = cinturao.planos.find((p) => p.legendas[0].texto === 'UM PASSO AO LADO')!.camera;
 
 const a = new THREE.Vector3(2, 5, -3);
 const b = new THREE.Vector3(-1, 6, 2);
@@ -92,6 +92,29 @@ describe('lerPlanoDeCamera — item 75', () => {
     expect(outro.pos(0, new THREE.Vector3()).toArray()).toEqual(a.toArray());
   });
 
+  it('lê inclinação e efeito fixos ou pulsantes, copiando os valores em tempo de relógio', () => {
+    const padrao = lerPlanoDeCamera(base);
+    expect([padrao.roll, padrao.warp]).toEqual([undefined, undefined]);
+    for (const tipo of ['fixo', 'pulso']) {
+      const chave = tipo === 'fixo' ? 'valor' : 'amplitude';
+      const dado = {
+        ...base, ritmo: 'launch',
+        inclinacao: { tipo, [chave]: -0.12 },
+        efeitoDeVelocidade: { tipo, [chave]: 0.7 },
+      };
+      const antes = JSON.stringify(dado);
+      const plano = lerPlanoDeCamera(dado);
+      expect(JSON.stringify(dado)).toBe(antes);
+      dado.inclinacao[chave] = 0.9;
+      dado.efeitoDeVelocidade[chave] = 0;
+      for (const k of fases) {
+        const fator = tipo === 'fixo' ? 1 : Math.sin(Math.PI * k);
+        expect(plano.roll?.(k)).toBe(-0.12 * fator);
+        expect(plano.warp?.(k)).toBe(0.7 * fator);
+      }
+    }
+  });
+
   it('recusa dados inválidos antes de entregá-los à câmera, com o campo no erro', () => {
     const casos: [unknown, RegExp][] = [
       [null, /plano/],
@@ -113,15 +136,22 @@ describe('lerPlanoDeCamera — item 75', () => {
       [{ ...base, mira: { tipo: 'pan-cedo', de: [1, 2, 3], para: [4, 5, 6], ate: 0 } }, /mira.ate/],
       [{ ...base, mira: { tipo: 'pan-direcao', de: [1, 2, 3], para: [4, 5, 6], ate: 1.1 } }, /mira.ate/],
       [{ ...base, mira: { tipo: 'passagem', de: a.toArray(), assunto: b.toArray(), rumo: c.toArray(), entrada: 0.8, saida: 0.3 } }, /mira.saida/],
+      [{ ...base, inclinacao: null }, /inclinacao/],
+      [{ ...base, inclinacao: { tipo: 'formula', valor: 1 } }, /inclinacao.tipo/],
+      [{ ...base, inclinacao: { tipo: 'fixo', valor: NaN } }, /inclinacao.valor/],
+      [{ ...base, inclinacao: { tipo: 'pulso' } }, /inclinacao.amplitude/],
+      [{ ...base, efeitoDeVelocidade: { tipo: 'fixo', valor: -0.1 } }, /efeitoDeVelocidade.valor/],
+      [{ ...base, efeitoDeVelocidade: { tipo: 'pulso', amplitude: 1.1 } }, /efeitoDeVelocidade.amplitude/],
+      [{ ...base, efeitoDeVelocidade: { tipo: 'pulso', amplitude: '0.5' } }, /efeitoDeVelocidade.amplitude/],
     ];
     for (const [dado, erro] of casos) expect(() => lerPlanoDeCamera(dado)).toThrow(erro);
   });
 
-  it('mudar o JSON muda posição, mira, lente e duração no filme em execução', async () => {
+  it('mudar o JSON dirige posição, mira, lente, duração, inclinação e pulso no filme real', async () => {
     vi.resetModules();
     vi.doMock('./roteiros/cinturao.json', () => ({
       default: {
-        planos: cinturao.planos.map((plano, i) => i !== 1 ? plano : {
+        planos: cinturao.planos.map((plano) => plano.camera !== passoAoLado ? plano : {
           ...plano,
           camera: {
             ...plano.camera,
@@ -129,27 +159,40 @@ describe('lerPlanoDeCamera — item 75', () => {
             movimento: { tipo: 'fixo', ponto: [13, 17, 19] },
             mira: { tipo: 'fixo', ponto: [29, 31, 37] },
             lente: [23, 23],
+            inclinacao: { tipo: 'pulso', amplitude: 0.3 },
+            efeitoDeVelocidade: { tipo: 'pulso', amplitude: 0.7 },
           },
         }),
       },
     }));
     try {
       const { Journey, auditarRoteiro } = await import('./journey');
-      const { JourneyRig } = await import('./cameraRig');
+      const { JourneyRig, galacticUp } = await import('./cameraRig');
       const audit = auditarRoteiro();
       const legenda = audit.captions.find((c) => c.text === 'UM PASSO AO LADO')!;
       const plano = audit.shots[legenda.shotIndex];
       expect(plano.dur).toBe(9);
-      const t = plano.t0 + plano.dur / 2;
+      const t = plano.t0 + plano.dur / 4;
       const pose = new Journey().at(t);
       expect(pose.pos.toArray()).toEqual([13, 17, 19]);
       expect(pose.look.toArray()).toEqual([29, 31, 37]);
+      const pulso = 0.7 * Math.sin(Math.PI / 4);
+      const inclinacao = 0.3 * Math.sin(Math.PI / 4);
+      expect(pose.warp).toBe(pulso);
+      expect(pose.roll).toBe(inclinacao);
       const camera = new THREE.PerspectiveCamera();
-      new JourneyRig().apply(camera, t, 1 / 60);
+      const efeito = new JourneyRig().apply(camera, t, 1 / 60);
       expect(camera.position.toArray()).toEqual([13, 17, 19]);
-      expect(camera.fov).toBe(23);
+      expect(camera.fov).toBe(23 + pulso * 3.5);
+      expect(efeito.warp).toBe(pulso);
       const direcao = new THREE.Vector3(16, 14, 18).normalize();
       expect(camera.getWorldDirection(new THREE.Vector3()).distanceTo(direcao)).toBeLessThan(1e-14);
+      const esperada = new THREE.PerspectiveCamera();
+      esperada.position.copy(pose.pos);
+      galacticUp(direcao, esperada.up);
+      esperada.lookAt(pose.look);
+      esperada.rotateZ(inclinacao);
+      expect(camera.quaternion.angleTo(esperada.quaternion)).toBeLessThan(1e-7);
     } finally {
       vi.doUnmock('./roteiros/cinturao.json');
       vi.resetModules();

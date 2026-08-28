@@ -1,6 +1,30 @@
 {
   "planos": [
     {
+      "camera": {
+        "duracao": 6,
+        "movimento": {
+          "tipo": "curva",
+          "de": "saidaDeSirius",
+          "controle1": [1.5, 12, 0],
+          "controle2": [4, 35, -1.5],
+          "para": "mirante"
+        },
+        "mira": { "tipo": "fixo", "ponto": "Alnilam" },
+        "lente": [63, 54],
+        "ritmo": "glide",
+        "inclinacao": { "tipo": "pulso", "amplitude": 0.06 },
+        "efeitoDeVelocidade": { "tipo": "pulso", "amplitude": 0.3 }
+      },
+      "destino": "Alnilam",
+      "legendas": [{
+        "em": 0.22,
+        "texto": "A BOLHA LOCAL",
+        "subtexto": "gás a um milhão de graus, esculpido por supernovas antigas",
+        "duracao": 4.5
+      }]
+    },
+    {
       "qa": { "cinturao": 0.5 },
       "camera": {
         "duracao": 6,

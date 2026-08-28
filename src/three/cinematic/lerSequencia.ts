@@ -16,10 +16,6 @@ interface ShotCaption {
 }
 
 export interface Shot extends CameraDoPlano, ApoiosDoPlano {
-  /** intensidade de warp (vinheta/CA/bloom), decisão de direção por shot */
-  warp?: (k: number) => number;
-  /** banking em radianos (positivo = horário); 0 nos holds por contrato */
-  roll?: (k: number) => number;
   captions?: ShotCaption[];
   /** assuntos declarados para a direção de etiquetas existente.
    *  'SOL' e 'SGR' são pseudo-alvos; o resto é nome de estrela do HYG. */

@@ -98,7 +98,8 @@ o contrato de autoria, o `NORTE.md` e o histórico do Git serão as fontes de ve
 ## Autoria disponível: sequência de planos
 
 O exemplo vivo é [`cinturao.json`](../src/three/cinematic/roteiros/cinturao.json):
-**AS TRÊS MARIAS** e **UM PASSO AO LADO**, com câmera e edição juntas.
+**A BOLHA LOCAL**, **AS TRÊS MARIAS** e **UM PASSO AO LADO**, com câmera
+e edição juntas. O corredor da Bolha também declara inclinação e pulso.
 `lerSequencia` lê `{ "planos": [...] }` e `journey.ts` encaixa a lista no
 filme existente. A ordem da lista é a ordem das cenas; duração, cortes,
 legendas e marcas da barra continuam calculados pelo relógio de `Journey`.
@@ -161,10 +162,10 @@ não se mantém uma cópia paralela.
 ### Câmera de cada plano
 
 `lerPlanoDeCamera` lê dados JSON e devolve as peças que `Journey.at` já usa.
-O segundo `camera` de `cinturao.json` é o antigo piloto `passoAoLado.json`,
-agora junto da edição e do plano anterior, sem cópia paralela.
-`journey.ts` fornece seus pontos nomeados (`mirante`, `desvio`, `Alnilam`).
-Alterar esse objeto altera a câmera e a duração daquele trecho.
+`journey.ts` fornece seus pontos nomeados (`saidaDeSirius`, `mirante`,
+`desvio`, `Alnilam`).
+Alterar a entrada `camera` de cada plano altera a câmera e a duração
+daquele trecho.
 
 Campos obrigatórios: `duracao` em segundos, `movimento`, `mira` e `lente`
 como `[início, fim]` em graus de campo vertical. A duração é positiva;
@@ -198,13 +199,28 @@ como nas primitivas existentes, não segundos de relógio.
 `ritmoDaLente`, a lente acompanha o ritmo do movimento. Separá-los permite
 aproximação e zoom com tempos diferentes, sem fórmulas no JSON.
 
+`inclinacao` e `efeitoDeVelocidade` são opcionais dentro de `camera`.
+Os dois aceitam `{ "tipo": "fixo", "valor": … }` ou
+`{ "tipo": "pulso", "amplitude": … }`. O fixo mantém o valor; o pulso
+é uma meia onda de seno: parte de zero, atinge a amplitude na metade e
+volta a zero no fim. Usam a fração do **tempo de relógio**, sem o `ritmo`
+da trajetória. Omissão significa zero; a montagem copia os valores.
+
+A inclinação usa radianos e aceita sinal negativo para o outro lado.
+O efeito de velocidade aceita valores de 0 a 1 e alimenta o que já existe:
+pequena abertura adicional da lente, bloom, separação de cores e vinheta.
+Não cria exposição adaptativa, tremor ou outro pós-processamento.
+As rampas e combinações dos trechos restantes ainda ficam no roteiro
+antigo; esses dois formatos não pretendem descrevê-las.
+
 Nomes desconhecidos, números não finitos e parâmetros fora dessas faixas
 interrompem a montagem com o campo indicado no erro. Não há `eval`, código
 embutido no roteiro, dependência nova nem controle novo para o visitante.
 
-**Limite desta base:** só a sequência do cinturão foi convertida; o motor
-para um filme completo ainda não terminou. Inclinação, efeitos e os
-movimentos específicos restantes ainda não são lidos do JSON. `assuntos` transporta
+**Limite desta base:** só o corredor e a sequência do cinturão foram
+convertidos; o motor para um filme completo ainda não terminou.
+Rampas/combinações de inclinação e efeitos, e os movimentos específicos
+restantes ainda não são lidos do JSON. `assuntos` transporta
 os nomes para a regra atual, mas não resolve a direção de etiquetas do
 item 82 — as três precisam falar juntas. Esses recursos e os movimentos
 específicos que faltam vêm antes da migração integral e do A/B de disco

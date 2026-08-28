@@ -65,18 +65,20 @@ describe('lerSequencia — item 75', () => {
   it('mudar a sequência muda ordem, duração, legendas, capítulos e direção no filme real', async () => {
     const { auditarRoteiro: original } = await import('./journey');
     const quantidadeOriginal = original().shotCount;
+    const [bolhaLocal, tresMarias, passoAoLado] = cinturao.planos;
     vi.resetModules();
     vi.doMock('./roteiros/cinturao.json', () => ({
       default: { planos: [
+        bolhaLocal,
         {
-          ...cinturao.planos[1],
-          camera: { ...cinturao.planos[1].camera, duracao: 2 },
+          ...passoAoLado,
+          camera: { ...passoAoLado.camera, duracao: 2 },
           legendas: [{ em: 0.25, texto: 'PRIMEIRA DO DADO', subtexto: 'Novo detalhe', duracao: 1 }],
           assuntos: ['Rigel'], fundoSilencioso: false, destino: 'Sirius', olhar: 'tras',
         },
         {
-          ...cinturao.planos[0],
-          camera: { ...cinturao.planos[0].camera, duracao: 3 },
+          ...tresMarias,
+          camera: { ...tresMarias.camera, duracao: 3 },
           legendas: [{ em: 0.5, texto: 'SEGUNDA DO DADO', duracao: 2, ponte: true }],
         },
         { camera: {

@@ -46,14 +46,14 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (28/08)
 
-**28/08 — O 75 JÁ PREPARA RECURSOS E LÊ MARCOS VISUAIS.** Além da
-sequência com câmera e legendas, o roteiro agora declara o preparo
-de Terra/Lua e os pontos de conferência. `apoiosDaViagem.json` alimenta
-o carregamento existente; `cinturao.json` também tem marcos nomeados.
-Os momentos de preparação e os dois quadros antigos foram mantidos.
-Instruções de autoria no `PLANO-CINEMA.md`. **Não é ainda o motor de
-um filme inteiro:** faltam inclinação/efeitos, movimentos específicos
-e a direção dos nomes em cena; a conversão integral vem depois. A fila segue
+**28/08 — O 75 JÁ LÊ INCLINAÇÃO E PULSO DE VELOCIDADE.** O roteiro
+aceita valores fixos e pulsos, ligados à câmera e aos efeitos existentes.
+**A BOLHA LOCAL** entrou no mesmo `cinturao.json` das Três Marias,
+com suas curvas, legenda, inclinação e pulso. Preparação de recursos e
+marcos visuais seguem disponíveis. Instruções no `PLANO-CINEMA.md`.
+**Não é ainda o motor de um filme inteiro:** faltam as rampas e
+combinações restantes, movimentos específicos e a direção dos nomes
+em cena; a conversão integral vem depois. A fila segue
 **75** → **100**. Provas e limites estão no próprio item.
 
 **28/08 — A SESSÃO CARA VIROU LEI, NÃO CAMPANHA.** Palavras dele: as
@@ -886,7 +886,8 @@ os dados entram na mesma montagem de `Journey`: cortes, janelas e
 capítulos continuam derivados, sem outro relógio. Instruções e limites
 de autoria estão no `PLANO-CINEMA.md`.
 Não há dependência nova, segundo motor nem migração integral concluída.
-Faltam inclinação/efeitos e os movimentos específicos restantes.
+Faltam as rampas/combinações de inclinação e efeitos e os movimentos
+específicos restantes.
 Ler `assuntos` ainda não resolve o item 82:
 a prioridade dos nomes em cena segue sendo a regra existente.
 O critério de saída continua no `PLANO-CINEMA.md`.
@@ -899,6 +900,13 @@ Terra/Lua e efemérides no estilingue e nomeia os quadros de perfil/face.
 `CAPTURE_T` passa a ler esses nomes com o arredondamento existente;
 os pinos continuam em **153 e 167 s**. O cinturão já declara seus
 próprios marcos no mesmo formato. Não nasceu outro carregador.
+
+**Inclinação e pulso vieram na quinta fatia (28/08):** `lerPlanoDeCamera`
+lê `inclinacao` e `efeitoDeVelocidade`, nos formatos `fixo` e `pulso`.
+Os valores usam o tempo de relógio e chegam ao rig e aos efeitos
+existentes. O corredor **A BOLHA LOCAL** saiu do código e entrou no
+`cinturao.json`; não ficou cópia. Rampas e combinações especiais ainda
+não estão disponíveis em dados. Nenhum quadro de medição foi alterado.
 
 **Prova da primeira fatia:** `capturas/item75-movimentos/` guarda o programa
 `prova.mjs`, os dois lados da comparação e os resultados dos testes.
@@ -953,6 +961,21 @@ no Director e fixar os tempos de QA; saídas integrais e patches em
 passou (`correcao.json`). **Limite:** prepara corpos e efemérides já
 existentes; não cria novos recursos. Não é exibição integral, A/B de
 cache zerado nem conversão das câmeras restantes.
+
+**Prova da inclinação e do pulso:** `capturas/item75-efeitos/` guarda a
+comparação numérica do filme inteiro (mesmo `prova.mjs` da primeira
+fatia), sem diferença de câmera ou edição, e **A BOLHA LOCAL** com HUD
+idêntica em RGB (`imagem.json`). A amostra em play mostra o avanço da
+barra e do pulso realmente entregue à tela (`navegador.json`, `play.png`).
+Typecheck, lint e 56 testes focados passaram; a suíte única terminou com
+2.450 aprovados e um já desativado, sem falhas (`suite.json`). A revisão
+independente fez seis sabotagens: pulso constante, limite removido,
+leituras desligadas, giro do rig removido e tempo suavizado no lugar do
+relógio cru. Todas reprovaram; referência verde, saídas e patches estão
+em `auditoria/`. A referência histórica dispensável das instruções foi
+retirada. **Limite:** só valores fixos e pulsos foram acrescentados;
+não cobre rampas/combinações restantes, exibição integral no navegador
+nem o A/B de disco zerado da migração completa.
 
 **77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
 FALTA SÓ O OLHO DELE.** A órbita é o DADO,

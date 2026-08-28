@@ -107,7 +107,7 @@ src/
 │  ├─ fases.ts              o que cada fase escreve
 │  ├─ cartography/          modelo galáctico + bakes + medidas
 │  ├─ cinematic/            journey.ts (filme) + lerSequencia.ts (JSON editorial)
-│  │                        + lerPlanoDeCamera.ts (câmera de cada plano)
+│  │                        + lerPlanoDeCamera.ts (câmera, inclinação e pulso)
 │  │                        + apoiosDoRoteiro.ts (preload e marcos de QA)
 │  │                        + movimentos.ts (trajetórias reutilizáveis)
 │  │                        + atlasRig.ts + cameraRig.ts

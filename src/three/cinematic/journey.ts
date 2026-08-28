@@ -623,31 +623,11 @@ const SHOTS: Shot[] = [
       },
     ],
   },
-  {
-    // cruzeiro pelo corredor de nuvens até o mirante do cinturão —
-    // olhando para ONDE SE VAI. Em 6 s (era 10): o destino quase não
-    // crescia, era câmera andando sem ação.
-    dur: 6,
-    pos: bezier(
-      POST_SIRIUS,
-      new THREE.Vector3(1.5, 12, 0),
-      new THREE.Vector3(4, 35, -1.5),
-      BELT_VIEW
-    ),
-    look: still(ALNILAM),
-    fov0: 63, fov1: 54,
-    ease: glide,
-    warp: (k) => 0.3 * Math.sin(Math.PI * k),
-    roll: (k) => 0.06 * Math.sin(Math.PI * k),
-    dest: 'Alnilam',
-    captions: [
-      { at: 0.22, text: 'A BOLHA LOCAL', sub: 'gás a um milhão de graus, esculpido por supernovas antigas', dur: 4.5 },
-    ],
-  },
-  // A trava fecha a lente na fila das Três Marias; o passo ao lado a
-  // desfaz. Câmera e edição vêm da mesma sequência, no relógio do filme.
+  // O corredor chega ao cinturão olhando à frente. A trava fecha a
+  // lente nas Três Marias; o passo ao lado desfaz a fila. Câmera,
+  // inclinação, pulso e edição vêm da mesma sequência, no relógio do filme.
   ...lerSequencia(cinturao, {
-    mirante: BELT_VIEW, desvio: BELT_BREAK, Alnilam: ALNILAM,
+    saidaDeSirius: POST_SIRIUS, mirante: BELT_VIEW, desvio: BELT_BREAK, Alnilam: ALNILAM,
   }),
   {
     // Betelgeuse À FRENTE: ela nasce do bordo inferior e INCHA — de 95

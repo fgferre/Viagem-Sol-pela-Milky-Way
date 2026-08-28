@@ -15,6 +15,10 @@ export interface CameraDoPlano {
   fov0: number;
   fov1: number;
   ease?: Ease;
+  /** Inclinação em radianos; os quadros de medição podem declarar valor fixo. */
+  roll?: Ease;
+  /** Pulso de velocidade entregue ao rig e ao pós-processamento existentes (0..1). */
+  warp?: Ease;
   /**
    * EASE SÓ DO FOV (F3), quando ele precisa divergir do da trajetória.
    * Ausente, o fov usa o `ease` do plano, como sempre — e a expressão
@@ -50,6 +54,21 @@ function ritmo(valor: unknown, campo: string): Ease | undefined {
     return erro(campo, `desconhecido: ${String(valor)}`);
   }
   return RITMOS[valor as keyof typeof RITMOS];
+}
+
+/** Curvas em tempo de relógio, independentes do ritmo da trajetória. */
+function curvaEscalar(valor: unknown, campo: string, normalizada = false): Ease | undefined {
+  if (valor === undefined) return undefined;
+  const c = objeto(valor, campo);
+  if (c.tipo !== 'fixo' && c.tipo !== 'pulso') {
+    return erro(`${campo}.tipo`, `desconhecido: ${String(c.tipo)}`);
+  }
+  const chave = c.tipo === 'fixo' ? 'valor' : 'amplitude';
+  const n = numero(c[chave], `${campo}.${chave}`);
+  if (normalizada && (n < 0 || n > 1)) {
+    return erro(`${campo}.${chave}`, 'deve estar entre 0 e 1');
+  }
+  return c.tipo === 'fixo' ? () => n : (k) => n * Math.sin(Math.PI * k);
 }
 
 /** Pontos em pc no referencial da cena; nomes resolvidos na montagem. */
@@ -131,5 +150,7 @@ export function lerPlanoDeCamera(
     dur, pos, look, fov0, fov1,
     ease: ritmo(p.ritmo, 'ritmo'),
     fovEase: ritmo(p.ritmoDaLente, 'ritmoDaLente'),
+    roll: curvaEscalar(p.inclinacao, 'inclinacao'),
+    warp: curvaEscalar(p.efeitoDeVelocidade, 'efeitoDeVelocidade', true),
   };
 }
