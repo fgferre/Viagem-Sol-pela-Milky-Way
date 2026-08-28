@@ -93,4 +93,54 @@ item 54 do `PENDENCIAS.md`. O trabalho segue nesta ordem:
    unidades revisadas, gate visual e exibição completa aprovada.
 
 Quando esta fila terminar, este arquivo pode desaparecer: o produto, os testes,
-o `NORTE.md` e o histórico do Git serão as fontes de verdade.
+o contrato de autoria, o `NORTE.md` e o histórico do Git serão as fontes de verdade.
+
+## Autoria disponível: um plano de câmera
+
+`lerPlanoDeCamera` lê dados JSON e devolve as peças que `Journey.at` já usa.
+O exemplo vivo é [`passoAoLado.json`](../src/three/cinematic/roteiros/passoAoLado.json):
+ele dirige a câmera do trecho **UM PASSO AO LADO**, não é uma cópia ilustrativa.
+`journey.ts` fornece seus pontos nomeados (`mirante`, `desvio`, `Alnilam`).
+Alterar esse JSON altera a câmera e a duração daquele trecho.
+
+Campos obrigatórios: `duracao` em segundos, `movimento`, `mira` e `lente`
+como `[início, fim]` em graus de campo vertical. A duração é positiva;
+os dois valores da lente ficam estritamente entre 0° e 180°.
+
+Todo ponto pode ser `[x, y, z]` em **parsecs no referencial da cena**, ou o
+nome de um vetor fornecido no segundo argumento de `lerPlanoDeCamera`.
+O leitor copia os pontos na montagem: um nome não é acompanhamento de um
+corpo em movimento. Não copie coordenadas científicas para o JSON quando
+o filme já calcula a âncora; passe o nome e a âncora existente.
+
+| Campo | `tipo` | Parâmetros |
+|---|---|---|
+| `movimento` | `fixo` | `ponto` |
+| `movimento` | `reta` | `de`, `para` |
+| `movimento` | `curva` | `de`, `controle1`, `controle2`, `para` — Bézier cúbica |
+| `movimento` | `orbita` | `centro`; pares `raio`, `angulo`, `altura`, do início ao fim. Raios não negativos em pc, ângulos em **radianos**, altura em pc ao longo do polo galáctico |
+| `mira` | `fixo` | `ponto` |
+| `mira` | `pan` | `de`, `para`; `ritmo` opcional, padrão `smooth` |
+| `mira` | `pan-cedo` | `de`, `para`, `ate` — interpola pontos, chega cedo e segura |
+| `mira` | `pan-direcao` | `de`, `para`, `ate` — interpola direções a partir da câmera em movimento; use perto de um alvo |
+| `mira` | `passagem` | `de`, `assunto`, `rumo`, `entrada`, `saida` — olhar que acompanha o assunto e depois entrega o rumo seguinte |
+
+`ate`, `entrada` e `saida` são frações entre 0 (exclusivo) e 1; `saida`
+nunca vem antes de `entrada`. São frações do **movimento já suavizado**,
+como nas primitivas existentes, não segundos de relógio.
+
+`ritmo` e `ritmoDaLente` são opcionais no plano. Os nomes disponíveis são
+`linear`, `smooth`, `easeOut`, `glide`, `launch`, `settle`, `settleFreeze`
+(as funções de `movimentos.ts`). Sem `ritmo`, a câmera usa `glide`; sem
+`ritmoDaLente`, a lente acompanha o ritmo do movimento. Separá-los permite
+aproximação e zoom com tempos diferentes, sem fórmulas no JSON.
+
+Nomes desconhecidos, números não finitos e parâmetros fora dessas faixas
+interrompem a montagem com o campo indicado no erro. Não há `eval`, código
+embutido no roteiro, dependência nova nem controle novo para o visitante.
+
+**Limite desta base:** é um plano de câmera, ainda não um filme completo.
+Legendas, nomes em cena, preload, marcadores de QA e a montagem da sequência
+continuam no formato atual. O próximo passo do item 75 é levá-los ao leitor;
+a migração integral e sua prova visual vêm depois. Validação focal:
+`npx vitest run src/three/cinematic/lerPlanoDeCamera.test.ts`.

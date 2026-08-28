@@ -46,13 +46,13 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (28/08)
 
-**28/08 — O 75 COMEÇOU, EM FATIA PEQUENA.** Os movimentos reutilizáveis
-da câmera saíram do roteiro e moram em `cinematic/movimentos.ts`; o filme
-atual já os usa, com as mesmas contas. A comparação da câmera no corte
-inteiro e uma vista com HUD deram idênticas; houve também conferência de
-um trecho em play no navegador. **Ainda não existe o leitor do roteiro
-simples.** Esse é o próximo passo do **75**, com as instruções de autoria;
-a conversão do filme atual vem depois, como ele pediu. A fila segue
+**28/08 — O 75 JÁ LÊ UM PLANO SIMPLES.** Depois de separar os movimentos,
+`lerPlanoDeCamera` passou a ler duração, trajetória, mira e lente em JSON.
+O piloto é **UM PASSO AO LADO**, ligado à câmera real do filme; o exemplo
+vivo mora em `roteiros/passoAoLado.json` e as instruções de autoria no
+`PLANO-CINEMA.md`. **Não é ainda o motor de um filme inteiro:** o próximo
+passo é a montagem da sequência com os dados editoriais, preload e
+marcadores de QA. A conversão integral vem depois. A fila segue
 **75** → **100**. Provas e limites estão no próprio item.
 
 **28/08 — A SESSÃO CARA VIROU LEI, NÃO CAMPANHA.** Palavras dele: as
@@ -872,11 +872,16 @@ agente, com instruções.
 **Primeira base pronta (28/08):** `movimentos.ts` reúne as trajetórias,
 curvas de aceleração e mudanças de olhar que estavam em `journey.ts`.
 Foi extração, não nova receita: o filme atual importa as mesmas peças.
-Não há dependência nova, formato de roteiro novo nem migração concluída.
-O próximo passo é o leitor de movimentos nomeados com as instruções de
-autoria; o critério de saída continua no `PLANO-CINEMA.md`.
 
-**Prova desta fatia:** `capturas/item75-movimentos/` guarda o programa
+**O leitor do plano veio na segunda fatia (28/08):** `lerPlanoDeCamera`
+lê dados JSON, com movimentos nomeados, mira, duração e lente; o piloto
+`passoAoLado.json` dirige **UM PASSO AO LADO** na câmera existente. As
+instruções e os limites de autoria estão no `PLANO-CINEMA.md`.
+Não há dependência nova, segundo motor nem migração integral concluída.
+Falta ler a sequência e os dados editoriais, preload e marcadores de QA;
+o critério de saída continua no `PLANO-CINEMA.md`.
+
+**Prova da primeira fatia:** `capturas/item75-movimentos/` guarda o programa
 `prova.mjs`, os dois lados da comparação e os resultados dos testes.
 Typecheck e lint passaram; a suíte teve 2.435 testes aprovados e um
 teste já desativado, sem falhas (`suite.json`).
@@ -886,6 +891,19 @@ mesmos doubles no corte inteiro; legendas e metadados também coincidem.
 `navegador.json` e `play.png` registram o trecho rodando. **Limite:** isso
 não substitui o A/B completo, de disco zerado, da migração; não é uma
 exibição contínua do filme inteiro no navegador.
+
+**Prova do leitor:** `capturas/item75-leitor/` guarda a comparação da
+câmera no corte inteiro (`antes`/`depois`, pelo mesmo `prova.mjs` da
+primeira fatia), a vista com HUD do piloto, idêntica pixel a pixel,
+e o trecho rodando (`navegador.json`, `play.png`). Typecheck e lint
+passaram; foram 2.441 testes aprovados na suíte, um já desativado e
+nenhuma falha (`suite.json`). O teste de ligação troca os dados do JSON
+e exige mudança de posição, mira, lente e duração no filme real.
+Os seis testes novos reprovaram com defeitos recolocados por revisão
+independente (`auditoria/`); para a ligação ao JSON vale o par `-v2`,
+com referência verde e mutação vermelha na mesma árvore isolada.
+O limite permanece: piloto de câmera, não migração integral nem novo
+filme; o A/B completo de disco zerado continua devido no fechamento do 75.
 
 **77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
 FALTA SÓ O OLHO DELE.** A órbita é o DADO,

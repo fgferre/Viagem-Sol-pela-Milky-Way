@@ -60,8 +60,10 @@ import { ORIGEM } from './enquadramento';
 import {
   bezier, easeOut, glide, launch, line, linear, lookEvento, lookPan,
   orbit, panLook, panThenHold, settle, settleFreeze, smooth, still,
-  type Ease, type PosFn,
+  type PosFn,
 } from './movimentos';
+import { lerPlanoDeCamera, type CameraDoPlano } from './lerPlanoDeCamera';
+import passoAoLado from './roteiros/passoAoLado.json';
 
 // ---- Quadros de MEDIÇÃO (não alterar sem atualizar scripts/visual/
 // rodada.mjs e docs/reference/VISUAL_TARGETS.md). As posições vêm da
@@ -109,27 +111,7 @@ interface ShotCaption {
   bridge?: boolean;
 }
 
-interface Shot {
-  dur: number;
-  pos: PosFn;
-  look: PosFn;
-  fov0: number;
-  fov1: number;
-  ease?: Ease;
-  /**
-   * EASE SÓ DO FOV (F3), quando ele precisa divergir do da trajetória.
-   * Ausente, o fov usa o `ease` do plano, como sempre — e a expressão
-   * que `at` avalia é EXATAMENTE a de antes, então nenhum plano herdado
-   * muda um bit. Nasceu por causa de um plano: a hélice da abertura
-   * refilmada, cuja posição precisa do parâmetro CRU (a distância é
-   * exponencial em segundos de relógio) enquanto o zoom 26°→56° tem de
-   * continuar com o `glide` de sempre. O mergulho de volta da coda usa
-   * o mesmo par (ease cru + fovEase) pela mesma razão. Sem este campo, a alternativa
-   * seria inverter o smoothstep dentro do `pos` por Newton para
-   * recuperar o `k` cru — conta iterativa por quadro para reproduzir um
-   * número que já existe.
-   */
-  fovEase?: Ease;
+interface Shot extends CameraDoPlano {
   /** intensidade de warp (vinheta/CA/bloom), decisão de direção por shot */
   warp?: (k: number) => number;
   /** banking em radianos (positivo = horário); 0 nos holds por contrato */
@@ -714,11 +696,9 @@ const SHOTS: Shot[] = [
   {
     // o passo ao lado: a fila se desfaz diante dos olhos — a
     // constelação é um acidente de ponto de vista, demonstrado
-    dur: 6,
-    pos: line(BELT_VIEW, BELT_BREAK),
-    look: still(ALNILAM),
-    fov0: 15, fov1: 50,
-    ease: glide,
+    ...lerPlanoDeCamera(passoAoLado, {
+      mirante: BELT_VIEW, desvio: BELT_BREAK, Alnilam: ALNILAM,
+    }),
     target: ['Alnitak', 'Alnilam', 'Mintaka'],
     quiet: true,
     lingua: 'assunto',
