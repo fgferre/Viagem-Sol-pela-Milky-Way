@@ -1,0 +1,89 @@
+{
+  "planos": [
+    {
+      "qa": { "lancamento": 0.5 },
+      "camera": {
+        "duracao": 6,
+        "movimento": {
+          "tipo": "curva", "de": "portaoAntares",
+          "controle1": "passagemAlta", "controle2": "passagemBaixa",
+          "para": "saidaAntares"
+        },
+        "mira": { "tipo": "pan", "de": "Antares", "para": "centro", "ritmo": "easeOut" },
+        "lente": [50, 58],
+        "ritmo": "launch",
+        "efeitoDeVelocidade": { "tipo": "rampa", "de": 0, "para": 0.85, "ritmo": "quadratic" }
+      },
+      "assuntos": ["Antares"],
+      "fundoSilencioso": true
+    },
+    {
+      "qa": { "bercario": 0.6 },
+      "camera": {
+        "duracao": 10,
+        "movimento": {
+          "tipo": "curva", "de": "saidaAntares",
+          "controle1": "entradaSagitario", "controle2": "muralhaSagitario",
+          "para": "saidaSagitario"
+        },
+        "mira": { "tipo": "fixo", "ponto": "centro" },
+        "lente": [58, 64],
+        "ritmo": "glide",
+        "efeitoDeVelocidade": { "tipo": "pulso", "base": 0.55, "amplitude": 0.4 },
+        "inclinacao": { "tipo": "pulso", "amplitude": 0.1 }
+      },
+      "destino": "SGR",
+      "assuntos": ["Shaula", "Dschubba", "Lesath", "Paikauhale"],
+      "legendas": [
+        {
+          "em": 0.06, "texto": "O MERGULHO",
+          "subtexto": "braço de Sagitário: a poeira extingue e avermelha as estrelas",
+          "duracao": 4.2
+        },
+        {
+          "em": 0.5, "texto": "O BERÇÁRIO",
+          "subtexto": "Shaula, Dschubba, Lesath — o berçário de Escorpião no caminho",
+          "duracao": 4.8
+        }
+      ]
+    },
+    {
+      "qa": { "ultimoBraco": 0.5 },
+      "camera": {
+        "duracao": 7,
+        "movimento": {
+          "tipo": "curva", "de": "saidaSagitario",
+          "controle1": "entradaScutum", "controle2": "muralhaScutum",
+          "para": "saidaScutum"
+        },
+        "mira": { "tipo": "fixo", "ponto": "centro" },
+        "lente": [64, 70],
+        "ritmo": "glide",
+        "efeitoDeVelocidade": { "tipo": "pulso", "base": 0.6, "amplitude": 0.4, "frequencia": 0.9 },
+        "inclinacao": { "tipo": "pulso", "amplitude": -0.12 }
+      },
+      "destino": "SGR",
+      "legendas": [{
+        "em": 0.18, "texto": "O ÚLTIMO BRAÇO",
+        "subtexto": "Scutum-Centaurus — o gás comprime e acende estrelas azuis",
+        "duracao": 5
+      }]
+    },
+    {
+      "qa": { "frenagem": 0.5 },
+      "camera": {
+        "duracao": 5,
+        "movimento": {
+          "tipo": "curva", "de": "saidaScutum",
+          "controle1": "entradaBojo", "controle2": "dentroDoBojo",
+          "para": "aglomeradoCentral"
+        },
+        "mira": { "tipo": "fixo", "ponto": "centro" },
+        "lente": [70, 55],
+        "ritmo": "settle",
+        "efeitoDeVelocidade": { "tipo": "frenagem", "amplitude": 0.9 }
+      },
+      "destino": "SGR"
+    }
+  ]
+}

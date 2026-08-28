@@ -97,9 +97,13 @@ o contrato de autoria, o `NORTE.md` e o histórico do Git serão as fontes de ve
 
 ## Autoria disponível: sequência de planos
 
-O exemplo vivo é [`cinturao.json`](../src/three/cinematic/roteiros/cinturao.json):
+Um exemplo vivo é [`cinturao.json`](../src/three/cinematic/roteiros/cinturao.json):
 **A BOLHA LOCAL**, **AS TRÊS MARIAS** e **UM PASSO AO LADO**, com câmera
-e edição juntas. O corredor da Bolha também declara inclinação e pulso.
+e edição juntas. O corredor da Bolha declara inclinação e pulso; o
+passo lateral usa um trajeto curvo por pontos. O outro exemplo,
+[`mergulho.json`](../src/three/cinematic/roteiros/mergulho.json), contém
+lançamento, travessias de Sagitário e Scutum e frenagem antes do centro,
+com rampas e pulsos de velocidade.
 `lerSequencia` lê `{ "planos": [...] }` e `journey.ts` encaixa a lista no
 filme existente. A ordem da lista é a ordem das cenas; duração, cortes,
 legendas e marcas da barra continuam calculados pelo relógio de `Journey`.
@@ -181,7 +185,8 @@ o filme já calcula a âncora; passe o nome e a âncora existente.
 |---|---|---|
 | `movimento` | `fixo` | `ponto` |
 | `movimento` | `reta` | `de`, `para` |
-| `movimento` | `curva` | `de`, `controle1`, `controle2`, `para` — Bézier cúbica |
+| `movimento` | `curva` | `de`, `controle1`, `controle2`, `para` — `CubicBezierCurve3` nativa do Three.js |
+| `movimento` | `trajeto` | `pontos` — lista de ao menos dois nomes ou vetores; passa por eles numa `CatmullRomCurve3` centrípeta, sem repetir pontos consecutivos |
 | `movimento` | `orbita` | `centro`; pares `raio`, `angulo`, `altura`, do início ao fim. Raios não negativos em pc, ângulos em **radianos**, altura em pc ao longo do polo galáctico |
 | `mira` | `fixo` | `ponto` |
 | `mira` | `pan` | `de`, `para`; `ritmo` opcional, padrão `smooth` |
@@ -193,34 +198,64 @@ o filme já calcula a âncora; passe o nome e a âncora existente.
 nunca vem antes de `entrada`. São frações do **movimento já suavizado**,
 como nas primitivas existentes, não segundos de relógio.
 
+O `trajeto` passa pelos pontos, ao contrário dos controles da Bézier,
+que apenas puxam a curva. O avanço usa o comprimento aproximado da
+curva nativa: pontos desigualmente espaçados não criam arrancadas por
+si só. A tabela de comprimentos é preparada na montagem; a curva é
+calculada em escala local e devolvida em pc, inclusive em distâncias
+solares. As duas pontas são exatas. Não há um relógio da biblioteca.
+
+Receita do passo lateral: `movimento: { "tipo": "trajeto", "pontos":
+["mirante", "curvaDoDesvio", "desvio"] }`, `mira` fixa em `Alnilam`
+e `ritmo: "glide"`. Para uma passagem, use a mesma trajetória com
+`mira.tipo: "passagem"`: ela acompanha o assunto e entrega o olhar ao
+rumo seguinte. Para contornar, use `orbita` com a mira fixa no centro.
+O arco do passo lateral foi uma melhoria deliberada de UX do item 75;
+não é diferença causada pela conversão do formato.
+
+**Ligação entre planos:** `trajeto` suaviza os pontos dentro de um
+plano; não costura automaticamente cortes entre planos diferentes.
+Para uma chegada e saída sem salto, compartilhe a âncora de ponta, a
+mira e a lente nos dois lados e use um ritmo que assente antes da
+próxima partida. Um voo sem parada deve ser um único trajeto; inserir
+uma legenda não exige quebrar a câmera em outro plano.
+
 `ritmo` e `ritmoDaLente` são opcionais no plano. Os nomes disponíveis são
-`linear`, `smooth`, `easeOut`, `glide`, `launch`, `settle`, `settleFreeze`
+`linear`, `quadratic`, `smooth`, `easeOut`, `glide`, `launch`, `settle`, `settleFreeze`
 (as funções de `movimentos.ts`). Sem `ritmo`, a câmera usa `glide`; sem
 `ritmoDaLente`, a lente acompanha o ritmo do movimento. Separá-los permite
 aproximação e zoom com tempos diferentes, sem fórmulas no JSON.
 
 `inclinacao` e `efeitoDeVelocidade` são opcionais dentro de `camera`.
-Os dois aceitam `{ "tipo": "fixo", "valor": … }` ou
-`{ "tipo": "pulso", "amplitude": … }`. O fixo mantém o valor; o pulso
-é uma meia onda de seno: parte de zero, atinge a amplitude na metade e
-volta a zero no fim. Usam a fração do **tempo de relógio**, sem o `ritmo`
-da trajetória. Omissão significa zero; a montagem copia os valores.
+Usam a fração do **tempo de relógio**, sem o `ritmo` da trajetória.
+Omissão significa zero; a montagem copia os valores. Os formatos são:
+
+| `tipo` | Dados e comportamento |
+|---|---|
+| `fixo` | `valor` constante |
+| `rampa` | `de`, `para`, `ritmo` opcional (padrão `linear`); permite subir ou descer |
+| `frenagem` | `amplitude`; cai por `amplitude × (1 − k)²` |
+| `pulso` | `amplitude`, `base` opcional (0) e `frequencia` opcional (1); `base + amplitude × sen(π × k × frequencia)` |
+
+No pulso padrão há uma meia onda: sai de zero, atinge a amplitude na
+metade e volta a zero. `frequencia` fica entre 0 (exclusivo) e 1;
+abaixo de 1, o plano termina antes de completar a meia onda.
 
 A inclinação usa radianos e aceita sinal negativo para o outro lado.
 O efeito de velocidade aceita valores de 0 a 1 e alimenta o que já existe:
 pequena abertura adicional da lente, bloom, separação de cores e vinheta.
-Não cria exposição adaptativa, tremor ou outro pós-processamento.
-As rampas e combinações dos trechos restantes ainda ficam no roteiro
-antigo; esses dois formatos não pretendem descrevê-las.
+No pulso de velocidade, `base + amplitude` também deve caber em 0..1.
+Não cria exposição adaptativa, tremor ou outro pós-processamento. Esses
+formatos ainda não descrevem somas arbitrárias de curvas.
 
 Nomes desconhecidos, números não finitos e parâmetros fora dessas faixas
 interrompem a montagem com o campo indicado no erro. Não há `eval`, código
 embutido no roteiro, dependência nova nem controle novo para o visitante.
 
-**Limite desta base:** só o corredor e a sequência do cinturão foram
-convertidos; o motor para um filme completo ainda não terminou.
-Rampas/combinações de inclinação e efeitos, e os movimentos específicos
-restantes ainda não são lidos do JSON. `assuntos` transporta
+**Limite desta base:** foram convertidos o corredor, o cinturão e as
+quatro cenas após Antares; o motor para um filme completo ainda não
+terminou. Faltam composições restantes de inclinação/efeitos e movimentos
+específicos, como a hélice e o retorno solar. `assuntos` transporta
 os nomes para a regra atual, mas não resolve a direção de etiquetas do
 item 82 — as três precisam falar juntas. Esses recursos e os movimentos
 específicos que faltam vêm antes da migração integral e do A/B de disco

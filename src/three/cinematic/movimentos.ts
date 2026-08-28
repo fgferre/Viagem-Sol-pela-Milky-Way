@@ -1,5 +1,5 @@
 // Movimentos reutilizáveis da câmera (item 75).
-// Extraídos de journey.ts: as contas e a ordem das operações são as mesmas.
+// Curvas espaciais do Three.js; gestos e referencial próprios do filme.
 // Posições, tempos e assuntos de cada filme ficam no roteiro, não aqui.
 import * as THREE from 'three';
 import { EX, EY, EZ } from '../world/baseGalactica';
@@ -8,6 +8,7 @@ export type Ease = (x: number) => number;
 export type PosFn = (k: number, out: THREE.Vector3) => THREE.Vector3;
 
 export const linear: Ease = (x) => x;
+export const quadratic: Ease = (x) => Math.pow(x, 2);
 export const smooth: Ease = (x) => x * x * x * (x * (x * 6 - 15) + 10); // smootherstep
 export const easeOut: Ease = (x) => 1 - Math.pow(1 - x, 3);
 /** parte devagar, cruza rápido, pousa devagar — o "gesto" padrão */
@@ -26,13 +27,30 @@ export const line = (a: THREE.Vector3, b: THREE.Vector3): PosFn => (k, out) =>
 export function bezier(
   a: THREE.Vector3, c1: THREE.Vector3, c2: THREE.Vector3, b: THREE.Vector3
 ): PosFn {
+  const curva = new THREE.CubicBezierCurve3(a, c1, c2, b);
+  return (k, out) => curva.getPoint(k, out);
+}
+
+/**
+ * Passa pelos pontos sem quinas. O avanço usa distância percorrida;
+ * acelerar e desacelerar continua sendo responsabilidade do ritmo.
+ * Pontos validados e copiados pelo leitor. A escala local evita que os
+ * limiares internos da Catmull-Rom confundam distâncias solares em pc
+ * com pontos repetidos. A tabela de comprimentos nasce uma vez, aqui.
+ */
+export function trajeto(pontos: THREE.Vector3[]): PosFn {
+  const origem = pontos[0];
+  const fim = pontos[pontos.length - 1];
+  const escala = pontos.reduce((maior, p) => Math.max(maior, p.distanceTo(origem)), 0);
+  const curva = new THREE.CatmullRomCurve3(
+    pontos.map((p) => p.clone().sub(origem).divideScalar(escala)), false, 'centripetal'
+  );
+  curva.getLengths();
   return (k, out) => {
-    const i = 1 - k;
-    out.copy(a).multiplyScalar(i * i * i);
-    out.addScaledVector(c1, 3 * i * i * k);
-    out.addScaledVector(c2, 3 * i * k * k);
-    out.addScaledVector(b, k * k * k);
-    return out;
+    // Pontas exatas: o arco não deixa uma fresta ao ligar ao próximo plano.
+    if (k === 0) return out.copy(origem);
+    if (k === 1) return out.copy(fim);
+    return curva.getPointAt(k, out).multiplyScalar(escala).add(origem);
   };
 }
 /**

@@ -3,10 +3,11 @@ import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { lerPlanoDeCamera } from './lerPlanoDeCamera';
 import {
-  bezier, easeOut, glide, launch, line, linear, lookEvento, lookPan,
-  orbit, panLook, panThenHold, settle, settleFreeze, smooth, still,
+  easeOut, glide, launch, line, linear, lookEvento, lookPan,
+  orbit, panLook, panThenHold, quadratic, settle, settleFreeze, smooth, still,
 } from './movimentos';
 import cinturao from './roteiros/cinturao.json';
+import mergulho from './roteiros/mergulho.json';
 
 const passoAoLado = cinturao.planos.find((p) => p.legendas[0].texto === 'UM PASSO AO LADO')!.camera;
 
@@ -24,10 +25,11 @@ const fases = [0, 0.2, 0.6, 0.9, 1];
 
 describe('lerPlanoDeCamera — item 75', () => {
   it('liga cada trajetória à primitiva existente e respeita o vetor de saída', () => {
+    const curva = new THREE.CubicBezierCurve3(a, c, d, b);
     const trajetorias = [
       [{ tipo: 'fixo', ponto: a.toArray() }, still(a)],
       [base.movimento, line(a, b)],
-      [{ tipo: 'curva', de: a.toArray(), controle1: c.toArray(), controle2: d.toArray(), para: b.toArray() }, bezier(a, c, d, b)],
+      [{ tipo: 'curva', de: a.toArray(), controle1: c.toArray(), controle2: d.toArray(), para: b.toArray() }, curva.getPoint.bind(curva)],
       [{ tipo: 'orbita', centro: a.toArray(), raio: [2, 5], angulo: [-0.3, 1.7], altura: [-1, 4] }, orbit(a, 2, 5, -0.3, 1.7, -1, 4)],
     ] as const;
     for (const [movimento, esperado] of trajetorias) {
@@ -36,6 +38,41 @@ describe('lerPlanoDeCamera — item 75', () => {
         const out = new THREE.Vector3();
         expect(plano.pos(k, out)).toBe(out);
         expect(out.toArray()).toEqual(esperado(k, new THREE.Vector3()).toArray());
+      }
+    }
+  });
+
+  it('atravessa os pontos pela curva nativa, copia as âncoras e permite buscar para trás', () => {
+    const dado = { ...base, movimento: { tipo: 'trajeto', pontos: ['inicio', c.toArray(), 'fim'] } };
+    const pontos = { inicio: a.clone(), fim: b.clone() };
+    const antes = JSON.stringify(dado);
+    const plano = lerPlanoDeCamera(dado, pontos);
+    const nativa = new THREE.CatmullRomCurve3([a, c, b]);
+    expect(JSON.stringify(dado)).toBe(antes);
+    pontos.inicio.set(99, 99, 99);
+    pontos.fim.set(99, 99, 99);
+    dado.movimento.pontos[1] = [99, 99, 99];
+    for (const k of [...fases, 0.2, 0.9, 0]) {
+      const out = new THREE.Vector3();
+      expect(plano.pos(k, out)).toBe(out);
+      expect(out.distanceTo(nativa.getPointAt(k))).toBeLessThan(1e-10);
+    }
+    expect(plano.pos(0, new THREE.Vector3()).toArray()).toEqual(a.toArray());
+    expect(plano.pos(1, new THREE.Vector3()).toArray()).toEqual(b.toArray());
+    expect(plano.pos(0.5, new THREE.Vector3()).distanceTo(a.clone().lerp(b, 0.5))).toBeGreaterThan(1);
+  });
+
+  it('avança por distância, sem disparar entre pontos desiguais nem perder a escala solar', () => {
+    for (const escala of [1, 1e-10, 1e5]) {
+      const plano = lerPlanoDeCamera({
+        ...base,
+        movimento: { tipo: 'trajeto', pontos: [0, 0.1, 10, 11].map((x) => [x * escala, 0, 0]) },
+      });
+      for (const k of fases) {
+        const p = plano.pos(k, new THREE.Vector3()).divideScalar(escala);
+        // Em linha reta o comprimento é conhecido, independente da biblioteca.
+        expect(p.x).toBeCloseTo(11 * k, 3);
+        expect([p.y, p.z]).toEqual([0, 0]);
       }
     }
   });
@@ -64,7 +101,7 @@ describe('lerPlanoDeCamera — item 75', () => {
     expect([padrao.dur, padrao.fov0, padrao.fov1]).toEqual([12, 24, 72]);
     expect(padrao.ease).toBeUndefined();
     expect(padrao.fovEase).toBeUndefined();
-    for (const [nome, funcao] of Object.entries({ linear, smooth, easeOut, glide, launch, settle, settleFreeze })) {
+    for (const [nome, funcao] of Object.entries({ linear, quadratic, smooth, easeOut, glide, launch, settle, settleFreeze })) {
       const plano = lerPlanoDeCamera({ ...base, ritmo: nome, ritmoDaLente: 'linear' });
       for (const k of fases) {
         expect(plano.ease?.(k)).toBe(funcao(k));
@@ -78,7 +115,7 @@ describe('lerPlanoDeCamera — item 75', () => {
   it('lê o JSON de exemplo, resolve nomes e copia os dados sem os modificar', () => {
     const dado = JSON.parse(JSON.stringify(passoAoLado));
     const cru = JSON.stringify(dado);
-    const pontos = { mirante: a.clone(), desvio: b.clone(), Alnilam: c.clone() };
+    const pontos = { mirante: a.clone(), curvaDoDesvio: d.clone(), desvio: b.clone(), Alnilam: c.clone() };
     const plano = lerPlanoDeCamera(dado, pontos);
     expect(JSON.stringify(dado)).toBe(cru);
     expect(pontos.mirante.toArray()).toEqual(a.toArray());
@@ -131,6 +168,10 @@ describe('lerPlanoDeCamera — item 75', () => {
       [{ ...base, movimento: { tipo: 'fixo', ponto: [1, NaN, 3] } }, /movimento.ponto/],
       [{ ...base, movimento: { tipo: 'fixo', ponto: [1, 2] } }, /movimento.ponto/],
       [{ ...base, movimento: { tipo: 'fixo', ponto: new Array(3) } }, /movimento.ponto/],
+      ...[null, [], [[0, 0, 0]], ['ausente', [1, 0, 0]], [[0, 0, 0], [0, 0, 0]],
+        [[0, 0, 0], [NaN, 1, 2]], [[0, 0, 0], [1e308, 0, 0]]].map((pontos): [unknown, RegExp] => [
+        { ...base, movimento: { tipo: 'trajeto', pontos } }, /movimento.pontos/,
+      ]),
       [{ ...base, movimento: { tipo: 'orbita', centro: [0, 0, 0], raio: [-1, 2], angulo: [0, 1], altura: [0, 1] } }, /movimento.raio/],
       [{ ...base, mira: { tipo: 'espiar' } }, /mira.tipo/],
       [{ ...base, mira: { tipo: 'pan-cedo', de: [1, 2, 3], para: [4, 5, 6], ate: 0 } }, /mira.ate/],
@@ -143,8 +184,71 @@ describe('lerPlanoDeCamera — item 75', () => {
       [{ ...base, efeitoDeVelocidade: { tipo: 'fixo', valor: -0.1 } }, /efeitoDeVelocidade.valor/],
       [{ ...base, efeitoDeVelocidade: { tipo: 'pulso', amplitude: 1.1 } }, /efeitoDeVelocidade.amplitude/],
       [{ ...base, efeitoDeVelocidade: { tipo: 'pulso', amplitude: '0.5' } }, /efeitoDeVelocidade.amplitude/],
+      [{ ...base, efeitoDeVelocidade: { tipo: 'rampa', de: -0.1, para: 0.5 } }, /efeitoDeVelocidade.de/],
+      [{ ...base, efeitoDeVelocidade: { tipo: 'rampa', de: 0, para: 1.1 } }, /efeitoDeVelocidade.para/],
+      [{ ...base, inclinacao: { tipo: 'rampa', de: 0, para: NaN } }, /inclinacao.para/],
+      [{ ...base, inclinacao: { tipo: 'rampa', de: 0, para: 1, ritmo: 'constructor' } }, /inclinacao.ritmo/],
+      [{ ...base, efeitoDeVelocidade: { tipo: 'frenagem', amplitude: -1 } }, /efeitoDeVelocidade.amplitude/],
+      [{ ...base, efeitoDeVelocidade: { tipo: 'pulso', amplitude: 0.5, base: 0.6 } }, /efeitoDeVelocidade.base/],
+      [{ ...base, efeitoDeVelocidade: { tipo: 'pulso', amplitude: 0.5, base: -0.1 } }, /efeitoDeVelocidade.base/],
+      [{ ...base, inclinacao: { tipo: 'pulso', amplitude: 1e308, base: 1e308 } }, /inclinacao.base/],
+      ...[0, 1.1, null].map((frequencia): [unknown, RegExp] => [
+        { ...base, inclinacao: { tipo: 'pulso', amplitude: 0.1, frequencia } }, /inclinacao.frequencia/,
+      ]),
     ];
     for (const [dado, erro] of casos) expect(() => lerPlanoDeCamera(dado)).toThrow(erro);
+  });
+
+  it('interpola rampas, freia e sobrepõe pulsos sem acompanhar mutações do dado', () => {
+    const casos: [Record<string, unknown>, (k: number) => number][] = [
+      [{ tipo: 'rampa', de: 0.8, para: 0.2 }, (k) => THREE.MathUtils.lerp(0.8, 0.2, k)],
+      [{ tipo: 'rampa', de: 0.1, para: 0.7, ritmo: 'quadratic' }, (k) => THREE.MathUtils.lerp(0.1, 0.7, k * k)],
+      [{ tipo: 'rampa', de: 0.2, para: 0.8, ritmo: 'smooth' }, (k) => THREE.MathUtils.lerp(0.2, 0.8, smooth(k))],
+      [{ tipo: 'frenagem', amplitude: 0.9 }, (k) => 0.9 * (1 - k) * (1 - k)],
+      [{ tipo: 'pulso', amplitude: 0.4, base: 0.3 }, (k) => 0.3 + 0.4 * Math.sin(Math.PI * k)],
+      [{ tipo: 'pulso', amplitude: 0.4, base: 0.3, frequencia: 0.9 }, (k) => 0.3 + 0.4 * Math.sin(Math.PI * k * 0.9)],
+    ];
+    for (const [curva, esperado] of casos) {
+      const dado = { ...base, ritmo: 'launch', inclinacao: curva, efeitoDeVelocidade: curva };
+      const antes = JSON.stringify(dado);
+      const plano = lerPlanoDeCamera(dado);
+      expect(JSON.stringify(dado)).toBe(antes);
+      Object.assign(curva, { de: 0, para: 0, amplitude: 0, base: 0, frequencia: 1, ritmo: 'linear' });
+      for (const k of fases) {
+        expect(plano.roll?.(k)).toBe(esperado(k));
+        expect(plano.warp?.(k)).toBe(esperado(k));
+      }
+    }
+    expect(lerPlanoDeCamera({ ...base, inclinacao: { tipo: 'rampa', de: -0.4, para: 0.4 } }).roll?.(0.25))
+      .toBeCloseTo(-0.2, 15);
+  });
+
+  it('o passo lateral real faz um arco, entra e sai suavemente e mantém o assunto no quadro', async () => {
+    const { Journey, auditarRoteiro } = await import('./journey');
+    const { JourneyRig } = await import('./cameraRig');
+    const audit = auditarRoteiro();
+    const legenda = audit.captions.find((c) => c.text === 'UM PASSO AO LADO')!;
+    const { t0, dur } = audit.shots[legenda.shotIndex];
+    const filme = new Journey();
+    const inicio = filme.at(t0).pos;
+    const fim = filme.at(t0 + dur).pos;
+    const meio = filme.at(t0 + dur / 2).pos;
+    expect(inicio.distanceTo(filme.at(t0 - 1e-6).pos)).toBe(0);
+    expect(fim.distanceTo(filme.at(t0 + dur - 1e-6).pos)).toBeLessThan(1e-9);
+    expect(meio.distanceTo(inicio.clone().lerp(fim, 0.5))).toBeGreaterThan(0.1);
+    const dt = 1 / 60;
+    const passoCentral = meio.distanceTo(filme.at(t0 + dur / 2 + dt).pos);
+    expect(inicio.distanceTo(filme.at(t0 + dt).pos)).toBeLessThan(passoCentral / 10);
+    expect(fim.distanceTo(filme.at(t0 + dur - dt).pos)).toBeLessThan(passoCentral / 10);
+    const rig = new JourneyRig();
+    const camera = new THREE.PerspectiveCamera();
+    for (let i = 0; i <= dur * 60; i++) {
+      const t = t0 + i / 60;
+      rig.apply(camera, t, dt);
+      const direcao = filme.at(t).look.sub(camera.position).normalize();
+      expect(camera.getWorldDirection(new THREE.Vector3()).angleTo(direcao) * THREE.MathUtils.RAD2DEG)
+        .toBeLessThan(1);
+    }
   });
 
   it('mudar o JSON dirige posição, mira, lente, duração, inclinação e pulso no filme real', async () => {
@@ -156,7 +260,7 @@ describe('lerPlanoDeCamera — item 75', () => {
           camera: {
             ...plano.camera,
             duracao: 9,
-            movimento: { tipo: 'fixo', ponto: [13, 17, 19] },
+            movimento: { tipo: 'trajeto', pontos: [[13, 17, 19], [20, 25, 12], [27, 17, 19]] },
             mira: { tipo: 'fixo', ponto: [29, 31, 37] },
             lente: [23, 23],
             inclinacao: { tipo: 'pulso', amplitude: 0.3 },
@@ -174,7 +278,11 @@ describe('lerPlanoDeCamera — item 75', () => {
       expect(plano.dur).toBe(9);
       const t = plano.t0 + plano.dur / 4;
       const pose = new Journey().at(t);
-      expect(pose.pos.toArray()).toEqual([13, 17, 19]);
+      const nativa = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(13, 17, 19), new THREE.Vector3(20, 25, 12), new THREE.Vector3(27, 17, 19),
+      ]);
+      const posEsperada = nativa.getPointAt(0.25 ** 2 * (3 - 2 * 0.25));
+      expect(pose.pos.distanceTo(posEsperada)).toBeLessThan(1e-12);
       expect(pose.look.toArray()).toEqual([29, 31, 37]);
       const pulso = 0.7 * Math.sin(Math.PI / 4);
       const inclinacao = 0.3 * Math.sin(Math.PI / 4);
@@ -182,10 +290,10 @@ describe('lerPlanoDeCamera — item 75', () => {
       expect(pose.roll).toBe(inclinacao);
       const camera = new THREE.PerspectiveCamera();
       const efeito = new JourneyRig().apply(camera, t, 1 / 60);
-      expect(camera.position.toArray()).toEqual([13, 17, 19]);
+      expect(camera.position.distanceTo(posEsperada)).toBeLessThan(1e-12);
       expect(camera.fov).toBe(23 + pulso * 3.5);
       expect(efeito.warp).toBe(pulso);
-      const direcao = new THREE.Vector3(16, 14, 18).normalize();
+      const direcao = new THREE.Vector3(29, 31, 37).sub(posEsperada).normalize();
       expect(camera.getWorldDirection(new THREE.Vector3()).distanceTo(direcao)).toBeLessThan(1e-14);
       const esperada = new THREE.PerspectiveCamera();
       esperada.position.copy(pose.pos);
@@ -195,6 +303,69 @@ describe('lerPlanoDeCamera — item 75', () => {
       expect(camera.quaternion.angleTo(esperada.quaternion)).toBeLessThan(1e-7);
     } finally {
       vi.doUnmock('./roteiros/cinturao.json');
+      vi.resetModules();
+    }
+  });
+
+  it('as quatro cenas do mergulho respondem ao JSON, incluindo rampas no giro e no pós-processamento', async () => {
+    const { auditarRoteiro: auditarAntes } = await import('./journey');
+    const antes = auditarAntes();
+    const indice = antes.captions.find((c) => c.text === 'O MERGULHO')!.shotIndex - 1;
+    const inicio = antes.shots[indice].t0;
+    const efeitos = [
+      { tipo: 'rampa', de: 0.1, para: 0.9, ritmo: 'quadratic' },
+      { tipo: 'pulso', amplitude: 0.4, base: 0.2 },
+      { tipo: 'pulso', amplitude: 0.3, base: 0.15, frequencia: 0.9 },
+      { tipo: 'frenagem', amplitude: 0.7 },
+    ];
+    const dados = {
+      planos: mergulho.planos.map((plano, i) => ({
+        ...plano,
+        camera: {
+          ...plano.camera, duracao: i === 0 ? 9 : plano.camera.duracao,
+          movimento: { tipo: 'fixo', ponto: [13 + i, 17, 19] },
+          mira: { tipo: 'fixo', ponto: [29, 31, 37] }, lente: [23, 23], ritmo: 'launch',
+          inclinacao: { tipo: 'rampa', de: -0.2, para: 0.4, ritmo: 'smooth' },
+          efeitoDeVelocidade: efeitos[i],
+        },
+      })),
+    };
+    vi.resetModules();
+    vi.doMock('./roteiros/mergulho.json', () => ({ default: dados }));
+    try {
+      const { Journey, auditarRoteiro } = await import('./journey');
+      const { JourneyRig, galacticUp } = await import('./cameraRig');
+      const depois = auditarRoteiro();
+      expect(depois.shotCount).toBe(antes.shotCount);
+      expect(depois.duration).toBe(antes.duration + 3);
+      const k = 0.25;
+      const esperados = [
+        THREE.MathUtils.lerp(0.1, 0.9, k * k),
+        0.2 + 0.4 * Math.sin(Math.PI * k),
+        0.15 + 0.3 * Math.sin(Math.PI * k * 0.9),
+        0.7 * (1 - k) * (1 - k),
+      ];
+      let t0 = inicio;
+      for (const [i, plano] of dados.planos.entries()) {
+        const t = t0 + plano.camera.duracao * k;
+        const pose = new Journey().at(t);
+        expect(pose.pos.toArray()).toEqual([13 + i, 17, 19]);
+        expect(pose.warp).toBe(esperados[i]);
+        const inclinacao = THREE.MathUtils.lerp(-0.2, 0.4, smooth(k));
+        expect(pose.roll).toBe(inclinacao);
+        const camera = new THREE.PerspectiveCamera();
+        expect(new JourneyRig().apply(camera, t, 1 / 60).warp).toBe(esperados[i]);
+        expect(camera.fov).toBe(23 + esperados[i] * 3.5);
+        const esperada = new THREE.PerspectiveCamera();
+        esperada.position.copy(pose.pos);
+        galacticUp(pose.look.clone().sub(pose.pos).normalize(), esperada.up);
+        esperada.lookAt(pose.look);
+        esperada.rotateZ(inclinacao);
+        expect(camera.quaternion.angleTo(esperada.quaternion)).toBeLessThan(1e-7);
+        t0 += plano.camera.duracao;
+      }
+    } finally {
+      vi.doUnmock('./roteiros/mergulho.json');
       vi.resetModules();
     }
   });

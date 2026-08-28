@@ -58,7 +58,7 @@ import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_SOL_PC } from '../escala';
 import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
 import { ORIGEM } from './enquadramento';
 import {
-  bezier, easeOut, glide, launch, line, linear, lookEvento, lookPan,
+  bezier, easeOut, glide, line, linear, lookEvento, lookPan,
   orbit, panLook, panThenHold, settle, settleFreeze, smooth, still,
   type PosFn,
 } from './movimentos';
@@ -66,6 +66,7 @@ import { lerSequencia, type Shot } from './lerSequencia';
 import { lerApoiosDoPlano, montarApoiosDoRoteiro } from './apoiosDoRoteiro';
 import apoiosDaViagem from './roteiros/apoiosDaViagem.json';
 import cinturao from './roteiros/cinturao.json';
+import mergulho from './roteiros/mergulho.json';
 
 // ---- Quadros de MEDIÇÃO (não alterar sem atualizar scripts/visual/
 // rodada.mjs e docs/reference/VISUAL_TARGETS.md). As posições vêm da
@@ -628,6 +629,8 @@ const SHOTS: Shot[] = [
   // inclinação, pulso e edição vêm da mesma sequência, no relógio do filme.
   ...lerSequencia(cinturao, {
     saidaDeSirius: POST_SIRIUS, mirante: BELT_VIEW, desvio: BELT_BREAK, Alnilam: ALNILAM,
+    // Recuo no meio do passo lateral: arco de revelação, com as mesmas pontas.
+    curvaDoDesvio: BELT_VIEW.clone().lerp(BELT_BREAK, 0.5).addScaledVector(BELT_AXIS, -4),
   }),
   {
     // Betelgeuse À FRENTE: ela nasce do bordo inferior e INCHA — de 95
@@ -722,83 +725,17 @@ const SHOTS: Shot[] = [
       { at: 0.38, text: 'ANTARES', sub: 'brasa a 550 anos-luz, no alinhamento do centro da galáxia', dur: 4.8 },
     ],
   },
-  {
-    // o lançamento mais forte do filme: a brasa passa por cima e o
-    // olhar entrega o rumo do centro enquanto o warp arma
-    dur: 6,
-    pos: bezier(
-      ANT_GATE,
-      ANTARES.clone().add(new THREE.Vector3(8, 16, 10)),
-      ANTARES.clone().add(new THREE.Vector3(5.5, 3, 3)),
-      ANT_PASS
-    ),
-    look: panLook(ANTARES, GAL.GC_POS, easeOut),
-    fov0: 50, fov1: 58,
-    ease: launch,
-    warp: (k) => 0.85 * Math.pow(k, 2),
-    target: ['Antares'],
-    quiet: true,
-  },
-  {
-    // ONDA 1 — ATRAVESSA a muralha de Sagitário por dentro: a poeira
-    // engrossa até o único túnel escuro do filme no meio do plano, e o
-    // dourado explode do outro lado.
-    dur: 10,
-    pos: bezier(ANT_PASS, gal(7400, 4, -28), DIVE_1, DIVE_2),
-    look: still(GAL.GC_POS),
-    fov0: 58, fov1: 64,
-    ease: glide,
-    warp: (k) => 0.55 + 0.4 * Math.sin(Math.PI * k),
-    roll: (k) => 0.10 * Math.sin(Math.PI * k),
-    dest: 'SGR',
-    target: ['Shaula', 'Dschubba', 'Lesath', 'Paikauhale'],
-    captions: [
-      {
-        at: 0.06,
-        text: 'O MERGULHO',
-        sub: 'braço de Sagitário: a poeira extingue e avermelha as estrelas',
-        dur: 4.2,
-      },
-      {
-        at: 0.50,
-        text: 'O BERÇÁRIO',
-        sub: 'Shaula, Dschubba, Lesath — o berçário de Escorpião no caminho',
-        dur: 4.8,
-      },
-    ],
-  },
-  {
-    // ONDA 2 — Scutum-Centaurus: a segunda crista é um BEAT, não um
-    // corredor mudo. O berçário com NOME (estrelas reais) ficou na
-    // Onda 1, onde elas passam; aqui é o último braço antes do centro.
-    dur: 7,
-    pos: bezier(DIVE_2, gal(4600, 16, -30), DIVE_3, DIVE_4),
-    look: still(GAL.GC_POS),
-    fov0: 64, fov1: 70,
-    ease: glide,
-    warp: (k) => 0.6 + 0.4 * Math.sin(Math.PI * k * 0.9),
-    roll: (k) => -0.12 * Math.sin(Math.PI * k),
-    dest: 'SGR',
-    captions: [
-      {
-        at: 0.18,
-        text: 'O ÚLTIMO BRAÇO',
-        sub: 'Scutum-Centaurus — o gás comprime e acende estrelas azuis',
-        dur: 5,
-      },
-    ],
-  },
-  {
-    // desaceleração no aglomerado central. A distorção prepara a
-    // revelação que pertence à curva rasante.
-    dur: 5,
-    pos: bezier(DIVE_4, gal(700, 29, -8), gal(320, 30, -6), CORE_IN),
-    look: still(GAL.GC_POS),
-    fov0: 70, fov1: 55,
-    ease: settle,
-    warp: (k) => 0.9 * (1 - k) * (1 - k),
-    dest: 'SGR',
-  },
+  // Lançamento, duas ondas de poeira e frenagem no aglomerado.
+  // O roteiro recebe as âncoras calculadas, sem copiar a ciência para o JSON.
+  ...lerSequencia(mergulho, {
+    portaoAntares: ANT_GATE, Antares: ANTARES, saidaAntares: ANT_PASS,
+    passagemAlta: ANTARES.clone().add(new THREE.Vector3(8, 16, 10)),
+    passagemBaixa: ANTARES.clone().add(new THREE.Vector3(5.5, 3, 3)),
+    entradaSagitario: gal(7400, 4, -28), muralhaSagitario: DIVE_1, saidaSagitario: DIVE_2,
+    entradaScutum: gal(4600, 16, -30), muralhaScutum: DIVE_3, saidaScutum: DIVE_4,
+    entradaBojo: gal(700, 29, -8), dentroDoBojo: gal(320, 30, -6), aglomeradoCentral: CORE_IN,
+    centro: GAL.GC_POS,
+  }),
   {
     // aproximação final: de 120 pc a 1,5 pc do centro.
     // O ângulo de partida É o de CORE_IN (30°), não 32° — 2° a 120 pc
@@ -1169,8 +1106,7 @@ export class Journey {
     const ke = (s.ease ?? glide)(k);
     const pos = s.pos(ke, new THREE.Vector3());
     const look = s.look(ke, new THREE.Vector3());
-    // sem `fovEase` o argumento é o MESMO `ke` de sempre — a expressão
-    // não muda, e nenhum dos 23 planos herdados move um bit
+    // Sem `fovEase`, a lente acompanha o mesmo `ke` da trajetória.
     const fov = THREE.MathUtils.lerp(s.fov0, s.fov1, s.fovEase ? s.fovEase(k) : ke);
 
     return {

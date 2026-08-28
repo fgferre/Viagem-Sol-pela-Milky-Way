@@ -46,15 +46,16 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (28/08)
 
-**28/08 — O 75 JÁ LÊ INCLINAÇÃO E PULSO DE VELOCIDADE.** O roteiro
-aceita valores fixos e pulsos, ligados à câmera e aos efeitos existentes.
-**A BOLHA LOCAL** entrou no mesmo `cinturao.json` das Três Marias,
-com suas curvas, legenda, inclinação e pulso. Preparação de recursos e
-marcos visuais seguem disponíveis. Instruções no `PLANO-CINEMA.md`.
-**Não é ainda o motor de um filme inteiro:** faltam as rampas e
-combinações restantes, movimentos específicos e a direção dos nomes
-em cena; a conversão integral vem depois. A fila segue
-**75** → **100**. Provas e limites estão no próprio item.
+**28/08 — O 75 JÁ USA CURVAS PRONTAS DO THREE.JS.** O roteiro aceita
+trajetos suaves por pontos, com avanço por distância. **UM PASSO AO
+LADO** ganhou um arco com as mesmas pontas e a mesma mira. Rampas,
+frenagem e pulsos com base/frequência também são dados; as quatro cenas
+após Antares entraram em `mergulho.json`. **Filme convertido: 7 de 25
+cenas, 46 de 193 segundos (cerca de 24% da duração).** **Motor: ainda
+parcial** — faltam movimentos específicos, composições restantes e a
+direção dos nomes em cena. O trajeto não costura automaticamente planos
+diferentes. Instruções no `PLANO-CINEMA.md`; provas no item. A fila
+segue **75** → **100**.
 
 **28/08 — A SESSÃO CARA VIROU LEI, NÃO CAMPANHA.** Palavras dele: as
 sessões estão longas demais, gastando milhões de tokens em tarefa
@@ -886,8 +887,8 @@ os dados entram na mesma montagem de `Journey`: cortes, janelas e
 capítulos continuam derivados, sem outro relógio. Instruções e limites
 de autoria estão no `PLANO-CINEMA.md`.
 Não há dependência nova, segundo motor nem migração integral concluída.
-Faltam as rampas/combinações de inclinação e efeitos e os movimentos
-específicos restantes.
+Faltam as composições restantes de inclinação/efeitos e os movimentos
+específicos que ainda não viraram dados.
 Ler `assuntos` ainda não resolve o item 82:
 a prioridade dos nomes em cena segue sendo a regra existente.
 O critério de saída continua no `PLANO-CINEMA.md`.
@@ -899,12 +900,12 @@ A escolha das peças de transição deve comparar as opções prontas e
 gratuitas com o que o Three.js já oferece; não pressupor implementação
 própria. O roteiro continua responsável pela intenção cinematográfica.
 
-**Direção técnica após a consulta:** priorizar as curvas nativas do
+**Direção técnica aplicada após a consulta:** usar as curvas nativas do
 Three.js — `CubicBezierCurve3` para controles explícitos e
-`CatmullRomCurve3` para trajetos por vários pontos. Hoje a Bézier ainda
-é calculada em `movimentos.ts`; aproveitar a biblioteca é obra pendente,
-não algo já concluído. As receitas de aproximação, passagem, contorno e
-ligação entre planos devem combinar essas peças com mira, lente e ritmo,
+`CatmullRomCurve3` para trajetos por vários pontos. `movimentos.ts`
+chama a biblioteca; não mantém a conta própria da Bézier. As receitas
+de aproximação, passagem, contorno e ligação entre planos combinam
+essas peças com mira, lente e ritmo,
 preservando o relógio único e a busca por qualquer instante do filme.
 Comparação nas fontes primárias: [curvas do Three.js](https://threejs.org/docs/pages/Curve.html)
 e [trajetos por pontos](https://threejs.org/docs/pages/CatmullRomCurve3.html);
@@ -930,8 +931,20 @@ próprios marcos no mesmo formato. Não nasceu outro carregador.
 lê `inclinacao` e `efeitoDeVelocidade`, nos formatos `fixo` e `pulso`.
 Os valores usam o tempo de relógio e chegam ao rig e aos efeitos
 existentes. O corredor **A BOLHA LOCAL** saiu do código e entrou no
-`cinturao.json`; não ficou cópia. Rampas e combinações especiais ainda
-não estão disponíveis em dados. Nenhum quadro de medição foi alterado.
+`cinturao.json`; não ficou cópia. Naquela fatia, rampas e combinações
+ainda não eram dados. Nenhum quadro de medição foi alterado.
+
+**Curvas prontas e rampas vieram na sexta fatia (28/08):** `trajeto`
+passa pelos pontos em curva, normalizada em escala local para funcionar
+também perto do Sol. O ritmo governa a partida e a chegada; mira, lente
+e relógio continuam os existentes. A pedido dele de fazer o melhor
+para UX, **UM PASSO AO LADO** passou da reta a um arco, preservando
+pontas, mira, duração e lente. O leitor também ganhou `rampa`,
+`frenagem` e `base`/`frequencia` do pulso. `mergulho.json` reúne as
+quatro cenas após Antares sem cópia no código antigo. A conversão é
+**7 de 25 cenas, 46 de 193 s**, medida por `capturas/item75-caminhos/medir.mjs`.
+Não confundir essa fração do filme com prontidão do motor: ele ainda
+não lê todos os movimentos e não dirige os nomes do item 82.
 
 **Prova da primeira fatia:** `capturas/item75-movimentos/` guarda o programa
 `prova.mjs`, os dois lados da comparação e os resultados dos testes.
@@ -1001,6 +1014,24 @@ em `auditoria/`. A referência histórica dispensável das instruções foi
 retirada. **Limite:** só valores fixos e pulsos foram acrescentados;
 não cobre rampas/combinações restantes, exibição integral no navegador
 nem o A/B de disco zerado da migração completa.
+
+**Prova das curvas e rampas:** `capturas/item75-transicoes/` registra a
+troca da Bézier e a migração das quatro cenas, antes de alterar o arco:
+câmera e edição iguais no corte inteiro pelo `prova.mjs` existente.
+O berçário em `t=100` também ficou idêntico em RGB (`imagem.json`).
+`play.json` percorre de 88,2 a 114,38 s, entrando nas quatro cenas e
+mostrando o efeito de velocidade vivo, com quatro capturas. Em
+`capturas/item75-caminhos/`, `medidas.json` separa a melhoria deliberada:
+só a posição desejada entre 49 e 55 s mudou; mira, lente, inclinação e
+efeito de velocidade coincidem com o original. As capturas `antes` e
+`depois`, `play.json` e `saida.json` mostram o arco e sua saída para
+Betelgeuse. Typecheck e lint passaram (`verificacoes.json`); 64 testes
+focados passaram, com um já desativado (`focal-v2.json`). A suíte única
+teve 2.455 aprovados, um já desativado e nenhuma falha (`suite.json`).
+A revisão independente não encontrou correções; oito sabotagens
+reprovaram, com referência verde, patches e saídas em `auditoria/`.
+**Limite:** isso não é exibição integral, A/B visual de cache zerado,
+costura automática entre planos nem conclusão do motor.
 
 **77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
 FALTA SÓ O OLHO DELE.** A órbita é o DADO,

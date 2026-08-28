@@ -1,10 +1,10 @@
 // Item 75: dados do roteiro → peças já usadas pela câmera.
 // Lido uma vez, na montagem; não interpreta texto nem aloca por quadro.
 import * as THREE from 'three';
-import { erro, numero, objeto } from './dadosDoRoteiro';
+import { erro, lista, numero, objeto } from './dadosDoRoteiro';
 import {
   bezier, easeOut, glide, launch, line, linear, lookEvento, lookPan,
-  orbit, panLook, panThenHold, settle, settleFreeze, smooth, still,
+  orbit, panLook, panThenHold, quadratic, settle, settleFreeze, smooth, still, trajeto,
   type Ease, type PosFn,
 } from './movimentos';
 
@@ -35,7 +35,7 @@ export interface CameraDoPlano {
   fovEase?: Ease;
 }
 
-const RITMOS = { linear, smooth, easeOut, glide, launch, settle, settleFreeze };
+const RITMOS = { linear, quadratic, smooth, easeOut, glide, launch, settle, settleFreeze };
 
 function par(valor: unknown, campo: string): [number, number] {
   if (!Array.isArray(valor) || valor.length !== 2) return erro(campo, 'deve ter dois números');
@@ -60,15 +60,40 @@ function ritmo(valor: unknown, campo: string): Ease | undefined {
 function curvaEscalar(valor: unknown, campo: string, normalizada = false): Ease | undefined {
   if (valor === undefined) return undefined;
   const c = objeto(valor, campo);
-  if (c.tipo !== 'fixo' && c.tipo !== 'pulso') {
-    return erro(`${campo}.tipo`, `desconhecido: ${String(c.tipo)}`);
+  const lerValor = (chave: string) => {
+    const n = numero(c[chave], `${campo}.${chave}`);
+    if (normalizada && (n < 0 || n > 1)) {
+      return erro(`${campo}.${chave}`, 'deve estar entre 0 e 1');
+    }
+    return n;
+  };
+  switch (c.tipo) {
+    case 'fixo': {
+      const n = lerValor('valor');
+      return () => n;
+    }
+    case 'rampa': {
+      const de = lerValor('de');
+      const para = lerValor('para');
+      const ease = ritmo(c.ritmo, `${campo}.ritmo`) ?? linear;
+      return (k) => THREE.MathUtils.lerp(de, para, ease(k));
+    }
+    case 'frenagem': {
+      const n = lerValor('amplitude');
+      return (k) => n * (1 - k) * (1 - k);
+    }
+    case 'pulso': {
+      const n = lerValor('amplitude');
+      const base = c.base === undefined ? 0 : lerValor('base');
+      const frequencia = c.frequencia === undefined ? 1 : fracao(c.frequencia, `${campo}.frequencia`);
+      if (!Number.isFinite(base + n) || (normalizada && base + n > 1)) {
+        return erro(`${campo}.base`, 'somada à amplitude ultrapassa o limite');
+      }
+      const pulso: Ease = (k) => n * Math.sin(Math.PI * k * frequencia);
+      return base === 0 ? pulso : (k) => base + pulso(k);
+    }
+    default: return erro(`${campo}.tipo`, `desconhecido: ${String(c.tipo)}`);
   }
-  const chave = c.tipo === 'fixo' ? 'valor' : 'amplitude';
-  const n = numero(c[chave], `${campo}.${chave}`);
-  if (normalizada && (n < 0 || n > 1)) {
-    return erro(`${campo}.${chave}`, 'deve estar entre 0 e 1');
-  }
-  return c.tipo === 'fixo' ? () => n : (k) => n * Math.sin(Math.PI * k);
 }
 
 /** Pontos em pc no referencial da cena; nomes resolvidos na montagem. */
@@ -109,6 +134,21 @@ export function lerPlanoDeCamera(
         ponto(m.controle2, 'movimento.controle2'), ponto(m.para, 'movimento.para')
       );
       break;
+    case 'trajeto': {
+      const via = Array.from(lista(m.pontos, 'movimento.pontos'), (v, i) =>
+        ponto(v, `movimento.pontos[${i}]`));
+      if (via.length < 2) return erro('movimento.pontos', 'deve conter ao menos dois pontos');
+      for (let i = 1; i < via.length; i++) {
+        if (!Number.isFinite(via[i].distanceTo(via[0]))) {
+          return erro(`movimento.pontos[${i}]`, 'produz uma distância não finita');
+        }
+        if (via[i].distanceTo(via[i - 1]) === 0) {
+          return erro(`movimento.pontos[${i}]`, 'repete o ponto anterior; use um plano fixo para esperar');
+        }
+      }
+      pos = trajeto(via);
+      break;
+    }
     case 'orbita': {
       const [r0, r1] = par(m.raio, 'movimento.raio');
       if (r0 < 0 || r1 < 0) return erro('movimento.raio', 'não pode ser negativo');
