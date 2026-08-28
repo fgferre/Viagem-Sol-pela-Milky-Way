@@ -62,8 +62,8 @@ import {
   orbit, panLook, panThenHold, settle, settleFreeze, smooth, still,
   type PosFn,
 } from './movimentos';
-import { lerPlanoDeCamera, type CameraDoPlano } from './lerPlanoDeCamera';
-import passoAoLado from './roteiros/passoAoLado.json';
+import { lerSequencia, type Shot } from './lerSequencia';
+import cinturao from './roteiros/cinturao.json';
 
 // ---- Quadros de MEDIÇÃO (não alterar sem atualizar scripts/visual/
 // rodada.mjs e docs/reference/VISUAL_TARGETS.md). As posições vêm da
@@ -99,41 +99,6 @@ const galPoint = (r: number, aRad: number, h: number, out: THREE.Vector3) =>
     .addScaledVector(EX, Math.cos(aRad) * r)
     .addScaledVector(EY, Math.sin(aRad) * r)
     .addScaledVector(EZ, h);
-
-interface ShotCaption {
-  /** fração do shot em que a legenda ENTRA */
-  at: number;
-  text: string;
-  sub?: string;
-  /** janela de exibição em segundos de VIAGEM (padrão 8,6) */
-  dur?: number;
-  /** autoriza esta legenda, e somente ela, a sobreviver ao corte do plano */
-  bridge?: boolean;
-}
-
-interface Shot extends CameraDoPlano {
-  /** intensidade de warp (vinheta/CA/bloom), decisão de direção por shot */
-  warp?: (k: number) => number;
-  /** banking em radianos (positivo = horário); 0 nos holds por contrato */
-  roll?: (k: number) => number;
-  captions?: ShotCaption[];
-  /** o(s) ASSUNTO(s) do shot: etiqueta forçada, nunca sofre culling.
-   *  'SOL' e 'SGR' são pseudo-alvos; o resto é nome de estrela do HYG. */
-  target?: string[];
-  /** silencia as etiquetas de fundo durante o beat */
-  quiet?: boolean;
-  /** linha de destino com distância viva: 'SGR' ou nome de estrela */
-  dest?: string;
-  /**
-   * A LÍNGUA DO OLHAR (lei do dono, 19/08): 'frente' é o padrão e não
-   * se escreve — a câmera olha para onde vai. 'assunto' declara órbita
-   * ou contemplação de um alvo (trava, rasante, revelação da galáxia).
-   * 'tras' declara acento traseiro CURTO (a dobradiça de CASA, a fuga
-   * do buraco negro). A lei executável (roteiroPerfil.test) cobra a
-   * frente de quem não declarou e o limite de duração de quem declarou.
-   */
-  lingua?: 'frente' | 'assunto' | 'tras';
-}
 
 // ---- pontos calculados do roteiro ---------------------------------------
 // Hélice do Ato I no referencial galáctico centrado no Sol: θ=0 é o lado
@@ -677,35 +642,11 @@ const SHOTS: Shot[] = [
       { at: 0.22, text: 'A BOLHA LOCAL', sub: 'gás a um milhão de graus, esculpido por supernovas antigas', dur: 4.5 },
     ],
   },
-  {
-    // A TRAVA DAS TRÊS MARIAS: a câmera POUSA no eixo Terra→cinturão e
-    // FECHA a lente na fila — gesto de telescópio, agora em 6 s. As
-    // três em linha, como no céu de casa, NOMEADAS.
-    dur: 6,
-    pos: still(BELT_VIEW),
-    look: still(ALNILAM),
-    fov0: 54, fov1: 15,
-    ease: settle,
-    target: ['Alnitak', 'Alnilam', 'Mintaka'],
-    quiet: true,
-    lingua: 'assunto',
-    captions: [
-      { at: 0.12, text: 'AS TRÊS MARIAS', sub: 'Alnitak, Alnilam, Mintaka — três supergigantes alinhadas só daqui', dur: 5 },
-    ],
-  },
-  {
-    // o passo ao lado: a fila se desfaz diante dos olhos — a
-    // constelação é um acidente de ponto de vista, demonstrado
-    ...lerPlanoDeCamera(passoAoLado, {
-      mirante: BELT_VIEW, desvio: BELT_BREAK, Alnilam: ALNILAM,
-    }),
-    target: ['Alnitak', 'Alnilam', 'Mintaka'],
-    quiet: true,
-    lingua: 'assunto',
-    captions: [
-      { at: 0.08, text: 'UM PASSO AO LADO', sub: 'Alnilam está 1.200 anos-luz mais ao fundo — a fila era um ponto de vista', dur: 5.4 },
-    ],
-  },
+  // A trava fecha a lente na fila das Três Marias; o passo ao lado a
+  // desfaz. Câmera e edição vêm da mesma sequência, no relógio do filme.
+  ...lerSequencia(cinturao, {
+    mirante: BELT_VIEW, desvio: BELT_BREAK, Alnilam: ALNILAM,
+  }),
   {
     // Betelgeuse À FRENTE: ela nasce do bordo inferior e INCHA — de 95
     // a 14 pc o diâmetro aparente cresce ~7×, e é esse crescimento que

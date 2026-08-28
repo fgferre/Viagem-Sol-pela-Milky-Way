@@ -1,7 +1,0 @@
-{
-  "duracao": 6,
-  "movimento": { "tipo": "reta", "de": "mirante", "para": "desvio" },
-  "mira": { "tipo": "fixo", "ponto": "Alnilam" },
-  "lente": [15, 50],
-  "ritmo": "glide"
-}

@@ -46,13 +46,14 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (28/08)
 
-**28/08 — O 75 JÁ LÊ UM PLANO SIMPLES.** Depois de separar os movimentos,
-`lerPlanoDeCamera` passou a ler duração, trajetória, mira e lente em JSON.
-O piloto é **UM PASSO AO LADO**, ligado à câmera real do filme; o exemplo
-vivo mora em `roteiros/passoAoLado.json` e as instruções de autoria no
-`PLANO-CINEMA.md`. **Não é ainda o motor de um filme inteiro:** o próximo
-passo é a montagem da sequência com os dados editoriais, preload e
-marcadores de QA. A conversão integral vem depois. A fila segue
+**28/08 — O 75 JÁ LÊ UMA SEQUÊNCIA COM LEGENDAS.** `lerSequencia`
+reúne câmera e edição no JSON vivo `roteiros/cinturao.json`: **AS TRÊS
+MARIAS** e **UM PASSO AO LADO**. A ordem dos planos, os textos e os dados
+de direção alimentam o relógio e a barra existentes. O antigo piloto
+isolado foi incorporado, sem cópia paralela. Instruções de autoria no
+`PLANO-CINEMA.md`. **Não é ainda o motor de um filme inteiro:** faltam
+preload, marcadores de QA, recursos de câmera específicos e a direção
+dos nomes em cena; a conversão integral vem depois. A fila segue
 **75** → **100**. Provas e limites estão no próprio item.
 
 **28/08 — A SESSÃO CARA VIROU LEI, NÃO CAMPANHA.** Palavras dele: as
@@ -875,11 +876,20 @@ Foi extração, não nova receita: o filme atual importa as mesmas peças.
 
 **O leitor do plano veio na segunda fatia (28/08):** `lerPlanoDeCamera`
 lê dados JSON, com movimentos nomeados, mira, duração e lente; o piloto
-`passoAoLado.json` dirige **UM PASSO AO LADO** na câmera existente. As
-instruções e os limites de autoria estão no `PLANO-CINEMA.md`.
+de **UM PASSO AO LADO** dirige a câmera existente.
+
+**A sequência veio na terceira fatia (28/08):** `lerSequencia` lê planos
+com câmera, legendas, assuntos, destino, silêncio de fundo e língua do
+olhar. O exemplo vivo `cinturao.json` reúne **AS TRÊS MARIAS** e **UM
+PASSO AO LADO**, incorporando o antigo `passoAoLado.json`. A ordem e
+os dados entram na mesma montagem de `Journey`: cortes, janelas e
+capítulos continuam derivados, sem outro relógio. Instruções e limites
+de autoria estão no `PLANO-CINEMA.md`.
 Não há dependência nova, segundo motor nem migração integral concluída.
-Falta ler a sequência e os dados editoriais, preload e marcadores de QA;
-o critério de saída continua no `PLANO-CINEMA.md`.
+Faltam preload, marcadores de QA, inclinação/efeitos e os movimentos
+específicos restantes. Ler `assuntos` ainda não resolve o item 82:
+a prioridade dos nomes em cena segue sendo a regra existente.
+O critério de saída continua no `PLANO-CINEMA.md`.
 
 **Prova da primeira fatia:** `capturas/item75-movimentos/` guarda o programa
 `prova.mjs`, os dois lados da comparação e os resultados dos testes.
@@ -904,6 +914,22 @@ independente (`auditoria/`); para a ligação ao JSON vale o par `-v2`,
 com referência verde e mutação vermelha na mesma árvore isolada.
 O limite permanece: piloto de câmera, não migração integral nem novo
 filme; o A/B completo de disco zerado continua devido no fechamento do 75.
+
+**Prova da sequência:** `capturas/item75-sequencia/` guarda os dois lados
+da câmera e da edição no corte inteiro (mesmo `prova.mjs`), sem diferença.
+O quadro do primeiro plano com HUD é idêntico (`imagem.json` e
+`comparar-imagens.mjs`); o segundo texto está em `segundo-plano.png`.
+`navegador.json` registra o play atravessando a sequência e seguindo
+para Betelgeuse, não uma exibição inteira. Typecheck e lint passaram
+(`verificacoes.json`); a suíte terminou com 2.445 aprovados, um já
+desativado e nenhuma falha (`suite.json`). Os testes mudam a sequência
+de verdade: ordem, quantidade, duração, legendas, marcas da barra e
+dados de direção precisam acompanhar o JSON. **Limite:** só os planos
+do cinturão foram convertidos; a prova não fecha o A/B integral de
+cache zerado nem a prioridade dos três nomes em cena. Os quatro testes
+novos e a ligação de câmera adaptada reprovaram nas cinco sabotagens
+independentes; `auditoria/` guarda os patches e trechos das saídas, com
+referência verde na mesma cópia física isolada.
 
 **77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
 FALTA SÓ O OLHO DELE.** A órbita é o DADO,

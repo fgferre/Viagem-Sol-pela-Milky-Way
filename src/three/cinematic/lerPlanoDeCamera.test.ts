@@ -6,7 +6,9 @@ import {
   bezier, easeOut, glide, launch, line, linear, lookEvento, lookPan,
   orbit, panLook, panThenHold, settle, settleFreeze, smooth, still,
 } from './movimentos';
-import passoAoLado from './roteiros/passoAoLado.json';
+import cinturao from './roteiros/cinturao.json';
+
+const passoAoLado = cinturao.planos[1].camera;
 
 const a = new THREE.Vector3(2, 5, -3);
 const b = new THREE.Vector3(-1, 6, 2);
@@ -117,13 +119,18 @@ describe('lerPlanoDeCamera — item 75', () => {
 
   it('mudar o JSON muda posição, mira, lente e duração no filme em execução', async () => {
     vi.resetModules();
-    vi.doMock('./roteiros/passoAoLado.json', () => ({
+    vi.doMock('./roteiros/cinturao.json', () => ({
       default: {
-        ...passoAoLado,
-        duracao: 9,
-        movimento: { tipo: 'fixo', ponto: [13, 17, 19] },
-        mira: { tipo: 'fixo', ponto: [29, 31, 37] },
-        lente: [23, 23],
+        planos: cinturao.planos.map((plano, i) => i !== 1 ? plano : {
+          ...plano,
+          camera: {
+            ...plano.camera,
+            duracao: 9,
+            movimento: { tipo: 'fixo', ponto: [13, 17, 19] },
+            mira: { tipo: 'fixo', ponto: [29, 31, 37] },
+            lente: [23, 23],
+          },
+        }),
       },
     }));
     try {
@@ -144,7 +151,7 @@ describe('lerPlanoDeCamera — item 75', () => {
       const direcao = new THREE.Vector3(16, 14, 18).normalize();
       expect(camera.getWorldDirection(new THREE.Vector3()).distanceTo(direcao)).toBeLessThan(1e-14);
     } finally {
-      vi.doUnmock('./roteiros/passoAoLado.json');
+      vi.doUnmock('./roteiros/cinturao.json');
       vi.resetModules();
     }
   });

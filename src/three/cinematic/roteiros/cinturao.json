@@ -1,0 +1,40 @@
+{
+  "planos": [
+    {
+      "camera": {
+        "duracao": 6,
+        "movimento": { "tipo": "fixo", "ponto": "mirante" },
+        "mira": { "tipo": "fixo", "ponto": "Alnilam" },
+        "lente": [54, 15],
+        "ritmo": "settle"
+      },
+      "assuntos": ["Alnitak", "Alnilam", "Mintaka"],
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [{
+        "em": 0.12,
+        "texto": "AS TRÊS MARIAS",
+        "subtexto": "Alnitak, Alnilam, Mintaka — três supergigantes alinhadas só daqui",
+        "duracao": 5
+      }]
+    },
+    {
+      "camera": {
+        "duracao": 6,
+        "movimento": { "tipo": "reta", "de": "mirante", "para": "desvio" },
+        "mira": { "tipo": "fixo", "ponto": "Alnilam" },
+        "lente": [15, 50],
+        "ritmo": "glide"
+      },
+      "assuntos": ["Alnitak", "Alnilam", "Mintaka"],
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [{
+        "em": 0.08,
+        "texto": "UM PASSO AO LADO",
+        "subtexto": "Alnilam está 1.200 anos-luz mais ao fundo — a fila era um ponto de vista",
+        "duracao": 5.4
+      }]
+    }
+  ]
+}

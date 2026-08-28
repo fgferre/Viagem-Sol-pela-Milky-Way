@@ -106,7 +106,8 @@ src/
 │  ├─ selo.ts               selo de honestidade
 │  ├─ fases.ts              o que cada fase escreve
 │  ├─ cartography/          modelo galáctico + bakes + medidas
-│  ├─ cinematic/            journey.ts (filme) + lerPlanoDeCamera.ts (JSON)
+│  ├─ cinematic/            journey.ts (filme) + lerSequencia.ts (JSON editorial)
+│  │                        + lerPlanoDeCamera.ts (câmera de cada plano)
 │  │                        + movimentos.ts (trajetórias reutilizáveis)
 │  │                        + atlasRig.ts + cameraRig.ts
 │  ├─ core/                 engine, post

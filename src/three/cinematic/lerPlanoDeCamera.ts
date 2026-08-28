@@ -1,6 +1,7 @@
 // Item 75: dados do roteiro → peças já usadas pela câmera.
 // Lido uma vez, na montagem; não interpreta texto nem aloca por quadro.
 import * as THREE from 'three';
+import { erro, numero, objeto } from './dadosDoRoteiro';
 import {
   bezier, easeOut, glide, launch, line, linear, lookEvento, lookPan,
   orbit, panLook, panThenHold, settle, settleFreeze, smooth, still,
@@ -31,24 +32,6 @@ export interface CameraDoPlano {
 }
 
 const RITMOS = { linear, smooth, easeOut, glide, launch, settle, settleFreeze };
-
-function erro(campo: string, motivo: string): never {
-  throw new Error(`Plano de câmera: ${campo} ${motivo}`);
-}
-
-function objeto(valor: unknown, campo: string): Record<string, unknown> {
-  if (!valor || typeof valor !== 'object' || Array.isArray(valor)) {
-    return erro(campo, 'deve ser um objeto');
-  }
-  return valor as Record<string, unknown>;
-}
-
-function numero(valor: unknown, campo: string): number {
-  if (typeof valor !== 'number' || !Number.isFinite(valor)) {
-    return erro(campo, 'deve ser um número finito');
-  }
-  return valor;
-}
 
 function par(valor: unknown, campo: string): [number, number] {
   if (!Array.isArray(valor) || valor.length !== 2) return erro(campo, 'deve ter dois números');

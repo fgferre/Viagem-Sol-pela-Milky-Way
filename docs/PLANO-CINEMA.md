@@ -95,13 +95,46 @@ item 54 do `PENDENCIAS.md`. O trabalho segue nesta ordem:
 Quando esta fila terminar, este arquivo pode desaparecer: o produto, os testes,
 o contrato de autoria, o `NORTE.md` e o histórico do Git serão as fontes de verdade.
 
-## Autoria disponível: um plano de câmera
+## Autoria disponível: sequência de planos
+
+O exemplo vivo é [`cinturao.json`](../src/three/cinematic/roteiros/cinturao.json):
+**AS TRÊS MARIAS** e **UM PASSO AO LADO**, com câmera e edição juntas.
+`lerSequencia` lê `{ "planos": [...] }` e `journey.ts` encaixa a lista no
+filme existente. A ordem da lista é a ordem das cenas; duração, cortes,
+legendas e marcas da barra continuam calculados pelo relógio de `Journey`.
+Não se digitam tempos absolutos nem se cria outra linha do tempo.
+
+Cada entrada tem `camera`, descrita abaixo, e estes campos opcionais:
+
+| Campo | Significado |
+|---|---|
+| `legendas` | Lista de janelas: `em` (fração do plano, de 0 até antes de 1), `texto`, `subtexto` opcional, `duracao` opcional em segundos de viagem (padrão 8,6), `ponte` opcional (padrão false) |
+| `assuntos` | Nomes de estrelas do HYG, ou `SOL` / `SGR`, entregues à direção de etiquetas existente |
+| `fundoSilencioso` | `true` silencia as etiquetas de fundo; omitido, continua false |
+| `destino` | Nome para a linha de rumo com distância viva |
+| `olhar` | Declara a língua do plano: `frente` (padrão), `assunto` ou `tras`; a orientação efetiva continua definida por `camera.mira` |
+
+`legendas.em` usa a fração do **tempo de relógio**, independente do ritmo
+do movimento. Uma janela é aberta na entrada e fechada no fim; buscar
+um instante ou voltar pela barra mostra o mesmo texto que assistir até lá.
+`ponte: true` declara a intenção de atravessar o corte — não altera a
+duração. O leitor valida formato e faixas, mas não conserta edição:
+`auditarRoteiro` e os testes editoriais existentes cobram sobreposições
+e travessias sem ponte. A última legenda pode continuar além do fim do filme.
+
+Para escrever outra sequência, copie a estrutura do exemplo, escolha
+os movimentos já disponíveis e forneça os pontos nomeados na chamada
+de `lerSequencia`. A montagem copia os dados, não acompanha alterações
+posteriores no objeto original. Remover ou acrescentar planos recalcula
+os horários dos seguintes e os capítulos da barra automaticamente.
+
+### Câmera de cada plano
 
 `lerPlanoDeCamera` lê dados JSON e devolve as peças que `Journey.at` já usa.
-O exemplo vivo é [`passoAoLado.json`](../src/three/cinematic/roteiros/passoAoLado.json):
-ele dirige a câmera do trecho **UM PASSO AO LADO**, não é uma cópia ilustrativa.
+O segundo `camera` de `cinturao.json` é o antigo piloto `passoAoLado.json`,
+agora junto da edição e do plano anterior, sem cópia paralela.
 `journey.ts` fornece seus pontos nomeados (`mirante`, `desvio`, `Alnilam`).
-Alterar esse JSON altera a câmera e a duração daquele trecho.
+Alterar esse objeto altera a câmera e a duração daquele trecho.
 
 Campos obrigatórios: `duracao` em segundos, `movimento`, `mira` e `lente`
 como `[início, fim]` em graus de campo vertical. A duração é positiva;
@@ -139,8 +172,11 @@ Nomes desconhecidos, números não finitos e parâmetros fora dessas faixas
 interrompem a montagem com o campo indicado no erro. Não há `eval`, código
 embutido no roteiro, dependência nova nem controle novo para o visitante.
 
-**Limite desta base:** é um plano de câmera, ainda não um filme completo.
-Legendas, nomes em cena, preload, marcadores de QA e a montagem da sequência
-continuam no formato atual. O próximo passo do item 75 é levá-los ao leitor;
-a migração integral e sua prova visual vêm depois. Validação focal:
-`npx vitest run src/three/cinematic/lerPlanoDeCamera.test.ts`.
+**Limite desta base:** só a sequência do cinturão foi convertida; o motor
+para um filme completo ainda não terminou. Preload, marcadores de QA,
+inclinação e efeitos ainda não são lidos do JSON. `assuntos` transporta
+os nomes para a regra atual, mas não resolve a direção de etiquetas do
+item 82 — as três precisam falar juntas. Esses recursos e os movimentos
+específicos que faltam vêm antes da migração integral e do A/B de disco
+zerado. Validação focal:
+`npx vitest run src/three/cinematic/lerSequencia.test.ts src/three/cinematic/lerPlanoDeCamera.test.ts`.
