@@ -58,13 +58,14 @@ import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_SOL_PC } from '../escala';
 import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
 import { ORIGEM } from './enquadramento';
 import {
-  bezier, easeOut, glide, line, linear, lookEvento, lookPan,
-  orbit, panLook, panThenHold, settle, settleFreeze, smooth, still,
+  bezier, distanciaExponencial, easeOut, glide, line, linear, lookPan,
+  panLook, panThenHold, settle, settleFreeze, smooth, still,
   type PosFn,
 } from './movimentos';
 import { lerSequencia, type Shot } from './lerSequencia';
 import { lerApoiosDoPlano, montarApoiosDoRoteiro } from './apoiosDoRoteiro';
 import apoiosDaViagem from './roteiros/apoiosDaViagem.json';
+import abertura from './roteiros/abertura.json';
 import cinturao from './roteiros/cinturao.json';
 import mergulho from './roteiros/mergulho.json';
 
@@ -175,9 +176,9 @@ export const DECADAS_DA_ABERTURA = Math.log10(D_SAIDA_PC / D_ABERTURA_PC);
 /**
  * A DISTÂNCIA AO SOL na hélice de abertura, em pc, como função pura do
  * parâmetro CRU do plano (`k` em [0,1], que é `t/24` — não o eased).
- * Exportada porque é ela que o juiz da F3 amostra: quem quiser provar
- * que o tamanho aparente do Sol não salta entre quadros precisa da
- * MESMA função que o quadro usa, não de uma reescrita no teste.
+ * Referência da F3: usa o mesmo cálculo exponencial da primitiva
+ * `helice` e as mesmas distâncias entregues a `abertura.json`.
+ * A ligação do roteiro à câmera é cobrada em `lerPlanoDeCamera.test`.
  *
  * Nos extremos devolve os extremos EXATOS: `Math.pow(x, 0)` é 1 e
  * `Math.pow(x, 1)` é o próprio x em IEEE754, então k=0 dá
@@ -187,49 +188,11 @@ export const DECADAS_DA_ABERTURA = Math.log10(D_SAIDA_PC / D_ABERTURA_PC);
  * constante, não daqui).
  */
 export function distanciaDaAbertura(k: number): number {
-  return D_ABERTURA_PC * Math.pow(D_SAIDA_PC / D_ABERTURA_PC, clamp01(k));
+  return distanciaExponencial(D_ABERTURA_PC, D_SAIDA_PC, k);
 }
 
-/**
- * A HÉLICE DA ABERTURA — a direção de sempre, a distância nova.
- *
- * A DECOMPOSIÇÃO, e ela é o coração da fase: a hélice antiga misturava
- * DIREÇÃO e DISTÂNCIA numa interpolação só (raio, ângulo e altura em
- * lerp). Aqui as duas se separam — a direção continua sendo exatamente a
- * da hélice antiga (mesmos 0,062→0,55 de raio, mesmos −150°→60° de
- * ângulo, mesmos 0,012→0,17 de altura, mesmo easing `glide`), só que
- * NORMALIZADA e re-escalada pela distância exponencial. O gesto da
- * câmera — a volta de 210° em torno do Sol, subindo do plano do disco —
- * é o mesmo; o que mudou foi só quão rápido ela se afasta.
- *
- * POR QUE O `ease` DO PLANO É `linear` E O `glide` VEM PARA DENTRO: o
- * `Journey.at` passa ao `pos` o parâmetro JÁ suavizado, e a distância
- * precisa do CRU para que "0,277 década por segundo" seja verdade em
- * segundos de relógio. Com o plano em `linear`, `pos` recebe o cru,
- * aplica `glide` sozinho na direção, e o `fovEase` (campo novo do Shot,
- * ver `at`) devolve ao fov a mesma curva de antes — bit a bit, porque é
- * a MESMA expressão `lerp(fov0, fov1, glide(k))` de sempre.
- */
-function heliceDaAbertura(): PosFn {
-  const direcao = orbit(
-    ORIGEM,
-    0.062, 0.55,
-    THREE.MathUtils.degToRad(-150), THREE.MathUtils.degToRad(60),
-    0.012, 0.17
-  );
-  return (k, out) => {
-    direcao(glide(k), out);
-    return out.multiplyScalar(distanciaDaAbertura(k) / out.length());
-  };
-}
-
-// partida: cruza a 0,35 pc de Sirius DE FRENTE — o olhar vira cedo
-// para ela (direção, não ponto), ela incha na aproximação e o olhar
-// entrega o rumo do cinturão na saída
-const SIRIUS_C1 = new THREE.Vector3(0.15, 1.1, 0.15);
-const SIRIUS_C2 = new THREE.Vector3(-0.35, 2.2, -0.45);
+// Entrega da passagem por Sirius ao corredor do cinturão.
 const POST_SIRIUS = new THREE.Vector3(0.4, 4.6, -0.6);
-const SIRIUS_PATH = bezier(ORBIT_EXIT, SIRIUS_C1, SIRIUS_C2, POST_SIRIUS);
 
 // Ato II — a TRAVA das Três Marias vem ANTES de Betelgeuse: o ponto de
 // vista fica no eixo Terra→Alnilam a 55 pc de casa, onde a paralaxe
@@ -554,76 +517,13 @@ function lookDoTake(): PosFn {
 
 // ---- a lista de shots ----------------------------------------------------
 const SHOTS: Shot[] = [
-  // ================= ATO I — CASA =================
-  {
-    // parede de fogo: 6 s imóveis (a revisão cortou a estática de 8).
-    // A gramática do filme nos primeiros segundos: quietude é promessa.
-    // F3: mesma parede, mesmo enquadramento, a 4,00 milhões de km do
-    // Sol REAL — ver `SUN_WALL` e a conta do K lá em cima.
-    dur: 6,
-    pos: still(SUN_WALL),
-    look: still(ORIGEM),
-    fov0: 26, fov1: 26,
-    quiet: true,
-    captions: [{
-      at: 0.3,
-      text: 'SOL',
-      sub: '600 milhões de toneladas de hidrogênio fundidas por segundo',
-      dur: 9,
-      bridge: true,
-    }],
-  },
-  {
-    // hélice ascendente: o Sol fica, o céu inteiro gira. O bojo dourado
-    // (Sagitário) cruza atrás do Sol no meio do shot — casa em contraluz
-    // contra o destino. ~210° em 24 s (< 9°/s: documentário).
-    //
-    // F3: A SUBIDA VIROU EXPONENCIAL. O gesto é o mesmo (mesma volta,
-    // mesma altura ganha, mesmo zoom); o que mudou é que a câmera agora
-    // parte de 5,74 raios solares em vez de 13.027 UA, e sobe 6,65
-    // décadas de distância em vez de 0,96. Interpolar isso em linha reta
-    // deixaria o filme com 23,99 s de estrela parada; a curva é
-    // `distanciaDaAbertura`, taxa constante de 0,277 década/s. O `ease`
-    // do plano é `linear` para o `pos` receber o parâmetro cru — quem
-    // devolve o `glide` à direção é a própria hélice, e ao fov, o
-    // `fovEase`.
-    dur: 24,
-    pos: heliceDaAbertura(),
-    look: still(ORIGEM),
-    fov0: 26, fov1: 56,
-    ease: linear,
-    fovEase: glide,
-    target: ['SOL'],
-    quiet: true,
-    captions: [
-      // entra quando a faixa já está franca no quadro (revisão: em
-      // k≈0,5 ela ainda estava espremida na borda)
-      { at: 0.64, text: 'A VIA LÁCTEA, DE DENTRO', sub: 'a faixa no céu é o disco: cem mil anos-luz vistos de dentro' },
-    ],
-  },
+  // Ato I e a passagem por Sirius. A distância cresce exponencialmente
+  // em tempo cru; a volta e a lente suavizam por conta própria no roteiro.
+  ...lerSequencia(abertura, {
+    Sol: ORIGEM, paredeSolar: SUN_WALL, saidaSolar: ORBIT_EXIT,
+    saidaDeSirius: POST_SIRIUS, miraDeSirius: SIRIUS.clone().multiplyScalar(2.4), Alnilam: ALNILAM,
+  }, { distanciaInicial: D_ABERTURA_PC, distanciaFinal: D_SAIDA_PC }),
   // ================= ATO II — ÓRION =================
-  {
-    // partida À FRENTE: o olhar vira cedo para Sirius (DIREÇÃO a
-    // partir da câmera, não ponto em mundo — o lerp de Sol→Sirius×2,4
-    // girava 445 °/s e o play borrava 1 s), ela incha de ponto a farol
-    // na passagem a 0,35 pc e o olhar entrega o rumo do cinturão.
-    dur: 7,
-    pos: SIRIUS_PATH,
-    look: lookEvento(SIRIUS_PATH, ORIGEM, SIRIUS.clone().multiplyScalar(2.4), ALNILAM, 0.58, 0.82),
-    fov0: 56, fov1: 63,
-    ease: glide,
-    warp: (k) => 0.25 * Math.sin(Math.PI * k),
-    roll: (k) => 0.08 * Math.sin(Math.PI * k),
-    target: ['Sirius', 'SOL'],
-    captions: [
-      {
-        at: 0.4,
-        text: 'SIRIUS',
-        sub: 'brilha tanto por estar a 8,6 anos-luz — é só uma vizinha',
-        dur: 4,
-      },
-    ],
-  },
   // O corredor chega ao cinturão olhando à frente. A trava fecha a
   // lente nas Três Marias; o passo ao lado desfaz a fila. Câmera,
   // inclinação, pulso e edição vêm da mesma sequência, no relógio do filme.

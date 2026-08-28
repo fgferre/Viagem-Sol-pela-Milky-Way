@@ -8,6 +8,7 @@ import {
 } from './movimentos';
 import cinturao from './roteiros/cinturao.json';
 import mergulho from './roteiros/mergulho.json';
+import abertura from './roteiros/abertura.json';
 
 const passoAoLado = cinturao.planos.find((p) => p.legendas[0].texto === 'UM PASSO AO LADO')!.camera;
 
@@ -75,6 +76,76 @@ describe('lerPlanoDeCamera — item 75', () => {
         expect([p.y, p.z]).toEqual([0, 0]);
       }
     }
+  });
+
+  it('a hélice atravessa escalas por razão constante, com centro e giro independentes', () => {
+    const forma = { tipo: 'helice', raio: [2, 5], angulo: [-0.3, 1.7], altura: [-1, 4] };
+    const direcao = orbit(new THREE.Vector3(), 2, 5, -0.3, 1.7, -1, 4);
+    for (const centro of [new THREE.Vector3(), a]) {
+      for (const distancia of [[1.3e-7, 0.576], [0.576, 1.3e-7], [2, 200]]) {
+        for (const ritmo of [undefined, 'linear', 'smooth']) {
+          const plano = lerPlanoDeCamera({
+            ...base, ritmo: 'linear',
+            movimento: { ...forma, centro: centro.toArray(), distancia, ritmoDaDirecao: ritmo },
+          });
+          const ease = ritmo === 'linear' ? linear : ritmo === 'smooth' ? smooth : glide;
+          for (const k of [...fases, 0.2, 0.9, 0]) {
+            const out = new THREE.Vector3();
+            expect(plano.pos(k, out)).toBe(out);
+            const radial = out.sub(centro);
+            const d = Math.exp(Math.log(distancia[0]) * (1 - k) + Math.log(distancia[1]) * k);
+            // A origem deslocada perde alguns bits ao subtrair distâncias solares.
+            expect(Math.abs(radial.length() - d)).toBeLessThan(Math.max(d, 1) * 1e-12);
+            expect(radial.normalize().distanceTo(direcao(ease(k), new THREE.Vector3()).normalize()))
+              .toBeLessThan(1e-8);
+          }
+        }
+      }
+    }
+    for (const [campo, valor] of [
+      ['raio', [0, 1]], ['raio', [-1, 1]],
+      ['distancia', [0, 1]], ['distancia', [-1, 1]], ['distancia', [1, Infinity]],
+      ['distancia', [Number.MIN_VALUE, Number.MAX_VALUE]],
+      ['distancia', [Number.MAX_VALUE, Number.MIN_VALUE]],
+      ['ritmoDaDirecao', 'constructor'],
+    ] as const) {
+      expect(() => lerPlanoDeCamera({
+        ...base, movimento: { ...forma, centro: [0, 0, 0], distancia: [1, 10], [campo]: valor },
+      })).toThrow(`movimento.${campo}`);
+    }
+  });
+
+  it('resolve números nomeados uma vez e mantém a validação dos campos', () => {
+    const numeros = { duracao: 12, lente: 24, raio: 2, angulo: -0.3, altura: -1, entrada: 0.3,
+      saida: 0.7, amplitude: 0.4, base: 0, frequencia: 0.9 };
+    const dado = {
+      ...base, duracao: 'duracao', lente: ['lente', 72],
+      movimento: { tipo: 'orbita', centro: a.toArray(), raio: ['raio', 5], angulo: ['angulo', 1.7], altura: ['altura', 4] },
+      mira: { tipo: 'passagem', de: c.toArray(), assunto: d.toArray(), rumo: a.toArray(), entrada: 'entrada', saida: 'saida' },
+      inclinacao: { tipo: 'rampa', de: 'altura', para: 'amplitude' },
+      efeitoDeVelocidade: { tipo: 'pulso', amplitude: 'amplitude', base: 'base', frequencia: 'frequencia' },
+    };
+    const literal = JSON.parse(JSON.stringify(dado), (_chave, valor) =>
+      typeof valor === 'string' && Object.hasOwn(numeros, valor) ? numeros[valor as keyof typeof numeros] : valor);
+    const antes = JSON.stringify(dado);
+    const plano = lerPlanoDeCamera(dado, {}, numeros);
+    const esperado = lerPlanoDeCamera(literal);
+    expect(JSON.stringify(dado)).toBe(antes);
+    for (const chave of Object.keys(numeros) as (keyof typeof numeros)[]) numeros[chave] = 99;
+    expect([plano.dur, plano.fov0, plano.fov1]).toEqual([12, 24, 72]);
+    for (const k of fases) {
+      expect(plano.pos(k, new THREE.Vector3())).toEqual(esperado.pos(k, new THREE.Vector3()));
+      expect(plano.look(k, new THREE.Vector3())).toEqual(esperado.look(k, new THREE.Vector3()));
+      expect(plano.roll?.(k)).toBe(esperado.roll?.(k));
+      expect(plano.warp?.(k)).toBe(esperado.warp?.(k));
+    }
+    for (const nome of ['ausente', 'constructor', '2 + 2']) {
+      expect(() => lerPlanoDeCamera({ ...base, duracao: nome })).toThrow('duracao');
+    }
+    for (const invalido of [NaN, Infinity, 0, -1]) {
+      expect(() => lerPlanoDeCamera({ ...base, duracao: 'tempo' }, {}, { tempo: invalido })).toThrow('duracao');
+    }
+    expect(() => lerPlanoDeCamera({ ...base, lente: ['lente', 72] }, {}, { lente: 180 })).toThrow('lente');
   });
 
   it('liga cada mira ao movimento do próprio plano, inclusive na passagem', () => {
@@ -366,6 +437,70 @@ describe('lerPlanoDeCamera — item 75', () => {
       }
     } finally {
       vi.doUnmock('./roteiros/mergulho.json');
+      vi.resetModules();
+    }
+  });
+
+  it('a abertura e Sirius usam o JSON e as distâncias calculadas no filme real', async () => {
+    const { auditarRoteiro: auditarAntes } = await import('./journey');
+    const antes = auditarAntes();
+    const dados = {
+      planos: abertura.planos.map((plano, i) => ({
+        ...plano,
+        camera: {
+          ...plano.camera, duracao: i === 0 ? 8 : plano.camera.duracao,
+          movimento: i === 1 ? {
+            tipo: 'helice', centro: [0, 0, 0], raio: [2, 5], angulo: [-0.3, 1.7], altura: [-1, 4],
+            distancia: ['distanciaFinal', 'distanciaInicial'], ritmoDaDirecao: 'linear',
+          } : { tipo: 'fixo', ponto: [13 + i, 17, 19] },
+          mira: { tipo: 'fixo', ponto: [29, 31, 37] },
+          lente: [23, 43], ritmo: 'linear', ritmoDaLente: 'smooth',
+          inclinacao: { tipo: 'fixo', valor: -0.2 },
+          efeitoDeVelocidade: { tipo: 'pulso', amplitude: 0.7 },
+        },
+        legendas: [{ em: 0.1, texto: `abertura pelo roteiro ${i}`, duracao: 1 }],
+      })),
+    };
+    vi.resetModules();
+    vi.doMock('./roteiros/abertura.json', () => ({ default: dados }));
+    try {
+      const { Journey, auditarRoteiro, D_ABERTURA_PC, D_SAIDA_PC } = await import('./journey');
+      const { JourneyRig, galacticUp } = await import('./cameraRig');
+      const depois = auditarRoteiro();
+      expect(depois.shotCount).toBe(antes.shotCount);
+      expect(depois.duration).toBe(antes.duration + 2);
+      const filme = new Journey();
+      const k = 0.25;
+      let t0 = 0;
+      for (const [i, plano] of dados.planos.entries()) {
+        const t = t0 + plano.camera.duracao * k;
+        const pose = filme.at(t);
+        const pos = i === 1 ? orbit(new THREE.Vector3(), 2, 5, -0.3, 1.7, -1, 4)(k, new THREE.Vector3())
+          .normalize().multiplyScalar(D_SAIDA_PC * (D_ABERTURA_PC / D_SAIDA_PC) ** k)
+          : new THREE.Vector3(13 + i, 17, 19);
+        expect(pose.pos.distanceTo(pos)).toBeLessThan(1e-14);
+        expect(pose.look.toArray()).toEqual([29, 31, 37]);
+        const pulso = 0.7 * Math.sin(Math.PI * k);
+        expect(pose.warp).toBe(pulso);
+        expect(pose.roll).toBe(-0.2);
+        expect(pose.fov).toBe(THREE.MathUtils.lerp(23, 43, smooth(k)));
+        const camera = new THREE.PerspectiveCamera();
+        expect(new JourneyRig().apply(camera, t, 1 / 60).warp).toBe(pulso);
+        expect(camera.position.distanceTo(pos)).toBeLessThan(1e-14);
+        expect(camera.fov).toBe(pose.fov + pulso * 3.5);
+        const esperada = new THREE.PerspectiveCamera();
+        esperada.position.copy(pos);
+        galacticUp(pose.look.clone().sub(pos).normalize(), esperada.up);
+        esperada.lookAt(pose.look);
+        esperada.rotateZ(-0.2);
+        expect(camera.quaternion.angleTo(esperada.quaternion)).toBeLessThan(1e-7);
+        expect(depois.captions.find((c) => c.text === plano.legendas[0].texto)?.t0)
+          .toBe(t0 + plano.camera.duracao * 0.1);
+        t0 += plano.camera.duracao;
+      }
+      expect(depois.shots[3].t0).toBe(t0);
+    } finally {
+      vi.doUnmock('./roteiros/abertura.json');
       vi.resetModules();
     }
   });

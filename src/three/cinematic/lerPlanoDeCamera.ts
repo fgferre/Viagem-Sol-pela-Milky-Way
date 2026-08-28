@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { erro, lista, numero, objeto } from './dadosDoRoteiro';
 import {
-  bezier, easeOut, glide, launch, line, linear, lookEvento, lookPan,
+  bezier, easeOut, glide, helice, launch, line, linear, lookEvento, lookPan,
   orbit, panLook, panThenHold, quadratic, settle, settleFreeze, smooth, still, trajeto,
   type Ease, type PosFn,
 } from './movimentos';
@@ -37,13 +37,13 @@ export interface CameraDoPlano {
 
 const RITMOS = { linear, quadratic, smooth, easeOut, glide, launch, settle, settleFreeze };
 
-function par(valor: unknown, campo: string): [number, number] {
+function par(valor: unknown, campo: string, lerNumero = numero): [number, number] {
   if (!Array.isArray(valor) || valor.length !== 2) return erro(campo, 'deve ter dois números');
-  return [numero(valor[0], `${campo}[0]`), numero(valor[1], `${campo}[1]`)];
+  return [lerNumero(valor[0], `${campo}[0]`), lerNumero(valor[1], `${campo}[1]`)];
 }
 
-function fracao(valor: unknown, campo: string): number {
-  const n = numero(valor, campo);
+function fracao(valor: unknown, campo: string, lerNumero = numero): number {
+  const n = lerNumero(valor, campo);
   if (n <= 0 || n > 1) return erro(campo, 'deve estar entre 0 (exclusivo) e 1');
   return n;
 }
@@ -57,11 +57,13 @@ function ritmo(valor: unknown, campo: string): Ease | undefined {
 }
 
 /** Curvas em tempo de relógio, independentes do ritmo da trajetória. */
-function curvaEscalar(valor: unknown, campo: string, normalizada = false): Ease | undefined {
+function curvaEscalar(
+  valor: unknown, campo: string, normalizada = false, lerNumero = numero
+): Ease | undefined {
   if (valor === undefined) return undefined;
   const c = objeto(valor, campo);
   const lerValor = (chave: string) => {
-    const n = numero(c[chave], `${campo}.${chave}`);
+    const n = lerNumero(c[chave], `${campo}.${chave}`);
     if (normalizada && (n < 0 || n > 1)) {
       return erro(`${campo}.${chave}`, 'deve estar entre 0 e 1');
     }
@@ -85,7 +87,7 @@ function curvaEscalar(valor: unknown, campo: string, normalizada = false): Ease 
     case 'pulso': {
       const n = lerValor('amplitude');
       const base = c.base === undefined ? 0 : lerValor('base');
-      const frequencia = c.frequencia === undefined ? 1 : fracao(c.frequencia, `${campo}.frequencia`);
+      const frequencia = c.frequencia === undefined ? 1 : fracao(c.frequencia, `${campo}.frequencia`, lerNumero);
       if (!Number.isFinite(base + n) || (normalizada && base + n > 1)) {
         return erro(`${campo}.base`, 'somada à amplitude ultrapassa o limite');
       }
@@ -96,15 +98,21 @@ function curvaEscalar(valor: unknown, campo: string, normalizada = false): Ease 
   }
 }
 
-/** Pontos em pc no referencial da cena; nomes resolvidos na montagem. */
+/** Pontos em pc e parâmetros numéricos nomeados, copiados na montagem; sem expressões. */
 export function lerPlanoDeCamera(
   dado: unknown,
-  pontos: Readonly<Record<string, THREE.Vector3>> = {}
+  pontos: Readonly<Record<string, THREE.Vector3>> = {},
+  numeros: Readonly<Record<string, number>> = {}
 ): CameraDoPlano {
+  const lerNumero = (valor: unknown, campo: string): number => {
+    if (typeof valor !== 'string') return numero(valor, campo);
+    if (!Object.hasOwn(numeros, valor)) return erro(campo, `não encontra o número “${valor}”`);
+    return numero(numeros[valor], campo);
+  };
   const p = objeto(dado, 'plano');
-  const dur = numero(p.duracao, 'duracao');
+  const dur = lerNumero(p.duracao, 'duracao');
   if (dur <= 0) return erro('duracao', 'deve ser positiva');
-  const [fov0, fov1] = par(p.lente, 'lente');
+  const [fov0, fov1] = par(p.lente, 'lente', lerNumero);
   if ([fov0, fov1].some((n) => n <= 0 || n >= 180)) {
     return erro('lente', 'deve ficar entre 0 e 180 graus, sem as pontas');
   }
@@ -149,12 +157,24 @@ export function lerPlanoDeCamera(
       pos = trajeto(via);
       break;
     }
-    case 'orbita': {
-      const [r0, r1] = par(m.raio, 'movimento.raio');
+    case 'orbita':
+    case 'helice': {
+      const [r0, r1] = par(m.raio, 'movimento.raio', lerNumero);
       if (r0 < 0 || r1 < 0) return erro('movimento.raio', 'não pode ser negativo');
-      const [a0, a1] = par(m.angulo, 'movimento.angulo');
-      const [h0, h1] = par(m.altura, 'movimento.altura');
-      pos = orbit(ponto(m.centro, 'movimento.centro'), r0, r1, a0, a1, h0, h1);
+      const [a0, a1] = par(m.angulo, 'movimento.angulo', lerNumero);
+      const [h0, h1] = par(m.altura, 'movimento.altura', lerNumero);
+      const centro = ponto(m.centro, 'movimento.centro');
+      if (m.tipo === 'orbita') {
+        pos = orbit(centro, r0, r1, a0, a1, h0, h1);
+      } else {
+        if (r0 <= 0 || r1 <= 0) return erro('movimento.raio', 'deve ser positivo na hélice');
+        const [d0, d1] = par(m.distancia, 'movimento.distancia', lerNumero);
+        if (d0 <= 0 || d1 <= 0 || !Number.isFinite(d1 / d0) || d1 / d0 === 0) {
+          return erro('movimento.distancia', 'deve ter distâncias positivas e razão finita, não nula');
+        }
+        pos = helice(centro, r0, r1, a0, a1, h0, h1, d0, d1,
+          ritmo(m.ritmoDaDirecao, 'movimento.ritmoDaDirecao'));
+      }
       break;
     }
     default: return erro('movimento.tipo', `desconhecido: ${String(m.tipo)}`);
@@ -168,14 +188,14 @@ export function lerPlanoDeCamera(
       look = panLook(ponto(o.de, 'mira.de'), ponto(o.para, 'mira.para'), ritmo(o.ritmo, 'mira.ritmo'));
       break;
     case 'pan-cedo':
-      look = panThenHold(ponto(o.de, 'mira.de'), ponto(o.para, 'mira.para'), fracao(o.ate, 'mira.ate'));
+      look = panThenHold(ponto(o.de, 'mira.de'), ponto(o.para, 'mira.para'), fracao(o.ate, 'mira.ate', lerNumero));
       break;
     case 'pan-direcao':
-      look = lookPan(pos, ponto(o.de, 'mira.de'), ponto(o.para, 'mira.para'), fracao(o.ate, 'mira.ate'));
+      look = lookPan(pos, ponto(o.de, 'mira.de'), ponto(o.para, 'mira.para'), fracao(o.ate, 'mira.ate', lerNumero));
       break;
     case 'passagem': {
-      const entrada = fracao(o.entrada, 'mira.entrada');
-      const saida = fracao(o.saida, 'mira.saida');
+      const entrada = fracao(o.entrada, 'mira.entrada', lerNumero);
+      const saida = fracao(o.saida, 'mira.saida', lerNumero);
       if (saida < entrada) return erro('mira.saida', 'não pode vir antes da entrada');
       look = lookEvento(
         pos, ponto(o.de, 'mira.de'), ponto(o.assunto, 'mira.assunto'),
@@ -190,7 +210,7 @@ export function lerPlanoDeCamera(
     dur, pos, look, fov0, fov1,
     ease: ritmo(p.ritmo, 'ritmo'),
     fovEase: ritmo(p.ritmoDaLente, 'ritmoDaLente'),
-    roll: curvaEscalar(p.inclinacao, 'inclinacao'),
-    warp: curvaEscalar(p.efeitoDeVelocidade, 'efeitoDeVelocidade', true),
+    roll: curvaEscalar(p.inclinacao, 'inclinacao', false, lerNumero),
+    warp: curvaEscalar(p.efeitoDeVelocidade, 'efeitoDeVelocidade', true, lerNumero),
   };
 }

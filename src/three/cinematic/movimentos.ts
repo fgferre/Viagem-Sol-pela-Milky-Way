@@ -77,6 +77,30 @@ export function orbit(
     return out;
   };
 }
+/** Mesma razão de distância a cada passo; serve tanto para sair como para chegar. */
+export function distanciaExponencial(de: number, para: number, k: number): number {
+  return de * Math.pow(para / de, THREE.MathUtils.clamp(k, 0, 1));
+}
+
+/**
+ * A órbita desenha a direção; a distância ao centro tem seu próprio avanço.
+ * Use ritmo linear no plano para atravessar décadas de escala uniformemente
+ * no relógio. A volta pode suavizar separadamente, assim como a lente.
+ */
+export function helice(
+  centro: THREE.Vector3,
+  r0: number, r1: number,
+  a0: number, a1: number,
+  h0: number, h1: number,
+  d0: number, d1: number,
+  ritmoDaDirecao: Ease = glide
+): PosFn {
+  const direcao = orbit(new THREE.Vector3(), r0, r1, a0, a1, h0, h1);
+  return (k, out) => {
+    direcao(ritmoDaDirecao(k), out);
+    return out.multiplyScalar(distanciaExponencial(d0, d1, k) / out.length()).add(centro);
+  };
+}
 /** mira que desliza entre dois pontos (para virar o olhar sem saltos) */
 export const panLook = (a: THREE.Vector3, b: THREE.Vector3, ease: Ease = smooth): PosFn =>
   (k, out) => out.copy(a).lerp(b, ease(k));

@@ -46,12 +46,12 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (28/08)
 
-**28/08 — O 75 JÁ USA CURVAS PRONTAS DO THREE.JS.** O roteiro aceita
-trajetos suaves por pontos, com avanço por distância. **UM PASSO AO
-LADO** ganhou um arco com as mesmas pontas e a mesma mira. Rampas,
-frenagem e pulsos com base/frequência também são dados; as quatro cenas
-após Antares entraram em `mergulho.json`. **Filme convertido: 7 de 25
-cenas, 46 de 193 segundos (cerca de 24% da duração).** **Motor: ainda
+**28/08 — O 75 JÁ LÊ A ABERTURA E SIRIUS.** A hélice reutilizável
+separa a distância exponencial da suavidade da volta e da lente;
+parâmetros nomeados preservam a calibração solar em uma fonte só.
+`abertura.json` reúne as três cenas iniciais, além das sequências já
+convertidas do cinturão e do mergulho. **Filme convertido: 10 de 25
+cenas, 83 de 193 segundos (cerca de 43% da duração).** **Motor: ainda
 parcial** — faltam movimentos específicos, composições restantes e a
 direção dos nomes em cena. O trajeto não costura automaticamente planos
 diferentes. Instruções no `PLANO-CINEMA.md`; provas no item. A fila
@@ -941,10 +941,21 @@ e relógio continuam os existentes. A pedido dele de fazer o melhor
 para UX, **UM PASSO AO LADO** passou da reta a um arco, preservando
 pontas, mira, duração e lente. O leitor também ganhou `rampa`,
 `frenagem` e `base`/`frequencia` do pulso. `mergulho.json` reúne as
-quatro cenas após Antares sem cópia no código antigo. A conversão é
+quatro cenas após Antares sem cópia no código antigo. A conversão chegou a
 **7 de 25 cenas, 46 de 193 s**, medida por `capturas/item75-caminhos/medir.mjs`.
 Não confundir essa fração do filme com prontidão do motor: ele ainda
 não lê todos os movimentos e não dirige os nomes do item 82.
+
+**A hélice e a abertura vieram na sétima fatia (28/08):** `helice`
+reutiliza `orbit` para a direção e `distanciaExponencial` para avançar
+entre escalas. O giro tem ritmo independente; o mesmo movimento pode
+aproximar ou afastar de outro centro. Os leitores aceitam parâmetros
+numéricos nomeados, copiados e validados na montagem. `abertura.json`
+recebe as distâncias calculadas do Sol e reúne a parede solar, a saída
+e Sirius, sem manter as câmeras antigas em paralelo. A conversão
+chegou a **10 de 25 cenas, 83 de 193 s**, medida por
+`capturas/item75-helice/medir.mjs`. A imagem desta etapa é preservada;
+retorno solar, passagem Lua–Terra e composições restantes ainda exigem obra.
 
 **Prova da primeira fatia:** `capturas/item75-movimentos/` guarda o programa
 `prova.mjs`, os dois lados da comparação e os resultados dos testes.
@@ -1032,6 +1043,21 @@ A revisão independente não encontrou correções; oito sabotagens
 reprovaram, com referência verde, patches e saídas em `auditoria/`.
 **Limite:** isso não é exibição integral, A/B visual de cache zerado,
 costura automática entre planos nem conclusão do motor.
+
+**Prova da hélice e da abertura:** `capturas/item75-helice/` conserva
+antes/depois do `prova.mjs`: posição, mira, lente, inclinação, efeito,
+rig contínuo e edição permanecem iguais no filme inteiro. A vista
+com HUD em `t=6,2` também é igual em RGB (`imagem.json`). `medidas.json`
+mede a conversão e o afastamento por quadro, a partir das poses reais.
+`play-sol.json` percorre de 6,25 a 10,30 s; `play-sirius.json`, de
+30,10 a 37,45 s, incluindo a entrada no corredor. As quatro capturas
+de movimento foram abertas e conferidas. Typecheck e lint passaram
+(`verificacoes.json`); 63 testes focados e 2.458 da suíte passaram, com
+um já desativado em cada execução (`focal.json`, `suite.json`). As sete
+sabotagens independentes reprovaram; referência verde, patches e saídas
+estão em `auditoria/`.
+**Limite:** prova focal no navegador, não exibição integral nem A/B de
+cache zerado; os percentuais continuam sendo de conversão, não do motor.
 
 **77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
 FALTA SÓ O OLHO DELE.** A órbita é o DADO,

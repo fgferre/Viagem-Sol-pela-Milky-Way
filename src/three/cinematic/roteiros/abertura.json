@@ -1,0 +1,62 @@
+{
+  "planos": [
+    {
+      "camera": {
+        "duracao": 6,
+        "movimento": { "tipo": "fixo", "ponto": "paredeSolar" },
+        "mira": { "tipo": "fixo", "ponto": "Sol" },
+        "lente": [26, 26]
+      },
+      "fundoSilencioso": true,
+      "legendas": [{
+        "em": 0.3, "texto": "SOL",
+        "subtexto": "600 milhões de toneladas de hidrogênio fundidas por segundo",
+        "duracao": 9, "ponte": true
+      }]
+    },
+    {
+      "camera": {
+        "duracao": 24,
+        "movimento": {
+          "tipo": "helice", "centro": "Sol",
+          "raio": [0.062, 0.55],
+          "angulo": [-2.6179938779914944, 1.0471975511965976],
+          "altura": [0.012, 0.17],
+          "distancia": ["distanciaInicial", "distanciaFinal"],
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": { "tipo": "fixo", "ponto": "Sol" },
+        "lente": [26, 56], "ritmo": "linear", "ritmoDaLente": "glide"
+      },
+      "assuntos": ["SOL"],
+      "fundoSilencioso": true,
+      "legendas": [{
+        "em": 0.64, "texto": "A VIA LÁCTEA, DE DENTRO",
+        "subtexto": "a faixa no céu é o disco: cem mil anos-luz vistos de dentro"
+      }]
+    },
+    {
+      "camera": {
+        "duracao": 7,
+        "movimento": {
+          "tipo": "curva", "de": "saidaSolar",
+          "controle1": [0.15, 1.1, 0.15], "controle2": [-0.35, 2.2, -0.45],
+          "para": "saidaDeSirius"
+        },
+        "mira": {
+          "tipo": "passagem", "de": "Sol", "assunto": "miraDeSirius", "rumo": "Alnilam",
+          "entrada": 0.58, "saida": 0.82
+        },
+        "lente": [56, 63], "ritmo": "glide",
+        "efeitoDeVelocidade": { "tipo": "pulso", "amplitude": 0.25 },
+        "inclinacao": { "tipo": "pulso", "amplitude": 0.08 }
+      },
+      "assuntos": ["Sirius", "SOL"],
+      "legendas": [{
+        "em": 0.4, "texto": "SIRIUS",
+        "subtexto": "brilha tanto por estar a 8,6 anos-luz — é só uma vizinha",
+        "duracao": 4
+      }]
+    }
+  ]
+}

@@ -103,7 +103,9 @@ e edição juntas. O corredor da Bolha declara inclinação e pulso; o
 passo lateral usa um trajeto curvo por pontos. O outro exemplo,
 [`mergulho.json`](../src/three/cinematic/roteiros/mergulho.json), contém
 lançamento, travessias de Sagitário e Scutum e frenagem antes do centro,
-com rampas e pulsos de velocidade.
+com rampas e pulsos de velocidade. A
+[`abertura.json`](../src/three/cinematic/roteiros/abertura.json) reúne a
+parede solar, a saída em hélice e a passagem por Sirius.
 `lerSequencia` lê `{ "planos": [...] }` e `journey.ts` encaixa a lista no
 filme existente. A ordem da lista é a ordem das cenas; duração, cortes,
 legendas e marcas da barra continuam calculados pelo relógio de `Journey`.
@@ -181,6 +183,15 @@ O leitor copia os pontos na montagem: um nome não é acompanhamento de um
 corpo em movimento. Não copie coordenadas científicas para o JSON quando
 o filme já calcula a âncora; passe o nome e a âncora existente.
 
+Os campos numéricos de `camera` também aceitam nomes fornecidos no
+terceiro argumento de `lerSequencia` ou `lerPlanoDeCamera`.
+Exemplo: `distancia: ["distanciaInicial", "distanciaFinal"]` recebe
+`{ distanciaInicial: D_ABERTURA_PC, distanciaFinal: D_SAIDA_PC }`.
+As distâncias continuam calculadas no filme, sem copiar a calibração
+solar para o JSON. Os números são copiados e validados na montagem;
+não são fórmulas nem acompanhamento ao vivo. Isso não se aplica aos
+componentes `[x, y, z]` de um ponto, às legendas ou aos apoios.
+
 | Campo | `tipo` | Parâmetros |
 |---|---|---|
 | `movimento` | `fixo` | `ponto` |
@@ -188,6 +199,7 @@ o filme já calcula a âncora; passe o nome e a âncora existente.
 | `movimento` | `curva` | `de`, `controle1`, `controle2`, `para` — `CubicBezierCurve3` nativa do Three.js |
 | `movimento` | `trajeto` | `pontos` — lista de ao menos dois nomes ou vetores; passa por eles numa `CatmullRomCurve3` centrípeta, sem repetir pontos consecutivos |
 | `movimento` | `orbita` | `centro`; pares `raio`, `angulo`, `altura`, do início ao fim. Raios não negativos em pc, ângulos em **radianos**, altura em pc ao longo do polo galáctico |
+| `movimento` | `helice` | Mesma forma da órbita, com raios positivos; `distancia` é o par de distâncias reais ao centro em pc, positivas e com razão finita não nula. `ritmoDaDirecao` opcional, padrão `glide` |
 | `mira` | `fixo` | `ponto` |
 | `mira` | `pan` | `de`, `para`; `ritmo` opcional, padrão `smooth` |
 | `mira` | `pan-cedo` | `de`, `para`, `ate` — interpola pontos, chega cedo e segura |
@@ -204,6 +216,14 @@ curva nativa: pontos desigualmente espaçados não criam arrancadas por
 si só. A tabela de comprimentos é preparada na montagem; a curva é
 calculada em escala local e devolvida em pc, inclusive em distâncias
 solares. As duas pontas são exatas. Não há um relógio da biblioteca.
+
+Na `helice`, `raio` e `altura` desenham a **direção**, não a distância
+final: a forma é normalizada e ampliada por `distancia`. A distância
+cresce ou diminui exponencialmente; `ritmoDaDirecao` suaviza só a volta.
+Na saída do Sol, `ritmo: "linear"` mantém a mesma razão de afastamento
+por segundo, enquanto `ritmoDaDirecao: "glide"` e
+`ritmoDaLente: "glide"` suavizam o giro e a abertura da lente. A forma
+continua usando a órbita existente, sem outra biblioteca ou relógio.
 
 Receita do passo lateral: `movimento: { "tipo": "trajeto", "pontos":
 ["mirante", "curvaDoDesvio", "desvio"] }`, `mira` fixa em `Alnilam`
@@ -252,10 +272,11 @@ Nomes desconhecidos, números não finitos e parâmetros fora dessas faixas
 interrompem a montagem com o campo indicado no erro. Não há `eval`, código
 embutido no roteiro, dependência nova nem controle novo para o visitante.
 
-**Limite desta base:** foram convertidos o corredor, o cinturão e as
-quatro cenas após Antares; o motor para um filme completo ainda não
-terminou. Faltam composições restantes de inclinação/efeitos e movimentos
-específicos, como a hélice e o retorno solar. `assuntos` transporta
+**Limite desta base:** foram convertidos a abertura, Sirius, o corredor,
+o cinturão e as quatro cenas após Antares: **10 de 25 cenas, 83 de 193 s**.
+Essa fração mede o filme convertido, não a prontidão do motor. Faltam
+composições restantes de inclinação/efeitos e movimentos específicos,
+como o retorno solar e a passagem Lua–Terra. `assuntos` transporta
 os nomes para a regra atual, mas não resolve a direção de etiquetas do
 item 82 — as três precisam falar juntas. Esses recursos e os movimentos
 específicos que faltam vêm antes da migração integral e do A/B de disco

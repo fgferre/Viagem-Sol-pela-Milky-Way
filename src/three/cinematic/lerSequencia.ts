@@ -53,7 +53,8 @@ function legenda(valor: unknown, campo: string): ShotCaption {
 /** Ordem da lista é ordem de exibição; tempos absolutos continuam derivados em Journey. */
 export function lerSequencia(
   dado: unknown,
-  pontos: Readonly<Record<string, Vector3>> = {}
+  pontos: Readonly<Record<string, Vector3>> = {},
+  numeros: Readonly<Record<string, number>> = {}
 ): Shot[] {
   const planos = lista(objeto(dado, 'sequencia').planos, 'planos');
   if (!planos.length) return erro('planos', 'deve conter ao menos um plano');
@@ -65,7 +66,7 @@ export function lerSequencia(
       return erro(`${campo}.olhar`, 'deve ser frente, assunto ou tras');
     }
     return {
-      ...lerPlanoDeCamera(p.camera, pontos),
+      ...lerPlanoDeCamera(p.camera, pontos, numeros),
       ...lerApoiosDoPlano(p, campo),
       captions: opcional(p.legendas, `${campo}.legendas`, (v, c) =>
         Array.from(lista(v, c), (item, j) => legenda(item, `${c}[${j}]`))),
