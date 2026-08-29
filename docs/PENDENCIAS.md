@@ -1314,10 +1314,13 @@ fim certo (`capturas/item108-fim-certo-t193.png`).
 **ESTADO REAL DO ITEM: o relato dele é intermitente e AINDA NÃO FOI
 REPRODUZIDO.** O que já está absolvido por medida: a lente (fim
 bit-idêntico em três códigos), o roteiro (idem), o caminho
-Atlas→play→fim por seek (v2, foto certa). Resta reproduzir com o filme
-INTEIRO tocando em tempo real pela receita, e repetido — se não
-aparecer, a próxima pista tem de vir do olho dele na hora (o que a tela
-mostrava, se havia legenda, se o relógio corria). Hipóteses vivas:
+Atlas→play→fim por seek (v2, foto certa). A reprodução com o filme INTEIRO
+tocando em tempo real pela receita foi feita no mesmo dia (Atlas →
+play → 189 s de relógio de parede) e o fim saiu CERTO — "A TERRA" com
+as Américas no quadro (`capturas/item108-fim-inteiro-t189.png`). Três
+tentativas honestas, zero reproduções. A próxima pista tem de vir do
+olho dele na hora em que acontecer de novo (o que a tela mostrava, se
+havia legenda, se o relógio corria, de onde ele tinha vindo). Hipóteses vivas:
 corrida de recurso após sessão LONGA no Atlas (textura/globo que não
 rearma), pressão de memória no M1, algo que só o percurso completo arma.
 
