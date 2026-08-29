@@ -56,14 +56,17 @@ medidos, NORTE atualizado — **86 e 61 FECHARAM e estão no museu**. No
 meio da leva ele reportou: *"o filme nao mostra mais direito no final a
 lua e a terra"* — virou o item **108**, e a medida do mesmo dia ABSOLVEU
 a lente e o roteiro (fim do filme bit-idêntico em três códigos) e
-FLAGROU o verdadeiro defeito, com a receita dele: **entrar no filme
-pelo botão do Atlas deixa a câmera presa na pose do Atlas enquanto o
-filme toca** (fotos item108-*), defeito HERDADO (existe no código
-pré-lente), suspeito de nascer com o motor do 75. **A fila agora: 108
-(o conserto do play vindo do Atlas — reporte dele, incomoda) → 100 (o
-HUD de lente/zoom, destravado).** O 108 ganhou obrigação de juiz: uma
-vista oficial do fim do filme (t=190/193) entra no `ab-identidade`,
-que hoje para em t=180.
+chegou a ACUSAR um flagra — e a acusação foi DESMENTIDA pela sonda
+corrigida no mesmo dia: era defeito do instrumento (o `play()` reinicia
+do zero; os quadros "presos" eram quadros certos de t≈17/24). Pela
+receita dele com o relógio lido de verdade, o fim sai CERTO
+(`item108-fim-certo-t193.png`; sonda v2 em t=192,07 com "A TERRA" na
+tela). **O 108 fica ABERTO como relato intermitente não reproduzido**,
+com as hipóteses e a próxima pista escritas no item. **A fila agora:
+108 (reproduzir e consertar) → 100 (o HUD de lente/zoom,
+destravado).** O 108 ganhou obrigação de juiz: uma vista oficial do
+fim do filme (t=190/193) entra no `ab-identidade`, que hoje para em
+t=180.
 
 **29/08 (tarde) — A SALA DE CONFERÊNCIA JULGOU CINCO FOTOS E A FILA
 DESTRAVOU.** Ele olhou as cinco no chat, de uma vez: **70 FECHOU** (a
@@ -1296,26 +1299,27 @@ novamente agora e apareceu.. tem algo estranho acontecendo talvez"* e
 bug quando é feito dessa forma"*. Ou seja: é INTERMITENTE e o gatilho é
 o caminho **Atlas → "Ver o filme"**.
 
-**FLAGRADO E MEDIDO no mesmo dia, com a receita dele — e o defeito é
-HERDADO, não desta rodada.** A sonda (headless, 1200×900, `q=cinema`):
-entra por `?atlas=1`, assenta, chama `director.play()` (o que o botão
-faz) e deixa o relógio correr de verdade. Resultado: **a câmera fica
-presa na pose do Atlas enquanto o filme toca** — a fase vira `journey`,
-o relógio anda, as tarjas de cinema entram, e o quadro mostra o Sol
-como estrelinha com rótulo do Atlas em vez das cenas do roteiro. No fim
-não há Lua nem Terra, que é exatamente o que ele viu. Fotos:
-`capturas/item108-viaatlas-fim.png` (o "fim" pela receita: SOL · 7,9 UA,
-céu vazio), `capturas/item108-viaatlas-t24-preobra.png` (o MESMO defeito
-no código de ANTES da lente — SOL · 37,6 UA — prova de que é herdado) e
-`capturas/item108-fim-certo-t193.png` (o fim CERTO, pelo caminho
-direto: a Terra das Américas). A passada limpa (sessão fresca, play até
-o fim) mostra a Terra normalmente; o `?t=` (seek) também reconstrói
-certo — o furo é só o play vindo do Atlas. **Suspeito número um:** o
-motor declarativo do item 75 arma o escritor de câmera na entrada
-normal do filme e o caminho `play()`-vindo-do-Atlas não o re-arma.
+**A PRIMEIRA SONDA ACUSOU E FOI DESMENTIDA NO MESMO DIA — defeito do
+INSTRUMENTO, não do app, e fica registrado para ninguém reabrir por
+cima:** a sonda v1 dizia "câmera presa na pose do Atlas", mas o
+`play()` REINICIA o filme do zero (o botão é "Ver o filme desde o
+começo"), então os quadros "presos" eram quadros CERTOS de t≈17 e t≈24
+do roteiro, mal rotulados por relógio de parede. A sonda v2, lendo o
+relógio de verdade (`currentTime`) e fotografando em t=192,07 pela
+MESMA receita (?atlas=1 → play → seek 178 → correr), mostra o fim
+CERTO — "A TERRA", as Américas, a legenda. As fotos da v1 foram
+APAGADAS de capturas/ para não enganar o olho de ninguém; ficou a do
+fim certo (`capturas/item108-fim-certo-t193.png`).
 
-A passada limpa (play de t=178 ao fim, sessão fresca) mostra a
-Terra normalmente.
+**ESTADO REAL DO ITEM: o relato dele é intermitente e AINDA NÃO FOI
+REPRODUZIDO.** O que já está absolvido por medida: a lente (fim
+bit-idêntico em três códigos), o roteiro (idem), o caminho
+Atlas→play→fim por seek (v2, foto certa). Resta reproduzir com o filme
+INTEIRO tocando em tempo real pela receita, e repetido — se não
+aparecer, a próxima pista tem de vir do olho dele na hora (o que a tela
+mostrava, se havia legenda, se o relógio corria). Hipóteses vivas:
+corrida de recurso após sessão LONGA no Atlas (textura/globo que não
+rearma), pressão de memória no M1, algo que só o percurso completo arma.
 
 **FUROU O JUIZ, e isso vira obrigação aqui:** a última vista oficial do
 `ab-identidade` no filme é **t=180** — os 13 segundos finais não têm
