@@ -27,7 +27,6 @@ import {
   POLO_ECLIPTICO,
   RETANGULO_CHEIO,
   RAMPA_DO_DEGRAU_S,
-  BORDA_DO_SISTEMA_INTERNO,
   CEDER_COMECA_GRAUS,
   direcaoDaLua,
   direcaoDeRepouso,
@@ -83,11 +82,12 @@ function noSistemaInteiro(rig: AtlasRig) {
 }
 
 /**
- * A ABERTURA DE PRODUÇÃO (item 61) — a esfera é a borda do sistema
- * INTERNO, a direção continua saindo do corpo mais externo, e o piso do
- * zoom é o raio FÍSICO do Sol. É o estado em que `Escada.focarNoSistema`
- * deixa o rig, e o irmão de `noSistemaInteiro`: um é o TETO, o outro é o
- * lugar de onde o visitante parte.
+ * A ABERTURA DE PRODUÇÃO — desde 29/08 (a escolha dele pela folha do
+ * item 61 sob a lente de 58°) a esfera é o SISTEMA INTEIRO
+ * (`orbitaMaisExterna`), a direção sai do mesmo corpo, e o piso do zoom
+ * é o raio FÍSICO do Sol. É o estado em que `Escada.focarNoSistema`
+ * deixa o rig. O irmão `noSistemaInteiro` enquadra a MESMA esfera sem o
+ * piso do Sol — a diferença entre os dois agora é só a régua de descida.
  *
  * MORA AQUI porque eram estas seis linhas redigitadas em dois trilhos —
  * e trilho que redigita o estado acaba medindo estados diferentes com o
@@ -97,7 +97,7 @@ function noSistemaInteiro(rig: AtlasRig) {
 function naAberturaDeProducao(rig: AtlasRig) {
   rig.focar(
     new THREE.Vector3(),
-    BORDA_DO_SISTEMA_INTERNO.raio,
+    orbitaMaisExterna().raio,
     orbitaMaisExterna().posicao,
     { pisoRaio: RAIO_DO_SOL_NA_CENA }
   );
@@ -832,7 +832,11 @@ describe('o arrasto de dois eixos — os sinais, o alcance e o custo', () => {
   it('uma volta inteira do dedo são 2.856 px, e devolve a MESMA vista', () => {
     const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
     const rig = new AtlasRig();
-    noSistemaInteiro(rig);
+    // a POSE DE PRODUÇÃO (piso = raio físico do Sol): é nela que o freio
+    // do solo vale 1 e o dedo bate 1:1 — sem o piso, a régua do freio é
+    // a esfera enquadrada, e sob a lente de 58° o enquadramento cai a
+    // 3,77 raios dela, dentro da faixa do freio (0,925 do gesto)
+    naAberturaDeProducao(rig);
     rig.apply(camera);
     const inicial = camera.position.clone();
     const pxPorVolta = (2 * Math.PI) / ARRASTO_RAD_POR_PX;
@@ -899,7 +903,8 @@ describe('o arrasto de dois eixos — os sinais, o alcance e o custo', () => {
     const rig = new AtlasRig();
     for (const eixoDoDedo of ['vertical', 'horizontal'] as const) {
       for (const sentido of [1, -1]) {
-        noSistemaInteiro(rig);
+        // pose de produção: freio do solo em 1 (ver o teste da volta)
+        naAberturaDeProducao(rig);
         rig.apply(camera, 1, LARGURA_DE_MESA_PX, 0);
         let anterior = camera.position.clone().sub(rig.alvo).normalize();
         const passoPx = 20 * sentido;
@@ -1175,11 +1180,11 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
     naAberturaDeProducao(rig);
     rig.apply(camera);
     const tetoEmUA = () => rig.tetoDeZoom / AU_PARA_PC;
-    // 226,84 UA — a faixa de meio UA é o que separa "a docstring está
-    // certa" de "a docstring envelheceu" (era 221,55 até a linha da
-    // escada da F2b crescer a faixa do topo)
-    expect(tetoEmUA()).toBeGreaterThan(226.6);
-    expect(tetoEmUA()).toBeLessThan(227.1);
+    // 133,68 UA sob a lente de 58° (a de 35° dava 226,84) — a faixa de
+    // meio UA é o que separa "a docstring está certa" de "a docstring
+    // envelheceu"
+    expect(tetoEmUA()).toBeGreaterThan(133.4);
+    expect(tetoEmUA()).toBeLessThan(133.9);
     // e ele ANDA com `?ui=` nos dois sentidos (213,4 e 317,1 UA). O
     // extremo de cima subiu de 296,8 em 2026-08-20 (item 9): a 1.200 px
     // com o texto em 140% os controles do tempo quebram em duas linhas,
@@ -1187,11 +1192,11 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
     // ocupa. Recuo é o preço declarado de HUD mais alto — o contrário
     // (declarar menos) é o alvo atrás do texto.
     rig.apply(camera, 0.85);
-    expect(tetoEmUA()).toBeGreaterThan(213.1);
-    expect(tetoEmUA()).toBeLessThan(213.6);
+    expect(tetoEmUA()).toBeGreaterThan(126.1);
+    expect(tetoEmUA()).toBeLessThan(126.6);
     rig.apply(camera, 1.4);
-    expect(tetoEmUA()).toBeGreaterThan(316.9);
-    expect(tetoEmUA()).toBeLessThan(317.4);
+    expect(tetoEmUA()).toBeGreaterThan(183.5);
+    expect(tetoEmUA()).toBeLessThan(184.0);
     // E O TETO NÃO DEPENDE DE ONDE O VISITANTE ESTÁ — só do alvo e da
     // lente. A prova é MOVER o visitante e reler: pinar a distância lá
     // embaixo, no piso, deixa a câmera a menos de um centésimo do teto, e
@@ -1213,33 +1218,26 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
     rig.pinarDistancia(null);
   });
 
-  it('a ABERTURA encolheu e o TETO do zoom NÃO desceu junto (item 61)', () => {
-    // A CONTRAPARTIDA DA VISTA NOVA, e é o que a torna aceitável: o
-    // Atlas passou a abrir na borda do sistema INTERNO, mas o teto
-    // continua sendo o sistema INTEIRO — quem quiser a vista antiga
-    // puxa a roda para fora e chega nela. Se um dia o teto passar a
-    // sair do raio enquadrado, o visitante nasce numa vista de onde não
-    // pode mais sair, e é este trilho que grita.
+  it('a ABERTURA é o sistema INTEIRO e nasce NO teto (29/08, itens 61+86)', () => {
+    // A ESCOLHA DELE pela folha `item61-abertura-folha.png` sob a lente
+    // de 58°: o Atlas abre como o NASA Eyes, com o sistema todo em
+    // quadro. A câmera nasce exatamente onde a roda para — o teto é o
+    // enquadramento da MESMA esfera —, então o curso da roda é todo
+    // para DENTRO: mais longe que "o sistema em quadro" não há assunto.
+    // Entre 23/08 e 29/08 a abertura foi a borda do sistema interno
+    // (~9 UA); se ela voltar a nascer abaixo do teto, ou o teto
+    // descolar do raio enquadrado, é este trilho que grita.
     const camera = new THREE.PerspectiveCamera(112, 16 / 9, 0.001, 100);
     const rig = new AtlasRig();
     naAberturaDeProducao(rig);
     rig.apply(camera);
-    const emUA = (pc: number) => pc / AU_PARA_PC;
-    // a abertura: ~9,1 UA, e ela É menor que a esfera do sistema
-    expect(emUA(rig.distanciaDoEnquadramento)).toBeGreaterThan(8);
-    expect(emUA(rig.distanciaDoEnquadramento)).toBeLessThan(11);
-    // o VALOR do teto tem dono, e não é este trilho: quem o pina é "a
-    // DISTÂNCIA DO TETO", acima. Aqui o que se cobra é a RELAÇÃO — a
-    // abertura fica ENTRE o piso e o teto, e não colada em nenhum dos
-    // dois —, e por isso a roda tem curso para OS DOIS LADOS, que é o
-    // que o visitante perdia quando nascia colado no teto
-    expect(rig.tetoDeZoom).toBeGreaterThan(rig.distanciaDoEnquadramento);
-    expect(rig.pisoDeZoom).toBeLessThan(rig.distanciaDoEnquadramento);
-    // e a esfera de dentro CABE na de fora, que é a promessa do nome
-    expect(BORDA_DO_SISTEMA_INTERNO.raio).toBeLessThan(orbitaMaisExterna().raio);
+    // a abertura É o teto — a mesma esfera, a mesma conta
+    expect(rig.distanciaDoEnquadramento).toBeCloseTo(rig.tetoDeZoom, 12);
+    // e a roda tem curso inteiro para dentro, até o corpo do Sol
+    expect(rig.pisoDeZoom).toBeLessThan(rig.distanciaDoEnquadramento / 1000);
   });
 
-  it('a roda desce do TETO até o corpo do Sol — 40 estalos, não cinco', () => {
+  it('a roda desce do TETO até o corpo do Sol — 38 estalos, não cinco', () => {
     // item 73, 22/08. Na abertura o ALVO É O SOL (a esfera do sistema é
     // centrada nele), então o piso do zoom é o raio FÍSICO dele. Com o
     // piso na esfera enquadrada eram 70,8 UA e cinco estalos: a roda
@@ -1256,7 +1254,7 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
     // o piso: 2 raios solares, 0,00930 UA — e não os 70,8 UA de antes
     expect(emUA(rig.pisoDeZoom)).toBeCloseTo(2 * emUA(RAIO_SOL_PC), 6);
     expect(emUA(rig.pisoDeZoom)).toBeLessThan(0.01);
-    expect(emUA(rig.tetoDeZoom)).toBeGreaterThan(226.6);
+    expect(emUA(rig.tetoDeZoom)).toBeGreaterThan(133.4);
     // o CURSO, contado com o mesmo passo em log que a roda gasta
     let d = rig.tetoDeZoom;
     let estalos = 0;
@@ -1264,10 +1262,12 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
       d = distanciaAposEstalos(d, rig.pisoDeZoom, rig.tetoDeZoom, -1);
       estalos += 1;
     }
-    expect(estalos).toBe(40);
+    // 38 sob a lente de 58° (o curso encurtou com o teto; eram 40 a 35°)
+    expect(estalos).toBe(38);
     // e a mesma conta com o piso ANTIGO (a esfera enquadrada) devolve o
-    // curso que o dono viu: quatro estalos (a nota do item 73 diz
-    // "cinco" porque lá o gesto começa fora do teto exato)
+    // curso raso que motivou o item 73: DOIS estalos sob a lente de 58°
+    // (eram quatro a 35°; a nota do item diz "cinco" porque lá o gesto
+    // começava fora do teto exato) — a roda parava a meio caminho de casa
     const pisoAntigo = 2 * casa.raio;
     let e2 = 0;
     let d2 = rig.tetoDeZoom;
@@ -1275,7 +1275,7 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
       d2 = distanciaAposEstalos(d2, pisoAntigo, rig.tetoDeZoom, -1);
       e2 += 1;
     }
-    expect(e2).toBe(4);
+    expect(e2).toBe(2);
   });
 
   it('a ABERTURA é quem entrega o piso do Sol — a escada, não o rig', () => {
@@ -1865,8 +1865,9 @@ describe('a rampa entre degraus do rig (F2b/D7)', () => {
 // O DEGRAU DO CORPO DO SOL — a escada do Atlas recusava exatamente um
 // corpo, e era o da casa: `focarNoCorpo` desviava o Sol para a abertura
 // ANTES de olhar o `ver`, então `?foco=sol&ver=corpo` não existia e o
-// visitante não tinha caminho NENHUM até o Sol procedural. A 226,84 UA
-// ele não tem corpo desenhado (o portão de 4 px desarma em 7,19 UA) nem
+// visitante não tinha caminho NENHUM até o Sol procedural. No teto
+// (226,84 UA na época; 133,7 sob a lente de 58°) ele não tem corpo
+// desenhado (o portão de 4 px desarma muitas UA antes) nem
 // clarão de estrela (só começa em 0,02 pc): o que sobra é um ponto que
 // o bloom espalha — a mancha branca da queixa do dono.
 // ============================================================
@@ -1886,16 +1887,17 @@ describe('o degrau do CORPO DO SOL', () => {
     const fatorSol = pedido(RAIO_DO_SOL_NA_CENA) / RAIO_DO_SOL_NA_CENA;
     const casa = orbitaMaisExterna();
     expect(fatorSol).toBeCloseTo(pedido(casa.raio) / casa.raio, 12);
-    // MEDIDO: 6,4042 raios solares = 4,459 milhões de km. Vizinho de
-    // perto do lugar de onde o FILME já filma o Sol (5,74 raios,
-    // 4,00 milhões de km, a vista `sol` do gate de md5) — a prova
-    // medida de que a composição aguenta esta distância.
-    expect(fatorSol).toBeCloseTo(6.4042, 4);
+    // MEDIDO sob a lente de 58° (29/08): 3,7741 raios solares = 2,63
+    // milhões de km — mais perto ainda do lugar de onde o FILME já
+    // filma o Sol (5,74 raios, 4,00 milhões de km, a vista `sol` do
+    // gate de md5), a prova medida de que a composição aguenta esta
+    // distância. Sob a lente antiga de 35° eram 6,4042 raios.
+    expect(fatorSol).toBeCloseTo(3.7741, 4);
     const km = (pedido(RAIO_DO_SOL_NA_CENA) / RAIO_SOL_PC) * RAIO_SOL_KM;
-    expect(km / 1e6).toBeCloseTo(4.459, 3);
+    expect(km / 1e6).toBeCloseTo(2.628, 2);
     // e o Sol INTEIRO cabe no que sobra do quadro: a margem de 1,2 é
-    // folga, não corte — 18,0° de disco dentro do retângulo útil
-    expect((2 * Math.asin(1 / fatorSol)) / GRAU).toBeCloseTo(17.97, 2);
+    // folga, não corte — ~30,7° de disco dentro do retângulo útil
+    expect((2 * Math.asin(1 / fatorSol)) / GRAU).toBeCloseTo(30.73, 2);
   });
 
   it('descer da casa ao Sol é DOLLY PURO: a direção não se mexe um bit', () => {
@@ -1912,10 +1914,11 @@ describe('o degrau do CORPO DO SOL', () => {
     rig.focar(new THREE.Vector3(0, 0, 0), RAIO_DO_SOL_NA_CENA, casa.posicao);
     rig.apply(camera);
     expect(camera.position.clone().normalize().distanceTo(deCasa)).toBeLessThan(1e-12);
-    // só a distância muda — e muda 7.612× (226,84 UA → 0,0298 UA); da
-    // abertura de hoje (~9,15 UA) o mesmo dolly é de ~307×
+    // só a distância muda — e muda ~7.609× (133,68 UA → 0,0176 UA sob a
+    // lente de 58°); a razão é a das esferas e não sabe da lente, então
+    // ela é a MESMA que valia a 35° (226,84 → 0,0298)
     expect(distCasa / camera.position.length()).toBeCloseTo(7609, -1);
-    expect(camera.position.length() / RAIO_DO_SOL_NA_CENA).toBeCloseTo(6.4042, 4);
+    expect(camera.position.length() / RAIO_DO_SOL_NA_CENA).toBeCloseTo(3.7741, 4);
   });
 
   it('o Director lê o `ver` ANTES de desviar o Sol — e só o `corpo` desce', () => {
@@ -2071,27 +2074,26 @@ describe('o degrau do CORPO DO SOL', () => {
     expect(abertura).toContain('this.casaViva() ??');
     expect(abertura.split('this.casaViva()').length - 1).toBe(1);
 
-    // E O RAIO VEM DA BORDA DE DENTRO (item 61) — a outra metade de
-    // `casaViva`, e a única amarra que liga a ESCADA à vista que o dono
-    // escolheu. Sem ela, trocar a borda de volta pelo corpo mais externo
-    // devolveria a abertura para 226,84 UA sem nenhum trilho vermelho:
-    // os outros dois testes desta vista recebem a esfera pela constante,
-    // não pela escada, e passariam iguais.
+    // E O RAIO SAI DO MESMO CORPO QUE A DIREÇÃO (29/08) — o mais
+    // externo, no mesmo `jd` e no mesmo laço. É a amarra que liga a
+    // ESCADA à vista que ele escolheu pela folha do item 61: a abertura
+    // é o sistema INTEIRO. Sem ela, pendurar o raio de volta em Marte
+    // (a vista de 23/08–29/08) devolveria a abertura interna sem nenhum
+    // trilho vermelho: os outros testes desta vista recebem a esfera
+    // pela constante, não pela escada, e passariam iguais.
     const casaViva = ESCADA.slice(
       ESCADA.indexOf('  private casaViva()'),
       ESCADA.indexOf('  focarNoSistema() {')
     );
-    expect(casaViva).toContain('BORDA_DO_SISTEMA_INTERNO.id');
-    expect(casaViva).toContain('raio: Math.hypot(borda.x, borda.y, borda.z) * AU_PARA_PC');
+    expect(casaViva).toContain('raio: maisLonge * AU_PARA_PC');
+    // a borda de Marte morreu com a escolha — nenhum sítio da escada
+    // pode citá-la de novo
+    expect(ESCADA).not.toContain('BORDA_DO_SISTEMA_INTERNO');
     // ...e o retrato congelado, o caminho SEM efeméride, tem de usar a
-    // MESMA borda — senão a vista muda quando a rede cai
-    expect(abertura).toContain('raio: BORDA_DO_SISTEMA_INTERNO.raio');
-    // TRÊS sítios da escada citam a mesma esfera, e o terceiro é o
-    // degrau `sistema` do POUSO, que o religador do relógio recompõe. O
-    // primeiro (`casaViva`) a cita pelo `.id`, e está cobrado logo
-    // acima; os OUTROS DOIS a citam pelo `.raio` — daí o 2, que é a
-    // contagem de `.raio`, não a de sítios.
-    expect(ESCADA.split('BORDA_DO_SISTEMA_INTERNO.raio').length - 1).toBe(2);
+    // MESMA esfera do sistema inteiro — senão a vista muda quando a
+    // rede cai. DOIS sítios: `focarNoSistema` e o degrau `sistema` do
+    // POUSO, que o religador do relógio recompõe.
+    expect(ESCADA.split('raio: orbitaMaisExterna().raio,').length - 1).toBe(2);
   });
 });
 

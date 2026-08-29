@@ -45,8 +45,8 @@ import { CORPOS_DO_SISTEMA, HELIO_SEM_PONTO, LUAS_DO_SISTEMA } from '../atlasCon
 import type { Phase } from '../fases';
 import {
   ATLAS_FOV_GRAUS,
-  BORDA_DO_SISTEMA_INTERNO,
   enquadrar,
+  orbitaMaisExterna,
   retanguloUtilDoAtlas,
 } from '../cinematic/atlasRig';
 import {
@@ -405,28 +405,30 @@ describe('a camada no quadro', () => {
     orbitas.dispose();
   });
 
-  it('A VISTA QUE O DONO ESCOLHEU: na ABERTURA acendem as quatro de dentro, e só elas', () => {
-    // O CANDIDATO (a) DO ITEM 61, cobrado como número. Ele escolheu "o
-    // sistema interno COM as linhas de órbita" e mandou o item 77 na
-    // frente exatamente para que a vista padrão nascesse com elas. Quem
-    // faz a vista é a Escada (`focarNoSistema`) e quem faz as linhas é
-    // esta camada — as duas se encontram SÓ na tela, e sem este teste
-    // nada guarda o encontro: mexer no fade, no fator de enquadramento
-    // ou na borda enquadrada degrada a vista dele em silêncio.
+  it('na vista do sistema INTERNO acendem as quatro de dentro, e só elas', () => {
+    // A LEI DO FADE na vista interna (o item 77 quem a desenha), cobrada
+    // como número. Esta vista foi a ABERTURA entre 23/08 e 29/08; desde
+    // 29/08 a abertura é o sistema INTEIRO (a escolha dele pela folha do
+    // item 61), e esta vista virou o lugar aonde a roda chega descendo —
+    // o comportamento das linhas nela continua sendo lei, porque a
+    // camada não sabe de onde o visitante veio.
     //
-    // A DISTÂNCIA NÃO É LITERAL: sai de `enquadrar()` sobre a MESMA
-    // esfera que a Escada enquadra, então ela acompanha a lente e o
-    // retângulo útil em vez de envelhecer aqui.
+    // A DISTÂNCIA NÃO É LITERAL: sai de `enquadrar()` sobre a esfera da
+    // órbita de Marte (a borda do sistema interno, no dado vivo da
+    // época), então ela acompanha a lente e o retângulo útil em vez de
+    // envelhecer aqui.
+    const marte = motor.posicaoHeliocentrica('mars', EPOCA_JD_TDB);
     const distancia = enquadrar({
-      rAlvo: BORDA_DO_SISTEMA_INTERNO.raio,
+      rAlvo: Math.hypot(marte.x, marte.y, marte.z) * AU_PARA_PC,
       fovDeg: ATLAS_FOV_GRAUS,
       aspect: 4 / 3,
       retanguloUtil: retanguloUtilDoAtlas(),
     }).distancia;
-    // ~9,1 UA: a faixa é larga porque quem a move é o HUD, e estreita o
-    // bastante para pegar uma troca de esfera (o teto são 226 UA)
-    expect(distancia * UA_POR_PC).toBeGreaterThan(8);
-    expect(distancia * UA_POR_PC).toBeLessThan(11);
+    // ~5,3 UA sob a lente de 58°: a faixa é larga porque quem a move é o
+    // HUD, e estreita o bastante para pegar uma troca de esfera (o
+    // sistema inteiro enquadra a ~130 UA)
+    expect(distancia * UA_POR_PC).toBeGreaterThan(4.5);
+    expect(distancia * UA_POR_PC).toBeLessThan(6.5);
 
     const orbitas = new Orbitas();
     orbitas.ligado = true;
@@ -446,15 +448,64 @@ describe('a camada no quadro', () => {
       return fita.material.opacity;
     };
     // AS QUATRO DE DENTRO, no brilho CHEIO — nenhuma no meio do fade: a
-    // vista dele não é "quase dá para ver as linhas"
+    // vista não é "quase dá para ver as linhas"
     for (const id of ['mercury', 'venus', 'earth', 'mars']) {
-      expect(alfaDe(id), `${id} devia acender na abertura`).toBeGreaterThan(0.3);
+      expect(alfaDe(id), `${id} devia acender na vista interna`).toBeGreaterThan(0.3);
     }
     // ...e NENHUMA heliocêntrica de fora, que é a outra metade da
-    // escolha: de Júpiter para fora a órbita não cabe no quadro, e uma
+    // vista: de Júpiter para fora a órbita não cabe no quadro, e uma
     // linha que não cabe é um risco atravessando o céu (§5)
     for (const id of ['jupiter', 'saturn', 'uranus', 'neptune', 'pluto']) {
-      expect(alfaDe(id), `${id} não devia acender na abertura`).toBe(0);
+      expect(alfaDe(id), `${id} não devia acender na vista interna`).toBe(0);
+    }
+    orbitas.dispose();
+  });
+
+  it('na ABERTURA (o sistema inteiro, 29/08) os nove laços têm dono declarado', () => {
+    // A VISTA COM QUE O ATLAS ABRE desde 29/08 — a escolha dele pela
+    // folha do item 61 sob a lente de 58° (item 86): o sistema INTEIRO,
+    // estilo NASA Eyes. Quem faz a vista é a Escada e quem faz as
+    // linhas é esta camada; sem este teste nada guarda o encontro.
+    // A distância sai de `enquadrar()` sobre a esfera do sistema — a
+    // MESMA conta do teto do zoom — e acompanha lente e HUD.
+    const distancia = enquadrar({
+      rAlvo: orbitaMaisExterna().raio,
+      fovDeg: ATLAS_FOV_GRAUS,
+      aspect: 4 / 3,
+      retanguloUtil: retanguloUtilDoAtlas(),
+    }).distancia;
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const camera = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 4 / 3, 1e-9, 1e6);
+    camera.position.set(0, 0, distancia);
+    camera.lookAt(0, 0, 0);
+    camera.updateMatrixWorld(true);
+    const tanAtlas = Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360);
+    orbitas.update(camera, quadroDe(900), tanAtlas, 0, null, 'atlas');
+    const alfaDe = (id: string) => {
+      const i = CORPOS_COM_ORBITA.findIndex((c) => c.id === id);
+      const fita = orbitas.group.children[i] as unknown as {
+        material: { opacity: number };
+      };
+      return fita.material.opacity;
+    };
+    // OS CINCO DE FORA no brilho CHEIO — é o contexto que ele pediu
+    // (medido em 29/08: os cinco em 0,320, o alfa pleno da fita)
+    for (const id of ['jupiter', 'saturn', 'uranus', 'neptune', 'pluto']) {
+      expect(alfaDe(id), `${id} devia acender na abertura`).toBeGreaterThan(0.3);
+    }
+    // Mercúrio não acende (órbita de ~3 px a esta distância) e o fade é
+    // MONOTÔNICO de dentro para fora — os números do meio (medidos em
+    // 29/08: Vênus 0,010, Terra 0,045, Marte 0,151) andam com o HUD e
+    // com a lente, então o que se pina é a ORDEM, não o valor
+    expect(alfaDe('mercury')).toBeLessThan(0.02);
+    const dentroParaFora = ['mercury', 'venus', 'earth', 'mars', 'jupiter'];
+    for (let i = 1; i < dentroParaFora.length; i++) {
+      expect(
+        alfaDe(dentroParaFora[i]),
+        `${dentroParaFora[i]} devia brilhar ≥ ${dentroParaFora[i - 1]}`
+      ).toBeGreaterThanOrEqual(alfaDe(dentroParaFora[i - 1]));
     }
     orbitas.dispose();
   });

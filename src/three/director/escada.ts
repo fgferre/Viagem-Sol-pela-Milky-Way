@@ -49,11 +49,7 @@ import type { CorpoBuscavel } from '../../lib/buscaEstrelas';
 import type { MaquinaDoTempo } from './maquinaDoTempo';
 import type { Rotulos } from './rotulos';
 import type { AtlasRig } from '../cinematic/atlasRig';
-import {
-  BORDA_DO_SISTEMA_INTERNO,
-  orbitaMaisExterna,
-  raioDeEnquadramentoEstelar,
-} from '../cinematic/atlasRig';
+import { orbitaMaisExterna, raioDeEnquadramentoEstelar } from '../cinematic/atlasRig';
 import {
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
@@ -450,35 +446,31 @@ export class Escada {
    * estava — só a distância muda —, e duas contas do "mais externo"
    * seriam duas direções que divergiriam no primeiro salto de data.
    *
-   * OS DOIS SAEM DE CORPOS DIFERENTES desde o item 61 (23/08), e isso é
-   * DECISÃO, não descuido — são duas perguntas, e cada uma tem o dono
-   * certo:
+   * RAIO E DIREÇÃO SAEM DO MESMO CORPO desde 29/08 — o mais externo,
+   * perguntado ao dado no instante pedido. Entre 23/08 e 29/08 o raio
+   * saiu da borda do sistema INTERNO (a órbita de Marte, item 61 de
+   * 23/08): a vista larga da época era *"dez nomes num nó de 40 px"* e
+   * descer foi a fuga da dívida. A dívida morreu — as linhas de órbita
+   * (77), os nomes (N1/82) e a lente de 58° (86) pousaram — e ele julgou
+   * a folha `capturas/item61-abertura-folha.png`: a abertura é o
+   * **sistema inteiro, estilo NASA Eyes**. A esfera que se enquadra
+   * volta a ser a que passa pelo corpo mais externo, centrada no Sol —
+   * contém toda órbita por construção, a mesma promessa de
+   * `orbitaMaisExterna` para o retrato congelado.
    *
-   *  · O RAIO é «o que eu enquadro», e passou a ser a BORDA DO SISTEMA
-   *    INTERNO (a órbita de Marte, `BORDA_DO_SISTEMA_INTERNO`). É a vista
-   *    que o dono escolheu: a de antes punha a câmera a 226,84 UA, onde
-   *    os dez nomes viravam um nó de 40 px — *"a tela diz que há dez
-   *    mundos e mostra um"*.
-   *  · A DIREÇÃO é «de onde eu olho», e continua saindo do corpo mais
-   *    externo. Ela NÃO acompanhou o raio, e a razão é o relógio: a
-   *    direção é recomposta a cada instante de céu (`recomporAlvo`), e o
-   *    mais externo leva 248 anos para dar a volta enquanto Marte leva
-   *    687 dias. Pendurar a direção em Marte faria a máquina do tempo
-   *    girar o visitante em torno do Sol a 60°/s na velocidade de cima —
-   *    ele pediu para ver o tempo passar, não para ser rodado. Como a
-   *    inclinação da pose é fixa (`PHASE_OFFSET_GRAUS` contra o polo da
-   *    eclíptica), trocar de eixo só mudaria a LONGITUDE da câmera: a
-   *    composição do quadro é a mesma dos dois jeitos, e o desempate é
-   *    inteiro do relógio.
-   *
-   * A promessa do RAIO fica de pé com a esfera menor, e por construção:
-   * a órbita de Marte centrada no Sol contém Mercúrio, Vênus e a Terra
-   * em qualquer data (ver `BORDA_DO_SISTEMA_INTERNO`).
+   * A DIREÇÃO continua a mesma de sempre — o corpo mais externo — e a
+   * razão segue sendo o relógio: ela é recomposta a cada instante de céu
+   * (`recomporAlvo`), e o mais externo leva 248 anos para dar a volta;
+   * pendurá-la num corpo rápido faria a máquina do tempo girar o
+   * visitante em torno do Sol na velocidade de cima. Com raio e direção
+   * no MESMO corpo e no MESMO `jd`, a esfera nunca descreve uma data e o
+   * ponto do corpo outra.
    */
   private casaViva(): { raio: number; eixo: THREE.Vector3 } | null {
     if (!this.maquinaDoTempo.efemeride) return null;
     const jd = this.maquinaDoTempo.jdVivo;
-    // a DIREÇÃO: quem é o mais externo AGORA, perguntado ao dado
+    // quem é o mais externo AGORA, perguntado ao dado — dele saem o raio
+    // E a direção, no mesmo instante
     let maisLonge = 0;
     const externo = { x: 0, y: 0, z: 0 };
     for (const c of CORPOS_DO_SISTEMA) {
@@ -493,48 +485,33 @@ export class Escada {
       }
     }
     const eq = eclipticaParaEquatorial([externo.x, externo.y, externo.z]);
-    // e o RAIO: a borda do sistema interno NO MESMO INSTANTE — a mesma
-    // efeméride viva e o mesmo `jd`, para que a esfera nunca descreva
-    // uma data e o ponto do corpo outra
-    const borda = this.maquinaDoTempo.efemeride.posicaoHeliocentrica(
-      BORDA_DO_SISTEMA_INTERNO.id,
-      jd
-    );
     return {
-      raio: Math.hypot(borda.x, borda.y, borda.z) * AU_PARA_PC,
+      raio: maisLonge * AU_PARA_PC,
       eixo: new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC),
     };
   }
 
   /**
-   * O ENQUADRAMENTO DE ABERTURA: o SISTEMA INTERNO, visto de fora da
-   * órbita de Marte. É a vista com que o Atlas abre, o destino do
-   * clique no Sol e — desde a F2 — a ação da linha ESCALA do selo, que
-   * é o único enquadramento em que o que domina o quadro é 1:1.
+   * O ENQUADRAMENTO DE ABERTURA: o SISTEMA INTEIRO, estilo NASA Eyes —
+   * a esfera do corpo mais externo, centrada no Sol. É a vista com que
+   * o Atlas abre, o destino do clique no Sol e — desde a F2 — a ação da
+   * linha ESCALA do selo, que é o único enquadramento em que o que
+   * domina o quadro é 1:1.
    *
-   * A VISTA QUE O DONO ESCOLHEU (item 61, o último passo do modo único —
-   * 23/08). Ela era o sistema INTEIRO, a 226,84 UA, e o que a foto
-   * mostrava eram *"dez nomes num nó de 40 px em volta de um ponto — a
-   * tela diz que há dez mundos e mostra um"*. Ele viu quatro candidatos e
-   * escolheu o **(a)**, o sistema interno COM as linhas de órbita, e
-   * mandou o item 77 (as linhas) na frente exatamente para que a vista
-   * padrão já nascesse com elas.
-   *
-   * O QUE MUDA NO QUADRO, e é o item 77 quem o desenha: a esta distância
-   * o fade das linhas acende as QUATRO de dentro e apaga o resto sozinho,
-   * sem uma regra a mais — Júpiter para fora sai pelo corte de "não cabe
-   * no quadro", e do lado de dentro nenhuma lua chega aos 3 px de raio
-   * que o fade de baixo exige.
-   *
-   * O QUE NÃO MUDA: o TETO do zoom (`AtlasRig.tetoDeZoom`) segue sendo o
-   * sistema INTEIRO, porque ele não sai daqui — sai de
-   * `orbitaMaisExterna`. Quem quiser a vista antiga puxa a roda para
-   * fora e chega nela; o que o visitante perdeu foi a obrigação de
-   * COMEÇAR lá.
+   * A VISTA QUE O DONO ESCOLHEU EM 29/08, pela folha
+   * `capturas/item61-abertura-folha.png` sob a lente nova de 58° (item
+   * 86). Entre 23/08 e 29/08 a abertura foi o sistema INTERNO (fora da
+   * órbita de Marte): a vista larga da época era *"dez nomes num nó de
+   * 40 px em volta de um ponto"*, e descer foi fuga da dívida — não
+   * preferência. A dívida morreu (linhas de órbita do 77, nomes do
+   * N1/82, lente do 86) e ele apontou o Eyes como referência: *"o
+   * contexto de abertura do NASA Eyes é muito melhor que o nosso"*.
+   * Com a esfera cheia a câmera nasce NO teto do zoom — a roda só tem
+   * curso para dentro, como no Eyes; mais longe não há assunto.
    *
    * CONSEQUÊNCIA DECLARADA: a porta `?d=` fala em RAIOS DO ALVO, e o
-   * alvo da abertura encolheu — um `?d=` copiado antes de 23/08 pousa
-   * mais perto do Sol do que pousava. É o preço de a régua ser relativa,
+   * alvo da abertura cresceu — um `?d=` copiado antes de 29/08 pousa
+   * mais longe do Sol do que pousava. É o preço de a régua ser relativa,
    * e o espelho da URL reescreve o valor certo no primeiro gesto.
    *
    * ABERTURA NA ÉPOCA VIVA (F2b) — OVERRIDE DECLARADO (emendas
@@ -554,11 +531,10 @@ export class Escada {
     // sempre, e que a limitação declarada
     // do item 77 (§6 de `orbitas.ts`: sem fonte não há linha) torna a
     // única resposta possível. A vista continua sendo a MESMA geometria,
-    // só sem os laços desenhados: o raio vem do retrato pela borda de
-    // dentro, e a direção pelo corpo mais externo dele — o mesmo par de
-    // donos de `casaViva`, congelado.
+    // só sem os laços desenhados: raio e direção vêm do corpo mais
+    // externo do retrato — o mesmo dono único de `casaViva`, congelado.
     const casa = this.casaViva() ?? {
-      raio: BORDA_DO_SISTEMA_INTERNO.raio,
+      raio: orbitaMaisExterna().raio,
       eixo: orbitaMaisExterna().posicao,
     };
     // O PISO DO ZOOM DA ABERTURA É O SOL, e não a esfera enquadrada
@@ -566,16 +542,16 @@ export class Escada {
     // sistema é centrada nele —, e a lei do modo é "um alvo e uma
     // distância": a roda tem de descer continuamente até o corpo do
     // alvo, como desce em Saturno. Com o piso na esfera enquadrada eram
-    // 70,8 UA e CINCO estalos de curso; com o raio físico do Sol são
-    // 0,00930 UA e 40 estalos DO TETO até o Sol — ~27 da abertura de
-    // hoje, que nasce no meio do curso (item 61). A mesma ordem das ~50
-    // de Saturno, e agora com estalos sobrando para os DOIS lados.
+    // 70,8 UA e CINCO estalos de curso; com o raio físico do Sol a roda
+    // desce DO TETO (onde a abertura nasce desde 29/08) até o Sol num
+    // curso de dezenas de estalos — a mesma ordem das ~50 de Saturno.
     //
     // A queda não abre regime de brilho novo: 2 raios solares é MAIS
-    // PERTO que o degrau do corpo do Sol (6,40 raios), que a
-    // `luz-do-quadro` já julga, e a etapa 1 conferiu na tela que não
-    // lava o quadro. O que ela revoga é a nota "descer ao Sol é outro
-    // degrau" — que valia enquanto a roda trocava de degrau.
+    // PERTO que o degrau do corpo do Sol (3,77 raios sob a lente de
+    // 58°; eram 6,40 a 35°), que a `luz-do-quadro` já julga, e a etapa
+    // 1 conferiu na tela que não lava o quadro. O que ela revoga é a
+    // nota "descer ao Sol é outro degrau" — que valia enquanto a roda
+    // trocava de degrau.
     this.atlas.focar(ORIGEM, casa.raio, casa.eixo, {
       rampa: this.rampaDaEscada(),
       pisoRaio: this.solRaioPc,
@@ -901,22 +877,23 @@ export class Escada {
   /**
    * O DEGRAU "CORPO" DO SOL — o último corpo da casa a ganhar escada, e
    * o que o dono reclama desde a primeira mensagem ("não vi o Sol
-   * procedural"): o Atlas o desviava para 226,84 UA, onde o Sol não tem
-   * corpo desenhado (o portão de 4 px desarma em 7,19 UA) nem clarão de
-   * estrela (só começa em 0,02 pc), e o que sobrava era um ponto sem
-   * teto que o bloom espalhava.
+   * procedural"): o Atlas o desviava para o teto do zoom, onde o Sol
+   * não tem corpo desenhado (o portão de 4 px desarma muitas UA antes)
+   * nem clarão de estrela (só começa em 0,02 pc), e o que sobrava era
+   * um ponto sem teto que o bloom espalhava.
    *
    * O CENTRO é a ORIGEM — o Sol não tem efeméride que o mova, ele É o
    * centro do frame heliocêntrico —, e o RAIO é `this.solRaioPc`, a
    * fonte única do tamanho do Sol depois da construção (a MESMA que o
    * palco e o portão de 4 px leem). Nenhum literal de distância nasce
    * aqui: a lente é que decide, pelo `d = r·1,2/sen(θ/2)` de todo
-   * enquadramento privilegiado. O número que sai é **6,40 raios
-   * solares — 4,46 milhões de km**, e ele é conferível: é a mesma conta
-   * que põe o TETO do zoom a 226,84 UA. Não foi ajustado à mão, e vizinha
-   * de perto o lugar de onde o FILME já filma o Sol (5,74 raios
-   * solares, 4,00 milhões de km), que é a prova medida de que a
-   * composição aguenta esta distância.
+   * enquadramento privilegiado. O número que sai é **3,77 raios
+   * solares — 2,63 milhões de km** sob a lente de 58° (item 86; eram
+   * 6,40 raios a 35°), e ele é conferível: é a mesma conta que põe o
+   * TETO do zoom a 133,68 UA. Não foi ajustado à mão, e vizinha de
+   * perto o lugar de onde o FILME já filma o Sol (5,74 raios solares,
+   * 4,00 milhões de km), que é a prova medida de que a composição
+   * aguenta esta distância.
    *
    * A DIREÇÃO é a MESMA da abertura (`casaViva`), e é decisão: descer
    * de casa ao Sol vira um DOLLY PURO — a rampa entre degraus só mexe
@@ -1442,9 +1419,9 @@ export class Escada {
    *
    * POR QUE O DEGRAU `céu` É OBRIGATÓRIO, e ele anda no mesmo diff que o
    * `pousar` de propósito: sem ele o pouso é desfeito no primeiro gesto.
-   * Com o raio do sistema, `AtlasRig.tetoDeZoom` cai em ~226,8 UA e o
-   * primeiro estalo de roda teleportaria o visitante de 26.911 pc para a
-   * vista de abertura. Com `raio = |posição|` a distância enquadrada
+   * Com o raio do sistema, `AtlasRig.tetoDeZoom` cai no teto da casa
+   * (~134 UA sob a lente de 58°) e o primeiro estalo de roda
+   * teleportaria o visitante de 26.911 pc para a vista de abertura. Com `raio = |posição|` a distância enquadrada
    * nasce da ordem da real e o teto acompanha o observador. E não serve
    * `raioDeEnquadramentoEstelar`: ele satura em 9 pc, o que poria a
    * câmera a 58 pc do Sol.
@@ -1496,7 +1473,7 @@ export class Escada {
       // aqui poria o religador do relógio (`enquadreVivo`) puxando a
       // câmera para outra esfera no primeiro tique
       const casa = this.casaViva() ?? {
-        raio: BORDA_DO_SISTEMA_INTERNO.raio,
+        raio: orbitaMaisExterna().raio,
         eixo: orbitaMaisExterna().posicao,
       };
       return {

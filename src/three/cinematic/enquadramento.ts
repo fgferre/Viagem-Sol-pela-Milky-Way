@@ -11,6 +11,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
+import { FOV_DA_CASA } from '../luzDaCasa';
 import { RETRATO_2026 } from '../world/planetas/retrato2026';
 import type { RetanguloUtil } from './retanguloDoAtlas';
 
@@ -227,10 +228,17 @@ export const MARGEM_DE_ENQUADRAMENTO = 1.2;
  * o fov do shot em que o visitante pausou o filme (o roteiro varre de
  * 15° a 60°), e o mesmo alvo seria enquadrado a distâncias diferentes
  * conforme o momento da pausa — nenhuma vista do Atlas seria
- * reproduzível. 35° é a lente neutra de documentário: não comprime a
- * profundidade como as longas do roteiro nem distorce como as curtas.
+ * reproduzível.
+ *
+ * O VALOR é a lente da casa (`FOV_DA_CASA`, o espelho testado do fov de
+ * fábrica de `core/engine.ts`) — DECISÃO DELE, item 86: a medida provou
+ * que o Atlas parecia mais apagado só porque a lente de 35° punha 3,1×
+ * menos céu por tela, ele mandou *"abrir a lente do filme para o app
+ * inteiro"* (25/08) e cravou com a foto A/B na mão (29/08). Uma lente
+ * só para a casa toda: quem mudar o fov de fábrica muda o Atlas junto,
+ * e brilho POR MODO continua proibido.
  */
-export const ATLAS_FOV_GRAUS = 35;
+export const ATLAS_FOV_GRAUS = FOV_DA_CASA;
 
 export interface PedidoDeEnquadramento {
   /**
@@ -864,43 +872,10 @@ export function orbitaMaisExterna(): { posicao: THREE.Vector3; raio: number } {
   };
 }
 
-/**
- * A BORDA DO SISTEMA INTERNO — a esfera que o Atlas ENQUADRA AO ABRIR
- * desde o item 61 (a vista que o dono escolheu em 23/08: *"o sistema
- * interno com as linhas de órbita desenhadas"*).
- *
- * A IRMÃ DE CIMA NÃO PERDEU EMPREGO: a esfera do sistema INTEIRO
- * (`orbitaMaisExterna`) segue sendo o TETO do zoom (`AtlasRig.tetoDeZoom`)
- * e a fronteira do pouso (`Escada.alvoDoPouso`). O que ela deixou de ser
- * é a ABERTURA — e é por isso que o visitante continua podendo puxar a
- * roda para fora até ver o sistema todo, de onde o Atlas costumava nascer.
- *
- * POR QUE AQUI MARTE É PINADO e ali o "mais externo" é PERGUNTADO AO
- * DADO — a distinção é o que impede isto de ser a segunda fonte de
- * verdade que a nota de `orbitaMaisExterna` proíbe:
- *
- *  · «quem é o mais externo» é uma PERGUNTA, e a resposta troca com a
- *    data — Netuno e Plutão trocaram de lugar entre 1979 e 1999;
- *  · «onde acaba o sistema interno» é uma DEFINIÇÃO: os rochosos são
- *    Mercúrio, Vênus, Terra e Marte, e Marte é o de fora em QUALQUER
- *    data, porque o periélio dele (1,381 UA) fica fora do afélio da
- *    Terra (1,017 UA). A esfera da órbita de Marte centrada no Sol
- *    contém os outros três por construção e não por sorte — a MESMA
- *    promessa que `orbitaMaisExterna` faz para o sistema todo.
- *
- * SÓ O RAIO SAI DAQUI. A DIREÇÃO de onde a abertura olha continua saindo
- * do corpo mais externo, e o porquê está em `Escada.casaViva`.
- */
-export const BORDA_DO_SISTEMA_INTERNO = {
-  /** a chave da efeméride VIVA (`posicaoHeliocentrica`) — a abertura na
-   *  época viva (F2b) lê o raio no instante pedido, como sempre leu.
-   *  O `satisfies` é a amarra: a chave tem de existir no RETRATO, que é
-   *  a mesma tabela de onde o `raio` abaixo sai e a mesma que alimenta
-   *  `IDS_FOTOMETRIA`. Sem ela, uma string solta aqui só quebraria em
-   *  runtime, e a vista de abertura é o pior lugar para descobrir isso. */
-  id: 'mars' satisfies keyof typeof RETRATO_2026,
-  /** e o raio do RETRATO congelado, o caminho SEM efeméride: ali não há
-   *  linha de órbita nenhuma para desenhar (§6 de `orbitas.ts`), e o
-   *  enquadramento é o que sobra de honesto */
-  raio: RETRATO_2026.mars.rUA * AU_PARA_PC,
-} as const;
+// A `BORDA_DO_SISTEMA_INTERNO` (a órbita de Marte como esfera da
+// ABERTURA, item 61 de 23/08) morava aqui e MORREU em 29/08: ele julgou
+// a folha `capturas/item61-abertura-folha.png` sob a lente nova e
+// escolheu o SISTEMA INTEIRO, estilo NASA Eyes — abertura e teto voltam
+// a ser a mesma esfera (`orbitaMaisExterna`), agora sob 58°. O raio da
+// abertura viva sai do corpo mais externo em `Escada.casaViva`, do MESMO
+// laço que já dava a direção.

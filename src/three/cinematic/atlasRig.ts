@@ -704,14 +704,12 @@ export class AtlasRig {
    * (quem precisar dele cita esta docstring em vez de repeti-lo). Com o
    * alvo no Sol, o retângulo útil vigente em `ui = 1` e tela de mesa
    * (aspecto ≥ 1, onde quem aperta é o vertical), a roda para a
-   * **226,84 UA do Sol** — `35,4213 UA × 1,2 / sen(meia-abertura útil)`,
-   * e como o alvo é a própria origem essa distância é a distância a
-   * casa, sem triângulo nenhum. Ela ANDA com o HUD e com `?ui=`: 213,37
-   * UA em `ui = 0,85`, ~317 UA em `ui = 1,4` (subiu de 296,8 em
-   * 2026-08-20, item 9 — a 1.200 px com o texto em 140% os controles do
-   * tempo quebram em duas linhas e a câmera recua o que o HUD ocupa). O
-   * trilho de `atlasRig.test.ts` deriva o número de `enquadrar()` e
-   * quebra se ele envelhecer aqui.
+   * **133,68 UA do Sol** — `35,4213 UA × 1,2 / sen(meia-abertura útil)`
+   * sob a lente de 58° (item 86; a 35° eram 226,84) —, e como o alvo é
+   * a própria origem essa distância é a distância a casa, sem triângulo
+   * nenhum. Ela ANDA com o HUD e com `?ui=`: 126,30 UA em `ui = 0,85`,
+   * 183,73 UA em `ui = 1,4`. O trilho de `atlasRig.test.ts` deriva o
+   * número de `enquadrar()` e quebra se ele envelhecer aqui.
    *
    * ATÉ 23/08 ESTE NÚMERO MORAVA num método `focarNoSistema` do rig, que
    * enquadrava esta mesma esfera. Ele morreu com o item 61: a abertura
@@ -720,11 +718,11 @@ export class AtlasRig {
    * baixo, direto. Dois métodos com o mesmo nome e esferas diferentes
    * eram uma armadilha para quem lesse depois.
    *
-   * O Atlas nascia NESTE teto até 23/08. Desde o item 61 ele nasce mais
-   * perto — na borda do sistema interno —, e o teto passou a ser um lugar
-   * aonde se CHEGA puxando a roda para fora, em vez do lugar de onde não
-   * se podia sair. A leitura de sempre segue valendo do lado de lá: mais
-   * longe que "o sistema em quadro" não há assunto, há fundo de céu.
+   * O Atlas nasceu NESTE teto até 23/08, desceu para a borda do sistema
+   * interno com o item 61, e desde 29/08 NASCE AQUI DE NOVO — a escolha
+   * dele pela folha da abertura sob a lente nova: o sistema inteiro,
+   * estilo NASA Eyes. O curso da roda é todo para dentro; mais longe que
+   * "o sistema em quadro" não há assunto, há fundo de céu.
    *
    * O `max` com a distância do último enquadramento é a guarda do
    * relógio: a órbita mais externa aqui vem do RETRATO congelado, e com

@@ -54,12 +54,12 @@ import type { ToneMapMode } from './core/engine';
 
 /** o estado de uma vista limpa: nada tocado, nada na URL */
 const LIMPA: EstadoDaVista = {
-  // 144 UA — uma vista de DENTRO do sistema solar, na faixa entre a
-  // abertura do Atlas (~9 UA, item 61) e o teto do zoom (226,84 UA). O
-  // veredito ESCALA é o mesmo em toda ela: os dois extremos estão bem
-  // abaixo de `LIMIAR_SISTEMA_SOLAR_PC`, e é isso que este fixture mede.
-  // Nenhum número de enquadramento se repete aqui — eles andam com o HUD
-  // e com `?ui=`.
+  // 144 UA — uma vista de DENTRO do sistema solar (o filme e o voo
+  // livre passam por aí; a roda do Atlas para no teto de ~134 UA sob a
+  // lente de 58°, item 86). O veredito ESCALA é o mesmo em toda a
+  // faixa: bem abaixo de `LIMIAR_SISTEMA_SOLAR_PC`, e é isso que este
+  // fixture mede. Nenhum número de enquadramento se repete aqui — eles
+  // andam com o HUD e com `?ui=`.
   distanciaPc: 0.0007,
   portas: [],
   exposicaoManual: false,

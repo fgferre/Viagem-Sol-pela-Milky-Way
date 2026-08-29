@@ -455,21 +455,24 @@ describe('a perna do ATLAS — a lente entra na conta (item 61, 23/08)', () => {
     expect(ATLAS_FOV_GRAUS).toBe(ATLAS_FOV_DA_FONTE);
   });
 
-  it('a 35° o disco do Sol é maior, e o direito de espalhar do clarão cede a ele', () => {
-    // a 1 UA e 900 px: 8,2 px de disco a 58°, 13,6 px a 35°. Os 10 px são
-    // onde a soltura zera (a superfície vira dona, §5.7), então a lente do
-    // Atlas atravessa essa fronteira e o teto de borrão desaba de 313 para
-    // 40 px. Uma régua que ignorasse o fov julgaria OUTRA lente — e é por
-    // isso que o fov passou a viajar por `discoRealPx`, `solturaDaLei`,
-    // `claraoDaLeiPx`, `tetoDeLavagem` e `julgarEscada`.
+  it('a lente entra na conta: uma teleobjetiva engorda o disco e cala o clarão', () => {
+    // A PROPRIEDADE sobrevive à lente única de 29/08 (item 86): mesmo
+    // com o Atlas a 58°, a régua tem de responder ao fov — se um dia a
+    // lente mudar de novo, é esta viagem do fov por `discoRealPx`,
+    // `solturaDaLei`, `claraoDaLeiPx`, `tetoDeLavagem` e `julgarEscada`
+    // que mantém o juiz honesto. A hipótese aqui é a lente ANTIGA de
+    // 35°, como matemática: a 1 UA e 900 px o disco vai de 8,2 px (58°)
+    // a 13,6 px (35°), cruza os 10 px em que a soltura zera (§5.7) e o
+    // clarão dá lugar à fotosfera.
+    const LENTE_ANTIGA = 35;
     const dLivre = discoRealPx(1, 900);
-    const dAtlas = discoRealPx(1, 900, ATLAS_FOV_GRAUS);
-    expect(dAtlas).toBeGreaterThan(dLivre);
-    expect(dAtlas / dLivre).toBeCloseTo(
-      Math.tan((58 * Math.PI) / 360) / Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360),
+    const dTele = discoRealPx(1, 900, LENTE_ANTIGA);
+    expect(dTele).toBeGreaterThan(dLivre);
+    expect(dTele / dLivre).toBeCloseTo(
+      Math.tan((58 * Math.PI) / 360) / Math.tan((LENTE_ANTIGA * Math.PI) / 360),
       6
     );
-    expect(claraoDaLeiPx(1, 900, EXPO_M0, SIGMA_PX, ATLAS_FOV_GRAUS)).toBe(0);
+    expect(claraoDaLeiPx(1, 900, EXPO_M0, SIGMA_PX, LENTE_ANTIGA)).toBe(0);
     expect(claraoDaLeiPx(1, 900)).toBeGreaterThan(0);
   });
 

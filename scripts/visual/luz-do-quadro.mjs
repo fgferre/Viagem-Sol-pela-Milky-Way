@@ -112,14 +112,16 @@ const PIN = '&q=cinema';
 // está verde DENTRO do modo, e não só fora.
 //
 // Ela entra pelo endereço do próprio modo (`?atlas=1&foco=sol&ver=corpo&d=`),
-// então mede o Atlas de verdade: lente de 35°, retângulo útil do Atlas,
-// enquadramento pelo rig. O fov entra na CONTA — `discoRealPx`,
+// então mede o Atlas de verdade: a lente vigente, o retângulo útil do
+// Atlas, o enquadramento pelo rig. O fov entra na CONTA — `discoRealPx`,
 // `solturaDaLei`, `claraoDaLeiPx`, `tetoDeLavagem` e `julgarEscada` o
-// recebem —, porque a 35° o disco do Sol é 1,76× maior em px e o direito
-// de espalhar do clarão muda com ele (a 1 UA o teto de borrão cai de
-// 313 px para 40 px: o disco passa de 8,2 px para 13,6 px, cruza os 10 px
-// em que a soltura zera, e o clarão dá lugar à fotosfera). Régua que
-// ignorasse isso estaria julgando outra lente.
+// recebem —, porque disco e direito de espalhar do clarão mudam com a
+// lente; régua que ignorasse isso julgaria outra lente. ENQUANTO o
+// Atlas rodou a 35° (23/08–29/08) as duas pernas mediam lentes
+// DIFERENTES (a 35° o disco do Sol era 1,76× maior em px e o teto de
+// borrão desabava de 313 para 40 px); desde 29/08 (item 86) a lente é
+// UMA, 58°, e a perna segue valendo pelo que sempre proveu de fato: a
+// escada verde DENTRO do modo, com o retângulo útil e o rig de verdade.
 const PERNA = process.env.PERNA === 'atlas' ? 'atlas' : 'pos';
 const CHAVE_DO_ESTADO =
   `${PERNA === 'atlas' ? 'atlas' : ''}${EXTRA}${process.env.JANELA || ''}`
@@ -137,8 +139,9 @@ const RAIO_SOL_PC = 2.2566840209436597e-8;
 const FOV_GRAUS = 58;
 /** a lente do ATLAS — `ATLAS_FOV_GRAUS` (`cinematic/enquadramento.ts`),
  *  redigitada aqui pela mesma razão que toda a família: node puro. O
- *  acordo com a fonte é cobrado em `luz-do-quadro.test.mjs`. */
-export const ATLAS_FOV_GRAUS = 35;
+ *  acordo com a fonte é cobrado em `luz-do-quadro.test.mjs`. Desde
+ *  29/08 (item 86, decisão dele) ela é a MESMA lente da casa: 58°. */
+export const ATLAS_FOV_GRAUS = 58;
 
 /**
  * Diâmetro aparente do Sol, em px — a coluna `discoReal`.
@@ -475,12 +478,14 @@ const PISO_LUZ_MEDIA_SEM_BLOOM = 0.039;
 const PISO_DE_FAISCAS = 40;
 
 /**
- * O PISO DA PERNA DO ATLAS (lente de 35°). Medido pelo MESMO método e com
- * a mesma receita do de cima — "~⅗ do mínimo observado, folga declarada
- * para cintilação e variação de vista" —, em duas DIREÇÕES: a da escada
- * oficial com `&fov=35` (14–63 faíscas) e a do próprio modo, que é o eixo
- * de `direcaoDeRepouso` no degrau do corpo do Sol (11–29). Mínimo
- * observado 11 ⇒ piso 7.
+ * O PISO DA PERNA DO ATLAS. Medido pelo MESMO método e com a mesma
+ * receita do de cima — "~⅗ do mínimo observado, folga declarada para
+ * cintilação e variação de vista" — NA ERA DA LENTE DE 35° (23/08–29/08),
+ * em duas DIREÇÕES: a da escada oficial com `&fov=35` (14–63 faíscas) e
+ * a do próprio modo, o eixo de `direcaoDeRepouso` no degrau do corpo do
+ * Sol (11–29). Mínimo observado 11 ⇒ piso 7. Desde 29/08 a lente é 58°
+ * (item 86) e a perna vê MAIS céu — o piso segue válido como piso: ele
+ * está aqui para pegar o COLAPSO, e por baixo continua pegando.
  *
  * A diferença entre as duas direções — ~20% — é ANISOTROPIA do céu, não
  * defeito: a foto de 150 UA (`capturas/luz-150ua-atlas.png`) mostra
