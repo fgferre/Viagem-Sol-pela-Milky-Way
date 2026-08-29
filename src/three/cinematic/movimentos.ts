@@ -6,6 +6,7 @@ import { EX, EY, EZ } from '../world/baseGalactica';
 
 export type Ease = (x: number) => number;
 export type PosFn = (k: number, out: THREE.Vector3) => THREE.Vector3;
+type UnidadeDoAngulo = 'radianos' | 'graus';
 
 export const linear: Ease = (x) => x;
 export const quadratic: Ease = (x) => Math.pow(x, 2);
@@ -56,17 +57,20 @@ export function trajeto(pontos: THREE.Vector3[]): PosFn {
 /**
  * Órbita/espiral ao redor de um centro no referencial galáctico:
  * raio, ângulo e altura (ao longo do polo) interpolados em k.
- * U=EX, V=EY são o plano do disco; ang em radianos.
+ * U=EX, V=EY são o plano do disco; ângulo em radianos por padrão.
+ * Em graus, a interpolação acontece antes da conversão para radianos.
  */
 export function orbit(
   center: THREE.Vector3,
   r0: number, r1: number,
   a0: number, a1: number,
-  h0: number, h1: number
+  h0: number, h1: number,
+  unidadeDoAngulo: UnidadeDoAngulo = 'radianos'
 ): PosFn {
   return (k, out) => {
     const r = THREE.MathUtils.lerp(r0, r1, k);
-    const a = THREE.MathUtils.lerp(a0, a1, k);
+    const aCru = THREE.MathUtils.lerp(a0, a1, k);
+    const a = unidadeDoAngulo === 'graus' ? THREE.MathUtils.degToRad(aCru) : aCru;
     const h = THREE.MathUtils.lerp(h0, h1, k);
     const ca = Math.cos(a);
     const sa = Math.sin(a);
@@ -93,9 +97,10 @@ export function helice(
   a0: number, a1: number,
   h0: number, h1: number,
   d0: number, d1: number,
-  ritmoDaDirecao: Ease = glide
+  ritmoDaDirecao: Ease = glide,
+  unidadeDoAngulo: UnidadeDoAngulo = 'radianos'
 ): PosFn {
-  const direcao = orbit(new THREE.Vector3(), r0, r1, a0, a1, h0, h1);
+  const direcao = orbit(new THREE.Vector3(), r0, r1, a0, a1, h0, h1, unidadeDoAngulo);
   return (k, out) => {
     direcao(ritmoDaDirecao(k), out);
     return out.multiplyScalar(distanciaExponencial(d0, d1, k) / out.length()).add(centro);

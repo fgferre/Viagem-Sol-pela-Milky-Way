@@ -6,6 +6,7 @@ import {
   easeOut, glide, launch, line, linear, lookEvento, lookPan,
   orbit, panLook, panThenHold, quadratic, settle, settleFreeze, smooth, still,
 } from './movimentos';
+import { EX, EY, EZ } from '../world/baseGalactica';
 import cinturao from './roteiros/cinturao.json';
 import mergulho from './roteiros/mergulho.json';
 import abertura from './roteiros/abertura.json';
@@ -27,11 +28,20 @@ const fases = [0, 0.2, 0.6, 0.9, 1];
 describe('lerPlanoDeCamera — item 75', () => {
   it('liga cada trajetória à primitiva existente e respeita o vetor de saída', () => {
     const curva = new THREE.CubicBezierCurve3(a, c, d, b);
+    const orbitaEmGraus = (k: number, out: THREE.Vector3) => {
+      const raio = THREE.MathUtils.lerp(2, 5, k);
+      const angulo = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(30, 38, k));
+      return out.copy(a)
+        .addScaledVector(EX, Math.cos(angulo) * raio)
+        .addScaledVector(EY, Math.sin(angulo) * raio)
+        .addScaledVector(EZ, THREE.MathUtils.lerp(-1, 4, k));
+    };
     const trajetorias = [
       [{ tipo: 'fixo', ponto: a.toArray() }, still(a)],
       [base.movimento, line(a, b)],
       [{ tipo: 'curva', de: a.toArray(), controle1: c.toArray(), controle2: d.toArray(), para: b.toArray() }, curva.getPoint.bind(curva)],
       [{ tipo: 'orbita', centro: a.toArray(), raio: [2, 5], angulo: [-0.3, 1.7], altura: [-1, 4] }, orbit(a, 2, 5, -0.3, 1.7, -1, 4)],
+      [{ tipo: 'orbita', centro: a.toArray(), raio: [2, 5], angulo: [30, 38], altura: [-1, 4], unidadeDoAngulo: 'graus' }, orbitaEmGraus],
     ] as const;
     for (const [movimento, esperado] of trajetorias) {
       const plano = lerPlanoDeCamera({ ...base, movimento });
@@ -244,6 +254,7 @@ describe('lerPlanoDeCamera — item 75', () => {
         { ...base, movimento: { tipo: 'trajeto', pontos } }, /movimento.pontos/,
       ]),
       [{ ...base, movimento: { tipo: 'orbita', centro: [0, 0, 0], raio: [-1, 2], angulo: [0, 1], altura: [0, 1] } }, /movimento.raio/],
+      [{ ...base, movimento: { tipo: 'orbita', centro: [0, 0, 0], raio: [1, 2], angulo: [0, 1], altura: [0, 1], unidadeDoAngulo: 'voltas' } }, /movimento.unidadeDoAngulo/],
       [{ ...base, mira: { tipo: 'espiar' } }, /mira.tipo/],
       [{ ...base, mira: { tipo: 'pan-cedo', de: [1, 2, 3], para: [4, 5, 6], ate: 0 } }, /mira.ate/],
       [{ ...base, mira: { tipo: 'pan-direcao', de: [1, 2, 3], para: [4, 5, 6], ate: 1.1 } }, /mira.ate/],
@@ -391,7 +402,7 @@ describe('lerPlanoDeCamera — item 75', () => {
       { tipo: 'frenagem', amplitude: 0.7 },
     ];
     const dados = {
-      planos: mergulho.planos.map((plano, i) => ({
+      planos: mergulho.planos.map((plano, i) => i >= efeitos.length ? plano : ({
         ...plano,
         camera: {
           ...plano.camera, duracao: i === 0 ? 9 : plano.camera.duracao,
@@ -419,7 +430,7 @@ describe('lerPlanoDeCamera — item 75', () => {
         0.7 * (1 - k) * (1 - k),
       ];
       let t0 = inicio;
-      for (const [i, plano] of dados.planos.entries()) {
+      for (const [i, plano] of dados.planos.slice(0, efeitos.length).entries()) {
         const t = t0 + plano.camera.duracao * k;
         const pose = new Journey().at(t);
         expect(pose.pos.toArray()).toEqual([13 + i, 17, 19]);

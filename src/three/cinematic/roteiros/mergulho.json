@@ -109,6 +109,55 @@
         "efeitoDeVelocidade": { "tipo": "frenagem", "amplitude": 0.9 }
       },
       "destino": "SGR"
+    },
+    {
+      "camera": {
+        "duracao": 5,
+        "movimento": {
+          "tipo": "orbita", "centro": "centro",
+          "raio": ["raioAglomerado", "raioRasante"],
+          "angulo": ["anguloAglomerado", "anguloEntradaRasante"],
+          "altura": ["alturaAglomerado", "alturaEntradaRasante"],
+          "unidadeDoAngulo": "graus"
+        },
+        "mira": { "tipo": "fixo", "ponto": "centro" },
+        "lente": [55, 50],
+        "ritmo": "glide"
+      },
+      "destino": "SGR",
+      "fundoSilencioso": true
+    },
+    {
+      "camera": {
+        "duracao": 14,
+        "movimento": {
+          "tipo": "orbita", "centro": "centro",
+          "raio": ["raioRasante", "raioRasante"],
+          "angulo": ["anguloEntradaRasante", "anguloSaidaRasante"],
+          "altura": ["alturaEntradaRasante", "alturaSaidaRasante"],
+          "unidadeDoAngulo": "graus"
+        },
+        "mira": { "tipo": "fixo", "ponto": "centro" },
+        "lente": [50, 52],
+        "ritmo": "glide",
+        "inclinacao": { "tipo": "pulso", "amplitude": 0.22 }
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.1,
+          "texto": "SAGITTARIUS A✱",
+          "subtexto": "quatro milhões de sóis num volume menor que a órbita de Mercúrio",
+          "duracao": 5.5
+        },
+        {
+          "em": 0.5,
+          "texto": "O HORIZONTE",
+          "subtexto": "a gravidade curva a luz ao redor da sombra — lente de Einstein",
+          "duracao": 6.6
+        }
+      ]
     }
   ]
 }

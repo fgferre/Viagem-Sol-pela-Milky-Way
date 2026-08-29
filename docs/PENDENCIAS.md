@@ -46,17 +46,15 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (28/08)
 
-**28/08 — OS HOLDS E A TRAVESSIA DO ATO IV VIRARAM ROTEIRO.**
-`revelacao.json` reúne os quadros de medição (perfil e face) e a
-travessia que abre o disco em braços; os marcos `edge`/`face` passaram
-a ser declarados pelos próprios planos, e os pinos do `CAPTURE_T`
-seguem em **153 e 167 s**. Nenhuma peça nova de motor: fixo, curva,
-rampa e pulso bastaram. **Filme convertido: 18 de 25 cenas, 135 de
-193 segundos (cerca de 70% da duração).** **Motor: ainda parcial** —
-faltam a aproximação final e a rasante do Ato III, a fuga/subida
-(trecho de curva e combinações de efeitos), a deriva, o mergulho de
-volta e o take Lua→Terra, e a direção dos nomes em cena. O trajeto
-não costura automaticamente planos diferentes. Instruções no
+**28/08 — O ATO III FECHOU EM ROTEIRO.** `mergulho.json` agora reúne
+também a aproximação final e a rasante de Sagittarius A✱. A órbita
+passou a aceitar graus declarados para preservar, número por número,
+a fórmula editorial que já existia; não nasceu movimento novo.
+**Filme convertido: 20 de 25 cenas, 154 de 193 segundos (cerca de 80%
+da duração).** **Motor: ainda parcial** — faltam a fuga/subida (trecho
+da mesma curva e combinações de efeitos), a deriva, o mergulho de
+volta e o take Lua→Terra, e a direção dos nomes em cena. O trajeto não
+costura automaticamente planos diferentes. Instruções no
 `PLANO-CINEMA.md`; provas no item. A fila segue **75** → **100**.
 
 **28/08 — O 75 JÁ LÊ ÓRION E A VIRADA DE ANTARES.** `orion.json` reúne
@@ -1095,10 +1093,17 @@ a ser declarados pelos próprios planos — `apoiosDaViagem.json` ficou
 só com o estilingue, sem cópia paralela — e os pinos do `CAPTURE_T`
 seguem em **153 e 167 s**. A conversão chegou a **18 de 25 cenas,
 135 de 193 s**, medida por `capturas/item75-ato4/medir.mjs`.
-Faltam: a aproximação final e a rasante do Ato III, a fuga/subida
-(trecho de curva e combinações de efeitos), a deriva, o mergulho de
-volta e o take da casa — estes pedem movimentos que ainda não são
-dados.
+Naquela fatia ainda faltavam a aproximação final e a rasante do Ato III,
+a fuga/subida, a deriva, o mergulho de volta e o take da casa.
+
+**A aproximação final e a rasante vieram na décima fatia (28/08):**
+os dois planos finais do Ato III entraram no próprio `mergulho.json`.
+Ambos usam a órbita existente; `unidadeDoAngulo: "graus"` preserva a
+interpolação editorial anterior antes da conversão para radianos, sem
+diferença de arredondamento. A conversão chegou a **20 de 25 cenas,
+154 de 193 s**, medida por `capturas/item75-sgr/medir.mjs`. Faltam a
+fuga/subida, a deriva, o mergulho de volta e o take da casa, além da
+direção dos nomes em cena.
 
 **Prova de Órion:** `capturas/item75-orion/` guarda o antes/depois do
 `prova.mjs`: posição, mira, lente, inclinação, efeito, rig contínuo e
@@ -1139,6 +1144,17 @@ ler `qa` — reprovou três testes, com referência verde ao reverter
 (`auditoria/`).
 **Limite:** prova focal no navegador, não exibição integral nem A/B de
 cache zerado; percentuais de conversão, não de prontidão do motor.
+
+**Prova da aproximação e da rasante:** `capturas/item75-sgr/` guarda o
+antes/depois do `prova.mjs`: os **209.958 números** de câmera e a edição
+do filme inteiro têm o mesmo `sha256`. A cena rodando no navegador e a
+imagem conferida ficam no mesmo diretório. Typecheck, lint e testes
+focados passaram em `verificacoes.json`; a suíte única do fechamento
+terminou com **2.458 aprovados**, um já desativado e nenhuma falha
+(`suite.json`). O teste de graus compara comportamento, não texto:
+recompõe a órbita no referencial galáctico e cobra as mesmas posições.
+**Limite:** prova focal, não exibição contínua do filme nem o A/B completo
+de cache zerado devido no fechamento do item 75.
 
 **77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
 FALTA SÓ O OLHO DELE.** A órbita é o DADO,

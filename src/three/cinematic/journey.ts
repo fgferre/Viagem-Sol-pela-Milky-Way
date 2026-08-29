@@ -234,7 +234,12 @@ const DIVE_1 = gal(6600, 6, -14); // muralha de Sagitário
 const DIVE_2 = gal(5100, 13, -8); // dentro da lâmina — travessia de nuvem
 const DIVE_3 = gal(3900, 20, -24); // Scutum-Centaurus
 const DIVE_4 = gal(1500, 27, -14); // reta final, bojo enchendo o quadro
-const CORE_IN = gal(120, 30, -4); // dentro do aglomerado central
+const CORE_R = 120;
+// A aproximação parte destes mesmos 30°: usar 32° a 120 pc criava
+// um salto de 4,2 pc no meio do ato III.
+const CORE_A = 30;
+const CORE_H = -4;
+const CORE_IN = gal(CORE_R, CORE_A, CORE_H); // dentro do aglomerado central
 
 // Sagittarius A*: curva rasante — arco de ~150° a 1,5 pc do centro
 // (≈30 RS na escala artística — a distância dos presets da demo: é a
@@ -244,6 +249,8 @@ const CORE_IN = gal(120, 30, -4); // dentro do aglomerado central
 const BH_ARC_IN = 38; // graus
 const BH_ARC_OUT = 190;
 const BH_R = 1.5;
+const BH_H_IN = -0.3;
+const BH_H_OUT = 0.55;
 
 // Ato IV — a fuga olhando o monstro encolher (acento traseiro curto),
 // a subida com o disco se construindo de dentro para fora, pouso no
@@ -255,7 +262,7 @@ const BH_R = 1.5;
 const SLING_C1 = gal(900, 190, 260);
 const SLING_C2 = gal(4200, 85, 2600);
 const BH_EXIT = galPoint(
-  BH_R, THREE.MathUtils.degToRad(BH_ARC_OUT), 0.55, new THREE.Vector3()
+  BH_R, THREE.MathUtils.degToRad(BH_ARC_OUT), BH_H_OUT, new THREE.Vector3()
 );
 const SLING = bezier(BH_EXIT, SLING_C1, SLING_C2, GATE_EDGE_POS);
 /** fração da curva do estilingue que pertence à FUGA (olhar para trás) */
@@ -558,57 +565,11 @@ const SHOTS: Shot[] = [
     entradaScutum: gal(4600, 16, -30), muralhaScutum: DIVE_3, saidaScutum: DIVE_4,
     entradaBojo: gal(700, 29, -8), dentroDoBojo: gal(320, 30, -6), aglomeradoCentral: CORE_IN,
     centro: GAL.GC_POS,
+  }, {
+    raioAglomerado: CORE_R, anguloAglomerado: CORE_A, alturaAglomerado: CORE_H,
+    raioRasante: BH_R, anguloEntradaRasante: BH_ARC_IN, anguloSaidaRasante: BH_ARC_OUT,
+    alturaEntradaRasante: BH_H_IN, alturaSaidaRasante: BH_H_OUT,
   }),
-  {
-    // aproximação final: de 120 pc a 1,5 pc do centro.
-    // O ângulo de partida É o de CORE_IN (30°), não 32° — 2° a 120 pc
-    // eram 4,2 pc de salto, o microtravamento no meio do ato III.
-    dur: 5,
-    pos: (k, out) => {
-      const a = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(30, BH_ARC_IN, k));
-      const r = THREE.MathUtils.lerp(120, BH_R, k);
-      const z = THREE.MathUtils.lerp(-4, -0.3, k);
-      return galPoint(r, a, z, out);
-    },
-    look: still(GAL.GC_POS),
-    fov0: 55, fov1: 50,
-    ease: glide,
-    dest: 'SGR',
-    quiet: true,
-  },
-  {
-    // A CURVA RASANTE: ~150° ao redor do horizonte, periastro no mínimo
-    // de velocidade de todo o ato — a física faz a coreografia (anel de
-    // Einstein varrendo o campo estelar). Plano contínuo, sem cortes,
-    // NOMEADO no clímax. Órbita de ASSUNTO declarada: é o alvo que se
-    // contempla, não voo de lado.
-    dur: 14,
-    pos: (k, out) => {
-      const a = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(BH_ARC_IN, BH_ARC_OUT, k));
-      const z = THREE.MathUtils.lerp(-0.3, 0.55, k);
-      return galPoint(BH_R, a, z, out);
-    },
-    look: still(GAL.GC_POS),
-    fov0: 50, fov1: 52,
-    ease: glide,
-    roll: (k) => 0.22 * Math.sin(Math.PI * k),
-    quiet: true,
-    lingua: 'assunto',
-    captions: [
-      {
-        at: 0.1,
-        text: 'SAGITTARIUS A✱',
-        sub: 'quatro milhões de sóis num volume menor que a órbita de Mercúrio',
-        dur: 5.5,
-      },
-      {
-        at: 0.5,
-        text: 'O HORIZONTE',
-        sub: 'a gravidade curva a luz ao redor da sombra — lente de Einstein',
-        dur: 6.6,
-      },
-    ],
-  },
 
   // ================= ATO IV — A REVELAÇÃO =================
   {

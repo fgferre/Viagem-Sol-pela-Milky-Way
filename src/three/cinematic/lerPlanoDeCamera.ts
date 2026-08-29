@@ -164,8 +164,12 @@ export function lerPlanoDeCamera(
       const [a0, a1] = par(m.angulo, 'movimento.angulo', lerNumero);
       const [h0, h1] = par(m.altura, 'movimento.altura', lerNumero);
       const centro = ponto(m.centro, 'movimento.centro');
+      const unidadeDoAngulo = m.unidadeDoAngulo === undefined ? 'radianos' : m.unidadeDoAngulo;
+      if (unidadeDoAngulo !== 'radianos' && unidadeDoAngulo !== 'graus') {
+        return erro('movimento.unidadeDoAngulo', 'deve ser radianos ou graus');
+      }
       if (m.tipo === 'orbita') {
-        pos = orbit(centro, r0, r1, a0, a1, h0, h1);
+        pos = orbit(centro, r0, r1, a0, a1, h0, h1, unidadeDoAngulo);
       } else {
         if (r0 <= 0 || r1 <= 0) return erro('movimento.raio', 'deve ser positivo na hélice');
         const [d0, d1] = par(m.distancia, 'movimento.distancia', lerNumero);
@@ -173,7 +177,7 @@ export function lerPlanoDeCamera(
           return erro('movimento.distancia', 'deve ter distâncias positivas e razão finita, não nula');
         }
         pos = helice(centro, r0, r1, a0, a1, h0, h1, d0, d1,
-          ritmo(m.ritmoDaDirecao, 'movimento.ritmoDaDirecao'));
+          ritmo(m.ritmoDaDirecao, 'movimento.ritmoDaDirecao'), unidadeDoAngulo);
       }
       break;
     }

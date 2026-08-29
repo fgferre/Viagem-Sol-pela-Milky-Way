@@ -205,8 +205,8 @@ componentes `[x, y, z]` de um ponto, às legendas ou aos apoios.
 | `movimento` | `reta` | `de`, `para` |
 | `movimento` | `curva` | `de`, `controle1`, `controle2`, `para` — `CubicBezierCurve3` nativa do Three.js |
 | `movimento` | `trajeto` | `pontos` — lista de ao menos dois nomes ou vetores; passa por eles numa `CatmullRomCurve3` centrípeta, sem repetir pontos consecutivos |
-| `movimento` | `orbita` | `centro`; pares `raio`, `angulo`, `altura`, do início ao fim. Raios não negativos em pc, ângulos em **radianos**, altura em pc ao longo do polo galáctico |
-| `movimento` | `helice` | Mesma forma da órbita, com raios positivos; `distancia` é o par de distâncias reais ao centro em pc, positivas e com razão finita não nula. `ritmoDaDirecao` opcional, padrão `glide` |
+| `movimento` | `orbita` | `centro`; pares `raio`, `angulo`, `altura`, do início ao fim. Raios não negativos em pc, ângulos em **radianos** por padrão e altura em pc ao longo do polo galáctico. `unidadeDoAngulo: "graus"` interpola primeiro em graus e converte cada instante |
+| `movimento` | `helice` | Mesma forma da órbita, com raios positivos; `distancia` é o par de distâncias reais ao centro em pc, positivas e com razão finita não nula. `ritmoDaDirecao` opcional, padrão `glide`; aceita a mesma unidade angular |
 | `mira` | `fixo` | `ponto` |
 | `mira` | `pan` | `de`, `para`; `ritmo` opcional, padrão `smooth` |
 | `mira` | `pan-cedo` | `de`, `para`, `ate` — interpola pontos, chega cedo e segura |
@@ -279,13 +279,11 @@ Nomes desconhecidos, números não finitos e parâmetros fora dessas faixas
 interrompem a montagem com o campo indicado no erro. Não há `eval`, código
 embutido no roteiro, dependência nova nem controle novo para o visitante.
 
-**Limite desta base:** foram convertidos a abertura, Sirius, o corredor,
-o cinturão e as quatro cenas após Antares: **10 de 25 cenas, 83 de 193 s**.
-Essa fração mede o filme convertido, não a prontidão do motor. Faltam
-composições restantes de inclinação/efeitos e movimentos específicos,
-como o retorno solar e a passagem Lua–Terra. `assuntos` transporta
-os nomes para a regra atual, mas não resolve a direção de etiquetas do
-item 82 — as três precisam falar juntas. Esses recursos e os movimentos
-específicos que faltam vêm antes da migração integral e do A/B de disco
+**Limite desta base:** foram convertidas **20 de 25 cenas, 154 de 193 s**.
+Essa fração mede o filme convertido, não a prontidão do motor. Faltam a
+fuga/subida do Ato IV, a deriva, o mergulho de volta e a passagem
+Lua–Terra. `assuntos` transporta os nomes para a regra atual, mas não
+resolve a direção de etiquetas do item 82 — as três precisam falar
+juntas. Esses recursos vêm antes da migração integral e do A/B de disco
 zerado. Validação focal:
 `npx vitest run src/three/cinematic/lerSequencia.test.ts src/three/cinematic/lerPlanoDeCamera.test.ts src/three/cinematic/apoiosDoRoteiro.test.ts`.
