@@ -46,6 +46,18 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (29/08)
 
+**29/08 (tarde) — A SALA DE CONFERÊNCIA JULGOU CINCO FOTOS E A FILA
+DESTRAVOU.** Ele olhou as cinco no chat, de uma vez: **70 FECHOU** (a
+borda está boa), **77 FECHOU** (o filme limpo, aprovado), o colar do
+**83-A1** foi re-confirmado (já estava aceito por C13, 26/08 — segue o A2
+e a coluna (iv) do B3), a lente do **86** está **CRAVADA** — *"Aprovo —
+crava o 58°"*, sabendo do teto de zoom que encurta (226,84 → ~133,7 UA) e
+da abertura que nasce mais perto — e a vista de abertura do **61** é o
+**sistema inteiro, estilo NASA Eyes** (o candidato (a) da folha). **O item
+da vez é a OBRA da lente:** 58° para o app inteiro + abertura no sistema
+inteiro, com as vistas de Atlas do gate re-baselizadas e declaradas no
+commit. Depois dela, o **100**.
+
 **29/08 — O MOTOR DE FILMES FECHOU; A FILA AGORA COMEÇA NO 100.**
 `revelacao.json` absorveu fuga, subida e deriva; `volta.json` declara o
 mergulho de volta e o take Lua→Terra. O motor ganhou as composições que
@@ -203,8 +215,9 @@ FECHARAM.)*
 > falta o olho dele) → ~~**(4)** o **70**, causa 2 (o ponto que
 > morre na borda)~~ (27/08 — pousou; a foto espera o olho dele) → ~~**(5)** o **99**
 > (a dieta dos juízes — primeira fatia em 27/08)~~ (28/08 — o resto do 99
-> acontece no TOQUE, não em campanha; item **106**) → **(6)** o **75**
-> (o motor de filmes) → o item **100**.
+> acontece no TOQUE, não em campanha; item **106**) → ~~**(6)** o **75**
+> (o motor de filmes)~~ (29/08 — FECHOU; história no ARQUIVO) → **a obra
+> da lente (86 + a abertura do 61)** → o item **100**.
 
 **O QUE ESPERA O OLHO DELE — e a dívida virou quase nada em 25/08.** As
 oito pranchas dos itens 88, 92 e 95 **já serviram**, e com elas morre a
@@ -223,12 +236,13 @@ não mais pergunta. **E EM 26/08 A DÍVIDA DA LUZ ZEROU:** a costura
 voltaram confirmadas — *"Confirmo como bom: C14, C15"* —, e com elas os
 itens **104**, **91** e **93** saíram da lista. O que vai à Sala agora é a
 folha da lente com a vista de abertura, e a foto da borda do item **70**.
+**(29/08: FORAM, e voltaram julgadas — a folha da lente, a da abertura, a
+borda do 70 e o filme limpo do 77. NADA mais espera o olho dele; o placar
+está no bastão.)**
 
-*(Registro de escrivão, para nada se perder: a foto
-`capturas/item77-filme-sem-orbitas.png` — a volta para casa sem as linhas
-de órbita — foi tirada DEPOIS da C1 e ainda não passou pelo olho dele; está
-escrita no próprio item **77**. Não aparece na fila acima porque a fila
-acima é a que ELE ordenou, e não se inventa posição em nome dele.)*
+*(Registro de escrivão: a foto `capturas/item77-filme-sem-orbitas.png`
+passou pelo olho dele em 29/08, fora da fila mas com a mão dele — o 77
+fechou; ver o bastão.)*
 
 **A DOUTRINA DO PINO, escrita para a próxima vez que houver foto à espera.**
 Mexer na LINHA da fila antes da conferência **invalida as fotos** que estão
@@ -800,6 +814,10 @@ exigir pedido novo dele.
   do A/B da lente e a da vista de abertura — saem da MESMA sessão de
   captura**, no mesmo binário, senão ele julga a vista larga sob uma lente
   que já não vai existir.
+  **ELE JULGOU EM 29/08, diante da folha:** a abertura é o **sistema
+  inteiro, estilo NASA Eyes** — o candidato **(a) DA FOLHA** (câmera no
+  teto do zoom sob 58°; não confundir com a vista (a) antiga, que era o
+  sistema interno). Vira obra junto com a lente do item 86, na mesma leva.
 - **o Atlas parar de parecer mais vazio que o filme** (*"parece que o modo
   atlas fica mais morto, vazio..."*). **Um mundo só JÁ É LEI e já é
   código.** A medida de 24/08 achou a causa, e ela não é regra por modo: é
@@ -809,135 +827,20 @@ exigir pedido novo dele.
 
 **A história completa está no ARQUIVO, item 61.**
 
-**70. O ponto que morre seco na borda.** *(O título nomeia o que está
-ABERTO, nunca o que já foi consertado — por essa disciplina este item já
-perdeu DOIS nomes em 25/08.)* (Achado em 22/08 pelo juiz de movimento, o
-MB1 — `scripts/visual/estabilidade-temporal.mjs`.) Quando uma estrela muito
-brilhante sai pela borda do quadro, o brilhão dela some de uma vez e **o
-céu inteiro perde luz num único passo de câmera**. Ao voltar, acende de
-novo do mesmo jeito. Está medido três vezes com a mesma assinatura, sempre
-na mesma estrela — Rigil Kentaurus. A causa 2 pousou em 27/08; o que
-falta é o olho dele na foto da borda.
-
-**A METADE QUE FECHOU em 25/08** (história no ARQUIVO): eram DUAS causas, e
-nenhuma delas a pupila. A **causa 1** — o segundo cobertor
-(`ClaraoDoCampo`) vestindo um rascunho que só tinha o que estava DENTRO do
-quadro — morreu com a **faixa de guarda** (`MARGEM_DO_CAMPO = 128 px`, o
-joelho medido). Na mesma rodada fecharam a **cessão da linha de órbita**
-(decisão dele) e a **faixa de instrumento** do juiz. **O MB1 foi de 6
-defeitos a ZERO, sem afrouxar soleira nenhuma, e o zero repete.**
-
-**A CAUSA 2 POUSOU em 27/08.** O vértice do ponto é preso 1 px dentro
-do clip e a PSF é avaliada pela distância verdadeira (`gl_FragCoord`
-menos o centro real) — o mesmo desenho da hero, agora nos três
-desenhistas do `STAR_FRAG` (catálogo, cascas, planetas). A largura do
-quadro sai da projeção, sem uniforme novo. Juiz: `scripts/visual/ponto-na-borda.mjs`.
-Medido em 1128×1080 dpr 1, Rigil Kentaurus: o pico da faixa cai **2,6%**
-no passo que cruza a borda (234 → 228 de 255) e depois desce com o rabo
-da PSF (186, 105, piso ~45). Foto:
-`capturas/item70-borda-depois-v3.png` — **espera o olho dele**.
-Neste Mac (ANGLE/Metal) o GPU já mantinha o sprite 1–2 px fora, então
-sabotar o prender não mudou a curva; o prender é o conserto portátil
-para o GPU que descarta o ponto no clip. **O MB1 não cobra este
-pedaço**; a régua nova mora no juiz acima.
-
-**O TAMANHO DO EFEITO DEPENDE DA JANELA** (medido em 25/08, item 81). Os
-números originais saíram de um quadro de 613 px, onde cada estrela é
-**3,1× mais quente** que num de 1080. No `pan` a queda do passo cai de
-−24,6% para **menos de 5%** a 1080 px; no `fov` ela **FICA** (−29,4%). A
-causa 2 mediu-se em 1128×1080, e é essa a janela do juiz.
-
-**AS TRÊS FOTOS DESTA HISTÓRIA JÁ SERVIRAM — C5, 25/08:** ele olhou
-`capturas/item70-giro-antes-depois.png`,
-`capturas/item70-linha-cede-antes-depois.png` e
-`capturas/item72-nobloom-antes-depois.png` pela Sala de Conferência e
-confirmou **o giro e a borda como bons**. Com isso a metade que fechou está
-ACEITA por ele, a nota de "não apagar" morre com a conferência, e **o que
-este item ainda é resume-se à foto da causa 2** — espera o olho dele.
-
-**DUAS REGRAS NASCERAM AQUI e valem para toda a casa:** *A/B se roda de
-ÁRVORE LIMPA dos dois lados — e se não der, o que sobrou de sujo entra
-NOMEADO no carimbo, arquivo por arquivo*; e *JSON de datas diferentes não é
-A/B*.
-
-**A história completa está no ARQUIVO, item 70.**
+**70.** O ponto que morria seco na borda — **FECHADO em 29/08**: as duas
+causas consertadas (a faixa de guarda em 25/08; o vértice preso e a PSF
+pela distância verdadeira em 27/08) e o olho dele veio em 29/08 sobre
+`capturas/item70-borda-depois-v3.png` — *"está bom"*. História no ARQUIVO.
 
 **75. Motor de filmes por roteiro — FECHADO EM 29/08.** As 25 cenas e os
 193 s são roteiro; câmera e edição preservadas, 61/61 vistas oficiais
 bit-idênticas e Alnilam novamente junto de Alnitak e Mintaka. História e
 provas no item 75 do `PENDENCIAS-ARQUIVO.md`.
 
-**77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
-FALTA SÓ O OLHO DELE.** A órbita é o DADO,
-não enfeite: NASA Eyes, Celestia e SpaceEngine desenham as três. Apareceram
-**30 laços** (os nove planetas e as 21 luas), com camada `noorbitas` na
-gaveta, fade nas duas pontas, lua só com o pai enquadrado, e **sem efeméride
-viva não há linha**.
-
-**O QUE ELE APROVOU (C1, pela Sala de Conferência):** as linhas **no
-Atlas**. Com isso as decisões **1** e **2**, que iam junto na conferência,
-ficam de pé como estão e não se re-litigam:
-
-1. **A curva NÃO sai de "amostrar um período", porque esse caminho não
-   existe.** A efeméride cobre 1950–2050, e um período inteiro cai fora
-   dela em **quatro dos nove planetas** — metade do sistema ficaria sem
-   linha, para sempre. O que ficou é a **cônica osculadora do estado
-   vivo**, que é o que "linha de órbita" significa nos três programas de
-   referência: o primeiro vértice do laço **É** a posição viva do corpo,
-   por identidade algébrica.
-2. **Os oito corpos SEM PONTO ficaram de fora, e a decisão foi tomada com a
-   FOTO na mão.** Ceres, Éris, Haumea, Makemake, Quaoar, Vesta, Palas e
-   Hígia juntos viravam um **novelo**, e os PLANETAS — que são o que este
-   item existe para deixar legível — sumiam dentro dele. Devolvê-los é
-   **UMA LINHA** (`HELIO_SEM_PONTO`, em `world/orbitas.ts`), e virou o
-   degrau **G1** do item 83.
-
-**A DECISÃO 3 ELE RESPONDEU, E A RESPOSTA VIROU OBRA — FEITA em 25/08.
-Palavras dele:** *"tirar do filme (aceito recriar a separação entre modos
-só aí)"*.
-
-**⛔ O QUE FALTA NESTE ITEM É SÓ O OLHO DELE:**
-`capturas/item77-filme-sem-orbitas.png` — a volta para casa ANTES (as
-quatro elipses sobre o Sol) × DEPOIS (o céu do filme, sem linha). Se ele
-aprovar, o item fecha e vai para o museu.
-
-**ONDE A EXCEÇÃO MORA, para quem for mexer nisso um dia.** O mapa
-`LINHAS_DE_ORBITA_POR_FASE` (`three/fases.ts`) diz, fase a fase, se a
-camada desenha: **não** no filme (`intro`, `journey`, `end`) e no
-`loading`; **sim** no Atlas e no voo livre. Quem lê o mapa é UM só — a
-camada, dentro de `Orbitas.update` (`world/orbitas.ts`, §7) —, e a fase
-chega lá como **parâmetro obrigatório**: apagá-lo não compila. A gaveta
-não perdeu nada: o `noorbitas` continua governando a camada onde sempre
-governou, e o gate se MULTIPLICA com ele.
-
-**É EXCEÇÃO AUTORIZADA POR ELE** à lei do mundo único (item **61**: *"o
-modo atlas na minha visao deveria ser o modo único"*), e a autorização é
-**só aí, com as palavras dele**: ninguém a estende para brilho, lente,
-nomes, bloom ou qualquer outra camada, e quem tentar está inventando
-permissão que ele não deu. **Isso não é promessa de comentário:**
-`fases.test.ts` varre a árvore e reprova qualquer consumidor do mapa que
-não seja a camada das órbitas.
-
-**A PROVA, em número.** `ab-identidade` nas **61 vistas**: **UMA** difere —
-`mergulho` (a volta para casa, t=180), `a6efa49a8749` → `b0c38175a512`;
-**56 IGUAIS**, e o Atlas entre elas (`atlas 45082fd1a0e5` dos dois lados,
-mais as 12 de `foco-*`/`anao-*`). As **4 INSTÁVEIS** (`eclipse-limbo`,
-`saturno-anel`, `saturno-anelnb`, `foco-titan`) já não repetiam **no lado
-ANTES**, com o código de HEAD: é tremor herdado, não desta obra. O diff de
-pixel do `mergulho`: **11.038 px de 3.083.400 (0,358%)**, e **11.027 SÓ
-PERDERAM luz** — assinatura de conteúdo que sumiu, não de ULP.
-**Sabotagem** (worktree, 77 dentes): gate removido → 2 reprovam; gate
-invertido → 10; exceção estendida a outra camada → 1; director passando
-fase digitada → 1; parâmetro apagado → **20 erros de compilação**.
-
-**AS FOTOS:** `capturas/item77-filme-sem-orbitas.png` (a que espera o olho
-dele), `item77-atlas-com-orbitas.png` e `item77-atlas-sem-orbitas.png` (o
-par que decidiu o Atlas, na vista de 226,84 UA que desde o item 61 é o TETO
-do zoom — **não é o candidato (a)**, que é o sistema interno de
-`capturas/vista-padrao-abertura.png`), `item77-jupiter-luas.png`,
-`item77-lua-fade.png` e `item77-filme-volta-para-casa.png`.
-
-**A história completa está no ARQUIVO, item 77.**
+**77.** As linhas de órbita, ligadas por padrão — **FECHADO em 29/08**: ele
+aprovou `capturas/item77-filme-sem-orbitas.png` (o filme limpo). As linhas
+ficam no Atlas e no voo livre; a exceção do filme é autorização DELE, só
+das órbitas, e `fases.test.ts` a guarda. História no ARQUIVO.
 
 **83. Órbitas AAA — a fita e o foco.** (Aberto em 23/08, DEPOIS de medir o
 NASA Eyes. L1 e L2 nasceram sem queixa; o acabamento, em 25/08, ele
@@ -1691,6 +1594,14 @@ vale.
 **A ideia que veio junto com esta decisão virou o item 100** — o indicador e
 o controle de lente/zoom. São coisas separadas: aqui é *qual* lente o app
 usa; lá é *mostrar e mexer* nela.
+
+**ELE CRAVOU EM 29/08, com a foto na mão:** diante de
+`capturas/item86-lente-ab.png` — e sabendo do efeito colateral (o teto do
+zoom encurta de 226,84 para ~133,7 UA e a abertura natural nasce mais
+perto, 8,9 → 5,2 UA) — respondeu **"Aprovo — crava o 58°"**. A obra
+executa: a lente do filme passa a valer no app inteiro, as vistas de Atlas
+do gate re-baselizam DECLARADAS, e a vista de abertura escolhida no item
+61 (o sistema inteiro) embarca na mesma leva.
 
 **88.** Ao enquadrar QUALQUER lua, o que ficava no alto da tela era o eixo
 da NOSSA Lua — **FECHADO em 25/08**, conferido por ele na SEGUNDA LEVA da

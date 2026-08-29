@@ -4529,3 +4529,151 @@ Três sabotagens curtas — retirar direção, retirar posições alternativas e
 parar o avanço da sequência — reprovaram exatamente um teste cada; os JSONs
 ficam em `capturas/item75-fechamento/auditoria/`. O motor fecha sem
 dependência nova, processo vivo ou worktree temporária.
+
+## Item 70 — O ponto que morre seco na borda — a causa 2 e o fecho
+
+*(Movido verbatim do vivo em 29/08, quando o item fechou. A metade da*
+*faixa de guarda tem seção própria mais acima, "a metade que fechou".)*
+
+**70. O ponto que morre seco na borda.** *(O título nomeia o que está
+ABERTO, nunca o que já foi consertado — por essa disciplina este item já
+perdeu DOIS nomes em 25/08.)* (Achado em 22/08 pelo juiz de movimento, o
+MB1 — `scripts/visual/estabilidade-temporal.mjs`.) Quando uma estrela muito
+brilhante sai pela borda do quadro, o brilhão dela some de uma vez e **o
+céu inteiro perde luz num único passo de câmera**. Ao voltar, acende de
+novo do mesmo jeito. Está medido três vezes com a mesma assinatura, sempre
+na mesma estrela — Rigil Kentaurus. A causa 2 pousou em 27/08; o que
+falta é o olho dele na foto da borda.
+
+**A METADE QUE FECHOU em 25/08** (história no ARQUIVO): eram DUAS causas, e
+nenhuma delas a pupila. A **causa 1** — o segundo cobertor
+(`ClaraoDoCampo`) vestindo um rascunho que só tinha o que estava DENTRO do
+quadro — morreu com a **faixa de guarda** (`MARGEM_DO_CAMPO = 128 px`, o
+joelho medido). Na mesma rodada fecharam a **cessão da linha de órbita**
+(decisão dele) e a **faixa de instrumento** do juiz. **O MB1 foi de 6
+defeitos a ZERO, sem afrouxar soleira nenhuma, e o zero repete.**
+
+**A CAUSA 2 POUSOU em 27/08.** O vértice do ponto é preso 1 px dentro
+do clip e a PSF é avaliada pela distância verdadeira (`gl_FragCoord`
+menos o centro real) — o mesmo desenho da hero, agora nos três
+desenhistas do `STAR_FRAG` (catálogo, cascas, planetas). A largura do
+quadro sai da projeção, sem uniforme novo. Juiz: `scripts/visual/ponto-na-borda.mjs`.
+Medido em 1128×1080 dpr 1, Rigil Kentaurus: o pico da faixa cai **2,6%**
+no passo que cruza a borda (234 → 228 de 255) e depois desce com o rabo
+da PSF (186, 105, piso ~45). Foto:
+`capturas/item70-borda-depois-v3.png` — **espera o olho dele**.
+Neste Mac (ANGLE/Metal) o GPU já mantinha o sprite 1–2 px fora, então
+sabotar o prender não mudou a curva; o prender é o conserto portátil
+para o GPU que descarta o ponto no clip. **O MB1 não cobra este
+pedaço**; a régua nova mora no juiz acima.
+
+**O TAMANHO DO EFEITO DEPENDE DA JANELA** (medido em 25/08, item 81). Os
+números originais saíram de um quadro de 613 px, onde cada estrela é
+**3,1× mais quente** que num de 1080. No `pan` a queda do passo cai de
+−24,6% para **menos de 5%** a 1080 px; no `fov` ela **FICA** (−29,4%). A
+causa 2 mediu-se em 1128×1080, e é essa a janela do juiz.
+
+**AS TRÊS FOTOS DESTA HISTÓRIA JÁ SERVIRAM — C5, 25/08:** ele olhou
+`capturas/item70-giro-antes-depois.png`,
+`capturas/item70-linha-cede-antes-depois.png` e
+`capturas/item72-nobloom-antes-depois.png` pela Sala de Conferência e
+confirmou **o giro e a borda como bons**. Com isso a metade que fechou está
+ACEITA por ele, a nota de "não apagar" morre com a conferência, e **o que
+este item ainda é resume-se à foto da causa 2** — espera o olho dele.
+
+**DUAS REGRAS NASCERAM AQUI e valem para toda a casa:** *A/B se roda de
+ÁRVORE LIMPA dos dois lados — e se não der, o que sobrou de sujo entra
+NOMEADO no carimbo, arquivo por arquivo*; e *JSON de datas diferentes não é
+A/B*.
+
+**A história completa está no ARQUIVO, item 70.**
+
+
+**FECHADO em 29/08, pelo olho dele:** diante de
+`capturas/item70-borda-depois-v3.png` ele respondeu **"Está bom — fecha o
+70"**. Com isso as duas causas estão consertadas e aceitas, e o item sai
+da lista viva.
+
+## Item 77 — As linhas de órbita, ligadas por padrão — o fecho
+
+*(Movido verbatim do vivo em 29/08, quando o item fechou. A história do*
+*código, das decisões 1–3 e das provas tem seção própria mais acima.)*
+
+**77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
+FALTA SÓ O OLHO DELE.** A órbita é o DADO,
+não enfeite: NASA Eyes, Celestia e SpaceEngine desenham as três. Apareceram
+**30 laços** (os nove planetas e as 21 luas), com camada `noorbitas` na
+gaveta, fade nas duas pontas, lua só com o pai enquadrado, e **sem efeméride
+viva não há linha**.
+
+**O QUE ELE APROVOU (C1, pela Sala de Conferência):** as linhas **no
+Atlas**. Com isso as decisões **1** e **2**, que iam junto na conferência,
+ficam de pé como estão e não se re-litigam:
+
+1. **A curva NÃO sai de "amostrar um período", porque esse caminho não
+   existe.** A efeméride cobre 1950–2050, e um período inteiro cai fora
+   dela em **quatro dos nove planetas** — metade do sistema ficaria sem
+   linha, para sempre. O que ficou é a **cônica osculadora do estado
+   vivo**, que é o que "linha de órbita" significa nos três programas de
+   referência: o primeiro vértice do laço **É** a posição viva do corpo,
+   por identidade algébrica.
+2. **Os oito corpos SEM PONTO ficaram de fora, e a decisão foi tomada com a
+   FOTO na mão.** Ceres, Éris, Haumea, Makemake, Quaoar, Vesta, Palas e
+   Hígia juntos viravam um **novelo**, e os PLANETAS — que são o que este
+   item existe para deixar legível — sumiam dentro dele. Devolvê-los é
+   **UMA LINHA** (`HELIO_SEM_PONTO`, em `world/orbitas.ts`), e virou o
+   degrau **G1** do item 83.
+
+**A DECISÃO 3 ELE RESPONDEU, E A RESPOSTA VIROU OBRA — FEITA em 25/08.
+Palavras dele:** *"tirar do filme (aceito recriar a separação entre modos
+só aí)"*.
+
+**⛔ O QUE FALTA NESTE ITEM É SÓ O OLHO DELE:**
+`capturas/item77-filme-sem-orbitas.png` — a volta para casa ANTES (as
+quatro elipses sobre o Sol) × DEPOIS (o céu do filme, sem linha). Se ele
+aprovar, o item fecha e vai para o museu.
+
+**ONDE A EXCEÇÃO MORA, para quem for mexer nisso um dia.** O mapa
+`LINHAS_DE_ORBITA_POR_FASE` (`three/fases.ts`) diz, fase a fase, se a
+camada desenha: **não** no filme (`intro`, `journey`, `end`) e no
+`loading`; **sim** no Atlas e no voo livre. Quem lê o mapa é UM só — a
+camada, dentro de `Orbitas.update` (`world/orbitas.ts`, §7) —, e a fase
+chega lá como **parâmetro obrigatório**: apagá-lo não compila. A gaveta
+não perdeu nada: o `noorbitas` continua governando a camada onde sempre
+governou, e o gate se MULTIPLICA com ele.
+
+**É EXCEÇÃO AUTORIZADA POR ELE** à lei do mundo único (item **61**: *"o
+modo atlas na minha visao deveria ser o modo único"*), e a autorização é
+**só aí, com as palavras dele**: ninguém a estende para brilho, lente,
+nomes, bloom ou qualquer outra camada, e quem tentar está inventando
+permissão que ele não deu. **Isso não é promessa de comentário:**
+`fases.test.ts` varre a árvore e reprova qualquer consumidor do mapa que
+não seja a camada das órbitas.
+
+**A PROVA, em número.** `ab-identidade` nas **61 vistas**: **UMA** difere —
+`mergulho` (a volta para casa, t=180), `a6efa49a8749` → `b0c38175a512`;
+**56 IGUAIS**, e o Atlas entre elas (`atlas 45082fd1a0e5` dos dois lados,
+mais as 12 de `foco-*`/`anao-*`). As **4 INSTÁVEIS** (`eclipse-limbo`,
+`saturno-anel`, `saturno-anelnb`, `foco-titan`) já não repetiam **no lado
+ANTES**, com o código de HEAD: é tremor herdado, não desta obra. O diff de
+pixel do `mergulho`: **11.038 px de 3.083.400 (0,358%)**, e **11.027 SÓ
+PERDERAM luz** — assinatura de conteúdo que sumiu, não de ULP.
+**Sabotagem** (worktree, 77 dentes): gate removido → 2 reprovam; gate
+invertido → 10; exceção estendida a outra camada → 1; director passando
+fase digitada → 1; parâmetro apagado → **20 erros de compilação**.
+
+**AS FOTOS:** `capturas/item77-filme-sem-orbitas.png` (a que espera o olho
+dele), `item77-atlas-com-orbitas.png` e `item77-atlas-sem-orbitas.png` (o
+par que decidiu o Atlas, na vista de 226,84 UA que desde o item 61 é o TETO
+do zoom — **não é o candidato (a)**, que é o sistema interno de
+`capturas/vista-padrao-abertura.png`), `item77-jupiter-luas.png`,
+`item77-lua-fade.png` e `item77-filme-volta-para-casa.png`.
+
+**A história completa está no ARQUIVO, item 77.**
+
+
+**FECHADO em 29/08, pelo olho dele:** diante de
+`capturas/item77-filme-sem-orbitas.png` (a volta para casa, antes × depois)
+ele respondeu **"Aprovo — fecha o 77"**. As linhas ficam no Atlas e no voo
+livre; o filme segue limpo, e a exceção por fase continua guardada por
+`fases.test.ts`, autorizada por ele e restrita às órbitas.
