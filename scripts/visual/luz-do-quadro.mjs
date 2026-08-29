@@ -726,12 +726,19 @@ const RAIO_SOL_UA = RAIO_SOL_PC / UA_EM_PC;
  * grampear (lá a asa da lei é pequena); a faixa em que os dois números
  * divergiam é a de perto, e ela está inteira aqui dentro.
  */
-const TETO_DO_ATLAS_UA = 255.5;
+// o mais longe a que a RODA leva a câmera no modo — degrau pedido acima
+// disso seria grampeado e mediria outra distância. Era 255,5 UA na era
+// da lente de 35°; com a lente única de 58° (item 86, 29/08) o teto de
+// mesa ui=1 mede 133,68 UA (docstring de `tetoDeZoom`) e o desta janela
+// fica um pouco acima — nenhum degrau da escada mora entre os dois, então
+// o corte é o mesmo: caem o 150 e os de lá para fora (SEIS degraus).
+const TETO_DO_ATLAS_UA = 133.7;
 
 const escadaDaPerna = () =>
   PERNA === 'atlas' ? ESCADA_UA.filter((ua) => ua <= TETO_DO_ATLAS_UA) : ESCADA_UA;
 
-/** o fov da perna: a lente do voo livre (58°) ou a do Atlas (35°) */
+/** o fov da perna: hoje as DUAS lentes são 58° (item 86) — o par segue
+ *  separado para o dia em que divergirem de novo */
 const FOV_DA_PERNA = PERNA === 'atlas' ? ATLAS_FOV_GRAUS : FOV_GRAUS;
 
 function urlDaDistancia(ua) {

@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 108.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 109.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`.)*
 
@@ -45,6 +45,25 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 ---
 
 ## O BASTÃO — onde a rodada parou (29/08)
+
+**29/08 (noite) — A LENTE POUSOU INTEIRA; O FIM DO FILME REVELOU UM BUG
+HERDADO (108).** A obra dos itens **86+61** fechou com todas as provas:
+58° no app inteiro, abertura no sistema inteiro (nasce no teto, ~133,7
+UA), A/B de 61 vistas com o filme **bit-idêntico** e só as 9 de Atlas
+mudando (declarado), sabotagem independente 4/4 mordendo, suíte cheia
+2.461 verdes, `atlas-smoke` e `luz-do-quadro` re-pinados com números
+medidos, NORTE atualizado — **86 e 61 FECHARAM e estão no museu**. No
+meio da leva ele reportou: *"o filme nao mostra mais direito no final a
+lua e a terra"* — virou o item **108**, e a medida do mesmo dia ABSOLVEU
+a lente e o roteiro (fim do filme bit-idêntico em três códigos) e
+FLAGROU o verdadeiro defeito, com a receita dele: **entrar no filme
+pelo botão do Atlas deixa a câmera presa na pose do Atlas enquanto o
+filme toca** (fotos item108-*), defeito HERDADO (existe no código
+pré-lente), suspeito de nascer com o motor do 75. **A fila agora: 108
+(o conserto do play vindo do Atlas — reporte dele, incomoda) → 100 (o
+HUD de lente/zoom, destravado).** O 108 ganhou obrigação de juiz: uma
+vista oficial do fim do filme (t=190/193) entra no `ab-identidade`,
+que hoje para em t=180.
 
 **29/08 (tarde) — A SALA DE CONFERÊNCIA JULGOU CINCO FOTOS E A FILA
 DESTRAVOU.** Ele olhou as cinco no chat, de uma vez: **70 FECHOU** (a
@@ -764,68 +783,13 @@ cópias — o estado (`texturas`, `recargas`, `texturasVivas`) ainda mora em
 cada classe; o passo honesto é esse estado mudar de casa para o pipeline
 único primeiro, e o double-buffer nascer lá, uma vez.)*
 
-**61. Rever a UI/UX inteira — DECISÃO DELE, 21/08. A ONDA POUSOU E ELE
-CONFERIU EM 25/08; o que sobra é RE-JULGAR A VISTA DE ABERTURA.** Palavras dele: *"nao, mas acho que podemos rever essa UI/UX
-(atlas tinha ideias boas de UX/UI e outros Apps tem até coisas melhores)"*
-— ou seja, **não** é para separar os Ajustes; é revisão da interface
-inteira. E a parte grande: *"o modo atlas na minha visao deveria ser o modo
-único, a viagem na verdade para mim é só uma ferramenta do modo atlas"*.
-
-**FECHARAM entre 22 e 24/08, e a história está no ARQUIVO:** os três botões
-iguais na abertura; os controles do filme somem sozinhos; o selo de
-honestidade virou UMA linha; as camadas saíram dos Ajustes e a gaveta virou
-a porta única; o **MODO ÚNICO inteiro**, em cinco passos, incluindo a vista
-padrão a ~9 UA; as tarjas pretas saíram do celular; *"Explorar livremente"*
-encurtou para **"Explorar"**; a folha do celular ganhou a quarta saída; e o
-clarão do Sol virou **teto único de 0,07**, decisão dele em duas etapas.
-
-**A CARA NOVA ESTÁ CONFERIDA — C8, 25/08, pela Sala de Conferência: ele
-confirmou o modo único e a interface nova como bons.** As fotos
-`capturas/item61-*`, `capturas/vista-padrao-*` e `capturas/clarao-v2-*` **já
-serviram**. E com C7 (as telas de erro, item **79**) fechando no mesmo
-olhar, a onda da UI/UX está aceita por inteiro — menos a vista de abertura,
-que é o que sobra abaixo.
-
-**"EXPLORAR" É A PALAVRA, E O ASSUNTO MORREU EM 25/08 (Q7).** Ele tinha
-oferecido *"navegar"* como alternativa sem exigi-la; perguntado, cravou
-**"Explorar (como está)"**. O bullet do NAVEGAR **saiu desta lista** —
-não é mais alternativa aceita, é caminho fechado. `components/Hud.tsx` e
-`components/BarraOuAlcas.tsx` ficam como estão, e trocar a palavra passa a
-exigir pedido novo dele.
-
-**O QUE FICA ABERTO:**
-
-- **A VISTA (a) NÃO É DEFINITIVA, e a hora de RE-JULGAR chegou.** Ele
-  apontou, na noite de 23/08, que o **contexto de abertura do NASA Eyes é
-  muito melhor que o nosso** — o Eyes abre no sistema INTEIRO e mesmo
-  assim é legível. Isto obriga a uma confissão: a escolha do (a) foi
-  **parcialmente FORÇADA pela dívida**, não preferência final — a vista
-  larga era "dez nomes num nó de 40 px" sobre linhas de um pixel, e descer
-  para o sistema interno foi o jeito de fugir do nó, não o de dar o melhor
-  contexto. **N1** (item 82) e **L2** (item 83) pousaram em 24/08, e era
-  isso que a vista larga esperava. **A folha de fotos SAIU em 27/08** —
-  `capturas/item61-abertura-folha.png`: sistema inteiro no estilo Eyes ×
-  interno atual × meio-termo, os três sob a lente nova de 58°, com HUD.
-  **A decisão
-  é DELE, e ninguém trate a (a) como resposta final até isso acontecer.**
-  **E ELA ANDA EMPARELHADA COM A LENTE (item 86), por decisão de 25/08:**
-  ele mandou abrir o fov do filme para o app inteiro, e a lente é metade da
-  razão pela qual a vista larga era ilegível. **As duas folhas de foto — a
-  do A/B da lente e a da vista de abertura — saem da MESMA sessão de
-  captura**, no mesmo binário, senão ele julga a vista larga sob uma lente
-  que já não vai existir.
-  **ELE JULGOU EM 29/08, diante da folha:** a abertura é o **sistema
-  inteiro, estilo NASA Eyes** — o candidato **(a) DA FOLHA** (câmera no
-  teto do zoom sob 58°; não confundir com a vista (a) antiga, que era o
-  sistema interno). Vira obra junto com a lente do item 86, na mesma leva.
-- **o Atlas parar de parecer mais vazio que o filme** (*"parece que o modo
-  atlas fica mais morto, vazio..."*). **Um mundo só JÁ É LEI e já é
-  código.** A medida de 24/08 achou a causa, e ela não é regra por modo: é
-  a **LENTE** (35° no Atlas contra 58°). Está no item **86** — e **ele
-  DECIDIU em 25/08: abrir a lente do filme para o app inteiro**, com foto
-  A/B antes de cravar.
-
-**A história completa está no ARQUIVO, item 61.**
+**61.** Rever a UI/UX inteira — **FECHADO em 29/08**: a última ponta (a
+vista de abertura) foi julgada por ele na folha
+`capturas/item61-abertura-folha.png` — **o sistema inteiro, estilo NASA
+Eyes** — e pousou junto com a lente do 86 (a abertura nasce no teto,
+~133,7 UA sob 58°; na abertura acendem as cinco órbitas de fora e os
+nomes Sol, Netuno e Plutão). O resto da onda já estava aceito desde
+C8/25-08. História no ARQUIVO.
 
 **70.** O ponto que morria seco na borda — **FECHADO em 29/08**: as duas
 causas consertadas (a faixa de guarda em 25/08; o vértice preso e a PSF
@@ -1298,6 +1262,66 @@ item **86**: lá se decide *qual* lente o app usa; aqui se **mostra e se
 mexe** nela. O 86 anda primeiro — mostrar uma lente que está prestes a mudar
 é trabalho jogado fora.
 
+
+**108. O fim do filme não mostra direito a Lua e a Terra.** (Palavras
+dele, 29/08, ditas ao ver o filme depois da lente nova: *"agora que
+mudou-se a lente o filme nao mostra mais direito no final a lua e a
+terra, ficou errado. será que no filme nao deverimaos manter a direcao
+de lente do jeito que era? motor de filme nao usa os efeitos e lentes de
+acordo com o roteiro/script?"*)
+
+**A MEDIDA JÁ FEITA, no mesmo dia — e ela absolve a lente E o roteiro:**
+os cinco instantes finais (t=183, 187, 190, 192, 193) são
+**bit-idênticos** em três códigos — antes da lente (a50a644), depois da
+lente (c7081d2) e antes da conversão do take final para roteiro
+(b3cd9cc). O motor LÊ a lente do roteiro, como ele esperava; o fim do
+filme está assim desde antes das duas obras. PNGs da sonda no
+scratchpad da sessão; a sonda é reproduzível (capturas por
+`?t=…&shot=2`, 1200×900).
+
+**O QUE SE VÊ nos quadros finais, para quando ele disser o que é o
+"errado":** em t=190/193 a Terra aparece de dia inteiro (Américas
+acesas, o pouso desenhado do roteiro) com um clarão de 4 pontas GRANDE
+dentro do quadro (abaixo/à direita da Terra) e um segundo clarão menor —
+e a Lua não aparece como corpo, só como clarão. Hipóteses a confirmar
+com ele: (a) o clarão gigante junto da Terra é o que incomoda; (b) a
+Lua virar estrela em vez de globo é o que incomoda; (c) o incômodo é
+DEPOIS do filme — a volta ao Atlas, que desde 29/08 abre no sistema
+inteiro, onde a Terra não tem nome nem órbita acesa (casa some da
+tela ao fim da viagem).
+
+**A RECEITA CHEGOU DELE, no mesmo dia (29/08, palavras dele):** *"vi
+novamente agora e apareceu.. tem algo estranho acontecendo talvez"* e
+*"eu estava no atlas e voltei para o modo de filme, talvez tenha algum
+bug quando é feito dessa forma"*. Ou seja: é INTERMITENTE e o gatilho é
+o caminho **Atlas → "Ver o filme"**.
+
+**FLAGRADO E MEDIDO no mesmo dia, com a receita dele — e o defeito é
+HERDADO, não desta rodada.** A sonda (headless, 1200×900, `q=cinema`):
+entra por `?atlas=1`, assenta, chama `director.play()` (o que o botão
+faz) e deixa o relógio correr de verdade. Resultado: **a câmera fica
+presa na pose do Atlas enquanto o filme toca** — a fase vira `journey`,
+o relógio anda, as tarjas de cinema entram, e o quadro mostra o Sol
+como estrelinha com rótulo do Atlas em vez das cenas do roteiro. No fim
+não há Lua nem Terra, que é exatamente o que ele viu. Fotos:
+`capturas/item108-viaatlas-fim.png` (o "fim" pela receita: SOL · 7,9 UA,
+céu vazio), `capturas/item108-viaatlas-t24-preobra.png` (o MESMO defeito
+no código de ANTES da lente — SOL · 37,6 UA — prova de que é herdado) e
+`capturas/item108-fim-certo-t193.png` (o fim CERTO, pelo caminho
+direto: a Terra das Américas). A passada limpa (sessão fresca, play até
+o fim) mostra a Terra normalmente; o `?t=` (seek) também reconstrói
+certo — o furo é só o play vindo do Atlas. **Suspeito número um:** o
+motor declarativo do item 75 arma o escritor de câmera na entrada
+normal do filme e o caminho `play()`-vindo-do-Atlas não o re-arma.
+
+A passada limpa (play de t=178 ao fim, sessão fresca) mostra a
+Terra normalmente.
+
+**FUROU O JUIZ, e isso vira obrigação aqui:** a última vista oficial do
+`ab-identidade` no filme é **t=180** — os 13 segundos finais não têm
+vista nenhuma. Quem fechar este item ACRESCENTA uma vista do fim (t=190
+ou t=193) à lista oficial, para o buraco não reabrir.
+
 ---
 
 ## BAIXA — dívida interna, ninguém vê
@@ -1513,95 +1537,13 @@ repetição, e a repetição respondeu. **Segunda aparição; continua sem se
 reproduzir sob comando, e continua sendo o único juiz da casa que
 reprova inocente.**
 
-**86.** (Aberto em 24/08, respondendo a uma impressão dele. **DECIDIDO POR
-ELE em 25/08 — vira OBRA: abrir a lente do filme para o app inteiro.**)
-**O céu de fundo PARECE mais apagado no Atlas — e parece com razão, mas a
-causa é a LENTE, não uma regra por modo.** Ele relatou a impressão; a resposta vem
-com número, porque impressão dele merece medida, não silêncio.
-**O QUE NÃO EXISTE:** varredura completa de `src/` não achou NENHUMA
-dependência de fase/modo no brilho, exposição, bloom ou ganho do campo
-estelar. Os uniformes do campo (`STAR_VERT`/`STAR_FRAG`, escritos por
-`StarField` e `WrappedStars`) saem de constantes, de resolução, de
-posição e do `catFade` — que depende da DISTÂNCIA de casa, não da fase.
-As três regras por modo que já existiram (`claraoDoAtlas`, o
-`setGradacao` do bloom e a dose por fase do clarão) estão mortas, com
-lápide e com `simbolosProibidos.test.ts` guardando o túmulo. *(Desde
-25/08 existe UMA regra por modo viva na casa, e ela não é de luz: as
-LINHAS DE ÓRBITA não desenham no filme — exceção que ELE autorizou pelo
-nome, item **77** decisão 3. Ela governa a visibilidade de uma camada de
-instrumento, não brilho, exposição, bloom nem ganho do campo, e
-`fases.test.ts` reprova qualquer tentativa de estendê-la.)* E a *dose do
-Sol por fase* de `director.ts` foi seguida até o fim do fio: alimenta só
-`cycleAmpK` em `world/sol/activity.js` (manchas e plages do CORPO do
-Sol) e não toca o campo.
-**A GRADAÇÃO TAMBÉM NÃO DIFERE**, medido com `?dbgfade=1` na mesma
-distância: Atlas e voo livre dão os MESMOS `gal=0.00 loc=1.00`. A
-suspeita de que a trava `leftDisk` atravessasse o portal e deixasse o
-Atlas com bloom de "vista externa" DENTRO do sistema **não se confirma na
-entrada por link**; ela só poderia acender vindo de um instante do filme
-já fora do disco, e nesse caso é a lei declarada do item 61 (o ambiente
-parou de mudar por troca de fase) — história, não modo.
-**O QUE EXISTE, medido nas duas pernas versionadas da régua de luz, na
-MESMA distância:** a luz média do quadro no Atlas é **0,0180** contra
-**0,0613** no voo livre a 3,6 UA, e **0,0191 contra 0,0612** a 150 UA —
-o quadro do Atlas tem ~**3,1× menos luz**. E é exatamente o que a LENTE
-prevê: o Atlas roda pinado em **35°** (`ATLAS_FOV_GRAUS`) e o voo
-livre/filme em **58°**; como a PSF do campo é de PIXEL FIXO (não cresce
-com a lente), estreitar o fov não escurece estrela nenhuma — só cabem
-menos estrelas por tela. A razão de área de céu é
-`(tan 17,5° / tan 29°)² = 0,324`, isto é **3,09× menos céu por tela**,
-contra os 3,1× medidos. **Mesma estrela, mesmo brilho, menos estrelas.**
-Some-se o `uZoom` das heroes (`heroStars.ts`), que por LEI encolhe o
-clarão sob teleobjetiva: a 35° vale 0,569 contra ~0,95–1,0 nos atos
-largos do filme.
-**NÃO HÁ CONSERTO PEQUENO E LÍCITO**, e por isso isto é item e não obra:
-mexer no fov quebra a reprodutibilidade que o pino existe para dar, e
-mexer no brilho POR MODO é exatamente o que ele proibiu. O caminho
-honesto, se ele quiser o céu mais cheio no Atlas, é um **eixo global de
-lente** — para todo mundo, nunca por modo. **Decisão dele.**
-
-**ELE DECIDIU EM 25/08, pela Sala de Conferência (Q4). Palavras dele:**
-*"abrir a lente (lente do modo filme) para o app inteiro — voltem com foto
-A/B"*. Ou seja: o **58°** do filme passa a valer também no Atlas, os
-`ATLAS_FOV_GRAUS` de 35° saem do caminho, e o eixo é **global**, como a
-medida acima já apontava ser o único caminho lícito.
-
-**A OBRA, e ela tem uma condição que é dele:** fazer o A/B da lente e
-**voltar com FOTO antes de cravar** — Atlas a 35° × Atlas a 58°, na mesma
-distância, mesma data, árvore limpa dos dois lados. Três coisas para quem
-executar: (i) o `uZoom` das heroes (`heroStars.ts`) responde à lente por
-LEI — a 58° o clarão delas cresce de 0,569 para ~0,95, e isso É parte do
-efeito, não bug a compensar; (ii) mudar o fov re-baseliza as vistas de Atlas
-do gate, e isso se declara; (iii) o teto do zoom e o enquadramento padrão
-mudam de tamanho aparente junto — o par de fotos tem de mostrar isso, não
-só o céu.
-
-**A FOTO SAIU em 27/08: `capturas/item86-lente-ab.png`** — 4 painéis, data
-pinada (jd 2460409,264), árvore limpa nos dois lados (o 58° era worktree de
-uma linha, removido; nada pousou). Par 1: mesma câmera (8,9 UA), 35° × 58°.
-Par 2: o enquadramento natural de cada lado. **Achado que ele precisa saber
-antes de julgar:** a 58° o teto do zoom cai de 226,84 para ~133,7 UA e a
-abertura natural desce de ~8,9 para ~5,2 UA. Espera o olho dele junto com
-a folha do item 61.
-
-**⚠ ESTA FOTO NÃO SAI SOZINHA.** Ela conversa direto com o **re-julgamento
-da vista de abertura** (item **61**): a vista larga era ilegível em parte
-por causa da lente, e ele vai julgar as duas coisas no mesmo olhar. **As
-duas folhas de foto — a da lente e a da vista de abertura — saem da MESMA
-sessão de captura**, senão ele compara maçã com laranja e a conferência não
-vale.
-
-**A ideia que veio junto com esta decisão virou o item 100** — o indicador e
-o controle de lente/zoom. São coisas separadas: aqui é *qual* lente o app
-usa; lá é *mostrar e mexer* nela.
-
-**ELE CRAVOU EM 29/08, com a foto na mão:** diante de
-`capturas/item86-lente-ab.png` — e sabendo do efeito colateral (o teto do
-zoom encurta de 226,84 para ~133,7 UA e a abertura natural nasce mais
-perto, 8,9 → 5,2 UA) — respondeu **"Aprovo — crava o 58°"**. A obra
-executa: a lente do filme passa a valer no app inteiro, as vistas de Atlas
-do gate re-baselizam DECLARADAS, e a vista de abertura escolhida no item
-61 (o sistema inteiro) embarca na mesma leva.
+**86.** O céu do Atlas parecia mais apagado e a causa era a LENTE —
+**FECHADO em 29/08**: ele cravou o 58° com a foto A/B na mão
+(`capturas/item86-lente-ab.png`) e a obra pousou no mesmo dia
+(`ATLAS_FOV_GRAUS` = `FOV_DA_CASA`; teto do zoom 226,84 → 133,68 UA;
+corpo do Sol a 3,7741 raios; A/B de 61 vistas com o filme bit-idêntico
+e só as 9 de Atlas mudando; sabotagem independente 4/4). História no
+ARQUIVO.
 
 **88.** Ao enquadrar QUALQUER lua, o que ficava no alto da tela era o eixo
 da NOSSA Lua — **FECHADO em 25/08**, conferido por ele na SEGUNDA LEVA da

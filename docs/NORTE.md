@@ -106,40 +106,37 @@ protege adiciona risco sem ganho.
   sentidos:** entrar do filme POUSA na pose exata (`AtlasRig.pousar`), com
   o alvo derivado em três degraus — o corpo de que a câmera está mais
   perto, senão o Sol, senão o degrau **`céu`** (alvo no Sol, raio igual à
-  distância do próprio observador). O fov corta para 35° atrás do véu. Sem
-  filme atrás (`?atlas=1`, o botão da abertura) quem responde é a vista de
-  abertura.
-- **A VISTA DE ABERTURA é o SISTEMA INTERNO** — o candidato (a) que ele
-  escolheu em 23/08, fechado no item 61. **E ELA NÃO É DEFINITIVA:** ele
-  apontou na mesma noite que o contexto de abertura do NASA Eyes é melhor
-  que o nosso (lá a vista é do sistema INTEIRO e ainda assim legível), e
-  a escolha do (a) foi em parte FORÇADA pela dívida — a nossa vista larga
-  era um nó de dez nomes sobre linhas de um pixel. **METADE DA DÍVIDA
-  ESTÁ PAGA:** o item **82** (N1) pousou em 24/08 e o nó morreu — no teto
-  do zoom, que é a vista larga, sobraram TRÊS nomes (o Sol, Netuno e
-  Plutão) contra os 27 de antes. **A OUTRA METADE FOI PAGA EM 24/08:** o
-  **83** (L2) trocou a linha de um pixel pela FITA de 1,25 px CSS, e as
-  faíscas do serrilhado caíram **−81,2%** somando os cinco degraus da
-  régua (−84,6% no melhor deles). Com as duas pagas, a vista larga
-  vira contexto viável e **a pergunta da abertura se RE-JULGA**, com
-  fotos lado a lado e decisão dele — é a conferência que agora espera
-  (`capturas/item83-*`). O detalhe está no `PENDENCIAS.md`, na fila. A esfera enquadrada deixou de ser
-  a órbita mais externa e passou a ser a **borda do sistema interno**
-  (`BORDA_DO_SISTEMA_INTERNO`, a órbita de Marte): a câmera nasce a **~9,1
-  UA** em vez de 226,84, e o item 77 acende ali as QUATRO linhas de dentro
-  e só elas. O **teto do zoom continua em 226,84 UA** — ele sai de
-  `orbitaMaisExterna`, não do raio enquadrado —, então a vista antiga
-  virou um lugar aonde se CHEGA puxando a roda, em vez do lugar de onde
-  não se podia sair. A DIREÇÃO de onde se olha continua saindo do corpo
-  mais externo, e isso é decisão: pendurá-la em Marte faria a máquina do
-  tempo girar o visitante em torno do Sol (687 dias contra 248 anos).
-  **CONSEQUÊNCIA QUE SE VÊ, e por isso está aqui e não só numa
-  docstring:** a porta `?d=` fala em RAIOS DO ALVO, e o alvo encolheu
-  ~25× (226,84 ÷ 9,1 = 24,9). Um link com `?d=` copiado ANTES de 23/08
-  pousa, portanto, **~25 vezes mais perto do Sol** do que pousava. É o
-  preço de a régua ser relativa — a alternativa (régua absoluta) quebraria
-  o `?d=` de todo alvo que não fosse a abertura —, e o espelho da URL
-  reescreve o valor certo no primeiro gesto do visitante.
+  distância do próprio observador). O fov assenta no pino do Atlas atrás
+  do véu — **58° desde 29/08** (item 86; era 35°). Sem filme atrás
+  (`?atlas=1`, o botão da abertura) quem responde é a vista de abertura.
+- **A LENTE É UMA SÓ NA CASA INTEIRA — 58°, decisão dele (item 86,
+  25→29/08).** A medida provou que o Atlas parecia mais apagado só
+  porque a lente de 35° punha 3,1× menos céu por tela; ele mandou
+  *"abrir a lente do filme para o app inteiro"* e cravou com a foto A/B
+  na mão. `ATLAS_FOV_GRAUS` passou a ser `FOV_DA_CASA`; brilho POR MODO
+  segue proibido. Números que andaram com a lente, medidos em 29/08: o
+  teto do zoom foi de 226,84 para **133,68 UA**; o corpo do Sol enquadra
+  a **3,77 raios** (era 6,40); a roda desce em **38 estalos**.
+- **A VISTA DE ABERTURA é o SISTEMA INTEIRO, estilo NASA Eyes — decisão
+  dele em 29/08** (item 61, pela folha `item61-abertura-folha.png` sob a
+  lente nova). A escolha do sistema interno de 23/08 tinha sido fuga da
+  dívida (o nó de dez nomes sobre linhas de um pixel); a dívida morreu —
+  os nomes (82/N1), a fita (83/L2) e a lente (86) — e ele escolheu o
+  contexto que sempre apontou como melhor. A esfera enquadrada volta a
+  ser a do **corpo mais externo** (raio e direção do MESMO corpo, no
+  mesmo instante, em `Escada.casaViva`); a câmera nasce NO teto do zoom
+  e o curso da roda é todo para dentro, como no Eyes. Na abertura o item
+  77 acende as CINCO linhas de fora no brilho cheio e o fade apaga as de
+  dentro (Mercúrio some; a vista interna, aonde a roda chega descendo,
+  continua acendendo as quatro de dentro e só elas).
+  **CONSEQUÊNCIA QUE SE VÊ:** a porta `?d=` fala em RAIOS DO ALVO, e o
+  alvo da abertura cresceu — um link com `?d=` copiado antes de 29/08
+  pousa mais LONGE do Sol do que pousava. É o preço de a régua ser
+  relativa, e o espelho da URL reescreve o valor certo no primeiro
+  gesto. **A prova da leva (29/08):** A/B de 61 vistas — o filme e o voo
+  livre bit-idênticos; as 9 que diferem são todas do Atlas (a lente e a
+  abertura, mudança declarada); sabotagem independente das guardas novas
+  em worktree, 4 de 4 mordendo.
 - Fase nova decide por mapa em `fases.ts`, não por cadeia de `if`.
 - O Atlas herda o look do filme. Diferença de desenho entre os dois modos
   é defeito — decisão dele CUMPRIDA no M1: `claraoDoAtlas` saiu do código
@@ -359,7 +356,7 @@ instrumento tem agora a sua nota.
 | `filme-smoke.mjs` | o roteiro na tela: texto e corte nas margens das 25 janelas de legenda, responsividade, e o relógio solto em NOVE instantes — o veredito é "andou?", com a taxa publicada como registro, nunca "andou X s em 420 ms de parede" (item 76, 22/08) | **2,6 min** | legenda, corte, retemporização, responsividade |
 | `filme-ritmo.mjs` | quanto a imagem muda por segundo no corte inteiro — 97 quadros parados — mais as folhas de contato | **~2,3 min** no passo padrão (extrapolado de 10 quadros em 0,3 min) | revisão de ritmo, e só como onde-olhar: a curva não mede tédio |
 | `busca-smoke.mjs` | a paleta de busca, o `?foco=` e o `?d=`: os dez corpos, a ida e volta pelo escritor vivo da URL (com a DISTÂNCIA dentro desde 22/08), latência por tecla, o atalho de teclado, o par clique/duplo clique num corpo, e a FICHA DO OBJETO que abre com o alvo escolhido — "Titã" na paleta abre a ficha dele com a distância a Saturno, `?foco=` que não acha não abre ficha nenhuma, e a ficha de SIRIUS diz a designação de Bayer, a distância em anos-luz e a temperatura derivada da cor (desde 22/08, item 74), e o DEDO abrindo a paleta pela alça ⌕ num aparelho de 390×844, com a folha de borda a borda e o campo focado (desde 23/08, item 62) — 37 vereditos | **1,9 min** | busca, deep-link de foco, rótulo clicável, gestos do Atlas, ficha do objeto, ficha de estrela |
-| `luz-do-quadro.mjs [ua…]` | quanto do quadro está lavado e o diâmetro do borrão contra o disco real e o clarão de direito, na escada de 11 distâncias; `julgarEscada` dá o veredito. **`PERNA=atlas` roda a MESMA escada DENTRO do modo** (item 61, 23/08), pelo endereço do próprio Atlas — lente de 35° na conta, piso de faíscas por lente e SETE dos onze degraus, porque o `tetoDeZoom` do rig para em 255,54 UA e os outros quatro são distâncias em que o modo não põe a câmera | **1,0 min inteira · 0,1 min por degrau** | exposição, bloom, clarão, qualquer coisa perto do Sol |
+| `luz-do-quadro.mjs [ua…]` | quanto do quadro está lavado e o diâmetro do borrão contra o disco real e o clarão de direito, na escada de 11 distâncias; `julgarEscada` dá o veredito. **`PERNA=atlas` roda a MESMA escada DENTRO do modo** (item 61, 23/08), pelo endereço do próprio Atlas — a lente vigente na conta (58° desde 29/08, item 86; era 35°), piso de faíscas por lente e SEIS dos onze degraus, porque o `tetoDeZoom` do rig para em ~133,7 UA e os outros cinco são distâncias em que o modo não põe a câmera | **1,0 min inteira · 0,1 min por degrau** | exposição, bloom, clarão, qualquer coisa perto do Sol |
 | `planeta-pixel.mjs [vista]` | se a luz que a camada dos planetas acende cai onde o `?dbgplan` mandou, a ≤0,5 px, por dois estimadores — lente `&nobloom=1&noclarao=1` e caixa de MEIA-ALTURA desde 22/08 (item 58a) | **0,4 min por vista** (as três ≈ 1,1 min) | camada dos planetas, fotometria dos corpos |
 | `sky-capture.mjs [tag]` | o céu interno contra o panorama ESO: 6 faces costuradas e os cinco termos da régua | **0,7 min** | céu, poeira, catálogo visto de casa |
 | `voo-smoke.mjs` | o voo livre: convite, furo do Spotlight ancorado, captura de ponteiro opt-in, backoff, soltura de teclas | **0,6 min** | voo livre |

@@ -22,7 +22,8 @@
 //     t=250 devolvia sempre a vista de abertura, a 224 UA de casa, e o
 //     Atlas parecia outro programa. Agora ela cobra o contrário —
 //     **três entradas, três vistas** — mais a prova que importa: a
-//     POSIÇÃO da câmera antes e depois do portal, e o fov em 35°.
+//     POSIÇÃO da câmera antes e depois do portal, e o fov no pino do
+//     Atlas (58° desde 29/08, item 86; era 35°).
 //
 //     A POSIÇÃO É COBRADA POR ERRO RELATIVO, não por `Object.is`, e o
 //     desvio é declarado: o pouso reconstrói a pose como (direção,
@@ -212,7 +213,10 @@ try {
       `t=${T}: a POSIÇÃO atravessa o portal — desvio ${p.erro.toExponential(2)}`
         + ` do raio (teto 1e-9)${p.exata ? ', bit-idêntica nos três eixos' : ''}`
     );
-    conferir(p.fov === 35, `t=${T}: o fov corta para 35° atrás do véu (${p.fov})`);
+    // desde 29/08 (item 86) a lente do Atlas é a da casa: 58°. O corte
+    // continua existindo — o shot pausado varre 15°–60° e o pino do
+    // Atlas escreve por cima — só o valor mudou.
+    conferir(p.fov === 58, `t=${T}: o fov assenta em 58° atrás do véu (${p.fov})`);
   }
 
   // ---- 3b: A QUARTA ENTRADA, a porta da ABERTURA (item 60) ---------
@@ -1105,9 +1109,11 @@ try {
     `...e depois de 176 estalos o alvo ainda é o mesmo ("${noTeto.foco}")`
   );
   conferir(
-    Math.abs(Math.log10(noTeto.teto / noPiso.piso) - 5.55) < 0.05,
+    // 5,32 décadas desde 29/08 (item 86): a lente de 58° encurtou o teto
+    // — eram 5,55 sob a de 35°
+    Math.abs(Math.log10(noTeto.teto / noPiso.piso) - 5.32) < 0.05,
     `a faixa inteira do alvo tem ${Math.log10(noTeto.teto / noPiso.piso).toFixed(2)} décadas`
-      + ` — as ~50 estaladas de ponta a ponta que o passo em log promete`
+      + ` — as ~48 estaladas de ponta a ponta que o passo em log promete`
   );
 
   // a PINÇA do trackpad é o mesmo `wheel` com `ctrlKey`, e sem limiar
@@ -1275,6 +1281,13 @@ try {
   // promessas foram REVOGADAS no dia seguinte, e o que cada endereço
   // cobra hoje está logo abaixo, nos vereditos.
   //
+  // E EM 29/08 A ABERTURA VOLTOU AO SISTEMA INTEIRO (itens 61+86, sob a
+  // lente de 58°): os dois endereços passaram a olhar a MESMA esfera —
+  // a abertura nasce no teto. As duas sondas ficam de pé de propósito:
+  // uma mede a vista de nascença, a outra a vista aonde a roda chega, e
+  // enquanto abertura e teto forem a mesma vista os censos têm de
+  // CONCORDAR — divergirem é o trilho gritando.
+  //
   // E EM 24/08 A PROMESSA MUDOU DE NATUREZA (item 82). O dono viu a
   // conta daquela promessa — *"o default todos os objetos estao com o
   // label ligado, fica uma confusao na tela"* — e o que ela cobrava
@@ -1331,14 +1344,17 @@ try {
   // designações de Bayer). Com a régua de relevância ela desenha OITO.
   //
   // O número é medido nesta janela (1200×900) e com este relógio
-  // (`jd=EPOCA`): quem mudar `JANELA` mede outro céu. Mercúrio projeta
-  // dentro da caixa do rótulo do Sol e perde o nome para ele — é a lei
-  // nova em ação ("colidiu, o menor some"), não um defeito. Se um dia
-  // ele voltar a ter nome, este pino se REESCREVE com o número novo, do
-  // jeito que este aqui foi escrito; afrouxar o dente para o juiz calar
-  // é que não vale.
-  const NA_ABERTURA = 8;
-  const CORPOS_COM_NOME = ['earth', 'mars', 'sun', 'venus'];
+  // (`jd=EPOCA`): quem mudar `JANELA` mede outro céu. DESDE 29/08 a
+  // abertura é o SISTEMA INTEIRO sob a lente de 58° (itens 61+86, a
+  // escolha dele pela folha) — o censo medido em 29/08 é TRÊS nomes,
+  // os mesmos três que o teto sempre teve: os corpos longe do nó do
+  // clarão. Na abertura interna de 23/08–29/08 eram 8 (earth, mars,
+  // sun, venus + 4 estrelas de nome próprio). Se a régua ou a vista
+  // mudarem, este pino se REESCREVE com o número novo, do jeito que
+  // este aqui foi escrito; afrouxar o dente para o juiz calar é que
+  // não vale.
+  const NA_ABERTURA = 3;
+  const CORPOS_COM_NOME = ['neptune', 'pluto', 'sun'];
   const corposDaAbertura = [...nomesDaAbertura.corpos].sort();
   const bateOsCorpos =
     corposDaAbertura.length === CORPOS_COM_NOME.length
@@ -1351,14 +1367,15 @@ try {
       + ` · medido: ${nomesDaAbertura.desenhados} nomes, corpos`
       + ` [${corposDaAbertura.join(', ')}]`
   );
-  // E AS QUATRO ESTRELAS SÃO ESTAS QUATRO, pelo nome (apertado em 24/08,
+  // E AS ESTRELAS SÃO ESTAS, pelo nome (a forma apertada em 24/08,
   // depois de o auditor mostrar que contagem + classe deixava passar
-  // QUALQUER quarteto de nome próprio — trocar Alnair por Vega passaria
-  // calado, e é justamente QUEM a régua escolhe que este item decidiu).
-  // A régua ordena por peso e desempata pelo mais PERTO, então o
-  // conjunto é função do céu daquela data (`jd=EPOCA`) e desta janela
-  // (1200×900) — as duas coisas estão pinadas acima.
-  const ESTRELAS_DA_ABERTURA = ['Aldhanab', 'Alnair', 'Peacock', 'Tiaki'];
+  // qualquer quarteto de nome próprio). Medido em 29/08 na abertura do
+  // sistema inteiro: NENHUMA estrela desenha — o quadro é o sistema, e
+  // os corpos tomam as vagas (na abertura interna eram Aldhanab,
+  // Alnair, Peacock e Tiaki). A régua ordena por peso e desempata pelo
+  // mais PERTO, então o conjunto é função do céu daquela data
+  // (`jd=EPOCA`) e desta janela (1200×900) — as duas pinadas acima.
+  const ESTRELAS_DA_ABERTURA = [];
   const estrelasNaTela = [...nomesDaAbertura.nomesDeEstrela].sort();
   const bateEstrelas =
     estrelasNaTela.length === ESTRELAS_DA_ABERTURA.length
@@ -1374,8 +1391,8 @@ try {
   // que o dono viu, e elas caem por serem o último degrau da tabela de
   // prioridade, sem uma regra nova que as nomeie.
   conferir(
-    nomesDaAbertura.estrelasBayer.length === 0 && nomesDaAbertura.estrelasProprias === 4,
-    `...e as estrelas que ficam são as de NOME PRÓPRIO —`
+    nomesDaAbertura.estrelasBayer.length === 0 && nomesDaAbertura.estrelasProprias === 0,
+    `...e nenhuma estrela ocupa vaga na abertura do sistema inteiro —`
       + ` ${nomesDaAbertura.estrelasProprias} próprias,`
       + ` ${nomesDaAbertura.estrelasBayer.length} designações de Bayer`
       + (nomesDaAbertura.estrelasBayer.length
@@ -2180,18 +2197,18 @@ try {
   // depois de reiniciar o servidor (grafo de módulos frio). Juiz que
   // escolhe o próprio alvo não é juiz.
   //
-  // Marte é um dos quatro corpos com nome na abertura (prova 15c) e
-  // foi o que a prova antiga acertava quando os rótulos tinham
-  // assentado. A prova ESPERA o rótulo assentar (duas leituras a
-  // ≤ 2 px) e relê a posição na hora do gesto.
+  // Plutão é um dos três corpos com nome na abertura do sistema
+  // inteiro (prova 15c; desde 29/08, item 61 — era Marte na abertura
+  // interna de 23/08–29/08, e Netuno ficou de fora porque a FICHA
+  // aberta cobre o rótulo dele a 390×844). A prova ESPERA o rótulo
+  // assentar (duas leituras a ≤ 2 px) e relê a posição na hora do gesto.
   //
   // E ELE TEM DE ESTAR SOBRE O CANVAS, e CONTINUAR SENDO CÉU DEPOIS
   // DO PRIMEIRO TOQUE — a metade que faltava, descoberta em 24/08
-  // (item 82). A ficha de Marte é a mais alta que existe (sete
-  // seções); se o rótulo ficar debaixo da folha, a prova FALHA com
+  // (item 82). Se o rótulo ficar debaixo da ficha, a prova FALHA com
   // essa frase, em vez de ir às compras noutro corpo.
-  const ALVO_DO_TOQUE = 'corpo:mars';
-  const NOME_DO_ALVO = 'Marte';
+  const ALVO_DO_TOQUE = 'corpo:pluto';
+  const NOME_DO_ALVO = 'Plutão';
   const rotulosNoCeu = async () => JSON.parse(await sessao.js(`JSON.stringify(
     window.__director.rotulos.alvos
       .filter((l) => l.desenhado === true && l.opacity >= 0.15)
