@@ -1,5 +1,0 @@
-{
-  "estilingue": {
-    "preload": { "corpos": ["earth", "moon"], "efemerides": true }
-  }
-}

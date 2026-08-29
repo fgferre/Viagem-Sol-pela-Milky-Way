@@ -1,0 +1,106 @@
+{
+  "planos": [
+    {
+      "camera": {
+        "duracao": 5,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Terra",
+          "de": "fimDaDeriva",
+          "para": "entradaDeCasa",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": { "tipo": "fixo", "ponto": "Terra" },
+        "lente": [54, 62],
+        "ritmo": "linear",
+        "ritmoDaLente": "glide",
+        "efeitoDeVelocidade": {
+          "tipo": "pulso-limitado", "amplitude": 0.9, "velocidade": 1.35
+        }
+      },
+      "fundoSilencioso": true,
+      "legendas": [{
+        "em": 0.12,
+        "texto": "A VOLTA PARA CASA",
+        "subtexto": "26 mil anos-luz até os minutos-luz de casa",
+        "duracao": 4.2
+      }]
+    },
+    {
+      "camera": {
+        "duracao": 12,
+        "movimento": {
+          "tipo": "sequencia",
+          "trechos": [
+            {
+              "ate": "fracaoDaLua",
+              "movimento": {
+                "tipo": "raspao",
+                "centro": "Lua",
+                "de": "entradaDeCasa",
+                "direcaoNoJoelho": "direcaoDoRaspao",
+                "para": "inicioDaVolta",
+                "distanciaMinima": "distanciaDoRaspao",
+                "joelho": "joelhoDoRaspao",
+                "sigma": 0.16,
+                "alongamento": 0.64,
+                "chao": 0.18,
+                "expoentes": [1.6, 1.45]
+              }
+            },
+            {
+              "ate": 1,
+              "movimento": {
+                "tipo": "arco",
+                "centro": "Terra",
+                "direcaoDe": "direcaoDaChegada",
+                "direcaoPara": "direcaoDoPouso",
+                "raio": ["raioInicialDaVolta", "raioFinalDaVolta"],
+                "progresso": {
+                  "tipo": "pouso", "para": 1, "pousaEm": 0.88, "expoente": 1.55
+                }
+              }
+            }
+          ]
+        },
+        "mira": {
+          "tipo": "raspao",
+          "principal": "Terra",
+          "assunto": "Lua",
+          "ate": "fracaoDaLua",
+          "joelho": "joelhoDoRaspao",
+          "sigma": 0.16,
+          "alongamento": 0.64,
+          "pesoMaximo": 0.83,
+          "alcance": "alcanceDaMira"
+        },
+        "lente": [62, 46],
+        "ritmo": "linear",
+        "ritmoDaLente": "glide",
+        "efeitoDeVelocidade": {
+          "tipo": "decaimento", "amplitude": 0.45, "ate": "fracaoDaLua", "expoente": 2
+        },
+        "inclinacao": {
+          "tipo": "pouso", "para": "inclinacaoDosPolos", "inicio": "fracaoDaLua",
+          "pousaEm": 0.88, "expoente": 1.55
+        }
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.06,
+          "texto": "A LUA",
+          "subtexto": "1,3 segundo-luz — o mais longe que o ser humano já chegou",
+          "duracao": 4.2
+        },
+        {
+          "em": 0.44,
+          "texto": "A TERRA",
+          "subtexto": "o único ponto com oceano de onde a galáxia inteira foi decifrada",
+          "duracao": 60
+        }
+      ]
+    }
+  ]
+}

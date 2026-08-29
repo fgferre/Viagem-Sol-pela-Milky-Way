@@ -70,13 +70,19 @@ describe('apoios do roteiro — item 75', () => {
   it('mudar o JSON muda a preparação no Director e os tempos reais de captura', async () => {
     vi.resetModules();
     vi.stubGlobal('window', { location: { search: '' } });
-    vi.doMock('./roteiros/apoiosDaViagem.json', () => ({ default: {
-      estilingue: { preload: { corpos: ['mars'], efemerides: false } },
-    } }));
     vi.doMock('./roteiros/revelacao.json', () => ({ default: {
-      planos: revelacao.planos.map((plano, i) => i === 0
-        ? { ...plano, preload: { efemerides: true }, qa: { edge: 0.2 } }
-        : i === 2 ? { ...plano, qa: { face: 0.8 } } : plano),
+      planos: revelacao.planos.map((plano) => {
+        if ('preload' in plano) {
+          return { ...plano, preload: { corpos: ['mars'], efemerides: false } };
+        }
+        if ('qa' in plano && plano.qa && 'edge' in plano.qa) {
+          return { ...plano, preload: { efemerides: true }, qa: { edge: 0.2 } };
+        }
+        if ('qa' in plano && plano.qa && 'face' in plano.qa) {
+          return { ...plano, qa: { face: 0.8 } };
+        }
+        return plano;
+      }),
     } }));
     try {
       const { Director } = await import('../director');
@@ -113,7 +119,6 @@ describe('apoios do roteiro — item 75', () => {
       expect(d.preAquecerCorpo('mars')).toBe(false);
       expect(d.palcoQuente).toBe(false);
     } finally {
-      vi.doUnmock('./roteiros/apoiosDaViagem.json');
       vi.doUnmock('./roteiros/revelacao.json');
       vi.unstubAllGlobals();
       vi.resetModules();

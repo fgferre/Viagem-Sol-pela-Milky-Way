@@ -315,6 +315,22 @@ describe('o HUD fixo afasta o nome (item 56)', () => {
 // implementação inteira é permitido; mudar o que o visitante VÊ, não.
 // ============================================================
 describe('um lugar por nome — ou cabe ali, ou some', () => {
+  it('o roteiro abre lugar para todos os assuntos e o fundo continua cedendo', () => {
+    const canvas = new LabelCanvas(canvasFalso());
+    const juntos = ['Alnitak', 'Alnilam', 'Mintaka'].map((name, i) =>
+      rotulo(name, name, 0.4 + i * 0.005, 0.45)
+    );
+    canvas.draw(juntos);
+    expect(juntos.filter((l) => l.desenhado).map((l) => l.name)).toEqual(['Alnitak']);
+
+    const dirigidos = juntos.map((l) => ({ ...l, dirigido: true }));
+    const fundo = rotulo('fundo', 'Fundo', 0.407, 0.45);
+    canvas.draw([...dirigidos, fundo]);
+    expect(dirigidos.filter((l) => l.desenhado).map((l) => l.name))
+      .toEqual(['Alnitak', 'Alnilam', 'Mintaka']);
+    expect(fundo.desenhado).toBe(false);
+  });
+
   it('o nome pousa na MESMA ALTURA da âncora: acabaram os traços em diagonal', () => {
     // A TEIA QUE O DONO VIU eram os deslocamentos verticais: um nome que
     // não cabia subia até 102 px e puxava um risco diagonal até o ponto.

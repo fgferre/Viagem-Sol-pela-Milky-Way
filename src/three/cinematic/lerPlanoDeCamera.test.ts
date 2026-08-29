@@ -125,6 +125,61 @@ describe('lerPlanoDeCamera — item 75', () => {
     }
   });
 
+  it('recorta, aproxima, raspa, encadeia e contorna sem código no roteiro', () => {
+    const recorte = lerPlanoDeCamera({
+      ...base,
+      movimento: { tipo: 'reta', de: [0, 0, 0], para: [10, 0, 0], intervalo: [0.2, 0.7] },
+    });
+    expect(recorte.pos(0, new THREE.Vector3()).toArray()).toEqual([2, 0, 0]);
+    expect(recorte.pos(1, new THREE.Vector3()).toArray()).toEqual([7, 0, 0]);
+
+    const aproximacao = lerPlanoDeCamera({
+      ...base, ritmo: 'linear',
+      movimento: {
+        tipo: 'aproximacao', centro: [0, 0, 0], de: [100, 0, 0], para: [0, 0, 1],
+        ritmoDaDirecao: 'linear',
+      },
+    });
+    expect(aproximacao.pos(0, new THREE.Vector3()).toArray()).toEqual([100, 0, 0]);
+    expect(aproximacao.pos(1, new THREE.Vector3()).toArray()).toEqual([0, 0, 1]);
+    expect(aproximacao.pos(0.5, new THREE.Vector3()).length()).toBeCloseTo(10, 12);
+
+    const formaDoRaspao = {
+      tipo: 'raspao', centro: [0, 0, 0], de: [10, 0, 0], direcaoNoJoelho: [0, 1, 0],
+      para: [-4, 0, 0], distanciaMinima: 1, joelho: 0.5, sigma: 0.16,
+      alongamento: 0.64, chao: 0.18, expoentes: [1.6, 1.45],
+    };
+    const take = lerPlanoDeCamera({
+      ...base, ritmo: 'linear',
+      movimento: {
+        tipo: 'sequencia', trechos: [
+          { ate: 0.4, movimento: formaDoRaspao },
+          { ate: 1, movimento: {
+            tipo: 'arco', centro: [0, 0, 0], direcaoDe: [-1, 0, 0],
+            direcaoPara: [0, -1, 0], raio: [4, 2],
+            progresso: { tipo: 'pouso', para: 1, pousaEm: 0.88, expoente: 1.55 },
+          } },
+        ],
+      },
+      mira: {
+        tipo: 'raspao', principal: [0, 0, 0], assunto: [0, 1, 0], ate: 0.4,
+        joelho: 0.5, sigma: 0.16, alongamento: 0.64, pesoMaximo: 0.83, alcance: 0.1,
+      },
+    });
+    expect(take.pos(0, new THREE.Vector3()).toArray()).toEqual([10, 0, 0]);
+    expect(take.pos(0.4, new THREE.Vector3()).toArray()).toEqual([-4, 0, 0]);
+    expect(take.pos(1, new THREE.Vector3()).distanceTo(new THREE.Vector3(0, -2, 0)))
+      .toBeLessThan(1e-12);
+    const menorDistancia = Math.min(...Array.from({ length: 201 }, (_, i) =>
+      take.pos(0.4 * i / 200, new THREE.Vector3()).length()));
+    expect(menorDistancia).toBeGreaterThanOrEqual(1);
+    expect(menorDistancia).toBeLessThan(1.02);
+    expect(take.look(0, new THREE.Vector3()).toArray()).toEqual([0, 0, 0]);
+    expect(take.look(0.2, new THREE.Vector3()).distanceTo(new THREE.Vector3(0, 0, 0)))
+      .toBeGreaterThan(0);
+    expect(take.look(0.4, new THREE.Vector3()).toArray()).toEqual([0, 0, 0]);
+  });
+
   it('resolve números nomeados uma vez e mantém a validação dos campos', () => {
     const numeros = { duracao: 12, lente: 24, raio: 2, angulo: -0.3, altura: -1, entrada: 0.3,
       saida: 0.7, amplitude: 0.4, base: 0, frequencia: 0.9 };
@@ -289,6 +344,21 @@ describe('lerPlanoDeCamera — item 75', () => {
       [{ tipo: 'frenagem', amplitude: 0.9 }, (k) => 0.9 * (1 - k) * (1 - k)],
       [{ tipo: 'pulso', amplitude: 0.4, base: 0.3 }, (k) => 0.3 + 0.4 * Math.sin(Math.PI * k)],
       [{ tipo: 'pulso', amplitude: 0.4, base: 0.3, frequencia: 0.9 }, (k) => 0.3 + 0.4 * Math.sin(Math.PI * k * 0.9)],
+      [{ tipo: 'decaimento', amplitude: 0.8, ate: 0.5 }, (k) => 0.8 * (1 - Math.min(k / 0.5, 1))],
+      [{ tipo: 'decaimento', amplitude: 0.8, ate: 0.5, expoente: 2 },
+        (k) => 0.8 * (1 - Math.min(k / 0.5, 1)) ** 2],
+      [{ tipo: 'pulso-limitado', amplitude: 0.4, velocidade: 1.6 },
+        (k) => 0.4 * Math.sin(Math.PI * Math.min(k * 1.6, 1))],
+      [{ tipo: 'pulso-frenado', amplitude: 0.4, velocidade: 1.6 },
+        (k) => 0.4 * Math.sin(Math.PI * Math.min(k * 1.6, 1)) * (1 - k)],
+      [{ tipo: 'soma', curvas: [
+        { tipo: 'pulso-frenado', amplitude: 0.2 },
+        { tipo: 'rampa', de: 0, para: 0.3, ritmo: 'smooth' },
+      ] }, (k) => 0.2 * Math.sin(Math.PI * k) * (1 - k) + 0.3 * smooth(k)],
+      [{ tipo: 'pouso', para: 0.5, inicio: 0.4, pousaEm: 0.88, expoente: 1.55 },
+        (k) => k <= 0.4 ? 0 : 0.5 * (1 - Math.pow(
+          1 - Math.min(((k - 0.4) / 0.6) / 0.88, 1), 1.55
+        ))],
     ];
     for (const [curva, esperado] of casos) {
       const dado = { ...base, ritmo: 'launch', inclinacao: curva, efeitoDeVelocidade: curva };

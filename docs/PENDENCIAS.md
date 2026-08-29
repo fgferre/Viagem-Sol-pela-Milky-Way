@@ -44,7 +44,18 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ---
 
-## O BASTÃO — onde a rodada parou (28/08)
+## O BASTÃO — onde a rodada parou (29/08)
+
+**29/08 — O FILME INTEIRO VIROU ROTEIRO; O 75 ESTÁ NO FECHAMENTO.**
+`revelacao.json` absorveu fuga, subida e deriva; `volta.json` declara o
+mergulho de volta e o take Lua→Terra. O motor ganhou as composições que
+esses gestos exigiam, e o roteiro agora dirige seus assuntos: Alnitak,
+Alnilam e Mintaka aparecem juntas, enquanto os nomes de fundo continuam
+cedendo. **Filme convertido: 25 de 25 cenas, 193 de 193 segundos.** Os
+**209.958 números** de câmera e a edição inteira coincidem com o corte
+anterior. Falta apenas executar o A/B completo de cache zerado, a suíte
+única e o fecho da rodada longa antes de retirar o item da lista. A fila
+segue **75** → **100**.
 
 **28/08 — O ATO III FECHOU EM ROTEIRO.** `mergulho.json` agora reúne
 também a aproximação final e a rasante de Sagittarius A✱. A órbita
@@ -1155,6 +1166,26 @@ terminou com **2.458 aprovados**, um já desativado e nenhuma falha
 recompõe a órbita no referencial galáctico e cobra as mesmas posições.
 **Limite:** prova focal, não exibição contínua do filme nem o A/B completo
 de cache zerado devido no fechamento do item 75.
+
+**A implementação inteira veio na décima primeira fatia (29/08):** a
+fuga, a subida e a deriva entraram no `revelacao.json`; o preload do
+estilingue entrou no próprio plano e apagou o arquivo paralelo. O novo
+`volta.json` declara a aproximação exponencial de casa e o take único
+Lua→Terra, compondo fly-by, arco e duas partes no mesmo relógio. O leitor
+ganhou apenas o vocabulário exigido por essas cinco cenas: recorte de
+trajetória, aproximação, fly-by, arco, sequência, mira do fly-by e as
+curvas escalares usadas por elas. `journey.ts` ficou com as âncoras
+calculadas e a montagem; as cinco câmeras antigas saíram sem cópia.
+
+O roteiro passou também a marcar seus `assuntos` como dirigidos. Só eles
+podem procurar as linhas alternativas já conhecidas do desenho e chegam
+antes dos nomes de fundo; a regra geral de um lugar por nome continua
+intacta no Atlas e no céu não dirigido. A prova real em `t=45` mostra
+Alnitak, Alnilam e Mintaka juntas. A conversão chegou a **25 de 25 cenas,
+193 de 193 s**. `capturas/item75-fechamento/depois.json` compara o filme
+inteiro a 60 Hz, emendas incluídas: **209.958 doubles** e toda a edição
+têm os mesmos hashes da base. O fechamento ainda deve o A/B completo de
+cache zerado e a suíte única; por isso o item continua aberto nesta linha.
 
 **77. As linhas de órbita, ligadas por padrão — A OBRA ACABOU EM 25/08;
 FALTA SÓ O OLHO DELE.** A órbita é o DADO,

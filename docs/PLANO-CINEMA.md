@@ -110,9 +110,11 @@ velocidade. A
 [`abertura.json`](../src/three/cinematic/roteiros/abertura.json) reúne a
 parede solar, a saída em hélice e a passagem por Sirius. O
 [`revelacao.json`](../src/three/cinematic/roteiros/revelacao.json) reúne
-os holds de medição do Ato IV (perfil e face) e a travessia que abre o
-disco em braços, com os marcos `edge`/`face` declarados nos próprios
-planos.
+a fuga do centro, a subida, os holds de medição do Ato IV (perfil e face),
+a travessia que abre o disco em braços e a deriva até “VOCÊ ESTÁ AQUI”,
+com os marcos `edge`/`face` declarados nos próprios planos. O
+[`volta.json`](../src/three/cinematic/roteiros/volta.json) contém o
+mergulho de volta e o take único Lua→Terra.
 `lerSequencia` lê `{ "planos": [...] }` e `journey.ts` encaixa a lista no
 filme existente. A ordem da lista é a ordem das cenas; duração, cortes,
 legendas e marcas da barra continuam calculados pelo relógio de `Journey`.
@@ -164,13 +166,10 @@ correspondente, para usar com a porta existente `?t=…&shot=1`.
 Não há controle novo para o visitante. `CAPTURE_T` continua arredondando
 os marcos `edge` e `face` ao segundo inteiro, como os juízes antigos.
 
-O exemplo do cinturão já declara `cinturao` e `paralaxe`; os holds do
-Ato IV declaram `edge` e `face` no `revelacao.json`. O apoio do plano
-ainda não convertido (a fuga) vem de
-[`apoiosDaViagem.json`](../src/three/cinematic/roteiros/apoiosDaViagem.json):
-Terra, Lua e efemérides no estilingue. `lerApoiosDoPlano` lê esses
-mesmos campos, sem outro formato. Ao converter essa câmera, o apoio
-passa para o plano no JSON; não se mantém uma cópia paralela.
+O exemplo do cinturão declara `cinturao` e `paralaxe`; os holds do
+Ato IV declaram `edge` e `face` no `revelacao.json`. A fuga no mesmo
+arquivo pede Terra, Lua e efemérides no estilingue. `lerApoiosDoPlano`
+lê esses campos sem outro formato nem arquivo paralelo.
 
 ### Câmera de cada plano
 
@@ -207,15 +206,25 @@ componentes `[x, y, z]` de um ponto, às legendas ou aos apoios.
 | `movimento` | `trajeto` | `pontos` — lista de ao menos dois nomes ou vetores; passa por eles numa `CatmullRomCurve3` centrípeta, sem repetir pontos consecutivos |
 | `movimento` | `orbita` | `centro`; pares `raio`, `angulo`, `altura`, do início ao fim. Raios não negativos em pc, ângulos em **radianos** por padrão e altura em pc ao longo do polo galáctico. `unidadeDoAngulo: "graus"` interpola primeiro em graus e converte cada instante |
 | `movimento` | `helice` | Mesma forma da órbita, com raios positivos; `distancia` é o par de distâncias reais ao centro em pc, positivas e com razão finita não nula. `ritmoDaDirecao` opcional, padrão `glide`; aceita a mesma unidade angular |
+| `movimento` | `aproximacao` | `centro`, `de`, `para`; a distância muda por razão constante e a direção usa `ritmoDaDirecao` opcional (padrão `glide`) |
+| `movimento` | `raspao` | Fly-by com `centro`, `de`, `direcaoNoJoelho`, `para`, `distanciaMinima`, `joelho`, `sigma`, `alongamento`, `chao` e o par `expoentes` |
+| `movimento` | `arco` | `centro`, versores `direcaoDe`/`direcaoPara` e o par `raio`; percorre um único eixo entre as direções |
+| `movimento` | `sequencia` | `trechos`, cada um com `ate` crescente e outro `movimento`; o último termina em 1 |
 | `mira` | `fixo` | `ponto` |
 | `mira` | `pan` | `de`, `para`; `ritmo` opcional, padrão `smooth` |
 | `mira` | `pan-cedo` | `de`, `para`, `ate` — interpola pontos, chega cedo e segura |
 | `mira` | `pan-direcao` | `de`, `para`, `ate` — interpola direções a partir da câmera em movimento; use perto de um alvo |
 | `mira` | `passagem` | `de`, `assunto`, `rumo`, `entrada`, `saida` — olhar que acompanha o assunto e depois entrega o rumo seguinte |
+| `mira` | `raspao` | Cede do alvo `principal` ao `assunto` no joelho do fly-by e devolve; usa `ate`, `joelho`, `sigma`, `alongamento`, `pesoMaximo` e `alcance` |
 
 `ate`, `entrada` e `saida` são frações entre 0 (exclusivo) e 1; `saida`
 nunca vem antes de `entrada`. São frações do **movimento já suavizado**,
 como nas primitivas existentes, não segundos de relógio.
+
+Todo movimento aceita `intervalo: [de, ate]` para usar apenas uma parte
+da trajetória e `progresso` para remapear o avanço com uma curva escalar.
+Isso permite compartilhar uma curva entre planos ou compor vários gestos
+num único take sem inserir código no roteiro.
 
 O `trajeto` passa pelos pontos, ao contrário dos controles da Bézier,
 que apenas puxam a curva. O avanço usa o comprimento aproximado da
@@ -263,6 +272,11 @@ Omissão significa zero; a montagem copia os valores. Os formatos são:
 | `rampa` | `de`, `para`, `ritmo` opcional (padrão `linear`); permite subir ou descer |
 | `frenagem` | `amplitude`; cai por `amplitude × (1 − k)²` |
 | `pulso` | `amplitude`, `base` opcional (0) e `frequencia` opcional (1); `base + amplitude × sen(π × k × frequencia)` |
+| `decaimento` | `amplitude`, `ate` opcional (1), `ritmo` opcional e `expoente` opcional (1); chega a zero e segura |
+| `pulso-limitado` | `amplitude` e `velocidade`; completa a meia onda no limite e permanece em zero |
+| `pulso-frenado` | O mesmo pulso, multiplicado por `(1 − k)` |
+| `soma` | `curvas`, com ao menos duas curvas escalares somadas |
+| `pouso` | `de` opcional (0), `para`, `inicio` opcional (0), `pousaEm` e `expoente`; chega ao valor e congela |
 
 No pulso padrão há uma meia onda: sai de zero, atinge a amplitude na
 metade e volta a zero. `frequencia` fica entre 0 (exclusivo) e 1;
@@ -272,18 +286,16 @@ A inclinação usa radianos e aceita sinal negativo para o outro lado.
 O efeito de velocidade aceita valores de 0 a 1 e alimenta o que já existe:
 pequena abertura adicional da lente, bloom, separação de cores e vinheta.
 No pulso de velocidade, `base + amplitude` também deve caber em 0..1.
-Não cria exposição adaptativa, tremor ou outro pós-processamento. Esses
-formatos ainda não descrevem somas arbitrárias de curvas.
+Não cria exposição adaptativa, tremor ou outro pós-processamento.
 
 Nomes desconhecidos, números não finitos e parâmetros fora dessas faixas
 interrompem a montagem com o campo indicado no erro. Não há `eval`, código
 embutido no roteiro, dependência nova nem controle novo para o visitante.
 
-**Limite desta base:** foram convertidas **20 de 25 cenas, 154 de 193 s**.
-Essa fração mede o filme convertido, não a prontidão do motor. Faltam a
-fuga/subida do Ato IV, a deriva, o mergulho de volta e a passagem
-Lua–Terra. `assuntos` transporta os nomes para a regra atual, mas não
-resolve a direção de etiquetas do item 82 — as três precisam falar
-juntas. Esses recursos vêm antes da migração integral e do A/B de disco
-zerado. Validação focal:
+**Estado da implementação:** foram convertidas **25 de 25 cenas, 193 de
+193 s**. `assuntos` dirige os nomes do plano e mantém a régua geral no
+fundo; Alnitak, Alnilam e Mintaka falam juntas no caso de prova. A câmera
+e a edição completas já coincidem com o corte anterior; o fechamento do
+item 75 ainda depende do A/B completo de cache zerado e da suíte única.
+Validação focal:
 `npx vitest run src/three/cinematic/lerSequencia.test.ts src/three/cinematic/lerPlanoDeCamera.test.ts src/three/cinematic/apoiosDoRoteiro.test.ts`.

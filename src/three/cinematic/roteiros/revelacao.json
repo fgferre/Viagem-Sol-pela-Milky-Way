@@ -1,6 +1,60 @@
 {
   "planos": [
     {
+      "preload": { "corpos": ["earth", "moon"], "efemerides": true },
+      "camera": {
+        "duracao": 5,
+        "movimento": {
+          "tipo": "curva", "de": "saidaDoRasante",
+          "controle1": "controleEstilingue1", "controle2": "controleEstilingue2",
+          "para": "portaoPerfil", "intervalo": [0, "fimDaFuga"]
+        },
+        "mira": { "tipo": "fixo", "ponto": "centro" },
+        "lente": [52, 54],
+        "ritmo": "glide",
+        "efeitoDeVelocidade": { "tipo": "decaimento", "amplitude": 0.6 },
+        "inclinacao": { "tipo": "pulso", "amplitude": 0.1 }
+      },
+      "fundoSilencioso": true,
+      "olhar": "tras",
+      "legendas": [{
+        "em": 0.2,
+        "texto": "O ESTILINGUE",
+        "subtexto": "do coração para o vazio acima do disco",
+        "duracao": 4
+      }]
+    },
+    {
+      "camera": {
+        "duracao": 10,
+        "movimento": {
+          "tipo": "curva", "de": "saidaDoRasante",
+          "controle1": "controleEstilingue1", "controle2": "controleEstilingue2",
+          "para": "portaoPerfil", "intervalo": ["fimDaFuga", 1]
+        },
+        "mira": { "tipo": "pan", "de": "centro", "para": "miraDoPortao", "ritmo": "easeOut" },
+        "lente": [54, "lentePerfil"],
+        "ritmo": "glide",
+        "efeitoDeVelocidade": {
+          "tipo": "pulso-frenado", "amplitude": 0.35, "velocidade": 1.6
+        },
+        "inclinacao": {
+          "tipo": "soma",
+          "curvas": [
+            { "tipo": "pulso-frenado", "amplitude": 0.12 },
+            { "tipo": "rampa", "de": 0, "para": "inclinacaoPerfil", "ritmo": "smooth" }
+          ]
+        }
+      },
+      "olhar": "assunto",
+      "legendas": [{
+        "em": 0.55,
+        "texto": "A VIA LÁCTEA, POR FORA",
+        "subtexto": "reconstrução a partir de 1,8 bilhão de estrelas da missão Gaia",
+        "duracao": 4.2
+      }]
+    },
+    {
       "qa": { "edge": 0.5 },
       "camera": {
         "duracao": 5,
@@ -58,6 +112,30 @@
         "texto": "NOSSA GALÁXIA",
         "subtexto": "espiral barrada — centenas de bilhões de estrelas a 220 km/s",
         "duracao": 4.4
+      }]
+    },
+    {
+      "camera": {
+        "duracao": 7,
+        "movimento": {
+          "tipo": "curva", "de": "portaoFace",
+          "controle1": "controleDeriva1", "controle2": "controleDeriva2",
+          "para": "fimDaDeriva"
+        },
+        "mira": { "tipo": "pan", "de": "miraDoPortao", "para": "miraDaDeriva", "ritmo": "smooth" },
+        "lente": ["lenteFace", 54],
+        "ritmo": "settleFreeze",
+        "inclinacao": {
+          "tipo": "decaimento", "amplitude": "inclinacaoFace", "ate": 0.88, "ritmo": "smooth"
+        }
+      },
+      "assuntos": ["SOL"],
+      "olhar": "assunto",
+      "legendas": [{
+        "em": 0.2,
+        "texto": "VOCÊ ESTÁ AQUI",
+        "subtexto": "Esporão de Órion, 26 mil anos-luz do centro — uma volta a cada 230 milhões de anos",
+        "duracao": 5.4
       }]
     }
   ]

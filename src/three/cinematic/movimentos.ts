@@ -32,6 +32,11 @@ export function bezier(
   return (k, out) => curva.getPoint(k, out);
 }
 
+/** Usa somente um intervalo de outra trajetória, sem criar outra curva. */
+export function intervalo(pos: PosFn, de: number, ate: number): PosFn {
+  return (k, out) => pos(de + (ate - de) * k, out);
+}
+
 /**
  * Passa pelos pontos sem quinas. O avanço usa distância percorrida;
  * acelerar e desacelerar continua sendo responsabilidade do ritmo.
@@ -106,9 +111,170 @@ export function helice(
     return out.multiplyScalar(distanciaExponencial(d0, d1, k) / out.length()).add(centro);
   };
 }
+
+/**
+ * Chega a um centro atravessando décadas de distância por razão constante,
+ * enquanto a direção entre as duas pontas desliza por um ritmo próprio.
+ */
+export function aproximacaoExponencial(
+  centro: THREE.Vector3,
+  de: THREE.Vector3,
+  para: THREE.Vector3,
+  ritmoDaDirecao: Ease = glide
+): PosFn {
+  const d0 = de.distanceTo(centro);
+  const d1 = para.distanceTo(centro);
+  const u0 = de.clone().sub(centro).normalize();
+  const u1 = para.clone().sub(centro).normalize();
+  const u = new THREE.Vector3();
+  return (k, out) => {
+    u.copy(u0).lerp(u1, ritmoDaDirecao(k)).normalize();
+    return out.copy(centro).addScaledVector(u, distanciaExponencial(d0, d1, k));
+  };
+}
+
+/** erf de Abramowitz–Stegun 7.1.26, suficiente para deformar um relógio. */
+function erfAprox(x: number): number {
+  const s = Math.sign(x);
+  const a = Math.abs(x);
+  const p = 1 / (1 + 0.3275911 * a);
+  const y = 1 - (((((1.061405429 * p - 1.453152027) * p) + 1.421413741) * p
+    - 0.284496736) * p + 0.254829592) * p * Math.exp(-a * a);
+  return s * y;
+}
+
+/** Anda mais devagar perto de um joelho, mas nunca para nele. */
+function alongarJoelho(
+  k: number,
+  joelho: number,
+  sigma: number,
+  intensidade: number
+): number {
+  const s2 = sigma * Math.SQRT2;
+  const integral = (u: number) =>
+    u - intensidade * sigma * Math.sqrt(2 * Math.PI) * 0.5 *
+      erfAprox((u - joelho) / s2);
+  return (integral(k) - integral(0)) / (integral(1) - integral(0));
+}
+
+interface FormaDoRaspao {
+  centro: THREE.Vector3;
+  de: THREE.Vector3;
+  direcaoNoJoelho: THREE.Vector3;
+  para: THREE.Vector3;
+  distanciaMinima: number;
+  joelho: number;
+  sigma: number;
+  alongamento: number;
+  chao: number;
+  expoenteDeEntrada: number;
+  expoenteDeSaida: number;
+}
+
+/**
+ * Fly-by com vale logarítmico de distância. O relógio alonga o instante
+ * de maior proximidade e o piso linear impede a câmera de parar ali.
+ */
+export function raspao(forma: FormaDoRaspao): PosFn {
+  const {
+    centro, de, direcaoNoJoelho, para, distanciaMinima, joelho, sigma,
+    alongamento, chao, expoenteDeEntrada, expoenteDeSaida,
+  } = forma;
+  const uEntrada = de.clone().sub(centro).normalize();
+  const uMinimo = direcaoNoJoelho.clone();
+  const uSaida = para.clone().sub(centro).normalize();
+  const dEntrada = de.distanceTo(centro);
+  const dSaida = para.distanceTo(centro);
+  const u = new THREE.Vector3();
+  return (k, out) => {
+    const k2 = alongarJoelho(k, joelho, sigma, alongamento);
+    const antes = k2 <= joelho;
+    const t = antes ? k2 / joelho : (k2 - joelho) / (1 - joelho);
+    const f = antes
+      ? chao * t + (1 - chao) * (1 - Math.pow(1 - t, expoenteDeEntrada))
+      : chao * t + (1 - chao) * Math.pow(t, expoenteDeSaida);
+    const d = antes
+      ? dEntrada * Math.pow(distanciaMinima / dEntrada, f)
+      : distanciaMinima * Math.pow(dSaida / distanciaMinima, f);
+    u.copy(antes ? uEntrada : uMinimo)
+      .lerp(antes ? uMinimo : uSaida, f)
+      .normalize();
+    return out.copy(centro).addScaledVector(u, d);
+  };
+}
+
+/** Arco entre dois versores em torno de um centro e de um único eixo. */
+export function arcoAxial(
+  centro: THREE.Vector3,
+  direcaoDe: THREE.Vector3,
+  direcaoPara: THREE.Vector3,
+  raioDe: number,
+  raioPara: number
+): PosFn {
+  const eixo = new THREE.Vector3().crossVectors(direcaoDe, direcaoPara).normalize();
+  const angulo = direcaoDe.angleTo(direcaoPara);
+  return (k, out) => out
+    .copy(direcaoDe)
+    .applyAxisAngle(eixo, angulo * k)
+    .multiplyScalar(THREE.MathUtils.lerp(raioDe, raioPara, k))
+    .add(centro);
+}
+
+/** Vários gestos dentro do mesmo plano, cada um em sua fração do relógio. */
+export function sequencia(
+  trechos: readonly { ate: number; pos: PosFn }[]
+): PosFn {
+  return (k, out) => {
+    let inicio = 0;
+    for (const trecho of trechos) {
+      if (k <= trecho.ate) {
+        return trecho.pos((k - inicio) / (trecho.ate - inicio), out);
+      }
+      inicio = trecho.ate;
+    }
+    const ultimo = trechos[trechos.length - 1];
+    return ultimo.pos(1, out);
+  };
+}
 /** mira que desliza entre dois pontos (para virar o olhar sem saltos) */
 export const panLook = (a: THREE.Vector3, b: THREE.Vector3, ease: Ease = smooth): PosFn =>
   (k, out) => out.copy(a).lerp(b, ease(k));
+
+/**
+ * No joelho de um fly-by, cede o olhar do alvo principal ao assunto e
+ * devolve. A posição vem do próprio plano, portanto mira e câmera não
+ * mantêm duas cópias da trajetória.
+ */
+export function lookRaspao(
+  posDoPlano: PosFn,
+  principal: THREE.Vector3,
+  assunto: THREE.Vector3,
+  ate: number,
+  joelho: number,
+  sigma: number,
+  alongamento: number,
+  pesoMaximo: number,
+  alcance: number
+): PosFn {
+  const pos = new THREE.Vector3();
+  const dirPrincipal = new THREE.Vector3();
+  const dirAssunto = new THREE.Vector3();
+  return (k, out) => {
+    if (k >= ate) return out.copy(principal);
+    const kr = alongarJoelho(k / ate, joelho, sigma, alongamento);
+    const w = kr <= joelho
+      ? pesoMaximo * 0.5 * (1 - Math.cos((Math.PI * kr) / joelho))
+      : pesoMaximo * 0.5 * (1 + Math.cos(
+        (Math.PI * (kr - joelho)) / (1 - joelho)
+      ));
+    if (w < 1e-6) return out.copy(principal);
+    posDoPlano(k, pos);
+    dirPrincipal.copy(principal).sub(pos).normalize();
+    dirAssunto.copy(assunto).sub(pos).normalize();
+    dirPrincipal.lerp(dirAssunto, w).normalize();
+    return out.copy(pos).addScaledVector(dirPrincipal, alcance);
+  };
+}
 /**
  * O GESTO-PADRÃO DA FRENTE (lei de 19/08): vira CEDO do ponto `a` para o
  * assunto `b` (até a fração `fim` do plano) e SEGURA nele — o giro é

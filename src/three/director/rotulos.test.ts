@@ -193,6 +193,7 @@ describe('a camada "Nomes na tela" (item 82, N2)', () => {
     // COM a camada ligada, o beat fala
     rotulos.projetar(cam, noFilme(false));
     expect(publicados.at(-1)!.some((l) => l.name === 'Vizinha')).toBe(true);
+    expect(publicados.at(-1)!.find((l) => l.name === 'Vizinha')?.dirigido).toBe(true);
     expect(dests.at(-1)).toBeTruthy();
 
     // ...e DESLIGADA ele continua falando: é o mesmo nome forçado e a

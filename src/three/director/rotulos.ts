@@ -215,7 +215,10 @@ export class Rotulos {
     const forced: StarLabel[] = [];
     for (const name of target ?? []) {
       const l = this.resolveForcedLabel(cam, named, name);
-      if (l) forced.push(l);
+      if (l) {
+        l.dirigido = true;
+        forced.push(l);
+      }
     }
     return forced;
   }
@@ -407,8 +410,12 @@ export class Rotulos {
         if (meta.target) {
           const forced = this.forcadosDoBeat(cam, named, meta.target);
           const keys = new Set(forced.map((l) => l.key));
-          labels = labels.filter((l) => !keys.has(l.key)).slice(0, 2);
-          labels.push(...forced);
+          // O ROTEIRO ASSUME A FRENTE: os assuntos ocupam primeiro; o
+          // fundo preserva a régua existente e disputa só o que sobrou.
+          labels = [
+            ...forced,
+            ...labels.filter((l) => !keys.has(l.key)).slice(0, 2),
+          ];
         }
         this.lastLabels = labels;
         // linha de rumo com distância viva

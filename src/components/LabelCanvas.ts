@@ -31,12 +31,23 @@ const FAMILIA = '"Segoe UI", Arial, sans-serif';
  * ele SOME. Nome não se salva puxando um risco. Como a lista chega
  * ordenada pela régua de relevância (`aplicarReguaDeRelevancia`), quem
  * chega primeiro ocupa e quem some é sempre o MENOR da disputa.
+ * A única exceção é a direção do filme: nomes que o roteiro declarou
+ * como assunto podem procurar as antigas linhas alternativas. A exceção
+ * não alcança o céu de fundo nem o Atlas.
  *
  * O que sobrou do traço é o risco de 10 px na horizontal, que é o
  * desenho anterior ao item 73: ele diz de que ponto o nome fala, e não
  * atravessa nada.
  */
 const RECUO_DO_TEXTO = 18;
+
+/**
+ * Só os nomes DIRIGIDOS pelo roteiro podem procurar outra linha. São as
+ * posições antigas, já medidas no filme; o zero primeiro mantém intacto
+ * todo assunto que já cabia no lugar natural.
+ */
+const DESLOCAMENTO_NATURAL = [0] as const;
+const DESLOCAMENTOS_DIRIGIDOS = [0, -34, 34, -68, 68, -102, 102] as const;
 
 /**
  * OS TRÊS PESOS VISUAIS, numa tabela só — à moda do `labelTier.ts` do
@@ -46,8 +57,8 @@ const RECUO_DO_TEXTO = 18;
  *
  * O DO MEIO É O DESENHO DE SEMPRE, pixel a pixel, e isso é deliberado:
  * `prioridade` ausente cai nele, e `prioridade` ausente é exatamente o
- * caso do RAMO DO FILME, que esta obra não toca. Um rótulo do filme
- * continua sendo desenhado com os mesmos números de antes.
+ * caso do RAMO DO FILME, cujo peso esta obra não toca. Um rótulo do filme
+ * continua sendo pintado com os mesmos números de antes.
  */
 export const PESOS_DO_ROTULO = {
   /** o foco e o Sol (prioridade ≥ 90): o assunto, e ele se lê primeiro */
@@ -214,7 +225,8 @@ export class LabelCanvas {
       assinatura +=
         `|${label.key},${Math.round(label.x * this.width)}` +
         `,${Math.round(label.y * this.height)},${label.opacity.toFixed(2)}` +
-        `,${label.prioridade ?? ''},${label.cortadoPelaRegua ? 1 : 0},${nome},${detalhe}`;
+        `,${label.prioridade ?? ''},${label.cortadoPelaRegua ? 1 : 0}` +
+        `,${label.dirigido ? 1 : 0},${nome},${detalhe}`;
     }
     return assinatura;
   }
@@ -297,11 +309,10 @@ export class LabelCanvas {
       ) {
         continue;
       }
-      // O LADO é a única liberdade que sobrou, e ela não é alternativa:
-      // é a borda da tela mandando o texto para dentro. Perto da direita
-      // o nome cresce para a esquerda, senão sairia do quadro.
-      const toLeft = anchorX > this.width * 0.72;
-      const direction = toLeft ? -1 : 1;
+      // No céu geral, o lado continua sendo a ÚNICA liberdade. O roteiro
+      // pode dirigir um assunto: aí, e só aí, ele procura as linhas
+      // alternativas antigas e assume a frente dos nomes de fundo.
+      const ladoPreferido = anchorX > this.width * 0.72;
       const name = this.nomes[i];
       const detail = this.detalhes[i];
       const peso = pesoVisual(label);
@@ -311,29 +322,42 @@ export class LabelCanvas {
       const nameWidth = this.medir(name, fonteDoNome);
       const detailWidth = this.medir(detail, fonteDoDetalhe);
       const contentWidth = nameWidth + 9 * k + detailWidth;
-      // UM LUGAR, E É O DELE: ao lado da âncora, na mesma altura dela.
-      // Colidiu — com o HUD ou com um nome que a régua pôs à frente — e
-      // este SOME. Era aqui que moravam as catorze vagas do item 73.
-      const textX = anchorX + direction * RECUO_DO_TEXTO * k;
-      const left = toLeft ? textX - contentWidth : textX;
-      const candidate: Rect = {
-        left: left - 5 * k,
-        right: left + contentWidth + 5 * k,
-        top: anchorY - 12 * k,
-        bottom: anchorY + 12 * k,
-      };
-      if (occupied.some((rect) => intersects(candidate, rect, 8 * k))) continue;
-      // O TRAÇO TAMBÉM É TINTA: o risco de 10 px sai da âncora e vai em
-      // direção ao texto, por fora da caixa dele, e não pode atravessar
-      // um painel opaco para apontar um ponto que ninguém vê.
-      const traco: Rect = {
-        left: Math.min(anchorX, anchorX + direction * 10 * k),
-        right: Math.max(anchorX, anchorX + direction * 10 * k),
-        top: anchorY,
-        bottom: anchorY,
-      };
-      if (this.reservadas.some((rect) => intersects(traco, rect, 0))) continue;
-      const textY = anchorY;
+      let candidate: Rect | null = null;
+      let textY = anchorY;
+      let toLeft = ladoPreferido;
+      let textX = anchorX + (ladoPreferido ? -1 : 1) * RECUO_DO_TEXTO * k;
+      const lados = label.dirigido ? 2 : 1;
+      const deslocamentos = label.dirigido ? DESLOCAMENTOS_DIRIGIDOS : DESLOCAMENTO_NATURAL;
+      for (let lado = 0; lado < lados && !candidate; lado++) {
+        const esquerda = lado === 0 ? ladoPreferido : !ladoPreferido;
+        const direction = esquerda ? -1 : 1;
+        const x = anchorX + direction * RECUO_DO_TEXTO * k;
+        const left = esquerda ? x - contentWidth : x;
+        for (const passo of deslocamentos) {
+          const y = anchorY + passo * k;
+          const tentativa: Rect = {
+            left: left - 5 * k,
+            right: left + contentWidth + 5 * k,
+            top: y - 12 * k,
+            bottom: y + 12 * k,
+          };
+          if (occupied.some((rect) => intersects(tentativa, rect, 8 * k))) continue;
+          const traco: Rect = {
+            left: Math.min(anchorX, anchorX + direction * 10 * k),
+            right: Math.max(anchorX, anchorX + direction * 10 * k),
+            top: Math.min(anchorY, y),
+            bottom: Math.max(anchorY, y),
+          };
+          if (this.reservadas.some((rect) => intersects(traco, rect, 0))) continue;
+          candidate = tentativa;
+          textY = y;
+          toLeft = esquerda;
+          textX = x;
+          break;
+        }
+      }
+      if (!candidate) continue;
+      const direction = toLeft ? -1 : 1;
       occupied.push(candidate);
       // passou por todas as leis: está NA TELA, e portanto é clicável
       label.desenhado = true;

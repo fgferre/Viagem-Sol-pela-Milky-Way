@@ -72,6 +72,12 @@ export interface StarLabel {
    * coube" ficaria invisível para quem mede.
    */
   cortadoPelaRegua?: boolean;
+  /**
+   * O roteiro declarou este nome como assunto do plano. Só esses nomes
+   * podem procurar uma posição alternativa quando colidem; o fundo
+   * continua sob a lei geral de um lugar por nome.
+   */
+  dirigido?: boolean;
 }
 
 /**
