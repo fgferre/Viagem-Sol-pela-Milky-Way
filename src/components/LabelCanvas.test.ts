@@ -329,6 +329,13 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     expect(dirigidos.filter((l) => l.desenhado).map((l) => l.name))
       .toEqual(['Alnitak', 'Alnilam', 'Mintaka']);
     expect(fundo.desenhado).toBe(false);
+
+    const { rotulos } = bancada();
+    rotulos.reservar([{ left: 610, right: 800, top: 400, bottom: 680 }]);
+    const semLugarDoLadoNatural = rotulo('dirigido', 'Dirigido', 0.5, 0.45);
+    semLugarDoLadoNatural.dirigido = true;
+    rotulos.draw([semLugarDoLadoNatural]);
+    expect(semLugarDoLadoNatural.desenhado).toBe(true);
   });
 
   it('o nome pousa na MESMA ALTURA da âncora: acabaram os traços em diagonal', () => {

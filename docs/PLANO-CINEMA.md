@@ -71,24 +71,13 @@ O que ficou de pé no repensar:
 
 O roteiro novo (perfil analítico, desenho sob as duas leis, juízes e
 varredura) pousou em 19–20/08 e virou produto — a exibição do dono é o
-item 54 do `PENDENCIAS.md`. O trabalho segue nesta ordem:
+item 54 do `PENDENCIAS.md`.
 
-1. **Motor declarativo.** A decisão e as palavras do dono moram no **item 75
-   do `PENDENCIAS.md`** — é ele o dono deste assunto; aqui fica só o critério
-   técnico de saída. Movimentos nomeados, legendas, preload e marcadores de QA
-   passam a ser dados leves do filme — e, por decisão dele em 24/08, também os
-   **nomes em cena**: o roteiro DIRIGE, não desliga. O que o beat declara
-   assume a frente da tela; a régua de relevância segue viva por baixo,
-   governando o que o roteiro não fala (os nomes de fundo); e o modo pode ser
-   escolhido manualmente por quem assiste — o dirigido é o padrão do filme,
-   não uma prisão. (O mundo continua um só: órbitas, luz e física não mudam
-   por modo; isto é direção declarada, não segundo universo.) O caso de prova
-   é o ALNILAM do item 82 — a Três Marias do meio que perdeu o nome: o motor
-   só está certo quando as três falarem. Conclui quando o filme galáctico roda
-   pelo novo formato sem diferença visual — prova A/B bit a bit, com o lado
-   novo capturado de disco zerado — nem perda dos gates, e um filme novo não
-   exige editar o núcleo do aplicativo.
-2. **Viagem solar.** Filme próprio de quatro minutos no mesmo motor. Conclui
+O **motor declarativo fechou em 29/08** (item 75): as 25 cenas do filme
+galáctico são roteiro, os nomes declarados são dirigidos e o A/B completo
+ficou bit-idêntico. A fila ativa agora tem um item:
+
+1. **Viagem solar.** Filme próprio de quatro minutos no mesmo motor. Conclui
    com Terra/Lua, Júpiter/Io, Saturno/luas e o afastamento final, ciência e
    unidades revisadas, gate visual e exibição completa aprovada.
 
@@ -292,10 +281,12 @@ Nomes desconhecidos, números não finitos e parâmetros fora dessas faixas
 interrompem a montagem com o campo indicado no erro. Não há `eval`, código
 embutido no roteiro, dependência nova nem controle novo para o visitante.
 
-**Estado da implementação:** foram convertidas **25 de 25 cenas, 193 de
-193 s**. `assuntos` dirige os nomes do plano e mantém a régua geral no
-fundo; Alnitak, Alnilam e Mintaka falam juntas no caso de prova. A câmera
-e a edição completas já coincidem com o corte anterior; o fechamento do
-item 75 ainda depende do A/B completo de cache zerado e da suíte única.
-Validação focal:
+**Motor fechado:** foram convertidas **25 de 25 cenas, 193 de 193 s**.
+`assuntos` dirige os nomes do plano e mantém a régua geral no fundo;
+Alnitak, Alnilam e Mintaka falam juntas no caso de prova. O A/B completo
+de cache zerado deu **61 de 61 vistas bit-idênticas**, com duas capturas
+estáveis de cada lado; a suíte fechou com 2.460 testes aprovados, um antigo
+já desativado e nenhuma falha. Um filme novo usa estes JSONs e registra
+suas âncoras científicas na montagem; não precisa alterar o leitor nem as
+peças de movimento enquanto usar o vocabulário acima. Validação focal:
 `npx vitest run src/three/cinematic/lerSequencia.test.ts src/three/cinematic/lerPlanoDeCamera.test.ts src/three/cinematic/apoiosDoRoteiro.test.ts`.

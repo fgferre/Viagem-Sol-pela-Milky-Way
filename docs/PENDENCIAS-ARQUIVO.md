@@ -4173,3 +4173,359 @@ grande rola e lê tudo, no tamanho que pediu. Encolher tipografia no telefone
 está **descartado por decisão dele**, e não volta sem pedido novo. Quem
 executar volta com a foto de 390×844 com `?ui=1.4`, mostrando o véu rolando
 até o rodapé inteiro.
+
+---
+
+## Item 75 — Motor de filmes por roteiro
+
+*(Fechado em 29/08: 25/25 cenas e 193/193 s em roteiro; A/B de cache
+zerado com 61/61 vistas bit-idênticas; 2.460 testes aprovados, um antigo
+já desativado e nenhuma falha. O que segue é o texto do vivo no fecho.)*
+
+**75. Motor de filmes por roteiro — em implementação.** Proposta dele
+de 22/08, nas palavras inteiras:
+
+> *"Digo mais, deveríamos ser capazes de criar filmes, os filmes nao
+> deveriam ser milhares de linhas de codigo, deveriam ser na verdade um
+> script, quase como um arquivo txt com os parametros que o "motor de
+> filmes" só lesse. um diretor de uma camera que se movimenta pelo
+> universo, troca de lente, usa zoom, vira e se movimenta livremente,
+> seguidno algortimos claros de movimento intelignete cinematográfico.
+> Nao estou dizendo que a ferramenta deveria estar disponivel para o
+> usuário, mas isso facilitaria sua propria vida para que vc gerasse
+> novos filmes facilmente... logo vc criaria a ferramenta e deixaria
+> instrucoes para que vc mesmo criasse scripts para essa ferramenta...
+> fica a ideia para uma implmentacao futura. depois podemos portar esse
+> filme atual para esssa ferramenta. nunca li o codigo, mas tneho a
+> impressao que hoje dentro do filme já temos todas as "ferramentas"
+> praticamente prontas para que realmente vire um motor, seria como
+> separar as coisas que sao constantes hard coded, da lógica
+> algortimica..."*
+
+Três coisas ficam ditas por ele: a ferramenta **não** é para o
+visitante (é para o agente escrever filmes), ela vem com **instruções**
+para o próprio agente escrever os roteiros, e o **filme atual se porta
+depois** — não antes.
+
+O plano da casa já tem o nome disso, e a ideia dele coincide com o que
+está escrito: é o **"Motor declarativo"**, item 1 da *Fila ativa* do
+[`PLANO-CINEMA.md`](PLANO-CINEMA.md) — **critério de saída: PLANO-CINEMA,
+fila ativa 1** (é lá que ele mora, e só lá). O que a mensagem dele
+ACRESCENTA ao que estava escrito é a parte da câmera — trocar de lente,
+usar zoom, virar e se mover por "algoritmos claros de movimento
+inteligente cinematográfico" — e o destinatário: o motor é ferramenta do
+agente, com instruções.
+
+**Primeira base pronta (28/08):** `movimentos.ts` reúne as trajetórias,
+curvas de aceleração e mudanças de olhar que estavam em `journey.ts`.
+Foi extração, não nova receita: o filme atual importa as mesmas peças.
+
+**O leitor do plano veio na segunda fatia (28/08):** `lerPlanoDeCamera`
+lê dados JSON, com movimentos nomeados, mira, duração e lente; o piloto
+de **UM PASSO AO LADO** dirige a câmera existente.
+
+**A sequência veio na terceira fatia (28/08):** `lerSequencia` lê planos
+com câmera, legendas, assuntos, destino, silêncio de fundo e língua do
+olhar. O exemplo vivo `cinturao.json` reúne **AS TRÊS MARIAS** e **UM
+PASSO AO LADO**, incorporando o antigo `passoAoLado.json`. A ordem e
+os dados entram na mesma montagem de `Journey`: cortes, janelas e
+capítulos continuam derivados, sem outro relógio. Instruções e limites
+de autoria estão no `PLANO-CINEMA.md`.
+Não há dependência nova, segundo motor nem migração integral concluída.
+Faltam as composições restantes de inclinação/efeitos e os movimentos
+específicos que ainda não viraram dados.
+Ler `assuntos` ainda não resolve o item 82:
+a prioridade dos nomes em cena segue sendo a regra existente.
+O critério de saída continua no `PLANO-CINEMA.md`.
+
+**28/08 — reforço dele sobre o motor:** "o motor tem que pensar em
+animacoes de transicao entre pontos e forma legais de fazer esses
+movimentos". E perguntou: "será que já nao tem libraires gratis prontas?"
+A escolha das peças de transição deve comparar as opções prontas e
+gratuitas com o que o Three.js já oferece; não pressupor implementação
+própria. O roteiro continua responsável pela intenção cinematográfica.
+
+**Direção técnica aplicada após a consulta:** usar as curvas nativas do
+Three.js — `CubicBezierCurve3` para controles explícitos e
+`CatmullRomCurve3` para trajetos por vários pontos. `movimentos.ts`
+chama a biblioteca; não mantém a conta própria da Bézier. As receitas
+de aproximação, passagem, contorno e ligação entre planos combinam
+essas peças com mira, lente e ritmo,
+preservando o relógio único e a busca por qualquer instante do filme.
+Comparação nas fontes primárias: [curvas do Three.js](https://threejs.org/docs/pages/Curve.html)
+e [trajetos por pontos](https://threejs.org/docs/pages/CatmullRomCurve3.html);
+[camera-controls](https://github.com/yomotsu/camera-controls) oferece
+transições de câmera e enquadramento; [Tween.js](https://github.com/tweenjs/tween.js)
+oferece interpolação e ritmos; [GSAP](https://gsap.com/docs/v3/GSAP/Timeline/)
+oferece composição temporal e busca na sequência. Os três primeiros
+usam MIT; o [GSAP é gratuito, com licença própria](https://github.com/greensock/GSAP).
+Nenhum pacote novo foi instalado. Adotar outro coordenador temporal só
+se trouxer uma capacidade que o relógio e a montagem existentes não
+cubram; não substituir a direção cinematográfica por mera suavização.
+
+**Preparação e marcos vieram na quarta fatia (28/08):** `apoiosDoRoteiro`
+lê `preload` e `qa`, usando os inícios já calculados pelos planos.
+`preAquecimento` tira a regra do corpo do Director: no filme ela segue
+os dados; no Atlas mantém foco e pai da lua. `apoiosDaViagem.json` pede
+Terra/Lua e efemérides no estilingue e nomeia os quadros de perfil/face.
+`CAPTURE_T` passa a ler esses nomes com o arredondamento existente;
+os pinos continuam em **153 e 167 s**. O cinturão já declara seus
+próprios marcos no mesmo formato. Não nasceu outro carregador.
+
+**Inclinação e pulso vieram na quinta fatia (28/08):** `lerPlanoDeCamera`
+lê `inclinacao` e `efeitoDeVelocidade`, nos formatos `fixo` e `pulso`.
+Os valores usam o tempo de relógio e chegam ao rig e aos efeitos
+existentes. O corredor **A BOLHA LOCAL** saiu do código e entrou no
+`cinturao.json`; não ficou cópia. Naquela fatia, rampas e combinações
+ainda não eram dados. Nenhum quadro de medição foi alterado.
+
+**Curvas prontas e rampas vieram na sexta fatia (28/08):** `trajeto`
+passa pelos pontos em curva, normalizada em escala local para funcionar
+também perto do Sol. O ritmo governa a partida e a chegada; mira, lente
+e relógio continuam os existentes. A pedido dele de fazer o melhor
+para UX, **UM PASSO AO LADO** passou da reta a um arco, preservando
+pontas, mira, duração e lente. O leitor também ganhou `rampa`,
+`frenagem` e `base`/`frequencia` do pulso. `mergulho.json` reúne as
+quatro cenas após Antares sem cópia no código antigo. A conversão chegou a
+**7 de 25 cenas, 46 de 193 s**, medida por `capturas/item75-caminhos/medir.mjs`.
+Não confundir essa fração do filme com prontidão do motor: ele ainda
+não lê todos os movimentos e não dirige os nomes do item 82.
+
+**A hélice e a abertura vieram na sétima fatia (28/08):** `helice`
+reutiliza `orbit` para a direção e `distanciaExponencial` para avançar
+entre escalas. O giro tem ritmo independente; o mesmo movimento pode
+aproximar ou afastar de outro centro. Os leitores aceitam parâmetros
+numéricos nomeados, copiados e validados na montagem. `abertura.json`
+recebe as distâncias calculadas do Sol e reúne a parede solar, a saída
+e Sirius, sem manter as câmeras antigas em paralelo. A conversão
+chegou a **10 de 25 cenas, 83 de 193 s**, medida por
+`capturas/item75-helice/medir.mjs`. A imagem desta etapa é preservada;
+retorno solar, passagem Lua–Terra e composições restantes ainda exigem obra.
+
+**Órion e a virada de Antares vieram na oitava fatia (28/08):**
+`orion.json` reúne a chegada e a órbita de Betelgeuse (a órbita é o
+movimento `orbita`, sem código novo), o raspão de Rigel e a dobradiça
+CASA; a virada para Antares antecede o lançamento no `mergulho.json`.
+Nenhuma peça nova de motor: curva, órbita, reta e as miras existentes
+bastaram. Os pontos calculados (órbitas de Betelgeuse, controle do
+raspão, parada do vazio) seguem nomeados em `journey.ts` — um número
+derivado de constante digitado no JSON já custou uma repescagem (o
+arredondado difere no último bit). A conversão chegou a **15 de 25
+cenas, 116 de 193 s**, medida por `capturas/item75-orion/medir.mjs`.
+O teste de ligação do mergulho acompanhou o plano novo. Faltam: os
+holds e a travessia do Ato IV, a fuga/subida (trecho de curva e
+combinações de efeitos), a deriva, o mergulho de volta e o take da
+casa — estes três últimos pedem movimentos que ainda não são dados.
+
+**Prova da primeira fatia:** `capturas/item75-movimentos/` guarda o programa
+`prova.mjs`, os dois lados da comparação e os resultados dos testes.
+Typecheck e lint passaram; a suíte teve 2.435 testes aprovados e um
+teste já desativado, sem falhas (`suite.json`).
+Posição, mira, lente, inclinação e movimento contínuo do rig deram os
+mesmos doubles no corte inteiro; legendas e metadados também coincidem.
+`antes.png` e `depois.png` são a mesma vista com HUD, pixel a pixel.
+`navegador.json` e `play.png` registram o trecho rodando. **Limite:** isso
+não substitui o A/B completo, de disco zerado, da migração; não é uma
+exibição contínua do filme inteiro no navegador.
+
+**Prova do leitor:** `capturas/item75-leitor/` guarda a comparação da
+câmera no corte inteiro (`antes`/`depois`, pelo mesmo `prova.mjs` da
+primeira fatia), a vista com HUD do piloto, idêntica pixel a pixel,
+e o trecho rodando (`navegador.json`, `play.png`). Typecheck e lint
+passaram; foram 2.441 testes aprovados na suíte, um já desativado e
+nenhuma falha (`suite.json`). O teste de ligação troca os dados do JSON
+e exige mudança de posição, mira, lente e duração no filme real.
+Os seis testes novos reprovaram com defeitos recolocados por revisão
+independente (`auditoria/`); para a ligação ao JSON vale o par `-v2`,
+com referência verde e mutação vermelha na mesma árvore isolada.
+O limite permanece: piloto de câmera, não migração integral nem novo
+filme; o A/B completo de disco zerado continua devido no fechamento do 75.
+
+**Prova da sequência:** `capturas/item75-sequencia/` guarda os dois lados
+da câmera e da edição no corte inteiro (mesmo `prova.mjs`), sem diferença.
+O quadro do primeiro plano com HUD é idêntico (`imagem.json` e
+`comparar-imagens.mjs`); o segundo texto está em `segundo-plano.png`.
+`navegador.json` registra o play atravessando a sequência e seguindo
+para Betelgeuse, não uma exibição inteira. Typecheck e lint passaram
+(`verificacoes.json`); a suíte terminou com 2.445 aprovados, um já
+desativado e nenhuma falha (`suite.json`). Os testes mudam a sequência
+de verdade: ordem, quantidade, duração, legendas, marcas da barra e
+dados de direção precisam acompanhar o JSON. **Limite:** só os planos
+do cinturão foram convertidos; a prova não fecha o A/B integral de
+cache zerado nem a prioridade dos três nomes em cena. Os quatro testes
+novos e a ligação de câmera adaptada reprovaram nas cinco sabotagens
+independentes; `auditoria/` guarda os patches e trechos das saídas, com
+referência verde na mesma cópia física isolada.
+
+**Prova da preparação:** `capturas/item75-apoios/` guarda os marcos e a
+comparação da política de carga (`apoios.json`, `medir-apoios.mjs`), a
+câmera/edição idênticas no corte inteiro e o quadro da Terra idêntico
+em RGB (`imagem.json`). O perfil foi aberto pelo marco calculado;
+o trecho seguiu em play (`marco-e-play.json`, `play.png`). Typecheck
+e lint passaram; a suíte única terminou com 2.449 aprovados, um já
+desativado e nenhuma falha (`suite.json`). Os quatro testes novos
+reprovaram em cinco sabotagens independentes, incluindo ignorar o JSON
+no Director e fixar os tempos de QA; saídas integrais e patches em
+`auditoria/`. A redundância de uma asserção foi retirada e a correção
+passou (`correcao.json`). **Limite:** prepara corpos e efemérides já
+existentes; não cria novos recursos. Não é exibição integral, A/B de
+cache zerado nem conversão das câmeras restantes.
+
+**Prova da inclinação e do pulso:** `capturas/item75-efeitos/` guarda a
+comparação numérica do filme inteiro (mesmo `prova.mjs` da primeira
+fatia), sem diferença de câmera ou edição, e **A BOLHA LOCAL** com HUD
+idêntica em RGB (`imagem.json`). A amostra em play mostra o avanço da
+barra e do pulso realmente entregue à tela (`navegador.json`, `play.png`).
+Typecheck, lint e 56 testes focados passaram; a suíte única terminou com
+2.450 aprovados e um já desativado, sem falhas (`suite.json`). A revisão
+independente fez seis sabotagens: pulso constante, limite removido,
+leituras desligadas, giro do rig removido e tempo suavizado no lugar do
+relógio cru. Todas reprovaram; referência verde, saídas e patches estão
+em `auditoria/`. A referência histórica dispensável das instruções foi
+retirada. **Limite:** só valores fixos e pulsos foram acrescentados;
+não cobre rampas/combinações restantes, exibição integral no navegador
+nem o A/B de disco zerado da migração completa.
+
+**Prova das curvas e rampas:** `capturas/item75-transicoes/` registra a
+troca da Bézier e a migração das quatro cenas, antes de alterar o arco:
+câmera e edição iguais no corte inteiro pelo `prova.mjs` existente.
+O berçário em `t=100` também ficou idêntico em RGB (`imagem.json`).
+`play.json` percorre de 88,2 a 114,38 s, entrando nas quatro cenas e
+mostrando o efeito de velocidade vivo, com quatro capturas. Em
+`capturas/item75-caminhos/`, `medidas.json` separa a melhoria deliberada:
+só a posição desejada entre 49 e 55 s mudou; mira, lente, inclinação e
+efeito de velocidade coincidem com o original. As capturas `antes` e
+`depois`, `play.json` e `saida.json` mostram o arco e sua saída para
+Betelgeuse. Typecheck e lint passaram (`verificacoes.json`); 64 testes
+focados passaram, com um já desativado (`focal-v2.json`). A suíte única
+teve 2.455 aprovados, um já desativado e nenhuma falha (`suite.json`).
+A revisão independente não encontrou correções; oito sabotagens
+reprovaram, com referência verde, patches e saídas em `auditoria/`.
+**Limite:** isso não é exibição integral, A/B visual de cache zerado,
+costura automática entre planos nem conclusão do motor.
+
+**Prova da hélice e da abertura:** `capturas/item75-helice/` conserva
+antes/depois do `prova.mjs`: posição, mira, lente, inclinação, efeito,
+rig contínuo e edição permanecem iguais no filme inteiro. A vista
+com HUD em `t=6,2` também é igual em RGB (`imagem.json`). `medidas.json`
+mede a conversão e o afastamento por quadro, a partir das poses reais.
+`play-sol.json` percorre de 6,25 a 10,30 s; `play-sirius.json`, de
+30,10 a 37,45 s, incluindo a entrada no corredor. As quatro capturas
+de movimento foram abertas e conferidas. Typecheck e lint passaram
+(`verificacoes.json`); 63 testes focados e 2.458 da suíte passaram, com
+um já desativado em cada execução (`focal.json`, `suite.json`). As sete
+sabotagens independentes reprovaram; referência verde, patches e saídas
+estão em `auditoria/`.
+**Limite:** prova focal no navegador, não exibição integral nem A/B de
+cache zerado; os percentuais continuam sendo de conversão, não do motor.
+
+**Os holds e a travessia do Ato IV vieram na nona fatia (28/08):**
+`revelacao.json` reúne os holds de medição (perfil e face) e a
+travessia que abre o disco em braços. Nenhuma peça nova de motor:
+fixo, curva, rampa e pulso bastaram. Os marcos `edge`/`face` passaram
+a ser declarados pelos próprios planos — `apoiosDaViagem.json` ficou
+só com o estilingue, sem cópia paralela — e os pinos do `CAPTURE_T`
+seguem em **153 e 167 s**. A conversão chegou a **18 de 25 cenas,
+135 de 193 s**, medida por `capturas/item75-ato4/medir.mjs`.
+Naquela fatia ainda faltavam a aproximação final e a rasante do Ato III,
+a fuga/subida, a deriva, o mergulho de volta e o take da casa.
+
+**A aproximação final e a rasante vieram na décima fatia (28/08):**
+os dois planos finais do Ato III entraram no próprio `mergulho.json`.
+Ambos usam a órbita existente; `unidadeDoAngulo: "graus"` preserva a
+interpolação editorial anterior antes da conversão para radianos, sem
+diferença de arredondamento. A conversão chegou a **20 de 25 cenas,
+154 de 193 s**, medida por `capturas/item75-sgr/medir.mjs`. Faltam a
+fuga/subida, a deriva, o mergulho de volta e o take da casa, além da
+direção dos nomes em cena.
+
+**Prova de Órion:** `capturas/item75-orion/` guarda o antes/depois do
+`prova.mjs`: posição, mira, lente, inclinação, efeito, rig contínuo e
+edição idênticos no filme inteiro (mesmo sha256 dos dois lados). A
+vista com HUD da órbita de Betelgeuse (`t=63`) é igual em RGB, canal a
+canal (`imagem.json`, antes de worktree limpa). `play.json` percorre o
+trecho em play real de 55 a 90 s — amostrado de 66,4 a 90,4, pois o
+filme já corre durante o assentamento — com duas capturas conferidas
+(saída da órbita de Betelgeuse; a virada com a linha de destino de
+Antares). A única correção da fatia foi o ponto
+de controle do raspão de Rigel: digitado arredondado no JSON, divergia
+no último bit; virou âncora calculada. Typecheck e lint passaram
+(`verificacoes.json`); os testes focados terminaram verdes após o
+ajuste de índice do teste de ligação, e a suíte única do fechamento
+terminou com 2.458 aprovados, um já desativado e nenhuma falha
+(`suite.json`). **Sem testes novos, sem sabotagem devida** — a fatia
+não criou peça de motor; o guarda é o bit a bit do filme inteiro.
+**Limite:** prova focal no navegador, não exibição integral nem A/B de
+cache zerado; percentuais de conversão, não de prontidão do motor.
+
+**Prova dos holds e da travessia:** `capturas/item75-ato4/` guarda o
+antes/depois do `prova.mjs`: posição, mira, lente, inclinação, efeito,
+rig contínuo e edição idênticos no filme inteiro (mesmo sha256 dos dois
+lados). As vistas com HUD dos dois quadros de medição (`t=153` e
+`t=167`, os pinos do `CAPTURE_T`) são iguais em RGB, canal a canal
+(`edge/imagem.json`, `face/imagem.json`; antes de worktree limpa).
+`play.json` percorre o trecho em play real de 148 a 171 s — amostrado
+de 161,6 a 171, pois o filme já corre durante o assentamento — com
+duas capturas conferidas (a travessia com OS BRAÇOS; o hold de face
+com NOSSA GALÁXIA e o marcador do Sol). Typecheck e lint passaram
+(`verificacoes.json`); os testes focados terminaram verdes e a suíte
+única do fechamento terminou com 2.458 aprovados, um já desativado e
+nenhuma falha (`suite.json`). **Sem testes novos** — a fatia não criou
+peça de motor; o guarda é o bit a bit do filme inteiro. O teste de
+ligação dos apoios passou a morder o `revelacao.json` (os marcos
+`edge`/`face` saem dele), e a sabotagem da própria mão — leitor sem
+ler `qa` — reprovou três testes, com referência verde ao reverter
+(`auditoria/`).
+**Limite:** prova focal no navegador, não exibição integral nem A/B de
+cache zerado; percentuais de conversão, não de prontidão do motor.
+
+**Prova da aproximação e da rasante:** `capturas/item75-sgr/` guarda o
+antes/depois do `prova.mjs`: os **209.958 números** de câmera e a edição
+do filme inteiro têm o mesmo `sha256`. A cena rodando no navegador e a
+imagem conferida ficam no mesmo diretório. Typecheck, lint e testes
+focados passaram em `verificacoes.json`; a suíte única do fechamento
+terminou com **2.458 aprovados**, um já desativado e nenhuma falha
+(`suite.json`). O teste de graus compara comportamento, não texto:
+recompõe a órbita no referencial galáctico e cobra as mesmas posições.
+**Limite:** prova focal, não exibição contínua do filme nem o A/B completo
+de cache zerado devido no fechamento do item 75.
+
+**A implementação inteira veio na décima primeira fatia (29/08):** a
+fuga, a subida e a deriva entraram no `revelacao.json`; o preload do
+estilingue entrou no próprio plano e apagou o arquivo paralelo. O novo
+`volta.json` declara a aproximação exponencial de casa e o take único
+Lua→Terra, compondo fly-by, arco e duas partes no mesmo relógio. O leitor
+ganhou apenas o vocabulário exigido por essas cinco cenas: recorte de
+trajetória, aproximação, fly-by, arco, sequência, mira do fly-by e as
+curvas escalares usadas por elas. `journey.ts` ficou com as âncoras
+calculadas e a montagem; as cinco câmeras antigas saíram sem cópia.
+
+O roteiro passou também a marcar seus `assuntos` como dirigidos. Só eles
+podem procurar as linhas alternativas já conhecidas do desenho e chegam
+antes dos nomes de fundo; a regra geral de um lugar por nome continua
+intacta no Atlas e no céu não dirigido. A prova real em `t=45` mostra
+Alnitak, Alnilam e Mintaka juntas. A conversão chegou a **25 de 25 cenas,
+193 de 193 s**. `capturas/item75-fechamento/depois.json` compara o filme
+inteiro a 60 Hz, emendas incluídas: **209.958 doubles** e toda a edição
+têm os mesmos hashes da base. O fechamento ainda deve o A/B completo de
+cache zerado e a suíte única; por isso o item continuava aberto naquela
+medição.
+
+**Fechamento do item 75 (29/08):** `ab-identidade` capturou as **61 vistas
+oficiais duas vezes em cada lado**, com cache zerado e árvore limpa:
+**61/61 estáveis antes, 61/61 estáveis depois e 61/61 bit-idênticas entre
+os lados**. Os estados e carimbos estão em `capturas/item75-fechamento/ab-*`.
+A mudança intencional dos nomes tem prova própria em
+`alnilam-depois.png`, aberta e conferida: as três estrelas estão legíveis
+e cada traço aponta para a âncora certa. A suíte única passou com **2.460
+testes**, um antigo já desativado e nenhuma falha (`suite.json`).
+
+A varredura da rodada longa fez as cinco perguntas do item 107. Não ficou
+câmera antiga, arquivo paralelo, chamada órfã nem segunda linha do tempo.
+Ela retirou duas exportações que não tinham consumidor, corrigiu o
+comentário que ainda negava a exceção dirigida e descobriu que o teste não
+mordia a troca para o outro lado; a mesma prova agora cobre essa saída.
+Três sabotagens curtas — retirar direção, retirar posições alternativas e
+parar o avanço da sequência — reprovaram exatamente um teste cada; os JSONs
+ficam em `capturas/item75-fechamento/auditoria/`. O motor fecha sem
+dependência nova, processo vivo ou worktree temporária.
