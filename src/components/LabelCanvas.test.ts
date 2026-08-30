@@ -32,6 +32,7 @@
 // ============================================================
 import { describe, expect, it } from 'vitest';
 import type { StarLabel } from '../three/world/labels';
+import type { RotuloComVaga } from '../three/world/rotulos3d';
 
 (globalThis as { window?: unknown }).window = { devicePixelRatio: 1 };
 
@@ -63,6 +64,10 @@ function contextoFalso() {
     moveTo: nada,
     lineTo: nada,
     stroke: nada,
+    // o anel do ícone (item 89) desenha um arco cheio; aqui só se julga
+    // a decisão de vaga, então as duas são mudas como as vizinhas
+    arc: nada,
+    fill: nada,
     fillText: (texto: string, x: number, y: number) => pintadas.push({ texto, x, y }),
     font: '',
     fillStyle: '',
@@ -102,7 +107,7 @@ function rotulo(
   x: number,
   y: number,
   prioridade?: number
-): StarLabel {
+): RotuloComVaga {
   return { name, spect: '', detalhe: 'corpo', distPc: 0, x, y, opacity: 0.95, key, prioridade };
 }
 
@@ -491,6 +496,64 @@ describe('o quadro parado não se repinta', () => {
     expect(medidoNoPrimeiro).toBe(2); // o nome e o detalhe
     rotulos.draw([rotulo('corpo:mars', 'Marte', 0.6, 0.5)]);
     expect(ctx.medicoes.conta).toBe(medidoNoPrimeiro);
+  });
+});
+
+// ============================================================
+// A VAGA TEM LADO, E O LADO VIAJA NO OBJETO (item 109, 30/08).
+//
+// O contrato da beta 3D é "o 2D decide a vaga, o 3D só pinta nela" — mas
+// o lado da vaga (a caixa reservada à ESQUERDA da âncora quando a borda
+// direita manda) morria dentro deste arquivo, e o pintor 3D crescia
+// sempre para a direita: nos 28% direitos da tela o nome saía clipado.
+// Aqui se prova que o lado é escrito no MESMO objeto que `desenhado` —
+// inclusive no quadro pulado pela assinatura, em que os objetos são
+// novos — e que o rótulo da beta (`textoInvisivel`) o recebe mesmo sem
+// um glifo 2D ser pintado.
+// ============================================================
+describe('a vaga tem lado, e o lado viaja no objeto (item 109)', () => {
+  it('borda direita ⇒ vaga à esquerda; meio da tela ⇒ vaga à direita', () => {
+    const { rotulos } = bancada();
+    const naBorda = rotulo('corpo:x', 'X', 0.9, 0.45);
+    const noMeio = rotulo('corpo:y', 'Y', 0.3, 0.3);
+    rotulos.draw([naBorda, noMeio]);
+    expect(naBorda.ladoEsquerdo).toBe(true);
+    expect(noMeio.ladoEsquerdo).toBe(false);
+  });
+
+  it('o rótulo da beta (textoInvisivel) ocupa a vaga COM lado — sem pintar glifo', () => {
+    const { ctx, rotulos } = bancada();
+    const beta = { ...rotulo('corpo:earth', 'Terra', 0.9, 0.45), textoInvisivel: true };
+    rotulos.draw([beta]);
+    expect(beta.desenhado).toBe(true);
+    expect((beta as RotuloComVaga).ladoEsquerdo).toBe(true);
+    // o texto é do pintor 3D; aqui não sai pincelada de glifo nenhuma
+    expect(ctx.pintadas).toHaveLength(0);
+  });
+
+  it('no quadro pulado pela assinatura, os objetos NOVOS repetem o lado', () => {
+    // sem a lembrança, o pintor 3D veria `ladoEsquerdo` vazio num quadro
+    // parado e o nome pulava de lado — o mesmo gênero de defeito
+    // silencioso que a marca `desenhado` já desarma
+    const { rotulos } = bancada();
+    rotulos.draw([rotulo('corpo:x', 'X', 0.9, 0.45)]);
+    const segundo = rotulo('corpo:x', 'X', 0.9, 0.45);
+    rotulos.draw([segundo]);
+    expect(segundo.desenhado).toBe(true);
+    expect(segundo.ladoEsquerdo).toBe(true);
+  });
+
+  it('a entrada só-ícone não tem texto, logo não tem lado', () => {
+    const { rotulos } = bancada();
+    const so = { ...rotulo('corpo:z', 'Z', 0.9, 0.45), icone: true };
+    rotulos.draw([so]);
+    expect(so.desenhado).toBe(true);
+    expect((so as RotuloComVaga).ladoEsquerdo).toBeUndefined();
+    // e num quadro pulado o ícone segue sem lado
+    const denovo = { ...rotulo('corpo:z', 'Z', 0.9, 0.45), icone: true };
+    rotulos.draw([denovo]);
+    expect(denovo.desenhado).toBe(true);
+    expect((denovo as RotuloComVaga).ladoEsquerdo).toBeUndefined();
   });
 });
 

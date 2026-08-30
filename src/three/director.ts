@@ -1349,11 +1349,19 @@ export class Director {
   setRotulos3d(ligado: boolean) {
     this.rotulos3dLigado = ligado;
     if (ligado && !this.rotulos3d) {
-      import('./world/rotulos3d').then((m) => {
-        if (this.disposed) return;
-        this.rotulos3d = new m.Rotulos3d(this.engine.scene);
-        this.perturbar();
-      });
+      import('./world/rotulos3d')
+        .then((m) => {
+          if (this.disposed) return;
+          this.rotulos3d = new m.Rotulos3d(this.engine.scene);
+          this.perturbar();
+        })
+        .catch((error) => {
+          // o chunk vem pela rede (404 de deploy novo, queda): sem este
+          // braço a rejeição ficava sem tratamento e a beta "ligada"
+          // apagava os nomes PARA SEMPRE — o gate de `texto3d` exige o
+          // pintor vivo, então o 2D segue pintando sozinho
+          console.warn('[rotulos3d] a carga da beta falhou; os nomes seguem no 2D.', error);
+        });
     }
     this.perturbar();
   }
@@ -2257,9 +2265,9 @@ export class Director {
       // A INÉRCIA DA RODA gasta o embalo ANTES de a câmera ser escrita
       // (item 73): escrever depois deixaria o quadro com a distância do
       // anterior, e a 60 Hz isso é um quadro de atraso em todo estalo.
-      // `pinarDistancia` recusa sozinho enquanto a rampa entre degraus
-      // anda — a rampa termina EXATA na pose pura, e duas mãos na mesma
-      // distância seriam duas leis.
+      // Com a rampa entre degraus em voo, `pinarDistancia` re-mira a
+      // distância de DESTINO dela (item 112) — o gesto da roda nunca se
+      // perde e continua havendo UMA lei escrevendo a distância.
       this.gestos?.avancarZoom(dt);
       // o MESMO ponto do quadro em que a JourneyRig escreveria a dela —
       // inclusive o fov, que aqui é o pino do Atlas e não o resíduo
@@ -2740,7 +2748,10 @@ export class Director {
       // outras dezoito, e entregue pronta ao produtor
       nomesEscondidos: this.hide.has('nonomes'),
       iconesEscondidos: this.hide.has('noicones'),
-      texto3d: this.rotulos3dLigado,
+      // a beta só cala o texto 2D com o pintor 3D VIVO: o chunk chega
+      // pela rede (import tardio) e, até lá — ou se a carga falhar —,
+      // o corpo focado continua com nome (item 109)
+      texto3d: this.rotulos3dLigado && !!this.rotulos3d,
     });
     // a camada 3D espelha o QUE ESTE QUADRO decidiu desenhar — depois
     // do projetar, para o texto nunca correr um quadro atrás do anel.
@@ -2850,6 +2861,14 @@ export class Director {
     // com ela indefinida
     step('planetas', () => this.planetas?.dispose());
     step('orbitas', () => this.orbitas?.dispose());
+    // a beta dos rótulos 3D (item 109) nasce de import tardio e pode nem
+    // existir; sem este passo, até 31 Texts do troika (geometria +
+    // material derivado + textura SDF cada) sobreviviam ao dispose — a
+    // mesma classe de vazamento medida nas heroes em 21/08
+    step('rotulos3d', () => {
+      this.rotulos3d?.dispose();
+      this.rotulos3d = undefined;
+    });
     // um passo por corpo, e não um por grupo: `passoBlindado` isola a
     // falha (teardown que falha não leva os outros junto — NORTE)
     for (const posto of this.noPalco) {

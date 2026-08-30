@@ -44,7 +44,7 @@ const TEARDOWN = FONTE.slice(INICIO_DO_TEARDOWN);
  */
 const CONSTRUIDOS = [
   ...new Set(
-    [...FONTE.slice(0, INICIO_DO_TEARDOWN).matchAll(/this\.([A-Za-z]+) = new /g)].map(
+    [...FONTE.slice(0, INICIO_DO_TEARDOWN).matchAll(/this\.([A-Za-z0-9]+) = new /g)].map(
       (m) => m[1]
     )
   ),
@@ -53,10 +53,12 @@ const CONSTRUIDOS = [
 describe('o teardown não esquece nenhum filho', () => {
   it('a varredura acha o que procura — um padrão quebrado passaria calado', () => {
     expect(INICIO_DO_TEARDOWN).toBeGreaterThan(0);
-    // os quatro que ninguém discute; se a regex quebrar, a lista esvazia
-    // e o teste abaixo passaria sem cobrar nada
+    // os cinco que ninguém discute; se a regex quebrar, a lista esvazia
+    // e o teste abaixo passaria sem cobrar nada. `rotulos3d` é o cinto
+    // do DÍGITO no nome: a varredura antiga (`[A-Za-z]+`) não o via, e
+    // foi exatamente assim que a camada ficou fora do teardown até 30/08
     expect(CONSTRUIDOS.length).toBeGreaterThan(10);
-    for (const nome of ['engine', 'sun', 'stars', 'heroes']) {
+    for (const nome of ['engine', 'sun', 'stars', 'heroes', 'rotulos3d']) {
       expect(CONSTRUIDOS, `${nome} sumiu da varredura`).toContain(nome);
     }
   });
@@ -455,5 +457,57 @@ describe('a Q14 do dono — em `?luz=real` a LINHA do Director abre +3 passos', 
     // URL histórica `?luz=real&exp=8.16` continua dando 8,16 e não 65.
     expect(exposicaoDoTick('real', 0, true)).toBeUndefined();
     expect(exposicaoDoTick('assistida', 0, true)).toBeUndefined();
+  });
+});
+
+// ============================================================
+// A BETA 3D SÓ CALA O 2D COM O PINTOR VIVO (item 109, 30/08).
+//
+// `setRotulos3d(true)` liga a flag NA HORA, mas o pintor chega pela rede
+// (import tardio de `world/rotulos3d`, chunk separado). O quadro levava
+// `texto3d: this.rotulos3dLigado` cru: entre o clique e o chunk o Atlas
+// ficava sem nome de corpo nenhum — e num 404 de deploy novo a promise
+// rejeitava sem tratamento e os nomes sumiam PARA SEMPRE. Aqui se
+// executa a LINHA REAL do quadro com um `this` de mentira, no precedente
+// do bloco da política de luz acima.
+// ============================================================
+describe('a beta dos rótulos 3D (item 109): o 2D pinta até o 3D existir', () => {
+  const GATE = FONTE.match(/\n *texto3d: (.*),\n/);
+
+  /** a expressão real do quadro, avaliada com a flag e o pintor dados */
+  const texto3dNoQuadro = (ligado: boolean, pintor: unknown): boolean =>
+    new Function(`return (${GATE![1]});`).call({
+      rotulos3dLigado: ligado,
+      rotulos3d: pintor,
+    });
+
+  it('a varredura acha a linha — um padrão quebrado passaria calado', () => {
+    expect(GATE, 'o quadro não entrega mais `texto3d`').not.toBeNull();
+  });
+
+  it('flag ligada SEM pintor: `texto3d` é falso e o 2D continua pintando', () => {
+    // é a janela do import em voo E o estado permanente após uma falha
+    // de carga — nos dois, apagar o texto 2D deixaria o corpo sem nome
+    expect(texto3dNoQuadro(true, undefined)).toBe(false);
+  });
+
+  it('flag ligada COM pintor: o 3D assume o texto', () => {
+    expect(texto3dNoQuadro(true, {})).toBe(true);
+  });
+
+  it('flag desligada: nunca — nem com o pintor vivo de uma ligada anterior', () => {
+    expect(texto3dNoQuadro(false, {})).toBe(false);
+  });
+
+  it('o import tem `.catch`: a falha avisa no console e deixa o 2D em paz', () => {
+    const corpo = FONTE.slice(
+      FONTE.indexOf('  setRotulos3d('),
+      FONTE.indexOf('  private get pauseLookActive')
+    );
+    expect(corpo).toContain(".catch");
+    expect(corpo).toContain('console.warn');
+    // a falha não desliga a flag nem mexe em estado: quem mantém o 2D
+    // pintando é o gate acima (pintor ausente), sem caso novo
+    expect(corpo).not.toContain('rotulos3dLigado = false');
   });
 });

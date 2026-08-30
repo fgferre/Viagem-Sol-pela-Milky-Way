@@ -3,6 +3,7 @@ import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
 import { numeroPtBr } from '../three/tempoDoAtlas';
 import { OPACIDADE_MINIMA_DO_ROTULO } from '../three/world/labels';
 import type { StarLabel } from '../three/world/labels';
+import type { RotuloComVaga } from '../three/world/rotulos3d';
 
 interface Rect {
   left: number;
@@ -180,13 +181,17 @@ export class LabelCanvas {
   private assinatura = '';
 
   /**
-   * QUEM SOBREVIVEU no quadro anterior. Sem isto o atalho da assinatura
-   * seria um defeito silencioso: a projeção cria objetos NOVOS a cada
-   * quadro, e um quadro pulado os deixaria com `desenhado: undefined` —
-   * que o clique lê como "pode ser alvo" (só o `false` explícito é
-   * descartado). O "SOL" escrito na tela voltaria a valer Fobos.
+   * QUEM SOBREVIVEU no quadro anterior — e de que LADO o texto pousou
+   * (o valor; `undefined` no só-ícone, que não tem texto). Sem isto o
+   * atalho da assinatura seria um defeito silencioso: a projeção cria
+   * objetos NOVOS a cada quadro, e um quadro pulado os deixaria com
+   * `desenhado: undefined` — que o clique lê como "pode ser alvo" (só o
+   * `false` explícito é descartado). O "SOL" escrito na tela voltaria a
+   * valer Fobos. Desde o item 109 o LADO viaja junto: o pintor 3D lê
+   * `ladoEsquerdo` no objeto do quadro, e um quadro pulado sem a
+   * lembrança o faria pintar do lado errado.
    */
-  private desenhadosAntes = new Set<string>();
+  private desenhadosAntes = new Map<string, boolean | undefined>();
 
   /** o plano do quadro: nome e detalhe prontos, reusados na pintura */
   private readonly nomes: string[] = [];
@@ -252,9 +257,14 @@ export class LabelCanvas {
     const assinatura = this.planejar(labels, k);
     if (assinatura === this.assinatura) {
       // O QUADRO JÁ ESTÁ NA TELA. Só as MARCAS se reescrevem: os objetos
-      // são novos, e a decisão de quem foi desenhado é a mesma — a
-      // assinatura é exatamente a prova disso.
-      for (const label of labels) label.desenhado = this.desenhadosAntes.has(label.key);
+      // são novos, e a decisão de quem foi desenhado — e de que LADO a
+      // vaga ficou (item 109) — é a mesma; a assinatura é exatamente a
+      // prova disso.
+      for (const label of labels) {
+        label.desenhado = this.desenhadosAntes.has(label.key);
+        const lado = this.desenhadosAntes.get(label.key);
+        if (lado !== undefined) (label as RotuloComVaga).ladoEsquerdo = lado;
+      }
       return;
     }
     this.assinatura = assinatura;
@@ -330,7 +340,8 @@ export class LabelCanvas {
         if (occupied.some((rect) => intersects(caixa, rect, 2 * k))) continue;
         occupied.push(caixa);
         label.desenhado = true;
-        this.desenhadosAntes.add(label.key);
+        // sem texto, sem lado: o `undefined` no valor é deliberado
+        this.desenhadosAntes.set(label.key, undefined);
         this.anel(ctx, anchorX, anchorY, r, k, label);
         continue;
       }
@@ -384,9 +395,13 @@ export class LabelCanvas {
       if (!candidate) continue;
       const direction = toLeft ? -1 : 1;
       occupied.push(candidate);
-      // passou por todas as leis: está NA TELA, e portanto é clicável
+      // passou por todas as leis: está NA TELA, e portanto é clicável —
+      // e a vaga TEM LADO (item 109): o pintor 3D pinta na MESMA vaga,
+      // então o lado que a borda escolheu viaja no objeto, ao lado do
+      // `desenhado`
       label.desenhado = true;
-      this.desenhadosAntes.add(label.key);
+      (label as RotuloComVaga).ladoEsquerdo = toLeft;
+      this.desenhadosAntes.set(label.key, toLeft);
 
       ctx.globalAlpha = label.opacity;
       if (label.comAnel) {
