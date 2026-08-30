@@ -46,6 +46,17 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (29/08)
 
+**29/08 (madrugada, o fecho da rodada) — 89, 94 e 96 FECHARAM; a mesa
+ficou limpa.** O 89 pelo olho dele ("confirmo as fotos"): o céu limpo
+navegável + o Eyes completo com o anel na cor da órbita. O 94 por
+medida dupla (blend 2,04→1,26 ms; A/B sentinela bit-idêntico 4/4) e o
+96 virando veredito vivo do atlas-smoke (Sol na origem, verificado).
+**O que resta aberto de produto: o 108 (armado, à espera da próxima
+aparição com o olho dele na hora) e o 109 (o spike dos labels 3D,
+quando ele mandar).** O site publicado está na era anterior a estas
+últimas levas (89 Eyes-completo, 83-cores, 94/96, 100) — publicar de
+novo é um pedido dele, como sempre.
+
 **29/08 (fim da noite) — PUBLICADO, a pedido dele.** *"sim, publique e
 faça push"* — os 179 commits desde a última publicação subiram para a
 `main` e o Pages pôs no ar tudo desta era: o motor de filmes (75), a
@@ -865,62 +876,12 @@ inteira no início, o tempo do filme inteiro depois de rolar) e a sabotagem
 confirma que elas mordem. Foto: `capturas/item87-abertura-rolagem-v2.png`;
 história no ARQUIVO.
 
-**89. Desligar os nomes deixa o céu INCLICÁVEL — o ícone tem de sobreviver
-ao texto.** (Aberto em 24/08, medido ao fechar o item **83**. Não é queixa
-dele: é buraco de produto achado com a régua na mão.) A camada dos nomes
-(item **82**) é uma chave só, e ela cala a TELA INTEIRA: sem rótulo
-desenhado não há o que clicar, porque **não existe raycast** nesta casa —
-o hit-test do Atlas roda sobre a LISTA de rótulos desenhados
-(`rotulos.ts`), não sobre a geometria. Quem desliga os nomes para limpar o
-céu perde junto o **clicar-para-visitar**, e isso é lei declarada e
-testada ("o que não está escrito não se clica", a mesma da pendência 30).
-Hoje isso é coerente; deixa de ser no dia em que o visitante quiser um céu
-limpo E navegável, que é exatamente o que o dono pediu quando reclamou da
-poluição visual.
-
-**A RESPOSTA JÁ ESTÁ MEDIDA, e é do Eyes** (degrau D5 de
-`docs/reference/estudo-orbitas-eyes-observacao.md`, promovido a item aqui
-porque proposta de estudo não tem dono e item tem): lá o **ícone é uma
-camada separada do texto** — `Labels` e `Icons` são chaves DISTINTAS —, e
-o ícone continua clicável com os nomes desligados. É a separação que falta:
-o ponto/ícone do corpo vira alvo próprio, com chave própria na gaveta, e o
-TEXTO é que se apaga. O céu fica limpo e continua navegável.
-
-**Cuidado herdado, para quem executar:** `raycast` antes do primeiro
-render falha **em silêncio** (verificado no fonte do three) — se a
-implementação passar a usar geometria em vez da lista de rótulos, a
-primeira leva de cliques some sem erro nenhum.
-
-**A OBRA POUSOU em 29/08, exatamente pela resposta medida do Eyes:** o
-ícone virou camada SEPARADA (`noicones`, "Ícones dos corpos", família
-Sistema solar, glifo ◎, ligada por padrão). Com os NOMES desligados,
-cada corpo mantém um anel discreto e CLICÁVEL na posição dele; com as
-duas camadas desligadas, o silêncio de sempre; com os nomes ligados, o
-quadro de hoje — nem um pixel do padrão mudou, e nenhum juiz
-re-baselizou. O cuidado herdado foi respeitado por desenho: o ícone
-entra na MESMA lista dos rótulos desenhados (a lei única da pendência
-30) e nenhum raycast nasceu. Guardas novas em `rotulos.test.ts`
-(só-ícone vira alvo; as duas desligadas calam; nomes ligados sem
-entrada só-ícone) — sabotagem pela própria mão mordeu (1 reprova com a
-fiação desligada); pinos da gaveta re-pinados com dente
-(`atlasConfig.test.ts`: 20 camadas, [11,3,6], o ◎ na lista). PROVA no
-navegador: com `nonomes=1` na abertura, **6 alvos clicáveis só-ícone**
-(Sol, Júpiter, Saturno, Urano, Netuno, Plutão) e zero textos. Foto:
-`capturas/item89-ceu-limpo-navegavel.png`.
-
-**ELE PEDIU O EYES COMPLETO no mesmo dia (29/08):** *"faça o
-comportamento completo do Eyes, incluindo a possibilidade de ligar e
-desligar o anel e que ele fique visível e bonito como no eyes"* — e a
-obra pousou em seguida: com as DUAS camadas ligadas (o padrão), o corpo
-tem o ANEL na âncora e o nome ao lado, sem risco (o anel É a marca do
-ponto); o anel veste **a cor da órbita do próprio corpo** (item 83 — o
-de Netuno é azul porque a órbita é azul; a lua veste a do pai), com
-miolo escuro sutil para ler sobre a própria linha. As camadas são
-independentes de verdade: só nomes, só anéis, os dois, ou nada.
-**MUDANÇA DE PIXEL NO PADRÃO — re-baseline das vistas de Atlas
-DECLARADO** (o anel entra na assinatura do canvas; estrelas intocadas).
-A/B: `capturas/item89-eyes-completo-ab.png`. **Espera o olho dele para
-fechar.**
+**89.** Desligar os nomes deixava o céu inclicável — **FECHADO em
+29/08**, em duas levas no mesmo dia: a camada `noicones` (o anel
+só-ícone, céu limpo E navegável) e, por ordem dele, o **Eyes
+completo** — anel na COR da órbita do corpo ao lado do nome, camadas
+independentes de verdade. Zero raycast; o clique segue na lista única
+da pendência 30. Fotos aceitas; história no ARQUIVO.
 
 **92.** Descer ao corpo de um anão não punha o corpo na tela — e era a
 classe dos oito, não Éris — **FECHADO em 25/08**, conferido por ele na
