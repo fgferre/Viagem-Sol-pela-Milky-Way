@@ -910,12 +910,26 @@ cena sem custo de reprojeção por quadro. **O QUE É LENDA ATÉ MEDIR:** o
 ganho de performance — canvas 2D com assinatura repinta quase nunca;
 sprites/SDF 3D pagam draw calls e atlas de glifos por quadro.
 
-**O CAMINHO, quando este item subir na fila:** um SPIKE em worktree —
-portar o desenho dos labels do doador para uma cena de teste, medir fps
-lado a lado (`gpu-profile`) nas vistas de abertura e de foco, e voltar
-com FOTO A/B + números. Só depois da medida se decide se as três leis
-migram. Custo estimado do spike: uma sessão média; a migração completa,
-se aprovada, é obra GRANDE (anuncia-se antes).
+**O SPIKE FOI FEITO em 29/08, por ordem dele — worktree efêmero com o
+mecanismo real do doador** (troika-three-text, o texto SDF vivo NA
+cena, tamanho estável por escala — o desenho que uma migração de
+verdade usaria), porta `?labels3d=N` com carga de população. **OS
+NÚMEROS (1920×1080, dpr 2, a abertura):** sem labels 3D **34,4 fps**;
+com 10 **33,0**; com 30 **34,0** — dentro do ruído. **O ganho de
+performance esperado NÃO existe**: o canvas 2D com assinatura quase
+nunca repinta, e os textos 3D não pesam nem aliviam. **O VISUAL:** o
+glifo SDF é nítido e tem profundidade de verdade, mas sem as três leis
+do 2D ele reabre exatamente o nó que a casa matou — na abertura os
+nomes internos se empilham sobre o Sol (foto), sem relevância e sem
+clique. Folha: `capturas/item109-spike-labels3d.png`.
+
+**VEREDITO PROPOSTO: NÃO migrar** — obra GRANDE (reimplementar
+colisão + relevância + clique no espaço 3D) por ganho estético parcial
+e zero de performance. O que vale colher pontualmente, se um dia
+incomodar: oclusão do rótulo atrás do globo, que dá para fazer no 2D
+com os oclusores que a casa já tem. **A decisão é dele: arquivar, ou
+ordenar a obra grande mesmo assim.** O worktree e a troika foram
+removidos após o spike, como manda o desenho.
 
 ---
 
