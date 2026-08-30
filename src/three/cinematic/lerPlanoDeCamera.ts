@@ -335,17 +335,20 @@ export function lerPlanoDeCamera(
       default: return erro(`${campo}.tipo`, `desconhecido: ${String(m.tipo)}`);
     }
 
-    const progresso = curvaEscalar(m.progresso, `${campo}.progresso`, true, lerNumero);
-    if (progresso) {
-      const movimento = pos;
-      pos = (k, out) => movimento(progresso(k), out);
-    }
+    // `intervalo` recorta a fatia da curva ANTES de `progresso` retemperar o avanço
+    // dentro dela; na ordem inversa o retempero nunca veria as pontas 0 e 1 da
+    // fatia, e o plano seguinte saltaria ao continuar da ponta verdadeira.
     if (m.intervalo !== undefined) {
       const [de, ate] = par(m.intervalo, `${campo}.intervalo`, lerNumero);
       if (de < 0 || ate > 1 || ate <= de) {
         return erro(`${campo}.intervalo`, 'deve crescer dentro de 0 e 1');
       }
       pos = intervalo(pos, de, ate);
+    }
+    const progresso = curvaEscalar(m.progresso, `${campo}.progresso`, true, lerNumero);
+    if (progresso) {
+      const movimento = pos;
+      pos = (k, out) => movimento(progresso(k), out);
     }
     return pos;
   };

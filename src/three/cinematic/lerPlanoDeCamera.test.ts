@@ -180,6 +180,31 @@ describe('lerPlanoDeCamera — item 75', () => {
     expect(take.look(0.4, new THREE.Vector3()).toArray()).toEqual([0, 0, 0]);
   });
 
+  it('com progresso e intervalo juntos, intervalo recorta a fatia e progresso retempera dentro dela', () => {
+    const combinado = lerPlanoDeCamera({
+      ...base,
+      movimento: {
+        tipo: 'reta', de: [0, 0, 0], para: [10, 0, 0], intervalo: [0.2, 0.7],
+        progresso: { tipo: 'rampa', de: 0, para: 1, ritmo: 'quadratic' },
+      },
+    });
+    // k' = de + (ate - de) * progresso(k): a curva nunca vê o progresso fora da fatia [de, ate].
+    const esperado = (k: number) => 10 * (0.2 + (0.7 - 0.2) * quadratic(k));
+    for (const k of fases) {
+      const out = combinado.pos(k, new THREE.Vector3());
+      expect(out.x).toBeCloseTo(esperado(k), 10);
+      expect([out.y, out.z]).toEqual([0, 0]);
+    }
+    // as pontas do intervalo DECLARADO são alcançadas de fato — não a sub-janela do progresso.
+    expect(combinado.pos(0, new THREE.Vector3()).toArray()).toEqual([2, 0, 0]);
+    expect(combinado.pos(1, new THREE.Vector3()).toArray()).toEqual([7, 0, 0]);
+    // em k=0.5 o progresso (quadratic, parte devagar) ainda não teria avançado metade da
+    // fatia: abaixo do meio-termo linear (4.5) que o intervalo sozinho daria — prova que o
+    // retempero age DENTRO da fatia, não sobre o [0,1] cru do plano inteiro.
+    expect(combinado.pos(0.5, new THREE.Vector3()).x).toBeCloseTo(3.25, 10);
+    expect(combinado.pos(0.5, new THREE.Vector3()).x).toBeLessThan(4.5);
+  });
+
   it('resolve números nomeados uma vez e mantém a validação dos campos', () => {
     const numeros = { duracao: 12, lente: 24, raio: 2, angulo: -0.3, altura: -1, entrada: 0.3,
       saida: 0.7, amplitude: 0.4, base: 0, frequencia: 0.9 };
