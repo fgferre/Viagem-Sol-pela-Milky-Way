@@ -126,17 +126,6 @@ export const VISTAS = [
   ['mergulho', '?t=180&shot=2'],
   ['edgeon', '?t=153&shot=2'],
   ['faceon', '?t=167&shot=2'],
-  // O FIM DO FILME (item 108, 30/08) — o buraco que o próprio item furou: a
-  // última vista oficial era `mergulho` em t=180 e o filme dura 193 s
-  // (`cameraRig.test.ts`: `journey.duration === 193`), então os 13 segundos
-  // finais — a chegada n'A TERRA, o ato que o dono viu quebrar — não tinham
-  // juiz nenhum. t=193 e não t=190 porque é o quadro EXTREMO: pinar 190
-  // deixaria os últimos 3 s de fora, e a queixa dele é sobre o fim, não sobre
-  // a véspera dele. Escolhido por ESTABILIDADE, não por gosto — par nulo de
-  // 3 capturas na mesma árvore, md5 igual nas três, para as duas candidatas
-  // (`capturas/item108-fim-vista-parnulo.json`); o fim tem véu e coda, e vista
-  // que treme no gate é pior que buraco.
-  ['fim-do-filme', '?t=193&shot=2'],
   // RETRATO POR PADRÃO, não opt-in. Os três harnesses do repo capturam em 1:1
   // (rodada 1800x1800, sky 1440x1440, este 1800x1800), e defeito que dependa
   // do ASPECTO da tela é invisível para todos eles. Foi exatamente o caso da
@@ -691,6 +680,21 @@ export const VISTAS = [
   ['anao-eris-corpo', '?foco=eris&ver=corpo&d=6&jd=2460409.26395835&shot=2'],
   ['anao-vesta-corpo', '?foco=vesta&ver=corpo&d=6&jd=2460409.26395835&shot=2'],
   ['anao-eris-orbita', '?foco=eris&jd=2460409.26395835&shot=2'],
+  // O FIM DO FILME (item 108, 30/08) — o buraco que o próprio item furou: a
+  // última vista oficial era `mergulho` em t=180 e o filme dura 193 s
+  // (`cameraRig.test.ts`: `journey.duration === 193`), então os 13 segundos
+  // finais — a chegada n'A TERRA, o ato que o dono viu quebrar — não tinham
+  // juiz nenhum. t=193 e não t=190 porque é o quadro EXTREMO: pinar 190
+  // deixaria os últimos 3 s de fora, e a queixa dele é sobre o fim, não sobre
+  // a véspera dele. Escolhido por ESTABILIDADE, não por gosto — par nulo de
+  // 3 capturas na mesma árvore, md5 igual nas três, para as duas candidatas
+  // (`capturas/item108-fim-vista-parnulo.json`); o fim tem véu e coda, e vista
+  // que treme no gate é pior que buraco.
+  // NO FIM DA LISTA de propósito (auditoria de 30/08): o round-robin dos
+  // baldes reparte por índice, e entrar no meio deslocava a leva inteira —
+  // o balde maior ia a 10 capturas e a conta do custo virava mentira. Aqui
+  // no fim, o balde maior segue com 9 e o "~3,6 min" do cabeçalho é teto.
+  ['fim-do-filme', '?t=193&shot=2'],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);

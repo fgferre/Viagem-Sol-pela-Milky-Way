@@ -51,8 +51,10 @@ describe('discoRealPx — a verdade geométrica do disco do Sol', () => {
   });
 
   it('a 1 UA o Sol mede 0,533° — a aferição que todo mundo pode conferir no céu', () => {
-    // θ = 2·R☉/1 UA = 2·2,2566842504293703e-8 / 4,84813681e-6 rad
-    const graus = (2 * 2.2566842504293703e-8) / (1 / 206264.80624548031) * (180 / Math.PI);
+    // θ = 2·R☉/1 UA — o R☉ é o MESMO `RAIO_SOL_DA_REGUA` cobrado acima:
+    // redigitá-lo aqui deixaria este caso cego a uma deriva da fonte
+    // (achado da auditoria de 30/08).
+    const graus = (2 * RAIO_SOL_DA_REGUA) / (1 / 206264.80624548031) * (180 / Math.PI);
     expect(graus).toBeCloseTo(0.5331, 3);
     // e projetado num buffer de 900 px com a lente de fábrica (58°)
     expect(discoRealPx(1, 900, 58)).toBeCloseTo(7.558, 3);
