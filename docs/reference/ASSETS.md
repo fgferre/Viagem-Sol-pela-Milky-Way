@@ -49,6 +49,17 @@ A autoridade de textura da casa é `public/data/atlas/texturas.json`
 (crédito por linha). Sem licença documentada não entra. O inventário
 do repositório atlas-orbital não vale aqui.
 
+## Fonte dos rótulos 3D (item 109)
+
+- `public/fonts/inter-400.woff` — **Inter** (regular, subconjunto
+  latin), de @fontsource/inter 5.0.18 (`files/inter-latin-400-normal.woff`,
+  via `npm pack`). Licença **SIL Open Font License 1.1**. Formato woff1
+  de propósito: o parser de fontes do troika digere ttf/otf/woff mas
+  NÃO woff2 (a variante woff2 deste mesmo pacote travava o `sync` para
+  sempre — item 109). Consumidor único: `world/rotulos3d.ts` (o texto
+  SDF do troika). Sem ela o troika buscaria glifos num CDN em tempo de
+  execução — esta casa é autocontida.
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**
@@ -102,14 +113,3 @@ acima) e desenha o elipsoide de `BODY_AXES`.
 | pallas | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
 | hygiea | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
 | haumea | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega |
-
-## Fonte dos rótulos 3D (item 109)
-
-- `public/fonts/inter-400.woff` — **Inter** (regular, subconjunto
-  latin), de @fontsource/inter 5.0.18 (`files/inter-latin-400-normal.woff`,
-  via `npm pack`). Licença **SIL Open Font License 1.1**. Formato woff1
-  de propósito: o parser de fontes do troika digere ttf/otf/woff mas
-  NÃO woff2 (a variante woff2 deste mesmo pacote travava o `sync` para
-  sempre — item 109). Consumidor único: `world/rotulos3d.ts` (o texto
-  SDF do troika). Sem ela o troika buscaria glifos num CDN em tempo de
-  execução — esta casa é autocontida.
