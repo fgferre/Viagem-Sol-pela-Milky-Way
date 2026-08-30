@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 109.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 110.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`.)*
 
@@ -906,8 +906,21 @@ fiação desligada); pinos da gaveta re-pinados com dente
 (`atlasConfig.test.ts`: 20 camadas, [11,3,6], o ◎ na lista). PROVA no
 navegador: com `nonomes=1` na abertura, **6 alvos clicáveis só-ícone**
 (Sol, Júpiter, Saturno, Urano, Netuno, Plutão) e zero textos. Foto:
-`capturas/item89-ceu-limpo-navegavel.png` — **espera o olho dele para
-fechar**.
+`capturas/item89-ceu-limpo-navegavel.png`.
+
+**ELE PEDIU O EYES COMPLETO no mesmo dia (29/08):** *"faça o
+comportamento completo do Eyes, incluindo a possibilidade de ligar e
+desligar o anel e que ele fique visível e bonito como no eyes"* — e a
+obra pousou em seguida: com as DUAS camadas ligadas (o padrão), o corpo
+tem o ANEL na âncora e o nome ao lado, sem risco (o anel É a marca do
+ponto); o anel veste **a cor da órbita do próprio corpo** (item 83 — o
+de Netuno é azul porque a órbita é azul; a lua veste a do pai), com
+miolo escuro sutil para ler sobre a própria linha. As camadas são
+independentes de verdade: só nomes, só anéis, os dois, ou nada.
+**MUDANÇA DE PIXEL NO PADRÃO — re-baseline das vistas de Atlas
+DECLARADO** (o anel entra na assinatura do canvas; estrelas intocadas).
+A/B: `capturas/item89-eyes-completo-ab.png`. **Espera o olho dele para
+fechar.**
 
 **92.** Descer ao corpo de um anão não punha o corpo na tela — e era a
 classe dos oito, não Éris — **FECHADO em 25/08**, conferido por ele na
@@ -983,6 +996,33 @@ rearma), pressão de memória no M1, algo que só o percurso completo arma.
 `ab-identidade` no filme é **t=180** — os 13 segundos finais não têm
 vista nenhuma. Quem fechar este item ACRESCENTA uma vista do fim (t=190
 ou t=193) à lista oficial, para o buraco não reabrir.
+
+
+**109. Os labels 3D do outro projeto — trazer ou não, com medida.**
+(Pergunta dele, 29/08, palavras dele: *"meu outro projeto tinha labels
+lindos 3d, porque nao trouxemos isso? com certeza terá algum ganho
+visual e de performance. funcionava super bem"*.)
+
+**POR QUE NÃO VIERAM, dito honesto:** a doutrina da fusão (decisão de
+então) tratou o atlas doador como ESPECIFICAÇÃO, não fornecedor — a UI
+dele foi condenada e renasceu. O sistema atual de rótulos 2D
+(`LabelCanvas`) não é herança preguiçosa: ele carrega três leis duras
+construídas item a item — *o que se desenha é o que se clica* (pendência
+30), a colisão contra o HUD medido (item 56) e a régua de relevância
+(item 82). Labels 3D no espaço da cena teriam de reimplementar as três.
+
+**O QUE O 3D COMPRARIA (a favor):** oclusão correta pelos corpos,
+profundidade real (o nome perto é maior), movimento solidário com a
+cena sem custo de reprojeção por quadro. **O QUE É LENDA ATÉ MEDIR:** o
+ganho de performance — canvas 2D com assinatura repinta quase nunca;
+sprites/SDF 3D pagam draw calls e atlas de glifos por quadro.
+
+**O CAMINHO, quando este item subir na fila:** um SPIKE em worktree —
+portar o desenho dos labels do doador para uma cena de teste, medir fps
+lado a lado (`gpu-profile`) nas vistas de abertura e de foco, e voltar
+com FOTO A/B + números. Só depois da medida se decide se as três leis
+migram. Custo estimado do spike: uma sessão média; a migração completa,
+se aprovada, é obra GRANDE (anuncia-se antes).
 
 ---
 

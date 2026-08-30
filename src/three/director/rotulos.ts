@@ -27,6 +27,7 @@ import { UA_POR_PC } from '../world/planetas/planetas';
 import type { Planetas } from '../world/planetas/planetas';
 import { RAIO_DO_SOL_NA_CENA } from '../escala';
 import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
+import { corDaOrbita } from '../world/orbitas';
 import type { NamedStar } from '../config';
 import type { Phase } from '../fases';
 import type { JourneyMeta } from '../cinematic/journey';
@@ -91,6 +92,28 @@ export const TETO_DE_CANDIDATAS_ESTELARES = 24;
  */
 export const LUA_ACENDE_EM = 0.012;
 export const LUA_ACESA_EM = 0.035;
+
+/** linear [0..1] → canal sRGB 0..255 (a curva exata, não gama 2,2) */
+function srgb255(u: number): number {
+  const v = u <= 0.0031308 ? u * 12.92 : 1.055 * u ** (1 / 2.4) - 0.055;
+  return Math.round(Math.min(1, Math.max(0, v)) * 255);
+}
+
+/** a cor CSS do anel de um corpo — a MESMA da linha de órbita (item
+ *  83); as luas herdam a do pai, como as linhas herdam. Cache por id:
+ *  a cor não muda em sessão. */
+const PAI_DA_LUA = new Map(LUAS_DO_SISTEMA.map((l) => [l.id, l.pai] as const));
+const coresDeAnel = new Map<string, string | undefined>();
+function corDeAnelCss(id: string, paiId?: string): string | undefined {
+  const chave = paiId ? `${id}<${paiId}` : id;
+  if (coresDeAnel.has(chave)) return coresDeAnel.get(chave);
+  const c = corDaOrbita(paiId ?? id);
+  const css = c
+    ? `rgba(${srgb255(c[0])}, ${srgb255(c[1])}, ${srgb255(c[2])}, 0.9)`
+    : undefined;
+  coresDeAnel.set(chave, css);
+  return css;
+}
 
 export class Rotulos {
   /** última projeção de rótulos — alvo do clicar-para-visitar */
@@ -436,7 +459,12 @@ export class Rotulos {
         const luas = projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo);
         this.esmaecerLuasColadasNoPai(corpos, luas);
         icones = [...corpos, ...luas];
-        for (const c of icones) c.icone = true;
+        for (const c of icones) {
+          const id = c.key.slice(6);
+          c.icone = true;
+          c.comAnel = true;
+          c.corDoAnel = corDeAnelCss(id, PAI_DA_LUA.get(id));
+        }
       }
       // a memória da régua não sobrevive: ela não está correndo
       if (this.prevLabelKeys.size > 0) this.prevLabelKeys.clear();
@@ -503,6 +531,18 @@ export class Rotulos {
         // de hoje Saturno já nem entra no quadro, e a Lua, Fobos e
         // Deimos continuam colados nos pais deles.)
         this.esmaecerLuasColadasNoPai(corpos, luas);
+        // O EYES COMPLETO (item 89, ordem dele em 29/08): com a camada
+        // de ícones LIGADA o anel aparece TAMBÉM ao lado do nome — as
+        // duas camadas são independentes de verdade, como Labels/Icons
+        // no Eyes. O anel veste a cor da órbita do corpo (item 83); a
+        // lua, a do pai, como a linha dela.
+        if (!quadro.iconesEscondidos) {
+          for (const c of [...corpos, ...luas]) {
+            const id = c.key.slice(6);
+            c.comAnel = true;
+            c.corDoAnel = corDeAnelCss(id, PAI_DA_LUA.get(id));
+          }
+        }
         // AS ESTRELAS entram por CANDIDATAS, não por vagas: o teto de 7
         // era um corte ANTES da disputa, e era ele que fazia uma vizinha
         // a 40 pc chegar à tela enquanto Saturno ficava de fora. Quem

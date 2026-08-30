@@ -229,7 +229,8 @@ export class LabelCanvas {
         // o modo do desenho entra na assinatura (item 89): a mesma chave
         // no mesmo pixel como ÍCONE e como TEXTO são quadros diferentes
         // — sem este bit, ligar/desligar os nomes não repintaria
-        `,${label.dirigido ? 1 : 0},${label.icone ? 1 : 0},${nome},${detalhe}`;
+        `,${label.dirigido ? 1 : 0},${label.icone ? 1 : 0},${label.comAnel ? 1 : 0}` +
+        `,${label.corDoAnel ?? ''},${nome},${detalhe}`;
     }
     return assinatura;
   }
@@ -329,14 +330,7 @@ export class LabelCanvas {
         occupied.push(caixa);
         label.desenhado = true;
         this.desenhadosAntes.add(label.key);
-        ctx.globalAlpha = label.opacity;
-        ctx.strokeStyle = 'rgba(255, 211, 145, 0.72)';
-        ctx.lineWidth = 1.1 * k;
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
-        ctx.shadowBlur = 5;
-        ctx.beginPath();
-        ctx.arc(anchorX, anchorY, r, 0, Math.PI * 2);
-        ctx.stroke();
+        this.anel(ctx, anchorX, anchorY, r, k, label);
         continue;
       }
       // No céu geral, o lado continua sendo a ÚNICA liberdade. O roteiro
@@ -394,14 +388,20 @@ export class LabelCanvas {
       this.desenhadosAntes.add(label.key);
 
       ctx.globalAlpha = label.opacity;
-      ctx.strokeStyle = 'rgba(255, 211, 145, 0.72)';
-      ctx.lineWidth = 0.75;
-      ctx.beginPath();
-      ctx.moveTo(anchorX, anchorY);
-      // o risco de 10 px na horizontal, que diz de que ponto o nome
-      // fala — o desenho anterior ao item 73, de volta inteiro
-      ctx.lineTo(anchorX + direction * 10 * k, textY);
-      ctx.stroke();
+      if (label.comAnel) {
+        // O EYES COMPLETO (item 89): o corpo tem o ANEL na âncora e o
+        // nome ao lado — sem risco, porque o anel É a marca do ponto.
+        this.anel(ctx, anchorX, anchorY, 3.5 * k, k, label);
+      } else {
+        ctx.strokeStyle = 'rgba(255, 211, 145, 0.72)';
+        ctx.lineWidth = 0.75;
+        ctx.beginPath();
+        ctx.moveTo(anchorX, anchorY);
+        // o risco de 10 px na horizontal, que diz de que ponto o nome
+        // fala — o desenho anterior ao item 73, de volta inteiro
+        ctx.lineTo(anchorX + direction * 10 * k, textY);
+        ctx.stroke();
+      }
 
       ctx.textAlign = toLeft ? 'right' : 'left';
       ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
@@ -418,6 +418,33 @@ export class LabelCanvas {
     }
 
     ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  }
+
+  /**
+   * O ANEL do corpo (item 89, o Eyes completo): traço na cor da ÓRBITA
+   * do corpo (item 83; âmbar padrão sem cor declarada) sobre um miolo
+   * escuro sutil — é o miolo que mantém o anel legível cruzando a
+   * própria linha de órbita e o clarão.
+   */
+  private anel(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    r: number,
+    k: number,
+    label: StarLabel
+  ): void {
+    ctx.globalAlpha = label.opacity;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
+    ctx.shadowBlur = 5;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(8, 10, 14, 0.55)';
+    ctx.fill();
+    ctx.strokeStyle = label.corDoAnel ?? 'rgba(255, 211, 145, 0.72)';
+    ctx.lineWidth = 1.1 * k;
+    ctx.stroke();
     ctx.shadowBlur = 0;
   }
 

@@ -734,6 +734,17 @@ export interface CorpoComOrbita {
  * é toda neutra e não vota — e qualquer corpo fora da tabela continuam
  * como sempre foram. As luas herdam a cor do PAI, nos dois casos.
  */
+/**
+ * A COR DA ÓRBITA de um corpo, exportada para quem pinta COM ela fora
+ * desta camada — desde 29/08 os ANÉIS dos rótulos (item 89, o
+ * comportamento completo do Eyes) vestem a mesma cor da linha: o anel
+ * de Netuno é azul porque a órbita de Netuno é azul. Uma lei de cor,
+ * duas superfícies.
+ */
+export function corDaOrbita(id: string): readonly [number, number, number] | null {
+  return matizDe(id);
+}
+
 function matizDe(id: string): readonly [number, number, number] | null {
   const daTextura = COR_DA_TEXTURA[id];
   if (daTextura) return daTextura;

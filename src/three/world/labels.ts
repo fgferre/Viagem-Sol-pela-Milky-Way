@@ -21,6 +21,13 @@ export interface StarLabel {
   /** entrada SÓ-ÍCONE (item 89): o LabelCanvas desenha um marcador em
    *  vez do texto, e o clique a lê pela mesma lista dos desenhados. */
   icone?: boolean;
+  /** o ANEL do corpo (item 89, o Eyes completo): desenha o marcador na
+   *  âncora TAMBÉM quando há texto — a camada de ícones é independente
+   *  da de nomes. */
+  comAnel?: boolean;
+  /** a cor CSS do anel — a mesma da linha de órbita do corpo (item 83);
+   *  ausente, o anel sai na tinta âmbar padrão dos rótulos. */
+  corDoAnel?: string;
   /**
    * O que a etiqueta escreve ao lado do nome quando o detalhe NÃO é
    * tipo espectral — os corpos do sistema trazem aqui a classe deles em
