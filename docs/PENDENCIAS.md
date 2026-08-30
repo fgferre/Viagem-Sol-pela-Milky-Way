@@ -859,6 +859,23 @@ tremor; os números estão em `capturas/item108-fim-vista-parnulo.json`.
 O preço do juiz subiu de 3,5 para ~3,6 min e o teto do censo de 31,8
 para 31,9, re-pinado no mesmo commit.
 
+**A HIPÓTESE DELE, 30/08 (palavras dele):** *"será que pode de alguma
+forma estar relacionado a posicao no tempo dos obejtos que por alguma
+razao em alguma situacao que ainda nao etendemos está chegando a camera
+num momento em que os obejtos nao estao mais lá por estarem em outro
+ponto de suas orbitas?"* Duas leituras testáveis, e as duas ganham
+sonda: **(a)** o relógio do Atlas vazando para o filme — o conserto
+"Atlas em 2035 não vaza" é de 21-22/08, ANTERIOR à reescrita completa
+do motor (item 75, 28-29/08); o vazamento pode ter renascido no motor
+novo; **(b)** a data real do dia — o filme corre na data de quem
+assiste, e o take Lua→Terra tem pelo menos um pedaço que usa posição
+LEMBRADA da Lua ("o lugar medido das 16:00", o fallback sem rede) em
+vez da viva; em algum dia do calendário a câmera pode olhar para onde a
+Lua não está. A sonda é numérica: varrer datas (`&jd=`) e o caminho
+Atlas-com-época-movida→filme, medindo o ângulo entre a mira da câmera e
+a direção viva da Terra/Lua em t=188–193 — data em que a Terra sai do
+quadro é a reprodução que faltava.
+
 
 **109. Os labels 3D do outro projeto — trazer ou não, com medida.**
 (Pergunta dele, 29/08, palavras dele: *"meu outro projeto tinha labels
@@ -934,6 +951,18 @@ próxima janela:**
   HUD, mas o texto 3D mora NA CENA — foto "só-cena" com beta ligada
   inclui os nomes; juízes de pixel não são afetados (beta desligada =
   bit-idêntico, SMOKE 4/4).
+
+**A RESPOSTA DELE CHEGOU (30/08), sobre a segunda observação — e é
+ordem de obra:** *"ajustamos... sempre importante avaliar sob um olhar
+maduro de UX/UI senior"*. O ajuste é desta beta, mesmo item: **(1)** o
+nome de estrela tem de nascer LEGÍVEL mesmo dentro do clarão — o
+caminho técnico é mecânica interna, preservando a oclusão pelos globos
+que o item 112 consertou; **(2)** a primeira observação (a linha
+`categoria · distância` que some no 3D) decide-se sob o MESMO olhar de
+UX e volta declarada na mesma folha. As fotos de 29/08 são ANTERIORES
+aos consertos do 112 na beta — as novas saem do código atual e
+gravam-se AO LADO (`-v2`), nunca por cima; o olho dele julga a folha
+nova.
 
 **O VEREDITO DO SPIKE fica como história da medida: NÃO migrar** — obra GRANDE (reimplementar
 colisão + relevância + clique no espaço 3D) por ganho estético parcial
