@@ -1,5 +1,5 @@
-// Serve: chão — mudança que move imagem não passa calada: md5 das 60 vistas, antes × depois
-// Custo: ~7,9 min por lado (derivado da contagem: 60/54 × 7,1 medidos; re-medir na próxima leva cheia) (SMOKE=1: 0,8 min por lado)
+// Serve: chão — mudança que move imagem não passa calada: md5 das 50 vistas, antes × depois
+// Custo: 3,5 min por lado (medido 2026-08-30, F2/F3 do item 113: 50 vistas = 52 capturas, JOBS=6; a JOBS=3 são 3,9) (SMOKE=1: 0,4 min por lado)
 // Prova de que uma mudança NÃO mexeu na imagem: md5 das mesmas vistas antes
 // e depois.
 //
@@ -8,18 +8,22 @@
 //   node scripts/visual/ab-identidade.mjs depois     # compara e dá o veredito
 //   node scripts/visual/ab-identidade.mjs antes interno   # uma vista só
 //   SMOKE=1 node scripts/visual/ab-identidade.mjs antes   # 4 vistas-sentinela
-//   JOBS=1 node scripts/visual/ab-identidade.mjs antes    # serial (padrão: 3)
+//   JOBS=1 node scripts/visual/ab-identidade.mjs antes    # serial (padrão: 6)
 //   DOZERO=1 node scripts/visual/ab-identidade.mjs depois # ignora o disco à força
 //
 // A RETOMADA DE DISCO NÃO ATRAVESSA MAIS UMA EDIÇÃO. Cada lado grava, ao lado
-// dos md5, o CARIMBO DO CÓDIGO que os produziu (`git rev-parse HEAD` + um md5
-// de `git status --porcelain` e `git diff HEAD`, para a árvore suja contar).
-// Na entrada, carimbo diferente = estado de outro binário: descartado, com
-// linha na tela. Era o buraco que fazia o `depois` de código novo sair inteiro
-// em `(de disco)` — 6,5 min de leva, prova nenhuma — e que só `DOZERO=1`
-// fechava, se alguém lembrasse. `DOZERO=1` continua de pé como força bruta
-// (recapturar o MESMO código), e sem git o carimbo vira `sem-git` e o
-// comportamento é o de antes.
+// dos md5, o CARIMBO DO CÓDIGO que os produziu — e desde o item 113 (F2) o
+// carimbo é de CONTEÚDO, não de commit: o hash da ÁRVORE de trabalho
+// (`write-tree` num índice descartável, ver `carimboDoCodigo`). Um commit que
+// não muda conteúdo não move o carimbo, então o `antes` da rodada seguinte
+// continua valendo depois do commit da anterior — eram ~8 min de recaptura
+// jogados fora por rodada encadeada. Na entrada, carimbo diferente = estado
+// de outro binário: descartado, com linha na tela. E o lado `antes` pode
+// SEMEAR do último estado de QUALQUER lado (antes ou depois) cujo carimbo de
+// árvore seja igual — com linha dizendo de onde semeou; o `depois` nunca
+// semeia do outro lado: as capturas dele são a prova. `DOZERO=1` continua de
+// pé como força bruta (recapturar o MESMO código), e sem git o carimbo vira
+// `sem-git` e a retomada volta a ser cega — declarada, não silenciosa.
 //
 // POR QUE NÃO `--virtual-time-budget --screenshot`, que é como `rodada.mjs`
 // captura: o orçamento de tempo virtual acelera TIMERS, não a REDE. Os ~6 MB
@@ -40,8 +44,16 @@
 //   cena já desenhou 10 quadros sem perturbação. ~6 s por captura. Sondado
 //   antes de trocar: `sol`, `travessia` e `soldisco` já devolvem o md5
 //   OFICIAL no primeiro quadro depois do deep-link — nos marcos 1, 2, 3, 5,
-//   10, 30, 80, 320 e 700 o hash é o mesmo. O método NÃO afrouxou: N=2 por
-//   vista, navegador limpo por captura, tier pinado, md5 bit-exato.
+//   10, 30, 80, 320 e 700 o hash é o mesmo. O MÉTODO desde o item 113 (F3),
+//   dito com honestidade: UMA sessão de Chrome por balde e navegação LIMPA
+//   por vista (documento novo por `ir()` + storage da origem zerado antes de
+//   cada navegação — o padrão provado no atlas-smoke, 91 navegações numa
+//   sessão), captura ADAPTATIVA (1× por vista; ×2 nas duas pinadas trêmulas
+//   e na re-mira de quem DIFERE), tier pinado, md5 bit-exato. Quem valida a
+//   troca de motor não é este parágrafo: é a PROVA A/A — os dois lados no
+//   MESMO código, todas as vistas IGUAL. Medida em 2026-08-30: o `antes` a
+//   JOBS=3 contra DOIS `depois` independentes a JOBS=6 — 50/50 IGUAL nas
+//   duas levas, zero INSTÁVEL, todas as capturas por via=sinal.
 //   O critério antigo continua vivo como TETO DE SEGURANÇA: se o sinal não
 //   existir (bundle de produção — `window.__director` só é publicado em DEV)
 //   ou não subir, a captura cai nos 700 quadros em vez de travar. A coluna
@@ -51,7 +63,7 @@
 //   captura por `quadros` faz o gate imprimir o bloco de erro e SAIR ≠ 0
 //   (`julgarProntidao` em chrome.mjs). `FALLBACK_OK=1` aceita de propósito.
 //
-// PARALELISMO POR DIVISÃO DA LISTA (`JOBS=N`, padrão 3): o pai reparte as
+// PARALELISMO POR DIVISÃO DA LISTA (`JOBS=N`, padrão 6): o pai reparte as
 // vistas entre N processos-filhos independentes, cada um com o SEU Chrome e o
 // SEU perfil; o dev server é um só (serve estático, aguenta). Nunca N abas ou
 // contextos num Chrome só — a bit-exatidão sob GPU compartilhada não está
@@ -61,24 +73,35 @@
 // prova do sinal da prova do paralelismo.
 //
 // LEIA O VEREDITO CERTO: md5 igual prova igualdade; md5 diferente NÃO prova
-// diferença — pode ser captura não assentada. Por isso N capturas por lado e
-// a marca INSTÁVEL quando um dos lados não repete. E "DIFERE" pede o passo
+// diferença — pode ser captura não assentada. Por isso a RE-MIRA (F3a do
+// item 113): vista que DIFERE na captura única volta ×2 nos dois lados antes
+// do veredito final — no `antes` só quando o carimbo dele é o código ATUAL
+// (A/A, knob por `EXTRA=`); num A/B de verdade o binário do `antes` já não
+// existe, e recapturá-lo com o código novo envenenaria a baseline. A marca
+// INSTÁVEL fica para quem não repete o próprio md5. E "DIFERE" pede o passo
 // seguinte, não a conclusão: rodar o diff de pixel. Diferença de 1 nível
 // espalhada por dezenas de pixels é 1 ULP do compilador (reordenar aritmética
 // ao mudar um `if` já basta), não conteúdo que sumiu.
 import { execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, existsSync, rmSync, mkdirSync } from 'node:fs';
+import {
+  readFileSync, writeFileSync, existsSync, rmSync, mkdirSync, copyFileSync,
+} from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import {
-  GPU_FLAGS, lancarChrome, portaDoPerfil, esperarAssentar, julgarProntidao, APP_PADRAO, dorme,
-} from './chrome.mjs';
+import { abrirSessao, julgarProntidao, APP_PADRAO } from './chrome.mjs';
 
 const LADO = process.argv[2] || 'antes';
 const SO = process.argv[3];
-const N = 2;
+// A CAPTURA É ADAPTATIVA (F3a do item 113): 1× por vista — a 2ª captura só
+// separa DIFERE de INSTÁVEL, informação que só é consumida quando os lados
+// divergem, então ela virou re-mira sob demanda (ver `pai`). EXCEÇÃO PINADA:
+// as duas vistas documentadas TRÊMULAS (o tremor é do anel de Saturno — ver o
+// bloco de `foco-titan` na lista) continuam SEMPRE em ×2, senão o tremor
+// conhecido delas viraria re-mira em toda leva.
+const PINADAS_N2 = ['foco-titan', 'saturno-anel'];
+const capturasDaVista = (nome) => (PINADAS_N2.includes(nome) ? 2 : 1);
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 // EXPORTADA porque a régua 3 (`planeta-pixel.mjs`) mede as MESMAS vistas
 // profundas com as MESMAS strings de deep-link. Redigitar `?pos=0,0,0.00072722`
@@ -121,7 +144,7 @@ export const VISTAS = [
   // alguém mover uma casa decimal); 0,50 = estrela pura (grupo do disco
   // apagado, uGain e uCore em 1).
   ['soldisco', '?pos=0,0,0.1&look=0,0,0&shot=2'],
-  ['solrampa', '?pos=0,0,0.25&look=0,0,0&shot=2'],
+  // solrampa → cortada (113 i): as pontas soldisco/solestouro/solestrela seguram o crossfade.
   ['solestouro', '?pos=0,0,0.32&look=0,0,0&shot=2'],
   ['solestrela', '?pos=0,0,0.5&look=0,0,0&shot=2'],
   // AS TRÊS DO SOL REAL (F1 da onda do Sol real) — a resposta com imagem
@@ -178,7 +201,7 @@ export const VISTAS = [
   // liga. hero8 continua julgando a D2 em Betelgeuse; as do Sol julgam
   // o caso vizinho, que é o mais comum.
   ['hero200', '?pos=7.3677,349.6513,45.4654&look=3.1895,151.3642,19.682&shot=2'],
-  ['hero600', '?pos=15.7242,746.2254,97.0322&look=3.1895,151.3642,19.682&shot=2'],
+  // hero600 → cortada (113 i): billboard de 0,15 px de raio — sub-pixel; hero200/hero950 são as pontas do farFade.
   ['hero950', '?pos=23.0362,1093.2277,142.1532&look=3.1895,151.3642,19.682&shot=2'],
   ['hero8', '?pos=3.0224,143.4327,18.6507&look=3.1895,151.3642,19.682&shot=2'],
   // ------------------------------------------------------------------
@@ -255,20 +278,13 @@ export const VISTAS = [
   // captura só (~795 px de diâmetro em 1800 px). Os números saíram da
   // MESMA cadeia do app (efemerides.bin → eclipticaParaEquatorial →
   // AU_PARA_PC), calculados uma vez e pinados aqui como os ?pos= acima.
-  // O par &nobloom=1 é GATE (emenda T-E10): é nele que se lê o subsolar
-  // sem o clarão, contra o limiar 0,82 do bloom.
   [
     'terra',
     '?pos=-0.0000045882235587153385,-0.0000014555632225072523,-6.307425015010789e-7'
       + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
       + '&jd=2460409.26395835&corpos=1&shot=2',
   ],
-  [
-    'terranb',
-    '?pos=-0.0000045882235587153385,-0.0000014555632225072523,-6.307425015010789e-7'
-      + '&look=-0.0000045890070378484725,-0.000001455314175436054,-6.308304960541221e-7'
-      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
-  ],
+  // terranb → cortada (113 i): o gate T-E10 fica com os três heróis declarados mercurionb/venusnb/titannb.
   // ------------------------------------------------------------------
   // ONDA 6 (F2b) — A LUA RESOLVIDA, no MESMO jd pinado da onda (que é o
   // dia do eclipse solar de 2024: a Lua está entre o Sol e a Terra, e o
@@ -413,8 +429,7 @@ export const VISTAS = [
   //
   // `jupiter`: câmera a 4 raios equatoriais do centro, 20° fora do eixo
   // corpo→Sol pelo lado ILUMINADO (o padrão da vista `lua`/`mercurio`:
-  // disco ~757 px em 1800×1713). E(real)=0,0399 a 5,006 UA. O par
-  // &nobloom=1 é o mesmo GATE T-E10 das irmãs.
+  // disco ~757 px em 1800×1713). E(real)=0,0399 a 5,006 UA.
   //
   // `saturno-anel`: NÃO é o disco cheio a 4 raios — a 5,73° de latitude
   // subsolar o anel leria quase de perfil e a sombra no disco some no
@@ -431,12 +446,7 @@ export const VISTAS = [
       + '&look=0.000014127656995165159,0.000018260414310732658,0.000007483024335340463'
       + '&jd=2460409.26395835&corpos=1&shot=2',
   ],
-  [
-    'jupiternb',
-    '?pos=0.000014120014161765692,0.000018255528587957974,0.00000748112563397955'
-      + '&look=0.000014127656995165159,0.000018260414310732658,0.000007483024335340463'
-      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
-  ],
+  // jupiternb → cortada (113 i): o gate T-E10 fica com mercurionb/venusnb/titannb.
   [
     'saturno-anel',
     '?pos=0.0000444068440660703,-0.000013639700232235952,-0.000007543925357433521'
@@ -460,9 +470,6 @@ export const VISTAS = [
   //
   // `titan`: atmosfera opaca a 9,705 UA — E(real)=0,0106. O par
   // &nobloom=1 é o GATE T-E10 das irmãs (Titã é o herói da bancada).
-  //
-  // `europa`: regolito LS (C=4/3 importado da Lua) a 5,002 UA —
-  // E(real)=0,0400. O px do efeito julgado: o disco INTEIRO, 757 px.
   [
     'titan',
     '?pos=0.000044401483620258156,-0.000013608337576815957,-0.00000755020595854049'
@@ -475,18 +482,8 @@ export const VISTAS = [
       + '&look=0.00004440174800605111,-0.000013608537105468783,-0.000007550247480449924'
       + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
   ],
-  [
-    'europa',
-    '?pos=0.000014125408023292846,0.000018240877731646644,0.000007473746885565305'
-      + '&look=0.00001412557512784177,0.00001824098426963711,0.0000074737888016236406'
-      + '&jd=2460409.26395835&corpos=1&shot=2',
-  ],
-  [
-    'europanb',
-    '?pos=0.000014125408023292846,0.000018240877731646644,0.000007473746885565305'
-      + '&look=0.00001412557512784177,0.00001824098426963711,0.0000074737888016236406'
-      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
-  ],
+  // europa → cortada (113 i): a lei Lommel-Seeliger segue vigiada por lua/mercurio/vesta; titan cobre lua de gigante.
+  // europanb → cortada (113 i): o gate T-E10 fica com mercurionb/venusnb/titannb.
   // ------------------------------------------------------------------
   // ONDA 6 (F6) — ANÕES/TNOs + ANÉIS, no MESMO jd pinado da onda
   // (2024-04-08). Entram ANTES do código da fase (regra da Onda 4): a
@@ -515,24 +512,14 @@ export const VISTAS = [
       + '&look=0.00008477758817176725,-0.00013105552796989695,-0.00006643012602992766'
       + '&jd=2460409.26395835&corpos=1&shot=2',
   ],
-  [
-    'plutao-carontenb',
-    '?pos=0.00008477711261100184,-0.00013105504237912263,-0.00006642962023154119'
-      + '&look=0.00008477758817176725,-0.00013105552796989695,-0.00006643012602992766'
-      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
-  ],
+  // plutao-carontenb → cortada (113 i): o gate T-E10 fica com mercurionb/venusnb/titannb.
   [
     'quaoar-anel',
     '?pos=0.00017125670258576192,0.00009621234849511725,0.000058818663740295546'
       + '&look=0.00017125697758965395,0.00009621246017136201,0.00005881891229886131'
       + '&jd=2460409.26395835&corpos=1&shot=2',
   ],
-  [
-    'quaoar-anelnb',
-    '?pos=0.00017125670258576192,0.00009621234849511725,0.000058818663740295546'
-      + '&look=0.00017125697758965395,0.00009621246017136201,0.00005881891229886131'
-      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
-  ],
+  // quaoar-anelnb → cortada (113 i): o gate T-E10 fica com mercurionb/venusnb/titannb.
   // ------------------------------------------------------------------
   // ONDA 6 (F7) — ASTEROIDES, no MESMO jd pinado da onda (2024-04-08).
   // Entram ANTES do código da fase (regra da Onda 4). Câmera a 4 raios
@@ -540,19 +527,13 @@ export const VISTAS = [
   // pelo lado iluminado (o padrão lua/mercurio: disco ~829 px em
   // 1800×1713). Cadeia do app (efemerides.bin →
   // eclipticaParaEquatorial → AU_PARA_PC). E(real)=0,158 a 2,517 UA.
-  // O par &nobloom=1 é o GATE T-E10 das irmãs.
   [
     'vesta',
     '?pos=-0.000005058489376246491,0.000010073653329889095,0.000004679479055866578'
       + '&look=-0.000005058494464853001,0.000010073688779328954,0.000004679490053606362'
       + '&jd=2460409.26395835&corpos=1&shot=2',
   ],
-  [
-    'vestanb',
-    '?pos=-0.000005058489376246491,0.000010073653329889095,0.000004679479055866578'
-      + '&look=-0.000005058494464853001,0.000010073688779328954,0.000004679490053606362'
-      + '&jd=2460409.26395835&corpos=1&shot=2&nobloom=1',
-  ],
+  // vestanb → cortada (113 i): o gate T-E10 fica com mercurionb/venusnb/titannb.
   // ------------------------------------------------------------------
   // O MODO ATLAS, e ela fecha um BURACO DE COBERTURA que nenhuma outra
   // vista cobre: as outras 51 rodam em fase de FILME, e a fase `atlas` é
@@ -658,7 +639,7 @@ export const VISTAS = [
   // existe para medir é de outra ordem: 2,3 milhões de px, 74,9% do
   // quadro.
   ['foco-titan', '?foco=tita&jd=2460409.26395835&shot=2'],
-  ['foco-caronte', '?foco=caronte&jd=2460409.26395835&shot=2'],
+  // foco-caronte → cortada (113 i): foco-titan (28,1°, o caso canônico) e foco-io (2,2°, a dose mínima) seguram o gate do polo.
   ['foco-io', '?foco=io&jd=2460409.26395835&shot=2'],
   // ------------------------------------------------------------------
   // AS TRÊS DOS HELIOCÊNTRICOS SEM PONTO (item 92, 25/08) — o mesmo
@@ -754,21 +735,35 @@ const SUFIXO = CHAVE_DO_ESTADO ? `-${CHAVE_DO_ESTADO.replace(/[^a-z0-9]+/gi, '')
 const ESTADO = resolve(tmpdir(), `ab-identidade-${LADO}${SUFIXO}.json`);
 
 /**
- * O CARIMBO DO CÓDIGO que produziu um estado — o commit mais a árvore suja.
+ * O CARIMBO DO CÓDIGO que produziu um estado — desde o item 113 (F2), o hash
+ * da ÁRVORE de conteúdo, não o commit.
+ *
+ * O DEFEITO QUE A TROCA FECHA: o carimbo antigo era `rev-parse HEAD` + estado
+ * sujo, então um COMMIT que não muda byte nenhum da árvore de trabalho (é o
+ * fim normal de toda rodada: o `depois` aprovado vira commit) trocava o
+ * carimbo e o `antes` da rodada seguinte recapturava tudo — ~8 min de GPU por
+ * rodada encadeada, comprando prova nenhuma.
+ *
+ * COMO: `git add -A` + `write-tree` num ÍNDICE DESCARTÁVEL, copiado do índice
+ * real para herdar o stat-cache (sem a cópia o git releria a árvore inteira;
+ * com ela, só re-hasheia o que está sujo). O resultado é o hash que o próprio
+ * git daria a um commit deste conteúdo: mesma árvore ⇒ mesmo carimbo, esteja
+ * ela suja, staged ou commitada. Efeito colateral declarado: os blobs dos
+ * arquivos sujos entram em `.git/objects` — os mesmos que o próximo `git add`
+ * real escreveria; o `gc` apaga os que nunca virarem commit. O índice REAL
+ * não é tocado.
  *
  * POR QUE NÃO ENTRA NO `SUFIXO`, que seria o lugar óbvio: o sufixo é a chave
  * de PAREAMENTO. O `depois` procura o `antes` por `ab-identidade-antes${SUFIXO}
  * .json`, e os dois lados de um A/B honesto têm, por definição, códigos
  * DIFERENTES — carimbo no nome do arquivo faria o `depois` procurar um `antes`
  * que não existe. Então ele vai ao LADO, no precedente do arquivo de `via` dos
- * filhos, e governa só uma coisa: se o estado gravado deste MESMO lado ainda
- * vale para retomar.
+ * filhos, e governa duas coisas: se o estado gravado deste lado ainda vale
+ * para retomar, e (só para o `antes`) se o estado do OUTRO lado pode semear.
  *
- * `git diff HEAD` cobre o conteúdo do que está rastreado (com ou sem `add`);
- * `--porcelain` cobre o resto, inclusive o NOME de arquivo novo ainda não
- * rastreado. Sem git (tarball, clone raso sem `.git`) devolve `sem-git`, uma
- * constante: o carimbo nunca invalida nada e a retomada volta a ser a de
- * antes — cegueira declarada, não silenciosa.
+ * Sem git (tarball, clone raso sem `.git`) devolve `sem-git`, uma constante:
+ * o carimbo nunca invalida nada e a retomada volta a ser a de antes —
+ * cegueira declarada, não silenciosa.
  *
  * EXPORTADA porque o carimbo não é só de retomada: todo número que um juiz
  * grava em disco precisa dizer de QUE código ele saiu, senão dois JSON com
@@ -776,16 +771,19 @@ const ESTADO = resolve(tmpdir(), `ab-identidade-${LADO}${SUFIXO}.json`);
  * o carimba nas medidas dele, e a definição continua sendo esta — uma só.
  */
 export function carimboDoCodigo() {
-  const git = (args) =>
-    execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
+  const git = (args, env) =>
+    execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28, env });
   try {
-    const head = git(['rev-parse', 'HEAD']).trim().slice(0, 12);
-    const sujeira = createHash('md5')
-      .update(git(['status', '--porcelain']))
-      .update(git(['diff', 'HEAD']))
-      .digest('hex')
-      .slice(0, 8);
-    return `${head}-${sujeira}`;
+    const indiceReal = resolve(ROOT, git(['rev-parse', '--git-path', 'index']).trim());
+    const indiceTmp = resolve(tmpdir(), `ab-carimbo-${process.pid}`);
+    copyFileSync(indiceReal, indiceTmp);
+    try {
+      const env = { ...process.env, GIT_INDEX_FILE: indiceTmp };
+      git(['add', '-A'], env);
+      return 'arv-' + git(['write-tree'], env).trim().slice(0, 12);
+    } finally {
+      rmSync(indiceTmp, { force: true });
+    }
   } catch {
     return 'sem-git';
   }
@@ -797,146 +795,127 @@ const lerCarimbo = (lado) =>
 // o filho recebe a sua fatia por ambiente; a linha de comando continua sendo
 // a de sempre (`lado [vista]`), para nada do ritual mudar
 const FILHO = process.env.AB_FILHO ? Number(process.env.AB_FILHO) : null;
-const JOBS = Math.max(1, Number(process.env.JOBS || 3));
+// 6 e não 3 por MEDIÇÃO, não opinião (mudança 5 do item 113, 30/08): a leva
+// cheia deu 3,5 min a JOBS=6 contra 3,9 a JOBS=3, com a A/A bit-idêntica
+// 50/50 nos dois — a GPU decidiu que aguenta seis sessões.
+const JOBS = Math.max(1, Number(process.env.JOBS || 6));
 const SMOKE = process.env.SMOKE === '1' || process.env.SMOKE === 'true';
-let id = 0;
-function rpc(ws, onEvent) {
-  const waiting = new Map();
-  ws.addEventListener('message', (e) => {
-    const m = JSON.parse(e.data);
-    if (m.id && waiting.has(m.id)) { waiting.get(m.id)(m); waiting.delete(m.id); }
-    else if (m.method) onEvent(m);
+// UMA SESSÃO POR BALDE, não um Chrome por captura (F3b do item 113): o
+// boot+teardown do headless custava ~3 s × dezenas de capturas. O padrão é o
+// já provado do `atlas-smoke` (91 navegações numa sessão) e do MB1: sessão
+// viva, `ir()` navega documento NOVO por vista. O prefixo é ÚNICO por
+// abertura, senão a reabertura de socorro reusaria o perfil — e leria o
+// `DevToolsActivePort` VELHO dele.
+let seqSessao = 0;
+const abrirSessaoDoAb = (janela) =>
+  abrirSessao({
+    janela: janela || process.env.JANELA || '1800x1800',
+    app: APP,
+    prefixo: `ab-${LADO}-j${FILHO ?? 'p'}-${seqSessao++}`,
   });
-  return (method, params = {}) => new Promise((res, rej) => {
-    const n = ++id;
-    waiting.set(n, (m) => (m.error ? rej(new Error(method + ': ' + m.error.message)) : res(m.result)));
-    ws.send(JSON.stringify({ id: n, method, params }));
-  });
-}
 
-let seqPerfil = 0;
-async function capturar(query, png, janela) {
-  const [jw, jh] = (janela || process.env.JANELA || '1800x1800').split('x');
-  let efetivo = '?';
-  const perfil = resolve(tmpdir(), `ab-${process.pid}-${seqPerfil++}`);
-  // PORTA ZERO: quem escolhe é o SO, e o Chrome publica a escolha no
-  // DevToolsActivePort do próprio perfil. Com N filhos em paralelo (e duas
-  // levas simultâneas na mesma máquina) não sobra aritmética de porta para
-  // errar — era a única corrida de verdade do paralelismo por lista.
-  const { encerrar } = lancarChrome({
-    perfil,
-    args: [
-      ...GPU_FLAGS,
-      '--hide-scrollbars', '--no-first-run', '--mute-audio',
-      '--force-device-scale-factor=1', `--window-size=${jw},${jh}`,
-      '--remote-debugging-port=0', 'about:blank',
-    ],
+async function capturarNaSessao(sessao, query, png) {
+  // NAVEGAÇÃO LIMPA POR VISTA: o storage da origem zera antes de cada
+  // navegação — nenhuma vista herda estado da anterior (as preferências do
+  // app moram em localStorage). O cache de HTTP fica de propósito: acelera a
+  // cartografia de ~6 MB e não desenha pixel.
+  await sessao.send('Storage.clearDataForOrigin', {
+    origin: APP,
+    storageTypes: 'cookies,local_storage,indexeddb,websql,service_workers,cache_storage',
   });
-  try {
-    const porta = await portaDoPerfil(perfil);
-    let url = null;
-    for (let i = 0; i < 100 && !url; i++) {
-      try {
-        const r = await fetch(`http://127.0.0.1:${porta}/json/list`).then((x) => x.json());
-        url = r.find((t) => t.type === 'page')?.webSocketDebuggerUrl;
-      } catch { /* Chrome ainda subindo */ }
-      if (!url) await dorme(200);
-    }
-    if (!url) throw new Error('CDP não respondeu');
-    const ws = new WebSocket(url);
-    // COM TIMEOUT, e ele já custou uma bateria inteira: se o alvo do CDP morre
-    // entre o /json/list e o handshake, nem `open` nem `error` disparam. A
-    // promessa fica pendente para sempre, o Node fica sem handles, e o processo
-    // SAI com um aviso de "unsettled top-level await" — três vistas capturadas,
-    // nenhuma gravada, e um veredito que nunca vem.
-    await new Promise((r, j) => {
-      const relogio = setTimeout(() => j(new Error('WebSocket do CDP não abriu em 30 s')), 30000);
-      ws.addEventListener('open', () => { clearTimeout(relogio); r(); });
-      ws.addEventListener('error', (e) => { clearTimeout(relogio); j(new Error('WebSocket: ' + e.message)); });
-    });
-    let cartografiaChegou = false;
-    const send = rpc(ws, (m) => {
-      if (m.method === 'Runtime.consoleAPICalled') {
-        const txt = (m.params.args || []).map((a) => String(a.value ?? '')).join(' ');
-        if (txt.includes('[cartografia]')) cartografiaChegou = true;
-      }
-    });
-    await send('Page.enable');
-    await send('Runtime.enable');
-    await send('Page.addScriptToEvaluateOnNewDocument', {
-      source: 'window.__f=0;const o=window.requestAnimationFrame.bind(window);'
-        + 'window.requestAnimationFrame=(c)=>o((t)=>{window.__f++;return c(t)});',
-    });
-    await send('Page.navigate', { url: APP + '/' + query });
-    const assentou = await esperarAssentar({
-      send, cartografia: () => cartografiaChegou, quadros: 700, teto: 180000,
-    });
-    // buffer EFETIVO, não a janela pedida: 700x1800 vira 684x1705 depois da
-    // barra de rolagem e do chrome do headless, e é o buffer que decide o
-    // aspecto que o shader vê
-    const buf0 = await send('Runtime.evaluate', {
-      expression: "(()=>{const c=document.querySelector('canvas');"
-        + "return c?c.width+'x'+c.height:'?'})()",
-      returnByValue: true,
-    });
-    efetivo = buf0.result.value;
-    const shot = await send('Page.captureScreenshot', { format: 'png' });
-    const buf = Buffer.from(shot.data, 'base64');
-    // captura preta ou página de erro: um md5 estável de NADA passaria no teste
-    if (buf.length < 40000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
-    if (png) writeFileSync(png, buf);
-    return {
-      hash: createHash('md5').update(buf).digest('hex').slice(0, 12) + '@' + efetivo,
-      via: assentou.via,
-      ms: assentou.ms,
-    };
-  } finally {
-    await encerrar({ carencia: 400 });
-  }
+  const assentou = await sessao.ir(query);
+  // buffer EFETIVO, não a janela pedida: 700x1800 vira 684x1705 depois da
+  // barra de rolagem e do chrome do headless, e é o buffer que decide o
+  // aspecto que o shader vê
+  const efetivo = await sessao.js(
+    "(()=>{const c=document.querySelector('canvas');return c?c.width+'x'+c.height:'?'})()"
+  );
+  const shot = await sessao.send('Page.captureScreenshot', { format: 'png' });
+  const buf = Buffer.from(shot.data, 'base64');
+  // captura preta ou página de erro: um md5 estável de NADA passaria no teste
+  if (buf.length < 40000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
+  if (png) writeFileSync(png, buf);
+  return {
+    hash: createHash('md5').update(buf).digest('hex').slice(0, 12) + '@' + efetivo,
+    via: assentou.via,
+    ms: assentou.ms,
+  };
 }
 
 /**
  * Captura uma lista de vistas em SÉRIE e grava o resultado em `arquivo` a
- * cada vista concluída. É o corpo do laço de sempre — o pai serial e cada
- * filho do paralelo chamam exatamente este.
+ * cada vista concluída. É o corpo do laço de sempre — o pai serial, cada
+ * filho do paralelo e a re-mira de DIFERE chamam exatamente este.
  *
  * `base` é o que JÁ estava medido: no pai serial é o estado lido do disco,
  * e ele precisa ser reescrito junto a cada vista, senão uma queda no meio da
  * leva deixaria em disco só as vistas desta rodada — a retomada perderia
  * justamente as boas que já custaram GPU.
  *
+ * A janela é da SESSÃO (o Chrome não redimensiona por vista), então a lista
+ * se agrupa por janela e cada grupo vive numa sessão: na leva oficial são
+ * duas — a das 1800×1800 e a da `retrato` (700×1800).
+ *
+ * `vezes` força o número de capturas (a re-mira usa ×2); `acumular` faz as
+ * novas capturas se SOMAREM às da base em vez de recomeçar a vista — é o que
+ * permite à re-mira classificar INSTÁVEL contra a 1ª captura. `ladoDoPng`
+ * existe porque a re-mira do lado `antes` roda dentro da invocação `depois`,
+ * e o PNG dela tem de se chamar `ab-antes-…` para o diff de pixel comparar
+ * os pares certos.
+ *
  * Devolve `{ out, vias }`: `vias` é uma entrada por CAPTURA (não por vista),
  * 'sinal' ou 'quadros', e é o que `julgarProntidao` julga no fim da leva.
  */
-async function capturarLista(vistas, arquivo, marca = '', base = {}) {
+async function capturarLista(
+  vistas, arquivo, marca = '', base = {},
+  { vezes = null, acumular = false, ladoDoPng = LADO } = {}
+) {
   const out = { ...base };
   const vias = [];
-  for (const [nome, query, janela] of vistas) {
-    out[nome] = [];
-    const daVista = [];
-    for (let k = 0; k < N; k++) {
-      // capturas/ é gitignored e não existe em clone novo — criar aqui, senão
-      // a única forma de OLHAR a diferença (o diff de pixel) morre no open()
-      const png = SO ? resolve(ROOT, 'capturas', `ab-${LADO}-${nome}-${k}.png`) : null;
-      if (png) mkdirSync(resolve(ROOT, 'capturas'), { recursive: true });
-      // uma segunda chance por captura: o Chrome headless morre no arranque de
-      // vez em quando, e perder a bateria por isso é caro demais
-      let r = null;
-      for (let tent = 1; tent <= 2 && r === null; tent++) {
-        try {
-          r = await capturar(query + PIN + EXTRA, png, janela);
-        } catch (e) {
-          console.log(`${marca}  ${nome} ${k} tentativa ${tent} falhou: ${e.message}`);
-          if (tent === 2) throw e;
+  const grupos = new Map();
+  for (const v of vistas) {
+    const chave = v[2] || process.env.JANELA || '1800x1800';
+    if (!grupos.has(chave)) grupos.set(chave, []);
+    grupos.get(chave).push(v);
+  }
+  for (const [janela, grupo] of grupos) {
+    let sessao = await abrirSessaoDoAb(janela);
+    try {
+      for (const [nome, query] of grupo) {
+        out[nome] = acumular ? [...(out[nome] || [])] : [];
+        const daVista = [];
+        const n = vezes ?? capturasDaVista(nome);
+        for (let k = 0; k < n; k++) {
+          // capturas/ é gitignored e não existe em clone novo — criar aqui,
+          // senão a única forma de OLHAR a diferença (o diff de pixel) morre
+          // no open()
+          const png = SO ? resolve(ROOT, 'capturas', `ab-${ladoDoPng}-${nome}-${k}.png`) : null;
+          if (png) mkdirSync(resolve(ROOT, 'capturas'), { recursive: true });
+          // uma segunda chance por captura, agora trocando a SESSÃO inteira:
+          // o Chrome headless morre no arranque (ou no meio do balde) de vez
+          // em quando, e perder a bateria por isso é caro demais
+          let r = null;
+          for (let tent = 1; tent <= 2 && r === null; tent++) {
+            try {
+              r = await capturarNaSessao(sessao, (query + PIN + EXTRA).slice(1), png);
+            } catch (e) {
+              console.log(`${marca}  ${nome} ${k} tentativa ${tent} falhou: ${e.message}`);
+              await sessao.fechar().catch(() => {});
+              if (tent === 2) throw e;
+              sessao = await abrirSessaoDoAb(janela);
+            }
+          }
+          out[nome].push(r.hash);
+          vias.push(r.via);
+          daVista.push(`${r.via}/${(r.ms / 1000).toFixed(0)}s`);
         }
+        console.log(`${marca}${nome.padEnd(10)} ${out[nome].join(' ')}  via=${daVista.join(' ')}`);
+        // por VISTA, não no fim: o estado sobrevive a uma queda no meio
+        writeFileSync(arquivo, JSON.stringify(out, null, 1));
       }
-      out[nome].push(r.hash);
-      vias.push(r.via);
-      daVista.push(`${r.via}/${(r.ms / 1000).toFixed(0)}s`);
+    } finally {
+      await sessao.fechar().catch(() => {});
     }
-    console.log(`${marca}${nome.padEnd(10)} ${out[nome].join(' ')}  via=${daVista.join(' ')}`);
-    // por VISTA, não no fim: o estado sobrevive a uma queda no meio
-    writeFileSync(arquivo, JSON.stringify(out, null, 1));
   }
   writeFileSync(arquivo, JSON.stringify(out, null, 1));
   return { out, vias };
@@ -1062,15 +1041,31 @@ async function pai() {
   // mudança. O carimbo fecha isso sozinho.
   const carimboEmDisco = lerCarimbo(LADO);
   const outroCodigo = existsSync(ESTADO) && carimboEmDisco !== CARIMBO;
-  if (outroCodigo) {
+  if (outroCodigo && !process.env.DOZERO) {
     console.log(
       `estado de "${LADO}" é de outro código (${carimboEmDisco ?? 'sem carimbo'}), `
-      + `agora em ${CARIMBO} — recapturando do zero`
+      + `agora em ${CARIMBO} — descartado`
     );
   }
-  const md5 = existsSync(ESTADO) && !outroCodigo && !process.env.DOZERO
+  let md5 = existsSync(ESTADO) && !outroCodigo && !process.env.DOZERO
     ? JSON.parse(readFileSync(ESTADO, 'utf8'))
     : {};
+  // A SEMENTE CRUZADA (F2 do item 113): o lado `antes` pode nascer do último
+  // estado de QUALQUER lado cujo carimbo de ÁRVORE seja o atual — o caso vivo
+  // é a rodada encadeada: o `depois` aprovado vira commit, o conteúdo não
+  // muda, e o `antes` da rodada seguinte já está medido, só que no arquivo do
+  // outro lado. Só o `antes` semeia: o `depois` é a prova da mudança, e
+  // semeá-lo do `antes` transformaria o A/B em comparar um arquivo com a
+  // cópia dele.
+  if (LADO === 'antes' && !Object.keys(md5).length && !process.env.DOZERO) {
+    const arqOutro = resolve(tmpdir(), `ab-identidade-depois${SUFIXO}.json`);
+    if (existsSync(arqOutro) && lerCarimbo('depois') === CARIMBO) {
+      md5 = JSON.parse(readFileSync(arqOutro, 'utf8'));
+      console.log(
+        `lado "antes" semeado do estado do lado "depois" (carimbo de árvore igual: ${CARIMBO})`
+      );
+    }
+  }
   // O CARIMBO E O ESTADO ANDAM JUNTOS, e são gravados ANTES da primeira
   // captura: uma leva interrompida tem de deixar em disco um par coerente —
   // estado parcial com o código que o produziu. Gravar o carimbo no fim
@@ -1085,7 +1080,9 @@ async function pai() {
     return true;
   });
   const pendentes = lista.filter(([nome]) => {
-    if (md5[nome]?.length === N && !SO) {
+    // `>=` e não `===`: uma vista que passou pela re-mira tem MAIS capturas
+    // que o piso adaptativo dela, e isso é informação, não pendência
+    if ((md5[nome]?.length ?? 0) >= capturasDaVista(nome) && !SO) {
       console.log(`${nome.padEnd(10)} ${md5[nome].join(' ')}  (de disco)`);
       return false;
     }
@@ -1147,16 +1144,15 @@ async function pai() {
   }
   if (pendentes.length) {
     console.log(
-      `\n${pendentes.length} vistas × ${N} capturas em `
+      `\n${pendentes.length} vistas (${vias.length} capturas) em `
       + `${((Date.now() - t0) / 60000).toFixed(1)} min (JOBS=${jobs}${SMOKE ? ', SMOKE' : ''})`
     );
   }
 
   let vereditoInvalido = false;
   if (LADO === 'depois') {
-    const antes = JSON.parse(
-      readFileSync(resolve(tmpdir(), `ab-identidade-antes${SUFIXO}.json`), 'utf8')
-    );
+    const arqAntes = resolve(tmpdir(), `ab-identidade-antes${SUFIXO}.json`);
+    const antes = JSON.parse(readFileSync(arqAntes, 'utf8'));
     // OS DOIS CARIMBOS na tela, e é a razão de eles existirem: quem lê o
     // veredito passa a ver COM QUAL CÓDIGO cada lado foi medido, em vez de
     // deduzir do ritual. Carimbos iguais não são erro — o A/B de um knob por
@@ -1165,7 +1161,45 @@ async function pai() {
     // `lista` e não `VISTAS`: o veredito cobra o que ESTA invocação pediu.
     // Com a leva completa são as 18; com SMOKE/vista única é o recorte, e
     // cobrar as outras como AUSENTE reprovaria o fluxo de iterar.
-    const juizo = julgarVistas({ vistas: lista.map(([nome]) => nome), antes, depois: md5 });
+    const nomes = lista.map(([nome]) => nome);
+    let juizo = julgarVistas({ vistas: nomes, antes, depois: md5 });
+    // A RE-MIRA (F3a do item 113): com captura única, DIFERE ainda não separa
+    // regressão de captura não assentada — a 2ª captura que fazia isso virou
+    // sob demanda. Quem DIFERE volta ×2 nos dois lados ANTES do veredito
+    // final; as pinadas ficam de fora (já são ×2, o tremor delas é conhecido)
+    // e vista que já tem ×2 dos dois lados também (o DIFERE dela é maduro).
+    const suspeitas = juizo.linhas
+      .filter((l) => l.veredito === 'DIFERE' && !PINADAS_N2.includes(l.nome))
+      .filter((l) => (md5[l.nome]?.length ?? 0) < 2 || (antes[l.nome]?.length ?? 0) < 2)
+      .map((l) => l.nome);
+    if (suspeitas.length) {
+      console.log(
+        `\nre-mira: ${suspeitas.length} vista(s) DIFEREM na captura única — `
+        + `recapturando ×2 antes do veredito: ${suspeitas.join(' ')}`
+      );
+      const vistasRe = lista.filter(([nome]) => suspeitas.includes(nome));
+      const reD = await capturarLista(vistasRe, ESTADO, '[re] ', md5, {
+        vezes: 2, acumular: true,
+      });
+      Object.assign(md5, reD.out);
+      vias.push(...reD.vias);
+      // o lado `antes` só se recaptura quando ele é do MESMO código (A/A,
+      // knob por EXTRA): num A/B de verdade o binário dele já não existe, e
+      // recapturá-lo com o código novo envenenaria a baseline
+      if (lerCarimbo('antes') === CARIMBO) {
+        const reA = await capturarLista(vistasRe, arqAntes, '[re-antes] ', antes, {
+          vezes: 2, acumular: true, ladoDoPng: 'antes',
+        });
+        Object.assign(antes, reA.out);
+        vias.push(...reA.vias);
+      } else {
+        console.log(
+          'o lado "antes" é de outro código — re-mira só no "depois"; '
+          + 'a captura única do "antes" fica'
+        );
+      }
+      juizo = julgarVistas({ vistas: nomes, antes, depois: md5 });
+    }
     for (const l of juizo.linhas) console.log(l.texto);
     console.log('\n' + juizo.resumo);
     vereditoInvalido = juizo.erro;

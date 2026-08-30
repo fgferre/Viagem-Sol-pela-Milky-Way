@@ -15,10 +15,14 @@
 // a guarda de `process.argv[1]`; só importar `chrome.mjs` ainda exige o Chrome
 // instalado (ele resolve o caminho no topo do módulo, de propósito).
 import { describe, it, expect } from 'vitest';
-import { julgarVistas } from './ab-identidade.mjs';
+import { julgarVistas, carimboDoCodigo } from './ab-identidade.mjs';
 
 const VISTAS = ['sol', 'interno', 'ua150'];
+// H = o par (as vistas pinadas em ×2 e a era pré-113); U = a captura ÚNICA,
+// que desde a F3a do item 113 é a norma — o veredito aceita os dois formatos
+// e qualquer mistura, e os casos abaixo cobram exatamente isso.
 const H = (x) => [`${x}@1800x1713`, `${x}@1800x1713`];
+const U = (x) => [`${x}@1800x1713`];
 
 describe('julgarVistas', () => {
   it('vista SÓ no depois (a que era pulada em silêncio): linha NOVA', () => {
@@ -152,5 +156,67 @@ describe('julgarVistas', () => {
     expect(r.erro).toBe(false);
     expect(r.bitIdentico).toBe(true);
     expect(r.resumo).toContain('BIT-IDÊNTICO (1 vista julgada)');
+  });
+});
+
+// A CAPTURA ADAPTATIVA (F3a do item 113): 1× por vista é a norma, ×2 só nas
+// pinadas trêmulas e na re-mira de quem DIFERE — e a re-mira ACUMULA (a nova
+// dupla soma-se à 1ª captura em vez de apagá-la). Estes casos pinam o
+// contrato que o motor novo entrega ao veredito: arrays de 1 e de 3 hashes
+// são entrada legítima, e é o hash DESTOANTE acumulado que separa INSTÁVEL
+// de DIFERE.
+describe('julgarVistas com a captura adaptativa (item 113)', () => {
+  it('captura única dos dois lados: IGUAL e DIFERE saem de 1 hash por lado', () => {
+    const r = julgarVistas({
+      vistas: ['sol', 'interno'],
+      antes: { sol: U('a4fbf427778a'), interno: U('d98cbef70849') },
+      depois: { sol: U('a4fbf427778a'), interno: U('0000deadbeef') },
+    });
+    expect(r.linhas.map((l) => l.veredito)).toEqual(['IGUAL', 'DIFERE']);
+    expect(r.erro).toBe(false);
+  });
+
+  it('re-mira que desmente: 1ª captura destoante + ×2 que repetem o antes → INSTÁVEL', () => {
+    // o caso que a 2ª captura incondicional pagava para separar: a 1ª não
+    // assentou; as duas da re-mira batem com o outro lado. O lado não repete
+    // o próprio md5 — INSTÁVEL, nunca DIFERE nem IGUAL calado.
+    const r = julgarVistas({
+      vistas: ['sol'],
+      antes: { sol: U('a4fbf427778a') },
+      depois: { sol: [...U('0000deadbeef'), ...U('a4fbf427778a'), ...U('a4fbf427778a')] },
+    });
+    expect(r.linhas[0].veredito).toBe('INSTÁVEL');
+    expect(r.bitIdentico).toBe(false);
+  });
+
+  it('re-mira que confirma: ×3 iguais entre si contra antes estável → DIFERE maduro', () => {
+    const r = julgarVistas({
+      vistas: ['sol'],
+      antes: { sol: U('a4fbf427778a') },
+      depois: { sol: [...U('0000deadbeef'), ...U('0000deadbeef'), ...U('0000deadbeef')] },
+    });
+    expect(r.linhas[0].veredito).toBe('DIFERE');
+    expect(r.resumo).toContain('NÃO é bit-idêntico');
+  });
+
+  it('lado misto (pinada ×2 contra ×1 do outro lado) compara sem cerimônia', () => {
+    const r = julgarVistas({
+      vistas: ['saturno-anel'],
+      antes: { 'saturno-anel': H('1cc87d169e7b') },
+      depois: { 'saturno-anel': U('1cc87d169e7b') },
+    });
+    expect(r.linhas[0].veredito).toBe('IGUAL');
+  });
+});
+
+// O CARIMBO DE ÁRVORE (F2 do item 113): conteúdo, não commit. A invariância
+// que importa — mesmo conteúdo antes e depois de `git add`/commit — está
+// provada no ritual do próprio juiz (a prova do carimbo); aqui fica o que um
+// teste puro alcança sem tocar no repositório: determinismo e formato.
+describe('carimboDoCodigo', () => {
+  it('é determinístico dentro do mesmo estado e tem formato arv-<12 hex> (ou sem-git)', () => {
+    const a = carimboDoCodigo();
+    expect(a).toMatch(/^(arv-[0-9a-f]{12}|sem-git)$/);
+    expect(carimboDoCodigo()).toBe(a);
   });
 });

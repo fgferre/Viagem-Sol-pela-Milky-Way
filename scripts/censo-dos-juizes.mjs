@@ -22,9 +22,12 @@ export const TETO_DA_RODADA_MIN = 15;
 // O total só desce ou fica; subir exige re-pinar AQUI, no mesmo commit,
 // com a justificativa (aposentou? fundiu?). Re-pinado na F1 do item 113
 // — a verdade dos preços subiu o declarado (o ab-identidade dizia 7,1
-// min de 54 vistas e são 60; o atlas-smoke desceu 7,4 → 7,3 medido);
-// as fases seguintes só descem.
-export const TETO_TOTAL_MIN = 44.0;
+// min de 54 vistas e são 60; o atlas-smoke desceu 7,4 → 7,3 medido).
+// Re-pinado PARA BAIXO nas F2/F3 do item 113 (30/08): o ab-identidade
+// caiu de 7,9 para 3,5 min medidos (corte de 10 vistas + captura
+// adaptativa + sessão por balde + JOBS=6), e o teto desce os mesmos
+// 4,4 — de 44,0 para 39,6.
+export const TETO_TOTAL_MIN = 39.6;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
