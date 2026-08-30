@@ -46,6 +46,16 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (29/08)
 
+**29/08 (fim da noite) — PUBLICADO, a pedido dele.** *"sim, publique e
+faça push"* — os 179 commits desde a última publicação subiram para a
+`main` e o Pages pôs no ar tudo desta era: o motor de filmes (75), a
+lente de 58° no app inteiro com a abertura do sistema inteiro (86+61),
+os fechos 70/77/87/91/93/104, o HUD de fotografia completo (100) e as
+órbitas com as cores dos próprios mundos (83). Higiene do mesmo dia: as
+4 branches locais de agentes (todas com zero commits fora da main)
+foram apagadas com a trava `-d`; restam 3 branches remotos velhos
+igualmente vazios, à espera de uma palavra dele para sumirem.
+
 **29/08 — O 83 FECHOU: as órbitas ficaram lindas, e com as cores dos
 próprios mundos.** Palavras dele no fecho: *"ficou lindo, confirmo as
 fotos"*. O dia inteiro da família: coluna (iv) computada das texturas
