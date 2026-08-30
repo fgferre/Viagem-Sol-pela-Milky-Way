@@ -1953,6 +1953,166 @@ describe('a rampa entre degraus do rig (F2b/D7)', () => {
 });
 
 // ============================================================
+// CLIQUE COM RAMPA EM VOO — a partida da rampa nova é a pose QUE ESTÁ
+// NA TELA, não o estado do rig (que durante uma rampa é o DESTINO
+// dela). Antes do conserto, o pedaço que faltava da rampa antiga
+// acontecia num quadro de 16 ms — sonda mediu saltos de 50° a 128° — e
+// o par canônico clique-escolhe + duplo-clique-mergulha caía SEMPRE
+// nisso, porque a janela do duplo (0,5 s) é menor que a rampa da
+// seleção. A régua de todas as provas: a rampa amaciada a 60 fps nunca
+// passa de ~2°/quadro por construção, então 5°/quadro separa o deslize
+// do salto com folga dos dois lados.
+// ============================================================
+describe('clique com rampa em voo — a partida é a pose da tela', () => {
+  const cam = () => new THREE.PerspectiveCamera(35, 1.6, 1e-9, 100);
+  const QUADRO_S = 1 / 60;
+  /** avança `quadros` de 16 ms e devolve o MAIOR passo de orientação, em graus */
+  const passoMaximo = (
+    rig: AtlasRig,
+    camera: THREE.PerspectiveCamera,
+    quadros: number
+  ) => {
+    let maior = 0;
+    const antes = camera.quaternion.clone();
+    for (let i = 0; i < quadros; i++) {
+      rig.apply(camera, 1, LARGURA_DE_MESA_PX, QUADRO_S);
+      maior = Math.max(
+        maior,
+        THREE.MathUtils.radToDeg(antes.angleTo(camera.quaternion))
+      );
+      antes.copy(camera.quaternion);
+    }
+    return maior;
+  };
+
+  const corpoA = new THREE.Vector3(1e-6, 0, 0);
+  const estrelaA = new THREE.Vector3(0.4, 0.9, 0);
+
+  it('segundo clique em alvo NOVO no meio do deslize — sem salto por quadro', () => {
+    const camera = cam();
+    const rig = new AtlasRig();
+    rig.focar(corpoA, 1e-9, corpoA);
+    rig.apply(camera);
+    rig.selecionar(estrelaA, 0.05, estrelaA, { rampa: true });
+    // ~30% da primeira rampa — o clique chega com o deslize em voo
+    const aTrinta = Math.max(1, Math.round((0.3 * rig.duracaoDaRampa) / QUADRO_S));
+    let maior = passoMaximo(rig, camera, aTrinta);
+    expect(rig.animando).toBe(true);
+    const estrelaB = new THREE.Vector3(-0.9, 0.1, 0.3);
+    rig.selecionar(estrelaB, 0.05, estrelaB, { rampa: true });
+    const resto = Math.ceil(rig.duracaoDaRampa / QUADRO_S) + 2;
+    maior = Math.max(maior, passoMaximo(rig, camera, resto));
+    expect(rig.animando).toBe(false);
+    // derivar a partida do ESTADO reprova aqui: a rampa nova nasceria no
+    // FIM da antiga e o pedaço que faltava (~50°) entraria num quadro
+    expect(maior).toBeLessThan(5);
+    // ...e a chegada olha o alvo novo (a folga é o recentrar do HUD)
+    const mira = camera.getWorldDirection(new THREE.Vector3());
+    const ate = estrelaB.clone().sub(camera.position).normalize();
+    expect(THREE.MathUtils.radToDeg(mira.angleTo(ate))).toBeLessThan(10);
+  });
+
+  it('o par canônico — clique escolhe, duplo clique mergulha — desliza inteiro', () => {
+    const camera = cam();
+    const rig = new AtlasRig();
+    const planeta = new THREE.Vector3(4.6e-5, 0, 0);
+    rig.focar(planeta, 2e-9, planeta);
+    rig.apply(camera);
+    const alvo = new THREE.Vector3(0, 1.4e-4, 0);
+    rig.selecionar(alvo, 1e-8, alvo, { rampa: true });
+    expect(rig.duracaoDaRampa).toBeGreaterThan(0.5); // a janela do duplo cabe dentro
+    // ~350 ms depois (a janela do duplo clique) vem o mergulho
+    let maior = passoMaximo(rig, camera, 21);
+    expect(rig.animando).toBe(true);
+    rig.focar(alvo, 1e-8, alvo, { rampa: true });
+    const resto = Math.ceil(rig.duracaoDaRampa / QUADRO_S) + 2;
+    maior = Math.max(maior, passoMaximo(rig, camera, resto));
+    expect(rig.animando).toBe(false);
+    expect(maior).toBeLessThan(5);
+    // o destino é o PRESET de sempre, bit a bit — a rampa muda o
+    // caminho, nunca a chegada
+    const seco = cam();
+    const rigSeco = new AtlasRig();
+    rigSeco.focar(alvo, 1e-8, alvo);
+    rigSeco.apply(seco);
+    expect(camera.position.equals(seco.position)).toBe(true);
+    expect(camera.quaternion.equals(seco.quaternion)).toBe(true);
+  });
+
+  it('re-clicar o MESMO alvo no meio do deslize não teleporta', () => {
+    const camera = cam();
+    const rig = new AtlasRig();
+    rig.focar(corpoA, 1e-9, corpoA);
+    rig.apply(camera);
+    rig.selecionar(estrelaA, 0.05, estrelaA, { rampa: true });
+    const aMeio = Math.round((0.4 * rig.duracaoDaRampa) / QUADRO_S);
+    let maior = passoMaximo(rig, camera, aMeio);
+    expect(rig.animando).toBe(true);
+    // antes do conserto a pose derivada do estado dava pan≈0, caía no
+    // ramo seco e o quadro seguinte escrevia o DESTINO — o pedaço que
+    // faltava da re-mira (~40°) virava teleporte
+    rig.selecionar(estrelaA, 0.05, estrelaA, { rampa: true });
+    expect(rig.animando).toBe(true);
+    maior = Math.max(
+      maior,
+      passoMaximo(rig, camera, Math.ceil(rig.duracaoDaRampa / QUADRO_S) + 2)
+    );
+    expect(rig.animando).toBe(false);
+    expect(maior).toBeLessThan(5);
+    // a chegada é a da seleção de sempre: mesma posição (a câmera não
+    // saiu do lugar), dentro do resto de float da conta fechada
+    const seco = cam();
+    const rigSeco = new AtlasRig();
+    rigSeco.focar(corpoA, 1e-9, corpoA);
+    rigSeco.apply(seco);
+    rigSeco.selecionar(estrelaA, 0.05, estrelaA);
+    rigSeco.apply(seco);
+    expect(camera.position.distanceTo(seco.position)).toBeLessThan(
+      1e-9 * seco.position.length()
+    );
+  });
+
+  it('a roda no meio do deslize re-mira o DESTINO — o estalo não se perde', () => {
+    const camera = cam();
+    const rig = new AtlasRig();
+    rig.focar(corpoA, 1e-9, corpoA);
+    rig.apply(camera);
+    rig.selecionar(estrelaA, 0.05, estrelaA, { rampa: true });
+    const aTrinta = Math.round((0.3 * rig.duracaoDaRampa) / QUADRO_S);
+    let maiorGiro = passoMaximo(rig, camera, aTrinta);
+    expect(rig.animando).toBe(true);
+    // o gesto da roda: antes do conserto `pinarDistancia` recusava
+    // durante a rampa e o estalo — já consumido por gestos.ts — sumia
+    const antes = rig.distancia;
+    rig.pinarDistancia(antes * 0.5);
+    expect(rig.distancia / (antes * 0.5)).toBeCloseTo(1, 10);
+    // ...e o deslize continua rumo à distância corrigida, sem salto:
+    // nem de orientação, nem de zoom — o passo de distância por quadro
+    // fica abaixo de UM estalo assentado (PASSO_LOG_LONGE = 0,2 década;
+    // medido: 0,068 no quadro do pino, o resto ≪ isso)
+    let maiorZoom = 0;
+    let dAntes = camera.position.distanceTo(rig.alvo);
+    const resto = Math.ceil(rig.duracaoDaRampa / QUADRO_S) + 2;
+    for (let i = 0; i < resto; i++) {
+      const antesQ = camera.quaternion.clone();
+      rig.apply(camera, 1, LARGURA_DE_MESA_PX, QUADRO_S);
+      maiorGiro = Math.max(
+        maiorGiro,
+        THREE.MathUtils.radToDeg(antesQ.angleTo(camera.quaternion))
+      );
+      const dAgora = camera.position.distanceTo(rig.alvo);
+      maiorZoom = Math.max(maiorZoom, Math.abs(Math.log10(dAgora / dAntes)));
+      dAntes = dAgora;
+    }
+    expect(rig.animando).toBe(false);
+    expect(maiorGiro).toBeLessThan(5);
+    expect(maiorZoom).toBeLessThan(0.1);
+    // a distância final REFLETE o ajuste — o gesto chegou inteiro
+    expect(camera.position.distanceTo(estrelaA) / (antes * 0.5)).toBeCloseTo(1, 10);
+  });
+});
+
+// ============================================================
 // O DEGRAU DO CORPO DO SOL — a escada do Atlas recusava exatamente um
 // corpo, e era o da casa: `focarNoCorpo` desviava o Sol para a abertura
 // ANTES de olhar o `ver`, então `?foco=sol&ver=corpo` não existia e o

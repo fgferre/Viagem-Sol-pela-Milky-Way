@@ -175,6 +175,10 @@ const _repouso = new THREE.Vector3();
 /** o passo de rotação do quadro, em torno dos eixos da TELA */
 const _eixoDaTela = new THREE.Vector3();
 const _passoDoGiro = new THREE.Quaternion();
+/** a MIRA da pose que está na tela (câmera→frente) no quadro do clique */
+const _miraNaTela = new THREE.Vector3();
+/** a base de uma pose pura, montada como o `lookAt` da câmera monta */
+const _baseDaPose = new THREE.Matrix4();
 /** o eixo `z` do frame de repouso — a mira, e o eixo do roll */
 const _EIXO_DA_MIRA = new THREE.Vector3(0, 0, 1);
 
@@ -364,36 +368,50 @@ export class AtlasRig {
         (pai === null) === (this.pai === null) &&
         this.polo.distanceToSquared(polo) === 0;
       if (mesmoAlvo) return;
-      // snapshot do enquadramento QUE ESTÁ NA TELA — é dele que a rampa parte
-      this.partida.alvo.copy(this.alvo);
-      this.partida.raio = this.raio;
-      this.partida.eixoDe.copy(this.eixoDe);
-      this.partida.temPai = this.pai !== null;
-      if (this.pai) this.partida.pai.copy(this.pai);
-      this.partida.giro.copy(this.giro);
-      this.partida.polo.copy(this.polo);
-      this.partida.distancia = this.distanciaPinada;
+      // snapshot do enquadramento QUE ESTÁ NA TELA — é dele que a rampa
+      // parte. Com rampa EM VOO "na tela" é a pose interpolada, não o
+      // estado (que é o destino da rampa antiga): o par canônico
+      // clique-escolhe + duplo-clique-mergulha cai SEMPRE aqui, porque
+      // a janela do duplo (0,5 s) é menor que a rampa da seleção
+      const emRampa = this.rampaT < 1;
+      let dAgora: number;
+      if (emRampa) {
+        this.partirDaTela(_posPartida, _miraNaTela, _upAgora);
+        dAgora = _posPartida.distanceTo(this.alvo);
+      } else {
+        this.partida.alvo.copy(this.alvo);
+        this.partida.raio = this.raio;
+        this.partida.eixoDe.copy(this.eixoDe);
+        this.partida.temPai = this.pai !== null;
+        if (this.pai) this.partida.pai.copy(this.pai);
+        this.partida.giro.copy(this.giro);
+        this.partida.polo.copy(this.polo);
+        this.partida.distancia = this.distanciaPinada;
+        this.repousoDe(this.eixoDe, this.alvo, this.pai, this.polo, _dirAgora);
+        poseDoVisitante(_dirAgora, this.polo, this.giro, _dirAgora, _upAgora);
+        _posPartida.copy(this.alvo).addScaledVector(_dirAgora, this.distancia);
+        _miraNaTela.copy(this.alvo).sub(_posPartida);
+        dAgora = this.distancia;
+      }
       // A DURAÇÃO É A DA TRAVESSIA (item 110) — medida ANTES de o
       // referencial trocar, na mesma conta fechada de `selecionar`:
-      // a posição de agora sai do próprio rig, o pan é o ângulo entre
-      // os dois alvos vistos dali, e o zoom compara a distância na tela
-      // com o enquadramento do destino (estimado pela razão viva
+      // o pan é o ângulo entre a mira de agora e o alvo novo vistos da
+      // posição de agora, e o zoom compara a distância na tela com o
+      // enquadramento do destino (estimado pela razão viva
       // distância/raio, que é a lei do enquadramento no fov de agora).
-      this.repousoDe(this.eixoDe, this.alvo, this.pai, this.polo, _dirAgora);
-      poseDoVisitante(_dirAgora, this.polo, this.giro, _dirAgora, _upAgora);
-      _posPartida.copy(this.alvo).addScaledVector(_dirAgora, this.distancia);
-      _dirA.copy(this.alvo).sub(_posPartida);
       _dirB.copy(alvo).sub(_posPartida);
       const pan =
-        _dirA.lengthSq() > 0 && _dirB.lengthSq() > 0 ? _dirA.angleTo(_dirB) : 0;
+        _miraNaTela.lengthSq() > 0 && _dirB.lengthSq() > 0
+          ? _miraNaTela.angleTo(_dirB)
+          : 0;
       const kDoEnquadramento =
         this.raio > 0 && this.distanciaEnquadrada > 0
           ? this.distanciaEnquadrada / this.raio
           : 0;
       const dDestino = kDoEnquadramento > 0 ? raio * kDoEnquadramento : 0;
       const decadas =
-        dDestino > 0 && this.distancia > 0
-          ? Math.abs(Math.log10(dDestino / this.distancia))
+        dDestino > 0 && dAgora > 0
+          ? Math.abs(Math.log10(dDestino / dAgora))
           : 0;
       this.rampaDuracaoS = Math.min(
         RAMPA_MAX_S,
@@ -483,24 +501,36 @@ export class AtlasRig {
     // 1. a pose de agora, no mundo — a direção E o alto da tela, porque
     //    desde o giro livre a pose tem TRÊS graus de liberdade e
     //    "não mexer na câmera" inclui não endireitar o horizonte
-    this.repousoDe(this.eixoDe, this.alvo, this.pai, this.polo, _dirAgora);
-    poseDoVisitante(_dirAgora, this.polo, this.giro, _dirAgora, _upAgora);
-    _posPartida.copy(this.alvo).addScaledVector(_dirAgora, this.distancia);
-    // o snapshot de partida e o PAN da re-mira, ANTES de o referencial
-    // trocar: o pan é o ângulo entre o alvo velho e o novo vistos da
-    // câmera parada — é exatamente o quanto a vista vai girar
-    this.partida.alvo.copy(this.alvo);
-    this.partida.raio = this.raio;
-    this.partida.eixoDe.copy(this.eixoDe);
-    this.partida.temPai = this.pai !== null;
-    if (this.pai) this.partida.pai.copy(this.pai);
-    this.partida.giro.copy(this.giro);
-    this.partida.polo.copy(this.polo);
-    this.partida.distancia = this.distanciaPinada;
-    _dirA.copy(this.alvo).sub(_posPartida);
+    const emRampa = this.rampaT < 1;
+    if (emRampa) {
+      // com rampa EM VOO o estado é o DESTINO dela, não o que a tela
+      // mostra — a pose de agora e a partida saem da pose interpolada
+      // (ver `partirDaTela`; o pan contra a MIRA real também resolve o
+      // re-clique do mesmo alvo, que dava pan 0 e teleportava)
+      this.partirDaTela(_posPartida, _miraNaTela, _upAgora);
+    } else {
+      this.repousoDe(this.eixoDe, this.alvo, this.pai, this.polo, _dirAgora);
+      poseDoVisitante(_dirAgora, this.polo, this.giro, _dirAgora, _upAgora);
+      _posPartida.copy(this.alvo).addScaledVector(_dirAgora, this.distancia);
+      // o snapshot de partida, ANTES de o referencial trocar
+      this.partida.alvo.copy(this.alvo);
+      this.partida.raio = this.raio;
+      this.partida.eixoDe.copy(this.eixoDe);
+      this.partida.temPai = this.pai !== null;
+      if (this.pai) this.partida.pai.copy(this.pai);
+      this.partida.giro.copy(this.giro);
+      this.partida.polo.copy(this.polo);
+      this.partida.distancia = this.distanciaPinada;
+      // assentada, a mira da tela é o próprio alvo
+      _miraNaTela.copy(this.alvo).sub(_posPartida);
+    }
+    // o PAN da re-mira: o ângulo entre a mira de agora e o alvo novo
+    // vistos da câmera parada — é exatamente o quanto a vista vai girar
     _dirB.copy(alvo).sub(_posPartida);
     const pan =
-      _dirA.lengthSq() > 0 && _dirB.lengthSq() > 0 ? _dirA.angleTo(_dirB) : 0;
+      _miraNaTela.lengthSq() > 0 && _dirB.lengthSq() > 0
+        ? _miraNaTela.angleTo(_dirB)
+        : 0;
     // 2. o referencial novo — e o gesto que trouxe a câmera até aqui
     //    acabou: a inércia não segue para o alvo escolhido
     this.esquecerOGiro();
@@ -539,12 +569,15 @@ export class AtlasRig {
     );
     // 5. a re-mira DESLIZA quando há o que ver (item 110): pan da vista
     //    e décadas do grampo somam a duração; sem mudança perceptível a
-    //    seleção segue seca — idempotente como sempre foi
+    //    seleção segue seca — idempotente como sempre foi. Com rampa em
+    //    voo o ramo seco é PROIBIDO por construção: "seco" escreveria o
+    //    destino no quadro seguinte, e a tela ainda está no meio do
+    //    caminho — o pedaço que falta viraria salto
     const decadas =
       this.distanciaPinada > 0
         ? Math.abs(Math.log10(this.distanciaPinada / distancia))
         : 0;
-    if (opcoes.rampa && (pan > 1e-4 || decadas > 1e-6)) {
+    if (opcoes.rampa && (emRampa || pan > 1e-4 || decadas > 1e-6)) {
       this.rampaDuracaoS = Math.min(
         RAMPA_MAX_S,
         RAMPA_DO_DEGRAU_S + RAMPA_POR_RADIANO_S * pan + RAMPA_POR_DECADA_S * decadas
@@ -695,6 +728,99 @@ export class AtlasRig {
     this.polo.copy(opcoes.polo ?? POLO_ECLIPTICO);
   }
 
+  /**
+   * A POSE QUE ESTÁ NA TELA com a rampa EM VOO — posição, mira e alto,
+   * mais a distância interpolada ao alvo (o retorno). Só faz sentido
+   * com `rampaT < 1`; assentada, a pose da tela é a do próprio estado.
+   *
+   * A CONTA ESPELHA A DO `apply` de propósito, termo a termo (poses das
+   * duas pontas, direção em torno do alvo, distância em log, slerp):
+   * quem chama vai usar isto como PARTIDA de uma rampa nova, e qualquer
+   * diferença contra o que o último quadro escreveu vira salto no
+   * quadro do clique. Duas ausências são deliberadas: os giros de
+   * recentragem do HUD (são da LENTE, iguais nas duas pontas, e o slerp
+   * comuta com eles — reaplicá-los aqui os dobraria) e a caixa de
+   * entrada do dedo (o que ainda não foi consumido não está na tela).
+   */
+  private poseNaTela(
+    outPos: THREE.Vector3,
+    outMira: THREE.Vector3,
+    outUp: THREE.Vector3
+  ): number {
+    this.repousoDe(this.eixoDe, this.alvo, this.pai, this.polo, _dir);
+    poseDoVisitante(_dir, this.polo, this.giro, _dir, _up);
+    const dDestino = this.distanciaPinada ?? this.distanciaEnquadrada;
+    _posDestino.copy(this.alvo).addScaledVector(_dir, dDestino);
+    _baseDaPose.lookAt(_posDestino, this.alvo, _up);
+    _quatDestino.setFromRotationMatrix(_baseDaPose);
+    const p = this.partida;
+    this.repousoDe(p.eixoDe, p.alvo, p.temPai ? p.pai : null, p.polo, _dir);
+    poseDoVisitante(_dir, p.polo, p.giro, _dir, _up);
+    // sem pino, a distância da partida sai da lei LINEAR do
+    // enquadramento (ver `fatorDeEnquadramento`) — a mesma régua que o
+    // `apply` recalcula por quadro, sem precisar de câmera aqui
+    const dPartida = p.distancia ?? this.fatorDeEnquadramento * p.raio;
+    _posPartida.copy(p.alvo).addScaledVector(_dir, dPartida);
+    _baseDaPose.lookAt(_posPartida, p.alvo, _up);
+    _quatPartida.setFromRotationMatrix(_baseDaPose);
+    const t = this.rampaT;
+    const k = t * t * (3 - 2 * t);
+    _dirA.copy(_posPartida).sub(this.alvo);
+    _dirB.copy(_posDestino).sub(this.alvo);
+    const dA = Math.max(_dirA.length(), 1e-30);
+    const dB = Math.max(_dirB.length(), 1e-30);
+    _dirA.multiplyScalar(1 / dA);
+    _dirB.multiplyScalar(1 / dB);
+    _dir.lerpVectors(_dirA, _dirB, k);
+    if (_dir.lengthSq() < 1e-12) _dir.copy(_dirB);
+    _dir.normalize();
+    const d = Math.exp((1 - k) * Math.log(dA) + k * Math.log(dB));
+    outPos.copy(this.alvo).addScaledVector(_dir, d);
+    _quatPartida.slerp(_quatDestino, k);
+    outMira.set(0, 0, -1).applyQuaternion(_quatPartida);
+    outUp.set(0, 1, 0).applyQuaternion(_quatPartida);
+    return d;
+  }
+
+  /**
+   * MATERIALIZA a pose da tela como PARTIDA de uma rampa nova — o
+   * conserto do clique com rampa em voo. `selecionar` e `focar`
+   * derivavam a partida do ESTADO do rig, que durante uma rampa é o
+   * DESTINO dela: a rampa nova nascia no fim da antiga e o pedaço que
+   * faltava acontecia num quadro (medido: 50° a 128°). E o par
+   * canônico — clique escolhe, duplo clique mergulha — caía SEMPRE
+   * nisso, porque a janela do duplo (0,5 s) é menor que a rampa da
+   * seleção.
+   *
+   * O REFERENCIAL É SINTÉTICO por necessidade: `escreverPose` sempre
+   * olha o próprio alvo, e a pose no meio de uma rampa não olha para
+   * alvo nenhum — então o ponto que a mira atravessa (à distância
+   * interpolada) vira o "alvo" da partida, com pino, raio pela lei
+   * linear e giro recomposto por `giroQueProduz`. Alimentada de volta
+   * no `escreverPose`, esta partida reproduz a pose da tela exata —
+   * e `recompor` a translada como qualquer outra.
+   */
+  private partirDaTela(
+    outPos: THREE.Vector3,
+    outMira: THREE.Vector3,
+    outUp: THREE.Vector3
+  ) {
+    const aoLonge = this.poseNaTela(outPos, outMira, outUp);
+    const p = this.partida;
+    p.alvo.copy(outPos).addScaledVector(outMira, aoLonge);
+    p.eixoDe.copy(p.alvo);
+    p.temPai = false;
+    p.polo.copy(this.polo);
+    p.raio =
+      this.fatorDeEnquadramento > 0
+        ? aoLonge / this.fatorDeEnquadramento
+        : this.raio;
+    p.distancia = aoLonge;
+    this.repousoDe(p.eixoDe, p.alvo, null, p.polo, _repouso);
+    _dir.copy(outMira).negate();
+    giroQueProduz(_dir, outUp, _repouso, p.polo, p.giro);
+  }
+
   /** a rampa entre degraus ainda está andando? (a captura espera por ela) */
   get animando(): boolean {
     return this.rampaT < 1;
@@ -831,19 +957,25 @@ export class AtlasRig {
    * PINA a distância ao alvo, em pc — a escrita da roda e, na etapa
    * seguinte, a da porta `?d=`. `null` devolve o enquadramento puro.
    *
-   * A RAMPA MANDA enquanto ela anda: a troca de degrau interpola poses e
-   * termina EXATA na pose pura, e um pino escrito no meio dela seria uma
-   * segunda mão na mesma distância. Depois de `rampaT ≥ 1` o zoom
-   * escreve à vontade. Fora da faixa `[piso, teto]` o valor é grampeado,
-   * nunca recusado — é o que faz o embalo da inércia parar na parede em
-   * vez de sumir.
+   * DURANTE A RAMPA a roda re-mira o DESTINO dela: o pino é a distância
+   * de chegada, o deslize continua rumo ao valor corrigido, e nada
+   * salta — a tela segue na interpolação, só a ponta anda. Recusar aqui
+   * (a lei até o item 110) engolia o gesto em silêncio por até 2,2 s
+   * depois de CADA clique: `gestos.ts` consome a inércia da roda e
+   * entrega os estalos de qualquer jeito, então o estalo recusado não
+   * volta. Não é segunda mão na mesma distância: a rampa escreve a POSE
+   * do quadro, o pino escreve a chegada — e os estalos já nascem da
+   * chegada (`Director` os deriva de `distancia`, que durante a rampa É
+   * o destino). Fora da faixa `[piso, teto]` o valor é grampeado, nunca
+   * recusado — é o que faz o embalo da inércia parar na parede em vez
+   * de sumir.
    */
   pinarDistancia(pc: number | null) {
     if (pc === null) {
       this.distanciaPinada = null;
       return;
     }
-    if (this.rampaT < 1 || !Number.isFinite(pc) || pc <= 0) return;
+    if (!Number.isFinite(pc) || pc <= 0) return;
     const piso = this.pisoDeZoom;
     const teto = Math.max(piso, this.tetoDeZoom);
     this.distanciaPinada = THREE.MathUtils.clamp(pc, piso, teto);
