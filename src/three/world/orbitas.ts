@@ -365,6 +365,7 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalact
 import { AU_KM } from '../../lib/atlas/elementosOrbitais';
 import { GM_CORPOS } from '../../lib/atlas/massas';
 import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
+import { COR_DA_TEXTURA } from './planetas/corDaTextura';
 // A EXCEÇÃO DO §7, e é o único import de FASE em toda a pasta `world/`.
 // Ele está aqui por autorização nomeada dele (item 77, decisão 3); o
 // mapa carrega a doutrina e `fases.test.ts` varre a árvore para que este
@@ -725,8 +726,17 @@ export interface CorpoComOrbita {
   cor: readonly [number, number, number];
 }
 
-/** O matiz da fotometria, normalizado no canal mais forte (§5). */
+/**
+ * O matiz da linha, normalizado no canal mais forte (§5) — desde 29/08
+ * (item 83 · B3, escolha dele na prancha v3) a fonte primeira é a COR
+ * DA TEXTURA do próprio globo (`COR_DA_TEXTURA`, com a receita e a
+ * procedência lá), e a fotometria é a reserva: Mercúrio — cuja textura
+ * é toda neutra e não vota — e qualquer corpo fora da tabela continuam
+ * como sempre foram. As luas herdam a cor do PAI, nos dois casos.
+ */
 function matizDe(id: string): readonly [number, number, number] | null {
+  const daTextura = COR_DA_TEXTURA[id];
+  if (daTextura) return daTextura;
   const linha = FOTOMETRIA[id];
   if (!linha) return null;
   const c = linha.corLinear;

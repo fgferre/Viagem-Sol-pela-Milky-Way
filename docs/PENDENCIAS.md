@@ -950,8 +950,19 @@ commit e uma foto por passo:
    tem pixel que vote** (textura toda neutra) e cai na fotometria — a
    própria receita dele decide. O oráculo bateu nos cinco corpos de
    prova. A porta `?paleta=` ganhou a quarta receita no worktree efêmero
-   e MORREU com ele, como manda o desenho. **A escolha é DELE; a
-   escolhida vira código em commit próprio.**
+   e MORREU com ele, como manda o desenho. **ELE ESCOLHEU A (iv) em 29/08, diante da prancha — e ela VIROU CÓDIGO
+   no mesmo dia, em commit próprio:** a tabela assada com procedência em
+   `world/planetas/corDaTextura.ts` (triplos lineares normalizados + hex
+   + matiz + representatividade por corpo), `matizDe` lê textura-primeiro
+   com a fotometria de reserva (Mercúrio fica como era; as luas herdam a
+   cor do pai). Guarda de comportamento em `orbitas.test.ts` (o azul da
+   Terra, a ferrugem de Marte, o fallback de Mercúrio, a herança da Lua).
+   Pixel de linha muda nas vistas de Atlas do gate — re-baseline
+   DECLARADO; o filme não tem linha (item 77) e segue bit-idêntico.
+   Fotos da cor pousada: `capturas/item83-b3-pousada-abertura.png` e
+   `item83-b3-pousada-jupiter.png` — **esperam o olho dele, e com elas o
+   item 83 fecha inteiro** (B1, B2 e B3 pousados; A1 aceito; L1/L2/L5 e
+   N1 da onda anterior).
 
 **Não falta, medido — não inventar:** a linha deles NÃO tem perfil
 através da largura (chapada, `glowWidth = 0` até no hover), NÃO tem

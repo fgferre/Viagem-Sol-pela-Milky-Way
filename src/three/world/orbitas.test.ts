@@ -38,7 +38,7 @@ import {
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { EPOCA_JD_TDB } from './planetas/retrato2026';
 import { Planetas, UA_POR_PC } from './planetas/planetas';
-import { IDS_FOTOMETRIA } from './planetas/fotometria';
+import { FOTOMETRIA, IDS_FOTOMETRIA } from './planetas/fotometria';
 import { CORPOS_DO_SISTEMA, HELIO_SEM_PONTO, LUAS_DO_SISTEMA } from '../atlasConfig';
 // só o TIPO: quem consome o MAPA de fases é a camada, e é `fases.test.ts`
 // que varre a árvore para garantir que continue sendo só ela (§7)
@@ -508,6 +508,31 @@ describe('a camada no quadro', () => {
       ).toBeGreaterThanOrEqual(alfaDe(dentroParaFora[i - 1]));
     }
     orbitas.dispose();
+  });
+
+  it('a COR da linha vem da TEXTURA do globo — e Mercúrio fica na fotometria (83·B3)', () => {
+    // A escolha dele na prancha v3 (29/08): a Terra sai o AZUL DO
+    // OCEANO da própria textura — apagar a fiação de COR_DA_TEXTURA
+    // devolveria o creme da fotometria e reprova aqui.
+    const corDe = (id: string) =>
+      CORPOS_COM_ORBITA.find((c) => c.id === id)!.cor;
+    const terra = corDe('earth');
+    expect(terra[2]).toBe(1); // azul é o canal pleno
+    expect(terra[0]).toBeLessThan(0.1); // e o vermelho quase nada
+    // Marte é a ferrugem da textura: vermelho pleno, azul baixo
+    const marte = corDe('mars');
+    expect(marte[0]).toBe(1);
+    expect(marte[2]).toBeLessThan(0.15);
+    // Mercúrio não tem pixel que vote (textura neutra) e cai na
+    // fotometria — o fallback é LEI, não esquecimento
+    const mercurio = corDe('mercury');
+    const linha = FOTOMETRIA.mercury.corLinear;
+    const pico = Math.max(linha[0], linha[1], linha[2]);
+    expect(mercurio[0]).toBeCloseTo(linha[0] / pico, 12);
+    expect(mercurio[2]).toBeCloseTo(linha[2] / pico, 12);
+    // e a LUA herda a cor do pai — o azul da Terra
+    const lua = CORPOS_COM_ORBITA.find((c) => c.id === 'moon')!.cor;
+    expect(lua).toEqual(terra);
   });
 
   it('com efeméride, o laço da Terra nasce no lugar da Terra', () => {
