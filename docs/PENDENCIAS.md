@@ -46,6 +46,20 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (30/08)
 
+**30/08 (noite — item 113 FECHADO e a lição de modelo).** A caçada que
+ele cobrou achou desperdício real (foto duplicada, "antes" refeito à
+toa, capturas em dobro, 122 boots de Chrome) e cinco fases provadas o
+mataram: bolsa dos juízes 44,0→31,8 min, fechamento pesado ~20→8,8,
+encadeado ~5,3. No caminho a rodada expôs a QUEDA DE MODELO — meio
+plano semanal de Fable queimado num dia por agentes lançados sem
+escolha de modelo ("inaceitável", dele) — e o conserto virou ESTRUTURA:
+operários nomeados em `.claude/agents/` (executor=Opus,
+mecanico=Sonnet), a delegação certa por construção. Consensos dele
+gravados na memória do coordenador: "leia a intenção — pedido claro
+executa, observação conversa primeiro"; a política de testes é autoria
+das IAs (verificação = assunto interno, decisões dele são de PRODUTO);
+julgamento, não pedra.
+
 **30/08 (mais tarde — item 99 FECHADO, a dieta dos juízes).** A pedido
 dele ("vamos para o item 99"), 6 frentes paralelas + fecho: os 97
 arquivos sem dono responderam a quem servem (dono 28 · lei 45 · chão
@@ -616,145 +630,14 @@ marcadas nos cabeçalhos para quem tocar (fita 3→1; chapa→costura);
 fase-da-grade desceu a bancada; voo-ida-e-volta vive. História no
 museu (`grep -n '^## Item 99' docs/PENDENCIAS-ARQUIVO.md`).
 
-**113. Os minutos dos juízes: a caçada achou ~15 e a obra corta por
-fases.** (30/08, palavras dele: *"vamos continuar tendo rodadas que
-demoram horas e horas???"* — e a cobrança direta: *"vc realmente ficou
-focado em encontrar grandes oportunidades de otimizacao?"*.) Dois
-analistas só-de-leitura sobre os seis juízes mais caros. ACHADOS: o
-preço declarado do ab-identidade nasceu velho (61 vistas, não 54 →
-~8,0 min/lado real); uma vista DUPLICADA (`ua40` ≡ `solreal40ua`,
-mesma URL — a mesma imagem capturada 4× por par, há semanas); o lado
-"antes" refeito à toa nas rodadas encadeadas (o carimbo usa o HEAD e
-devia usar a ÁRVORE; ~8 min/par); 2 capturas por vista quando 1 basta
-até haver divergência (~7,5 min/par); um boot de Chrome POR CAPTURA em
-vez de por balde (~2–4 min/par); MB1 todo em série (~2 min); a11y
-recarrega a página ~40× para trocar o que o app troca ao vivo
-(~2,7 min); sobras do item 76 no atlas-smoke (~1 min de dorme fixo
-onde `esperarCapaSair`/`esperarPor` já existem). EFEITO se tudo
-passar: rodada pesada de fechamento ~20 → ~5 min; bolsa ~45 → ~28,
-SEM perder proteção. OBRA POR FASES, cada uma com prova e re-pino de
-Custo/catraca: **F1** duplicada + esperas do atlas-smoke + verdade dos
-preços (EM OBRA); **F2** carimbo de árvore; **F3** captura adaptativa
-+ Chrome por balde (exige A/A 61/61 — "navegador limpo por captura" é
-método declarado e a mudança prova bit-identidade antes de valer);
-**F4** MB1 em baldes; **F5** a11y vivo; aposta a MEDIR: a11y em
-q=performance. **DECISÕES DELE — APROVADAS em 30/08 ("ok para
-tudo"): os três cortes entram junto com as fases.** (i) cortar 10 fotos de baixo valor do
-ab-identidade (2,9 min/par); (ii) afinar o MB1 (0,9); (iii)
-filme-ritmo de 2 s→4 s + memoria de 5→3 ciclos + espera da prova
-negativa de 18→10 s (~1,9). Porta 5173: dois vite órfãos de 29/08
-seguem vivos (o kill foi bloqueado por permissão) — as provas usam
-`APP_URL` apontando ao servidor vivo da sessão.
-
-**106. Sessões longas demais, milhões de tokens em tarefa simples —
-FECHADO em 28/08, no mesmo dia em que nasceu.** Palavras dele: *"as
-sessoes estao longas demais, gastando milhoes de tokens para tarefas
-simples"*; e a solução *"tem que ser holistica e nao focada num
-determinado harness"*. Não se apagam os testes; não se constrói um
-sistema de orçamento. A lei curta entrou no `AGENTS.md` (§1 e §18):
-obra pequena se faz sozinha; modelo caro só no diagnóstico e no
-julgamento; agente recebe pacote curto; uma falha, um conserto; a
-janela cara lê o bastão, a fila e o item da vez. Vale para qualquer
-modelo. A casa desta lei é o `AGENTS.md`, não este item.
-
-**107. Ao encerrar conversa longa, varrer o que a sessão deixou —
-FECHADO em 28/08, no mesmo dia.** Palavras dele: garantir que na
-sessão *nada tenha sido criado em duplicidade, ao invés de adaptar
-itens que já existem*, gerando um emaranhado; *não deixar código
-morto, lixo, desenho complexo de arquitetura* — o projeto é tocado
-por várias IAs e ele não programa. A lei mora no `AGENTS.md` (§13):
-cinco perguntas sobre o CONJUNTO da sessão; sessão longa manda o
-*diff* a um leitor fresco e barato, nunca a conversa; um conserto e
-fecha. Não é suíte. Não é segundo revisor da mesma prova.
-
-**102.** Girar em volta do objeto selecionado era péssimo — **FECHADO em
-26/08**. Ele decidiu o desenho no chat, e a frase é a lei: *"quero que
-seja navegação livre e sem travas para qualquer dos lados sem nenhum
-limitador de angulo ou coisa parecida"* — mais *"podemos colocar um botao
-de zerar orientacao, assim como o google maps tem um botao de norte"*. O
-dedo passou a somar num QUATERNION em torno dos eixos da TELA, sem grampo
-nenhum; a porta `?giro=` morreu com os DOIS ramos antigos; e nasceu a
-bússola, que só aparece com o horizonte torto e o endireita sem mover a
-mira. 61 vistas bit-idênticas, `atlas-smoke` com 171 vereditos, a11y
-verde. **O que sobra é o olho dele, no app, com o dedo e sem vídeo** — o
-que se julga aqui é TATO, e tato não se julga em gravação; se o que ele
-sentir não for o que a frase pedia, é item NOVO. História no ARQUIVO.
-
-**105.** A prova 19 do `atlas-smoke` (o toque duplo, no aparelho) falhava
-de vez em quando — **FECHADO em 27/08**, na primeira fatia do item **99**:
-a prova mira Marte pelo nome, espera o rótulo assentar e relê a posição
-na hora do gesto. História no ARQUIVO.
-
-**103.** A porta do BRILHO no selo parou de virar — **FECHADO em 26/08**
-(`4ce0169`). **A calibração era inocente** (medido: o defeito reproduz
-IGUAL no `aca067b^`); o culpado é a porta de duas vias, que nasceu com ele
-dentro em `dd2faeb` (item **91**) — a volta armava por *veredito vazio* em
-vez de *nada a desfazer*, e o tier abaixo de cinema trancava a luz em
-`real` para sempre. Gesto provado nos dois sentidos em navegador (prova
-**20** do `atlas-smoke`); história no ARQUIVO.
-
-**104.** A transição da sombra dos anéis para a noite estava mal feita —
-**FECHADO em 26/08**, conferido por ele na Sala de Conferência (**C14**: a
-costura, com o perfil que desce sem voltar atrás uma única vez); história no
-ARQUIVO.
-
-**110.** O voo até o corpo escolhido parecia um salto seco — palavras dele
-(29/08): *"quando clicamos em algum corpo que nao está focado, ou
-double-click, nao seria interessasnte que houvesse uma animacao até
-centralizar esse corpo no centro? hoje parece que há um salto abrupto...
-nao seria um padrao de industria?"*. **O diagnóstico:** o clique simples
-NÃO move a câmera por lei dele mesmo (item **73**, 22/08: *"um clique
-escolhe, dois vão"*) — o que salta é o GESTO DE IR (duplo clique, o botão
-⊕ Aproximar, a busca): a rampa existia e terminava exata, mas durava
-**0,5 s FIXOS**, do mergulho curto à travessia do céu inteiro — e
-travessia grande em meio segundo lê como corte. Os melhores (NASA Eyes,
-SpaceEngine) voam 1,5–4 s, proporcional à viagem. **FEITO em 29/08:** a
-duração virou função da travessia — PAN (radianos que a mira varre) e
-ZOOM (décadas de distância) somam tempo sobre o piso de 0,5 s, teto
-2,2 s (`RAMPA_MAX_S`, `atlasRig.ts`); mergulho no corpo já focado fica
-~1 s, planeta→planeta chega perto do teto; reduced-motion e `?shot=`
-seguem instantâneos; a rampa continua terminando bit a bit na pose pura
-(`?foco=` reproduzível). Guardas novas em `atlasRig.test.ts` (104/104).
-**ABERTO esperando a mão dele no app** — tato não se julga em foto
-(precedente do item 102). Se ele quiser que o clique simples TAMBÉM
-centralize (hoje só escolhe), é revisão da lei do item 73 e decisão
-dele.
-
-**A 2ª QUEIXA (29/08, mesma noite):** *"quando dou um clique simples,
-ainda nao ocorre uma transicao suave... ele centraliza num pulo"*. O
-salto do clique SIMPLES era outro mecanismo: a lei do Atlas é a câmera
-OLHAR o alvo, então ESCOLHER re-mira a vista em torno da câmera parada
-— e re-mirava NUM QUADRO (`selecionar` zerava a rampa por contrato).
-Sonda na página viva cravou: escolher uma estrela no degrau corpo de
-Saturno girava **45,5° em 17 ms**. **FEITO em 29/08:** a re-mira passa
-pela MESMA rampa proporcional (`selecionar` ganhou `rampa`, a escada a
-passa com a guarda de sempre; sem mudança perceptível segue seco —
-re-clicar não balança). Re-medido no mesmo cenário: maior giro num
-quadro **2,96°**, pico no meio da rampa (~730 ms), giro total idêntico;
-posição parada como manda o item 73; destino bit a bit o de sempre.
-Guarda nova no `atlasRig.test.ts` (105/105) e **atlas-smoke inteiro
-verde** (clique escolhe parado, duplo vai, pinça, bússola). Segue
-ABERTO esperando a mão dele.
-
-**111.** O cursor era mão aberta no céu inteiro — palavras dele (29/08):
-*"o ícone do mouse está sempre no foramto de mao... acho que talvez
-deveria mudar, como é o padrao?"*. O padrão dos mapas (Google Maps,
-NASA Eyes) tem TRÊS estados, e a casa só tinha dois: `grab` (agarrar)
-no céu e `grabbing` no arrasto — faltava `pointer` sobre o que é
-clicável. **FEITO em 29/08:** o `pointermove` (só com o ponteiro solto,
-`buttons === 0`) roda o MESMO hit-test do clique (`alvoNoPonto`, via
-fachadas `apontaAlgo` na escolha e na escada) e liga/desliga a classe
-`apontavel` direto no canvas, sem re-render; CSS em `01-base.css`, com
-o apontar ANTES do `:active` para o agarrar em curso ganhar do hover.
-Guardas no `arrastoDePonteiro.test.ts` (regra de CSS + ordem + fiação).
-ABERTO esperando o olho dele no app.
-
-**112.** A varredura das 36 horas — **FECHADO em 30/08 pelo olho e pela
-mão dele** (*"testei os 3 pontos, tudo certo"*): 2 graves (o chicote do
-clique-durante-rampa e o texto 3D engolido pelo globo na beta) e 7
-médios, todos consertados no mesmo dia em 4 frentes, cada um pinado por
-guarda com sabotagem provada; suíte 2.500/2.500. História completa no
-museu (`grep -n '^## Item 112' docs/PENDENCIAS-ARQUIVO.md`).
+**113.** Os minutos dos juízes — **FECHADO em 30/08, no mesmo dia**:
+cinco fases provadas uma a uma (A/A bit-idêntica ×2 no detector; zero
+acusações no MB1; 573=573 na acessibilidade) + os 3 cortes que ele
+aprovou ("ok para tudo"). Placar medido: bolsa 44,0→31,8 min (−28%),
+fechamento pesado ~20→8,8 min, rodadas encadeadas ~5,3 (o "antes" de
+graça pelo carimbo de árvore). As duas réguas defasadas pela lente 58°
+morreram re-derivadas da lei viva. História no museu
+(`grep -n '^## Item 113' docs/PENDENCIAS-ARQUIVO.md`).
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
