@@ -57,8 +57,12 @@ por guarda nova com sabotagem provada; suíte cheia 2.500/2.500,
 typecheck e lint limpos. Áreas varridas e LIMPAS: órbitas/cores, post,
 lente 58°; no leitor de roteiros, 1 armadilha desarmada
 (`progresso`+`intervalo`). **O item 112 tem o mapa e as 3 perguntas
-que esperam a mão/olho dele.** Commits desta rodada empurrados só ao
-`backup`; o site segue na era anterior.
+que esperam a mão/olho dele.** *(Mesmo dia, mais tarde:)* **ele testou
+os 3 pontos — "tudo certo" — o 112 FECHOU pelo olho e pela mão dele e
+mandou PUBLICAR: a main levou tudo (as levas desde `5371037` inclusas —
+110/111, a beta do 109, a lente única, o Eyes completo, as cores das
+órbitas, o HUD de fotografia e os consertos do 112). O site está na era
+atual.**
 
 **29/08 (fecho por ordem dele — "we are almost out of context").** A
 sessão parou NO MEIO da beta dos rótulos 3D (item 109): a fiação
@@ -753,47 +757,12 @@ o apontar ANTES do `:active` para o agarrar em curso ganhar do hover.
 Guardas no `arrastoDePonteiro.test.ts` (regra de CSS + ordem + fiação).
 ABERTO esperando o olho dele no app.
 
-**112. A varredura das 36 horas — dois graves confirmados, sete médios,
-tudo consertado no mesmo dia.** (30/08, pedido dele: *"faça uma varredura
-a procura de bugs de alta severidade nas implementacoes das ultimas 36
-horas"*.) Seis revisores em paralelo + céticos independentes sobre
-`1129219..HEAD`; zero achado derrubado. **O grave nº 1 era a queixa de
-29/08 renascida pelo próprio conserto dela:** `selecionar`/`focar`
-partiam do ESTADO do rig — que durante uma rampa é o DESTINO dela — e
-todo clique no meio do deslize saltava o resto da travessia num quadro
-(sonda: 50–128°); o par canônico "um clique escolhe, dois vão" caía
-SEMPRE, porque a janela do duplo (0,5 s) é menor que a rampa da seleção
-(0,5–2,2 s). **Conserto:** a rampa nova parte da pose QUE ESTÁ NA TELA
-(`poseNaTela`/`partirDaTela` no `atlasRig.ts`, espelho termo a termo da
-conta do `apply`, referencial sintético no ponto da mira); com rampa em
-voo o ramo seco é proibido por construção; re-clicar o mesmo alvo
-desliza em vez de teleportar. Junto: `pinarDistancia` deixou de engolir
-a roda durante a rampa — o pino re-mira a distância de DESTINO (o gesto
-nunca se perde, nada salta). 4 guardas novas (109/109 no
-`atlasRig.test.ts`); sabotagem provada: reverter o conserto reprova
-exatamente as 4. **O grave nº 2, na beta do item 109:** o texto 3D
-nascia com o teste de profundidade LIGADO no centro do corpo — o globo o
-engolia de perto, e como a beta cala o 2D, o corpo focado ficava SEM
-NOME. Consertado com os três irmãos da mesma família: profundidade
-desligada como no clarão (§5.15) + renderOrder acima da fita e da
-atmosfera; o LADO da vaga viaja do 2D ao 3D (`ladoEsquerdo`, re-`sync`
-só quando troca); o 2D só se cala com o pintor VIVO (`texto3d` exige
-`!!rotulos3d`; o import ganhou `.catch` — rede que falha deixa os nomes
-2D e avisa); a camada entrou no teardown auditado (e a regex do canário
-do `director.test.ts` não enxergava camada com dígito no nome —
-consertada, `rotulos3d` na lista). **Os médios:** o cursor mentia com
-gaveta aberta — agora o hover consulta `gavetaQueOToqueFecha()`, a MESMA
-guarda do clique (`gestos.test.ts` novo, 5 pinos; limitação registrada:
-gaveta aberta por teclado só atualiza o cursor no próximo movimento); e
-no leitor de roteiros `progresso`+`intervalo` compunham na ordem errada
-— intervalo recorta a fatia, progresso retempera DENTRO dela (pinado;
-nenhum roteiro atual combinava os dois, ninguém viu). Suíte cheia
-2.500/2.500, typecheck e lint limpos; varrido e LIMPO: órbitas/cores,
-post, lente 58°. **ABERTO esperando a mão e o olho dele:** (i) clicar
-noutro corpo NO MEIO do deslize — ainda chicoteia?; (ii) clicar num
-corpo e rolar a roda no mesmo segundo — responde?; (iii) beta `?r3d=1`:
-o nome aparece DE PERTO do corpo focado e no lado certo junto à borda
-direita?
+**112.** A varredura das 36 horas — **FECHADO em 30/08 pelo olho e pela
+mão dele** (*"testei os 3 pontos, tudo certo"*): 2 graves (o chicote do
+clique-durante-rampa e o texto 3D engolido pelo globo na beta) e 7
+médios, todos consertados no mesmo dia em 4 frentes, cada um pinado por
+guarda com sabotagem provada; suíte 2.500/2.500. História completa no
+museu (`grep -n '^## Item 112' docs/PENDENCIAS-ARQUIVO.md`).
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 

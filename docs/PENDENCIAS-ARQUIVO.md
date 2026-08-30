@@ -5623,3 +5623,51 @@ confirmado como a FÍSICA pedida por ele — fase de verdade (Saturno
 0,88 do lado do Sol × 0,02 contra ele), cor de verdade, e Vênus a
 "estrela" junto ao Sol como no céu real de abril/2024. Folha aceita:
 capturas/item394043-verificacao.png.
+
+## Item 112 — A varredura das 36 horas: dois graves e sete médios, consertados e fechados no mesmo dia
+
+**112. A varredura das 36 horas — dois graves confirmados, sete médios,
+tudo consertado no mesmo dia.** (30/08, pedido dele: *"faça uma varredura
+a procura de bugs de alta severidade nas implementacoes das ultimas 36
+horas"*.) Seis revisores em paralelo + céticos independentes sobre
+`1129219..HEAD`; zero achado derrubado. **O grave nº 1 era a queixa de
+29/08 renascida pelo próprio conserto dela:** `selecionar`/`focar`
+partiam do ESTADO do rig — que durante uma rampa é o DESTINO dela — e
+todo clique no meio do deslize saltava o resto da travessia num quadro
+(sonda: 50–128°); o par canônico "um clique escolhe, dois vão" caía
+SEMPRE, porque a janela do duplo (0,5 s) é menor que a rampa da seleção
+(0,5–2,2 s). **Conserto:** a rampa nova parte da pose QUE ESTÁ NA TELA
+(`poseNaTela`/`partirDaTela` no `atlasRig.ts`, espelho termo a termo da
+conta do `apply`, referencial sintético no ponto da mira); com rampa em
+voo o ramo seco é proibido por construção; re-clicar o mesmo alvo
+desliza em vez de teleportar. Junto: `pinarDistancia` deixou de engolir
+a roda durante a rampa — o pino re-mira a distância de DESTINO (o gesto
+nunca se perde, nada salta). 4 guardas novas (109/109 no
+`atlasRig.test.ts`); sabotagem provada: reverter o conserto reprova
+exatamente as 4. **O grave nº 2, na beta do item 109:** o texto 3D
+nascia com o teste de profundidade LIGADO no centro do corpo — o globo o
+engolia de perto, e como a beta cala o 2D, o corpo focado ficava SEM
+NOME. Consertado com os três irmãos da mesma família: profundidade
+desligada como no clarão (§5.15) + renderOrder acima da fita e da
+atmosfera; o LADO da vaga viaja do 2D ao 3D (`ladoEsquerdo`, re-`sync`
+só quando troca); o 2D só se cala com o pintor VIVO (`texto3d` exige
+`!!rotulos3d`; o import ganhou `.catch` — rede que falha deixa os nomes
+2D e avisa); a camada entrou no teardown auditado (e a regex do canário
+do `director.test.ts` não enxergava camada com dígito no nome —
+consertada, `rotulos3d` na lista). **Os médios:** o cursor mentia com
+gaveta aberta — agora o hover consulta `gavetaQueOToqueFecha()`, a MESMA
+guarda do clique (`gestos.test.ts` novo, 5 pinos; limitação registrada:
+gaveta aberta por teclado só atualiza o cursor no próximo movimento); e
+no leitor de roteiros `progresso`+`intervalo` compunham na ordem errada
+— intervalo recorta a fatia, progresso retempera DENTRO dela (pinado;
+nenhum roteiro atual combinava os dois, ninguém viu). Suíte cheia
+2.500/2.500, typecheck e lint limpos; varrido e LIMPO: órbitas/cores,
+post, lente 58°. Commits: `6daf9c1` (rig), `b375751` (beta 3D),
+`617a28b` (cursor), `5443bfd` (leitor), `2ac65b5` (caderno).
+
+**O FECHO (30/08, pelo olho e pela mão dele):** as 3 perguntas voltaram
+confirmadas — *"testei os 3 pontos, tudo certo"* — (i) clicar noutro
+corpo no meio do deslize desliza sem chicote; (ii) a roda logo após o
+clique responde; (iii) a beta `?r3d=1` mostra o nome de perto e no lado
+certo junto à borda direita. Publicado na main por ordem dele no mesmo
+dia.
