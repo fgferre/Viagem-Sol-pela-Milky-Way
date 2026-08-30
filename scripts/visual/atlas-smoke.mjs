@@ -136,8 +136,10 @@ try {
   //
   // `jd=EPOCA` pina o relógio do céu: é a segunda variável que a coda
   // move sozinha, e sem o pino ela se disfarçava de defeito do Sol (ver
-  // a prova 3 no cabeçalho). O `?jd=` tem precedência declarada sobre a
-  // troca da coda — é a mesma porta que a prova 8 usa.
+  // a prova 3 no cabeçalho). Desde o conserto do item 108 (30/08) a
+  // porta `?jd=` manda no ATLAS (reaplicada ao entrar, `aplicarPortaJd`)
+  // e nunca mais no filme — o filme corrige o próprio relógio todo
+  // quadro. É a mesma porta que a prova 8 usa.
   const PIN_DO_TRIO = `${PIN}&jd=EPOCA`;
   const doAtlas = new Map();
   const relogios = new Map();

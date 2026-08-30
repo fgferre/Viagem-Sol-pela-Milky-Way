@@ -972,8 +972,15 @@ do relógio:** mesmo no caminho CERTO a Lua fica fora do quadro nos
 últimos 6 s (t=187 ela está ATRÁS da câmera, 133,9°; t=193 a 32,9°,
 logo acima da borda); o fly-by dela é em t≈183, no centro. Pode ser a
 outra metade da frase dele ("não mostra mais direito no final A LUA e
-a terra") — perguntado a ele em 30/08; obra de roteiro só com a
-palavra dele.
+a terra") — perguntado a ele em 30/08, **e a palavra veio no mesmo
+dia, com lição junto:** *"nunca travamos nada, se for detectada alguma
+melhoria temos a obrigacao de sempre trazer. como te disse vc mesmo
+que cria as travas... vc detectou o problema, vamos consertar, vai
+melhorar o roteiro"*. A obra do roteiro do take final está ORDENADA:
+o fim mostra a Lua E a Terra no quadro (a composição fina é mecânica
+nossa; ele julga por foto e no filme). A Lua em t=193 está a 32,9° da
+mira com meio-quadro de ~32° — logo acima da borda: o ajuste é de
+enquadramento, não de trajeto.
 
 
 **109. Os labels 3D do outro projeto — trazer ou não, com medida.**
