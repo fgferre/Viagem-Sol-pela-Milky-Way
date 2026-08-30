@@ -464,15 +464,25 @@ esmaeça a grandeza da cena galáctica e do starfield, exuberante... nada de
 efeitos de pupila ou sei lá como vc chama isso..."*
 
 Medido: era a pupila (`?pupila=1`), 16 stops ao focar Sirius. No app limpo
-ela está desligada e nenhuma camada esmaece. Item fica aberto até ele
-conferir no app limpo.
+ela está desligada e nenhuma camada esmaece.
+
+**RE-VERIFICADO em 29/08, por mecanismo:** os 9 uniforms numéricos do
+campo estelar são IDÊNTICOS com e sem estrela em foco — não existe
+botão de esmaecer vivo (a pupila morreu no M2, com lápide guardada por
+`simbolosProibidos.test.ts`). Evidência na folha
+`capturas/item394043-verificacao.png`. **Espera o olho dele para
+fechar.**
 
 **40. Dois Sóis com rótulo ao mesmo tempo.**
 Palavras do dono: *"percebi tb que existem 2 sois (com tags) simultaneos
 na cena. será que tem mais outras duplciacoes? ou isso já está no pipeline
 para ser resovido?"*
 
-O rótulo dobrado não se reproduziu. *(M1, 16/08: o Sol continua sendo
+O rótulo dobrado não se reproduziu. **RE-VERIFICADO em 29/08, por
+censo:** em cinco endereços (abertura, foco-sol, corpo do Sol, longe,
+sirius) NUNCA há mais de UM rótulo "SOL" desenhado — e onde o Sol não é
+assunto, há zero. Folha `capturas/item394043-verificacao.png`; **espera
+o olho dele para fechar.** *(M1, 16/08: o Sol continua sendo
 bola 3D + ponto, mas agora os dois são UMA repartição — o ponto cede
 exatamente na medida em que a bola entra, pesos somando 1; e o terceiro
 desenhista, o clarão de autor do `SunStar`, morreu.)* O borrão branco da
@@ -520,9 +530,16 @@ As duas coisas JÁ SÃO o modelo, verificadas ao vivo em 16/08:
   Terra levemente azulada; Vênus clara — e o brilho dela vem de H
   (albedo × tamanho) + proximidade, como ele descreveu.
 
-O que a verificação REVELOU de quebra: na foto do lado noturno quem
-domina o quadro é o HALO do Sol a 11,5 UA (~160 px) — o rabo do item 3
-fotobombando a cena. É a fila M1/M2 de novo, por outro ângulo.
+O que a verificação de 16/08 revelou de quebra (o halo fotobombando)
+morreu com o M2 e a régua da luz.
+
+**RE-VERIFICADO em 29/08, com fotos novas na cena de hoje** (folha
+`capturas/item394043-verificacao.png`): Saturno visto do lado do Sol a
+2 UA aparece aceso (fase 0,88); visto CONTRA o Sol some no clarão (fase
+0,02 — ninguém reflete de todos os lados); e Vênus, da Terra, é a
+"estrela" junto ao Sol — como no céu real de abril/2024, perto da
+conjunção. A física que ele descreveu É o modelo. **Espera o olho dele
+para fechar os três.**
 
 **52. A conferência do dono no app com o padrão novo da luz.**
 A queixa que abriu a rodada da luz era do app com o desenho velho; o
