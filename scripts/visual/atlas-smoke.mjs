@@ -1299,6 +1299,21 @@ try {
   // nada; estes ganharam dente novo no mesmo commit em que a lei mudou.
   await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
   await sessao.assentar();
+  // ---- item 96: o COMBINADO "o Sol está na origem" deixa de ser só
+  // combinado. A cena inteira depende disso (o -centro normalizado dos
+  // resolvidos, o vértice 0 dos planetas, a ORIGEM do enquadramento) e
+  // a malha do Sol fica lá por OMISSÃO — ninguém escreve o
+  // group.position dela. Se um dia alguém transladar a raiz ou
+  // posicionar a malha, a luz do app inteiro discordaria de onde o Sol
+  // é desenhado, em silêncio (o modo de falha do item 91). Uma linha,
+  // no app VIVO, e o silêncio acaba.
+  const solNaOrigem = JSON.parse(await sessao.js(
+    "JSON.stringify((() => { const p = window.__director.sun.group.position; return [p.x, p.y, p.z]; })())"
+  ));
+  conferir(
+    solNaOrigem.every((v) => v === 0),
+    `o Sol ESTÁ na origem — group.position = [${solNaOrigem.join(', ')}] (item 96)`
+  );
   // a capa da abertura cobre a cena por alguns segundos DEPOIS de a
   // prontidão fechar (ver o NORTE, "Como rodar") — e é o desenho dos
   // rótulos que se mede aqui, não a prontidão

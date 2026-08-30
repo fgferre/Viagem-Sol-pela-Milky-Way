@@ -423,7 +423,16 @@ class ClaraoDoCampo extends Pass {
       LIMIAR_DO_CAMPO
     );
     const m = this.maquina();
-    if (!m.compositeMaterial || !m.renderTargetsHorizontal?.length) {
+    if (
+      !m.compositeMaterial ||
+      !m.renderTargetsHorizontal?.length ||
+      !m.renderTargetsVertical?.length ||
+      !m.renderTargetBright ||
+      !m.materialHighPassFilter ||
+      !m.highPassUniforms?.tDiffuse ||
+      !m.separableBlurMaterials?.length ||
+      !(m.nMips > 0)
+    ) {
       throw new Error('ClaraoDoCampo: o UnrealBloomPass mudou de forma');
     }
     // a MESMA curva do passa-alta da máquina da lei: as duas comprimem a
@@ -439,8 +448,76 @@ class ClaraoDoCampo extends Pass {
   private maquina() {
     return this.bloom as unknown as {
       compositeMaterial: THREE.ShaderMaterial;
-      renderTargetsHorizontal: Array<{ texture: THREE.Texture }>;
+      renderTargetsHorizontal: THREE.WebGLRenderTarget[];
+      renderTargetsVertical: THREE.WebGLRenderTarget[];
+      renderTargetBright: THREE.WebGLRenderTarget;
+      materialHighPassFilter: THREE.ShaderMaterial;
+      highPassUniforms: Record<string, { value: unknown }>;
+      separableBlurMaterials: THREE.ShaderMaterial[];
+      nMips: number;
+      threshold: number;
+      strength: number;
+      radius: number;
+      bloomTintColors: THREE.Vector3[];
+      clearColor: THREE.Color;
     };
+  }
+
+  /**
+   * AS TRÊS ETAPAS DA MÁQUINA, SEM A SOMA FINAL (item 94). O
+   * `UnrealBloomPass.render` termina SEMPRE somando o clarão de volta no
+   * buffer de entrada — e aqui esse buffer é o RASCUNHO, cuja soma
+   * ninguém lê: o passo 3 deste passe recorta direto de
+   * `renderTargetsHorizontal[0]`. Era um passe aditivo de tela cheia por
+   * quadro jogado fora — 1,43× a área do quadro desde a faixa de guarda.
+   * O preço declarado é depender da forma interna do passe, que o
+   * construtor já cobra por `throw`; o corpo abaixo é o do
+   * `UnrealBloomPass.render` dos addons, etapa por etapa, menos o blend.
+   */
+  private soOClarao(renderer: THREE.WebGLRenderer) {
+    const m = this.maquina();
+    // as direções são estáticos de runtime que o .d.ts dos addons não
+    // declara — o mesmo tipo de escape do `maquina()`
+    const { BlurDirectionX, BlurDirectionY } = UnrealBloomPass as unknown as {
+      BlurDirectionX: THREE.Vector2;
+      BlurDirectionY: THREE.Vector2;
+    };
+    renderer.getClearColor(this.corDeLimpezaVelha);
+    const alphaVelho = renderer.getClearAlpha();
+    renderer.setClearColor(m.clearColor, 0);
+    // 1. passa-alta do rascunho
+    m.highPassUniforms.tDiffuse.value = this.rascunho.texture;
+    m.highPassUniforms.luminosityThreshold.value = m.threshold;
+    this.quad.material = m.materialHighPassFilter;
+    renderer.setRenderTarget(m.renderTargetBright);
+    renderer.clear();
+    this.quad.render(renderer);
+    // 2. a pirâmide de borrões progressivos
+    let entrada: THREE.WebGLRenderTarget = m.renderTargetBright;
+    for (let i = 0; i < m.nMips; i++) {
+      const blur = m.separableBlurMaterials[i];
+      this.quad.material = blur;
+      blur.uniforms.colorTexture.value = entrada.texture;
+      blur.uniforms.direction.value = BlurDirectionX;
+      renderer.setRenderTarget(m.renderTargetsHorizontal[i]);
+      renderer.clear();
+      this.quad.render(renderer);
+      blur.uniforms.colorTexture.value = m.renderTargetsHorizontal[i].texture;
+      blur.uniforms.direction.value = BlurDirectionY;
+      renderer.setRenderTarget(m.renderTargetsVertical[i]);
+      renderer.clear();
+      this.quad.render(renderer);
+      entrada = m.renderTargetsVertical[i];
+    }
+    // 3. o composite da pirâmide — o que o passo seguinte deste passe lê
+    this.quad.material = m.compositeMaterial;
+    m.compositeMaterial.uniforms.bloomStrength.value = m.strength;
+    m.compositeMaterial.uniforms.bloomRadius.value = m.radius;
+    m.compositeMaterial.uniforms.bloomTintColors.value = m.bloomTintColors;
+    renderer.setRenderTarget(m.renderTargetsHorizontal[0]);
+    renderer.clear();
+    this.quad.render(renderer);
+    renderer.setClearColor(this.corDeLimpezaVelha, alphaVelho);
   }
 
   /**
@@ -548,8 +625,10 @@ class ClaraoDoCampo extends Pass {
     this.cena.background = fundo;
     renderer.setClearColor(this.corDeLimpezaVelha, alphaVelho);
 
-    // 2. a máquina do campo, que já é de filme, sobre o rascunho inteiro
-    this.bloom.render(renderer, this.rascunho, this.rascunho, 0, false);
+    // 2. a máquina do campo, que já é de filme, sobre o rascunho — as
+    //    três etapas que importam, SEM a soma final que ninguém lia
+    //    (item 94; era `bloom.render(...)` inteiro)
+    this.soOClarao(renderer);
 
     // 3. só o clarão, somado ao quadro principal — e RECORTADO: o
     //    composite cobre o rascunho, o quadro é a janela do meio dele

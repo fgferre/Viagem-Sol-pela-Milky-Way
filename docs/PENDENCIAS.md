@@ -1032,37 +1032,22 @@ se aprovada, é obra GRANDE (anuncia-se antes).
 conferido por ele na SEGUNDA LEVA da Sala de Conferência (**C12**);
 história no ARQUIVO.
 
-**96.** (Da mesma auditoria, 25/08. **Risco latente, não defeito visível.**)
-**"O Sol está na origem" é combinado, não é verificado.** A cena inteira
-depende disso: os quatro corpos resolvidos fazem `-centro` normalizado
-sem consultar ninguém, a camada de planetas põe o Sol no vértice 0 em
-`(0,0,0)`, o enquadramento usa a constante `ORIGEM`, e a malha do Sol
-(`StellarBody`) fica na origem por OMISSÃO — o `group.position` dela
-nunca é escrito. Não há `DirectionalLight` nem `PointLight` em `src`
-inteiro, então não existe uma segunda fonte hoje. **Mas nada afirma o
-combinado**: bastaria alguém transladar a raiz da cena ou posicionar a
-malha do Sol para a luz de todo o app discordar de onde o Sol é
-desenhado, em silêncio, e o modo de falha seria exatamente o do item 91.
-É um teste de uma linha (`sun.group.position` é `ORIGEM`) para quem
-estiver em `director/` — o arquivo não é de quem levantou isto.
+**96.** "O Sol está na origem" era combinado, não verificado —
+**FECHADO em 29/08**: virou veredito do `atlas-smoke`, no app VIVO
+(`window.__director.sun.group.position` tem de ser exatamente
+[0, 0, 0]); quem transladar a raiz da cena ou posicionar a malha do
+Sol agora quebra um juiz em vez de quebrar a luz em silêncio.
 
-**94.** (Achado pela auditoria da rodada da faixa de guarda, 25/08.) **O
-segundo cobertor compõe um quadro inteiro que ninguém lê — e agora ele é
-1,43× mais caro.** O `UnrealBloomPass` (three/addons) termina sempre
-somando o clarão de volta no `readBuffer` que recebeu; o `ClaraoDoCampo`
-passa o RASCUNHO nos dois argumentos, então essa soma final cai no
-próprio rascunho e morre ali — o passe seguinte lê `renderTargetsHorizontal[0]`
-direto, pelo recorte. É um passe aditivo de tela cheia por quadro,
-jogado fora. Já era desperdício antes; com a faixa de guarda o rascunho
-tem 1,43× a área do quadro (a 1920×1080), então o desperdício cresceu na
-mesma razão. **É ganho de graça para quem pegar:** não muda um pixel do
-que se vê, só para de desenhar o que ninguém amostra. O caminho conhecido
-é não chamar `bloom.render` inteiro — repetir as três etapas que
-importam (passa-alta, pirâmide, composite) sem a soma final —, e o preço
-disso é passar a depender da forma interna do passe, que hoje já é
-cobrada por `throw` no construtor. Medir com `gpu-profile` antes e
-depois; o rótulo do passe é `pos:bloom-blend`, que na medição de 25/08
-aparecia com ~1,6 ms.
+**94.** O segundo cobertor compunha um quadro que ninguém lia —
+**FECHADO em 29/08**: o `ClaraoDoCampo` deixou de chamar o
+`bloom.render` inteiro e repete as três etapas que importam
+(passa-alta, pirâmide, composite) sem a soma final; a dependência da
+forma interna já era cobrada por `throw` no construtor, agora sobre
+todos os campos usados. MEDIDO a 1920×1080 em `?t=100`:
+`pos:bloom-blend` caiu de 2,04 para 1,26 ms (×0,5 → ×0,2 por quadro —
+o que sobrou é o blend legítimo da máquina da lei), e o A/B sentinela
+deu **bit-idêntico nas 4 vistas** (sol, soldisco, hero8, ua150).
+Rastros: `capturas/item94-gpu-{antes,depois}.txt` e o carimbo do ab-identidade.
 
 
 **22.** 35 imagens de referência citadas que não existem, e as 6 fotos
