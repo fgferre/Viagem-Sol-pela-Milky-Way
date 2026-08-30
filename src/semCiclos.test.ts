@@ -1,3 +1,4 @@
+// Serve: lei — o src/ nunca fecha ciclo de import; a varredura é permanente, não lembrança de auditoria
 // ============================================================
 // O `src/` NÃO TEM CICLO DE IMPORT — varrido, não lembrado.
 //

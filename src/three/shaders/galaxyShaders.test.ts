@@ -1,3 +1,4 @@
+// Serve: lei — ?samples= tem teto além do piso: nunca escreve notação científica no shader nem trava a GPU
 // ============================================================
 // O KNOB `?samples=` NÃO PODE ESCREVER QUALQUER COISA NO FONTE.
 //

@@ -1,3 +1,4 @@
+// Serve: chão — a régua 3 casa corpo com alvo pelo pixel; mover o ALVO, não a mancha, tem de reprovar
 // A RÉGUA 3 medida sem GPU — as funções puras de `planeta-pixel.mjs` contra
 // imagens fabricadas aqui, onde a resposta certa é conhecida por construção.
 //

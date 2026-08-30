@@ -1,3 +1,4 @@
+// Serve: lei — todo controle que muda a imagem vira desvio declarado no selo, e toda porta de URL lida no código tem entrada no registro
 // ============================================================
 // O SELO SÓ VALE SE NÃO PUDER ENVELHECER CALADO. São dois testes-tranca
 // (D1) e o resto é comportamento:

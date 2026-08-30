@@ -1,3 +1,4 @@
+// Serve: chão — o mesmo giro vale o mesmo zoom em qualquer navegador, a inércia é forma fechada (não v·dt), e a roda escreve só distância, nunca foco nem degrau
 // ============================================================
 // O ZOOM DA RODA — bancada. Ela substitui a de `rodaDaEscada.test.ts`,
 // que morreu junto com o tradutor roda→degrau (item 73), e cobra o que

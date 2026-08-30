@@ -1,3 +1,4 @@
+// Serve: chão — cada definição do medidor de luz do A/B tem a conta ao lado, para nenhuma delas se afrouxar em silêncio
 // ============================================================
 // O JUIZ DO MEDIDOR — cada definição do A/B de luz num quadro cuja
 // resposta se sabe à mão.

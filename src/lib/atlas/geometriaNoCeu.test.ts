@@ -1,3 +1,4 @@
+// Serve: lei — a velocidade orbital e a geometria vista da Terra (fases, elongação) batem com os extremos publicados do céu real
 // ============================================================
 // O CANAL VIVO — a velocidade que estava no `.bin` sem consumidor e a
 // geometria no céu vista da TERRA.

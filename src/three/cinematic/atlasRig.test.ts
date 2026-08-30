@@ -1,3 +1,4 @@
+// Serve: lei — a geometria do rig do Atlas (enquadramento, giro livre sem grampo, bússola) é sempre a mesma conta
 // ============================================================
 // O ENQUADRAMENTO PRIVILEGIADO é conta, não gosto — e é por isso que
 // ele é função pura e tem oráculo. O oráculo aqui não repete a

@@ -1,3 +1,5 @@
+// Serve: lei — o céu interno contra o panorama ESO: 6 faces costuradas e os cinco termos da régua
+// Custo: 0,7 min
 // Gate da vista interna: captura as 6 faces do cubo do céu a partir do
 // Sol, costura, mede contra o panorama ESO e imprime os termos.
 //

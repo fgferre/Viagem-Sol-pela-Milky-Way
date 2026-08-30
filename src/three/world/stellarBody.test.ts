@@ -1,3 +1,4 @@
+// Serve: chão — os literais de SOL_PARAMS e as cirurgias no texto do Sol vendorizado não divergem do que eram antes
 // ============================================================
 // Oráculo de `StellarParams` (Onda 3, fase 2).
 //

@@ -1,3 +1,4 @@
+// Serve: lei — a segunda lei de luz (Sol, lanterna, terminador, véu) roda dentro do próprio shader, não de uma cópia da conta
 // ============================================================
 // A RECEITA DO GLOBO — os juízes da segunda lei de luz (itens 91 e 93).
 //

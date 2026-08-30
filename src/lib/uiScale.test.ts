@@ -1,3 +1,4 @@
+// Serve: chão — todo font-size do HUD reage à raiz e a quebra do celular usa o mesmo número do TypeScript; os dois já divergiram
 // ============================================================
 // A ESCALA DA UI — a leitura da porta e A REGRA DO CSS.
 //

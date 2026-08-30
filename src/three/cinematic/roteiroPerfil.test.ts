@@ -1,3 +1,4 @@
+// Serve: dono — a frente é a visão principal e nenhum trecho do roteiro fica parado por 4 s ou mais
 // A LEI DO DONO, EXECUTÁVEL — e a mesa de despejo do perfil.
 //
 // Duas leis ditas em 19/08, reprovando o corte antigo:

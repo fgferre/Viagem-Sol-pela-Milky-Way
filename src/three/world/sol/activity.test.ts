@@ -1,3 +1,4 @@
+// Serve: lei — o estado das regiões ativas do Sol é função do instante, nunca do caminho por onde se chega até ele
 // A SIMETRIA DO SEEK — o oráculo que o item 5 comprou.
 //
 // A promessa é uma frase: o estado das regiões ativas num instante é o

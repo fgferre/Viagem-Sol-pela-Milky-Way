@@ -1,3 +1,4 @@
+// Serve: lei — a ficha monta completa, honesta e silenciosa para os 39 alvos, com a efeméride e o corpos.json reais
 // ============================================================
 // A FICHA — a montagem julgada com a efeméride REAL e o `corpos.json` real.
 // O que se cobra aqui é o contrato que a tela depende: completude (todo

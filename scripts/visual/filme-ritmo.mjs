@@ -1,3 +1,5 @@
+// Serve: dono — onde olhar na revisão de ritmo: quanto a imagem muda por segundo no corte inteiro
+// Custo: ~2,3 min no passo padrão (extrapolado de 10 quadros)
 // A EXIBIÇÃO COMPLETA, MEDIDA — o instrumento da revisão de ritmo.
 //
 //   node scripts/visual/filme-ritmo.mjs

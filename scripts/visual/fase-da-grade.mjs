@@ -1,3 +1,7 @@
+// Serve: lei — o lastro da aritmética de fase do MB1: a soleira provada na grade, com o canto (0,5; 0,5) dentro
+// Custo: ~0,1 min (estimado — medir na próxima corrida; conta pura, sem navegador)
+// Bancada desde o fechamento do item 99 (30/08): a soleira é cobrada na
+// suíte (estabilidade-temporal.test.mjs); aqui só se imprime a tabela.
 // ============================================================
 // A FASE DA GRADE — o LASTRO da aritmética de fase do MB1.
 //

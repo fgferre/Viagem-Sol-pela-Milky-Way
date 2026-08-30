@@ -1,3 +1,4 @@
+// Serve: lei — toda sigla de constelação usada no catálogo vivo tem entrada nas 88, sem repetir
 // ============================================================
 // A TABELA DAS 88 — cobrada contra o CATÁLOGO de verdade, não contra si
 // mesma. O que pode dar errado aqui é uma sigla viva no `stars_meta.json`

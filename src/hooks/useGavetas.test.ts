@@ -1,3 +1,4 @@
+// Serve: chão — as quatro gavetas abrem uma de cada vez, o ⚙ Ajustes e a ficha resistem à troca de fase, e arrastar a folha 64 px para baixo fecha
 // ============================================================
 // AS QUATRO GAVETAS — as regras, não o React (item 62, 23/08).
 //

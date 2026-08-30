@@ -1,3 +1,4 @@
+// Serve: lei — a ponte magnitude↔fluxo é sempre a mesma (F1 inerte) e o fluxo se conserva bit a bit na troca disco↔ponto
 // ============================================================
 // A UNIDADE DE LUZ — o oráculo que faltava, e a dívida com número.
 //

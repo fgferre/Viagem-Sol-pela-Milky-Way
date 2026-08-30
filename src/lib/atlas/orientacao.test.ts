@@ -1,3 +1,4 @@
+// Serve: lei — o spin e o polo de cada corpo batem com o GMST e com o catálogo IAU que orientacao.ts porta
 // ============================================================
 // Porte dos testes de CONTRATO de bodyOrientation.test.ts do doador
 // (atlas-orbital), julgando orientacao.ts puro — sem cena, sem three.

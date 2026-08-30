@@ -1,3 +1,4 @@
+// Serve: lei — o sub-ponto solar de cada corpo bate com o JPL Horizons, e o relógio implicado por todos os corpos concorda
 // ============================================================
 // ORÁCULO PORTADO de atlas-orbital/src/lib/subSolarPoint.test.ts —
 // onde o Sol está a pino, julgado contra o NASA JPL Horizons.

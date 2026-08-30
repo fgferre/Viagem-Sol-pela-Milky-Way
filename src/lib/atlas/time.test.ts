@@ -1,3 +1,4 @@
+// Serve: lei — a conversão de tempo (JD, TDB, ΔT, GMST) bate com a tabela publicada de Espenak & Meeus e o exemplo resolvido de Meeus
 // ============================================================
 // VENDORIZADO VERBATIM do atlas-orbital (src/lib/orbital/time.test.ts).
 // Oráculo do conversor único de tempo (src/lib/atlas/time.ts, regra M6

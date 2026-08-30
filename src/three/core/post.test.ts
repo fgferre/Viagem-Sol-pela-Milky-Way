@@ -1,3 +1,4 @@
+// Serve: chão — a faixa de guarda do campo e a porta ?nobloom continuam com o tamanho e o alcance que a auditoria mediu depois do buraco
 // ============================================================
 // AS DUAS GUARDAS DO PÓS — a faixa de guarda do campo (item 70) e a porta
 // `?nobloom` (item 72).

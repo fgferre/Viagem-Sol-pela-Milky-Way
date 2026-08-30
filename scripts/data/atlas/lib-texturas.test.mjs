@@ -1,3 +1,4 @@
+// Serve: chão — a escada de texturas nunca faz upscale, o host fica na allowlist do item 13 e o webp só sobrevive mais leve
 // ============================================================
 // Oráculos das decisões puras do pipeline de texturas (Onda 6,
 // F2a). Cada bloco pina uma lição do checklist pré-fusão ou do

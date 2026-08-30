@@ -1,3 +1,4 @@
+// Serve: chão — a régua da luz mede o disco real certo e lê o quadro certo; se uma das duas contas mentir, o item 3 fica sem juiz
 // As duas contas PURAS da régua da luz — as que julgam sem subir Chrome.
 //
 // A régua inteira não é testável aqui (ela captura), mas as duas funções que

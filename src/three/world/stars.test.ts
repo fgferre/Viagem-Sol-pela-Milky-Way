@@ -1,3 +1,4 @@
+// Serve: lei — o canal aFocus escreve idempotente e a troca de qualidade nunca recria a geometria (D8)
 // ============================================================
 // Oráculo do campo de catálogo (Onda 3, fase 3; podado no M2 da
 // LEI-DA-ESTRELA).

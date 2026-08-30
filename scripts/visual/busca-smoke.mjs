@@ -1,3 +1,5 @@
+// Serve: dono — a paleta acha, o ?foco= reabre a mesma vista e a ficha diz o que ele pediu
+// Custo: 1,9 min
 // A BUSCA E O DEEP-LINK DO FOCO, em navegador real (Onda 5, F3).
 //
 //   node scripts/visual/busca-smoke.mjs

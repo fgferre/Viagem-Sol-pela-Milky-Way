@@ -1,3 +1,4 @@
+// Serve: chão — o MB1 mede o mesmo resíduo em cena fabricada: passa estável, reprova o salto no passo certo e suspende o que não deve julgar
 // O ORÁCULO DO MB1 — o miolo do juiz de estabilidade temporal, julgado sem
 // navegador nenhum.
 //

@@ -1,3 +1,5 @@
+// Serve: dono — a perna do celular do a11y: o modo inteiro num aparelho, alças, folha e céu
+// Custo: 0,0 min (dentro do a11y.mjs — uma corrida só)
 // O JUIZ DO HUD DO CELULAR (item 62) — a perna de aparelho do `a11y.mjs`.
 //
 //   não se roda sozinho: quem o chama é `scripts/visual/a11y.mjs`

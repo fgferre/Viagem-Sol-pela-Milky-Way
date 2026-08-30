@@ -1,3 +1,5 @@
+// Serve: chão — ida e volta nos MESMOS 34 degraus: transição e histerese não travam estado entre os sentidos
+// Custo: 1,0 min
 // ============================================================
 // O VOO DE IDA E VOLTA — a bancada que enxerga MOVIMENTO (item 11).
 //

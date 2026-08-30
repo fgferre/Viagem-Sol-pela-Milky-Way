@@ -1,3 +1,4 @@
+// Serve: chão — o veredito do md5 nunca fica em silêncio: vista só de um lado é NOVA ou AUSENTE, nunca some da leva
 // O VEREDITO da leva de md5, sem subir Chrome e sem tocar em disco.
 //
 // Existe porque o defeito que ele fecha era invisível por construção: o laço

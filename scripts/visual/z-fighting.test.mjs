@@ -1,3 +1,4 @@
+// Serve: chão — o contador de alternantes tem dente: pixel que salta conta, AA de 3 níveis não, e o auto-teste sintético prova os dois lados
 // O instrumento de z-fighting sem GPU: o sintético tem de ter dentes.
 import { describe, expect, it } from 'vitest';
 import {

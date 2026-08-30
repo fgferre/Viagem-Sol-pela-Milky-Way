@@ -1,3 +1,4 @@
+// Serve: chão — o veredito do pop na borda reprova queda de golpe, aprova saída suave e não finge medir o que não cruzou
 // O juiz do ponto na borda, sem Chrome: curvas fabricadas com a
 // resposta ao lado.
 import { describe, expect, it } from 'vitest';

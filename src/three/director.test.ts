@@ -1,3 +1,4 @@
+// Serve: chão — cada buraco achado por auditoria ou sabotagem no Director (desmonte esquecido, falha muda, porta ?calib= morta, fase digitada) continua fechado
 // ============================================================
 // O DESMONTE DO DIRECTOR, cobrado por VARREDURA e não por lista.
 //

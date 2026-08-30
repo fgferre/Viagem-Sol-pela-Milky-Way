@@ -1,3 +1,5 @@
+// Serve: chão — o passo depois do DIFERE: quantos pixels, de quanto e onde
+// Custo: 0,1 min
 // O passo seguinte a "DIFERE": QUANTOS pixels, de QUANTO, e ONDE.
 //
 //   node scripts/visual/diff-pixel.mjs capturas/ab-antes-sol-0.png capturas/ab-depois-sol-0.png

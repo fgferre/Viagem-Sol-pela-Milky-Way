@@ -1,3 +1,4 @@
+// Serve: lei — a linha de órbita nasce da efeméride viva e a fita que a desenha obedece à lei do pixel CSS
 // ============================================================
 // AS LINHAS DE ÓRBITA (item 77) — julgadas contra a efeméride REAL da
 // casa, nunca contra um dublê. É o que o teste da ficha já faz

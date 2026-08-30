@@ -1,3 +1,5 @@
+// Serve: dono — o voo livre recebe bem: convite, furo ancorado, captura de ponteiro opt-in e nenhuma tecla presa
+// Custo: 0,6 min
 // O SMOKE DO VOO LIVRE — convite, Spotlight e captura de ponteiro (F5).
 //
 //   node scripts/visual/voo-smoke.mjs

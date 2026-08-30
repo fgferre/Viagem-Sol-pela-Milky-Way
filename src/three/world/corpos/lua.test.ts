@@ -1,3 +1,4 @@
+// Serve: lei — a Lua obedece Lommel-Seeliger derivado por quadratura, a libração do kernel e a cadeia de luz heliocêntrica
 // ============================================================
 // A LUA RESOLVIDA (F2b) — os cinco juízes do módulo:
 //

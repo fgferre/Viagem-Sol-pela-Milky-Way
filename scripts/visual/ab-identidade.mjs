@@ -1,3 +1,5 @@
+// Serve: chão — mudança que move imagem não passa calada: md5 das 54 vistas, antes × depois
+// Custo: 7,1 min por lado (SMOKE=1: 0,8 min por lado)
 // Prova de que uma mudança NÃO mexeu na imagem: md5 das mesmas vistas antes
 // e depois.
 //

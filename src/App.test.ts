@@ -1,3 +1,5 @@
+// Serve: chão — ?loader= só arma atrás do ?shot= e nunca vaza no link copiado; a lista de reservas dos rótulos cobre o HUD fixo
+// Mordida: justificada — pina dois defeitos pontuais de um componente de ~1.100 linhas; o comportamento largo do App é dos juízes de navegador (a11y, atlas-smoke), e sabotagem fora dos pinos não é deste arquivo
 // ============================================================
 // App.tsx por texto-fonte — o App é DOM de ponta a ponta e o runner da
 // casa é `node`, então o que ele decide se pina aqui como a "fiação no

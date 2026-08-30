@@ -1,3 +1,4 @@
+// Serve: chão — os mesmos consertos dos gigantes (ganho de visita, tradução) não regridem nos rochosos
 // ============================================================
 // OS ROCHOSOS (F3+F5) — os juízes do módulo genérico:
 //

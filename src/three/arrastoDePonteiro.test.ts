@@ -1,3 +1,4 @@
+// Serve: chão — o segundo dedo não contamina o gesto, cancelar solta a cena, só o botão principal arrasta, e o clique curto distingue dedo de mouse
 // ============================================================
 // OS QUATRO DEFEITOS DE PONTEIRO, um oráculo cada. Todos confirmados
 // por auditoria em 2026-08-12 e fechados em 2026-08-13.

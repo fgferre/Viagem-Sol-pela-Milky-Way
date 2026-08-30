@@ -1,3 +1,4 @@
+// Serve: lei — as matrizes do frame galáctico acham Sgr A* e o polo eclíptico nos ângulos publicados, e a ponte cena↔eclíptica é reversível
 // ============================================================
 // Gate da onda para o frame galáctico (TAREFA G): dois faróis no céu
 // real — Sgr A* e o polo eclíptico norte — mais a prova de construção

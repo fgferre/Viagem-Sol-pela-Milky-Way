@@ -1,3 +1,8 @@
+// Serve: dono — a fita de órbita sem colar de contas nas juntas ("lindas como as do NASA Eyes")
+// Custo: ~0,3 min (estimado — medir na próxima corrida)
+// Fusão marcada (item 99, 30/08): beira+dobra+colar viram UM juiz da
+// fita numa corrida só (3 boots de Chrome → 1) — executa quem tocar
+// qualquer um dos três.
 // ============================================================
 // O JUIZ DO COLAR — a fita de órbita tem contas de luz nas juntas?
 //

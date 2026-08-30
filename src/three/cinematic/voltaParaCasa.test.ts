@@ -1,3 +1,4 @@
+// Serve: dono — a coda pousa em casa como ele pediu: raspão na Lua, chegada pelo escuro, Terra grande com os polos para cima
 // O JUIZ DA VOLTA PARA CASA (coda de 19/08).
 //
 // Duas coisas se cobram aqui, e nenhuma é estética:

@@ -1,3 +1,4 @@
+// Serve: lei — o MotorEfemerides reproduz os fixtures NASA JPL Horizons dentro dos limiares do doador, corpo a corpo e época a época
 // ============================================================
 // ORÁCULO PORTADO de atlas-orbital/src/lib/orbital/regression.test.ts
 // (+ o porte de heliocentric.test.ts ao final) — o juiz numérico da

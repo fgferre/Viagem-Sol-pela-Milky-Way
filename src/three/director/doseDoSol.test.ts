@@ -1,3 +1,4 @@
+// Serve: lei — a dose de ocupação do arranque só cresce e termina em 1 exato, nunca empurra o Sol para trás
 // A DOSE DO ARRANQUE — o que substituiu a torção de fase (item 5).
 // O oráculo cobra as duas coisas que fazem dela uma assistência e não um
 // segundo universo: ela é MONOTÔNICA e some EXATAMENTE no fim da janela.

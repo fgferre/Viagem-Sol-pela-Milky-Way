@@ -1,3 +1,4 @@
+// Serve: dono — toda fase decide o HUD, a câmera e o arrasto por escrito, e as linhas de órbita são a única regra por modo que ele autorizou (item 77)
 // ============================================================
 // O INVENTÁRIO DE FASES é pino, não documentação. O `satisfies` já
 // obriga os mapas a cobrirem a união em tempo de compilação; o que

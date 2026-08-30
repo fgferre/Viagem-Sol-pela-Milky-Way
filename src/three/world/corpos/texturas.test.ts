@@ -1,3 +1,4 @@
+// Serve: chão — os três furos das quatro cópias antigas (canal solto, anel sem mapa, manifest repetido) não voltam
 // ============================================================
 // O PIPELINE ÚNICO DE TEXTURAS — os três furos que quatro cópias
 // tinham, cada um com o seu oráculo e um fetch FALSO (nada de rede).

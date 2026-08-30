@@ -1,3 +1,5 @@
+// Serve: lei — a luz dos planetas cai onde o ?dbgplan mandou, a ≤0,5 px, por dois estimadores
+// Custo: ~1,1 min as três vistas (0,4 min por vista)
 // ============================================================
 // RÉGUA 3 da D10 (Onda 4) — O PIXEL.
 //

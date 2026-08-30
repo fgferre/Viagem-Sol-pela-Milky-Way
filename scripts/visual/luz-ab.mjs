@@ -1,3 +1,5 @@
+// Serve: lei — o medidor de luz de um par A/B: os números saem de script versionado, não de scratchpad
+// Custo: ~0,1 min por par (estimado — medir na próxima corrida; conta pura, sem navegador)
 // ============================================================
 // O MEDIDOR DE LUZ DE UM PAR — o que o A/B de uma obra de luz mede, e de
 // onde cada número sai.

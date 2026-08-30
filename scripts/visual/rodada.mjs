@@ -1,3 +1,5 @@
+// Serve: dono — a galáxia contra as referências: "aproximou ou afastou?", com a linha escrita no ledger
+// Custo: 0,3 min
 // Captura de rodada: as duas vistas que correspondem às imagens de referência
 // (face-on e edge-on), mais a linha de números que vai para o git.
 //

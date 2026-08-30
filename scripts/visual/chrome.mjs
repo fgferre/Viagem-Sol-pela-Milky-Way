@@ -1,3 +1,4 @@
+// Serve: chão — o harness de todos os juízes: Chrome com GPU de verdade, morto pelo perfil, sem órfão sujando a medida
 // Onde está o Chrome e com que backend ele desenha — um lugar só.
 //
 // Os quatro harnesses (rodada, ab-identidade, sky-capture, gpu-profile) subiam

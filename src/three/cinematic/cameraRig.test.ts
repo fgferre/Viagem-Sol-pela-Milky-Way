@@ -1,3 +1,4 @@
+// Serve: dono — o filme cumpre o corte editorial e a composição que ele aprovou, do arranque ao pouso em casa
 // ============================================================
 // Oráculo do VOO NO DOMÍNIO PROFUNDO (Onda 4, fase 2 — decisão D6) e
 // da varredura do ROTEIRO INTEIRO.

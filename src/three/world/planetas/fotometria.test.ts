@@ -1,3 +1,4 @@
+// Serve: lei — a fotometria dos dez corpos e a lei de fase MH18 seguem os coeficientes do paper, sem chute
 // ============================================================
 // Régua 1 da D10, parte "a fotometria": as duas leis puras e a tabela
 // de 10 corpos, julgadas pelo que é AFIRMÁVEL.

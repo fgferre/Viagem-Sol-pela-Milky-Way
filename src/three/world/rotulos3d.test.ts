@@ -1,3 +1,4 @@
+// Serve: chão — os consertos de 30/08 do rótulo 3D (profundidade, lado e descarte) não voltam em silêncio
 // ============================================================
 // O PINTOR 3D DA BETA (item 109) — o espelho que NÃO decide nada.
 //

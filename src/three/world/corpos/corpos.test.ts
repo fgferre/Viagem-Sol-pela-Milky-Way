@@ -1,3 +1,4 @@
+// Serve: lei — o registro de corpos resolvidos e a lei do palco julgando o Sol decidem near, gate e cessão
 // ============================================================
 // O ESQUELETO DO PALCO LOCAL (Onda 6, F0 — D1): o contrato do registro
 // de corpos resolvidos, o getter que o near consome e a CONTA que torna

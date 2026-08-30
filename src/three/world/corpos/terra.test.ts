@@ -1,3 +1,4 @@
+// Serve: lei — a orientação da Terra bate com o Horizons, e o gate binário e o gatilho de carga obedecem ao módulo
 // ============================================================
 // A TERRA RESOLVIDA (F2a) — os quatro juízes do módulo:
 //

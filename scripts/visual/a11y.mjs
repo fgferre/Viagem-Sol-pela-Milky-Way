@@ -1,4 +1,5 @@
 // Serve: dono — o HUD se usa de teclado e no telefone, e a gaveta não mente o número de camadas
+// Custo: 6,1 min
 // O JUIZ DE ACESSIBILIDADE DO HUD — em navegador real, por CDP.
 //
 //   node scripts/visual/a11y.mjs

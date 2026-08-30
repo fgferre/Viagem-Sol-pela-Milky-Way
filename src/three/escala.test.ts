@@ -1,3 +1,4 @@
+// Serve: lei — todo corpo que confessa escala artística tem entrada no cadastro, com fator real ou dívida declarada — nunca escala inventada calada
 // ============================================================
 // O oráculo do cadastro de escala. Três coisas, e a terceira é a que
 // dá valor às outras duas:

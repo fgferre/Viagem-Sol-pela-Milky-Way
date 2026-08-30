@@ -1,3 +1,4 @@
+// Serve: dono — um lugar por nome: quem colide some, o clique só acha quem está escrito na tela, e o lado da vaga viaja com o objeto
 // ============================================================
 // UMA LISTA SÓ — o desenho dos rótulos e o alvo do clique (pendência 30,
 // fechada em 2026-08-14; sintoma: o defeito 1 do commit `51d7777`,

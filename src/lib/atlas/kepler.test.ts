@@ -1,3 +1,4 @@
+// Serve: lei — o propagador Kepler resolve a anomalia e reproduz os fixtures Horizons de cada corpo na época
 // ============================================================
 // Oráculos do propagador Kepler novo (Onda 2, tarefa K).
 //

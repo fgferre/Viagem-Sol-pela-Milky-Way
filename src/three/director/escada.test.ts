@@ -1,3 +1,4 @@
+// Serve: chão — o religador do relógio enquadra o mesmo corpo que o gesto focou, nunca a Terra por engano
 // ============================================================
 // O RELIGADOR DO RELÓGIO NÃO TROCA O CORPO EM FOCO.
 //

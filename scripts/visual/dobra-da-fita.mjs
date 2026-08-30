@@ -1,3 +1,8 @@
+// Serve: dono — a junta da fita vinca em bissetriz em vez de abrir cunha ("fita dobrada, não linha grossa")
+// Custo: ~0,4 min por estado (estimado — medir na próxima corrida)
+// Fusão marcada (item 99, 30/08): beira+dobra+colar viram UM juiz da
+// fita numa corrida só (3 boots de Chrome → 1) — executa quem tocar
+// qualquer um dos três.
 // ============================================================
 // O JUIZ DA DOBRA — a fita VINCA na junta, ou abre cunha e dobra tinta?
 //

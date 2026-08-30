@@ -1,3 +1,5 @@
+// Serve: dono — estrela forte sai pela borda sem pop: o rabo da PSF fica, o céu não perde luz num passo
+// Custo: ~0,5 min (estimado — medir na próxima corrida)
 // ============================================================
 // O JUIZ DO PONTO NA BORDA — item 70, causa 2.
 //

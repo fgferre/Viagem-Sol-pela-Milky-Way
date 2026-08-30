@@ -1,3 +1,4 @@
+// Serve: lei — o contrato do cache, a honestidade da nota de validade e a interpolação Hermite do MotorEfemerides
 // ============================================================
 // Oráculos do MotorEfemerides fora do juiz Horizons (que vive em
 // regressao.test.ts):

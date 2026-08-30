@@ -1,3 +1,4 @@
+// Serve: lei — a conservação é tautológica, TS e GLSL batem bit a bit, e o clarão deriva do fluxo, nunca do peso do ponto
 // ============================================================
 // A LEI DA ESTRELA — os oráculos do L1.
 //

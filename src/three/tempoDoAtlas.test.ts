@@ -1,3 +1,4 @@
+// Serve: chão — a escada de tempo é log de verdade, o grampo nunca deixa o motor sair da janela real, e o mostrador só repinta quando o minuto muda
 // ============================================================
 // A MÁQUINA DO TEMPO, parte pura (Onda 5, F4/D2). Cinco assuntos:
 //

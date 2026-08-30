@@ -1,3 +1,4 @@
+// Serve: chão — o pente do colar reprova quando falta qualquer um dos três termos (grupos, vão de junta, relógio parado) e não confunde curva com junta
 // ============================================================
 // O JUIZ DO JUIZ DO COLAR — perfis montados à mão, com a resposta ao
 // lado, para que a lei do pente não possa mudar em silêncio.

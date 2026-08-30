@@ -1,3 +1,4 @@
+// Serve: lei — gravidade, escape e massa reproduzem os valores publicados, e GM_CORPOS não diverge de MU_PARENT
 import { describe, expect, it } from 'vitest';
 import {
   AU_KM,

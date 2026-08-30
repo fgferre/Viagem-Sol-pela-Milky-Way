@@ -1,3 +1,4 @@
+// Serve: lei — a fase do ciclo solar sai das datas reais (mínimo 2019, máximo out/2024), e o relógio anda monotônico, contínuo e reversível
 // A ÂNCORA DO CICLO SOLAR, cobrada contra as datas reais. Este é o
 // oráculo que faz a promessa do item 5 ser verificável sem navegador:
 // se alguém mexer na assimetria subida/descida, é aqui que o máximo do

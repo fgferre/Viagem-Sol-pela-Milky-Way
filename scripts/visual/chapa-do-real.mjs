@@ -1,3 +1,8 @@
+// Serve: dono — o modo real com os +3 passos que ele escolheu (R1), e o selo declarando a chapa
+// Custo: ~0,5 min por estado (estimado — medir na próxima corrida)
+// Fusão marcada (item 99, 30/08): vira o modo --selo da
+// costura-da-sombra (que já empresta a vista, o quadro e o harness) —
+// executa quem tocar um dos dois.
 // ============================================================
 // A CHAPA DO MODO REAL — a prancha da Q14 do dono (item 91).
 //

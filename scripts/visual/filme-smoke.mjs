@@ -1,3 +1,5 @@
+// Serve: dono — o roteiro na tela: legenda inteira nas margens, corte certo e o relógio andando
+// Custo: 2,6 min
 // O JUIZ DO ROTEIRO NA TELA — texto, cortes, responsividade e movimento.
 //
 //   node scripts/visual/filme-smoke.mjs

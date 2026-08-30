@@ -1,3 +1,4 @@
+// Serve: lei — a irradiância e o ganho fundido seguem o inverso do quadrado e os números do doador que autorizaram luz.ts
 // ============================================================
 // Oráculos da lei de luz — a régua que autorizou `luz.ts`.
 //

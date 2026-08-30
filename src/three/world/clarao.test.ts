@@ -1,3 +1,4 @@
+// Serve: lei — o orçamento do clarão entra e sai por rampa, e a elegibilidade nasce do fluxo, nunca do nome
 // ============================================================
 // Oráculo do CLARÃO DE ASAS (M2 da LEI-DA-ESTRELA).
 //

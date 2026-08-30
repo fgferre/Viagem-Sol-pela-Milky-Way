@@ -1,3 +1,4 @@
+// Serve: chão — os consertos dos gigantes (sombra do anel, ganho de Saturno, tradução da visita) não regridem
 // ============================================================
 // OS GIGANTES (F4) — os juízes do módulo:
 //

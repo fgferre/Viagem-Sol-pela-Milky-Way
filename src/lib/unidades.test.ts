@@ -1,3 +1,4 @@
+// Serve: dono — a escada de unidades fala km/UA perto de casa e anos-luz nas estrelas, na grafia e vírgula que ele pediu
 // ============================================================
 // A ESCADA DE UNIDADES que o visitante lê — km → UA → anos-luz.
 //

@@ -1,3 +1,4 @@
+// Serve: lei — todo desenhista de estrela que emite gl_PointSize prende o ponto na borda do clip, e o fragmento lê a distância verdadeira
 // A conta da beira, e a fiação nos três desenhistas do STAR_FRAG.
 // Apagar `prenderPontoNoClip(uScreenH)` de qualquer vértice, ou
 // devolver o fragmento a `gl_PointCoord`, tem de reprovar.

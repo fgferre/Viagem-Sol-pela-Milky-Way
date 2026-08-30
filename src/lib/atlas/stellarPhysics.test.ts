@@ -1,3 +1,4 @@
+// Serve: lei — temperatura, raio e classe espectral reproduzem as sete verdades-terreno nomeadas (Sol, Sirius, Vega, Proxima…)
 // ============================================================
 // Oráculo da física estelar — 7 verdades-terreno nomeadas + bordas.
 //

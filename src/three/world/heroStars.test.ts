@@ -1,3 +1,4 @@
+// Serve: dono — as heroes resgatadas do filme de 30/07 mantêm o tamanho, a cor e a lente que ele escolheu
 // As heroes RESGATADAS (item 44, 16/08): a arte do filme de 30/07, de
 // volta byte a byte. Os oráculos cobram a identidade da peça exumada —
 // a escolha por magnitude, o tamanho de autor e a lente de referência —

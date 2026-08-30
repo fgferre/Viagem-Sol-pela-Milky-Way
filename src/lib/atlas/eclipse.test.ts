@@ -1,3 +1,4 @@
+// Serve: lei — o cone de eclipse reproduz os números publicados (umbra, penumbra, gamma, obscuração, Danjon) que autorizaram eclipse.ts
 // ============================================================
 // Oráculos do cone de eclipse — a régua que autorizou `eclipse.ts`.
 //

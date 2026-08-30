@@ -1,3 +1,4 @@
+// Serve: dono — a busca acha a estrela certa por acento, prefixo, chave irmã e rubrica de degraus, do jeito que ele desenhou
 // ============================================================
 // Gate da busca (Onda 5, F3) — julgado contra o DADO VIVO, o mesmo
 // `public/data/stars_meta.json` que o runtime carrega. Nada de fixture

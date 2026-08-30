@@ -1,3 +1,4 @@
+// Serve: lei — a rampa do LOD estelar e a cessão por dominância corpo↔ponto obedecem a lei contínua, sem degrau
 // ============================================================
 // Oráculo do LOD estelar — o que sobrou dele depois do M2 da
 // LEI-DA-ESTRELA. Duas origens, declaradas:

@@ -1,3 +1,4 @@
+// Serve: lei — os planos de corte, as portas ?tone=/?exp= e a trava de vai-e-volta do engine só deixam passar número são
 // ============================================================
 // Dois oráculos do `engine.ts`: os PLANOS DE CORTE (Onda 4, fase 2 —
 // decisão D5) e, no fim do arquivo, as DUAS PORTAS DE GOSTO (`?tone=` e

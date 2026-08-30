@@ -1,4 +1,5 @@
 // Serve: dono — o portal do Atlas, a navegação e o toque no aparelho fazem o que ele pediu
+// Custo: 7,4 min
 // O PORTAL DO ATLAS EM NAVEGADOR REAL — ida e volta, medida em PIXEL.
 //
 //   node scripts/visual/atlas-smoke.mjs

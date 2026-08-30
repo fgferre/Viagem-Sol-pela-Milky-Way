@@ -1,3 +1,5 @@
+// Serve: chão — o preço de cada passe medido DENTRO da GPU, não por impressão de fps
+// Custo: 0,2 min
 // Preço de cada PASSE do quadro, medido na GPU.
 //
 //   node scripts/visual/gpu-profile.mjs "?t=100" 15 1920 1080 1

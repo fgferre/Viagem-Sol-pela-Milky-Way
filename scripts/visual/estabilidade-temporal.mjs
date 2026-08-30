@@ -1,3 +1,5 @@
+// Serve: lei — §5.17/§5.20 da LEI-DA-ESTRELA: nada ferve nem re-semeia quando a câmera anda
+// Custo: 3,9 min a corrida inteira (~0,4 min por família)
 // ============================================================
 // MB1 — O JUIZ DE ESTABILIDADE TEMPORAL (LEI-DA-ESTRELA §5.17, §5.20).
 //

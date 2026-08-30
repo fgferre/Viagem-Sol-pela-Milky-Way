@@ -1,3 +1,5 @@
+// Serve: chão — nenhum pixel alterna sob jitter sub-pixel: superfície colada em superfície não pisca
+// Custo: 0,5 min
 // ============================================================
 // INSTRUMENTO DE Z-FIGHTING (Onda 6, F8 / D1 / P-E15)
 //

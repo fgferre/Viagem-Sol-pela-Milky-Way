@@ -1,3 +1,5 @@
+// Serve: chão — sair devolve o que entrar alocou: texturas, bytes de texel, geometrias e workers sem vazamento
+// Custo: 2,9 min por tier
 // O AMOSTRADOR DE MEMÓRIA — o juiz que prova que sair DEVOLVE o que
 // entrar alocou (Onda 6, F8/D9).
 //

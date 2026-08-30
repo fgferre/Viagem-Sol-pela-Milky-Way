@@ -1,3 +1,4 @@
+// Serve: lei — a ponte de frame, a magnitude por quadro e o corte de custo da camada de planetas obedecem à régua 1
 // ============================================================
 // Régua 1 da D10, ELO FINAL: da tabela congelada ao pixel.
 //

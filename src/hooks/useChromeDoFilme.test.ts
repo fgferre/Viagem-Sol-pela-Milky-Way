@@ -1,3 +1,4 @@
+// Serve: chão — o chrome do filme some por opacidade, nunca por display:none, e continua clicável mesmo invisível
 // ============================================================
 // O CHROME DO FILME SOME SOZINHO (item 61, 22/08) — as três leis que a
 // tela tem de obedecer, cobradas onde elas moram: no CSS e no App.

@@ -1,3 +1,4 @@
+// Serve: lei — o retrato congelado é bit a bit o que o motor de efemérides responde, e bate com o Horizons externo
 // ============================================================
 // Régua 1 da D10, parte "o dado": a cadeia da posição elo a elo, sem
 // navegador e sem pixel.

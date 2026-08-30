@@ -1,3 +1,5 @@
+// Serve: lei — o quadro não lava: o borrão contra o disco real e o clarão de direito, na escada de 11 distâncias
+// Custo: 1,0 min a escada inteira (0,1 min por degrau)
 // A RÉGUA DA LUZ — quanto do quadro está lavado, e qual é o tamanho do borrão.
 //
 //   node scripts/visual/luz-do-quadro.mjs                 # a escada do Sol inteira

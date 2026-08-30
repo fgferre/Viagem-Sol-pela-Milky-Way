@@ -1,3 +1,4 @@
+// Serve: chão — o cursor não acende quando uma gaveta vai fechar no clique; o toque cumpre o que o cursor prometeu
 // ============================================================
 // O CURSOR NÃO PODE PROMETER O QUE A GAVETA IMPEDE — defeito achado
 // depois do item 111 ("o cursor diz o que o clique faria"). O hover

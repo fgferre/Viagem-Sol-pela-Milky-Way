@@ -1,3 +1,4 @@
+// Serve: lei — a hierarquia dos rótulos e a régua de relevância decidem quem ganha a vaga na tela
 // ============================================================
 // OS RÓTULOS DOS DEZ CORPOS (Onda 5, conserto da revisão de olhos
 // frescos). O que se julga aqui é a única coisa que o produtor promete

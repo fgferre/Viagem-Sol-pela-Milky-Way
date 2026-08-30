@@ -1,3 +1,8 @@
+// Serve: dono — a beira da fita de órbita sobe em rampa e a largura cresce com a janela ("fita dobrada, não linha grossa")
+// Custo: ~0,6 min (estimado — medir na próxima corrida)
+// Fusão marcada (item 99, 30/08): beira+dobra+colar viram UM juiz da
+// fita numa corrida só (3 boots de Chrome → 1) — executa quem tocar
+// qualquer um dos três.
 // ============================================================
 // O JUIZ DA BEIRA — a fita de órbita acaba em RAMPA ou em ESCADA?
 //

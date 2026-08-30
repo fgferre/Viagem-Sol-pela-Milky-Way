@@ -1,3 +1,4 @@
+// Serve: dono — os rótulos cumprem cada decisão dele: câmera só sobe com leitor, nomes e ícones desligam em camadas separadas, lente e beta 3D só onde ele mandou
 // ============================================================
 // A CÂMERA SÓ SOBE PARA O REACT COM QUEM A LEIA.
 //

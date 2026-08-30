@@ -1,3 +1,5 @@
+// Serve: dono — a sombra do anel cruza o terminador sem tira clara nem degrau ("tinha que ser seamless")
+// Custo: ~1,5 min por estado (estimado — medir na próxima corrida)
 // ============================================================
 // A COSTURA DA SOMBRA — a prancha do item 104, e a quem este script serve.
 //
