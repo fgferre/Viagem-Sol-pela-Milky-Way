@@ -1,5 +1,5 @@
 // Serve: dono — o portal do Atlas, a navegação e o toque no aparelho fazem o que ele pediu
-// Custo: 7,4 min
+// Custo: 7,3 min (medido na F1 do item 113, servidor quente; era 7,4)
 // O PORTAL DO ATLAS EM NAVEGADOR REAL — ida e volta, medida em PIXEL.
 //
 //   node scripts/visual/atlas-smoke.mjs
@@ -64,7 +64,7 @@
 // Ajustes), `?shot=2` (só a cena), e o SINAL de prontidão do próprio app
 // no lugar de espera cega.
 import { readFileSync } from 'node:fs';
-import { abrirSessao, APP_PADRAO, dorme, esperarPor } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme, esperarCapaSair, esperarPor } from './chrome.mjs';
 
 /**
  * OS +3 PASSOS DA Q14 (item 91), LIDOS DA FONTE e não redigitados aqui.
@@ -915,12 +915,16 @@ try {
       + ` seletor '${semQnaUrl.escolhido}')`
   );
   await sessao.js("window.localStorage.removeItem('viagem-prefs')");
-  await sessao.js('window.__marcaAuto = 1');
+  await sessao.js('window.__marcaAuto = 1;'
+    + ' window.__medicaoAntesDoAuto = window.__director.engine.medicao');
   await clicarTier('auto');
-  // uma JANELA DE MEDIDA inteira (2,5 s) mais folga: escolher Auto só
-  // vira tier depois de EXISTIR uma sugestão, e é a primeira janela que
-  // a produz — sem a espera, a prova cobraria o Auto por não ter
-  // aplicado uma medida que ainda não havia.
+  // espera de ESTADO, não 3,2 s de parede (item 113): escolher Auto só
+  // vira tier depois de EXISTIR uma sugestão, e quem a produz é uma
+  // JANELA DE MEDIDA inteira fechada depois do clique. Cada janela
+  // publica um OBJETO novo em `engine.medicao`, então "objeto diferente
+  // do anotado antes do clique" é exatamente esse estado — e sobrevive
+  // ao zerar da troca de tier, que só adia o objeto novo. O estouro
+  // entra no veredito da convergência abaixo, não num rodapé.
   //
   // O que NÃO se espera aqui é o mostrador: desde 22/08 (item 66) o
   // `?shot=` congela a nota em "medindo o quadro." de propósito. O
@@ -930,7 +934,9 @@ try {
   // vez a cada ~100. Quem traz o número é
   // `window.__director.engine.medicao`, lido abaixo, que o modo foto
   // não congela: a régua corre, só o mostrador para.
-  await dorme(3200);
+  const janelaDoAuto = await esperarPor(sessao,
+    'window.__director.engine.medicao !== null'
+    + ' && window.__director.engine.medicao !== window.__medicaoAntesDoAuto', 8000);
   // …e se a medida pediu outro tier, o mundo novo ainda está no forno
   await sessao.assentar();
   const noAuto = JSON.parse(await sessao.js(`JSON.stringify({
@@ -955,8 +961,10 @@ try {
   // medição. `medicao` nula é o estado legítimo logo depois de uma
   // troca — a média recomeça —, e aí não há veredito a contradizer.
   conferir(
-    noAuto.medicao === null || noAuto.medicao.sugestao === noAuto.tier,
-    `e o Auto não fica parado contra a medição (tier '${noAuto.tier}', medida`
+    janelaDoAuto !== null
+      && (noAuto.medicao === null || noAuto.medicao.sugestao === noAuto.tier),
+    `e o Auto não fica parado contra a medição (janela nova em ${janelaDoAuto} ms,`
+      + ` tier '${noAuto.tier}', medida`
       + ` ${noAuto.medicao ? `${noAuto.medicao.fps.toFixed(1)} q/s → '${noAuto.medicao.sugestao}'` : 'recomeçando'})`
   );
 
@@ -1317,8 +1325,13 @@ try {
   );
   // a capa da abertura cobre a cena por alguns segundos DEPOIS de a
   // prontidão fechar (ver o NORTE, "Como rodar") — e é o desenho dos
-  // rótulos que se mede aqui, não a prontidão
-  await dorme(4000);
+  // rótulos que se mede aqui, não a prontidão. Espera de ESTADO, não
+  // 4 s de parede (item 113): a capa SAI (~2,1 s medidos) e o primeiro
+  // quadro de rótulos é escrito. O estouro não cala: sem quadro de
+  // rótulos o censo abaixo lê zero desenhados e reprova.
+  await esperarCapaSair(sessao.send);
+  await esperarPor(sessao,
+    'window.__director.rotulos.alvos.some((l) => l.desenhado === true)', 6000);
   // O CENSO DOS NOMES, uma sonda só para os dois endereços: era esta
   // mesma IIFE copiada em dois lugares, e cópia de sonda é como cópia de
   // régua — uma delas envelhece calada.
@@ -1448,7 +1461,10 @@ try {
   );
   await sessao.ir(`atlas=1&jd=EPOCA&q=cinema&d=${raiosDoTeto}`);
   await sessao.assentar();
-  await dorme(4000);
+  // a MESMA capa da abertura do censo de cima: estado, não parede (item 113)
+  await esperarCapaSair(sessao.send);
+  await esperarPor(sessao,
+    'window.__director.rotulos.alvos.some((l) => l.desenhado === true)', 6000);
   const nomesDoTeto = await censoDeNomes();
   // ---- A PROMESSA DOS DEZ, REVOGADA EM 24/08 (item 82, N1) ---------
   // Até aqui este veredito cobrava os DEZ com nome — os oito planetas, o
@@ -1531,7 +1547,16 @@ try {
     await sessao.js('window.__director.ciclarDegrau()');
   }
   await sessao.js('window.__director.andarNoTempo(1)');
-  await dorme(2000);
+  // espera de ESTADO, não 2 s de parede (item 113): o veredito cobra o
+  // alvo andando >100× o raio do enquadramento, então espera-se o
+  // PRÓPRIO deslocamento cruzar o limiar (com margem) e o relógio para
+  // em seguida. O estouro não cala: sem o limiar cruzado o `emQuadros`
+  // abaixo fica aquém dos 100 e o veredito reprova.
+  const LIMIAR_DO_RELOGIO = 110 * antesDoRelogio.dist;
+  const msDoRelogio = await esperarPor(sessao, `(() => {
+    const a = window.__director.atlas.alvo;
+    return Math.hypot(a.x - (${antesDoRelogio.alvo[0]}), a.y - (${antesDoRelogio.alvo[1]}),
+      a.z - (${antesDoRelogio.alvo[2]})) > ${LIMIAR_DO_RELOGIO}; })()`, 6000);
   await sessao.js('window.__director.andarNoTempo(0)');
   const depoisDoRelogio = JSON.parse(await leitura());
   const andou = Math.hypot(
@@ -1542,7 +1567,8 @@ try {
   const emQuadros = andou / depoisDoRelogio.dist;
   conferir(
     emQuadros > 100,
-    `a 115,7 dias/s o alvo andou ${(andou / 4.84813681e-6).toFixed(2)} UA em 2 s —`
+    `a 115,7 dias/s o alvo andou ${(andou / 4.84813681e-6).toFixed(2)} UA em`
+      + ` ${msDoRelogio === null ? 'ESTOURO de 6' : (msDoRelogio / 1000).toFixed(1)} s —`
       + ` ${emQuadros.toFixed(0)}× o raio do enquadramento`
   );
   conferir(
@@ -1834,9 +1860,28 @@ try {
       if (!(await abrirOSelo())) break;
       const linha = JSON.parse(await sessao.js(SELO('.atlas-selo-linha', 1)));
       if (!linha) break;
+      // a marca morre com o documento — é ela que diz "a recarga já passou"
+      await sessao.js('window.__antesDaVolta = 1');
       await sessao.clicar(linha.x, linha.y);
-      // a primeira volta passa por RECARGA: o documento troca no meio
-      await dorme(3000);
+      // espera de ESTADO, não 3 s de parede (item 113). A primeira volta
+      // passa por RECARGA (a porta desconhecida é volta:'recarregar') e o
+      // documento troca no meio: espera-se o documento NOVO (sem a marca)
+      // com a LUZ que o clique pediu — só a luz não basta, o documento
+      // velho poderia respondê-la antes de navegar. A segunda volta é
+      // gesto no MESMO documento e a marca fica; ali só a luz decide. O
+      // catch é o do `abrirOSelo`: o vão entre documentos derruba o
+      // evaluate, e esse erro é a própria recarga passando. O estouro não
+      // cala: a luz errada reprova no veredito do ciclo, logo abaixo.
+      const luzPedida = i === 0 ? 'real' : 'assistida';
+      const soDocNovo = i === 0 ? "typeof window.__antesDaVolta === 'undefined' && " : '';
+      const t0DaVolta = Date.now();
+      for (;;) {
+        const chegou = await sessao
+          .js(`${soDocNovo}((window.__director || {}).selo || {}).luz === '${luzPedida}'`)
+          .catch(() => false);
+        if (chegou || Date.now() - t0DaVolta > 15000) break;
+        await dorme(150);
+      }
       comChave.push(JSON.parse(await luzViva()));
     }
     conferir(

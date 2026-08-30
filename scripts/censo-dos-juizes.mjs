@@ -19,10 +19,12 @@ import { fileURLToPath } from 'node:url';
 export const TETO_DA_RODADA_MIN = 15;
 
 // A catraca do total: soma dos custos declarados de TODOS os juízes.
-// Armada em 30/08 (fechamento do item 99) com a soma da época — 23
-// juízes, 43,3 min. O total só desce ou fica; subir exige re-pinar
-// AQUI, no mesmo commit, com a justificativa (aposentou? fundiu?).
-export const TETO_TOTAL_MIN = 43.3;
+// O total só desce ou fica; subir exige re-pinar AQUI, no mesmo commit,
+// com a justificativa (aposentou? fundiu?). Re-pinado na F1 do item 113
+// — a verdade dos preços subiu o declarado (o ab-identidade dizia 7,1
+// min de 54 vistas e são 60; o atlas-smoke desceu 7,4 → 7,3 medido);
+// as fases seguintes só descem.
+export const TETO_TOTAL_MIN = 44.0;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

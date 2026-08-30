@@ -1,5 +1,5 @@
-// Serve: chão — mudança que move imagem não passa calada: md5 das 54 vistas, antes × depois
-// Custo: 7,1 min por lado (SMOKE=1: 0,8 min por lado)
+// Serve: chão — mudança que move imagem não passa calada: md5 das 60 vistas, antes × depois
+// Custo: ~7,9 min por lado (derivado da contagem: 60/54 × 7,1 medidos; re-medir na próxima leva cheia) (SMOKE=1: 0,8 min por lado)
 // Prova de que uma mudança NÃO mexeu na imagem: md5 das mesmas vistas antes
 // e depois.
 //
@@ -151,7 +151,7 @@ export const VISTAS = [
   // no anti-Sirius a 4 mi km, mirando a origem.
   ['solatras', '?pos=0.0000000243031,-0.000000121752,0.0000000372805&look=0,0,0&shot=2'],
   ['solreal1ua', '?pos=0,0,0.0000048481&look=0,0,0&shot=2'],
-  ['solreal40ua', '?pos=0,0,0.00019393&look=0,0,0&shot=2'],
+  // solreal40ua → ua40 (mesma URL, item 113): a vista das 40 UA vive na Onda 4.
   // As de hero são Betelgeuse (152,67 pc de casa, a supergigante do Ato II),
   // a câmera na PRÓPRIA reta Sol→estrela. As três distâncias são os três
   // regimes do `farFade` do billboard (heroStars.ts:58, 320→900 pc): 200 pc
