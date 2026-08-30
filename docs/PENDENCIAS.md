@@ -935,6 +935,24 @@ commit e uma foto por passo:
    cor do material por essas três receitas e ler `BRILHO_DA_LINHA` da
    URL; a tabela e o gama acima são tudo o que ela precisa.
 
+   **A COLUNA (iv) NASCEU em 29/08 e a prancha v3 ESTÁ NA MESA:**
+   `capturas/item83-b3-cores-v3.png` — QUATRO receitas × DUAS vistas (a
+   abertura do sistema inteiro, que desde 29/08 é a primeira tela, e o
+   foco em Júpiter — as quatro de dentro + a dele, o endereço oficial do
+   gate), jd pinada, lente 58°, cena pura. A receita (iv) computada da
+   TEXTURA de cada globo exatamente como ele mandou (histograma de matiz
+   pesado pela saturação; s<0,08 ou v<0,05 não vota; média ponderada na
+   janela do pico; normalizada pelo canal máximo — script reproduzível,
+   JSON com matiz/representatividade por corpo): Terra **#4583ff** (o
+   azul do oceano, de graça), Marte #ff7e54 (ferrugem), Saturno #ffe8bc
+   (dourado), Júpiter #ffe0bf, Vênus #ffd38e, Urano #bcf6ff, Netuno
+   #5470ff, Plutão #ffc89c (o salmão da New Horizons). **Mercúrio não
+   tem pixel que vote** (textura toda neutra) e cai na fotometria — a
+   própria receita dele decide. O oráculo bateu nos cinco corpos de
+   prova. A porta `?paleta=` ganhou a quarta receita no worktree efêmero
+   e MORREU com ele, como manda o desenho. **A escolha é DELE; a
+   escolhida vira código em commit próprio.**
+
 **Não falta, medido — não inventar:** a linha deles NÃO tem perfil
 através da largura (chapada, `glowWidth = 0` até no hover), NÃO tem
 gradiente nem fade ao longo da órbita (`farSideAlphaFade` existe no
