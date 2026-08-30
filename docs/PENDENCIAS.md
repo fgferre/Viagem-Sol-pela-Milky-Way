@@ -738,29 +738,10 @@ ARQUIVO.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
-**97. A órbita acende mais cedo no Retina do que numa tela comum.** Achado
-em 25/08 ao consertar a régua da cessão (item 70), na mesma peça e pela
-mesma doença: o fade de entrada da linha compara o raio aparente da elipse
-com `RAIO_MIN_PX = 3` e `RAIO_CHEIO_PX = 16` (`world/orbitas.ts`), só que o
-raio é calculado contra a meia-altura do quadro em px de **buffer**. Num Mac
-(2×) o mesmo céu dá o dobro de pixels, então a linha cruza os dois limiares
-com **metade do tamanho aparente**: numa tela ela já está cheia enquanto na
-outra ainda está nascendo. O tamanho aparente é o que a casa exige de tudo
-que tem medida de tela (a fita é px de CSS, o clarão corrige DPR), então o
-provável certo é dividir pelo `pixelRatio` — mas isso MUDA o que aparece na
-tela e em que momento, e por isso pede medida e o olho dele, não conserto de
-passagem. **MEDIDO E CONSERTADO em 29/08.** A medida que faltava: no Retina cada
-órbita nascia e enchia a exatamente o DOBRO da distância (Mercúrio
-cheio a 39,3 UA contra 19,6 na tela comum; Júpiter a 528 contra 264 —
-a tabela completa está no registro do commit). O conserto é o
-provável-certo do diagnóstico: a meia-altura do fade virou px de CSS
-(buffer ÷ pixelRatio), a régua de tamanho aparente da casa — em dpr 1
-a divisão é por um e o desenho fica bit a bit (sentinelas do
-ab-identidade IDÊNTICAS). Guarda de invariância em `orbitas.test.ts`
-(o mesmo céu em dpr 1 e dpr 2 dá alfas idênticos, com Mercúrio no meio
-do fade para o teste morder; sabotagem da divisão reprova). FOTO:
-`capturas/item97-retina-ab.png` — dpr 2 a 528 UA, Saturno nascendo no
-depois como na tela comum. **Espera o olho dele para fechar.**
+**97.** A órbita acendia mais cedo no Retina — **FECHADO em 29/08**: a
+régua do fade virou px de CSS (na tela comum, bit a bit; no Retina as
+distâncias de aparição caíram ao valor certo — eram o DOBRO), com
+guarda de invariância e foto aceita por ele. História no ARQUIVO.
 
 **12.** Nenhuma foto de referência mora entre 1 UA e 40 UA — onde a tela
 lava. A régua de luz e as vistas `ua2`…`ua2000` já enxergam a faixa.
