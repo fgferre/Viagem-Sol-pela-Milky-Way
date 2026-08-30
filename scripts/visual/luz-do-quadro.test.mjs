@@ -19,6 +19,7 @@ import {
   vaoDoFiltro,
   ESCADA_UA,
   ATLAS_FOV_GRAUS,
+  RAIO_SOL_PC as RAIO_SOL_DA_REGUA,
 } from './luz-do-quadro.mjs';
 // a lei da casa, no endereço único do F0 — o vitest transpila o TS; a régua
 // `.mjs` em node puro continua redigitando, e É ESTE teste que cobra o acordo.
@@ -42,9 +43,16 @@ function quadroSolido(largura, altura, y) {
 }
 
 describe('discoRealPx — a verdade geométrica do disco do Sol', () => {
+  it('o raio do Sol redigitado aqui é o da fonte, não um número parecido', () => {
+    // mesmo contrato de procedência do fov do Atlas: a régua roda em node
+    // puro e redigita `RAIO_SOL_PC` de `src/three/escala`; é ESTE teste que
+    // cobra o acordo. Sem ele a cópia deriva calada e o disco inteiro mente.
+    expect(RAIO_SOL_DA_REGUA).toBe(RAIO_SOL_PC);
+  });
+
   it('a 1 UA o Sol mede 0,533° — a aferição que todo mundo pode conferir no céu', () => {
-    // θ = 2·R☉/1 UA = 2·2,2566840209436597e-8 / 4,84813681e-6 rad
-    const graus = (2 * 2.2566840209436597e-8) / (1 / 206264.80624548031) * (180 / Math.PI);
+    // θ = 2·R☉/1 UA = 2·2,2566842504293703e-8 / 4,84813681e-6 rad
+    const graus = (2 * 2.2566842504293703e-8) / (1 / 206264.80624548031) * (180 / Math.PI);
     expect(graus).toBeCloseTo(0.5331, 3);
     // e projetado num buffer de 900 px com a lente de fábrica (58°)
     expect(discoRealPx(1, 900, 58)).toBeCloseTo(7.558, 3);

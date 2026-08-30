@@ -1242,15 +1242,6 @@ conferido contra o código em 25/08:
 - **o dossiê mecânico dos itens abertos**, como checklist da extração.
   Agora só vale para os documentos que a reforma ainda não tocou —
   `NORTE.md`, `PLANO-ATLAS.md`, `LEI-DA-ESTRELA.md`.
-- **o `RAIO_SOL_PC` duplicado — CONFERIDO em 25/08, e ainda é.**
-  `scripts/visual/luz-do-quadro.mjs` redigita o literal
-  `2.2566840209436597e-8`, cuja fonte é `RAIO_SOL_PC` em
-  `src/three/escala.ts`, e a razão está declarada no próprio comentário: a
-  régua roda em node puro. **O defeito não é a cópia, é que ela não tem
-  dente.** O vizinho `ATLAS_FOV_GRAUS`, redigitado pela MESMA razão, é
-  cobrado por `luz-do-quadro.test.mjs` (*"o fov do Atlas redigitado aqui é
-  o da fonte, não um número parecido"*); o `RAIO_SOL_PC` não é. São duas
-  linhas de teste.
 - **O QUE NÃO FICA ABERTO, e por quê:** o `scripts/docs-check.mjs` com
   lista de exceções foi construído, medido e **removido pelo dono no mesmo
   14/08** — *"só mais um problema para o futuro, um teste que pouco faz"*.

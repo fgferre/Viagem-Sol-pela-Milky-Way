@@ -133,8 +133,10 @@ const SUFIXO = CHAVE_DO_ESTADO ? `-${CHAVE_DO_ESTADO.replace(/[^a-z0-9]+/gi, '')
 // ── as constantes da conta, todas com procedência ─────────────────────────
 /** 1 UA em pc. O mesmo conversor de `escala.ts` (AU_PARA_PC). */
 const UA_EM_PC = 1 / 206264.80624548031;
-/** Raio do Sol em pc — `RAIO_SOL_PC` de `src/three/escala.ts`. */
-const RAIO_SOL_PC = 2.2566840209436597e-8;
+/** Raio do Sol em pc — `RAIO_SOL_PC` de `src/three/escala.ts`, redigitado
+ *  aqui pela mesma razão que toda a família: node puro. O acordo com a
+ *  fonte é cobrado em `luz-do-quadro.test.mjs`. */
+export const RAIO_SOL_PC = 2.2566842504293703e-8;
 /** A lente do deep-link `?pos=`: o fov VERTICAL de fábrica da câmera
  *  (`engine.ts:217`, `new THREE.PerspectiveCamera(58, …)`). `?fov=` não é
  *  usado por nenhuma vista desta escada. */
