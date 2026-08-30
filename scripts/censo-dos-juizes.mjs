@@ -1,38 +1,45 @@
 // Serve: dono — o custo dos testes tem teto e cada juiz declara a quem serve (item 99)
 //
-// Censo dos juízes. Cada teste e cada juiz responde "a quem sirvo":
-// decisão do dono, lei física, ou chão de regressão. Quem não responde
-// aparece como SEM DONO — nesta fatia a amostra com Serve é cobrada;
-// o resto se classifica nas fatias seguintes, e ninguém morre em silêncio.
+// O porteiro do censo. Cada teste e cada juiz responde "a quem sirvo":
+// decisão do dono, lei física, ou chão de regressão — quem não responde
+// REPROVA e sai listado. Juiz visual declara também o custo em minutos;
+// a catraca soma os custos e compara com o teto pinado aqui: o total só
+// desce ou fica — subir exige re-pinar o teto no mesmo commit.
 //
 //   node scripts/censo-dos-juizes.mjs
 //
-// O teto da rodada visual é o do item 57 (~15 min). Juiz novo declara
-// Serve e Custo, ou aposenta/funde alguém.
+// Todos os números impressos derivam da varredura; nada decorado
+// (regra anti-deriva da casa).
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Teto por corrida de rodada visual — régua do item 57, segue de pé.
 export const TETO_DA_RODADA_MIN = 15;
+
+// A catraca do total: soma dos custos declarados de TODOS os juízes.
+// Armada em 30/08 (fechamento do item 99) com a soma da época — 23
+// juízes, 43,3 min. O total só desce ou fica; subir exige re-pinar
+// AQUI, no mesmo commit, com a justificativa (aposentou? fundiu?).
+export const TETO_TOTAL_MIN = 43.3;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** dono = decisão dele; lei = física/contrato; chão = regressão. */
 export const SERVE_RE = /^\/\/ Serve:\s*(dono|lei|chão)\s+[—–-]\s+\S+/m;
 
-const FERRAMENTAS = new Set(['diff-pixel.mjs', 'gpu-profile.mjs']);
+// Custo pt-BR: "X,X min" ou "~X,X min (…)" — o ~ marca estimado.
+export const CUSTO_RE = /^\/\/ Custo:\s*(~?)\s*(\d+(?:,\d+)?)\s*min\b/m;
+
+// Fora da exigência de Custo: não são juízes, são a bancada deles.
+// fase-da-grade desceu de juiz a bancada no fechamento do 99: a soleira
+// dele já é cobrada DENTRO da suíte (estabilidade-temporal.test.mjs);
+// o standalone resta como impressor de tabela.
+const FERRAMENTAS = new Set(['diff-pixel.mjs', 'gpu-profile.mjs', 'fase-da-grade.mjs']);
 const HARNESS = new Set(['chrome.mjs']);
 
-export const AMOSTRA_COM_SERVE = [
-  'src/three/atlasConfig.test.ts',
-  'src/three/cadastroDeRepresentacoes.test.ts',
-  'src/three/simbolosProibidos.test.ts',
-  'scripts/visual/chrome.test.mjs',
-  'scripts/visual/atlas-smoke.mjs',
-  'scripts/visual/a11y.mjs',
-  'scripts/censo-dos-juizes.test.mjs',
-];
+export const CLASSES = ['dono', 'lei', 'chão'];
 
 function andar(dir, acc = []) {
   for (const nome of readdirSync(dir)) {
@@ -48,6 +55,12 @@ export function lerServe(fonte) {
   const m = fonte.match(SERVE_RE);
   if (!m) return null;
   return { classe: m[1], linha: m[0].slice(3) };
+}
+
+export function lerCusto(fonte) {
+  const m = fonte.match(CUSTO_RE);
+  if (!m) return null;
+  return { minutos: Number(m[2].replace(',', '.')), estimado: m[1] === '~' };
 }
 
 function contarCasos(fonte) {
@@ -70,14 +83,13 @@ function entradaDe(caminho) {
     else if (FERRAMENTAS.has(base)) papel = 'ferramenta';
     else papel = 'juiz';
   }
-  const custo = fonte.match(/^\/\/ Custo:\s*(.+)$/m)?.[1]?.trim() ?? null;
   return {
     arquivo: r,
     papel,
     casos: r.endsWith('.test.ts') || r.endsWith('.test.mjs') ? contarCasos(fonte) : 0,
     serve: serve ? serve.classe : null,
     frase: serve ? serve.linha : null,
-    custo,
+    custo: lerCusto(fonte),
   };
 }
 
@@ -97,28 +109,86 @@ export function censo() {
   return { testes, visuais };
 }
 
-export function amostraSemServe(lista) {
-  return AMOSTRA_COM_SERVE.filter((a) => {
-    const e = lista.find((x) => x.arquivo === a);
-    return !e || !e.serve;
-  });
+/** Os furos que reprovam: teste/juiz sem Serve; juiz sem Custo parseável. */
+export function furos({ testes, visuais }) {
+  const juizes = visuais.filter((v) => v.papel === 'juiz');
+  return {
+    semServe: [...testes, ...juizes].filter((e) => !e.serve).map((e) => e.arquivo),
+    semCusto: juizes.filter((j) => !j.custo).map((j) => j.arquivo),
+  };
+}
+
+export function quebraPorClasse(entradas) {
+  const q = Object.fromEntries(CLASSES.map((c) => [c, 0]));
+  let semDono = 0;
+  for (const e of entradas) {
+    if (e.serve) q[e.serve] += 1;
+    else semDono += 1;
+  }
+  return { ...q, semDono };
+}
+
+export function somaCustos(juizes) {
+  let total = 0;
+  let estimados = 0;
+  for (const j of juizes) {
+    if (!j.custo) continue;
+    total += j.custo.minutos;
+    if (j.custo.estimado) estimados += 1;
+  }
+  return { total, estimados };
+}
+
+/** soma > teto estoura; teto null = catraca desarmada, nada estoura.
+ *  A comparação é em DÉCIMOS de minuto — a precisão das declarações —
+ *  porque a soma binária de 43,3 chega como 43,300000000000004. */
+export function julgarCatraca(totalMin, teto = TETO_TOTAL_MIN) {
+  if (teto === null) return { armada: false, estoura: false };
+  return { armada: true, estoura: Math.round(totalMin * 10) > Math.round(teto * 10) };
+}
+
+export function minutosPtBr(n) {
+  return n.toFixed(1).replace('.', ',');
 }
 
 function main() {
   const { testes, visuais } = censo();
-  const casos = testes.reduce((n, t) => n + t.casos, 0);
-  const testesCom = testes.filter((t) => t.serve).length;
   const juizes = visuais.filter((v) => v.papel === 'juiz');
-  const juizesCom = juizes.filter((j) => j.serve).length;
-  const amostraFura = amostraSemServe([...testes, ...visuais]);
+  const casos = testes.reduce((n, t) => n + t.casos, 0);
+  const quebra = quebraPorClasse([...testes, ...juizes]);
+  const { semServe, semCusto } = furos({ testes, visuais });
+  const { total, estimados } = somaCustos(juizes);
+  const catraca = julgarCatraca(total);
 
-  process.stdout.write(`Censo dos juízes (item 99) — teto da rodada visual: ${TETO_DA_RODADA_MIN} min\n`);
-  process.stdout.write(`testes: ${testes.length} arquivos, ${casos} casos, ${testesCom} com Serve\n`);
-  process.stdout.write(`juízes visuais: ${juizes.length}, ${juizesCom} com Serve\n`);
-  process.stdout.write(`amostra sem Serve: ${amostraFura.length === 0 ? 'nenhuma' : amostraFura.join(', ')}\n`);
-  const semDono = [...testes, ...juizes].filter((e) => !e.serve);
-  process.stdout.write(`sem dono (fatias seguintes): ${semDono.length}\n`);
-  if (amostraFura.length) process.exit(1);
+  const escreve = (s) => process.stdout.write(`${s}\n`);
+  escreve(`Censo dos juízes (item 99) — teto da rodada visual: ${TETO_DA_RODADA_MIN} min`);
+  escreve(`testes: ${testes.length} arquivos, ${casos} casos`);
+  escreve(`juízes visuais: ${juizes.length} (harness/ferramentas fora da exigência de Custo: ${visuais.length - juizes.length})`);
+  escreve(`por classe: dono ${quebra.dono} · lei ${quebra.lei} · chão ${quebra['chão']} · sem dono ${quebra.semDono}`);
+  escreve(`custo declarado dos juízes: ${minutosPtBr(total)} min (${estimados} estimados)`);
+  if (!catraca.armada) {
+    escreve('catraca desarmada (armar no fechamento do item 99)');
+  } else if (!catraca.estoura) {
+    escreve(`catraca armada: ${minutosPtBr(total)} min dentro do teto de ${minutosPtBr(TETO_TOTAL_MIN)} min`);
+  }
+
+  for (const a of semServe) escreve(`SEM SERVE: ${a}`);
+  for (const a of semCusto) escreve(`SEM CUSTO: ${a}`);
+  if (catraca.estoura) {
+    escreve(
+      `CATRACA: ${minutosPtBr(total)} min estoura o teto de ${minutosPtBr(TETO_TOTAL_MIN)} min — ` +
+        'juiz novo só entra aposentando ou fundindo alguém — ou re-pine o teto NO MESMO commit com a justificativa'
+    );
+  }
+
+  if (semServe.length || semCusto.length || catraca.estoura) {
+    escreve(
+      `PORTEIRO REPROVA: ${semServe.length} sem Serve, ${semCusto.length} juiz(es) sem Custo` +
+        (catraca.estoura ? ', catraca estourada' : '')
+    );
+    process.exit(1);
+  }
+  escreve('porteiro passa: todo teste e juiz com dono, todo juiz com custo');
 }
 
 const este = fileURLToPath(import.meta.url);
