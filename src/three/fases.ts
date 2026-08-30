@@ -135,6 +135,11 @@ export interface HudDaFase {
    *  medida de distancia para provar isso"). Só no voo livre: o filme
    *  guarda a dramaturgia, o Atlas tem o próprio enquadramento. */
   sol: boolean;
+  /** o indicador de fotografia ("LENTE 34° · SOL 412 UA", item 100) —
+   *  só no FILME, onde o roteiro varre a lente e nasce a dúvida "é a
+   *  câmera andando ou o zoom fechando?" (as Três Marias). No voo
+   *  livre e no Atlas a lente é o pino fixo da casa. */
+  lente: boolean;
   /** barra de capítulos do FILME (slider de scrub) */
   progresso: boolean;
   /** barra de controles — é ela que hospeda o ⚙ Ajustes */
@@ -197,6 +202,7 @@ export interface HudDaFase {
 export const HUD_POR_FASE = {
   loading: {
     sol: false,
+    lente: false,
     letterbox: false,
     legenda: false,
     rumo: false,
@@ -216,6 +222,7 @@ export const HUD_POR_FASE = {
   },
   intro: {
     sol: false,
+    lente: false,
     letterbox: true,
     legenda: false,
     rumo: false,
@@ -235,6 +242,7 @@ export const HUD_POR_FASE = {
   },
   journey: {
     sol: false,
+    lente: true,
     letterbox: true,
     legenda: true,
     rumo: true,
@@ -254,6 +262,7 @@ export const HUD_POR_FASE = {
   },
   end: {
     sol: false,
+    lente: false,
     letterbox: true,
     legenda: false,
     rumo: false,
@@ -273,6 +282,7 @@ export const HUD_POR_FASE = {
   },
   free: {
     sol: true,
+    lente: false,
     letterbox: true,
     legenda: false,
     rumo: false,
@@ -298,6 +308,7 @@ export const HUD_POR_FASE = {
   // dentro do Atlas — e o tempo do Atlas é OUTRO tempo: o do céu).
   atlas: {
     sol: false,
+    lente: false,
     letterbox: true,
     legenda: false,
     rumo: false,

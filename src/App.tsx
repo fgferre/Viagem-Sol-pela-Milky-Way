@@ -161,6 +161,9 @@ export default function App() {
   const [runtime, setRuntime] = useState(0);
   const [dest, setDest] = useState('');
   const [sol, setSol] = useState('');
+  /** o indicador de fotografia do filme ("LENTE 34° · SOL 412 UA",
+   *  item 100); vazio = escondido */
+  const [lente, setLente] = useState('');
   /**
    * ONDE A CÂMERA ESTÁ, em eclíptica heliocêntrica UA — só no Atlas, a
    * 4 Hz e só quando ela anda (item 74, parte B). A ficha do objeto a usa
@@ -292,6 +295,7 @@ export default function App() {
     setRuntime,
     setDest,
     setSol,
+    setLente,
     setCamera,
     setQuality,
     setLoadStage,
@@ -772,6 +776,12 @@ export default function App() {
 
       {/* distância viva do Sol — a prova do afastamento (voo livre) */}
       {hud.sol && sol && <div className="sol-line">{sol}</div>}
+
+      {/* o indicador de fotografia (item 100): a LENTE denuncia o zoom,
+          a distância denuncia o dolly — juntos desfazem a dúvida das
+          Três Marias. Só no filme; ocupa a vaga do sol-line, que lá
+          nunca desenha */}
+      {hud.lente && lente && <div className="lente-line">{lente}</div>}
 
       {/* progresso (arrastável — scrub). Fica de pé na tela final também:
           seekFraction já sabe retomar a partir da fase 'end', e sem a barra

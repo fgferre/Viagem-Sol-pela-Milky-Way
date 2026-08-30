@@ -35,6 +35,7 @@ function bancada() {
     onLabels: () => {},
     onDest: () => {},
     onSol: () => {},
+    onLente: () => {},
     onCamera: (posUA) => publicadas.push(posUA),
     beatDaViagem: () => ({}) as JourneyMeta,
   });
@@ -134,6 +135,7 @@ describe('a camada "Nomes na tela" (item 82, N2)', () => {
       onLabels: (l) => publicados.push(l),
       onDest: () => {},
       onSol: () => {},
+      onLente: () => {},
       onCamera: (posUA) => camPublicadas.push(posUA),
       beatDaViagem: () => ({}) as JourneyMeta,
     });
@@ -179,6 +181,7 @@ describe('a camada "Nomes na tela" (item 82, N2)', () => {
       onLabels: (l) => publicados.push(l),
       onDest: (d) => dests.push(d),
       onSol: () => {},
+      onLente: () => {},
       onCamera: () => {},
       beatDaViagem: () => ({ target: ['Vizinha'], dest: 'Vizinha' }) as JourneyMeta,
     });
@@ -228,5 +231,56 @@ describe('a camada "Nomes na tela" (item 82, N2)', () => {
     rotulos.projetar(cam, quadro(true));
     rotulos.projetar(cam, quadro(false));
     expect(publicados.at(-1)!.length).toBeGreaterThan(0);
+  });
+});
+
+describe('o indicador de fotografia (item 100): "LENTE · SOL" só no filme', () => {
+  const CEU: NamedStar[] = [
+    { n: 'Vizinha', x: 0.4, y: 0.2, z: 0, m: 1, s: 'A0V', d: 5, t: 0 },
+  ];
+
+  function montar() {
+    const lentes: string[] = [];
+    const rotulos = new Rotulos({
+      onLabels: () => {},
+      onDest: () => {},
+      onSol: () => {},
+      onLente: (texto) => lentes.push(texto),
+      onCamera: () => {},
+      beatDaViagem: () => ({ target: ['Vizinha'], dest: 'Vizinha' }) as JourneyMeta,
+    });
+    const cam = new THREE.PerspectiveCamera(34.6, 1.6, 0.001, 100);
+    cam.position.set(0, 0, 5);
+    cam.updateMatrixWorld();
+    const quadro = (fase: QuadroDeRotulos['fase']): QuadroDeRotulos => ({
+      fase, named: CEU, dHome: 5, planetas: null, foco: null, nomesEscondidos: false,
+    });
+    return { rotulos, lentes, cam, quadro };
+  }
+
+  it('no FILME publica lente arredondada e distância na régua canônica', () => {
+    const { rotulos, lentes, cam, quadro } = montar();
+    rotulos.projetar(cam, quadro('journey'));
+    // 34,6° arredonda para 35; 5 pc viram anos-luz pela MESMA escada de
+    // unidades de todo mostrador — o texto tem as duas metades da dúvida
+    // das Três Marias: a lente (zoom) e a posição (dolly)
+    expect(lentes.at(-1)).toMatch(/^LENTE 35° · SOL /);
+    expect(lentes.at(-1)).toContain('anos-luz');
+  });
+
+  it('fora do filme se apaga, e o pulso do zoom republica pelo relógio de 4 Hz', () => {
+    const { rotulos, lentes, cam, quadro } = montar();
+    rotulos.projetar(cam, quadro('journey'));
+    expect(lentes.at(-1)).toMatch(/^LENTE /);
+    // sair do filme apaga IMEDIATO (mudança de espécie, sem esperar 4 Hz)
+    rotulos.projetar(cam, quadro('free'));
+    expect(lentes.at(-1)).toBe('');
+    // de volta ao filme com o ZOOM fechando: o número acompanha depois do
+    // tique — apagar a fiação do fov congelaria este valor e reprovaria
+    rotulos.projetar(cam, quadro('journey'));
+    cam.fov = 18.2;
+    rotulos.tique(0.5);
+    rotulos.projetar(cam, quadro('journey'));
+    expect(lentes.at(-1)).toMatch(/^LENTE 18° · SOL /);
   });
 });

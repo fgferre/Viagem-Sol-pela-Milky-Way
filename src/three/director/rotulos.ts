@@ -99,6 +99,8 @@ export class Rotulos {
   private destTimer = 0;
   private lastSol = '';
   private solTimer = 0;
+  private lastLente = '';
+  private lenteTimer = 0;
   /** a última posição de câmera PUBLICADA, em pc de cena (item 74) */
   private readonly ultimaCam = new THREE.Vector3(NaN, NaN, NaN);
   private camTimer = 0;
@@ -134,6 +136,16 @@ export class Rotulos {
      * para ninguém é pagar alocação por quadro no filme.
      */
     onCamera: (posUA: readonly [number, number, number] | null) => void;
+    /**
+     * O INDICADOR DE FOTOGRAFIA (item 100) — "LENTE 34° · SOL 412 UA",
+     * só no FILME; vazio = esconder. É a resposta ao caso das Três
+     * Marias, ideia dele em 25/08: no filme não dá para saber se "o
+     * ponto de observação está mudando ou o zoom está sendo ativado".
+     * A LENTE denuncia o zoom (o roteiro varre 15°–60°) e a distância
+     * denuncia o dolly — os dois números lado a lado desfazem a
+     * ambiguidade. Mesmo remédio de 4 Hz do rumo e do Sol.
+     */
+    onLente: (text: string) => void;
     /** o meta do beat da viagem — só o ramo `journey` o paga */
     beatDaViagem: () => JourneyMeta;
   };
@@ -196,6 +208,7 @@ export class Rotulos {
     this.destTimer += dt;
     this.solTimer += dt;
     this.camTimer += dt;
+    this.lenteTimer += dt;
   }
 
   /**
@@ -313,6 +326,31 @@ export class Rotulos {
   }
 
   /**
+   * "LENTE 34° · SOL 412 UA" — o indicador de fotografia (item 100),
+   * só no FILME (`HUD_POR_FASE` concorda: `lente` só em 'journey' —
+   * é lá que o roteiro varre a lente de 15° a 60° e nasce a dúvida
+   * das Três Marias; no voo livre e no Atlas a lente é o pino fixo da
+   * casa e a distância já tem as próprias linhas). O fov é o VERTICAL
+   * da câmera, arredondado a grau inteiro — é o pulso do número que
+   * denuncia o zoom; a distância usa a MESMA escada de unidades de
+   * todo mostrador (`lib/unidades`). Mesmo remédio de 4 Hz.
+   */
+  private emitLente(cam: THREE.PerspectiveCamera, fase: Phase) {
+    let text = '';
+    if (fase === 'journey') {
+      const nota = notaDeDistancia(cam.position.length() * UA_POR_PC, numeroPtBr);
+      const graus = Math.round(cam.fov);
+      if (nota && Number.isFinite(graus)) text = `LENTE ${graus}° · SOL ${nota}`;
+    }
+    const changedKind = (text === '') !== (this.lastLente === '');
+    if (text !== this.lastLente && (changedKind || this.lenteTimer > 0.25)) {
+      this.lastLente = text;
+      this.lenteTimer = 0;
+      this.fios.onLente(text);
+    }
+  }
+
+  /**
    * A CÂMERA EM ECLÍPTICA, a 4 Hz, só quando ela andou e SÓ COM A FICHA
    * ABERTA. O gatilho do movimento é o MESMO de `escreverFase` na camada
    * de planetas — comparar o vetor com o anterior —, porque a pergunta é
@@ -386,6 +424,7 @@ export class Rotulos {
       this.fios.onLabels(this.lastLabels);
       this.emitDest(roteiro?.dest, cam.position, named);
       this.emitSol(cam.position, fase);
+      this.emitLente(cam, fase);
       this.emitCamera(cam.position, fase);
       return;
     }
@@ -505,6 +544,8 @@ export class Rotulos {
 
     // a distância viva do Sol — roda todo tique e se auto-apaga fora do voo
     this.emitSol(cam.position, fase);
+    // o indicador de fotografia — roda todo tique e se auto-apaga fora do filme
+    this.emitLente(cam, fase);
     // e onde a câmera ESTÁ, para a ficha dizer o que se vê iluminado daqui
     this.emitCamera(cam.position, fase);
   }

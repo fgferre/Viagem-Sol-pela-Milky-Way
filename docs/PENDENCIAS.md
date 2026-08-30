@@ -1265,6 +1265,31 @@ item **86**: lá se decide *qual* lente o app usa; aqui se **mostra e se
 mexe** nela. O 86 anda primeiro — mostrar uma lente que está prestes a mudar
 é trabalho jogado fora.
 
+**A FASE 1 (MOSTRAR) POUSOU em 29/08, à noite.** O indicador vive no
+FILME — é lá que o roteiro varre a lente e nasce a dúvida — como UMA
+linha discreta no canto inferior direito, no traje das linhas de rumo e
+do Sol: **"LENTE 41° · SOL 179 ANOS-LUZ"**. A lente é o fov vertical
+vivo arredondado a grau; a distância usa a régua canônica de unidades
+(`lib/unidades`). O fio é o mesmo remédio de 4 Hz dos irmãos
+(`rotulos.emitLente` → `onLente` → `.lente-line`), a linha ocupa a vaga
+do sol-line (que nunca desenha no filme) e some sozinha fora do filme.
+**A PROVA É O PAR das Três Marias** (o caso que ELE apontou):
+`capturas/item100-lente-t44.png` × `item100-lente-t48.png` — no mesmo
+plano fixo a lente vai de 41° a 16° e o SOL fica em 179 anos-luz: zoom,
+não deslocamento, legível por qualquer um. Guardas:
+`rotulos.test.ts` (publica no filme com lente arredondada e régua
+canônica; apaga fora; o pulso do zoom republica). Nenhuma porta nova,
+nenhum juiz tocado (os gates fotografam sem HUD, `?shot=2`).
+
+**A FASE 2 (MEXER) ESPERA A DECISÃO DELE — as duas variantes são as
+palavras dele:** (a) *"um controle de zoom que muda a lente
+automaticamente"* — um eixo contínuo, o zoom desliza e a lente
+acompanha; ou (b) *"você escolhe a lente e o zoom muda de acordo"* —
+lentes nomeadas (grande-angular / normal / tele) e o zoom anda dentro
+da escolhida. Custo honesto de qualquer uma: o fov vivo do Atlas deixa
+de ser só pino e vira desvio DECLARADO (selo + espelho de URL), e as
+vistas de juiz re-baselizam se o padrão mudar — anuncia-se antes.
+
 
 **108. O fim do filme não mostra direito a Lua e a Terra.** (Palavras
 dele, 29/08, ditas ao ver o filme depois da lente nova: *"agora que

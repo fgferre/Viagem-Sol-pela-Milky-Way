@@ -46,6 +46,7 @@ export interface FiosDoDirector {
   setRuntime: (v: number) => void;
   setDest: (v: string) => void;
   setSol: (v: string) => void;
+  setLente: (v: string) => void;
   setCamera: (v: readonly [number, number, number] | null) => void;
   setQuality: (v: EstadoDaQualidade) => void;
   setLoadStage: (v: LoadStage) => void;
@@ -76,6 +77,7 @@ export function useDirector(fios: FiosDoDirector) {
     setRuntime,
     setDest,
     setSol,
+    setLente,
     setCamera,
     setQuality,
     setLoadStage,
@@ -111,6 +113,7 @@ export function useDirector(fios: FiosDoDirector) {
       onQuality: setQuality,
       onDest: setDest,
       onSol: setSol,
+      onLente: setLente,
       onCamera: setCamera,
       onStage: setLoadStage,
       // custom property, como o warp: o véu do Atlas anda a 60 Hz e um

@@ -142,6 +142,25 @@
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
 }
 
+/* --- o indicador de fotografia (item 100): "LENTE 34° · SOL 412 UA".
+   Mesmo traje e mesmo degrau do sol-line — no FILME, onde só ele
+   desenha, a vaga é a mesma e as duas linhas nunca coexistem. A cor é
+   a do sol-line (referência de posição, não chamada); o número da
+   lente pulsando é o que denuncia o zoom, sem animação extra. --- */
+.lente-line {
+  position: fixed;
+  right: 6vw;
+  bottom: 7.6vh;
+  z-index: 40;
+  pointer-events: none;
+  color: rgba(255, 214, 150, 0.55);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+
 /* --- dica de voo livre ---
    SEM POSIÇÃO PRÓPRIA: a dica vive dentro de uma coluna nos dois modos
    em que existe — o `.filme-rodape` no filme e no voo livre, o

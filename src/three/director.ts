@@ -175,6 +175,9 @@ interface DirectorEvents {
   onDest: (text: string) => void;
   /** distância viva do Sol ("SOL · 40,2 UA"); vazio = esconder */
   onSol: (text: string) => void;
+  /** o indicador de fotografia do FILME ("LENTE 34° · SOL 412 UA",
+   *  item 100); vazio = esconder */
+  onLente: (text: string) => void;
   /**
    * ONDE A CÂMERA ESTÁ, em eclíptica heliocêntrica UA — só no Atlas, a
    * 4 Hz e só quando ela se move (item 74, parte B). É com ela que a ficha
@@ -451,6 +454,7 @@ export class Director {
     onLabels: (labels) => this.events.onLabels(labels),
     onDest: (text) => this.events.onDest(text),
     onSol: (text) => this.events.onSol(text),
+    onLente: (text) => this.events.onLente(text),
     onCamera: (posUA) => this.events.onCamera(posUA),
     beatDaViagem: () => this.rig.metaAt(this.journeyT),
   });
