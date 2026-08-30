@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 113.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 114.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`.)*
 
@@ -615,6 +615,36 @@ App.test.ts, respondido com justificativa no próprio arquivo. Fusões
 marcadas nos cabeçalhos para quem tocar (fita 3→1; chapa→costura);
 fase-da-grade desceu a bancada; voo-ida-e-volta vive. História no
 museu (`grep -n '^## Item 99' docs/PENDENCIAS-ARQUIVO.md`).
+
+**113. Os minutos dos juízes: a caçada achou ~15 e a obra corta por
+fases.** (30/08, palavras dele: *"vamos continuar tendo rodadas que
+demoram horas e horas???"* — e a cobrança direta: *"vc realmente ficou
+focado em encontrar grandes oportunidades de otimizacao?"*.) Dois
+analistas só-de-leitura sobre os seis juízes mais caros. ACHADOS: o
+preço declarado do ab-identidade nasceu velho (61 vistas, não 54 →
+~8,0 min/lado real); uma vista DUPLICADA (`ua40` ≡ `solreal40ua`,
+mesma URL — a mesma imagem capturada 4× por par, há semanas); o lado
+"antes" refeito à toa nas rodadas encadeadas (o carimbo usa o HEAD e
+devia usar a ÁRVORE; ~8 min/par); 2 capturas por vista quando 1 basta
+até haver divergência (~7,5 min/par); um boot de Chrome POR CAPTURA em
+vez de por balde (~2–4 min/par); MB1 todo em série (~2 min); a11y
+recarrega a página ~40× para trocar o que o app troca ao vivo
+(~2,7 min); sobras do item 76 no atlas-smoke (~1 min de dorme fixo
+onde `esperarCapaSair`/`esperarPor` já existem). EFEITO se tudo
+passar: rodada pesada de fechamento ~20 → ~5 min; bolsa ~45 → ~28,
+SEM perder proteção. OBRA POR FASES, cada uma com prova e re-pino de
+Custo/catraca: **F1** duplicada + esperas do atlas-smoke + verdade dos
+preços (EM OBRA); **F2** carimbo de árvore; **F3** captura adaptativa
++ Chrome por balde (exige A/A 61/61 — "navegador limpo por captura" é
+método declarado e a mudança prova bit-identidade antes de valer);
+**F4** MB1 em baldes; **F5** a11y vivo; aposta a MEDIR: a11y em
+q=performance. **DECISÕES DELE (cortes com preço, ~6 min extras,
+nenhuma sem palavra):** (i) cortar 10 fotos de baixo valor do
+ab-identidade (2,9 min/par); (ii) afinar o MB1 (0,9); (iii)
+filme-ritmo de 2 s→4 s + memoria de 5→3 ciclos + espera da prova
+negativa de 18→10 s (~1,9). Porta 5173: dois vite órfãos de 29/08
+seguem vivos (o kill foi bloqueado por permissão) — as provas usam
+`APP_URL` apontando ao servidor vivo da sessão.
 
 **106. Sessões longas demais, milhões de tokens em tarefa simples —
 FECHADO em 28/08, no mesmo dia em que nasceu.** Palavras dele: *"as
