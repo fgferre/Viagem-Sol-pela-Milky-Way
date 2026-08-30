@@ -27,7 +27,10 @@ export const TETO_DA_RODADA_MIN = 15;
 // caiu de 7,9 para 3,5 min medidos (corte de 10 vistas + captura
 // adaptativa + sessão por balde + JOBS=6), e o teto desce os mesmos
 // 4,4 — de 44,0 para 39,6.
-export const TETO_TOTAL_MIN = 39.6;
+// Re-pinado PARA BAIXO na F4 do item 113 (30/08): o MB1 caiu de 3,9
+// para 1,8 min medidos (corte ii: 97 → 72 passos; três baldes
+// paralelos), e o teto desce os mesmos 2,1 — de 39,6 para 37,5.
+export const TETO_TOTAL_MIN = 37.5;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

@@ -1,10 +1,11 @@
 // Serve: lei — §5.17/§5.20 da LEI-DA-ESTRELA: nada ferve nem re-semeia quando a câmera anda
-// Custo: 3,9 min a corrida inteira (~0,4 min por família)
+// Custo: 1,8 min a corrida inteira (3 baldes paralelos; ~0,5 min por família avulsa)
 // ============================================================
 // MB1 — O JUIZ DE ESTABILIDADE TEMPORAL (LEI-DA-ESTRELA §5.17, §5.20).
 //
-//   node scripts/visual/estabilidade-temporal.mjs                 # a corrida inteira
-//   node scripts/visual/estabilidade-temporal.mjs pan orbita      # só estas famílias
+//   node scripts/visual/estabilidade-temporal.mjs                 # a corrida inteira (3 baldes paralelos)
+//   SERIE=1 node scripts/visual/estabilidade-temporal.mjs         # a corrida inteira numa sessão só (o controle)
+//   node scripts/visual/estabilidade-temporal.mjs pan fov         # só estas famílias
 //   PNGS=1 node scripts/visual/estabilidade-temporal.mjs pan      # guarda os retratos
 //   JANELA=1128x1080 node scripts/visual/estabilidade-temporal.mjs # (padrão)
 //
@@ -91,15 +92,19 @@
 // do `.bare-mode` (`> *:not(.scene-canvas)`) que o `?shot=2` usa, e nada mais:
 // a cena desenha igual, o relógio anda.
 //
-// AS OITO FAMÍLIAS, 87 passos. `aproxSol` (300 → 6 UA, translação pura: o campo
-// fica parado e a reprojeção é quase a identidade — o caso mais limpo);
-// `fronteiraSol` (a banda do gate ponto→corpo, 4 px arma e 2 px desarma, LIDA da
-// régua do próprio app e não digitada); `reversao` (a MESMA escada de volta, na
-// MESMA sessão, que é onde a histerese aparece); `pan` (rotação pura a 40 UA,
-// com a volta ao ponto de partida — a persistência); `orbita` (translação e
-// rotação juntas); `fov`; `aproxEstrela` (Sirius); `fronteiraTerra` (a cessão
-// corpo↔ponto, `cessaoPorDominancia`). O passo de cada família move a imagem uns
-// 4 px — a escala de um quadro de voo real.
+// AS OITO FAMÍLIAS, 72 passos (o corte ii do item 113 afinou quatro escadas de
+// 12 para 8 degraus e aposentou `orbita` — ver a ponte de comentário onde ela
+// morava). `aproxSol` (300 → 6 UA, translação pura: o campo fica parado e a
+// reprojeção é quase a identidade — o caso mais limpo); `fronteiraSol` (a banda
+// do gate ponto→corpo, 4 px arma e 2 px desarma, LIDA da régua do próprio app e
+// não digitada); `reversao` (a MESMA escada de volta, na MESMA sessão, que é
+// onde a histerese aparece); `pan` (rotação pura a 40 UA, com a volta ao ponto
+// de partida — a persistência); `fov`; `aproxEstrela` (Sirius);
+// `fronteiraTerra` (a cessão corpo↔ponto, `cessaoPorDominancia`); `zoomDeRoda`
+// (a única DENTRO do Atlas, pela porta do gesto — item 73). O passo de cada
+// família move a imagem uns 4 px — a escala de um quadro de voo real. A corrida
+// inteira reparte as famílias em TRÊS baldes paralelos (F4 do 113, ver
+// `BALDES`); cada família mede o próprio piso na própria sessão.
 //
 // QUEM NÃO É JULGADO, e cada regra tem a sua medida ao lado da constante:
 // fonte fraca demais para sobreviver à fase da grade (`LIMIAR_JULGADA`); fonte
@@ -119,11 +124,14 @@
 // ruído — o que entrou no item 70 das PENDENCIAS repetiu em corridas
 // sucessivas, com a mesma assinatura e no mesmo passo.
 //
-// CUSTO: ~4 min a corrida inteira, ~0,4 min por família — medido nesta máquina
-// em 25/08, com o dev server no ar e o quadro de 1128×1080 (eram 1,8 min no
-// quadro de 613 px que não servia). O censo está em docs/NORTE.md.
+// CUSTO: 1,8 min a corrida inteira — medido nesta máquina em 30/08, duas
+// corridas (1,75 e 1,80 min), com o dev server no ar, o quadro de 1128×1080 e
+// os três baldes paralelos da F4 do item 113 (era 3,9 min em série, com os 97
+// passos de antes do corte ii). O censo está em docs/NORTE.md.
 // ============================================================
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
@@ -1729,7 +1737,8 @@ async function familiaFronteiraSol(s, banda) {
   const ate = banda.de * 0.6;
   await s.ir(`pos=0,0,${de}&look=0,0,0&q=cinema`);
   await s.js(SO_A_CENA);
-  const poses = degraus(de, ate, 12).map((z) => pousar([0, 0, z], SOL));
+  // 8 degraus (eram 12, corte ii do item 113) — pontas e razão geométrica mantidas; sem vigia fica fervura estreita entre degraus da banda de promoção
+  const poses = degraus(de, ate, 8).map((z) => pousar([0, 0, z], SOL));
   return medirPercurso(s, { nome: 'fronteiraSol', poses });
 }
 
@@ -1738,7 +1747,8 @@ async function familiaFronteiraSol(s, banda) {
 async function familiaReversao(s, banda) {
   const de = banda.ate * 1.6;
   const ate = banda.de * 0.6;
-  const poses = degraus(ate, de, 12).map((z) => pousar([0, 0, z], SOL));
+  // 8 degraus (eram 12, corte ii do item 113) — a MESMA escada afinada da ida; sem vigia fica fervura estreita entre degraus da banda de promoção
+  const poses = degraus(ate, de, 8).map((z) => pousar([0, 0, z], SOL));
   return medirPercurso(s, { nome: 'reversao', poses });
 }
 
@@ -1762,20 +1772,10 @@ async function familiaPan(s) {
   return medirPercurso(s, { nome: 'pan', poses });
 }
 
-/** ÓRBITA — translação + rotação juntas, com o Sol pinado no centro. */
-async function familiaOrbita(s) {
-  const r = 40 / UA_POR_PC;
-  await s.ir(`pos=0,0,${r}&look=0,0,0&q=cinema`);
-  await s.js(SO_A_CENA);
-  const cam = JSON.parse(await s.js(LER_CAMERA));
-  const passoRad = 4 / pxPorRad(cam);
-  const poses = [];
-  for (let i = 0; i <= 9; i++) {
-    const a = i * passoRad;
-    poses.push(pousar([r * Math.sin(a), 0, r * Math.cos(a)], SOL));
-  }
-  return medirPercurso(s, { nome: 'orbita', poses });
-}
+// A família `orbita` (translação+rotação juntas, o Sol pinado no centro) saiu
+// no corte ii do item 113, aprovado pelo dono em 30/08: `pan` e `aproxSol`
+// seguem vigiando cada metade separada — rotação pura e translação pura; sem
+// vigia fica a instabilidade que SÓ aparece com as duas juntas.
 
 /**
  * FOV — a lente muda e a câmera não sai do lugar.
@@ -1793,7 +1793,8 @@ async function familiaFov(s) {
   const z = 40 / UA_POR_PC;
   await s.ir(`pos=0,0,${z}&look=0,0,0&q=cinema`);
   await s.js(SO_A_CENA);
-  const fovs = degraus(58, 46, 12);
+  // 8 degraus (eram 12, corte ii do item 113) — pontas e razão mantidas; sem vigia fica fervura estreita entre degraus da escada de lente
+  const fovs = degraus(58, 46, 8);
   const poses = fovs.map((f) => async (sess) => {
     await sess.js(
       `(() => { const c = window.__director.engine.camera; c.fov = ${f};`
@@ -1839,7 +1840,8 @@ async function familiaFronteiraTerra(s) {
   );
   await s.js(SO_A_CENA);
   await s.assentar();
-  const poses = degraus(600, 30, 12).map((k) => pousarEm(k));
+  // 8 degraus (eram 12, corte ii do item 113) — pontas e razão mantidas; sem vigia fica fervura estreita entre degraus da banda da cessão
+  const poses = degraus(600, 30, 8).map((k) => pousarEm(k));
   const ancorasDe = (ca, cb) => [...ancorasDaCasa(ca, cb), { nome: 'terra', ponto: centro }];
   return medirPercurso(s, { nome: 'fronteiraTerra', poses, ancorasDe });
 }
@@ -1900,28 +1902,37 @@ async function familiaZoomDeRoda(s) {
 // ------------------------------------------------------------
 
 const TODAS = [
-  'aproxSol', 'fronteiraSol', 'reversao', 'pan', 'orbita', 'fov',
+  'aproxSol', 'fronteiraSol', 'reversao', 'pan', 'fov',
   'aproxEstrela', 'fronteiraTerra', 'zoomDeRoda',
 ];
 
-async function correr() {
-  const pedidas = process.argv.slice(2).filter((a) => !a.startsWith('-'));
-  const alvos = pedidas.length ? pedidas : TODAS;
+/**
+ * OS BALDES DO PARALELO (F4 do item 113): a corrida inteira reparte as oito
+ * famílias em TRÊS processos filhos, um Chrome por balde — perfil e porta são
+ * únicos por construção (`abrirSessao` põe o PID no perfil e pede porta 0 ao
+ * SO). O reparte equilibra os passos (23 · 23 · 26) e respeita a única
+ * dependência dura: `fronteiraSol` e `reversao` JUNTAS e NESTA ORDEM, porque a
+ * histerese só existe medida na MESMA sessão, sem reload no meio. Cada família
+ * segue medindo o próprio piso na própria sessão — a régua fica justa por
+ * construção mesmo com três GPU-clientes disputando a máquina.
+ *
+ * O RISCO DECLARADO é exatamente essa disputa: contenção de GPU pode alongar
+ * `esperarQuadros` e fabricar acusação falsa. O controle é `SERIE=1` (a
+ * corrida inteira numa sessão só): acusação que só existe no paralelo é
+ * contenção, não defeito do app.
+ */
+const BALDES = [
+  ['aproxSol', 'fronteiraSol', 'reversao'],
+  ['pan', 'fov'],
+  ['aproxEstrela', 'fronteiraTerra', 'zoomDeRoda'],
+];
+
+/** Corre as famílias pedidas, em ordem, numa sessão só — o corpo de um balde
+ *  e também o da corrida em série. Devolve o bruto; quem julga é o chamador. */
+async function correrFamilias(alvos) {
   for (const a of alvos) {
     if (!TODAS.includes(a)) throw new Error(`família desconhecida: ${a} (há ${TODAS.join(', ')})`);
   }
-
-  const t0 = Date.now();
-  const alturaPedida = Number(JANELA.split('x')[1]);
-  // ESTA LINHA É O PEDIDO, e ela diz isso: o override pode falhar, e a altura
-  // que decide a régua é a do quadro CAPTURADO — cada família publica a sua no
-  // resumo, e `julgarFamilia` reprova quem sair da calibração.
-  console.log(
-    `quadro PEDIDO ${JANELA} · σ da PSF ${((SIGMA_DA_PSF_PX * alturaPedida) / ALTURA_DE_CALIBRACAO_PX).toFixed(3)} px`
-    + ` · soleira de fase ${soleiraJulgada(alturaPedida).toFixed(4)}`
-    + (alturaPedida === ALTURA_DE_CALIBRACAO_PX ? '' : '  (o PEDIDO já está fora da calibração)')
-    + '  — a altura que vale é a MEDIDA, abaixo'
-  );
   const s = await novaSessao();
   const cruas = [];
   let gritos = [];
@@ -1947,7 +1958,6 @@ async function correr() {
         if (!alvos.includes('fronteiraSol')) await familiaFronteiraSol(s, banda);
         r = await familiaReversao(s, banda);
       } else if (nome === 'pan') r = await familiaPan(s);
-      else if (nome === 'orbita') r = await familiaOrbita(s);
       else if (nome === 'fov') r = await familiaFov(s);
       else if (nome === 'aproxEstrela') r = await familiaAproxEstrela(s);
       else if (nome === 'zoomDeRoda') r = await familiaZoomDeRoda(s);
@@ -1968,6 +1978,71 @@ async function correr() {
   } finally {
     s.fechar();
   }
+  return { cruas, gritos };
+}
+
+/** O FILHO de um balde: corre as famílias do argv na própria sessão e grava o
+ *  bruto em `MB1_BALDE`. Ele nunca julga — veredito parcial não é veredito, e
+ *  quem soma as famílias e escreve o JSON oficial é o pai. */
+async function correrBalde() {
+  const alvos = process.argv.slice(2).filter((a) => !a.startsWith('-'));
+  const { cruas, gritos } = await correrFamilias(alvos);
+  // Infinity (censo sem fonte na faixa) vira null aqui — a MESMA perda que o
+  // JSON final já tinha, então o desvio pelo filho não muda o artefato
+  writeFileSync(process.env.MB1_BALDE, JSON.stringify({ cruas, gritos }));
+}
+
+/** O PAI do paralelo: um processo por balde (ver `BALDES`), bruto reunido. */
+async function correrBaldes() {
+  const script = fileURLToPath(import.meta.url);
+  const saidas = await Promise.all(BALDES.map((fams, i) => new Promise((res, rej) => {
+    const saida = resolve(tmpdir(), `mb1-balde-${process.pid}-${i}.json`);
+    const filho = spawn(process.execPath, [script, ...fams], {
+      env: { ...process.env, MB1_BALDE: saida },
+      // as linhas de família saem direto no terminal, intercaladas por balde;
+      // cada linha já se identifica pelo nome, então a mistura é legível
+      stdio: 'inherit',
+    });
+    filho.on('error', rej);
+    filho.on('exit', (codigo) => (codigo === 0
+      ? res(saida)
+      : rej(new Error(`balde ${i + 1} (${fams.join(', ')}) morreu com código ${codigo}`))));
+  })));
+  const cruas = [];
+  const gritos = [];
+  for (const arq of saidas) {
+    const bruto = JSON.parse(readFileSync(arq, 'utf8'));
+    cruas.push(...bruto.cruas);
+    gritos.push(...bruto.gritos);
+    rmSync(arq, { force: true });
+  }
+  return { cruas, gritos };
+}
+
+async function correr() {
+  const pedidas = process.argv.slice(2).filter((a) => !a.startsWith('-'));
+  const alvos = pedidas.length ? pedidas : TODAS;
+  for (const a of alvos) {
+    if (!TODAS.includes(a)) throw new Error(`família desconhecida: ${a} (há ${TODAS.join(', ')})`);
+  }
+
+  const t0 = Date.now();
+  const alturaPedida = Number(JANELA.split('x')[1]);
+  // ESTA LINHA É O PEDIDO, e ela diz isso: o override pode falhar, e a altura
+  // que decide a régua é a do quadro CAPTURADO — cada família publica a sua no
+  // resumo, e `julgarFamilia` reprova quem sair da calibração.
+  console.log(
+    `quadro PEDIDO ${JANELA} · σ da PSF ${((SIGMA_DA_PSF_PX * alturaPedida) / ALTURA_DE_CALIBRACAO_PX).toFixed(3)} px`
+    + ` · soleira de fase ${soleiraJulgada(alturaPedida).toFixed(4)}`
+    + (alturaPedida === ALTURA_DE_CALIBRACAO_PX ? '' : '  (o PEDIDO já está fora da calibração)')
+    + '  — a altura que vale é a MEDIDA, abaixo'
+  );
+  // a corrida INTEIRA vai em baldes paralelos (F4 do item 113); família
+  // avulsa e o controle `SERIE=1` correm numa sessão só, como sempre
+  const paralelo = !pedidas.length && process.env.SERIE !== '1';
+  const { cruas, gritos } = paralelo ? await correrBaldes() : await correrFamilias(alvos);
+  // os baldes terminam fora de ordem; o JSON sai na ordem canônica de TODAS
+  cruas.sort((a, b) => TODAS.indexOf(a.nome) - TODAS.indexOf(b.nome));
 
   const familias = cruas.map((r) => julgarFamilia(r));  // `r` já carrega `altura`
   const veredito = julgarCorrida(familias);
@@ -2081,6 +2156,7 @@ async function correr() {
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
-  await correr();
+  if (process.env.MB1_BALDE) await correrBalde();
+  else await correr();
 }
 /* c8 ignore stop */
