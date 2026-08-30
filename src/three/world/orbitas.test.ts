@@ -461,6 +461,46 @@ describe('a camada no quadro', () => {
     orbitas.dispose();
   });
 
+  it('o fade da linha é INVARIANTE de resolução — Retina vê o mesmo céu (97)', () => {
+    // A DOENÇA (achada em 25/08, consertada em 29/08): o raio aparente
+    // da elipse era medido em px de BUFFER, então no dpr 2 cada órbita
+    // nascia e enchia ao DOBRO da distância. A régua certa é a de CSS —
+    // a mesma da fita e do clarão. A prova é a invariância: o MESMO céu
+    // em dpr 1 (900 px) e dpr 2 (1800 px de buffer, mesma janela) tem de
+    // dar alfas IDÊNTICOS, órbita por órbita. Reverter a divisão pelo
+    // pixelRatio reprova aqui — no dpr 2, Mercúrio sairia CHEIO onde o
+    // dpr 1 o desenha a meio caminho.
+    const distancia = 39.3 / UA_POR_PC; // Mercúrio a meio-fade (raio ~8 px CSS)
+    const alfasEm = (quadro: QuadroEmPx) => {
+      const orbitas = new Orbitas();
+      orbitas.ligado = true;
+      orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+      const camera = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 4 / 3, 1e-9, 1e6);
+      camera.position.set(0, 0, distancia);
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld(true);
+      const tanAtlas = Math.tan((ATLAS_FOV_GRAUS * Math.PI) / 360);
+      orbitas.update(camera, quadro, tanAtlas, 0, null, 'atlas');
+      const resultado = CORPOS_COM_ORBITA.map((c, i) => ({
+        id: c.id,
+        alfa: (orbitas.group.children[i] as unknown as { material: { opacity: number } })
+          .material.opacity,
+      }));
+      orbitas.dispose();
+      return resultado;
+    };
+    const dpr1 = alfasEm({ larguraPx: 900, alturaPx: 900, pixelRatio: 1 });
+    const dpr2 = alfasEm({ larguraPx: 1800, alturaPx: 1800, pixelRatio: 2 });
+    // Mercúrio está no MEIO do fade — o teste morde de verdade: antes do
+    // conserto o dpr 2 o dava cheio (0,32) e o dpr 1 a meio caminho
+    const mercurio1 = dpr1.find((c) => c.id === 'mercury')!.alfa;
+    expect(mercurio1).toBeGreaterThan(0.05);
+    expect(mercurio1).toBeLessThan(0.3);
+    for (let i = 0; i < dpr1.length; i++) {
+      expect(dpr2[i].alfa, `${dpr1[i].id}: dpr2 difere do dpr1`).toBeCloseTo(dpr1[i].alfa, 12);
+    }
+  });
+
   it('na ABERTURA (o sistema inteiro, 29/08) os nove laços têm dono declarado', () => {
     // A VISTA COM QUE O ATLAS ABRE desde 29/08 — a escolha dele pela
     // folha do item 61 sob a lente de 58° (item 86): o sistema INTEIRO,

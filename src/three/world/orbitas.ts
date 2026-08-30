@@ -613,8 +613,15 @@ export const RAIO_DA_CESSAO_PX = 2;
 export const BORDA_DA_CESSAO_PX = 5;
 
 /**
- * O piso e o topo do fade DE BAIXO, em pixels de raio na tela. Abaixo
- * do piso a elipse não é curva, é sujeira sobre o ponto do corpo.
+ * O piso e o topo do fade DE BAIXO, em pixels de raio — DE CSS, desde
+ * 29/08 (item 97): a régua de tamanho aparente da casa é a de CSS (a
+ * fita, a cessão e o clarão já obedecem), e este era o último número da
+ * peça medindo em px de buffer. No Retina o mesmo céu dava o dobro de
+ * pixels e a linha cruzava os limiares com METADE do tamanho aparente —
+ * cada órbita nascia e enchia a exatamente o DOBRO da distância
+ * (Mercúrio cheio a 39 UA no dpr 2 contra 19,6 no dpr 1). Em dpr 1 a
+ * divisão é por um: bit a bit o desenho de sempre. Abaixo do piso a
+ * elipse não é curva, é sujeira sobre o ponto do corpo.
  */
 const RAIO_MIN_PX = 3;
 const RAIO_CHEIO_PX = 16;
@@ -1687,7 +1694,9 @@ export class Orbitas {
       }
       return;
     }
-    const meiaAltura = quadro.alturaPx / 2;
+    // meia-altura em px de CSS (item 97): buffer ÷ pixelRatio — é a
+    // régua de tamanho aparente da casa, a mesma da fita e do clarão
+    const meiaAltura = quadro.alturaPx / (2 * quadro.pixelRatio);
     const camPos = camera.position;
     for (const linha of this.linhas) {
       linha.realce = this.perseguirRealce(linha, dtS);
