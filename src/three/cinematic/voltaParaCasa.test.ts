@@ -13,7 +13,10 @@
 //
 // 2. A ENCENAÇÃO QUE O DONO PEDIU É GEOMETRIA VERIFICÁVEL: raspão que
 //    enche o quadro, Lua acesa no flanco, chegada pelo lado escuro,
-//    pouso congelado no lado claro com a Terra grande e centrada.
+//    pouso congelado no lado claro com a Terra grande. Desde o item 108
+//    ela pousa no TERÇO DE BAIXO, e não mais no centro: o último bloco
+//    deste arquivo cobra o retrato de família — a Lua no quadro junto
+//    com ela —, que é a razão do deslocamento.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -31,7 +34,9 @@ import { AU_KM } from '../../lib/atlas/elementosOrbitais';
 (globalThis as unknown as { window: { location: { search: string } } }).window = {
   location: { search: '' },
 };
-const { Journey, TERRA_PC, LUA_PC, JD_DO_FILME_TDB, K_LUA_NO_TAKE } = await import('./journey');
+const { Journey, TERRA_PC, LUA_PC, MIRA_DO_POUSO, JD_DO_FILME_TDB, K_LUA_NO_TAKE } =
+  await import('./journey');
+const { galacticUp } = await import('./cameraRig');
 
 const DATA_DIR = fileURLToPath(new URL('../../../public/data/atlas/', import.meta.url));
 const meta = JSON.parse(
@@ -120,19 +125,36 @@ describe('a encenação pedida, medida na trajetória', () => {
     expect(grausEntre(camLua, olhar)).toBeLessThan(s.fov * 0.45);
   });
 
-  it('o take começa e termina na Terra — no joelho o olhar cede à Lua', () => {
+  // A mira do take é MIRA_DO_POUSO (item 108): a Terra deslocada 11° pelo
+  // norte da tela NO RAIO DO POUSO, para o retrato de família caber no
+  // último quadro. É um PONTO EM MUNDO, então de longe ele e a Terra são o
+  // mesmo alvo — a costura com o plano anterior (que mira a Terra) está
+  // medida abaixo em graus, e é ela que garante que a troca não é um corte.
+  it('o take começa e termina na mira do pouso — no joelho o olhar cede à Lua', () => {
     const tTake = j.duration - 12;
     const noRaspao = AMOSTRAS.reduce((m, a) =>
       a.pos.distanceTo(LUA_PC) < m.pos.distanceTo(LUA_PC) ? a : m
     );
-    expect(j.at(tTake).look.distanceTo(TERRA_PC)).toBeLessThan(1e-12);
+    expect(j.at(tTake).look.distanceTo(MIRA_DO_POUSO)).toBeLessThan(1e-12);
     const noJoelho = j.at(noRaspao.t);
     const paraTerra = TERRA_PC.clone().sub(noJoelho.pos).normalize();
     const paraLua = LUA_PC.clone().sub(noJoelho.pos).normalize();
     const olhar = noJoelho.look.clone().sub(noJoelho.pos).normalize();
     expect(grausEntre(olhar, paraTerra)).toBeGreaterThan(20);
     expect(grausEntre(olhar, paraLua)).toBeLessThan(12);
-    expect(j.at(j.duration).look.distanceTo(TERRA_PC)).toBeLessThan(1e-12);
+    expect(j.at(j.duration).look.distanceTo(MIRA_DO_POUSO)).toBeLessThan(1e-12);
+  });
+
+  it('a troca de mira na costura dos dois planos da coda é invisível', () => {
+    // o plano anterior mira a TERRA; o take mira MIRA_DO_POUSO. A troca só
+    // vale porque, de 2,9 milhões de km, os dois pontos são o mesmo alvo.
+    const antes = j.at(j.duration - 12 - 0.001);
+    const depois = j.at(j.duration - 12 + 0.001);
+    const salto = grausEntre(
+      antes.look.clone().sub(antes.pos),
+      depois.look.clone().sub(depois.pos)
+    );
+    expect(salto).toBeLessThan(0.2);
   });
 
   it('a volta chega pelo lado escuro e pousa no claro, com a Terra grande', () => {
@@ -144,7 +166,7 @@ describe('a encenação pedida, medida na trajetória', () => {
     const diametroGraus = 2 * THREE.MathUtils.radToDeg(Math.atan(RAIO_TERRA_PC / d));
     expect(diametroGraus).toBeGreaterThan(19);
     expect(diametroGraus).toBeLessThan(23);
-    expect(j.at(j.duration).look.distanceTo(TERRA_PC)).toBeLessThan(1e-12);
+    expect(j.at(j.duration).look.distanceTo(MIRA_DO_POUSO)).toBeLessThan(1e-12);
   });
 
   it('o filme termina CONGELADO na Terra (o pouso é antes do fim)', () => {
@@ -157,10 +179,9 @@ describe('a encenação pedida, medida na trajetória', () => {
     expect(JD_DO_FILME_TDB).toBe(EPOCA_JD_TDB + 16 / 24);
   });
 
-  it('o último quadro tem os POLOS PARA CIMA (pedido do dono)', async () => {
+  it('o último quadro tem os POLOS PARA CIMA (pedido do dono)', () => {
     // a câmera reconstruída com as MESMAS peças do rig: galacticUp,
     // lookAt e rotateZ(roll) — não uma reescrita da conta
-    const { galacticUp } = await import('./cameraRig');
     const s = j.at(j.duration);
     const cam = new THREE.PerspectiveCamera(s.fov, 4 / 3, 0.1, 10);
     cam.position.copy(s.pos);
@@ -176,5 +197,67 @@ describe('a encenação pedida, medida na trajetória', () => {
       .addScaledVector(viewDir, -viewDir.z)
       .normalize();
     expect(grausEntre(upDaTela, norte)).toBeLessThan(0.5);
+  });
+});
+
+/**
+ * O RETRATO DE FAMÍLIA (item 108, ordem do dono de 30/08: "vamos
+ * consertar, vai melhorar o roteiro"). Antes desta obra a Lua saía por
+ * cima no arremate — no último quadro ela estava a 32,9° da mira com
+ * meio-quadro de 32,1°, NDC y = 1,10. O que segura o retrato são DUAS
+ * peças, e cada cobrança abaixo mata uma delas:
+ *   - a MIRA sobe 11° pelo norte da tela (`MIRA_DO_POUSO` no roteiro):
+ *     devolvê-la ao centro da Terra leva a Lua a 0,97 no último quadro;
+ *   - a LENTE fecha em 52°, não em 46°: voltar aos 46° encurta o retrato
+ *     com folga de 2,10 s para 1,81 s.
+ * As medidas são no quadro do rig (mesmas peças: galacticUp, lookAt,
+ * rotateZ) e no aspecto da vista oficial `fim-do-filme` (1200×813).
+ */
+describe('o fim mostra a Lua E a Terra', () => {
+  const ASPECTO_DA_VISTA = 1200 / 813;
+  /** NDC de um corpo no quadro do rig; +∞ atrás da câmera */
+  function noQuadro(t: number, alvo: THREE.Vector3) {
+    const s = j.at(t);
+    const cam = new THREE.PerspectiveCamera(s.fov, ASPECTO_DA_VISTA, 1e-12, 10);
+    cam.position.copy(s.pos);
+    const viewDir = s.look.clone().sub(s.pos).normalize();
+    galacticUp(viewDir, cam.up);
+    cam.lookAt(s.look);
+    cam.rotateZ(s.roll);
+    cam.updateMatrixWorld();
+    cam.updateProjectionMatrix();
+    if (alvo.clone().applyMatrix4(cam.matrixWorldInverse).z >= 0) {
+      return { x: Infinity, y: Infinity, fora: Infinity };
+    }
+    const p = alvo.clone().project(cam);
+    return { x: p.x, y: p.y, fora: Math.max(Math.abs(p.x), Math.abs(p.y)) };
+  }
+
+  it('no último quadro a Lua está no quadro com folga, e a Terra manda', () => {
+    const lua = noQuadro(j.duration, LUA_PC);
+    expect(lua.fora).toBeLessThan(0.7); // medido 0,579
+    expect(lua.y).toBeGreaterThan(0.2); // ela entra POR CIMA, não pelo lado
+    const terra = noQuadro(j.duration, TERRA_PC);
+    expect(Math.abs(terra.x)).toBeLessThan(0.05); // centrada na horizontal
+    // a Terra assenta no terço de baixo: o disco INTEIRO no quadro, com ar
+    // embaixo e o alto livre para a Lua
+    const s = j.at(j.duration);
+    const raio = Math.atan(RAIO_TERRA_PC / s.pos.distanceTo(TERRA_PC));
+    const meioQuadro = Math.tan(THREE.MathUtils.degToRad(s.fov / 2));
+    const emNdc = Math.tan(raio) / meioQuadro;
+    expect(terra.y - emNdc).toBeGreaterThan(-0.9); // não corta embaixo
+    expect(terra.y - emNdc).toBeLessThan(-0.7); // nem flutua no meio
+    expect(terra.y + emNdc).toBeLessThan(0.1); // o alto do quadro é da Lua
+  });
+
+  it('o retrato dura pelo menos 2 s antes do fim', () => {
+    let entrou = NaN;
+    for (let t = j.duration - 4; t <= j.duration; t += 0.01) {
+      if (noQuadro(t, LUA_PC).fora <= 0.85 && noQuadro(t, TERRA_PC).fora <= 1) {
+        entrou = t;
+        break;
+      }
+    }
+    expect(j.duration - entrou).toBeGreaterThan(2); // medido 2,10 s
   });
 });

@@ -65,7 +65,7 @@
         },
         "mira": {
           "tipo": "raspao",
-          "principal": "Terra",
+          "principal": "miraDoPouso",
           "assunto": "Lua",
           "ate": "fracaoDaLua",
           "joelho": "joelhoDoRaspao",
@@ -74,7 +74,7 @@
           "pesoMaximo": 0.83,
           "alcance": "alcanceDaMira"
         },
-        "lente": [62, 46],
+        "lente": [62, 52],
         "ritmo": "linear",
         "ritmoDaLente": "glide",
         "efeitoDeVelocidade": {

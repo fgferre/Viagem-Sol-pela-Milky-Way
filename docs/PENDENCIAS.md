@@ -982,6 +982,85 @@ nossa; ele julga por foto e no filme). A Lua em t=193 está a 32,9° da
 mira com meio-quadro de ~32° — logo acima da borda: o ajuste é de
 enquadramento, não de trajeto.
 
+**A OBRA DO ROTEIRO POUSOU em 30/08 — o retrato de família, e só o
+roteiro dirigiu (item 75).** Duas linhas de JSON e um ponto de apoio
+novo; nenhuma peça nova no motor. **(1) A MIRA:** `mira.principal` do
+take passou de `Terra` para `miraDoPouso` — a Terra deslocada
+**11° pelo norte da tela**, medido no raio do pouso (`SUBIDA_DO_RETRATO`
+em `journey.ts`; 6.778 km de deslocamento em mundo). É PONTO EM MUNDO
+de propósito: o desvio angular cresce com a aproximação — 0,12° na
+entrada de casa, ~1° no raspão, 11° no pouso —, então de longe o take
+segue olhando a Terra e o retrato só se compõe quando há retrato. A
+subida é pelo NORTE porque o roll põe o norte da Terra para cima: ela
+vira deslocamento vertical puro do disco, sem torcer as Américas.
+**(2) A LENTE:** o take fecha em **52°**, não mais em 46°.
+`ROLL_DOS_POLOS` passou a derivar da visada REAL do último quadro (a
+mira do retrato), senão a subida entortaria os polos que ela existe
+para preservar.
+
+**OS NÚMEROS DA COMPOSIÇÃO** (rastro `capturas/item108-fim-novo-medidas.json`,
+medidos NO APP pela receita da sonda: 1200×900, `?t=…&shot=2`; e
+reproduzidos bit a bit fora do navegador pelo `voltaParaCasa.test.ts`):
+
+| t | lente | Terra (ângulo da mira / NDC) | Lua (ângulo da mira / NDC) |
+|---|---|---|---|
+| 188 | 55,76° | 4,93° / (0,021; −0,160) | 101,17° / FORA |
+| 190 | 53,56° | 8,83° / (−0,027; −0,305) | 51,36° / FORA (1,426; 1,307) |
+| 191 | 52,74° | 10,26° / (−0,017; −0,364) | **35,19° / (0,810; 0,770)** |
+| 192 | 52,20° | 10,97° / (−0,001; −0,396) | **26,27° / (0,584; 0,521)** |
+| 193 | 52,00° | 11,00° / (0,000; −0,399) | **25,93° / (0,579; 0,513)** |
+
+Antes da obra a Lua saía por cima em t=193 com NDC y = 1,10. No último
+quadro ela agora está a 0,58 do centro, e a Terra fecha centrada na
+horizontal, com o disco inteiro entre NDC y −0,774 e −0,023: 20,73° de
+diâmetro em 52° de lente, **39,9% da altura do quadro** (eram 45% em
+46°). **O RETRATO DURA 2,10 s** — a Lua entra no quadro em t=190,58 e
+passa de 0,85 em t=190,90.
+
+**O QUE A GEOMETRIA NÃO DÁ, dito com número medido:** em t=188 e t=190
+os dois corpos NÃO cabem. A separação Terra–Lua vista da câmera é
+**102,4° em t=188** (a Lua ainda quase de costas) e **57,2° em t=190** —
+ela está a 382 mil km enquanto a Terra está a 43 mil. O menor fov que
+poria os dois dentro do quadro: em t=188, NENHUM (nem 175°); em t=190,
+**71,6°** com a mira do retrato e **87,2°** mirando o centro da Terra —
+olho-de-peixe com a Terra do tamanho de uma moeda, ou seja outro plano,
+não este. Em t=191 o mínimo é 43,8° e a lente do take é 52,7°: cabe. A
+convergência é física: a Lua fecha para 33° só nos últimos 2,4 s. Um
+efeito colateral DECLARADO: a estrela brilhante que fechava o quadro
+antigo por baixo (19,5° abaixo da Terra, NDC y −0,83) sai por baixo nos
+últimos 2 s — o orçamento vertical entre ela e a Lua é 44,5°, e não cabe
+com a Terra grande; a ordem do dono é a Lua. O Sol não estava no quadro
+nem antes: ele fica a 171° da mira, ATRÁS da câmera (é por isso que a
+Terra fecha quase cheia, com o terminador no bordo direito).
+
+**AS GUARDAS (§15 — comportamento, não texto),** em `voltaParaCasa.test.ts`,
+com a sabotagem de cada uma feita e medida: *"no último quadro a Lua está
+no quadro com folga, e a Terra manda"* (Lua ≤0,70, entrando POR CIMA;
+Terra centrada na horizontal e com o disco inteiro no terço de baixo) e
+*"o retrato dura pelo menos 2 s antes do fim"*. Devolver `principal` a
+`Terra` reprova CINCO testes (a Lua vai a 0,966 e o retrato nunca
+acontece — e os polos saem de esquadro, 0,507°); devolver a lente a 46°
+reprova a duração (1,81 s < 2 s). Somou-se a guarda da costura: a troca
+de mira entre os dois planos da coda tem de valer menos de 0,2° (medida
+0,1212°, e o rig ainda a amortece em 0,4 s) — é ela que impede alguém de
+pôr o ponto do retrato longe e transformar a costura num corte.
+
+**A PROVA DE PIXEL** (`ab-identidade`, leva CHEIA, antes `arv-d0ba6b48827f`
+× depois `arv-fdbd19534642`): **50 das 51 vistas bit-idênticas**, as seis
+de filme incluídas (`sol`, `interno`, `travessia`, `mergulho`, `edgeon`,
+`faceon`). A `fim-do-filme` MUDA de propósito: md5
+**d0cb808b1115 → 20a4c9758e2b**, e o par nulo do lado depois deu o mesmo
+md5 **três vezes** seguidas (a vista nova não treme). O diff de pixel da
+vista que mudou: 1.509.388 px de 3.083.400 (48,95%) — é o quadro
+recomposto, não um ULP. Fotos para o olho dele:
+`capturas/item108-fim-novo-t190.png`, `-t191.png` e `-t193.png`.
+
+**O QUE SEGUE ABERTO no item:** o OLHO DELE, agora nas duas frentes — se
+o fim parou de "não mostrar direito" e se o retrato de família serve. A
+Lua no último quadro é um corpo resolvido de ~8 px em 1200 (0,51° de
+diâmetro a 389 mil km): é o máximo que a trajetória aprovada permite, e
+crescer isso só mexendo no trajeto, que não está ordenado.
+
 
 **109. Os labels 3D do outro projeto — trazer ou não, com medida.**
 (Pergunta dele, 29/08, palavras dele: *"meu outro projeto tinha labels

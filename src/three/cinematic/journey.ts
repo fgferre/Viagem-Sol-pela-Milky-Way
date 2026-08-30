@@ -328,7 +328,7 @@ const ENTRADA_DE_CASA = LUA_PC.clone()
 const RASPAO_DA_LUA = 3.5e-10;
 /** raio da volta na Terra (do lado escuro ao claro) */
 const VOLTA_R0 = 2.6e-9; // ~12,6 raios terrestres, lado noite
-const VOLTA_R1 = 1.13e-9; // ~5,5 raios terrestres: Terra a ~45% do quadro
+const VOLTA_R1 = 1.13e-9; // ~5,5 raios terrestres: Terra a ~40% da altura do quadro
 /**
  * As duas pontas da volta, como DIREÇÕES Terra→câmera. A chegada fica
  * 22° fora do eixo anti-Sol, do lado da Lua (é de lá que o raspão
@@ -354,17 +354,42 @@ const DIR_POUSO = SOLWARD.clone()
 const INICIO_DA_VOLTA = TERRA_PC.clone().addScaledVector(DIR_CHEGADA, VOLTA_R0);
 const POUSO = TERRA_PC.clone().addScaledVector(DIR_POUSO, VOLTA_R1);
 /**
+ * A MIRA DO POUSO — o RETRATO DE FAMÍLIA (item 108, ordem do dono:
+ * "vai melhorar o roteiro"). O arremate não mira o centro da Terra: sobe
+ * `SUBIDA_DO_RETRATO` pelo norte da tela, medido no raio do pouso. A
+ * Terra desce para o terço de baixo e a Lua — que só nos últimos
+ * segundos fecha para 33° do centro da Terra — entra pelo alto do
+ * quadro em vez de raspar a borda de cima (medida de 30/08: NDC y 1,10,
+ * fora por 10%).
+ *
+ * A subida é pelo NORTE de propósito: o roll abaixo põe o norte da
+ * Terra para cima, então ela aparece como deslocamento vertical puro do
+ * disco — as Américas do pouso não torcem no quadro. A mira é um PONTO
+ * EM MUNDO, então o desvio angular cresce com a aproximação (0,1° na
+ * entrada de casa, 1,0° no raspão, 11° no pouso): de longe o take
+ * continua olhando a Terra, e o retrato só se compõe quando há retrato.
+ */
+const SUBIDA_DO_RETRATO = THREE.MathUtils.degToRad(11);
+const NORTE_DA_TELA = NORTE_EQ.clone()
+  .addScaledVector(DIR_POUSO, -NORTE_EQ.dot(DIR_POUSO))
+  .normalize();
+export const MIRA_DO_POUSO = TERRA_PC.clone()
+  .addScaledVector(NORTE_DA_TELA, VOLTA_R1 * Math.tan(SUBIDA_DO_RETRATO));
+/**
  * O ROLL QUE PÕE OS POLOS PARA CIMA (pedido do dono): o rig olha o
  * mundo com o up do POLO GALÁCTICO (cameraRig.galacticUp), e no último
  * quadro o dono quer a Terra "no sentido dos polos" — o norte DELA para
  * cima. O ângulo abaixo gira a tela do up galáctico ao up equatorial,
  * medido ao redor do eixo de visada do pouso; o rig aplica roll com
  * rotateZ, que gira ao redor de câmera→trás (−olhar), e o sinal aqui
- * segue essa convenção. voltaParaCasa.test.ts reconstrói a câmera do
- * rig e cobra o alinhamento em graus.
+ * segue essa convenção. O eixo é a visada REAL do último quadro (a
+ * mira do retrato, não o centro da Terra), senão a subida de 11°
+ * entortaria os polos que ela existe para preservar.
+ * voltaParaCasa.test.ts reconstrói a câmera do rig e cobra o
+ * alinhamento em graus.
  */
 const ROLL_DOS_POLOS = (() => {
-  const olhar = TERRA_PC.clone().sub(POUSO).normalize();
+  const olhar = MIRA_DO_POUSO.clone().sub(POUSO).normalize();
   const upGal = EZ.clone().addScaledVector(olhar, -EZ.dot(olhar)).normalize();
   const upTerra = NORTE_EQ.clone().addScaledVector(olhar, -NORTE_EQ.dot(olhar)).normalize();
   const eixoDoRoll = olhar.clone().negate();
@@ -464,6 +489,7 @@ const SHOTS: Shot[] = [
   // ============ CODA — A VOLTA PARA CASA (pedido do dono, 19/08) ============
   ...lerSequencia(volta, {
     Terra: TERRA_PC, Lua: LUA_PC, fimDaDeriva: FINAL_POS,
+    miraDoPouso: MIRA_DO_POUSO,
     entradaDeCasa: ENTRADA_DE_CASA, direcaoDoRaspao: U_RASPAO_MIN,
     inicioDaVolta: INICIO_DA_VOLTA,
     direcaoDaChegada: DIR_CHEGADA, direcaoDoPouso: DIR_POUSO,
