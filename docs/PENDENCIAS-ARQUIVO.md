@@ -4873,3 +4873,103 @@ estrelas; 5,32 décadas; alvo do toque virou Plutão) e a perna do
 Atlas do `luz-do-quadro` com o espelho em 58 e teto em 133,7 (seis
 degraus). Consequência declarada: `?d=` copiado antes de 29/08 pousa
 mais longe; o item 100 (HUD de lente/zoom) destravou.
+
+## Item 100 — O HUD de fotografia: mostrar e mexer na lente
+
+*(Movido verbatim do vivo em 29/08, quando o item fechou.)*
+
+**100. Mostrar e mexer na lente — o HUD de fotografia, como nos jogos.**
+(**IDEIA DELE**, 25/08, dita junto com a decisão de abrir a lente — item
+**86**. O **escopo ainda é decisão dele**: entra aqui em MÉDIA pela régua do
+"quanto incomoda", e pode subir ou descer quando ele disser o tamanho que
+quer.) Palavras dele, verbatim, a partir de onde a decisão do 86 termina:
+
+> *"mas acho que podemos criar uma dinamica tb de indicar a lente que
+> estamos usando e colocar tb um controle de zoom (que muda a lente
+> automaticamente ou vc escolhe a lente e o zoom muda de acordo se for
+> lentes de zoom variável tb muda as inidicacoes, isso é especialemnte
+> interessante para o modo filme quando tem vezes que nao sabemos se o
+> ponto de observacao está mudando ou o zoom está sneod ativado (como no
+> caso das 3 marias), podiamos colcoar um pequeno indicador de posicao e
+> zoom discreto e cool, como se fosse um hud de jogo que usa essa tecnica
+> para parte de fotografia que alguns jogos tem esse modo..."*
+
+**Em uma linha, o que isso é tecnicamente:** um indicador discreto de
+lente/zoom mais um controle de zoom que **muda a lente** — zoom ÓPTICO
+declarado (o fov anda de verdade), nunca recorte da imagem —, com os dois
+mostradores amarrados um ao outro; e o valor dele está no **filme**, onde
+hoje não dá para distinguir **"a câmera está andando"** de **"o zoom está
+fechando"** (o caso das Três Marias, que foi ele quem apontou).
+
+**O que fica dito e não se re-litiga:** o painel é **discreto**, no espírito
+do modo fotografia de jogo, e não vira mais um painel de ajustes — a lei do
+item 61 (uma porta só) continua valendo. E ele é **irmão**, não filho, do
+item **86**: lá se decide *qual* lente o app usa; aqui se **mostra e se
+mexe** nela. O 86 anda primeiro — mostrar uma lente que está prestes a mudar
+é trabalho jogado fora.
+
+**A FASE 1 (MOSTRAR) POUSOU em 29/08, à noite.** O indicador vive no
+FILME — é lá que o roteiro varre a lente e nasce a dúvida — como UMA
+linha discreta no canto inferior direito, no traje das linhas de rumo e
+do Sol: **"LENTE 41° · SOL 179 ANOS-LUZ"**. A lente é o fov vertical
+vivo arredondado a grau; a distância usa a régua canônica de unidades
+(`lib/unidades`). O fio é o mesmo remédio de 4 Hz dos irmãos
+(`rotulos.emitLente` → `onLente` → `.lente-line`), a linha ocupa a vaga
+do sol-line (que nunca desenha no filme) e some sozinha fora do filme.
+**A PROVA É O PAR das Três Marias** (o caso que ELE apontou):
+`capturas/item100-lente-t44.png` × `item100-lente-t48.png` — no mesmo
+plano fixo a lente vai de 41° a 16° e o SOL fica em 179 anos-luz: zoom,
+não deslocamento, legível por qualquer um. Guardas:
+`rotulos.test.ts` (publica no filme com lente arredondada e régua
+canônica; apaga fora; o pulso do zoom republica). Nenhuma porta nova,
+nenhum juiz tocado (os gates fotografam sem HUD, `?shot=2`).
+
+**A FASE 2 (MEXER) POUSOU em 29/08, na variante (a) — decisão dele no
+mesmo dia:** *"acho que o (a) fica menos chato de mexer, mais facil
+para o usuário"*. E ele dispensou o selo para lente, com doutrina:
+*"nunca é real quando se olha numa lente... nem mesmo o que o olho
+vê.. a realidade está nos olhos de quem vê... vamos ser menos chatos
+com o selo de honestidade para nao beirar o exagero"* — lente NÃO é
+assunto de selo, e a régua vale daqui em diante.
+
+**ONDE O CONTROLE VIVE: no FILME PAUSADO — o modo fotografia de
+verdade.** Pausa, olha ao redor (já existia) e a RODA fecha/abre a
+lente (`JourneyRig.ajustarLente`, fator exponencial com paredes 0,2–1,4
+sobre o fov do roteiro, fov final grampeado em 8°–75°); o indicador
+LENTE·SOL acusa ao vivo. No PLAY a lente DECAI sozinha para a do
+roteiro, no mesmo compasso do olhar — o script retoma a direção sem
+salto. `reset()` (seek, portal, captura) zera: links e fotos são sempre
+a lente do roteiro — nenhuma porta nova, nenhum juiz tocado, nenhum
+selo. Durante a reprodução a roda não faz nada (o roteiro dirige); no
+Atlas a roda continua sendo só distância (lei do item 73).
+
+**A PROVA:** `capturas/item100-lente-gesto.png` — pausado nas Três
+Marias, 10 estalos de roda: fov 23,5° → 8,0° (a parede), as três
+abertas no céu e o indicador dizendo "LENTE 8° · SOL 179 ANOS-LUZ".
+Guardas em `cameraRig.test.ts` (fecha na pausa com paredes; decai no
+play; ignorada fora da pausa; reset devolve o script bit a bit).
+**Pendência curta desta família:** a pinça do telefone ainda não é
+lente no filme pausado (só a roda); vale uma linha quando o telefone
+for o assunto. **ELE OLHOU E ACHOU DEFEITO DE LAYOUT (29/08, palavras dele):** *"acho
+que a indicacao da lente nao está bem posicionada... parece que sobrepoe
+a barra de progresso e capitulos do filme"* — e tinha razão, medido: a
+linha nasceu em 7,6vh e a barra vive em 7,4vh com carrapichos e halo de
+toque de ±12px — o texto caía sobre os carrapichos e DENTRO da área de
+clique do scrub. O conserto (mesmo dia): uma coluna só acima da régua —
+a LENTE ancora a 9,6vh (instrumento persistente, junto à barra) e o
+RUMO sobe para 11,6vh (transiente, flutua acima); o sol-line do voo
+livre fica em 7,6vh porque lá não há barra. O item espera o olho dele
+nas fotos para fechar.
+
+
+**FECHADO em 29/08, pelo olho dele — palavras dele: "ficou otimo,**
+**confirmo as fotos — pode fechar o item 100".** As três levas do dia:
+a fase 1 (o indicador LENTE·SOL no filme, par das Três Marias como
+prova), a fase 2a (a roda no filme pausado fecha/abre a lente, decai
+no play, sem selo — doutrina dele: "a realidade está nos olhos de
+quem vê"), e o conserto de layout que o olho dele pediu (a coluna
+acima da régua: lente a 9,6vh ancorada na barra, rumo a 11,6vh
+flutuando acima). Fotos aceitas: item100-lente-t44/t48 (o zoom sem
+dolly), item100-lente-gesto (fov 23,5°→8° pela roda) e
+item100-layout-t46/t58 (a coluna). Fica na família a pendência curta:
+a pinça do telefone ainda não é lente no filme pausado.
