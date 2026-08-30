@@ -616,7 +616,9 @@ export const REVEAL_T =
  * para o Ato I dava planetas de 2035 no filme, com o relógio saltando
  * sozinho para 2026 quando a barra chegava à coda — dois calendários no
  * mesmo corte, nenhum declarado. Um relógio só, e no filme ele é este.
- * A porta `?jd=` do operador continua com precedência (o tick a checa).
+ * A porta `?jd=` manda no ATLAS (reaplicada ao entrar, `aplicarPortaJd`)
+ * e NUNCA cala este relógio dentro do filme — conserto do item 108
+ * (30/08): a guarda que a checava no tick foi removida com censo.
  */
 export function jdDoFilme(t: number): number {
   return t >= REVEAL_T ? JD_DO_FILME_TDB : EPOCA_JD_TDB;

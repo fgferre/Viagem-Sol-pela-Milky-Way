@@ -1055,6 +1055,23 @@ vista que mudou: 1.509.388 px de 3.083.400 (48,95%) — é o quadro
 recomposto, não um ULP. Fotos para o olho dele:
 `capturas/item108-fim-novo-t190.png`, `-t191.png` e `-t193.png`.
 
+**A AUDITORIA ÚNICA DAS DUAS OBRAS (30/08, mão independente) passou sem
+ALTO** — re-sabotou as seis guardas (todas mordem), reproduziu os md5
+das duas vistas em árvores COMMITADAS e conferiu as fotos contra os
+números ao pixel. Os achados dela, todos consertados no mesmo dia: o
+docblock do `jdDoFilme` ainda prometia a precedência morta do `?jd=`;
+a varredura do `director.test.ts` aceitava cópia morta do bloco (agora
+recorta DO PRÓPRIO tick e cobra a linha ÚNICA no arquivo); a leva cheia
+da prova de pixel acima estava SEM ARQUIVO (§14) — re-rodada na árvore
+limpa de `d13b6ea` (`arv-be5ad6279a2a`, carimbo do commit): **50 de 51
+IGUAIS, rastro em `capturas/item108-ab-retrato.json`**; as duas sondas
+de capturas/ gravavam por cima da própria testemunha (agora escrevem
+`-v2` ao lado, §7). E uma linha que faltava declarar: **o pino de
+terra/lua vale o FILME INTEIRO** (t=0 a 193, `palco.ts`), não só a
+coda — antes de `REVEAL_T` o relógio é a época e o pino é o das 16:00;
+inofensivo (Terra fora do quadro/sub-pixel nesse trecho, vistas t=6/40/
+100 bit-idênticas) e agora escrito.
+
 **O QUE SEGUE ABERTO no item:** o OLHO DELE, agora nas duas frentes — se
 o fim parou de "não mostrar direito" e se o retrato de família serve. A
 Lua no último quadro é um corpo resolvido de ~8 px em 1200 (0,51° de

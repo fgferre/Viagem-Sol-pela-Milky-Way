@@ -535,8 +535,12 @@ describe('a beta dos rótulos 3D (item 109): o 2D pinta até o 3D existir', () =
 // ============================================================
 describe('o relógio do filme é do filme — a porta ?jd= não o cala (item 108)', () => {
   // a condição fica no grupo: qualquer guarda que alguém recoloque
-  // entra aqui e vai ser EXECUTADA, não lida
-  const BLOCO = FONTE.match(
+  // entra aqui e vai ser EXECUTADA, não lida.
+  // Recortado DO PRÓPRIO tick — a auditoria de 30/08 provou que uma
+  // cópia morta do bloco noutro método enganava a varredura solta; a
+  // unicidade da linha é cobrada no primeiro veredito abaixo.
+  const DO_TICK = FONTE.slice(FONTE.indexOf('private tick('));
+  const BLOCO = DO_TICK.match(
     /\n {4}(if \([^\n]*\) \{\n {6}this\.maquinaDoTempo\.jdPedido = jdDoFilme\(this\.journeyT\);\n {4}\})/
   );
 
@@ -554,6 +558,9 @@ describe('o relógio do filme é do filme — a porta ?jd= não o cala (item 108
 
   it('a varredura acha o bloco — um padrão quebrado passaria calado', () => {
     expect(BLOCO, 'o tick não escreve mais `jdPedido = jdDoFilme(journeyT)`').not.toBeNull();
+    // e a linha viva é ÚNICA no arquivo: uma cópia morta em outro canto
+    // reprovaria AQUI, em vez de se oferecer à varredura no lugar dela
+    expect(FONTE.match(/jdPedido = jdDoFilme\(this\.journeyT\);/g)).toHaveLength(1);
   });
 
   it('COM ?jd= na URL o filme SEGUE corrigindo o relógio — os dois trechos', () => {
@@ -585,7 +592,9 @@ describe('o relógio do filme é do filme — a porta ?jd= não o cala (item 108
       FONTE.indexOf('  entrarNoAtlas(opcoes'),
       FONTE.indexOf('  partirDoAtlas()')
     );
-    expect(portal).toContain('this.aplicarPortaJd();');
+    // guarda de TEXTO declarada (a regex exclui linha comentada); o
+    // dublê morto fora do portal cai na unicidade abaixo e no tsc do gate
+    expect(portal).toMatch(/\n\s*this\.aplicarPortaJd\(\);/);
     // e a porta é LIDA num lugar só, do boot e do portal
     expect(FONTE.match(/lerPortaJd\(/g)).toHaveLength(1);
   });
