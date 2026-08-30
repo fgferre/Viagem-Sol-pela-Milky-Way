@@ -40,6 +40,13 @@ export interface FiosDosGestos {
    */
   zoom: (estalos: number) => void;
   /**
+   * A LENTE DO MODO FOTOGRAFIA (item 100, fase 2): a roda com o FILME
+   * PAUSADO fecha e abre a lente — deltaY em px, negativo fecha, como
+   * o zoom do Atlas aproxima. Quem sabe as paredes e o decaimento no
+   * play é o rig; aqui só se decide QUANDO a roda é lente.
+   */
+  lente: (deltaPx: number) => void;
+  /**
    * FECHA A GAVETA ABERTA — a terceira saída da folha do telefone (item
    * 62), ao lado do toque na própria alça e do Esc. Do outro lado do fio
    * há `setState` do React; a REGRA de qual toque fecha o quê é daqui.
@@ -289,9 +296,19 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
    * câmera.
    */
   const onRoda = (evento: WheelEvent) => {
-    if (!fios.noAtlas()) return;
-    evento.preventDefault();
-    roda.girar(evento, window.innerHeight);
+    if (fios.noAtlas()) {
+      evento.preventDefault();
+      roda.girar(evento, window.innerHeight);
+      return;
+    }
+    // NO FILME PAUSADO a roda é a LENTE (item 100, fase 2) — o modo
+    // fotografia: pausa, olha ao redor e fecha a lente. `deltaMode` 1
+    // (linhas, Firefox) vira px pelo mesmo fator ~16 dos navegadores.
+    if (fios.pauseLookAtivo()) {
+      evento.preventDefault();
+      const px = evento.deltaMode === 1 ? evento.deltaY * 16 : evento.deltaY;
+      fios.lente(px);
+    }
   };
 
   /**

@@ -1281,14 +1281,33 @@ não deslocamento, legível por qualquer um. Guardas:
 canônica; apaga fora; o pulso do zoom republica). Nenhuma porta nova,
 nenhum juiz tocado (os gates fotografam sem HUD, `?shot=2`).
 
-**A FASE 2 (MEXER) ESPERA A DECISÃO DELE — as duas variantes são as
-palavras dele:** (a) *"um controle de zoom que muda a lente
-automaticamente"* — um eixo contínuo, o zoom desliza e a lente
-acompanha; ou (b) *"você escolhe a lente e o zoom muda de acordo"* —
-lentes nomeadas (grande-angular / normal / tele) e o zoom anda dentro
-da escolhida. Custo honesto de qualquer uma: o fov vivo do Atlas deixa
-de ser só pino e vira desvio DECLARADO (selo + espelho de URL), e as
-vistas de juiz re-baselizam se o padrão mudar — anuncia-se antes.
+**A FASE 2 (MEXER) POUSOU em 29/08, na variante (a) — decisão dele no
+mesmo dia:** *"acho que o (a) fica menos chato de mexer, mais facil
+para o usuário"*. E ele dispensou o selo para lente, com doutrina:
+*"nunca é real quando se olha numa lente... nem mesmo o que o olho
+vê.. a realidade está nos olhos de quem vê... vamos ser menos chatos
+com o selo de honestidade para nao beirar o exagero"* — lente NÃO é
+assunto de selo, e a régua vale daqui em diante.
+
+**ONDE O CONTROLE VIVE: no FILME PAUSADO — o modo fotografia de
+verdade.** Pausa, olha ao redor (já existia) e a RODA fecha/abre a
+lente (`JourneyRig.ajustarLente`, fator exponencial com paredes 0,2–1,4
+sobre o fov do roteiro, fov final grampeado em 8°–75°); o indicador
+LENTE·SOL acusa ao vivo. No PLAY a lente DECAI sozinha para a do
+roteiro, no mesmo compasso do olhar — o script retoma a direção sem
+salto. `reset()` (seek, portal, captura) zera: links e fotos são sempre
+a lente do roteiro — nenhuma porta nova, nenhum juiz tocado, nenhum
+selo. Durante a reprodução a roda não faz nada (o roteiro dirige); no
+Atlas a roda continua sendo só distância (lei do item 73).
+
+**A PROVA:** `capturas/item100-lente-gesto.png` — pausado nas Três
+Marias, 10 estalos de roda: fov 23,5° → 8,0° (a parede), as três
+abertas no céu e o indicador dizendo "LENTE 8° · SOL 179 ANOS-LUZ".
+Guardas em `cameraRig.test.ts` (fecha na pausa com paredes; decai no
+play; ignorada fora da pausa; reset devolve o script bit a bit).
+**Pendência curta desta família:** a pinça do telefone ainda não é
+lente no filme pausado (só a roda); vale uma linha quando o telefone
+for o assunto. **O item espera o olho dele nas fotos para fechar.**
 
 
 **108. O fim do filme não mostra direito a Lua e a Terra.** (Palavras

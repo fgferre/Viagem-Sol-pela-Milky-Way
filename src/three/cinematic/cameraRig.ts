@@ -79,6 +79,17 @@ export class JourneyRig {
   /** olhar-ao-redor durante a pausa (radianos, decai sozinho no play) */
   private lookYaw = 0;
   private lookPitch = 0;
+  /**
+   * A LENTE DO VISITANTE no modo fotografia (item 100, fase 2 — a
+   * variante (a) que ele escolheu: zoom contínuo que muda a lente).
+   * Fator multiplicativo sobre o fov do ROTEIRO, vivo só na PAUSA;
+   * no play decai sozinho para 1, no mesmo compasso do olhar — o
+   * roteiro retoma a direção de fotografia sem salto. `reset()` (seek,
+   * portal, captura) zera: link e foto são sempre a lente do script.
+   * SEM SELO, por decisão dele em 29/08: nenhuma lente é "a real" —
+   * "a realidade está nos olhos de quem vê".
+   */
+  private lenteFator = 1;
   paused = false;
 
   get duration() {
@@ -125,6 +136,23 @@ export class JourneyRig {
     this.lookPitch = THREE.MathUtils.clamp(this.lookPitch - dy * 0.0022, -1.2, 1.2);
   }
 
+  /**
+   * A RODA NA PAUSA (item 100, fase 2): deltaY em px de roda — negativo
+   * (roda para cima) FECHA a lente, como o zoom do Atlas aproxima. O
+   * passo é exponencial (cada trecho de roda multiplica, não soma) e o
+   * fator tem paredes: com o roteiro varrendo 15°–60°, [0,2 .. 1,4]
+   * mantém o fov resultante na janela sã de ~8° a ~75° — o clamp final
+   * do `apply` é a segunda parede, para o shot largo não estourar.
+   */
+  ajustarLente(deltaPx: number) {
+    if (!this.paused || !Number.isFinite(deltaPx)) return;
+    this.lenteFator = THREE.MathUtils.clamp(
+      this.lenteFator * Math.exp(deltaPx * 0.0015),
+      0.2,
+      1.4
+    );
+  }
+
   apply(
     camera: THREE.PerspectiveCamera,
     t: number,
@@ -168,16 +196,24 @@ export class JourneyRig {
       const decay = Math.exp(-dt / 0.5);
       this.lookYaw *= decay;
       this.lookPitch *= decay;
+      // a lente do visitante volta à do roteiro no MESMO compasso
+      this.lenteFator = 1 + (this.lenteFator - 1) * decay;
     }
     if (Math.abs(this.lookYaw) > 1e-5 || Math.abs(this.lookPitch) > 1e-5) {
       camera.rotateY(this.lookYaw);
       camera.rotateX(this.lookPitch);
     }
 
-    // FOV do roteiro, com pontapé sutil de velocidade (documentário).
+    // FOV do roteiro, com pontapé sutil de velocidade (documentário) —
+    // e, na pausa, a lente do visitante por cima (item 100, fase 2). O
+    // clamp final é a parede da sanidade óptica nos shots extremos.
     // No primeiro quadro pós-seek o fov SALTA como a mira: sem isso,
     // capturas ?t= rendiam o fov ainda amortecendo (28° onde pedia 15°).
-    const targetFov = s.fov + s.warp * 3.5;
+    const targetFov = THREE.MathUtils.clamp(
+      (s.fov + s.warp * 3.5) * this.lenteFator,
+      8,
+      75
+    );
     camera.fov = snap ? targetFov : camera.fov + (targetFov - camera.fov) * kFov;
     camera.updateProjectionMatrix();
 
@@ -189,6 +225,7 @@ export class JourneyRig {
     this.lookDir.set(0, 0, 0);
     this.lookYaw = 0;
     this.lookPitch = 0;
+    this.lenteFator = 1;
   }
 }
 

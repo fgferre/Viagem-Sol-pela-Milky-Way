@@ -734,6 +734,12 @@ export class Director {
         }
       },
       olhar: (dx, dy) => this.rig.addLookDelta(dx, dy),
+      // a roda no filme pausado é a LENTE do modo fotografia (item 100,
+      // fase 2) — o indicador LENTE·SOL acusa ao vivo pelo mesmo tick
+      lente: (deltaPx) => {
+        this.rig.ajustarLente(deltaPx);
+        this.perturbar();
+      },
       // UM CLIQUE ESCOLHE, DOIS VÃO (item 73). São dois fios porque são
       // dois gestos: o primeiro troca o alvo com a câmera parada, o
       // segundo é o preset da escada, com rampa.

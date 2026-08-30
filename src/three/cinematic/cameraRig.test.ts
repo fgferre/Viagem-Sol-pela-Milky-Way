@@ -716,3 +716,70 @@ describe('EstadoDaCaptura — o backoff das três negativas', () => {
     expect(e.desistiu).toBe(false);
   });
 });
+
+describe('a lente do modo fotografia (item 100, fase 2 — a variante (a) dele)', () => {
+  const T_MARIAS = 46; // meio do plano fixo "AS TRÊS MARIAS"
+
+  // dt GRANDE converge o amortecimento do fov num apply só (kFov≈1);
+  // com dt=0 o k é zero e o apply não escreve fov nenhum — pegadinha
+  // medida na primeira rodada destes testes. Na pausa não há decaimento,
+  // então o dt grande é inofensivo.
+  const DT_CONVERGE = 5;
+
+  function noPausado() {
+    const rig = new JourneyRig();
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 0.001, 100);
+    rig.paused = true;
+    rig.apply(cam, T_MARIAS, 0); // 1º quadro: snap exato para o instante
+    return { rig, cam, fovDoRoteiro: cam.fov };
+  }
+
+  it('na PAUSA a roda fecha e abre a lente, com paredes', () => {
+    const { rig, cam, fovDoRoteiro } = noPausado();
+    // roda para cima (deltaY negativo) FECHA — como o zoom do Atlas
+    rig.ajustarLente(-600);
+    rig.apply(cam, T_MARIAS, DT_CONVERGE);
+    expect(cam.fov).toBeLessThan(fovDoRoteiro);
+    // a parede de baixo: nem mil voltas passam do fator 0,2 / fov 8°
+    for (let i = 0; i < 50; i++) rig.ajustarLente(-600);
+    rig.apply(cam, T_MARIAS, DT_CONVERGE);
+    expect(cam.fov).toBeGreaterThanOrEqual(8);
+    expect(cam.fov).toBeCloseTo(Math.max(8, fovDoRoteiro * 0.2), 3);
+    // e a de cima
+    for (let i = 0; i < 100; i++) rig.ajustarLente(600);
+    rig.apply(cam, T_MARIAS, DT_CONVERGE);
+    expect(cam.fov).toBeLessThanOrEqual(75);
+    expect(cam.fov).toBeCloseTo(Math.min(75, fovDoRoteiro * 1.4), 3);
+  });
+
+  it('no PLAY a lente decai sozinha para a do roteiro — sem salto', () => {
+    const { rig, cam, fovDoRoteiro } = noPausado();
+    rig.ajustarLente(-600);
+    rig.apply(cam, T_MARIAS, DT_CONVERGE);
+    const fechada = cam.fov;
+    rig.paused = false;
+    // quatro segundos de quadros a 60 Hz: o decaimento de 0,5 s esvazia
+    for (let i = 0; i < 240; i++) rig.apply(cam, T_MARIAS, 1 / 60);
+    expect(Math.abs(cam.fov - fovDoRoteiro)).toBeLessThan(0.05);
+    expect(fechada).toBeLessThan(fovDoRoteiro); // e o teste mediu algo
+  });
+
+  it('FORA da pausa a roda não mexe; e o reset (seek/portal) zera a lente', () => {
+    const rig = new JourneyRig();
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 0.001, 100);
+    rig.paused = false;
+    rig.apply(cam, T_MARIAS, 0); // 1º quadro: snap exato
+    const doRoteiro = cam.fov;
+    rig.ajustarLente(-600); // ignorado: o roteiro está dirigindo
+    rig.apply(cam, T_MARIAS, 5);
+    expect(cam.fov).toBeCloseTo(doRoteiro, 10);
+    // pausado fecha; o reset devolve o script bit a bit (links e fotos)
+    rig.paused = true;
+    rig.ajustarLente(-600);
+    rig.apply(cam, T_MARIAS, 5);
+    expect(cam.fov).toBeLessThan(doRoteiro);
+    rig.reset();
+    rig.apply(cam, T_MARIAS, 0); // snap pós-reset: o fov do script, exato
+    expect(cam.fov).toBe(doRoteiro);
+  });
+});
