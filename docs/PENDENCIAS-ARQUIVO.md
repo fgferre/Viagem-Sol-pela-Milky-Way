@@ -5671,3 +5671,104 @@ corpo no meio do deslize desliza sem chicote; (ii) a roda logo após o
 clique responde; (iii) a beta `?r3d=1` mostra o nome de perto e no lado
 certo junto à borda direita. Publicado na main por ordem dele no mesmo
 dia.
+
+## Item 99 — A dieta dos juízes: censo com dono, catraca do total e mordida amostral
+
+**99. A dieta dos juízes — o custo cresce sem teto e a deriva virou medo dele.**
+(Aberto em 25/08, palavras do dono: *"os testes estão demorando muito e crescendo
+cada vez mais... começam a derivar e se tornam um problema... estou com medo
+deles... isso não deveria ser avaliado ao invés de criar mais testes?"*.)
+O medo tem número: só na rodada 23–25/08 os testes de unidade foram de 2.023 a
+2.293 (+13%), o MB1 dobrou de preço (1,8 → ~3,9 min, pela janela calibrada — que
+era necessária), as vistas do A/B foram de 52 a 54, e cada etapa roda a suíte
+inteira 3 a 6 vezes (editor valida, auditor refaz em worktree, conserto
+revalida) — o custo cresce em duas direções ao mesmo tempo. E a deriva é
+documentada: pinos de texto-fonte quebraram quando o código MELHOROU, contagens
+decoradas mentiram em seis lugares, "17 camadas" mudou de pino a cada obra.
+**A obra, em quatro peças:** (1) **censo com preço e dono** (herdeiro do item 57):
+cada teste e juiz responde "a quem sirvo" — decisão do dono, lei física, ou chão
+de regressão; quem não responde MORRE em vez de ser re-pinado; redundantes se
+fundem; (2) **portões em camadas**: por commit só o rápido (typecheck + lint +
+testes dos arquivos tocados); suíte cheia UMA vez por etapa, no fechamento; A/B
+cheio só quando pixel muda de propósito; auditor sabota ALVOS, não re-roda o
+mundo; (3) **teto de custo com porteiro**: a rodada padrão tem orçamento em
+minutos (o item 57 fixou ~15); quem estoura só entra aposentando ou fundindo
+alguém; (4) **anti-deriva**: contagem derivada em vez de decorada, pino declara
+a quem serve, e o censo sabota POR AMOSTRA os testes velhos (hoje só os novos
+provam que mordem — os velhos nunca). **Fila: entra ANTES do item 75** — o motor
+de filmes é rodada longa, e emagrecer os portões antes dela paga a obra em uma
+semana. A prova de saída: o preço da rodada padrão medido antes/depois, e o
+censo publicado com cada morte justificada (nenhum juiz morre em silêncio).
+**25/08, o dono cortou na carne antes da obra:** "vamos simplificar todo esse
+processo — as sessões estão ridiculamente longas e três dias gastaram o plano
+inteiro". As peças 2 e 3 (portões em camadas, prova proporcional, agente só
+quando paga a passagem, custo anunciado, uma auditoria sem re-auditoria)
+viraram **lei imediata** no `AGENTS.md` (§12 e §13) — não esperam esta obra.
+O que resta ao item: a peça 1 (o censo com preço e dono) e a 4 (anti-deriva
+com sabotagem amostral dos velhos), mais o teto em minutos com porteiro.
+
+**27/08, PRIMEIRA FATIA — O ANDAIME POUSOU, A DIETA NÃO FECHA.** Quatro
+peças de chão, nenhuma delas mata juiz em silêncio:
+
+1. **O censo existe** (`scripts/censo-dos-juizes.mjs`, `npm run censo`):
+   lista testes e juízes visuais, cobra Serve na amostra, imprime quem
+   está sem dono. Medido nesta máquina: **2.435** casos de unidade em 75
+   arquivos, typecheck 2,9 s, lint 5,5 s. A maior parte ainda está SEM
+   DONO — classificar o resto acontece no TOQUE (28/08), e ninguém morre
+   antes.
+2. **O portão de commit existe** (`npm run gate`): typecheck + lint +
+   testes dos arquivos tocados, mais os transversais do cadastro da luz
+   e dos símbolos proibidos. Foi exatamente essa lacuna que deixou o
+   `pontoNaBorda.ts` do item 70 de fora do cadastro com a suíte "dos
+   tocados" verde.
+3. **Anti-deriva amostral:** o "19 camadas" deixa de ser pino decorado
+   (a gaveta deriva da tabela); a amostra de juízes velhos declara
+   Serve; apagar a linha faz o censo acusar; o juiz do harness ainda
+   morde o sinal quebrado.
+4. **O item 105 fechou** no mesmo commit: a prova 19 mira Marte.
+
+**O que falta para o 99 sair da lista:** dono em cada arquivo (quem não
+responder MORRE, com a morte justificada no censo); fundir redundantes;
+sabotagem amostral dos velhos para valer (hoje é uma amostra de seis);
+porteiro do teto de 15 min que recuse juiz novo sem aposentar alguém
+(hoje o teto está escrito, não trava).
+**28/08, ele puxou de volta:** a prioridade é o tamanho da sessão (item
+**106**), não uma campanha de classificação. O que falta aqui acontece
+quando uma obra TOCAR o arquivo — não se abre sessão só para classificar.
+O 75 **não espera** uma varredura: os portões em camadas já são lei
+(`npm run gate` no commit; suíte cheia no fechamento).
+
+**O FECHO (30/08).** A pedido dele ("vamos para o item 99"), a rodada
+fechou as quatro peças que faltavam, em 6 frentes paralelas + fecho do
+coordenador: (1) DONO EM CADA ARQUIVO — os 97 sem dono responderam
+(dono 28 · lei 45 · chão 31, zero sem dono); NENHUM morreu: as quatro
+levas de testes voltaram sem candidato a morte (sobreposições eram
+partição deliberada declarada nos cabeçalhos) — o problema da casa
+nunca foi teste inútil, era crescimento sem catraca e deriva sem
+mordida. (2) PREÇO EM CADA JUIZ — os 17 medidos com a tabela do NORTE,
+os 8 novos com `~` e "(estimado — medir na próxima corrida)"; soma da
+época 43,3 min, PINADA na catraca (`TETO_TOTAL_MIN` no censo): o total
+só desce ou fica, subir re-pina no diff com justificativa; comparação
+em décimos de minuto (o ruído binário de 43,3 não estoura o próprio
+pino). (3) PORTEIRO — `npm run censo` reprova teste/juiz sem Serve e
+juiz sem Custo parseável; a amostra fixa de 7 morreu superada.
+(4) MORDIDA AMOSTRAL — `npm run mordida`: 3 testes por semana (rotação
+determinística pela semana ISO, varre a lista inteira), cada sujeito
+sabotado num worktree de HEAD por 4 mutações textuais, teste tem de
+ficar vermelho em ≥1; nunca apaga nada; "não mordeu" responde-se com
+`// Mordida: justificada — frase` no próprio teste (a linha aparece no
+diff e o veredito avisa quando ela envelhece). NO PRIMEIRO GIRO
+(2026-W35) pegou caso real: App.test.ts não mordeu as 4 sabotagens do
+App.tsx — justificado no arquivo (pina dois defeitos pontuais de um
+componente de ~1.100 linhas; o comportamento largo do App é dos juízes
+de navegador). JULGAMENTOS do coordenador: voo-ida-e-volta VIVE
+(1 min, opcional, único que vê histerese); fase-da-grade desceu a
+BANCADA (a soleira já é cobrada na suíte); fusões MARCADAS nos
+cabeçalhos para quem tocar (beira+dobra+colar → um juiz da fita,
+3 boots → 1; chapa-do-real → modo --selo da costura-da-sombra) — regra
+dele de 28/08, sem obra cega em juiz que não se pode rodar (a porta
+5173 tinha servidor de outra sessão). PREÇO antes/depois: portão e
+suíte inalterados (typecheck 2,9 s · lint 5,5 s · suíte 2.516 casos em
+~7,3 s); o ganho da dieta é o FREIO — total pinado, porteiro cobrando,
+mordida rodando. Suíte cheia UMA vez no fechamento: 81 arquivos,
+2.516 verdes.

@@ -291,7 +291,16 @@ testes dos arquivos tocados, mais os transversais do cadastro da luz).
 A suíte cheia (`npm test`) é uma vez, no fechamento da etapa. Os juízes
 de imagem seguem a coluna "Quando roda" abaixo. O censo vivo é `npm run
 censo` (item 99). O teto da rodada visual continua ~15 min (item 57):
-juiz novo declara Serve e Custo, ou aposenta alguém.
+juiz novo declara Serve e Custo, ou aposenta alguém. **Desde 30/08 o
+censo é PORTEIRO** (fecho do item 99): reprova teste ou juiz sem a
+linha `// Serve:` e juiz sem `// Custo:` parseável, e a CATRACA pina a
+soma dos custos declarados (43,3 min na época) — o total só desce ou
+fica; subir exige re-pinar `TETO_TOTAL_MIN` no mesmo commit, com a
+justificativa. E `npm run mordida` (fechamento de etapa, nunca no gate)
+sabota 3 testes por semana, por rotação determinística, num worktree de
+HEAD: teste que não fica vermelho em nenhuma das 4 sabotagens pede olho
+humano — reforçar, ou responder com `// Mordida: justificada — frase`
+no próprio teste.
 Os minutos são MEDIDOS nesta máquina
 em 21/08, com o servidor já no ar; noutra máquina são ordem de grandeza,
 nunca oráculo. Escolher qual rodar é a regra que já está escrita — a prova
