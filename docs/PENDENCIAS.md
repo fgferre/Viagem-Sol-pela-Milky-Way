@@ -1307,7 +1307,16 @@ Guardas em `cameraRig.test.ts` (fecha na pausa com paredes; decai no
 play; ignorada fora da pausa; reset devolve o script bit a bit).
 **Pendência curta desta família:** a pinça do telefone ainda não é
 lente no filme pausado (só a roda); vale uma linha quando o telefone
-for o assunto. **O item espera o olho dele nas fotos para fechar.**
+for o assunto. **ELE OLHOU E ACHOU DEFEITO DE LAYOUT (29/08, palavras dele):** *"acho
+que a indicacao da lente nao está bem posicionada... parece que sobrepoe
+a barra de progresso e capitulos do filme"* — e tinha razão, medido: a
+linha nasceu em 7,6vh e a barra vive em 7,4vh com carrapichos e halo de
+toque de ±12px — o texto caía sobre os carrapichos e DENTRO da área de
+clique do scrub. O conserto (mesmo dia): uma coluna só acima da régua —
+a LENTE ancora a 9,6vh (instrumento persistente, junto à barra) e o
+RUMO sobe para 11,6vh (transiente, flutua acima); o sol-line do voo
+livre fica em 7,6vh porque lá não há barra. O item espera o olho dele
+nas fotos para fechar.
 
 
 **108. O fim do filme não mostra direito a Lua e a Terra.** (Palavras

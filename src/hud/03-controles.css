@@ -110,11 +110,17 @@
    toda fase — que é o teto que a impede de sair pela esquerda. O `:has()` e
    os 60vw saem com a peça que os justificava. */
 
-/* --- linha de rumo (destino com distância viva) --- */
+/* --- linha de rumo (destino com distância viva) ---
+   No FILME o canto inferior direito é uma COLUNA acima da régua do
+   tempo (barra a 7,4vh, carrapichos e halo de toque ±12px): o
+   instrumento persistente (.lente-line, 9,6vh) ancora junto à barra e
+   o rumo — que vem e vai com os beats — flutua acima dele. Foi a
+   queixa dele em 29/08 ("parece que sobrepõe a barra de progresso")
+   que ordenou a coluna. --- */
 .dest-line {
   position: fixed;
   right: 6vw;
-  bottom: 9.6vh;
+  bottom: 11.6vh;
   z-index: 40;
   pointer-events: none;
   color: rgba(255, 214, 150, 0.78);
@@ -143,14 +149,16 @@
 }
 
 /* --- o indicador de fotografia (item 100): "LENTE 34° · SOL 412 UA".
-   Mesmo traje e mesmo degrau do sol-line — no FILME, onde só ele
-   desenha, a vaga é a mesma e as duas linhas nunca coexistem. A cor é
-   a do sol-line (referência de posição, não chamada); o número da
-   lente pulsando é o que denuncia o zoom, sem animação extra. --- */
+   Mesmo traje do sol-line, mas a 9,6vh: no FILME a vaga de 7,6vh cai
+   sobre a barra de progresso (7,4vh + carrapichos + halo de toque) —
+   foi a queixa dele em 29/08. Aqui a linha ancora logo ACIMA da régua,
+   e o rumo flutua acima dela (11,6vh). A cor é a do sol-line
+   (referência, não chamada); o número da lente pulsando é o que
+   denuncia o zoom, sem animação extra. --- */
 .lente-line {
   position: fixed;
   right: 6vw;
-  bottom: 7.6vh;
+  bottom: 9.6vh;
   z-index: 40;
   pointer-events: none;
   color: rgba(255, 214, 150, 0.55);
