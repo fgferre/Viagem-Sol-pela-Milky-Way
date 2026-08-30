@@ -287,6 +287,10 @@ export class Escada {
   mergulharNoEscolhido() {
     this.escolha.mergulharNoEscolhido();
   }
+  /** hover no Atlas: há algo clicável sob o ponteiro? (cursor, item 111) */
+  apontaAlgo(x: number, y: number): boolean {
+    return this.escolha.apontaAlgo(x, y);
+  }
 
   /**
    * A RECEITA DE ENQUADRAMENTO de um corpo QUALQUER, no instante vivo —
@@ -345,7 +349,11 @@ export class Escada {
       this.maquinaDoTempo.garantirEfemerides();
       return;
     }
-    this.atlas.selecionar(r.alvo, r.raio, r.eixoDe, { pisoRaio: r.pisoRaio });
+    this.atlas.selecionar(r.alvo, r.raio, r.eixoDe, {
+      pisoRaio: r.pisoRaio,
+      // a re-mira desliza (item 110) — mesma guarda das trocas de degrau
+      rampa: this.rampaDaEscada(),
+    });
     this.enquadrarAgora();
     this.focoCorpoId = id;
     this.focoEstrela = false;
@@ -359,7 +367,9 @@ export class Escada {
   /** escolhe uma ESTRELA (ou o centro galáctico) sem mover a câmera —
    *  mesma fronteira de `selecionarCorpo`: quem chama é `escolha.ts` */
   selecionarPonto(pos: THREE.Vector3, raio: number, nome: string) {
-    this.atlas.selecionar(pos, raio, pos);
+    // a re-mira desliza (item 110) — era AQUI que o pulo mais doía:
+    // escolher uma estrela estando no degrau corpo girava 45° num quadro
+    this.atlas.selecionar(pos, raio, pos, { rampa: this.rampaDaEscada() });
     this.enquadrarAgora();
     this.focoCorpoId = null;
     this.focoEstrela = true;

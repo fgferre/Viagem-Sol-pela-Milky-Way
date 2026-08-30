@@ -635,6 +635,19 @@ describe('o cursor de agarrar (defeito 4) chega ao canvas', () => {
     expect(CSS).toMatch(/\.scene-canvas\.arrastavel:active \{\s*cursor: grabbing;/);
   });
 
+  it('e apontar para um nome clicável mostra pointer (item 111)', () => {
+    expect(CSS).toMatch(/\.scene-canvas\.arrastavel\.apontavel \{\s*cursor: pointer;/);
+    // o apontar fica ANTES do :active na folha: mesma especificidade, e
+    // o gesto EM CURSO (agarrando) tem de ganhar do hover
+    expect(CSS.indexOf('.scene-canvas.arrastavel.apontavel')).toBeLessThan(
+      CSS.indexOf('.scene-canvas.arrastavel:active')
+    );
+    // quem liga e desliga a classe é o gesto, com o MESMO hit-test do
+    // clique — e só com o ponteiro solto (buttons === 0)
+    expect(GESTOS).toContain("classList.toggle(\n        'apontavel',");
+    expect(GESTOS).toContain('event.buttons === 0');
+  });
+
   it('e o canvas continua sem gesto nativo do navegador por cima', () => {
     // `touch-action: none` é o que entrega o `pointermove` do dedo em vez
     // de o navegador rolar a página com ele — o filtro por pointerId só

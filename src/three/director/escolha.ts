@@ -108,6 +108,12 @@ export class Escolha {
     return best;
   }
 
+  /** há algo clicável neste ponto? — o MESMO hit-test do clique,
+   *  servindo o CURSOR (item 111). Leitura pura: nenhum estado se mexe. */
+  apontaAlgo(x: number, y: number): boolean {
+    return this.alvoNoPonto(x, y) !== null;
+  }
+
   /**
    * O CLIQUE CURTO NO VOO LIVRE: a câmera VOA até o nome mais próximo.
    *

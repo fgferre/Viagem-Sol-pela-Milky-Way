@@ -747,6 +747,7 @@ export class Director {
       // dois gestos: o primeiro troca o alvo com a câmera parada, o
       // segundo é o preset da escada, com rampa.
       selecionar: (x, y) => this.escada.selecionarNoPonto(x, y),
+      apontavel: (x, y) => this.escada.apontaAlgo(x, y),
       fecharGavetas: () => this.events.onFecharGavetas(),
       mergulhar: () => this.escada.mergulharNoEscolhido(),
       // A RODA ESCREVE DISTÂNCIA, e só distância (item 73): nem

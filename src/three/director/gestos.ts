@@ -31,6 +31,12 @@ export interface FiosDosGestos {
    * tela) — sem mover a câmera (item 73).
    */
   selecionar: (x: number, y: number) => void;
+  /**
+   * HÁ ALGO CLICÁVEL NESTE PONTO? (frações de tela) — o mesmo hit-test
+   * do clique, servindo o CURSOR (item 111): pointer sobre nome, agarrar
+   * no resto. Leitura pura, não mexe em estado nenhum.
+   */
+  apontavel: (x: number, y: number) => boolean;
   /** DUPLO CLIQUE no Atlas: mergulhar no que o clique escolheu, com rampa. */
   mergulhar: () => void;
   /**
@@ -150,6 +156,22 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
   };
 
   const onPointerMove = (event: PointerEvent) => {
+    // O CURSOR DIZ O QUE O CLIQUE FARIA (item 111): pointer sobre um
+    // nome clicável, mão de agarrar no resto do céu — o padrão de todo
+    // mapa. Só no hover de verdade (nenhum botão apertado): durante o
+    // gesto o `:active` já mostra "agarrando", e mexer na classe ali
+    // faria o cursor piscar. Classe direto no canvas, sem re-render.
+    if (event.buttons === 0) {
+      canvas.classList.toggle(
+        'apontavel',
+        fios.noAtlas() &&
+          event.target === canvas &&
+          fios.apontavel(
+            event.clientX / window.innerWidth,
+            event.clientY / window.innerHeight
+          )
+      );
+    }
     // A PINÇA vem ANTES do arrasto, e não depois: com dois dedos o
     // arrasto já não tem dono (o `esquecer` acima), então `mover`
     // devolveria `null` e o gesto morreria no `return` de baixo.

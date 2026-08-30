@@ -107,6 +107,13 @@
 .scene-canvas.arrastavel {
   cursor: grab;
 }
+/* O DEDO SOBRE UM NOME CLICÁVEL (item 111): pointer, o padrão de todo
+   mapa — Google Maps, NASA Eyes. A classe entra e sai no pointermove
+   (gestos.ts, hit-test dos rótulos); fica ANTES do :active de propósito,
+   para o agarrar EM CURSO ganhar do apontar na mesma especificidade. */
+.scene-canvas.arrastavel.apontavel {
+  cursor: pointer;
+}
 .scene-canvas.arrastavel:active {
   cursor: grabbing;
 }

@@ -1899,6 +1899,46 @@ describe('a rampa entre degraus do rig (F2b/D7)', () => {
     expect(chegada.quaternion.equals(seco.quaternion)).toBe(true);
   });
 
+  it('a re-mira da SELEÇÃO desliza — e re-selecionar o mesmo alvo é seco (item 110)', () => {
+    // medido antes do conserto: escolher uma estrela estando no degrau
+    // corpo girava a vista 45,5° num único quadro. Com `rampa: true` a
+    // mesma troca desliza — e o DESTINO é bit a bit o da seleção seca,
+    // que é o que a prova do smoke ("a câmera não sai do lugar") mede.
+    const corpoA = new THREE.Vector3(1e-6, 0, 0);
+    const estrela = new THREE.Vector3(0.4, 0.9, 0);
+
+    const seco = cam();
+    const rigSeco = new AtlasRig();
+    rigSeco.focar(corpoA, 1e-9, corpoA);
+    rigSeco.apply(seco);
+    rigSeco.selecionar(estrela, 0.05, estrela);
+    rigSeco.apply(seco);
+
+    const animado = cam();
+    const rig = new AtlasRig();
+    rig.focar(corpoA, 1e-9, corpoA);
+    rig.apply(animado);
+    const antes = animado.quaternion.clone();
+    rig.selecionar(estrela, 0.05, estrela, { rampa: true });
+    expect(rig.animando).toBe(true);
+    const dur = rig.duracaoDaRampa;
+    expect(dur).toBeGreaterThanOrEqual(RAMPA_DO_DEGRAU_S);
+    // meio da rampa: a vista está ENTRE as miras, não já na nova
+    rig.apply(animado, 1, LARGURA_DE_MESA_PX, dur / 2);
+    expect(animado.quaternion.equals(antes)).toBe(false);
+    expect(animado.quaternion.equals(seco.quaternion)).toBe(false);
+    // fim: a pose PURA da seleção de sempre, bit a bit
+    rig.apply(animado, 1, LARGURA_DE_MESA_PX, dur);
+    expect(rig.animando).toBe(false);
+    rig.apply(animado, 1, LARGURA_DE_MESA_PX, 0.016);
+    expect(animado.position.equals(seco.position)).toBe(true);
+    expect(animado.quaternion.equals(seco.quaternion)).toBe(true);
+
+    // re-selecionar o alvo que JÁ se olha não balança um bit
+    rig.selecionar(estrela, 0.05, estrela, { rampa: true });
+    expect(rig.animando).toBe(false);
+  });
+
   it('focar o MESMO alvo com rampa é no-op — nem reinicia a animação', () => {
     const rig = new AtlasRig();
     noSistemaInteiro(rig);

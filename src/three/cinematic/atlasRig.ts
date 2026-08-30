@@ -458,16 +458,27 @@ export class AtlasRig {
    * pergunta ao rig se há pai (`temPai`) em vez de deduzi-lo do degrau,
    * para não recolocar a mistura que a seleção não pediu.
    *
-   * A RAMPA NÃO ENTRA: não há travessia a animar — a câmera não sai do
-   * lugar. `rampaT` volta a 1 para o caso de a seleção pegar uma troca
-   * de degrau no meio (aí a rampa perde, e é o certo: o gesto do
-   * visitante ganha do preset que ele interrompeu).
+   * A RAMPA ENTRA QUANDO A VISTA MUDA (item 110). A câmera não sai do
+   * LUGAR — mas a lei do Atlas é olhar o alvo, então trocar o alvo
+   * RE-MIRA a vista em torno da câmera parada (medido: 45,5° num quadro
+   * ao escolher uma estrela estando no degrau corpo de Saturno — o
+   * "salto abrupto" da queixa dele, 29/08), e o grampo do passo 4 ainda
+   * pode puxar a distância para a faixa do alvo novo. Com `opcoes.rampa`
+   * essa mudança desliza pela MESMA rampa dos degraus (slerp + distância
+   * em log), com duração proporcional; sem mudança perceptível a seleção
+   * segue instantânea — re-clicar o mesmo alvo não balança um bit, e o
+   * destino final é bit a bit o de sempre (a prova do smoke, "a câmera
+   * não sai do lugar", mede DEPOIS de assentar e continua verdadeira).
    */
   selecionar(
     alvo: THREE.Vector3,
     raio: number,
     eixoDe: THREE.Vector3 = alvo,
-    opcoes: { polo?: THREE.Vector3 | null; pisoRaio?: number | null } = {}
+    opcoes: {
+      polo?: THREE.Vector3 | null;
+      pisoRaio?: number | null;
+      rampa?: boolean;
+    } = {}
   ) {
     // 1. a pose de agora, no mundo — a direção E o alto da tela, porque
     //    desde o giro livre a pose tem TRÊS graus de liberdade e
@@ -475,6 +486,21 @@ export class AtlasRig {
     this.repousoDe(this.eixoDe, this.alvo, this.pai, this.polo, _dirAgora);
     poseDoVisitante(_dirAgora, this.polo, this.giro, _dirAgora, _upAgora);
     _posPartida.copy(this.alvo).addScaledVector(_dirAgora, this.distancia);
+    // o snapshot de partida e o PAN da re-mira, ANTES de o referencial
+    // trocar: o pan é o ângulo entre o alvo velho e o novo vistos da
+    // câmera parada — é exatamente o quanto a vista vai girar
+    this.partida.alvo.copy(this.alvo);
+    this.partida.raio = this.raio;
+    this.partida.eixoDe.copy(this.eixoDe);
+    this.partida.temPai = this.pai !== null;
+    if (this.pai) this.partida.pai.copy(this.pai);
+    this.partida.giro.copy(this.giro);
+    this.partida.polo.copy(this.polo);
+    this.partida.distancia = this.distanciaPinada;
+    _dirA.copy(this.alvo).sub(_posPartida);
+    _dirB.copy(alvo).sub(_posPartida);
+    const pan =
+      _dirA.lengthSq() > 0 && _dirB.lengthSq() > 0 ? _dirA.angleTo(_dirB) : 0;
     // 2. o referencial novo — e o gesto que trouxe a câmera até aqui
     //    acabou: a inércia não segue para o alvo escolhido
     this.esquecerOGiro();
@@ -488,7 +514,6 @@ export class AtlasRig {
       opcoes.pisoRaio !== undefined && opcoes.pisoRaio !== null && opcoes.pisoRaio > 0
         ? opcoes.pisoRaio
         : null;
-    this.rampaT = 1;
     // 3. a MESMA pose, escrita no referencial novo
     _dirB.copy(_posPartida).sub(this.alvo);
     const distancia = _dirB.length();
@@ -497,6 +522,7 @@ export class AtlasRig {
       // e o enquadramento é a única resposta honesta
       this.giro.identity();
       this.distanciaPinada = null;
+      this.rampaT = 1;
       return;
     }
     _dirB.multiplyScalar(1 / distancia);
@@ -511,6 +537,22 @@ export class AtlasRig {
       piso,
       Math.max(piso, this.tetoDeZoom)
     );
+    // 5. a re-mira DESLIZA quando há o que ver (item 110): pan da vista
+    //    e décadas do grampo somam a duração; sem mudança perceptível a
+    //    seleção segue seca — idempotente como sempre foi
+    const decadas =
+      this.distanciaPinada > 0
+        ? Math.abs(Math.log10(this.distanciaPinada / distancia))
+        : 0;
+    if (opcoes.rampa && (pan > 1e-4 || decadas > 1e-6)) {
+      this.rampaDuracaoS = Math.min(
+        RAMPA_MAX_S,
+        RAMPA_DO_DEGRAU_S + RAMPA_POR_RADIANO_S * pan + RAMPA_POR_DECADA_S * decadas
+      );
+      this.rampaT = 0;
+    } else {
+      this.rampaT = 1;
+    }
   }
 
   /**

@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 111.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 112.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`.)*
 
@@ -709,6 +709,35 @@ seguem instantâneos; a rampa continua terminando bit a bit na pose pura
 (precedente do item 102). Se ele quiser que o clique simples TAMBÉM
 centralize (hoje só escolhe), é revisão da lei do item 73 e decisão
 dele.
+
+**A 2ª QUEIXA (29/08, mesma noite):** *"quando dou um clique simples,
+ainda nao ocorre uma transicao suave... ele centraliza num pulo"*. O
+salto do clique SIMPLES era outro mecanismo: a lei do Atlas é a câmera
+OLHAR o alvo, então ESCOLHER re-mira a vista em torno da câmera parada
+— e re-mirava NUM QUADRO (`selecionar` zerava a rampa por contrato).
+Sonda na página viva cravou: escolher uma estrela no degrau corpo de
+Saturno girava **45,5° em 17 ms**. **FEITO em 29/08:** a re-mira passa
+pela MESMA rampa proporcional (`selecionar` ganhou `rampa`, a escada a
+passa com a guarda de sempre; sem mudança perceptível segue seco —
+re-clicar não balança). Re-medido no mesmo cenário: maior giro num
+quadro **2,96°**, pico no meio da rampa (~730 ms), giro total idêntico;
+posição parada como manda o item 73; destino bit a bit o de sempre.
+Guarda nova no `atlasRig.test.ts` (105/105) e **atlas-smoke inteiro
+verde** (clique escolhe parado, duplo vai, pinça, bússola). Segue
+ABERTO esperando a mão dele.
+
+**111.** O cursor era mão aberta no céu inteiro — palavras dele (29/08):
+*"o ícone do mouse está sempre no foramto de mao... acho que talvez
+deveria mudar, como é o padrao?"*. O padrão dos mapas (Google Maps,
+NASA Eyes) tem TRÊS estados, e a casa só tinha dois: `grab` (agarrar)
+no céu e `grabbing` no arrasto — faltava `pointer` sobre o que é
+clicável. **FEITO em 29/08:** o `pointermove` (só com o ponteiro solto,
+`buttons === 0`) roda o MESMO hit-test do clique (`alvoNoPonto`, via
+fachadas `apontaAlgo` na escolha e na escada) e liga/desliga a classe
+`apontavel` direto no canvas, sem re-render; CSS em `01-base.css`, com
+o apontar ANTES do `:active` para o agarrar em curso ganhar do hover.
+Guardas no `arrastoDePonteiro.test.ts` (regra de CSS + ordem + fiação).
+ABERTO esperando o olho dele no app.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
