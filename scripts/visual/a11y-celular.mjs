@@ -20,8 +20,9 @@
 // `medirCobertura` e o `bate()` continuam existindo em UM lugar só, que
 // era a condição da divisão.
 //
-// O CENSO CONTINUA UM, porque a corrida continua uma: os 301 vereditos da
-// perna do celular somam-se aos do resto no mesmo `a11y`, e o preço
+// O CENSO CONTINUA UM, porque a corrida continua uma: os vereditos da
+// perna do celular — contados NA CORRIDA, que é onde eles existem —
+// somam-se aos do resto no mesmo `a11y`, e o preço
 // (4,5 min desde a F5 do item 113) é o da sessão única — dividir a
 // CHAMADA em duas custaria dois boots de Chrome para medir a mesma coisa.
 import { dorme, esperarPor } from './chrome.mjs';

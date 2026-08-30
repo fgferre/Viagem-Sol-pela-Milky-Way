@@ -64,6 +64,59 @@ const conferir = (ok, texto) => {
 const contexto = (s) =>
   s.js("(document.querySelector('.atlas-ficha-nome') || {}).textContent || ''");
 
+/** pc → UA — o inverso do `AU_PARA_PC` da casa, num lugar só neste juiz. */
+const PC_EM_UA = 206264.80624548031;
+
+/**
+ * A LEI DO ENQUADRAMENTO, lida do MESMO módulo puro que põe a câmera:
+ * `enquadrar()` de `src/three/cinematic/enquadramento.ts`, com a lente
+ * pinada do Atlas e o retângulo útil VIVO que o Director publica
+ * (`__director.retanguloUtil`). Devolve `k` — a distância que a lei pede
+ * para uma esfera de raio 1 —, e como a conta é LINEAR no raio, a régua
+ * do alvo é `k × rAlvo`.
+ *
+ * ELA EXISTE PORQUE A RÉGUA VELHA DECORAVA UM NÚMERO. "5–8 UA do Sol"
+ * era `1 UA × 1,2 / sen(11,06°)`, a conta sob a lente de 35° que o Atlas
+ * usava; em 29/08 (item 86, decisão dele com a foto A/B na mão) a casa
+ * passou a ter UMA lente só — `ATLAS_FOV_GRAUS = FOV_DA_CASA = 58°` —, e
+ * enquadrar a MESMA esfera com mais céu por tela é chegar MAIS PERTO: o
+ * `?foco=terra` assenta a 2,90 UA do Sol e a régua velha reprovava o app
+ * por obedecer a uma decisão de produto aprovada. Número decorado
+ * envelhece calado; a lei anda junto com a lente. (Re-derivada no item
+ * 113, 30/08.)
+ *
+ * O import vem numa chamada à parte porque o `Runtime.evaluate` da
+ * sessão não espera promessa — é a mesma dança do índice da busca, na
+ * prova 6.
+ */
+async function leiDoEnquadramento(s) {
+  await s.js(
+    "(() => { import('/src/three/cinematic/enquadramento.ts')"
+      + '.then((m) => { window.__enq = m; }); })()'
+  );
+  if ((await esperarPor(s, 'Boolean(window.__enq)')) === null) {
+    throw new Error('o módulo do enquadramento não carregou na página');
+  }
+  return JSON.parse(await s.js(`JSON.stringify((() => {
+    const e = window.__enq;
+    const d = window.__director;
+    const cam = d.engine.camera;
+    const k = e.enquadrar({
+      rAlvo: 1,
+      fovDeg: e.ATLAS_FOV_GRAUS,
+      aspect: cam.aspect,
+      retanguloUtil: d.retanguloUtil,
+    }).distancia;
+    return {
+      k,
+      fov: e.ATLAS_FOV_GRAUS,
+      raioUA: d.atlas.raioDoAlvo * ${PC_EM_UA},
+      distanciaUA: d.atlas.distancia * ${PC_EM_UA},
+      previstaUA: k * d.atlas.raioDoAlvo * ${PC_EM_UA},
+    };
+  })())`));
+}
+
 /** abre a paleta pelo gatilho, como quem clica nela */
 async function abrirPaleta(s) {
   await s.js(`(() => {
@@ -450,7 +503,7 @@ try {
   // não fazia coisa alguma. Três linhas da matriz do PLANO com destino
   // nesta onda.
   const emUA = () =>
-    sessao.js('window.__director.engine.camera.position.length() * 206264.80624548031');
+    sessao.js(`window.__director.engine.camera.position.length() * ${PC_EM_UA}`);
 
   await sessao.ir(`foco=terra&${PIN}`);
   const naTerra = await contexto(sessao);
@@ -459,10 +512,22 @@ try {
     naTerra === 'Terra',
     `?foco=terra abre o Atlas com a Terra em quadro (em quadro: "${naTerra}")`
   );
-  // enquadra a ÓRBITA (1 UA) e não o corpo: 1 × 1,2 / sen(11,06°) ≈ 6,3 UA
+  // ENQUADRA A ÓRBITA E NÃO O CORPO, e a régua é a LEI e não um número
+  // decorado — ver `leiDoEnquadramento`. Duas coisas de uma vez, porque
+  // uma sozinha não basta: o raio enquadrado é o da ÓRBITA (≈1 UA, e
+  // anda com a data entre 0,983 e 1,017 — o corpo tem 4,3e-5 UA, quatro
+  // ordens abaixo), e a distância é exatamente a que a lente VIGENTE
+  // pede para essa esfera. A margem é justa de propósito: os dois lados
+  // saem da MESMA função pura, então o que sobra é ruído de float, e uma
+  // folga larga aqui deixaria passar o rig enquadrando por outra conta.
+  const leiTerra = await leiDoEnquadramento(sessao);
   conferir(
-    distTerra > 5 && distTerra < 8,
-    `e enquadra a ÓRBITA dela: a câmera fica a ${distTerra.toFixed(2)} UA do Sol`
+    Math.abs(leiTerra.raioUA - 1) < 0.05
+      && Math.abs(leiTerra.distanciaUA / leiTerra.previstaUA - 1) < 1e-6,
+    `e enquadra a ÓRBITA dela (raio ${leiTerra.raioUA.toFixed(3)} UA) na distância que`
+      + ` a lente de ${leiTerra.fov}° pede: ${leiTerra.distanciaUA.toFixed(3)} UA do alvo`
+      + ` contra ${leiTerra.previstaUA.toFixed(3)} previstas`
+      + ` (${leiTerra.k.toFixed(3)} × o raio) — ${distTerra.toFixed(2)} UA do Sol`
   );
 
   // a paleta acha pelo nome pt-BR, sem acento, e a escolha ENQUADRA

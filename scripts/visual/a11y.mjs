@@ -927,37 +927,13 @@ async function julgarFerramentasDoAtlas(s) {
 const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
 if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
+// O VIGIA DA ABA DA FRENTE vem DE GRAÇA com a sessão desde 30/08: ele
+// nasceu aqui (é este o juiz mais longo da casa, e foi nele que a aba
+// `chrome://settings/help` do Chrome desatualizado roubou o primeiro
+// plano duas vezes) e mudou para `abrirSessao` no mesmo dia — a intrusa
+// é do navegador, não deste juiz. A doutrina inteira e o que foi medido
+// estão na docstring dele em `chrome.mjs`.
 const sessao = await abrirSessao({ janela: JANELA, app: APP, prefixo: 'a11y' });
-/**
- * O VIGIA DA ABA DA FRENTE — medido em 30/08 (F5 do item 113), DUAS
- * corridas seguidas: aos ~4-5 min de browser vivo o Chrome headless
- * abriu SOZINHO uma aba `chrome://settings/help` (o aviso de relaunch
- * do update pendente do próprio Chrome) e ela roubou o primeiro plano.
- * O app virou aba de FUNDO: o rAF congela (§ prontidão nunca acende) e
- * `Input.dispatchKeyEvent` — que só responde quando a aba ativa
- * processa o evento — pendura o juiz PARA SEMPRE, calado. O vigia roda
- * entre os awaits do juiz (o laço de eventos fica livre mesmo com um
- * send pendurado), fecha qualquer aba `chrome://` intrusa e devolve a
- * frente ao app; provado ao vivo: o juiz destravou no instante do
- * fechamento. O conserto de TODOS os juízes é mudança de `chrome.mjs`
- * (fora do escopo da F5) — este vigia protege o juiz mais longo da casa.
- */
-const vigiaDaFrente = setInterval(async () => {
-  try {
-    const { targetInfos } = await sessao.send('Target.getTargets');
-    const intrusa = targetInfos.find((t) => t.type === 'page' && t.url.startsWith('chrome://'));
-    const app = targetInfos.find((t) => t.type === 'page' && t.url.includes(new URL(APP).host));
-    if (intrusa) {
-      process.stdout.write(`  ·     vigia: aba intrusa ${intrusa.url} fechada — a frente volta ao app\n`);
-      await sessao.send('Target.closeTarget', { targetId: intrusa.targetId });
-    }
-    // A FRENTE SE REAFIRMA A CADA VOLTA, com ou sem intrusa — medido em
-    // 30/08: fechar a intrusa NÃO devolve a ativação sozinho, e a corrida
-    // seguinte morreu num `ir()` de aba ainda de fundo ("o documento novo
-    // não carregou"). Ativar aba já ativa é inócuo.
-    if (app) await sessao.send('Target.activateTarget', { targetId: app.targetId });
-  } catch { /* sessão fechando */ }
-}, 2000);
 try {
   // A ABERTURA, que é por onde o visitante entra — e que este juiz não
   // abria (item 60).
@@ -1593,7 +1569,6 @@ try {
   // roubasse o foco não apareceria em prova nenhuma.
   await julgarPagina(sessao, 'pos=0,0,0.1&look=0,0,0', 'free');
 } finally {
-  clearInterval(vigiaDaFrente);
   sessao.fechar();
 }
 

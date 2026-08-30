@@ -33,7 +33,10 @@
 //     zero por não ter acontecido nada.
 //  C. Foco em 3 corpos — `focarNoCorpo`, o MESMO ponto de pouso do
 //     `?foco=` (App.tsx: resolverFoco → escolherAlvo → focarNoCorpo).
-//     Enquadrar não aloca: delta ZERO também. Além do delta, o
+//     Enquadrar não aloca: delta ZERO também — contra uma linha de base
+//     que NASCE com o episódico já contado (a fita da órbita de Mercúrio
+//     só acende no primeiro foco interno; ver `estrearOFoco`).
+//     Além do delta, o
 //     veredito cobra um TETO residente (texturas, BYTES DE TEXEL e
 //     geometrias): Atlas quente com delta zero e 400 texturas ainda é
 //     vazamento permanente — e delta zero com 1,2 GiB também é.
@@ -342,6 +345,63 @@ try {
     );
   };
 
+  /**
+   * A ESTREIA DO FOCO — o MESMO remédio do `estrearOEpisodico` acima,
+   * para o outro episódico da casa, e pelo mesmo motivo: a linha de base
+   * tem de NASCER com o que só estreia.
+   *
+   * O QUE ESTREAVA, medido em 30/08 (item 113): o bloco acusava `+1
+   * geometria` no PRIMEIRO foco e nunca mais — 43 no boot e depois das
+   * trocas, 44 em `earth`, e 44 em jupiter, saturn, neptune, mars e
+   * earth de novo. A geometria é a FITA DA ÓRBITA DE MERCÚRIO: no
+   * enquadramento de abertura as órbitas acesas são venus…pluto (a de
+   * Mercúrio fica apagada, colada no Sol) e o primeiro foco num corpo
+   * interno acende `mercury` pela primeira vez. Como
+   * `renderer.info.memory.geometries` conta o que o renderer JÁ VIU
+   * DESENHAR, a fita entra na conta no quadro em que acende — e a troca
+   * de tier refaz o mundo, então quem tem de estrear é a fita do mundo
+   * VIVO, depois da última troca.
+   *
+   * NÃO É VAZAMENTO, e a diferença se mede: vazamento cresce a cada
+   * foco, estreia acontece uma vez. O número ficou preso em 44 por seis
+   * focos seguidos, incluindo um repetido. O que a régua continua
+   * cobrando é exatamente isso — delta ZERO a partir daqui.
+   *
+   * E VOLTA AO SISTEMA no fim, que é a parte que custou uma corrida
+   * inteira para aparecer: `focarNoCorpo` no corpo JÁ FOCADO em órbita
+   * DESCE um degrau (o gesto da descida, D7/item 92) e o degrau "corpo"
+   * carrega o globo. Estrear em `earth` e deixar o bloco medir `earth`
+   * em seguida punha **+9 texturas e +7 geometrias** no primeiro foco —
+   * trocaria um episódico de 1 por um de 16, que é o oposto do conserto.
+   * A volta é pelo mesmo caminho vivo (`focarNoCorpo('sun')` sem `ver=` é
+   * `focarNoSistema`, o pouso de `?foco=sol`), e ela NÃO desfaz a
+   * estreia: o renderer não esquece o que já desenhou, e as fitas são
+   * objetos persistentes que só acendem e apagam (medido por uuid).
+   *
+   * ESTREAR COM OUTRO CORPO resolveria a descida e criaria outro
+   * problema: `mercury` enquadra uma órbita de 0,39 UA, a câmera cai
+   * muito mais perto do Sol e o LOD registra **+6 geometrias e +4
+   * texturas** que os focos medidos nunca alocariam — linha de base
+   * gorda é acomodação, não conserto. Por isso a estreia é o MESMO corpo
+   * e o MESMO caminho do bloco, e o que se desfaz é só o degrau.
+   */
+  const estrearOFoco = async (id) => {
+    const conta = () =>
+      sessao.js('window.__director.engine.renderer.info.memory.geometries');
+    const antes = await conta();
+    await sessao.js(`window.__director.focarNoCorpo('${id}')`);
+    await sessao.assentar();
+    const acendeu = await conta();
+    await sessao.js("window.__director.focarNoCorpo('sun')");
+    await sessao.assentar();
+    const depois = await conta();
+    process.stdout.write(
+      `  foco '${id}' disparado e desfeito antes da linha de base dos focos:`
+      + ` ${antes} → ${acendeu} → ${depois} geometrias`
+      + ' (a fita de Mercúrio acendendo, e o degrau de volta ao sistema)\n'
+    );
+  };
+
   const protocolo = async ({ sabotar, ciclos, trocas, focos }) => {
     const boot = await sessao.ir(BOOT);
     const fase = await sessao.js('window.__director.captura.fase');
@@ -368,6 +428,14 @@ try {
         mundos.push(await sessao.js('window.__director.captura.tierDoMundo'));
       }
       amostras.push(await amostrar(`troca q ${t}`));
+    }
+    // a linha de base dos focos nasce COM o episódico já contado — ver
+    // `estrearOFoco`. Ela é a âncora que `julgar` usa (a amostra
+    // imediatamente anterior ao primeiro foco), e por isso a estreia vem
+    // ANTES dela e depois da última troca de tier.
+    if (focos.length) {
+      await estrearOFoco(focos[0]);
+      amostras.push(await amostrar('base focos'));
     }
     for (const id of focos) {
       await sessao.js(`window.__director.focarNoCorpo('${id}')`);
@@ -400,7 +468,15 @@ try {
           ...trocas.map((a) => Math.abs(a.geometries - trocas[0].geometries))
         )
       : 0;
-    const ancora = trocas[trocas.length - 1] ?? ciclos[ciclos.length - 1];
+    // A ÂNCORA DOS FOCOS é a amostra IMEDIATAMENTE ANTERIOR ao primeiro
+    // deles — que desde 30/08 é a `base focos`, tirada depois da estreia
+    // (ver `estrearOFoco`). Escrita assim e não pelo rótulo: o protocolo
+    // pode reordenar os blocos, e "a última medida antes de começar a
+    // focar" continua sendo a definição certa de linha de base. Os
+    // fallbacks servem os braços que não têm focos.
+    const iPrimeiroFoco = amostras.findIndex((a) => a.rotulo.startsWith('foco'));
+    const ancora = (iPrimeiroFoco > 0 ? amostras[iPrimeiroFoco - 1] : null)
+      ?? trocas[trocas.length - 1] ?? ciclos[ciclos.length - 1];
     const focos = amostras.filter((a) => a.rotulo.startsWith('foco'));
     const deltaFocos = focos.length
       ? Math.max(

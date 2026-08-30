@@ -483,6 +483,12 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
     if (!alvo) await dorme(200);
   }
   if (!alvo) throw new Error('CDP não respondeu');
+  // A NOSSA ABA, pelo id que o próprio CDP põe no fim do endereço do
+  // socket (`…/devtools/page/<targetId>`). É por ele — e não pela URL —
+  // que o vigia abaixo sabe quem é o app: no instante em que a sessão
+  // abre a página ainda é `about:blank`, e casar por host deixaria a
+  // primeira janela do vigia sem alvo a reativar.
+  const idDaAba = alvo.split('/').pop();
   let cartografia = false;
   /**
    * O DOCUMENTO NOVO JÁ EXISTE? A terceira armadilha do harness, medida
@@ -524,9 +530,54 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
     source: 'window.__f=0;const o=window.requestAnimationFrame.bind(window);'
       + 'window.requestAnimationFrame=(c)=>o((t)=>{window.__f++;return c(t)});',
   });
+  /**
+   * O VIGIA DA ABA DA FRENTE — medido em 30/08 (F5 do item 113) em DUAS
+   * corridas seguidas do juiz de a11y: aos ~4-5 min de browser vivo o
+   * Chrome headless abriu SOZINHO uma aba `chrome://settings/help` (o
+   * aviso de relaunch do update pendente do próprio Chrome) e ela roubou
+   * o primeiro plano. O app virou aba de FUNDO: o rAF congela (o sinal de
+   * prontidão nunca acende) e `Input.dispatchKeyEvent` — que só responde
+   * quando a aba ATIVA processa o evento — pendura o juiz PARA SEMPRE,
+   * calado. Nasceu dentro do `a11y.mjs`, que era o juiz mais longo da
+   * casa; mora aqui desde 30/08 porque a intrusa é do CHROME e não do
+   * juiz — quem passa dos minutos com uma sessão aberta corre o mesmo
+   * risco, e o conserto tinha de ser um só para todos.
+   *
+   * SÃO DOIS GESTOS, e o segundo não é enfeite: fechar a intrusa NÃO
+   * devolve a ativação sozinho — medido, a corrida seguinte morreu num
+   * `ir()` com a aba ainda de fundo ("o documento novo não carregou").
+   * Por isso a frente se REAFIRMA a cada volta, com ou sem intrusa;
+   * ativar aba já ativa é inócuo.
+   *
+   * ELE RODA ENTRE OS AWAITS DO JUIZ: o laço de eventos fica livre mesmo
+   * com um `send` pendurado, e foi assim que o destravamento se provou ao
+   * vivo — o juiz voltou a andar no instante do fechamento. `unref` para
+   * que um caminho de erro não deixe o Node vivo só por causa do timer; o
+   * `fechar` da sessão o desarma no caminho feliz.
+   *
+   * A NOSSA ABA NUNCA É CANDIDATA (`t.targetId !== idDaAba`): o alvo é
+   * "página `chrome://` que não é a minha", e não "qualquer `chrome://`".
+   */
+  const vigiaDaFrente = setInterval(async () => {
+    try {
+      const { targetInfos } = await send('Target.getTargets');
+      const intrusa = targetInfos.find(
+        (t) => t.type === 'page' && t.targetId !== idDaAba && t.url.startsWith('chrome://')
+      );
+      if (intrusa) {
+        process.stdout.write(
+          `  ·     vigia: aba intrusa ${intrusa.url} fechada — a frente volta ao app\n`
+        );
+        await send('Target.closeTarget', { targetId: intrusa.targetId });
+      }
+      await send('Target.activateTarget', { targetId: idDaAba });
+    } catch { /* sessão fechando, ou socket já morto */ }
+  }, 2000);
+  vigiaDaFrente.unref?.();
   return {
     send,
     fechar: () => {
+      clearInterval(vigiaDaFrente);
       fecharSocket();
       return encerrar();
     },

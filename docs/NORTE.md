@@ -257,10 +257,12 @@ acrescentar uma cegueira acrescenta um item, e mais nada:
   degraus DISTANTES, cego a cintilação por construção) e não é juiz
   obrigatório desde 21/08 — ver a tabela de decisões fechadas.
 - **O filme andando de ponta a ponta.** Nenhum juiz assiste 0→193 s no
-  navegador: o `filme-ritmo.mjs` amostra 97 quadros PARADOS e o
-  `filme-smoke.mjs` solta o relógio por 420 ms em sete instantes. A única
-  varredura contínua a 60 fps é conta em Node (`cameraRig.test.ts`), sem
-  GPU e sem pós. O filme inteiro continua sendo julgado pelo olho do dono.
+  navegador: o `filme-ritmo.mjs` amostra ~49 quadros PARADOS (passo de
+  4 s desde 30/08; `PASSO=2` volta aos 97 para revisão fina) e o
+  `filme-smoke.mjs` solta o relógio em nove instantes, por três quadros
+  do próprio app em cada um. A única varredura contínua a 60 fps é conta
+  em Node (`cameraRig.test.ts`), sem GPU e sem pós. O filme inteiro
+  continua sendo julgado pelo olho do dono.
 - **Referência visual entre 1 e 40 UA.** As vistas `ua2`…`ua2000` existem;
   foto-oráculo nessa faixa, não (item 12).
 - **O FPS É CEGO A CUSTO DE THREAD — medido em 24/08.** No M1, a 1200×900
