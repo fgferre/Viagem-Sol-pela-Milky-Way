@@ -850,7 +850,14 @@ rearma), pressão de memória no M1, algo que só o percurso completo arma.
 **FUROU O JUIZ, e isso vira obrigação aqui:** a última vista oficial do
 `ab-identidade` no filme é **t=180** — os 13 segundos finais não têm
 vista nenhuma. Quem fechar este item ACRESCENTA uma vista do fim (t=190
-ou t=193) à lista oficial, para o buraco não reabrir.
+ou t=193) à lista oficial, para o buraco não reabrir. **CUMPRIDO em
+30/08:** a vista `fim-do-filme` (**t=193**, o quadro extremo — t=190
+deixaria os últimos 3 s de fora) está no gate. As duas candidatas foram
+sondadas por par nulo, três capturas cada na mesma árvore, e as duas
+saíram com md5 igual nas três — a escolha foi por cobertura, não por
+tremor; os números estão em `capturas/item108-fim-vista-parnulo.json`.
+O preço do juiz subiu de 3,5 para ~3,6 min e o teto do censo de 31,8
+para 31,9, re-pinado no mesmo commit.
 
 
 **109. Os labels 3D do outro projeto — trazer ou não, com medida.**

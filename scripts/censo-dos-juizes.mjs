@@ -37,7 +37,14 @@ export const TETO_DA_RODADA_MIN = 15;
 // 4 s), memoria 2,9→2,1 (ciclos/focos 5→3) e atlas-smoke 7,3→6,5
 // (manual 18→10 s) — 5,7 min a menos, e o teto desce os mesmos 5,7:
 // de 37,5 para 31,8.
-export const TETO_TOTAL_MIN = 31.8;
+// Re-pinado PARA CIMA no fecho do item 108 (30/08) — o único desta série,
+// e com a justificativa que a catraca exige: o filme dura 193 s e a última
+// vista do `ab-identidade` era t=180, então os 13 s finais não tinham juiz.
+// A vista `fim-do-filme` (t=193) fecha o buraco por uma captura a mais:
+// 3,5 → ~3,6 min declarados, e o teto sobe os mesmos 0,1 — de 31,8 para
+// 31,9. O preço novo é conta, não medição (a leva cheia custaria 7 min de
+// GPU só para reaferir), e leva o til; a próxima leva cheia re-pina.
+export const TETO_TOTAL_MIN = 31.9;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

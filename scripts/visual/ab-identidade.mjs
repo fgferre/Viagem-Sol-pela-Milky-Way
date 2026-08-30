@@ -1,5 +1,11 @@
-// Serve: chão — mudança que move imagem não passa calada: md5 das 50 vistas, antes × depois
-// Custo: 3,5 min por lado (medido 2026-08-30, F2/F3 do item 113: 50 vistas = 52 capturas, JOBS=6; a JOBS=3 são 3,9) (SMOKE=1: 0,4 min por lado)
+// Serve: chão — mudança que move imagem não passa calada: md5 das 51 vistas, antes × depois
+// Custo: ~3,6 min por lado (51 vistas = 53 capturas, JOBS=6) (SMOKE=1: 0,4 min por lado)
+//   O til é honesto: 3,5 min era MEDIDO (F2/F3 do item 113, 52 capturas, JOBS=6;
+//   a JOBS=3 eram 3,9). A vista `fim-do-filme` do item 108 soma uma captura e o
+//   preço virou CONTA — 3,5/52 = 0,067 por captura, 3,57 → 3,6 em décimos —
+//   porque rodar a leva cheia só para reaferir custaria 7 min de GPU. É teto
+//   folgado: com round-robin o balde maior tem 9 capturas com 52 e com 53, e é
+//   ele quem manda no relógio. A próxima leva cheia mede e re-pina para baixo.
 // Prova de que uma mudança NÃO mexeu na imagem: md5 das mesmas vistas antes
 // e depois.
 //
@@ -120,6 +126,17 @@ export const VISTAS = [
   ['mergulho', '?t=180&shot=2'],
   ['edgeon', '?t=153&shot=2'],
   ['faceon', '?t=167&shot=2'],
+  // O FIM DO FILME (item 108, 30/08) — o buraco que o próprio item furou: a
+  // última vista oficial era `mergulho` em t=180 e o filme dura 193 s
+  // (`cameraRig.test.ts`: `journey.duration === 193`), então os 13 segundos
+  // finais — a chegada n'A TERRA, o ato que o dono viu quebrar — não tinham
+  // juiz nenhum. t=193 e não t=190 porque é o quadro EXTREMO: pinar 190
+  // deixaria os últimos 3 s de fora, e a queixa dele é sobre o fim, não sobre
+  // a véspera dele. Escolhido por ESTABILIDADE, não por gosto — par nulo de
+  // 3 capturas na mesma árvore, md5 igual nas três, para as duas candidatas
+  // (`capturas/item108-fim-vista-parnulo.json`); o fim tem véu e coda, e vista
+  // que treme no gate é pior que buraco.
+  ['fim-do-filme', '?t=193&shot=2'],
   // RETRATO POR PADRÃO, não opt-in. Os três harnesses do repo capturam em 1:1
   // (rodada 1800x1800, sky 1440x1440, este 1800x1800), e defeito que dependa
   // do ASPECTO da tela é invisível para todos eles. Foi exatamente o caso da
