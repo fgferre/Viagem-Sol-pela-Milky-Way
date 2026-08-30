@@ -454,92 +454,16 @@ Conferência (**C6**); história no ARQUIVO.
 ARQUIVO. *(O herdeiro VIVO é o item **59**: trocar de tier ainda não troca
 a textura de quem já carregou.)*
 
-**39. Estrela focada apaga as outras, ligando e desligando de repente.**
-Palavras do dono: *"uma coisa que percebi é que agora quando uma estrela
-está focada, as demais simplesmente desaparecem (ligam/desligam
-abruptamente), nao quero esse efeito, quero que as estrelas continuem
-aparecendo, nao precisa ter esse efeito bizarro..."* E: *"eu quero que
-independentemente do astro/objeto que está em foco na tela nunca se
-esmaeça a grandeza da cena galáctica e do starfield, exuberante... nada de
-efeitos de pupila ou sei lá como vc chama isso..."*
+**39.** Focar uma estrela apagava as outras — **FECHADO em 29/08**,
+morto por mecanismo (uniforms do campo idênticos com/sem foco; a causa
+— a pupila — tem lápide com teste). História no ARQUIVO.
 
-Medido: era a pupila (`?pupila=1`), 16 stops ao focar Sirius. No app limpo
-ela está desligada e nenhuma camada esmaece.
+**40.** Dois Sóis com rótulo — **FECHADO em 29/08**, morto por censo
+(nunca mais de um rótulo SOL, em cinco endereços). História no ARQUIVO.
 
-**RE-VERIFICADO em 29/08, por mecanismo:** os 9 uniforms numéricos do
-campo estelar são IDÊNTICOS com e sem estrela em foco — não existe
-botão de esmaecer vivo (a pupila morreu no M2, com lápide guardada por
-`simbolosProibidos.test.ts`). Evidência na folha
-`capturas/item394043-verificacao.png`. **Espera o olho dele para
-fechar.**
-
-**40. Dois Sóis com rótulo ao mesmo tempo.**
-Palavras do dono: *"percebi tb que existem 2 sois (com tags) simultaneos
-na cena. será que tem mais outras duplciacoes? ou isso já está no pipeline
-para ser resovido?"*
-
-O rótulo dobrado não se reproduziu. **RE-VERIFICADO em 29/08, por
-censo:** em cinco endereços (abertura, foco-sol, corpo do Sol, longe,
-sirius) NUNCA há mais de UM rótulo "SOL" desenhado — e onde o Sol não é
-assunto, há zero. Folha `capturas/item394043-verificacao.png`; **espera
-o olho dele para fechar.** *(M1, 16/08: o Sol continua sendo
-bola 3D + ponto, mas agora os dois são UMA repartição — o ponto cede
-exatamente na medida em que a bola entra, pesos somando 1; e o terceiro
-desenhista, o clarão de autor do `SunStar`, morreu.)* O borrão branco da
-abertura do Atlas é o rabo do item 3 (bloom, M2). Fica aberto até o dono
-conferir. Não criar segundo mecanismo de rótulos — o `LabelCanvas` já
-resolve colisão.
-
-**43. Planetas de longe parecem estrelas.**
-Palavras do dono, 2026-08-16: *"percebi q planetas de longe parecem
-estrelas tb... esse comportamento nao é estranho? eles nao emitem luz...
-no máximo refletem um pouco que nao causaria esse efeito similar ao de
-uma estrela..."*
-
-O que é físico e fica: ponto de luz refletida É ponto de luz — Vênus é a
-"estrela" mais brilhante do céu real (m −4,6), e a camada dos dez corpos
-divide o gaussiano e a fotometria com o campo estelar de propósito. De
-longe de verdade eles apagam com 1/d²: no limiar do sistema (~10.300 UA)
-os nove medem m 15,3–27,7, invisíveis — pinado em `planetas.test.ts`.
-
-O que era defeito e tinha dono: o GRAU. O gatilho dos espinhos saturava
-em pico 4 (cláusula 5.4 da Lei, o clamp `sat`), então Vênus, Júpiter e
-Sirius ganhavam a MESMA cruz de difração cheia. *(MORTO no M2, 16/08:
-espinho e branqueamento derivam do FLUXO — amplitude 0,0278·pico,
-calibrada por continuidade em Sirius; saturação suave pico/(pico+4) no
-lugar do clamp. Vênus brilha mais que Sirius no céu real e agora a cruz
-dela é maior TAMBÉM — como numa câmera. Fica aberto até o dono conferir
-na cena.)*
-
-Ele refinou, no mesmo dia: *"acho que um planeta, nao poderia refletir
-de todos os lados... eles nao sao fontes de luz..."* e *"os planetas
-refletem de acordo com sua cor... venus está proxima do sol, brilha mais
-e tem uma cor mais reflexiva... marte jé é mais avermelhada.. a terra é
-o pale blue dot..."*
-
-As duas coisas JÁ SÃO o modelo, verificadas ao vivo em 16/08:
-- **Fase:** todo movimento de câmera reescreve `aFase` por corpo
-  (`escreverFase`, planetas.ts) com o ângulo Sol–planeta–observador no
-  modelo MH18 (Saturno inclui a abertura do anel). Medido na cena:
-  Saturno a 2 UA pelo lado do Sol, fase 0,883; a 2 UA por trás (ângulo
-  160,7°), fase 0,024 — 37× menos luz, e some no piso (+15 mag) em
-  fase nova plena. Ninguém reflete de todos os lados.
-- **Cor e albedo:** `aCor` por corpo = iluminante solar × razão de banda
-  dos índices medidos (B−V/V−R, fotometria.ts). Na cena: Marte
-  [1,89 / 0,97 / 0,48] avermelhado; Netuno [0,46 / 0,97 / 1,17] azul;
-  Terra levemente azulada; Vênus clara — e o brilho dela vem de H
-  (albedo × tamanho) + proximidade, como ele descreveu.
-
-O que a verificação de 16/08 revelou de quebra (o halo fotobombando)
-morreu com o M2 e a régua da luz.
-
-**RE-VERIFICADO em 29/08, com fotos novas na cena de hoje** (folha
-`capturas/item394043-verificacao.png`): Saturno visto do lado do Sol a
-2 UA aparece aceso (fase 0,88); visto CONTRA o Sol some no clarão (fase
-0,02 — ninguém reflete de todos os lados); e Vênus, da Terra, é a
-"estrela" junto ao Sol — como no céu real de abril/2024, perto da
-conjunção. A física que ele descreveu É o modelo. **Espera o olho dele
-para fechar os três.**
+**43.** Planetas de longe parecem estrelas — **FECHADO em 29/08**: é a
+física que ele pediu (fase e cor de verdade; Vênus é a "estrela" do
+céu real), re-fotografada na cena de hoje e aceita. História no ARQUIVO.
 
 **52. A conferência do dono no app com o padrão novo da luz.**
 A queixa que abriu a rodada da luz era do app com o desenho velho; o
