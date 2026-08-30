@@ -105,9 +105,11 @@ acima) e desenha o elipsoide de `BODY_AXES`.
 
 ## Fonte dos rótulos 3D (item 109)
 
-- `public/fonts/inter-400.woff2` — **Inter** (regular, subconjunto
-  latin), de @fontsource/inter 5.0.18. Licença **SIL Open Font License
-  1.1**; fonte do arquivo: cdn.jsdelivr.net/npm/@fontsource/inter.
-  Consumidor único: `world/rotulos3d.ts` (o texto SDF do troika). Sem
-  ela o troika buscaria glifos num CDN em tempo de execução — esta casa
-  é autocontida.
+- `public/fonts/inter-400.woff` — **Inter** (regular, subconjunto
+  latin), de @fontsource/inter 5.0.18 (`files/inter-latin-400-normal.woff`,
+  via `npm pack`). Licença **SIL Open Font License 1.1**. Formato woff1
+  de propósito: o parser de fontes do troika digere ttf/otf/woff mas
+  NÃO woff2 (a variante woff2 deste mesmo pacote travava o `sync` para
+  sempre — item 109). Consumidor único: `world/rotulos3d.ts` (o texto
+  SDF do troika). Sem ela o troika buscaria glifos num CDN em tempo de
+  execução — esta casa é autocontida.

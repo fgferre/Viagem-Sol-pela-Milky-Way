@@ -952,18 +952,30 @@ próxima janela:**
   unidade em `rotulos.test.ts` (texto3d marca corpo, poupa estrela,
   posicaoDoCorpo); **beta desligada = bit-idêntico provado** (SMOKE
   4/4).
-- **O DEFEITO ABERTO, com a sonda que o cravou:** com a beta ligada os
-  glifos NÃO aparecem e sobram quadrados pretos nas âncoras (o miolo do
-  Sol fica um ponto preto). Causa MEDIDA na página viva: um `Text`
-  avulso com a fonte PADRÃO do troika sincroniza em 341 ms; com a NOSSA
-  `/fonts/inter-400.woff2` o `sync` NUNCA resolve (timeout 3 s) —
-  `textRenderInfo` fica false. **O parser do troika não digere este
-  woff2 do fontsource.** Próximos passos, em ordem: (1) trocar o
-  arquivo por um .woff/.ttf (ou outra fonte OFL) e re-sondar; (2) se
-  digerir, refazer as fotos beta-abertura/beta-foco e entregar ao olho
-  dele; (3) considerar empacotar localmente a própria fonte-padrão do
-  troika. As sondas vivem no scratchpad da sessão de 29/08
-  (`sonda-beta.mjs`, `sonda-troika.mjs`) e são triviais de reescrever.
+- **O DEFEITO DOS GLIFOS: CONSERTADO em 29/08 (2ª sessão).** A causa
+  cravada pela sonda se confirmou: o parser do troika não digere woff2
+  (digere ttf/otf/woff1). Conserto: `public/fonts/inter-400.woff2` →
+  `inter-400.woff` (o MESMO @fontsource/inter 5.0.18, variante woff1,
+  latin 400, 29 kB, via `npm pack`); `FONTE` em `world/rotulos3d.ts` e
+  ASSETS.md ajustados. Sonda reescrita e re-medida na página viva: o
+  `sync` que NUNCA resolvia agora resolve em **774 ms** e
+  `textRenderInfo` existe. Na cena: glifos nítidos na abertura e no
+  foco, sem quadrados pretos.
+- **AS FOTOS PARA O OLHO DELE (feitas, esperando julgamento):**
+  `capturas/item109-beta-abertura.png` (Atlas `?atlas=1&r3d=1`) e
+  `item109-beta-foco.png` (Saturno `?foco=saturno&ver=orbita&r3d=1`),
+  com os pares 2D `item109-beta-*-2d.png` da MESMA câmera e data para
+  comparar. 1920×1080 dpr2, `?shot=1` (visão do visitante, HUD), arnês
+  `chrome.mjs`. **Duas observações do coordenador para o olho dele:**
+  (1) a beta espelha SÓ O NOME — a linha `categoria · distância` do 2D
+  some junto com o texto invisível (gosto ou defeito? decisão dele);
+  (2) o "SOL" nasce meio engolido pelo clarão do Sol (profundidade
+  real: o texto fica atrás do brilho — é o dinamismo que ele elogiou no
+  atlas, mas na abertura o nome da estrela sai ilegível pela metade).
+  Nota de instrumento: `?shot=2` apaga o HUD e os rótulos 2D moram no
+  HUD, mas o texto 3D mora NA CENA — foto "só-cena" com beta ligada
+  inclui os nomes; juízes de pixel não são afetados (beta desligada =
+  bit-idêntico, SMOKE 4/4).
 
 **O VEREDITO DO SPIKE fica como história da medida: NÃO migrar** — obra GRANDE (reimplementar
 colisão + relevância + clique no espaço 3D) por ganho estético parcial

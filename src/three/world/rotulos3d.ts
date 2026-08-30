@@ -14,9 +14,9 @@
 // TAMANHO ESTÁVEL DE TELA por ESCALA do mesh (fov e distância entram na
 // conta; zero re-layout por quadro — o `sync()` do troika roda uma vez
 // por texto, na criação). A fonte é a Inter embarcada
-// (`public/fonts/inter-400.woff2`, SIL OFL — ver ASSETS.md): sem ela o
-// troika buscaria glifos num CDN em tempo de execução, e esta casa é
-// autocontida.
+// (`public/fonts/inter-400.woff`, SIL OFL — ver ASSETS.md; woff1 porque
+// o parser do troika não digere woff2): sem ela o troika buscaria
+// glifos num CDN em tempo de execução, e esta casa é autocontida.
 // ============================================================
 import * as THREE from 'three';
 // @ts-expect-error — troika-three-text não publica tipos
@@ -26,7 +26,7 @@ import type { StarLabel } from './labels';
 /** fração da meia-altura da tela que a fonte ocupa (~13 px em 900) */
 const FRACAO_DA_TELA = 13 / 450;
 
-const FONTE = `${import.meta.env.BASE_URL}fonts/inter-400.woff2`;
+const FONTE = `${import.meta.env.BASE_URL}fonts/inter-400.woff`;
 
 /** a tinta dos corpos — a mesma família do peso `secundario` do 2D */
 const TINTA = '#f0f4fb';
