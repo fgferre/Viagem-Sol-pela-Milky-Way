@@ -920,7 +920,13 @@ que pediram na URL; nenhuma vista de filme do `ab-identidade` leva
 porta. Ou seja: nada legítimo precisa pinar o relógio DENTRO do filme —
 o que os dois juízes precisam é da porta mandando no Atlas. Então o
 `?jd=` é reaplicado quando o portal abre (`aplicarPortaJd`, lida num
-lugar só, do boot e do portal).
+lugar só, do boot e do portal). E o censo foi CONFERIDO no app vivo, não
+só lido (`capturas/item108-portal-jd.txt`, sonda em
+`item108-portal-jd.mjs`): entrando no Atlas a partir de t=10, t=100 e
+t=250 com `jd=EPOCA`, o relógio do Atlas é o MESMO nas três
+(2461041,5008692136 — o invariante da prova 3), e com `jd=2465000` ele
+difere (o invariante da prova 18); no FILME, t=250 já corre em
+2461042,16753588, a data do roteiro.
 
 **AS GUARDAS (§15 — comportamento, não texto):** três testes novos, e a
 sabotagem de cada um feita pela própria mão, com o defeito exato de
