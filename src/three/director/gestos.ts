@@ -161,11 +161,23 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
     // mapa. Só no hover de verdade (nenhum botão apertado): durante o
     // gesto o `:active` já mostra "agarrando", e mexer na classe ali
     // faria o cursor piscar. Classe direto no canvas, sem re-render.
+    //
+    // COM GAVETA ABERTA O CLIQUE NÃO ESCOLHE: o `pointerdown` fecha a
+    // folha e o `pointerup` engole a seleção (`gestoFechouGaveta`,
+    // abaixo) — a promessa do cursor tem de calar quando o clique não a
+    // cumpriria. `gavetaQueOToqueFecha()` é a MESMA guarda que o
+    // `pointerdown` consulta; duas cópias da pergunta poderiam divergir.
+    //
+    // LIMITAÇÃO: isto só reavalia num `pointermove`. Abrir ou fechar a
+    // gaveta sem mexer o ponteiro (atalho de teclado, clique num botão
+    // do HUD) deixa a classe visualmente atrasada até o próximo
+    // movimento — caso raro, sem observador de DOM para ele.
     if (event.buttons === 0) {
       canvas.classList.toggle(
         'apontavel',
         fios.noAtlas() &&
           event.target === canvas &&
+          !gavetaQueOToqueFecha() &&
           fios.apontavel(
             event.clientX / window.innerWidth,
             event.clientY / window.innerHeight
