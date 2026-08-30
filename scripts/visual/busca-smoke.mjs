@@ -1,5 +1,5 @@
 // Serve: dono — a paleta acha, o ?foco= reabre a mesma vista e a ficha diz o que ele pediu
-// Custo: 1,9 min
+// Custo: 1,5 min (medido 30/08, F5 do item 113: esperas fixas → espera por estado)
 // A BUSCA E O DEEP-LINK DO FOCO, em navegador real (Onda 5, F3).
 //
 //   node scripts/visual/busca-smoke.mjs
@@ -42,7 +42,7 @@
 //     ÓRBITA e o clique no rótulo faz o mesmo.
 // 10. O ATALHO DO TECLADO (item 8): "/" e Ctrl+K abrem a paleta; o "/"
 //     que abriu não vaza para o campo, e com ela aberta "/" é digitação.
-import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme, esperarPor } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
@@ -218,7 +218,10 @@ try {
   await sessao.digitar('sirius');
   await dorme(300);
   await sessao.teclar('Enter');
-  await dorme(400);
+  // espera por ESTADO (item 76): o fim do gesto é a paleta fechada e a
+  // ficha do escolhido aberta — era um dorme(400) medindo a máquina
+  await esperarPor(sessao, `(() => !document.querySelector('[data-dialogo="busca"]')
+    && Boolean((document.querySelector('.atlas-ficha-nome') || {}).textContent))()`);
   const escolhido = await contexto(sessao);
   conferir(escolhido === 'Sirius', `a paleta enquadra o que se escolhe ("${escolhido}")`);
 
@@ -246,7 +249,13 @@ try {
   await sessao.ir(`atlas=1&${PIN}`);
   await abrirPaleta(sessao);
   await sessao.digitar('alfa cen');
-  await dorme(400);
+  // espera por ESTADO: o aviso do vazio na tela é o fim da consulta —
+  // era um dorme(400); se ele nunca vier, o estouro reprova nas linhas
+  // de baixo, que é o veredito certo
+  await esperarPor(
+    sessao,
+    "/nada com esse nome/.test((document.querySelector('.atlas-busca-aviso') || {}).textContent || '')"
+  );
   const vazio = await sessao.js(`(() => ({
     opcoes: document.querySelectorAll('[role="option"]').length,
     aviso: (document.querySelector('.atlas-busca-aviso') || {}).textContent || '',
@@ -397,7 +406,8 @@ try {
   await clicar('Reviver');
   await dorme(300);
   await clicar('Explorar');
-  await dorme(400);
+  // espera por ESTADO: a fase é o que o clique promete — era dorme(400)
+  await esperarPor(sessao, "window.__director.captura.fase === 'free'");
   const aoVoltar = await sessao.js(`JSON.stringify({
     paleta: Boolean(document.querySelector('.atlas-busca')),
     foco: document.activeElement ? document.activeElement.className : null,
@@ -420,7 +430,13 @@ try {
   await sessao.js('window.__director.partirDoAtlas()');
   await dorme(300);
   await sessao.js('window.__director.entrarNoAtlas({ instantaneo: true })');
-  await dorme(400);
+  // espera por ESTADO: a travessia terminou quando a fase é atlas E o
+  // sinal de prontidão acendeu (o véu em curso derruba o `pronto`) —
+  // era dorme(400)
+  await esperarPor(
+    sessao,
+    "window.__director.captura.fase === 'atlas' && window.__director.captura.pronto"
+  );
   const gaveta = await sessao.js("Boolean(document.querySelector('.atlas-gaveta'))");
   conferir(
     abriuNoAtlas && !gaveta,
@@ -561,8 +577,18 @@ try {
     `clicar num corpo ESCOLHE e a câmera não sai do lugar ("${naTerra}"/`
       + `${antesDoClique} → "${depoisDoClique}"/${degrauDepois})`
   );
+  // espera por ESTADO (item 76): o gesto COMEÇOU (a câmera saiu da pose)
+  // e depois a cena ASSENTOU (a rampa derruba o `pronto` até o fim) —
+  // era um dorme(1200) medindo a rampa pelo relógio de parede
+  await sessao.js(
+    'window.__poseAntesDoDuplo = window.__director.engine.camera.position.toArray().join()'
+  );
   await sessao.duploClicar(px, py);
-  await dorme(1200);
+  await esperarPor(
+    sessao,
+    "window.__director.engine.camera.position.toArray().join() !== window.__poseAntesDoDuplo",
+    5000
+  );
   await sessao.assentar();
   const noDuplo = await contexto(sessao);
   const degrauDoDuplo = await degrau();
@@ -580,7 +606,10 @@ try {
   await sessao.ir(`atlas=1&${PIN}`);
   await abrirPaleta(sessao);
   await sessao.digitar('lua');
-  await dorme(400);
+  // espera por ESTADO: a opção "Lua" na lista é o fim da consulta — era
+  // dorme(400); o estouro reprova na linha de baixo
+  await esperarPor(sessao, `[...document.querySelectorAll('[role="option"] .atlas-busca-nome')]
+    .some((n) => n.textContent === 'Lua')`);
   const listaLua = await sessao.js(`(() => {
     const ops = [...document.querySelectorAll('[role="option"]')];
     const daLua = ops.find((o) => o.querySelector('.atlas-busca-nome').textContent === 'Lua');
@@ -600,14 +629,19 @@ try {
   // corpo" e "no corpo, a 2,4 raios dele" a porta velha não distingue.
   // Aqui a roda anda ANTES do espelho, que é o que faz o link ter o que
   // contar; `?ver=` some da escrita e continua valendo na leitura.
+  await sessao.js('window.__dAntesDaRoda = window.__director.atlas.distancia');
   for (let i = 0; i < 3; i++) {
     await sessao.js(`(() => document.querySelector('canvas').dispatchEvent(
       new WheelEvent('wheel', { deltaY: -100, deltaMode: 0, bubbles: true, cancelable: true })))()`);
   }
-  // a inércia da roda é curta (meia-vida 87 ms, zona morta em ~0,7 s):
-  // esperar 1,2 s é esperar o GESTO acabar, e é obrigatório — ler a
-  // distância com o embalo andando compararia dois instantes
-  await dorme(1200);
+  // a inércia da roda é curta (meia-vida 87 ms, zona morta em ~0,7 s), e
+  // ler a distância com o embalo andando compararia dois instantes. A
+  // espera é por ESTADO (item 76): o gesto COMEÇOU (a distância saiu do
+  // lugar — cada estalo consumido chama `perturbar`) e a cena ASSENTOU
+  // (o sinal de prontidão exige quadros parados: o embalo morreu) — era
+  // um dorme(1200) de relógio de parede
+  await esperarPor(sessao, 'window.__director.atlas.distancia !== window.__dAntesDaRoda');
+  await sessao.assentar();
   const emRaios = () =>
     sessao.js('window.__director.atlas.distancia / window.__director.atlas.raioDoAlvo');
   const raiosNaLua = await emRaios();
@@ -699,7 +733,12 @@ try {
       dedo('touchMove', [{ x: p.x + 6, y: p.y + 6, id: 1 }]),
       dedo('touchEnd', []),
     ]);
-    await dorme(400);
+    // espera por ESTADO: a folha aberta com o campo focado é o fim do
+    // gesto — era dorme(400); o estouro reprova na leitura de baixo
+    await esperarPor(sessao, `(() => {
+      const c = document.querySelector('.atlas-busca-campo');
+      return Boolean(c) && document.activeElement === c;
+    })()`);
     const aberta = JSON.parse(await sessao.js(`JSON.stringify((() => {
       const campo = document.querySelector('.atlas-busca-campo');
       const f = document.querySelector('[data-dialogo="busca"]');

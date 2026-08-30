@@ -1,5 +1,5 @@
 // Serve: chão — sair devolve o que entrar alocou: texturas, bytes de texel, geometrias e workers sem vazamento
-// Custo: 2,9 min por tier
+// Custo: 2,1 min por tier (medido 30/08, corte iii do item 113: ciclos 5→3, focos 5→3)
 // O AMOSTRADOR DE MEMÓRIA — o juiz que prova que sair DEVOLVE o que
 // entrar alocou (Onda 6, F8/D9).
 //
@@ -15,7 +15,7 @@
 // gestos que alocam e desalocam de verdade (A, B, C), e a régua D olha a
 // memória que saiu da thread:
 //
-//  A. N=5 ciclos entra/sai do Atlas — o portal "Partir" e a volta, o mesmo
+//  A. N=3 ciclos entra/sai do Atlas — o portal "Partir" e a volta, o mesmo
 //     caminho vivo que o `atlas-smoke` navega. VEREDITO: `textures` e
 //     `geometries` do ciclo N iguais aos do ciclo 1 com delta ZERO. Zero e
 //     não "quase": um recurso de GPU que sobra por ciclo é dispose faltando,
@@ -31,7 +31,7 @@
 //     defeito atrás de um documento novo. O juiz cobra que o mundo tenha
 //     de fato trocado (`captura.tierDoMundo`), senão o delta zero seria
 //     zero por não ter acontecido nada.
-//  C. Foco em 5 corpos — `focarNoCorpo`, o MESMO ponto de pouso do
+//  C. Foco em 3 corpos — `focarNoCorpo`, o MESMO ponto de pouso do
 //     `?foco=` (App.tsx: resolverFoco → escolherAlvo → focarNoCorpo).
 //     Enquadrar não aloca: delta ZERO também. Além do delta, o
 //     veredito cobra um TETO residente (texturas, BYTES DE TEXEL e
@@ -117,10 +117,17 @@ const TIER = process.env.TIER || 'alta';
  */
 const JD_PINADO = 2460409.26395835;
 const BOOT = `atlas=1&jd=${JD_PINADO}&q=${TIER}`;
-const CICLOS = 5;
+// ERAM 5 ciclos até 30/08 (corte iii do item 113, decisão do dono): o
+// veredito é delta ZERO por ciclo, e um dispose faltando aparece já no
+// 2º–3º. O que fica SEM VIGIA: vazamento que só se manifesta depois do
+// 3º ciclo (um cache que estoura tarde, uma pool que cresce em degraus).
+const CICLOS = 3;
 const TROCAS = 3;
-// os 5 corpos do foco — ids de `IDS_FOTOMETRIA` (o pouso do ?foco=)
-const FOCOS = ['earth', 'jupiter', 'saturn', 'neptune', 'mars'];
+// os corpos do foco — ids de `IDS_FOTOMETRIA` (o pouso do ?foco=).
+// ERAM 5 (…, 'neptune', 'mars') até 30/08 (corte iii do item 113):
+// enquadrar não aloca, e 3 focos provam o mesmo delta zero. O que fica
+// SEM VIGIA: alocação que só o foco de Netuno/Marte dispararia.
+const FOCOS = ['earth', 'jupiter', 'saturn'];
 const LIMIAR_HEAP_MB = 12;
 // Teto RESIDENTE (não o delta). Delta ZERO com 400 texturas ainda é um
 // vazamento permanente.
@@ -140,12 +147,13 @@ const TETO_GEOMETRIAS = 80;
  * A conta é a de `alvoDePixels`: largura × altura × 4 canais × 4/3 de
  * mipmap, sobre as texturas VIVAS na cena (o walker abaixo).
  *
- * OS NÚMEROS. Medidos em 22/08 nesta máquina, com o protocolo inteiro
+ * OS NÚMEROS. Medidos em 22/08 nesta máquina, com o protocolo de então
  * (5 idas ao Atlas, 3 trocas de tier e 5 focos — earth, jupiter,
- * saturn, neptune, mars, que é a dose de corpo mais pesada que o
- * protocolo alcança). O teto fica ~25% acima do pico medido: acima do
- * ruído de um foco a mais, e MUITO abaixo do que o pré-aquecimento
- * antigo deixava (1.200 MiB em cinema, 291 em alta).
+ * saturn, neptune, mars, a dose de corpo mais pesada que o protocolo
+ * alcançava; desde o corte iii do item 113 ele anda 3/3/3, o que só
+ * pode DIMINUIR o pico — o teto fica). O teto fica ~25% acima do pico
+ * medido: acima do ruído de um foco a mais, e MUITO abaixo do que o
+ * pré-aquecimento antigo deixava (1.200 MiB em cinema, 291 em alta).
  */
 const TETO_MIB = { cinema: 900, alta: 200, performance: 120 };
 const SABOTAGEM = process.argv.includes('--sabotagem');

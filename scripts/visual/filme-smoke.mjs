@@ -1,5 +1,5 @@
 // Serve: dono — o roteiro na tela: legenda inteira nas margens, corte certo e o relógio andando
-// Custo: 2,6 min
+// Custo: 1,4 min (medido 30/08, F5c do item 113: sentinela na 2ª largura + mesma sessão)
 // O JUIZ DO ROTEIRO NA TELA — texto, cortes, responsividade e movimento.
 //
 //   node scripts/visual/filme-smoke.mjs
@@ -9,6 +9,13 @@
 // margens das janelas alteradas, lê o DOM que o espectador vê e depois solta
 // o relógio em NOVE trechos. A folha de contato é temporária por padrão: o
 // repositório não acumula capturas de revisão.
+//
+// AS DUAS LARGURAS ANDAM NA MESMA SESSÃO de Chrome desde 30/08 (F5c do
+// item 113): a segunda vira um `setDeviceMetricsOverride` de 820×900, e a
+// abertura a 820 continua provada por RECARGA (o `ir()` da largura boota o
+// documento já estreito). E a varredura completa das janelas roda só na
+// primeira largura — na segunda vale a SENTINELA (ver o comentário no
+// corpo): top-8 legendas mais compridas + abertura + tela final.
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -211,14 +218,9 @@ const JANELAS = [
   { t: 187, title: 'A TERRA', sub: 'o único ponto com oceano de onde a galáxia inteira foi decifrada' },
 ];
 
-async function julgarLargura(largura, altura, captura) {
-  const sessao = await abrirSessao({
-    janela: `${largura}x${altura}`,
-    app: APP,
-    prefixo: `filme-${largura}`,
-  });
+async function julgarLargura(sessao, largura, altura, captura) {
   const frames = [];
-  try {
+  {
     await sessao.send('Emulation.setDeviceMetricsOverride', {
       width: largura,
       height: altura,
@@ -242,7 +244,29 @@ async function julgarLargura(largura, altura, captura) {
     const viagemAssentou = await sessao.ir('q=cinema&shot=1&t=33');
     conferir(viagemAssentou.via === 'sinal', `${largura}px · viagem assentou por ${viagemAssentou.via}`);
 
-    for (const janela of JANELAS) await conferirLegenda(sessao, largura, janela);
+    // A SENTINELA DA 2ª LARGURA (F5c do item 113, 30/08): a varredura
+    // COMPLETA roda na primeira largura, onde texto e corte são o juízo.
+    // Na segunda, o único veredito NOVO é "dentro da tela" — e quem
+    // estoura borda é COMPRIMENTO. As top-8 legendas mais compridas são
+    // escolhidas por contagem de caracteres EM EXECUÇÃO: um texto novo
+    // comprido entra sozinho na sentinela, sem ninguém lembrar de
+    // listá-lo. Abertura e tela final continuam conferidas nas duas
+    // larguras (acima e abaixo deste laço).
+    const janelas = captura === 'todas'
+      ? JANELAS
+      : JANELAS
+          .filter((j) => j.title)
+          .sort((a, b) => (b.title.length + b.sub.length) - (a.title.length + a.sub.length))
+          .slice(0, 8)
+          .sort((a, b) => a.t - b.t);
+    if (captura !== 'todas') {
+      conferir(
+        janelas.length === 8,
+        `${largura}px · SENTINELA: as ${janelas.length} legendas mais compridas do corte`
+          + ` — ${janelas.map((j) => j.title).join(' · ')}`
+      );
+    }
+    for (const janela of janelas) await conferirLegenda(sessao, largura, janela);
 
     if (captura) {
       const vistas = captura === 'todas' ? [
@@ -317,20 +341,24 @@ async function julgarLargura(largura, altura, captura) {
       frames.push({ png: await capturar(sessao), rotulo: `TELA FINAL · ${largura}px` });
     }
     return frames;
-  } finally {
-    sessao.fechar();
   }
 }
 
+// UMA sessão de Chrome para as duas larguras (F5c): a segunda largura é
+// override de métricas, e a abertura dela continua provada por recarga —
+// o `ir()` de cada largura boota o documento já no tamanho novo.
+const sessao = await abrirSessao({ janela: '1200x900', app: APP, prefixo: 'filme' });
 try {
-  const frames = await julgarLargura(1200, 900, 'todas');
-  frames.push(...await julgarLargura(820, 900, 'compacta'));
+  const frames = await julgarLargura(sessao, 1200, 900, 'todas');
+  frames.push(...await julgarLargura(sessao, 820, 900, 'compacta'));
   await salvarFolha(frames);
   if (falhas.length === 0) conferir(true, 'gate completo (0 falhas)');
   process.stdout.write(`\nFolha de contato: ${SAIDA}\n`);
 } catch (erro) {
   falhas.push(erro instanceof Error ? erro.message : String(erro));
   process.stderr.write(`\nFALHA INESPERADA: ${falhas.at(-1)}\n`);
+} finally {
+  sessao.fechar();
 }
 
 if (falhas.length) {

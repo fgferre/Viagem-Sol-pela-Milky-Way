@@ -30,7 +30,14 @@ export const TETO_DA_RODADA_MIN = 15;
 // Re-pinado PARA BAIXO na F4 do item 113 (30/08): o MB1 caiu de 3,9
 // para 1,8 min medidos (corte ii: 97 → 72 passos; três baldes
 // paralelos), e o teto desce os mesmos 2,1 — de 39,6 para 37,5.
-export const TETO_TOTAL_MIN = 37.5;
+// Re-pinado PARA BAIXO na F5 do item 113 (30/08), tudo medido na mesma
+// máquina: a11y 6,1→4,5 (recarga → mudança viva de ?ui=/viewport),
+// busca-smoke 1,9→1,5 (espera por estado), filme-smoke 2,6→1,4
+// (sentinela na 2ª largura + mesma sessão), filme-ritmo 2,3→1,4 (passo
+// 4 s), memoria 2,9→2,1 (ciclos/focos 5→3) e atlas-smoke 7,3→6,5
+// (manual 18→10 s) — 5,7 min a menos, e o teto desce os mesmos 5,7:
+// de 37,5 para 31,8.
+export const TETO_TOTAL_MIN = 31.8;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

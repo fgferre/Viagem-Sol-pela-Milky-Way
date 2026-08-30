@@ -21,10 +21,10 @@
 // era a condição da divisão.
 //
 // O CENSO CONTINUA UM, porque a corrida continua uma: os 301 vereditos da
-// perna do celular somam-se aos 238 do resto no mesmo `a11y`, e o preço
-// (6,1 min) é o da sessão única — dividir a CHAMADA em duas custaria dois
-// boots de Chrome para medir a mesma coisa.
-import { dorme } from './chrome.mjs';
+// perna do celular somam-se aos do resto no mesmo `a11y`, e o preço
+// (4,5 min desde a F5 do item 113) é o da sessão única — dividir a
+// CHAMADA em duas custaria dois boots de Chrome para medir a mesma coisa.
+import { dorme, esperarPor } from './chrome.mjs';
 
 /** os aparelhos que este juiz abre — o comum e o pequeno */
 const APARELHOS = [[390, 844], [320, 568]];
@@ -205,8 +205,27 @@ async function despirAparelho(s) {
  *     passou a ocupar a tela inteira;
  *  8. A DICA está FORA DO FLUXO, que é o que a deixa apagar sem dar pulo.
  */
-export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
+export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUiAoVivo }) {
   const ALVO_DE_TOQUE_PX = 44;
+
+  /**
+   * SOBE A ESCADA ATÉ O SISTEMA — o estado "sem seleção" pelo gesto do
+   * visitante (F5a do item 113): Esc fecha a folha aberta PRIMEIRO
+   * (diálogo come o Esc, contrato do dialogFocus) e depois sobe um
+   * degrau por vez; no sistema não há seleção e a ficha não monta.
+   */
+  const subirAteOSistema = async () => {
+    for (let i = 0; i < 6; i++) {
+      const chegou = await s.js(
+        "window.__director.escadaViva.degrau === 'sistema'"
+        + " && !document.querySelector('[data-dialogo]')"
+      );
+      if (chegou) return;
+      await s.teclar('Escape');
+      await dorme(200);
+      await s.assentar();
+    }
+  };
 
   // ---- PARTE 0: O CONVITE, QUE AGORA ABRE NO TELEFONE --------------
   // Até 2026-08-23 o convite do Atlas era PULADO em `pointer: coarse`, e
@@ -268,13 +287,31 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
     'convite no telefone: o "entendi" fecha, e as partes seguintes medem o regime'
   );
 
+  // F5a (item 113): eram SEIS navegações (3 `?ui=` × 2 portas). O
+  // aparelho já trocava ao vivo (matchMedia, ver o cabeçalho); agora a
+  // ESCALA e a SELEÇÃO também: `focarNoCorpo` é o mesmo pouso do
+  // `?foco=` (App.tsx: resolverFoco → escolherAlvo → focarNoCorpo) e o
+  // Esc sobe a escada até o sistema, onde não há seleção. O boot-por-URL
+  // da família é a primeira célula, com `?ui=` na porta.
+  let bootou = false;
   for (const fator of [0.85, 1, 1.4]) {
     for (const [query, esperadas] of [
       ['atlas=1', ALCAS_SEM_SELECAO],
       ['foco=marte', ALCAS_COM_SELECAO],
     ]) {
       await vestirAparelho(s, ...APARELHOS[0]);
-      await s.ir(`${query}&ui=${fator}&${PIN}`);
+      if (!bootou) {
+        await s.ir(`${query}&ui=${fator}&${PIN}`);
+        bootou = true;
+      } else {
+        await trocarUiAoVivo(s, fator);
+        if (esperadas.length === 5) {
+          await s.js("window.__director.focarNoCorpo('mars')");
+          await s.assentar();
+        } else {
+          await subirAteOSistema();
+        }
+      }
       for (const [w, h] of APARELHOS) {
         await vestirAparelho(s, w, h);
         await dorme(200);
@@ -362,9 +399,18 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
   // passa de metade da tela (o teto que `julgarAreaDaFicha` já cobra para
   // a ficha, aqui cobrado para as cinco).
   const TETO_DA_FOLHA_PCT = 50;
+  // F5a (item 113): um boot-por-URL (`?foco=` e `?ui=` na porta) e os
+  // outros dois degraus de texto AO VIVO — a seleção sobrevive, e as
+  // cinco folhas continuam abertas uma a uma pelo gesto de sempre.
+  let bootouFolha = false;
   for (const fator of [0.85, 1, 1.4]) {
     await vestirAparelho(s, ...APARELHOS[0]);
-    await s.ir(`foco=marte&ui=${fator}&${PIN}`);
+    if (!bootouFolha) {
+      await s.ir(`foco=marte&ui=${fator}&${PIN}`);
+      bootouFolha = true;
+    } else {
+      await trocarUiAoVivo(s, fator);
+    }
     for (const [w, h] of APARELHOS) {
       await vestirAparelho(s, w, h);
       await dorme(200);
@@ -445,12 +491,16 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
           Math.round(r.top), Math.round(r.height)]);
       }
       if (performance.now() - inicio < 900) requestAnimationFrame(passo);
+      else window.__folhaFim = true;
     };
+    window.__folhaFim = false;
     document.querySelector('[data-abre-dialogo="camadas"]').click();
     requestAnimationFrame(passo);
     return true;
   })()`);
-  await dorme(1400);
+  // espera por ESTADO (item 76): o amostrador declara o próprio fim —
+  // era um dorme(1400) por cima de uma varredura de 900 ms
+  await esperarPor(s, 'window.__folhaFim === true', 5000);
   const subida = (await s.js('window.__folha')).filter((a) => a[0] !== null);
   const receita = await s.js(`(() => {
     const d = document.querySelector('[data-dialogo]');
@@ -520,12 +570,16 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
           d ? Math.round(d.getBoundingClientRect().top) : null,
           d ? d.hasAttribute('inert') : null]);
         if (performance.now() - t0 < 700) requestAnimationFrame(passo);
+        else window.__saidaFim = true;
       };
       requestAnimationFrame(passo);
     }, 500);
+    window.__saidaFim = false;
     return true;
   })()`);
-  await dorme(1600);
+  // espera por ESTADO: o amostrador declara o próprio fim — era um
+  // dorme(1600) por cima de 500 ms de espera + 700 ms de varredura
+  await esperarPor(s, 'window.__saidaFim === true', 5000);
   const saida = await s.js('window.__saida');
   const descendo = saida.filter((a) => a[1] !== null);
   const sumiu = saida.filter((a) => a[1] === null);
@@ -620,7 +674,15 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
     conferir(false, 'toque no céu: nenhum rótulo desenhado sobre o canvas para tocar');
   } else {
     await s.clicar(tinta.x, tinta.y);
-    await dorme(600);
+    // espera por ESTADO: a folha fecha (animada + desmonta); o "não
+    // escolhe" é lido em seguida — se ela nunca fechar, o estouro deixa
+    // a leitura reprovar
+    await esperarPor(s, "document.querySelectorAll('[data-dialogo]').length === 0");
+    // e o PRÓXIMO toque só sai depois da janela do TOQUE DUPLO: medido
+    // em 30/08, sem esta separação os dois toques deste bloco caíam na
+    // janela do duplo e viravam "voar" — o gesto errado. É espera de
+    // SEMÂNTICA do gesto (dois toques SEPARADOS), não de estado.
+    await dorme(400);
     const depoisDoToque = await s.js(`(() => ({
       folhas: document.querySelectorAll('[data-dialogo]').length,
       // O MARCADOR DA SELEÇÃO é a ALÇA DA FICHA, e não
@@ -708,11 +770,15 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
       });
     }
     await s.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-    await dorme(600);
+    // a ESPERA é de quem chama (F5b do item 113): o fecho espera o
+    // ESTADO "folha sumiu"; as provas NEGATIVAS ("fica aberta") seguem
+    // com dorme — para "NADA acontece" não há predicado, e esperar é o
+    // que fortalece a prova (a doutrina do esperarPor, chrome.mjs)
   };
   await s.js(`document.querySelector('[data-abre-dialogo="camadas"]').click()`);
   await dorme(300);
   await arrastarNaFolha(45, 3);
+  await dorme(600); // prova NEGATIVA: "encostar não é fechar" — sem predicado de nada-aconteceu
   const depoisDoCurto = await s.js(`document.querySelectorAll('[data-dialogo]').length`);
   conferir(
     depoisDoCurto === 1,
@@ -720,6 +786,9 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
       + ` ${depoisDoCurto} folha(s). Encostar não é fechar`
   );
   await arrastarNaFolha(180);
+  // espera por ESTADO: a folha desce animada (~260 ms) e DESMONTA — o
+  // estouro deixa a leitura de baixo reprovar, que é o veredito certo
+  await esperarPor(s, "document.querySelectorAll('[data-dialogo]').length === 0");
   const depoisDoArrasto = await s.js(`document.querySelectorAll('[data-dialogo]').length`);
   conferir(
     depoisDoArrasto === 0,
@@ -730,6 +799,7 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
   await s.js(`document.querySelector('[data-abre-dialogo="camadas"]').click()`);
   await dorme(300);
   await arrastarNaFolha(-180);
+  await dorme(600); // prova NEGATIVA: subir não fecha — sem predicado de nada-aconteceu
   const depoisDeSubir = await s.js(`document.querySelectorAll('[data-dialogo]').length`);
   conferir(
     depoisDeSubir === 1,
@@ -793,10 +863,18 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
   // nome de uma obra que não foi essa. Quem pina a obra é a prova da
   // IMAGEM, logo abaixo, e ela é exata: zero pixel de tarja.
   const META_DO_CEU = { 390: 75, 320: 70 };
+  // F5a (item 113): eram SEIS navegações para variar `?ui=` e aparelho —
+  // um boot-por-URL na primeira célula e o resto AO VIVO.
+  let bootouCeu = false;
   for (const fator of [0.85, 1, 1.4]) {
     for (const [w, h] of APARELHOS) {
       await vestirAparelho(s, w, h);
-      await s.ir(`atlas=1&ui=${fator}&${PIN}`);
+      if (!bootouCeu) {
+        await s.ir(`atlas=1&ui=${fator}&${PIN}`);
+        bootouCeu = true;
+      } else {
+        await trocarUiAoVivo(s, fator);
+      }
       await dorme(200);
       await medirCobertura(s, `celular ${w}×${h}, ui = ${fator}`, true, fator);
     }
@@ -805,9 +883,16 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN }) {
   // instante do pior estado, contando até o que a declaração não paga.
   // Foi assim que os 42% e os 18% de antes foram medidos (item 62), e
   // comparar de outro jeito seria trocar a régua no meio da conta.
+  // F5a: UM boot (que traz a dica de volta à tela — ela é marca de
+  // documento novo e apaga no primeiro arrasto); o aparelho pequeno
+  // entra ao vivo, sem gesto no meio, então a dica segue na tela.
+  let bootouMeta = false;
   for (const [w, h] of APARELHOS) {
     await vestirAparelho(s, w, h);
-    await s.ir(`atlas=1&${PIN}`);
+    if (!bootouMeta) {
+      await s.ir(`atlas=1&${PIN}`);
+      bootouMeta = true;
+    }
     await dorme(200);
     const c = await s.js(`(() => {
       const H = innerHeight;

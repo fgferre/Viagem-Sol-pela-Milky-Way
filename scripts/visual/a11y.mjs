@@ -1,5 +1,7 @@
 // Serve: dono — o HUD se usa de teclado e no telefone, e a gaveta não mente o número de camadas
-// Custo: 6,1 min
+// Custo: 4,5 min (medido 30/08, F5a/F5b do item 113: `?ui=`/viewport ao vivo — ~40 recargas a menos; era 6,1.
+// A aposta `q=performance` nos boots de DOM foi MEDIDA e DESCARTADA: pouparia 0,8 min (< 1 min do piso)
+// e derrubou 2 vereditos da perna do celular — o cinema fica.)
 // O JUIZ DE ACESSIBILIDADE DO HUD — em navegador real, por CDP.
 //
 //   node scripts/visual/a11y.mjs
@@ -66,6 +68,43 @@ const conferir = (ok, texto) => {
   process.stdout.write(`${ok ? '  OK  ' : '  FALHA '} ${texto}\n`);
   if (!ok) falhas.push(texto);
 };
+
+/**
+ * TROCA A ESCALA DA UI AO VIVO — o caminho do próprio app
+ * (`trocarEscalaUi` em useEspelhoDaUrl.ts): o `--ui` entra pela porta
+ * única do módulo (`aplicarEscalaDaUi`) e o Director é avisado
+ * (`escalaDaUiMudou` → perturbar, então `assentar()` funciona depois).
+ * O import é o MESMO módulo que a UI consome (o dev server serve o
+ * fonte; precedente: o atlasRig e a lib da busca no busca-smoke), logo
+ * não nasce segunda cópia do estado.
+ *
+ * F5a do item 113: onde a navegação só variava `?ui=` (ou o tamanho da
+ * janela), a recarga virou mudança viva — como no produto, onde o painel
+ * troca o texto sem recarregar. CADA FAMÍLIA mantém UMA navegação
+ * boot-por-URL com `?ui=` na porta: é ela que segue provando o contrato
+ * "a UI vive na URL, nunca no storage".
+ */
+async function trocarUiAoVivo(s, fator) {
+  await s.js(
+    "(() => { if (!window.__uiScale) import('/src/lib/uiScale.ts').then((m) => { window.__uiScale = m; }); })()"
+  );
+  await esperarPor(s, 'Boolean(window.__uiScale)');
+  await s.js(
+    `(() => { window.__uiScale.aplicarEscalaDaUi(${fator}); window.__director.escalaDaUiMudou(); })()`
+  );
+}
+
+/**
+ * TROCA A VIEWPORT AO VIVO: o override do CDP dispensa recarga — o app
+ * responde pelo ouvinte de resize (engine.onResize → perturbar) e o CSS
+ * reflui sozinho. A espera é por ESTADO: o documento VIU o tamanho novo.
+ */
+async function mudarJanela(s, w, h, mobile = false) {
+  await s.send('Emulation.setDeviceMetricsOverride', {
+    width: w, height: h, deviceScaleFactor: 1, mobile,
+  });
+  await esperarPor(s, `window.innerWidth === ${w} && window.innerHeight === ${h}`);
+}
 
 /** O MESMO seletor de focáveis do módulo — a régua do juiz é a do juiz. */
 const FOCAVEIS =
@@ -889,6 +928,36 @@ const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
 if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
 const sessao = await abrirSessao({ janela: JANELA, app: APP, prefixo: 'a11y' });
+/**
+ * O VIGIA DA ABA DA FRENTE — medido em 30/08 (F5 do item 113), DUAS
+ * corridas seguidas: aos ~4-5 min de browser vivo o Chrome headless
+ * abriu SOZINHO uma aba `chrome://settings/help` (o aviso de relaunch
+ * do update pendente do próprio Chrome) e ela roubou o primeiro plano.
+ * O app virou aba de FUNDO: o rAF congela (§ prontidão nunca acende) e
+ * `Input.dispatchKeyEvent` — que só responde quando a aba ativa
+ * processa o evento — pendura o juiz PARA SEMPRE, calado. O vigia roda
+ * entre os awaits do juiz (o laço de eventos fica livre mesmo com um
+ * send pendurado), fecha qualquer aba `chrome://` intrusa e devolve a
+ * frente ao app; provado ao vivo: o juiz destravou no instante do
+ * fechamento. O conserto de TODOS os juízes é mudança de `chrome.mjs`
+ * (fora do escopo da F5) — este vigia protege o juiz mais longo da casa.
+ */
+const vigiaDaFrente = setInterval(async () => {
+  try {
+    const { targetInfos } = await sessao.send('Target.getTargets');
+    const intrusa = targetInfos.find((t) => t.type === 'page' && t.url.startsWith('chrome://'));
+    const app = targetInfos.find((t) => t.type === 'page' && t.url.includes(new URL(APP).host));
+    if (intrusa) {
+      process.stdout.write(`  ·     vigia: aba intrusa ${intrusa.url} fechada — a frente volta ao app\n`);
+      await sessao.send('Target.closeTarget', { targetId: intrusa.targetId });
+    }
+    // A FRENTE SE REAFIRMA A CADA VOLTA, com ou sem intrusa — medido em
+    // 30/08: fechar a intrusa NÃO devolve a ativação sozinho, e a corrida
+    // seguinte morreu num `ir()` de aba ainda de fundo ("o documento novo
+    // não carregou"). Ativar aba já ativa é inócuo.
+    if (app) await sessao.send('Target.activateTarget', { targetId: app.targetId });
+  } catch { /* sessão fechando */ }
+}, 2000);
 try {
   // A ABERTURA, que é por onde o visitante entra — e que este juiz não
   // abria (item 60).
@@ -1334,7 +1403,7 @@ try {
   await julgarAreaDaFicha(sessao);
 
   // ---- O HUD DO CELULAR: as alças no pé e a folha que sobe (item 62) --
-  await julgarCelular(sessao, { conferir, medirCobertura, PIN });
+  await julgarCelular(sessao, { conferir, medirCobertura, PIN, trocarUiAoVivo });
 
   // ---- A ESCADA DE NAVEGAÇÃO (F2b/D7) -----------------------------
   // Os dois botões da escada com nome acessível pt-BR, o gesto de descer,
@@ -1524,6 +1593,7 @@ try {
   // roubasse o foco não apareceria em prova nenhuma.
   await julgarPagina(sessao, 'pos=0,0,0.1&look=0,0,0', 'free');
 } finally {
+  clearInterval(vigiaDaFrente);
   sessao.fechar();
 }
 
@@ -1580,15 +1650,28 @@ async function julgarAreaDoSelo(s) {
         .getPropertyValue('--ui')) || 1,
       pct: selo ? (selo.w * selo.h) / (W * H) * 100 : null };
   })()`;
+  // F5a (item 113): UMA navegação boot-por-URL (a primeira célula, com
+  // `?ui=` na porta — o contrato provado) e as outras CINCO células por
+  // mudança VIVA: viewport pelo override, escala pelo caminho do painel
+  // e a gaveta da célula anterior fechada por Esc, o gesto do visitante.
+  let bootou = false;
   for (const fator of [0.85, 1, 1.4]) {
     // 768 px é o piso da faixa declarada (`LARGURA_UTIL_MINIMA_PX`), e
     // 600 de altura com o texto em 140% é o canto em que a gaveta
     // passava por cima do selo — o caso do mockup roda de propósito
     for (const [w, h] of [[1200, 900], [768, 600]]) {
-      await s.send('Emulation.setDeviceMetricsOverride', {
-        width: w, height: h, deviceScaleFactor: 1, mobile: false,
-      });
-      await s.ir(`atlas=1&ui=${fator}&${PIN}`);
+      if (!bootou) {
+        await s.send('Emulation.setDeviceMetricsOverride', {
+          width: w, height: h, deviceScaleFactor: 1, mobile: false,
+        });
+        await s.ir(`atlas=1&ui=${fator}&${PIN}`);
+        bootou = true;
+      } else {
+        await s.teclar('Escape');
+        await dorme(150);
+        await mudarJanela(s, w, h);
+        await trocarUiAoVivo(s, fator);
+      }
       const fechado = await s.js(MEDIR);
       const onde = `${w}×${h}, ui = ${fator}`;
       const teto = TETO_DA_LINHA_PX * fechado.ui;
@@ -1608,6 +1691,10 @@ async function julgarAreaDoSelo(s) {
       );
     }
   }
+  // fecha a gaveta da última célula — as provas seguintes navegam, mas
+  // devolver o estado é higiene de quem mede na mesma sessão
+  await s.teclar('Escape');
+  await dorme(150);
   // devolve a janela do juiz: as provas seguintes medem nela. LIMPAR
   // basta — a janela real do Chrome é a de `JANELA`, e o override que
   // este bloco pôs é o único que a esconde. Havia aqui um
@@ -1675,12 +1762,22 @@ async function julgarAreaDaFicha(s) {
   // nela era medir a ficha mais baixa e chamar isso de teto. Marte tem as
   // sete, é a mais alta que existe, e é ela que o teto tem de segurar.
   const TETO_PCT = 50;
+  // F5a (item 113): boot-por-URL só na primeira célula (`?foco=` e
+  // `?ui=` na porta); as outras cinco trocam viewport e escala AO VIVO —
+  // a ficha da seleção fica aberta pelo caminho vivo, como no produto.
+  let bootou = false;
   for (const fator of [0.85, 1, 1.4]) {
     for (const [w, h] of [[390, 844], [320, 568]]) {
-      await s.send('Emulation.setDeviceMetricsOverride', {
-        width: w, height: h, deviceScaleFactor: 1, mobile: false,
-      });
-      await s.ir(`foco=marte&ui=${fator}&${PIN}`);
+      if (!bootou) {
+        await s.send('Emulation.setDeviceMetricsOverride', {
+          width: w, height: h, deviceScaleFactor: 1, mobile: false,
+        });
+        await s.ir(`foco=marte&ui=${fator}&${PIN}`);
+        bootou = true;
+      } else {
+        await mudarJanela(s, w, h);
+        await trocarUiAoVivo(s, fator);
+      }
       const m = await s.js(MEDIR);
       const onde = `Marte, ${w}×${h}, ui = ${fator}`;
       conferir(
@@ -1925,7 +2022,10 @@ async function julgarEscalaDaUi(s) {
     await s.ir(`${query}&${PIN}`);
     const base = await s.js(MEDIR_FONTES);
     const clampsBase = await s.js(MEDIR_CLAMPS);
-    await s.ir(`${query}&ui=${GRANDE}&${PIN}`);
+    // F5a (item 113): o degrau grande entra AO VIVO — mesma página,
+    // mesmos elementos (o pareamento por índice fica exato); os boots
+    // com `?ui=` na porta vivem nas outras famílias deste juiz
+    await trocarUiAoVivo(s, GRANDE);
     const grande = await s.js(MEDIR_FONTES);
     const clamps = await s.js(MEDIR_CLAMPS);
     const chaves = Object.keys(base);
@@ -1965,9 +2065,11 @@ async function julgarEscalaDaUi(s) {
   conferir(cobertos > 0, `escala da UI: ${cobertos} medições de font-size nas três telas`);
 
   // ---- o HUD não quebra ------------------------------------------
-  // com o painel ABERTO, que é a peça mais alta que a casa tem
+  // com o painel ABERTO, que é a peça mais alta que a casa tem.
+  // F5a: um boot-por-URL (ui=1) e o degrau grande ao vivo.
   for (const fator of [1, GRANDE]) {
-    await s.ir(`atlas=1&ajustes=1&ui=${fator}&${PIN}`);
+    if (fator === 1) await s.ir(`atlas=1&ajustes=1&ui=1&${PIN}`);
+    else await trocarUiAoVivo(s, fator);
     const q = await s.js(MEDIR_QUEBRAS);
     conferir(
       q.foraDaTela.length === 0 && q.atropelos.length === 0,
@@ -1982,6 +2084,9 @@ async function julgarEscalaDaUi(s) {
   // conteúdo em px de dispositivo fica do mesmo tamanho. Quem vive em
   // `vw`/`vh` acompanha; quem vive em `rem` cresce na tela. É o pior
   // caso do texto grande, e é onde um HUD mal ancorado sai da tela.
+  // F5a: a página do bloco de cima já está em `atlas=1&ajustes=1` com o
+  // texto no degrau grande — o zoom é só o override de métricas, que
+  // dispensa recarga (o app responde pelo ouvinte de resize)
   for (const zoom of [1.5, 2]) {
     await s.send('Emulation.setDeviceMetricsOverride', {
       width: Math.round(1200 / zoom),
@@ -1989,7 +2094,7 @@ async function julgarEscalaDaUi(s) {
       deviceScaleFactor: zoom,
       mobile: false,
     });
-    await s.ir(`atlas=1&ajustes=1&ui=${GRANDE}&${PIN}`);
+    await esperarPor(s, `window.innerWidth === ${Math.round(1200 / zoom)}`);
     const q = await s.js(MEDIR_QUEBRAS);
     conferir(
       q.foraDaTela.length === 0 && q.atropelos.length === 0,
@@ -2021,7 +2126,8 @@ async function julgarEscalaDaUi(s) {
       })()`;
       await s.ir(`loader=galaxy&ui=1&${PIN}`);
       const um = await s.js(medir);
-      await s.ir(`loader=galaxy&ui=${GRANDE}&${PIN}`);
+      // F5a: o degrau grande ao vivo — mesma página, mesmos seletores
+      await trocarUiAoVivo(s, GRANDE);
       const grande = await s.js(medir);
       conferir(
         um.largura < 760 && um.titulo !== null
@@ -2057,8 +2163,13 @@ async function julgarEscalaDaUi(s) {
   );
 
   // ---- e o retângulo útil do Atlas segue cobrindo o HUD -----------
+  // F5a: fecha o painel que o teste da URL abriu (Esc — diálogo aberto
+  // come o Esc primeiro) e mede os dois extremos AO VIVO; o boot desta
+  // família é o `ajustes=1` logo acima
+  await s.teclar('Escape');
+  await dorme(150);
   for (const fator of [0.85, GRANDE]) {
-    await s.ir(`atlas=1&ui=${fator}&${PIN}`);
+    await trocarUiAoVivo(s, fator);
     await medirCobertura(s, `ui = ${fator}`, true, fator);
   }
 
@@ -2082,12 +2193,23 @@ async function julgarEscalaDaUi(s) {
     Number.isFinite(minima) && minima > 0,
     `a faixa de validade da declaração é um número: ≥ ${minima} px de largura de CSS`
   );
+  // F5a (item 113): eram NOVE recargas para variar só largura e fator —
+  // uma célula boota por URL (o contrato) e as outras oito andam ao
+  // vivo. O `?ui=1.25` (meio da faixa, sem botão no painel) entra pelo
+  // mesmo caminho vivo: a faixa da URL aceita qualquer valor.
+  let bootouMatriz = false;
   for (const largura of [minima, 1000, 1200]) {
     for (const fator of [1, 1.25, GRANDE]) {
-      await s.send('Emulation.setDeviceMetricsOverride', {
-        width: largura, height: 900, deviceScaleFactor: 1, mobile: false,
-      });
-      await s.ir(`atlas=1&ui=${fator}&${PIN}`);
+      if (!bootouMatriz) {
+        await s.send('Emulation.setDeviceMetricsOverride', {
+          width: largura, height: 900, deviceScaleFactor: 1, mobile: false,
+        });
+        await s.ir(`atlas=1&ui=${fator}&${PIN}`);
+        bootouMatriz = true;
+      } else {
+        await mudarJanela(s, largura, 900);
+        await trocarUiAoVivo(s, fator);
+      }
       await medirCobertura(s, `ui = ${fator}`, true, fator);
     }
   }

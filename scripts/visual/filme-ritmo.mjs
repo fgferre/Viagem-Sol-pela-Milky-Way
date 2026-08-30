@@ -1,9 +1,15 @@
 // Serve: dono — onde olhar na revisão de ritmo: quanto a imagem muda por segundo no corte inteiro
-// Custo: ~2,3 min no passo padrão (extrapolado de 10 quadros)
+// Custo: 1,4 min no passo padrão de 4 s (medido 30/08, corte iii do item 113; PASSO=2 ≈ o dobro)
 // A EXIBIÇÃO COMPLETA, MEDIDA — o instrumento da revisão de ritmo.
 //
 //   node scripts/visual/filme-ritmo.mjs
 //   FILME_RITMO_DIR=/tmp/ritmo PASSO=2 node scripts/visual/filme-ritmo.mjs
+//
+// O PASSO PADRÃO é 4 s desde 30/08 (corte iii do item 113, aprovado pelo
+// dono): ~49 quadros em vez de 97 — a curva continua achando trecho longo
+// no chão e pico colado em pico, que é o que ela serve. Para a revisão
+// FINA (retemporização, corte novo), `PASSO=2` continua sendo a porta e
+// dobra a resolução da varredura.
 //
 // O juiz de roteiro (`filme-smoke.mjs`) salta às MARGENS das janelas de
 // legenda: ele prova texto e corte, não ritmo. Este varre o corte INTEIRO
@@ -26,7 +32,7 @@ import { abrirSessao } from './chrome.mjs';
 
 const DIR = process.env.FILME_RITMO_DIR
   || resolve(tmpdir(), `filme-ritmo-${process.pid}`);
-const PASSO = Number(process.env.PASSO || 2); // segundos de viagem por quadro
+const PASSO = Number(process.env.PASSO || 4); // segundos de viagem por quadro (PASSO=2 = revisão fina)
 
 // medida em miniatura cinza: o delta é por PIXEL da miniatura, então a
 // resolução dela só precisa ser estável dentro da varredura

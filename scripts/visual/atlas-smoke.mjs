@@ -1,5 +1,5 @@
 // Serve: dono — o portal do Atlas, a navegação e o toque no aparelho fazem o que ele pediu
-// Custo: 7,3 min (medido na F1 do item 113, servidor quente; era 7,4)
+// Custo: 6,5 min (medido 30/08, F5/corte iii do item 113: espera do manual 18→10 s; era 7,3)
 // O PORTAL DO ATLAS EM NAVEGADOR REAL — ida e volta, medida em PIXEL.
 //
 //   node scripts/visual/atlas-smoke.mjs
@@ -969,15 +969,15 @@ try {
   );
 
   // A FRONTEIRA POLÍTICA, no navegador: em MANUAL a medição pode gritar
-  // o que quiser — o tier não anda. O tier escolhido é `performance` e a
-  // espera passa dos 15 s da anti-vaivém DE PROPÓSITO: é só depois dela
-  // que a medida no teto do monitor passa a sugerir SUBIR, ou seja, é aí
-  // que existe uma sugestão para o manual resistir. Medido nesta
-  // bancada: a 60 q/s a sugestão vira 'alta' na 6ª janela (~15,6 s).
-  // Numa máquina que não chega ao teto a sugestão fica igual ao vivo e a
-  // prova enfraquece (o tier segue o mesmo, que é o que se cobra) — o
-  // log diz qual dos dois casos aconteceu.
-  const ESPERA_DO_MANUAL_MS = 18000;
+  // o que quiser — o tier não anda. O tier escolhido é `performance`.
+  // ERAM 18 s, atravessando de propósito os 15 s da anti-vaivém (a 60
+  // q/s a sugestão de SUBIR só nasce na 6ª janela, ~15,6 s — e aí havia
+  // uma sugestão para o manual resistir). DESDE 30/08 são 10 s, por
+  // decisão do dono (corte iii do item 113): a prova negativa "nada
+  // troca sozinho" fica mais CURTA — ela cobre ~4 janelas de medição,
+  // mas já não espera a sugestão de subir nascer nesta bancada; o log
+  // continua dizendo qual dos dois casos aconteceu.
+  const ESPERA_DO_MANUAL_MS = 10000;
   await sessao.ir('atlas=1&ajustes=1&shot=1&q=performance');
   await dorme(ESPERA_DO_MANUAL_MS);
   const noManual = JSON.parse(await sessao.js(`JSON.stringify({
