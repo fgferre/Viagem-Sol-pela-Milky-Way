@@ -876,6 +876,41 @@ Atlas-com-época-movida→filme, medindo o ângulo entre a mira da câmera e
 a direção viva da Terra/Lua em t=188–193 — data em que a Terra sai do
 quadro é a reprodução que faltava.
 
+**REPRODUZIDO em 30/08, no mesmo dia — a hipótese dele estava CERTA, e
+o mecanismo tem nome.** A causa NÃO é o relógio do Atlas vazando (os
+quatro caminhos Atlas→filme saíram bit-idênticos ao certo — o conserto
+de 21-22/08 sobreviveu à reescrita do motor): é a porta `?jd=` que o
+PRÓPRIO APP grava na barra de endereços. A cadeia, só com gestos de
+visitante: o Atlas abre AO VIVO por desenho, então `naEpoca` é falso
+sempre e QUALQUER gesto que espelhe a URL (trocar qualidade, copiar
+link, recarregar camada — `urlComMomento()` em `useEspelhoDaUrl.ts`)
+grava `&jd=` de hoje; um F5, um link compartilhado ou uma aba
+restaurada fazem o boot ler `?jd=`; e a guarda
+`!this.debug.has('jd')` no tick do `director.ts` então entrega o
+relógio do filme à porta — os corpos correm na data errada enquanto a
+câmera segue o roteiro. Varridas 14 datas: SÓ a do filme passa; com
+`?jd=` de +1 dia a Terra já sai do quadro em t=187 (46°), e na
+reprodução pela UI ela está a 263 milhões de km quando deveria estar a
+34.868. A intermitência do relato é exatamente o F5: sem recarregar, a
+barra fica suja mas o filme sai certo. Terceira peça: o pino das 16:00
+em `terra.ts`/`lua.ts` só vale SEM efeméride (`!q.fonte`), então não
+salva o quadro. Foto `capturas/item108-REPRODUZIDO-t193.png` (a
+legenda "A TERRA" sobre céu vazio); rastro completo
+`capturas/item108-sonda-tempo.json` (22 cenários × 4 instantes).
+**Conserto proposto pela sonda (não implementado):** o pino manda
+sempre que existir (`if (q.centroPinadoPc)`, sem o `!q.fonte` — o
+`palco.ts` já o zera fora do filme), e decidir na obra se a guarda do
+`?jd=` sai do trecho do filme inteiro; o gate novo tem de reprovar
+quando se recoloca a condição antiga.
+
+**ACHADO INDEPENDENTE da mesma sonda — a Lua, e este é do ROTEIRO, não
+do relógio:** mesmo no caminho CERTO a Lua fica fora do quadro nos
+últimos 6 s (t=187 ela está ATRÁS da câmera, 133,9°; t=193 a 32,9°,
+logo acima da borda); o fly-by dela é em t≈183, no centro. Pode ser a
+outra metade da frase dele ("não mostra mais direito no final A LUA e
+a terra") — perguntado a ele em 30/08; obra de roteiro só com a
+palavra dele.
+
 
 **109. Os labels 3D do outro projeto — trazer ou não, com medida.**
 (Pergunta dele, 29/08, palavras dele: *"meu outro projeto tinha labels
