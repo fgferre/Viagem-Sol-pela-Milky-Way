@@ -230,6 +230,7 @@ export class LabelCanvas {
         // no mesmo pixel como ÍCONE e como TEXTO são quadros diferentes
         // — sem este bit, ligar/desligar os nomes não repintaria
         `,${label.dirigido ? 1 : 0},${label.icone ? 1 : 0},${label.comAnel ? 1 : 0}` +
+        `,${label.textoInvisivel ? 1 : 0}` +
         `,${label.corDoAnel ?? ''},${nome},${detalhe}`;
     }
     return assinatura;
@@ -402,6 +403,11 @@ export class LabelCanvas {
         ctx.lineTo(anchorX + direction * 10 * k, textY);
         ctx.stroke();
       }
+
+      // BETA 3D (item 109): o rótulo passou por TODAS as leis e ocupou a
+      // vaga — mas o texto dele é pintado NA CENA pelo Rotulos3d. Aqui
+      // fica só a marca do desenhado (o clique) e o anel lá de cima.
+      if (label.textoInvisivel) continue;
 
       ctx.textAlign = toLeft ? 'right' : 'left';
       ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';

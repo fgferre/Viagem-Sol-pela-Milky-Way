@@ -57,6 +57,8 @@ export function Ajustes({
   onExposicao,
   escalaUi,
   onEscalaUi,
+  rotulos3d,
+  onRotulos3d,
   urlParaCopiar,
   onReverConvite,
 }: {
@@ -72,6 +74,9 @@ export function Ajustes({
   /** fator do tamanho do texto do HUD (`?ui=`) — 1 é o de sempre */
   escalaUi: number;
   onEscalaUi: (v: number) => void;
+  /** a BETA dos rótulos 3D (item 109) — só muda o desenho dos nomes */
+  rotulos3d: boolean;
+  onRotulos3d: (v: boolean) => void;
   /** a URL de agora COM o instante da viagem (App.urlComMomento) */
   urlParaCopiar: () => string;
   /**
@@ -187,6 +192,32 @@ export function Ajustes({
               {rotuloDaEscala(f)}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div>
+        <h3>Beta · Rótulos 3D</h3>
+        <p className="ajustes-nota">
+          Os nomes dos corpos viram texto dentro da própria cena, com
+          profundidade — o visual do projeto irmão. Quem aparece continua
+          sendo decidido pelas mesmas regras de sempre, e o anel segue
+          sendo o alvo do clique. Vale no Atlas; experimental.
+        </p>
+        <div className="ajustes-linha">
+          <button
+            type="button"
+            className={rotulos3d ? '' : 'on'}
+            onClick={() => onRotulos3d(false)}
+          >
+            Desligados
+          </button>
+          <button
+            type="button"
+            className={rotulos3d ? 'on' : ''}
+            onClick={() => onRotulos3d(true)}
+          >
+            Ligados
+          </button>
         </div>
       </div>
 

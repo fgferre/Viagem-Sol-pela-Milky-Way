@@ -65,6 +65,9 @@ export interface QuadroDeRotulos {
    *  no Eyes: com os nomes desligados os corpos mantêm um marcador
    *  clicável; com as duas desligadas, o silêncio de sempre. */
   iconesEscondidos: boolean;
+  /** BETA dos rótulos 3D (item 109): o TEXTO dos corpos é pintado na
+   *  cena pelo `Rotulos3d`; o 2D segue dono das leis e do anel. */
+  texto3d: boolean;
 }
 
 /**
@@ -184,6 +187,23 @@ export class Rotulos {
   /** a última projeção — a lista ÚNICA que o clique lê (pendência 30) */
   get alvos(): StarLabel[] {
     return this.lastLabels;
+  }
+
+  /** posição de MUNDO viva de um corpo pela chave do rótulo — o
+   *  consumidor é o `Rotulos3d` (item 109); null sem efeméride. */
+  posicaoDoCorpo(
+    key: string,
+    posicoesPlanetas: Float32Array | null,
+    idsPlanetas: readonly { id: string }[]
+  ): readonly [number, number, number] | null {
+    const id = key.slice(6);
+    const iLua = LUAS_DO_SISTEMA.findIndex((l) => l.id === id);
+    const fonte = iLua >= 0 ? this.luaPosParaRotulo : posicoesPlanetas;
+    const i = iLua >= 0 ? iLua : idsPlanetas.findIndex((c) => c.id === id);
+    if (!fonte || i < 0) return null;
+    const x = fonte[i * 3];
+    if (!Number.isFinite(x)) return null;
+    return [x, fonte[i * 3 + 1], fonte[i * 3 + 2]];
   }
 
   /** escreve o centro vivo no slot da lua em `luaPosParaRotulo`. */
@@ -542,6 +562,11 @@ export class Rotulos {
             c.comAnel = true;
             c.corDoAnel = corDeAnelCss(id, PAI_DA_LUA.get(id));
           }
+        }
+        // BETA 3D (item 109): o texto do corpo migra para a cena; a
+        // vaga, o anel e o clique ficam aqui
+        if (quadro.texto3d) {
+          for (const c of [...corpos, ...luas]) c.textoInvisivel = true;
         }
         // AS ESTRELAS entram por CANDIDATAS, não por vagas: o teto de 7
         // era um corte ANTES da disputa, e era ele que fazia uma vizinha

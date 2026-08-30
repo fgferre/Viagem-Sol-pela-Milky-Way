@@ -25,6 +25,10 @@ export interface StarLabel {
    *  âncora TAMBÉM quando há texto — a camada de ícones é independente
    *  da de nomes. */
   comAnel?: boolean;
+  /** BETA dos rótulos 3D (item 109): o texto deste rótulo é pintado NA
+   *  CENA pelo `Rotulos3d` — o 2D cumpre as leis (colisão, relevância,
+   *  clique, vaga ocupada) e o anel, mas NÃO pinta o texto. */
+  textoInvisivel?: boolean;
   /** a cor CSS do anel — a mesma da linha de órbita do corpo (item 83);
    *  ausente, o anel sai na tinta âmbar padrão dos rótulos. */
   corDoAnel?: string;

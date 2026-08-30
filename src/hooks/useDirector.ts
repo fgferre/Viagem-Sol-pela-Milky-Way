@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import { Director } from '../three/director';
 import type { EstadoDaEscada, EstadoDaQualidade, LoadStage, Phase } from '../three/director';
 import type { NamedStar } from '../three/config';
+import { lerPortaRotulos3d } from '../lib/beta';
 import {
   lerPortaExposicao,
   lerPortaQualidade,
@@ -173,6 +174,10 @@ export function useDirector(fios: FiosDoDirector) {
         if (tone) d.engine.setToneMapping(tone);
         const exposure = lerPortaExposicao(query.get('exp'));
         if (exposure !== null) d.setExposure(exposure);
+
+        // ?r3d=1 — a beta dos rótulos 3D (item 109; porta catalogada em
+        // lib/beta.ts, fora do selo por doutrina dele)
+        if (lerPortaRotulos3d(query)) d.setRotulos3d(true);
 
         // ?pos=x,y,z[&look=x,y,z][&fov=graus] — câmera livre determinística
         // em qualquer ponto da galáxia (screenshots/inspeção; o fov só faz

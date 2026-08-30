@@ -46,7 +46,7 @@ function bancada() {
   // da câmera, e ele roda em todo quadro, depois do ramo
   const quadro: QuadroDeRotulos = {
     fase: 'atlas', named: null, dHome: 0, planetas: null, foco: null,
-    nomesEscondidos: false, iconesEscondidos: false,
+    nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
   };
   /** um quadro do Atlas com a câmera em `x` (pc de cena) */
   const passo = (x: number) => {
@@ -108,7 +108,7 @@ describe('a câmera só sobe para o React com quem a leia', () => {
     rotulos.tique(0.5);
     rotulos.projetar(cam, {
       fase: 'free', named: null, dHome: 0, planetas: null, foco: null,
-      nomesEscondidos: false, iconesEscondidos: false,
+      nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
     });
     expect(publicadas).toEqual([publicadas[0], null]);
   });
@@ -145,7 +145,7 @@ describe('a camada "Nomes na tela" (item 82, N2)', () => {
     cam.position.set(0, 0, 5);
     cam.updateMatrixWorld();
     const quadro = (nomesEscondidos: boolean): QuadroDeRotulos => ({
-      fase: 'free', named: CEU, dHome: 5, planetas: null, foco: null, nomesEscondidos, iconesEscondidos: false,
+      fase: 'free', named: CEU, dHome: 5, planetas: null, foco: null, nomesEscondidos, iconesEscondidos: false, texto3d: false,
     });
     return { rotulos, publicados, camPublicadas, cam, quadro };
   }
@@ -192,7 +192,7 @@ describe('a camada "Nomes na tela" (item 82, N2)', () => {
     cam.updateMatrixWorld();
     const noFilme = (nomesEscondidos: boolean): QuadroDeRotulos => ({
       fase: 'journey', named: CEU, dHome: 5, planetas: null, foco: null,
-      nomesEscondidos, iconesEscondidos: false,
+      nomesEscondidos, iconesEscondidos: false, texto3d: false,
     });
 
     // COM a camada ligada, o beat fala
@@ -261,7 +261,7 @@ describe('o céu limpo continua navegável (item 89): ícone é camada separada'
     const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
     const quadro: QuadroDeRotulos = {
       fase: 'atlas', named: [], dHome: 5, planetas, foco: null,
-      nomesEscondidos, iconesEscondidos,
+      nomesEscondidos, iconesEscondidos, texto3d: false,
     };
     rotulos.projetar(cam, quadro);
     return { alvos: rotulos.alvos };
@@ -277,6 +277,42 @@ describe('o céu limpo continua navegável (item 89): ícone é camada separada'
   it('as DUAS desligadas: o silêncio de sempre — nenhum alvo', () => {
     const { alvos } = noAtlasComTerra(true, true);
     expect(alvos).toEqual([]);
+  });
+
+  it('a BETA 3D marca o texto do corpo como invisível — e não toca as estrelas (109)', () => {
+    // O desenho que preserva as três leis: o 2D decide QUEM aparece e
+    // ocupa a vaga; com texto3d o corpo leva textoInvisivel (o glifo sai
+    // na cena, pelo Rotulos3d) e a estrela continua pintada no canvas.
+    const publicados: StarLabel[][] = [];
+    const rotulos = new Rotulos({
+      onLabels: (l) => publicados.push(l),
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({}) as JourneyMeta,
+    });
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 0.001, 100);
+    cam.position.set(0, 0, 5);
+    cam.updateMatrixWorld();
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const iTerra = CORPOS_DO_SISTEMA.findIndex((c) => c.id === 'earth');
+    posicoes[iTerra * 3] = 0; posicoes[iTerra * 3 + 1] = 0; posicoes[iTerra * 3 + 2] = 0;
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    rotulos.projetar(cam, {
+      fase: 'atlas', named: [{ n: 'Vizinha', x: 0.4, y: 0.2, z: 0, m: 1, s: 'A0V', d: 5, t: 0 }],
+      dHome: 5, planetas, foco: null,
+      nomesEscondidos: false, iconesEscondidos: false, texto3d: true,
+    });
+    const alvos = rotulos.alvos;
+    const terra = alvos.find((l) => l.key === 'corpo:earth')!;
+    expect(terra.textoInvisivel).toBe(true);
+    expect(terra.comAnel).toBe(true); // o anel-âncora fica
+    const estrela = alvos.find((l) => l.name === 'Vizinha')!;
+    expect(estrela.textoInvisivel).toBeUndefined();
+    // e a posição de MUNDO sai pela chave, para o 3D pintar no lugar
+    expect(rotulos.posicaoDoCorpo('corpo:earth', posicoes, CORPOS_DO_SISTEMA)).toEqual([0, 0, 0]);
+    expect(rotulos.posicaoDoCorpo('corpo:mars', posicoes, CORPOS_DO_SISTEMA)).toBeNull();
   });
 
   it('nomes LIGADOS: o quadro de sempre, sem entrada só-ícone nenhuma', () => {
@@ -304,7 +340,7 @@ describe('o indicador de fotografia (item 100): "LENTE · SOL" só no filme', ()
     cam.position.set(0, 0, 5);
     cam.updateMatrixWorld();
     const quadro = (fase: QuadroDeRotulos['fase']): QuadroDeRotulos => ({
-      fase, named: CEU, dHome: 5, planetas: null, foco: null, nomesEscondidos: false, iconesEscondidos: false,
+      fase, named: CEU, dHome: 5, planetas: null, foco: null, nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
     });
     return { rotulos, lentes, cam, quadro };
   }

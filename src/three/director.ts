@@ -257,6 +257,9 @@ export class Director {
   private post: Post;
   private nebula: Nebula;
   private stars!: StarField;
+  /** BETA dos rótulos 3D (item 109) — decisão dele, 29/08 */
+  private rotulos3dLigado = false;
+  private rotulos3d?: import('./world/rotulos3d').Rotulos3d;
   /** O CLARÃO DE ASAS (M2 da Lei): a óptica das fontes fortes, por
    *  orçamento de fluxo com histerese — camada única, sempre acesa.
    *  (A identidade "as 16", o casamento hero↔catálogo e a política de
@@ -994,6 +997,8 @@ export class Director {
     this.blackHole.setQuality(this.engine.quality);
     this.post.addBlackHole(this.blackHole);
     this.engine.scene.add(this.stars.points);
+    // a camada 3D nasce preguiçosa: só importa/instancia se a beta
+    // ligar um dia nesta sessão (setRotulos3d)
     this.engine.scene.add(this.sun.group);
     this.engine.scene.add(this.dust.points);
     this.engine.scene.add(this.clarao.group);
@@ -1336,6 +1341,22 @@ export class Director {
   }
 
   // ---- pausar-e-olhar (viagem congelada) -------------------------
+  /**
+   * A BETA DOS RÓTULOS 3D (item 109) — liga/desliga ao vivo, pelo
+   * Ajustes. O 2D continua dono das leis; a camada 3D só pinta.
+   */
+  setRotulos3d(ligado: boolean) {
+    this.rotulos3dLigado = ligado;
+    if (ligado && !this.rotulos3d) {
+      import('./world/rotulos3d').then((m) => {
+        if (this.disposed) return;
+        this.rotulos3d = new m.Rotulos3d(this.engine.scene);
+        this.perturbar();
+      });
+    }
+    this.perturbar();
+  }
+
   private get pauseLookActive() {
     return this.phase === 'journey' && this.freezeJourney;
   }
@@ -2718,7 +2739,23 @@ export class Director {
       // outras dezoito, e entregue pronta ao produtor
       nomesEscondidos: this.hide.has('nonomes'),
       iconesEscondidos: this.hide.has('noicones'),
+      texto3d: this.rotulos3dLigado,
     });
+    // a camada 3D espelha o QUE ESTE QUADRO decidiu desenhar — depois
+    // do projetar, para o texto nunca correr um quadro atrás do anel.
+    // (O `desenhado` deste quadro é escrito pelo LabelCanvas no draw do
+    // MESMO tick, via onLabels; aqui a lista já saiu do forno.)
+    this.rotulos3d?.sincronizar(
+      this.rotulos3dLigado && this.phase === 'atlas',
+      cam,
+      this.rotulos.alvos,
+      (key) =>
+        this.rotulos.posicaoDoCorpo(
+          key,
+          this.planetas ? this.planetas.posicoes : null,
+          CORPOS_DO_SISTEMA
+        )
+    );
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
     // gate 0.02: na casca externa do fade a contribuição é invisível

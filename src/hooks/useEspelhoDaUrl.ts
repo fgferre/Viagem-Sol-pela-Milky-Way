@@ -1,3 +1,4 @@
+import { lerPortaRotulos3d } from '../lib/beta';
 // ============================================================
 // A URL COMO ESPELHO — o estado de gosto que nasce dela e os sete
 // escritores que a mantêm fiel (a decisão do dono: a URL espelha, não
@@ -48,6 +49,19 @@ export function useEspelhoDaUrl(dep: {
   // Director validava, então `?tone=foo` deixava os quatro rádios
   // desmarcados e `?exp=abc` pintava "Exposição · NaN" num slider com
   // `value={NaN}` — o HUD mentindo sobre o que o instrumento faz.
+  // A BETA DOS RÓTULOS 3D (item 109) — decisão dele em 29/08. A porta
+  // `?r3d=1` mora em lib/beta.ts, FORA do catálogo do selo, por
+  // doutrina dele: rotulagem é ponto de vista, não desvio de
+  // honestidade. O espelho escreve a chave para o link reproduzir.
+  const [rotulos3d, setRotulos3d] = useState(
+    () => lerPortaRotulos3d(new URLSearchParams(window.location.search))
+  );
+  const trocarRotulos3d = (ligado: boolean) => {
+    setRotulos3d(ligado);
+    directorRef.current?.setRotulos3d(ligado);
+    window.history.replaceState(null, '', comParam('r3d', ligado ? '1' : null));
+  };
+
   const [tom, setTom] = useState<ToneMapMode>(
     () => lerPortaTom(new URLSearchParams(window.location.search).get('tone')) ?? 'aces'
   );
@@ -393,6 +407,8 @@ export function useEspelhoDaUrl(dep: {
     trocarExposicao,
     voltarAoBrilhoReal,
     trocarEscalaUi,
+    rotulos3d,
+    trocarRotulos3d,
     alternarCamada,
   };
 }

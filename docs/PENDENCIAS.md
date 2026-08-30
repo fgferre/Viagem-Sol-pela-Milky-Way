@@ -46,6 +46,17 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (29/08)
 
+**29/08 (fecho por ordem dele — "we are almost out of context").** A
+sessão parou NO MEIO da beta dos rótulos 3D (item 109): a fiação
+inteira está commitada e provada inofensiva (beta desligada =
+bit-idêntico), e o único defeito aberto tem sonda e causa — a fonte
+Inter woff2 embarcada trava o `sync` do troika (a padrão dele resolve
+em 341 ms). **A PRÓXIMA JANELA COMEÇA AÍ: trocar o arquivo da fonte,
+re-sondar, fotos, olho dele** — o passo a passo está no corpo do item
+109. Antes disso ficaram fechados hoje: 39, 40, 43, 61, 70, 75, 77,
+83, 86, 89, 94, 96, 97 e 100; publicado até `5371037`; o site NÃO tem
+as levas posteriores (fecho da família + spike + beta).
+
 **29/08 (madrugada, o fecho da rodada) — 89, 94 e 96 FECHARAM; a mesa
 ficou limpa.** O 89 pelo olho dele ("confirmo as fotos"): o céu limpo
 navegável + o Eyes completo com o anel na cor da órbita. O 94 por
@@ -923,7 +934,38 @@ do 2D ele reabre exatamente o nó que a casa matou — na abertura os
 nomes internos se empilham sobre o Sol (foto), sem relevância e sem
 clique. Folha: `capturas/item109-spike-labels3d.png`.
 
-**VEREDITO PROPOSTO: NÃO migrar** — obra GRANDE (reimplementar
+**ELE DECIDIU DIFERENTE no mesmo dia — e é gosto dele, vale:** *"vamos
+implementar como uma opcao beta a ser ativada no menu. no atlas os
+labels 3d sao muito mais bonitos e sao dinamicos de um jeito
+interessante"*. **A OBRA DA BETA ESTÁ NO MEIO — o estado exato para a
+próxima janela:**
+
+- **PRONTO E COMMITADO:** a camada `world/rotulos3d.ts` (espelha os
+  rótulos de corpo que o 2D mandou desenhar — as TRÊS leis ficam no 2D:
+  colisão, relevância e clique; o anel segue âncora; `textoInvisivel`
+  no LabelCanvas ocupa a vaga sem pintar); a porta `?r3d=1` em
+  `lib/beta.ts` (FORA do catálogo do selo, por doutrina dele); o
+  espelho/estado em `useEspelhoDaUrl` (`trocarRotulos3d`); a seção
+  "Beta · Rótulos 3D" no Ajustes; `director.setRotulos3d` com import
+  preguiçoso; dependência `troika-three-text` declarada; fonte
+  `public/fonts/inter-400.woff2` embarcada (OFL, ASSETS.md); guarda de
+  unidade em `rotulos.test.ts` (texto3d marca corpo, poupa estrela,
+  posicaoDoCorpo); **beta desligada = bit-idêntico provado** (SMOKE
+  4/4).
+- **O DEFEITO ABERTO, com a sonda que o cravou:** com a beta ligada os
+  glifos NÃO aparecem e sobram quadrados pretos nas âncoras (o miolo do
+  Sol fica um ponto preto). Causa MEDIDA na página viva: um `Text`
+  avulso com a fonte PADRÃO do troika sincroniza em 341 ms; com a NOSSA
+  `/fonts/inter-400.woff2` o `sync` NUNCA resolve (timeout 3 s) —
+  `textRenderInfo` fica false. **O parser do troika não digere este
+  woff2 do fontsource.** Próximos passos, em ordem: (1) trocar o
+  arquivo por um .woff/.ttf (ou outra fonte OFL) e re-sondar; (2) se
+  digerir, refazer as fotos beta-abertura/beta-foco e entregar ao olho
+  dele; (3) considerar empacotar localmente a própria fonte-padrão do
+  troika. As sondas vivem no scratchpad da sessão de 29/08
+  (`sonda-beta.mjs`, `sonda-troika.mjs`) e são triviais de reescrever.
+
+**O VEREDITO DO SPIKE fica como história da medida: NÃO migrar** — obra GRANDE (reimplementar
 colisão + relevância + clique no espaço 3D) por ganho estético parcial
 e zero de performance. O que vale colher pontualmente, se um dia
 incomodar: oclusão do rótulo atrás do globo, que dá para fazer no 2D

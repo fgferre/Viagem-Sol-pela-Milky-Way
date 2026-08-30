@@ -608,6 +608,8 @@ export default function App() {
     trocarExposicao,
     voltarAoBrilhoReal,
     trocarEscalaUi,
+    rotulos3d,
+    trocarRotulos3d,
     alternarCamada,
   } = useEspelhoDaUrl({ directorRef, phase, foco, indice, quality });
 
@@ -1052,6 +1054,8 @@ export default function App() {
         onExposicao={trocarExposicao}
         escalaUi={escalaUi}
         onEscalaUi={trocarEscalaUi}
+        rotulos3d={rotulos3d}
+        onRotulos3d={trocarRotulos3d}
         urlParaCopiar={() => urlComMomento().toString()}
         onReverConvite={
           hud.dicaDeVoo || phase === 'atlas'
