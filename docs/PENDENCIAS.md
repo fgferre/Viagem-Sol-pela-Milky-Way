@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 110.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 111.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`.)*
 
@@ -687,6 +687,28 @@ vez de *nada a desfazer*, e o tier abaixo de cinema trancava a luz em
 **FECHADO em 26/08**, conferido por ele na Sala de Conferência (**C14**: a
 costura, com o perfil que desce sem voltar atrás uma única vez); história no
 ARQUIVO.
+
+**110.** O voo até o corpo escolhido parecia um salto seco — palavras dele
+(29/08): *"quando clicamos em algum corpo que nao está focado, ou
+double-click, nao seria interessasnte que houvesse uma animacao até
+centralizar esse corpo no centro? hoje parece que há um salto abrupto...
+nao seria um padrao de industria?"*. **O diagnóstico:** o clique simples
+NÃO move a câmera por lei dele mesmo (item **73**, 22/08: *"um clique
+escolhe, dois vão"*) — o que salta é o GESTO DE IR (duplo clique, o botão
+⊕ Aproximar, a busca): a rampa existia e terminava exata, mas durava
+**0,5 s FIXOS**, do mergulho curto à travessia do céu inteiro — e
+travessia grande em meio segundo lê como corte. Os melhores (NASA Eyes,
+SpaceEngine) voam 1,5–4 s, proporcional à viagem. **FEITO em 29/08:** a
+duração virou função da travessia — PAN (radianos que a mira varre) e
+ZOOM (décadas de distância) somam tempo sobre o piso de 0,5 s, teto
+2,2 s (`RAMPA_MAX_S`, `atlasRig.ts`); mergulho no corpo já focado fica
+~1 s, planeta→planeta chega perto do teto; reduced-motion e `?shot=`
+seguem instantâneos; a rampa continua terminando bit a bit na pose pura
+(`?foco=` reproduzível). Guardas novas em `atlasRig.test.ts` (104/104).
+**ABERTO esperando a mão dele no app** — tato não se julga em foto
+(precedente do item 102). Se ele quiser que o clique simples TAMBÉM
+centralize (hoje só escolhe), é revisão da lei do item 73 e decisão
+dele.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 

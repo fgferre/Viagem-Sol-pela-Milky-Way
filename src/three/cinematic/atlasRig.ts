@@ -43,6 +43,21 @@ export * from './enquadramento';
 
 export const RAMPA_DO_DEGRAU_S = 0.5;
 
+// A RAMPA PROPORCIONAL À TRAVESSIA (item 110): meio segundo fixo lia
+// como salto seco quando o gesto cruzava o céu — palavras dele, 29/08:
+// "hoje parece que há um salto abrupto". O tamanho perceptivo do gesto
+// tem DOIS eixos, exatamente os que a rampa interpola: o PAN (o ângulo
+// que a mira varre entre o alvo velho e o novo, visto de onde a câmera
+// está) e o ZOOM (as décadas de distância entre a pose de agora e o
+// enquadramento do destino). Meio segundo segue sendo o PISO — o
+// mergulho órbita→corpo, que era o gesto para o qual a rampa nasceu,
+// fica perto do que era (~1 s); a travessia planeta→planeta é quem
+// ganha tempo; e o teto segura qualquer travessia no ritmo de um voo,
+// não de um bocejo.
+export const RAMPA_MAX_S = 2.2;
+const RAMPA_POR_RADIANO_S = 0.9;
+const RAMPA_POR_DECADA_S = 0.1;
+
 /**
  * O PISO DO ZOOM, em RAIOS do alvo — e ele é derivado, não escolhido.
  *
@@ -290,6 +305,8 @@ export class AtlasRig {
   // bit — é o que mantém `?foco=` reproduzível), e o snapshot de
   // partida é a pose que a câmera MOSTRAVA no quadro da troca.
   private rampaT = 1;
+  /** a duração DESTA rampa, escolhida pela travessia no `focar` (item 110) */
+  private rampaDuracaoS = RAMPA_DO_DEGRAU_S;
   private readonly partida = {
     alvo: new THREE.Vector3(),
     raio: 0,
@@ -356,6 +373,32 @@ export class AtlasRig {
       this.partida.giro.copy(this.giro);
       this.partida.polo.copy(this.polo);
       this.partida.distancia = this.distanciaPinada;
+      // A DURAÇÃO É A DA TRAVESSIA (item 110) — medida ANTES de o
+      // referencial trocar, na mesma conta fechada de `selecionar`:
+      // a posição de agora sai do próprio rig, o pan é o ângulo entre
+      // os dois alvos vistos dali, e o zoom compara a distância na tela
+      // com o enquadramento do destino (estimado pela razão viva
+      // distância/raio, que é a lei do enquadramento no fov de agora).
+      this.repousoDe(this.eixoDe, this.alvo, this.pai, this.polo, _dirAgora);
+      poseDoVisitante(_dirAgora, this.polo, this.giro, _dirAgora, _upAgora);
+      _posPartida.copy(this.alvo).addScaledVector(_dirAgora, this.distancia);
+      _dirA.copy(this.alvo).sub(_posPartida);
+      _dirB.copy(alvo).sub(_posPartida);
+      const pan =
+        _dirA.lengthSq() > 0 && _dirB.lengthSq() > 0 ? _dirA.angleTo(_dirB) : 0;
+      const kDoEnquadramento =
+        this.raio > 0 && this.distanciaEnquadrada > 0
+          ? this.distanciaEnquadrada / this.raio
+          : 0;
+      const dDestino = kDoEnquadramento > 0 ? raio * kDoEnquadramento : 0;
+      const decadas =
+        dDestino > 0 && this.distancia > 0
+          ? Math.abs(Math.log10(dDestino / this.distancia))
+          : 0;
+      this.rampaDuracaoS = Math.min(
+        RAMPA_MAX_S,
+        RAMPA_DO_DEGRAU_S + RAMPA_POR_RADIANO_S * pan + RAMPA_POR_DECADA_S * decadas
+      );
       this.rampaT = 0;
     } else {
       this.rampaT = 1;
@@ -613,6 +656,11 @@ export class AtlasRig {
   /** a rampa entre degraus ainda está andando? (a captura espera por ela) */
   get animando(): boolean {
     return this.rampaT < 1;
+  }
+
+  /** a duração da rampa VIVA, em s — a que a travessia escolheu (item 110) */
+  get duracaoDaRampa(): number {
+    return this.rampaDuracaoS;
   }
 
   /**
@@ -1102,7 +1150,7 @@ export class AtlasRig {
     // a rampa entre degraus: poses dos dois enquadramentos, interpoladas
     this.rampaT = Math.min(
       1,
-      this.rampaT + (Number.isFinite(dt) ? Math.max(dt, 0) : 0) / RAMPA_DO_DEGRAU_S
+      this.rampaT + (Number.isFinite(dt) ? Math.max(dt, 0) : 0) / this.rampaDuracaoS
     );
     const t = this.rampaT;
     // o mesmo smoothstep de toda rampa da casa (C¹ nas duas bordas)

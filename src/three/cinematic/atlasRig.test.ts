@@ -27,6 +27,7 @@ import {
   POLO_ECLIPTICO,
   RETANGULO_CHEIO,
   RAMPA_DO_DEGRAU_S,
+  RAMPA_MAX_S,
   CEDER_COMECA_GRAUS,
   direcaoDaLua,
   direcaoDeRepouso,
@@ -1714,12 +1715,15 @@ describe('o alvo vivo — recompor sem quebrar o que o visitante estava fazendo'
     rig.focar(a, 1e-8);
     rig.apply(camera);
     rig.focar(b, 1e-9, b, { rampa: true });
-    rig.apply(camera, 1, LARGURA_DE_MESA_PX, RAMPA_DO_DEGRAU_S / 2);
+    // a duração é a que a travessia escolheu (item 110) — o teste anda
+    // em metades DELA, não da constante
+    const dur = rig.duracaoDaRampa;
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, dur / 2);
     expect(rig.animando).toBe(true);
     rig.recompor(b, 1e-9, b);
     expect(rig.animando).toBe(true);
     // a segunda metade ainda termina a rampa: o relógio dela não voltou
-    rig.apply(camera, 1, LARGURA_DE_MESA_PX, RAMPA_DO_DEGRAU_S / 2);
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, dur / 2);
     expect(rig.animando).toBe(false);
   });
 
@@ -1837,15 +1841,62 @@ describe('a rampa entre degraus do rig (F2b/D7)', () => {
     rig.apply(animado);
     rig.focar(alvo, 1e-7, alvo, { rampa: true });
     expect(rig.animando).toBe(true);
+    const dur = rig.duracaoDaRampa;
     // meio da rampa: a câmera está ENTRE as poses (nem lá nem cá)
-    rig.apply(animado, 1, LARGURA_DE_MESA_PX, RAMPA_DO_DEGRAU_S / 2);
+    rig.apply(animado, 1, LARGURA_DE_MESA_PX, dur / 2);
     expect(animado.position.equals(seco.position)).toBe(false);
     // fim: os passos somam a duração e a pose é a PURA, bit a bit
-    rig.apply(animado, 1, LARGURA_DE_MESA_PX, RAMPA_DO_DEGRAU_S);
+    rig.apply(animado, 1, LARGURA_DE_MESA_PX, dur);
     expect(rig.animando).toBe(false);
     rig.apply(animado, 1, LARGURA_DE_MESA_PX, 0.016);
     expect(animado.position.equals(seco.position)).toBe(true);
     expect(animado.quaternion.equals(seco.quaternion)).toBe(true);
+  });
+
+  it('a duração é a da travessia — cruzar o céu demora mais que mergulhar (item 110)', () => {
+    // palavras dele (29/08): "hoje parece que há um salto abrupto". O
+    // conserto: a rampa dura conforme o gesto — PAN (radianos que a
+    // mira varre) e ZOOM (décadas de distância) somam tempo sobre o
+    // piso de meio segundo, até o teto. Reverter para 0,5 s fixos
+    // reprova as três réguas abaixo.
+
+    // o MERGULHO: da abertura para um corpo quase no centro do quadro —
+    // pan mínimo, zoom manda; fica perto do piso, nunca abaixo dele
+    const mergulho = new AtlasRig();
+    noSistemaInteiro(mergulho);
+    mergulho.apply(cam());
+    const alvoAoCentro = new THREE.Vector3(1e-6, 0, 0);
+    mergulho.focar(alvoAoCentro, 1e-7, alvoAoCentro, { rampa: true });
+    const doMergulho = mergulho.duracaoDaRampa;
+    expect(doMergulho).toBeGreaterThanOrEqual(RAMPA_DO_DEGRAU_S);
+    expect(doMergulho).toBeLessThan(1.5);
+
+    // a TRAVESSIA: a câmera COLADA num corpo e o gesto pede outro, bem
+    // do lado — a mira varre um ângulo grande e o tempo cresce
+    const travessia = new AtlasRig();
+    const corpoA = new THREE.Vector3(1e-6, 0, 0);
+    travessia.focar(corpoA, 1e-9, corpoA);
+    travessia.apply(cam());
+    const corpoB = new THREE.Vector3(0, 1e-6, 0);
+    travessia.focar(corpoB, 1e-9, corpoB, { rampa: true });
+    const daTravessia = travessia.duracaoDaRampa;
+    expect(daTravessia).toBeGreaterThan(doMergulho);
+    expect(daTravessia).toBeLessThanOrEqual(RAMPA_MAX_S);
+
+    // ...e a rampa mais longa TERMINA exata como sempre (t ≥ 1 escreve
+    // a conta pura): a travessia muda o relógio, não o destino
+    const chegada = cam();
+    travessia.apply(chegada, 1, LARGURA_DE_MESA_PX, daTravessia);
+    expect(travessia.animando).toBe(false);
+    const seco = cam();
+    const rigSeco = new AtlasRig();
+    rigSeco.focar(corpoA, 1e-9, corpoA);
+    rigSeco.apply(seco);
+    rigSeco.focar(corpoB, 1e-9, corpoB);
+    rigSeco.apply(seco);
+    travessia.apply(chegada, 1, LARGURA_DE_MESA_PX, 0.016);
+    expect(chegada.position.equals(seco.position)).toBe(true);
+    expect(chegada.quaternion.equals(seco.quaternion)).toBe(true);
   });
 
   it('focar o MESMO alvo com rampa é no-op — nem reinicia a animação', () => {
@@ -1854,7 +1905,7 @@ describe('a rampa entre degraus do rig (F2b/D7)', () => {
     rig.apply(cam());
     const alvo = new THREE.Vector3(1e-6, 0, 0);
     rig.focar(alvo, 1e-7, alvo, { rampa: true });
-    rig.apply(cam(), 1, LARGURA_DE_MESA_PX, RAMPA_DO_DEGRAU_S);
+    rig.apply(cam(), 1, LARGURA_DE_MESA_PX, rig.duracaoDaRampa);
     expect(rig.animando).toBe(false);
     rig.focar(alvo, 1e-7, alvo, { rampa: true });
     expect(rig.animando).toBe(false);
