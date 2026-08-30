@@ -261,8 +261,10 @@ export interface QuadroDaTerra {
   jdTdb: number;
   /** a efeméride viva, ou null (retrato congelado — o "sem rede"). */
   fonte: FonteDeEfemerides | null;
-  /** no filme, sem fonte: Terra das 16:00 (`TERRA_PC`), não o retrato
-   *  da meia-noite — senão o pouso mira um globo a 1,7 milhão de km. */
+  /** no filme: a Terra das 16:00 (`TERRA_PC`), não o retrato da
+   *  meia-noite — senão o pouso mira um globo a 1,7 milhão de km. Manda
+   *  sobre a efeméride quando existe (item 108): quem o zera fora do
+   *  filme é o `palco.ts`. */
   centroPinadoPc?: THREE.Vector3;
   camPosPc: THREE.Vector3;
   screenHPx: number;
@@ -414,7 +416,17 @@ export class TerraResolvida {
       saltoDeData = true;
       this.jdEscrito = q.jdTdb;
       this.fonteEscrita = q.fonte;
-      if (!q.fonte && q.centroPinadoPc) {
+      // O PINO MANDA SEMPRE QUE EXISTE (item 108, 30/08). Até aqui ele
+      // valia só SEM efeméride (`!q.fonte`) — e por isso não salvava o
+      // quadro quando o relógio do filme era sequestrado por um `?jd=`
+      // que o próprio app grava na barra de endereços: a fonte estava
+      // viva, na data errada, e a Terra sumia do enquadramento da coda.
+      // Quem decide se o pino existe é o `palco.ts`, que o zera fora do
+      // filme (`noFilme && posto.pinoNoFilme`); aqui basta obedecer.
+      // Consequência declarada: com o pino não há eclipse resolvido — a
+      // posição é a das 16:00 e a sombra fica neutra, que é o que a data
+      // do filme (2026-01-01) tem de verdade.
+      if (q.centroPinadoPc) {
         this.centro.copy(q.centroPinadoPc);
         this.rUA = this.centro.length() / AU_PARA_PC;
         this.sombra.ativo = false;

@@ -471,6 +471,30 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
     lua.dispose();
   });
 
+  it('o pino MANDA sobre a efeméride VIVA — o relógio sequestrado não move a Lua (item 108)', async () => {
+    // O DEFEITO, de 30/08: o pino só valia SEM fonte (`!q.fonte`), e por
+    // isso não salvava o quadro quando um `?jd=` — que o PRÓPRIO app
+    // grava na barra de endereços — punha a efeméride viva na data
+    // errada dentro do filme. A coda mira um lugar pré-computado; é ele
+    // que tem de estar lá. Recolocar o `!q.fonte` reprova aqui.
+    const { lua } = luaDeTeste();
+    const pin = centroPc(JD);
+    const perto = pin.clone();
+    perto.z += RAIO_LUA_PC * 4;
+    lua.atualizar(quadro(perto, { atlasQuente: true }));
+    await flush();
+    // o CONTROLE: com a fonte viva e o relógio um dia adiante, a Lua
+    // anda de verdade — é a magnitude que o pino tem de cancelar
+    const doDiaSeguinte = lua.atualizar(quadro(perto, { jdTdb: JD + 1 })).centroPc.clone();
+    expect(doDiaSeguinte.distanceTo(pin)).toBeGreaterThan(RAIO_LUA_PC * 4);
+    // ...e com o pino, no MESMO relógio errado (outro jd para o cache
+    // por (jd, fonte) recomputar), a Lua está onde a câmera a espera
+    const comPino = lua.atualizar(quadro(perto, { jdTdb: JD + 2, centroPinadoPc: pin }));
+    expect(comPino.centroPc.distanceTo(pin)).toBe(0);
+    expect(Number.isFinite(comPino.rUA)).toBe(true);
+    lua.dispose();
+  });
+
   it('SEM efeméride não há Lua: centro NaN, nunca em quadro, nada inventado', async () => {
     const { lua } = luaDeTeste();
     const perto = centroPc(JD);

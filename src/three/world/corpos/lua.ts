@@ -63,7 +63,10 @@
 // não tem satélites; no Atlas, sem rede, a Lua não nasce (o badge já
 // conta). No FILME, `centroPinadoPc` é `LUA_PC`: a mesma efeméride das
 // 16:00, pré-computada. Sem o pino a câmera raspa um vazio e a Lua
-// desenhada (se chegasse tarde) ficaria 59 mil km ao lado.
+// desenhada (se chegasse tarde) ficaria 59 mil km ao lado. E desde
+// 30/08 (item 108) o pino MANDA sobre a efeméride viva, não só sobre a
+// ausência dela: a coda mira um lugar pré-computado, então é ele que
+// tem de estar lá — qualquer relógio que discorde está errado.
 //
 // SEM PONTO FOTOMÉTRICO, DECLARADO: `IDS_FOTOMETRIA` não tem a Lua —
 // não há aCede a escrever nem crossfade a fazer; o nascimento do mesh
@@ -196,8 +199,9 @@ export interface QuadroDaLua {
   /** a efeméride viva, ou null — e null aqui significa SEM Lua, salvo
    *  `centroPinadoPc` (o vetor da coda do filme). */
   fonte: FonteDeEfemerides | null;
-  /** posição heliocêntrica pinada (pc). Só vale sem fonte: é a coda
-   *  usando `LUA_PC`, não um chute. */
+  /** posição heliocêntrica pinada (pc): a coda usando `LUA_PC`, não um
+   *  chute. MANDA sobre a fonte quando existe (item 108); quem o zera
+   *  fora do filme é o `palco.ts`. */
   centroPinadoPc?: THREE.Vector3;
   camPosPc: THREE.Vector3;
   screenHPx: number;
@@ -297,7 +301,20 @@ export class LuaResolvida {
     ) {
       this.jdEscrito = q.jdTdb;
       this.fonteEscrita = q.fonte;
-      if (q.fonte) {
+      // O PINO MANDA SEMPRE QUE EXISTE, e por isso vem ANTES da fonte
+      // (item 108, 30/08). Até aqui ele era o último recurso — só sem
+      // efeméride —, e por isso não salvava o quadro quando o relógio do
+      // filme era sequestrado por um `?jd=` que o próprio app grava na
+      // barra de endereços: a fonte estava viva, na data errada, e o
+      // raspão da coda passava por onde a Lua não estava. Quem decide se
+      // o pino existe é o `palco.ts`, que o zera fora do filme. Sem
+      // eclipse resolvido, pela mesma razão da Terra: a posição é a das
+      // 16:00 e a sombra fica neutra, que é a verdade daquela data.
+      if (q.centroPinadoPc) {
+        this.centro.copy(q.centroPinadoPc);
+        this.rUA = this.centro.length() / AU_PARA_PC;
+        this.sombra.ativo = false;
+      } else if (q.fonte) {
         // a CADEIA heliocêntrica (Terra + geocêntrica) — a lei de luz
         // exige a distância ao SOL, nunca ao pai (contrato de luz.ts)
         const p = q.fonte.posicaoHeliocentrica('moon', q.jdTdb);
@@ -318,10 +335,6 @@ export class LuaResolvida {
             this.sombra
           );
         }
-      } else if (q.centroPinadoPc) {
-        this.centro.copy(q.centroPinadoPc);
-        this.rUA = this.centro.length() / AU_PARA_PC;
-        this.sombra.ativo = false;
       } else {
         this.rUA = Number.NaN;
         this.centro.set(Number.NaN, Number.NaN, Number.NaN);

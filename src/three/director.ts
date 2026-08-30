@@ -697,14 +697,7 @@ export class Director {
     // "com a porta" desse A/B — ele acende o caminho vivo INTEIRO
     // (busca, decodificação, escrita dos dois atributos) num instante
     // em que o resultado tem de ser o retrato bit a bit.
-    if (this.debug.has('jd')) {
-      const pedido = lerPortaJd(this.debug.get('jd'), EPOCA_JD_TDB);
-      if (pedido === null) console.warn('?jd= inválido:', this.debug.get('jd'));
-      else {
-        this.maquinaDoTempo.jdPedido = pedido;
-        this.maquinaDoTempo.garantirEfemerides();
-      }
-    }
+    this.aplicarPortaJd();
     this.reducedMotion =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1532,6 +1525,29 @@ export class Director {
   // ---- portal do Atlas ---------------------------------------------
 
   /**
+   * A PORTA `?jd=` APLICADA — o instante do céu do ATLAS, e só dele
+   * (item 108, 30/08). Ela é lida em DOIS momentos, e por isso mora
+   * aqui em vez de escrita duas vezes: no boot, e de novo quando o
+   * Atlas abre. A segunda leitura é o que devolve o pino ao relógio
+   * depois de o filme ter corrido na data DELE — sem ela, quem chega ao
+   * Atlas vindo do filme (`t=250&jd=EPOCA`, o trio da prova 3 do
+   * `atlas-smoke`, e o `noCorpoDoSol` da prova 18) chegaria com o
+   * calendário do roteiro em vez do que pediu na URL.
+   *
+   * `garantirEfemerides` é idempotente e abortável: chamar de novo na
+   * entrada não custa byte nenhum.
+   */
+  private aplicarPortaJd() {
+    if (!this.debug.has('jd')) return;
+    const pedido = lerPortaJd(this.debug.get('jd'), EPOCA_JD_TDB);
+    if (pedido === null) console.warn('?jd= inválido:', this.debug.get('jd'));
+    else {
+      this.maquinaDoTempo.jdPedido = pedido;
+      this.maquinaDoTempo.garantirEfemerides();
+    }
+  }
+
+  /**
    * ENTRAR NO ATLAS. Só o pause-look e o deep-link `?atlas=1` chamam
    * isto. Não é travessia física: o véu fecha, a câmera é reposta pelo
    * AtlasRig e o véu abre.
@@ -1631,6 +1647,12 @@ export class Director {
       // declarada: uma captura SEM nenhuma das três nunca vai assentar
       // pelo sinal — e está certo, porque a cena de fato não assenta.
       // Quem fotografa o Atlas pina `&jd=`.
+      //
+      // E O PINO VOLTA AQUI, ANTES da guarda (item 108): o filme corre
+      // na data dele e sobrescreve o `jdPedido` a cada quadro, então a
+      // porta precisa ser reaplicada na entrada — senão o `?jd=` da URL
+      // valeria só até o primeiro quadro de viagem.
+      this.aplicarPortaJd();
       if (
         !this.maquinaDoTempo.aoVivo &&
         !this.debug.has('jd') &&
@@ -2325,9 +2347,20 @@ export class Director {
     // viajasse para 2035 no Atlas e partisse assistia aos atos com os
     // planetas de 2035 e via o relógio saltar sozinho para 2026 na coda,
     // sem nada dizendo. Um relógio só — e dentro do filme ele é do
-    // filme. A porta ?jd= do operador mantém a precedência; sem rede a
-    // fonte não chega e a coda degrada como a Lua: honesta e visível.
-    if (this.phase === 'journey' && !this.debug.has('jd')) {
+    // filme. Sem rede a fonte não chega e a coda degrada como a Lua:
+    // honesta e visível.
+    //
+    // E A PORTA `?jd=` PERDEU A PRECEDÊNCIA AQUI em 30/08 (item 108),
+    // porque ela não é só do operador: o Atlas abre AO VIVO por desenho,
+    // então `naEpoca` é falso sempre e QUALQUER gesto que espelhe a URL
+    // (`urlComMomento`) grava `&jd=` de hoje. Um F5, um link
+    // compartilhado ou uma aba restaurada devolviam esse `?jd=` ao boot
+    // — e a guarda `!this.debug.has('jd')` entregava o relógio do filme
+    // a ele: os corpos na data de hoje, a câmera no roteiro, a Terra a
+    // 263 milhões de km na coda em vez de 34.868. NENHUMA porta de
+    // visitante tira o relógio do filme. O `?jd=` segue mandando no
+    // Atlas — `aplicarPortaJd` o reaplica quando o portal abre.
+    if (this.phase === 'journey') {
       this.maquinaDoTempo.jdPedido = jdDoFilme(this.journeyT);
     }
 

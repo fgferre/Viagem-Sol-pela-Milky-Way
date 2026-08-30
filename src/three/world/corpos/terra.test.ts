@@ -787,6 +787,36 @@ describe('6c. a falha de carga não é sentença (auditoria item 6)', () => {
   });
 });
 
+describe('6d. o pino do filme manda sobre a efeméride (item 108, 30/08)', () => {
+  it('com a fonte VIVA na data errada, a Terra fica onde a coda a espera', async () => {
+    // O DEFEITO: o pino (`TERRA_PC`, as 16:00 do dia do filme) só valia
+    // SEM fonte (`!q.fonte`), e por isso não salvava o quadro quando um
+    // `?jd=` — que o PRÓPRIO app grava na barra de endereços a cada
+    // gesto que espelha a URL — punha a efeméride viva noutra data
+    // dentro do filme. Medido em 30/08: com `?jd=` de +1 dia a Terra
+    // saía do quadro em t=187 e estava a 263 milhões de km na coda, em
+    // vez de 34.868. Recolocar o `!q.fonte` reprova aqui.
+    const { terra } = terraDeTeste();
+    const pin = centroPc(JD);
+    const perto = pin.clone();
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    terra.atualizar(quadro(perto, { atlasQuente: true }));
+    await flush();
+    // o CONTROLE: um dia de relógio move a Terra muito além do próprio
+    // enquadramento — é essa magnitude que o pino tem de cancelar
+    const doDiaSeguinte = terra.atualizar(quadro(perto, { jdTdb: JD + 1 })).centroPc.clone();
+    expect(doDiaSeguinte.distanceTo(pin)).toBeGreaterThan(RAIO_EQ_TERRA_PC * 4);
+    // ...e com o pino, no MESMO relógio errado (outro jd para o cache
+    // por (jd, fonte) recomputar), o globo está no lugar medido
+    const comPino = terra.atualizar(quadro(perto, { jdTdb: JD + 2, centroPinadoPc: pin }));
+    expect(comPino.centroPc.distanceTo(pin)).toBe(0);
+    // e o globo está mesmo LÁ, ao alcance da câmera do pouso — não é um
+    // centro escrito num corpo que o resto do tick ignorou
+    expect(comPino.diametroPx).toBeGreaterThan(0);
+    terra.dispose();
+  });
+});
+
 describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
   it('não tem relógio: o jd é do Director (D-E6)', () => {
     expect(FONTE).not.toContain('Date.now');

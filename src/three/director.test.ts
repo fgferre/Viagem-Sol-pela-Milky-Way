@@ -26,6 +26,8 @@ import {
 } from '../lib/atlas/luzDaVisita';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { lerPortaLuz } from './selo';
+import { JD_DO_FILME_TDB, jdDoFilme } from './cinematic/journey';
+import { EPOCA_JD_TDB } from './world/planetas/retrato2026';
 
 const FONTE = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 // quem tem o canvas e o laço (o listener de contexto perdido mora lá) e
@@ -510,5 +512,81 @@ describe('a beta dos rótulos 3D (item 109): o 2D pinta até o 3D existir', () =
     // a falha não desliga a flag nem mexe em estado: quem mantém o 2D
     // pintando é o gate acima (pintor ausente), sem caso novo
     expect(corpo).not.toContain('rotulos3dLigado = false');
+  });
+});
+
+// ============================================================
+// O RELÓGIO DO FILME É DO FILME (item 108, 30/08).
+//
+// O DEFEITO QUE ESTE BLOCO EXISTE PARA NÃO DEIXAR VOLTAR: o tick do
+// filme escrevia `jdPedido = jdDoFilme(journeyT)` atrás de uma guarda
+// `!this.debug.has('jd')`. A porta parecia do operador — mas o Atlas
+// abre AO VIVO por desenho, então `naEpoca` é falso sempre e QUALQUER
+// gesto que espelhe a URL (`urlComMomento` em `useEspelhoDaUrl.ts`)
+// grava `&jd=` de hoje na barra de endereços. Um F5, um link
+// compartilhado ou uma aba restaurada devolviam esse `?jd=` ao boot, a
+// guarda calava o relógio do roteiro e a coda mirava uma Terra a 263
+// milhões de km em vez de 34.868. Nenhuma porta de visitante tira o
+// relógio do filme.
+//
+// A LINHA REAL É EXECUTADA com um `this` de mentira — o precedente do
+// gate dos rótulos 3D e das portas do harness acima. Recolocar a
+// condição antiga reprova aqui: a linha extraída deixaria de escrever.
+// ============================================================
+describe('o relógio do filme é do filme — a porta ?jd= não o cala (item 108)', () => {
+  // a condição fica no grupo: qualquer guarda que alguém recoloque
+  // entra aqui e vai ser EXECUTADA, não lida
+  const BLOCO = FONTE.match(
+    /\n {4}(if \([^\n]*\) \{\n {6}this\.maquinaDoTempo\.jdPedido = jdDoFilme\(this\.journeyT\);\n {4}\})/
+  );
+
+  /** roda o bloco REAL do tick com a fase, o t e as portas que se quiser */
+  const tick = (phase: string, journeyT: number, portas: [string, string][]) => {
+    const alvo = {
+      phase,
+      journeyT,
+      debug: new Map(portas),
+      maquinaDoTempo: { jdPedido: Number.NaN },
+    };
+    new Function('jdDoFilme', BLOCO![1]).call(alvo, jdDoFilme);
+    return alvo.maquinaDoTempo.jdPedido;
+  };
+
+  it('a varredura acha o bloco — um padrão quebrado passaria calado', () => {
+    expect(BLOCO, 'o tick não escreve mais `jdPedido = jdDoFilme(journeyT)`').not.toBeNull();
+  });
+
+  it('COM ?jd= na URL o filme SEGUE corrigindo o relógio — os dois trechos', () => {
+    // a coda (t=193, o quadro do pouso sobre as Américas) e um ato
+    // qualquer: os dois têm de sair na data do ROTEIRO, não na da porta
+    expect(tick('journey', 193, [['jd', '2465000']])).toBe(JD_DO_FILME_TDB);
+    expect(tick('journey', 40, [['jd', '2465000']])).toBe(EPOCA_JD_TDB);
+  });
+
+  it('...e sem a porta, idêntico — a porta nunca foi a variável', () => {
+    expect(tick('journey', 193, [])).toBe(JD_DO_FILME_TDB);
+    expect(tick('journey', 40, [])).toBe(EPOCA_JD_TDB);
+  });
+
+  it('fora do filme o bloco não escreve nada — o Atlas tem o relógio dele', () => {
+    // o controle que prova que o bloco extraído é código de verdade, com
+    // o gate de fase vivo: se ele escrevesse sempre, o Atlas perderia a
+    // data do visitante no primeiro quadro
+    expect(tick('atlas', 193, [['jd', '2465000']])).toBeNaN();
+    expect(tick('intro', 40, [])).toBeNaN();
+  });
+
+  it('a porta ?jd= volta a mandar quando o ATLAS abre — o pino não morreu', () => {
+    // o outro lado do conserto: o `atlas-smoke` chega ao Atlas VINDO do
+    // filme (`t=250&jd=EPOCA`, prova 3; `noCorpoDoSol`, prova 18) e
+    // precisa do instante que pediu. Sem esta chamada dentro do portal o
+    // `?jd=` valeria só até o primeiro quadro de viagem.
+    const portal = FONTE.slice(
+      FONTE.indexOf('  entrarNoAtlas(opcoes'),
+      FONTE.indexOf('  partirDoAtlas()')
+    );
+    expect(portal).toContain('this.aplicarPortaJd();');
+    // e a porta é LIDA num lugar só, do boot e do portal
+    expect(FONTE.match(/lerPortaJd\(/g)).toHaveLength(1);
   });
 });

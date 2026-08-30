@@ -903,6 +903,64 @@ sempre que existir (`if (q.centroPinadoPc)`, sem o `!q.fonte` — o
 `?jd=` sai do trecho do filme inteiro; o gate novo tem de reprovar
 quando se recoloca a condição antiga.
 
+**CONSERTADO em 30/08 — as duas peças de código, e a lei que elas
+servem: o filme corre sempre na SUA data.** (1) O PINO MANDA SEMPRE QUE
+EXISTE: `terra.ts` e `lua.ts` passaram a obedecer `centroPinadoPc` na
+frente da efeméride viva (na Lua ele subiu para o primeiro ramo), e quem
+decide se o pino existe segue sendo só o `palco.ts`, que o zera fora do
+filme — consequência declarada, sem eclipse resolvido no ramo do pino: a
+posição é a das 16:00 e a sombra fica neutra, que é a verdade de
+2026-01-01. (2) A GUARDA `!this.debug.has('jd')` SAIU DO TICK DO FILME
+INTEIRO. O CENSO que decidiu isso: dos consumidores de `?jd=` durante a
+fase journey, só existem dois, e os dois são o mesmo caso — a prova 3
+(`t=10/100/250` + `jd=EPOCA`) e a prova 18 (`noCorpoDoSol`) do
+`atlas-smoke`, que chegam ao ATLAS vindo do filme e precisam do instante
+que pediram na URL; nenhuma vista de filme do `ab-identidade` leva
+`&jd=`, e `filme-smoke`, `filme-ritmo` e os `voo-*` não conhecem a
+porta. Ou seja: nada legítimo precisa pinar o relógio DENTRO do filme —
+o que os dois juízes precisam é da porta mandando no Atlas. Então o
+`?jd=` é reaplicado quando o portal abre (`aplicarPortaJd`, lida num
+lugar só, do boot e do portal).
+
+**AS GUARDAS (§15 — comportamento, não texto):** três testes novos, e a
+sabotagem de cada um feita pela própria mão, com o defeito exato de
+volta. `director.test.ts` extrai o bloco REAL do tick e o EXECUTA com um
+`this` de mentira: com `debug` contendo `jd`, t=193 tem de escrever
+`JD_DO_FILME_TDB` e t=40 `EPOCA_JD_TDB` (recolocar a guarda → reprova),
+fora do filme não escreve nada, e o portal tem de chamar
+`aplicarPortaJd` (tirar a chamada → reprova). `terra.test.ts` e
+`lua.test.ts` cobram o pino COM a fonte viva num relógio errado, com o
+controle medindo quanto o corpo andaria sem ele (recolocar `!q.fonte` →
+reprovam nos dois).
+
+**A CONTRAPROVA, com número, pela receita da sonda** (rastro
+`capturas/item108-contraprova.json`): boot em `?t=193&shot=2&jd=` de +1
+dia (2026-01-02, o cenário que reprovava), 1200×900, medida no MESMO
+quadro que produziu a foto. A Terra está NO QUADRO, a 0,0° da mira, NDC
+(0,000; 0,000), a **34.868 km** — o valor certo, contra os 263 milhões
+de km da reprodução; `jd` vivo = 2461042,16753588, isto é, o filme
+corrigiu o relógio. Os três casos medidos (sem porta, `?jd=` de +1 dia,
+e a URL que o próprio app grava) dão números IDÊNTICOS: a porta deixou
+de mover o filme. E a foto `capturas/item108-CONSERTADO-t193.png` sai
+**bit-idêntica** (md5 `c6e9c7ad14e4`) à `item108-fim-certo-t193.png`, o
+quadro correto capturado em 29/08.
+
+**A PROVA DE PIXEL, mirada no que mudou** (`capturas/item108-ab-filme.json`):
+as 7 vistas de FILME do `ab-identidade` (`sol`, `interno`, `travessia`,
+`mergulho`, `edgeon`, `faceon`, `fim-do-filme`), antes (árvore em HEAD,
+carimbo `arv-d58c3b0633b1`) × depois (`arv-a312f7931970`) — **BIT-IDÊNTICO
+nas sete**; o par nulo do `fim-do-filme` no lado depois deu o mesmo md5
+duas vezes (`d0cb808b1115`), então a vista nova não passou a tremer.
+
+**O QUE SEGUE ABERTO, e por isso o item NÃO fecha:** o OLHO DELE — só
+ele diz se o fim do filme parou de "não mostrar direito"; e a pergunta
+da LUA no roteiro, que é o parágrafo abaixo e não tem nada com o
+relógio. Fora do escopo desta obra, RELATADO e não executado: o
+`urlComMomento()` continua gravando `&jd=` de hoje em qualquer espelho
+de URL (o Atlas abre ao vivo, `naEpoca` é falso sempre) — o filme agora
+é imune, mas a barra de endereços segue suja, e um link compartilhado
+leva o Atlas de quem o abre para a data de quem o copiou.
+
 **ACHADO INDEPENDENTE da mesma sonda — a Lua, e este é do ROTEIRO, não
 do relógio:** mesmo no caminho CERTO a Lua fica fora do quadro nos
 últimos 6 s (t=187 ela está ATRÁS da câmera, 133,9°; t=193 a 32,9°,
