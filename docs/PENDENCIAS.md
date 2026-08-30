@@ -997,7 +997,21 @@ que o item 112 consertou; **(2)** a primeira observação (a linha
 UX e volta declarada na mesma folha. As fotos de 29/08 são ANTERIORES
 aos consertos do 112 na beta — as novas saem do código atual e
 gravam-se AO LADO (`-v2`), nunca por cima; o olho dele julga a folha
-nova.
+nova. **O AJUSTE POUSOU EM 30/08**, e o caminho foi o do espelho, não o
+do caso especial: o nome 3D passou a nascer na FOLGA do 2D (o
+`RECUO_DO_TEXTO`, 18 px sobre o corpo de 13 — era um espaço de ~4 px, e
+por isso o "S" caía dentro do núcleo) e ganhou o mesmo HALO ESCURO que
+o canvas põe atrás de todo nome (`shadowBlur 7` → contorno com borrão
+no SDF). Medido na abertura: a primeira letra do "SOL" saiu de 1,8:1
+para 12,5:1 de contraste, com a palavra inteira em 15:1. Fotos `-v2` na
+mesa (o par 2D saiu bit-idêntico ao de 29/08, mesmo md5). A linha
+`categoria · distância` FICA FORA do 3D por decisão de UX — texto de
+cena é identidade, o dado mora na ficha e no 2D —, à espera do veto
+dele. **Achado a decidir:** a linha `depthTest = false` do 112 nunca
+chegou a material nenhum (com contorno, o `material` do troika é um
+ARRAY) — o nome sempre foi ocluído pelos globos, e continua sendo; o
+defeito que o 112 quis matar (a casca do próprio corpo engolindo o nome
+em close) segue aberto.
 
 **O VEREDITO DO SPIKE fica como história da medida: NÃO migrar** — obra GRANDE (reimplementar
 colisão + relevância + clique no espaço 3D) por ganho estético parcial
