@@ -638,8 +638,8 @@ preços (EM OBRA); **F2** carimbo de árvore; **F3** captura adaptativa
 + Chrome por balde (exige A/A 61/61 — "navegador limpo por captura" é
 método declarado e a mudança prova bit-identidade antes de valer);
 **F4** MB1 em baldes; **F5** a11y vivo; aposta a MEDIR: a11y em
-q=performance. **DECISÕES DELE (cortes com preço, ~6 min extras,
-nenhuma sem palavra):** (i) cortar 10 fotos de baixo valor do
+q=performance. **DECISÕES DELE — APROVADAS em 30/08 ("ok para
+tudo"): os três cortes entram junto com as fases.** (i) cortar 10 fotos de baixo valor do
 ab-identidade (2,9 min/par); (ii) afinar o MB1 (0,9); (iii)
 filme-ritmo de 2 s→4 s + memoria de 5→3 ciclos + espera da prova
 negativa de 18→10 s (~1,9). Porta 5173: dois vite órfãos de 29/08
