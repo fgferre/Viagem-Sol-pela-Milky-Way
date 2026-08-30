@@ -226,7 +226,10 @@ export class LabelCanvas {
         `|${label.key},${Math.round(label.x * this.width)}` +
         `,${Math.round(label.y * this.height)},${label.opacity.toFixed(2)}` +
         `,${label.prioridade ?? ''},${label.cortadoPelaRegua ? 1 : 0}` +
-        `,${label.dirigido ? 1 : 0},${nome},${detalhe}`;
+        // o modo do desenho entra na assinatura (item 89): a mesma chave
+        // no mesmo pixel como ÍCONE e como TEXTO são quadros diferentes
+        // — sem este bit, ligar/desligar os nomes não repintaria
+        `,${label.dirigido ? 1 : 0},${label.icone ? 1 : 0},${nome},${detalhe}`;
     }
     return assinatura;
   }
@@ -307,6 +310,33 @@ export class LabelCanvas {
         anchorY < this.height * 0.17 * k &&
         anchorX > this.width * (0.62 - 0.38 * (k - 1))
       ) {
+        continue;
+      }
+      // A ENTRADA SÓ-ÍCONE (item 89): um anel discreto na âncora, sem
+      // texto, sem traço e sem disputa de vaga — a caixa dele é pequena
+      // e obedece às MESMAS leis de ocupação (HUD medido e vizinhos).
+      // Passou, está na tela — e portanto é clicável, pela mesma lista
+      // única de sempre (pendência 30).
+      if (label.icone) {
+        const r = 3.5 * k;
+        const caixa: Rect = {
+          left: anchorX - r - 2 * k,
+          right: anchorX + r + 2 * k,
+          top: anchorY - r - 2 * k,
+          bottom: anchorY + r + 2 * k,
+        };
+        if (occupied.some((rect) => intersects(caixa, rect, 2 * k))) continue;
+        occupied.push(caixa);
+        label.desenhado = true;
+        this.desenhadosAntes.add(label.key);
+        ctx.globalAlpha = label.opacity;
+        ctx.strokeStyle = 'rgba(255, 211, 145, 0.72)';
+        ctx.lineWidth = 1.1 * k;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
+        ctx.shadowBlur = 5;
+        ctx.beginPath();
+        ctx.arc(anchorX, anchorY, r, 0, Math.PI * 2);
+        ctx.stroke();
         continue;
       }
       // No céu geral, o lado continua sendo a ÚNICA liberdade. O roteiro

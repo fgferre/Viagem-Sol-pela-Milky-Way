@@ -2717,6 +2717,7 @@ export class Director {
       // a camada "Nomes na tela" (item 82, N2) — lida aqui com as
       // outras dezoito, e entregue pronta ao produtor
       nomesEscondidos: this.hide.has('nonomes'),
+      iconesEscondidos: this.hide.has('noicones'),
     });
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);

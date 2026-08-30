@@ -18,6 +18,9 @@ export interface StarLabel {
   /** 0 = nome próprio, 1 = designação de Bayer. Só ordena a disputa
    *  pelas vagas; o Sol e Sgr A✱ entram como 0. */
   tier?: number;
+  /** entrada SÓ-ÍCONE (item 89): o LabelCanvas desenha um marcador em
+   *  vez do texto, e o clique a lê pela mesma lista dos desenhados. */
+  icone?: boolean;
   /**
    * O que a etiqueta escreve ao lado do nome quando o detalhe NÃO é
    * tipo espectral — os corpos do sistema trazem aqui a classe deles em

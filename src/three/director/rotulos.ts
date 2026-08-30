@@ -60,6 +60,10 @@ export interface QuadroDeRotulos {
    * LIGADA é a régua de relevância.
    */
   nomesEscondidos: boolean;
+  /** a camada de ÍCONES dos corpos (item 89) — separada do texto, como
+   *  no Eyes: com os nomes desligados os corpos mantêm um marcador
+   *  clicável; com as duas desligadas, o silêncio de sempre. */
+  iconesEscondidos: boolean;
 }
 
 /**
@@ -407,9 +411,11 @@ export class Rotulos {
       // anos-luz"), que nem nome de corpo é. O filme é o roteiro dirigindo
       // a cena; uma chave de camada não tem autoridade para emudecê-lo.
       //
-      // O QUE FICA IGUAL: no Atlas e no voo livre, tudo cala — inclusive
-      // o clique, que é decisão declarada e testada. O que muda é só o
-      // FILME, e só a fala dele.
+      // O QUE FICA das ESTRELAS: no Atlas e no voo livre elas calam —
+      // inclusive o clique, decisão declarada e testada. Desde 29/08
+      // (item 89) os CORPOS têm sorte própria, logo abaixo: o ícone é
+      // camada SEPARADA do texto, como no Eyes (Labels ≠ Icons, degrau
+      // D5 do estudo), e o céu limpo continua navegável.
       const roteiro =
         fase === 'journey' && named
           ? this.fios.beatDaViagem()
@@ -417,10 +423,25 @@ export class Rotulos {
       const falados = roteiro
         ? this.forcadosDoBeat(cam, named as NamedStar[], roteiro.target)
         : [];
+      // OS ÍCONES DOS CORPOS (item 89): com os NOMES desligados e a
+      // camada de ícones LIGADA, cada corpo mantém um marcador discreto
+      // e CLICÁVEL na posição dele. A lei do clique não muda de casa: o
+      // ícone entra na MESMA lista dos rótulos desenhados (`alvos`), e
+      // por isso não nasce raycast nenhum — a armadilha herdada do
+      // "raycast antes do primeiro render falha em silêncio" morre no
+      // desenho. Com AS DUAS camadas desligadas, o silêncio de sempre.
+      let icones: StarLabel[] = [];
+      if (!quadro.iconesEscondidos && fase === 'atlas' && planetas?.points.visible) {
+        const corpos = projectCorpos(cam, CORPOS_DO_SISTEMA, planetas.posicoes);
+        const luas = projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo);
+        this.esmaecerLuasColadasNoPai(corpos, luas);
+        icones = [...corpos, ...luas];
+        for (const c of icones) c.icone = true;
+      }
       // a memória da régua não sobrevive: ela não está correndo
       if (this.prevLabelKeys.size > 0) this.prevLabelKeys.clear();
       if (this.prevDesenhados.size > 0) this.prevDesenhados.clear();
-      this.lastLabels = falados;
+      this.lastLabels = [...falados, ...icones];
       this.fios.onLabels(this.lastLabels);
       this.emitDest(roteiro?.dest, cam.position, named);
       this.emitSol(cam.position, fase);

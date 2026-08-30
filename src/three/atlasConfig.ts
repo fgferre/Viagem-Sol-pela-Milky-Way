@@ -141,6 +141,10 @@ export const CAMADAS: readonly Camada[] = [
   { flag: 'nosun', nome: 'Sol', familia: 'Sistema solar', viva: true },
   { flag: 'nomarker', nome: 'Marcador do Sol', familia: 'Sistema solar', viva: true, icone: '⌖' },
   { flag: 'noplan', nome: 'Planetas', familia: 'Sistema solar', viva: true, icone: '◉' },
+  // item 89: o ícone é camada SEPARADA do texto (Eyes: Labels ≠ Icons)
+  // — desligar os nomes deixa o céu limpo E navegável; quem quiser o
+  // silêncio de antes desliga as duas
+  { flag: 'noicones', nome: 'Ícones dos corpos', familia: 'Sistema solar', viva: true, icone: '◎' },
   // O PALCO LOCAL da Onda 6 (F0): os corpos resolvidos — os globos de
   // perto, distintos dos PONTOS fotométricos de `noplan`. Entra vazio
   // nesta fase (nenhum mesh ainda; o toggle não muda pixel até F2),

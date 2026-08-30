@@ -387,11 +387,12 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     expect(naGaveta.map((c) => c.flag).sort()).toEqual(
       CAMADAS.map((c) => c.flag).sort()
     );
-    expect(naGaveta).toHaveLength(19);
+    expect(naGaveta).toHaveLength(20);
     expect(CAMADAS_POR_FAMILIA.map((g) => g.familia)).toEqual(FAMILIAS_DE_CAMADAS);
-    // a quinta do sistema solar é `noorbitas` (item 77); a TERCEIRA das
-    // estrelas é `nonomes` (item 82) — o ponto, o clarão e o nome
-    expect(CAMADAS_POR_FAMILIA.map((g) => g.camadas.length)).toEqual([11, 3, 5]);
+    // a TERCEIRA das estrelas é `nonomes` (item 82); no sistema solar,
+    // `noorbitas` (item 77) e `noicones` (item 89 — o ícone separado do
+    // texto) levam a família a SEIS
+    expect(CAMADAS_POR_FAMILIA.map((g) => g.camadas.length)).toEqual([11, 3, 6]);
   });
 
   it('a família diz o que a flag desliga — as escalas da casa, não a ordem da linha', () => {
@@ -409,7 +410,7 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     // os NOMES entram pela família de onde veio a queixa: a abertura
     // desenhava cinco nomes de corpo e dezessete de estrela (item 82)
     expect(de('nonomes')).toBe('Estrelas');
-    for (const local of ['nosun', 'nomarker', 'noplan', 'nocorpos', 'noorbitas']) {
+    for (const local of ['nosun', 'nomarker', 'noplan', 'noicones', 'nocorpos', 'noorbitas']) {
       expect(de(local), local).toBe('Sistema solar');
     }
   });
@@ -431,8 +432,9 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
   it('cada uma tem rótulo em pt-BR, e o ícone é ornamento de oito delas', () => {
     for (const c of CAMADAS) expect(c.nome.length).toBeGreaterThan(2);
     // o glifo deixou de decidir QUEM entra na gaveta (era o recorte D6)
-    // e voltou a ser o que o nome dele diz. Oito o têm; as outras onze
-    // ficam com a coluna vazia, que é o que alinha os nomes.
+    // e voltou a ser o que o nome dele diz. Nove o têm (o ◎ dos ícones
+    // entrou no item 89); as outras onze ficam com a coluna vazia, que
+    // é o que alinha os nomes.
     const comIcone = CAMADAS.filter((c) => c.icone);
     expect(comIcone.map((c) => c.flag)).toEqual([
       'nobh',
@@ -444,6 +446,8 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
       'noclarao',
       'nomarker',
       'noplan',
+      // item 89: o ◎ dos ícones dos corpos
+      'noicones',
       'nocorpos',
       // item 77: o arco ◜ das linhas de órbita
       'noorbitas',

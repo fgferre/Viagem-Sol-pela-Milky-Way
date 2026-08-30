@@ -891,6 +891,24 @@ render falha **em silêncio** (verificado no fonte do three) — se a
 implementação passar a usar geometria em vez da lista de rótulos, a
 primeira leva de cliques some sem erro nenhum.
 
+**A OBRA POUSOU em 29/08, exatamente pela resposta medida do Eyes:** o
+ícone virou camada SEPARADA (`noicones`, "Ícones dos corpos", família
+Sistema solar, glifo ◎, ligada por padrão). Com os NOMES desligados,
+cada corpo mantém um anel discreto e CLICÁVEL na posição dele; com as
+duas camadas desligadas, o silêncio de sempre; com os nomes ligados, o
+quadro de hoje — nem um pixel do padrão mudou, e nenhum juiz
+re-baselizou. O cuidado herdado foi respeitado por desenho: o ícone
+entra na MESMA lista dos rótulos desenhados (a lei única da pendência
+30) e nenhum raycast nasceu. Guardas novas em `rotulos.test.ts`
+(só-ícone vira alvo; as duas desligadas calam; nomes ligados sem
+entrada só-ícone) — sabotagem pela própria mão mordeu (1 reprova com a
+fiação desligada); pinos da gaveta re-pinados com dente
+(`atlasConfig.test.ts`: 20 camadas, [11,3,6], o ◎ na lista). PROVA no
+navegador: com `nonomes=1` na abertura, **6 alvos clicáveis só-ícone**
+(Sol, Júpiter, Saturno, Urano, Netuno, Plutão) e zero textos. Foto:
+`capturas/item89-ceu-limpo-navegavel.png` — **espera o olho dele para
+fechar**.
+
 **92.** Descer ao corpo de um anão não punha o corpo na tela — e era a
 classe dos oito, não Éris — **FECHADO em 25/08**, conferido por ele na
 SEGUNDA LEVA da Sala de Conferência (**C11**); história no ARQUIVO.
