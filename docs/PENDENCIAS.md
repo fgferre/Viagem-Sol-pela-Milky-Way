@@ -719,49 +719,10 @@ tela retina, é a primeira suspeita. Conferir com o dono na vista
 galáctica antes de mexer.
 
 **59.** Trocar de qualidade não trocava a textura dos corpos já
-carregados — **FECHADO em 31/08**, nas duas fases que o próprio item
-desenhava.
-
-O que o visitante sente agora: com a Terra em close-up, escolher outra
-qualidade **não tira o globo da tela** — a textura nova chega por trás e
-entra num quadro só, nos dois sentidos (alta→cinema e cinema→
-performance). Antes, quem já tinha carregado ficava no alvo de pixels do
-tier velho para sempre, e a única alternativa conhecida (refazer o
-corpo) custava ~2 s de véu.
-
-Como pousou. **F1** — o estado da textura (`texturas`, `recargas`,
-`texturasVivas`) saiu das quatro classes de corpo e mudou de casa para o
-pipeline único: `TexturasDoCorpo`, em `world/corpos/texturas.ts`. O
-corpo declara o pedido uma vez e entrega o `publicar`, que é a única
-parte que é dele. Refatoração pura, −198 linhas nos corpos. **F2** — o
-double-buffer nasceu lá, uma vez: o `tierVivo` diz de que tier são os
-pixels que estão na tela, e quando o seletor discorda dele sai um pedido
-em segundo plano; o corpo segue 'pronta', desenhando os pixels velhos,
-até o lote inteiro chegar. A régua de validade é a GERAÇÃO do pedido
-(três cliques seguidos, só o último vira pixel) e voltar ao tier que já
-está na tela CANCELA em vez de pedir de novo — a mesma lição que o
-`reassarMundo` aprendeu em 21/08. A troca que cai deixa o corpo com os
-pixels que tem, com a política de recarga de sempre e um aviso próprio.
-
-A prova. 10 testes novos de comportamento (7 na peça, 3 de ponta a ponta
-na Terra em close-up, onde o oráculo é o `name` da textura no uniform) e
-**sabotagem em worktree com quatro defeitos recolocados, todos
-reprovando**: o comportamento antigo (8 testes), o véu de volta (7), sem
-a geração (2), a troca sem descartar o lote velho (4). No app VIVO
-(`capturas/item59-troca-tier.json`, com as fotos ao lado e a sonda
-`item59-troca-tier.mjs` que o recomputa): Terra a 472 px de diâmetro,
-**71 e 190 quadros amostrados nas duas travessias, ZERO sem globo**; a
-largura da imagem no uniform vai de 2048 → 8192 → 1024 (o alvo de cada
-tier, lido do `naturalWidth`, não do número que o app diz querer); a
-troca leva 1,4 s e 0,56 s, e a fração de tela clara fica em 0,238 antes,
-durante e depois. A/B das 51 vistas oficiais
-(`capturas/item59-ab-vistas.json`): **bit-idênticas** — a obra muda
-transição, não estado assentado. (`foco-luas` saiu INSTÁVEL no balde da
-leva cheia, com dois md5 no MESMO código novo; isolada, 3 capturas no
-código novo e 3 no antigo deram o mesmo md5 do `antes`.)
-
-Sobra: a história antiga deste item (21/08 e 22/08) ainda não foi para o
-`PENDENCIAS-ARQUIVO.md`, como manda o padrão dos itens 61 e 70.
+carregados — **FECHADO em 31/08**: a troca de tier virou double-buffer no
+pipeline único de texturas — a tela fica com os pixels velhos até o lote
+novo chegar, zero quadros sem globo em 261 amostras nas duas travessias.
+História no ARQUIVO.
 
 **61.** Rever a UI/UX inteira — **FECHADO em 29/08**: a última ponta (a
 vista de abertura) foi julgada por ele na folha
