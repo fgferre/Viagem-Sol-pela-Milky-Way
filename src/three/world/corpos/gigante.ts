@@ -74,18 +74,12 @@ import {
 } from '../../../lib/atlas/eclipse';
 import type { FonteDeEfemerides } from '../planetas/planetas';
 import type { CalibracaoDaCasa } from '../../estrela';
-import {
-  A_MAG_BASE_PC,
-  DESLOCAMENTO_UA_PARA_PC,
-  faseDoVertice,
-  magDoVertice,
-} from '../planetas/planetas';
+import { A_MAG_BASE_PC, DESLOCAMENTO_UA_PARA_PC } from '../planetas/planetas';
 import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RETRATO_2026 } from '../planetas/retrato2026';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
-import { psfPointSizePx } from '../../luzDaCasa';
 import { diametroAparentePx } from './corpos';
-import { cessaoAlvo, gateBinario } from './terra';
+import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
 import { CANAL_MAP, carregarCanaisDoCorpo, estadoAposFalha } from './texturas';
 import type { CanalPedido, EstadoDasTexturas, OpcoesDeTextura } from './texturas';
 import {
@@ -794,17 +788,9 @@ export class GiganteResolvido {
     const base = q.fonte
       ? aMagBaseDe(FOTOMETRIA[this.idCorpo].H, this.rUA) + DESLOCAMENTO_UA_PARA_PC
       : A_MAG_BASE_PC[this.idCorpo];
-    const fase = faseDoVertice(
-      this.centro.x, this.centro.y, this.centro.z,
-      q.camPosPc.x, q.camPosPc.y, q.camPosPc.z
+    const alvo = alvoDaCessaoDoCorpo(
+      base, this.centro, q.camPosPc, dPc, diametroPx, emQuadro, q.psf, q.screenHPx
     );
-    const halo = psfPointSizePx(
-      magDoVertice(base, dPc, fase),
-      q.psf.expoM0,
-      q.psf.sigmaPx,
-      q.screenHPx
-    );
-    const alvo = cessaoAlvo(emQuadro, diametroPx, halo);
     e.cede =
       q.salto || saltoDeData
         ? alvo

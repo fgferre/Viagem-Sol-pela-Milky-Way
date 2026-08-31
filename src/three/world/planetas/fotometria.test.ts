@@ -21,43 +21,57 @@ import { readFileSync } from 'node:fs';
 import { bvToColor } from '../../shaders/common';
 import { catalogApparentMag } from '../lodStellar';
 import { SOL_BV } from '../clarao';
+import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import {
   A_MAG_BASE,
+  BV_LUA,
   BV_SOL,
   COR_SOLAR_LINEAR,
   FOTOMETRIA,
+  IDS_DOS_PONTOS,
   IDS_FOTOMETRIA,
-  DOMINIO_MH18,
+  IDS_SEM_RETRATO,
+  DOMINIO_DA_FASE,
+  VR_LUA,
+  VR_SOL,
   aMagBaseDe,
   betaEfetivoAnel,
-  deltaMagMh18,
+  deltaMagDeFase,
   faseLambertiana,
-  fatorDeFaseMh18,
+  fatorDeFaseDoPonto,
   magAparente,
   magAparenteEstelar,
 } from './fotometria';
 import { IDS_RETRATO, RETRATO_2026 } from './retrato2026';
 
-describe('fotometria — a tabela dos 10', () => {
-  it('cobre o Sol e os nove do retrato, sem sobra e sem falta', () => {
-    expect(Object.keys(FOTOMETRIA)).toEqual([...IDS_FOTOMETRIA]);
+describe('fotometria — a tabela dos pontos', () => {
+  it('cobre o Sol, os nove do retrato e a Lua, sem sobra e sem falta', () => {
+    expect(Object.keys(FOTOMETRIA)).toEqual([...IDS_DOS_PONTOS]);
     expect(IDS_FOTOMETRIA).toHaveLength(10);
     expect(IDS_FOTOMETRIA[0]).toBe('sun');
+    // os dez do retrato são o PREFIXO da lista de vértices — é isso que
+    // mantém certo todo consumidor que indexa por CORPOS_DO_SISTEMA
+    expect(IDS_DOS_PONTOS.slice(0, 10)).toEqual([...IDS_FOTOMETRIA]);
+    expect([...IDS_SEM_RETRATO]).toEqual(['moon']);
+    // e o corpo sem retrato NÃO está no retrato: a camada não pode ter
+    // por onde posicioná-lo sozinha
+    for (const id of IDS_SEM_RETRATO) expect(id in RETRATO_2026).toBe(false);
   });
 
-  it('só o Sol tem lei estelar; os nove planetas têm lei planetária', () => {
+  it('só o Sol tem lei estelar; os nove planetas e a Lua têm planetária', () => {
     expect(FOTOMETRIA.sun.lei).toBe('estelar');
     for (const id of IDS_RETRATO) expect(FOTOMETRIA[id].lei).toBe('planetaria');
+    expect(FOTOMETRIA.moon.lei).toBe('planetaria');
   });
 
   it('o canal V da razão de banda vale 1 em todos — é a normalização', () => {
-    for (const id of IDS_FOTOMETRIA) expect(FOTOMETRIA[id].razaoBanda[1]).toBe(1);
+    for (const id of IDS_DOS_PONTOS) expect(FOTOMETRIA[id].razaoBanda[1]).toBe(1);
   });
 
   it('a cor é o iluminante vezes a razão de banda, e o Sol É o iluminante', () => {
     expect(COR_SOLAR_LINEAR).toEqual(bvToColor(BV_SOL));
     expect(FOTOMETRIA.sun.corLinear).toEqual(COR_SOLAR_LINEAR);
-    for (const id of IDS_FOTOMETRIA) {
+    for (const id of IDS_DOS_PONTOS) {
       const { razaoBanda, corLinear } = FOTOMETRIA[id];
       for (let k = 0; k < 3; k++) {
         expect(corLinear[k]).toBeCloseTo(COR_SOLAR_LINEAR[k] * razaoBanda[k], 15);
@@ -102,6 +116,20 @@ describe('fotometria — a ORDEM dos canais de cor é a física', () => {
     const u = ordem('uranus');
     const n = ordem('neptune');
     expect(n.b / n.r).toBeGreaterThan(u.b / u.r);
+  });
+
+  it('Lua: r > g > b — o regolito maduro é mais vermelho que o Sol', () => {
+    const { r, g, b } = ordem('moon');
+    expect(r).toBeGreaterThan(g);
+    expect(g).toBeGreaterThan(b);
+    // e o (V−R) é DERIVADO do (B−V) pela inclinação [BES90], não
+    // redigitado: refazer a conta aqui é o que impede alguém de trocar
+    // o número por gosto sem trocar a justificativa junto
+    expect(VR_LUA).toBeCloseTo(
+      VR_SOL + (BV_LUA - BV_SOL) * ((0.64 - 0.55) / (0.55 - 0.44)),
+      15
+    );
+    expect(VR_LUA).toBeGreaterThan(VR_SOL); // a Lua avermelha, o Sol é a régua
   });
 
   it('Terra: b > r — o ponto azul pálido, mais azul que o iluminante', () => {
@@ -284,42 +312,79 @@ describe('fotometria — a lei estelar do Sol e o ponto-zero do campo', () => {
 
 describe('fotometria — MH18 (D10, domínio e costura)', () => {
   it('em α=0 e B=0 o fator é 1 (o H da tabela já é V(1,0))', () => {
-    for (const id of Object.keys(DOMINIO_MH18)) {
-      expect(fatorDeFaseMh18(id, 0), id).toBeCloseTo(1, 10);
-      expect(deltaMagMh18(id, 0), id).toBeCloseTo(0, 12);
+    for (const id of Object.keys(DOMINIO_DA_FASE)) {
+      expect(fatorDeFaseDoPonto(id, 0), id).toBeCloseTo(1, 10);
+      expect(deltaMagDeFase(id, 0), id).toBeCloseTo(0, 12);
     }
+  });
+
+  it('a Lua é a única linha NÃO-MH18 com domínio: [ALLEN76] até 150°', () => {
+    expect(DOMINIO_DA_FASE.moon).toBe(150);
+    expect(deltaMagDeFase('moon', 10)).toBeCloseTo(0.026 * 10 + 4e-9 * 10 ** 4, 12);
+    expect(deltaMagDeFase('moon', 90)).toBeCloseTo(0.026 * 90 + 4e-9 * 90 ** 4, 12);
+  });
+
+  /**
+   * O ORÁCULO QUE PROVA QUE O H DA LUA NÃO FOI INVENTADO: a tabela
+   * publica V(1,0) = +0,21 e a lei publica V = −12,73 + fase para o
+   * disco cheio à distância geocêntrica MÉDIA. São o MESMO número dito
+   * de dois jeitos, e re-referenciar um no outro tem de fechar. A
+   * distância média (384.400 km) mora AQUI, no juiz — pô-la no módulo
+   * seria um segundo número de Lua para divergir em silêncio.
+   */
+  it('H da Lua e a lei de fase fecham com a magnitude da Lua cheia (≤ 0,02 mag)', () => {
+    const DIST_MEDIA_UA = 384_400 / AU_KM;
+    // m = H + 5·log10(r_UA) + 5·log10(d_UA) − 2,5·log10(Φ), com o Sol a
+    // 1 UA da Lua, α = 0 e Φ = 1
+    const cheia = magAparente(aMagBaseDe(FOTOMETRIA.moon.H, 1), DIST_MEDIA_UA, 1);
+    expect(cheia).toBeCloseTo(-12.73, 1);
+    expect(Math.abs(cheia - -12.73)).toBeLessThan(0.02);
+  });
+
+  /**
+   * E O ORÁCULO QUE PROVA QUE LAMBERT NÃO SERVIRIA — a razão de a Lua
+   * ter lei própria em vez de cair no fallback. No quarto a Lua real é
+   * ~5,5× mais fraca do que a esfera difusora ideal prevê: é o surto de
+   * oposição do regolito, o mesmo fato que o globo dela já respeita por
+   * Lommel-Seeliger.
+   */
+  it('no quarto (α = 90°) a Lua real é MUITO mais fraca que Lambert', () => {
+    const a90 = Math.PI / 2;
+    const phi = fatorDeFaseDoPonto('moon', a90);
+    expect(phi).toBeCloseTo(0.091, 3);
+    expect(phi).toBeLessThan(faseLambertiana(a90) / 5);
   });
 
   it('Plutão e o Sol não têm MH18: devolvem Lambert', () => {
     const a = Math.PI / 3;
-    expect(fatorDeFaseMh18('pluto', a)).toBeCloseTo(faseLambertiana(a), 12);
-    expect(fatorDeFaseMh18('sun', a)).toBeCloseTo(faseLambertiana(a), 12);
+    expect(fatorDeFaseDoPonto('pluto', a)).toBeCloseTo(faseLambertiana(a), 12);
+    expect(fatorDeFaseDoPonto('sun', a)).toBeCloseTo(faseLambertiana(a), 12);
   });
 
   it('na borda do domínio a emenda é C0 — razão pinada', () => {
-    for (const [id, teto] of Object.entries(DOMINIO_MH18)) {
+    for (const [id, teto] of Object.entries(DOMINIO_DA_FASE)) {
       const aRad = (teto * Math.PI) / 180;
-      const dentro = fatorDeFaseMh18(id, aRad - 1e-9);
-      const fora = fatorDeFaseMh18(id, aRad + 1e-9);
+      const dentro = fatorDeFaseDoPonto(id, aRad - 1e-9);
+      const fora = fatorDeFaseDoPonto(id, aRad + 1e-9);
       expect(Math.abs(dentro - fora), id).toBeLessThan(1e-6);
     }
   });
 
   it('Saturno: o termo de anel move o fator com B, mesmo em α=0', () => {
-    const semAnel = fatorDeFaseMh18('saturn', 0, 0);
-    const comAnel = fatorDeFaseMh18('saturn', 0, 0.3);
+    const semAnel = fatorDeFaseDoPonto('saturn', 0, 0);
+    const comAnel = fatorDeFaseDoPonto('saturn', 0, 0.3);
     expect(semAnel).toBeCloseTo(1, 10);
     expect(comAnel).not.toBeCloseTo(1, 2);
   });
 
   it('Mercúrio no domínio é mais escuro que Lambert (regolito, não esfera lisa)', () => {
     const a = (30 * Math.PI) / 180;
-    expect(fatorDeFaseMh18('mercury', a)).toBeLessThan(faseLambertiana(a));
+    expect(fatorDeFaseDoPonto('mercury', a)).toBeLessThan(faseLambertiana(a));
   });
 
   it('os coeficientes do paper estão pinados — ×10 num termo reprova', () => {
     // cada esperado é a equação do paper escrita AQUI, não a função
-    expect(deltaMagMh18('mercury', 10)).toBeCloseTo(
+    expect(deltaMagDeFase('mercury', 10)).toBeCloseTo(
       6.328e-2 * 10 -
         1.6336e-3 * 100 +
         3.3644e-5 * 1000 -
@@ -328,25 +393,25 @@ describe('fotometria — MH18 (D10, domínio e costura)', () => {
         3.0334e-12 * 1_000_000,
       12
     );
-    expect(deltaMagMh18('venus', 10)).toBeCloseTo(
+    expect(deltaMagDeFase('venus', 10)).toBeCloseTo(
       -1.044e-3 * 10 + 3.687e-4 * 100 - 2.814e-6 * 1000 + 8.938e-9 * 10_000,
       12
     );
-    expect(deltaMagMh18('earth', 10)).toBeCloseTo(-1.06e-3 * 10 + 2.054e-4 * 100, 12);
-    expect(deltaMagMh18('mars', 10)).toBeCloseTo(2.267e-2 * 10 - 1.302e-4 * 100, 12);
-    expect(deltaMagMh18('jupiter', 10)).toBeCloseTo(-3.7e-4 * 10 + 6.16e-4 * 100, 12);
-    expect(deltaMagMh18('saturn', 10, 0)).toBeCloseTo(0.026 * 10, 12);
-    expect(deltaMagMh18('uranus', 10)).toBeCloseTo(6.587e-3 * 10 + 1.049e-4 * 100, 12);
+    expect(deltaMagDeFase('earth', 10)).toBeCloseTo(-1.06e-3 * 10 + 2.054e-4 * 100, 12);
+    expect(deltaMagDeFase('mars', 10)).toBeCloseTo(2.267e-2 * 10 - 1.302e-4 * 100, 12);
+    expect(deltaMagDeFase('jupiter', 10)).toBeCloseTo(-3.7e-4 * 10 + 6.16e-4 * 100, 12);
+    expect(deltaMagDeFase('saturn', 10, 0)).toBeCloseTo(0.026 * 10, 12);
+    expect(deltaMagDeFase('uranus', 10)).toBeCloseTo(6.587e-3 * 10 + 1.049e-4 * 100, 12);
     // [MH18] Eq. 17 — sem isto Netuno devolve 0 e o ponto dobra de brilho
-    expect(deltaMagMh18('neptune', 10)).toBeCloseTo(7.944e-3 * 10 + 9.617e-5 * 100, 12);
-    expect(deltaMagMh18('neptune', 90)).toBeCloseTo(7.944e-3 * 90 + 9.617e-5 * 8100, 12);
+    expect(deltaMagDeFase('neptune', 10)).toBeCloseTo(7.944e-3 * 10 + 9.617e-5 * 100, 12);
+    expect(deltaMagDeFase('neptune', 90)).toBeCloseTo(7.944e-3 * 90 + 9.617e-5 * 8100, 12);
   });
 
   it('o domínio de Urano/Netuno é o da equação, não o α visto da Terra', () => {
-    expect(DOMINIO_MH18.uranus).toBe(154);
-    expect(DOMINIO_MH18.neptune).toBe(133);
+    expect(DOMINIO_DA_FASE.uranus).toBe(154);
+    expect(DOMINIO_DA_FASE.neptune).toBe(133);
     const a90 = Math.PI / 2;
-    expect(fatorDeFaseMh18('neptune', a90)).toBeLessThan(faseLambertiana(a90) * 0.7);
+    expect(fatorDeFaseDoPonto('neptune', a90)).toBeLessThan(faseLambertiana(a90) * 0.7);
   });
 
   it('Saturno: β efetiva é √(βE βS) de mesmo sinal, senão 0 [MH18] Eq. 10', () => {
@@ -369,11 +434,13 @@ describe('fotometria — texto-fonte (D1, anti-relógio e fonte por linha)', () 
   });
 
   it('cada corpo carrega fonte citada, e a política de domínio MH18 está dita', () => {
-    for (const marca of ['[MH18]', '[MKP17]', '[R12]', '[SBDB]', '[RBF94]']) {
+    for (const marca of [
+      '[MH18]', '[MKP17]', '[R12]', '[SBDB]', '[RBF94]', '[ALLEN76]', '[BES90]',
+    ]) {
       expect(fonte).toContain(marca);
     }
     expect(fonte).toContain('emenda');
     expect(fonte).toContain('costura');
-    expect(fonte).toContain('DOMINIO_MH18');
+    expect(fonte).toContain('DOMINIO_DA_FASE');
   });
 });

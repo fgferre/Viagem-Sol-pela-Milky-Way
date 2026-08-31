@@ -43,7 +43,19 @@ import {
   ganhoDoGlobo,
 } from '../../../lib/atlas/luzDaVisita';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
+import {
+  BETA_EMISSAO,
+  EXPO_M0,
+  SIGMA_PX,
+  picoDaPsf,
+  psfPointSizePx,
+} from '../../luzDaCasa';
 import { EPOCA_JD_TDB } from '../planetas/retrato2026';
+import { Planetas, magDoVertice } from '../planetas/planetas';
+import { IDS_DOS_PONTOS } from '../planetas/fotometria';
+import { JD_DO_FILME_TDB, LUA_PC } from '../../cinematic/journey';
+import { passoDoPalco, quadroDoPalcoVazio } from '../../director/palco';
+import type { PostoNoPalco } from '../../director/palco';
 import {
   LS_NORMALIZACAO,
   LS_NORMALIZACAO_GLSL,
@@ -245,6 +257,11 @@ function luaDeTeste() {
   return { lua, chamadas };
 }
 
+/** O INSTRUMENTO DA CASA, importado e não redigitado — é ele que o
+ *  Director entrega ao quadro (`CALIBRACAO_DA_CASA`), e o halo do ponto
+ *  da Lua sai dele. */
+const PSF = { expoM0: EXPO_M0, sigmaPx: SIGMA_PX, beta: BETA_EMISSAO } as const;
+
 /** centro da Lua em pc na cena, pelo mesmo caminho do módulo. */
 function centroPc(jd: number): THREE.Vector3 {
   const p = motor.posicaoHeliocentrica('moon', jd);
@@ -262,6 +279,10 @@ function quadro(camPosPc: THREE.Vector3, extra: Partial<Parameters<LuaResolvida[
     ligado: true,
     atlasQuente: false,
     politica: 'assistida' as const,
+    // o instrumento e o relógio da cessão do ponto (item 108)
+    dtS: 1 / 60,
+    psf: PSF,
+    salto: false,
     ...extra,
   };
 }
@@ -590,6 +611,12 @@ describe('5. texto-fonte de lua.ts e do shader montado (as leis pinadas)', () =>
     expect(FONTE).not.toContain('1737');
   });
 
+  it('o cabeçalho não promete mais o que já entregou (o ponto da Lua)', () => {
+    expect(FONTE).not.toContain('SEM PONTO FOTOMÉTRICO');
+    expect(FONTE).toContain('alvoDaCessaoDoCorpo(');
+    expect(FONTE).toContain('FOTOMETRIA.moon.H');
+  });
+
   it('o needle do eclipse (F2c/D3): o chunk da lib, MONTADO, multiplica SÓ a direta', () => {
     // a lição do chunk renomeado: lê-se o shader montado, não o texto-fonte
     expect(LUA_FRAG).toContain('vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo)');
@@ -606,4 +633,165 @@ describe('5. texto-fonte de lua.ts e do shader montado (as leis pinadas)', () =>
     expect(LUA_FRAG).toContain('luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam, sombras))');
   });
 
+});
+
+// ============================================================
+// 6. A ORDEM FOTOMÉTRICA DO CÉU (item 108, a terceira perna)
+//
+// O juiz que trava o que o olho do dono viu quebrado: no quadro final
+// do filme a Lua tem de ser a fonte mais viva do céu depois da Terra —
+// acima de TODA estrela de fundo, em pico e em fluxo. Antes desta obra
+// o pico dela era 148 de 255 contra dez estrelas entre 166 e 244
+// (`capturas/item108-lua-fotometria.json`), porque a Lua não tinha
+// ponto fotométrico: o globo é exposto "para si" e não carrega o fluxo
+// verdadeiro de um disco de dez pixels.
+//
+// A RÉGUA DA COMPARAÇÃO É SIRIUS (V = −1,46), a estrela mais brilhante
+// do céu inteiro. Bater Sirius é bater qualquer estrela de fundo, em
+// qualquer quadro — é a forma mais forte da afirmação e a única que não
+// depende de qual estrela caiu naquele recorte.
+//
+// E ELE MEDE COMPORTAMENTO, não texto: roda o `passoDoPalco` DE
+// VERDADE contra uma `Planetas` de verdade. Apagar a publicação do
+// lugar do ponto (`escreverPontoDeCorpo`) deixa o vértice na origem e o
+// primeiro `expect` cai; apagar a cessão (`escreverCessao`) deixa o
+// `aCede` no 1 de nascimento e o segundo cai; errar o H ou a lei de
+// fase derruba o terceiro e o quarto.
+// ============================================================
+describe('6. a ordem fotométrica — o ponto da Lua no fim do filme', () => {
+  /** o quadro final MEDIDO: câmera, fov e altura de
+   *  `capturas/item108-fim-wide-medidas.json` (t=193, 1920×993). */
+  const CAM_T193 = new THREE.Vector3(
+    -9.003307607805455e-7, 0.000004294125917834365, 0.0000018618398447841702
+  );
+  const FOV_T193 = 52;
+  const ALTURA_T193 = 993;
+  /** V de Sirius, a estrela mais brilhante do céu. */
+  const M_SIRIUS = -1.46;
+
+  function luaNoQuadroFinal(
+    camPosPc: THREE.Vector3,
+    lua = luaDeTeste().lua,
+    screenHPx = ALTURA_T193
+  ) {
+    const planetas = new Planetas(PSF);
+    const posto: PostoNoPalco = {
+      corpo: lua,
+      id: 'moon',
+      // os traços da Lua, como `montarCorposDoPalco` os declara (o pino
+      // das 16:00, ponto sim, retrato não)
+      pinoNoFilme: LUA_PC,
+      temPonto: true,
+      temRetrato: false,
+      rotuloDeLua: true,
+      emQuadroAntes: false,
+      carregavaAntes: false,
+      carregando: false,
+      friaNoGate: false,
+    };
+    const q = quadroDoPalcoVazio();
+    q.jdTdb = JD_DO_FILME_TDB;
+    q.fonte = motor as unknown as typeof q.fonte;
+    q.camPosPc = camPosPc;
+    q.screenHPx = screenHPx;
+    q.fovDeg = FOV_T193;
+    q.ligado = true;
+    q.psf = PSF;
+    q.salto = true;
+    passoDoPalco([posto], q, {
+      palco: { registrar() {}, remover() {} } as unknown as Parameters<typeof passoDoPalco>[2]['palco'],
+      planetas,
+      rotulos: { escreverPosicaoDeLua() {} } as unknown as Parameters<typeof passoDoPalco>[2]['rotulos'],
+      efemeride: motor,
+      noFilme: true,
+      preAquecer: () => false,
+      perturbar: () => {},
+    });
+    // o quadro da camada, DEPOIS do palco — é ele que escreve o Φ de
+    // cada ponto a partir da posição que a Lua acabou de publicar. Sem
+    // esta linha o juiz mediria uma Lua CHEIA que não existe naquele
+    // instante (o arremate a pega gibosa), e o número sairia otimista.
+    planetas.update(screenHPx, camPosPc);
+    const geo = planetas.points.geometry;
+    const i = (IDS_DOS_PONTOS as readonly string[]).indexOf('moon');
+    const pos = geo.getAttribute('position');
+    const centro = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+    const m = magDoVertice(
+      geo.getAttribute('aMagBase').getX(i),
+      camPosPc.distanceTo(centro),
+      geo.getAttribute('aFase').getX(i)
+    );
+    return { centro, cede: geo.getAttribute('aCede').getX(i), m, planetas, lua };
+  }
+
+  it('a Lua bate Sirius no quadro final — em pico E em fluxo integrado', () => {
+    const { centro, cede, m, planetas, lua } = luaNoQuadroFinal(CAM_T193);
+
+    // 1. o LUGAR do ponto é o do globo: o PINO das 16:00, não um
+    //    segundo lugar que a camada tenha inventado por efeméride. Bit a
+    //    bit no float32 do buffer — é o mais forte que a régua permite
+    expect(centro.x).toBe(Math.fround(LUA_PC.x));
+    expect(centro.y).toBe(Math.fround(LUA_PC.y));
+    expect(centro.z).toBe(Math.fround(LUA_PC.z));
+
+    // 2. o ponto está ACESO: o disco de ~10 px ainda não domina o halo
+    expect(cede).toBe(0);
+
+    // 3. e é a Lua GIBOSA do arremate, a 389 mil km: magnitude de −12
+    //    (o Φ de [ALLEN76] naquele ângulo de fase já está dentro)
+    expect(m).toBeLessThan(-12);
+
+    // 4. PICO e FLUXO acima de Sirius, e não por pouco
+    const picoLua = picoDaPsf(m, PSF.expoM0, PSF.sigmaPx, ALTURA_T193);
+    const picoSirius = picoDaPsf(M_SIRIUS, PSF.expoM0, PSF.sigmaPx, ALTURA_T193);
+    expect(picoLua / picoSirius).toBeGreaterThan(1e4);
+    // o fluxo integrado é a mesma razão (a PSF conserva o fluxo por
+    // construção): as duas afirmações do critério, medidas
+    const fluxo = (mag: number) => 10 ** (-0.4 * (mag - PSF.expoM0));
+    expect(fluxo(m) / fluxo(M_SIRIUS)).toBeGreaterThan(1e4);
+
+    // 5. e o sprite dele CABE no disco: o clarão não é uma bola que
+    //    engole a Terra ao lado — poucas dezenas de pixels
+    expect(psfPointSizePx(m, PSF.expoM0, PSF.sigmaPx, ALTURA_T193)).toBeLessThan(40);
+
+    planetas.dispose();
+    lua.dispose();
+  });
+
+  it('de perto o ponto SE APAGA: o globo carrega o fluxo sozinho', async () => {
+    // a câmera a 20 raios lunares — o disco domina o halo com folga. E
+    // o globo tem de estar EM QUADRO: mesh fora de quadro não domina
+    // nada e o ponto fica inteiro (é o `cessaoAlvo` de sempre), então a
+    // textura precisa ter chegado — a carga injetada faz isso.
+    const perto = LUA_PC.clone().addScaledVector(
+      CAM_T193.clone().sub(LUA_PC).normalize(), 20 * RAIO_LUA_PC
+    );
+    const { lua } = luaDeTeste();
+    luaNoQuadroFinal(perto, lua).planetas.dispose(); // arma o gate e dispara a carga
+    await flush();
+    const { cede, planetas } = luaNoQuadroFinal(perto, lua);
+    expect(cede).toBe(1);
+    planetas.dispose();
+    lua.dispose();
+  });
+
+  it('sem lugar não há ponto: a Lua sem efeméride e sem pino fica MUDA', () => {
+    const planetas = new Planetas(PSF);
+    const lua = new LuaResolvida({ tier: () => 'cinema', maxTextureSize: 16384, base: '' });
+    const e = lua.atualizar(
+      quadro(CAM_T193, { fonte: null, centroPinadoPc: undefined, jdTdb: JD_DO_FILME_TDB })
+    );
+    expect(e.cede).toBe(1);
+    // e o vértice nasce com o MESMO 1 na camada: os dois lados combinam
+    const i = (IDS_DOS_PONTOS as readonly string[]).indexOf('moon');
+    expect(planetas.points.geometry.getAttribute('aCede').getX(i)).toBe(1);
+    // escrever um centro NaN não move um bit do buffer
+    expect(
+      planetas.escreverPontoDeCorpo(
+        'moon', new THREE.Vector3(Number.NaN, Number.NaN, Number.NaN)
+      )
+    ).toBe(false);
+    planetas.dispose();
+    lua.dispose();
+  });
 });

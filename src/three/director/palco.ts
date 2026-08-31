@@ -12,11 +12,13 @@
 //  - `pinoNoFilme`: o centro pré-computado das 16:00 que a CODA usa
 //    (Terra e Lua têm; o resto do sistema não aparece no filme);
 //  - `temPonto`: o corpo tem ponto fotométrico na camada `planetas` e
-//    por isso recebe a cessão suave (as luas não têm — `IDS_FOTOMETRIA`
-//    não as conhece);
+//    por isso recebe a cessão suave (os dez do retrato desde a Onda 4;
+//    a LUA desde 30/08, item 108 — as outras luas ainda não);
 //  - `temRetrato`: o corpo EXISTE sem efeméride (planeta cai no retrato
 //    congelado; lua, não) — é o que separa "textura que falhou" de
-//    "corpo que por contrato não está aí" no fallback frio;
+//    "corpo que por contrato não está aí" no fallback frio; e, desde o
+//    item 108, é também o que decide QUEM POSICIONA O PONTO: corpo com
+//    ponto e SEM retrato publica o próprio centro na camada;
 //  - `rotuloDeLua`: publica a posição viva para o rótulo (as luas, que
 //    não têm ponto na camada para o `projectCorpos` seguir).
 //
@@ -61,10 +63,10 @@ export function quadroDoPalcoVazio(): QuadroDoPalco {
 }
 
 /**
- * O que o laço LÊ do estado devolvido. `cede` e `emRampa` são opcionais
- * porque a Lua não tem ponto para ceder — e `emRampa` ausente é
- * `undefined`, que não perturba a captura, exatamente como o laço da
- * Lua fazia por omissão.
+ * O que o laço LÊ do estado devolvido. `cede` e `emRampa` seguem
+ * opcionais porque nem todo corpo do palco tem ponto (as luas rochosas,
+ * os anões e os asteroides não têm) — `emRampa` ausente é `undefined`,
+ * que não perturba a captura.
  */
 export interface EstadoNoPalco {
   emQuadro: boolean;
@@ -153,8 +155,15 @@ export function passoDoPalco(
     else palco.remover(posto.id);
 
     // a cessão SUAVE (F2b/D5): reafirmada TODO quadro — a escrita é
-    // idempotente (`gravar`), então reafirmar não sobe upload
-    if (posto.temPonto) planetas?.escreverCessao(posto.id, e.cede ?? 0);
+    // idempotente (`gravar`), então reafirmar não sobe upload. E o
+    // corpo SEM retrato (a Lua, item 108) publica antes o LUGAR do
+    // ponto: a camada não tem efeméride de lua, e mesmo que tivesse ela
+    // não conhece o pino das 16:00 que a coda mira — duas fontes de
+    // posição para o mesmo corpo põem o ponto ao lado do globo.
+    if (posto.temPonto) {
+      if (!posto.temRetrato) planetas?.escreverPontoDeCorpo(posto.id, e.centroPc);
+      planetas?.escreverCessao(posto.id, e.cede ?? 0);
+    }
 
     posto.carregando = e.carregando;
     // o FALLBACK FRIO (item 5b): gate armado, camada ligada e nem

@@ -171,18 +171,29 @@ describe('a fiação de um posto do palco no Director (a da Lua)', () => {
     expect(CARREGAMENTO).toContain(
       "new LuaResolvida({ tier, maxTextureSize, base }), 'moon'"
     );
-    // sem ponto fotométrico na camada (não há cessão a escrever), sem
-    // retrato congelado (sem efeméride ela não existe — e o fallback frio
-    // não pode segurar a captura por isso) e COM rótulo próprio; o pino
-    // das 16:00 é o que a coda mira
+    // COM ponto fotométrico desde 30/08 (item 108 — a cessão dela é
+    // escrita como a das irmãs), SEM retrato congelado (sem efeméride
+    // ela não existe — e o fallback frio não pode segurar a captura por
+    // isso) e COM rótulo próprio; o pino das 16:00 é o que a coda mira
     const tracos = CARREGAMENTO.slice(
       CARREGAMENTO.indexOf("'moon'"),
       CARREGAMENTO.indexOf('const rochosos')
     );
     expect(tracos).toContain('pinoNoFilme: LUA_PC');
-    expect(tracos).toContain('temPonto: false');
+    expect(tracos).toContain('temPonto: true');
     expect(tracos).toContain('temRetrato: false');
     expect(tracos).toContain('rotuloDeLua: true');
+  });
+
+  it('corpo com ponto e SEM retrato publica o PRÓPRIO lugar na camada', () => {
+    // o par (temPonto, temRetrato) é o que decide quem posiciona o
+    // ponto — e a Lua é o único corpo em que os dois discordam. O
+    // comportamento tem juiz próprio (`world/corpos/lua.test.ts`, §6,
+    // que roda o `passoDoPalco` de verdade); aqui fica a cravação de
+    // que a decisão mora no palco e é feita por esse par.
+    expect(PALCO).toContain(
+      'if (!posto.temRetrato) planetas?.escreverPontoDeCorpo(posto.id, e.centroPc);'
+    );
   });
 
   it('o palco registra e remove a superfície pelo posto — o corpo não conhece o palco', () => {

@@ -1104,11 +1104,123 @@ estrela do fundo), como LEI do desenho e não gambiarra do filme; é o
 mesmo vão que o canal dormente `aFocus` (item 38) existe para fechar
 no sentido inverso.
 
-**O QUE SEGUE ABERTO no item:** a obra da fotometria acima, e depois o
-OLHO DELE de novo — se o fim parou de "não mostrar direito". A
-distância da Lua no último quadro (~0,51° de diâmetro) é a máxima que
-a trajetória aprovada permite; o que muda agora é o BRILHO, não o
-tamanho.
+**A OBRA DA FOTOMETRIA POUSOU EM 31/08, e o conserto é LEI, não um `if`
+do fim do filme: a Lua ganhou o PONTO FOTOMÉTRICO que nunca teve.**
+
+**O MECANISMO, achado antes de mexer.** O globo e o ponto vivem em
+unidades diferentes e só se encontram num crossfade. O globo é exposto
+*para si* (`luzDaVisita.ts`, Sol = 1 — a fotografia da visita que ele
+escolheu no item 93), e nessa régua a superfície da Lua vale o albedo
+dela, ~0,12, esteja onde estiver: por isso o pico 148. O ponto é
+normalizado por `EXPO_M0`, que é a régua em que a estrela vive — e o
+ponto CEDE (`aCede`, a rampa `cessaoPorDominancia`) só quando o disco
+cresce o bastante para carregar o fluxo sozinho. A régua do palco já
+prometia isso por escrito em `corpos.ts`: *"abaixo de 4 px um globo
+texturizado não comunica nada que o ponto fotométrico já não comunique
+— e o ponto tem a fotometria certa"*. Para a Lua a promessa era vazia:
+`IDS_FOTOMETRIA` não a conhecia, e o próprio cabeçalho de `lua.ts`
+declarava o vão ("SEM PONTO FOTOMÉTRICO... pendência nomeada para
+F8/Onda 7"). Corpo resolvido PEQUENO caía entre as duas réguas.
+**Consertar pelo lado do globo era impossível, e o número diz por quê:**
+na régua de tela a superfície da Lua ali vale ~3,5e4 e a da Terra ao
+lado ~1e5 — acima do teto do half-float do composer (65.504). Quem
+carrega fluxo grande em pouco pixel é o ponto, que tem a compressão na
+emissão da Lei §7; o globo não tem e não deve ter.
+
+**A DOSE: NENHUMA.** Não há rampa nova, não há assistência a declarar
+no selo, não há ramo de filme. A Lua entrou na camada de pontos como
+os outros dez, com a lei publicada dela — V(1,0) = +0,21 e a fase
+`V = −12,73 + 0,026·|α| + 4e−9·α⁴` de [ALLEN76] —, e cede pela MESMA
+curva das irmãs. Lambert não serviria e o teste mede: no quarto a Lua
+real vale Φ = 0,091 contra 0,50 de uma esfera difusora (5,5× de erro —
+o surto de oposição do regolito, o mesmo fato que o globo já respeita
+por Lommel-Seeliger). A cor sai dos índices do disco cheio, com o
+(V−R) **derivado** do (B−V) pela inclinação espectral [BES90] em vez
+de um segundo número copiado sem fonte.
+
+**ONDE MORA.** `world/planetas/fotometria.ts` (a linha da Lua, a lei de
+fase e o despachante, que deixou de se chamar `fatorDeFaseMh18` no
+commit em que passou a servir três leis); `world/planetas/planetas.ts`
+(o 11º vértice, `IDS_DOS_PONTOS`, e o `escreverPontoDeCorpo`);
+`corpos/lua.ts` (a cessão); `director/palco.ts` (o par
+`temPonto && !temRetrato` decide quem publica o LUGAR do ponto — e o
+lugar é o do globo, com o pino das 16:00 dentro, porque duas fontes de
+posição para o mesmo corpo foi exatamente o defeito da 2ª perna). O
+bloco da cessão, que era cópia idêntica em Terra/rochoso/gigante e ia
+virar a quarta, virou `alvoDaCessaoDoCorpo` em `terra.ts`.
+
+**OS NÚMEROS, medidos** (`capturas/item108-lua-ponto-fotometria-v2.json`,
+mesmo método PIL do rastro anterior, nos dois lados):
+
+| | pico da Lua | fluxo integrado | maior do fundo |
+|---|---|---|---|
+| antes | **148** | 8.623 | **230** |
+| depois | **245** | **90.226** | 230 |
+
+A Lua sai de PERDER para sete estrelas para ser a fonte mais viva do
+céu depois da Terra: pico acima de todas e fluxo **19,8×** o da estrela
+mais brilhante do quadro. O campo estelar não se mexeu um bit (as dez
+maiores do fundo são as MESMAS nos dois lados). No app a linha do
+`?dbgplan` fecha a conta: `moon … m = −12,16 · E = 1,84e6 · pico
+4,79e5` com o disco em 9,1 px e `aCede = 0`. Fotos AO LADO:
+`capturas/item108-lua-ponto-t193.png` (1920, o quadro novo) contra
+`item108-fim-wide-t193.png` (o velho), e o par de zooms
+`item108-lua-zoom-antes.png` × `-depois.png`.
+
+**O RAIO DA EXPLOSÃO, vista a vista** (leva CHEIA do `ab-identidade`,
+`antes` no HEAD `87793dd` × `depois` na árvore da obra; **46 das 51
+bit-idênticas**). As cinco que mudaram, com o diff de pixel de cada uma:
+
+- **`fim-do-filme`** — 6.930 px, todos GANHANDO luz, numa caixa de
+  348×379 em torno da Lua. É a obra.
+- **`mercurio`** — 1.082 px, +2 níveis no máximo, caixa de 78×74. A Lua
+  vista de Mercúrio é magnitude ~0: uma estrela viva no céu, como no
+  céu de verdade. O par `mercurionb` (sem bloom) mostra o ponto CRU —
+  **10 px** —, o que prova que a mancha maior do `mercurio` é o bloom
+  fazendo o que faz com qualquer fonte brilhante.
+- **`mercurionb`** — 10 px, +1 nível. O mesmo ponto, sem bloom.
+- **`foco-jupiter`** — 7 px, +1 nível. A Lua a ~5 UA é magnitude ~+3:
+  uma estrela fraca, e é o que aparece.
+- **`anao-eris-orbita`** — **1 pixel, −1 nível**. Um ULP: a Eris está a
+  96 UA e a Lua ali é magnitude ~+10 (sub-pixel); o que mexeu foi a
+  aritmética do driver com um vértice a mais no buffer, não conteúdo.
+
+E as que NÃO mudaram são a outra metade da prova: `terra`, `lua`,
+`terralua`, `eclipse-solar`, `eclipse-lunar`, `eclipse-limbo`,
+`foco-luas`, `foco-io`, `foco-titan` — em todas o globo da Lua domina e
+`aCede` vai a 1 exato, isto é, **o crossfade apaga o ponto sozinho**;
+e as onze vistas profundas (`sol*`, `hero*`, `ua*`) seguem bit a bit.
+
+**A GUARDA (§15)** entrou no juiz que já existia, `world/corpos/lua.test.ts`,
+como a seção 6: ela roda o `passoDoPalco` DE VERDADE contra uma
+`Planetas` de verdade, na câmera medida do quadro final, e cobra que o
+ponto esteja no lugar do pino (bit a bit no float32), que a cessão seja
+0 ali, e que o pico E o fluxo da Lua batam **Sirius** — a estrela mais
+brilhante do céu inteiro, que é a forma mais forte de "acima de toda
+estrela de fundo". **SABOTAGEM PELA PRÓPRIA MÃO, cinco cortes, todos
+mordidos** (e a coluna diz QUEM mordeu, porque não é sempre o mesmo
+juiz):
+
+| corte | quem reprova |
+|---|---|
+| `temPonto: true` → `false` (`carregamento.ts`) | `director.test.ts` (pino de texto — `montarCorposDoPalco` não é importável em `node`, o próprio arquivo explica) |
+| apagar `escreverPontoDeCorpo` do `palco.ts` | `lua.test.ts` §6 |
+| apagar `escreverCessao` do `palco.ts` | `lua.test.ts` §6 |
+| apagar `moon: 150` do domínio (a fase vira Lambert) | `fotometria.test.ts`, 2 oráculos |
+| H da Lua +0,21 → +4,21 | `fotometria.test.ts` + `lua.test.ts` §6 |
+
+Nenhum juiz novo nasceu (a dieta do item 99 respeitada): as guardas
+entraram em `lua.test.ts`, `fotometria.test.ts`, `planetas.test.ts` e
+`director.test.ts`, que já existiam.
+
+**O QUE SEGUE ABERTO no item:** o OLHO DELE — se o fim parou de "não
+mostrar direito". A distância da Lua no último quadro (~0,51° de
+diâmetro) é a máxima que a trajetória aprovada permite; o que mudou foi
+o BRILHO, não o tamanho. E fica NOMEADO o que esta obra não fez: as
+OUTRAS luas resolvidas (Io, Europa, Titã, Caronte…) e os anões
+seguem sem ponto fotométrico — o mecanismo agora existe e serve a
+todas, mas cada uma precisa do H e da cor com fonte publicada, que é
+trabalho de dado, não de desenho.
 
 
 **109. Os labels 3D do outro projeto — trazer ou não, com medida.**

@@ -52,6 +52,7 @@ import { MotorEfemerides, decodeEfemerides } from '../../../lib/atlas/efemerides
 import {
   A_MAG_BASE,
   FOTOMETRIA,
+  IDS_DOS_PONTOS,
   IDS_FOTOMETRIA,
   aMagBaseDe,
   faseLambertiana,
@@ -260,11 +261,36 @@ const atributo = (p: Planetas, nome: string) =>
 // 1. Estrutura: o objeto, o material, o lugar na cena
 // ============================================================
 describe('a camada nasce com a estrutura que a D3 manda', () => {
-  it('são DEZ vértices — o Sol e os nove do retrato, nessa ordem', () => {
+  it('são ONZE vértices — os dez do retrato, nessa ordem, e a Lua no fim', () => {
     const p = camada();
-    expect(atributo(p, 'position').count).toBe(10);
+    expect(atributo(p, 'position').count).toBe(IDS_DOS_PONTOS.length);
+    expect(IDS_DOS_PONTOS).toHaveLength(11);
     expect(IDS_FOTOMETRIA).toHaveLength(10);
     expect(IDS_FOTOMETRIA[0]).toBe('sun');
+    // a ORDEM é contrato: os dez do retrato são o PREFIXO, e é por isso
+    // que órbitas, rótulos, escada e selo seguem indexando por
+    // `CORPOS_DO_SISTEMA` sem saber que a camada cresceu
+    expect(IDS_DOS_PONTOS.slice(0, 10)).toEqual([...IDS_FOTOMETRIA]);
+    expect(IDS_DOS_PONTOS[10]).toBe('moon');
+    p.dispose();
+  });
+
+  it('o vértice SEM retrato nasce MUDO — na origem, sem brilho e cedido', () => {
+    // a Lua não tem posição congelada; até o corpo resolvido publicar a
+    // dela, o vértice não pode desenhar um pixel. O `aCede = 1` é o
+    // interruptor (o fator (1 − aCede) zera vPeak e o STAR_FRAG devolve
+    // preto exato), e os zeros de posição/magnitude são o estado
+    // "ainda não escrito", nunca um lugar nem um brilho.
+    const p = camada();
+    const i = IDS_DOS_PONTOS.indexOf('moon');
+    const pos = atributo(p, 'position');
+    expect([pos.getX(i), pos.getY(i), pos.getZ(i)]).toEqual([0, 0, 0]);
+    expect(atributo(p, 'aMagBase').getX(i)).toBe(0);
+    expect(atributo(p, 'aCede').getX(i)).toBe(1);
+    // e os dez do retrato seguem nascendo com o ponto INTEIRO
+    for (let k = 0; k < IDS_FOTOMETRIA.length; k++) {
+      expect(atributo(p, 'aCede').getX(k), IDS_FOTOMETRIA[k]).toBe(0);
+    }
     p.dispose();
   });
 
@@ -1000,8 +1026,8 @@ describe('texto-fonte da camada (D1, D3, D8)', () => {
     }
   });
 
-  it('a fase do ponto é MH18 (D10) e a cessão continua Lambert', () => {
-    expect(FONTE).toContain('fatorDeFaseMh18');
+  it('a fase do ponto é a lei publicada (D10) e a cessão continua Lambert', () => {
+    expect(FONTE).toContain('fatorDeFaseDoPonto');
     expect(FONTE).toContain('aFase');
     expect(FONTE).toContain('faseDoVertice');
     expect(FONTE).toContain('betaEfetivoAnel');
@@ -1147,20 +1173,23 @@ const maquina = readFileSync(
 // 9. O readout do ?dbgplan
 // ============================================================
 describe('?dbgplan — o que a régua 2 vai ler', () => {
-  it('traz época, os dez corpos, NDC, px e m, em unidades de visitante', () => {
+  it('traz época, os onze pontos, NDC, px e m, em unidades de visitante', () => {
     const p = camada();
     p.ligado = true;
     const cam = camera(0.00072722, UP_DO_QUADRO);
     p.update(ALTURA_PX, cam.position);
     const texto = p.dbg(cam, LARGURA_PX, ALTURA_PX);
     const linhas = texto.split('\n');
-    expect(linhas).toHaveLength(11);
+    expect(linhas).toHaveLength(IDS_DOS_PONTOS.length + 1);
     expect(linhas[0]).toContain('2026-01-01T00:00:00Z');
     expect(linhas[0]).toContain('2461041.5008692136');
     expect(linhas[0]).toContain('UA');
     expect(linhas[0]).toContain('anos-luz');
     expect(linhas[0]).toContain('régua interna');
-    IDS_FOTOMETRIA.forEach((id, i) => expect(linhas[i + 1]).toContain(id));
+    IDS_DOS_PONTOS.forEach((id, i) => expect(linhas[i + 1]).toContain(id));
+    // e o corpo SEM retrato diz que não tem coluna eclíptica em vez de
+    // fingir um vetor de zeros
+    expect(linhas[IDS_DOS_PONTOS.indexOf('moon') + 1]).toContain('ecl=(sem retrato)');
     p.dispose();
   });
 
@@ -1168,7 +1197,8 @@ describe('?dbgplan — o que a régua 2 vai ler', () => {
     const p = camada();
     const cam = camera(0.00072722, UP_DO_QUADRO);
     const texto = p.dbg(cam, LARGURA_PX, ALTURA_PX);
-    const linhas = texto.split('\n').slice(1);
+    // só as linhas do RETRATO: o alvo da régua 1 é a projeção dos dez
+    const linhas = texto.split('\n').slice(1, 1 + IDS_FOTOMETRIA.length);
     linhas.forEach((linha, i) => {
       const m = linha.match(/px=\(([-0-9.]+), ([-0-9.]+)\)/);
       expect(m, IDS_FOTOMETRIA[i]).not.toBeNull();
@@ -1463,8 +1493,10 @@ describe('a cessão sob corpo resolvido (aCede, F2a)', () => {
   it('nasce 0 em TODOS os vértices — fora do corpo resolvido nada muda', () => {
     const p = camada();
     const cede = p.points.geometry.getAttribute('aCede');
-    expect(cede.count).toBe(IDS_FOTOMETRIA.length);
-    for (let i = 0; i < cede.count; i++) expect(cede.getX(i)).toBe(0);
+    expect(cede.count).toBe(IDS_DOS_PONTOS.length);
+    // ...nos do RETRATO; o vértice sem retrato nasce cedido (mudo), e
+    // o `it` da estrutura acima é o dono desse fato
+    for (let i = 0; i < IDS_FOTOMETRIA.length; i++) expect(cede.getX(i)).toBe(0);
     p.dispose();
   });
 
@@ -1489,7 +1521,7 @@ describe('a cessão sob corpo resolvido (aCede, F2a)', () => {
     expect(cede.getX(iTerra)).toBe(1);
     expect(cede.version).toBeGreaterThan(v0);
     // e os OUTROS vértices ficam intocados — cessão é por corpo
-    for (let i = 0; i < cede.count; i++) {
+    for (let i = 0; i < IDS_FOTOMETRIA.length; i++) {
       if (i !== iTerra) expect(cede.getX(i), IDS_FOTOMETRIA[i]).toBe(0);
     }
     // idempotência do 1 também

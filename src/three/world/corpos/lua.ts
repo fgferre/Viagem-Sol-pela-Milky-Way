@@ -68,12 +68,28 @@
 // ausência dela: a coda mira um lugar pré-computado, então é ele que
 // tem de estar lá — qualquer relógio que discorde está errado.
 //
-// SEM PONTO FOTOMÉTRICO, DECLARADO: `IDS_FOTOMETRIA` não tem a Lua —
-// não há aCede a escrever nem crossfade a fazer; o nascimento do mesh
-// aos 4 px do gate é mesh↔nada. O ponto fotométrico das luas (MH18 ou
-// convenção própria) é pendência nomeada para F8/Onda 7 — quando ele
-// nascer, a cessão suave da camada (`cessaoAlvo`, terra.ts) o serve de
-// graça, parametrizada por corpo (D5).
+// O PONTO FOTOMÉTRICO NASCEU EM 30/08 (item 108, a terceira perna) — e
+// a pendência que este cabeçalho carregava ("o ponto das luas é para a
+// F8/Onda 7") fechou como ela previa: a cessão suave da camada
+// (`alvoDaCessaoDoCorpo`, terra.ts) serviu de graça, e o que a Lua
+// precisou trazer de próprio foi a LEI DE FASE dela ([ALLEN76], em
+// `planetas/fotometria.ts`) e o LUGAR do ponto.
+//
+// O QUE ELE CONSERTA, medido: sem ponto, o disco da Lua no fim do filme
+// (389 mil km, ~10 px) saía com pico 148 de 255 e DEZ estrelas de fundo
+// saíam entre 166 e 244 — a Lua, magnitude −12,7, mais fraca que
+// estrelas de sexta grandeza. A causa é de UNIDADE, não de filme: o
+// globo é exposto "para si" (Sol = 1, `luzDaVisita.ts`) e nessa régua a
+// superfície vale o albedo, ~0,12; o ponto é normalizado por `EXPO_M0`,
+// a régua em que a estrela vive. Corpo resolvido PEQUENO só carrega o
+// fluxo verdadeiro pelo ponto, e é ele que cede quando o disco cresce.
+//
+// O LUGAR DO PONTO É O DA LUA, e sai daqui — nunca da efeméride da
+// camada. Esta classe é a única que conhece o PINO das 16:00, e a
+// segunda perna do item 108 provou o preço de duas fontes de posição
+// para o mesmo corpo: com um `?jd=` na barra, a camada poria o ponto a
+// dezenas de milhares de km do globo. `palco.ts` publica o centro daqui
+// em `Planetas.escreverPontoDeCorpo` e a cessão em `escreverCessao`.
 //
 // PRECISÃO: mesmo desenho da Terra — frame LOCAL em raios, câmera e Sol
 // convertidos na CPU (float64); clamps e guardas em todo pow/divisão.
@@ -99,9 +115,13 @@ import {
   criaSombraNaCena,
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
+import type { CalibracaoDaCasa } from '../../estrela';
 import type { FonteDeEfemerides } from '../planetas/planetas';
+import { DESLOCAMENTO_UA_PARA_PC } from '../planetas/planetas';
+import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
+import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { diametroAparentePx } from './corpos';
-import { gateBinario } from './terra';
+import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
 import { CANAL_MAP, carregarCanaisDoCorpo, estadoAposFalha } from './texturas';
 import type { EstadoDasTexturas, OpcoesDeTextura } from './texturas';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
@@ -192,8 +212,9 @@ void main() {
 // (escada, gate, webp, manifest) é IMPORTADO, nunca copiado.
 // ------------------------------------------------------------
 
-/** O que o Director entrega por tick — subconjunto do quadro da Terra
- *  (sem PSF: a Lua não tem ponto a ceder; ver o cabeçalho). */
+/** O que o Director entrega por tick — o MESMO quadro da Terra desde
+ *  30/08: com o ponto fotométrico, a Lua passou a ter cessão, e a
+ *  cessão consome `psf`, `dtS` e `salto` como as irmãs. */
 export interface QuadroDaLua {
   jdTdb: number;
   /** a efeméride viva, ou null — e null aqui significa SEM Lua, salvo
@@ -209,6 +230,12 @@ export interface QuadroDaLua {
   ligado: boolean;
   atlasQuente: boolean;
   politica: PoliticaDeLuz;
+  /** dt do quadro em segundos — só a rampa temporal da cessão o consome. */
+  dtS: number;
+  /** o instrumento da CASA: o halo do ponto sai dele. */
+  psf: CalibracaoDaCasa;
+  /** a câmera SALTOU neste quadro: a cessão faz snap em vez de animar. */
+  salto: boolean;
 }
 
 export interface EstadoDaLua {
@@ -225,6 +252,17 @@ export interface EstadoDaLua {
   /** distância heliocêntrica da CADEIA da Lua, em UA — o que o selo e
    *  a busca leem; NaN sem efeméride. */
   rUA: number;
+  /**
+   * A CESSÃO SUAVE do ponto fotométrico da Lua (item 108), com o mesmo
+   * contrato das irmãs: 0 = ponto inteiro, 1 = ponto apagado, o meio é
+   * o crossfade. E **1 EXATO sem lugar** (Lua sem efeméride e sem
+   * pino): sem posição no mundo o vértice tem de ficar mudo, e a
+   * cessão é o interruptor que já existe para isso.
+   */
+  cede: number;
+  /** a cessão ainda está ANDANDO rumo ao alvo — o Director zera a
+   *  contagem de estabilidade enquanto isto for true. */
+  emRampa: boolean;
 }
 
 /** Só o bloco comum de textura (`OpcoesDeTextura`): a Lua tem UM canal e
@@ -281,6 +319,10 @@ export class LuaResolvida {
       centroPc: this.centro,
       diametroPx: Number.NaN,
       rUA: Number.NaN,
+      // sem lugar não há ponto: o vértice nasce mudo e a camada nasce
+      // com o mesmo 1 no `aCede` dele — os dois lados combinam
+      cede: 1,
+      emRampa: false,
     };
   }
 
@@ -295,10 +337,12 @@ export class LuaResolvida {
     const e = this.estado;
     if (this.disposto) return e;
 
+    let saltoDeData = false;
     if (
       (q.jdTdb !== this.jdEscrito || q.fonte !== this.fonteEscrita) &&
       Number.isFinite(q.jdTdb)
     ) {
+      saltoDeData = true;
       this.jdEscrito = q.jdTdb;
       this.fonteEscrita = q.fonte;
       // O PINO MANDA SEMPRE QUE EXISTE, e por isso vem ANTES da fonte
@@ -361,6 +405,25 @@ export class LuaResolvida {
     e.carregando = this.texturas === 'buscando';
     e.gateArmado = this.armado;
     this.group.visible = emQuadro;
+
+    // A CESSÃO SUAVE do ponto (item 108) — a conta das irmãs, com a
+    // base SEMPRE viva: a Lua não tem retrato congelado onde cair, e
+    // sem lugar ela não tem ponto nenhum (cessão 1, snap, sem rampa —
+    // animar um crossfade a partir de "não existe" seria mentir
+    // movimento). O mesh fora de quadro devolve 0 e o ponto fica
+    // inteiro: é ele quem mostra a Lua antes dos 4 px do gate.
+    const temLugar = Number.isFinite(this.centro.x);
+    const alvo = temLugar
+      ? alvoDaCessaoDoCorpo(
+          aMagBaseDe(FOTOMETRIA.moon.H, this.rUA) + DESLOCAMENTO_UA_PARA_PC,
+          this.centro, q.camPosPc, dPc, diametroPx, emQuadro, q.psf, q.screenHPx
+        )
+      : 1;
+    e.cede =
+      q.salto || saltoDeData || !temLugar
+        ? alvo
+        : stepRampToward(e.cede, alvo, q.dtS, RAMP_DURATION_MS);
+    e.emRampa = e.cede !== alvo;
 
     if (emQuadro) this.posicionar(q);
     return e;
@@ -460,7 +523,9 @@ export class LuaResolvida {
       })
       .catch(() => {
         if (this.disposto) return;
-        // a Lua não tem nem ponto fotométrico para sobrar no lugar
+        // sem textura não há globo — mas desde o item 108 sobra o PONTO
+        // fotométrico, que não depende de textura nenhuma: a Lua deixa
+        // de ser um mundo e volta a ser o que é de longe, uma luz
         const r = estadoAposFalha(this.recargas, 'lua', 'a Lua não nasce nesta sessão');
         this.recargas = r.recargas;
         this.texturas = r.texturas;

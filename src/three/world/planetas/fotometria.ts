@@ -1,6 +1,11 @@
 // ============================================================
-// Fotometria dos 10 pontos da camada `planetas` (D3): magnitude
-// absoluta, cor e as duas leis puras que a camada vai usar.
+// Fotometria dos pontos da camada `planetas` (D3): magnitude absoluta,
+// cor e as duas leis puras que a camada vai usar. São os dez do retrato
+// (o Sol e os nove) MAIS a Lua, que entrou em 30/08 pelo item 108 — e a
+// diferença entre os dois grupos é o RETRATO, não a lei: a Lua não tem
+// posição congelada (o retrato não tem satélites), então quem escreve
+// onde o ponto dela está é o corpo resolvido, todo quadro. Ver
+// {@link IDS_DOS_PONTOS}.
 //
 // A DOUTRINA. A Onda 4 não infla planeta nenhum (D1): um corpo aparece
 // quando o BRILHO APARENTE dele manda, como no céu de verdade. As 328k
@@ -59,7 +64,19 @@
 // costura). O teto NÃO é o α máximo visto da Terra (3,1° Urano /
 // 1,9° Netuno): a câmera voa por dentro do sistema. Saturno leva o
 // termo de anel (−1,825 sin β + …) com β = √(βE βS) de mesmo sinal
-// (Eq. 10). Plutão não tem MH18 — fica Lambert.
+// (Eq. 10). Plutão não tem MH18 — fica Lambert. A LUA tem lei própria
+// [ALLEN76], que entra pela MESMA política de domínio: a polinomial
+// dentro de 150°, a mesma emenda contínua com Lambert fora. É por isso
+// que o despachante se chama `fatorDeFaseDoPonto` e não mais
+// `fatorDeFaseMh18` — ele serve TRÊS leis, e o nome dizia uma.
+//
+// POR QUE LAMBERT NÃO SERVIRIA À LUA, e é a razão de a lei própria
+// entrar junto com o ponto: no quarto (α = 90°) Lambert dá Φ = 0,50 e a
+// Lua real dá 0,091 (Δm = 2,60 mag pela lei abaixo) — a Lua cheia é
+// mais de cinco vezes mais brilhante do que a esfera difusora prevê, e
+// o quarto, cinco vezes menos. É o surto de oposição do regolito, o
+// mesmo fato fotométrico que o globo dela já respeita por
+// Lommel-Seeliger (`corpos/lua.ts`).
 //
 // FONTES (por linha na tabela abaixo):
 //   [MH18] Mallama, A. & Hilton, J.L. 2018, "Computing apparent
@@ -81,6 +98,15 @@
 //          209: B−V = 0,846 ± 0,010 e V−R = 0,462 ± 0,021 para o par
 //          Plutão+Caronte integrado numa rotação (valores citados
 //          apud Lorenzi et al. 2016, A&A 585, A131, §1).
+//   [ALLEN76] Allen, C.W., "Astrophysical Quantities", 3ª ed. (1976) —
+//          a lei clássica da magnitude da Lua,
+//          V = −12,73 + 0,026·|α| + 4e−9·α⁴ (α em graus, disco cheio a
+//          distância geocêntrica média), reproduzida desde então pelo
+//          "Explanatory Supplement to the Astronomical Almanac"; e o
+//          índice integrado do disco cheio B−V = +0,92.
+//   [BES90] Bessell, M.S. 1990, PASP 102, 1181 — comprimentos de onda
+//          efetivos do sistema Johnson-Cousins (B 0,44 µm, V 0,55 µm,
+//          R_C 0,64 µm), usados SÓ na derivação do (V−R) da Lua.
 // ============================================================
 
 import { bvToColor } from '../../shaders/common';
@@ -95,8 +121,29 @@ import { IDS_RETRATO, RETRATO_2026 } from './retrato2026';
  */
 export const BV_SOL = 0.653;
 
-/** (V−R)C☉ [R12] — só serve à razão de banda de Plutão. */
+/** (V−R)C☉ [R12] — serve às razões de banda de Plutão e da Lua. */
 export const VR_SOL = 0.352;
+
+/** (B−V) do disco lunar CHEIO integrado [ALLEN76]. */
+export const BV_LUA = 0.92;
+
+/**
+ * (V−R)C da Lua — **DERIVADO**, e a derivação é a honestidade desta
+ * linha: [ALLEN76] publica o (B−V) do disco cheio e não o (V−R) no
+ * mesmo sistema, então redigitar um segundo índice seria inventar dado.
+ * O que existe de fato é o AVERMELHAMENTO do regolito maduro, que sobe
+ * quase linear com o comprimento de onda no visível; a derivação toma a
+ * MESMA inclinação (mag por µm) que o excesso de (B−V) sobre o Sol
+ * mede, e a estende de V até R_C pelos comprimentos efetivos [BES90]:
+ *
+ *     (V−R) = (V−R)☉ + [(B−V)_Lua − (B−V)☉] · (λR − λV)/(λV − λB)
+ *
+ * Dá 0,570 — a Lua tan-acinzentada, r > g > b, que é o único invariante
+ * que o teste cobra (a ORDEM é física; o valor é calibração).
+ * APROXIMAÇÃO DECLARADA: os dois índices são do disco CHEIO, e a Lua
+ * avermelha com a fase — o ponto não modela isso.
+ */
+export const VR_LUA = VR_SOL + (BV_LUA - BV_SOL) * ((0.64 - 0.55) / (0.55 - 0.44));
 
 /**
  * Cor do Sol em RGB linear pela lei ÚNICA de cor da casa
@@ -207,10 +254,40 @@ export const FOTOMETRIA: Record<string, LinhaFotometria> = {
   // Cor: [RBF94] B−V = 0,846, V−R = 0,462 — tolinas avermelhadas,
   // r > g > b.
   pluto: linha('pluto', 'planetaria', -0.55, razaoDeIndices(0.846, 0.462)),
+
+  // A LUA (item 108, 30/08) — o primeiro corpo desta tabela SEM retrato
+  // congelado. H: V(1,0) = +0,21 [ALLEN76], que é a mesma lei do
+  // −12,73 dela re-referenciada a 1 UA / 1 UA (a equivalência é oráculo
+  // em `fotometria.test.ts`, com a distância média de 384.400 km — o
+  // número mora lá, no juiz, e não aqui em duplicata). Cor: os índices
+  // do disco cheio, com o (V−R) DERIVADO — ver {@link VR_LUA}.
+  moon: linha('moon', 'planetaria', 0.21, razaoDeIndices(BV_LUA, VR_LUA)),
 };
 
-/** Os 10 ids da camada: o Sol e os nove do retrato. */
+/** Os 10 ids do RETRATO congelado: o Sol e os nove. */
 export const IDS_FOTOMETRIA = ['sun', ...IDS_RETRATO] as const;
+
+/**
+ * OS CORPOS COM PONTO E SEM RETRATO — hoje só a Lua (item 108).
+ *
+ * O retrato congelado não tem satélites, então o vértice de um corpo
+ * daqui NÃO nasce posicionado e a máquina do tempo desta camada não o
+ * move: quem escreve onde ele está é o CORPO RESOLVIDO, todo quadro
+ * (`Planetas.escreverPontoDeCorpo`, chamado pelo `palco.ts`). É a única
+ * fonte que honra o PINO do filme — a camada perguntaria à efeméride e
+ * poria o ponto onde a Lua não está sempre que o relógio for
+ * sequestrado por um `?jd=`, que é exatamente o defeito que a segunda
+ * perna do item 108 acabou de consertar no globo.
+ */
+export const IDS_SEM_RETRATO = ['moon'] as const;
+
+/**
+ * OS VÉRTICES DA CAMADA, na ORDEM do buffer — o retrato primeiro, os
+ * sem-retrato depois. A ordem importa e é contrato: `orbitas.ts`, os
+ * rótulos e o selo indexam por `IDS_FOTOMETRIA`/`CORPOS_DO_SISTEMA`, e
+ * só continuam certos porque os dez seguem sendo o PREFIXO desta lista.
+ */
+export const IDS_DOS_PONTOS = [...IDS_FOTOMETRIA, ...IDS_SEM_RETRATO] as const;
 
 /**
  * `aMagBase = H + 5·log10(r_UA)` — a metade da lei planetária que a
@@ -239,10 +316,11 @@ export function faseLambertiana(alphaRad: number): number {
 }
 
 /**
- * Teto do domínio publicado [MH18], em graus. Fora: clamp na borda
- * + Lambert × (Φ_MH/Φ_L)|borda.
+ * Teto do domínio publicado de cada lei de fase, em graus. Fora: clamp
+ * na borda + Lambert × (Φ|borda / Φ_L|borda). Oito linhas são [MH18]; a
+ * da Lua é [ALLEN76].
  */
-export const DOMINIO_MH18: Record<string, number> = {
+export const DOMINIO_DA_FASE: Record<string, number> = {
   mercury: 170,
   venus: 179,
   earth: 180,
@@ -253,12 +331,18 @@ export const DOMINIO_MH18: Record<string, number> = {
   uranus: 154,
   // Eq. 17 vale até 133° (último full-disk Voyager); 1,9° é geocêntrico.
   neptune: 133,
+  // [ALLEN76] é publicada para o disco cheio até ~150°; além disso a
+  // Lua é uma foice fina e o α cresce rumo à conjunção, onde a emenda
+  // com Lambert já manda (e Lambert vai a 0 na conjunção, que é a
+  // resposta certa: Lua nova não brilha).
+  moon: 150,
 };
 
 const VENUS_COSTURA_DEG = 163.7;
 
-/** Δm [MH18] DENTRO do domínio. α em graus; B (Saturno) em radianos. */
-export function deltaMagMh18(
+/** Δm DENTRO do domínio. α em graus; B (Saturno) em radianos. Oito
+ *  corpos por [MH18]; a Lua por [ALLEN76]. */
+export function deltaMagDeFase(
   id: string,
   alphaDeg: number,
   BsatRad = 0
@@ -293,6 +377,10 @@ export function deltaMagMh18(
     case 'neptune':
       // [MH18] Eq. 17, válida até 133°.
       return 7.944e-3 * a + 9.617e-5 * a * a;
+    case 'moon':
+      // [ALLEN76]: V = −12,73 + 0,026·|α| + 4e−9·α⁴. O termo constante
+      // é o H (V(1,0) = +0,21, na tabela acima); aqui fica só a fase.
+      return 0.026 * a + 4e-9 * a ** 4;
     default:
       return 0;
   }
@@ -315,22 +403,26 @@ function phiDeDeltaMag(dm: number): number {
 }
 
 /**
- * Fator de fase Φ do PONTO (D10). Dentro do domínio: 10^(−0,4 Δm).
- * Fora: Lambert × (Φ_MH / Φ_L) na borda — C0, razão pinada.
- * Corpo sem MH18 (Sol, Plutão): Lambert.
+ * Fator de fase Φ do PONTO (D10) — o DESPACHANTE ÚNICO das três leis.
+ * Dentro do domínio: 10^(−0,4 Δm). Fora: Lambert × (Φ / Φ_L) na borda
+ * — C0, razão pinada. Corpo sem lei publicada (Sol, Plutão): Lambert.
+ *
+ * Chamava-se `fatorDeFaseMh18` até 30/08 e o nome passou a mentir no
+ * commit em que a Lua entrou com [ALLEN76]: o despachante nunca foi da
+ * MH18, ele é do PONTO — a MH18 é uma das leis que ele serve.
  */
-export function fatorDeFaseMh18(
+export function fatorDeFaseDoPonto(
   id: string,
   alphaRad: number,
   BsatRad = 0
 ): number {
-  if (!(id in DOMINIO_MH18)) return faseLambertiana(alphaRad);
+  if (!(id in DOMINIO_DA_FASE)) return faseLambertiana(alphaRad);
   const a = Math.abs(alphaRad);
   const aDeg = (a * 180) / Math.PI;
-  const teto = DOMINIO_MH18[id];
-  if (aDeg <= teto) return phiDeDeltaMag(deltaMagMh18(id, aDeg, BsatRad));
+  const teto = DOMINIO_DA_FASE[id];
+  if (aDeg <= teto) return phiDeDeltaMag(deltaMagDeFase(id, aDeg, BsatRad));
   const tetoRad = (teto * Math.PI) / 180;
-  const phiBorda = phiDeDeltaMag(deltaMagMh18(id, teto, BsatRad));
+  const phiBorda = phiDeDeltaMag(deltaMagDeFase(id, teto, BsatRad));
   const lambertBorda = faseLambertiana(tetoRad);
   // Na conjunção Lambert vai a 0: a razão não é definida — CLAMP.
   if (lambertBorda < 1e-6) return phiBorda;

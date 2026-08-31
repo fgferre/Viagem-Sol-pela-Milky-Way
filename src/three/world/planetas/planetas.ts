@@ -1,7 +1,40 @@
 // ============================================================
-// A CAMADA `planetas` (D3 da Onda 4) — dez pontos fotométricos: o Sol
-// e os nove corpos do retrato congelado, desenhados pela MESMA PSF das
-// 328.749 estrelas do campo.
+// A CAMADA `planetas` (D3 da Onda 4) — os pontos fotométricos dos
+// corpos do sistema, desenhados pela MESMA PSF das 328.749 estrelas do
+// campo: o Sol e os nove do retrato congelado, mais a LUA desde 30/08
+// (item 108). Onze vértices, uma lei só.
+//
+// ------------------------------------------------------------
+// POR QUE A LUA ENTROU (item 108, a terceira perna)
+// ------------------------------------------------------------
+// A régua do palco (`corpos.ts`, `LIMIAR_DO_GATE_PX`) sempre prometeu,
+// por escrito, que abaixo de 4 px "um globo texturizado não comunica
+// nada que o ponto fotométrico já não comunique — e o ponto tem a
+// fotometria certa". Para as luas essa promessa era vazia: elas não
+// tinham ponto. O resultado, MEDIDO no quadro final do filme
+// (`capturas/item108-lua-fotometria.json`): a Lua a 389 mil km, que é
+// magnitude −12,7, saía com pico 148 de 255 enquanto DEZ estrelas de
+// fundo saíam entre 166 e 244. A ordem fotométrica do céu estava
+// invertida por ordens de grandeza.
+//
+// A CAUSA, e ela não é do filme: o GLOBO e o PONTO vivem em unidades
+// diferentes. O globo é exposto "para si" (`luzDaVisita.ts`, Sol = 1 —
+// a fotografia da visita que o dono escolheu), e nessa régua a
+// superfície da Lua vale o albedo dela, ~0,12, dê-se onde estiver. O
+// ponto é normalizado por `EXPO_M0` — a régua em que a estrela vive. As
+// duas só se encontram no CROSSFADE: o ponto carrega o fluxo verdadeiro
+// enquanto o disco é pequeno e cede (`aCede`) quando o disco cresce o
+// bastante para carregá-lo sozinho. Sem ponto, um corpo resolvido
+// pequeno cai no vão entre as duas réguas — e foi o olho do dono que o
+// viu primeiro.
+//
+// E POR QUE NÃO SE CONSERTA DO LADO DO GLOBO: na régua de tela a
+// superfície da Lua ali vale ~3,5e4, e a da Terra ao lado, ~1e5 — acima
+// do teto do half-float do composer (65.504). O ponto tem a compressão
+// na emissão (`β·asinh`, Lei §7) justamente para caber; o globo não
+// tem, e nunca deve ter (comprimir o globo achataria o PERFIL dele).
+// A arquitetura da casa já respondia a pergunta: quem carrega fluxo
+// grande em pouco pixel é o ponto.
 //
 // A DOUTRINA, em uma frase: nada aqui é inflado. Um planeta aparece
 // quando o brilho aparente dele manda, como no céu de verdade — e é por
@@ -106,11 +139,12 @@
 // lado dele. Não vira `Math.log10` no espelho TS abaixo pelo mesmo
 // motivo de lá: o espelho existe para PREVER o pixel da GPU.
 //
-// FASE DO PONTO (D10 / F8): Φ sai de `fatorDeFaseMh18` (polinomial
+// FASE DO PONTO (D10 / F8): Φ sai de `fatorDeFaseDoPonto` (polinomial
 // por corpo, domínio + emenda contínua com Lambert fora; Saturno
-// com termo de anel). O ângulo ainda é Sol–corpo–observador (Sol
-// na origem). `faseDoVertice` CONTINUA Lambert — é o espelho
-// geométrico que a cessão do globo lê; o brilho do ponto é `aFase`.
+// com termo de anel; a Lua com a lei própria de [ALLEN76]). O ângulo
+// ainda é Sol–corpo–observador (Sol na origem). `faseDoVertice`
+// CONTINUA Lambert — é o espelho geométrico que a cessão do globo lê;
+// o brilho do ponto é `aFase`.
 //
 // ------------------------------------------------------------
 // 3. O QUE ESTA CAMADA NÃO FAZ
@@ -141,10 +175,11 @@ import { baseCorpoEquatorial } from '../../../lib/atlas/orientacao';
 import {
   A_MAG_BASE,
   FOTOMETRIA,
+  IDS_DOS_PONTOS,
   IDS_FOTOMETRIA,
   aMagBaseDe,
   betaEfetivoAnel,
-  fatorDeFaseMh18,
+  fatorDeFaseDoPonto,
 } from './fotometria';
 import { EPOCA_ISO, EPOCA_JD_TDB, IDS_RETRATO, RETRATO_2026 } from './retrato2026';
 
@@ -378,26 +413,39 @@ export class Planetas {
   private readonly rascunhoUA: [number, number, number] = [0, 0, 0];
 
   constructor(instrumento: CalibracaoDaCasa) {
-    const n = IDS_FOTOMETRIA.length;
+    const n = IDS_DOS_PONTOS.length;
     const posicao = new Float32Array(n * 3);
     const magBase = new Float32Array(n);
     const cor = new Float32Array(n * 3);
     const ehSol = new Float32Array(n);
+    // a cessão nasce 0 nos do retrato (ponto inteiro) e 1 nos SEM
+    // retrato: sem posição no mundo o vértice tem de nascer MUDO, e
+    // `aCede = 1` é o mecanismo que já existe para isso — o fator
+    // (1 − aCede) zera `vPeak`, e com ele o STAR_FRAG devolve preto
+    // EXATO (cor, halo, espinhos e branqueamento derivam todos dele).
+    const cede = new Float32Array(n);
 
     for (let i = 0; i < n; i++) {
-      const id = IDS_FOTOMETRIA[i];
+      const id = IDS_DOS_PONTOS[i];
       if (id === 'sun') {
         // o Sol É a origem da cena — não é posicionado, é onde tudo mede.
         ehSol[i] = 1;
-      } else {
+      } else if (id in RETRATO_2026) {
         // D1: uma rotação e uma multiplicação, e nada mais.
-        const v = RETRATO_2026[id].vetorUA;
+        const v = RETRATO_2026[id as keyof typeof RETRATO_2026].vetorUA;
         const eq = eclipticaParaEquatorial([v[0], v[1], v[2]]);
         posicao[i * 3] = eq[0] * AU_PARA_PC;
         posicao[i * 3 + 1] = eq[1] * AU_PARA_PC;
         posicao[i * 3 + 2] = eq[2] * AU_PARA_PC;
+      } else {
+        // SEM RETRATO (a Lua): posição e magnitude ficam ZERO até o
+        // corpo resolvido escrever as duas em `escreverPontoDeCorpo`.
+        // O zero não é um lugar nem um brilho — é o estado mudo que o
+        // `aCede = 1` ao lado esconde; o vértice não desenha um pixel
+        // antes do primeiro passo do palco.
+        cede[i] = 1;
       }
-      magBase[i] = A_MAG_BASE_PC[id];
+      magBase[i] = id in A_MAG_BASE_PC ? A_MAG_BASE_PC[id] : 0;
       const c = FOTOMETRIA[id].corLinear;
       cor[i * 3] = c[0];
       cor[i * 3 + 1] = c[1];
@@ -409,9 +457,9 @@ export class Planetas {
     geo.setAttribute('aMagBase', new THREE.BufferAttribute(magBase, 1));
     geo.setAttribute('aCor', new THREE.BufferAttribute(cor, 3));
     geo.setAttribute('aEhSol', new THREE.BufferAttribute(ehSol, 1));
-    // cessão sob corpo resolvido (Onda 6, F2a): nasce 0 em todos — só o
-    // gate do globo escreve, via `escreverCessao`, nunca o quadro
-    geo.setAttribute('aCede', new THREE.BufferAttribute(new Float32Array(n), 1));
+    // cessão sob corpo resolvido (Onda 6, F2a): só o gate do globo
+    // escreve, via `escreverCessao`, nunca o quadro
+    geo.setAttribute('aCede', new THREE.BufferAttribute(cede, 1));
     // Φ MH18: nasce 1 (fase zero) até o primeiro update com câmera.
     const fase0 = new Float32Array(n);
     fase0.fill(1);
@@ -463,7 +511,10 @@ export class Planetas {
   }
 
   /**
-   * AS POSIÇÕES DE CENA DOS DEZ, na ordem de `IDS_FOTOMETRIA` — o
+   * AS POSIÇÕES DE CENA DOS VÉRTICES, na ordem de `IDS_DOS_PONTOS` —
+   * e os dez do retrato são o PREFIXO dela, que é o que mantém certo
+   * todo consumidor que indexa por `IDS_FOTOMETRIA`/`CORPOS_DO_SISTEMA`
+   * (órbitas, rótulos, escada, selo). O
    * Float32Array VIVO do atributo, o mesmo que a GPU lê e o mesmo que a
    * máquina do tempo reescreve. Somente leitura por contrato: quem
    * escreve aqui é `escreverInstante`, e mais ninguém.
@@ -559,7 +610,11 @@ export class Planetas {
     let moveu = false;
     let brilhou = false;
     // o vértice 0 é o Sol: ele É a origem da cena em qualquer instante,
-    // e a magnitude dele a 1 pc não depende de efeméride nenhuma.
+    // e a magnitude dele a 1 pc não depende de efeméride nenhuma. O laço
+    // PARA no fim do retrato de propósito: os corpos SEM retrato (a Lua)
+    // são escritos pelo corpo resolvido deles, que é quem honra o PINO
+    // do filme — perguntar aqui à efeméride poria o ponto onde a Lua não
+    // está sempre que o relógio for sequestrado por um `?jd=`.
     for (let i = 1; i < IDS_FOTOMETRIA.length; i++) {
       const id = IDS_FOTOMETRIA[i];
       const p = fonte.posicaoHeliocentrica(id, jdTdb);
@@ -599,15 +654,58 @@ export class Planetas {
    * Escrita idempotente pela mesma lei do instante (`gravar`): reescrever
    * o mesmo valor a 60 Hz não sobe upload. Devolve se algo mudou.
    */
-  /** Φ MH18 de cada ponto, reescrito quando a câmera ou o instante muda. */
+  /**
+   * O PONTO DE UM CORPO SEM RETRATO (item 108) — método IRMÃO de
+   * `escreverInstante`, e a diferença entre os dois é QUEM SABE ONDE O
+   * CORPO ESTÁ. Para os nove do retrato é a efeméride desta camada; para
+   * a Lua é o corpo resolvido (`corpos/lua.ts`), porque só ele conhece o
+   * PINO das 16:00 que a coda do filme mira. Uma fonte de posição por
+   * corpo, nunca duas — o ponto e o globo NÃO podem discordar de lugar.
+   *
+   * Escreve os DOIS atributos que a posição carrega, pela mesma lição do
+   * `escreverInstante`: `position` e o `aMagBase`, que leva o
+   * `5·log10(r_UA)` heliocêntrico dentro. Centro não-finito (a Lua sem
+   * efeméride e sem pino) não escreve NADA — quem apaga o vértice nesse
+   * caso é a cessão que o corpo publica, e ela é 1.
+   *
+   * Devolve se algo mudou de verdade (escrita idempotente, `gravar`).
+   */
+  escreverPontoDeCorpo(id: string, centroPc: THREE.Vector3): boolean {
+    const i = (IDS_DOS_PONTOS as readonly string[]).indexOf(id);
+    if (i < 0) return false;
+    const { x, y, z } = centroPc;
+    if (!(Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z))) return false;
+    const pos = this.points.geometry.getAttribute('position') as THREE.BufferAttribute;
+    const mag = this.points.geometry.getAttribute('aMagBase') as THREE.BufferAttribute;
+    const posArray = pos.array as Float32Array;
+    const magArray = mag.array as Float32Array;
+    let moveu = false;
+    if (this.gravar(posArray, i * 3, x)) moveu = true;
+    if (this.gravar(posArray, i * 3 + 1, y)) moveu = true;
+    if (this.gravar(posArray, i * 3 + 2, z)) moveu = true;
+    // o `r` heliocêntrico sai do próprio centro (o Sol é a origem da
+    // cena por construção) e entra na magnitude pelo conversor ÚNICO da
+    // F1 — o mesmo `aMagBaseDe` que produziu a tabela congelada.
+    const rUA = Math.hypot(x, y, z) * UA_POR_PC;
+    const base = aMagBaseDe(FOTOMETRIA[id].H, rUA) + DESLOCAMENTO_UA_PARA_PC;
+    const brilhou = this.gravar(magArray, i, base);
+    if (moveu) pos.needsUpdate = true;
+    if (brilhou) mag.needsUpdate = true;
+    if ((moveu || brilhou) && Number.isFinite(this.camAnterior.x)) {
+      this.escreverFase(this.camAnterior);
+    }
+    return moveu || brilhou;
+  }
+
+  /** Φ de cada ponto, reescrito quando a câmera ou o instante muda. */
   private escreverFase(camPos: THREE.Vector3) {
     const pos = this.points.geometry.getAttribute('position') as THREE.BufferAttribute;
     const attr = this.points.geometry.getAttribute('aFase') as THREE.BufferAttribute;
     const arr = attr.array as Float32Array;
     const jd = Number.isFinite(this.jdEscrito) ? this.jdEscrito : EPOCA_JD_TDB;
     let mudou = false;
-    for (let i = 0; i < IDS_FOTOMETRIA.length; i++) {
-      const id = IDS_FOTOMETRIA[i];
+    for (let i = 0; i < IDS_DOS_PONTOS.length; i++) {
+      const id = IDS_DOS_PONTOS[i];
       if (id === 'sun') {
         if (this.gravar(arr, i, 1)) mudou = true;
         continue;
@@ -634,7 +732,7 @@ export class Planetas {
         );
         B = betaEfetivoAnel(Math.asin(sinBetaE), Math.asin(sinBetaS));
       }
-      if (this.gravar(arr, i, fatorDeFaseMh18(id, Math.acos(cos), B))) mudou = true;
+      if (this.gravar(arr, i, fatorDeFaseDoPonto(id, Math.acos(cos), B))) mudou = true;
     }
     if (mudou) attr.needsUpdate = true;
   }
@@ -645,7 +743,7 @@ export class Planetas {
   // sempre prometeu.)
 
   escreverCessao(id: string, cede: number): boolean {
-    const i = (IDS_FOTOMETRIA as readonly string[]).indexOf(id);
+    const i = (IDS_DOS_PONTOS as readonly string[]).indexOf(id);
     if (i < 0) return false;
     const attr = this.points.geometry.getAttribute('aCede') as THREE.BufferAttribute;
     if (!this.gravar(attr.array as Float32Array, i, cede)) return false;
@@ -694,7 +792,7 @@ export class Planetas {
         `visível=${this.points.visible}`,
     ];
     for (let i = 0; i < pos.count; i++) {
-      const id = IDS_FOTOMETRIA[i];
+      const id = IDS_DOS_PONTOS[i];
       const x = pos.getX(i);
       const y = pos.getY(i);
       const z = pos.getZ(i);
@@ -715,10 +813,18 @@ export class Planetas {
         E: fluxoDeMagnitude(m, expoM0),
         pico: picoDaPsf(m, expoM0, sigmaPx, alturaPx),
       };
-      const ua = id === 'sun' ? ([0, 0, 0] as const) : RETRATO_2026[id].vetorUA;
+      // a coluna eclíptica é a do RETRATO; corpo sem retrato (a Lua) não
+      // tem uma — a linha dele mostra `—` em vez de fingir um vetor
+      const ua =
+        id === 'sun'
+          ? ([0, 0, 0] as const)
+          : (RETRATO_2026 as Record<string, { vetorUA: readonly number[] } | undefined>)[id]
+              ?.vetorUA;
       linhas.push(
         `[dbgplan] ${id.padEnd(8)} ` +
-          `ecl=(${ua[0].toFixed(9)}, ${ua[1].toFixed(9)}, ${ua[2].toFixed(9)}) UA · ` +
+          (ua
+            ? `ecl=(${ua[0].toFixed(9)}, ${ua[1].toFixed(9)}, ${ua[2].toFixed(9)}) UA · `
+            : 'ecl=(sem retrato) · ') +
           `cena=(${x}, ${y}, ${z}) pc[régua interna] · ` +
           `ndc=(${ndc.x.toFixed(9)}, ${ndc.y.toFixed(9)}, ${ndc.z.toFixed(9)}) · ` +
           `px=(${px.toFixed(6)}, ${py.toFixed(6)}) · ` +

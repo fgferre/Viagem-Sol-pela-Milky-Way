@@ -231,10 +231,11 @@ export function montarCorposDoPalco(opts: {
   const { tier, maxTextureSize, base } = opts;
   // A TERRA e a LUA têm o PINO DAS 16:00 do filme (`TERRA_PC`/`LUA_PC`,
   // journey.ts): sem ele a coda mira um globo a 1,7 milhão de km. A Lua
-  // é a única do quarteto sem ponto fotométrico na camada
-  // (`IDS_FOTOMETRIA` não a conhece) e sem retrato congelado — sem
-  // efeméride ela simplesmente não existe, e é isso que o fallback frio
-  // precisa saber para não segurar a captura para sempre.
+  // é a única do quarteto COM ponto fotométrico (item 108, 30/08) e SEM
+  // retrato congelado — sem efeméride ela simplesmente não existe, e é
+  // isso que o fallback frio precisa saber para não segurar a captura
+  // para sempre. O par (temPonto true, temRetrato false) é também o que
+  // manda o `palco.ts` publicar o centro DELA na camada de pontos.
   const terra = corpoNoPalco(new TerraResolvida({ tier, maxTextureSize, base }), 'earth', {
     pinoNoFilme: TERRA_PC,
     temPonto: true,
@@ -243,7 +244,7 @@ export function montarCorposDoPalco(opts: {
   });
   const lua = corpoNoPalco(new LuaResolvida({ tier, maxTextureSize, base }), 'moon', {
     pinoNoFilme: LUA_PC,
-    temPonto: false,
+    temPonto: true,
     temRetrato: false,
     rotuloDeLua: true,
   });

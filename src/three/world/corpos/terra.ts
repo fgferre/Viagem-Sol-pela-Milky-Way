@@ -238,6 +238,43 @@ export function cessaoAlvo(
   return cessaoPorDominancia(diametroMeshPx / haloPontoPx);
 }
 
+/**
+ * O ALVO DA CESSÃO DE UM CORPO RESOLVIDO, do começo ao fim — prever o
+ * halo do ponto pelo espelho da PSF e medir o mesh contra ele.
+ *
+ * ESTE BLOCO ERA TRÊS CÓPIAS idênticas (Terra, rochoso, gigante) e o
+ * ponto da Lua (item 108) ia fazer a quarta. É a mesma conta em todos:
+ * a magnitude que a camada de planetas está desenhando AGORA — mesma
+ * base, mesma fase Lambertiana (o espelho GEOMÉTRICO que a dominância
+ * lê, não o Φ publicado que o ponto usa para brilhar), mesma exposição
+ * do campo — vira tamanho de sprite, e a razão mesh/halo vira o alvo
+ * por g(r). A `magBase1Pc` fica de FORA porque é a única linha que
+ * difere entre os corpos: os do retrato caem nele sem efeméride, e a
+ * Lua não tem retrato onde cair.
+ */
+export function alvoDaCessaoDoCorpo(
+  magBase1Pc: number,
+  centroPc: THREE.Vector3,
+  camPosPc: THREE.Vector3,
+  dPc: number,
+  diametroPx: number,
+  emQuadro: boolean,
+  psf: CalibracaoDaCasa,
+  screenHPx: number
+): number {
+  const fase = faseDoVertice(
+    centroPc.x, centroPc.y, centroPc.z,
+    camPosPc.x, camPosPc.y, camPosPc.z
+  );
+  const halo = psfPointSizePx(
+    magDoVertice(magBase1Pc, dPc, fase),
+    psf.expoM0,
+    psf.sigmaPx,
+    screenHPx
+  );
+  return cessaoAlvo(emQuadro, diametroPx, halo);
+}
+
 // (`cessaoPeloGate` e `CESSAO_PELO_GATE_MULT` — a cessão do SOL-ponto
 // ancorada no gate do palco, com a porta `?bcede=` — morreram no M1 da
 // LEI-DA-ESTRELA: a cessão do Sol é `wResolvido` da repartição única,
@@ -489,17 +526,9 @@ export class TerraResolvida {
     const base = q.fonte
       ? aMagBaseDe(FOTOMETRIA.earth.H, this.rUA) + DESLOCAMENTO_UA_PARA_PC
       : A_MAG_BASE_PC.earth;
-    const fase = faseDoVertice(
-      this.centro.x, this.centro.y, this.centro.z,
-      q.camPosPc.x, q.camPosPc.y, q.camPosPc.z
+    const alvo = alvoDaCessaoDoCorpo(
+      base, this.centro, q.camPosPc, dPc, diametroPx, emQuadro, q.psf, q.screenHPx
     );
-    const halo = psfPointSizePx(
-      magDoVertice(base, dPc, fase),
-      q.psf.expoM0,
-      q.psf.sigmaPx,
-      q.screenHPx
-    );
-    const alvo = cessaoAlvo(emQuadro, diametroPx, halo);
     e.cede =
       q.salto || saltoDeData
         ? alvo
