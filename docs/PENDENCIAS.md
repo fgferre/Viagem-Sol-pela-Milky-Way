@@ -553,6 +553,20 @@ em princípio), a ORDEM será reavaliada com calma quando a frente que
 hoje trabalha a fila terminar. Ninguém abre obra destes blocos antes
 dessa reavaliação. Quando ela vier, cada bloco escolhido vira item
 próprio e este encolhe.
+**A REAVALIAÇÃO ACONTECEU em 31/08 e a ordem decidida por ele é:**
+(0) a CONFERÊNCIA dele AGORA, antes de tudo — 108/109/vinheta no app +
+fotos antigas (52/53/54/22) + contar o que estranhou na fita (82/C3);
+(1) consertos rápidos medidos: slerpDir da rampa, embalo do zoom na
+parede, ⏵ na parede do tempo, desempate da busca (+ medir 117 e, se
+couber, 37/46); (2) BELEZA PRIMEIRO — bloco B (MSAA no alvo com GPU
+medida antes, rampas de rótulo 250/750 ms, oclusores além do Sol,
+gradiente da fita), com a faxina dos ruídos de instrumento
+(49/80/85/101) na MESMA sessão de re-baseline; (3) bloco A (memória de
+texturas: refcount + descarga adiada 15 s, createImageBitmap, abort);
+(4) em diante: os pontos MAIS ANTIGOS da fila (pacote Sol/escala e
+afins), por escolha dele; o 114 requalificado (relevância + assets)
+fica para etapa mais à frente, e os blocos D/E da colheita junto com
+ele.
 
 **114. O censo do sistema solar: todas as luas e os objetos interessantes.**
 Pedido do dono em 30/08, palavras dele: *"quero expandir nosso projeto
@@ -562,7 +576,16 @@ sequência: *"nao quero as naves mas quero todas as luas e outros objetos
 interessantes..."*. Hoje o app tem Sol, planetas e poucas luas. A meta:
 **sem naves**; TODAS as luas (o Eyes cataloga 451) e os demais objetos
 interessantes — planetas-anões (Plutão, Éris, Ceres...), asteroides e
-cometas notáveis; o top-40 por tamanho é o piso, não o teto. A mineração do NASA Eyes de 30/08
+cometas notáveis; o top-40 por tamanho é o piso, não o teto.
+**REQUALIFICADO por ele em 31/08, na reavaliação de prioridades:**
+*"estava mais preocupado em aumentar a oferta de objetos do sistema
+solar, mas sempre focando em relevância e em objetos que tenhamos
+assets para utilizar. Então talvez possamos deixar isso para uma etapa
+mais para frente ainda... e focar em outros pontos que já estão na
+fila há mais tempo."* — ou seja: o critério é RELEVÂNCIA + ASSETS
+DISPONÍVEIS (não completude das 451), e a onda fica para DEPOIS das
+estações decididas no item 115. O mapa técnico do mergulho 05 continua
+válido quando a onda chegar. A mineração do NASA Eyes de 30/08
 (`scratchpad/estudos/nasa-eyes-solar-system/mineracao/`) foi reapontada
 para colher exatamente a engenharia disso: como o Eyes registra 724
 objetos (catálogo de receitas `EntityUtils`, parentesco dependente do
