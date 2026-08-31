@@ -354,7 +354,8 @@ export async function esperarAssentar({ send, cartografia, quadros = 700, teto =
  * só a desmonta `MERGE_MS` depois do `done`, para o crossfade do núcleo
  * sobre o Sol não piscar. Medido: ela sai **2,13 s DEPOIS** do sinal. O
  * obturador disparava no meio disso e a foto saía com a cartografia da
- * carga — outra Via Láctea, de dois braços (item 34) — no lugar do app.
+ * carga — a vinheta do boot (desde o item 34, com os quatro braços do
+ * modelo da casa) — no lugar do app.
  *
  * POR QUE NENHUM JUIZ ADOECEU COM ISSO, e é o que explica os meses de
  * silêncio: todo consumidor de `capturarCDP` pina `?shot=2`
