@@ -927,6 +927,17 @@ script de medida pronto em
 (b) frase final = a curta clássica do Pale Blue Dot com atribuição a
 Carl Sagan, origem documentada (licença documenta-se, não bloqueia).
 Prova: fotos dos quadros finais para o olho dele.
+**Direção dele em 31/08 para a frase:** entre aspas, sem caixa alta, e
+com *"olhar de UI/UX apurado... é um encerramento do filme com impacto
+e drama. cinema puro"* — encenação linha a linha. Sobre o comprimento:
+ele pediu a frase completa achando-a de domínio público; esclarecido
+que não é (obra de 1994, domínio público só ~2066) e que a citação
+CURTA com atribuição é o caminho seguro em obra educacional (Lei
+9.610 art. 46). Decisão operacional: o app embarca as frases icônicas
+curtas; o texto vive num LUGAR ÚNICO comentado, onde o dono pode
+estender a citação à mão se decidir assumir isso — o coordenador
+declarou que não escreve o parágrafo longo (limite próprio de direito
+autoral).
 
 **O QUE SE VÊ nos quadros finais, para quando ele disser o que é o
 "errado":** em t=190/193 a Terra aparece de dia inteiro (Américas
