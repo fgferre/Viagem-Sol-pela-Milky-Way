@@ -105,9 +105,39 @@ void main() {
 }
 `;
 
+// ─── O CÉU DAS NUVENS, visto do Sol (item 37) ────────────────────────────
+//
+// Quantas células de direção o índice tem. 2° por célula: a menor nuvem
+// desta camada (raio 26 pc) ainda subtende 0,5° a 3 kpc, então a célula é
+// só uma PENEIRA de candidatas — quem decide é o teste de cone exato, por
+// estrela. Grade fina demais multiplica os pares (nuvem, célula) sem
+// mudar veredito nenhum.
+const CELULAS_EM_LONGITUDE = 180;
+const CELULAS_EM_LATITUDE = 90;
+/** abaixo disto o fragmento da nuvem é descartado (`FRAG`) — nuvem morta */
+const ALPHA_VIVO = 0.003;
+
+/** o `smoothstep` do GLSL, para o `nearFade` do vértice caber na CPU */
+function suave(a: number, b: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
+/** faixa de latitude de um ângulo em radianos, grampeada na grade */
+function celulaDeLatitude(lat: number): number {
+  return Math.min(
+    CELULAS_EM_LATITUDE - 1,
+    Math.max(0, Math.floor((lat / Math.PI + 0.5) * CELULAS_EM_LATITUDE))
+  );
+}
+
 export class ObservedClouds {
   readonly mesh: THREE.Mesh;
   private material: THREE.ShaderMaterial;
+  /** centro (x,y,z), raio e distância ao Sol de cada nuvem VIVA */
+  private readonly vivas: number[] = [];
+  /** índice direção → nuvens vivas cujo cone toca a célula */
+  private readonly grade: number[][] = [];
 
   constructor(clouds: CatalogueTable, largeClouds: CatalogueTable) {
     const entries: number[] = []; // x,y,z,radius,alpha,seed
@@ -196,6 +226,116 @@ export class ObservedClouds {
     this.mesh = new THREE.Mesh(geometry, this.material);
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = 5; // junto da poeira galáctica multiplicativa
+
+    this.indexarCeu(packed);
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // O CÉU DAS NUVENS — quem tem nuvem entre si e o Sol (item 37)
+  // ────────────────────────────────────────────────────────────────────
+  //
+  // Este quad é MULTIPLICATIVO e cai sobre o framebuffer inteiro: sem
+  // ninguém escrevendo profundidade nas camadas aditivas, ele apaga
+  // também quem está NA FRENTE dele. Medido em 31/08: uma estrela a
+  // 56,5 pc, com a nuvem mais próxima da visada a 121 pc, perdia 49,7%
+  // da luz — e a poeira de trás ainda a avermelhava.
+  //
+  // O conserto é de ORDEM, e a ordem precisa de um critério por estrela:
+  // quem está na frente de TODAS as nuvens da visada desenha DEPOIS do
+  // quad; o resto desenha antes e segue extinto pelo billboard, que é a
+  // extinção certa e não pode morrer junto. Este índice é quem responde
+  // a pergunta.
+  //
+  // A RÉGUA É O SOL, e isso é uma escolha declarada: o campo de catálogo
+  // vive na vizinhança solar (`uFade` o apaga ao sair dela) e as nuvens
+  // moram a 100 pc ou mais, então a paralaxe do visitante não reordena
+  // a coluna. Fora da vizinhança a classificação envelhece — e lá o
+  // campo já esmaeceu.
+  private indexarCeu(packed: Float32Array) {
+    for (let i = 0; i < packed.length; i += 6) {
+      const x = packed[i];
+      const y = packed[i + 1];
+      const z = packed[i + 2];
+      const raio = packed[i + 3];
+      const alpha = packed[i + 4];
+      const dist = Math.hypot(x, y, z);
+      // a mesma vida que o shader enxerga: o `nearFade` do vértice apaga
+      // a nuvem em que a câmera está entrando, e o fragmento descarta
+      // abaixo de ALPHA_VIVO
+      const nearFade = suave(raio * 2, raio * 7, dist);
+      if (alpha * nearFade < ALPHA_VIVO) continue;
+      this.vivas.push(x / dist, y / dist, z / dist, raio, dist);
+    }
+    for (let c = 0; c < CELULAS_EM_LONGITUDE * CELULAS_EM_LATITUDE; c++) {
+      this.grade.push([]);
+    }
+    for (let n = 0; n < this.vivas.length; n += 5) {
+      const dy = this.vivas[n + 1];
+      const raio = this.vivas[n + 3];
+      const dist = this.vivas[n + 4];
+      // meio-ângulo do cone, com a folga de uma célula: a peneira erra
+      // para o lado de INCLUIR candidata, nunca de perder
+      const teta = Math.atan2(raio, dist) + Math.PI / CELULAS_EM_LATITUDE;
+      const lat = Math.asin(Math.max(-1, Math.min(1, dy)));
+      const lon = Math.atan2(this.vivas[n + 2], this.vivas[n]);
+      const jA = celulaDeLatitude(lat - teta);
+      const jB = celulaDeLatitude(lat + teta);
+      for (let j = jA; j <= jB; j++) {
+        // meia-largura em longitude na latitude da FAIXA (a mais próxima
+        // do polo, que é a mais larga); perto do polo a faixa inteira
+        const latDaFaixa = Math.max(
+          Math.abs(((j + 0.5) / CELULAS_EM_LATITUDE - 0.5) * Math.PI) - Math.PI / CELULAS_EM_LATITUDE,
+          0
+        );
+        const cosLat = Math.cos(latDaFaixa);
+        const meia =
+          cosLat <= Math.sin(teta) ? Math.PI : Math.asin(Math.min(1, Math.sin(teta) / cosLat));
+        const passos = Math.min(
+          CELULAS_EM_LONGITUDE,
+          Math.ceil((meia / Math.PI) * (CELULAS_EM_LONGITUDE / 2)) * 2 + 1
+        );
+        const i0 = Math.floor(((lon + Math.PI) / (2 * Math.PI)) * CELULAS_EM_LONGITUDE);
+        for (let k = 0; k < passos; k++) {
+          const i = (((i0 + k - (passos >> 1)) % CELULAS_EM_LONGITUDE) + CELULAS_EM_LONGITUDE)
+            % CELULAS_EM_LONGITUDE;
+          this.grade[j * CELULAS_EM_LONGITUDE + i].push(n);
+        }
+      }
+    }
+  }
+
+  /**
+   * Há nuvem VIVA entre o Sol e este ponto? O ponto tem de estar na
+   * frente da superfície mais próxima da nuvem (`dist − raio`), não só
+   * do centro dela: dentro do volume já há coluna pela frente.
+   */
+  temNuvemNaFrente(x: number, y: number, z: number): boolean {
+    const d = Math.hypot(x, y, z);
+    if (!(d > 0)) return false;
+    const ux = x / d;
+    const uy = y / d;
+    const uz = z / d;
+    const lat = Math.asin(Math.max(-1, Math.min(1, uy)));
+    const j = celulaDeLatitude(lat);
+    const i = Math.min(
+      CELULAS_EM_LONGITUDE - 1,
+      Math.max(
+        0,
+        Math.floor(((Math.atan2(uz, ux) + Math.PI) / (2 * Math.PI)) * CELULAS_EM_LONGITUDE)
+      )
+    );
+    for (const n of this.grade[j * CELULAS_EM_LONGITUDE + i]) {
+      const dist = this.vivas[n + 4];
+      const raio = this.vivas[n + 3];
+      // a nuvem só entra se o ponto estiver ATRÁS da superfície mais
+      // próxima dela — na frente dela não há coluna entre as duas
+      if (d < dist - raio) continue;
+      const cos = ux * this.vivas[n] + uy * this.vivas[n + 1] + uz * this.vivas[n + 2];
+      // dentro do cone do billboard (o quad é um disco de raio `raio` a
+      // `dist`, encarando a câmera)
+      if (cos > 0 && cos * cos * (dist * dist + raio * raio) >= dist * dist) return true;
+    }
+    return false;
   }
 
   update(tanHalfFov: number, fade: number) {

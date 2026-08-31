@@ -977,6 +977,17 @@ export class Director {
         this.starForges.setTauMap(tauTex);
       }
       this.engine.scene.add(this.observedClouds.mesh);
+      // O CÉU DAS NUVENS classifica o campo (item 37): quem não tem nuvem
+      // viva entre si e o Sol passa a desenhar DEPOIS do quad
+      // multiplicativo e para de ser apagado por poeira que está atrás
+      // dele. Uma vez só, aqui, porque é aqui que as nuvens existem.
+      const livres = this.stars.marcarNuvensNaFrente((x, y, z) =>
+        this.observedClouds!.temNuvemNaFrente(x, y, z)
+      );
+      console.info(
+        `[nuvens] ${livres} estrelas do catálogo na frente de todas as nuvens ` +
+          'da visada — desenham depois do quad multiplicativo'
+      );
       this.engine.scene.add(this.starForges.points);
       this.nuvensSemente.construir(galactic);
       console.info(
@@ -1004,6 +1015,10 @@ export class Director {
     this.blackHole.setQuality(this.engine.quality);
     this.post.addBlackHole(this.blackHole);
     this.engine.scene.add(this.stars.points);
+    // a SEGUNDA passada do campo (item 37) — a de quem está na frente de
+    // todas as nuvens da visada, desenhada depois do quad multiplicativo.
+    // Nasce invisível e só acende quando o céu das nuvens é classificado.
+    this.engine.scene.add(this.stars.pontosNaFrente);
     // a camada 3D nasce preguiçosa: só importa/instancia se a beta
     // ligar um dia nesta sessão (setRotulos3d)
     this.engine.scene.add(this.sun.group);
@@ -1017,6 +1032,7 @@ export class Director {
     // do filme SÓ nelas. Sol, clarão, planetas, poeira, galáxia e nebulosa
     // ficam na camada 0, sob a pirâmide da lei.
     this.stars.points.layers.enable(CAMADA_DO_CAMPO);
+    this.stars.pontosNaFrente.layers.enable(CAMADA_DO_CAMPO);
     this.wrappedStars.points.layers.enable(CAMADA_DO_CAMPO);
     this.heroes.group.traverse((o) => o.layers.enable(CAMADA_DO_CAMPO));
     // Os 10 pontos fotométricos (Onda 4, D3). Grupo PRÓPRIO na cena,

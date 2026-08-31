@@ -6168,3 +6168,87 @@ onde o erro de quantização é maior. Nenhum shader corrige isso.
 consome `GLSL_LEI_DE_TELA` em px de buffer. Fica registrado aqui porque
 o pacote desta obra era a galáxia; a forja é obra própria, e a dosagem
 dela ainda espera a re-dosagem da extinção de coluna (rodada 26).
+
+## Item 37 — As nuvens escuras apagavam o que está NA FRENTE delas
+
+**37.** (Suspeita a medir.) As nuvens escuras podem estar apagando o que
+está na frente delas. Par de capturas antes de tocar em qualquer linha.
+
+**VEREDITO (medido em 31/08 — CULPADA: a camada multiplicativa cai sobre
+tudo o que já está no quadro, inclusive o que está NA FRENTE).** A peça é
+`ObservedClouds` (`src/three/world/observedClouds.ts`): o material nasce
+com `MultiplyBlending`, `depthWrite: false` e `mesh.renderOrder = 5` —
+DEPOIS de todas as camadas de estrela, que também não escrevem
+profundidade. Sem ninguém escrever o buffer de profundidade, o
+`depthTest` do quad não tem contra o que rejeitar: o multiply pega o
+framebuffer inteiro e apaga junto quem está na frente. **O tiro único:**
+uma estrela do catálogo a 56,5 pc do Sol, magnitude 3,85, coberta por 74
+nuvens VIVAS — a mais próxima delas a 121 pc, 2,1× mais longe que a
+própria estrela. Ligando e desligando só a camada (`?noco=1`), o excesso
+dela sobre o fundo caía para **0,503 — metade da luz comida por nuvens
+que estão atrás**, com a cor saindo avermelhada junto. Fotos
+`capturas/item37-*.png`, rastro em `capturas/item37-nuvens.json`.
+
+**FECHADO em 31/08 — O CAMPO PASSOU A TER DOIS LADOS.** O conserto
+proposto no item era levar a extinção das nuvens CO para dentro do shader
+da estrela. Ele foi **medido e recusado pelo tamanho**: uma coluna por
+estrela contra 8.191 nuvens pede subsistema novo (bake direcional ×
+distância, consumido por campo, cascas, forjas e clarão), é obra de mais
+de um dia e reescreve o desenho das camadas — o pacote mandava PARAR
+nesse caso. O que entrou é o caminho mais barato que respeita a física, e
+ele responde exatamente ao critério: **quem está na frente de TODAS as
+nuvens da visada não pode ser escurecido por elas.**
+
+O campo de catálogo desenha em DUAS passadas com o MESMO buffer, uma de
+cada lado do quad multiplicativo: `renderOrder` 2 para quem tem nuvem
+viva entre si e o Sol — e essa extinção é a CERTA, não pode morrer —, e
+`renderOrder` 6 para quem não tem. Quem responde de que lado cada estrela
+está é o **céu das nuvens** (`ObservedClouds.temNuvemNaFrente`): um índice
+de direção (celas de 2°) com o cone de cada nuvem VIVA, e o teste exato
+por estrela — cone do billboard e distância contra a superfície MAIS
+PRÓXIMA da nuvem (`dist − raio`), porque dentro do volume já há coluna
+pela frente. O canal por estrela é `aNaFrenteDasNuvens`, escrito uma vez
+quando a camada de nuvens nasce; sem ela o campo desenha numa passada só,
+exatamente como antes.
+
+**A régua é o SOL, e isso é escolha declarada:** o campo de catálogo vive
+na vizinhança solar (o `uFade` o apaga ao sair dela) e as nuvens moram a
+100 pc ou mais, então a paralaxe do visitante não reordena a coluna.
+
+**Os números, A/B de árvore limpa contra o HEAD** (rastro em
+`capturas/item37-fix-nuvens.json`, fotos `capturas/item37-fix-*.png`,
+instrumento em `capturas/item37-fix-nuvens.mjs`; janela 3×3 em espaço
+linear com o fundo local subtraído — a mesma que reproduz o 0,503
+publicado):
+
+| | antes | depois |
+| --- | --- | --- |
+| a estrela do tiro único (56,5 pc) | **0,512** | **0,966** |
+| população LIVRE, cena do alvo (55) — mediana | 0,973 | **1,000** |
+| a mesma, p10 · mínimo | 0,550 · 0,382 | **0,940 · 0,847** |
+| população LIVRE, cena APOGEE (138) — p10 · mínimo | 0,885 · 0,782 | **0,993 · 0,976** |
+| população ATRÁS de nuvem (289 e 247) | 0,956 / 1,000 | **idênticas, bit a bit** |
+| o FUNDO dentro da nuvem | 0,488 | **0,488** |
+
+Quem é de cada lado não é palpite do medidor: o script pergunta ao app,
+com a cena assentada, o canal `aNaFrenteDasNuvens` de cada estrela e
+projeta cada uma com as matrizes da câmera — é isso que liga o pixel
+medido ao veredito do oráculo.
+
+**A cirurgia é do tamanho certo.** Com a camada ligada, só os pixels das
+estrelas livres mudam: 563 e 2.189 de 1.080.000. Com a camada DESLIGADA
+(`?noco=1`) as duas passadas reproduzem a passada única — 2 e 79 pixels
+com diferença de UMA unidade, ruído de ordem de soma em float. Nenhuma
+estrela perdida, nenhuma desenhada duas vezes.
+
+**O resíduo de 0,966 é da MEDIDA, não do conserto:** a janela 3×3 ainda
+tem 5 a 7 pixels de fundo, e o fundo continua (corretamente) escurecido.
+No pixel do sprite a conta fecha em 1,003. E o clarão de asas não entra:
+com `?noclarao=1` a razão sai igual até a quarta casa.
+
+**O que sobrou, com número próprio: o item 122.** As outras camadas
+aditivas — clarão de asas, heroes, poeira, forjas, cascas e as partículas
+da galáxia — continuam do lado de trás do quad, e o mesmo defeito vale
+para elas. As cascas e as partículas da galáxia estão do lado CERTO (são
+o fundo que as nuvens têm de escurecer); o clarão, as heroes e a poeira
+local não.

@@ -20,6 +20,8 @@ import * as THREE from 'three';
 import { StarField, UPDATE_RANGE_CAP } from './stars';
 import type { StarArrays } from '../config';
 import { FOCUS_OFF, FOCUS_ON } from './lodStellar';
+import { ObservedClouds } from './observedClouds';
+import { STAR_VERT } from '../shaders/starShaders';
 
 /** um catálogo mínimo — 5 estrelas, o suficiente para o contrato */
 function campo(n = 5): StarField {
@@ -257,5 +259,124 @@ describe('D8 — o invariante da casa: qualidade não recria geometria', () => {
     expect(atributo(f, 'aFocus')).toBe(foco); // mesmo buffer
     expect(f.focusAt(1)).toBeCloseTo(0.6, 6); // mesmo valor
     f.dispose();
+  });
+});
+
+// ============================================================
+// AS DUAS PASSADAS DO CAMPO (item 37).
+//
+// O quad das nuvens moleculares é MULTIPLICATIVO e cai sobre o
+// framebuffer inteiro. O conserto é de ordem: quem não tem nuvem viva
+// entre si e o Sol desenha DEPOIS dele; o resto desenha antes e segue
+// extinto — essa extinção é a certa e não pode morrer junto.
+//
+// O que se cobra aqui é o COMPORTAMENTO das duas passadas, com a regra
+// do vertex reproduzida sobre o buffer: cada estrela do catálogo tem de
+// ser desenhada EXATAMENTE UMA VEZ, e do lado certo do quad.
+// ============================================================
+describe('as duas passadas do campo, uma de cada lado das nuvens (item 37)', () => {
+  /** a regra do STAR_VERT: `aNaFrenteDasNuvens != uLado` mata o ponto */
+  const desenha = (f: StarField, i: number) => {
+    const canal = atributo(f, 'aNaFrenteDasNuvens').array as Float32Array;
+    let vezes = 0;
+    for (const p of [f.points, f.pontosNaFrente]) {
+      const mat = (p as THREE.Points).material as THREE.ShaderMaterial;
+      if (canal[i] === mat.uniforms.uLado.value) vezes++;
+    }
+    return vezes;
+  };
+
+  it('sem classificação, o campo é o de sempre: uma passada só', () => {
+    const f = campo(5);
+    expect(atributo(f, 'aNaFrenteDasNuvens').array).toEqual(new Float32Array(5));
+    f.setFade(1);
+    expect(f.points.visible).toBe(true);
+    expect(f.pontosNaFrente.visible).toBe(false);
+    for (let i = 0; i < 5; i++) expect(desenha(f, i)).toBe(1);
+    f.dispose();
+  });
+
+  it('classificado, cada estrela desenha EXATAMENTE uma vez', () => {
+    const f = campo(6);
+    // as de índice par ficam na frente de todas as nuvens
+    const livres = f.marcarNuvensNaFrente((_x, _y, z) => Math.round(z) % 2 === 1);
+    expect(livres).toBe(3);
+    const canal = atributo(f, 'aNaFrenteDasNuvens').array as Float32Array;
+    expect(Array.from(canal)).toEqual([1, 0, 1, 0, 1, 0]);
+    for (let i = 0; i < 6; i++) expect(desenha(f, i), `estrela ${i}`).toBe(1);
+    f.dispose();
+  });
+
+  it('a passada da frente acende só quando há quem desenhar', () => {
+    const f = campo(4);
+    f.setFade(1);
+    expect(f.pontosNaFrente.visible).toBe(false);
+    expect(f.marcarNuvensNaFrente(() => true)).toBe(0); // todas atrás
+    expect(f.pontosNaFrente.visible).toBe(false);
+    expect(f.marcarNuvensNaFrente(() => false)).toBe(4); // todas livres
+    expect(f.pontosNaFrente.visible).toBe(true);
+    f.setFade(0); // campo apagado apaga as duas
+    expect(f.points.visible).toBe(false);
+    expect(f.pontosNaFrente.visible).toBe(false);
+    f.dispose();
+  });
+
+  it('a ordem é a do quad das nuvens — uma de cada lado dele', () => {
+    const f = campo(3);
+    const nuvens = new ObservedClouds(
+      { data: new Float32Array(0), count: 0, stride: 11 },
+      { data: new Float32Array(0), count: 0, stride: 9 }
+    );
+    expect(f.points.renderOrder).toBeLessThan(nuvens.mesh.renderOrder);
+    expect(f.pontosNaFrente.renderOrder).toBeGreaterThan(nuvens.mesh.renderOrder);
+    nuvens.dispose();
+    f.dispose();
+  });
+
+  it('as duas passadas dividem O MESMO buffer — nada é copiado', () => {
+    const f = campo(5);
+    expect(f.pontosNaFrente.geometry).toBe(f.points.geometry);
+    f.writeFocus(2, FOCUS_ON);
+    expect(
+      ((f.pontosNaFrente.geometry.getAttribute('aFocus') as THREE.BufferAttribute)
+        .array as Float32Array)[2]
+    ).toBe(FOCUS_ON);
+    f.dispose();
+  });
+
+  it('o que o quadro escreve chega às DUAS — nenhuma fica no valor velho', () => {
+    const f = campo(3);
+    f.update(new THREE.Vector3(7, 8, 9), 1440, 4);
+    f.setFade(0.5);
+    f.setCavity(new THREE.Vector3(1, 2, 3), 0.7);
+    for (const p of [f.points, f.pontosNaFrente]) {
+      const u = ((p as THREE.Points).material as THREE.ShaderMaterial).uniforms;
+      expect((u.uCamPos.value as THREE.Vector3).toArray()).toEqual([7, 8, 9]);
+      expect(u.uScreenH.value).toBe(1440);
+      expect(u.uPr2.value).toBe(4);
+      expect(u.uFade.value).toBe(0.5);
+      expect((u.uCavityPos.value as THREE.Vector3).toArray()).toEqual([1, 2, 3]);
+      expect(u.uCavityGate.value).toBe(0.7);
+    }
+    // ...e os dois lados continuam sendo lados diferentes
+    expect((f.points.material as THREE.ShaderMaterial).uniforms.uLado.value).not.toBe(
+      (f.pontosNaFrente.material as THREE.ShaderMaterial).uniforms.uLado.value
+    );
+    f.dispose();
+  });
+
+  it('o vertex mata quem não é da passada ANTES de qualquer conta', () => {
+    const corpo = STAR_VERT.slice(STAR_VERT.indexOf('void main()'));
+    const morte = corpo.indexOf('if (aNaFrenteDasNuvens != uLado)');
+    expect(morte).toBeGreaterThan(0);
+    // nada de starPSF, extinção ou projeção antes do corte
+    for (const depois of ['starPSF(', 'extinction(', 'projectionMatrix']) {
+      expect(corpo.indexOf(depois), depois).toBeGreaterThan(morte);
+    }
+    // e o ponto morto não deixa varying por escrever (NaN no fragmento)
+    const bloco = corpo.slice(morte, corpo.indexOf('}', corpo.indexOf('return;', morte)));
+    for (const varying of ['vColor', 'vSigma', 'vPeak', 'vCentroPx', 'vMeiaPx']) {
+      expect(bloco, varying).toContain(varying);
+    }
   });
 });

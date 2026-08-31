@@ -586,9 +586,10 @@ nuvens apaga o que está na frente — CULPADA, meia luz de uma estrela a
 56,5 pc comida por nuvens a 121 pc) e 46 (a galáxia profunda não é
 invariante à resolução — CULPADA, 23–29% a menos em retina; mas o "céu
 vazio" temido é INOCENTE). Medição não é conserto, e cada um trouxe o
-conserto proposto por escrito; o **46 já FECHOU por obra** no mesmo dia
-(a lei de tela ganhou régua — a razão da escada 900→1800 foi de 0,770
-para 0,982), o 117 segue aberto.
+conserto proposto por escrito; o **46 e o 37 FECHARAM por obra** no mesmo
+dia (a lei de tela ganhou régua, e a razão da escada 900→1800 foi de 0,770
+para 0,982; o campo de catálogo ganhou dois lados, e a estrela comida pela
+nuvem de trás foi de 0,512 para 0,966), o 117 segue aberto.
 **Estação (2), primeira peça — o MSAA no alvo do composer: MEDIDO e
 REPROVADO PELO PREÇO (31/08). NÃO virou obra.** O teto era ~15% do tempo
 de quadro na vista mais cara; o medido foi **+55% a +70% em dpr 2** e
@@ -892,47 +893,16 @@ vezes (na cor e em metade do alpha) com degrau duro em 3 px, e o
 morta. A UNIFICAÇÃO segue sendo a pauta 1 do NORTE — obra própria, que
 muda pixel e volta com foto para o dono a cada mudança.
 
-**37.** (Suspeita a medir.) As nuvens escuras podem estar apagando o que
-está na frente delas. Par de capturas antes de tocar em qualquer linha.
-
-**VEREDITO (medido em 31/08 — CULPADA: a camada multiplicativa cai sobre
-tudo o que já está no quadro, inclusive o que está NA FRENTE).** A peça é
-`ObservedClouds` (`src/three/world/observedClouds.ts`): o material nasce
-com `MultiplyBlending`, `depthWrite: false` e `mesh.renderOrder = 5` —
-DEPOIS de todas as camadas de estrela, que também não escrevem
-profundidade (`stars.ts` e `wrappedStars.ts` em 2, `heroStars.ts` e
-`starForges.ts` em 3, as partículas de `galaxy.ts` em 1–3, `dust.ts` em
-4; todas `AdditiveBlending` + `depthWrite: false`). Sem ninguém escrever
-o buffer de profundidade, o `depthTest` do quad não tem contra o que
-rejeitar: o multiply pega o framebuffer inteiro e apaga junto quem está
-na frente. **O tiro único:** uma estrela do catálogo a 56,5 pc do Sol,
-magnitude 3,85, coberta por 74 nuvens VIVAS — a mais próxima delas a 121
-pc, 2,1× mais longe que a própria estrela, ou seja NENHUMA entre ela e a
-câmera. Ligando e desligando só a camada (`?noco=1`), o pico dela cai de
-(163,141,125) para (120,89,65) e, em espaço linear, o excesso sobre o
-fundo cai para **0,503 — metade da luz comida por nuvens que estão
-atrás**. A cor sai errada junto (R 0,579 · G 0,473 · B 0,438): a poeira
-de trás avermelha a estrela da frente. **O controle fecha.** Numa segunda
-vista, um complexo APOGEE isolado a 2.138 pc (raio angular 9,1°), com 60
-estrelas do catálogo entre 70 e 277 pc dentro do disco e a nuvem mais
-próxima que as cobre a 1.210 pc: as 34 brilhantes (m < 7) perdem em
-mediana **15%**, no pior caso **37%**; as 13 estrelas de CONTROLE — mesmo
-quadro, sem nuvem viva na linha de visada — dão razão **1,000 exata**,
-todas. E a perda de cada estrela ACOMPANHA a transmissão local da nuvem
-medida no fundo ao redor dela: reta ancorada em (1,1) com inclinação
-**1,14** e r = **0,78** sobre 32 estrelas — a estrela perde tanto quanto o
-fundo, que é a assinatura de estar sendo multiplicada junto com ele. Na
-vista do centro galáctico as nuvens chegam a empilhar τ 9,8 sobre
-estrelas a menos de 300 pc, com toda a pilha atrás delas. **Conserto
-proposto (não implementado):** a extinção das nuvens CO tem de entrar na
-PRÓPRIA estrela — o shader de `stars.ts` já tem o canal `uTau` e a coluna
-fica ordenada por construção —, deixando o billboard multiplicativo
-pintar só o fundo. Baixar o `renderOrder` das nuvens para antes das
-estrelas é o remendo barato, mas torna toda estrela imune, inclusive as
-que estão de fato atrás. Fotos `capturas/item37-*.png` (o par do alvo em
-`-alvo-aces-zoom-com/sem`), rastro com URLs, portas e todos os números em
-`capturas/item37-nuvens.json`. **O item continua ABERTO** — a suspeita
-virou defeito com causa e número, e o conserto é obra própria.
+**37.** As nuvens escuras apagavam o que está NA FRENTE delas —
+**FECHADO em 31/08**: o campo de catálogo passou a desenhar em DUAS
+passadas, uma de cada lado do quad multiplicativo, e quem diz de que
+lado cada estrela está é o céu das nuvens (`temNuvemNaFrente`, em
+`observedClouds.ts`); a estrela do tiro único vai de 0,512 para 0,966,
+a população livre vai a mediana 1,000 e as estrelas ATRÁS de nuvem
+ficam bit-idênticas, com o fundo ainda escurecido em 0,488. O conserto
+proposto no item (a coluna das nuvens dentro do shader da estrela) foi
+recusado pelo TAMANHO — vira subsistema e reescreve as camadas. O que
+sobrou tem número: item **122**. História no ARQUIVO.
 
 **46.** A galáxia profunda não passava pela invariância de resolução —
 **FECHADO em 31/08**: a lei de tela ganhou RÉGUA (`leiDeTelaNaRegua`, em
@@ -1794,6 +1764,27 @@ FITA (o pico mais próximo do da coluna anterior) em vez do pixel mais
 claro da faixa. É mudança de JUIZ, e o `AGENTS.md` §13 não dá desconto a
 ela — número medido, declaração no commit e sabotagem por mão
 independente —, por isso ficou de fora da peça.
+
+**122. O quad das nuvens ainda apaga as OUTRAS camadas aditivas que
+estão na frente dele (herdado do item 37, 31/08).** O conserto do 37 deu
+dois lados ao campo de catálogo, e só a ele. As demais camadas aditivas
+seguem inteiras do lado de trás do quad multiplicativo (`renderOrder` 5),
+e como nenhuma escreve profundidade, todas continuam sendo multiplicadas
+por nuvem que está ATRÁS delas: o **clarão de asas** (`clarao.ts`, ordem
+3 — a lente das fontes fortes, que é artefato do instrumento e nasce na
+câmera), as **16 heroes** (`heroStars.ts`, ordem 3) e a **poeira local**
+(`dust.ts`, ordem 4). As cascas (`wrappedStars.ts`) e as partículas da
+galáxia estão do lado CERTO — são o fundo que as nuvens têm de escurecer,
+e é delas que vêm as fendas escuras da faixa. Os dez corpos NÃO sofrem: o
+grupo é opaco, escreve o único depth da casa e o `depthTest` do quad o
+rejeita. **Nada disto está medido** — o que está medido é a ordem no
+código. Casa do conserto: as heroes e o clarão são poucos objetos, com
+posição conhecida, e o oráculo do 37 (`temNuvemNaFrente`) já responde por
+eles um a um — dá para escolher o `renderOrder` de cada quad. A poeira
+local é campo de pontos e pede o mesmo canal do campo. **E há o caminho
+grande, que segue de pé:** a extinção das nuvens dentro do shader de cada
+camada, por um bake direção × distância — o conserto que o 37 recusou
+pelo tamanho, e que resolveria todas de uma vez.
 
 **95.** Num eclipse o chão escurecia e o AR não — **FECHADO em 25/08**,
 conferido por ele na SEGUNDA LEVA da Sala de Conferência (**C12**);

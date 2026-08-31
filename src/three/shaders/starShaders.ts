@@ -43,6 +43,16 @@ export const BETA_DA_EMISSAO = lerBetaDaEmissao(
 export const STAR_VERT = /* glsl */ `
 attribute float aLogLum;
 attribute float aCi;
+// 1 = esta estrela está NA FRENTE de todas as nuvens moleculares vivas
+// da visada; 0 = há nuvem entre ela e o Sol (item 37). O campo desenha em
+// DUAS passadas com o MESMO buffer, uma de cada lado do quad
+// multiplicativo das nuvens: as extintas antes dele — essa extinção é a
+// certa —, as livres depois. Sem isto o multiply cai sobre o framebuffer
+// inteiro e apaga metade da luz de quem está NA FRENTE da nuvem (medido:
+// 49,7% numa estrela a 56,5 pc, com a nuvem mais próxima a 121 pc).
+attribute float aNaFrenteDasNuvens;
+/** 0 = a passada de trás (a de sempre) · 1 = a passada da frente */
+uniform float uLado;
 
 uniform vec3 uCamPos;
 uniform float uScreenH;
@@ -71,6 +81,23 @@ ${GLSL_STAR_PSF}
 ${GLSL_PONTO_NA_BORDA}
 
 void main() {
+  // A PASSADA PRIMEIRO, antes de qualquer conta: quem não é desta
+  // passada sai do clip e não rasteriza nada. É o preço do conserto do
+  // item 37 — uma busca de atributo e uma comparação por estrela na
+  // passada que a descarta.
+  if (aNaFrenteDasNuvens != uLado) {
+    // fora do clip em z, e com TODO varying escrito: um driver que ainda
+    // assim rasterizasse o ponto (o piso de 1 px do
+    // ALIASED_POINT_SIZE_RANGE) depositaria zero, nunca NaN
+    gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
+    gl_PointSize = 0.0;
+    vColor = vec3(0.0);
+    vSigma = 1.0;
+    vPeak = 0.0;
+    vCentroPx = vec2(0.0);
+    vMeiaPx = 1.0;
+    return;
+  }
   vec3 worldPos = position;
   float dist = length(worldPos - uCamPos);
 

@@ -25,9 +25,28 @@ interface StarFieldOptions {
   tau?: number; // coeficiente de extinção
 }
 
+/**
+ * A ordem das duas passadas do campo — item 37. O quad multiplicativo
+ * das nuvens moleculares (`observedClouds.ts`) desenha em 5 e cai sobre
+ * o framebuffer INTEIRO, porque nenhuma camada aditiva escreve
+ * profundidade. Quem tem nuvem viva entre si e o Sol desenha ANTES dele
+ * e continua extinto — essa extinção é a certa. Quem não tem desenha
+ * DEPOIS: nenhuma nuvem da visada pode apagá-lo.
+ */
+const ORDEM_ATRAS_DAS_NUVENS = 2;
+const ORDEM_NA_FRENTE_DAS_NUVENS = 6;
+
 export class StarField {
+  /** a passada de quem tem nuvem na frente — a ordem de sempre */
   readonly points: THREE.Points;
   readonly material: THREE.ShaderMaterial;
+  /** a passada de quem está na frente de todas as nuvens da visada */
+  readonly pontosNaFrente: THREE.Points;
+  private readonly materialNaFrente: THREE.ShaderMaterial;
+  private readonly naFrenteArray: Float32Array;
+  private readonly naFrenteAttr: THREE.BufferAttribute;
+  /** quantas estrelas a segunda passada desenha (0 = céu não classificado) */
+  private naFrente = 0;
   /** `uExpoM0` e `uSigmaPx` publicados: quem precisa prever o pixel do
    *  campo (a repartição do Sol no director, o clarão de asas) lê DAQUI
    *  — redigitar 3,5/0,85 no consumidor seria comprar a divergência que
@@ -73,6 +92,14 @@ export class StarField {
     this.focusAttr.onUpload(() => {
       this.focusCheio = false;
     });
+    // NASCE ZERADO = como era antes do item 37: com todas as estrelas do
+    // lado de trás, a segunda passada não desenha nada e a primeira é a
+    // de sempre, byte a byte. Quem preenche é o Director, DEPOIS de a
+    // camada de nuvens existir — e ela pode não existir (`?nocart`,
+    // `cartMode: 'off'`, ou o carregamento sem cartografia).
+    this.naFrenteArray = new Float32Array(n);
+    this.naFrenteAttr = new THREE.BufferAttribute(this.naFrenteArray, 1);
+    geo.setAttribute('aNaFrenteDasNuvens', this.naFrenteAttr);
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 6000);
 
     this.expoM0 = opts.expoM0 ?? EXPO_M0;
@@ -93,6 +120,8 @@ export class StarField {
         uFade: { value: 1 },
         uCavityPos: { value: new THREE.Vector3() },
         uCavityGate: { value: 0 },
+        // 0 = esta passada desenha quem tem nuvem na frente (item 37)
+        uLado: { value: 0 },
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -101,19 +130,56 @@ export class StarField {
 
     this.points = new THREE.Points(geo, this.material);
     this.points.frustumCulled = false;
-    this.points.renderOrder = 2;
+    this.points.renderOrder = ORDEM_ATRAS_DAS_NUVENS;
+
+    // A SEGUNDA PASSADA divide a GEOMETRIA — os atributos são os mesmos
+    // objetos, então `writeFocus` e o resto continuam com um endereço só.
+    // O que ela tem de próprio é o material, por causa de `uLado`; os
+    // outros uniforms viajam pelos dois em `update`/`setFade`/`setCavity`.
+    this.materialNaFrente = this.material.clone();
+    this.materialNaFrente.uniforms.uLado.value = 1;
+    this.pontosNaFrente = new THREE.Points(geo, this.materialNaFrente);
+    this.pontosNaFrente.frustumCulled = false;
+    this.pontosNaFrente.renderOrder = ORDEM_NA_FRENTE_DAS_NUVENS;
+    this.pontosNaFrente.visible = false;
   }
 
   update(camPos: THREE.Vector3, screenH: number, pr2 = 1) {
-    const u = this.material.uniforms;
-    (u.uCamPos.value as THREE.Vector3).copy(camPos);
-    u.uScreenH.value = screenH;
-    u.uPr2.value = pr2;
+    for (const u of [this.material.uniforms, this.materialNaFrente.uniforms]) {
+      (u.uCamPos.value as THREE.Vector3).copy(camPos);
+      u.uScreenH.value = screenH;
+      u.uPr2.value = pr2;
+    }
   }
 
   setFade(f: number) {
     this.material.uniforms.uFade.value = f;
-    this.points.visible = f > 0.001;
+    this.materialNaFrente.uniforms.uFade.value = f;
+    const aceso = f > 0.001;
+    this.points.visible = aceso;
+    // a segunda passada só existe depois de o Director classificar o céu
+    this.pontosNaFrente.visible = aceso && this.naFrente > 0;
+  }
+
+  /**
+   * Classifica cada estrela pelo céu das nuvens (item 37) e devolve
+   * quantas ficaram NA FRENTE de todas as nuvens da visada. Chamada uma
+   * vez, quando a camada de nuvens nasce; sem ela o campo desenha numa
+   * passada só, exatamente como antes.
+   */
+  marcarNuvensNaFrente(temNuvemNaFrente: (x: number, y: number, z: number) => boolean): number {
+    const pos = this.points.geometry.getAttribute('position') as THREE.BufferAttribute;
+    const xyz = pos.array as Float32Array;
+    let naFrente = 0;
+    for (let i = 0; i < this.naFrenteArray.length; i++) {
+      const livre = temNuvemNaFrente(xyz[i * 3], xyz[i * 3 + 1], xyz[i * 3 + 2]) ? 0 : 1;
+      this.naFrenteArray[i] = livre;
+      naFrente += livre;
+    }
+    this.naFrenteAttr.needsUpdate = true;
+    this.naFrente = naFrente;
+    this.pontosNaFrente.visible = this.points.visible && naFrente > 0;
+    return naFrente;
   }
 
   // (O atuador da pupila — `setPupila`, o deslocamento de `expoM0` por
@@ -208,12 +274,16 @@ export class StarField {
 
   /** mesma cavidade do raymarch — a extinção vê o mesmo gás carvado */
   setCavity(pos: THREE.Vector3, gate: number) {
-    (this.material.uniforms.uCavityPos.value as THREE.Vector3).copy(pos);
-    this.material.uniforms.uCavityGate.value = gate;
+    for (const u of [this.material.uniforms, this.materialNaFrente.uniforms]) {
+      (u.uCavityPos.value as THREE.Vector3).copy(pos);
+      u.uCavityGate.value = gate;
+    }
   }
 
   dispose() {
+    // a geometria é UMA — as duas passadas a compartilham
     this.points.geometry.dispose();
     this.material.dispose();
+    this.materialNaFrente.dispose();
   }
 }
