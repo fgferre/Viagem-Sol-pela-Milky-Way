@@ -787,6 +787,115 @@ describe('6c. a falha de carga não é sentença (auditoria item 6)', () => {
   });
 });
 
+describe('6c2. trocar de qualidade não tira o globo da tela (item 59)', () => {
+  /** Terra com o tier NA MÃO do teste e cada textura marcada pela url —
+   *  é o `name` que diz, do lado de fora, quais pixels estão na tela. */
+  function terraComTierVivo(inicial: 'cinema' | 'alta' | 'performance') {
+    let tier = inicial;
+    const urls: string[] = [];
+    const descartadas: string[] = [];
+    const terra = new TerraResolvida({
+      tier: () => tier,
+      maxTextureSize: 16384,
+      base: '',
+      webp: true,
+      buscarManifest: async () => MANIFEST,
+      carregarTextura: async (url) => {
+        urls.push(url);
+        const t = new THREE.Texture();
+        t.name = url;
+        t.addEventListener('dispose', () => descartadas.push(url));
+        return t;
+      },
+    });
+    const mapaNaTela = () => {
+      const mesh = terra.group.children[0] as THREE.Mesh;
+      const mat = mesh.material as THREE.ShaderMaterial;
+      return (mat.uniforms.uMapaDia.value as THREE.Texture | null)?.name ?? null;
+    };
+    return {
+      terra,
+      urls,
+      descartadas,
+      mapaNaTela,
+      escolher: (t: typeof inicial) => {
+        tier = t;
+      },
+    };
+  }
+
+  /** a variante que o manifest REAL dá para o `map` da Terra num tier. */
+  const mapaEm = (tier: 'cinema' | 'alta' | 'performance') =>
+    escolherVariante(MANIFEST.entradas, 'earth', 'map', alvoDePixels(tier, 'map', 16384), true)!
+      .arquivo;
+
+  it('alta → cinema em close-up: o globo fica, e a textura nova entra por trás', async () => {
+    const b = terraComTierVivo('alta');
+    const perto = centroPc(JD);
+    perto.z += RAIO_EQ_TERRA_PC * 4; // a Terra dominando a tela
+    b.terra.atualizar(quadro(perto));
+    await flush();
+    let e = b.terra.atualizar(quadro(perto));
+    expect(e.emQuadro).toBe(true);
+    expect(b.mapaNaTela()).toBe(mapaEm('alta'));
+    const pedidosDeAlta = b.urls.length;
+
+    // o visitante escolhe Cinema. Os ticks abaixo são SÍNCRONOS: nenhum
+    // microtask roda entre eles, então o lote novo não chegou em NENHUM
+    // — é exatamente a janela em que a Terra "virava ponto e voltava".
+    b.escolher('cinema');
+    for (let i = 0; i < 20; i++) {
+      e = b.terra.atualizar(quadro(perto));
+      expect(e.emQuadro, `tick ${i}: o globo saiu da tela`).toBe(true);
+      expect(b.terra.group.visible, `tick ${i}: o grupo apagou`).toBe(true);
+      expect(b.mapaNaTela(), `tick ${i}: pixels sumiram`).toBe(mapaEm('alta'));
+      // e a mudança já pedida se declara: o `captura` do Director não
+      // fotografa a corrida
+      expect(e.carregando).toBe(true);
+    }
+
+    // o lote inteiro chega: a troca é de um quadro só
+    await flush();
+    e = b.terra.atualizar(quadro(perto));
+    expect(e.emQuadro).toBe(true);
+    expect(e.carregando).toBe(false);
+    expect(b.mapaNaTela()).toBe(mapaEm('cinema'));
+    // os CINCO canais vieram no tier novo, e os cinco velhos voltaram
+    expect(b.urls.length - pedidosDeAlta).toBe(CANAIS_DA_TERRA.length);
+    expect(b.descartadas).toHaveLength(CANAIS_DA_TERRA.length);
+    b.terra.dispose();
+  });
+
+  it('e o caminho de volta: cinema → performance, sem véu nenhum', async () => {
+    const b = terraComTierVivo('cinema');
+    const perto = centroPc(JD);
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    b.terra.atualizar(quadro(perto));
+    await flush();
+    expect(b.terra.atualizar(quadro(perto)).emQuadro).toBe(true);
+    b.escolher('performance');
+    for (let i = 0; i < 20; i++) {
+      expect(b.terra.atualizar(quadro(perto)).emQuadro).toBe(true);
+    }
+    await flush();
+    expect(b.terra.atualizar(quadro(perto)).emQuadro).toBe(true);
+    expect(b.mapaNaTela()).toBe(mapaEm('performance'));
+    b.terra.dispose();
+  });
+
+  it('de LONGE, com o gate frio, a troca de tier não faz um fetch', async () => {
+    // a carga preguiçosa continua sendo o contrato: quem nunca carregou
+    // não tem o que trocar, e as vistas oficiais não fazem fetch
+    const b = terraComTierVivo('alta');
+    b.terra.atualizar(quadro(new THREE.Vector3(0, 0, 0.001)));
+    b.escolher('cinema');
+    for (let i = 0; i < 5; i++) b.terra.atualizar(quadro(new THREE.Vector3(0, 0, 0.001)));
+    await flush();
+    expect(b.urls).toEqual([]);
+    b.terra.dispose();
+  });
+});
+
 describe('6d. o pino do filme manda sobre a efeméride (item 108, 30/08)', () => {
   it('com a fonte VIVA na data errada, a Terra fica onde a coda a espera', async () => {
     // O DEFEITO: o pino (`TERRA_PC`, as 16:00 do dia do filme) só valia

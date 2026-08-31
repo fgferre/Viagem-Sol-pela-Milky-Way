@@ -439,15 +439,52 @@ export interface PedidoDeTexturas {
  * se repete diverge no que importa. O corpo continua dono do material,
  * da casca e do `dispose` dele; o que ele delega é QUANDO pedir, o que
  * fazer quando cai, e quem descarta os texels no fim.
+ *
+ * ------------------------------------------------------------
+ * O DOUBLE-BUFFER DA TROCA DE TIER (item 59, 31/08)
+ * ------------------------------------------------------------
+ * Até aqui o tier era lido só na HORA do primeiro pedido: quem já
+ * estava carregado ficava com os pixels do tier velho para sempre, e a
+ * Terra em close-up continuava em 1k depois de o visitante escolher
+ * Cinema. Refazer o corpo para alcançá-lo tirava o globo da tela por
+ * ~2 s (medido em 20/08) — o véu que a letra C dos Ajustes proíbe.
+ *
+ * O conserto é o MESMO desenho do `reassarMundo`, um degrau abaixo: o
+ * `tierVivo` diz de que tier são os pixels QUE ESTÃO NA TELA; quando o
+ * seletor discorda dele, sai um pedido em SEGUNDO PLANO (o corpo segue
+ * 'pronta', desenhando os pixels velhos), e a troca de ponteiro
+ * acontece num passo síncrono só — `publicar` o lote novo, descartar o
+ * velho. Nunca existe um quadro sem globo.
+ *
+ * A GERAÇÃO é quem decide validade, não o tier pedido: quem clica em
+ * três tiers seguidos gera três pedidos, e só o último vira pixel — os
+ * outros descartam o que baixaram pela transação que já existe
+ * (`carregarCanaisDoCorpo` recebe `cancelado`). Pela régua do tier, um
+ * clique que VOLTA ao tier vivo passaria batido e deixaria o lote do
+ * meio do caminho pousar; é a mesma lição que o `geracaoDaTroca` do
+ * Director aprendeu em 21/08.
  */
 export class TexturasDoCorpo {
   private estado: EstadoDasTexturas = 'fria';
   /** recargas já gastas depois de falha — ver RECARGAS_ATE_DESISTIR */
   private recargas = 0;
   /** os texels residentes, dos quais esta casa é a dona */
-  private readonly vivas: THREE.Texture[] = [];
+  private vivas: THREE.Texture[] = [];
   private disposto = false;
   private readonly pedido: PedidoDeTexturas;
+
+  /** de que tier são os pixels QUE ESTÃO NA TELA (null: nenhum ainda) */
+  private tierVivo: QualityLevel | null = null;
+  /** o tier do lote EM VOO — null quando não há pedido no ar */
+  private tierEmVoo: QualityLevel | null = null;
+  /**
+   * O tier cuja TROCA esgotou as três tentativas. Sem ele o tick
+   * repetiria o pedido para sempre, 60 vezes por segundo, contra uma
+   * rede que já disse não três vezes. Uma troca bem-sucedida o apaga.
+   */
+  private tierRecusado: QualityLevel | null = null;
+  /** o pedido que vale; qualquer outro que chegue é descartado */
+  private geracao = 0;
 
   constructor(pedido: PedidoDeTexturas) {
     this.pedido = pedido;
@@ -458,23 +495,60 @@ export class TexturasDoCorpo {
     return this.estado === 'pronta';
   }
 
-  /** há carga EM VOO — mudança já pedida que ainda não chegou. */
+  /**
+   * Há carga EM VOO — mudança já pedida que ainda não chegou, seja a
+   * primeira (sem globo na tela) ou a troca de tier (com o globo velho
+   * ainda desenhando). Os dois casos contam pelo mesmo motivo: o
+   * `captura` do Director espera por eles para fotografar a imagem em
+   * vez da corrida, e o `perturbar` do palco recomeça a contagem de
+   * estabilidade quando o lote novo entra.
+   */
   get carregando(): boolean {
-    return this.estado === 'buscando';
+    return this.estado === 'buscando' || this.tierEmVoo !== null;
+  }
+
+  /** o tier dos pixels na tela — a sonda da troca lê isto. */
+  get tierNaTela(): QualityLevel | null {
+    return this.tierVivo;
   }
 
   /**
    * O GATILHO, uma vez por tick. `gatilho` é o par de sempre (gate
    * armado OU fase atlas); a carga preguiçosa é o contrato — sem
    * gatilho nenhum byte desce, e as vistas oficiais não fazem fetch.
+   *
+   * A TROCA DE TIER não pede gatilho: o corpo já está na tela, e é
+   * justamente por estar que ele precisa dos pixels certos.
    */
   aoTick(gatilho: boolean): void {
     if (this.disposto) return;
-    if (this.estado === 'fria' && gatilho) this.pedir();
+    if (this.estado === 'fria' && gatilho) {
+      this.pedir();
+      return;
+    }
+    // corpo procedural (sem canais) não tem pixel de arquivo a trocar
+    if (this.estado !== 'pronta' || this.pedido.canais.length === 0) return;
+    const tier = this.pedido.rede.tier();
+    // contra o lote EM VOO quando há um: dois cliques no mesmo tier não
+    // abrem dois pedidos, e o pedido em voo não se cancela sozinho
+    if (tier === (this.tierEmVoo ?? this.tierVivo) || tier === this.tierRecusado) return;
+    // VOLTAR AO TIER QUE JÁ ESTÁ NA TELA É CANCELAR, e não pedir de
+    // novo: não há lote a buscar, mas há um em voo que ninguém espera
+    // mais — a geração nova o invalida. É a lição do `reassarMundo`
+    // (21/08) num corpo só.
+    if (tier === this.tierVivo) {
+      this.geracao += 1;
+      this.tierEmVoo = null;
+      return;
+    }
+    this.pedir();
   }
 
   private pedir(): void {
-    this.estado = 'buscando';
+    // com o globo já na tela o pedido é de TROCA: o estado continua
+    // 'pronta' e os pixels velhos seguem desenhando até o lote chegar
+    const daPrimeiraVez = this.estado !== 'pronta';
+    if (daPrimeiraVez) this.estado = 'buscando';
     // corpo procedural: nada a baixar, e a casca nasce no `publicar`
     if (this.pedido.canais.length === 0) {
       this.pedido.publicar(new Map());
@@ -482,29 +556,59 @@ export class TexturasDoCorpo {
       return;
     }
     const { corpo, canais, rede, publicar } = this.pedido;
-    void carregarCanaisDoCorpo(corpo, canais, rede, () => this.disposto)
+    const minha = ++this.geracao;
+    const tier = rede.tier();
+    this.tierEmVoo = tier;
+    const vencida = () => this.disposto || minha !== this.geracao;
+    void carregarCanaisDoCorpo(corpo, canais, rede, vencida)
       .then((porCanal) => {
         // cancelada no caminho: o lote já foi descartado lá dentro
         if (!porCanal) return;
         // e o microtask entre a chegada e esta linha ainda cabe um
-        // `dispose()` do Director — o lote não fica sem dono
-        if (this.disposto) {
+        // `dispose()` do Director ou um clique num terceiro tier — o
+        // lote não fica sem dono
+        if (vencida()) {
           for (const t of porCanal.values()) t.dispose();
           return;
         }
+        // ---- A TROCA DE PONTEIRO: síncrona, sem um `await` no meio ---
+        // publicar ANTES de descartar; entre as duas linhas nenhum
+        // quadro é desenhado, então nenhum material aponta para um texel
+        // já devolvido à GPU
         publicar(porCanal);
-        this.vivas.push(...porCanal.values());
+        for (const t of this.vivas) t.dispose();
+        this.vivas = [...porCanal.values()];
+        // ---- fim da troca -------------------------------------------
+        this.tierVivo = tier;
+        this.tierEmVoo = null;
+        this.tierRecusado = null;
+        this.recargas = 0;
         this.estado = 'pronta';
       })
       .catch(() => {
-        if (this.disposto) return;
-        const r = estadoAposFalha(
-          this.recargas,
-          this.pedido.etiqueta ?? corpo,
-          this.pedido.oQueNaoNasce
+        if (vencida()) return;
+        this.tierEmVoo = null;
+        const etiqueta = this.pedido.etiqueta ?? corpo;
+        if (daPrimeiraVez) {
+          const r = estadoAposFalha(this.recargas, etiqueta, this.pedido.oQueNaoNasce);
+          this.recargas = r.recargas;
+          this.estado = r.texturas;
+          return;
+        }
+        // A TROCA QUE CAI não é sentença nem véu: o corpo continua com
+        // os pixels que tem. A política de recarga é a mesma da primeira
+        // carga (uma falha não é sentença), e o aviso é OUTRO porque a
+        // verdade é outra — o globo está na tela, no tier de antes.
+        if (this.recargas < RECARGAS_ATE_DESISTIR) {
+          this.recargas += 1;
+          return;
+        }
+        this.recargas = 0;
+        this.tierRecusado = tier;
+        console.warn(
+          `[${etiqueta}] troca de qualidade falhou ${1 + RECARGAS_ATE_DESISTIR}×; ` +
+            `o corpo segue no tier '${this.tierVivo}'`
         );
-        this.recargas = r.recargas;
-        this.estado = r.texturas;
       });
   }
 
