@@ -318,3 +318,85 @@ describe('os corpos do sistema entram no MESMO índice', () => {
     expect(chaveDoFoco('Sagittarius A✱', comCorpos)).toBeNull();
   });
 });
+
+// ============================================================
+// O DESEMPATE ENTRE CORPOS (item 115). `brilhoDe` devolve 0 para todo
+// corpo, então dois corpos no MESMO degrau caíam na ordem do catálogo —
+// ordem de construção, não mérito. Com dez corpos ninguém via; a
+// mineração do NASA Eyes mediu a nossa rubrica contra os 451 nomes de
+// lua deles (o porte que o item 114 traz) e achou três empates cegos:
+// "tita" (Titan × Titania, 110 cada), "jupiter" (14 numeradas em 110) e
+// "s/2004" (33 chaves empatadas).
+//
+// Os nomes desta bancada são os do catálogo do Eyes, escritos aqui de
+// propósito: o defeito é do PORTE que ainda não temos, e um juiz que só
+// olhasse os dez corpos de hoje não veria nada.
+// ============================================================
+describe('empate entre corpos: o desempate é o nome, não a ordem do catálogo', () => {
+  const lua = (nome: string, pai: string): CorpoBuscavel => ({
+    id: normalizarConsulta(nome).replace(/[^a-z0-9]+/g, '-'),
+    nome,
+    classe: 'lua',
+    rUA: Number.NaN,
+    pai,
+  });
+  const FAMILIA: readonly CorpoBuscavel[] = [
+    { id: 'jupiter', nome: 'Júpiter', classe: 'planeta', rUA: 5.2 },
+    { id: 'saturn', nome: 'Saturno', classe: 'planeta', rUA: 9.58 },
+    lua('Titania', 'uranus'),
+    lua('Titan', 'saturn'),
+    lua('Jupiter LII', 'jupiter'),
+    lua('Jupiter LI', 'jupiter'),
+    lua('Jupiter LIV', 'jupiter'),
+    lua('S/2004 S 12', 'saturn'),
+    lua('S/2004 S 7', 'saturn'),
+    lua('S/2004 S 13', 'saturn'),
+  ];
+  /** os nomes que a busca devolve, na ordem, para um catálogo nesta ordem */
+  const saida = (consulta: string, corpos: readonly CorpoBuscavel[]) =>
+    buscar(consulta, construirIndice([], corpos), 8).map((r) =>
+      r.entrada.tipo === 'corpo' ? r.entrada.corpo.nome : r.entrada.estrela.n
+    );
+
+  it('"tita": Titan ganha de Titania por mérito, e não por chegar antes', () => {
+    // os dois casam por PREFIXO (110): sem desempate de nome, quem
+    // ganha é quem o catálogo construiu primeiro — e aqui Titania vem
+    // primeiro de propósito
+    expect(saida('tita', FAMILIA)).toEqual(['Titan', 'Titania']);
+    // ...e continua ganhando com o catálogo ao contrário
+    expect(saida('tita', [...FAMILIA].reverse())).toEqual(['Titan', 'Titania']);
+  });
+
+  it('a ordem do catálogo NÃO decide mais nada — embaralhar não muda a saída', () => {
+    // o veredito que define "determinístico": a mesma consulta, o mesmo
+    // conjunto, ordens de entrada diferentes, UMA saída
+    const consultas = ['tita', 'jupiter', 's/2004', 'jupiter l'];
+    const embaralhado = [
+      FAMILIA[7], FAMILIA[2], FAMILIA[5], FAMILIA[0],
+      FAMILIA[9], FAMILIA[3], FAMILIA[8], FAMILIA[1], FAMILIA[6], FAMILIA[4],
+    ];
+    for (const q of consultas) {
+      expect(saida(q, embaralhado), q).toEqual(saida(q, FAMILIA));
+      expect(saida(q, [...FAMILIA].reverse()), q).toEqual(saida(q, FAMILIA));
+    }
+  });
+
+  it('"jupiter": o planeta na frente por score, e as numeradas em ordem estável', () => {
+    // o exato (140) já põe Júpiter em primeiro; o que o desempate novo
+    // arruma é o que vem DEPOIS — antes era o acaso do catálogo
+    expect(saida('jupiter', FAMILIA)).toEqual([
+      'Júpiter',
+      'Jupiter LI',
+      'Jupiter LII',
+      'Jupiter LIV',
+    ]);
+  });
+
+  it('"s/2004": as empatadas saem da mais curta para a mais longa, e em ordem', () => {
+    expect(saida('s/2004', FAMILIA)).toEqual([
+      'S/2004 S 7',
+      'S/2004 S 12',
+      'S/2004 S 13',
+    ]);
+  });
+});

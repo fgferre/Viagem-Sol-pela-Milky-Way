@@ -143,10 +143,11 @@ export function construirIndice(
     if (lista) lista.push(indice);
     else porChave.set(chave, [indice]);
   };
-  // OS CORPOS PRIMEIRO, e a ordem importa duas vezes: ela é o desempate
-  // final do `buscar` (índice menor ganha) e é a ordem em que a lista
-  // aparece quando os scores empatam. Dez corpos contra 1.726 estrelas —
-  // quem digita "terra" está em casa procurando casa.
+  // OS CORPOS PRIMEIRO — dez corpos contra 1.726 estrelas, e quem
+  // digita "terra" está em casa procurando casa. Quem os põe na frente
+  // no resultado é `ordemDoTipo`, não esta ordem: desde o item 115 o
+  // índice é só o ÚLTIMO critério do `buscar`, o que sobra para dois
+  // alvos com nome idêntico.
   const entradas: EntradaDaBusca[] = [
     ...corpos.map((corpo) => ({ tipo: 'corpo', corpo }) as const),
     ...nomeadas.map((estrela) => ({ tipo: 'estrela', estrela }) as const),
@@ -182,11 +183,26 @@ const ordemDoTipo = (entrada: EntradaDaBusca) => (entrada.tipo === 'corpo' ? 0 :
 const brilhoDe = (entrada: EntradaDaBusca) =>
   entrada.tipo === 'estrela' ? entrada.estrela.m : 0;
 
+/** o nome canônico da entrada, normalizado — a régua do desempate final */
+const nomeCanonico = (entrada: EntradaDaBusca) =>
+  normalizarConsulta(entrada.tipo === 'corpo' ? entrada.corpo.nome : entrada.estrela.n);
+
 /**
- * Resultados por score decrescente; empate desempata pela mais BRILHANTE
- * (magnitude aparente menor), que é a que o visitante procurava — e,
- * antes disso, pela ordem do índice, que põe os dez corpos do sistema à
- * frente das 1.726 estrelas.
+ * Resultados por score decrescente; empate desempata primeiro pelo TIPO
+ * (casa antes do céu) e depois pela mais BRILHANTE (magnitude aparente
+ * menor), que é a estrela que o visitante procurava.
+ *
+ * O ÚLTIMO DESEMPATE É O NOME, NÃO O ACASO (item 115). `brilhoDe`
+ * devolve 0 para todo corpo, então dois CORPOS no mesmo degrau caíam na
+ * ordem do catálogo — que é ordem de construção, não mérito. Medido
+ * contra os 451 nomes de lua do NASA Eyes (o porte que o item 114
+ * traz): "tita" empata Titan e Titania em 110 e Titan só ganhava por
+ * acidente; "s/2004" empata 33 chaves e a lista saía por acaso;
+ * "jupiter" empata 14 numeradas. A régua nova é o COMPRIMENTO do nome e,
+ * nele, a ordem alfabética: o nome mais curto é o corpo principal —
+ * "Titan" antes de "Titania", "Júpiter" antes de "Jupiter LI" — e o
+ * resto fica reproduzível em vez de arbitrário. Entra DEPOIS do brilho,
+ * então nada muda entre estrelas com magnitudes diferentes.
  */
 export function buscar(
   consulta: string,
@@ -212,6 +228,15 @@ export function buscar(
     }
   }
 
+  // o nome sai UMA vez por candidato: `normalizarConsulta` dentro do
+  // comparador seria O(n log n) normalizações do mesmo texto
+  const nomes = new Map<number, string>();
+  const nomeDe = (i: number) => {
+    let nome = nomes.get(i);
+    if (nome === undefined) nomes.set(i, (nome = nomeCanonico(indice.entradas[i])));
+    return nome;
+  };
+
   return [...melhorPorEntrada]
     .map(([i, score]) => ({ indice: i, entrada: indice.entradas[i], score }))
     .sort(
@@ -219,6 +244,8 @@ export function buscar(
         b.score - a.score ||
         ordemDoTipo(a.entrada) - ordemDoTipo(b.entrada) ||
         brilhoDe(a.entrada) - brilhoDe(b.entrada) ||
+        nomeDe(a.indice).length - nomeDe(b.indice).length ||
+        (nomeDe(a.indice) < nomeDe(b.indice) ? -1 : nomeDe(a.indice) > nomeDe(b.indice) ? 1 : 0) ||
         a.indice - b.indice
     )
     .slice(0, limite);
