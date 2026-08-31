@@ -1444,9 +1444,13 @@ export class Orbitas {
    * VIVO de `Planetas.posicoes` (a ordem é a de `IDS_FOTOMETRIA`) e projeta
    * o corpo DONO de cada linha. Corpo ATRÁS da câmera sai apagado —
    * `project` devolveria a posição espelhada, e um disco de cessão fantasma
-   * comeria a linha do lado errado do céu. Lua não tem ponto no palco
-   * (`IDS_FOTOMETRIA` é o Sol mais os nove), então a órbita dela não cede a
-   * ninguém — e nem precisa: o defeito é o corpo sobre a PRÓPRIA elipse.
+   * comeria a linha do lado errado do céu. A Lua fica FORA deste laço, que
+   * indexa `IDS_FOTOMETRIA` — os dez do retrato; ela tem ponto desde o item
+   * 108 (o 11º vértice), mas continua sem ceder a ninguém, e continua certo:
+   * o defeito é o corpo sobre a PRÓPRIA elipse, e a elipse da Lua só aparece
+   * na escala do sistema Terra–Lua, onde o globo já domina e a cessão do
+   * ponto foi a 1 exato (medido no A/B do 108, vistas `terra`, `lua`,
+   * `terralua` e os três eclipses). Não há ponto a proteger ali.
    *
    * TUDO SAI EM PIXEL DE BUFFER, que é o espaço do `gl_FragCoord` e o único
    * que o shader conhece: a largura e a altura são as do canvas

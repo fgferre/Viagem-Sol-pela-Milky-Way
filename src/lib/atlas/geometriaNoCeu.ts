@@ -4,13 +4,13 @@
 // DUAS PERGUNTAS PARECIDAS QUE NÃO SÃO A MESMA, e confundi-las era a
 // armadilha desta obra. A casa já mede um ângulo de fase: `escreverFase`
 // (`world/planetas/planetas.ts`) calcula o ângulo Sol–corpo–CÂMERA para
-// acender o ponto fotométrico na tela, e alimenta `fatorDeFaseMh18`. Isso é
+// acender o ponto fotométrico na tela, e alimenta `fatorDeFaseDoPonto`. Isso é
 // fotometria do pixel: "quanto do disco a câmera vê iluminado, daqui". O que
 // falta — e é o que este arquivo faz — é a pergunta do doador, que é a do
 // visitante com um telescópio: "dá para ver isso hoje à noite?". Essa é
 // medida da TERRA, não da câmera.
 //
-// As duas convivem e a ficha rotula cada uma. `fatorDeFaseMh18` NÃO se toca.
+// As duas convivem e a ficha rotula cada uma. `fatorDeFaseDoPonto` NÃO se toca.
 //
 // PURAMENTE GEOMÉTRICO, DE CENTRO A CENTRO. Não há observador com endereço
 // nesta casa: o que sai daqui diz onde o corpo ESTÁ em relação ao Sol, nunca

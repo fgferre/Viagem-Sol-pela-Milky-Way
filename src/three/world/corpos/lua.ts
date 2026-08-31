@@ -76,9 +76,13 @@
 // `planetas/fotometria.ts`) e o LUGAR do ponto.
 //
 // O QUE ELE CONSERTA, medido: sem ponto, o disco da Lua no fim do filme
-// (389 mil km, ~10 px) saía com pico 148 de 255 e DEZ estrelas de fundo
-// saíam entre 166 e 244 — a Lua, magnitude −12,7, mais fraca que
-// estrelas de sexta grandeza. A causa é de UNIDADE, não de filme: o
+// (389 mil km, ~10 px) saía com pico 148 de 255, e SETE das dez fontes
+// de fundo do rastro saíam acima dela, a mais viva com 230 — a Lua,
+// magnitude −12,7, mais fraca que estrelas de sexta grandeza. (ERRATA de
+// 31/08: o texto dizia "dez, entre 166 e 244" — número de uma varredura
+// sem MÁXIMO LOCAL, em que oito das dez eram o mesmo borrão sentado no
+// halo da Terra, fora do corte por 54 px. O fato não muda.) A causa é de
+// UNIDADE, não de filme: o
 // globo é exposto "para si" (Sol = 1, `luzDaVisita.ts`) e nessa régua a
 // superfície vale o albedo, ~0,12; o ponto é normalizado por `EXPO_M0`,
 // a régua em que a estrela vive. Corpo resolvido PEQUENO só carrega o

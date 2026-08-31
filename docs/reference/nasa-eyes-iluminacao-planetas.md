@@ -78,7 +78,7 @@ clara e aqui, mesmo com brilho assistido, quase some.**
 
 Peças da casa citadas pelo nome: `ganhoFundido`, `SIGMA_ASSISTIDA`,
 `irradianciaRelativa`, `GIGANTE_LAMBERT_FRAG`, `ANEL_FRAG`,
-`TERRA_FRAG`, `LUA_FRAG`, `fatorDeFaseMh18`, `cessaoAlvo`,
+`TERRA_FRAG`, `LUA_FRAG`, `fatorDeFaseDoPonto`, `cessaoAlvo`,
 `ACESFilmicToneMapping`.
 
 Peças do Eyes citadas pelo nome: `MaterialUtilsPhong`,
@@ -117,7 +117,7 @@ outra.
 **1. O pontinho no céu** — Saturno visto de longe, como estrela.
 A regra certa é: quanto mais longe do Sol (e de você), mais fraco.
 Vênus brilha, Netuno some. Isso é o céu de verdade. A casa **já faz
-bem** (`fatorDeFaseMh18`, `H = −8,914`, a PSF da Lei da Estrela).
+bem** (`fatorDeFaseDoPonto`, `H = −8,914`, a PSF da Lei da Estrela).
 
 **2. O globo quando você chegou** — Saturno enchendo a tela, como
 nas fotos da Cassini. A regra certa é outra: o Sol ilumina aquele

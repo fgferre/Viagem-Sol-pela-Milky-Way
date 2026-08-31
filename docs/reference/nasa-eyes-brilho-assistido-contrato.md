@@ -88,7 +88,7 @@ o dia. Este contrato pede a **receita**.
 
 Peças da casa: `ganhoDoGlobo`, `compensacaoDaVisita`, `luzDaVisita.ts`,
 `GIGANTE_LAMBERT_FRAG`, `ANEL_FRAG`, `TERRA_FRAG`, `LUA_FRAG`,
-`fatorDeFaseMh18`, `?luz=assistida|real`.
+`fatorDeFaseDoPonto`, `?luz=assistida|real`.
 
 Peças do Eyes: `MaterialUtils.setLightSourceUniforms`,
 `CameraManager.toggleCameraLight`, `Settings.lightType === "shadow"`,

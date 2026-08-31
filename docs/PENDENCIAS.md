@@ -1092,9 +1092,26 @@ ele testou e disse: *"nao percebo a lua por cima... será???"*. O olho
 dele estava CERTO e o quadro errado:** a geometria foi absolvida na
 tela dele (sonda em 1920×1080: a Lua NO quadro de t=191 em diante, NDC
 0,44/0,51 em t=193 — `capturas/item108-fim-wide-medidas.json`), mas a
-FOTOMETRIA está invertida: o pico do disco da Lua é **148** e há DEZ
-estrelas de fundo mais brilhantes (166–244) no mesmo quadro
-(`capturas/item108-lua-fotometria.json`). A Lua cheia a 389 mil km é
+FOTOMETRIA está invertida: o pico do disco da Lua é **148**, e **SETE**
+das dez fontes de fundo do rastro estão acima dela, a mais viva com
+**230** — [230, 229, 188, 184, 174, 163, 152], as dez com coordenada em
+`capturas/item108-lua-ponto-fotometria-v2.json`.
+
+> **ERRATA de 31/08 (registro, não obra).** Este parágrafo dizia "dez
+> estrelas entre 166 e 244", e o número saía de uma varredura que não
+> exigia MÁXIMO LOCAL. Refeita agora sobre a MESMA foto
+> (`item108-fim-wide-t193.png`), ela se explica: **oito das dez eram o
+> mesmo borrão** — x 775–781 × y 343–347, uma fonte compacta sentada no
+> halo da Terra a 394 px do centro dela, isto é, fora do corte de 340 px
+> por 54 px. O topo verdadeiro do fundo é 230, o mesmo 230 da tabela do
+> "depois", abaixo — e é por isso que os dois lados dela batem.
+> **Limite declarado:** uma varredura de passo 1 exigindo máximo local
+> encontra, nessa foto, outros picos acima de 148 que a lista das dez não
+> carrega (219, 218, 216…, alguns também no halo da Terra). "Sete" é a
+> contagem DENTRO da lista do rastro, não um censo do quadro; nada no
+> veredito depende disso, que é a comparação Lua × mais viva do fundo.
+
+A Lua cheia a 389 mil km é
 magnitude ~−12,7 — ordens de grandeza acima de QUALQUER estrela; o
 modo assistido dá o empurrão às estrelas e esqueceu o corpo resolvido
 pequeno, que fica pálido e invisível no meio delas. A obra: o corpo
@@ -1121,11 +1138,15 @@ texturizado não comunica nada que o ponto fotométrico já não comunique
 `IDS_FOTOMETRIA` não a conhecia, e o próprio cabeçalho de `lua.ts`
 declarava o vão ("SEM PONTO FOTOMÉTRICO... pendência nomeada para
 F8/Onda 7"). Corpo resolvido PEQUENO caía entre as duas réguas.
-**Consertar pelo lado do globo era impossível, e o número diz por quê:**
-na régua de tela a superfície da Lua ali vale ~3,5e4 e a da Terra ao
-lado ~1e5 — acima do teto do half-float do composer (65.504). Quem
-carrega fluxo grande em pouco pixel é o ponto, que tem a compressão na
-emissão da Lei §7; o globo não tem e não deve ter.
+**Consertar pelo lado do globo foi ESCOLHA DE DESENHO, não
+impossibilidade — e a razão escrita antes estava errada:** o teto do
+half-float do composer (65.504) NÃO barra a Lua, que na régua de tela
+vale ~3,5e4 por pixel ali; quem estoura o teto é a Terra ao lado
+(~1,8e5). O motivo verdadeiro é o PERFIL: quem carrega fluxo grande em
+pouco pixel é o ponto, que tem a compressão na emissão da Lei §7 para
+isso; o globo não tem e não deve ter, porque comprimir o globo
+achataria o modelado da superfície — a coisa que o globo existe para
+mostrar.
 
 **A DOSE: NENHUMA.** Não há rampa nova, não há assistência a declarar
 no selo, não há ramo de filme. A Lua entrou na camada de pontos como
@@ -1168,22 +1189,35 @@ maiores do fundo são as MESMAS nos dois lados). No app a linha do
 `item108-lua-zoom-antes.png` × `-depois.png`.
 
 **O RAIO DA EXPLOSÃO, vista a vista** (leva CHEIA do `ab-identidade`,
-`antes` no HEAD `87793dd` × `depois` na árvore da obra; **46 das 51
-bit-idênticas**). As cinco que mudaram, com o diff de pixel de cada uma:
+`antes` no HEAD `87793dd` × `depois` na árvore da obra; **45 das 51
+bit-idênticas**). As SEIS que mudaram, com o diff de pixel de cada uma
+(a contagem foi corrigida em 31/08 — a auditoria achou uma sexta vista
+que a leitura anterior tinha perdido):
 
-- **`fim-do-filme`** — 6.930 px, todos GANHANDO luz, numa caixa de
-  348×379 em torno da Lua. É a obra.
+- **`fim-do-filme`** — 6.930 px numa caixa de 348×379 em torno da Lua.
+  É a obra. Quase todos GANHAM luz; **3 dos 6.930 perdem 1 nível num
+  canal** — é o tonemap ACES misturando canais (somar luz num canal
+  pode baixar outro), não perda de luz.
 - **`mercurio`** — 1.082 px, +2 níveis no máximo, caixa de 78×74. A Lua
   vista de Mercúrio é magnitude ~0: uma estrela viva no céu, como no
   céu de verdade. O par `mercurionb` (sem bloom) mostra o ponto CRU —
   **10 px** —, o que prova que a mancha maior do `mercurio` é o bloom
   fazendo o que faz com qualquer fonte brilhante.
 - **`mercurionb`** — 10 px, +1 nível. O mesmo ponto, sem bloom.
-- **`foco-jupiter`** — 7 px, +1 nível. A Lua a ~5 UA é magnitude ~+3:
-  uma estrela fraca, e é o que aparece.
-- **`anao-eris-orbita`** — **1 pixel, −1 nível**. Um ULP: a Eris está a
-  96 UA e a Lua ali é magnitude ~+10 (sub-pixel); o que mexeu foi a
-  aritmética do driver com um vértice a mais no buffer, não conteúdo.
+- **`foco-jupiter`** — 7 px, +1 nível. A Lua vista de Júpiter é
+  **m = +4,82** (d = 5,85 UA, α = 29,7°): uma estrela fraca no limite do
+  olho nu, e é o que aparece.
+- **`mergulho`** (t=180) — **9 px**, todos ganhando, máximo +1, caixa
+  6×5 no centro do quadro (md5 `a6cdca686136` → `0eab4aa12d79`). É a luz
+  do próprio ponto da Lua naquele instante: legítima, e a vista que a
+  primeira leitura tinha perdido.
+- **`anao-eris-orbita`** — **1 pixel, −1 nível**. É CONTEÚDO, não ULP
+  (a explicação anterior — "aritmética do driver com um vértice a mais"
+  — estava errada): a luz da própria Lua (m = +10,39, um ponto de 3,44 px
+  no piso) caindo dentro do clarão do Sol, e determinística — duas
+  capturas deram o mesmo md5. O nível ir para BAIXO é o mesmo mecanismo
+  dos 3 px do `fim-do-filme`: o ACES mistura canais, então somar luz num
+  canal pode baixar outro.
 
 E as que NÃO mudaram são a outra metade da prova: `terra`, `lua`,
 `terralua`, `eclipse-solar`, `eclipse-lunar`, `eclipse-limbo`,
@@ -1221,6 +1255,17 @@ OUTRAS luas resolvidas (Io, Europa, Titã, Caronte…) e os anões
 seguem sem ponto fotométrico — o mecanismo agora existe e serve a
 todas, mas cada uma precisa do H e da cor com fonte publicada, que é
 trabalho de dado, não de desenho.
+
+**NOTA HERDADA, achada na auditoria de 31/08 e anotada sem obra:** o
+que a casa chama de `faseLambertiana` (`planetas/fotometria.ts`) é a
+**fração iluminada do disco**, `(1 + cos α)/2` — não a função de fase de
+uma esfera Lambertiana, que é `[sin α + (π − α)·cos α]/π`. A Lua não é
+afetada (tem lei própria, [ALLEN76]); quem usa esta função é o
+**fallback** fora do domínio publicado — hoje o Sol e Plutão, e a
+emenda contínua na borda dos outros. As duas curvas coincidem em α = 0 e
+em α = π e divergem no meio (em α = 90°: 0,50 contra 0,318). Fica para a
+bancada da luz decidir se troca a função ou só o nome; nada muda de
+pixel enquanto isso.
 
 
 **109. Os labels 3D do outro projeto — trazer ou não, com medida.**

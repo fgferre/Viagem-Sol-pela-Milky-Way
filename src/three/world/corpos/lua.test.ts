@@ -641,8 +641,11 @@ describe('5. texto-fonte de lua.ts e do shader montado (as leis pinadas)', () =>
 // O juiz que trava o que o olho do dono viu quebrado: no quadro final
 // do filme a Lua tem de ser a fonte mais viva do céu depois da Terra —
 // acima de TODA estrela de fundo, em pico e em fluxo. Antes desta obra
-// o pico dela era 148 de 255 contra dez estrelas entre 166 e 244
-// (`capturas/item108-lua-fotometria.json`), porque a Lua não tinha
+// o pico dela era 148 de 255 contra SETE das dez fontes de fundo do
+// rastro, a mais viva com 230 (`capturas/item108-lua-fotometria.json`;
+// ERRATA de 31/08 — o texto dizia "dez, entre 166 e 244", número de uma
+// varredura sem máximo local em que oito das dez eram o mesmo borrão no
+// halo da Terra; o fato é o mesmo), porque a Lua não tinha
 // ponto fotométrico: o globo é exposto "para si" e não carrega o fluxo
 // verdadeiro de um disco de dez pixels.
 //

@@ -340,9 +340,13 @@ export const CORPOS_DO_SISTEMA: readonly CorpoDoSistema[] = IDS_FOTOMETRIA.map(
 
 /**
  * AS LUAS DO ATLAS (F2b; +Fobos/Deimos na F3; +17 na F5) — fora de
- * `CORPOS_DO_SISTEMA` de propósito: aquela lista é indexada ao VÉRTICE
- * da camada de pontos (`IDS_FOTOMETRIA`), e lua não tem ponto
- * fotométrico (dito em `lua.ts`). O `pai` é o corpo cuja efeméride
+ * `CORPOS_DO_SISTEMA` de propósito: aquela lista é a dos corpos com
+ * RETRATO congelado (`IDS_FOTOMETRIA`, os dez), e é por esse índice que
+ * órbitas, rótulos, escada e selo leem posição. A Lua ganhou ponto
+ * fotométrico no item 108, e a decisão não muda por isso — ela não tem
+ * retrato: o lugar dela vem do corpo resolvido, que é quem conhece o
+ * pino do filme (`lua.ts`), e é por isso que ela vive aqui, com `pai`.
+ * O `pai` é o corpo cuja efeméride
  * centra a dela — é dele que a busca mede a distância da nota ("Lua ·
  * 384 mil km"; "Titã · 1 222 mil km") e é ele que o enquadramento do
  * degrau "lua" mantém em quadro (`PARENT_FRAMING_BIAS`).

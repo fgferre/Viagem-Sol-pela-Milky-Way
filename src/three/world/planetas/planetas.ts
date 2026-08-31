@@ -13,9 +13,15 @@
 // fotometria certa". Para as luas essa promessa era vazia: elas não
 // tinham ponto. O resultado, MEDIDO no quadro final do filme
 // (`capturas/item108-lua-fotometria.json`): a Lua a 389 mil km, que é
-// magnitude −12,7, saía com pico 148 de 255 enquanto DEZ estrelas de
-// fundo saíam entre 166 e 244. A ordem fotométrica do céu estava
-// invertida por ordens de grandeza.
+// magnitude −12,7, saía com pico 148 de 255 enquanto SETE das dez
+// fontes de fundo do rastro saíam acima dela, a mais viva com 230
+// (`item108-lua-ponto-fotometria-v2.json` tem as dez com coordenada). A
+// ordem fotométrica do céu estava invertida por ordens de grandeza.
+// (ERRATA de 31/08: o texto dizia "dez, entre 166 e 244". Esse número
+// vinha de uma varredura que não exigia MÁXIMO LOCAL — OITO das dez
+// eram o mesmo borrão, x 775–781 × y 343–347, uma fonte compacta
+// sentada no halo da Terra a 394 px do centro dela, logo fora do corte
+// de 340 px. O fato não muda; o topo do fundo é 230.)
 //
 // A CAUSA, e ela não é do filme: o GLOBO e o PONTO vivem em unidades
 // diferentes. O globo é exposto "para si" (`luzDaVisita.ts`, Sol = 1 —
@@ -28,12 +34,15 @@
 // pequeno cai no vão entre as duas réguas — e foi o olho do dono que o
 // viu primeiro.
 //
-// E POR QUE NÃO SE CONSERTA DO LADO DO GLOBO: na régua de tela a
-// superfície da Lua ali vale ~3,5e4, e a da Terra ao lado, ~1e5 — acima
-// do teto do half-float do composer (65.504). O ponto tem a compressão
-// na emissão (`β·asinh`, Lei §7) justamente para caber; o globo não
-// tem, e nunca deve ter (comprimir o globo achataria o PERFIL dele).
-// A arquitetura da casa já respondia a pergunta: quem carrega fluxo
+// E POR QUE NÃO SE CONSERTA DO LADO DO GLOBO — é ESCOLHA DE DESENHO, e
+// a razão não é o teto: na régua de tela a superfície da Lua ali vale
+// ~3,5e4 por pixel, abaixo do teto do half-float do composer (65.504);
+// quem estoura esse teto é a Terra ao lado (~1,8e5). O motivo verdadeiro
+// é o PERFIL: o ponto tem a compressão na emissão (`β·asinh`, Lei §7)
+// justamente para carregar fluxo grande em pouco pixel, e o globo não
+// tem nem deve ter — comprimir o globo achataria o modelado da
+// superfície, que é a coisa que o globo existe para mostrar. A
+// arquitetura da casa já respondia a pergunta: quem carrega fluxo
 // grande em pouco pixel é o ponto.
 //
 // A DOUTRINA, em uma frase: nada aqui é inflado. Um planeta aparece
