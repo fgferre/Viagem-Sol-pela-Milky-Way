@@ -87,6 +87,21 @@ export function foraDaJanela(jd: number): boolean {
   return !Number.isFinite(jd) || jd !== grampearJd(jd);
 }
 
+/**
+ * O PEDIDO ANDA CONTRA A BORDA EM QUE JÁ SE ESTÁ? Estar em cima do
+ * `jdFim` e pedir ⏵ é isso; estar lá e pedir ⏴ não é.
+ *
+ * Existe porque o relógio PISCAVA (item 115): `andarNoTempo` limpava a
+ * parede sem olhar o sentido, então o aperto contra ela publicava um
+ * quadro de mentira — o aviso sumia, o botão virava ⏸ — e o quadro
+ * seguinte grampeava, repunha a parede e devolvia o ⏵. Com esta
+ * pergunta o pedido impossível nunca chega a "despausar".
+ */
+export function contraAParede(jd: number, sentido: SentidoDoTempo): boolean {
+  if (sentido === 0 || !Number.isFinite(jd)) return false;
+  return sentido > 0 ? jd >= JANELA_EFEMERIDES.jdFim : jd <= JANELA_EFEMERIDES.jdInicio;
+}
+
 // ---- a porta `?jd=` -----------------------------------------------
 
 /**

@@ -9,6 +9,7 @@
 // `grampearJd(jdPedido)` que o director repetia em 12 lugares.
 // ============================================================
 import {
+  contraAParede,
   degrauValido,
   estadoDoTempo,
   grampearJd,
@@ -179,6 +180,21 @@ export class MaquinaDoTempo {
    * andando a 1 Hz: o rótulo prometia uma coisa e o método fazia outra.
    */
   andarNoTempo(sentido: SentidoDoTempo) {
+    // O PEDIDO CONTRA A PAREDE NÃO ACONTECE (item 115). Limpar
+    // `naParede` sem olhar o sentido fazia o ⏵ piscar na borda da
+    // tabela: este aperto publicava um quadro de mentira — o aviso
+    // sumia, o botão virava ⏸ —, e no quadro seguinte `andarORelogio`
+    // grampeava, repunha a parede e devolvia o ⏵. Toda vez. Aqui o
+    // estado ASSENTA: o relógio fica parado, o aviso continua, e o que
+    // muda é só o AO VIVO, que qualquer sentido desliga. Andar para o
+    // outro lado segue livre — quem está no fim volta quando quiser.
+    if (contraAParede(this.jdPedido, sentido)) {
+      this.sentidoDoTempo = 0;
+      this.naParede = true;
+      this.aoVivo = false;
+      this.publicarTempo();
+      return;
+    }
     this.sentidoDoTempo = sentido;
     this.naParede = false;
     this.aoVivo = false;
