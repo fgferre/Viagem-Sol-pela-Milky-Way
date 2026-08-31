@@ -32,6 +32,14 @@ const H = Number(process.argv[5] || 1080);
 // buffer 4× maior — o único regime em que a cadeia de pós escala de verdade
 const DPR = Number(process.argv[6] || 1);
 const CRU = process.argv[7] === 'cru';
+// SEM_VSYNC=1 solta o relógio de apresentação. Sob vsync o rAF só devolve
+// múltiplos de 16,67 ms, então um custo de 10% cabe DENTRO do balde e sai
+// medido como zero — foi o que aconteceu ao medir o MSAA (item 115): as três
+// vistas deram p50 33,3 / 33,3 / 83,3 antes E depois. Solto, o fps vira régua
+// contínua e a diferença aparece em ms. Não mede o mesmo que o timer query: lá
+// é o tempo DENTRO dos draws, aqui é o quadro inteiro (draws + blit + resolve
+// do MSAA, que nenhum timer query de draw enxerga).
+const SEM_VSYNC = process.env.SEM_VSYNC === '1';
 const PORT = 9300 + (process.pid % 200);
 const APP = (process.env.APP_URL || 'http://127.0.0.1:5173') + '/' + QUERY;
 
@@ -175,6 +183,7 @@ const { encerrar } = lancarChrome({
     ...GPU_FLAGS,
     '--hide-scrollbars', '--no-first-run', '--mute-audio',
     `--force-device-scale-factor=${DPR}`, `--window-size=${W},${H}`,
+    ...(SEM_VSYNC ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : []),
     `--remote-debugging-port=${PORT}`,
     'about:blank',
   ],
@@ -259,7 +268,8 @@ try {
   const total = rows.reduce((s, r) => s + r.ms, 0);
   const pos = rows.filter((r) => r.l.startsWith('pos:')).reduce((s, r) => s + r.ms, 0);
 
-  console.log(`${QUERY}  buffer ${buf.result.value}  dPR ${DPR}${CRU ? '  [CRU]' : ''}`);
+  console.log(`${QUERY}  buffer ${buf.result.value}  dPR ${DPR}${CRU ? '  [CRU]' : ''}`
+    + `${SEM_VSYNC ? '  [SEM VSYNC]' : ''}`);
   console.log(`${p.frames} quadros em ${SECONDS}s = ${(p.frames / SECONDS).toFixed(1)} fps`
     + `  | rAF p50 ${q(0.5)} p90 ${q(0.9)} p99 ${q(0.99)}`
     + `  | calls/quadro ${cpf.toFixed(1)}  descartes ${p.drops}`);

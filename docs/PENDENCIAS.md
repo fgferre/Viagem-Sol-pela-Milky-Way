@@ -587,6 +587,49 @@ nuvens apaga o que está na frente — CULPADA, meia luz de uma estrela a
 invariante à resolução — CULPADA, 23–29% a menos em retina; mas o "céu
 vazio" temido é INOCENTE). Os três seguem ABERTOS: medição não é
 conserto, e cada um traz o conserto proposto por escrito.
+**Estação (2), primeira peça — o MSAA no alvo do composer: MEDIDO e
+REPROVADO PELO PREÇO (31/08). NÃO virou obra.** O teto era ~15% do tempo
+de quadro na vista mais cara; o medido foi **+55% a +70% em dpr 2** e
+**+22% a +26% em dpr 1**, e não há tier em que caiba. Máquina: Chrome com
+GPU real (`ANGLE Metal, Apple M1`, `MAX_SAMPLES` 4 — o `samples:4` da
+referência é também o teto desta placa). Método: `gpu-profile.mjs` em modo
+`cru` com `SEM_VSYNC=1` e os dois lados ALTERNADOS na mesma sequência —
+sob vsync o rAF só devolve múltiplos de 16,67 ms e as três vistas davam
+p50 33,3/33,3/83,3 **antes e depois**, ou seja o balde engolia o custo
+inteiro; e a máquina deriva até 60% entre corridas distantes, então lado A
+e lado B têm de ser vizinhos. Os números, mediana de 4 repetições
+(sem MSAA → com MSAA): sistema de Júpiter **51,7 → 85,1 ms (+64,7%)**,
+abertura do Atlas **55,7 → 94,3 ms (+69,3%)**, galáxia de face
+**100,5 → 156,3 ms (+55,5%)**. Com `samples:2` ainda é +19% a +35%.
+**ONDE O PREÇO É PAGO, e é isto que mata a ideia:** no perfil por passe,
+`cena:heroStars` vai de 81,9 para 358,4 ms (4,4×) — o campo de estrelas
+aditivo paga quase toda a conta e **não ganha nada**, porque sprite macio
+não tem beira dura para amostrar. **E o que o MSAA compra não é o que a
+mineração prometeu:** a fita de órbita quase não muda (diferença média
+0,070 por pixel na zona da fita contra **0,498** na beira de globo — 7×
+menos), porque a SAIA analítica do `orbitas.ts` já faz o trabalho dela;
+quem ganha de verdade é a silhueta dura de globo, a escada que o 117
+mediu. Prova visual em `capturas/item115-msaa-{fita,silhueta}-{off,on}.png`
+e os zooms `-zoom-{off,on}`: no limbo de Ganimedes a escada some, na fita
+o par é indistinguível a olho. O diff é de BEIRA, não de luz: 88,5% e
+97,9% da massa de diferença nos 3 decis de maior gradiente, e a luz média
+do quadro anda −0,07% e +0,05%. **Dois achados que sobrevivem à
+reprovação.** (i) O `EffectComposer` **não reinicia os buffers a cada
+quadro** e o número de trocas por quadro é ímpar com o joelho ligado
+(knee + OutputPass + film) e par sem ele — então o alvo em que a cena é
+rasterizada ALTERNA entre `renderTarget1` e `renderTarget2`. Hoje é
+inofensivo (os dois alvos são gêmeos), mas qualquer obra que dê
+propriedade só a um deles pega quadro sim, quadro não; grampear os dois
+buffers no início de `Post.render` derrubou o custo de +87/90/73% para
++65/69/55%, e é o desenho certo se a peça algum dia voltar. (ii) Ligar
+`antialias:true` no renderer continua inerte — quem rasteriza é o alvo do
+composer. **O conserto proposto (não implementado), se ele quiser a
+beleza:** o remendo exato de 6 linhas está gravado dentro de
+`capturas/item115-msaa.json` (campo `remendoMedido`, com a porta `?msaa=N`
+que serviu de bancada), junto de todos os números acima. Caminho mais
+barato para a MESMA beleza, a desenhar: tirar o campo de estrelas do alvo
+amostrado, ou atacar a franja do limbo pelo 117 (atenuar `uCA`), que é um
+uniforme e custa zero.
 
 **114. O censo do sistema solar: todas as luas e os objetos interessantes.**
 Pedido do dono em 30/08, palavras dele: *"quero expandir nosso projeto
