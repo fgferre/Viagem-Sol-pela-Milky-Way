@@ -237,7 +237,7 @@ export const FOTOMETRIA: Record<string, LinhaFotometria> = {
   jupiter: linha('jupiter', 'planetaria', -9.395, razaoDeAlbedo(0.443, 0.538, 0.495)),
 
   // H: [MH18] Eq. 10 — GLOBO + ANÉIS em α=0, B=0. Os termos de
-  // inclinação do anel e de fase saem de `deltaMagMh18`.
+  // inclinação do anel e de fase saem de `deltaMagDeFase`.
   // Albedos: [MKP17] 0,339 / 0,499 / 0,568. Palha dourada: r > g > b.
   saturn: linha('saturn', 'planetaria', -8.914, razaoDeAlbedo(0.339, 0.499, 0.568)),
 
