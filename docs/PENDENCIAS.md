@@ -70,8 +70,11 @@ do boot com os QUATRO braços do modelo — e o espelho de quiralidade
 desfeito), **84** (3 vistas de Atlas no gate — enquadramento de corpo,
 teto do zoom, close-up de lua; preço MEDIDO 4,0/lado, catraca 32,3;
 sabotagem independente selou, inclusive a prova de que a vista do teto
-mede o GRAMPO). Nasceram **116/117** (Tritão como disco preto na vista
-pinada; aro azulado no limbo dos globos). O contador de itens estava
+mede o GRAMPO). Nasceram **116/117** e no MESMO dia ganharam causa medida
+(116: o mosaico de Tritão é 76% preto e o lado fotografado nunca
+enquadra — família de 8 luas, conversa com a bancada do item 19; 117:
+a aberração cromática do passe de gradação pinta o limbo — dosar perto
+de borda dura é conversa de gosto com A/B). O contador de itens estava
 DUAS casas atrás (114/115 da outra sessão sem somá-lo) — re-somado, com
 aviso na própria linha. **ESPERA O OLHO DELE: o fim do filme no app
 (108), as fotos da beta (109) e a galáxia do boot (34).** Backup em dia
