@@ -1,6 +1,6 @@
 # Mineração de mecanismos — NASA Eyes, sessão de 30-31/08/2026
 
-Nove mergulhos de engenharia reversa comparada sobre a cópia local do
+Doze mergulhos de engenharia reversa comparada sobre a cópia local do
 NASA Eyes, feitos DEPOIS do estudo consolidado
 ([`nasa-eyes-estudo-completo.md`](nasa-eyes-estudo-completo.md), que
 cobriu o funil de demanda visual, labels, iluminação, Dynamo e stories).
@@ -138,6 +138,49 @@ do palco, FPS medido antes). Só vale se o produto decidir descer.
 - Pirâmide de tiles estática é viável (~31 MB/corpo nível 2, formato
   100% estático; por Marte) — onda própria, só depois do Bloco A.
 
+### Rodada final — mergulhos 10, 11 e 12 (31/08, escolhidos pelo dono)
+
+**Relógio e giro (10)** — tranquilizador: nossa orientação é IAU
+analítica e stateless (função pura do tempo, como o `ori` deles), não
+há salto de rotação a proteger, e o amortecedor que a ficha sugeria
+NUNCA roda em planeta no próprio Eyes (censo: 9 usos, todos juntas de
+nave). A guarda do `?jd=` cobre todos os consumidores (censo por
+endereço). Um ganho barato: apertar ⏵ contra a parede do tempo faz
+nosso aviso piscar e o botão reverter (`maquinaDoTempo.ts:181-188` vs
+`262-287`); o desenho deles evita por construção — conserto de uma
+condição. Registrados sem obra: aliasing de giro no degrau 7 (Júpiter
+4,66 voltas/quadro; eles aliasam 9,5× pior) e o risco do AO VIVO a 1 Hz
+cortar rampas de cessão em snap (não confirmado na tela).
+
+**Régua de distâncias (11)** — feature candidata com mecânica decifrada:
+ponto-entre como ENTIDADE (soma ponderada de posições — acompanha os
+corpos de graça), medida superfície-a-superfície com o raio do terreno
+real na direção do outro corpo, pose em "tenda" com o PARA-CIMA da
+câmera sendo a própria linha (o segmento cabe a prumo), corredor de
+picking de 80 px. Achado de doutrina: o bundle deles tem ZERO unidade
+astronômica (Netuno vira "4.33 billion km") — nossa escada de unidades
+ganha no trecho central do produto deles; a nossa régua chamaria
+`notaDeDistancia` e COPIARIA uma ideia só: a segunda linha em TEMPO DE
+LUZ (segundos-luz da Lua → anos-luz), a mesma razão do ano-luz sobre o
+parsec. Aviso colateral: o deep-link frio deles abre QUEBRADO (cena
+preta) — lição de teste para a nossa porta `?atlas=`.
+
+**Busca e cometa (12)** — a busca deles é Fuse.js de prateleira e,
+medida contra o banco real de 724 nomes, a NOSSA rubrica ganha (prefixo
+lá nunca chega a forte; "jupiter" põe Io em 49º de 114 — as luas famosas
+só aparecem por lista curada à mão). Para os 450 nomes do item 114,
+adotar três coisas: keywords por corpo num degrau ~60 ("galileana",
+"lua de Júpiter"), bloco de luas vindo da HIERARQUIA (não de lista
+curada) e desempate por raio físico — o nosso desempate atual devolve 0
+e "jupiter" enche os slots com "Jupiter LI…LXI" (medido). A cauda de
+cometa virou receita portátil completa (doc 12 §B): três componentes de
+um shader (poeira, íon 10× mais rápido e azulado, coma), aceleração
+anti-Sol `mult·rand·n̂·K/r²` com K = 5,8475e13 km³·s^-1,5, deslocamento
+`a·t^1,5`, alfa `√(1−√(t/T))`, corte além de 4,68 UA, ZERO afinação por
+corpo (os 14 cometas do catálogo têm `comet:{}` vazio) — com as cinco
+travas de integração declaradas (km→parsec, verbete no `escala.ts`,
+corte pela pupila, renderOrder, origem móvel de tempo).
+
 ## O que NÃO trazer (consolidado, com o porquê nos docs)
 
 Reparentagem e parentesco temporal (máquina de nave; 452 luas deles têm
@@ -151,7 +194,11 @@ projeção manual (convenção de eixos própria); `gl_FragDepth` em todo
 material; POINTS até 50 px (lei do Mac); índice Uint16 (teto de 65.535
 estrelas); stories/kiosk/share/Toolbox/embed; escurecer a cena na
 busca; WMTS ao vivo; `getRaycastColor` por canvas 2D; MSAA+depth pagos
-em dobro no canvas (desperdício que nosso item 21 fechou — eles pagam).
+em dobro no canvas (desperdício que nosso item 21 fechou — eles pagam);
+Fuse.js e o limiar 0,05 (nossa rubrica ganha, medida); `featuredMoons`
+curado; o `pioneer.setTime()` direto dos deep-links deles (a classe de
+bug de dois donos do relógio que nosso item 108 matou); moment.js;
+a convenção de eixos do shader deles (`w = viewPosition.y`).
 
 ## Pendências de prova desta mineração
 
@@ -165,6 +212,10 @@ em dobro no canvas (desperdício que nosso item 21 fechou — eles pagam).
 - Achado avulso: docblock de `texturas.ts` (linhas ~25/272) afirma
   manifest de 3,44 MiB; o real mede 112.009 bytes (chip de conserto
   aberto).
+- Rodada final: posições da busca não confirmadas no app vivo; custo de
+  quadro da cauda de cometa não medido; voo ao ponto-entre da régua é
+  leitura de código, não observação; o risco do AO VIVO×cessão (snap em
+  ~30% das rampas de 300 ms) não foi confirmado na tela.
 
 ## Mapa dos artefatos (scratchpad, fora do git)
 
