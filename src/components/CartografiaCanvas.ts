@@ -9,6 +9,7 @@
 // modelo é determinístico (LCG semeada), então a mesma etapa desenha
 // sempre a mesma galáxia, que é o que `?loader=<id>&shot=1` precisa.
 // ============================================================
+import { BACKBONE, GALACTIC_MODEL } from '../three/cartography/galacticModel';
 
 /** o que o HUD manda a cada mudança de etapa/estado */
 export interface CartografiaState {
@@ -23,8 +24,46 @@ export interface CartografiaState {
   merging: boolean;
 }
 
-/** braços bem enrolados, quase anelares, como as recriações Gaia */
-const TWIST = 9.8;
+/**
+ * A LEI DOS BRAÇOS É A DA CASA (item 34). A vinheta desenhava DOIS braços
+ * numa espiral inventada (`TWIST`, linear em r) enquanto o céu que o
+ * visitante navega logo depois tem QUATRO: a mesma tela prometia outra
+ * galáxia. Agora a crista sai da espinha simétrica do modelo cartográfico
+ * — `BACKBONE` em `cartography/galacticModel` —, quatro cristas de mesmo
+ * pitch espaçadas 2π/4. Não é cópia científica (não há fase de maser,
+ * barra, warp nem correção observada aqui): é a mesma FAMÍLIA de curva,
+ * na mesma quiralidade, para o boot não contradizer o céu.
+ */
+const INV_TAN_PITCH = 1 / Math.tan((BACKBONE.pitchDeg * Math.PI) / 180);
+/** raio do Sol em fração do raio do disco — a âncora do log da espiral */
+const R_SOL = GALACTIC_MODEL.sunRadiusPc / GALACTIC_MODEL.diskRadiusPc;
+/**
+ * Daqui para dentro a espiral CONGELA: log-espiral enrola sem fim no
+ * centro, e no modelo da casa a família mais interna começa a 2,2 kpc —
+ * abaixo disso é bojo, e o gradiente quente cobre o congelamento.
+ */
+const R_MIN = 2_200 / GALACTIC_MODEL.diskRadiusPc;
+
+/**
+ * Azimute da crista do braço `k` no raio `r` (fração do disco).
+ *
+ * O X E O Y SÃO DE TELA, e o canvas tem y para BAIXO: o y do modelo entra
+ * NEGADO, e é isso que põe a vinheta na vista do polo norte galáctico — a
+ * de qualquer mapa face-on da Via Láctea, e a do céu da casa. MEDIDO
+ * (fase da harmônica m=4 contra ln r, anel de 150–400 px): o céu da casa
+ * fotografado do polo norte abre a −3,78 rad por e-fold e esta vinheta a
+ * −4,44 (pitch aparente 12,7° contra os 12,5° do BACKBONE); a vinheta de
+ * dois braços abria a +4,33 — sinal trocado, ou seja, o ESPELHO do céu.
+ */
+function noBraco(r: number, k: number, desvio: number) {
+  const th =
+    BACKBONE.phase0Rad +
+    (k * 2 * Math.PI) / BACKBONE.armCount +
+    Math.log(Math.max(r, R_MIN) / R_SOL) * INV_TAN_PITCH +
+    desvio;
+  return { x: r * Math.cos(th), y: -r * Math.sin(th) };
+}
+
 /** lado do bitmap da galáxia (espaço do modelo, girado no frame) */
 const OFF_SIZE = 1400;
 /** raio do disco dentro do bitmap — o resto é margem para a bruma */
@@ -165,33 +204,42 @@ export class CartografiaCanvas {
     const rnd = rng(7);
     const gauss = () => (rnd() + rnd() + rnd() - 1.5) / 1.5;
     for (let i = 0; i < 18000; i++) {
-      // metade em bruma difusa, metade cravada na crista do braço
-      const haze = rnd() < 0.45;
+      // um terço em bruma difusa, o resto cravado na crista do braço. Com
+      // QUATRO cristas em vez de duas cada uma recebe metade das
+      // partículas, e o braço apagava: a bruma cedeu população (era 0,45)
+      // e a crista ficou ~40% mais estreita (era 0,05+0,06r). Medido no
+      // anel de 60–150 px do quadro de boot — pico 202 nos dois braços,
+      // 162 com a crista larga, 191 assim; o cinza MÉDIO do anel não se
+      // mexe (69,8 → 69,7), então isto é contraste, não exposição.
+      const haze = rnd() < 0.36;
       const r = Math.pow(rnd(), 0.58);
-      const arm = i % 2;
-      const spread = haze ? 0.55 : 0.05 + 0.06 * r;
-      const th = r * TWIST + arm * Math.PI + (gauss() * spread) / (0.3 + r) * 2.2;
+      const arm = i % BACKBONE.armCount;
+      const spread = haze ? 0.55 : 0.03 + 0.036 * r;
       const cr = rnd();
       const inner = r < 0.32;
-      const fall = (1 - r * 0.32) * (haze ? 0.72 : 1);
+      // par dominante: os braços de índice ÍMPAR da espinha, como no
+      // modelo (lá é `pairSign`/`renderWeight` — Sct-Cen e Perseu, a
+      // dominância m=2 da população estelar evoluída). Quatro braços
+      // IGUAIS seriam outra galáxia tanto quanto dois.
+      const fall =
+        (1 - r * 0.32) * (haze ? 0.72 : 1) * (arm % 2 ? 1 : 0.62);
       this.gal.push({
-        x: r * Math.cos(th),
-        y: r * Math.sin(th),
+        ...noBraco(r, arm, ((gauss() * spread) / (0.3 + r)) * 2.2),
         s: 0.4 + rnd() * (inner ? 1.1 : 0.85),
-        a: (0.11 + rnd() * 0.42) * fall,
+        a: (0.12 + rnd() * 0.45) * fall,
         col: cr < 0.68 ? 0 : cr < 0.94 ? 1 : 2,
         // o bojo acende antes; os braços externos são a etapa seguinte
         at: inner ? 1.4 + rnd() * 1.4 : 2.6 + rnd() * 2.6,
       });
     }
-    // regiões H II — pontos rosados discretos ao longo dos braços
+    // regiões H II — pontos rosados discretos ao longo dos braços. SEM a
+    // dominância m=2: o gás carrega os quatro braços parecidos (é o mesmo
+    // 0,82 uniforme dos nós no gerador da galáxia)
     for (let i = 0; i < 120; i++) {
       const r = 0.35 + Math.pow(rnd(), 0.7) * 0.6;
-      const arm = i % 2;
-      const th = r * TWIST + arm * Math.PI + (gauss() * 0.06) / (0.3 + r) * 2.2;
+      const arm = i % BACKBONE.armCount;
       this.gal.push({
-        x: r * Math.cos(th),
-        y: r * Math.sin(th),
+        ...noBraco(r, arm, ((gauss() * 0.06) / (0.3 + r)) * 2.2),
         s: 1.2 + rnd() * 1.2,
         a: 0.08 + rnd() * 0.12,
         col: 3,
@@ -201,11 +249,9 @@ export class CartografiaCanvas {
     // poeira escura: mosqueado fino seguindo os braços, meio passo à frente
     for (let i = 0; i < 700; i++) {
       const r = 0.16 + Math.pow(rnd(), 0.8) * 0.75;
-      const arm = i % 2;
-      const th = r * TWIST + arm * Math.PI + 0.05 + (gauss() * 0.04) / (0.3 + r) * 2.2;
+      const arm = i % BACKBONE.armCount;
       this.dust.push({
-        x: r * Math.cos(th),
-        y: r * Math.sin(th),
+        ...noBraco(r, arm, 0.05 + ((gauss() * 0.025) / (0.3 + r)) * 2.2),
         s: 3.5 + rnd() * 9,
         a: 0.08 + rnd() * 0.14,
         at: 2.1 + rnd() * 1.4,
@@ -331,6 +377,9 @@ export class CartografiaCanvas {
     // atrás do carregamento e a etapa 07 chegava com a tela ainda vazia.
     // A rotação NÃO: um salto de giro de segundos apareceria como corte.
     this.p = frozen ? target : this.p + (target - this.p) * (1 - Math.exp(-Math.min(2, bruto) * 2.4));
+    // o giro é HORÁRIO na tela (rot cresce, canvas com y para baixo), que
+    // na vista do polo norte é o sentido em que a Via Láctea gira — e com
+    // a espiral do `noBraco` isso deixa os braços ARRASTANDO, como devem
     if (!frozen) this.rot += Math.min(0.1, bruto) * 0.012;
 
     if (merging && this.fadedFrames > 90) {

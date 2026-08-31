@@ -687,8 +687,19 @@ trocá-las é trabalho de bancada (o mosaico Cassini de Titã com as
 emendas tratadas, as 68 linhas de Europa preenchidas, o mosaico Dawn de
 Ceres com licença fechada).
 
-**34.** A tela de carregamento desenha outra Via Láctea, de dois braços.
-O modelo da casa tem quatro.
+**34.** A tela de carregamento desenhava outra Via Láctea, de dois braços,
+e o modelo da casa tem quatro — **FECHADO em 31/08**. A vinheta tinha
+espiral própria (um `TWIST` linear em r, dois braços a π); agora a crista
+sai da MESMA espinha do modelo cartográfico (`BACKBONE`, quatro cristas de
+pitch 12,5° espaçadas 2π/4), com o par ímpar dominante como no céu e o gás
+(H II, poeira) uniforme nos quatro, também como no céu. E havia um segundo
+defeito que ninguém tinha visto: o **sentido estava espelhado**. Medido
+pela fase da harmônica m=4 contra ln r, o céu da casa fotografado do polo
+norte galáctico abre a −3,78 rad por e-fold, a vinheta velha abria a
++4,33 e a nova abre a −4,44 (pitch aparente 12,7° contra os 12,5° do
+`BACKBONE`). Fotos: `capturas/item34-boot-antes.png`,
+`item34-boot-depois.png` e `item34-ceu-polo-norte.png` (a referência de
+quiralidade, `?pos=` sobre o polo norte).
 
 **36. (MEDIDO em 17/08 — o censo completo mora no commit da data.)
 SEIS leis de poeira convivem, não quatro.** Às quatro contadas (a
