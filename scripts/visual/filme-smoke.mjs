@@ -329,9 +329,25 @@ async function julgarLargura(sessao, largura, altura, captura) {
     );
     const final = normalizar(await sessao.js("document.querySelector('.veil-end')?.textContent"));
     conferir(final.includes('de volta a casa'), `${largura}px · a coda assina a tela final`);
+    // A FRASE EMPRESTADA E O CRÉDITO SÃO UMA COISA SÓ (item 108): a
+    // citação do Pale Blue Dot substituiu a conclusão do Sol em 31/08, e
+    // quem apagar a atribuição reprova aqui — é a regra escrita em
+    // `docs/reference/ASSETS.md` ("Fonte da frase de encerramento")
+    // virada em juiz, e não em promessa.
+    // O QUE SE COBRA É A PRIMEIRA LINHA E O CRÉDITO, não a citação
+    // inteira: o dono pode acrescentar linhas em `encerramento.ts` (é
+    // para isso que aquilo é uma lista), e um juiz que copiasse as
+    // quatro linhas de hoje reprovaria a extensão dele amanhã. As
+    // aspas de fechamento entram no teste porque elas são a prova de
+    // que a última linha da lista, seja qual for, fechou a citação.
     conferir(
-      final.includes('O SOL É SÓ MAIS UM PONTO DE LUZ — E É O NOSSO'),
-      `${largura}px · conclusão do Sol preservada`
+      final.includes('“Olhe de novo esse ponto.'),
+      `${largura}px · a citação do encerramento abre na tela`
+    );
+    conferir(final.includes('”'), `${largura}px · a citação fecha as aspas`);
+    conferir(
+      final.includes('— Carl Sagan') && final.includes('Pale Blue Dot, 1994'),
+      `${largura}px · a frase emprestada vem com a atribuição`
     );
     conferir(
       final.includes('estrelas nomeadas em posições reais · Via Láctea reconstruída a partir de dados científicos'),

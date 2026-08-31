@@ -301,21 +301,33 @@ describe('a auditoria editorial do filme', () => {
   const auditoria = auditarRoteiro();
   const journey = new Journey();
 
-  it('o corte de 19/08 à noite: 25 planos, 193 s e os dois holds de medição', () => {
-    expect(auditoria.shotCount).toBe(25);
+  // 25 → 27 PLANOS em 31/08 (item 108 v2): o dolly zoom do arremate
+  // entrou como DOIS planos no fim da coda — o recuo, com a lente
+  // ancorada, e a parada final, que é o que mantém a promessa de o
+  // filme acabar congelado. A duração total NÃO mudou: os 3 s vieram do
+  // take, que foi de 12 s para 9 s.
+  it('o corte de 19/08 à noite: 27 planos, 193 s e os dois holds de medição', () => {
+    expect(auditoria.shotCount).toBe(27);
     expect(auditoria.duration).toBe(193);
     expect(journey.duration).toBe(193);
     expect(CAPTURE_T).toEqual({ edge: 153, face: 167 });
   });
 
-  it('nenhuma legenda se sobrepõe e só o SOL atravessa um corte, com passe explícito', () => {
+  // A SEGUNDA PONTE NASCEU COM O DOLLY ZOOM (item 108 v2). "A TERRA"
+  // sempre durou 60 s — ela é a assinatura do fim, não um beat —, e
+  // enquanto o take era o último plano ela não cruzava corte nenhum.
+  // Agora o take entrega o filme a três planos de arremate, e a legenda
+  // atravessa os três: o passe é DECLARADO no roteiro (`"ponte": true`),
+  // que é exatamente o mecanismo que este juiz existe para cobrar.
+  it('nenhuma legenda se sobrepõe e só SOL e A TERRA atravessam um corte, com passe explícito', () => {
     expect(auditoria.overlaps).toEqual([]);
     expect(auditoria.crossings.filter((caption) => !caption.bridge)).toEqual([]);
     expect(auditoria.crossings).toEqual([
       { text: 'SOL', shotIndex: 0, shotEnd: 6, t1: 10.8, bridge: true },
+      { text: 'A TERRA', shotIndex: 24, shotEnd: 190, t1: 246.28, bridge: true },
     ]);
     expect(auditoria.captions.filter((caption) => caption.bridge).map((caption) => caption.text))
-      .toEqual(['SOL']);
+      .toEqual(['SOL', 'A TERRA']);
   });
 
   it('as saídas de Sirius, Casa, Rigel e Antares não vazam para o plano seguinte', () => {

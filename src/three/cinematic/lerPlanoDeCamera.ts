@@ -34,6 +34,27 @@ export interface CameraDoPlano {
    * número que já existe.
    */
   fovEase?: Ease;
+  /**
+   * LENTE ANCORADA A UM ALVO — a primitiva genérica do "dolly zoom".
+   * Quando o roteiro declara `"lente": {"tipo":"ancorada", …}` em vez do
+   * par de graus, o fov deixa de ser interpolado e passa a ser uma
+   * FUNÇÃO DA POSIÇÃO: a lente abre ou fecha na razão que mantém do
+   * MESMO tamanho aparente um corpo parado em `centro` — a lei
+   * `d · tan(fov/2)` constante. Se a câmera se afasta, a lente fecha na
+   * mesma medida; o alvo não muda de tamanho e todo o resto do quadro
+   * muda de perspectiva.
+   *
+   * É genérica de propósito: ela não sabe que filme está rodando nem
+   * que corpo é o alvo — recebe um ponto, uma distância de referência e
+   * a lente que vale ali. Qualquer plano de qualquer roteiro pode pedir
+   * "segure este alvo do tamanho que ele tem a tantos parsecs".
+   *
+   * Presente, ela MANDA sobre `fov0/fov1` (que continuam publicados com
+   * o valor da referência, para quem só quer saber a ordem de grandeza
+   * do plano). Ausente, nada muda: a expressão que `at` avalia é a de
+   * sempre, e nenhum plano herdado muda um bit.
+   */
+  fovDe?: (pos: THREE.Vector3) => number;
 }
 
 const RITMOS = { linear, quadratic, smooth, easeOut, glide, launch, settle, settleFreeze };
@@ -179,10 +200,6 @@ export function lerPlanoDeCamera(
   const p = objeto(dado, 'plano');
   const dur = lerNumero(p.duracao, 'duracao');
   if (dur <= 0) return erro('duracao', 'deve ser positiva');
-  const [fov0, fov1] = par(p.lente, 'lente', lerNumero);
-  if ([fov0, fov1].some((n) => n <= 0 || n >= 180)) {
-    return erro('lente', 'deve ficar entre 0 e 180 graus, sem as pontas');
-  }
 
   const ponto = (valor: unknown, campo: string): THREE.Vector3 => {
     if (typeof valor === 'string') {
@@ -196,6 +213,42 @@ export function lerPlanoDeCamera(
     return new THREE.Vector3(
       numero(valor[0], `${campo}[0]`), numero(valor[1], `${campo}[1]`), numero(valor[2], `${campo}[2]`)
     );
+  };
+
+  /**
+   * A LENTE, nas duas formas que o roteiro pode declarar:
+   *   `[a, b]`                       — o par de graus de sempre;
+   *   `{tipo:'ancorada', centro, distancia, angulo}` — a lente segue a
+   *   distância à `centro` mantendo o tamanho aparente que um corpo ali
+   *   tem quando a câmera está a `distancia` com `angulo` de abertura.
+   * A segunda forma é o "dolly zoom" como PRIMITIVA: nada aqui sabe de
+   * Terra, Lua ou coda — só de um ponto, uma distância e um ângulo.
+   */
+  const lerLente = (): { fov0: number; fov1: number; fovDe?: (p: THREE.Vector3) => number } => {
+    if (Array.isArray(p.lente)) {
+      const [a, b] = par(p.lente, 'lente', lerNumero);
+      if ([a, b].some((n) => n <= 0 || n >= 180)) {
+        return erro('lente', 'deve ficar entre 0 e 180 graus, sem as pontas');
+      }
+      return { fov0: a, fov1: b };
+    }
+    const l = objeto(p.lente, 'lente');
+    if (l.tipo !== 'ancorada') return erro('lente.tipo', `desconhecido: ${String(l.tipo)}`);
+    const centro = ponto(l.centro, 'lente.centro');
+    const distancia = lerNumero(l.distancia, 'lente.distancia');
+    const angulo = lerNumero(l.angulo, 'lente.angulo');
+    if (distancia <= 0) return erro('lente.distancia', 'deve ser positiva');
+    if (angulo <= 0 || angulo >= 180) {
+      return erro('lente.angulo', 'deve ficar entre 0 e 180 graus, sem as pontas');
+    }
+    // a constante da lei: `d · tan(fov/2)`, medida na referência
+    const constante = distancia * Math.tan(THREE.MathUtils.degToRad(angulo / 2));
+    const fovDe = (posicao: THREE.Vector3) => {
+      const d = posicao.distanceTo(centro);
+      // câmera no centro não tem lente que a salve: cai na referência
+      return d <= 0 ? angulo : 2 * THREE.MathUtils.radToDeg(Math.atan(constante / d));
+    };
+    return { fov0: angulo, fov1: angulo, fovDe };
   };
 
   const lerMovimento = (valor: unknown, campo: string): PosFn => {
@@ -404,7 +457,7 @@ export function lerPlanoDeCamera(
   }
 
   return {
-    dur, pos, look, fov0, fov1,
+    dur, pos, look, ...lerLente(),
     ease: ritmo(p.ritmo, 'ritmo'),
     fovEase: ritmo(p.ritmoDaLente, 'ritmoDaLente'),
     roll: curvaEscalar(p.inclinacao, 'inclinacao', false, lerNumero),

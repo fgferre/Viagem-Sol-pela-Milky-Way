@@ -60,6 +60,28 @@ do repositório atlas-orbital não vale aqui.
   SDF do troika). Sem ela o troika buscaria glifos num CDN em tempo de
   execução — esta casa é autocontida.
 
+## Fonte da frase de encerramento (item 108)
+
+O véu do fim do filme fecha com uma frase que **não é da casa**:
+
+- **"Olhe de novo esse ponto. É aqui. É o nosso lar. Somos nós."** —
+  Carl Sagan, *Pale Blue Dot: A Vision of the Human Future in Space*
+  (Random House, 1994), do trecho escrito sobre a fotografia da Terra
+  feita pela Voyager 1 em 14/02/1990. Tradução da casa do original
+  *"Look again at that dot. That's here. That's home. That's us."*
+- O texto mora num lugar só: **`src/components/encerramento.ts`**, como
+  lista de linhas (o `Hud.tsx` só encena). É lá que se acrescenta linha
+  se a citação for estendida à mão.
+- O que entra é só ESSA citação curta, e ela entra **atribuída na
+  própria tela** — `— Carl Sagan`, com `Pale Blue Dot, 1994` embaixo. O
+  parágrafo longo do livro **não entra**: é obra protegida, e citação
+  curta com crédito é outra coisa que reprodução. Quem estender a lista
+  estende o que a casa cita de outra pessoa, e essa fronteira é aqui.
+- Quem trocar a frase troca frase e crédito juntos: frase sem crédito na
+  tela é o defeito que esta seção existe para não deixar acontecer, e
+  `scripts/visual/filme-smoke.mjs` reprova a tela final sem a linha do
+  crédito.
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**

@@ -327,54 +327,130 @@ const ENTRADA_DE_CASA = LUA_PC.clone()
  *  no flanco solar — crescente grande no quadro, Terra ainda no fov. */
 const RASPAO_DA_LUA = 3.5e-10;
 /** raio da volta na Terra (do lado escuro ao claro) */
-const VOLTA_R0 = 2.6e-9; // ~12,6 raios terrestres, lado noite
-const VOLTA_R1 = 1.13e-9; // ~5,5 raios terrestres: Terra a ~40% da altura do quadro
+const VOLTA_R0 = 2.6e-9; // 80.220 km (~12,6 raios terrestres), lado noite
+/** o raio do ÚLTIMO QUADRO — 60.171 km, o fim do dolly zoom abaixo */
+const VOLTA_R1 = 1.95e-9;
+/**
+ * O DOLLY ZOOM DO ARREMATE (item 108 v2, pedido do dono em 31/08: "no
+ * finalzinho nao tem como fazer um jogo de lente em que o fundo se
+ * aproxima mais e mais para a Lua aparecer um pouco maior... nao tem um
+ * truque de lente que muda essa perspectiva?"). É o efeito Vertigo: nos
+ * últimos segundos a câmera RECUA e a lente FECHA na razão que mantém
+ * `d · tan(fov/2)` CONSTANTE. Nessa razão a Terra não muda de tamanho
+ * nem de lugar no quadro — e tudo que está atrás dela cresce, porque a
+ * lente encolhe o quadro 1,9× enquanto a Lua, seis vezes mais longe,
+ * quase não recua em ângulo. A perspectiva muda; não é zoom.
+ *
+ * A ÂNCORA É DUPLA, e a segunda é de graça: a mira do retrato é um
+ * PONTO EM MUNDO medido no raio FINAL (`MIRA_DO_POUSO`, abaixo), então
+ * o desvio angular dela cresce com a aproximação pela MESMA lei
+ * (`tanβ · R_fim / R`) com que o meio-quadro cresce — a razão entre os
+ * dois é constante, e a Terra fica parada no lugar exato do quadro
+ * durante todo o efeito, não só do mesmo tamanho.
+ *
+ * QUEM EXECUTA A LEI É O MOTOR, e por uma primitiva GENÉRICA: o plano
+ * do dolly declara `"lente": {"tipo":"ancorada", "centro":"Terra",
+ * "distancia":…, "angulo":…}` e o `lerPlanoDeCamera` devolve um fov que
+ * é FUNÇÃO DA POSIÇÃO, não do relógio. Nada disso sabe que filme está
+ * rodando: qualquer roteiro futuro pede "segure este alvo do tamanho
+ * que ele tem a tantos parsecs". O primeiro desenho desta obra fazia o
+ * efeito com keyframes de lente em GRAUS, e não fechava: graus
+ * interpolam em reta e a lei é uma tangente, então a Terra respirava
+ * 1,2% mesmo partindo o efeito em dois planos. Com a primitiva o
+ * respiro é ZERO por construção — e o roteiro voltou a ser um plano só.
+ */
+const FORCA_DO_DOLLY = 1.9;
+/** a lente do último quadro; a lei da lente ancorada sai dela */
+const LENTE_DO_FIM = 20;
+/** onde o arco pousa: o ponto MAIS PERTO do filme, antes do recuo */
+const RAIO_DO_POUSO = VOLTA_R1 / FORCA_DO_DOLLY;
+/** a lente que segura a Terra do mesmo tamanho a cada raio */
+const lenteAncorada = (raio: number) => 2 * THREE.MathUtils.radToDeg(Math.atan(
+  Math.tan(THREE.MathUtils.degToRad(LENTE_DO_FIM / 2)) * (VOLTA_R1 / raio)
+));
 /**
  * As duas pontas da volta, como DIREÇÕES Terra→câmera. A chegada fica
  * 22° fora do eixo anti-Sol, do lado da Lua (é de lá que o raspão
- * entrega). O POUSO fica 20° fora do eixo solar, PARA O NORTE
- * equatorial — a cena é o frame equatorial J2000, então (0,0,1) é o
- * polo norte da Terra: o desvio ao norte sobe o centro do disco do
- * subsolar (23°S de janeiro) para perto do equador, e as duas Américas
- * cabem acesas no quadro.
+ * entrega).
+ *
+ * O POUSO mudou de âncora na v2 do retrato (item 108, conferência do
+ * dono de 31/08: "a lua nao está fácil de entender que é a Lua...
+ * aproximar mais ela e a terra"). Antes ele era medido a partir do EIXO
+ * SOLAR (20° ao norte), e a Lua caía a 32,9° do centro da Terra — para
+ * caber os dois, a lente tinha de abrir 52°, e nessa lente a Lua vale
+ * 0,51° de disco: 9 px de altura numa janela de 900. Nenhum
+ * enquadramento salva 9 px.
+ *
+ * Agora ele é medido a partir da LINHA ANTI-LUA (Terra→câmera oposta à
+ * Lua), a linha em que a Lua se esconde exatamente ATRÁS da Terra. O
+ * pouso se afasta dessa linha por `AFASTAMENTO_DA_LUA`, e é esse
+ * afastamento que MANDA na separação Terra–Lua no quadro: a 18° a Lua
+ * fica a 16,4° do centro da Terra (metade de antes), a lente fecha para
+ * 34° e a Lua dobra de tamanho na tela. O azimute do afastamento
+ * (`AZIMUTE_DO_AFASTAMENTO`, 0° = norte equatorial, 90° = para o Sol)
+ * é o que resta de composição: ele decide de que lado a Lua aparece e,
+ * de quebra, a latitude subterrestre — 45° põe a Lua na diagonal de
+ * cima à direita, deixa o disco a 16,7° do subsolar (dia cheio, as
+ * Américas acesas) e o centro do disco a 14°S, entre o subsolar de
+ * janeiro (23°S) e o equador.
  */
 const SOLWARD = ANTISSOL.clone().negate();
 const NORTE_EQ = new THREE.Vector3(0, 0, 1);
-const NORTE_PERP = NORTE_EQ.clone()
-  .addScaledVector(SOLWARD, -NORTE_EQ.dot(SOLWARD)).normalize();
 const DIR_CHEGADA = ANTISSOL.clone()
   .multiplyScalar(Math.cos(THREE.MathUtils.degToRad(22)))
   .addScaledVector(LADO_DA_LUA, Math.sin(THREE.MathUtils.degToRad(22)))
   .normalize();
-const DIR_POUSO = SOLWARD.clone()
-  .multiplyScalar(Math.cos(THREE.MathUtils.degToRad(20)))
-  .addScaledVector(NORTE_PERP, Math.sin(THREE.MathUtils.degToRad(20)))
+/** Terra→câmera na linha em que a Lua fica escondida atrás da Terra */
+const LINHA_ANTI_LUA = RUMO_DA_LUA.clone().negate();
+const AFASTAMENTO_DA_LUA = THREE.MathUtils.degToRad(14);
+const AZIMUTE_DO_AFASTAMENTO = THREE.MathUtils.degToRad(45);
+const NORTE_DA_LINHA = NORTE_EQ.clone()
+  .addScaledVector(LINHA_ANTI_LUA, -NORTE_EQ.dot(LINHA_ANTI_LUA)).normalize();
+const SOL_DA_LINHA = SOLWARD.clone()
+  .addScaledVector(LINHA_ANTI_LUA, -SOLWARD.dot(LINHA_ANTI_LUA)).normalize();
+const LADO_DO_POUSO = NORTE_DA_LINHA.clone()
+  .multiplyScalar(Math.cos(AZIMUTE_DO_AFASTAMENTO))
+  .addScaledVector(SOL_DA_LINHA, Math.sin(AZIMUTE_DO_AFASTAMENTO))
   .normalize();
-/** onde a volta começa (fim do raspão) e onde pousa (o quadro final) */
+const DIR_POUSO = LINHA_ANTI_LUA.clone()
+  .multiplyScalar(Math.cos(AFASTAMENTO_DA_LUA))
+  .addScaledVector(LADO_DO_POUSO, Math.sin(AFASTAMENTO_DA_LUA))
+  .normalize();
+/** as três estações da volta: onde o arco começa, onde ele pousa (o
+ *  ponto mais perto do filme) e onde o recuo do dolly zoom termina —
+ *  as duas últimas na mesma linha Terra→câmera. */
 const INICIO_DA_VOLTA = TERRA_PC.clone().addScaledVector(DIR_CHEGADA, VOLTA_R0);
-const POUSO = TERRA_PC.clone().addScaledVector(DIR_POUSO, VOLTA_R1);
+const POUSO = TERRA_PC.clone().addScaledVector(DIR_POUSO, RAIO_DO_POUSO);
+const FIM_DO_DOLLY = TERRA_PC.clone().addScaledVector(DIR_POUSO, VOLTA_R1);
 /**
- * A MIRA DO POUSO — o RETRATO DE FAMÍLIA (item 108, ordem do dono:
- * "vai melhorar o roteiro"). O arremate não mira o centro da Terra: sobe
- * `SUBIDA_DO_RETRATO` pelo norte da tela, medido no raio do pouso. A
- * Terra desce para o terço de baixo e a Lua — que só nos últimos
- * segundos fecha para 33° do centro da Terra — entra pelo alto do
- * quadro em vez de raspar a borda de cima (medida de 30/08: NDC y 1,10,
- * fora por 10%).
+ * A MIRA DO POUSO — o RETRATO DE FAMÍLIA (item 108). O arremate não
+ * mira o centro da Terra: escorrega `DESLOCAMENTO_DO_RETRATO` NA
+ * DIREÇÃO EM QUE A LUA APARECE, medido no raio do pouso. A Terra cai
+ * para o canto de baixo à esquerda e a Lua sobe para dentro do quadro;
+ * o eixo do deslocamento não é mais o norte da tela (v1), e sim o
+ * próprio eixo Terra→Lua projetado no plano da tela — assim a
+ * composição segue a Lua se o azimute do pouso mudar, em vez de
+ * depender de os dois terem sido escolhidos para casar.
  *
- * A subida é pelo NORTE de propósito: o roll abaixo põe o norte da
- * Terra para cima, então ela aparece como deslocamento vertical puro do
- * disco — as Américas do pouso não torcem no quadro. A mira é um PONTO
- * EM MUNDO, então o desvio angular cresce com a aproximação (0,1° na
- * entrada de casa, 1,0° no raspão, 11° no pouso): de longe o take
- * continua olhando a Terra, e o retrato só se compõe quando há retrato.
+ * A mira é um PONTO EM MUNDO, então o desvio angular cresce com a
+ * aproximação (0,03° na entrada de casa, 0,3° no raspão, 6,5° no pouso,
+ * 3,4° no último quadro): de longe o take continua olhando a Terra, e o
+ * retrato só se compõe quando há retrato.
+ *
+ * O DESLOCAMENTO É MEDIDO NO RAIO FINAL, e não no do pouso — é o que
+ * faz a Terra ficar PARADA durante o dolly zoom. O desvio angular vale
+ * `atan(tanβ · R_fim / R)` e o meio-quadro vale `tan(f_fim/2) · R_fim /
+ * R`: as duas encolhem pelo MESMO fator quando a câmera recua, então a
+ * razão entre elas — que é onde a Terra assenta no quadro — não muda.
  */
-const SUBIDA_DO_RETRATO = THREE.MathUtils.degToRad(11);
-const NORTE_DA_TELA = NORTE_EQ.clone()
-  .addScaledVector(DIR_POUSO, -NORTE_EQ.dot(DIR_POUSO))
-  .normalize();
+const DESLOCAMENTO_DO_RETRATO = THREE.MathUtils.degToRad(3.4);
+const EIXO_DO_RETRATO = (() => {
+  const paraTerra = TERRA_PC.clone().sub(FIM_DO_DOLLY).normalize();
+  const paraLua = LUA_PC.clone().sub(FIM_DO_DOLLY).normalize();
+  return paraLua.addScaledVector(paraTerra, -paraLua.dot(paraTerra)).normalize();
+})();
 export const MIRA_DO_POUSO = TERRA_PC.clone()
-  .addScaledVector(NORTE_DA_TELA, VOLTA_R1 * Math.tan(SUBIDA_DO_RETRATO));
+  .addScaledVector(EIXO_DO_RETRATO, VOLTA_R1 * Math.tan(DESLOCAMENTO_DO_RETRATO));
 /**
  * O ROLL QUE PÕE OS POLOS PARA CIMA (pedido do dono): o rig olha o
  * mundo com o up do POLO GALÁCTICO (cameraRig.galacticUp), e no último
@@ -383,13 +459,13 @@ export const MIRA_DO_POUSO = TERRA_PC.clone()
  * medido ao redor do eixo de visada do pouso; o rig aplica roll com
  * rotateZ, que gira ao redor de câmera→trás (−olhar), e o sinal aqui
  * segue essa convenção. O eixo é a visada REAL do último quadro (a
- * mira do retrato, não o centro da Terra), senão a subida de 11°
- * entortaria os polos que ela existe para preservar.
+ * mira do retrato, não o centro da Terra), senão o deslocamento do
+ * retrato entortaria os polos que ele existe para preservar.
  * voltaParaCasa.test.ts reconstrói a câmera do rig e cobra o
  * alinhamento em graus.
  */
 const ROLL_DOS_POLOS = (() => {
-  const olhar = MIRA_DO_POUSO.clone().sub(POUSO).normalize();
+  const olhar = MIRA_DO_POUSO.clone().sub(FIM_DO_DOLLY).normalize();
   const upGal = EZ.clone().addScaledVector(olhar, -EZ.dot(olhar)).normalize();
   const upTerra = NORTE_EQ.clone().addScaledVector(olhar, -NORTE_EQ.dot(olhar)).normalize();
   const eixoDoRoll = olhar.clone().negate();
@@ -407,8 +483,14 @@ const U_RASPAO_MIN = EIXO_LUA_TERRA.clone()
   .addScaledVector(FLANCO_ANTISSOL.clone().negate(), Math.sin(THREE.MathUtils.degToRad(40)))
   .normalize();
 const JOELHO_DO_RASPAO = 0.62;
+/** duração do take Lua→Terra e do raspão dentro dele, em segundos. O
+ *  take encolheu de 12 s para 9 s quando o dolly zoom levou os últimos
+ *  3 s da coda (item 108 v2); o raspão continua com os MESMOS 4,8 s de
+ *  relógio absoluto de sempre, e é daí que sai a fração abaixo. */
+const DUR_DO_TAKE = 9;
+const DUR_DO_RASPAO = 4.8;
 /** fração do take único dedicada ao fly-by da Lua. */
-export const K_LUA_NO_TAKE = 0.40;
+export const K_LUA_NO_TAKE = DUR_DO_RASPAO / DUR_DO_TAKE;
 /** no joelho, o olhar é o meio-ângulo Lua–Terra. O ponto de mira mora
  *  a ~1e-8 pc da câmera (a escala Lua–Terra) — NUNCA a 1 pc. O rig
  *  amortece a mira em 0,4 s; um alvo a 1 pc nunca alcançava a Terra
@@ -493,11 +575,18 @@ const SHOTS: Shot[] = [
     entradaDeCasa: ENTRADA_DE_CASA, direcaoDoRaspao: U_RASPAO_MIN,
     inicioDaVolta: INICIO_DA_VOLTA,
     direcaoDaChegada: DIR_CHEGADA, direcaoDoPouso: DIR_POUSO,
+    pouso: POUSO, fimDoDolly: FIM_DO_DOLLY,
   }, {
     distanciaDoRaspao: RASPAO_DA_LUA, joelhoDoRaspao: JOELHO_DO_RASPAO,
-    fracaoDaLua: K_LUA_NO_TAKE,
-    raioInicialDaVolta: VOLTA_R0, raioFinalDaVolta: VOLTA_R1,
+    fracaoDaLua: K_LUA_NO_TAKE, duracaoDoTake: DUR_DO_TAKE,
+    raioInicialDaVolta: VOLTA_R0, raioDoPouso: RAIO_DO_POUSO,
+    raioFinalDaVolta: VOLTA_R1,
     alcanceDaMira: ALCANCE_DA_MIRA_PC, inclinacaoDosPolos: ROLL_DOS_POLOS,
+    lenteDoFim: LENTE_DO_FIM,
+    // a lente com que o TAKE entrega o filme ao dolly sai da mesma lei
+    // da lente ancorada, no raio do pouso: digitá-la à mão faria a
+    // emenda saltar no dia em que qualquer um dos dois raios mudasse
+    lenteDoPouso: lenteAncorada(RAIO_DO_POUSO),
   }),
 ];
 
@@ -512,6 +601,21 @@ const STARTS: number[] = [];
 }
 const JOURNEY_DURATION = STARTS[STARTS.length - 1] + SHOTS[SHOTS.length - 1].dur;
 export const APOIOS_DO_FILME = montarApoiosDoRoteiro(SHOTS, STARTS);
+
+/**
+ * OS INSTANTES DA CODA QUE OS JUÍZES PRECISAM, derivados da lista de
+ * shots e não copiados dela. A coda tem QUATRO planos desde o dolly
+ * zoom (item 108 v2): aproximação, take Lua→Terra, o recuo e a parada
+ * final — e é por isso que o take é o terceiro de trás para a frente. Antes disso `voltaParaCasa.test.ts` escrevia `duration - 12`
+ * à mão, e a conta envelheceu no primeiro plano que entrou.
+ */
+const I_DO_TAKE = SHOTS.length - 3;
+/** quando o take Lua→Terra começa */
+export const T_DO_TAKE = STARTS[I_DO_TAKE];
+/** quando o raspão entrega o voo ao arco da volta */
+export const T_DA_VOLTA = T_DO_TAKE + K_LUA_NO_TAKE * SHOTS[I_DO_TAKE].dur;
+/** quando o arco pousa e o dolly zoom começa a recuar */
+export const T_DO_DOLLY = STARTS[I_DO_TAKE + 1];
 
 // legendas achatadas em janelas absolutas [t0, t0+dur)
 const CAPTION_WINDOWS = SHOTS.flatMap((s, i) =>
@@ -663,8 +767,12 @@ export class Journey {
     const ke = (s.ease ?? glide)(k);
     const pos = s.pos(ke, new THREE.Vector3());
     const look = s.look(ke, new THREE.Vector3());
-    // Sem `fovEase`, a lente acompanha o mesmo `ke` da trajetória.
-    const fov = THREE.MathUtils.lerp(s.fov0, s.fov1, s.fovEase ? s.fovEase(k) : ke);
+    // Lente ANCORADA (o dolly zoom) manda sobre o par de graus: ela é
+    // função da posição, não do relógio. Sem `fovEase`, a lente
+    // interpolada acompanha o mesmo `ke` da trajetória.
+    const fov = s.fovDe
+      ? s.fovDe(pos)
+      : THREE.MathUtils.lerp(s.fov0, s.fov1, s.fovEase ? s.fovEase(k) : ke);
 
     return {
       pos,

@@ -178,11 +178,14 @@
   transition-delay: 0s;
 }
 
-/* O último plano É a tese do filme ("o Sol é só mais um ponto de luz") e a
-   câmera congela ~2,9 s antes do fim; o véu subia quase em cima dele. Estes
-   2,4 s a mais são GOSTO — o número está aqui sozinho para poder mudar. */
+/* O último plano é o retrato de família, e a câmera congela 0,5 s antes do
+   fim; o véu subia quase em cima dele. Este atraso é GOSTO — o número está
+   aqui sozinho para poder mudar. Ele encolheu de 2,4 s para 1,4 s em 31/08
+   (item 108 v2) porque a espera passou para DENTRO do véu: a citação do
+   Sagan entra linha a linha, e o silêncio antes dela já é a pausa que os
+   2,4 s compravam. */
 .veil.veil-end {
-  transition-delay: 2.4s;
+  transition-delay: 1.4s;
 }
 .veil.veil-end.hidden-veil {
   transition-delay: 0s;
@@ -244,6 +247,91 @@
   height: 1px;
   margin: 1.8rem 0;
   background: linear-gradient(90deg, transparent, rgba(255, 214, 150, 0.9), transparent);
+}
+
+/* ---- O ENCERRAMENTO ENCENADO (item 108 v2, 31/08) --------------------
+   Ordem do dono: *"é um encerramento do filme com impacto e drama.
+   cinema puro"*. A citação do Pale Blue Dot entra LINHA A LINHA, e só
+   depois dela chegam o crédito e o rodapé com os botões.
+
+   QUEM CONTA O TEMPO É O CSS, e a chave está no seletor: a animação
+   mora em `.veil-end:not(.hidden-veil)`, então ela nasce no instante em
+   que a classe do véu vira — e não no carregamento da página, que é o
+   que aconteceria se a regra estivesse no elemento (ele fica montado o
+   filme inteiro, invisível). Os ATRASOS chegam pelo `style`, vindos do
+   roteiro do fim (`roteiros/encerramento.json`, montado em
+   `components/encerramento.ts`): quem manda no ritmo é o roteiro, não
+   esta folha — ela só sabe encenar uma lista de linhas, qualquer uma.
+
+   A TIPOGRAFIA É OUTRA da dos títulos de propósito: `title-big` é
+   letreiro (caixa alta, tracking de 0,55em); citação é PROSA — caixa
+   normal, tracking curto, entrelinha larga, e as aspas tipográficas
+   entram no texto pelas pontas da lista. */
+.encerramento {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: min(46rem, 88vw);
+  text-align: center;
+}
+.encerramento-linha {
+  color: #f7f3ea;
+  font-weight: 200;
+  font-size: clamp(1.05rem, calc(2.5vw * var(--ui)), 2rem);
+  letter-spacing: 0.06em;
+  line-height: 1.75;
+  text-shadow: 0 0 34px rgba(150, 180, 255, 0.45);
+}
+.encerramento-credito {
+  margin-top: 1.6rem;
+  /* a sombra é legibilidade, não enfeite: o crédito cai em cima do
+     disco da Terra, que é claro, e sem ela some no Atlântico */
+  text-shadow: 0 0 14px rgba(0, 0, 6, 0.95), 0 0 4px rgba(0, 0, 6, 0.9);
+  color: rgba(206, 218, 236, 0.92);
+  font-weight: 300;
+  font-size: clamp(0.72rem, calc(1.1vw * var(--ui)), 0.92rem);
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+}
+.encerramento-fonte {
+  display: block;
+  margin-top: 0.5rem;
+  color: rgba(178, 192, 214, 0.72);
+  font-size: 0.72em;
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+}
+/* as três coisas que esperam a citação terminar: selo, régua e botões */
+.veil-end .encerramento-linha,
+.veil-end .encerramento-credito,
+.veil-end .encerramento-rodape {
+  opacity: 0;
+}
+@keyframes encerramento-entra {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to { opacity: 1; transform: none; }
+}
+.veil-end:not(.hidden-veil) .encerramento-linha,
+.veil-end:not(.hidden-veil) .encerramento-credito,
+.veil-end:not(.hidden-veil) .encerramento-rodape {
+  animation: encerramento-entra 1.3s ease both;
+}
+/* CAPTURA E QUEM PEDIU SEM MOVIMENTO VEEM TUDO DE UMA VEZ: sem isto, o
+   `?shot=` fotografaria um véu meio escrito e o gate de texto do
+   filme-smoke dependeria de acertar o segundo certo. */
+.shot-mode .veil-end .encerramento-linha,
+.shot-mode .veil-end .encerramento-credito,
+.shot-mode .veil-end .encerramento-rodape {
+  animation: none;
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .veil-end .encerramento-linha,
+  .veil-end .encerramento-credito,
+  .veil-end .encerramento-rodape {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 /* ---- AS TRÊS PORTAS DA ABERTURA (item 60; o TAMANHO, item 61) -------

@@ -13,10 +13,12 @@
 //
 // 2. A ENCENAÇÃO QUE O DONO PEDIU É GEOMETRIA VERIFICÁVEL: raspão que
 //    enche o quadro, Lua acesa no flanco, chegada pelo lado escuro,
-//    pouso congelado no lado claro com a Terra grande. Desde o item 108
-//    ela pousa no TERÇO DE BAIXO, e não mais no centro: o último bloco
-//    deste arquivo cobra o retrato de família — a Lua no quadro junto
-//    com ela —, que é a razão do deslocamento.
+//    pouso no lado claro com a Terra grande e o filme parando congelado.
+//    Desde o item 108 v2 ela assenta EMBAIXO À ESQUERDA, e não no
+//    centro, e depois de pousar a câmera ainda RECUA com a lente
+//    ancorada (o dolly zoom): o último bloco deste arquivo cobra o
+//    retrato de família — a Lua no quadro junto com ela, com disco
+//    legível —, que é a razão das duas coisas.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -34,8 +36,10 @@ import { AU_KM } from '../../lib/atlas/elementosOrbitais';
 (globalThis as unknown as { window: { location: { search: string } } }).window = {
   location: { search: '' },
 };
-const { Journey, TERRA_PC, LUA_PC, MIRA_DO_POUSO, JD_DO_FILME_TDB, K_LUA_NO_TAKE } =
-  await import('./journey');
+const {
+  Journey, TERRA_PC, LUA_PC, MIRA_DO_POUSO, JD_DO_FILME_TDB,
+  T_DO_TAKE, T_DA_VOLTA, T_DO_DOLLY,
+} = await import('./journey');
 const { galacticUp } = await import('./cameraRig');
 
 const DATA_DIR = fileURLToPath(new URL('../../../public/data/atlas/', import.meta.url));
@@ -131,7 +135,7 @@ describe('a encenação pedida, medida na trajetória', () => {
   // mesmo alvo — a costura com o plano anterior (que mira a Terra) está
   // medida abaixo em graus, e é ela que garante que a troca não é um corte.
   it('o take começa e termina na mira do pouso — no joelho o olhar cede à Lua', () => {
-    const tTake = j.duration - 12;
+    const tTake = T_DO_TAKE;
     const noRaspao = AMOSTRAS.reduce((m, a) =>
       a.pos.distanceTo(LUA_PC) < m.pos.distanceTo(LUA_PC) ? a : m
     );
@@ -148,8 +152,8 @@ describe('a encenação pedida, medida na trajetória', () => {
   it('a troca de mira na costura dos dois planos da coda é invisível', () => {
     // o plano anterior mira a TERRA; o take mira MIRA_DO_POUSO. A troca só
     // vale porque, de 2,9 milhões de km, os dois pontos são o mesmo alvo.
-    const antes = j.at(j.duration - 12 - 0.001);
-    const depois = j.at(j.duration - 12 + 0.001);
+    const antes = j.at(T_DO_TAKE - 0.001);
+    const depois = j.at(T_DO_TAKE + 0.001);
     const salto = grausEntre(
       antes.look.clone().sub(antes.pos),
       depois.look.clone().sub(depois.pos)
@@ -157,16 +161,57 @@ describe('a encenação pedida, medida na trajetória', () => {
     expect(salto).toBeLessThan(0.2);
   });
 
+  /**
+   * AS COSTURAS QUE O DOLLY ZOOM ABRIU (item 108 v2). A coda ganhou dois
+   * planos no fim — o recuo e a parada —, e com eles duas emendas novas:
+   * take→dolly e dolly→parada. Nenhuma pode ser um corte, nem de
+   * posição, nem de lente, nem de VELOCIDADE, que é o que só este bloco
+   * cobra: o arco pousa com derivada zero (`progresso` de pouso) e o
+   * recuo parte com derivada zero (`rampa` com ritmo `glide`), e trocar
+   * qualquer um dos dois por um ritmo que arranca com velocidade abre um
+   * degrau aqui. O ponto do meio entra como controle: ele NÃO é emenda,
+   * e mede o mesmo que os outros dois no meio do movimento.
+   */
+  it('as emendas do dolly zoom não saltam — nem posição, nem lente, nem velocidade', () => {
+    // O SALTO SE MEDE CONTRA A VIZINHANÇA, não contra zero: na emenda a
+    // câmera está em movimento, e um limiar absoluto ou reprovaria o
+    // movimento legítimo ou deixaria passar um corte de câmera lenta.
+    const passo = 0.002;
+    const desloca = (x: number) => j.at(x + passo).pos.distanceTo(j.at(x - passo).pos);
+    const abreLente = (x: number) => Math.abs(j.at(x + passo).fov - j.at(x - passo).fov);
+    const taxa = (x: number) => {
+      const r0 = j.at(x - passo).pos.distanceTo(TERRA_PC);
+      const r1 = j.at(x + passo).pos.distanceTo(TERRA_PC);
+      return (r1 - r0) / (2 * passo) / r1;
+    };
+    for (const t of [T_DO_DOLLY, T_DO_DOLLY + 1.25, T_DO_DOLLY + 2.5]) {
+      const vizinhos = (f: (x: number) => number) =>
+        Math.max(f(t - 4 * passo), f(t + 4 * passo));
+      expect(desloca(t)).toBeLessThan(3 * vizinhos(desloca) + 1e-14);
+      expect(abreLente(t)).toBeLessThan(3 * vizinhos(abreLente) + 1e-6);
+      // e a VELOCIDADE radial não dá degrau (medida em raios por segundo)
+      expect(Math.abs(taxa(t - 3 * passo) - taxa(t + 3 * passo))).toBeLessThan(0.06);
+    }
+  });
+
   it('a volta chega pelo lado escuro e pousa no claro, com a Terra grande', () => {
-    const chegada = j.at(j.duration - 12 * (1 - K_LUA_NO_TAKE)).pos; // início da volta
-    expect(faseVista(TERRA_PC, chegada)).toBeGreaterThan(135);
+    expect(faseVista(TERRA_PC, j.at(T_DA_VOLTA).pos)).toBeGreaterThan(135);
     const fim = j.at(j.duration).pos;
     expect(faseVista(TERRA_PC, fim)).toBeLessThan(45);
-    const d = fim.distanceTo(TERRA_PC);
-    const diametroGraus = 2 * THREE.MathUtils.radToDeg(Math.atan(RAIO_TERRA_PC / d));
-    expect(diametroGraus).toBeGreaterThan(19);
-    expect(diametroGraus).toBeLessThan(23);
-    expect(j.at(j.duration).look.distanceTo(MIRA_DO_POUSO)).toBeLessThan(1e-12);
+    // O PONTO MAIS PERTO do filme é o POUSO, não o último quadro: desde o
+    // dolly zoom a câmera recua depois de pousar, e é a lente que segura
+    // o tamanho. O que "Terra grande" quer dizer se mede nos DOIS:
+    // ângulo no pouso e fração do quadro no fim.
+    const noPouso = j.at(T_DO_DOLLY).pos.distanceTo(TERRA_PC);
+    const anguloNoPouso = 2 * THREE.MathUtils.radToDeg(Math.atan(RAIO_TERRA_PC / noPouso));
+    expect(anguloNoPouso).toBeGreaterThan(21);
+    expect(anguloNoPouso).toBeLessThan(25);
+    const s = j.at(j.duration);
+    const discoNdc = Math.tan(Math.atan(RAIO_TERRA_PC / fim.distanceTo(TERRA_PC)))
+      / Math.tan(THREE.MathUtils.degToRad(s.fov / 2));
+    expect(discoNdc).toBeGreaterThan(0.55); // o disco toma 60% da altura
+    expect(discoNdc).toBeLessThan(0.66);
+    expect(s.look.distanceTo(MIRA_DO_POUSO)).toBeLessThan(1e-12);
   });
 
   it('o filme termina CONGELADO na Terra (o pouso é antes do fim)', () => {
@@ -201,15 +246,22 @@ describe('a encenação pedida, medida na trajetória', () => {
 });
 
 /**
- * O RETRATO DE FAMÍLIA (item 108, ordem do dono de 30/08: "vamos
- * consertar, vai melhorar o roteiro"). Antes desta obra a Lua saía por
- * cima no arremate — no último quadro ela estava a 32,9° da mira com
- * meio-quadro de 32,1°, NDC y = 1,10. O que segura o retrato são DUAS
- * peças, e cada cobrança abaixo mata uma delas:
- *   - a MIRA sobe 11° pelo norte da tela (`MIRA_DO_POUSO` no roteiro):
- *     devolvê-la ao centro da Terra leva a Lua a 0,97 no último quadro;
- *   - a LENTE fecha em 52°, não em 46°: voltar aos 46° encurta o retrato
- *     com folga de 2,10 s para 1,81 s.
+ * O RETRATO DE FAMÍLIA — VERSÃO 2 (item 108, conferência do dono de
+ * 31/08: *"a lua nao está fácil de entender que é a Lua... aproximar
+ * mais ela e a terra e melhorar o enquadramento para que as 2 ocupem a
+ * mesma cena de forma incontestável"*).
+ *
+ * A v1 punha os dois no quadro e parava aí: com a lente de 52° a Lua
+ * valia 0,51° de disco, isto é 7,4 px de altura na vista oficial, e um
+ * disco de 7 px é um ponto. A v2 ataca o TAMANHO, e são três peças —
+ * cada cobrança abaixo mata uma delas:
+ *   - o POUSO se ancora na LINHA ANTI-LUA (14° fora dela) em vez do
+ *     eixo solar: a Lua cai a 12,0° do centro da Terra, e não a 32,9°;
+ *   - a LENTE final fecha em 20°, não em 52° — o que só cabe porque a
+ *     separação encolheu;
+ *   - o DOLLY ZOOM recua a câmera 1,9× com a lente na razão que segura
+ *     a Terra: a Lua cresce de 10,8 px para 19,1 px sem a Terra mudar
+ *     de tamanho nem de lugar.
  * As medidas são no quadro do rig (mesmas peças: galacticUp, lookAt,
  * rotateZ) e no aspecto da vista oficial `fim-do-filme` (1200×813).
  */
@@ -233,31 +285,86 @@ describe('o fim mostra a Lua E a Terra', () => {
     return { x: p.x, y: p.y, fora: Math.max(Math.abs(p.x), Math.abs(p.y)) };
   }
 
+  /** altura do disco em px na vista oficial (1200×813) */
+  function emPixels(t: number, raioPc: number) {
+    const s = j.at(t);
+    const raio = Math.atan(raioPc / s.pos.distanceTo(
+      raioPc === RAIO_LUA_PC ? LUA_PC : TERRA_PC));
+    return 2 * 813 * Math.tan(raio) / Math.tan(THREE.MathUtils.degToRad(s.fov / 2)) / 2;
+  }
+
   it('no último quadro a Lua está no quadro com folga, e a Terra manda', () => {
     const lua = noQuadro(j.duration, LUA_PC);
-    expect(lua.fora).toBeLessThan(0.7); // medido 0,579
-    expect(lua.y).toBeGreaterThan(0.2); // ela entra POR CIMA, não pelo lado
+    expect(lua.fora).toBeLessThan(0.78); // medido 0,662
+    expect(lua.x).toBeGreaterThan(0.15); // ela entra pela DIAGONAL de cima
+    expect(lua.y).toBeGreaterThan(0.4); //  à direita, não pelo lado nem por cima
     const terra = noQuadro(j.duration, TERRA_PC);
-    expect(Math.abs(terra.x)).toBeLessThan(0.05); // centrada na horizontal
-    // a Terra assenta no terço de baixo: o disco INTEIRO no quadro, com ar
-    // embaixo e o alto livre para a Lua
+    // a Terra assenta embaixo à esquerda: o disco INTEIRO no quadro, com
+    // ar nas quatro bordas e a diagonal de cima livre para a Lua
     const s = j.at(j.duration);
     const raio = Math.atan(RAIO_TERRA_PC / s.pos.distanceTo(TERRA_PC));
     const meioQuadro = Math.tan(THREE.MathUtils.degToRad(s.fov / 2));
     const emNdc = Math.tan(raio) / meioQuadro;
-    expect(terra.y - emNdc).toBeGreaterThan(-0.9); // não corta embaixo
-    expect(terra.y - emNdc).toBeLessThan(-0.7); // nem flutua no meio
-    expect(terra.y + emNdc).toBeLessThan(0.1); // o alto do quadro é da Lua
+    expect(terra.y - emNdc).toBeGreaterThan(-0.95); // não corta embaixo
+    expect(terra.y - emNdc).toBeLessThan(-0.78); // nem flutua no meio
+    expect(terra.x - emNdc / ASPECTO_DA_VISTA).toBeGreaterThan(-0.95); // nem à esquerda
+    expect(terra.y + emNdc).toBeLessThan(0.45); // o alto do quadro é da Lua
+  });
+
+  /**
+   * A COBRANÇA QUE O DONO PEDIU EM PALAVRAS ("a lua nao está fácil de
+   * entender que é a Lua"): a Lua tem de ter DISCO, não ponto. Na v1
+   * ela media 7,4 px de altura na vista oficial; o piso abaixo é o que
+   * separa um globo com fase de uma estrela com halo, e ele reprova
+   * qualquer volta à lente aberta ou ao pouso ancorado no eixo solar.
+   */
+  it('a Lua tem disco, não ponto, e a Terra continua a dona do quadro', () => {
+    const lua = emPixels(j.duration, RAIO_LUA_PC);
+    expect(lua).toBeGreaterThan(16); // medido 19,1 px (a v1 dava 7,4)
+    const terra = emPixels(j.duration, RAIO_TERRA_PC);
+    expect(terra).toBeGreaterThan(440); // medido 489 px
+  });
+
+  /**
+   * O DOLLY ZOOM (pedido do dono em 31/08: "nao tem um truque de lente
+   * que muda essa perspectiva?"). A promessa é exata e é esta: enquanto
+   * a câmera recua, a Terra não muda de tamanho NEM DE LUGAR, e a Lua
+   * cresce. Tirar o recuo (pousar direto no raio final) mata o
+   * crescimento; tirar a lei da lente (uma lente digitada à mão) mata a
+   * âncora — e as duas mortes aparecem aqui.
+   */
+  it('no dolly zoom a Terra fica parada e a Lua cresce', () => {
+    const ref = noQuadro(T_DO_DOLLY, TERRA_PC);
+    let menor = Infinity, maior = -Infinity, deriva = 0;
+    for (let t = T_DO_DOLLY; t <= j.duration; t += 0.02) {
+      const px = emPixels(t, RAIO_TERRA_PC);
+      menor = Math.min(menor, px);
+      maior = Math.max(maior, px);
+      const q = noQuadro(t, TERRA_PC);
+      deriva = Math.max(deriva, Math.hypot(q.x - ref.x, q.y - ref.y));
+    }
+    // A ÂNCORA É EXATA, e o teto cobra isso: a lente ancorada é função
+    // da POSIÇÃO (`lente: {tipo:'ancorada'}`), não do relógio. Trocá-la
+    // por keyframes de graus — o primeiro desenho desta obra — devolve
+    // 1,2% de respiro e reprova aqui.
+    expect(maior / menor - 1).toBeLessThan(0.004); // respiro medido 0,00%
+    expect(deriva).toBeLessThan(0.006); // deriva medida 0,0021 NDC (1 px)
+    // e a câmera RECUOU de verdade — sem isso não há efeito nenhum
+    const recuo = j.at(j.duration).pos.distanceTo(TERRA_PC)
+      / j.at(T_DO_DOLLY).pos.distanceTo(TERRA_PC);
+    expect(recuo).toBeGreaterThan(1.7); // medido 1,90×
+    const cresceu = emPixels(j.duration, RAIO_LUA_PC) / emPixels(T_DO_DOLLY, RAIO_LUA_PC);
+    expect(cresceu).toBeGreaterThan(1.6); // medido 1,77×
   });
 
   it('o retrato dura pelo menos 2 s antes do fim', () => {
     let entrou = NaN;
-    for (let t = j.duration - 4; t <= j.duration; t += 0.01) {
+    for (let t = j.duration - 6; t <= j.duration; t += 0.01) {
       if (noQuadro(t, LUA_PC).fora <= 0.85 && noQuadro(t, TERRA_PC).fora <= 1) {
         entrou = t;
         break;
       }
     }
-    expect(j.duration - entrou).toBeGreaterThan(2); // medido 2,10 s
+    expect(j.duration - entrou).toBeGreaterThan(2); // medido 3,85 s
   });
 });

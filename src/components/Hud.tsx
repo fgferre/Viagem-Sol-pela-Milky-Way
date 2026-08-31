@@ -7,6 +7,10 @@ import { LARGURA_DO_CELULAR_PX } from '../lib/uiScale';
 import { LOAD_STAGES } from '../three/director';
 import type { LoadStage } from '../three/director';
 import { CartografiaCanvas } from './CartografiaCanvas';
+import {
+  LINHAS, ATRIBUICAO, FONTE_DA_CITACAO,
+  ATRASO_DA_LINHA, ATRASO_DA_ATRIBUICAO, ATRASO_DO_RODAPE,
+} from './encerramento';
 
 /**
  * Telas curtas escondem só a telemetria dos cantos.
@@ -292,13 +296,54 @@ export function TitleVeil({
             de volta a casa
           </div>
           <div className="title-rule" />
-          <div className="title-big" style={{ fontSize: 'clamp(1.2rem, 3vw, 2.2rem)' }}>
-            O SOL É SÓ MAIS UM PONTO DE LUZ — E É O NOSSO
+          {/* A FRASE DE ENCERRAMENTO É EMPRESTADA E ENCENADA (item 108,
+              pedidos do dono em 31/08: "podemos trocar a frase de
+              encerramento para aquela frase classica do carl sagan
+              falando do pale blue dot" e "é um encerramento do filme com
+              impacto e drama. cinema puro").
+              O TEXTO NÃO MORA AQUI: mora no roteiro do fim
+              (`three/cinematic/roteiros/encerramento.json`, montado por
+              `encerramento.ts`), como LISTA de linhas com os tempos —
+              é lá que se acrescenta linha, e o resto
+              (aspas nas pontas, ordem, atraso de cada entrada, espera do
+              crédito e do rodapé) sai do tamanho da lista sozinho.
+              A ENCENAÇÃO É CSS, não relógio de JavaScript: cada linha
+              tem o seu `animation-delay`, e a animação só existe
+              enquanto o véu está visível (`.veil-end:not(.hidden-veil)`
+              em 02-filme.css), então ela COMEÇA quando o véu sobe e não
+              quando a página carrega. Em `?shot=` e em
+              prefers-reduced-motion tudo aparece de uma vez — captura
+              determinística e sem drama para quem pediu sem drama.
+              A linha da procedência dos dados desceu para o rodapé, com
+              os botões: ela continua no véu porque o que promete
+              (posições reais) é a promessa que o app cumpre — mas não
+              divide a tela com a citação. */}
+          <div className="encerramento">
+            {LINHAS.map((linha, i) => (
+              <div
+                key={linha}
+                className="encerramento-linha"
+                style={{ animationDelay: `${ATRASO_DA_LINHA(i)}s` }}
+              >
+                {`${i === 0 ? '“' : ''}${linha}${i === LINHAS.length - 1 ? '”' : ''}`}
+              </div>
+            ))}
+            <div
+              className="encerramento-credito"
+              style={{ animationDelay: `${ATRASO_DA_ATRIBUICAO}s` }}
+            >
+              {ATRIBUICAO}
+              <span className="encerramento-fonte">{FONTE_DA_CITACAO}</span>
+            </div>
           </div>
-          <div className="title-sub">
+          <div
+            className="title-sub encerramento-rodape"
+            style={{ animationDelay: `${ATRASO_DO_RODAPE}s` }}
+          >
             estrelas nomeadas em posições reais · Via Láctea reconstruída a partir de dados científicos
           </div>
-          <div className="title-rule" />
+          <div className="title-rule encerramento-rodape"
+            style={{ animationDelay: `${ATRASO_DO_RODAPE}s` }} />
           {/* A TERCEIRA SAÍDA DO FIM (item 61, 23/08): "Ficar aqui" entra
               no Atlas NA POSE DA CODA. É a frase do dono virada em botão —
               *"a viagem na verdade para mim é só uma ferramenta do modo
@@ -307,7 +352,10 @@ export function TitleVeil({
               devolvido para uma vista a 224 UA de casa. Quem leva a
               câmera é o mesmo `entrarNoAtlas` do pausar-e-olhar, agora
               com o pouso (`Escada.pousarDoFilme`). */}
-          <div style={{ display: 'flex', gap: '0.8rem' }}>
+          <div
+            className="encerramento-rodape"
+            style={{ display: 'flex', gap: '0.8rem', animationDelay: `${ATRASO_DO_RODAPE}s` }}
+          >
             <button className="hud-btn" onClick={onPlay}>
               Reviver a viagem
             </button>

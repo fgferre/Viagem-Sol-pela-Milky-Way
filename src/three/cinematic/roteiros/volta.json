@@ -28,7 +28,7 @@
     },
     {
       "camera": {
-        "duracao": 12,
+        "duracao": "duracaoDoTake",
         "movimento": {
           "tipo": "sequencia",
           "trechos": [
@@ -55,9 +55,9 @@
                 "centro": "Terra",
                 "direcaoDe": "direcaoDaChegada",
                 "direcaoPara": "direcaoDoPouso",
-                "raio": ["raioInicialDaVolta", "raioFinalDaVolta"],
+                "raio": ["raioInicialDaVolta", "raioDoPouso"],
                 "progresso": {
-                  "tipo": "pouso", "para": 1, "pousaEm": 0.88, "expoente": 1.55
+                  "tipo": "pouso", "para": 1, "pousaEm": 1, "expoente": 1.55
                 }
               }
             }
@@ -74,7 +74,7 @@
           "pesoMaximo": 0.83,
           "alcance": "alcanceDaMira"
         },
-        "lente": [62, 52],
+        "lente": [62, "lenteDoPouso"],
         "ritmo": "linear",
         "ritmoDaLente": "glide",
         "efeitoDeVelocidade": {
@@ -82,25 +82,59 @@
         },
         "inclinacao": {
           "tipo": "pouso", "para": "inclinacaoDosPolos", "inicio": "fracaoDaLua",
-          "pousaEm": 0.88, "expoente": 1.55
+          "pousaEm": 0.9, "expoente": 1.55
         }
       },
       "fundoSilencioso": true,
       "olhar": "assunto",
       "legendas": [
         {
-          "em": 0.06,
+          "em": 0.08,
           "texto": "A LUA",
           "subtexto": "1,3 segundo-luz — o mais longe que o ser humano já chegou",
           "duracao": 4.2
         },
         {
-          "em": 0.44,
+          "em": 0.5866666666666667,
           "texto": "A TERRA",
           "subtexto": "o único ponto com oceano de onde a galáxia inteira foi decifrada",
-          "duracao": 60
+          "duracao": 60,
+          "ponte": true
         }
       ]
+    },
+    {
+      "camera": {
+        "duracao": 2.5,
+        "movimento": {
+          "tipo": "aproximacao", "centro": "Terra", "de": "pouso", "para": "fimDoDolly",
+          "progresso": { "tipo": "rampa", "de": 0, "para": 1, "ritmo": "glide" }
+        },
+        "mira": { "tipo": "fixo", "ponto": "miraDoPouso" },
+        "lente": {
+          "tipo": "ancorada", "centro": "Terra",
+          "distancia": "raioFinalDaVolta", "angulo": "lenteDoFim"
+        },
+        "ritmo": "linear",
+        "inclinacao": { "tipo": "fixo", "valor": "inclinacaoDosPolos" }
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto"
+    },
+    {
+      "camera": {
+        "duracao": 0.5,
+        "movimento": { "tipo": "fixo", "ponto": "fimDoDolly" },
+        "mira": { "tipo": "fixo", "ponto": "miraDoPouso" },
+        "lente": {
+          "tipo": "ancorada", "centro": "Terra",
+          "distancia": "raioFinalDaVolta", "angulo": "lenteDoFim"
+        },
+        "ritmo": "linear",
+        "inclinacao": { "tipo": "fixo", "valor": "inclinacaoDosPolos" }
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto"
     }
   ]
 }

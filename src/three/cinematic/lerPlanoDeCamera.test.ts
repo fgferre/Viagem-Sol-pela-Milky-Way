@@ -273,6 +273,45 @@ describe('lerPlanoDeCamera — item 75', () => {
     }
   });
 
+  /**
+   * A LENTE ANCORADA — a primitiva genérica do dolly zoom (item 108 v2).
+   * Ela não interpola graus: devolve uma FUNÇÃO DA POSIÇÃO que segura
+   * `d · tan(fov/2)` no valor da referência, isto é, mantém do mesmo
+   * tamanho aparente um corpo parado em `centro`. Aqui se cobra a LEI,
+   * não o número: em quatro distâncias diferentes o produto tem de sair
+   * o MESMO, e o tamanho aparente de um corpo de raio arbitrário tem de
+   * ficar parado no quadro. Se alguém trocar isto por uma interpolação
+   * de graus, o produto deixa de ser constante e este teste reprova.
+   */
+  it('a lente ancorada segura o tamanho aparente do alvo em qualquer distância', () => {
+    const centro = new THREE.Vector3(3, -4, 12);
+    const plano = lerPlanoDeCamera({
+      ...base,
+      lente: { tipo: 'ancorada', centro: 'alvo', distancia: 'refDist', angulo: 'refFov' },
+    }, { alvo: centro }, { refDist: 10, refFov: 40 });
+    // o par publicado é o da referência, para quem só quer a ordem de grandeza
+    expect([plano.fov0, plano.fov1]).toEqual([40, 40]);
+    const constante = 10 * Math.tan(THREE.MathUtils.degToRad(20));
+    const raio = 0.37; // um corpo qualquer parado no centro
+    const alturaNoQuadro: number[] = [];
+    for (const d of [10, 14, 19, 31.5]) {
+      const pos = centro.clone().add(new THREE.Vector3(1, -2, 2).normalize().multiplyScalar(d));
+      const fov = plano.fovDe!(pos);
+      expect(d * Math.tan(THREE.MathUtils.degToRad(fov / 2))).toBeCloseTo(constante, 12);
+      alturaNoQuadro.push(
+        Math.tan(Math.atan(raio / d)) / Math.tan(THREE.MathUtils.degToRad(fov / 2))
+      );
+    }
+    for (const h of alturaNoQuadro) expect(h).toBeCloseTo(alturaNoQuadro[0], 12);
+    // na referência ela devolve exatamente a lente declarada
+    const naReferencia = centro.clone().add(new THREE.Vector3(0, 0, 10));
+    expect(plano.fovDe!(naReferencia)).toBeCloseTo(40, 12);
+    // e a câmera EM CIMA do alvo não faz a lente explodir
+    expect(plano.fovDe!(centro.clone())).toBe(40);
+    // sem `ancorada`, nada muda: o plano de sempre não ganha função
+    expect(lerPlanoDeCamera(base).fovDe).toBeUndefined();
+  });
+
   it('lê o JSON de exemplo, resolve nomes e copia os dados sem os modificar', () => {
     const dado = JSON.parse(JSON.stringify(passoAoLado));
     const cru = JSON.stringify(dado);
@@ -322,6 +361,11 @@ describe('lerPlanoDeCamera — item 75', () => {
       [{ ...base, lente: [24, 180] }, /lente/],
       [{ ...base, lente: [24] }, /lente/],
       [{ ...base, lente: [24, '72'] }, /lente/],
+      [{ ...base, lente: { tipo: 'telefoto' } }, /lente.tipo/],
+      [{ ...base, lente: { tipo: 'ancorada', centro: [0, 0, 0], distancia: 0, angulo: 40 } }, /lente.distancia/],
+      [{ ...base, lente: { tipo: 'ancorada', centro: [0, 0, 0], distancia: 10, angulo: 0 } }, /lente.angulo/],
+      [{ ...base, lente: { tipo: 'ancorada', centro: [0, 0, 0], distancia: 10, angulo: 180 } }, /lente.angulo/],
+      [{ ...base, lente: { tipo: 'ancorada', centro: 'ausente', distancia: 10, angulo: 40 } }, /lente.centro/],
       [{ ...base, ritmo: 'constructor' }, /ritmo/],
       [{ ...base, ritmoDaLente: 'inexistente' }, /ritmoDaLente/],
       [{ ...base, movimento: { tipo: 'voar' } }, /movimento.tipo/],
