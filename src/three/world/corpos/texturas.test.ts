@@ -80,7 +80,7 @@ describe('furo (a): a carga é TRANSAÇÃO — cai um canal, não sobra nenhum',
   it('os quatro que chegaram são DESCARTADOS, não abandonados', async () => {
     const descartadas: string[] = [];
     await expect(
-      carregarCanaisDoCorpo('earth', CINCO, opcoesComUmCanalQueCai(descartadas), nunca)
+      carregarCanaisDoCorpo('earth', CINCO, opcoesComUmCanalQueCai(descartadas), 'cinema', nunca)
     ).rejects.toThrow();
     // 5 canais, 1 caiu: os 4 que baixaram têm de ter sido descartados.
     // Com `Promise.all` este número era ZERO — a espera terminava no
@@ -92,7 +92,7 @@ describe('furo (a): a carga é TRANSAÇÃO — cai um canal, não sobra nenhum',
     const descartadas: string[] = [];
     const opcoes = opcoesComUmCanalQueCai(descartadas);
     for (let i = 0; i < 3; i++) {
-      await carregarCanaisDoCorpo('earth', CINCO, opcoes, nunca).catch(() => undefined);
+      await carregarCanaisDoCorpo('earth', CINCO, opcoes, 'cinema', nunca).catch(() => undefined);
     }
     expect(descartadas).toHaveLength(12);
   });
@@ -111,7 +111,7 @@ describe('furo (a): a carga é TRANSAÇÃO — cai um canal, não sobra nenhum',
         webp: true,
         buscarManifest: async () => MANIFEST,
         carregarTextura: async (url) => texturaContada(descartadas, url),
-      }, nunca)
+      }, 'cinema', nunca)
     ).rejects.toThrow(/sem variante/);
     expect(descartadas).toHaveLength(1);
   });
@@ -129,6 +129,7 @@ describe('furo (a): a carga é TRANSAÇÃO — cai um canal, não sobra nenhum',
         buscarManifest: async () => MANIFEST,
         carregarTextura: async (url) => texturaContada(descartadas, url),
       },
+      'cinema',
       () => true
     );
     expect(fora).toBeNull();
@@ -163,7 +164,7 @@ describe('furo (b): o anel de Saturno é do MESMO lote que o mapa', () => {
     // uma deixava um `map` de Saturno residente (42,7 MiB em cinema) e
     // o planeta nunca aparecia.
     for (let i = 0; i < 3; i++) {
-      await carregarCanaisDoCorpo('saturn', SATURNO, opcoes, nunca).catch(() => undefined);
+      await carregarCanaisDoCorpo('saturn', SATURNO, opcoes, 'cinema', nunca).catch(() => undefined);
     }
     expect(descartadas).toHaveLength(3);
   });
@@ -190,6 +191,7 @@ describe('furo (b): o anel de Saturno é do MESMO lote que o mapa', () => {
         buscarManifest: async () => MANIFEST,
         carregarTextura: async () => new THREE.Texture(),
       },
+      'cinema',
       nunca
     );
     expect(lote?.get('map')!.wrapS).toBe(THREE.RepeatWrapping);
@@ -227,23 +229,23 @@ describe('furo (c): o manifest desce UMA vez', () => {
       'saturn', 'uranus', 'neptune', 'io', 'europa', 'titan', 'phobos',
     ];
     await Promise.all(
-      corpos.map((c) => carregarCanaisDoCorpo(c, [CANAL_MAP], opcoes, nunca))
+      corpos.map((c) => carregarCanaisDoCorpo(c, [CANAL_MAP], opcoes, 'cinema', nunca))
     );
     expect(pedidos).toEqual(['data/atlas/texturas.json']);
   });
 
   it('e nas cargas seguintes também — a promessa fica em cache', async () => {
     const { pedidos, opcoes } = opcoesQueContam();
-    await carregarCanaisDoCorpo('mars', [CANAL_MAP], opcoes, nunca);
-    await carregarCanaisDoCorpo('venus', [CANAL_MAP], opcoes, nunca);
+    await carregarCanaisDoCorpo('mars', [CANAL_MAP], opcoes, 'cinema', nunca);
+    await carregarCanaisDoCorpo('venus', [CANAL_MAP], opcoes, 'cinema', nunca);
     expect(pedidos).toHaveLength(1);
   });
 
   it('cada buscador tem o SEU cache — dois testes nunca se leem', async () => {
     const a = opcoesQueContam();
     const b = opcoesQueContam();
-    await carregarCanaisDoCorpo('mars', [CANAL_MAP], a.opcoes, nunca);
-    await carregarCanaisDoCorpo('mars', [CANAL_MAP], b.opcoes, nunca);
+    await carregarCanaisDoCorpo('mars', [CANAL_MAP], a.opcoes, 'cinema', nunca);
+    await carregarCanaisDoCorpo('mars', [CANAL_MAP], b.opcoes, 'cinema', nunca);
     expect(a.pedidos).toHaveLength(1);
     expect(b.pedidos).toHaveLength(1);
   });
@@ -346,11 +348,11 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     expect(b.casa.tierNaTela).toBe('alta');
     expect(b.pedidos).toEqual([mapaDaTerraEm('alta')]);
 
-    // o visitante escolhe Cinema: o tick seguinte PEDE, sem gatilho de
-    // gate nenhum — o corpo já está na tela, e é por isso que ele
-    // precisa dos pixels certos
+    // o visitante escolhe Cinema: o tick seguinte PEDE, porque o
+    // gatilho continua armado — o corpo está NA TELA, e é por isso que
+    // ele precisa dos pixels certos
     b.escolher('cinema');
-    b.casa.aoTick(false);
+    b.casa.aoTick(true);
     await b.respirar();
     expect(b.pedidos).toEqual([mapaDaTerraEm('alta'), mapaDaTerraEm('cinema')]);
 
@@ -358,7 +360,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     // é o critério inteiro do item 59. `pronta` é o que faz `emQuadro`
     // nos quatro corpos; se ele caísse aqui, a Terra viraria ponto.
     for (let i = 0; i < 5; i++) {
-      b.casa.aoTick(false);
+      b.casa.aoTick(true);
       expect(b.casa.pronta, `tick ${i} sem globo`).toBe(true);
     }
     // e o ponteiro NÃO trocou: quem desenha ainda é o mapa de alta
@@ -385,7 +387,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     b.casa.aoTick(true);
     await b.entregar();
     b.escolher('performance');
-    b.casa.aoTick(false);
+    b.casa.aoTick(true);
     expect(b.casa.pronta).toBe(true);
     await b.entregar();
     expect(b.casa.tierNaTela).toBe('performance');
@@ -399,11 +401,11 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     await b.entregar();
     // clique 1: cinema (fica em voo)
     b.escolher('cinema');
-    b.casa.aoTick(false);
+    b.casa.aoTick(true);
     await b.respirar();
     // clique 2: performance ANTES de o de cinema chegar
     b.escolher('performance');
-    b.casa.aoTick(false);
+    b.casa.aoTick(true);
     await b.respirar();
     expect(b.pedidos).toHaveLength(3);
     // os dois chegam juntos; a GERAÇÃO é quem decide qual vale
@@ -422,9 +424,11 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     b.casa.aoTick(true);
     await b.entregar();
     b.escolher('cinema');
-    b.casa.aoTick(false);
+    b.casa.aoTick(true);
     await b.respirar();
     b.escolher('alta'); // arrependeu-se antes de o lote chegar
+    // e SEM gatilho: cancelar não toca a rede, então o corpo que saiu
+    // da tela no meio do arrependimento também larga o lote em voo
     b.casa.aoTick(false);
     // nada a buscar: o mapa de alta nunca saiu da tela
     expect(b.pedidos).toHaveLength(2);
@@ -442,7 +446,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     b.casa.aoTick(true);
     await b.entregar();
     b.escolher('cinema');
-    b.casa.aoTick(false);
+    b.casa.aoTick(true);
     await b.respirar();
     b.casa.dispose(); // o Director morre com o lote no ar
     await b.entregar();
@@ -465,7 +469,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     try {
       // 1 carga + RECARGAS_ATE_DESISTIR recargas, como na primeira vez
       for (let i = 0; i < 1 + RECARGAS_ATE_DESISTIR; i++) {
-        b.casa.aoTick(false);
+        b.casa.aoTick(true);
         await b.entregar();
         // a cada queda o globo CONTINUA na tela, com os pixels de alta
         expect(b.casa.pronta).toBe(true);
@@ -480,8 +484,36 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     // e depois de desistir ele PARA de pedir — 60 pedidos por segundo
     // contra uma rede que já disse não três vezes é o defeito, não a cura
     const antes = b.pedidos.length;
-    for (let i = 0; i < 5; i++) b.casa.aoTick(false);
+    for (let i = 0; i < 5; i++) b.casa.aoTick(true);
     expect(b.pedidos).toHaveLength(antes);
+  });
+
+  it('FORA DA TELA a troca não nasce; e nasce no tick em que o corpo VOLTA', async () => {
+    const b = bancadaDaTroca('alta');
+    b.casa.aoTick(true); // visitado: o gatilho armou e o lote de alta desceu
+    await b.entregar();
+    expect(b.pedidos).toEqual([mapaDaTerraEm('alta')]);
+
+    // o visitante foi embora (gate desarmado, o Atlas focando outro
+    // corpo) e mexe no seletor. É o estado dos 38 corpos do palco:
+    // 'pronta' quer dizer "carregou alguma vez", não "está na tela" —
+    // sem a condição do gatilho, cada clique re-baixava o lote de todos
+    // eles (34,4 MiB de variante de cinema por leva, item 59/auditoria).
+    b.escolher('cinema');
+    for (let i = 0; i < 5; i++) b.casa.aoTick(false);
+    await b.respirar();
+    expect(b.pedidos).toEqual([mapaDaTerraEm('alta')]);
+    expect(b.casa.carregando).toBe(false);
+    expect(b.casa.tierNaTela).toBe('alta');
+
+    // e ele VOLTA a ser olhado: o pedido nasce neste tick, pela mesma
+    // comparação com `tierVivo` que já estava aqui — nada precisou
+    // guardar o clique perdido
+    b.casa.aoTick(true);
+    await b.respirar();
+    expect(b.pedidos).toEqual([mapaDaTerraEm('alta'), mapaDaTerraEm('cinema')]);
+    await b.entregar();
+    expect(b.casa.tierNaTela).toBe('cinema');
   });
 
   it('corpo PROCEDURAL (sem canais) nasce pronto e nenhuma troca o alcança', async () => {

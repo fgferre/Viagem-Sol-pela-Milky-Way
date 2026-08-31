@@ -204,8 +204,9 @@ export function detectarWebp(): boolean {
 // A CARGA — uma só, para os quatro corpos
 // ------------------------------------------------------------
 
-/** O estado da textura de um corpo. Um enum, quatro moradores. */
-export type EstadoDasTexturas = 'fria' | 'buscando' | 'pronta' | 'falhou';
+/** O estado da textura de um corpo. Um enum, quatro moradores, e desde
+ *  o item 59 um único leitor — `TexturasDoCorpo`, aqui dentro. */
+type EstadoDasTexturas = 'fria' | 'buscando' | 'pronta' | 'falhou';
 
 export type BuscadorDeManifest = (url: string) => Promise<ManifestDeTexturas>;
 export type CarregadorDeTextura = (url: string) => Promise<THREE.Texture>;
@@ -327,17 +328,22 @@ export function buscarManifestUmaVez(
  * `Promise.allSettled` e não `Promise.all`: com `all`, o primeiro canal
  * que cai resolve a espera e os outros terminam sozinhos, sem ninguém
  * para descartá-los. Aqui todos são esperados até o fim, sempre.
+ *
+ * O `tier` vem PRONTO de quem pede, e não de `opcoes.tier()`: um lote é
+ * de um tier só (ou os canais da Terra viriam de duas doses diferentes),
+ * e quem pede já o leu para anotar o lote em voo. Duas leituras da mesma
+ * função hoje coincidem por serem o mesmo turno síncrono — se um dia
+ * divergirem, o `tierVivo` que a casa grava mentiria sobre os pixels que
+ * ela acabou de publicar.
  */
 export async function carregarCanaisDoCorpo(
   corpo: string,
   canais: readonly CanalPedido[],
   opcoes: OpcoesDeTextura,
+  tier: QualityLevel,
   cancelado: () => boolean
 ): Promise<Map<string, THREE.Texture> | null> {
   const { base, maxTextureSize } = opcoes;
-  // o tier é lido UMA vez, no começo do pedido: um lote é de um tier só,
-  // ou os canais da Terra viriam de duas doses diferentes
-  const tierAgora = opcoes.tier();
   const buscar = opcoes.buscarManifest ?? buscarPelaRede;
   const carregar = opcoes.carregarTextura ?? carregarPelaRede;
   const webpOk = opcoes.webp ?? detectarWebp();
@@ -347,7 +353,7 @@ export async function carregarCanaisDoCorpo(
   const lote = await Promise.allSettled(
     canais.map(async (pedido) => {
       // o alvo é POR CANAL — a dose de VRAM mora em `alvoDePixels`
-      const alvo = alvoDePixels(tierAgora, pedido.canal, maxTextureSize);
+      const alvo = alvoDePixels(tier, pedido.canal, maxTextureSize);
       const variante = escolherVariante(manifest.entradas, corpo, pedido.canal, alvo, webpOk);
       if (!variante) {
         throw new Error(`${corpo} sem variante para '${pedido.canal}' ≤ ${alvo}px`);
@@ -384,7 +390,7 @@ export async function carregarCanaisDoCorpo(
  *
  * `oQueNaoNasce` é a única coisa que variava entre as quatro cópias.
  */
-export function estadoAposFalha(
+function estadoAposFalha(
   recargas: number,
   etiqueta: string,
   oQueNaoNasce: string
@@ -453,7 +459,8 @@ export interface PedidoDeTexturas {
  *
  * O conserto é o MESMO desenho do `reassarMundo`, um degrau abaixo: o
  * `tierVivo` diz de que tier são os pixels QUE ESTÃO NA TELA; quando o
- * seletor discorda dele, sai um pedido em SEGUNDO PLANO (o corpo segue
+ * seletor discorda dele — e o corpo está na tela, que é o gatilho de
+ * `aoTick` —, sai um pedido em SEGUNDO PLANO (o corpo segue
  * 'pronta', desenhando os pixels velhos), e a troca de ponteiro
  * acontece num passo síncrono só — `publicar` o lote novo, descartar o
  * velho. Nunca existe um quadro sem globo.
@@ -519,8 +526,17 @@ export class TexturasDoCorpo {
    * armado OU fase atlas); a carga preguiçosa é o contrato — sem
    * gatilho nenhum byte desce, e as vistas oficiais não fazem fetch.
    *
-   * A TROCA DE TIER não pede gatilho: o corpo já está na tela, e é
-   * justamente por estar que ele precisa dos pixels certos.
+   * A TROCA DE TIER PEDE O MESMO GATILHO, porque ele é justamente quem
+   * diz "este corpo está NA TELA agora": gate armado (grande o bastante
+   * para o olho ler) ou o foco do Atlas. Sem essa condição bastava
+   * 'pronta' — "carregou alguma vez" —, e um clique no seletor mandava
+   * os 38 corpos do palco que alguém já visitou e abandonou re-baixar o
+   * lote inteiro (34,4 MiB de variante de cinema, medidos na auditoria
+   * de 31/08), cada um disparando o `perturbar` do palco por pixels que
+   * ninguém olha. Quem sai da tela fica com os texels que tem; quem
+   * VOLTA pede a troca no primeiro tick em que o gatilho volta, pela
+   * mesma comparação com `tierVivo` que já está aqui — ela não some,
+   * só não dispara enquanto ninguém olha.
    */
   aoTick(gatilho: boolean): void {
     if (this.disposto) return;
@@ -537,12 +553,14 @@ export class TexturasDoCorpo {
     // VOLTAR AO TIER QUE JÁ ESTÁ NA TELA É CANCELAR, e não pedir de
     // novo: não há lote a buscar, mas há um em voo que ninguém espera
     // mais — a geração nova o invalida. É a lição do `reassarMundo`
-    // (21/08) num corpo só.
+    // (21/08) num corpo só. Vale FORA da tela também: cancelar não toca
+    // a rede, e o lote que já está no ar deixou de ter dono.
     if (tier === this.tierVivo) {
       this.geracao += 1;
       this.tierEmVoo = null;
       return;
     }
+    if (!gatilho) return;
     this.pedir();
   }
 
@@ -562,7 +580,7 @@ export class TexturasDoCorpo {
     const tier = rede.tier();
     this.tierEmVoo = tier;
     const vencida = () => this.disposto || minha !== this.geracao;
-    void carregarCanaisDoCorpo(corpo, canais, rede, vencida)
+    void carregarCanaisDoCorpo(corpo, canais, rede, tier, vencida)
       .then((porCanal) => {
         // cancelada no caminho: o lote já foi descartado lá dentro
         if (!porCanal) return;

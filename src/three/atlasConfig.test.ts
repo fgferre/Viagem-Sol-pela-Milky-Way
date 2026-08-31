@@ -169,8 +169,13 @@ describe('a troca de tier ao vivo (Ajustes C)', () => {
     expect(TEXTURAS, 'o tier congelou de novo no construtor').toContain(
       'tier: () => QualityLevel;'
     );
+    // A leitura mora em `pedir()` desde 31/08 e desce PRONTA ao
+    // carregador (uma leitura por lote, não duas). Quem mede o
+    // comportamento é `texturas.test.ts` — trocar o seletor e cobrar a
+    // variante nova; este pino só cobra que a leitura não volte ao
+    // construtor.
     expect(TEXTURAS, 'o alvo de pixels não lê o tier de agora').toContain(
-      'const tierAgora = opcoes.tier();'
+      'const tier = rede.tier();'
     );
     // e desde o item 59 o ESTADO da textura mora lá junto com a carga:
     // o corpo declara o pedido e lê `pronta`/`carregando`, mas quem
