@@ -509,8 +509,15 @@ contra o grampo, e a direção da rampa estoura 7,7× a velocidade
 angular a 170° (o `slerpDir` pronto existe). O material bruto
 (fichas, medidas, capturas) vive no scratchpad da máquina
 (`scratchpad/estudos/nasa-eyes-solar-system/mineracao/`, fora do git,
-retomada pelo `CHECKPOINT.md` de lá). Quando ele escolher um bloco, o
-bloco vira item próprio e este encolhe.
+retomada pelo `CHECKPOINT.md` de lá). **Palavra dele em 31/08:** *"eu
+acho que temo que fazer tudo, mas talvez valha a pena fazer uma
+reavaliacao da ordem e prioridades... nesse momento tem outro agente já
+trabalhando na fila, entao vamos deixar ele terminar para depois pensar
+nisso com carinho e inteligencia."* — ou seja: a colheita ENTRA (tudo,
+em princípio), a ORDEM será reavaliada com calma quando a frente que
+hoje trabalha a fila terminar. Ninguém abre obra destes blocos antes
+dessa reavaliação. Quando ela vier, cada bloco escolhido vira item
+próprio e este encolhe.
 
 **114. O censo do sistema solar: todas as luas e os objetos interessantes.**
 Pedido do dono em 30/08, palavras dele: *"quero expandir nosso projeto
