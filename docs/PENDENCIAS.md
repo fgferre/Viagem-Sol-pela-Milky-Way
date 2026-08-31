@@ -790,6 +790,10 @@ norte galáctico abre a −3,78 rad por e-fold, a vinheta velha abria a
 `item34-boot-depois.png` e `item34-ceu-polo-norte.png` (a referência de
 quiralidade, `?pos=` sobre o polo norte).
 
+**O olho dele confirmou em 31/08:** *"a vinheta da galaxia está um pouco
+melhor sim... por enquanto vamos dar como encerrada"* — e a ressalva
+dele virou o item **118**.
+
 **36. (MEDIDO em 17/08 — o censo completo mora no commit da data.)
 SEIS leis de poeira convivem, não quatro.** Às quatro contadas (a
 tripla literal do catálogo, as cascas em 0,8 mag/kpc acromático, a
@@ -1474,6 +1478,23 @@ com os oclusores que a casa já tem. **A decisão é dele: arquivar, ou
 ordenar a obra grande mesmo assim.** O worktree e a troika foram
 removidos após o spike, como manda o desenho.
 
+**A CONFERÊNCIA DELE em 31/08, testando a beta consertada — três
+vereditos, palavras dele:** (a) legibilidade OK ("o nome continua facil
+de ler"); (b) **REPROVAÇÃO — o engolimento VOLTOU ou nunca morreu**:
+*"nao, quando aproximo o corpo do objeto engole o texto"* — o conserto
+de 30/08 (depth+renderOrder) não segurou no teste dele; reabrir essa
+perna com reprodução no app vivo antes de qualquer outra obra da beta;
+(c) direção de produto: *"o texto parece mais definido no 3d, ficou
+visualmente atraente, mas ele parece sempre do mesmo tamanho, achei que
+teria algo mais dinamico regendo a posicao e tamanho das fontes e
+icones"* — a beta pede uma régua dinâmica de tamanho/posição (a
+mineração do Eyes tem o mecanismo mapeado: tamanho por pixels na tela e
+intervalos de aparição, mergulhos 06/08); e **DECISÃO DE DOUTRINA
+dele**: *"Nao acho que devemos nunca transformar o modo 3d ou 2d num
+modo unico, acho que é algo de preferencia que deve ficar guardado
+quando selecionado pelo usuario"* — 2D e 3D coexistem para sempre como
+preferência salva do usuário; ninguém propõe unificação de novo.
+
 **116.** (Suspeita a medir, achada em 31/08 fechando o item 84.)
 `?foco=tritao` devolve o disco de Tritão **inteiramente escuro**, com e
 sem `?d=`, no jd pinado do gate (2460409.26) — silhueta preta sobre a
@@ -1547,6 +1568,16 @@ a peça em `capturas/item117-limbo.json`.
 ---
 
 ## BAIXA — dívida interna, ninguém vê
+
+**118. A tela de abertura merece ser repensada por inteiro (futuro).**
+Palavras dele em 31/08, ao encerrar o item 34: *"acho que ainda temos
+grande oportunidade nessa tela de abertura no entanto.. nao acho muito
+bonita ainda... talvez tenhamos que repensar no futuro completamente
+essa tela de loading, mas por enquanto vamos dar como encerrada."* Fica
+registrado como obra futura de produto, sem urgência; quando vier,
+começa por propostas visuais para o olho dele (a mineração do Eyes tem
+o mecanismo do loading deles mapeado no mergulho 06 — bundle separado,
+dados essenciais antes do app, saída em fade).
 
 **95.** Num eclipse o chão escurecia e o AR não — **FECHADO em 25/08**,
 conferido por ele na SEGUNDA LEVA da Sala de Conferência (**C12**);
