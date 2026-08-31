@@ -30,17 +30,21 @@ import {
   discoAparentePx,
   GLSL_LEI_DA_ESTRELA,
   GLSL_LEI_DE_TELA,
+  GLSL_LEI_DE_TELA_NA_REGUA,
   PISO_DE_TELA_AO_QUADRADO,
   PISO_DE_TELA_PX,
+  PISO_DO_RASTRO_PX,
   PLATO_DE_TELA_PX,
   TETO_DE_TELA_PX,
   leiDeTela,
+  leiDeTelaNaRegua,
   repartir,
   type EstadoDaEstrela,
   type Instrumento,
   type Observacao,
 } from './estrela';
 import {
+  ALTURA_DE_CALIBRACAO_DO_SIGMA_PX,
   EXPO_M0,
   M_V_SOL,
   SIGMA_PX,
@@ -275,6 +279,118 @@ describe('2. as duas faces batem — conformidade numérica, molde do F0', () =>
       expect(a.pontoPx, `pontoPx em ${p}`).toBeCloseTo(b.pontoPx, 8);
       expect(a.shrink, `shrink em ${p}`).toBeCloseTo(b.shrink, 8);
       expect(a.subPix, `subPix em ${p}`).toBeCloseTo(b.subPix, 8);
+    }
+  });
+
+  // ─── A LEI DE TELA NA RÉGUA (item 46) ───────────────────────────────
+  //
+  // O que este bloco cobra é o DEPÓSITO — alpha × rastro rasterizado —,
+  // porque é ele que o olho vê depois de a tela reduzir o buffer, e é ele
+  // que a medição de 31/08 pegou caindo 23–29% em retina.
+  //
+  // O RASTERIZADOR É DADO MEDIDO, não suposição: a sonda de
+  // `capturas/item46-resolucao.json` mostra que esta GPU deposita 1 px²
+  // CHEIO para qualquer `gl_PointSize` de 0,3 a 0,99 (energia 1,000 por
+  // ponto), 1,89 em 1,4, 4 em 2 e 9 em 3 — `ALIASED_POINT_SIZE_RANGE` =
+  // [1, 511]. É por isso que o juiz tem o piso ESCRITO nele: se a lei
+  // passar a supor um rastro que a GPU não deposita, a conta abaixo
+  // desiguala e o teste reprova.
+  const PISO_MEDIDO_DO_RASTERIZADOR_PX = 1;
+  const depositoMedido = (pxDoBuffer: number, alturaDoBuffer: number) => {
+    const t = leiDeTelaNaRegua(pxDoBuffer, alturaDoBuffer);
+    const rastro = Math.max(t.escritoPx, PISO_MEDIDO_DO_RASTERIZADOR_PX);
+    return t.fluxo * rastro * rastro;
+  };
+
+  it('na altura de calibração a lei na régua É a lei de sempre', () => {
+    for (let logPx = -2; logPx <= 1.6; logPx += 0.017) {
+      const px = Math.pow(10, logPx);
+      const velha = leiDeTela(px);
+      const nova = leiDeTelaNaRegua(px, ALTURA_DE_CALIBRACAO_DO_SIGMA_PX);
+      // o tamanho escrito é o pontoPx JÁ grampeado pelo driver — pedir
+      // 0,7 px sempre foi pedir 1 px de rastro
+      expect(nova.escritoPx, `${px} px`).toBe(
+        Math.max(velha.pontoPx, PISO_MEDIDO_DO_RASTERIZADOR_PX)
+      );
+      expect(nova.fluxo, `${px} px`).toBe(velha.shrink * velha.subPix);
+    }
+  });
+
+  it('o depósito por ângulo NÃO depende da altura do buffer', () => {
+    // a escada da medição (450 → 900 → 1800) mais a altura da casa e o
+    // retina de 2160 — e ângulos que atravessam os DOIS joelhos (o piso
+    // de 0,7 px e o platô de 3 px) na régua
+    for (const altura of [450, 900, 1080, 1200, 1800, 2160]) {
+      const escala = altura / ALTURA_DE_CALIBRACAO_DO_SIGMA_PX;
+      for (let logPx = -1.7; logPx <= 1.8; logPx += 0.011) {
+        const pxNaRegua = Math.pow(10, logPx);
+        const naRegua = depositoMedido(pxNaRegua, ALTURA_DE_CALIBRACAO_DO_SIGMA_PX);
+        // o MESMO ângulo neste buffer ocupa `escala` vezes mais pixels
+        const neste = depositoMedido(pxNaRegua * escala, altura);
+        // ...e tem de depositar `escala²` vezes mais energia, que é o que
+        // deixa o pixel médio da imagem igual ao da régua
+        expect(
+          neste / (escala * escala) / naRegua,
+          `${pxNaRegua.toFixed(3)} px na régua, buffer de ${altura} px`
+        ).toBeCloseTo(1, 9);
+      }
+    }
+  });
+
+  it('a lei em px de BUFFER perdia o depósito ao dobrar a resolução', () => {
+    // o defeito medido, escrito como número: a lei antiga julgava o
+    // ângulo em pixels do buffer, então dobrar a altura atravessava os
+    // joelhos e a energia por ângulo caía. Os dois casos são os que a
+    // medição nomeou — as partículas de disco de 14 a 20 pc (sub-pixel,
+    // no piso) e os nós HII/jovens de 30 a 140 pc (no platô). Quem NÃO
+    // atravessa joelho nenhum já era invariante, e é por isso que a
+    // escada media 0,994 de 450 para 900 e só desabava de 900 para 1800.
+    const depositoAntigo = (px: number) => {
+      const t = leiDeTela(px);
+      const rastro = Math.max(t.pontoPx, PISO_MEDIDO_DO_RASTERIZADOR_PX);
+      return t.shrink * t.subPix * rastro * rastro;
+    };
+    for (const pxEm900 of [0.5, 0.69, 0.85, 2, 3, 6]) {
+      const antes = depositoAntigo(pxEm900 * 2) / 4 / depositoAntigo(pxEm900);
+      expect(antes, `${pxEm900} px em 900`).toBeLessThan(0.8);
+      const depois =
+        depositoMedido(pxEm900 * 2, 1800) / 4 / depositoMedido(pxEm900, 900);
+      expect(depois, `${pxEm900} px em 900`).toBeCloseTo(1, 9);
+    }
+  });
+
+  it('a face GLSL da lei na régua imprime os MESMOS floats da face TS', () => {
+    const numeros = (re: RegExp) => {
+      const m = GLSL_LEI_DE_TELA_NA_REGUA.match(re);
+      expect(m, `${re} não achou o literal no GLSL gerado`).not.toBeNull();
+      return (m as RegExpMatchArray).slice(1).map(Number);
+    };
+    const [altura] = numeros(/max\(alturaDoBuffer, 1\.0\) \/ ([\d.]+)/);
+    const [pisoRastro] = numeros(/max\(pontoPx, ([\d.]+)\)/);
+    const [pisoEscrito] = numeros(/max\(pontoPx \* escala, ([\d.]+)\)/);
+    expect(altura).toBe(ALTURA_DE_CALIBRACAO_DO_SIGMA_PX);
+    expect(pisoRastro).toBe(PISO_DO_RASTRO_PX);
+    expect(pisoEscrito).toBe(PISO_DO_RASTRO_PX);
+    expect(GLSL_LEI_DE_TELA_NA_REGUA).not.toMatch(/undefined|NaN/);
+    // a lei base viaja junto, uma vez só — quem incluir as duas listas
+    // redefine `leiDeTela` e não compila
+    expect(GLSL_LEI_DE_TELA_NA_REGUA).toContain(GLSL_LEI_DE_TELA);
+    expect(GLSL_LEI_DE_TELA_NA_REGUA.match(/void leiDeTela\(/g)).toHaveLength(1);
+    // e a transliteração completa bate com a face TS sobre grade
+    for (const alturaDoBuffer of [450, 900, 1080, 1800]) {
+      for (let logPx = -2; logPx <= 1.8; logPx += 0.031) {
+        const px = Math.pow(10, logPx);
+        const escala = Math.max(alturaDoBuffer, 1) / altura;
+        const t = leiDeTela(px / escala);
+        const rastroDaRegua = Math.max(t.pontoPx, pisoRastro);
+        const escritoPx = Math.max(t.pontoPx * escala, pisoEscrito);
+        const razao = (rastroDaRegua * escala) / escritoPx;
+        const nossa = leiDeTelaNaRegua(px, alturaDoBuffer);
+        expect(nossa.escritoPx, `${px} px em ${alturaDoBuffer}`).toBe(escritoPx);
+        expect(nossa.fluxo, `${px} px em ${alturaDoBuffer}`).toBe(
+          t.shrink * t.subPix * razao * razao
+        );
+      }
     }
   });
 

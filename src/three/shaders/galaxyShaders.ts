@@ -5,7 +5,7 @@
 // ============================================================
 import { GALACTIC_MODEL, GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
 import { glslNumber } from '../glslNumber';
-import { GLSL_LEI_DE_TELA } from '../estrela';
+import { GLSL_LEI_DE_TELA_NA_REGUA } from '../estrela';
 import { GLSL_STAR_COLOR } from './common';
 import { GLSL_UNRESOLVED } from '../world/wrappedStars';
 
@@ -87,7 +87,7 @@ varying float vAlpha;
 
 ${GLSL_CARTOGRAPHY}
 ${GLSL_UNRESOLVED}
-${GLSL_LEI_DE_TELA}
+${GLSL_LEI_DE_TELA_NA_REGUA}
 
 void main() {
   float dist = length(position - uCamPos);
@@ -100,8 +100,14 @@ void main() {
   // valor só (20), knob sem lado A. A migração de REPRESENTAÇÃO desta
   // camada (aAlpha → fluxo na unidade, a morte do platô e do ramo 1/px²,
   // a cessão partícula↔lâmina) segue sendo o M6.
-  float clamped, shrink, subPix;
-  leiDeTela(px, clamped, shrink, subPix);
+  //
+  // NA RÉGUA desde o item 46: o ângulo é julgado sempre na altura de
+  // calibração e o rastro volta para o buffer de verdade, senão os
+  // joelhos da lei andam com a resolução e a camada perde 23–29% do
+  // depósito por ângulo em retina (medido em 31/08). Na altura de
+  // calibração a conta é a de sempre, bit a bit.
+  float escritoPx, fluxoDaTela;
+  leiDeTelaNaRegua(px, uScreenH, escritoPx, fluxoDaTela);
 
   // PROJEÇÃO ANTES DA EXTINÇÃO — o recorte que faltava.
   // As 16 amostras VTF abaixo custam 1,22 ms por milhão de pontos (medido
@@ -111,12 +117,12 @@ void main() {
   // 99,98% no face-on). Ou seja: 98% pagavam a integral inteira para serem
   // descartados pelo clipper depois.
   // Isto NÃO tira ponto nenhum da imagem: quem sai daqui já não virava
-  // fragmento. Só sobe a projeção — px, clamped, shrink e subPix não
+  // fragmento. Só sobe a projeção — px, escritoPx e fluxoDaTela não
   // dependem de tau, então não há circularidade — e pula o que sobra.
   // A MARGEM É OBRIGATÓRIA: ES rasteriza ponto como QUADRADO em espaço de
   // JANELA, então o centro pode estar fora e a borda ainda depositar. Um
   // corte NDC puro apaga ponto visível — foi medido e rejeitado.
-  // A margem exata em Y é (clamped/2 + 2 px) convertida para NDC, e uScreenH
+  // A margem exata em Y é (escritoPx/2 + 2 px) convertida para NDC, e uScreenH
   // é a ALTURA do buffer. Em X ela NÃO é a mesma: depende do aspecto, e o
   // aspecto já está dentro da projeção (P[0][0] = f/aspecto, P[1][1] = f),
   // então P[0][0]/P[1][1] = altura/largura converte uma na outra sem gastar
@@ -134,14 +140,14 @@ void main() {
   // tauRT, não produtor. Há um único RenderPass e nenhum overrideMaterial.
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
-  gl_PointSize = clamped;
+  gl_PointSize = escritoPx;
   vColor = vec3(0.0);
   vAlpha = 0.0;
   // w <= 0 é subconjunto estrito do que o clipper já descarta, e o "=" é o
   // que impede 0/0 = NaN passar batido por toda comparação abaixo.
   if (gl_Position.w <= 0.0) return;
   vec2 ndc = gl_Position.xy / gl_Position.w;
-  float margemY = (clamped + 4.0) / uScreenH;
+  float margemY = (escritoPx + 4.0) / uScreenH;
   float margemX = margemY * projectionMatrix[0][0] / projectionMatrix[1][1];
   if (abs(ndc.x) > 1.0 + margemX || abs(ndc.y) > 1.0 + margemY) return;
 
@@ -221,7 +227,7 @@ void main() {
   // handoff da unificação 2: a fração da luz que as cascas resolvem
   // como estrelas individuais a esta distância sai da integrada.
   // Além de ~5 kpc unresolved ≡ 1,0 — a vista externa não move.
-  vAlpha = aAlpha * uFade * shrink * subPix * unresolved(dist);
+  vAlpha = aAlpha * uFade * fluxoDaTela * unresolved(dist);
 }
 `;
 

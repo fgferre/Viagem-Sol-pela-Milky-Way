@@ -6089,3 +6089,82 @@ e o teto do censo subiu os mesmos 0,4 — de 31,9 para 32,3 min.
 HUD. Todas as vistas da casa capturam com `?shot=2`, que apaga o DOM e o
 canvas dos rótulos; o que as três novas guardam é enquadramento, órbitas
 desenhadas e os corpos resolvidos do Atlas.
+
+## Item 46 — A galáxia profunda perdia um quarto do brilho em retina
+
+**46.** (Suspeita a medir, herdada do item 44.) A galáxia profunda
+(`galaxy.ts`, 4M pontos, `shrink` 1/px² próprio) não passou pela
+invariância de resolução — se o "céu vazio" voltar na vista de LONGE em
+tela retina, é a primeira suspeita.
+
+**VEREDITO (medido em 31/08 — CULPADA quanto à invariância; INOCENTE
+quanto ao "céu vazio").** A vista de longe NÃO esvazia em retina: face-on
+e edge-on, dpr 1 e dpr 2 lado a lado, mostram a mesma galáxia, mais
+nítida, e o QUADRO CHEIO perde só **2,5%** (face-on) e **15%** (edge-on)
+do brilho integrado. Mas a camada profunda SOZINHA (as 4 M partículas,
+isoladas com `?nodisc=1&noglow=1`) perde **23%** face-on e **29%**
+edge-on quando a altura do buffer vai de 900 para 1800 px — que é
+exatamente o que a tela do Mac faz na mesma janela. Medido em espaço
+linear (`?tone=linear` mais o sRGB desfeito), média por ÁREA com o chão
+do quadro subtraído, zero pixel saturado nas dez capturas. A escada 450 →
+900 → 1800 px de altura dá 1,000 → 0,994 → 0,765 (face-on) e 1,000 →
+0,911 → 0,650 (edge-on), e a queda é da RESOLUÇÃO DO BUFFER, não do dpr:
+1200×900 em dpr 2 e 2400×1800 em dpr 1 produzem a mesma imagem (PNG de
+6.536.513 e 6.536.468 B). **A causa são os dois joelhos da lei de tela**
+(`leiDeTela`/`GLSL_LEI_DE_TELA` em `src/three/estrela.ts`, consumida por
+`GALAXY_VERT`). (1) O PISO: `subPix = px²/0,49` compensa supondo um
+rastro de 0,49 px², e o rasterizador desta GPU deposita 1 px² SEMPRE —
+medido em canvas WebGL próprio, `gl_PointSize` de 0,3 a 0,99 dá energia
+1,000 por ponto, 1,4 dá 1,89, 2 dá 4, 3 dá 9, e o
+`ALIASED_POINT_SIZE_RANGE` é [1, 511]. (2) O PLATÔ: `shrink = 9/px²`
+conserva o depósito em PIXEL, não em ÂNGULO — acima de 3 px o total fica
+preso em 9 px² físicos, então dobrar a resolução divide a contribuição em
+área por 4. Quem atravessa esse platô entre 900 e 1800 px são justamente
+os nós HII/jovens de 30 a 140 pc (`geradorDaGalaxia.ts`) — são eles que
+dão cor aos braços. Fotos `capturas/item46-*.png`, rastro em
+`capturas/item46-resolucao.json`.
+
+**FECHADO em 31/08 — A LEI DE TELA GANHOU RÉGUA.** O conserto não é um
+fator mágico e não é o `×uPr2` copiado: o eixo verdadeiro, que a própria
+medição isolou, é a ALTURA DO BUFFER, não o pixel ratio. `leiDeTelaNaRegua`
+(`estrela.ts`, com face GLSL gerada das mesmas constantes) julga o ângulo
+SEMPRE na altura de calibração da casa — os mesmos 1080 px do σ da PSF,
+`ALTURA_DE_CALIBRACAO_DO_SIGMA_PX` — e devolve o rastro ao buffer de
+verdade; o depósito passa a escalar com escala² por construção, e o pixel
+médio da imagem (que é o que o olho vê depois de a tela reduzir o buffer)
+para de depender da resolução. A segunda metade é o PISO DO RASTRO, e ele
+é medido: `PISO_DO_RASTRO_PX = 1`, o piso do `ALIASED_POINT_SIZE_RANGE`
+desta GPU. Pedir 0,7 px nunca encolheu rastro nenhum, e sem contar isso a
+compensação sub-pixel erraria de um jeito que depende da resolução — que
+é o defeito. Na altura de calibração a conta é a de sempre, bit a bit.
+
+**O número, A/B de árvore limpa contra o HEAD** (o mesmo método da
+medição, calibrado contra as capturas de 31/08 casa decimal por casa
+decimal; rastro em `capturas/item46-fix-resolucao.json`, fotos
+`capturas/item46-fix-*.png`, instrumento em `capturas/item46-fix-escada.mjs`):
+
+| escada (só a camada profunda) | antes | depois |
+| --- | --- | --- |
+| face-on 450→900 | 0,994 | 1,001 |
+| face-on 900→1800 | **0,770** | **0,982** |
+| edge-on 450→900 | 0,911 | 0,955 |
+| edge-on 900→1800 | **0,714** | **0,937** |
+| quadro cheio face-on dpr1→dpr2 | 0,975 | **1,000** |
+| quadro cheio edge-on dpr1→dpr2 | 0,845 | **0,966** |
+
+O que o dono ganha na tela dele (retina, 1200×900 em dpr 2): a camada
+profunda volta **+26,6%** face-on e **+24,8%** edge-on, e o quadro cheio
+sobe 2,4% e 11,3%. **O que muda em dpr 1 na janela de sempre é o mínimo,
+e está medido:** −0,09% no quadro cheio face-on e −2,6% no edge-on (a
+camada profunda sozinha, −0,7% e −4,9%) — a janela de 900 px passa a
+mostrar o que a régua de 1080 mostra.
+
+**O que sobra de 1,00 é do rasterizador, não da lei:** um ponto de 1,4 px
+deposita 1,89 px² medidos e não 1,96, e em 450 px de altura a escala
+0,417 empilha os tamanhos escritos justamente em cima do piso de 1 px,
+onde o erro de quantização é maior. Nenhum shader corrige isso.
+
+**O que NÃO foi tocado, e é o mesmo defeito:** `starForges.ts` também
+consome `GLSL_LEI_DE_TELA` em px de buffer. Fica registrado aqui porque
+o pacote desta obra era a galáxia; a forja é obra própria, e a dosagem
+dela ainda espera a re-dosagem da extinção de coluna (rodada 26).

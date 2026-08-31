@@ -37,6 +37,7 @@
 // ============================================================
 import { glslNumber } from './glslNumber';
 import {
+  ALTURA_DE_CALIBRACAO_DO_SIGMA_PX,
   M_V_SOL,
   TEFF_SOL_K,
   anguloSolidoDeDisco,
@@ -374,6 +375,65 @@ export function leiDeTela(px: number): TelaDaFonte {
   };
 }
 
+// ─── A LEI DE TELA NA RÉGUA — a invariância de buffer (item 46) ───────────
+//
+// A lei acima julga o ângulo em PIXELS DO BUFFER, e por isso os joelhos
+// dela andam quando o buffer muda: o mesmo braço de galáxia atravessa o
+// platô ao dobrar a resolução, e a camada perde depósito por ângulo. Foi
+// medido em 31/08 (item 46): a galáxia profunda sozinha perde 23% face-on
+// e 29% edge-on quando a altura do buffer vai de 900 para 1800 px, e a
+// queda é do BUFFER, não do dpr (1200×900 em dpr 2 e 2400×1800 em dpr 1
+// dão a mesma imagem).
+//
+// O conserto não é um fator mágico: é julgar o ângulo SEMPRE na mesma
+// régua (a altura de calibração da casa) e devolver o rastro ao buffer de
+// verdade. O depósito então escala com escala² por construção — e o pixel
+// médio da imagem, que é o que o olho vê depois do downscale da tela, não
+// depende mais da resolução. É a mesma ideia do `×uPr2` das camadas de
+// estrela (`starShaders.ts`), escrita no eixo que a medição mostrou ser o
+// verdadeiro: a ALTURA DO BUFFER, não o pixel ratio.
+//
+// O PISO DO RASTRO é a segunda metade, e ele é MEDIDO, não suposto: o
+// `ALIASED_POINT_SIZE_RANGE` desta GPU começa em 1, e um ponto de 0,3 a
+// 0,99 px deposita 1 px² cheio (item 46, sonda de rasterizador em
+// `capturas/item46-resolucao.json`). Pedir 0,7 px não encolhe rastro
+// nenhum; sem contar isso, a compensação sub-pixel erraria de um jeito que
+// depende da resolução — que é exatamente o defeito.
+//
+// NA RÉGUA A LEI É A DE SEMPRE, BIT A BIT: com o buffer na altura de
+// calibração `escala` vale 1, `escritoPx` é o `pontoPx` já grampeado pelo
+// driver e `fluxo` é `shrink · subPix`. O nível calibrado não se move; o
+// que morre é a dependência da resolução.
+
+/**
+ * O menor rastro que a GPU desta casa deposita, em px de buffer — o piso
+ * do `ALIASED_POINT_SIZE_RANGE`, medido no rasterizador (item 46).
+ */
+export const PISO_DO_RASTRO_PX = 1;
+
+export interface TelaNaRegua {
+  /** o `gl_PointSize` a escrever, em px do BUFFER */
+  escritoPx: number;
+  /** o que a alpha paga: `shrink · subPix`, corrigido do piso do rastro */
+  fluxo: number;
+}
+
+/**
+ * A lei de tela julgada na RÉGUA DE REFERÊNCIA e devolvida ao buffer.
+ * `alturaDoBuffer` é a altura em px do framebuffer (`uScreenH`), e
+ * `pxDoBuffer` é o diâmetro aparente NELE.
+ */
+export function leiDeTelaNaRegua(pxDoBuffer: number, alturaDoBuffer: number): TelaNaRegua {
+  const escala = Math.max(alturaDoBuffer, 1) / ALTURA_DE_CALIBRACAO_DO_SIGMA_PX;
+  const t = leiDeTela(pxDoBuffer / escala);
+  // o que a régua deposita (com o piso do driver) e o que ESTE buffer
+  // deposita; a razão entre os dois rastros é o que a alpha devolve
+  const rastroDaRegua = Math.max(t.pontoPx, PISO_DO_RASTRO_PX);
+  const escritoPx = Math.max(t.pontoPx * escala, PISO_DO_RASTRO_PX);
+  const razao = (rastroDaRegua * escala) / escritoPx;
+  return { escritoPx, fluxo: t.shrink * t.subPix * razao * razao };
+}
+
 // ─── AS FUNÇÕES DA LEI ────────────────────────────────────────────────────
 
 /** O smoothstep de GLSL, palavra por palavra, em float64 — as duas faces
@@ -645,5 +705,25 @@ void leiDeTela(float px, out float pontoPx, out float shrink, out float subPix) 
   subPix = px < ${glslNumber(PISO_DE_TELA_PX)}
     ? (px * px) / ${glslNumber(PISO_DE_TELA_AO_QUADRADO)}
     : 1.0;
+}
+`;
+
+// A face GPU da LEI DE TELA NA RÉGUA — o texto arrasta a lei base junto
+// porque as duas andam sempre em par, e um consumidor que incluísse as
+// duas listas teria `leiDeTela` redefinida (erro de compilação em GLSL ES).
+export const GLSL_LEI_DE_TELA_NA_REGUA = /* glsl */ `
+${GLSL_LEI_DE_TELA}
+// A lei de tela na RÉGUA — o mesmo ângulo julgado sempre na mesma altura
+// de buffer, e o rastro devolvido ao buffer de verdade (item 46).
+void leiDeTelaNaRegua(
+  float pxDoBuffer, float alturaDoBuffer, out float escritoPx, out float fluxo
+) {
+  float escala = max(alturaDoBuffer, 1.0) / ${glslNumber(ALTURA_DE_CALIBRACAO_DO_SIGMA_PX)};
+  float pontoPx, shrink, subPix;
+  leiDeTela(pxDoBuffer / escala, pontoPx, shrink, subPix);
+  float rastroDaRegua = max(pontoPx, ${glslNumber(PISO_DO_RASTRO_PX)});
+  escritoPx = max(pontoPx * escala, ${glslNumber(PISO_DO_RASTRO_PX)});
+  float razao = (rastroDaRegua * escala) / escritoPx;
+  fluxo = shrink * subPix * razao * razao;
 }
 `;

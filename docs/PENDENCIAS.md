@@ -585,8 +585,10 @@ cromática do passe de gradação, CULPADA), 37 (a camada multiplicativa das
 nuvens apaga o que está na frente — CULPADA, meia luz de uma estrela a
 56,5 pc comida por nuvens a 121 pc) e 46 (a galáxia profunda não é
 invariante à resolução — CULPADA, 23–29% a menos em retina; mas o "céu
-vazio" temido é INOCENTE). Os três seguem ABERTOS: medição não é
-conserto, e cada um traz o conserto proposto por escrito.
+vazio" temido é INOCENTE). Medição não é conserto, e cada um trouxe o
+conserto proposto por escrito; o **46 já FECHOU por obra** no mesmo dia
+(a lei de tela ganhou régua — a razão da escada 900→1800 foi de 0,770
+para 0,982), o 117 segue aberto.
 **Estação (2), primeira peça — o MSAA no alvo do composer: MEDIDO e
 REPROVADO PELO PREÇO (31/08). NÃO virou obra.** O teto era ~15% do tempo
 de quadro na vista mais cara; o medido foi **+55% a +70% em dpr 2** e
@@ -932,49 +934,13 @@ que estão de fato atrás. Fotos `capturas/item37-*.png` (o par do alvo em
 `capturas/item37-nuvens.json`. **O item continua ABERTO** — a suspeita
 virou defeito com causa e número, e o conserto é obra própria.
 
-**46.** (Suspeita a medir, herdada do item 44.) A galáxia profunda
-(`galaxy.ts`, 4M pontos, `shrink` 1/px² próprio) não passou pela
-invariância de resolução — se o "céu vazio" voltar na vista de LONGE em
-tela retina, é a primeira suspeita. Conferir com o dono na vista
-galáctica antes de mexer.
-
-**VEREDITO (medido em 31/08 — CULPADA quanto à invariância; INOCENTE
-quanto ao "céu vazio").** A vista de longe NÃO esvazia em retina: face-on
-e edge-on, dpr 1 e dpr 2 lado a lado, mostram a mesma galáxia, mais
-nítida, e o QUADRO CHEIO perde só **2,5%** (face-on) e **15%** (edge-on)
-do brilho integrado. Mas a camada profunda SOZINHA (as 4 M partículas,
-isoladas com `?nodisc=1&noglow=1`) perde **23%** face-on e **29%**
-edge-on quando a altura do buffer vai de 900 para 1800 px — que é
-exatamente o que a tela do Mac faz na mesma janela. Medido em espaço
-linear (`?tone=linear` mais o sRGB desfeito), média por ÁREA com o chão
-do quadro subtraído, zero pixel saturado nas dez capturas. A escada 450 →
-900 → 1800 px de altura dá 1,000 → 0,994 → 0,765 (face-on) e 1,000 →
-0,911 → 0,650 (edge-on), e a queda é da RESOLUÇÃO DO BUFFER, não do dpr:
-1200×900 em dpr 2 e 2400×1800 em dpr 1 produzem a mesma imagem (PNG de
-6.536.513 e 6.536.468 B). **A causa são os dois joelhos da lei de tela**
-(`leiDeTela`/`GLSL_LEI_DE_TELA` em `src/three/estrela.ts`, consumida por
-`GALAXY_VERT`). (1) O PISO: `subPix = px²/0,49` compensa supondo um
-rastro de 0,49 px², e o rasterizador desta GPU deposita 1 px² SEMPRE —
-medido em canvas WebGL próprio, `gl_PointSize` de 0,3 a 0,99 dá energia
-1,000 por ponto, 1,4 dá 1,89, 2 dá 4, 3 dá 9, e o
-`ALIASED_POINT_SIZE_RANGE` é [1, 511]. Dobrar a resolução atravessa o
-piso, a compensação desliga e o depósito por área cai até 2× nas
-partículas de disco de 14 a 20 pc. (2) O PLATÔ: `shrink = 9/px²` conserva
-o depósito em PIXEL, não em ÂNGULO — acima de 3 px o total fica preso em
-9 px² físicos, então dobrar a resolução divide a contribuição em área por
-4. Quem atravessa esse platô entre 900 e 1800 px são justamente os nós
-HII/jovens de 30 a 140 pc (`geradorDaGalaxia.ts`), com razão prevista
-0,59 (30 pc) a 0,25 (140 pc) — são eles que dão cor aos braços. **Conserto
-proposto (não implementado):** a galáxia é a única camada de ponto da
-casa sem o `×pr²` que `starShaders.ts` já aplica (`uPr2`), e é ele que
-devolve o depósito por ângulo; junto, o piso de 0,7 px precisa casar com
-o piso real do rasterizador, senão a compensação sub-pixel erra por
-1/0,49 = 2,04× de um jeito que depende da resolução. Fotos
-`capturas/item46-*.png`, rastro com URLs, janelas, campos medidos e a
-sonda do rasterizador em `capturas/item46-resolucao.json`. **O item
-continua ABERTO, redimensionado:** não é "céu vazio", é perda de 23 a 29%
-da camada profunda em retina — e não precisa da conferência com o dono
-que a linha antiga pedia, porque o número já existe.
+**46.** A galáxia profunda não passava pela invariância de resolução —
+**FECHADO em 31/08**: a lei de tela ganhou RÉGUA (`leiDeTelaNaRegua`, em
+`estrela.ts`) — o ângulo é julgado sempre na altura de calibração da casa
+e o rastro volta ao buffer, com o piso do rasterizador MEDIDO no lugar do
+suposto; na escada 900→1800 a razão vai de 0,770/0,714 para 0,982/0,937 e
+o quadro cheio em retina de 0,975/0,845 para 1,000/0,966, com −0,09% e
+−2,6% na janela de dpr 1 de sempre. História no ARQUIVO.
 
 **59.** Trocar de qualidade não trocava a textura dos corpos já
 carregados — **FECHADO em 31/08**: a troca de tier virou double-buffer no

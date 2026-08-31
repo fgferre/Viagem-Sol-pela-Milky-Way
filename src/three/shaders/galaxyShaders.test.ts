@@ -14,7 +14,7 @@
 // dois primeiros casos cobram.
 // ============================================================
 import { describe, expect, it } from 'vitest';
-import { TETO_DE_AMOSTRAS, amostrasDaExtincao } from './galaxyShaders';
+import { GALAXY_VERT, TETO_DE_AMOSTRAS, amostrasDaExtincao } from './galaxyShaders';
 
 describe('?samples= tem teto, e não só piso', () => {
   it('o default e a faixa útil passam intactos — a imagem não se move', () => {
@@ -43,5 +43,37 @@ describe('?samples= tem teto, e não só piso', () => {
       expect(Number.isInteger(n)).toBe(true);
       expect(String(n)).toMatch(/^\d+$/);
     }
+  });
+});
+
+// ============================================================
+// A FIAÇÃO DA LEI DE TELA NA RÉGUA (item 46).
+//
+// O comportamento da lei é julgado em `estrela.test.ts` (o depósito por
+// ângulo não pode depender da altura do buffer) e a prova de imagem é a
+// escada 450→900→1800 do rastro `capturas/item46-fix-resolucao.json`.
+// O que se cobra AQUI é que esta camada seja de fato quem a consome: a
+// galáxia profunda era a única camada de ponto da casa sem correção de
+// resolução, e é a fiação que a liga.
+// ============================================================
+describe('a galáxia profunda consome a lei de tela NA RÉGUA', () => {
+  it('o vértice julga o ângulo na régua e escreve o rastro do buffer', () => {
+    expect(GALAXY_VERT).toContain(
+      'leiDeTelaNaRegua(px, uScreenH, escritoPx, fluxoDaTela);'
+    );
+    expect(GALAXY_VERT).toContain('gl_PointSize = escritoPx;');
+    expect(GALAXY_VERT).toContain(
+      'vAlpha = aAlpha * uFade * fluxoDaTela * unresolved(dist);'
+    );
+  });
+
+  it('a lei em px de BUFFER não voltou pela porta dos fundos', () => {
+    // o defeito de origem: `leiDeTela(px, …)` julga o ângulo em pixels do
+    // buffer, e aí os joelhos andam com a resolução
+    expect(GALAXY_VERT).not.toMatch(/leiDeTela\(px[,)]/);
+    // e o `main` não pode consumir `shrink`/`subPix` crus — eles são
+    // internos da lei, e é `fluxoDaTela` que já vem na régua
+    const main = GALAXY_VERT.slice(GALAXY_VERT.indexOf('void main()'));
+    expect(main).not.toMatch(/shrink|subPix/);
   });
 });
