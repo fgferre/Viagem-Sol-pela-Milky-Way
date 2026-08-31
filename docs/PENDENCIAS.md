@@ -942,6 +942,20 @@ curtas; o texto vive num LUGAR ÚNICO comentado, onde o dono pode
 estender a citação à mão se decidir assumir isso — o coordenador
 declarou que não escreve o parágrafo longo (limite próprio de direito
 autoral).
+**A V2 POUSOU E ELE APROVOU em 31/08 — palavras dele: "ficou lindo,
+aprovo a recomendada com o dolly zoom" (commit a675ff9).** A causa da
+Lua ilegível era geométrica (pouso medido do eixo solar deixava a Lua a
+32,9°; lente 52° ⇒ Lua 7,4 px); o pouso passou à linha anti-Lua
+(separação 12°, lente 20°, Lua 19,1 px com fase), o dolly zoom entrou
+como lei d·tan(fov/2) constante (Terra 489 px cravada, deriva 1 px,
+pupila +5,3% monotônica) via primitiva GENÉRICA "lente ancorada"
+(lerPlanoDeCamera.ts; roteiro segue dado puro — volta.json +
+encerramento.json novo), e o encerramento encena o Sagan linha a linha
+com crédito. 5 sabotagens mordem; fotos item108-v2-* conferidas pelo
+coordenador e por ele. O que falta para FECHAR o 108 inteiro: só a
+exibição do filme completo por ele (casa com o item 54). O risco
+pré-existente achado na obra virou o item 119.
+
 **Terceira direção dele, 31/08:** *"no finalzinho nao tem como fazer um
 jogo de lente em que o fundo se aproxima mais e mais para a Lua
 aparecer um pouco maior... nao tem um truque de lente que muda essa
@@ -1608,6 +1622,17 @@ registrado como obra futura de produto, sem urgência; quando vier,
 começa por propostas visuais para o olho dele (a mineração do Eyes tem
 o mecanismo do loading deles mapeado no mergulho 06 — bundle separado,
 dados essenciais antes do app, saída em fade).
+
+**119. O atlas-smoke prova 3 reprova em t=250 — o relógio do portal
+move a Terra (pré-existente, provado).** Achado em 31/08 durante a obra
+do retrato v2, com prova de inocência da obra: a mesma receita em HEAD
+com as mudanças em stash dá o MESMO desvio (1,185e-2 do raio) — a pose
+atravessa o portal exata em relação à Terra (60.170,7128 km antes e
+depois); o que muda é o relógio: o `?jd=` reaplicado no portal move a
+Terra 1,74 M km e a prova mede contra o lugar velho. Família do
+108/portal. Casa do conserto: decidir se o portal deve reaplicar o
+`?jd=` (e a prova acompanhar) ou se a prova deve medir relativo à
+Terra.
 
 **95.** Num eclipse o chão escurecia e o AR não — **FECHADO em 25/08**,
 conferido por ele na SEGUNDA LEVA da Sala de Conferência (**C12**);
