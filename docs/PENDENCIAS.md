@@ -633,7 +633,14 @@ app. O pouso de 17/08 aceitou a SOLTURA da estrela — este item é o
 pacote da luz por inteiro. *(Veio do bloco da onda da luz, enxuto pelo
 item 51.)*
 
-**53. O expoente da asa (β) espera o gate de foto do dono.**
+**53. O expoente da asa (β) espera o gate de foto do dono — FECHADO em
+31/08.** Ele olhou a escada inteira das 11 distâncias
+(`capturas/luz-*.png`, entregues no chat) e cravou, palavras dele:
+*"acho que isso já ficou bom, nao precisamos mais mexer nisso."* —
+β = 2,4 deixa de ser semente e vira valor definitivo, com a corrente
+que o item sempre declarou: `BETA_DO_ESPINHO` = 1,5× ele e a fração
+0,06 juntas. O gate de foto que este item pedia foi cumprido.
+*(Texto original preservado abaixo para o museu.)*
 β = 2,4 é semente de projeto — a Lei §1 pede a escolha entre 2,0 e 3,0
 com foto, com `BETA_DO_ESPINHO` acorrentado em **1,5×** ele
 (`1.5 * BETA_DA_ASA`, em `estrela.ts`) e a fração 0,06 junto. O ¾ foi a
