@@ -678,7 +678,11 @@ para acomodar”* — conferir na mesma exibição.
 25/08**, palavras dele: *"ficou bom assim"*; história no ARQUIVO.
 
 **82. Os nomes na tela estão muito intrusivos — N1 e N2 pousaram em 24/08 e
-ELE CONFERIU em 25/08; o que sobra é Alnilam, N3 e duas vagas.** Palavras do dono, 23/08: *"estou achando que ele está
+ELE CONFERIU em 25/08; o que sobra é N3 e duas vagas.** *(Correção de
+31/08: o caso ALNILAM saiu desta lista — foi resolvido em 29/08 pelo
+fechamento do item 75, o roteiro dirige seus assuntos e as Três Marias
+aparecem juntas, foto `alnilam-depois.png` conferida; o cabeçalho aqui
+tinha ficado para trás e chegou a gerar uma oferta requentada ao dono.)* Palavras do dono, 23/08: *"estou achando que ele está
 muito intrusivo, acho que precisaria ser um sistema mais inteligente do que
 é."* E: *"A impressao que tenho é que o default todos os objetos estao com
 o label ligado, fica uma confusao na tela."*
