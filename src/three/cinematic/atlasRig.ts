@@ -966,8 +966,10 @@ export class AtlasRig {
    * do quadro, o pino escreve a chegada — e os estalos já nascem da
    * chegada (`Director` os deriva de `distancia`, que durante a rampa É
    * o destino). Fora da faixa `[piso, teto]` o valor é grampeado, nunca
-   * recusado — é o que faz o embalo da inércia parar na parede em vez
-   * de sumir.
+   * recusado — a câmera para NA parede em vez de o gesto sumir. Quem
+   * mata a inércia que sobrou é o fio `zoom` do `Director` (item 115),
+   * do lado de fora: aqui não há como saber se o grampo cortou um gesto
+   * do visitante ou uma correção de rampa.
    */
   pinarDistancia(pc: number | null) {
     if (pc === null) {
