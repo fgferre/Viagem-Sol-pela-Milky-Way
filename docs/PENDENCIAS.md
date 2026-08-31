@@ -899,6 +899,24 @@ filme está assim desde antes das duas obras. PNGs da sonda no
 scratchpad da sessão; a sonda é reproduzível (capturas por
 `?t=…&shot=2`, 1200×900).
 
+**A CONFERÊNCIA DELE de 31/08 (após as três pernas da retomada) — o
+item entra na versão 2, palavras dele:** *"testei o fim do filme, a lua
+e a terra ok, mas acho que podemos atingir um resultado ainda melhor se
+estivermos com a lente certa... a lua nao está fácil de entender que é
+a Lua... acho que temos que aproximar mais ela e a terra e melhorar o
+enquadramento para que as 2 ocupem a mesma cena de forma incontestável.
+tb acho que podemos trocar a frase de encerramento para aquela frase
+classica do carl sagan falando do pale blue dot."* Direção da obra v2:
+(a) retrato mais perto com lente certa — o mergulho 04 da mineração
+(docs/reference/nasa-eyes-mineracao-mecanismos.md) mediu o quadro: o
+roteiro atual fica a ~34.868 km e o fit de dois corpos indica ~14.550 km
+(2,4× mais perto; Terra 47° de altura no quadro, Lua legível), com
+script de medida pronto em
+`scratchpad/estudos/nasa-eyes-solar-system/mineracao/mergulhos/medidas/retrato-vs-fit.test.ts`;
+(b) frase final = a curta clássica do Pale Blue Dot com atribuição a
+Carl Sagan, origem documentada (licença documenta-se, não bloqueia).
+Prova: fotos dos quadros finais para o olho dele.
+
 **O QUE SE VÊ nos quadros finais, para quando ele disser o que é o
 "errado":** em t=190/193 a Terra aparece de dia inteiro (Américas
 acesas, o pouso desenhado do roteiro) com um clarão de 4 pontas GRANDE
