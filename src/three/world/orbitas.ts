@@ -152,6 +152,25 @@
 // `Line2` NÃO seria atalho: lá as calotas continuam.
 //
 // ------------------------------------------------------------
+// 5f. O GRADIENTE AO LONGO DO LAÇO (item 115, bloco B; R3 do mergulho 08)
+// ------------------------------------------------------------
+// A FITA ERA CHAPADA: um alfa para o laço inteiro. A do NASA Eyes tem
+// gradiente ao longo do rastro — mais viva perto do corpo, esvaindo
+// atrás —, e é isso que faz o olho ler a DIREÇÃO do movimento.
+//
+// A porta é a que o próprio `LineMaterial` abre: `instanceColorStart/End`
+// com `vertexColors`, e o `<color_fragment>` do three multiplicando
+// `diffuseColor.rgb`. Em blending ADITIVO multiplicar a cor é
+// multiplicar a contribuição — o mesmo produto que um alfa por vértice
+// daria, e alfa por vértice o material não tem (ver o §5 acima).
+//
+// CUSTA ZERO POR QUADRO, e é consequência da álgebra do §2: o vértice 0
+// É a posição viva do corpo, então a distância de cada vértice ao corpo
+// não muda NUNCA. O buffer é escrito uma vez, na construção, e é o mesmo
+// objeto para as trinta linhas. Quem anda é o laço; o ponto claro anda
+// com ele de graça. Ver `gradienteDaFita` para a curva e os dois números.
+//
+// ------------------------------------------------------------
 // 5d. A SAIA DO AA E A LARGURA NA JANELA (item 83 · A2 + A3)
 // ------------------------------------------------------------
 // A BEIRA LISA DA REFERÊNCIA É MSAA DE CARTÃO — duas camadas, 4× no alvo
@@ -258,7 +277,10 @@
 //     (§5b) dão um alfa DIFERENTE a cada laço, e no `LineMaterial` o
 //     alfa é um uniform global (issue #23680, aberta desde 2022). Um
 //     objeto só exigiria a receita de alfa por vértice que o item 83
-//     reserva ao L4.
+//     reserva ao L4. (Desde 31/08 há modulação POR VÉRTICE — o gradiente
+//     do §5f —, e ela não muda esta conta: entra pela COR, que o
+//     `LineMaterial` interpola por instância, e o alfa do laço continua
+//     sendo um número só.)
 // O que se perde é nada: já eram 30 draw calls, e continuam 30 — só as
 // ACESAS desenham.
 //
@@ -482,7 +504,7 @@ export function gradienteDaFita(k: number, n: number): number {
  * O segmento `k` liga o ponto `k` ao ponto `k+1` (ver `espelharNaFita`),
  * e por isso o fim do segmento é o gradiente do ponto seguinte.
  */
-export function corDoGradienteDaFita(n: number): Float32Array {
+function corDoGradienteDaFita(n: number): Float32Array {
   const cores = new Float32Array(n * 6);
   for (let k = 0; k < n; k++) {
     const inicio = gradienteDaFita(k, n);

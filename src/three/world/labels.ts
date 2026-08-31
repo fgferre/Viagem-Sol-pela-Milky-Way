@@ -403,8 +403,10 @@ const _aoAlvo = new THREE.Vector3();
 const _aoCorpo = new THREE.Vector3();
 
 /**
- * O CENTRO da estrela cai dentro do cone do corpo, com o corpo entre a
- * câmera e ela? ("vejo estrelas através do sol" — item 47.) O teste é o
+ * O CENTRO do alvo cai dentro do cone de um corpo, com o corpo entre a
+ * câmera e ele? ("vejo estrelas através do sol" — item 47; desde o item
+ * 115 o alvo também pode ser um CORPO, e a lista de oclusores é a dos
+ * corpos do quadro, não mais só o Sol.) O teste é o
  * ângulo real (dot) contra o meio-ângulo do disco (cos = √(1−(r/d)²)) —
  * nada de aproximar seno por ângulo, que de perto o disco é ENORME.
  *
