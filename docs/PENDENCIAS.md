@@ -1440,6 +1440,34 @@ diferentes e a conta do terminador (onde o Sol está em relação à
 câmera). A vista foi DESCARTADA do gate do 84 por isso; se for
 geometria honesta, vira candidata de novo com outro jd.
 
+**VEREDITO (medido em 31/08 — luz e enquadramento INOCENTES; culpado é o
+MAPA).** A câmera está no lado do DIA: ângulo de fase 70,00° no jd
+pinado (67% do disco iluminado) — e é 70,00° exato porque
+`MAX_SOLAR_DEVIATION_GRAUS` de `direcaoDaLua`
+(`src/three/cinematic/enquadramento.ts`) grampeia ali. O censo das 13
+luas no mesmo jd dá fase ≤ 70° em TODAS (Lua 6,7° … Calisto/Ariel/
+Oberon/Caronte 70,0°): o degrau `lua` sempre escolhe o lado do dia, e
+Tritão não é azarado. Sem eclipse (Sol↔Netuno visto de Tritão: 34,7°,
+contra 4,0° de raio angular de Netuno), `uLuzGanho`=1 e `uEclipseAtivo`=0
+como em Ganimedes. O preto é a TEXTURA: `public/textures/atlas/triton/
+map.webp` é mosaico parcial da Voyager 2 com **76,0% da área esférica em
+preto puro** (Ganimedes: 0,16%), e o shader usa o mapa como albedo cru
+(`albedo = texture2D(uMapaDia, vUv)` em `ROCHOSO_LS_FRAG`/`LAMBERT`,
+`src/three/world/corpos/rochoso.ts`) — albedo 0 × luz = 0. Em 24
+instantes (uma órbita de 5,88 d e um ano) o sub-ponto da câmera cai
+SEMPRE no vazio do mosaico (amostra da textura: média 0, máx 0), porque
+Tritão é síncrono e o enquadramento vai para o lado oposto a Netuno.
+Prova por gesto do produto: 4 arrastos de 400 px no MESMO jd levam o
+sub-ponto a uv (0,634 / 0,829), dentro do trecho fotografado, e o miolo
+do quadro sobe de 2,7/4,3 para 11,8/101,6 — o globo acende
+(`capturas/item116-tritao-girado-4x400px.png`). **A família é maior que
+Tritão**: Titânia 68%, Ariel 66%, Oberon 66%, Umbriel 63%, Miranda 61%,
+Hígia 59%, Jápeto 30% de área preta no mapa. **Conserto proposto (não
+implementado):** preencher o vazio dos mosaicos parciais na origem —
+albedo médio do corpo, com a costura suavizada — em vez de servir preto
+puro como albedo. Fotos `capturas/item116-*.png`, rastro com ângulos,
+distâncias e a receita de recomputo em `capturas/item116-tritao.json`.
+
 **117.** (Suspeita a medir, mesma sessão.) As capturas de globo em
 close-up mostram um **aro azulado fino na borda do disco** — visto em
 Ganimedes (`atlas-lua-ganimedes`, nova) e na `foco-io` antiga. Corpo
@@ -1447,6 +1475,30 @@ sem atmosfera não devia ter limbo azul. Pré-existente à obra do 84.
 Conferir se é casca de atmosfera aplicada por engano, Fresnel de
 material, ou artefato de anti-serrilhado — par de zoom na borda antes
 de qualquer conserto.
+
+**VEREDITO (medido em 31/08 — CULPADA a aberração cromática do passe de
+gradação; atmosfera, Fresnel e anti-serrilhado inocentes).** O perfil RGB
+atravessando o limbo mostra os canais caindo em ORDEM, um pixel cada:
+Ganimedes a 45° da tela dá (205,205,209) → (99,213,208) → (10,8,121) →
+(4,3,29) → fundo; a Lua e Mercúrio dão o mesmo desenho. Não é mistura de
+anti-serrilhado (isso daria cinza mais escuro, não azul saturado com R e
+G em 3). A peça é o `FILM_SHADER` de `src/three/shaders/dustShaders.ts`,
+que amostra R deslocado para FORA e B para DENTRO
+(`off = c*uCA*r2*60`, `uCA` de fábrica 0,00012; `Post.setWarp` de
+`src/three/core/post.ts` o reescreve por quadro e o multiplica por até
+4,5× no warp da viagem). A/B na mesma sessão, travando só `uCA` em zero:
+o "azul do limbo" (B − (R+G)/2) cai de **112 → 1** em Ganimedes, **117 →
+2** na Lua e **77 → −51** em Io; desligar o passe inteiro dá o mesmo, ou
+seja a aberração é a única contribuinte. Não é casca de atmosfera posta
+em quem não devia: só a Terra tem casca (`terra.ts`), e o limbo dela é
+uma faixa larga e macia de ~20 px em (24,50,112) — outro bicho; Titã, de
+limbo laranja e macio, não tem aro nenhum (azul máx. −8). O aro aparece
+em TODO globo com borda dura porque a borda dura é do render — a
+silhueta sai serrilhada (visível no zoom sem aberração). **Conserto
+proposto (não implementado):** atenuar `uCA` (ou zerá-lo fora do warp),
+já que o efeito só se manifesta como franja de 1 px em silhuetas de alto
+contraste. Zooms `capturas/item117-zoom-*.png` (com e `-semCA`), perfis e
+a peça em `capturas/item117-limbo.json`.
 
 ---
 
