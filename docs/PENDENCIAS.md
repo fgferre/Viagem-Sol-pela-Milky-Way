@@ -488,14 +488,15 @@ número livre segue **108**.
 
 ## ALTA — o dono vê e incomoda
 
-**114. O censo do sistema solar: ao menos os 40 maiores objetos.**
+**114. O censo do sistema solar: todas as luas e os objetos interessantes.**
 Pedido do dono em 30/08, palavras dele: *"quero expandir nosso projeto
 para ter todos obejtos possiveis de luas e obejtos maiores tb. meteoros
-etc. queria ter ao menos os 40 maiores obetos do sistma solar..."*.
-Hoje o app tem Sol, planetas e poucas luas; a meta mínima é o top-40 por
-tamanho (entra Ganimedes, Titã, Calisto, Io, Europa, Tritão, Plutão,
-Éris, luas médias de Saturno/Urano, Ceres...), com a porta aberta para
-asteroides/meteoros depois. A mineração do NASA Eyes de 30/08
+etc. queria ter ao menos os 40 maiores obetos do sistma solar..."* e, na
+sequência: *"nao quero as naves mas quero todas as luas e outros objetos
+interessantes..."*. Hoje o app tem Sol, planetas e poucas luas. A meta:
+**sem naves**; TODAS as luas (o Eyes cataloga 451) e os demais objetos
+interessantes — planetas-anões (Plutão, Éris, Ceres...), asteroides e
+cometas notáveis; o top-40 por tamanho é o piso, não o teto. A mineração do NASA Eyes de 30/08
 (`scratchpad/estudos/nasa-eyes-solar-system/mineracao/`) foi reapontada
 para colher exatamente a engenharia disso: como o Eyes registra 724
 objetos (catálogo de receitas `EntityUtils`, parentesco dependente do
