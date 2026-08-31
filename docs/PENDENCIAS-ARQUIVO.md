@@ -5998,3 +5998,94 @@ código novo e 3 no antigo deram o mesmo md5 do `antes`.)
 
 Sobra: a história antiga deste item (21/08 e 22/08) ainda não foi para o
 `PENDENCIAS-ARQUIVO.md`, como manda o padrão dos itens 61 e 70.
+
+## Item 84 — O gate de identidade cobria a fase ATLAS com UMA vista de 52
+
+*(FECHADO em 31/08. O que segue é o texto do vivo, verbatim, na véspera
+da saída, e depois o fecho.)*
+
+**84.** (Achado em 23/08, fechando o clarão único.) **O `ab-identidade`
+cobre a fase ATLAS com UMA vista só, de 52.** Medido sem querer: uma
+mudança que só tocava o Atlas (o teto do clarão) devolveu **51 de 52
+bit-idênticas** — e não porque quase nada mudou, mas porque 51 daquelas
+vistas rodam por `?pos=`, isto é, na fase do voo livre. A única que
+mudou foi `atlas`, e mudou muito (8,08% do quadro). O gate está certo no
+que faz; o que ele não tem é POPULAÇÃO no modo que virou o produto. Hoje
+quem cobre o Atlas de verdade é a perna `PERNA=atlas` da régua de luz
+(sete distâncias, JSON versionado) — e ela cobre LUZ, não composição:
+nomes, órbitas e HUD do Atlas não têm vista bit-exata que os guarde. O
+conserto é somar vistas de Atlas ao gate (o enquadramento de um corpo, o
+teto do zoom, o close-up de uma lua), e o preço é ~6 s de captura por
+vista por lado. **Não fazer isto às cegas junto de outra obra:** cada
+vista nova pede o lado "antes" recapturado, senão nasce sem base.
+
+### O fecho (31/08)
+
+Entre o achado e o fecho a lista já tinha ganhado as vistas de `foco-` e
+`anao-` (itens 83, 88 e 92), então o que faltava eram exatamente os TRÊS
+assuntos que o item nomeia, e nenhum deles tinha vista. As três nasceram
+no FIM da lista, pela regra do round-robin dos baldes (a lição da
+auditoria de 30/08, escrita no bloco da `fim-do-filme`), todas com
+`&jd=2460409.26395835` pinado e `shot=2`, e todas em corpos que nenhuma
+irmã cobria:
+
+| vista | porta | md5 de nascimento |
+| --- | --- | --- |
+| `atlas-corpo-marte` | `?foco=marte&ver=corpo` | `bfbf114a7e61` |
+| `atlas-teto-netuno` | `?foco=netuno&d=100000` | `4750e7bd5e37` |
+| `atlas-lua-ganimedes` | `?foco=ganimedes&d=2` | `1d1faa08f163` |
+
+**O que cada uma compra.** `atlas-corpo-marte` é o degrau `corpo` de um
+PLANETA DO RETRATO pelo caminho do Atlas — as duas de `?ver=corpo` que
+já existiam são de `HELIO_SEM_PONTO` (outra lista, outro ramo) e as de
+planeta resolvido cravam `?pos=`, que é voo livre; e é sem `?d=`, para
+guardar o enquadramento PADRÃO do degrau, que as irmãs desligam com
+`&d=6` (medido: 3,7741 raios de Marte, 12,9 mil km do centro, disco de
+~830 px, 24,5% do quadro aceso, com as órbitas de Fobos e Deimos no
+campo). `atlas-teto-netuno` é o TETO DO ZOOM, e é a única vista que
+exerce o grampo de `AtlasRig.pinarDistancia` e o termo `+ |alvo|` de
+`tetoDeZoom`: o `?d=100000` não é distância, é pedido impossível que o
+grampo devolve no teto — `d=100000`, `d=1000000` e `d=10000000` dão o
+MESMO md5, e é assim que a vista NOMEIA o teto em vez de copiar um
+número que envelhece (medido: 246,47 UA do alvo, 8,24 raios da órbita de
+Netuno, 1,87× a distância em que a abertura pousa). `atlas-lua-ganimedes`
+é o close-up de verdade: `foco-io`/`foco-titan` pousam no enquadramento
+padrão do degrau `lua`, que guarda o PAI em quadro, e aqui o `?d=2` desce
+ao globo — 79,1% do quadro é Ganimedes (1.790 × 1.664 px), sem pai e sem
+céu que salve.
+
+**Estabilidade antes de pinar**, no precedente do item 108: par nulo de
+3 capturas por candidata na mesma árvore (`arv-ea93f18b2d61`), md5 igual
+nas três, em `capturas/item84-vistas-atlas-parnulo.json` — que também
+guarda as DESCARTADAS por leitura da imagem: `?foco=miranda&d=3` (a lua
+entra como fio de crescente e quem ocupa a tela é Urano com o anel),
+`?foco=tritao` (disco inteiro no lado da noite, silhueta preta sobre a
+Via Láctea) e `?atlas=1&d=100000` (o teto com o SOL no alvo, 133,69 UA —
+quase a foto da abertura, que pousa a 132,06 UA). A família de Saturno
+ficou fora pelo tremor conhecido do item 101.
+
+**A vista morde**, em duas sabotagens de knob que só existe no Atlas
+(`cinematic/enquadramento.ts`), desfeitas depois:
+
+- `MARGEM_DE_ENQUADRAMENTO` 1,2 → 1,35: `atlas-corpo-marte` DIFERE,
+  `atlas-teto-netuno` DIFERE, `atlas` (a de sempre) DIFERE — e as irmãs
+  de filme `sol`, `travessia`, `mergulho` e `ua150` IGUAIS, 4/4.
+- `PARENT_FRAMING_BIAS` 0,78 → 0,6: `atlas-lua-ganimedes` DIFERE (o
+  `?d=2` a torna imune à margem, então ela precisava do seu próprio
+  defeito), `atlas-corpo-marte` e `sol` IGUAIS.
+
+**O lado "antes"** existe pelo desenho do gate (os dois lados capturam
+sempre), e foi conferido: A/A das três na mesma árvore, 3/3 IGUAL, e uma
+leva `AB_VISTAS=` só com elas nos dois lados, com os mesmos três md5.
+
+**O preço**, e a catraca do item 99. A leva cheia foi MEDIDA de novo
+(`DOZERO=1`, mesma máquina): **4,0 min por lado**, 54 vistas em 56
+capturas a `JOBS=6` — contra 3,6 declarados. Quem manda no relógio é o
+balde maior, que foi de 9 para 10 capturas. O cabeçalho do juiz perdeu o
+til que o item 108 tinha posto (o preço voltou a ser medição, não conta)
+e o teto do censo subiu os mesmos 0,4 — de 31,9 para 32,3 min.
+
+**O que continua sem juiz bit-exato, declarado:** os NOMES na tela e o
+HUD. Todas as vistas da casa capturam com `?shot=2`, que apaga o DOM e o
+canvas dos rótulos; o que as três novas guardam é enquadramento, órbitas
+desenhadas e os corpos resolvidos do Atlas.

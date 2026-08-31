@@ -44,7 +44,16 @@ export const TETO_DA_RODADA_MIN = 15;
 // 3,5 → ~3,6 min declarados, e o teto sobe os mesmos 0,1 — de 31,8 para
 // 31,9. O preço novo é conta, não medição (a leva cheia custaria 7 min de
 // GPU só para reaferir), e leva o til; a próxima leva cheia re-pina.
-export const TETO_TOTAL_MIN = 31.9;
+// Re-pinado PARA CIMA no fecho do item 84 (31/08), o segundo desta série, e
+// pela mesma exigência da catraca: o `ab-identidade` cobria a fase ATLAS —
+// a que virou o produto — com UMA vista de 52, e a prova disso foi medida
+// em 23/08 (uma mudança que só tocava o Atlas devolveu 51 de 52
+// bit-idênticas, porque 51 rodam por `?pos=`, na fase do voo livre). As
+// TRÊS vistas novas (`atlas-corpo-marte`, `atlas-teto-netuno`,
+// `atlas-lua-ganimedes`) somam três capturas e levam o balde maior de 9
+// para 10 — 3,6 → 4,0 min, agora MEDIDOS (a leva cheia rodou, e com ela o
+// til do item 108 saiu). O teto sobe os mesmos 0,4 — de 31,9 para 32,3.
+export const TETO_TOTAL_MIN = 32.3;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

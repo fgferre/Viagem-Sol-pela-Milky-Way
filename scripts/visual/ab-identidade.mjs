@@ -1,11 +1,11 @@
-// Serve: chão — mudança que move imagem não passa calada: md5 das 51 vistas, antes × depois
-// Custo: ~3,6 min por lado (51 vistas = 53 capturas, JOBS=6) (SMOKE=1: 0,4 min por lado)
-//   O til é honesto: 3,5 min era MEDIDO (F2/F3 do item 113, 52 capturas, JOBS=6;
-//   a JOBS=3 eram 3,9). A vista `fim-do-filme` do item 108 soma uma captura e o
-//   preço virou CONTA — 3,5/52 = 0,067 por captura, 3,57 → 3,6 em décimos —
-//   porque rodar a leva cheia só para reaferir custaria 7 min de GPU. É teto
-//   folgado: com round-robin o balde maior tem 9 capturas com 52 e com 53, e é
-//   ele quem manda no relógio. A próxima leva cheia mede e re-pina para baixo.
+// Serve: chão — mudança que move imagem não passa calada: md5 das 54 vistas, antes × depois
+// Custo: 4,0 min por lado (54 vistas = 56 capturas, JOBS=6) (SMOKE=1: 0,4 min por lado)
+//   SEM TIL: o preço voltou a ser MEDIDO em 31/08 (item 84, `DOZERO=1` na mesma
+//   máquina) — 4,0 min. Ele estimava 3,6 desde o item 108, quando a conta por
+//   captura substituiu a medição para não gastar 7 min de GPU só reaferindo.
+//   A dívida se pagou junto com a leva que as TRÊS vistas de Atlas do item 84
+//   exigiram: o que manda no relógio é o BALDE MAIOR, que foi de 9 para 10
+//   capturas no round-robin, e 3,5 × 10/9 = 3,9 previa quase certo.
 // Prova de que uma mudança NÃO mexeu na imagem: md5 das mesmas vistas antes
 // e depois.
 //
@@ -695,9 +695,68 @@ export const VISTAS = [
   // que treme no gate é pior que buraco.
   // NO FIM DA LISTA de propósito (auditoria de 30/08): o round-robin dos
   // baldes reparte por índice, e entrar no meio deslocava a leva inteira —
-  // o balde maior ia a 10 capturas e a conta do custo virava mentira. Aqui
-  // no fim, o balde maior segue com 9 e o "~3,6 min" do cabeçalho é teto.
+  // o balde maior ia a 10 capturas e a conta do custo virava mentira. A
+  // regra continua de pé e é por ela que o TRIO DO ATLAS abaixo entrou
+  // depois desta, e não ao lado das irmãs de `foco-`.
   ['fim-do-filme', '?t=193&shot=2'],
+  // ------------------------------------------------------------------
+  // AS TRÊS DO ATLAS (item 84, 31/08) — a POPULAÇÃO que faltava no modo
+  // que virou o produto. O buraco foi medido sem querer em 23/08: uma
+  // mudança que só tocava o Atlas devolveu 51 de 52 vistas bit-idênticas,
+  // e não porque quase nada mudou — porque quase tudo naquela lista roda
+  // por `?pos=`, isto é, na fase do VOO LIVRE. A única que se mexeu foi
+  // `atlas` (8,08% do quadro). Os itens 83/88/92 trouxeram depois as de
+  // `foco-`/`anao-`, e sobraram os TRÊS assuntos que o item 84 nomeia e
+  // que nenhuma delas alcança: o enquadramento de um CORPO do retrato, o
+  // TETO do zoom e o CLOSE-UP de uma lua.
+  //
+  // TODAS COM CORPOS NOVOS, de propósito: repetir Júpiter, Titã, Io,
+  // Éris ou Vesta compraria uma segunda foto do mesmo caminho. E todas
+  // com `&jd=` pelo motivo de sempre — sem efeméride pinada a pose anda
+  // com o dia e o md5 deixa de ser régua.
+  //
+  //  - `atlas-corpo-marte` é o degrau `corpo` de um PLANETA DO RETRATO
+  //    pelo caminho do Atlas. As duas de `?ver=corpo` que já existem
+  //    (`anao-eris-corpo`, `anao-vesta-corpo`) são de `HELIO_SEM_PONTO`
+  //    — outra lista, outro ramo —, e as de planeta resolvido (`terra`,
+  //    `jupiter`, `mercurio`…) cravam a câmera com `?pos=`, que é voo
+  //    livre. SEM `?d=`: o que esta guarda é o enquadramento PADRÃO do
+  //    degrau, que ninguém pina — as duas irmãs o desligam com `&d=6`.
+  //    Medido no nascimento: a câmera pousa a 3,7741 raios de Marte
+  //    (12,9 mil km do centro), disco de ~830 px em 1800×1713, 24,5% do
+  //    quadro aceso, com as órbitas de Fobos e Deimos cruzando o campo.
+  //
+  //  - `atlas-teto-netuno` é o TETO DO ZOOM, o mais longe a que o modo
+  //    leva — e a única vista que exerce o GRAMPO de `pinarDistancia`
+  //    (`AtlasRig`) e o termo `+ |alvo|` de `tetoDeZoom`, que é o que
+  //    torna a esfera honesta para um alvo fora do centro. O `?d=100000`
+  //    não é uma distância: é um pedido impossível que o grampo devolve
+  //    NO TETO, e é assim que a vista NOMEIA o teto em vez de copiar um
+  //    número que envelhece. Provado no nascimento: `d=100000`,
+  //    `d=1000000` e `d=10000000` devolvem o MESMO md5 (4750e7bd5e37).
+  //    Medido: 246,47 UA do alvo (8,24 raios da órbita de Netuno), 1,87×
+  //    a distância em que a abertura pousa (132,06 UA) — o `atlas` NÃO a
+  //    cobre, e a prova é que `?atlas=1&d=100000` (133,69 UA, o teto com
+  //    o Sol no alvo) já difere dele.
+  //
+  //  - `atlas-lua-ganimedes` é o CLOSE-UP de lua, e é outra coisa que
+  //    `foco-io`/`foco-titan`: aquelas pousam no enquadramento padrão do
+  //    degrau `lua`, que guarda o PAI em quadro — nelas o quadro aceso é
+  //    32,3% e 40,2%, e boa parte disso é o planeta atrás. Aqui o `?d=2`
+  //    desce ao globo: 79,1% do quadro é Ganimedes (1.790 × 1.664 px),
+  //    sem pai e sem céu que salve — é a única vista da casa em que a
+  //    superfície de uma lua resolvida PELO ATLAS ocupa a tela. Medido:
+  //    2,0000 raios exatos, o pino do link mandando.
+  //
+  // ESTABILIDADE ANTES DE PINAR, como o item 108 fez: par nulo de 3
+  // capturas por candidata na MESMA árvore, md5 igual nas três
+  // (`capturas/item84-vistas-atlas-parnulo.json`). Candidatas descartadas
+  // por LEITURA, não por gosto: `?foco=miranda` e `?foco=tritao` devolvem
+  // quadro quase todo escuro (a lua no lado da noite), e a família de
+  // Saturno está fora por tremor conhecido (item 101).
+  ['atlas-corpo-marte', '?foco=marte&ver=corpo&jd=2460409.26395835&shot=2'],
+  ['atlas-teto-netuno', '?foco=netuno&d=100000&jd=2460409.26395835&shot=2'],
+  ['atlas-lua-ganimedes', '?foco=ganimedes&d=2&jd=2460409.26395835&shot=2'],
 ];
 // SENTINELA (`SMOKE=1`): as três que mais pegam regressão. `sol` é o disco
 // solar inteiro (coroa, raias, proeminências, o ato mais olhado do filme);
@@ -708,8 +767,8 @@ export const VISTAS = [
 // DENTRO do domínio profundo (150 UA), com o sistema solar inteiro em quadro
 // — sem ela, iterar na onda dos planetas seria iterar às cegas.
 // SENTINELA É PARA ITERAR: o gate de fechamento continua sendo a leva
-// COMPLETA das 18 — quatro vistas não cobrem o aspecto (retrato), nem a
-// travessia, nem o mergulho, nem os regimes do farFade.
+// COMPLETA das 54 — quatro vistas não cobrem o aspecto (retrato), nem a
+// travessia, nem o mergulho, nem os regimes do farFade, nem o Atlas.
 const SENTINELAS = ['sol', 'soldisco', 'hero8', 'ua150'];
 const APP = process.env.APP_URL || APP_PADRAO;
 // TIER FIXO, e ele não é preferência. Por dois períodos:

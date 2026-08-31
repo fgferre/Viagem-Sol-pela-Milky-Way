@@ -1553,20 +1553,19 @@ componente, não a geometria de um quadro. **(b)** `pan` e `orbita` definem o
 passo em PIXELS (`4 / pxPorRad`), então o CÉU que varrem encolhe quando a
 janela cresce: **os vereditos das duas não são comparáveis entre janelas.**
 
-**84.** (Achado em 23/08, fechando o clarão único.) **O `ab-identidade`
-cobre a fase ATLAS com UMA vista só, de 52.** Medido sem querer: uma
-mudança que só tocava o Atlas (o teto do clarão) devolveu **51 de 52
-bit-idênticas** — e não porque quase nada mudou, mas porque 51 daquelas
-vistas rodam por `?pos=`, isto é, na fase do voo livre. A única que
-mudou foi `atlas`, e mudou muito (8,08% do quadro). O gate está certo no
-que faz; o que ele não tem é POPULAÇÃO no modo que virou o produto. Hoje
-quem cobre o Atlas de verdade é a perna `PERNA=atlas` da régua de luz
-(sete distâncias, JSON versionado) — e ela cobre LUZ, não composição:
-nomes, órbitas e HUD do Atlas não têm vista bit-exata que os guarde. O
-conserto é somar vistas de Atlas ao gate (o enquadramento de um corpo, o
-teto do zoom, o close-up de uma lua), e o preço é ~6 s de captura por
-vista por lado. **Não fazer isto às cegas junto de outra obra:** cada
-vista nova pede o lado "antes" recapturado, senão nasce sem base.
+**84.** O gate de identidade cobria a fase ATLAS com UMA vista de 52 —
+**FECHADO em 31/08**, pelas três vistas que o próprio item nomeava, todas
+em corpos que nenhuma irmã cobria e todas com `&jd=` pinado:
+`atlas-corpo-marte` (`?foco=marte&ver=corpo`, md5 `bfbf114a7e61`),
+`atlas-teto-netuno` (`?foco=netuno&d=100000`, `4750e7bd5e37`) e
+`atlas-lua-ganimedes` (`?foco=ganimedes&d=2`, `1d1faa08f163`).
+Estabilidade provada antes de pinar (par nulo de 3 capturas cada,
+`capturas/item84-vistas-atlas-parnulo.json`) e mordida provada por duas
+sabotagens de knob só-do-Atlas, com as irmãs de filme 4/4 bit-idênticas.
+Preço MEDIDO de novo: 4,0 min por lado (54 vistas, 56 capturas) contra
+3,6 declarados — o til do item 108 saiu e o teto do censo subiu de 31,9
+para 32,3 min. Continua sem juiz bit-exato, declarado: os NOMES na tela e
+o HUD, que o `?shot=2` de toda vista apaga. História no ARQUIVO.
 
 **85.** (Ruído de instrumento, visto em 24/08 e **de novo em 26/08**.) **O
 `atlas-smoke` reprovou o TOQUE DUPLO sem defeito nenhum.** Numa corrida
