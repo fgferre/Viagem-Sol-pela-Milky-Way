@@ -1087,11 +1087,28 @@ coda — antes de `REVEAL_T` o relógio é a época e o pino é o das 16:00;
 inofensivo (Terra fora do quadro/sub-pixel nesse trecho, vistas t=6/40/
 100 bit-idênticas) e agora escrito.
 
-**O QUE SEGUE ABERTO no item:** o OLHO DELE, agora nas duas frentes — se
-o fim parou de "não mostrar direito" e se o retrato de família serve. A
-Lua no último quadro é um corpo resolvido de ~8 px em 1200 (0,51° de
-diâmetro a 389 mil km): é o máximo que a trajetória aprovada permite, e
-crescer isso só mexendo no trajeto, que não está ordenado.
+**A TERCEIRA PERNA DA QUEIXA, achada pelo OLHO DELE em 30/08 à noite —
+ele testou e disse: *"nao percebo a lua por cima... será???"*. O olho
+dele estava CERTO e o quadro errado:** a geometria foi absolvida na
+tela dele (sonda em 1920×1080: a Lua NO quadro de t=191 em diante, NDC
+0,44/0,51 em t=193 — `capturas/item108-fim-wide-medidas.json`), mas a
+FOTOMETRIA está invertida: o pico do disco da Lua é **148** e há DEZ
+estrelas de fundo mais brilhantes (166–244) no mesmo quadro
+(`capturas/item108-lua-fotometria.json`). A Lua cheia a 389 mil km é
+magnitude ~−12,7 — ordens de grandeza acima de QUALQUER estrela; o
+modo assistido dá o empurrão às estrelas e esqueceu o corpo resolvido
+pequeno, que fica pálido e invisível no meio delas. A obra: o corpo
+resolvido pequeno tem de carregar o brilho VERDADEIRO (ordem
+fotométrica restaurada — a Lua inconfundível, mais viva que toda
+estrela do fundo), como LEI do desenho e não gambiarra do filme; é o
+mesmo vão que o canal dormente `aFocus` (item 38) existe para fechar
+no sentido inverso.
+
+**O QUE SEGUE ABERTO no item:** a obra da fotometria acima, e depois o
+OLHO DELE de novo — se o fim parou de "não mostrar direito". A
+distância da Lua no último quadro (~0,51° de diâmetro) é a máxima que
+a trajetória aprovada permite; o que muda agora é o BRILHO, não o
+tamanho.
 
 
 **109. Os labels 3D do outro projeto — trazer ou não, com medida.**
