@@ -19,7 +19,7 @@ import {
   projectLabels,
   projectForced,
 } from '../world/labels';
-import type { StarLabel } from '../world/labels';
+import type { OclusorDeRotulo, StarLabel } from '../world/labels';
 import { GAL } from '../world/galaxy';
 import { numeroPtBr } from '../tempoDoAtlas';
 import { notaDeDistancia } from '../../lib/unidades';
@@ -143,11 +143,31 @@ export class Rotulos {
   private readonly luaPosParaRotulo = new Float32Array(
     LUAS_DO_SISTEMA.length * 3
   ).fill(Number.NaN);
-  /** o disco do Sol como oclusor de RÓTULO ("vejo estrelas através do
-   *  sol", item 47): nome de estrela atrás da fotosfera não nasce. Os
-   *  planetas não entram nesta leva — disco de minutos de arco só em
-   *  close, e lá o rótulo do próprio corpo é quem manda no quadro. */
-  private readonly oclusoresDeRotulo = [{ x: 0, y: 0, z: 0, raio: RAIO_DO_SOL_NA_CENA }];
+  /**
+   * OS DISCOS QUE ESCONDEM NOME — o Sol na cabeça, os corpos do quadro
+   * atrás dele (item 47 + item 115, bloco B, peça 2).
+   *
+   * O Sol entrou primeiro ("vejo estrelas através do sol") e era o
+   * ÚNICO: o comentário de então dizia que planeta é disco de minutos de
+   * arco e só importa em close — mas é exatamente em close que o nome
+   * atravessa o globo, e o mergulho 08 fotografou o resultado (FOMALHAUT
+   * e ALNAIR impressos em branco sobre o disco iluminado da Terra,
+   * descrevendo estrelas que estão ATRÁS do planeta). O Eyes oclui por
+   * qualquer corpo (`isPositionOccluded`, por rótulo, todo quadro).
+   *
+   * A ENTRADA ZERO É PERMANENTE e não vem da camada: o Sol está na
+   * ORIGEM do mundo heliocêntrico por definição, e vale mesmo antes de
+   * existir efeméride. Da entrada 1 em diante a lista é REMONTADA por
+   * quadro a partir das posições vivas — os objetos são reusados
+   * (`poolDeOclusores`), então nenhum quadro aloca.
+   */
+  private readonly oclusoresDeRotulo: OclusorDeRotulo[] = [
+    { x: 0, y: 0, z: 0, raio: RAIO_DO_SOL_NA_CENA, chave: `${CHAVE_DE_CORPO}sun` },
+  ];
+  /** os oclusores de corpo, reusados quadro a quadro (ver acima) */
+  private readonly poolDeOclusores: OclusorDeRotulo[] = [];
+  /** raio físico por id — não muda em sessão, e o fio é da escada */
+  private readonly raiosDeCorpo = new Map<string, number | null>();
   /** as rampas de 250/750 ms dos nomes (item 115, bloco B) */
   private readonly rampas = new RampasDeRotulo();
   /**
@@ -187,6 +207,14 @@ export class Rotulos {
     onLente: (text: string) => void;
     /** o meta do beat da viagem — só o ramo `journey` o paga */
     beatDaViagem: () => JourneyMeta;
+    /**
+     * O RAIO FÍSICO de um corpo pelo id, na unidade da cena — a fonte é
+     * a escada (`raioFisicoDe`), a MESMA que dá o piso do zoom, o raio
+     * das malhas e o avanço do nome 3D sobre a casca. Aqui ela mede o
+     * disco que esconde rótulo (item 115, bloco B, peça 2); uma segunda
+     * tabela de raios seria a segunda verdade que a primeira desmentiria.
+     */
+    raioFisicoDe: (id: string) => number | null;
   };
 
   constructor(fios: Rotulos['fios']) {
@@ -213,6 +241,56 @@ export class Rotulos {
     const x = fonte[i * 3];
     if (!Number.isFinite(x)) return null;
     return [x, fonte[i * 3 + 1], fonte[i * 3 + 2]];
+  }
+
+  /**
+   * A LISTA DE OCLUSORES DESTE QUADRO — o Sol mais cada corpo e lua com
+   * posição viva (item 115, bloco B, peça 2).
+   *
+   * SEM FILTRO DE TAMANHO, de propósito: um corpo pequeno na tela tem
+   * cone pequeno, e o próprio teste do cone o descarta — um limiar em
+   * pixels aqui seria um segundo critério para a mesma pergunta, e
+   * erraria justamente no caso que interessa (a lua que passa
+   * rasante atrás do pai).
+   */
+  private montarOclusores(planetas: Planetas | null) {
+    // a entrada zero é o Sol, e ela não se remonta
+    this.oclusoresDeRotulo.length = 1;
+    if (!planetas) return;
+    this.somarOclusores(CORPOS_DO_SISTEMA, planetas.posicoes);
+    this.somarOclusores(LUAS_DO_SISTEMA, this.luaPosParaRotulo);
+  }
+
+  private somarOclusores(
+    corpos: readonly { id: string; chave: string }[],
+    posicoes: Float32Array
+  ) {
+    for (let i = 0; i < corpos.length && (i + 1) * 3 <= posicoes.length; i++) {
+      if (corpos[i].id === 'sun') continue; // já é a entrada zero
+      const x = posicoes[i * 3];
+      const y = posicoes[i * 3 + 1];
+      const z = posicoes[i * 3 + 2];
+      // sem efeméride não há disco: NaN não esconde nada
+      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
+      let raio = this.raiosDeCorpo.get(corpos[i].id);
+      if (raio === undefined) {
+        raio = this.fios.raioFisicoDe(corpos[i].id);
+        this.raiosDeCorpo.set(corpos[i].id, raio);
+      }
+      if (raio === null || !(raio > 0)) continue;
+      const n = this.oclusoresDeRotulo.length;
+      let o = this.poolDeOclusores[n - 1];
+      if (!o) {
+        o = { x: 0, y: 0, z: 0, raio: 0 };
+        this.poolDeOclusores[n - 1] = o;
+      }
+      o.x = x;
+      o.y = y;
+      o.z = z;
+      o.raio = raio;
+      o.chave = corpos[i].chave;
+      this.oclusoresDeRotulo.push(o);
+    }
   }
 
   /** escreve o centro vivo no slot da lua em `luaPosParaRotulo`. */
@@ -469,6 +547,9 @@ export class Rotulos {
     // regra editorial — a rampa é do céu que o visitante navega.
     const dtDaRampa = this.dtDeRampa;
     this.dtDeRampa = 0;
+    // OS DISCOS DO QUADRO, antes de qualquer projeção: eles valem para
+    // as estrelas e para os corpos, e a lista é a mesma nos dois ramos.
+    this.montarOclusores(planetas);
     // A CAMADA DESLIGADA CALA A TELA INTEIRA (item 82, N2) — e cala
     // antes de projetar, porque projetar para jogar fora seria pagar a
     // conta de um quadro que ninguém vê. A lista fica VAZIA, e com ela o
@@ -506,8 +587,12 @@ export class Rotulos {
       // desenho. Com AS DUAS camadas desligadas, o silêncio de sempre.
       let icones: StarLabel[] = [];
       if (!quadro.iconesEscondidos && fase === 'atlas' && planetas?.points.visible) {
-        const corpos = projectCorpos(cam, CORPOS_DO_SISTEMA, planetas.posicoes);
-        const luas = projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo);
+        const corpos = projectCorpos(
+          cam, CORPOS_DO_SISTEMA, planetas.posicoes, this.oclusoresDeRotulo
+        );
+        const luas = projectCorpos(
+          cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo
+        );
         this.esmaecerLuasColadasNoPai(corpos, luas);
         icones = [...corpos, ...luas];
         for (const c of icones) {
@@ -565,14 +650,14 @@ export class Rotulos {
         // decide `points.visible`).
         const corpos =
           fase === 'atlas' && planetas?.points.visible
-            ? projectCorpos(cam, CORPOS_DO_SISTEMA, planetas.posicoes)
+            ? projectCorpos(cam, CORPOS_DO_SISTEMA, planetas.posicoes, this.oclusoresDeRotulo)
             : [];
         // AS LUAS (F2b/F5): rótulo pela posição VIVA da efeméride —
         // não têm vértice na camada de pontos, então entram por uma
         // projeção própria. NaN (sem efeméride) o projectCorpos ignora.
         const luas =
           fase === 'atlas' && planetas?.points.visible
-            ? projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)
+            ? projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo)
             : [];
         // A LUA SÓ ACENDE QUANDO SE DESCOLA DO PAI (item 73, plano §3):
         // de longe as 21 luas projetam em cima dos planetas delas, e o

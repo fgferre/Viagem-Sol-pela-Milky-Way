@@ -210,7 +210,11 @@ describe('a fiação de um posto do palco no Director (a da Lua)', () => {
     // no gate do [0]. O buffer e a projeção moram no módulo dos rótulos
     // (corte 7 da onda da arquitetura), e o fio se cobra dos dois lados.
     expect(PALCO).toContain('rotulos.escreverPosicaoDeLua(posto.id, e.centroPc)');
-    expect(ROTULOS).toContain('projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo)');
+    // (guarda de TEXTO, herdada: o que ela cobra é o fio, e ela cobra a
+    // linha inteira — a lista de oclusores entrou nela em 31/08, item 115)
+    expect(ROTULOS).toContain(
+      'projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo)'
+    );
   });
 
   it('teardown: os corpos devolvem tudo ANTES de o palco esvaziar', () => {

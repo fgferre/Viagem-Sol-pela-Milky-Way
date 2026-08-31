@@ -36,6 +36,7 @@ const {
   aplicarReguaDeRelevancia,
   ORCAMENTO_DE_NOMES,
   OPACIDADE_MINIMA_DO_ROTULO,
+  projectLabels,
 } = await import('./labels');
 
 /** uma câmera olhando a origem de 10 unidades no eixo z */
@@ -391,5 +392,76 @@ describe('a régua de relevância — importância antes de geometria', () => {
     for (const v of visiveis) {
       expect(lista.find((l) => l.key === v.key)!.cortadoPelaRegua, v.key).toBeFalsy();
     }
+  });
+});
+
+// ============================================================
+// O DISCO DE QUALQUER CORPO ESCONDE NOME (item 115, bloco B, peça 2).
+//
+// Até 31/08 a lista de oclusores tinha UM item — o Sol —, e o mergulho
+// 08 fotografou a consequência (`nossa-03-terra-corpo.png`): FOMALHAUT e
+// ALNAIR impressos em branco sobre o disco iluminado da Terra,
+// descrevendo estrelas que estão ATRÁS do planeta. O Eyes oclui por
+// qualquer corpo, por rótulo, todo quadro.
+//
+// A conta de `escondidaPorDisco` não mudou uma linha: o que mudou é
+// quem entra nela. Aqui se julgam as três metades da lei nova — a
+// estrela atrás do globo não nasce, o corpo atrás de outro corpo não
+// nasce, e nenhum corpo esconde a si mesmo.
+// ============================================================
+describe('o disco de qualquer corpo esconde nome (item 115)', () => {
+  /** um oclusor de raio `r` a `z` na frente da câmera (que está em z=10) */
+  const disco = (z: number, r: number, chave?: string) => ({ x: 0, y: 0, z, raio: r, chave });
+
+  it('a estrela ATRÁS de um planeta perde o nome; a do lado, não', () => {
+    const cam = camera();
+    // uma estrela na mira, a 200 pc, e outra deslocada — as duas visíveis
+    const naMira = { n: 'Atrás', x: 0, y: 0, z: -200, m: 1, s: 'A0V', d: 200, t: 0 };
+    const aoLado = { n: 'AoLado', x: 60, y: 0, z: -200, m: 1, s: 'A0V', d: 200, t: 0 };
+    // a câmera está a 10 pc da origem, então o `sol-home` também nasce;
+    // o que se julga aqui são as duas nomeadas
+    const soAsDuas = (l: StarLabel[]) => l.map((x) => x.key).filter((k) => k !== 'sol-home');
+    expect(soAsDuas(projectLabels(cam, [naMira, aoLado], 7, undefined, [])).sort()).toEqual([
+      'AoLado', 'Atrás',
+    ]);
+    // o globo entra entre a câmera e a estrela da mira: 0,3 de raio a 3
+    // de distância cobre bem mais do que o ponto dela
+    const comDisco = projectLabels(cam, [naMira, aoLado], 7, undefined, [disco(7, 0.3)]);
+    expect(soAsDuas(comDisco)).toEqual(['AoLado']);
+  });
+
+  it('o corpo ATRÁS de outro corpo perde o nome — a mesma lei, o mesmo cone', () => {
+    const cam = camera();
+    const p = new Float32Array(6);
+    // dois corpos alinhados com a câmera: o primeiro em z=8, o segundo
+    // em z=0, atrás dele
+    p[2] = 8;
+    p[5] = 0;
+    const dois = [
+      { chave: 'corpo:frente', nome: 'Frente', classe: 'planeta' },
+      { chave: 'corpo:atras', nome: 'Atrás', classe: 'planeta' },
+    ];
+    expect(projectCorpos(cam, dois, p).map((l) => l.key)).toEqual([
+      'corpo:frente', 'corpo:atras',
+    ]);
+    const oclusores = [disco(8, 0.5, 'corpo:frente')];
+    expect(projectCorpos(cam, dois, p, oclusores).map((l) => l.key)).toEqual(['corpo:frente']);
+  });
+
+  it('nenhum corpo esconde a SI MESMO, nem um bilionésimo à frente', () => {
+    const cam = camera();
+    const p = new Float32Array(3);
+    p[2] = 8;
+    const um = [{ chave: 'corpo:frente', nome: 'Frente', classe: 'planeta' }];
+    // NO MESMO PONTO o empate de distância já salvaria o nome. O que a
+    // chave protege é o caso em que as duas fontes NÃO coincidem bit a
+    // bit — e elas são duas de verdade: o disco do Sol é a ORIGEM
+    // constante (`oclusoresDeRotulo[0]`) e o rótulo dele sai do buffer da
+    // camada. Um bilionésimo de parsec à frente e, sem a chave, o corpo
+    // cai dentro do próprio cone com cosseno 1 e some da tela.
+    expect(projectCorpos(cam, um, p, [disco(8, 0.5, 'corpo:frente')])).toHaveLength(1);
+    expect(projectCorpos(cam, um, p, [disco(8 + 1e-9, 0.5, 'corpo:frente')])).toHaveLength(1);
+    // e o MESMO disco com outra chave (um vizinho no caminho) esconde
+    expect(projectCorpos(cam, um, p, [disco(8 + 1e-9, 0.5, 'corpo:outro')])).toHaveLength(0);
   });
 });

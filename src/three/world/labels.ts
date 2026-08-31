@@ -378,13 +378,25 @@ function projectPoint(
   return { x, y };
 }
 
-/** Um corpo com disco: nome de estrela ESCONDIDA atrás dele não nasce. */
+/** Um corpo com disco: nome ESCONDIDO atrás dele não nasce. */
 export interface OclusorDeRotulo {
   x: number;
   y: number;
   z: number;
   /** raio da superfície na cena, em pc */
   raio: number;
+  /**
+   * A CHAVE DO RÓTULO deste corpo, quando ele TAMBÉM tem nome na tela
+   * (item 115, bloco B, peça 2) — é por ela que um corpo não esconde o
+   * próprio nome.
+   *
+   * A aritmética já o faria (`distAlvo <= dCorpo` empata consigo mesmo e
+   * o laço pula), mas por um empate de ponto flutuante — e a consequência
+   * de um ULP de diferença não é um pixel torto: é o corpo se ocluindo,
+   * cosseno 1 contra qualquer cone, e o nome sumindo de vez. Uma
+   * comparação de string por oclusor é barata perto disso.
+   */
+  chave?: string;
 }
 
 const _aoAlvo = new THREE.Vector3();
@@ -405,9 +417,11 @@ function escondidaPorDisco(
   camPos: THREE.Vector3,
   estrela: { x: number; y: number; z: number },
   distEstrela: number,
-  oclusores: readonly OclusorDeRotulo[]
+  oclusores: readonly OclusorDeRotulo[],
+  chaveDoAlvo?: string
 ): boolean {
   for (const o of oclusores) {
+    if (o.chave !== undefined && o.chave === chaveDoAlvo) continue;
     _aoCorpo.set(o.x, o.y, o.z).sub(camPos);
     const dCorpo = _aoCorpo.length();
     // corpo sem disco à frente (atrás da estrela, raio nulo, ou a câmera
@@ -482,10 +496,16 @@ export function projectLabels(
     // apontava um nome onde não há estrela visível. A magnitude é
     // recalculada da CÂMERA — quem se aproxima acende, como no shader.
     if (s.m + 5 * Math.log10(dist / Math.max(s.d, 1e-6)) > NAKED_EYE_MAG) continue;
-    if (oclusores && escondidaPorDisco(camPos, s, dist, oclusores)) continue;
 
+    // A CAIXA DA TELA ANTES DO CONE, e a ordem é só PREÇO (item 115,
+    // bloco B, peça 2): os dois testes descartam a mesma estrela, e a
+    // lista que sai é a mesma linha a linha. Mas a lista de oclusores
+    // deixou de ter um item e passou a ter os corpos do quadro — e
+    // pagar trinta cones por estrela que nem chega à tela seria o custo
+    // que faz uma peça barata parecer cara.
     const p = projectPoint(camera, s);
     if (!p) continue;
+    if (oclusores && escondidaPorDisco(camPos, s, dist, oclusores)) continue;
 
     // opacidade: perto demais ou longe demais → esmaece
     const oNear = THREE.MathUtils.smoothstep(dist, 0.4, 2.2);
@@ -565,7 +585,8 @@ export const CORPO_FADE_TERMINA_PC = 0.05;
 export function projectCorpos(
   camera: THREE.PerspectiveCamera,
   corpos: readonly CorpoRotulavel[],
-  posicoes: Float32Array
+  posicoes: Float32Array,
+  oclusores?: readonly OclusorDeRotulo[]
 ): StarLabel[] {
   const out: StarLabel[] = [];
   for (let i = 0; i < corpos.length && (i + 1) * 3 <= posicoes.length; i++) {
@@ -578,6 +599,14 @@ export function projectCorpos(
     const p = projectPoint(camera, { x, y, z });
     if (!p) continue;
     const dist = _v.set(x, y, z).distanceTo(camera.position);
+    // O CORPO ATRÁS DE OUTRO CORPO TAMBÉM PERDE O NOME (item 115, bloco
+    // B, peça 2). É a MESMA lei das estrelas, com a mesma conta: a lua
+    // que passou para trás do pai deixa de ter etiqueta em vez de
+    // escrevê-la sobre o globo que a esconde. O corpo nunca é oclusor de
+    // si mesmo — ver `OclusorDeRotulo.chave`.
+    if (oclusores && escondidaPorDisco(camera.position, { x, y, z }, dist, oclusores, corpos[i].chave)) {
+      continue;
+    }
     out.push({
       name: corpos[i].nome,
       spect: '',

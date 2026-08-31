@@ -454,13 +454,16 @@ export class Director {
 
   /** os rótulos do céu — corte 7 da Parte 1 (director/rotulos.ts); o
    *  beat é fio porque só o ramo da viagem o paga */
-  private readonly rotulos = new Rotulos({
+  private readonly rotulos: Rotulos = new Rotulos({
     onLabels: (labels) => this.events.onLabels(labels),
     onDest: (text) => this.events.onDest(text),
     onSol: (text) => this.events.onSol(text),
     onLente: (text) => this.events.onLente(text),
     onCamera: (posUA) => this.events.onCamera(posUA),
     beatDaViagem: () => this.rig.metaAt(this.journeyT),
+    // o disco que esconde nome sai da MESMA escada que dá o raio das
+    // malhas e o avanço do nome 3D sobre a casca (item 115, bloco B)
+    raioFisicoDe: (id): number | null => this.escada.raioFisicoDe(id),
   });
 
   private phase: Phase = 'loading';
@@ -542,7 +545,7 @@ export class Director {
    *  foco (`ver`/`focoEstrela`/`focoCorpoId`) com UM dono; os punhos
    *  de instância entram com o nome preservado, o que nasce depois do
    *  construtor (engine, roam) e o que muda por quadro entram por fio */
-  private readonly escada = new Escada({
+  private readonly escada: Escada = new Escada({
     atlas: this.atlas,
     maquinaDoTempo: this.maquinaDoTempo,
     rotulos: this.rotulos,

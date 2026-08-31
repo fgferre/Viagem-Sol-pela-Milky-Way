@@ -41,6 +41,8 @@ function bancada() {
     onLente: () => {},
     onCamera: (posUA) => publicadas.push(posUA),
     beatDaViagem: () => ({}) as JourneyMeta,
+    // sem raio não há disco: estas bancadas só têm o Sol como oclusor
+    raioFisicoDe: () => null,
   });
   const cam = new THREE.PerspectiveCamera();
   // `named: null` mata o ramo dos rótulos: o que se julga aqui é o fio
@@ -141,6 +143,8 @@ describe('a camada "Nomes na tela" (item 82, N2)', () => {
       onLente: () => {},
       onCamera: (posUA) => camPublicadas.push(posUA),
       beatDaViagem: () => ({}) as JourneyMeta,
+    // sem raio não há disco: estas bancadas só têm o Sol como oclusor
+    raioFisicoDe: () => null,
     });
     const cam = new THREE.PerspectiveCamera();
     cam.position.set(0, 0, 5);
@@ -187,6 +191,7 @@ describe('a camada "Nomes na tela" (item 82, N2)', () => {
       onLente: () => {},
       onCamera: () => {},
       beatDaViagem: () => ({ target: ['Vizinha'], dest: 'Vizinha' }) as JourneyMeta,
+      raioFisicoDe: () => null,
     });
     const cam = new THREE.PerspectiveCamera();
     cam.position.set(0, 0, 5);
@@ -247,6 +252,8 @@ describe('o céu limpo continua navegável (item 89): ícone é camada separada'
       onLente: () => {},
       onCamera: () => {},
       beatDaViagem: () => ({}) as JourneyMeta,
+    // sem raio não há disco: estas bancadas só têm o Sol como oclusor
+    raioFisicoDe: () => null,
     });
     const cam = new THREE.PerspectiveCamera(58, 1.6, 0.001, 100);
     cam.position.set(0, 0, 5);
@@ -292,6 +299,8 @@ describe('o céu limpo continua navegável (item 89): ícone é camada separada'
       onLente: () => {},
       onCamera: () => {},
       beatDaViagem: () => ({}) as JourneyMeta,
+    // sem raio não há disco: estas bancadas só têm o Sol como oclusor
+    raioFisicoDe: () => null,
     });
     const cam = new THREE.PerspectiveCamera(58, 1.6, 0.001, 100);
     cam.position.set(0, 0, 5);
@@ -336,6 +345,7 @@ describe('o indicador de fotografia (item 100): "LENTE · SOL" só no filme', ()
       onLente: (texto) => lentes.push(texto),
       onCamera: () => {},
       beatDaViagem: () => ({ target: ['Vizinha'], dest: 'Vizinha' }) as JourneyMeta,
+      raioFisicoDe: () => null,
     });
     const cam = new THREE.PerspectiveCamera(34.6, 1.6, 0.001, 100);
     cam.position.set(0, 0, 5);
@@ -412,6 +422,8 @@ describe('a rampa dos nomes: 250 ms para entrar, 750 ms para sair', () => {
       onLente: () => {},
       onCamera: () => {},
       beatDaViagem: () => ({}) as JourneyMeta,
+    // sem raio não há disco: estas bancadas só têm o Sol como oclusor
+    raioFisicoDe: () => null,
     });
     const cam = new THREE.PerspectiveCamera(50, 1, 0.1, 2000);
     cam.updateMatrixWorld();
@@ -510,5 +522,67 @@ describe('a rampa dos nomes: 250 ms para entrar, 750 ms para sair', () => {
     const antes = publicadas.at(-1)!.map((l) => l.opacity);
     passo(tres);
     expect(publicadas.at(-1)!.map((l) => l.opacity)).toEqual(antes);
+  });
+});
+
+// ============================================================
+// A LISTA DE OCLUSORES É A DOS CORPOS DO QUADRO (item 115, bloco B,
+// peça 2) — e não a do Sol sozinho.
+//
+// A lei está provada em `world/labels.test.ts` (a conta do cone). O que
+// se julga aqui é a FIAÇÃO: que `montarOclusores` lê as posições vivas
+// da camada e o raio da escada, e entrega esses discos às duas
+// projeções. Apagar a montagem — ou o fio do raio — devolve o defeito
+// fotografado no mergulho 08 e reprova.
+// ============================================================
+describe('os oclusores de rótulo são os corpos do quadro (item 115)', () => {
+  /** o Atlas com a Terra na origem e uma estrela alinhada atrás dela */
+  function noAtlasComGlobo(raioDaTerra: number | null) {
+    const rotulos = new Rotulos({
+      onLabels: () => {},
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({}) as JourneyMeta,
+      raioFisicoDe: (id) => (id === 'earth' ? raioDaTerra : null),
+    });
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 0.001, 1000);
+    cam.position.set(0, 0, 5);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const iTerra = CORPOS_DO_SISTEMA.findIndex((c) => c.id === 'earth');
+    posicoes[iTerra * 3] = 0;
+    posicoes[iTerra * 3 + 1] = 0;
+    posicoes[iTerra * 3 + 2] = 0;
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    // duas nomeadas a 200 pc: uma exatamente atrás da Terra, outra ao lado
+    const named: NamedStar[] = [
+      { n: 'Atrás', x: 0, y: 0, z: -200, m: 1, s: 'A0V', d: 200, t: 0 },
+      { n: 'AoLado', x: 60, y: 0, z: -200, m: 1, s: 'A0V', d: 200, t: 0 },
+    ];
+    rotulos.tique(1 / 60);
+    rotulos.projetar(cam, {
+      fase: 'atlas', named, dHome: 5, planetas, foco: null,
+      nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+    });
+    return rotulos.alvos.map((l) => l.key);
+  }
+
+  it('sem raio (nenhum globo) as duas estrelas nascem — é o estado de antes', () => {
+    const chaves = noAtlasComGlobo(null);
+    expect(chaves).toContain('Atrás');
+    expect(chaves).toContain('AoLado');
+  });
+
+  it('com o globo da Terra no caminho, a estrela ATRÁS dela não nasce', () => {
+    const chaves = noAtlasComGlobo(0.3);
+    expect(chaves).not.toContain('Atrás');
+    // e a vizinha, fora do cone, continua na tela — o disco esconde o
+    // que está atrás DELE, não a metade do céu
+    expect(chaves).toContain('AoLado');
+    // a própria Terra segue com nome: nenhum corpo é oclusor de si
+    expect(chaves).toContain('corpo:earth');
   });
 });
