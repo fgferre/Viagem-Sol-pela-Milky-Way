@@ -1951,6 +1951,94 @@ describe('a rampa entre degraus do rig (F2b/D7)', () => {
     rig.focar(alvo, 1e-7, alvo, { rampa: true });
     expect(rig.animando).toBe(false);
   });
+
+  // ============================================================
+  // A TRAVESSIA DE 170° — a direção da rampa é SLERP, não
+  // `lerp`+`normalize`. As duas percorrem o mesmo arco; o lerp o
+  // percorre com velocidade angular que dispara no meio, e a razão
+  // explode com a separação (medido no estudo do NASA Eyes: 1,02× a
+  // 30°, 2,85× a 150°, 7,70× a 170°). Como a ORIENTAÇÃO sempre foi
+  // slerp honesto, era a POSIÇÃO que corria na frente no miolo da
+  // rampa: o alvo saía do centro da tela, derivava e voltava.
+  //
+  // O cenário monta a separação de propósito: a pose de repouso põe a
+  // câmera do lado do Sol, e o alvo velho fica no lado OPOSTO ao alvo
+  // novo, a 10° da antiparalela. É alcançável em produção — basta
+  // escolher um corpo do outro lado do céu estando num degrau de corpo.
+  // ============================================================
+  /** o cenário de ~170° de separação entre as direções das duas pontas */
+  const travessiaDe170 = () => {
+    const alvoNovo = new THREE.Vector3(2e-6, 0, 0);
+    const dirDestino = direcaoDeRepouso(alvoNovo, POLO_ECLIPTICO, new THREE.Vector3());
+    const eixo = new THREE.Vector3(0, 0, 1).cross(dirDestino).normalize();
+    const dirPartida = dirDestino.clone().negate().applyAxisAngle(eixo, 10 * GRAU);
+    return {
+      alvoNovo,
+      alvoVelho: alvoNovo.clone().addScaledVector(dirPartida, 5e-7),
+    };
+  };
+
+  it('a rampa de 170° não chicoteia: a velocidade angular fica perto da média', () => {
+    const { alvoVelho, alvoNovo } = travessiaDe170();
+    const camera = cam();
+    const rig = new AtlasRig();
+    rig.focar(alvoVelho, 1e-10, alvoVelho);
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, 0);
+
+    // a separação REAL das duas pontas, medida no cenário e não suposta
+    const dPartida = camera.position.clone().sub(alvoNovo).normalize();
+    const dDestino = direcaoDeRepouso(alvoNovo, POLO_ECLIPTICO, new THREE.Vector3());
+    expect(dPartida.angleTo(dDestino) / GRAU).toBeGreaterThan(169);
+
+    rig.focar(alvoNovo, 1e-10, alvoNovo, { rampa: true });
+    const dur = rig.duracaoDaRampa;
+    const PASSOS = 600;
+    const dt = dur / PASSOS;
+    let anterior = camera.position.clone().sub(rig.alvo).normalize();
+    let varrido = 0;
+    let pico = 0;
+    for (let i = 0; i < PASSOS; i++) {
+      rig.apply(camera, 1, LARGURA_DE_MESA_PX, dt);
+      const agora = camera.position.clone().sub(rig.alvo).normalize();
+      const passo = anterior.angleTo(agora);
+      varrido += passo;
+      pico = Math.max(pico, passo / dt);
+      anterior = agora;
+    }
+    // o arco varrido é o mesmo dos dois jeitos — o que muda é o RITMO
+    expect(varrido / GRAU).toBeGreaterThan(169);
+    const media = varrido / dur;
+    // com slerp o único relevo é o smoothstep da rampa, cujo pico é
+    // exatamente 1,5× a média. Com `lerp`+`normalize` o pico medido
+    // neste mesmo cenário é 11,53× (7,70 do nlerp × 1,5 do smoothstep):
+    // 891°/s de pico contra 77°/s de média, numa rampa de 2,2 s.
+    expect(pico / media).toBeLessThan(1.6);
+  });
+
+  it('o gêmeo de `poseNaTela` anda junto: clicar no meio da rampa de 170° não salta', () => {
+    // `partirDaTela` materializa a pose da tela como partida da rampa
+    // nova; se a conta dela divergir da do `apply`, o quadro do clique
+    // corrige a diferença de uma vez. Com um dos dois em lerp e o outro
+    // em slerp, o salto medido aqui é 1,6% da distância ao alvo — e
+    // NENHUM outro trilho desta bancada o pega.
+    const { alvoVelho, alvoNovo } = travessiaDe170();
+    const terceiro = new THREE.Vector3(-1.5e-6, 1e-6, 0);
+    const camera = cam();
+    const rig = new AtlasRig();
+    rig.focar(alvoVelho, 1e-10, alvoVelho);
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, 0);
+    rig.focar(alvoNovo, 1e-10, alvoNovo, { rampa: true });
+    const QUADRO_S = 1 / 60;
+    // 30% da rampa: fora do meio, onde lerp e slerp coincidem por simetria
+    const quadros = Math.round((0.3 * rig.duracaoDaRampa) / QUADRO_S);
+    for (let i = 0; i < quadros; i++) rig.apply(camera, 1, LARGURA_DE_MESA_PX, QUADRO_S);
+    const antes = camera.position.clone();
+
+    rig.focar(terceiro, 1e-10, terceiro, { rampa: true });
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, 0); // dt = 0: nada pode andar
+    const salto = antes.distanceTo(camera.position) / antes.distanceTo(terceiro);
+    expect(salto).toBeLessThan(1e-9);
+  });
 });
 
 // ============================================================

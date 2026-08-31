@@ -203,6 +203,48 @@ export function raspao(forma: FormaDoRaspao): PosFn {
   };
 }
 
+const _eixoDoSlerp = new THREE.Vector3();
+
+/**
+ * SLERP DE VERSORES — velocidade angular UNIFORME entre duas direções.
+ *
+ * `lerp`+`normalize` percorre o MESMO arco, mas com velocidade angular
+ * que dispara no meio: a razão pico/média é 1,02× a 30°, 2,85× a 150° e
+ * **7,70× a 170°** (medido no estudo do NASA Eyes, `nlerp.py`). Perto de
+ * 180° o caminho passa pelo zero e o `normalize` devolve o lado errado —
+ * é o chicote que no play contínuo fazia a coda olhar para trás, e é o
+ * mesmo que na rampa do Atlas tirava o alvo do centro no meio da pose.
+ *
+ * Os dois extremos são tratados: quase-paralelo (`dot > 0,9995`) cai no
+ * lerp, que ali é exato até o arredondamento; quase-antiparalelo
+ * (`dot < −0,9995`) roda `π·t` por uma perpendicular construída, em vez
+ * de saltar.
+ *
+ * MORA AQUI, e não num dos rigs, porque os DOIS a usam: a mira
+ * amortecida do filme (`cameraRig`) e a direção da rampa entre degraus
+ * do Atlas (`atlasRig`, nas duas contas espelhadas). Uma cópia só.
+ */
+export function slerpDir(
+  a: THREE.Vector3,
+  b: THREE.Vector3,
+  t: number,
+  out: THREE.Vector3
+): THREE.Vector3 {
+  const dot = THREE.MathUtils.clamp(a.dot(b), -1, 1);
+  if (dot > 0.9995) return out.copy(a).lerp(b, t).normalize();
+  if (dot < -0.9995) {
+    _eixoDoSlerp.set(Math.abs(a.x) < 0.9 ? 1 : 0, Math.abs(a.x) < 0.9 ? 0 : 1, 0);
+    _eixoDoSlerp.cross(a).normalize();
+    return out.copy(a).applyAxisAngle(_eixoDoSlerp, Math.PI * t);
+  }
+  const omega = Math.acos(dot);
+  const so = Math.sin(omega);
+  return out
+    .copy(a)
+    .multiplyScalar(Math.sin((1 - t) * omega) / so)
+    .addScaledVector(b, Math.sin(t * omega) / so);
+}
+
 /** Arco entre dois versores em torno de um centro e de um único eixo. */
 export function arcoAxial(
   centro: THREE.Vector3,

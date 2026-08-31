@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 import { ArrastoDePonteiro } from '../arrastoDePonteiro';
+import { slerpDir } from './movimentos';
 import { Journey } from './journey';
 
 // Manter o polo galáctico no alto faz o plano da Via Láctea ler como
@@ -28,32 +29,7 @@ const FRAME_B = new THREE.Vector3().crossVectors(GALACTIC_NORTH, FRAME_A).normal
 
 const _tmpV = new THREE.Vector3();
 const _tmpDir = new THREE.Vector3();
-const _tmpAxis = new THREE.Vector3();
 const _tmpQ = new THREE.Quaternion();
-
-/** slerp de versores. `lerp`+`normalize` atolha perto de 180° (o
- *  caminho passa pelo zero e o normalize devolve o lado errado) — é
- *  o chicote que no play contínuo faz a coda olhar para trás. */
-function slerpDir(
-  a: THREE.Vector3,
-  b: THREE.Vector3,
-  t: number,
-  out: THREE.Vector3
-): THREE.Vector3 {
-  const dot = THREE.MathUtils.clamp(a.dot(b), -1, 1);
-  if (dot > 0.9995) return out.copy(a).lerp(b, t).normalize();
-  if (dot < -0.9995) {
-    _tmpAxis.set(Math.abs(a.x) < 0.9 ? 1 : 0, Math.abs(a.x) < 0.9 ? 0 : 1, 0);
-    _tmpAxis.cross(a).normalize();
-    return out.copy(a).applyAxisAngle(_tmpAxis, Math.PI * t);
-  }
-  const omega = Math.acos(dot);
-  const so = Math.sin(omega);
-  return out
-    .copy(a)
-    .multiplyScalar(Math.sin((1 - t) * omega) / so)
-    .addScaledVector(b, Math.sin(t * omega) / so);
-}
 
 /** up compartilhado viagem/voo: polo galáctico, cedendo ao eixo
  *  centro→Sol em visadas quase face-on (evita o flip do lookAt).

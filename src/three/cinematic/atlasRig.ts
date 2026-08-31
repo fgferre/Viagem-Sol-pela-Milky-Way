@@ -30,6 +30,7 @@ import {
   poseDoVisitante,
   upDoAtlas,
 } from './enquadramento';
+import { slerpDir } from './movimentos';
 import { LARGURA_DE_MESA_PX, retanguloUtilDoAtlas } from './retanguloDoAtlas';
 import { ORIGEM } from './enquadramento';
 
@@ -771,9 +772,7 @@ export class AtlasRig {
     const dB = Math.max(_dirB.length(), 1e-30);
     _dirA.multiplyScalar(1 / dA);
     _dirB.multiplyScalar(1 / dB);
-    _dir.lerpVectors(_dirA, _dirB, k);
-    if (_dir.lengthSq() < 1e-12) _dir.copy(_dirB);
-    _dir.normalize();
+    slerpDir(_dirA, _dirB, k, _dir);
     const d = Math.exp((1 - k) * Math.log(dA) + k * Math.log(dB));
     outPos.copy(this.alvo).addScaledVector(_dir, d);
     _quatPartida.slerp(_quatDestino, k);
@@ -1350,16 +1349,20 @@ export class AtlasRig {
 
     // posição: direção em torno do ALVO NOVO interpolada e distância em
     // LOG — órbita→corpo atravessa 3+ ordens de grandeza, e a distância
-    // linear gastaria a rampa inteira parada e saltaria no fim
+    // linear gastaria a rampa inteira parada e saltaria no fim.
+    // A direção vai por SLERP, não por `lerp`+`normalize`: o lerp
+    // percorre o mesmo arco com velocidade angular que dispara no meio
+    // (7,70× a média a 170°), e é isso que tirava o alvo do centro no
+    // miolo da rampa enquanto a ORIENTAÇÃO, que sempre foi slerp,
+    // avançava uniforme. O gêmeo em `poseNaTela` muda junto por
+    // contrato — trocar só um reintroduz salto via `partirDaTela`.
     _dirA.copy(_posPartida).sub(this.alvo);
     _dirB.copy(_posDestino).sub(this.alvo);
     const dA = Math.max(_dirA.length(), 1e-30);
     const dB = Math.max(_dirB.length(), 1e-30);
     _dirA.multiplyScalar(1 / dA);
     _dirB.multiplyScalar(1 / dB);
-    _dir.lerpVectors(_dirA, _dirB, k);
-    if (_dir.lengthSq() < 1e-12) _dir.copy(_dirB);
-    _dir.normalize();
+    slerpDir(_dirA, _dirB, k, _dir);
     const d = Math.exp((1 - k) * Math.log(dA) + k * Math.log(dB));
     camera.position.copy(this.alvo).addScaledVector(_dir, d);
     camera.quaternion.slerpQuaternions(_quatPartida, _quatDestino, k);
