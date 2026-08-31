@@ -1531,10 +1531,20 @@ removidos após o spike, como manda o desenho.
 
 **A CONFERÊNCIA DELE em 31/08, testando a beta consertada — três
 vereditos, palavras dele:** (a) legibilidade OK ("o nome continua facil
-de ler"); (b) **REPROVAÇÃO — o engolimento VOLTOU ou nunca morreu**:
-*"nao, quando aproximo o corpo do objeto engole o texto"* — o conserto
-de 30/08 (depth+renderOrder) não segurou no teste dele; reabrir essa
-perna com reprodução no app vivo antes de qualquer outra obra da beta;
+de ler"); (b) **REPROVAÇÃO — e o conserto da causa POUSOU em 31/08, aprovado por
+ele nas fotos (commit b394141)**: *"nao, quando aproximo o corpo do
+objeto engole o texto"* — investigado: o "conserto" de 30/08 NUNCA
+existiu (o depthTest era escrito numa lista de materiais do troika e
+morria; commit 4f13f00 já tinha removido as linhas mortas). Causa
+verdadeira: o texto vivia no CENTRO do globo, atrás da casca que
+escreve profundidade. Conserto: o nome avança pela linha câmera→corpo
+(AVANCO_EM_RAIOS 1,05, rotulos3d.ts:89) — mesmo pixel e tamanho na
+tela, à frente da superfície, teto no near — preservando a oclusão
+pelos OUTROS corpos (o ganho real do 3D). Sabotagem avanco=0 reprova
+os 4 vereditos novos; fotos item109-engolimento-* em 3 corpos,
+conferidas pelo coordenador e por ele; 3 riscos de borda declarados no
+relato (lua raspada abaixo do piso da roda; nome do planeta pode furar
+lua a <1 raio à frente; cascas sem profundidade intocadas);
 (c) direção de produto: *"o texto parece mais definido no 3d, ficou
 visualmente atraente, mas ele parece sempre do mesmo tamanho, achei que
 teria algo mais dinamico regendo a posicao e tamanho das fontes e
