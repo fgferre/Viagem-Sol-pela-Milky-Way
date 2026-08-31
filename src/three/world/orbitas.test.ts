@@ -69,6 +69,8 @@ import {
   realceDoFoco,
   RAIO_DA_CESSAO_PX,
   BORDA_DA_CESSAO_PX,
+  gradienteDaFita,
+  PISO_DO_GRADIENTE,
   type QuadroEmPx,
 } from './orbitas';
 
@@ -1591,5 +1593,82 @@ describe('O FILME NÃO TEM LINHA (§7 — item 77 · decisão 3)', () => {
     orbitas.update(camera, quadroDe(1800), tan, 0, null, 'atlas');
     expect(orbitas.dbg()).not.toContain('o filme não tem linha');
     orbitas.dispose();
+  });
+});
+
+// ============================================================
+// O GRADIENTE DA FITA (item 115, bloco B, peça 3; R3 do mergulho 08).
+//
+// A fita era CHAPADA — um alfa para o laço inteiro (o `LineMaterial` só
+// tem alfa uniform, issue #23680). O gradiente entra pela porta que o
+// próprio material já abre, `instanceColorStart/End` com `vertexColors`,
+// e o `<color_fragment>` do three multiplica a cor da linha por ele. Em
+// blending aditivo multiplicar a cor é multiplicar a contribuição.
+//
+// A ÂNCORA É O ÍNDICE, e por isso o gradiente custa zero por quadro: o
+// vértice 0 do laço É a posição viva do corpo, por construção algébrica
+// (item 77). O que anda é o laço; o ponto claro anda com ele de graça.
+// ============================================================
+describe('o gradiente da fita (item 115)', () => {
+  it('é cheio NO CORPO, chega ao piso um quarto à frente e volta subindo', () => {
+    const n = PONTOS_POR_ORBITA;
+    expect(gradienteDaFita(0, n)).toBe(1);
+    expect(gradienteDaFita(n / 4, n)).toBeCloseTo(PISO_DO_GRADIENTE, 12);
+    // à FRENTE do corpo cai depressa: um quarto do laço gasta a queda
+    // inteira. Atrás dele sobe devagar pelos três quartos restantes —
+    // é essa assimetria que faz a fita ter DIREÇÃO.
+    for (let k = 1; k <= n / 4; k++) {
+      expect(gradienteDaFita(k, n), `à frente, k=${k}`)
+        .toBeLessThan(gradienteDaFita(k - 1, n));
+    }
+    for (let k = n / 4 + 1; k < n; k++) {
+      expect(gradienteDaFita(k, n), `atrás, k=${k}`)
+        .toBeGreaterThan(gradienteDaFita(k - 1, n));
+    }
+    // e é CONTÍNUO na volta: o vértice n−1 encosta no corpo sem degrau
+    expect(gradienteDaFita(n - 1, n)).toBeGreaterThan(0.99);
+    expect(gradienteDaFita(n, n)).toBe(gradienteDaFita(0, n));
+  });
+
+  it('o piso não apaga a fita — órbita é DADO, não enfeite', () => {
+    const n = PONTOS_POR_ORBITA;
+    let menor = 1;
+    for (let k = 0; k < n; k++) menor = Math.min(menor, gradienteDaFita(k, n));
+    expect(menor).toBe(PISO_DO_GRADIENTE);
+    expect(menor).toBeGreaterThan(0.2);
+  });
+
+  it('as TRINTA linhas carregam o gradiente, e num buffer só', () => {
+    // O DEFEITO QUE ISTO PEGA: escrever a curva e não pendurá-la em
+    // geometria nenhuma (ou pendurar sem acender `vertexColors`, que
+    // deixa o `USE_COLOR` apagado e a fita chapada do mesmo jeito).
+    const orbitas = new Orbitas();
+    const linhas = orbitas.group.children as unknown as {
+      geometry: { getAttribute(n: string): { data: { array: Float32Array } } | undefined };
+      material: { vertexColors: boolean };
+    }[];
+    expect(linhas.length).toBeGreaterThan(20);
+    const primeiro = linhas[0].geometry.getAttribute('instanceColorStart');
+    expect(primeiro).toBeTruthy();
+    for (const linha of linhas) {
+      expect(linha.material.vertexColors).toBe(true);
+      expect(linha.geometry.getAttribute('instanceColorEnd')).toBeTruthy();
+      // UM buffer para as trinta: o gradiente é função do índice, então
+      // trinta cópias seriam trinta subidas para a GPU do mesmo array
+      expect(linha.geometry.getAttribute('instanceColorStart')!.data)
+        .toBe(primeiro!.data);
+    }
+    // e o que viaja nele é a curva, no layout do LineMaterial (passo 6)
+    const cores = primeiro!.data.array;
+    const n = PONTOS_POR_ORBITA;
+    expect(cores.length).toBe(n * 6);
+    for (const k of [0, 1, n / 4, n / 2, n - 1]) {
+      // cinza: o matiz é o uniform `color`, e o vértice só traz o fator
+      expect(cores[k * 6], `k=${k}`).toBeCloseTo(gradienteDaFita(k, n), 6);
+      expect(cores[k * 6 + 1]).toBe(cores[k * 6]);
+      expect(cores[k * 6 + 2]).toBe(cores[k * 6]);
+      // o segmento k acaba no ponto k+1 (ver `espelharNaFita`)
+      expect(cores[k * 6 + 3], `fim de k=${k}`).toBeCloseTo(gradienteDaFita(k + 1, n), 6);
+    }
   });
 });

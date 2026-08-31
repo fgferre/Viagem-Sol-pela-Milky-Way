@@ -409,6 +409,95 @@ export function muDoPar(centro: string, corpo: string): number | null {
 export const PONTOS_POR_ORBITA = 256;
 
 /**
+ * O PISO DO GRADIENTE DA FITA (item 115, bloco B, peça 3) — quanto sobra
+ * do brilho no fim da cauda.
+ *
+ * 0,35 é o número do mergulho 08 (R3, `alfa = lerp(0,35 , 1,0 , …)`), e
+ * ele não é zero por uma razão de produto: a linha de órbita é DADO, não
+ * enfeite (§1). Apagá-la do outro lado do laço tiraria do visitante
+ * justamente o que ela existe para dizer — que Marte está entre a Terra
+ * e Júpiter. O gradiente é para LER a fita melhor, não para ter menos
+ * fita.
+ */
+export const PISO_DO_GRADIENTE = 0.35;
+
+/**
+ * QUANTO DO LAÇO, À FRENTE DO CORPO, CAI ATÉ O PISO (item 115, peça 3).
+ *
+ * Um quarto. É este número que faz a fita ter DIREÇÃO: à frente do corpo
+ * ela apaga depressa, atrás dela sobe devagar pelos três quartos
+ * restantes até reencontrar o corpo cheio. O olho lê uma cauda cuja
+ * cabeça é o planeta — que é o que o dono chamou de fita ("mais viva
+ * perto do corpo, esvaindo atrás").
+ *
+ * POR QUE NÃO O SIMÉTRICO DO MERGULHO (`m = ângulo/π`, mínimo no lado
+ * oposto): simétrico entrega o fade e o ponto claro que ANDA com o
+ * planeta, mas não entrega direção nenhuma — os dois lados da fita ficam
+ * iguais. E por que não o degrau seco do `TrailComponent` deles (cauda
+ * que nasce no corpo e some, sem nada à frente): num laço FECHADO isso é
+ * uma emenda visível de piso para cheio entre dois vértices vizinhos, a
+ * 1,4° um do outro. Este número é o meio-termo que mantém a curva
+ * CONTÍNUA em toda a volta — o mínimo fica a um quarto à frente em vez
+ * de ficar colado no corpo.
+ */
+export const FRACAO_A_FRENTE_DO_GRADIENTE = 0.25;
+
+/**
+ * O GRADIENTE NO VÉRTICE `k` de um laço de `n` (item 115, bloco B, R3 do
+ * mergulho 08).
+ *
+ * ELE É FUNÇÃO DO ÍNDICE, E SÓ, e é isso que o faz custar zero por
+ * quadro: o vértice 0 do laço É a posição VIVA do corpo, por construção
+ * algébrica (§1 e `escreverLaco`: `anomalia = anomalia0 + k·2π/n`, com
+ * `anomalia0` lida do estado do corpo). Então "a que distância do corpo
+ * está este vértice" não muda nunca — quem anda é o LAÇO, reescrito a
+ * cada salto de data, e o ponto claro anda junto de graça. Um gradiente
+ * ancorado em posição de mundo pediria um buffer de cor reescrito por
+ * quadro; este é escrito UMA vez, na construção, e é o MESMO para as
+ * trinta linhas.
+ *
+ * `k` cresce na DIREÇÃO DO MOVIMENTO — a anomalia excêntrica cresce com
+ * o tempo, e o par `P̂`/`Q̂` sai de `h⃗ = r⃗ × v⃗`, que é o sentido real do
+ * corpo (as retrógradas como Tritão saem certas sozinhas).
+ */
+export function gradienteDaFita(k: number, n: number): number {
+  const u = (((k % n) + n) % n) / n;
+  const f =
+    u <= FRACAO_A_FRENTE_DO_GRADIENTE
+      ? 1 - u / FRACAO_A_FRENTE_DO_GRADIENTE
+      : (u - FRACAO_A_FRENTE_DO_GRADIENTE) / (1 - FRACAO_A_FRENTE_DO_GRADIENTE);
+  return PISO_DO_GRADIENTE + (1 - PISO_DO_GRADIENTE) * f;
+}
+
+/**
+ * O BUFFER DE COR DA FITA — `instanceColorStart`/`instanceColorEnd` do
+ * `LineMaterial`, no layout dele (passo 6: rgb do início, rgb do fim).
+ *
+ * CINZA, NUNCA MATIZ: a cor da órbita continua sendo o uniform `color`
+ * do material (a fotometria da casa, §5), e o `<color_fragment>` do three
+ * MULTIPLICA — então o que viaja aqui é só o fator do gradiente,
+ * escrito nos três canais. Matiz por vértice seria uma segunda fonte
+ * para a cor da linha.
+ *
+ * O segmento `k` liga o ponto `k` ao ponto `k+1` (ver `espelharNaFita`),
+ * e por isso o fim do segmento é o gradiente do ponto seguinte.
+ */
+export function corDoGradienteDaFita(n: number): Float32Array {
+  const cores = new Float32Array(n * 6);
+  for (let k = 0; k < n; k++) {
+    const inicio = gradienteDaFita(k, n);
+    const fim = gradienteDaFita(k + 1, n);
+    cores[k * 6] = inicio;
+    cores[k * 6 + 1] = inicio;
+    cores[k * 6 + 2] = inicio;
+    cores[k * 6 + 3] = fim;
+    cores[k * 6 + 4] = fim;
+    cores[k * 6 + 5] = fim;
+  }
+  return cores;
+}
+
+/**
  * A LARGURA DA FITA, em PIXELS CSS (§5, item 83 · L2).
  *
  * 1,25 é o número do NASA Eyes, e ele foi medido por DOIS métodos
@@ -1171,6 +1260,16 @@ export class Orbitas {
 
   constructor(corpos: readonly CorpoComOrbita[] = CORPOS_COM_ORBITA) {
     this.group.name = 'orbitas';
+    // O GRADIENTE É UM BUFFER SÓ PARA AS TRINTA LINHAS (item 115, bloco
+    // B, peça 3). Ele é função do ÍNDICE do vértice, e o índice 0 é
+    // sempre o corpo — logo o mesmo array serve todos os laços e sobe
+    // para a GPU uma vez. Nada aqui é reescrito por quadro: o que anda é
+    // o laço, e o ponto claro anda com ele de graça.
+    const gradiente = new THREE.InstancedInterleavedBuffer(
+      corDoGradienteDaFita(PONTOS_POR_ORBITA),
+      6,
+      1
+    );
     for (const corpo of corpos) {
       const geo = new LineSegmentsGeometry();
       // O BUFFER NASCE AQUI E NÃO MORRE MAIS (§5): `setPositions()` aloca
@@ -1199,6 +1298,19 @@ export class Orbitas {
         'instanceSeguinte',
         new THREE.InterleavedBufferAttribute(segmentos, 3, DESLOCAMENTO_DO_SEGUINTE)
       );
+      // O GRADIENTE (peça 3), nos nomes que o `LineMaterial` já conhece —
+      // `vertexColors` acende o `USE_COLOR` dele e o `<color_fragment>`
+      // multiplica a cor da linha por este fator. Não é `setColors()`
+      // porque ela ALOCA um buffer novo por chamada, e aqui as trinta
+      // linhas compartilham o mesmo.
+      geo.setAttribute(
+        'instanceColorStart',
+        new THREE.InterleavedBufferAttribute(gradiente, 3, 0)
+      );
+      geo.setAttribute(
+        'instanceColorEnd',
+        new THREE.InterleavedBufferAttribute(gradiente, 3, 3)
+      );
       geo.instanceCount = PONTOS_POR_ORBITA;
       // nasce com raio zero: sem cônica escrita não há nada para cortar
       geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 0);
@@ -1210,6 +1322,13 @@ export class Orbitas {
         linewidth: LARGURA_DA_FITA_PX + SAIA_DO_AA_PX,
         transparent: true,
         opacity: 0,
+        // O GRADIENTE DA FITA (peça 3): acende o `USE_COLOR`, e com ele
+        // o `<color_fragment>` do three multiplica `diffuseColor.rgb`
+        // pelo fator por vértice. Em blending ADITIVO multiplicar a cor
+        // é multiplicar a contribuição — o mesmo produto que um alfa por
+        // vértice daria, e o `LineMaterial` não tem alfa por vértice
+        // (o alfa dele é uniform, issue #23680).
+        vertexColors: true,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         // linha atrás de globo resolvido SOME — é o palco quem escreve
