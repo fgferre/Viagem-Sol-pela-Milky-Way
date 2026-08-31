@@ -411,6 +411,12 @@ registradas em `docs/NORTE.md` e `docs/PENDENCIAS.md`.
 
 - [Algoritmos de labels e trajetórias](nasa-eyes-algoritmos.md)
 - [Iluminação observada no NASA Eyes](nasa-eyes-iluminacao-planetas.md)
+- [Mineração de mecanismos 30-31/08 — 9 mergulhos comparados](nasa-eyes-mineracao-mecanismos.md)
+  — a fronteira que este relatório não cobriu (transição multi-escala,
+  profundidade, navegação, enquadramento, catálogo de muitos corpos, UX,
+  shaders 38/38, fita/rótulos, assets/memória), confrontada com o nosso
+  código e com medidas; ganhos ranqueados e lista consolidada do que não
+  trazer.
 
 A pasta de estudo é deliberadamente ignorada pelo git. No clone que contém os
 assets, ela está em `scratchpad/estudos/nasa-eyes-solar-system/`; não há link
