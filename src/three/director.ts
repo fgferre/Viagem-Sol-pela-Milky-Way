@@ -749,13 +749,22 @@ export class Director {
       // objeto escolhido nunca troca sozinho — a queixa "nem conseguimos
       // mais selecionar para onde vamos" morre aqui, não num remendo.
       zoom: (estalos) => {
-        const d = distanciaAposEstalos(
-          this.atlas.distancia,
-          this.atlas.pisoDeZoom,
-          this.atlas.tetoDeZoom,
-          estalos
-        );
+        const antes = this.atlas.distancia;
+        const piso = this.atlas.pisoDeZoom;
+        const teto = this.atlas.tetoDeZoom;
+        const d = distanciaAposEstalos(antes, piso, teto, estalos);
         this.atlas.pinarDistancia(d);
+        // NA PAREDE O EMBALO MORRE (item 115). Sem isto a inércia
+        // continua queimando contra o grampo: um detente deixa 8
+        // estalos/s, que só caem na zona morta 0,55 s depois; uma rajada
+        // de dez deixa 80 estalos/s e 0,84 s. Como o impulso do gesto
+        // SOMA na mesma velocidade, a primeira inversão do visitante era
+        // gasta só em cancelar embalo morto — ele descia até o piso,
+        // queria voltar, e a roda não fazia nada. A condição é o grampo
+        // MEDIDO, não a intenção do gesto: a distância não andou E o
+        // valor é a parede. Quem só CHEGA na parede neste quadro ainda
+        // entrega o movimento; morre no seguinte.
+        if (d === antes && (d === piso || d === teto)) this.gestos?.esquecerRoda();
         // o `?d=` que veio no link deixa de mandar no primeiro gesto
         this.escada.esquecerPinoDoLink();
         this.perturbar();

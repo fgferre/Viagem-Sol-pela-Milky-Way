@@ -336,6 +336,89 @@ describe('Director — a roda está ligada, e ligada do jeito que funciona', () 
     expect(GESTOS).not.toContain('Degrau');
   });
 
+  // ============================================================
+  // O EMBALO NÃO QUEIMA CONTRA A PAREDE (item 115).
+  //
+  // A bancada roda o CORPO REAL do fio `zoom` do Director — o texto é
+  // extraído e executado, com um rig de mentira do outro lado —, ligado
+  // à `ZoomDaRoda` de verdade e ao `distanciaAposEstalos` de verdade. É
+  // a máquina inteira do gesto, sem navegador: o que se mede é o TEMPO
+  // até a roda responder a uma inversão, que é a queixa.
+  // ============================================================
+  /** o corpo do fio `zoom` do Director, executável com um `this` de mentira */
+  const fioDeZoom = (alvo: object) => {
+    const m = DIRECTOR.match(/\n      zoom: \(estalos\) => \{\n([\s\S]*?)\n      \},\n/);
+    expect(m, 'o fio `zoom` sumiu do director.ts').not.toBeNull();
+    const corpo = new Function(
+      'distanciaAposEstalos',
+      `return function (estalos) {${m![1]}};`
+    )(distanciaAposEstalos);
+    return (estalos: number) => corpo.call(alvo, estalos);
+  };
+
+  /**
+   * Gasta o embalo como o tick gasta (`avancarZoom`) e devolve os
+   * SEGUNDOS até a roda parar, mais a distância final. `parede: true`
+   * começa o gesto já encostado no piso.
+   */
+  const queimar = (detentes: number, parede: boolean) => {
+    const roda = new ZoomDaRoda();
+    const rig = {
+      piso: 1,
+      teto: 100,
+      distancia: parede ? 1 : 10,
+      pisoDeZoom: 1,
+      tetoDeZoom: 100,
+      pinarDistancia(pc: number) {
+        this.distancia = Math.min(Math.max(pc, this.piso), this.teto);
+      },
+    };
+    const alvo = {
+      atlas: rig,
+      gestos: { esquecerRoda: () => roda.esquecer() },
+      escada: { esquecerPinoDoLink: () => {} },
+      perturbar: () => {},
+    };
+    const zoom = fioDeZoom(alvo);
+    roda.empurrar(-ESTALO_EM_PX * detentes); // negativo APROXIMA
+    const QUADRO = 1 / 60;
+    let t = 0;
+    while (roda.embalando && t < 5) {
+      const estalos = roda.avancar(QUADRO);
+      t += QUADRO;
+      if (estalos !== 0) zoom(estalos);
+    }
+    return { segundos: t, distancia: rig.distancia };
+  };
+
+  it('na parede o embalo MORRE — a roda responde à inversão em um quadro', () => {
+    // sem o conserto a inércia queimava contra o grampo: um detente
+    // deixa 8 estalos/s e só cai na zona morta em ln(80)/8 = 0,548 s;
+    // dez detentes deixam 80 estalos/s e 0,835 s. Nesse intervalo o
+    // impulso contrário do visitante SOMA na mesma velocidade, então o
+    // primeiro gesto de volta era gasto só em cancelar embalo morto.
+    const leve = queimar(1, true);
+    const rajada = queimar(10, true);
+    expect(leve.segundos).toBeLessThanOrEqual(2 / 60);
+    expect(rajada.segundos).toBeLessThanOrEqual(2 / 60);
+    // e o grampo continua sendo o grampo: a parede não foi atravessada
+    expect(leve.distancia).toBe(1);
+    expect(rajada.distancia).toBe(1);
+  });
+
+  it('LONGE da parede o embalo é o de sempre — o conserto não matou a inércia', () => {
+    // o controle que impede o conserto de virar "esquecer sempre": em
+    // campo aberto o gesto tem de gastar os mesmos ~0,55 s / ~0,84 s
+    const leve = queimar(1, false);
+    const rajada = queimar(10, false);
+    expect(leve.segundos).toBeGreaterThan(0.5);
+    expect(leve.segundos).toBeLessThan(0.6);
+    expect(rajada.segundos).toBeGreaterThan(0.8);
+    expect(rajada.segundos).toBeLessThan(0.9);
+    // ...e o gesto ANDOU: aproximou de 10 rumo ao piso
+    expect(leve.distancia).toBeLessThan(10);
+  });
+
   it('o embalo é gasto DENTRO do tick, antes de a câmera ser escrita', () => {
     const bloco = DIRECTOR.slice(
       DIRECTOR.indexOf("} else if (this.escritorDeCamera === 'atlas') {"),
