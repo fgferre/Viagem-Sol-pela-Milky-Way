@@ -579,8 +579,14 @@ registrados SEM obra, para a colheita: a busca não tem palavras-chave
 em `CorpoBuscavel` e todos os produtores) e o desempate por importância
 física pede o raio do corpo, que o contrato não carrega; herdado e
 registrado como fronteira em `maquinaDoTempo.test.ts`: o ⏸ contra a
-parede ainda apaga o aviso uma vez (não pisca). Da estação sobra só
-medir 37/46 — o 117 já foi medido em 31/08, veredito no próprio item.
+parede ainda apaga o aviso uma vez (não pisca). **As três medições da
+estação estão FEITAS**, veredito escrito no próprio item: 117 (aberração
+cromática do passe de gradação, CULPADA), 37 (a camada multiplicativa das
+nuvens apaga o que está na frente — CULPADA, meia luz de uma estrela a
+56,5 pc comida por nuvens a 121 pc) e 46 (a galáxia profunda não é
+invariante à resolução — CULPADA, 23–29% a menos em retina; mas o "céu
+vazio" temido é INOCENTE). Os três seguem ABERTOS: medição não é
+conserto, e cada um traz o conserto proposto por escrito.
 
 **114. O censo do sistema solar: todas as luas e os objetos interessantes.**
 Pedido do dono em 30/08, palavras dele: *"quero expandir nosso projeto
@@ -844,11 +850,88 @@ muda pixel e volta com foto para o dono a cada mudança.
 **37.** (Suspeita a medir.) As nuvens escuras podem estar apagando o que
 está na frente delas. Par de capturas antes de tocar em qualquer linha.
 
+**VEREDITO (medido em 31/08 — CULPADA: a camada multiplicativa cai sobre
+tudo o que já está no quadro, inclusive o que está NA FRENTE).** A peça é
+`ObservedClouds` (`src/three/world/observedClouds.ts`): o material nasce
+com `MultiplyBlending`, `depthWrite: false` e `mesh.renderOrder = 5` —
+DEPOIS de todas as camadas de estrela, que também não escrevem
+profundidade (`stars.ts` e `wrappedStars.ts` em 2, `heroStars.ts` e
+`starForges.ts` em 3, as partículas de `galaxy.ts` em 1–3, `dust.ts` em
+4; todas `AdditiveBlending` + `depthWrite: false`). Sem ninguém escrever
+o buffer de profundidade, o `depthTest` do quad não tem contra o que
+rejeitar: o multiply pega o framebuffer inteiro e apaga junto quem está
+na frente. **O tiro único:** uma estrela do catálogo a 56,5 pc do Sol,
+magnitude 3,85, coberta por 74 nuvens VIVAS — a mais próxima delas a 121
+pc, 2,1× mais longe que a própria estrela, ou seja NENHUMA entre ela e a
+câmera. Ligando e desligando só a camada (`?noco=1`), o pico dela cai de
+(163,141,125) para (120,89,65) e, em espaço linear, o excesso sobre o
+fundo cai para **0,503 — metade da luz comida por nuvens que estão
+atrás**. A cor sai errada junto (R 0,579 · G 0,473 · B 0,438): a poeira
+de trás avermelha a estrela da frente. **O controle fecha.** Numa segunda
+vista, um complexo APOGEE isolado a 2.138 pc (raio angular 9,1°), com 60
+estrelas do catálogo entre 70 e 277 pc dentro do disco e a nuvem mais
+próxima que as cobre a 1.210 pc: as 34 brilhantes (m < 7) perdem em
+mediana **15%**, no pior caso **37%**; as 13 estrelas de CONTROLE — mesmo
+quadro, sem nuvem viva na linha de visada — dão razão **1,000 exata**,
+todas. E a perda de cada estrela ACOMPANHA a transmissão local da nuvem
+medida no fundo ao redor dela: reta ancorada em (1,1) com inclinação
+**1,14** e r = **0,78** sobre 32 estrelas — a estrela perde tanto quanto o
+fundo, que é a assinatura de estar sendo multiplicada junto com ele. Na
+vista do centro galáctico as nuvens chegam a empilhar τ 9,8 sobre
+estrelas a menos de 300 pc, com toda a pilha atrás delas. **Conserto
+proposto (não implementado):** a extinção das nuvens CO tem de entrar na
+PRÓPRIA estrela — o shader de `stars.ts` já tem o canal `uTau` e a coluna
+fica ordenada por construção —, deixando o billboard multiplicativo
+pintar só o fundo. Baixar o `renderOrder` das nuvens para antes das
+estrelas é o remendo barato, mas torna toda estrela imune, inclusive as
+que estão de fato atrás. Fotos `capturas/item37-*.png` (o par do alvo em
+`-alvo-aces-zoom-com/sem`), rastro com URLs, portas e todos os números em
+`capturas/item37-nuvens.json`. **O item continua ABERTO** — a suspeita
+virou defeito com causa e número, e o conserto é obra própria.
+
 **46.** (Suspeita a medir, herdada do item 44.) A galáxia profunda
 (`galaxy.ts`, 4M pontos, `shrink` 1/px² próprio) não passou pela
 invariância de resolução — se o "céu vazio" voltar na vista de LONGE em
 tela retina, é a primeira suspeita. Conferir com o dono na vista
 galáctica antes de mexer.
+
+**VEREDITO (medido em 31/08 — CULPADA quanto à invariância; INOCENTE
+quanto ao "céu vazio").** A vista de longe NÃO esvazia em retina: face-on
+e edge-on, dpr 1 e dpr 2 lado a lado, mostram a mesma galáxia, mais
+nítida, e o QUADRO CHEIO perde só **2,5%** (face-on) e **15%** (edge-on)
+do brilho integrado. Mas a camada profunda SOZINHA (as 4 M partículas,
+isoladas com `?nodisc=1&noglow=1`) perde **23%** face-on e **29%**
+edge-on quando a altura do buffer vai de 900 para 1800 px — que é
+exatamente o que a tela do Mac faz na mesma janela. Medido em espaço
+linear (`?tone=linear` mais o sRGB desfeito), média por ÁREA com o chão
+do quadro subtraído, zero pixel saturado nas dez capturas. A escada 450 →
+900 → 1800 px de altura dá 1,000 → 0,994 → 0,765 (face-on) e 1,000 →
+0,911 → 0,650 (edge-on), e a queda é da RESOLUÇÃO DO BUFFER, não do dpr:
+1200×900 em dpr 2 e 2400×1800 em dpr 1 produzem a mesma imagem (PNG de
+6.536.513 e 6.536.468 B). **A causa são os dois joelhos da lei de tela**
+(`leiDeTela`/`GLSL_LEI_DE_TELA` em `src/three/estrela.ts`, consumida por
+`GALAXY_VERT`). (1) O PISO: `subPix = px²/0,49` compensa supondo um
+rastro de 0,49 px², e o rasterizador desta GPU deposita 1 px² SEMPRE —
+medido em canvas WebGL próprio, `gl_PointSize` de 0,3 a 0,99 dá energia
+1,000 por ponto, 1,4 dá 1,89, 2 dá 4, 3 dá 9, e o
+`ALIASED_POINT_SIZE_RANGE` é [1, 511]. Dobrar a resolução atravessa o
+piso, a compensação desliga e o depósito por área cai até 2× nas
+partículas de disco de 14 a 20 pc. (2) O PLATÔ: `shrink = 9/px²` conserva
+o depósito em PIXEL, não em ÂNGULO — acima de 3 px o total fica preso em
+9 px² físicos, então dobrar a resolução divide a contribuição em área por
+4. Quem atravessa esse platô entre 900 e 1800 px são justamente os nós
+HII/jovens de 30 a 140 pc (`geradorDaGalaxia.ts`), com razão prevista
+0,59 (30 pc) a 0,25 (140 pc) — são eles que dão cor aos braços. **Conserto
+proposto (não implementado):** a galáxia é a única camada de ponto da
+casa sem o `×pr²` que `starShaders.ts` já aplica (`uPr2`), e é ele que
+devolve o depósito por ângulo; junto, o piso de 0,7 px precisa casar com
+o piso real do rasterizador, senão a compensação sub-pixel erra por
+1/0,49 = 2,04× de um jeito que depende da resolução. Fotos
+`capturas/item46-*.png`, rastro com URLs, janelas, campos medidos e a
+sonda do rasterizador em `capturas/item46-resolucao.json`. **O item
+continua ABERTO, redimensionado:** não é "céu vazio", é perda de 23 a 29%
+da camada profunda em retina — e não precisa da conferência com o dono
+que a linha antiga pedia, porque o número já existe.
 
 **59.** Trocar de qualidade não trocava a textura dos corpos já
 carregados — **FECHADO em 31/08**: a troca de tier virou double-buffer no

@@ -1,0 +1,385 @@
+{
+ "item": 46,
+ "pergunta": "a galáxia profunda (galaxy.ts, 4 M pontos) é invariante à resolução? o céu esvazia em retina?",
+ "veredito": "CULPADA quanto à invariância; INOCENTE quanto ao \"céu vazio\"",
+ "medidoEm": "2026-08-31",
+ "arvore": {
+  "HEAD": "49f9c1e7dc1ee44710ded098a86dea053184922b",
+  "suja": []
+ },
+ "servidor": "vite próprio em http://127.0.0.1:5199",
+ "metodo": "mesma vista, mesma lente, mesmo aspecto 4:3; o pixel é lido em espaço LINEAR (?tone=linear + sRGB desfeito) e a média é por ÁREA, com o chão do quadro (percentil 20) subtraído. Zero pixel saturado nas dez capturas.",
+ "escada": [
+  {
+   "vista": "faceon",
+   "janela": [
+    600,
+    450
+   ],
+   "url": "http://127.0.0.1:5199/?t=167&shot=2&q=cinema&tone=linear&nodisc=1&noglow=1",
+   "arquivo": "item46-escada-faceon-h450.png",
+   "bytes": 370979,
+   "assentou": {
+    "via": "sinal",
+    "ms": 4098,
+    "quadros": 10,
+    "fase": "journey"
+   },
+   "estado": {
+    "dpr": 1,
+    "pr": 1,
+    "tela": [
+     600,
+     450
+    ],
+    "fov": 57,
+    "aspect": 1.3333333333333333,
+    "cam": [
+     -25573,
+     -13060,
+     15832
+    ]
+   }
+  },
+  {
+   "vista": "edgeon",
+   "janela": [
+    600,
+    450
+   ],
+   "url": "http://127.0.0.1:5199/?t=153&shot=2&q=cinema&tone=linear&nodisc=1&noglow=1",
+   "arquivo": "item46-escada-edgeon-h450.png",
+   "bytes": 255573,
+   "assentou": {
+    "via": "sinal",
+    "ms": 3725,
+    "quadros": 10,
+    "fase": "journey"
+   },
+   "estado": {
+    "dpr": 1,
+    "pr": 1,
+    "tela": [
+     600,
+     450
+    ],
+    "fov": 58,
+    "aspect": 1.3333333333333333,
+    "cam": [
+     -597,
+     14597,
+     6287
+    ]
+   }
+  },
+  {
+   "vista": "faceon",
+   "janela": [
+    1200,
+    900
+   ],
+   "url": "http://127.0.0.1:5199/?t=167&shot=2&q=cinema&tone=linear&nodisc=1&noglow=1",
+   "arquivo": "item46-escada-faceon-h900.png",
+   "bytes": 1604314,
+   "assentou": {
+    "via": "sinal",
+    "ms": 4187,
+    "quadros": 10,
+    "fase": "journey"
+   },
+   "estado": {
+    "dpr": 1,
+    "pr": 1,
+    "tela": [
+     1200,
+     900
+    ],
+    "fov": 57,
+    "aspect": 1.3333333333333333,
+    "cam": [
+     -25573,
+     -13060,
+     15832
+    ]
+   }
+  },
+  {
+   "vista": "edgeon",
+   "janela": [
+    1200,
+    900
+   ],
+   "url": "http://127.0.0.1:5199/?t=153&shot=2&q=cinema&tone=linear&nodisc=1&noglow=1",
+   "arquivo": "item46-escada-edgeon-h900.png",
+   "bytes": 1004401,
+   "assentou": {
+    "via": "sinal",
+    "ms": 4024,
+    "quadros": 10,
+    "fase": "journey"
+   },
+   "estado": {
+    "dpr": 1,
+    "pr": 1,
+    "tela": [
+     1200,
+     900
+    ],
+    "fov": 58,
+    "aspect": 1.3333333333333333,
+    "cam": [
+     -597,
+     14597,
+     6287
+    ]
+   }
+  },
+  {
+   "vista": "faceon",
+   "janela": [
+    2400,
+    1800
+   ],
+   "url": "http://127.0.0.1:5199/?t=167&shot=2&q=cinema&tone=linear&nodisc=1&noglow=1",
+   "arquivo": "item46-escada-faceon-h1800.png",
+   "bytes": 6536468,
+   "assentou": {
+    "via": "sinal",
+    "ms": 4548,
+    "quadros": 10,
+    "fase": "journey"
+   },
+   "estado": {
+    "dpr": 1,
+    "pr": 1,
+    "tela": [
+     2400,
+     1800
+    ],
+    "fov": 57,
+    "aspect": 1.3333333333333333,
+    "cam": [
+     -25573,
+     -13060,
+     15832
+    ]
+   }
+  },
+  {
+   "vista": "edgeon",
+   "janela": [
+    2400,
+    1800
+   ],
+   "url": "http://127.0.0.1:5199/?t=153&shot=2&q=cinema&tone=linear&nodisc=1&noglow=1",
+   "arquivo": "item46-escada-edgeon-h1800.png",
+   "bytes": 3956098,
+   "assentou": {
+    "via": "sinal",
+    "ms": 4222,
+    "quadros": 10,
+    "fase": "journey"
+   },
+   "estado": {
+    "dpr": 1,
+    "pr": 1,
+    "tela": [
+     2400,
+     1800
+    ],
+    "fov": 58,
+    "aspect": 1.3333333333333333,
+    "cam": [
+     -597,
+     14597,
+     6287
+    ]
+   }
+  }
+ ],
+ "camposMedidos": {
+  "item46-escada-faceon-h450.png": {
+   "arquivo": "item46-escada-faceon-h450.png",
+   "tamanho": [
+    600,
+    450
+   ],
+   "media": 0.0052263738549463284,
+   "piso": 0.0010420688399198688,
+   "excessoMedio": 0.00421537875719477,
+   "max": 0.39873038917144676
+  },
+  "item46-escada-faceon-h900.png": {
+   "arquivo": "item46-escada-faceon-h900.png",
+   "tamanho": [
+    1200,
+    900
+   ],
+   "media": 0.005198366855065161,
+   "piso": 0.0010420688399198688,
+   "excessoMedio": 0.004189417564981063,
+   "max": 0.5531777976367334
+  },
+  "item46-escada-faceon-h1800.png": {
+   "arquivo": "item46-escada-faceon-h1800.png",
+   "tamanho": [
+    2400,
+    1800
+   ],
+   "media": 0.0042135862184597955,
+   "piso": 0.0010201541917076427,
+   "excessoMedio": 0.0032262575256356003,
+   "max": 0.6366208364587467
+  },
+  "item46-escada-edgeon-h450.png": {
+   "arquivo": "item46-escada-edgeon-h450.png",
+   "tamanho": [
+    600,
+    450
+   ],
+   "media": 0.00272822786271649,
+   "piso": 0.000977539003217386,
+   "excessoMedio": 0.0017855126730240613,
+   "max": 0.6563207119391096
+  },
+  "item46-escada-edgeon-h900.png": {
+   "arquivo": "item46-escada-edgeon-h900.png",
+   "tamanho": [
+    1200,
+    900
+   ],
+   "media": 0.002568347886309508,
+   "piso": 0.000977539003217386,
+   "excessoMedio": 0.0016258687593829107,
+   "max": 0.614516576868167
+  },
+  "item46-escada-edgeon-h1800.png": {
+   "arquivo": "item46-escada-edgeon-h1800.png",
+   "tamanho": [
+    2400,
+    1800
+   ],
+   "media": 0.0021027058012229056,
+   "piso": 0.000977539003217386,
+   "excessoMedio": 0.0011604146669505554,
+   "max": 0.6976991503878126
+  },
+  "item46-faceon-lin-dpr1.png": {
+   "arquivo": "item46-faceon-lin-dpr1.png",
+   "tamanho": [
+    1200,
+    900
+   ],
+   "media": 0.03268509581265655,
+   "piso": 0.0010420688399198688,
+   "excessoMedio": 0.03167279242440198,
+   "max": 0.9837561706671972
+  },
+  "item46-faceon-lin-dpr2.png": {
+   "arquivo": "item46-faceon-lin-dpr2.png",
+   "tamanho": [
+    2400,
+    1800
+   ],
+   "media": 0.03190255086689788,
+   "piso": 0.0010420688399198688,
+   "excessoMedio": 0.03089050006651235,
+   "max": 0.9849449569111125
+  },
+  "item46-edgeon-lin-dpr1.png": {
+   "arquivo": "item46-edgeon-lin-dpr1.png",
+   "tamanho": [
+    1200,
+    900
+   ],
+   "media": 0.003894892244711713,
+   "piso": 0.000977539003217386,
+   "excessoMedio": 0.0029495528127160948,
+   "max": 0.6305824243591766
+  },
+  "item46-edgeon-lin-dpr2.png": {
+   "arquivo": "item46-edgeon-lin-dpr2.png",
+   "tamanho": [
+    2400,
+    1800
+   ],
+   "media": 0.003438153658450431,
+   "piso": 0.000977539003217386,
+   "excessoMedio": 0.002492964496926895,
+   "max": 0.7138585327166933
+  }
+ },
+ "razoes": {
+  "faceon so-pontos h450→h900": 0.9938413144561691,
+  "faceon so-pontos h900→h1800": 0.7700969109891493,
+  "faceon so-pontos h450→h1800": 0.7653541262760917,
+  "edgeon so-pontos h450→h900": 0.9105893136167064,
+  "edgeon so-pontos h900→h1800": 0.7137197638209029,
+  "edgeon so-pontos h450→h1800": 0.6499055898523537,
+  "faceon quadro cheio dpr1→dpr2": 0.9753008087380727,
+  "edgeon quadro cheio dpr1→dpr2": 0.8452008338956472
+ },
+ "equivalencia": "a janela 1200×900 em dpr 2 e a janela 2400×1800 em dpr 1 produzem o MESMO buffer e a mesma imagem (PNG de 6.536.513 e 6.536.468 B na vista faceon só-pontos) — a dependência é do BUFFER, não do dpr",
+ "pisoDoRasterizador": {
+  "descricao": "quanto o rasterizador desta GPU realmente deposita por gl_PointSize, medido em canvas WebGL próprio (antialias off, 256 pontos com fase sub-pixel variada)",
+  "medida": {
+   "faixaDoDriver": [
+    1,
+    511
+   ],
+   "amostras": 0,
+   "pontos": 256,
+   "medidas": {
+    "1": {
+     "areaPorPonto": 1,
+     "energiaPorPonto": 1
+    },
+    "2": {
+     "areaPorPonto": 4,
+     "energiaPorPonto": 4
+    },
+    "3": {
+     "areaPorPonto": 9,
+     "energiaPorPonto": 9
+    },
+    "4": {
+     "areaPorPonto": 16,
+     "energiaPorPonto": 16
+    },
+    "0.3": {
+     "areaPorPonto": 1,
+     "energiaPorPonto": 1
+    },
+    "0.5": {
+     "areaPorPonto": 1,
+     "energiaPorPonto": 1
+    },
+    "0.69": {
+     "areaPorPonto": 1,
+     "energiaPorPonto": 1
+    },
+    "0.7": {
+     "areaPorPonto": 1,
+     "energiaPorPonto": 1
+    },
+    "0.99": {
+     "areaPorPonto": 1,
+     "energiaPorPonto": 1
+    },
+    "1.4": {
+     "areaPorPonto": 1.890625,
+     "energiaPorPonto": 1.890625
+    }
+   },
+   "renderer": "WebKit WebGL"
+  },
+  "conclusao": "área = max(1, tamanho²): de 0,3 a 0,99 o depósito é EXATAMENTE 1 px cheio (energia 1,000/ponto); 1,4 → 1,89; 2 → 4; 3 → 9; 4 → 16. ALIASED_POINT_SIZE_RANGE = [1, 511]."
+ },
+ "causa": {
+  "peca": "a lei de tela (leiDeTela / GLSL_LEI_DE_TELA em src/three/estrela.ts), consumida por GALAXY_VERT (src/three/shaders/galaxyShaders.ts) — piso 0,7 px, platô 3 px, teto 20 px",
+  "ramo1": "PISO. subPix = px²/0,49 compensa a pegada supondo 0,49 px² de rastro; o rasterizador deposita 1 px² sempre (medido acima). Enquanto px fica abaixo de 0,7 nos dois lados o erro cancela; quando dobrar a resolução empurra px através de 0,7, a compensação desliga e o depósito por ÁREA cai até 2×. Faixa atingida na vista faceon: partículas de disco de 14 a 20 pc (razão prevista 0,96 a 0,49).",
+  "ramo2": "PLATÔ. shrink = 9/px² conserva o depósito em PIXEL, não em ÂNGULO: acima de 3 px o total fica preso em 9 px² físicos, então dobrar a resolução divide a contribuição em ÁREA por 4. Os nós HII/jovens (aSize 30 a 140 pc em geradorDaGalaxia.ts) atravessam o platô exatamente entre h=900 e h=1800: razão prevista 0,59 (30 pc), 0,71 (70 pc), 0,35 (100 pc), 0,25 (140 pc)."
+ },
+ "ceuVazio": "NÃO. Nada desaparece: o quadro cheio perde 2,5% face-on e 15% edge-on, e as duas fotos lado a lado mostram a mesma galáxia, mais nítida e um pouco mais fraca no borrifo de estrelas do disco.",
+ "consertoProposto": "NÃO IMPLEMENTADO. A lei precisa conservar o depósito por ÂNGULO, não por pixel: o alvo natural é o mesmo ×pr² que starShaders.ts já aplica (uPr2) — a galáxia é a única camada de ponto da casa que não o tem. E o piso de 0,7 px tem de casar com o piso REAL do rasterizador (1 px), senão a compensação sub-pixel erra por 1/0,49 = 2,04× de forma dependente de resolução."
+}
