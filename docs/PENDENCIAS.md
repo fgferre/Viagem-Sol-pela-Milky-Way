@@ -650,7 +650,10 @@ não é cruz, é parede de 2.400 px. As fotos já existem
 (`capturas/luz-*.png`, a escada inteira); falta ele olhar e cravar. *(Veio do bloco da onda da luz, enxuto pelo
 item 51.)*
 
-**54. O filme espera a exibição do dono — agora com o gesto da Lua.**
+**54. O filme espera a exibição do dono — FECHADO em 31/08.** Ele
+assistiu ao filme inteiro com o final novo (retrato v2 + dolly zoom +
+Sagan) e cravou: *"já assisti, ficou lindo."* A exibição que este item
+esperava aconteceu. *(Texto original abaixo para o museu.)*
 Palavras dele no pedido, 19/08: *“quando estivesse passando poderia dar
 uma leve desacelerada e virar rapidamente a camera para ela e desvirar
 para continuar em direção a terra.”* — implementado e medido em 20/08:
@@ -898,7 +901,11 @@ cinco fotos ("ficou otimo"). Pendência curta na família: a pinça do
 telefone ainda não é lente. História no ARQUIVO.
 
 
-**108. O fim do filme não mostra direito a Lua e a Terra.** (Palavras
+**108. O fim do filme não mostra direito a Lua e a Terra — FECHADO em
+31/08, inteiro.** As três pernas da retomada (relógio do ?jd=, retrato,
+Lua acesa 148→245) + a v2 dele (pouso anti-Lua, dolly zoom, Sagan,
+commit a675ff9) + a exibição completa: *"já assisti, ficou lindo."* O
+herdeiro vivo é o item 119 (relógio do portal). História no ARQUIVO.* (Palavras
 dele, 29/08, ditas ao ver o filme depois da lente nova: *"agora que
 mudou-se a lente o filme nao mostra mais direito no final a lua e a
 terra, ficou errado. será que no filme nao deverimaos manter a direcao
