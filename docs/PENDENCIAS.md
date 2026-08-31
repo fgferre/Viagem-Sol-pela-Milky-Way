@@ -1744,26 +1744,14 @@ ANTERIOR antes de reatribuir `lastLabels`, e medir o que muda na abertura
 do Atlas. A rampa, enquanto isso, AMORTECE o sintoma — quem perde a vaga
 leva 750 ms para apagar em vez de um quadro.
 
-**121. O juiz da beira da fita não consegue medir a perna dpr 1 com o
-gradiente (achado e medido em 31/08, na peça 3 do bloco B).** O
-`beira-da-fita.mjs` acha a crista tomando, por COLUNA, o pixel mais
-brilhante de uma faixa que também contém estrelas; com a fita atenuada
-pelo gradiente, em ~3% mais colunas a estrela ganha e a crista SALTA. O
-teste que reprova é o "posso medir?" (`colunasMansas ≥ 0,9`), não o
-veredito da saia — as duas pernas de dpr 2 seguem APROVADAS e com o
-perfil praticamente igual (p800 subida 1,774 → 1,848 px disp, FWHM
-3,039 → 2,878; g1200 2,134 → 2,192 e 4,241 → 4,047). A varredura está em
-`capturas/item115-blocoB-gradiente-piso-vs-beira.json`, medida com a
-FUNÇÃO DO PRÓPRIO JUIZ (`medirPng`) sobre a vista dele em 1067×800 dpr 1:
-piso 1,00 → 0,931 de colunas mansas (pico 149,2); 0,65 → 0,909 (129,4);
-0,55 → 0,899; 0,45 → 0,87; 0,35 → 0,85. Ou seja: só um gradiente de
-1,54:1 passaria, e depois da gradação isso é gradiente que ninguém vê.
-A fita NÃO some no regime fino — no piso 0,65 o pico mediano ainda é
-129 contra um céu de 24. Casa do conserto: a crista do juiz seguir a
-FITA (o pico mais próximo do da coluna anterior) em vez do pixel mais
-claro da faixa. É mudança de JUIZ, e o `AGENTS.md` §13 não dá desconto a
-ela — número medido, declaração no commit e sabotagem por mão
-independente —, por isso ficou de fora da peça.
+**121.** O juiz da beira da fita não conseguia medir a perna dpr 1 com o
+gradiente — **FECHADO em 31/08**; história no ARQUIVO. *(A crista deixou
+de ser o pixel mais claro de cada coluna e virou a TRILHA de maior soma
+que anda devagar; a mesma foto que reprovava com `colunasMansas` 0,86
+aprova com subida 1,307 px disp e FWHM 1,633, e as duas pernas de dpr 2
+mal se mexem. A cobrança da continuidade — agora garantida por
+construção — deu lugar a `colunasVivas ≥ 0,9`, sob teste próprio em
+`beira-da-fita.test.mjs`.)*
 
 **122. O quad das nuvens ainda apaga as OUTRAS camadas aditivas que
 estão na frente dele (herdado do item 37, 31/08).** O conserto do 37 deu

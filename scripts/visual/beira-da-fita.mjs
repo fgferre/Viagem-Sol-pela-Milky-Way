@@ -81,14 +81,32 @@
 //
 // O RECORTE NÃO É DECORADO: as duas janelas têm tamanhos diferentes, e um
 // `FAIXA` fixo mediria o céu numa delas. O juiz VARRE a faixa alta do
-// quadro (bem acima do Sol, que fica no centro) procurando a crista mais
-// brilhante coluna a coluna, e só aceita se a crista ANDAR DEVAGAR — uma
-// fita quase horizontal move-se menos de um pixel por coluna. Estrela e
-// planeta não passam nesse teste: são manchas, não cristas contínuas.
+// quadro (bem acima do Sol, que fica no centro) e acha ali a TRILHA mais
+// brilhante que anda devagar — o caminho de maior soma que se desloca no
+// máximo `PASSO_MAX_DA_CRISTA` de uma coluna para a vizinha.
+//
+// POR QUE TRILHA, E NÃO O PIXEL MAIS CLARO DE CADA COLUNA (item 121,
+// 31/08). A versão antiga tomava, por coluna, o máximo da faixa, e depois
+// COBRAVA que o resultado andasse devagar. Enquanto a fita era a coisa
+// mais brilhante da faixa isso dava no mesmo; com o gradiente da fita
+// (peça 3 do bloco B) ela desceu abaixo das estrelas do campo — na perna
+// de dpr 1 a fita mede ~104 e há estrelas de 130 a 240 — e em ~14% das
+// colunas a estrela ganhava, a crista SALTAVA e o juiz reprovava a si
+// mesmo (`colunasMansas` 0,86 contra um mínimo de 0,90) com a fita
+// perfeitamente medível. Medido em `capturas/item115-blocoB-gradiente-
+// piso-vs-beira.json`: no piso 0,65 do gradiente o pico mediano ainda é
+// 129 contra um céu de 24.
+//
+// A continuidade passou portanto de COBRANÇA a CONSTRUÇÃO, e o que ficou
+// no lugar dela como cobrança é o que a construção não garante: a trilha
+// tem de estar VIVA em quase toda a janela (`colunasVivas`). Um caminho
+// costurado pelo céu entre duas estrelas é contínuo e é escuro; uma fita
+// é contínua e é brilhante do começo ao fim. As duas peças estão sob
+// teste em `beira-da-fita.test.mjs`, com imagens montadas à mão.
 //
 // E ELE REPROVA QUANDO NÃO CONSEGUE MEDIR — sem crista, crista fraca,
-// crista que salta. Juiz que avisa em vez de reprovar é juiz que ninguém
-// lê (a lição do MB1 descalibrado, item 81).
+// trilha que morre no meio da janela. Juiz que avisa em vez de reprovar é
+// juiz que ninguém lê (a lição do MB1 descalibrado, item 81).
 // ============================================================
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -133,12 +151,19 @@ export const BUSCA_X = 0.22;
 export const PISO_DA_CRISTA = 30;
 /**
  * Quanto a crista pode andar de uma coluna para a vizinha, em px. Uma
- * fita quase horizontal anda menos de 1; uma mancha (estrela, planeta) ou
- * o serrilhado de uma curva íngreme saltam muito mais.
+ * fita quase horizontal anda menos de 1 (medido no alto do laço em dpr 1:
+ * 0,5 px por coluna no flanco, 0 no ápice); uma mancha — estrela, planeta
+ * — está a dezenas de px da fita e não cabe num passo destes.
  */
 export const PASSO_MAX_DA_CRISTA = 1.5;
-/** ...e esta fração das colunas tem de andar devagar para valer crista. */
-export const MIN_DE_COLUNAS_MANSAS = 0.9;
+/**
+ * Uma coluna está VIVA quando o pico da trilha nela chega a esta fração
+ * do pico mediano da própria trilha. Metade é a mesma soleira com que os
+ * cortes já eram escolhidos — uma definição só para as duas coisas.
+ */
+export const FRACAO_VIVA = 0.5;
+/** ...e esta fração das colunas tem de estar viva para valer fita. */
+export const MIN_DE_COLUNAS_VIVAS = 0.9;
 /** meia altura do corte, em px — folga larga sobre uma fita de ~5 px */
 export const MEIO_CORTE = 12;
 
@@ -146,8 +171,20 @@ export const MEIO_CORTE = 12;
 const mediana = (v) => percentil(v, 0.5);
 
 /**
- * A CRISTA da fita na faixa alta do quadro: para cada coluna, a linha
- * mais brilhante e o quanto ela brilha. Pura, sobre o cinza já lido.
+ * A TRILHA da fita na faixa alta do quadro: o caminho de MAIOR SOMA que
+ * atravessa a faixa da esquerda à direita andando no máximo
+ * `PASSO_MAX_DA_CRISTA` por coluna. Pura, sobre o cinza já lido.
+ *
+ * É uma programação dinâmica de uma linha só — para cada coluna e cada
+ * linha da faixa, o melhor caminho que chega ali é o melhor dos vizinhos
+ * alcançáveis da coluna anterior mais o brilho de agora. Custa
+ * `colunas × linhas × (2·passo+1)` somas (176 × 152 × 3 na perna de
+ * dpr 1) e é determinística: nenhum limiar, nenhuma semente, nenhum
+ * empate resolvido por sorte — `>` estrito mantém o menor `y` no empate.
+ *
+ * O PASSO É INTEIRO porque a grade é: com `PASSO_MAX_DA_CRISTA` = 1,5 a
+ * trilha anda −1, 0 ou +1 linha por coluna, que é a leitura honesta de
+ * "menos de um pixel e meio".
  */
 export function acharACrista(cinza, largura, altura) {
   const y0 = Math.round(altura * BUSCA_Y.de);
@@ -155,18 +192,41 @@ export function acharACrista(cinza, largura, altura) {
   const meia = Math.round((altura * BUSCA_X) / 2);
   const x0 = Math.round(largura / 2) - meia;
   const x1 = Math.round(largura / 2) + meia;
-  const colunas = [];
-  for (let x = x0; x < x1; x++) {
-    let pico = -1;
-    let onde = -1;
-    for (let y = y0; y < y1; y++) {
-      const v = cinza[y * largura + x];
-      if (v > pico) {
-        pico = v;
-        onde = y;
+  const linhas = y1 - y0;
+  const nColunas = x1 - x0;
+  const passo = Math.floor(PASSO_MAX_DA_CRISTA);
+
+  let soma = new Float64Array(linhas);
+  const veio = new Int32Array(linhas * nColunas);
+  for (let i = 0; i < linhas; i++) soma[i] = cinza[(y0 + i) * largura + x0];
+  for (let k = 1; k < nColunas; k++) {
+    const proxima = new Float64Array(linhas);
+    for (let i = 0; i < linhas; i++) {
+      let melhor = -Infinity;
+      let deOnde = i;
+      for (let d = -passo; d <= passo; d++) {
+        const j = i + d;
+        if (j < 0 || j >= linhas) continue;
+        if (soma[j] > melhor) {
+          melhor = soma[j];
+          deOnde = j;
+        }
       }
+      proxima[i] = melhor + cinza[(y0 + i) * largura + (x0 + k)];
+      veio[k * linhas + i] = deOnde;
     }
-    colunas.push({ x, y: onde, pico });
+    soma = proxima;
+  }
+
+  let fim = 0;
+  for (let i = 1; i < linhas; i++) if (soma[i] > soma[fim]) fim = i;
+  const colunas = new Array(nColunas);
+  let i = fim;
+  for (let k = nColunas - 1; k >= 0; k--) {
+    const x = x0 + k;
+    const y = y0 + i;
+    colunas[k] = { x, y, pico: cinza[y * largura + x] };
+    i = veio[k * linhas + i];
   }
   return { colunas, faixa: { x0, x1, y0, y1 } };
 }
@@ -228,14 +288,22 @@ export function medirOCorte(cinza, largura, x, yPico) {
 }
 
 /**
- * O VEREDITO de um quadro: a crista existe, é mansa, e o par de números
- * que ela devolve. `aprovado: false` é o ramo do juiz que não conseguiu
- * medir — quem chama olha `aprovado` antes de olhar número nenhum.
+ * O VEREDITO de um quadro: a trilha existe, está viva de ponta a ponta, e
+ * o par de números que ela devolve. `aprovado: false` é o ramo do juiz que
+ * não conseguiu medir — quem chama olha `aprovado` antes de olhar número
+ * nenhum.
  */
 export function medirPng(bytes) {
   const png = lerPng(bytes);
-  const { largura, altura } = png;
-  const cinza = cinzaDoPng(png);
+  return julgarQuadro(cinzaDoPng(png), png.largura, png.altura);
+}
+
+/**
+ * O mesmo veredito sobre um campo de cinza já pronto — é por esta porta
+ * que o teste entra com quadros montados à mão, sem um codificador de PNG
+ * no meio inventando o que se quer medir.
+ */
+export function julgarQuadro(cinza, largura, altura) {
   const { colunas, faixa } = acharACrista(cinza, largura, altura);
 
   const picoMediano = mediana(colunas.map((c) => c.pico));
@@ -247,22 +315,22 @@ export function medirPng(bytes) {
     };
   }
 
-  let mansas = 0;
-  for (let i = 1; i < colunas.length; i++) {
-    if (Math.abs(colunas[i].y - colunas[i - 1].y) <= PASSO_MAX_DA_CRISTA) mansas++;
-  }
-  const fracaoMansa = mansas / (colunas.length - 1);
-  if (fracaoMansa < MIN_DE_COLUNAS_MANSAS) {
+  // A trilha é contínua por construção; o que a construção NÃO garante é
+  // que ela seja fita o caminho inteiro. Costura pelo céu entre duas
+  // estrelas passa no teste da continuidade e morre neste.
+  const vivas = colunas.filter((c) => c.pico >= picoMediano * FRACAO_VIVA).length;
+  const fracaoViva = vivas / colunas.length;
+  if (fracaoViva < MIN_DE_COLUNAS_VIVAS) {
     return {
       quadro: `${largura}x${altura}`,
       aprovado: false,
-      motivo: `a crista salta: só ${Math.round(fracaoMansa * 100)}% das colunas andam devagar`,
+      motivo: `a trilha morre no meio: só ${Math.round(fracaoViva * 100)}% das colunas têm fita`,
     };
   }
 
   const cortes = [];
   for (const c of colunas) {
-    if (c.pico < picoMediano * 0.5) continue;
+    if (c.pico < picoMediano * FRACAO_VIVA) continue;
     const m = medirOCorte(cinza, largura, c.x, c.y);
     if (m) cortes.push(m);
   }
@@ -282,7 +350,7 @@ export function medirPng(bytes) {
     faixa,
     colunas: colunas.length,
     medidas: cortes.length,
-    colunasMansas: arred(fracaoMansa, 3),
+    colunasVivas: arred(fracaoViva, 3),
     ceu: arred(mediana(cortes.map((c) => c.ceu)), 1),
     pico: arred(mediana(cortes.map((c) => c.pico)), 1),
     // OS DOIS NÚMEROS, em px de DISPOSITIVO

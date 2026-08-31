@@ -6252,3 +6252,87 @@ da galáxia — continuam do lado de trás do quad, e o mesmo defeito vale
 para elas. As cascas e as partículas da galáxia estão do lado CERTO (são
 o fundo que as nuvens têm de escurecer); o clarão, as heroes e a poeira
 local não.
+
+---
+
+## Item 121 — O juiz da beira da fita não conseguia medir a perna dpr 1
+
+**O achado, verbatim do vivo (31/08):**
+
+**121. O juiz da beira da fita não consegue medir a perna dpr 1 com o
+gradiente (achado e medido em 31/08, na peça 3 do bloco B).** O
+`beira-da-fita.mjs` acha a crista tomando, por COLUNA, o pixel mais
+brilhante de uma faixa que também contém estrelas; com a fita atenuada
+pelo gradiente, em ~3% mais colunas a estrela ganha e a crista SALTA. O
+teste que reprova é o "posso medir?" (`colunasMansas ≥ 0,9`), não o
+veredito da saia — as duas pernas de dpr 2 seguem APROVADAS e com o
+perfil praticamente igual (p800 subida 1,774 → 1,848 px disp, FWHM
+3,039 → 2,878; g1200 2,134 → 2,192 e 4,241 → 4,047). A varredura está em
+`capturas/item115-blocoB-gradiente-piso-vs-beira.json`, medida com a
+FUNÇÃO DO PRÓPRIO JUIZ (`medirPng`) sobre a vista dele em 1067×800 dpr 1:
+piso 1,00 → 0,931 de colunas mansas (pico 149,2); 0,65 → 0,909 (129,4);
+0,55 → 0,899; 0,45 → 0,87; 0,35 → 0,85. Ou seja: só um gradiente de
+1,54:1 passaria, e depois da gradação isso é gradiente que ninguém vê.
+A fita NÃO some no regime fino — no piso 0,65 o pico mediano ainda é
+129 contra um céu de 24. Casa do conserto: a crista do juiz seguir a
+FITA (o pico mais próximo do da coluna anterior) em vez do pixel mais
+claro da faixa. É mudança de JUIZ, e o `AGENTS.md` §13 não dá desconto a
+ela — número medido, declaração no commit e sabotagem por mão
+independente —, por isso ficou de fora da peça.
+
+### O conserto (31/08, na faxina da estação do item 115)
+
+**A causa, medida na foto.** Na perna dpr 1 a fita mede **104** contra um
+céu de **24**, e a mesma faixa tem estrelas de **130 a 240** — em 24 das
+176 colunas o máximo da coluna era estrela, e a crista saltava até **49
+px** de uma coluna para a vizinha. `colunasMansas` saía **0,86** contra o
+mínimo de 0,90, e o juiz reprovava a si mesmo com a fita perfeitamente
+medível.
+
+**O instrumento.** `acharACrista` deixou de tomar o pixel mais claro de
+cada coluna e passa a achar a **trilha de maior soma** que atravessa a
+faixa andando no máximo `PASSO_MAX_DA_CRISTA` (1,5 px → −1, 0 ou +1 linha
+por coluna) — uma programação dinâmica de uma linha só, 176 × 152 × 3
+somas na perna de dpr 1, determinística, sem limiar e sem semente. A
+trilha achada acompanha o laço descendo de y=110 a y=72 ao longo da
+janela e ignora as três estrelas que antes a capturavam.
+
+**Os números, sobre os MESMOS bytes de PNG** (a mesma foto rejulgada
+antes e depois, sem cena nova no meio):
+
+| perna | antes | depois |
+| --- | --- | --- |
+| dpr1 | REPROVA (`colunasMansas` 0,860) | subida **1,307** px disp · FWHM **1,633** |
+| p800 (dpr 2) | subida 1,844 · FWHM 2,877 | subida **1,836** · FWHM **2,864** |
+| g1200 (dpr 2) | subida 2,216 · FWHM 4,053 | subida **2,188** · FWHM **4,045** |
+
+As pernas de dpr 2 mudam na terceira casa porque a trilha tira do
+cômputo as poucas colunas contaminadas por estrela; o veredito delas
+nunca esteve em jogo. Rastro: `capturas/item83-b1-antes121.json` e
+`capturas/item83-b1-depois121.json`.
+
+**O que ficou no lugar da cobrança que virou construção.** A continuidade
+agora é garantida pelo achador, então cobrá-la seria decoração. Entrou
+`colunasVivas ≥ 0,9`: a trilha tem de estar acima de metade do próprio
+pico mediano em quase toda a janela. Um caminho costurado pelo céu entre
+duas estrelas é contínuo e escuro; uma fita é contínua e brilhante do
+começo ao fim.
+
+**As duas sabotagens (§13 não dá desconto a mudança de juiz).** Em
+worktree separada, sobre `b0608c2`:
+
+1. **A fiação do conserto.** `acharACrista` devolvido ao máximo por
+   coluna → o teste novo **reprova 2 de 8** (a crista pousa na estrela; o
+   maior salto vira 49 px contra o limite de 1,5).
+2. **A fita esmaecida de verdade.** `gradienteDaFita` forçado a **0,02**
+   constante (2% do brilho) → o juiz **CONSERTADO reprova as três
+   pernas**: "só 74 de 176 colunas deram corte medível" (dpr1), 121 de
+   352 (p800), 180 de 528 (g1200). Rastro:
+   `capturas/item121-sabotagem-gradiente-2pct.json`.
+
+**Guarda nova em suíte:** `scripts/visual/beira-da-fita.test.mjs`, 8
+casos sobre quadros de cinza montados à mão — a estrela mais brilhante
+que a fita, a fita ausente, a fita abaixo do piso, a fita que morre no
+meio da janela, e a soleira do vivo mordendo entre 0,95 (passa) e 0,80
+(reprova). A porta é `julgarQuadro`, que é `medirPng` sem o decodificador
+de PNG no meio.
