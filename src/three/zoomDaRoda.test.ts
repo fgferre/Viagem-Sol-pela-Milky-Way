@@ -347,7 +347,7 @@ describe('Director — a roda está ligada, e ligada do jeito que funciona', () 
   // ============================================================
   /** o corpo do fio `zoom` do Director, executável com um `this` de mentira */
   const fioDeZoom = (alvo: object) => {
-    const m = DIRECTOR.match(/\n      zoom: \(estalos\) => \{\n([\s\S]*?)\n      \},\n/);
+    const m = DIRECTOR.match(/\n {6}zoom: \(estalos\) => \{\n([\s\S]*?)\n {6}\},\n/);
     expect(m, 'o fio `zoom` sumiu do director.ts').not.toBeNull();
     const corpo = new Function(
       'distanciaAposEstalos',
