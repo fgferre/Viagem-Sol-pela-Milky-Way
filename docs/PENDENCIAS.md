@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 118.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 120.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega DUAS vezes atrás da verdade — o 114 e o 115
@@ -567,6 +567,20 @@ texturas: refcount + descarga adiada 15 s, createImageBitmap, abort);
 afins), por escolha dele; o 114 requalificado (relevância + assets)
 fica para etapa mais à frente, e os blocos D/E da colheita junto com
 ele.
+**Estação (1) CUMPRIDA em 31/08** (executor com juiz que morde por
+conserto; suíte cheia uma vez, 2.583 verdes/exit 0; tsc e lint limpos):
+a rampa do Atlas virou slerp (chicote 891°/s → 116°/s, `0e789c4`), o
+embalo do zoom morre na parede (resposta à inversão 0,85 s → 1 quadro,
+`b7a4808`), o ⏵ assenta contra a parede do tempo (2 publicações
+fantasmas → 0, `7e1471d`) e o desempate da busca é o nome mais curto
+(Titan antes de Titania, `d16ef27`). Dois achados de CONTRATO ficaram
+registrados SEM obra, para a colheita: a busca não tem palavras-chave
+("jupiter" ainda não traz Io/Europa/Ganimedes/Calisto — pede campo novo
+em `CorpoBuscavel` e todos os produtores) e o desempate por importância
+física pede o raio do corpo, que o contrato não carrega; herdado e
+registrado como fronteira em `maquinaDoTempo.test.ts`: o ⏸ contra a
+parede ainda apaga o aviso uma vez (não pisca). Da estação sobra só
+medir 37/46 — o 117 já foi medido em 31/08, veredito no próprio item.
 
 **114. O censo do sistema solar: todas as luas e os objetos interessantes.**
 Pedido do dono em 30/08, palavras dele: *"quero expandir nosso projeto
