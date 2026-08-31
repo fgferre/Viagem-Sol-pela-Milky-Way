@@ -669,11 +669,14 @@ export const VISTAS = [
   //    ordem de distância (2,4 UA). Ela impede o gate de virar caso
   //    especial de Éris: um conserto escrito só para um corpo deixaria
   //    esta parada.
-  //  - `anao-eris-orbita` é a ANTI-DERIVA, e tem de sair BIT-IDÊNTICA:
-  //    `?foco=` sem `?ver=` é o degrau de órbita desde sempre, e um
-  //    conserto que descesse por conta própria trocaria um defeito por
-  //    outro. Sem ela o par de cima não distingue "o degrau de baixo
-  //    passou a existir" de "o de cima morreu".
+  //  - `anao-eris-orbita` é a ANTI-DERIVA do conserto dos ANÕES: no par
+  //    daquele assunto ela sai bit-idêntica (`?foco=` sem `?ver=` é o
+  //    degrau de órbita desde sempre, e um conserto que descesse por
+  //    conta própria trocaria um defeito por outro). Mudança GLOBAL
+  //    legítima de luz PODE tocá-la — em 30/08 o ponto fotométrico da
+  //    Lua (item 108) somou 1 px nela, dentro do clarão do Sol. Sem ela
+  //    o par de cima não distingue "o degrau de baixo passou a existir"
+  //    de "o de cima morreu".
   //
   // `&jd=` é o mesmo instante das vistas de foco acima: sem efeméride
   // viva estes oito não têm posição NENHUMA (nem órbita, nem globo).
