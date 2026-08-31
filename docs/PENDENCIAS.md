@@ -488,7 +488,21 @@ número livre segue **108**.
 
 ## ALTA — o dono vê e incomoda
 
-**91.** Saturno estava quase escuro mesmo com brilho assistido, e o modo
+**114. O censo do sistema solar: ao menos os 40 maiores objetos.**
+Pedido do dono em 30/08, palavras dele: *"quero expandir nosso projeto
+para ter todos obejtos possiveis de luas e obejtos maiores tb. meteoros
+etc. queria ter ao menos os 40 maiores obetos do sistma solar..."*.
+Hoje o app tem Sol, planetas e poucas luas; a meta mínima é o top-40 por
+tamanho (entra Ganimedes, Titã, Calisto, Io, Europa, Tritão, Plutão,
+Éris, luas médias de Saturno/Urano, Ceres...), com a porta aberta para
+asteroides/meteoros depois. A mineração do NASA Eyes de 30/08
+(`scratchpad/estudos/nasa-eyes-solar-system/mineracao/`) foi reapontada
+para colher exatamente a engenharia disso: como o Eyes registra 724
+objetos (catálogo de receitas `EntityUtils`, parentesco dependente do
+tempo, política de existência por quadro do `SceneManager`, camadas
+contextuais por proximidade) — o mergulho 05 traz o confronto. Obra a
+desenhar depois do estudo: catálogo, órbitas e texturas dos 40, sem
+quebrar a lei de um universo só. Saturno estava quase escuro mesmo com brilho assistido, e o modo
 real ficou escuro demais — **FECHADO em 26/08**, conferido por ele na Sala
 de Conferência (**C15**: a chapa do modo real, com a **R1** que ele escolheu
 na **Q14** embarcada e os +3 passos declarados no selo); história no
