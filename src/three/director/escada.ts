@@ -800,6 +800,11 @@ export class Escada {
    * O RAIO FÍSICO de um corpo do sistema, em pc — a régua do PISO do
    * zoom da roda (`K_MIN_RAIOS`, item 73). `null` para quem não tem.
    *
+   * PÚBLICA desde 31/08 por um SEGUNDO leitor: o pintor da beta 3D
+   * (`world/rotulos3d.ts`, item 109) adianta o nome sobre a casca do
+   * corpo e precisa exatamente desta régua — o raio do globo que
+   * escreve profundidade. Uma fonte só; nenhum raio novo nasce lá.
+   *
    * FONTE ÚNICA: `BODY_AXES` do kernel `pck00011`, lida pela MESMA
    * função que dá raio às malhas. `raiosDoRochosoPc` é literalmente
    * `BODY_AXES[id]` convertido — o nome é do módulo em que ela nasceu,
@@ -808,7 +813,7 @@ export class Escada {
    * `solRaioPc` que o palco entregou, a mesma fonte única que o degrau
    * do corpo dele usa.
    */
-  private raioFisicoDe(id: string): number | null {
+  raioFisicoDe(id: string): number | null {
     if (id === 'sun') return this.solRaioPc;
     return BODY_AXES[id] ? raiosDoRochosoPc(id).a : null;
   }

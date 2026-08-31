@@ -61,6 +61,44 @@ const RECUO_EM_EMS = 18 / 13;
  */
 const CONTORNO = { largura: 0.1, borrao: 7 / 13, opacidade: 0.96 };
 
+/**
+ * O NOME NASCE NA FRENTE DA CASCA DO PRÓPRIO CORPO, em raios dele.
+ *
+ * O DEFEITO QUE ISTO MATA (reprovado por ele em 31/08: *"quando aproximo
+ * o corpo o objeto engole o texto"*): o texto era posto na posição de
+ * MUNDO do corpo — o CENTRO dele, dentro do globo. Longe não se nota (o
+ * corpo tem poucos pixels e a folga de 18 px joga o nome para fora do
+ * disco); de perto o disco toma a tela, e o teste de profundidade some
+ * com o nome inteiro. Medido na página viva antes do conserto
+ * (`?atlas=1&foco=terra&ver=corpo&d=3&r3d=1`): o texto "TERRA" existia,
+ * `visible: true`, a 6,2e-10 pc da câmera — 3,0 raios terrestres —
+ * enquanto a superfície estava a 2,0 raios; `depthTest: [true, true]`
+ * nos dois materiais do troika. Nenhuma foto mostrava o nome.
+ *
+ * POR QUE NÃO É `depthTest = false`: a oclusão pelos OUTROS corpos é
+ * justamente o que o 3D compra sobre o canvas (o nome de uma lua que
+ * passou para trás do pai tem de sumir). Adiantar o nome ao longo do
+ * raio da câmera cura só a casca própria — e nem mexe na tela, porque
+ * andar sobre a linha câmera→corpo não muda o ponto projetado; muda o Z.
+ *
+ * 1,05 e não 1,00 porque o texto é um plano tangente à esfera quando o
+ * avanço é exato: 5% do raio tira o z-fighting do polo. As cascas que
+ * NÃO escrevem profundidade (atmosfera e halo da Terra, anel dos
+ * gigantes, o ponto da camada) nunca engoliram nada e seguem iguais.
+ */
+const AVANCO_EM_RAIOS = 1.05;
+
+/**
+ * A FOLGA ATÉ O PLANO NEAR, em nears — o único teto do avanço. Adiantar
+ * o nome até a câmera o clipa: o piso da roda é 2 raios (`K_MIN_RAIOS`)
+ * e ali o near vale meio raio (`nearPlanePc`), então o avanço cheio de
+ * 1,05 raio ainda pousa a 0,95 raio da câmera, quase o dobro do near. O
+ * teto só morde num corpo mais perto que o piso da roda — uma lua
+ * raspada de passagem —, e ali ele prefere o nome ocluído ao nome
+ * cortado pelo plano.
+ */
+const FOLGA_DO_NEAR = 1.2;
+
 type TextoTroika = {
   text: string;
   font: string;
@@ -100,6 +138,9 @@ export class Rotulos3d {
   /** a direita da CÂMERA, reaproveitada — a folga do nome é medida na
    *  tela, e na tela "para o lado" é este eixo */
   private readonly direita = new THREE.Vector3();
+  /** o rumo corpo→câmera, reaproveitado — sobre ele corre o avanço que
+   *  tira o nome de dentro da casca (`AVANCO_EM_RAIOS`) */
+  private readonly paraACamera = new THREE.Vector3();
   /** o lado em que cada texto está pintado — o re-`sync()` só acontece
    *  quando a vaga do 2D troca de lado */
   private readonly ladoDoTexto = new Map<string, boolean>();
@@ -115,13 +156,17 @@ export class Rotulos3d {
    * de corpo DESENHADOS (a decisão é do 2D) como texto na cena, na
    * posição de MUNDO do corpo. `posicaoDe` devolve a posição viva do
    * corpo pela chave, ou null (sem efeméride ⇒ sem texto — a mesma
-   * regra das linhas de órbita).
+   * regra das linhas de órbita). `raioDe` devolve o raio FÍSICO do corpo
+   * na mesma unidade da posição (a fonte única da escada), ou null para
+   * quem não tem — é ele que tira o nome de dentro da casca; sem raio o
+   * nome fica no centro, como antes de 31/08 (ver `AVANCO_EM_RAIOS`).
    */
   sincronizar(
     ligado: boolean,
     cam: THREE.PerspectiveCamera,
     alvos: readonly RotuloComVaga[],
-    posicaoDe: (key: string) => readonly [number, number, number] | null
+    posicaoDe: (key: string) => readonly [number, number, number] | null,
+    raioDe: (key: string) => number | null
   ) {
     if (!ligado) {
       if (this.naCena) {
@@ -159,12 +204,16 @@ export class Rotulos3d {
         //
         // A PROFUNDIDADE FICA COMO A DO TROIKA — o nome é objeto de cena e
         // as superfícies resolvidas escrevem depth (corpos.ts), então um
-        // nome atrás de um globo continua escondido. (Havia aqui duas
-        // linhas `t.material.depthTest = false` que NUNCA chegaram a
-        // material nenhum: com contorno ligado o `material` do troika é um
-        // ARRAY [contorno, preenchimento], e a escrita morria na própria
-        // lista — medido na página viva em 30/08, `depthTest: [true,
-        // true]`. Saíram; o comportamento é o mesmo de sempre.)
+        // nome atrás de um globo continua escondido. É de propósito: a
+        // oclusão pelos outros corpos é o que o 3D compra sobre o canvas.
+        // A casca do PRÓPRIO corpo, que engolia o nome de perto, sai pela
+        // geometria e não pelo material — ver `AVANCO_EM_RAIOS`.
+        // (Havia aqui duas linhas `t.material.depthTest = false` que
+        // NUNCA chegaram a material nenhum: com contorno ligado o
+        // `material` do troika é um ARRAY [contorno, preenchimento], e a
+        // escrita morria na própria lista — medido na página viva em
+        // 30/08, `depthTest: [true, true]`. Saíram em 30/08, e o defeito
+        // que elas tentavam matar só caiu em 31/08, com o avanço.)
         t.renderOrder = 10;
         this.escreverLado(t, alvo.key, alvo.name, esquerda);
         this.grupo.add(t as unknown as THREE.Object3D);
@@ -174,8 +223,23 @@ export class Rotulos3d {
       }
       t.visible = true;
       t.position.set(pos[0], pos[1], pos[2]);
-      // escala = fração da tela × altura visível naquela distância
-      const d = t.position.distanceTo(cam.position);
+      // O AVANÇO SOBRE A CASCA (item 109, 31/08) — sobre a linha
+      // câmera→corpo, que é a única direção que não mexe no ponto
+      // projetado: o nome fica onde estava na tela e passa à frente do
+      // globo em profundidade. Ver `AVANCO_EM_RAIOS`.
+      let d = t.position.distanceTo(cam.position);
+      const raio = raioDe(alvo.key);
+      if (raio !== null && raio > 0 && d > 0) {
+        const avanco = Math.min(raio * AVANCO_EM_RAIOS, d - cam.near * FOLGA_DO_NEAR);
+        if (avanco > 0) {
+          this.paraACamera.subVectors(cam.position, t.position).divideScalar(d);
+          t.position.addScaledVector(this.paraACamera, avanco);
+          d -= avanco;
+        }
+      }
+      // escala = fração da tela × altura visível naquela distância — e a
+      // distância é a do texto ADIANTADO, senão o nome cresceria na tela
+      // exatamente o quanto se aproximou
       const em = FRACAO_DA_TELA * d * tanMeioFov;
       t.scale.setScalar(em);
       t.quaternion.copy(cam.quaternion);

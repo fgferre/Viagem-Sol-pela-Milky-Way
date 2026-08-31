@@ -83,6 +83,7 @@ import { ORIGEM } from './cinematic/enquadramento';
 import { escalaDaUi, larguraDeCss } from '../lib/uiScale';
 import {
   CAMADAS,
+  CHAVE_DE_CORPO,
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
   HELIO_SEM_PONTO,
@@ -2803,7 +2804,12 @@ export class Director {
           key,
           this.planetas ? this.planetas.posicoes : null,
           CORPOS_DO_SISTEMA
-        )
+        ),
+      // e o RAIO FÍSICO do mesmo corpo, na mesma unidade da posição: é
+      // com ele que o nome passa à frente da casca em vez de nascer
+      // dentro dela (item 109, o engolimento de perto). A fonte é a da
+      // escada — a MESMA que dá o piso do zoom e o raio das malhas.
+      (key) => this.escada.raioFisicoDe(key.slice(CHAVE_DE_CORPO.length))
     );
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);

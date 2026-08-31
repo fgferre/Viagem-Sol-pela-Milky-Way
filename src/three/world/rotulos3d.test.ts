@@ -20,6 +20,9 @@
 //    o que engolia o "SOL" dentro do clarão;
 //  · o HALO ESCURO que o 2D põe atrás de cada nome (`shadowBlur 7` sobre
 //    corpo 13) — sem ele o nome dentro do clarão é branco sobre branco;
+//  · o AVANÇO sobre a casca do próprio corpo (31/08): o nome anda sobre
+//    a linha câmera→corpo até passar à frente da superfície — o mesmo
+//    ponto na tela, outro Z —, com teto no plano near;
 //  · a ordem de pintura e o LADO que o 2D escolheu — caixa reservada à
 //    esquerda ⇒ âncora 'right' — e o re-`sync()` só quando o lado TROCA;
 //  · `dispose()` descarta TODOS os textos (o passo do teardown do
@@ -117,6 +120,14 @@ function alvo(key: string, name: string, extras: Partial<RotuloComVaga> = {}): R
 /** o corpo na ORIGEM: a folga fica sendo a própria posição do texto */
 const naOrigem = (): readonly [number, number, number] => [0, 0, 0];
 
+/**
+ * O CORPO SEM RAIO CONHECIDO — o espelho põe o nome no centro, como
+ * fazia antes de 31/08. Os vereditos da folga usam este, para medirem
+ * só a folga: com raio o nome também ANDA para a câmera, e a conta da
+ * escala muda junto (é disso que trata o bloco do avanço, abaixo).
+ */
+const semRaio = () => null;
+
 function bancada(distancia = 5) {
   const cena = new THREE.Scene();
   const pintor = new Rotulos3d(cena);
@@ -133,7 +144,8 @@ describe('a folga da vaga é a do 2D, medida na tela', () => {
       true,
       cam,
       [alvo('corpo:earth', 'Terra'), alvo('corpo:mars', 'Marte', { ladoEsquerdo: true })],
-      naOrigem
+      naOrigem,
+      semRaio
     );
     const [terra, marte] = criados;
     // a câmera olha para −Z sem rolagem: "para o lado" na tela é o X do
@@ -148,11 +160,11 @@ describe('a folga da vaga é a do 2D, medida na tela', () => {
 
   it('a folga é CONSTANTE NA TELA: dobrar a distância dobra o mundo', () => {
     const perto = bancada(5);
-    perto.pintor.sincronizar(true, perto.cam, [alvo('corpo:earth', 'Terra')], naOrigem);
+    perto.pintor.sincronizar(true, perto.cam, [alvo('corpo:earth', 'Terra')], naOrigem, semRaio);
     const a = criados[0];
     criados.length = 0;
     const longe = bancada(10);
-    longe.pintor.sincronizar(true, longe.cam, [alvo('corpo:earth', 'Terra')], naOrigem);
+    longe.pintor.sincronizar(true, longe.cam, [alvo('corpo:earth', 'Terra')], naOrigem, semRaio);
     const b = criados[0];
     // o dobro de distância, o dobro de mundo por pixel — e a MESMA folga
     // na tela, que é o que o visitante vê
@@ -162,7 +174,7 @@ describe('a folga da vaga é a do 2D, medida na tela', () => {
 
   it('o texto não carrega mais o espaço que fazia as vezes da folga', () => {
     const { pintor, cam } = bancada();
-    pintor.sincronizar(true, cam, [alvo('corpo:earth', 'Terra')], naOrigem);
+    pintor.sincronizar(true, cam, [alvo('corpo:earth', 'Terra')], naOrigem, semRaio);
     expect(criados[0].text).toBe('TERRA');
   });
 });
@@ -170,7 +182,7 @@ describe('a folga da vaga é a do 2D, medida na tela', () => {
 describe('o halo escuro do 2D atrás do nome', () => {
   it('o contorno é preto e alcança o borrão do canvas (7 sobre 13)', () => {
     const { pintor, cam } = bancada();
-    pintor.sincronizar(true, cam, [alvo('corpo:earth', 'Terra')], naOrigem);
+    pintor.sincronizar(true, cam, [alvo('corpo:earth', 'Terra')], naOrigem, semRaio);
     const t = criados[0];
     expect(t.outlineColor).toBe('#000000');
     expect(t.outlineOpacity).toBeGreaterThan(0.9);
@@ -181,7 +193,7 @@ describe('o halo escuro do 2D atrás do nome', () => {
 
   it('o nome pinta depois das camadas do corpo', () => {
     const { pintor, cam } = bancada();
-    pintor.sincronizar(true, cam, [alvo('corpo:earth', 'Terra')], naOrigem);
+    pintor.sincronizar(true, cam, [alvo('corpo:earth', 'Terra')], naOrigem, semRaio);
     // depois da fita das órbitas (8) e da atmosfera da Terra (9) — senão
     // as camadas transparentes do próprio corpo pintam por cima
     expect(criados[0].renderOrder).toBeGreaterThan(9);
@@ -195,7 +207,8 @@ describe('o 3D pinta na vaga do 2D — inclusive no LADO dela', () => {
       true,
       cam,
       [alvo('corpo:earth', 'Terra'), alvo('corpo:mars', 'Marte', { ladoEsquerdo: true })],
-      naOrigem
+      naOrigem,
+      semRaio
     );
     const [terra, marte] = criados;
     // sem lado declarado, o desenho de sempre: cresce para a direita
@@ -207,19 +220,20 @@ describe('o 3D pinta na vaga do 2D — inclusive no LADO dela', () => {
   it('o lado que TROCA re-sincroniza uma vez; o lado parado não re-layouta', () => {
     const { pintor, cam } = bancada();
     const corpo = alvo('corpo:earth', 'Terra');
-    pintor.sincronizar(true, cam, [corpo], naOrigem);
+    pintor.sincronizar(true, cam, [corpo], naOrigem, semRaio);
     const t = criados[0];
     const aposCriar = t.sincronizacoes;
     // quadros seguintes com o MESMO lado: zero re-layout (o contrato do
     // desenho original — sync roda na criação, não por quadro)
-    pintor.sincronizar(true, cam, [alvo('corpo:earth', 'Terra')], naOrigem);
+    pintor.sincronizar(true, cam, [alvo('corpo:earth', 'Terra')], naOrigem, semRaio);
     expect(t.sincronizacoes).toBe(aposCriar);
     // o corpo cruzou a borda dos 72%: o 2D trocou o lado da vaga
     pintor.sincronizar(
       true,
       cam,
       [alvo('corpo:earth', 'Terra', { ladoEsquerdo: true })],
-      naOrigem
+      naOrigem,
+      semRaio
     );
     expect(t.sincronizacoes).toBe(aposCriar + 1);
     expect(t.anchorX).toBe('right');
@@ -237,9 +251,83 @@ describe('o 3D pinta na vaga do 2D — inclusive no LADO dela', () => {
         alvo('corpo:earth', 'Terra', { desenhado: false }), // perdeu a vaga
         alvo('corpo:mars', 'Marte', { icone: true }), // só-ícone: sem texto
       ],
-      naOrigem
+      naOrigem,
+      semRaio
     );
     expect(criados).toHaveLength(0);
+  });
+});
+
+describe('a casca do PRÓPRIO corpo não engole mais o nome', () => {
+  // A reprovação dele em 31/08: "quando aproximo o corpo o objeto engole
+  // o texto". O nome era posto no CENTRO do corpo — dentro do globo —, e
+  // o globo escreve profundidade: de perto o disco toma a tela e o nome
+  // sumia inteiro. Medido na página viva antes do conserto
+  // (`?atlas=1&foco=terra&ver=corpo&d=3&r3d=1`): "TERRA" existia,
+  // `visible: true`, a 3,0 raios da câmera, com a superfície a 2,0.
+  it('com raio, o nome nasce À FRENTE da superfície, não no centro', () => {
+    const { pintor, cam } = bancada(5);
+    pintor.sincronizar(true, cam, [alvo('corpo:earth', 'Terra')], naOrigem, () => 1);
+    const t = criados[0];
+    // a superfície de um corpo de raio 1 na origem está a 4 da câmera: o
+    // nome tem de estar MAIS PERTO que ela, que é a única leitura que o
+    // teste de profundidade faz
+    expect(t.position.distanceTo(cam.position)).toBeLessThan(4);
+    // o avanço é o raio com os 5% que tiram o z-fighting do polo
+    expect(t.position.z).toBeCloseTo(1.05, 6);
+  });
+
+  it('sem raio o nome fica no centro — o espelho não inventa geometria', () => {
+    const { pintor, cam } = bancada(5);
+    pintor.sincronizar(true, cam, [alvo('corpo:earth', 'Terra')], naOrigem, semRaio);
+    expect(criados[0].position.z).toBeCloseTo(0, 9);
+  });
+
+  it('o avanço não mexe no ponto da TELA: anda sobre a linha câmera→corpo', () => {
+    const { pintor, cam } = bancada(5);
+    const centro: readonly [number, number, number] = [2, 1, 0];
+    pintor.sincronizar(
+      true,
+      cam,
+      [alvo('corpo:mars', 'Marte')],
+      () => centro,
+      () => 0.5
+    );
+    const t = criados[0];
+    // tira a folga da vaga (a direita da câmera é +X, quaternion
+    // identidade): o que sobra é o avanço puro
+    const semFolga = t.position
+      .clone()
+      .sub(new THREE.Vector3((18 / 13) * t.scale.x, 0, 0))
+      .sub(cam.position);
+    const aoCorpo = new THREE.Vector3(centro[0], centro[1], centro[2]).sub(cam.position);
+    // colinear com câmera→corpo ⇒ mesmo ponto projetado, outro Z
+    expect(semFolga.clone().cross(aoCorpo).length()).toBeCloseTo(0, 9);
+    expect(semFolga.length()).toBeLessThan(aoCorpo.length());
+  });
+
+  it('o tamanho na tela não muda: a escala é a da distância NOVA', () => {
+    const a = bancada(5);
+    a.pintor.sincronizar(true, a.cam, [alvo('corpo:earth', 'Terra')], naOrigem, semRaio);
+    const semR = criados[0];
+    criados.length = 0;
+    const b = bancada(5);
+    b.pintor.sincronizar(true, b.cam, [alvo('corpo:earth', 'Terra')], naOrigem, () => 1);
+    const comR = criados[0];
+    // 13 px continuam 13 px: o em cai na MESMA proporção da distância
+    expect(comR.scale.x / semR.scale.x).toBeCloseTo((5 - 1.05) / 5, 6);
+  });
+
+  it('o TETO do near: perto demais, o avanço para antes do plano', () => {
+    const { pintor, cam } = bancada(1.2);
+    // o near do palco local com corpo em quadro: meio raio (`nearPlanePc`)
+    cam.near = 0.5;
+    pintor.sincronizar(true, cam, [alvo('corpo:earth', 'Terra')], naOrigem, () => 1);
+    const t = criados[0];
+    // o avanço cheio (1,05) deixaria o nome a 0,15 da câmera, dentro do
+    // near — cortado. O teto o para em d − 1,2·near.
+    expect(t.position.z).toBeCloseTo(1.2 - 0.6, 6);
+    expect(t.position.distanceTo(cam.position)).toBeGreaterThan(cam.near);
   });
 });
 
@@ -250,7 +338,8 @@ describe('dispose descarta todos os textos — o passo do teardown', () => {
       true,
       cam,
       [alvo('corpo:earth', 'Terra'), alvo('corpo:mars', 'Marte')],
-      naOrigem
+      naOrigem,
+      semRaio
     );
     expect(criados).toHaveLength(2);
     pintor.dispose();
