@@ -490,9 +490,13 @@ describe('a ponte AU→cena é uma rotação e uma multiplicação (D1)', () => 
   });
 
   it('as cores do atributo são as da F1, canal a canal', () => {
+    // o laço é o dos ONZE (`IDS_DOS_PONTOS`), não o dos dez do retrato:
+    // o vértice sem retrato nasce mudo na POSIÇÃO e na magnitude, mas a
+    // cor dele é escrita no construtor como a dos outros — percorrer só
+    // `IDS_FOTOMETRIA` deixava a Lua fora de qualquer cobrança de cor.
     const p = camada();
     const c = atributo(p, 'aCor');
-    IDS_FOTOMETRIA.forEach((id, i) => {
+    IDS_DOS_PONTOS.forEach((id, i) => {
       const alvo = FOTOMETRIA[id].corLinear;
       expect(c.getX(i), id).toBe(Math.fround(alvo[0]));
       expect(c.getY(i), id).toBe(Math.fround(alvo[1]));
@@ -1546,5 +1550,83 @@ describe('a cessão sob corpo resolvido (aCede, F2a)', () => {
   it('a cessão mora FORA do update — método irmão, como escreverInstante', () => {
     expect(CORPO_DO_UPDATE).not.toContain('escreverCessao');
     expect(CORPO_DO_UPDATE).not.toContain('aCede');
+  });
+});
+
+// ============================================================
+// 11. O PONTO DE UM CORPO SEM RETRATO (item 108) — a escrita que vem
+// do corpo resolvido, e a COBRANÇA DE UPLOAD dela.
+//
+// `escreverPontoDeCorpo` é o irmão do `escreverInstante`, e o irmão
+// tem a cobrança de `version` desde a F4 (bloco 10a): escrever de
+// verdade sobe upload, reescrever o mesmo valor não sobe nada. Sem
+// esta seção o `needsUpdate` da Lua podia sumir com a suíte verde — o
+// buffer certo em CPU e o vértice velho na GPU, que é exatamente o
+// defeito que nenhum teste de valor enxerga (§15).
+// ============================================================
+describe('escreverPontoDeCorpo — o vértice da Lua e o upload dele', () => {
+  /** um centro plausível para a Lua: ~1 UA do Sol, em pc de cena. */
+  const CENTRO = new THREE.Vector3(0.6 * AU_PARA_PC, -0.8 * AU_PARA_PC, 1e-7);
+
+  it('escrever o centro sobe upload nos DOIS atributos que ele carrega', () => {
+    const p = camada();
+    const pos = atributo(p, 'position');
+    const mag = atributo(p, 'aMagBase');
+    const vPos = pos.version;
+    const vMag = mag.version;
+
+    expect(p.escreverPontoDeCorpo('moon', CENTRO)).toBe(true);
+
+    const i = IDS_DOS_PONTOS.indexOf('moon');
+    expect(pos.getX(i)).toBe(Math.fround(CENTRO.x));
+    expect(pos.getY(i)).toBe(Math.fround(CENTRO.y));
+    expect(pos.getZ(i)).toBe(Math.fround(CENTRO.z));
+    // a magnitude sai do conversor ÚNICO da F1, com o r heliocêntrico
+    // tirado do próprio centro (o Sol é a origem da cena)
+    const rUA = Math.hypot(CENTRO.x, CENTRO.y, CENTRO.z) * UA_POR_PC;
+    expect(mag.getX(i)).toBe(
+      Math.fround(aMagBaseDe(FOTOMETRIA.moon.H, rUA) + DESLOCAMENTO_UA_PARA_PC)
+    );
+    // A COBRANÇA: sem `needsUpdate` o valor acima estaria certo em CPU
+    // e o vértice na GPU seria o mudo do construtor
+    expect(pos.version).toBe(vPos + 1);
+    expect(mag.version).toBe(vMag + 1);
+    // upload CHEIO, como o irmão: nenhuma faixa parcial é aberta
+    expect(pos.updateRanges).toHaveLength(0);
+    expect(mag.updateRanges).toHaveLength(0);
+    p.dispose();
+  });
+
+  it('reescrever o MESMO centro não sobe upload — é o que o palco faz 60×/s', () => {
+    const p = camada();
+    p.escreverPontoDeCorpo('moon', CENTRO);
+    const pos = atributo(p, 'position');
+    const mag = atributo(p, 'aMagBase');
+    const vPos = pos.version;
+    const vMag = mag.version;
+    expect(p.escreverPontoDeCorpo('moon', CENTRO)).toBe(false);
+    expect(pos.version).toBe(vPos);
+    expect(mag.version).toBe(vMag);
+    p.dispose();
+  });
+
+  it('centro não-finito não escreve nada e não sobe upload', () => {
+    const p = camada();
+    const pos = atributo(p, 'position');
+    const vPos = pos.version;
+    expect(p.escreverPontoDeCorpo('moon', new THREE.Vector3(Number.NaN, 0, 0))).toBe(false);
+    const i = IDS_DOS_PONTOS.indexOf('moon');
+    expect([pos.getX(i), pos.getY(i), pos.getZ(i)]).toEqual([0, 0, 0]);
+    expect(pos.version).toBe(vPos);
+    p.dispose();
+  });
+
+  it('corpo desconhecido é recusado sem tocar o buffer', () => {
+    const p = camada();
+    const pos = atributo(p, 'position');
+    const vPos = pos.version;
+    expect(p.escreverPontoDeCorpo('vulcan', CENTRO)).toBe(false);
+    expect(pos.version).toBe(vPos);
+    p.dispose();
   });
 });
