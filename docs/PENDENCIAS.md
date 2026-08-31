@@ -1658,7 +1658,11 @@ conferido contra o código em 25/08:
 - **a baseline do gate gerada e VERSIONADA.** Hoje o `ab-identidade` guarda
   tudo em TMPDIR, e o `NORTE` já registra a falta ("baseline indexada pela
   GPU, fora do TMPDIR — ainda não existe; o ritual é manual"). Sem ela,
-  mexer nos documentos deixa a casa sem valor esperado.
+  mexer nos documentos deixa a casa sem valor esperado. **E mais uma
+  razão, achada em 31/08:** esse estado em `$TMPDIR` é COMPARTILHADO entre
+  as worktrees e a árvore principal — o carimbo é do código, então mesmo
+  carimbo quer dizer mesmo cache, e duas mãos em paralelo escrevem uma por
+  cima da outra sem aviso nenhum.
 - **o dossiê mecânico dos itens abertos**, como checklist da extração.
   Agora só vale para os documentos que a reforma ainda não tocou —
   `NORTE.md`, `PLANO-ATLAS.md`, `LEI-DA-ESTRELA.md`.
@@ -1710,6 +1714,17 @@ está fora de suspeita (pose bit a bit igual nas duas navegações); o
 suspeito de sempre é textura chegando em estados diferentes. Enquanto
 viver, um A/B pode acusar essas vistas em falso — a prova de inocência é
 o par nulo (o mesmo lado contra ele mesmo), que já pegou este.
+
+A `foco-luas` entrou em **31/08**, pela leva do item **59**: dentro do
+balde da leva cheia (9 navegações na MESMA sessão de Chrome) as duas
+capturas do lado *depois* — mesmo código — deram md5 diferentes,
+`fda93db749c0` na primeira e `6af9c0dbcbe4` na segunda, que é o md5 do
+lado *antes*. Medida em seguida **isolada**, uma sessão de Chrome por
+captura, ela é estável: 3 capturas no código novo e 3 no código antigo
+(`63ce689`) deram as seis `6af9c0dbcbe4`. É tremor de **contexto de
+balde**, não da obra — a família deste item com o **80** —, e por isso o
+A/B fechou 51/51 bit-idênticas. Rastro:
+`capturas/item59-ab-vistas.json`.
 
 **PARTE DISTO TINHA CAUSA, E A CAUSA CAIU EM 26/08 (item 104, S3).** O
 `sombraDoAnel` de `gigante.ts` lia a placa do anel com a busca DEPOIS dos
