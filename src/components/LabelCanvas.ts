@@ -235,7 +235,7 @@ export class LabelCanvas {
         // no mesmo pixel como ÍCONE e como TEXTO são quadros diferentes
         // — sem este bit, ligar/desligar os nomes não repintaria
         `,${label.dirigido ? 1 : 0},${label.icone ? 1 : 0},${label.comAnel ? 1 : 0}` +
-        `,${label.textoInvisivel ? 1 : 0}` +
+        `,${label.textoInvisivel ? 1 : 0},${label.saindo ? 1 : 0}` +
         `,${label.corDoAnel ?? ''},${nome},${detalhe}`;
     }
     return assinatura;
@@ -394,14 +394,23 @@ export class LabelCanvas {
       }
       if (!candidate) continue;
       const direction = toLeft ? -1 : 1;
-      occupied.push(candidate);
-      // passou por todas as leis: está NA TELA, e portanto é clicável —
-      // e a vaga TEM LADO (item 109): o pintor 3D pinta na MESMA vaga,
-      // então o lado que a borda escolheu viaja no objeto, ao lado do
-      // `desenhado`
-      label.desenhado = true;
-      (label as RotuloComVaga).ladoEsquerdo = toLeft;
-      this.desenhadosAntes.set(label.key, toLeft);
+      // O NOME QUE ESTÁ SAINDO É IMAGEM, NÃO OCUPANTE (item 115, bloco
+      // B). Ele pinta enquanto a rampa desce — é isso que faz o nome
+      // esvair em vez de sumir num quadro — e não faz mais nada: não
+      // reserva vaga (o vizinho vivo entra por cima dele, como no Eyes,
+      // onde um div em `hiddenByLabelQuadtree` já saiu da quadtree), não
+      // vira alvo de clique e não realimenta a histerese da régua. Sem
+      // esta porta a rampa deixaria de ser o COMO e viraria o QUEM.
+      if (!label.saindo) {
+        occupied.push(candidate);
+        // passou por todas as leis: está NA TELA, e portanto é clicável —
+        // e a vaga TEM LADO (item 109): o pintor 3D pinta na MESMA vaga,
+        // então o lado que a borda escolheu viaja no objeto, ao lado do
+        // `desenhado`
+        label.desenhado = true;
+        (label as RotuloComVaga).ladoEsquerdo = toLeft;
+        this.desenhadosAntes.set(label.key, toLeft);
+      }
 
       ctx.globalAlpha = label.opacity;
       if (label.comAnel) {

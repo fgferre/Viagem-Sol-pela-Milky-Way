@@ -12,6 +12,7 @@
 import * as THREE from 'three';
 import {
   PRIORIDADE_DO_ROTULO,
+  RampasDeRotulo,
   aplicarReguaDeRelevancia,
   prioridadeDeEstrela,
   projectCorpos,
@@ -147,6 +148,14 @@ export class Rotulos {
    *  planetas não entram nesta leva — disco de minutos de arco só em
    *  close, e lá o rótulo do próprio corpo é quem manda no quadro. */
   private readonly oclusoresDeRotulo = [{ x: 0, y: 0, z: 0, raio: RAIO_DO_SOL_NA_CENA }];
+  /** as rampas de 250/750 ms dos nomes (item 115, bloco B) */
+  private readonly rampas = new RampasDeRotulo();
+  /**
+   * O TEMPO QUE AS RAMPAS AINDA NÃO GASTARAM. `tique` acumula, `projetar`
+   * consome e zera — assim um quadro em que a projeção não roda não some
+   * com o tempo dele nem o faz contar duas vezes.
+   */
+  private dtDeRampa = 0;
 
   private readonly fios: {
     onLabels: (labels: StarLabel[]) => void;
@@ -250,12 +259,29 @@ export class Rotulos {
     this.cameraTemLeitor = quer;
   }
 
+  /**
+   * A LISTA DO QUADRO SAI POR AQUI, e a rampa é o último passo antes do
+   * fio (item 115, bloco B). Um lugar só, e por dois motivos: a rampa
+   * precisa correr em TODO quadro do céu navegado — inclusive nos que
+   * publicam lista vazia, senão a memória de quem sumiu congela em vez
+   * de esvair —, e a régua tem de ter dito a última palavra antes dela.
+   *
+   * O FILME NÃO ENTRA: lá o assunto do beat é etiqueta forçada, sem
+   * fades, por regra editorial ("o assunto sempre tem nome"), e os
+   * planos são pinados quadro a quadro.
+   */
+  private publicar(labels: StarLabel[], dt: number, fase: Phase) {
+    if (fase !== 'journey') this.rampas.aplicar(labels, dt);
+    this.fios.onLabels(labels);
+  }
+
   /** os relógios de 4 Hz do rumo e do Sol andam com o quadro */
   tique(dt: number) {
     this.destTimer += dt;
     this.solTimer += dt;
     this.camTimer += dt;
     this.lenteTimer += dt;
+    this.dtDeRampa += dt;
   }
 
   /**
@@ -438,6 +464,11 @@ export class Rotulos {
    */
   projetar(cam: THREE.PerspectiveCamera, quadro: QuadroDeRotulos) {
     const { fase, named, dHome, planetas } = quadro;
+    // O TEMPO DAS RAMPAS, consumido de uma vez (ver `dtDeRampa`). O FILME
+    // NÃO ENTRA: lá o assunto do beat é etiqueta forçada, sem fades, por
+    // regra editorial — a rampa é do céu que o visitante navega.
+    const dtDaRampa = this.dtDeRampa;
+    this.dtDeRampa = 0;
     // A CAMADA DESLIGADA CALA A TELA INTEIRA (item 82, N2) — e cala
     // antes de projetar, porque projetar para jogar fora seria pagar a
     // conta de um quadro que ninguém vê. A lista fica VAZIA, e com ela o
@@ -490,7 +521,7 @@ export class Rotulos {
       if (this.prevLabelKeys.size > 0) this.prevLabelKeys.clear();
       if (this.prevDesenhados.size > 0) this.prevDesenhados.clear();
       this.lastLabels = [...falados, ...icones];
-      this.fios.onLabels(this.lastLabels);
+      this.publicar(this.lastLabels, dtDaRampa, fase);
       this.emitDest(roteiro?.dest, cam.position, named);
       this.emitSol(cam.position, fase);
       this.emitLente(cam, fase);
@@ -612,6 +643,10 @@ export class Rotulos {
         // da geometria: sem ele, vinte estrelas espalhadas pelo quadro
         // nunca colidem entre si e ficam todas na tela, que foi
         // exatamente a confusão que o dono viu na abertura.
+        // A RAMPA VEM DEPOIS DA RÉGUA (em `publicar`), e essa ordem é o
+        // contrato: a régua decide quem aparece e quantos cabem; a rampa
+        // só diz com quanta tinta. Ler a opacidade rampada de volta no
+        // orçamento faria a rampa mudar QUEM aparece — e ela não muda.
         this.lastLabels = aplicarReguaDeRelevancia(lista, this.prevDesenhados);
         this.emitDest(undefined, cam.position, named);
       }
@@ -621,10 +656,10 @@ export class Rotulos {
       this.prevDesenhados = new Set(
         this.lastLabels.filter((l) => l.desenhado).map((l) => l.key)
       );
-      this.fios.onLabels(this.lastLabels);
+      this.publicar(this.lastLabels, dtDaRampa, fase);
     } else if (fase !== 'journey') {
       this.lastLabels = [];
-      this.fios.onLabels([]);
+      this.publicar(this.lastLabels, dtDaRampa, fase);
       this.emitDest(undefined, cam.position, named);
     }
 

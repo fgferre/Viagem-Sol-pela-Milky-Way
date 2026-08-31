@@ -372,3 +372,143 @@ describe('o indicador de fotografia (item 100): "LENTE · SOL" só no filme', ()
     expect(lentes.at(-1)).toMatch(/^LENTE 18° · SOL /);
   });
 });
+
+// ============================================================
+// A RAMPA DOS NOMES — 250 ms para entrar, 750 ms para sair (item 115,
+// bloco B; mergulho 08 §1.6a).
+//
+// Antes desta obra a opacidade de um rótulo era calculada do zero no
+// quadro em que ele aparecia: quem entrava nascia CHEIO e quem perdia a
+// vaga da régua ia a ZERO em um quadro. Nenhum quadro com alfa
+// intermediário — a contagem abaixo mede exatamente isso, e é ela que
+// reprova se a rampa sumir ou se as duas durações virarem uma só.
+//
+// A bancada é o VOO LIVRE com um céu de estrelas de mentira, todas a
+// mais de 2,2 pc (onde o fade de perto já está cheio) e com a MESMA
+// magnitude: a opacidade de repouso de cada uma é 0,92 exata, então
+// "alfa intermediário" é literalmente "diferente de 0 e de 0,92".
+// ============================================================
+describe('a rampa dos nomes: 250 ms para entrar, 750 ms para sair', () => {
+  const QUADRO = 1 / 60;
+
+  /** uma estrela de mentira a `d` pc na frente da câmera, com nome dado */
+  function estrela(nome: string, d: number, i: number): NamedStar {
+    // afastada do eixo o bastante para cair dentro da caixa segura de
+    // `projectPoint`, e diferente por índice para não empilhar
+    return { n: nome, x: 0.02 * i * d, y: 0.02 * i * d, z: -d, m: 1, s: 'G2V', d, t: 0 };
+  }
+
+  /** o céu de `n` estrelas, a 3, 4, … pc — a mais distante é a última */
+  function ceu(n: number): NamedStar[] {
+    return Array.from({ length: n }, (_, i) => estrela(`E${i + 1}`, 3 + i, i + 1));
+  }
+
+  function bancadaDoCeu() {
+    const publicadas: StarLabel[][] = [];
+    const rotulos = new Rotulos({
+      onLabels: (labels) => publicadas.push(labels),
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({}) as JourneyMeta,
+    });
+    const cam = new THREE.PerspectiveCamera(50, 1, 0.1, 2000);
+    cam.updateMatrixWorld();
+    /** um quadro de 1/60 s com o céu dado */
+    const passo = (named: NamedStar[]) => {
+      rotulos.tique(QUADRO);
+      rotulos.projetar(cam, {
+        fase: 'free', named, dHome: 0, planetas: null, foco: null,
+        nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+      });
+    };
+    /** a opacidade de um nome no último quadro publicado (0 se ausente) */
+    const alfaDe = (nome: string) =>
+      publicadas.at(-1)?.find((l) => l.key === nome)?.opacity ?? 0;
+    return { rotulos, publicadas, passo, alfaDe };
+  }
+
+  const CHEIO = 0.92;
+  const intermediario = (a: number) => a > 0 && a < CHEIO;
+
+  it('quem ENTRA sobe em 15 quadros (250 ms a 60 fps) e ENCOSTA em 0,92', () => {
+    const { passo, alfaDe } = bancadaDoCeu();
+    const céu = ceu(3);
+    let meios = 0;
+    for (let i = 0; i < 60; i++) {
+      passo(céu);
+      if (intermediario(alfaDe('E1'))) meios++;
+    }
+    // 14 quadros no meio do caminho e o 15º já cheio: 250 ms exatos
+    expect(meios).toBe(14);
+    // ENCOSTAR é obrigação: 0,92 EXATO, senão a assinatura do desenho
+    // muda em todo quadro e a tela repinta para sempre
+    expect(alfaDe('E1')).toBe(CHEIO);
+  });
+
+  it('quem PERDE a vaga desce em 45 quadros (750 ms) — três vezes a subida', () => {
+    const { passo, alfaDe, publicadas } = bancadaDoCeu();
+    // onze estrelas: o orçamento de nomes é dez, então E11 já nasce
+    // cortada e as dez primeiras assentam cheias
+    const onze = ceu(11);
+    for (let i = 0; i < 40; i++) passo(onze);
+    expect(alfaDe('E10')).toBe(CHEIO);
+    // chega uma estrela MAIS PERTO que todas: ela toma a última vaga e
+    // E10 passa a ser a cortada
+    const doze = [estrela('NOVA', 2.5, 12), ...onze];
+    let saindo = 0;
+    let entrando = 0;
+    for (let i = 0; i < 60; i++) {
+      passo(doze);
+      if (intermediario(alfaDe('E10'))) saindo++;
+      if (intermediario(alfaDe('NOVA'))) entrando++;
+    }
+    expect(saindo).toBe(44);
+    expect(entrando).toBe(14);
+    // a assimetria é o produto: sair custa três vezes o entrar
+    expect((saindo + 1) / (entrando + 1)).toBe(3);
+    // e no fim a cortada está APAGADA e volta a ser corte da régua
+    const E10 = publicadas.at(-1)?.find((l) => l.key === 'E10');
+    expect(E10?.opacity).toBe(0);
+    expect(E10?.cortadoPelaRegua).toBe(true);
+  });
+
+  it('enquanto desce, o nome cortado volta à lista como `saindo` — imagem, não vaga', () => {
+    const { passo, publicadas } = bancadaDoCeu();
+    const onze = ceu(11);
+    for (let i = 0; i < 40; i++) passo(onze);
+    const doze = [estrela('NOVA', 2.5, 12), ...onze];
+    passo(doze);
+    const E10 = publicadas.at(-1)?.find((l) => l.key === 'E10');
+    // a régua CORTOU (e é ela quem manda em quem ocupa); a rampa devolve
+    // o rótulo à pintura sem devolver a vaga
+    expect(E10?.saindo).toBe(true);
+    expect(E10?.cortadoPelaRegua).toBeFalsy();
+    // quem já estava fora e apagado continua fora: E11 nunca acendeu
+    expect(publicadas.at(-1)?.find((l) => l.key === 'E11')?.opacity).toBe(0);
+  });
+
+  it('a memória atravessa a ausência: sumir e voltar não reinicia do zero', () => {
+    const { passo, alfaDe } = bancadaDoCeu();
+    const tres = ceu(3);
+    for (let i = 0; i < 30; i++) passo(tres);
+    expect(alfaDe('E3')).toBe(CHEIO);
+    // E3 sai do catálogo por seis quadros (100 ms de descida) e volta
+    const dois = tres.slice(0, 2);
+    for (let i = 0; i < 6; i++) passo(dois);
+    passo(tres);
+    // sem memória ela renasceria em 1/15 do caminho; com memória volta
+    // de onde parou, bem acima disso — é o que impede o pisca-pisca
+    expect(alfaDe('E3')).toBeGreaterThan(0.8 * CHEIO);
+  });
+
+  it('com a rampa cheia o quadro parado é BIT A BIT o mesmo — nada a repintar', () => {
+    const { passo, publicadas } = bancadaDoCeu();
+    const tres = ceu(3);
+    for (let i = 0; i < 30; i++) passo(tres);
+    const antes = publicadas.at(-1)!.map((l) => l.opacity);
+    passo(tres);
+    expect(publicadas.at(-1)!.map((l) => l.opacity)).toEqual(antes);
+  });
+});

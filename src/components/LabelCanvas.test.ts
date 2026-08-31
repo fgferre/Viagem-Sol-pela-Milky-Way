@@ -586,3 +586,44 @@ describe('três pesos visuais, numa tabela só', () => {
     expect(cores.size).toBe(3);
   });
 });
+
+// ============================================================
+// O NOME QUE ESTÁ SAINDO É IMAGEM, NÃO OCUPANTE (item 115, bloco B).
+//
+// A rampa de 250/750 ms devolve à pintura o rótulo que a régua de
+// relevância CORTOU, para ele esvair em vez de sumir num quadro. A lei
+// que faz disso o COMO e não o QUEM mora aqui: o `saindo` pinta e não
+// reserva vaga, não vira alvo de clique e não guarda lado. Apagar a
+// porta do `saindo` no desenho faz os três vereditos abaixo reprovarem.
+// ============================================================
+describe('o nome que sai pinta, mas não ocupa (item 115)', () => {
+  it('pinta na tela como qualquer outro', () => {
+    const { ctx, rotulos } = bancada();
+    const indo = rotulo('star:indo', 'INDO', 0.4, 0.4);
+    indo.saindo = true;
+    rotulos.draw([indo]);
+    expect(ctx.pintadas.map((p) => p.texto)).toContain('INDO');
+  });
+
+  it('não reserva a vaga: o vizinho VIVO entra por cima dele', () => {
+    const { rotulos } = bancada();
+    const indo = rotulo('star:indo', 'INDO', 0.4, 0.4);
+    indo.saindo = true;
+    // o mesmo pixel: sem a porta, o primeiro da lista ocuparia e o
+    // segundo sumiria — que é a régua mudando por causa da rampa
+    const vivo = rotulo('star:vivo', 'VIVO', 0.4, 0.4);
+    rotulos.draw([indo, vivo]);
+    expect(vivo.desenhado).toBe(true);
+  });
+
+  it('não vira alvo de clique nem alimenta a histerese', () => {
+    const { rotulos } = bancada();
+    const indo = rotulo('star:indo', 'INDO', 0.4, 0.4);
+    indo.saindo = true;
+    rotulos.draw([indo]);
+    // `desenhado` é a lista única do clique (pendência 30) e a fonte da
+    // histerese da régua: um nome de saída não entra em nenhuma das duas
+    expect(indo.desenhado).toBe(false);
+    expect(indo.ladoEsquerdo).toBeUndefined();
+  });
+});

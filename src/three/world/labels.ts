@@ -92,6 +92,17 @@ export interface StarLabel {
    * continua sob a lei geral de um lugar por nome.
    */
   dirigido?: boolean;
+  /**
+   * ESTE NOME ESTÁ SAINDO — a rampa dele desce (item 115, bloco B).
+   *
+   * Quem marca é `RampasDeRotulo`, no rótulo que a régua CORTOU e cuja
+   * rampa ainda não chegou a zero. O `LabelCanvas` o PINTA (é o que faz
+   * o nome esvair em vez de sumir num quadro) e não faz mais nada com
+   * ele: não reserva vaga, não escreve `desenhado`, não guarda o lado.
+   * É esta linha que garante que a rampa muda o COMO e nunca o QUEM —
+   * o conjunto dos rótulos que ocupam a tela é o mesmo com e sem ela.
+   */
+  saindo?: boolean;
 }
 
 /**
@@ -265,6 +276,88 @@ export function aplicarReguaDeRelevancia(
     else l.cortadoPelaRegua = true;
   }
   return lista;
+}
+
+/**
+ * AS DUAS DURAÇÕES DA RAMPA — 250 ms para ENTRAR, 750 ms para SAIR
+ * (item 115, bloco B; mergulho 08 §1.6a, `.pioneer-label-div`:
+ * `transition: opacity .25s` na entrada e `.75s` no `.hidden`).
+ *
+ * A ASSIMETRIA É O PRODUTO, não um detalhe: rápido a aparecer e
+ * preguiçoso a sumir é o que faz o desentulho não piscar — um nome que
+ * perde a vaga por um punhado de quadros e a recupera nem chega a
+ * apagar. Simétrico, os dois defeitos voltam juntos (entrada arrastada e
+ * saída seca).
+ */
+export const RAMPA_DE_ENTRADA_S = 0.25;
+export const RAMPA_DE_SAIDA_S = 0.75;
+
+/**
+ * A RAMPA TEMPORAL DOS NOMES (item 115, bloco B) — o COMO, nunca o QUEM.
+ *
+ * Até 31/08 a opacidade de cada rótulo era calculada do zero no quadro
+ * em que ele aparecia: quem entrava nascia cheio e quem perdia a vaga ia
+ * a zero em UM quadro. A régua de relevância (`aplicarReguaDeRelevancia`,
+ * item 82 N1) e a histerese de seleção continuam decidindo QUEM aparece,
+ * intocadas — esta peça roda DEPOIS delas e só multiplica a tinta.
+ *
+ * A LEI DA NEUTRALIDADE, e é ela que separa esta peça de uma mudança de
+ * régua: o rótulo CORTADO cuja rampa ainda não zerou volta à lista como
+ * `saindo` — pinta, e nada mais (`StarLabel.saindo`). Não reserva vaga,
+ * não vira alvo de clique, não realimenta a histerese. O conjunto do que
+ * OCUPA a tela é bit a bit o de antes.
+ *
+ * POR QUE LINEAR E NÃO EXPONENCIAL: o encosto exponencial que o mergulho
+ * sugeriu (`op += (alvo−op)·(1−e^(−dt/τ))`) nunca CHEGA ao alvo, e a
+ * assinatura do `LabelCanvas` (que compara opacidade para não repintar
+ * um quadro parado) passaria a mudar para sempre, a 60 Hz. A rampa
+ * linear em ALFA chega ao alvo em tempo exato, é reversível no meio do
+ * caminho sem descontinuidade, e devolve os 250/750 ms medidos no CSS
+ * deles em vez de uma constante de tempo que só se parece com eles.
+ */
+export class RampasDeRotulo {
+  /** alfa vivo por chave; ausente = ainda não nasceu (entra do zero) */
+  private readonly alfa = new Map<string, number>();
+
+  /**
+   * Um passo de `dt` sobre a lista JÁ julgada pela régua: multiplica a
+   * opacidade de cada rótulo pela rampa dele e devolve à lista, como
+   * `saindo`, quem a régua cortou e ainda tem tinta.
+   */
+  aplicar(lista: readonly StarLabel[], dt: number): void {
+    if (!(dt > 0)) return;
+    const sobe = dt / RAMPA_DE_ENTRADA_S;
+    const desce = dt / RAMPA_DE_SAIDA_S;
+    const vistos = new Set<string>();
+    for (const l of lista) {
+      vistos.add(l.key);
+      const v = this.andar(this.alfa.get(l.key) ?? 0, l.cortadoPelaRegua ? 0 : 1, sobe, desce);
+      this.alfa.set(l.key, v);
+      l.opacity *= v;
+      if (l.cortadoPelaRegua && v > 0) {
+        l.cortadoPelaRegua = false;
+        l.saindo = true;
+      }
+    }
+    // QUEM SUMIU DA LISTA TAMBÉM DESCE. Sem isto o nome que sai do
+    // quadro por um instante e volta renasceria do zero — a memória é
+    // exatamente o que impede o pisca-pisca que a assimetria promete
+    // matar. Zerou, sai do mapa: a memória vive no máximo 750 ms.
+    for (const [key, v] of this.alfa) {
+      if (vistos.has(key)) continue;
+      const novo = this.andar(v, 0, sobe, desce);
+      if (novo <= 0) this.alfa.delete(key);
+      else this.alfa.set(key, novo);
+    }
+  }
+
+  private andar(v: number, alvo: number, sobe: number, desce: number): number {
+    const novo = alvo > v ? Math.min(alvo, v + sobe) : Math.max(alvo, v - desce);
+    // ENCOSTAR NO ALVO É OBRIGAÇÃO. A soma de quinze doze-avos em ponto
+    // flutuante pousa em 0,9999999999999999, e um alfa que só TENDE a 1
+    // faria a assinatura do desenho mudar em todo quadro para sempre.
+    return Math.abs(alvo - novo) < 1e-6 ? alvo : novo;
+  }
 }
 
 const _v = new THREE.Vector3();
