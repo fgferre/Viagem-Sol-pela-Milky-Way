@@ -224,8 +224,10 @@ export interface OpcoesDeTextura {
    * de qualidade ao vivo não alcançava corpo nenhum; e reconstruí-los
    * para alcançar tirava o globo da tela por ~2 s enquanto a textura
    * nova vinha — medido, e é exatamente o véu que a letra C proíbe.
-   * Quem já está carregado guarda os pixels que tem; quem carregar
-   * daqui em diante obedece ao tier de agora.
+   * Desde o item 59 esta função é lida A CADA TICK por quem já está
+   * carregado, e não só na primeira carga: é ela que o double-buffer de
+   * `TexturasDoCorpo` compara com o `tierVivo` para decidir se há um
+   * lote novo a buscar em segundo plano.
    */
   tier: () => QualityLevel;
   maxTextureSize?: number;

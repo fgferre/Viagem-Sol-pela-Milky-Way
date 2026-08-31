@@ -574,15 +574,20 @@ Teardown que falha não leva os outros junto (`passoBlindado`).
   lâminas, que era a outra metade, já vai FATIADO por lâmina (~70 ms
   cada, sete fatias) e a primeira renderização do mundo novo custa
   ~130 ms de upload de VBO, inerente.
-- **Corpo do palco JÁ carregado guarda os pixels que tem.** Refazê-los
-  na troca foi tentado e medido em 20/08: a Terra em close-up vira
-  ponto por ~2 s enquanto a textura do tier novo vem pela rede — o véu
-  que a letra C proíbe. Quem carregar DEPOIS da troca obedece ao tier
-  de agora. Se um dia isso incomodar, o conserto é double-buffer POR
-  CORPO (segurar a textura velha até a nova chegar), não reconstrução.
-  Desde a dose de 22/08 (logo abaixo) isso vale para MUITO menos gente:
-  quem não está em foco está `fria` na hora da troca e nasce no tier
-  novo sozinho.
+- **Corpo do palco JÁ carregado troca de tier por DOUBLE-BUFFER, nunca
+  por reconstrução** (item 59, 31/08 — a decisão que este ponto previa
+  virou código). Refazer o corpo na troca foi tentado e medido em
+  20/08: a Terra em close-up vira ponto por ~2 s enquanto a textura do
+  tier novo vem pela rede — o véu que a letra C proíbe. O que vale
+  agora: `TexturasDoCorpo` (world/corpos/texturas.ts) guarda o
+  `tierVivo` dos pixels que estão na tela, e quando o seletor discorda
+  dele busca o lote novo em SEGUNDO PLANO, seguindo a desenhar os
+  pixels velhos, e troca o ponteiro num quadro só. A régua de validade
+  é a GERAÇÃO do pedido, não o tier pedido — a mesma lição do
+  `reassarMundo`. Quem nunca carregou continua obedecendo ao tier de
+  agora na primeira carga, e desde a dose de 22/08 (logo abaixo) é a
+  maioria: quem não está em foco está `fria` na hora da troca e nasce
+  no tier novo sozinho.
 - **A DOSE DO PRÉ-AQUECIMENTO é por CORPO, e o gate manda no resto**
   (22/08). Era um booleano só — `palcoQuente` — valendo para os doze, e
   o preço estava medido: abrir o Atlas em cinema deixava residentes

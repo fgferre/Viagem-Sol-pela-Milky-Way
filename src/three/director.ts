@@ -1032,10 +1032,11 @@ export class Director {
     // Terra — construtor barato, sem geometria e sem um byte de textura
     // (a carga é preguiçosa por contrato; as 18 vistas não fazem fetch).
     // O teto de textura congela AQUI (é do aparelho); o TIER, não — ele
-    // entra por FUNÇÃO e é lido no instante da carga, que é quando ele
-    // decide alguma coisa. É o que faz a troca de tier viva (Ajustes C)
-    // alcançar os corpos sem os reconstruir — reconstruir tirava o globo
-    // da tela por ~2 s, o véu que a letra C proíbe.
+    // entra por FUNÇÃO, lida na primeira carga E a cada tick de quem já
+    // carregou (o double-buffer do item 59). É o que faz a troca de tier
+    // viva (Ajustes C) alcançar os corpos sem os reconstruir —
+    // reconstruir tirava o globo da tela por ~2 s, o véu que a letra C
+    // proíbe.
     const corpos = montarCorposDoPalco({
       tier: () => this.engine.quality,
       maxTextureSize: sondarGl().maxTextureSize,
@@ -1981,14 +1982,17 @@ export class Director {
     this.engine.scene.remove(velho.sol.group);
     this.sun = solNovo;
     this.engine.scene.add(this.sun.group);
-    // O PALCO LOCAL NÃO É REFEITO AQUI, e isso é decisão medida: os doze
-    // corpos leem o tier na HORA de pedir textura (`montarCorposDoPalco`
-    // recebe uma função), então quem carregar daqui em diante já obedece
-    // ao número novo. Reconstruí-los para alcançar os que JÁ estão
-    // carregados foi tentado e medido em 20/08: a Terra em close-up some
-    // por ~2 s enquanto a textura no tier novo vem pela rede — o globo
-    // vira ponto e volta. É exatamente o véu que a letra C proíbe, e o
-    // preço de não fazê-lo é modesto: textura de corpo é alocação
+    // O PALCO LOCAL NÃO É REFEITO AQUI, e isso é decisão medida:
+    // reconstruir os doze corpos para alcançar os que JÁ estão carregados
+    // foi tentado e medido em 20/08 — a Terra em close-up some por ~2 s
+    // enquanto a textura no tier novo vem pela rede, o véu que a letra C
+    // proíbe. Quem alcança os carregados desde o item 59 (31/08) é o
+    // DOUBLE-BUFFER POR CORPO (`TexturasDoCorpo`, world/corpos/
+    // texturas.ts): cada corpo compara o tier vivo dos pixels que tem com
+    // o do seletor, busca o lote novo em segundo plano e troca o ponteiro
+    // num quadro só — o mesmo desenho deste swap, um degrau abaixo, e sem
+    // um quadro sem globo. Quem nunca carregou continua obedecendo ao
+    // tier de agora na primeira carga: textura de corpo é alocação
     // PREGUIÇOSA, do que se visitou, não peso residente do mundo.
     this.tierDoMundo = q;
     this.trocaPedida = null;

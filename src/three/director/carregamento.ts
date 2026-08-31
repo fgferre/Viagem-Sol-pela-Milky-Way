@@ -218,10 +218,12 @@ export async function montarCarga(opts: {
  * ele entra como FUNÇÃO e é lido no instante da carga (Ajustes C). Até
  * 2026-08-20 congelava junto, e a troca de tier viva não alcançava
  * corpo nenhum; reconstruí-los para alcançar tirava o globo da tela por
- * ~2 s (o tempo da textura nova) — o véu que a letra C proíbe. Quem já
- * carregou guarda os pixels que tem; quem carregar depois obedece ao
- * tier de agora — inclusive quando quem acabou de trocá-lo foi o Auto
- * do seletor (o antigo auto-quality do engine morreu na letra D).
+ * ~2 s (o tempo da textura nova) — o véu que a letra C proíbe. Desde o
+ * item 59 (31/08) a função é lida TAMBÉM por quem já carregou: o
+ * double-buffer de `TexturasDoCorpo` compara o tier dos pixels que estão
+ * na tela com o do seletor e troca o ponteiro quando o lote novo chega,
+ * sem véu — inclusive quando quem acabou de trocar o tier foi o Auto do
+ * seletor (o antigo auto-quality do engine morreu na letra D).
  */
 export function montarCorposDoPalco(opts: {
   tier: () => QualityLevel;

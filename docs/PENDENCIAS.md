@@ -718,32 +718,50 @@ invariância de resolução — se o "céu vazio" voltar na vista de LONGE em
 tela retina, é a primeira suspeita. Conferir com o dono na vista
 galáctica antes de mexer.
 
-**59.** (Achado em 21/08, ligado ao item 7.) Trocar de qualidade não
-troca a textura dos corpos que já estão carregados. O `reassarMundo`
-refaz a galáxia, os dois mapas e o Sol; os doze corpos do palco leem o
-tier só na HORA de pedir textura, então quem já carregou fica no alvo do
-tier velho (`alvoDePixels`, `world/corpos/texturas.ts`: cinema 8192,
-alta 2048, performance 1024). Não é esquecimento: refazer o globo hoje
-custa ~2 s de véu — a Terra em close-up vira ponto e volta enquanto a
-textura nova vem pela rede —, e isso está declarado no próprio
-`reassarMundo` e no `NORTE.md`. O conserto sem véu é double-buffer por
-corpo: assar a textura nova em paralelo e trocar o ponteiro num quadro
-só, que é o que a letra C já faz com a galáxia e o Sol.
+**59.** Trocar de qualidade não trocava a textura dos corpos já
+carregados — **FECHADO em 31/08**, nas duas fases que o próprio item
+desenhava.
 
-*(22/08: ENCOLHEU por dois lados, e continua aberto. (1) A carga virou
-TRANSACIONAL e cancelável — `carregarCanaisDoCorpo` já busca o lote
-inteiro num pedido, publica de uma vez e descarta tudo se o pedido for
-cancelado no caminho; é exatamente a metade de baixo do double-buffer, e
-ela existe. (2) O pré-aquecimento virou DOSE por corpo: abrir o Atlas
-não carrega mais os doze, então na troca de tier quase todo corpo está
-`fria` e nasce no tier novo sozinho — o item passou a valer só para o
-corpo que o visitante está OLHANDO. O que falta é a metade de cima: uma
-GERAÇÃO por corpo e o `tierVivo` que ela compara, para o corpo já
-carregado pedir o tier novo em segundo plano, seguir desenhando com os
-pixels velhos e trocar o ponteiro num quadro só. Hoje isso seriam quatro
-cópias — o estado (`texturas`, `recargas`, `texturasVivas`) ainda mora em
-cada classe; o passo honesto é esse estado mudar de casa para o pipeline
-único primeiro, e o double-buffer nascer lá, uma vez.)*
+O que o visitante sente agora: com a Terra em close-up, escolher outra
+qualidade **não tira o globo da tela** — a textura nova chega por trás e
+entra num quadro só, nos dois sentidos (alta→cinema e cinema→
+performance). Antes, quem já tinha carregado ficava no alvo de pixels do
+tier velho para sempre, e a única alternativa conhecida (refazer o
+corpo) custava ~2 s de véu.
+
+Como pousou. **F1** — o estado da textura (`texturas`, `recargas`,
+`texturasVivas`) saiu das quatro classes de corpo e mudou de casa para o
+pipeline único: `TexturasDoCorpo`, em `world/corpos/texturas.ts`. O
+corpo declara o pedido uma vez e entrega o `publicar`, que é a única
+parte que é dele. Refatoração pura, −198 linhas nos corpos. **F2** — o
+double-buffer nasceu lá, uma vez: o `tierVivo` diz de que tier são os
+pixels que estão na tela, e quando o seletor discorda dele sai um pedido
+em segundo plano; o corpo segue 'pronta', desenhando os pixels velhos,
+até o lote inteiro chegar. A régua de validade é a GERAÇÃO do pedido
+(três cliques seguidos, só o último vira pixel) e voltar ao tier que já
+está na tela CANCELA em vez de pedir de novo — a mesma lição que o
+`reassarMundo` aprendeu em 21/08. A troca que cai deixa o corpo com os
+pixels que tem, com a política de recarga de sempre e um aviso próprio.
+
+A prova. 10 testes novos de comportamento (7 na peça, 3 de ponta a ponta
+na Terra em close-up, onde o oráculo é o `name` da textura no uniform) e
+**sabotagem em worktree com quatro defeitos recolocados, todos
+reprovando**: o comportamento antigo (8 testes), o véu de volta (7), sem
+a geração (2), a troca sem descartar o lote velho (4). No app VIVO
+(`capturas/item59-troca-tier.json`, com as fotos ao lado e a sonda
+`item59-troca-tier.mjs` que o recomputa): Terra a 472 px de diâmetro,
+**71 e 190 quadros amostrados nas duas travessias, ZERO sem globo**; a
+largura da imagem no uniform vai de 2048 → 8192 → 1024 (o alvo de cada
+tier, lido do `naturalWidth`, não do número que o app diz querer); a
+troca leva 1,4 s e 0,56 s, e a fração de tela clara fica em 0,238 antes,
+durante e depois. A/B das 51 vistas oficiais
+(`capturas/item59-ab-vistas.json`): **bit-idênticas** — a obra muda
+transição, não estado assentado. (`foco-luas` saiu INSTÁVEL no balde da
+leva cheia, com dois md5 no MESMO código novo; isolada, 3 capturas no
+código novo e 3 no antigo deram o mesmo md5 do `antes`.)
+
+Sobra: a história antiga deste item (21/08 e 22/08) ainda não foi para o
+`PENDENCIAS-ARQUIVO.md`, como manda o padrão dos itens 61 e 70.
 
 **61.** Rever a UI/UX inteira — **FECHADO em 29/08**: a última ponta (a
 vista de abertura) foi julgada por ele na folha
