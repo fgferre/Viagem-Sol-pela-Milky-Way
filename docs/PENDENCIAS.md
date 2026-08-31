@@ -488,6 +488,27 @@ número livre segue **108**.
 
 ## ALTA — o dono vê e incomoda
 
+**115. A colheita da mineração do Eyes espera o julgamento dele.**
+A mineração de 30-31/08 (12 mergulhos comparados, tudo medido) está
+sintetizada em
+[`docs/reference/nasa-eyes-mineracao-mecanismos.md`](reference/nasa-eyes-mineracao-mecanismos.md)
+— ganhos ranqueados em blocos e a lista do que NÃO trazer. Nada virou
+obra; este item existe para a colheita não morrer sem número. As duas
+maiores alavancas sugeridas: **bloco A** (memória de texturas — hoje
+não descarregamos NADA, até 1,12 GiB residentes; refcount + descarga
+adiada 15 s) e **bloco B** (fita de órbita e rótulos — MSAA zerado
+hoje, `samples:4` no alvo do composer + rampa de rótulos 250/750 ms +
+oclusores além do Sol). Dentro do pacote há também quatro defeitos
+nossos pequenos e medidos que podem sair na frente: o desempate da
+busca devolve 0 ("jupiter" enche os slots com Jupiter LI…), o play
+pisca contra a parede do tempo, o embalo do zoom queima até 0,84 s
+contra o grampo, e a direção da rampa estoura 7,7× a velocidade
+angular a 170° (o `slerpDir` pronto existe). O material bruto
+(fichas, medidas, capturas) vive no scratchpad da máquina
+(`scratchpad/estudos/nasa-eyes-solar-system/mineracao/`, fora do git,
+retomada pelo `CHECKPOINT.md` de lá). Quando ele escolher um bloco, o
+bloco vira item próprio e este encolhe.
+
 **114. O censo do sistema solar: todas as luas e os objetos interessantes.**
 Pedido do dono em 30/08, palavras dele: *"quero expandir nosso projeto
 para ter todos obejtos possiveis de luas e obejtos maiores tb. meteoros
