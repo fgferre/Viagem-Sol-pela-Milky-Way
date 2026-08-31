@@ -36,9 +36,12 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 114.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 118.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
-  *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`.)*
+  *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
+  31/08 esta linha foi pega DUAS vezes atrás da verdade — o 114 e o 115
+  nasceram sem somá-la; quem abrir item confere o maior número vivo
+  antes de confiar nela.)*
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
@@ -1387,6 +1390,24 @@ incomodar: oclusão do rótulo atrás do globo, que dá para fazer no 2D
 com os oclusores que a casa já tem. **A decisão é dele: arquivar, ou
 ordenar a obra grande mesmo assim.** O worktree e a troika foram
 removidos após o spike, como manda o desenho.
+
+**116.** (Suspeita a medir, achada em 31/08 fechando o item 84.)
+`?foco=tritao` devolve o disco de Tritão **inteiramente escuro**, com e
+sem `?d=`, no jd pinado do gate (2460409.26) — silhueta preta sobre a
+Via Láctea. Pode ser geometria honesta (a noite virada para a câmera
+naquele instante) ou defeito do degrau `lua` de Netuno (enquadramento
+ou luz). Antes de tocar qualquer linha: par de capturas em dois jd
+diferentes e a conta do terminador (onde o Sol está em relação à
+câmera). A vista foi DESCARTADA do gate do 84 por isso; se for
+geometria honesta, vira candidata de novo com outro jd.
+
+**117.** (Suspeita a medir, mesma sessão.) As capturas de globo em
+close-up mostram um **aro azulado fino na borda do disco** — visto em
+Ganimedes (`atlas-lua-ganimedes`, nova) e na `foco-io` antiga. Corpo
+sem atmosfera não devia ter limbo azul. Pré-existente à obra do 84.
+Conferir se é casca de atmosfera aplicada por engano, Fresnel de
+material, ou artefato de anti-serrilhado — par de zoom na borda antes
+de qualquer conserto.
 
 ---
 
