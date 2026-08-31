@@ -47,7 +47,39 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ---
 
-## O BASTÃO — onde a rodada parou (30/08)
+## O BASTÃO — onde a rodada parou (31/08)
+
+**31/08 (a rodada da retomada — Fable coordena, executores Opus,
+auditor por etapa; TODAS as etapas auditadas por mão independente e os
+achados consertados no dia).** O **item 108 completou as três pernas**,
+e a chave foi a HIPÓTESE DELE (a câmera chegando quando os corpos não
+estão mais lá): (1) o relógio do filme consertado na raiz — o `?jd=`
+que o próprio app gravava na URL desligava a correção após um F5; a
+guarda saiu do tick com censo, contraprova com data suja saiu
+bit-idêntica à foto boa; (2) o **retrato de família** — o fim mostra a
+Lua E a Terra (mira +11°, lente 52°, 2 s de retrato; só a vista
+`fim-do-filme` mudou, 50/51 intactas com rastro); (3) a **Lua ACESA** —
+ela não tinha ponto fotométrico e perdia para estrelas de fundo (pico
+148 vs 230); entrou na camada de pontos SEM dose nova (148→245, fluxo
+19,8× a estrela mais viva) e o brilho ganhou dente. O **109** ajustado
+pela ordem dele ("olhar de UX sênior"): "SOL" legível no clarão
+(contraste 1,8→12,5:1), fotos `-v2` na mesa. **FECHADOS por obra: 59**
+(trocar de qualidade não tira mais o globo da tela; double-buffer na
+casa única; troca só para quem está NA TELA; museu), **34** (a vinheta
+do boot com os QUATRO braços do modelo — e o espelho de quiralidade
+desfeito), **84** (3 vistas de Atlas no gate — enquadramento de corpo,
+teto do zoom, close-up de lua; preço MEDIDO 4,0/lado, catraca 32,3;
+sabotagem independente selou, inclusive a prova de que a vista do teto
+mede o GRAMPO). Nasceram **116/117** (Tritão como disco preto na vista
+pinada; aro azulado no limbo dos globos). O contador de itens estava
+DUAS casas atrás (114/115 da outra sessão sem somá-lo) — re-somado, com
+aviso na própria linha. **ESPERA O OLHO DELE: o fim do filme no app
+(108), as fotos da beta (109) e a galáxia do boot (34).** Backup em dia
+a cada selo; site intocado. E a palavra dele na pedra da outra frente
+(`acb2b1e`): os blocos do 115 só ENTRAM depois que a frente atual da
+fila terminar.
+
+*(30/08, o bastão anterior:)*
 
 **30/08 (noite — item 113 FECHADO e a lição de modelo).** A caçada que
 ele cobrou achou desperdício real (foto duplicada, "antes" refeito à

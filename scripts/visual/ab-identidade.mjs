@@ -1,7 +1,10 @@
 // Serve: chão — mudança que move imagem não passa calada: md5 das 54 vistas, antes × depois
 // Custo: 4,0 min por lado (54 vistas = 56 capturas, JOBS=6) (SMOKE=1: 0,4 min por lado)
 //   SEM TIL: o preço voltou a ser MEDIDO em 31/08 (item 84, `DOZERO=1` na mesma
-//   máquina) — 4,0 min. Ele estimava 3,6 desde o item 108, quando a conta por
+//   máquina) — 4,0 min; a auditoria independente re-mediu 3,4 na mesma máquina,
+//   então 4,0 é o TETO das duas medições (erra para o lado seguro; quem somar
+//   juiz re-pina a catraca no próprio diff, como sempre). Ele estimava 3,6
+//   desde o item 108, quando a conta por
 //   captura substituiu a medição para não gastar 7 min de GPU só reaferindo.
 //   A dívida se pagou junto com a leva que as TRÊS vistas de Atlas do item 84
 //   exigiram: o que manda no relógio é o BALDE MAIOR, que foi de 9 para 10
@@ -568,7 +571,8 @@ export const VISTAS = [
   ['atlas', '?atlas=1&jd=2460409.26395835&shot=2'],
   // ------------------------------------------------------------------
   // AS DUAS DO FOCO (item 83 · L1, 24/08) — e elas nasceram de um BURACO
-  // MEDIDO, não de zelo: das 52 vistas acima, NENHUMA tem corpo em foco.
+  // MEDIDO, não de zelo: das 52 vistas DE ENTÃO (24/08; a lista mudou
+  // desde lá), NENHUMA tinha corpo em foco.
   // As de corpo (`terra`, `jupiter`, `titan`…) cravam a câmera com
   // `?pos=&look=`, que é voo livre — `focoCorpoId` fica `null` nas 52. Um
   // degrau que só muda a cena QUANDO há foco seria, para este gate,
@@ -650,7 +654,8 @@ export const VISTAS = [
   // ------------------------------------------------------------------
   // AS TRÊS DOS HELIOCÊNTRICOS SEM PONTO (item 92, 25/08) — o mesmo
   // buraco medido dos dois blocos acima, na última família que faltava.
-  // Das 57 vistas de cima, NENHUMA desce ao degrau `corpo` de um anão
+  // Das 57 vistas DE ENTÃO (25/08; a lista mudou desde lá), NENHUMA
+  // descia ao degrau `corpo` de um anão
   // ou de um asteroide: as de `foco-` são de órbita (Júpiter) ou de lua
   // (Titã, Caronte, Io), e nenhum dos oito tem vista própria. Por isso
   // a classe inteira podia devolver quadro SEM GLOBO — o `?ver=corpo`
