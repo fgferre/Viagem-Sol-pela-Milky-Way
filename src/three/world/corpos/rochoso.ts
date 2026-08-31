@@ -74,8 +74,8 @@ import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { diametroAparentePx } from './corpos';
 import { LS_NORMALIZACAO_GLSL } from './lua';
 import { LIMIAR_DO_GATE_PX, alvoDaCessaoDoCorpo, gateBinario } from './terra';
-import { CANAL_MAP, carregarCanaisDoCorpo, estadoAposFalha } from './texturas';
-import type { EstadoDasTexturas, OpcoesDeTextura } from './texturas';
+import { CANAL_MAP, TexturasDoCorpo } from './texturas';
+import type { OpcoesDeTextura } from './texturas';
 import {
   componentesNoFrameDoAnel,
   orientacaoDoCorpoNaCena,
@@ -461,9 +461,8 @@ export class RochosoResolvido {
    *  jd/fonte — scratch único (out-parameter), como nas irmãs */
   private readonly sombra = criaSombraNaCena();
 
-  private texturas: EstadoDasTexturas = 'fria';
-  private recargas = 0;
-  private readonly texturasVivas: THREE.Texture[] = [];
+  /** o estado das texturas — a casa dele é o pipeline (`texturas.ts`) */
+  private readonly texturas: TexturasDoCorpo;
   private disposto = false;
 
   private geometria: THREE.SphereGeometry | null = null;
@@ -501,10 +500,7 @@ export class RochosoResolvido {
     return this.ehPlaneta;
   }
 
-  private readonly opcoes: OpcoesDoRochoso;
-
   constructor(opcoes: OpcoesDoRochoso) {
-    this.opcoes = opcoes;
     this.config = opcoes.config;
     const { a, c, b } = raiosDoRochosoPc(this.config.id);
     this.raioA = a;
@@ -512,6 +508,20 @@ export class RochosoResolvido {
     this.razaoB = b / a;
     this.ehPlaneta = this.config.id in RETRATO_2026;
     this.group.visible = false;
+    this.texturas = new TexturasDoCorpo({
+      corpo: this.config.id,
+      // superfície PROCEDURAL não tem imagem para pedir: lista vazia, e
+      // o corpo nasce pronto no primeiro gatilho sem tocar a rede
+      canais: this.config.superficie === 'procedural' ? [] : [CANAL_MAP],
+      rede: opcoes,
+      oQueNaoNasce: 'o corpo não nasce nesta sessão',
+      publicar: (porCanal) => {
+        this.garantirCasca();
+        // o procedural chega com o lote VAZIO — o shader dele não lê mapa
+        const tex = porCanal.get('map');
+        if (tex) this.matSuperficie!.uniforms.uMapaDia.value = tex;
+      },
+    });
     this.estado = {
       emQuadro: false,
       carregando: false,
@@ -583,17 +593,15 @@ export class RochosoResolvido {
     );
 
     // o MESMO gatilho duplo das irmãs (lei 4): gate armado OU fase atlas
-    if (this.texturas === 'fria' && (this.armado || q.atlasQuente)) {
-      this.iniciarCarga();
-    }
+    this.texturas.aoTick(this.armado || q.atlasQuente);
 
     const emQuadro =
       this.armado &&
       q.ligado &&
-      this.texturas === 'pronta' &&
+      this.texturas.pronta &&
       Number.isFinite(this.centro.x);
     e.emQuadro = emQuadro;
-    e.carregando = this.texturas === 'buscando';
+    e.carregando = this.texturas.carregando;
     e.gateArmado = this.armado;
     this.group.visible = emQuadro;
 
@@ -767,40 +775,6 @@ export class RochosoResolvido {
     }
   }
 
-  /** a carga preguiçosa — UM canal (`map`), pela transação única; corpo
-   *  procedural não tem o que baixar e nasce pronto no mesmo passo. */
-  private iniciarCarga() {
-    this.texturas = 'buscando';
-    if (this.config.superficie === 'procedural') {
-      this.garantirCasca();
-      this.texturas = 'pronta';
-      return;
-    }
-    const id = this.config.id;
-    void carregarCanaisDoCorpo(id, [CANAL_MAP], this.opcoes, () => this.disposto)
-      .then((porCanal) => {
-        // cancelada no caminho: o lote já foi descartado lá dentro
-        if (!porCanal) return;
-        // e o microtask entre a chegada e esta linha ainda cabe um
-        // `dispose()` do Director — o lote não fica sem dono
-        if (this.disposto) {
-          for (const t of porCanal.values()) t.dispose();
-          return;
-        }
-        const tex = porCanal.get('map')!;
-        this.garantirCasca();
-        this.matSuperficie!.uniforms.uMapaDia.value = tex;
-        this.texturasVivas.push(tex);
-        this.texturas = 'pronta';
-      })
-      .catch(() => {
-        if (this.disposto) return;
-        const r = estadoAposFalha(this.recargas, id, 'o corpo não nasce nesta sessão');
-        this.recargas = r.recargas;
-        this.texturas = r.texturas;
-      });
-  }
-
   dispose() {
     this.disposto = true;
     this.group.clear();
@@ -808,7 +782,6 @@ export class RochosoResolvido {
     this.matSuperficie?.dispose();
     this.geoAnel?.dispose();
     this.matAnel?.dispose();
-    for (const t of this.texturasVivas) t.dispose();
-    this.texturasVivas.length = 0;
+    this.texturas.dispose();
   }
 }

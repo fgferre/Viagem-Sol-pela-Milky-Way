@@ -126,8 +126,8 @@ import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { diametroAparentePx } from './corpos';
 import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
-import { CANAL_MAP, carregarCanaisDoCorpo, estadoAposFalha } from './texturas';
-import type { EstadoDasTexturas, OpcoesDeTextura } from './texturas';
+import { CANAL_MAP, TexturasDoCorpo } from './texturas';
+import type { OpcoesDeTextura } from './texturas';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import {
   escreverSombraDeEclipse,
@@ -286,10 +286,8 @@ export class LuaResolvida {
    *  scratch único, preenchido por `resolveSombraNaCena` (out-parameter) */
   private readonly sombra = criaSombraNaCena();
 
-  private texturas: EstadoDasTexturas = 'fria';
-  /** recargas já gastas depois de falha — ver RECARGAS_ATE_DESISTIR */
-  private recargas = 0;
-  private readonly texturasVivas: THREE.Texture[] = [];
+  /** o estado das texturas — a casa dele é o pipeline (`texturas.ts`) */
+  private readonly texturas: TexturasDoCorpo;
   private disposto = false;
 
   private geometria: THREE.SphereGeometry | null = null;
@@ -310,11 +308,25 @@ export class LuaResolvida {
     return this.estado;
   }
 
-  private readonly opcoes: OpcoesDaLua;
-
   constructor(opcoes: OpcoesDaLua) {
-    this.opcoes = opcoes;
     this.group.visible = false;
+    // UM canal (`map`), pela transação única. A dose de VRAM é POR CANAL
+    // (`alvoDePixels`), então o `map` da Lua mantém o 8k de cinema de
+    // graça: a regra nunca foi por corpo.
+    this.texturas = new TexturasDoCorpo({
+      corpo: 'moon',
+      canais: [CANAL_MAP],
+      rede: opcoes,
+      etiqueta: 'lua',
+      // sem textura não há globo — mas desde o item 108 sobra o PONTO
+      // fotométrico, que não depende de textura nenhuma: a Lua deixa de
+      // ser um mundo e volta a ser o que é de longe, uma luz
+      oQueNaoNasce: 'a Lua não nasce nesta sessão',
+      publicar: (porCanal) => {
+        this.garantirCasca();
+        this.matSuperficie!.uniforms.uMapaDia.value = porCanal.get('map')!;
+      },
+    });
     this.estado = {
       emQuadro: false,
       carregando: false,
@@ -399,14 +411,12 @@ export class LuaResolvida {
     this.armado = gateBinario(this.armado, diametroPx);
 
     // o MESMO gatilho duplo da Terra (lei 4): gate armado OU fase atlas
-    if (this.texturas === 'fria' && (this.armado || q.atlasQuente)) {
-      this.iniciarCarga();
-    }
+    this.texturas.aoTick(this.armado || q.atlasQuente);
 
     const emQuadro =
-      this.armado && q.ligado && this.texturas === 'pronta' && q.fonte !== null;
+      this.armado && q.ligado && this.texturas.pronta && q.fonte !== null;
     e.emQuadro = emQuadro;
-    e.carregando = this.texturas === 'buscando';
+    e.carregando = this.texturas.carregando;
     e.gateArmado = this.armado;
     this.group.visible = emQuadro;
 
@@ -504,44 +514,11 @@ export class LuaResolvida {
     this.group.add(this.superficie);
   }
 
-  /** a carga preguiçosa — UM canal (`map`), pela transação única. A dose
-   *  de VRAM é POR CANAL (`alvoDePixels`), então o `map` da Lua mantém o
-   *  8k de cinema de graça: a regra nunca foi por corpo. */
-  private iniciarCarga() {
-    this.texturas = 'buscando';
-    void carregarCanaisDoCorpo('moon', [CANAL_MAP], this.opcoes, () => this.disposto)
-      .then((porCanal) => {
-        // cancelada no caminho: o lote já foi descartado lá dentro
-        if (!porCanal) return;
-        // e o microtask entre a chegada e esta linha ainda cabe um
-        // `dispose()` do Director — o lote não fica sem dono
-        if (this.disposto) {
-          for (const t of porCanal.values()) t.dispose();
-          return;
-        }
-        const tex = porCanal.get('map')!;
-        this.garantirCasca();
-        this.matSuperficie!.uniforms.uMapaDia.value = tex;
-        this.texturasVivas.push(tex);
-        this.texturas = 'pronta';
-      })
-      .catch(() => {
-        if (this.disposto) return;
-        // sem textura não há globo — mas desde o item 108 sobra o PONTO
-        // fotométrico, que não depende de textura nenhuma: a Lua deixa
-        // de ser um mundo e volta a ser o que é de longe, uma luz
-        const r = estadoAposFalha(this.recargas, 'lua', 'a Lua não nasce nesta sessão');
-        this.recargas = r.recargas;
-        this.texturas = r.texturas;
-      });
-  }
-
   dispose() {
     this.disposto = true;
     this.group.clear();
     this.geometria?.dispose();
     this.matSuperficie?.dispose();
-    for (const t of this.texturasVivas) t.dispose();
-    this.texturasVivas.length = 0;
+    this.texturas.dispose();
   }
 }

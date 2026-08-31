@@ -80,8 +80,8 @@ import { RETRATO_2026 } from '../planetas/retrato2026';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { diametroAparentePx } from './corpos';
 import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
-import { CANAL_MAP, carregarCanaisDoCorpo, estadoAposFalha } from './texturas';
-import type { CanalPedido, EstadoDasTexturas, OpcoesDeTextura } from './texturas';
+import { CANAL_MAP, TexturasDoCorpo } from './texturas';
+import type { CanalPedido, OpcoesDeTextura } from './texturas';
 import {
   componentesNoFrameDoAnel,
   orientacaoDoCorpoNaCena,
@@ -666,9 +666,8 @@ export class GiganteResolvido {
   private armado = false;
   private readonly sombra = criaSombraNaCena();
 
-  private texturas: EstadoDasTexturas = 'fria';
-  private recargas = 0;
-  private readonly texturasVivas: THREE.Texture[] = [];
+  /** o estado das texturas — a casa dele é o pipeline (`texturas.ts`) */
+  private readonly texturas: TexturasDoCorpo;
   private disposto = false;
 
   private geometria: THREE.SphereGeometry | null = null;
@@ -703,10 +702,7 @@ export class GiganteResolvido {
     return true;
   }
 
-  private readonly opcoes: OpcoesDoGigante;
-
   constructor(opcoes: OpcoesDoGigante) {
-    this.opcoes = opcoes;
     this.idCorpo = opcoes.id;
     const { a, c, b } = raiosDoGigantePc(this.idCorpo);
     this.raioA = a;
@@ -715,6 +711,24 @@ export class GiganteResolvido {
     this.kPolar = c / a;
     this.temAnel = (CORPOS_COM_ANEL as readonly string[]).includes(this.idCorpo);
     this.group.visible = false;
+    // `map` e, em Saturno, o `ring`, no MESMO lote: ou os dois entram, ou
+    // nenhum entra e nada fica residente.
+    const comAnel = this.temAnel && this.idCorpo === 'saturn';
+    this.texturas = new TexturasDoCorpo({
+      corpo: this.idCorpo,
+      canais: comAnel ? [CANAL_MAP, CANAL_ANEL] : [CANAL_MAP],
+      rede: opcoes,
+      oQueNaoNasce: 'o corpo não nasce nesta sessão',
+      publicar: (porCanal) => {
+        this.garantirCasca();
+        this.matSuperficie!.uniforms.uMapaDia.value = porCanal.get('map')!;
+        if (comAnel) {
+          const texAnel = porCanal.get('ring')!;
+          this.matSuperficie!.uniforms.uMapaAnel.value = texAnel;
+          this.matAnel!.uniforms.uMapaAnel.value = texAnel;
+        }
+      },
+    });
     this.estado = {
       emQuadro: false,
       carregando: false,
@@ -771,17 +785,15 @@ export class GiganteResolvido {
 
     this.armado = gateBinario(this.armado, diametroPx);
 
-    if (this.texturas === 'fria' && (this.armado || q.atlasQuente)) {
-      this.iniciarCarga();
-    }
+    this.texturas.aoTick(this.armado || q.atlasQuente);
 
     const emQuadro =
       this.armado &&
       q.ligado &&
-      this.texturas === 'pronta' &&
+      this.texturas.pronta &&
       Number.isFinite(this.centro.x);
     e.emQuadro = emQuadro;
-    e.carregando = this.texturas === 'buscando';
+    e.carregando = this.texturas.carregando;
     e.gateArmado = this.armado;
     this.group.visible = emQuadro;
 
@@ -952,43 +964,6 @@ export class GiganteResolvido {
     }
   }
 
-  /** a carga preguiçosa — `map` e, em Saturno, o `ring`, no MESMO lote:
-   *  ou os dois entram, ou nenhum entra e nada fica residente. */
-  private iniciarCarga() {
-    this.texturas = 'buscando';
-    const id = this.idCorpo;
-    const comAnel = this.temAnel && id === 'saturn';
-    const pedido = comAnel ? [CANAL_MAP, CANAL_ANEL] : [CANAL_MAP];
-    void carregarCanaisDoCorpo(id, pedido, this.opcoes, () => this.disposto)
-      .then((porCanal) => {
-        // cancelada no caminho: o lote já foi descartado lá dentro
-        if (!porCanal) return;
-        // e o microtask entre a chegada e esta linha ainda cabe um
-        // `dispose()` do Director — o lote não fica sem dono
-        if (this.disposto) {
-          for (const t of porCanal.values()) t.dispose();
-          return;
-        }
-        const tex = porCanal.get('map')!;
-        this.garantirCasca();
-        this.matSuperficie!.uniforms.uMapaDia.value = tex;
-        this.texturasVivas.push(tex);
-        if (comAnel) {
-          const texAnel = porCanal.get('ring')!;
-          this.matSuperficie!.uniforms.uMapaAnel.value = texAnel;
-          this.matAnel!.uniforms.uMapaAnel.value = texAnel;
-          this.texturasVivas.push(texAnel);
-        }
-        this.texturas = 'pronta';
-      })
-      .catch(() => {
-        if (this.disposto) return;
-        const r = estadoAposFalha(this.recargas, id, 'o corpo não nasce nesta sessão');
-        this.recargas = r.recargas;
-        this.texturas = r.texturas;
-      });
-  }
-
   dispose() {
     this.disposto = true;
     this.group.clear();
@@ -997,7 +972,6 @@ export class GiganteResolvido {
     this.geoAnel?.dispose();
     this.matAnel?.dispose();
     this.dummyAnel?.dispose();
-    for (const t of this.texturasVivas) t.dispose();
-    this.texturasVivas.length = 0;
+    this.texturas.dispose();
   }
 }

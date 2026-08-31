@@ -172,9 +172,17 @@ describe('a troca de tier ao vivo (Ajustes C)', () => {
     expect(TEXTURAS, 'o alvo de pixels não lê o tier de agora').toContain(
       'const tierAgora = opcoes.tier();'
     );
+    // e desde o item 59 o ESTADO da textura mora lá junto com a carga:
+    // o corpo declara o pedido e lê `pronta`/`carregando`, mas quem
+    // guarda o quarteto ('fria'…'falhou'), as recargas e os texels
+    // residentes é a casa única — quem voltasse a montar o seu próprio
+    // estado sairia do double-buffer da troca de tier sem avisar.
     for (const [nome, fonte] of CORPOS) {
       expect(fonte, `${nome}: pede textura por fora do pipeline único`).toContain(
-        'carregarCanaisDoCorpo('
+        'new TexturasDoCorpo({'
+      );
+      expect(fonte, `${nome}: voltou a guardar estado de textura em casa`).not.toContain(
+        'EstadoDasTexturas'
       );
     }
   });

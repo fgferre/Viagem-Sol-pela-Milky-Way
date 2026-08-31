@@ -98,8 +98,8 @@ import {
 } from '../../shaders/terraShaders';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import type { OrientacaoNaCena } from './orientacaoNaCena';
-import { carregarCanaisDoCorpo, estadoAposFalha } from './texturas';
-import type { CanalPedido, EstadoDasTexturas, OpcoesDeTextura } from './texturas';
+import { TexturasDoCorpo } from './texturas';
+import type { CanalPedido, OpcoesDeTextura } from './texturas';
 import {
   escreverSombraDeEclipse,
   uniformsDeEclipseNeutros,
@@ -378,10 +378,8 @@ export class TerraResolvida {
    *  scratch único, preenchido por `resolveSombraNaCena` (out-parameter) */
   private readonly sombra = criaSombraNaCena();
 
-  private texturas: EstadoDasTexturas = 'fria';
-  /** recargas já gastas depois de falha — ver RECARGAS_ATE_DESISTIR */
-  private recargas = 0;
-  private readonly texturasVivas: THREE.Texture[] = [];
+  /** o estado das texturas — a casa dele é o pipeline (`texturas.ts`) */
+  private readonly texturas: TexturasDoCorpo;
   private disposto = false;
 
   private geometria: THREE.SphereGeometry | null = null;
@@ -407,10 +405,7 @@ export class TerraResolvida {
     return this.estado;
   }
 
-  private readonly opcoes: OpcoesDaTerra;
-
   constructor(opcoes: OpcoesDaTerra) {
-    this.opcoes = opcoes;
     // O fluxo metalness da casa entra como o caso ESPECIALIZADO
     // metalness = 0 (F0 = 0,04 dielétrico): este material não tem ramo
     // de condutor. Se a calibração central um dia mudar, isto vira erro
@@ -422,6 +417,22 @@ export class TerraResolvida {
       );
     }
     this.group.visible = false;
+    this.texturas = new TexturasDoCorpo({
+      corpo: 'earth',
+      canais: PEDIDO_DA_TERRA,
+      rede: opcoes,
+      etiqueta: 'terra',
+      oQueNaoNasce: 'o globo não nasce nesta sessão',
+      publicar: (porCanal) => {
+        this.garantirCascas();
+        const uS = this.matSuperficie!.uniforms;
+        uS.uMapaDia.value = porCanal.get('map');
+        uS.uMapaNoite.value = porCanal.get('night');
+        uS.uMapaNormal.value = porCanal.get('normal');
+        uS.uMapaRugosidade.value = porCanal.get('roughness');
+        this.matNuvens!.uniforms.uMapaNuvens.value = porCanal.get('clouds');
+      },
+    });
     this.estado = {
       emQuadro: false,
       carregando: false,
@@ -505,13 +516,11 @@ export class TerraResolvida {
 
     // O GATILHO da carga (lei 4 do cabeçalho): gate armado OU fase atlas.
     // Nunca outro caminho — o teste pina exatamente esta dupla.
-    if (this.texturas === 'fria' && (this.armado || q.atlasQuente)) {
-      this.iniciarCarga();
-    }
+    this.texturas.aoTick(this.armado || q.atlasQuente);
 
-    const emQuadro = this.armado && q.ligado && this.texturas === 'pronta';
+    const emQuadro = this.armado && q.ligado && this.texturas.pronta;
     e.emQuadro = emQuadro;
-    e.carregando = this.texturas === 'buscando';
+    e.carregando = this.texturas.carregando;
     e.gateArmado = this.armado;
     this.group.visible = emQuadro;
 
@@ -721,38 +730,6 @@ export class TerraResolvida {
     this.group.add(this.superficie, this.nuvens, this.atmosfera);
   }
 
-  /** a carga preguiçosa — a transação mora em `carregarCanaisDoCorpo`;
-   *  o que fica aqui é o estado do corpo e a publicação nos uniforms. */
-  private iniciarCarga() {
-    this.texturas = 'buscando';
-    void carregarCanaisDoCorpo('earth', PEDIDO_DA_TERRA, this.opcoes, () => this.disposto)
-      .then((porCanal) => {
-        // cancelada no caminho: o lote já foi descartado lá dentro
-        if (!porCanal) return;
-        // e o microtask entre a chegada e esta linha ainda cabe um
-        // `dispose()` do Director — o lote não fica sem dono
-        if (this.disposto) {
-          for (const t of porCanal.values()) t.dispose();
-          return;
-        }
-        this.garantirCascas();
-        const uS = this.matSuperficie!.uniforms;
-        uS.uMapaDia.value = porCanal.get('map');
-        uS.uMapaNoite.value = porCanal.get('night');
-        uS.uMapaNormal.value = porCanal.get('normal');
-        uS.uMapaRugosidade.value = porCanal.get('roughness');
-        this.matNuvens!.uniforms.uMapaNuvens.value = porCanal.get('clouds');
-        this.texturasVivas.push(...porCanal.values());
-        this.texturas = 'pronta';
-      })
-      .catch(() => {
-        if (this.disposto) return;
-        const r = estadoAposFalha(this.recargas, 'terra', 'o globo não nasce nesta sessão');
-        this.recargas = r.recargas;
-        this.texturas = r.texturas;
-      });
-  }
-
   dispose() {
     this.disposto = true;
     this.group.clear();
@@ -760,7 +737,6 @@ export class TerraResolvida {
     this.matSuperficie?.dispose();
     this.matNuvens?.dispose();
     this.matAtmosfera?.dispose();
-    for (const t of this.texturasVivas) t.dispose();
-    this.texturasVivas.length = 0;
+    this.texturas.dispose();
   }
 }

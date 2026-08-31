@@ -395,3 +395,122 @@ export function estadoAposFalha(
   );
   return { texturas: 'falhou', recargas };
 }
+
+// ------------------------------------------------------------
+// A CASA DO ESTADO — uma por corpo
+// ------------------------------------------------------------
+
+/**
+ * O que o corpo declara UMA vez, no construtor, e nunca mais repete.
+ *
+ * `publicar` é o único passo que continua sendo do corpo: só ele sabe em
+ * que uniform cada canal entra (a Terra tem cinco, Saturno escreve o
+ * anel em DOIS materiais). Ele é chamado com o lote INTEIRO já em mãos,
+ * e é dentro dele que a casca nasce na primeira necessidade.
+ */
+export interface PedidoDeTexturas {
+  /** o id no manifest — 'earth', 'moon', 'io'… */
+  corpo: string;
+  /**
+   * Os canais que este corpo quer. VAZIO é o corpo PROCEDURAL (Palas,
+   * Haumea): não há imagem para pedir, então ele nasce pronto no
+   * primeiro gatilho, sem tocar a rede — e nenhuma troca de qualidade o
+   * alcança, porque não há pixel de arquivo para trocar.
+   */
+  canais: readonly CanalPedido[];
+  /** o bloco comum de rede e tier (`OpcoesDeTextura`) */
+  rede: OpcoesDeTextura;
+  /** a fiação nos uniforms, com o lote inteiro em mãos */
+  publicar: (porCanal: Map<string, THREE.Texture>) => void;
+  /** o que o visitante perde se as três tentativas caírem */
+  oQueNaoNasce: string;
+  /** a etiqueta do aviso; default = `corpo` (a Terra avisa 'terra') */
+  etiqueta?: string;
+}
+
+/**
+ * O ESTADO DE TEXTURA DE UM CORPO, numa casa só — o quarteto
+ * ('fria'/'buscando'/'pronta'/'falhou' + as recargas + as texturas
+ * residentes + o `disposto`) que morava COPIADO nas quatro classes.
+ *
+ * Por que mudou de casa: enquanto o estado morava em cada corpo, uma
+ * mudança de política de carga tinha de ser escrita quatro vezes — e as
+ * quatro cópias da carga em si já haviam provado (cabeçalho) que o que
+ * se repete diverge no que importa. O corpo continua dono do material,
+ * da casca e do `dispose` dele; o que ele delega é QUANDO pedir, o que
+ * fazer quando cai, e quem descarta os texels no fim.
+ */
+export class TexturasDoCorpo {
+  private estado: EstadoDasTexturas = 'fria';
+  /** recargas já gastas depois de falha — ver RECARGAS_ATE_DESISTIR */
+  private recargas = 0;
+  /** os texels residentes, dos quais esta casa é a dona */
+  private readonly vivas: THREE.Texture[] = [];
+  private disposto = false;
+  private readonly pedido: PedidoDeTexturas;
+
+  constructor(pedido: PedidoDeTexturas) {
+    this.pedido = pedido;
+  }
+
+  /** há pixels na tela? (o `emQuadro` dos quatro corpos depende disto) */
+  get pronta(): boolean {
+    return this.estado === 'pronta';
+  }
+
+  /** há carga EM VOO — mudança já pedida que ainda não chegou. */
+  get carregando(): boolean {
+    return this.estado === 'buscando';
+  }
+
+  /**
+   * O GATILHO, uma vez por tick. `gatilho` é o par de sempre (gate
+   * armado OU fase atlas); a carga preguiçosa é o contrato — sem
+   * gatilho nenhum byte desce, e as vistas oficiais não fazem fetch.
+   */
+  aoTick(gatilho: boolean): void {
+    if (this.disposto) return;
+    if (this.estado === 'fria' && gatilho) this.pedir();
+  }
+
+  private pedir(): void {
+    this.estado = 'buscando';
+    // corpo procedural: nada a baixar, e a casca nasce no `publicar`
+    if (this.pedido.canais.length === 0) {
+      this.pedido.publicar(new Map());
+      this.estado = 'pronta';
+      return;
+    }
+    const { corpo, canais, rede, publicar } = this.pedido;
+    void carregarCanaisDoCorpo(corpo, canais, rede, () => this.disposto)
+      .then((porCanal) => {
+        // cancelada no caminho: o lote já foi descartado lá dentro
+        if (!porCanal) return;
+        // e o microtask entre a chegada e esta linha ainda cabe um
+        // `dispose()` do Director — o lote não fica sem dono
+        if (this.disposto) {
+          for (const t of porCanal.values()) t.dispose();
+          return;
+        }
+        publicar(porCanal);
+        this.vivas.push(...porCanal.values());
+        this.estado = 'pronta';
+      })
+      .catch(() => {
+        if (this.disposto) return;
+        const r = estadoAposFalha(
+          this.recargas,
+          this.pedido.etiqueta ?? corpo,
+          this.pedido.oQueNaoNasce
+        );
+        this.recargas = r.recargas;
+        this.estado = r.texturas;
+      });
+  }
+
+  dispose(): void {
+    this.disposto = true;
+    for (const t of this.vivas) t.dispose();
+    this.vivas.length = 0;
+  }
+}
