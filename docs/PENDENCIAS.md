@@ -938,6 +938,14 @@ curtas; o texto vive num LUGAR ÚNICO comentado, onde o dono pode
 estender a citação à mão se decidir assumir isso — o coordenador
 declarou que não escreve o parágrafo longo (limite próprio de direito
 autoral).
+**Terceira direção dele, 31/08:** *"no finalzinho nao tem como fazer um
+jogo de lente em que o fundo se aproxima mais e mais para a Lua
+aparecer um pouco maior... nao tem um truque de lente que muda essa
+perspectiva?"* — é o DOLLY ZOOM (efeito Vertigo): nos últimos segundos,
+a câmera recua enquanto a lente fecha, a Terra segura o tamanho
+aparente e a Lua cresce atrás. Entra como keyframes de lente+distância
+no take final (o roteiro dirige), lento, casando com as frases do
+Sagan, sem bombear a exposição.
 
 **O QUE SE VÊ nos quadros finais, para quando ele disser o que é o
 "errado":** em t=190/193 a Terra aparece de dia inteiro (Américas
