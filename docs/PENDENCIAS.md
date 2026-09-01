@@ -1826,234 +1826,40 @@ Terra 1,74 M km e a prova mede contra o lugar velho. Família do
 Terra.
 
 **125. A ONDA DA PARIDADE — linhas de órbita, rótulos e ícones IGUAIS
-aos do NASA Eyes.** *(Nasceu como "120" nos commits `335fa9c`/`60190b9`
-por contador atrasado — o 120 é a histerese, aberta E fechada em 31/08
-pela outra frente; renumerado para 125 no mesmo dia. Os commits de
-história seguem dizendo "120"; este parágrafo é a ponte.)* Ordem do dono em 31/08, palavras dele: *"nao estou
-convencido nem mesmo satisfeito ainda com a nossa implementacao das
-linhas de orbitas, labels e ícones. Acho que nao aprendemos direito as
-regras que fazem eles aparecerem, em qual momento desaparecem, como sao
-desenhados, quais algoritmos governam encobrimentos... mas
-principalmente os visuais desses elementos e comportamentos. Quero que
-fiquem iguais ao do nasa eyes. Acho que vc fez um trabalho pobre e está
-colocando exclusivamente a culpa dessa diferença no MSAA... nao estamos
-atingindo o nivel de otimizacao e de algoritmos e regras que governam
-esses itens, sejam em visuais, seja em comportamentos dinamicos."*
-Esta ordem SUPERA a "estação da beleza" do item 115 (o bloco B era um
-subconjunto) e AUTORIZA rever leis anteriores onde conflitarem com a
-paridade — em particular o orçamento de 8 nomes do item 82 (lei de
-25/08), que será substituído pelo conjunto de regras do Eyes (pesos por
-classe + colisão + rodízio), mudança declarada aqui e conferível por
-ele no fim.
+aos do NASA Eyes.** *(Ponte: nasceu como "120" nos commits
+`335fa9c`/`60190b9` por contador atrasado; renumerado em 31/08 — os
+commits antigos seguem dizendo "120".)* Ordem do dono em 31/08; supera
+a "estação da beleza" do item 115 e autorizou revogar leis anteriores
+onde conflitassem (o orçamento de nomes do item 82 foi revogado na F3).
+O gabarito é docs/reference/contrato-eyes-linhas-rotulos.md (77 regras
+com endereço no bundle deles).
 
-**ESTADO DA ÁRVORE ANTES DE ABRIR FASE (aviso da frente do 115,
-31/08):** o plano abaixo foi escrito contra um retrato ANTERIOR à
-estação (2) do item 115, que pousou NO MESMO DIA. Já estão na main:
-fades 250/750 ms nos rótulos (`622e920` — a F2 começa daí, faltam
-intervalos por tamanho aparente e canais ícone/texto), oclusão por
-TODO globo via âncora (`7d51170` — a F4 cita "hoje só o Sol", que já
-não é verdade; falta segmento-esfera e atrás-da-câmera), gradiente na
-fita (`74bec54`), MSAA `samples:4` MEDIDO e reprovado pelo preço nesta
-GPU (+55–70% do quadro em dpr 2, `925f595` — a F1 tem os números
-prontos em capturas/item115-msaa.json, não precisa medir do zero), e o
-re-baseline único + faxina 49/80/85/101 FEITOS (`6873dbf`, 54 vistas
-estáveis). As fases constroem em cima disso, não do retrato velho.
+**ESTADO: F0-F5 SELADAS pelo olho dele — falta só a F6.** A história
+de cada selo mora no commit da fase e nos bastões de
+scratchpad/estudos/nasa-eyes-solar-system/mineracao/:
+F0 contrato `60190b9` · F1 pintura (MSAA por tier, saia morta, hover
+nome→órbita) `04529af` · F2 aparição (cessão por tamanho aparente,
+segunda camada de fade, causaDoSumico) `1057890` · F3 prioridade e
+colisão (pesos do Eyes, orçamento revogado, quadtree+rodízio,
+histerese aposentada) `40a5fc2` · F4 encobrimento (rampa na oclusão,
+isenção do alvo seguido, viewport inteiro) `09f16e8` · F5 tipografia e
+ícones (letra do Eyes em dois níveis, dois anéis, detalhe só no
+focado) `1a2708f`.
 
-**O PLANO (a fila viva é esta; cada fase fecha com prova e a onda
-inteira fecha com A/B lado a lado contra o Eyes vivo e o olho dele):**
+**F6 — o que falta (EM CURSO em 01/09):** fotos A/B das MESMAS quatro
+cenas nos dois apps (vista do sistema, hover, aproximação, close com
+cessão) + a palavra final dele sobre a paridade; fechamento sob o §19
+(a lista — suíte cheia 1× e a auditoria única da onda, §13 — ainda
+por ele aprovar ou cortar).
 
-**F1 SELADA em 31/08 (a madrugada virou 01/09), palavras dele: "pode
-declarar e selar a F1 assim" (commit 04529af).** O que a F1 entregou:
-MSAA no alvo do composer com escada por tier (cinema/alta 4 amostras,
-performance 2 — o zero foi RECUSADO com foto na prancha, e o remédio de
-2 custa +2,5-3,5 ms), saia de fwidth aposentada (beira dura, miolo
-chapado, largura 1,2 = o literal do Eyes), hover que nasce no NOME e
-acende a órbita (regra F0: o Eyes não tem picking de linha), forense
-54/54 vistas explicada POR MEDIDA (noorbitas isola a luz da linha;
-?msaa=0 devolve bit-idêntico nas 25 sem órbita), 11 sabotagens mordem.
-**DECARADO por decisão dele:** sob MSAA a galáxia perde −1,23% de luz
-de face / −2,19% de perfil — NÃO é o campo de estrelas (ablação por
-camada prova: esconder o campo mantém a perda; esconder a galáxia
-zera; a fotometria estelar está INTACTA) — é cobertura area-correta
-(sem MSAA, sprite que cobre 30% do pixel depositava 100% da energia) e
-invisível a olho nu; a blindagem aprovada parou ANTES de operar porque
-trataria o órgão errado (condição dele honrada). Fica registrado, sem
-obra: metade da perda vem do caminho do resolve (msaa=1 = msaa=2 =
-metade do 4) — investigar só se um dia incomodar. Pós-selo pendente
-para a sessão da F2: aplicar as 2 correções ao §7 do contrato (L3/L4
-dizem "não tem" e a casa tem — anotadas no F1-BASTAO.md §8); achado
-para o item 49 (tremor é ENTRE sessões, não dentro — 160 capturas
-internas sem oscilação, terralua diferiu entre sessões). *(As duas
-cumpridas em 01/09, commit `2196c5e`.)*
-
-**F2 SELADA em 01/09, palavras dele no servidor vivo: "ficou ótimo,
-pode selar a F2 e seguir para a F3".** O que a F2 entregou: cessão do
-rótulo por TAMANHO APARENTE com a conta literal do Eyes (raio do corpo
-em NDC, preset (0, 0,02), fadeBlur 0,5 ⇒ apaga entre 0,02 e 0,03 —
-na Terra, entre ~90 e ~60 raios, série de 6 fotos conferida pelo
-coordenador e pelo olho dele no vivo); o FOCO não é exceção (prioridade
-120 fica, imunidade morre — provado vivo com as 6 distâncias); a
-SEGUNDA camada de fade (opacidade final = produto: texto 0,75 planeta /
-0,35 secundário, 0,05 escondido, 1 apontado; rampas 250/750 ms nas DUAS
-causas de sumiço, `causaDoSumico` 'tamanho'/'disputa' registrado — a F3
-vai ler); hover leva o texto a alfa 1 no mesmo evento da F1 (razão
-descida/subida MEDIDA = 3,0 = 750/250; +26% no pixel do nome). 13
-sabotagens mordem, 122 testes verdes. A4 conferida SEM código: a régua
-de aparição da órbita da casa não é equivalente à deles, e fica —
-A7/L24 já a declaram melhor. **ACHADO ESTRUTURAL para F3-F6: o gate de
-identidade (54 vistas `?shot=2`) é CEGO a rótulo por construção**
-(`.bare-mode` esconde o `label-canvas`, App.tsx:700) — o bit-idêntico
-54/54 da F2 não prova nada sobre nomes; a prova é foto com HUD +
-medida. Pendências herdadas e endereçadas: canal de ícone calculado
-mas não lido (F5 pluga); oclusão/atrás-da-câmera sem causa própria
-(F4); o modo só-ícone cede junto (decisão, igual ao Eyes). O
-atlas-smoke segue com a única falha pré-existente do portal t=250
-(item 119, idêntica em `2196c5e`).
-
-**F3 SELADA em 01/09, palavras dele nas fotos: "ficou ótimo, pode
-consertar os juízes e selar a F3".** O que a F3 entregou: a TABELA DE
-PESOS do Eyes (mapeada classe a classe: foco 201, sol 100 `Star`,
-planeta 50, anão 28, lua 25, asteroide 15 — degrau novo, abaixo da lua
-como no Eyes —, estrelaPropria 10 `Constellation` declarado sem par,
-estrelaBayer 5, outros 1, sem-classe 0 = os dois defaults do P2);
-desempate determinístico completo peso → distPc → ALFABÉTICA invertida
-(o sentido do fonte deles); o ORÇAMENTO REVOGADO (`ORCAMENTO_DE_NOMES`
-apagado — censo da abertura 4→16 nomes, aprovado pelo olho dele;
-Júpiter d=400 4→11 com Calisto/Ganimedes perdendo por disputa 25<201);
-`QuadtreeDeRotulos` prof. 8, 8/nó, DOIS retângulos por nome (perde a
-caixa do TEXTO; a marca da âncora é oponente mas não perdedora —
-testar as duas simetricamente matava Alnilam nas Três Marias);
-RODÍZIO de 20/quadro com veredito persistente (custo −34/54/72% em
-55/131/331 nomes, pior caso 0,48 ms; transitório da entrada ≤0,19 de
-alfa por ≤200 ms, pago pela rampa da F2); HISTERESE APOSENTADA
-(`BONUS_DE_HISTERESE` apagado) com prova de estabilidade: parado 0,
-zoom 0, girando ≤0,375 troca/s contra teto de 1 — a rampa de 750 ms é
-o análogo deles; `dirigido` passou a valer o peso do foco (senão
-estrela de fundo derrubava a legenda do filme). Correção de
-honestidade do executor: em d=60 Io/Europa aparecem NAS DUAS fotos — o
-ganho ali são 7 estrelas; a perda de lua por disputa é Ganimedes (d=60)
-e Calisto+Ganimedes (d=400). JUÍZES: os 6 do atlas-smoke que cobravam
-a lei revogada foram refeitos (5 renumerados pelo censo medido; o
-1438 SUBSTITUÍDO por dois vereditos de lei — (a) nenhum par de nomes
-desenhados se sobrepõe, (b) todo cortado tem um desenhado que o vence
-pela ordem — alimentados por `StarLabel.caixaDaDisputa`, a caixa real
-da disputa exposta no rótulo, zero alocação); o guarda de texto do
-director.test (defeito herdado da F2) apertado para os 5 argumentos.
-23 sabotagens mordem (21 de unidade + SJ1/SJ2 de imagem, provadas
-não-redundantes); 250 testes verdes; atlas-smoke inteiro com a única
-falha pré-existente do portal t=250 (item 119). `ab-identidade` não
-rodou por decisão: é cego a rótulo (achado da F2), nada desta fase o
-toca.
-
-**F4 SELADA em 01/09, sob a LEI NOVA do §19 do AGENTS.md (nascida
-nesta fase: teste só com aprovação dele — a F4 passou de 1h30 porque o
-rito de provas escalava sozinho, e ele cortou).** O que a F4 entregou:
-a terceira causa de sumiço `'oclusao'` — nome escondido por globo
-APAGA pela rampa de 750 ms em vez de sumir seco (série medida
-0,736→0,552→0,368→0,184, passo constante, razão 3,0; o rótulo fica na
-lista com `pintaSemVaga`: pinta a rampa, não ocupa vaga, não vira
-clique); a ISENÇÃO do alvo seguido (O11, `chaveIsentaDeOclusao` —
-Io em foco 1,88° dentro do cone de Júpiter com o nome vivo, foto); o
-RECORTE COM MARGEM morto — vale o viewport inteiro como no Eyes
-(medido antes: as faixas da margem já são da tarja e da bússola; preço
-declarado, abertura 16→15 nomes); conferências com prova: O4/O5 (31
-oclusores remontados por quadro; corte de 1 px do Eyes NÃO faz falta
-— corpo de 0,95 px só alcança nome em cima do próprio objeto, não se
-criou mecanismo), O8 (Sol a 147° do eixo sem rótulo no vidro, foto),
-O7 (sem usuário vivo — só corpos reais na lista; o anel de Saturno
-nunca foi somado). Atrás-da-câmera NÃO ganhou causa própria
-(declarado: sai por projectPoint null, sem objeto onde marcar). O
-juiz (b) da F3 passou a modelar o HUD como oponente. FECHAMENTO sob a
-lei nova: ele avaliou filme e estrelas do atlas com o próprio olho,
-aprovou 2 dos 4 testes propostos e cortou o resto; os 2 rodaram
-verdes em 3 SEGUNDOS (268+20 testes) — a lição medida: o custo nunca
-foi rodar teste, era o rito de escrever/rodar sabotagem em loop. 19
-sabotagens já haviam mordido antes da ordem; atlas-smoke com a única
-falha alheia do portal (item 119).
-
-**F5 SELADA em 01/09, palavras dele: "concordo com as propostas e acho
-que ficou boa a implementação" + "já avaliei o atlas, tudo certo" (o
-olho dele substituiu o atlas-smoke no fechamento, §19).** O que a F5
-entregou (obra em `LabelCanvas.ts` + teste, ~25 min de executor sob a
-lei nova): a TIPOGRAFIA do Eyes — dois níveis, não três (planeta CAIXA
-ALTA peso 600 tracking .3em; resto caixa mista 400; 16 px para todos,
-18 no Sol, 14/16 em tela <1025×600 = a media query deles; hierarquia
-por caixa/peso/tracking/alfa, nunca por tamanho de classe); os DOIS
-ANÉIS (planeta traço central r 9,25 cor da órbita; menores r 7,25
-BRANCO — perde a cor do pai do item 83, reverter é 1 linha; miolo
-escuro morto; hover 1,2×); canais ícone/texto INDEPENDENTES (o
-alfaDoIcone da F2 finalmente lido — o produtor não precisou de linha);
-estrela sem ícone por CLASSE; a haste de 10 px morta (ponto de tamanho
-zero, textBaseline middle); pixel inteiro por paridade
-(inteiroPorParidade); T15 DECLARADO como diferença aceita (canvas 2D
-com sombra 7→5 sobre a galáxia procedural vs div branco sem sombra
-deles — não migramos para DOM). DECISÃO DELE: o detalhe
-"classe · distância" só no corpo FOCADO (fecha a pendência do item 82;
-abertura 15→19 nomes — a segunda coluna de texto é que custava vaga,
-não a fonte maior). Sol FICOU com ícone contra a letra de T8 (o bundle
-deles tem icon-circle-sun). O filme deliberadamente intocado (nível
-`filme` 12px/500, número por número) — e conferido nesta rodada que
-NÃO há duplicação de camada: o LabelCanvas é UM para os dois modos, o
-roteiro declara legendas onde o atlas usa régua, "um lugar por nome"
-alcança os dois. Fechamento §19: ele aprovou 2 testes (88 verdes em
-3 s) e cortou o resto com o próprio olho (atlas e filme).
-
-**ESTADO DA ONDA no handoff de 31/08 (histórico da pausa; superado pelo selo acima):**
-F0 FEITA e commitada (docs/reference/contrato-eyes-linhas-rotulos.md,
-60190b9 — 77 regras). F1 FEITA E PAUSADA NA ÁRVORE, SEM COMMIT, por
-ordem dele (pausa para outra sessão pousar): 11 arquivos, todos
-listados em scratchpad/estudos/nasa-eyes-solar-system/mineracao/
-F1-BASTAO.md — o bastão tem o estado exato, os números (GPU +50,8%
-dpr2 ⇒ escada por tier; beira 1,836→1,560; hover 5×), as 9 sabotagens
-e a fila de retomada: (1) forense do re-baseline (54/54 vistas DIFEREM
-— esperado com MSAA, mas cada uma precisa de explicação escrita; só luz
-de linha/AA pode explicar); (2) AMOSTRAS_POR_TIER.performance = 2
-(remédio medido, +3,5 ms, decisão do coordenador já tomada); (3) fotos
-finais para o olho dele. NENHUMA OUTRA FRENTE pode tocar os 11 arquivos
-do bastão até a F1 selar. Achado colateral da F1 para o item 49: o
-tremor é ENTRE sessões, não dentro (160 capturas na mesma sessão, zero
-oscilação; terralua diferiu entre sessões). A retomada: relançar um
-executor com o F1-BASTAO.md como brief + o contrato §1; depois F2→F5
-pelo contrato, F6 fecha com A/B contra o Eyes vivo e o olho dele.
-
-- **F0 — O CONTRATO (leitura, sem código):** um documento único em
-  docs/reference/ com TODAS as regras do Eyes já mineradas e as que
-  faltarem, extraídas dos trechos locais: pintura da linha (larguras,
-  cores, alfas, hover, junta, miolo chapado), TrailShader, pesos de
-  classe e prioridade determinística do LabelQuadtree (rodízio 20/frame,
-  profundidade 8), VisibleInterval (fadeBlur, DefaultVisibleFar),
-  DivComponent (oclusão segmento-esfera, atrás-da-câmera), fades
-  250/750ms em duas camadas, canais independentes ícone/texto,
-  tipografia dos dois níveis, ícones (anel/hexágono, tamanhos). Cada
-  regra com o literal e o endereço no bundle. É o gabarito da onda.
-- **F1 — A PINTURA:** samples:4 no alvo do composer (custo de GPU
-  MEDIDO antes/depois; se o preço for alto, escada de qualidade decide
-  por tier), aposentadoria da saia fwidth (miolo chapado como o deles),
-  hover da órbita no mesmo quadro (1,2→2px, alfa 0,75→1). Re-baseline
-  ÚNICO dos juízes, na mesma sessão da faxina dos ruídos 49/80/85/101.
-- **F2 — AS REGRAS DE APARIÇÃO:** intervalos de visibilidade por
-  tamanho aparente (o rótulo cede quando o corpo ENCHE a tela e quando
-  vira pó), fades assimétricos 250/750ms, canais ícone/texto
-  independentes (ícone pode ficar sem texto).
-- **F3 — PRIORIDADE E COLISÃO:** pesos por classe do Eyes, prioridade
-  determinística (classe → profundidade → alfabética), perdedor SOME
-  (sem empurrar), rodízio por quadro; substitui o orçamento fixo de 8.
-- **F4 — ENCOBRIMENTO:** todo corpo é oclusor de rótulo/ícone
-  (segmento-esfera; hoje só o Sol, rotulos.ts:149), atrás-da-câmera
-  não rotula.
-- **F5 — TIPOGRAFIA E ÍCONES:** os dois níveis (planeta caixa alta com
-  tracking; corpo menor caixa mista menor), ícone ao lado do nome,
-  migalha fora do escopo (é do 115-F).
-- **F6 — O JULGAMENTO:** fotos A/B das MESMAS cenas nos dois apps
-  (vista do sistema, hover, aproximação, close com cessão) + auditoria
-  independente única da onda + suíte cheia + a palavra dele.
-
-Riscos declarados de antemão: F1 muda pixel na casa inteira (re-baseline
-total dos gates de identidade — por isso é UM re-baseline só); o custo
-do MSAA é real e será medido, com a escada de tiers como saída se
-pesar; F3 revoga uma lei aprovada (declarado acima). O material-fonte
-está todo em docs/reference/nasa-eyes-* e nos trechos/medidas de
-scratchpad/estudos/nasa-eyes-solar-system/mineracao/.
+**Achados da onda que seguem abertos:** (a) o gate de identidade é
+CEGO a rótulo por construção (`?shot=2` esconde o `label-canvas`,
+App.tsx:700) — prova de trabalho de rótulo é foto com HUD + medida,
+nunca gate bit-idêntico; (b) o anel branco dos corpos menores perdeu a
+cor herdada do pai (item 83) — reverter é 1 linha, se o olho dele
+sentir falta; (c) as legendas do filme guardam a letra antiga de
+propósito — unificar com a letra nova é decisão de direção de arte
+futura, só se incomodar.
 
 **120.** A histerese da régua de relevância nunca chegava a valer —
 **FECHADO em 31/08**; história no ARQUIVO. *(`prevDesenhados` era montado
