@@ -635,6 +635,47 @@ barato para a MESMA beleza, a desenhar: tirar o campo de estrelas do alvo
 amostrado, ou atacar a franja do limbo pelo 117 (atenuar `uCA`), que é um
 uniforme e custa zero.
 
+**Estação (2), a FAXINA e o RE-BASELINE — CUMPRIDOS em 31/08, na mesma
+sessão, como ele mandou.** Os ruídos de instrumento responderam: o **121**
+(o juiz da beira não media a perna dpr 1 com o gradiente) e o **120** (a
+histerese da régua nunca valeu) FECHARAM por obra, com sabotagem; o **85**
+(o `atlas-smoke` reprovando o toque duplo inocente) FECHOU com a causa
+achada — a ida e volta de CDP entre os dois toques contra a janela de
+500 ms do navegador; e os **49/80/101** continuam ABERTOS, agora datados:
+63 capturas em 7 vistas, nos dois contextos (balde e isolado), ZERO
+oscilação, e nada a consertar enquanto o fenômeno não voltar. Nasceram os
+itens **123** (as forjas perdem um terço da luz ao dobrar a resolução — o
+irmão do 46, que morava só no museu) e **124** (o porteiro do censo
+reprova por uma palavra).
+
+**O RE-BASELINE: 54 de 54 vistas do `ab-identidade` re-pinadas, e o diff
+inteiro EXPLICADO.** Lado `antes` em `7d51170` (a árvore antes do
+gradiente da fita), lado `depois` na árvore final; **zero vistas
+INSTÁVEIS em 222 capturas do lado depois**, com `JOBS=6`. As três
+mudanças intencionais da estação assinam o diff, e a forense de pixel
+separa as assinaturas: na `atlas` (com órbita no quadro) quem PERDE luz é
+BRILHANTE e perde muito (21.163 px, mediana 67 de brilho, delta mediano
+14, máx 72 — a fita escurecida pelo gradiente) e quem GANHA é ESCURO e
+ganha pouco (39.827 px, mediana 16, delta mediano 1 — o céu); na `edgeon`
+(sem órbita nenhuma) ninguém perde de verdade (2.396 px a 1 nível, que é
+ULP) e 83.947 ganham — a galáxia; na `terra` **o globo não foi tocado**
+(7 px em 370.527, delta máximo 2 no limbo) e tudo o que mudou está no
+céu. Nenhuma mancha compacta com delta grande, que é a assinatura de
+conteúdo que sumiu. A histerese do **120** não alcança estas vistas: o
+`?shot=2` esconde o `.label-canvas` pela regra `.bare-mode >
+*:not(.scene-canvas)`. Rastro: `capturas/item115-rebaseline-ab.json` e
+`capturas/item115-rebaseline-forense.json`. **A prova 3 do `atlas-smoke`
+(item 119) segue reprovando com o MESMO 1,19e-2 do raio nas quatro
+corridas da sessão — não foi mascarada nem tocada.**
+
+**A FOLHA PARA ELE**, cinco pranchas legendadas com o antes/depois de
+cada conquista da estação: `capturas/item115-folha-1-rampa.png`
+(os nomes entrando em 250 ms), `-2-oclusor.png` (FOMALHAUT saindo de cima
+da Terra), `-3-gradiente.png` (o laço inteiro mais o zoom no alto),
+`-4-galaxia-retina.png` (a faixa da Via Láctea em dpr 2) e
+`-5-nuvens.png` (a estrela na frente da nuvem, 10× no pixel medido).
+Compostas por `capturas/item115-folha.mjs`.
+
 **114. O censo do sistema solar: todas as luas e os objetos interessantes.**
 Pedido do dono em 30/08, palavras dele: *"quero expandir nosso projeto
 para ter todos obejtos possiveis de luas e obejtos maiores tb. meteoros
