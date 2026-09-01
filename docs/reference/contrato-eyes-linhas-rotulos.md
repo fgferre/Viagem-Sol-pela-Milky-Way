@@ -341,6 +341,23 @@ preset só — `DefaultVisibleFar` — e a única exceção documentada é
 `AlwaysVisible` em três casos pontuais.** Não existe uma tabela de intervalos
 por classe.
 
+### 2.2b AS QUATRO PORTAS — correção pós-F7 (01/09)
+
+**O §2 acima descreve só a QUARTA porta.** A F7 provou (dono corrigiu o
+rumo; medição viva + bundle em `mergulhos/05-catalogo-muitos-corpos.md`
+§1.6-1.7 e `F7-BASTAO.md`) que a visibilidade real é o produto de
+quatro portas: **(0)** a entidade EXISTE? — luas/naves/asteroides são
+criados e DESTRUÍDOS por quadro pela porta do SISTEMA DO PAI
+(`(systemRadius/raio_do_pai) × raioPx_do_pai ≥ 20`; planetas e estrelas
+existem sempre — cena de 719 cadastrados vai de 44 entidades na home a
+125 no close da Terra); **(1)** a CAMADA está ligada? — contextuais
+religadas quando a câmera muda de pai; **(2)** `setVisibility` da
+entidade; **(3)** o `VisibleInterval` deste §2. Seleção NÃO mexe em
+linha nenhuma (as 9 órbitas ficam em alfa 1 com a Terra selecionada);
+o que a seleção faz é levar a câmera, e a câmera move a porta 0. O
+Eyes desenha de propósito o risco reto de uma órbita atravessando o
+quadro quando a câmera está dentro dela.
+
 ### 2.3 O rótulo CEDE no close — a regra contraintuitiva
 
 **A5.** `DefaultVisibleFar = (0, 0.02, "normal-radius")`, `fadeBlur = 0,5`.
@@ -879,7 +896,7 @@ a F0 as declarou "não tem" e a casa já as tinha desde o item 83.
 | regra | o que a casa tem hoje | onde | fase |
 |---|---|---|---|
 | A1-A3 fade por tamanho aparente | **mesma família**: `smoothstep` em px CSS e em semi-ângulo | `orbitas.ts:1910`, `:1923-1924` | — |
-| A4 preset único `DefaultVisibleFar` | a casa tem quatro constantes próprias: `RAIO_MIN_PX 3`, `RAIO_CHEIO_PX 16`, `CABE_NO_QUADRO 1.0`, `FORA_DO_QUADRO 1.8` | `orbitas.ts:737-746` | F2 (conferir equivalência) |
+| A4 preset único `DefaultVisibleFar` | **refeita na F7** (a conferência da F2 usava só a 4ª porta — ver §2.2b): planetas isentos (min=0) + cessão no close pela conta da F2; luas pela porta do pai (`PORTA_DO_SISTEMA_PX 20`) com rampa da casa; `apoastroPc` e `paiEnquadrado` mortos | `orbitas.ts` (`PORTA_DO_SISTEMA_PX`, `raiosDoSistema`, `cessao`) | F7 selada |
 | A5 o rótulo cede no close | **NÃO**: planeta nunca some por tamanho; só a lua colada no pai esmaece (`LUA_ACENDE_EM = 0.012`) | `src/three/director/rotulos.ts:97`, `:327` | **F2** |
 | A6 o alvo seguido não é exceção | a casa promove o foco a `prioridade 120` e não tem cessão por tamanho | `src/three/world/labels.ts:139` | F2 |
 | A7 porta extra do rastro | não se aplica (sem rastro); a ponta de cima da casa é o semi-ângulo de tangência ao apoastro, e é melhor | `orbitas.ts:1917-1924` | manter |

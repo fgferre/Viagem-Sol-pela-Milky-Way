@@ -335,6 +335,20 @@ export class Rotulos {
   private readonly raioPorChave = (chave: string): number | null =>
     this.raioDeCorpo(chave.slice(CHAVE_DE_CORPO.length));
 
+  /**
+   * AS POSIÇÕES VIVAS DAS LUAS, para quem mais precisar delas neste
+   * tique — hoje as LINHAS DE ÓRBITA (item 125, F7: a órbita de uma lua
+   * cede quando a lua enche a tela, e a régua é a distância ao CORPO).
+   *
+   * Devolve o array em si, não uma cópia: é o mesmo contrato de
+   * `Planetas.posicoes`, e copiar por quadro seria pagar 21 vezes por
+   * um número que já está certo. Quem lê aceita `NaN` — é assim que
+   * "sem efeméride" viaja aqui desde que o campo nasceu.
+   */
+  get posicoesDasLuas(): Float32Array {
+    return this.luaPosParaRotulo;
+  }
+
   /** escreve o centro vivo no slot da lua em `luaPosParaRotulo`. */
   escreverPosicaoDeLua(id: string, centro: THREE.Vector3) {
     const i = LUAS_DO_SISTEMA.findIndex((l) => l.id === id);

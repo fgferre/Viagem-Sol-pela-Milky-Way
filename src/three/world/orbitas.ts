@@ -420,6 +420,13 @@ import { COR_DA_TEXTURA } from './planetas/corDaTextura';
 import { LINHAS_DE_ORBITA_POR_FASE } from '../fases';
 import type { Phase } from '../fases';
 import { FOTOMETRIA, IDS_FOTOMETRIA } from './planetas/fotometria';
+// A CONTA DA CESSÃO É UMA SÓ NA CASA (item 125, F7 · A5): a mesma função
+// que apaga o NOME quando o corpo enche a tela apaga a LINHA dele. No
+// Eyes as duas peças penduram no MESMO `VisibleInterval` da MESMA
+// entidade e morrem juntas; aqui elas penduram na mesma função.
+import { cessaoPorTamanhoAparente, raioAparenteNdc } from './labels';
+import { raiosDoRochosoPc } from './corpos/rochoso';
+import { BODY_AXES } from '../../lib/atlas/iauOrientation';
 
 /** segundos num dia — o fator da conversão de μ, escrito uma vez */
 const SEGUNDOS_POR_DIA = 86_400;
@@ -690,33 +697,41 @@ export const RAIO_DA_CESSAO_PX = 2;
 export const BORDA_DA_CESSAO_PX = 5;
 
 /**
- * O piso e o topo do fade DE BAIXO, em pixels de raio — DE CSS, desde
- * 29/08 (item 97): a régua de tamanho aparente da casa é a de CSS (a
- * fita, a cessão e o clarão já obedecem), e este era o último número da
- * peça medindo em px de buffer. No Retina o mesmo céu dava o dobro de
- * pixels e a linha cruzava os limiares com METADE do tamanho aparente —
- * cada órbita nascia e enchia a exatamente o DOBRO da distância
- * (Mercúrio cheio a 39 UA no dpr 2 contra 19,6 no dpr 1). Em dpr 1 a
- * divisão é por um: bit a bit o desenho de sempre. Abaixo do piso a
- * elipse não é curva, é sujeira sobre o ponto do corpo.
+ * A PORTA DO SISTEMA DO PAI (item 125, F7 — a Porta 0 do Eyes), em
+ * pixels de raio DE CSS.
+ *
+ * ESTE É O GATILHO DELES, medido no bundle e conferido vivo. O
+ * `SceneManager.update` do Eyes CRIA E DESTRÓI as entidades dinâmicas
+ * (as 451 luas, as 171 naves — só os 8 planetas e as estrelas são
+ * estáticos) por este teste, verbatim:
+ *
+ *     (systemRadius_do_pai || 25·raio_do_pai) / raio_do_pai
+ *       × raioEmPx_do_pai  >=  20
+ *
+ * que é, simplificando, **o raio do SISTEMA do pai em pixels ≥ 20**. O
+ * teste NÃO OLHA O FILHO: é por isso que as quatro galileanas nascem
+ * TODAS NO MESMO INSTANTE, e é essa a leitura que se copia — a porta é
+ * do pai, não de cada lua.
+ *
+ * Medido no Eyes vivo em 01/09 (`F7-BASTAO.md` §2): em `#/jupiter` com o
+ * sistema em quadro existem `io, europa, ganymede, callisto`; afastando
+ * 16 passos de roda as quatro somem da CENA (`removeEntity`), e as nove
+ * linhas heliocêntricas seguem intactas.
+ *
+ * O RAIO DO SISTEMA NÃO É TABELA NOVA: o mergulho 05 §1.4 mediu que o
+ * `systemRadius` deles é `≈ 2 × apoastro da lua principal mais externa`,
+ * e a casa JÁ TEM esse apoastro por lua, vivo, em `linha.apoastroPc`.
+ * Ver `raioDoSistemaPc`.
+ *
+ * O TOPO (40 px) É NOSSO, e é a única coisa desta porta que não é
+ * deles — a ordem do dono foi "o melhor dos 2 mundos": o gatilho do
+ * Eyes com a FORMA da casa. Lá as luas aparecem de estalo em 20 px;
+ * aqui elas COMEÇAM a aparecer no mesmo instante (20 px) e enchem em
+ * 40, que é a metade da distância. Uma oitava de rampa, o mesmo
+ * idioma do `fadeBlur` de meia oitava do `VisibleInterval`.
  */
-const RAIO_MIN_PX = 3;
-const RAIO_CHEIO_PX = 16;
-
-/**
- * O fade DE CIMA, em frações do SEMI-ÂNGULO VERTICAL da lente: em 1,0 o
- * apoastro encosta na borda do quadro, e a partir daí a órbita deixa de
- * caber. Some de vez em 1,8.
- */
-const CABE_NO_QUADRO = 1.0;
-const FORA_DO_QUADRO = 1.8;
-
-/**
- * A margem do teste "pai enquadrado", em NDC. 1,0 é a borda exata do
- * quadro; a folga de 25% evita que a linha da lua pisque quando o pai
- * encosta na moldura.
- */
-const MARGEM_DO_PAI_NDC = 1.25;
+const PORTA_DO_SISTEMA_PX = 20;
+const PORTA_CHEIA_PX = 40;
 
 /**
  * O BRILHO DA LINHA — o único número de intensidade desta camada, e ele
@@ -1202,6 +1217,20 @@ interface LinhaDeOrbita {
   apoastroPc: number;
   /** o alfa do quadro anterior, que é quem decide o reamostrar */
   alfa: number;
+  /**
+   * A CESSÃO POR TAMANHO APARENTE do corpo DONO desta linha (F7 · A5),
+   * escrita por `escreverNucleos` no mesmo laço que já projeta o corpo:
+   * 1 enquanto ele é pequeno, 0 quando ele enche a tela.
+   *
+   * NASCE 1 e VOLTA A 1 quando não há por onde medir — sem o palco dos
+   * corpos, sem raio no `BODY_AXES`, ou nas 21 LUAS, que não estão em
+   * `IDS_FOTOMETRIA` e por isso não têm posição nesta camada. É a mesma
+   * declaração do disco de cessão logo abaixo ("sem os corpos no palco
+   * a linha volta INTEIRA"), e a lacuna das luas está declarada no
+   * relatório da F7: fechá-la é passar as posições vivas delas ao
+   * `update`, como o `rotulos.ts` já faz para os nomes.
+   */
+  cessao: number;
   /** o multiplicador do foco (§5b), perseguindo o alvo — nasce neutro */
   realce: number;
   /**
@@ -1273,7 +1302,12 @@ export class Orbitas {
    */
   private readonly rascunhoDoLaco = new Float32Array(PONTOS_POR_ORBITA * 3);
   private readonly rascunhoNdc = new THREE.Vector3();
-  private readonly centroDoPai = new THREE.Vector3();
+  /** onde o CORPO dono da linha está neste quadro — rascunho reusado */
+  private readonly pontoDoCorpo = new THREE.Vector3();
+  /** raio físico por corpo, memoizado — ver `raioDe` */
+  private readonly raiosDeCorpo = new Map<string, number | null>();
+  /** raio do sistema por PAI neste quadro — ver `raiosDoSistema` */
+  private readonly raioDoSistemaPc = new Map<string, number>();
 
   constructor(corpos: readonly CorpoComOrbita[] = CORPOS_COM_ORBITA) {
     this.group.name = 'orbitas';
@@ -1383,6 +1417,7 @@ export class Orbitas {
         semieixoPc: 0,
         apoastroPc: 0,
         alfa: 0,
+        cessao: 1,
         realce: 1,
         nucleo,
       });
@@ -1582,25 +1617,58 @@ export class Orbitas {
   private escreverNucleos(
     camera: THREE.PerspectiveCamera,
     quadro: QuadroEmPx,
-    posicoes: Float32Array | null
+    posicoes: Float32Array | null,
+    luas: Float32Array | null,
+    tanHalfFov: number
   ) {
     const raio = RAIO_DA_CESSAO_PX * quadro.pixelRatio;
     const borda = BORDA_DA_CESSAO_PX * quadro.pixelRatio;
     const podeCeder = quadro.larguraPx > 0 && quadro.alturaPx > 0 && borda > raio;
     for (const linha of this.linhas) {
       const alvo = linha.nucleo.value;
-      const i = IDS_FOTOMETRIA.indexOf(linha.corpo.id as (typeof IDS_FOTOMETRIA)[number]);
+      linha.cessao = 1;
+      alvo.set(0, 0, 0, 0);
+      // ONDE ESTÁ O CORPO DESTA LINHA — duas fontes, cada uma com o seu
+      // índice, e nenhuma conta refeita aqui: os dez do retrato vêm de
+      // `Planetas.posicoes` e as 21 luas do MESMO array que os rótulos
+      // já leem (`rotulos.ts:luaPosParaRotulo`, escrito pelo passo do
+      // palco ANTES deste tick). Sem efeméride a lua chega NaN, e NaN
+      // não mede: a linha volta inteira, como sem palco.
+      const iCorpo = IDS_FOTOMETRIA.indexOf(
+        linha.corpo.id as (typeof IDS_FOTOMETRIA)[number]
+      );
+      const daLua = iCorpo < 0;
+      const fonte = daLua ? luas : posicoes;
+      const i = daLua ? LUAS_DO_SISTEMA.findIndex((l) => l.id === linha.corpo.id) : iCorpo;
       const j = i * 3;
-      if (!posicoes || i < 0 || j + 2 >= posicoes.length || !podeCeder) {
-        alvo.set(0, 0, 0, 0);
-        continue;
+      if (!fonte || i < 0 || j + 2 >= fonte.length) continue;
+      this.pontoDoCorpo.set(fonte[j], fonte[j + 1], fonte[j + 2]);
+      if (!Number.isFinite(this.pontoDoCorpo.x)) continue;
+      // A CESSÃO POR TAMANHO APARENTE (F7 · A5) mede a distância ao
+      // CORPO, e é por isso que ela mora AQUI e não no `alfaDa`: este é
+      // o único laço da camada que tem a posição do corpo na mão. Para
+      // um heliocêntrico o centro do laço é a origem, e medir do centro
+      // daria a distância ao SOL — que é outra pergunta, e não morre
+      // nunca. Para uma lua o centro é o PAI, e medir dele apagaria a
+      // órbita dela ao chegar no planeta, que é o oposto do que o Eyes
+      // faz (medido: em `#/earth` a linha da Terra vai a 0 e a da LUA
+      // continua em 1).
+      const raioDoCorpo = this.raioDe(linha.corpo.id);
+      if (raioDoCorpo !== null) {
+        linha.cessao = cessaoPorTamanhoAparente(
+          raioAparenteNdc(
+            raioDoCorpo,
+            this.pontoDoCorpo.distanceTo(camera.position),
+            tanHalfFov
+          )
+        );
       }
-      this.rascunhoNdc.set(posicoes[j], posicoes[j + 1], posicoes[j + 2]);
-      this.rascunhoNdc.project(camera);
-      if (this.rascunhoNdc.z > 1) {
-        alvo.set(0, 0, 0, 0);
-        continue;
-      }
+      // O DISCO fica só com os dez do retrato, e a razão é a do
+      // cabeçalho: o defeito que ele conserta é o PONTO fotométrico
+      // sobre a própria elipse, e as luas não o têm nesta escala.
+      if (daLua || !podeCeder) continue;
+      this.rascunhoNdc.copy(this.pontoDoCorpo).project(camera);
+      if (this.rascunhoNdc.z > 1) continue;
       alvo.set(
         (this.rascunhoNdc.x * 0.5 + 0.5) * quadro.larguraPx,
         (this.rascunhoNdc.y * 0.5 + 0.5) * quadro.alturaPx,
@@ -1608,6 +1676,48 @@ export class Orbitas {
         borda
       );
     }
+  }
+
+  /**
+   * O RAIO FÍSICO de um corpo em pc, memoizado — a mesma fonte que o
+   * `escada.raioFisicoDe` usa para os rótulos (`BODY_AXES`, do kernel
+   * `pck00011.tpc`). Memoiza porque `raiosDoRochosoPc` faz conta, e isto
+   * roda 30 vezes por quadro.
+   */
+  private raioDe(id: string): number | null {
+    const guardado = this.raiosDeCorpo.get(id);
+    if (guardado !== undefined) return guardado;
+    const raio = BODY_AXES[id] ? raiosDoRochosoPc(id).a : null;
+    this.raiosDeCorpo.set(id, raio);
+    return raio;
+  }
+
+  /**
+   * O RAIO DO SISTEMA de um pai, em pc — a régua da porta do Eyes,
+   * DERIVADA e nunca digitada.
+   *
+   * `systemRadius ≈ 2 × apoastro da lua principal mais externa` é a
+   * conta que o mergulho 05 §1.4 mediu contra a tabela deles, e a casa
+   * tem o apoastro de cada lua vivo em `linha.apoastroPc` — reamostrado
+   * a cada salto de data pelo `escreverInstante`. Um pai sem lua na
+   * casa devolve 0, e 0 fecha a porta: não há sistema a mostrar.
+   *
+   * O laço é sobre as 30 linhas e roda uma vez por quadro, não uma por
+   * lua; o mapa é reusado.
+   */
+  private raiosDoSistema(): Map<string, number> {
+    this.raioDoSistemaPc.clear();
+    for (const linha of this.linhas) {
+      if (linha.corpo.centro === 'sun') continue;
+      const atual = this.raioDoSistemaPc.get(linha.corpo.centro) ?? 0;
+      if (linha.apoastroPc > atual) {
+        this.raioDoSistemaPc.set(linha.corpo.centro, linha.apoastroPc);
+      }
+    }
+    for (const [pai, apoastro] of this.raioDoSistemaPc) {
+      this.raioDoSistemaPc.set(pai, 2 * apoastro);
+    }
+    return this.raioDoSistemaPc;
   }
 
   /**
@@ -1778,6 +1888,16 @@ export class Orbitas {
    * compila. `null` — camada dos corpos apagada — devolve a linha inteira,
    * e É uma declaração, não um esquecimento.
    *
+   * `luas` É A SEGUNDA FONTE (item 125, F7), e existe pela mesma lei de
+   * uma conta com um dono só: as 21 luas não estão em `IDS_FOTOMETRIA`,
+   * e sem elas a órbita de Io continuava desenhada com a câmera colada
+   * em Io — um risco atravessando o quadro onde o Eyes já a apagou. É o
+   * array VIVO que os rótulos já mantêm (`rotulos.ts:posicoesDasLuas`,
+   * na ordem de `LUAS_DO_SISTEMA`): nunca uma cópia, e nunca um segundo
+   * cálculo de posição de lua. Quem o escreve é o passo do palco, que
+   * roda ANTES deste no mesmo tique. `null` e `NaN` devolvem a linha
+   * inteira, pela mesma declaração de `corpos`.
+   *
    * `fase` É PARÂMETRO PELA MESMÍSSIMA RAZÃO, e a razão vale o dobro aqui:
    * um gate de modo que se pudesse cortar em silêncio devolveria as linhas
    * ao filme sem derrubar teste nenhum, e a decisão 3 do item 77 (§7)
@@ -1791,6 +1911,7 @@ export class Orbitas {
     tanHalfFov: number,
     dtS: number,
     corpos: Float32Array | null,
+    luas: Float32Array | null,
     fase: Phase
   ) {
     // O GATE DE FASE, e é o ÚNICO da casa (§7 — autorização DELE de
@@ -1801,7 +1922,7 @@ export class Orbitas {
     const desenha = this.ligado && LINHAS_DE_ORBITA_POR_FASE[fase];
     this.group.visible = desenha;
     this.escreverLargura(quadro);
-    this.escreverNucleos(camera, quadro, corpos);
+    this.escreverNucleos(camera, quadro, corpos, luas, tanHalfFov);
     if (!desenha) {
       // CAMADA FECHADA: o realce ENCOSTA no alvo em vez de perseguir no
       // escuro. Sem isto, abrir a gaveta depois de um `?foco=` mostraria
@@ -1822,9 +1943,12 @@ export class Orbitas {
     // régua de tamanho aparente da casa, a mesma da fita e do clarão
     const meiaAltura = quadro.alturaPx / (2 * quadro.pixelRatio);
     const camPos = camera.position;
+    // A RÉGUA DA PORTA é a mesma para as luas todas de um pai, então ela
+    // se monta UMA vez por quadro e não uma por linha (F7).
+    const raiosDoSistema = this.raiosDoSistema();
     for (const linha of this.linhas) {
       linha.realce = this.perseguirRealce(linha, dtS);
-      linha.alfa = this.alfaDa(linha, camera, camPos, meiaAltura, tanHalfFov);
+      linha.alfa = this.alfaDa(linha, raiosDoSistema, camPos, meiaAltura, tanHalfFov);
       const aceso = linha.alfa > ALFA_INVISIVEL;
       linha.fita.visible = aceso;
       if (aceso) linha.material.opacity = linha.alfa;
@@ -1859,57 +1983,74 @@ export class Orbitas {
     return alvo - resto * Math.exp(-VELOCIDADE_DO_REALCE * dtS);
   }
 
-  /** O fade de uma linha: as duas pontas do §5, mais o pai enquadrado. */
+  /**
+   * O FADE DE UMA LINHA, reescrito na F7 (item 125) para a lei do Eyes.
+   *
+   * DUAS PORTAS, E SÓ DUAS — e as duas foram medidas no app deles, não
+   * deduzidas (`F7-BASTAO.md` §2):
+   *
+   *   1. A PORTA DO SISTEMA DO PAI, e **só as luas a atravessam**. Ver
+   *      `PORTA_DO_SISTEMA_PX`. Os heliocêntricos são ISENTOS porque no
+   *      Eyes eles são entidades ESTÁTICAS (`staticEntityGroups:
+   *      ["stars","planets"]`): a órbita de um planeta nunca some por o
+   *      corpo ser pequeno. Medido: `alphaMultiplier = 1` em toda vista,
+   *      das nove linhas, inclusive na abertura em que Mercúrio tem
+   *      raio NDC 0,00001.
+   *   2. A CESSÃO NO CLOSE (A5), a mesma conta do NOME: `min = 0,
+   *      max = 0,02` de raio aparente do CORPO em NDC, `fadeBlur 0,5`.
+   *      Ela é escrita no `escreverNucleos` e chega aqui pronta.
+   *      Medido: em `#/earth` a Terra dá raio NDC 0,52942 e a linha dela
+   *      vai a **0** — enquanto Júpiter, Saturno e as demais seguem em 1.
+   *
+   * O QUE MORREU AQUI, na mesma passada (F7, decisão dele com foto):
+   *
+   *   - `d <= apoastroPc`, "de dentro do laço não desenha". O Eyes
+   *     desenha: em `capturas/f7-inv-alfa-2-terra-close.png` a câmera
+   *     está a ~1 UA do Sol, DENTRO da órbita de Saturno, e a linha de
+   *     Saturno atravessa o quadro em alfa cheio. O risco reto é
+   *     escolha deles, não descuido — e quem cobre o caso que importa
+   *     (a órbita do corpo em que se está em cima) é a cessão.
+   *   - a ponta de baixo por-filho (`RAIO_MIN_PX 3 → 16`). Quem manda
+   *     agora é a porta do PAI, e ela chega no mesmo lugar: no instante
+   *     em que a porta de Júpiter abre, Calisto tem 10 px de raio de
+   *     órbita e Io 2,2 px — a mesma faixa. A diferença que se comprou
+   *     é que as quatro entram JUNTAS, como lá.
+   *   - a ponta de cima por tangência (`CABE_NO_QUADRO/FORA_DO_QUADRO`)
+   *     e o `paiEnquadrado`. O Eyes pergunta TAMANHO, nunca
+   *     enquadramento — não há um só teste de moldura no bundle.
+   */
   private alfaDa(
     linha: LinhaDeOrbita,
-    camera: THREE.PerspectiveCamera,
+    raiosDoSistema: Map<string, number>,
     camPos: THREE.Vector3,
     meiaAltura: number,
     tanHalfFov: number
   ): number {
     if (!Number.isFinite(linha.jd) || !(linha.semieixoPc > 0)) return 0;
-    const centro = linha.fita.position;
-    const d = camPos.distanceTo(centro);
+    const d = camPos.distanceTo(linha.fita.position);
     if (!(d > 0) || !(tanHalfFov > 0)) return 0;
 
-    // A CÂMERA DENTRO DO LAÇO é o corte que não é escolha de gosto: se
-    // ela está mais perto do centro que o apoastro, a órbita ENVOLVE o
-    // observador e não existe lente que a enquadre — de dentro da órbita
-    // da Terra, a órbita da Terra é um risco dando a volta no céu. Foi o
-    // que a primeira foto mostrou (a órbita da Terra atravessando o
-    // enquadramento da Lua a meia força) e o que a régua de tamanho
-    // angular não pegava sozinha: `r/d` aproxima seno por ângulo, e a
-    // aproximação morre exatamente aqui, onde r/d → 1.
-    if (d <= linha.apoastroPc) return 0;
-
-    // A PONTA DE BAIXO é uma pergunta de PIXEL ("dá para ver a curva?"),
-    // e ali o ângulo é pequeno e a aproximação vale: o semieixo é a
-    // medida do tamanho típico do laço.
-    const raioPx = ((linha.semieixoPc / d) / tanHalfFov) * meiaAltura;
-    const entra = THREE.MathUtils.smoothstep(raioPx, RAIO_MIN_PX, RAIO_CHEIO_PX);
-    if (entra <= 0) return 0;
-
-    // A PONTA DE CIMA é uma pergunta de ÂNGULO ("cabe no quadro?"), e
-    // ali a aproximação não vale mais: a conta é o semi-ângulo de
-    // TANGÊNCIA ao apoastro contra o semi-ângulo vertical da lente.
-    const raioAngular = Math.asin(
-      Math.min(1, linha.apoastroPc / d)
-    );
-    const sai =
-      1 -
-      THREE.MathUtils.smoothstep(
-        raioAngular / Math.atan(tanHalfFov),
-        CABE_NO_QUADRO,
-        FORA_DO_QUADRO
+    // A PORTA DO PAI — a régua é o SISTEMA dele, uma por pai e não uma
+    // por lua, e é isso que faz as irmãs nascerem no mesmo instante.
+    let porta = 1;
+    if (linha.corpo.centro !== 'sun') {
+      const raioDoSistema = raiosDoSistema.get(linha.corpo.centro) ?? 0;
+      const sistemaPx = ((raioDoSistema / d) / tanHalfFov) * meiaAltura;
+      porta = THREE.MathUtils.smoothstep(
+        sistemaPx,
+        PORTA_DO_SISTEMA_PX,
+        PORTA_CHEIA_PX
       );
-    if (sai <= 0) return 0;
+      if (porta <= 0) return 0;
+    }
 
-    if (linha.corpo.centro !== 'sun' && !this.paiEnquadrado(centro, camera)) return 0;
-    // O REALCE ENTRA POR ÚLTIMO (§5b), e por isso não abre porta nenhuma:
-    // quem já foi cortado pelas duas pontas ou pelo pai fora do quadro
-    // continua cortado, por mais que esteja em foco — ou apontado. O foco
-    // escolhe o ASSUNTO entre as linhas que a cena já decidiu mostrar; o
-    // hover responde ao dedo entre as mesmas.
+    if (linha.cessao <= 0) return 0;
+
+    // O REALCE ENTRA POR ÚLTIMO (§5b), e por isso não abre porta
+    // nenhuma: quem a porta do pai ou a cessão cortou continua cortado,
+    // por mais que esteja em foco — ou apontado. O foco escolhe o
+    // ASSUNTO entre as linhas que a cena já decidiu mostrar; o hover
+    // responde ao dedo entre as mesmas.
     //
     // E O HOVER SUBSTITUI, não multiplica (§5g · L10): no Eyes
     // `onHoverChange` ESCREVE o alfa do topo, venha ele do `primary` ou
@@ -1918,18 +2059,7 @@ export class Orbitas {
     // não está — e o gesto deixaria de responder sempre igual. É também
     // aqui que ele fica INSTANTÂNEO: não passa por `perseguirRealce`.
     const realce = linha.corpo.id === this.hover ? REALCE_DO_HOVER : linha.realce;
-    return BRILHO_DA_LINHA * entra * sai * realce;
-  }
-
-  /** O pai está no quadro? (§5 — só as luas perguntam.) */
-  private paiEnquadrado(centro: THREE.Vector3, camera: THREE.PerspectiveCamera): boolean {
-    this.centroDoPai.copy(centro);
-    const ndc = this.rascunhoNdc.copy(this.centroDoPai).project(camera);
-    // atrás da câmera o `project` devolve NDC dentro da caixa com z > 1
-    if (ndc.z > 1) return false;
-    return (
-      Math.abs(ndc.x) <= MARGEM_DO_PAI_NDC && Math.abs(ndc.y) <= MARGEM_DO_PAI_NDC
-    );
+    return BRILHO_DA_LINHA * porta * linha.cessao * realce;
   }
 
   /** `?dbgorbitas` — que linha está acesa, com que raio e por quê. */

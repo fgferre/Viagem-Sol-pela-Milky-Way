@@ -1835,57 +1835,29 @@ Terra 1,74 M km e a prova mede contra o lugar velho. Família do
 Terra.
 
 **125. A ONDA DA PARIDADE — linhas de órbita, rótulos e ícones IGUAIS
-aos do NASA Eyes.** *(Ponte: nasceu como "120" nos commits
-`335fa9c`/`60190b9` por contador atrasado; renumerado em 31/08 — os
-commits antigos seguem dizendo "120".)* Ordem do dono em 31/08; supera
-a "estação da beleza" do item 115 e autorizou revogar leis anteriores
-onde conflitassem (o orçamento de nomes do item 82 foi revogado na F3).
-O gabarito é docs/reference/contrato-eyes-linhas-rotulos.md (77 regras
-com endereço no bundle deles).
+aos do NASA Eyes.** **FECHADA em 01/09**, palavra dele nas fotos A/B e
+no vivo; suíte cheia verde no fechamento (2.729 testes, 9 s; a única
+falha era a porta `?msaa=` da F1 fora do registro do selo — declarada).
+História fase a fase nos commits (F0 `60190b9` · F1 `04529af` · F2
+`1057890` · F3 `40a5fc2` · F4 `09f16e8` · F5 `1a2708f` · F7 no selo
+desta linha) e nos bastões de scratchpad/estudos/nasa-eyes-solar-system/
+mineracao/. O gabarito docs/reference/contrato-eyes-linhas-rotulos.md
+ficou corrigido (§2.2b: as quatro portas; A4 e L3/L4 refeitas).
+*(Ponte: nasceu como "120" nos commits `335fa9c`/`60190b9`.)*
 
-**ESTADO: F0-F5 SELADAS pelo olho dele — falta só a F6.** A história
-de cada selo mora no commit da fase e nos bastões de
-scratchpad/estudos/nasa-eyes-solar-system/mineracao/:
-F0 contrato `60190b9` · F1 pintura (MSAA por tier, saia morta, hover
-nome→órbita) `04529af` · F2 aparição (cessão por tamanho aparente,
-segunda camada de fade, causaDoSumico) `1057890` · F3 prioridade e
-colisão (pesos do Eyes, orçamento revogado, quadtree+rodízio,
-histerese aposentada) `40a5fc2` · F4 encobrimento (rampa na oclusão,
-isenção do alvo seguido, viewport inteiro) `09f16e8` · F5 tipografia e
-ícones (letra do Eyes em dois níveis, dois anéis, detalhe só no
-focado) `1a2708f`.
+**127. Re-baseline das 54 vistas do `ab-identidade` — pendente do
+fechamento da onda 125.** A onda mudou pixels de propósito em toda
+vista com órbita (MSAA, linhas, régua nova da F7); o dono cortou o
+re-baseline no fechamento (§19). Até refazer o retrato-base, o
+detector de regressão acusa a onda inteira como "diferença" — rodá-lo
+exige primeiro capturar o retrato novo em árvore limpa do selo da F7.
 
-**F6 — fotos A/B FEITAS em 01/09** (5 pares em capturas/f6-*.png;
-drivers do Eyes vivo em scratchpad/estudos/nasa-eyes-solar-system/
-mineracao/{eyes,f6-eyes,f6-casa}.mjs); veredito dele: "tudo ok", com a
-ressalva que virou a F7. O fechamento da onda (suíte cheia 1× +
-auditoria única, §13/§19, aprovados por ele) roda DEPOIS da F7, uma
-vez só.
-
-**F7 — EM OBRA em 01/09, ordem dele nas fotos A/B: "temos que ter as
-mesmas regras de comportamento para as linhas de órbitas
-sumirem/aparecerem que o nasa eyes".** A investigação (dono corrigiu o
-rumo: "existe um dinamismo por contexto") provou que a regra real do
-Eyes são QUATRO portas, não a única do contrato §2 — a que faltava
-está em mergulhos/05 §1.6-1.7 e no F7-BASTAO.md: luas/naves são
-criadas e destruídas por quadro pela porta do SISTEMA DO PAI
-((systemRadius/raio_do_pai)×raioPx ≥ 20); planetas são ISENTOS
-(órbita sempre visível, alfa 1, medido vivo); seleção NÃO mexe em
-linha; o Eyes desenha o risco reto de dentro da órbita de propósito.
-Obra decidida: planetas min=0 + cessão no close (conta da F2, linha e
-nome morrem juntos); luas = "o melhor dos 2 mundos" (dele): gatilho do
-pai do Eyes + rampa suave da casa; morrem `d<=apoastroPc` e
-`paiEnquadrado` (sem par no Eyes). Cores/alfas ficam (doutrina F1).
-No selo: corrigir o §2/A4 do contrato com as quatro portas.
-
-**Achados da onda que seguem abertos:** (a) o gate de identidade é
-CEGO a rótulo por construção (`?shot=2` esconde o `label-canvas`,
-App.tsx:700) — prova de trabalho de rótulo é foto com HUD + medida,
-nunca gate bit-idêntico; (b) o anel branco dos corpos menores perdeu a
-cor herdada do pai (item 83) — reverter é 1 linha, se o olho dele
-sentir falta; (c) as legendas do filme guardam a letra antiga de
-propósito — unificar com a letra nova é decisão de direção de arte
-futura, só se incomodar.
+**128. O gate de identidade é CEGO a rótulo (achado da F2 da onda
+125).** As 54 vistas usam `?shot=2` e `.bare-mode` esconde o
+`label-canvas` (App.tsx:700): nenhum juiz de imagem da casa vê nomes.
+Prova de trabalho de rótulo é foto com HUD + medida. Dívida de
+instrumento: ou uma família de vistas com HUD entra no censo, ou o
+buraco fica declarado aqui.
 
 **120.** A histerese da régua de relevância nunca chegava a valer —
 **FECHADO em 31/08**; história no ARQUIVO. *(`prevDesenhados` era montado

@@ -2734,6 +2734,9 @@ export class Director {
         tanHalfFov,
         dt,
         this.planetas?.ligado ? this.planetas.posicoes : null,
+        // as luas VIVAS, do mesmo array que os nomes leem — o passo do
+        // palco já o escreveu neste tique, umas 240 linhas acima
+        this.rotulos.posicoesDasLuas,
         this.phase
       );
     }

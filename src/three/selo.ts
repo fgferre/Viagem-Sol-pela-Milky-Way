@@ -521,6 +521,11 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   },
   // --- portas de URL que mexem na luz ------------------------------
   porta('fov', 'lente forçada por ?fov='),
+  // `?msaa=N` vence a escada de tiers do MSAA (F1 da onda 125). Mexe na
+  // imagem duas vezes: suaviza toda beira e muda a cobertura area-correta
+  // da galáxia (−1,23% de face medido no selo da F1) — logo é desvio,
+  // não bancada neutra.
+  porta('msaa', 'amostras do MSAA forçadas por ?msaa='),
   porta('nobloom', 'bloom desligado'),
   porta('knee', 'joelho asinh forçado'),
   porta('kneemode', 'modo do joelho trocado'),
