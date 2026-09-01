@@ -1862,7 +1862,30 @@ estáveis). As fases constroem em cima disso, não do retrato velho.
 **O PLANO (a fila viva é esta; cada fase fecha com prova e a onda
 inteira fecha com A/B lado a lado contra o Eyes vivo e o olho dele):**
 
-**ESTADO DA ONDA no handoff de 31/08 (sessão da mineração encerrou aqui):**
+**F1 SELADA em 31/08 (a madrugada virou 01/09), palavras dele: "pode
+declarar e selar a F1 assim" (commit 04529af).** O que a F1 entregou:
+MSAA no alvo do composer com escada por tier (cinema/alta 4 amostras,
+performance 2 — o zero foi RECUSADO com foto na prancha, e o remédio de
+2 custa +2,5-3,5 ms), saia de fwidth aposentada (beira dura, miolo
+chapado, largura 1,2 = o literal do Eyes), hover que nasce no NOME e
+acende a órbita (regra F0: o Eyes não tem picking de linha), forense
+54/54 vistas explicada POR MEDIDA (noorbitas isola a luz da linha;
+?msaa=0 devolve bit-idêntico nas 25 sem órbita), 11 sabotagens mordem.
+**DECARADO por decisão dele:** sob MSAA a galáxia perde −1,23% de luz
+de face / −2,19% de perfil — NÃO é o campo de estrelas (ablação por
+camada prova: esconder o campo mantém a perda; esconder a galáxia
+zera; a fotometria estelar está INTACTA) — é cobertura area-correta
+(sem MSAA, sprite que cobre 30% do pixel depositava 100% da energia) e
+invisível a olho nu; a blindagem aprovada parou ANTES de operar porque
+trataria o órgão errado (condição dele honrada). Fica registrado, sem
+obra: metade da perda vem do caminho do resolve (msaa=1 = msaa=2 =
+metade do 4) — investigar só se um dia incomodar. Pós-selo pendente
+para a sessão da F2: aplicar as 2 correções ao §7 do contrato (L3/L4
+dizem "não tem" e a casa tem — anotadas no F1-BASTAO.md §8); achado
+para o item 49 (tremor é ENTRE sessões, não dentro — 160 capturas
+internas sem oscilação, terralua diferiu entre sessões).
+
+**ESTADO DA ONDA no handoff de 31/08 (histórico da pausa; superado pelo selo acima):**
 F0 FEITA e commitada (docs/reference/contrato-eyes-linhas-rotulos.md,
 60190b9 — 77 regras). F1 FEITA E PAUSADA NA ÁRVORE, SEM COMMIT, por
 ordem dele (pausa para outra sessão pousar): 11 arquivos, todos
