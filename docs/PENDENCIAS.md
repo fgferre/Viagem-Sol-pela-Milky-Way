@@ -676,6 +676,62 @@ da Terra), `-3-gradiente.png` (o laço inteiro mais o zoom no alto),
 `-5-nuvens.png` (a estrela na frente da nuvem, 10× no pixel medido).
 Compostas por `capturas/item115-folha.mjs`.
 
+**Estação (3) — o BLOCO A (memória de texturas): CUMPRIDA em 31/08, as
+três peças.** O buraco que o mergulho 09 chamou de mais grave era real e
+está MEDIDO nos dois lados, com o passeio de oito corpos em cinema
+(`capturas/item115-passeio-memoria.mjs`; rastro em
+`item115-passeio-antes.json` e `item115-passeio-memoria.json`).
+
+*Peça 1 — os três que seguram e a carência de 15 s* (`25b131c`). O app
+não descarregava textura nenhuma: 54,1 MiB no boot, **1.082,9 MiB**
+depois de visitar oito corpos, e **1.082,9 MiB vinte segundos depois de
+sair** — o repouso ERA o pico, 100%. Agora quem segura os texels é uma
+lista de três razões reais (`Seguradores`) e basta uma para os bytes
+ficarem: a TELA (o gate de 4 px), o FOCO do Atlas e o ROTEIRO do filme.
+Depois: **pico 966,1 MiB, repouso 70,1 MiB — 7% do pico**. A carência são
+os 15 000 ms literais do `ResourceManager` deles, no relógio de PAREDE do
+app. Duas garantias que valem escritas: (a) a descarga NUNCA alcança
+corpo em quadro, por construção — `emQuadro` exige o gate armado, que é o
+segurador `tela`; (b) o roteiro do filme é MONOTÔNICO (`t >= inicio`),
+então a descarga não pode estrangular a viagem.
+
+*Peça 2 — `createImageBitmap`* (`ee261bb`). O `<img>` do
+`THREE.TextureLoader` decodificava na thread principal: pousar na Terra
+em cinema travava **1.308 ms** (TBT 1.413). Fora da thread: **790 ms**
+(−40%), TBT 972 (−31%) — `capturas/item115-thread-na-carga.{mjs,json}`.
+O que SOBRA e não é decodificação: a subida dos 134 MB de RGBA8 para a
+GPU. As três opções do bitmap existem para o pixel não mudar, e o
+`descartarTextura` fecha o `ImageBitmap` além do `dispose()` — a metade
+de CPU que o `dispose()` sozinho não devolve.
+
+*Peça 3 — `abort`* (`fa44a4a`). A geração já invalidava o lote em voo,
+mas invalidar não é parar de receber. Com a banda estrangulada a 2 Mbit/s
+e uma troca de alvo no meio da carga
+(`capturas/item115-abort-na-troca.mjs`): ANTES 5 pedidos da Terra, 0
+cortados, 3 inteiros, **0,70 MiB desceram** para um corpo abandonado;
+DEPOIS **5 de 5 CORTADOS, 0,00 MiB**.
+
+**As provas.** Volta ao mesmo corpo DENTRO da carência: **0 pedidos
+novos**; DEPOIS dela: os 5 canais recarregam, e o retorno não tem UM
+quadro com o gate armado e sem globo (`friaNoGate` 0 em 17 amostras a
+100 ms) — porque o segurador do FOCO dispara no clique, com a câmera
+ainda viajando. O `memoria.mjs` ganhou a régua **E** (o passeio), a única
+que mede o que a sessão DEVOLVE; as quatro antigas seguem verdes. O juiz
+subiu de 2,1 para 4,4 min medidos e a catraca do censo foi re-pinada de
+32,3 para 34,6 no mesmo commit. Doze sabotagens em worktree reprovaram
+(cinco na peça 1, três na 2, três na 3, e uma na mão do roteiro).
+**Pixel:** `ab-identidade` em worktree LIMPO do HEAD, duas levas de 54
+vistas — **zero DIFERE nas duas**; 52+2 e 53+1 instáveis, e as vistas
+instáveis TROCARAM entre as levas (`terralua`/`venusnb` numa,
+`saturno-anel` — uma das duas pinadas trêmulas — na outra), que é
+assinatura da família 49/80/101 e não de código. As duas suspeitas da
+primeira leva deram 8 de 8 capturas idênticas ao `antes` no instrumento
+de datação. **Fica sem obra, declarado:** o KTX2 (item 3 do bloco A)
+segue REPROVADO pelo mergulho para o canal `map` e pendente de A/B de um
+arquivo nos canais de apoio; e uma corrida do passeio pendurou em
+`sun.assentado` (o bake do Sol, que esta obra não toca) e não
+reproduziu na repetição.
+
 **114. O censo do sistema solar: todas as luas e os objetos interessantes.**
 Pedido do dono em 30/08, palavras dele: *"quero expandir nosso projeto
 para ter todos obejtos possiveis de luas e obejtos maiores tb. meteoros
