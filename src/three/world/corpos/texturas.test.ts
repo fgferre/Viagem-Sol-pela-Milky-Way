@@ -23,6 +23,7 @@ import {
   alvoDePixels,
   buscarManifestUmaVez,
   carregarCanaisDoCorpo,
+  descartarTextura,
   escolherVariante,
 } from './texturas';
 import type {
@@ -695,5 +696,132 @@ describe('a descarga adiada: os três que seguram e a carência de 15 s', () => 
     b.tick({}, CARENCIA_DA_DESCARGA_S);
     expect(b.descartadas).toEqual([mapaDaTerraEm('cinema'), mapaDaTerraEm('alta')]);
     expect(b.casa.pronta).toBe(false);
+  });
+});
+
+describe('a carga sai da thread principal: fetch + createImageBitmap (peça 2)', () => {
+  /**
+   * A bancada substitui `fetch` e `createImageBitmap` no global — é o
+   * que faz este teste medir o CARREGADOR DE PRODUÇÃO
+   * (`carregarPelaRede`, o default de `carregarCanaisDoCorpo`) e não
+   * uma cópia dele. Em Node os dois não existem com esta forma, e é
+   * justamente por isso que a peça precisava de um juiz próprio.
+   */
+  function bancadaDoBitmap() {
+    const chamadas: { url: string; opcoes: unknown }[] = [];
+    const fechados: unknown[] = [];
+    const blobs = new Map<string, object>();
+    const falso = globalThis as unknown as Record<string, unknown>;
+    const antes = { fetch: falso.fetch, cib: falso.createImageBitmap, IB: falso.ImageBitmap };
+    class BitmapDeTeste {
+      width = 8;
+      height = 4;
+      fechado = false;
+      close() {
+        this.fechado = true;
+        fechados.push(this);
+      }
+    }
+    falso.ImageBitmap = BitmapDeTeste;
+    falso.fetch = async (url: string) => {
+      const blob = { url };
+      blobs.set(url, blob);
+      return { ok: true, blob: async () => blob };
+    };
+    falso.createImageBitmap = async (blob: { url: string }, opcoes: unknown) => {
+      chamadas.push({ url: blob.url, opcoes });
+      return new BitmapDeTeste();
+    };
+    return {
+      chamadas,
+      fechados,
+      restaurar: () => {
+        falso.fetch = antes.fetch;
+        falso.createImageBitmap = antes.cib;
+        falso.ImageBitmap = antes.IB;
+      },
+    };
+  }
+
+  it('decodifica pelo bitmap, com as três opções que preservam o pixel', async () => {
+    const b = bancadaDoBitmap();
+    try {
+      const lote = await carregarCanaisDoCorpo(
+        'earth',
+        [CANAL_MAP],
+        { tier: () => 'alta', maxTextureSize: 16384, base: '', webp: true,
+          buscarManifest: async () => MANIFEST },
+        'alta',
+        () => false
+      );
+      // o pedido passou pelo caminho novo — e com as opções literais
+      expect(b.chamadas).toHaveLength(1);
+      expect(b.chamadas[0].url).toBe(mapaDaTerraEm('alta'));
+      expect(b.chamadas[0].opcoes).toEqual({
+        imageOrientation: 'flipY',
+        premultiplyAlpha: 'none',
+        colorSpaceConversion: 'none',
+      });
+      // O PAR QUE SALVA O PIXEL: o bitmap já vem virado, então o three
+      // NÃO pode virar de novo. Tirar `flipY = false` põe todo globo da
+      // casa de cabeça para baixo, e nenhum teste de unidade veria.
+      const tex = lote!.get('map')!;
+      expect(tex.flipY).toBe(false);
+      // `needsUpdate` é só escrita no three; o que ele MOVE é a versão,
+      // e é a versão que faz o renderer subir os texels
+      expect(tex.version).toBeGreaterThan(0);
+      expect(tex.image).toBeInstanceOf(
+        (globalThis as unknown as { ImageBitmap: new () => object }).ImageBitmap
+      );
+    } finally {
+      b.restaurar();
+    }
+  });
+
+  it('o descarte FECHA o bitmap além de devolver a textura à GPU', async () => {
+    const b = bancadaDoBitmap();
+    try {
+      const lote = await carregarCanaisDoCorpo(
+        'earth',
+        [CANAL_MAP],
+        { tier: () => 'alta', maxTextureSize: 16384, base: '', webp: true,
+          buscarManifest: async () => MANIFEST },
+        'alta',
+        () => false
+      );
+      const tex = lote!.get('map')!;
+      let devolvida = false;
+      tex.addEventListener('dispose', () => {
+        devolvida = true;
+      });
+      descartarTextura(tex);
+      // as DUAS metades: `dispose()` é a GPU, `close()` é a memória de
+      // CPU do bitmap decodificado — que o GC não recolhe sozinho
+      expect(devolvida).toBe(true);
+      expect(b.fechados).toEqual([tex.image]);
+    } finally {
+      b.restaurar();
+    }
+  });
+
+  it('o lote que CAI no meio fecha os bitmaps que já tinham chegado', async () => {
+    const b = bancadaDoBitmap();
+    try {
+      await expect(
+        carregarCanaisDoCorpo(
+          'earth',
+          [CANAL_MAP, { canal: 'nao-existe', cor: true, repetirEmU: false }],
+          { tier: () => 'alta', maxTextureSize: 16384, base: '', webp: true,
+            buscarManifest: async () => MANIFEST },
+          'alta',
+          () => false
+        )
+      ).rejects.toThrow(/sem variante/);
+      // o canal que chegou não pode ficar com o bitmap aberto — é o
+      // vazamento de CPU que o `dispose()` sozinho não fecha
+      expect(b.fechados).toHaveLength(1);
+    } finally {
+      b.restaurar();
+    }
   });
 });

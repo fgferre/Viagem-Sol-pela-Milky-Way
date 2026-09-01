@@ -224,6 +224,28 @@ export type BuscadorDeManifest = (url: string) => Promise<ManifestDeTexturas>;
 export type CarregadorDeTextura = (url: string) => Promise<THREE.Texture>;
 
 /**
+ * O DESCARTE DE UMA TEXTURA DE CORPO — as DUAS metades, e a segunda é a
+ * que quase todo projeto three.js esquece (mergulho 09, §1.5, o
+ * `ThreeJsHelper.destroyTexture` deles).
+ *
+ * `dispose()` devolve a textura da GPU. O `ImageBitmap` que a
+ * alimentou é memória do lado da CPU, num objeto que o GC não coleta
+ * sozinho enquanto não for fechado — e desde a peça 2 do bloco A TODA
+ * textura de corpo nasce de um bitmap. Fechar antes de `dispose()` é
+ * seguro: o three já subiu os texels no `needsUpdate` do primeiro
+ * quadro em que o material desenhou.
+ *
+ * A guarda de `typeof` existe porque a suíte roda em Node, onde
+ * `ImageBitmap` não é global — e a alternativa (`instanceof` cru)
+ * estouraria em todo teste que descarta textura.
+ */
+export function descartarTextura(tex: THREE.Texture): void {
+  const dado: unknown = tex.source?.data;
+  if (typeof ImageBitmap !== 'undefined' && dado instanceof ImageBitmap) dado.close();
+  tex.dispose();
+}
+
+/**
  * O que TODO corpo resolvido precisa saber para pedir os pixels dele —
  * o bloco que era copiado nas quatro `Opcoes*`, palavra por palavra.
  */
@@ -330,8 +352,52 @@ const buscarPelaRede: BuscadorDeManifest = async (url) => {
   return r.json() as Promise<ManifestDeTexturas>;
 };
 
-const carregarPelaRede: CarregadorDeTextura = (url) =>
-  new THREE.TextureLoader().loadAsync(url);
+/**
+ * A CARGA DE UMA IMAGEM — `fetch` + `createImageBitmap`, e não mais o
+ * `THREE.TextureLoader` (item 115, bloco A, peça 2).
+ *
+ * O `TextureLoader` monta um `<img>`, e `<img>` DECODIFICA NA THREAD
+ * PRINCIPAL. Medido em 31/08 (`capturas/item115-thread-na-carga.mjs`,
+ * 3 repetições, navegação nova por repetição): pousar na Terra em
+ * cinema — cinco canais, o `map` 8192×4096 virando 134 MB de RGBA8 —
+ * travava a thread por **1.308 ms** no pior bloqueio, TBT 1.413 ms.
+ * `createImageBitmap` decodifica FORA da thread, que é a mesma escolha
+ * de engenharia do Eyes (mergulho 09, §1.2).
+ *
+ * AS TRÊS OPÇÕES NÃO SÃO ENFEITE, e duas existem para o pixel NÃO mudar:
+ *
+ *  - `imageOrientation: 'flipY'` COM `tex.flipY = false`. O three IGNORA
+ *    `Texture.flipY` quando a fonte é um `ImageBitmap` (está escrito no
+ *    docblock do `ImageBitmapLoader` dele), então o flip que o caminho
+ *    do `<img>` fazia no UPLOAD passa a ser feito na DECODIFICAÇÃO. Sem
+ *    isto todo globo da casa nasceria de cabeça para baixo — e o par é à
+ *    prova dos dois comportamentos: o bitmap já vem virado, e o
+ *    `UNPACK_FLIP_Y` desligado não o vira de novo se o navegador o
+ *    respeitar.
+ *  - `premultiplyAlpha: 'none'`: o `<img>` subia com
+ *    `UNPACK_PREMULTIPLY_ALPHA_WEBGL` = `texture.premultiplyAlpha`, que
+ *    é `false` por padrão. Mesma conta, do outro lado da fronteira.
+ *  - `colorSpaceConversion: 'none'`: nenhum dos webp do atlas carrega
+ *    perfil ICC (medido: 7 dos 174 arquivos têm perfil, e são os
+ *    `.jpg`/`.png` do fallback, todos sRGB), então converter ou não dá o
+ *    mesmo byte — e 'none' é o que protege `normal` e `roughness`, que
+ *    são DADO e não cor.
+ *
+ * A prova de que o pixel não mudou é o `ab-identidade` nas 54 vistas.
+ */
+const carregarPelaRede: CarregadorDeTextura = async (url) => {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
+  const bitmap = await createImageBitmap(await r.blob(), {
+    imageOrientation: 'flipY',
+    premultiplyAlpha: 'none',
+    colorSpaceConversion: 'none',
+  });
+  const tex = new THREE.Texture(bitmap);
+  tex.flipY = false;
+  tex.needsUpdate = true;
+  return tex;
+};
 
 /**
  * O manifest é UM arquivo de 3,44 MiB e treze corpos o pediam ao mesmo
@@ -432,7 +498,7 @@ export async function carregarCanaisDoCorpo(
   const chegaram = lote.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []));
   const caiu = lote.find((r) => r.status === 'rejected');
   if (caiu || cancelado()) {
-    for (const { tex } of chegaram) tex.dispose();
+    for (const { tex } of chegaram) descartarTextura(tex);
     if (caiu) throw (caiu as PromiseRejectedResult).reason;
     return null;
   }
@@ -726,7 +792,7 @@ export class TexturasDoCorpo {
   private descarregar(): void {
     this.geracao += 1;
     this.pedido.soltar();
-    for (const t of this.vivas) t.dispose();
+    for (const t of this.vivas) descartarTextura(t);
     this.vivas = [];
     this.estado = 'fria';
     this.tierVivo = null;
@@ -760,7 +826,7 @@ export class TexturasDoCorpo {
         // `dispose()` do Director ou um clique num terceiro tier — o
         // lote não fica sem dono
         if (vencida()) {
-          for (const t of porCanal.values()) t.dispose();
+          for (const t of porCanal.values()) descartarTextura(t);
           return;
         }
         // ---- A TROCA DE PONTEIRO: síncrona, sem um `await` no meio ---
@@ -768,7 +834,7 @@ export class TexturasDoCorpo {
         // quadro é desenhado, então nenhum material aponta para um texel
         // já devolvido à GPU
         publicar(porCanal);
-        for (const t of this.vivas) t.dispose();
+        for (const t of this.vivas) descartarTextura(t);
         this.vivas = [...porCanal.values()];
         // ---- fim da troca -------------------------------------------
         this.tierVivo = tier;
@@ -806,7 +872,7 @@ export class TexturasDoCorpo {
 
   dispose(): void {
     this.disposto = true;
-    for (const t of this.vivas) t.dispose();
+    for (const t of this.vivas) descartarTextura(t);
     this.vivas.length = 0;
   }
 }
