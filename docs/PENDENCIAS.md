@@ -1862,17 +1862,21 @@ ressalva que virou a F7. O fechamento da onda (suíte cheia 1× +
 auditoria única, §13/§19, aprovados por ele) roda DEPOIS da F7, uma
 vez só.
 
-**F7 — ABERTA em 01/09, ordem dele nas fotos A/B: "temos que ter as
+**F7 — EM OBRA em 01/09, ordem dele nas fotos A/B: "temos que ter as
 mesmas regras de comportamento para as linhas de órbitas
-sumirem/aparecerem que o nasa eyes".** Reabre a decisão da F2 sobre a
-régua A4 (que mantivera a regra da casa, declarada melhor): a linha de
-órbita passa a aparecer/sumir pela régua do Eyes — nunca some por o
-corpo ser pequeno (min=0), cede quando o corpo enche a tela (mesma
-conta da cessão de rótulo da F2, corpo em raio NDC 0,02→0,03). Cores e
-alfas das linhas NÃO entram (divergência de doutrina declarada na F1:
-luz física vs ilustração). O corte da casa por apoastro/tangência
-(L24, "de dentro não desenha") é decisão do executor com foto: manter
-se protege de linha reta cruzando o quadro na chegada, declarar.
+sumirem/aparecerem que o nasa eyes".** A investigação (dono corrigiu o
+rumo: "existe um dinamismo por contexto") provou que a regra real do
+Eyes são QUATRO portas, não a única do contrato §2 — a que faltava
+está em mergulhos/05 §1.6-1.7 e no F7-BASTAO.md: luas/naves são
+criadas e destruídas por quadro pela porta do SISTEMA DO PAI
+((systemRadius/raio_do_pai)×raioPx ≥ 20); planetas são ISENTOS
+(órbita sempre visível, alfa 1, medido vivo); seleção NÃO mexe em
+linha; o Eyes desenha o risco reto de dentro da órbita de propósito.
+Obra decidida: planetas min=0 + cessão no close (conta da F2, linha e
+nome morrem juntos); luas = "o melhor dos 2 mundos" (dele): gatilho do
+pai do Eyes + rampa suave da casa; morrem `d<=apoastroPc` e
+`paiEnquadrado` (sem par no Eyes). Cores/alfas ficam (doutrina F1).
+No selo: corrigir o §2/A4 do contrato com as quatro portas.
 
 **Achados da onda que seguem abertos:** (a) o gate de identidade é
 CEGO a rótulo por construção (`?shot=2` esconde o `label-canvas`,
