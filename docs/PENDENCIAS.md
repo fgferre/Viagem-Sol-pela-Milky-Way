@@ -1769,6 +1769,66 @@ Terra 1,74 M km e a prova mede contra o lugar velho. Família do
 `?jd=` (e a prova acompanhar) ou se a prova deve medir relativo à
 Terra.
 
+**120. A ONDA DA PARIDADE — linhas de órbita, rótulos e ícones IGUAIS
+aos do NASA Eyes.** Ordem do dono em 31/08, palavras dele: *"nao estou
+convencido nem mesmo satisfeito ainda com a nossa implementacao das
+linhas de orbitas, labels e ícones. Acho que nao aprendemos direito as
+regras que fazem eles aparecerem, em qual momento desaparecem, como sao
+desenhados, quais algoritmos governam encobrimentos... mas
+principalmente os visuais desses elementos e comportamentos. Quero que
+fiquem iguais ao do nasa eyes. Acho que vc fez um trabalho pobre e está
+colocando exclusivamente a culpa dessa diferença no MSAA... nao estamos
+atingindo o nivel de otimizacao e de algoritmos e regras que governam
+esses itens, sejam em visuais, seja em comportamentos dinamicos."*
+Esta ordem SUPERA a "estação da beleza" do item 115 (o bloco B era um
+subconjunto) e AUTORIZA rever leis anteriores onde conflitarem com a
+paridade — em particular o orçamento de 8 nomes do item 82 (lei de
+25/08), que será substituído pelo conjunto de regras do Eyes (pesos por
+classe + colisão + rodízio), mudança declarada aqui e conferível por
+ele no fim.
+
+**O PLANO (a fila viva é esta; cada fase fecha com prova e a onda
+inteira fecha com A/B lado a lado contra o Eyes vivo e o olho dele):**
+
+- **F0 — O CONTRATO (leitura, sem código):** um documento único em
+  docs/reference/ com TODAS as regras do Eyes já mineradas e as que
+  faltarem, extraídas dos trechos locais: pintura da linha (larguras,
+  cores, alfas, hover, junta, miolo chapado), TrailShader, pesos de
+  classe e prioridade determinística do LabelQuadtree (rodízio 20/frame,
+  profundidade 8), VisibleInterval (fadeBlur, DefaultVisibleFar),
+  DivComponent (oclusão segmento-esfera, atrás-da-câmera), fades
+  250/750ms em duas camadas, canais independentes ícone/texto,
+  tipografia dos dois níveis, ícones (anel/hexágono, tamanhos). Cada
+  regra com o literal e o endereço no bundle. É o gabarito da onda.
+- **F1 — A PINTURA:** samples:4 no alvo do composer (custo de GPU
+  MEDIDO antes/depois; se o preço for alto, escada de qualidade decide
+  por tier), aposentadoria da saia fwidth (miolo chapado como o deles),
+  hover da órbita no mesmo quadro (1,2→2px, alfa 0,75→1). Re-baseline
+  ÚNICO dos juízes, na mesma sessão da faxina dos ruídos 49/80/85/101.
+- **F2 — AS REGRAS DE APARIÇÃO:** intervalos de visibilidade por
+  tamanho aparente (o rótulo cede quando o corpo ENCHE a tela e quando
+  vira pó), fades assimétricos 250/750ms, canais ícone/texto
+  independentes (ícone pode ficar sem texto).
+- **F3 — PRIORIDADE E COLISÃO:** pesos por classe do Eyes, prioridade
+  determinística (classe → profundidade → alfabética), perdedor SOME
+  (sem empurrar), rodízio por quadro; substitui o orçamento fixo de 8.
+- **F4 — ENCOBRIMENTO:** todo corpo é oclusor de rótulo/ícone
+  (segmento-esfera; hoje só o Sol, rotulos.ts:149), atrás-da-câmera
+  não rotula.
+- **F5 — TIPOGRAFIA E ÍCONES:** os dois níveis (planeta caixa alta com
+  tracking; corpo menor caixa mista menor), ícone ao lado do nome,
+  migalha fora do escopo (é do 115-F).
+- **F6 — O JULGAMENTO:** fotos A/B das MESMAS cenas nos dois apps
+  (vista do sistema, hover, aproximação, close com cessão) + auditoria
+  independente única da onda + suíte cheia + a palavra dele.
+
+Riscos declarados de antemão: F1 muda pixel na casa inteira (re-baseline
+total dos gates de identidade — por isso é UM re-baseline só); o custo
+do MSAA é real e será medido, com a escada de tiers como saída se
+pesar; F3 revoga uma lei aprovada (declarado acima). O material-fonte
+está todo em docs/reference/nasa-eyes-* e nos trechos/medidas de
+scratchpad/estudos/nasa-eyes-solar-system/mineracao/.
+
 **120.** A histerese da régua de relevância nunca chegava a valer —
 **FECHADO em 31/08**; história no ARQUIVO. *(`prevDesenhados` era montado
 da lista NOVA do próprio quadro, em que `desenhado` ainda é `undefined`
