@@ -36,12 +36,13 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 122.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 125.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
-  31/08 esta linha foi pega DUAS vezes atrás da verdade — o 114 e o 115
-  nasceram sem somá-la; quem abrir item confere o maior número vivo
-  antes de confiar nela.)*
+  31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
+  o 122 nasceram sem somá-la; quem abrir item confere o maior número vivo
+  antes de confiar nela. Os 123 e 124 nasceram na faxina da estação do
+  115, conferindo primeiro.)*
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
@@ -2181,6 +2182,45 @@ item viver, a régua continua sendo o par nulo. Rastro:
 `capturas/item115-datacao-tremor-balde.json`,
 `capturas/item115-datacao-tremor-isolado.json`, sonda em
 `capturas/item115-datacao-tremor.mjs`.
+
+**123. As FORJAS ESTELARES perdem um terço do brilho quando a resolução
+dobra — o defeito-irmão do item 46, medido em 31/08.** O
+`src/three/world/starForges.ts` consome `GLSL_LEI_DE_TELA` — a lei de
+tela ANTES da régua —, e não o `GLSL_LEI_DE_TELA_NA_REGUA` que a galáxia
+profunda ganhou no fecho do 46. É o mesmo platô: `shrink` conserva o
+depósito em PIXEL e não em ÂNGULO, então dobrar a altura do buffer divide
+a contribuição em área. O achado estava registrado só no ARQUIVO, dentro
+do fecho do 46 ("o que NÃO foi tocado, e é o mesmo defeito"), que é museu
+— por isso ganhou número aqui.
+
+**MEDIDO** com a mesma conta do 46: fluxo das forjas = quadro cheio menos
+quadro com `?noforge=1`, em espaço linear (`?tone=linear` mais o sRGB
+desfeito), média por ÁREA, altura do buffer 900 contra 1800 px em dpr 1
+(o eixo verdadeiro do 46 é a ALTURA, não o pixel ratio).
+
+· **edge-on: 0,663** — as forjas são 7,8% do quadro (3,62e-4 contra
+  4,65e-3) e nenhum pixel satura (max 234 e 232). **Um terço da luz das
+  forjas some ao dobrar a resolução**, e o número do 46 antes da régua era
+  0,650 na mesma vista: é o mesmo defeito, na mesma dose.
+· **face-on: 0,798** (o 46 dava 0,770), mas este lado vale MENOS: o quadro
+  satura (max 255 nos quatro) e as forjas são só 0,3% dele.
+
+Casa do conserto: trocar a lei pela régua no `starForges.ts`, como o 46
+fez no `galaxyShaders.ts` — e a dose das forjas ainda espera a re-dosagem
+da extinção de coluna (rodada 26), com quem a mudança tem de conversar.
+Rastro: `capturas/item123-forjas-resolucao.json`, sonda em
+`capturas/item123-forjas-resolucao.mjs`.
+
+**124. O porteiro do censo dos juízes REPROVA desde 31/08, por uma
+palavra (achado na faxina da estação do 115).** O
+`src/three/world/observedClouds.test.ts` nasceu em `b0608c2` com
+`// Serve: física — …`, e o `SERVE_RE` do `scripts/censo-dos-juizes.mjs`
+só aceita três classes: `dono`, `lei` e `chão`. O `npm run censo` sai com
+`PORTEIRO REPROVA: 1 sem Serve` e a catraca (32,3 min, dentro do teto)
+nem chega a ser o assunto. A classe certa é `lei` — o arquivo prova
+física do céu das nuvens, que é contrato, não decisão do dono nem
+regressão. É uma palavra num comentário; ficou registrado em vez de
+consertado porque a faxina do 115 não tinha esse arquivo no pacote.
 
 ---
 
