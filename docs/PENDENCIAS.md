@@ -1836,6 +1836,14 @@ Uma pista MORREU em 22/08: o item 66 (a mesma URL dando duas telas) era
 o mostrador de quadros por segundo do HUD entrando na foto — e as vistas
 da Terra são `?shot=2`, sem HUD nenhum. Não é a mesma raiz.
 
+**DATADO POR REPETIÇÃO em 31/08, e NÃO se reproduziu.** A `terralua` (a
+`terranb` já não está na lista de vistas) entrou na varredura da família
+descrita no item **101** — 63 capturas, nos DOIS contextos. **As 6
+capturas de `terralua` no balde e as 3 no isolado deram todas o mesmo
+md5** (`22eabfacec75@1800x1713`). O item fica aberto, honesto: o fenômeno
+não se reproduziu sob comando, então não há o que consertar nem o que
+fechar.
+
 **64.** (Ruído de instrumento, visto UMA vez em 21/08.) Um filho do
 `ab-identidade` mediu as suas 18 vistas, gravou o estado e o arquivo de
 vias, e NÃO saiu — ficou 12 minutos vivo depois do `process.exit(0)`,
@@ -1919,6 +1927,11 @@ há o que medir. Quando voltar, o passo é guardar os DOIS PNG e rodar o
 estados diferentes, e o gate tem defesa contra isso (`friaNoGate`), o que
 torna a hipótese menos provável e o achado mais interessante.
 
+**DATADO POR REPETIÇÃO em 31/08, e NÃO se reproduziu.** A `lua` levou 6
+capturas no contexto de BALDE e 3 no ISOLADO, e as **nove deram
+`09d8c61fa256@1800x1713`**. Ela entrou na varredura da família inteira
+(63 capturas, 7 vistas) descrita no item **101**.
+
 **81.** O MB1 reprovava em cinco famílias e a culpa era do próprio juiz, que
 media numa janela em que a régua dele não vale — **FECHADO em 25/08**;
 história no ARQUIVO. *(Pedia 640×700 e media 640×**613**; ali o app desenha
@@ -1949,25 +1962,15 @@ Preço MEDIDO de novo: 4,0 min por lado (54 vistas, 56 capturas) contra
 para 32,3 min. Continua sem juiz bit-exato, declarado: os NOMES na tela e
 o HUD, que o `?shot=2` de toda vista apaga. História no ARQUIVO.
 
-**85.** (Ruído de instrumento, visto em 24/08 e **de novo em 26/08**.) **O
-`atlas-smoke` reprovou o TOQUE DUPLO sem defeito nenhum.** Numa corrida
-ele acusou *"o TOQUE DUPLO VAI: a câmera reposicionou (andou 2.63e-16 do
-raio, degrau orbita)"* — ou seja, a câmera NÃO andou. Na corrida
-seguinte, com o MESMO código, passou (*"andou 1.10e+0 do raio, degrau
-corpo"*), e no código anterior também passava. É flutuação do gesto
-sintético, não regressão. Fica registrado porque é o mesmo gênero dos
-itens 64 e 78, e porque juiz que reprova inocente já custou uma
-investigação inteira (item 76). Se reaparecer, o passo é datar por
-repetição antes de mexer em qualquer coisa.
-
-**REAPARECEU EM 26/08, na leva da Q14 (item 91), e foi datado como este
-item manda.** A MESMA frase e o MESMO número — *"andou 2.63e-16 do
-raio"*, que é zero —, mudando só o degrau (`corpo` no lugar de `orbita`).
-A corrida ANTERIOR e a SEGUINTE, com o mesmo código, saíram **verdes as
-duas**, e nada foi tocado por causa dele: a receita deste item é
-repetição, e a repetição respondeu. **Segunda aparição; continua sem se
-reproduzir sob comando, e continua sendo o único juiz da casa que
-reprova inocente.**
+**85.** O `atlas-smoke` reprovava o TOQUE DUPLO sem defeito nenhum —
+**FECHADO em 31/08**; história no ARQUIVO. *(A causa estava escrita uma
+tela acima do defeito: o `await` entre os dois toques do par custa uma
+ida e volta de CDP, medida no próprio arquivo em 200 ms com a sessão
+sozinha e mais de 500 com o navegador aquecido — e a janela do duplo é
+de 500 ms. Os seis comandos do par foram para uma fila só: o intervalo
+caiu de 50 para 12 ms, e a espera de 1,5 s de parede virou espera de
+ESTADO — o mergulho começa em 4 ms. O par e o mergulho entram no
+veredito, então o zero de amanhã já vem com a explicação ao lado.)*
 
 **86.** O céu do Atlas parecia mais apagado e a causa era a LENTE —
 **FECHADO em 29/08**: ele cravou o 58° com a foto A/B na mão
@@ -2158,6 +2161,31 @@ capturas por vista não enterram o fenômeno. O que ficou PROVADO é que a
 família de Saturno carregava, além do tremor, um defeito de código; o que
 sobrar do tremor continua vivendo aqui, e a régua continua sendo o par
 nulo.
+
+**A VARREDURA DE 31/08 — 63 capturas, ZERO oscilação, e o item continua
+aberto.** A faxina da estação do item 115 datou a família inteira por
+repetição, antes de mexer em qualquer coisa. Sete vistas — `lua`,
+`terralua`, `eclipse-limbo`, `saturno-anel`, `saturno-anelnb`,
+`foco-titan`, `foco-luas` —, nos DOIS contextos que o item acusa:
+
+· **BALDE** (o contexto do item 59/80: uma sessão de Chrome só,
+  `Storage.clearDataForOrigin` entre navegações, três rodadas de DUAS
+  capturas por vista, as vistas alternando entre as rodadas — 42
+  capturas, 5,0 min): **as 6 capturas de cada vista deram um md5 só.**
+
+· **ISOLADO** (uma sessão de Chrome por captura — 21 capturas, 2,7 min):
+  **as 3 de cada vista deram um md5 só, e o MESMO do balde.**
+
+Ou seja: hoje, nesta máquina, nenhuma das sete treme, e o md5 não depende
+do contexto. **Isso não fecha o item, e a razão é a mesma de sempre:** o
+fenômeno nunca se reproduziu sob comando, e ausência sob 63 capturas não
+é prova de morte. **O que a varredura NÃO cobriu é a CARGA:** a leva
+oficial do `ab-identidade` roda SEIS sessões de Chrome ao mesmo tempo
+(`JOBS=6`), e a `foco-luas` de 31/08 tremeu justamente ali. Enquanto o
+item viver, a régua continua sendo o par nulo. Rastro:
+`capturas/item115-datacao-tremor-balde.json`,
+`capturas/item115-datacao-tremor-isolado.json`, sonda em
+`capturas/item115-datacao-tremor.mjs`.
 
 ---
 

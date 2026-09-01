@@ -2384,16 +2384,54 @@ try {
       conferir(false, `toque duplo: ${NOME_DO_ALVO} sumiu depois do reset`);
     } else {
       const doZero = await ondeEstaACamera();
-      await tocar();
-      await tocar();
-      await dorme(1500);
+      // O PAR VAI NUMA FILA SÓ, e é o MESMO argumento do parágrafo acima
+      // levado um nível adiante (item 85, 31/08). Ali o `await` entre os
+      // três eventos de UM toque foi medido em 200 ms com a sessão
+      // sozinha e mais de 500 com o navegador aquecido; entre os DOIS
+      // toques do par ele continuava, e a janela do duplo é de 500 ms
+      // (`JANELA_DO_DUPLO_MS`, `director/gestos.ts`). Nas corridas em que
+      // a ida e volta estourava a janela o navegador entregava dois
+      // toques SOLTOS, a câmera não ia a lugar nenhum e o juiz reprovava
+      // um produto são — "andou 2.63e-16 do raio", que é zero. Seis
+      // comandos numa fila só põem o par a microssegundos um do outro.
+      await sessao.js(`(() => {
+        window.__toquesDoPar = [];
+        addEventListener('pointerup', () => window.__toquesDoPar.push(performance.now()), true);
+        return true;
+      })()`);
+      await Promise.all([
+        dedo('touchStart', [{ x: nome.x, y: nome.y, id: 1 }]),
+        dedo('touchMove', [{ x: nome.x + 6, y: nome.y + 6, id: 1 }]),
+        dedo('touchEnd', []),
+        dedo('touchStart', [{ x: nome.x, y: nome.y, id: 1 }]),
+        dedo('touchMove', [{ x: nome.x + 6, y: nome.y + 6, id: 1 }]),
+        dedo('touchEnd', []),
+      ]);
+      // O INTERVALO DO PRÓPRIO GESTO, medido DENTRO da página. Ele entra
+      // no veredito porque é ele que separa produto de instrumento: um
+      // "andou zero" com o par a 3 ms é o produto; o mesmo zero com o par
+      // a 600 ms é a prova não tendo entregado um duplo.
+      const entreOsToques = JSON.parse(await sessao.js(
+        `JSON.stringify((() => { const t = window.__toquesDoPar || [];
+          return t.length >= 2 ? Math.round(t[1] - t[0]) : null; })())`
+      ));
+      // ESPERA DE ESTADO, não 1,5 s de parede: o veredito é "a câmera
+      // FOI", então espera-se a câmera SAIR do lugar, e o quanto ela
+      // demorou entra no veredito. O estouro não cala — sem deslocamento
+      // o `andou` abaixo reprova do mesmo jeito.
+      const msDoMergulho = await esperarPor(sessao, `(() => {
+        const p = window.__director.engine.camera.position;
+        return Math.hypot(p.x - (${doZero[0]}), p.y - (${doZero[1]}), p.z - (${doZero[2]}))
+          / ${Math.hypot(...doZero)} > 1e-3; })()`, 6000);
       await sessao.assentar();
       const cameraDoDuplo = await ondeEstaACamera();
       conferir(
         andou(cameraDoDuplo, doZero) > 1e-3,
         `o TOQUE DUPLO VAI em ${NOME_DO_ALVO}: a câmera reposicionou (andou`
           + ` ${andou(cameraDoDuplo, doZero).toExponential(2)} do raio,`
-          + ` degrau ${await sessao.js('window.__director.escadaViva.degrau')})`
+          + ` degrau ${await sessao.js('window.__director.escadaViva.degrau')},`
+          + ` par a ${entreOsToques === null ? '—' : `${entreOsToques} ms`} da janela de 500,`
+          + ` mergulho em ${msDoMergulho === null ? 'ESTOURO de 6 s' : `${msDoMergulho} ms`})`
       );
     }
     }

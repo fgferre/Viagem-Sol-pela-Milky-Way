@@ -6336,3 +6336,89 @@ que a fita, a fita ausente, a fita abaixo do piso, a fita que morre no
 meio da janela, e a soleira do vivo mordendo entre 0,95 (passa) e 0,80
 (reprova). A porta é `julgarQuadro`, que é `medirPng` sem o decodificador
 de PNG no meio.
+
+---
+
+## Item 85 — O `atlas-smoke` reprovava o toque duplo sem defeito nenhum
+
+**O achado, verbatim do vivo (24/08, 26/08):**
+
+**85.** (Ruído de instrumento, visto em 24/08 e **de novo em 26/08**.) **O
+`atlas-smoke` reprovou o TOQUE DUPLO sem defeito nenhum.** Numa corrida
+ele acusou *"o TOQUE DUPLO VAI: a câmera reposicionou (andou 2.63e-16 do
+raio, degrau orbita)"* — ou seja, a câmera NÃO andou. Na corrida
+seguinte, com o MESMO código, passou (*"andou 1.10e+0 do raio, degrau
+corpo"*), e no código anterior também passava. É flutuação do gesto
+sintético, não regressão. Fica registrado porque é o mesmo gênero dos
+itens 64 e 78, e porque juiz que reprova inocente já custou uma
+investigação inteira (item 76). Se reaparecer, o passo é datar por
+repetição antes de mexer em qualquer coisa.
+
+**REAPARECEU EM 26/08, na leva da Q14 (item 91), e foi datado como este
+item manda.** A MESMA frase e o MESMO número — *"andou 2.63e-16 do
+raio"*, que é zero —, mudando só o degrau (`corpo` no lugar de `orbita`).
+A corrida ANTERIOR e a SEGUINTE, com o mesmo código, saíram **verdes as
+duas**, e nada foi tocado por causa dele: a receita deste item é
+repetição, e a repetição respondeu. **Segunda aparição; continua sem se
+reproduzir sob comando, e continua sendo o único juiz da casa que
+reprova inocente.**
+
+### A datação (31/08, como o próprio item manda)
+
+Três corridas cheias do `atlas-smoke` em `b0608c2`, árvore limpa: os
+**dois** toques duplos (o do mouse, prova 7, e o do dedo, prova 15)
+saíram VERDES nas três, e com o MESMO número — 1,24e+0 do raio no mouse,
+1,18e+0 no dedo. A única FALHA das três é o **item 119** (t=250, desvio
+1,19e-2 do raio), pré-existente e idêntica nas três. Rastro:
+`capturas/item85-datacao-toque-duplo.json`.
+
+### A CAUSA, e ela estava escrita uma tela acima do defeito
+
+O toque duplo do dedo é `await tocar(); await tocar();`. O comentário do
+próprio arquivo, escrito quando o `await` DENTRO de um toque foi
+consertado, já dizia o número: *"cada `Input.dispatchTouchEvent` custa
+uma ida e volta de CDP, e com a cena do Atlas ocupando o processo isso
+foi de 200 ms (a sessão sozinha) a mais de 500 (a sessão inteira do
+smoke, com o navegador aquecido)"*. A janela do duplo é
+`JANELA_DO_DUPLO_MS = 500` (`src/three/director/gestos.ts`), e o
+navegador sintetiza o `dblclick` com a mesma ordem de grandeza. **O
+conserto de 23/08 juntou os três eventos de UM toque numa fila só e
+parou ali: entre os DOIS toques do par a ida e volta continuou.** Quando
+ela estourava os 500 ms, o navegador entregava dois toques SOLTOS, a
+câmera não ia a lugar nenhum, e o juiz reprovava um produto são — que é,
+letra por letra, "andou 2.63e-16 do raio".
+
+### O conserto (31/08)
+
+1. **O par vai numa fila só.** Os seis comandos (`touchStart`/`Move`/
+   `End` × 2) num `Promise.all` único, o mesmo argumento do parágrafo
+   acima levado um nível adiante. **Medido: o intervalo entre os dois
+   `pointerup`, lido DENTRO da página, caiu de 50 ms para 12 ms** — de
+   10% da janela para 2,4%, e sem a ida e volta que sob carga vira
+   500 ms.
+2. **A espera vira ESTADO.** `await dorme(1500)` deu lugar a
+   `esperarPor` a câmera SAIR do lugar. **Medido: o mergulho começa em
+   4 ms** — a espera de parede era 375× o necessário.
+3. **Os dois números entram no veredito.** "par a 12 ms da janela de
+   500, mergulho em 4 ms". É isso que separa produto de instrumento no
+   dia seguinte: um "andou zero" com o par a 3 ms é o produto; o mesmo
+   zero com o par a 600 ms é a prova não tendo entregado um duplo.
+
+### As duas sabotagens (mudança de juiz, §13 sem desconto)
+
+Em worktree separada, sobre `981f0c0`:
+
+1. **A fiação do conserto.** O par devolvido a dois `await tocar()` → o
+   intervalo salta de **12 para 50 ms**, 4,2× — a margem contra a janela
+   de 500 ms volta a depender de uma ida e volta de CDP que o próprio
+   arquivo mediu em 200 a 500+ ms sob carga.
+2. **A falha de verdade.** O par reduzido a UM toque → o juiz
+   **REPROVA**, e com a assinatura exata do item: *"andou 4.13e-16 do
+   raio, degrau orbita, par a — da janela de 500, mergulho em ESTOURO de
+   6 s"*. O "—" é a página tendo visto UM `pointerup`, não dois. A
+   espera de estado não mascara nada, e o zero de amanhã já vem com a
+   explicação ao lado.
+
+A prova 3 (item 119, o relógio do portal) segue reprovando com o MESMO
+desvio de 1,19e-2 do raio nas quatro corridas — antes e depois do
+conserto. Este item não a tocou.
