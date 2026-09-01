@@ -995,3 +995,61 @@ describe('a caixa da disputa viaja no rótulo', () => {
     expect(terceiro[0].caixaDaDisputa).toEqual(primeiro[0].caixaDaDisputa);
   });
 });
+
+// ============================================================
+// §4 ENCOBRIMENTO — o nome que o globo esconde (item 125, F4 · O1-O5).
+//
+// Ele é o TERCEIRO estado desta bancada, e não existia antes: não é
+// candidato (não entra na árvore, não ocupa vaga, não recebe clique) e
+// mesmo assim PINTA, porque a rampa de 750 ms corre sobre o globo. No
+// Eyes é o `<div>` com `hidden`: alfa a zero em 750 ms,
+// `pointer-events: none`, desenhando onde estava.
+// ============================================================
+describe('F4 — o nome ocluído pinta sem ocupar', () => {
+  /** o mesmo rótulo, marcado como o produtor o entrega quando o globo o pega */
+  const atrasDoGlobo = (l: StarLabel): StarLabel => ({
+    ...l,
+    causaDoSumico: 'oclusao',
+    saindo: true,
+    opacity: 0.5,
+  });
+
+  it('PINTA a rampa, mas não é alvo de clique nem tem caixa julgada', () => {
+    const { rotulos, ctx } = bancada(1200, 900);
+    const preso = atrasDoGlobo(rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100));
+    rotulos.draw([preso]);
+    expect(ctx.pintadas.map((p) => p.texto)).toContain('SOL');
+    // ...com a tinta da rampa, não com a cheia
+    expect(ctx.pintadas.find((p) => p.texto === 'SOL')!.alfa).toBeCloseTo(0.5, 10);
+    // e nada mais: sem clique, sem caixa, sem veredito de disputa
+    expect(preso.desenhado).toBe(false);
+    expect(preso.caixaDaDisputa).toBeUndefined();
+    expect(preso.perdeuAVaga).toBe(false);
+  });
+
+  it('NÃO reserva espaço: o vizinho mais fraco no mesmo lugar continua na tela', () => {
+    const { rotulos } = bancada(1200, 900);
+    // dois nomes no MESMO ponto: o forte (peso 100) e o fraco (peso 25)
+    const forte = rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100);
+    const fraco = rotulo('corpo:moon', 'Lua', 0.5, 0.45, 25);
+    rotulos.draw([forte, fraco]);
+    expect(forte.desenhado).toBe(true);
+    expect(fraco.desenhado).toBe(false); // a lei de sempre: quem colide some
+    // agora o forte está atrás de um globo — ele sai da árvore, e a vaga
+    // que ele ocupava fica livre para o fraco
+    const { rotulos: outro } = bancada(1200, 900);
+    const escondido = atrasDoGlobo(rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100));
+    const livre = rotulo('corpo:moon', 'Lua', 0.5, 0.45, 25);
+    outro.draw([escondido, livre]);
+    expect(livre.desenhado).toBe(true);
+    expect(escondido.desenhado).toBe(false);
+  });
+
+  it('a MARGEM da composição continua valendo — ocluído no rodapé não pinta', () => {
+    // a causa de fora não é passe livre: quem cai na faixa do HUD não
+    // desenha, ocluído ou não
+    const { rotulos, ctx } = bancada(1200, 900);
+    rotulos.draw([atrasDoGlobo(rotulo('corpo:sun', 'Sol', 0.5, 0.95, 100))]);
+    expect(ctx.pintadas).toHaveLength(0);
+  });
+});

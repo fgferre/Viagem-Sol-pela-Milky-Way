@@ -580,6 +580,11 @@ describe('os oclusores de rótulo são os corpos do quadro (item 115)', () => {
   });
 
   it('com o globo da Terra no caminho, a estrela ATRÁS dela não nasce', () => {
+    // A ESTRELA NUNCA VISTA NÃO NASCE NEM PARA APAGAR (item 125, F4): ela
+    // entra na lista marcada de saída, a rampa a encontra com alfa ZERO
+    // (nunca esteve na tela, então não há tinta a esvair) e o produtor a
+    // tira no mesmo quadro. O que fadeia é só o nome que ESTAVA aceso —
+    // provado logo abaixo, no bloco da F4.
     const chaves = noAtlasComGlobo(0.3);
     expect(chaves).not.toContain('Atrás');
     // e a vizinha, fora do cone, continua na tela — o disco esconde o
@@ -587,6 +592,286 @@ describe('os oclusores de rótulo são os corpos do quadro (item 115)', () => {
     expect(chaves).toContain('AoLado');
     // a própria Terra segue com nome: nenhum corpo é oclusor de si
     expect(chaves).toContain('corpo:earth');
+  });
+});
+
+// ============================================================
+// §4 ENCOBRIMENTO — as regras do NASA Eyes (item 125, ONDA DA PARIDADE,
+// F4). O que se julga aqui é o que só o PRODUTOR sabe: a lista de
+// oclusores do quadro (O4/O5), a rampa da oclusão (a integração com a
+// F2), a isenção do alvo seguido (O11) e o que acontece às costas (O8).
+// A conta em si mora em `world/labels.test.ts`.
+// ============================================================
+describe('F4 — os oclusores são os corpos VIVOS do quadro (O4/O5)', () => {
+  const QUADRO = 1 / 60;
+
+  /**
+   * A bancada do encobrimento: a Terra na origem, a Lua onde se quiser,
+   * e duas estrelas a 200 pc — uma na mira da Terra, outra ao lado.
+   * `raio` é o raio físico que a escada devolve para cada corpo.
+   */
+  function bancada(raios: Record<string, number | null>) {
+    const publicadas: StarLabel[][] = [];
+    const rotulos = new Rotulos({
+      onLabels: (l) => publicadas.push(l),
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({}) as JourneyMeta,
+      raioFisicoDe: (id) => raios[id] ?? null,
+    });
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 0.001, 1000);
+    cam.position.set(0, 0, 5);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const iTerra = CORPOS_DO_SISTEMA.findIndex((c) => c.id === 'earth');
+    posicoes[iTerra * 3] = 0;
+    posicoes[iTerra * 3 + 1] = 0;
+    posicoes[iTerra * 3 + 2] = 0;
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    const passo = (named: NamedStar[], foco: string | null = null) => {
+      rotulos.tique(QUADRO);
+      rotulos.projetar(cam, {
+        fase: 'atlas', named, dHome: 5, planetas, foco,
+        nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+      });
+      return publicadas.at(-1)!;
+    };
+    return { rotulos, cam, posicoes, passo, publicadas };
+  }
+
+  /** uma estrela a 200 pc, a `graus` do eixo da câmera */
+  const estrela = (nome: string, graus: number): NamedStar => ({
+    n: nome,
+    x: 200 * Math.sin((graus * Math.PI) / 180),
+    y: 0,
+    z: -200 * Math.cos((graus * Math.PI) / 180),
+    m: 1,
+    s: 'A0V',
+    d: 200,
+    t: 0,
+  });
+
+  /** o raio APARENTE em px de um corpo de raio `r` a `d`, em 900 px de altura */
+  const px = (r: number, d: number, fovDeg = 58, alturaPx = 900) => {
+    const s = r / d;
+    return ((s / Math.sqrt(1 - s * s) / Math.tan((fovDeg * Math.PI) / 360)) * alturaPx) / 2;
+  };
+
+  it('(a) o corpo GRANDE oclui — a Terra a 5 pc com 0,3 de raio cobre 49 px', () => {
+    // 48,8 px de raio numa tela de 900: um globo bem visível, e o nome
+    // que cai dentro do cone dele morre
+    expect(px(0.3, 5)).toBeCloseTo(48.8, 1);
+    const lista = bancada({ earth: 0.3 }).passo([estrela('Mira', 0), estrela('Lado', 30)]);
+    expect(lista.map((l) => l.key)).not.toContain('Mira');
+    expect(lista.map((l) => l.key)).toContain('Lado');
+  });
+
+  it('(b) o corpo de MENOS DE UM PIXEL só alcança o que está sob ele', () => {
+    // O CORTE DE 1 px DO EYES (O5) NÃO EXISTE NA CASA, e a medida diz
+    // por quê ele não faz falta: o cone É a régua. Com raio 0,0015 a
+    // 5 pc a Terra tem 0,95 px de raio aparente — abaixo do corte deles,
+    // portanto um oclusor que lá seria PODADO. Aqui ele oclui, mas só
+    // dentro do próprio cone: 0,0344° de meio-ângulo.
+    const raio = 0.0015;
+    expect(px(raio, 5)).toBeLessThan(1);
+    const meioAngulo = (Math.asin(raio / 5) * 180) / Math.PI;
+    expect(meioAngulo).toBeCloseTo(0.0172, 4);
+    // a estrela EXATAMENTE atrás (0°) perde o nome...
+    expect(bancada({ earth: raio }).passo([estrela('Mira', 0)]).map((l) => l.key)).not.toContain(
+      'Mira'
+    );
+    // ...e a 0,05° — meio pixel e meio de distância na tela — não perde.
+    // O erro contra o Eyes é, no MÁXIMO, um nome cujo ponto esteja a
+    // menos de um pixel do centro de um corpo invisível: onde o nome
+    // já estaria escrito em cima do próprio objeto.
+    expect(
+      bancada({ earth: raio }).passo([estrela('Quase', 0.05)]).map((l) => l.key)
+    ).toContain('Quase');
+  });
+
+  it('(c) a lista é REMONTADA por quadro — o corpo que sai dela para de ocluir', () => {
+    // O4/O5 medidos pelo efeito, na MESMA instância e em dois quadros:
+    // a Lua com posição viva entre a câmera e a estrela oclui...
+    const b = bancada({ moon: 0.3 });
+    b.rotulos.escreverPosicaoDeLua('moon', new THREE.Vector3(0, 0, 2));
+    expect(b.passo([estrela('Mira', 0)]).map((l) => l.key)).not.toContain('Mira');
+    // ...e no quadro seguinte, sem efeméride (NaN, que é como a projeção
+    // diz "não sei onde ela está"), o nome VOLTA. Se a lista fosse
+    // acumulada em vez de remontada, o disco de ontem esconderia hoje.
+    b.rotulos.escreverPosicaoDeLua('moon', new THREE.Vector3(NaN, NaN, NaN));
+    expect(b.passo([estrela('Mira', 0)]).map((l) => l.key)).toContain('Mira');
+    // e o corpo SEM RAIO (a escada não conhece o mesh dele) também não
+    // oclui — é o `occlusionRadius = 0` do construtor deles (O6)
+    const semRaio = bancada({ moon: null });
+    semRaio.rotulos.escreverPosicaoDeLua('moon', new THREE.Vector3(0, 0, 2));
+    expect(semRaio.passo([estrela('Mira', 0)]).map((l) => l.key)).toContain('Mira');
+  });
+});
+
+describe('F4 — o nome que o globo pega APAGA em 750 ms (a integração com a F2)', () => {
+  const QUADRO = 1 / 60;
+
+  /** a Terra na origem e uma estrela que ENTRA no cone quando se quer */
+  function bancada() {
+    const publicadas: StarLabel[][] = [];
+    const rotulos = new Rotulos({
+      onLabels: (l) => publicadas.push(l),
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({}) as JourneyMeta,
+      raioFisicoDe: (id) => (id === 'moon' ? 0.3 : null),
+    });
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 0.001, 1000);
+    cam.position.set(0, 0, 5);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    const alvo: NamedStar = { n: 'Alvo', x: 0, y: 0, z: -200, m: 1, s: 'A0V', d: 200, t: 0 };
+    /** um quadro; `comLua` põe a Lua no caminho da estrela */
+    const passo = (comLua: boolean) => {
+      rotulos.escreverPosicaoDeLua(
+        'moon',
+        comLua ? new THREE.Vector3(0, 0, 2) : new THREE.Vector3(NaN, NaN, NaN)
+      );
+      rotulos.tique(QUADRO);
+      rotulos.projetar(cam, {
+        fase: 'atlas', named: [alvo], dHome: 5, planetas, foco: null,
+        nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+      });
+      return publicadas.at(-1)!.find((l) => l.key === 'Alvo') ?? null;
+    };
+    return { passo, rotulos };
+  }
+
+  it('a tinta desce em 45 quadros — a MESMA rampa de saída da disputa', () => {
+    const { passo } = bancada();
+    // 20 quadros de céu limpo: a estrela sobe e ENCOSTA (a rampa chega
+    // ao alvo em tempo exato, e o alfa base é o do fade de distância)
+    let vivo = null;
+    for (let i = 0; i < 20; i++) vivo = passo(false);
+    const cheio = vivo!.opacity;
+    expect(cheio).toBe(passo(false)!.opacity);
+    expect(vivo!.causaDoSumico).toBeUndefined();
+    // a Lua entra no caminho: a partir daqui o nome está de SAÍDA
+    const primeiro = passo(true)!;
+    expect(primeiro.causaDoSumico).toBe('oclusao');
+    expect(primeiro.saindo).toBe(true);
+    // e ele NÃO é alvo de clique: quem está atrás do globo não se clica
+    expect(primeiro.desenhado).not.toBe(true);
+    // 750 ms a 60 fps são 45 quadros; o primeiro já andou um
+    const alfas = [primeiro.opacity];
+    let quadros = 1;
+    for (; quadros < 200; quadros++) {
+      const l = passo(true);
+      if (l === null) break;
+      alfas.push(l.opacity);
+    }
+    // o quadro do `primeiro` já contou: 1 + 44 = 45 = 750 ms a 60 fps
+    expect(1 + quadros).toBe(45);
+    // e o passo é CONSTANTE: rampa linear, não encosto exponencial
+    const passos = alfas.slice(1).map((a, i) => alfas[i] - a);
+    for (const d of passos) expect(d).toBeCloseTo(cheio / 45, 6);
+    // SABOTAGEM QUE ISTO MORDE: devolver o `continue` da oclusão (o nome
+    // sai da lista no quadro em que o globo o pega) zera `quadros`.
+  });
+
+  it('a tinta VOLTA se o globo sair antes do fim — 3× mais rápido, como a F2 manda', () => {
+    const { passo } = bancada();
+    for (let i = 0; i < 20; i++) passo(false);
+    const descendo = [passo(true)!.opacity, passo(true)!.opacity, passo(true)!.opacity];
+    expect(descendo[2]).toBeLessThan(descendo[0]);
+    // o globo sai: a mesma memória sobe pela rampa de ENTRADA (250 ms)
+    const voltando = passo(false)!;
+    expect(voltando.causaDoSumico).toBeUndefined();
+    const subida = voltando.opacity - descendo[2];
+    const descida = descendo[0] - descendo[1];
+    expect(subida / descida).toBeCloseTo(3, 6); // 750 / 250
+  });
+
+  it('o ocluído fica com a CAUSA dele — a derrota na disputa não a reescreve', () => {
+    const { passo, rotulos } = bancada();
+    for (let i = 0; i < 20; i++) passo(false);
+    const l = passo(true)!;
+    expect(l.causaDoSumico).toBe('oclusao');
+    // e AGORA a parte que morde: o `LabelCanvas` deste quadro diz que o
+    // nome também PERDEU A VAGA (é o que ele escreve quando julga), e a
+    // realimentação do quadro seguinte não pode trocar a causa dele. A
+    // marca vai no objeto vivo, que é onde o `LabelCanvas` a escreveria.
+    for (const x of rotulos.alvos) if (x.key === 'Alvo') x.perdeuAVaga = true;
+    const depois = passo(true)!;
+    // SABOTAGEM QUE ISTO MORDE: a realimentação do F3 (`perdedoresDaVaga`)
+    // sobrescrever a causa com 'disputa' mandaria o nome de volta à
+    // disputa por espaço, que ele não travou.
+    expect(depois.causaDoSumico).toBe('oclusao');
+  });
+});
+
+describe('F4 · O11 — a isenção do alvo seguido, pelo produtor', () => {
+  const QUADRO = 1 / 60;
+
+  /** a Lua na frente da TERRA, vista da câmera: quem é o foco decide */
+  function passoCom(foco: string | null) {
+    const publicadas: StarLabel[][] = [];
+    const rotulos = new Rotulos({
+      onLabels: (l) => publicadas.push(l),
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({}) as JourneyMeta,
+      // A ESCALA AQUI É A DO SISTEMA, não a do céu: o fade de distância
+      // dos corpos fecha em 0,05 pc (`CORPO_FADE_TERMINA_PC`), e a
+      // cessão por tamanho (F2 · A5) fecha em 0,03 de raio NDC. A câmera
+      // a 0,005 pc com a Terra de raio 2e-5 fica dentro das duas — é a
+      // única faixa em que um corpo tem nome VIVO para a isenção salvar.
+      raioFisicoDe: (id) => (id === 'moon' ? 1e-4 : id === 'earth' ? 2e-5 : null),
+    });
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 1e-6, 1000);
+    cam.position.set(0, 0, 0.005);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const iTerra = CORPOS_DO_SISTEMA.findIndex((c) => c.id === 'earth');
+    posicoes[iTerra * 3] = 0;
+    posicoes[iTerra * 3 + 1] = 0;
+    posicoes[iTerra * 3 + 2] = 0;
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    rotulos.escreverPosicaoDeLua('moon', new THREE.Vector3(0, 0, 0.002));
+    let ultimo: StarLabel[] = [];
+    for (let i = 0; i < 30; i++) {
+      rotulos.tique(QUADRO);
+      rotulos.projetar(cam, {
+        fase: 'atlas', named: [], dHome: 0.005, planetas, foco,
+        nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+      });
+      ultimo = publicadas.at(-1)!;
+    }
+    return ultimo;
+  }
+
+  it('SEM foco a Terra atrás da Lua perde o nome; COM foco nela, não', () => {
+    // a Lua (0,3 de raio a 3 pc da câmera) cobre a Terra, que está na
+    // origem, 5 pc adiante
+    expect(passoCom(null).map((l) => l.key)).not.toContain('corpo:earth');
+    expect(passoCom('earth').map((l) => l.key)).toContain('corpo:earth');
+    // e o nome do alvo seguido está VIVO, não apagando: sem causa
+    const alvo = passoCom('earth').find((l) => l.key === 'corpo:earth')!;
+    expect(alvo.causaDoSumico).toBeUndefined();
+    expect(alvo.opacity).toBeGreaterThan(0.5);
+  });
+
+  it('a isenção é DO ALVO, não de todo mundo — e LARGAR desfaz', () => {
+    // com o foco em OUTRO corpo, a Terra volta a ser escondida
+    expect(passoCom('mars').map((l) => l.key)).not.toContain('corpo:earth');
+    // é o `unfollow` deles: a chave sai do foco vivo a cada quadro, e
+    // não há estado guardado para restaurar
+    expect(passoCom(null).map((l) => l.key)).not.toContain('corpo:earth');
   });
 });
 

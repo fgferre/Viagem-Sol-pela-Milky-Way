@@ -201,6 +201,20 @@ export const JULGAMENTOS_POR_QUADRO = 20;
 interface PlanoDoRotulo {
   /** disputa espaço? (fora: escondido por tamanho, transparente, margem) */
   candidato: boolean;
+  /**
+   * PINTA MESMO SEM DISPUTAR (item 125, F4 · O1-O5) — o nome que um GLOBO
+   * esconde.
+   *
+   * Ele não é candidato: não entra na árvore, não ocupa vaga, não vira
+   * alvo de clique e não derruba vizinho. Mas TEM posição na tela e uma
+   * rampa de 750 ms correndo, e é sobre o globo que essa rampa se vê —
+   * no Eyes o `<div>` ocluído recebe `hidden` (alfa a zero em 750 ms,
+   * `pointer-events: none`) e continua desenhando onde estava.
+   *
+   * Sem esta porta o `!candidato` do laço de pintura mataria a rampa e a
+   * oclusão voltaria a ser o corte seco de um quadro.
+   */
+  pintaSemVaga: boolean;
   caixaDoIcone: Rect | null;
   caixaDoTexto: Rect | null;
   ancoraX: number;
@@ -632,27 +646,33 @@ export class LabelCanvas {
       const p = plano[i];
       const perdeu = this.veredito.get(label.key) === true;
       label.perdeuAVaga = perdeu;
-      if (!p.candidato) continue;
+      if (!p.candidato && !p.pintaSemVaga) continue;
       // A CAIXA QUE FOI JULGADA sai no objeto (item 125, F3): é a mesma
       // que a disputa usou, com a folga que a consulta aplica — não uma
       // cópia recalculada. Quem lê é o juiz de imagem do `atlas-smoke`.
-      const julgada = p.caixaDoTexto ?? p.caixaDoIcone!;
-      const caixa: CaixaDaDisputa = {
-        left: julgada.left,
-        right: julgada.right,
-        top: julgada.top,
-        bottom: julgada.bottom,
-        folga: (p.caixaDoTexto ? 8 : 2) * k,
-      };
-      label.caixaDaDisputa = caixa;
-      this.caixas.set(label.key, caixa);
+      //
+      // SÓ CANDIDATO TEM CAIXA, e o ocluído da F4 não é: ele pinta a
+      // rampa sem ocupar nada, e escrever uma caixa para ele faria o juiz
+      // de imagem cobrar sobreposição de um nome que não disputou.
+      if (p.candidato) {
+        const julgada = p.caixaDoTexto ?? p.caixaDoIcone!;
+        const caixa: CaixaDaDisputa = {
+          left: julgada.left,
+          right: julgada.right,
+          top: julgada.top,
+          bottom: julgada.bottom,
+          folga: (p.caixaDoTexto ? 8 : 2) * k,
+        };
+        label.caixaDaDisputa = caixa;
+        this.caixas.set(label.key, caixa);
+      }
       // O NOME QUE PERDEU É IMAGEM, NÃO OCUPANTE (item 115, bloco B;
       // item 125, F3 · P4). Ele pinta enquanto a rampa de 750 ms desce —
       // é isso que faz o nome esvair em vez de sumir num quadro — e não
       // faz mais nada: não vira alvo de clique e não derruba vizinho (a
       // disputa ignora o oponente escondido, P9). Sem esta porta a rampa
       // deixaria de ser o COMO e viraria o QUEM.
-      if (!perdeu) {
+      if (!perdeu && p.candidato) {
         label.desenhado = true;
         if (p.caixaDoTexto) {
           // a vaga TEM LADO (item 109): o pintor 3D pinta na MESMA vaga
@@ -728,6 +748,7 @@ export class LabelCanvas {
   /** o rótulo que não disputa nada — a resposta negativa da geometria */
   private static readonly FORA: PlanoDoRotulo = {
     candidato: false,
+    pintaSemVaga: false,
     caixaDoIcone: null,
     caixaDoTexto: null,
     ancoraX: 0,
@@ -759,6 +780,12 @@ export class LabelCanvas {
     const perdeuAntes = label.cortadoPelaRegua === true || label.saindo === true;
     if (label.causaDoSumico === 'tamanho') return LabelCanvas.FORA;
     if (!perdeuAntes && label.opacity < OPACIDADE_MINIMA_DO_ROTULO) return LabelCanvas.FORA;
+    // O GLOBO NA FRENTE É CAUSA DE FORA (item 125, F4 · O1-O5), e ela não
+    // se discute com vizinho: quem está atrás de um planeta não volta à
+    // tela porque ganhou a vaga. Ele sai da árvore como o cedido por
+    // tamanho — e, ao contrário dele, PINTA, porque a rampa de 750 ms
+    // corre sobre o globo (ver `pintaSemVaga`).
+    const ocluido = label.causaDoSumico === 'oclusao';
     const ancoraX = label.x * this.width;
     const ancoraY = label.y * this.height;
     // A MARGEM DA COMPOSIÇÃO — a faixa de baixo e o canto dos
@@ -795,7 +822,8 @@ export class LabelCanvas {
     const peso = pesoVisual(label);
     if (label.icone) {
       return {
-        candidato: true,
+        candidato: !ocluido,
+        pintaSemVaga: ocluido,
         caixaDoIcone: anel,
         caixaDoTexto: null,
         ancoraX,
@@ -861,7 +889,8 @@ export class LabelCanvas {
       bottom: ancoraY + 2 * k,
     };
     return {
-      candidato: true,
+      candidato: !ocluido,
+      pintaSemVaga: ocluido,
       caixaDoIcone: label.comAnel ? anel : risco,
       caixaDoTexto,
       ancoraX,

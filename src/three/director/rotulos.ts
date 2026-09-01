@@ -402,6 +402,24 @@ export class Rotulos {
       }
       this.rampas.aplicar(labels, dt);
     }
+    // O NOME OCLUÍDO SAI DA LISTA QUANDO A TINTA ACABA (item 125, F4).
+    //
+    // Ele entra na lista só para a rampa de 750 ms ter onde correr
+    // (`projectCorpos`/`projectLabels` deixaram de dar `continue` na
+    // oclusão); passada a rampa, ficar seria um zumbi — um nome de
+    // opacidade zero atrás de um globo, pago em `planejar` e em
+    // `geometria` sessenta vezes por segundo, por toda a sessão. Saindo,
+    // a projeção em regime é NOME A NOME a de antes da F4, e é isso que
+    // faz esta peça mudar o COMO sem mudar o QUEM.
+    //
+    // NO FILME NÃO HÁ RAMPA (o assunto do beat é etiqueta forçada, sem
+    // fades — ver acima), então lá o ocluído sai no MESMO quadro: é
+    // exatamente o `continue` que ele tinha antes desta fase.
+    const semRampa = fase === 'journey';
+    for (let i = labels.length - 1; i >= 0; i--) {
+      const l = labels[i];
+      if (l.causaDoSumico === 'oclusao' && (semRampa || !(l.opacity > 0))) labels.splice(i, 1);
+    }
     this.fios.onLabels(labels);
   }
 
@@ -602,6 +620,12 @@ export class Rotulos {
     // OS DISCOS DO QUADRO, antes de qualquer projeção: eles valem para
     // as estrelas e para os corpos, e a lista é a mesma nos dois ramos.
     this.montarOclusores(planetas);
+    // A ISENÇÃO DO ALVO SEGUIDO (item 125, F4 · O11): o corpo em foco não
+    // é escondido por globo nenhum — o `setCanBeOccluded(false)` deles,
+    // que o `unfollow` desfaz. Aqui o "desfazer" é de graça: a chave sai
+    // do foco vivo a cada quadro, então largar o alvo devolve a lei geral
+    // no quadro seguinte, sem estado guardado para restaurar.
+    const isentoDeOclusao = quadro.foco ? `${CHAVE_DE_CORPO}${quadro.foco}` : undefined;
     // A CAMADA DESLIGADA CALA A TELA INTEIRA (item 82, N2) — e cala
     // antes de projetar, porque projetar para jogar fora seria pagar a
     // conta de um quadro que ninguém vê. A lista fica VAZIA, e com ela o
@@ -640,10 +664,10 @@ export class Rotulos {
       let icones: StarLabel[] = [];
       if (!quadro.iconesEscondidos && fase === 'atlas' && planetas?.points.visible) {
         const corpos = projectCorpos(
-          cam, CORPOS_DO_SISTEMA, planetas.posicoes, this.oclusoresDeRotulo, this.raioPorChave
+          cam, CORPOS_DO_SISTEMA, planetas.posicoes, this.oclusoresDeRotulo, this.raioPorChave, isentoDeOclusao
         );
         const luas = projectCorpos(
-          cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo, this.raioPorChave
+          cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo, this.raioPorChave, isentoDeOclusao
         );
         this.esmaecerLuasColadasNoPai(corpos, luas);
         icones = [...corpos, ...luas];
@@ -715,7 +739,7 @@ export class Rotulos {
         const corpos =
           fase === 'atlas' && planetas?.points.visible
             ? projectCorpos(
-                cam, CORPOS_DO_SISTEMA, planetas.posicoes, this.oclusoresDeRotulo, this.raioPorChave
+                cam, CORPOS_DO_SISTEMA, planetas.posicoes, this.oclusoresDeRotulo, this.raioPorChave, isentoDeOclusao
               )
             : [];
         // AS LUAS (F2b/F5): rótulo pela posição VIVA da efeméride —
@@ -724,7 +748,7 @@ export class Rotulos {
         const luas =
           fase === 'atlas' && planetas?.points.visible
             ? projectCorpos(
-                cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo, this.raioPorChave
+                cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo, this.raioPorChave, isentoDeOclusao
               )
             : [];
         // A LUA SÓ ACENDE QUANDO SE DESCOLA DO PAI (item 73, plano §3):
@@ -804,14 +828,29 @@ export class Rotulos {
         if (this.perdedoresDaVaga.size > 0) {
           for (const l of this.lastLabels) {
             if (!this.perdedoresDaVaga.has(l.key)) continue;
-            if (l.causaDoSumico === 'tamanho') continue;
+            // QUEM JÁ TEM CAUSA FICA COM A DELE — e desde a F4 são DUAS
+            // as causas de fora ('tamanho' e 'oclusao'), as duas o
+            // `hidden` do `DivComponent` deles. A distinção não é
+            // cosmética: o ocluído não disputa espaço (a `geometria` do
+            // `LabelCanvas` o tira da árvore), e reescrever a causa dele
+            // como 'disputa' o mandaria de volta à disputa que ele não
+            // travou.
+            if (l.causaDoSumico !== undefined) continue;
             l.cortadoPelaRegua = true;
             l.causaDoSumico = 'disputa';
           }
         }
         this.emitDest(undefined, cam.position, named);
       }
-      this.prevLabelKeys = new Set(this.lastLabels.map((l) => l.key));
+      // A MEMÓRIA DA RÉGUA NÃO CONTA O OCLUÍDO (item 125, F4). Esta
+      // marca vira BÔNUS de 20% na disputa por candidatura estelar
+      // (`projectLabels`, `rank`), e um nome que está atrás de um globo
+      // — invisível, de saída — não pode usar esse bônus para tomar a
+      // vaga de uma estrela que se vê. É a mesma lei da neutralidade que
+      // põe as ocluídas depois do corte das candidatas.
+      this.prevLabelKeys = new Set(
+        this.lastLabels.filter((l) => l.causaDoSumico !== 'oclusao').map((l) => l.key)
+      );
       this.publicar(this.lastLabels, dtDaRampa, fase);
     } else if (fase !== 'journey') {
       this.lastLabels = [];

@@ -99,6 +99,15 @@ export interface StarLabel {
    * sendo a projeção inteira (o que o Director publica e o juiz lê), e
    * quem foi cortado continua sendo JULGADO pela colisão — é assim que
    * ele volta à tela quando o vencedor sai de perto.
+   *
+   * E DESDE A F4 ELA TEM UM SEGUNDO ESCRITOR: a OCLUSÃO
+   * (`causaDoSumico: 'oclusao'`). No Eyes as duas causas são a MESMA
+   * porta — uma classe CSS que leva o alfa a zero em 750 ms —, e aqui a
+   * porta é este campo: quem o lê (a rampa, e a `geometria` do
+   * `LabelCanvas`) só precisa saber que o nome está de saída. O que
+   * distingue as duas é a `causaDoSumico`, e ela decide a única coisa em
+   * que diferem: o ocluído NÃO volta a disputar espaço (globo na frente
+   * não é vizinho que se possa vencer), o cortado sim.
    */
   cortadoPelaRegua?: boolean;
   /**
@@ -167,21 +176,28 @@ export interface StarLabel {
    *  · `'tamanho'` — a régua de aparição disse não: o corpo ENCHEU a
    *    tela e o nome cedeu (`cessaoPorTamanhoAparente`). É o `hidden`
    *    deles.
+   *  · `'oclusao'` — um GLOBO está na frente (item 125, F4 · O1-O5): o
+   *    centro do alvo caiu no cone de um corpo que está entre ele e a
+   *    câmera. É o MESMO `hidden` deles, escrito pelo mesmo
+   *    `DivComponent` na mesma linha do tamanho.
    *  · `'disputa'` — a régua de relevância cortou: a tela está cheia de
    *    nomes que importam mais. É o `hiddenByLabelQuadtree` deles, e é
    *    a mesma marca que `cortadoPelaRegua` já carregava.
    *
    * A CAUSA É ESTADO, não decoração: `RampasDeRotulo` a lê para pôr as
-   * duas sob a MESMA rampa de saída, e a F3 (prioridade e colisão) vai
-   * precisar distinguir quem perdeu a vaga de quem saiu de cena.
+   * três sob a MESMA rampa de saída, que é o que a folha deles faz numa
+   * regra só.
    *
-   * O QUE ELA NÃO COBRE, e está declarado: oclusão e atrás-da-câmera
-   * retiram o rótulo da LISTA (`projectCorpos`/`projectLabels` dão
-   * `continue`), então não há objeto onde escrever a marca — eles caem
-   * no ramo "sumiu da lista" da rampa, que usa a mesma
-   * `RAMPA_DE_SAIDA_S`. Trazer esses dois para a lista é obra da F4.
+   * ATRÁS DA CÂMERA NÃO TEM CAUSA, e é decisão medida da F4 (O8): um
+   * nome às suas costas não tem posição na tela onde apagar. No Eyes ele
+   * recebe `hidden` E vai para `translate(10× largura, 10× altura)` — dez
+   * viewports fora (A11): a transição corre, invisível. Aqui ele sai da
+   * lista e a memória da rampa desce na MESMA `RAMPA_DE_SAIDA_S` pelo
+   * ramo "sumiu da lista" — mesma curva, mesmo tempo, mesma volta ao
+   * girar de volta. Inventar uma posição para pintar o que está atrás
+   * seria a única diferença, e seria para pior.
    */
-  causaDoSumico?: 'tamanho' | 'disputa';
+  causaDoSumico?: 'tamanho' | 'oclusao' | 'disputa';
   /**
    * O ALFA DO CANAL DE TEXTO — a camada de DENTRO dos dois fades do
    * Eyes (item 125, F2 · A8/A9). Quem escreve é `RampasDeRotulo`; quem
@@ -670,7 +686,32 @@ function projectPoint(
   if (_v.z > 1 || _v.z < -1) return null; // atrás da câmera
   const x = (_v.x + 1) / 2;
   const y = (1 - _v.y) / 2;
-  if (x < 0.04 || x > 0.96 || y < 0.08 || y > 0.9) return null;
+  // O RETÂNGULO É O DA TELA INTEIRA (item 125, F4) — a decisão do §7 do
+  // contrato, tomada com medida.
+  //
+  // Até 01/09 esta linha cortava `x ∈ [0,04; 0,96]`, `y ∈ [0,08; 0,9]`:
+  // uma margem inventada pela casa, sem par no Eyes, onde o `DivComponent`
+  // usa o viewport inteiro e joga o que sobra dez viewports para fora
+  // (A11). A margem foi conferida antes de morrer, retângulo a retângulo,
+  // com o HUD medido vivo em 1200×900 (`f4-margem.mjs`):
+  //
+  //  · a faixa de CIMA (0-72 px) é a tarja (`.letterbox`, 0-59 px), que
+  //    JÁ se reserva — tinta preta opaca por cima deste canvas; a barra
+  //    de controles só começa em 77 px, e cada botão dela também se
+  //    reserva;
+  //  · a faixa de BAIXO (810-900) está dentro da margem de composição do
+  //    `LabelCanvas` (que corta em 0,76 da altura) e da tarja de baixo;
+  //  · as faixas dos LADOS (48 px) têm a bússola (36-74 px), que se
+  //    reserva.
+  //
+  // Ou seja: tudo que a margem protegia é MEDIDO e recusado pela disputa,
+  // que compara a caixa do nome com os retângulos que o App publica. A
+  // margem era uma segunda régua para a mesma pergunta — e a mais
+  // grosseira das duas.
+  //
+  // O QUE FICA sendo cortado é o que não tem pixel na tela: nome fora do
+  // retângulo do viewport. É o corte do Eyes, e é o mínimo que existe.
+  if (x < 0 || x > 1 || y < 0 || y > 1) return null;
   return { x, y };
 }
 
@@ -743,6 +784,18 @@ export function projectLabels(
 ): StarLabel[] {
   const camPos = camera.position;
   const out: StarLabel[] = [];
+  /**
+   * OS NOMES QUE UM GLOBO ESCONDE (item 125, F4 · O1-O5) — fora do
+   * `out`, e é a lei da NEUTRALIDADE que os põe aqui.
+   *
+   * O `out` é cortado em `maxLabels` candidatas (`TETO_DE_CANDIDATAS_
+   * ESTELARES`), e uma estrela ocluída que disputasse esse teto EMPURRARIA
+   * uma estrela visível para fora da tela — a rampa deixaria de mudar o
+   * COMO e passaria a mudar o QUEM, que é exatamente o que o item 115
+   * proibiu. Elas entram DEPOIS do corte, já marcadas de saída: pintam a
+   * rampa de 750 ms e nada mais.
+   */
+  const ocluidas: StarLabel[] = [];
   const dHome = camPos.length();
   const dGC = camPos.distanceTo(GAL.GC_POS);
 
@@ -803,12 +856,12 @@ export function projectLabels(
     // que faz uma peça barata parecer cara.
     const p = projectPoint(camera, s);
     if (!p) continue;
-    if (oclusores && escondidaPorDisco(camPos, s, dist, oclusores)) continue;
+    const ocluida = oclusores !== undefined && escondidaPorDisco(camPos, s, dist, oclusores);
 
     // opacidade: perto demais ou longe demais → esmaece
     const oNear = THREE.MathUtils.smoothstep(dist, 0.4, 2.2);
     const oFar = 1 - THREE.MathUtils.smoothstep(dist, 140, 320);
-    out.push({
+    (ocluida ? ocluidas : out).push({
       name: s.n,
       spect: s.s,
       distPc: dist,
@@ -817,6 +870,7 @@ export function projectLabels(
       opacity: Math.min(oNear, oFar) * 0.92,
       key: s.n,
       tier: s.t ?? 0,
+      ...(ocluida ? { causaDoSumico: 'oclusao' as const, cortadoPelaRegua: true } : {}),
     });
   }
 
@@ -845,7 +899,9 @@ export function projectLabels(
   const rank = (l: StarLabel) =>
     l.distPc * (prevKeys?.has(l.key) ? 0.8 : 1);
   out.sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0) || rank(a) - rank(b));
-  return out.slice(0, maxLabels);
+  // as ocluídas entram DEPOIS do corte, e por isso não movem o corte:
+  // as `maxLabels` candidatas são as MESMAS de antes da F4, uma a uma
+  return ocluidas.length === 0 ? out.slice(0, maxLabels) : [...out.slice(0, maxLabels), ...ocluidas];
 }
 
 /** O que o produtor de rótulos precisa saber de um corpo do sistema. */
@@ -896,7 +952,26 @@ export function projectCorpos(
    * oclusor, o piso do zoom e o raio da malha. Uma segunda tabela de
    * raios aqui seria a segunda verdade que a primeira desmentiria.
    */
-  raioDeCena?: (chave: string) => number | null
+  raioDeCena?: (chave: string) => number | null,
+  /**
+   * A ISENÇÃO DO ALVO SEGUIDO (item 125, F4 · O11) — a chave do corpo em
+   * FOCO, que globo nenhum esconde.
+   *
+   * O literal deles: ao seguir uma entidade o app guarda o `canOcclude`
+   * anterior e faz `getComponent(DivComponent).setCanBeOccluded(false)`
+   * (offset 1 312 951); ao largar, os valores voltam. É a ÚNICA isenção
+   * de encobrimento do Eyes, e ela não é peso: o alvo seguido continua
+   * cedendo por TAMANHO como todo mundo (A6, provado na F2).
+   *
+   * Por que ela existe: quem segue um corpo escolheu aquele corpo. O
+   * nome dele sumir porque a lua dele passou na frente — ou porque a
+   * câmera entrou na sombra de outro globo — apaga justamente a única
+   * etiqueta que responde "o que estou vendo?".
+   *
+   * Ausente (`undefined`) = nada é isento, que é o Atlas sem foco e o
+   * ramo do FILME.
+   */
+  chaveIsentaDeOclusao?: string
 ): StarLabel[] {
   const out: StarLabel[] = [];
   // o SEMI-ÂNGULO VERTICAL da lente viva — a régua de `normal-radius` é
@@ -917,9 +992,17 @@ export function projectCorpos(
     // que passou para trás do pai deixa de ter etiqueta em vez de
     // escrevê-la sobre o globo que a esconde. O corpo nunca é oclusor de
     // si mesmo — ver `OclusorDeRotulo.chave`.
-    if (oclusores && escondidaPorDisco(camera.position, { x, y, z }, dist, oclusores, corpos[i].chave)) {
-      continue;
-    }
+    //
+    // O `continue` MORREU AQUI (item 125, F4): sumir da lista é sumir num
+    // quadro, e o Eyes apaga o nome ocluído em 750 ms como apaga
+    // qualquer outro (`hidden` no `<div>`, A8/A10). Agora ele fica na
+    // lista com a causa e a marca de saída — quem pinta a rampa é o
+    // `LabelCanvas`, e quem o tira da lista quando a tinta acaba é o
+    // produtor (`director/rotulos.ts`).
+    const ocluido =
+      oclusores !== undefined &&
+      corpos[i].chave !== chaveIsentaDeOclusao &&
+      escondidaPorDisco(camera.position, { x, y, z }, dist, oclusores, corpos[i].chave);
     // A CESSÃO POR TAMANHO APARENTE (F2 · A5) — o nome sai quando o
     // corpo enche a tela, e o ALVO SEGUIDO NÃO É EXCEÇÃO (A6): quem
     // está em foco só ganha PESO na disputa (`PRIORIDADE_DO_ROTULO.foco`,
@@ -945,7 +1028,14 @@ export function projectCorpos(
       key: corpos[i].chave,
       prioridade: prioridadeDeCorpo(classe),
       canalPrimario: classe === 'planeta' || classe === 'estrela',
-      ...(cessao <= 0 ? { causaDoSumico: 'tamanho' as const } : {}),
+      // A CAUSA DE FORA MANDA, e a ordem é a do Eyes: as duas são o
+      // mesmo `hidden` do `DivComponent`, testado na mesma função e na
+      // mesma ordem — fade zero primeiro, oclusão depois (O9).
+      ...(cessao <= 0
+        ? { causaDoSumico: 'tamanho' as const }
+        : ocluido
+          ? { causaDoSumico: 'oclusao' as const, cortadoPelaRegua: true }
+          : {}),
     });
   }
   return out;

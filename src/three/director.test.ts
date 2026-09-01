@@ -219,9 +219,12 @@ describe('a fiação de um posto do palco no Director (a da Lua)', () => {
     // para três linhas — a guarda reprovou por FORMATAÇÃO, com o fio
     // intacto. Uma guarda de texto que morre no `prettier` não protege
     // nada; ela vira ruído que alguém apaga. A regex tolera a quebra e
-    // cobra MAIS que a de antes: os CINCO argumentos, na ordem.
+    // cobra MAIS que a de antes: os SEIS argumentos, na ordem — o sexto
+    // é a isenção do alvo seguido (item 125, F4 · O11), e ele entra aqui
+    // porque um `undefined` calado no lugar dele devolveria a lei geral
+    // ao corpo em foco sem que nada reclamasse.
     expect(ROTULOS).toMatch(
-      /projectCorpos\(\s*cam,\s*LUAS_DO_SISTEMA,\s*this\.luaPosParaRotulo,\s*this\.oclusoresDeRotulo,\s*this\.raioPorChave\s*,?\s*\)/
+      /projectCorpos\(\s*cam,\s*LUAS_DO_SISTEMA,\s*this\.luaPosParaRotulo,\s*this\.oclusoresDeRotulo,\s*this\.raioPorChave,\s*isentoDeOclusao\s*,?\s*\)/
     );
   });
 

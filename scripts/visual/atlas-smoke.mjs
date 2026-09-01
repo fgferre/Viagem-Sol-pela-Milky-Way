@@ -1373,16 +1373,45 @@ try {
     const vence = (a, b) => peso(a) !== peso(b) ? peso(a) > peso(b)
       : (a.distPc !== b.distPc ? a.distPc < b.distPc
         : a.key.localeCompare(b.key, 'pt-BR') > 0);
+    // O HUD É O OPONENTE QUE NINGUÉM VENCE, e a lei está escrita no
+    // disputar do LabelCanvas: a mesma disputa que faz um nome ceder a
+    // outro o faz ceder ao painel, ao rodapé e à tarja. Até 01/09 este
+    // juiz não o modelava — e não precisava, porque a MARGEM do produtor
+    // (x 0,04-0,96, y 0,08-0,9) cortava o nome antes de ele chegar à
+    // faixa do HUD. A F4 (item 125) aposentou a margem: o recorte é o
+    // viewport inteiro, como no Eyes, e a tarja passou a ser vencedora
+    // legítima de quem projeta debaixo dela.
+    //
+    // A LISTA É CÓPIA DECLARADA de AREAS_RESERVADAS (App.tsx). O juiz
+    // reimplementa a lei de propósito — é o mesmo motivo pelo qual a
+    // ordem da disputa é reescrita logo acima, em vez de lida da função
+    // que a executa.
+    const raiz = document.querySelector('.hud-root');
+    const hud = [];
+    for (const s of [':scope > [data-dialogo]', '.letterbox', '.controls-bar > *',
+                     '.atlas-rodape', '.atlas-selo', '.atlas-alcas',
+                     '.atlas-selo-detalhe', '.atlas-bussola.acesa', '.filme-rodape']) {
+      for (const e of raiz.querySelectorAll(s)) {
+        const b = e.getBoundingClientRect();
+        if (b.width > 0 && b.height > 0) {
+          hud.push({ left: b.left, right: b.right, top: b.top, bottom: b.bottom });
+        }
+      }
+    }
     const semCulpado = [];
+    let peloHud = 0;
     const perdedorComCaixa = corte.filter((l) => caixa(l));
     for (const p of perdedorComCaixa) {
       const c = caixa(p);
       const dono = naTela.find((v) => cruza(c, caixa(v), c.folga) && vence(v, p));
-      if (!dono) semCulpado.push(p.key);
+      if (dono) continue;
+      if (hud.some((h) => cruza(c, h, c.folga))) peloHud++;
+      else semCulpado.push(p.key);
     }
     return {
       caixasSobrepostas: sobrepostos,
       perdedoresComCaixa: perdedorComCaixa.length,
+      perdedoresPeloHud: peloHud,
       perdedoresSemVencedor: semCulpado,
       desenhadosComCaixa: caixasNaTela.filter((c) => c.r).length,
       projetados: alvos.length,
@@ -1450,9 +1479,17 @@ try {
   // sistema e por isso não colidem com ninguém. O conjunto é função do
   // céu daquela data (`jd=EPOCA`) e desta janela (1200×900) — as duas
   // pinadas acima.
+  //
+  // E EM 01/09, NA F4: a MARGEM do produtor morreu (o recorte passou a
+  // ser o viewport inteiro, como no Eyes). A troca é de UM nome, e ela
+  // tem endereço: `Safina` projeta a 6 px da borda esquerda — dentro da
+  // faixa que a margem cortava — e entra; `δ Pav` sai porque as
+  // candidatas estelares têm teto (24, `TETO_DE_CANDIDATAS_ESTELARES`) e
+  // as que a margem escondia passaram a disputá-lo. São doze nas duas
+  // leis; o que mudou foi QUAIS.
   const ESTRELAS_DA_ABERTURA = [
     'Aldhanab', 'Ankaa', 'Arkab Posterior', 'Cervantes', 'Fomalhaut', 'Fuyue',
-    'Lang-Exster', 'Peacock', 'Rukbat', 'Tiaki', 'δ Pav', 'ε Ind',
+    'Lang-Exster', 'Peacock', 'Rukbat', 'Safina', 'Tiaki', 'ε Ind',
   ];
   const estrelasNaTela = [...nomesDaAbertura.nomesDeEstrela].sort();
   const bateEstrelas =
@@ -1474,13 +1511,17 @@ try {
   // `δ Pav` continuam valendo 5 contra os 10 de um nome próprio, e
   // perderiam qualquer disputa direta. O que guarda ISSO é o par de
   // vereditos de lei logo abaixo.
-  const BAYER_DA_ABERTURA = ['ε Ind', 'δ Pav'];
+  // (E EM 01/09, NA F4: onze próprias e UMA Bayer — `δ Pav` perdeu a
+  // candidatura para `Safina`, que a margem escondia. A lei que o
+  // veredito guarda é a mesma.)
+  const PROPRIAS_DA_ABERTURA = 11;
+  const BAYER_DA_ABERTURA = ['ε Ind'];
   const bayerNaTela = [...nomesDaAbertura.estrelasBayer].sort();
   conferir(
-    nomesDaAbertura.estrelasProprias === 10
+    nomesDaAbertura.estrelasProprias === PROPRIAS_DA_ABERTURA
       && bayerNaTela.length === BAYER_DA_ABERTURA.length
       && [...BAYER_DA_ABERTURA].sort().every((n, i) => bayerNaTela[i] === n),
-    `...e são ${10} de nome próprio e ${BAYER_DA_ABERTURA.length} designações de Bayer`
+    `...e são ${PROPRIAS_DA_ABERTURA} de nome próprio e ${BAYER_DA_ABERTURA.length} designações de Bayer`
       + ` (${BAYER_DA_ABERTURA.join(', ')})`
       + ` · medido: ${nomesDaAbertura.estrelasProprias} próprias,`
       + ` [${bayerNaTela.join(', ')}]`
@@ -1512,7 +1553,8 @@ try {
     nomesDaAbertura.perdedoresComCaixa > 0
       && nomesDaAbertura.perdedoresSemVencedor.length === 0,
     `...e quem a disputa cortou perdeu para um VENCEDOR no mesmo espaço:`
-      + ` ${nomesDaAbertura.perdedoresComCaixa} cortados com caixa,`
+      + ` ${nomesDaAbertura.perdedoresComCaixa} cortados com caixa`
+      + ` (${nomesDaAbertura.perdedoresPeloHud} deles para o HUD),`
       + ` ${nomesDaAbertura.perdedoresSemVencedor.length} sem vencedor`
       + (nomesDaAbertura.perdedoresSemVencedor.length
         ? ` (${nomesDaAbertura.perdedoresSemVencedor.join(', ')})` : '')
@@ -1604,6 +1646,7 @@ try {
       + ` ${nomesDoTeto.caixasSobrepostas.length} sobreposições e`
       + ` ${nomesDoTeto.perdedoresSemVencedor.length} de`
       + ` ${nomesDoTeto.perdedoresComCaixa} cortados sem vencedor`
+      + ` (${nomesDoTeto.perdedoresPeloHud} cederam ao HUD)`
   );
 
   // ---- 16: O POLO DO CORPO NO ALTO (Onda 7) ------------------------

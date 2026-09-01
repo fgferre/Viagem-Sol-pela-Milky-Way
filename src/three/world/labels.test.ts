@@ -415,11 +415,28 @@ describe('a régua de relevância — importância antes de geometria', () => {
 // estrela atrás do globo não nasce, o corpo atrás de outro corpo não
 // nasce, e nenhum corpo esconde a si mesmo.
 // ============================================================
-describe('o disco de qualquer corpo esconde nome (item 115)', () => {
+describe('o disco de qualquer corpo esconde nome (item 115; regime novo na F4)', () => {
   /** um oclusor de raio `r` a `z` na frente da câmera (que está em z=10) */
   const disco = (z: number, r: number, chave?: string) => ({ x: 0, y: 0, z, raio: r, chave });
 
-  it('a estrela ATRÁS de um planeta perde o nome; a do lado, não', () => {
+  /**
+   * O QUE MUDOU EM 01/09 (item 125, F4 · O1-O5), e por que estes três
+   * juízes falam outra língua: até a F3 a projeção dava `continue` no
+   * nome ocluído e ele SUMIA DA LISTA — sumir da lista é sumir num
+   * quadro. O Eyes apaga o ocluído em 750 ms, como apaga qualquer outro
+   * (`hidden` no `<div>`, A8/A10). Hoje ele fica na lista com
+   * `causaDoSumico: 'oclusao'` e `cortadoPelaRegua`, e quem o tira
+   * quando a tinta acaba é o produtor (`director/rotulos.ts`, provado
+   * em `rotulos.test.ts`).
+   *
+   * A LEI DO ENCOBRIMENTO NÃO MUDOU: quem está atrás do globo não é
+   * escrito como nome vivo, não ocupa vaga e não recebe clique. O que
+   * mudou é o COMO da saída.
+   */
+  const marcado = (l: StarLabel | undefined) =>
+    l && l.causaDoSumico === 'oclusao' && l.cortadoPelaRegua === true;
+
+  it('a estrela ATRÁS de um planeta é marcada de saída; a do lado, não', () => {
     const cam = camera();
     // uma estrela na mira, a 200 pc, e outra deslocada — as duas visíveis
     const naMira = { n: 'Atrás', x: 0, y: 0, z: -200, m: 1, s: 'A0V', d: 200, t: 0 };
@@ -433,10 +450,36 @@ describe('o disco de qualquer corpo esconde nome (item 115)', () => {
     // o globo entra entre a câmera e a estrela da mira: 0,3 de raio a 3
     // de distância cobre bem mais do que o ponto dela
     const comDisco = projectLabels(cam, [naMira, aoLado], 7, undefined, [disco(7, 0.3)]);
-    expect(soAsDuas(comDisco)).toEqual(['AoLado']);
+    expect(marcado(comDisco.find((l) => l.key === 'Atrás'))).toBe(true);
+    expect(comDisco.find((l) => l.key === 'AoLado')?.causaDoSumico).toBeUndefined();
+    // A NEUTRALIDADE (a lei do item 115): a ocluída entra DEPOIS do
+    // corte das candidatas, então ela é sempre a ÚLTIMA — nunca empurra
+    // uma estrela que se vê para fora do teto
+    expect(comDisco[comDisco.length - 1].key).toBe('Atrás');
   });
 
-  it('o corpo ATRÁS de outro corpo perde o nome — a mesma lei, o mesmo cone', () => {
+  it('a ocluída não gasta vaga de candidata — o teto corta as VISÍVEIS', () => {
+    const cam = camera();
+    // três estrelas: uma atrás do globo e duas ao lado. Com teto 2, as
+    // duas que se veem passam, e a ocluída vem depois do corte
+    const atras = { n: 'Atrás', x: 0, y: 0, z: -200, m: 1, s: 'A0V', d: 200, t: 0 };
+    const perto = { n: 'Perto', x: 40, y: 0, z: -200, m: 1, s: 'A0V', d: 200, t: 0 };
+    const longe = { n: 'Longe', x: 60, y: 0, z: -300, m: 1, s: 'A0V', d: 300, t: 0 };
+    // A RÉGUA DA NEUTRALIDADE é o comportamento ANTERIOR à F4: lá o
+    // ocluído sumia da lista, então as candidatas eram as que sobram
+    // quando ele não existe. É contra ISSO que a lista nova tem de
+    // bater — não contra a cena sem globo, onde a estrela escondida
+    // ainda ocuparia uma vaga que ela não pode ocupar.
+    const comoEraAntes = projectLabels(cam, [perto, longe], 2, undefined, []);
+    const comGlobo = projectLabels(cam, [atras, perto, longe], 2, undefined, [disco(7, 0.3)]);
+    expect(comGlobo.filter((l) => l.causaDoSumico === undefined).map((l) => l.key)).toEqual(
+      comoEraAntes.map((l) => l.key)
+    );
+    // e a ocluída está lá, no fim, só para a rampa ter onde correr
+    expect(comGlobo[comGlobo.length - 1].key).toBe('Atrás');
+  });
+
+  it('o corpo ATRÁS de outro corpo é marcado de saída — a mesma lei, o mesmo cone', () => {
     const cam = camera();
     const p = new Float32Array(6);
     // dois corpos alinhados com a câmera: o primeiro em z=8, o segundo
@@ -451,7 +494,50 @@ describe('o disco de qualquer corpo esconde nome (item 115)', () => {
       'corpo:frente', 'corpo:atras',
     ]);
     const oclusores = [disco(8, 0.5, 'corpo:frente')];
-    expect(projectCorpos(cam, dois, p, oclusores).map((l) => l.key)).toEqual(['corpo:frente']);
+    const comGlobo = projectCorpos(cam, dois, p, oclusores);
+    expect(comGlobo.map((l) => l.key)).toEqual(['corpo:frente', 'corpo:atras']);
+    expect(comGlobo[0].causaDoSumico).toBeUndefined();
+    expect(marcado(comGlobo[1])).toBe(true);
+  });
+
+  it('a CAUSA DE FORA manda: quem já cedeu por TAMANHO não vira oclusão', () => {
+    // as duas são o mesmo `hidden` do `DivComponent`, testado na mesma
+    // ordem que eles (fade zero primeiro, oclusão depois — O9)
+    const cam = camera();
+    const p = new Float32Array(6);
+    p[2] = 8;
+    p[5] = 0;
+    const dois = [
+      { chave: 'corpo:frente', nome: 'Frente', classe: 'planeta' },
+      { chave: 'corpo:atras', nome: 'Atrás', classe: 'planeta' },
+    ];
+    // o de trás está a 10 de distância e com raio 1 enche a tela
+    const comRaio = projectCorpos(cam, dois, p, [disco(8, 0.5, 'corpo:frente')], (chave) =>
+      chave === 'corpo:atras' ? 1 : null
+    );
+    expect(comRaio[1].causaDoSumico).toBe('tamanho');
+  });
+
+  it('O11 — o alvo SEGUIDO não é escondido por globo nenhum', () => {
+    const cam = camera();
+    const p = new Float32Array(6);
+    p[2] = 8;
+    p[5] = 0;
+    const dois = [
+      { chave: 'corpo:frente', nome: 'Frente', classe: 'planeta' },
+      { chave: 'corpo:atras', nome: 'Atrás', classe: 'planeta' },
+    ];
+    const oclusores = [disco(8, 0.5, 'corpo:frente')];
+    // sem isenção, o de trás sai marcado; com a isenção, ele é um rótulo
+    // como qualquer outro — é o `setCanBeOccluded(false)` deles
+    expect(marcado(projectCorpos(cam, dois, p, oclusores)[1])).toBe(true);
+    const isento = projectCorpos(cam, dois, p, oclusores, undefined, 'corpo:atras');
+    expect(isento[1].causaDoSumico).toBeUndefined();
+    expect(isento[1].cortadoPelaRegua).toBeUndefined();
+    // e a isenção é DE UM SÓ: isentar o outro não salva este
+    expect(marcado(projectCorpos(cam, dois, p, oclusores, undefined, 'corpo:frente')[1])).toBe(
+      true
+    );
   });
 
   it('nenhum corpo esconde a SI MESMO, nem um bilionésimo à frente', () => {
@@ -465,10 +551,87 @@ describe('o disco de qualquer corpo esconde nome (item 115)', () => {
     // constante (`oclusoresDeRotulo[0]`) e o rótulo dele sai do buffer da
     // camada. Um bilionésimo de parsec à frente e, sem a chave, o corpo
     // cai dentro do próprio cone com cosseno 1 e some da tela.
-    expect(projectCorpos(cam, um, p, [disco(8, 0.5, 'corpo:frente')])).toHaveLength(1);
-    expect(projectCorpos(cam, um, p, [disco(8 + 1e-9, 0.5, 'corpo:frente')])).toHaveLength(1);
+    expect(projectCorpos(cam, um, p, [disco(8, 0.5, 'corpo:frente')])[0].causaDoSumico)
+      .toBeUndefined();
+    expect(projectCorpos(cam, um, p, [disco(8 + 1e-9, 0.5, 'corpo:frente')])[0].causaDoSumico)
+      .toBeUndefined();
     // e o MESMO disco com outra chave (um vizinho no caminho) esconde
-    expect(projectCorpos(cam, um, p, [disco(8 + 1e-9, 0.5, 'corpo:outro')])).toHaveLength(0);
+    expect(marcado(projectCorpos(cam, um, p, [disco(8 + 1e-9, 0.5, 'corpo:outro')])[0])).toBe(
+      true
+    );
+  });
+
+  it('O2 — só esconde o globo que está ENTRE a câmera e o alvo', () => {
+    // O literal deles é o ponto médio da corda dentro da esfera caindo
+    // em [0, 1) — 1 é o objeto, então a esfera tem de estar do lado de
+    // cá dele. Um globo alinhado mas MAIS LONGE não esconde nada, por
+    // mais gordo que seja.
+    const cam = camera();
+    const p = new Float32Array(3);
+    p[2] = 8; // o corpo a 2 da câmera (que está em z=10)
+    const um = [{ chave: 'corpo:perto', nome: 'Perto', classe: 'planeta' }];
+    // um globo ENORME atrás dele, no mesmo eixo
+    expect(projectCorpos(cam, um, p, [disco(0, 3, 'corpo:longe')])[0].causaDoSumico)
+      .toBeUndefined();
+    // e o MESMO globo movido para a frente dele esconde
+    expect(marcado(projectCorpos(cam, um, p, [disco(9, 0.2, 'corpo:longe')])[0])).toBe(true);
+  });
+
+  it('O6 — disco de RAIO ZERO não esconde nada, esteja onde estiver', () => {
+    // `_occlusionRadius = 0` no construtor da entidade deles: raio zero
+    // ⇒ não oclui até alguém escrever um raio. Aqui o mesmo: um oclusor
+    // sem raio é linha morta na lista, e o cone dele não existe.
+    const cam = camera();
+    const p = new Float32Array(6);
+    p[2] = 8;
+    p[5] = 0;
+    const dois = [
+      { chave: 'corpo:frente', nome: 'Frente', classe: 'planeta' },
+      { chave: 'corpo:atras', nome: 'Atrás', classe: 'planeta' },
+    ];
+    expect(projectCorpos(cam, dois, p, [disco(8, 0, 'corpo:frente')])[1].causaDoSumico)
+      .toBeUndefined();
+    // e com raio, o mesmo disco esconde — a diferença é só o número
+    expect(marcado(projectCorpos(cam, dois, p, [disco(8, 0.5, 'corpo:frente')])[1])).toBe(true);
+  });
+
+  it('o recorte é o VIEWPORT INTEIRO — a margem da casa morreu na F4', () => {
+    // O Eyes usa o retângulo do viewport e joga o resto dez viewports
+    // para fora (A11); a casa cortava `x ∈ [0,04; 0,96]`, `y ∈ [0,08;
+    // 0,9]` — uma segunda régua para a mesma pergunta, mais grosseira
+    // que a primeira (a disputa contra os retângulos MEDIDOS do HUD).
+    const cam = camera();
+    const p = new Float32Array(3);
+    const um = [{ chave: 'corpo:beira', nome: 'Beira', classe: 'planeta' }];
+    // a câmera está em z=10, fov 60, aspecto 1,6 — meia-largura em z=0 é
+    // 10·tan(30°)·1,6 = 9,24. A 96% dela o corpo cai na antiga faixa
+    // proibida (x ≈ 0,98) e HOJE tem nome.
+    p[0] = 9.24 * 0.96;
+    p[2] = 0;
+    const naBeira = projectCorpos(cam, um, p);
+    expect(naBeira).toHaveLength(1);
+    expect(naBeira[0].x).toBeGreaterThan(0.96);
+    expect(naBeira[0].x).toBeLessThanOrEqual(1);
+    // e o que está FORA do viewport continua fora: é o único corte
+    p[0] = 9.24 * 1.2;
+    expect(projectCorpos(cam, um, p)).toHaveLength(0);
+  });
+
+  it('O8 — o que está ATRÁS DA CÂMERA não entra na lista, com causa nenhuma', () => {
+    // o teste do Eyes é o eixo de profundidade da câmera (`n.dot(i) <= 0`,
+    // `DivComponent`); aqui é o `z` de NDC saindo de [-1, 1] no
+    // `projectPoint` — pega o que está atrás E o que passou do plano
+    // distante. Ele não ganha causa porque não tem ONDE apagar: no Eyes
+    // o `<div>` ocluído recebe `hidden` E vai dez viewports para fora
+    // (A11), e a transição corre invisível.
+    const cam = camera();
+    const p = new Float32Array(3);
+    p[2] = 30; // a câmera está em z=10 olhando para −z: isto é às costas
+    const um = [{ chave: 'corpo:costas', nome: 'Costas', classe: 'planeta' }];
+    expect(projectCorpos(cam, um, p)).toHaveLength(0);
+    // e um palmo à FRENTE ele existe — a diferença é o lado, não o resto
+    p[2] = -30;
+    expect(projectCorpos(cam, um, p)).toHaveLength(1);
   });
 });
 

@@ -1945,6 +1945,32 @@ falha pré-existente do portal t=250 (item 119). `ab-identidade` não
 rodou por decisão: é cego a rótulo (achado da F2), nada desta fase o
 toca.
 
+**F4 SELADA em 01/09, sob a LEI NOVA do §19 do AGENTS.md (nascida
+nesta fase: teste só com aprovação dele — a F4 passou de 1h30 porque o
+rito de provas escalava sozinho, e ele cortou).** O que a F4 entregou:
+a terceira causa de sumiço `'oclusao'` — nome escondido por globo
+APAGA pela rampa de 750 ms em vez de sumir seco (série medida
+0,736→0,552→0,368→0,184, passo constante, razão 3,0; o rótulo fica na
+lista com `pintaSemVaga`: pinta a rampa, não ocupa vaga, não vira
+clique); a ISENÇÃO do alvo seguido (O11, `chaveIsentaDeOclusao` —
+Io em foco 1,88° dentro do cone de Júpiter com o nome vivo, foto); o
+RECORTE COM MARGEM morto — vale o viewport inteiro como no Eyes
+(medido antes: as faixas da margem já são da tarja e da bússola; preço
+declarado, abertura 16→15 nomes); conferências com prova: O4/O5 (31
+oclusores remontados por quadro; corte de 1 px do Eyes NÃO faz falta
+— corpo de 0,95 px só alcança nome em cima do próprio objeto, não se
+criou mecanismo), O8 (Sol a 147° do eixo sem rótulo no vidro, foto),
+O7 (sem usuário vivo — só corpos reais na lista; o anel de Saturno
+nunca foi somado). Atrás-da-câmera NÃO ganhou causa própria
+(declarado: sai por projectPoint null, sem objeto onde marcar). O
+juiz (b) da F3 passou a modelar o HUD como oponente. FECHAMENTO sob a
+lei nova: ele avaliou filme e estrelas do atlas com o próprio olho,
+aprovou 2 dos 4 testes propostos e cortou o resto; os 2 rodaram
+verdes em 3 SEGUNDOS (268+20 testes) — a lição medida: o custo nunca
+foi rodar teste, era o rito de escrever/rodar sabotagem em loop. 19
+sabotagens já haviam mordido antes da ordem; atlas-smoke com a única
+falha alheia do portal (item 119).
+
 **ESTADO DA ONDA no handoff de 31/08 (histórico da pausa; superado pelo selo acima):**
 F0 FEITA e commitada (docs/reference/contrato-eyes-linhas-rotulos.md,
 60190b9 — 77 regras). F1 FEITA E PAUSADA NA ÁRVORE, SEM COMMIT, por
