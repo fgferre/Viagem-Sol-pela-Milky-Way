@@ -847,7 +847,11 @@ desta onda (mergulhos 06 §4 e 08 §4; `nasa-eyes-algoritmos.md` §L).
 ## §7 MAPA DO CONFRONTO — regra a regra, o que a casa tem hoje
 
 Uma linha por regra. "Casa" é o estado conferido em 31/08 por grep dirigido;
-"F" é a fase do item 125 (ex-120) a que a regra pertence.
+"F" é a fase do item 125 (ex-120) a que a regra pertence. **Nota pós-F1
+(01/09):** a F1 foi selada (commit `04529af`) — as linhas L5, L6, L8, L9,
+L10 e L11 abaixo descrevem o estado ANTERIOR a ela e valem como história do
+confronto; o estado novo está no selo. L3 e L4 foram corrigidas nesta data:
+a F0 as declarou "não tem" e a casa já as tinha desde o item 83.
 
 ### §1 A LINHA → F1
 
@@ -855,8 +859,8 @@ Uma linha por regra. "Casa" é o estado conferido em 31/08 por grep dirigido;
 |---|---|---|---|
 | L1 duas peças por classe | **só uma**: laço fechado para todos; não há rastro | `src/three/world/orbitas.ts` | F1 (declarar), fita afunilada fora do escopo |
 | L2 fita em espaço de tela | **igual em espírito**: `LineSegments2` + `LineMaterial` (item 83) | `orbitas.ts:1344` | — |
-| L3 `resolutionFactor` | **NÃO tem**: largura fixa `LARGURA_DA_FITA_PX = 1.25` | `orbitas.ts:542` | F1 |
-| L4 junta miter com clamp | **NÃO tem**: `LineSegments2` põe calota redonda em cada segmento (o "colar de contas", L2.5 do item 83) | `orbitas.ts:1344` | F1 |
+| L3 `resolutionFactor` | **TEM** desde o item 83-A3 (a F0 errou; corrigido em 01/09): `larguraVisivelDaFitaPx`, `max(1, min(lado CSS)/800)` — a conta deles | `orbitas.ts:603` | já feita |
+| L4 junta miter com clamp | **TEM** desde o item 83-B2 (a F0 errou; corrigido em 01/09): `dobrarNaBissetriz` com o clamp `LIMITE_DA_BISSETRIZ = 0.25`; a calota redonda morre no `discard` do `USE_DASH` | `orbitas.ts:1512`, `:1132` | já feita |
 | L5 miolo chapado, borda dura | **oposto**: saia de `fwidth`, `SAIA_DO_AA_PX = 1`, `miolo = 1.25/2.25` — perfil medido `35,161,179,151,12`, sem platô | `orbitas.ts:567`, `:1280`, `:1490` | F1 |
 | L6 `samples: 4` no alvo | **nenhum MSAA em alvo nenhum**: `antialias: false` e `new EffectComposer(renderer)` sem alvo próprio | `src/three/core/engine.ts:419`, `src/three/core/post.ts:664` | F1 |
 | L7 aditivo, `depthWrite:false`, `depthTest` ligado | **igual** | `orbitas.ts:1354`, `:1358` | — |
@@ -950,8 +954,9 @@ Uma linha por regra. "Casa" é o estado conferido em 31/08 por grep dirigido;
 §6 é ponteiro (13 recusas com endereço), §7 é o confronto (58 linhas de
 mapa, cobrindo todas as regras que têm par na casa).
 
-**Fatias por fase:** F1 leva 8 linhas do mapa (L3, L4, L5, L6, L8, L9, L10,
-L11); F2 leva 6 (A4, A5, A6, A8, A10, A12); F3 leva 8 (P1, P2, P3, P5, P6,
+**Fatias por fase:** F1 levou 6 linhas do mapa (L5, L6, L8, L9, L10, L11 —
+seladas em `04529af`; L3 e L4 constavam da fatia mas já estavam feitas
+desde o item 83, erro da F0 corrigido em 01/09); F2 leva 6 (A4, A5, A6, A8, A10, A12); F3 leva 8 (P1, P2, P3, P5, P6,
 P7, P12, mais a revogação do orçamento e a decisão sobre a histerese); F4
 leva 4 (O4-conferir, O7, O8-conferir, O11, mais a decisão do recorte com
 margem); F5 leva 9 (T1, T3, T5, T7, T9, T10, T12, T13, T15, mais a decisão

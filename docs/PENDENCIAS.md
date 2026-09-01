@@ -2054,6 +2054,13 @@ md5** (`22eabfacec75@1800x1713`). O item fica aberto, honesto: o fenômeno
 não se reproduziu sob comando, então não há o que consertar nem o que
 fechar.
 
+**DATUM DA F1 (01/09, forense do re-baseline da onda 125):** o tremor é
+**ENTRE sessões do navegador, não dentro** — 160 capturas na mesma sessão
+deram zero oscilação; a `terralua` só diferiu quando capturada em SESSÕES
+distintas. Combina com a cara de "algo assenta" (carga/estado que se firma
+por sessão) e estreita a caça: quem procurar a causa deve comparar o que
+muda entre dois processos do navegador, não entre dois quadros.
+
 **64.** (Ruído de instrumento, visto UMA vez em 21/08.) Um filho do
 `ab-identidade` mediu as suas 18 vistas, gravou o estado e o arquivo de
 vias, e NÃO saiu — ficou 12 minutos vivo depois do `process.exit(0)`,
