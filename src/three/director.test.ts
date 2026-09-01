@@ -211,9 +211,17 @@ describe('a fiação de um posto do palco no Director (a da Lua)', () => {
     // (corte 7 da onda da arquitetura), e o fio se cobra dos dois lados.
     expect(PALCO).toContain('rotulos.escreverPosicaoDeLua(posto.id, e.centroPc)');
     // (guarda de TEXTO, herdada: o que ela cobra é o fio, e ela cobra a
-    // linha inteira — a lista de oclusores entrou nela em 31/08, item 115)
-    expect(ROTULOS).toContain(
-      'projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo)'
+    // CHAMADA INTEIRA — a lista de oclusores entrou nela em 31/08, item
+    // 115, e o raio de cena da régua de aparição em 01/09, item 125/F2.)
+    //
+    // POR QUE VIROU REGEX EM 01/09: a guarda era uma string de uma linha
+    // e a F2 acrescentou o quinto argumento, o que empurrou a chamada
+    // para três linhas — a guarda reprovou por FORMATAÇÃO, com o fio
+    // intacto. Uma guarda de texto que morre no `prettier` não protege
+    // nada; ela vira ruído que alguém apaga. A regex tolera a quebra e
+    // cobra MAIS que a de antes: os CINCO argumentos, na ordem.
+    expect(ROTULOS).toMatch(
+      /projectCorpos\(\s*cam,\s*LUAS_DO_SISTEMA,\s*this\.luaPosParaRotulo,\s*this\.oclusoresDeRotulo,\s*this\.raioPorChave\s*,?\s*\)/
     );
   });
 

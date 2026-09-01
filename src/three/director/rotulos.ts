@@ -123,9 +123,21 @@ export class Rotulos {
   /** última projeção de rótulos — alvo do clicar-para-visitar */
   private lastLabels: StarLabel[] = [];
   private prevLabelKeys = new Set<string>();
-  /** as chaves que o DESENHO marcou no quadro anterior — o bônus de
-   *  histerese de `pesoDoRotulo` (item 73) */
-  private prevDesenhados = new Set<string>();
+  /**
+   * QUEM PERDEU A VAGA NO QUADRO ANTERIOR (item 125, F3 · P4) — a
+   * realimentação que fecha o ciclo entre a colisão e as rampas.
+   *
+   * A ORDEM DO QUADRO é: projetar → ordenar → **marcar os perdedores de
+   * ontem** → rampas → desenhar/julgar. O veredito só existe depois do
+   * desenho, então ele chega aqui um quadro depois; é a mesma latência
+   * do Eyes, onde o `LabelQuadtree` põe a classe CSS e a transição de
+   * 750 ms começa no quadro seguinte.
+   *
+   * Era `prevDesenhados`, e servia ao bônus de histerese de 20% do
+   * `pesoDoRotulo` — que a F3 aposentou: quem segura o pisca-pisca é a
+   * rampa de saída somada ao desempate total do P3, como no Eyes.
+   */
+  private perdedoresDaVaga = new Set<string>();
   private lastDest = '';
   private destTimer = 0;
   private lastSol = '';
@@ -644,7 +656,7 @@ export class Rotulos {
       }
       // a memória da régua não sobrevive: ela não está correndo
       if (this.prevLabelKeys.size > 0) this.prevLabelKeys.clear();
-      if (this.prevDesenhados.size > 0) this.prevDesenhados.clear();
+      if (this.perdedoresDaVaga.size > 0) this.perdedoresDaVaga.clear();
       this.lastLabels = [...falados, ...icones];
       this.publicar(this.lastLabels, dtDaRampa, fase);
       this.emitDest(roteiro?.dest, cam.position, named);
@@ -654,17 +666,17 @@ export class Rotulos {
       return;
     }
     if ((fase === 'journey' || fase === 'free' || fase === 'atlas') && named) {
-      // AS MARCAS DO QUADRO ANTERIOR, colhidas ANTES de `lastLabels` ser
-      // reescrito (item 120). Quem escreve `desenhado` é o `LabelCanvas`,
-      // e ele corre DEPOIS deste tique, dentro do `onLabels` — então
+      // O VEREDITO DO QUADRO ANTERIOR, colhido ANTES de `lastLabels` ser
+      // reescrito (item 120, e desde o item 125/F3 é o veredito da
+      // colisão). Quem escreve `perdeuAVaga` é o `LabelCanvas`, e ele
+      // corre DEPOIS deste tique, dentro do `onLabels` — então
       // `lastLabels` chega aqui ainda carregando as marcas do quadro que
-      // saiu da tela, e é exatamente esse conjunto que a histerese quer.
-      // Colher DEPOIS da reescrita, como se fazia até 31/08, lia a lista
-      // NOVA: `projectCorpos`/`projectLabels` constroem objetos do zero a
-      // cada quadro, com `desenhado` ainda `undefined`, e o conjunto saía
-      // SEMPRE vazio — o bônus de `pesoDoRotulo` não multiplicava nada.
-      this.prevDesenhados = new Set(
-        this.lastLabels.filter((l) => l.desenhado).map((l) => l.key)
+      // saiu da tela, e é exatamente esse conjunto que as rampas querem.
+      // Colher DEPOIS da reescrita lia a lista NOVA:
+      // `projectCorpos`/`projectLabels` constroem objetos do zero a cada
+      // quadro, e o conjunto saía SEMPRE vazio.
+      this.perdedoresDaVaga = new Set(
+        this.lastLabels.filter((l) => l.perdeuAVaga).map((l) => l.key)
       );
       if (fase === 'journey') {
         // REGRA EDITORIAL da revisão: o assunto do beat sempre tem nome
@@ -777,18 +789,26 @@ export class Rotulos {
             if (l.key === chaveDoFoco) l.prioridade = PRIORIDADE_DO_ROTULO.foco;
           }
         }
-        // A RÉGUA DE RELEVÂNCIA (item 82, N1): ordena pela hierarquia da
-        // casa — que é o que decide quem vence a colisão, porque o
-        // desenho ocupa na ordem em que recebe — e marca o que passa do
-        // ORÇAMENTO de nomes da tela. O corte por IMPORTÂNCIA vem antes
-        // da geometria: sem ele, vinte estrelas espalhadas pelo quadro
-        // nunca colidem entre si e ficam todas na tela, que foi
-        // exatamente a confusão que o dono viu na abertura.
-        // A RAMPA VEM DEPOIS DA RÉGUA (em `publicar`), e essa ordem é o
-        // contrato: a régua decide quem aparece e quantos cabem; a rampa
-        // só diz com quanta tinta. Ler a opacidade rampada de volta no
-        // orçamento faria a rampa mudar QUEM aparece — e ela não muda.
-        this.lastLabels = aplicarReguaDeRelevancia(lista, this.prevDesenhados);
+        // A RÉGUA DE RELEVÂNCIA (item 82, N1) ORDENA, e desde o item 125
+        // (F3) não corta mais nada: o orçamento de dez nomes foi
+        // revogado por decisão do dono e quem decide quem cabe é a
+        // colisão, com os pesos do Eyes. A ordem continua importando —
+        // é ela que o rodízio da quadtree percorre (P8).
+        this.lastLabels = aplicarReguaDeRelevancia(lista);
+        // A DERROTA DE ONTEM VIRA A RAMPA DE HOJE (F3 · P4). A marca é a
+        // mesma que o orçamento escrevia (`cortadoPelaRegua` +
+        // `causaDoSumico: 'disputa'`), e por isso as rampas da F2 a leem
+        // sem saber que a fonte mudou. Quem já cedeu por TAMANHO fica
+        // com a causa dele: são as duas classes do Eyes (`hidden` e
+        // `hiddenByLabelQuadtree`), e a de fora manda.
+        if (this.perdedoresDaVaga.size > 0) {
+          for (const l of this.lastLabels) {
+            if (!this.perdedoresDaVaga.has(l.key)) continue;
+            if (l.causaDoSumico === 'tamanho') continue;
+            l.cortadoPelaRegua = true;
+            l.causaDoSumico = 'disputa';
+          }
+        }
         this.emitDest(undefined, cam.position, named);
       }
       this.prevLabelKeys = new Set(this.lastLabels.map((l) => l.key));

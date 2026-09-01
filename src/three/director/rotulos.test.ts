@@ -19,7 +19,7 @@ import type { JourneyMeta } from '../cinematic/journey';
 import type { NamedStar } from '../config';
 import { CORPOS_DO_SISTEMA } from '../atlasConfig';
 import type { Planetas } from '../world/planetas/planetas';
-import { ORCAMENTO_DE_NOMES, PRIORIDADE_DO_ROTULO } from '../world/labels';
+import { PRIORIDADE_DO_ROTULO } from '../world/labels';
 import type { StarLabel } from '../world/labels';
 import type { Rotulos as TipoRotulos, QuadroDeRotulos } from './rotulos';
 
@@ -461,18 +461,21 @@ describe('a rampa dos nomes: 250 ms para entrar, 750 ms para sair', () => {
   });
 
   it('quem PERDE a vaga desce em 45 quadros (750 ms) — três vezes a subida', () => {
-    const { passo, alfaDe, publicadas } = bancadaDoCeu();
-    // onze estrelas: o orçamento de nomes é dez, então E11 já nasce
-    // cortada e as dez primeiras assentam cheias
+    // DESDE A F3 (item 125) quem tira a vaga de um nome é a COLISÃO, e o
+    // veredito dela chega ao produtor pela marca `perdeuAVaga` que o
+    // `LabelCanvas` escreve nos objetos do quadro. Aqui ela é encenada:
+    // E10 perde a vaga a partir do 41º quadro. A rampa é a mesma peça da
+    // F2 e as durações são as mesmas — o que mudou é a fonte do veredito.
+    const { rotulos, passo, alfaDe, publicadas } = bancadaDoCeu();
     const onze = ceu(11);
     for (let i = 0; i < 40; i++) passo(onze);
     expect(alfaDe('E10')).toBe(CHEIO);
-    // chega uma estrela MAIS PERTO que todas: ela toma a última vaga e
-    // E10 passa a ser a cortada
+    // chega uma estrela MAIS PERTO que todas: ela ocupa o lugar de E10
     const doze = [estrela('NOVA', 2.5, 12), ...onze];
     let saindo = 0;
     let entrando = 0;
     for (let i = 0; i < 60; i++) {
+      for (const l of rotulos.alvos) l.perdeuAVaga = l.key === 'E10';
       passo(doze);
       if (intermediario(alfaDe('E10'))) saindo++;
       if (intermediario(alfaDe('NOVA'))) entrando++;
@@ -481,25 +484,24 @@ describe('a rampa dos nomes: 250 ms para entrar, 750 ms para sair', () => {
     expect(entrando).toBe(14);
     // a assimetria é o produto: sair custa três vezes o entrar
     expect((saindo + 1) / (entrando + 1)).toBe(3);
-    // e no fim a cortada está APAGADA e volta a ser corte da régua
+    // e no fim a perdedora está APAGADA e segue marcada pela disputa
     const E10 = publicadas.at(-1)?.find((l) => l.key === 'E10');
     expect(E10?.opacity).toBe(0);
     expect(E10?.cortadoPelaRegua).toBe(true);
+    expect(E10?.causaDoSumico).toBe('disputa');
   });
 
   it('enquanto desce, o nome cortado volta à lista como `saindo` — imagem, não vaga', () => {
-    const { passo, publicadas } = bancadaDoCeu();
+    const { rotulos, passo, publicadas } = bancadaDoCeu();
     const onze = ceu(11);
     for (let i = 0; i < 40; i++) passo(onze);
-    const doze = [estrela('NOVA', 2.5, 12), ...onze];
-    passo(doze);
+    for (const l of rotulos.alvos) l.perdeuAVaga = l.key === 'E10';
+    passo([estrela('NOVA', 2.5, 12), ...onze]);
     const E10 = publicadas.at(-1)?.find((l) => l.key === 'E10');
-    // a régua CORTOU (e é ela quem manda em quem ocupa); a rampa devolve
-    // o rótulo à pintura sem devolver a vaga
+    // a colisão CORTOU (e é ela quem manda em quem ocupa); a rampa
+    // devolve o rótulo à pintura sem devolver a vaga
     expect(E10?.saindo).toBe(true);
     expect(E10?.cortadoPelaRegua).toBeFalsy();
-    // quem já estava fora e apagado continua fora: E11 nunca acendeu
-    expect(publicadas.at(-1)?.find((l) => l.key === 'E11')?.opacity).toBe(0);
   });
 
   it('a memória atravessa a ausência: sumir e voltar não reinicia do zero', () => {
@@ -588,13 +590,14 @@ describe('os oclusores de rótulo são os corpos do quadro (item 115)', () => {
   });
 });
 
-describe('a histerese da régua enxerga o quadro ANTERIOR (item 120)', () => {
+describe('o veredito da colisão volta como rampa (item 125, F3 · P4)', () => {
   /**
-   * UM CÉU CHEIO O BASTANTE PARA A RÉGUA CORTAR. `ORCAMENTO_DE_NOMES` é
-   * 10; catorze estrelas do mesmo tier (mesma prioridade) põem quatro
-   * nomes do lado de fora, e o desempate entre pesos iguais é a
-   * DISTÂNCIA — então quem é cortado é o mais longe. É exatamente a
-   * disputa em que o bônus de 20% de `pesoDoRotulo` decide.
+   * UM CÉU CHEIO. Catorze estrelas do mesmo tier espalhadas pelo quadro:
+   * elas não colidem entre si, e desde a revogação do orçamento (F3)
+   * nenhuma é cortada por população. Quem corta agora é o desenho, e o
+   * que se prova aqui é o FIO — que o veredito escrito por ele no quadro
+   * N vira `cortadoPelaRegua` + `causaDoSumico: 'disputa'` no quadro
+   * N+1, que é o que faz a rampa de 750 ms correr.
    */
   const CEU_CHEIO: NamedStar[] = Array.from({ length: 14 }, (_, i) => ({
     n: `E${i}`,
@@ -634,37 +637,54 @@ describe('a histerese da régua enxerga o quadro ANTERIOR (item 120)', () => {
     return { rotulos, passo };
   }
 
-  it('a bancada CORTA de verdade — sem corte não há o que a histerese decida', () => {
+  it('a POPULAÇÃO não corta mais ninguém — o orçamento foi revogado', () => {
     const { rotulos, passo } = bancadaCheia();
     passo();
-    const cortados = rotulos.alvos.filter((l) => l.cortadoPelaRegua);
-    expect(cortados.length).toBeGreaterThan(0);
-    expect(rotulos.alvos.length - cortados.length).toBe(ORCAMENTO_DE_NOMES);
+    // catorze estrelas projetadas, catorze nomes na lista, zero cortes
+    expect(rotulos.alvos.length).toBeGreaterThan(10);
+    expect(rotulos.alvos.filter((l) => l.cortadoPelaRegua).length).toBe(0);
   });
 
-  it('quem o DESENHO marcou no quadro anterior sobrevive ao corte no seguinte', () => {
+  it('quem o DESENHO reprovou chega ao quadro seguinte marcado — e com a causa', () => {
     const { rotulos, passo } = bancadaCheia();
     passo();
-    // o pior colocado do primeiro quadro: cortado pela régua
-    const perdedor = rotulos.alvos.filter((l) => l.cortadoPelaRegua).at(-1)!.key;
-
-    // O QUE O `LabelCanvas` FAZ, encenado: ele escreve `desenhado` nos
+    const perdedor = rotulos.alvos.at(-1)!.key;
+    // O QUE O `LabelCanvas` FAZ, encenado: ele escreve `perdeuAVaga` nos
     // objetos que o Director guarda em `lastLabels`, DEPOIS deste tique.
-    for (const l of rotulos.alvos) l.desenhado = l.key === perdedor;
+    for (const l of rotulos.alvos) l.perdeuAVaga = l.key === perdedor;
 
     passo();
     const depois = rotulos.alvos.find((l) => l.key === perdedor)!;
-    expect(depois.cortadoPelaRegua).toBeFalsy();
+    expect(depois.cortadoPelaRegua).toBe(true);
+    expect(depois.causaDoSumico).toBe('disputa');
+    // e a rampa já mordeu: a camada de fora começou a descer
+    expect(depois.opacity).toBeLessThan(0.5);
   });
 
-  it('...e sem a marca ele continua cortado — a diferença é a marca, não a bancada', () => {
+  it('...e quem VENCEU não é marcado — a diferença é o veredito, não a bancada', () => {
     const { rotulos, passo } = bancadaCheia();
     passo();
-    const perdedor = rotulos.alvos.filter((l) => l.cortadoPelaRegua).at(-1)!.key;
-    // ninguém marcado: é o mesmo segundo quadro, sem a única diferença
-    for (const l of rotulos.alvos) l.desenhado = false;
+    const chave = rotulos.alvos.at(-1)!.key;
+    for (const l of rotulos.alvos) l.perdeuAVaga = false;
     passo();
-    expect(rotulos.alvos.find((l) => l.key === perdedor)!.cortadoPelaRegua).toBe(true);
+    const depois = rotulos.alvos.find((l) => l.key === chave)!;
+    expect(depois.cortadoPelaRegua).toBeFalsy();
+    expect(depois.causaDoSumico).toBeUndefined();
+  });
+
+  it('a derrota é REVERSÍVEL: o vencedor saiu de perto, o nome volta', () => {
+    const { rotulos, passo } = bancadaCheia();
+    passo();
+    const chave = rotulos.alvos.at(-1)!.key;
+    for (const l of rotulos.alvos) l.perdeuAVaga = l.key === chave;
+    passo();
+    expect(rotulos.alvos.find((l) => l.key === chave)!.cortadoPelaRegua).toBe(true);
+    // o desenho o aprova de novo (o oponente saiu de quadro)
+    for (const l of rotulos.alvos) l.perdeuAVaga = false;
+    passo();
+    const voltou = rotulos.alvos.find((l) => l.key === chave)!;
+    expect(voltou.cortadoPelaRegua).toBeFalsy();
+    expect(voltou.opacity).toBeGreaterThan(0.5);
   });
 });
 

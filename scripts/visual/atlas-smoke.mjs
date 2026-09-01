@@ -1340,11 +1340,51 @@ try {
   const censoDeNomes = async () => JSON.parse(await sessao.js(`JSON.stringify((() => {
     const alvos = window.__director.rotulos.alvos;
     const naTela = alvos.filter((l) => l.desenhado === true);
-    // O QUE A RÉGUA DE RELEVÂNCIA CORTOU (item 82, N1): a marca fica no
-    // objeto, e é por isso que ela existe — sem ela, "a régua não quis"
-    // e "não coube" seriam a mesma ausência, e ninguém mediria a régua.
-    const corte = alvos.filter((l) => l.cortadoPelaRegua === true);
+    // O QUE A DISPUTA CORTOU (item 82, N1; refeito no item 125, F3): a
+    // marca fica no objeto, e é por isso que ela existe — sem ela, "não
+    // interessa" e "não coube" seriam a mesma ausência. Desde a F3 a
+    // marca vem do veredito da COLISÃO, e a causa está escrita nela.
+    const corte = alvos.filter((l) => l.causaDoSumico === 'disputa');
+    // A GEOMETRIA JULGADA, do jeito que o desenho a julgou (item 125, F3
+    // · P5/P6): a caixa e a folga saem do LabelCanvas no próprio rótulo.
+    // Recalculá-las aqui seria uma segunda régua — e o juiz passaria a
+    // medir a cópia. (Sem crase nos comentários daqui para dentro: este
+    // bloco vive num template literal.)
+    const caixa = (l) => l.caixaDaDisputa ?? null;
+    const cruza = (a, b, folga) => a && b
+      && a.right + folga > b.left && a.left - folga < b.right
+      && a.bottom + folga > b.top && a.top - folga < b.bottom;
+    // (a) nenhum par de DESENHADOS se sobrepõe
+    const caixasNaTela = naTela.map((l) => ({ key: l.key, r: caixa(l) }));
+    const sobrepostos = [];
+    for (let i = 0; i < caixasNaTela.length; i++) {
+      for (let j = i + 1; j < caixasNaTela.length; j++) {
+        if (cruza(caixasNaTela[i].r, caixasNaTela[j].r, 0)) {
+          sobrepostos.push(caixasNaTela[i].key + ' × ' + caixasNaTela[j].key);
+        }
+      }
+    }
+    // (b) quem perdeu perdeu para alguém que o VENCE no mesmo espaço.
+    // A ordem é a do Eyes (P3): peso → profundidade → alfabética
+    // invertida (vence o nome maior). Ela é reimplementada aqui de
+    // propósito: é a LEI que o juiz cobra, e cobrar a lei lendo a função
+    // que a executa não cobraria nada.
+    const peso = (l) => (l.dirigido ? 201 : (l.prioridade ?? 0));
+    const vence = (a, b) => peso(a) !== peso(b) ? peso(a) > peso(b)
+      : (a.distPc !== b.distPc ? a.distPc < b.distPc
+        : a.key.localeCompare(b.key, 'pt-BR') > 0);
+    const semCulpado = [];
+    const perdedorComCaixa = corte.filter((l) => caixa(l));
+    for (const p of perdedorComCaixa) {
+      const c = caixa(p);
+      const dono = naTela.find((v) => cruza(c, caixa(v), c.folga) && vence(v, p));
+      if (!dono) semCulpado.push(p.key);
+    }
     return {
+      caixasSobrepostas: sobrepostos,
+      perdedoresComCaixa: perdedorComCaixa.length,
+      perdedoresSemVencedor: semCulpado,
+      desenhadosComCaixa: caixasNaTela.filter((c) => c.r).length,
       projetados: alvos.length,
       desenhados: naTela.length,
       corpos: naTela.filter((l) => l.key.startsWith('corpo:')).map((l) => l.key.slice(6)),
@@ -1356,8 +1396,6 @@ try {
       estrelasBayer: naTela.filter((l) => !l.key.startsWith('corpo:') && l.tier === 1)
         .map((l) => l.name),
       cortadosPelaRegua: corte.length,
-      menorQueFicou: Math.min(...naTela.map((l) => l.prioridade ?? 4)),
-      maiorQueSaiu: corte.length ? Math.max(...corte.map((l) => l.prioridade ?? 4)) : 0,
       luasAcesas: naTela.filter((l) => l.opacity > 0.08
         && ['moon','titan','io','europa','ganymede','callisto'].includes(l.key.slice(6))).length,
     };
@@ -1366,25 +1404,31 @@ try {
   const OITO_PLANETAS = [
     'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune',
   ];
-  // ---- A PROMESSA NOVA, MEDIDA EM 24/08 (item 82, N1) --------------
+  // ---- A PROMESSA, MEDIDA EM 24/08 E REESCRITA EM 01/09 ------------
   // A velha ("todo corpo em quadro tem nome") era a promessa do item 73
   // — encaixar o máximo de nomes com catorze vagas e traço de até 102 px
   // por nome. É essa promessa que o item 82 REVOGA, e por decisão do
   // dono: *"fica uma confusao na tela"*. A abertura desenhava VINTE E
   // DOIS nomes (os cinco corpos e DEZESSETE estrelas, quase todas
-  // designações de Bayer). Com a régua de relevância ela desenha OITO.
+  // designações de Bayer). Com a régua de relevância ela desenhou OITO,
+  // e TRÊS depois de a abertura virar o sistema inteiro (itens 61+86).
+  //
+  // E EM 01/09 A LEI MUDOU DE NOVO (item 125, F3, ordem do dono): o
+  // ORÇAMENTO de dez nomes foi REVOGADO. O Eyes não tem teto de nomes —
+  // tem pesos por classe, colisão e rodízio —, e quem cabe sem colidir
+  // aparece. A mesma abertura desenha QUINZE: os mesmos três corpos
+  // (os que estão longe do nó do clarão) e DOZE estrelas que não
+  // disputam espaço com ninguém. O número subiu porque o corte por
+  // POPULAÇÃO morreu, não porque a colisão afrouxou — os dois vereditos
+  // de lei logo abaixo (caixas que não se sobrepõem, perdedor que
+  // perdeu para quem o vence) é que guardam isso.
   //
   // O número é medido nesta janela (1200×900) e com este relógio
-  // (`jd=EPOCA`): quem mudar `JANELA` mede outro céu. DESDE 29/08 a
-  // abertura é o SISTEMA INTEIRO sob a lente de 58° (itens 61+86, a
-  // escolha dele pela folha) — o censo medido em 29/08 é TRÊS nomes,
-  // os mesmos três que o teto sempre teve: os corpos longe do nó do
-  // clarão. Na abertura interna de 23/08–29/08 eram 8 (earth, mars,
-  // sun, venus + 4 estrelas de nome próprio). Se a régua ou a vista
-  // mudarem, este pino se REESCREVE com o número novo, do jeito que
-  // este aqui foi escrito; afrouxar o dente para o juiz calar é que
+  // (`jd=EPOCA`): quem mudar `JANELA` mede outro céu. Se a régua ou a
+  // vista mudarem, este pino se REESCREVE com o número novo, do jeito
+  // que este aqui foi escrito; afrouxar o dente para o juiz calar é que
   // não vale.
-  const NA_ABERTURA = 3;
+  const NA_ABERTURA = 15;
   const CORPOS_COM_NOME = ['neptune', 'pluto', 'sun'];
   const corposDaAbertura = [...nomesDaAbertura.corpos].sort();
   const bateOsCorpos =
@@ -1393,20 +1437,23 @@ try {
   conferir(
     nomesDaAbertura.desenhados === NA_ABERTURA && bateOsCorpos,
     `a abertura desenha ${NA_ABERTURA} nomes de ${nomesDaAbertura.projetados} projetados`
-      + ` (eram 22 antes da régua) — e os corpos com nome são exatamente`
-      + ` ${CORPOS_COM_NOME.join(', ')}`
+      + ` (22 antes da régua, 3 com o orçamento) — e os corpos com nome são`
+      + ` exatamente ${CORPOS_COM_NOME.join(', ')}`
       + ` · medido: ${nomesDaAbertura.desenhados} nomes, corpos`
       + ` [${corposDaAbertura.join(', ')}]`
   );
   // E AS ESTRELAS SÃO ESTAS, pelo nome (a forma apertada em 24/08,
   // depois de o auditor mostrar que contagem + classe deixava passar
-  // qualquer quarteto de nome próprio). Medido em 29/08 na abertura do
-  // sistema inteiro: NENHUMA estrela desenha — o quadro é o sistema, e
-  // os corpos tomam as vagas (na abertura interna eram Aldhanab,
-  // Alnair, Peacock e Tiaki). A régua ordena por peso e desempata pelo
-  // mais PERTO, então o conjunto é função do céu daquela data
-  // (`jd=EPOCA`) e desta janela (1200×900) — as duas pinadas acima.
-  const ESTRELAS_DA_ABERTURA = [];
+  // qualquer quarteto de nome próprio). Em 29/08 a lista era VAZIA — o
+  // orçamento de dez nomes gastava todas as vagas nos corpos. Desde
+  // 01/09 (item 125, F3) são DOZE, e são estas: as que projetam longe do
+  // sistema e por isso não colidem com ninguém. O conjunto é função do
+  // céu daquela data (`jd=EPOCA`) e desta janela (1200×900) — as duas
+  // pinadas acima.
+  const ESTRELAS_DA_ABERTURA = [
+    'Aldhanab', 'Ankaa', 'Arkab Posterior', 'Cervantes', 'Fomalhaut', 'Fuyue',
+    'Lang-Exster', 'Peacock', 'Rukbat', 'Tiaki', 'δ Pav', 'ε Ind',
+  ];
   const estrelasNaTela = [...nomesDaAbertura.nomesDeEstrela].sort();
   const bateEstrelas =
     estrelasNaTela.length === ESTRELAS_DA_ABERTURA.length
@@ -1416,28 +1463,59 @@ try {
     `...e as estrelas com nome são exatamente ${ESTRELAS_DA_ABERTURA.join(', ')}`
       + ` · medido: [${estrelasNaTela.join(', ')}]`
   );
-  // O AVESSO, e ele é a metade que dá dente ao veredito de cima: as
-  // estrelas que sobram são de NOME PRÓPRIO, e nenhuma designação de
-  // Bayer fica na tela. Eram elas — ε Ind, ι Pav, τ PsA, φ² Pav… — o nó
-  // que o dono viu, e elas caem por serem o último degrau da tabela de
-  // prioridade, sem uma regra nova que as nomeie.
+  // O AVESSO, e ele é a metade que dá dente ao veredito de cima: DE QUE
+  // CLASSE são as estrelas que sobram.
+  //
+  // ATÉ 01/09 este veredito cobrava ZERO estrelas — com dez vagas ao
+  // todo, os corpos as gastavam. A lei nova (item 125, F3) não tem vaga
+  // para gastar: a estrela fica se não colidir. Sobraram DEZ de nome
+  // próprio e DUAS designações de Bayer — e as duas ficam porque estão
+  // sozinhas no canto delas, não porque subiram de degrau: `ε Ind` e
+  // `δ Pav` continuam valendo 5 contra os 10 de um nome próprio, e
+  // perderiam qualquer disputa direta. O que guarda ISSO é o par de
+  // vereditos de lei logo abaixo.
+  const BAYER_DA_ABERTURA = ['ε Ind', 'δ Pav'];
+  const bayerNaTela = [...nomesDaAbertura.estrelasBayer].sort();
   conferir(
-    nomesDaAbertura.estrelasBayer.length === 0 && nomesDaAbertura.estrelasProprias === 0,
-    `...e nenhuma estrela ocupa vaga na abertura do sistema inteiro —`
-      + ` ${nomesDaAbertura.estrelasProprias} próprias,`
-      + ` ${nomesDaAbertura.estrelasBayer.length} designações de Bayer`
-      + (nomesDaAbertura.estrelasBayer.length
-        ? ` (${nomesDaAbertura.estrelasBayer.join(', ')})` : '')
+    nomesDaAbertura.estrelasProprias === 10
+      && bayerNaTela.length === BAYER_DA_ABERTURA.length
+      && [...BAYER_DA_ABERTURA].sort().every((n, i) => bayerNaTela[i] === n),
+    `...e são ${10} de nome próprio e ${BAYER_DA_ABERTURA.length} designações de Bayer`
+      + ` (${BAYER_DA_ABERTURA.join(', ')})`
+      + ` · medido: ${nomesDaAbertura.estrelasProprias} próprias,`
+      + ` [${bayerNaTela.join(', ')}]`
   );
-  // A RÉGUA É UMA RÉGUA, e não um corte por acaso: o menor peso que
-  // ficou na tela ainda vale o maior que ela cortou. Um corte por
-  // proximidade, por ordem de chegada ou por sorteio quebra aqui.
+  // ---- A LEI NOVA, EM DOIS VEREDITOS (item 125, F3) ----------------
+  // O que estava aqui até 01/09 era "o menor peso que ficou vale o maior
+  // que saiu" — a régua de POPULAÇÃO do item 82. Com a colisão do Eyes
+  // essa frase é FALSA por desenho, e é bom que seja: um planeta
+  // empilhado no clarão do Sol perde para o Sol enquanto uma estrela
+  // isolada do outro lado da tela sobrevive. O peso decide entre quem
+  // DISPUTA O MESMO ESPAÇO, e é isso que os dois vereditos abaixo
+  // cobram — sobre as caixas que o desenho de fato julgou
+  // (`StarLabel.caixaDaDisputa`), não sobre uma cópia recalculada.
+  //
+  // (a) A PROMESSA DO VISITANTE: nome não se escreve por cima de nome.
   conferir(
-    nomesDaAbertura.cortadosPelaRegua > 0
-      && nomesDaAbertura.menorQueFicou >= nomesDaAbertura.maiorQueSaiu,
-    `...e o corte é por IMPORTÂNCIA: ${nomesDaAbertura.cortadosPelaRegua} nomes cortados,`
-      + ` o menor que ficou vale ${nomesDaAbertura.menorQueFicou}`
-      + ` e o maior que saiu vale ${nomesDaAbertura.maiorQueSaiu}`
+    nomesDaAbertura.desenhadosComCaixa === nomesDaAbertura.desenhados
+      && nomesDaAbertura.caixasSobrepostas.length === 0,
+    `...e NENHUM par de nomes desenhados se sobrepõe`
+      + ` (${nomesDaAbertura.desenhadosComCaixa}/${nomesDaAbertura.desenhados} com caixa`
+      + ` julgada; sobreposições: [${nomesDaAbertura.caixasSobrepostas.join(' ;; ')}])`
+  );
+  // (b) O AVESSO, que é o que faz da colisão uma LEI e não um sorteio:
+  // todo nome cortado pela disputa tem, cruzando a caixa dele, um nome
+  // DESENHADO que o vence pela ordem do Eyes (peso → profundidade →
+  // alfabética). Um corte por ordem de chegada, por proximidade ou por
+  // orçamento quebra aqui — nenhum deles garante um vencedor no lugar.
+  conferir(
+    nomesDaAbertura.perdedoresComCaixa > 0
+      && nomesDaAbertura.perdedoresSemVencedor.length === 0,
+    `...e quem a disputa cortou perdeu para um VENCEDOR no mesmo espaço:`
+      + ` ${nomesDaAbertura.perdedoresComCaixa} cortados com caixa,`
+      + ` ${nomesDaAbertura.perdedoresSemVencedor.length} sem vencedor`
+      + (nomesDaAbertura.perdedoresSemVencedor.length
+        ? ` (${nomesDaAbertura.perdedoresSemVencedor.join(', ')})` : '')
   );
   conferir(
     nomesDaAbertura.luasAcesas === 0,
@@ -1492,23 +1570,40 @@ try {
   // Plutão, nas órbitas de fora) e cala os que se empilham sobre o
   // clarão. Trocar Netuno por Júpiter seria outra lei, não outro número.
   const NO_TETO = ['neptune', 'pluto', 'sun'];
+  // e o total, que desde a revogação do orçamento (item 125, F3) já não
+  // é o número de corpos: as estrelas de fundo que não colidem ficam
+  const NOMES_NO_TETO = 15;
   const corposDoTeto = [...nomesDoTeto.corpos].sort();
   const bateOTeto =
     corposDoTeto.length === NO_TETO.length
     && NO_TETO.every((c, i) => corposDoTeto[i] === c);
   conferir(
-    nomesDoTeto.desenhados === NO_TETO.length && bateOTeto,
-    `no teto do zoom sobra o que a tela SEPARA — ${NO_TETO.length} nomes de`
-      + ` ${nomesDoTeto.projetados} projetados (eram 27 antes da régua), e são`
-      + ` exatamente ${NO_TETO.join(', ')}`
+    nomesDoTeto.desenhados === NOMES_NO_TETO && bateOTeto,
+    `no teto do zoom sobra o que a tela SEPARA — ${NOMES_NO_TETO} nomes de`
+      + ` ${nomesDoTeto.projetados} projetados (27 antes da régua, 3 com o`
+      + ` orçamento), e os CORPOS são exatamente ${NO_TETO.join(', ')}`
       + ` · medido ${nomesDoTeto.desenhados}: [${corposDoTeto.join(', ')}]`
   );
+  // ---- O QUE ESTE VEREDITO PASSOU A GUARDAR (item 125, F3) ---------
+  // Ele cobrava "nenhuma estrela de fundo toma a vaga de um corpo", e a
+  // frase morreu com o orçamento: não há vaga a tomar. Sete dos dez
+  // corpos continuam mudos aqui — eles se empilham sobre o clarão e
+  // perdem a caixa uns para os outros —, e as doze estrelas que ficam
+  // estão longe do nó. A LEI que sobrou é a mesma da abertura, e é ela
+  // que se cobra: caixa não pisa em caixa, e quem foi cortado perdeu
+  // para quem o vence no mesmo espaço.
   conferir(
-    nomesDoTeto.estrelasProprias + nomesDoTeto.estrelasBayer.length === 0
-      && nomesDoTeto.corpos.length < OS_DEZ_DO_TETO.length,
-    `...e nenhuma estrela de fundo toma a vaga de um corpo do sistema:`
-      + ` ${nomesDoTeto.corpos.length} dos ${OS_DEZ_DO_TETO.length} corpos com nome,`
-      + ` ${nomesDoTeto.estrelasProprias + nomesDoTeto.estrelasBayer.length} estrelas`
+    nomesDoTeto.corpos.length < OS_DEZ_DO_TETO.length
+      && nomesDoTeto.desenhadosComCaixa === nomesDoTeto.desenhados
+      && nomesDoTeto.caixasSobrepostas.length === 0
+      && nomesDoTeto.perdedoresComCaixa > 0
+      && nomesDoTeto.perdedoresSemVencedor.length === 0,
+    `...e no teto a lei é a mesma: ${nomesDoTeto.corpos.length} dos`
+      + ` ${OS_DEZ_DO_TETO.length} corpos com nome,`
+      + ` ${nomesDoTeto.estrelasProprias + nomesDoTeto.estrelasBayer.length} estrelas,`
+      + ` ${nomesDoTeto.caixasSobrepostas.length} sobreposições e`
+      + ` ${nomesDoTeto.perdedoresSemVencedor.length} de`
+      + ` ${nomesDoTeto.perdedoresComCaixa} cortados sem vencedor`
   );
 
   // ---- 16: O POLO DO CORPO NO ALTO (Onda 7) ------------------------

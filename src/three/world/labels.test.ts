@@ -29,12 +29,12 @@ const {
   prioridadeDeCorpo,
   prioridadeDeEstrela,
   pesoDoRotulo,
+  ordemDaDisputa,
   PRIORIDADE_DO_ROTULO,
-  BONUS_DE_HISTERESE,
+  PESO_SEM_CLASSE,
   CORPO_FADE_COMECA_PC,
   CORPO_FADE_TERMINA_PC,
   aplicarReguaDeRelevancia,
-  ORCAMENTO_DE_NOMES,
   OPACIDADE_MINIMA_DO_ROTULO,
   projectLabels,
   RAIO_NDC_DE_CESSAO,
@@ -159,16 +159,41 @@ describe('prioridade — quem ganha a vaga', () => {
     expect(prioridadeDeCorpo('estrela')).toBe(PRIORIDADE_DO_ROTULO.sol);
     expect(prioridadeDeCorpo('planeta')).toBe(PRIORIDADE_DO_ROTULO.planeta);
     expect(prioridadeDeCorpo('planeta anão')).toBe(PRIORIDADE_DO_ROTULO.anao);
-    expect(prioridadeDeCorpo('asteroide')).toBe(PRIORIDADE_DO_ROTULO.anao);
+    expect(prioridadeDeCorpo('asteroide')).toBe(PRIORIDADE_DO_ROTULO.asteroide);
     expect(prioridadeDeCorpo('lua')).toBe(PRIORIDADE_DO_ROTULO.lua);
+    // cometa e asteroide dividem o degrau, como `Comet`/`Asteroid` lá
+    expect(prioridadeDeCorpo('cometa')).toBe(PRIORIDADE_DO_ROTULO.asteroide);
     // classe que ninguém previu não vira exceção: cai no piso
-    expect(prioridadeDeCorpo('cometa')).toBe(PRIORIDADE_DO_ROTULO.outros);
+    expect(prioridadeDeCorpo('quasar')).toBe(PRIORIDADE_DO_ROTULO.outros);
     // e a ordem é a que a queixa do dono pede: planeta acima de lua
     expect(PRIORIDADE_DO_ROTULO.foco).toBeGreaterThan(PRIORIDADE_DO_ROTULO.sol);
     expect(PRIORIDADE_DO_ROTULO.sol).toBeGreaterThan(PRIORIDADE_DO_ROTULO.planeta);
     expect(PRIORIDADE_DO_ROTULO.planeta).toBeGreaterThan(PRIORIDADE_DO_ROTULO.anao);
     expect(PRIORIDADE_DO_ROTULO.anao).toBeGreaterThan(PRIORIDADE_DO_ROTULO.lua);
     expect(PRIORIDADE_DO_ROTULO.lua).toBeGreaterThan(PRIORIDADE_DO_ROTULO.estrelaPropria);
+  });
+
+  // ==========================================================
+  // OS NÚMEROS SÃO OS DELES (item 125, F3 · P1/P2/P11). Este é o único
+  // teste do arquivo que pergunta VALOR de constante, e ele existe por
+  // isso: a fase inteira é "adote a tabela do Eyes", então trocar um
+  // degrau por um número parecido é exatamente o defeito a pegar.
+  // Fonte: contrato §3.1, `LabelManager._weightMap`.
+  // ==========================================================
+  it('a tabela é o `_weightMap` do Eyes, degrau a degrau', () => {
+    expect(PRIORIDADE_DO_ROTULO.foco).toBe(201); // P11, o alvo seguido
+    expect(PRIORIDADE_DO_ROTULO.sol).toBe(100); // Star
+    expect(PRIORIDADE_DO_ROTULO.planeta).toBe(50); // Planet
+    expect(PRIORIDADE_DO_ROTULO.anao).toBe(28); // Dwarf Planet
+    expect(PRIORIDADE_DO_ROTULO.lua).toBe(25); // Moon
+    expect(PRIORIDADE_DO_ROTULO.asteroide).toBe(15); // Asteroid / Comet
+    expect(PRIORIDADE_DO_ROTULO.estrelaPropria).toBe(10); // degrau Constellation
+    expect(PRIORIDADE_DO_ROTULO.estrelaBayer).toBe(5); // degrau Landing site
+    expect(PRIORIDADE_DO_ROTULO.outros).toBe(1); // fora do mapa (P2)
+    expect(PESO_SEM_CLASSE).toBe(0); // categoria desconhecida (P2)
+    // A INVERSÃO DECLARADA: o asteroide caiu ABAIXO da lua, que é a
+    // hierarquia deles (15 contra 25) e não a da casa (8 contra 6).
+    expect(PRIORIDADE_DO_ROTULO.asteroide).toBeLessThan(PRIORIDADE_DO_ROTULO.lua);
   });
 
   it('a estrela entra pelo TIER: nome próprio acima de designação', () => {
@@ -189,81 +214,85 @@ describe('prioridade — quem ganha a vaga', () => {
     );
   });
 
-  it('a HISTERESE vale 20% e é multiplicação, não caso novo', () => {
+  it('O PESO É A PRIORIDADE, e mais nada — não há multiplicador nenhum', () => {
+    // A HISTERESE DE 20% MORREU (item 125, F3): era invenção da casa, e
+    // o análogo do Eyes é a rampa de 750 ms da F2 somada ao desempate
+    // total do P3. O que este verdito guarda é que ninguém a traga de
+    // volta por baixo do pano — peso é tabela, não estado.
     const rotulos = projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes());
     const terra = rotulos.find((l) => l.key === `${CHAVE_DE_CORPO}earth`)!;
     expect(pesoDoRotulo(terra)).toBe(PRIORIDADE_DO_ROTULO.planeta);
-    expect(pesoDoRotulo(terra, new Set([terra.key]))).toBe(
-      PRIORIDADE_DO_ROTULO.planeta * BONUS_DE_HISTERESE
-    );
-    expect(BONUS_DE_HISTERESE).toBe(1.2);
-    // ...e ela NÃO inverte a hierarquia: uma lua que estava na tela
-    // continua abaixo de um planeta que não estava
-    const lua = { ...terra, prioridade: PRIORIDADE_DO_ROTULO.lua };
-    expect(pesoDoRotulo(lua, new Set([lua.key]))).toBeLessThan(pesoDoRotulo(terra));
+    // o MESMO rótulo, com toda marca de "estava na tela" que existe
+    const lembrado = { ...terra, desenhado: true, saindo: true };
+    expect(pesoDoRotulo(lembrado)).toBe(PRIORIDADE_DO_ROTULO.planeta);
+    // e uma lua nunca passa um planeta, com marca ou sem
+    const lua = { ...terra, desenhado: true, prioridade: PRIORIDADE_DO_ROTULO.lua };
+    expect(pesoDoRotulo(lua)).toBeLessThan(pesoDoRotulo(terra));
   });
 
-  it('O BÔNUS NÃO INVERTE NENHUM PAR DA TABELA — a trava, degrau a degrau', () => {
-    // A SEGURANÇA "estrela nunca rouba a vaga de lua" tem margem
-    // EXATAMENTE ZERO: `lua` 6 contra `estrelaPropria` 5 × 1,2 = 6,0.
-    //
-    // O QUE ESTE TESTE ACRESCENTA, dito sem inflar (medido em 24/08, e a
-    // primeira redação desta nota exagerava): as sabotagens ÓBVIAS desse
-    // par — bônus 1,25, ou `estrelaPropria` 6 — JÁ REPROVAVAM em pinos
-    // que existiam antes dele. O buraco real era OUTRO, e este teste é
-    // que o achou: `sol` 90 × 1,2 = 108 passava `foco` 100, e NENHUM
-    // juiz guardava esse par. É por isso que a trava é sobre a TABELA
-    // INTEIRA, e não sobre o par que alguém lembrou de escrever: o par
-    // esquecido nunca é o que se está olhando.
-    //
-    // A LEI: para dois degraus vizinhos, o de BAIXO com bônus não pode
-    // PASSAR o de cima sem bônus. Empatar é permitido — o desempate por
-    // distância resolve, e é onde `lua`/`estrelaPropria` vive hoje.
-    // um rótulo qualquer, só para carregar a prioridade: o que se mede
-    // aqui é o PESO, e ele não olha mais nada do objeto
-    const base = projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes()).find(
-      (l) => l.key === `${CHAVE_DE_CORPO}earth`
-    )!;
-    const degraus = [...new Set(Object.values(PRIORIDADE_DO_ROTULO))].sort(
-      (a, b) => b - a
+  it('sem prioridade vale ZERO — e o DIRIGIDO do filme vale o foco', () => {
+    const cru = { ...projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes())[0] };
+    expect(pesoDoRotulo({ ...cru, prioridade: undefined })).toBe(PESO_SEM_CLASSE);
+    // O ASSUNTO DO BEAT é o alvo seguido do Eyes: sem esta linha, a
+    // disputa pareada deixaria uma estrela de fundo derrubar a legenda
+    // que o roteiro mandou escrever.
+    expect(pesoDoRotulo({ ...cru, prioridade: undefined, dirigido: true })).toBe(
+      PRIORIDADE_DO_ROTULO.foco
     );
-    for (let i = 0; i + 1 < degraus.length; i++) {
-      const cima = degraus[i];
-      const baixo = degraus[i + 1];
-      expect(
-        baixo * BONUS_DE_HISTERESE,
-        `o bônus faz ${baixo} passar ${cima}`
-      ).toBeLessThanOrEqual(cima);
-    }
+  });
+});
 
-    // E A MESMA LEI PELO PESO, que é quem manda de verdade — a conta
-    // acima é da tabela, esta é da função que a lê.
-    const nomes = Object.keys(PRIORIDADE_DO_ROTULO) as (keyof typeof PRIORIDADE_DO_ROTULO)[];
-    for (const alto of nomes) {
-      for (const baixo of nomes) {
-        if (PRIORIDADE_DO_ROTULO[baixo] >= PRIORIDADE_DO_ROTULO[alto]) continue;
-        const a = { ...base, key: 'a', prioridade: PRIORIDADE_DO_ROTULO[alto] };
-        const b = { ...base, key: 'b', prioridade: PRIORIDADE_DO_ROTULO[baixo] };
-        expect(
-          pesoDoRotulo(b, new Set(['b'])),
-          `${baixo} com bônus passou ${alto} sem bônus`
-        ).toBeLessThanOrEqual(pesoDoRotulo(a));
+// ============================================================
+// A ORDEM DA DISPUTA (item 125, F3 · P3) — os TRÊS critérios do
+// `_isLessWeightsAndZ`. O terceiro é o que faltava na casa, e ele não é
+// enfeite: sem desempate total, dois nomes de mesmo peso e mesma
+// distância ficam na ordem em que o `sort` os achou.
+// ============================================================
+describe('a ordem determinística — peso, profundidade, alfabética', () => {
+  const rot = (key: string, prioridade: number, distPc: number): StarLabel => ({
+    name: key, spect: '', distPc, x: 0.5, y: 0.5, opacity: 0.9, key, prioridade,
+  });
+
+  it('1º o PESO: menor peso perde, por mais perto que esteja', () => {
+    const lua = rot('lua', PRIORIDADE_DO_ROTULO.lua, 0.0001);
+    const planeta = rot('planeta', PRIORIDADE_DO_ROTULO.planeta, 90);
+    expect(ordemDaDisputa(planeta, lua)).toBeLessThan(0);
+    expect(ordemDaDisputa(lua, planeta)).toBeGreaterThan(0);
+  });
+
+  it('2º empatado o peso, o MAIS LONGE perde', () => {
+    const perto = rot('a', 10, 1);
+    const longe = rot('b', 10, 2);
+    expect(ordemDaDisputa(perto, longe)).toBeLessThan(0);
+  });
+
+  it('3º empatados peso E distância, perde quem vem ANTES no alfabeto', () => {
+    // O SENTIDO É CONTRAINTUITIVO E É O DO FONTE
+    // (`localeCompare(...) < 0 ⇒ é o ocluído`): vence o nome
+    // alfabeticamente MAIOR.
+    const antes = rot('alfa', 10, 1);
+    const depois = rot('beta', 10, 1);
+    expect(ordemDaDisputa(depois, antes)).toBeLessThan(0);
+    expect(ordemDaDisputa(antes, depois)).toBeGreaterThan(0);
+  });
+
+  it('a ordem é TOTAL: nenhum par empata, e ela não depende da lista', () => {
+    // é isto que substitui o bônus de histerese: dois nomes gêmeos
+    // decidem sozinhos, sempre igual, com ou sem terceiros em quadro
+    const gemeos = [rot('a', 10, 1), rot('b', 10, 1), rot('c', 10, 1)];
+    for (const x of gemeos) {
+      for (const y of gemeos) {
+        if (x === y) continue;
+        expect(ordemDaDisputa(x, y), `${x.key} vs ${y.key}`).not.toBe(0);
+        // antissimetria: se x vence y, y perde de x
+        expect(Math.sign(ordemDaDisputa(x, y))).toBe(-Math.sign(ordemDaDisputa(y, x)));
       }
     }
-
-    // O PAR QUE ESTAVA QUEBRADO até 24/08, pinado pelo nome para nunca
-    // mais voltar em silêncio: o `foco` é o topo, e um SOL já desenhado
-    // não pode passar à frente de um alvo recém-escolhido.
-    const sol = { ...base, key: 'sol', prioridade: PRIORIDADE_DO_ROTULO.sol };
-    const foco = { ...base, key: 'foco', prioridade: PRIORIDADE_DO_ROTULO.foco };
-    expect(pesoDoRotulo(sol, new Set(['sol']))).toBeLessThanOrEqual(
-      pesoDoRotulo(foco)
-    );
-  });
-
-  it('sem prioridade vale o piso — é o rótulo do FILME, que não é tocado', () => {
-    expect(pesoDoRotulo({ ...projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes())[0], prioridade: undefined }))
-      .toBe(PRIORIDADE_DO_ROTULO.outros);
+    // e a ordenação de uma lista embaralhada dá SEMPRE a mesma fila
+    const fila = () =>
+      aplicarReguaDeRelevancia([...gemeos].reverse()).map((l) => l.key).join(',');
+    expect(fila()).toBe('c,b,a');
+    expect(aplicarReguaDeRelevancia([...gemeos]).map((l) => l.key).join(',')).toBe('c,b,a');
   });
 });
 
@@ -321,88 +350,54 @@ describe('a régua de relevância — importância antes de geometria', () => {
     nome('sol', PRIORIDADE_DO_ROTULO.sol, 0.0001),
   ];
 
-  it('a tela tem TETO: sobra nome de fora, por mais que projete', () => {
+  it('O ORÇAMENTO MORREU: a régua não corta mais ninguém', () => {
+    // A REVOGAÇÃO (item 125, F3, decisão do dono): o Eyes não tem teto
+    // de nomes — tem colisão, pesos e rodízio. Quem cabe sem colidir,
+    // aparece. Nenhum nome sai desta função marcado.
     const lista = aplicarReguaDeRelevancia(ceuLotado());
-    const passaram = lista.filter((l) => !l.cortadoPelaRegua);
-    expect(passaram.length).toBeLessThan(lista.length);
-    expect(passaram.length).toBe(ORCAMENTO_DE_NOMES);
-  });
-
-  it('quem passa vale MAIS que quem some — sempre, sem exceção', () => {
-    // é isto que separa uma régua de relevância de um corte arbitrário:
-    // o menor prioritário que ficou ainda é ≥ o maior que saiu
-    const lista = aplicarReguaDeRelevancia(ceuLotado());
-    const passaram = lista.filter((l) => !l.cortadoPelaRegua);
-    const cortados = lista.filter((l) => l.cortadoPelaRegua);
-    const menorQueFicou = Math.min(...passaram.map((l) => l.prioridade!));
-    const maiorQueSaiu = Math.max(...cortados.map((l) => l.prioridade!));
-    expect(menorQueFicou).toBeGreaterThanOrEqual(maiorQueSaiu);
-  });
-
-  it('o Sol e o planeta NUNCA cedem a estrela de fundo', () => {
-    const lista = aplicarReguaDeRelevancia(ceuLotado());
-    for (const chave of ['sol', 'planeta']) {
-      expect(lista.find((l) => l.key === chave)!.cortadoPelaRegua, chave).toBeFalsy();
-    }
-  });
-
-  it('a designação de Bayer é o primeiro degrau a cair', () => {
-    // as dezessete estrelas que faziam o nó na abertura eram quase todas
-    // designações (ε Ind, ι Pav, τ PsA…): o último degrau da tabela some
-    // sozinho, sem uma regra nova que o nomeie
-    const lista = aplicarReguaDeRelevancia(ceuLotado());
-    const bayerVivas = lista.filter(
-      (l) => l.prioridade === PRIORIDADE_DO_ROTULO.estrelaBayer && !l.cortadoPelaRegua
-    );
-    const propriasVivas = lista.filter(
-      (l) => l.prioridade === PRIORIDADE_DO_ROTULO.estrelaPropria && !l.cortadoPelaRegua
-    );
-    expect(propriasVivas.length).toBe(6);
-    expect(bayerVivas.length).toBeLessThan(propriasVivas.length);
+    expect(lista.filter((l) => l.cortadoPelaRegua).length).toBe(0);
+    expect(lista.filter((l) => l.causaDoSumico !== undefined).length).toBe(0);
+    expect(lista.length).toBe(38);
   });
 
   it('a ORDEM da lista é a disputa: quem vale mais chega antes', () => {
-    // o `LabelCanvas` ocupa na ordem em que recebe, então ordenar aqui É
-    // decidir quem sobrevive à colisão
+    // é a lista ordenada por peso do P8 — o rodízio da quadtree percorre
+    // esta ordem, então nomes de peso próximo são julgados juntos
     const lista = aplicarReguaDeRelevancia(ceuLotado());
     for (let i = 1; i < lista.length; i++) {
       expect(lista[i - 1].prioridade!).toBeGreaterThanOrEqual(lista[i].prioridade!);
     }
+    expect(lista[0].key).toBe('sol');
+    expect(lista[1].key).toBe('planeta');
   });
 
-  it('a histerese segura quem já estava na tela — o corte não PISCA', () => {
-    // dois de mesmo peso disputando a última vaga trocariam de lugar a
-    // cada quadro em que a projeção andasse um pixel
+  it('a designação de Bayer continua sendo o último degrau', () => {
+    // as dezessete estrelas que faziam o nó na abertura eram quase todas
+    // designações (ε Ind, ι Pav, τ PsA…): elas seguem no fim da fila, e
+    // é por isso que são as primeiras a perder a vaga na colisão
+    const lista = aplicarReguaDeRelevancia(ceuLotado());
+    const primeiraBayer = lista.findIndex(
+      (l) => l.prioridade === PRIORIDADE_DO_ROTULO.estrelaBayer
+    );
+    const ultimaPropria = lista.reduce(
+      (ultimo, l, i) =>
+        l.prioridade === PRIORIDADE_DO_ROTULO.estrelaPropria ? i : ultimo,
+      -1
+    );
+    expect(primeiraBayer).toBeGreaterThan(ultimaPropria);
+  });
+
+  it('empatado o peso, o mais PERTO vem antes — e sem memória nenhuma', () => {
     const lista = () => [
-      nome('sol', PRIORIDADE_DO_ROTULO.sol, 0.0001),
       nome('longe', PRIORIDADE_DO_ROTULO.estrelaPropria, 9),
+      nome('sol', PRIORIDADE_DO_ROTULO.sol, 0.0001),
       nome('perto', PRIORIDADE_DO_ROTULO.estrelaPropria, 8),
     ];
-    // sem memória, o mais PERTO vem antes
-    expect(aplicarReguaDeRelevancia(lista(), undefined, 2).map((l) => l.key))
+    expect(aplicarReguaDeRelevancia(lista()).map((l) => l.key))
       .toEqual(['sol', 'perto', 'longe']);
-    // com o bônus de quem estava desenhado, o que já se lia continua lido
-    const comMemoria = aplicarReguaDeRelevancia(lista(), new Set(['longe']), 2);
-    expect(comMemoria.map((l) => l.key)).toEqual(['sol', 'longe', 'perto']);
-    expect(comMemoria.find((l) => l.key === 'perto')!.cortadoPelaRegua).toBe(true);
-  });
-
-  it('nome invisível não gasta vaga — a lua colada no pai não expulsa ninguém', () => {
-    // `esmaecerLuasColadasNoPai` derruba a opacidade das 21 luas quase a
-    // zero; se elas consumissem orçamento, empurrariam para fora nomes
-    // que o visitante VÊ
-    const fantasmas = Array.from({ length: 20 }, (_, i) => {
-      const l = nome(`lua${i}`, PRIORIDADE_DO_ROTULO.lua, 0.01);
-      l.opacity = OPACIDADE_MINIMA_DO_ROTULO / 2;
-      return l;
-    });
-    const visiveis = Array.from({ length: 4 }, (_, i) =>
-      nome(`propria${i}`, PRIORIDADE_DO_ROTULO.estrelaPropria, 5 + i)
-    );
-    const lista = aplicarReguaDeRelevancia([...fantasmas, ...visiveis]);
-    for (const v of visiveis) {
-      expect(lista.find((l) => l.key === v.key)!.cortadoPelaRegua, v.key).toBeFalsy();
-    }
+    // a MESMA fila em outra ordem de entrada: a régua não tem estado
+    expect(aplicarReguaDeRelevancia(lista().reverse()).map((l) => l.key))
+      .toEqual(['sol', 'perto', 'longe']);
   });
 });
 
@@ -677,16 +672,14 @@ describe('A10 — duas causas de sumiço, a MESMA duração de fade', () => {
   }
 
   it('a causa fica legível no estado — e são duas palavras diferentes', () => {
-    const lista = [
-      rot({ key: 'a', prioridade: 10 }),
-      rot({ key: 'b', prioridade: 9 }),
-      rot({ key: 'c', prioridade: 8 }),
-    ];
-    aplicarReguaDeRelevancia(lista, undefined, 1);
-    expect(lista[0].causaDoSumico).toBeUndefined();
-    expect(lista[1].causaDoSumico).toBe('disputa');
-    expect(lista[2].causaDoSumico).toBe('disputa');
-    expect(lista[1].cortadoPelaRegua).toBe(true);
+    // Desde a F3 quem escreve `'disputa'` é a realimentação do veredito
+    // da colisão (`director/rotulos.ts`, e há teste do fio lá); o que
+    // esta linha guarda é que as DUAS palavras continuam existindo e que
+    // a rampa as trata igual (o verdito seguinte).
+    const porTamanho = rot({ key: 'a', causaDoSumico: 'tamanho' });
+    const porDisputa = rot({ key: 'b', cortadoPelaRegua: true, causaDoSumico: 'disputa' });
+    expect(porTamanho.causaDoSumico).toBe('tamanho');
+    expect(porDisputa.causaDoSumico).toBe('disputa');
   });
 
   it('cedido por TAMANHO e cortado pela DISPUTA descem juntos, passo a passo', () => {

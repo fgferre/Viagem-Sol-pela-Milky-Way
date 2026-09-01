@@ -37,7 +37,15 @@ import type { RotuloComVaga } from '../three/world/rotulos3d';
 
 (globalThis as { window?: unknown }).window = { devicePixelRatio: 1 };
 
-const { LabelCanvas, PESOS_DO_ROTULO, pesoVisual } = await import('./LabelCanvas');
+const {
+  LabelCanvas,
+  PESOS_DO_ROTULO,
+  pesoVisual,
+  QuadtreeDeRotulos,
+  JULGAMENTOS_POR_QUADRO,
+  VALORES_POR_NO,
+  PROFUNDIDADE_MAXIMA,
+} = await import('./LabelCanvas');
 
 /** o que o desenho escreveu: texto e onde ele pousou */
 interface Pintada {
@@ -116,18 +124,25 @@ function rotulo(
   return { name, spect: '', detalhe: 'corpo', distPc: 0, x, y, opacity: 0.95, key, prioridade };
 }
 
-/** a vista de abertura MEDIDA: o Sol, os planetas e as luas de Marte */
+/**
+ * A vista de abertura MEDIDA: o Sol, os planetas e as luas de Marte.
+ *
+ * OS PESOS SÃO OS DA CASA (item 125, F3): Sol 100, planeta 50, lua 25.
+ * Até 01/09 a lista vinha sem eles e a disputa era por ORDEM DE CHEGADA;
+ * hoje ela é pareada e o peso é o primeiro critério, então uma cena de
+ * teste sem peso mede outra coisa (o desempate alfabético).
+ */
 function aberturaDoAtlas(): StarLabel[] {
   return [
-    rotulo('corpo:sun', 'Sol', 0.5, 0.4575),
-    rotulo('corpo:mercury', 'Mercúrio', 0.5028, 0.4567),
-    rotulo('corpo:venus', 'Vênus', 0.5022, 0.455),
-    rotulo('corpo:earth', 'Terra', 0.4973, 0.461),
-    rotulo('corpo:mars', 'Marte', 0.5033, 0.4525),
-    rotulo('corpo:neptune', 'Netuno', 0.3326, 0.4031),
-    rotulo('corpo:moon', 'Lua', 0.4973, 0.4611),
-    rotulo('corpo:phobos', 'Fobos', 0.5033, 0.4525),
-    rotulo('corpo:deimos', 'Deimos', 0.5033, 0.4525),
+    rotulo('corpo:sun', 'Sol', 0.5, 0.4575, 100),
+    rotulo('corpo:mercury', 'Mercúrio', 0.5028, 0.4567, 50),
+    rotulo('corpo:venus', 'Vênus', 0.5022, 0.455, 50),
+    rotulo('corpo:earth', 'Terra', 0.4973, 0.461, 50),
+    rotulo('corpo:mars', 'Marte', 0.5033, 0.4525, 50),
+    rotulo('corpo:neptune', 'Netuno', 0.3326, 0.4031, 50),
+    rotulo('corpo:moon', 'Lua', 0.4973, 0.4611, 25),
+    rotulo('corpo:phobos', 'Fobos', 0.5033, 0.4525, 25),
+    rotulo('corpo:deimos', 'Deimos', 0.5033, 0.4525, 25),
   ];
 }
 
@@ -166,14 +181,14 @@ function aberturaCheia(): StarLabel[] {
 }
 
 describe('o clique bate com o nome escrito na tela', () => {
-  it('o desenho MARCA quem sobreviveu — no aglomerado fica quem chegou primeiro', () => {
+  it('o desenho MARCA quem sobreviveu — no aglomerado fica quem PESA mais', () => {
     const labels = aberturaDoAtlas();
     new LabelCanvas(canvasFalso()).draw(labels);
-    // A LEI DO ITEM 82: um lugar por nome, e colidiu — some. Quem chega
-    // primeiro na lista ocupa, e a lista chega ordenada pela régua de
-    // relevância, então quem some é sempre o MENOR da disputa. O Sol
-    // abre a fila e fica; os quatro rochosos e as três luas caem DENTRO
-    // da caixa dele e somem; Netuno, longe do nó, fica.
+    // A LEI DO ITEM 82: um lugar por nome, e colidiu — some. Quem decide
+    // (desde o item 125, F3) é a comparação PAREADA do Eyes: peso, depois
+    // profundidade, depois alfabética. O Sol pesa 100 e fica; os quatro
+    // rochosos e as três luas caem DENTRO da caixa dele e somem; Netuno,
+    // longe do nó, fica.
     const desenhados = labels.filter((l) => l.desenhado).map((l) => l.key);
     expect(desenhados).toContain('corpo:sun');
     expect(desenhados).toContain('corpo:neptune');
@@ -192,7 +207,14 @@ describe('o clique bate com o nome escrito na tela', () => {
     // com a abertura CHEIA (os dez mais as 21 luas) a disputa volta a
     // ter perdedores, e é sobre eles que a pendência 30 fala
     const labels = aberturaCheia();
-    new LabelCanvas(canvasFalso()).draw(labels);
+    const canvas = new LabelCanvas(canvasFalso());
+    // DOIS QUADROS, e a razão é o RODÍZIO (item 125, F3 · P7): o
+    // `LabelQuadtree` julga 20 nomes por quadro, e são 31 aqui. Quem não
+    // foi julgado mantém o veredito anterior — que num canvas recém-nascido
+    // é "ainda não perdeu". A volta inteira leva dois quadros; a rampa de
+    // 750 ms é que absorve essa latência na tela.
+    canvas.draw(labels);
+    canvas.draw(labels);
     const perdedores = labels.filter((l) => l.desenhado === false);
     expect(perdedores.length).toBeGreaterThan(0);
     // o ponteiro em cima do ÚLTIMO da fila — quem perdeu a vaga; lendo
@@ -204,7 +226,9 @@ describe('o clique bate com o nome escrito na tela', () => {
 
   it('com a marca, o clique nunca acha um INVISÍVEL', () => {
     const labels = aberturaCheia();
-    new LabelCanvas(canvasFalso()).draw(labels);
+    const canvas = new LabelCanvas(canvasFalso());
+    canvas.draw(labels); // a volta do rodízio, como acima
+    canvas.draw(labels);
     const alvos = labels.filter((l) => l.desenhado !== false);
     const ultimo = labels.at(-1)!;
     const achado = maisPerto(alvos, ultimo.x, ultimo.y)!;
@@ -221,13 +245,13 @@ describe('o clique bate com o nome escrito na tela', () => {
     // marca `undefined`, porque o clique só descarta o `false` explícito
     // — um `undefined` faria o "SOL" escrito na tela valer Fobos.
     const labels = [
-      rotulo('corpo:sun', 'Sol', 0.5, 0.4575, 90),
+      rotulo('corpo:sun', 'Sol', 0.5, 0.4575, 100),
       // este some por ser quase transparente (a lua colada no pai)
-      { ...rotulo('corpo:moon', 'Lua', 0.2, 0.3, 6), opacity: 0.01 },
-      // este some porque a régua de relevância já disse não
-      { ...rotulo('star:kdra', 'κ Dra', 0.8, 0.7, 3), cortadoPelaRegua: true },
-      // e este some por colidir com o Sol
-      rotulo('corpo:mercury', 'Mercúrio', 0.5028, 0.4567, 10),
+      { ...rotulo('corpo:moon', 'Lua', 0.2, 0.3, 25), opacity: 0.01 },
+      // este some porque a régua de aparição já o cedeu (F2 · A5)
+      { ...rotulo('star:kdra', 'κ Dra', 0.8, 0.7, 5), causaDoSumico: 'tamanho' as const },
+      // e este some por colidir com o Sol, que pesa mais
+      rotulo('corpo:mercury', 'Mercúrio', 0.5028, 0.4567, 50),
     ];
     new LabelCanvas(canvasFalso()).draw(labels);
     for (const l of labels) expect(typeof l.desenhado, l.key).toBe('boolean');
@@ -331,7 +355,10 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
       rotulo(name, name, 0.4 + i * 0.005, 0.45)
     );
     canvas.draw(juntos);
-    expect(juntos.filter((l) => l.desenhado).map((l) => l.name)).toEqual(['Alnitak']);
+    // três nomes empilhados, mesmo peso e mesma distância: quem fica é o
+    // ÚLTIMO no alfabeto — o terceiro critério do Eyes (F3 · P3), e é
+    // contraintuitivo de propósito (`localeCompare < 0 ⇒ é o ocluído`)
+    expect(juntos.filter((l) => l.desenhado).map((l) => l.name)).toEqual(['Mintaka']);
 
     const dirigidos = juntos.map((l) => ({ ...l, dirigido: true }));
     const fundo = rotulo('fundo', 'Fundo', 0.407, 0.45);
@@ -377,33 +404,39 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     );
     rotulos.draw(muitos);
     expect(muitos.filter((l) => l.desenhado).length).toBe(1);
-    expect(muitos[0].desenhado).toBe(true);
+    // e o sobrevivente é o mesmo em toda execução: chave por chave, a
+    // ordem do P3 é TOTAL, e o último no alfabeto é quem fica
+    expect(muitos.find((l) => l.desenhado)!.key).toBe('corpo:c9');
   });
 
-  it('COLIDIU, O MENOR SOME: quem a régua pôs à frente é quem fica', () => {
+  it('COLIDIU, O MENOR SOME: quem PESA mais é quem fica', () => {
     const { rotulos } = bancada();
-    // a lista chega ordenada pela régua de relevância — o Sol antes do
-    // planeta, o planeta antes da estrela. Quem chega primeiro ocupa, e
-    // é assim que "o menor some" acontece sem uma segunda lei
+    // a comparação é pareada (F3 · P3): o Sol pesa 100, a designação de
+    // Bayer pesa 5 — e a ordem da lista não tem parte nenhuma nisso
     const doisNoMesmoPonto = [
-      rotulo('corpo:sun', 'Sol', 0.5, 0.45, 90),
-      rotulo('star:kdra', 'κ Dra', 0.5, 0.45, 3),
+      rotulo('star:kdra', 'κ Dra', 0.5, 0.45, 5),
+      rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100),
     ];
     rotulos.draw(doisNoMesmoPonto);
-    expect(doisNoMesmoPonto[0].desenhado).toBe(true);
-    expect(doisNoMesmoPonto[1].desenhado).toBe(false);
+    expect(doisNoMesmoPonto[1].desenhado).toBe(true);
+    expect(doisNoMesmoPonto[0].desenhado).toBe(false);
   });
 
-  it('a régua manda ANTES da geometria: cortado não disputa lugar nenhum', () => {
+  it('A DERROTA NÃO É PERPÉTUA: o perdedor continua sendo julgado', () => {
+    // A LEI MUDOU EM 01/09 (item 125, F3). Até então `cortadoPelaRegua`
+    // era veto: o rótulo nem chegava à geometria. Agora ele é o
+    // `hiddenByLabelQuadtree` deles — a marca do quadro anterior — e o
+    // nome tem de ser julgado de novo, senão nunca voltaria à tela
+    // quando o vencedor saísse de perto.
     const { rotulos } = bancada();
-    // sozinho no quadro, com a tela inteira à disposição — e mesmo assim
-    // não nasce, porque a régua de relevância já disse não
-    const cortado = rotulo('star:kdra', 'κ Dra', 0.3, 0.3, 3);
-    cortado.cortadoPelaRegua = true;
-    const passa = rotulo('star:vega', 'Vega', 0.7, 0.6, 5);
-    rotulos.draw([cortado, passa]);
-    expect(cortado.desenhado).toBe(false);
-    expect(passa.desenhado).toBe(true);
+    const perdedor = rotulo('star:kdra', 'κ Dra', 0.3, 0.3, 5);
+    perdedor.cortadoPelaRegua = true;
+    const vizinho = rotulo('star:vega', 'Vega', 0.7, 0.6, 10);
+    rotulos.draw([vizinho, perdedor]);
+    // ninguém disputa o canto dele: ele volta
+    expect(perdedor.desenhado).toBe(true);
+    expect(perdedor.perdeuAVaga).toBe(false);
+    expect(vizinho.desenhado).toBe(true);
   });
 
   it('perto da borda direita o nome cresce para DENTRO da tela', () => {
@@ -489,7 +522,14 @@ describe('o quadro parado não se repinta', () => {
     const segundo = [rotulo('star:x', 'X', 0.52, 0.48)];
     rotulos.draw(segundo);
     expect(segundo[0].desenhado).toBe(false);
-    expect(ctx.pintadas.length).toBe(0);
+    expect(segundo[0].perdeuAVaga).toBe(true);
+    // O QUE MUDOU EM 01/09 (item 125, F3): o perdedor não some no mesmo
+    // quadro, ele SAI pela rampa de 750 ms — no Eyes a quadtree põe a
+    // classe e a transição do CSS faz o resto, com o div pintando o
+    // caminho todo. Aqui a rampa mora no produtor, então neste teste
+    // unitário o nome continua sendo pintado; o que não pode é a decisão
+    // ficar congelada pelo atalho da assinatura.
+    expect(ctx.pintadas.length).toBeGreaterThan(0);
   });
 
   it('a mesma string não se mede duas vezes', () => {
@@ -564,11 +604,15 @@ describe('a vaga tem lado, e o lado viaja no objeto (item 109)', () => {
 
 describe('três pesos visuais, numa tabela só', () => {
   it('a prioridade escolhe o peso, e o do meio é o desenho de sempre', () => {
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 100))).toBe(PESOS_DO_ROTULO.principal);
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 90))).toBe(PESOS_DO_ROTULO.principal);
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 10))).toBe(PESOS_DO_ROTULO.secundario);
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 5))).toBe(PESOS_DO_ROTULO.secundario);
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 3))).toBe(PESOS_DO_ROTULO.terciario);
+    // os degraus na escala do Eyes (item 125, F3 · P1) — o CONJUNTO de
+    // quem cai em cada peso é o mesmo de antes, nome por nome
+    expect(pesoVisual(rotulo('a', 'A', 0, 0, 201))).toBe(PESOS_DO_ROTULO.principal); // foco
+    expect(pesoVisual(rotulo('a', 'A', 0, 0, 100))).toBe(PESOS_DO_ROTULO.principal); // sol
+    expect(pesoVisual(rotulo('a', 'A', 0, 0, 50))).toBe(PESOS_DO_ROTULO.secundario); // planeta
+    expect(pesoVisual(rotulo('a', 'A', 0, 0, 25))).toBe(PESOS_DO_ROTULO.secundario); // lua
+    expect(pesoVisual(rotulo('a', 'A', 0, 0, 10))).toBe(PESOS_DO_ROTULO.secundario); // nome próprio
+    expect(pesoVisual(rotulo('a', 'A', 0, 0, 5))).toBe(PESOS_DO_ROTULO.terciario); // Bayer
+    expect(pesoVisual(rotulo('a', 'A', 0, 0, 1))).toBe(PESOS_DO_ROTULO.terciario); // piso
   });
 
   it('SEM prioridade cai no do meio — é o rótulo do FILME, intocado', () => {
@@ -611,24 +655,28 @@ describe('o nome que sai pinta, mas não ocupa (item 115)', () => {
 
   it('não reserva a vaga: o vizinho VIVO entra por cima dele', () => {
     const { rotulos } = bancada();
-    const indo = rotulo('star:indo', 'INDO', 0.4, 0.4);
+    // o de saída pesa MAIS e mesmo assim cede: quem está escondido não
+    // derruba ninguém (F3 · P9), e é essa linha que impede a rampa de
+    // virar régua
+    const indo = rotulo('star:indo', 'INDO', 0.4, 0.4, 50);
     indo.saindo = true;
-    // o mesmo pixel: sem a porta, o primeiro da lista ocuparia e o
-    // segundo sumiria — que é a régua mudando por causa da rampa
-    const vivo = rotulo('star:vivo', 'VIVO', 0.4, 0.4);
+    indo.cortadoPelaRegua = true;
+    const vivo = rotulo('star:vivo', 'VIVO', 0.4, 0.4, 10);
     rotulos.draw([indo, vivo]);
     expect(vivo.desenhado).toBe(true);
   });
 
-  it('não vira alvo de clique nem alimenta a histerese', () => {
+  it('não vira alvo de clique: quem perdeu a vaga não é alvo', () => {
     const { rotulos } = bancada();
-    const indo = rotulo('star:indo', 'INDO', 0.4, 0.4);
-    indo.saindo = true;
-    rotulos.draw([indo]);
-    // `desenhado` é a lista única do clique (pendência 30) e a fonte da
-    // histerese da régua: um nome de saída não entra em nenhuma das duas
+    // os dois no mesmo pixel: o de peso menor perde e, perdendo, sai da
+    // lista única do clique (pendência 30) e não guarda lado
+    const indo = rotulo('star:indo', 'INDO', 0.4, 0.4, 5);
+    const fica = rotulo('star:fica', 'FICA', 0.4, 0.4, 100);
+    rotulos.draw([indo, fica]);
     expect(indo.desenhado).toBe(false);
+    expect(indo.perdeuAVaga).toBe(true);
     expect(indo.ladoEsquerdo).toBeUndefined();
+    expect(fica.desenhado).toBe(true);
   });
 });
 
@@ -677,5 +725,273 @@ describe('A8 — o texto pinta o produto das duas camadas', () => {
     expect(segundo).toBeCloseTo(0.8 * 0.75, 12);
     // SABOTAGEM QUE ISTO MORDE: tirar `alfaDoTexto` da assinatura faz o
     // segundo desenho ser pulado e os dois números coincidirem.
+  });
+});
+
+// ============================================================
+// A QUADTREE DA COLISÃO (item 125, F3 · P5/P6/P7) — a estrutura do
+// `LabelQuadtree` do NASA Eyes, com os literais dele.
+//
+// Estes vereditos são os únicos do arquivo que olham a estrutura por
+// dentro, e é deliberado: a fase inteira é "adote a quadtree deles", e
+// uma varredura linear com o nome de árvore passaria em todo teste de
+// comportamento. O que se cobra aqui são os NÚMEROS (8 valores por nó,
+// profundidade 8, colapso em 4) e a lei de descida (um valor só desce
+// para o filho que o CONTENHA inteiro).
+// ============================================================
+describe('a quadtree — a estrutura, com os números deles', () => {
+  const caixa = (x: number, y: number, lado = 2) => ({
+    left: x, right: x + lado, top: y, bottom: y + lado,
+  });
+
+  it('os literais são 8 valores por nó, profundidade 8 e colapso em 4', () => {
+    expect(VALORES_POR_NO).toBe(8);
+    expect(PROFUNDIDADE_MAXIMA).toBe(8);
+    expect(JULGAMENTOS_POR_QUADRO).toBe(20);
+  });
+
+  it('acha quem cruza e ignora quem não cruza — o contrato mínimo', () => {
+    const arvore = new QuadtreeDeRotulos(1000, 1000);
+    arvore.inserir('a', 'a', caixa(10, 10));
+    arvore.inserir('b', 'b', caixa(900, 900));
+    expect(arvore.consultar(caixa(11, 11), []).map((v) => v.nome)).toEqual(['a']);
+    expect(arvore.consultar(caixa(500, 500), [])).toEqual([]);
+    expect(arvore.tamanho).toBe(2);
+  });
+
+  it('NOVE valores no mesmo canto estouram o nó — e todos continuam achados', () => {
+    // a prova de que a subdivisão não PERDE ninguém: é o defeito clássico
+    // de quadtree, e ele some em silêncio (um nome deixa de derrubar o
+    // vizinho e a tela ganha uma sobreposição que ninguém explica)
+    const arvore = new QuadtreeDeRotulos(1000, 1000);
+    for (let i = 0; i < 9; i++) arvore.inserir(`v${i}`, `v${i}`, caixa(10 + i, 10));
+    expect(arvore.tamanho).toBe(9);
+    const achados = arvore.consultar({ left: 0, right: 100, top: 0, bottom: 100 }, []);
+    expect(achados.length).toBe(9);
+    // e a busca larga acha os nove pelos QUATRO quadrantes também
+    expect(arvore.consultar({ left: 0, right: 1000, top: 0, bottom: 1000 }, []).length).toBe(9);
+  });
+
+  it('quem NÃO cabe num filho fica no pai — e continua sendo achado', () => {
+    // um retângulo que cruza o meio da tela não desce: `bounds.surrounds`
+    // é a lei, e um valor mal colocado num filho sumiria das consultas
+    // feitas pelo filho vizinho
+    const arvore = new QuadtreeDeRotulos(1000, 1000);
+    for (let i = 0; i < 9; i++) arvore.inserir(`v${i}`, `v${i}`, caixa(10 + i, 10));
+    arvore.inserir('meio', 'meio', { left: 400, right: 600, top: 400, bottom: 600 });
+    expect(arvore.consultar(caixa(590, 590), []).map((v) => v.nome)).toEqual(['meio']);
+  });
+
+  it('remover devolve a árvore ao estado anterior — e o valor some das buscas', () => {
+    const arvore = new QuadtreeDeRotulos(1000, 1000);
+    for (let i = 0; i < 9; i++) arvore.inserir(`v${i}`, `v${i}`, caixa(10 + i, 10));
+    for (let i = 0; i < 9; i++) arvore.remover(`v${i}`);
+    expect(arvore.tamanho).toBe(0);
+    expect(arvore.consultar({ left: 0, right: 1000, top: 0, bottom: 1000 }, [])).toEqual([]);
+    // e a árvore volta a funcionar depois do colapso
+    arvore.inserir('novo', 'novo', caixa(10, 10));
+    expect(arvore.consultar(caixa(11, 11), []).map((v) => v.nome)).toEqual(['novo']);
+  });
+
+  it('o COLAPSO recolhe os valores para o pai — ninguém se perde na volta', () => {
+    // a árvore estoura em quatro filhos com nove valores e volta a ser um
+    // nó só quando a subárvore cai abaixo de quatro (`maxValuesPerNode/2`).
+    // O defeito que isto pega é o do colapso que DESCARTA em vez de
+    // recolher: a árvore encolhe, as buscas ficam mudas e a colisão para
+    // de acontecer sem que nada acuse.
+    const arvore = new QuadtreeDeRotulos(1000, 1000);
+    for (let i = 0; i < 9; i++) arvore.inserir(`v${i}`, `v${i}`, caixa(10 + i * 3, 10));
+    for (let i = 0; i < 6; i++) arvore.remover(`v${i}`);
+    expect(arvore.tamanho).toBe(3);
+    const achados = arvore.consultar({ left: 0, right: 1000, top: 0, bottom: 1000 }, []);
+    expect(achados.map((v) => v.nome).sort()).toEqual(['v6', 'v7', 'v8']);
+  });
+
+  it('inserir o mesmo nome duas vezes SUBSTITUI — a caixa nova manda', () => {
+    // é assim que o rodízio atualiza a caixa de um nome que se moveu; sem
+    // isto a árvore acumularia fantasmas do quadro anterior
+    const arvore = new QuadtreeDeRotulos(1000, 1000);
+    arvore.inserir('a', 'a', caixa(10, 10));
+    arvore.inserir('a', 'a', caixa(900, 900));
+    expect(arvore.tamanho).toBe(1);
+    expect(arvore.consultar(caixa(11, 11), [])).toEqual([]);
+    expect(arvore.consultar(caixa(901, 901), []).map((v) => v.nome)).toEqual(['a']);
+  });
+
+  it('a janela nova reconstrói a raiz — caixa de quadro velho não sobrevive', () => {
+    const arvore = new QuadtreeDeRotulos(1000, 1000);
+    arvore.inserir('a', 'a', caixa(10, 10));
+    arvore.redimensionar(400, 300);
+    expect(arvore.tamanho).toBe(0);
+  });
+});
+
+// ============================================================
+// O RODÍZIO E OS DOIS RETÂNGULOS (item 125, F3 · P6/P7) — vistos pelo
+// desenho, que é onde eles decidem o que o visitante vê.
+// ============================================================
+describe('o rodízio julga 20 por quadro (item 125, F3 · P7)', () => {
+  /** um nome pesado e `n` leves, todos no mesmo ponto */
+  const empilhados = (n: number): StarLabel[] => [
+    rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100),
+    ...Array.from({ length: n }, (_, i) =>
+      rotulo(`star:s${String(i).padStart(2, '0')}`, `S${i}`, 0.5, 0.45, 5)
+    ),
+  ];
+
+  it('num quadro só, quem ficou FORA da janela não é julgado — e continua na tela', () => {
+    const { rotulos } = bancada();
+    const labels = empilhados(24); // 25 nomes, janela de 20
+    rotulos.draw(labels);
+    const desenhados = labels.filter((l) => l.desenhado);
+    // o Sol mais os CINCO que o rodízio ainda não alcançou
+    expect(desenhados.length).toBe(1 + (25 - JULGAMENTOS_POR_QUADRO));
+    expect(desenhados[0].key).toBe('corpo:sun');
+  });
+
+  it('no quadro seguinte a volta se completa e sobra UM', () => {
+    const { rotulos } = bancada();
+    const labels = empilhados(24);
+    rotulos.draw(labels);
+    const segundos = empilhados(24); // objetos NOVOS, como na projeção
+    rotulos.draw(segundos);
+    expect(segundos.filter((l) => l.desenhado).map((l) => l.key)).toEqual(['corpo:sun']);
+  });
+
+  it('quem não foi julgado MANTÉM o veredito anterior, não o perde', () => {
+    const { rotulos } = bancada();
+    rotulos.draw(empilhados(24));
+    rotulos.draw(empilhados(24));
+    // terceiro quadro: a janela cobre outros vinte, e os que ficaram de
+    // fora continuam derrotados — sem isto o nome voltaria a piscar a
+    // cada volta do rodízio
+    const terceiros = empilhados(24);
+    rotulos.draw(terceiros);
+    expect(terceiros.filter((l) => l.desenhado).map((l) => l.key)).toEqual(['corpo:sun']);
+  });
+
+  it('o atalho da assinatura NÃO congela um rodízio pela metade', () => {
+    // o quadro de entrada é idêntico nos dois desenhos; se o atalho
+    // valesse já no segundo, os cinco não julgados ficariam na tela para
+    // sempre
+    const { rotulos } = bancada();
+    rotulos.draw(empilhados(24));
+    const segundos = empilhados(24);
+    rotulos.draw(segundos);
+    expect(segundos.filter((l) => l.desenhado).length).toBe(1);
+  });
+});
+
+describe('dois retângulos por nome (item 125, F3 · P6)', () => {
+  it('o NOME que pousa em cima da marca de outro objeto cede', () => {
+    const { rotulos } = bancada(1200, 900);
+    // o Sol tem a marca dele no ponto; a estrela está à ESQUERDA, e o
+    // texto dela cresce para a direita, por cima da marca do Sol
+    const sol = rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100);
+    const vizinha = rotulo('star:v', 'V', 0.47, 0.45, 5);
+    rotulos.draw([sol, vizinha]);
+    expect(sol.desenhado).toBe(true);
+    expect(vizinha.desenhado).toBe(false);
+    // e o inverso: longe da marca, o mesmo par convive
+    const { rotulos: r2 } = bancada(1200, 900);
+    const sol2 = rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100);
+    const longe = rotulo('star:v', 'V', 0.2, 0.2, 5);
+    r2.draw([sol2, longe]);
+    expect(longe.desenhado).toBe(true);
+  });
+
+  it('a marca NÃO é quem perde: dois objetos vizinhos guardam os dois ícones', () => {
+    // entrada só-ícone (item 89): a marca é o rótulo, e aí sim ela
+    // disputa — dois ícones no mesmo pixel não podem ficar os dois
+    const { rotulos } = bancada();
+    const a = { ...rotulo('corpo:a', 'A', 0.5, 0.45, 50), icone: true };
+    const b = { ...rotulo('corpo:b', 'B', 0.5, 0.45, 25), icone: true };
+    rotulos.draw([a, b]);
+    expect(a.desenhado).toBe(true);
+    expect(b.desenhado).toBe(false);
+  });
+});
+
+describe('os retângulos são do CANVAS, não do dispositivo', () => {
+  it('o mesmo quadro em dpr 2 decide igual — a árvore não dobra de lado', () => {
+    const janela = globalThis.window as unknown as { devicePixelRatio: number };
+    const labels1 = aberturaDoAtlas();
+    janela.devicePixelRatio = 1;
+    new LabelCanvas(canvasFalso()).draw(labels1);
+    const labels2 = aberturaDoAtlas();
+    janela.devicePixelRatio = 2;
+    new LabelCanvas(canvasFalso()).draw(labels2);
+    janela.devicePixelRatio = 1;
+    expect(labels2.map((l) => l.desenhado)).toEqual(labels1.map((l) => l.desenhado));
+  });
+});
+
+// ============================================================
+// A CAIXA JULGADA SAI NO OBJETO (item 125, F3) — o contrato que o juiz
+// de imagem do `atlas-smoke` lê. Sem ele o juiz teria de recalcular a
+// geometria por fora, com a fonte, o lado e a largura do texto: uma
+// segunda régua, que mede a cópia e não a tela.
+// ============================================================
+describe('a caixa da disputa viaja no rótulo', () => {
+  it('quem disputou tem caixa; quem está fora da disputa NÃO tem', () => {
+    const { rotulos } = bancada(1200, 900);
+    const vivo = rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100);
+    const cedido = { ...rotulo('corpo:x', 'X', 0.3, 0.3, 50), causaDoSumico: 'tamanho' as const };
+    const apagado = { ...rotulo('corpo:y', 'Y', 0.7, 0.3, 50), opacity: 0.01 };
+    rotulos.draw([vivo, cedido, apagado]);
+    expect(vivo.caixaDaDisputa).toBeDefined();
+    expect(vivo.caixaDaDisputa!.right).toBeGreaterThan(vivo.caixaDaDisputa!.left);
+    expect(vivo.caixaDaDisputa!.folga).toBe(8);
+    expect(cedido.caixaDaDisputa).toBeUndefined();
+    expect(apagado.caixaDaDisputa).toBeUndefined();
+  });
+
+  it('NENHUM par de caixas desenhadas se sobrepõe — a lei nova, medida', () => {
+    const { rotulos } = bancada(1200, 900);
+    const labels = aberturaCheia();
+    rotulos.draw(labels);
+    rotulos.draw(labels); // a volta do rodízio
+    const naTela = labels.filter((l) => l.desenhado).map((l) => l.caixaDaDisputa!);
+    expect(naTela.length).toBeGreaterThan(1);
+    for (let i = 0; i < naTela.length; i++) {
+      for (let j = i + 1; j < naTela.length; j++) {
+        const a = naTela[i];
+        const b = naTela[j];
+        const cruza =
+          a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom;
+        expect(cruza, `caixas ${i} e ${j} se sobrepõem`).toBe(false);
+      }
+    }
+  });
+
+  it('quem PERDEU tem, no mesmo espaço, um desenhado que o vence', () => {
+    const { rotulos } = bancada(1200, 900);
+    const labels = aberturaCheia();
+    rotulos.draw(labels);
+    rotulos.draw(labels);
+    const naTela = labels.filter((l) => l.desenhado);
+    const perdedores = labels.filter((l) => l.perdeuAVaga && l.caixaDaDisputa);
+    expect(perdedores.length).toBeGreaterThan(0);
+    for (const p of perdedores) {
+      const c = p.caixaDaDisputa!;
+      const vencedor = naTela.find((v) => {
+        const b = v.caixaDaDisputa!;
+        return (
+          c.right + c.folga > b.left && c.left - c.folga < b.right
+          && c.bottom + c.folga > b.top && c.top - c.folga < b.bottom
+        );
+      });
+      expect(vencedor, `${p.key} perdeu para ninguém`).toBeDefined();
+    }
+  });
+
+  it('e a caixa sobrevive ao quadro pulado pela assinatura', () => {
+    const { rotulos } = bancada(1200, 900);
+    const primeiro = [rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100)];
+    rotulos.draw(primeiro);
+    rotulos.draw([rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100)]);
+    const terceiro = [rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100)];
+    rotulos.draw(terceiro); // este sai pelo atalho: objetos NOVOS
+    expect(terceiro[0].caixaDaDisputa).toEqual(primeiro[0].caixaDaDisputa);
   });
 });

@@ -6,6 +6,16 @@ import * as THREE from 'three';
 import type { NamedStar } from '../config';
 import { GAL } from './baseGalactica';
 
+/** a caixa julgada pela disputa, em px CSS do canvas (ver `StarLabel`) */
+export interface CaixaDaDisputa {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  /** o quanto a consulta infla esta caixa para procurar oponente */
+  folga: number;
+}
+
 export interface StarLabel {
   name: string;
   /** tipo espectral — vazio nos corpos do sistema, que não têm um */
@@ -68,24 +78,66 @@ export interface StarLabel {
    * não é tocado por esta obra e continua ordenando por tier e
    * proximidade, como sempre ordenou.
    *
-   * O valor sai da tabela `PRIORIDADE_DO_ROTULO`, e a razão de ele ser
-   * um NÚMERO e não uma classe é o bônus de histerese: quem estava
-   * desenhado no quadro anterior vale 20% a mais, e isso é uma
-   * multiplicação, não um caso novo.
+   * O valor sai da tabela `PRIORIDADE_DO_ROTULO` — desde 01/09 com os
+   * NÚMEROS DO EYES (item 125, F3 · P1). Continua sendo um número e não
+   * uma classe porque a disputa compara pesos, e porque o alvo em foco
+   * entra por promoção (201) e não por classe nova.
    */
   prioridade?: number;
   /**
-   * A RÉGUA DE RELEVÂNCIA DISSE NÃO (item 82, N1) — este nome projetou,
-   * mas a tela já está cheia de nomes que importam mais.
+   * ESTE NOME ESTÁ ESCONDIDO PELA DISPUTA — o `hiddenByLabelQuadtree`
+   * deles (item 82, N1; refeito no item 125, F3).
+   *
+   * QUEM ESCREVE MUDOU em 01/09. Era a régua de relevância, quando o
+   * nome passava do orçamento de dez. O orçamento morreu; hoje a marca é
+   * a REALIMENTAÇÃO do veredito da colisão: o `LabelCanvas` julga e
+   * escreve `perdeuAVaga` no objeto do quadro, e o produtor a converte
+   * nesta marca no quadro seguinte, ANTES das rampas — que é como a
+   * derrota vira fade de 750 ms em vez de sumiço seco.
    *
    * É uma MARCA e não uma remoção da lista de propósito: `alvos` continua
    * sendo a projeção inteira (o que o Director publica e o juiz lê), e
-   * quem foi cortado nasce `desenhado: false` como qualquer outro
-   * descarte do desenho. Sem a marca, o corte teria de acontecer
-   * removendo da lista, e aí a diferença entre "a régua não quis" e "não
-   * coube" ficaria invisível para quem mede.
+   * quem foi cortado continua sendo JULGADO pela colisão — é assim que
+   * ele volta à tela quando o vencedor sai de perto.
    */
   cortadoPelaRegua?: boolean;
+  /**
+   * O VEREDITO DA COLISÃO DESTE QUADRO (item 125, F3 · P5-P7) — escrito
+   * pelo `LabelCanvas`, no MESMO objeto que o Director guarda em
+   * `lastLabels`, como o `desenhado`.
+   *
+   *  · `true` — a quadtree achou um oponente vivo que o vence pela
+   *    `ordemDaDisputa` e cuja caixa cruza a dele;
+   *  · `false` — julgado e aprovado;
+   *  · `undefined` — **não foi julgado neste quadro**. O rodízio julga 20
+   *    nomes por quadro (P7) e quem não foi mantém o veredito anterior,
+   *    que vive dentro do `LabelCanvas`. A rampa de 750 ms da F2 é o que
+   *    absorve essa latência: no pior caso a derrota chega três quadros
+   *    depois, e a tinta leva vinte e cinco vezes mais que isso para
+   *    sumir.
+   */
+  perdeuAVaga?: boolean;
+  /**
+   * A CAIXA QUE A DISPUTA JULGOU (item 125, F3) — em px CSS do canvas dos
+   * rótulos, escrita pelo `LabelCanvas` no mesmo objeto que o Director
+   * guarda, como o `desenhado` e o `perdeuAVaga`.
+   *
+   * POR QUE ELA SAI DO DESENHO em vez de ser recalculada por quem
+   * precisa: a caixa depende da largura do texto MEDIDA pelo canvas, da
+   * fonte do peso visual, do lado que a borda escolheu e da escala da UI.
+   * Recalculá-la fora seria uma segunda régua — e a primeira vez que as
+   * duas divergissem, o juiz estaria medindo a cópia, não a tela.
+   *
+   * `folga` é o quanto a consulta INFLA esta caixa na hora de procurar
+   * oponente (8×k no texto, 2×k na marca da âncora). Sem ela, quem lê a
+   * caixa de fora teria de repetir o número — e repetir número é a mesma
+   * armadilha da caixa.
+   *
+   * Só CANDIDATOS têm caixa: quem está fora da disputa (cedeu por
+   * tamanho, está quase transparente ou caiu na margem da composição) não
+   * tem geometria julgada, e a ausência é a informação.
+   */
+  caixaDaDisputa?: CaixaDaDisputa;
   /**
    * O roteiro declarou este nome como assunto do plano. Só esses nomes
    * podem procurar uma posição alternativa quando colidem; o fundo
@@ -166,59 +218,72 @@ export interface StarLabel {
 }
 
 /**
- * A HIERARQUIA DOS NOMES, numa tabela só — a reimplementação do
- * `OverlayPositionTracker` do atlas doador (item 73, plano §3).
+ * A HIERARQUIA DOS NOMES, numa tabela só — desde 01/09 (item 125, F3 ·
+ * P1/P2/P11) **os números são os do NASA Eyes**, não mais os da casa.
  *
- * O que ela resolve, medido no TETO do zoom (224 UA — a vista de
- * abertura até 23/08, e desde o item 61 o lugar aonde a roda leva): os
- * dez corpos e as 21 luas projetam a menos de 1% de tela uns dos
- * outros, e quem chegava primeiro na lista ocupava. O resultado era
- * Saturno nascendo `desenhado: false` por colidir com "SOL", e a queixa
- * do dono — *"conseguíamos ver os rótulos de todos objetos de forma
- * inteligente"*.
+ * O LITERAL DELES (`LabelManager._weightMap`, contrato §3.1):
  *
- * OS NÚMEROS, e a razão de cada degrau:
- *  · `foco` 120 — o que o visitante escolheu nunca cede a nada. **Era
- *    100, e 100 NÃO CUMPRIA a própria promessa** (achado em 24/08, ao
- *    escrever a trava de hierarquia): o bônus de histerese multiplica o
- *    peso de quem já estava na tela, e `sol` 90 × 1,2 = **108 > 100** —
- *    um Sol já desenhado passava à frente de um alvo recém-escolhido que
- *    ainda não tivesse aparecido, que é exatamente o que esta linha jura
- *    que não acontece. 120 dá **folga** sobre os 108 — não é o menor
- *    valor que serviria (110 já passaria a trava): é o degrau redondo
- *    que deixa margem para a tabela crescer sem raspar no limite;
- *  · `sol` 90 — a estrela da casa é o centro do frame e a referência de
- *    escala de toda vista do Atlas;
- *  · `planeta` 10, `anao` 8, `lua` 6 — a hierarquia do próprio objeto;
- *  · `estrelaPropria` 5 e `estrelaBayer` 3 — o tier que
- *    `projectLabels` já usava para desempatar, virado peso: nome
- *    próprio acima de designação;
- *  · `outros` 4 — Sagittarius A✱ e o que mais chegar sem classe.
+ *     Universe 100, Galaxy 100, Star 100, Planet 50, Spacecraft 30,
+ *     "Dwarf Planet" 28, Moon 25, Asteroid 15, Comet 15,
+ *     Constellation 10, "Landing site" 5, Barycenter 0
+ *
+ * e, fora do mapa, DOIS defaults que diferem (P2): `initLabelWeights`
+ * grava **1** para categoria que não está na tabela; `getDefaultWeight`
+ * devolve **0** para categoria desconhecida sem entrada. O alvo SEGUIDO
+ * recebe **201** (P11, string `"201"` no fonte deles), acima do teto 100.
+ *
+ * O MAPEAMENTO CLASSE A CLASSE — o que a casa tem, o que vale lá:
+ *
+ * | casa | Eyes | peso | por quê |
+ * |---|---|---|---|
+ * | `foco` | alvo seguido | **201** | P11 literal |
+ * | `sol` (classe "estrela") | `Star` | **100** | par exato: no catálogo deles a única entidade `Star` é o Sol |
+ * | `planeta` | `Planet` | **50** | par exato |
+ * | `anao` ("planeta anão") | `Dwarf Planet` | **28** | par exato |
+ * | `lua` | `Moon` | **25** | par exato |
+ * | `asteroide` | `Asteroid`/`Comet` | **15** | par exato — e é DEGRAU NOVO: até 31/08 asteroide dividia o peso do anão |
+ * | `estrelaPropria` | *sem par* | **10** | o degrau `Constellation`: é a marca de referência do CÉU, não um objeto do sistema; fica abaixo da lua, como já ficava |
+ * | `estrelaBayer` | *sem par* | **5** | o degrau `Landing site`, o último nomeado acima do baricentro: uma designação é marcador, não objeto |
+ * | `outros` | categoria fora do mapa | **1** | o primeiro default deles (P2) |
+ * | (sem `prioridade`) | categoria desconhecida | **0** | o segundo default deles (P2) — ver `PESO_SEM_CLASSE` |
+ *
+ * DUAS CONSEQUÊNCIAS DECLARADAS, porque mudam ordem e não só escala:
+ *  1. **asteroide caiu abaixo da lua** (15 contra 25). Era 8 contra 6 —
+ *     acima. É a hierarquia deles, e é a única inversão do mapeamento.
+ *  2. **`outros` caiu abaixo de `estrelaBayer`** (1 contra 5). Era 4
+ *     contra 3. `outros` não tem usuário vivo — nenhuma classe de
+ *     `NOMES_DOS_CORPOS` cai nele e Sagittarius A✱ entra por
+ *     `prioridadeDeEstrela` —, então a troca não move nenhum nome da
+ *     tela; ela põe o degrau onde o fonte deles o põe.
+ *
+ * O QUE NÃO MUDOU DE ORDEM: foco > sol > planeta > anão > lua >
+ * estrela própria > designação. É a mesma pirâmide, com os números
+ * deles.
  */
 export const PRIORIDADE_DO_ROTULO = {
-  foco: 120,
-  sol: 90,
-  planeta: 10,
-  anao: 8,
-  lua: 6,
-  estrelaPropria: 5,
-  outros: 4,
-  estrelaBayer: 3,
+  foco: 201,
+  sol: 100,
+  planeta: 50,
+  anao: 28,
+  lua: 25,
+  asteroide: 15,
+  estrelaPropria: 10,
+  estrelaBayer: 5,
+  outros: 1,
 } as const;
 
 /**
- * O bônus de quem JÁ ESTAVA na tela — a histerese, em fator.
+ * O SEGUNDO DEFAULT DELES (P2): rótulo que chega SEM classe nenhuma vale
+ * zero na disputa — é o `getDefaultWeight` do `LabelManager`.
  *
- * **ELE NÃO PODE INVERTER A TABELA ACIMA**, e essa é a trava que
- * `labels.test.ts` guarda par a par: para todo degrau vizinho, o de
- * baixo COM bônus não passa o de cima sem bônus. A folga mais apertada é
- * `lua` 6 contra `estrelaPropria` 5 × 1,2 = **6,0** — empate exato, que
- * o desempate por distância resolve. Subir este fator para 1,25
- * inverteria esse par (6,25 > 6) e uma estrela roubaria a vaga de uma
- * lua — mas ESSE caso já tinha pino antes da trava; quem a fez nascer
- * foi o par `sol`/`foco`, que não tinha juiz nenhum (ver a tabela).
+ * Na casa quem chega assim é o RAMO DO FILME, que não escreve
+ * `prioridade`. Ele não fica desprotegido: o assunto do beat é
+ * `dirigido`, e `pesoDoRotulo` dá ao dirigido o peso do foco — que é o
+ * que o Eyes faz com o alvo seguido (P11). O fundo do filme, esse sim,
+ * vale zero, e é o que ele já valia na prática (entrava por último na
+ * ordem de chegada).
  */
-export const BONUS_DE_HISTERESE = 1.2;
+export const PESO_SEM_CLASSE = 0;
 
 /**
  * A prioridade de um corpo do sistema, pela CLASSE em pt-BR que a
@@ -226,13 +291,18 @@ export const BONUS_DE_HISTERESE = 1.2;
  * anão", "lua", "asteroide"). Deriva do dado que existe — uma segunda
  * tabela de ids seria a segunda fonte de verdade que a primeira
  * desmentiria no dia em que alguém promovesse Ceres.
+ *
+ * "cometa" tem par no Eyes (`Comet` 15, o mesmo do asteroide) e por isso
+ * está escrito, ainda que a casa não desenhe nenhum: quando desenhar,
+ * cai no degrau certo sem regra nova.
  */
 export function prioridadeDeCorpo(classe: string): number {
   if (classe === 'estrela') return PRIORIDADE_DO_ROTULO.sol;
   if (classe === 'planeta') return PRIORIDADE_DO_ROTULO.planeta;
   if (classe === 'lua') return PRIORIDADE_DO_ROTULO.lua;
-  if (classe === 'planeta anão' || classe === 'asteroide') {
-    return PRIORIDADE_DO_ROTULO.anao;
+  if (classe === 'planeta anão') return PRIORIDADE_DO_ROTULO.anao;
+  if (classe === 'asteroide' || classe === 'cometa') {
+    return PRIORIDADE_DO_ROTULO.asteroide;
   }
   return PRIORIDADE_DO_ROTULO.outros;
 }
@@ -245,18 +315,58 @@ export function prioridadeDeEstrela(tier: number | undefined): number {
 }
 
 /**
- * O PESO da disputa: prioridade × histerese. Quem estava desenhado no
- * quadro anterior vale 20% a mais — sem isso a seleção PISCA quando dois
- * nomes disputam a mesma vaga e a projeção anda um pixel. É a mesma
- * histerese que `projectLabels` já tinha na disputa entre estrelas
- * (`prevKeys`), generalizada para a lista inteira.
+ * O PESO da disputa — a prioridade e mais nada (item 125, F3).
+ *
+ * **O BÔNUS DE HISTERESE MORREU AQUI.** Até 01/09 quem estava desenhado
+ * no quadro anterior valia 20% a mais (`BONUS_DE_HISTERESE = 1.2`), e a
+ * razão escrita era "sem isso a seleção PISCA". Era invenção da casa: o
+ * Eyes não multiplica peso nenhum, e o que impede o pisca-pisca lá é a
+ * RAMPA DE 750 ms de saída (contrato A8/A10, construída pela F2) somada
+ * a um desempate TOTALMENTE determinístico (P3, abaixo) — dois nomes
+ * empatados não alternam porque a ordem entre eles não depende do
+ * quadro. Medido antes de aposentar: ver o bastão da F3.
+ *
+ * O DIRIGIDO VALE O FOCO: o assunto declarado pelo roteiro é o
+ * equivalente do alvo seguido do Eyes (P11, peso 201), e é a linha que
+ * mantém a regra editorial do filme ("o assunto sempre tem nome") agora
+ * que a disputa é por PESO e não por ordem de chegada.
  */
-export function pesoDoRotulo(
-  label: StarLabel,
-  desenhadosAntes?: ReadonlySet<string>
-): number {
-  const base = label.prioridade ?? PRIORIDADE_DO_ROTULO.outros;
-  return desenhadosAntes?.has(label.key) ? base * BONUS_DE_HISTERESE : base;
+export function pesoDoRotulo(label: StarLabel): number {
+  if (label.dirigido) return PRIORIDADE_DO_ROTULO.foco;
+  return label.prioridade ?? PESO_SEM_CLASSE;
+}
+
+/**
+ * A ORDEM DA DISPUTA, com os TRÊS critérios do Eyes (item 125, F3 · P3)
+ * — o literal de `LabelQuadtree._isLessWeightsAndZ`:
+ *
+ * ```js
+ * if (t.weight !== e.weight) return t.weight < e.weight;   // menor peso perde
+ * if (t.z      !== e.z)      return t.z > e.z;             // mais LONGE perde
+ * return t.getName().localeCompare(e.getName()) < 0;       // vem ANTES perde
+ * ```
+ *
+ * O TERCEIRO CRITÉRIO É O QUE FALTAVA, e ele não é enfeite: sem
+ * desempate total, dois nomes de mesmo peso e mesma distância ficam na
+ * ordem em que o `sort` os encontrou, e essa ordem muda com a lista —
+ * um nome entra em quadro do outro lado da tela e dois nomes que nada
+ * têm com ele trocam de vaga. Com o terceiro critério a relação é uma
+ * ORDEM TOTAL: o par decide sozinho, sempre igual.
+ *
+ * O SENTIDO É CONTRAINTUITIVO E É O DO FONTE: perde quem vem ANTES
+ * alfabeticamente, logo VENCE o nome alfabeticamente MAIOR — por isso
+ * `b.key.localeCompare(a.key)`. A chave é a identidade da entidade (o
+ * `getEntity().getName()` deles), não o rótulo escrito: é ela que é
+ * única e estável entre quadros.
+ *
+ * Devolve <0 quando `a` vence (vai na frente da lista ordenada).
+ */
+export function ordemDaDisputa(a: StarLabel, b: StarLabel): number {
+  const pa = pesoDoRotulo(a);
+  const pb = pesoDoRotulo(b);
+  if (pa !== pb) return pb - pa;
+  if (a.distPc !== b.distPc) return a.distPc - b.distPc;
+  return b.key.localeCompare(a.key, 'pt-BR');
 }
 
 /**
@@ -357,78 +467,34 @@ export const ALFA_DO_TEXTO_ESCONDIDO = 0.05;
 export const ALFA_DO_TEXTO_APONTADO = 1;
 
 /**
- * QUANTOS NOMES A TELA CARREGA AO MESMO TEMPO — a régua de relevância do
- * item 82, e a metade que o NASA Eyes não tem.
+ * A RÉGUA DE RELEVÂNCIA (item 82, N1) — hoje ela ORDENA, e só (item
+ * 125, F3).
  *
- * O estudo do Eyes (`docs/reference/estudo-orbitas-eyes-observacao.md`,
- * §5) mediu numa vista só: 103 nomes no DOM, 40 acesos, 11 mortos por
- * colisão. A quadtree deles resolve SOBREPOSIÇÃO e resolve bem — e ainda
- * assim quarenta nomes acesos é confusão. O Eyes nunca decide que um
- * objeto **não interessa**; só decide que ele **não cabe**. Esta
- * constante é a decisão que falta: primeiro corta-se por IMPORTÂNCIA,
- * e só o que sobra vai disputar lugar na tela.
+ * **O ORÇAMENTO DE NOMES MORREU AQUI**, por decisão declarada do dono no
+ * item 125. Até 01/09 esta função também cortava: `ORCAMENTO_DE_NOMES =
+ * 10` vagas, e o 11º nome saía da tela por população, não por
+ * sobreposição. A razão escrita em 24/08 era boa — *"o Eyes nunca decide
+ * que um objeto não interessa; só decide que ele não cabe"*, e quarenta
+ * nomes acesos é confusão. A ordem da onda da paridade é a outra: **quem
+ * cabe sem colidir, aparece**. Quem decide agora é a colisão
+ * (`LabelCanvas`, a quadtree do P5/P6) com os pesos do Eyes e o
+ * desempate determinístico do P3 — as três peças que faziam falta e sem
+ * as quais o orçamento era o único freio disponível.
  *
- * O NÚMERO É MEDIDO, não escolhido no ar. Antes dele a abertura do Atlas
- * desenhava 22 nomes — os cinco corpos em quadro e DEZESSETE estrelas,
- * quase todas designações de Bayer (ε Ind, ι Pav, τ PsA…) com traço de
- * até 102 px em volta do sistema. Era a queixa viva do dono:
- * *"o default todos os objetos estao com o label ligado, fica uma
- * confusao na tela"*. Com dez vagas a mesma abertura desenha o Sol, os
- * quatro rochosos e as estrelas de NOME PRÓPRIO que couberem — e as
- * designações de Bayer, que são o último degrau da tabela, caem
- * sozinhas, sem uma regra nova que as nomeie.
+ * O QUE SOBROU, e por que continua importando: a ORDEM. `P8` — a lista
+ * do Eyes é mantida ordenada por peso, e o rodízio da quadtree percorre
+ * essa ordem, então nomes de peso próximo são julgados no mesmo quadro.
+ * Aqui é a mesma coisa: a lista sai ordenada por `ordemDaDisputa`, que é
+ * a ordem TOTAL do P3.
  *
- * Dez e não cinco: no TETO do zoom os dez corpos do sistema são o
- * assunto inteiro do quadro, e um orçamento menor cortaria planeta para
- * caber estrela de fundo. Quem some lá é a COLISÃO, que é outra lei.
+ * O que NÃO se faz mais aqui: marcar `cortadoPelaRegua`. Essa marca
+ * agora vem do veredito da colisão, pela realimentação que o produtor
+ * (`director/rotulos.ts`) aplica no quadro seguinte — é o
+ * `hiddenByLabelQuadtree` deles, escrito por quem de fato julga o
+ * espaço.
  */
-export const ORCAMENTO_DE_NOMES = 10;
-
-/**
- * A RÉGUA DE RELEVÂNCIA, ANTES DA GEOMETRIA (item 82, N1) — ordena a
- * lista pela hierarquia da casa e marca o que passa do orçamento.
- *
- * A ORDEM É A DISPUTA: o `LabelCanvas` desenha na ordem que recebe e
- * quem chega primeiro ocupa, então ordenar aqui É decidir quem vence a
- * colisão. Empate desempata pelo mais PERTO, que é a régua que a lista
- * já usava entre estrelas.
- *
- * Não há tabela nova: o peso é o `pesoDoRotulo` de sempre
- * (`PRIORIDADE_DO_ROTULO` × a histerese de quem já estava na tela). O
- * bônus dos 20% é o que impede o corte de PISCAR — dois nomes de mesmo
- * peso disputando a última vaga trocariam de lugar a cada quadro em que
- * a projeção andasse um pixel.
- */
-export function aplicarReguaDeRelevancia(
-  lista: StarLabel[],
-  desenhadosAntes?: ReadonlySet<string>,
-  orcamento: number = ORCAMENTO_DE_NOMES
-): StarLabel[] {
-  lista.sort(
-    (a, b) =>
-      pesoDoRotulo(b, desenhadosAntes) - pesoDoRotulo(a, desenhadosAntes) ||
-      a.distPc - b.distPc
-  );
-  let vagas = orcamento;
-  for (const l of lista) {
-    // o que já está invisível não gasta vaga: quem o descarta é o
-    // desenho, pela mesma soleira
-    if (l.opacity < OPACIDADE_MINIMA_DO_ROTULO) continue;
-    // A MARCA SÓ SE ACENDE, NUNCA SE APAGA — e é por isso que o contrato
-    // é lista NOVA a cada quadro. `projectCorpos` e `projectLabels`
-    // constroem os objetos do zero em toda projeção, então um rótulo
-    // nunca chega aqui trazendo o "não" do quadro anterior. Quem
-    // reaproveitar uma lista entre quadros tem de limpar a marca antes,
-    // senão o corte de um quadro vira sentença perpétua.
-    if (vagas > 0) vagas--;
-    else {
-      l.cortadoPelaRegua = true;
-      // A CAUSA fica legível no estado (item 125, F2 · A10): este é o
-      // `hiddenByLabelQuadtree` deles — perdeu a DISPUTA por espaço, não
-      // saiu de cena.
-      l.causaDoSumico = 'disputa';
-    }
-  }
+export function aplicarReguaDeRelevancia(lista: StarLabel[]): StarLabel[] {
+  lista.sort(ordemDaDisputa);
   return lista;
 }
 

@@ -1910,6 +1910,41 @@ mas não lido (F5 pluga); oclusão/atrás-da-câmera sem causa própria
 atlas-smoke segue com a única falha pré-existente do portal t=250
 (item 119, idêntica em `2196c5e`).
 
+**F3 SELADA em 01/09, palavras dele nas fotos: "ficou ótimo, pode
+consertar os juízes e selar a F3".** O que a F3 entregou: a TABELA DE
+PESOS do Eyes (mapeada classe a classe: foco 201, sol 100 `Star`,
+planeta 50, anão 28, lua 25, asteroide 15 — degrau novo, abaixo da lua
+como no Eyes —, estrelaPropria 10 `Constellation` declarado sem par,
+estrelaBayer 5, outros 1, sem-classe 0 = os dois defaults do P2);
+desempate determinístico completo peso → distPc → ALFABÉTICA invertida
+(o sentido do fonte deles); o ORÇAMENTO REVOGADO (`ORCAMENTO_DE_NOMES`
+apagado — censo da abertura 4→16 nomes, aprovado pelo olho dele;
+Júpiter d=400 4→11 com Calisto/Ganimedes perdendo por disputa 25<201);
+`QuadtreeDeRotulos` prof. 8, 8/nó, DOIS retângulos por nome (perde a
+caixa do TEXTO; a marca da âncora é oponente mas não perdedora —
+testar as duas simetricamente matava Alnilam nas Três Marias);
+RODÍZIO de 20/quadro com veredito persistente (custo −34/54/72% em
+55/131/331 nomes, pior caso 0,48 ms; transitório da entrada ≤0,19 de
+alfa por ≤200 ms, pago pela rampa da F2); HISTERESE APOSENTADA
+(`BONUS_DE_HISTERESE` apagado) com prova de estabilidade: parado 0,
+zoom 0, girando ≤0,375 troca/s contra teto de 1 — a rampa de 750 ms é
+o análogo deles; `dirigido` passou a valer o peso do foco (senão
+estrela de fundo derrubava a legenda do filme). Correção de
+honestidade do executor: em d=60 Io/Europa aparecem NAS DUAS fotos — o
+ganho ali são 7 estrelas; a perda de lua por disputa é Ganimedes (d=60)
+e Calisto+Ganimedes (d=400). JUÍZES: os 6 do atlas-smoke que cobravam
+a lei revogada foram refeitos (5 renumerados pelo censo medido; o
+1438 SUBSTITUÍDO por dois vereditos de lei — (a) nenhum par de nomes
+desenhados se sobrepõe, (b) todo cortado tem um desenhado que o vence
+pela ordem — alimentados por `StarLabel.caixaDaDisputa`, a caixa real
+da disputa exposta no rótulo, zero alocação); o guarda de texto do
+director.test (defeito herdado da F2) apertado para os 5 argumentos.
+23 sabotagens mordem (21 de unidade + SJ1/SJ2 de imagem, provadas
+não-redundantes); 250 testes verdes; atlas-smoke inteiro com a única
+falha pré-existente do portal t=250 (item 119). `ab-identidade` não
+rodou por decisão: é cego a rótulo (achado da F2), nada desta fase o
+toca.
+
 **ESTADO DA ONDA no handoff de 31/08 (histórico da pausa; superado pelo selo acima):**
 F0 FEITA e commitada (docs/reference/contrato-eyes-linhas-rotulos.md,
 60190b9 — 77 regras). F1 FEITA E PAUSADA NA ÁRVORE, SEM COMMIT, por
