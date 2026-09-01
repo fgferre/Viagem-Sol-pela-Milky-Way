@@ -1862,6 +1862,24 @@ estáveis). As fases constroem em cima disso, não do retrato velho.
 **O PLANO (a fila viva é esta; cada fase fecha com prova e a onda
 inteira fecha com A/B lado a lado contra o Eyes vivo e o olho dele):**
 
+**ESTADO DA ONDA no handoff de 31/08 (sessão da mineração encerrou aqui):**
+F0 FEITA e commitada (docs/reference/contrato-eyes-linhas-rotulos.md,
+60190b9 — 77 regras). F1 FEITA E PAUSADA NA ÁRVORE, SEM COMMIT, por
+ordem dele (pausa para outra sessão pousar): 11 arquivos, todos
+listados em scratchpad/estudos/nasa-eyes-solar-system/mineracao/
+F1-BASTAO.md — o bastão tem o estado exato, os números (GPU +50,8%
+dpr2 ⇒ escada por tier; beira 1,836→1,560; hover 5×), as 9 sabotagens
+e a fila de retomada: (1) forense do re-baseline (54/54 vistas DIFEREM
+— esperado com MSAA, mas cada uma precisa de explicação escrita; só luz
+de linha/AA pode explicar); (2) AMOSTRAS_POR_TIER.performance = 2
+(remédio medido, +3,5 ms, decisão do coordenador já tomada); (3) fotos
+finais para o olho dele. NENHUMA OUTRA FRENTE pode tocar os 11 arquivos
+do bastão até a F1 selar. Achado colateral da F1 para o item 49: o
+tremor é ENTRE sessões, não dentro (160 capturas na mesma sessão, zero
+oscilação; terralua diferiu entre sessões). A retomada: relançar um
+executor com o F1-BASTAO.md como brief + o contrato §1; depois F2→F5
+pelo contrato, F6 fecha com A/B contra o Eyes vivo e o olho dele.
+
 - **F0 — O CONTRATO (leitura, sem código):** um documento único em
   docs/reference/ com TODAS as regras do Eyes já mineradas e as que
   faltarem, extraídas dos trechos locais: pintura da linha (larguras,
