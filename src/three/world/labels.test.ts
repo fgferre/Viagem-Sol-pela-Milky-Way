@@ -37,6 +37,17 @@ const {
   ORCAMENTO_DE_NOMES,
   OPACIDADE_MINIMA_DO_ROTULO,
   projectLabels,
+  RAIO_NDC_DE_CESSAO,
+  BORRAO_DA_CESSAO,
+  raioAparenteNdc,
+  cessaoPorTamanhoAparente,
+  RampasDeRotulo,
+  RAMPA_DE_ENTRADA_S,
+  RAMPA_DE_SAIDA_S,
+  ALFA_DO_TEXTO_SECUNDARIO,
+  ALFA_DO_TEXTO_PRIMARIO,
+  ALFA_DO_TEXTO_ESCONDIDO,
+  ALFA_DO_TEXTO_APONTADO,
 } = await import('./labels');
 
 /** uma câmera olhando a origem de 10 unidades no eixo z */
@@ -463,5 +474,247 @@ describe('o disco de qualquer corpo esconde nome (item 115)', () => {
     expect(projectCorpos(cam, um, p, [disco(8 + 1e-9, 0.5, 'corpo:frente')])).toHaveLength(1);
     // e o MESMO disco com outra chave (um vizinho no caminho) esconde
     expect(projectCorpos(cam, um, p, [disco(8 + 1e-9, 0.5, 'corpo:outro')])).toHaveLength(0);
+  });
+});
+
+// ============================================================
+// §2 APARIÇÃO — as regras do NASA Eyes (item 125, ONDA DA PARIDADE, F2)
+//
+// O que se julga aqui é a CONTA, com os literais do bundle deles ao
+// lado. Cada bloco tem a sabotagem que ele morde escrita por extenso: se
+// a conta mudar de sinal, de limiar ou de duração, uma destas linhas cai.
+// ============================================================
+
+/** a câmera bem dentro do sistema, onde o fade de distância ainda não morde */
+const PERTO = 0.005;
+
+describe('A5 — o rótulo CEDE quando o corpo ENCHE a tela', () => {
+  it('a régua é o literal DefaultVisibleFar: pleno em 0,02, zero em 0,03', () => {
+    // `new VisibleInterval(0, .02, "normal-radius")`, fadeBlur .5
+    expect(RAIO_NDC_DE_CESSAO).toBe(0.02);
+    expect(BORRAO_DA_CESSAO).toBe(0.5);
+    // `sai = clamp01((1 − r/max)/fadeBlur + 1)`
+    expect(cessaoPorTamanhoAparente(0)).toBe(1);
+    expect(cessaoPorTamanhoAparente(0.019)).toBe(1);
+    expect(cessaoPorTamanhoAparente(0.02)).toBeCloseTo(1, 12);
+    expect(cessaoPorTamanhoAparente(0.025)).toBeCloseTo(0.5, 12);
+    expect(cessaoPorTamanhoAparente(0.03)).toBeCloseTo(0, 12);
+    expect(cessaoPorTamanhoAparente(0.06)).toBe(0);
+    // SABOTAGEM QUE ISTO MORDE: inverter o sinal do fade
+    // (`(r/max − 1)/blur + 1`) faz o nome sumir quando o corpo é PEQUENO
+    // e aparecer quando enche a tela — em 0,019 o valor cairia a 0 e em
+    // 0,06 subiria a 1, e as duas pontas acima acusam.
+  });
+
+  it('min = 0: NUNCA some por ser pequeno — a outra ponta é lei', () => {
+    // No Eyes `min = 0` faz a metade `entra` valer 1 sempre; aqui ela
+    // nem existe, e é isto que prova que não nasceu por engano.
+    for (const r of [0, 1e-12, 1e-6, 1e-3, 0.01]) {
+      expect(cessaoPorTamanhoAparente(r), `r=${r}`).toBe(1);
+    }
+  });
+
+  it('o raio aparente é EXATO em NDC, não a aproximação de ângulo pequeno', () => {
+    const tanHalfFov = Math.tan(Math.PI / 6); // lente de 60°
+    // s = 0,6 ⇒ tan(asin 0,6) = 0,6/0,8 = 0,75, e não 0,6
+    expect(raioAparenteNdc(6, 10, tanHalfFov)).toBeCloseTo(0.75 / tanHalfFov, 12);
+    // longe, as duas formas coincidem — é lá que a aproximação valia
+    expect(raioAparenteNdc(1, 1e6, tanHalfFov)).toBeCloseTo(1e-6 / tanHalfFov, 15);
+    // CÂMERA DENTRO DO CORPO: cedeu de vez, sem NaN
+    expect(raioAparenteNdc(10, 10, tanHalfFov)).toBe(Number.POSITIVE_INFINITY);
+    expect(cessaoPorTamanhoAparente(raioAparenteNdc(10, 5, tanHalfFov))).toBe(0);
+    // entrada degenerada não vira NaN nem infinito
+    expect(raioAparenteNdc(0, 10, tanHalfFov)).toBe(0);
+    expect(raioAparenteNdc(1, 0, tanHalfFov)).toBe(0);
+  });
+
+  it('em projectCorpos o nome apaga ENTRE os dois raios, e some no de cima', () => {
+    // A câmera DENTRO do sistema (0,005 pc), senão o fade de distância
+    // dos corpos (`CORPO_FADE_*`, 0,01→0,05 pc) já zera tudo e a régua
+    // nova mediria zero contra zero.
+    const cam = new THREE.PerspectiveCamera(60, 1.6, 1e-9, 1000);
+    cam.position.set(0, 0, PERTO);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld(true);
+    const tanHalfFov = Math.tan((60 / 2) * (Math.PI / 180));
+    const um = [CORPOS_DO_SISTEMA[3]];
+    const p = new Float32Array(3);
+    /** o raio que põe o corpo exatamente em `alvoNdc` de raio aparente */
+    const raioPara = (alvoNdc: number) => {
+      const tan = alvoNdc * tanHalfFov;
+      const s = tan / Math.sqrt(1 + tan * tan);
+      return s * PERTO;
+    };
+    const alfaCom = (alvoNdc: number) => {
+      const r = raioPara(alvoNdc);
+      const l = projectCorpos(cam, um, p, undefined, () => r)[0];
+      return l ? { op: l.opacity, causa: l.causaDoSumico } : null;
+    };
+    const pequeno = alfaCom(0.001)!;
+    const noJoelho = alfaCom(0.02)!;
+    const meio = alfaCom(0.025)!;
+    const cheio = alfaCom(0.03)!;
+    const passou = alfaCom(0.035)!;
+    expect(pequeno.op).toBeGreaterThan(0.9);
+    expect(noJoelho.op).toBeCloseTo(pequeno.op, 10); // até 0,02 nada muda
+    expect(meio.op).toBeCloseTo(pequeno.op * 0.5, 10);
+    expect(cheio.op).toBeCloseTo(0, 12);
+    // A CAUSA fica legível no estado (A10) — e SÓ na ponta de cima
+    expect(pequeno.causa).toBeUndefined();
+    expect(meio.causa).toBeUndefined();
+    // NO JOELHO EXATO a cessão é um epsilon de ponto flutuante, não um
+    // zero — a marca só se acende quando o multiplicador CHEGA a zero,
+    // e a opacidade nessa fresta já está muito abaixo da soleira do
+    // desenho (`OPACIDADE_MINIMA_DO_ROTULO`).
+    expect(cheio.causa).toBeUndefined();
+    expect(cheio.op).toBeLessThan(OPACIDADE_MINIMA_DO_ROTULO);
+    expect(passou.op).toBe(0);
+    expect(passou.causa).toBe('tamanho');
+  });
+
+  it('sem o fio do raio a régua não roda — o ramo velho fica intacto', () => {
+    const cam = new THREE.PerspectiveCamera(60, 1.6, 1e-9, 1000);
+    cam.position.set(0, 0, PERTO);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld(true);
+    const um = [CORPOS_DO_SISTEMA[3]];
+    const p = new Float32Array(3);
+    const semFio = projectCorpos(cam, um, p)[0];
+    const comFioNulo = projectCorpos(cam, um, p, undefined, () => null)[0];
+    expect(semFio.opacity).toBe(comFioNulo.opacity);
+    expect(semFio.opacity).toBeGreaterThan(0.9);
+  });
+
+  it('o CANAL PRIMÁRIO sai da classe: planeta e estrela leem mais forte', () => {
+    const rotulos = projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes());
+    const porChave = new Map(rotulos.map((l) => [l.key, l]));
+    expect(porChave.get(`${CHAVE_DE_CORPO}sun`)!.canalPrimario).toBe(true);
+    expect(porChave.get(`${CHAVE_DE_CORPO}earth`)!.canalPrimario).toBe(true);
+    expect(porChave.get(`${CHAVE_DE_CORPO}pluto`)!.canalPrimario).toBe(false);
+  });
+});
+
+describe('A8/A9 — os fades do rótulo em DUAS camadas, e a final é o produto', () => {
+  /** um rótulo cru, sem passar por projeção */
+  function rot(over: Partial<StarLabel> = {}): StarLabel {
+    return { name: 'X', spect: '', distPc: 1, x: 0.5, y: 0.5, opacity: 1, key: 'x', ...over };
+  }
+
+  it('os alfas de dentro são os literais da folha deles', () => {
+    expect(ALFA_DO_TEXTO_SECUNDARIO).toBe(0.35); // --secondaryFadeIn
+    expect(ALFA_DO_TEXTO_PRIMARIO).toBe(0.75); // --primaryFadeIn
+    expect(ALFA_DO_TEXTO_ESCONDIDO).toBe(0.05); // --*FadeOut
+    expect(ALFA_DO_TEXTO_APONTADO).toBe(1); // --hoverOpacity
+  });
+
+  it('o rótulo NASCE no alfa de repouso do canal, e a variante planeta é outra', () => {
+    const rampas = new RampasDeRotulo();
+    const comum = rot();
+    const planeta = rot({ key: 'p', canalPrimario: true });
+    rampas.aplicar([comum, planeta], 0);
+    expect(comum.alfaDoTexto).toBe(ALFA_DO_TEXTO_SECUNDARIO);
+    expect(planeta.alfaDoTexto).toBe(ALFA_DO_TEXTO_PRIMARIO);
+    // o canal do ÍCONE viaja calculado, para a F5 plugar
+    expect(comum.alfaDoIcone).toBe(ALFA_DO_TEXTO_SECUNDARIO);
+    // e a camada de FORA ainda está subindo: a final é o PRODUTO
+    expect(comum.opacity).toBe(0);
+  });
+
+  it('a opacidade final é o produto das DUAS camadas', () => {
+    const rampas = new RampasDeRotulo();
+    // meio caminho da camada de fora: 0,125 s de 0,25
+    const l = rot();
+    rampas.aplicar([l], RAMPA_DE_ENTRADA_S / 2);
+    expect(l.opacity).toBeCloseTo(0.5, 12);
+    expect(l.alfaDoTexto).toBe(ALFA_DO_TEXTO_SECUNDARIO);
+    // o desenho pinta `opacity × alfaDoTexto` — 0,5 × 0,35
+    expect(l.opacity * l.alfaDoTexto!).toBeCloseTo(0.175, 12);
+    // SABOTAGEM QUE ISTO MORDE: pintar só uma das camadas (0,5 ou 0,35)
+    // deixa a curva linear e este produto desmente.
+  });
+
+  it('a camada de dentro gasta 250 ms para ENTRAR e 750 ms para SAIR', () => {
+    const rampas = new RampasDeRotulo();
+    const l = rot();
+    rampas.aplicar([l], 0); // nasce em 0,35
+    // ESCONDIDO: 0,35 → 0,05, em 750 ms (a duração é do CSS, não uma
+    // taxa: o percurso inteiro cabe na duração, qualquer que seja)
+    l.causaDoSumico = 'tamanho';
+    rampas.aplicar([l], RAMPA_DE_SAIDA_S / 3);
+    expect(l.alfaDoTexto).toBeCloseTo(0.35 - (0.35 - 0.05) / 3, 12);
+    rampas.aplicar([l], (RAMPA_DE_SAIDA_S * 2) / 3);
+    expect(l.alfaDoTexto).toBe(ALFA_DO_TEXTO_ESCONDIDO);
+    // VOLTOU: 0,05 → 0,35 em 250 ms
+    l.causaDoSumico = undefined;
+    rampas.aplicar([l], RAMPA_DE_ENTRADA_S / 2);
+    expect(l.alfaDoTexto).toBeCloseTo(0.05 + (0.35 - 0.05) / 2, 12);
+    rampas.aplicar([l], RAMPA_DE_ENTRADA_S / 2);
+    expect(l.alfaDoTexto).toBe(ALFA_DO_TEXTO_SECUNDARIO);
+    // SABOTAGEM QUE ISTO MORDE: trocar as duas durações de lugar (750
+    // para entrar, 250 para sair) muda os dois números do meio.
+  });
+
+  it('A12 — o hover leva o texto a 1 em 250 ms, e escondido não recebe ponteiro', () => {
+    const rampas = new RampasDeRotulo();
+    const l = rot();
+    rampas.aplicar([l], 0);
+    expect(l.alfaDoTexto).toBe(ALFA_DO_TEXTO_SECUNDARIO);
+    l.apontado = true;
+    rampas.aplicar([l], RAMPA_DE_ENTRADA_S / 2);
+    expect(l.alfaDoTexto).toBeCloseTo(0.35 + (1 - 0.35) / 2, 12);
+    rampas.aplicar([l], RAMPA_DE_ENTRADA_S / 2);
+    expect(l.alfaDoTexto).toBe(ALFA_DO_TEXTO_APONTADO);
+    // `.hidden { pointer-events: none }` — o ponteiro não alcança quem saiu
+    const morto = rot({ key: 'm', apontado: true, causaDoSumico: 'tamanho' });
+    rampas.aplicar([morto], 0);
+    expect(morto.alfaDoTexto).toBe(ALFA_DO_TEXTO_ESCONDIDO);
+  });
+});
+
+describe('A10 — duas causas de sumiço, a MESMA duração de fade', () => {
+  function rot(over: Partial<StarLabel> = {}): StarLabel {
+    return { name: 'X', spect: '', distPc: 1, x: 0.5, y: 0.5, opacity: 1, key: 'x', ...over };
+  }
+
+  it('a causa fica legível no estado — e são duas palavras diferentes', () => {
+    const lista = [
+      rot({ key: 'a', prioridade: 10 }),
+      rot({ key: 'b', prioridade: 9 }),
+      rot({ key: 'c', prioridade: 8 }),
+    ];
+    aplicarReguaDeRelevancia(lista, undefined, 1);
+    expect(lista[0].causaDoSumico).toBeUndefined();
+    expect(lista[1].causaDoSumico).toBe('disputa');
+    expect(lista[2].causaDoSumico).toBe('disputa');
+    expect(lista[1].cortadoPelaRegua).toBe(true);
+  });
+
+  it('cedido por TAMANHO e cortado pela DISPUTA descem juntos, passo a passo', () => {
+    const rampas = new RampasDeRotulo();
+    const porTamanho = rot({ key: 'tamanho' });
+    const porDisputa = rot({ key: 'disputa' });
+    // os dois nascem na tela e sobem a camada de fora até o topo
+    rampas.aplicar([porTamanho, porDisputa], RAMPA_DE_ENTRADA_S);
+    expect(porTamanho.opacity).toBe(1);
+    expect(porDisputa.opacity).toBe(1);
+    // agora um sai por cada porta, e as trilhas têm de coincidir
+    const trilhaT: number[] = [];
+    const trilhaD: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      porTamanho.opacity = 1;
+      porTamanho.causaDoSumico = 'tamanho';
+      porDisputa.opacity = 1;
+      porDisputa.cortadoPelaRegua = true;
+      porDisputa.causaDoSumico = 'disputa';
+      rampas.aplicar([porTamanho, porDisputa], RAMPA_DE_SAIDA_S / 4);
+      trilhaT.push(porTamanho.opacity);
+      trilhaD.push(porDisputa.opacity);
+    }
+    expect(trilhaT).toEqual(trilhaD);
+    expect(trilhaT[0]).toBeCloseTo(0.75, 12); // 750 ms, um quarto por passo
+    expect(trilhaT[3]).toBe(0);
+    // SABOTAGEM QUE ISTO MORDE: dar à cessão por tamanho uma duração
+    // própria (ou não a mandar para a rampa) rompe a igualdade das duas
+    // trilhas na primeira linha.
   });
 });

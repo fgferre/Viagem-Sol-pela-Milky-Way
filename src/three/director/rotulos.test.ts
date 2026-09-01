@@ -19,7 +19,7 @@ import type { JourneyMeta } from '../cinematic/journey';
 import type { NamedStar } from '../config';
 import { CORPOS_DO_SISTEMA } from '../atlasConfig';
 import type { Planetas } from '../world/planetas/planetas';
-import { ORCAMENTO_DE_NOMES } from '../world/labels';
+import { ORCAMENTO_DE_NOMES, PRIORIDADE_DO_ROTULO } from '../world/labels';
 import type { StarLabel } from '../world/labels';
 import type { Rotulos as TipoRotulos, QuadroDeRotulos } from './rotulos';
 
@@ -665,5 +665,137 @@ describe('a histerese da régua enxerga o quadro ANTERIOR (item 120)', () => {
     for (const l of rotulos.alvos) l.desenhado = false;
     passo();
     expect(rotulos.alvos.find((l) => l.key === perdedor)!.cortadoPelaRegua).toBe(true);
+  });
+});
+
+// ============================================================
+// §2 APARIÇÃO no PRODUTOR (item 125, ONDA DA PARIDADE, F2).
+//
+// A conta mora em `world/labels.ts` e é julgada lá. O que se prova aqui
+// é o FIO: que o produtor entrega o raio de cena à régua, que o alvo em
+// FOCO passa por ela como todo mundo (A6) e que o ponteiro chega ao alfa
+// do texto no mesmo quadro (A12).
+// ============================================================
+describe('A6 — o alvo SEGUIDO não é exceção à cessão por tamanho', () => {
+  /** a Terra sozinha em quadro, a `dist` pc da câmera, com raio `raio` */
+  function comATerra(raio: number, foco: string | null) {
+    const publicados: StarLabel[][] = [];
+    const rotulos = new Rotulos({
+      onLabels: (l) => publicados.push(l),
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({}) as JourneyMeta,
+      // a régua de aparição bebe DESTA fonte, a mesma do disco oclusor
+      raioFisicoDe: (id) => (id === 'earth' ? raio : null),
+    });
+    const cam = new THREE.PerspectiveCamera(60, 1.6, 1e-9, 100);
+    cam.position.set(0, 0, 0.005);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld(true);
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const iTerra = CORPOS_DO_SISTEMA.findIndex((c) => c.id === 'earth');
+    posicoes[iTerra * 3] = 0;
+    posicoes[iTerra * 3 + 1] = 0;
+    posicoes[iTerra * 3 + 2] = 0;
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    const quadro: QuadroDeRotulos = {
+      fase: 'atlas', named: [], dHome: 0.005, planetas, foco,
+      nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+    };
+    // dois quadros: o primeiro faz a camada de fora subir ao topo
+    rotulos.tique(1);
+    rotulos.projetar(cam, quadro);
+    rotulos.tique(1);
+    rotulos.projetar(cam, quadro);
+    return rotulos.alvos.find((l) => l.key === 'corpo:earth')!;
+  }
+
+  /** o raio que põe o corpo em `alvoNdc` de raio aparente, a 0,005 pc */
+  function raioPara(alvoNdc: number) {
+    const tan = alvoNdc * Math.tan((60 / 2) * (Math.PI / 180));
+    return (tan / Math.sqrt(1 + tan * tan)) * 0.005;
+  }
+
+  it('PEQUENA e em foco: o nome vive, com o peso do foco', () => {
+    const terra = comATerra(raioPara(0.005), 'earth');
+    expect(terra.prioridade).toBe(PRIORIDADE_DO_ROTULO.foco);
+    expect(terra.opacity).toBeGreaterThan(0.3);
+    expect(terra.causaDoSumico).toBeUndefined();
+  });
+
+  it('ENCHENDO A TELA e em foco: o nome CEDE — peso não é imunidade', () => {
+    const terra = comATerra(raioPara(0.05), 'earth');
+    // o peso do foco continua lá, e mesmo assim…
+    expect(terra.prioridade).toBe(PRIORIDADE_DO_ROTULO.foco);
+    expect(terra.opacity).toBe(0);
+    expect(terra.causaDoSumico).toBe('tamanho');
+    // …e o texto de dentro já está no alfa de escondido
+    expect(terra.alfaDoTexto).toBeLessThan(0.35);
+    // SABOTAGEM QUE ISTO MORDE: isentar o foco da régua (a leitura
+    // intuitiva, e a que a casa tinha até 01/09) devolve opacidade viva.
+  });
+
+  it('sem foco o resultado é o MESMO: a régua não olha quem é o alvo', () => {
+    const emFoco = comATerra(raioPara(0.05), 'earth');
+    const solto = comATerra(raioPara(0.05), null);
+    expect(solto.opacity).toBe(emFoco.opacity);
+    expect(solto.causaDoSumico).toBe(emFoco.causaDoSumico);
+  });
+});
+
+describe('A12 — o ponteiro no nome acende o alfa do texto, no mesmo quadro', () => {
+  function bancadaDeHover() {
+    const rotulos = new Rotulos({
+      onLabels: () => {},
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({}) as JourneyMeta,
+      raioFisicoDe: () => null,
+    });
+    const cam = new THREE.PerspectiveCamera(60, 1.6, 1e-9, 100);
+    cam.position.set(0, 0, 0.005);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld(true);
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const iTerra = CORPOS_DO_SISTEMA.findIndex((c) => c.id === 'earth');
+    posicoes[iTerra * 3] = 0;
+    posicoes[iTerra * 3 + 1] = 0;
+    posicoes[iTerra * 3 + 2] = 0;
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    const quadro: QuadroDeRotulos = {
+      fase: 'atlas', named: [], dHome: 0.005, planetas, foco: null,
+      nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+    };
+    const passo = (dt: number) => {
+      rotulos.tique(dt);
+      rotulos.projetar(cam, quadro);
+      return rotulos.alvos.find((l) => l.key === 'corpo:earth')!;
+    };
+    return { rotulos, passo };
+  }
+
+  it('0,35 em repouso → 1 em 250 ms, e volta ao soltar', () => {
+    const { rotulos, passo } = bancadaDeHover();
+    // a Terra é PLANETA: o canal dela é o primário (0,75)
+    expect(passo(1).alfaDoTexto).toBe(0.75);
+    rotulos.apontado = 'corpo:earth';
+    expect(passo(0.125).alfaDoTexto).toBeCloseTo(0.75 + (1 - 0.75) / 2, 12);
+    expect(passo(0.125).alfaDoTexto).toBe(1);
+    // soltou: desce pela rampa LONGA (750 ms), como no `.text` deles
+    rotulos.apontado = null;
+    expect(passo(0.25).alfaDoTexto).toBeCloseTo(1 - (1 - 0.75) / 3, 12);
+    // SABOTAGEM QUE ISTO MORDE: apagar a marca do apontado no produtor
+    // (ou pendurá-la em outro evento) trava o alfa em 0,75.
+  });
+
+  it('apontar OUTRO nome não acende este', () => {
+    const { rotulos, passo } = bancadaDeHover();
+    passo(1);
+    rotulos.apontado = 'corpo:mars';
+    expect(passo(0.25).alfaDoTexto).toBe(0.75);
   });
 });

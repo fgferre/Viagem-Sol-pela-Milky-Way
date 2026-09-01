@@ -168,6 +168,17 @@ export class Rotulos {
   private readonly poolDeOclusores: OclusorDeRotulo[] = [];
   /** raio físico por id — não muda em sessão, e o fio é da escada */
   private readonly raiosDeCorpo = new Map<string, number | null>();
+  /**
+   * A CHAVE DO RÓTULO QUE O PONTEIRO APONTA (item 125, F2 · A12) — o
+   * MESMO gesto que a F1 usou para acender a linha de órbita (L11), e
+   * por isso o mesmo quadro: quem escreve é `Director.apontarRotulo`,
+   * do hit-test da lista única dos desenhados.
+   *
+   * Aqui ele vale para QUALQUER rótulo, não só para corpo: a linha só
+   * existe para corpo, mas o alfa do texto é do rótulo — no Eyes o
+   * `:hover` está na folha do `<div>`, que toda entidade rotulada tem.
+   */
+  apontado: string | null = null;
   /** as rampas de 250/750 ms dos nomes (item 115, bloco B) */
   private readonly rampas = new RampasDeRotulo();
   /**
@@ -272,11 +283,7 @@ export class Rotulos {
       const z = posicoes[i * 3 + 2];
       // sem efeméride não há disco: NaN não esconde nada
       if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
-      let raio = this.raiosDeCorpo.get(corpos[i].id);
-      if (raio === undefined) {
-        raio = this.fios.raioFisicoDe(corpos[i].id);
-        this.raiosDeCorpo.set(corpos[i].id, raio);
-      }
+      const raio = this.raioDeCorpo(corpos[i].id);
       if (raio === null || !(raio > 0)) continue;
       const n = this.oclusoresDeRotulo.length;
       let o = this.poolDeOclusores[n - 1];
@@ -292,6 +299,29 @@ export class Rotulos {
       this.oclusoresDeRotulo.push(o);
     }
   }
+
+  /**
+   * O RAIO DE CENA de um corpo pelo id, memoizado — a fonte é a escada
+   * (`raioFisicoDe`) e ele não muda em sessão. DOIS fregueses: o disco
+   * que esconde nome (item 115) e, desde 01/09, a régua de aparição por
+   * tamanho aparente (item 125, F2 · A5).
+   */
+  private raioDeCorpo(id: string): number | null {
+    let raio = this.raiosDeCorpo.get(id);
+    if (raio === undefined) {
+      raio = this.fios.raioFisicoDe(id);
+      this.raiosDeCorpo.set(id, raio);
+    }
+    return raio;
+  }
+
+  /**
+   * O MESMO raio, pela CHAVE do rótulo — o formato que `projectCorpos`
+   * fala. Campo e não método para não alocar um fecho por quadro: são
+   * quatro chamadas de projeção em cada tique.
+   */
+  private readonly raioPorChave = (chave: string): number | null =>
+    this.raioDeCorpo(chave.slice(CHAVE_DE_CORPO.length));
 
   /** escreve o centro vivo no slot da lua em `luaPosParaRotulo`. */
   escreverPosicaoDeLua(id: string, centro: THREE.Vector3) {
@@ -349,7 +379,17 @@ export class Rotulos {
    * planos são pinados quadro a quadro.
    */
   private publicar(labels: StarLabel[], dt: number, fase: Phase) {
-    if (fase !== 'journey') this.rampas.aplicar(labels, dt);
+    if (fase !== 'journey') {
+      // O HOVER ENTRA AQUI, no MESMO funil das rampas e no MESMO quadro
+      // do gesto (item 125, F2 · A12/A13): um `mouseenter` no nome, dois
+      // efeitos — a linha engrossa sem transição (F1 · L10) e o alfa do
+      // texto sobe em 250 ms. A marca é do quadro, nunca do objeto: a
+      // projeção nasce nova a cada tique e o ponteiro pode ter saído.
+      if (this.apontado !== null) {
+        for (const l of labels) if (l.key === this.apontado) l.apontado = true;
+      }
+      this.rampas.aplicar(labels, dt);
+    }
     this.fios.onLabels(labels);
   }
 
@@ -588,10 +628,10 @@ export class Rotulos {
       let icones: StarLabel[] = [];
       if (!quadro.iconesEscondidos && fase === 'atlas' && planetas?.points.visible) {
         const corpos = projectCorpos(
-          cam, CORPOS_DO_SISTEMA, planetas.posicoes, this.oclusoresDeRotulo
+          cam, CORPOS_DO_SISTEMA, planetas.posicoes, this.oclusoresDeRotulo, this.raioPorChave
         );
         const luas = projectCorpos(
-          cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo
+          cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo, this.raioPorChave
         );
         this.esmaecerLuasColadasNoPai(corpos, luas);
         icones = [...corpos, ...luas];
@@ -662,14 +702,18 @@ export class Rotulos {
         // decide `points.visible`).
         const corpos =
           fase === 'atlas' && planetas?.points.visible
-            ? projectCorpos(cam, CORPOS_DO_SISTEMA, planetas.posicoes, this.oclusoresDeRotulo)
+            ? projectCorpos(
+                cam, CORPOS_DO_SISTEMA, planetas.posicoes, this.oclusoresDeRotulo, this.raioPorChave
+              )
             : [];
         // AS LUAS (F2b/F5): rótulo pela posição VIVA da efeméride —
         // não têm vértice na camada de pontos, então entram por uma
         // projeção própria. NaN (sem efeméride) o projectCorpos ignora.
         const luas =
           fase === 'atlas' && planetas?.points.visible
-            ? projectCorpos(cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo)
+            ? projectCorpos(
+                cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo, this.raioPorChave
+              )
             : [];
         // A LUA SÓ ACENDE QUANDO SE DESCOLA DO PAI (item 73, plano §3):
         // de longe as 21 luas projetam em cima dos planetas delas, e o

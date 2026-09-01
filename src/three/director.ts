@@ -1236,6 +1236,12 @@ export class Director {
           ? chave.slice(CHAVE_DE_CORPO.length)
           : null;
     }
+    // O SEGUNDO EFEITO DO MESMO GESTO (item 125, F2 · A12/A13): o alfa
+    // do TEXTO do nome apontado sobe ao topo. Vale para qualquer rótulo
+    // — estrela e centro galáctico inclusive, que não têm linha a
+    // acender — porque no Eyes o `:hover` mora na folha do `<div>` do
+    // rótulo, e todo rótulo tem um.
+    this.rotulos.apontado = chave;
     return chave !== null;
   }
 
@@ -1243,6 +1249,7 @@ export class Director {
    *  promessa do cursor (ver `apontarRotulo`) */
   private apagarHover() {
     if (this.orbitas) this.orbitas.hover = null;
+    this.rotulos.apontado = null;
   }
 
   /**

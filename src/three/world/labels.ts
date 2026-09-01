@@ -103,6 +103,66 @@ export interface StarLabel {
    * o conjunto dos rótulos que ocupam a tela é o mesmo com e sem ela.
    */
   saindo?: boolean;
+  /**
+   * POR QUE ESTE NOME ESTÁ SUMINDO (item 125, F2 · A10) — e são DUAS
+   * causas, não uma, exatamente como no Eyes: lá o `<div>` recebe
+   * `hidden` (tamanho aparente fora do intervalo, oclusão por corpo ou
+   * atrás da câmera, escrito pelo `DivComponent`) ou
+   * `hiddenByLabelQuadtree` (perdeu a disputa por espaço, escrito pelo
+   * `LabelQuadtree`), e as DURAÇÕES DE FADE SÃO AS MESMAS nos dois
+   * casos (`transition: opacity .75s` na mesma regra CSS).
+   *
+   *  · `'tamanho'` — a régua de aparição disse não: o corpo ENCHEU a
+   *    tela e o nome cedeu (`cessaoPorTamanhoAparente`). É o `hidden`
+   *    deles.
+   *  · `'disputa'` — a régua de relevância cortou: a tela está cheia de
+   *    nomes que importam mais. É o `hiddenByLabelQuadtree` deles, e é
+   *    a mesma marca que `cortadoPelaRegua` já carregava.
+   *
+   * A CAUSA É ESTADO, não decoração: `RampasDeRotulo` a lê para pôr as
+   * duas sob a MESMA rampa de saída, e a F3 (prioridade e colisão) vai
+   * precisar distinguir quem perdeu a vaga de quem saiu de cena.
+   *
+   * O QUE ELA NÃO COBRE, e está declarado: oclusão e atrás-da-câmera
+   * retiram o rótulo da LISTA (`projectCorpos`/`projectLabels` dão
+   * `continue`), então não há objeto onde escrever a marca — eles caem
+   * no ramo "sumiu da lista" da rampa, que usa a mesma
+   * `RAMPA_DE_SAIDA_S`. Trazer esses dois para a lista é obra da F4.
+   */
+  causaDoSumico?: 'tamanho' | 'disputa';
+  /**
+   * O ALFA DO CANAL DE TEXTO — a camada de DENTRO dos dois fades do
+   * Eyes (item 125, F2 · A8/A9). Quem escreve é `RampasDeRotulo`; quem
+   * o consome é o `LabelCanvas`, que pinta o texto com o PRODUTO
+   * `opacity × alfaDoTexto`. Ausente = 1 (o ramo do FILME, que não
+   * passa pelas rampas, continua pixel a pixel o de sempre).
+   */
+  alfaDoTexto?: number;
+  /**
+   * O ALFA DO CANAL DE ÍCONE — o irmão de `alfaDoTexto`, calculado com
+   * os mesmos números e DELIBERADAMENTE não consumido ainda: os ícones
+   * são assunto da F5, e o contrato (§5.1) manda que os dois canais
+   * sejam independentes. A F2 deixa o fio esticado e não o liga.
+   */
+  alfaDoIcone?: number;
+  /**
+   * O PONTEIRO ESTÁ EM CIMA DESTE NOME (item 125, F2 · A12) — a mesma
+   * marca, no mesmo quadro, que já acende a linha de órbita (F1 · L11).
+   * O Eyes leva os dois canais a `--hoverOpacity: 1` em 250 ms
+   * ease-out; aqui o alvo do canal de texto vira 1 e a rampa de entrada
+   * o leva lá.
+   */
+  apontado?: boolean;
+  /**
+   * ESTE NOME É DO CANAL PRIMÁRIO (item 125, F2 · A9). No CSS deles as
+   * variantes `.planet` e `.sun` trocam `--secondaryFadeIn` (0,35) por
+   * `--primaryFadeIn` (0,75) — planeta e estrela leem mais forte que o
+   * resto. Aqui a marca é escrita por `projectCorpos` a partir da
+   * CLASSE em pt-BR ('planeta' e 'estrela'), que é o dado que já
+   * existe; anões, asteroides, luas e as estrelas do céu ficam no
+   * secundário, como as naves deles.
+   */
+  canalPrimario?: boolean;
 }
 
 /**
@@ -209,6 +269,94 @@ export function pesoDoRotulo(
 export const OPACIDADE_MINIMA_DO_ROTULO = 0.08;
 
 /**
+ * O RÓTULO CEDE QUANDO O CORPO ENCHE A TELA (item 125, F2 · A5) — a
+ * regra contraintuitiva do Eyes, copiada com os literais dele.
+ *
+ * O PRESET É UM SÓ na casa deles: `VisibleInterval.DefaultVisibleFar =
+ * new VisibleInterval(0, .02, "normal-radius")`, com `fadeBlur = 0.5`
+ * de fábrica — e é ele que o `DivComponent`, o `LabelComponent`, o
+ * `TrailComponent` e o `OrbitLineComponent` recebem no construtor
+ * (`trechos/m08-VisibleInterval.js:3`). Não existe tabela de
+ * intervalos por classe; existe este par de números.
+ *
+ * A CONTA INTEIRA deles é:
+ *
+ *     entra = (r>0 || min>0) ? clamp01((r/min − 1)/fadeBlur + 1) : 1
+ *     sai   = (r>0 || max>0) ? clamp01((1 − r/max)/fadeBlur + 1) : 0
+ *     multiplicador = min(entra, sai)
+ *
+ * Com `min = 0` a primeira metade é sempre 1 (`r/0` é infinito para
+ * `r > 0`, e para `r = 0` a condição é falsa e o ramo devolve 1) — é o
+ * que quer dizer **nunca some por ser pequeno**. Sobra a segunda:
+ * pleno até `r = 0,02`, zero em `r = 1,5 × 0,02 = 0,03`. Nada é
+ * booleano; nada pisca.
+ *
+ * A RÉGUA É `normal-radius`: o raio APARENTE do corpo em NDC, não a
+ * distância. Um corpo pequeno visto de perto e um grande visto de
+ * longe cedem no mesmo lugar, e a lente entra na conta — que é o
+ * sentido da regra: o nome sai quando o OBJETO já é o assunto do
+ * quadro e o texto sobre ele virou estorvo.
+ *
+ * O SUMIÇO "VIRA PÓ" DA CASA NÃO SE TOCA: o esmaecimento por distância
+ * dos corpos (`CORPO_FADE_*`) e o da lua colada no pai continuam onde
+ * estavam. Esta régua é a OUTRA ponta, a que não existia.
+ */
+export const RAIO_NDC_DE_CESSAO = 0.02;
+export const BORRAO_DA_CESSAO = 0.5;
+
+/**
+ * O RAIO APARENTE EM NDC de uma esfera de raio `raio` a `dist` da
+ * câmera, com `tanHalfFov` = tangente do SEMI-ÂNGULO VERTICAL da lente.
+ *
+ * A forma é EXATA, não a aproximação de ângulo pequeno: o NDC vertical
+ * é `tan(θ)/tan(fov/2)` e o semi-ângulo do disco é `asin(raio/dist)`,
+ * então `tan(θ) = s/√(1−s²)` com `s = raio/dist`. A aproximação `s`
+ * erraria justamente onde esta régua trabalha — no close, com `s`
+ * grande —, e a casa já pagou esse preço uma vez na ponta de cima da
+ * régua da órbita (`orbitas.ts`, "a aproximação morre onde r/d → 1").
+ *
+ * Câmera DENTRO do corpo (`s ≥ 1`) devolve infinito: cedeu de vez.
+ */
+export function raioAparenteNdc(raio: number, dist: number, tanHalfFov: number): number {
+  if (!(raio > 0) || !(dist > 0) || !(tanHalfFov > 0)) return 0;
+  const s = raio / dist;
+  if (s >= 1) return Number.POSITIVE_INFINITY;
+  return s / Math.sqrt(1 - s * s) / tanHalfFov;
+}
+
+/**
+ * O MULTIPLICADOR de `DefaultVisibleFar` para um raio aparente em NDC —
+ * a metade `sai` da conta acima, que é a única que morde com `min = 0`.
+ */
+export function cessaoPorTamanhoAparente(raioNdc: number): number {
+  if (!Number.isFinite(raioNdc)) return raioNdc > 0 ? 0 : 1;
+  const sai = (1 - raioNdc / RAIO_NDC_DE_CESSAO) / BORRAO_DA_CESSAO + 1;
+  return Math.min(1, Math.max(0, sai));
+}
+
+/**
+ * A CAMADA DE DENTRO dos dois fades (item 125, F2 · A8/A9) — os alfas
+ * do `.icon` e do `.text` dentro do `<div>` do rótulo.
+ *
+ * São os literais da folha deles (`trechos/m08-label-css.txt`):
+ * `--secondaryFadeIn: 0.35`, `--secondaryFadeOut: 0.05`,
+ * `--primaryFadeIn: 0.75`, `--primaryFadeOut: 0.05`,
+ * `--hoverOpacity: 1`. A variante `.planet`/`.sun` troca o par
+ * secundário pelo primário; o `.hidden`/`.hiddenByLabelQuadtree` leva
+ * os dois ao 0,05.
+ *
+ * POR QUE DUAS CAMADAS E NÃO UMA: a opacidade final é o PRODUTO da
+ * camada de fora (o `<div>`, 0↔1, `RAMPA_DE_ENTRADA_S`/`SAIDA_S`) pela
+ * de dentro (estes números, com as MESMAS durações). É essa curva
+ * não-linear que soa orquestrada — rápido a aparecer, preguiçoso a
+ * sumir — e nenhuma das duas sozinha a produz.
+ */
+export const ALFA_DO_TEXTO_SECUNDARIO = 0.35;
+export const ALFA_DO_TEXTO_PRIMARIO = 0.75;
+export const ALFA_DO_TEXTO_ESCONDIDO = 0.05;
+export const ALFA_DO_TEXTO_APONTADO = 1;
+
+/**
  * QUANTOS NOMES A TELA CARREGA AO MESMO TEMPO — a régua de relevância do
  * item 82, e a metade que o NASA Eyes não tem.
  *
@@ -273,7 +421,13 @@ export function aplicarReguaDeRelevancia(
     // reaproveitar uma lista entre quadros tem de limpar a marca antes,
     // senão o corte de um quadro vira sentença perpétua.
     if (vagas > 0) vagas--;
-    else l.cortadoPelaRegua = true;
+    else {
+      l.cortadoPelaRegua = true;
+      // A CAUSA fica legível no estado (item 125, F2 · A10): este é o
+      // `hiddenByLabelQuadtree` deles — perdeu a DISPUTA por espaço, não
+      // saiu de cena.
+      l.causaDoSumico = 'disputa';
+    }
   }
   return lista;
 }
@@ -318,27 +472,60 @@ export const RAMPA_DE_SAIDA_S = 0.75;
 export class RampasDeRotulo {
   /** alfa vivo por chave; ausente = ainda não nasceu (entra do zero) */
   private readonly alfa = new Map<string, number>();
+  /**
+   * A CAMADA DE DENTRO por chave (item 125, F2 · A8/A9) — e ela guarda
+   * MAIS do que um alfa, porque a semântica do CSS não é a de uma
+   * rampa de taxa fixa: `transition: opacity .25s` gasta os 250 ms
+   * INTEIROS seja qual for o tamanho do salto. Ir de 0,35 a 1 (hover)
+   * leva os mesmos 250 ms que ir de 0,05 a 0,35. Por isso a transição
+   * guarda de onde partiu, para onde vai e quanto já andou.
+   *
+   * A camada de FORA continua sendo taxa (`alfa`, acima) e não muda: lá
+   * o percurso é sempre 0↔1, e taxa e duração coincidem.
+   */
+  private readonly dentro = new Map<
+    string,
+    { alfa: number; origem: number; alvo: number; t: number }
+  >();
 
   /**
    * Um passo de `dt` sobre a lista JÁ julgada pela régua: multiplica a
    * opacidade de cada rótulo pela rampa dele e devolve à lista, como
    * `saindo`, quem a régua cortou e ainda tem tinta.
+   *
+   * `dt = 0` NÃO É SAÍDA (mudou em 01/09, F2): o passo não anda, mas os
+   * alfas do canal continuam sendo escritos na lista. Antes disso um
+   * quadro sem tempo deixaria `alfaDoTexto` indefinido e o desenho
+   * pintaria o nome cheio por um quadro — um pisca que ninguém pediu.
    */
   aplicar(lista: readonly StarLabel[], dt: number): void {
-    if (!(dt > 0)) return;
-    const sobe = dt / RAMPA_DE_ENTRADA_S;
-    const desce = dt / RAMPA_DE_SAIDA_S;
+    const passo = dt > 0 ? dt : 0;
+    const sobe = passo / RAMPA_DE_ENTRADA_S;
+    const desce = passo / RAMPA_DE_SAIDA_S;
     const vistos = new Set<string>();
     for (const l of lista) {
       vistos.add(l.key);
-      const v = this.andar(this.alfa.get(l.key) ?? 0, l.cortadoPelaRegua ? 0 : 1, sobe, desce);
+      // AS DUAS CAUSAS ENTRAM PELA MESMA PORTA (F2 · A10): perder a
+      // disputa e ceder por tamanho escondem o nome com a MESMA rampa,
+      // que é o que a folha deles faz numa regra só
+      // (`&.hidden,&.hiddenByLabelQuadtree{…transition:opacity .75s}`).
+      const escondido = l.cortadoPelaRegua === true || l.causaDoSumico === 'tamanho';
+      const v = this.andar(this.alfa.get(l.key) ?? 0, escondido ? 0 : 1, sobe, desce);
       this.alfa.set(l.key, v);
       l.opacity *= v;
+      const alfaDeDentro = this.andarPorDentro(l, escondido, passo);
+      l.alfaDoTexto = alfaDeDentro;
+      // O CANAL DO ÍCONE É O MESMO NÚMERO e um campo SEPARADO: no CSS
+      // deles `.icon` e `.text` dividem a variável, e o que os separa é
+      // o hover (que também escala o ícone) e o poder de esconder um
+      // sem o outro. A F5 liga este fio; a F2 só o deixa esticado.
+      l.alfaDoIcone = alfaDeDentro;
       if (l.cortadoPelaRegua && v > 0) {
         l.cortadoPelaRegua = false;
         l.saindo = true;
       }
     }
+    if (passo <= 0) return;
     // QUEM SUMIU DA LISTA TAMBÉM DESCE. Sem isto o nome que sai do
     // quadro por um instante e volta renasceria do zero — a memória é
     // exatamente o que impede o pisca-pisca que a assimetria promete
@@ -346,9 +533,52 @@ export class RampasDeRotulo {
     for (const [key, v] of this.alfa) {
       if (vistos.has(key)) continue;
       const novo = this.andar(v, 0, sobe, desce);
-      if (novo <= 0) this.alfa.delete(key);
-      else this.alfa.set(key, novo);
+      if (novo <= 0) {
+        this.alfa.delete(key);
+        this.dentro.delete(key);
+      } else this.alfa.set(key, novo);
     }
+  }
+
+  /**
+   * UM PASSO DA CAMADA DE DENTRO. O alvo é o do CSS deles, nesta ordem
+   * de precedência: apontado (`--hoverOpacity` 1) vence, depois
+   * escondido (`--*FadeOut` 0,05), senão o repouso da variante
+   * (`--primaryFadeIn` 0,75 no planeta e na estrela, `--secondaryFadeIn`
+   * 0,35 no resto).
+   *
+   * O RÓTULO NASCE NO ALVO, não no zero: no navegador o `<div>` é
+   * criado já com a regra aplicada e a transição não corre na primeira
+   * pintura. Quem faz a entrada do nome é a camada de FORA.
+   */
+  private andarPorDentro(l: StarLabel, escondido: boolean, dt: number): number {
+    const repouso = l.canalPrimario ? ALFA_DO_TEXTO_PRIMARIO : ALFA_DO_TEXTO_SECUNDARIO;
+    // ESCONDIDO NÃO RECEBE PONTEIRO: no CSS deles o `.hidden` leva
+    // `pointer-events: none`, então `:hover` não alcança quem já saiu.
+    const alvo = escondido
+      ? ALFA_DO_TEXTO_ESCONDIDO
+      : l.apontado
+        ? ALFA_DO_TEXTO_APONTADO
+        : repouso;
+    let c = this.dentro.get(l.key);
+    if (!c) {
+      c = { alfa: alvo, origem: alvo, alvo, t: 0 };
+      this.dentro.set(l.key, c);
+      return alvo;
+    }
+    if (c.alvo !== alvo) {
+      c.origem = c.alfa;
+      c.alvo = alvo;
+      c.t = 0;
+    }
+    if (c.alfa === c.alvo) return c.alfa;
+    const duracao = c.alvo > c.origem ? RAMPA_DE_ENTRADA_S : RAMPA_DE_SAIDA_S;
+    c.t += dt;
+    c.alfa =
+      c.t >= duracao
+        ? c.alvo
+        : c.origem + (c.alvo - c.origem) * (c.t / duracao);
+    return c.alfa;
   }
 
   private andar(v: number, alvo: number, sobe: number, desce: number): number {
@@ -588,9 +818,24 @@ export function projectCorpos(
   camera: THREE.PerspectiveCamera,
   corpos: readonly CorpoRotulavel[],
   posicoes: Float32Array,
-  oclusores?: readonly OclusorDeRotulo[]
+  oclusores?: readonly OclusorDeRotulo[],
+  /**
+   * O RAIO DE CENA do corpo pela CHAVE do rótulo — a entrada da régua de
+   * aparição (item 125, F2 · A5). Ausente (ou `null` para um corpo), a
+   * cessão por tamanho não roda e o rótulo se comporta como antes de
+   * 01/09: é o que mantém os testes de projeção que não falam de
+   * tamanho, e o ramo do FILME, exatamente onde estavam.
+   *
+   * A FONTE É A ESCADA (`raioFisicoDe`), a mesma que já dá o disco
+   * oclusor, o piso do zoom e o raio da malha. Uma segunda tabela de
+   * raios aqui seria a segunda verdade que a primeira desmentiria.
+   */
+  raioDeCena?: (chave: string) => number | null
 ): StarLabel[] {
   const out: StarLabel[] = [];
+  // o SEMI-ÂNGULO VERTICAL da lente viva — a régua de `normal-radius` é
+  // relativa à TELA, e por isso a lente entra na conta (A2/A5)
+  const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5);
   for (let i = 0; i < corpos.length && (i + 1) * 3 <= posicoes.length; i++) {
     const x = posicoes[i * 3];
     const y = posicoes[i * 3 + 1];
@@ -609,19 +854,32 @@ export function projectCorpos(
     if (oclusores && escondidaPorDisco(camera.position, { x, y, z }, dist, oclusores, corpos[i].chave)) {
       continue;
     }
+    // A CESSÃO POR TAMANHO APARENTE (F2 · A5) — o nome sai quando o
+    // corpo enche a tela, e o ALVO SEGUIDO NÃO É EXCEÇÃO (A6): quem
+    // está em foco só ganha PESO na disputa (`PRIORIDADE_DO_ROTULO.foco`,
+    // escrito depois, no produtor), e peso não é imunidade a esta régua.
+    // Ela roda aqui, antes de tudo, exatamente para que nenhuma promoção
+    // posterior possa desfazê-la.
+    const raio = raioDeCena?.(corpos[i].chave) ?? null;
+    const cessao =
+      raio === null ? 1 : cessaoPorTamanhoAparente(raioAparenteNdc(raio, dist, tanHalfFov));
+    const classe = corpos[i].classe;
     out.push({
       name: corpos[i].nome,
       spect: '',
-      detalhe: corpos[i].classe,
+      detalhe: classe,
       distPc: dist,
       x: p.x,
       y: p.y,
       opacity:
         0.95 *
         (1 -
-          THREE.MathUtils.smoothstep(dist, CORPO_FADE_COMECA_PC, CORPO_FADE_TERMINA_PC)),
+          THREE.MathUtils.smoothstep(dist, CORPO_FADE_COMECA_PC, CORPO_FADE_TERMINA_PC)) *
+        cessao,
       key: corpos[i].chave,
-      prioridade: prioridadeDeCorpo(corpos[i].classe),
+      prioridade: prioridadeDeCorpo(classe),
+      canalPrimario: classe === 'planeta' || classe === 'estrela',
+      ...(cessao <= 0 ? { causaDoSumico: 'tamanho' as const } : {}),
     });
   }
   return out;

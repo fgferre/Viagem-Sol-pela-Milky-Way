@@ -1883,7 +1883,32 @@ metade do 4) — investigar só se um dia incomodar. Pós-selo pendente
 para a sessão da F2: aplicar as 2 correções ao §7 do contrato (L3/L4
 dizem "não tem" e a casa tem — anotadas no F1-BASTAO.md §8); achado
 para o item 49 (tremor é ENTRE sessões, não dentro — 160 capturas
-internas sem oscilação, terralua diferiu entre sessões).
+internas sem oscilação, terralua diferiu entre sessões). *(As duas
+cumpridas em 01/09, commit `2196c5e`.)*
+
+**F2 SELADA em 01/09, palavras dele no servidor vivo: "ficou ótimo,
+pode selar a F2 e seguir para a F3".** O que a F2 entregou: cessão do
+rótulo por TAMANHO APARENTE com a conta literal do Eyes (raio do corpo
+em NDC, preset (0, 0,02), fadeBlur 0,5 ⇒ apaga entre 0,02 e 0,03 —
+na Terra, entre ~90 e ~60 raios, série de 6 fotos conferida pelo
+coordenador e pelo olho dele no vivo); o FOCO não é exceção (prioridade
+120 fica, imunidade morre — provado vivo com as 6 distâncias); a
+SEGUNDA camada de fade (opacidade final = produto: texto 0,75 planeta /
+0,35 secundário, 0,05 escondido, 1 apontado; rampas 250/750 ms nas DUAS
+causas de sumiço, `causaDoSumico` 'tamanho'/'disputa' registrado — a F3
+vai ler); hover leva o texto a alfa 1 no mesmo evento da F1 (razão
+descida/subida MEDIDA = 3,0 = 750/250; +26% no pixel do nome). 13
+sabotagens mordem, 122 testes verdes. A4 conferida SEM código: a régua
+de aparição da órbita da casa não é equivalente à deles, e fica —
+A7/L24 já a declaram melhor. **ACHADO ESTRUTURAL para F3-F6: o gate de
+identidade (54 vistas `?shot=2`) é CEGO a rótulo por construção**
+(`.bare-mode` esconde o `label-canvas`, App.tsx:700) — o bit-idêntico
+54/54 da F2 não prova nada sobre nomes; a prova é foto com HUD +
+medida. Pendências herdadas e endereçadas: canal de ícone calculado
+mas não lido (F5 pluga); oclusão/atrás-da-câmera sem causa própria
+(F4); o modo só-ícone cede junto (decisão, igual ao Eyes). O
+atlas-smoke segue com a única falha pré-existente do portal t=250
+(item 119, idêntica em `2196c5e`).
 
 **ESTADO DA ONDA no handoff de 31/08 (histórico da pausa; superado pelo selo acima):**
 F0 FEITA e commitada (docs/reference/contrato-eyes-linhas-rotulos.md,

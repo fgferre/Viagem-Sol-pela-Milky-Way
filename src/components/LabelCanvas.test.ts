@@ -44,6 +44,8 @@ interface Pintada {
   texto: string;
   x: number;
   y: number;
+  /** o alfa VIGENTE no instante da pintura (item 125, F2 · A8) */
+  alfa: number;
 }
 
 /** contexto 2D de mentira: mede texto por caractere e ANOTA o que pinta. */
@@ -52,7 +54,7 @@ function contextoFalso() {
   const pintadas: Pintada[] = [];
   /** quantas vezes `measureText` foi chamado de verdade */
   const medicoes = { conta: 0 };
-  return {
+  const ctx = {
     pintadas,
     medicoes,
     measureText: (t: string) => {
@@ -69,7 +71,8 @@ function contextoFalso() {
     // a decisão de vaga, então as duas são mudas como as vizinhas
     arc: nada,
     fill: nada,
-    fillText: (texto: string, x: number, y: number) => pintadas.push({ texto, x, y }),
+    fillText: (texto: string, x: number, y: number) =>
+      pintadas.push({ texto, x, y, alfa: ctx.globalAlpha }),
     font: '',
     fillStyle: '',
     strokeStyle: '',
@@ -81,6 +84,7 @@ function contextoFalso() {
     shadowBlur: 0,
     globalAlpha: 1,
   };
+  return ctx;
 }
 
 function canvasFalso(largura = 1200, altura = largura) {
@@ -625,5 +629,53 @@ describe('o nome que sai pinta, mas não ocupa (item 115)', () => {
     // histerese da régua: um nome de saída não entra em nenhuma das duas
     expect(indo.desenhado).toBe(false);
     expect(indo.ladoEsquerdo).toBeUndefined();
+  });
+});
+
+// ============================================================
+// A8 — O PRODUTO DAS DUAS CAMADAS chega ao PIXEL (item 125, F2).
+//
+// A conta das camadas mora em `world/labels.ts` e é julgada lá. O que se
+// prova aqui é o último elo: que o desenho pinta o TEXTO com o produto e
+// que o anel/risco fica na camada de fora — o canal de ícone é da F5.
+// ============================================================
+describe('A8 — o texto pinta o produto das duas camadas', () => {
+  it('o nome sai com `opacity × alfaDoTexto`, e o ausente vale 1', () => {
+    const { ctx, rotulos } = bancada();
+    const l = rotulo('corpo:earth', 'Terra', 0.5, 0.5);
+    l.opacity = 0.8;
+    l.alfaDoTexto = 0.35;
+    rotulos.draw([l]);
+    const nome = ctx.pintadas.find((p) => p.texto === 'TERRA')!;
+    expect(nome.alfa).toBeCloseTo(0.8 * 0.35, 12);
+
+    // O RAMO DO FILME não passa pelas rampas e não traz o campo: ele
+    // continua pintando com a opacidade de sempre, pixel a pixel.
+    const { ctx: ctx2, rotulos: r2 } = bancada();
+    const semCanal = rotulo('corpo:earth', 'Terra', 0.5, 0.5);
+    semCanal.opacity = 0.8;
+    r2.draw([semCanal]);
+    expect(ctx2.pintadas.find((p) => p.texto === 'TERRA')!.alfa).toBeCloseTo(0.8, 12);
+    // SABOTAGEM QUE ISTO MORDE: pintar só `opacity` (ou só o alfa do
+    // canal) muda o primeiro número e deixa o segundo igual.
+  });
+
+  it('o alfa do canal entra na ASSINATURA — o fade não congela no atalho', () => {
+    const { ctx, rotulos } = bancada();
+    const l = rotulo('corpo:earth', 'Terra', 0.5, 0.5);
+    l.opacity = 0.8;
+    l.alfaDoTexto = 0.35;
+    rotulos.draw([l]);
+    const primeiro = ctx.pintadas.find((p) => p.texto === 'TERRA')!.alfa;
+    // mesmo pixel, mesma opacidade de fora, SÓ o canal de dentro andou
+    const l2 = rotulo('corpo:earth', 'Terra', 0.5, 0.5);
+    l2.opacity = 0.8;
+    l2.alfaDoTexto = 0.75;
+    rotulos.draw([l2]);
+    const segundo = ctx.pintadas.find((p) => p.texto === 'TERRA')!.alfa;
+    expect(segundo).not.toBeCloseTo(primeiro, 6);
+    expect(segundo).toBeCloseTo(0.8 * 0.75, 12);
+    // SABOTAGEM QUE ISTO MORDE: tirar `alfaDoTexto` da assinatura faz o
+    // segundo desenho ser pulado e os dois números coincidirem.
   });
 });

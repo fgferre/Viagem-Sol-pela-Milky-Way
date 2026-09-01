@@ -236,6 +236,11 @@ export class LabelCanvas {
         // — sem este bit, ligar/desligar os nomes não repintaria
         `,${label.dirigido ? 1 : 0},${label.icone ? 1 : 0},${label.comAnel ? 1 : 0}` +
         `,${label.textoInvisivel ? 1 : 0},${label.saindo ? 1 : 0}` +
+        // A CAMADA DE DENTRO ENTRA NA ASSINATURA (item 125, F2 · A8): o
+        // alfa do texto muda sem que o nome saia do pixel — um hover, ou
+        // a rampa de 250 ms subindo de 0,05 a 0,35 — e sem este campo o
+        // atalho de repintura diria "já está na tela" e congelaria o fade.
+        `,${(label.alfaDoTexto ?? 1).toFixed(3)}` +
         `,${label.corDoAnel ?? ''},${nome},${detalhe}`;
     }
     return assinatura;
@@ -433,6 +438,19 @@ export class LabelCanvas {
       // fica só a marca do desenhado (o clique) e o anel lá de cima.
       if (label.textoInvisivel) continue;
 
+      // O PRODUTO DAS DUAS CAMADAS (item 125, F2 · A8/A9). No Eyes a
+      // opacidade do nome é `opacity` do `<div>` (0↔1, 250/750 ms) VEZES
+      // a opacidade do `.text` de dentro (0,35 no comum, 0,75 no planeta
+      // e no Sol, 0,05 escondido, 1 apontado — com as mesmas durações).
+      // É essa curva não-linear que soa orquestrada, e nenhuma das duas
+      // camadas sozinha a produz.
+      //
+      // SÓ O TEXTO: o anel e o risco continuam na camada de fora, porque
+      // o canal de ÍCONE é assunto da F5 (`alfaDoIcone` já viaja no
+      // objeto, calculado, e ninguém o lê ainda). Ausente = 1, e é assim
+      // que o ramo do FILME — que não passa pelas rampas — continua
+      // pintando pixel a pixel o de sempre.
+      ctx.globalAlpha = label.opacity * (label.alfaDoTexto ?? 1);
       ctx.textAlign = toLeft ? 'right' : 'left';
       ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
       ctx.shadowBlur = 7;
