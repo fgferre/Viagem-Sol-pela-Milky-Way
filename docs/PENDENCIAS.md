@@ -1823,6 +1823,19 @@ começa por propostas visuais para o olho dele (a mineração do Eyes tem
 o mecanismo do loading deles mapeado no mergulho 06 — bundle separado,
 dados essenciais antes do app, saída em fade).
 
+**129. Modos não são universos — e a busca é UMA SÓ.** Direção de
+produto dada em 01/09, ao encerrar a onda 125, palavras dele: *"o modo
+viagem é somente uma mudança na forma de controlar o movimento da
+câmera (...) o filme é uma opção que vive no universo único do app
+(...) logo a busca é uma só tb, para todos os objetos que populam
+nosso 'universo'."* Estende a doutrina do universo único (decisão
+antiga dele): viagem/atlas/filme são OPÇÕES do mesmo mundo, não
+mundos. A oportunidade que ele enxerga é na PESQUISA/BUSCA: um só
+buscador, que ache qualquer objeto do universo a partir de qualquer
+opção em que o visitante esteja. Sem obra ainda — é o rumo da próxima
+rodada; a primeira pergunta dela é o censo do que a busca de hoje
+enxerga e deixa de enxergar em cada opção.
+
 **119. O atlas-smoke prova 3 reprova em t=250 — o relógio do portal
 move a Terra (pré-existente, provado).** Achado em 31/08 durante a obra
 do retrato v2, com prova de inocência da obra: a mesma receita em HEAD
