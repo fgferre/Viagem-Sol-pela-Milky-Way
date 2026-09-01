@@ -896,7 +896,7 @@ a F0 as declarou "não tem" e a casa já as tinha desde o item 83.
 | regra | o que a casa tem hoje | onde | fase |
 |---|---|---|---|
 | A1-A3 fade por tamanho aparente | **mesma família**: `smoothstep` em px CSS e em semi-ângulo | `orbitas.ts:1910`, `:1923-1924` | — |
-| A4 preset único `DefaultVisibleFar` | **refeita na F7** (a conferência da F2 usava só a 4ª porta — ver §2.2b): planetas isentos (min=0) + cessão no close pela conta da F2; luas pela porta do pai (`PORTA_DO_SISTEMA_PX 20`) com rampa da casa; `apoastroPc` e `paiEnquadrado` mortos | `orbitas.ts` (`PORTA_DO_SISTEMA_PX`, `raiosDoSistema`, `cessao`) | F7 selada |
+| A4 preset único `DefaultVisibleFar` | **refeita na F7** (a conferência da F2 usava só a 4ª porta — ver §2.2b): planetas isentos (min=0) + cessão no close pela conta da F2; luas pela porta do pai (`PORTA_DO_SISTEMA_PX 20`) com rampa da casa; morreram o CORTE `d <= apoastroPc` e o `paiEnquadrado` (o campo `apoastroPc` segue vivo — é a base de `raiosDoSistema()`, que alimenta a porta do pai) | `orbitas.ts` (`PORTA_DO_SISTEMA_PX`, `raiosDoSistema`, `cessao`) | F7 selada |
 | A5 o rótulo cede no close | **NÃO**: planeta nunca some por tamanho; só a lua colada no pai esmaece (`LUA_ACENDE_EM = 0.012`) | `src/three/director/rotulos.ts:97`, `:327` | **F2** |
 | A6 o alvo seguido não é exceção | a casa promove o foco a `prioridade 120` e não tem cessão por tamanho | `src/three/world/labels.ts:139` | F2 |
 | A7 porta extra do rastro | não se aplica (sem rastro); a ponta de cima da casa é o semi-ângulo de tangência ao apoastro, e é melhor | `orbitas.ts:1917-1924` | manter |
