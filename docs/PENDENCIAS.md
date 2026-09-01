@@ -1855,11 +1855,24 @@ isenção do alvo seguido, viewport inteiro) `09f16e8` · F5 tipografia e
 ícones (letra do Eyes em dois níveis, dois anéis, detalhe só no
 focado) `1a2708f`.
 
-**F6 — o que falta (EM CURSO em 01/09):** fotos A/B das MESMAS quatro
-cenas nos dois apps (vista do sistema, hover, aproximação, close com
-cessão) + a palavra final dele sobre a paridade; fechamento sob o §19
-(a lista — suíte cheia 1× e a auditoria única da onda, §13 — ainda
-por ele aprovar ou cortar).
+**F6 — fotos A/B FEITAS em 01/09** (5 pares em capturas/f6-*.png;
+drivers do Eyes vivo em scratchpad/estudos/nasa-eyes-solar-system/
+mineracao/{eyes,f6-eyes,f6-casa}.mjs); veredito dele: "tudo ok", com a
+ressalva que virou a F7. O fechamento da onda (suíte cheia 1× +
+auditoria única, §13/§19, aprovados por ele) roda DEPOIS da F7, uma
+vez só.
+
+**F7 — ABERTA em 01/09, ordem dele nas fotos A/B: "temos que ter as
+mesmas regras de comportamento para as linhas de órbitas
+sumirem/aparecerem que o nasa eyes".** Reabre a decisão da F2 sobre a
+régua A4 (que mantivera a regra da casa, declarada melhor): a linha de
+órbita passa a aparecer/sumir pela régua do Eyes — nunca some por o
+corpo ser pequeno (min=0), cede quando o corpo enche a tela (mesma
+conta da cessão de rótulo da F2, corpo em raio NDC 0,02→0,03). Cores e
+alfas das linhas NÃO entram (divergência de doutrina declarada na F1:
+luz física vs ilustração). O corte da casa por apoastro/tangência
+(L24, "de dentro não desenha") é decisão do executor com foto: manter
+se protege de linha reta cruzando o quadro na chegada, declarar.
 
 **Achados da onda que seguem abertos:** (a) o gate de identidade é
 CEGO a rótulo por construção (`?shot=2` esconde o `label-canvas`,
