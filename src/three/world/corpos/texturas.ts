@@ -221,7 +221,14 @@ export function detectarWebp(): boolean {
 type EstadoDasTexturas = 'fria' | 'buscando' | 'pronta' | 'falhou';
 
 export type BuscadorDeManifest = (url: string) => Promise<ManifestDeTexturas>;
-export type CarregadorDeTextura = (url: string) => Promise<THREE.Texture>;
+/**
+ * O carregador de UMA imagem. O `sinal` é a peça 3 do bloco A: pedido
+ * que perdeu o dono no meio do caminho para de descer.
+ */
+export type CarregadorDeTextura = (
+  url: string,
+  sinal?: AbortSignal
+) => Promise<THREE.Texture>;
 
 /**
  * O DESCARTE DE UMA TEXTURA DE CORPO — as DUAS metades, e a segunda é a
@@ -385,14 +392,22 @@ const buscarPelaRede: BuscadorDeManifest = async (url) => {
  *
  * A prova de que o pixel não mudou é o `ab-identidade` nas 54 vistas.
  */
-const carregarPelaRede: CarregadorDeTextura = async (url) => {
-  const r = await fetch(url);
+const carregarPelaRede: CarregadorDeTextura = async (url, sinal) => {
+  const r = await fetch(url, { signal: sinal });
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
   const bitmap = await createImageBitmap(await r.blob(), {
     imageOrientation: 'flipY',
     premultiplyAlpha: 'none',
     colorSpaceConversion: 'none',
   });
+  // O CANCELAMENTO PODE CAIR DURANTE A DECODIFICAÇÃO, que é justamente o
+  // trecho longo desta função: o bitmap já existe, é memória de CPU, e
+  // ninguém mais vai buscá-lo para fechar. É o mesmo guard do
+  // `t.isCanceled` deles (mergulho 09, §1.2).
+  if (sinal?.aborted) {
+    bitmap.close();
+    throw new Error(`${url}: carga cancelada`);
+  }
   const tex = new THREE.Texture(bitmap);
   tex.flipY = false;
   tex.needsUpdate = true;
@@ -469,7 +484,8 @@ export async function carregarCanaisDoCorpo(
   canais: readonly CanalPedido[],
   opcoes: OpcoesDeTextura,
   tier: QualityLevel,
-  cancelado: () => boolean
+  cancelado: () => boolean,
+  sinal?: AbortSignal
 ): Promise<Map<string, THREE.Texture> | null> {
   const { base, maxTextureSize } = opcoes;
   const buscar = opcoes.buscarManifest ?? buscarPelaRede;
@@ -486,7 +502,7 @@ export async function carregarCanaisDoCorpo(
       if (!variante) {
         throw new Error(`${corpo} sem variante para '${pedido.canal}' ≤ ${alvo}px`);
       }
-      const tex = await carregar(`${base}${variante.arquivo}`);
+      const tex = await carregar(`${base}${variante.arquivo}`, sinal);
       if (pedido.cor) tex.colorSpace = THREE.SRGBColorSpace;
       tex.wrapS = pedido.repetirEmU ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
@@ -643,6 +659,14 @@ export class TexturasDoCorpo {
   private soltoDesde: number | null = null;
   /** quantos seguram os texels AGORA — 0 é a carência correndo */
   private quantosSeguram = 0;
+  /**
+   * O ABORTO do lote EM VOO (item 115, peça 3). A geração já invalidava
+   * o lote — mas invalidar é decidir que os bytes não servem, não parar
+   * de recebê-los: até aqui o `map` de cinema da Terra descia INTEIRO
+   * para ser descartado na chegada. `AbortController` corta a
+   * transferência. `null` quando não há pedido no ar.
+   */
+  private abortoEmVoo: AbortController | null = null;
 
   constructor(pedido: PedidoDeTexturas) {
     this.pedido = pedido;
@@ -735,11 +759,24 @@ export class TexturasDoCorpo {
     // (21/08) num corpo só. Fora da tela quem cancela é o `aoSoltar`,
     // que não olha tier nenhum: sem segurador, nenhum lote tem dono.
     if (tier === this.tierVivo) {
-      this.geracao += 1;
-      this.tierEmVoo = null;
+      this.cancelarEmVoo();
       return;
     }
     this.pedir();
+  }
+
+  /**
+   * O LOTE EM VOO PERDE O DONO — a geração nova o invalida (quem chegar
+   * é descartado) e o aborto corta os bytes que ainda estão descendo.
+   * As duas metades andam juntas: sem a geração, um lote abortado
+   * poderia pousar; sem o aborto, um lote invalidado continua custando
+   * banda. Um `abort()` depois de a carga terminar é inócuo.
+   */
+  private cancelarEmVoo(): void {
+    this.geracao += 1;
+    this.tierEmVoo = null;
+    this.abortoEmVoo?.abort();
+    this.abortoEmVoo = null;
   }
 
   /**
@@ -752,18 +789,14 @@ export class TexturasDoCorpo {
     // PRIMEIRA CARGA EM VOO: nada na tela para preservar. Cancela já —
     // a geração nova invalida o lote, e o `abortar` corta os bytes.
     if (this.estado === 'buscando') {
-      this.geracao += 1;
-      this.tierEmVoo = null;
+      this.cancelarEmVoo();
       this.estado = 'fria';
       this.soltoDesde = null;
       return;
     }
     // TROCA DE TIER EM VOO: os pixels velhos continuam servindo, então
     // o lote novo é que perde o dono. A carência abaixo julga os velhos.
-    if (this.tierEmVoo !== null) {
-      this.geracao += 1;
-      this.tierEmVoo = null;
-    }
+    if (this.tierEmVoo !== null) this.cancelarEmVoo();
     // nada residente (corpo frio, procedural ou que desistiu): sem relógio
     if (this.vivas.length === 0) {
       this.soltoDesde = null;
@@ -790,7 +823,7 @@ export class TexturasDoCorpo {
    * não tem texel residente.
    */
   private descarregar(): void {
-    this.geracao += 1;
+    this.cancelarEmVoo();
     this.pedido.soltar();
     for (const t of this.vivas) descartarTextura(t);
     this.vivas = [];
@@ -814,11 +847,16 @@ export class TexturasDoCorpo {
       return;
     }
     const { corpo, canais, rede, publicar } = this.pedido;
+    // um pedido novo cancela o anterior — a geração já o invalidava, e
+    // agora os bytes dele também param
+    this.abortoEmVoo?.abort();
+    const aborto = new AbortController();
+    this.abortoEmVoo = aborto;
     const minha = ++this.geracao;
     const tier = rede.tier();
     this.tierEmVoo = tier;
     const vencida = () => this.disposto || minha !== this.geracao;
-    void carregarCanaisDoCorpo(corpo, canais, rede, tier, vencida)
+    void carregarCanaisDoCorpo(corpo, canais, rede, tier, vencida, aborto.signal)
       .then((porCanal) => {
         // cancelada no caminho: o lote já foi descartado lá dentro
         if (!porCanal) return;
@@ -839,6 +877,7 @@ export class TexturasDoCorpo {
         // ---- fim da troca -------------------------------------------
         this.tierVivo = tier;
         this.tierEmVoo = null;
+        if (this.abortoEmVoo === aborto) this.abortoEmVoo = null;
         this.tierRecusado = null;
         this.recargas = 0;
         this.estado = 'pronta';
@@ -846,6 +885,7 @@ export class TexturasDoCorpo {
       .catch(() => {
         if (vencida()) return;
         this.tierEmVoo = null;
+        if (this.abortoEmVoo === aborto) this.abortoEmVoo = null;
         const etiqueta = this.pedido.etiqueta ?? corpo;
         if (daPrimeiraVez) {
           const r = estadoAposFalha(this.recargas, etiqueta, this.pedido.oQueNaoNasce);
@@ -872,6 +912,9 @@ export class TexturasDoCorpo {
 
   dispose(): void {
     this.disposto = true;
+    // o que ainda está descendo para uma cena que morreu para de descer
+    this.abortoEmVoo?.abort();
+    this.abortoEmVoo = null;
     for (const t of this.vivas) descartarTextura(t);
     this.vivas.length = 0;
   }

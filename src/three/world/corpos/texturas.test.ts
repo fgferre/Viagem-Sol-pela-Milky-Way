@@ -285,6 +285,8 @@ describe('furo (c): o manifest desce UMA vez', () => {
 function bancadaDaTroca(tierInicial: QualityLevel = 'alta') {
   let tier = tierInicial;
   const pedidos: string[] = [];
+  /** o `AbortSignal` de CADA pedido, na ordem — a régua da peça 3 */
+  const sinais: (AbortSignal | undefined)[] = [];
   const descartadas: string[] = [];
   const publicados: string[][] = [];
   let pendentes: (() => void)[] = [];
@@ -295,9 +297,10 @@ function bancadaDaTroca(tierInicial: QualityLevel = 'alta') {
     base: '',
     webp: true,
     buscarManifest: async () => MANIFEST,
-    carregarTextura: (url) =>
+    carregarTextura: (url, sinal) =>
       new Promise((resolver, rejeitar) => {
         pedidos.push(url);
+        sinais.push(sinal);
         pendentes.push(() =>
           caindo ? rejeitar(new Error('HTTP 500')) : resolver(texturaContada(descartadas, url))
         );
@@ -318,6 +321,7 @@ function bancadaDaTroca(tierInicial: QualityLevel = 'alta') {
   return {
     casa,
     pedidos,
+    sinais,
     descartadas,
     publicados,
     soltas,
@@ -823,5 +827,74 @@ describe('a carga sai da thread principal: fetch + createImageBitmap (peça 2)',
     } finally {
       b.restaurar();
     }
+  });
+});
+
+describe('o abort: pedido sem dono para de descer (peça 3)', () => {
+  it('trocar de tier no meio da carga ABORTA o lote velho', async () => {
+    const b = bancadaDaTroca('alta');
+    b.tick({ tela: true });
+    await b.entregar();
+    b.escolher('cinema');
+    b.tick({ tela: true });
+    await b.respirar();
+    expect(b.pedidos).toHaveLength(2);
+    expect(b.sinais[1]!.aborted).toBe(false);
+
+    // um terceiro tier: o de cinema perde o dono. A geração já o
+    // invalidava — invalidar é decidir que os bytes não servem, não
+    // parar de recebê-los; um `map` de cinema descia INTEIRO para ser
+    // descartado na chegada.
+    b.escolher('performance');
+    b.tick({ tela: true });
+    expect(b.sinais[1]!.aborted, 'o lote de cinema continuou descendo').toBe(true);
+    // e o pedido NOVO nasce vivo (o `carregar` só é chamado depois do
+    // manifest, então o sinal dele só existe no microtask seguinte)
+    await b.respirar();
+    expect(b.sinais[2]!.aborted).toBe(false);
+  });
+
+  it('VOLTAR ao tier que já está na tela aborta o lote do meio do caminho', async () => {
+    const b = bancadaDaTroca('alta');
+    b.tick({ tela: true });
+    await b.entregar();
+    b.escolher('cinema');
+    b.tick({ tela: true });
+    await b.respirar();
+    b.escolher('alta');
+    b.tick({ tela: true });
+    expect(b.sinais[1]!.aborted).toBe(true);
+  });
+
+  it('perder o ÚLTIMO segurador em voo aborta na hora, sem esperar a carência', async () => {
+    const b = bancadaDaTroca('cinema');
+    b.tick({ foco: true });
+    await b.respirar();
+    expect(b.sinais[0]!.aborted).toBe(false);
+    b.tick();
+    expect(b.sinais[0]!.aborted).toBe(true);
+  });
+
+  it('a DESCARGA e o `dispose` abortam o que ainda estava descendo', async () => {
+    const b = bancadaDaTroca('alta');
+    b.tick({ tela: true });
+    await b.entregar();
+    b.escolher('cinema');
+    b.tick({ tela: true });
+    await b.respirar();
+    // ninguém segura: o lote novo é abortado já, e os velhos ficam a
+    // carência inteira — e a descarga não tem mais nada a abortar
+    b.tick();
+    expect(b.sinais[1]!.aborted).toBe(true);
+    b.tick({}, CARENCIA_DA_DESCARGA_S);
+    expect(b.casa.pronta).toBe(false);
+
+    // e o teardown da cena corta uma carga viva
+    const c = bancadaDaTroca('cinema');
+    c.tick({ tela: true });
+    await c.respirar();
+    expect(c.sinais[0]!.aborted).toBe(false);
+    c.casa.dispose();
+    expect(c.sinais[0]!.aborted).toBe(true);
   });
 });
