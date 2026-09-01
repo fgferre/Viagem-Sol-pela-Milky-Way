@@ -2252,16 +2252,11 @@ da extinção de coluna (rodada 26), com quem a mudança tem de conversar.
 Rastro: `capturas/item123-forjas-resolucao.json`, sonda em
 `capturas/item123-forjas-resolucao.mjs`.
 
-**124. O porteiro do censo dos juízes REPROVA desde 31/08, por uma
-palavra (achado na faxina da estação do 115).** O
-`src/three/world/observedClouds.test.ts` nasceu em `b0608c2` com
-`// Serve: física — …`, e o `SERVE_RE` do `scripts/censo-dos-juizes.mjs`
-só aceita três classes: `dono`, `lei` e `chão`. O `npm run censo` sai com
-`PORTEIRO REPROVA: 1 sem Serve` e a catraca (32,3 min, dentro do teto)
-nem chega a ser o assunto. A classe certa é `lei` — o arquivo prova
-física do céu das nuvens, que é contrato, não decisão do dono nem
-regressão. É uma palavra num comentário; ficou registrado em vez de
-consertado porque a faxina do 115 não tinha esse arquivo no pacote.
+**124.** O porteiro do censo reprovava por uma palavra — **FECHADO em
+31/08**; história no ARQUIVO. *(O `observedClouds.test.ts` nasceu com
+`// Serve: física` e o porteiro só aceita `dono|lei|chão`; a classe
+certa era `lei` — o arquivo prova o contrato do céu das nuvens. Uma
+palavra trocada, `npm run censo` de volta ao exit 0.)*
 
 ---
 

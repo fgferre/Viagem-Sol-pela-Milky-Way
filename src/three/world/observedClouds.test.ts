@@ -1,4 +1,4 @@
-// Serve: física — o céu das nuvens diz quem tem poeira entre si e o Sol, e só quem tem é escurecido pelo quad multiplicativo
+// Serve: lei — o céu das nuvens diz quem tem poeira entre si e o Sol, e só quem tem é escurecido pelo quad multiplicativo
 // ============================================================
 // O CÉU DAS NUVENS (item 37).
 //

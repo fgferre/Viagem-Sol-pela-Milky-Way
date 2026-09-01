@@ -6491,3 +6491,15 @@ bancada.
 
 **Sabotagem em worktree:** a colheita devolvida para DEPOIS da reescrita
 de `lastLabels` (o código de até 31/08) faz o caso (2) **REPROVAR**.
+
+**124. O porteiro do censo dos juízes reprovava por uma palavra
+(aberto e fechado em 31/08, na estação do 115).** O
+`src/three/world/observedClouds.test.ts` nasceu em `b0608c2` com
+`// Serve: física — …`, e o `SERVE_RE` do `scripts/censo-dos-juizes.mjs`
+só aceita três classes: `dono`, `lei` e `chão`. O `npm run censo` saía
+com `PORTEIRO REPROVA: 1 sem Serve` e a catraca (32,3 min, dentro do
+teto) nem chegava a ser o assunto. A classe certa é `lei` — o arquivo
+prova o contrato do céu das nuvens (quem tem poeira entre si e o Sol é
+escurecido; quem não tem, não), não decisão do dono nem chão de
+literais. Fecho: a palavra trocada pelo coordenador no mesmo dia,
+`npm run censo` de volta ao exit 0.
