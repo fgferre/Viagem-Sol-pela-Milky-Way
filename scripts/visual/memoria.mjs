@@ -1,5 +1,5 @@
 // Serve: chão — sair devolve o que entrar alocou: texturas, bytes de texel, geometrias e workers sem vazamento
-// Custo: 2,1 min por tier (medido 30/08, corte iii do item 113: ciclos 5→3, focos 5→3)
+// Custo: 4,4 min por tier (medido 31/08 com a régua E do item 115; eram 2,1 sem ela)
 // O AMOSTRADOR DE MEMÓRIA — o juiz que prova que sair DEVOLVE o que
 // entrar alocou (Onda 6, F8/D9).
 //
@@ -12,8 +12,8 @@
 // `renderer.info.memory` — a contagem viva de texturas e geometrias que o
 // PRÓPRIO three mantém na GPU — e o heap de JS; o CDP acrescenta o heap
 // preciso e a lista de alvos vivos do browser. O protocolo repete os três
-// gestos que alocam e desalocam de verdade (A, B, C), e a régua D olha a
-// memória que saiu da thread:
+// gestos que alocam e desalocam de verdade (A, B, C), a régua D olha a
+// memória que saiu da thread, e a E o que a sessão DEVOLVE:
 //
 //  A. N=3 ciclos entra/sai do Atlas — o portal "Partir" e a volta, o mesmo
 //     caminho vivo que o `atlas-smoke` navega. VEREDITO: `textures` e
@@ -52,6 +52,21 @@
 //     recebe a resposta (`assarCargaEmWorker`, director/carregamento.ts).
 //     Contar pelo browser e não pelo app é o que dá dentes: worker vazado por
 //     QUALQUER caminho aparece, inclusive um que o app não conheça.
+//  E. O PASSEIO (item 115, bloco A) — a régua que faltava, e é OUTRA
+//     pergunta: as quatro de cima medem o PICO de uma sessão; esta mede
+//     o que SOBRA depois de o visitante ir embora. Até 31/08 os dois
+//     números eram o MESMO, porque o app não descarregava textura
+//     nenhuma: medido no passeio de oito corpos em cinema, pico 1.082,9
+//     MiB e repouso 1.082,9 MiB — 100% do pico. Com a descarga adiada de
+//     15 s: 966,1 de pico e 70,1 de repouso, 7%. O bloco continua de
+//     onde o protocolo parou (sem boot novo), faz uma ida e volta,
+//     sai para o sistema, ESPERA além da carência e cobra três
+//     números: o repouso abaixo de `TETO_REPOUSO_MIB`, a VOLTA DENTRO da
+//     carência sem UM pedido novo do corpo, e o repouso abaixo de dois
+//     terços do pico (sem descarga a razão é 1,0×; medida, 2,6× em alta
+//     e 13,8× em cinema). Os dentes são por construção: apagar a
+//     descarga faz o repouso voltar a ser o pico e estourar o teto;
+//     zerar a carência faz a volta rápida recarregar.
 //
 // O HEAP: veredito por INCLINAÇÃO, não por igualdade — o heap de V8 oscila
 // por natureza (GC, caches do JIT). O juiz força GC (HeapProfiler.
@@ -159,6 +174,34 @@ const TETO_GEOMETRIAS = 80;
  * pré-aquecimento antigo deixava (1.200 MiB em cinema, 291 em alta).
  */
 const TETO_MIB = { cinema: 900, alta: 200, performance: 120 };
+
+/**
+ * O PASSEIO (régua E, item 115) — os corpos visitados, a espera e o
+ * teto do REPOUSO.
+ *
+ * DOIS corpos e não os oito do instrumento de bancada
+ * (`capturas/item115-passeio-memoria.mjs`): o veredito não precisa do
+ * pico máximo — ele herda o pico do protocolo inteiro —, precisa da
+ * diferença entre o pico e o que sobra, e de UM par de corpos para a
+ * ida e volta. Cada foco a mais custa um `assentar`.
+ *
+ * A ESPERA é 22 s e não 15: a carência conta o relógio de PAREDE do app
+ * (`CARENCIA_DA_DESCARGA_S`, texturas.ts), e a folga cobre o boot do
+ * tick e o `assentar` do último foco.
+ *
+ * OS TETOS, medidos em 31/08 nesta máquina com o instrumento de bancada
+ * (oito corpos, cinema): ANTES da descarga, pico 1.082,9 MiB e repouso
+ * 1.082,9 — 100% do pico, porque o app não devolvia nada. DEPOIS, pico
+ * 966,1 e repouso 70,1 (7%). O teto fica ~2,5× acima do repouso medido
+ * (folga para um corpo a mais ainda dentro da carência no instante da
+ * amostra) e MUITO abaixo do pico — que é o que dá dentes: apagar a
+ * descarga faz o repouso virar o pico e estourar o teto por mais de 5×.
+ */
+const PASSEIO = ['earth', 'mars'];
+const ESPERA_DA_CARENCIA_S = 22;
+/** o desvio da volta rápida — poucos segundos, bem DENTRO da carência */
+const DESVIO_DA_VOLTA_S = 3;
+const TETO_REPOUSO_MIB = { cinema: 180, alta: 60, performance: 40 };
 const SABOTAGEM = process.argv.includes('--sabotagem');
 
 const falhas = [];
@@ -243,6 +286,34 @@ const sessao = await abrirSessao({ janela: JANELA, app: APP, prefixo: 'memoria' 
 try {
   // domínio extra do CDP, uma vez por sessão (sobrevive à navegação)
   await sessao.send('HeapProfiler.enable');
+
+  /**
+   * O GRAMPO DE PEDIDOS da régua E, instalado antes de qualquer
+   * navegação. Conta o que o APP pede, e não o que a REDE entrega:
+   * medido em 31/08, `performance.getEntriesByType('resource')` NÃO
+   * registra o que o Chrome serve do cache de memória, e a recarga da
+   * Terra depois da carência aparecia como zero — igual à volta rápida,
+   * que é justamente o contrário. E é o pedido que importa: mesmo com
+   * o arquivo em cache, pedir de novo custa decodificação e uma subida
+   * nova para a GPU. Os dois caminhos da casa: o `src` do `<img>` (o
+   * `THREE.TextureLoader`) e o `fetch`.
+   */
+  await sessao.send('Page.addScriptToEvaluateOnNewDocument', {
+    source: `window.__texPedidos = [];
+      const anota = (u) => {
+        if (typeof u === 'string' && /\\/textures\\/atlas\\//.test(u)) {
+          window.__texPedidos.push(u);
+        }
+      };
+      const d = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+      Object.defineProperty(HTMLImageElement.prototype, 'src', {
+        ...d, set(v) { anota(v); d.set.call(this, v); },
+      });
+      const f = window.fetch;
+      window.fetch = (u, o) => {
+        anota(typeof u === 'string' ? u : u && u.url); return f(u, o);
+      };`,
+  });
 
   /** A RÉGUA D: workers vivos pelo olho do BROWSER. `Target.getTargets` é
    *  domínio de browser e responde na mesma conexão da página; contar aqui,
@@ -400,6 +471,56 @@ try {
       + ` ${antes} → ${acendeu} → ${depois} geometrias`
       + ' (a fita de Mercúrio acendendo, e o degrau de volta ao sistema)\n'
     );
+  };
+
+  /**
+   * O PASSEIO (régua E) — sai, espera, e volta.
+   *
+   * CONTINUA DE ONDE O PROTOCOLO PAROU, sem boot novo: ele termina no
+   * Atlas com os três corpos do bloco C já focados e carregados, que é
+   * exatamente a linha de base que este bloco quer — uma sessão que
+   * andou. Booted de novo custava um `ir()` e dois focos a mais (5,4 min
+   * de juiz contra os 2,1 de antes, medido); assim o bloco cobra só o
+   * que é DELE — o desvio, a saída e a espera da carência.
+   *
+   * O PICO entra pela porta: são as amostras do protocolo inteiro, e
+   * não só as marcas daqui — o pico de uma sessão é o da sessão.
+   */
+  const passeio = async (picoDoProtocolo) => {
+    const texels = async () => (await sessao.js(MEDIR_TEXELS)).MiB;
+    // OS PEDIDOS DO CORPO SOB TESTE, e não a lista inteira: o desvio
+    // carrega o mapa do OUTRO corpo, e o contador global acusava um
+    // pedido novo numa volta que não pediu nada do primeiro.
+    const pedidos = async () => Number(await sessao.js(
+      `window.__texPedidos.filter((u) => /\\/${PASSEIO[0]}\\//.test(u)).length`
+    ));
+    const focar = async (id) => {
+      await sessao.js(`window.__director.focarNoCorpo('${id}','corpo')`);
+      await sessao.assentar();
+      return texels();
+    };
+    const marcas = [picoDoProtocolo, await focar(PASSEIO[0])];
+
+    // A VOLTA RÁPIDA — o gesto do visitante que clica noutro corpo e se
+    // arrepende. O DESVIO NÃO ESPERA ASSENTAR, e isso é medida e não
+    // pressa: em cinema um `focarNoCorpo` + `assentar` custa da ordem
+    // dos 15 s nesta máquina — o MESMO tempo da carência —, e a
+    // primeira versão deste bloco gastava a carência inteira DENTRO do
+    // próprio instrumento (medido: 6 pedidos novos onde o certo é 0).
+    const antesDaVolta = await pedidos();
+    await sessao.js(`window.__director.focarNoCorpo('${PASSEIO[1]}','corpo')`);
+    await dorme(DESVIO_DA_VOLTA_S * 1000);
+    marcas.push(await focar(PASSEIO[0]));
+    const novosNaVoltaRapida = (await pedidos()) - antesDaVolta;
+
+    await sessao.js("window.__director.focarNoCorpo('sun')");
+    await sessao.assentar();
+    marcas.push(await texels());
+    // e o tempo passa com a aba na frente (a carência só corre no rAF)
+    await dorme(ESPERA_DA_CARENCIA_S * 1000);
+    const repouso = await texels();
+    marcas.push(repouso);
+    return { marcas, repouso, pico: Math.max(...marcas), novosNaVoltaRapida };
   };
 
   const protocolo = async ({ sabotar, ciclos, trocas, focos }) => {
@@ -586,7 +707,34 @@ try {
     const faseFinal = await sessao.js('window.__director.captura.fase');
     conferir(faseFinal === 'atlas', `o protocolo termina onde começou (fase '${faseFinal}')`);
 
-    // ---- 5: O PREÇO DO SWAP NA THREAD — registrado e medido ----------
+    // ---- 5: O PASSEIO — o que o corpo DEVOLVE (régua E, item 115) ----
+    const p = await passeio(v.picoTexelMiB);
+    process.stdout.write(
+      `        passeio: pico ${p.pico.toFixed(0)} MiB → repouso`
+      + ` ${p.repouso.toFixed(0)} MiB (${((p.repouso / p.pico) * 100).toFixed(0)}% do pico)\n`
+    );
+    conferir(
+      p.repouso <= TETO_REPOUSO_MIB[TIER],
+      `passeio: REPOUSO ${p.repouso.toFixed(0)} MiB ≤ ${TETO_REPOUSO_MIB[TIER]} MiB`
+        + ` (tier ${TIER}) — sem a descarga adiada o repouso É o pico`
+    );
+    conferir(
+      p.novosNaVoltaRapida === 0,
+      `passeio: a VOLTA dentro da carência não pede a textura de novo`
+        + ` (${p.novosNaVoltaRapida} pedidos)`
+    );
+    // E O PASSEIO TEM DE TER DEVOLVIDO ALGO, senão o teto acima passaria
+    // por omissão numa máquina onde nada carregou. Sem a descarga os
+    // dois números são o MESMO (razão 1,00, medido); com ela a razão foi
+    // 2,6 em alta e 13,8 em cinema — os dois terços deixam a folga do
+    // corpo que ainda estiver dentro da carência no instante da amostra.
+    conferir(
+      p.repouso < p.pico / 1.5,
+      `passeio: o repouso ficou abaixo de dois terços do pico`
+        + ` (razão ${(p.pico / p.repouso).toFixed(1)}× — sem descarga é 1,0×)`
+    );
+
+    // ---- 6: O PREÇO DO SWAP NA THREAD — registrado e medido ----------
     // Até 2026-08-20 esta linha registrava um RELOAD: a troca do painel
     // gravava `?q=` e trocava de documento, e o que se media era o custo
     // do caminho que o visitante pagava. Os Ajustes C mataram a recarga;
@@ -618,7 +766,7 @@ try {
       );
     }
 
-    // ---- 6: AUTOVALIDAÇÃO M5 — o verde só vale com dentes ------------
+    // ---- 7: AUTOVALIDAÇÃO M5 — o verde só vale com dentes ------------
     // Navegação nova (zera o array da sabotagem) e 2 ciclos VAZADOS de
     // verdade. Os mesmos medidores do veredito têm de acusar: textures
     // sobe 1 por ciclo, heap sobe 16 MB por ciclo. Medidor que não vê o

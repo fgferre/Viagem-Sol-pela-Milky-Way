@@ -75,7 +75,11 @@ import {
   montarCorposDoPalco,
 } from './director/carregamento';
 import { passoDoPalco, quadroDoPalcoVazio } from './director/palco';
-import { corpoPrecisaPreCarga, efemeridesPrecisamPreCarga } from './director/preAquecimento';
+import {
+  corpoNoFocoDoAtlas,
+  corpoPedidoPeloRoteiro,
+  efemeridesPrecisamPreCarga,
+} from './director/preAquecimento';
 import type { PostoNoPalco } from './director/palco';
 import type { GalacticAssets } from './cartography/galacticAssets';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
@@ -313,9 +317,14 @@ export class Director {
   private readonly quadroDoPalco = quadroDoPalcoVazio();
   /** `perturbar` já ligado ao this — um fio por tick, não doze */
   private readonly perturbarDoPalco = () => this.perturbar();
-  /** A política mora em preAquecimento; a ligação ao this é feita uma vez. */
-  private preAquecerCorpo(id: string): boolean {
-    return corpoPrecisaPreCarga(this.phase, this.journeyT, this.escada.focoCorpoId, id);
+  /** A política mora em preAquecimento; a ligação ao this é feita uma vez.
+   *  São DUAS mãos desde o item 115 — o foco solta no clique seguinte, o
+   *  roteiro segura até o fim do filme, e a descarga precisa da diferença. */
+  private corpoNoFoco(id: string): boolean {
+    return corpoNoFocoDoAtlas(this.phase, this.escada.focoCorpoId, id);
+  }
+  private corpoNoRoteiro(id: string): boolean {
+    return corpoPedidoPeloRoteiro(this.phase, this.journeyT, id);
   }
   /** quadros já gastos segurando a captura com a efeméride pedida
    *  indisponível — ver QUADROS_TENTANDO_FONTE (auditoria item 5c). */
@@ -580,7 +589,8 @@ export class Director {
   private readonly assets: ReturnType<Director['startLoading']>;
 
   constructor(canvas: HTMLCanvasElement, events: DirectorEvents) {
-    this.preAquecerCorpo = this.preAquecerCorpo.bind(this);
+    this.corpoNoFoco = this.corpoNoFoco.bind(this);
+    this.corpoNoRoteiro = this.corpoNoRoteiro.bind(this);
     this.events = events;
     this.engine = new Engine(canvas);
     // Se QUALQUER coisa abaixo lançar (o prime do Sol são ~550 draws numa
@@ -2422,6 +2432,9 @@ export class Director {
       q.fovDeg = cam.fov;
       q.ligado = this.palco.ligado;
       q.politica = this.politicaDeLuz;
+      // o relógio de PAREDE, que só a carência da descarga lê; o `dtS` é
+      // grampeado e serviria mal a uma espera de 15 s
+      q.tS = rawTime;
       q.dtS = dt;
       q.psf = CALIBRACAO_DA_CASA;
       q.salto = this.saltoDeCamera;
@@ -2431,7 +2444,8 @@ export class Director {
         rotulos: this.rotulos,
         efemeride: this.maquinaDoTempo.efemeride,
         noFilme: this.phase === 'journey',
-        preAquecer: this.preAquecerCorpo,
+        noFoco: this.corpoNoFoco,
+        noRoteiro: this.corpoNoRoteiro,
         perturbar: this.perturbarDoPalco,
       });
     }

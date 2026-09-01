@@ -53,7 +53,17 @@ export const TETO_DA_RODADA_MIN = 15;
 // `atlas-lua-ganimedes`) somam três capturas e levam o balde maior de 9
 // para 10 — 3,6 → 4,0 min, agora MEDIDOS (a leva cheia rodou, e com ela o
 // til do item 108 saiu). O teto sobe os mesmos 0,4 — de 31,9 para 32,3.
-export const TETO_TOTAL_MIN = 32.3;
+// Re-pinado PARA CIMA no item 115 (31/08), o terceiro desta série, e com a
+// justificativa que a catraca exige: o `memoria.mjs` ganhou a régua E — o
+// PASSEIO —, que é a única que mede o que a sessão DEVOLVE. Ela existe
+// porque o app não descarregava textura nenhuma (medido: 1.082,9 MiB
+// residentes depois de um passeio de oito corpos em cinema, 100% do pico),
+// e o defeito era invisível para as quatro réguas antigas, que medem PICO e
+// delta por ciclo. O preço foi cortado antes de ser declarado: a primeira
+// versão bootava de novo e visitava cinco corpos (5,4 min medidos); a que
+// ficou continua de onde o protocolo já parou e visita dois — 4,4 min
+// medidos na mesma máquina. O teto sobe os mesmos 2,3 — de 32,3 para 34,6.
+export const TETO_TOTAL_MIN = 34.6;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

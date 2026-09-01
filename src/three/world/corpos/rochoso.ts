@@ -74,7 +74,7 @@ import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { diametroAparentePx } from './corpos';
 import { LS_NORMALIZACAO_GLSL } from './lua';
 import { LIMIAR_DO_GATE_PX, alvoDaCessaoDoCorpo, gateBinario } from './terra';
-import { CANAL_MAP, TexturasDoCorpo } from './texturas';
+import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
 import type { OpcoesDeTextura } from './texturas';
 import {
   componentesNoFrameDoAnel,
@@ -414,8 +414,15 @@ export interface QuadroDoRochoso {
   screenHPx: number;
   fovDeg: number;
   ligado: boolean;
-  atlasQuente: boolean;
+  /** o Atlas está focado neste corpo (ou na lua dele) — um dos três que
+   *  SEGURAM os texels (`Seguradores`, texturas.ts). */
+  focoDoAtlas: boolean;
+  /** o roteiro do filme declarou este corpo — o segurador monotônico. */
+  pedidoDoRoteiro: boolean;
   politica: PoliticaDeLuz;
+  /** o relógio de PAREDE do app em segundos — só a carência da descarga
+   *  o consome (`CARENCIA_DA_DESCARGA_S`). */
+  tS: number;
   /** os três de PLANETA (a cessão suave, D5); luas ignoram. */
   dtS: number;
   psf: CalibracaoDaCasa;
@@ -463,6 +470,8 @@ export class RochosoResolvido {
 
   /** o estado das texturas — a casa dele é o pipeline (`texturas.ts`) */
   private readonly texturas: TexturasDoCorpo;
+  /** o registro dos três seguradores, REUSADO por tick (M4 da casa) */
+  private readonly seguram: Seguradores = { tela: false, foco: false, filme: false };
   private disposto = false;
 
   private geometria: THREE.SphereGeometry | null = null;
@@ -520,6 +529,13 @@ export class RochosoResolvido {
         // o procedural chega com o lote VAZIO — o shader dele não lê mapa
         const tex = porCanal.get('map');
         if (tex) this.matSuperficie!.uniforms.uMapaDia.value = tex;
+      },
+      // o procedural nunca chega aqui (não há texel residente para
+      // soltar), mas o uniform dele também não existe — a guarda serve
+      // aos dois
+      soltar: () => {
+        const u = this.matSuperficie?.uniforms.uMapaDia;
+        if (u) u.value = null;
       },
     });
     this.estado = {
@@ -592,8 +608,12 @@ export class RochosoResolvido {
         : diametroPx * (LIMIAR_DO_GATE_PX / LIMIAR_LUA_ROCHOSA_PX)
     );
 
-    // o MESMO gatilho duplo das irmãs (lei 4): gate armado OU fase atlas
-    this.texturas.aoTick(this.armado || q.atlasQuente);
+    // OS MESMOS TRÊS SEGURADORES das irmãs (lei 4, item 115): tela, foco
+    // do Atlas e roteiro do filme; o último a soltar abre a carência.
+    this.seguram.tela = this.armado;
+    this.seguram.foco = q.focoDoAtlas;
+    this.seguram.filme = q.pedidoDoRoteiro;
+    this.texturas.aoTick(this.seguram, q.tS);
 
     const emQuadro =
       this.armado &&

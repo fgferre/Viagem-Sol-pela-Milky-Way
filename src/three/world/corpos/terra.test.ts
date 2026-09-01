@@ -353,8 +353,12 @@ function quadro(camPosPc: THREE.Vector3, extra: Partial<Parameters<TerraResolvid
     screenHPx: 1080,
     fovDeg: 58,
     ligado: true,
-    atlasQuente: false,
+    focoDoAtlas: false,
+    pedidoDoRoteiro: false,
     politica: 'assistida' as const,
+    // o relógio de parede fica PARADO por padrão: quem testa a carência
+    // da descarga passa o `tS` dele
+    tS: 0,
     // dt GRANDE de propósito: um passo cobre a rampa temporal inteira
     // (stepRampToward clampa em 0,1 s = 1/3 da travessia; três ticks
     // assentam) — os testes que julgam a RAMPA passam dtS próprio
@@ -401,9 +405,52 @@ describe('5. o gatilho da carga preguiçosa (lei 4)', () => {
 
   it('a fase atlas pré-aquece a carga mesmo de longe — e SÓ ela', async () => {
     const { terra, chamadas } = terraDeTeste();
-    terra.atualizar(quadro(new THREE.Vector3(0, 0, 0.001), { atlasQuente: true }));
+    terra.atualizar(quadro(new THREE.Vector3(0, 0, 0.001), { focoDoAtlas: true }));
     await flush();
     expect(chamadas.length).toBeGreaterThan(0);
+    terra.dispose();
+  });
+
+  it('a descarga NUNCA alcança um globo em quadro — o gate é o segurador', async () => {
+    // A prova de que a carência de 15 s (item 115) é segura por
+    // construção: `emQuadro` exige o gate ARMADO, e o gate armado é o
+    // segurador `tela`. Uma hora de relógio de parede com a câmera
+    // colada não pode apagar o globo.
+    const { terra, chamadas } = terraDeTeste();
+    const perto = centroPc(JD);
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    terra.atualizar(quadro(perto));
+    await flush();
+    expect(terra.atualizar(quadro(perto)).emQuadro).toBe(true);
+    const carregas = chamadas.filter((c) => c.startsWith('tex:')).length;
+    for (const tS of [60, 600, 3600]) {
+      const e = terra.atualizar(quadro(perto, { tS }));
+      expect(e.emQuadro, `o globo sumiu em tS=${tS}`).toBe(true);
+    }
+    // e nada foi rebaixado e recarregado pelo caminho
+    expect(chamadas.filter((c) => c.startsWith('tex:'))).toHaveLength(carregas);
+    terra.dispose();
+  });
+
+  it('fora do gate e fora do foco: passada a carência, os texels voltam', async () => {
+    // o espelho do teste acima — e o que o passeio mede no navegador
+    const { terra } = terraDeTeste();
+    const perto = centroPc(JD);
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    terra.atualizar(quadro(perto));
+    await flush();
+    expect(terra.atualizar(quadro(perto)).emQuadro).toBe(true);
+    // a câmera vai embora: o gate desarma e ninguém mais segura
+    const longe = new THREE.Vector3(0, 0, 40);
+    expect(terra.atualizar(quadro(longe)).gateArmado).toBe(false);
+    terra.atualizar(quadro(longe, { tS: 14.9 }));
+    expect(terra.estadoVivo.carregando).toBe(false);
+    // ...e depois dos 15 s a Terra volta a ser fria: o gate reaproxima e
+    // a carga recomeça, com o ponto fotométrico cobrindo o caminho
+    terra.atualizar(quadro(longe, { tS: 15.1 }));
+    const volta = terra.atualizar(quadro(perto, { tS: 15.2 }));
+    expect(volta.emQuadro).toBe(false);
+    expect(volta.carregando).toBe(true);
     terra.dispose();
   });
 });
@@ -909,7 +956,7 @@ describe('6d. o pino do filme manda sobre a efeméride (item 108, 30/08)', () =>
     const pin = centroPc(JD);
     const perto = pin.clone();
     perto.z += RAIO_EQ_TERRA_PC * 4;
-    terra.atualizar(quadro(perto, { atlasQuente: true }));
+    terra.atualizar(quadro(perto, { focoDoAtlas: true }));
     await flush();
     // o CONTROLE: um dia de relógio move a Terra muito além do próprio
     // enquadramento — é essa magnitude que o pino tem de cancelar

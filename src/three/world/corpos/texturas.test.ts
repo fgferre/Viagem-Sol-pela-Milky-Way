@@ -17,6 +17,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ALVO_DE_APOIO_CINEMA,
   CANAL_MAP,
+  CARENCIA_DA_DESCARGA_S,
   RECARGAS_ATE_DESISTIR,
   TexturasDoCorpo,
   alvoDePixels,
@@ -24,7 +25,12 @@ import {
   carregarCanaisDoCorpo,
   escolherVariante,
 } from './texturas';
-import type { CanalPedido, ManifestDeTexturas, OpcoesDeTextura } from './texturas';
+import type {
+  CanalPedido,
+  ManifestDeTexturas,
+  OpcoesDeTextura,
+  Seguradores,
+} from './texturas';
 import type { QualityLevel } from '../../core/engine';
 
 const DATA_DIR = fileURLToPath(new URL('../../../../public/data/atlas/', import.meta.url));
@@ -296,6 +302,7 @@ function bancadaDaTroca(tierInicial: QualityLevel = 'alta') {
         );
       }),
   };
+  const soltas: number[] = [];
   const casa = new TexturasDoCorpo({
     corpo: 'earth',
     canais: [CANAL_MAP],
@@ -303,12 +310,24 @@ function bancadaDaTroca(tierInicial: QualityLevel = 'alta') {
     etiqueta: 'terra',
     oQueNaoNasce: 'o globo não nasce nesta sessão',
     publicar: (porCanal) => publicados.push([...porCanal.keys()]),
+    soltar: () => soltas.push(publicados.length),
   });
+  /** o relógio de PAREDE da bancada — quem testa a carência o anda */
+  let relogio = 0;
   return {
     casa,
     pedidos,
     descartadas,
     publicados,
+    soltas,
+    /** os três seguradores, um de cada vez ou juntos */
+    tick: (seguram: Partial<Seguradores> = {}, avancarS = 0) => {
+      relogio += avancarS;
+      casa.aoTick(
+        { tela: false, foco: false, filme: false, ...seguram },
+        relogio
+      );
+    },
     escolher: (t: QualityLevel) => {
       tier = t;
     },
@@ -342,7 +361,7 @@ const mapaDaTerraEm = (tier: QualityLevel) =>
 describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', () => {
   it('carregado em alta, o pedido de cinema nasce em SEGUNDO PLANO', async () => {
     const b = bancadaDaTroca('alta');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.entregar();
     expect(b.casa.pronta).toBe(true);
     expect(b.casa.tierNaTela).toBe('alta');
@@ -352,7 +371,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     // gatilho continua armado — o corpo está NA TELA, e é por isso que
     // ele precisa dos pixels certos
     b.escolher('cinema');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.respirar();
     expect(b.pedidos).toEqual([mapaDaTerraEm('alta'), mapaDaTerraEm('cinema')]);
 
@@ -360,7 +379,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     // é o critério inteiro do item 59. `pronta` é o que faz `emQuadro`
     // nos quatro corpos; se ele caísse aqui, a Terra viraria ponto.
     for (let i = 0; i < 5; i++) {
-      b.casa.aoTick(true);
+      b.tick({ tela: true });
       expect(b.casa.pronta, `tick ${i} sem globo`).toBe(true);
     }
     // e o ponteiro NÃO trocou: quem desenha ainda é o mapa de alta
@@ -384,10 +403,10 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
 
   it('o caminho de volta também: cinema → performance', async () => {
     const b = bancadaDaTroca('cinema');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.entregar();
     b.escolher('performance');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     expect(b.casa.pronta).toBe(true);
     await b.entregar();
     expect(b.casa.tierNaTela).toBe('performance');
@@ -397,15 +416,15 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
 
   it('três tiers seguidos: só o ÚLTIMO vira pixel, o do meio é descartado', async () => {
     const b = bancadaDaTroca('alta');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.entregar();
     // clique 1: cinema (fica em voo)
     b.escolher('cinema');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.respirar();
     // clique 2: performance ANTES de o de cinema chegar
     b.escolher('performance');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.respirar();
     expect(b.pedidos).toHaveLength(3);
     // os dois chegam juntos; a GERAÇÃO é quem decide qual vale
@@ -421,15 +440,15 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
 
   it('voltar ao tier que JÁ está na tela CANCELA, não abre pedido novo', async () => {
     const b = bancadaDaTroca('alta');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.entregar();
     b.escolher('cinema');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.respirar();
     b.escolher('alta'); // arrependeu-se antes de o lote chegar
     // e SEM gatilho: cancelar não toca a rede, então o corpo que saiu
     // da tela no meio do arrependimento também larga o lote em voo
-    b.casa.aoTick(false);
+    b.tick();
     // nada a buscar: o mapa de alta nunca saiu da tela
     expect(b.pedidos).toHaveLength(2);
     expect(b.casa.carregando).toBe(false);
@@ -443,10 +462,10 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
 
   it('o corpo descartado no meio da troca não deixa texel sem dono', async () => {
     const b = bancadaDaTroca('alta');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.entregar();
     b.escolher('cinema');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.respirar();
     b.casa.dispose(); // o Director morre com o lote no ar
     await b.entregar();
@@ -459,7 +478,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
 
   it('a troca que CAI deixa o globo no tier de antes, e desiste com aviso', async () => {
     const b = bancadaDaTroca('alta');
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.entregar();
     b.derrubarARede(true);
     b.escolher('cinema');
@@ -469,7 +488,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     try {
       // 1 carga + RECARGAS_ATE_DESISTIR recargas, como na primeira vez
       for (let i = 0; i < 1 + RECARGAS_ATE_DESISTIR; i++) {
-        b.casa.aoTick(true);
+        b.tick({ tela: true });
         await b.entregar();
         // a cada queda o globo CONTINUA na tela, com os pixels de alta
         expect(b.casa.pronta).toBe(true);
@@ -484,13 +503,13 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     // e depois de desistir ele PARA de pedir — 60 pedidos por segundo
     // contra uma rede que já disse não três vezes é o defeito, não a cura
     const antes = b.pedidos.length;
-    for (let i = 0; i < 5; i++) b.casa.aoTick(true);
+    for (let i = 0; i < 5; i++) b.tick({ tela: true });
     expect(b.pedidos).toHaveLength(antes);
   });
 
   it('FORA DA TELA a troca não nasce; e nasce no tick em que o corpo VOLTA', async () => {
     const b = bancadaDaTroca('alta');
-    b.casa.aoTick(true); // visitado: o gatilho armou e o lote de alta desceu
+    b.tick({ tela: true }); // visitado: o gatilho armou e o lote de alta desceu
     await b.entregar();
     expect(b.pedidos).toEqual([mapaDaTerraEm('alta')]);
 
@@ -500,7 +519,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     // sem a condição do gatilho, cada clique re-baixava o lote de todos
     // eles (34,4 MiB de variante de cinema por leva, item 59/auditoria).
     b.escolher('cinema');
-    for (let i = 0; i < 5; i++) b.casa.aoTick(false);
+    for (let i = 0; i < 5; i++) b.tick();
     await b.respirar();
     expect(b.pedidos).toEqual([mapaDaTerraEm('alta')]);
     expect(b.casa.carregando).toBe(false);
@@ -509,7 +528,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
     // e ele VOLTA a ser olhado: o pedido nasce neste tick, pela mesma
     // comparação com `tierVivo` que já estava aqui — nada precisou
     // guardar o clique perdido
-    b.casa.aoTick(true);
+    b.tick({ tela: true });
     await b.respirar();
     expect(b.pedidos).toEqual([mapaDaTerraEm('alta'), mapaDaTerraEm('cinema')]);
     await b.entregar();
@@ -518,6 +537,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
 
   it('corpo PROCEDURAL (sem canais) nasce pronto e nenhuma troca o alcança', async () => {
     const pedidos: string[] = [];
+    let soltou = 0;
     let tier: QualityLevel = 'alta';
     const casa = new TexturasDoCorpo({
       corpo: 'pallas',
@@ -537,12 +557,143 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
       },
       oQueNaoNasce: 'o corpo não nasce nesta sessão',
       publicar: () => undefined,
+      soltar: () => soltou++,
     });
-    casa.aoTick(true);
+    const segura = { tela: true, foco: false, filme: false };
+    casa.aoTick(segura, 0);
     expect(casa.pronta).toBe(true);
     tier = 'cinema';
-    casa.aoTick(true);
+    casa.aoTick(segura, 0);
     await flush();
     expect(pedidos).toEqual([]);
+    // e NINGUÉM SEGURANDO por muito mais que a carência não o descarrega:
+    // não há texel de arquivo para devolver, e voltar a 'fria' só faria
+    // o corpo republicar a casca a cada ida e volta
+    casa.aoTick({ tela: false, foco: false, filme: false }, 1000);
+    expect(soltou).toBe(0);
+    expect(casa.pronta).toBe(true);
+  });
+});
+
+describe('a descarga adiada: os três que seguram e a carência de 15 s', () => {
+  it('BASTA UM: o foco solta, a TELA continua segurando, e nada é devolvido', async () => {
+    const b = bancadaDaTroca('cinema');
+    // os dois juntos — é o estado de quem está focado E perto
+    b.tick({ tela: true, foco: true });
+    await b.entregar();
+    expect(b.casa.pronta).toBe(true);
+    expect(b.casa.segurando).toBe(2);
+
+    // o visitante troca o foco, mas o corpo continua grande na tela:
+    // com um FLAG no lugar da contagem, isto soltaria a imagem que o
+    // olho está lendo
+    for (let i = 0; i < 40; i++) b.tick({ tela: true }, 1);
+    expect(b.casa.segurando).toBe(1);
+    expect(b.casa.pronta).toBe(true);
+    expect(b.soltas).toEqual([]);
+    expect(b.descartadas).toEqual([]);
+  });
+
+  it('o FILME segura sozinho: 60 s sem tela nem foco e o globo continua', async () => {
+    const b = bancadaDaTroca('cinema');
+    b.tick({ filme: true });
+    await b.entregar();
+    for (let i = 0; i < 60; i++) b.tick({ filme: true }, 1);
+    expect(b.casa.segurando).toBe(1);
+    expect(b.casa.pronta).toBe(true);
+    expect(b.descartadas).toEqual([]);
+  });
+
+  it('NINGUÉM segura: a carência corre e SÓ depois dela os texels voltam', async () => {
+    const b = bancadaDaTroca('cinema');
+    b.tick({ tela: true });
+    await b.entregar();
+    const arquivo = mapaDaTerraEm('cinema');
+
+    // o relógio começa a contar no primeiro tick sem segurador
+    b.tick();
+    expect(b.casa.segurando).toBe(0);
+    // um cabelo ANTES do prazo: ainda tudo de pé
+    b.tick({}, CARENCIA_DA_DESCARGA_S - 0.01);
+    expect(b.casa.pronta, 'descarregou antes da carência').toBe(true);
+    expect(b.descartadas).toEqual([]);
+    // e no prazo: o corpo solta os uniforms ANTES de os texels sumirem
+    b.tick({}, 0.02);
+    expect(b.soltas).toHaveLength(1);
+    expect(b.descartadas).toEqual([arquivo]);
+    expect(b.casa.pronta).toBe(false);
+    expect(b.casa.tierNaTela).toBe(null);
+  });
+
+  it('a VOLTA DENTRO da carência não toca a rede — e a volta DEPOIS toca', async () => {
+    const b = bancadaDaTroca('cinema');
+    b.tick({ foco: true });
+    await b.entregar();
+    expect(b.pedidos).toHaveLength(1);
+
+    // saiu do foco por 10 s e voltou: o relógio zera, nada recarrega
+    b.tick();
+    b.tick({}, 10);
+    b.tick({ foco: true });
+    await b.entregar();
+    expect(b.pedidos, 'a volta rápida pagou rede').toHaveLength(1);
+    expect(b.casa.pronta).toBe(true);
+    expect(b.descartadas).toEqual([]);
+
+    // ...e a ressurreição zerou MESMO o relógio: outros 10 s soltos
+    // (20 s desde a primeira saída) ainda não descarregam
+    b.tick();
+    b.tick({}, 10);
+    expect(b.casa.pronta, 'o relógio da carência não zerou na volta').toBe(true);
+
+    // agora sim, além do prazo — e a volta seguinte recarrega
+    b.tick({}, CARENCIA_DA_DESCARGA_S);
+    expect(b.casa.pronta).toBe(false);
+    b.tick({ foco: true });
+    await b.entregar();
+    expect(b.pedidos).toHaveLength(2);
+    expect(b.casa.pronta).toBe(true);
+    expect(b.casa.tierNaTela).toBe('cinema');
+  });
+
+  it('PRIMEIRA CARGA em voo sem ninguém segurando: cancela na hora, sem carência', async () => {
+    const b = bancadaDaTroca('cinema');
+    b.tick({ foco: true });
+    await b.respirar();
+    expect(b.casa.carregando).toBe(true);
+
+    // o visitante saiu antes de a imagem chegar: não há pixel a
+    // preservar, então a espera de 15 s só serviria para os bytes
+    // continuarem descendo para ninguém
+    b.tick();
+    expect(b.casa.carregando).toBe(false);
+    // e o lote que chega depois não fica sem dono
+    await b.entregar();
+    expect(b.publicados).toEqual([]);
+    expect(b.descartadas).toEqual([mapaDaTerraEm('cinema')]);
+    expect(b.casa.pronta).toBe(false);
+  });
+
+  it('a TROCA de tier em voo perde o dono, e os pixels VELHOS ficam a carência inteira', async () => {
+    const b = bancadaDaTroca('alta');
+    b.tick({ tela: true });
+    await b.entregar();
+    b.escolher('cinema');
+    b.tick({ tela: true });
+    await b.respirar();
+    expect(b.casa.carregando).toBe(true);
+
+    // ninguém mais segura: o lote NOVO é descartado ao chegar, mas o
+    // VELHO continua na tela até a carência fechar
+    b.tick();
+    expect(b.casa.carregando).toBe(false);
+    await b.entregar();
+    expect(b.casa.pronta).toBe(true);
+    expect(b.casa.tierNaTela).toBe('alta');
+    expect(b.descartadas).toEqual([mapaDaTerraEm('cinema')]);
+
+    b.tick({}, CARENCIA_DA_DESCARGA_S);
+    expect(b.descartadas).toEqual([mapaDaTerraEm('cinema'), mapaDaTerraEm('alta')]);
+    expect(b.casa.pronta).toBe(false);
   });
 });

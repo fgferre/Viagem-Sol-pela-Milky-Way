@@ -98,7 +98,7 @@ import {
 } from '../../shaders/terraShaders';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import type { OrientacaoNaCena } from './orientacaoNaCena';
-import { TexturasDoCorpo } from './texturas';
+import { type Seguradores, TexturasDoCorpo } from './texturas';
 import type { CanalPedido, OpcoesDeTextura } from './texturas';
 import {
   escreverSombraDeEclipse,
@@ -308,9 +308,15 @@ export interface QuadroDaTerra {
   fovDeg: number;
   /** a porta ?corpos/?nocorpos, escrita pelo Director antes do tick. */
   ligado: boolean;
-  /** fase atlas: pré-aquece a carga de textura (gatilho 2 do contrato). */
-  atlasQuente: boolean;
+  /** o Atlas está focado neste corpo (ou na lua dele) — um dos três que
+   *  SEGURAM os texels (`Seguradores`, texturas.ts). */
+  focoDoAtlas: boolean;
+  /** o roteiro do filme declarou este corpo — o segurador monotônico. */
+  pedidoDoRoteiro: boolean;
   politica: PoliticaDeLuz;
+  /** o relógio de PAREDE do app em segundos (o `t` do tick) — só a
+   *  carência da descarga o consome (`CARENCIA_DA_DESCARGA_S`). */
+  tS: number;
   /** dt do quadro em segundos — só a rampa temporal da cessão o consome
    *  (o clamp de picos mora em `stepRampToward`, nunca aqui). */
   dtS: number;
@@ -380,6 +386,8 @@ export class TerraResolvida {
 
   /** o estado das texturas — a casa dele é o pipeline (`texturas.ts`) */
   private readonly texturas: TexturasDoCorpo;
+  /** o registro dos três seguradores, REUSADO por tick (M4 da casa) */
+  private readonly seguram: Seguradores = { tela: false, foco: false, filme: false };
   private disposto = false;
 
   private geometria: THREE.SphereGeometry | null = null;
@@ -431,6 +439,16 @@ export class TerraResolvida {
         uS.uMapaNormal.value = porCanal.get('normal');
         uS.uMapaRugosidade.value = porCanal.get('roughness');
         this.matNuvens!.uniforms.uMapaNuvens.value = porCanal.get('clouds');
+      },
+      soltar: () => {
+        const uS = this.matSuperficie?.uniforms;
+        if (uS) {
+          uS.uMapaDia.value = null;
+          uS.uMapaNoite.value = null;
+          uS.uMapaNormal.value = null;
+          uS.uMapaRugosidade.value = null;
+        }
+        if (this.matNuvens) this.matNuvens.uniforms.uMapaNuvens.value = null;
       },
     });
     this.estado = {
@@ -514,9 +532,15 @@ export class TerraResolvida {
 
     this.armado = gateBinario(this.armado, diametroPx);
 
-    // O GATILHO da carga (lei 4 do cabeçalho): gate armado OU fase atlas.
-    // Nunca outro caminho — o teste pina exatamente esta dupla.
-    this.texturas.aoTick(this.armado || q.atlasQuente);
+    // OS TRÊS QUE SEGURAM a textura (lei 4 do cabeçalho, item 115): a
+    // TELA (gate armado), o FOCO do Atlas e o ROTEIRO do filme. Basta um
+    // para carregar e para manter; quando o último solta, a carência de
+    // 15 s corre e os texels voltam para a GPU. O registro é reusado —
+    // doze objetos por quadro é a alocação que o M4 da casa não deixa.
+    this.seguram.tela = this.armado;
+    this.seguram.foco = q.focoDoAtlas;
+    this.seguram.filme = q.pedidoDoRoteiro;
+    this.texturas.aoTick(this.seguram, q.tS);
 
     const emQuadro = this.armado && q.ligado && this.texturas.pronta;
     e.emQuadro = emQuadro;

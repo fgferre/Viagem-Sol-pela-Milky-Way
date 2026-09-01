@@ -80,7 +80,7 @@ import { RETRATO_2026 } from '../planetas/retrato2026';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { diametroAparentePx } from './corpos';
 import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
-import { CANAL_MAP, TexturasDoCorpo } from './texturas';
+import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
 import type { CanalPedido, OpcoesDeTextura } from './texturas';
 import {
   componentesNoFrameDoAnel,
@@ -615,8 +615,15 @@ export interface QuadroDoGigante {
   screenHPx: number;
   fovDeg: number;
   ligado: boolean;
-  atlasQuente: boolean;
+  /** o Atlas está focado neste corpo (ou na lua dele) — um dos três que
+   *  SEGURAM os texels (`Seguradores`, texturas.ts). */
+  focoDoAtlas: boolean;
+  /** o roteiro do filme declarou este corpo — o segurador monotônico. */
+  pedidoDoRoteiro: boolean;
   politica: PoliticaDeLuz;
+  /** o relógio de PAREDE do app em segundos — só a carência da descarga
+   *  o consome (`CARENCIA_DA_DESCARGA_S`). */
+  tS: number;
   dtS: number;
   psf: CalibracaoDaCasa;
   salto: boolean;
@@ -668,6 +675,8 @@ export class GiganteResolvido {
 
   /** o estado das texturas — a casa dele é o pipeline (`texturas.ts`) */
   private readonly texturas: TexturasDoCorpo;
+  /** o registro dos três seguradores, REUSADO por tick (M4 da casa) */
+  private readonly seguram: Seguradores = { tela: false, foco: false, filme: false };
   private disposto = false;
 
   private geometria: THREE.SphereGeometry | null = null;
@@ -728,6 +737,15 @@ export class GiganteResolvido {
           this.matAnel!.uniforms.uMapaAnel.value = texAnel;
         }
       },
+      // a placa do anel entra em DOIS materiais (a sombra no globo e o
+      // anel em si): os dois têm de largar o ponteiro
+      soltar: () => {
+        if (this.matSuperficie) {
+          this.matSuperficie.uniforms.uMapaDia.value = null;
+          if (comAnel) this.matSuperficie.uniforms.uMapaAnel.value = null;
+        }
+        if (comAnel && this.matAnel) this.matAnel.uniforms.uMapaAnel.value = null;
+      },
     });
     this.estado = {
       emQuadro: false,
@@ -785,7 +803,12 @@ export class GiganteResolvido {
 
     this.armado = gateBinario(this.armado, diametroPx);
 
-    this.texturas.aoTick(this.armado || q.atlasQuente);
+    // OS MESMOS TRÊS SEGURADORES das irmãs (lei 4, item 115): tela, foco
+    // do Atlas e roteiro do filme; o último a soltar abre a carência.
+    this.seguram.tela = this.armado;
+    this.seguram.foco = q.focoDoAtlas;
+    this.seguram.filme = q.pedidoDoRoteiro;
+    this.texturas.aoTick(this.seguram, q.tS);
 
     const emQuadro =
       this.armado &&

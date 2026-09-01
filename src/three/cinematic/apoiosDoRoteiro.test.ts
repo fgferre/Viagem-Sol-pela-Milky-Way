@@ -95,28 +95,45 @@ describe('apoios do roteiro — item 75', () => {
       // Métodos reais, sem construir DOM/GPU. Só o estado que a política lê.
       const d = Object.create(Director.prototype) as {
         phase: Phase; journeyT: number; escada: { focoCorpoId: string | null };
-        preAquecerCorpo: (id: string) => boolean; palcoQuente: boolean;
+        corpoNoFoco: (id: string) => boolean;
+        corpoNoRoteiro: (id: string) => boolean;
+        palcoQuente: boolean;
       };
       Object.assign(d, { phase: 'journey', journeyT: REVEAL_T - 0.001, escada: { focoCorpoId: null } });
-      expect(d.preAquecerCorpo('mars')).toBe(false);
+      const segura = (id: string) => d.corpoNoFoco(id) || d.corpoNoRoteiro(id);
+      expect(segura('mars')).toBe(false);
       d.journeyT = REVEAL_T;
-      expect(d.preAquecerCorpo('mars')).toBe(true);
-      expect(d.preAquecerCorpo('earth')).toBe(false);
-      expect(d.preAquecerCorpo('moon')).toBe(false);
+      expect(segura('mars')).toBe(true);
+      expect(segura('earth')).toBe(false);
+      expect(segura('moon')).toBe(false);
       expect(d.palcoQuente).toBe(false);
       d.journeyT = perfil.t0;
       expect(d.palcoQuente).toBe(true);
+      // O SEGURADOR DO ROTEIRO É MONOTÔNICO (item 115): uma vez aceso,
+      // aceso até o fim do filme — é isso que impede a descarga de tirar
+      // do roteiro um corpo que ele vai usar em seguida.
+      const fim = audit.shots[audit.shots.length - 1];
+      for (const t of [REVEAL_T, REVEAL_T + 1, perfil.t0, fim.t0 + fim.dur]) {
+        d.journeyT = t;
+        expect(d.corpoNoRoteiro('mars'), `roteiro soltou 'mars' em t=${t}`).toBe(true);
+      }
+      // e dentro do filme o FOCO do Atlas nunca segura — as duas mãos
+      // não se sobrepõem, porque a fase decide qual delas fala
+      d.escada.focoCorpoId = 'earth';
+      expect(d.corpoNoFoco('earth')).toBe(false);
       // A regra do Atlas não veio do roteiro: foco de lua ainda inclui o pai.
       d.phase = 'atlas';
       d.escada.focoCorpoId = 'moon';
-      expect(d.preAquecerCorpo('moon')).toBe(true);
-      expect(d.preAquecerCorpo('earth')).toBe(true);
-      expect(d.preAquecerCorpo('mars')).toBe(false);
+      expect(segura('moon')).toBe(true);
+      expect(segura('earth')).toBe(true);
+      expect(segura('mars')).toBe(false);
+      // e no Atlas quem não fala é o ROTEIRO
+      expect(d.corpoNoRoteiro('mars')).toBe(false);
       expect(d.palcoQuente).toBe(true);
       d.escada.focoCorpoId = null;
-      expect(d.preAquecerCorpo('earth')).toBe(false);
+      expect(segura('earth')).toBe(false);
       d.phase = 'free';
-      expect(d.preAquecerCorpo('mars')).toBe(false);
+      expect(segura('mars')).toBe(false);
       expect(d.palcoQuente).toBe(false);
     } finally {
       vi.doUnmock('./roteiros/revelacao.json');

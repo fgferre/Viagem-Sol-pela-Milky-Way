@@ -126,7 +126,7 @@ import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { diametroAparentePx } from './corpos';
 import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
-import { CANAL_MAP, TexturasDoCorpo } from './texturas';
+import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
 import type { OpcoesDeTextura } from './texturas';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import {
@@ -232,8 +232,15 @@ export interface QuadroDaLua {
   screenHPx: number;
   fovDeg: number;
   ligado: boolean;
-  atlasQuente: boolean;
+  /** o Atlas está focado nesta lua (ou no pai dela) — um dos três que
+   *  SEGURAM os texels (`Seguradores`, texturas.ts). */
+  focoDoAtlas: boolean;
+  /** o roteiro do filme declarou este corpo — o segurador monotônico. */
+  pedidoDoRoteiro: boolean;
   politica: PoliticaDeLuz;
+  /** o relógio de PAREDE do app em segundos — só a carência da descarga
+   *  o consome (`CARENCIA_DA_DESCARGA_S`). */
+  tS: number;
   /** dt do quadro em segundos — só a rampa temporal da cessão o consome. */
   dtS: number;
   /** o instrumento da CASA: o halo do ponto sai dele. */
@@ -288,6 +295,8 @@ export class LuaResolvida {
 
   /** o estado das texturas — a casa dele é o pipeline (`texturas.ts`) */
   private readonly texturas: TexturasDoCorpo;
+  /** o registro dos três seguradores, REUSADO por tick (M4 da casa) */
+  private readonly seguram: Seguradores = { tela: false, foco: false, filme: false };
   private disposto = false;
 
   private geometria: THREE.SphereGeometry | null = null;
@@ -325,6 +334,9 @@ export class LuaResolvida {
       publicar: (porCanal) => {
         this.garantirCasca();
         this.matSuperficie!.uniforms.uMapaDia.value = porCanal.get('map')!;
+      },
+      soltar: () => {
+        if (this.matSuperficie) this.matSuperficie.uniforms.uMapaDia.value = null;
       },
     });
     this.estado = {
@@ -410,8 +422,12 @@ export class LuaResolvida {
 
     this.armado = gateBinario(this.armado, diametroPx);
 
-    // o MESMO gatilho duplo da Terra (lei 4): gate armado OU fase atlas
-    this.texturas.aoTick(this.armado || q.atlasQuente);
+    // OS MESMOS TRÊS SEGURADORES da Terra (lei 4, item 115): tela, foco
+    // do Atlas e roteiro do filme; o último a soltar abre a carência.
+    this.seguram.tela = this.armado;
+    this.seguram.foco = q.focoDoAtlas;
+    this.seguram.filme = q.pedidoDoRoteiro;
+    this.texturas.aoTick(this.seguram, q.tS);
 
     const emQuadro =
       this.armado && q.ligado && this.texturas.pronta && q.fonte !== null;

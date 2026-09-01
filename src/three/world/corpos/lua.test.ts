@@ -277,8 +277,10 @@ function quadro(camPosPc: THREE.Vector3, extra: Partial<Parameters<LuaResolvida[
     screenHPx: 1080,
     fovDeg: 58,
     ligado: true,
-    atlasQuente: false,
+    focoDoAtlas: false,
+    pedidoDoRoteiro: false,
     politica: 'assistida' as const,
+    tS: 0,
     // o instrumento e o relógio da cessão do ponto (item 108)
     dtS: 1 / 60,
     psf: PSF,
@@ -472,7 +474,7 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
 
   it('a fase atlas pré-aquece mesmo de longe — o mesmo gatilho duplo da Terra', async () => {
     const { lua, chamadas } = luaDeTeste();
-    lua.atualizar(quadro(new THREE.Vector3(0, 0, 0.001), { atlasQuente: true }));
+    lua.atualizar(quadro(new THREE.Vector3(0, 0, 0.001), { focoDoAtlas: true }));
     await flush();
     expect(chamadas.length).toBeGreaterThan(0);
     lua.dispose();
@@ -483,7 +485,7 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
     const pin = centroPc(JD);
     const perto = pin.clone();
     perto.z += RAIO_LUA_PC * 4;
-    lua.atualizar(quadro(perto, { atlasQuente: true }));
+    lua.atualizar(quadro(perto, { focoDoAtlas: true }));
     await flush();
     lua.atualizar(quadro(perto));
     const e = lua.atualizar(quadro(perto, { fonte: null, centroPinadoPc: pin }));
@@ -502,7 +504,7 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
     const pin = centroPc(JD);
     const perto = pin.clone();
     perto.z += RAIO_LUA_PC * 4;
-    lua.atualizar(quadro(perto, { atlasQuente: true }));
+    lua.atualizar(quadro(perto, { focoDoAtlas: true }));
     await flush();
     // o CONTROLE: com a fonte viva e o relógio um dia adiante, a Lua
     // anda de verdade — é a magnitude que o pino tem de cancelar
@@ -521,7 +523,7 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
     const perto = centroPc(JD);
     perto.z += RAIO_LUA_PC * 4;
     // com textura pronta e câmera colada, mas fonte null: fora de quadro
-    lua.atualizar(quadro(perto, { atlasQuente: true }));
+    lua.atualizar(quadro(perto, { focoDoAtlas: true }));
     await flush();
     const e = lua.atualizar(quadro(perto, { fonte: null }));
     expect(Number.isNaN(e.centroPc.x)).toBe(true);
@@ -701,13 +703,15 @@ describe('6. a ordem fotométrica — o ponto da Lua no fim do filme', () => {
     q.ligado = true;
     q.psf = PSF;
     q.salto = true;
+    q.tS = 0;
     passoDoPalco([posto], q, {
       palco: { registrar() {}, remover() {} } as unknown as Parameters<typeof passoDoPalco>[2]['palco'],
       planetas,
       rotulos: { escreverPosicaoDeLua() {} } as unknown as Parameters<typeof passoDoPalco>[2]['rotulos'],
       efemeride: motor,
       noFilme: true,
-      preAquecer: () => false,
+      noFoco: () => false,
+      noRoteiro: () => false,
       perturbar: () => {},
     });
     // o quadro da camada, DEPOIS do palco — é ele que escreve o Φ de

@@ -54,8 +54,10 @@ export function quadroDoPalcoVazio(): QuadroDoPalco {
     screenHPx: 0,
     fovDeg: 0,
     ligado: false,
-    atlasQuente: false,
+    focoDoAtlas: false,
+    pedidoDoRoteiro: false,
     politica: 'assistida',
+    tS: 0,
     dtS: 0,
     psf: { expoM0: 0, sigmaPx: 0, beta: 0 },
     salto: false,
@@ -116,14 +118,20 @@ export interface FiosDoPalco {
   /** o filme está correndo? (só nele o pino das 16:00 vale) */
   noFilme: boolean;
   /**
-   * ESTE corpo pré-aquece a textura neste quadro? É o GATILHO 2 da carga
-   * preguiçosa (o gatilho 1 é o gate de 4 px), e desde 22/08 ele é POR
-   * CORPO. Era um booleano só para os doze — `palcoQuente` —, e o preço
-   * estava medido: abrir o Atlas em cinema carregava 1.147 MiB de texel
-   * de corpo sem o visitante chegar perto de nada, e a coda do filme
-   * fazia o mesmo com os dez que ela nunca resolve.
+   * OS DOIS SEGURADORES QUE NÃO SÃO A TELA — o gatilho 2 da carga
+   * preguiçosa (o gatilho 1 é o gate de 4 px), POR CORPO desde 22/08. O
+   * preço da dose larga estava medido: abrir o Atlas em cinema
+   * carregava 1.147 MiB de texel de corpo sem o visitante chegar perto
+   * de nada, e a coda do filme fazia o mesmo com os dez que ela nunca
+   * resolve.
+   *
+   * Eram um booleano só (`preAquecer`) até o item 115, e viraram dois
+   * porque a DESCARGA precisa saber quem segura: o foco do Atlas solta
+   * no clique seguinte, o pedido do roteiro é monotônico até o fim do
+   * filme. A política dos dois mora em `director/preAquecimento.ts`.
    */
-  preAquecer: (id: string) => boolean;
+  noFoco: (id: string) => boolean;
+  noRoteiro: (id: string) => boolean;
   /** a cena mudou: a captura recomeça a contagem de estabilidade */
   perturbar: () => void;
 }
@@ -141,14 +149,16 @@ export function passoDoPalco(
   quadro: QuadroDoPalco,
   fios: FiosDoPalco
 ): void {
-  const { palco, planetas, rotulos, efemeride, noFilme, preAquecer, perturbar } = fios;
+  const { palco, planetas, rotulos, efemeride, noFilme, noFoco, noRoteiro, perturbar } = fios;
   for (const posto of postos) {
     // o pino das 16:00 é POR CORPO e só dentro do filme; sem ele o
     // pouso miraria um globo a 1,7 milhão de km
     quadro.centroPinadoPc =
       noFilme && posto.pinoNoFilme ? posto.pinoNoFilme : undefined;
-    // e o pré-aquecimento também é POR CORPO (a dose de 22/08)
-    quadro.atlasQuente = preAquecer(posto.id);
+    // e os dois seguradores antecipados também são POR CORPO (a dose
+    // de 22/08, separada em duas mãos pelo item 115)
+    quadro.focoDoAtlas = noFoco(posto.id);
+    quadro.pedidoDoRoteiro = noRoteiro(posto.id);
     const e = posto.corpo.atualizar(quadro);
 
     if (e.emQuadro) palco.registrar(posto.id, e.raioPc, e.centroPc);

@@ -31,6 +31,18 @@
 // corpo continua dono do seu estado ('fria'/'buscando'/'pronta'/
 // 'falhou'), do seu material e do seu `dispose`; o que ele delega é o
 // caminho de rede e a transação.
+//
+// E A DESCARGA (item 115, bloco A da colheita do Eyes, 31/08). Até
+// aqui a carga era uma via de mão única: uma vez baixada, a textura de
+// um corpo ficava residente pela sessão inteira — o único `dispose()`
+// de textura de corpo morava no teardown do Director. MEDIDO no
+// passeio de oito corpos em cinema (`capturas/item115-passeio-memoria
+// .mjs`): 54,1 MiB no boot, 1.082,9 MiB depois da visita, e 1.082,9
+// MiB vinte segundos depois de sair — 100% do pico, porque não havia
+// caminho de volta. Agora há três: quem SEGURA os texels
+// (`Seguradores`), a CARÊNCIA de 15 s entre o último soltar e o
+// `dispose` de verdade (`CARENCIA_DA_DESCARGA_S`), e o `soltar` do
+// corpo, que apaga os uniforms antes de os texels voltarem para a GPU.
 // ============================================================
 import * as THREE from 'three';
 import type { QualityLevel } from '../../core/engine';
@@ -262,6 +274,56 @@ export interface CanalPedido {
 /** O canal comum: superfície equiretangular em cor. */
 export const CANAL_MAP: CanalPedido = { canal: 'map', cor: true, repetirEmU: true };
 
+/**
+ * QUEM SEGURA os texels de um corpo neste quadro (item 115, bloco A).
+ *
+ * Não é um flag de "pode descarregar": é a lista das razões REAIS pelas
+ * quais a imagem precisa existir agora, e basta UMA para os bytes
+ * ficarem. Quem solta não decide sozinho — só o último a soltar começa
+ * a contar a carência. É a diferença entre uma contagem e um botão: com
+ * um botão, a mão que solta o foco levaria junto a imagem que a TELA
+ * ainda está desenhando.
+ *
+ *  - `tela`: o gate binário de 4 px está armado — o corpo ESTÁ (ou está
+ *    prestes a estar) desenhando. É este segurador que torna a descarga
+ *    segura POR CONSTRUÇÃO: `emQuadro` exige `armado` nos quatro
+ *    corpos, então nenhuma textura é tirada de um corpo em quadro.
+ *  - `foco`: o Atlas está focado neste corpo (ou na lua dele) — a dose
+ *    antecipada de `director/preAquecimento.ts`. Solta no clique
+ *    seguinte do visitante, e é EXATAMENTE esse caso que a carência
+ *    protege: quem vai a Marte e volta à Terra em cinco segundos não
+ *    paga rede nenhuma.
+ *  - `filme`: o roteiro declarou o corpo (`preload.corpos`). É
+ *    MONOTÔNICO no tempo do filme — `montarApoiosDoRoteiro` guarda o
+ *    INÍCIO e responde `t >= inicio` —, então uma vez pedido o corpo
+ *    fica segurado até o filme acabar. É por isso que a descarga não
+ *    pode estrangular a viagem: ela nunca alcança um corpo que o
+ *    roteiro ainda vai usar.
+ */
+export interface Seguradores {
+  tela: boolean;
+  foco: boolean;
+  filme: boolean;
+}
+
+/**
+ * A CARÊNCIA entre "o último soltou" e o `dispose()` de verdade — o
+ * número literal do `ResourceManager` do NASA Eyes (mergulho 09, §1.5:
+ * `unloadTimeout = setTimeout(_deleteEntry, 15e3)`).
+ *
+ * Não é folga arbitrária: é a peça que faz a ida e volta sair de graça.
+ * Dentro dela o corpo continua INTEIRO — os texels na GPU, os uniforms
+ * escritos, o estado 'pronta' —, e um segurador que volte é o
+ * `clearTimeout` deles: o relógio simplesmente zera, sem tocar a rede.
+ *
+ * A conta corre no relógio de PAREDE do app (o `tS` do quadro, que é o
+ * `Timer.getElapsed()` do Engine), e não na soma dos `dtS`: o `dtS` é
+ * grampeado em `GRAMPO_DO_PASSO_S` e numa vista pesada a carência
+ * esticaria sozinha. Aba escondida congela o relógio junto com o rAF —
+ * e isso é o certo: sem quadro não há visitante indo a lugar nenhum.
+ */
+export const CARENCIA_DA_DESCARGA_S = 15;
+
 const buscarPelaRede: BuscadorDeManifest = async (url) => {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
@@ -430,6 +492,17 @@ export interface PedidoDeTexturas {
   rede: OpcoesDeTextura;
   /** a fiação nos uniforms, com o lote inteiro em mãos */
   publicar: (porCanal: Map<string, THREE.Texture>) => void;
+  /**
+   * O ESPELHO de `publicar`, e obrigatório pelo mesmo motivo que ele: só
+   * o corpo sabe em que uniform cada canal entrou. Chamado ANTES do
+   * `dispose()` da descarga, e a ordem não é detalhe — um uniform
+   * apontando para textura já devolvida à GPU é um texel que o walker da
+   * memória continua contando e que o three re-subiria se o material
+   * voltasse a desenhar. Depois dele os uniforms ficam nulos, e o corpo
+   * volta a 'fria': quem manda no que aparece é `emQuadro`, que exige
+   * `pronta`.
+   */
+  soltar: () => void;
   /** o que o visitante perde se as três tentativas caírem */
   oQueNaoNasce: string;
   /** a etiqueta do aviso; default = `corpo` (a Terra avisa 'terra') */
@@ -494,9 +567,24 @@ export class TexturasDoCorpo {
   private tierRecusado: QualityLevel | null = null;
   /** o pedido que vale; qualquer outro que chegue é descartado */
   private geracao = 0;
+  /**
+   * O INSTANTE em que o ÚLTIMO segurador soltou (relógio de parede do
+   * app), ou `null` enquanto alguém segura. É o `unloadTimeout` deles
+   * sem timer: o tick já passa aqui sessenta vezes por segundo, e um
+   * `setTimeout` por corpo seria um relógio a mais para o `dispose`
+   * lembrar de limpar.
+   */
+  private soltoDesde: number | null = null;
+  /** quantos seguram os texels AGORA — 0 é a carência correndo */
+  private quantosSeguram = 0;
 
   constructor(pedido: PedidoDeTexturas) {
     this.pedido = pedido;
+  }
+
+  /** quantos dos três seguram os texels neste quadro (0 = carência) */
+  get segurando(): number {
+    return this.quantosSeguram;
   }
 
   /** há pixels na tela? (o `emQuadro` dos quatro corpos depende disto) */
@@ -522,9 +610,10 @@ export class TexturasDoCorpo {
   }
 
   /**
-   * O GATILHO, uma vez por tick. `gatilho` é o par de sempre (gate
-   * armado OU fase atlas); a carga preguiçosa é o contrato — sem
-   * gatilho nenhum byte desce, e as vistas oficiais não fazem fetch.
+   * O GATILHO, uma vez por tick. `seguram` são os três de sempre (gate
+   * armado, foco do Atlas, pedido do roteiro) — e qualquer um deles é o
+   * gatilho da carga; a carga preguiçosa é o contrato — sem segurador
+   * nenhum byte desce, e as vistas oficiais não fazem fetch.
    *
    * A TROCA DE TIER PEDE O MESMO GATILHO, porque ele é justamente quem
    * diz "este corpo está NA TELA agora": gate armado (grande o bastante
@@ -533,14 +622,38 @@ export class TexturasDoCorpo {
    * os 38 corpos do palco que alguém já visitou e abandonou re-baixar o
    * lote inteiro (34,4 MiB de variante de cinema, medidos na auditoria
    * de 31/08), cada um disparando o `perturbar` do palco por pixels que
-   * ninguém olha. Quem sai da tela fica com os texels que tem; quem
-   * VOLTA pede a troca no primeiro tick em que o gatilho volta, pela
-   * mesma comparação com `tierVivo` que já está aqui — ela não some,
-   * só não dispara enquanto ninguém olha.
+   * ninguém olha. Quem VOLTA pede a troca no primeiro tick em que o
+   * segurador volta, pela mesma comparação com `tierVivo` que já está
+   * aqui — ela não some, só não dispara enquanto ninguém olha.
+   *
+   * E QUANDO NINGUÉM SEGURA (item 115, bloco A) a mão vai para o outro
+   * lado, com a regra do `releaseByUrl` deles copiada letra a letra:
+   *
+   *  - lote em voo SEM pixel na tela → cancela NA HORA, sem carência.
+   *    Não há imagem a preservar, e a volta recomeçaria do zero de
+   *    qualquer jeito; o que a espera compraria seria só banda descendo
+   *    para ninguém (mergulho 09, §1.5: "senão (ainda baixando) →
+   *    `_deleteEntry` imediato").
+   *  - com pixels residentes → a CARÊNCIA de 15 s, e só então o
+   *    `dispose`. Um lote de TROCA que ainda esteja no ar perde o dono
+   *    junto, porque os pixels velhos continuam servindo.
+   *
+   * `tS` é o relógio de parede do app (o `t` do tick). Ver
+   * `CARENCIA_DA_DESCARGA_S` para o porquê de não ser a soma dos `dtS`.
    */
-  aoTick(gatilho: boolean): void {
+  aoTick(seguram: Seguradores, tS: number): void {
     if (this.disposto) return;
-    if (this.estado === 'fria' && gatilho) {
+    const gatilho = seguram.tela || seguram.foco || seguram.filme;
+    this.quantosSeguram =
+      (seguram.tela ? 1 : 0) + (seguram.foco ? 1 : 0) + (seguram.filme ? 1 : 0);
+    if (!gatilho) {
+      this.aoSoltar(tS);
+      return;
+    }
+    // RESSURREIÇÃO: qualquer segurador que volte zera o relógio da
+    // carência — é o `clearTimeout` do `acquire` deles.
+    this.soltoDesde = null;
+    if (this.estado === 'fria') {
       this.pedir();
       return;
     }
@@ -553,15 +666,74 @@ export class TexturasDoCorpo {
     // VOLTAR AO TIER QUE JÁ ESTÁ NA TELA É CANCELAR, e não pedir de
     // novo: não há lote a buscar, mas há um em voo que ninguém espera
     // mais — a geração nova o invalida. É a lição do `reassarMundo`
-    // (21/08) num corpo só. Vale FORA da tela também: cancelar não toca
-    // a rede, e o lote que já está no ar deixou de ter dono.
+    // (21/08) num corpo só. Fora da tela quem cancela é o `aoSoltar`,
+    // que não olha tier nenhum: sem segurador, nenhum lote tem dono.
     if (tier === this.tierVivo) {
       this.geracao += 1;
       this.tierEmVoo = null;
       return;
     }
-    if (!gatilho) return;
     this.pedir();
+  }
+
+  /**
+   * NINGUÉM SEGURA — o outro lado do gatilho. Devolve na primeira linha
+   * que puder: quem não tem nada residente nem nada no ar não está em
+   * carência de coisa nenhuma, está simplesmente frio (é o estado dos 30
+   * corpos que o visitante nunca visitou).
+   */
+  private aoSoltar(tS: number): void {
+    // PRIMEIRA CARGA EM VOO: nada na tela para preservar. Cancela já —
+    // a geração nova invalida o lote, e o `abortar` corta os bytes.
+    if (this.estado === 'buscando') {
+      this.geracao += 1;
+      this.tierEmVoo = null;
+      this.estado = 'fria';
+      this.soltoDesde = null;
+      return;
+    }
+    // TROCA DE TIER EM VOO: os pixels velhos continuam servindo, então
+    // o lote novo é que perde o dono. A carência abaixo julga os velhos.
+    if (this.tierEmVoo !== null) {
+      this.geracao += 1;
+      this.tierEmVoo = null;
+    }
+    // nada residente (corpo frio, procedural ou que desistiu): sem relógio
+    if (this.vivas.length === 0) {
+      this.soltoDesde = null;
+      return;
+    }
+    if (this.soltoDesde === null) {
+      this.soltoDesde = tS;
+      return;
+    }
+    if (tS - this.soltoDesde >= CARENCIA_DA_DESCARGA_S) this.descarregar();
+  }
+
+  /**
+   * A DESCARGA — os texels voltam para a GPU e o corpo volta a 'fria'.
+   *
+   * A ordem é o espelho exato da troca de ponteiro do `pedir`: `soltar`
+   * (os uniforms deixam de apontar) ANTES do `dispose` (os texels
+   * somem). Entre as duas linhas nenhum quadro é desenhado.
+   *
+   * Volta a 'fria' e não a 'falhou': descarregar não é fracasso, e o
+   * corpo tem de poder recarregar no primeiro tick em que alguém o
+   * segurar de novo — por isso as recargas e o `tierRecusado` também
+   * zeram. Quem desistiu de verdade ('falhou') nunca chega aqui, porque
+   * não tem texel residente.
+   */
+  private descarregar(): void {
+    this.geracao += 1;
+    this.pedido.soltar();
+    for (const t of this.vivas) t.dispose();
+    this.vivas = [];
+    this.estado = 'fria';
+    this.tierVivo = null;
+    this.tierEmVoo = null;
+    this.tierRecusado = null;
+    this.recargas = 0;
+    this.soltoDesde = null;
   }
 
   private pedir(): void {
