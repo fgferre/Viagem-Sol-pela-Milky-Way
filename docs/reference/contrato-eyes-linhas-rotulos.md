@@ -1,6 +1,6 @@
 # O CONTRATO — linhas de órbita, rótulos e ícones do NASA Eyes
 
-**O que é.** O gabarito único da ONDA DA PARIDADE (item 120, fase F0). Toda
+**O que é.** O gabarito único da ONDA DA PARIDADE (item 125 (ex-120), fase F0). Toda
 regra que governa como o Eyes desenha, mostra, esconde e prioriza LINHA,
 RÓTULO e ÍCONE está aqui, com o **literal** e o **endereço**. Quem
 implementar F1–F6 não deve precisar reabrir o bundle.
@@ -847,7 +847,7 @@ desta onda (mergulhos 06 §4 e 08 §4; `nasa-eyes-algoritmos.md` §L).
 ## §7 MAPA DO CONFRONTO — regra a regra, o que a casa tem hoje
 
 Uma linha por regra. "Casa" é o estado conferido em 31/08 por grep dirigido;
-"F" é a fase do item 120 a que a regra pertence.
+"F" é a fase do item 125 (ex-120) a que a regra pertence.
 
 ### §1 A LINHA → F1
 
@@ -900,7 +900,7 @@ Uma linha por regra. "Casa" é o estado conferido em 31/08 por grep dirigido;
 | P10 `__focus` não pesa | não se aplica | — | — |
 | P11 alvo seguido com peso 201 | equivalente: `foco: 120`, acima de tudo | `labels.ts:139` | — |
 | P12 exceções de camada | a gaveta tem a camada "Nomes na tela"; sem lista de exceções | `HudDoAtlas.tsx` | F3 |
-| **orçamento fixo** | a casa tem `ORCAMENTO_DE_NOMES = 10` — o Eyes **não tem orçamento**, tem colisão + pesos + rodízio | `labels.ts:237` | **F3 revoga (declarado no item 120)** |
+| **orçamento fixo** | a casa tem `ORCAMENTO_DE_NOMES = 10` — o Eyes **não tem orçamento**, tem colisão + pesos + rodízio | `labels.ts:237` | **F3 revoga (declarado no item 125, ex-120)** |
 | histerese de seleção | `BONUS_DE_HISTERESE = 1.2` — invenção da casa, sem par no Eyes; o análogo deles é a rampa de 750 ms | `labels.ts:161` | F3 (decidir se convive) |
 
 ### §4 ENCOBRIMENTO → F4

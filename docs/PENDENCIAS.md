@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 125.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 126.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -1769,8 +1769,11 @@ Terra 1,74 M km e a prova mede contra o lugar velho. Família do
 `?jd=` (e a prova acompanhar) ou se a prova deve medir relativo à
 Terra.
 
-**120. A ONDA DA PARIDADE — linhas de órbita, rótulos e ícones IGUAIS
-aos do NASA Eyes.** Ordem do dono em 31/08, palavras dele: *"nao estou
+**125. A ONDA DA PARIDADE — linhas de órbita, rótulos e ícones IGUAIS
+aos do NASA Eyes.** *(Nasceu como "120" nos commits `335fa9c`/`60190b9`
+por contador atrasado — o 120 é a histerese, aberta E fechada em 31/08
+pela outra frente; renumerado para 125 no mesmo dia. Os commits de
+história seguem dizendo "120"; este parágrafo é a ponte.)* Ordem do dono em 31/08, palavras dele: *"nao estou
 convencido nem mesmo satisfeito ainda com a nossa implementacao das
 linhas de orbitas, labels e ícones. Acho que nao aprendemos direito as
 regras que fazem eles aparecerem, em qual momento desaparecem, como sao
@@ -1786,6 +1789,19 @@ paridade — em particular o orçamento de 8 nomes do item 82 (lei de
 25/08), que será substituído pelo conjunto de regras do Eyes (pesos por
 classe + colisão + rodízio), mudança declarada aqui e conferível por
 ele no fim.
+
+**ESTADO DA ÁRVORE ANTES DE ABRIR FASE (aviso da frente do 115,
+31/08):** o plano abaixo foi escrito contra um retrato ANTERIOR à
+estação (2) do item 115, que pousou NO MESMO DIA. Já estão na main:
+fades 250/750 ms nos rótulos (`622e920` — a F2 começa daí, faltam
+intervalos por tamanho aparente e canais ícone/texto), oclusão por
+TODO globo via âncora (`7d51170` — a F4 cita "hoje só o Sol", que já
+não é verdade; falta segmento-esfera e atrás-da-câmera), gradiente na
+fita (`74bec54`), MSAA `samples:4` MEDIDO e reprovado pelo preço nesta
+GPU (+55–70% do quadro em dpr 2, `925f595` — a F1 tem os números
+prontos em capturas/item115-msaa.json, não precisa medir do zero), e o
+re-baseline único + faxina 49/80/85/101 FEITOS (`6873dbf`, 54 vistas
+estáveis). As fases constroem em cima disso, não do retrato velho.
 
 **O PLANO (a fila viva é esta; cada fase fecha com prova e a onda
 inteira fecha com A/B lado a lado contra o Eyes vivo e o olho dele):**
