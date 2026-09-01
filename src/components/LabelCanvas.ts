@@ -1,7 +1,11 @@
 import { escalaDaUi } from '../lib/uiScale';
 import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
 import { numeroPtBr } from '../three/tempoDoAtlas';
-import { OPACIDADE_MINIMA_DO_ROTULO, ordemDaDisputa } from '../three/world/labels';
+import {
+  OPACIDADE_MINIMA_DO_ROTULO,
+  PRIORIDADE_DO_ROTULO,
+  ordemDaDisputa,
+} from '../three/world/labels';
 import type { CaixaDaDisputa, StarLabel } from '../three/world/labels';
 import type { RotuloComVaga } from '../three/world/rotulos3d';
 
@@ -223,7 +227,7 @@ interface PlanoDoRotulo {
   textoY: number;
   esquerda: boolean;
   larguraDoNome: number;
-  peso: (typeof PESOS_DO_ROTULO)[keyof typeof PESOS_DO_ROTULO];
+  peso: PesoDoRotulo;
 }
 
 /** a família do HUD, escrita uma vez (era repetida em quatro linhas) */
@@ -250,11 +254,16 @@ const FAMILIA = '"Segoe UI", Arial, sans-serif';
  * como assunto podem procurar as antigas linhas alternativas. A exceção
  * não alcança o céu de fundo nem o Atlas.
  *
- * O que sobrou do traço é o risco de 10 px na horizontal, que é o
- * desenho anterior ao item 73: ele diz de que ponto o nome fala, e não
- * atravessa nada.
+ * E O RISCO MORREU (item 125, F5 · T12). Até 01/09 o caminho SEM anel
+ * — as estrelas do céu, e o corpo com a camada de ícones desligada —
+ * ainda puxava um traço de 10 px na horizontal, resto do desenho
+ * anterior ao item 73. No Eyes o alinhamento é `(0, 0.5)`: a caixa
+ * cresce para a direita do ponto, centrada na vertical, e **não há
+ * haste, não há traço** (`m08-DivComponent.js:3`). O que diz de que
+ * ponto o nome fala é o ÍCONE, quando a classe tem um; quando não tem
+ * (estrela: `Star → "no-icon"`, T7), o nome fala sozinho, a doze pixels
+ * do ponto.
  */
-const RECUO_DO_TEXTO = 18;
 
 /**
  * Só os nomes DIRIGIDOS pelo roteiro podem procurar outra linha. São as
@@ -264,59 +273,151 @@ const RECUO_DO_TEXTO = 18;
 const DESLOCAMENTOS_DIRIGIDOS = [0, -34, 34, -68, 68, -102, 102] as const;
 
 /**
- * OS TRÊS PESOS VISUAIS, numa tabela só — à moda do `labelTier.ts` do
- * doador. O que separa um do outro é a HIERARQUIA (`prioridade`), e a
- * tabela é o único lugar onde cor, peso e tamanho de um rótulo se
- * decidem.
+ * OS DOIS NÍVEIS TIPOGRÁFICOS (item 125, F5 · T9/T10) — e o eixo da
+ * hierarquia NÃO é o tamanho da fonte.
  *
- * O DO MEIO É O DESENHO DE SEMPRE, pixel a pixel, e isso é deliberado:
+ * Até 01/09 esta tabela tinha TRÊS pesos e os separava por TAMANHO
+ * (13/12/11 px) + peso + cor. A folha do Eyes (`m08-label-css.txt`) faz
+ * o oposto: **em desktop todo rótulo tem 16 px** e só o Sol tem 18; o
+ * que separa um planeta de uma lua é CAIXA (`text-transform:uppercase`),
+ * PESO (600), TRACKING (`letter-spacing:.3em`), ALFA de repouso (0,75
+ * contra 0,35 — a F2 já os pôs) e TAMANHO DO ÍCONE (20 contra 16 px).
+ * O tamanho da fonte é do DISPOSITIVO, não da classe:
+ *
+ * ```css
+ * .pioneer-label-div { font-size: var(--fontSizeSmall) }        // 14px
+ * @media (min-width:1025px) and (min-height:600px) {
+ *   .pioneer-label-div     { font-size: var(--fontSize) }       // 16px
+ *   .pioneer-label-div.sun { font-size: var(--fontSizeLarge) }  // 18px
+ * }
+ * ```
+ *
+ * O `sol` NÃO é um terceiro nível: é a variante DIMENSIONAL do primário
+ * (`.sun` no CSS deles) — mesma caixa, mesmo peso, mesmo tracking, mesmo
+ * alfa; só o tamanho, o recuo (20 px) e o deslocamento vertical (+8)
+ * mudam.
+ *
+ * E O `filme` É O DESENHO DE SEMPRE, pixel a pixel, deliberadamente:
  * `prioridade` ausente cai nele, e `prioridade` ausente é exatamente o
- * caso do RAMO DO FILME, cujo peso esta obra não toca. Um rótulo do filme
- * continua sendo pintado com os mesmos números de antes.
+ * caso do RAMO DO FILME. O Eyes não tem filme; as legendas do roteiro
+ * ("BETELGEUSE · M2Ib · 49,7 anos-luz") são identidade da casa, foram
+ * medidas beat a beat, e esta fase — que é sobre PARIDADE com o Atlas
+ * deles — não tem autoridade para reescrevê-las. É a mesma decisão que
+ * a F3 tomou sobre os pesos.
  */
 export const PESOS_DO_ROTULO = {
-  /** o foco e o Sol (prioridade ≥ 90): o assunto, e ele se lê primeiro */
-  principal: {
-    tamanhoDoNome: 13,
+  /** `.planet` — planeta e o que a casa marca como canal primário */
+  primario: {
+    tamanho: { grande: 16, pequeno: 14 },
+    caixaAlta: true,
     pesoDoNome: '600',
-    corDoNome: 'rgba(255, 246, 232, 0.98)',
+    /** `letter-spacing: .3em`, em EM: vira px na hora de pintar */
+    trackingEm: 0.3,
+    /** `left: 18px` — de onde o texto começa, à direita da âncora */
+    recuoDoTexto: 18,
+    /** `top: -6px` — o ajuste ótico sobre o centro vertical */
+    deslocamentoY: -6,
+    /** o traço central do anel de 20 px (r externo 10, interno 8,5) */
+    raioDoIcone: 9.25,
+    /** o anel veste a cor da ÓRBITA do corpo (T4) */
+    iconeBranco: false,
+    corDoNome: '#fff',
     tamanhoDoDetalhe: 9,
     corDoDetalhe: 'rgba(198, 206, 220, 0.92)',
   },
-  /** planetas, anões, luas e nomes próprios — o desenho de sempre */
-  secundario: {
-    tamanhoDoNome: 12,
+  /** `.sun` — a variante dimensional do primário, não um nível novo */
+  sol: {
+    tamanho: { grande: 18, pequeno: 16 },
+    caixaAlta: true,
+    pesoDoNome: '600',
+    trackingEm: 0.3,
+    recuoDoTexto: 20,
+    deslocamentoY: 8,
+    raioDoIcone: 9.25,
+    iconeBranco: false,
+    corDoNome: '#fff',
+    tamanhoDoDetalhe: 9,
+    corDoDetalhe: 'rgba(198, 206, 220, 0.92)',
+  },
+  /** a base: lua, anão, asteroide e as estrelas do céu */
+  base: {
+    tamanho: { grande: 16, pequeno: 14 },
+    caixaAlta: false,
+    pesoDoNome: '400',
+    trackingEm: 0,
+    /** `left: 12px` */
+    recuoDoTexto: 12,
+    /** `top: -4px` */
+    deslocamentoY: -4,
+    /** o traço central do anel pequeno de 16 px (r 8 / 6,5) */
+    raioDoIcone: 7.25,
+    /** `icon-circle-white-small` — branco, e não a cor do pai (T5) */
+    iconeBranco: true,
+    corDoNome: '#fff',
+    tamanhoDoDetalhe: 9,
+    corDoDetalhe: 'rgba(159, 176, 201, 0.88)',
+  },
+  /** o RAMO DO FILME — os números de antes da F5, intocados */
+  filme: {
+    tamanho: { grande: 12, pequeno: 12 },
+    caixaAlta: true,
     pesoDoNome: '500',
+    trackingEm: 0,
+    recuoDoTexto: 18,
+    deslocamentoY: 0,
+    raioDoIcone: 3.5,
+    iconeBranco: false,
     corDoNome: 'rgba(240, 244, 251, 0.96)',
     tamanhoDoDetalhe: 9,
     corDoDetalhe: 'rgba(159, 176, 201, 0.88)',
   },
-  /** designações de Bayer e o resto: presente, sem disputar a leitura */
-  terciario: {
-    tamanhoDoNome: 11,
-    pesoDoNome: '400',
-    corDoNome: 'rgba(206, 215, 231, 0.82)',
-    tamanhoDoDetalhe: 8,
-    corDoDetalhe: 'rgba(143, 158, 181, 0.74)',
-  },
 } as const;
 
+type PesoDoRotulo = (typeof PESOS_DO_ROTULO)[keyof typeof PESOS_DO_ROTULO];
+
 /**
- * A faixa de prioridade de cada peso — a tabela decide, não o desenho.
+ * QUE NÍVEL ESTE RÓTULO USA — e a chave é a CLASSE, como no Eyes (T11:
+ * `getLabelClass` devolve o nome da classe da entidade, e a folha
+ * estiliza `.planet`, `.sun`).
  *
- * OS DEGRAUS FORAM REESCRITOS NA ESCALA NOVA (item 125, F3 · P1) e o
- * conjunto de quem cai em cada peso é o MESMO de antes, nome por nome:
- * `foco` e `sol` (201/100) no principal; planeta, anão, lua, asteroide e
- * estrela de nome próprio (50…10) no secundário; designação de Bayer e o
- * piso (5/1) no terciário. Só os números mudaram — a tipografia é
- * assunto da F5 e esta fase não a move um pixel.
+ * Aqui a classe chega em dois campos que já existiam: `canalPrimario`
+ * (escrito por `projectCorpos` a partir da classe em pt-BR 'planeta' e
+ * 'estrela' — o mesmo par que o CSS deles marca como primário) e
+ * `detalhe`, que carrega a palavra da classe e separa a ESTRELA da
+ * casa, que é o `.sun`. Estrela do céu de fundo não tem `canalPrimario`
+ * e cai na base — que é o certo: no Eyes ela é `Star`, sem ícone e sem
+ * caixa alta.
  */
 export function pesoVisual(label: StarLabel) {
-  const p = label.prioridade;
-  if (p === undefined) return PESOS_DO_ROTULO.secundario;
-  if (p >= 100) return PESOS_DO_ROTULO.principal;
-  if (p >= 10) return PESOS_DO_ROTULO.secundario;
-  return PESOS_DO_ROTULO.terciario;
+  if (label.prioridade === undefined) return PESOS_DO_ROTULO.filme;
+  if (label.detalhe === 'estrela') return PESOS_DO_ROTULO.sol;
+  return label.canalPrimario ? PESOS_DO_ROTULO.primario : PESOS_DO_ROTULO.base;
+}
+
+/**
+ * O TAMANHO É DO DISPOSITIVO (T10) — a media query deles, em px CSS do
+ * canvas, que é o viewport: `min-width:1025px and min-height:600px`.
+ */
+const LARGURA_DE_TELA_GRANDE = 1025;
+const ALTURA_DE_TELA_GRANDE = 600;
+
+/**
+ * O DETALHE "classe · distância" SÓ NO CORPO FOCADO (item 125, F5 —
+ * decisão pendente desde o item 82).
+ *
+ * O Eyes NÃO escreve nada além do nome no céu: a classe e a distância
+ * moram na FICHA da entidade, que abre com um clique. A casa escrevia
+ * nos dois lugares, e o preço era uma etiqueta de duas colunas em cada
+ * ponto da tela. O meio-termo desta fase: o detalhe fica **onde ele
+ * responde a uma pergunta viva** — o corpo que o visitante escolheu
+ * seguir — e sai de todos os outros.
+ *
+ * O FILME NÃO É TOCADO (`prioridade === undefined`): a legenda do beat
+ * é a identidade dele, e o item 82 já dizia que tirá-la exigia julgar
+ * com o filme na tela.
+ */
+function escreveDetalhe(label: StarLabel): boolean {
+  return label.prioridade === undefined || label.prioridade >= PRIORIDADE_DO_ROTULO.foco;
 }
 
 /**
@@ -419,12 +520,45 @@ export class LabelCanvas {
   private readonly nomes: string[] = [];
   private readonly detalhes: string[] = [];
 
-  private medir(texto: string, fonte: string): number {
-    const chave = `${fonte}\u0000${texto}`;
+  /**
+   * O TAMANHO DA FONTE DESTE NÍVEL, em px CSS — a media query deles
+   * (T10), lida do viewport deste canvas.
+   */
+  private tamanhoDaFonte(peso: PesoDoRotulo): number {
+    const grande =
+      this.width >= LARGURA_DE_TELA_GRANDE && this.height >= ALTURA_DE_TELA_GRANDE;
+    return grande ? peso.tamanho.grande : peso.tamanho.pequeno;
+  }
+
+  /** a fonte do NOME, já na escala da UI */
+  private fonteDoNome(peso: PesoDoRotulo, k: number): string {
+    return `${peso.pesoDoNome} ${this.tamanhoDaFonte(peso) * k}px ${FAMILIA}`;
+  }
+
+  /** `letter-spacing: .3em` em px, já na escala da UI */
+  private trackingDoNome(peso: PesoDoRotulo, k: number): number {
+    return peso.trackingEm * this.tamanhoDaFonte(peso) * k;
+  }
+
+  /**
+   * O TRACKING ENTRA NO CANVAS por `ctx.letterSpacing`, que o Chrome
+   * respeita TAMBÉM no `measureText` — por isso ele viaja com a fonte
+   * até a medida, e por isso entra na chave do cache de larguras. Onde a
+   * propriedade não existe (o duplo dos testes, um navegador antigo) a
+   * escrita é inofensiva, e a medida sai sem o tracking.
+   */
+  private aplicarTracking(px: number): void {
+    (this.context as { letterSpacing?: string }).letterSpacing = `${px}px`;
+  }
+
+  private medir(texto: string, fonte: string, tracking = 0): number {
+    const chave = `${fonte}\u0000${tracking}\u0000${texto}`;
     const guardada = this.larguras.get(chave);
     if (guardada !== undefined) return guardada;
     this.context.font = fonte;
+    this.aplicarTracking(tracking);
     const medida = this.context.measureText(texto).width;
+    this.aplicarTracking(0);
     // O TETO, e ele é necessário: o detalhe carrega a distância VIVA e
     // inventa uma string nova a cada casa decimal que anda. Sem teto, um
     // voo longo faria o mapa crescer sem parar.
@@ -442,11 +576,17 @@ export class LabelCanvas {
     this.detalhes.length = 0;
     let assinatura = `${this.width}x${this.height}@${this.dpr}:${k}`;
     for (const label of labels) {
-      const nome = label.name.toLocaleUpperCase('pt-BR');
+      const peso = pesoVisual(label);
+      // A CAIXA É DO NÍVEL (item 125, F5 · T9): `text-transform:
+      // uppercase` só existe em `.planet` e `.sun`. Até 01/09 este
+      // arquivo punha TUDO em caixa alta, e era essa a razão de a
+      // hierarquia precisar de três tamanhos de fonte para se fazer ouvir.
+      const nome = peso.caixaAlta ? label.name.toLocaleUpperCase('pt-BR') : label.name;
       // o `detalhe` é dos corpos do sistema (a classe em pt-BR, que não
       // cabe no orçamento de 5 do tipo espectral); nas estrelas ele é o
-      // tipo espectral
-      const detalhe = detalheDoRotulo(label);
+      // tipo espectral — e desde a F5 ele só é ESCRITO no corpo focado e
+      // no filme (`escreveDetalhe`)
+      const detalhe = escreveDetalhe(label) ? detalheDoRotulo(label) : '';
       this.nomes.push(nome);
       this.detalhes.push(detalhe);
       assinatura +=
@@ -684,28 +824,14 @@ export class LabelCanvas {
         }
       }
       if (label.opacity < OPACIDADE_MINIMA_DO_ROTULO) continue;
-      if (!p.caixaDoTexto) {
-        // A ENTRADA SÓ-ÍCONE (item 89): um anel discreto na âncora, sem
-        // texto e sem traço.
-        this.anel(ctx, p.ancoraX, p.ancoraY, 3.5 * k, k, label);
-        continue;
-      }
-      const direcao = p.esquerda ? -1 : 1;
-      ctx.globalAlpha = label.opacity;
-      if (label.comAnel) {
-        // O EYES COMPLETO (item 89): o corpo tem o ANEL na âncora e o
-        // nome ao lado — sem risco, porque o anel É a marca do ponto.
-        this.anel(ctx, p.ancoraX, p.ancoraY, 3.5 * k, k, label);
-      } else {
-        ctx.strokeStyle = 'rgba(255, 211, 145, 0.72)';
-        ctx.lineWidth = 0.75;
-        ctx.beginPath();
-        ctx.moveTo(p.ancoraX, p.ancoraY);
-        // o risco de 10 px na horizontal, que diz de que ponto o nome
-        // fala — o desenho anterior ao item 73, de volta inteiro
-        ctx.lineTo(p.ancoraX + direcao * 10 * k, p.textoY);
-        ctx.stroke();
-      }
+      // ── O CANAL DE ÍCONE (item 125, F5 · T1/T2) ─────────────────
+      // Os dois canais são independentes de verdade: o ícone existe
+      // quando a CLASSE do corpo tem um (`comAnel`, o `_iconMap` deles)
+      // e a camada está ligada — com nome ao lado ou sem ele —, e o
+      // texto existe quando a camada de nomes está ligada. Estrela do
+      // céu não tem ícone (T7) e por isso não pinta nada aqui.
+      if (label.comAnel) this.anel(ctx, p, k, label);
+      if (!p.caixaDoTexto) continue;
 
       // BETA 3D (item 109): o rótulo passou por TODAS as leis e ocupou a
       // vaga — mas o texto dele é pintado NA CENA pelo Rotulos3d. Aqui
@@ -719,20 +845,36 @@ export class LabelCanvas {
       // É essa curva não-linear que soa orquestrada, e nenhuma das duas
       // camadas sozinha a produz.
       //
-      // SÓ O TEXTO: o anel e o risco continuam na camada de fora, porque
-      // o canal de ÍCONE é assunto da F5 (`alfaDoIcone` já viaja no
-      // objeto, calculado, e ninguém o lê ainda). Ausente = 1, e é assim
-      // que o ramo do FILME — que não passa pelas rampas — continua
-      // pintando pixel a pixel o de sempre.
+      // O CANAL DO ÍCONE TEM O ALFA DELE (F5 · T1), lido dentro de
+      // `anel`: os dois nascem do mesmo número, e é o hover — e a
+      // possibilidade de desligar um sem o outro — que os separa.
+      // Ausente = 1, e é assim que o ramo do FILME — que não passa pelas
+      // rampas — continua pintando pixel a pixel o de sempre.
       ctx.globalAlpha = label.opacity * (label.alfaDoTexto ?? 1);
       ctx.textAlign = p.esquerda ? 'right' : 'left';
+      // O ALINHAMENTO (0, 0.5) É VERTICALMENTE CENTRADO (F5 · T12): a
+      // linha de base seguia a âncora, o que punha o nome meio corpo
+      // acima do ponto de que ele fala.
+      ctx.textBaseline = 'middle';
+      // O CONTORNO É DA CASA, e é diferença DECLARADA (F5 · T15): o
+      // rótulo deles é um `<div>` de texto branco sem sombra nenhuma
+      // sobre um céu preto. O nosso é canvas 2D sobre a Via Láctea
+      // procedural, que tem tinta em quase todo pixel — sem um contorno
+      // o nome some dentro do braço da galáxia. A sombra apertou de 7
+      // para 5 nesta fase: o halo largo era o que mais afastava a letra
+      // da deles.
       ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
-      ctx.shadowBlur = 7;
-      ctx.font = `${p.peso.pesoDoNome} ${p.peso.tamanhoDoNome * k}px ${FAMILIA}`;
+      ctx.shadowBlur = 5;
+      ctx.font = this.fonteDoNome(p.peso, k);
+      this.aplicarTracking(this.trackingDoNome(p.peso, k));
       ctx.fillStyle = p.peso.corDoNome;
       ctx.fillText(this.nomes[i], p.textoX, p.textoY);
+      this.aplicarTracking(0);
 
-      ctx.shadowBlur = 6;
+      // O DETALHE (classe · distância) só existe no corpo focado e no
+      // filme desde a F5 — nos demais a string vem vazia de `planejar`,
+      // e pintar vazio não custa nem sujeita ninguém a um `if`.
+      ctx.shadowBlur = 4;
       ctx.font = `400 ${p.peso.tamanhoDoDetalhe * k}px ${FAMILIA}`;
       ctx.fillStyle = p.peso.corDoDetalhe;
       const detalheX = p.esquerda
@@ -757,7 +899,7 @@ export class LabelCanvas {
     textoY: 0,
     esquerda: false,
     larguraDoNome: 0,
-    peso: PESOS_DO_ROTULO.secundario,
+    peso: PESOS_DO_ROTULO.base,
   };
 
   /**
@@ -786,8 +928,16 @@ export class LabelCanvas {
     // tamanho — e, ao contrário dele, PINTA, porque a rampa de 750 ms
     // corre sobre o globo (ver `pintaSemVaga`).
     const ocluido = label.causaDoSumico === 'oclusao';
-    const ancoraX = label.x * this.width;
-    const ancoraY = label.y * this.height;
+    // O PIXEL INTEIRO, E A PARIDADE DA JANELA (item 125, F5 · T13),
+    // literal do `DivComponent` deles:
+    //   `n.x = e.size.x % 2 == 0 ? Math.round(n.x) : Math.floor(n.x)`
+    // Lado PAR arredonda, lado ÍMPAR trunca — o que mantém o texto a uma
+    // distância inteira da borda nas duas paridades, em vez de meio
+    // pixel numa delas. É em px CSS, como lá: o canvas está escalado por
+    // `dpr`, então num monitor 2× isto é meio pixel de dispositivo, e é
+    // exatamente o que o `<div>` deles também faz.
+    const ancoraX = inteiroPorParidade(label.x * this.width, this.width);
+    const ancoraY = inteiroPorParidade(label.y * this.height, this.height);
     // A MARGEM DA COMPOSIÇÃO — a faixa de baixo e o canto dos
     // controles, onde o HUD mora em QUALQUER arranjo. Não é a régua do
     // HUD (essa é `reservadas`, medida): é o que sobra de pé quando
@@ -812,19 +962,28 @@ export class LabelCanvas {
     ) {
       return LabelCanvas.FORA;
     }
-    const raio = 3.5 * k;
+    const peso = pesoVisual(label);
+    // O ANEL TEM DOIS TAMANHOS (item 125, F5 · T3/T5): 20 px no planeta
+    // e no Sol, 16 px nos menores. O raio aqui é o do TRAÇO CENTRAL —
+    // 9,25 e 7,25 —, porque 20 e 16 são o QUADRO do sprite deles, e o
+    // círculo externo lá tem r = 10 (traço de 1,5 para dentro).
+    const raio = peso.raioDoIcone * k;
     const anel: Rect = {
       left: ancoraX - raio - 2 * k,
       right: ancoraX + raio + 2 * k,
       top: ancoraY - raio - 2 * k,
       bottom: ancoraY + raio + 2 * k,
     };
-    const peso = pesoVisual(label);
+    // O PONTO SEM ÍCONE (T7/T12): a estrela do céu é `Star → "no-icon"`,
+    // e o retângulo da âncora dela tem tamanho ZERO — é o `size (0,0)`
+    // do ponto do objeto deles. Até 01/09 era o retângulo do risco de
+    // 10 px, que morreu junto com o risco.
+    const ponto: Rect = { left: ancoraX, right: ancoraX, top: ancoraY, bottom: ancoraY };
     if (label.icone) {
       return {
         candidato: !ocluido,
         pintaSemVaga: ocluido,
-        caixaDoIcone: anel,
+        caixaDoIcone: label.comAnel ? anel : ponto,
         caixaDoTexto: null,
         ancoraX,
         ancoraY,
@@ -839,13 +998,18 @@ export class LabelCanvas {
     // pode dirigir um assunto: aí, e só aí, ele procura as linhas
     // alternativas antigas e assume a frente dos nomes de fundo.
     const ladoPreferido = ancoraX > this.width * 0.72;
-    const fonteDoNome = `${peso.pesoDoNome} ${peso.tamanhoDoNome * k}px ${FAMILIA}`;
+    const fonteDoNome = this.fonteDoNome(peso, k);
+    const tracking = this.trackingDoNome(peso, k);
     const fonteDoDetalhe = `400 ${peso.tamanhoDoDetalhe * k}px ${FAMILIA}`;
-    const larguraDoNome = this.medir(this.nomes[i], fonteDoNome);
+    const larguraDoNome = this.medir(this.nomes[i], fonteDoNome, tracking);
     const larguraDoDetalhe = this.medir(this.detalhes[i], fonteDoDetalhe);
-    const conteudo = larguraDoNome + 9 * k + larguraDoDetalhe;
+    // SEM DETALHE, SEM VÃO: desde a F5 o detalhe é vazio na maioria dos
+    // nomes, e somar o vão de 9 px a uma string vazia daria a cada nome
+    // uma caixa mais larga do que o que ele escreve.
+    const conteudo =
+      larguraDoDetalhe > 0 ? larguraDoNome + 9 * k + larguraDoDetalhe : larguraDoNome;
     const caixaEm = (esquerda: boolean, y: number): Rect => {
-      const x = ancoraX + (esquerda ? -1 : 1) * RECUO_DO_TEXTO * k;
+      const x = ancoraX + (esquerda ? -1 : 1) * peso.recuoDoTexto * k;
       const left = esquerda ? x - conteudo : x;
       return {
         left: left - 5 * k,
@@ -854,9 +1018,14 @@ export class LabelCanvas {
         bottom: y + 12 * k,
       };
     };
+    // O DESLOCAMENTO ÓTICO do nível (T9: `top:-4px` na base, `-6px` no
+    // planeta, `+8px` no Sol) — o alinhamento é (0, 0,5), então a linha
+    // do texto nasce no CENTRO vertical da âncora e este número só a
+    // ajusta.
+    const linhaDoTexto = ancoraY + peso.deslocamentoY * k;
     let esquerda = ladoPreferido;
-    let textoY = ancoraY;
-    let caixaDoTexto = caixaEm(ladoPreferido, ancoraY);
+    let textoY = linhaDoTexto;
+    let caixaDoTexto = caixaEm(ladoPreferido, linhaDoTexto);
     if (label.dirigido) {
       // A EXCEÇÃO DO FILME: só o assunto declarado procura outra linha.
       // O que ele evita é ESPAÇO OCUPADO por quem está vivo — o
@@ -882,20 +1051,17 @@ export class LabelCanvas {
       }
     }
     const direcao = esquerda ? -1 : 1;
-    const risco: Rect = {
-      left: Math.min(ancoraX, ancoraX + direcao * 10 * k),
-      right: Math.max(ancoraX, ancoraX + direcao * 10 * k),
-      top: ancoraY - 2 * k,
-      bottom: ancoraY + 2 * k,
-    };
     return {
       candidato: !ocluido,
       pintaSemVaga: ocluido,
-      caixaDoIcone: label.comAnel ? anel : risco,
+      // SEM ANEL, SEM RETÂNGULO DE ÂNCORA (T7/T12): o que sobra é o
+      // ponto de tamanho zero deles — o risco de 10 px, que era o
+      // retângulo daqui, morreu com o desenho que o justificava.
+      caixaDoIcone: label.comAnel ? anel : ponto,
       caixaDoTexto,
       ancoraX,
       ancoraY,
-      textoX: ancoraX + direcao * RECUO_DO_TEXTO * k,
+      textoX: ancoraX + direcao * peso.recuoDoTexto * k,
       textoY,
       esquerda,
       larguraDoNome,
@@ -994,28 +1160,51 @@ export class LabelCanvas {
   }
 
   /**
-   * O ANEL do corpo (item 89, o Eyes completo): traço na cor da ÓRBITA
-   * do corpo (item 83; âmbar padrão sem cor declarada) sobre um miolo
-   * escuro sutil — é o miolo que mantém o anel legível cruzando a
-   * própria linha de órbita e o clarão.
+   * O ANEL do corpo — a forma MEDIDA no `sprite.svg` deles (item 125,
+   * F5 · T3/T5).
+   *
+   * TODOS OS ÍCONES DELES SÃO TRAÇADO COM O MIOLO VAZADO, nenhum é
+   * preenchido: `icon-circle-<nome>` é 20×20 com círculo externo r = 10
+   * e interno r = 8,5 (traço de 1,5 px para dentro), e
+   * `icon-circle-white-small` é 16×16 com r = 8 / 6,5 — o mesmo traço de
+   * 1,5. Aqui o raio é o do traço CENTRAL (9,25 e 7,25) e a largura é
+   * 1,5, que devolve as mesmas duas bordas.
+   *
+   * O QUE MUDOU EM 01/09: o anel era um só, de raio 3,5 e traço 1,1, com
+   * um MIOLO escuro `rgba(8,10,14,0.55)` — menor que o deles e cheio. O
+   * miolo morreu com a forma; o que segurou a legibilidade em cima da
+   * linha de órbita e do clarão passou a ser a sombra (a mesma diferença
+   * declarada do texto, T15).
+   *
+   * A COR: planeta e Sol vestem a cor da ÓRBITA do corpo (T4, já era a
+   * lei da casa desde o item 83); os MENORES vestem branco, que é o
+   * `icon-circle-white-small` deles — lua, anão, asteroide e cometa
+   * usam o MESMO sprite branco lá, e é isso que faz o anel colorido
+   * significar "planeta" em vez de "corpo qualquer".
+   *
+   * O ALFA É O DO CANAL DE ÍCONE (T1) — `alfaDoIcone`, que a F2 calculou
+   * e ninguém lia. Ausente = 1: o ramo do filme continua com o alfa de
+   * fora sozinho.
+   *
+   * E O HOVER ESCALA 1,2 (`&:hover .icon { … scale(1.2) }`), que é o
+   * gesto que o Eyes faz e a casa não fazia.
    */
   private anel(
     ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    r: number,
+    p: PlanoDoRotulo,
     k: number,
     label: StarLabel
   ): void {
-    ctx.globalAlpha = label.opacity;
+    const escala = label.apontado ? 1.2 : 1;
+    ctx.globalAlpha = label.opacity * (label.alfaDoIcone ?? 1);
     ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
     ctx.shadowBlur = 5;
     ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(8, 10, 14, 0.55)';
-    ctx.fill();
-    ctx.strokeStyle = label.corDoAnel ?? 'rgba(255, 211, 145, 0.72)';
-    ctx.lineWidth = 1.1 * k;
+    ctx.arc(p.ancoraX, p.ancoraY, p.peso.raioDoIcone * k * escala, 0, Math.PI * 2);
+    ctx.strokeStyle = p.peso.iconeBranco
+      ? '#fff'
+      : (label.corDoAnel ?? 'rgba(255, 211, 145, 0.72)');
+    ctx.lineWidth = 1.5 * k;
     ctx.stroke();
     ctx.shadowBlur = 0;
   }
@@ -1040,6 +1229,14 @@ export class LabelCanvas {
     this.arvore.redimensionar(width, height);
     this.veredito.clear();
   }
+}
+
+/**
+ * O ARREDONDAMENTO POR PARIDADE (item 125, F5 · T13) — `Math.round` se o
+ * lado da janela é PAR, `Math.floor` se é ÍMPAR.
+ */
+function inteiroPorParidade(v: number, lado: number): number {
+  return lado % 2 === 0 ? Math.round(v) : Math.floor(v);
 }
 
 function intersects(a: Rect, b: Rect, padding: number): boolean {

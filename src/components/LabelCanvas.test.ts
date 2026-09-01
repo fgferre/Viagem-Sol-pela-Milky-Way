@@ -60,25 +60,60 @@ interface Pintada {
 function contextoFalso() {
   const nada = () => {};
   const pintadas: Pintada[] = [];
+  /** os anéis pintados: onde, de que tamanho, com que tinta */
+  const aneis: {
+    x: number;
+    y: number;
+    r: number;
+    alfa: number;
+    cor: string;
+    largura: number;
+  }[] = [];
+  /** quantas vezes o desenho PREENCHEU um miolo (na F5, nenhuma) */
+  const preenchimentos = { conta: 0 };
+  /** as pontas de traço pedidas ao contexto (na F5, nenhuma) */
+  const riscos: { x: number; y: number }[] = [];
   /** quantas vezes `measureText` foi chamado de verdade */
   const medicoes = { conta: 0 };
   const ctx = {
     pintadas,
+    aneis,
+    riscos,
+    preenchimentos,
     medicoes,
     measureText: (t: string) => {
       medicoes.conta++;
       return { width: t.length * 7 };
     },
     setTransform: nada,
-    clearRect: () => pintadas.splice(0, pintadas.length),
+    clearRect: () => {
+      pintadas.splice(0, pintadas.length);
+      aneis.splice(0, aneis.length);
+      riscos.splice(0, riscos.length);
+    },
     beginPath: nada,
     moveTo: nada,
-    lineTo: nada,
-    stroke: nada,
-    // o anel do ícone (item 89) desenha um arco cheio; aqui só se julga
-    // a decisão de vaga, então as duas são mudas como as vizinhas
-    arc: nada,
-    fill: nada,
+    // O RISCO DE 10 px (morto na F5 · T12) — anotado para que a sua
+    // volta reprove um veredito, e não passe calada.
+    lineTo: (x: number, y: number) => {
+      riscos.push({ x, y });
+    },
+    // a tinta e a largura só se conhecem no `stroke`, que é depois do
+    // `arc` — é lá que o anel do quadro fecha
+    stroke: () => {
+      const ultimo = aneis[aneis.length - 1];
+      if (!ultimo || ultimo.cor !== '') return;
+      ultimo.cor = ctx.strokeStyle;
+      ultimo.largura = ctx.lineWidth;
+    },
+    // O ANEL DO ÍCONE (item 89; a forma do Eyes na F5) — anotado, porque
+    // desde a F5 ele tem dois tamanhos, alfa próprio e cor por classe, e
+    // isso é lei que se mede.
+    arc: (x: number, y: number, r: number) =>
+      aneis.push({ x, y, r, alfa: ctx.globalAlpha, cor: '', largura: 0 }),
+    fill: () => {
+      preenchimentos.conta++;
+    },
     fillText: (texto: string, x: number, y: number) =>
       pintadas.push({ texto, x, y, alfa: ctx.globalAlpha }),
     font: '',
@@ -602,36 +637,245 @@ describe('a vaga tem lado, e o lado viaja no objeto (item 109)', () => {
   });
 });
 
-describe('três pesos visuais, numa tabela só', () => {
-  it('a prioridade escolhe o peso, e o do meio é o desenho de sempre', () => {
-    // os degraus na escala do Eyes (item 125, F3 · P1) — o CONJUNTO de
-    // quem cai em cada peso é o mesmo de antes, nome por nome
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 201))).toBe(PESOS_DO_ROTULO.principal); // foco
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 100))).toBe(PESOS_DO_ROTULO.principal); // sol
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 50))).toBe(PESOS_DO_ROTULO.secundario); // planeta
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 25))).toBe(PESOS_DO_ROTULO.secundario); // lua
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 10))).toBe(PESOS_DO_ROTULO.secundario); // nome próprio
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 5))).toBe(PESOS_DO_ROTULO.terciario); // Bayer
-    expect(pesoVisual(rotulo('a', 'A', 0, 0, 1))).toBe(PESOS_DO_ROTULO.terciario); // piso
+describe('os DOIS níveis tipográficos (item 125, F5 · T9/T10)', () => {
+  /** um rótulo com a CLASSE do corpo, que é o que escolhe o nível */
+  const daClasse = (classe: string, prioridade: number): StarLabel => ({
+    ...rotulo('corpo:x', 'X', 0.4, 0.4, prioridade),
+    detalhe: classe,
+    canalPrimario: classe === 'planeta' || classe === 'estrela',
   });
 
-  it('SEM prioridade cai no do meio — é o rótulo do FILME, intocado', () => {
+  it('a CLASSE escolhe o nível, não a prioridade', () => {
+    expect(pesoVisual(daClasse('planeta', 50))).toBe(PESOS_DO_ROTULO.primario);
+    expect(pesoVisual(daClasse('estrela', 100))).toBe(PESOS_DO_ROTULO.sol);
+    expect(pesoVisual(daClasse('lua', 25))).toBe(PESOS_DO_ROTULO.base);
+    expect(pesoVisual(daClasse('planeta anão', 30))).toBe(PESOS_DO_ROTULO.base);
+    expect(pesoVisual(daClasse('asteroide', 20))).toBe(PESOS_DO_ROTULO.base);
+    // a estrela do céu não tem canal primário: base, como o `Star` deles
+    expect(pesoVisual(rotulo('star:a', 'A', 0, 0, 10))).toBe(PESOS_DO_ROTULO.base);
+    expect(pesoVisual(rotulo('star:b', 'B', 0, 0, 5))).toBe(PESOS_DO_ROTULO.base);
+    // e o FOCO não muda de nível: promover a 201 dá peso na disputa, não
+    // um corpo tipográfico novo
+    expect(pesoVisual(daClasse('lua', 201))).toBe(PESOS_DO_ROTULO.base);
+  });
+
+  it('o eixo da hierarquia NÃO é o tamanho da fonte', () => {
+    const { primario, base } = PESOS_DO_ROTULO;
+    // o mesmo tamanho nos dois níveis, nas duas telas
+    expect(primario.tamanho.grande).toBe(base.tamanho.grande);
+    expect(primario.tamanho.pequeno).toBe(base.tamanho.pequeno);
+    // o que os separa: caixa, peso, tracking e o tamanho do ícone
+    expect(primario.caixaAlta).toBe(true);
+    expect(base.caixaAlta).toBe(false);
+    expect(primario.pesoDoNome).toBe('600');
+    expect(base.pesoDoNome).toBe('400');
+    expect(primario.trackingEm).toBe(0.3);
+    expect(base.trackingEm).toBe(0);
+    expect(primario.raioDoIcone).toBeGreaterThan(base.raioDoIcone);
+  });
+
+  it('os literais da folha deles: 16/14 px, 18 no Sol; anéis 20 e 16 px', () => {
+    expect(PESOS_DO_ROTULO.primario.tamanho).toEqual({ grande: 16, pequeno: 14 });
+    expect(PESOS_DO_ROTULO.base.tamanho).toEqual({ grande: 16, pequeno: 14 });
+    expect(PESOS_DO_ROTULO.sol.tamanho).toEqual({ grande: 18, pequeno: 16 });
+    // o raio do TRAÇO CENTRAL: 20 px de quadro ⇒ r externo 10, traço 1,5
+    expect(PESOS_DO_ROTULO.primario.raioDoIcone).toBe(9.25);
+    // 16 px de quadro ⇒ r externo 8
+    expect(PESOS_DO_ROTULO.base.raioDoIcone).toBe(7.25);
+    // recuo do texto: `left: 18px` no planeta, 12 na base, 20 no Sol
+    expect(PESOS_DO_ROTULO.primario.recuoDoTexto).toBe(18);
+    expect(PESOS_DO_ROTULO.base.recuoDoTexto).toBe(12);
+    expect(PESOS_DO_ROTULO.sol.recuoDoTexto).toBe(20);
+  });
+
+  it('o Sol é a variante DIMENSIONAL do primário, não um terceiro nível', () => {
+    const { primario, sol } = PESOS_DO_ROTULO;
+    expect(sol.caixaAlta).toBe(primario.caixaAlta);
+    expect(sol.pesoDoNome).toBe(primario.pesoDoNome);
+    expect(sol.trackingEm).toBe(primario.trackingEm);
+    expect(sol.raioDoIcone).toBe(primario.raioDoIcone);
+    expect(sol.iconeBranco).toBe(primario.iconeBranco);
+  });
+
+  it('o anel colorido é do planeta; o pequeno é BRANCO (T4/T5)', () => {
+    expect(PESOS_DO_ROTULO.primario.iconeBranco).toBe(false);
+    expect(PESOS_DO_ROTULO.sol.iconeBranco).toBe(false);
+    expect(PESOS_DO_ROTULO.base.iconeBranco).toBe(true);
+  });
+
+  it('SEM prioridade cai no FILME, intocado — número por número', () => {
     const doFilme = pesoVisual(rotulo('star:x', 'X', 0, 0));
-    expect(doFilme).toBe(PESOS_DO_ROTULO.secundario);
-    // e o do meio É, número por número, o que o canvas sempre pintou
-    expect(doFilme.tamanhoDoNome).toBe(12);
+    expect(doFilme).toBe(PESOS_DO_ROTULO.filme);
+    expect(doFilme.tamanho.grande).toBe(12);
+    expect(doFilme.tamanho.pequeno).toBe(12);
     expect(doFilme.pesoDoNome).toBe('500');
+    expect(doFilme.caixaAlta).toBe(true);
+    expect(doFilme.trackingEm).toBe(0);
+    expect(doFilme.recuoDoTexto).toBe(18);
     expect(doFilme.corDoNome).toBe('rgba(240, 244, 251, 0.96)');
     expect(doFilme.tamanhoDoDetalhe).toBe(9);
     expect(doFilme.corDoDetalhe).toBe('rgba(159, 176, 201, 0.88)');
   });
 
-  it('os três se distinguem no tamanho E na tinta', () => {
-    const { principal, secundario, terciario } = PESOS_DO_ROTULO;
-    expect(principal.tamanhoDoNome).toBeGreaterThan(secundario.tamanhoDoNome);
-    expect(secundario.tamanhoDoNome).toBeGreaterThan(terciario.tamanhoDoNome);
-    const cores = new Set([principal.corDoNome, secundario.corDoNome, terciario.corDoNome]);
-    expect(cores.size).toBe(3);
+  it('a CAIXA ALTA é do nível: planeta em maiúsculas, lua como veio', () => {
+    const { ctx, rotulos } = bancada();
+    const planeta: StarLabel = {
+      ...rotulo('corpo:earth', 'Terra', 0.3, 0.4, 50),
+      detalhe: 'planeta',
+      canalPrimario: true,
+    };
+    const lua: StarLabel = {
+      ...rotulo('corpo:titan', 'Titã', 0.7, 0.6, 25),
+      detalhe: 'lua',
+    };
+    rotulos.draw([planeta, lua]);
+    const textos = ctx.pintadas.map((p) => p.texto);
+    expect(textos).toContain('TERRA');
+    expect(textos).toContain('Titã');
+    expect(textos).not.toContain('TITÃ');
+  });
+});
+
+describe('os DOIS canais, ícone e texto (item 125, F5 · T1/T2/T3/T5/T7/T12)', () => {
+  const corpo = (
+    key: string,
+    nome: string,
+    classe: string,
+    prioridade: number,
+    extras: Partial<StarLabel> = {}
+  ): StarLabel => ({
+    ...rotulo(key, nome, 0.4, 0.4, prioridade),
+    detalhe: classe,
+    canalPrimario: classe === 'planeta' || classe === 'estrela',
+    ...extras,
+  });
+
+  it('o ANEL do planeta é o do sprite: r 9,25, traço 1,5, VAZADO', () => {
+    const { ctx, rotulos } = bancada();
+    const terra = corpo('corpo:earth', 'Terra', 'planeta', 50, {
+      comAnel: true,
+      corDoAnel: '#09C',
+    });
+    rotulos.draw([terra]);
+    expect(ctx.aneis.length).toBe(1);
+    expect(ctx.aneis[0].r).toBeCloseTo(9.25, 6);
+    expect(ctx.aneis[0].largura).toBeCloseTo(1.5, 6);
+    expect(ctx.aneis[0].cor).toBe('#09C');
+    // o miolo escuro morreu com a forma: nenhum preenchimento
+    expect(ctx.preenchimentos.conta).toBe(0);
+  });
+
+  it('o anel dos MENORES é o pequeno e BRANCO', () => {
+    const { ctx, rotulos } = bancada();
+    const lua = corpo('corpo:titan', 'Titã', 'lua', 25, {
+      comAnel: true,
+      corDoAnel: '#D5C187',
+    });
+    rotulos.draw([lua]);
+    expect(ctx.aneis.length).toBe(1);
+    expect(ctx.aneis[0].r).toBeCloseTo(7.25, 6);
+    expect(ctx.aneis[0].cor).toBe('#fff');
+  });
+
+  it('T7: a estrela do céu não tem ícone — e não tem risco (T12)', () => {
+    const { ctx, rotulos } = bancada();
+    rotulos.draw([rotulo('star:sirius', 'Sirius', 0.4, 0.4, 10)]);
+    expect(ctx.pintadas.some((p) => p.texto === 'Sirius')).toBe(true);
+    expect(ctx.aneis.length).toBe(0);
+    expect(ctx.riscos.length).toBe(0);
+  });
+
+  it('ÍCONE SEM TEXTO e TEXTO SEM ÍCONE — os dois canais separados', () => {
+    const soIcone = bancada();
+    soIcone.rotulos.draw([
+      corpo('corpo:earth', 'Terra', 'planeta', 50, { comAnel: true, icone: true }),
+    ]);
+    expect(soIcone.ctx.aneis.length).toBe(1);
+    expect(soIcone.ctx.pintadas.filter((p) => p.texto !== '').length).toBe(0);
+
+    const soTexto = bancada();
+    soTexto.rotulos.draw([corpo('corpo:earth', 'Terra', 'planeta', 50)]);
+    expect(soTexto.ctx.aneis.length).toBe(0);
+    expect(soTexto.ctx.pintadas.some((p) => p.texto === 'TERRA')).toBe(true);
+    expect(soTexto.ctx.riscos.length).toBe(0);
+  });
+
+  it('cada canal usa o ALFA DELE (o fio que a F2 deixou esticado)', () => {
+    const { ctx, rotulos } = bancada();
+    rotulos.draw([
+      corpo('corpo:earth', 'Terra', 'planeta', 50, {
+        comAnel: true,
+        alfaDoIcone: 0.75,
+        alfaDoTexto: 0.2,
+      }),
+    ]);
+    // 0,95 de fora × o alfa de dentro de cada canal
+    expect(ctx.aneis[0].alfa).toBeCloseTo(0.95 * 0.75, 6);
+    const nome = ctx.pintadas.find((p) => p.texto === 'TERRA');
+    expect(nome?.alfa).toBeCloseTo(0.95 * 0.2, 6);
+  });
+
+  it('T13: o pixel inteiro sai pela PARIDADE do lado da janela', () => {
+    // 480,7 px de âncora nas duas janelas: lado ÍMPAR trunca (480), lado
+    // PAR arredonda (481). O texto da base começa 12 px à direita disso.
+    const impar = bancada(1201, 901);
+    impar.rotulos.draw([rotulo('star:a', 'A', 480.7 / 1201, 360.4 / 901, 10)]);
+    const naImpar = impar.ctx.pintadas.find((p) => p.texto === 'A');
+    expect(naImpar?.x).toBe(480 + 12);
+    expect(naImpar?.y).toBe(360 - 4);
+
+    const par = bancada(1200, 900);
+    par.rotulos.draw([rotulo('star:a', 'A', 480.7 / 1200, 360.4 / 900, 10)]);
+    const naPar = par.ctx.pintadas.find((p) => p.texto === 'A');
+    expect(naPar?.x).toBe(481 + 12);
+    expect(naPar?.y).toBe(360 - 4);
+  });
+
+  it('o HOVER escala o ícone em 1,2 (o `scale(1.2)` da folha deles)', () => {
+    const parado = bancada();
+    parado.rotulos.draw([corpo('corpo:earth', 'Terra', 'planeta', 50, { comAnel: true })]);
+    const apontado = bancada();
+    apontado.rotulos.draw([
+      corpo('corpo:earth', 'Terra', 'planeta', 50, { comAnel: true, apontado: true }),
+    ]);
+    expect(apontado.ctx.aneis[0].r / parado.ctx.aneis[0].r).toBeCloseTo(1.2, 6);
+  });
+});
+
+describe('o detalhe "classe · distância" só no corpo focado (item 125, F5)', () => {
+  const comDistancia = (key: string, nome: string, x: number, p?: number): StarLabel => ({
+    ...rotulo(key, nome, x, 0.4, p),
+    detalhe: 'planeta',
+    canalPrimario: true,
+    distPc: 0.00002,
+  });
+
+  it('o corpo comum escreve SÓ o nome; o focado escreve os dois', () => {
+    const { ctx, rotulos } = bancada();
+    rotulos.draw([comDistancia('corpo:earth', 'Terra', 0.3, 50)]);
+    const comuns = ctx.pintadas.map((p) => p.texto).filter((t) => t !== '');
+    expect(comuns).toEqual(['TERRA']);
+
+    const outro = bancada();
+    outro.rotulos.draw([comDistancia('corpo:earth', 'Terra', 0.3, 201)]);
+    const focado = outro.ctx.pintadas.map((p) => p.texto).filter((t) => t !== '');
+    expect(focado.length).toBe(2);
+    expect(focado[0]).toBe('TERRA');
+    expect(focado[1]).toContain('planeta');
+  });
+
+  it('o FILME não é tocado: sem prioridade, o detalhe fica', () => {
+    const { ctx, rotulos } = bancada();
+    const doFilme: StarLabel = {
+      ...rotulo('star:betelgeuse', 'Betelgeuse', 0.3, 0.4),
+      detalhe: undefined,
+      spect: 'M2Ib',
+      distPc: 15.2,
+    };
+    rotulos.draw([doFilme]);
+    const escritos = ctx.pintadas.map((p) => p.texto).filter((t) => t !== '');
+    expect(escritos.length).toBe(2);
+    expect(escritos[1]).toContain('M2Ib');
   });
 });
 
@@ -887,14 +1131,16 @@ describe('dois retângulos por nome (item 125, F3 · P6)', () => {
     const { rotulos } = bancada(1200, 900);
     // o Sol tem a marca dele no ponto; a estrela está à ESQUERDA, e o
     // texto dela cresce para a direita, por cima da marca do Sol
-    const sol = rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100);
+    // desde a F5 a MARCA é o anel (T3): sem ícone não há retângulo de
+    // âncora nenhum — o ponto do objeto tem tamanho zero, como no Eyes
+    const sol = { ...rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100), comAnel: true };
     const vizinha = rotulo('star:v', 'V', 0.47, 0.45, 5);
     rotulos.draw([sol, vizinha]);
     expect(sol.desenhado).toBe(true);
     expect(vizinha.desenhado).toBe(false);
     // e o inverso: longe da marca, o mesmo par convive
     const { rotulos: r2 } = bancada(1200, 900);
-    const sol2 = rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100);
+    const sol2 = { ...rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100), comAnel: true };
     const longe = rotulo('star:v', 'V', 0.2, 0.2, 5);
     r2.draw([sol2, longe]);
     expect(longe.desenhado).toBe(true);
@@ -1018,9 +1264,9 @@ describe('F4 — o nome ocluído pinta sem ocupar', () => {
     const { rotulos, ctx } = bancada(1200, 900);
     const preso = atrasDoGlobo(rotulo('corpo:sun', 'Sol', 0.5, 0.45, 100));
     rotulos.draw([preso]);
-    expect(ctx.pintadas.map((p) => p.texto)).toContain('SOL');
+    expect(ctx.pintadas.map((p) => p.texto)).toContain('Sol');
     // ...com a tinta da rampa, não com a cheia
-    expect(ctx.pintadas.find((p) => p.texto === 'SOL')!.alfa).toBeCloseTo(0.5, 10);
+    expect(ctx.pintadas.find((p) => p.texto === 'Sol')!.alfa).toBeCloseTo(0.5, 10);
     // e nada mais: sem clique, sem caixa, sem veredito de disputa
     expect(preso.desenhado).toBe(false);
     expect(preso.caixaDaDisputa).toBeUndefined();

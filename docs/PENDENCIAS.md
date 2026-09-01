@@ -1971,6 +1971,33 @@ foi rodar teste, era o rito de escrever/rodar sabotagem em loop. 19
 sabotagens já haviam mordido antes da ordem; atlas-smoke com a única
 falha alheia do portal (item 119).
 
+**F5 SELADA em 01/09, palavras dele: "concordo com as propostas e acho
+que ficou boa a implementação" + "já avaliei o atlas, tudo certo" (o
+olho dele substituiu o atlas-smoke no fechamento, §19).** O que a F5
+entregou (obra em `LabelCanvas.ts` + teste, ~25 min de executor sob a
+lei nova): a TIPOGRAFIA do Eyes — dois níveis, não três (planeta CAIXA
+ALTA peso 600 tracking .3em; resto caixa mista 400; 16 px para todos,
+18 no Sol, 14/16 em tela <1025×600 = a media query deles; hierarquia
+por caixa/peso/tracking/alfa, nunca por tamanho de classe); os DOIS
+ANÉIS (planeta traço central r 9,25 cor da órbita; menores r 7,25
+BRANCO — perde a cor do pai do item 83, reverter é 1 linha; miolo
+escuro morto; hover 1,2×); canais ícone/texto INDEPENDENTES (o
+alfaDoIcone da F2 finalmente lido — o produtor não precisou de linha);
+estrela sem ícone por CLASSE; a haste de 10 px morta (ponto de tamanho
+zero, textBaseline middle); pixel inteiro por paridade
+(inteiroPorParidade); T15 DECLARADO como diferença aceita (canvas 2D
+com sombra 7→5 sobre a galáxia procedural vs div branco sem sombra
+deles — não migramos para DOM). DECISÃO DELE: o detalhe
+"classe · distância" só no corpo FOCADO (fecha a pendência do item 82;
+abertura 15→19 nomes — a segunda coluna de texto é que custava vaga,
+não a fonte maior). Sol FICOU com ícone contra a letra de T8 (o bundle
+deles tem icon-circle-sun). O filme deliberadamente intocado (nível
+`filme` 12px/500, número por número) — e conferido nesta rodada que
+NÃO há duplicação de camada: o LabelCanvas é UM para os dois modos, o
+roteiro declara legendas onde o atlas usa régua, "um lugar por nome"
+alcança os dois. Fechamento §19: ele aprovou 2 testes (88 verdes em
+3 s) e cortou o resto com o próprio olho (atlas e filme).
+
 **ESTADO DA ONDA no handoff de 31/08 (histórico da pausa; superado pelo selo acima):**
 F0 FEITA e commitada (docs/reference/contrato-eyes-linhas-rotulos.md,
 60190b9 — 77 regras). F1 FEITA E PAUSADA NA ÁRVORE, SEM COMMIT, por
