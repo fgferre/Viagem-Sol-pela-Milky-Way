@@ -108,15 +108,19 @@
 // `resolution` no resize: escrever à mão é reintroduzir o bug que o
 // upstream fechou.
 //
-// O ANTI-ALIASING É O DA CASA, e a escolha é declarada: `alphaToCoverage`
-// do `LineMaterial` depende de MSAA, e ESTA CASA NÃO TEM MSAA — o
-// renderer nasce com `antialias: false` e o AA vem do supersampling por
-// pixelRatio (`core/engine.ts`), com os alvos do composer sem `samples`.
-// Ligar a chave escreveria uma cobertura que ninguém amostra. O que a
-// beira da fita ganha em vez disso é a SAIA do §5d — suavização
-// analítica DENTRO da linha, e só nela. O `logdepthbuf` que o
-// `LineMaterial` traz fica inerte porque a casa não usa profundidade
-// logarítmica.
+// O ANTI-ALIASING É O DO ALVO DO COMPOSER, e só ele (item 120, F1 · L6):
+// desde 31/08 o `renderTarget1` do `EffectComposer` nasce com
+// `samples: 4` (`core/post.ts`, `AMOSTRAS_DO_ALVO`) nos tiers `cinema` e
+// `alta`. É a MESMA peça da referência, no MESMO lugar. O renderer
+// continua com `antialias: false` porque essa flag só governa o
+// framebuffer do CANVAS, que neste app recebe um quad de tela cheia —
+// ligá-la é inerte, e está medido.
+//
+// `alphaToCoverage` segue DESLIGADO mesmo agora que há MSAA: ele
+// converte alfa em cobertura, e a fita não tem alfa por fragmento a
+// converter — o alfa dela é um uniform por laço (§5). O `logdepthbuf`
+// que o `LineMaterial` traz fica inerte porque a casa não usa
+// profundidade logarítmica.
 //
 // ------------------------------------------------------------
 // 5e. A JUNTA EM BISSETRIZ (item 83 · B2, o A4)
@@ -171,39 +175,38 @@
 // com ele de graça. Ver `gradienteDaFita` para a curva e os dois números.
 //
 // ------------------------------------------------------------
-// 5d. A SAIA DO AA E A LARGURA NA JANELA (item 83 · A2 + A3)
+// 5d. A BEIRA DURA E A LARGURA NA JANELA (item 120, F1 · L5 + L3)
 // ------------------------------------------------------------
-// A BEIRA LISA DA REFERÊNCIA É MSAA DE CARTÃO — duas camadas, 4× no alvo
-// de render mais o AA do canvas — e ZERO suavização no shader de linha
-// deles. Esta casa não liga MSAA; imita-se o RESULTADO, e só na linha.
+// A SAIA DO AA FOI APOSENTADA EM 31/08, e a lápide fica aqui porque o
+// que ela consertava não pode voltar por descuido.
 //
-// A IDEIA É DE LIVRO (GPU Gems, Cesium): a caneta é um pouco mais larga
-// do que o traço que se quer ver, e o excedente some numa rampa. O
-// material nasce com `LARGURA_DA_FITA_PX + SAIA_DO_AA_PX`; no fragmento,
-// `u = |vUv.x|` corre de 0 (eixo da fita) a 1 (beira do quad INCHADO), e
-// o alfa cai de 1 a 0 entre o `uMiolo` e essa beira. Não é tubo, e o
-// `sqrt(1−u²)` que a leitura de 24/08 propôs está proibido (a referência
-// é chapada: `glowWidth = 0` devolve `edgeGlow() = 1`).
+// O QUE ELA ERA (item 83 · A2, de 24/08 a 31/08): a caneta nascia 1 px
+// CSS mais larga do que o traço visível e o excedente sumia numa rampa
+// de `fwidth` dentro do fragmento — suavização analítica, porque a casa
+// não tinha MSAA e a beira da referência é lisa.
 //
-// O MIOLO É CHAPADO QUANDO HÁ LARGURA PARA ELE, e a frase precisa desta
-// metade — dizê-la em termos absolutos era mentira, e uma auditoria a
-// pegou em 26/08. A rampa começa em `uMiolo − fwidth(u)`, e o `fwidth`
-// cresce quando a fita tem POUCOS pixels de dispositivo. O limiar tem
-// número, e são DOIS porque `fwidth` depende da inclinação: sobra platô
-// acima de **3,60 px de dispositivo** na fita inchada quando ela corre
-// alinhada aos eixos, e acima de **5,09 px** quando corre a 45°. Abaixo
-// disso a rampa toma a fita inteira e o que se garante é o CENTRO
-// PLENO, nunca menos que `BRILHO_DA_LINHA`. Em `pixelRatio` 2 e janela
-// de referência a fita inchada dá 4,5 px: tem platô no arco alinhado e
-// NÃO tem no arco a 45° — e toda elipse tem os dois. Quem garante o
-// centro é o grampo em zero (`perfilDaSaia`), e ele existe porque sem
-// ele o regime fino perdia 15,6% de brilho no eixo — perfil através da
-// largura, exatamente o que se proibiu.
+// POR QUE ELA MORREU, e é uma medida, não gosto: a rampa começava em
+// `uMiolo − fwidth(u)`, e `fwidth` cresce quando a fita tem poucos
+// pixels de dispositivo. Sobrava platô só acima de 3,60 px de
+// dispositivo no arco alinhado aos eixos e de 5,09 px no arco a 45° — e
+// toda elipse tem os dois. Na prática a rampa tomava a FITA INTEIRA: o
+// corte medido no mergulho 08 deu `35, 161, 179, 151, 12`, um morro sem
+// platô, contra `0, 77, 153, 153, 51, 0` da referência — degraus em
+// quartos exatos com DOIS pixels de topo, que é a assinatura de 4
+// amostras sobre borda DURA. O miolo escorria; o deles é chapado. A
+// saia era a nossa resposta à falta de MSAA, e a falta de MSAA acabou.
 //
-// E O REGIME FINO É ALCANÇÁVEL, não hipótese: o preset `performance` do
-// `core/engine.ts` tem `pixelRatio` 1,0 — por `?q=performance`, por
-// auto-degradação abaixo de 34 fps, e em qualquer monitor não-Retina,
-// onde `min(devicePixelRatio, preset)` dá 1.
+// O QUE ELA CONSERTAVA NÃO PODE VOLTAR (item 83 · B1): o grampo
+// `max(uMiolo − pixel, 0)` existia porque sem ele, em `pixelRatio` 1, o
+// começo da rampa ficava NEGATIVO e o `smoothstep` mordia o EIXO da
+// fita — 15,6% de brilho perdido no centro, um perfil ATRAVÉS da
+// largura, exatamente o que o item 83 proíbe. Hoje não há rampa
+// nenhuma: o fragmento não lê `vUv.x`, não chama `fwidth` e o alfa do
+// pixel é o alfa do laço, inteiro, de beira a beira. O defeito perdeu a
+// máquina que o produzia; não há grampo a esquecer.
+//
+// QUEM SUAVIZA AGORA é o `samples: 4` do alvo do composer (§5, L6), que
+// é onde a referência põe o dela.
 //
 // A LARGURA CRESCE COM A JANELA, e é o único fator: `max(1, min(lado
 // CSS)/800)`, o mesmo da referência. Numa janela pequena o fator é 1 e
@@ -212,17 +215,39 @@
 // custaram pixel nesta casa: (i) o `QuadroEmPx` fala em px de
 // DISPOSITIVO — dividir pelo `pixelRatio` antes de comparar com 800, ou
 // um Retina de 1200 CSS mediria 2400 e a fita sairia com o dobro do
-// fator; (ii) a SAIA SOMA DEPOIS do fator — ela é 1 px CSS de rampa em
-// qualquer janela, não uma fração da largura.
+// fator; (ii) o fator multiplica a largura de FÁBRICA, e a largura de
+// fábrica muda com o hover (§5g) — as duas larguras passam pelo mesmo
+// fator, senão a fita apontada deixaria de crescer com a janela.
 //
-// E POR ISSO O `uMiolo` É UNIFORM, e não literal no GLSL: com o fator da
-// janela em cima da largura e a saia fixa por baixo, a fração
-// `visível/(visível+saia)` MUDA de janela para janela — 1,25/2,25 numa
-// tela de 800, 1,40625/2,40625 numa de 1200. Literal, o miolo mentiria
-// em toda janela grande e a largura visível deixaria de ser a que o §5
-// promete. `larguraVisivelDaFitaPx` é a fonte única dos dois números: o
-// que vai para o `linewidth` e o que vai para o `uMiolo` saem da mesma
-// chamada, no mesmo quadro.
+// ------------------------------------------------------------
+// 5g. O HOVER (item 120, F1 · L9 + L10 + L11)
+// ------------------------------------------------------------
+// APONTAR O NOME ACENDE A ÓRBITA, e a direção do gesto é a descoberta
+// que a mineração fez: no Eyes o `mouseenter`/`mouseleave` vive no
+// `<div>` do RÓTULO (`LabelManager.setLabelProps`), que dispara
+// `hoverchange`, e o app amarra
+// `labelManager.registerCallback("hoverchange", trailManager.onHoverChange)`.
+// **Não existe picking da geometria da linha** — e é por isso que a
+// órbita de Netuno acende quando o ponteiro toca o nome "NETUNO" a meia
+// tela de distância do traço.
+//
+// A CASA JÁ TINHA O HIT-TEST, e é o MESMO: `Escolha.alvoNoPonto`, a
+// lista ÚNICA de rótulos desenhados que o clique e o cursor (item 111)
+// consultam. O hover não abriu uma segunda pergunta sobre o que está
+// debaixo do dedo; ele passou a ler a resposta que já existia.
+//
+// É INSTANTÂNEO E NO MESMO QUADRO (L10): o `onHoverChange` deles não tem
+// tween nem duração. Aqui isso quer dizer que o hover NÃO passa pelo
+// `perseguirRealce` — ele substitui o multiplicador do quadro, e o
+// quadro seguinte já sai com o número novo. É também por isso que ele
+// não entra em `animando`: não há transição que a captura precise
+// esperar.
+//
+// OS DOIS NÚMEROS SÃO OS DELES: largura `1,2 → 2` px CSS
+// (`lineWidth: {default: 1.2, hover: 2}`) e o alfa ao TOPO
+// (`_opacity = {primary: .75, secondary: .35, hover: 1}` — o hover leva
+// qualquer linha ao teto, inclusive a que estava no alfa fraco). Ver
+// `REALCE_DO_HOVER` para como o teto desta casa é o do §5b, e por quê.
 //
 // ------------------------------------------------------------
 // 5c. A JUNTA SEM CONTA (item 83 · A1, o L2.5-a)
@@ -520,51 +545,41 @@ function corDoGradienteDaFita(n: number): Float32Array {
 }
 
 /**
- * A LARGURA DA FITA, em PIXELS CSS (§5, item 83 · L2).
+ * A LARGURA DA FITA EM REPOUSO, em PIXELS CSS (§5, item 120 · L9).
  *
- * 1,25 é o número do NASA Eyes, e ele foi medido por DOIS métodos
- * independentes que fecharam (`docs/reference/estudo-orbitas-eyes-observacao.md`):
- * a COBERTURA lida do pixel da tela deles — níveis em 0,25/0,50/0,75/1,00
- * sobre ~2,5 px de dispositivo a DPR 2 — e a leitura da API do motor. A
- * nossa tinha 1 px de DISPOSITIVO, que num Retina é 0,5 px CSS: a deles
- * era 2,5× mais grossa.
+ * 1,2 é o LITERAL do NASA Eyes — `this._orbitLinesOpts = { lineWidth: {
+ * default: 1.2, hover: 2 }, … }`, lido no bundle deles
+ * (`trechos/m08-app-orbita-hover.js:4-11`, §1.4 do contrato).
  *
- * AQUELES QUARTOS NÃO SÃO PERFIL, e a primeira redação disto errava: a
- * faixa deles é CHAPADA (`glowWidth = 0` devolve `edgeGlow() = 1`), e os
- * níveis em quartos exatos são MSAA (`antialias: true`) sobre borda
- * DURA. A nossa borda também é dura; quem a suaviza é o downsample do
- * supersampling, no fim da cadeia. O que nos separa é o AA da borda, não
- * um perfil na largura.
+ * ELE CORRIGE UM 1,25 QUE ERA ESTIMATIVA. Até 31/08 esta constante valia
+ * 1,25, e o cabeçalho a chamava de "o número do NASA Eyes" — mas os dois
+ * métodos que a produziram eram INDIRETOS (a cobertura lida do pixel da
+ * tela deles, ~2,5 px de dispositivo a DPR 2, e uma leitura da API do
+ * motor). O bundle cravou o número de fábrica, e literal vence
+ * estimativa: 4% de diferença, sub-pixel na tela, mas é a diferença
+ * entre copiar e adivinhar.
+ *
+ * OS QUARTOS DA MEDIÇÃO NÃO SÃO PERFIL: a faixa deles é CHAPADA
+ * (`glowWidth = 0` devolve `edgeGlow() = 1`), e os níveis em quartos
+ * exatos são MSAA de 4 amostras sobre borda DURA. A nossa borda também é
+ * dura, e desde 31/08 quem a suaviza é o mesmo MSAA, no mesmo lugar
+ * (§5d).
  *
  * NÃO CONFUNDIR COM RAIO: no shader do `LineMaterial` o `linewidth` é a
  * largura CHEIA (o offset do quad é metade dele para cada lado).
  */
-export const LARGURA_DA_FITA_PX = 1.25;
+export const LARGURA_DA_FITA_PX = 1.2;
 
 /**
- * A SAIA DO ANTI-ALIASING, em pixels CSS de largura TOTAL (§5d, item
- * 83 · A2) — meio pixel para cada lado.
+ * A LARGURA DA FITA APONTADA, em pixels CSS (§5g, item 120 · L9) — o
+ * `hover: 2` literal do `_orbitLinesOpts` deles.
  *
- * Ela é o que a caneta ganha ALÉM do traço visível para poder terminar
- * numa rampa em vez de num degrau. `LARGURA_DA_FITA_PX` continua sendo a
- * largura VISÍVEL — o número medido no pixel da referência —, e é por
- * isso que a saia é uma constante SEPARADA e não um 2,25 digitado: quem
- * ler o §5 e quiser saber quão grossa a fita aparece continua achando
- * 1,25, e quem mexer no AA não mexe na largura.
- *
- * 1 px é o mínimo que cobre um pixel inteiro de rampa em qualquer tela:
- * menos que isso e a rampa não tem onde acontecer no downsample da casa;
- * mais que isso e a fita ganha um halo que a referência não tem.
- *
- * O QUE ELA NÃO PROMETE, e a distinção é medida (§5d): que o miolo fique
- * CHAPADO em toda tela. A rampa começa em `uMiolo − fwidth(u)`, e o
- * `fwidth` cresce quando a fita tem poucos pixels de DISPOSITIVO — sobra
- * platô acima de 3,60 px na fita inchada com ela alinhada aos eixos, e
- * acima de 5,09 px com ela a 45°; abaixo disso a rampa toma a fita
- * inteira. O que a saia garante em QUALQUER densidade é o CENTRO PLENO,
- * e quem o garante é o grampo em zero de `perfilDaSaia`.
+ * São 1,67× a largura de repouso: o salto tem de ser visível de relance,
+ * porque é ele que responde "é ESTA a órbita do nome que estou
+ * apontando" numa tela com trinta laços. Passa pelo MESMO fator de
+ * janela da largura de repouso (`larguraVisivelDaFitaPx`).
  */
-export const SAIA_DO_AA_PX = 1;
+export const LARGURA_DO_HOVER_PX = 2;
 
 /**
  * A JANELA DE REFERÊNCIA da largura (§5d, item 83 · A3): abaixo deste
@@ -574,74 +589,25 @@ export const SAIA_DO_AA_PX = 1;
 const JANELA_DE_REFERENCIA_PX = 800;
 
 /**
- * A LARGURA VISÍVEL DA FITA neste quadro, em px CSS (§5d · A3) — o `px`
- * da receita, ANTES de somar a saia.
+ * A LARGURA DA FITA neste quadro, em px CSS (§5d · A3) — a largura de
+ * FÁBRICA (repouso ou hover) esticada pelo fator da janela.
  *
- * É PURA E EXPORTADA de propósito: a conta tem duas armadilhas (o
- * `pixelRatio` e a ordem da soma da saia) e nenhuma das duas se afere
- * abrindo um navegador. Quem a chama são o `update` — que a converte em
- * `linewidth` e em `uMiolo` na mesma linha — e o teste, que cobra os
- * DOIS números.
+ * É PURA E EXPORTADA de propósito: a conta tem uma armadilha que não se
+ * afere abrindo um navegador — o `QuadroEmPx` fala em px de DISPOSITIVO,
+ * e comparar 2400 com 800 num Retina de 1200 CSS daria o dobro do fator.
  *
  * O `?? 1` do ratio não é defesa contra o desconhecido: é o quadro de
  * teste que passa `pixelRatio` zero antes do primeiro resize, e dividir
- * por zero devolveria uma fita infinita em vez de uma fita de 1,25.
+ * por zero devolveria uma fita infinita em vez de uma fita de 1,2.
  */
-export function larguraVisivelDaFitaPx(quadro: QuadroEmPx): number {
+export function larguraVisivelDaFitaPx(
+  quadro: QuadroEmPx,
+  base = LARGURA_DA_FITA_PX
+): number {
   const ratio = quadro.pixelRatio > 0 ? quadro.pixelRatio : 1;
   const ladoMenorCss = Math.min(quadro.larguraPx, quadro.alturaPx) / ratio;
   const fator = Math.max(1, ladoMenorCss / JANELA_DE_REFERENCIA_PX);
-  return LARGURA_DA_FITA_PX * fator;
-}
-
-/**
- * O PERFIL DA SAIA ATRAVÉS DA LARGURA (§5d) — a MESMA conta que o
- * fragmento faz, em TypeScript, para uma máquina sem GPU poder julgá-la.
- *
- * `u` é a distância ao eixo em frações da meia largura INCHADA (0 no
- * eixo, 1 na beira do quad); `miolo` é onde a rampa começaria; `pixel` é
- * o `fwidth(u)`, o tamanho de um pixel de dispositivo nessa mesma régua.
- * Devolve o multiplicador do alfa, de 1 (fita cheia) a 0 (céu).
- *
- * O GRAMPO EM ZERO É O CONSERTO DE 26/08, e ele nasceu de uma medida: sem
- * ele, quando `pixel` passa do `miolo` o começo da rampa fica NEGATIVO e
- * o `smoothstep` já morde o EIXO da fita — em `pixelRatio` 1, com a fita
- * inchada valendo 2,25 px de dispositivo, `fwidth` dá 0,889 contra um
- * miolo de 0,556, o começo cai em −0,333 e o centro perde **15,6% de
- * brilho**. Isso é exatamente o perfil através da largura que o item 83
- * proíbe, e chegava por um caminho que ninguém tinha fotografado.
- *
- * E O REGIME É ALCANÇÁVEL, não teórico: o preset `performance` do
- * `core/engine.ts` tem `pixelRatio` 1,0 — por `?q=performance`, por
- * auto-degradação abaixo de 34 fps, e em QUALQUER monitor não-Retina,
- * onde `min(devicePixelRatio, preset)` dá 1.
- *
- * O QUE O GRAMPO NÃO FAZ é devolver o platô: com 2,25 px de dispositivo
- * não HÁ largura para um platô, e o que se ganha é o centro pleno com a
- * rampa tomando a fita inteira — o melhor que essa densidade permite.
- * Onde a fita é grossa o bastante, o grampo não muda nada, porque ali o
- * começo da rampa já era positivo.
- */
-export function perfilDaSaia(u: number, miolo: number, pixel: number): number {
-  const inicio = Math.max(miolo - pixel, 0);
-  const t = Math.min(1, Math.max(0, (Math.abs(u) - inicio) / (1 - inicio)));
-  return 1 - t * t * (3 - 2 * t);
-}
-
-/**
- * O `fwidth(u)` que a GPU verá, dado quantos px de DISPOSITIVO a fita
- * inchada ocupa. `u` corre 0→1 ao longo de MEIA largura, então o
- * gradiente vale `2/largura`; e `fwidth` é `|dFdx| + |dFdy|`, que para
- * uma fita a 45° chega a `√2` vezes o gradiente e para uma alinhada aos
- * eixos vale exatamente ele.
- *
- * O PIOR CASO É O DE 45°, e é por ele que o dente cobra: uma fita de
- * órbita cruza todas as inclinações ao longo do laço, então o regime
- * ruim acontece em algum arco de TODA elipse desenhada.
- */
-export function pixelDaSaia(larguraInchadaEmDispositivo: number, diagonal = false): number {
-  const gradiente = 2 / larguraInchadaEmDispositivo;
-  return diagonal ? gradiente * Math.SQRT2 : gradiente;
+  return base * fator;
 }
 
 /**
@@ -778,6 +744,32 @@ const BRILHO_DA_LINHA = 0.32;
  */
 const REALCE_DO_FOCO = 1.75;
 const RECUO_FORA_DO_FOCO = 0.35;
+
+/**
+ * O REALCE DO HOVER (§5g, item 120 · L10) — o multiplicador que a linha
+ * APONTADA usa no lugar do realce do foco, sem transição.
+ *
+ * NO EYES O HOVER LEVA AO TOPO, e é isso que se copia: o `_opacity`
+ * deles tem três casas — `primary .75`, `secondary .35`, `hover 1` — e
+ * `onHoverChange` escreve `hover` seja qual for a casa de origem. A
+ * linha fraca e a linha forte chegam ao MESMO lugar quando o ponteiro
+ * toca o nome delas; é essa igualdade que faz o gesto responder sempre
+ * do mesmo jeito.
+ *
+ * E O TOPO DESTA CASA É `REALCE_DO_FOCO`, não um quarto número: 1,75
+ * leva a linha de 0,32 a **0,56**, e 0,56 é TETO MEDIDO — acima dele a
+ * linha começa a alimentar o bloom e vira a fonte mais forte do quadro
+ * dentro do sistema (ver o cabeçalho de `REALCE_DO_FOCO`). Copiar a
+ * razão deles (1/0,75 = 1,333 sobre o realce do foco) daria 0,747, meio
+ * passo dentro da zona que o §5 proíbe. Sobe-se ao teto que existe, e o
+ * teto é este. Declarado como divergência de NÚMERO com paridade de
+ * COMPORTAMENTO.
+ *
+ * QUEM ESTÁ EM FOCO NÃO MUDA DE ALFA ao ser apontado — já estava no topo
+ * —, e continua respondendo pela LARGURA (1,2 → 2 px), que é o outro
+ * meio do hover deles e o mais visível dos dois.
+ */
+const REALCE_DO_HOVER = REALCE_DO_FOCO;
 
 /**
  * A VELOCIDADE DA TRANSIÇÃO do realce, em 1/s — o decaimento por quadro
@@ -1255,6 +1247,20 @@ export class Orbitas {
    */
   foco: string | null = null;
 
+  /**
+   * O CORPO APONTADO (§5g), escrito pelo director a cada `pointermove`
+   * pela mesma disciplina de `ligado` e `foco`. É o id que o hit-test
+   * ÚNICO dos rótulos (`Escolha.alvoNoPonto`) devolveu; `null` quando o
+   * ponteiro não está sobre nome nenhum — o que inclui toda captura
+   * headless, que não tem ponteiro.
+   *
+   * SÓ A LINHA DO PRÓPRIO CORPO acende, e não a família: apontar Júpiter
+   * não engrossa as galileanas. É a lei do Eyes, em que o `hoverchange`
+   * carrega UMA entidade, e é o que distingue o hover (que responde ao
+   * dedo) do foco (que declara o assunto da cena).
+   */
+  hover: string | null = null;
+
   private readonly linhas: LinhaDeOrbita[] = [];
   /** o instante em que os CENTROS foram postos no lugar */
   private jdDosCentros = Number.NaN;
@@ -1268,17 +1274,6 @@ export class Orbitas {
   private readonly rascunhoDoLaco = new Float32Array(PONTOS_POR_ORBITA * 3);
   private readonly rascunhoNdc = new THREE.Vector3();
   private readonly centroDoPai = new THREE.Vector3();
-  /**
-   * A FRAÇÃO DA LARGURA QUE É MIOLO (§5d) — onde a saia do AA começa,
-   * em `|vUv.x|`. É UM objeto para as TRINTA linhas de propósito: o
-   * número depende só da janela, e todos os shaders guardam a referência
-   * deste mesmo `{ value }` — escrever nele uma vez por quadro atualiza
-   * as trinta, e não existe caminho em que uma linha fique com um miolo
-   * de outra janela.
-   */
-  private readonly miolo = {
-    value: LARGURA_DA_FITA_PX / (LARGURA_DA_FITA_PX + SAIA_DO_AA_PX),
-  };
 
   constructor(corpos: readonly CorpoComOrbita[] = CORPOS_COM_ORBITA) {
     this.group.name = 'orbitas';
@@ -1338,10 +1333,10 @@ export class Orbitas {
       geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 0);
       const material = new LineMaterial({
         color: new THREE.Color(corpo.cor[0], corpo.cor[1], corpo.cor[2]),
-        // A LARGURA INCHADA (§5d): o traço visível MAIS a saia do AA. O
-        // `update` reescreve os dois números a cada quadro pelo fator da
-        // janela; este é o valor de fábrica, o da janela de referência.
-        linewidth: LARGURA_DA_FITA_PX + SAIA_DO_AA_PX,
+        // A LARGURA (§5d): o `update` a reescreve a cada quadro pelo
+        // fator da janela e pelo hover; este é o valor de fábrica, o da
+        // janela de referência em repouso.
+        linewidth: LARGURA_DA_FITA_PX,
         transparent: true,
         opacity: 0,
         // O GRADIENTE DA FITA (peça 3): acende o `USE_COLOR`, e com ele
@@ -1356,7 +1351,8 @@ export class Orbitas {
         // linha atrás de globo resolvido SOME — é o palco quem escreve
         // profundidade, e é o comportamento certo (§5)
         depthTest: true,
-        // sem MSAA nesta casa não há cobertura para escrever (§5)
+        // MESMO com MSAA no alvo (§5): o alfa da fita é um uniform por
+        // laço, não um alfa por fragmento — não há cobertura a escrever
         alphaToCoverage: false,
         // A JUNTA SEM CONTA (§5c) — o trio que descarta a calota. NÃO
         // traceja nada: `gapSize` zero deixa o resto de `mod` sempre
@@ -1394,33 +1390,28 @@ export class Orbitas {
   }
 
   /**
-   * A CIRURGIA DO FRAGMENTO do `LineMaterial` (three/addons), e ela leva
-   * DUAS costuras num callback só — a saia do AA (§5d) e a cessão ao
-   * núcleo. Não é economia: `onBeforeCompile` é um CAMPO, e um segundo
-   * callback APAGARIA o primeiro em silêncio, sem erro de compilação e
-   * sem teste vermelho. O nome fica no que a casa já chama assim.
+   * A CIRURGIA DO FRAGMENTO do `LineMaterial` (three/addons): a CESSÃO ao
+   * núcleo aceso. Ela instala TAMBÉM a cirurgia do vertex
+   * (`dobrarNaBissetriz`) no mesmo callback, e isso não é economia:
+   * `onBeforeCompile` é um CAMPO, e um segundo callback APAGARIA o
+   * primeiro em silêncio, sem erro de compilação e sem teste vermelho.
    *
    * A ORDEM DENTRO DO FRAGMENTO É LEI, e é esta: (1) o `discard` da
-   * calota, que o `USE_DASH` já traz de fábrica (§5c); (2) a SAIA, que
-   * decide quanto daquele pixel é fita; (3) a CESSÃO, que decide se
-   * aquela fita cede lugar ao núcleo aceso; (4) o `gl_FragColor`. Inverter
-   * (2) e (3) daria o mesmo produto — as duas são multiplicações — mas
-   * quem lê o shader tem de achar a largura resolvida ANTES do disco,
-   * porque é assim que os dois efeitos se explicam.
+   * calota, que o `USE_DASH` já traz de fábrica (§5c); (2) a CESSÃO, que
+   * decide se aquela fita cede lugar ao núcleo aceso; (3) o
+   * `gl_FragColor`.
+   *
+   * A SAIA DE `fwidth` MORAVA ENTRE (1) E (2) ATÉ 31/08 e foi
+   * aposentada (§5d, item 120 · L5): a beira é DURA e o miolo é CHAPADO,
+   * como o da referência, e quem suaviza é o `samples: 4` do alvo do
+   * composer. O fragmento não lê mais `vUv.x` nem chama `fwidth` — o
+   * alfa do pixel é o alfa do laço, de beira a beira.
    *
    * A CESSÃO — ver o cabeçalho de `RAIO_DA_CESSAO_PX` para a decisão do
    * dono e os números. É de texto, no molde de `domarPassaAlta`
    * (`core/post.ts`): o `alpha` do fragment é multiplicado pelo
    * `smoothstep` da distância ao disco do corpo DONO da linha, ANTES de
    * virar `gl_FragColor`.
-   *
-   * A SAIA — `u = |vUv.x|` é a distância ao eixo da fita em frações da
-   * MEIA largura inchada, e o `LineMaterial` já a interpola no caminho de
-   * pixels. `fwidth(u)` é o tamanho de um pixel nessa mesma régua, e
-   * atrasar a rampa dele deixa a beira acabar em rampa mesmo quando a
-   * fita corre quase paralela à grade. O nome no shader é `uMiolo` e
-   * NUNCA `nucleo`: `uNucleo` já é o disco da cessão, e trocar os dois
-   * seria trocar a largura pelo buraco.
    *
    * O SHADER NÃO CONVERTE NADA, e essa é a defesa: `uNucleo` chega pronto
    * no espaço do `gl_FragCoord` — `xy` é o centro em px de buffer, `z` e
@@ -1436,28 +1427,16 @@ export class Orbitas {
     material.onBeforeCompile = (shader) => {
       this.dobrarNaBissetriz(shader);
       shader.uniforms.uNucleo = nucleo as unknown as THREE.IUniform;
-      shader.uniforms.uMiolo = this.miolo as unknown as THREE.IUniform;
       const ALVO = 'gl_FragColor = vec4( diffuseColor.rgb, alpha );';
       if (!shader.fragmentShader.includes(ALVO)) {
         throw new Error('cederAoNucleo: o fragment do LineMaterial mudou de forma');
       }
       shader.fragmentShader = shader.fragmentShader
-        .replace(
-          'void main() {',
-          'uniform vec4 uNucleo;\nuniform float uMiolo;\nvoid main() {'
-        )
+        .replace('void main() {', 'uniform vec4 uNucleo;\nvoid main() {')
         .replace(
           ALVO,
-          // (2) A SAIA (§5d). O `max(…, 0.0)` é o GRAMPO do eixo: sem
-          // ele, numa fita fina de dispositivo o `fwidth` passa do
-          // miolo, o começo da rampa fica NEGATIVO e o centro da fita
-          // perde brilho — o perfil através da largura que o item 83
-          // proíbe. Ver `perfilDaSaia`, que é esta conta em TypeScript.
-          'float u = abs(vUv.x);\n'
-            + '\tfloat pixel = fwidth(u);\n'
-            + '\talpha *= 1.0 - smoothstep(max(uMiolo - pixel, 0.0), 1.0, u);\n'
-            // (3) A CESSÃO ao núcleo aceso
-            + '\tif (uNucleo.w > 0.0) {\n'
+          // (2) A CESSÃO ao núcleo aceso
+          'if (uNucleo.w > 0.0) {\n'
             + '\t\talpha *= smoothstep(uNucleo.z, uNucleo.w,\n'
             + '\t\t                    length(gl_FragCoord.xy - uNucleo.xy));\n'
             + `\t}\n\t${ALVO}`
@@ -1466,19 +1445,18 @@ export class Orbitas {
   }
 
   /**
-   * A LARGURA DA FITA NESTE QUADRO (§5d) — os DOIS números, escritos da
-   * MESMA chamada de `larguraVisivelDaFitaPx`, que é o que impede o
-   * shader de suavizar uma beira que a geometria pôs noutro lugar.
+   * A LARGURA DE CADA FITA NESTE QUADRO (§5d + §5g) — o fator da janela
+   * sobre a largura de fábrica, e a de fábrica depende do HOVER.
    *
-   * O `linewidth` do material é a largura INCHADA (visível + saia); o
-   * `uMiolo` é onde a rampa começaria — a fração chapada quando há
-   * largura de dispositivo para um platô (§5d). Uma linha só entre os
-   * dois: não há caminho em que um seja recalculado e o outro não.
+   * É POR LINHA, e passou a ser em 31/08: enquanto a largura era uma só
+   * para as trinta, ela podia ser escrita num laço cego. O hover dá a UMA
+   * linha uma grossura que as outras não têm, e a régua da janela
+   * continua valendo para as duas — 1,2 e 2 px CSS multiplicados pelo
+   * MESMO fator, senão a fita apontada deixaria de crescer com a janela.
    *
-   * ELA RODA ANTES DO GATE DE FASE, com a camada apagada inclusive. É
-   * uma divisão e um `max` — e o quadro em que a gaveta abre já encontra
-   * a fita na grossura da janela, em vez de um quadro na grossura da
-   * anterior.
+   * ELA RODA ANTES DO GATE DE FASE, com a camada apagada inclusive. São
+   * duas divisões — e o quadro em que a gaveta abre já encontra a fita na
+   * grossura da janela, em vez de um quadro na grossura da anterior.
    *
    * NÃO SE ESCREVE `resolution` AQUI, e é a mesma lei do §5: quem o
    * escreve é o `LineSegments2.onBeforeRender`, em px de CSS. `linewidth`
@@ -1486,10 +1464,11 @@ export class Orbitas {
    * bug que o upstream fechou.
    */
   private escreverLargura(quadro: QuadroEmPx) {
-    const visivel = larguraVisivelDaFitaPx(quadro);
-    this.miolo.value = visivel / (visivel + SAIA_DO_AA_PX);
-    const inchada = visivel + SAIA_DO_AA_PX;
-    for (const linha of this.linhas) linha.material.linewidth = inchada;
+    const repouso = larguraVisivelDaFitaPx(quadro);
+    const apontada = larguraVisivelDaFitaPx(quadro, LARGURA_DO_HOVER_PX);
+    for (const linha of this.linhas) {
+      linha.material.linewidth = linha.corpo.id === this.hover ? apontada : repouso;
+    }
   }
 
   /**
@@ -1928,9 +1907,18 @@ export class Orbitas {
     if (linha.corpo.centro !== 'sun' && !this.paiEnquadrado(centro, camera)) return 0;
     // O REALCE ENTRA POR ÚLTIMO (§5b), e por isso não abre porta nenhuma:
     // quem já foi cortado pelas duas pontas ou pelo pai fora do quadro
-    // continua cortado, por mais que esteja em foco. O foco escolhe o
-    // ASSUNTO entre as linhas que a cena já decidiu mostrar.
-    return BRILHO_DA_LINHA * entra * sai * linha.realce;
+    // continua cortado, por mais que esteja em foco — ou apontado. O foco
+    // escolhe o ASSUNTO entre as linhas que a cena já decidiu mostrar; o
+    // hover responde ao dedo entre as mesmas.
+    //
+    // E O HOVER SUBSTITUI, não multiplica (§5g · L10): no Eyes
+    // `onHoverChange` ESCREVE o alfa do topo, venha ele do `primary` ou
+    // do `secondary`. Multiplicar pelo realce daria dois números
+    // diferentes de hover — um para quem está em foco, outro para quem
+    // não está — e o gesto deixaria de responder sempre igual. É também
+    // aqui que ele fica INSTANTÂNEO: não passa por `perseguirRealce`.
+    const realce = linha.corpo.id === this.hover ? REALCE_DO_HOVER : linha.realce;
+    return BRILHO_DA_LINHA * entra * sai * realce;
   }
 
   /** O pai está no quadro? (§5 — só as luas perguntam.) */

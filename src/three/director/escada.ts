@@ -287,9 +287,10 @@ export class Escada {
   mergulharNoEscolhido() {
     this.escolha.mergulharNoEscolhido();
   }
-  /** hover no Atlas: há algo clicável sob o ponteiro? (cursor, item 111) */
-  apontaAlgo(x: number, y: number): boolean {
-    return this.escolha.apontaAlgo(x, y);
+  /** hover no Atlas: a chave do rótulo sob o ponteiro, ou `null` — serve
+   *  o cursor (item 111) e o hover da órbita (item 120) */
+  chaveApontada(x: number, y: number): string | null {
+    return this.escolha.chaveApontada(x, y);
   }
 
   /**

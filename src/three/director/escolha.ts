@@ -108,10 +108,21 @@ export class Escolha {
     return best;
   }
 
-  /** há algo clicável neste ponto? — o MESMO hit-test do clique,
-   *  servindo o CURSOR (item 111). Leitura pura: nenhum estado se mexe. */
-  apontaAlgo(x: number, y: number): boolean {
-    return this.alvoNoPonto(x, y) !== null;
+  /**
+   * O QUE ESTE PONTO APONTA — a CHAVE do rótulo sob o ponteiro, ou
+   * `null`. O MESMO hit-test do clique, e leitura pura: nenhum estado se
+   * mexe aqui.
+   *
+   * DOIS FREGUESES, UMA PERGUNTA: o cursor (item 111), que só quer saber
+   * se há algo clicável, e o HOVER DA ÓRBITA (item 120, F1 · L11), que
+   * precisa saber DE QUEM. Antes disto o método devolvia um `boolean` e
+   * jogava fora justamente o nome — e o segundo freguês teria de refazer
+   * a varredura para reencontrá-lo, com o risco clássico de duas listas
+   * onde tem de haver uma (o defeito do "SOL" que enquadrava Fobos, ver
+   * `alvoNoPonto`).
+   */
+  chaveApontada(x: number, y: number): string | null {
+    return this.alvoNoPonto(x, y)?.key ?? null;
   }
 
   /**

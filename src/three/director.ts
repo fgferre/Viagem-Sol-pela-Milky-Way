@@ -654,6 +654,8 @@ export class Director {
       this.nebula.setSteps(this.engine.preset.nebulaSteps);
       // o preset de grão era config morta — nunca chegava ao shader
       this.post.setGrain(this.engine.preset.grain);
+      // as amostras do alvo do composer (item 120, F1): o MSAA é do tier
+      this.post.aplicarAmostras(quality);
       this.blackHole?.setQuality(quality);
       this.publicarQualidade();
       // troca de tier muda pixelRatio e passos do raymarch: a contagem de
@@ -673,6 +675,7 @@ export class Director {
     this.nebula.setScale(this.engine.quality === 'performance' ? 0.35 : 0.5);
     this.nebula.setSteps(this.engine.preset.nebulaSteps);
     this.post.setGrain(this.engine.preset.grain);
+    this.post.aplicarAmostras(this.engine.quality);
     // e o React TAMBÉM é ouvinte tardio: sem esta semente o painel de
     // Ajustes nasceria mostrando o que ele chutou no `useState` em vez do
     // que o engine aplicou — e o clique no tier certo virava no-op
@@ -754,7 +757,8 @@ export class Director {
       // dois gestos: o primeiro troca o alvo com a câmera parada, o
       // segundo é o preset da escada, com rampa.
       selecionar: (x, y) => this.escada.selecionarNoPonto(x, y),
-      apontavel: (x, y) => this.escada.apontaAlgo(x, y),
+      apontavel: (x, y) => this.apontarRotulo(x, y),
+      nadaApontado: () => this.apagarHover(),
       fecharGavetas: () => this.events.onFecharGavetas(),
       mergulhar: () => this.escada.mergulharNoEscolhido(),
       // A RODA ESCREVE DISTÂNCIA, e só distância (item 73): nem
@@ -1205,6 +1209,40 @@ export class Director {
   /** algo mudou o que a cena mostra — a contagem de estabilidade recomeça */
   private perturbar() {
     this.quadrosEstaveis = 0;
+  }
+
+  /**
+   * O PONTEIRO PASSOU AQUI (item 120, F1 · L11): um hit-test só,
+   * consumido por DOIS — o cursor, que quer saber se há algo clicável, e
+   * a linha de órbita, que quer saber DE QUEM.
+   *
+   * É AQUI QUE "APONTAR O NOME ACENDE A ÓRBITA" acontece, e a direção é
+   * a do Eyes: lá o `mouseenter` mora no `<div>` do RÓTULO e dispara o
+   * `hoverchange` que o `TrailManager` escuta; não há picking da
+   * geometria da linha em lugar nenhum. Aqui o rótulo é canvas 2D e não
+   * tem `<div>` para escutar — o equivalente exato é o hit-test da lista
+   * ÚNICA de rótulos desenhados, o mesmo que o clique usa.
+   *
+   * SÓ CORPO TEM ÓRBITA: uma estrela ou o centro galáctico apontados
+   * devolvem `true` para o cursor e APAGAM o hover, porque não há linha
+   * deles a acender. `hover` guarda o id do corpo, sem o prefixo da
+   * chave, que é a régua que `Orbitas` fala.
+   */
+  private apontarRotulo(x: number, y: number): boolean {
+    const chave = this.escada.chaveApontada(x, y);
+    if (this.orbitas) {
+      this.orbitas.hover =
+        chave?.startsWith(CHAVE_DE_CORPO) === true
+          ? chave.slice(CHAVE_DE_CORPO.length)
+          : null;
+    }
+    return chave !== null;
+  }
+
+  /** o ponteiro saiu do alcance do gesto — a órbita apagada junto com a
+   *  promessa do cursor (ver `apontarRotulo`) */
+  private apagarHover() {
+    if (this.orbitas) this.orbitas.hover = null;
   }
 
   /**

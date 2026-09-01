@@ -416,7 +416,12 @@ export class Engine {
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: false, // AA vem do supersampling via pixelRatio + bloom
+      // AA NÃO SE LIGA AQUI, e não é escolha: esta flag governa só o
+      // framebuffer do CANVAS, que neste app recebe um quad de tela cheia
+      // e nada mais — a cena 3D é rasterizada no alvo do `EffectComposer`
+      // (`core/post.ts`, `AMOSTRAS_DO_ALVO`), e é lá que o MSAA mora
+      // desde 31/08. Ligá-la aqui é INERTE, e foi medido assim.
+      antialias: false,
       powerPreference: 'high-performance',
       stencil: false,
       // O BUFFER DE PROFUNDIDADE DA TELA era memória paga e inútil

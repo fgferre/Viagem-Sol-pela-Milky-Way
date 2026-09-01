@@ -75,6 +75,7 @@ function fiosMock(overrides: Partial<FiosDosGestos> = {}): FiosDosGestos {
     olhar: () => {},
     selecionar: () => {},
     apontavel: () => true,
+    nadaApontado: () => {},
     mergulhar: () => {},
     zoom: () => {},
     lente: () => {},
@@ -97,7 +98,12 @@ beforeEach(() => {
 
 function bancada(overrides: Partial<FiosDosGestos> = {}) {
   const canvas = Object.assign(new Barramento(), { classList: new ClasseFake() });
-  const chamadas = { selecionar: [] as [number, number][], fecharGavetas: 0, apontavel: 0 };
+  const chamadas = {
+    selecionar: [] as [number, number][],
+    fecharGavetas: 0,
+    apontavel: 0,
+    nadaApontado: 0,
+  };
   // `...overrides` vem PRIMEIRO: os três campos de baixo têm de vencer o
   // spread, senão um `overrides.apontavel` substituiria o envelope que
   // conta a chamada em vez de passar por dentro dele
@@ -110,6 +116,10 @@ function bancada(overrides: Partial<FiosDosGestos> = {}) {
     apontavel: (...args) => {
       chamadas.apontavel++;
       return overrides.apontavel ? overrides.apontavel(...args) : true;
+    },
+    nadaApontado: () => {
+      chamadas.nadaApontado++;
+      overrides.nadaApontado?.();
     },
   });
   const punho = ligarGestos(canvas as unknown as HTMLCanvasElement, fios);
@@ -155,6 +165,11 @@ describe('o cursor não promete o que a gaveta impede', () => {
     // e o hit-test dos rótulos nem chega a rodar: a guarda da gaveta
     // corta antes, por curto-circuito do `&&`
     expect(b.chamadas.apontavel).toBe(0);
+    // ...MAS O HOVER TEM DE SER APAGADO (item 120, F1): sem este aviso a
+    // órbita ficaria acesa embaixo da gaveta, prometendo pela linha o
+    // que o cursor acabou de negar. É o único caminho que ela tem para
+    // saber, justamente porque o hit-test não roda.
+    expect(b.chamadas.nadaApontado).toBe(1);
   });
 
   it('sem gaveta nenhuma + hit-test verdadeiro → apontavel LIGADA', () => {
@@ -163,6 +178,10 @@ describe('o cursor não promete o que a gaveta impede', () => {
     b.move(500, 400);
     expect(b.canvas.classList.contains('apontavel')).toBe(true);
     expect(b.chamadas.apontavel).toBe(1);
+    // dentro do alcance quem publica o hover é o próprio hit-test: o
+    // aviso de "nada apontado" seria uma segunda voz sobre o mesmo
+    // estado, e a última a falar venceria
+    expect(b.chamadas.nadaApontado).toBe(0);
   });
 
   it('a ficha (gaveta que o toque NÃO fecha) liga o cursor — e o clique cumpre a promessa', () => {

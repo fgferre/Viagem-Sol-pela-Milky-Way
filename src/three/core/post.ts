@@ -11,6 +11,7 @@ import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { FILM_SHADER } from '../shaders/dustShaders';
 import { GLSL_COMPRESSAO } from '../shaders/common';
 import { BETA_DA_ASA, FRACAO_DA_ASA } from '../estrela';
+import type { QualityLevel } from './engine';
 
 // KNEE pré-ACES (rodada 19): compressão asinh do compósito HDR — o tone
 // map de divulgação da referência (Lupton 2004; Filmic/AgX) comprime
@@ -649,6 +650,72 @@ class ClaraoDoCampo extends Pass {
   }
 }
 
+/**
+ * AS AMOSTRAS DO ALVO DO COMPOSER — o MSAA que esta casa não tinha (item
+ * 120, F1 · L6 do contrato do NASA Eyes).
+ *
+ * O renderer nasce `antialias: false` (`core/engine.ts`) e essa flag só
+ * governa o framebuffer do CANVAS, que neste app recebe um quad de tela
+ * cheia e nada mais — ligá-la é INERTE, e foi medido assim em 31/08.
+ * Quem rasteriza a cena 3D é o alvo do `EffectComposer`, e alvo de
+ * composer nasce com `samples` 0. É este o parâmetro que produz o pixel,
+ * e é o mesmo que a referência escreve (`new WebGLRenderTarget(x, y,
+ * {samples: 4})`, offset 261 634 do bundle deles).
+ *
+ * QUATRO, e o número não é gosto: `MAX_SAMPLES` do ANGLE/Metal no M1 é 4
+ * — medido pela sonda em 31/08 —, então 4 é ao mesmo tempo o que a
+ * referência usa e o teto desta placa. Pedir 8 seria pedir 4 com outro
+ * nome.
+ *
+ * POR QUE ELE PASSOU A SER OBRIGATÓRIO, e é a diferença entre esta
+ * medição e a do item 115, que REPROVOU a mesma peça: lá a fita ainda
+ * tinha a SAIA ANALÍTICA (`fwidth`), que já suavizava a beira sozinha —
+ * o MSAA comprava 0,070 de delta médio na zona da fita, quase nada, e o
+ * preço não se pagava. O F1 APOSENTOU a saia (§5d de `world/orbitas.ts`,
+ * L5 do contrato): a fita agora tem beira DURA e miolo CHAPADO, como a
+ * do Eyes, e o único suavizador que resta é este. As duas peças são um
+ * pacote; medir uma sem a outra dá a resposta errada, nos dois sentidos.
+ */
+export const AMOSTRAS_DO_ALVO = 4;
+
+/**
+ * A ESCADA DE QUALIDADE DECIDE AS AMOSTRAS (item 120, F1) — porque o
+ * preço é real e está MEDIDO nesta máquina (`ANGLE Metal, Apple M1`,
+ * `gpu-profile.mjs` em modo `cru` com `SEM_VSYNC=1`, lados A e B
+ * alternados na mesma sequência).
+ *
+ * `cinema` e `alta` levam as QUATRO amostras da referência.
+ * `performance` leva **DUAS**, e o meio-termo é medido, não escolhido:
+ *
+ *   - com ZERO, a fita fica em UM pixel de dispositivo duro — FWHM
+ *     1,121 px, subida 0,932 — e o zoom mostra a ESCADA que o item 83
+ *     nasceu para matar. Foi fotografado assim antes de a decisão ser
+ *     tomada (4ª linha de `capturas/item120-f1-fita-ampliada.png`).
+ *   - com DUAS, a fita volta a FWHM **1,793** px e subida **1,260** —
+ *     praticamente o que as quatro dão nesse regime (1,862 / 1,291), a
+ *     um terço do preço.
+ *   - o preço das duas, medido neste tier em duas repetições alternadas
+ *     (`gpu-profile` em modo `cru` com `SEM_VSYNC=1`, dpr 1): **+2,5 a
+ *     +3,5 ms/quadro, +22,4% a +23,7%** (14,6 → 18,1 ms com a máquina
+ *     carregada; 11,2 → 13,7 ms com ela livre). A porcentagem repete; o
+ *     absoluto depende do que mais está rodando, e por isso vão os dois.
+ *
+ * DUAS AMOSTRAS BASTAM AQUI porque `performance` roda em `pixelRatio`
+ * 1,0: a fita tem ~1,2 px de dispositivo, e o que falta é UM degrau
+ * intermediário na beira, não quatro. Em dpr 2 seria diferente, e é por
+ * isso que os outros dois tiers não herdam este número.
+ *
+ * E A VÁLVULA JÁ EXISTE: o auto-quality mede fps e desce de tier
+ * sozinho, então uma placa que não aguenta o MSAA cheio cai para
+ * `performance` e paga um terço, pelo mesmo caminho que já baixava o
+ * raymarch caro.
+ */
+export const AMOSTRAS_POR_TIER: Record<QualityLevel, number> = {
+  cinema: AMOSTRAS_DO_ALVO,
+  alta: AMOSTRAS_DO_ALVO,
+  performance: 2,
+};
+
 export class Post {
   readonly composer: EffectComposer;
   readonly bloom: UnrealBloomPass;
@@ -658,10 +725,23 @@ export class Post {
   private kneeOn = false;
   private outputPass!: OutputPass;
   private renderer: THREE.WebGLRenderer;
+  /** `?msaa=N` venceu a escada de tiers; `null` = quem manda é o tier */
+  private readonly amostrasForcadas: number | null;
 
   constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
     this.renderer = renderer;
+    const q = new URLSearchParams(window.location.search);
     this.composer = new EffectComposer(renderer);
+    // O CAMINHO DE VOLTA E O LADO A DA BANCADA, no molde de `?bbloom=0`:
+    // `?msaa=0` devolve o alvo sem amostras — o quadro anterior a esta
+    // obra —, `?msaa=N` varre e vence a escada de tiers. Ausente, quem
+    // manda é o tier (`aplicarAmostras`).
+    const pedido = q.get('msaa');
+    const forcado = pedido === null ? Number.NaN : Math.trunc(Number(pedido));
+    this.amostrasForcadas = Number.isFinite(forcado) ? Math.max(0, forcado) : null;
+    // UM ALVO SÓ — o `renderTarget1`, que o grampo de `render` fixa como
+    // o lugar onde a cena 3D é rasterizada. Ver `aplicarAmostras`.
+    this.composer.renderTarget1.samples = this.amostrasForcadas ?? AMOSTRAS_DO_ALVO;
     this.composer.addPass(new RenderPass(scene, camera));
 
     // (A porta de medição `?knee2=` morreu no M2: o experimento que ela
@@ -709,7 +789,6 @@ export class Post {
     // knee 0,45 + exp 1,05 venceu os DOIS gates — edge 0,8275, face
     // 0,0517). ?knee=0 desliga; ?knee=β varre; ?kneemode=lum|rgb.
     this.knee = new ShaderPass(KNEE_SHADER as never);
-    const q = new URLSearchParams(window.location.search);
     const raw = q.get('knee');
     const beta = raw === null ? 0.45 : parseFloat(raw);
     this.kneeOn = Number.isFinite(beta) && beta > 0;
@@ -909,8 +988,54 @@ export class Post {
       0.00012 + k * 0.00042;
   }
 
+  /**
+   * AS AMOSTRAS DO TIER (item 120, F1) — chamada pelo Director no
+   * `onQuality` e na semeadura inicial, o mesmo caminho do grão e dos
+   * passos do raymarch.
+   *
+   * O `dispose()` é o que faz a troca VALER: o three só lê `samples` em
+   * `setupRenderTarget`, e essa só roda quando o alvo não tem
+   * framebuffer. Sem ele, mudar o número escreveria um campo que ninguém
+   * consulta e o tier trocaria nada. Nada se perde na destruição — o
+   * `RenderPass` limpa o alvo antes de desenhar, todo quadro.
+   *
+   * `?msaa=` vence: uma bancada que fixou o número não pode ser desfeita
+   * pela auto-degradação no meio da medida.
+   */
+  aplicarAmostras(tier: QualityLevel) {
+    const alvo = this.amostrasForcadas ?? AMOSTRAS_POR_TIER[tier];
+    const rt = this.composer.renderTarget1;
+    if (rt.samples === alvo) return;
+    rt.samples = alvo;
+    rt.dispose();
+  }
+
+  /**
+   * O GRAMPO DOS BUFFERS, e ele é o que torna o MSAA pagável (medido no
+   * item 115, aproveitado aqui).
+   *
+   * O `EffectComposer` NÃO reinicia `readBuffer`/`writeBuffer` a cada
+   * quadro: eles ficam onde a última troca os deixou. E o número de
+   * trocas por quadro é ÍMPAR com o joelho ligado (knee + OutputPass +
+   * film) e PAR sem ele — ou seja, o alvo em que o `RenderPass`
+   * rasteriza a cena ALTERNAVA entre `renderTarget1` e `renderTarget2`
+   * de um quadro para o outro, e mudava de regime no meio da travessia
+   * da galáxia. Sem o grampo, dar amostras a UM alvo daria quadro liso
+   * sim, quadro serrilhado não; dar aos DOIS custa um resolve de tela
+   * cheia em CADA passe de quad — medido em 31/08, +73% a +90% de tempo
+   * de quadro nas três vistas, contra +55% a +69% com o grampo.
+   *
+   * Grampeado, `renderTarget1` é sempre onde a cena 3D cai (o
+   * `readBuffer` do `RenderPass`, do bloom e do clarão do campo) e
+   * `renderTarget2` é sempre rascunho de quad, que não tem beira para
+   * amostrar. Nada depende do buffer do quadro anterior — o `RenderPass`
+   * limpa o alvo antes de desenhar —, então o grampo não apaga
+   * informação de ninguém.
+   */
   render(time: number) {
     (this.film.uniforms as Record<string, { value: number }>).uTime.value = time;
+    this.composer.readBuffer = this.composer.renderTarget1;
+    this.composer.writeBuffer = this.composer.renderTarget2;
     this.composer.render();
   }
 

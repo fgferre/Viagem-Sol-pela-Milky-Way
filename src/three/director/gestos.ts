@@ -34,9 +34,23 @@ export interface FiosDosGestos {
   /**
    * HÁ ALGO CLICÁVEL NESTE PONTO? (frações de tela) — o mesmo hit-test
    * do clique, servindo o CURSOR (item 111): pointer sobre nome, agarrar
-   * no resto. Leitura pura, não mexe em estado nenhum.
+   * no resto.
+   *
+   * DESDE O ITEM 120 ELE TAMBÉM PUBLICA O HOVER: quem apontou, e não só
+   * se apontou. É o `hoverchange` do Eyes — lá o `mouseenter` do `<div>`
+   * do rótulo acende a linha de órbita do corpo, e não há picking da
+   * geometria da linha. Um hit-test só, dois fregueses; ver
+   * `Director.apontarRotulo`.
    */
   apontavel: (x: number, y: number) => boolean;
+  /**
+   * O PONTEIRO SAIU DO ALCANCE do gesto — não é o Atlas, não é o céu, ou
+   * a gaveta aberta come o clique. Aqui o hit-test não roda (é a lei do
+   * cursor: não prometer o que o clique não cumpriria), e por isso o
+   * hover precisa de um caminho PRÓPRIO para se apagar — sem ele a
+   * órbita ficaria acesa depois de o ponteiro subir para o HUD.
+   */
+  nadaApontado: () => void;
   /** DUPLO CLIQUE no Atlas: mergulhar no que o clique escolheu, com rampa. */
   mergulhar: () => void;
   /**
@@ -173,16 +187,22 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
     // do HUD) deixa a classe visualmente atrasada até o próximo
     // movimento — caso raro, sem observador de DOM para ele.
     if (event.buttons === 0) {
+      // O ALCANCE DO GESTO, calculado UMA vez: é ele que decide se o
+      // hit-test roda, e por isso é ele que decide se o hover pode
+      // acender. Fora do alcance nada é apontado — e "nada apontado"
+      // tem de ser DITO (`nadaApontado`), senão a órbita ficaria acesa
+      // com o ponteiro já no HUD, prometendo o que o clique não cumpre.
+      const noAlcance =
+        fios.noAtlas() && event.target === canvas && !gavetaQueOToqueFecha();
       canvas.classList.toggle(
         'apontavel',
-        fios.noAtlas() &&
-          event.target === canvas &&
-          !gavetaQueOToqueFecha() &&
+        noAlcance &&
           fios.apontavel(
             event.clientX / window.innerWidth,
             event.clientY / window.innerHeight
           )
       );
+      if (!noAlcance) fios.nadaApontado();
     }
     // A PINÇA vem ANTES do arrasto, e não depois: com dois dedos o
     // arrasto já não tem dono (o `esquecer` acima), então `mover`

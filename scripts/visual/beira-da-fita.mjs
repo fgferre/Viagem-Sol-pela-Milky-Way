@@ -16,9 +16,18 @@
 // Ao DONO, e a frase é dele, de 2026-08-26: *"lá a órbita parece uma fita
 // dobrada, não uma linha grossa; a nossa ainda parece linha grossa"*.
 // Este arquivo mede a primeira metade da resposta — o item 83 · B1, que
-// é o A2 (a saia do anti-aliasing) mais o A3 (a largura que cresce com a
+// é o A2 (o anti-aliasing da beira) mais o A3 (a largura que cresce com a
 // janela). A segunda metade, a junta em bissetriz, é o B2 e tem juiz
 // próprio na dobra.
+//
+// QUEM FAZ O A2 MUDOU EM 31/08 (item 120, F1 · L5+L6), e o juiz não: de
+// 24/08 até lá o AA era a SAIA ANALÍTICA — uma rampa de `fwidth` dentro
+// do fragmento da fita, porque a casa não tinha MSAA. A saia foi
+// APOSENTADA: a beira é dura e o miolo é chapado, como os da referência,
+// e quem suaviza é o `samples: 4` do alvo do composer (`AMOSTRAS_DO_ALVO`,
+// em `core/post.ts`), nos tiers `cinema` e `alta`. O que este juiz mede é
+// o RESULTADO no pixel, então ele continua sendo o mesmo instrumento —
+// só o mecanismo por trás do número trocou.
 //
 // Nada aqui mede semelhança com a foto da referência. O alvo é a linha
 // LINDA; o que se mede é o PERFIL ATRAVÉS da fita, que é onde a escada
@@ -33,9 +42,10 @@
 // independentes de propósito:
 //
 //   · A SUBIDA (10%→90%), em px de dispositivo — o tamanho da RAMPA. É o
-//     número do A2. Beira dura sobe no espaço de um pixel (o único
-//     degrau intermediário é o do downsample do supersampling); beira com
-//     saia sobe ao longo dela.
+//     número do A2. Beira dura sem AA nenhum sobe no espaço de um pixel
+//     (o único degrau intermediário é o do downsample do supersampling);
+//     com MSAA de 4 amostras ela sobe em degraus de um quarto; com a
+//     saia analítica que morreu em 31/08, ela subia ao longo da saia.
 //   · A LARGURA A MEIA ALTURA (FWHM), em px de dispositivo — o traço que
 //     o olho lê como "a grossura da fita". É o número do A3, e é ELE que
 //     tem de ficar igual numa janela de 800 e crescer numa janela grande.
@@ -62,14 +72,24 @@
 //
 // DPR 2 nessas duas, porque é a tela dele.
 //
-// E UMA TERCEIRA, de dpr 1, acrescentada em 26/08 por auditoria. Ela é o
-// regime em que a fita inchada vale 2,25 px de DISPOSITIVO: ali o
-// `fwidth(u)` do fragmento passa do `uMiolo`, a rampa toma a fita
-// inteira, e sem o grampo de `perfilDaSaia` o CENTRO perdia 15,6% de
-// brilho. O regime é alcançável — preset `performance`, auto-degradação
-// abaixo de 34 fps, monitor não-Retina —, e era o único que nunca tinha
-// sido fotografado. A perna leva `?q=performance` junto do dpr, para o
+// E UMA TERCEIRA, de dpr 1, acrescentada em 26/08 por auditoria. Ela
+// nasceu para fotografar o regime FINO de dispositivo, onde a saia
+// analítica se comportava pior; desde 31/08 ela mudou de dono e ficou
+// MAIS importante: com `?q=performance` o tier leva DUAS amostras e não
+// quatro (`AMOSTRAS_POR_TIER`), então esta perna é a única que fotografa
+// o meio-termo da escada de qualidade do item 120. O regime é alcançável
+// de verdade: preset `performance` por `?q=` ou por auto-degradação
+// abaixo de 34 fps. A perna leva `?q=performance` junto do dpr, para o
 // preset do engine casar com a emulação em vez de as duas discordarem.
+//
+// E O NÚMERO DELE FOI ESCOLHIDO AQUI: com ZERO amostras esta perna dava
+// FWHM 1,121 px e subida 0,932 — um pixel duro, a escada de volta; com
+// DUAS dá 1,793 / 1,260, quase o que as quatro dão (1,862 / 1,291), por
+// +3,5 ms/quadro num quadro de 14,6 ms.
+//
+// (Um monitor NÃO-Retina no tier de produto é caso DIFERENTE e melhor:
+// ali o tier é `cinema`, `pixelRatio` é `min(1, 2)` = 1 e o MSAA está
+// LIGADO — medido em 31/08, FWHM 1,868 px contra 1,121 px sem ele.)
 //
 // ------------------------------------------------------------
 // ONDE ELE OLHA, e como acha a fita sem número decorado
@@ -455,16 +475,14 @@ async function comporPrancha(zoom = 5) {
   <p>Zoom ${zoom}× em pixels crus (sem interpolação) no alto do laço de Saturno, corte perpendicular à fita.
   Cada LINHA é uma janela, com o mesmo recorte dos dois lados; o par de cada linha é o que se compara.
   <br><b>Os dois números.</b> A <i>subida</i> é quanto a luz demora a ir de 10% a 90% atravessando a beira —
-  é o tamanho da RAMPA, e é o número do A2: beira dura sobe no espaço de um pixel, beira com saia sobe ao
-  longo dela. A <i>FWHM</i> é a grossura do traço a meia altura — é o número do A3, que tem de ficar igual
+  é o tamanho da RAMPA, e é o número do A2: beira dura sem AA sobe no espaço de um pixel, e com o MSAA
+  de 4 amostras do alvo do composer ela sobe em degraus de um quarto. A <i>FWHM</i> é a grossura do traço a meia altura — é o número do A3, que tem de ficar igual
   numa janela de lado 800 e crescer numa de 1200.
   <br><b>As três janelas.</b> As duas de dpr 2 são a tela dele, em fator 1× e 1,5×.
-  A de <b>dpr 1</b> é o regime FINO de dispositivo, alcançável de verdade — preset <code>performance</code>,
-  auto-degradação abaixo de 34 fps, monitor não-Retina. Ali a fita inchada vale 2,25 px de DISPOSITIVO e o
-  <code>fwidth</code> do fragmento passa do miolo: sem o grampo <code>max(uMiolo − pixel, 0)</code> o começo
-  da rampa fica NEGATIVO e o <b>centro da fita perde 15,6% de brilho</b> — perfil através da largura, que
-  este item proíbe. Com o grampo, o eixo volta ao pleno e a rampa toma a fita inteira, que é o melhor que
-  2,25 px permitem: <b>não há platô nessa densidade, e o item não promete um</b>.
+  A de <b>dpr 1</b> leva <code>?q=performance</code>, o tier que desde 31/08 (item 120, F1) leva DUAS
+  amostras em vez de quatro (<code>AMOSTRAS_POR_TIER</code>): é o meio-termo da escada de qualidade, e é
+  para vê-lo que esta perna existe. Um monitor não-Retina no tier de produto é outro caso, e melhor: lá o
+  tier é <code>cinema</code>, o <code>pixelRatio</code> é 1 e as quatro amostras estão ligadas.
   <br><b>A franja colorida não é da fita:</b> é a aberração cromática da lente da casa (<code>uCA</code>, no
   <code>post.ts</code>), mais forte longe do centro do quadro, e igual nos dois lados de cada par.
   <br>Antes: <code>${lados[0].dados.carimbo}</code> · Depois: <code>${lados[1].dados.carimbo}</code>.

@@ -18,7 +18,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
-import { MARGEM_DO_CAMPO, criarSomaComRecorte } from './post';
+import { AMOSTRAS_DO_ALVO, AMOSTRAS_POR_TIER, MARGEM_DO_CAMPO, criarSomaComRecorte } from './post';
 
 const post = readFileSync(new URL('./post.ts', import.meta.url), 'utf8');
 const director = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
@@ -90,6 +90,78 @@ describe('a soma com recorte (a armadilha do premultiplied)', () => {
     expect(soma.transparent).toBe(true);
     expect(soma.depthTest).toBe(false);
     expect(soma.depthWrite).toBe(false);
+  });
+});
+
+describe('o MSAA do alvo do composer (item 120, F1 · L6)', () => {
+  it('são QUATRO amostras — o número da referência e o teto da placa', () => {
+    // O literal deles (`{samples: 4}`, offset 261 634 do bundle) é também
+    // o `MAX_SAMPLES` medido no ANGLE/Metal do M1: pedir 8 seria pedir 4
+    // com outro nome.
+    expect(AMOSTRAS_DO_ALVO).toBe(4);
+  });
+
+  it('a escada de tiers decide, e `performance` leva DUAS amostras', () => {
+    // DUAS REVERSÕES DE UMA VEZ, e as duas foram fotografadas antes de o
+    // número ser escolhido:
+    //   · quatro em TODO tier — a tentadora. O preço está medido nesta
+    //     máquina, +51% a +54% de tempo de quadro em dpr 2, e
+    //     `performance` é justamente o tier de quem pediu para pagar
+    //     menos (por `?q=` ou por auto-degradação abaixo de 34 fps).
+    //   · ZERO em `performance` — o que esta obra entregou primeiro. Ali
+    //     a fita vira UM pixel de dispositivo duro (FWHM 1,121 px) e o
+    //     zoom mostra a escada que o item 83 nasceu para matar. Duas
+    //     amostras devolvem FWHM 1,793 por +3,5 ms/quadro.
+    expect(AMOSTRAS_POR_TIER.cinema).toBe(AMOSTRAS_DO_ALVO);
+    expect(AMOSTRAS_POR_TIER.alta).toBe(AMOSTRAS_DO_ALVO);
+    expect(AMOSTRAS_POR_TIER.performance).toBe(2);
+    // e ela é MENOR que a dos outros dois: um `performance` que pagasse o
+    // mesmo que o `cinema` não seria mais o tier barato
+    expect(AMOSTRAS_POR_TIER.performance).toBeLessThan(AMOSTRAS_DO_ALVO);
+    // ...e MAIOR que zero: sem amostra nenhuma volta a escada
+    expect(AMOSTRAS_POR_TIER.performance).toBeGreaterThan(0);
+  });
+
+  it('as amostras vão para o alvo do COMPOSER, não para o renderer', () => {
+    // A REVERSÃO INERTE, e ela já custou uma medição inteira em 31/08:
+    // `antialias: true` no renderer governa só o framebuffer do CANVAS,
+    // que neste app recebe um quad de tela cheia. Quem rasteriza a cena
+    // 3D é o `renderTarget1` do composer.
+    expect(post).toMatch(/composer\.renderTarget1\.samples =/);
+    const engine = readFileSync(new URL('./engine.ts', import.meta.url), 'utf8');
+    expect(engine, 'o AA voltou para o renderer, onde é inerte')
+      .toMatch(/antialias: false/);
+  });
+
+  it('a troca de tier DISPÕE o alvo — senão ela não vale nada', () => {
+    // A SABOTAGEM SILENCIOSA: escrever `rt.samples = n` e parar aí. O
+    // three só lê `samples` em `setupRenderTarget`, e essa só roda quando
+    // o alvo não tem framebuffer — sem o `dispose()` o campo muda e o
+    // pixel não.
+    const metodo = post.slice(post.indexOf('aplicarAmostras(tier'));
+    const corpo = metodo.slice(0, metodo.indexOf('\n  }'));
+    expect(corpo).toMatch(/rt\.samples = alvo/);
+    expect(corpo).toMatch(/rt\.dispose\(\)/);
+    // e o director tem de CHAMAR o método, nos dois caminhos: a troca
+    // viva e a semeadura inicial (o engine aplica a qualidade no próprio
+    // construtor, antes de os ouvintes existirem)
+    expect(director.match(/this\.post\.aplicarAmostras\(/g) ?? []).toHaveLength(2);
+  });
+
+  it('o grampo dos buffers fixa em QUAL alvo a cena é rasterizada', () => {
+    // SEM ELE O MSAA PEGA QUADRO SIM, QUADRO NÃO: o `EffectComposer` não
+    // reinicia os buffers a cada quadro e o número de trocas por quadro é
+    // ímpar com o joelho ligado e par sem ele — o alvo da cena alternava
+    // entre `renderTarget1` e `renderTarget2`, e mudava de regime no meio
+    // da travessia da galáxia. Dar amostras aos DOIS custaria +73% a +90%
+    // em vez de +55% a +69% (medido em 31/08).
+    const metodo = post.slice(post.indexOf('render(time: number)'));
+    const corpo = metodo.slice(0, metodo.indexOf('\n  }'));
+    expect(corpo).toMatch(/readBuffer = this\.composer\.renderTarget1/);
+    expect(corpo).toMatch(/writeBuffer = this\.composer\.renderTarget2/);
+    // e o grampo tem de vir ANTES do render, senão ele fixa o quadro que
+    // já passou
+    expect(corpo.indexOf('renderTarget1')).toBeLessThan(corpo.indexOf('composer.render()'));
   });
 });
 

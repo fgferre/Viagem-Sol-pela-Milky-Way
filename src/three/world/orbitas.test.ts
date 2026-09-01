@@ -54,13 +54,11 @@ import {
   CORPOS_COM_ORBITA,
   Orbitas,
   LARGURA_DA_FITA_PX,
-  SAIA_DO_AA_PX,
+  LARGURA_DO_HOVER_PX,
   LIMITE_DA_BISSETRIZ,
   PASSO_DA_FITA,
   escalaDaBissetriz,
   larguraVisivelDaFitaPx,
-  perfilDaSaia,
-  pixelDaSaia,
   PONTOS_POR_ORBITA,
   conicaOsculadora,
   escreverLaco,
@@ -792,19 +790,18 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
         resolution: { x: number; y: number };
       };
     }).material;
-    // OS DOIS NÚMEROS (§5d): o material leva a largura INCHADA — o traço
-    // visível MAIS a saia do AA —, e a saia é o que a beira em rampa
-    // gasta. Cobrar só `1,25` deixaria passar uma fita sem saia (beira em
-    // escada de novo) e cobrar só `2,25` deixaria passar quem engordasse
-    // o traço visível fingindo que era AA.
-    expect(material.linewidth).toBe(LARGURA_DA_FITA_PX + SAIA_DO_AA_PX);
-    expect(LARGURA_DA_FITA_PX).toBe(1.25);
-    expect(SAIA_DO_AA_PX).toBe(1);
+    // OS DOIS LITERAIS DO EYES (§5d + §5g, item 120 · L9): a fita nasce
+    // com a largura de REPOUSO, sem saia nenhuma somada — a saia do AA
+    // foi aposentada em 31/08 e quem suaviza é o `samples: 4` do alvo do
+    // composer. Os números são os do `_orbitLinesOpts` deles.
+    expect(material.linewidth).toBe(LARGURA_DA_FITA_PX);
+    expect(LARGURA_DA_FITA_PX, 'o literal do Eyes é 1,2 — 1,25 era estimativa').toBe(1.2);
+    expect(LARGURA_DO_HOVER_PX).toBe(2);
     // em unidades de MUNDO a largura deixaria de ser um pixel e passaria
     // a encolher com a distância — o oposto do que a fita é
     expect(material.worldUnits).toBe(false);
-    // sem MSAA nesta casa (o renderer nasce com `antialias: false`), a
-    // cobertura não teria quem a amostrasse
+    // MESMO com MSAA no alvo: o alfa da fita é um uniform por laço, não
+    // um alfa por fragmento — não há cobertura a escrever
     expect(material.alphaToCoverage).toBe(false);
     expect(material.resolution.x, 'a camada escreveu `resolution`').toBe(0);
     expect(material.resolution.y, 'a camada escreveu `resolution`').toBe(0);
@@ -865,17 +862,17 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
   }
 
   it('a fita ENGROSSA com a janela, e a régua é o pixel CSS (§5d · A3)', () => {
-    // A LEI: `1,25 · max(1, min(lado CSS)/800)`, e a saia SOMA DEPOIS.
+    // A LEI: `1,2 · max(1, min(lado CSS)/800)`.
     //
     // NA JANELA DE REFERÊNCIA o fator é 1 e a fita é a de sempre.
     expect(larguraVisivelDaFitaPx({ larguraPx: 1200, alturaPx: 800, pixelRatio: 1 }))
-      .toBeCloseTo(1.25, 12);
+      .toBeCloseTo(1.2, 12);
     // ABAIXO DELA a fita NÃO encolhe — o `max` é piso, não escala
     expect(larguraVisivelDaFitaPx({ larguraPx: 400, alturaPx: 300, pixelRatio: 1 }))
-      .toBeCloseTo(1.25, 12);
+      .toBeCloseTo(1.2, 12);
     // ACIMA DELA cresce na proporção do LADO MENOR: 900/800 = 1,125
     expect(larguraVisivelDaFitaPx({ larguraPx: 1600, alturaPx: 900, pixelRatio: 1 }))
-      .toBeCloseTo(1.25 * 1.125, 12);
+      .toBeCloseTo(1.2 * 1.125, 12);
 
     // A ARMADILHA (i) DO ITEM 83, e é ela que este bloco existe para
     // pegar: o `QuadroEmPx` fala em px de DISPOSITIVO. Uma janela de
@@ -884,162 +881,197 @@ describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
     // fator 2,25 no lugar de 1,125, uma fita com o DOBRO da grossura.
     const retina = { larguraPx: 2400, alturaPx: 1800, pixelRatio: 2 };
     expect(larguraVisivelDaFitaPx(retina), 'a fita mediu px de dispositivo')
-      .toBeCloseTo(1.25 * 1.125, 12);
+      .toBeCloseTo(1.2 * 1.125, 12);
     // e a invariância que a casa exige de tudo que tem tamanho de tela: a
     // MESMA janela em CSS dá a MESMA fita em 1×, 1,5× e 2×
     for (const dpr of [1, 1.5, 2, 3]) {
       expect(
         larguraVisivelDaFitaPx({ larguraPx: 1200 * dpr, alturaPx: 900 * dpr, pixelRatio: dpr }),
         `dpr ${dpr}`
-      ).toBeCloseTo(1.25 * 1.125, 12);
+      ).toBeCloseTo(1.2 * 1.125, 12);
     }
 
-    // E O QUADRO ESCREVE ISSO NO MATERIAL, com a saia por cima — os DOIS
-    // números, da mesma conta. Sem esta metade a lei viveria numa função
-    // pura que ninguém chama.
-    expect(larguraNoQuadro(retina)).toBeCloseTo(1.25 * 1.125 + SAIA_DO_AA_PX, 12);
+    // E O FATOR ALCANÇA A LARGURA DO HOVER (§5g): as duas larguras de
+    // fábrica passam pelo MESMO esticão, senão a fita apontada deixaria
+    // de crescer com a janela e o salto do hover encolheria em telas
+    // grandes exatamente onde ele precisa ser visto.
+    expect(larguraVisivelDaFitaPx(retina, LARGURA_DO_HOVER_PX))
+      .toBeCloseTo(LARGURA_DO_HOVER_PX * 1.125, 12);
+
+    // E O QUADRO ESCREVE ISSO NO MATERIAL, sem saia nenhuma somada. Sem
+    // esta metade a lei viveria numa função pura que ninguém chama.
+    expect(larguraNoQuadro(retina)).toBeCloseTo(1.2 * 1.125, 12);
     expect(larguraNoQuadro({ larguraPx: 800, alturaPx: 800, pixelRatio: 1 }))
-      .toBeCloseTo(LARGURA_DA_FITA_PX + SAIA_DO_AA_PX, 12);
-    // A ARMADILHA (ii): a saia é 1 px CSS de rampa em QUALQUER janela, e
-    // não uma fração da largura. Multiplicá-la pelo fator daria 2,53125.
-    expect(larguraNoQuadro(retina) - larguraVisivelDaFitaPx(retina))
-      .toBeCloseTo(SAIA_DO_AA_PX, 12);
+      .toBeCloseTo(LARGURA_DA_FITA_PX, 12);
   });
 
-  it('a SAIA suaviza a beira, e o miolo acompanha a largura viva (§5d · A2)', () => {
+  it('a BEIRA é DURA e o miolo é CHAPADO — a saia morreu (§5d · L5)', () => {
     // O FRAGMENTO É TEXTO, e em Node não há GPU: o que se afere é a
     // cirurgia que a camada instala, rodando o `onBeforeCompile` à mão
     // sobre um fragment com a forma do `LineMaterial`. É o mesmo shader
     // que o navegador compilaria.
+    //
+    // O QUE ESTE DENTE COBRA é a APOSENTADORIA da saia (item 120, F1):
+    // de 24/08 a 31/08 o fragmento tinha uma rampa de `fwidth` que
+    // suavizava a beira por dentro — a resposta desta casa à falta de
+    // MSAA. Medida no mergulho 08, essa rampa tomava a fita INTEIRA
+    // (`35, 161, 179, 151, 12`, um morro sem platô) enquanto a
+    // referência dá `0, 77, 153, 153, 51, 0`, degraus em quartos exatos
+    // com DOIS pixels de topo. Miolo chapado, beira dura, e o MSAA do
+    // alvo do composer fazendo o resto.
     const orbitas = new Orbitas();
     orbitas.ligado = true;
     const material = materialDe(orbitas);
     const ALVO = 'gl_FragColor = vec4( diffuseColor.rgb, alpha );';
     const shader = compilarDeVerdade(material);
     const fonte = shader.fragmentShader;
-    // A SAIA EXISTE, e o nome é `uMiolo` — `nucleo` é o disco da cessão,
-    // e trocar os dois seria trocar a largura pelo buraco
-    expect(fonte, 'a saia do AA sumiu do fragmento').toContain('uMiolo');
-    expect(fonte).toContain('float u = abs(vUv.x);');
-    expect(fonte).toContain('fwidth(u)');
+    // O TRECHO QUE É NOSSO — do `<color_fragment>` ao `gl_FragColor`. O
+    // recorte importa: o `LineMaterial` de fábrica usa `fwidth` e
+    // `vUv.x` na calota redonda (que o `USE_DASH` do §5c já descarta
+    // antes), e cobrar o arquivo inteiro acusaria código do three em vez
+    // do nosso.
+    const nosso = fonte.slice(fonte.indexOf('#include <color_fragment>'), fonte.indexOf(ALVO));
+    // NENHUMA DAS TRÊS PEÇAS DA SAIA sobrevive — e são três nomes
+    // porque uma volta parcial (o uniform sem a rampa, ou a rampa com
+    // outro nome) é a forma que a regressão teria.
+    expect(fonte, 'o uniform da saia voltou').not.toContain('uMiolo');
+    expect(nosso, 'a fita voltou a ler a largura no fragmento')
+      .not.toContain('vUv.x');
+    expect(nosso, 'a rampa analítica voltou').not.toContain('fwidth');
+    expect(shader.uniforms.uMiolo, 'o uniform da saia ainda é declarado')
+      .toBeUndefined();
     // NÃO É TUBO: o miolo fica chapado. O `sqrt(1−u²)` foi a leitura
     // errada de 24/08 e está PROIBIDO pelo item 83 — se voltar, volta
     // aqui em vermelho.
     expect(fonte, 'o perfil de tubo voltou: a fita é CHAPADA').not.toContain('sqrt');
-    // A ORDEM DO §5d: a saia resolve a largura ANTES de a cessão abrir o
-    // buraco, e as duas ANTES do `gl_FragColor`.
-    expect(fonte.indexOf('uMiolo - pixel')).toBeLessThan(fonte.indexOf('uNucleo.w > 0.0'));
+    // O QUE FICOU no fragmento é a CESSÃO, e ela vem antes do
+    // `gl_FragColor` como sempre veio (§5d)
+    expect(fonte).toContain('uNucleo.w > 0.0');
     expect(fonte.indexOf('uNucleo.w > 0.0')).toBeLessThan(fonte.indexOf(ALVO));
-
-    // O MIOLO É A FRAÇÃO CHAPADA da largura inchada, e ele ANDA COM A
-    // JANELA (§5d): com a saia fixa e a largura crescendo, uma fração
-    // literal no GLSL mentiria em toda janela grande.
-    const miolo = () => shader.uniforms.uMiolo.value as number;
-    const cam = new THREE.PerspectiveCamera(35, 4 / 3, 1e-9, 1e6);
-    cam.updateMatrixWorld(true);
-    const tan = Math.tan((35 * Math.PI) / 360);
-    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
-
-    orbitas.update(cam, { larguraPx: 800, alturaPx: 800, pixelRatio: 1 }, tan, 0, null, 'atlas');
-    expect(miolo(), 'a janela de referência: 1,25 de 2,25')
-      .toBeCloseTo(LARGURA_DA_FITA_PX / (LARGURA_DA_FITA_PX + SAIA_DO_AA_PX), 12);
-
-    const grande = { larguraPx: 2400, alturaPx: 1800, pixelRatio: 2 };
-    orbitas.update(cam, grande, tan, 0, null, 'atlas');
-    const visivel = larguraVisivelDaFitaPx(grande);
-    expect(miolo(), 'o miolo ficou preso na janela de referência')
-      .toBeCloseTo(visivel / (visivel + SAIA_DO_AA_PX), 12);
-    // e é o MESMO par de números que o material recebeu: a beira que o
-    // shader suaviza é a beira que a geometria desenhou
-    expect(material.linewidth).toBeCloseTo(visivel + SAIA_DO_AA_PX, 12);
-    expect(miolo() * material.linewidth).toBeCloseTo(visivel, 12);
     orbitas.dispose();
   });
 
-  it('o CENTRO da fita nunca perde brilho, nem em pixelRatio 1 (§5d)', () => {
-    // O DEFEITO QUE ISTO PEGA, e ele foi MEDIDO por auditoria em 26/08:
-    // `fwidth(u)` cresce quando a fita tem poucos pixels de DISPOSITIVO.
-    // Em `pixelRatio` 1 a fita inchada vale 2,25 px, `fwidth` dá 0,889
-    // contra um miolo de 0,556, e sem o grampo o começo da rampa cai em
-    // −0,333: o `smoothstep` morde o EIXO e o centro perde 15,6% de
-    // brilho. Isso é PERFIL ATRAVÉS DA LARGURA, que o item 83 proíbe.
+  it('o grampo do item 83-B1 perdeu a máquina que produzia o defeito (§5d)', () => {
+    // A HISTÓRIA, e ela é por que este dente existe: o grampo
+    // `max(uMiolo − pixel, 0)` foi o conserto de 26/08. Sem ele, em
+    // `pixelRatio` 1 a fita inchada valia 2,25 px de dispositivo,
+    // `fwidth` dava 0,889 contra um miolo de 0,556, o começo da rampa
+    // caía em −0,333 e o `smoothstep` mordia o EIXO — o centro perdia
+    // 15,6% de brilho. Isso é PERFIL ATRAVÉS DA LARGURA, que o item 83
+    // proíbe pelo nome.
     //
-    // E O REGIME É ALCANÇÁVEL: o preset `performance` do `engine.ts` tem
-    // `pixelRatio` 1,0 — por `?q=performance`, por auto-degradação
-    // abaixo de 34 fps, e em qualquer monitor não-Retina.
-    const miolo = LARGURA_DA_FITA_PX / (LARGURA_DA_FITA_PX + SAIA_DO_AA_PX);
-
-    // A LARGURA INCHADA EM PX DE DISPOSITIVO, nos dois regimes. Em dpr 1
-    // a janela de referência dá 2,25; em dpr 2, 4,5.
-    const dpr1 = (LARGURA_DA_FITA_PX + SAIA_DO_AA_PX) * 1;
-    const dpr2 = (LARGURA_DA_FITA_PX + SAIA_DO_AA_PX) * 2;
-
-    // O EIXO É PLENO NOS DOIS, e nas duas inclinações. O pior caso é a
-    // fita a 45°, que TODA elipse tem em algum arco.
-    for (const [nome, largura] of [['dpr 1', dpr1], ['dpr 2', dpr2]] as const) {
-      for (const diagonal of [false, true]) {
-        const pixel = pixelDaSaia(largura, diagonal);
-        expect(
-          perfilDaSaia(0, miolo, pixel),
-          `${nome}${diagonal ? ' a 45°' : ''}: o centro da fita perdeu brilho`
-        ).toBeCloseTo(1, 12);
-      }
-    }
-
-    // ...e a BEIRA continua morrendo, senão o grampo teria matado a saia
-    for (const largura of [dpr1, dpr2]) {
-      expect(perfilDaSaia(1, miolo, pixelDaSaia(largura))).toBeCloseTo(0, 12);
-    }
-
-    // O PLATÔ EXISTE EM dpr 2 e NÃO em dpr 1, e o teste diz as duas
-    // coisas — é essa a honestidade que o item passou a carregar: o
-    // miolo é chapado QUANDO HÁ LARGURA para ele, e com 2,25 px de
-    // dispositivo não há. Em dpr 2 alinhada o começo da rampa é 0,111,
-    // então metade do caminho até ele ainda está cheio.
-    expect(
-      perfilDaSaia(0.05, miolo, pixelDaSaia(dpr2)),
-      'dpr 2: o platô do miolo sumiu'
-    ).toBeCloseTo(1, 12);
-    expect(
-      perfilDaSaia(0.05, miolo, pixelDaSaia(dpr1)),
-      'dpr 1: não HÁ platô com 2,25 px de dispositivo, e o item não promete um'
-    ).toBeLessThan(1);
-    // ...e NEM MESMO em dpr 2 o platô existe no arco a 45°, porque
-    // `fwidth` é `|dFdx| + |dFdy|` e cresce √2 vezes ali. Toda elipse
-    // tem os dois arcos, então o item não pode prometer platô em termos
-    // absolutos nem na tela dele. É esta linha que faz o fator diagonal
-    // de `pixelDaSaia` carregar peso: sem ela, apagá-lo passava verde.
-    expect(
-      perfilDaSaia(0.05, miolo, pixelDaSaia(dpr2, true)),
-      'dpr 2 a 45°: o platô não existe aqui, e o teste tem de saber disso'
-    ).toBeLessThan(1);
-    // e os DOIS limiares, em px de dispositivo, escritos como número: o
-    // platô nasce acima de 3,60 px alinhada e de 5,09 px a 45°
-    expect(2 / miolo).toBeCloseTo(3.6, 2);
-    expect((2 * Math.SQRT2) / miolo).toBeCloseTo(5.09, 2);
-
-    // O GRAMPO SÓ SOBE ALFA, nunca desce: onde o começo já era positivo
-    // ele não muda um bit, e é isso que faz o conserto ser seguro.
-    const semGrampo = (u: number, pixel: number) => {
-      const inicio = miolo - pixel;
-      const t = Math.min(1, Math.max(0, (u - inicio) / (1 - inicio)));
-      return 1 - t * t * (3 - 2 * t);
-    };
-    for (const u of [0, 0.1, 0.3, 0.6, 0.9]) {
-      const p2 = pixelDaSaia(dpr2);
-      expect(perfilDaSaia(u, miolo, p2), `dpr 2 alinhada em u=${u}`)
-        .toBeCloseTo(semGrampo(u, p2), 12);
-      const p1 = pixelDaSaia(dpr1);
-      expect(perfilDaSaia(u, miolo, p1), `dpr 1 em u=${u}: o grampo baixou o alfa`)
-        .toBeGreaterThanOrEqual(semGrampo(u, p1) - 1e-12);
-    }
-
-    // ...e o shader carrega o MESMO grampo. Sem este pino, a conta de
-    // cima viveria numa função pura que a GPU não lê.
+    // O QUE MUDOU EM 31/08 é que o defeito perdeu a máquina: não há mais
+    // rampa nenhuma no fragmento, então não há começo de rampa para
+    // ficar negativo. O dente não cobra mais o grampo (ele não existe);
+    // cobra que NADA no fragmento faça o alfa depender da distância ao
+    // eixo — que é o defeito em si, e não a peça que o consertava.
+    //
+    // E O REGIME CONTINUA ALCANÇÁVEL: o preset `performance` do
+    // `engine.ts` tem `pixelRatio` 1,0 — por `?q=performance`, por
+    // auto-degradação abaixo de 34 fps, e em qualquer monitor
+    // não-Retina. É por isso que ele é o tier SEM MSAA: a beira dura
+    // fica dura, e é a escolha declarada.
     const orbitas = new Orbitas();
     const fonte = compilarDeVerdade(materialDe(orbitas)).fragmentShader;
-    expect(fonte, 'o grampo do eixo sumiu do fragmento')
-      .toContain('smoothstep(max(uMiolo - pixel, 0.0), 1.0, u)');
+    // O TRECHO QUE É NOSSO — do `<color_fragment>` ao `gl_FragColor`. É
+    // ali que a rampa morava, e é ali que ela não pode voltar por outro
+    // nome. (A calota redonda do `LineMaterial` de fábrica usa `fwidth`
+    // logo acima e é código do three, descartado pelo `USE_DASH`.)
+    const corpo = fonte.slice(
+      fonte.indexOf('#include <color_fragment>'),
+      fonte.indexOf('gl_FragColor = vec4( diffuseColor.rgb, alpha );')
+    );
+    for (const proibido of ['fwidth', 'dFdx', 'dFdy', 'smoothstep(max']) {
+      expect(corpo, `o perfil através da largura voltou por \`${proibido}\``)
+        .not.toContain(proibido);
+    }
+    // e a ÚNICA multiplicação do alfa que sobrou é a da cessão, cujo
+    // argumento é `gl_FragCoord` — a posição na TELA, não a distância ao
+    // eixo da fita
+    const multiplicacoes = corpo.match(/alpha \*=/g) ?? [];
+    expect(multiplicacoes.length, 'apareceu um segundo fator no alfa do pixel')
+      .toBe(1);
+    expect(corpo).toContain('length(gl_FragCoord.xy - uNucleo.xy)');
+    orbitas.dispose();
+  });
+
+  it('APONTAR O NOME ACENDE A ÓRBITA — largura e alfa, no mesmo quadro (§5g)', () => {
+    // O GESTO DO EYES (L11): quem dispara o hover é o RÓTULO, não a
+    // linha — `mouseenter` no `<div>` do nome, `hoverchange`, e o
+    // `TrailManager` engrossa a órbita daquele corpo. Não há picking da
+    // geometria da linha em lugar nenhum. Aqui a porta é o campo
+    // `hover`, escrito pelo director a partir do hit-test ÚNICO dos
+    // rótulos.
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const cam = new THREE.PerspectiveCamera(35, 4 / 3, 1e-9, 1e6);
+    cam.position.set(0, 0, 3e-5);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld(true);
+    const tan = Math.tan((35 * Math.PI) / 360);
+    const quadro = { larguraPx: 1600, alturaPx: 900, pixelRatio: 1 };
+    const linhaDe = (id: string) => {
+      const i = CORPOS_COM_ORBITA.findIndex((c) => c.id === id);
+      return orbitas.group.children[i] as unknown as {
+        material: { linewidth: number; opacity: number };
+        visible: boolean;
+      };
+    };
+
+    // EM REPOUSO: a largura é a de fábrica, esticada pela janela.
+    orbitas.hover = null;
+    orbitas.update(cam, quadro, tan, 0, null, 'atlas');
+    const emRepouso = larguraVisivelDaFitaPx(quadro);
+    expect(linhaDe('earth').material.linewidth).toBeCloseTo(emRepouso, 12);
+    const alfaEmRepouso = linhaDe('earth').material.opacity;
+    expect(alfaEmRepouso, 'a Terra não acendeu — o resto do dente não mede nada')
+      .toBeGreaterThan(0);
+
+    // APONTADA: 1,2 → 2 px CSS pelo MESMO fator de janela, e o alfa ao
+    // topo. NO MESMO QUADRO — nenhum tween, nenhum `dtS`, como no Eyes.
+    orbitas.hover = 'earth';
+    orbitas.update(cam, quadro, tan, 0, null, 'atlas');
+    expect(linhaDe('earth').material.linewidth)
+      .toBeCloseTo(larguraVisivelDaFitaPx(quadro, LARGURA_DO_HOVER_PX), 12);
+    expect(linhaDe('earth').material.linewidth / emRepouso)
+      .toBeCloseTo(LARGURA_DO_HOVER_PX / LARGURA_DA_FITA_PX, 12);
+    expect(linhaDe('earth').material.opacity).toBeGreaterThan(alfaEmRepouso);
+
+    // SÓ A LINHA DO PRÓPRIO CORPO, e não a família: é a diferença entre
+    // o hover (que responde ao dedo) e o foco (que declara o assunto).
+    expect(linhaDe('mars').material.linewidth).toBeCloseTo(emRepouso, 12);
+
+    // E ELE VOLTA no quadro seguinte, sem rastro: o hover não é estado
+    // que se persiga, é leitura do ponteiro deste quadro.
+    orbitas.hover = null;
+    orbitas.update(cam, quadro, tan, 0, null, 'atlas');
+    expect(linhaDe('earth').material.linewidth).toBeCloseTo(emRepouso, 12);
+    expect(linhaDe('earth').material.opacity).toBeCloseTo(alfaEmRepouso, 12);
+    orbitas.dispose();
+  });
+
+  it('o hover NÃO segura o obturador — ele não é transição (§5g · L10)', () => {
+    // POR QUE ISTO IMPORTA: `animando` é o que faz a captura esperar. O
+    // realce do foco entra nele porque persegue um alvo por decaimento
+    // exponencial; o hover NÃO, porque é escrito e lido no mesmo quadro.
+    // Se ele entrasse, um ponteiro parado sobre um nome travaria o gate
+    // de identidade para sempre.
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const cam = new THREE.PerspectiveCamera(35, 4 / 3, 1e-9, 1e6);
+    cam.position.set(0, 0, 3e-5);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld(true);
+    const tan = Math.tan((35 * Math.PI) / 360);
+    const quadro = { larguraPx: 1600, alturaPx: 900, pixelRatio: 1 };
+    orbitas.update(cam, quadro, tan, 0, null, 'atlas');
+    expect(orbitas.animando).toBe(false);
+    orbitas.hover = 'earth';
+    orbitas.update(cam, quadro, tan, 0.016, null, 'atlas');
+    expect(orbitas.animando, 'o hover virou transição e trava a captura')
+      .toBe(false);
     orbitas.dispose();
   });
 
