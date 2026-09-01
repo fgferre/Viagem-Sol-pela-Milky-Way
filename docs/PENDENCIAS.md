@@ -1800,6 +1800,15 @@ já que o efeito só se manifesta como franja de 1 px em silhuetas de alto
 contraste. Zooms `capturas/item117-zoom-*.png` (com e `-semCA`), perfis e
 a peça em `capturas/item117-limbo.json`.
 
+**126. `?foco=mars` cai na estrela "Marsic", não em Marte.** Achado em
+01/09 pelas fotos A/B da F6 (onda 125), sem obra: pedir a URL com
+`foco=mars` abre a ficha "MARSIC · ESTRELA · κ Herculis" em vez do
+planeta — o resolvedor de foco casa por prefixo/semelhança de nome e a
+estrela vence o planeta. Foto do flagrante ficou com a sessão; refazer
+é trivial (`?foco=mars` no navegador). Casa do conserto: onde a URL
+vira corpo (prioridade para corpos do sistema sobre estrelas, ou casar
+exato antes de aproximado).
+
 ---
 
 ## BAIXA — dívida interna, ninguém vê
