@@ -1845,19 +1845,7 @@ mineracao/. O gabarito docs/reference/contrato-eyes-linhas-rotulos.md
 ficou corrigido (§2.2b: as quatro portas; A4 e L3/L4 refeitas).
 *(Ponte: nasceu como "120" nos commits `335fa9c`/`60190b9`.)*
 
-**127. Re-baseline das 54 vistas do `ab-identidade` — pendente do
-fechamento da onda 125.** A onda mudou pixels de propósito em toda
-vista com órbita (MSAA, linhas, régua nova da F7); o dono cortou o
-re-baseline no fechamento (§19). Até refazer o retrato-base, o
-detector de regressão acusa a onda inteira como "diferença" — rodá-lo
-exige primeiro capturar o retrato novo em árvore limpa do selo da F7.
 
-**128. O gate de identidade é CEGO a rótulo (achado da F2 da onda
-125).** As 54 vistas usam `?shot=2` e `.bare-mode` esconde o
-`label-canvas` (App.tsx:700): nenhum juiz de imagem da casa vê nomes.
-Prova de trabalho de rótulo é foto com HUD + medida. Dívida de
-instrumento: ou uma família de vistas com HUD entra no censo, ou o
-buraco fica declarado aqui.
 
 **120.** A histerese da régua de relevância nunca chegava a valer —
 **FECHADO em 31/08**; história no ARQUIVO. *(`prevDesenhados` era montado
