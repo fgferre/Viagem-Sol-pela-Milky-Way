@@ -6422,3 +6422,72 @@ Em worktree separada, sobre `981f0c0`:
 A prova 3 (item 119, o relógio do portal) segue reprovando com o MESMO
 desvio de 1,19e-2 do raio nas quatro corridas — antes e depois do
 conserto. Este item não a tocou.
+
+---
+
+## Item 120 — A histerese da régua de relevância nunca chegava a valer
+
+**O achado, verbatim do vivo (31/08):**
+
+**120. A histerese da régua de relevância nunca chega a valer (achado
+em 31/08, na peça 1 do bloco B; herdado do item 82).** `Rotulos.projetar`
+monta `prevDesenhados` a partir da lista NOVA do próprio quadro — objetos
+recém-criados por `projectCorpos`/`projectLabels`, em que `desenhado`
+ainda é `undefined` porque quem o escreve é o `LabelCanvas`, DENTRO do
+`onLabels` que vem depois. O conjunto sai portanto SEMPRE VAZIO, e o
+bônus de 20% de `pesoDoRotulo` — que existe para o corte por orçamento
+não piscar quando dois nomes de mesmo peso disputam a última vaga — não
+multiplica nada. O comentário no lugar diz o contrário ("o que o DESENHO
+marcou no quadro que acabou de sair da tela"), então é comentário que
+virou mentira. NÃO foi consertado de propósito: o conserto muda QUEM
+aparece na tela, e a rampa de 250/750 ms (peça 1) foi feita sob a regra
+de não mexer na régua. Casa do conserto: guardar as marcas do quadro
+ANTERIOR antes de reatribuir `lastLabels`, e medir o que muda na abertura
+do Atlas. A rampa, enquanto isso, AMORTECE o sintoma — quem perde a vaga
+leva 750 ms para apagar em vez de um quadro.
+
+### O conserto (31/08, na faxina da estação do item 115)
+
+Três linhas, e a casa do conserto era a que o item já apontava: a
+colheita de `prevDesenhados` subiu para o TOPO do bloco, antes de
+`lastLabels` ser reescrito. Ali a lista ainda é a do quadro que saiu da
+tela, e ela chega carregando as marcas que o `LabelCanvas` escreveu nos
+PRÓPRIOS objetos — o `LabelCanvas` diz isso com todas as letras: *"O
+objeto é o mesmo que ele guarda em `lastLabels`, então a escrita chega lá
+sem plumbing."*
+
+### O que muda na tela, MEDIDO
+
+Cena de fronteira: Júpiter enquadrado com as luas
+(`?foco=jupiter&d=0.01`), relógio na taxa mais rápida da escada (115,7
+dias/s), janela 1600×1200 — 29 rótulos candidatos, **8 desenhados e 19
+cortados pela régua**, com cinco estrelas de peso parecido disputando as
+vagas que sobram. Um laço de `rAF` injetado na página lê
+`__director.rotulos.alvos` a cada QUADRO, monta a assinatura do que está
+`desenhado` e conta as viradas. Três corridas de 30 s por lado:
+
+| | trocas/min | configurações distintas |
+| --- | --- | --- |
+| antes | **816,7** (816,0 · 814,0 · 820,0) | 187 · 187 · 186 |
+| depois | **785,3** (786,0 · 794,0 · 776,0) | 166 · 168 · 163 |
+
+**−3,8% de trocas e −11% de configurações distintas**, sem sobreposição
+entre os dois conjuntos de corridas (o pior "antes" é 814, o melhor
+"depois" é 794). O efeito é modesto porque nesta cena a maior parte da
+agitação vem da COLISÃO, não do corte por orçamento — e a histerese só
+alcança o corte. Rastro: `capturas/item120-trocas-antes.json`,
+`capturas/item120-trocas-depois.json`, sonda em
+`capturas/item120-trocas.mjs`.
+
+### A guarda (§15: apagar a fiação tem de reprovar)
+
+Três casos novos em `src/three/director/rotulos.test.ts`, sobre uma
+bancada de catorze estrelas do mesmo tier (o orçamento é 10, então quatro
+ficam de fora): (1) a bancada CORTA de verdade — sem corte não há o que a
+histerese decida; (2) o pior colocado do primeiro quadro, marcado
+`desenhado` como o `LabelCanvas` faria, SOBREVIVE ao corte do segundo;
+(3) sem a marca ele continua cortado — a diferença é a marca, não a
+bancada.
+
+**Sabotagem em worktree:** a colheita devolvida para DEPOIS da reescrita
+de `lastLabels` (o código de até 31/08) faz o caso (2) **REPROVAR**.

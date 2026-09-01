@@ -19,6 +19,7 @@ import type { JourneyMeta } from '../cinematic/journey';
 import type { NamedStar } from '../config';
 import { CORPOS_DO_SISTEMA } from '../atlasConfig';
 import type { Planetas } from '../world/planetas/planetas';
+import { ORCAMENTO_DE_NOMES } from '../world/labels';
 import type { StarLabel } from '../world/labels';
 import type { Rotulos as TipoRotulos, QuadroDeRotulos } from './rotulos';
 
@@ -584,5 +585,85 @@ describe('os oclusores de rótulo são os corpos do quadro (item 115)', () => {
     expect(chaves).toContain('AoLado');
     // a própria Terra segue com nome: nenhum corpo é oclusor de si
     expect(chaves).toContain('corpo:earth');
+  });
+});
+
+describe('a histerese da régua enxerga o quadro ANTERIOR (item 120)', () => {
+  /**
+   * UM CÉU CHEIO O BASTANTE PARA A RÉGUA CORTAR. `ORCAMENTO_DE_NOMES` é
+   * 10; catorze estrelas do mesmo tier (mesma prioridade) põem quatro
+   * nomes do lado de fora, e o desempate entre pesos iguais é a
+   * DISTÂNCIA — então quem é cortado é o mais longe. É exatamente a
+   * disputa em que o bônus de 20% de `pesoDoRotulo` decide.
+   */
+  const CEU_CHEIO: NamedStar[] = Array.from({ length: 14 }, (_, i) => ({
+    n: `E${i}`,
+    // espalhadas pela largura do quadro, longe umas das outras: o que se
+    // quer medir é o corte por ORÇAMENTO, não a colisão de caixas
+    x: -1.3 + i * 0.2,
+    y: (i % 2 === 0 ? 1 : -1) * 0.35,
+    z: 0,
+    m: 1,
+    s: 'A0V',
+    d: 5 + i,
+    t: 0,
+  }));
+
+  function bancadaCheia() {
+    const rotulos = new Rotulos({
+      onLabels: () => {},
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({}) as JourneyMeta,
+      raioFisicoDe: () => null,
+    });
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 0.001, 100);
+    cam.position.set(0, 0, 5);
+    cam.updateMatrixWorld();
+    const quadro: QuadroDeRotulos = {
+      fase: 'free', named: CEU_CHEIO, dHome: 5, planetas: null, foco: null,
+      nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+    };
+    /** um quadro inteiro: a rampa completa (250 ms) e a projeção */
+    const passo = () => {
+      rotulos.tique(1);
+      rotulos.projetar(cam, quadro);
+    };
+    return { rotulos, passo };
+  }
+
+  it('a bancada CORTA de verdade — sem corte não há o que a histerese decida', () => {
+    const { rotulos, passo } = bancadaCheia();
+    passo();
+    const cortados = rotulos.alvos.filter((l) => l.cortadoPelaRegua);
+    expect(cortados.length).toBeGreaterThan(0);
+    expect(rotulos.alvos.length - cortados.length).toBe(ORCAMENTO_DE_NOMES);
+  });
+
+  it('quem o DESENHO marcou no quadro anterior sobrevive ao corte no seguinte', () => {
+    const { rotulos, passo } = bancadaCheia();
+    passo();
+    // o pior colocado do primeiro quadro: cortado pela régua
+    const perdedor = rotulos.alvos.filter((l) => l.cortadoPelaRegua).at(-1)!.key;
+
+    // O QUE O `LabelCanvas` FAZ, encenado: ele escreve `desenhado` nos
+    // objetos que o Director guarda em `lastLabels`, DEPOIS deste tique.
+    for (const l of rotulos.alvos) l.desenhado = l.key === perdedor;
+
+    passo();
+    const depois = rotulos.alvos.find((l) => l.key === perdedor)!;
+    expect(depois.cortadoPelaRegua).toBeFalsy();
+  });
+
+  it('...e sem a marca ele continua cortado — a diferença é a marca, não a bancada', () => {
+    const { rotulos, passo } = bancadaCheia();
+    passo();
+    const perdedor = rotulos.alvos.filter((l) => l.cortadoPelaRegua).at(-1)!.key;
+    // ninguém marcado: é o mesmo segundo quadro, sem a única diferença
+    for (const l of rotulos.alvos) l.desenhado = false;
+    passo();
+    expect(rotulos.alvos.find((l) => l.key === perdedor)!.cortadoPelaRegua).toBe(true);
   });
 });

@@ -1727,22 +1727,17 @@ Terra 1,74 M km e a prova mede contra o lugar velho. Família do
 `?jd=` (e a prova acompanhar) ou se a prova deve medir relativo à
 Terra.
 
-**120. A histerese da régua de relevância nunca chega a valer (achado
-em 31/08, na peça 1 do bloco B; herdado do item 82).** `Rotulos.projetar`
-monta `prevDesenhados` a partir da lista NOVA do próprio quadro — objetos
-recém-criados por `projectCorpos`/`projectLabels`, em que `desenhado`
-ainda é `undefined` porque quem o escreve é o `LabelCanvas`, DENTRO do
-`onLabels` que vem depois. O conjunto sai portanto SEMPRE VAZIO, e o
-bônus de 20% de `pesoDoRotulo` — que existe para o corte por orçamento
-não piscar quando dois nomes de mesmo peso disputam a última vaga — não
-multiplica nada. O comentário no lugar diz o contrário ("o que o DESENHO
-marcou no quadro que acabou de sair da tela"), então é comentário que
-virou mentira. NÃO foi consertado de propósito: o conserto muda QUEM
-aparece na tela, e a rampa de 250/750 ms (peça 1) foi feita sob a regra
-de não mexer na régua. Casa do conserto: guardar as marcas do quadro
-ANTERIOR antes de reatribuir `lastLabels`, e medir o que muda na abertura
-do Atlas. A rampa, enquanto isso, AMORTECE o sintoma — quem perde a vaga
-leva 750 ms para apagar em vez de um quadro.
+**120.** A histerese da régua de relevância nunca chegava a valer —
+**FECHADO em 31/08**; história no ARQUIVO. *(`prevDesenhados` era montado
+da lista NOVA do próprio quadro, em que `desenhado` ainda é `undefined`
+porque quem o escreve é o `LabelCanvas`, no `onLabels` que vem depois — o
+conjunto saía SEMPRE vazio e o bônus de 20% de `pesoDoRotulo` não
+multiplicava nada. A colheita passou para ANTES da reescrita de
+`lastLabels`. Muda QUEM aparece em cena de empate, e está medido: numa
+cena de fronteira — Júpiter enquadrado com as luas e cinco estrelas
+disputando as vagas — as trocas do conjunto desenhado caem de **816,7
+para 785,3 por minuto** (−3,8%, 3 corridas de 30 s por lado) e as
+configurações distintas de **187 para 166** (−11%).)*
 
 **121.** O juiz da beira da fita não conseguia medir a perna dpr 1 com o
 gradiente — **FECHADO em 31/08**; história no ARQUIVO. *(A crista deixou

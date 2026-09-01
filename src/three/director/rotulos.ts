@@ -614,6 +614,18 @@ export class Rotulos {
       return;
     }
     if ((fase === 'journey' || fase === 'free' || fase === 'atlas') && named) {
+      // AS MARCAS DO QUADRO ANTERIOR, colhidas ANTES de `lastLabels` ser
+      // reescrito (item 120). Quem escreve `desenhado` é o `LabelCanvas`,
+      // e ele corre DEPOIS deste tique, dentro do `onLabels` — então
+      // `lastLabels` chega aqui ainda carregando as marcas do quadro que
+      // saiu da tela, e é exatamente esse conjunto que a histerese quer.
+      // Colher DEPOIS da reescrita, como se fazia até 31/08, lia a lista
+      // NOVA: `projectCorpos`/`projectLabels` constroem objetos do zero a
+      // cada quadro, com `desenhado` ainda `undefined`, e o conjunto saía
+      // SEMPRE vazio — o bônus de `pesoDoRotulo` não multiplicava nada.
+      this.prevDesenhados = new Set(
+        this.lastLabels.filter((l) => l.desenhado).map((l) => l.key)
+      );
       if (fase === 'journey') {
         // REGRA EDITORIAL da revisão: o assunto do beat sempre tem nome
         // (target, etiqueta forçada, sem fades) e o fundo fica mudo
@@ -736,11 +748,6 @@ export class Rotulos {
         this.emitDest(undefined, cam.position, named);
       }
       this.prevLabelKeys = new Set(this.lastLabels.map((l) => l.key));
-      // o que o DESENHO marcou no quadro que acabou de sair da tela —
-      // a histerese é sobre o que se VIU, não sobre o que se projetou
-      this.prevDesenhados = new Set(
-        this.lastLabels.filter((l) => l.desenhado).map((l) => l.key)
-      );
       this.publicar(this.lastLabels, dtDaRampa, fase);
     } else if (fase !== 'journey') {
       this.lastLabels = [];
