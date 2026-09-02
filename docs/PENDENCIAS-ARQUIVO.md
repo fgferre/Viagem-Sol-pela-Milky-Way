@@ -8670,3 +8670,23 @@ direita do quadro; depois ele preenche o quadro. Guarda de profundidade:
 o near menor reduz a precisão do depth longe da câmera (a 200 mil km, de
 80 m para ~40 km), o que os juízes `z-fighting` e `ab-identidade` medem
 no fecho da rodada.
+
+## Item 136 — As órbitas das luas novas de Saturno pareciam erradas, "todas muito próximas"
+
+Palavras dele, 02/09: *"Me parece que tem algum erro nas órbitas dessas
+luas novas que apareceram. Eu acho que tem que ser verificado isso com
+mais cuidado... elas estão com as órbitas todas muito próximas, isso
+está muito estranho."*
+
+**Verificação (02/09, mão do coordenador):** os elementos das nove
+(`elementosOrbitais.ts`) recomputados em km e dias e comparados com a
+tabela da NASA/JPL lida na hora (SAT415): os nove raios batem (Febe a
+0,17 %, média × osculante); os períodos de Atlas–Jano ficam 0,4–0,5 %
+abaixo dos da JPL (outro período publicado na fonte do projeto Saturn),
+sem efeito na órbita desenhada. O plano das sete internas é o equador de
+Saturno (i 28,05°, Ω 169,5° na eclíptica), o mesmo de Mimas e Encélado.
+Rastro em `capturas/item136-orbitas-vs-nasa.txt`; fotos de cima do polo
+em `capturas/item136-orbitas-de-cima-{5r,14r}.png`. **Sem defeito:** sete
+das nove orbitam mesmo entre 133 e 152 mil km — Pã e Dáfnis dentro das
+divisões do anel A, Atlas na borda, Prometeu e Pandora nos dois lados do
+anel F, Jano e Epimeteu co-orbitais. A estranheza é a física.

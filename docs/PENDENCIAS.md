@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 136.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 137.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -318,6 +318,8 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
 Fotos do site dele em `capturas/item134-saturn-dele-*.png`.
 
 **135.** Perto de Saturno ou dos anéis a imagem cortava "como se batesse na lente" — **FECHADO em 02/09** (o piso do plano próximo era metade do raio do corpo, 30 mil km em Saturno; virou um milésimo, `PISO_DO_NEAR_EM_RAIOS`); ARQUIVO.
+
+**136.** As órbitas das luas novas de Saturno pareciam erradas, "todas muito próximas" — **FECHADO em 02/09 por verificação**: os nove raios batem com a NASA/JPL (`capturas/item136-orbitas-vs-nasa.txt`); sete delas orbitam de fato entre 133 e 152 mil km, na borda do anel; ARQUIVO.
 
 **133.** Os anéis de Saturno ficavam estranhos do lado de sombra —
 **FECHADO em 02/09** na S1 do item 134 (a física estava certa; faltava o
