@@ -179,12 +179,25 @@ Fotos do site dele em `capturas/item134-saturn-dele-*.png`.
 iluminado.** Palavras dele, 02/09: *"os anéis de Saturno ficam um pouco
 estranhos: do lado que está sendo iluminado fica ok, mas o lado que não
 está sendo iluminado pelo Sol fica um pouco estranho. Não sei se era pra
-ser assim mesmo, queria uma verificação visual."* Em curso: fotos do
-lado iluminado e do lado de sombra, de vários ângulos, mais a leitura do
-que o desenho faz com a luz que ATRAVESSA os anéis (na física real o
-lado de sombra não é preto: as partes finas, anéis A e C, deixam passar
-luz e ficam claras; o anel B, denso, fica escuro; a sombra do planeta
-cai sobre eles).
+ser assim mesmo, queria uma verificação visual."* **VERIFICADO em
+02/09 (seis fotos com ângulo medido, luminância por anel, sombra do globo
+conferida em 180 azimutes — `capturas/item133-saturno-*.png`): a física
+está certa.** O anel é camada de partículas com luz transmitida no lado
+de sombra; hoje (Sol a 7° do plano, pós-equinócio de 2025) a face de
+sombra fica quase toda preta e só o anel C e a divisão de Cassini
+transmitem — em 2017, com o Sol a 27°, sai a assinatura clássica de
+Cassini (B preto, C e Cassini claros, A médio). O "estranho" é uma
+AUSÊNCIA, não um erro: **(a) zero planetshine** — o globo de Saturno não
+ilumina os próprios anéis (na realidade é a fonte dominante da face
+escura perto do equinócio; ~5% no D, ~0,2% no F), então a umbra sai em 0
+literal e o B/A viram buraco em vez de cinza fraco; conserto é obra
+(termo de irradiância do globo em `ANEL_FRAG`, antes da sombra) e é o
+gêmeo do ringshine do bloco C do 134 — os dois juntos são "iluminação
+mútua globo↔anel". **(b)** franja azul nas bordas de alfa baixo (a matte
+da placa vaza pela janela `smoothstep(0,30–0,80)`; subir para ~0,55–0,95,
+com foto). **(c)** serrilhado de 1 px no contorno rasante (antialias de
+geometria fina, não do modelo de luz). **Decisão dele:** fazer (a)+(b)
+como parte da onda de Saturno do 134, ou deixar como está (declarado).
 
 **97.** A órbita acendia mais cedo no Retina — **FECHADO em 29/08**; ARQUIVO.
 
