@@ -125,7 +125,9 @@ objetos (catálogo de receitas `EntityUtils`, parentesco dependente do
 tempo, política de existência por quadro do `SceneManager`, camadas
 contextuais por proximidade) — o mergulho 05 traz o confronto. Obra a
 desenhar depois do estudo: catálogo, órbitas e texturas dos 40, sem
-quebrar a lei de um universo só. Saturno estava quase escuro mesmo com brilho assistido, e o modo
+quebrar a lei de um universo só.
+
+**91.** Saturno estava quase escuro mesmo com brilho assistido, e o modo
 real ficou escuro demais — **FECHADO em 26/08**, conferido por ele na Sala
 de Conferência (**C15**: a chapa do modo real, com a **R1** que ele escolheu
 na **Q14** embarcada e os +3 passos declarados no selo); história no
@@ -238,24 +240,29 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   `atlasConfig.test.ts` espera 30 luas (na lista do §19). Declarado: a
   fase orbital não é efeméride (elementos médios J2000 a dois corpos).
   Provas em `capturas/item134-s3-*`.
-- **S3c — PARIDADE do esculpido com o projeto dele (ABERTA, primeira
-  obra da próxima janela).** Palavras dele, 02/09, com o Hipérion dos
-  dois apps lado a lado: *"o app do Saturno continua entregando uma
-  qualidade geral muito maior nas luas... olhe a diferença gritante...
-  por quê?"* Lá: cor de regolito (bege/terroso), fundo de cratera
-  ESCURO dentro da própria cratera, paredes claras de gelo, crateras
-  fundas e grão fino de alto contraste. Aqui: branco uniforme, crateras
-  rasas e macias, pouco contraste. Suspeitas, a medir UMA por vez com o
-  método da S2b (o mesmo enquadramento nos dois apps, foto lado a lado):
-  (1) a cor por família e o escurecimento do fundo pelas máscaras de
-  cratera foram reescritos em GLSL e podem ter ficado fracos ou perdidos
-  — conferir os números dele em `moonMaterials.ts` contra
-  `esculpido.ts`; (2) a amplitude do grão fino (bump lendo o fbm) e a
-  profundidade das crateras (`craterDepth`, `detail` do icosaedro,
-  normais suavizadas no weld) contra os dele; (3) a exposição e o
-  "brilho assistido" da casa lavando o albedo para branco; (4) o pós
-  dele (grão, vinheta, aberração) contra o nosso. A lei dele vale: a
-  referência é o projeto dele; igualar, não suavizar.
+- **S3c — PARIDADE do esculpido com o projeto dele (o grão FEITO; a cor
+  ABERTA no juízo dele).** Palavras dele, 02/09: *"qualidade geral muito
+  maior nas luas... a diferença gritante"* — lá bege/terroso, fundo de
+  cratera escuro, grão fino de alto contraste; aqui branco e macio. Medido
+  ingrediente por ingrediente contra `moonMaterials.ts`: **(1) cor e
+  máscaras — NADA a consertar**: a tabela dele (`IRREGULAR_SURFACES`) e a
+  ordem de mistura estão letra por letra em `esculpido.ts`, e as máscaras
+  chegam ao fragmento (fundo > 0,5 em 11,1 % dos vértices de Hipérion,
+  borda 18,5 %, cavidade 16,6 %). **(2) grão fino — CONSERTADO**: a
+  tradução da S3 usara 3 oitavas normalizadas em [0,1]; o
+  `mx_fractal_noise_float` dele soma oitavas centradas em zero e não
+  normaliza (macro 5 oitavas ×2,05/0,52, micro 4 ×2,12/0,48). A altura de
+  bump saía com desvio 0,080 contra 0,302 dele, e a oitava mais fina
+  parava em 4,2× a escala de base contra 17,7×. Com as oitavas dele
+  (`bandaFbm`), o grão fino do disco iluminado vai de 0,97 % para 1,47 %
+  do brilho — o dele mede 1,56 %. **(3) exposição — RELATADA, não tocada**:
+  a chapa iluminada fica em 191/255 com R/B 1,08, a dele em 160 com R/B
+  1,19; a casa usa ACES a 1,05 (que dessatura para branco no alto da
+  curva) e ele usa AgX a 1,4 com Sol de 3,4 — é o tonemap COMPARTILHADO
+  com todo corpo (`engine.ts`), fora do esculpido. **(4) o pós dele —
+  RELATADO**: `filmGrain` 0,035, aberração cromática 1,008 e vinheta, que
+  ele não tem no nosso; é gosto e é decisão dele. Fotos
+  `capturas/item134-s3c-*`. A lei dele vale: igualar, não suavizar.
 - **S4 — os jatos de Encélado: FEITA em 02/09** (commit no selo desta
   linha; fotos conferidas e entregues). A matemática do projeto dele
   inteira (8 bocas nas listras de tigre, voo balístico com gravidade,

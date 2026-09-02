@@ -556,15 +556,35 @@ ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
 ${GLSL_BUMP_DO_ALBEDO}
 ${GLSL_RUIDO_DE_VALOR}
-float fbm3(vec3 p) {
-  return 0.5 * ruido(p) + 0.3 * ruido(p * 2.05) + 0.2 * ruido(p * 4.2);
+// AS DUAS BANDAS DELE, oitava por oitava. O mx_fractal_noise_float do
+// TSL soma oitavas CENTRADAS EM ZERO e NÃO normaliza pela soma das
+// amplitudes — é dessa soma que sai a amplitude do relevo. A tradução da
+// S3 usara três oitavas normalizadas de ruído em [0,1], e a conta da
+// diferença é o que o dono viu: a altura de bump saía com desvio 0,080
+// contra 0,302 destas bandas, e a oitava mais fina parava em 4,2× a
+// escala de base contra 17,7× (o grão fino sumia, e o relevo com ele).
+// Aqui as oitavas são as dele: macro 5
+// com lacunaridade 2,05 e ganho 0,52, micro 4 com 2,12 e 0,48.
+float bandaFbm(vec3 p, int oitavas, float lacunaridade, float ganho) {
+  float soma = 0.0;
+  float amp = 1.0;
+  float freq = 1.0;
+  for (int o = 0; o < 5; o++) {
+    if (o >= oitavas) break;
+    soma += amp * (2.0 * ruido(p * freq) - 1.0);
+    amp *= ganho;
+    freq *= lacunaridade;
+  }
+  return soma;
 }
 void main() {
   vec3 n = normSeguro(vNormal);
   vec3 d = normSeguro(vLocal);
   vec3 off = vec3(uSemente * 0.73, uSemente * -0.41, uSemente * 0.57);
-  float macro = clamp(fbm3(d * uRegolito.x + off), 0.0, 1.0);
-  float micro = clamp(fbm3(d * uRegolito.y + off * 3.1), 0.0, 1.0);
+  float macroBruto = bandaFbm(d * uRegolito.x + off, 5, 2.05, 0.52);
+  float microBruto = bandaFbm(d * uRegolito.y + off * 3.1, 4, 2.12, 0.48);
+  float macro = clamp(macroBruto * 0.5 + 0.5, 0.0, 1.0);
+  float micro = clamp(microBruto * 0.5 + 0.5, 0.0, 1.0);
   vec3 albedo = mix(uCorBase * (1.0 - uRegolito.z), uCorBase * (1.0 + uRegolito.z), macro);
   albedo *= micro * 0.08 + 0.96;
   albedo = mix(albedo, uCorCrista, vCratera.w * uMisturas.z);
@@ -578,8 +598,9 @@ void main() {
   // de tela fica CONSTANTE por face; alimentar o bump com elas
   // transformava a malha de 8.820 faces num mosaico de facetas duras.
   // As duas bandas de fbm são contínuas na superfície inteira — e são a
-  // MESMA altura de bump que ele usa: macro*0,62 + micro*0,38.
-  n = normalComBumpDoAlbedo(n, vLocal, macro * 0.62 + micro * 0.38);
+  // MESMA altura de bump que ele usa: macro*0,62 + micro*0,38, sobre as
+  // bandas BRUTAS (centradas em zero), que é onde mora a amplitude.
+  n = normalComBumpDoAlbedo(n, vLocal, macroBruto * 0.62 + microBruto * 0.38);
   float ndotlGeo = dot(n, uDirSolLocal);
   vec3 sombras = fatorDeEclipse(vLocal, n, ndotlGeo);
   vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
