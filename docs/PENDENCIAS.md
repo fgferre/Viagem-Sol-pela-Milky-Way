@@ -51,6 +51,20 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (01/09)
 
+**01/09 (noite — a FAXINA dos miúdos, ordem dele: "vamos tocar todos
+esses, coordene conforme nossos preceitos" + "verifique se ainda é
+problema hoje").** Verificação por leitura de código e git (mecanico):
+**123, 17, 15, 117, 119 AINDA REAIS; 27 PARCIAL (faltam as fixtures de
+POSIÇÃO e os quatro corpos no juiz de regressão); 22 quase morto** (as
+35 imagens citadas já não faltam — o LEIA-ME foi limpo em 12/08; sobra
+só a curadoria das 6 fotos do Sol, bancada com o olho dele, fora da
+faxina). Decisões de mecânica do coordenador: 15 liga coroa/ejeção ao
+NÍVEL DE QUALIDADE existente (Performance alivia), sem tela nova; 119
+conserta-se no JUIZ (mede relativo à Terra; o portal reaplicar o `?jd=`
+é decisão do 108). Ordem: executor visual (123, 17, 15, 117, com fotos),
+depois o mecânico (119, 27); juízes e a suíte só na lista do §19.
+
+
 **01/09 (a onda da paridade FECHADA e a lei do §19).** O **item 125**
 (linhas de órbita, rótulos e ícones iguais aos do NASA Eyes) fechou com
 a palavra dele nas fotos A/B, fase a fase (F0–F7; hashes na lápide do
@@ -952,10 +966,15 @@ lava. A régua de luz e as vistas `ua2`…`ua2000` já enxergam a faixa.
 mentiroso de escala. Cadastro em `escala.ts`.
 
 **15.** Quando o quadro engasga, não há como aliviar o Sol. As chaves de
-desligar coroa e ejeção são lidas e nunca escritas.
+desligar coroa e ejeção (`CVOL_K`/`CME_K`, lidas em `sol/cme.js`) só são
+escritas pela URL (`?solcvol=`/`?solcme=`) na construção. *(Verificado
+01/09; caminho decidido: as chaves passam a seguir o nível de qualidade
+já existente — Performance alivia — sem tela nova.)*
 
 **17.** O Sol solavanca quando o relógio acelera. O conserto existe, veio
-do projeto irmão e está desligado. Ligar depende de editar `sol/activity.js`.
+do projeto irmão e está desligado. *(Verificado 01/09: a chave real é
+`LAPSE_K: 0` cravado em `stellarBody.ts` na construção do contexto — o
+bloco C de `sol/activity.js` só liga com `LAPSE_K > 0`.)*
 
 **18.** A luz trata o Sol como ponto sem tamanho. Certo para planetas,
 errado a poucos raios solares — e agora a câmera chega lá. Sem penumbra.
@@ -1968,9 +1987,12 @@ deu **bit-idêntico nas 4 vistas** (sol, soldisco, hero8, ua150).
 Rastros: `capturas/item94-gpu-{antes,depois}.txt` e o carimbo do ab-identidade.
 
 
-**22.** 35 imagens de referência citadas que não existem, e as 6 fotos
-reais do Sol nunca foram baixadas. As seis passam na régua da bancada;
-o dono nunca as julgou.
+**22.** As 6 fotos reais do Sol nunca foram curadas — a bancada nunca as
+baixou nem as pôs diante do olho dele. *(A outra metade do item — "35
+imagens de referência citadas que não existem" — morreu em 01/09 na
+verificação: o `referencias-corpos/LEIA-ME.md` foi limpo em 12/08, dois
+dias antes de o item nascer; hoje cita 8 e as 8 existem.)* Trabalho de
+bancada com o olho dele, não conserto; conversa com o 12 e o 23.
 
 **23.** A granulação do Sol não é física (45 Mm contra 1 Mm reais) e muda
 55% conforme a placa de vídeo.
