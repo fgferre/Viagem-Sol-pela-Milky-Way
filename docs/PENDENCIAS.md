@@ -189,8 +189,8 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   nuvem/bruma) e Ceres (mapa confessado inventado); deslocamento
   por mapa de altura REAL em Mimas, Tétis, Encélado e Dione (webp sem
   perda para canal de dado, 3,5 MB; malha 256×128 só nelas); grão do
-  close com gate medido. **Reia e Jápeto: S2b FEITA em 02/09** (commit no
-  selo desta linha) — voltaram com o relevo sintético do projeto dele
+  close com gate medido. **Reia e Jápeto: S2b FEITA e SELADA por ele em 02/09** ("sim, essa
+  fica"; commit `2cbd5a7`) — voltaram com o relevo sintético do projeto dele
   SEM corte, pela palavra dele ("a da foto está maravilhosa"; "queremos
   o relevo sobressaído, Reia não é uma esfera, é acidentada"). O laudo
   de "bolhas" do coordenador estava ERRADO duas vezes: a resolução (1024)
