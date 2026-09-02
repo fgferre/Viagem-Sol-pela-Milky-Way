@@ -263,6 +263,19 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   RELATADO**: `filmGrain` 0,035, aberração cromática 1,008 e vinheta, que
   ele não tem no nosso; é gosto e é decisão dele. Fotos
   `capturas/item134-s3c-*`. A lei dele vale: igualar, não suavizar.
+  **Experimento de luz (02/09, depois do "claramente estamos distantes"):**
+  a foto de comparação estava com o Sol atrás da câmera (fase 9,8°, relevo
+  invisível); refeita a 90° como a dele (instrumento só de captura:
+  `?foco=` + giro pelo `placeCamera` no `aoAssentar`, relógio pregado por
+  `?jd=`; `capturas/item134-s3c-luz-*`, prancha e medidas ao lado). Medido:
+  **desligar a lanterna de leitura (15 %) e o terminador suave é o que
+  aproxima** — a noite fica preta e as sombras das crateras voltam duras
+  como na foto dele; AgX 1,4 não ajuda (R/B cai de 1,11 para 1,08; a dele
+  é 1,18–1,26). Restam: a COR (cinza aqui, bege lá — as tabelas são iguais
+  e ele também as usa em linear; a perda é de tom, na curva/luz) e o pós
+  dele. **DECISÃO DELE pendente:** a lanterna e o terminador suave são o
+  brilho assistido de TODO corpo (item 93); o visitante já pode desligá-los
+  no selo ("brilho real"). Igualar por padrão muda a casa inteira.
 - **S4 — os jatos de Encélado: FEITA em 02/09** (commit no selo desta
   linha; fotos conferidas e entregues). A matemática do projeto dele
   inteira (8 bocas nas listras de tigre, voo balístico com gravidade,
