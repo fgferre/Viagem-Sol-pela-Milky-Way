@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 134.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 135.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -151,6 +151,16 @@ dinamismo dos nomes do NASA Eyes".)*
 **113.** Os minutos dos juízes — **FECHADO em 30/08**; ARQUIVO.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
+
+**134. A colheita do projeto Saturn dele (https://fgferre.github.io/Saturn/).**
+Pedido dele, 02/09: *"trazer os aprendizados desse outro projeto que eu
+mesmo fiz, específico de Saturno: tem muitas luas e modelos 3D, com
+técnicas muito interessantes que evidenciam as crateras, a textura
+aplicada nessas luas, detalhes muito interessantes dos anéis, e outras
+técnicas que fazem sentido para melhorar o nosso projeto."* Em curso:
+mineração só de leitura (site + repositório), laudo ranqueado em
+`docs/reference/saturn-colheita.md` — o que trazer, como, e o que não
+trazer; conversa com o 114 (todas as luas) e o 133 (anéis).
 
 **133. Os anéis de Saturno ficam estranhos do lado que não está
 iluminado.** Palavras dele, 02/09: *"os anéis de Saturno ficam um pouco
