@@ -56,8 +56,7 @@ outra janela").** A ONDA DE SATURNO (item 134) tem **S1, S2, S2b, S3,
 S3b e S4 FEITAS** (anéis com perfil medido e iluminação mútua; relevo das
 luas com bump + altura real, Reia/Jápeto com o relevo do projeto dele
 selado por ele; nove luas esculpidas com ficha; jatos de Encélado).
-**Falta a S5** (anéis E e F, raios do B, ondas de Dáfnis — "o espetáculo",
-por último, com foto). **Esperam a palavra dele na próxima janela:** (1)
+**Falta a S3c** (paridade do esculpido: o Hipérion dele é muito melhor que o nosso — palavra dele ao fechar, primeira obra da próxima janela) **e a S5** (anéis E e F, raios do B, ondas de Dáfnis — "o espetáculo", por último, com foto). **Esperam a palavra dele na próxima janela:** (1)
 a dose do miolo dos jatos (`DOSE_BASE` em `plumas.ts` — foto entregue,
 perguntado); (2) **a LISTA DO §19 da onda**, ainda sem o sim dele e sem
 rodar: `gigante.test.ts` (guarda do canal ring virou "não pede"),
@@ -239,6 +238,24 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   `atlasConfig.test.ts` espera 30 luas (na lista do §19). Declarado: a
   fase orbital não é efeméride (elementos médios J2000 a dois corpos).
   Provas em `capturas/item134-s3-*`.
+- **S3c — PARIDADE do esculpido com o projeto dele (ABERTA, primeira
+  obra da próxima janela).** Palavras dele, 02/09, com o Hipérion dos
+  dois apps lado a lado: *"o app do Saturno continua entregando uma
+  qualidade geral muito maior nas luas... olhe a diferença gritante...
+  por quê?"* Lá: cor de regolito (bege/terroso), fundo de cratera
+  ESCURO dentro da própria cratera, paredes claras de gelo, crateras
+  fundas e grão fino de alto contraste. Aqui: branco uniforme, crateras
+  rasas e macias, pouco contraste. Suspeitas, a medir UMA por vez com o
+  método da S2b (o mesmo enquadramento nos dois apps, foto lado a lado):
+  (1) a cor por família e o escurecimento do fundo pelas máscaras de
+  cratera foram reescritos em GLSL e podem ter ficado fracos ou perdidos
+  — conferir os números dele em `moonMaterials.ts` contra
+  `esculpido.ts`; (2) a amplitude do grão fino (bump lendo o fbm) e a
+  profundidade das crateras (`craterDepth`, `detail` do icosaedro,
+  normais suavizadas no weld) contra os dele; (3) a exposição e o
+  "brilho assistido" da casa lavando o albedo para branco; (4) o pós
+  dele (grão, vinheta, aberração) contra o nosso. A lei dele vale: a
+  referência é o projeto dele; igualar, não suavizar.
 - **S4 — os jatos de Encélado: FEITA em 02/09** (commit no selo desta
   linha; fotos conferidas e entregues). A matemática do projeto dele
   inteira (8 bocas nas listras de tigre, voo balístico com gravidade,
