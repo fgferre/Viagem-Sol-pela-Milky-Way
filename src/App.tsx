@@ -35,7 +35,7 @@ import {
 } from './components/Spotlight';
 import { Ajustes } from './components/Ajustes';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
-import { useDirector, escolherAlvo } from './hooks/useDirector';
+import { useDirector, escolherAlvo, LUGARES_DA_BUSCA } from './hooks/useDirector';
 import { useAtalhos } from './hooks/useAtalhos';
 import { useChromeDoFilme } from './hooks/useChromeDoFilme';
 import { useEspelhoDaUrl } from './hooks/useEspelhoDaUrl';
@@ -570,7 +570,11 @@ export default function App() {
     () =>
       construirIndice(
         nomeadas,
-        phase === 'atlas' || phase === 'free' ? (directorRef.current?.corpos ?? []) : []
+        phase === 'atlas' || phase === 'free' ? (directorRef.current?.corpos ?? []) : [],
+        // O CENTRO GALÁCTICO não depende de fase: ele está no céu em
+        // todas elas, e o `?foco=` que a URL escreve precisa dele para
+        // reconhecer o que está em quadro (`chaveDoFoco`)
+        LUGARES_DA_BUSCA
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [nomeadas, phase, tempo?.aviso]

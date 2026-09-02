@@ -25,7 +25,7 @@
 // NADA AQUI PISCA: o que muda de estado muda de borda e de rótulo.
 // ============================================================
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { buscar } from '../lib/buscaEstrelas';
+import { buscar, nomeDaEntrada } from '../lib/buscaEstrelas';
 import type { EntradaDaBusca, IndiceEstrelas } from '../lib/buscaEstrelas';
 import { gatilhoDoDialogo, useDialogFocus } from '../lib/dialogFocus';
 import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
@@ -42,11 +42,6 @@ import { numeroPtBr } from '../three/tempoDoAtlas';
  */
 export const LIMITE_TECLADO = 8;
 export const LIMITE_TOQUE = 5;
-
-/** o nome que a lista mostra — de uma estrela ou de um corpo do sistema */
-function nomeDaEntrada(entrada: EntradaDaBusca): string {
-  return entrada.tipo === 'corpo' ? entrada.corpo.nome : entrada.estrela.n;
-}
 
 /**
  * A NOTA à direita, e ela troca de RÉGUA com o alvo: anos-luz para as
@@ -66,6 +61,12 @@ function notaDaEntrada(entrada: EntradaDaBusca): string {
     const distancia = notaDeDistancia(entrada.estrela.d * UA_POR_PC, numeroPtBr);
     return distancia ? `${distancia} · ${entrada.estrela.s}` : entrada.estrela.s;
   }
+  // UM LUGAR mostra só a distância (item 129/F5): o centro galáctico não
+  // tem tipo espectral nem órbita, e a nota não inventa uma palavra de
+  // classe para preencher a linha — a mesma lei da lua sem efeméride
+  if (entrada.tipo === 'lugar') {
+    return notaDeDistancia(entrada.lugar.d * UA_POR_PC, numeroPtBr) ?? '';
+  }
   const { rUA, classe } = entrada.corpo;
   const distancia = notaDeDistancia(rUA, numeroPtBr);
   // o Sol não orbita nada (nota é a classe); uma lua sem efeméride
@@ -74,18 +75,18 @@ function notaDaEntrada(entrada: EntradaDaBusca): string {
 }
 
 /**
- * O ESTADO VAZIO É HONESTO, e este comentário é o porquê. A busca corre
- * sobre os nomes que o catálogo REALMENTE guarda — um por estrela, o
- * próprio da IAU quando existe. Consequência medida: "alfa cen" não
- * acha nada, porque a designação de Bayer da α Centauri não está no
- * dado (o nome próprio a expulsou); quem procura por ela digita "rigil".
+ * O ESTADO VAZIO É HONESTO, e este comentário é o porquê. Diante de uma
+ * consulta que não casa há dois caminhos, e um deles é mentira: chutar
+ * o que o visitante "quis dizer" (e enquadrar uma estrela que ele não
+ * pediu) ou dizer o que não achou e MOSTRAR o que funciona. Os exemplos
+ * abaixo são portas de entrada que existem de fato, e todas são
+ * testadas em `buscaEstrelas.test.ts`.
  *
- * Diante disso há dois caminhos, e um deles é mentira: chutar o que o
- * visitante "quis dizer" (e enquadrar uma estrela que ele não pediu) ou
- * dizer o que não achou e MOSTRAR o que funciona. Os exemplos abaixo
- * são as quatro portas de entrada que existem de fato — nome próprio,
- * designação grega no jeito que se digita, catálogo numérico e Gliese —
- * e todos são testados em `buscaEstrelas.test.ts`.
+ * O ALCANCE CRESCEU no item 129/F5 e a copy do vazio continua valendo:
+ * o catálogo segue guardando UM nome por estrela, mas agora a busca
+ * fala também apelido, designação de Bayer completa, constelação e
+ * lugar — nas duas línguas. "alfa cen", que este comentário citava
+ * como o caso do vazio, hoje acha Rigil Kentaurus.
  */
 const EXEMPLOS = ['sirius', 'rigil', 'gama vel', 'hd 48915'];
 

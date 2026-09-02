@@ -19,9 +19,36 @@ import { LabelCanvas } from '../components/LabelCanvas';
 import { sondarGl } from '../lib/glProbe';
 import type { EstadoDoTempo } from '../three/tempoDoAtlas';
 import { construirIndice, resolverFoco } from '../lib/buscaEstrelas';
-import type { EntradaDaBusca } from '../lib/buscaEstrelas';
+import type { EntradaDaBusca, LugarBuscavel } from '../lib/buscaEstrelas';
+import { LUGARES_DO_FILME } from '../lib/lugaresDoFilme';
+import { GAL } from '../three/world/baseGalactica';
 import { lerPortaVer } from '../three/selo';
 import type { VerDaEscada } from '../three/selo';
+
+/**
+ * OS LUGARES DO CÉU que a busca alcança (item 129/F5) — as palavras vêm
+ * da tabela, a GEOMETRIA vem daqui, que é o lado que conhece a cena. Só
+ * o centro galáctico por enquanto: as linhas cujo alvo é uma estrela do
+ * catálogo viram apelido dela lá dentro, não entrada nova.
+ *
+ * `GC_POS` é medido do Sol, que está na origem — por isso o comprimento
+ * do vetor É a distância em parsecs que a paleta mostra em anos-luz.
+ */
+export const LUGARES_DA_BUSCA: readonly LugarBuscavel[] = LUGARES_DO_FILME.flatMap(
+  (lugar) =>
+    'centroGalactico' in lugar.alvo
+      ? [
+          {
+            id: lugar.id,
+            nome: lugar.nome,
+            d: GAL.GC_POS.length(),
+            x: GAL.GC_POS.x,
+            y: GAL.GC_POS.y,
+            z: GAL.GC_POS.z,
+          },
+        ]
+      : []
+);
 
 export function escolherAlvo(
   entrada: EntradaDaBusca,
@@ -31,6 +58,15 @@ export function escolherAlvo(
   if (!alvo) return;
   if (entrada.tipo === 'estrela') {
     alvo.visitarEstrela(entrada.estrela);
+    return;
+  }
+  // UM LUGAR não é estrela, mas o verbo é o mesmo: um ponto do céu com
+  // nome. `visitarEstrela` é a porta que já leva um {n,x,y,z} e já se
+  // dobra às duas fases — no voo livre VOA até lá, no Atlas ENQUADRA
+  // (ver `escada.irAte`), que é o destino do clique no rótulo dele.
+  if (entrada.tipo === 'lugar') {
+    const { nome, x, y, z } = entrada.lugar;
+    alvo.visitarEstrela({ n: nome, x, y, z });
     return;
   }
   // UM CORPO É DO ATLAS (item 129: a busca é uma só, e "focar é coisa
@@ -229,7 +265,10 @@ export function useDirector(fios: FiosDoDirector) {
             // `useMemo` que ainda não rodou (o estado das nomeadas está
             // sendo publicado neste mesmo tick), e este morre na linha
             // seguinte. A conta é uma passada nas 1.726.
-            const achado = resolverFoco(foco, construirIndice(d.nomeadas, d.corpos));
+            const achado = resolverFoco(
+              foco,
+              construirIndice(d.nomeadas, d.corpos, LUGARES_DA_BUSCA)
+            );
             // `?ver=corpo` (F2b/D7) desce ao degrau do corpo — a lei
             // única da porta (`lerPortaVer`); inválido cai no default
             // `orbita`, a semântica de sempre do `?foco=`

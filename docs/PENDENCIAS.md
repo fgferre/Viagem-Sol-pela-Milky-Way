@@ -1893,21 +1893,21 @@ nuvens moleculares — nenhuma tem nome no molde do índice.
   <2 ms por tecla. Provas `capturas/item129-f4-sondagem-{antes,depois}.txt`
   e `item129-f4-jupter.png`. Uma expectativa do teste mudou
   ("anhanhuca" virou erro de digitação de Añañuca) — na lista do §19.
-- **F5 — o vocabulário (BILÍNGUE, ordem dele em 01/09: "tem que ser
-  bilingue, ENG PT-BR"):** apelidos por objeto — português e inglês,
-  designação de Bayer (alfa Centauri), constelação como lugar, os pontos
-  do filme como destinos (Três Marias, Berçário, Sagittarius A✱) e o
-  buraco negro central como alvo da busca. **Censo dos nomes (01/09,
-  feito):** o catálogo JÁ guarda a letra de Bayer (`b`, 1.522 estrelas)
-  e a sigla da constelação (`c`, todas as 1.726), e
-  `lib/atlas/constelacoes.ts` já expande a sigla para o genitivo latino
-  ("α Canis Majoris"). FALTAM, e são tabelas curtas: o nome das 88
-  constelações em português e no nominativo (Órion/Orion, Sagitário,
-  Cruzeiro do Sul), uns 30 apelidos populares (Sírio, Estrela Polar,
-  Alfa Centauri) e os lugares do filme como destino (Três Marias →
-  Alnilam; Sagittarius A✱ → `GAL.GC_POS`, pelo mesmo `visitarEstrela`
-  que leva a uma estrela). "Órion" deve listar as estrelas mais
-  brilhantes da constelação.
+- **F5 — o vocabulário bilíngue: FEITA em 01/09** (tabelas `db2ca94`,
+  fiação no selo desta linha). Apelidos pt/en (Sírio, Estrela Polar,
+  Três Marias, Cruzeiro do Sul), designação de Bayer para toda estrela
+  com letra+constelação ("alfa cen", "alpha centauri", "α cen"),
+  constelação como lugar em degrau próprio abaixo dos nomes ("órion"
+  lista as mais brilhantes de Órion sem enterrar quem começa com "and"),
+  e o centro galáctico como entrada de tipo `lugar` ("buraco negro",
+  "black hole", "sgr a") — no voo livre a câmera voa até lá, no atlas
+  enquadra; `?foco=sagittarius-a` fecha o link. Latência ~2 ms por tecla
+  (chaves 3.905 → 11.239). Sondagem `capturas/item129-f5-sondagem.txt`
+  (com o diff das 35 antigas: 11 "nada" viraram acerto, o resto igual
+  ou subiu de degrau); fotos `capturas/item129-f5-*.png` conferidas.
+  Sobra miúda: a ficha chama Sagittarius A✱ de "estrela" (comportamento
+  antigo do foco da escada) — conserto de palavra, quando a ficha for
+  tocada.
 - **F2 — busca no filme:** decisão dele pendente (escolher um alvo
   durante o filme = sair do filme para ele, como o ↗ Explorar faz?).
 - **F3 — famílias sem nome (aglomerados, nuvens…):** só entram se

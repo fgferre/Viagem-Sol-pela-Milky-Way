@@ -12,12 +12,18 @@
 // menor a joga atrás de outras mais fracas em magnitude, que é onde
 // uma busca ingênua erraria.
 //
-// MEDIDO ao escrever: nenhuma consulta única acende os 4 degraus neste
-// dado (varredura sobre as 3.845 chaves de texto), porque um degrau
+// MEDIDO ao escrever: nenhuma consulta única acende todos os degraus
+// neste dado (varredura sobre as 11.170 chaves de texto — eram 3.845
+// antes do vocabulário bilíngue do item 129/F5), porque um degrau
 // EXATO só nasce de chave de uma palavra e essas não reaparecem como
 // palavra interna de outra. Por isso a rubrica é provada em DOIS casos
 // reais que se emendam: "ran" (exato > prefixo > parcial) e "tau"
-// (prefixo > palavra interna > parcial).
+// (prefixo > palavra interna > parcial > constelação).
+//
+// O VOCABULÁRIO BILÍNGUE (item 129/F5) alargou o alcance sem mexer na
+// rubrica: apelido, designação de Bayer de TODA estrela com letra e
+// sigla, constelação como lugar e o centro galáctico. As expectativas
+// que mudaram de propósito estão marcadas uma a uma, com o porquê.
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -28,10 +34,16 @@ import {
   chaveDeLink,
   chaveDoFoco,
   construirIndice,
+  nomeDaEntrada,
   normalizarConsulta,
   resolverFoco,
 } from './buscaEstrelas';
-import type { CorpoBuscavel, EntradaDaBusca, ResultadoBusca } from './buscaEstrelas';
+import type {
+  CorpoBuscavel,
+  EntradaDaBusca,
+  LugarBuscavel,
+  ResultadoBusca,
+} from './buscaEstrelas';
 import { CORPOS_DO_SISTEMA } from '../three/atlasConfig';
 import { RETRATO_2026 } from '../three/world/planetas/retrato2026';
 import type { IdRetrato } from '../three/world/planetas/retrato2026';
@@ -113,19 +125,52 @@ describe('texto', () => {
     expect(nomes('gama vel')).toEqual(['γ² Vel']); // como um brasileiro digita
     expect(nomes('alfa mus')).toEqual(['α Mus']);
     expect(nomes('tau cet')).toEqual(['τ Cet']);
+    // e o GENITIVO latino, que é como a designação se escreve por fora
+    // do catálogo — mesma estrela, mesma lei (item 129/F5)
+    expect(nomes('gamma velorum')).toEqual(['γ² Vel']);
+    expect(nomes('beta orionis')).toEqual(['Rigel']);
   });
 
   it('a designação Gliese também é porta de entrada', () => {
     expect(nomes('gl 244')).toEqual(['Sirius', 'Sirius B']);
   });
 
-  it('SURPRESA DO DADO: sem α Cen — o nome próprio expulsa o Bayer', () => {
-    // `named` guarda UM nome por estrela; quando a IAU deu nome próprio,
-    // a designação de Bayer não existe no dado e nenhuma chave irmã pode
-    // ser fabricada (não há coluna `con`). "alfa cen" não acha nada;
-    // quem procura α Cen tem de digitar "rigil" (ou "prox" para a C).
-    expect(nomes('alfa cen')).toEqual([]);
+  it('α Cen ACHA (item 129/F5): a designação não depende mais do nome', () => {
+    // MUDOU DE PROPÓSITO. Enquanto a chave irmã saía do NOME, uma
+    // estrela batizada pela IAU perdia a designação de Bayer junto — e
+    // "alfa cen" caía no vazio, que era a "surpresa do dado" que este
+    // teste registrava. Agora a designação sai dos campos `b`/`c`, que
+    // o catálogo sempre trouxe: as duas α do Centauro respondem, a mais
+    // brilhante na frente, e as duas línguas valem sempre.
+    expect(nomes('alfa cen')).toEqual(['Rigil Kentaurus', 'Toliman']);
+    expect(nomes('alpha centauri')).toEqual(['Rigil Kentaurus', 'Toliman']);
+    expect(nomes('α cen')).toEqual(['Rigil Kentaurus', 'Toliman']);
+    // o sobrescrito é opcional: com ele, a designação é de UMA só
+    expect(nomes('alfa1 cen')).toEqual(['Rigil Kentaurus']);
     expect(nomes('rigil')).toEqual(['Rigil Kentaurus']);
+  });
+
+  it('apelido popular, nas duas línguas, acha a estrela do catálogo', () => {
+    expect(nomes('sirio')).toEqual(['Sirius']); // MUDOU: era vazio
+    expect(nomes('sírio')).toEqual(['Sirius']);
+    expect(nomes('estrela polar')).toEqual(['Polaris']);
+    expect(nomes('north star')).toEqual(['Polaris']);
+    // um apelido pode ser de TRÊS estrelas — o cinturão de Órion
+    expect(nomes('tres marias')).toEqual(['Alnilam', 'Alnitak', 'Mintaka']);
+    expect(nomes("orion's belt")).toEqual(['Alnilam', 'Alnitak', 'Mintaka']);
+  });
+
+  it('a constelação é um LUGAR, e vem embaixo de todo casamento literal', () => {
+    // "ursa maior" não é nome de estrela nenhuma: o que responde é o
+    // ENDEREÇO delas, no degrau próprio, da mais brilhante para a mais
+    // fraca. Em latim, pt e en — as três formas, sempre.
+    const brilhantes = ['Alioth', 'Dubhe', 'Alkaid', 'Mizar', 'Merak'];
+    expect(buscar('ursa maior', indice, 5).map((r) => est(r).n)).toEqual(brilhantes);
+    expect(buscar('great bear', indice, 5).map((r) => est(r).n)).toEqual(brilhantes);
+    expect(buscar('ursa maior', indice, 1)[0].score).toBe(SCORE.constelacao);
+    // e o preço que o desenho mandou não pagar: "and" não afoga quem
+    // casa por letra — a constelação vale MENOS que qualquer literal
+    expect(SCORE.constelacao).toBeLessThan(SCORE.parcial);
   });
 
   it('consulta vazia ou só espaço não devolve nada', () => {
@@ -136,7 +181,9 @@ describe('texto', () => {
   it('o limite é respeitado (8 por omissão)', () => {
     expect(buscar('tau', indice, 5)).toHaveLength(5);
     expect(buscar('tau', indice)).toHaveLength(8);
-    expect(buscar('tau', indice, 500).length).toBe(78);
+    // 130, e eram 78 até o item 129/F5: entraram as τ que têm nome
+    // próprio (a designação não depende mais do nome) e a constelação
+    expect(buscar('tau', indice, 500).length).toBe(130);
   });
 });
 
@@ -156,7 +203,7 @@ describe('consulta numérica por acesso direto', () => {
   });
 });
 
-describe('rubrica de 4 degraus', () => {
+describe('rubrica de degraus', () => {
   it('"ran": exato > prefixo > parcial, e Aldebaran fica atrás apesar do brilho', () => {
     const r = buscar('ran', indice, 8);
     expect(r.map((x) => `${est(x).n} ${x.score}`)).toEqual([
@@ -175,16 +222,26 @@ describe('rubrica de 4 degraus', () => {
     expect(est(r[2]).m).toBeGreaterThan(est(r[3]).m);
   });
 
-  it('"tau": prefixo > palavra interna > parcial, com Rigil Kentaurus no fim', () => {
+  it('"tau": prefixo > palavra > parcial > constelação, e Rigil lá embaixo', () => {
     const r = buscar('tau', indice, 500);
     const degraus = [...new Set(r.map((x) => x.score))];
-    expect(degraus).toEqual([SCORE.prefixo, SCORE.palavra, SCORE.parcial]);
-    expect(est(r[0]).n).toBe('τ Pup'); // "τ Pup" → chave irmã "tau pup"
-    expect(est(r.find((x) => x.score === SCORE.palavra)).n).toBe('ο Tau');
-    // a terceira estrela mais brilhante do céu é a ÚLTIMA da lista:
-    // "tau" só aparece dentro de "kentaurus"
-    expect(est(r.at(-2)).n).toBe('Rigil Kentaurus');
-    expect(est(r.at(-1)).n).toBe('Proxima Centauri');
+    // MUDOU no item 129/F5: o quarto degrau é a constelação (Taurus),
+    // e o primeiro do prefixo é outra τ — Paikauhale (τ Sco, m 2,82) é
+    // mais brilhante que τ Pup e só entrou porque a designação deixou
+    // de depender do nome próprio
+    expect(degraus).toEqual([
+      SCORE.prefixo,
+      SCORE.palavra,
+      SCORE.parcial,
+      SCORE.constelacao,
+    ]);
+    expect(est(r[0]).n).toBe('Paikauhale'); // τ Sco, pela chave "tau sco"
+    // "α Tau" → chave "alfa tauri", e "tauri" é palavra que começa com "tau"
+    expect(est(r.find((x) => x.score === SCORE.palavra)).n).toBe('Aldebaran');
+    // a terceira estrela mais brilhante do céu abre o degrau PARCIAL:
+    // "tau" só aparece dentro de "kentaurus", e isso a joga atrás de
+    // toda τ e de toda estrela de Touro
+    expect(est(r.find((x) => x.score === SCORE.parcial)).n).toBe('Rigil Kentaurus');
   });
 
   it('cada degrau vale a mesma coisa para a mesma estrela, venha da chave que vier', () => {
@@ -210,7 +267,8 @@ describe('rubrica de 4 degraus', () => {
 describe('degrau tolerante: um erro de digitação não apaga a estrela', () => {
   it('a letra trocada, a sobrando e a faltando acham o nome certo', () => {
     expect(nomes('siriuss')).toEqual(['Sirius', 'Sirius B']); // uma a mais
-    expect(nomes('betelgeuze')).toEqual(['Betelgeuse']); // uma trocada
+    // "betelgeuze" saiu daqui no item 129/F5: virou APELIDO de dado
+    // (degrau exato), e quem prova a tolerância é a de duas trocadas
     expect(nomes('betelguese')).toEqual(['Betelgeuse']); // duas trocadas
     expect(nomes('vegaa')).toEqual(['Vega']);
   });
@@ -223,13 +281,17 @@ describe('degrau tolerante: um erro de digitação não apaga a estrela', () => 
   });
 
   it('termo curto não ganha folga — um erro em 3 letras é outra palavra', () => {
-    // "sirio" (5 letras, folga 1) está a DUAS de "sirius": fica vazio
-    expect(nomes('sirio')).toEqual([]);
+    // "sirio" saiu daqui no item 129/F5 pelo mesmo motivo do
+    // "betelgeuze": deixou de ser erro de digitação e virou apelido
     expect(nomes('vga')).toEqual([]);
+    expect(nomes('rgl')).toEqual([]); // "rigel" sem as vogais não é erro, é outra coisa
   });
 
   it('o estado vazio continua honesto: o que não parece nada dá nada', () => {
-    expect(nomes('cruzeiro do sul')).toEqual([]);
+    // "cruzeiro do sul" saiu daqui: é apelido das três da Cruz desde o
+    // item 129/F5. "buraco negro" continua vazio NESTE índice porque
+    // ele nasce sem lugares — o alvo é injetado, ver o describe do
+    // centro galáctico lá embaixo
     expect(nomes('buraco negro')).toEqual([]);
     expect(nomes('xkcd')).toEqual([]);
     // e a lei do §D4 não afrouxa: número incompleto segue sem palpite
@@ -278,7 +340,10 @@ describe('a chave do link', () => {
   it('porta vazia ou sem correspondência devolve nada — nunca um palpite', () => {
     expect(resolverFoco('', indice)).toBeNull();
     expect(resolverFoco('   ', indice)).toBeNull();
-    expect(resolverFoco('alfa cen', indice)).toBeNull();
+    // "alfa cen" SAIU desta lista no item 129/F5 — hoje ele resolve em
+    // Rigil Kentaurus, e é uma porta legítima; o que continua sem
+    // palpite é a consulta que não casa com nada
+    expect(resolverFoco('kzzz', indice)).toBeNull();
     expect(resolverFoco('hd 4891', indice)).toBeNull();
   });
 });
@@ -358,7 +423,9 @@ describe('os corpos do sistema entram no MESMO índice', () => {
   it('chaveDoFoco acha pelo nome que a ficha mostra — corpo ou estrela', () => {
     expect(chaveDoFoco('Terra', comCorpos)).toBe('terra');
     expect(chaveDoFoco('Sirius', comCorpos)).toBe('hd48915');
-    // o que não está no índice não inventa porta (o Sagittarius A✱)
+    // o que não está no índice não inventa porta — e este índice nasce
+    // SEM lugares, então o Sagittarius A✱ ainda não é dele (com o lugar
+    // injetado ele tem chave; ver o describe do centro galáctico)
     expect(chaveDoFoco('Sagittarius A✱', comCorpos)).toBeNull();
   });
 });
@@ -399,7 +466,7 @@ describe('empate entre corpos: o desempate é o nome, não a ordem do catálogo'
   /** os nomes que a busca devolve, na ordem, para um catálogo nesta ordem */
   const saida = (consulta: string, corpos: readonly CorpoBuscavel[]) =>
     buscar(consulta, construirIndice([], corpos), 8).map((r) =>
-      r.entrada.tipo === 'corpo' ? r.entrada.corpo.nome : r.entrada.estrela.n
+      nomeDaEntrada(r.entrada)
     );
 
   it('"tita": Titan ganha de Titania por mérito, e não por chegar antes', () => {
@@ -442,5 +509,51 @@ describe('empate entre corpos: o desempate é o nome, não a ordem do catálogo'
       'S/2004 S 12',
       'S/2004 S 13',
     ]);
+  });
+});
+
+// ============================================================
+// O CENTRO GALÁCTICO como alvo da busca (item 129/F5). Ele não é
+// estrela do catálogo nem corpo do sistema: é um LUGAR, e entra no
+// índice com a geometria INJETADA — a lib é pura e `GAL.GC_POS` mora no
+// three. O que se julga aqui é o vocabulário das duas línguas e a porta
+// do link, que até esta fase devolvia `null` para ele.
+// ============================================================
+describe('o centro galáctico é um lugar, e a busca o alcança', () => {
+  // os números são os da cena (`LUGARES_DA_BUSCA`, em useDirector); o
+  // que este arquivo julga é a busca, não a astrometria
+  const sgrA: LugarBuscavel = {
+    id: 'sagittarius-a',
+    nome: 'Sagittarius A✱',
+    d: 8178,
+    x: 0,
+    y: 0,
+    z: -8178,
+  };
+  const comLugar = construirIndice(nomeadas, [], [sgrA]);
+  const achado = (q: string) => {
+    const e = buscar(q, comLugar, 1)[0]?.entrada;
+    return e && e.tipo === 'lugar' ? e.lugar.id : null;
+  };
+
+  it('as duas línguas levam ao mesmo lugar', () => {
+    for (const q of [
+      'buraco negro',
+      'black hole',
+      'centro da galaxia',
+      'centro galáctico',
+      'galactic center',
+      'galactic centre',
+      'sagittarius a',
+    ]) {
+      expect(achado(q), q).toBe('sagittarius-a');
+    }
+  });
+
+  it('a porta do link fecha o círculo — nome em quadro → chave → alvo', () => {
+    // era `null` até o item 129/F5, e por isso o `?foco=` sumia da URL
+    // quando o que estava em quadro era o centro galáctico
+    expect(chaveDoFoco('Sagittarius A✱', comLugar)).toBe('sagittarius-a');
+    expect(achado('sagittarius-a')).toBe('sagittarius-a');
   });
 });

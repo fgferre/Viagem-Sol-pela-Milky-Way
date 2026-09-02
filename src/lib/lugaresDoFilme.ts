@@ -14,15 +14,21 @@
 // ============================================================
 
 export const LUGARES_DO_FILME: ReadonlyArray<{
+  /** a chave do link (`?foco=sagittarius-a`) — ASCII, sem espaço */
   id: string;
+  /** o nome que o Director ANUNCIA no rótulo e no cabeçalho da ficha.
+   *  Tem de ser igual letra a letra ao de lá (`director/rotulos.ts`):
+   *  é por ele que `chaveDoFoco` reconhece o que está em quadro. */
+  nome: string;
   pt: readonly string[];
   en: readonly string[];
   alvo: { estrela: string } | { centroGalactico: true };
 }> = [
   {
     id: 'sagittarius-a',
-    pt: ['Sagittarius A*', 'Buraco negro', 'Centro da galáxia', 'Centro galáctico'],
-    en: ['Sagittarius A*', 'Black hole', 'Galactic center', 'Galactic centre'],
+    nome: 'Sagittarius A✱',
+    pt: ['Sagittarius A*', 'Sgr A*', 'Buraco negro', 'Centro da galáxia', 'Centro galáctico'],
+    en: ['Sagittarius A*', 'Sgr A*', 'Black hole', 'Galactic center', 'Galactic centre'],
     alvo: { centroGalactico: true },
   },
 ];

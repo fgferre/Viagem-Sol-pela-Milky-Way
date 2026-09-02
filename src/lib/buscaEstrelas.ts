@@ -32,14 +32,26 @@
 // tolerância é para consertar um erro de digitação, nunca para chutar.
 //
 // ADAPTAÇÃO DECLARADA: o doador guardava a abreviação ("Alp") e
-// acrescentava o glifo; aqui é o inverso — o dado já traz "α Cen", e a
-// chave irmã é a que se DIGITA. São duas: a abreviação de catálogo
-// ("alp cen") e o nome pt-BR da letra ("alfa cen", o caso de teste que
-// o desenho da onda nomeia). O sobrescrito de Bayer (γ² Vel) cai nas
-// chaves irmãs e vira dígito ASCII na normalização.
+// acrescentava o glifo; aqui a chave é a que se DIGITA — a abreviação
+// de catálogo ("alp cen"), o glifo ("α cen") e o nome da letra nas duas
+// línguas ("alfa cen", "alpha centauri"). O sobrescrito de Bayer (γ²
+// Vel) vira dígito ASCII na normalização, e a designação existe com e
+// sem ele.
+//
+// O VOCABULÁRIO BILÍNGUE (item 129/F5) entra por TRÊS tabelas de dado,
+// e nenhuma palavra é redigitada aqui: `apelidosDeEstrelas` (sírio,
+// north star, três marias), `atlas/constelacoes` (os nomes das 88 e o
+// genitivo latino) e `lugaresDoFilme` (o centro galáctico). As DUAS
+// línguas entram sempre, qualquer que seja o idioma da tela: quem
+// digita "black hole" e quem digita "buraco negro" procuram a mesma
+// coisa, e uma busca que só falasse a língua do momento perderia
+// metade dos links que já circulam por aí.
 // ============================================================
 import MiniSearch from 'minisearch';
 import type { NamedStar } from '../three/config';
+import { APELIDOS_DE_ESTRELAS } from './apelidosDeEstrelas';
+import { CONSTELACOES, NOMES_DAS_CONSTELACOES } from './atlas/constelacoes';
+import { LUGARES_DO_FILME } from './lugaresDoFilme';
 
 /** um documento do motor: UMA chave normalizada do índice de texto */
 interface ChaveIndexada {
@@ -80,13 +92,34 @@ export interface CorpoBuscavel {
 // de busca e os rótulos das estrelas a importam. Aqui ficou só a busca.
 
 /**
- * O que o índice guarda. As duas famílias de alvo do Atlas, com o TIPO
- * declarado em vez de inferido — quem consome decide o verbo (voar até
- * uma estrela, enquadrar a órbita de um corpo) olhando esta etiqueta.
+ * UM LUGAR DO CÉU que não é estrela nem corpo do sistema — hoje só o
+ * centro galáctico (`LUGARES_DO_FILME`). As PALAVRAS dele vêm da
+ * tabela; a GEOMETRIA entra injetada, porque `GAL.GC_POS` mora no three
+ * e esta biblioteca é pura (ver `LUGARES_DA_BUSCA`, em `useDirector`).
+ */
+export interface LugarBuscavel {
+  /** o id da linha em `LUGARES_DO_FILME` — é a chave do link */
+  id: string;
+  /** o nome que o Director ANUNCIA no rótulo ('Sagittarius A✱'), que é
+   *  por onde `chaveDoFoco` o reconhece em quadro */
+  nome: string;
+  /** distância ao Sol em PARSECS, como `NamedStar.d` — a nota da paleta */
+  d: number;
+  x: number;
+  y: number;
+  z: number;
+}
+
+/**
+ * O que o índice guarda. As três famílias de alvo, com o TIPO declarado
+ * em vez de inferido — quem consome decide o verbo (voar até uma
+ * estrela, enquadrar a órbita de um corpo, voar até um lugar) olhando
+ * esta etiqueta.
  */
 export type EntradaDaBusca =
   | { tipo: 'estrela'; estrela: NamedStar }
-  | { tipo: 'corpo'; corpo: CorpoBuscavel };
+  | { tipo: 'corpo'; corpo: CorpoBuscavel }
+  | { tipo: 'lugar'; lugar: LugarBuscavel };
 
 export interface ResultadoBusca {
   /** posição na array `entradas` do índice — a chave da lista na UI */
@@ -104,6 +137,9 @@ export interface IndiceEstrelas {
   porChave: Map<string, number[]>;
   /** 'hd 48915' / 'hip 32349' → estrela, para o acesso direto */
   porCatalogo: Map<string, number>;
+  /** nome de CONSTELAÇÃO (pt, en e latino) → as estrelas dela. Mapa à
+   *  parte de propósito — ver o degrau `SCORE.constelacao` em `buscar` */
+  porConstelacao: Map<string, number[]>;
   /** as chaves de `porChave` na ordem de inserção — a id do motor é a
    *  posição aqui, e é por ela que um achado volta a ser entrada */
   chaves: readonly string[];
@@ -112,28 +148,43 @@ export interface IndiceEstrelas {
 }
 
 /**
- * A rubrica, agora de 5 degraus: exato > prefixo > palavra interna >
- * parcial > APROXIMADO. Os quatro primeiros são casamento literal e não
- * mudaram de valor; o quinto é o do motor (distância de edição) e mora
- * embaixo de todos de propósito — quem casou de verdade nunca perde
- * para quem casou por semelhança.
+ * A rubrica, agora de 6 degraus: exato > prefixo > palavra interna >
+ * parcial > CONSTELAÇÃO > aproximado. Os quatro primeiros são casamento
+ * literal e nunca mudaram de valor; o quinto é a constelação como LUGAR
+ * (item 129/F5) e o sexto é o do motor (distância de edição).
+ *
+ * POR QUE A CONSTELAÇÃO MORA EMBAIXO DOS QUATRO. Ela não casa com o
+ * nome do alvo, casa com o ENDEREÇO dele: "andromeda" devolve 150
+ * estrelas que não se chamam Andrômeda. Se valesse um degrau literal,
+ * digitar "and" empurraria a constelação inteira para dentro do limite
+ * de 8 e enterraria quem de fato começa com "and" — o preço que o
+ * desenho desta fase mandou não pagar. Embaixo, ela só aparece no
+ * espaço que sobra.
  */
 export const SCORE = {
   exato: 140,
   prefixo: 110,
   palavra: 90,
   parcial: 75,
+  constelacao: 60,
   aproximado: 40,
 } as const;
 
-/** Glifo → chaves irmãs: abreviação de catálogo e nome pt-BR da letra. */
+/**
+ * Glifo → como a letra se DIGITA: a abreviação de catálogo (a coluna
+ * `bayer` do HYG) e o nome dela nas DUAS línguas — pt primeiro, en
+ * depois, e uma forma só quando as duas coincidem. O inglês entrou no
+ * item 129/F5: a busca indexa as duas línguas sempre, independente do
+ * idioma da tela, e sem ele "alpha centauri" ficava fora.
+ */
 const GREGAS: Record<string, readonly string[]> = {
-  α: ['alp', 'alfa'], β: ['bet', 'beta'], γ: ['gam', 'gama'], δ: ['del', 'delta'],
-  ε: ['eps', 'epsilon'], ζ: ['zet', 'zeta'], η: ['eta'], θ: ['the', 'teta'],
-  ι: ['iot', 'iota'], κ: ['kap', 'capa'], λ: ['lam', 'lambda'], μ: ['mu', 'mi'],
-  ν: ['nu', 'ni'], ξ: ['xi', 'csi'], ο: ['omi', 'omicron'], π: ['pi'],
-  ρ: ['rho', 'ro'], σ: ['sig', 'sigma'], τ: ['tau'], υ: ['ups', 'ipsilon'],
-  φ: ['phi', 'fi'], χ: ['chi', 'qui'], ψ: ['psi'], ω: ['ome', 'omega'],
+  α: ['alp', 'alfa', 'alpha'], β: ['bet', 'beta'], γ: ['gam', 'gama', 'gamma'],
+  δ: ['del', 'delta'], ε: ['eps', 'epsilon'], ζ: ['zet', 'zeta'], η: ['eta'],
+  θ: ['the', 'teta', 'theta'], ι: ['iot', 'iota'], κ: ['kap', 'capa', 'kappa'],
+  λ: ['lam', 'lambda'], μ: ['mu', 'mi'], ν: ['nu', 'ni'], ξ: ['xi', 'csi'],
+  ο: ['omi', 'omicron'], π: ['pi'], ρ: ['rho', 'ro'], σ: ['sig', 'sigma'],
+  τ: ['tau'], υ: ['ups', 'ipsilon', 'upsilon'], φ: ['phi', 'fi'],
+  χ: ['chi', 'qui'], ψ: ['psi'], ω: ['ome', 'omega'],
 };
 
 /**
@@ -152,13 +203,42 @@ export function normalizarConsulta(valor: string): string {
     .replace(/\s+/g, ' ');
 }
 
-/** "γ² Vel" → ["gam vel", "gama vel"]; nome próprio não tem irmã. */
-function chavesIrmas(nome: string): string[] {
-  const partes = nome.split(' ');
-  if (partes.length !== 2) return [];
-  const formas = GREGAS[partes[0].replace(/[¹²³⁴⁵⁶⁷⁸⁹]/g, '')];
-  return formas ? formas.map((forma) => `${forma} ${partes[1]}`) : [];
+/**
+ * AS CHAVES DE UMA DESIGNAÇÃO DE BAYER — "α¹ Cen" vira "α1 cen",
+ * "α cen", "alfa1 cen", "alfa cen", "alpha centauri"… e assim por
+ * diante, o glifo e as formas da letra cruzados com a SIGLA e com o
+ * GENITIVO latino.
+ *
+ * UMA LEI SÓ (item 129/F5). Até aqui isto se chamava `chavesIrmas` e
+ * saía do NOME (`n`), o que só alcançava as 1.151 estrelas cujo nome JÁ
+ * era a designação — nas outras 575 o nome próprio da IAU tinha
+ * expulsado o Bayer e "alfa cen" caía no vazio. Agora sai dos campos
+ * `b`/`c` do catálogo, que existem em 1.522 delas, e é por isso que
+ * "alfa cen" acha Rigil Kentaurus. Medido: nas 1.151 que o caminho
+ * velho cobria, `b`+`c` reproduzem o nome partido ao meio, letra a
+ * letra — a lei nova contém a velha, não a contradiz.
+ *
+ * O SOBRESCRITO ENTRA E SAI: "α¹ Cen" responde a "alfa1 cen" (a
+ * designação inteira) e também a "alfa cen" (quem procura a estrela do
+ * Centauro não sabe que ela é a primeira de um par). A normalização
+ * dobra "¹" em "1" — aqui só se decide QUAIS formas existem.
+ */
+function chavesDeBayer(letra: string, sigla: string): string[] {
+  const nua = letra.replace(/[¹²³⁴⁵⁶⁷⁸⁹]/g, '');
+  const sufixo = letra.slice(nua.length);
+  const formas = [nua, ...(GREGAS[nua] ?? [])];
+  const todas = sufixo ? [...formas.map((f) => f + sufixo), ...formas] : formas;
+  const genitivo = CONSTELACOES[sigla];
+  const chaves: string[] = [];
+  for (const forma of todas) {
+    chaves.push(`${forma} ${sigla}`);
+    if (genitivo) chaves.push(`${forma} ${genitivo}`);
+  }
+  return chaves;
 }
+
+/** nome da estrela → apelidos populares nas duas línguas (item 129/F5) */
+const APELIDOS = new Map(APELIDOS_DE_ESTRELAS.map((a) => [a.nome, [...a.pt, ...a.en]]));
 
 /**
  * `corpos` é opcional e vem VAZIO fora do Atlas: é lá que existe o verbo
@@ -168,7 +248,8 @@ function chavesIrmas(nome: string): string[] {
  */
 export function construirIndice(
   nomeadas: readonly NamedStar[],
-  corpos: readonly CorpoBuscavel[] = []
+  corpos: readonly CorpoBuscavel[] = [],
+  lugares: readonly LugarBuscavel[] = []
 ): IndiceEstrelas {
   const porChave = new Map<string, number[]>();
   const porCatalogo = new Map<string, number>();
@@ -183,11 +264,18 @@ export function construirIndice(
   // digita "terra" está em casa procurando casa. Quem os põe na frente
   // no resultado é `ordemDoTipo`, não esta ordem: desde o item 115 o
   // índice é só o ÚLTIMO critério do `buscar`, o que sobra para dois
-  // alvos com nome idêntico.
+  // alvos com nome idêntico. Os LUGARES vêm logo atrás (é um só).
   const entradas: EntradaDaBusca[] = [
     ...corpos.map((corpo) => ({ tipo: 'corpo', corpo }) as const),
+    ...lugares.map((lugar) => ({ tipo: 'lugar', lugar }) as const),
     ...nomeadas.map((estrela) => ({ tipo: 'estrela', estrela }) as const),
   ];
+  /** nome da estrela → entrada, só para casar as tabelas de vocabulário */
+  const porNome = new Map<string, number>();
+  /** id do lugar → entrada, idem */
+  const porIdDeLugar = new Map<string, number>();
+  /** sigla da constelação → as estrelas dela, antes de virar nome */
+  const porSigla = new Map<string, number[]>();
   entradas.forEach((entrada, indice) => {
     if (entrada.tipo === 'corpo') {
       anotar(entrada.corpo.nome, indice);
@@ -202,13 +290,65 @@ export function construirIndice(
       anotar(entrada.corpo.id, indice);
       return;
     }
+    if (entrada.tipo === 'lugar') {
+      // o id é a CHAVE DO LINK (`?foco=sagittarius-a`) e o nome é o que
+      // o Director anuncia; as palavras das duas línguas entram abaixo,
+      // da tabela, junto com as dos lugares que são estrela
+      anotar(entrada.lugar.id, indice);
+      anotar(entrada.lugar.nome, indice);
+      porIdDeLugar.set(entrada.lugar.id, indice);
+      return;
+    }
     const estrela = entrada.estrela;
     anotar(estrela.n, indice);
-    for (const irma of chavesIrmas(estrela.n)) anotar(irma, indice);
+    porNome.set(estrela.n, indice);
+    // A DESIGNAÇÃO DE BAYER de TODA estrela que tenha letra e sigla —
+    // 1.522 delas, o nome próprio não a expulsa mais (item 129/F5)
+    if (estrela.b && estrela.c) {
+      for (const chave of chavesDeBayer(estrela.b, estrela.c)) anotar(chave, indice);
+    }
+    // A CONSTELAÇÃO NÃO VIRA CHAVE DE TEXTO, e é a decisão desta fase:
+    // "andromedae" em 150 estrelas encheria os degraus literais de
+    // endereço. Ela vai para um mapa à parte, consultado no degrau
+    // próprio (`SCORE.constelacao`). O GENITIVO acima é a exceção
+    // declarada: ele é parte da designação que se digita ("alfa
+    // centauri"), e por isso paga o preço de casar também por palavra.
+    if (estrela.c) {
+      const lista = porSigla.get(estrela.c);
+      if (lista) lista.push(indice);
+      else porSigla.set(estrela.c, [indice]);
+    }
+    for (const apelido of APELIDOS.get(estrela.n) ?? []) anotar(apelido, indice);
     if (estrela.gl) anotar(estrela.gl, indice);
     if (estrela.hd !== undefined) porCatalogo.set(`hd ${estrela.hd}`, indice);
     if (estrela.hip !== undefined) porCatalogo.set(`hip ${estrela.hip}`, indice);
   });
+  // OS LUGARES DO FILME, as duas línguas. Uma linha da tabela aponta ou
+  // para um lugar injetado (o centro galáctico) ou para uma ESTRELA do
+  // catálogo — e nesse caso as palavras dela viram apelido da estrela,
+  // que é o alvo de verdade. Linha sem alvo no índice é silêncio.
+  for (const lugar of LUGARES_DO_FILME) {
+    const alvo =
+      'estrela' in lugar.alvo
+        ? porNome.get(lugar.alvo.estrela)
+        : porIdDeLugar.get(lugar.id);
+    if (alvo === undefined) continue;
+    for (const palavra of [...lugar.pt, ...lugar.en]) anotar(palavra, alvo);
+  }
+  // As 88 constelações pelo NOME — latino, pt e en, as três sempre.
+  const porConstelacao = new Map<string, number[]>();
+  for (const [sigla, estrelas] of porSigla) {
+    const nomes = NOMES_DAS_CONSTELACOES[sigla];
+    if (!nomes) continue;
+    for (const nome of [nomes.la, nomes.pt, nomes.en]) {
+      const chave = normalizarConsulta(nome);
+      const lista = porConstelacao.get(chave);
+      // "Cruzeiro do Sul" é o pt de Cru e nada mais; mas duas siglas
+      // podem cair na mesma palavra e a lista soma, nunca se sobrescreve
+      if (lista) for (const i of estrelas) { if (!lista.includes(i)) lista.push(i); }
+      else porConstelacao.set(chave, [...estrelas]);
+    }
+  }
   // O MOTOR RECEBE AS MESMAS CHAVES, uma por documento (não uma por
   // estrela): é o que faz "sirius" pontuar mais alto na chave "sirius"
   // do que na "sirius b" — o MiniSearch normaliza pelo comprimento do
@@ -220,7 +360,7 @@ export function construirIndice(
     processTerm: (termo) => normalizarConsulta(termo) || null,
   });
   tolerancia.addAll(chaves.map((texto, id) => ({ id, texto })));
-  return { entradas, nomeadas, porChave, porCatalogo, chaves, tolerancia };
+  return { entradas, nomeadas, porChave, porCatalogo, porConstelacao, chaves, tolerancia };
 }
 
 function pontuar(chave: string, consulta: string): number {
@@ -232,6 +372,13 @@ function pontuar(chave: string, consulta: string): number {
   return chave.includes(consulta) ? SCORE.parcial : 0;
 }
 
+/** o nome que a entrada mostra, seja ela de que família for */
+export function nomeDaEntrada(entrada: EntradaDaBusca): string {
+  if (entrada.tipo === 'corpo') return entrada.corpo.nome;
+  if (entrada.tipo === 'lugar') return entrada.lugar.nome;
+  return entrada.estrela.n;
+}
+
 /** casa antes do céu: com o mesmo score, um corpo do sistema vem antes */
 const ordemDoTipo = (entrada: EntradaDaBusca) => (entrada.tipo === 'corpo' ? 0 : 1);
 
@@ -240,8 +387,7 @@ const brilhoDe = (entrada: EntradaDaBusca) =>
   entrada.tipo === 'estrela' ? entrada.estrela.m : 0;
 
 /** o nome canônico da entrada, normalizado — a régua do desempate final */
-const nomeCanonico = (entrada: EntradaDaBusca) =>
-  normalizarConsulta(entrada.tipo === 'corpo' ? entrada.corpo.nome : entrada.estrela.n);
+const nomeCanonico = (entrada: EntradaDaBusca) => normalizarConsulta(nomeDaEntrada(entrada));
 
 /**
  * Resultados por score decrescente; empate desempata primeiro pelo TIPO
@@ -281,6 +427,25 @@ export function buscar(
     if (score === 0) continue;
     for (const i of entradas) {
       if ((melhorPorEntrada.get(i) ?? 0) < score) melhorPorEntrada.set(i, score);
+    }
+  }
+
+  // A CONSTELAÇÃO COMO LUGAR (item 129/F5): "orion", "cão maior",
+  // "southern cross" devolvem as estrelas DAQUELE pedaço de céu, as
+  // mais brilhantes primeiro (quem ordena é o desempate por magnitude
+  // que já existe). Em degrau próprio, embaixo dos quatro literais —
+  // ver `SCORE.constelacao`.
+  //
+  // A CONSULTA INTEIRA, e prefixo só de 3 letras para cima: "and" já
+  // abre Andrômeda, "an" não abre nada. Abaixo de três, um prefixo
+  // acende meia dúzia de constelações de uma vez e o degrau deixa de
+  // querer dizer "o visitante nomeou um lugar".
+  for (const [chave, estrelas] of indice.porConstelacao) {
+    if (chave !== alvo && !(alvo.length >= 3 && chave.startsWith(alvo))) continue;
+    for (const i of estrelas) {
+      if ((melhorPorEntrada.get(i) ?? 0) < SCORE.constelacao) {
+        melhorPorEntrada.set(i, SCORE.constelacao);
+      }
     }
   }
 
@@ -368,6 +533,10 @@ export function buscar(
  */
 export function chaveDeLink(entrada: EntradaDaBusca): string {
   if (entrada.tipo === 'corpo') return normalizarConsulta(entrada.corpo.nome);
+  // UM LUGAR vai pelo id da tabela (`?foco=sagittarius-a`): o nome dele
+  // carrega um "✱" que nenhuma URL quer, e o id é ASCII e casa por
+  // degrau EXATO — a mesma lei do nome de um corpo, com outra grafia
+  if (entrada.tipo === 'lugar') return entrada.lugar.id;
   const estrela = entrada.estrela;
   if (estrela.hd !== undefined) return `hd${estrela.hd}`;
   if (estrela.hip !== undefined) return `hip${estrela.hip}`;
@@ -376,14 +545,19 @@ export function chaveDeLink(entrada: EntradaDaBusca): string {
 
 /**
  * A CHAVE DO QUE ESTÁ EM QUADRO, achada pelo NOME que o Director
- * anunciou (é o que o cabeçalho da ficha mostra). `null` quando o nome não é do
- * índice — o Sagittarius A✱ é o caso, e o link volta ao modo sem o alvo
- * em vez de inventar uma porta que a busca não saberia resolver.
+ * anunciou (é o que o cabeçalho da ficha mostra). `null` quando o nome
+ * não é do índice — o link volta ao modo sem o alvo em vez de inventar
+ * uma porta que a busca não saberia resolver.
+ *
+ * O SAGITTARIUS A✱ DEIXOU DE SER ESSE CASO (item 129/F5): enquanto ele
+ * era só um rótulo alcançável pelo clique, o foco nele apagava o
+ * `?foco=` da URL; agora ele é uma ENTRADA do índice (um `lugar`), a
+ * chave dele é `sagittarius-a` e o link reproduz a vista. Continua
+ * valendo quando o índice é construído SEM lugares — é o que os testes
+ * do catálogo fazem, e lá o silêncio segue certo.
  */
 export function chaveDoFoco(nome: string, indice: IndiceEstrelas): string | null {
-  const entrada = indice.entradas.find((e) =>
-    e.tipo === 'corpo' ? e.corpo.nome === nome : e.estrela.n === nome
-  );
+  const entrada = indice.entradas.find((e) => nomeDaEntrada(e) === nome);
   return entrada ? chaveDeLink(entrada) : null;
 }
 
