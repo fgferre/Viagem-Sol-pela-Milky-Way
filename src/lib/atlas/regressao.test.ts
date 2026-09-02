@@ -92,6 +92,14 @@ const REPRESENTATIVE_BODIES = [
   // Casa (adaptação 5): hygiea saiu do Kepler de catálogo e entrou na
   // família AsteroidOsculating na Onda 2 — julga nas 3 épocas.
   'hygiea',
+  // Casa (item 27): os quatro planetas que o doador só tinha em
+  // orientação (`subsolar-*`). TOLERANCES já trazia o limiar VSOP87D
+  // deles; o que faltava eram as fixtures de POSIÇÃO, geradas nas 3
+  // épocas pelo mesmo `scripts/data/atlas/generate-horizons-fixtures.js`.
+  'venus',
+  'jupiter',
+  'saturn',
+  'uranus',
 ] as const;
 const PREFERRED_BASELINE_DATE = '2025-01-01T00:00:00Z';
 

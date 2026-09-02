@@ -2,12 +2,15 @@
 
 // ============================================================
 // VENDORIZADO do atlas-orbital (scripts/generate-horizons-fixtures.js).
-// Ferramenta offline julgada por oráculo (PLANO-ATLAS §0.2). Duas
-// adaptações declaradas, ambas marcadas com "// Casa:" no corpo:
+// Ferramenta offline julgada por oráculo (PLANO-ATLAS §0.2). Três
+// adaptações declaradas, todas marcadas com "// Casa:" no corpo:
 //   1. FIXTURES_DIR aponta para o src/test/fixtures/horizons desta raiz
 //      (o script mudou de profundidade de diretório).
 //   2. Hygiea entra em TARGET_BODIES — é a adição da Onda 2 (o doador a
 //      deixava em Kepler de catálogo; aqui ela ganha o pipeline osculante).
+//   3. Vênus, Júpiter, Saturno e Urano saem de SUBPOINT_ONLY_BODIES (que
+//      some com o desvio MODE_BODIES) e entram em TARGET_BODIES: o item 27
+//      é a decisão explícita que o doador exigia para cunhar posição.
 // Todo o resto é conteúdo verbatim.
 // ============================================================
 
@@ -82,6 +85,14 @@ const TARGET_BODIES = [
   { id: "mars", command: "499", center: "500@10", name: "Mars" },
   { id: "neptune", command: "899", center: "500@10", name: "Neptune" },
   { id: "pluto", command: "999", center: "500@10", name: "Pluto" },
+  // Casa (item 27): os quatro que o doador deixava só em `subpoint`. A
+  // ressalva dele era não cunhar assertiva de POSIÇÃO em silêncio — aqui
+  // a decisão é explícita, e eles entram junto em REPRESENTATIVE_BODIES
+  // (`src/lib/atlas/regressao.test.ts`), onde TOLERANCES já os esperava.
+  { id: "venus", command: "299", center: "500@10", name: "Venus" },
+  { id: "jupiter", command: "599", center: "500@10", name: "Jupiter" },
+  { id: "saturn", command: "699", center: "500@10", name: "Saturn" },
+  { id: "uranus", command: "799", center: "500@10", name: "Uranus" },
   // Earth system
   { id: "moon", command: "301", center: "500@399", name: "Moon" },
   // Martian moons
@@ -150,31 +161,14 @@ const BODY_FILTER = process.env.HORIZONS_BODIES
     )
   : null;
 
-/**
- * Bodies that only `subpoint` mode needs.
- *
- * Kept out of `TARGET_BODIES` on purpose: that list drives the *vectors*
- * regression set, `regression.test.ts` iterates whatever is on disk, and
- * silently minting new position fixtures would silently mint new position
- * assertions. Orientation truth for these bodies is wanted; new position
- * assertions are a separate decision.
- */
-const SUBPOINT_ONLY_BODIES = [
-  { id: "venus", command: "299", center: "500@10", name: "Venus" },
-  { id: "jupiter", command: "599", center: "500@10", name: "Jupiter" },
-  { id: "saturn", command: "699", center: "500@10", name: "Saturn" },
-  { id: "uranus", command: "799", center: "500@10", name: "Uranus" },
-];
-
-const MODE_BODIES =
-  process.env.HORIZONS_MODE === "subpoint"
-    ? [...TARGET_BODIES, ...SUBPOINT_ONLY_BODIES]
-    : TARGET_BODIES;
-
+// Casa (item 27): a lista `SUBPOINT_ONLY_BODIES` do doador — e o desvio
+// `MODE_BODIES` que ela pedia — morreram aqui. Ela existia só para segurar
+// Vênus, Júpiter, Saturno e Urano fora das fixtures de posição; agora eles
+// estão em TARGET_BODIES e os dois modos leem a mesma lista.
 // Active body list (filtered if HORIZONS_BODIES set)
 const ACTIVE_BODIES = BODY_FILTER
-  ? MODE_BODIES.filter((b) => BODY_FILTER.has(b.id))
-  : MODE_BODIES;
+  ? TARGET_BODIES.filter((b) => BODY_FILTER.has(b.id))
+  : TARGET_BODIES;
 
 function buildHorizonsUrl(body, date) {
   const stopDate = new Date(date);

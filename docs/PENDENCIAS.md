@@ -1877,16 +1877,13 @@ planetas no voo livre e entra no atlas neles (`e75d4af`), e leva ao
 buraco negro central. Filme segue sem busca (palavra dele). Testes
 aprovados e verdes (`78ee3b5`). O que sobrou virou o item **131**.)*
 
-**119. O atlas-smoke prova 3 reprova em t=250 — o relógio do portal
-move a Terra (pré-existente, provado).** Achado em 31/08 durante a obra
-do retrato v2, com prova de inocência da obra: a mesma receita em HEAD
-com as mudanças em stash dá o MESMO desvio (1,185e-2 do raio) — a pose
-atravessa o portal exata em relação à Terra (60.170,7128 km antes e
-depois); o que muda é o relógio: o `?jd=` reaplicado no portal move a
-Terra 1,74 M km e a prova mede contra o lugar velho. Família do
-108/portal. Casa do conserto: decidir se o portal deve reaplicar o
-`?jd=` (e a prova acompanhar) ou se a prova deve medir relativo à
-Terra.
+**119.** O `atlas-smoke` prova 3 reprovava em t=250 porque media
+contra a Terra velha — **OBRA FEITA em 02/09, fecha quando o juiz rodar
+(lista do §19)**; história no ARQUIVO. *(A régua passou a ser a Terra
+viva de cada lado: relógio parado → vetor relativo (teto 1e-9);
+relógio reaplicado pelo portal (item 108) → distância de enquadramento
+(teto 1e-4). Medido à mão: 1,185e-2 → 3,78e-5. Prova
+`capturas/item119-regua.txt`.)*
 
 **125. A ONDA DA PARIDADE — linhas de órbita, rótulos e ícones IGUAIS
 aos do NASA Eyes.** **FECHADA em 01/09**, palavra dele nas fotos A/B e
@@ -1982,7 +1979,12 @@ corte come a superfície.
 
 **26.** O brilho das estrelas é relativo, não absoluto.
 
-**27.** Faltam fixtures Horizons de Vênus, Júpiter, Saturno e Urano.
+**27.** Faltavam fixtures Horizons de POSIÇÃO de Vênus, Júpiter,
+Saturno e Urano — **OBRA FEITA em 02/09, fecha quando o teste rodar
+(lista do §19)**; história no ARQUIVO. *(12 fixtures nas mesmas 3 datas
+dos outros planetas, índice 127 → 139; os quatro entraram no juiz de
+regressão; pior desvio motor × Horizons 0,00032° / 0,0018% contra o
+teto 0,1° / 0,2%. Prova `capturas/item27-fixtures.txt`.)*
 
 **28.** Dívidas internas de cor a re-dosar.
 

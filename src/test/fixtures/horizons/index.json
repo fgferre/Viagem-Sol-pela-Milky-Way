@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-11T01:32:25.880Z",
-  "totalFixtures": 127,
+  "generatedAt": "2026-09-02T05:07:38.773Z",
+  "totalFixtures": 139,
   "bodies": [
     "ariel",
     "callisto",
@@ -15,6 +15,7 @@
     "hygiea",
     "iapetus",
     "io",
+    "jupiter",
     "mars",
     "mercury",
     "mimas",
@@ -26,11 +27,14 @@
     "phobos",
     "pluto",
     "rhea",
+    "saturn",
     "tethys",
     "titan",
     "titania",
     "triton",
     "umbriel",
+    "uranus",
+    "venus",
     "vesta"
   ],
   "dates": [
@@ -333,6 +337,21 @@
       "file": "io-2026-01-01.json"
     },
     {
+      "bodyId": "jupiter",
+      "date": "2025-01-01T00:00:00Z",
+      "file": "jupiter-2025-01-01.json"
+    },
+    {
+      "bodyId": "jupiter",
+      "date": "2025-07-01T00:00:00Z",
+      "file": "jupiter-2025-07-01.json"
+    },
+    {
+      "bodyId": "jupiter",
+      "date": "2026-01-01T00:00:00Z",
+      "file": "jupiter-2026-01-01.json"
+    },
+    {
       "bodyId": "mars",
       "date": "2025-01-01T00:00:00Z",
       "file": "mars-2025-01-01.json"
@@ -548,6 +567,21 @@
       "file": "rhea-2026-01-01.json"
     },
     {
+      "bodyId": "saturn",
+      "date": "2025-01-01T00:00:00Z",
+      "file": "saturn-2025-01-01.json"
+    },
+    {
+      "bodyId": "saturn",
+      "date": "2025-07-01T00:00:00Z",
+      "file": "saturn-2025-07-01.json"
+    },
+    {
+      "bodyId": "saturn",
+      "date": "2026-01-01T00:00:00Z",
+      "file": "saturn-2026-01-01.json"
+    },
+    {
       "bodyId": "tethys",
       "date": "2024-01-01T00:00:00Z",
       "file": "tethys-2024-01-01.json"
@@ -661,6 +695,36 @@
       "bodyId": "umbriel",
       "date": "2026-01-01T00:00:00Z",
       "file": "umbriel-2026-01-01.json"
+    },
+    {
+      "bodyId": "uranus",
+      "date": "2025-01-01T00:00:00Z",
+      "file": "uranus-2025-01-01.json"
+    },
+    {
+      "bodyId": "uranus",
+      "date": "2025-07-01T00:00:00Z",
+      "file": "uranus-2025-07-01.json"
+    },
+    {
+      "bodyId": "uranus",
+      "date": "2026-01-01T00:00:00Z",
+      "file": "uranus-2026-01-01.json"
+    },
+    {
+      "bodyId": "venus",
+      "date": "2025-01-01T00:00:00Z",
+      "file": "venus-2025-01-01.json"
+    },
+    {
+      "bodyId": "venus",
+      "date": "2025-07-01T00:00:00Z",
+      "file": "venus-2025-07-01.json"
+    },
+    {
+      "bodyId": "venus",
+      "date": "2026-01-01T00:00:00Z",
+      "file": "venus-2026-01-01.json"
     },
     {
       "bodyId": "vesta",

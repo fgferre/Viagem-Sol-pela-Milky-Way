@@ -26,13 +26,23 @@
 //     POSIÇÃO da câmera antes e depois do portal, e o fov no pino do
 //     Atlas (58° desde 29/08, item 86; era 35°).
 //
-//     A POSIÇÃO É COBRADA POR ERRO RELATIVO, não por `Object.is`, e o
-//     desvio é declarado: o pouso reconstrói a pose como (direção,
-//     distância) contra o eixo do degrau, e a ida e volta por ângulo não
-//     é exata em ponto flutuante. Medido: a coda sai BIT-IDÊNTICA nos
-//     três eixos, e as outras duas concordam em 1 ulp (~1e-16
-//     relativo). O teto é 1e-9 do raio, três ordens acima do pior visto
-//     e sete abaixo de qualquer erro que mova pixel.
+//     A POSIÇÃO É COBRADA CONTRA A TERRA VIVA DE CADA LADO, e não
+//     contra uma posição guardada antes de atravessar (item 119, a
+//     régua consertada em 01/09). A promessa não mudou — a pose
+//     atravessa o portal —, mudou o zero da régua: `entrarNoAtlas`
+//     reaplica o `?jd=` DE PROPÓSITO (`aplicarPortaJd`, item 108: filme
+//     e atlas contam a mesma hora), e nos 0,667 d que a coda devolve ao
+//     relógio a Terra anda 1,74 M km. Medir a câmera contra a origem
+//     via 1,19e-2 do raio e culpava o portal pelo calendário.
+//
+//     São dois regimes, e o veredito escolhe pelo próprio relógio:
+//     com o jd IGUAL dos dois lados o VETOR relativo à Terra atravessa
+//     em 1 ulp (medido 1,4e-16 em t=10 e 5,1e-16 em t=100, teto 1e-9);
+//     com o jd ANDANDO só a DISTÂNCIA de enquadramento atravessa
+//     (medido 3,8e-5 em t=250 — 2,3 km em 60.165 —, teto 1e-4), porque
+//     o pouso reconstrói a pose como (direção, distância) contra o eixo
+//     do degrau e a direção gira junto com a longitude orbital do
+//     planeta: 0,71° na jornada de 0,667 d.
 //
 //     Os três instantes seguem sendo escolhidos por REGIME, e agora cada
 //     um cai num degrau diferente do pouso — que é o que faz a trinca
@@ -146,9 +156,27 @@ try {
   const degraus = new Map();
   const poses = new Map();
   // a pose lida do MESMO objeto dos dois lados do portal — é ela que
-  // responde "o Atlas nasceu onde o filme estava?"
-  const POSE = 'JSON.stringify((()=>{const c=window.__director.engine.camera;'
-    + 'return {p:[c.position.x,c.position.y,c.position.z],fov:c.fov};})())';
+  // responde "o Atlas nasceu onde o filme estava?". A TERRA VIVA vem
+  // junto porque é a RÉGUA (item 119): `entrarNoAtlas` reaplica o `?jd=`
+  // de propósito (`aplicarPortaJd`, item 108 — filme e atlas contam a
+  // mesma hora), e com o relógio o planeta anda; medir a câmera contra a
+  // origem culparia o portal pelo calendário. O índice do vértice sai do
+  // getter `corpos` (a ordem de `CORPOS_DO_SISTEMA`), nunca digitado.
+  const POSE = 'JSON.stringify((()=>{const d=window.__director;'
+    + "const c=d.engine.camera;const i=d.corpos.findIndex((x)=>x.id==='earth');"
+    + 'const P=d.planetas?d.planetas.posicoes:null;'
+    + 'return {p:[c.position.x,c.position.y,c.position.z],fov:c.fov,jd:d.tempo.jd,'
+    + ' terra:(P&&i>=0)?[P[i*3],P[i*3+1],P[i*3+2]]:null};})())';
+  const menos = (a, b) => a.map((v, i) => v - b[i]);
+  /** vetor relativo à Terra, com o relógio parado dos dois lados: o pior
+   *  medido é 5e-16 (1 ulp), e o teto fica três ordens acima. */
+  const TETO_DA_POSE = 1e-9;
+  /** com o relógio do portal ANDANDO só a distância de enquadramento
+   *  atravessa — a direção gira junto com a longitude orbital da Terra
+   *  (0,71° nos 0,667 d da coda). Pior medido 3,8e-5 (2,3 km em 60.165);
+   *  o piso é o desencontro de 3,8 km entre a Terra do buffer da camada
+   *  e o `atlas.alvo` que o pouso enquadra. */
+  const TETO_DA_DISTANCIA = 1e-4;
   for (const T of [10, 100, 250]) {
     await sessao.ir(`t=${T}&${PIN_DO_TRIO}`);
     const antesFase = await sessao.js('window.__director.captura.fase');
@@ -162,14 +190,26 @@ try {
     const faseDentro = await sessao.js('window.__director.captura.fase');
     const md5Atlas = await sessao.md5();
     doAtlas.set(T, md5Atlas);
-    relogios.set(T, await sessao.js('window.__director.tempo.jd'));
     const poseDepois = JSON.parse(await sessao.js(POSE));
+    relogios.set(T, poseDepois.jd);
     degraus.set(T, await sessao.js('window.__director.escadaViva.degrau'));
-    const raio = Math.hypot(...poseAntes.p);
-    const desvio = Math.hypot(...poseAntes.p.map((v, i) => v - poseDepois.p[i]));
+    // sem Terra viva não há régua, e o erro sai NaN de propósito: o
+    // veredito reprova em vez de medir contra um planeta ausente
+    const semTerra = [poseAntes.terra, poseDepois.terra].some(
+      (t) => !Array.isArray(t) || !t.every((v) => Number.isFinite(v))
+    );
+    const relAntes = semTerra ? [NaN, NaN, NaN] : menos(poseAntes.p, poseAntes.terra);
+    const relDepois = semTerra ? [NaN, NaN, NaN] : menos(poseDepois.p, poseDepois.terra);
+    const dAntes = Math.hypot(...relAntes);
+    const relogioAndou = !Object.is(poseAntes.jd, poseDepois.jd);
     poses.set(T, {
-      erro: raio > 0 ? desvio / raio : desvio,
-      exata: poseAntes.p.every((v, i) => Object.is(v, poseDepois.p[i])),
+      semTerra,
+      relogioAndou,
+      erro:
+        (relogioAndou
+          ? Math.abs(dAntes - Math.hypot(...relDepois))
+          : Math.hypot(...menos(relAntes, relDepois))) / dAntes,
+      exata: !relogioAndou && relAntes.every((v, i) => Object.is(v, relDepois[i])),
       fov: poseDepois.fov,
     });
     conferir(faseDentro === 'atlas', `t=${T}: entrou — fase = '${faseDentro}'`);
@@ -211,10 +251,15 @@ try {
       + ` ${[...degraus].map(([t, d]) => `t=${t} ${d}`).join(' · ')}`
   );
   for (const [T, p] of poses) {
+    const teto = p.relogioAndou ? TETO_DA_DISTANCIA : TETO_DA_POSE;
     conferir(
-      p.erro < 1e-9,
-      `t=${T}: a POSIÇÃO atravessa o portal — desvio ${p.erro.toExponential(2)}`
-        + ` do raio (teto 1e-9)${p.exata ? ', bit-idêntica nos três eixos' : ''}`
+      !p.semTerra && p.erro < teto,
+      `t=${T}: a POSIÇÃO atravessa o portal contra a TERRA VIVA —`
+        + ` ${p.relogioAndou ? 'distância de enquadramento' : 'vetor relativo'}`
+        + ` a ${p.erro.toExponential(2)} dela (teto ${teto.toExponential(0)}`
+        + `${p.relogioAndou ? ', o relógio do portal andou' : ''})`
+        + `${p.exata ? ', bit-idêntica nos três eixos' : ''}`
+        + `${p.semTerra ? ' — SEM POSIÇÃO VIVA DA TERRA' : ''}`
     );
     // desde 29/08 (item 86) a lente do Atlas é a da casa: 58°. O corte
     // continua existindo — o shot pausado varre 15°–60° e o pino do

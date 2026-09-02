@@ -6671,3 +6671,16 @@ a peça em `capturas/item117-limbo.json`.
 **Fecho dos quatro (02/09, faxina dos miúdos):** executor Opus em uma
 passada, fotos conferidas pelo coordenador; o 15 fechou sem obra porque
 a verificação provou que o nível de qualidade já fazia o alívio.
+
+**119. O atlas-smoke prova 3 reprova em t=250 — o relógio do portal
+move a Terra (pré-existente, provado).** Achado em 31/08 durante a obra
+do retrato v2, com prova de inocência da obra: a mesma receita em HEAD
+com as mudanças em stash dá o MESMO desvio (1,185e-2 do raio) — a pose
+atravessa o portal exata em relação à Terra (60.170,7128 km antes e
+depois); o que muda é o relógio: o `?jd=` reaplicado no portal move a
+Terra 1,74 M km e a prova mede contra o lugar velho. Família do
+108/portal. Casa do conserto: decidir se o portal deve reaplicar o
+`?jd=` (e a prova acompanhar) ou se a prova deve medir relativo à
+Terra.
+
+**27.** Faltam fixtures Horizons de Vênus, Júpiter, Saturno e Urano.
