@@ -6503,3 +6503,24 @@ prova o contrato do céu das nuvens (quem tem poeira entre si e o Sol é
 escurecido; quem não tem, não), não decisão do dono nem chão de
 literais. Fecho: a palavra trocada pelo coordenador no mesmo dia,
 `npm run censo` de volta ao exit 0.
+
+**126. `?foco=mars` cai na estrela "Marsic", não em Marte.** Achado em
+01/09 pelas fotos A/B da F6 (onda 125), sem obra: pedir a URL com
+`foco=mars` abre a ficha "MARSIC · ESTRELA · κ Herculis" em vez do
+planeta — o resolvedor de foco casa por prefixo/semelhança de nome e a
+estrela vence o planeta. Foto do flagrante ficou com a sessão; refazer
+é trivial (`?foco=mars` no navegador). Casa do conserto: onde a URL
+vira corpo (prioridade para corpos do sistema sobre estrelas, ou casar
+exato antes de aproximado).
+
+
+**Fecho (01/09, mão do coordenador, sessão pequena):** a causa não era
+"semelhança vencendo": o corpo só era anotado no índice pelo NOME
+(`marte`), e `mars` não é prefixo de `marte` — a única chave que casava
+era a da estrela (`marsic`, prefixo, 110). `construirIndice` passou a
+anotar também o `id` inglês de cada corpo (`mars`, `earth`, `moon`), que
+casa por degrau EXATO (140) e vence qualquer prefixo; `anotar` não repete
+a mesma entrada na mesma chave (`jupiter` é id e nome). O lado que
+ESCREVE o link (`chaveDeLink`) segue pelo nome. Foto de prova
+`capturas/item126-foco-mars-depois.png` (ficha MARTE · PLANETA, órbita
+enquadrada). Teste do `buscaEstrelas.test.ts` fica para a lista do §19.

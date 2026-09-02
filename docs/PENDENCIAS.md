@@ -36,19 +36,36 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 126.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 130.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
   o 122 nasceram sem somá-la; quem abrir item confere o maior número vivo
   antes de confiar nela. Os 123 e 124 nasceram na faxina da estação do
-  115, conferindo primeiro.)*
+  115, conferindo primeiro. Em 01/09 ela ficou de novo atrás — o 129 nasceu
+  com ela ainda em 126; re-somada.)*
 
 A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
 
 ---
 
-## O BASTÃO — onde a rodada parou (31/08)
+## O BASTÃO — onde a rodada parou (01/09)
+
+**01/09 (a onda da paridade FECHADA e a lei do §19).** O **item 125**
+(linhas de órbita, rótulos e ícones iguais aos do NASA Eyes) fechou com
+a palavra dele nas fotos A/B, fase a fase (F0–F7; hashes na lápide do
+item). No caminho nasceu o **§19 do AGENTS.md**: teste, sabotagem e
+suíte só rodam com o sim dele, em lista simples no fim da rodada. Ele
+matou o 127 e o 128 pelo olho ("já vi que está tudo bem") e deu a
+direção do **129**: viagem/atlas/filme são OPÇÕES do universo único, e
+a **busca é uma só** para todo objeto — rumo da próxima rodada, começa
+pelo censo do que a busca enxerga em cada opção. *(Mais tarde, outra
+janela:)* o **126** fechou com a própria mão do coordenador — o planeta
+entra na busca também pelo id inglês; foto conferida. Backup em dia;
+site intocado.
+
+*(31/08, o bastão anterior:)*
+
 
 **31/08 (a rodada da retomada — Fable coordena, executores Opus,
 auditor por etapa; TODAS as etapas auditadas por mão independente e os
@@ -1800,15 +1817,12 @@ já que o efeito só se manifesta como franja de 1 px em silhuetas de alto
 contraste. Zooms `capturas/item117-zoom-*.png` (com e `-semCA`), perfis e
 a peça em `capturas/item117-limbo.json`.
 
-**126. `?foco=mars` cai na estrela "Marsic", não em Marte.** Achado em
-01/09 pelas fotos A/B da F6 (onda 125), sem obra: pedir a URL com
-`foco=mars` abre a ficha "MARSIC · ESTRELA · κ Herculis" em vez do
-planeta — o resolvedor de foco casa por prefixo/semelhança de nome e a
-estrela vence o planeta. Foto do flagrante ficou com a sessão; refazer
-é trivial (`?foco=mars` no navegador). Casa do conserto: onde a URL
-vira corpo (prioridade para corpos do sistema sobre estrelas, ou casar
-exato antes de aproximado).
-
+**126.** `?foco=mars` caía na estrela "Marsic", não em Marte — **FECHADO em
+01/09**; história no ARQUIVO. *(O planeta só entrava na busca pelo nome
+em português, e "mars" não é começo de "marte"; agora cada corpo do
+sistema entra também pelo id inglês — `mars`, `earth`, `moon` —, que
+casa exato e vence qualquer prefixo de estrela. Foto
+`capturas/item126-foco-mars-depois.png`.)*
 ---
 
 ## BAIXA — dívida interna, ninguém vê

@@ -140,8 +140,8 @@ export function construirIndice(
     const chave = normalizarConsulta(bruta);
     if (!chave) return;
     const lista = porChave.get(chave);
-    if (lista) lista.push(indice);
-    else porChave.set(chave, [indice]);
+    if (!lista) porChave.set(chave, [indice]);
+    else if (!lista.includes(indice)) lista.push(indice);
   };
   // OS CORPOS PRIMEIRO — dez corpos contra 1.726 estrelas, e quem
   // digita "terra" está em casa procurando casa. Quem os põe na frente
@@ -155,6 +155,15 @@ export function construirIndice(
   entradas.forEach((entrada, indice) => {
     if (entrada.tipo === 'corpo') {
       anotar(entrada.corpo.nome, indice);
+      // O ID INGLÊS TAMBÉM É CHAVE (item 126): `?foco=mars` caía na
+      // estrela Marsic porque "mars" não é começo de "marte", e a única
+      // chave que casava era a da estrela. O id é o nome inglês do corpo
+      // ('mars', 'earth', 'moon'), que casa por degrau EXATO e vence
+      // qualquer prefixo — o link escrito em inglês pousa no planeta.
+      // O que a UI ESCREVE segue sendo o nome (`chaveDeLink`); isto é só
+      // o lado que LÊ. "jupiter" é id e nome ao mesmo tempo: `anotar`
+      // não repete a mesma entrada na mesma chave.
+      anotar(entrada.corpo.id, indice);
       return;
     }
     const estrela = entrada.estrela;
