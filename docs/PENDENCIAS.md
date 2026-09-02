@@ -240,8 +240,8 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   `atlasConfig.test.ts` espera 30 luas (na lista do §19). Declarado: a
   fase orbital não é efeméride (elementos médios J2000 a dois corpos).
   Provas em `capturas/item134-s3-*`.
-- **S3c — PARIDADE do esculpido com o projeto dele (o grão FEITO; a cor
-  ABERTA no juízo dele).** Palavras dele, 02/09: *"qualidade geral muito
+- **S3c — PARIDADE do esculpido com o projeto dele: FECHADA em 02/09 pela
+  palavra dele (o grão feito; a luz fica como está).** Palavras dele, 02/09: *"qualidade geral muito
   maior nas luas... a diferença gritante"* — lá bege/terroso, fundo de
   cratera escuro, grão fino de alto contraste; aqui branco e macio. Medido
   ingrediente por ingrediente contra `moonMaterials.ts`: **(1) cor e
@@ -276,6 +276,9 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   dele. **DECISÃO DELE pendente:** a lanterna e o terminador suave são o
   brilho assistido de TODO corpo (item 93); o visitante já pode desligá-los
   no selo ("brilho real"). Igualar por padrão muda a casa inteira.
+  **DECISÃO DELE (02/09): "melhorou bastante... não, deixe do jeito que
+  ficou agora"** — as ajudas de luz ficam como estão; S3c FECHADA com o
+  grão (d82cbfc). Cor/tom e pós dele não entram.
 - **S4 — os jatos de Encélado: FEITA em 02/09** (commit no selo desta
   linha; fotos conferidas e entregues). A matemática do projeto dele
   inteira (8 bocas nas listras de tigre, voo balístico com gravidade,
