@@ -8690,3 +8690,164 @@ em `capturas/item136-orbitas-de-cima-{5r,14r}.png`. **Sem defeito:** sete
 das nove orbitam mesmo entre 133 e 152 mil km — Pã e Dáfnis dentro das
 divisões do anel A, Atlas na borda, Prometeu e Pandora nos dois lados do
 anel F, Jano e Epimeteu co-orbitais. A estranheza é a física.
+
+## Item 134 — A ONDA DE SATURNO: a colheita do projeto Saturn dele
+
+**134. A ONDA DE SATURNO — a colheita do projeto Saturn dele
+(https://fgferre.github.io/Saturn/) mais o que o 133 achou.** Pedido dele,
+02/09: *"trazer os aprendizados desse outro projeto que eu mesmo fiz"* e,
+depois do laudo: *"vamos fazer tudo isso que você levantou, das
+observações do nosso projeto e do meu projeto de Saturno; tudo isso é
+meu, criado por mim e por você, não tem problema usar nada. Acho o
+resultado muito interessante, inclusive os jatos de Encélado."* Laudo:
+[`docs/reference/saturn-colheita.md`](reference/saturn-colheita.md)
+(conferido pelo coordenador corpo a corpo: NÃO há modelo 3D — seis luas
+com mapa de altura+normais, nove corpos irregulares esculpidos por
+código, Saturno e Titã esferas). Licença: o código é dele; o único dado
+de terceiro é o perfil dos anéis (Björn Jónsson), creditado no NOTICE
+dele sem linha de licença — trazer com o crédito e documentar em
+`ASSETS.md`. Custo anunciado: obra GRANDE, cinco fases, meia jornada a
+um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
+
+- **S1 — os anéis: FEITA em 02/09** (commit no selo desta linha; fotos
+  conferidas pelo coordenador e entregues a ele). Perfil radial medido
+  (8 KB) aposentou a placa — o canal `ring` (~22 MiB residentes) deixou
+  de ser pedido; planetshine no anel (derivado: 9% no D, 0,8% no F) e
+  ringshine na noite do globo (LUT de 64 latitudes; +13% na noite); a
+  franja azul morreu por consequência; penumbra da sombra do anel pelo
+  disco solar. Lado de sombra do B: 0,03 → 0,23 (2017), 0,01 → 0,07
+  (hoje). Filme bit-idêntico longe de Saturno; custo de quadro igual.
+  Declarado: o anel termina em 136.775 km (o F fica para a S5); o
+  contraste B/A vem só de τ (albedo por raio ficou de fora). Provas em
+  `capturas/item134-s1-*`. Lista do §19 da onda: `gigante.test.ts` (a
+  guarda do canal ring virou "não pede") e a suíte 1× no fecho.
+- **S2 — o relevo das luas: FEITA em 02/09** (commit no selo desta
+  linha; fotos conferidas e entregues). Bump por derivada do albedo em
+  todo corpo rochoso — LEI DELE (02/09): "o relevo deve aparecer em
+  tudo que tem relevo, sem atmosfera; um universo só, filme, voo e
+  Atlas" — Mercúrio, Marte, Io e a Lua ligados (fotos
+  `capturas/item134-s2-bump-*`); zero só em Vênus e Titã (o mapa é
+  nuvem/bruma) e Ceres (mapa confessado inventado); deslocamento
+  por mapa de altura REAL em Mimas, Tétis, Encélado e Dione (webp sem
+  perda para canal de dado, 3,5 MB; malha 256×128 só nelas); grão do
+  close com gate medido. **Reia e Jápeto: S2b FEITA e SELADA por ele em 02/09** ("sim, essa
+  fica"; commit `2cbd5a7`) — voltaram com o relevo sintético do projeto dele
+  SEM corte, pela palavra dele ("a da foto está maravilhosa"; "queremos
+  o relevo sobressaído, Reia não é uma esfera, é acidentada"). O laudo
+  de "bolhas" do coordenador estava ERRADO duas vezes: a resolução (1024)
+  e a malha (256×128) do projeto dele já eram as nossas, e o corte foi
+  por gosto próprio. Medido: o relevo aparece na luz rasante (terminador
+  esfarrapado, crateras com sombra própria; Reia 5,3% dos pixels, delta
+  208/255), quase nada no limbo cheio — igual ao site dele. Filme
+  bit-idêntico; custo dentro do ruído. Fotos `capturas/item134-s2b-*`. **Sem
+  LOD de esfera**, por medida: o gate de 48 px da casa tira a lua do
+  quadro antes de qualquer nível médio ser escolhido. Custo de quadro
+  dentro do ruído. Provas em `capturas/item134-s2-*`. Lista do §19 da
+  onda: `rochoso.test.ts`, `lua.test.ts`, `corpos.test.ts`.
+- **S3 — as luas que faltam: FEITA em 02/09** (commit no selo desta
+  linha; fotos conferidas e entregues). Hipérion, Pã, Dafnis, Atlas,
+  Prometeu, Pandora, Jano, Epimeteu e Febe: esculpidor dele portado
+  (`esculpido.ts`, icosaedro + ruído + crateras por semente, material em
+  GLSL da casa sem Hapke), elementos orbitais dele no motor com a
+  mudança de frame provada (Febe retrógrada a 149°, Jano/Epimeteu
+  período igual, erro de período 0 nas nove), orientação modelada
+  (W₀ = 0 declarado), rótulos/busca/órbitas nascem de `LUAS_DO_SISTEMA`;
+  a ficha declara "geometria esculpida por código a partir das
+  dimensões Cassini". Filme bit-idêntico; zero malha esculpida nasce na
+  vista do sistema (gate de 48 px). **S3b FEITA em 02/09** (commit no selo desta
+  linha): editorial das 9 em inglês e português (fatos da NASA,
+  conferidos contra o motor), contadores 45→54 / luas 23→32 / alvos
+  39→48, `corpos.json` regenerado, `npm run data:verify` limpo;
+  `atlasConfig.test.ts` espera 30 luas (na lista do §19). Declarado: a
+  fase orbital não é efeméride (elementos médios J2000 a dois corpos).
+  Provas em `capturas/item134-s3-*`.
+- **S3c — PARIDADE do esculpido com o projeto dele: FECHADA em 02/09 pela
+  palavra dele (o grão feito; a luz fica como está).** Palavras dele, 02/09: *"qualidade geral muito
+  maior nas luas... a diferença gritante"* — lá bege/terroso, fundo de
+  cratera escuro, grão fino de alto contraste; aqui branco e macio. Medido
+  ingrediente por ingrediente contra `moonMaterials.ts`: **(1) cor e
+  máscaras — NADA a consertar**: a tabela dele (`IRREGULAR_SURFACES`) e a
+  ordem de mistura estão letra por letra em `esculpido.ts`, e as máscaras
+  chegam ao fragmento (fundo > 0,5 em 11,1 % dos vértices de Hipérion,
+  borda 18,5 %, cavidade 16,6 %). **(2) grão fino — CONSERTADO**: a
+  tradução da S3 usara 3 oitavas normalizadas em [0,1]; o
+  `mx_fractal_noise_float` dele soma oitavas centradas em zero e não
+  normaliza (macro 5 oitavas ×2,05/0,52, micro 4 ×2,12/0,48). A altura de
+  bump saía com desvio 0,080 contra 0,302 dele, e a oitava mais fina
+  parava em 4,2× a escala de base contra 17,7×. Com as oitavas dele
+  (`bandaFbm`), o grão fino do disco iluminado vai de 0,97 % para 1,47 %
+  do brilho — o dele mede 1,56 %. **(3) exposição — RELATADA, não tocada**:
+  a chapa iluminada fica em 191/255 com R/B 1,08, a dele em 160 com R/B
+  1,19; a casa usa ACES a 1,05 (que dessatura para branco no alto da
+  curva) e ele usa AgX a 1,4 com Sol de 3,4 — é o tonemap COMPARTILHADO
+  com todo corpo (`engine.ts`), fora do esculpido. **(4) o pós dele —
+  RELATADO**: `filmGrain` 0,035, aberração cromática 1,008 e vinheta, que
+  ele não tem no nosso; é gosto e é decisão dele. Fotos
+  `capturas/item134-s3c-*`. A lei dele vale: igualar, não suavizar.
+  **Experimento de luz (02/09, depois do "claramente estamos distantes"):**
+  a foto de comparação estava com o Sol atrás da câmera (fase 9,8°, relevo
+  invisível); refeita a 90° como a dele (instrumento só de captura:
+  `?foco=` + giro pelo `placeCamera` no `aoAssentar`, relógio pregado por
+  `?jd=`; `capturas/item134-s3c-luz-*`, prancha e medidas ao lado). Medido:
+  **desligar a lanterna de leitura (15 %) e o terminador suave é o que
+  aproxima** — a noite fica preta e as sombras das crateras voltam duras
+  como na foto dele; AgX 1,4 não ajuda (R/B cai de 1,11 para 1,08; a dele
+  é 1,18–1,26). Restam: a COR (cinza aqui, bege lá — as tabelas são iguais
+  e ele também as usa em linear; a perda é de tom, na curva/luz) e o pós
+  dele. **DECISÃO DELE pendente:** a lanterna e o terminador suave são o
+  brilho assistido de TODO corpo (item 93); o visitante já pode desligá-los
+  no selo ("brilho real"). Igualar por padrão muda a casa inteira.
+  **DECISÃO DELE (02/09): "melhorou bastante... não, deixe do jeito que
+  ficou agora"** — as ajudas de luz ficam como estão; S3c FECHADA com o
+  grão (d82cbfc). Cor/tom e pós dele não entram.
+- **S4 — os jatos de Encélado: FEITA em 02/09** (commit no selo desta
+  linha; fotos conferidas e entregues). A matemática do projeto dele
+  inteira (8 bocas nas listras de tigre, voo balístico com gravidade,
+  vida 5–10 s, brilho 14× em contraluz, maré 4:1), assada uma vez na CPU
+  em regime e desenhada como pontos aditivos presos ao polo sul IAU
+  (`plumas.ts`); 131 mil grãos em cinema, 33 mil em alta, 8 mil em
+  performance com a luz igual (grão engorda); gate de 48 px; cadastro de
+  escala como instrumento; +3,2 ms no pior caso; filme bit-idêntico.
+  Fora, declarado: grão andando (sem passe de compute na casa), apagar
+  na umbra de Saturno (o motor não tem esse par de eclipse), anel E (S5).
+  **Pergunta a ele:** o miolo do jato sai quase opaco no close (matemática
+  dele, sem suavizar); ajuste é um número (`DOSE_BASE`) se ele quiser.
+  Provas `capturas/item134-s4-*`. Lista do §19: `escala.test.ts`.
+- **S5 — o espetáculo dos anéis: FEITA em 02/09** (commit no selo desta
+  linha; fotos conferidas pelo coordenador). Quatro peças com a matemática
+  dele: **anel F** — três fitas excêntricas a 140 180 km com dobra, grumos e
+  os canais de Prometeu, 45× mais brilhante contra o Sol que de frente;
+  **anel E** — toro de 170 000 a 330 000 km com pico na órbita de Encélado,
+  só espalhamento para a frente, apagando quando a câmera entra nele (os dois
+  em `aneisTenues.ts`, do `fRing.ts`/`eRing.ts` dele); **raios do B** e
+  **ondas de Dáfnis** no vão de Keeler dentro do `ANEL_FRAG` (do
+  `ringsMaterial.ts` dele), presos às longitudes VIVAS de Dáfnis e Prometeu
+  pelo mesmo propagador que põe as luas na cena. UM número dele trocado e
+  declarado: as duas frequências do ruído dos raios davam mancha alongada AO
+  LONGO do anel (arco de 41 000 km) e o raio do B é radial — 2,5 e 9 trocados
+  de lugar. Cadastro de escala `aneis-tenues-de-saturno` (fita 8× mais larga,
+  onda de ~96 km num vão de 37 km). Custo medido alternando A/B na mesma
+  sessão: F 0,43 ms + E 0,43 ms + anel +0,01 ms em cinema; 0,45/0,44/+0,04 em
+  alta; 0,45/0,25/+0,07 em performance; pior caso (anel escancarado, toro
+  cobrindo a tela) +1,9 ms em cinema — 60 fps e zero quadro perdido dos dois
+  lados. Filme: 51 das 54 vistas bit-idênticas; `titan` mudou UM pixel em
+  3,08 milhões (o limbo do E visto de Titã) e as duas `saturno-anel*` são a
+  obra. Fora, declarado: esteiras de autogravidade e a lajota volumétrica de
+  atravessar o anel (não estavam na lista da S5). Provas em
+  `capturas/item134-s5-*`. Lista do §19 da onda: `escala.test.ts` (cadastro
+  novo) e `gigante.test.ts`.
+Fotos do site dele em `capturas/item134-saturn-dele-*.png`.
+
+**Fecho (02/09, noite):** todas as fases feitas — S1 `66ff8be`, S2 (S2b
+`2cbd5a7`), S3 `d6ab863` (S3b `561827f`, S3c grão `d82cbfc` e fechada por
+ele em `47be95f`: "melhorou bastante... deixe do jeito que ficou"), S4
+`11de511`, S5 `14d4fb2`. No caminho: **135** (piso do near, `438fe6a`) e
+**136** (órbitas verificadas, `1e19f21`). Lista do §19 aprovada por ele e
+rodada: unidades 287/287 (`c6d503d`); suíte 1× com 30 falhas em 6
+arquivos → 28 guardas desatualizadas pela onda e 2 defeitos reais
+(extrator de números do teste de fichas; censo da luz sem a linha dos
+jatos), tudo em `9d55fae`; z-fighting OK; ab-identidade 14d4fb2→HEAD 48
+IGUAL + 6 INSTÁVEL (instabilidade do próprio antes) + 0 DIFERE. Rastros
+em `capturas/item135-{z-fighting,ab-identidade}.txt`. Sobra numerada:
+**137** (assets `ring*` e canal 'ring' órfãos). Dose dos jatos: foto
+entregue, sem pedido de mudança — fica a matemática dele.
