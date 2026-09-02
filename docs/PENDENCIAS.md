@@ -157,10 +157,23 @@ Pedido dele, 02/09: *"trazer os aprendizados desse outro projeto que eu
 mesmo fiz, específico de Saturno: tem muitas luas e modelos 3D, com
 técnicas muito interessantes que evidenciam as crateras, a textura
 aplicada nessas luas, detalhes muito interessantes dos anéis, e outras
-técnicas que fazem sentido para melhorar o nosso projeto."* Em curso:
-mineração só de leitura (site + repositório), laudo ranqueado em
-`docs/reference/saturn-colheita.md` — o que trazer, como, e o que não
-trazer; conversa com o 114 (todas as luas) e o 133 (anéis).
+técnicas que fazem sentido para melhorar o nosso projeto."* **Laudo pronto
+em 02/09:** [`docs/reference/saturn-colheita.md`](reference/saturn-colheita.md)
+(inventário, técnica × já temos, blocos ranqueados, o que não trazer,
+licenças). Achado que muda a conversa: o projeto dele NÃO carrega modelo
+3D — o relevo das luas é mapa de altura de shape model real aplicado
+como deslocamento numa esfera. Os cinco maiores ganhos: (A) perfil
+radial MEDIDO do anel (13.177 amostras, 14 KB; único asset SEM licença
+escrita — pedir ao autor ou tirar do PDS antes de assar; conversa com o
+133); (B) relevo nas luas em dois degraus — bump por derivada do albedo
+(zero byte) e deslocamento por altura real (Mimas, Tétis, Encélado,
+Dione, ~2 MB; exige LOD de esfera, item 114); (C) ringshine — o anel
+ilumina a noite de Saturno (zero asset); (D) penumbra na sombra do anel
+sobre o globo (3 linhas); (E) manchinha de detalhe no close (3 linhas).
+Não trazer: Hapke com parâmetros a olho, relevo inventado de Reia e
+Jápeto, estado na URL, atmosfera por raymarch, o espetáculo específico
+de Saturno. **Espera a escolha dele: quais blocos, e em que ordem.**
+Fotos do site dele em `capturas/item134-saturn-dele-*.png`.
 
 **133. Os anéis de Saturno ficam estranhos do lado que não está
 iluminado.** Palavras dele, 02/09: *"os anéis de Saturno ficam um pouco
