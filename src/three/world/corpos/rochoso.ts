@@ -211,10 +211,12 @@ export const RELEVO_DA_LUA: Readonly<Record<string, { escala: number; vies: numb
   enceladus: { escala: 0.009472107707579332, vies: -0.005141926965558401 },
   tethys: { escala: 0.03387224437534385, vies: -0.016188330361680364 },
   dione: { escala: 0.01065032313122289, vies: -0.005189992373296278 },
-  // Reia e Jápeto NÃO entram: o relevo deles no projeto Saturn é
-  // SINTÉTICO (sem DTM público) e sai em bolhas largas no limbo — pior
-  // que a esfera lisa (foto `capturas/item134-s2-ficha-rhea.png`, decisão
-  // do coordenador em 02/09, reversível com uma linha aqui e os assets).
+  // S2b — Reia e Jápeto entram por ORDEM DELE (02/09): "queremos o relevo
+  // sobressaído, sabemos que Reia não é uma esfera, ela é acidentada". As
+  // duas são o caso SINTÉTICO (sem DTM público), confessado na ficha; as
+  // amplitudes são as do `relief.json` dele, sem corte.
+  rhea: { escala: 0.02632461314614639, vies: -0.018329572914844723 },
+  iapetus: { escala: 0.026878580907480177, vies: -0.017520709781114384 },
 };
 
 /**

@@ -566,10 +566,10 @@ function secaoImagem(
 
   // O RELEVO É UMA SEGUNDA IMAGEM (item 134/S2), e ela precisa de linha
   // própria: quatro luas de Saturno ganharam topografia de modelo de forma
-  // MEDIDO. Se um dia entrar relevo SINTÉTICO (o de Reia e Jápeto do
-  // projeto Saturn ficou de fora em 02/09 por sair em bolhas), a nota da
-  // bancada (`ASSETS.md`) chega aqui como dado, pelo mesmo caminho da nota
-  // do `map` — desenhar montanha fabricada sem dizer seria exatamente a
+  // MEDIDO e duas — Reia e Jápeto, na S2b — relevo SINTÉTICO, gerado por
+  // código. Para essas a nota da bancada (`ASSETS.md`) chega aqui como
+  // dado, pelo mesmo caminho da nota do `map`, e sai na linha "o relevo
+  // admite" — desenhar montanha fabricada sem dizer seria exatamente a
   // mentira que esta seção existe para não contar.
   const relevo = fonteDoCanal(manifest.entradas, id, 'height');
   if (relevo?.origem) {

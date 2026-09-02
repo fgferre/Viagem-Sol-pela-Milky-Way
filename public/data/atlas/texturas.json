@@ -1277,6 +1277,40 @@
     },
     {
       "corpo": "iapetus",
+      "canal": "height",
+      "arquivo": "textures/atlas/iapetus/height.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 229295,
+      "sha256": "c49de83059a26d8d37c581612d234585e16c72613385913d4a34c4ccad3a0869",
+      "origem": {
+        "fonte": "Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público), com a crista equatorial real modelada — mapa de ALTURA",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "código do autor (Felipe Ferreira)",
+        "atribuicao": "Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida."
+      },
+      "proveniencia": "derivado",
+      "nota": "relevo SINTÉTICO: não existe DTM público de Jápeto — o campo de crateras foi gerado por código no projeto Saturn do autor (só a crista equatorial é feição real, modelada), e não é medida"
+    },
+    {
+      "corpo": "iapetus",
+      "canal": "height",
+      "arquivo": "textures/atlas/iapetus/height.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 106826,
+      "sha256": "27effccc2ca9722ddd0fa05e8f9c57c33d4de3121eef647540ab2fe29dc2b322",
+      "origem": {
+        "fonte": "Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público), com a crista equatorial real modelada — mapa de ALTURA",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "código do autor (Felipe Ferreira)",
+        "atribuicao": "Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida."
+      },
+      "proveniencia": "derivado",
+      "nota": "relevo SINTÉTICO: não existe DTM público de Jápeto — o campo de crateras foi gerado por código no projeto Saturn do autor (só a crista equatorial é feição real, modelada), e não é medida"
+    },
+    {
+      "corpo": "iapetus",
       "canal": "map",
       "arquivo": "textures/atlas/iapetus/map_1024.jpg",
       "larguraPx": 1024,
@@ -1336,6 +1370,38 @@
         "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Iapetus",
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "iapetus",
+      "canal": "normal",
+      "arquivo": "textures/atlas/iapetus/normal.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 480249,
+      "sha256": "a942056135115d3a1ce10c1d2511dc4ee15dabf5cbfdad53e66a04dee0dd83da",
+      "origem": {
+        "fonte": "Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "código do autor (Felipe Ferreira)",
+        "atribuicao": "Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "iapetus",
+      "canal": "normal",
+      "arquivo": "textures/atlas/iapetus/normal.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 214340,
+      "sha256": "617da1aa9668315a21efff7bfc5ce98415c86478d2b347176c9e97877a79b749",
+      "origem": {
+        "fonte": "Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "código do autor (Felipe Ferreira)",
+        "atribuicao": "Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida."
       },
       "proveniencia": "derivado"
     },
@@ -2221,6 +2287,40 @@
     },
     {
       "corpo": "rhea",
+      "canal": "height",
+      "arquivo": "textures/atlas/rhea/height.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 240776,
+      "sha256": "e6b43bfc79b41e9fa5056416888755780e858f22080bea1dc40b31f47c39c143",
+      "origem": {
+        "fonte": "Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de ALTURA",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "código do autor (Felipe Ferreira)",
+        "atribuicao": "Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida."
+      },
+      "proveniencia": "derivado",
+      "nota": "relevo SINTÉTICO: não existe DTM público de Reia — o campo de crateras foi gerado por código no projeto Saturn do autor, e não é medida"
+    },
+    {
+      "corpo": "rhea",
+      "canal": "height",
+      "arquivo": "textures/atlas/rhea/height.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 110794,
+      "sha256": "a6ccdd2c1ce9b0231d23b4f53b9c2db6a5e2f6eb08b8563d8aeaa8c843d9f7ae",
+      "origem": {
+        "fonte": "Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de ALTURA",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "código do autor (Felipe Ferreira)",
+        "atribuicao": "Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida."
+      },
+      "proveniencia": "derivado",
+      "nota": "relevo SINTÉTICO: não existe DTM público de Reia — o campo de crateras foi gerado por código no projeto Saturn do autor, e não é medida"
+    },
+    {
+      "corpo": "rhea",
       "canal": "map",
       "arquivo": "textures/atlas/rhea/map_1024.jpg",
       "larguraPx": 1024,
@@ -2280,6 +2380,38 @@
         "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Rhea",
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "rhea",
+      "canal": "normal",
+      "arquivo": "textures/atlas/rhea/normal.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 533095,
+      "sha256": "2981145f1e4b413058fcb25ccad86808450d1d91e5aee77c2b06a7767dd2ce56",
+      "origem": {
+        "fonte": "Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "código do autor (Felipe Ferreira)",
+        "atribuicao": "Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "rhea",
+      "canal": "normal",
+      "arquivo": "textures/atlas/rhea/normal.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 237346,
+      "sha256": "2900998d432fa216a2397853d8504d65cceb1cc3ce2dc3f54134ac95ad255959",
+      "origem": {
+        "fonte": "Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "código do autor (Felipe Ferreira)",
+        "atribuicao": "Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida."
       },
       "proveniencia": "derivado"
     },

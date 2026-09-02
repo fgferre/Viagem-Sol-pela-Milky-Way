@@ -89,19 +89,20 @@ Encélado veio em 2048 e foi reamostrado para 1024 (lanczos3).
 | Tétis | modelo de forma SPC V1.0 (R. Gaskell), NASA PDS | domínio público | 143 + 492 KB |
 | Encélado | DEM global 200 m — Schenk & McKinnon 2024, USGS Astropedia | domínio público, **citação obrigatória**: *Icarus* 408, 115827 | 296 + 728 KB |
 | Dione | DTM SPC — Weirich et al. 2025, NASA PDS SBN | domínio público | 228 + 512 KB |
-| Reia, Jápeto | **ficaram de FORA** — o relevo deles no projeto Saturn é sintético (sem DTM público) e sai em bolhas no limbo (`capturas/item134-s2-ficha-rhea.png`) | — | 0 |
+| Reia | **relevo SINTÉTICO** — não existe DTM público de Reia; campo de crateras gerado por código no projeto Saturn | código do autor | 108 + 232 KB |
+| Jápeto | **relevo SINTÉTICO** — não existe DTM público de Jápeto; campo de crateras por código, com a crista equatorial real (~13 km) modelada | código do autor | 104 + 209 KB |
 
-Total baixado pelo visitante: **3,55 MB** em webp (10,17 MB em disco com o
+Total baixado pelo visitante: **3,55 MB** em webp (10,06 MB em disco com o
 `.png` de fallback). O `NOTICE` do projeto dele é a fonte destas linhas e
 declara os dois sintéticos com todas as letras: *"Rhea and Iapetus have no
 public DTM as of 2026; their relief is synthetic"*.
 
-**Reia e Jápeto NÃO entraram.** O `NOTICE` dele confessa que a topografia
-das duas é fabricada, e a foto mostrou o preço: bolhas largas no limbo,
-pior que a esfera lisa. Decisão do coordenador em 02/09, reversível: os
-mapas continuam no projeto dele; voltar é uma linha em `RELEVO_DA_LUA`,
-os assets no manifesto e a nota "relevo sintético" na ficha (o caminho
-`relevo` da seção *a imagem* já existe).
+**Reia e Jápeto entraram por decisão DELE (02/09, S2b):** *"queremos o
+relevo sobressaído, sabemos que Reia não é uma esfera, ela é acidentada"*.
+O relevo das duas **não é medida** — é campo de crateras gerado por código
+no projeto Saturn dele —, e é isso que a ficha imprime na seção *a imagem*,
+na linha `relevo`. As amplitudes são as dele (`relief.json`: 2,6 % do raio
+nas duas), sem corte: o `span`/`bias` do projeto é o piso, não o teto.
 
 ## As nove luas esculpidas de Saturno (item 134, S3)
 
@@ -206,6 +207,8 @@ tocar num `.mjs`.
 | europa/map | mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou |
 | venus/map | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |
 | enceladus/height | DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul |
+| rhea/height | relevo SINTÉTICO: não existe DTM público de Reia — o campo de crateras foi gerado por código no projeto Saturn do autor, e não é medida |
+| iapetus/height | relevo SINTÉTICO: não existe DTM público de Jápeto — o campo de crateras foi gerado por código no projeto Saturn do autor (só a crista equatorial é feição real, modelada), e não é medida |
 
 ### a forma (item 20)
 

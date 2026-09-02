@@ -421,6 +421,37 @@ const ORIGENS = {
     atribuicao: 'Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).',
     proveniencia: 'derivado',
   },
+  // S2b (2026-09-02): Reia e Jápeto voltam. Não há DTM público das duas, e
+  // o relevo delas é GERADO POR CÓDIGO no projeto Saturn — não é medida.
+  // A confissão sai daqui para a ficha pela nota do ASSETS.md.
+  'rhea/height': {
+    fonte: 'Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de ALTURA',
+    url: 'https://github.com/fgferre/Saturn',
+    licenca: 'código do autor (Felipe Ferreira)',
+    atribuicao: 'Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida.',
+    proveniencia: 'derivado',
+  },
+  'rhea/normal': {
+    fonte: 'Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura',
+    url: 'https://github.com/fgferre/Saturn',
+    licenca: 'código do autor (Felipe Ferreira)',
+    atribuicao: 'Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida.',
+    proveniencia: 'derivado',
+  },
+  'iapetus/height': {
+    fonte: 'Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público), com a crista equatorial real modelada — mapa de ALTURA',
+    url: 'https://github.com/fgferre/Saturn',
+    licenca: 'código do autor (Felipe Ferreira)',
+    atribuicao: 'Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida.',
+    proveniencia: 'derivado',
+  },
+  'iapetus/normal': {
+    fonte: 'Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura',
+    url: 'https://github.com/fgferre/Saturn',
+    licenca: 'código do autor (Felipe Ferreira)',
+    atribuicao: 'Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida.',
+    proveniencia: 'derivado',
+  },
 };
 
 // A marca da política do dono: arquivo presente sem linha em ORIGENS

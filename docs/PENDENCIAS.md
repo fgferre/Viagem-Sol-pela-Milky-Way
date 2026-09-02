@@ -189,21 +189,16 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   nuvem/bruma) e Ceres (mapa confessado inventado); deslocamento
   por mapa de altura REAL em Mimas, Tétis, Encélado e Dione (webp sem
   perda para canal de dado, 3,5 MB; malha 256×128 só nelas); grão do
-  close com gate medido. **Reia e Jápeto ficaram de FORA por enquanto — S2b
-  ABERTA (palavra dele: "no meu projeto de Saturno elas ficam bem
-  bonitas, por que não ficariam aqui?").** Conferido no site dele
-  (`capturas/item134-s2-{rhea,iapetus}-site-dele.png`): lá as duas têm
-  crateras finas e limbo áspero; aqui saíram em bolhas
-  (`item134-s2-ficha-rhea.png`). A culpa é da nossa obra, não do dado:
-  o mapa desceu para 1024 e a malha de 256 segmentos só resolve forma
-  grande — as crateras pequenas viram bolha. Obra S2b, em curso: medir
-  a resolução e a malha que ele usa, igualar, e provar lado a lado no
-  MESMO ângulo. **Direção dele (02/09), depois de ver a primeira foto e o
-  app sem relevo: "a da foto está maravilhosa"; "queremos o relevo
-  sobressaído, sabemos que Reia não é uma esfera, ela é acidentada".** O
-  coordenador tinha cortado o relevo por gosto próprio — erro; a
-  presunção é relevo LIGADO e pronunciado, a primeira foto
-  (`item134-s2-ficha-rhea.png`) é referência aceita por ele. **Sem
+  close com gate medido. **Reia e Jápeto: S2b FEITA em 02/09** (commit no
+  selo desta linha) — voltaram com o relevo sintético do projeto dele
+  SEM corte, pela palavra dele ("a da foto está maravilhosa"; "queremos
+  o relevo sobressaído, Reia não é uma esfera, é acidentada"). O laudo
+  de "bolhas" do coordenador estava ERRADO duas vezes: a resolução (1024)
+  e a malha (256×128) do projeto dele já eram as nossas, e o corte foi
+  por gosto próprio. Medido: o relevo aparece na luz rasante (terminador
+  esfarrapado, crateras com sombra própria; Reia 5,3% dos pixels, delta
+  208/255), quase nada no limbo cheio — igual ao site dele. Filme
+  bit-idêntico; custo dentro do ruído. Fotos `capturas/item134-s2b-*`. **Sem
   LOD de esfera**, por medida: o gate de 48 px da casa tira a lua do
   quadro antes de qualquer nível médio ser escolhido. Custo de quadro
   dentro do ruído. Provas em `capturas/item134-s2-*`. Lista do §19 da
