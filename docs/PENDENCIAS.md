@@ -63,512 +63,6 @@ falhas ANTIGAS da onda 125 — provado no código de antes — que viraram
 o item **132**. Próxima frente: **130 (app bilíngue)**. Backup em dia;
 site intocado.
 
-*(01/09, o bastão anterior:)*
-
-
-**01/09 (noite — a FAXINA dos miúdos, ordem dele: "vamos tocar todos
-esses, coordene conforme nossos preceitos" + "verifique se ainda é
-problema hoje").** Verificação por leitura de código e git (mecanico):
-**123, 17, 15, 117, 119 AINDA REAIS; 27 PARCIAL (faltam as fixtures de
-POSIÇÃO e os quatro corpos no juiz de regressão); 22 quase morto** (as
-35 imagens citadas já não faltam — o LEIA-ME foi limpo em 12/08; sobra
-só a curadoria das 6 fotos do Sol, bancada com o olho dele, fora da
-faxina). Decisões de mecânica do coordenador: 15 liga coroa/ejeção ao
-NÍVEL DE QUALIDADE existente (Performance alivia), sem tela nova; 119
-conserta-se no JUIZ (mede relativo à Terra; o portal reaplicar o `?jd=`
-é decisão do 108). Ordem: executor visual (123, 17, 15, 117, com fotos),
-depois o mecânico (119, 27); juízes e a suíte só na lista do §19.
-
-
-**01/09 (a onda da paridade FECHADA e a lei do §19).** O **item 125**
-(linhas de órbita, rótulos e ícones iguais aos do NASA Eyes) fechou com
-a palavra dele nas fotos A/B, fase a fase (F0–F7; hashes na lápide do
-item). No caminho nasceu o **§19 do AGENTS.md**: teste, sabotagem e
-suíte só rodam com o sim dele, em lista simples no fim da rodada. Ele
-matou o 127 e o 128 pelo olho ("já vi que está tudo bem") e deu a
-direção do **129**: viagem/atlas/filme são OPÇÕES do universo único, e
-a **busca é uma só** para todo objeto — rumo da próxima rodada, começa
-pelo censo do que a busca enxerga em cada opção. *(Mais tarde, outra
-janela:)* o **126** fechou com a própria mão do coordenador — o planeta
-entra na busca também pelo id inglês; foto conferida. Backup em dia;
-site intocado.
-
-*(31/08, o bastão anterior:)*
-
-
-**31/08 (a rodada da retomada — Fable coordena, executores Opus,
-auditor por etapa; TODAS as etapas auditadas por mão independente e os
-achados consertados no dia).** O **item 108 completou as três pernas**,
-e a chave foi a HIPÓTESE DELE (a câmera chegando quando os corpos não
-estão mais lá): (1) o relógio do filme consertado na raiz — o `?jd=`
-que o próprio app gravava na URL desligava a correção após um F5; a
-guarda saiu do tick com censo, contraprova com data suja saiu
-bit-idêntica à foto boa; (2) o **retrato de família** — o fim mostra a
-Lua E a Terra (mira +11°, lente 52°, 2 s de retrato; só a vista
-`fim-do-filme` mudou, 50/51 intactas com rastro); (3) a **Lua ACESA** —
-ela não tinha ponto fotométrico e perdia para estrelas de fundo (pico
-148 vs 230); entrou na camada de pontos SEM dose nova (148→245, fluxo
-19,8× a estrela mais viva) e o brilho ganhou dente. O **109** ajustado
-pela ordem dele ("olhar de UX sênior"): "SOL" legível no clarão
-(contraste 1,8→12,5:1), fotos `-v2` na mesa. **FECHADOS por obra: 59**
-(trocar de qualidade não tira mais o globo da tela; double-buffer na
-casa única; troca só para quem está NA TELA; museu), **34** (a vinheta
-do boot com os QUATRO braços do modelo — e o espelho de quiralidade
-desfeito), **84** (3 vistas de Atlas no gate — enquadramento de corpo,
-teto do zoom, close-up de lua; preço MEDIDO 4,0/lado, catraca 32,3;
-sabotagem independente selou, inclusive a prova de que a vista do teto
-mede o GRAMPO). Nasceram **116/117** e no MESMO dia ganharam causa medida
-(116: o mosaico de Tritão é 76% preto e o lado fotografado nunca
-enquadra — família de 8 luas, conversa com a bancada do item 19; 117:
-a aberração cromática do passe de gradação pinta o limbo — dosar perto
-de borda dura é conversa de gosto com A/B). O contador de itens estava
-DUAS casas atrás (114/115 da outra sessão sem somá-lo) — re-somado, com
-aviso na própria linha. **ESPERA O OLHO DELE: o fim do filme no app
-(108), as fotos da beta (109) e a galáxia do boot (34).** Backup em dia
-a cada selo; site intocado. E a palavra dele na pedra da outra frente
-(`acb2b1e`): os blocos do 115 só ENTRAM depois que a frente atual da
-fila terminar.
-
-*(30/08, o bastão anterior:)*
-
-**30/08 (noite — item 113 FECHADO e a lição de modelo).** A caçada que
-ele cobrou achou desperdício real (foto duplicada, "antes" refeito à
-toa, capturas em dobro, 122 boots de Chrome) e cinco fases provadas o
-mataram: bolsa dos juízes 44,0→31,8 min, fechamento pesado ~20→8,8,
-encadeado ~5,3. No caminho a rodada expôs a QUEDA DE MODELO — meio
-plano semanal de Fable queimado num dia por agentes lançados sem
-escolha de modelo ("inaceitável", dele) — e o conserto virou ESTRUTURA:
-operários nomeados em `.claude/agents/` (executor=Opus,
-mecanico=Sonnet), a delegação certa por construção. Consensos dele
-gravados na memória do coordenador: "leia a intenção — pedido claro
-executa, observação conversa primeiro"; a política de testes é autoria
-das IAs (verificação = assunto interno, decisões dele são de PRODUTO);
-julgamento, não pedra.
-
-**30/08 (mais tarde — item 99 FECHADO, a dieta dos juízes).** A pedido
-dele ("vamos para o item 99"), 6 frentes paralelas + fecho: os 97
-arquivos sem dono responderam a quem servem (dono 28 · lei 45 · chão
-31; NENHUM morreu — a leva inteira se justificou), todo juiz declara o
-preço (soma 43,3 min PINADA na catraca: total só desce, subir re-pina
-no diff), o porteiro do `npm run censo` reprova sem-dono e sem-preço, e
-a mordida amostral (`npm run mordida`, 3/semana) provou no primeiro
-giro que morde de verdade — pegou o App.test.ts, respondido com
-justificativa no arquivo. Fusões marcadas nos cabeçalhos (fita 3→1,
-chapa→costura) para quem tocar; fase-da-grade virou bancada. Suíte
-2.516 verde; história no museu. Próximos da fila de produto: 108
-(armado, espera a aparição com o olho dele) e a beta do 109.
-
-**30/08 (a varredura das 36 h — item 112).** Pedido dele: caçar bugs
-graves nas implementações das últimas 36 h. Time de 6 revisores em
-paralelo + céticos independentes sobre `1129219..HEAD`; **2 graves
-confirmados** (o CHICOTE do clique-durante-rampa — a queixa de 29/08
-renascida pelo próprio item 110 — e o texto 3D da beta engolido pelo
-globo) **e 7 médios; zero achado derrubado pelos céticos. TUDO
-consertado no mesmo dia em 4 frentes paralelas**, cada conserto pinado
-por guarda nova com sabotagem provada; suíte cheia 2.500/2.500,
-typecheck e lint limpos. Áreas varridas e LIMPAS: órbitas/cores, post,
-lente 58°; no leitor de roteiros, 1 armadilha desarmada
-(`progresso`+`intervalo`). **O item 112 tem o mapa e as 3 perguntas
-que esperam a mão/olho dele.** *(Mesmo dia, mais tarde:)* **ele testou
-os 3 pontos — "tudo certo" — o 112 FECHOU pelo olho e pela mão dele e
-mandou PUBLICAR: a main levou tudo (as levas desde `5371037` inclusas —
-110/111, a beta do 109, a lente única, o Eyes completo, as cores das
-órbitas, o HUD de fotografia e os consertos do 112). O site está na era
-atual.**
-
-**29/08 (fecho por ordem dele — "we are almost out of context").** A
-sessão parou NO MEIO da beta dos rótulos 3D (item 109): a fiação
-inteira está commitada e provada inofensiva (beta desligada =
-bit-idêntico), e o único defeito aberto tem sonda e causa — a fonte
-Inter woff2 embarcada trava o `sync` do troika (a padrão dele resolve
-em 341 ms). **A PRÓXIMA JANELA COMEÇA AÍ: trocar o arquivo da fonte,
-re-sondar, fotos, olho dele** — o passo a passo está no corpo do item
-109. Antes disso ficaram fechados hoje: 39, 40, 43, 61, 70, 75, 77,
-83, 86, 89, 94, 96, 97 e 100; publicado até `5371037`; o site NÃO tem
-as levas posteriores (fecho da família + spike + beta).
-
-**29/08 (madrugada, o fecho da rodada) — 89, 94 e 96 FECHARAM; a mesa
-ficou limpa.** O 89 pelo olho dele ("confirmo as fotos"): o céu limpo
-navegável + o Eyes completo com o anel na cor da órbita. O 94 por
-medida dupla (blend 2,04→1,26 ms; A/B sentinela bit-idêntico 4/4) e o
-96 virando veredito vivo do atlas-smoke (Sol na origem, verificado).
-**O que resta aberto de produto: o 108 (armado, à espera da próxima
-aparição com o olho dele na hora) e o 109 (o spike dos labels 3D,
-quando ele mandar).** O site publicado está na era anterior a estas
-últimas levas (89 Eyes-completo, 83-cores, 94/96, 100) — publicar de
-novo é um pedido dele, como sempre.
-
-**29/08 (fim da noite) — PUBLICADO, a pedido dele.** *"sim, publique e
-faça push"* — os 179 commits desde a última publicação subiram para a
-`main` e o Pages pôs no ar tudo desta era: o motor de filmes (75), a
-lente de 58° no app inteiro com a abertura do sistema inteiro (86+61),
-os fechos 70/77/87/91/93/104, o HUD de fotografia completo (100) e as
-órbitas com as cores dos próprios mundos (83). Higiene do mesmo dia: as
-4 branches locais de agentes (todas com zero commits fora da main)
-foram apagadas com a trava `-d`; restam 3 branches remotos velhos
-igualmente vazios, à espera de uma palavra dele para sumirem.
-
-**29/08 — O 83 FECHOU: as órbitas ficaram lindas, e com as cores dos
-próprios mundos.** Palavras dele no fecho: *"ficou lindo, confirmo as
-fotos"*. O dia inteiro da família: coluna (iv) computada das texturas
-pela receita dele (executor barato, oráculo 5/5), prancha v3 pela porta
-efêmera `?paleta=` (worktree, morta após servir), escolha dele na mesa,
-e a (iv) em código com procedência (`corDaTextura.ts`), guarda de
-comportamento e re-baseline declarado. **A fila agora: o 108 segue
-ARMADO (à espera da próxima aparição do fim errado, com o olho dele na
-hora); o próximo trabalho livre natural é o 89** (o ícone que sobrevive
-ao texto desligado — céu limpo E navegável, a separação Labels/Icons do
-Eyes) **e atrás dele as dívidas BAIXAS (94, o clarão desperdiçado; 96,
-o teste do Sol na origem). A ordem final é dele.**
-
-**29/08 (madrugada) — O 100 NASCEU, CRESCEU E FECHOU NO MESMO DIA.**
-As três levas: o indicador de fotografia (LENTE·SOL no filme, prova no
-par das Três Marias — zoom sem dolly, legível por leigo), o controle da
-variante (a) que ele escolheu (a roda no filme pausado fecha/abre a
-lente com paredes 8°–75°, decai sozinha no play; SEM selo — doutrina
-dele: *"a realidade está nos olhos de quem vê"*, lente não é assunto de
-honestidade), e o conserto de layout que o olho dele apontou (a linha
-caía sobre a barra de progresso; agora a coluna ancora acima da régua).
-Ele confirmou as cinco fotos e mandou fechar. **A fila agora: o 108
-segue ARMADO esperando a próxima aparição do fim errado (o olho dele na
-hora é a pista que falta); trabalho livre mais natural é a família 83
-(a coluna (iv) da prancha de cores — a cor da linha vem da textura do
-globo, direção dele de 27/08 — e o degrau A2 da borda macia), com o 89
-(o ícone que sobrevive ao texto desligado) atrás; a ordem final é
-dele.** Pendência curta anotada no 100 fechado: a pinça do telefone.
-
-**29/08 (noite) — A LENTE POUSOU INTEIRA; O FIM DO FILME REVELOU UM BUG
-HERDADO (108).** A obra dos itens **86+61** fechou com todas as provas:
-58° no app inteiro, abertura no sistema inteiro (nasce no teto, ~133,7
-UA), A/B de 61 vistas com o filme **bit-idêntico** e só as 9 de Atlas
-mudando (declarado), sabotagem independente 4/4 mordendo, suíte cheia
-2.461 verdes, `atlas-smoke` e `luz-do-quadro` re-pinados com números
-medidos, NORTE atualizado — **86 e 61 FECHARAM e estão no museu**. No
-meio da leva ele reportou: *"o filme nao mostra mais direito no final a
-lua e a terra"* — virou o item **108**, e a medida do mesmo dia ABSOLVEU
-a lente e o roteiro (fim do filme bit-idêntico em três códigos) e
-chegou a ACUSAR um flagra — e a acusação foi DESMENTIDA pela sonda
-corrigida no mesmo dia: era defeito do instrumento (o `play()` reinicia
-do zero; os quadros "presos" eram quadros certos de t≈17/24). Pela
-receita dele com o relógio lido de verdade, o fim sai CERTO
-(`item108-fim-certo-t193.png`; sonda v2 em t=192,07 com "A TERRA" na
-tela). **O 108 fica ABERTO como relato intermitente não reproduzido**,
-com as hipóteses e a próxima pista escritas no item. **A fila agora:
-108 (reproduzir e consertar) → 100 (o HUD de lente/zoom,
-destravado).** O 108 ganhou obrigação de juiz: uma vista oficial do
-fim do filme (t=190/193) entra no `ab-identidade`, que hoje para em
-t=180.
-
-**29/08 (tarde) — A SALA DE CONFERÊNCIA JULGOU CINCO FOTOS E A FILA
-DESTRAVOU.** Ele olhou as cinco no chat, de uma vez: **70 FECHOU** (a
-borda está boa), **77 FECHOU** (o filme limpo, aprovado), o colar do
-**83-A1** foi re-confirmado (já estava aceito por C13, 26/08 — segue o A2
-e a coluna (iv) do B3), a lente do **86** está **CRAVADA** — *"Aprovo —
-crava o 58°"*, sabendo do teto de zoom que encurta (226,84 → ~133,7 UA) e
-da abertura que nasce mais perto — e a vista de abertura do **61** é o
-**sistema inteiro, estilo NASA Eyes** (o candidato (a) da folha). **O item
-da vez é a OBRA da lente:** 58° para o app inteiro + abertura no sistema
-inteiro, com as vistas de Atlas do gate re-baselizadas e declaradas no
-commit. Depois dela, o **100**.
-
-**29/08 — O MOTOR DE FILMES FECHOU; A FILA AGORA COMEÇA NO 100.**
-`revelacao.json` absorveu fuga, subida e deriva; `volta.json` declara o
-mergulho de volta e o take Lua→Terra. O motor ganhou as composições que
-esses gestos exigiam, e o roteiro agora dirige seus assuntos: Alnitak,
-Alnilam e Mintaka aparecem juntas, enquanto os nomes de fundo continuam
-cedendo. **Filme convertido: 25 de 25 cenas, 193 de 193 segundos.** Os
-**209.958 números** de câmera e a edição inteira coincidem com o corte
-anterior; o A/B completo deu **61 de 61 vistas bit-idênticas**, com duas
-capturas estáveis de cada lado. A suíte única passou com 2.460 testes,
-um antigo já desativado e nenhuma falha. A varredura da rodada retirou
-duas exportações sem dono, corrigiu um comentário mentiroso e fechou a
-lacuna do teste do lado alternativo. História e provas no item 75 do
-ARQUIVO. A fila de produto agora começa no **100**, a viagem solar.
-
-**28/08 — O ATO III FECHOU EM ROTEIRO.** `mergulho.json` agora reúne
-também a aproximação final e a rasante de Sagittarius A✱. A órbita
-passou a aceitar graus declarados para preservar, número por número,
-a fórmula editorial que já existia; não nasceu movimento novo.
-**Filme convertido: 20 de 25 cenas, 154 de 193 segundos (cerca de 80%
-da duração).** **Motor: ainda parcial** — faltam a fuga/subida (trecho
-da mesma curva e combinações de efeitos), a deriva, o mergulho de
-volta e o take Lua→Terra, e a direção dos nomes em cena. O trajeto não
-costura automaticamente planos diferentes. Instruções no
-`PLANO-CINEMA.md`; provas no item. A fila segue **75** → **100**.
-
-**28/08 — O 75 JÁ LÊ ÓRION E A VIRADA DE ANTARES.** `orion.json` reúne
-a chegada e a órbita de Betelgeuse, o raspão de Rigel e a dobradiça
-CASA; a virada para Antares abre o `mergulho.json`. Nenhum movimento
-novo foi preciso: curva, órbita, reta e mira cedo bastaram. **Filme
-convertido: 15 de 25 cenas, 116 de 193 segundos (cerca de 60% da
-duração).** **Motor: ainda parcial** — faltam os trechos de curva e as
-combinações da fuga/subida, o mergulho de volta e o take Lua→Terra, e a
-direção dos nomes em cena. O trajeto não costura automaticamente planos
-diferentes. Instruções no `PLANO-CINEMA.md`; provas no item. A fila
-segue **75** → **100**.
-
-**28/08 — A SESSÃO CARA VIROU LEI, NÃO CAMPANHA.** Palavras dele: as
-sessões estão longas demais, gastando milhões de tokens em tarefa
-simples; a solução tem de valer para qualquer modelo, não para um
-instrumento. Isso é o item **106**, e fechou no mesmo dia: a lei mora
-no `AGENTS.md` (§1 e §18). Não se apagam os testes; não se constrói um
-motor de orçamento. O que falta no **99** (dono nos arquivos, teto de
-15 min) acontece quando uma obra TOCAR o teste — não numa varredura.
-No mesmo dia ele cravou o **107**: quando a janela estiver longa e
-for hora de encerrar, varre-se duplicata, código morto, lixo e
-emaranhado do CONJUNTO da sessão — não se repete a prova. A fila de
-produto segue **75** → **100**. O que espera o olho dele não mudou:
-a folha da lente (**86**) com a vista de abertura (**61**), a foto da
-borda (**70**), a fita do **83**.
-
-**27/08 — O 87 POUSOU E SAIU DA FILA.** A abertura do telefone com a fonte
-grande passou a ROLAR, sem encolher nada (a escolha dele em 25/08, Q6); o
-juiz de acessibilidade ganhou as três provas das pontas e a sabotagem
-confirma que elas mordem. Foto: `capturas/item87-abertura-rolagem-v2.png`.
-
-**27/08, QUARTA LEVA — A PRIMEIRA FATIA DO 99 POUSOU.** O toque duplo
-no aparelho (item **105**) passou a MIRAR Marte, em vez de escolher o
-vizinho; o cadastro da luz ganhou o prender da borda que o item 70
-tinha deixado de fora; nasceu o censo dos juízes
-(`scripts/censo-dos-juizes.mjs`) e o portão de commit (`npm run gate`:
-typecheck + lint + testes dos tocados, com os transversais do
-cadastro). Medido nesta máquina: 2.435 casos de unidade, typecheck
-2,9 s, lint 5,5 s. A dieta NÃO fecha: falta dono na maior parte dos
-arquivos, e o teto de 15 min da rodada visual ainda é porteiro de
-papel. **A fila daquele dia seguia no 99** (o resto da dieta) →
-**75** → **100**. *(28/08: o que vale está no topo deste bastão.)*
-
-**27/08, TERCEIRA LEVA — A CAUSA 2 DO 70 POUSOU.** O ponto de estrela
-passa a ser preso 1 px dentro da tela e o brilho é avaliado na posição
-verdadeira (catálogo, cascas e planetas, o mesmo `STAR_FRAG`). Juiz:
-`scripts/visual/ponto-na-borda.mjs`. Medido em 1128×1080: Rigil
-Kentaurus cruza a borda e o pico da faixa cai 2,6% no passo (234 →
-228 de 255), depois desce aos poucos com o rabo da PSF; foto
-`capturas/item70-borda-depois-v3.png`. A fila daquele dia começava
-no **99** → **75** → **100**. *(28/08: o que vale está no topo deste bastão.)*
-
-**27/08, SEGUNDA LEVA — AS FOTOS DO (3) ESTÃO NA MESA, à espera do olho
-dele.** A sessão única de captura saiu: `capturas/item86-lente-ab.png`
-(o A/B da lente, 35° × 58°, data pinada, árvore limpa dos dois lados —
-o lado 58° era um worktree de uma linha, já removido) e
-`capturas/item61-abertura-folha.png` (os três candidatos de abertura, todos
-a 58°). **Achado da sessão, que ele precisa saber antes de julgar:** com a
-lente mais aberta o teto do zoom cai de 226,84 para ~133,7 UA e a
-abertura natural desce de ~8,9 para ~5,2 UA — está nas etiquetas das
-pranchas. Nenhuma linha de código pousou; a escolha é dele.
-**A fila daquele dia começava no (5):** o **99** (a dieta dos juízes)
-→ **75** → **100**. *(28/08: o que vale está no topo deste bastão.)*
-
-**A FILA DE 23/08 — SUPERADA (a que vale é a da PRÓXIMA CONVERSA, mais
-abaixo); fica como história, e era DECISÃO DELE.** Entrou aqui em 23/08 como
-decisão de coordenação com a conferência pendente; em **25/08 ele mandou a
-obra do 91 andar**, e quem manda uma obra andar confirma a posição dela na
-fila. O que sobra à espera dele agora é a IMAGEM, não a prioridade.
-
-> ~~**clarão único**~~ (24/08, teto de 0,07) → ~~**82 (N1+N2: os nomes)**~~
-> (24/08) → ~~**tarjas do celular**~~ (24/08) → ~~**"Explorar" e o arrasto
-> da folha**~~ (24/08) → ~~**83 (L1+L2)**~~ (24/08) → ~~**91 (Saturno
-> escuro — a luz dos planetas)**~~ (25/08) → ~~**81**~~ (25/08; o vermelho
-> que sobrava era do **70**, e ele também fechou em 25/08 — **o MB1 fecha
-> em ZERO, e o zero repete**) → ~~**93 (brilho assistido = algoritmo do
-> Eyes)**~~ (25/08 — a receita pousou INTEIRA, véu palha de Saturno
-> incluído; **FECHADO em 26/08**, com a calibração escolhida na Q13) →
-> **99 (a dieta dos juízes)** → ~~**70**
-> (a causa 2, o ponto que
-> morre na borda)~~ (27/08 — pousou) → **75**, com o resto do **83** (L2.5, G1, L3, L4, L5)
-> na fila da mesma família.
-
-**25/08, FIM DO DIA — A CONFERÊNCIA CHEGOU PELA SALA DE CONFERÊNCIA, E A
-FILA DECIDIDA GANHOU OBRAS.** Ele respondeu a folha inteira de fotos e
-perguntas naquele artefato, e as respostas pousaram item a item: **5, 7, 69
-e 79 FECHARAM**; **61, 70, 77 e 82** tiveram a conferência aceita e as fotos
-delas já serviram; o **modo real do 91** volta à prancheta com palavra dele
-(*"escuro demais, repensar"*); **86**, **87** e o novo **100** nasceram
-decididos; e a fita do **83** ficou com uma queixa pela metade — as
-palavras chegaram no chat do mesmo dia (*"lindas e profissionais como as
-do nasa eyes"*; a receita da caneta está no item — **o A1 pousou em
-25/08 e o colar está morto**, agora o A2). **A fila decidida, que se
-ACRESCENTA à de cima e não a substitui:** ~~**véu palha do 93**~~ (25/08 — pousou, e as três pranchas
-esperam o olho dele) → ~~**88**~~ (25/08 — pousou; as duas pranchas
-esperam o olho dele) → ~~**92**~~ (25/08 — pousou, e não era de Éris: era
-da classe dos oito; as duas pranchas esperam o olho dele) → ~~**95**~~
-(25/08 — pousou; o ar no eclipse ganhou dose derivada e quatro fotos
-esperam o olho dele) → **gate do filme (77)** → ~~**rolagem do véu
-(87)**~~ (27/08 — pousou, e saiu da lista) → **A/B da lente (86)**, na MESMA sessão de captura da folha da vista
-de abertura (**61**) → ~~**70**, a causa 2~~ (27/08 — pousou) → **99** → **75**.
-
-**25/08, FIM DE SESSÃO — A SEGUNDA LEVA DA SALA DE CONFERÊNCIA CHEGOU, E
-TRÊS ITENS FECHARAM.** Ele olhou as pranchas que estavam na mão dele e
-confirmou como bons **C10** (o polo das luas, item **88**), **C11** (descer
-ao corpo dos anões, item **92**) e **C12** (o ar no eclipse, item **95**) —
-os três saem da lista, com a história verbatim e o número intacto no
-ARQUIVO. Respondeu também as **Q9–Q12** do item **93** e reafirmou o
-**Q2** (o modo real): a **receita do Eyes está APROVADA** — palavras dele,
-*"a calibracao nao muda a ideia central"* —, e o que ela pede é
-**CALIBRAÇÃO** dos botões de dentro (lanterna, terminador, Mercúrio), com o
-véu intacto. *(26/08 — a calibração POUSOU: ele escolheu a **C1** na Q13,
-ela virou o padrão, a porta `?calib=` morreu e o item **104** saiu na
-mesma leva, como ele pediu. E o olho dele veio no mesmo dia, pela Sala —
-*"Confirmo como bom: C14, C15"* —, então **91**, **93** e **104**
-FECHARAM.)*
-
-**A FILA DA PRÓXIMA CONVERSA, e é esta que vale a partir de agora:**
-
-> ~~**(1)** calibração da luz assistida + propostas do modo real (itens
-> **93** e **91**(c) — UMA folha de opções em foto, 2 a 3 calibrações lado
-> a lado)~~ (26/08 — **as DUAS metades pousaram**: ele escolheu a **C1**
-> na Q13 e a porta `?calib=` morreu, com o item **104** saindo na mesma
-> leva; e escolheu a **R1** na Q14, com os +3 passos de exposição do modo
-> real embarcados e declarados no selo. **E o olho dele veio no mesmo dia:
-> as TRÊS fecharam** — 91, 93 e 104, por C14 e C15) → ~~**(2)** a rolagem
-> do véu da abertura (**87**)~~ (27/08 — pousou, e saiu da lista) → ~~**(3)** o A/B
-> da lente de 58° (**86**) junto com a folha da vista de abertura (**61**),
-> na **MESMA sessão de captura**~~ (27/08 — **as fotos saíram e estão na
-> mesa**: `capturas/item86-lente-ab.png` e `capturas/item61-abertura-folha.png`;
-> falta o olho dele) → ~~**(4)** o **70**, causa 2 (o ponto que
-> morre na borda)~~ (27/08 — pousou; a foto espera o olho dele) → ~~**(5)** o **99**
-> (a dieta dos juízes — primeira fatia em 27/08)~~ (28/08 — o resto do 99
-> acontece no TOQUE, não em campanha; item **106**) → ~~**(6)** o **75**
-> (o motor de filmes)~~ (29/08 — FECHOU; história no ARQUIVO) → **a obra
-> da lente (86 + a abertura do 61)** → o item **100**.
-
-**O QUE ESPERA O OLHO DELE — e a dívida virou quase nada em 25/08.** As
-oito pranchas dos itens 88, 92 e 95 **já serviram**, e com elas morre a
-nota de "não apagar" das três. **A fita do 83 deixou de esperar palavras:**
-elas chegaram no chat (*"as linhas de órbita finalmente fiquem lindas e
-profissionais como as do nasa eyes"*), e o **A1 POUSOU** em 25/08: a
-IMAGEM do colar morto no Retina está na mesa
-(`capturas/item83-colar-antes-depois-v2.png` — a v2 é a que ele julga)
-e **espera o olho dele**.
-Segue o **A2** (a borda macia). **A FOLHA DA CALIBRAÇÃO já serviu** — ele
-escolheu a C1 por ela (Q13), e as quatro pranchas
-`capturas/item93-calib-*.png` passam a ser a REFERÊNCIA medida do "antes",
-não mais pergunta. **E EM 26/08 A DÍVIDA DA LUZ ZEROU:** a costura
-(`capturas/item104-costura-v2.png`) e a chapa do modo real
-(`capturas/item91-real-r1-v2.png`, a R1 da Q14 embarcada) foram à Sala e
-voltaram confirmadas — *"Confirmo como bom: C14, C15"* —, e com elas os
-itens **104**, **91** e **93** saíram da lista. O que vai à Sala agora é a
-folha da lente com a vista de abertura, e a foto da borda do item **70**.
-**(29/08: FORAM, e voltaram julgadas — a folha da lente, a da abertura, a
-borda do 70 e o filme limpo do 77. NADA mais espera o olho dele; o placar
-está no bastão.)**
-
-*(Registro de escrivão: a foto `capturas/item77-filme-sem-orbitas.png`
-passou pelo olho dele em 29/08, fora da fila mas com a mão dele — o 77
-fechou; ver o bastão.)*
-
-**A DOUTRINA DO PINO, escrita para a próxima vez que houver foto à espera.**
-Mexer na LINHA da fila antes da conferência **invalida as fotos** que estão
-na mão dele: ele julgaria uma coisa e veria outra. O pino de 24/08 foi
-**retirado por quem o pôs** (*"pode dar push e seguir em frente
-orquestrando"*), que é a única forma de um pino sair.
-
-**E A VISTA DE ABERTURA VAI SER RE-JULGADA — a hora chegou.** Ele apontou,
-na noite de 23/08, que o contexto de abertura do NASA Eyes é melhor que o
-nosso. A escolha do candidato **(a)** foi **parcialmente forçada pela
-dívida**, não preferência final. **N1** (item 82) e **L2** (item 83)
-pousaram em 24/08, e era exatamente isso que a vista larga esperava para
-voltar a ser contexto viável. O detalhe está no item **61**; ninguém trate
-a (a) como resposta final até ele ver as fotos lado a lado.
-
-**⚠ A PUPILA ESTÁ REPROVADA — e foi ENTERRADA no M2 (16/08).**
-`src/three/core/pupila.ts` e o teste morreram inteiros na data marcada
-(LEI §7.3); a varredura invertida (`simbolosProibidos.test.ts`) vigia a
-ressurreição. O que está no lugar é compressão fixa na emissão —
-`LEI-DA-ESTRELA.md` §7. Não a reescreva. O `NORTE` proíbe em letra:
-*"Proibido: teto de brilho. Proibido: exposição que depende do que está em
-foco."*
-
-**A FRONTEIRA DA LEI DA ESTRELA fica de pé:** não tocar no que a Lei ainda
-demole (`lodStellar.ts`, `stellarBody.ts` por dentro, `world/sol/*`,
-`iauOrientation.ts`) — a exceção é obra própria DELA, e a primeira foi o
-item 5 em 21/08, com a exceção declarada no cabeçalho de cada arquivo. O
-conserto do Sol está FECHADO e ACEITO (M1, M2, R1–R3 e a soltura, o pouso
-de 17/08). O item **38** (`aFocus`) é dormente por desenho — **não apagar**;
-é o canal do passo E3.
-
-**Publicar está em aberto e é decisão dele.** Em 2026-08-08 ele pediu, com
-estas palavras: *"Consegue publicar o projeto automaticamente a cada commit
-no main no git spaces"* — e é isso que `.github/workflows/deploy.yml` faz.
-Segurar o push **não foi pedido dele**: foi um agente que inventou a trava.
-Qualquer push na `main` põe o site no ar. Sem pedido explícito, não se
-publica; o pedido de publicar continua de pé.
-
-**Números aposentados — e nenhum se reaproveita.** A lista inteira, com o
-commit de cada saída, mora no ARQUIVO (seção *O DIÁRIO DO CABEÇALHO*). Os
-de 14/08 (**1, 2, 14, 29, 30, 31, 32, 35**) leem-se em
-`git show de16542 -- docs/PENDENCIAS.md`. Os que o ARQUIVO registra, com
-hash: **1–4, 6, 8–11, 14, 16, 20, 21, 29–33, 35, 41, 42, 44, 47, 48, 50,
-51, 55–58, 60, 62, 63, 65–68, 71, 73, 74, 76**. O **19** NÃO saiu — fechou
-a metade da confissão e ficou a das texturas.
-
-**E QUATRO SAÍRAM EM 25/08, todos por OLHO DELE e nenhum por obra nova** —
-a conferência que chegou pela Sala de Conferência: **5** (o Sol do Atlas
-pelo calendário, C6), **7** (a troca de qualidade sem reload, C9 — *"testei
-e ficou bom"*), **69** (a dose dos berçários, Q5 — *"ficou bom assim"*) e
-**79** (as duas telas de erro, C7). A história dos quatro está no ARQUIVO,
-verbatim e com o número intacto.
-
-**E MAIS TRÊS EM 25/08, na SEGUNDA LEVA da Sala de Conferência, também
-todos por olho dele:** **88** (o polo das luas, C10), **92** (descer ao
-corpo dos anões, C11) e **95** (o ar no eclipse, C12). Estes três TINHAM
-obra nova — ela pousou no mesmo dia e foi ele quem a aceitou. A história
-dos três está no ARQUIVO, verbatim e com o número intacto. **Total
-aposentado em 25/08: SETE números** (5, 7, 69, 79, 88, 92, 95), mais o
-**72**, que a conferência dos números resgatou e cuja história mora dentro
-do item **70**.
-
-**E o 72 entra aqui agora, achado pela conferência dos números de 25/08** —
-a mesma varredura que já pegara o 76 e os sete créditos de 22/08: ele era o
-único número que não estava nem vivo nem aposentado. **72** (a porta
-`?nobloom=1` que só apagava METADE do bloom) **fechou em 25/08**, dentro da
-rodada da faixa de guarda, e a história dele mora no ARQUIVO — não numa
-seção própria, mas dentro do **item 70**, que é onde a obra aconteceu. A
-foto é `capturas/item72-nobloom-antes-depois.png`, e ela **já serviu**: saiu
-da lista das que esperam o olho dele com a conferência de 25/08 (C5).
-
-**E QUATRO SAÍRAM EM 26/08 — o dia da calibração.** O **103** (a porta do
-BRILHO que parou de virar) fechou de manhã, por obra, no mesmo dia em que
-nasceu — foi o único dos quatro que não precisou do olho dele. Os outros
-três fecharam pela Sala de Conferência, com as palavras dele — *"Confirmo
-como bom: C14, C15"*: o **104** (a costura da sombra do anel para a noite,
-**C14**), o **91** (Saturno escuro e o modo real, **C15** — a chapa da R1
-que ele escolheu na Q14) e o **93** (o brilho assistido pelo algoritmo do
-Eyes), que fecha porque **nada mais restava dentro dele**: receita aprovada
-por ele em 25/08, calibração escolhida na Q13, padrão embarcado com a porta
-`?calib=` morta, e a ressalva conferida no 104. A história dos quatro está
-no ARQUIVO, verbatim e com o número intacto.
-
-**E O QUINTO FECHOU À TARDE, POR DECISÃO DELE NO CHAT: o 102** (o giro em
-volta do objeto focado). Ele não escolheu nenhum dos dois lados que o
-vídeo A/B ia filmar — mandou um terceiro caminho, e a frase é a lei:
-*"quero que seja navegação livre e sem travas para qualquer dos lados sem
-nenhum limitador de angulo ou coisa parecida"*, mais *"podemos colocar um
-botao de zerar orientacao, assim como o google maps tem um botao de
-norte"*. O dedo virou QUATERNION em torno dos eixos da TELA, a porta
-`?giro=` morreu com os DOIS ramos antigos, e nasceu a bússola. **O vídeo
-A/B do P4 não vai ser gravado** — ele decidiu antes, e o instrumento que
-existia para filmá-lo saiu junto. **O que sobra é o dedo dele no app, sem
-vídeo:** o que se julga é TATO, e tato não se julga em gravação; se o que
-ele sentir não for o que a frase pedia, é item NOVO.
-
-**Total aposentado em 26/08: CINCO números** (91, 93, 102, 103, 104) — e o
-**próximo número livre continua 105**, porque nenhum destes fechos abriu
-obra nova.
-
-**E em 27/08 saiu o 87** (a rolagem do véu da abertura), por obra, no
-caminho que ele escolheu em 25/08 — o próximo número livre segue **106**,
-porque o fecho não abriu obra nova.
-
-**E ainda em 27/08 saiu o 105** (a prova 19 do toque duplo que escolhia
-o próprio alvo), dentro da primeira fatia da dieta dos juízes (item
-**99**). O próximo número livre naquele dia seguia **106**.
-
-**E em 28/08 saiu o 106** (a lei curta da sessão, no `AGENTS.md`), no
-mesmo dia em que nasceu; e no mesmo dia saiu o **107** (a varredura de
-fecho: duplicata, lixo e emaranhado, não repetir a prova). O próximo
-número livre segue **108**.
-
 ---
 
 ## ALTA — o dono vê e incomoda
@@ -808,32 +302,17 @@ de Conferência (**C15**: a chapa do modo real, com a **R1** que ele escolheu
 na **Q14** embarcada e os +3 passos declarados no selo); história no
 ARQUIVO.
 
-**93.** O brilho assistido tinha de ser o mesmo algoritmo do NASA Eyes —
-**FECHADO em 26/08**, e nada mais restava dentro dele: receita aprovada por
-ele em 25/08 (*"a calibracao nao muda a ideia central"*), calibração
-escolhida na **Q13** (a **C1**, *"o Eyes ao pé da letra"*), o padrão
-embarcado com a porta `?calib=` morta, e a ressalva dele conferida no item
-**104** (**C14**); história no ARQUIVO.
+**93.** O brilho assistido = mesmo algoritmo do NASA Eyes — **FECHADO em 26/08**; ARQUIVO.
 
-**5.** O Sol do Atlas estava congelado no máximo solar e passou a obedecer
-ao calendário — **FECHADO em 25/08**, conferido por ele na Sala de
-Conferência (**C6**); história no ARQUIVO.
+**5.** O Sol do Atlas estava congelado no máximo solar — **FECHADO em 25/08**; ARQUIVO.
 
-**7.** Trocar a qualidade recarregava a página, e o reload morreu —
-**FECHADO em 25/08**, palavras dele: *"testei e ficou bom"*; história no
-ARQUIVO. *(O herdeiro VIVO é o item **59**: trocar de tier ainda não troca
-a textura de quem já carregou.)*
+**7.** Trocar de qualidade recarregava a página e o reload morria — **FECHADO em 25/08**; ARQUIVO.
 
-**39.** Focar uma estrela apagava as outras — **FECHADO em 29/08**,
-morto por mecanismo (uniforms do campo idênticos com/sem foco; a causa
-— a pupila — tem lápide com teste). História no ARQUIVO.
+**39.** Focar uma estrela apagava as outras — **FECHADO em 29/08**; ARQUIVO.
 
-**40.** Dois Sóis com rótulo — **FECHADO em 29/08**, morto por censo
-(nunca mais de um rótulo SOL, em cinco endereços). História no ARQUIVO.
+**40.** Dois Sóis com rótulo ao mesmo tempo — **FECHADO em 29/08**; ARQUIVO.
 
-**43.** Planetas de longe parecem estrelas — **FECHADO em 29/08**: é a
-física que ele pediu (fase e cor de verdade; Vênus é a "estrela" do
-céu real), re-fotografada na cena de hoje e aceita. História no ARQUIVO.
+**43.** Planetas de longe pareciam estrelas — **FECHADO em 29/08**; ARQUIVO.
 
 **52. A conferência do dono no app com o padrão novo da luz.**
 A queixa que abriu a rodada da luz era do app com o desenho velho; o
@@ -843,52 +322,11 @@ app. O pouso de 17/08 aceitou a SOLTURA da estrela — este item é o
 pacote da luz por inteiro. *(Veio do bloco da onda da luz, enxuto pelo
 item 51.)*
 
-**53. O expoente da asa (β) espera o gate de foto do dono — FECHADO em
-31/08.** Ele olhou a escada inteira das 11 distâncias
-(`capturas/luz-*.png`, entregues no chat) e cravou, palavras dele:
-*"acho que isso já ficou bom, nao precisamos mais mexer nisso."* —
-β = 2,4 deixa de ser semente e vira valor definitivo, com a corrente
-que o item sempre declarou: `BETA_DO_ESPINHO` = 1,5× ele e a fração
-0,06 juntas. O gate de foto que este item pedia foi cumprido.
-*(Texto original preservado abaixo para o museu.)*
-β = 2,4 é semente de projeto — a Lei §1 pede a escolha entre 2,0 e 3,0
-com foto, com `BETA_DO_ESPINHO` acorrentado em **1,5×** ele
-(`1.5 * BETA_DA_ASA`, em `estrela.ts`) e a fração 0,06 junto. O ¾ foi a
-primeira forma, e o dono a reprovou no app em 16/08 — *"os spikes
-ficaram horríveis e enormes"*: braço que decai mais devagar que o halo
-não é cruz, é parede de 2.400 px. As fotos já existem
-(`capturas/luz-*.png`, a escada inteira); falta ele olhar e cravar. *(Veio do bloco da onda da luz, enxuto pelo
-item 51.)*
+**53.** O expoente da asa (β) esperava o gate de foto do dono — **FECHADO em 31/08**; ARQUIVO.
 
-**54. O filme espera a exibição do dono — FECHADO em 31/08.** Ele
-assistiu ao filme inteiro com o final novo (retrato v2 + dolly zoom +
-Sagan) e cravou: *"já assisti, ficou lindo."* A exibição que este item
-esperava aconteceu. *(Texto original abaixo para o museu.)*
-Palavras dele no pedido, 19/08: *“quando estivesse passando poderia dar
-uma leve desacelerada e virar rapidamente a camera para ela e desvirar
-para continuar em direção a terra.”* — implementado e medido em 20/08:
-a Lua fica grande ~1,5 s (era 0,7 — o "piscar"), a câmera vira para ela
-no ponto mais próximo (6 raios lunares) e devolve o olhar à Terra; o
-pouso assenta nas Américas. Na mesma rodada: os giros de Sirius e de
-Rigel deixaram de borrar, "O BERÇÁRIO" cai onde as estrelas reais
-passam, a Lua sem rede usa o lugar medido das 16:00, e um juiz novo
-assiste o filme INTEIRO em play contínuo (0→193) nos testes. A
-história completa da rodada (o roteiro repensado, a coda, as falhas do
-play e seus consertos) mora nos commits de 19–20/08. Falta só ele
-assistir do começo, sem pular, e aprovar.
+**54.** O filme esperava a exibição do dono — **FECHADO em 31/08**; ARQUIVO.
 
-A ideia solta dele segue na mesa como decisão de escopo: *“como um
-fly-by ao redor dos planetas no final”*. Na rota de casa Júpiter passa
-a 2,3 UA — um pontinho; fly-by de verdade exige desviar a rota da coda.
-A alternativa oferecida é cruzar o plano da galáxia no mergulho (a
-poeira passa de teto a chão). Um dos dois, ou nenhum: escolha dele.
-
-E um aviso dele sobre as legendas novas (que ele gostou): *“gostei das
-suas sugestoes, mas talvez teria que adaptar um pouco design/layout UI
-para acomodar”* — conferir na mesma exibição.
-
-**69.** A dose das forjas (os berçários) vista de longe — **FECHADA em
-25/08**, palavras dele: *"ficou bom assim"*; história no ARQUIVO.
+**69.** A dose das forjas (berçários) vista de longe — **FECHADA em 25/08**; ARQUIVO.
 
 **82. Os nomes na tela estão muito intrusivos — N1 e N2 pousaram em 24/08 e
 ELE CONFERIU em 25/08; o que sobra é N3 e duas vagas.** *(Correção de
@@ -945,34 +383,13 @@ pedido novo dele. As quatro fotos —
 
 ---
 
-**99.** A dieta dos juízes — **FECHADO em 30/08**: todo teste e juiz
-declara a quem serve (dono 28 · lei 45 · chão 31, zero sem dono — e
-NENHUM morreu: a leva inteira respondeu), todo juiz declara o preço
-(43,3 min somados, PINADOS na catraca do censo: o total só desce;
-subir re-pina no diff com justificativa), o porteiro do `npm run
-censo` reprova arquivo sem dono e juiz sem preço, e a MORDIDA
-AMOSTRAL (`npm run mordida`, 3 por semana, rotação determinística)
-prova que teste velho ainda morde — no primeiro giro pegou o
-App.test.ts, respondido com justificativa no próprio arquivo. Fusões
-marcadas nos cabeçalhos para quem tocar (fita 3→1; chapa→costura);
-fase-da-grade desceu a bancada; voo-ida-e-volta vive. História no
-museu (`grep -n '^## Item 99' docs/PENDENCIAS-ARQUIVO.md`).
+**99.** A dieta dos juízes — **FECHADO em 30/08**; ARQUIVO.
 
-**113.** Os minutos dos juízes — **FECHADO em 30/08, no mesmo dia**:
-cinco fases provadas uma a uma (A/A bit-idêntica ×2 no detector; zero
-acusações no MB1; 573=573 na acessibilidade) + os 3 cortes que ele
-aprovou ("ok para tudo"). Placar medido: bolsa 44,0→31,8 min (−28%),
-fechamento pesado ~20→8,8 min, rodadas encadeadas ~5,3 (o "antes" de
-graça pelo carimbo de árvore). As duas réguas defasadas pela lente 58°
-morreram re-derivadas da lei viva. História no museu
-(`grep -n '^## Item 113' docs/PENDENCIAS-ARQUIVO.md`).
+**113.** Os minutos dos juízes — **FECHADO em 30/08**; ARQUIVO.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
-**97.** A órbita acendia mais cedo no Retina — **FECHADO em 29/08**: a
-régua do fade virou px de CSS (na tela comum, bit a bit; no Retina as
-distâncias de aparição caíram ao valor certo — eram o DOBRO), com
-guarda de invariância e foto aceita por ele. História no ARQUIVO.
+**97.** A órbita acendia mais cedo no Retina — **FECHADO em 29/08**; ARQUIVO.
 
 **12.** Nenhuma foto de referência mora entre 1 UA e 40 UA — onde a tela
 lava. A régua de luz e as vistas `ua2`…`ua2000` já enxergam a faixa.
@@ -980,19 +397,9 @@ lava. A régua de luz e as vistas `ua2`…`ua2000` já enxergam a faixa.
 **13.** Sagittarius A✱ ainda é 125.884× maior que o real. Segundo
 mentiroso de escala. Cadastro em `escala.ts`.
 
-**15.** Quando o quadro engasgava não havia como aliviar o Sol —
-**FECHADO em 02/09 por verificação, sem obra**; história no ARQUIVO.
-*(O nível Performance JÁ zera coroa volumétrica e ejeção (`TIERS.low`:
-`cstep 0`/`cmestep 0`) e vale ao vivo, porque a troca de qualidade
-re-assa o mundo; medido 44,3 → 23,7 ms/quadro. Fotos
-`capturas/item15-sol-{cinema,performance}.png`.)*
+**15.** Sem como aliviar o Sol quando o quadro engasgava — **FECHADO em 02/09**; ARQUIVO.
 
-**17.** O Sol solavancava quando o relógio acelerava — **FECHADO em
-02/09**; história no ARQUIVO. *(A chave `LAPSE_K` passou a receber a
-taxa viva da máquina do tempo só no Atlas (`escreverLapso`); filme
-bit-idêntico por md5; salto médio entre quadros −16%, pior salto −10%.
-O que sobra do salto é o re-assar do retrato a cada 7,2 unidades de
-data, declarado, não consertado. Fotos `capturas/item17-*.png`.)*
+**17.** O Sol solavancava quando o relógio acelerava — **FECHADO em 02/09**; ARQUIVO.
 
 **18.** A luz trata o Sol como ponto sem tamanho. Certo para planetas,
 errado a poucos raios solares — e agora a câmera chega lá. Sem penumbra.
@@ -1008,23 +415,7 @@ trocá-las é trabalho de bancada (o mosaico Cassini de Titã com as
 emendas tratadas, as 68 linhas de Europa preenchidas, o mosaico Dawn de
 Ceres com licença fechada).
 
-**34.** A tela de carregamento desenhava outra Via Láctea, de dois braços,
-e o modelo da casa tem quatro — **FECHADO em 31/08**. A vinheta tinha
-espiral própria (um `TWIST` linear em r, dois braços a π); agora a crista
-sai da MESMA espinha do modelo cartográfico (`BACKBONE`, quatro cristas de
-pitch 12,5° espaçadas 2π/4), com o par ímpar dominante como no céu e o gás
-(H II, poeira) uniforme nos quatro, também como no céu. E havia um segundo
-defeito que ninguém tinha visto: o **sentido estava espelhado**. Medido
-pela fase da harmônica m=4 contra ln r, o céu da casa fotografado do polo
-norte galáctico abre a −3,78 rad por e-fold, a vinheta velha abria a
-+4,33 e a nova abre a −4,44 (pitch aparente 12,7° contra os 12,5° do
-`BACKBONE`). Fotos: `capturas/item34-boot-antes.png`,
-`item34-boot-depois.png` e `item34-ceu-polo-norte.png` (a referência de
-quiralidade, `?pos=` sobre o polo norte).
-
-**O olho dele confirmou em 31/08:** *"a vinheta da galaxia está um pouco
-melhor sim... por enquanto vamos dar como encerrada"* — e a ressalva
-dele virou o item **118**.
+**34.** A tela de carregamento desenhava outra Via Láctea, espelhada — **FECHADO em 31/08**; ARQUIVO.
 
 **36. (MEDIDO em 17/08 — o censo completo mora no commit da data.)
 SEIS leis de poeira convivem, não quatro.** Às quatro contadas (a
@@ -1045,89 +436,29 @@ vezes (na cor e em metade do alpha) com degrau duro em 3 px, e o
 morta. A UNIFICAÇÃO segue sendo a pauta 1 do NORTE — obra própria, que
 muda pixel e volta com foto para o dono a cada mudança.
 
-**37.** As nuvens escuras apagavam o que está NA FRENTE delas —
-**FECHADO em 31/08**: o campo de catálogo passou a desenhar em DUAS
-passadas, uma de cada lado do quad multiplicativo, e quem diz de que
-lado cada estrela está é o céu das nuvens (`temNuvemNaFrente`, em
-`observedClouds.ts`); a estrela do tiro único vai de 0,512 para 0,966,
-a população livre vai a mediana 1,000 e as estrelas ATRÁS de nuvem
-ficam bit-idênticas, com o fundo ainda escurecido em 0,488. O conserto
-proposto no item (a coluna das nuvens dentro do shader da estrela) foi
-recusado pelo TAMANHO — vira subsistema e reescreve as camadas. O que
-sobrou tem número: item **122**. História no ARQUIVO.
+**37.** As nuvens escuras apagavam o que está na frente delas — **FECHADO em 31/08**; ARQUIVO.
 
-**46.** A galáxia profunda não passava pela invariância de resolução —
-**FECHADO em 31/08**: a lei de tela ganhou RÉGUA (`leiDeTelaNaRegua`, em
-`estrela.ts`) — o ângulo é julgado sempre na altura de calibração da casa
-e o rastro volta ao buffer, com o piso do rasterizador MEDIDO no lugar do
-suposto; na escada 900→1800 a razão vai de 0,770/0,714 para 0,982/0,937 e
-o quadro cheio em retina de 0,975/0,845 para 1,000/0,966, com −0,09% e
-−2,6% na janela de dpr 1 de sempre. História no ARQUIVO.
+**46.** A galáxia profunda não passava pela invariância de resolução — **FECHADO em 31/08**; ARQUIVO.
 
-**59.** Trocar de qualidade não trocava a textura dos corpos já
-carregados — **FECHADO em 31/08**: a troca de tier virou double-buffer no
-pipeline único de texturas — a tela fica com os pixels velhos até o lote
-novo chegar, zero quadros sem globo em 261 amostras nas duas travessias.
-História no ARQUIVO.
+**59.** Trocar de qualidade não trocava a textura já carregada — **FECHADO em 31/08**; ARQUIVO.
 
-**61.** Rever a UI/UX inteira — **FECHADO em 29/08**: a última ponta (a
-vista de abertura) foi julgada por ele na folha
-`capturas/item61-abertura-folha.png` — **o sistema inteiro, estilo NASA
-Eyes** — e pousou junto com a lente do 86 (a abertura nasce no teto,
-~133,7 UA sob 58°; na abertura acendem as cinco órbitas de fora e os
-nomes Sol, Netuno e Plutão). O resto da onda já estava aceito desde
-C8/25-08. História no ARQUIVO.
+**61.** Rever a UI/UX inteira — **FECHADO em 29/08**; ARQUIVO.
 
-**70.** O ponto que morria seco na borda — **FECHADO em 29/08**: as duas
-causas consertadas (a faixa de guarda em 25/08; o vértice preso e a PSF
-pela distância verdadeira em 27/08) e o olho dele veio em 29/08 sobre
-`capturas/item70-borda-depois-v3.png` — *"está bom"*. História no ARQUIVO.
+**70.** O ponto que morria seco na borda — **FECHADO em 29/08**; ARQUIVO.
 
-**75. Motor de filmes por roteiro — FECHADO EM 29/08.** As 25 cenas e os
-193 s são roteiro; câmera e edição preservadas, 61/61 vistas oficiais
-bit-idênticas e Alnilam novamente junto de Alnitak e Mintaka. História e
-provas no item 75 do `PENDENCIAS-ARQUIVO.md`.
+**75.** Motor de filmes por roteiro — **FECHADO em 29/08**; ARQUIVO.
 
-**77.** As linhas de órbita, ligadas por padrão — **FECHADO em 29/08**: ele
-aprovou `capturas/item77-filme-sem-orbitas.png` (o filme limpo). As linhas
-ficam no Atlas e no voo livre; a exceção do filme é autorização DELE, só
-das órbitas, e `fases.test.ts` a guarda. História no ARQUIVO.
+**77.** As linhas de órbita, ligadas por padrão — **FECHADO em 29/08**; ARQUIVO.
 
-**83.** Órbitas AAA — a fita e o foco — **FECHADO em 29/08**: o último
-degrau (B3, a cor) pousou com a receita DELE — a cor dominante da
-textura de cada globo (`corDaTextura.ts`; Terra o azul do oceano,
-Plutão o salmão; Mercúrio na fotometria por decisão da própria
-receita) — e ele confirmou as fotos ("ficou lindo"). A fita (B1), a
-bissetriz (B2), o colar morto (A1) e a cor (B3), todos aceitos.
-Opção dormente: o G1 (linha para os oito sem ponto) segue sendo UMA
-linha, só se ele quiser. História no ARQUIVO.
+**83.** Órbitas AAA — a fita e o foco — **FECHADO em 29/08**; ARQUIVO.
 
-**87.** O véu da abertura não cabia na tela do telefone com a fonte
-grande — **FECHADO em 27/08**, por obra, no caminho que ELE escolheu em
-25/08 (Q6: *"deixar a página rolar"*): o véu rola e nada encolhe. As três
-provas novas do juiz de acessibilidade cobrem as duas pontas (a tarja
-inteira no início, o tempo do filme inteiro depois de rolar) e a sabotagem
-confirma que elas mordem. Foto: `capturas/item87-abertura-rolagem-v2.png`;
-história no ARQUIVO.
+**87.** O véu da abertura não cabia no telefone — **FECHADO em 27/08**; ARQUIVO.
 
-**89.** Desligar os nomes deixava o céu inclicável — **FECHADO em
-29/08**, em duas levas no mesmo dia: a camada `noicones` (o anel
-só-ícone, céu limpo E navegável) e, por ordem dele, o **Eyes
-completo** — anel na COR da órbita do corpo ao lado do nome, camadas
-independentes de verdade. Zero raycast; o clique segue na lista única
-da pendência 30. Fotos aceitas; história no ARQUIVO.
+**89.** Desligar os nomes deixava o céu inclicável — **FECHADO em 29/08**; ARQUIVO.
 
-**92.** Descer ao corpo de um anão não punha o corpo na tela — e era a
-classe dos oito, não Éris — **FECHADO em 25/08**, conferido por ele na
-SEGUNDA LEVA da Sala de Conferência (**C11**); história no ARQUIVO.
+**92.** Descer ao corpo de um anão não o mostrava — **FECHADO em 25/08**; ARQUIVO.
 
-**100.** O HUD de fotografia — **FECHADO em 29/08, no mesmo dia em que
-nasceu como obra**: o indicador LENTE·SOL no filme, a roda que fecha a
-lente no filme pausado (decai no play; sem selo, doutrina dele), e a
-coluna de layout acima da régua que o olho dele pediu. Ele confirmou as
-cinco fotos ("ficou otimo"). Pendência curta na família: a pinça do
-telefone ainda não é lente. História no ARQUIVO.
-
+**100.** O HUD de fotografia — **FECHADO em 29/08**; ARQUIVO.
 
 **108. O fim do filme não mostra direito a Lua e a Terra — FECHADO em
 31/08, inteiro.** As três pernas da retomada (relógio do ?jd=, retrato,
@@ -1822,19 +1153,9 @@ albedo médio do corpo, com a costura suavizada — em vez de servir preto
 puro como albedo. Fotos `capturas/item116-*.png`, rastro com ângulos,
 distâncias e a receita de recomputo em `capturas/item116-tritao.json`.
 
-**117.** Aro azulado fino na borda dos globos em close-up — **FECHADO
-em 02/09**; história no ARQUIVO. *(A aberração cromática do pós passa a
-CEDER onde há degrau duro de contraste (`FILM_SHADER`, `smoothstep
-0,06–0,30` sobre a diferença de canais); excesso de azul no limbo de
-Ganimedes 118 → 25; a CA do céu no warp preservada em 98%. Fotos
-`capturas/item117-{limbo,zoom,warp}-{antes,depois}.png`.)*
+**117.** Aro azulado fino na borda dos globos em close-up — **FECHADO em 02/09**; ARQUIVO.
 
-**126.** `?foco=mars` caía na estrela "Marsic", não em Marte — **FECHADO em
-01/09**; história no ARQUIVO. *(O planeta só entrava na busca pelo nome
-em português, e "mars" não é começo de "marte"; agora cada corpo do
-sistema entra também pelo id inglês — `mars`, `earth`, `moon` —, que
-casa exato e vence qualquer prefixo de estrela. Foto
-`capturas/item126-foco-mars-depois.png`.)*
+**126.** `?foco=mars` caía na estrela Marsic, não em Marte — **FECHADO em 01/09**; ARQUIVO.
 ---
 
 ## BAIXA — dívida interna, ninguém vê
@@ -1904,55 +1225,15 @@ começa por propostas visuais para o olho dele (a mineração do Eyes tem
 o mecanismo do loading deles mapeado no mergulho 06 — bundle separado,
 dados essenciais antes do app, saída em fade).
 
-**129.** Modos não são universos e a busca é UMA SÓ — **FECHADO em
-01/09**, palavra dele; história no ARQUIVO. *(A busca ficou tolerante a
-erro de letra (MiniSearch como quinto degrau, `121143b`), bilíngue com
-apelidos, Bayer e constelação como lugar (`db2ca94`, `6059f82`), acha
-planetas no voo livre e entra no atlas neles (`e75d4af`), e leva ao
-buraco negro central. Filme segue sem busca (palavra dele). Testes
-aprovados e verdes (`78ee3b5`). O que sobrou virou o item **131**.)*
+**129.** Modos não são universos; a busca é uma só — **FECHADO em 01/09**; ARQUIVO.
 
-**119.** O `atlas-smoke` prova 3 reprovava em t=250 porque media
-contra a Terra velha — **FECHADO em 02/09**, juiz rodado com o sim dele
-(prova 3 passa); história no ARQUIVO. *(A régua passou a ser a Terra
-viva de cada lado: relógio parado → vetor relativo (teto 1e-9);
-relógio reaplicado pelo portal (item 108) → distância de enquadramento
-(teto 1e-4). Medido à mão: 1,185e-2 → 3,78e-5. Prova
-`capturas/item119-regua.txt`.)*
+**119.** O atlas-smoke prova 3 reprovava em t=250 (Terra velha) — **FECHADO em 02/09**; ARQUIVO.
 
-**125. A ONDA DA PARIDADE — linhas de órbita, rótulos e ícones IGUAIS
-aos do NASA Eyes.** **FECHADA em 01/09**, palavra dele nas fotos A/B e
-no vivo; suíte cheia verde no fechamento (2.729 testes, 9 s; a única
-falha era a porta `?msaa=` da F1 fora do registro do selo — declarada).
-História fase a fase nos commits (F0 `60190b9` · F1 `04529af` · F2
-`1057890` · F3 `40a5fc2` · F4 `09f16e8` · F5 `1a2708f` · F7 no selo
-desta linha) e nos bastões de scratchpad/estudos/nasa-eyes-solar-system/
-mineracao/. O gabarito docs/reference/contrato-eyes-linhas-rotulos.md
-ficou corrigido (§2.2b: as quatro portas; A4 e L3/L4 refeitas).
-*(Ponte: nasceu como "120" nos commits `335fa9c`/`60190b9`.)*
+**125.** A onda da paridade — linhas, rótulos e ícones do Eyes — **FECHADA em 01/09**; ARQUIVO.
 
+**120.** A histerese da régua de relevância nunca valia — **FECHADO em 31/08**; ARQUIVO.
 
-
-**120.** A histerese da régua de relevância nunca chegava a valer —
-**FECHADO em 31/08**; história no ARQUIVO. *(`prevDesenhados` era montado
-da lista NOVA do próprio quadro, em que `desenhado` ainda é `undefined`
-porque quem o escreve é o `LabelCanvas`, no `onLabels` que vem depois — o
-conjunto saía SEMPRE vazio e o bônus de 20% de `pesoDoRotulo` não
-multiplicava nada. A colheita passou para ANTES da reescrita de
-`lastLabels`. Muda QUEM aparece em cena de empate, e está medido: numa
-cena de fronteira — Júpiter enquadrado com as luas e cinco estrelas
-disputando as vagas — as trocas do conjunto desenhado caem de **816,7
-para 785,3 por minuto** (−3,8%, 3 corridas de 30 s por lado) e as
-configurações distintas de **187 para 166** (−11%).)*
-
-**121.** O juiz da beira da fita não conseguia medir a perna dpr 1 com o
-gradiente — **FECHADO em 31/08**; história no ARQUIVO. *(A crista deixou
-de ser o pixel mais claro de cada coluna e virou a TRILHA de maior soma
-que anda devagar; a mesma foto que reprovava com `colunasMansas` 0,86
-aprova com subida 1,307 px disp e FWHM 1,633, e as duas pernas de dpr 2
-mal se mexem. A cobrança da continuidade — agora garantida por
-construção — deu lugar a `colunasVivas ≥ 0,9`, sob teste próprio em
-`beira-da-fita.test.mjs`.)*
+**121.** O juiz da beira da fita não media a perna dpr 1 — **FECHADO em 31/08**; ARQUIVO.
 
 **122. O quad das nuvens ainda apaga as OUTRAS camadas aditivas que
 estão na frente dele (herdado do item 37, 31/08).** O conserto do 37 deu
@@ -1975,27 +1256,11 @@ grande, que segue de pé:** a extinção das nuvens dentro do shader de cada
 camada, por um bake direção × distância — o conserto que o 37 recusou
 pelo tamanho, e que resolveria todas de uma vez.
 
-**95.** Num eclipse o chão escurecia e o AR não — **FECHADO em 25/08**,
-conferido por ele na SEGUNDA LEVA da Sala de Conferência (**C12**);
-história no ARQUIVO.
+**95.** Num eclipse o chão escurecia e o AR não — **FECHADO em 25/08**; ARQUIVO.
 
-**96.** "O Sol está na origem" era combinado, não verificado —
-**FECHADO em 29/08**: virou veredito do `atlas-smoke`, no app VIVO
-(`window.__director.sun.group.position` tem de ser exatamente
-[0, 0, 0]); quem transladar a raiz da cena ou posicionar a malha do
-Sol agora quebra um juiz em vez de quebrar a luz em silêncio.
+**96.** "O Sol está na origem" era combinado, não verificado — **FECHADO em 29/08**; ARQUIVO.
 
-**94.** O segundo cobertor compunha um quadro que ninguém lia —
-**FECHADO em 29/08**: o `ClaraoDoCampo` deixou de chamar o
-`bloom.render` inteiro e repete as três etapas que importam
-(passa-alta, pirâmide, composite) sem a soma final; a dependência da
-forma interna já era cobrada por `throw` no construtor, agora sobre
-todos os campos usados. MEDIDO a 1920×1080 em `?t=100`:
-`pos:bloom-blend` caiu de 2,04 para 1,26 ms (×0,5 → ×0,2 por quadro —
-o que sobrou é o blend legítimo da máquina da lei), e o A/B sentinela
-deu **bit-idêntico nas 4 vistas** (sol, soldisco, hero8, ua150).
-Rastros: `capturas/item94-gpu-{antes,depois}.txt` e o carimbo do ab-identidade.
-
+**94.** O segundo cobertor compunha um quadro que ninguém lia — **FECHADO em 29/08**; ARQUIVO.
 
 **22.** As 6 fotos reais do Sol nunca foram curadas — a bancada nunca as
 baixou nem as pôs diante do olho dele. *(A outra metade do item — "35
@@ -2014,12 +1279,7 @@ corte come a superfície.
 
 **26.** O brilho das estrelas é relativo, não absoluto.
 
-**27.** Faltavam fixtures Horizons de POSIÇÃO de Vênus, Júpiter,
-Saturno e Urano — **FECHADO em 02/09**, teste de regressão rodado com o
-sim dele (197/197); história no ARQUIVO. *(12 fixtures nas mesmas 3 datas
-dos outros planetas, índice 127 → 139; os quatro entraram no juiz de
-regressão; pior desvio motor × Horizons 0,00032° / 0,0018% contra o
-teto 0,1° / 0,2%. Prova `capturas/item27-fixtures.txt`.)*
+**27.** Faltavam fixtures Horizons de posição de 4 planetas — **FECHADO em 02/09**; ARQUIVO.
 
 **28.** Dívidas internas de cor a re-dosar.
 
@@ -2122,10 +1382,7 @@ Origem: relatório externo de degradação, verificado por leitura
 independente antes de virar código. A conferência do dono é só o fps que
 ele sentir — o número de processos já está provado.
 
-**79.** As duas telas de erro esperavam o olho dele — **FECHADO em 25/08**,
-conferido na Sala de Conferência (**C7**); história no ARQUIVO. *(As fotos
-`capturas/erro-contexto-perdido.png` e `capturas/erro-no-tick.png`
-TERMINARAM de servir: a nota de "não apagar" morreu com o item.)*
+**79.** As duas telas de erro esperavam o olho dele — **FECHADO em 25/08**; ARQUIVO.
 
 **80.** (Ruído de instrumento, achado em 22/08 fechando o item 74.) **Uma
 das 52 vistas oficiais não repetiu a si mesma.** O `ab-identidade` captura
@@ -2148,57 +1405,15 @@ capturas no contexto de BALDE e 3 no ISOLADO, e as **nove deram
 `09d8c61fa256@1800x1713`**. Ela entrou na varredura da família inteira
 (63 capturas, 7 vistas) descrita no item **101**.
 
-**81.** O MB1 reprovava em cinco famílias e a culpa era do próprio juiz, que
-media numa janela em que a régua dele não vale — **FECHADO em 25/08**;
-história no ARQUIVO. *(Pedia 640×700 e media 640×**613**; ali o app desenha
-uma PSF de 0,48 px, abaixo de Nyquist, e nenhuma fonte do campo tem
-identidade medível. O quadro passou a ser exato, o padrão virou
-1128×**1080**, e a soleira deixou de ser digitada.)*
+**81.** O MB1 reprovava em cinco famílias — culpa do juiz — **FECHADO em 25/08**; ARQUIVO.
 
-**AS DUAS LIMITAÇÕES DECLARADAS ficam AQUI** — não são obra pendente; são o
-que a régua reconhecidamente não faz, e quem for medir depois precisa
-saber. **(a)** A regra do traço barra a LINHA, não o PEDAÇO dela: o corte
-`lado ≤ 3·√nMeia` equivale a 9:1 num blob cheio, então barras maciças
-compridas passam por mancha — fechar esse vão pede olhar a HISTÓRIA da
-componente, não a geometria de um quadro. **(b)** `pan` e `orbita` definem o
-passo em PIXELS (`4 / pxPorRad`), então o CÉU que varrem encolhe quando a
-janela cresce: **os vereditos das duas não são comparáveis entre janelas.**
+**84.** O gate de identidade cobria o Atlas com 1 vista só — **FECHADO em 31/08**; ARQUIVO.
 
-**84.** O gate de identidade cobria a fase ATLAS com UMA vista de 52 —
-**FECHADO em 31/08**, pelas três vistas que o próprio item nomeava, todas
-em corpos que nenhuma irmã cobria e todas com `&jd=` pinado:
-`atlas-corpo-marte` (`?foco=marte&ver=corpo`, md5 `bfbf114a7e61`),
-`atlas-teto-netuno` (`?foco=netuno&d=100000`, `4750e7bd5e37`) e
-`atlas-lua-ganimedes` (`?foco=ganimedes&d=2`, `1d1faa08f163`).
-Estabilidade provada antes de pinar (par nulo de 3 capturas cada,
-`capturas/item84-vistas-atlas-parnulo.json`) e mordida provada por duas
-sabotagens de knob só-do-Atlas, com as irmãs de filme 4/4 bit-idênticas.
-Preço MEDIDO de novo: 4,0 min por lado (54 vistas, 56 capturas) contra
-3,6 declarados — o til do item 108 saiu e o teto do censo subiu de 31,9
-para 32,3 min. Continua sem juiz bit-exato, declarado: os NOMES na tela e
-o HUD, que o `?shot=2` de toda vista apaga. História no ARQUIVO.
+**85.** O atlas-smoke reprovava o toque duplo sem defeito — **FECHADO em 31/08**; ARQUIVO.
 
-**85.** O `atlas-smoke` reprovava o TOQUE DUPLO sem defeito nenhum —
-**FECHADO em 31/08**; história no ARQUIVO. *(A causa estava escrita uma
-tela acima do defeito: o `await` entre os dois toques do par custa uma
-ida e volta de CDP, medida no próprio arquivo em 200 ms com a sessão
-sozinha e mais de 500 com o navegador aquecido — e a janela do duplo é
-de 500 ms. Os seis comandos do par foram para uma fila só: o intervalo
-caiu de 50 para 12 ms, e a espera de 1,5 s de parede virou espera de
-ESTADO — o mergulho começa em 4 ms. O par e o mergulho entram no
-veredito, então o zero de amanhã já vem com a explicação ao lado.)*
+**86.** O céu do Atlas parecia apagado pela lente — **FECHADO em 29/08**; ARQUIVO.
 
-**86.** O céu do Atlas parecia mais apagado e a causa era a LENTE —
-**FECHADO em 29/08**: ele cravou o 58° com a foto A/B na mão
-(`capturas/item86-lente-ab.png`) e a obra pousou no mesmo dia
-(`ATLAS_FOV_GRAUS` = `FOV_DA_CASA`; teto do zoom 226,84 → 133,68 UA;
-corpo do Sol a 3,7741 raios; A/B de 61 vistas com o filme bit-idêntico
-e só as 9 de Atlas mudando; sabotagem independente 4/4). História no
-ARQUIVO.
-
-**88.** Ao enquadrar QUALQUER lua, o que ficava no alto da tela era o eixo
-da NOSSA Lua — **FECHADO em 25/08**, conferido por ele na SEGUNDA LEVA da
-Sala de Conferência (**C10**); história no ARQUIVO.
+**88.** Ao enquadrar qualquer lua aparecia o eixo da nossa Lua — **FECHADO em 25/08**; ARQUIVO.
 
 **90. Upscaling espacial como feature experimental (beta).** (Decisão do
 dono em 24/08, em resposta ao levantamento de desempenho. **Fila futura,
@@ -2403,17 +1618,9 @@ item viver, a régua continua sendo o par nulo. Rastro:
 `capturas/item115-datacao-tremor-isolado.json`, sonda em
 `capturas/item115-datacao-tremor.mjs`.
 
-**123.** As forjas estelares perdiam um terço do brilho quando a
-resolução dobrava — **FECHADO em 02/09**; história no ARQUIVO. *(O mesmo
-conserto do 46: `starForges.ts` passou à lei de tela NA RÉGUA; razão
-dpr2/dpr1 medida 0,76–0,84 → 1,08–1,13. Fotos
-`capturas/item123-forjas-*.png`.)*
+**123.** As forjas estelares perdiam brilho ao dobrar a resolução — **FECHADO em 02/09**; ARQUIVO.
 
-**124.** O porteiro do censo reprovava por uma palavra — **FECHADO em
-31/08**; história no ARQUIVO. *(O `observedClouds.test.ts` nasceu com
-`// Serve: física` e o porteiro só aceita `dono|lei|chão`; a classe
-certa era `lei` — o arquivo prova o contrato do céu das nuvens. Uma
-palavra trocada, `npm run censo` de volta ao exit 0.)*
+**124.** O porteiro do censo reprovava por uma palavra — **FECHADO em 31/08**; ARQUIVO.
 
 ---
 
