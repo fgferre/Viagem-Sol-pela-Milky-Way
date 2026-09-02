@@ -152,27 +152,38 @@ dinamismo dos nomes do NASA Eyes".)*
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
-**134. A colheita do projeto Saturn dele (https://fgferre.github.io/Saturn/).**
-Pedido dele, 02/09: *"trazer os aprendizados desse outro projeto que eu
-mesmo fiz, específico de Saturno: tem muitas luas e modelos 3D, com
-técnicas muito interessantes que evidenciam as crateras, a textura
-aplicada nessas luas, detalhes muito interessantes dos anéis, e outras
-técnicas que fazem sentido para melhorar o nosso projeto."* **Laudo pronto
-em 02/09:** [`docs/reference/saturn-colheita.md`](reference/saturn-colheita.md)
-(inventário, técnica × já temos, blocos ranqueados, o que não trazer,
-licenças). Achado que muda a conversa: o projeto dele NÃO carrega modelo
-3D — o relevo das luas é mapa de altura de shape model real aplicado
-como deslocamento numa esfera. Os cinco maiores ganhos: (A) perfil
-radial MEDIDO do anel (13.177 amostras, 14 KB; único asset SEM licença
-escrita — pedir ao autor ou tirar do PDS antes de assar; conversa com o
-133); (B) relevo nas luas em dois degraus — bump por derivada do albedo
-(zero byte) e deslocamento por altura real (Mimas, Tétis, Encélado,
-Dione, ~2 MB; exige LOD de esfera, item 114); (C) ringshine — o anel
-ilumina a noite de Saturno (zero asset); (D) penumbra na sombra do anel
-sobre o globo (3 linhas); (E) manchinha de detalhe no close (3 linhas).
-Não trazer: Hapke com parâmetros a olho, relevo inventado de Reia e
-Jápeto, estado na URL, atmosfera por raymarch, o espetáculo específico
-de Saturno. **Espera a escolha dele: quais blocos, e em que ordem.**
+**134. A ONDA DE SATURNO — a colheita do projeto Saturn dele
+(https://fgferre.github.io/Saturn/) mais o que o 133 achou.** Pedido dele,
+02/09: *"trazer os aprendizados desse outro projeto que eu mesmo fiz"* e,
+depois do laudo: *"vamos fazer tudo isso que você levantou, das
+observações do nosso projeto e do meu projeto de Saturno; tudo isso é
+meu, criado por mim e por você, não tem problema usar nada. Acho o
+resultado muito interessante, inclusive os jatos de Encélado."* Laudo:
+[`docs/reference/saturn-colheita.md`](reference/saturn-colheita.md)
+(conferido pelo coordenador corpo a corpo: NÃO há modelo 3D — seis luas
+com mapa de altura+normais, nove corpos irregulares esculpidos por
+código, Saturno e Titã esferas). Licença: o código é dele; o único dado
+de terceiro é o perfil dos anéis (Björn Jónsson), creditado no NOTICE
+dele sem linha de licença — trazer com o crédito e documentar em
+`ASSETS.md`. Custo anunciado: obra GRANDE, cinco fases, meia jornada a
+um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
+
+- **S1 — os anéis** (tudo em `gigante.ts`): perfil radial MEDIDO
+  (13.177 amostras: cor, τ, retro/frente/lado escuro; 14 KB) no lugar
+  do τ da placa; ILUMINAÇÃO MÚTUA globo↔anel (planetshine no anel — a
+  causa do "estranho" do 133 — e ringshine na noite do globo); a franja
+  azul da matte (janela de alfa); penumbra na sombra do anel sobre o
+  globo. Prova: as seis vistas do 133 antes/depois + zooms.
+- **S2 — o relevo das luas**: bump por derivada do albedo (zero byte) e
+  deslocamento por mapa de altura (Mimas, Tétis, Encélado, Dione reais;
+  Reia e Jápeto sintéticos, DECLARADOS na ficha); LOD de esfera por
+  distância; detalhe fino no close. Assets ~2 MB assados em webp.
+- **S3 — as luas que faltam** (conversa com o 114): Hipérion e as oito
+  menores (Pan, Dafnis, Atlas, Prometeu, Pandora, Jano, Epimeteu, Febe)
+  com a geometria esculpida por código e os elementos orbitais dele.
+- **S4 — os jatos de Encélado.**
+- **S5 — o espetáculo dos anéis**: anéis E e F, raios do B, ondas de
+  Dáfnis — por último, com foto para o olho dele.
 Fotos do site dele em `capturas/item134-saturn-dele-*.png`.
 
 **133. Os anéis de Saturno ficam estranhos do lado que não está
@@ -196,8 +207,8 @@ gêmeo do ringshine do bloco C do 134 — os dois juntos são "iluminação
 mútua globo↔anel". **(b)** franja azul nas bordas de alfa baixo (a matte
 da placa vaza pela janela `smoothstep(0,30–0,80)`; subir para ~0,55–0,95,
 com foto). **(c)** serrilhado de 1 px no contorno rasante (antialias de
-geometria fina, não do modelo de luz). **Decisão dele:** fazer (a)+(b)
-como parte da onda de Saturno do 134, ou deixar como está (declarado).
+geometria fina, não do modelo de luz). **Decisão dele (02/09): fazer** —
+(a) e (b) moram na S1 do item 134; este item fecha quando a S1 selar.
 
 **97.** A órbita acendia mais cedo no Retina — **FECHADO em 29/08**; ARQUIVO.
 

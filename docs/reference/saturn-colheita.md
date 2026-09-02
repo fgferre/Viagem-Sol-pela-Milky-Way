@@ -101,6 +101,8 @@ luas com a cor IR/UV realçada do produto original.
 
 ## 4. O que NÃO trazer
 
+*(Revisto em 02/09 pela palavra dele — "vamos fazer tudo isso, inclusive os jatos de Encélado": os jatos e o espetáculo dos anéis SAÍRAM desta lista e viraram as fases S4 e S5 do item 134. Fica aqui só o que continua fora por doutrina.)*
+
 - **Hapke completo com parâmetros por lua.** A casa recusa por doutrina
   (`lua.ts`): exige parâmetros medidos por corpo e sem eles é invenção com
   cara de física. O código dele confirma o risco — um comentário admite que
