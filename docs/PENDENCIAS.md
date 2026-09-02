@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 130.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 131.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -1826,6 +1826,21 @@ casa exato e vence qualquer prefixo de estrela. Foto
 ---
 
 ## BAIXA — dívida interna, ninguém vê
+
+**130. O app inteiro bilíngue — português e inglês (futuro, direção
+dele em 01/09).** Palavras dele, ao pedir as tabelas bilíngues da busca:
+*"depois temos que transformar nosso app todo em bilingue"*. Medido em
+01/09 (contagem grosseira por script, não por olho): ~460 trechos de
+texto em português no código fora de testes (o grosso em
+`cadastroDeRepresentacoes.ts`, `selo.ts`, `escala.ts`, `ficha.ts`, HUD e
+paleta — parte é texto interno de auditoria, não de tela), ~280 textos
+nas fichas dos corpos (`public/data/atlas/corpos.json`) e as legendas
+do filme. O mecanismo é pequeno (dicionário + língua na URL/navegador,
+sem biblioteca); o volume é a tradução. Ordem sugerida quando vier:
+(1) a chave de língua e o HUD/botões/dicas; (2) as fichas dos corpos;
+(3) as legendas do filme; (4) o resto. Antes de qualquer obra: censo
+por OLHO do que é texto de tela e do que é texto interno. Sem
+urgência; a busca (129/F5) já nasce bilíngue.
 
 **118. A tela de abertura merece ser repensada por inteiro (futuro).**
 Palavras dele em 31/08, ao encerrar o item 34: *"acho que ainda temos
