@@ -81,7 +81,7 @@ import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { diametroAparentePx } from './corpos';
 import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
 import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
-import type { CanalPedido, OpcoesDeTextura } from './texturas';
+import type { OpcoesDeTextura } from './texturas';
 import {
   componentesNoFrameDoAnel,
   orientacaoDoCorpoNaCena,
@@ -108,6 +108,70 @@ export const GIGANTES: readonly { readonly id: string }[] = [
  * = 1,110; F-ring externo 140 180 / 60 268 = 2,326. Cicatriz W5-B.
  */
 export const ANEL_SATURNO = { rInt: 1.11, rExt: 2.326 } as const;
+
+/**
+ * O PERFIL RADIAL MEDIDO DO ANEL — o dado que aposentou a placa.
+ *
+ * 13.177 amostras a 5 km do modelo de anéis de Björn Jónsson (Voyager
+ * PPS + Cassini, via o PDS Ring-Moon Systems Node), reamostradas em
+ * 2.048 caixas de 36 km sobre 66 900–140 500 km. Dois arquivos, 14 KB:
+ *
+ *  - `anel-saturno-perfil.bin` — 2048 × RGBA8: **RGB** = cor da
+ *    partícula (relativa, cada canal normalizado ao próprio máximo pela
+ *    fonte), **A** = opacidade `1 − transparência`, que é `1 − e^{−τ}`
+ *    visto de cima. É ele que entra em `uMapaAnel`.
+
+ *
+ * O QUE A PLACA NÃO SABIA e este dado sabe: a divisão de ENCKE (α 0,008
+ * contra 0,401 do anel A ao lado), o C translúcido de verdade, e o
+ * LADO ESCURO medido — o número que o item 133 teve de adivinhar.
+ *
+ * O LIMITE DECLARADO É O BYTE: com α em 8 bits, os 22 texels em 255
+ * saem de `tauDaOpacidade` com τ ≈ 6,9 em vez do τ ≈ 2 real do anel B.
+ * Em reflexão os dois saturam igual; em transmissão os dois dão zero. É
+ * por isso que o cinza do lado escuro do B vem do PLANETSHINE, não daqui.
+ *
+ * Crédito e licença: `docs/reference/ASSETS.md`.
+ */
+export const PERFIL_DO_ANEL = {
+  perfil: 'data/atlas/anel-saturno-perfil.bin',
+  caixas: 2048,
+  kmInterno: 66900,
+  kmExterno: 140500,
+} as const;
+
+/**
+ * A PONTE ENTRE AS DUAS RÉGUAS. O `u` desta casa corre de `rInt` a
+ * `rExt` em raios equatoriais; o do dado corre de 66 900 a 140 500 km.
+ * Os dois quase coincidem (2,5 km de folga na borda interna, 0,07 de
+ * uma caixa), mas quase não é igual — a conta fica derivada aqui em vez
+ * de virar número solto no GLSL.
+ */
+const KM_DO_ANEL = {
+  int: ANEL_SATURNO.rInt * BODY_AXES.saturn[0]!,
+  ext: ANEL_SATURNO.rExt * BODY_AXES.saturn[0]!,
+};
+const VAO_DO_PERFIL = PERFIL_DO_ANEL.kmExterno - PERFIL_DO_ANEL.kmInterno;
+export const U_PERFIL_ESCALA = (KM_DO_ANEL.ext - KM_DO_ANEL.int) / VAO_DO_PERFIL;
+export const U_PERFIL_BASE = (KM_DO_ANEL.int - PERFIL_DO_ANEL.kmInterno) / VAO_DO_PERFIL;
+
+/**
+ * A COR DO ANEL B NO DADO — média dos 712 texels entre 92 000 e
+ * 117 580 km. Não é uma cor a mais na tela: é o DENOMINADOR que torna a
+ * croma do dado uma RAZÃO. O vermelho e o azul dele saturam em 255
+ * (1.052 e 887 texels dos 2.048), então o nível absoluto não é
+ * confiável — a razão em torno do B é. Dividindo por ela, o anel B sai
+ * exatamente em {@link COR_DO_GELO_DO_ANEL} (a cor medida NESTA casa) e
+ * o C, a divisão e o A herdam só o DESVIO medido: o cinza-azulado que a
+ * matte da placa nunca soube separar do próprio defeito.
+ */
+export const COR_B_DO_PERFIL = [0.9996, 0.9589, 0.9424] as const;
+
+/**
+ * Albedo geométrico visual de Saturno — JPL Saturn Fact Sheet. É a
+ * amplitude do PLANETSHINE: quanta luz o globo devolve ao anel.
+ */
+export const ALBEDO_GEO_SATURNO = 0.499;
 
 /**
  * Anéis U/N/Q — raios CITADOS de DADOS-ANEIS-F6.md, em unidades do
@@ -236,8 +300,16 @@ float sombraDoAnel(vec3 p) {
   float t = -p.y / uDirSolLocal.y;
   vec3 hit = p + uDirSolLocal * t;
   float r = length(hit.xz);
-  float u = (r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6);
-  float a = texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5)).a;
+  float vao = max(uAnelRaios.y - uAnelRaios.x, 1.0e-6);
+  float u = ((r - uAnelRaios.x) / vao) * U_ESCALA + U_BASE;
+  // O SOL É UM DISCO, e a meia-penumbra no plano do anel é t·θ☉ — o
+  // mesmo uSolAngRad medido que já macia a sombra do globo NO anel,
+  // agora do lado de cá. Três amostras ¼-½-¼ do perfil trocam o degrau
+  // por borda; o teto de 0,9 fica, que é dose desta casa.
+  float meia = min(abs(t) * uSolAngRad / vao * U_ESCALA, 0.04);
+  float a = texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5)).a * 0.5
+    + texture2D(uMapaAnel, vec2(clamp(u - meia, 0.0, 1.0), 0.5)).a * 0.25
+    + texture2D(uMapaAnel, vec2(clamp(u + meia, 0.0, 1.0), 0.5)).a * 0.25;
   if (t <= 0.0) return 1.0;
   if (r <= uAnelRaios.x || r >= uAnelRaios.y) return 1.0;
   return 1.0 - a * 0.9;
@@ -271,6 +343,225 @@ float sombraDoAnel(vec3 p) {
  * (item 104, S1): a validade dela é só geométrica, e o terminador entra
  * DEPOIS, multiplicando o mesmo termo.
  */
+/**
+ * RINGSHINE — O ANEL ILUMINA A NOITE DO GLOBO. O gêmeo exato do
+ * planetshine: lá o globo acende o anel, aqui o anel acende o globo. Sem
+ * ele o lado noturno de Saturno é carvão, e as fotos da Cassini
+ * (PIA08329) mostram que não é.
+ *
+ * A LUT TEM 64 LATITUDES e o índice dela é o SENO DA NORMAL do
+ * elipsoide, que é o que o fragmento tem na mão (`n.y`). Para cada
+ * latitude, a irradiância é a integral do anel como fonte EXTENSA:
+ *
+ *     E/F = (1/π) · Σ (I/F)(anel) · cos(incidência) · dΩ
+ *
+ * varrida em 12 anéis × 8 azimutes (a metade, dobrada por simetria). O
+ * `I/F` de cada pedaço é a MESMA `camadaDeParticulas` que desenha o anel
+ * na tela, com o mesmo τ do perfil medido e a mesma âncora
+ * {@link IF_RETRO_DO_GELO} — o globo é iluminado pelo anel que a câmera
+ * vê, não por um segundo anel inventado ao lado. A face é a do
+ * hemisfério: quem está do lado do Sol vê a face iluminada, quem está do
+ * outro vê a face escura, e ali o ramo é o de transmissão.
+ *
+ * A SOMBRA DO GLOBO NO ANEL ENTRA, com a mesma conta elipsoide do
+ * `sombraDoPlaneta`: o pedaço de anel que não vê o Sol não devolve luz
+ * nenhuma, e é isso que faz o ringshine afundar perto do ponto
+ * anti-solar em vez de brilhar igual em toda a noite.
+ *
+ * AS APROXIMAÇÕES, declaradas: a LUT vale para o MERIDIANO ANTI-SOLAR
+ * (o Sol em azimute π), que é onde o ringshine importa e onde ela é
+ * aplicada; o fragmento a apaga no lado do dia. E ela é recalculada só
+ * quando o seno da elevação solar anda mais de 2e-3 (≈0,12°) — 12 × 8 ×
+ * 64 iterações, e a elevação do Sol sobre o plano do anel leva dias de
+ * tempo simulado para andar isso.
+ *
+ * O segundo binário do dono (retro/frente/lado escuro) NÃO veio: os três
+ * canais dele estão normalizados cada um ao próprio máximo, a razão entre
+ * as faces se perdeu na assadura, e o modelo de camada desta casa já
+ * responde pelas duas faces.
+ */
+export const RINGSHINE_LATS = 64;
+const RINGSHINE_ANEIS = 12;
+const RINGSHINE_AZIMUTES = 8;
+/** o teto do byte da LUT, em frações do Sol que Saturno recebe */
+export const RINGSHINE_ESCALA = 0.02;
+
+const GLSL_RINGSHINE_NO_GLOBO = /* glsl */ `
+float ringshineDoAnel(vec3 n, float ndotl) {
+  if (uRingshineAtivo < 0.5) return 0.0;
+  float latU = clamp(n.y * 0.5 + 0.5, 0.0, 1.0);
+  // a LUT foi integrada no meridiano ANTI-SOLAR: no lado do dia o Sol é
+  // duas ordens de grandeza maior e ela não tem o que dizer
+  float noite = clamp(1.0 - 2.0 * max(ndotl, 0.0), 0.0, 1.0);
+  return texture2D(uRingshine, vec2(latU, 0.5)).r * RINGSHINE_ESCALA * noite;
+}
+`;
+
+/** `faseDoAnel` do GLSL, na CPU — o integrador do ringshine usa a MESMA
+ *  curva que o fragmento do anel, e não uma cópia com outro número. */
+function faseDoAnelCpu(cosTheta: number): number {
+  const g2 = G_DO_ANEL * G_DO_ANEL;
+  const hg = (1 - g2) * (1 + g2 - 2 * G_DO_ANEL * cosTheta) ** -1.5;
+  const retro = (1 - g2) * (1 + g2 + 2 * G_DO_ANEL) ** -1.5;
+  return hg / retro + K_DIFRACAO * Math.max(cosTheta, 0) ** 6;
+}
+
+/** `camadaDeParticulas` do GLSL, na CPU, devolvendo o I/F JÁ NA ÁREA (o
+ *  produto `x·y` de lá) — que é o que uma integral de fonte extensa
+ *  quer. */
+function camadaDeParticulasCpu(
+  tau: number, mu0: number, mu: number, fase: number, mesmoLado: number
+): number {
+  const amp = 2 * fase;
+  if (mesmoLado > 0) {
+    return amp * (mu0 / (mu + mu0)) * (1 - Math.exp(-tau * (1 / mu + 1 / mu0)));
+  }
+  const d = mu0 - mu;
+  return Math.abs(d) < 1e-3
+    ? amp * (tau / mu0) * Math.exp(-tau / mu0)
+    : amp * (mu0 / d) * (Math.exp(-tau / mu0) - Math.exp(-tau / mu));
+}
+
+/** O ponto (x, z) do plano do anel está na sombra do globo? A mesma
+ *  conta elipsoide de `sombraDoPlaneta`, sem a penumbra (aqui ela vale
+ *  menos de um dos 12 anéis). */
+function anelNaSombraDoGlobo(
+  x: number, z: number, sx: number, sy: number, k: number
+): boolean {
+  const dn = Math.hypot(sx, sy / k);
+  const dx = sx / dn;
+  const dy = sy / k / dn;
+  const aproxima = -x * dx;
+  if (aproxima <= 0) return false;
+  return Math.hypot(x + dx * aproxima, dy * aproxima, z) < 1;
+}
+
+/**
+ * A LUT viva. Nasce do perfil medido (τ por anel), e o único número que
+ * ela recebe por quadro é o SENO da elevação do Sol sobre o plano.
+ */
+class RingshineDoAnel {
+  readonly textura: THREE.DataTexture;
+  private readonly bytes: Uint8Array;
+  private readonly aneis: readonly { r: number; tau: number }[];
+  private readonly kPolar: number;
+  private senoEscrito = Number.NaN;
+
+  constructor(perfil: Uint8Array, kPolar: number) {
+    this.kPolar = kPolar;
+    this.bytes = new Uint8Array(RINGSHINE_LATS * 4);
+    this.textura = new THREE.DataTexture(this.bytes, RINGSHINE_LATS, 1);
+    this.textura.minFilter = THREE.LinearFilter;
+    this.textura.magFilter = THREE.LinearFilter;
+    this.textura.wrapS = THREE.ClampToEdgeWrapping;
+    this.textura.wrapT = THREE.ClampToEdgeWrapping;
+    this.textura.needsUpdate = true;
+    const caixas = PERFIL_DO_ANEL.caixas;
+    const aneis: { r: number; tau: number }[] = [];
+    for (let i = 0; i < RINGSHINE_ANEIS; i++) {
+      const t = (i + 0.5) / RINGSHINE_ANEIS;
+      const idx = Math.min(
+        caixas - 1,
+        Math.max(0, Math.round((t * U_PERFIL_ESCALA + U_PERFIL_BASE) * caixas))
+      );
+      const alfa = (perfil[idx * 4 + 3] ?? 0) / 255;
+      aneis.push({
+        r: ANEL_SATURNO.rInt + t * (ANEL_SATURNO.rExt - ANEL_SATURNO.rInt),
+        tau: -Math.log(Math.max(1 - alfa, 1e-3)),
+      });
+    }
+    this.aneis = aneis;
+  }
+
+  atualizar(senoSolar: number): void {
+    if (Math.abs(senoSolar - this.senoEscrito) < 2e-3) return;
+    this.senoEscrito = senoSolar;
+    const k = this.kPolar;
+    const mu0 = Math.max(Math.abs(senoSolar), 0.02);
+    const hemisferioDoSol = senoSolar >= 0 ? 1 : -1;
+    const largura = (ANEL_SATURNO.rExt - ANEL_SATURNO.rInt) / RINGSHINE_ANEIS;
+    const dPsi = Math.PI / RINGSHINE_AZIMUTES;
+    // o Sol em azimute π: este é o meridiano ANTI-SOLAR
+    const sx = -Math.sqrt(Math.max(1 - senoSolar * senoSolar, 0));
+    const sy = senoSolar;
+    for (let li = 0; li < RINGSHINE_LATS; li++) {
+      const ny = ((li + 0.5) / RINGSHINE_LATS) * 2 - 1;
+      const nx = Math.sqrt(Math.max(1 - ny * ny, 0));
+      // do seno da NORMAL de volta ao ponto no elipsoide
+      const fi = Math.atan2(k * ny, nx);
+      const px = Math.cos(fi);
+      const py = k * Math.sin(fi);
+      const mesmoLado = (py >= 0 ? 1 : -1) === hemisferioDoSol ? 1 : -1;
+      let soma = 0;
+      for (const anel of this.aneis) {
+        for (let j = 0; j < RINGSHINE_AZIMUTES; j++) {
+          const psi = (j + 0.5) * dPsi;
+          const ax = anel.r * Math.cos(psi);
+          const az = anel.r * Math.sin(psi);
+          const dx = ax - px;
+          const dy = -py;
+          const dist = Math.hypot(dx, dy, az);
+          if (dist < 1e-3) continue;
+          const cosInc = (nx * dx + ny * dy) / dist;
+          if (cosInc <= 0) continue;
+          const cosEmis = Math.abs(dy) / dist;
+          if (cosEmis < 1e-3) continue;
+          if (anelNaSombraDoGlobo(ax, az, sx, sy, k)) continue;
+          const mu = Math.max(cosEmis, 0.02);
+          const cosTheta = (sx * dx + sy * dy) / dist;
+          const iF = camadaDeParticulasCpu(
+            anel.tau, mu0, mu, faseDoAnelCpu(cosTheta), mesmoLado
+          );
+          soma += iF * cosInc * ((anel.r * largura * dPsi * 2 * cosEmis) / (dist * dist));
+        }
+      }
+      const v = Math.min(1, soma * (IF_RETRO_DO_GELO / Math.PI) / RINGSHINE_ESCALA);
+      const b = Math.round(Math.max(v, 0) * 255);
+      this.bytes[li * 4] = b;
+      this.bytes[li * 4 + 1] = b;
+      this.bytes[li * 4 + 2] = b;
+      this.bytes[li * 4 + 3] = 255;
+    }
+    this.textura.needsUpdate = true;
+  }
+}
+
+/**
+ * O PERFIL VIVO, UMA VEZ POR SESSÃO. Não passa pelo pipeline de
+ * `texturas.ts` de propósito: aquilo escolhe variante por tier e por
+ * largura, e isto não é imagem — são 14 KB de MEDIDA, que não têm
+ * versão de 1k nem se decodificam de sRGB. Nasce na primeira casca de
+ * Saturno e não é descartado com o corpo: o corpo renasce, o dado não
+ * muda, e 8 KB não são dose de VRAM.
+ */
+let perfilDoAnelVivo: { textura: THREE.DataTexture; bytes: Uint8Array } | null = null;
+let perfilDoAnelPedido: Promise<void> | null = null;
+
+async function pedirPerfilDoAnel(base: string): Promise<void> {
+  perfilDoAnelPedido ??= (async () => {
+    const resposta = await fetch(`${base}${PERFIL_DO_ANEL.perfil}`);
+    if (!resposta.ok) throw new Error(`perfil do anel: HTTP ${resposta.status}`);
+    const bytes = new Uint8Array(await resposta.arrayBuffer());
+    const esperado = PERFIL_DO_ANEL.caixas * 4;
+    if (bytes.length !== esperado) {
+      throw new Error(`perfil do anel: ${bytes.length} B, esperado ${esperado}`);
+    }
+    const textura = new THREE.DataTexture(bytes, PERFIL_DO_ANEL.caixas, 1);
+    // mipmap + anisotropia porque a estrutura fina do perfil (Encke tem
+    // 9 caixas) cintila de longe e de esguelha, que é o mesmo motivo
+    // pelo qual a placa os tinha
+    textura.generateMipmaps = true;
+    textura.minFilter = THREE.LinearMipmapLinearFilter;
+    textura.magFilter = THREE.LinearFilter;
+    textura.anisotropy = 4;
+    textura.wrapS = THREE.ClampToEdgeWrapping;
+    textura.wrapT = THREE.ClampToEdgeWrapping;
+    textura.needsUpdate = true;
+    perfilDoAnelVivo = { textura, bytes };
+  })();
+  return perfilDoAnelPedido;
+}
+
 export const GIGANTE_LAMBERT_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
 uniform sampler2D uMapaAnel;
@@ -281,14 +572,21 @@ uniform vec3 uNormalEsc;
 uniform vec3 uEscalaLocal;
 uniform float uAnelAtivo;
 uniform vec2 uAnelRaios;
+uniform float uSolAngRad;
+uniform sampler2D uRingshine;
+uniform float uRingshineAtivo;
 varying vec3 vLocal;
 varying vec2 vUv;
+const float U_ESCALA = ${U_PERFIL_ESCALA};
+const float U_BASE = ${U_PERFIL_BASE};
+const float RINGSHINE_ESCALA = ${RINGSHINE_ESCALA};
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
 ${GLSL_VEU_DE_SATURNO}
 ${GLSL_SOMBRA_ANEL_NO_PLANETA}
+${GLSL_RINGSHINE_NO_GLOBO}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
@@ -297,7 +595,12 @@ void main() {
   vec3 view = normSeguro(uCamLocal - pElip);
   vec3 eclipse = fatorDeEclipse(pElip, n, ndotlGeo);
   vec3 sombras = eclipse * sombraDoAnel(pElip);
-  vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
+  // o ringshine é LUZ, não assistência: entra ao lado do Sol (acende a
+  // superfície e a palha do véu) e FORA de sombras — a sombra do anel
+  // apaga o Sol, não o próprio anel.
+  vec3 luzSol =
+    (vec3(terminadorSuave(ndotlGeo)) * sombras + vec3(ringshineDoAnel(n, ndotlGeo)))
+    * uLuzGanho;
   vec3 fill = lanternaDeLeitura(n, view, eclipse);
   gl_FragColor =
     vec4(globoComVeu(albedo, luzSol, fill, opacidadeDoVeu(dot(n, view))), 1.0);
@@ -323,19 +626,6 @@ void main() {
  * fingir que tem seria número inventado com cara de ciência.
  */
 export const IF_RETRO_DO_GELO = 0.5;
-
-/**
- * O PICO de `luminância_linear / alpha` da placa `ring` de Saturno,
- * medido texel a texel na linha central de `ring.png` (8192×500; a
- * placa é constante em v), contado só onde ela é opaca. Vale 0,2873, no
- * anel B (u = 0,531) — e é ele que denuncia o segundo defeito: a placa
- * é uma FOTOGRAFIA escura, não um albedo. Mesmo com iluminação cheia,
- * `placa.rgb` sozinho não passa de 0,25 em linear, enquanto o globo
- * chega a ~0,7. Dividir pela cobertura (`alpha`, que a foto já embutiu)
- * e por este pico devolve o PERFIL RADIAL por partícula — que é o que a
- * placa realmente sabe: gradações do B, o C mais sujo, a divisão.
- */
-export const PICO_DA_PLACA_DO_ANEL = 0.2873;
 
 /**
  * A COR do gelo do anel, normalizada a luminância 1 — medida na PRÓPRIA
@@ -407,14 +697,23 @@ float tauDaOpacidade(float alfa) {
   return -log(max(1.0 - alfa, 1.0e-3));
 }
 
-// a FORMA da curva de fase, normalizada em retro (vale 1 quando o Sol
+// a FORMA da curva de fase, normalizada em retro (vale 1 quando a fonte
 // está às costas da câmera). cosTheta é o cosseno do ângulo de
 // ESPALHAMENTO: +1 para a frente, −1 em retro.
-float faseDoAnel(float cosTheta) {
+//
+// SÃO DUAS FUNÇÕES E NÃO UMA porque o lobo de difração PEDE FONTE
+// PONTUAL: a largura de cinema (expoente 6) está calibrada para o Sol,
+// que de Saturno tem 0,0275° de raio. O globo visto de um ponto do anel
+// abre de 25° a 64° — nele o lobo não existe, e deixá-lo aceso punha o
+// planetshine 8× acima do devido em vista rasante (medido no item 134).
+float hgDoAnel(float cosTheta) {
   float g2 = G_DO_ANEL * G_DO_ANEL;
   float hg = (1.0 - g2) * pow(max(1.0 + g2 - 2.0 * G_DO_ANEL * cosTheta, 1.0e-4), -1.5);
   float retro = (1.0 - g2) * pow(1.0 + g2 + 2.0 * G_DO_ANEL, -1.5);
-  return hg / retro + K_DIFRACAO * pow(max(cosTheta, 0.0), 6.0);
+  return hg / retro;
+}
+float faseDoAnel(float cosTheta) {
+  return hgDoAnel(cosTheta) + K_DIFRACAO * pow(max(cosTheta, 0.0), 6.0);
 }
 
 // x = brilho ONDE a camada cobre, em unidades da âncora de retro;
@@ -480,9 +779,72 @@ float sombraDoPlaneta(vec3 p) {
 `;
 
 /**
- * Anel de Saturno: placa alpha + camada de partículas + sombra do
- * planeta elipsoide. vPos está no frame da RingGeometry (plano XY); o
- * mesh aplica Rx(−π/2), então +Z deste frame é o POLO (W5-B).
+ * PLANETSHINE — O GLOBO ILUMINADO ACENDE O ANEL. A ausência que o item
+ * 133 nomeou: sem este termo a face de sombra do anel não é escura, é
+ * BURACO, e a umbra sai em 0 literal.
+ *
+ * A FONTE CAVALGA O PLANO. Do ponto do anel, o centro de Saturno está
+ * exatamente no horizonte local — metade do disco fica acima do plano e
+ * ilumina a face de cima, metade abaixo e ilumina a de baixo. Por isso
+ * o ramo aqui é SEMPRE o de reflexão (`mesmoLado = 1`): cada face é
+ * iluminada pela metade do seu lado, e é isso que tira o lado escuro do
+ * zero sem inventar transmissão nenhuma.
+ *
+ * A CONTA, com θ = arcsin(1/r) o raio angular do globo e k o
+ * achatamento. Para uma superfície VOLTADA ao planeta a irradiância é a
+ * de sempre, `E_face = F·p·Φ(α)/r²`. A nossa superfície é
+ * PERPENDICULAR a ela, e o que ela colhe é a integral de cos(i) sobre a
+ * meia-elipse acima do plano:
+ *
+ *     E_anel   = E_face · 2kθ/(3π)      (o que chega ao plano)
+ *     μ₀_globo = 4kθ/(3π)               (a incidência EFETIVA da fonte)
+ *     E_anel/μ₀ = E_face/2              (o k e o θ se cancelam)
+ *
+ * `E_face/2` é o que a camada de partículas quer: fluxo NORMAL ao
+ * feixe, com μ₀ dizendo a inclinação. Φ é a fase de Lambert de uma
+ * esfera, `[sin α + (π−α) cos α]/π`, com α o ângulo Sol–Saturno–ponto:
+ * do lado do Sol o anel vê um globo cheio, do lado anti-solar vê a
+ * NOITE dele — e é por isso que a umbra continua escura mesmo com este
+ * termo aceso. Isso não é falta: é a física, e a foto do 133 mostra.
+ *
+ * OS NÚMEROS, para conferência: na borda interna do D (r = 1,110,
+ * θ = 64,3°) `E_anel/F` vale 9,1 % com o globo cheio e 5,5 % em α = 60°;
+ * no F (r = 2,326) vale 0,82 % e 0,49 %. O laudo do item 133 pedia
+ * "~5 % no D e ~0,2 % no F" — a ordem bate, e agora a conta é derivada
+ * em vez de citada.
+ *
+ * O QUE FICA DE FORA, declarado: o escurecimento de bordo do globo, a
+ * variação de α através do disco (a 1,11 raios ele abre 64°, e um α só
+ * para o disco inteiro é aproximação), e a luz que o anel devolve ao
+ * anel.
+ */
+const GLSL_PLANETSHINE_NO_ANEL = /* glsl */ `
+float planetshineNoAnel(
+  vec3 p, float r, vec3 view, float mu, float tau, float nDotV
+) {
+  vec3 pHat = normSeguro(vec3(p.xy, 0.0));
+  float rr = max(r, 1.001);
+  float theta = asin(clamp(1.0 / rr, 0.0, 0.9999));
+  float mu0 = clamp(4.0 * uKPolar * theta / (3.0 * PI), 0.02, 1.0);
+  float alfaFase = acos(clamp(dot(uDirSolLocal, pHat), -1.0, 1.0));
+  float fi = (sin(alfaFase) + (PI - alfaFase) * cos(alfaFase)) / PI;
+  float irrad = 0.5 * ALBEDO_GEO * fi / (rr * rr);
+  // a direção média da luz que chega: horizontal para o globo, erguida
+  // de μ₀ para o lado da face que estamos desenhando
+  float lado = nDotV >= 0.0 ? 1.0 : -1.0;
+  vec3 dirGlobo = normSeguro(
+    -pHat * sqrt(max(1.0 - mu0 * mu0, 0.0)) + vec3(0.0, 0.0, lado * mu0)
+  );
+  float cosTheta = clamp(-dot(dirGlobo, view), -1.0, 1.0);
+  return camadaDeParticulas(tau, mu0, mu, hgDoAnel(cosTheta), 1.0).x * irrad;
+}
+`;
+
+/**
+ * Anel de Saturno: perfil radial medido + camada de partículas +
+ * planetshine + sombra do planeta elipsoide. vPos está no frame da
+ * RingGeometry (plano XY); o mesh aplica Rx(−π/2), então +Z deste frame
+ * é o POLO (W5-B).
  */
 export const ANEL_FRAG = /* glsl */ `
 uniform sampler2D uMapaAnel;
@@ -493,17 +855,23 @@ uniform float uKPolar;
 uniform float uSolAngRad;
 uniform vec2 uAnelRaios;
 varying vec3 vPos;
+const float PI = 3.14159265358979;
 const float IF_RETRO = ${IF_RETRO_DO_GELO};
-const float PICO_DA_PLACA = ${PICO_DA_PLACA_DO_ANEL};
 const vec3 COR_DO_GELO = vec3(${COR_DO_GELO_DO_ANEL.join(', ')});
+const vec3 COR_B_DO_PERFIL = vec3(${COR_B_DO_PERFIL.join(', ')});
+const float ALBEDO_GEO = ${ALBEDO_GEO_SATURNO};
+const float U_ESCALA = ${U_PERFIL_ESCALA};
+const float U_BASE = ${U_PERFIL_BASE};
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
 ${GLSL_CAMADA_DO_ANEL}
+${GLSL_PLANETSHINE_NO_ANEL}
 void main() {
   float r = length(vPos.xy);
-  float u = (r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6);
-  vec4 placa = texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5));
-  float alfa = placa.a;
+  float u = ((r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6))
+    * U_ESCALA + U_BASE;
+  vec4 perfil = texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5));
+  float alfa = perfil.a;
   if (alfa < 0.004) discard;
   vec3 n = vec3(0.0, 0.0, 1.0);
   vec3 view = normSeguro(uCamLocal - vPos);
@@ -513,22 +881,24 @@ void main() {
   float mu = max(abs(nDotV), 0.02);
   float cosTheta = clamp(-dot(uDirSolLocal, view), -1.0, 1.0);
   float mesmoLado = nDotL * nDotV;
+  float tau = tauDaOpacidade(alfa);
   vec2 camada = camadaDeParticulas(
-    tauDaOpacidade(alfa), mu0, mu, faseDoAnel(cosTheta), mesmoLado
+    tau, mu0, mu, faseDoAnel(cosTheta), mesmoLado
   );
-  // a placa é foto: tirar a cobertura que ela já embutiu e o pico
-  // medido devolve o PERFIL por partícula, que é o que ela sabe. A
-  // CROMA dela só vale onde é opaca — abaixo disso é a matte, e a cor
-  // cai para o gelo medido no próprio anel B.
-  vec3 crua = placa.rgb / max(alfa * PICO_DA_PLACA, 1.0e-4);
-  float perfil = dot(crua, vec3(0.2126, 0.7152, 0.0722));
-  vec3 tinta = clamp(
-    mix(COR_DO_GELO * perfil, crua, smoothstep(0.30, 0.80, alfa)), 0.0, 1.0
-  );
+  // a croma do dado é RELATIVA (cada canal normalizado ao próprio
+  // máximo pela fonte, e saturado em 255 em 1.052 texels): dividir pela
+  // cor do anel B e renormalizar a luminância 1 deixa passar só o
+  // DESVIO medido, com o nível preso na âncora IF_RETRO.
+  vec3 razao = perfil.rgb / COR_B_DO_PERFIL;
+  vec3 tinta = COR_DO_GELO
+    * (razao / max(dot(razao, vec3(0.2126, 0.7152, 0.0722)), 1.0e-4));
   if (dot(tinta, tinta) < 1.0e-6) tinta = COR_DO_GELO;
   vec3 direta =
     (tinta * IF_RETRO) * (camada.x * uLuzGanho) * sombraDoPlaneta(vPos);
-  gl_FragColor = vec4(direta, clamp(camada.y, 0.0, 1.0));
+  // o planetshine NÃO leva a sombra do planeta: o planeta é a FONTE
+  vec3 doGlobo = (tinta * IF_RETRO)
+    * (planetshineNoAnel(vPos, r, view, mu, tau, nDotV) * uLuzGanho);
+  gl_FragColor = vec4(direta + doGlobo, clamp(camada.y, 0.0, 1.0));
 }
 `;
 
@@ -654,7 +1024,6 @@ export interface OpcoesDoGigante extends OpcoesDeTextura {
  * uma falha do anel voltava o corpo inteiro a 'fria' e recarregava o
  * `map` por cima, até três mapas residentes e Saturno nunca em quadro.
  */
-const CANAL_ANEL: CanalPedido = { canal: 'ring', cor: true, repetirEmU: false };
 
 export class GiganteResolvido {
   readonly group = new THREE.Group();
@@ -686,6 +1055,10 @@ export class GiganteResolvido {
   private anel: THREE.Mesh | null = null;
   private matAnel: THREE.ShaderMaterial | null = null;
   private dummyAnel: THREE.DataTexture | null = null;
+  /** a LUT de latitudes do ringshine — só Saturno tem uma */
+  private ringshine: RingshineDoAnel | null = null;
+  /** BASE_URL do vite, para buscar o perfil medido do anel */
+  private readonly base: string;
 
   private readonly vX = new THREE.Vector3();
   private readonly vY = new THREE.Vector3();
@@ -713,6 +1086,7 @@ export class GiganteResolvido {
 
   constructor(opcoes: OpcoesDoGigante) {
     this.idCorpo = opcoes.id;
+    this.base = opcoes.base;
     const { a, c, b } = raiosDoGigantePc(this.idCorpo);
     this.raioA = a;
     this.razaoC = c / a;
@@ -720,31 +1094,22 @@ export class GiganteResolvido {
     this.kPolar = c / a;
     this.temAnel = (CORPOS_COM_ANEL as readonly string[]).includes(this.idCorpo);
     this.group.visible = false;
-    // `map` e, em Saturno, o `ring`, no MESMO lote: ou os dois entram, ou
-    // nenhum entra e nada fica residente.
-    const comAnel = this.temAnel && this.idCorpo === 'saturn';
+    // Só o `map`: o canal `ring` (a placa) morreu na S1 do item 134 — o
+    // anel de Saturno lê o perfil medido (`PERFIL_DO_ANEL`), 8 KB no lugar
+    // de ~22 MiB que ficavam residentes sem alimentar nada.
     this.texturas = new TexturasDoCorpo({
       corpo: this.idCorpo,
-      canais: comAnel ? [CANAL_MAP, CANAL_ANEL] : [CANAL_MAP],
+      canais: [CANAL_MAP],
       rede: opcoes,
       oQueNaoNasce: 'o corpo não nasce nesta sessão',
       publicar: (porCanal) => {
         this.garantirCasca();
         this.matSuperficie!.uniforms.uMapaDia.value = porCanal.get('map')!;
-        if (comAnel) {
-          const texAnel = porCanal.get('ring')!;
-          this.matSuperficie!.uniforms.uMapaAnel.value = texAnel;
-          this.matAnel!.uniforms.uMapaAnel.value = texAnel;
-        }
       },
-      // a placa do anel entra em DOIS materiais (a sombra no globo e o
-      // anel em si): os dois têm de largar o ponteiro
+      // `uMapaAnel` NÃO entra aqui desde o item 134: quem o alimenta é o
+      // perfil medido, que não tem tier nem carência e não vem neste lote
       soltar: () => {
-        if (this.matSuperficie) {
-          this.matSuperficie.uniforms.uMapaDia.value = null;
-          if (comAnel) this.matSuperficie.uniforms.uMapaAnel.value = null;
-        }
-        if (comAnel && this.matAnel) this.matAnel.uniforms.uMapaAnel.value = null;
+        if (this.matSuperficie) this.matSuperficie.uniforms.uMapaDia.value = null;
       },
     });
     this.estado = {
@@ -883,6 +1248,13 @@ export class GiganteResolvido {
     // atmosfera: em Saturno o s cai a 2,8986; nos outros, 3 exato.
     escreverLuzDaVisita(u, q.politica, densidadeDoVeu(this.idCorpo));
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
+    // o Sol é um DISCO: o raio angular visto DESTE corpo é a meia-penumbra
+    // das DUAS sombras — a do anel no globo e a do globo no anel
+    const solAngRad = RAIO_SOL_KM / Math.max(this.rUA * AU_KM, 1e-30);
+    u.uSolAngRad.value = solAngRad;
+    // `sLy` É o seno da elevação do Sol sobre o plano do anel: vY é o eixo
+    // polar do corpo, e o anel mora no equador dele
+    this.ringshine?.atualizar(sLy);
 
     if (this.anel && this.matAnel) {
       // M = Basis INERCIAL · S(a) · Rx(−π/2): o padrão não herda W(t)
@@ -908,8 +1280,7 @@ export class GiganteResolvido {
         ua.uCamLocal.value as THREE.Vector3
       ).divideScalar(this.raioA);
       ua.uLuzGanho.value = ganho;
-      // o Sol é um DISCO: raio angular visto DESTE corpo, para a penumbra
-      ua.uSolAngRad.value = RAIO_SOL_KM / Math.max(this.rUA * AU_KM, 1e-30);
+      ua.uSolAngRad.value = solAngRad;
     }
   }
 
@@ -940,6 +1311,9 @@ export class GiganteResolvido {
             (ANEIS_CITADOS[this.idCorpo] ?? ANEL_SATURNO).rExt
           ),
         },
+        uSolAngRad: { value: 0 },
+        uRingshine: { value: this.dummyAnel },
+        uRingshineAtivo: { value: 0 },
         ...uniformsDaLuzDaVisita(),
         // o véu do §4.4 é do CORPO, não do quadro: coluna, espessura e a
         // palha nascem aqui e não se mexem mais. Quem não tem véu recebe
@@ -984,11 +1358,38 @@ export class GiganteResolvido {
       this.anel = new THREE.Mesh(this.geoAnel, this.matAnel);
       this.anel.matrixAutoUpdate = false;
       this.group.add(this.anel);
+      if (placa) void this.ligarPerfilDoAnel();
+    }
+  }
+
+  /**
+   * O PERFIL MEDIDO NOS DOIS MATERIAIS, e a LUT do ringshine que nasce
+   * dele. Falha aqui é degradação honesta: `uMapaAnel` continua no dummy
+   * transparente (α = 0), o anel some e a sombra dele no globo devolve 1
+   * — nenhum quadro quebra, e o console diz por quê.
+   */
+  private async ligarPerfilDoAnel(): Promise<void> {
+    try {
+      await pedirPerfilDoAnel(this.base);
+    } catch (erro) {
+      console.warn('[gigante] perfil do anel não veio', erro);
+      return;
+    }
+    if (this.disposto || !perfilDoAnelVivo) return;
+    const { textura, bytes } = perfilDoAnelVivo;
+    if (this.matAnel) this.matAnel.uniforms.uMapaAnel.value = textura;
+    if (this.matSuperficie) {
+      this.matSuperficie.uniforms.uMapaAnel.value = textura;
+      this.ringshine = new RingshineDoAnel(bytes, this.kPolar);
+      this.matSuperficie.uniforms.uRingshine.value = this.ringshine.textura;
+      this.matSuperficie.uniforms.uRingshineAtivo.value = 1;
     }
   }
 
   dispose() {
     this.disposto = true;
+    this.ringshine?.textura.dispose();
+    this.ringshine = null;
     this.group.clear();
     this.geometria?.dispose();
     this.matSuperficie?.dispose();

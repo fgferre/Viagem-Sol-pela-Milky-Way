@@ -168,12 +168,18 @@ dele sem linha de licença — trazer com o crédito e documentar em
 `ASSETS.md`. Custo anunciado: obra GRANDE, cinco fases, meia jornada a
 um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
 
-- **S1 — os anéis** (tudo em `gigante.ts`): perfil radial MEDIDO
-  (13.177 amostras: cor, τ, retro/frente/lado escuro; 14 KB) no lugar
-  do τ da placa; ILUMINAÇÃO MÚTUA globo↔anel (planetshine no anel — a
-  causa do "estranho" do 133 — e ringshine na noite do globo); a franja
-  azul da matte (janela de alfa); penumbra na sombra do anel sobre o
-  globo. Prova: as seis vistas do 133 antes/depois + zooms.
+- **S1 — os anéis: FEITA em 02/09** (commit no selo desta linha; fotos
+  conferidas pelo coordenador e entregues a ele). Perfil radial medido
+  (8 KB) aposentou a placa — o canal `ring` (~22 MiB residentes) deixou
+  de ser pedido; planetshine no anel (derivado: 9% no D, 0,8% no F) e
+  ringshine na noite do globo (LUT de 64 latitudes; +13% na noite); a
+  franja azul morreu por consequência; penumbra da sombra do anel pelo
+  disco solar. Lado de sombra do B: 0,03 → 0,23 (2017), 0,01 → 0,07
+  (hoje). Filme bit-idêntico longe de Saturno; custo de quadro igual.
+  Declarado: o anel termina em 136.775 km (o F fica para a S5); o
+  contraste B/A vem só de τ (albedo por raio ficou de fora). Provas em
+  `capturas/item134-s1-*`. Lista do §19 da onda: `gigante.test.ts` (a
+  guarda do canal ring virou "não pede") e a suíte 1× no fecho.
 - **S2 — o relevo das luas**: bump por derivada do albedo (zero byte) e
   deslocamento por mapa de altura (Mimas, Tétis, Encélado, Dione reais;
   Reia e Jápeto sintéticos, DECLARADOS na ficha); LOD de esfera por
@@ -186,29 +192,9 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   Dáfnis — por último, com foto para o olho dele.
 Fotos do site dele em `capturas/item134-saturn-dele-*.png`.
 
-**133. Os anéis de Saturno ficam estranhos do lado que não está
-iluminado.** Palavras dele, 02/09: *"os anéis de Saturno ficam um pouco
-estranhos: do lado que está sendo iluminado fica ok, mas o lado que não
-está sendo iluminado pelo Sol fica um pouco estranho. Não sei se era pra
-ser assim mesmo, queria uma verificação visual."* **VERIFICADO em
-02/09 (seis fotos com ângulo medido, luminância por anel, sombra do globo
-conferida em 180 azimutes — `capturas/item133-saturno-*.png`): a física
-está certa.** O anel é camada de partículas com luz transmitida no lado
-de sombra; hoje (Sol a 7° do plano, pós-equinócio de 2025) a face de
-sombra fica quase toda preta e só o anel C e a divisão de Cassini
-transmitem — em 2017, com o Sol a 27°, sai a assinatura clássica de
-Cassini (B preto, C e Cassini claros, A médio). O "estranho" é uma
-AUSÊNCIA, não um erro: **(a) zero planetshine** — o globo de Saturno não
-ilumina os próprios anéis (na realidade é a fonte dominante da face
-escura perto do equinócio; ~5% no D, ~0,2% no F), então a umbra sai em 0
-literal e o B/A viram buraco em vez de cinza fraco; conserto é obra
-(termo de irradiância do globo em `ANEL_FRAG`, antes da sombra) e é o
-gêmeo do ringshine do bloco C do 134 — os dois juntos são "iluminação
-mútua globo↔anel". **(b)** franja azul nas bordas de alfa baixo (a matte
-da placa vaza pela janela `smoothstep(0,30–0,80)`; subir para ~0,55–0,95,
-com foto). **(c)** serrilhado de 1 px no contorno rasante (antialias de
-geometria fina, não do modelo de luz). **Decisão dele (02/09): fazer** —
-(a) e (b) moram na S1 do item 134; este item fecha quando a S1 selar.
+**133.** Os anéis de Saturno ficavam estranhos do lado de sombra —
+**FECHADO em 02/09** na S1 do item 134 (a física estava certa; faltava o
+planetshine — o globo iluminando os próprios anéis); ARQUIVO.
 
 **97.** A órbita acendia mais cedo no Retina — **FECHADO em 29/08**; ARQUIVO.
 

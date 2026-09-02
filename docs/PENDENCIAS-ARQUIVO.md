@@ -8618,3 +8618,29 @@ nome atrás de globo apaga pela rampa de 750 ms, alvo seguido isento); a
 "vaga gasta com nome que o HUD vai comer" foi tratada na mesma fase
 (viewport inteiro como o Eyes, margem morta) e o detalhe "classe ·
 distância" só no focado veio na F5 (`1a2708f`, que já citava o 82).
+
+**133. Os anéis de Saturno ficam estranhos do lado que não está
+iluminado.** Palavras dele, 02/09: *"os anéis de Saturno ficam um pouco
+estranhos: do lado que está sendo iluminado fica ok, mas o lado que não
+está sendo iluminado pelo Sol fica um pouco estranho. Não sei se era pra
+ser assim mesmo, queria uma verificação visual."* **VERIFICADO em
+02/09 (seis fotos com ângulo medido, luminância por anel, sombra do globo
+conferida em 180 azimutes — `capturas/item133-saturno-*.png`): a física
+está certa.** O anel é camada de partículas com luz transmitida no lado
+de sombra; hoje (Sol a 7° do plano, pós-equinócio de 2025) a face de
+sombra fica quase toda preta e só o anel C e a divisão de Cassini
+transmitem — em 2017, com o Sol a 27°, sai a assinatura clássica de
+Cassini (B preto, C e Cassini claros, A médio). O "estranho" é uma
+AUSÊNCIA, não um erro: **(a) zero planetshine** — o globo de Saturno não
+ilumina os próprios anéis (na realidade é a fonte dominante da face
+escura perto do equinócio; ~5% no D, ~0,2% no F), então a umbra sai em 0
+literal e o B/A viram buraco em vez de cinza fraco; conserto é obra
+(termo de irradiância do globo em `ANEL_FRAG`, antes da sombra) e é o
+gêmeo do ringshine do bloco C do 134 — os dois juntos são "iluminação
+mútua globo↔anel". **(b)** franja azul nas bordas de alfa baixo (a matte
+da placa vaza pela janela `smoothstep(0,30–0,80)`; subir para ~0,55–0,95,
+com foto). **(c)** serrilhado de 1 px no contorno rasante (antialias de
+geometria fina, não do modelo de luz). **Decisão dele (02/09): fazer** —
+(a) e (b) moram na S1 do item 134; este item fecha quando a S1 selar.
+
+**Fecho (02/09):** consertado na S1 do item 134 — planetshine no anel (a causa do 'estranho'), franja azul morta com a placa; fotos `capturas/item134-s1-mutua-*.png`.

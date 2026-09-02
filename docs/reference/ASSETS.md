@@ -49,6 +49,23 @@ A autoridade de textura da casa é `public/data/atlas/texturas.json`
 (crédito por linha). Sem licença documentada não entra. O inventário
 do repositório atlas-orbital não vale aqui.
 
+## Perfil radial do anel de Saturno (item 134)
+
+- `public/data/atlas/anel-saturno-perfil.bin` (8.192 B, 2048 × RGBA8: cor
+  da partícula + opacidade) — **modelo de anéis
+  de Björn Jónsson** (Voyager PPS + Cassini, via o PDS Ring-Moon Systems
+  Node; 13.177 amostras a 5 km, 74.510–140.390 km), reamostrado em 2.048
+  caixas sobre 66.900–140.500 km. Trazidos do projeto Saturn do dono
+  (https://github.com/fgferre/Saturn, `scripts/bake-rings.mjs`), que os
+  credita no `NOTICE` **sem linha de licença**. Uso com crédito ao autor;
+  **licença não declarada pelo autor** — a base do PDS é domínio público,
+  mas o modelo dele não diz. PENDÊNCIA DESTE ARQUIVO: confirmar com o
+  autor (ou refazer os perfis direto do PDS) antes de publicar. Consumidor:
+  `world/corpos/gigante.ts` (τ, cor e sombra do anel). O segundo binário
+  dele (retro/frente/lado escuro) ficou de fora: normalizado por canal, a
+  razão entre as faces se perdeu na assadura. Com ele, o canal `ring` da
+  placa (`texturas.json`) deixou de ser pedido por Saturno.
+
 ## Fonte dos rótulos 3D (item 109)
 
 - `public/fonts/inter-400.woff` — **Inter** (regular, subconjunto

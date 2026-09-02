@@ -10,7 +10,7 @@
 //     no .z com `a = dot(d',d')`, scattering frente/trás.
 //  3. A FIGURA: flattening BODY_AXES, gradiente EXATO.
 //  4. O ANEL: raios 1,110–2,326; Saturno não é receptor.
-//  5. A CLASSE: gate, carga, cessão, Saturno pede o canal ring.
+//  5. A CLASSE: gate, carga, cessão, Saturno pede só o map (a placa morreu).
 //  6. TEXTO-FONTE: relógio único; advecção ESTÁTICA com pendência
 //     nomeada; sem cisalhamento por banda.
 // ============================================================
@@ -753,12 +753,14 @@ describe('5. a classe — gate, carga, cessão, anel', () => {
     corpo.dispose();
   });
 
-  it('Saturno pede o canal ring além do map', async () => {
+  // A PLACA MORREU NA S1 DO ITEM 134: o anel lê o perfil medido, e pedir o
+  // canal `ring` voltaria a deixar ~22 MiB residentes sem alimentar nada.
+  it('Saturno pede só o map — o canal ring não é mais baixado', async () => {
     const { corpo, chamadas } = giganteDeTeste('saturn');
     corpo.atualizar(quadro('saturn', 4));
     await flush();
     expect(chamadas.some((c) => c.includes('saturn/map'))).toBe(true);
-    expect(chamadas.some((c) => c.includes('saturn/ring'))).toBe(true);
+    expect(chamadas.some((c) => c.includes('saturn/ring'))).toBe(false);
     expect(corpo.atualizar(quadro('saturn', 4)).emQuadro).toBe(true);
     corpo.dispose();
   });
