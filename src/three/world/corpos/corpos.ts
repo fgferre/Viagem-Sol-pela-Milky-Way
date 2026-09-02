@@ -264,16 +264,13 @@ export const BUMP_DO_ALBEDO_PADRAO = 0.02;
  * montanha onde há só tinta.
  */
 export const BUMP_DO_ALBEDO: Readonly<Record<string, number>> = {
-  // os três planetas rochosos: o retrato oficial deles não é assunto da
-  // S2, e em dois deles o mapa nem é superfície — Vênus é topo de nuvem
-  // e Marte é poeira eólica.
-  mercury: 0,
+  // A LEI DO DONO (02/09): "o relevo deve aparecer em tudo que tem relevo,
+  // sem atmosfera" — um universo só, filme, voo e Atlas. Mercúrio, Marte,
+  // Io e a Lua entram pelo padrão. Zero SÓ onde a mancha do mapa não é
+  // chão: Vênus é topo de nuvem e Titã é o topo da bruma (dito em
+  // rochoso.ts) — relevo tirado dali seria montanha de nuvem.
   venus: 0,
-  mars: 0,
-  // Titã é NÉVOA (o mapa é o topo da bruma, dito em rochoso.ts) e Io é
-  // depósito de enxofre — nos dois, a mancha é cor.
   titan: 0,
-  io: 0,
   // Ceres: a própria fonte admite mapa INVENTADO (ASSETS.md) — derivar
   // relevo de invenção seria inventar duas vezes.
   ceres: 0,

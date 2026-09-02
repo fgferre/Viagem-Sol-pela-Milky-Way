@@ -182,9 +182,11 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   guarda do canal ring virou "não pede") e a suíte 1× no fecho.
 - **S2 — o relevo das luas: FEITA em 02/09** (commit no selo desta
   linha; fotos conferidas e entregues). Bump por derivada do albedo em
-  toda lua rochosa (interruptor por corpo `BUMP_DO_ALBEDO`; zero para
-  Mercúrio/Vênus/Marte, Titã, Io e Ceres; a Lua do filme muda 133 px
-  com delta 2/255 — ficou ligada, reverter é `moon: 0`); deslocamento
+  todo corpo rochoso — LEI DELE (02/09): "o relevo deve aparecer em
+  tudo que tem relevo, sem atmosfera; um universo só, filme, voo e
+  Atlas" — Mercúrio, Marte, Io e a Lua ligados (fotos
+  `capturas/item134-s2-bump-*`); zero só em Vênus e Titã (o mapa é
+  nuvem/bruma) e Ceres (mapa confessado inventado); deslocamento
   por mapa de altura REAL em Mimas, Tétis, Encélado e Dione (webp sem
   perda para canal de dado, 3,5 MB; malha 256×128 só nelas); grão do
   close com gate medido. **Reia e Jápeto ficaram de FORA** (relevo
