@@ -241,3 +241,143 @@ export function gateBinario(armado: boolean, diametroPx: number): boolean {
   if (armado) return !(diametroPx < LIMIAR_DO_GATE_PX / CUSHION_DO_GATE);
   return diametroPx >= LIMIAR_DO_GATE_PX;
 }
+
+// ------------------------------------------------------------
+// B1 — O BUMP POR DERIVADA DO ALBEDO (item 134/S2, colhido do projeto
+// Saturn do dono: `moonMaterials.ts`, `bumpMap = map` com `bumpScale
+// 0.02`, e a conta de gradiente de tela do `proceduralNormal` dele).
+// ------------------------------------------------------------
+
+/**
+ * A ESCALA PADRÃO — 0,02 do RAIO do corpo, o número dele. É pequena de
+ * propósito: a aproximação vale enquanto o relevo falso ficar abaixo do
+ * que o olho cobra do limbo (que é assunto do B2, o mapa de altura).
+ */
+export const BUMP_DO_ALBEDO_PADRAO = 0.02;
+
+/**
+ * O INTERRUPTOR, um por corpo. Ausente = padrão; 0 = desligado.
+ *
+ * É APROXIMAÇÃO DECLARADA, e a lista de zeros é onde ela seria MENTIRA:
+ * albedo só é altura em superfície de regolito craterizado. Onde a
+ * mancha do mapa é de COR e não de forma, derivar relevo dela inventa
+ * montanha onde há só tinta.
+ */
+export const BUMP_DO_ALBEDO: Readonly<Record<string, number>> = {
+  // os três planetas rochosos: o retrato oficial deles não é assunto da
+  // S2, e em dois deles o mapa nem é superfície — Vênus é topo de nuvem
+  // e Marte é poeira eólica.
+  mercury: 0,
+  venus: 0,
+  mars: 0,
+  // Titã é NÉVOA (o mapa é o topo da bruma, dito em rochoso.ts) e Io é
+  // depósito de enxofre — nos dois, a mancha é cor.
+  titan: 0,
+  io: 0,
+  // Ceres: a própria fonte admite mapa INVENTADO (ASSETS.md) — derivar
+  // relevo de invenção seria inventar duas vezes.
+  ceres: 0,
+};
+
+/** A escala do bump de um corpo: o interruptor, ou o padrão. */
+export function escalaDoBumpDoAlbedo(id: string): number {
+  return BUMP_DO_ALBEDO[id] ?? BUMP_DO_ALBEDO_PADRAO;
+}
+
+/**
+ * A NORMAL PERTURBADA PELO GRADIENTE DO PRÓPRIO ALBEDO — ZERO BYTE novo.
+ *
+ * A conta é a de Mikkelsen para superfície NÃO parametrizada (a mesma do
+ * `proceduralNormal` dele), e ela mede o gradiente por DERIVADA DE TELA:
+ * o valor amostrado já vem do mip certo, então a intensidade acompanha a
+ * distância sozinha — não há régua de "quantos texels por pixel" a
+ * manter. `p` chega em RAIOS do corpo, então `escala` sai direto como
+ * FRAÇÃO DO RAIO (0,02 = 2 % do raio de pico a pico).
+ *
+ * O LIMITADOR DE DERIVADA é dele e existe por um defeito medido lá: sem
+ * ele, de longe (o mapa inteiro num punhado de pixels) o gradiente
+ * dispara e a lua vira faísca. Corta em 0,35 e não em 0 porque zerar
+ * apagaria o relevo de perto junto.
+ *
+ * `dFdx`/`dFdy` em ESSL1: o contexto é WebGL2 (`engine.ts`), e a
+ * especificação do WebGL2 mantém `GL_OES_standard_derivatives` SEMPRE
+ * habilitada nos shaders GLSL ES 1.00 — nenhum `#extension` é preciso.
+ */
+export const GLSL_BUMP_DO_ALBEDO = /* glsl */ `
+uniform float uBumpAlbedo;  // fração do raio; 0 desliga o bloco inteiro
+vec3 normalComBumpDoAlbedo(vec3 n, vec3 p, float h) {
+  if (uBumpAlbedo <= 0.0) return n;
+  vec3 sx = dFdx(p);
+  vec3 sy = dFdy(p);
+  float dhx = dFdx(h);
+  float dhy = dFdy(h);
+  float lim = clamp(1.0 / (10.0 * max(abs(dhx), abs(dhy)) + 1.0), 0.35, 1.0);
+  vec3 r1 = cross(sy, n);
+  vec3 r2 = cross(n, sx);
+  float det = dot(sx, r1);
+  vec3 grad = sign(det) * (dhx * r1 + dhy * r2) * (uBumpAlbedo * lim);
+  return normalize(abs(det) * n - grad);
+}
+`;
+
+/** A luminância que serve de altura — a mesma Rec.709 do grading dele. */
+export const GLSL_ALTURA_DO_ALBEDO = /* glsl */ `
+float alturaDoAlbedo(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+`;
+
+/**
+ * O RUÍDO DE VALOR de 3 oitavas — a MESMA função que os dois shaders
+ * procedurais de `rochoso.ts` já traziam digitada duas vezes. Virou chunk
+ * na S2 do item 134 porque o grão do close (abaixo) seria a TERCEIRA
+ * cópia. O texto expandido é o de lá, letra por letra.
+ */
+export const GLSL_RUIDO_DE_VALOR = /* glsl */ `
+float hash31(vec3 p) {
+  return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
+}
+float ruido(vec3 p) {
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  float n000 = hash31(i);
+  float n100 = hash31(i + vec3(1.0, 0.0, 0.0));
+  float n010 = hash31(i + vec3(0.0, 1.0, 0.0));
+  float n110 = hash31(i + vec3(1.0, 1.0, 0.0));
+  float n001 = hash31(i + vec3(0.0, 0.0, 1.0));
+  float n101 = hash31(i + vec3(1.0, 0.0, 1.0));
+  float n011 = hash31(i + vec3(0.0, 1.0, 1.0));
+  float n111 = hash31(i + vec3(1.0, 1.0, 1.0));
+  float nx00 = mix(n000, n100, f.x);
+  float nx10 = mix(n010, n110, f.x);
+  float nx01 = mix(n001, n101, f.x);
+  float nx11 = mix(n011, n111, f.x);
+  return mix(mix(nx00, nx10, f.y), mix(nx01, nx11, f.y), f.z);
+}
+`;
+
+/**
+ * E — O GRÃO DO CLOSE (item 134/S2, a "manchinha de detalhe" dele).
+ *
+ * ONDE O MOSAICO ACABA a superfície vira borrão: colada na lua, um texel
+ * do mapa cobre vários pixels e o que se vê é a interpolação bilinear,
+ * não a lua. ±6 % de ruído fractal devolve GRÃO — não desenha cratera
+ * nenhuma, só impede que a tela fique chapada onde a foto não tem mais o
+ * que mostrar. É invenção declarada, e por isso mora sob um gate.
+ *
+ * O GATE É MEDIDO, não é distância: `dFdx(uv)·tamanho` é quantos TEXELS
+ * o pixel atravessa. Acima de 1 texel/pixel (mosaico ainda resolvendo) o
+ * termo é 1 EXATO e nada muda — de longe, e em toda vista oficial que
+ * não seja close, este bloco não existe.
+ */
+export const GLSL_GRAO_DO_CLOSE = /* glsl */ `
+uniform vec2 uTamanhoDoMapa;  // o mapa em texels; (0,0) desliga o grão
+float graoDoClose(vec2 uv, vec3 p) {
+  float texelsPorPixel = length(dFdx(uv) * uTamanhoDoMapa);
+  // tamanho zero é "ainda não publicaram o mapa": sem ele a derivada
+  // seria 0 e o gate abriria escancarado, que é o oposto do que ele é
+  if (uTamanhoDoMapa.x <= 0.0 || texelsPorPixel >= 1.0) return 1.0;
+  float dose = 1.0 - smoothstep(0.5, 1.0, texelsPorPixel);
+  float f = 0.5 * ruido(p * 24.0) + 0.3 * ruido(p * 53.0) + 0.2 * ruido(p * 117.0);
+  return 1.0 + dose * 0.06 * (2.0 * f - 1.0);
+}
+`;

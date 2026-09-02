@@ -9,11 +9,14 @@
 // saída, coberta por lib-texturas.test.mjs no runner da casa.
 // ============================================================
 
-// Os seis canais que o manifest reconhece. Nome de arquivo fora
-// deste vocabulário é ERRO na hora, não entrada "criativa" no
-// manifest — a padronização é o que permite inferir corpo/canal
-// da árvore de diretórios sem tabela paralela.
-export const CANAIS = ['map', 'clouds', 'night', 'normal', 'roughness', 'ring'];
+// Os canais que o manifest reconhece. Nome de arquivo fora deste
+// vocabulário é ERRO na hora, não entrada "criativa" no manifest — a
+// padronização é o que permite inferir corpo/canal da árvore de
+// diretórios sem tabela paralela.
+// `height` entrou na S2 do item 134: o mapa de altura que desloca o
+// vértice da lua (`rochoso.ts`). É DADO, não cor — ver a exceção de
+// encode em `otimiza-texturas.mjs`.
+export const CANAIS = ['map', 'clouds', 'night', 'normal', 'roughness', 'ring', 'height'];
 
 // Degraus da escada de reamostragem (D4 + emenda T-E7): o tier
 // performance consome ≤1k, alta ≤2k, cinema ≤4k; o 8k fica como

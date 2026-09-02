@@ -564,6 +564,24 @@ function secaoImagem(
     );
   }
 
+  // O RELEVO É UMA SEGUNDA IMAGEM (item 134/S2), e ela precisa de linha
+  // própria: quatro luas de Saturno ganharam topografia de modelo de forma
+  // MEDIDO. Se um dia entrar relevo SINTÉTICO (o de Reia e Jápeto do
+  // projeto Saturn ficou de fora em 02/09 por sair em bolhas), a nota da
+  // bancada (`ASSETS.md`) chega aqui como dado, pelo mesmo caminho da nota
+  // do `map` — desenhar montanha fabricada sem dizer seria exatamente a
+  // mentira que esta seção existe para não contar.
+  const relevo = fonteDoCanal(manifest.entradas, id, 'height');
+  if (relevo?.origem) {
+    const tier = TIER_DA_IMAGEM[relevo.proveniencia ?? 'nao-resolvida'];
+    linhas.push(
+      linha('relevo', relevo.origem.fonte, tier, `${numeroPtBr(relevo.larguraPx)} px de largura`)
+    );
+    if (relevo.nota) {
+      linhas.push(linha('o relevo admite', relevo.nota, 'medido', 'bancada de texturas'));
+    }
+  }
+
   const forma = manifest.formas?.[id];
   if (forma) linhas.push(linha('forma', forma, 'artistico', 'bancada de texturas'));
 

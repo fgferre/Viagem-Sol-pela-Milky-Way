@@ -33,7 +33,23 @@
 //   - sharp/libvips PINADOS pelo package-lock; trocar a versão
 //     do sharp PODE mudar bytes — regenerar manifest junto.
 //
+// CANAL DE DADO ≠ CANAL DE COR (item 134/S2). `height` e `normal`
+// não são olhados: são LIDOS — o primeiro desloca vértice, o segundo
+// gira normal. O webp q88 do canal de cor mede, num mapa de altura de
+// Mimas, erro máximo de 8/255 (= 0,64 km de relevo falso, ~1,6 px de
+// faceta no limbo em close) e, num mapa de normal, 51/255. Por isso os
+// dois canais, QUANDO A FONTE É PNG, encodam em webp SEM PERDA: o
+// arquivo fica menor que o PNG e exato. `earth/normal` fica de fora por
+// construção — a fonte dele já é jpg (ORIGENS o declara reencodado), e
+// não há o que preservar num dado que já chegou com perda.
+//
+// ESCOPO OPCIONAL: sem argumento, varre a árvore inteira (o
+// comportamento de sempre, byte a byte). Com argumentos, varre só os
+// diretórios de corpo nomeados — é o que evita re-encodar 140 MB para
+// acrescentar dois canais a seis luas.
+//
 //   npm run data:texturas   (este script + gera-manifest)
+//   node scripts/data/atlas/otimiza-texturas.mjs mimas dione
 // ============================================================
 
 import { readdir, stat, unlink } from 'node:fs/promises';
@@ -59,6 +75,14 @@ const texturasRaiz = path.join(rootDirectory, 'public', 'textures', 'atlas');
 const OPCOES_JPEG = { quality: 88, mozjpeg: true, chromaSubsampling: '4:4:4' };
 const OPCOES_PNG = { compressionLevel: 9, adaptiveFiltering: false };
 const OPCOES_WEBP = { quality: 88, effort: 6 };
+const OPCOES_WEBP_DADO = { lossless: true, effort: 6 };
+/** Os canais que se LEEM em vez de se olhar — ver o cabeçalho. */
+const CANAIS_DE_DADO = new Set(['height', 'normal']);
+
+/** Os corpos a varrer; vazio = a árvore inteira. */
+const escopo = new Set(process.argv.slice(2));
+const noEscopo = (arquivo) =>
+  escopo.size === 0 || escopo.has(path.basename(path.dirname(arquivo)));
 
 const megabytes = (bytes) => `${(bytes / 1048576).toFixed(2)} MB`;
 
@@ -83,7 +107,8 @@ async function main() {
   // Variante reamostrar variante acumularia perda de geração; a
   // escada inteira desce sempre da fonte cheia.
   const fontes = todos.filter(
-    (arquivo) => analisarNomeDeTextura(path.basename(arquivo)).ehFonte
+    (arquivo) =>
+      noEscopo(arquivo) && analisarNomeDeTextura(path.basename(arquivo)).ehFonte
   );
   for (const fonte of fontes) {
     const meta = await sharp(fonte).metadata();
@@ -111,10 +136,16 @@ async function main() {
   let mantidos = 0;
   let descartados = 0;
   for (const arquivo of await listarArquivos(texturasRaiz)) {
-    const { extensao } = analisarNomeDeTextura(path.basename(arquivo));
+    if (!noEscopo(arquivo)) continue;
+    const { canal, extensao } = analisarNomeDeTextura(path.basename(arquivo));
     if (extensao === 'webp') continue;
     const destino = arquivo.slice(0, -(extensao.length + 1)) + '.webp';
-    await sharp(arquivo).webp(OPCOES_WEBP).toFile(destino);
+    // dado em fonte SEM perda encoda sem perda (cabeçalho)
+    const opcoes =
+      CANAIS_DE_DADO.has(canal) && extensao === 'png'
+        ? OPCOES_WEBP_DADO
+        : OPCOES_WEBP;
+    await sharp(arquivo).webp(opcoes).toFile(destino);
     const bytesFonte = (await stat(arquivo)).size;
     const bytesWebp = (await stat(destino)).size;
     if (!webpCompensa(bytesFonte, bytesWebp)) {

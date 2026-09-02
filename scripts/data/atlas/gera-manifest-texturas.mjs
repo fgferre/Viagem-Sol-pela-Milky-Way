@@ -357,6 +357,70 @@ const ORIGENS = {
     atribuicao: 'Textura: ESO / VLT / Vernazza et al. — CC BY 4.0.',
     proveniencia: 'medido',
   },
+
+  // ---- S2 do item 134 (2026-09-02): O RELEVO DAS LUAS, colhido do
+  // projeto Saturn do dono. Os dois canais saem do MESMO dado — a altura
+  // desloca o vértice e a normal gira a luz —, e por isso os dois são
+  // 'derivado' até na FONTE: nenhum deles é um produto publicado, e sim
+  // um mapa equiretangular ASSADO a partir do modelo de forma (ou, em
+  // Reia e Jápeto, gerado por código). A confissão do sintético mora na
+  // nota (ASSETS.md) e a ficha a imprime na seção "a imagem".
+  'mimas/height': {
+    fonte: 'Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de ALTURA',
+    url: 'https://sbn.psi.edu/pds/shape-models/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao: 'Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
+  },
+  'mimas/normal': {
+    fonte: 'Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura',
+    url: 'https://sbn.psi.edu/pds/shape-models/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao: 'Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
+  },
+  'tethys/height': {
+    fonte: 'Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de ALTURA',
+    url: 'https://sbn.psi.edu/pds/shape-models/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao: 'Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
+  },
+  'tethys/normal': {
+    fonte: 'Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura',
+    url: 'https://sbn.psi.edu/pds/shape-models/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao: 'Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
+  },
+  'enceladus/height': {
+    fonte: 'DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de ALTURA',
+    url: 'https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m',
+    licenca: 'domínio público, com citação obrigatória',
+    atribuicao: 'Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
+  },
+  'enceladus/normal': {
+    fonte: 'DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura',
+    url: 'https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m',
+    licenca: 'domínio público, com citação obrigatória',
+    atribuicao: 'Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
+  },
+  'dione/height': {
+    fonte: 'DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de ALTURA',
+    url: 'https://sbn.psi.edu/pds/shape-models/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao: 'Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
+  },
+  'dione/normal': {
+    fonte: 'DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura',
+    url: 'https://sbn.psi.edu/pds/shape-models/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao: 'Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
+  },
 };
 
 // A marca da política do dono: arquivo presente sem linha em ORIGENS

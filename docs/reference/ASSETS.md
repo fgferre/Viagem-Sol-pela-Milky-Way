@@ -66,6 +66,43 @@ do repositório atlas-orbital não vale aqui.
   razão entre as faces se perdeu na assadura. Com ele, o canal `ring` da
   placa (`texturas.json`) deixou de ser pedido por Saturno.
 
+## Relevo das seis luas de Saturno (item 134, S2)
+
+Dois canais novos por lua — `height` (mapa de altura equiretangular, que
+desloca o vértice) e `normal` (mapa de normais, que gira a luz) — em
+1024×512, `.png` de fallback e `.webp` **sem perda**. O webp de cor (q88)
+foi medido e reprovado para estes dois: no mapa de altura de Mimas erra até
+8/255 (= 0,64 km de relevo falso, ~1,6 px de faceta no limbo em close) e no
+de normais, 51/255. A regra vive em `scripts/data/atlas/otimiza-texturas.mjs`
+(`CANAIS_DE_DADO`) e vale só para fonte PNG — `earth/normal` continua q88
+porque a fonte dele já é jpg.
+
+Todos vêm do **projeto Saturn do dono** (https://github.com/fgferre/Saturn,
+`public/textures/relief/`), que os assou a partir dos modelos abaixo; as
+escalas de deslocamento (`span`/`bias` como fração do raio) vêm do
+`relief.json` dele e moram em `RELEVO_DA_LUA` (`world/corpos/rochoso.ts`).
+Encélado veio em 2048 e foi reamostrado para 1024 (lanczos3).
+
+| lua | topografia | licença | webp (altura + normal) |
+| --- | --- | --- | --- |
+| Mimas | modelo de forma SPC V2.0 (R. Gaskell), NASA PDS | domínio público | 103 + 477 KB |
+| Tétis | modelo de forma SPC V1.0 (R. Gaskell), NASA PDS | domínio público | 143 + 492 KB |
+| Encélado | DEM global 200 m — Schenk & McKinnon 2024, USGS Astropedia | domínio público, **citação obrigatória**: *Icarus* 408, 115827 | 296 + 728 KB |
+| Dione | DTM SPC — Weirich et al. 2025, NASA PDS SBN | domínio público | 228 + 512 KB |
+| Reia, Jápeto | **ficaram de FORA** — o relevo deles no projeto Saturn é sintético (sem DTM público) e sai em bolhas no limbo (`capturas/item134-s2-ficha-rhea.png`) | — | 0 |
+
+Total baixado pelo visitante: **3,55 MB** em webp (10,17 MB em disco com o
+`.png` de fallback). O `NOTICE` do projeto dele é a fonte destas linhas e
+declara os dois sintéticos com todas as letras: *"Rhea and Iapetus have no
+public DTM as of 2026; their relief is synthetic"*.
+
+**Reia e Jápeto NÃO entraram.** O `NOTICE` dele confessa que a topografia
+das duas é fabricada, e a foto mostrou o preço: bolhas largas no limbo,
+pior que a esfera lisa. Decisão do coordenador em 02/09, reversível: os
+mapas continuam no projeto dele; voltar é uma linha em `RELEVO_DA_LUA`,
+os assets no manifesto e a nota "relevo sintético" na ficha (o caminho
+`relevo` da seção *a imagem* já existe).
+
 ## Fonte dos rótulos 3D (item 109)
 
 - `public/fonts/inter-400.woff` — **Inter** (regular, subconjunto
@@ -139,6 +176,7 @@ tocar num `.mjs`.
 | titan/map | 720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou |
 | europa/map | mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou |
 | venus/map | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |
+| enceladus/height | DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul |
 
 ### a forma (item 20)
 

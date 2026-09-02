@@ -180,10 +180,20 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   contraste B/A vem só de τ (albedo por raio ficou de fora). Provas em
   `capturas/item134-s1-*`. Lista do §19 da onda: `gigante.test.ts` (a
   guarda do canal ring virou "não pede") e a suíte 1× no fecho.
-- **S2 — o relevo das luas**: bump por derivada do albedo (zero byte) e
-  deslocamento por mapa de altura (Mimas, Tétis, Encélado, Dione reais;
-  Reia e Jápeto sintéticos, DECLARADOS na ficha); LOD de esfera por
-  distância; detalhe fino no close. Assets ~2 MB assados em webp.
+- **S2 — o relevo das luas: FEITA em 02/09** (commit no selo desta
+  linha; fotos conferidas e entregues). Bump por derivada do albedo em
+  toda lua rochosa (interruptor por corpo `BUMP_DO_ALBEDO`; zero para
+  Mercúrio/Vênus/Marte, Titã, Io e Ceres; a Lua do filme muda 133 px
+  com delta 2/255 — ficou ligada, reverter é `moon: 0`); deslocamento
+  por mapa de altura REAL em Mimas, Tétis, Encélado e Dione (webp sem
+  perda para canal de dado, 3,5 MB; malha 256×128 só nelas); grão do
+  close com gate medido. **Reia e Jápeto ficaram de FORA** (relevo
+  sintético sai em bolhas no limbo — decisão do coordenador, reversível;
+  foto `capturas/item134-s2-ficha-rhea.png`, ele veta se quiser). **Sem
+  LOD de esfera**, por medida: o gate de 48 px da casa tira a lua do
+  quadro antes de qualquer nível médio ser escolhido. Custo de quadro
+  dentro do ruído. Provas em `capturas/item134-s2-*`. Lista do §19 da
+  onda: `rochoso.test.ts`, `lua.test.ts`, `corpos.test.ts`.
 - **S3 — as luas que faltam** (conversa com o 114): Hipérion e as oito
   menores (Pan, Dafnis, Atlas, Prometeu, Pandora, Jano, Epimeteu, Febe)
   com a geometria esculpida por código e os elementos orbitais dele.

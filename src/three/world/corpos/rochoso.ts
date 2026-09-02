@@ -71,10 +71,23 @@ import { A_MAG_BASE_PC, DESLOCAMENTO_UA_PARA_PC } from '../planetas/planetas';
 import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RETRATO_2026 } from '../planetas/retrato2026';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
-import { diametroAparentePx } from './corpos';
+import {
+  GLSL_ALTURA_DO_ALBEDO,
+  GLSL_BUMP_DO_ALBEDO,
+  GLSL_GRAO_DO_CLOSE,
+  GLSL_RUIDO_DE_VALOR,
+  diametroAparentePx,
+  escalaDoBumpDoAlbedo,
+} from './corpos';
 import { LS_NORMALIZACAO_GLSL } from './lua';
 import { LIMIAR_DO_GATE_PX, alvoDaCessaoDoCorpo, gateBinario } from './terra';
-import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
+import {
+  CANAL_ALTURA,
+  CANAL_MAP,
+  CANAL_NORMAL,
+  type Seguradores,
+  TexturasDoCorpo,
+} from './texturas';
 import type { OpcoesDeTextura } from './texturas';
 import {
   componentesNoFrameDoAnel,
@@ -152,6 +165,53 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   { id: 'quaoar', brdf: 'lambert', superficie: 'procedural' },
 ];
 
+/**
+ * O RELEVO POR LUA (item 134/S2) — `span`/`bias` como FRAÇÃO DO RAIO,
+ * copiados do `relief.json` do projeto Saturn do dono. O raio do vértice
+ * vira `1 + vies + altura·escala`: o viés é negativo para que a média
+ * fique no raio nominal de `BODY_AXES` (a esfera não engorda).
+ *
+ * SÓ SEIS LUAS PORQUE SÓ SEIS TÊM MAPA. Quatro saem de modelo de forma
+ * MEDIDO (Mimas e Tétis por SPC de Gaskell, Encélado pelo DEM de Schenk &
+ * McKinnon 2024, Dione pelo DTM de Weirich et al. 2025); Reia e Jápeto
+ * NÃO TÊM DTM público e o relevo deles é SINTÉTICO, gerado por código no
+ * projeto dele — entra por decisão do dono e é confessado onde o
+ * visitante lê (ficha do objeto, seção "a imagem", linha "relevo"), com o
+ * texto nascendo em `docs/reference/ASSETS.md`.
+ *
+ * Mimas puxa 10 % do raio: Herschel é um terço do diâmetro dela, e é essa
+ * a foto que o limbo tinha de mostrar e a esfera lisa não mostrava.
+ */
+export const RELEVO_DA_LUA: Readonly<Record<string, { escala: number; vies: number }>> = {
+  mimas: { escala: 0.10200225260766879, vies: -0.04611062610562858 },
+  enceladus: { escala: 0.009472107707579332, vies: -0.005141926965558401 },
+  tethys: { escala: 0.03387224437534385, vies: -0.016188330361680364 },
+  dione: { escala: 0.01065032313122289, vies: -0.005189992373296278 },
+  // Reia e Jápeto NÃO entram: o relevo deles no projeto Saturn é
+  // SINTÉTICO (sem DTM público) e sai em bolhas largas no limbo — pior
+  // que a esfera lisa (foto `capturas/item134-s2-ficha-rhea.png`, decisão
+  // do coordenador em 02/09, reversível com uma linha aqui e os assets).
+};
+
+/**
+ * A MALHA DENSA que o deslocamento exige. A esfera de 128×64 da casa tem
+ * 1,4° por segmento no equador — larga demais para uma cratera de 130 km
+ * aparecer NO LIMBO, que é o defeito que a S2 conserta. 256×128 iguala o
+ * nível `ultra` dele e amostra o mapa de 1024 px a 4:1.
+ *
+ * NÃO HÁ LOD DE ESFERA, e é medição e não preguiça: o LOD dele existe
+ * porque as luas dele são desenhadas SEMPRE, até com dois pixels. Aqui o
+ * `LIMIAR_LUA_ROCHOSA_PX` já corta a lua fora do quadro abaixo de 48 px
+ * de diâmetro — pela régua dele (razão distância/raio) a lua da casa
+ * nunca passa de ~45, e os níveis médio e grosso dele NUNCA seriam
+ * escolhidos. Um seletor com três níveis aqui seria código morto com
+ * histerese. Ver o relatório da S2.
+ */
+const SEGMENTOS_COM_RELEVO: readonly [number, number] = [256, 128];
+
+/** A escala TANGENCIAL do mapa de normais — o 1,2 dele (`normalScale`). */
+const ESCALA_DA_NORMAL_DO_RELEVO = 1.2;
+
 /** Raios do corpo em pc — BODY_AXES (a fonte única) pelos
  *  conversores únicos; nenhum literal novo de comprimento. */
 export function raiosDoRochosoPc(id: string): { a: number; c: number; b: number } {
@@ -196,6 +256,65 @@ void main() {
 }
 `;
 
+/**
+ * O VERTEX DO RELEVO (item 134/S2) — deslocamento RADIAL por mapa de
+ * altura, a receita dele (`moonMaterials.ts`): raio = 1 + viés +
+ * altura·escala, com os dois em fração do raio. Fica num shader SEPARADO
+ * do `ROCHOSO_VERT` de propósito: quem não tem relevo continua com o
+ * vertex de sempre, sem sampler nem multiplicação a mais, e o A/B do
+ * corpo sem relevo é bit-idêntico por construção.
+ *
+ * `texture2D` no vertex é leitura de nível 0 (GLSL ES 1.00 não aceita
+ * viés de mip no estágio de vértice) — é o que se quer: o deslocamento
+ * tem de ser o MESMO para todo vértice, venha a câmera de onde vier, ou
+ * a silhueta pulsaria com a distância.
+ */
+const ROCHOSO_VERT_RELEVO = /* glsl */ `
+uniform sampler2D uMapaAltura;
+uniform vec2 uRelevo;  // (escala, viés) em fração do raio — relief.json dele
+varying vec3 vLocal;   // posição DESLOCADA, ainda em raios de a
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  float h = texture2D(uMapaAltura, uv).r;
+  vLocal = position * (1.0 + uRelevo.y + h * uRelevo.x);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(vLocal, 1.0);
+}
+`;
+
+/**
+ * A NORMAL DO MAPA, em espaço tangente sobre a esfera equiretangular.
+ *
+ * O FRAME É ANALÍTICO e não vem de atributo: a parametrização da
+ * `SphereGeometry` do three é conhecida, e dela sai `T = ŷ × n̂` (leste,
+ * o sentido de +u) e `B = n̂ × T` (norte, o sentido de +v) — as duas
+ * derivadas exatas da malha. Calcular tangentes por atributo custaria um
+ * pré-passo de geometria para o mesmo resultado.
+ *
+ * NOS POLOS O FRAME DEGENERA (ŷ × n̂ → 0) e a função devolve a normal
+ * geométrica: um pixel de polo sem relevo é menos errado que uma normal
+ * dividida por zero.
+ *
+ * A APROXIMAÇÃO DECLARADA: nas luas triaxiais o `T` exato não é
+ * exatamente `ŷ × n̂`; em Mimas (a/b = 1,05) o erro de direção fica
+ * abaixo de 3°, e o que ele desloca é a SOMBRA dentro da cratera, não a
+ * silhueta (essa vem do vértice).
+ */
+const GLSL_NORMAL_DO_MAPA = /* glsl */ `
+uniform sampler2D uMapaNormal;
+uniform float uRelevoNormal;  // 0 desliga; a escala tangencial dele é 1,2
+vec3 normalDoMapa(vec3 n, vec2 uv) {
+  if (uRelevoNormal <= 0.0) return n;
+  vec3 t = cross(vec3(0.0, 1.0, 0.0), n);
+  float lt = length(t);
+  if (lt < 1.0e-4) return n;
+  t /= lt;
+  vec3 b = cross(n, t);
+  vec3 m = texture2D(uMapaNormal, uv).rgb * 2.0 - 1.0;
+  return normalize(m.x * uRelevoNormal * t + m.y * uRelevoNormal * b + m.z * n);
+}
+`;
+
 const GLSL_NORMAL_ELIPSOIDE = /* glsl */ `
 // gradiente exato do elipsoide (x/a², y/c², z/b²) em unidades de a:
 // uNormalEsc = (1, a²/c², a²/b²) — esfera ⇒ (1,1,1) exato
@@ -226,11 +345,24 @@ vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
+${GLSL_ALTURA_DO_ALBEDO}
+${GLSL_BUMP_DO_ALBEDO}
+${GLSL_NORMAL_DO_MAPA}
+${GLSL_RUIDO_DE_VALOR}
+${GLSL_GRAO_DO_CLOSE}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
-  float ndotlGeo = dot(n, uDirSolLocal);
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
+  // B2: com mapa de relevo, a normal vem MEDIDA e o bump do albedo
+  // não entra — seriam duas fontes para a mesma cratera. B1 é o
+  // substituto de quem não tem mapa (uRelevoNormal == 0).
+  n = uRelevoNormal > 0.0
+    ? normalDoMapa(n, vUv)
+    : normalComBumpDoAlbedo(n, pElip, alturaDoAlbedo(albedo));
+  // E: o grão do close, DEPOIS da normal — o ruído não é relevo
+  albedo *= graoDoClose(vUv, vLocal);
+  float ndotlGeo = dot(n, uDirSolLocal);
   vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
   vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
   vec3 fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip), sombras);
@@ -264,10 +396,23 @@ vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
+${GLSL_ALTURA_DO_ALBEDO}
+${GLSL_BUMP_DO_ALBEDO}
+${GLSL_NORMAL_DO_MAPA}
+${GLSL_RUIDO_DE_VALOR}
+${GLSL_GRAO_DO_CLOSE}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
+  // B2: com mapa de relevo, a normal vem MEDIDA e o bump do albedo
+  // não entra — seriam duas fontes para a mesma cratera. B1 é o
+  // substituto de quem não tem mapa (uRelevoNormal == 0).
+  n = uRelevoNormal > 0.0
+    ? normalDoMapa(n, vUv)
+    : normalComBumpDoAlbedo(n, pElip, alturaDoAlbedo(albedo));
+  // E: o grão do close, DEPOIS da normal — o ruído não é relevo
+  albedo *= graoDoClose(vUv, vLocal);
   vec3 dirCam = normSeguro(uCamLocal - pElip);
   float mu0 = clamp(dot(n, uDirSolLocal), 0.0, 1.0);
   float mu = clamp(dot(n, dirCam), 0.0, 1.0);
@@ -300,27 +445,7 @@ vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
-float hash31(vec3 p) {
-  return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
-}
-float ruido(vec3 p) {
-  vec3 i = floor(p);
-  vec3 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  float n000 = hash31(i);
-  float n100 = hash31(i + vec3(1.0, 0.0, 0.0));
-  float n010 = hash31(i + vec3(0.0, 1.0, 0.0));
-  float n110 = hash31(i + vec3(1.0, 1.0, 0.0));
-  float n001 = hash31(i + vec3(0.0, 0.0, 1.0));
-  float n101 = hash31(i + vec3(1.0, 0.0, 1.0));
-  float n011 = hash31(i + vec3(0.0, 1.0, 1.0));
-  float n111 = hash31(i + vec3(1.0, 1.0, 1.0));
-  float nx00 = mix(n000, n100, f.x);
-  float nx10 = mix(n010, n110, f.x);
-  float nx01 = mix(n001, n101, f.x);
-  float nx11 = mix(n011, n111, f.x);
-  return mix(mix(nx00, nx10, f.y), mix(nx01, nx11, f.y), f.z);
-}
+${GLSL_RUIDO_DE_VALOR}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
@@ -353,27 +478,7 @@ vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
-float hash31(vec3 p) {
-  return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
-}
-float ruido(vec3 p) {
-  vec3 i = floor(p);
-  vec3 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  float n000 = hash31(i);
-  float n100 = hash31(i + vec3(1.0, 0.0, 0.0));
-  float n010 = hash31(i + vec3(0.0, 1.0, 0.0));
-  float n110 = hash31(i + vec3(1.0, 1.0, 0.0));
-  float n001 = hash31(i + vec3(0.0, 0.0, 1.0));
-  float n101 = hash31(i + vec3(1.0, 0.0, 1.0));
-  float n011 = hash31(i + vec3(0.0, 1.0, 1.0));
-  float n111 = hash31(i + vec3(1.0, 1.0, 1.0));
-  float nx00 = mix(n000, n100, f.x);
-  float nx10 = mix(n010, n110, f.x);
-  float nx01 = mix(n001, n101, f.x);
-  float nx11 = mix(n011, n111, f.x);
-  return mix(mix(nx00, nx10, f.y), mix(nx01, nx11, f.y), f.z);
-}
+${GLSL_RUIDO_DE_VALOR}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
@@ -521,21 +626,40 @@ export class RochosoResolvido {
       corpo: this.config.id,
       // superfície PROCEDURAL não tem imagem para pedir: lista vazia, e
       // o corpo nasce pronto no primeiro gatilho sem tocar a rede
-      canais: this.config.superficie === 'procedural' ? [] : [CANAL_MAP],
+      canais:
+        this.config.superficie === 'procedural'
+          ? []
+          : this.config.id in RELEVO_DA_LUA
+            ? [CANAL_MAP, CANAL_ALTURA, CANAL_NORMAL]
+            : [CANAL_MAP],
       rede: opcoes,
       oQueNaoNasce: 'o corpo não nasce nesta sessão',
       publicar: (porCanal) => {
         this.garantirCasca();
         // o procedural chega com o lote VAZIO — o shader dele não lê mapa
+        const u = this.matSuperficie!.uniforms;
         const tex = porCanal.get('map');
-        if (tex) this.matSuperficie!.uniforms.uMapaDia.value = tex;
+        if (tex) {
+          u.uMapaDia.value = tex;
+          const img = tex.image as { width?: number; height?: number } | undefined;
+          (u.uTamanhoDoMapa.value as THREE.Vector2).set(img?.width ?? 0, img?.height ?? 0);
+        }
+        // o lote é ATÔMICO (texturas.ts): ou vieram os três, ou nenhum
+        const alt = porCanal.get('height');
+        if (alt) u.uMapaAltura.value = alt;
+        const nrm = porCanal.get('normal');
+        if (nrm) u.uMapaNormal.value = nrm;
       },
       // o procedural nunca chega aqui (não há texel residente para
       // soltar), mas o uniform dele também não existe — a guarda serve
       // aos dois
       soltar: () => {
-        const u = this.matSuperficie?.uniforms.uMapaDia;
-        if (u) u.value = null;
+        const u = this.matSuperficie?.uniforms;
+        if (!u) return;
+        u.uMapaDia.value = null;
+        (u.uTamanhoDoMapa.value as THREE.Vector2).set(0, 0);
+        u.uMapaAltura.value = null;
+        u.uMapaNormal.value = null;
       },
     });
     this.estado = {
@@ -730,11 +854,16 @@ export class RochosoResolvido {
   /** geometria + material + mesh, UMA vez, na primeira necessidade. */
   private garantirCasca() {
     if (this.geometria || this.disposto) return;
-    this.geometria = new THREE.SphereGeometry(1, 128, 64);
+    // A MALHA DENSA só nasce onde há relevo (SEGMENTOS_COM_RELEVO diz por
+    // que não há LOD); o resto da casa fica na esfera de sempre.
+    const relevo = RELEVO_DA_LUA[this.config.id];
+    this.geometria = relevo
+      ? new THREE.SphereGeometry(1, ...SEGMENTOS_COM_RELEVO)
+      : new THREE.SphereGeometry(1, 128, 64);
     const procedural = this.config.superficie === 'procedural';
     const albedo = ALBEDO_PROCEDURAL[this.config.id] ?? [0.5, 0.5, 0.5];
     this.matSuperficie = new THREE.ShaderMaterial({
-      vertexShader: ROCHOSO_VERT,
+      vertexShader: relevo ? ROCHOSO_VERT_RELEVO : ROCHOSO_VERT,
       fragmentShader: procedural
         ? this.config.brdf === 'ls'
           ? ROCHOSO_PROC_LS_FRAG
@@ -744,6 +873,21 @@ export class RochosoResolvido {
           : ROCHOSO_LAMBERT_FRAG,
       uniforms: {
         uMapaDia: { value: null },
+        // B1 — o interruptor por corpo; procedural não tem mapa de onde
+        // tirar gradiente, e o shader dele nem declara o bloco
+        uBumpAlbedo: { value: procedural ? 0 : escalaDoBumpDoAlbedo(this.config.id) },
+        // B2 — o relevo medido. Sem entrada em RELEVO_DA_LUA os três
+        // ficam neutros e nenhum sampler é lido.
+        uMapaAltura: { value: null },
+        uMapaNormal: { value: null },
+        uRelevo: {
+          value: new THREE.Vector2(relevo?.escala ?? 0, relevo?.vies ?? 0),
+        },
+        uRelevoNormal: { value: relevo ? ESCALA_DA_NORMAL_DO_RELEVO : 0 },
+        // E — o gate do grão. Quem escreve o tamanho VERDADEIRO é quem
+        // publica o mapa (a variante do tier manda, não o manifesto);
+        // (0,0) é "ainda não veio" e o chunk devolve 1 exato.
+        uTamanhoDoMapa: { value: new THREE.Vector2(0, 0) },
         uAlbedoBase: { value: new THREE.Vector3(albedo[0], albedo[1], albedo[2]) },
         uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
         uCamLocal: { value: new THREE.Vector3(0, 0, 4) },

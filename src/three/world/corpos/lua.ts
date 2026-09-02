@@ -124,7 +124,12 @@ import type { FonteDeEfemerides } from '../planetas/planetas';
 import { DESLOCAMENTO_UA_PARA_PC } from '../planetas/planetas';
 import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
-import { diametroAparentePx } from './corpos';
+import {
+  GLSL_ALTURA_DO_ALBEDO,
+  GLSL_BUMP_DO_ALBEDO,
+  diametroAparentePx,
+  escalaDoBumpDoAlbedo,
+} from './corpos';
 import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
 import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
 import type { OpcoesDeTextura } from './texturas';
@@ -189,9 +194,14 @@ varying vec2 vUv;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
+${GLSL_ALTURA_DO_ALBEDO}
+${GLSL_BUMP_DO_ALBEDO}
 void main() {
   vec3 n = normSeguro(vLocal);
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
+  // B1: a normal ganha o relevo do PRÓPRIO mapa (corpos.ts). O
+  // interruptor da Lua vale para o FILME — ver BUMP_DO_ALBEDO.
+  n = normalComBumpDoAlbedo(n, vLocal, alturaDoAlbedo(albedo));
   vec3 dirCam = normSeguro(uCamLocal - vLocal);
   float mu0 = clamp(dot(n, uDirSolLocal), 0.0, 1.0);
   float mu = clamp(dot(n, dirCam), 0.0, 1.0);
@@ -510,6 +520,7 @@ export class LuaResolvida {
       fragmentShader: LUA_FRAG,
       uniforms: {
         uMapaDia: { value: null },
+        uBumpAlbedo: { value: escalaDoBumpDoAlbedo('moon') },
         uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
         uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
         uLuzGanho: { value: 1 },

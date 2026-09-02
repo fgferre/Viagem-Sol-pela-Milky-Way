@@ -270,6 +270,38 @@
     },
     {
       "corpo": "dione",
+      "canal": "height",
+      "arquivo": "textures/atlas/dione/height.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 538153,
+      "sha256": "01fe48c5a554ea251f794b94a16a5d87521dbadf64b206d4f43c4398d037ab19",
+      "origem": {
+        "fonte": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de ALTURA",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "height",
+      "arquivo": "textures/atlas/dione/height.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 234082,
+      "sha256": "1b6aad0b8f30c7f18805aa5339174cbed5f54a91a3788ee23b787284b1698e81",
+      "origem": {
+        "fonte": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de ALTURA",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
       "canal": "map",
       "arquivo": "textures/atlas/dione/map_1024.jpg",
       "larguraPx": 1024,
@@ -329,6 +361,38 @@
         "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Dione",
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "normal",
+      "arquivo": "textures/atlas/dione/normal.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 867518,
+      "sha256": "44aa916b21fa60eb76dfecf22bcaf07c33752e40de8af28d15f9418cdb270321",
+      "origem": {
+        "fonte": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "normal",
+      "arquivo": "textures/atlas/dione/normal.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 524902,
+      "sha256": "dec38ad879bb592834c5eb8be963959284c2ba3bafe2cc7ff2345785916c761c",
+      "origem": {
+        "fonte": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -926,6 +990,40 @@
     },
     {
       "corpo": "enceladus",
+      "canal": "height",
+      "arquivo": "textures/atlas/enceladus/height.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 516674,
+      "sha256": "6cc07502e1108c5c707f91f2e8c75a1ea136978c9826b3ea2978ccdbe071a04c",
+      "origem": {
+        "fonte": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de ALTURA",
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
+        "licenca": "domínio público, com citação obrigatória",
+        "atribuicao": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado",
+      "nota": "DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "height",
+      "arquivo": "textures/atlas/enceladus/height.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 303396,
+      "sha256": "082a2f1487b3ef95a7dd61aaf2f04d76343742cf1d4110165b5a7c534c42809f",
+      "origem": {
+        "fonte": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de ALTURA",
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
+        "licenca": "domínio público, com citação obrigatória",
+        "atribuicao": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado",
+      "nota": "DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul"
+    },
+    {
+      "corpo": "enceladus",
       "canal": "map",
       "arquivo": "textures/atlas/enceladus/map_1024.jpg",
       "larguraPx": 1024,
@@ -985,6 +1083,38 @@
         "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Enceladus",
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "normal",
+      "arquivo": "textures/atlas/enceladus/normal.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 984846,
+      "sha256": "3e9127db1592b62572ff27477ebbff78a3258bd421e78403f8a0d372b0969ed1",
+      "origem": {
+        "fonte": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura",
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
+        "licenca": "domínio público, com citação obrigatória",
+        "atribuicao": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "normal",
+      "arquivo": "textures/atlas/enceladus/normal.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 745712,
+      "sha256": "21c7f207da5e82dc323270c21a80294e8f030c53524875759a28f5c577ad86b2",
+      "origem": {
+        "fonte": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura",
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
+        "licenca": "domínio público, com citação obrigatória",
+        "atribuicao": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -1586,6 +1716,38 @@
     },
     {
       "corpo": "mimas",
+      "canal": "height",
+      "arquivo": "textures/atlas/mimas/height.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 254416,
+      "sha256": "652d949393b268ac0673060b6064e25cd6621ac21b28f84fed53ab993814958d",
+      "origem": {
+        "fonte": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de ALTURA",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "height",
+      "arquivo": "textures/atlas/mimas/height.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 105754,
+      "sha256": "0dcd6bda9304abf5028d19ad14c7321c8dcfa77d78739911c60664aa4aa105e4",
+      "origem": {
+        "fonte": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de ALTURA",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
       "canal": "map",
       "arquivo": "textures/atlas/mimas/map_1024.jpg",
       "larguraPx": 1024,
@@ -1645,6 +1807,38 @@
         "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Mimas",
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mimas/normal.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 961629,
+      "sha256": "f8a28f74202e1a19b1d1f412ff5d6bd54035fa4756f36705868e3cfc65299ff9",
+      "origem": {
+        "fonte": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mimas/normal.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 488710,
+      "sha256": "0262a97d4ed5f1c7da00ccd39e4fc0951665a97db6c35bc164dd9a837f6daae1",
+      "origem": {
+        "fonte": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -2306,6 +2500,38 @@
     },
     {
       "corpo": "tethys",
+      "canal": "height",
+      "arquivo": "textures/atlas/tethys/height.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 368376,
+      "sha256": "89033a6f8cb9ffcb7fa08f6c941fcefce241acaeb290554613604b9b3796ff03",
+      "origem": {
+        "fonte": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de ALTURA",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "height",
+      "arquivo": "textures/atlas/tethys/height.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 147338,
+      "sha256": "73e05439c5800ea35ebff2150ad0b16d8073658fdf4049cca4685ab9ffcca07e",
+      "origem": {
+        "fonte": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de ALTURA",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
       "canal": "map",
       "arquivo": "textures/atlas/tethys/map_1024.jpg",
       "larguraPx": 1024,
@@ -2365,6 +2591,38 @@
         "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Tethys",
         "licenca": "NASA 3D Resources (uso livre)",
         "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "normal",
+      "arquivo": "textures/atlas/tethys/normal.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 847649,
+      "sha256": "9195f414a4608854e8b19f66fef2d32293d7ba4add4baa64a42089ce232521f2",
+      "origem": {
+        "fonte": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "normal",
+      "arquivo": "textures/atlas/tethys/normal.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 504552,
+      "sha256": "b208b3db9055eff4196b02741574d7ee9a1dfabfa75cafc9f74040e09c69b335",
+      "origem": {
+        "fonte": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": "domínio público (NASA PDS)",
+        "atribuicao": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },

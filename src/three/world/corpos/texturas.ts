@@ -304,6 +304,15 @@ export interface CanalPedido {
 export const CANAL_MAP: CanalPedido = { canal: 'map', cor: true, repetirEmU: true };
 
 /**
+ * OS DOIS CANAIS DO RELEVO (item 134/S2) — DADO, nunca cor: a altura
+ * desloca o vértice e a normal gira a luz. Em sRGB os dois sairiam
+ * torcidos em silêncio, pelo mesmo motivo que o `normal` da Terra é
+ * linear. Equiretangulares como as irmãs, então repetem em U.
+ */
+export const CANAL_ALTURA: CanalPedido = { canal: 'height', cor: false, repetirEmU: true };
+export const CANAL_NORMAL: CanalPedido = { canal: 'normal', cor: false, repetirEmU: true };
+
+/**
  * QUEM SEGURA os texels de um corpo neste quadro (item 115, bloco A).
  *
  * Não é um flag de "pode descarregar": é a lista das razões REAIS pelas
