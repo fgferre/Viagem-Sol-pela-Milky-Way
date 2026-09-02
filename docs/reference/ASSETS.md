@@ -103,6 +103,35 @@ mapas continuam no projeto dele; voltar é uma linha em `RELEVO_DA_LUA`,
 os assets no manifesto e a nota "relevo sintético" na ficha (o caminho
 `relevo` da seção *a imagem* já existe).
 
+## As nove luas esculpidas de Saturno (item 134, S3)
+
+Pã, Dáfnis, Atlas, Prometeu, Pandora, Jano, Epimeteu, Hipérion e Febe
+entraram **sem um único byte de imagem**: a forma é malha gerada por código
+(`src/three/world/corpos/esculpido.ts`) e a cor é família de regolito em
+GLSL. Não há textura, não há mapa de altura, não há download.
+
+O esculpidor e as duas tabelas de dado (razões de eixo + campo de crateras;
+cor de base, de fundo de cratera, de borda e de crista) vêm do **projeto
+Saturn do dono** (https://github.com/fgferre/Saturn,
+`src/scene/irregularMoonGeometry.ts` e `src/materials/moonMaterials.ts`),
+trazidos com autorização dele. O material da casa é reescrito — o dele é
+`MeshStandardNodeMaterial` do TSL, que esta casa não usa.
+
+| dado | fonte | licença |
+| --- | --- | --- |
+| Raio médio de cada lua e elementos orbitais (a, e, i, nodo, periastro, M₀, período) | NASA/JPL Solar System Dynamics — *Planetary Satellite Mean Orbital Parameters* (https://ssd.jpl.nasa.gov/sats/elem/), transcritos em `src/data/saturn.ts` do projeto dele | domínio público |
+| Elementos de Febe no frame ECLÍPTICO (i = 173,04° ⇒ retrógrada) | JPL SSD, tabela de satélites irregulares (`PHOEBE_ECLIPTIC` dele) | domínio público |
+| Razões de eixo e morfologia (crista de acreção dos pastores, cratera profunda de Hipérion, polo sul rebaixado de Epimeteu, escuridão de Febe) | páginas de corpo da NASA/Cassini, ligadas uma a uma no cabeçalho de `esculpido.ts` | domínio público |
+| Polo de Saturno usado na mudança de frame e na orientação modelada | IAU/WGCCRE, α₀ = 40,589°, δ₀ = 83,537° (o mesmo do kernel que a casa já carrega) | domínio público |
+
+**O que NÃO é medido, e está confessado na tela** (tabela *a forma*,
+abaixo): o campo de crateras é procedural por semente, e o meridiano-primo
+das nove é W₀ = 0 arbitrário — numa superfície inventada não há feição
+medida em que ancorá-lo. A fase orbital também não é efeméride: os
+elementos são MÉDIOS na época J2000 e a propagação é de dois corpos, então
+uma lua de 0,575 dia acumula dezenas de graus de longitude em 26 anos. A
+órbita, o tamanho, a inclinação e o sentido, sim.
+
 ## Fonte dos rótulos 3D (item 109)
 
 - `public/fonts/inter-400.woff` — **Inter** (regular, subconjunto
@@ -180,9 +209,12 @@ tocar num `.mjs`.
 
 ### a forma (item 20)
 
-Os quatro corpos cujo modelo de forma IRREGULAR existe publicado e **não** é
-carregado: a casa não tem `GLTFLoader`/`OBJLoader` (pendência **P-F7-MESH**,
-acima) e desenha o elipsoide de `BODY_AXES`.
+Duas famílias. Primeiro, os quatro corpos cujo modelo de forma IRREGULAR
+existe publicado e **não** é carregado: a casa não tem
+`GLTFLoader`/`OBJLoader` (pendência **P-F7-MESH**, acima) e desenha o
+elipsoide de `BODY_AXES`. Depois, as nove luas de Saturno da S3, que são o
+caso oposto — têm malha, e a malha é INVENTADA a partir das dimensões
+publicadas (item 134/S3, seção acima).
 
 | corpo | nota |
 | --- | --- |
@@ -190,3 +222,12 @@ acima) e desenha o elipsoide de `BODY_AXES`.
 | pallas | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
 | hygiea | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
 | haumea | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega |
+| pan | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| daphnis | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| atlas | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| prometheus | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| pandora | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| janus | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| epimetheus | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| hyperion | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| phoebe | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |

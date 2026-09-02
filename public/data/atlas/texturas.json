@@ -3,9 +3,18 @@
   "geradoPor": "scripts/data/atlas/gera-manifest-texturas.mjs",
   "confissao": "docs/reference/ASSETS.md § A CONFISSÃO NA TELA",
   "formas": {
+    "atlas": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
+    "daphnis": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
+    "epimetheus": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
     "haumea": "elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega",
     "hygiea": "elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega",
+    "hyperion": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
+    "janus": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
     "pallas": "elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega",
+    "pan": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
+    "pandora": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
+    "phoebe": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
+    "prometheus": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
     "vesta": "elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e esta casa ainda não a carrega"
   },
   "entradas": [

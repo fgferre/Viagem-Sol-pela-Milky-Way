@@ -100,6 +100,12 @@ import {
   uniformsDeEclipseNeutros,
 } from './eclipseNoMaterial';
 import { ANEIS_CITADOS, ANEL_PROC_FRAG, ANEL_VERT } from './gigante';
+import {
+  ESCULPIDO_FRAG,
+  ESCULPIDO_VERT,
+  criaGeometriaEsculpida,
+  uniformsDoEsculpido,
+} from './esculpido';
 
 
 /**
@@ -119,8 +125,13 @@ export type BrdfDoRochoso = 'ls' | 'lambert';
 export interface ConfigDoRochoso {
   readonly id: string;
   readonly brdf: BrdfDoRochoso;
-  /** F6: Haumea/Makemake/Éris/Quaoar — o −3 inventado; sem mapa. */
-  readonly superficie?: 'mapa' | 'procedural';
+  /**
+   * F6: Haumea/Makemake/Éris/Quaoar — o −3 inventado; sem mapa.
+   * S3 (item 134): `esculpido` é o terceiro caminho — sem mapa E sem
+   * esfera, malha própria com o campo de crateras nos atributos
+   * (`esculpido.ts`). É o único que troca a GEOMETRIA.
+   */
+  readonly superficie?: 'mapa' | 'procedural' | 'esculpido';
 }
 
 /**
@@ -163,6 +174,19 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   { id: 'makemake', brdf: 'lambert', superficie: 'procedural' },
   { id: 'eris', brdf: 'lambert', superficie: 'procedural' },
   { id: 'quaoar', brdf: 'lambert', superficie: 'procedural' },
+  // S3 (item 134) — as nove esculpidas de Saturno. Todas `lambert` com o
+  // `terminadorSuave` da casa: o disco chato de Lommel-Seeliger é o fato
+  // que uma FOTO confere, e não há foto destes nove com que conferir —
+  // o que existe é a forma, e a forma está na malha.
+  { id: 'pan', brdf: 'lambert', superficie: 'esculpido' },
+  { id: 'daphnis', brdf: 'lambert', superficie: 'esculpido' },
+  { id: 'atlas', brdf: 'lambert', superficie: 'esculpido' },
+  { id: 'prometheus', brdf: 'lambert', superficie: 'esculpido' },
+  { id: 'pandora', brdf: 'lambert', superficie: 'esculpido' },
+  { id: 'janus', brdf: 'lambert', superficie: 'esculpido' },
+  { id: 'epimetheus', brdf: 'lambert', superficie: 'esculpido' },
+  { id: 'hyperion', brdf: 'lambert', superficie: 'esculpido' },
+  { id: 'phoebe', brdf: 'lambert', superficie: 'esculpido' },
 ];
 
 /**
@@ -579,7 +603,7 @@ export class RochosoResolvido {
   private readonly seguram: Seguradores = { tela: false, foco: false, filme: false };
   private disposto = false;
 
-  private geometria: THREE.SphereGeometry | null = null;
+  private geometria: THREE.BufferGeometry | null = null;
   private superficie: THREE.Mesh | null = null;
   private matSuperficie: THREE.ShaderMaterial | null = null;
   private geoAnel: THREE.RingGeometry | null = null;
@@ -627,7 +651,7 @@ export class RochosoResolvido {
       // superfície PROCEDURAL não tem imagem para pedir: lista vazia, e
       // o corpo nasce pronto no primeiro gatilho sem tocar a rede
       canais:
-        this.config.superficie === 'procedural'
+        this.config.superficie !== undefined && this.config.superficie !== 'mapa'
           ? []
           : this.config.id in RELEVO_DA_LUA
             ? [CANAL_MAP, CANAL_ALTURA, CANAL_NORMAL]
@@ -857,25 +881,39 @@ export class RochosoResolvido {
     // A MALHA DENSA só nasce onde há relevo (SEGMENTOS_COM_RELEVO diz por
     // que não há LOD); o resto da casa fica na esfera de sempre.
     const relevo = RELEVO_DA_LUA[this.config.id];
-    this.geometria = relevo
-      ? new THREE.SphereGeometry(1, ...SEGMENTOS_COM_RELEVO)
-      : new THREE.SphereGeometry(1, 128, 64);
+    // S3: o corpo ESCULPIDO troca a esfera pela malha própria — é o único
+    // caminho desta classe em que a figura não mora na escala da matriz.
+    const esculpido = this.config.superficie === 'esculpido';
+    this.geometria = esculpido
+      ? criaGeometriaEsculpida(this.config.id)
+      : relevo
+        ? new THREE.SphereGeometry(1, ...SEGMENTOS_COM_RELEVO)
+        : new THREE.SphereGeometry(1, 128, 64);
     const procedural = this.config.superficie === 'procedural';
     const albedo = ALBEDO_PROCEDURAL[this.config.id] ?? [0.5, 0.5, 0.5];
     this.matSuperficie = new THREE.ShaderMaterial({
-      vertexShader: relevo ? ROCHOSO_VERT_RELEVO : ROCHOSO_VERT,
-      fragmentShader: procedural
-        ? this.config.brdf === 'ls'
-          ? ROCHOSO_PROC_LS_FRAG
-          : ROCHOSO_PROC_FRAG
-        : this.config.brdf === 'ls'
-          ? ROCHOSO_LS_FRAG
-          : ROCHOSO_LAMBERT_FRAG,
+      vertexShader: esculpido
+        ? ESCULPIDO_VERT
+        : relevo
+          ? ROCHOSO_VERT_RELEVO
+          : ROCHOSO_VERT,
+      fragmentShader: esculpido
+        ? ESCULPIDO_FRAG
+        : procedural
+          ? this.config.brdf === 'ls'
+            ? ROCHOSO_PROC_LS_FRAG
+            : ROCHOSO_PROC_FRAG
+          : this.config.brdf === 'ls'
+            ? ROCHOSO_LS_FRAG
+            : ROCHOSO_LAMBERT_FRAG,
       uniforms: {
         uMapaDia: { value: null },
         // B1 — o interruptor por corpo; procedural não tem mapa de onde
         // tirar gradiente, e o shader dele nem declara o bloco
         uBumpAlbedo: { value: procedural ? 0 : escalaDoBumpDoAlbedo(this.config.id) },
+        // S3: cor/fundo/borda/crista da família de regolito. Só o corpo
+        // esculpido lê estes; nos outros o bloco nem existe no shader.
+        ...(esculpido ? uniformsDoEsculpido(this.config.id) : {}),
         // B2 — o relevo medido. Sem entrada em RELEVO_DA_LUA os três
         // ficam neutros e nenhum sampler é lido.
         uMapaAltura: { value: null },

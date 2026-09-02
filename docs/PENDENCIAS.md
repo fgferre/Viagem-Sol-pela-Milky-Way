@@ -204,9 +204,24 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   quadro antes de qualquer nível médio ser escolhido. Custo de quadro
   dentro do ruído. Provas em `capturas/item134-s2-*`. Lista do §19 da
   onda: `rochoso.test.ts`, `lua.test.ts`, `corpos.test.ts`.
-- **S3 — as luas que faltam** (conversa com o 114): Hipérion e as oito
-  menores (Pan, Dafnis, Atlas, Prometeu, Pandora, Jano, Epimeteu, Febe)
-  com a geometria esculpida por código e os elementos orbitais dele.
+- **S3 — as luas que faltam: FEITA em 02/09** (commit no selo desta
+  linha; fotos conferidas e entregues). Hipérion, Pã, Dafnis, Atlas,
+  Prometeu, Pandora, Jano, Epimeteu e Febe: esculpidor dele portado
+  (`esculpido.ts`, icosaedro + ruído + crateras por semente, material em
+  GLSL da casa sem Hapke), elementos orbitais dele no motor com a
+  mudança de frame provada (Febe retrógrada a 149°, Jano/Epimeteu
+  período igual, erro de período 0 nas nove), orientação modelada
+  (W₀ = 0 declarado), rótulos/busca/órbitas nascem de `LUAS_DO_SISTEMA`;
+  a ficha declara "geometria esculpida por código a partir das
+  dimensões Cassini". Filme bit-idêntico; zero malha esculpida nasce na
+  vista do sistema (gate de 48 px). **Sobras abertas — S3b:** (1) o
+  editorial dos 9 (`corpos-fonte.json`/`editorial-pt.json`, ~800 linhas,
+  contadores 45→54 em `gera-corpos.mjs`/`verify-assets.mjs`) — a ficha
+  sai sem CONTEXTO e CURIOSIDADES até lá; (2) `atlasConfig.test.ts`
+  espera 21 luas e o espelho com `corpos.json` (vai reprovar; entra na
+  lista do §19 com a expectativa nova); (3) fase orbital não é
+  efeméride (elementos médios J2000 propagados a dois corpos), declarado.
+  Provas em `capturas/item134-s3-*`.
 - **S4 — os jatos de Encélado.**
 - **S5 — o espetáculo dos anéis**: anéis E e F, raios do B, ondas de
   Dáfnis — por último, com foto para o olho dele.

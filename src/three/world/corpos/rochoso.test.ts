@@ -42,6 +42,7 @@ import {
   ganhoDoGlobo,
 } from '../../../lib/atlas/luzDaVisita';
 import {
+  type ConfigDoRochoso,
   LIMIAR_LUA_ROCHOSA_PX,
   ROCHOSOS,
   ROCHOSO_LAMBERT_FRAG,
@@ -225,7 +226,7 @@ const flush = async () => {
 function rochosoDeTeste(
   id: string,
   brdf: 'ls' | 'lambert',
-  superficie?: 'mapa' | 'procedural'
+  superficie?: ConfigDoRochoso['superficie']
 ) {
   const chamadas: string[] = [];
   const corpo = new RochosoResolvido({

@@ -136,6 +136,12 @@ export interface SatelliteEntry {
 // years.
 export const EPOCH_2025_JD = 2460676.5008931975;
 
+// J2000.0 como JD. É a época implícita do Kepler de catálogo do doador
+// (keplerProvider.ts avança `M = M0 + n * daysSinceJ2000`) E a das nove
+// luas do projeto Saturn do autor, abaixo. Morava mais adiante no arquivo;
+// subiu porque agora SATELLITES o lê na própria construção.
+const J2000_JD = 2451545.0;
+
 /**
  * Ecliptic-J2000 osculating elements, parent-centered, all at epoch
  * 2025-01-01. Every block below was emitted by
@@ -361,6 +367,167 @@ export const SATELLITES: Record<string, SatelliteEntry> = {
     },
   },
 
+  // --- Saturnian menores + Hipérion e Febe (item 134/S3) ---
+  //
+  // FONTE: `src/data/saturn.ts` do PROJETO SATURN DO AUTOR (MOONS.hyperion,
+  // MINOR_MOONS, PHOEBE_ECLIPTIC), que os transcreve de NASA/JPL Solar System
+  // Dynamics, "Planetary Satellite Mean Orbital Parameters"
+  // (https://ssd.jpl.nasa.gov/sats/elem/). São elementos MÉDIOS na época
+  // J2000, não osculantes de fixture — por isso `epochJD: J2000_JD` e não
+  // EPOCH_2025_JD, e por isso não há tag `pub`/`fix`: a taxa é 360/período
+  // publicado, transcrição direta, sem ajuste local.
+  //
+  // MUDANÇA DE FRAME, o único cálculo feito aqui. Ele guarda tudo no frame
+  // EQUATORIAL DE SATURNO (nas menores i = Ω = ω = 0 é a aproximação exata:
+  // a órbita É o plano do equador); esta casa fala eclíptica J2000. A
+  // conversão gira o versor do periastro e a normal da órbita pela base
+  // (nodo do equador de Saturno na equatorial ICRF, polo IAU 40,589°/83,537°)
+  // e re-extrai os três ângulos — a MESMA `eclipticOrbitToSaturnFrame()` dele,
+  // no sentido inverso. DUAS PROVAS antes de colar: (1) a ida do Febe
+  // reproduz os três ângulos que ele publica no lado equatorial
+  // (149,14266°/52,95355°/281,75182°) a 1e-5°; (2) as SETE saturnianas que a
+  // casa já tem, convertidas para o frame dele, batem com a tabela dele em
+  // 0,03° nas cinco internas (Reia 0,308 × 0,333; Titã 0,402 × 0,306; Jápeto
+  // 15,78 × 15,47 — a diferença é médio × osculante, não erro de rotação).
+  //
+  // O QUE ESTES NÚMEROS NÃO SÃO: efeméride. Duas leis a limitam, e as duas
+  // são as mesmas do projeto dele. (a) A PRECESSÃO de nodo e periastro sob o
+  // J2 de Saturno é desprezada — inofensiva nas sete internas (i = 0 no frame
+  // de Saturno: o plano da órbita É o equador, que não precessa) e pequena em
+  // Hipérion (0,43°) e Febe (longe). (b) A FASE é propagada por dois corpos
+  // desde J2000: em 26 anos uma lua de 0,575 dia dá ~16.500 voltas, e o
+  // arredondamento do período publicado na 4ª casa já vale dezenas de graus
+  // de longitude. Para onde a lua ESTÁ, isto não serve; para a órbita, o
+  // tamanho, a inclinação e o sentido, serve — e é o que a tela mostra.
+  //
+  // JANO E EPIMETEU: período IGUAL de propósito (decisão dele, §8 do plano
+  // dele) — o par co-orbital dista ~50 km em `a`, menos que a soma dos raios,
+  // e períodos diferentes fariam as malhas se atravessarem. A troca real de
+  // órbitas a cada ~4 anos fica de fora; Epimeteu carrega M0 = 60° nominal
+  // para os dois ficarem separados em longitude.
+  //
+  // FEBE é o único cujo dado nasce JÁ eclíptico: `PHOEBE_ECLIPTIC` dele é a
+  // linha do JPL para satélites irregulares (i = 173,04° ⇒ RETRÓGRADA), e a
+  // conversão só a devolve inalterada — o número que entra aqui é o do JPL,
+  // sem rotação nenhuma no caminho.
+  hyperion: {
+    parent: "saturn",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 0.00990321582,
+      e: 0.105,
+      iDeg: 27.743454,
+      OmegaDeg: 168.88776,
+      omegaDeg: 167.399866,
+      M0Deg: 86.3,
+      nDegPerDay: 16.91998962,
+    },
+  },
+  pan: {
+    parent: "saturn",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 0.000892953886,
+      e: 0,
+      iDeg: 28.052163,
+      OmegaDeg: 169.527509,
+      omegaDeg: 320.034463,
+      M0Deg: 0,
+      nDegPerDay: 626.0869565,
+    },
+  },
+  daphnis: {
+    parent: "saturn",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 0.000912479565,
+      e: 0,
+      iDeg: 28.052163,
+      OmegaDeg: 169.527509,
+      omegaDeg: 320.034463,
+      M0Deg: 0,
+      nDegPerDay: 606.0606061,
+    },
+  },
+  atlas: {
+    parent: "saturn",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 0.000920267109,
+      e: 0,
+      iDeg: 28.052163,
+      OmegaDeg: 169.527509,
+      omegaDeg: 320.034463,
+      M0Deg: 0,
+      nDegPerDay: 598.3048031,
+    },
+  },
+  prometheus: {
+    parent: "saturn",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 0.000931697753,
+      e: 0,
+      iDeg: 28.052163,
+      OmegaDeg: 169.527509,
+      omegaDeg: 320.034463,
+      M0Deg: 0,
+      nDegPerDay: 587.2756933,
+    },
+  },
+  pandora: {
+    parent: "saturn",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 0.000947339687,
+      e: 0,
+      iDeg: 28.052163,
+      OmegaDeg: 169.527509,
+      omegaDeg: 320.034463,
+      M0Deg: 0,
+      nDegPerDay: 572.7923628,
+    },
+  },
+  janus: {
+    parent: "saturn",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 0.00101244757,
+      e: 0,
+      iDeg: 28.052163,
+      OmegaDeg: 169.527509,
+      omegaDeg: 320.034463,
+      M0Deg: 0,
+      nDegPerDay: 518.3585313,
+    },
+  },
+  epimetheus: {
+    parent: "saturn",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 0.00101211334,
+      e: 0,
+      iDeg: 28.052163,
+      OmegaDeg: 169.527509,
+      omegaDeg: 320.034463,
+      M0Deg: 60,
+      nDegPerDay: 518.3585313,
+    },
+  },
+  phoebe: {
+    parent: "saturn",
+    elements: {
+      epochJD: J2000_JD,
+      aAU: 0.0865787724,
+      e: 0.1635,
+      iDeg: 173.040001,
+      OmegaDeg: 241.570032,
+      omegaDeg: 342.470032,
+      M0Deg: 0,
+      nDegPerDay: 0.6541767367,
+    },
+  },
+
   // --- Major Uranian ---
   // Miranda: P=1.41 d. Uranus J2 at small semi-major axis; envelope 1.6°.
   miranda: {
@@ -545,9 +712,6 @@ export const ASTEROIDS: Record<string, EclipticElements> = {
   },
 };
 
-// J2000.0 como JD. É a época implícita do Kepler de catálogo do doador:
-// keplerProvider.ts avança `M = M0 + n * daysSinceJ2000`.
-const J2000_JD = 2451545.0;
 
 /**
  * Casa: luas de TNO que seguem como Kepler DE CATÁLOGO (matriz §2.2 do
