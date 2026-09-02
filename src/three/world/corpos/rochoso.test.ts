@@ -35,6 +35,7 @@ import { LS_NORMALIZACAO_GLSL } from './lua';
 import { LIMIAR_DO_GATE_PX, eixosDoMesh } from './terra';
 import type { ManifestDeTexturas } from './terra';
 import { ANEIS_CITADOS } from './gigante';
+import { FAMILIAS_DE_REGOLITO, FORMAS_ESCULPIDAS } from './esculpido';
 import { ganhoFundido } from '../../../lib/atlas/luz';
 import {
   LANTERNA_DE_LEITURA,
@@ -101,8 +102,10 @@ function subSolarDosEixos(
 function malhaDaSuperficie(group: THREE.Object3D): THREE.Mesh {
   for (const c of group.children) {
     if (c instanceof THREE.Mesh && c.geometry instanceof THREE.SphereGeometry) return c;
+    // o esculpido (134/S3) não é esfera: é a malha soldada com as máscaras
+    if (c instanceof THREE.Mesh && c.geometry.hasAttribute('aFundoDeCratera')) return c;
   }
-  throw new Error('malhaDaSuperficie: nenhuma esfera no grupo');
+  throw new Error('malhaDaSuperficie: nenhuma superfície no grupo');
 }
 
 describe('2. o needle dos GLSL montados', () => {
@@ -574,6 +577,15 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
       'makemake',
       'eris',
       'quaoar',
+      'pan',
+      'daphnis',
+      'atlas',
+      'prometheus',
+      'pandora',
+      'janus',
+      'epimetheus',
+      'hyperion',
+      'phoebe',
     ]);
     expect(ROCHOSOS.filter((c) => c.brdf === 'ls').map((c) => c.id)).toEqual([
       'mercury',
@@ -604,6 +616,12 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
       expect(IAU_ORIENTATIONS[c.id], `${c.id} sem IAU`).toBeTruthy();
       expect(BODY_AXES[c.id], `${c.id} sem BODY_AXES`).toBeTruthy();
       if (c.superficie === 'procedural') continue;
+      if (c.superficie === 'esculpido') {
+        // sem textura por desenho: a forma e a família de regolito são o dado
+        expect(FORMAS_ESCULPIDAS[c.id], `${c.id} sem forma esculpida`).toBeTruthy();
+        expect(FAMILIAS_DE_REGOLITO[c.id], `${c.id} sem família de regolito`).toBeTruthy();
+        continue;
+      }
       expect(
         MANIFEST.entradas.some((e) => e.corpo === c.id && e.canal === 'map'),
         `${c.id} sem textura no manifest`

@@ -122,9 +122,11 @@ describe('2. o needle dos GLSL montados', () => {
       'vec3 sombras = eclipse * sombraDoAnel(pElip);'
     );
     // ITEM 93: a luz do Sol passa pela logística e SÓ DEPOIS a lanterna soma-se
+    // desde a S1 do 134 o ringshine entra AO LADO do Sol, fora de `sombras`
     expect(GIGANTE_LAMBERT_FRAG).toContain(
-      'vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;'
+      '(vec3(terminadorSuave(ndotlGeo)) * sombras + vec3(ringshineDoAnel(n, ndotlGeo)))'
     );
+    expect(GIGANTE_LAMBERT_FRAG).toContain('* uLuzGanho;');
     // a LANTERNA leva o ECLIPSE, e SÓ ele (item 104, S2): a sombra do
     // anel morde o termo do Sol e não o piso da noite
     expect(GIGANTE_LAMBERT_FRAG).toContain('vec3 view = normSeguro(uCamLocal - pElip);');
@@ -214,7 +216,7 @@ describe('2. o needle dos GLSL montados', () => {
     // e o que ela recebe é o fator do eclipse, sozinho
     expect(new RegExp(`vec3 ${daLanterna![1]} = fatorDeEclipse\\(`).test(main)).toBe(true);
     // o termo do SOL, esse leva as duas: é sobre ele que os fatores caem
-    expect(main).toContain(`* uLuzGanho * ${comAnel![1]};`);
+    expect(main).toContain(`(vec3(terminadorSuave(ndotlGeo)) * ${comAnel![1]} +`);
   });
 
   /**
@@ -270,7 +272,9 @@ describe('2. o needle dos GLSL montados', () => {
     expect(ANEL_FRAG).toContain('1.0 - exp(-tau * (1.0 / mu + 1.0 / mu0))');
     expect(ANEL_FRAG).toContain('exp(-tau / mu0) - exp(-tau / mu)');
     expect(ANEL_FRAG).toContain('K_DIFRACAO * pow(max(cosTheta, 0.0), 6.0)');
-    expect(ANEL_FRAG).not.toContain('0.34');
+    // a janela dos raios do B (S5 do 134: `smoothstep(0.34, 0.42, rr)`) é
+    // outro 0,34 — o do perfil, não o do doador; sai da busca
+    expect(ANEL_FRAG.replace('smoothstep(0.34, 0.42, rr)', '')).not.toContain('0.34');
     expect(GIGANTE_LAMBERT_FRAG).not.toContain('0.34');
     expect(FONTE).not.toMatch(/RING_SHADOW_INTENSITY/);
   });
