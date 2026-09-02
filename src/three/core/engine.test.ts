@@ -27,6 +27,7 @@ import {
   lerPortaExposicao,
   lerPortaTom,
   nearPlanePc,
+  PISO_DO_NEAR_EM_RAIOS,
   tierMedido,
 } from './engine';
 import type { QualityLevel, ToneMapMode } from './engine';
@@ -213,9 +214,9 @@ describe('near — abaixo do limiar o piso SAI (o que a D5 comprou)', () => {
 //     e o skyError (a câmera do céu está em casa, onde o piso 1e-8
 //     governa).
 //  2. COM corpo em quadro: o regime é o termo proporcional (0,4% da
-//     distância à superfície), o piso deriva do RAIO (metade dele —
-//     rede de segurança ~1e-13 pc para Fobos), e corpo longe não mexe
-//     em nada.
+//     distância à superfície), o piso deriva do RAIO (um milésimo dele
+//     desde o item 135 — era metade, e metade governava até 125 raios,
+//     cortando o anel de Saturno), e corpo longe não mexe em nada.
 // ============================================================
 describe('Onda 6, F0 — pino de neutralidade: sem corpo, o par é o vigente', () => {
   /** A lei VIGENTE (Onda 4), verbatim das linhas de antes desta onda. */
@@ -272,25 +273,34 @@ describe('Onda 6, F0 — com corpo em quadro, a superfície governa o near', () 
     expect(near).toBeLessThan(nearPlanePc(0.00072722));
   });
 
-  it('o piso é METADE DO RAIO — rede de segurança, nunca regime', () => {
+  it('o piso é UM MILÉSIMO DO RAIO — rede de segurança, nunca regime (item 135)', () => {
     // câmera TOCANDO a superfície (d=0) e DENTRO do corpo (d<0): o
     // near não zera nem vira negativo — a projeção não aceita nenhum
     for (const dSup of [0, -RAIO_TERRA_PC / 2]) {
-      expect(nearPlanePc(0.00072722, dSup, RAIO_TERRA_PC)).toBe(RAIO_TERRA_PC * 0.5);
+      expect(nearPlanePc(0.00072722, dSup, RAIO_TERRA_PC)).toBe(
+        RAIO_TERRA_PC * PISO_DO_NEAR_EM_RAIOS
+      );
     }
-    // e o piso só assume MUITO perto: ele empata com a proporção em
-    // d_superfície = (raio/2)/0,004 = 125 raios — de 126 para fora o
-    // regime é o proporcional, como o desenho manda
-    expect(nearPlanePc(0.00072722, 126 * RAIO_TERRA_PC, RAIO_TERRA_PC)).toBe(
-      126 * RAIO_TERRA_PC * 0.004
+    // e o piso só assume COLADO no corpo: ele empata com a proporção em
+    // d_superfície = (raio/1000)/0,004 = 0,25 raio — de 0,3 raio para
+    // fora o regime é o proporcional. O piso de METADE do raio (até o
+    // item 135) empatava a 125 raios e cortava o anel de Saturno, que
+    // passa a 2,3 raios do centro: a 1 raio da superfície de Saturno o
+    // near tem de ficar bem abaixo da largura do anel
+    expect(nearPlanePc(0.00072722, 0.3 * RAIO_TERRA_PC, RAIO_TERRA_PC)).toBe(
+      0.3 * RAIO_TERRA_PC * 0.004
     );
+    const RAIO_SATURNO_PC = 60268 / 149597870.7 / 206264.80624548031;
+    const nearA1Raio = nearPlanePc(0.00004624, RAIO_SATURNO_PC, RAIO_SATURNO_PC);
+    expect(nearA1Raio).toBe(RAIO_SATURNO_PC * 0.004);
+    expect(nearA1Raio).toBeLessThan(RAIO_SATURNO_PC * 0.01);
   });
 
-  it('para Fobos o piso é ~1,8e-13 pc — a rede de ~1e-13 do desenho da onda', () => {
+  it('para Fobos o piso é ~3,6e-16 pc (11 m) — anteparo, e nunca zero', () => {
     const piso = nearPlanePc(0.00072722, 0, RAIO_FOBOS_PC);
-    expect(piso).toBeCloseTo(1.78e-13, 15);
-    expect(piso).toBeGreaterThan(1e-13 / 2);
-    expect(piso).toBeLessThan(1e-12);
+    expect(piso).toBeCloseTo(3.565e-16, 18);
+    expect(piso).toBeGreaterThan(0);
+    expect(piso).toBeLessThan(1e-15);
     // o piso do Sol (1e-8 pc = 308 mil km) seria 56 mil vezes maior que
     // o corpo inteiro — é por isso que ele deriva do raio agora
     expect(DEEP_NEAR_MIN_PC / RAIO_FOBOS_PC).toBeGreaterThan(10000);

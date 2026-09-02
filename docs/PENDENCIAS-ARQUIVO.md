@@ -8644,3 +8644,29 @@ geometria fina, não do modelo de luz). **Decisão dele (02/09): fazer** —
 (a) e (b) moram na S1 do item 134; este item fecha quando a S1 selar.
 
 **Fecho (02/09):** consertado na S1 do item 134 — planetshine no anel (a causa do 'estranho'), franja azul morta com a placa; fotos `capturas/item134-s1-mutua-*.png`.
+
+## Item 135 — Perto de Saturno ou dos anéis, a imagem era cortada "como se batesse na lente"
+
+Palavras dele, 02/09, com a foto (câmera junto ao anel, rótulo de Dáfnis
+em quadro): *"quando aproximamos a camera do planeta ou dos aneis mesmo,
+dá um defeito, corta a visualizacao como se estivesse batendo na lente"*.
+O anel sumia por uma linha reta diagonal.
+
+**Causa (medida no código):** o plano de corte próximo da câmera
+(`nearPlanePc`, `engine.ts`) com corpo em quadro era
+`max(d_superfície × 0,4 %, raio × 0,5)`. A metade do raio nasceu na Onda
+6 como "rede de segurança" contra a câmera dentro do corpo, mas só empata
+com a proporção a 125 raios da superfície — de 125 raios para dentro ela
+era o REGIME: 30 mil km em Saturno. O anel se estende a 2,3 raios e passa
+rente à câmera, então tudo que ficava a menos de 30 mil km sumia.
+
+**Fecho (02/09):** o piso virou um milésimo do raio
+(`PISO_DO_NEAR_EM_RAIOS`): empata com a proporção a 0,25 raio, e dali
+para dentro é anteparo de verdade (60 km em Saturno, 6 km na Terra, 11 m
+em Fobos). Pinos de `engine.test.ts` reescritos de propósito (na lista do
+§19). Fotos `capturas/item135-anel-rente-{antes,depois}.png`: câmera a
+2 raios do centro, na latitude do Sol — antes o anel próximo sumia à
+direita do quadro; depois ele preenche o quadro. Guarda de profundidade:
+o near menor reduz a precisão do depth longe da câmera (a 200 mil km, de
+80 m para ~40 km), o que os juízes `z-fighting` e `ab-identidade` medem
+no fecho da rodada.

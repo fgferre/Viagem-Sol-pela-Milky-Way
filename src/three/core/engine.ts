@@ -350,15 +350,24 @@ export const DEEP_NEAR_MIN_PC = 1e-8;
  * proporção de sempre (0,4% da distância) — o regime é o termo
  * proporcional, nunca o piso. O piso deixa de ser o do Sol
  * (`DEEP_NEAR_MIN_PC` = 308 mil km, absurdo ao lado de Fobos) e deriva
- * do RAIO do corpo: metade dele, a mesma ordem do anteparo que a casa
- * já usa na origem (1e-8 pc ≈ 0,44 raio solar) — para Fobos (11 km =
- * 3,6e-13 pc) dá a rede de segurança de ~1e-13 pc do desenho da onda.
- * É anteparo contra `d_superfície ≤ 0` (câmera tocando ou dentro do
- * corpo), nunca calibração. `dSuperficiePc`/`raioPc` NaN ou ausentes =
+ * do RAIO do corpo: UM MILÉSIMO dele. Era METADE (a mesma ordem do
+ * anteparo da origem, 0,44 raio solar) até o item 135 (02/09): metade
+ * do raio só empata com a proporção a 125 raios da superfície, então
+ * de 125 raios para dentro o "piso" era o REGIME — 30 mil km em
+ * Saturno, e o anel, que se estende a 2,3 raios e passa rente à câmera,
+ * saía cortado por uma linha reta ("como se batesse na lente", palavras
+ * do dono). Um milésimo empata a 0,25 raio: dali para dentro a câmera
+ * já está mais perto da superfície que a própria curvatura do corpo, e
+ * o anteparo (60 km em Saturno, 6 km na Terra, 11 m em Fobos) só existe
+ * contra `d_superfície ≤ 0` (câmera tocando ou dentro do corpo) — é
+ * anteparo, nunca calibração. `dSuperficiePc`/`raioPc` NaN ou ausentes =
  * sem corpo em quadro, e o par (near, far) é BIT-IDÊNTICO ao vigente:
  * NaN reprova toda comparação e o ramo novo nem executa (pino de
  * neutralidade em `engine.test.ts` — é ele que sustenta o 18/18 da F0).
  */
+/** o anteparo do near com corpo em quadro, em RAIOS do corpo (item 135) */
+export const PISO_DO_NEAR_EM_RAIOS = 1e-3;
+
 export function nearPlanePc(
   distFromSun: number,
   dSuperficiePc = Number.NaN,
@@ -371,7 +380,7 @@ export function nearPlanePc(
   if (!(Number.isFinite(dSuperficiePc) && Number.isFinite(raioPc) && raioPc > 0)) {
     return semCorpo;
   }
-  return Math.min(semCorpo, Math.max(dSuperficiePc * 0.004, raioPc * 0.5));
+  return Math.min(semCorpo, Math.max(dSuperficiePc * 0.004, raioPc * PISO_DO_NEAR_EM_RAIOS));
 }
 
 /**
