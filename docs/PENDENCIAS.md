@@ -1860,14 +1860,34 @@ nuvens moleculares — nenhuma tem nome no molde do índice.
   o destino que o `?foco=` sempre deu; a dica da paleta diz "Enter abre
   o atlas nele". Fotos `capturas/item129-f1-paleta-voo-livre.png` e
   `item129-f1-depois-atlas.png`.
+- **A SONDAGEM (01/09, 35 consultas na busca de hoje, palavra dele
+  em seguida: "temos que ter um sistema de busca que funcione"):**
+  erro de uma letra (jupter, siriuss), nome em português (sirio,
+  betelgeuze), apelido (alfa cen, alpha centauri, estrela polar),
+  constelação (órion, sagitário, três marias, cruzeiro do sul) e os
+  lugares do próprio filme (buraco negro, sgr a, centro da galáxia)
+  devolvem NADA. O motor caseiro só casa começo de palavra e só sabe o
+  nome oficial. Decisão (dele, "prossiga"): motor aberto + vocabulário.
+- **F4 — o motor: MiniSearch** (MIT, sem dependências, ~8 KB, prefixo +
+  tolerância a erro de digitação + peso por campo) por baixo da MESMA
+  porta (`construirIndice`/`buscar`/`chaveDeLink`/`resolverFoco`): a
+  paleta, o `?foco=` e os links copiados não mudam. Ficam os desempates
+  da casa (corpo antes de estrela, mais brilhante, nome mais curto), a
+  normalização NFKD, as irmãs gregas e o acesso direto hd/hip. Prova:
+  a sondagem antes/depois em arquivo + foto da paleta com "jupter".
+- **F5 — o vocabulário:** apelidos por objeto — português e inglês,
+  designação de Bayer (alfa Centauri), constelação como lugar, os pontos
+  do filme como destinos (Três Marias, Berçário, Sagittarius A✱) e o
+  buraco negro central como alvo da busca. Censo dos nomes no dado
+  antes de escrever qualquer lista.
 - **F2 — busca no filme:** decisão dele pendente (escolher um alvo
   durante o filme = sair do filme para ele, como o ↗ Explorar faz?).
-- **F3 — famílias sem nome (Sgr A✱, aglomerados, nuvens…):** só entram
-  se tiverem nome que alguém digite (NGC/Messier/nome próprio); antes
-  da obra, censo dos NOMES no dado. Sgr A✱ é o caso fácil.
+- **F3 — famílias sem nome (aglomerados, nuvens…):** só entram se
+  tiverem nome que alguém digite (NGC/Messier); depende do censo da F5.
 - Lista do §19 desta rodada (ainda sem o sim dele): o
-  `buscaEstrelas.test.ts` (o id inglês do 126) e uma guarda nova para
-  "escolher corpo no voo livre entra no atlas".
+  `buscaEstrelas.test.ts` (id inglês do 126 + o que a F4 mudar de
+  propósito) e o juiz `busca-smoke` (1,5 min). A guarda da F1 foi
+  cortada por ele ("porque vai criar o item 2").
 
 **119. O atlas-smoke prova 3 reprova em t=250 — o relógio do portal
 move a Terra (pré-existente, provado).** Achado em 31/08 durante a obra
