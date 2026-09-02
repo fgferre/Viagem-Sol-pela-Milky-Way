@@ -1875,7 +1875,8 @@ nuvens moleculares — nenhuma tem nome no molde do índice.
   da casa (corpo antes de estrela, mais brilhante, nome mais curto), a
   normalização NFKD, as irmãs gregas e o acesso direto hd/hip. Prova:
   a sondagem antes/depois em arquivo + foto da paleta com "jupter".
-- **F5 — o vocabulário:** apelidos por objeto — português e inglês,
+- **F5 — o vocabulário (BILÍNGUE, ordem dele em 01/09: "tem que ser
+  bilingue, ENG PT-BR"):** apelidos por objeto — português e inglês,
   designação de Bayer (alfa Centauri), constelação como lugar, os pontos
   do filme como destinos (Três Marias, Berçário, Sagittarius A✱) e o
   buraco negro central como alvo da busca. **Censo dos nomes (01/09,
