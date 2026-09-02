@@ -97,7 +97,9 @@ export function PaletaDeBusca({
 }: {
   onFechar: () => void;
   indice: IndiceEstrelas;
-  /** o que a escolha FAZ nesta fase — o botão não pode prometer outra coisa */
+  /** o que a escolha de uma ESTRELA faz nesta fase — o aviso não pode
+   *  prometer outra coisa; um corpo do sistema sempre enquadra, e de
+   *  fora do Atlas a escolha o abre nele (item 129) */
   verbo: 'enquadrar' | 'visitar';
   onEscolher: (entrada: EntradaDaBusca) => void;
 }) {
@@ -175,10 +177,17 @@ export function PaletaDeBusca({
   // formatador da casa evita: esta linha só existe no navegador, onde o
   // ICU é completo — a ressalva do `numeroPtBr` é sobre o Node dos testes.
   const quantas = indice.nomeadas.length.toLocaleString('pt-BR');
-  // OS CORPOS DO SISTEMA só entram no índice na fase que sabe enquadrar
-  // órbitas (o Atlas), e a copy pergunta ao ÍNDICE em vez de perguntar à
-  // fase: quem conta o alcance é quem o tem na mão.
+  // OS CORPOS DO SISTEMA entram no índice no Atlas e no voo livre (item
+  // 129), e a copy pergunta ao ÍNDICE em vez de perguntar à fase: quem
+  // conta o alcance é quem o tem na mão.
   const corpos = indice.entradas.length - indice.nomeadas.length;
+  // O VERBO É DA LINHA ESCOLHIDA, não só da fase: no voo livre uma
+  // estrela "voa até lá" e um corpo "abre o Atlas nele".
+  const escolhida = resultados[escolhido]?.entrada;
+  const oQueOEnterFaz =
+    verbo === 'enquadrar' ? 'enquadra'
+    : escolhida?.tipo === 'corpo' ? 'abre o atlas nele'
+    : 'voa até lá';
   const alcance = corpos > 0
     ? `as ${quantas} nomeadas e os ${corpos} corpos do sistema`
     : `as ${quantas} nomeadas`;
@@ -187,7 +196,7 @@ export function PaletaDeBusca({
       + `estrela, o próprio quando existe. tente ${EXEMPLOS.join(' · ')}`
     : resultados.length > 0
       ? `${resultados.length} ${resultados.length === 1 ? 'resultado' : 'resultados'} · `
-        + `setas escolhem · Enter ${verbo === 'enquadrar' ? 'enquadra' : 'voa até lá'}`
+        + `setas escolhem · Enter ${oQueOEnterFaz}`
       : `nome, designação (gama vel) ou catálogo (hd 48915) · `
         + `${(corpos > 0 ? ['terra', ...EXEMPLOS] : EXEMPLOS).join(' · ')}`;
 

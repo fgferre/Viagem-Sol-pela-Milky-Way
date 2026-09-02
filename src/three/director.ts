@@ -1643,7 +1643,9 @@ export class Director {
    * dessa semente sai do roteiro pela MESMA lei do `seek`: um link para
    * a coda tem de partir com o disco já para trás.
    */
-  entrarNoAtlas(opcoes: { instantaneo?: boolean; momento?: number } = {}) {
+  entrarNoAtlas(
+    opcoes: { instantaneo?: boolean; momento?: number; aoChegar?: () => void } = {}
+  ) {
     if (this.phase === 'atlas' || this.phase === 'loading') return;
     const daViagem = this.phase === 'journey' || this.phase === 'end';
     const olhar = this.rig.olhar;
@@ -1746,6 +1748,12 @@ export class Director {
       ) {
         this.maquinaDoTempo.alternarAoVivo();
       }
+      // AO CHEGAR (item 129): quem entra com um alvo na mão — a busca
+      // escolhendo um corpo de fora do Atlas — enquadra-o DEPOIS que a
+      // fase virou, porque `focarNoCorpo` recusa qualquer outra fase.
+      // Roda atrás do véu, no mesmo tique da troca: sem quadro entre a
+      // abertura e o alvo.
+      opcoes.aoChegar?.();
     });
   }
 

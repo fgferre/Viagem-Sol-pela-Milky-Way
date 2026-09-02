@@ -1842,13 +1842,32 @@ produto dada em 01/09, ao encerrar a onda 125, palavras dele: *"o modo
 viagem é somente uma mudança na forma de controlar o movimento da
 câmera (...) o filme é uma opção que vive no universo único do app
 (...) logo a busca é uma só tb, para todos os objetos que populam
-nosso 'universo'."* Estende a doutrina do universo único (decisão
-antiga dele): viagem/atlas/filme são OPÇÕES do mesmo mundo, não
-mundos. A oportunidade que ele enxerga é na PESQUISA/BUSCA: um só
-buscador, que ache qualquer objeto do universo a partir de qualquer
-opção em que o visitante esteja. Sem obra ainda — é o rumo da próxima
-rodada; a primeira pergunta dela é o censo do que a busca de hoje
-enxerga e deixa de enxergar em cada opção.
+nosso 'universo'."* Estende a doutrina do universo único: viagem/atlas/
+filme são OPÇÕES do mesmo mundo, não mundos.
+
+**O censo (01/09, leitura do código):** o buscador JÁ é um só
+(`construirIndice`/`buscar` em `lib/buscaEstrelas.ts`, um índice no
+App). O que varia é o que ENTRA nele: (a) no voo livre só entravam as
+1.726 estrelas nomeadas — planetas, luas e anões só no atlas; (b) no
+filme não existe caixa de busca (`HUD_POR_FASE.journey.busca`); (c) o
+app desenha famílias que busca nenhuma alcança: Sagittarius A✱ (já é
+alvo do Director), aglomerados e cefeidas Gaia, regiões H II, masers,
+nuvens moleculares — nenhuma tem nome no molde do índice.
+
+- **F1 — corpos na busca do voo livre: FEITA em 01/09** (commit no
+  selo desta linha). Escolher um corpo de fora do atlas ENTRA nele pelo
+  véu e enquadra ao chegar (`escolherAlvo` → `entrarNoAtlas({aoChegar})`),
+  o destino que o `?foco=` sempre deu; a dica da paleta diz "Enter abre
+  o atlas nele". Fotos `capturas/item129-f1-paleta-voo-livre.png` e
+  `item129-f1-depois-atlas.png`.
+- **F2 — busca no filme:** decisão dele pendente (escolher um alvo
+  durante o filme = sair do filme para ele, como o ↗ Explorar faz?).
+- **F3 — famílias sem nome (Sgr A✱, aglomerados, nuvens…):** só entram
+  se tiverem nome que alguém digite (NGC/Messier/nome próprio); antes
+  da obra, censo dos NOMES no dado. Sgr A✱ é o caso fácil.
+- Lista do §19 desta rodada (ainda sem o sim dele): o
+  `buscaEstrelas.test.ts` (o id inglês do 126) e uma guarda nova para
+  "escolher corpo no voo livre entra no atlas".
 
 **119. O atlas-smoke prova 3 reprova em t=250 — o relógio do portal
 move a Terra (pré-existente, provado).** Achado em 31/08 durante a obra

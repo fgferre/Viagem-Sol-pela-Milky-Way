@@ -553,10 +553,12 @@ export default function App() {
    * `useMemo` FICA — a viagem no tempo em degrau rápido ainda publica
    * depressa, e é dela que estas 5 mil chaves precisam de abrigo.
    *
-   * OS DEZ CORPOS DO SISTEMA só entram na fase que sabe enquadrar
-   * órbitas. No voo livre a escolha VOA, e a lei de aproximação de lá é
-   * de estrelas: voar até a Terra pararia a 0,8 pc dela, ou seja,
-   * prometeria um destino que a fase não entrega.
+   * OS CORPOS DO SISTEMA entram no Atlas E no voo livre (item 129: a
+   * busca é uma só). No voo livre a escolha de um corpo não VOA — a lei
+   * de aproximação de lá é de estrelas, e voar até a Terra pararia a
+   * 0,8 pc dela —: ela ENTRA no Atlas e enquadra ao chegar
+   * (`escolherAlvo`), o destino que o `?foco=` sempre deu. O filme não
+   * tem paleta (`HUD_POR_FASE`), e a fase de carga não tem Director.
    */
   // `tempo?.aviso` entra nas dependências pela LUA (F2b): a nota dela
   // ("384 mil km") vem da efeméride, que chega TARDE — o aviso do
@@ -568,7 +570,7 @@ export default function App() {
     () =>
       construirIndice(
         nomeadas,
-        phase === 'atlas' ? (directorRef.current?.corpos ?? []) : []
+        phase === 'atlas' || phase === 'free' ? (directorRef.current?.corpos ?? []) : []
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [nomeadas, phase, tempo?.aviso]
@@ -1032,8 +1034,9 @@ export default function App() {
       {/* A PALETA DE BUSCA (F3) — filha DIRETA de .hud-root, como todo
           overlay da casa. Fechar DESMONTA (precedente do Convite): é o
           que faz a consulta anterior não sobrar para a próxima abertura.
-          O verbo vem da fase: no Atlas a escolha enquadra, no voo livre
-          ela voa. */}
+          O verbo vem da fase para as ESTRELAS: no Atlas a escolha
+          enquadra, no voo livre ela voa. Um corpo do sistema sempre
+          enquadra — de fora do Atlas, entrando nele (item 129). */}
       {montada === 'busca' && hud.busca && (
         <PaletaDeBusca
           onFechar={() => fecharGaveta('busca')}

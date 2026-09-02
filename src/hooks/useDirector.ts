@@ -29,8 +29,17 @@ export function escolherAlvo(
   ver: VerDaEscada = 'orbita'
 ) {
   if (!alvo) return;
-  if (entrada.tipo === 'corpo') alvo.focarNoCorpo(entrada.corpo.id, ver);
-  else alvo.visitarEstrela(entrada.estrela);
+  if (entrada.tipo === 'estrela') {
+    alvo.visitarEstrela(entrada.estrela);
+    return;
+  }
+  // UM CORPO É DO ATLAS (item 129: a busca é uma só, e "focar é coisa
+  // que só existe no Atlas"). Escolhido de FORA dele — a paleta do voo
+  // livre —, a escolha ENTRA no Atlas pelo véu e enquadra ao chegar: o
+  // mesmo destino que o `?foco=` já dava por URL. Voar até a Terra pela
+  // lei das estrelas pararia a 0,8 pc dela — por isso o corpo nunca voa.
+  if (alvo.fase === 'atlas') alvo.focarNoCorpo(entrada.corpo.id, ver);
+  else alvo.entrarNoAtlas({ aoChegar: () => alvo.focarNoCorpo(entrada.corpo.id, ver) });
 }
 
 /** Tudo que o boot escreve — os fios do App, por nome. */
