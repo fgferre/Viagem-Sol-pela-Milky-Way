@@ -220,7 +220,19 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   `atlasConfig.test.ts` espera 30 luas (na lista do §19). Declarado: a
   fase orbital não é efeméride (elementos médios J2000 a dois corpos).
   Provas em `capturas/item134-s3-*`.
-- **S4 — os jatos de Encélado.**
+- **S4 — os jatos de Encélado: FEITA em 02/09** (commit no selo desta
+  linha; fotos conferidas e entregues). A matemática do projeto dele
+  inteira (8 bocas nas listras de tigre, voo balístico com gravidade,
+  vida 5–10 s, brilho 14× em contraluz, maré 4:1), assada uma vez na CPU
+  em regime e desenhada como pontos aditivos presos ao polo sul IAU
+  (`plumas.ts`); 131 mil grãos em cinema, 33 mil em alta, 8 mil em
+  performance com a luz igual (grão engorda); gate de 48 px; cadastro de
+  escala como instrumento; +3,2 ms no pior caso; filme bit-idêntico.
+  Fora, declarado: grão andando (sem passe de compute na casa), apagar
+  na umbra de Saturno (o motor não tem esse par de eclipse), anel E (S5).
+  **Pergunta a ele:** o miolo do jato sai quase opaco no close (matemática
+  dele, sem suavizar); ajuste é um número (`DOSE_BASE`) se ele quiser.
+  Provas `capturas/item134-s4-*`. Lista do §19: `escala.test.ts`.
 - **S5 — o espetáculo dos anéis**: anéis E e F, raios do B, ondas de
   Dáfnis — por último, com foto para o olho dele.
 Fotos do site dele em `capturas/item134-saturn-dele-*.png`.

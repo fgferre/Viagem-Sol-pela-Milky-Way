@@ -379,6 +379,18 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
       'o alfa das 4,02 milhões de partículas é artístico, e acima de 20 px na ' +
       'tela a lei ESCURECE a estrela quando a câmera se aproxima dela',
   },
+  {
+    id: 'plumas-de-encelado',
+    nome: 'jatos de Encélado',
+    classe: 'instrumento',
+    fator: null,
+    fatorDeBrilho: null,
+    endereco: 'src/three/world/corpos/plumas.ts:113',
+    razao:
+      'o grão de gelo tem mícrons e o sprite tem de 0,012 a 0,16 raio da lua: ' +
+      'cada um representa uma multidão de grãos, e a nuvem só soma luz por cima ' +
+      '(aditiva, sem escrever profundidade)',
+  },
 ] as const;
 
 /**

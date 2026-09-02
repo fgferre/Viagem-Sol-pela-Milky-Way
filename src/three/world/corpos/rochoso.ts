@@ -106,6 +106,8 @@ import {
   criaGeometriaEsculpida,
   uniformsDoEsculpido,
 } from './esculpido';
+import { PlumasDeEncelado, atividadeDasMares } from './plumas';
+import type { QuadroDasPlumas } from './plumas';
 
 
 /**
@@ -611,6 +613,13 @@ export class RochosoResolvido {
   private geoAnel: THREE.RingGeometry | null = null;
   private anel: THREE.Mesh | null = null;
   private matAnel: THREE.ShaderMaterial | null = null;
+  /** S4 (item 134): só Encélado tem jatos — ver `plumas.ts`. */
+  private plumas: PlumasDeEncelado | null = null;
+  /** o quadro das plumas, REUSADO (zero alocação por tick, M4 da casa) */
+  private quadroDasPlumas: QuadroDasPlumas | null = null;
+  /** o tier VIVO, lido na hora (a mesma regra da textura): a dose de
+   *  grãos da pluma é alocação, e alocação lê o tier antes de alocar. */
+  private readonly tier: OpcoesDoRochoso['tier'];
   private readonly mRx = new THREE.Matrix4().makeRotationX(-Math.PI / 2);
 
   // rascunhos reusados — zero alocação por quadro (M4 da casa)
@@ -647,6 +656,7 @@ export class RochosoResolvido {
     this.razaoC = c / a;
     this.razaoB = b / a;
     this.ehPlaneta = this.config.id in RETRATO_2026;
+    this.tier = opcoes.tier;
     this.group.visible = false;
     this.texturas = new TexturasDoCorpo({
       corpo: this.config.id,
@@ -847,6 +857,22 @@ export class RochosoResolvido {
     // a sombra do eclipse — o mesmo fio das irmãs (sem deriva: casca única)
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
 
+    // S4 — OS JATOS. Mesma matriz da casca (mesmo frame IAU, mesma
+    // escala do elipsoide: as fissuras ficam grudadas nas listras) e os
+    // MESMOS dois vetores locais do globo; a pluma segue a exposição da
+    // visita pelo `ganho`, como a superfície.
+    if (this.plumas && this.quadroDasPlumas) {
+      this.plumas.pontos.matrix.copy(sup.matrix);
+      const p = this.quadroDasPlumas;
+      p.dirSolLocal.set(sLx, sLy, sLz);
+      p.camLocal.set(cLx, cLy, cLz);
+      p.luzGanho = ganho;
+      p.atividade = atividadeDasMares(this.jdEscrito);
+      p.alturaPx = q.screenHPx;
+      p.tier = this.tier();
+      this.plumas.atualizar(p);
+    }
+
     if (this.anel && this.matAnel) {
       const inercial = orientacaoInercialDoAnelNaCena(
         IAU_ORIENTATIONS[this.config.id],
@@ -953,6 +979,21 @@ export class RochosoResolvido {
     this.superficie.matrixAutoUpdate = false;
     this.group.add(this.superficie);
 
+    // S4 — os jatos nascem com a casca e morrem com ela; o gate deles é
+    // o do corpo (48 px), porque são filhos do mesmo grupo.
+    if (this.config.id === 'enceladus') {
+      this.plumas = new PlumasDeEncelado();
+      this.quadroDasPlumas = {
+        dirSolLocal: new THREE.Vector3(),
+        camLocal: new THREE.Vector3(),
+        luzGanho: 1,
+        atividade: 1,
+        alturaPx: 1080,
+        tier: 'cinema',
+      };
+      this.group.add(this.plumas.pontos);
+    }
+
     if (this.config.id === 'quaoar') {
       const anel = ANEIS_CITADOS.quaoar;
       this.geoAnel = new THREE.RingGeometry(anel.rInt, anel.rExt, 192);
@@ -986,6 +1027,7 @@ export class RochosoResolvido {
     this.matSuperficie?.dispose();
     this.geoAnel?.dispose();
     this.matAnel?.dispose();
+    this.plumas?.dispose();
     this.texturas.dispose();
   }
 }
