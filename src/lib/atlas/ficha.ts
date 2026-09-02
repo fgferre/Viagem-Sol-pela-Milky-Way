@@ -655,7 +655,10 @@ export function montarFichaDeEstrela(
   return {
     id: 'estrela',
     nome,
-    classe: 'estrela',
+    // A PALAVRA DA CLASSE DIZ O QUE O OBJETO É (ordem dele, 01/09, ao ver
+    // "Sagittarius A✱ · estrela"): a ficha só de cabeçalho é a do centro
+    // galáctico, e ele é um buraco negro, não uma estrela do catálogo.
+    classe: estrela ? 'estrela' : 'buraco negro',
     secoes: cheias.length > 0 ? [{ id: 'estrela', titulo: TITULOS.estrela, linhas: cheias }] : [],
   };
 }

@@ -1839,8 +1839,9 @@ do filme. O mecanismo é pequeno (dicionário + língua na URL/navegador,
 sem biblioteca); o volume é a tradução. Ordem sugerida quando vier:
 (1) a chave de língua e o HUD/botões/dicas; (2) as fichas dos corpos;
 (3) as legendas do filme; (4) o resto. Antes de qualquer obra: censo
-por OLHO do que é texto de tela e do que é texto interno. Sem
-urgência; a busca (129/F5) já nasce bilíngue.
+por OLHO do que é texto de tela e do que é texto interno. **NA FILA
+por ordem dele (01/09, "app inteiro bilingue na fila"): é a próxima
+frente depois de fechar o 129.** A busca (129/F5) já nasce bilíngue.
 
 **118. A tela de abertura merece ser repensada por inteiro (futuro).**
 Palavras dele em 31/08, ao encerrar o item 34: *"acho que ainda temos
@@ -1905,16 +1906,18 @@ nuvens moleculares — nenhuma tem nome no molde do índice.
   (chaves 3.905 → 11.239). Sondagem `capturas/item129-f5-sondagem.txt`
   (com o diff das 35 antigas: 11 "nada" viraram acerto, o resto igual
   ou subiu de degrau); fotos `capturas/item129-f5-*.png` conferidas.
-  Sobra miúda: a ficha chama Sagittarius A✱ de "estrela" (comportamento
-  antigo do foco da escada) — conserto de palavra, quando a ficha for
-  tocada.
-- **F2 — busca no filme:** decisão dele pendente (escolher um alvo
-  durante o filme = sair do filme para ele, como o ↗ Explorar faz?).
+  A ficha chamava Sagittarius A✱ de "estrela"; ordem dele ("tem que
+  trocar estrela para o que é") — agora diz "buraco negro"
+  (`montarFichaDeEstrela`, no selo desta linha).
+- **F2 — busca no filme: MORTA pela palavra dele (01/09):** *"Durante o
+  filme a busca nem aparece normalmente... ou não deveria, certo?"* —
+  não deveria; o filme segue sem caixa de busca.
 - **F3 — famílias sem nome (aglomerados, nuvens…):** só entram se
   tiverem nome que alguém digite (NGC/Messier); depende do censo da F5.
-- Lista do §19 desta rodada (ainda sem o sim dele): o
-  `buscaEstrelas.test.ts` (id inglês do 126 + o que a F4 mudar de
-  propósito) e o juiz `busca-smoke` (1,5 min). A guarda da F1 foi
+- Lista do §19 desta rodada, APROVADA por ele em 01/09 ("aprovo os dois
+  testes, pode rodar") e RODADA: `buscaEstrelas.test.ts` 39/39 verde;
+  juiz `busca-smoke` verde depois de trocar a consulta do vazio honesto
+  ("alfa cen" virou acerto de propósito → "xkcd"). A guarda da F1 foi
   cortada por ele ("porque vai criar o item 2").
 
 **119. O atlas-smoke prova 3 reprova em t=250 — o relógio do portal

@@ -247,9 +247,11 @@ try {
   await dorme(200);
 
   // ---- 2: porta que não acha não chuta -----------------------------
-  // "alfa cen" é o caso REAL do dado: o nome próprio da IAU expulsou a
-  // designação de Bayer, e nenhuma chave irmã pode ser fabricada.
-  await sessao.ir(`foco=alfa%20cen&${PIN}`);
+  // Era "alfa cen" — o caso real do dado até 01/09, quando a designação
+  // de Bayer virou chave de TODA estrela (item 129/F5) e ela passou a
+  // achar Rigil Kentaurus de propósito. O vazio honesto agora se prova
+  // com o que não se parece com nada, nem por uma letra: "xkcd".
+  await sessao.ir(`foco=xkcd&${PIN}`);
   const semPalpite = JSON.parse(await sessao.js(`JSON.stringify({
     nome: (document.querySelector('.atlas-ficha-nome') || {}).textContent || '',
     ficha: document.querySelector('.atlas-ficha') !== null,
@@ -301,7 +303,7 @@ try {
   // ---- 4: o estado vazio, honesto ----------------------------------
   await sessao.ir(`atlas=1&${PIN}`);
   await abrirPaleta(sessao);
-  await sessao.digitar('alfa cen');
+  await sessao.digitar('xkcd');
   // espera por ESTADO: o aviso do vazio na tela é o fim da consulta —
   // era um dorme(400); se ele nunca vier, o estouro reprova nas linhas
   // de baixo, que é o veredito certo
@@ -313,7 +315,7 @@ try {
     opcoes: document.querySelectorAll('[role="option"]').length,
     aviso: (document.querySelector('.atlas-busca-aviso') || {}).textContent || '',
   }))()`);
-  conferir(vazio.opcoes === 0, `"alfa cen" não acende opção nenhuma (${vazio.opcoes})`);
+  conferir(vazio.opcoes === 0, `"xkcd" não acende opção nenhuma (${vazio.opcoes})`);
   conferir(
     /nada com esse nome/.test(vazio.aviso) && /sirius/.test(vazio.aviso),
     `e o vazio diz o que não achou E o que funciona: "${vazio.aviso}"`
