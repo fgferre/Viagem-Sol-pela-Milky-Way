@@ -229,7 +229,6 @@ export const IDS_ESCULPIDOS: readonly string[] = [
 ];
 
 /** Este corpo tem malha esculpida? (o `superficie: 'esculpido'` do config) */
-export const ehEsculpido = (id: string): boolean => id in FORMAS_ESCULPIDAS;
 
 // ------------------------------------------------------------
 // O ESCULPIDOR

@@ -105,6 +105,7 @@ import {
   ESCULPIDO_VERT,
   criaGeometriaEsculpida,
   uniformsDoEsculpido,
+  IDS_ESCULPIDOS,
 } from './esculpido';
 import { PlumasDeEncelado, atividadeDasMares } from './plumas';
 import type { QuadroDasPlumas } from './plumas';
@@ -180,15 +181,8 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   // `terminadorSuave` da casa: o disco chato de Lommel-Seeliger é o fato
   // que uma FOTO confere, e não há foto destes nove com que conferir —
   // o que existe é a forma, e a forma está na malha.
-  { id: 'pan', brdf: 'lambert', superficie: 'esculpido' },
-  { id: 'daphnis', brdf: 'lambert', superficie: 'esculpido' },
-  { id: 'atlas', brdf: 'lambert', superficie: 'esculpido' },
-  { id: 'prometheus', brdf: 'lambert', superficie: 'esculpido' },
-  { id: 'pandora', brdf: 'lambert', superficie: 'esculpido' },
-  { id: 'janus', brdf: 'lambert', superficie: 'esculpido' },
-  { id: 'epimetheus', brdf: 'lambert', superficie: 'esculpido' },
-  { id: 'hyperion', brdf: 'lambert', superficie: 'esculpido' },
-  { id: 'phoebe', brdf: 'lambert', superficie: 'esculpido' },
+  // A lista mora em `esculpido.ts` (`IDS_ESCULPIDOS`): uma fonte só.
+  ...IDS_ESCULPIDOS.map((id) => ({ id, brdf: 'lambert', superficie: 'esculpido' }) as const),
 ];
 
 /**
