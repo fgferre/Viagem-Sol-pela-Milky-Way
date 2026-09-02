@@ -1878,8 +1878,17 @@ nuvens moleculares — nenhuma tem nome no molde do índice.
 - **F5 — o vocabulário:** apelidos por objeto — português e inglês,
   designação de Bayer (alfa Centauri), constelação como lugar, os pontos
   do filme como destinos (Três Marias, Berçário, Sagittarius A✱) e o
-  buraco negro central como alvo da busca. Censo dos nomes no dado
-  antes de escrever qualquer lista.
+  buraco negro central como alvo da busca. **Censo dos nomes (01/09,
+  feito):** o catálogo JÁ guarda a letra de Bayer (`b`, 1.522 estrelas)
+  e a sigla da constelação (`c`, todas as 1.726), e
+  `lib/atlas/constelacoes.ts` já expande a sigla para o genitivo latino
+  ("α Canis Majoris"). FALTAM, e são tabelas curtas: o nome das 88
+  constelações em português e no nominativo (Órion/Orion, Sagitário,
+  Cruzeiro do Sul), uns 30 apelidos populares (Sírio, Estrela Polar,
+  Alfa Centauri) e os lugares do filme como destino (Três Marias →
+  Alnilam; Sagittarius A✱ → `GAL.GC_POS`, pelo mesmo `visitarEstrela`
+  que leva a uma estrela). "Órion" deve listar as estrelas mais
+  brilhantes da constelação.
 - **F2 — busca no filme:** decisão dele pendente (escolher um alvo
   durante o filme = sair do filme para ele, como o ↗ Explorar faz?).
 - **F3 — famílias sem nome (aglomerados, nuvens…):** só entram se
