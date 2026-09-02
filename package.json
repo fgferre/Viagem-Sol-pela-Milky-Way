@@ -27,6 +27,7 @@
     "data:all": "npm run data:stars && npm run data:galaxy && npm run data:fit && npm run data:verify && npm run data:pack"
   },
   "dependencies": {
+    "minisearch": "7.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "three": "^0.185.1",

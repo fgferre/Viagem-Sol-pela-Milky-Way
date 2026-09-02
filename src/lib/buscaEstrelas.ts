@@ -20,6 +20,17 @@
 // o contrato da D4. A varredura de texto sobrevive porque o alcance é
 // 1.726 estrelas (~5k chaves), não 328k.
 //
+// O MOTOR É O MiniSearch (7.2.0, MIT, sem dependências), e ele entra
+// por BAIXO das regras da casa, não por cima: o degrau TOLERANTE (o
+// quinto) é dele — índice invertido com distância de edição, o que a
+// varredura de chaves não sabe fazer. Continuam da casa, acima dele: os
+// quatro degraus (exato > prefixo > palavra > parcial, e o parcial é
+// substring NO MEIO da palavra, que o MiniSearch não tem), o acesso
+// direto hd/hip por Map, a normalização única (`normalizarConsulta`
+// entra como `processTerm` nos dois lados) e todos os desempates. O
+// degrau tolerante só ACENDE quando os quatro acharam ZERO — a
+// tolerância é para consertar um erro de digitação, nunca para chutar.
+//
 // ADAPTAÇÃO DECLARADA: o doador guardava a abreviação ("Alp") e
 // acrescentava o glifo; aqui é o inverso — o dado já traz "α Cen", e a
 // chave irmã é a que se DIGITA. São duas: a abreviação de catálogo
@@ -27,7 +38,15 @@
 // o desenho da onda nomeia). O sobrescrito de Bayer (γ² Vel) cai nas
 // chaves irmãs e vira dígito ASCII na normalização.
 // ============================================================
+import MiniSearch from 'minisearch';
 import type { NamedStar } from '../three/config';
+
+/** um documento do motor: UMA chave normalizada do índice de texto */
+interface ChaveIndexada {
+  /** a posição da chave em `IndiceEstrelas.chaves` */
+  id: number;
+  texto: string;
+}
 
 /**
  * UM CORPO DO SISTEMA como alvo da busca. Ele entra no MESMO índice das
@@ -85,10 +104,27 @@ export interface IndiceEstrelas {
   porChave: Map<string, number[]>;
   /** 'hd 48915' / 'hip 32349' → estrela, para o acesso direto */
   porCatalogo: Map<string, number>;
+  /** as chaves de `porChave` na ordem de inserção — a id do motor é a
+   *  posição aqui, e é por ela que um achado volta a ser entrada */
+  chaves: readonly string[];
+  /** o MiniSearch das mesmas chaves, usado SÓ no degrau tolerante */
+  tolerancia: MiniSearch<ChaveIndexada>;
 }
 
-/** A rubrica de 4 degraus: exato > prefixo > palavra interna > parcial. */
-export const SCORE = { exato: 140, prefixo: 110, palavra: 90, parcial: 75 } as const;
+/**
+ * A rubrica, agora de 5 degraus: exato > prefixo > palavra interna >
+ * parcial > APROXIMADO. Os quatro primeiros são casamento literal e não
+ * mudaram de valor; o quinto é o do motor (distância de edição) e mora
+ * embaixo de todos de propósito — quem casou de verdade nunca perde
+ * para quem casou por semelhança.
+ */
+export const SCORE = {
+  exato: 140,
+  prefixo: 110,
+  palavra: 90,
+  parcial: 75,
+  aproximado: 40,
+} as const;
 
 /** Glifo → chaves irmãs: abreviação de catálogo e nome pt-BR da letra. */
 const GREGAS: Record<string, readonly string[]> = {
@@ -173,7 +209,18 @@ export function construirIndice(
     if (estrela.hd !== undefined) porCatalogo.set(`hd ${estrela.hd}`, indice);
     if (estrela.hip !== undefined) porCatalogo.set(`hip ${estrela.hip}`, indice);
   });
-  return { entradas, nomeadas, porChave, porCatalogo };
+  // O MOTOR RECEBE AS MESMAS CHAVES, uma por documento (não uma por
+  // estrela): é o que faz "sirius" pontuar mais alto na chave "sirius"
+  // do que na "sirius b" — o MiniSearch normaliza pelo comprimento do
+  // campo. `processTerm` é a normalização da casa, então indexação e
+  // consulta passam pela MESMA lei e o índice não guarda acento nenhum.
+  const chaves = [...porChave.keys()];
+  const tolerancia = new MiniSearch<ChaveIndexada>({
+    fields: ['texto'],
+    processTerm: (termo) => normalizarConsulta(termo) || null,
+  });
+  tolerancia.addAll(chaves.map((texto, id) => ({ id, texto })));
+  return { entradas, nomeadas, porChave, porCatalogo, chaves, tolerancia };
 }
 
 function pontuar(chave: string, consulta: string): number {
@@ -237,6 +284,36 @@ export function buscar(
     }
   }
 
+  // O DEGRAU TOLERANTE, e SÓ COM A LISTA VAZIA. "jupter", "siriuss" e
+  // "betelgeuze" não casam com letra nenhuma da rubrica acima e caíam no
+  // estado vazio; aqui o motor procura por distância de edição.
+  //
+  // Por que só quando não achou nada: se alguma chave casou de verdade,
+  // acrescentar semelhanças só empurra ruído para dentro do limite de 8
+  // — e a lei do estado vazio honesto (nada parecido → nada) continua
+  // valendo, porque a busca tolerante também pode não achar.
+  //
+  // A dose: distância 0,2 do tamanho do termo e só de 4 letras para
+  // cima ("io", "sol", "cet" não têm folga para errar — um erro de uma
+  // letra num termo curto é outra palavra). Prefixo fica DESLIGADO aqui
+  // porque a rubrica acima já o cobre (e melhor: ela também casa no meio
+  // da palavra). `AND` obriga TODOS os termos a casarem na mesma chave —
+  // é o que mantém "alfa cen" devolvendo nada, já que "cen" é curto
+  // demais para tolerância e não existe chave com essa palavra.
+  const relevancia = new Map<number, number>();
+  if (melhorPorEntrada.size === 0) {
+    for (const achado of indice.tolerancia.search(alvo, {
+      prefix: false,
+      fuzzy: (termo) => (termo.length >= 4 ? 0.2 : 0),
+      combineWith: 'AND',
+    })) {
+      for (const i of indice.porChave.get(indice.chaves[achado.id as number]) ?? []) {
+        melhorPorEntrada.set(i, SCORE.aproximado);
+        if ((relevancia.get(i) ?? 0) < achado.score) relevancia.set(i, achado.score);
+      }
+    }
+  }
+
   // o nome sai UMA vez por candidato: `normalizarConsulta` dentro do
   // comparador seria O(n log n) normalizações do mesmo texto
   const nomes = new Map<number, string>();
@@ -252,6 +329,11 @@ export function buscar(
       (a, b) =>
         b.score - a.score ||
         ordemDoTipo(a.entrada) - ordemDoTipo(b.entrada) ||
+        // a relevância do motor é ZERO em todos os quatro degraus
+        // literais, então esta linha não muda nada lá: ela só ordena o
+        // degrau tolerante, onde o score é o mesmo para todos e quem
+        // deve vir na frente é quem se parece MAIS com o que se digitou
+        (relevancia.get(b.indice) ?? 0) - (relevancia.get(a.indice) ?? 0) ||
         brilhoDe(a.entrada) - brilhoDe(b.entrada) ||
         nomeDe(a.indice).length - nomeDe(b.indice).length ||
         (nomeDe(a.indice) < nomeDe(b.indice) ? -1 : nomeDe(a.indice) > nomeDe(b.indice) ? 1 : 0) ||

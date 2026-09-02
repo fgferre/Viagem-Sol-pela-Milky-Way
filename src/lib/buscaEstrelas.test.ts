@@ -87,7 +87,12 @@ describe('normalização (teclado pt-BR)', () => {
     expect(nomes('bibha')).toEqual(['Bibhā']); // Bibhā
     expect(nomes('lusitania')).toEqual(['Lusitânia']);
     expect(nomes('ananuca')).toEqual(['Añañuca']); // o ñ decompõe e o til cai junto
-    expect(nomes('anhanhuca')).toEqual([]); // grafar o SOM em pt-BR já é outro nome
+    // MUDOU no item 129/F4, de propósito: "anhanhuca" está a DUAS letras
+    // de "ananuca" (os dois 'h' a mais), e o degrau tolerante do motor
+    // acha por isso. Era `[]` enquanto a busca só sabia casar letra a
+    // letra — grafar o som em pt-BR deixou de ser "outro nome" e passou a
+    // ser o que de fato é: um erro de digitação dentro da folga.
+    expect(nomes('anhanhuca')).toEqual(['Añañuca']);
   });
 
   it('colapsa espaço e dobra o sobrescrito de Bayer', () => {
@@ -190,6 +195,45 @@ describe('rubrica de 4 degraus', () => {
     expect(buscar('cet', indice, 500).find((x) => est(x).n === 'τ Cet')?.score).toBe(
       SCORE.palavra
     );
+  });
+});
+
+// ============================================================
+// O DEGRAU TOLERANTE (item 129, F4) — o quinto, o do MiniSearch. A
+// queixa medida do dono: "jupter", "siriuss" e "betelgeuze" caíam no
+// estado vazio, porque a rubrica literal só casa começo de palavra ou
+// substring. O motor entra POR BAIXO dela: só acende quando os quatro
+// degraus literais acharam ZERO, e por isso nada do que já funcionava
+// mudou de ordem — o que se julga aqui é o que era vazio e virou acerto,
+// e o que tem de continuar vazio.
+// ============================================================
+describe('degrau tolerante: um erro de digitação não apaga a estrela', () => {
+  it('a letra trocada, a sobrando e a faltando acham o nome certo', () => {
+    expect(nomes('siriuss')).toEqual(['Sirius', 'Sirius B']); // uma a mais
+    expect(nomes('betelgeuze')).toEqual(['Betelgeuse']); // uma trocada
+    expect(nomes('betelguese')).toEqual(['Betelgeuse']); // duas trocadas
+    expect(nomes('vegaa')).toEqual(['Vega']);
+  });
+
+  it('o degrau tolerante vale MENOS que qualquer casamento literal', () => {
+    expect(buscar('siriuss', indice)[0].score).toBe(SCORE.aproximado);
+    expect(SCORE.aproximado).toBeLessThan(SCORE.parcial);
+    // e não se intromete quando a letra bate: "sirius" continua exato
+    expect(buscar('sirius', indice)[0].score).toBe(SCORE.exato);
+  });
+
+  it('termo curto não ganha folga — um erro em 3 letras é outra palavra', () => {
+    // "sirio" (5 letras, folga 1) está a DUAS de "sirius": fica vazio
+    expect(nomes('sirio')).toEqual([]);
+    expect(nomes('vga')).toEqual([]);
+  });
+
+  it('o estado vazio continua honesto: o que não parece nada dá nada', () => {
+    expect(nomes('cruzeiro do sul')).toEqual([]);
+    expect(nomes('buraco negro')).toEqual([]);
+    expect(nomes('xkcd')).toEqual([]);
+    // e a lei do §D4 não afrouxa: número incompleto segue sem palpite
+    expect(nomes('hd 4891')).toEqual([]);
   });
 });
 

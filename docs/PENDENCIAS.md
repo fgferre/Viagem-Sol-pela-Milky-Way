@@ -1883,13 +1883,16 @@ nuvens moleculares — nenhuma tem nome no molde do índice.
   lugares do próprio filme (buraco negro, sgr a, centro da galáxia)
   devolvem NADA. O motor caseiro só casa começo de palavra e só sabe o
   nome oficial. Decisão (dele, "prossiga"): motor aberto + vocabulário.
-- **F4 — o motor: MiniSearch** (MIT, sem dependências, ~8 KB, prefixo +
-  tolerância a erro de digitação + peso por campo) por baixo da MESMA
-  porta (`construirIndice`/`buscar`/`chaveDeLink`/`resolverFoco`): a
-  paleta, o `?foco=` e os links copiados não mudam. Ficam os desempates
-  da casa (corpo antes de estrela, mais brilhante, nome mais curto), a
-  normalização NFKD, as irmãs gregas e o acesso direto hd/hip. Prova:
-  a sondagem antes/depois em arquivo + foto da paleta com "jupter".
+- **F4 — o motor: FEITA em 01/09** (commit no selo desta linha).
+  MiniSearch 7.2.0 (MIT, sem dependências) entrou como QUINTO degrau
+  (`SCORE.aproximado`), só quando os quatro da casa devolvem nada —
+  decisão do executor, medida: o motor não casa no meio da palavra e o
+  BM25 mataria os desempates da casa. Tolerância de 1 letra em termos
+  ≥4; nada mudou para quem já achava (31 de 35 consultas idênticas;
+  jupter/siriuss/betelgeuze/betelguese passaram a achar). Latência
+  <2 ms por tecla. Provas `capturas/item129-f4-sondagem-{antes,depois}.txt`
+  e `item129-f4-jupter.png`. Uma expectativa do teste mudou
+  ("anhanhuca" virou erro de digitação de Añañuca) — na lista do §19.
 - **F5 — o vocabulário (BILÍNGUE, ordem dele em 01/09: "tem que ser
   bilingue, ENG PT-BR"):** apelidos por objeto — português e inglês,
   designação de Bayer (alfa Centauri), constelação como lugar, os pontos
