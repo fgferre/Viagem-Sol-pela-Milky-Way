@@ -109,6 +109,17 @@ export class MaquinaDoTempo {
   }
 
   /**
+   * A TAXA VIVA — quantos segundos de céu andam por segundo de relógio
+   * AGORA. Relógio parado e AO VIVO valem 1 (nada anda mais devagar que
+   * o real); só o degrau acelera. Quem lê é o Sol, que precisa saber que
+   * o relógio corre para não fazer as regiões nascerem e morrerem em pop
+   * (item 17).
+   */
+  get taxaViva(): number {
+    return this.sentidoDoTempo !== 0 ? taxaDoDegrau(this.degrau) : 1;
+  }
+
+  /**
    * O MOSTRADOR, somente leitura — como o `captura` e o `selo`. A conta
    * inteira (grampo, aviso, rótulos) mora no módulo puro; aqui só se
    * juntam os cinco campos de estado que este objeto guarda.

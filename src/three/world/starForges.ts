@@ -14,7 +14,7 @@ import * as THREE from 'three';
 import type { GalacticAssets } from '../cartography/galacticAssets';
 import { galactocentricToScene, EX, EY, EZ, GAL } from './baseGalactica';
 import { GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
-import { GLSL_LEI_DE_TELA } from '../estrela';
+import { GLSL_LEI_DE_TELA_NA_REGUA } from '../estrela';
 import { GLSL_STAR_COLOR } from '../shaders/common';
 
 const TYPE_HII = 0;
@@ -54,7 +54,7 @@ varying float vSeed;
 varying vec3 vExtinct;
 
 ${GLSL_CARTOGRAPHY}
-${GLSL_LEI_DE_TELA}
+${GLSL_LEI_DE_TELA_NA_REGUA}
 
 void main() {
   float dist = length(position - uCamPos);
@@ -65,8 +65,14 @@ void main() {
   // MUDA PIXEL, e o delta é o assunto do commit: o piso mais baixo deixa
   // a forja distante escrever ponto menor e apagar mais tarde, e o teto
   // mais baixo corta as poucas forjas gigantes de perto.
-  float clamped, shrink, subPix;
-  leiDeTela(px, clamped, shrink, subPix);
+  //
+  // NA RÉGUA desde o item 123, como galaxyShaders desde o 46: o ângulo
+  // é julgado sempre na altura de calibração e o rastro volta para o
+  // buffer de verdade, senão os joelhos da lei andam com a resolução e a
+  // camada perde um terço do depósito em retina. Na altura de calibração
+  // a conta é a de sempre, bit a bit.
+  float escritoPx, fluxoDaTela;
+  leiDeTelaNaRegua(px, uScreenH, escritoPx, fluxoDaTela);
 
   float intensity = aIntensity;
   // Cefeidas pulsam: períodos reais são 1–70 dias — inviáveis numa
@@ -77,7 +83,7 @@ void main() {
   }
 
   vType = aType;
-  vAlpha = intensity * uFade * shrink * subPix;
+  vAlpha = intensity * uFade * fluxoDaTela;
   vSeed = aSeed;
 
   // mesma extinção por coluna de GALAXY_VERT (comentário completo lá)
@@ -96,7 +102,7 @@ void main() {
 
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
-  gl_PointSize = clamped;
+  gl_PointSize = escritoPx;
 }
 `;
 

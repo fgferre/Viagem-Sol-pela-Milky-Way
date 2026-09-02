@@ -108,10 +108,22 @@ export const FILM_SHADER = {
 
       // aberração cromática radial (mais forte nos cantos)
       vec2 off = c * uCA * r2 * 60.0;
+      vec3 base = texture2D(tDiffuse, uv).rgb;
+      float rDesl = texture2D(tDiffuse, uv + off).r;
+      float bDesl = texture2D(tDiffuse, uv - off).b;
+      // A BEIRA DURA CEDE (item 117). A separação é um DESLOCAMENTO: num
+      // degrau de silhueta ela traz para fora do corpo o azul de dentro
+      // dele e pinta um aro que não existe — medido no limbo de
+      // Ganimedes em 31/08. Onde o desvio ATRAVESSA um degrau (a luz do
+      // ponto deslocado difere muito da do ponto), a separação cede; o
+      // céu é gradiente e não degrau, então ali ela fica inteira. Custa
+      // ZERO amostra a mais: a do centro já era a do canal verde.
+      float degrau = max(abs(rDesl - base.r), abs(bDesl - base.b));
+      float cede = 1.0 - smoothstep(0.06, 0.30, degrau);
       vec3 col;
-      col.r = texture2D(tDiffuse, uv + off).r;
-      col.g = texture2D(tDiffuse, uv).g;
-      col.b = texture2D(tDiffuse, uv - off).b;
+      col.r = mix(base.r, rDesl, cede);
+      col.g = base.g;
+      col.b = mix(base.b, bDesl, cede);
 
       // vinheta anamórfica suave
       col *= 1.0 - uVignette * smoothstep(0.12, 0.62, r2);

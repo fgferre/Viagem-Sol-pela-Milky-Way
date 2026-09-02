@@ -965,16 +965,19 @@ lava. A régua de luz e as vistas `ua2`…`ua2000` já enxergam a faixa.
 **13.** Sagittarius A✱ ainda é 125.884× maior que o real. Segundo
 mentiroso de escala. Cadastro em `escala.ts`.
 
-**15.** Quando o quadro engasga, não há como aliviar o Sol. As chaves de
-desligar coroa e ejeção (`CVOL_K`/`CME_K`, lidas em `sol/cme.js`) só são
-escritas pela URL (`?solcvol=`/`?solcme=`) na construção. *(Verificado
-01/09; caminho decidido: as chaves passam a seguir o nível de qualidade
-já existente — Performance alivia — sem tela nova.)*
+**15.** Quando o quadro engasgava não havia como aliviar o Sol —
+**FECHADO em 02/09 por verificação, sem obra**; história no ARQUIVO.
+*(O nível Performance JÁ zera coroa volumétrica e ejeção (`TIERS.low`:
+`cstep 0`/`cmestep 0`) e vale ao vivo, porque a troca de qualidade
+re-assa o mundo; medido 44,3 → 23,7 ms/quadro. Fotos
+`capturas/item15-sol-{cinema,performance}.png`.)*
 
-**17.** O Sol solavanca quando o relógio acelera. O conserto existe, veio
-do projeto irmão e está desligado. *(Verificado 01/09: a chave real é
-`LAPSE_K: 0` cravado em `stellarBody.ts` na construção do contexto — o
-bloco C de `sol/activity.js` só liga com `LAPSE_K > 0`.)*
+**17.** O Sol solavancava quando o relógio acelerava — **FECHADO em
+02/09**; história no ARQUIVO. *(A chave `LAPSE_K` passou a receber a
+taxa viva da máquina do tempo só no Atlas (`escreverLapso`); filme
+bit-idêntico por md5; salto médio entre quadros −16%, pior salto −10%.
+O que sobra do salto é o re-assar do retrato a cada 7,2 unidades de
+data, declarado, não consertado. Fotos `capturas/item17-*.png`.)*
 
 **18.** A luz trata o Sol como ponto sem tamanho. Certo para planetas,
 errado a poucos raios solares — e agora a câmera chega lá. Sem penumbra.
@@ -1804,37 +1807,12 @@ albedo médio do corpo, com a costura suavizada — em vez de servir preto
 puro como albedo. Fotos `capturas/item116-*.png`, rastro com ângulos,
 distâncias e a receita de recomputo em `capturas/item116-tritao.json`.
 
-**117.** (Suspeita a medir, mesma sessão.) As capturas de globo em
-close-up mostram um **aro azulado fino na borda do disco** — visto em
-Ganimedes (`atlas-lua-ganimedes`, nova) e na `foco-io` antiga. Corpo
-sem atmosfera não devia ter limbo azul. Pré-existente à obra do 84.
-Conferir se é casca de atmosfera aplicada por engano, Fresnel de
-material, ou artefato de anti-serrilhado — par de zoom na borda antes
-de qualquer conserto.
-
-**VEREDITO (medido em 31/08 — CULPADA a aberração cromática do passe de
-gradação; atmosfera, Fresnel e anti-serrilhado inocentes).** O perfil RGB
-atravessando o limbo mostra os canais caindo em ORDEM, um pixel cada:
-Ganimedes a 45° da tela dá (205,205,209) → (99,213,208) → (10,8,121) →
-(4,3,29) → fundo; a Lua e Mercúrio dão o mesmo desenho. Não é mistura de
-anti-serrilhado (isso daria cinza mais escuro, não azul saturado com R e
-G em 3). A peça é o `FILM_SHADER` de `src/three/shaders/dustShaders.ts`,
-que amostra R deslocado para FORA e B para DENTRO
-(`off = c*uCA*r2*60`, `uCA` de fábrica 0,00012; `Post.setWarp` de
-`src/three/core/post.ts` o reescreve por quadro e o multiplica por até
-4,5× no warp da viagem). A/B na mesma sessão, travando só `uCA` em zero:
-o "azul do limbo" (B − (R+G)/2) cai de **112 → 1** em Ganimedes, **117 →
-2** na Lua e **77 → −51** em Io; desligar o passe inteiro dá o mesmo, ou
-seja a aberração é a única contribuinte. Não é casca de atmosfera posta
-em quem não devia: só a Terra tem casca (`terra.ts`), e o limbo dela é
-uma faixa larga e macia de ~20 px em (24,50,112) — outro bicho; Titã, de
-limbo laranja e macio, não tem aro nenhum (azul máx. −8). O aro aparece
-em TODO globo com borda dura porque a borda dura é do render — a
-silhueta sai serrilhada (visível no zoom sem aberração). **Conserto
-proposto (não implementado):** atenuar `uCA` (ou zerá-lo fora do warp),
-já que o efeito só se manifesta como franja de 1 px em silhuetas de alto
-contraste. Zooms `capturas/item117-zoom-*.png` (com e `-semCA`), perfis e
-a peça em `capturas/item117-limbo.json`.
+**117.** Aro azulado fino na borda dos globos em close-up — **FECHADO
+em 02/09**; história no ARQUIVO. *(A aberração cromática do pós passa a
+CEDER onde há degrau duro de contraste (`FILM_SHADER`, `smoothstep
+0,06–0,30` sobre a diferença de canais); excesso de azul no limbo de
+Ganimedes 118 → 25; a CA do céu no warp preservada em 98%. Fotos
+`capturas/item117-{limbo,zoom,warp}-{antes,depois}.png`.)*
 
 **126.** `?foco=mars` caía na estrela "Marsic", não em Marte — **FECHADO em
 01/09**; história no ARQUIVO. *(O planeta só entrava na busca pelo nome
@@ -2388,33 +2366,11 @@ item viver, a régua continua sendo o par nulo. Rastro:
 `capturas/item115-datacao-tremor-isolado.json`, sonda em
 `capturas/item115-datacao-tremor.mjs`.
 
-**123. As FORJAS ESTELARES perdem um terço do brilho quando a resolução
-dobra — o defeito-irmão do item 46, medido em 31/08.** O
-`src/three/world/starForges.ts` consome `GLSL_LEI_DE_TELA` — a lei de
-tela ANTES da régua —, e não o `GLSL_LEI_DE_TELA_NA_REGUA` que a galáxia
-profunda ganhou no fecho do 46. É o mesmo platô: `shrink` conserva o
-depósito em PIXEL e não em ÂNGULO, então dobrar a altura do buffer divide
-a contribuição em área. O achado estava registrado só no ARQUIVO, dentro
-do fecho do 46 ("o que NÃO foi tocado, e é o mesmo defeito"), que é museu
-— por isso ganhou número aqui.
-
-**MEDIDO** com a mesma conta do 46: fluxo das forjas = quadro cheio menos
-quadro com `?noforge=1`, em espaço linear (`?tone=linear` mais o sRGB
-desfeito), média por ÁREA, altura do buffer 900 contra 1800 px em dpr 1
-(o eixo verdadeiro do 46 é a ALTURA, não o pixel ratio).
-
-· **edge-on: 0,663** — as forjas são 7,8% do quadro (3,62e-4 contra
-  4,65e-3) e nenhum pixel satura (max 234 e 232). **Um terço da luz das
-  forjas some ao dobrar a resolução**, e o número do 46 antes da régua era
-  0,650 na mesma vista: é o mesmo defeito, na mesma dose.
-· **face-on: 0,798** (o 46 dava 0,770), mas este lado vale MENOS: o quadro
-  satura (max 255 nos quatro) e as forjas são só 0,3% dele.
-
-Casa do conserto: trocar a lei pela régua no `starForges.ts`, como o 46
-fez no `galaxyShaders.ts` — e a dose das forjas ainda espera a re-dosagem
-da extinção de coluna (rodada 26), com quem a mudança tem de conversar.
-Rastro: `capturas/item123-forjas-resolucao.json`, sonda em
-`capturas/item123-forjas-resolucao.mjs`.
+**123.** As forjas estelares perdiam um terço do brilho quando a
+resolução dobrava — **FECHADO em 02/09**; história no ARQUIVO. *(O mesmo
+conserto do 46: `starForges.ts` passou à lei de tela NA RÉGUA; razão
+dpr2/dpr1 medida 0,76–0,84 → 1,08–1,13. Fotos
+`capturas/item123-forjas-*.png`.)*
 
 **124.** O porteiro do censo reprovava por uma palavra — **FECHADO em
 31/08**; história no ARQUIVO. *(O `observedClouds.test.ts` nasceu com

@@ -968,6 +968,22 @@ export class StellarBody {
   }
 
   /**
+   * O LAPSO DO RELÓGIO (item 17). `taxa` é quantos segundos de céu andam
+   * por segundo de relógio; ela vira `LAPSE_K` na unidade do núcleo
+   * doador (0..1 ↔ multiplicador 1..40 de `sol/cycle.js`, invertendo
+   * `cycleMultiplierFor`). É o único interruptor das rampas largas do
+   * bloco C de `sol/activity.js` — sem ele o nascimento e a morte de
+   * plage/faculae viram pop no limbo assim que o relógio do Atlas
+   * acelera. Taxa 1 (relógio parado, ao vivo, filme, foto) devolve 0 e o
+   * Sol é o de sempre, bit a bit.
+   */
+  escreverLapso(taxa: number) {
+    if (!Number.isFinite(taxa)) return;
+    const lapso = ((Math.max(1, taxa) - 1) / 39) ** 2;
+    this.ctx.LAPSE_K = lapso >= 1 ? 1 : lapso;
+  }
+
+  /**
    * A DOSE DE OCUPAÇÃO da dramaturgia (`director/doseDoSol.ts`): quanto
    * da atividade DAQUELA data aparece. 1 = tudo, e é o valor fora do
    * filme. Ela multiplica a ocupação e não encosta em fase, banda de

@@ -2643,6 +2643,12 @@ export class Director {
     this.sun.escreverDose(
       this.phase === 'journey' ? doseDaDramaturgia(this.journeyT) : 1
     );
+    // O SOLAVANCO (item 17): a taxa do relógio do ATLAS, e só dele. No
+    // filme e na foto a máquina do tempo está parada, então `taxaViva` é
+    // 1 e o lapso é 0 — a fase da cena não muda um pixel.
+    this.sun.escreverLapso(
+      this.phase === 'atlas' ? this.maquinaDoTempo.taxaViva : 1
+    );
     this.sun.update(time, this.engine.camera);
     // O OCLUSOR DA NEBULOSA. A fotosfera está na ORIGEM (o grupo do Sol
     // só é escalado, nunca posicionado) e o raio de mundo dele é
