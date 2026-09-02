@@ -51,6 +51,15 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (02/09)
 
+**02/09 (mais tarde — os 5 ruídos e o caderno).** Varredura dos ruídos
+de instrumento (ordem dele): **49, 64, 78, 80, 101 FECHADOS por
+prescrição** — nenhum reproduz com o instrumento de hoje (16 capturas,
+todas por sinal; registro em `capturas/varredura-ruidos-02-09.txt`). O
+caderno encolheu 2.427 → 1.634 linhas pela lei (lápides de uma linha,
+bastões ao museu). Fila apresentada a ele; próxima frente pela ordem
+dele: **130 (app bilíngue)**; depois, sugerido, **115 bloco A**
+(memória de texturas).
+
 **02/09 (o fecho da FAXINA).** Sete miúdos verificados por código e git
 antes de qualquer obra (ordem dele): **123, 17, 117 consertados** com
 foto (`542a9d2`); **15 fechado sem obra** (já funcionava, medido);
@@ -1291,119 +1300,15 @@ Se a onda do motor terminar sem fiá-lo, aí sim vira peso morto.
 `sky-capture` — a medição do céu interno contra o panorama ESO precisa de
 decisão própria de resolução quando esse assunto voltar à mesa.
 
-**49.** (Ruído de instrumento, achado nos cortes 4-5 da arquitetura.)
-As vistas oficiais da TERRA cintilam entre capturas da MESMA sessão no
-MESMO código — `terralua` (corte 4 da Parte 2: duas capturas do antes
-com md5 distintos) e `terranb` (corte 5 da Parte 1: primeira captura do
-depois transiente, segunda byte a byte igual ao baseline; a recaptura
-isolada saiu IGUAL). Algo assenta entre capturas — cara de carga
-preguiçosa de textura. Enquanto viver, qualquer A/B pode acusá-las em
-falso; a prova de inocência é uma captura do lado acusado bater byte a
-byte com o baseline (funcionou nas duas).
+**49.** Vistas da Terra cintilavam entre capturas (ruído de instrumento) — **FECHADO em 02/09 por prescrição**: não reproduz (`terralua` 2× em duas sessões, 0 px de 3,08 M); registro `capturas/varredura-ruidos-02-09.txt`; ARQUIVO.
 
-Uma pista MORREU em 22/08: o item 66 (a mesma URL dando duas telas) era
-o mostrador de quadros por segundo do HUD entrando na foto — e as vistas
-da Terra são `?shot=2`, sem HUD nenhum. Não é a mesma raiz.
+**64.** Um filho do `ab-identidade` não saía (ruído de instrumento) — **FECHADO em 02/09 por prescrição**: não reproduz (`SMOKE=1 JOBS=3` antes e depois, pai sai em <1 s, 0 filho vivo); registro `capturas/varredura-ruidos-02-09.txt`; ARQUIVO.
 
-**DATADO POR REPETIÇÃO em 31/08, e NÃO se reproduziu.** A `terralua` (a
-`terranb` já não está na lista de vistas) entrou na varredura da família
-descrita no item **101** — 63 capturas, nos DOIS contextos. **As 6
-capturas de `terralua` no balde e as 3 no isolado deram todas o mesmo
-md5** (`22eabfacec75@1800x1713`). O item fica aberto, honesto: o fenômeno
-não se reproduziu sob comando, então não há o que consertar nem o que
-fechar.
-
-**DATUM DA F1 (01/09, forense do re-baseline da onda 125):** o tremor é
-**ENTRE sessões do navegador, não dentro** — 160 capturas na mesma sessão
-deram zero oscilação; a `terralua` só diferiu quando capturada em SESSÕES
-distintas. Combina com a cara de "algo assenta" (carga/estado que se firma
-por sessão) e estreita a caça: quem procurar a causa deve comparar o que
-muda entre dois processos do navegador, não entre dois quadros.
-
-**64.** (Ruído de instrumento, visto UMA vez em 21/08.) Um filho do
-`ab-identidade` mediu as suas 18 vistas, gravou o estado e o arquivo de
-vias, e NÃO saiu — ficou 12 minutos vivo depois do `process.exit(0)`,
-com o pai parado no `Promise.allSettled`. As 52 vistas já estavam em
-disco; matar o filho fez o pai fundir os três baldes normalmente e só
-então lançar `filho j0 saiu com null`, sem imprimir o veredito. O lado
-`antes` da mesma bateria, com os mesmos três filhos, terminou sozinho.
-Enquanto viver, uma leva que pare com todos os baldes cheios se resolve
-matando o filho preso — o veredito sai da segunda invocação, que lê tudo
-de disco. **O suspeito ganhou nome em 22/08, medindo o item 76:** cada
-chamada de CDP fica pendurada num `id` que só o Chrome responde, e o
-`send` do `chrome.mjs` não tinha nenhuma saída para o Chrome que morre
-SEM responder — a promessa ficava viva para sempre, e com ela o processo.
-O buraco foi tapado em `6dacdc4` (fechar o socket agora reprova os
-pendentes, nos dois lugares que falam CDP), mas isto NÃO é a prova: o
-defeito não se
-reproduz sob comando, e o item só fecha quando uma leva presa voltar a
-acontecer e sair com erro legível em vez de sono. **A OUTRA METADE
-MORREU em 23/08** — o Chrome que sobrevivia ao juiz é o assunto do item
-**78**, e o conserto está lá. O que segura ESTE item é só o sono.
-
-**78.** (Ruído de instrumento, visto UMA vez em 22/08.) **O
-`ab-identidade` com `JOBS=3` travou DEPOIS de terminar.** Os três
-processos-filhos capturaram as 52 vistas, gravaram os arquivos de
-estado e saíram — o pai ficou 25 minutos vivo, sem filhos, sem
-consumir CPU e sem imprimir o veredito, com 20 Chrome órfãos na
-máquina. O `Promise.allSettled` sobre os `on('exit')` dos filhos não
-resolveu, e o pai nem chegou a fundir os três `-j*.json` (eles
-continuavam em disco, e a fusão os apaga). Contornado à mão: fundir os
-três num `ab-identidade-depois.json` e rodar o lado de novo — as 52
-vieram `(de disco)`, com o CARIMBO conferido (`c8507bad1eb9-d41d8cd9`),
-e o veredito saiu em segundos. **O suspeito mudou em 22/08:** não é o
-`stdio: 'inherit'` — é o mesmo `send` sem saída do item 64 (uma chamada
-de CDP que espera para sempre a resposta de um Chrome morto). O `send`
-dos dois caminhos (`abrirSessao` e `capturarCDP`) agora reprova os
-pendentes quando o socket fecha (`6dacdc4`); enquanto o travamento não
-voltar a acontecer para mostrar o erro, o item fica aberto.
-
-**OS 20 CHROME ÓRFÃOS SÃO OUTRO DEFEITO, E ESSE MORREU EM 23/08.** Não
-era consequência do travamento: o `finally` que mata o Chrome é o
-caminho FELIZ, e quando o Node morria no MEIO (Ctrl+C, `kill` de agente,
-`process.exit` dentro de um `try` — o `--cru` do `gpu-profile` fazia
-exatamente isso) ele não rodava, o browser reparentava para o launchd e
-ficava desenhando o app com contexto Metal para sempre. Custo medido na
-casa: dois headless de 1,5 dia com `PPID=1`, ~45% de CPU e ~1,2 GB
-disputando o M1 do dono — e o próprio `chrome.mjs` já tinha medido a
-baseline caindo de **20,0 para 8,0 fps** com órfãos vivos. Era, de longe,
-a maior perda de quadro desta máquina, e não estava no app.
-
-O conserto é estrutural: os OITO `spawn(CHROME)` soltos do projeto
-viraram UMA porta (`lancarChrome`, em `chrome.mjs`), toda sessão viva
-entra num registro, e UM vigia só — `exit` + `SIGINT` + `SIGTERM`,
-armado uma vez e nunca por chamada — mata browser e helpers pelo
-`user-data-dir` quando o Node cai. Provado com o mesmo juiz nos dois
-lados: morto no meio por `kill -INT`, **antes** deixava 2 headless de pé
-(o browser e o Helper de GPU com Metal), **depois** deixa ZERO; até o
-fim normal, zero; e num laço de 8 capturas os ouvintes de sinal ficam em
-**1, 1 e 1** (um tratador por chamada seria vazamento com outro nome).
-Origem: relatório externo de degradação, verificado por leitura
-independente antes de virar código. A conferência do dono é só o fps que
-ele sentir — o número de processos já está provado.
+**78.** O `ab-identidade` travava depois de terminar (ruído de instrumento) — **FECHADO em 02/09 por prescrição**: não reproduz (mesma leva, veredito e prompt no mesmo segundo, 0 Chrome órfão); registro `capturas/varredura-ruidos-02-09.txt`; ARQUIVO.
 
 **79.** As duas telas de erro esperavam o olho dele — **FECHADO em 25/08**; ARQUIVO.
 
-**80.** (Ruído de instrumento, achado em 22/08 fechando o item 74.) **Uma
-das 52 vistas oficiais não repetiu a si mesma.** O `ab-identidade` captura
-cada vista DUAS vezes por lado, e é assim que ele sabe distinguir "mudou"
-de "oscila". Na corrida `antes` (HEAD `3235aa7`, árvore limpa) a vista
-`lua` devolveu `e90581bdd9d0` numa captura e `6550cae71307` na outra — o
-MESMO código, dois md5. Não é regressão da obra: o lado `depois` deu
-`6550cae71307` em oito capturas seguidas (a leva inteira mais três
-recapturas forçadas com `DOZERO=1`), e as outras 51 vistas saíram
-IGUAL contra IGUAL. Ou seja, o que oscila é a vista, não a mudança — e o
-juiz a marcou `INSTÁVEL`, que é exatamente o que ele existe para fazer.
-Fica aberto porque não se reproduz sob comando: enquanto não voltar, não
-há o que medir. Quando voltar, o passo é guardar os DOIS PNG e rodar o
-`diff-pixel` — o suspeito de sempre nessa vista é a textura chegando em
-estados diferentes, e o gate tem defesa contra isso (`friaNoGate`), o que
-torna a hipótese menos provável e o achado mais interessante.
-
-**DATADO POR REPETIÇÃO em 31/08, e NÃO se reproduziu.** A `lua` levou 6
-capturas no contexto de BALDE e 3 no ISOLADO, e as **nove deram
-`09d8c61fa256@1800x1713`**. Ela entrou na varredura da família inteira
-(63 capturas, 7 vistas) descrita no item **101**.
+**80.** A vista oficial não repetia a si mesma (ruído de instrumento) — **FECHADO em 02/09 por prescrição**: não reproduz (`lua` 2× em duas sessões, 0 px); registro `capturas/varredura-ruidos-02-09.txt`; ARQUIVO.
 
 **81.** O MB1 reprovava em cinco famílias — culpa do juiz — **FECHADO em 25/08**; ARQUIVO.
 
@@ -1544,79 +1449,7 @@ não é problema a policiar**: o vivo grande reflete backlog real, e a
 memória de coordenador pode crescer livre (vetorizar é opção futura SE
 um dia doer). Sem teto, sem porteiro, sem burocracia nova.
 
-**101.** (Ruído de instrumento, achado em 25/08 fechando o item 88 —
-irmão dos itens 49, 80 e 85.) **O anel de Saturno treme entre capturas do
-MESMO código.** A vista `saturno-anel`, na leva desde a F6, contra ela
-mesma dá **828 px** (0,027%, delta máx 47) — a auditoria reproduziu ao
-pixel; a irmã dela `saturno-anelnb` (a mesma vista sem bloom) entrou na
-lista em 25/08, pela leva do item **92**, com os dois lados instáveis
-contra si mesmos; a `eclipse-limbo` entrou em 25/08, pela leva do item
-**77** (par nulo no lado antes: dois hashes com o MESMO código, e o
-depois dentro do conjunto do antes — mesma família: casca de atmosfera +
-sombra no limbo, textura chegando em estados diferentes); a `foco-titan`
-nova dá **605 px numa medição e 262 px noutra**
-(estocástico: o número muda por leva, e por isso nenhum vale como pino) —
-sempre na caixa sobre a linha do anel e a sombra dela no globo. A câmera
-está fora de suspeita (pose bit a bit igual nas duas navegações); o
-suspeito de sempre é textura chegando em estados diferentes. Enquanto
-viver, um A/B pode acusar essas vistas em falso — a prova de inocência é
-o par nulo (o mesmo lado contra ele mesmo), que já pegou este.
-
-A `foco-luas` entrou em **31/08**, pela leva do item **59**: dentro do
-balde da leva cheia (9 navegações na MESMA sessão de Chrome) as duas
-capturas do lado *depois* — mesmo código — deram md5 diferentes,
-`fda93db749c0` na primeira e `6af9c0dbcbe4` na segunda, que é o md5 do
-lado *antes*. Medida em seguida **isolada**, uma sessão de Chrome por
-captura, ela é estável: 3 capturas no código novo e 3 no código antigo
-(`63ce689`) deram as seis `6af9c0dbcbe4`. É tremor de **contexto de
-balde**, não da obra — a família deste item com o **80** —, e por isso o
-A/B fechou 51/51 bit-idênticas. Rastro:
-`capturas/item59-ab-vistas.json`.
-
-**PARTE DISTO TINHA CAUSA, E A CAUSA CAIU EM 26/08 (item 104, S3).** O
-`sombraDoAnel` de `gigante.ts` lia a placa do anel com a busca DEPOIS dos
-`return` geométricos, e uma busca sem LOD sob quadrado partido escolhe o
-nível da textura por uma derivada de lixo — valor que muda **a cada
-execução**. Isso é exatamente "a mesma vista, o mesmo código, dois
-quadros diferentes", e caía "na caixa sobre a linha do anel e a sombra
-dela no globo", que é onde este item sempre apontou. Consertada a ordem,
-o par nulo da vista da costura foi de 618 px a **ZERO**, e as quatro
-vistas desta lista deram **0 px** numa medição de duas capturas cada
-(`capturas/item104-parnulo-vistas101-v2.json`).
-
-⚠ **ISSO NÃO FECHA O ITEM, e a razão é o controle.** A `eclipse-limbo`
-também deu zero — e ela não tem anel nenhum, logo o conserto do S3 não
-pode explicá-la. Somado ao que o próprio item já diz (o número é
-estocástico: a `foco-titan` deu 605 numa medição e 262 noutra), duas
-capturas por vista não enterram o fenômeno. O que ficou PROVADO é que a
-família de Saturno carregava, além do tremor, um defeito de código; o que
-sobrar do tremor continua vivendo aqui, e a régua continua sendo o par
-nulo.
-
-**A VARREDURA DE 31/08 — 63 capturas, ZERO oscilação, e o item continua
-aberto.** A faxina da estação do item 115 datou a família inteira por
-repetição, antes de mexer em qualquer coisa. Sete vistas — `lua`,
-`terralua`, `eclipse-limbo`, `saturno-anel`, `saturno-anelnb`,
-`foco-titan`, `foco-luas` —, nos DOIS contextos que o item acusa:
-
-· **BALDE** (o contexto do item 59/80: uma sessão de Chrome só,
-  `Storage.clearDataForOrigin` entre navegações, três rodadas de DUAS
-  capturas por vista, as vistas alternando entre as rodadas — 42
-  capturas, 5,0 min): **as 6 capturas de cada vista deram um md5 só.**
-
-· **ISOLADO** (uma sessão de Chrome por captura — 21 capturas, 2,7 min):
-  **as 3 de cada vista deram um md5 só, e o MESMO do balde.**
-
-Ou seja: hoje, nesta máquina, nenhuma das sete treme, e o md5 não depende
-do contexto. **Isso não fecha o item, e a razão é a mesma de sempre:** o
-fenômeno nunca se reproduziu sob comando, e ausência sob 63 capturas não
-é prova de morte. **O que a varredura NÃO cobriu é a CARGA:** a leva
-oficial do `ab-identidade` roda SEIS sessões de Chrome ao mesmo tempo
-(`JOBS=6`), e a `foco-luas` de 31/08 tremeu justamente ali. Enquanto o
-item viver, a régua continua sendo o par nulo. Rastro:
-`capturas/item115-datacao-tremor-balde.json`,
-`capturas/item115-datacao-tremor-isolado.json`, sonda em
-`capturas/item115-datacao-tremor.mjs`.
+**101.** O anel de Saturno tremia entre capturas (ruído de instrumento) — **FECHADO em 02/09 por prescrição**: não reproduz (`saturno-anel` 4 capturas e `foco-titan` 2, 0 px); registro `capturas/varredura-ruidos-02-09.txt`; ARQUIVO.
 
 **123.** As forjas estelares perdiam brilho ao dobrar a resolução — **FECHADO em 02/09**; ARQUIVO.
 
