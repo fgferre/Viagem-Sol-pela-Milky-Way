@@ -78,7 +78,10 @@ import { A_MAG_BASE_PC, DESLOCAMENTO_UA_PARA_PC } from '../planetas/planetas';
 import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RETRATO_2026 } from '../planetas/retrato2026';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
-import { diametroAparentePx } from './corpos';
+import { GLSL_RUIDO_DE_VALOR, diametroAparentePx } from './corpos';
+import { AneisTenuesDeSaturno } from './aneisTenues';
+import type { QuadroDosAneisTenues } from './aneisTenues';
+import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
 import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
 import type { OpcoesDeTextura } from './texturas';
@@ -154,6 +157,22 @@ const KM_DO_ANEL = {
 const VAO_DO_PERFIL = PERFIL_DO_ANEL.kmExterno - PERFIL_DO_ANEL.kmInterno;
 export const U_PERFIL_ESCALA = (KM_DO_ANEL.ext - KM_DO_ANEL.int) / VAO_DO_PERFIL;
 export const U_PERFIL_BASE = (KM_DO_ANEL.int - PERFIL_DO_ANEL.kmInterno) / VAO_DO_PERFIL;
+
+/**
+ * O VÃO DE KEELER no `u` do perfil — 136 485–136 522 km (Cassini/PDS), o
+ * eixo das ondas de Dáfnis (S5). O dado do Björn Jónsson TEM o vão: a caixa
+ * 1 937 (136 511 km) sai com α = 0 entre duas de α ≈ 0,45, e é essa borda
+ * dura que as ondas ondulam.
+ */
+export const U_DO_VAO_DE_KEELER =
+  ((136485 + 136522) / 2 - PERFIL_DO_ANEL.kmInterno) / VAO_DO_PERFIL;
+
+/**
+ * O PERÍODO DE COROTAÇÃO DA MAGNETOSFERA, em horas — o relógio dos raios
+ * do anel B (a poeira erguida corotaciona com o campo, não com Kepler).
+ * É o 10,66 h dele (`SaturnSystem.ts`).
+ */
+export const HORAS_DA_COROTACAO = 10.66;
 
 /**
  * A COR DO ANEL B NO DADO — média dos 712 texels entre 92 000 e
@@ -762,7 +781,7 @@ vec2 camadaDeParticulas(float tau, float mu0, float mu, float fase, float mesmoL
  *    a meia-penumbra sai no frame já achatado, o que a distorce em até
  *    10% num número que vale menos de um pixel.
  */
-const GLSL_SOMBRA_DO_PLANETA_NO_ANEL = /* glsl */ `
+export const GLSL_SOMBRA_DO_PLANETA_NO_ANEL = /* glsl */ `
 float sombraDoPlaneta(vec3 p) {
   float k = max(uKPolar, 1.0e-4);
   // o achatamento vira esfera unitária; o anel mora em z = 0
@@ -841,6 +860,94 @@ float planetshineNoAnel(
 `;
 
 /**
+ * O ESPETÁCULO DO ANEL (item 134/S5) — os RAIOS DO B e as ONDAS DE DÁFNIS,
+ * portados do projeto Saturn do dono (`src/materials/ringsMaterial.ts`).
+ * Os dois só existem no anel de Saturno: o `ANEL_PROC_FRAG` de
+ * Urano/Netuno/Quaoar não os recebe.
+ *
+ * OS RAIOS são poeira de mícron LEVITADA sobre o anel B, que corotaciona
+ * com a magnetosfera (10,66 h) em vez de seguir Kepler. Em luz refletida
+ * eles TAPAM (a mancha é escura); em contraluz ACENDEM, porque grão fino
+ * espalha para a frente. São fenômeno de EQUINÓCIO — somem quando o Sol
+ * sobe acima de ~17° do plano —, e a estação entra pela elevação do Sol.
+ * Ele mesmo marca a soleira de 17° como não verificada contra as fotos
+ * Cassini de 2009–2010; hoje (um ano depois do equinócio de 2025) o Sol
+ * está a ~3,6° e a estação vale 1.
+ *
+ * AS ONDAS DE DÁFNIS são a onda que a gravidade da lua levanta nas duas
+ * bordas do vão de Keeler (PIA11656). O CISALHAMENTO DE KEPLER dá o
+ * ziguezague: a borda de DENTRO orbita mais rápido que a lua, então a onda
+ * dela vai À FRENTE; a de fora é mais lenta e a onda fica ATRÁS. Aqui a
+ * onda perturba a COORDENADA DE AMOSTRA no perfil, nunca a geometria — a
+ * malha do anel continua um disco liso.
+ *
+ * O EXAGERO É DELE E FICA DECLARADO (cadastro de escala,
+ * `aneis-tenues-de-saturno`): o vão tem 37 km, menos que um texel do perfil,
+ * e a onda real teria comprimento de 100–200 km, subpixel na escala do
+ * sistema. A banda perturbada foi alargada para ~440 km e o deslocamento
+ * para ~96 km, senão nada disto chega a um pixel.
+ */
+const GLSL_ESPETACULO_DO_ANEL = /* glsl */ `
+const float U_KEELER = ${U_DO_VAO_DE_KEELER};
+
+// o mx_fractal_noise_float(p, 3, 2.0, 0.5) dele: três oitavas CENTRADAS
+// em zero e SEM normalizar — a lição que a S3c mediu no grão do esculpido.
+// O ruído de valor da casa devolve [0, 1], por isso o centra aqui.
+float fbmDoAnel(vec3 p) {
+  float soma = 0.0;
+  float amp = 1.0;
+  float freq = 1.0;
+  for (int o = 0; o < 3; o++) {
+    soma += (ruido(p * freq) * 2.0 - 1.0) * amp;
+    freq *= 2.0;
+    amp *= 0.5;
+  }
+  return soma;
+}
+
+float raiosDoB(float rr, float ang, float senElevSol) {
+  // a janela do anel B na régua do perfil (0,34–0,70 ≈ 91 900–118 400 km).
+  // A segunda soleira vai escrita ao contrário porque smoothstep com
+  // borda decrescente é INDEFINIDO em GLSL — a conta é a mesma dele.
+  float janelaB = smoothstep(0.34, 0.42, rr) * (1.0 - smoothstep(0.60, 0.70, rr));
+  // AS DUAS FREQUÊNCIAS DELE, TROCADAS DE LUGAR, e é o único número desta
+  // fase que não sai igual ao do projeto dele. Na ordem original (2,5 em
+  // azimute, 9 em raio) a mancha mede 41 000 km ao longo do anel por 8 000 km
+  // de largura radial — um ARCO, não um raio. Medido na primeira foto desta
+  // fase, e o comentário dele mesmo diz o contrário ("radial streaks"). Com
+  // 9 e 2,5 a mancha vira 11 500 km de largura por toda a altura do B, que é
+  // a forma que a Cassini fotografou.
+  float mancha = fbmDoAnel(vec3(cos(ang) * 9.0, sin(ang) * 9.0, rr * 2.5)) * 0.5 + 0.5;
+  float estacao = 1.0 - smoothstep(0.17, 0.29, abs(senElevSol));
+  return smoothstep(0.62, 0.85, mancha) * janelaB * 0.13 * estacao;
+}
+
+float ondasDeDafnis(float uBase, float ang, float dafnisLon) {
+  const float BANDA = 0.006;   // meia-largura da faixa perturbada (~440 km)
+  const float CORTE = 0.0012;  // meia-largura da troca dentro/fora do vão
+  const float K = 300.0;       // número de onda em azimute (inteiro: fecha em 2π)
+  const float SIGMA = 0.22;    // decaimento do rastro (rad) — visível a ~30°
+  const float AMP = 0.0013;    // deslocamento da amostra (~96 km)
+  float dTheta = ang - dafnisLon;
+  // azimute ENVOLVIDO em (−π, π]: sem costura em 2π, e o rastro continua no
+  // lugar quando a lua passa por ±π
+  float phi = atan(sin(dTheta), cos(dTheta));
+  float q = phi / SIGMA;
+  float envelope = exp(-q * q);
+  float atras = smoothstep(-0.02, 0.02, phi);
+  float faixa = smoothstep(U_KEELER - BANDA, U_KEELER, uBase)
+    * (1.0 - smoothstep(U_KEELER, U_KEELER + BANDA, uBase));
+  float dentro = 1.0 - smoothstep(U_KEELER - CORTE, U_KEELER + CORTE, uBase);
+  // borda de dentro À FRENTE da lua, borda de fora ATRÁS: o ziguezague
+  float espacial = faixa * (dentro * (1.0 - atras) + (1.0 - dentro) * atras);
+  // apaga a onda fina antes que ela vire cintilação de longe — a mesma
+  // ideia do gate por derivada que o grão do close já usa
+  float suaviza = clamp(1.0 - fwidth(ang) * 150.0, 0.0, 1.0);
+  return sin(phi * K) * AMP * envelope * espacial * suaviza;
+}
+`;
+
+/**
  * Anel de Saturno: perfil radial medido + camada de partículas +
  * planetshine + sombra do planeta elipsoide. vPos está no frame da
  * RingGeometry (plano XY); o mesh aplica Rx(−π/2), então +Z deste frame
@@ -854,6 +961,8 @@ uniform float uLuzGanho;
 uniform float uKPolar;
 uniform float uSolAngRad;
 uniform vec2 uAnelRaios;
+uniform float uFaseDosRaios;
+uniform float uDafnisLon;
 varying vec3 vPos;
 const float PI = 3.14159265358979;
 const float IF_RETRO = ${IF_RETRO_DO_GELO};
@@ -866,10 +975,15 @@ vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
 ${GLSL_CAMADA_DO_ANEL}
 ${GLSL_PLANETSHINE_NO_ANEL}
+${GLSL_RUIDO_DE_VALOR}
+${GLSL_ESPETACULO_DO_ANEL}
 void main() {
   float r = length(vPos.xy);
-  float u = ((r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6))
+  float uBase = ((r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6))
     * U_ESCALA + U_BASE;
+  float ang = atan(vPos.y, vPos.x);
+  // as ondas de Dáfnis mexem em ONDE se amostra o perfil, nunca na malha
+  float u = clamp(uBase + ondasDeDafnis(uBase, ang, uDafnisLon), 0.0, 1.0);
   vec4 perfil = texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5));
   float alfa = perfil.a;
   if (alfa < 0.004) discard;
@@ -893,8 +1007,14 @@ void main() {
   vec3 tinta = COR_DO_GELO
     * (razao / max(dot(razao, vec3(0.2126, 0.7152, 0.0722)), 1.0e-4));
   if (dot(tinta, tinta) < 1.0e-6) tinta = COR_DO_GELO;
-  vec3 direta =
-    (tinta * IF_RETRO) * (camada.x * uLuzGanho) * sombraDoPlaneta(vPos);
+  // OS RAIOS DO B (S5): a poeira levitada TAPA o anel visto do lado
+  // iluminado e ACENDE visto contra o Sol — os dois termos dele, com a
+  // fase de corotação girando o padrão sobre o anel.
+  float raios = raiosDoB(clamp(uBase, 0.0, 1.0), ang + uFaseDosRaios, nDotL);
+  float ladoSuave = smoothstep(-0.03, 0.03, mesmoLado);
+  vec3 direta = (tinta * IF_RETRO)
+    * ((camada.x * (1.0 - raios * ladoSuave) + raios * 0.5 * alfa) * uLuzGanho)
+    * sombraDoPlaneta(vPos);
   // o planetshine NÃO leva a sombra do planeta: o planeta é a FONTE
   vec3 doGlobo = (tinta * IF_RETRO)
     * (planetshineNoAnel(vPos, r, view, mu, tau, nDotV) * uLuzGanho);
@@ -1055,6 +1175,10 @@ export class GiganteResolvido {
   private anel: THREE.Mesh | null = null;
   private matAnel: THREE.ShaderMaterial | null = null;
   private dummyAnel: THREE.DataTexture | null = null;
+  /** S5 (item 134): o F e o E — só Saturno os tem (`aneisTenues.ts`) */
+  private tenues: AneisTenuesDeSaturno | null = null;
+  /** o quadro dos dois véus, REUSADO (zero alocação por tick, M4 da casa) */
+  private quadroDosTenues: QuadroDosAneisTenues | null = null;
   /** a LUT de latitudes do ringshine — só Saturno tem uma */
   private ringshine: RingshineDoAnel | null = null;
   /** BASE_URL do vite, para buscar o perfil medido do anel */
@@ -1067,6 +1191,8 @@ export class GiganteResolvido {
   private readonly vAnelY = new THREE.Vector3();
   private readonly vAnelZ = new THREE.Vector3();
   private readonly vTmp = new THREE.Vector3();
+  private readonly vLua = new THREE.Vector3();
+  private readonly vLuaNoAnel = new THREE.Vector3();
   private readonly vSol = new THREE.Vector3();
   private readonly vEscala = new THREE.Vector3();
   private readonly mRx = new THREE.Matrix4().makeRotationX(-Math.PI / 2);
@@ -1281,7 +1407,48 @@ export class GiganteResolvido {
       ).divideScalar(this.raioA);
       ua.uLuzGanho.value = ganho;
       ua.uSolAngRad.value = solAngRad;
+
+      // S5 — O ESPETÁCULO. A fase de corotação (10,66 h) reduz-se a uma
+      // volta AQUI, em dupla precisão: os 5,5 milhões de voltas desde a
+      // época juliana não cabem num float32 de uniform.
+      if (this.tenues && this.quadroDosTenues) {
+        const fase =
+          -(((this.jdEscrito * 24) / HORAS_DA_COROTACAO) * (Math.PI * 2)) %
+          (Math.PI * 2);
+        ua.uFaseDosRaios.value = fase;
+        ua.uDafnisLon.value = this.azimuteDaLuaNoAnel('daphnis');
+        const t = this.quadroDosTenues;
+        t.dirSolLocal.copy(ua.uDirSolLocal.value as THREE.Vector3);
+        t.camLocal.copy(ua.uCamLocal.value as THREE.Vector3);
+        t.luzGanho = ganho;
+        t.solAngRad = solAngRad;
+        t.kPolar = this.kPolar;
+        t.prometeuLon = this.azimuteDaLuaNoAnel('prometheus');
+        t.fase = fase;
+        this.tenues.fixarNoAnel(this.anel.matrix);
+        this.tenues.atualizar(t);
+      }
     }
+  }
+
+  /**
+   * O AZIMUTE DE UMA LUA NO FRAME DO ANEL (rad) — a longitude que as ondas
+   * de Dáfnis e os canais de Prometeu perseguem.
+   *
+   * Sai do MESMO propagador que põe a lua na cena (`posicaoKepler`, já
+   * centrado no pai) e atravessa a MESMA ponte de frame que o anel usa para
+   * o Sol e a câmera: não há segunda conta de frame que possa divergir da
+   * primeira, que é como a inversão do item 91 se escondeu.
+   */
+  private azimuteDaLuaNoAnel(id: string): number {
+    if (!Number.isFinite(this.jdEscrito)) return 0;
+    const rel = posicaoKepler(id, this.jdEscrito);
+    const eq = eclipticaParaEquatorial([rel.x, rel.y, rel.z]);
+    this.vLua.set(eq[0], eq[1], eq[2]);
+    componentesNoFrameDoAnel(
+      this.vLua, this.vAnelX, this.vAnelY, this.vAnelZ, this.vLuaNoAnel
+    );
+    return Math.atan2(this.vLuaNoAnel.y, this.vLuaNoAnel.x);
   }
 
   private garantirCasca() {
@@ -1349,6 +1516,10 @@ export class GiganteResolvido {
           uSolAngRad: { value: 0 },
           uAnelRaios: { value: new THREE.Vector2(anel.rInt, anel.rExt) },
           uModo: { value: modo },
+          // S5: só o `ANEL_FRAG` de Saturno os lê; nos procedurais ficam
+          // parados em zero e o programa nem os declara
+          uFaseDosRaios: { value: 0 },
+          uDafnisLon: { value: 0 },
         },
         transparent: true,
         depthWrite: false,
@@ -1358,7 +1529,22 @@ export class GiganteResolvido {
       this.anel = new THREE.Mesh(this.geoAnel, this.matAnel);
       this.anel.matrixAutoUpdate = false;
       this.group.add(this.anel);
-      if (placa) void this.ligarPerfilDoAnel();
+      if (placa) {
+        // S5 — o F e o E nascem com o anel e morrem com ele; o gate deles é
+        // o do corpo (48 px), porque são filhos do mesmo grupo.
+        this.tenues = new AneisTenuesDeSaturno(GLSL_SOMBRA_DO_PLANETA_NO_ANEL);
+        this.quadroDosTenues = {
+          dirSolLocal: new THREE.Vector3(),
+          camLocal: new THREE.Vector3(),
+          luzGanho: 1,
+          solAngRad: 0,
+          kPolar: this.kPolar,
+          prometeuLon: 0,
+          fase: 0,
+        };
+        this.group.add(this.tenues.grupo);
+        void this.ligarPerfilDoAnel();
+      }
     }
   }
 
@@ -1395,6 +1581,7 @@ export class GiganteResolvido {
     this.matSuperficie?.dispose();
     this.geoAnel?.dispose();
     this.matAnel?.dispose();
+    this.tenues?.dispose();
     this.dummyAnel?.dispose();
     this.texturas.dispose();
   }

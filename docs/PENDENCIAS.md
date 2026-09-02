@@ -276,8 +276,29 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   **Pergunta a ele:** o miolo do jato sai quase opaco no close (matemática
   dele, sem suavizar); ajuste é um número (`DOSE_BASE`) se ele quiser.
   Provas `capturas/item134-s4-*`. Lista do §19: `escala.test.ts`.
-- **S5 — o espetáculo dos anéis**: anéis E e F, raios do B, ondas de
-  Dáfnis — por último, com foto para o olho dele.
+- **S5 — o espetáculo dos anéis: FEITA em 02/09** (commit no selo desta
+  linha; fotos conferidas pelo coordenador). Quatro peças com a matemática
+  dele: **anel F** — três fitas excêntricas a 140 180 km com dobra, grumos e
+  os canais de Prometeu, 45× mais brilhante contra o Sol que de frente;
+  **anel E** — toro de 170 000 a 330 000 km com pico na órbita de Encélado,
+  só espalhamento para a frente, apagando quando a câmera entra nele (os dois
+  em `aneisTenues.ts`, do `fRing.ts`/`eRing.ts` dele); **raios do B** e
+  **ondas de Dáfnis** no vão de Keeler dentro do `ANEL_FRAG` (do
+  `ringsMaterial.ts` dele), presos às longitudes VIVAS de Dáfnis e Prometeu
+  pelo mesmo propagador que põe as luas na cena. UM número dele trocado e
+  declarado: as duas frequências do ruído dos raios davam mancha alongada AO
+  LONGO do anel (arco de 41 000 km) e o raio do B é radial — 2,5 e 9 trocados
+  de lugar. Cadastro de escala `aneis-tenues-de-saturno` (fita 8× mais larga,
+  onda de ~96 km num vão de 37 km). Custo medido alternando A/B na mesma
+  sessão: F 0,43 ms + E 0,43 ms + anel +0,01 ms em cinema; 0,45/0,44/+0,04 em
+  alta; 0,45/0,25/+0,07 em performance; pior caso (anel escancarado, toro
+  cobrindo a tela) +1,9 ms em cinema — 60 fps e zero quadro perdido dos dois
+  lados. Filme: 51 das 54 vistas bit-idênticas; `titan` mudou UM pixel em
+  3,08 milhões (o limbo do E visto de Titã) e as duas `saturno-anel*` são a
+  obra. Fora, declarado: esteiras de autogravidade e a lajota volumétrica de
+  atravessar o anel (não estavam na lista da S5). Provas em
+  `capturas/item134-s5-*`. Lista do §19 da onda: `escala.test.ts` (cadastro
+  novo) e `gigante.test.ts`.
 Fotos do site dele em `capturas/item134-saturn-dele-*.png`.
 
 **133.** Os anéis de Saturno ficavam estranhos do lado de sombra —

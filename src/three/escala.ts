@@ -391,6 +391,21 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
       'cada um representa uma multidão de grãos, e a nuvem só soma luz por cima ' +
       '(aditiva, sem escrever profundidade)',
   },
+  {
+    id: 'aneis-tenues-de-saturno',
+    nome: 'anéis F e E e as ondas de Dáfnis',
+    classe: 'instrumento',
+    fator: 8,
+    fatorDeBrilho: null,
+    endereco: 'src/three/world/corpos/aneisTenues.ts:43',
+    razao:
+      'a fita do F é desenhada 8× mais larga que os 45 km medidos, porque o ' +
+      'perfil transversal já apaga as bordas; e as ondas de Dáfnis deslocam a ' +
+      'amostra do perfil em ~96 km numa faixa de ~440 km, contra um vão de ' +
+      'Keeler de 37 km — sem o exagero nada disso chega a um pixel. Os RAIOS ' +
+      'são de verdade (140 180 km o F, 170 000 a 330 000 km o E) e os três só ' +
+      'somam luz por cima, sem escrever profundidade',
+  },
 ] as const;
 
 /**
