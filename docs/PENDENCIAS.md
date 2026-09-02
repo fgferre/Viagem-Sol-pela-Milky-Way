@@ -49,7 +49,26 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ---
 
-## O BASTÃO — onde a rodada parou (02/09)
+## O BASTÃO — onde a rodada parou (02/09, noite)
+
+**02/09 (noite — FECHO por ordem dele: "contexto cheio, continuar em
+outra janela").** A ONDA DE SATURNO (item 134) tem **S1, S2, S2b, S3,
+S3b e S4 FEITAS** (anéis com perfil medido e iluminação mútua; relevo das
+luas com bump + altura real, Reia/Jápeto com o relevo do projeto dele
+selado por ele; nove luas esculpidas com ficha; jatos de Encélado).
+**Falta a S5** (anéis E e F, raios do B, ondas de Dáfnis — "o espetáculo",
+por último, com foto). **Esperam a palavra dele na próxima janela:** (1)
+a dose do miolo dos jatos (`DOSE_BASE` em `plumas.ts` — foto entregue,
+perguntado); (2) **a LISTA DO §19 da onda**, ainda sem o sim dele e sem
+rodar: `gigante.test.ts` (guarda do canal ring virou "não pede"),
+`rochoso.test.ts`/`lua.test.ts`/`corpos.test.ts` (chunks novos),
+`atlasConfig.test.ts` (30 luas), `escala.test.ts` (entrada das plumas), e
+a suíte inteira 1× no fecho da onda. A varredura de fecho (§13, cinco
+perguntas por leitor fresco sobre `30322fd..HEAD`) roda no encerramento
+desta janela. Backup em dia; site intocado (publicar só com pedido dele).
+
+*(02/09, mais cedo:)*
+
 
 **02/09 (mais tarde — os 5 ruídos e o caderno).** Varredura dos ruídos
 de instrumento (ordem dele): **49, 64, 78, 80, 101 FECHADOS por
