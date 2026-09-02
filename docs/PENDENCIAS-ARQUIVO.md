@@ -6524,3 +6524,75 @@ a mesma entrada na mesma chave (`jupiter` é id e nome). O lado que
 ESCREVE o link (`chaveDeLink`) segue pelo nome. Foto de prova
 `capturas/item126-foco-mars-depois.png` (ficha MARTE · PLANETA, órbita
 enquadrada). Teste do `buscaEstrelas.test.ts` fica para a lista do §19.
+
+**129. Modos não são universos — e a busca é UMA SÓ.** Direção de
+produto dada em 01/09, ao encerrar a onda 125, palavras dele: *"o modo
+viagem é somente uma mudança na forma de controlar o movimento da
+câmera (...) o filme é uma opção que vive no universo único do app
+(...) logo a busca é uma só tb, para todos os objetos que populam
+nosso 'universo'."* Estende a doutrina do universo único: viagem/atlas/
+filme são OPÇÕES do mesmo mundo, não mundos.
+
+**O censo (01/09, leitura do código):** o buscador JÁ é um só
+(`construirIndice`/`buscar` em `lib/buscaEstrelas.ts`, um índice no
+App). O que varia é o que ENTRA nele: (a) no voo livre só entravam as
+1.726 estrelas nomeadas — planetas, luas e anões só no atlas; (b) no
+filme não existe caixa de busca (`HUD_POR_FASE.journey.busca`); (c) o
+app desenha famílias que busca nenhuma alcança: Sagittarius A✱ (já é
+alvo do Director), aglomerados e cefeidas Gaia, regiões H II, masers,
+nuvens moleculares — nenhuma tem nome no molde do índice.
+
+- **F1 — corpos na busca do voo livre: FEITA em 01/09** (commit no
+  selo desta linha). Escolher um corpo de fora do atlas ENTRA nele pelo
+  véu e enquadra ao chegar (`escolherAlvo` → `entrarNoAtlas({aoChegar})`),
+  o destino que o `?foco=` sempre deu; a dica da paleta diz "Enter abre
+  o atlas nele". Fotos `capturas/item129-f1-paleta-voo-livre.png` e
+  `item129-f1-depois-atlas.png`.
+- **A SONDAGEM (01/09, 35 consultas na busca de hoje, palavra dele
+  em seguida: "temos que ter um sistema de busca que funcione"):**
+  erro de uma letra (jupter, siriuss), nome em português (sirio,
+  betelgeuze), apelido (alfa cen, alpha centauri, estrela polar),
+  constelação (órion, sagitário, três marias, cruzeiro do sul) e os
+  lugares do próprio filme (buraco negro, sgr a, centro da galáxia)
+  devolvem NADA. O motor caseiro só casa começo de palavra e só sabe o
+  nome oficial. Decisão (dele, "prossiga"): motor aberto + vocabulário.
+- **F4 — o motor: FEITA em 01/09** (commit no selo desta linha).
+  MiniSearch 7.2.0 (MIT, sem dependências) entrou como QUINTO degrau
+  (`SCORE.aproximado`), só quando os quatro da casa devolvem nada —
+  decisão do executor, medida: o motor não casa no meio da palavra e o
+  BM25 mataria os desempates da casa. Tolerância de 1 letra em termos
+  ≥4; nada mudou para quem já achava (31 de 35 consultas idênticas;
+  jupter/siriuss/betelgeuze/betelguese passaram a achar). Latência
+  <2 ms por tecla. Provas `capturas/item129-f4-sondagem-{antes,depois}.txt`
+  e `item129-f4-jupter.png`. Uma expectativa do teste mudou
+  ("anhanhuca" virou erro de digitação de Añañuca) — na lista do §19.
+- **F5 — o vocabulário bilíngue: FEITA em 01/09** (tabelas `db2ca94`,
+  fiação no selo desta linha). Apelidos pt/en (Sírio, Estrela Polar,
+  Três Marias, Cruzeiro do Sul), designação de Bayer para toda estrela
+  com letra+constelação ("alfa cen", "alpha centauri", "α cen"),
+  constelação como lugar em degrau próprio abaixo dos nomes ("órion"
+  lista as mais brilhantes de Órion sem enterrar quem começa com "and"),
+  e o centro galáctico como entrada de tipo `lugar` ("buraco negro",
+  "black hole", "sgr a") — no voo livre a câmera voa até lá, no atlas
+  enquadra; `?foco=sagittarius-a` fecha o link. Latência ~2 ms por tecla
+  (chaves 3.905 → 11.239). Sondagem `capturas/item129-f5-sondagem.txt`
+  (com o diff das 35 antigas: 11 "nada" viraram acerto, o resto igual
+  ou subiu de degrau); fotos `capturas/item129-f5-*.png` conferidas.
+  A ficha chamava Sagittarius A✱ de "estrela"; ordem dele ("tem que
+  trocar estrela para o que é") — agora diz "buraco negro"
+  (`montarFichaDeEstrela`, no selo desta linha).
+- **F2 — busca no filme: MORTA pela palavra dele (01/09):** *"Durante o
+  filme a busca nem aparece normalmente... ou não deveria, certo?"* —
+  não deveria; o filme segue sem caixa de busca.
+- **F3 — famílias sem nome (aglomerados, nuvens…):** só entram se
+  tiverem nome que alguém digite (NGC/Messier); depende do censo da F5.
+- Lista do §19 desta rodada, APROVADA por ele em 01/09 ("aprovo os dois
+  testes, pode rodar") e RODADA: `buscaEstrelas.test.ts` 39/39 verde;
+  juiz `busca-smoke` verde depois de trocar a consulta do vazio honesto
+  ("alfa cen" virou acerto de propósito → "xkcd"). A guarda da F1 foi
+  cortada por ele ("porque vai criar o item 2").
+
+**Fecho (01/09, palavra dele):** F1, F4 e F5 feitas e testadas com o sim
+dele; F2 morta ("durante o filme a busca nem aparece... não deveria");
+F3 virou o item 131 (roadmap futuro, curadoria do desenho antes). O app
+inteiro bilíngue é o item 130, na fila como próxima frente.

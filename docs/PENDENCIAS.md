@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 131.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 132.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -1843,6 +1843,25 @@ por OLHO do que é texto de tela e do que é texto interno. **NA FILA
 por ordem dele (01/09, "app inteiro bilingue na fila"): é a próxima
 frente depois de fechar o 129.** A busca (129/F5) já nasce bilíngue.
 
+**131. Aglomerados, nebulosas e nuvens na busca — roadmap futuro, depois
+da curadoria do desenho deles.** Palavras dele em 01/09, ao fechar o
+129: *"não vamos fazer isso agora. precisamos ver esses objetos com
+calma, acho que hoje talvez eles não sejam desenhados corretamente,
+teríamos que curar isso. vamos deixar como roadmap futuro."* Fatos
+medidos no dia: os arquivos que o app carrega para essas famílias
+(`public/data/galaxy/*.bin`, manifesto) guardam só posição e física —
+o nome foi descartado na linha de montagem; os catálogos de origem têm
+nome nos aglomerados do Gaia (coluna `Cluster`: NGC, Melotte…) e só
+código de coordenada nas regiões H II e masers; as nuvens grandes não
+têm nome nem na origem; o cache local dos catálogos não existe (baixar
+de novo). Dois caminhos quando vier: (1) tabela curta de lugares
+famosos (Nebulosa de Órion, Plêiades, Carina, Lagoa, Águia, Aglomerado
+Duplo, nuvens de Touro/Ofiúco/Cisne) pelo mesmo mecanismo de `lugar`
+do centro galáctico, com foto de chegada em cada um; (2) reexportar os
+nomes dos aglomerados num arquivo lateral (base útil para o 114).
+**Pré-requisito, ordem dele: olhar com calma como essas famílias são
+desenhadas hoje e curar antes de apontar a busca para elas.**
+
 **118. A tela de abertura merece ser repensada por inteiro (futuro).**
 Palavras dele em 31/08, ao encerrar o item 34: *"acho que ainda temos
 grande oportunidade nessa tela de abertura no entanto.. nao acho muito
@@ -1853,72 +1872,13 @@ começa por propostas visuais para o olho dele (a mineração do Eyes tem
 o mecanismo do loading deles mapeado no mergulho 06 — bundle separado,
 dados essenciais antes do app, saída em fade).
 
-**129. Modos não são universos — e a busca é UMA SÓ.** Direção de
-produto dada em 01/09, ao encerrar a onda 125, palavras dele: *"o modo
-viagem é somente uma mudança na forma de controlar o movimento da
-câmera (...) o filme é uma opção que vive no universo único do app
-(...) logo a busca é uma só tb, para todos os objetos que populam
-nosso 'universo'."* Estende a doutrina do universo único: viagem/atlas/
-filme são OPÇÕES do mesmo mundo, não mundos.
-
-**O censo (01/09, leitura do código):** o buscador JÁ é um só
-(`construirIndice`/`buscar` em `lib/buscaEstrelas.ts`, um índice no
-App). O que varia é o que ENTRA nele: (a) no voo livre só entravam as
-1.726 estrelas nomeadas — planetas, luas e anões só no atlas; (b) no
-filme não existe caixa de busca (`HUD_POR_FASE.journey.busca`); (c) o
-app desenha famílias que busca nenhuma alcança: Sagittarius A✱ (já é
-alvo do Director), aglomerados e cefeidas Gaia, regiões H II, masers,
-nuvens moleculares — nenhuma tem nome no molde do índice.
-
-- **F1 — corpos na busca do voo livre: FEITA em 01/09** (commit no
-  selo desta linha). Escolher um corpo de fora do atlas ENTRA nele pelo
-  véu e enquadra ao chegar (`escolherAlvo` → `entrarNoAtlas({aoChegar})`),
-  o destino que o `?foco=` sempre deu; a dica da paleta diz "Enter abre
-  o atlas nele". Fotos `capturas/item129-f1-paleta-voo-livre.png` e
-  `item129-f1-depois-atlas.png`.
-- **A SONDAGEM (01/09, 35 consultas na busca de hoje, palavra dele
-  em seguida: "temos que ter um sistema de busca que funcione"):**
-  erro de uma letra (jupter, siriuss), nome em português (sirio,
-  betelgeuze), apelido (alfa cen, alpha centauri, estrela polar),
-  constelação (órion, sagitário, três marias, cruzeiro do sul) e os
-  lugares do próprio filme (buraco negro, sgr a, centro da galáxia)
-  devolvem NADA. O motor caseiro só casa começo de palavra e só sabe o
-  nome oficial. Decisão (dele, "prossiga"): motor aberto + vocabulário.
-- **F4 — o motor: FEITA em 01/09** (commit no selo desta linha).
-  MiniSearch 7.2.0 (MIT, sem dependências) entrou como QUINTO degrau
-  (`SCORE.aproximado`), só quando os quatro da casa devolvem nada —
-  decisão do executor, medida: o motor não casa no meio da palavra e o
-  BM25 mataria os desempates da casa. Tolerância de 1 letra em termos
-  ≥4; nada mudou para quem já achava (31 de 35 consultas idênticas;
-  jupter/siriuss/betelgeuze/betelguese passaram a achar). Latência
-  <2 ms por tecla. Provas `capturas/item129-f4-sondagem-{antes,depois}.txt`
-  e `item129-f4-jupter.png`. Uma expectativa do teste mudou
-  ("anhanhuca" virou erro de digitação de Añañuca) — na lista do §19.
-- **F5 — o vocabulário bilíngue: FEITA em 01/09** (tabelas `db2ca94`,
-  fiação no selo desta linha). Apelidos pt/en (Sírio, Estrela Polar,
-  Três Marias, Cruzeiro do Sul), designação de Bayer para toda estrela
-  com letra+constelação ("alfa cen", "alpha centauri", "α cen"),
-  constelação como lugar em degrau próprio abaixo dos nomes ("órion"
-  lista as mais brilhantes de Órion sem enterrar quem começa com "and"),
-  e o centro galáctico como entrada de tipo `lugar` ("buraco negro",
-  "black hole", "sgr a") — no voo livre a câmera voa até lá, no atlas
-  enquadra; `?foco=sagittarius-a` fecha o link. Latência ~2 ms por tecla
-  (chaves 3.905 → 11.239). Sondagem `capturas/item129-f5-sondagem.txt`
-  (com o diff das 35 antigas: 11 "nada" viraram acerto, o resto igual
-  ou subiu de degrau); fotos `capturas/item129-f5-*.png` conferidas.
-  A ficha chamava Sagittarius A✱ de "estrela"; ordem dele ("tem que
-  trocar estrela para o que é") — agora diz "buraco negro"
-  (`montarFichaDeEstrela`, no selo desta linha).
-- **F2 — busca no filme: MORTA pela palavra dele (01/09):** *"Durante o
-  filme a busca nem aparece normalmente... ou não deveria, certo?"* —
-  não deveria; o filme segue sem caixa de busca.
-- **F3 — famílias sem nome (aglomerados, nuvens…):** só entram se
-  tiverem nome que alguém digite (NGC/Messier); depende do censo da F5.
-- Lista do §19 desta rodada, APROVADA por ele em 01/09 ("aprovo os dois
-  testes, pode rodar") e RODADA: `buscaEstrelas.test.ts` 39/39 verde;
-  juiz `busca-smoke` verde depois de trocar a consulta do vazio honesto
-  ("alfa cen" virou acerto de propósito → "xkcd"). A guarda da F1 foi
-  cortada por ele ("porque vai criar o item 2").
+**129.** Modos não são universos e a busca é UMA SÓ — **FECHADO em
+01/09**, palavra dele; história no ARQUIVO. *(A busca ficou tolerante a
+erro de letra (MiniSearch como quinto degrau, `121143b`), bilíngue com
+apelidos, Bayer e constelação como lugar (`db2ca94`, `6059f82`), acha
+planetas no voo livre e entra no atlas neles (`e75d4af`), e leva ao
+buraco negro central. Filme segue sem busca (palavra dele). Testes
+aprovados e verdes (`78ee3b5`). O que sobrou virou o item **131**.)*
 
 **119. O atlas-smoke prova 3 reprova em t=250 — o relógio do portal
 move a Terra (pré-existente, provado).** Achado em 31/08 durante a obra
