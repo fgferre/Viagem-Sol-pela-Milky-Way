@@ -392,6 +392,26 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'do renderer; a EMISSÃO dele ainda não consome a lei: entra na unidade da ' +
       'casa no M7, com o resto emissivo (divergência do L1 declarada no M2)',
   },
+  {
+    // item 134/S4: a peça nasceu com a linha do cadastro de ESCALA
+    // (`plumas-de-encelado`) e sem a do censo da LUZ — é esta.
+    id: 'plumas-de-encelado',
+    nome: 'os jatos de Encélado (Points aditivos)',
+    arquivos: ['src/three/world/corpos/plumas.ts'],
+    consomeL1: false,
+    leiVelhaApagada: false,
+    fatorDeBrilho: null,
+    destino: 'fora-da-lei',
+    migracao: null,
+    emiteGlPointSize: true,
+    razao:
+      'não é fonte estelar: cada sprite é luz do SOL espalhada por uma multidão ' +
+      'de grãos de gelo (dose pela exposição da visita, ganhoDoGlobo do corpo), e ' +
+      'o tamanho é geométrico — o raio do grão pela matriz do modelo, com teto de ' +
+      '48 px DECLARADO no shader (a lei da casa: POINTS acima de 64 trava o Mac). ' +
+      'A dose do miolo ainda não foi medida na unidade da casa: fatorDeBrilho null ' +
+      'é a dívida escrita, o mesmo molde da poeira',
+  },
 ];
 
 /**

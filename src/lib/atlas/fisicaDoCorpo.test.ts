@@ -164,8 +164,12 @@ describe('GM_CORPOS × MU_PARENT — a checagem independente, sem risco de pixel
   }
 
   it.each(Object.keys(MU_PARENT))('%s: corpo + luas reproduz o μ do sistema', (pai) => {
+    // A soma é sobre quem TEM GM na tabela: as nove do item 134/S3 são
+    // desenhadas e não têm (`SEM_GM_DAS_ESCULPIDAS`, abaixo), e é por isso
+    // que o resíduo de Saturno continua sendo o mesmo 5,2e-8 de antes — as
+    // que faltam na tabela são justamente as que o texto já listava.
     const soma = [pai, ...(LUAS_POR_PAI.get(pai) ?? [])].reduce(
-      (total, id) => total + GM_CORPOS[id]!,
+      (total, id) => total + (GM_CORPOS[id] ?? 0),
       0
     );
     const relativo =
@@ -192,10 +196,27 @@ describe('completude — todo alvo do Atlas tem física, ou a falta é nomeada',
     ...ASTEROIDES_DO_SISTEMA,
   ].map((c) => c.id);
 
-  it('cobre os 39 alvos menos os nomeados em SEM_GM_NO_KERNEL', () => {
-    expect(ALVOS).toHaveLength(39);
+  /**
+   * AS NOVE DO ITEM 134/S3 ENTRARAM SEM MASSA, e a ausência é dita aqui em
+   * vez de somada a `SEM_GM_NO_KERNEL`: aquela lista afirma que o KERNEL não
+   * cobre o corpo (o caso de Makemake, que não tem satélite que fixe a
+   * massa), e destas nove esta casa não sabe isso — o que se sabe é que o
+   * emissor do bloco (`GM_BODIES` de `derive-iau-orientation.js`) não as
+   * pede. Enquanto ninguém regenerar o bloco com elas, a ficha simplesmente
+   * não escreve massa, gravidade e escape — o mesmo silêncio de Makemake.
+   * Digitar GM à mão aqui é o que o cabeçalho de `massas.ts` proíbe.
+   */
+  const SEM_GM_DAS_ESCULPIDAS = [
+    'pan', 'daphnis', 'atlas', 'prometheus', 'pandora',
+    'janus', 'epimetheus', 'hyperion', 'phoebe',
+  ];
+
+  it('cobre os 48 alvos menos os nomeados, e a lista de fora é exata', () => {
+    expect(ALVOS).toHaveLength(48);
     const semGm = ALVOS.filter((id) => GM_CORPOS[id] === undefined);
-    expect(semGm).toEqual([...SEM_GM_NO_KERNEL]);
+    expect([...semGm].sort()).toEqual(
+      [...SEM_GM_NO_KERNEL, ...SEM_GM_DAS_ESCULPIDAS].sort()
+    );
     expect(Object.keys(GM_CORPOS)).toHaveLength(38);
   });
 

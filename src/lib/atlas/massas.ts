@@ -27,8 +27,9 @@
 // consumidor de TEXTO, e `fisicaDoCorpo.test.ts` cobra que as duas concordem
 // a 1,5e-6 relativo — a checagem independente sem o risco de pixel.
 //
-// SÃO 38, E O QUE FALTA É NOMEADO. Os alvos do Atlas são 39 (10 do retrato +
-// 21 luas + 5 anões + 3 asteroides); MAKEMAKE não entra porque o kernel não o
+// SÃO 38, E O QUE FALTA É NOMEADO. Os alvos do Atlas são 48 (10 do retrato +
+// 30 luas + 5 anões + 3 asteroides; as nove esculpidas do 134/S3 são desenhadas
+// sem GM — o emissor não as pede); MAKEMAKE não entra porque o kernel não o
 // tem — sem satélite não há massa medida, e o doador imprimia "~3,1 × 10²¹ kg"
 // com til. Campo ausente fica ausente: a ficha de Makemake simplesmente não
 // escreve as linhas de massa, gravidade e escape.

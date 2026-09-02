@@ -1362,6 +1362,14 @@ function pixelDoGigante(
     normSeguro: () => [ndotv, 0, 0],
     fatorDeEclipse: () => eclipse,
     sombraDoAnel: () => anel,
+    // item 134/S1: o ringshine é uma LUT de 64 latitudes lida por
+    // `texture2D`, e textura este juiz não simula — entra como o escalar
+    // que o `main` soma ao Sol, apagado. Apagado é o valor EXATO onde
+    // `uRingshineAtivo` é 0 (todo gigante que não é Saturno), e a lei do
+    // 104 não depende dele: o ringshine é a MESMA parcela dentro e fora
+    // da sombra do anel, que é justamente o que o `main` afirma ao
+    // somá-lo FORA de `sombras`.
+    ringshineDoAnel: () => 0,
     texture2D: () => ({ rgb: albedo }),
     // os uniformes e varyings. O ganho é DERIVADO, não redigitado: em
     // `assistida` a peça (a) vale 1 para todo corpo resolvido.

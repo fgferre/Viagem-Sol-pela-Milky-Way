@@ -212,8 +212,10 @@ describe('o μ, e as duas conferências independentes (§3)', () => {
 });
 
 describe('a lista de quem ganha linha', () => {
-  it('são 30: os nove do retrato e as 21 luas — e mais ninguém', () => {
-    expect(CORPOS_COM_ORBITA).toHaveLength(30);
+  // 30 → 39 no item 134/S3: as nove esculpidas de Saturno entraram em
+  // `LUAS_DO_SISTEMA` e cada lua ganha linha.
+  it('são 39: os nove do retrato e as 30 luas — e mais ninguém', () => {
+    expect(CORPOS_COM_ORBITA).toHaveLength(39);
     // o Sol é a origem: não orbita nada
     expect(CORPOS_COM_ORBITA.some((c) => c.id === 'sun')).toBe(false);
     // OS OITO SEM PONTO FICAM FORA por decisão tomada com a foto na mão

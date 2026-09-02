@@ -1,4 +1,4 @@
-// Serve: lei — a ficha monta completa, honesta e silenciosa para os 39 alvos, com a efeméride e o corpos.json reais
+// Serve: lei — a ficha monta completa, honesta e silenciosa para os 48 alvos, com a efeméride e o corpos.json reais
 // ============================================================
 // A FICHA — a montagem julgada com a efeméride REAL e o `corpos.json` real.
 // O que se cobra aqui é o contrato que a tela depende: completude (todo
@@ -96,8 +96,10 @@ function porRotulo(id: string, secao: string): Map<string, string> {
 const todasAsLinhas = (f: Ficha) => f.secoes.flatMap((s) => s.linhas);
 
 describe('completude — todo alvo do Atlas monta ficha', () => {
-  it('são 39 alvos e os 39 montam', () => {
-    expect(ALVOS).toHaveLength(39);
+  // 39 → 48 no item 134/S3: as nove luas esculpidas de Saturno entraram
+  // na lista de alvos do Atlas.
+  it('são 48 alvos e os 48 montam', () => {
+    expect(ALVOS).toHaveLength(48);
     for (const id of ALVOS) {
       expect(ficha(id), id).not.toBeNull();
     }
@@ -260,17 +262,23 @@ const PALAVRAS_INGLESAS = new Set([
 /** Os números que uma frase carrega, com a régua decimal de cada língua. */
 function numerosDe(texto: string, decimal: ',' | '.'): Set<string> {
   const milhar = decimal === ',' ? '.' : ',';
-  const semMilhar = texto.replaceAll(
-    new RegExp(`(\\d)\\${milhar}(\\d\\d\\d)(?!\\d)`, 'g'),
-    '$1$2'
-  );
+  // EM LAÇO, e não uma passada só: com dois grupos de milhar ("12,950,000")
+  // uma passada come o primeiro separador e deixa o segundo, e aí as duas
+  // línguas se partem em lugares diferentes — o inglês em {12950, 000} e o
+  // português em {12950.000}, um falso "sumiu na tradução" (Febe, 134/S3).
+  const padrao = new RegExp(`(\\d)\\${milhar}(\\d\\d\\d)(?!\\d)`, 'g');
+  let semMilhar = texto;
+  for (let antes = ''; antes !== semMilhar; ) {
+    antes = semMilhar;
+    semMilhar = semMilhar.replaceAll(padrao, '$1$2');
+  }
   const normalizado =
     decimal === ',' ? semMilhar.replaceAll(/(\d),(\d)/g, '$1.$2') : semMilhar;
   return new Set(normalizado.match(/\d+(?:\.\d+)?/g) ?? []);
 }
 
 describe('a língua — o texto é pt-BR e a tela não tem inglês (item 74, parte B)', () => {
-  it('os 39 alvos têm as duas seções de prosa, e nenhuma nasce vazia', () => {
+  it('os 48 alvos têm as duas seções de prosa, e nenhuma nasce vazia', () => {
     for (const id of ALVOS) {
       const f = ficha(id)!;
       const contexto = f.secoes.find((s) => s.id === 'contexto');
@@ -385,7 +393,7 @@ describe('a língua — o texto é pt-BR e a tela não tem inglês (item 74, par
 
 describe('a imagem confessa — itens 19 e 20', () => {
   it('todo corpo com mesh tem a seção, e ela diz fonte, licença e crédito', () => {
-    // 38 dos 39: o Sol não entra (a imagem dele é a Lei da Estrela).
+    // 47 dos 48: o Sol não entra (a imagem dele é a Lei da Estrela).
     for (const id of ALVOS.filter((i) => i !== 'sun')) {
       const imagem = porRotulo(id, 'imagem');
       expect(imagem.size, id).toBeGreaterThan(0);
@@ -423,12 +431,21 @@ describe('a imagem confessa — itens 19 e 20', () => {
     expect(defeito.fonte).toBe('bancada de texturas');
   });
 
-  it('os quatro elipsoides confessam a forma, e ninguém mais (item 20)', () => {
+  it('os quatro elipsoides e as nove esculpidas confessam a forma, e ninguém mais (item 20)', () => {
     const COM_MALHA_PUBLICADA = ['vesta', 'pallas', 'hygiea', 'haumea'];
+    // item 134/S3: a malha das nove é ESCULPIDA por código (o roteiro é
+    // `IDS_ESCULPIDOS`, em `world/corpos/esculpido.ts`) — forma inventada
+    // confessa igual a elipsoide no lugar de malha medida.
+    const ESCULPIDAS = [
+      'pan', 'daphnis', 'atlas', 'prometheus', 'pandora',
+      'janus', 'epimetheus', 'hyperion', 'phoebe',
+    ];
     for (const id of ALVOS.filter((i) => i !== 'sun')) {
       const forma = porRotulo(id, 'imagem').get('forma');
       if (COM_MALHA_PUBLICADA.includes(id)) {
         expect(forma, id).toContain('elipsoide, sem malha');
+      } else if (ESCULPIDAS.includes(id)) {
+        expect(forma, id).toContain('geometria esculpida por código');
       } else {
         expect(forma, id).toBeUndefined();
       }

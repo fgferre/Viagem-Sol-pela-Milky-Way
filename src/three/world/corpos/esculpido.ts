@@ -228,8 +228,6 @@ export const IDS_ESCULPIDOS: readonly string[] = [
   'janus', 'epimetheus', 'hyperion', 'phoebe',
 ];
 
-/** Este corpo tem malha esculpida? (o `superficie: 'esculpido'` do config) */
-
 // ------------------------------------------------------------
 // O ESCULPIDOR
 // ------------------------------------------------------------

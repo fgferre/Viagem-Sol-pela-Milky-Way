@@ -224,6 +224,11 @@ describe('kepler / elementosParaCartesiano', () => {
 // Orcus e Quaoar (os pais, adicionados pela revisão de olhos frescos
 // para fechar a composição heliocêntrica) estão na MESMA categoria: a
 // escala deles é julgada no teste de fechamento de efemerides.test.ts.
+// As nove do item 134/S3 entram pela MESMA porta e por escolha de dado, não
+// por falta: são elementos MÉDIOS J2000 do "Planetary Satellite Mean Orbital
+// Parameters" (declarado no bloco delas em `elementosOrbitais.ts`), e médio
+// não reproduz vetor de estado osculante — fabricar fixture para elas seria
+// inventar a efeméride que a casa declarou não ter.
 const SEM_FIXTURE = new Set([
   'vanth',
   'weywot',
@@ -232,6 +237,15 @@ const SEM_FIXTURE = new Set([
   'haumea',
   'makemake',
   'eris',
+  'pan',
+  'daphnis',
+  'atlas',
+  'prometheus',
+  'pandora',
+  'janus',
+  'epimetheus',
+  'hyperion',
+  'phoebe',
 ]);
 const idsComFixture = IDS_KEPLER.filter((id) => !SEM_FIXTURE.has(id));
 
