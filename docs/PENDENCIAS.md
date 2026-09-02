@@ -196,10 +196,14 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   crateras finas e limbo áspero; aqui saíram em bolhas
   (`item134-s2-ficha-rhea.png`). A culpa é da nossa obra, não do dado:
   o mapa desceu para 1024 e a malha de 256 segmentos só resolve forma
-  grande — as crateras pequenas viram bolha. Obra S2b, depois da S3:
-  medir a resolução e a malha que ele usa para as duas, igualar (mapa
-  na resolução dele, malha mais densa ou o relevo fino pela normal, não
-  pelo deslocamento), e provar com o par lado a lado no MESMO ângulo. **Sem
+  grande — as crateras pequenas viram bolha. Obra S2b, em curso: medir
+  a resolução e a malha que ele usa, igualar, e provar lado a lado no
+  MESMO ângulo. **Direção dele (02/09), depois de ver a primeira foto e o
+  app sem relevo: "a da foto está maravilhosa"; "queremos o relevo
+  sobressaído, sabemos que Reia não é uma esfera, ela é acidentada".** O
+  coordenador tinha cortado o relevo por gosto próprio — erro; a
+  presunção é relevo LIGADO e pronunciado, a primeira foto
+  (`item134-s2-ficha-rhea.png`) é referência aceita por ele. **Sem
   LOD de esfera**, por medida: o gate de 48 px da casa tira a lua do
   quadro antes de qualquer nível médio ser escolhido. Custo de quadro
   dentro do ruído. Provas em `capturas/item134-s2-*`. Lista do §19 da
