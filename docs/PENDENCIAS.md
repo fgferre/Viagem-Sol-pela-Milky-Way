@@ -189,9 +189,17 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   nuvem/bruma) e Ceres (mapa confessado inventado); deslocamento
   por mapa de altura REAL em Mimas, Tétis, Encélado e Dione (webp sem
   perda para canal de dado, 3,5 MB; malha 256×128 só nelas); grão do
-  close com gate medido. **Reia e Jápeto ficaram de FORA** (relevo
-  sintético sai em bolhas no limbo — decisão do coordenador, reversível;
-  foto `capturas/item134-s2-ficha-rhea.png`, ele veta se quiser). **Sem
+  close com gate medido. **Reia e Jápeto ficaram de FORA por enquanto — S2b
+  ABERTA (palavra dele: "no meu projeto de Saturno elas ficam bem
+  bonitas, por que não ficariam aqui?").** Conferido no site dele
+  (`capturas/item134-s2-{rhea,iapetus}-site-dele.png`): lá as duas têm
+  crateras finas e limbo áspero; aqui saíram em bolhas
+  (`item134-s2-ficha-rhea.png`). A culpa é da nossa obra, não do dado:
+  o mapa desceu para 1024 e a malha de 256 segmentos só resolve forma
+  grande — as crateras pequenas viram bolha. Obra S2b, depois da S3:
+  medir a resolução e a malha que ele usa para as duas, igualar (mapa
+  na resolução dele, malha mais densa ou o relevo fino pela normal, não
+  pelo deslocamento), e provar com o par lado a lado no MESMO ângulo. **Sem
   LOD de esfera**, por medida: o gate de 48 px da casa tira a lua do
   quadro antes de qualquer nível médio ser escolhido. Custo de quadro
   dentro do ruído. Provas em `capturas/item134-s2-*`. Lista do §19 da
