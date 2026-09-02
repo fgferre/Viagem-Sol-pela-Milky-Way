@@ -212,8 +212,9 @@ mentiroso de escala. Cadastro em `escala.ts`.
 
 **17.** O Sol solavancava quando o relógio acelerava — **FECHADO em 02/09**; ARQUIVO.
 
-**18.** A luz trata o Sol como ponto sem tamanho. Certo para planetas,
-errado a poucos raios solares — e agora a câmera chega lá. Sem penumbra.
+**18.** A luz tratava o Sol como ponto sem tamanho — **FECHADO em 02/09
+por verificação**: desde `4b1e9fc` (2026-08-25) os globos recebem o raio angular
+real do Sol (`uSolAngRad`) e o terminador é suave (obra do 93); ARQUIVO.
 
 **19. (A METADE DA CONFISSÃO FECHOU em 22/08; a das texturas segue
 aberta.)** Titã tem emendas, Europa tem 68 linhas pretas no polo sul,

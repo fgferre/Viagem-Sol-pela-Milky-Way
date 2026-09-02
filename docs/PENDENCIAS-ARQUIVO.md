@@ -7784,3 +7784,13 @@ bloco B: rampas, oclusores e fita feitos, MSAA reprovado por medida). O
 que restava — a estação (0), a conferência dele — já mora nos itens 52,
 82, 108, 22 e 12; a estação (4) é a fila. O item deixa de existir como
 casa de obra.
+
+**18.** A luz trata o Sol como ponto sem tamanho. Certo para planetas,
+errado a poucos raios solares — e agora a câmera chega lá. Sem penumbra.
+
+**Fecho por verificação (02/09, pergunta dele: "não está tudo pronto?"):**
+estava. Desde `4b1e9fc` (2026-08-25) os globos rochosos e os gigantes recebem
+`uSolAngRad` = raio do Sol ÷ distância ao Sol e o terminador é
+`terminadorSuave` — o Sol é fonte EXTENSA, com penumbra pelo tamanho
+angular real dele (obra do item 93, 26/08). O item nasceu em 14/08, antes
+disso, e ninguém o encolheu.
