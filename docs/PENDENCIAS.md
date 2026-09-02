@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 133.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 134.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -151,6 +151,17 @@ dinamismo dos nomes do NASA Eyes".)*
 **113.** Os minutos dos juízes — **FECHADO em 30/08**; ARQUIVO.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
+
+**133. Os anéis de Saturno ficam estranhos do lado que não está
+iluminado.** Palavras dele, 02/09: *"os anéis de Saturno ficam um pouco
+estranhos: do lado que está sendo iluminado fica ok, mas o lado que não
+está sendo iluminado pelo Sol fica um pouco estranho. Não sei se era pra
+ser assim mesmo, queria uma verificação visual."* Em curso: fotos do
+lado iluminado e do lado de sombra, de vários ângulos, mais a leitura do
+que o desenho faz com a luz que ATRAVESSA os anéis (na física real o
+lado de sombra não é preto: as partes finas, anéis A e C, deixam passar
+luz e ficam claras; o anel B, denso, fica escuro; a sombra do planeta
+cai sobre eles).
 
 **97.** A órbita acendia mais cedo no Retina — **FECHADO em 29/08**; ARQUIVO.
 
