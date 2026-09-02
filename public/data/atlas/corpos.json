@@ -804,6 +804,299 @@
       }
     },
     {
+      "id": "pan",
+      "type": "moon",
+      "name": {
+        "en": "PAN",
+        "pt": "PÃ"
+      },
+      "editorial": {
+        "pt": {
+          "description": "Pã é uma pequena lua de Saturno, com raio médio de cerca de 14 km, orbitando dentro da Falha de Encke do anel A, a cerca de 134.000 km de Saturno. Sua gravidade mantém a falha aberta enquanto ela completa uma órbita em cerca de 13,8 horas.",
+          "curiosity": "Pã acumulou uma espessa crista equatorial de material do anel, o que lhe dá uma forma achatada, em disco, comparada a um ravióli ou a um disco voador. Ao orbitar dentro da Falha de Encke, sua gravidade também levanta ondulações no material do anel ao redor, visíveis por centenas de quilômetros.",
+          "facts": [
+            "Mark Showalter o identificou em 1990 a partir de imagens da Voyager 2 tiradas nove anos antes.",
+            "Recebeu o nome de Pã, o deus grego da natureza selvagem, condizente com seu papel de pastor do sistema de anéis de Saturno."
+          ],
+          "records": [
+            "Forma de disco voador compartilhada com Atlas",
+            "Primeira lua de Saturno identificada a partir de imagens de arquivo de uma sonda"
+          ],
+          "explorationMilestone": {
+            "year": 2017,
+            "description": "O sobrevoo mais próximo da Cassini, em 7 de março, fotografou a crista com oito vezes a resolução de observações anteriores"
+          },
+          "info": "Lua ravióli."
+        }
+      },
+      "orbita": {
+        "periodoDias": 0.575,
+        "minUa": 0.00089295,
+        "maxUa": 0.00089295
+      }
+    },
+    {
+      "id": "daphnis",
+      "type": "moon",
+      "name": {
+        "en": "DAPHNIS",
+        "pt": "DAFNIS"
+      },
+      "editorial": {
+        "pt": {
+          "description": "Dafnis é uma lua minúscula de Saturno, com raio médio de cerca de 3,8 km, orbitando dentro da estreita Falha de Keeler do anel A, a cerca de 136.500 km de Saturno. Ela completa uma órbita em cerca de 14 horas.",
+          "curiosity": "A gravidade de Dafnis esculpe as bordas da Falha de Keeler em ondas verticais, que se adiantam à lua numa borda e ficam para trás na outra. Esses padrões de onda projetam sombras longas sobre os anéis perto do equinócio de Saturno, quando a luz solar rasa o plano dos anéis.",
+          "facts": [
+            "A equipe de imageamento da Cassini a descobriu em 1º de maio de 2005, designada inicialmente S/2005 S1.",
+            "Cientistas suspeitavam de uma lua dentro da Falha de Keeler por causa de suas bordas onduladas, anos antes de Dafnis ser fotografada diretamente.",
+            "Sua órbita fica quase exatamente no plano dos anéis, o que a mantém embutida na falha que ela mantém livre."
+          ],
+          "records": [
+            "Uma das menores luas confirmadas de Saturno",
+            "Detectada por ondas nos anéis antes de ser fotografada diretamente"
+          ],
+          "explorationMilestone": {
+            "year": 2017,
+            "description": "A imagem mais próxima da Cassini, em 16 de janeiro durante uma passagem rasante pelos anéis, resolveu a lua e seu padrão de ondas em detalhe"
+          },
+          "info": "Pastora da Falha de Keeler."
+        }
+      },
+      "orbita": {
+        "periodoDias": 0.594,
+        "minUa": 0.00091248,
+        "maxUa": 0.00091248
+      }
+    },
+    {
+      "id": "atlas",
+      "type": "moon",
+      "name": {
+        "en": "ATLAS",
+        "pt": "ATLAS"
+      },
+      "editorial": {
+        "pt": {
+          "description": "Atlas é uma pequena lua de Saturno, com raio médio de cerca de 15 km, orbitando logo fora da borda externa do anel A, a cerca de 137.700 km de Saturno. Ela completa uma órbita em cerca de 14,4 horas.",
+          "curiosity": "Como Pã, Atlas acumulou uma crista equatorial larga e lisa de material do anel, o que lhe dá o mesmo perfil achatado de disco voador de seu vizinho. Acredita-se que a crista tenha se formado aos poucos, conforme partículas finas do anel se depositavam no equador da lua ao longo do tempo.",
+          "facts": [
+            "R. Terrile e a equipe de imageamento da Voyager 1 a descobriram em 1980, a partir de imagens tiradas durante o encontro da sonda com Saturno.",
+            "Em 2004, imagens da Cassini revelaram um anel tênue e temporário de detritos orbitando perto de Atlas, provavelmente desprendido de sua própria crista.",
+            "Recebeu o nome do Titã condenado por Zeus a sustentar o céu na mitologia grega."
+          ],
+          "records": [
+            "Forma de disco voador compartilhada com Pã"
+          ],
+          "explorationMilestone": {
+            "year": 2004,
+            "description": "Um sobrevoo inicial da Cassini fotografou a crista de Atlas e o anel tênue de detritos ao seu redor"
+          },
+          "info": "Lua disco voador."
+        }
+      },
+      "orbita": {
+        "periodoDias": 0.6017,
+        "minUa": 0.00092027,
+        "maxUa": 0.00092027
+      }
+    },
+    {
+      "id": "prometheus",
+      "type": "moon",
+      "name": {
+        "en": "PROMETHEUS",
+        "pt": "PROMETEU"
+      },
+      "editorial": {
+        "pt": {
+          "description": "Prometeu é uma lua irregular, em forma de batata, de Saturno, com raio médio de cerca de 43 km, orbitando a cerca de 139.400 km de Saturno na borda interna do anel F. Ela completa uma órbita em cerca de 14,7 horas.",
+          "curiosity": "Como pastora interna do anel F, Prometeu periodicamente mergulha no anel e arrasta canais de material para fora dele, deixando estruturas trançadas e retorcidas para trás. Essas interações fazem do anel F uma das feições mais dinâmicas e mutáveis do sistema de anéis de Saturno.",
+          "facts": [
+            "A equipe científica da Voyager 1 a descobriu em outubro de 1980.",
+            "É menos densamente cheia de crateras do que suas vizinhas Pandora, Jano e Epimeteu.",
+            "Sua baixa densidade sugere que é um corpo poroso e gelado, e não rocha sólida."
+          ],
+          "records": [
+            "Pastora interna do anel F de Saturno",
+            "Menos crateras entre as pequenas luas internas de Saturno"
+          ],
+          "explorationMilestone": {
+            "year": 2015,
+            "description": "Um sobrevoo próximo da Cassini em 6 de dezembro fotografou sua forma alongada e cheia de crateras em detalhe"
+          },
+          "info": "Pastora do anel F."
+        }
+      },
+      "orbita": {
+        "periodoDias": 0.613,
+        "minUa": 0.0009317,
+        "maxUa": 0.0009317
+      }
+    },
+    {
+      "id": "pandora",
+      "type": "moon",
+      "name": {
+        "en": "PANDORA",
+        "pt": "PANDORA"
+      },
+      "editorial": {
+        "pt": {
+          "description": "Pandora é uma pequena lua de Saturno em forma de batata, com raio médio de cerca de 40 km, orbitando a cerca de 141.700 km de Saturno, logo fora do anel F. Ela completa uma órbita em cerca de 15,1 horas.",
+          "curiosity": "Como pastora externa do anel F, a gravidade de Pandora age ao contrário da de Prometeu: em vez de manter o anel coeso, ela tende a agitar e perturbar sua borda externa. Sua própria superfície é coberta por um material gelado fino, do tamanho de poeira, que suaviza as crateras e grava sulcos e cristas curiosas por ela.",
+          "facts": [
+            "A equipe científica da Voyager 1 a descobriu em outubro de 1980, sob a designação provisória S/1980 S26.",
+            "Recebeu seu nome definitivo em 1985, em referência à figura da mitologia grega.",
+            "Até suas crateras de impacto aparecem com bordas suavizadas, cobertas por detrito fino em vez de bem definidas."
+          ],
+          "records": [
+            "Pastora externa do anel F de Saturno",
+            "Superfície mais lisa entre as pequenas luas dos anéis de Saturno"
+          ],
+          "explorationMilestone": {
+            "year": 2004,
+            "description": "A Cassini começou a trazer suas imagens mais próximas e detalhadas da superfície sulcada e coberta de detrito de Pandora após entrar em órbita de Saturno"
+          },
+          "info": "Pastora do anel F."
+        }
+      },
+      "orbita": {
+        "periodoDias": 0.6285,
+        "minUa": 0.00094734,
+        "maxUa": 0.00094734
+      }
+    },
+    {
+      "id": "janus",
+      "type": "moon",
+      "name": {
+        "en": "JANUS",
+        "pt": "JANO"
+      },
+      "editorial": {
+        "pt": {
+          "description": "Jano é uma lua de Saturno em forma de batata, com raio médio de cerca de 89,5 km e dimensões de aproximadamente 196 por 192 por 150 km, orbitando a cerca de 151.500 km de Saturno. Ela completa uma órbita em cerca de 17 horas.",
+          "curiosity": "Jano compartilha sua órbita com a lua menor Epimeteu, na única configuração desse tipo conhecida no Sistema Solar. A cada quatro anos, aproximadamente, a lua interna alcança a externa, e a gravidade mútua entre as duas as troca de órbita, que diferem entre si por apenas cerca de 50 km.",
+          "facts": [
+            "Audouin Dollfus a observou pela primeira vez em 15 de dezembro de 1966, embora ela só tenha sido confirmada como uma lua distinta de Epimeteu em 1978.",
+            "Stephen Larson e John Fountain mostraram em 1978 que as observações de 1966 eram, na verdade, dois corpos separados.",
+            "A Voyager 1 confirmou as duas luas e sua dança de troca de órbitas em 1980."
+          ],
+          "records": [
+            "Único par conhecido de luas co-orbitais com troca periódica de órbita"
+          ],
+          "explorationMilestone": {
+            "year": 2012,
+            "description": "Um sobrevoo próximo da Cassini em 27 de março fotografou a forma alongada e cheia de crateras de Jano em detalhe"
+          },
+          "info": "Co-orbital com Epimeteu."
+        }
+      },
+      "orbita": {
+        "periodoDias": 0.6945,
+        "minUa": 0.00101245,
+        "maxUa": 0.00101245
+      }
+    },
+    {
+      "id": "epimetheus",
+      "type": "moon",
+      "name": {
+        "en": "EPIMETHEUS",
+        "pt": "EPIMETEU"
+      },
+      "editorial": {
+        "pt": {
+          "description": "Epimeteu é uma pequena lua de Saturno de forma irregular, com raio médio de cerca de 58 km e dimensões de aproximadamente 135 por 108 por 105 km, compartilhando quase a mesma órbita da lua maior Jano, a cerca de 151.400 km de Saturno. Ela completa uma órbita em cerca de 17 horas.",
+          "curiosity": "Epimeteu e Jano estão presos numa ressonância 1:1, com órbitas separadas por apenas cerca de 50 km — menos que a soma de seus raios. A cada quatro anos, aproximadamente, a lua interna mais rápida alcança a externa, e a gravidade entre as duas as troca de órbita em vez de deixá-las colidir.",
+          "facts": [
+            "A observação de Richard Walker em 18 de dezembro de 1966 é creditada como a descoberta, junto com Jano.",
+            "Stephen Larson e John Fountain mostraram em 1978 que as observações de 1966 eram duas luas separadas, não uma só.",
+            "As duas luas nunca chegam a menos de cerca de 15.000 km uma da outra durante uma troca."
+          ],
+          "records": [
+            "Metade do único par conhecido de luas co-orbitais"
+          ],
+          "explorationMilestone": {
+            "year": 2015,
+            "description": "Um sobrevoo próximo da Cassini em 6 de dezembro forneceu imagens detalhadas de sua superfície cheia de crateras"
+          },
+          "info": "Co-orbital com Jano."
+        }
+      },
+      "orbita": {
+        "periodoDias": 0.6945,
+        "minUa": 0.00101211,
+        "maxUa": 0.00101211
+      }
+    },
+    {
+      "id": "hyperion",
+      "type": "moon",
+      "name": {
+        "en": "HYPERION",
+        "pt": "HIPÉRION"
+      },
+      "editorial": {
+        "pt": {
+          "description": "Hipérion é uma das luas de tamanho médio de Saturno, com raio médio de 135 km e forma altamente irregular, semelhante a uma batata, com cerca de 255 por 163 por 137 km ao longo de seus três eixos. Diferente da maioria das luas de seu tamanho, ela nunca se acomodou numa rotação síncrona: presa numa ressonância orbital de 4:3 com Titã e com órbita excêntrica, ela cambaleia caoticamente enquanto circula Saturno a cada 21 dias, aproximadamente.",
+          "curiosity": "A superfície de Hipérion parece uma esponja, marcada por crateras fundas e de bordas nítidas que quase não mostram raios claros de ejeta ao redor. Sua densidade é só um pouco maior que a da água, por isso acredita-se que ela seja uma pilha frouxa de gelo e rocha, cheia de espaços vazios.",
+          "facts": [
+            "William Lassell a descobriu em 1848, o mesmo ano em que William Cranch Bond e seu filho George Phillips Bond a avistaram de forma independente.",
+            "Ela gira a cada 13 dias, aproximadamente, enquanto orbita Saturno a cada 21 dias, aproximadamente, sem eixo de rotação fixo.",
+            "Sua porosidade estimada passa de 40%, entre as mais altas já medidas para qualquer lua conhecida."
+          ],
+          "records": [
+            "Rotador caótico mais conhecido do Sistema Solar",
+            "Um dos corpos mais porosos conhecidos do Sistema Solar"
+          ],
+          "explorationMilestone": {
+            "year": 2005,
+            "description": "O sobrevoo próximo da Cassini em 26 de setembro fotografou em detalhe a superfície esburacada, em forma de esponja"
+          },
+          "info": "Cambaleadora caótica."
+        }
+      },
+      "orbita": {
+        "periodoDias": 21.27661,
+        "minUa": 0.00886338,
+        "maxUa": 0.01094305
+      }
+    },
+    {
+      "id": "phoebe",
+      "type": "moon",
+      "name": {
+        "en": "PHOEBE",
+        "pt": "FEBE"
+      },
+      "editorial": {
+        "pt": {
+          "description": "Febe é uma lua irregular e densamente cheia de crateras de Saturno, com raio médio de cerca de 106,5 km, orbitando bem fora das outras luas maiores de Saturno, a cerca de 12.950.000 km, num caminho retrógrado, excêntrico e inclinado. Ela leva cerca de 550 dias, mais ou menos um ano e meio, para completar uma órbita, movendo-se ao contrário da rotação de Saturno e da maioria de suas outras luas.",
+          "curiosity": "A órbita retrógrada de Febe e sua superfície escura, que reflete só cerca de 6% da luz solar, apontam para um objeto capturado pela gravidade de Saturno, e não formado junto dele. Sua composição sugere um corpo rico em gelo que se formou bem longe, provavelmente no Cinturão de Kuiper, e foi depois capturado em órbita ao redor de Saturno como um Centauro.",
+          "facts": [
+            "William Henry Pickering a descobriu em chapas fotográficas tiradas em agosto de 1898.",
+            "É a fonte do vasto e tênue anel de Febe, descoberto em imagens infravermelhas em 2009.",
+            "Sua órbita irregular e retrógrada ajudou a estabelecer como os astrônomos classificam as luas externas capturadas dos planetas gigantes."
+          ],
+          "records": [
+            "Primeiro alvo de sobrevoo próximo da Cassini no sistema de Saturno",
+            "Provavelmente um Centauro capturado do Cinturão de Kuiper"
+          ],
+          "explorationMilestone": {
+            "year": 2004,
+            "description": "O sobrevoo da Cassini em 11 de junho, seu primeiro encontro próximo no sistema de Saturno, trouxe as primeiras imagens detalhadas de um possível Centauro capturado"
+          },
+          "info": "Lua capturada e retrógrada."
+        }
+      },
+      "orbita": {
+        "periodoDias": 550.31,
+        "minUa": 0.07242314,
+        "maxUa": 0.1007344
+      }
+    },
+    {
       "id": "triton",
       "type": "moon",
       "name": {

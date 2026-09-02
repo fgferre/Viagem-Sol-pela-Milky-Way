@@ -218,13 +218,12 @@ um dia de executor cada, fotos a cada fase; versão curta seria S1+S2.
   (W₀ = 0 declarado), rótulos/busca/órbitas nascem de `LUAS_DO_SISTEMA`;
   a ficha declara "geometria esculpida por código a partir das
   dimensões Cassini". Filme bit-idêntico; zero malha esculpida nasce na
-  vista do sistema (gate de 48 px). **Sobras abertas — S3b:** (1) o
-  editorial dos 9 (`corpos-fonte.json`/`editorial-pt.json`, ~800 linhas,
-  contadores 45→54 em `gera-corpos.mjs`/`verify-assets.mjs`) — a ficha
-  sai sem CONTEXTO e CURIOSIDADES até lá; (2) `atlasConfig.test.ts`
-  espera 21 luas e o espelho com `corpos.json` (vai reprovar; entra na
-  lista do §19 com a expectativa nova); (3) fase orbital não é
-  efeméride (elementos médios J2000 propagados a dois corpos), declarado.
+  vista do sistema (gate de 48 px). **S3b FEITA em 02/09** (commit no selo desta
+  linha): editorial das 9 em inglês e português (fatos da NASA,
+  conferidos contra o motor), contadores 45→54 / luas 23→32 / alvos
+  39→48, `corpos.json` regenerado, `npm run data:verify` limpo;
+  `atlasConfig.test.ts` espera 30 luas (na lista do §19). Declarado: a
+  fase orbital não é efeméride (elementos médios J2000 a dois corpos).
   Provas em `capturas/item134-s3-*`.
 - **S4 — os jatos de Encélado.**
 - **S5 — o espetáculo dos anéis**: anéis E e F, raios do B, ondas de

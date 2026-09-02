@@ -549,7 +549,9 @@ describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
 
   it('toda lua declara o pai — é dele que a nota mede e que o degrau enquadra', () => {
     // F5: as 17 texturadas entram pelo mesmo contrato das marcianas
-    expect(LUAS_DO_SISTEMA).toHaveLength(21);
+    // S3 do item 134: as nove luas de Saturno (pan, daphnis, atlas,
+    // prometheus, pandora, janus, epimetheus, hyperion, phoebe) somam 21→30.
+    expect(LUAS_DO_SISTEMA).toHaveLength(30);
     expect(LUAS_DO_SISTEMA[0]).toMatchObject({ id: 'moon', nome: 'Lua', classe: 'lua', pai: 'earth' });
     expect(LUAS_DO_SISTEMA[1]).toMatchObject({ id: 'phobos', nome: 'Fobos', classe: 'lua', pai: 'mars' });
     expect(LUAS_DO_SISTEMA[2]).toMatchObject({ id: 'deimos', nome: 'Deimos', classe: 'lua', pai: 'mars' });

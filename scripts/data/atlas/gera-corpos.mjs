@@ -97,8 +97,10 @@ const {
 } = await import(path.join(rootDirectory, 'src/three/atlasConfig.ts'));
 
 // ---- contagens esperadas: o mesmo contrato vive em verify-assets.mjs
-const TOTAL_ESPERADO = 45;
-const CONTAGENS_ESPERADAS = { star: 1, planet: 8, moon: 23, dwarf: 5, tno: 5, asteroid: 3 };
+// item 134/S3: as nove luas menores de Saturno (pan, daphnis, atlas,
+// prometheus, pandora, janus, epimetheus, hyperion, phoebe) somam-se às 45.
+const TOTAL_ESPERADO = 54;
+const CONTAGENS_ESPERADAS = { star: 1, planet: 8, moon: 32, dwarf: 5, tno: 5, asteroid: 3 };
 
 // ---- os 6 campos editoriais, na ordem canônica do JSON
 const CAMPOS_EDITORIAIS = [

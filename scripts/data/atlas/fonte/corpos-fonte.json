@@ -678,6 +678,254 @@
       }
     },
     {
+      "id": "pan",
+      "type": "moon",
+      "name": {
+        "en": "PAN",
+        "pt": "PÃ"
+      },
+      "editorial": {
+        "en": {
+          "description": "Pan is a small moon of Saturn, with a mean radius of about 14 km, orbiting inside the Encke Gap of the A ring roughly 134,000 km from Saturn. Its gravity keeps the gap open as it completes an orbit in about 13.8 hours.",
+          "curiosity": "Pan has accreted a thick equatorial ridge of ring material, giving it a flattened, disc-like shape often compared to a ravioli or a flying saucer. As it orbits inside the Encke Gap, its gravity also raises wave-like wakes in the surrounding ring material, visible for hundreds of kilometers.",
+          "facts": [
+            "Mark Showalter identified it in 1990 from Voyager 2 images taken nine years earlier.",
+            "It is named after Pan, the Greek god of the wild, fitting its role as a shepherd of the Saturn ring system."
+          ],
+          "records": [
+            "Flying-saucer shape shared with Atlas",
+            "First moon of Saturn identified from archival spacecraft images"
+          ],
+          "explorationMilestone": {
+            "year": 2017,
+            "description": "Cassini's closest flyby, on March 7, imaged the ridge at eight times the resolution of earlier views"
+          },
+          "info": "Ravioli moon."
+        }
+      }
+    },
+    {
+      "id": "daphnis",
+      "type": "moon",
+      "name": {
+        "en": "DAPHNIS",
+        "pt": "DAFNIS"
+      },
+      "editorial": {
+        "en": {
+          "description": "Daphnis is a tiny moon of Saturn, with a mean radius of about 3.8 km, orbiting inside the narrow Keeler Gap of the A ring roughly 136,500 km from Saturn. It completes an orbit in about 14 hours.",
+          "curiosity": "Daphnis's gravity sculpts the edges of the Keeler Gap into vertical waves that ripple ahead of the moon on one edge and lag behind it on the other. These wave patterns cast long shadows across the rings near Saturn's equinox, when sunlight grazes the ring plane.",
+          "facts": [
+            "The Cassini imaging team discovered it on May 1, 2005, initially designated S/2005 S1.",
+            "Scientists suspected a moon inside the Keeler Gap from its wavy edges years before Daphnis was directly imaged.",
+            "Its orbit lies almost exactly in the ring plane, keeping it embedded in the gap it clears."
+          ],
+          "records": [
+            "One of the smallest confirmed moons of Saturn",
+            "Detected by ring waves before being directly imaged"
+          ],
+          "explorationMilestone": {
+            "year": 2017,
+            "description": "Cassini's closest image, on January 16 during a ring-grazing pass, resolved the moon and its wave pattern in detail"
+          },
+          "info": "Keeler Gap shepherd."
+        }
+      }
+    },
+    {
+      "id": "atlas",
+      "type": "moon",
+      "name": {
+        "en": "ATLAS",
+        "pt": "ATLAS"
+      },
+      "editorial": {
+        "en": {
+          "description": "Atlas is a small moon of Saturn, with a mean radius of about 15 km, orbiting just outside the outer edge of the A ring roughly 137,700 km from Saturn. It completes an orbit in about 14.4 hours.",
+          "curiosity": "Like Pan, Atlas has accreted a broad, smooth equatorial ridge of ring material, giving it the same flattened, flying-saucer profile as its neighbor. The ridge is thought to have built up gradually as fine ring particles settled onto the moon's equator over time.",
+          "facts": [
+            "R. Terrile and the Voyager 1 imaging team discovered it in 1980 from images taken during the spacecraft's encounter with Saturn.",
+            "In 2004, Cassini images revealed a faint, temporary ring of debris orbiting close to Atlas, likely shed from its own ridge.",
+            "It is named after the Titan condemned by Zeus to hold up the sky in Greek mythology."
+          ],
+          "records": [
+            "Flying-saucer shape shared with Pan"
+          ],
+          "explorationMilestone": {
+            "year": 2004,
+            "description": "Cassini's early flyby imaged Atlas's ridge and the faint ring of debris around it"
+          },
+          "info": "Flying-saucer moon."
+        }
+      }
+    },
+    {
+      "id": "prometheus",
+      "type": "moon",
+      "name": {
+        "en": "PROMETHEUS",
+        "pt": "PROMETEU"
+      },
+      "editorial": {
+        "en": {
+          "description": "Prometheus is an irregular, potato-shaped moon of Saturn, with a mean radius of about 43 km, orbiting roughly 139,400 km from Saturn at the inner edge of the F ring. It completes an orbit in about 14.7 hours.",
+          "curiosity": "As the inner shepherd of the F ring, Prometheus periodically dips into the ring and drags streamer-channels of material out of it, leaving braided, twisted structures behind. These interactions make the F ring one of the most dynamic, fast-changing features in Saturn's ring system.",
+          "facts": [
+            "The Voyager 1 science team discovered it in October 1980.",
+            "It is less densely cratered than its neighbors Pandora, Janus and Epimetheus.",
+            "Its low density suggests it is a porous, icy body rather than solid rock."
+          ],
+          "records": [
+            "Inner shepherd of Saturn's F ring",
+            "Least cratered of Saturn's small inner moons"
+          ],
+          "explorationMilestone": {
+            "year": 2015,
+            "description": "Cassini's close flyby on December 6 imaged its cratered, elongated shape in detail"
+          },
+          "info": "F ring shepherd."
+        }
+      }
+    },
+    {
+      "id": "pandora",
+      "type": "moon",
+      "name": {
+        "en": "PANDORA",
+        "pt": "PANDORA"
+      },
+      "editorial": {
+        "en": {
+          "description": "Pandora is a small, potato-shaped moon of Saturn, with a mean radius of about 40 km, orbiting roughly 141,700 km from Saturn just outside the F ring. It completes an orbit in about 15.1 hours.",
+          "curiosity": "As the outer shepherd of the F ring, Pandora's gravity works opposite to Prometheus: rather than holding the ring together, it tends to stir and disrupt its outer edge. Its own surface is coated in fine, dust-sized icy debris that smooths over craters and etches curious grooves and ridges across it.",
+          "facts": [
+            "The Voyager 1 science team discovered it in October 1980, under the provisional designation S/1980 S26.",
+            "It received its permanent name in 1985, after the figure from Greek mythology.",
+            "Even its impact craters appear soft-edged, blanketed by fine debris rather than sharply defined."
+          ],
+          "records": [
+            "Outer shepherd of Saturn's F ring",
+            "Smoothest surface among Saturn's small ring moons"
+          ],
+          "explorationMilestone": {
+            "year": 2004,
+            "description": "Cassini began returning its closest, most detailed images of Pandora's grooved, debris-coated surface after entering orbit at Saturn"
+          },
+          "info": "F ring shepherd."
+        }
+      }
+    },
+    {
+      "id": "janus",
+      "type": "moon",
+      "name": {
+        "en": "JANUS",
+        "pt": "JANO"
+      },
+      "editorial": {
+        "en": {
+          "description": "Janus is a potato-shaped moon of Saturn, with a mean radius of about 89.5 km and dimensions of roughly 196 by 192 by 150 km, orbiting about 151,500 km from Saturn. It completes an orbit in about 17 hours.",
+          "curiosity": "Janus shares its orbit with the smaller moon Epimetheus in the only such configuration known in the Solar System. About every four years the inner moon catches up to the outer one, and their mutual gravity swaps them between the two orbits, which differ by only about 50 km.",
+          "facts": [
+            "Audouin Dollfus first observed it on December 15, 1966, though it was not confirmed as a moon distinct from Epimetheus until 1978.",
+            "Stephen Larson and John Fountain showed in 1978 that the 1966 sightings were actually two separate bodies.",
+            "Voyager 1 confirmed the two moons and their orbit-swapping dance in 1980."
+          ],
+          "records": [
+            "Only known co-orbital moon pair with periodic orbit exchange"
+          ],
+          "explorationMilestone": {
+            "year": 2012,
+            "description": "Cassini's close flyby on March 27 imaged Janus's cratered, oblong shape in detail"
+          },
+          "info": "Co-orbital with Epimetheus."
+        }
+      }
+    },
+    {
+      "id": "epimetheus",
+      "type": "moon",
+      "name": {
+        "en": "EPIMETHEUS",
+        "pt": "EPIMETEU"
+      },
+      "editorial": {
+        "en": {
+          "description": "Epimetheus is a small, irregularly shaped moon of Saturn, with a mean radius of about 58 km and dimensions of roughly 135 by 108 by 105 km, sharing almost the same orbit as the larger moon Janus about 151,400 km from Saturn. It completes an orbit in about 17 hours.",
+          "curiosity": "Epimetheus and Janus are locked in a 1:1 resonance with orbits only about 50 km apart, closer than the sum of their radii. Roughly every four years the faster inner moon catches up to the outer one, and their gravity swaps them between orbits instead of letting them collide.",
+          "facts": [
+            "Richard Walker's observation on December 18, 1966, is credited as the discovery, alongside Janus.",
+            "Stephen Larson and John Fountain showed in 1978 that the 1966 sightings were two separate moons, not one.",
+            "The two moons never approach closer than about 15,000 km during a swap."
+          ],
+          "records": [
+            "Half of the only known co-orbital moon pair"
+          ],
+          "explorationMilestone": {
+            "year": 2015,
+            "description": "Cassini's close flyby on December 6 provided detailed images of its cratered surface"
+          },
+          "info": "Co-orbital with Janus."
+        }
+      }
+    },
+    {
+      "id": "hyperion",
+      "type": "moon",
+      "name": {
+        "en": "HYPERION",
+        "pt": "HIPÉRION"
+      },
+      "editorial": {
+        "en": {
+          "description": "Hyperion is one of Saturn's mid-sized moons, with a mean radius of 135 km and a highly irregular, potato-like shape, about 255 by 163 by 137 km across its three axes. Unlike most moons its size, it never settled into synchronous rotation: locked in a 4:3 orbital resonance with Titan and moving on an eccentric orbit, it tumbles chaotically as it circles Saturn roughly every 21 days.",
+          "curiosity": "Hyperion's surface looks like a sponge, pocked with deep, sharply rimmed craters that show almost no bright ejecta rays around them. Its density is only a little more than that of water, so it is thought to be a loosely bound pile of ice and rock riddled with empty space.",
+          "facts": [
+            "William Lassell discovered it in 1848, the same year William Cranch Bond and his son George Phillips Bond spotted it independently.",
+            "It rotates roughly every 13 days while orbiting Saturn roughly every 21 days, with no fixed spin axis.",
+            "Its estimated porosity is over 40 percent, among the highest measured for any known moon."
+          ],
+          "records": [
+            "Best-known chaotic rotator in the Solar System",
+            "One of the most porous bodies known in the Solar System"
+          ],
+          "explorationMilestone": {
+            "year": 2005,
+            "description": "Cassini's close flyby on September 26 imaged the pitted, sponge-like surface in detail"
+          },
+          "info": "Chaotic tumbler."
+        }
+      }
+    },
+    {
+      "id": "phoebe",
+      "type": "moon",
+      "name": {
+        "en": "PHOEBE",
+        "pt": "FEBE"
+      },
+      "editorial": {
+        "en": {
+          "description": "Phoebe is an irregular, heavily cratered moon of Saturn, with a mean radius of about 106.5 km, orbiting far outside Saturn's other major moons at roughly 12,950,000 km on a retrograde, eccentric, inclined path. It takes about 550 days, roughly a year and a half, to complete one orbit, moving opposite to Saturn's rotation and to most of its other moons.",
+          "curiosity": "Phoebe's retrograde orbit and dark surface, reflecting only about 6 percent of sunlight, point to an object captured by Saturn's gravity rather than formed alongside it. Its composition suggests an ice-rich body that formed far away, most likely in the Kuiper Belt, and was later captured into orbit around Saturn as a Centaur.",
+          "facts": [
+            "William Henry Pickering discovered it on photographic plates taken in August 1898.",
+            "It is the source of the vast, faint Phoebe ring, discovered in infrared images in 2009.",
+            "Its irregular, retrograde orbit helped establish how astronomers classify the outer, captured moons of giant planets."
+          ],
+          "records": [
+            "Cassini's first close flyby target in the Saturn system",
+            "Likely a captured Centaur from the Kuiper Belt"
+          ],
+          "explorationMilestone": {
+            "year": 2004,
+            "description": "Cassini's flyby on June 11, its first close encounter in the Saturn system, returned the first detailed images of a possible captured Centaur"
+          },
+          "info": "Captured, retrograde moon."
+        }
+      }
+    },
+    {
       "id": "triton",
       "type": "moon",
       "name": {

@@ -309,11 +309,13 @@ try {
   );
 }
 const corpos = corposDoc.corpos;
-if (!Array.isArray(corpos) || corpos.length !== 45) {
-  throw new Error(`atlas/corpos: esperados 45 corpos, obtidos ${corpos?.length ?? 0}.`);
+// item 134/S3: as nove luas menores de Saturno somam-se às 45 (45→54,
+// moon 23→32) — o mesmo contrato numérico vive em gera-corpos.mjs.
+if (!Array.isArray(corpos) || corpos.length !== 54) {
+  throw new Error(`atlas/corpos: esperados 54 corpos, obtidos ${corpos?.length ?? 0}.`);
 }
 {
-  const contagensEsperadas = { star: 1, planet: 8, moon: 23, dwarf: 5, tno: 5, asteroid: 3 };
+  const contagensEsperadas = { star: 1, planet: 8, moon: 32, dwarf: 5, tno: 5, asteroid: 3 };
   const contagens = {};
   for (const corpo of corpos) {
     contagens[corpo.type] = (contagens[corpo.type] ?? 0) + 1;
@@ -384,8 +386,10 @@ if (!Array.isArray(corpos) || corpos.length !== 45) {
   }
 
   const alvos = corpos.filter((c) => c.semAlvo !== true);
-  if (alvos.length !== 39) {
-    throw new Error(`atlas/corpos: esperados 39 alvos, obtidos ${alvos.length}.`);
+  // item 134/S3: as nove luas menores de Saturno são todas alvo (têm pai,
+  // logo têm órbita) — 39→48.
+  if (alvos.length !== 48) {
+    throw new Error(`atlas/corpos: esperados 48 alvos, obtidos ${alvos.length}.`);
   }
 
   // ---- A LÍNGUA, E O CADEADO CONTRA A EDIÇÃO À MÃO ----------------------
