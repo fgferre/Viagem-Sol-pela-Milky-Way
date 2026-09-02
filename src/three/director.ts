@@ -256,6 +256,9 @@ interface DirectorEvents {
 // é o endereço que o resto da casa já usa — o mesmo caso do `Phase`.
 export type { EstadoDaEscada } from './director/escada';
 
+/** as opções da entrada no Atlas — `aoChegar` é o alvo na mão (item 129) */
+type EntradaNoAtlas = { instantaneo?: boolean; momento?: number; aoChegar?: () => void };
+
 export class Director {
   /** o painel de ajustes mexe em tom e exposição ao vivo */
   readonly engine: Engine;
@@ -1643,9 +1646,7 @@ export class Director {
    * dessa semente sai do roteiro pela MESMA lei do `seek`: um link para
    * a coda tem de partir com o disco já para trás.
    */
-  entrarNoAtlas(
-    opcoes: { instantaneo?: boolean; momento?: number; aoChegar?: () => void } = {}
-  ) {
+  entrarNoAtlas(opcoes: EntradaNoAtlas = {}) {
     if (this.phase === 'atlas' || this.phase === 'loading') return;
     const daViagem = this.phase === 'journey' || this.phase === 'end';
     const olhar = this.rig.olhar;

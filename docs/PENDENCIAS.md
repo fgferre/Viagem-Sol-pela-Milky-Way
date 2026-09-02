@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 132.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 133.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -49,7 +49,22 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ---
 
-## O BASTÃO — onde a rodada parou (01/09)
+## O BASTÃO — onde a rodada parou (02/09)
+
+**02/09 (o fecho da FAXINA).** Sete miúdos verificados por código e git
+antes de qualquer obra (ordem dele): **123, 17, 117 consertados** com
+foto (`542a9d2`); **15 fechado sem obra** (já funcionava, medido);
+**119 e 27 feitos** (`37d6010`) e **fechados pelos testes que ele
+aprovou** (regressão 197/197; atlas-smoke prova 3 passa); **22
+encolhido** (sobra a curadoria das fotos do Sol). A suíte cheia rodou
+1× no fecho: 2 guardas de texto quebradas pela assinatura da F1
+(consertadas, 162/162 nos dois arquivos). O juiz do atlas trouxe 7
+falhas ANTIGAS da onda 125 — provado no código de antes — que viraram
+o item **132**. Próxima frente: **130 (app bilíngue)**. Backup em dia;
+site intocado.
+
+*(01/09, o bastão anterior:)*
+
 
 **01/09 (noite — a FAXINA dos miúdos, ordem dele: "vamos tocar todos
 esses, coordene conforme nossos preceitos" + "verifique se ainda é
@@ -1859,6 +1874,26 @@ nomes dos aglomerados num arquivo lateral (base útil para o 114).
 **Pré-requisito, ordem dele: olhar com calma como essas famílias são
 desenhadas hoje e curar antes de apontar a busca para elas.**
 
+**132. O juiz `atlas-smoke` está desatualizado pela onda 125 — 7 provas
+de rótulos reprovam, e uma pode ser defeito de verdade.** Achado em
+02/09 ao rodar o juiz no fecho da faxina (com o sim dele). PROVADO que
+não é da faxina: o mesmo juiz rodado no código do fecho da onda 125
+(`11cdbf0`, worktree) dá as MESMAS 7 falhas mais a do 119
+(`capturas/item132-atlas-smoke-antes-11cdbf0.log` vs
+`-depois-37d6010.log`). A onda 125 mudou as regras dos rótulos pelo olho
+dele (F4 encobrimento, F5 tipografia e ícones, F7 portas) e só rodou a
+suíte, não este juiz. O que reprova: (a) o CENSO da abertura e do teto do
+zoom — o juiz pina 15 nomes e uma lista exata de estrelas; hoje são 17
+(entram Alnair, Sargas, Shaula; sai Fuyue) — provavelmente só re-pinar;
+(b) "1 cortado sem vencedor (corpo:uranus)" — a régua do juiz não conhece
+as causas novas de corte (encobrimento/portas); verificar se Urano some
+por regra nova ou por defeito antes de re-pinar; (c) no CELULAR
+(390×844) Plutão não está desenhado sobre o canvas — pode ser a
+tipografia de 16 px da F5 tirando vaga; conferir com foto do telefone.
+Obra: olhar as três com foto, re-pinar o juiz com número medido e
+declaração no commit (§13). Não bloqueia nada: o site publicado é
+anterior à onda 125.
+
 **118. A tela de abertura merece ser repensada por inteiro (futuro).**
 Palavras dele em 31/08, ao encerrar o item 34: *"acho que ainda temos
 grande oportunidade nessa tela de abertura no entanto.. nao acho muito
@@ -1878,8 +1913,8 @@ buraco negro central. Filme segue sem busca (palavra dele). Testes
 aprovados e verdes (`78ee3b5`). O que sobrou virou o item **131**.)*
 
 **119.** O `atlas-smoke` prova 3 reprovava em t=250 porque media
-contra a Terra velha — **OBRA FEITA em 02/09, fecha quando o juiz rodar
-(lista do §19)**; história no ARQUIVO. *(A régua passou a ser a Terra
+contra a Terra velha — **FECHADO em 02/09**, juiz rodado com o sim dele
+(prova 3 passa); história no ARQUIVO. *(A régua passou a ser a Terra
 viva de cada lado: relógio parado → vetor relativo (teto 1e-9);
 relógio reaplicado pelo portal (item 108) → distância de enquadramento
 (teto 1e-4). Medido à mão: 1,185e-2 → 3,78e-5. Prova
@@ -1980,8 +2015,8 @@ corte come a superfície.
 **26.** O brilho das estrelas é relativo, não absoluto.
 
 **27.** Faltavam fixtures Horizons de POSIÇÃO de Vênus, Júpiter,
-Saturno e Urano — **OBRA FEITA em 02/09, fecha quando o teste rodar
-(lista do §19)**; história no ARQUIVO. *(12 fixtures nas mesmas 3 datas
+Saturno e Urano — **FECHADO em 02/09**, teste de regressão rodado com o
+sim dele (197/197); história no ARQUIVO. *(12 fixtures nas mesmas 3 datas
 dos outros planetas, índice 127 → 139; os quatro entraram no juiz de
 regressão; pior desvio motor × Horizons 0,00032° / 0,0018% contra o
 teto 0,1° / 0,2%. Prova `capturas/item27-fixtures.txt`.)*
