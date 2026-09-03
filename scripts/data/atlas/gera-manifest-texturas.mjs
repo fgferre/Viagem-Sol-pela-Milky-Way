@@ -464,6 +464,26 @@ const ORIGENS = {
     atribuicao: 'Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida.',
     proveniencia: 'derivado',
   },
+
+  // ---- ITEM 140 (2026-09-03): O RELEVO DA LUA, medido. Até aqui a Lua
+  // tinha SÓ o mapa de cor, e o relevo dela era derivado dele (o bump do
+  // albedo da S2) — invenção que afundava os mares e levantava os raios
+  // de Tycho. Agora a normal vem da topografia do LRO, que é o melhor
+  // dado de terreno que existe fora da Terra. 'derivado' porque o
+  // produto publicado é o mapa de ALTURA: a normal é assada dele aqui,
+  // por `scripts/data/atlas/gera-normal-da-lua.mjs`.
+  'moon/normal': {
+    fonte:
+      'LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — ' +
+      'mapa de NORMAIS derivado da altura, em amplitude física',
+    url: 'https://svs.gsfc.nasa.gov/4720',
+    licenca: 'domínio público (NASA)',
+    atribuicao:
+      'Topografia: NASA/Goddard Space Flight Center Scientific Visualization ' +
+      'Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de ' +
+      'normais assado nesta casa (gera-normal-da-lua.mjs).',
+    proveniencia: 'derivado',
+  },
 };
 
 // A marca da política do dono: arquivo presente sem linha em ORIGENS

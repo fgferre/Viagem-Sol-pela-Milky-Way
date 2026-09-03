@@ -124,14 +124,9 @@ import type { FonteDeEfemerides } from '../planetas/planetas';
 import { DESLOCAMENTO_UA_PARA_PC } from '../planetas/planetas';
 import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
-import {
-  GLSL_ALTURA_DO_ALBEDO,
-  GLSL_BUMP_DO_ALBEDO,
-  diametroAparentePx,
-  escalaDoBumpDoAlbedo,
-} from './corpos';
+import { GLSL_NORMAL_DO_MAPA, diametroAparentePx } from './corpos';
 import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
-import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
+import { CANAL_MAP, CANAL_NORMAL, type Seguradores, TexturasDoCorpo } from './texturas';
 import type { OpcoesDeTextura } from './texturas';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import {
@@ -154,6 +149,19 @@ export const LS_NORMALIZACAO = 4 / 3;
 
 /** O literal que entra no GLSL — o que o oráculo por quadratura lê. */
 export const LS_NORMALIZACAO_GLSL = LS_NORMALIZACAO.toFixed(7);
+
+/**
+ * A ESCALA TANGENCIAL DO RELEVO DA LUA — 1,0, ou seja NENHUM ganho.
+ *
+ * O mapa de normais dela é assado do LDEM do LRO em amplitude FÍSICA
+ * (`scripts/data/atlas/gera-normal-da-lua.mjs`): a inclinação que o
+ * texel carrega é a inclinação medida do terreno, RMS 6,9° e máxima
+ * 40,2°. As luas de Saturno usam 1,2 porque o número é o do projeto do
+ * dono; aqui não há de onde tirar um exagero que não seja invenção — e
+ * o que ele cobrou foi justamente que a Lua CORRESPONDA ao que se
+ * observa.
+ */
+export const ESCALA_DA_NORMAL_DA_LUA = 1;
 
 // ------------------------------------------------------------
 // GLSL — shader PRÓPRIO, padrão da casa (guardas, zero chunk).
@@ -194,14 +202,12 @@ varying vec2 vUv;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
-${GLSL_ALTURA_DO_ALBEDO}
-${GLSL_BUMP_DO_ALBEDO}
+${GLSL_NORMAL_DO_MAPA}
 void main() {
-  vec3 n = normSeguro(vLocal);
+  // ITEM 140: o relevo da Lua é MEDIDO — a normal vem do mapa do LDEM
+  // do LRO, e a silhueta continua a da esfera (nada desloca vértice).
+  vec3 n = normalDoMapa(normSeguro(vLocal), vUv);
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
-  // B1: a normal ganha o relevo do PRÓPRIO mapa (corpos.ts). O
-  // interruptor da Lua vale para o FILME — ver BUMP_DO_ALBEDO.
-  n = normalComBumpDoAlbedo(n, vLocal, alturaDoAlbedo(albedo));
   vec3 dirCam = normSeguro(uCamLocal - vLocal);
   float mu0 = clamp(dot(n, uDirSolLocal), 0.0, 1.0);
   float mu = clamp(dot(n, dirCam), 0.0, 1.0);
@@ -329,12 +335,15 @@ export class LuaResolvida {
 
   constructor(opcoes: OpcoesDaLua) {
     this.group.visible = false;
-    // UM canal (`map`), pela transação única. A dose de VRAM é POR CANAL
-    // (`alvoDePixels`), então o `map` da Lua mantém o 8k de cinema de
-    // graça: a regra nunca foi por corpo.
+    // DOIS canais desde o item 140 (`map` e `normal`), na transação
+    // única. A dose de VRAM é POR CANAL (`alvoDePixels`), e as duas
+    // doses são as de sempre: `map` é canal de ASSUNTO e fica com o 8k
+    // de cinema, `normal` é apoio e teta em 4k — a régua nunca foi por
+    // corpo. O texto de `alvoDePixels` ainda cita a Lua como o corpo de
+    // UM canal; o exemplo envelheceu aqui, a regra não.
     this.texturas = new TexturasDoCorpo({
       corpo: 'moon',
-      canais: [CANAL_MAP],
+      canais: [CANAL_MAP, CANAL_NORMAL],
       rede: opcoes,
       etiqueta: 'lua',
       // sem textura não há globo — mas desde o item 108 sobra o PONTO
@@ -343,10 +352,18 @@ export class LuaResolvida {
       oQueNaoNasce: 'a Lua não nasce nesta sessão',
       publicar: (porCanal) => {
         this.garantirCasca();
-        this.matSuperficie!.uniforms.uMapaDia.value = porCanal.get('map')!;
+        // o lote é ATÔMICO (texturas.ts): ou vieram os dois, ou nenhum —
+        // é o que permite ao shader confiar em `uMapaNormal` sempre que
+        // houver casca
+        const u = this.matSuperficie!.uniforms;
+        u.uMapaDia.value = porCanal.get('map')!;
+        u.uMapaNormal.value = porCanal.get('normal')!;
       },
       soltar: () => {
-        if (this.matSuperficie) this.matSuperficie.uniforms.uMapaDia.value = null;
+        const u = this.matSuperficie?.uniforms;
+        if (!u) return;
+        u.uMapaDia.value = null;
+        u.uMapaNormal.value = null;
       },
     });
     this.estado = {
@@ -520,7 +537,8 @@ export class LuaResolvida {
       fragmentShader: LUA_FRAG,
       uniforms: {
         uMapaDia: { value: null },
-        uBumpAlbedo: { value: escalaDoBumpDoAlbedo('moon') },
+        uMapaNormal: { value: null },
+        uRelevoNormal: { value: ESCALA_DA_NORMAL_DA_LUA },
         uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
         uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
         uLuzGanho: { value: 1 },

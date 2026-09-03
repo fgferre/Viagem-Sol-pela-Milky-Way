@@ -2190,6 +2190,108 @@
       "proveniencia": "derivado"
     },
     {
+      "corpo": "moon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/moon/normal_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 862076,
+      "sha256": "5f465765a2d68d0b818aac9250f3c03f19342f5f6f7ca5c8d64ff78c7b4df3ab",
+      "origem": {
+        "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://svs.gsfc.nasa.gov/4720",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"
+    },
+    {
+      "corpo": "moon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/moon/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 665056,
+      "sha256": "8423fd55197f32922b34e8297fa1dcd7beafefb7e82d2f10407afd087c814f26",
+      "origem": {
+        "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://svs.gsfc.nasa.gov/4720",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"
+    },
+    {
+      "corpo": "moon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/moon/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 3573351,
+      "sha256": "d59ebd16763e83eacf5d75c1d4af53a8adfc32ba431e40fc362a46c3535920ca",
+      "origem": {
+        "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://svs.gsfc.nasa.gov/4720",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"
+    },
+    {
+      "corpo": "moon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/moon/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2682464,
+      "sha256": "032c80e19ab691113c93389ef4eabb023607243eaab417d7b27a3a2980103fbc",
+      "origem": {
+        "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://svs.gsfc.nasa.gov/4720",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"
+    },
+    {
+      "corpo": "moon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/moon/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 13488235,
+      "sha256": "ce5687195817f813ccdf5837566cd8dec8ef0b0489921343769d079bdc78801b",
+      "origem": {
+        "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://svs.gsfc.nasa.gov/4720",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"
+    },
+    {
+      "corpo": "moon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/moon/normal.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 9141842,
+      "sha256": "c7e5adfffdcdec8ed38438c294164f9bf2bb766c52b7980c6b1789f7be12ebeb",
+      "origem": {
+        "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://svs.gsfc.nasa.gov/4720",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"
+    },
+    {
       "corpo": "neptune",
       "canal": "map",
       "arquivo": "textures/atlas/neptune/map_1024.jpg",

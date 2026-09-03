@@ -571,7 +571,12 @@ function secaoImagem(
   // dado, pelo mesmo caminho da nota do `map`, e sai na linha "o relevo
   // admite" — desenhar montanha fabricada sem dizer seria exatamente a
   // mentira que esta seção existe para não contar.
-  const relevo = fonteDoCanal(manifest.entradas, id, 'height');
+  // O canal do relevo é `height` onde ele desloca vértice e `normal`
+  // onde ele só gira a luz (item 140: a Lua) — a linha é sobre a IMAGEM
+  // de onde o relevo vem, não sobre o que o shader faz com ela.
+  const relevo =
+    fonteDoCanal(manifest.entradas, id, 'height') ??
+    fonteDoCanal(manifest.entradas, id, 'normal');
   if (relevo?.origem) {
     const tier = TIER_DA_IMAGEM[relevo.proveniencia ?? 'nao-resolvida'];
     linhas.push(

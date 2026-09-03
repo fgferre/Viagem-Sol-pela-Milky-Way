@@ -262,6 +262,13 @@ export const BUMP_DO_ALBEDO_PADRAO = 0.02;
  * albedo só é altura em superfície de regolito craterizado. Onde a
  * mancha do mapa é de COR e não de forma, derivar relevo dela inventa
  * montanha onde há só tinta.
+ *
+ * A LUA NÃO ESTÁ NESTA TABELA E NÃO CONSOME MAIS ESTE CHUNK (item 140):
+ * desde que ela ganhou mapa de normais MEDIDO (LDEM do LRO), `lua.ts`
+ * usa `GLSL_NORMAL_DO_MAPA` e nunca chama `escalaDoBumpDoAlbedo` — a
+ * aproximação daqui afundava os mares e levantava os raios claros de
+ * Tycho, que foi o que o dono viu ("não corresponde mais ao que
+ * observamos"). Quem tem a normal real não precisa da inventada.
  */
 export const BUMP_DO_ALBEDO: Readonly<Record<string, number>> = {
   // A LEI DO DONO (02/09): "o relevo deve aparecer em tudo que tem relevo,
@@ -320,6 +327,44 @@ vec3 normalComBumpDoAlbedo(vec3 n, vec3 p, float h) {
 /** A luminância que serve de altura — a mesma Rec.709 do grading dele. */
 export const GLSL_ALTURA_DO_ALBEDO = /* glsl */ `
 float alturaDoAlbedo(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+`;
+
+/**
+ * A NORMAL DO MAPA, em espaço tangente sobre a esfera equiretangular.
+ *
+ * MORAVA EM `rochoso.ts` (S2 do item 134) e veio para cá no item 140,
+ * quando a LUA passou a ter mapa de normais MEDIDO (LDEM do LRO) e
+ * virou o segundo leitor do mesmo chunk — duas cópias do frame
+ * tangente seriam a segunda fonte de verdade nascendo (AGENTS 4).
+ *
+ * O FRAME É ANALÍTICO e não vem de atributo: a parametrização da
+ * `SphereGeometry` do three é conhecida, e dela sai `T = ŷ × n̂` (leste,
+ * o sentido de +u) e `B = n̂ × T` (norte, o sentido de +v) — as duas
+ * derivadas exatas da malha. Calcular tangentes por atributo custaria um
+ * pré-passo de geometria para o mesmo resultado.
+ *
+ * NOS POLOS O FRAME DEGENERA (ŷ × n̂ → 0) e a função devolve a normal
+ * geométrica: um pixel de polo sem relevo é menos errado que uma normal
+ * dividida por zero.
+ *
+ * A APROXIMAÇÃO DECLARADA: nas luas triaxiais o `T` exato não é
+ * exatamente `ŷ × n̂`; em Mimas (a/b = 1,05) o erro de direção fica
+ * abaixo de 3°, e o que ele desloca é a SOMBRA dentro da cratera, não a
+ * silhueta (essa vem do vértice).
+ */
+export const GLSL_NORMAL_DO_MAPA = /* glsl */ `
+uniform sampler2D uMapaNormal;
+uniform float uRelevoNormal;  // 0 desliga; a escala tangencial dele é 1,2
+vec3 normalDoMapa(vec3 n, vec2 uv) {
+  if (uRelevoNormal <= 0.0) return n;
+  vec3 t = cross(vec3(0.0, 1.0, 0.0), n);
+  float lt = length(t);
+  if (lt < 1.0e-4) return n;
+  t /= lt;
+  vec3 b = cross(n, t);
+  vec3 m = texture2D(uMapaNormal, uv).rgb * 2.0 - 1.0;
+  return normalize(m.x * uRelevoNormal * t + m.y * uRelevoNormal * b + m.z * n);
+}
 `;
 
 /**

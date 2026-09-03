@@ -75,6 +75,7 @@ import {
   GLSL_ALTURA_DO_ALBEDO,
   GLSL_BUMP_DO_ALBEDO,
   GLSL_GRAO_DO_CLOSE,
+  GLSL_NORMAL_DO_MAPA,
   GLSL_RUIDO_DE_VALOR,
   diametroAparentePx,
   escalaDoBumpDoAlbedo,
@@ -325,39 +326,6 @@ void main() {
   float h = texture2D(uMapaAltura, uv).r;
   vLocal = position * (1.0 + uRelevo.y + h * uRelevo.x);
   gl_Position = projectionMatrix * modelViewMatrix * vec4(vLocal, 1.0);
-}
-`;
-
-/**
- * A NORMAL DO MAPA, em espaço tangente sobre a esfera equiretangular.
- *
- * O FRAME É ANALÍTICO e não vem de atributo: a parametrização da
- * `SphereGeometry` do three é conhecida, e dela sai `T = ŷ × n̂` (leste,
- * o sentido de +u) e `B = n̂ × T` (norte, o sentido de +v) — as duas
- * derivadas exatas da malha. Calcular tangentes por atributo custaria um
- * pré-passo de geometria para o mesmo resultado.
- *
- * NOS POLOS O FRAME DEGENERA (ŷ × n̂ → 0) e a função devolve a normal
- * geométrica: um pixel de polo sem relevo é menos errado que uma normal
- * dividida por zero.
- *
- * A APROXIMAÇÃO DECLARADA: nas luas triaxiais o `T` exato não é
- * exatamente `ŷ × n̂`; em Mimas (a/b = 1,05) o erro de direção fica
- * abaixo de 3°, e o que ele desloca é a SOMBRA dentro da cratera, não a
- * silhueta (essa vem do vértice).
- */
-const GLSL_NORMAL_DO_MAPA = /* glsl */ `
-uniform sampler2D uMapaNormal;
-uniform float uRelevoNormal;  // 0 desliga; a escala tangencial dele é 1,2
-vec3 normalDoMapa(vec3 n, vec2 uv) {
-  if (uRelevoNormal <= 0.0) return n;
-  vec3 t = cross(vec3(0.0, 1.0, 0.0), n);
-  float lt = length(t);
-  if (lt < 1.0e-4) return n;
-  t /= lt;
-  vec3 b = cross(n, t);
-  vec3 m = texture2D(uMapaNormal, uv).rgb * 2.0 - 1.0;
-  return normalize(m.x * uRelevoNormal * t + m.y * uRelevoNormal * b + m.z * n);
 }
 `;
 

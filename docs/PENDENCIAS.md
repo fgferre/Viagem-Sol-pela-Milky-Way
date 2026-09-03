@@ -161,6 +161,25 @@ real, malha e textura maiores — e o custo de quadro; referência do "que
 observamos": as imagens do NASA SVS Moon Phase and Libration (LRO,
 domínio público) no mesmo instante.
 
+**ESTADO (03/09 — obra feita, falta a palavra dele).** O "lento" NÃO era o
+relevo: medido nos três tiers, o passe da Lua dá 8,58 ms com o bump da S2,
+8,67 ms com o mapa novo e 8,70 ms SEM relevo nenhum — os três iguais dentro
+de 1,4%, e o quadro não muda (22,0 / 24,5 / 42,7 fps em cinema/alta/
+performance, mesmos números dos dois lados). O que pesa naquela vista são as
+estrelas-herói (32 draws, 32% do quadro) e o bloom (17%). O "não corresponde"
+era REAL e foi consertado na raiz: o relevo da Lua vinha do gradiente da COR
+(mares viravam buracos, raios de Tycho viravam cristas) e virou topografia
+medida — mapa de NORMAIS 4096×2048 assado do LDEM do LOLA/LRO (NASA SVS,
+domínio público) em amplitude física, sem ganho, RMS 6,9°. Entra SÓ na
+iluminação: silhueta intacta, nada desloca vértice. A Lua saiu da tabela
+`BUMP_DO_ALBEDO` (quem tem normal medida não precisa da inventada) e a ficha
+ganhou a linha "relevo" com a fonte. Custo em disco: +29,6 MB (texturas de
+189,0 → 218,65 MB); no tier cinema a Lua baixa 8,72 MB de normal — cair para
+fonte de 2048 (2,56 MB) é trocar um número no gerador, se ele preferir leveza
+a detalhe. Fotos `capturas/item140-{svs-referencia,lua-prancha,terminador-
+antes,terminador-depois}.png`, custo em `capturas/item140-custo-{antes,
+depois}.txt`. Falta: a palavra dele sobre a foto, e a lista do §19.
+
 **141. Os outros candidatos à técnica da Lua (relevo real, só na luz).**
 Pedido dele, 03/09: *"ver que outros candidatos podem se beneficiar da mesma
 tecnica"*. Censo (03/09, cruzando o manifesto de texturas com os mapas de

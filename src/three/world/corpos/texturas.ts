@@ -138,7 +138,8 @@ const CANAIS_DE_ASSUNTO = new Set(['map', 'ring']);
  * continua válida: a dose existe para não empilhar 8k em todo canal.
  * A 795 px de disco os apoios em 4k já estão acima de 2 texels/pixel.
  * A regra mora AQUI, por canal, e vale para qualquer corpo futuro:
- * um corpo de 1 canal (a Lua) mantém o 8k no `map` de graça.
+ * um corpo de poucos canais (a Lua: `map` + o `normal` do item 140)
+ * mantém o 8k no `map` de graça.
  *
  * Sem sonda legível o teto é 2k — errar para baixo é barato, estourar o
  * limite do driver é tela preta.

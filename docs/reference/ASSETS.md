@@ -219,6 +219,43 @@ O véu do fim do filme fecha com uma frase que **não é da casa**:
   `scripts/visual/filme-smoke.mjs` reprova a tela final sem a linha do
   crédito.
 
+## O relevo da Lua (item 140)
+
+A Lua tinha só o mapa de cor. O relevo dela vinha do **bump por derivada do
+albedo** da S2 do item 134: a normal era torcida pelo gradiente da própria
+cor, então mancha escura virava buraco e mancha clara virava crista. Nos
+mares e nos raios de Tycho isso é o contrário do terreno — o mar é uma
+planície LISA e escura, e o raio é poeira clara sobre chão plano. Palavras
+do dono: *"não corresponde mais ao que observamos"*.
+
+A fonte do conserto é o **LDEM do LOLA/LRO**, publicado pelo NASA SVS no CGI
+Moon Kit (<https://svs.gsfc.nasa.gov/4720>, domínio público). Entrou o
+`ldem_16_uint.tif`: 5760×2880, 16 pixels por grau, inteiro sem sinal de 16
+bits com o deslocamento que a própria página declara — altura em metros =
+`(valor − 20000) × 0,5`, sobre a esfera de referência de 1737,4 km.
+
+`scripts/data/atlas/gera-normal-da-lua.mjs` assa dele um mapa de NORMAIS
+equiretangular de 4096×2048 (escada 2048/1024), em **amplitude física**: as
+derivadas são metros por metro sobre a esfera (passo leste `R·cos(lat)·dLon`,
+passo norte `R·dLat`), **sem ganho nenhum** — inclinação RMS medida 6,9° e
+máxima 40,2°. A Lua é o único corpo da casa com relevo assim, e por isso ela
+saiu da tabela `BUMP_DO_ALBEDO`: quem tem a normal medida não precisa da
+inventada.
+
+O relevo entra **só na iluminação**. Nada desloca vértice: a silhueta segue
+sendo a da esfera exata de `BODY_AXES`, e o que o mapa faz é girar a normal
+para o Sol desenhar sombra DENTRO da cratera — que é o pedido do dono ("a
+lua só aparece a iluminação fazendo como se fosse sombra nas crateras").
+
+O TIFF de origem **não fica na árvore**: são 33 MB de matéria-prima para um
+produto de 12,9 MB, e o script o apaga depois de assar.
+
+O alinhamento é conferido por MEDIDA, não por fé: o script correlaciona a
+altura com a luminância do mapa de cor (mares baixos e escuros, terras altas
+e claras) e recusa a assar abaixo de +0,3. Sem deslocamento nenhum ela dá
+**+0,61** — o LDEM e o mapa da Solar System Scope estão na mesma convenção
+de longitude, e não há a meia volta que o item 138 achou nas luas de Saturno.
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**
@@ -262,6 +299,7 @@ tocar num `.mjs`.
 | enceladus/height | DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul |
 | rhea/height | relevo SINTÉTICO: não existe DTM público de Reia — o campo de crateras foi gerado por código no projeto Saturn do autor, e não é medida |
 | iapetus/height | relevo SINTÉTICO: não existe DTM público de Jápeto — o campo de crateras foi gerado por código no projeto Saturn do autor (só a crista equatorial é feição real, modelada), e não é medida |
+| moon/normal | topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela |
 
 ### a forma (item 20)
 
