@@ -449,6 +449,36 @@ recusado por `lerSequencia`, as duas listas do encerramento com o mesmo
 tamanho e o `filme-smoke` com `?lang=en`. Fica para a F4 o que a F2 já
 listou (confissões do manifesto/ASSETS, portas de depuração).
 
+- **F4 — FEITA em 03/09** (o operário caiu duas vezes por sobrecarga do
+  servidor; o coordenador fechou o resto à mão): as confissões da ficha
+  que vêm do manifesto de texturas (fonte, atribuição, licença, "o
+  defeito", "o relevo admite", "a forma") viraram `{pt, en}` no
+  `texturas.json` (792 campos `en`, gerados de `texturas-em-ingles.mjs`
+  ao lado do gera-manifest; leitor com pt de piso; `verify-assets` confere
+  os dois); `<title>`, `<meta description>` e o `lang` do `<html>` seguem
+  a língua viva a partir do `main.tsx`; inglês unificado para AMERICANO
+  (decisão dele: "americano tá bom") nas tabelas e nos roteiros; os dois
+  erros de carga que o visitante pode ver entraram na tabela. Varredura:
+  fora das tabelas só sobraram comentários, mensagens de console e a
+  mensagem interna do canvas de cartografia. Portas de depuração do selo
+  não vazam para a tela normal.
+- **LISTA DO §19 do 130 (consolidada, para o sim dele):** (1)
+  `idioma.escolha` — storage > navegador > pt-BR, e pt-BR fora do
+  navegador; (2) `idioma.tabelas` — pt e en com as mesmas chaves e os
+  mesmos `{param}`; (3) `idioma.aoVivo` — trocar a língua muda data,
+  distância, qualidade e camadas sem recarregar; (4) `unidades.plural` —
+  "1,5 ano-luz" × "1.5 light-years"; (5) `idioma.semSobra` — nenhum
+  literal acentuado de tela fora das tabelas; (6) `selo.portaLang` —
+  `?lang=` não é porta não declarada; (7) `atlasConfig.nomeEn` espelha
+  `name.en`; (8) `ficha.prosa` — mesmas linhas em pt e en nos 48 corpos,
+  e corpo sem `en` cai no pt; (9) `rotulo/busca` seguem o idioma vivo;
+  (10) `chaveDoFoco` aceita as duas grafias; (11) `verify-assets`
+  reprova `en` adulterado (fichas e manifesto); (12) `lerSequencia` recusa
+  bloco `en` malformado e `journey` devolve o inglês com o mesmo t0/t1,
+  caindo para pt sem `en`; (13) `director` reemite a legenda ao trocar de
+  língua; (14) `filme-smoke` com `?lang=en` (legendas cabem nas margens);
+  e a suíte inteira 1×.
+
 **131. Aglomerados, nebulosas e nuvens na busca — roadmap futuro, depois
 da curadoria do desenho deles.** Palavras dele em 01/09, ao fechar o
 129: *"não vamos fazer isso agora. precisamos ver esses objetos com

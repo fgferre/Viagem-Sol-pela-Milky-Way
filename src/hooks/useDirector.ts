@@ -15,7 +15,7 @@ import {
   lerPortaQualidade,
   lerPortaTom,
 } from '../three/core/engine';
-import { assinarIdioma } from '../lib/idioma';
+import { assinarIdioma, t } from '../lib/idioma';
 import { LabelCanvas } from '../components/LabelCanvas';
 import { sondarGl } from '../lib/glProbe';
 import type { EstadoDoTempo } from '../three/tempoDoAtlas';
@@ -186,7 +186,7 @@ export function useDirector(fios: FiosDoDirector) {
       console.error(error);
       queueMicrotask(() =>
         setLoadError(
-          error instanceof Error ? error.message : 'Não foi possível criar o renderizador.'
+          error instanceof Error ? error.message : t('erro.renderizador')
         )
       );
       return () => labels.clear();
@@ -307,7 +307,7 @@ export function useDirector(fios: FiosDoDirector) {
         // a tela de erro fica; o contexto WebGL e os render targets já
         // criados no construtor, não — a sessão morta não renderiza mais
         d.dispose();
-        setLoadError(error instanceof Error ? error.message : 'Não foi possível iniciar a simulação.');
+        setLoadError(error instanceof Error ? error.message : t('erro.iniciar'));
       });
     return () => {
       cancelled = true;

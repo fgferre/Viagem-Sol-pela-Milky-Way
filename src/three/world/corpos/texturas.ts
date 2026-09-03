@@ -65,10 +65,22 @@ export const RECARGAS_ATE_DESISTIR = 2;
  * primeiro consumidor, na seção "a imagem".
  */
 export interface OrigemDaTextura {
-  fonte: string | null;
+  fonte: TextoBilingue | null;
   url: string | null;
-  licenca: string;
-  atribuicao: string | null;
+  licenca: TextoBilingue;
+  atribuicao: TextoBilingue | null;
+}
+
+/**
+ * UMA FRASE DO MANIFESTO NAS DUAS LÍNGUAS (item 130/F4). Elas são texto de
+ * TELA — a ficha as imprime na seção "a imagem" —, e o app fala pt-BR e
+ * inglês desde a F1. O pt-BR é a CHAVE da tradução no gerador e o PISO na
+ * leitura: manifesto antigo, sem `en`, ainda monta a ficha em português em
+ * vez de quebrar.
+ */
+export interface TextoBilingue {
+  pt: string;
+  en?: string;
 }
 
 /**
@@ -96,7 +108,7 @@ export interface EntradaDeTextura {
    * TELA), o gerador a lê de lá, e AUSÊNCIA quer dizer "a bancada não achou
    * defeito" — nunca "ninguém olhou".
    */
-  nota?: string;
+  nota?: TextoBilingue;
 }
 export interface ManifestDeTexturas {
   entradas: EntradaDeTextura[];
@@ -106,7 +118,7 @@ export interface ManifestDeTexturas {
    * na entrada porque Palas e Haumea não têm textura nenhuma — a superfície
    * deles é procedural — e não teriam onde pendurar a confissão.
    */
-  formas?: Record<string, string>;
+  formas?: Record<string, TextoBilingue>;
 }
 
 /** Teto de cinema para os canais de APOIO (tudo que não é `map`) —

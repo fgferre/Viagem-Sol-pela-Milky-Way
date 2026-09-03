@@ -68,6 +68,7 @@ import type { NamedStar } from '../../three/config';
 import type {
   EntradaDeTextura,
   ManifestDeTexturas,
+  TextoBilingue,
 } from '../../three/world/corpos/texturas';
 
 // ---------------------------------------------------------------- formas
@@ -575,6 +576,20 @@ const TIER_DA_IMAGEM: Record<
  * granulação). Uma linha aqui seria a segunda fonte de verdade sobre um
  * assunto que tem contrato próprio.
  */
+/**
+ * A FRASE DO MANIFESTO NA LÍNGUA DE AGORA (item 130/F4), com o pt-BR de
+ * PISO — o mesmo molde de `editorialDoIdioma`. Fonte, licença, atribuição,
+ * defeito e forma são texto de tela que nasce fora do código: a tabela
+ * `ORIGENS` do gerador e o `docs/reference/ASSETS.md`. Manifesto sem `en`
+ * (ou de antes desta fase) cai no português em vez de sumir da ficha.
+ */
+function noIdioma(texto: TextoBilingue): string;
+function noIdioma(texto: TextoBilingue | null | undefined): string | null;
+function noIdioma(texto: TextoBilingue | null | undefined): string | null {
+  if (!texto) return null;
+  return idiomaAtual() === 'en' ? (texto.en ?? texto.pt) : texto.pt;
+}
+
 function secaoImagem(
   id: string,
   manifest: ManifestDeTexturas | null | undefined
@@ -588,15 +603,17 @@ function secaoImagem(
     linhas.push(
       linha(
         t('ficha.campo.fonte'),
-        mapa.origem.fonte,
+        noIdioma(mapa.origem.fonte),
         tier,
         t('ficha.fonte.larguraPx', { px: numeroDoIdioma(mapa.larguraPx) })
       ),
-      linha(t('ficha.campo.licenca'), mapa.origem.licenca, tier),
-      linha(t('ficha.campo.atribuicao'), mapa.origem.atribuicao, tier)
+      linha(t('ficha.campo.licenca'), noIdioma(mapa.origem.licenca), tier),
+      linha(t('ficha.campo.atribuicao'), noIdioma(mapa.origem.atribuicao), tier)
     );
     if (mapa.nota) {
-      linhas.push(linha(t('ficha.campo.oDefeito'), mapa.nota, 'medido', t('ficha.fonte.bancada')));
+      linhas.push(
+        linha(t('ficha.campo.oDefeito'), noIdioma(mapa.nota), 'medido', t('ficha.fonte.bancada'))
+      );
     }
   } else {
     linhas.push(
@@ -627,20 +644,29 @@ function secaoImagem(
     linhas.push(
       linha(
         t('ficha.campo.relevo'),
-        relevo.origem.fonte,
+        noIdioma(relevo.origem.fonte),
         tier,
         t('ficha.fonte.larguraPx', { px: numeroDoIdioma(relevo.larguraPx) })
       )
     );
     if (relevo.nota) {
       linhas.push(
-        linha(t('ficha.campo.oRelevoAdmite'), relevo.nota, 'medido', t('ficha.fonte.bancada'))
+        linha(
+          t('ficha.campo.oRelevoAdmite'),
+          noIdioma(relevo.nota),
+          'medido',
+          t('ficha.fonte.bancada')
+        )
       );
     }
   }
 
   const forma = manifest.formas?.[id];
-  if (forma) linhas.push(linha(t('ficha.campo.forma'), forma, 'artistico', t('ficha.fonte.bancada')));
+  if (forma) {
+    linhas.push(
+      linha(t('ficha.campo.forma'), noIdioma(forma), 'artistico', t('ficha.fonte.bancada'))
+    );
+  }
 
   return linhas.filter((l): l is LinhaDaFicha => l !== null);
 }

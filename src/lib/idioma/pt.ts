@@ -22,6 +22,11 @@
 export const PT = {
   // ---- o app -------------------------------------------------------
   'app.titulo': 'Mar de Estrelas — Viagem pela Via Láctea',
+  // a `<meta name="description">` do `index.html` — estática em pt-BR
+  // para quem lê a página sem JS (buscador, prévia de link); o
+  // `main.tsx` a reescreve quando a língua se resolve.
+  'app.descricao':
+    'Uma viagem cinematográfica por 18.543 estrelas do catálogo HYG e pela Via Láctea completa.',
 
   // ---- a tela de carregamento e os véus (`components/Hud.tsx`) ------
   'hud.kicker': 'HYG · VIA LÁCTEA · TEMPO REAL',
@@ -429,4 +434,52 @@ export const PT = {
 
   // ---- o rumo desenhado sobre a cena (`three/director`) -------------
   'cena.rotulosIndisponiveis': 'Canvas 2D indisponível para os rótulos.',
+
+  // ---- a nota de validade da efeméride (`lib/atlas/registroOrbital`,
+  // composta em `lib/atlas/efemerides`). A ficha do objeto imprime esta
+  // frase inteira na linha "modelo e validade"; até o item 130/F4 ela era
+  // o último parágrafo de tela que só falava português. Os NÚMEROS são a
+  // MEDIÇÃO herdada do doador (3.6°, 5.2°, 7.4°, as janelas) e não se
+  // tocam nem na vírgula decimal — quem muda de língua é a prosa. ------
+  'efemeride.nota.origemDoSistema':
+    'referência de origem do sistema solar',
+  'efemeride.nota.vsop87':
+    'série VSOP87D truncada, nível de arcsegundo entre 2000 a.C. e 6000 d.C.',
+  'efemeride.nota.plutoMeeus':
+    'teoria de Plutão do Meeus (cap. 37), válida de 1885 a 2099',
+  'efemeride.nota.elp':
+    'ELP/MPP02 truncada (nível de poucos arcsegundos ao longo de milênios)',
+  'efemeride.nota.marcianas':
+    'Kepler de dois corpos a partir dos elementos osculantes de 2025-01-01; pior caso 3.6° em ±1 ano da época, medido dos DOIS lados (Fobos, taxa publicada; lua ressonante de período curto não se sustenta em dois corpos por ±1 ano), sem validação fora dessa faixa',
+  'efemeride.nota.galileanas':
+    'Kepler de dois corpos a partir dos elementos osculantes de 2025-01-01; pior caso 1.6° em ±1 ano da época, medido dos DOIS lados (Europa), sem validação fora dessa faixa',
+  'efemeride.nota.saturnianas':
+    'Kepler de dois corpos a partir dos elementos osculantes de 2025-01-01; pior caso 5.2° em ±1 ano da época, medido dos DOIS lados (Mimas, taxa publicada; lua ressonante de período curto não se sustenta em dois corpos por ±1 ano), sem validação fora dessa faixa',
+  'efemeride.nota.uranianas':
+    'Kepler de dois corpos a partir dos elementos osculantes de 2025-01-01; pior caso 1.3° em ±1 ano da época, medido dos DOIS lados (Miranda), sem validação fora dessa faixa',
+  'efemeride.nota.netunianas':
+    'Kepler de dois corpos a partir dos elementos osculantes de 2025-01-01; pior caso 0.16° em +1 ano da época (um lado só — não há fixture antes da época), sem validação fora dessa faixa',
+  'efemeride.nota.plutonianas':
+    'Kepler de dois corpos a partir dos elementos osculantes de 2025-01-01; pior caso 0.01° em +1 ano da época (um lado só — não há fixture antes da época), sem validação fora dessa faixa',
+  'efemeride.nota.asteroides':
+    'Kepler de dois corpos a partir dos elementos osculantes de 2025-01-01; ~0.01° perto da época, extrapolado a ~1° nas bordas de 2000/2050 (única conferência longe da época: 7.4° em 1890)',
+  'efemeride.nota.luaDeCatalogo':
+    'órbita de catálogo por Kepler; orientação do plano e fase FABRICADAS (Ω/ω/M0 = 0) — desenha uma órbita plausível, nunca prevê uma posição',
+  'efemeride.anoAC':
+    '{ano} a.C.',
+  'efemeride.anoDC':
+    '{ano} d.C.',
+  'efemeride.foraDaTabela':
+    'Fora de {janela}: sem tabela embarcada — posicao() lança aqui. A teoria {modelo} cobriria {teoria}; regenere a tabela para estender a janela.',
+  'efemeride.comTabela':
+    '{modelo}: {nota}. Tabela embarcada {janela} (teoria válida {teoria}); interpolação Hermite medida ≤ {erro} UA (manifesto).',
+  'efemeride.semJanela':
+    '{modelo}: {nota}.',
+  'efemeride.foraDaJanela':
+    'Fora de {janela}: elementos osculantes congelados em 2025-01-01 extrapolados por Kepler de dois corpos — acurácia não caracterizada aqui.',
+  'efemeride.naJanela':
+    '{modelo} (válido {janela}): {nota}.',
+  // os dois erros de carga que o visitante pode ver (F4 do 130)
+  'erro.renderizador': 'Não foi possível criar o renderizador.',
+  'erro.iniciar': 'Não foi possível iniciar a simulação.',
 } as const;

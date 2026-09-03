@@ -54,6 +54,7 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { sha256 } from '../lib/binary.mjs';
 import { analisarNomeDeTextura, lerTabelasDaConfissao } from './lib-texturas.mjs';
+import { bilingue } from './texturas-em-ingles.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -606,18 +607,26 @@ async function main() {
       alturaPx: meta.height,
       bytes: size,
       sha256: sha256(await readFile(arquivo)),
+      // BILÍNGUE desde o item 130/F4: a ficha imprime estas frases, e a
+      // ficha fala duas línguas. O `url` não é frase — fica só. O
+      // português continua sendo a CHAVE da tradução (ver
+      // `texturas-em-ingles.mjs`), então reescrever uma linha de
+      // `ORIGENS` sem traduzi-la FALHA aqui em vez de publicar calada.
       origem: {
-        fonte: declarada.fonte,
+        fonte: bilingue(declarada.fonte, `origem.fonte de ${corpo}/${canal}`),
         url: declarada.url,
-        licenca: declarada.licenca,
-        atribuicao: declarada.atribuicao,
+        licenca: bilingue(declarada.licenca, `origem.licenca de ${corpo}/${canal}`),
+        atribuicao: bilingue(
+          declarada.atribuicao,
+          `origem.atribuicao de ${corpo}/${canal}`
+        ),
       },
       proveniencia: ehFonte ? declarada.proveniencia : 'derivado',
       // O DEFEITO É DA IMAGEM, não da variante: a escada de tamanhos e o
       // webp saem do MESMO mapa, e o polo preenchido de Ceres continua
       // preenchido em 512 px. A nota acompanha todas as variantes, e a
       // ausência dela é a declaração de que a bancada não achou defeito.
-      ...(nota ? { nota } : {}),
+      ...(nota ? { nota: bilingue(nota, `a nota de ${corpo}/${canal}`) } : {}),
     });
   }
 
@@ -637,14 +646,18 @@ async function main() {
     // procedural em `rochoso.ts`) e não teriam onde pendurar a nota. O que
     // se confessa aqui é o MESH — o elipsoide de BODY_AXES no lugar da
     // malha irregular que existe publicada (item 20).
-    formas: Object.fromEntries([...confissao.forma].sort(([a], [b]) => a.localeCompare(b, 'en'))),
+    formas: Object.fromEntries(
+      [...confissao.forma]
+        .sort(([a], [b]) => a.localeCompare(b, 'en'))
+        .map(([id, nota]) => [id, bilingue(nota, `a forma de ${id}`)])
+    ),
     entradas,
   };
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 
   const totalBytes = entradas.reduce((soma, e) => soma + e.bytes, 0);
   const naoResolvidas = entradas.filter(
-    (e) => e.origem.licenca === 'nao-resolvida'
+    (e) => e.origem.licenca.pt === 'nao-resolvida'
   ).length;
   const comNota = new Set(entradas.filter((e) => e.nota).map((e) => `${e.corpo}/${e.canal}`));
   console.log(

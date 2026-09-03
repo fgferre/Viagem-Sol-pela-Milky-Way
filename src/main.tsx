@@ -1,16 +1,26 @@
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { assinarIdioma, iniciarIdioma, t } from './lib/idioma'
+import { assinarIdioma, idiomaAtual, iniciarIdioma, t } from './lib/idioma'
 
 // A LÍNGUA SE RESOLVE AQUI, UMA VEZ (item 130). É o único ponto do
 // projeto que olha o storage, o `navigator` e a porta de captura
 // `?lang=`: fora do navegador — a suíte, os scripts de dado — ninguém
 // chama isto e a casa fica em pt-BR, byte a byte como sempre foi.
 iniciarIdioma(window.location.search)
-// …e o TÍTULO DA ABA acompanha, porque o `index.html` é estático e não
-// tem como saber a língua antes do JS subir.
-const titular = () => { document.title = t('app.titulo') }
+// …e O QUE O `index.html` CARIMBA ESTÁTICO acompanha, porque ele não tem
+// como saber a língua antes do JS subir: o título da aba, a
+// `<meta name="description">` e o `lang` do `<html>` (o leitor de tela
+// escolhe a voz por ele). O HTML fica em pt-BR, que é o padrão da casa e
+// o que o buscador lê sem executar JS; aqui os três seguem a língua viva
+// — uma `<meta>` por idioma no HTML não resolveria nada, porque o
+// buscador lê a primeira e o visitante não lê nenhuma.
+const descricao = document.querySelector<HTMLMetaElement>('meta[name="description"]')
+const titular = () => {
+  document.title = t('app.titulo')
+  document.documentElement.lang = idiomaAtual()
+  if (descricao) descricao.content = t('app.descricao')
+}
 titular()
 assinarIdioma(titular)
 

@@ -781,11 +781,30 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
     // real, ou a marca explícita 'nao-resolvida' — nunca vazio. E
     // licença que exige crédito (CC BY, USGS) sem texto de atribuição
     // é atribuição perdida — quebra.
-    if (typeof entrada.origem?.licenca !== 'string' || entrada.origem.licenca === '') {
+    // BILÍNGUE desde o item 130/F4: as três frases que a ficha imprime
+    // viajam como `{pt, en}`. O pt-BR continua sendo a régua de toda
+    // guarda abaixo (é ele que a política e o ASSETS.md escrevem); o
+    // inglês só precisa EXISTIR e não estar vazio — publicar uma ficha
+    // em inglês com a linha em português seria o defeito que a F4 veio
+    // fechar.
+    const licenca = entrada.origem?.licenca;
+    if (typeof licenca?.pt !== 'string' || licenca.pt === '') {
       throw new Error(`${rotulo}: origem.licenca ausente ou vazia.`);
     }
+    for (const [campo, valor] of Object.entries(entrada.origem)) {
+      if (campo === 'url' || valor === null) continue;
+      if (typeof valor?.pt !== 'string' || valor.pt === '') {
+        throw new Error(`${rotulo}: origem.${campo} sem o texto em pt-BR.`);
+      }
+      if (typeof valor.en !== 'string' || valor.en === '') {
+        throw new Error(
+          `${rotulo}: origem.${campo} sem o inglês (item 130/F4) — ` +
+            'rode npm run data:texturas.'
+        );
+      }
+    }
     if (
-      (entrada.origem.licenca === 'nao-resolvida') !==
+      (licenca.pt === 'nao-resolvida') !==
       (entrada.proveniencia === 'nao-resolvida')
     ) {
       throw new Error(
@@ -793,10 +812,10 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
       );
     }
     if (
-      (/^CC BY/i.test(entrada.origem.licenca) || /USGS/i.test(entrada.origem.licenca)) &&
+      (/^CC BY/i.test(licenca.pt) || /USGS/i.test(licenca.pt)) &&
       !entrada.origem.atribuicao
     ) {
-      throw new Error(`${rotulo}: licença "${entrada.origem.licenca}" exige atribuição redigida.`);
+      throw new Error(`${rotulo}: licença "${licenca.pt}" exige atribuição redigida.`);
     }
     conferidas.add(path.normalize(caminho));
     totalBytes += entrada.bytes;
@@ -852,10 +871,16 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
           'rode npm run data:texturas.'
       );
     }
-    if (nota !== confissao.imagem.get(chave)) {
+    if (nota.pt !== confissao.imagem.get(chave)) {
       throw new Error(
         `atlas/texturas: a nota de "${chave}" no manifesto não é a do ASSETS.md — ` +
           'o documento é a fonte; rode npm run data:texturas.'
+      );
+    }
+    if (typeof nota.en !== 'string' || nota.en === '') {
+      throw new Error(
+        `atlas/texturas: a nota de "${chave}" está sem inglês (item 130/F4) — ` +
+          'rode npm run data:texturas.'
       );
     }
   }
@@ -868,9 +893,15 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
     );
   }
   for (const [id, nota] of Object.entries(formas)) {
-    if (nota !== confissao.forma.get(id)) {
+    if (nota.pt !== confissao.forma.get(id)) {
       throw new Error(
-        `atlas/texturas: a forma de "${id}" não confere com o ASSETS.md ("${nota}").`
+        `atlas/texturas: a forma de "${id}" não confere com o ASSETS.md ("${nota.pt}").`
+      );
+    }
+    if (typeof nota.en !== 'string' || nota.en === '') {
+      throw new Error(
+        `atlas/texturas: a forma de "${id}" está sem inglês (item 130/F4) — ` +
+          'rode npm run data:texturas.'
       );
     }
   }

@@ -16,12 +16,23 @@
 //
 // Os nomes próprios que a casa cita (Gaia DR3, HYG, APOGEE, ACES, AgX)
 // não se traduzem: são catálogos e curvas, não palavras.
+//
+// A VARIANTE É AMERICANA (item 130/F4), e não é gosto: a prosa das
+// fichas em `editorial.en` é o ORIGINAL do dono, escrito em americano, e
+// a NASA — a fonte de quase toda atribuição desta casa — também. Duas
+// variantes na mesma tela ("colour" no selo, "color" na ficha ao lado)
+// leem como descuido. Então: color/center/catalog/license/disk, nunca
+// colour/centre/catalogue/licence/disc. Vale aqui, nas legendas do filme
+// (`three/cinematic/roteiros/*.json`) e no inglês do manifesto de
+// texturas (`scripts/data/atlas/texturas-em-ingles.mjs`).
 // ============================================================
 import type { PT } from './pt';
 
 export const EN: Record<keyof typeof PT, string> = {
   // ---- the app -----------------------------------------------------
   'app.titulo': 'Sea of Stars — A Journey through the Milky Way',
+  'app.descricao':
+    'A cinematic journey through 18,543 stars of the HYG catalog and the whole Milky Way.',
 
   // ---- loading screen and veils ------------------------------------
   'hud.kicker': 'HYG · MILKY WAY · REAL TIME',
@@ -48,7 +59,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'hud.abertura.linha1':
     'from the Sun to the supergiants of Orion, to the heart of the galaxy — and back',
   'hud.abertura.linha2':
-    '328,749 catalogued stars · volumetric Milky Way rebuilt in real time',
+    '328,749 cataloged stars · volumetric Milky Way rebuilt in real time',
   'hud.porta.filme': 'Start the journey',
   'hud.porta.filmeNota': 'a film with a script and captions — you watch',
   'hud.porta.explorar': 'Explore',
@@ -67,12 +78,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'hud.capitulos': '{total} chapters',
 
   // ---- loading stages ----------------------------------------------
-  'etapa.catalogs': 'receiving the catalogues…',
+  'etapa.catalogs': 'receiving the catalogs…',
   'etapa.stars': 'waking 328,749 stars…',
-  'etapa.dust': 'baking the disc dust…',
+  'etapa.dust': 'baking the disk dust…',
   'etapa.structure': 'fitting arms and warp…',
-  'etapa.galaxy': 'seeding the galactic disc…',
-  'etapa.layers': 'revealing the disc slices…',
+  'etapa.galaxy': 'seeding the galactic disk…',
+  'etapa.layers': 'revealing the disk slices…',
   'etapa.shaders': 'compiling the shaders…',
 
   // ---- the control bar ---------------------------------------------
@@ -139,7 +150,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'atlas.eixoBrilho': 'brightness',
   'atlas.escalaRealAria': '{estado}: what dominates the frame is at 1:1',
   'atlas.foraDeEscalaAria':
-    "{estado}: the Sun's disc in this view is an actor. Click to frame the system at real scale",
+    "{estado}: the Sun's disk in this view is an actor. Click to frame the system at real scale",
   'atlas.escalaRealNota': 'the frame is at 1:1',
   'atlas.escalaDesvioNota': 'click: frame at real scale',
   'atlas.brilhoRealAria': '{estado}: {exposicao} Click to bring the assisted light back.',
@@ -175,18 +186,18 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.campoCorposEEstrelas': 'search for a body or a star',
   'busca.campoEstrelas': 'search for a star',
   'busca.campoAria':
-    'Name of a body in the system, or name, designation or catalogue of the star',
+    'Name of a body in the system, or name, designation or catalog of the star',
   'busca.alcanceComCorpos': 'the {quantas} named stars and the {corpos} bodies of the system',
   'busca.alcance': 'the {quantas} named stars',
   'busca.vazio':
-    'nothing by that name among {alcance} — the catalogue keeps ONE name per star, its own when it has one. try {exemplos}',
+    'nothing by that name among {alcance} — the catalog keeps ONE name per star, its own when it has one. try {exemplos}',
   'busca.contagem': '{n} {palavra} · arrows choose · Enter {verbo}',
   'busca.resultado': 'result',
   'busca.resultados': 'results',
   'busca.verboEnquadra': 'frames it',
   'busca.verboAtlas': 'opens the atlas on it',
   'busca.verboVoa': 'flies there',
-  'busca.dica': 'name, designation (gamma vel) or catalogue (hd 48915) · {exemplos}',
+  'busca.dica': 'name, designation (gamma vel) or catalog (hd 48915) · {exemplos}',
   'busca.exemploCorpo': 'earth',
 
   // ---- the gesture walkthrough -------------------------------------
@@ -235,7 +246,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.diaSideral': 'sidereal day',
   'ficha.campo.modeloEValidade': 'model and validity',
   'ficha.campo.elongacao': 'elongation from the Sun',
-  'ficha.campo.discoIluminado': 'illuminated disc',
+  'ficha.campo.discoIluminado': 'illuminated disk',
   'ficha.campo.oQueE': 'what it is',
   'ficha.campo.emUmaLinha': 'in one line',
   'ficha.campo.curiosidade': 'trivia',
@@ -243,7 +254,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.recorde': 'record',
   'ficha.campo.exploracao': 'exploration',
   'ficha.campo.fonte': 'source',
-  'ficha.campo.licenca': 'licence',
+  'ficha.campo.licenca': 'license',
   'ficha.campo.atribuicao': 'attribution',
   'ficha.campo.oDefeito': 'the flaw',
   'ficha.campo.superficie': 'surface',
@@ -254,9 +265,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.distancia': 'distance',
   'ficha.campo.magnitude': 'apparent magnitude',
   'ficha.campo.tipoEspectral': 'spectral type',
-  'ficha.campo.corBV': 'B−V colour',
+  'ficha.campo.corBV': 'B−V color',
   'ficha.campo.temperatura': 'temperature',
-  'ficha.campo.catalogos': 'catalogues',
+  'ficha.campo.catalogos': 'catalogs',
   'ficha.fonte.daEfemeride': 'from the ephemeris',
   'ficha.fonte.daCamera': "from the camera's point of view",
   'ficha.fonte.deGmEDoRaio': 'from GM and the radius',
@@ -264,16 +275,16 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.fonte.dosElementos': 'from the house orbital elements',
   'ficha.fonte.minEMax': 'min and max of the orbit',
   'ficha.fonte.rotacaoIau': 'from the IAU rotation model',
-  'ficha.fonte.geometrico': 'geometric, centre to centre',
+  'ficha.fonte.geometrico': 'geometric, center to center',
   'ficha.fonte.editorial': 'editorial text, no source cited',
   'ficha.fonte.bancada': 'texture workbench',
-  'ficha.fonte.semLicenca': 'no texture with a settled licence',
+  'ficha.fonte.semLicenca': 'no texture with a settled license',
   'ficha.fonte.larguraPx': '{px} px wide',
-  'ficha.fonte.catalogoHyg': 'HYG/AT-HYG catalogue',
+  'ficha.fonte.catalogoHyg': 'HYG/AT-HYG catalog',
   'ficha.fonte.bayerIau': 'Bayer, IAU abbreviation',
   'ficha.fonte.paralaxe': 'Gaia DR3 parallax',
   'ficha.fonte.ballesteros': 'from B−V, after Ballesteros',
-  'ficha.semMapa': "no map: this body's colour and relief are invented",
+  'ficha.semMapa': "no map: this body's color and relief are invented",
   'ficha.hora': 'hour',
   'ficha.horas': 'hours',
   'ficha.dia': 'day',
@@ -286,11 +297,11 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.brilhoAssistido': 'ASSISTED BRIGHTNESS',
   'selo.tese': 'what in this view is adjusted and what is measured',
   'selo.tier.medido': 'measured',
-  'selo.tier.medidoOQue': 'catalogue and ephemeris',
+  'selo.tier.medidoOQue': 'catalog and ephemeris',
   'selo.tier.derivado': 'derived',
-  'selo.tier.derivadoOQue': 'colour and temperature from a model',
+  'selo.tier.derivadoOQue': 'color and temperature from a model',
   'selo.tier.artistico': 'artistic',
-  'selo.tier.artisticoOQue': "the Sun's disc, the glare and the diffraction spikes",
+  'selo.tier.artisticoOQue': "the Sun's disk, the glare and the diffraction spikes",
   'selo.cartografiaProcedural': 'cartography: procedural (the maps did not arrive)',
   'selo.cartografiaDesligada':
     'cartography: procedural (maps turned off by ?cart=off)',
@@ -335,7 +346,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'camada.nowrap': 'Surrounding field',
   'camada.nodust': 'Nearby dust',
   'camada.nobh': 'Black hole (Sgr A✱)',
-  'camada.nocat': 'HYG catalogue',
+  'camada.nocat': 'HYG catalog',
   'camada.nonomes': 'Names on screen',
   'camada.noclarao': 'Star glare',
   'camada.nosun': 'Sun',
@@ -405,7 +416,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'unidade.vezesTerra': '{n}× Earth',
 
   // ---- the always-on gesture hint ----------------------------------
-  'cena.aria': 'Three-dimensional simulation of the journey through the HYG catalogue and the Milky Way',
+  'cena.aria': 'Three-dimensional simulation of the journey through the HYG catalog and the Milky Way',
   'cena.sol': 'SUN · {nota}',
   'cena.lente': 'LENS {graus}° · SUN {nota}',
   'dica.toque.olhar': 'touch and drag — look',
@@ -427,4 +438,47 @@ export const EN: Record<keyof typeof PT, string> = {
 
   // ---- the heading drawn over the scene ----------------------------
   'cena.rotulosIndisponiveis': '2D canvas unavailable for the labels.',
+
+  // ---- ephemeris validity note (see pt.ts): the measured numbers are
+  // verbatim; only the prose changes language. --------------------------
+  'efemeride.nota.origemDoSistema':
+    'origin reference of the solar system',
+  'efemeride.nota.vsop87':
+    'truncated VSOP87D series, arcsecond level between 2000 BC and 6000 AD',
+  'efemeride.nota.plutoMeeus':
+    'Meeus\'s Pluto theory (ch. 37), valid from 1885 to 2099',
+  'efemeride.nota.elp':
+    'truncated ELP/MPP02 (a few arcseconds over millennia)',
+  'efemeride.nota.marcianas':
+    'two-body Kepler from the osculating elements of 2025-01-01; worst case 3.6° within ±1 year of the epoch, measured on BOTH sides (Phobos, published mean motion; a short-period resonant moon does not hold up under two-body over ±1 year), no validation outside that range',
+  'efemeride.nota.galileanas':
+    'two-body Kepler from the osculating elements of 2025-01-01; worst case 1.6° within ±1 year of the epoch, measured on BOTH sides (Europa), no validation outside that range',
+  'efemeride.nota.saturnianas':
+    'two-body Kepler from the osculating elements of 2025-01-01; worst case 5.2° within ±1 year of the epoch, measured on BOTH sides (Mimas, published mean motion; a short-period resonant moon does not hold up under two-body over ±1 year), no validation outside that range',
+  'efemeride.nota.uranianas':
+    'two-body Kepler from the osculating elements of 2025-01-01; worst case 1.3° within ±1 year of the epoch, measured on BOTH sides (Miranda), no validation outside that range',
+  'efemeride.nota.netunianas':
+    'two-body Kepler from the osculating elements of 2025-01-01; worst case 0.16° at +1 year from the epoch (one side only — there is no fixture before the epoch), no validation outside that range',
+  'efemeride.nota.plutonianas':
+    'two-body Kepler from the osculating elements of 2025-01-01; worst case 0.01° at +1 year from the epoch (one side only — there is no fixture before the epoch), no validation outside that range',
+  'efemeride.nota.asteroides':
+    'two-body Kepler from the osculating elements of 2025-01-01; ~0.01° near the epoch, extrapolated to ~1° at the 2000/2050 edges (the only check far from the epoch: 7.4° in 1890)',
+  'efemeride.nota.luaDeCatalogo':
+    'catalog orbit by Kepler; plane orientation and phase FABRICATED (Ω/ω/M0 = 0) — draws a plausible orbit, never predicts a position',
+  'efemeride.anoAC':
+    '{ano} BC',
+  'efemeride.anoDC':
+    '{ano} AD',
+  'efemeride.foraDaTabela':
+    'Outside {janela}: no embedded table — posicao() throws here. The {modelo} theory would cover {teoria}; regenerate the table to extend the window.',
+  'efemeride.comTabela':
+    '{modelo}: {nota}. Embedded table {janela} (theory valid {teoria}); measured Hermite interpolation ≤ {erro} AU (manifest).',
+  'efemeride.semJanela':
+    '{modelo}: {nota}.',
+  'efemeride.foraDaJanela':
+    'Outside {janela}: osculating elements frozen at 2025-01-01 extrapolated by two-body Kepler — accuracy not characterized here.',
+  'efemeride.naJanela':
+    '{modelo} (valid {janela}): {nota}.',
+  'erro.renderizador': 'Could not create the renderer.',
+  'erro.iniciar': 'Could not start the simulation.',
 };
