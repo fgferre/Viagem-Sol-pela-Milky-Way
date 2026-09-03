@@ -21,6 +21,10 @@
         "em": 0.2,
         "texto": "O ESTILINGUE",
         "subtexto": "do coração para o vazio acima do disco",
+        "en": {
+          "texto": "THE SLINGSHOT",
+          "subtexto": "from the heart out into the void above the disc"
+        },
         "duracao": 4
       }]
     },
@@ -51,6 +55,10 @@
         "em": 0.55,
         "texto": "A VIA LÁCTEA, POR FORA",
         "subtexto": "reconstrução a partir de 1,8 bilhão de estrelas da missão Gaia",
+        "en": {
+          "texto": "THE MILKY WAY, FROM OUTSIDE",
+          "subtexto": "reconstructed from 1.8 billion stars of the Gaia mission"
+        },
         "duracao": 4.2
       }]
     },
@@ -69,6 +77,10 @@
         "em": 0.1,
         "texto": "ELA NÃO É PLANA",
         "subtexto": "cem mil anos-luz de lado, mil de espessura — as bordas ondulam",
+        "en": {
+          "texto": "IT IS NOT FLAT",
+          "subtexto": "a hundred thousand light-years across, a thousand thick — the edges warp"
+        },
         "duracao": 4.4
       }]
     },
@@ -93,6 +105,10 @@
         "em": 0.22,
         "texto": "OS BRAÇOS",
         "subtexto": "não são braços rígidos — são ondas que comprimem o gás em espiral",
+        "en": {
+          "texto": "THE ARMS",
+          "subtexto": "not rigid arms — waves that compress the gas into a spiral"
+        },
         "duracao": 6
       }]
     },
@@ -111,6 +127,10 @@
         "em": 0.1,
         "texto": "NOSSA GALÁXIA",
         "subtexto": "espiral barrada — centenas de bilhões de estrelas a 220 km/s",
+        "en": {
+          "texto": "OUR GALAXY",
+          "subtexto": "a barred spiral — hundreds of billions of stars at 220 km/s"
+        },
         "duracao": 4.4
       }]
     },
@@ -135,6 +155,10 @@
         "em": 0.2,
         "texto": "VOCÊ ESTÁ AQUI",
         "subtexto": "Esporão de Órion, 26 mil anos-luz do centro — uma volta a cada 230 milhões de anos",
+        "en": {
+          "texto": "YOU ARE HERE",
+          "subtexto": "the Orion Spur, 26 thousand light-years from the centre — one turn every 230 million years"
+        },
         "duracao": 5.4
       }]
     }

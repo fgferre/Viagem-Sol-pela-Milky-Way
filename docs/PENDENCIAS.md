@@ -365,7 +365,8 @@ para quem digitou a porta); a `meta description` do `index.html` (o
 Chrome com `navigator.languages` em `en-US`, então a partir daqui eles
 enxergam o app em INGLÊS — o conserto é de uma linha em
 `scripts/visual/chrome.mjs` (`--lang=pt-BR` no `GPU_FLAGS`) ou `?lang=pt-BR`
-no PIN de cada juiz, e ainda NÃO foi feito.
+no PIN de cada juiz — conferido em 03/09 na F3: o `--lang=pt-BR` JÁ está no
+`GPU_FLAGS`, os juízes seguem fotografando em português.
 
 **F2 FEITA (03/09) — as FICHAS DOS CORPOS e os NOMES.** O inglês da prosa
 NÃO precisou ser traduzido: ele é o ORIGINAL do dono, escrito por ele no
@@ -406,6 +407,47 @@ pt-BR toda saída é byte a byte a de antes; o que envelheceu foi COMENTÁRIO:
 fonte (podia ler do artefato agora), e `atlasConfig.test.ts` confere o
 espelho só do `name.pt` — o `nomeEn` das 48 entradas ainda NÃO tem guarda
 contra o `name.en` do JSON. Os dois entram na lista do §19.
+
+**F3 FEITA (03/09) — as LEGENDAS DO FILME e o encerramento.** Os roteiros
+NASCEM À MÃO (`src/three/cinematic/roteiros/*.json`, sem gerador e sem
+fonte externa — o filme é obra da casa, item 75), e o inglês NÃO existia
+em lugar nenhum: as 24 legendas (48 trechos: `texto` + `subtexto`) foram
+TRADUZIDAS. Molde: o português fica onde está e ganha um irmão `en:
+{texto, subtexto}` DENTRO da mesma legenda. O pt continua sendo a CHAVE
+— é por ele que `REVEAL_T` acha o beat do estilingue, que
+`auditarRoteiro` nomeia a legenda e que os juízes a procuram —, então o
+diff é só de adição e a saída em pt-BR é byte a byte a de antes (o par
+`{pt, en}` com o pt aninhado quebraria `lerSequencia.test` e
+`lerPlanoDeCamera.test` no TYPECHECK, que é o único gate que a F3 podia
+rodar). Por roteiro: abertura 3, cinturão 3, mergulho 6, Órion 3,
+revelação 6, volta 3. O RITMO NÃO PASSA PELO TEXTO: entrada, janela e
+passe pelo corte (`em`/`duracao`/`ponte`) são segundos do roteiro,
+iguais nas duas línguas — trocar de idioma no meio do filme troca a
+frase e não move um quadro. Quem escolhe é `legendaNaLingua` no
+`journey.ts`, consultada A CADA quadro pelo `captionAt` e pelas marcas
+da barra; o Director passou a comparar o TEXTO no ar (e não só o índice
+da legenda), então a troca aparece no quadro seguinte, e `useDirector`
+reassina as marcas quando a língua muda (o título delas só vive no
+`aria-valuetext`). Legenda sem `en` cai para o português: piso
+declarado. **Encerramento:** o inglês do Sagan é o ORIGINAL (o pt é que
+é tradução) — `encerramento.json` ganhou `en.linhas` com as quatro
+linhas, `linhasDoEncerramento()` escolhe ao vivo e os atrasos continuam
+saindo da lista em português (as duas têm 4 linhas; se divergirem, o
+ritmo do fim muda). **Fora dos roteiros nada sobrou:** título, portas,
+"pular", capítulos, tela final e rodapé já eram da F1;
+`lugaresDoFilme.ts` já é bilíngue. **Riscos declarados:** (1) a legenda
+mais comprida em inglês tem 90 caracteres contra 82 em pt (+10% na
+maior, +7% na soma) e o `filme-smoke` — que mede se a legenda cabe nas
+margens — só fotografa em pt-BR; medir com `?lang=en` é da F4. (2) O
+inglês da casa está dividido: a `en.ts` da F1 é britânica (`colour`,
+`centre`) e a fonte do DONO é americana (`color`, `center`); as legendas
+seguiram a `en.ts`, e unificar é decisão dele. **Pinos de teste:**
+nenhum reprova (a suíte roda em pt-BR e o pt não mudou); entram na lista
+do §19 — legenda em inglês pelo idioma vivo com o mesmo `t0`/`t1`, a
+troca de língua no meio do filme reemitindo a legenda, o `en` malformado
+recusado por `lerSequencia`, as duas listas do encerramento com o mesmo
+tamanho e o `filme-smoke` com `?lang=en`. Fica para a F4 o que a F2 já
+listou (confissões do manifesto/ASSETS, portas de depuração).
 
 **131. Aglomerados, nebulosas e nuvens na busca — roadmap futuro, depois
 da curadoria do desenho deles.** Palavras dele em 01/09, ao fechar o

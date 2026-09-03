@@ -11,6 +11,10 @@
       "legendas": [{
         "em": 0.3, "texto": "SOL",
         "subtexto": "600 milhões de toneladas de hidrogênio fundidas por segundo",
+        "en": {
+          "texto": "THE SUN",
+          "subtexto": "600 million tonnes of hydrogen fused every second"
+        },
         "duracao": 9, "ponte": true
       }]
     },
@@ -32,7 +36,11 @@
       "fundoSilencioso": true,
       "legendas": [{
         "em": 0.64, "texto": "A VIA LÁCTEA, DE DENTRO",
-        "subtexto": "a faixa no céu é o disco: cem mil anos-luz vistos de dentro"
+        "subtexto": "a faixa no céu é o disco: cem mil anos-luz vistos de dentro",
+        "en": {
+          "texto": "THE MILKY WAY, FROM INSIDE",
+          "subtexto": "the band across the sky is the disc: a hundred thousand light-years seen from within"
+        }
       }]
     },
     {
@@ -55,6 +63,10 @@
       "legendas": [{
         "em": 0.4, "texto": "SIRIUS",
         "subtexto": "brilha tanto por estar a 8,6 anos-luz — é só uma vizinha",
+        "en": {
+          "texto": "SIRIUS",
+          "subtexto": "it shines this brightly only because it is 8.6 light-years away — a neighbour"
+        },
         "duracao": 4
       }]
     }

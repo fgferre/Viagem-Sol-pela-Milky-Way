@@ -9,6 +9,14 @@ interface ShotCaption {
   at: number;
   text: string;
   sub?: string;
+  /**
+   * O PAR EM INGLÊS (item 130/F3). O português continua sendo a CHAVE —
+   * é por ele que `REVEAL_T` acha o beat do estilingue, que a auditoria
+   * do roteiro nomeia a legenda e que os juízes a procuram —, e o inglês
+   * chega ao lado. Legenda sem `en` fica em português na tela inglesa:
+   * piso declarado, e não buraco silencioso.
+   */
+  en?: { text: string; sub?: string };
   /** janela de exibição em segundos de VIAGEM (padrão 8,6) */
   dur?: number;
   /** autoriza esta legenda, e somente ela, a sobreviver ao corte do plano */
@@ -45,6 +53,13 @@ function legenda(valor: unknown, campo: string): ShotCaption {
     at,
     text: texto(c.texto, `${campo}.texto`),
     sub: opcional(c.subtexto, `${campo}.subtexto`, texto),
+    en: opcional(c.en, `${campo}.en`, (valorEn, campoEn) => {
+      const bloco = objeto(valorEn, campoEn);
+      return {
+        text: texto(bloco.texto, `${campoEn}.texto`),
+        sub: opcional(bloco.subtexto, `${campoEn}.subtexto`, texto),
+      };
+    }),
     dur,
     bridge: opcional(c.ponte, `${campo}.ponte`, booleano),
   };

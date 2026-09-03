@@ -60,6 +60,7 @@ import { ORIGEM } from './enquadramento';
 import { distanciaExponencial, glide } from './movimentos';
 import { lerSequencia, type Shot } from './lerSequencia';
 import { montarApoiosDoRoteiro } from './apoiosDoRoteiro';
+import { idiomaAtual } from '../../lib/idioma';
 import abertura from './roteiros/abertura.json';
 import cinturao from './roteiros/cinturao.json';
 import orion from './roteiros/orion.json';
@@ -626,9 +627,25 @@ const CAPTION_WINDOWS = SHOTS.flatMap((s, i) =>
     shotEnd: STARTS[i] + s.dur,
     text: c.text,
     sub: c.sub,
+    en: c.en,
     bridge: c.bridge ?? false,
   }))
 ).sort((a, b) => a.t0 - b.t0);
+
+/**
+ * O TEXTO DA LEGENDA NA LÍNGUA VIVA (item 130/F3). O RITMO NÃO PASSA
+ * POR AQUI: entrada (`t0`), janela (`t1`) e passe pelo corte (`bridge`)
+ * saem do roteiro em segundos e não olham o texto — trocar de língua no
+ * meio do filme troca a frase e não move um quadro. Quem não tem `en`
+ * fica em português na tela inglesa, de propósito.
+ *
+ * Consultado A CADA quadro (o Director compara o que está no ar com o
+ * que deveria estar), e é por isso que a troca de idioma aparece no
+ * quadro seguinte sem ninguém avisar o filme.
+ */
+function legendaNaLingua(w: (typeof CAPTION_WINDOWS)[number]): { text: string; sub?: string } {
+  return w.en && idiomaAtual() === 'en' ? w.en : { text: w.text, sub: w.sub };
+}
 
 export interface JourneyScriptAudit {
   duration: number;
@@ -791,7 +808,8 @@ export class Journey {
     for (let i = CAPTION_WINDOWS.length - 1; i >= 0; i--) {
       const w = CAPTION_WINDOWS[i];
       if (t >= w.t0 && t < w.t1) {
-        return { index: i, key: { caption: w.text, sub: w.sub } };
+        const fala = legendaNaLingua(w);
+        return { index: i, key: { caption: fala.text, sub: fala.sub } };
       }
     }
     return { index: -1, key: { caption: '' } };
@@ -807,7 +825,7 @@ export class Journey {
   get tickTimes(): { t: number; text: string }[] {
     return CAPTION_WINDOWS.map((w) => ({
       t: w.t0 / JOURNEY_DURATION,
-      text: w.text,
+      text: legendaNaLingua(w).text,
     }));
   }
 }

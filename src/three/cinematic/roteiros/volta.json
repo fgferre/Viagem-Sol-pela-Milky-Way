@@ -23,6 +23,10 @@
         "em": 0.12,
         "texto": "A VOLTA PARA CASA",
         "subtexto": "26 mil anos-luz até os minutos-luz de casa",
+        "en": {
+          "texto": "THE WAY HOME",
+          "subtexto": "26 thousand light-years down to the light-minutes of home"
+        },
         "duracao": 4.2
       }]
     },
@@ -92,12 +96,20 @@
           "em": 0.08,
           "texto": "A LUA",
           "subtexto": "1,3 segundo-luz — o mais longe que o ser humano já chegou",
+          "en": {
+            "texto": "THE MOON",
+            "subtexto": "1.3 light-seconds — the farthest a human being has ever gone"
+          },
           "duracao": 4.2
         },
         {
           "em": 0.5866666666666667,
           "texto": "A TERRA",
           "subtexto": "o único ponto com oceano de onde a galáxia inteira foi decifrada",
+          "en": {
+            "texto": "EARTH",
+            "subtexto": "the only point with an ocean, and the one the whole galaxy was deciphered from"
+          },
           "duracao": 60,
           "ponte": true
         }

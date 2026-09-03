@@ -22,6 +22,10 @@
         "em": 0.38,
         "texto": "ANTARES",
         "subtexto": "brasa a 550 anos-luz, no alinhamento do centro da galáxia",
+        "en": {
+          "texto": "ANTARES",
+          "subtexto": "an ember 550 light-years away, in line with the centre of the galaxy"
+        },
         "duracao": 4.8
       }]
     },
@@ -63,11 +67,19 @@
         {
           "em": 0.06, "texto": "O MERGULHO",
           "subtexto": "braço de Sagitário: a poeira extingue e avermelha as estrelas",
+          "en": {
+            "texto": "THE DIVE",
+            "subtexto": "the Sagittarius Arm: dust dims and reddens the stars"
+          },
           "duracao": 4.2
         },
         {
           "em": 0.5, "texto": "O BERÇÁRIO",
           "subtexto": "Shaula, Dschubba, Lesath — o berçário de Escorpião no caminho",
+          "en": {
+            "texto": "THE NURSERY",
+            "subtexto": "Shaula, Dschubba, Lesath — the Scorpius nursery along the way"
+          },
           "duracao": 4.8
         }
       ]
@@ -91,6 +103,10 @@
       "legendas": [{
         "em": 0.18, "texto": "O ÚLTIMO BRAÇO",
         "subtexto": "Scutum-Centaurus — o gás comprime e acende estrelas azuis",
+        "en": {
+          "texto": "THE LAST ARM",
+          "subtexto": "Scutum-Centaurus — the gas compresses and lights up blue stars"
+        },
         "duracao": 5
       }]
     },
@@ -149,12 +165,20 @@
           "em": 0.1,
           "texto": "SAGITTARIUS A✱",
           "subtexto": "quatro milhões de sóis num volume menor que a órbita de Mercúrio",
+          "en": {
+            "texto": "SAGITTARIUS A✱",
+            "subtexto": "four million suns in a volume smaller than the orbit of Mercury"
+          },
           "duracao": 5.5
         },
         {
           "em": 0.5,
           "texto": "O HORIZONTE",
           "subtexto": "a gravidade curva a luz ao redor da sombra — lente de Einstein",
+          "en": {
+            "texto": "THE HORIZON",
+            "subtexto": "gravity bends light around the shadow — an Einstein lens"
+          },
           "duracao": 6.6
         }
       ]

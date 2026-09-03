@@ -10,7 +10,7 @@ import { LOAD_STAGES } from '../three/director';
 import type { LoadStage } from '../three/director';
 import { CartografiaCanvas } from './CartografiaCanvas';
 import {
-  LINHAS, ATRIBUICAO, FONTE_DA_CITACAO,
+  linhasDoEncerramento, ATRIBUICAO, FONTE_DA_CITACAO,
   ATRASO_DA_LINHA, ATRASO_DA_ATRIBUICAO, ATRASO_DO_RODAPE,
 } from './encerramento';
 
@@ -335,13 +335,13 @@ export function TitleVeil({
               (posições reais) é a promessa que o app cumpre — mas não
               divide a tela com a citação. */}
           <div className="encerramento">
-            {LINHAS.map((linha, i) => (
+            {linhasDoEncerramento().map((linha, i, linhas) => (
               <div
                 key={linha}
                 className="encerramento-linha"
                 style={{ animationDelay: `${ATRASO_DA_LINHA(i)}s` }}
               >
-                {`${i === 0 ? '“' : ''}${linha}${i === LINHAS.length - 1 ? '”' : ''}`}
+                {`${i === 0 ? '“' : ''}${linha}${i === linhas.length - 1 ? '”' : ''}`}
               </div>
             ))}
             <div

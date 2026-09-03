@@ -39,6 +39,10 @@
         "em": 0.08,
         "texto": "BETELGEUSE",
         "subtexto": "supergigante vermelha à beira de explodir — engoliria a órbita de Júpiter",
+        "en": {
+          "texto": "BETELGEUSE",
+          "subtexto": "a red supergiant on the verge of exploding — it would swallow the orbit of Jupiter"
+        },
         "duracao": 5.4
       }]
     },
@@ -63,6 +67,10 @@
         "em": 0.25,
         "texto": "RIGEL",
         "subtexto": "supergigante azul a 12.000 K — 40.000 sóis em poucos milhões de anos",
+        "en": {
+          "texto": "RIGEL",
+          "subtexto": "a blue supergiant at 12,000 K — 40,000 suns in a few million years"
+        },
         "duracao": 5
       }]
     },
@@ -81,6 +89,10 @@
         "em": 0.35,
         "texto": "CASA",
         "subtexto": "a 800 anos-luz o Sol caiu para magnitude 12: invisível a olho nu",
+        "en": {
+          "texto": "HOME",
+          "subtexto": "at 800 light-years the Sun has fallen to magnitude 12: invisible to the naked eye"
+        },
         "duracao": 4.4
       }]
     }

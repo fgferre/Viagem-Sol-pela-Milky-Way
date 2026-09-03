@@ -15,6 +15,7 @@ import {
   lerPortaQualidade,
   lerPortaTom,
 } from '../three/core/engine';
+import { assinarIdioma } from '../lib/idioma';
 import { LabelCanvas } from '../components/LabelCanvas';
 import { sondarGl } from '../lib/glProbe';
 import type { EstadoDoTempo } from '../three/tempoDoAtlas';
@@ -317,4 +318,20 @@ export function useDirector(fios: FiosDoDirector) {
     // refs e setters de useState são estáveis; o boot roda UMA vez
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // OS NOMES DOS CAPÍTULOS SEGUEM A LÍNGUA (item 130/F3). A lista das
+  // marcas da barra é lida UMA vez, quando o Director termina de subir,
+  // e cada marca leva o título da legenda junto — que agora troca com o
+  // idioma. Sem esta assinatura, quem trocasse de língua no meio da
+  // sessão ouviria o capítulo anunciado na língua de quando o app
+  // subiu (o título das marcas só aparece no `aria-valuetext` da barra).
+  // `assinarIdioma` devolve o cancelamento, que é o que o efeito quer.
+  useEffect(
+    () =>
+      assinarIdioma(() => {
+        const d = directorRef.current;
+        if (d) setTicks(d.progressTicks);
+      }),
+    [directorRef, setTicks]
+  );
 }

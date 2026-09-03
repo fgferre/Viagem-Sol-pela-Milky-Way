@@ -7,7 +7,8 @@
 // tempos. Este arquivo é a capacidade genérica que encena qualquer
 // lista dessas — some com o roteiro e ele não tem o que mostrar.
 //
-// PARA ESTENDER A CITAÇÃO, ACRESCENTE LINHAS NA LISTA DO JSON. Cada
+// PARA ESTENDER A CITAÇÃO, ACRESCENTE LINHAS NAS DUAS LISTAS DO JSON
+// (`linhas` em português e `en.linhas` no original inglês). Cada
 // item é uma linha que ENTRA SOZINHA na tela, na ordem, com `passo`
 // segundos entre uma e a seguinte; as aspas de abertura e de fechamento
 // vão para a primeira e a última linha sozinhas (o `Hud.tsx` as põe), e
@@ -29,9 +30,25 @@
 // calculados aqui a partir dos tempos do roteiro.
 // ============================================================
 import roteiro from '../three/cinematic/roteiros/encerramento.json';
+import { idiomaAtual } from '../lib/idioma';
 
-/** as linhas da citação, uma por entrada na tela */
-export const LINHAS: readonly string[] = roteiro.linhas;
+/**
+ * AS LINHAS DA CITAÇÃO na língua do visitante, uma por entrada na tela.
+ * O inglês do JSON é o ORIGINAL — Sagan escreveu em inglês, e o
+ * português é que é tradução —, e por isso ele não se traduz de volta.
+ *
+ * É FUNÇÃO, e não constante, porque a língua troca AO VIVO: o `Hud`
+ * assina o idioma e chama esta lista de novo no redesenho. O RITMO não
+ * vem daqui — os atrasos abaixo saem da lista em português, e as duas
+ * têm o mesmo número de linhas de propósito: trocar de idioma no fim do
+ * filme troca a frase e não move o relógio do encerramento.
+ */
+export function linhasDoEncerramento(): readonly string[] {
+  return idiomaAtual() === 'en' ? roteiro.en.linhas : roteiro.linhas;
+}
+
+/** quantas linhas o encerramento encena — a fonte dos atrasos */
+const QUANTAS_LINHAS = roteiro.linhas.length;
 /** o crédito, discreto, depois da última linha */
 export const ATRIBUICAO = roteiro.atribuicao;
 /** de onde a frase veio, ainda menor, embaixo do crédito */
@@ -43,5 +60,5 @@ export const FADE_S = roteiro.ritmo.fade;
 export const ATRASO_DA_LINHA = (i: number) =>
   roteiro.ritmo.atrasoInicial + i * roteiro.ritmo.passo;
 export const ATRASO_DA_ATRIBUICAO =
-  ATRASO_DA_LINHA(LINHAS.length - 1) + roteiro.ritmo.respiroDoCredito;
+  ATRASO_DA_LINHA(QUANTAS_LINHAS - 1) + roteiro.ritmo.respiroDoCredito;
 export const ATRASO_DO_RODAPE = ATRASO_DA_ATRIBUICAO + roteiro.ritmo.respiroDoRodape;

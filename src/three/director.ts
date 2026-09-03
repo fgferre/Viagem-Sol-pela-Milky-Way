@@ -504,6 +504,8 @@ export class Director {
    */
   private leftDisk = false;
   private lastCaptionIdx = -1;
+  /** a frase que está NO AR — o índice sozinho não vê a troca de idioma */
+  private lastCaptionTexto = '';
   private relogioParado = false;
   /**
    * CONGELA A VIAGEM — e é o DONO ÚNICO da pausa, que sempre teve dois
@@ -1350,6 +1352,7 @@ export class Director {
   play() {
     this.journeyT = 0;
     this.lastCaptionIdx = -1;
+    this.lastCaptionTexto = '';
     this.freezeJourney = false;
     this.playbackRate = 1;
     this.leftDisk = false;
@@ -2366,9 +2369,16 @@ export class Director {
       this.events.onProgress(Math.min(t / this.rig.duration, 1));
       this.events.onWarp(this.reducedMotion ? 0 : warp);
 
+      // A LEGENDA E A LÍNGUA VIVA (item 130/F3). Comparar só o índice
+      // deixava a frase em português na tela até a PRÓXIMA legenda
+      // quando o visitante trocava de idioma no meio do filme — o
+      // roteiro não mudou de legenda, mas a frase mudou. Comparar o
+      // texto emitido pega as duas causas com uma condição só, e a
+      // troca aparece no quadro seguinte.
       const { index, key } = this.rig.captionAt(t);
-      if (index !== this.lastCaptionIdx) {
+      if (index !== this.lastCaptionIdx || key.caption !== this.lastCaptionTexto) {
         this.lastCaptionIdx = index;
+        this.lastCaptionTexto = key.caption;
         this.events.onCaption(index, key.caption, key.sub);
       }
 
