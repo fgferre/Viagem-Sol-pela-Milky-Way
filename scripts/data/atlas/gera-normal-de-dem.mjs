@@ -1,11 +1,12 @@
 // ============================================================
 // O MAPA DE NORMAIS DE UM CORPO, assado do DEM público dele
-// (item 140 na Lua, item 141 em Mercúrio e Marte).
+// (item 140 na Lua, item 141 em Mercúrio, Marte, Ceres e Vesta).
 //
 //   node scripts/data/atlas/gera-normal-de-dem.mjs moon
 //   node scripts/data/atlas/gera-normal-de-dem.mjs mercury
 //   node scripts/data/atlas/gera-normal-de-dem.mjs mars --manter
 //   node scripts/data/atlas/gera-normal-de-dem.mjs moon --dem /caminho/ldem.tif
+//   node scripts/data/atlas/gera-normal-de-dem.mjs vesta --varredura
 //
 // POR QUE ESTE SCRIPT EXISTE. Até o item 140 os corpos com mapa tinham
 // só a COR, e o relevo deles era INVENTADO a partir dela (o bump por
@@ -15,11 +16,37 @@
 // observamos". O conserto é DADO, não shader: onde existe topografia
 // medida e pública, a normal vem dela.
 //
-// UM SCRIPT, TRÊS CORPOS (item 141). A tabela `CORPOS` é a única coisa
+// UM SCRIPT, CINCO CORPOS (item 141). A tabela `CORPOS` é a única coisa
 // que muda de um para o outro: a fonte, o raio de referência, a
-// conversão que os metadados da fonte declaram e se o DEM está meia
-// volta virado em relação ao mapa de cor da casa. A conta da normal, a
-// guarda de alinhamento e a escrita são as mesmas para todos.
+// conversão que os metadados da fonte declaram e em que longitude a
+// borda esquerda do DEM cai. A conta da normal, a guarda de alinhamento
+// e a escrita são as mesmas para todos.
+//
+// A CONVERSÃO É A DO GDAL: valor = bruto × SCALE + OFFSET, que é o que
+// o GeoTIFF declara em `GDALMetadata` (`role="scale"`/`role="offset"`).
+// O que sai dela é ALTURA sobre o datum em três corpos (Lua, Mercúrio,
+// Marte) e o RAIO EM METROS nos dois da Dawn (Ceres traz OFFSET 470000,
+// Vesta guarda o raio direto no float) — a diferença é constante e some
+// na derivada, mas o número impresso passa a querer dizer alguma coisa.
+// A Lua declara aqui o par que o SVS publica em prosa (deslocamento
+// +20.000, unidade 0,5 m) já na forma do GDAL: escala 0,5, offset
+// −10.000. É a MESMA conta, e o produto dela sai byte a byte igual.
+//
+// O ELIPSOIDE JÁ ESTÁ NA GEOMETRIA (Ceres e Vesta). A malha da casa não
+// é esfera: `normalDoCorpo` devolve a normal do ELIPSOIDE de `BODY_AXES`
+// (Ceres 487,3×446; Vesta 289×280×229), e o mapa só a PERTURBA. Um DEM
+// medido sobre esfera carrega a figura global inteira — em Vesta são 60
+// km de achatamento num raio de 255, uma rampa sistemática de ~8° que a
+// geometria JÁ desenha. Assar isso no mapa contaria a mesma forma duas
+// vezes. Por isso, onde `eixosDaCasaKm` existe, o script SUBTRAI o raio
+// do elipsoide de revolução da casa antes de derivar, e o que sobra é o
+// relevo sobre a bola que a casa realmente desenha. O preço declarado:
+// a subtração é AXISSIMÉTRICA (a equatorial é a média de a e b), então
+// os 9 km entre os dois eixos equatoriais de Vesta ficam no resíduo
+// (~0,6° de rampa), e a diferença entre o elipsoide da casa e o do dado
+// (Ceres 487,3 contra os 482 que a Dawn mediu) também. Nos outros três
+// o campo não existe e nada é subtraído: Mercúrio e a Lua são esferas em
+// `BODY_AXES`, e o achatamento de Marte vale 0,2° contra um RMS de 1,94°.
 //
 // A CONTA. Normal em ESPAÇO TANGENTE sobre a esfera equiretangular, na
 // convenção que `normalDoMapa` (corpos.ts) consome: x ao longo de +u
@@ -43,9 +70,12 @@
 // polo, onde o frame degenera).
 //
 // A GUARDA DE ALINHAMENTO. O mapa de cor e o DEM têm de estar na MESMA
-// convenção de longitude, senão o relevo cai meia volta fora — o
-// defeito que o item 138 achou nas luas de Saturno. A prova é medida em
-// 720x360 e tem DUAS partes:
+// convenção de longitude, senão o relevo cai fora — o defeito que o
+// item 138 achou nas luas de Saturno, e o risco real de Vesta, cujos
+// produtos da Dawn circulam em DOIS sistemas (o "Claudia" de operação e
+// o da IAU, ~150° de diferença). `--varredura` mede as 72 defasagens de
+// 5° e imprime o pico, que é como se acha o giro certo quando ele não é
+// meia volta. A prova é medida em 720x360 e tem DUAS partes:
 //
 //   1. ENERGIA DE BORDA (universal): a correlação entre |∇altura| e
 //      |∇albedo|. Onde há degrau de terreno há degrau de imagem, e o
@@ -55,6 +85,17 @@
 //      Medido: Lua 0,261 contra 0,008; Mercúrio 0,196 contra 0,021;
 //      Marte 0,139 contra −0,016 (a varredura das 72 defasagens tem
 //      pico agudo exatamente na declarada nos três).
+//
+//      CERES NÃO TEM CONTRA O QUE MEDIR: o mapa de cor que a casa
+//      carrega é o `2k_ceres_fictional` do Solar System Scope, que a
+//      PRÓPRIA fonte declara inventado (ASSETS.md). Correlacionar o DEM
+//      com uma invenção não prova nada. Por isso Ceres declara
+//      `albedoDaGuarda`: o mosaico REAL da Dawn (USGS, 20 px/grau, 27
+//      MB) é baixado SÓ para a guarda, medido contra ele e apagado —
+//      nenhum byte dele entra na árvore. É o corpo real que aprova a
+//      orientação; o mapa de cor entregue segue inventado, e o relevo
+//      verdadeiro passa por baixo dele sem casar com as manchas (é o
+//      que o item 141 previu ao escolher Ceres).
 //   2. CORRELAÇÃO COM SINAL (só onde ela é fato): na Lua, mares baixos
 //      E escuros, terras altas E claras dão +0,61, e o item 140 assou
 //      com o piso de +0,3. Em Mercúrio ela é NEGATIVA (−0,14) e em
@@ -66,15 +107,18 @@
 // MB para um produto de alguns MB, e o script o apaga ao terminar
 // quando foi ele quem baixou (`--manter` segura, para quem reamostrar).
 //
-// A LEITURA POR FAIXAS (Mercúrio). O DEM da USGS tem 23040x11520 e 530
-// MB — acima do teto de download desta casa. Ele é um GeoTIFF SEM
-// COMPRESSÃO, uma tira por linha e tiras contíguas, então dá para ler
-// pela rede SÓ as linhas que a grade de saída usa: 2 linhas de origem
-// por linha de saída, 212 MiB medidos em vez de 530 MB (180 do assamento
-// mais 32 da guarda). O preço é declarado — das
+// A LEITURA POR FAIXAS (Mercúrio, Ceres, Vesta). O DEM da USGS de
+// Mercúrio tem 23040x11520 e 530 MB — acima do teto de download desta
+// casa; os da Dawn têm 466 MB (Ceres) e 597 MB (Vesta). Os três são
+// GeoTIFF SEM COMPRESSÃO, uma tira por linha e tiras contíguas, então
+// dá para ler pela rede SÓ as linhas que a grade de saída usa: 2 linhas
+// de origem por linha de saída. Medido: Mercúrio 212 MiB em vez de 530
+// MB (180 do assamento mais 32 da guarda). O preço é declarado — das
 // 5,6 linhas de origem que cabem em cada linha de saída, a média usa 2;
 // nas COLUNAS a média é completa (as 23040 entram). É borrão de
-// latitude, não deslocamento.
+// latitude, não deslocamento. O leitor aceita 16 bits com sinal
+// (Mercúrio, Ceres) e 32 bits em ponto flutuante (Vesta), que é o que
+// os cabeçalhos declaram.
 // ============================================================
 
 import { mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
@@ -93,9 +137,19 @@ const rootDirectory = path.resolve(
 
 /**
  * OS CORPOS QUE TÊM DEM GLOBAL PÚBLICO. `offsetDoDado` e
- * `metrosPorUnidade` são a conversão que a PRÓPRIA fonte declara
- * (altura_m = (bruto − offset) × unidade); onde o arquivo carrega os
- * metadados, o script os lê e RECUSA a assar se divergirem daqui.
+ * `metrosPorUnidade` são a conversão que a PRÓPRIA fonte declara, NA
+ * CONVENÇÃO DO GDAL (valor_m = bruto × unidade + offset); onde o
+ * arquivo carrega os metadados, o script os lê e RECUSA a assar se
+ * divergirem daqui.
+ *
+ * `longitudeDaBordaEsquerdaGraus` é onde a PRIMEIRA COLUNA do DEM cai em
+ * longitude leste — a casa entrega texturas centradas em 0°, ou seja
+ * com a borda esquerda em 180°, e o giro sai da diferença.
+ *
+ * `eixosDaCasaKm` só existe onde o elipsoide de `BODY_AXES` não é
+ * esfera a ponto de importar (ver o cabeçalho): `a` é a média dos dois
+ * eixos equatoriais e `c` o polar, e o raio desse elipsoide é subtraído
+ * do dado antes de derivar, para não contar a figura global duas vezes.
  */
 const CORPOS = {
   moon: {
@@ -104,10 +158,10 @@ const CORPOS = {
     // A esfera de referência do LOLA.
     raioM: 1737400,
     // O SVS declara na página: dado deslocado em +20.000 para ficar
-    // positivo, unidade de 0,5 m.
-    offsetDoDado: 20000,
+    // positivo, unidade de 0,5 m — na forma do GDAL, ×0,5 e −10.000.
+    offsetDoDado: -10000,
     metrosPorUnidade: 0.5,
-    meiaVolta: false,
+    longitudeDaBordaEsquerdaGraus: 180,
     // o número do item 140 — na Lua o albedo É forma (mar liso e
     // escuro, terra alta e clara)
     correlacaoMinima: 0.3,
@@ -129,7 +183,7 @@ const CORPOS = {
     metrosPorUnidade: 0.5,
     // o TIF nasce com o meridiano central em 180° (geokey 3088) e a
     // borda esquerda em 0°; a textura da casa é centrada em 0°
-    meiaVolta: true,
+    longitudeDaBordaEsquerdaGraus: 0,
     fonte: {
       tipo: 'tif-por-faixas',
       nome: 'Mercury_Messenger_USGS_DEM_Global_665m_v2.tif',
@@ -150,7 +204,7 @@ const CORPOS = {
     offsetDoDado: 0,
     metrosPorUnidade: 1,
     // MEGDR nasce com a borda esquerda em 0° (CENTER_LONGITUDE 180)
-    meiaVolta: true,
+    longitudeDaBordaEsquerdaGraus: 0,
     fonte: {
       tipo: 'cru-msb16',
       nome: 'megt90n000eb.img',
@@ -160,6 +214,78 @@ const CORPOS = {
       descricao: 'MOLA MEGDR topografia global a 16 px/grau (MGS, PDS)',
       largura: 5760,
       altura: 2880,
+    },
+  },
+
+  ceres: {
+    nome: 'Ceres',
+    diretorio: 'ceres',
+    // a esfera de projeção que o rótulo PDS3 e a geokey 2057 declaram
+    raioM: 470000,
+    // GDALMetadata do TIF: OFFSET 470000, SCALE 1 — o texel é a ALTURA
+    // sobre a esfera de 470 km e o offset a devolve como RAIO em metros
+    offsetDoDado: 470000,
+    metrosPorUnidade: 1,
+    // CENTER_LONGITUDE 180 no rótulo, geokey 3088 = 180: borda esquerda
+    // em 0°, como Mercúrio e Marte
+    longitudeDaBordaEsquerdaGraus: 0,
+    // BODY_AXES.ceres = [487,3, 487,3, 446] — já esférico em a e b
+    eixosDaCasaKm: { a: 487.3, c: 446 },
+    fonte: {
+      tipo: 'tif-por-faixas',
+      nome: 'Ceres_Dawn_FC_HAMO_DTM_DLR_Global_60ppd_Oct2016.tif',
+      url: 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Ceres_Dawn_FC_HAMO_DTM_DLR_Global_60ppd_Oct2016.tif',
+      descricao: 'Dawn FC HAMO DTM global 60 px/grau, 137 m (DLR, via USGS Astrogeology)',
+      linhasPorSaida: 2,
+      semDado: -32768,
+    },
+    // ver o cabeçalho: o mapa de cor da casa é declaradamente inventado
+    albedoDaGuarda: {
+      nome: 'Ceres_Dawn_FC_DLR_global_20ppd_Oct2015.tif',
+      url: 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Ceres_Dawn_FC_DLR_global_20ppd_Oct2015.tif',
+      descricao: 'mosaico Dawn FC global 20 px/grau (DLR, via USGS) — só para a guarda',
+      // mesmo rótulo do DTM: CENTER_LONGITUDE 180, borda esquerda em 0°
+      longitudeDaBordaEsquerdaGraus: 0,
+    },
+  },
+
+  vesta: {
+    nome: 'Vesta',
+    diretorio: 'vesta',
+    // a esfera de projeção do rótulo PDS3 (A=B=C=255 km); NÃO é o raio
+    // do corpo, que é o elipsoide de `eixosDaCasaKm`
+    raioM: 255000,
+    // o TIF não traz GDALMetadata: o float32 já é o RAIO em metros
+    // (medido: 279 km de média no equador, 224 no polo)
+    offsetDoDado: 0,
+    metrosPorUnidade: 1,
+    // OS 150° DE VESTA, MEDIDOS. O rótulo do DEM diz borda esquerda em
+    // 180° (CENTER_LONGITUDE 0, geokey 3088 = 0), que é a mesma da casa
+    // — e com essa declaração a guarda REPROVOU. A varredura das 72
+    // defasagens achou o pico em 150° (0,1359 contra 0,062 na declarada
+    // e um fundo de 0,065–0,085), que é exatamente a distância conhecida
+    // entre os DOIS sistemas de longitude de Vesta: o "Claudia" com que a
+    // Dawn operou e o "Claudia Double Prime" que a IAU aprovou. O mapa de
+    // COR da casa (mosaico da Dawn embutido no modelo 3D da NASA) está
+    // num; este DEM está no outro. Quem manda aqui é o mapa de cor —
+    // relevo e mancha têm de casar, que foi a lição do item 138 —, então
+    // a borda esquerda do DEM cai em 30° do sistema da casa (180 − 150).
+    // O PREÇO, declarado: se o mosaico de cor for o que está fora da IAU,
+    // a face que aponta para o Sol na data certa erra 150° — mas isso é
+    // defeito ANTIGO do mapa de cor, não deste relevo, e o olho não vê
+    // longitude absoluta num asteroide; vê cratera iluminada do lado
+    // errado, que é o que este giro corrige.
+    longitudeDaBordaEsquerdaGraus: 30,
+    // BODY_AXES.vesta = [289, 280, 229]; `a` é a média equatorial
+    eixosDaCasaKm: { a: 284.5, c: 229 },
+    fonte: {
+      tipo: 'tif-por-faixas',
+      nome: 'Vesta_Dawn_HAMO_DTM_DLR_Global_48ppd.tif',
+      url: 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Vesta_Dawn_HAMO_DTM_DLR_Global_48ppd.tif',
+      descricao: 'Dawn HAMO DTM global 48 px/grau, 93 m (DLR, via USGS Astrogeology)',
+      linhasPorSaida: 2,
+      // o GDALNoData do TIF é o menor float negativo
+      semDado: -1e30,
     },
   },
 };
@@ -172,6 +298,15 @@ const LATITUDE_DO_CLAMP_RAD = (80 * Math.PI) / 180;
 
 /** Quanto a orientação declarada tem de vencer a meia volta. */
 const MARGEM_DA_BORDA = 0.05;
+
+/**
+ * A longitude leste em que cai a PRIMEIRA COLUNA das texturas da casa.
+ * Todas são equiretangulares centradas em 0°, então a borda é 180°.
+ */
+const LONGITUDE_ESQUERDA_DA_CASA = 180;
+
+/** Passo da varredura de `--varredura`: 72 posições de 5°. */
+const PASSO_DA_VARREDURA_GRAUS = 5;
 
 /** Grade em que as duas medidas da guarda são feitas. */
 const LARGURA_DA_GUARDA = 720;
@@ -197,9 +332,10 @@ async function garantirArquivo(fonte, caminhoDado) {
 /**
  * O CABEÇALHO DO GeoTIFF, lido por faixas — só o que a leitura remota
  * precisa. Recusa tudo que não seja o caso simples que ela sabe ler:
- * TIFF clássico little-endian, 16 bits com sinal, SEM compressão, uma
- * tira por linha e tiras contíguas. Também devolve o OFFSET/SCALE que o
- * GDALMetadata declara — é ele que manda na conversão, não a tabela.
+ * TIFF clássico little-endian, SEM compressão, uma tira por linha,
+ * tiras contíguas e amostra de 16 bits com sinal (Mercúrio, Ceres) ou
+ * 32 bits em ponto flutuante (Vesta). Também devolve o OFFSET/SCALE que
+ * o GDALMetadata declara — é ele que manda na conversão, não a tabela.
  */
 async function cabecalhoDoTifRemoto(url) {
   const faixa = async (ini, bytes) => {
@@ -227,7 +363,14 @@ async function cabecalhoDoTifRemoto(url) {
   const curto = (t) => tags.get(t)?.curto;
   const largura = curto(256);
   const altura = curto(257);
-  if (curto(258) !== 16 || curto(339) !== 2) throw new Error('esperava 16 bits COM sinal.');
+  const bits = curto(258);
+  const formato = curto(339); // 2 = inteiro com sinal, 3 = ponto flutuante
+  const inteiro16 = bits === 16 && formato === 2;
+  const flutuante32 = bits === 32 && formato === 3;
+  if (!inteiro16 && !flutuante32) {
+    throw new Error(`esperava 16 bits com sinal ou 32 em ponto flutuante; achei ${bits}/${formato}.`);
+  }
+  const bytesPorAmostra = bits / 8;
   if (curto(259) !== 1) throw new Error('esperava TIFF sem compressão.');
   if (curto(277) !== 1) throw new Error('esperava uma amostra por pixel.');
   if (curto(278) !== 1) throw new Error('esperava uma linha por tira.');
@@ -235,7 +378,7 @@ async function cabecalhoDoTifRemoto(url) {
   const inicios = await faixa(tiras.valor, tiras.conta * 4);
   const base = inicios.readUInt32LE(0);
   for (let j = 1; j < tiras.conta; j += 1) {
-    if (inicios.readUInt32LE(j * 4) !== base + j * largura * 2) {
+    if (inicios.readUInt32LE(j * 4) !== base + j * largura * bytesPorAmostra) {
       throw new Error(`tira ${j} fora da sequência — a leitura por faixas não serve.`);
     }
   }
@@ -247,7 +390,7 @@ async function cabecalhoDoTifRemoto(url) {
     offset = Number(/name="OFFSET"[^>]*>([^<]+)</.exec(texto)?.[1] ?? 0);
     escala = Number(/name="SCALE"[^>]*>([^<]+)</.exec(texto)?.[1] ?? 1);
   }
-  return { largura, altura, base, offset, escala };
+  return { largura, altura, base, offset, escala, bytesPorAmostra, flutuante32 };
 }
 
 /** Confere o rótulo PDS contra a tabela — os metadados mandam. */
@@ -283,13 +426,18 @@ async function conferirRotuloPds(corpo) {
 // A ALTURA EM METROS, na grade que se pedir
 // ------------------------------------------------------------
 
-/** Meia volta em colunas — o DEM vira para a convenção do mapa de cor. */
-function giraMeiaVolta(campo, largura, altura) {
-  const meia = largura / 2;
+/**
+ * GIRO EM COLUNAS — o DEM vira para a convenção do mapa de cor. O
+ * deslocamento é a diferença entre a longitude da borda esquerda da
+ * FONTE e a da CASA, e meia volta é só o caso mais comum dele.
+ */
+function giraLongitude(campo, largura, altura, giroGraus) {
+  const passos = ((Math.round((giroGraus / 360) * largura) % largura) + largura) % largura;
+  if (passos === 0) return campo;
   const saida = new Float32Array(campo.length);
   for (let j = 0; j < altura; j += 1) {
     for (let i = 0; i < largura; i += 1) {
-      saida[j * largura + i] = campo[j * largura + ((i + meia) % largura)];
+      saida[j * largura + i] = campo[j * largura + ((i + passos) % largura)];
     }
   }
   return saida;
@@ -302,7 +450,9 @@ function giraMeiaVolta(campo, largura, altura) {
  * cada linha de saída — é o botão que a leitura remota usa para não
  * baixar o arquivo inteiro.
  */
-async function mediaDeCaixa(daLinha, origem, largura, altura, linhasPorSaida, semDado) {
+async function mediaDeCaixa(
+  daLinha, origem, largura, altura, linhasPorSaida, semDado, preencheComAMedia
+) {
   // sai em VALOR BRUTO da fonte; a conversão para metros é do chamador
   const media = new Float32Array(largura * altura);
   let vazios = 0;
@@ -316,15 +466,33 @@ async function mediaDeCaixa(daLinha, origem, largura, altura, linhasPorSaida, se
     for (let l = 0; l < usadas; l += 1) {
       for (let i = 0; i < origem.largura; i += 1) {
         const v = linhas[l * origem.largura + i];
-        if (v === semDado) continue;
+        // `<=` porque o sem-dado do float de Vesta é o menor negativo
+        // que existe e não sobrevive à ida e volta pelo decimal do
+        // GDALNoData; no inteiro de 16 bits o `<=` é o próprio `===`
+        if (v <= semDado) continue;
         const ii = Math.floor((i * largura) / origem.largura);
         soma[ii] += v;
         conta[ii] += 1;
       }
     }
+    // O TAPA-BURACO. Zero é um valor legítimo para ALTURA sobre o datum
+    // (Lua, Mercúrio, Marte) e um absurdo para RAIO (Ceres e Vesta:
+    // seria um texel no centro do corpo, um penhasco de 470 km). Onde a
+    // fonte guarda raio, o buraco recebe a média da própria linha —
+    // relevo zero naquela latitude — e onde guarda altura, o zero de
+    // sempre, para não mexer no que já está assado.
+    let somaDaLinha = 0;
+    let contaDaLinha = 0;
+    for (let i = 0; i < largura; i += 1) {
+      if (conta[i]) {
+        somaDaLinha += soma[i] / conta[i];
+        contaDaLinha += 1;
+      }
+    }
+    const tapaBuraco = preencheComAMedia && contaDaLinha ? somaDaLinha / contaDaLinha : 0;
     for (let i = 0; i < largura; i += 1) {
       if (conta[i] === 0) vazios += 1;
-      media[j * largura + i] = conta[i] ? soma[i] / conta[i] : 0;
+      media[j * largura + i] = conta[i] ? soma[i] / conta[i] : tapaBuraco;
     }
   }
   return { media, vazios };
@@ -338,6 +506,9 @@ async function mediaDeCaixa(daLinha, origem, largura, altura, linhasPorSaida, se
 async function lerAlturaEmMetros(corpo, contexto, largura) {
   const altura = largura / 2;
   const { fonte } = corpo;
+  // onde há elipsoide da casa a subtrair, o valor da fonte é RAIO — e é
+  // esse o caso em que o buraco não pode virar zero (ver `mediaDeCaixa`)
+  const comRaio = Boolean(corpo.eixosDaCasaKm);
   let bruto;
   let vazios = 0;
 
@@ -365,26 +536,28 @@ async function lerAlturaEmMetros(corpo, contexto, largura) {
       return fatia;
     };
     ({ media: bruto, vazios } = await mediaDeCaixa(
-      daLinha, origem, largura, altura, Number.POSITIVE_INFINITY, fonte.semDado
+      daLinha, origem, largura, altura, Number.POSITIVE_INFINITY, fonte.semDado, comRaio
     ));
   } else if (fonte.tipo === 'tif-por-faixas') {
-    const { largura: LO, altura: AO, base } = contexto.tif;
+    const { largura: LO, altura: AO, base, bytesPorAmostra, flutuante32 } = contexto.tif;
     const origem = { largura: LO, altura: AO };
     const daLinha = async (j0, n) => {
-      const ini = base + j0 * LO * 2;
-      const bytes = n * LO * 2;
+      const ini = base + j0 * LO * bytesPorAmostra;
+      const bytes = n * LO * bytesPorAmostra;
       const r = await fetch(fonte.url, {
         headers: { Range: `bytes=${ini}-${ini + bytes - 1}` },
       });
       if (!r.ok && r.status !== 206) throw new Error(`HTTP ${r.status} na linha ${j0}`);
       const b = Buffer.from(await r.arrayBuffer());
       contexto.lidos += b.length;
-      const fatia = new Int16Array(n * LO);
-      for (let k = 0; k < n * LO; k += 1) fatia[k] = b.readInt16LE(k * 2);
+      const fatia = flutuante32 ? new Float32Array(n * LO) : new Int16Array(n * LO);
+      for (let k = 0; k < n * LO; k += 1) {
+        fatia[k] = flutuante32 ? b.readFloatLE(k * 4) : b.readInt16LE(k * 2);
+      }
       return fatia;
     };
     ({ media: bruto, vazios } = await mediaDeCaixa(
-      daLinha, origem, largura, altura, fonte.linhasPorSaida, fonte.semDado
+      daLinha, origem, largura, altura, fonte.linhasPorSaida, fonte.semDado, comRaio
     ));
   } else {
     throw new Error(`fonte de tipo desconhecido: ${fonte.tipo}`);
@@ -393,15 +566,40 @@ async function lerAlturaEmMetros(corpo, contexto, largura) {
   if (vazios) console.log(`  ${vazios} texels sem dado na grade de ${largura} — postos em 0.`);
   const metros = new Float32Array(bruto.length);
   for (let k = 0; k < metros.length; k += 1) {
-    metros[k] = (bruto[k] - contexto.offset) * contexto.escala;
+    metros[k] = bruto[k] * contexto.escala + contexto.offset;
   }
+  if (corpo.eixosDaCasaKm) descontarElipsoideDaCasa(corpo, metros, largura, altura);
   return { metros, largura, altura };
 }
 
-/** A grade na convenção do mapa de cor (ou na oposta, para a guarda). */
-function orientar(corpo, grade, oposta = false) {
-  const girar = oposta ? !corpo.meiaVolta : corpo.meiaVolta;
-  return girar ? giraMeiaVolta(grade.metros, grade.largura, grade.altura) : grade.metros;
+/**
+ * SUBTRAI O ELIPSOIDE QUE A GEOMETRIA JÁ DESENHA (ver o cabeçalho). O
+ * campo entra como RAIO em metros e sai como o relevo sobre o
+ * elipsoide de revolução da casa — a única forma que `normalDoCorpo` já
+ * conhece. A latitude é a planetocêntrica da linha, a mesma que
+ * `assaNormais` usa.
+ */
+function descontarElipsoideDaCasa(corpo, metros, largura, altura) {
+  const a = corpo.eixosDaCasaKm.a * 1000;
+  const c = corpo.eixosDaCasaKm.c * 1000;
+  for (let j = 0; j < altura; j += 1) {
+    const lat = Math.PI / 2 - ((j + 0.5) / altura) * Math.PI;
+    const co = Math.cos(lat);
+    const si = Math.sin(lat);
+    const raio = (a * c) / Math.hypot(c * co, a * si);
+    for (let i = 0; i < largura; i += 1) metros[j * largura + i] -= raio;
+  }
+}
+
+/**
+ * A grade na convenção do mapa de cor. `defasagemExtraGraus` é o que a
+ * guarda usa para experimentar outras posições (meia volta, ou as 72 da
+ * varredura) sem reler a fonte, que é cara.
+ */
+function orientar(corpo, grade, defasagemExtraGraus = 0) {
+  const giro =
+    LONGITUDE_ESQUERDA_DA_CASA - corpo.longitudeDaBordaEsquerdaGraus + defasagemExtraGraus;
+  return giraLongitude(grade.metros, grade.largura, grade.altura, giro);
 }
 
 // ------------------------------------------------------------
@@ -446,28 +644,54 @@ function energiaDeBorda(campo, largura, altura) {
   return saida;
 }
 
-async function guardaDeAlinhamento(corpo, contexto, mapaDeCor) {
+async function guardaDeAlinhamento(corpo, contexto, mapaDeCor, varredura) {
   const L = LARGURA_DA_GUARDA;
   const A = L / 2;
   const grade = await lerAlturaEmMetros(corpo, contexto, L);
   const declarada = orientar(corpo, grade);
-  const outra = orientar(corpo, grade, true);
-  const alb = Float64Array.from(
+  const outra = orientar(corpo, grade, 180);
+  // O albedo entra na convenção DA CASA. O mapa entregue já está nela;
+  // um mosaico cru da fonte (o `albedoDaGuarda` de Ceres) nasce na
+  // convenção da fonte e tem de girar igual ao DEM, senão a guarda
+  // compararia duas coisas em sistemas diferentes e reprovaria o certo.
+  const cru = Float32Array.from(
     await sharp(mapaDeCor, { limitInputPixels: false })
       .resize(L, A, { fit: 'fill' })
       .greyscale()
       .raw()
       .toBuffer()
   );
+  const bordaEsquerdaDoAlbedo =
+    corpo.albedoDaGuarda?.longitudeDaBordaEsquerdaGraus ?? LONGITUDE_ESQUERDA_DA_CASA;
+  const alb = Float64Array.from(
+    giraLongitude(cru, L, A, LONGITUDE_ESQUERDA_DA_CASA - bordaEsquerdaDoAlbedo)
+  );
   const bordaAlb = energiaDeBorda(alb, L, A);
   const bordaDeclarada = pearson(energiaDeBorda(declarada, L, A), bordaAlb);
   const bordaOutra = pearson(energiaDeBorda(outra, L, A), bordaAlb);
   const comSinal = pearson(declarada, alb);
+  const giro = LONGITUDE_ESQUERDA_DA_CASA - corpo.longitudeDaBordaEsquerdaGraus;
   console.log(
     `guarda (${L}x${A}): energia de borda ${bordaDeclarada.toFixed(4)} na orientação ` +
-      `declarada (meia volta ${corpo.meiaVolta ? 'SIM' : 'não'}) contra ` +
-      `${bordaOutra.toFixed(4)} na outra; correlação com sinal ${comSinal.toFixed(4)}.`
+      `declarada (giro de ${((giro % 360) + 360) % 360}°) contra ` +
+      `${bordaOutra.toFixed(4)} na meia volta; correlação com sinal ${comSinal.toFixed(4)}.`
   );
+
+  if (varredura) {
+    const linhas = [];
+    let pico = { defasagem: 0, valor: -Infinity };
+    for (let d = 0; d < 360; d += PASSO_DA_VARREDURA_GRAUS) {
+      const valor = pearson(energiaDeBorda(orientar(corpo, grade, d), L, A), bordaAlb);
+      if (valor > pico.valor) pico = { defasagem: d, valor };
+      linhas.push(`${String(d).padStart(3)}° ${valor.toFixed(4)}`);
+    }
+    console.log(`varredura das ${linhas.length} defasagens (energia de borda):`);
+    for (let k = 0; k < linhas.length; k += 6) console.log(`  ${linhas.slice(k, k + 6).join('  ')}`);
+    console.log(
+      `pico em ${pico.defasagem}° sobre a declarada (${pico.valor.toFixed(4)}) — ` +
+        `0° quer dizer que a declaração está certa.`
+    );
+  }
   if (!(bordaDeclarada > bordaOutra + MARGEM_DA_BORDA)) {
     throw new Error(
       `a orientação declarada não vence a meia volta por ${MARGEM_DA_BORDA} ` +
@@ -484,6 +708,19 @@ async function guardaDeAlinhamento(corpo, contexto, mapaDeCor) {
 // ------------------------------------------------------------
 // O ASSAMENTO
 // ------------------------------------------------------------
+
+/**
+ * O RAIO QUE DÁ A ESCALA HORIZONTAL. É o da esfera de projeção da fonte,
+ * menos onde a casa desenha um elipsoide: ali o passo tem de ser o da
+ * bola desenhada, e o raio médio dela ((2a+c)/3) é a régua. Em Vesta a
+ * esfera de projeção do dado tem 255 km e a bola da casa 266 — usar a
+ * primeira deixaria toda encosta 4 % mais íngreme do que é.
+ */
+function raioDoPassoM(corpo) {
+  if (!corpo.eixosDaCasaKm) return corpo.raioM;
+  const { a, c } = corpo.eixosDaCasaKm;
+  return ((2 * a + c) / 3) * 1000;
+}
 
 function assaNormais(metros, largura, altura, raioM) {
   const dLon = (2 * Math.PI) / largura;
@@ -531,6 +768,7 @@ function assaNormais(metros, largura, altura, raioM) {
 async function main() {
   const argv = process.argv.slice(2);
   const manter = argv.includes('--manter');
+  const varredura = argv.includes('--varredura');
   const iDem = argv.indexOf('--dem');
   const caminhoDado = iDem >= 0 ? path.resolve(argv[iDem + 1]) : '';
   const id = argv.find((a, k) => !a.startsWith('--') && !(iDem >= 0 && k === iDem + 1));
@@ -540,11 +778,22 @@ async function main() {
   }
 
   const destino = path.join(rootDirectory, 'public', 'textures', 'atlas', corpo.diretorio);
-  const mapaDeCor = ['map.jpg', 'map.png', 'map_4096.jpg']
-    .map((n) => path.join(destino, n))
-    .find((p) => existsSync(p));
-  if (!mapaDeCor) {
-    throw new Error(`sem o mapa de cor em ${destino} — a guarda de alinhamento precisa dele.`);
+  // o albedo CONTRA O QUAL a guarda mede: o mapa entregue, ou o mosaico
+  // real da fonte quando o entregue é invenção declarada (Ceres)
+  let mapaDeCor;
+  let albedoBaixado = false;
+  if (corpo.albedoDaGuarda) {
+    const arquivo = await garantirArquivo(corpo.albedoDaGuarda, '');
+    mapaDeCor = arquivo.caminho;
+    albedoBaixado = arquivo.baixado;
+    console.log(`albedo da guarda: ${corpo.albedoDaGuarda.descricao} — ${mapaDeCor}.`);
+  } else {
+    mapaDeCor = ['map.jpg', 'map.png', 'map_4096.jpg']
+      .map((n) => path.join(destino, n))
+      .find((p) => existsSync(p));
+    if (!mapaDeCor) {
+      throw new Error(`sem o mapa de cor em ${destino} — a guarda de alinhamento precisa dele.`);
+    }
   }
 
   const contexto = {
@@ -583,12 +832,12 @@ async function main() {
   }
 
   // ---- a guarda de alinhamento, ANTES de assar 8 milhões de pixels
-  await guardaDeAlinhamento(corpo, contexto, mapaDeCor);
+  await guardaDeAlinhamento(corpo, contexto, mapaDeCor, varredura);
 
   const grade = await lerAlturaEmMetros(corpo, contexto, LARGURA_ALVO);
   const { largura, altura } = grade;
   const { rgb, rmsGraus, maxGraus } = assaNormais(
-    orientar(corpo, grade), largura, altura, corpo.raioM
+    orientar(corpo, grade), largura, altura, raioDoPassoM(corpo)
   );
   console.log(
     `inclinação: RMS ${rmsGraus.toFixed(2)}°, máxima ${maxGraus.toFixed(2)}° ` +
@@ -609,6 +858,10 @@ async function main() {
   if (baixado && !manter) {
     await unlink(contexto.caminho);
     console.log(`matéria-prima apagada: ${contexto.caminho} (use --manter para segurá-la).`);
+  }
+  if (albedoBaixado && !manter) {
+    await unlink(mapaDeCor);
+    console.log(`albedo da guarda apagado: ${mapaDeCor} (nunca entra na árvore).`);
   }
   console.log(
     `agora: node scripts/data/atlas/otimiza-texturas.mjs ${corpo.diretorio} && ` +

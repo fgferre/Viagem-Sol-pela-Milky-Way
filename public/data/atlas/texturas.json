@@ -182,6 +182,108 @@
       "nota": "a fonte admite que este mapa é inventado — não existe mosaico real de Ceres com licença fechada, e o da sonda Dawn segue pendente"
     },
     {
+      "corpo": "ceres",
+      "canal": "normal",
+      "arquivo": "textures/atlas/ceres/normal_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 1065211,
+      "sha256": "04004e0e196fc8f82a7451fbc64a93673cc4264f20655bec14b42389c01afd75",
+      "origem": {
+        "fonte": "Dawn FC HAMO DTM global 137 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_dtm_global_137m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "normal",
+      "arquivo": "textures/atlas/ceres/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 773676,
+      "sha256": "bb4d50c86c2b936b77b147db4e6b8e18267c5c537f71ed984d0cda422162d6ce",
+      "origem": {
+        "fonte": "Dawn FC HAMO DTM global 137 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_dtm_global_137m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "normal",
+      "arquivo": "textures/atlas/ceres/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 4175598,
+      "sha256": "d73f9cb2434992706e4c3e58e95873b1d4913d5f125242805ae88d63232549cf",
+      "origem": {
+        "fonte": "Dawn FC HAMO DTM global 137 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_dtm_global_137m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "normal",
+      "arquivo": "textures/atlas/ceres/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2792564,
+      "sha256": "437420d552c8e8fd13eacfeb45e8b2c9b789bc877d25f61c9b0fea8c3baf5812",
+      "origem": {
+        "fonte": "Dawn FC HAMO DTM global 137 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_dtm_global_137m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "normal",
+      "arquivo": "textures/atlas/ceres/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 15300806,
+      "sha256": "ee2a0d8be8e467bf091908bd64f0d2770a3a392c0bdff9ae3e77a8a095f3c12e",
+      "origem": {
+        "fonte": "Dawn FC HAMO DTM global 137 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_dtm_global_137m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "normal",
+      "arquivo": "textures/atlas/ceres/normal.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 8284442,
+      "sha256": "87a2929c1f5078b4176504d6dc4dd1b0976b56fbe4cde268bdef08118d99d726",
+      "origem": {
+        "fonte": "Dawn FC HAMO DTM global 137 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_dtm_global_137m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+    },
+    {
       "corpo": "charon",
       "canal": "map",
       "arquivo": "textures/atlas/charon/map.jpg",
@@ -3704,6 +3806,108 @@
         "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn."
       },
       "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "normal",
+      "arquivo": "textures/atlas/vesta/normal_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 1226740,
+      "sha256": "381f371c07c8d2b89e081986b7a73ebe62445acf36e01433857674f42d31f4c2",
+      "origem": {
+        "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "normal",
+      "arquivo": "textures/atlas/vesta/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 834182,
+      "sha256": "3a4e9ec325dc701080a08f678bfd0537f528118e6aa485b57821dddf455e80f7",
+      "origem": {
+        "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "normal",
+      "arquivo": "textures/atlas/vesta/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 4764163,
+      "sha256": "6ea75435e531a52888bfdbd2c20f69ffadbffe3e79cb7c705dcb774f2ddf642a",
+      "origem": {
+        "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "normal",
+      "arquivo": "textures/atlas/vesta/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2925222,
+      "sha256": "dd9c90daf6aed73e3c57d0ef3328e4226ef8598263841d99a70a7556d4929e5b",
+      "origem": {
+        "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "normal",
+      "arquivo": "textures/atlas/vesta/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 17702826,
+      "sha256": "64a5cf80a2b44959cdb14a09213a62023eacd7d9473a58271cc8d99c2fc263b3",
+      "origem": {
+        "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "normal",
+      "arquivo": "textures/atlas/vesta/normal.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 8802158,
+      "sha256": "6f6e283607bc8788a6a2ebd24da1e627fa2a14dbab4a9c836d424f5a45a567a9",
+      "origem": {
+        "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave"
     }
   ]
 }

@@ -304,6 +304,87 @@ do elipsoide de `BODY_AXES`, a esfera continua a de 128×64, e os dois saem
 da tabela `BUMP_DO_ALBEDO` (`NORMAL_MEDIDA`, em `rochoso.ts`, é a lista de
 quem tem a normal medida). Os TIF/IMG de origem não ficam na árvore.
 
+## O relevo de Ceres e de Vesta (item 141, 2ª fase)
+
+Os dois corpos que a sonda **Dawn** mapeou, e os dois primeiros em que a
+técnica encontrou um problema que a Lua, Mercúrio e Marte não tinham: o
+**elipsoide de `BODY_AXES` deles não é quase-esfera**. Ceres é 487,3×446 e
+Vesta 289×280×229, e `normalDoCorpo` já desenha essa figura. Um DEM medido
+sobre esfera carrega a figura global inteira — em Vesta são 60 km de
+achatamento num raio de 255 km, uma rampa sistemática de ~8° que a geometria
+JÁ desenha —, e assá-la no mapa contaria a mesma forma **duas vezes**. Por
+isso o gerador subtrai o raio do elipsoide de revolução da casa antes de
+derivar (campo `eixosDaCasaKm`), e o que vai para o mapa é o relevo SOBRE a
+bola desenhada. Preço declarado: a subtração é axissimétrica (a equatorial é
+a média de *a* e *b*), então os 9 km entre os dois eixos equatoriais de Vesta
+ficam no resíduo como rampa suave, e a diferença entre o elipsoide da casa e
+o que a Dawn mediu (Ceres 487,3 aqui contra 482 lá) também.
+
+**Ceres**: `Ceres Dawn FC HAMO DTM Global 137m` (DLR, distribuído pelo USGS
+Astrogeology, <https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_dtm_global_137m>,
+domínio público), 21600×10800, inteiro COM sinal de 16 bits, 466 MB — lido
+por FAIXAS HTTP como o de Mercúrio, **198,41 MB** medidos, sem baixar o
+mosaico. A conversão está no próprio GeoTIFF e o script a LÊ (`GDALMetadata`:
+`OFFSET` 470000, `SCALE` 1): o texel é a altura sobre a esfera de 470 km que
+o rótulo PDS3 e a geokey declaram, e o offset a devolve como RAIO em metros —
+que é a forma de que a subtração do elipsoide precisa. Inclinação medida:
+**RMS 10,86°, máxima 63,62°** — o maior número da casa, e ele é fato: a 4096
+px cada texel de Ceres cobre 0,73 km (contra 2,7 na Lua e 5,2 em Marte), e
+nessa régua a parede de cratera aparece inteira.
+
+**A GUARDA DE CERES NÃO PODE USAR O MAPA DA CASA.** O mapa de cor de Ceres é
+o `2k_ceres_fictional` do Solar System Scope, que a própria fonte declara
+inventado (seção acima) — correlacionar topografia medida com invenção não
+prova nada. Por isso o gerador declara para Ceres um `albedoDaGuarda`: o
+mosaico REAL da Dawn (`Ceres_Dawn_FC_DLR_global_20ppd_Oct2015`, 27 MB) é
+baixado SÓ para a guarda e apagado — nenhum byte dele entra na árvore.
+Medido contra ele: energia de borda **0,2124** na orientação declarada contra
+**−0,0056** na meia volta, com pico agudo em 0° na varredura das 72
+defasagens. A correlação COM SINAL dá **−0,39**, e é assim mesmo: em Ceres o
+chão claro é o fundo de cratera com sal (as fáculas de Occator), não a terra
+alta. **A consequência, dita na ficha**: a FORMA de Ceres passa a ser medida,
+mas ela ilumina uma cor inventada — cratera e mancha não se correspondem. O
+conserto de raiz é trocar o mapa de cor pelo mosaico da Dawn, que é domínio
+público e cabe na casa; fica **pendente**, fora deste item.
+
+**Vesta**: `Vesta Dawn HAMO DTM Global 93m` (DLR, via USGS Astrogeology,
+<https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m>,
+domínio público), 17280×8640, **ponto flutuante de 32 bits** (o leitor por
+faixas do gerador aprendeu esse formato aqui), 597 MB, lidos por faixas. O
+TIF não traz `GDALMetadata`: o float **já é o raio em metros** (medido: 279
+km de média no equador, 224 no polo), e a esfera de 255 km do rótulo é só a
+projeção, não o corpo. Inclinação medida DEPOIS de tirar o elipsoide da casa:
+**RMS 17,44°, máxima 84,61°** — o número mais alto da casa, e Vesta é
+mesmo assim: a 4096 px cada texel dela cobre 0,41 km, e nessa régua a
+escarpa de Rheasilvia e as fossas equatoriais entram inteiras. A repartição
+por eixo (`capturas/item141-anisotropia.mjs`) dá 11,66° leste-oeste contra
+13,33° norte-sul, razão 1,15 — a média de caixa que usa 2 das 4,2 linhas de
+origem NÃO está fabricando ruído (em Ceres a razão é 1,03, em Mercúrio 0,89).
+
+**OS 150° DE VESTA, MEDIDOS.** Vesta tem dois sistemas de longitude em
+circulação — o "Claudia" com que a Dawn operou e o "Claudia Double Prime" que
+a IAU aprovou, ~150° apartados. Com a orientação que o rótulo do DEM declara,
+**a guarda reprovou**; a varredura das 72 defasagens achou o pico em **150°**
+(0,1359 contra 0,062 na declarada, sobre um fundo de 0,046–0,089). Para saber
+QUEM está fora, a mesma varredura foi feita entre dois ALBEDOS — o mosaico de
+cor da própria USGS (74 px/grau, lido por faixas) contra o `map.jpg` da casa:
+pico **também em 150°**, com 0,3118. Os dois produtos da USGS/DLR concordam
+entre si, e quem está deslocado é **o mapa de cor que a casa carrega** (o
+mosaico embutido no modelo 3D da NASA). Como a casa orienta Vesta pela IAU
+(`iauOrientation.ts`, pck00011, W₀ = 285,39°), esse mapa de cor está 150° fora
+do meridiano que o próprio motor usa — defeito ANTERIOR a este item. O relevo
+foi alinhado AO MAPA DE COR (borda esquerda do DEM em 30° = 180 − 150), porque
+cratera e mancha casando é o que o olho vê; girar o mapa de cor e voltar o DEM
+ao rótulo é o conserto de raiz, e fica **pendente**. Rastro completo em
+`capturas/item141-vesta-longitude.txt`.
+
+**Só na iluminação, como nos outros.** Nada desloca vértice: a silhueta segue
+a do elipsoide de `BODY_AXES`, a esfera continua a de 128×64, e os dois saem
+da tabela `BUMP_DO_ALBEDO` (`NORMAL_MEDIDA`, em `rochoso.ts`, é a lista de
+quem tem a normal medida). Vesta entra nessa lista de zeros AGORA: o mosaico
+dela é real, mas o que o bump lia como cratera era em boa parte a mancha de
+composição da crosta. Os TIF de origem não ficam na árvore.
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**
@@ -350,6 +431,8 @@ tocar num `.mjs`.
 | moon/normal | topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela |
 | mercury/normal | topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem |
 | mars/normal | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |
+| ceres/normal | topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem |
+| vesta/normal | topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave |
 
 ### a forma (item 20)
 

@@ -262,7 +262,8 @@ const ESCALA_DA_NORMAL_DO_RELEVO = 1.2;
 /**
  * A NORMAL MEDIDA (item 141) — os corpos cujo relevo vem de DEM público
  * e entra SÓ NA LUZ. É o caminho que a Lua estreou no item 140, agora em
- * Mercúrio e Marte: `scripts/data/atlas/gera-normal-de-dem.mjs` assa o
+ * Mercúrio, Marte, Ceres e Vesta:
+ * `scripts/data/atlas/gera-normal-de-dem.mjs` assa o
  * mapa de normais em AMPLITUDE FÍSICA (a inclinação do texel é a
  * inclinação medida do terreno) e o shader o consome pelo frame
  * tangente.
@@ -277,6 +278,14 @@ const ESCALA_DA_NORMAL_DO_RELEVO = 1.2;
  * 2439, e a de Marte 29 km num raio de 3396; deslocar vértice não
  * mudaria pixel de limbo e custaria a malha densa.
  *
+ * OS DOIS DA DAWN (Ceres e Vesta) têm uma diferença que Mercúrio e Marte
+ * não têm: o elipsoide de `BODY_AXES` deles NÃO é quase-esfera (Ceres
+ * 487,3×446, Vesta 289×280×229), e `normalDoCorpo` já desenha essa
+ * figura. Por isso o gerador subtrai o raio do elipsoide da casa antes
+ * de derivar — o que vai para o mapa é o relevo SOBRE a bola desenhada,
+ * e não a bola outra vez. Em Vesta a figura global valia ~8° de rampa,
+ * que é mais do que todo o relevo dela.
+ *
  * O valor é a ESCALA TANGENCIAL, e é 1 — nenhum ganho. As luas de
  * Saturno usam 1,2 porque o número é o do projeto do dono; aqui a
  * amplitude já é a medida, e exagerá-la seria voltar a inventar.
@@ -284,6 +293,8 @@ const ESCALA_DA_NORMAL_DO_RELEVO = 1.2;
 export const NORMAL_MEDIDA: Readonly<Record<string, number>> = {
   mercury: 1,
   mars: 1,
+  ceres: 1,
+  vesta: 1,
 };
 
 /** Raios do corpo em pc — BODY_AXES (a fonte única) pelos

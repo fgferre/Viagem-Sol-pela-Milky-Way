@@ -168,8 +168,8 @@ ou zerar. Ordem sugerida, depois de a Lua (140) provar a técnica: Mercúrio
 numa fase própria.
   **DECISÃO DELE (03/09): "pode zerar Europa e Io"** — feito no mesmo
   commit desta linha (`BUMP_DO_ALBEDO`), fotos `capturas/item141-{europa,io}-*`.
-  Mercúrio e Marte FEITOS (`f4f6db0`); faltam Ceres e Vesta (Dawn HAMO) e
-  Fobos/Deimos (forma real, malha).
+  Mercúrio e Marte FEITOS (`f4f6db0`); Ceres e Vesta FEITOS (2ª fase, estado
+  abaixo); falta Fobos/Deimos (forma real, malha).
 
 **ESTADO (03/09 — Mercúrio e Marte feitos, falta a palavra dele).** Os dois
 saíram do relevo INVENTADO da cor e ganharam o real, pelo mesmo caminho da Lua:
@@ -185,8 +185,33 @@ para os três (`gera-normal-de-dem.mjs`) e a Lua sai dele byte a byte igual.
 Custo: passe do corpo 0,311→0,315 ms em Mercúrio e 0,398→0,402 em Marte — as
 faixas dos dois lados se cruzam, e a taxa de quadro não mudou; disco 218,65 →
 250,98 MB. Fotos `capturas/item141-{mercury,mars}-prancha.png`, custo em
-`capturas/item141-custo-{antes,depois}.txt`. FORA: Ceres e Vesta (Dawn HAMO,
-a próxima dupla), Fobos/Deimos (é malha, não normal) e a lista do §19.
+`capturas/item141-custo-{antes,depois}.txt`. FORA: Fobos/Deimos (é malha, não
+normal) e a lista do §19.
+
+**ESTADO (03/09 — Ceres e Vesta feitos, falta a palavra dele).** Os dois corpos
+da Dawn entraram pelo mesmo caminho, com uma diferença que os três primeiros
+não tinham: o elipsoide de `BODY_AXES` deles NÃO é quase-esfera (Ceres
+487,3×446, Vesta 289×280×229) e `normalDoCorpo` já desenha essa figura, então o
+gerador **subtrai o elipsoide da casa** antes de derivar — sem isso, Vesta
+levaria duas vezes os ~8° de rampa do próprio achatamento. **Ceres** — DTM Dawn
+FC HAMO 137 m (DLR/USGS, 466 MB lidos por faixas: 198,41 MB), RMS 10,86° e
+máxima 63,62°; a guarda não pôde usar o mapa de cor da casa (o
+`2k_ceres_fictional`, invenção declarada) e mediu contra o mosaico REAL da Dawn,
+baixado só para isso e apagado: 0,2124 contra −0,0056 na meia volta, pico agudo
+em 0°. **Vesta** — DTM Dawn HAMO 93 m em float32 (o leitor por faixas aprendeu
+o formato), 597 MB lidos como 317,46 MB, RMS 17,44° e máxima 84,61°; a guarda
+REPROVOU a orientação do rótulo e a varredura das 72 defasagens achou o pico em
+**150°** — os dois sistemas de longitude de Vesta. A segunda medida (mosaico de
+cor da USGS contra o `map.jpg` da casa, pico também em 150°, 0,3118) mostra que
+**quem está fora da IAU é o mapa de COR da casa**, não o DEM; o relevo foi
+alinhado à cor, e girar a cor 150° fica PENDENTE (`capturas/item141-vesta-longitude.txt`).
+Custo: passe do corpo 0,616→0,617 ms em Ceres e 0,359→0,362 em Vesta, faixas
+cruzadas e taxa de quadro igual; disco 250,98 → 316,45 MB. Fotos
+`capturas/item141-{ceres,vesta}-prancha.png`, custo em
+`capturas/item141b-custo-{antes,depois}.txt`. FORA e RELATADO: trocar o mapa de
+cor inventado de Ceres pelo mosaico Dawn de domínio público (27 MB, existe e
+cabe), girar o mapa de cor de Vesta em 150°, Fobos/Deimos (é malha, não normal)
+e a lista do §19.
 
 **138.** Jápeto "totalmente feio" e a paridade das luas contra o projeto dele — **FECHADO em 03/09** (`c70a204`: mosaicos Schenk graduados como lá; o relevo estava meia volta errado nas seis desde a S2); nível e Titã laranja ficam como estão, palavra dele "tudo ok, já avaliei"; ARQUIVO.
 
