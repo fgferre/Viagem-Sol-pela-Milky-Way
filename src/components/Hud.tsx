@@ -242,7 +242,7 @@ export function TitleVeil({
       {mode === 'intro' && (
         <>
           <div className="title-kicker">{t('hud.kicker')}</div>
-          <div className="title-big">MAR DE ESTRELAS</div>
+          <div className="title-big">{t('hud.nome')}</div>
           <div className="title-rule" />
           <div className="title-sub">
             {t('hud.abertura.linha1')}
