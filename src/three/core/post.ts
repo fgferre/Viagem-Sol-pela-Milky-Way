@@ -3,7 +3,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { CopyShader } from 'three/addons/shaders/CopyShader.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
@@ -651,16 +651,18 @@ class ClaraoDoCampo extends Pass {
 }
 
 /**
- * AS AMOSTRAS DO ALVO DO COMPOSER — o MSAA que esta casa não tinha (item
+ * AS AMOSTRAS DO ALVO DA CENA — o MSAA que esta casa não tinha (item
  * 120, F1 · L6 do contrato do NASA Eyes).
  *
  * O renderer nasce `antialias: false` (`core/engine.ts`) e essa flag só
  * governa o framebuffer do CANVAS, que neste app recebe um quad de tela
  * cheia e nada mais — ligá-la é INERTE, e foi medido assim em 31/08.
- * Quem rasteriza a cena 3D é o alvo do `EffectComposer`, e alvo de
- * composer nasce com `samples` 0. É este o parâmetro que produz o pixel,
- * e é o mesmo que a referência escreve (`new WebGLRenderTarget(x, y,
- * {samples: 4})`, offset 261 634 do bundle deles).
+ * Quem rasteriza a cena 3D é o alvo PRÓPRIO de `CenaResolvidaUmaVez`
+ * (item 144) — até 03/09 era o `renderTarget1` do composer, e isso
+ * custava o dobro do que a beira vale: ver o cabeçalho daquela classe.
+ * É este o parâmetro que produz o pixel, e é o mesmo que a referência
+ * escreve (`new WebGLRenderTarget(x, y, {samples: 4})`, offset 261 634
+ * do bundle deles).
  *
  * QUATRO, e o número não é gosto: `MAX_SAMPLES` do ANGLE/Metal no M1 é 4
  * — medido pela sonda em 31/08 —, então 4 é ao mesmo tempo o que a
@@ -716,9 +718,120 @@ export const AMOSTRAS_POR_TIER: Record<QualityLevel, number> = {
   performance: 2,
 };
 
+/**
+ * A CENA RESOLVE O MSAA UMA VEZ (item 144, 03/09).
+ *
+ * A DOENÇA, medida no M1 dele: com as amostras no `renderTarget1` do
+ * composer, QUATRO desenhos por quadro caíam num alvo multiamostrado — a
+ * cena, o blend aditivo do bloom, a soma do `ClaraoDoCampo` e o
+ * `OutputPass` — e o three resolve o alvo (blit dos 15 MP em Retina) ao
+ * fim de CADA `render()`. Com os cobertores desligados o MSAA custava
+ * 24 ms; com eles, 67 ms — 37% do quadro em cinema 2560×1500 (5,3 fps
+ * contra 10,5 no código de 24/08, `capturas/desempenho-m1-03-09.txt`).
+ * O preço não era a beira suavizada: eram os três resolves a mais e o
+ * ROP de quatro amostras em quads que não têm beira nenhuma.
+ *
+ * O CONSERTO: a cena 3D cai num alvo multiamostrado PRÓPRIO, resolvido
+ * uma vez — e o resolve cai DIRETO na textura do `renderTarget1` do
+ * composer, porque o alvo COMPARTILHA essa textura (`alvo.texture =
+ * destino.texture`; o three cria a textura de GL uma vez e os dois
+ * framebuffers a apontam). Zero cópia, zero passe a mais: o buffer do
+ * composer volta a ser liso (e sem profundidade, que ninguém lê ali) e
+ * já nasce com a cena dentro. Todo passe depois deste vê exatamente o
+ * que via — a soma e o blend são lineares, e somar depois de resolver é
+ * o mesmo que resolver depois de somar (medido: ≤ 1 nível em ≤ 0,02%
+ * dos pixels nas quatro vistas-sentinela, a assinatura do ULP).
+ *
+ * A primeira versão desta obra copiava o alvo resolvido com um quad de
+ * tela cheia. Era +100% em 2560×1500 mas −15% em 1200×900 (medido, A/B
+ * alternado): no chip da Apple a cópia logo depois do resolve custa mais
+ * que o resolve. A cópia ficou só como CAMINHO DE SEGURANÇA, para o caso
+ * de o `readBuffer` não ser o destino — o grampo em `Post.render` é o
+ * que garante que ele é.
+ *
+ * DUAS OBRIGAÇÕES da textura compartilhada: (1) trocar as amostras
+ * dispõe os DOIS alvos (`aplicarAmostras`), porque dispor um apaga a
+ * textura de GL que o outro ainda aponta; (2) `resolveDepthBuffer` fica
+ * em falso — ninguém lê a profundidade resolvida e o blit dela custava
+ * ~4 ms em 1200×900 Retina.
+ */
+class CenaResolvidaUmaVez extends Pass {
+  /** o alvo multiamostrado — `samples` decide o pixel, ver `aplicarAmostras` */
+  readonly alvo: THREE.WebGLRenderTarget;
+  /** o `renderTarget1` do composer — dono da textura em que o alvo resolve */
+  private destino: THREE.WebGLRenderTarget;
+  private copia: THREE.ShaderMaterial;
+  private quad: FullScreenQuad;
+  private cena: THREE.Scene;
+  private camera: THREE.Camera;
+
+  constructor(
+    cena: THREE.Scene,
+    camera: THREE.Camera,
+    amostras: number,
+    destino: THREE.WebGLRenderTarget
+  ) {
+    super();
+    this.cena = cena;
+    this.camera = camera;
+    this.destino = destino;
+    this.needsSwap = false;
+    this.alvo = new THREE.WebGLRenderTarget(destino.width, destino.height, {
+      type: THREE.HalfFloatType,
+      samples: amostras,
+      resolveDepthBuffer: false,
+    });
+    this.alvo.texture = destino.texture;
+    this.copia = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.clone(CopyShader.uniforms),
+      vertexShader: CopyShader.vertexShader,
+      fragmentShader: CopyShader.fragmentShader,
+      depthTest: false,
+      depthWrite: false,
+      blending: THREE.NoBlending,
+    });
+    this.quad = new FullScreenQuad(this.copia);
+  }
+
+  /** o composer chama com px de BUFFER — a densidade certa para a cena */
+  setSize(largura: number, altura: number) {
+    this.alvo.setSize(largura, altura);
+  }
+
+  render(
+    renderer: THREE.WebGLRenderer,
+    _writeBuffer: THREE.WebGLRenderTarget,
+    readBuffer: THREE.WebGLRenderTarget
+  ) {
+    const limpavaSozinho = renderer.autoClear;
+    renderer.autoClear = false;
+    // 1. a cena no alvo multiamostrado — o ÚNICO resolve do quadro
+    //    acontece no fim deste render, dentro do three, e cai na textura
+    //    do destino (compartilhada)
+    renderer.setRenderTarget(this.alvo);
+    renderer.clear(renderer.autoClearColor, renderer.autoClearDepth, renderer.autoClearStencil);
+    renderer.render(this.cena, this.camera);
+    // 2. caminho de segurança: se o composer entregou OUTRO buffer como
+    //    leitura, a cena resolvida vai para lá por cópia
+    if (readBuffer !== this.destino) {
+      this.copia.uniforms.tDiffuse.value = this.alvo.texture;
+      renderer.setRenderTarget(readBuffer);
+      this.quad.render(renderer);
+    }
+    renderer.autoClear = limpavaSozinho;
+  }
+
+  dispose() {
+    this.alvo.dispose();
+    this.copia.dispose();
+    this.quad.dispose();
+  }
+}
+
 export class Post {
   readonly composer: EffectComposer;
   readonly bloom: UnrealBloomPass;
+  private cena: CenaResolvidaUmaVez;
   private claraoDoCampo: ClaraoDoCampo;
   private film: ShaderPass;
   private knee: ShaderPass;
@@ -731,7 +844,17 @@ export class Post {
   constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
     this.renderer = renderer;
     const q = new URLSearchParams(window.location.search);
-    this.composer = new EffectComposer(renderer);
+    // os buffers do composer são LISOS e sem profundidade: a cena não
+    // rasteriza mais neles (ver `CenaResolvidaUmaVez`), e quad de
+    // pós-processamento não testa profundidade
+    const buffer = renderer.getDrawingBufferSize(new THREE.Vector2());
+    this.composer = new EffectComposer(
+      renderer,
+      new THREE.WebGLRenderTarget(buffer.x, buffer.y, {
+        type: THREE.HalfFloatType,
+        depthBuffer: false,
+      })
+    );
     // O CAMINHO DE VOLTA E O LADO A DA BANCADA, no molde de `?bbloom=0`:
     // `?msaa=0` devolve o alvo sem amostras — o quadro anterior a esta
     // obra —, `?msaa=N` varre e vence a escada de tiers. Ausente, quem
@@ -739,10 +862,14 @@ export class Post {
     const pedido = q.get('msaa');
     const forcado = pedido === null ? Number.NaN : Math.trunc(Number(pedido));
     this.amostrasForcadas = Number.isFinite(forcado) ? Math.max(0, forcado) : null;
-    // UM ALVO SÓ — o `renderTarget1`, que o grampo de `render` fixa como
-    // o lugar onde a cena 3D é rasterizada. Ver `aplicarAmostras`.
-    this.composer.renderTarget1.samples = this.amostrasForcadas ?? AMOSTRAS_DO_ALVO;
-    this.composer.addPass(new RenderPass(scene, camera));
+    // UM ALVO SÓ, e é o da cena — resolvido uma vez. Ver `aplicarAmostras`.
+    this.cena = new CenaResolvidaUmaVez(
+      scene,
+      camera,
+      this.amostrasForcadas ?? AMOSTRAS_DO_ALVO,
+      this.composer.renderTarget1
+    );
+    this.composer.addPass(this.cena);
 
     // (A porta de medição `?knee2=` morreu no M2: o experimento que ela
     // permitia — joelho ANTES do bloom — foi medido em 15/08, perdeu para
@@ -996,41 +1123,31 @@ export class Post {
    * O `dispose()` é o que faz a troca VALER: o three só lê `samples` em
    * `setupRenderTarget`, e essa só roda quando o alvo não tem
    * framebuffer. Sem ele, mudar o número escreveria um campo que ninguém
-   * consulta e o tier trocaria nada. Nada se perde na destruição — o
-   * `RenderPass` limpa o alvo antes de desenhar, todo quadro.
+   * consulta e o tier trocaria nada. Nada se perde na destruição — a
+   * `CenaResolvidaUmaVez` limpa o alvo antes de desenhar, todo quadro.
    *
    * `?msaa=` vence: uma bancada que fixou o número não pode ser desfeita
    * pela auto-degradação no meio da medida.
    */
   aplicarAmostras(tier: QualityLevel) {
     const alvo = this.amostrasForcadas ?? AMOSTRAS_POR_TIER[tier];
-    const rt = this.composer.renderTarget1;
+    const rt = this.cena.alvo;
     if (rt.samples === alvo) return;
     rt.samples = alvo;
     rt.dispose();
+    // e o dono da textura compartilhada vai junto: dispor o alvo apagou a
+    // textura de GL que o framebuffer do `renderTarget1` ainda aponta
+    this.composer.renderTarget1.dispose();
   }
 
   /**
-   * O GRAMPO DOS BUFFERS, e ele é o que torna o MSAA pagável (medido no
-   * item 115, aproveitado aqui).
-   *
-   * O `EffectComposer` NÃO reinicia `readBuffer`/`writeBuffer` a cada
-   * quadro: eles ficam onde a última troca os deixou. E o número de
-   * trocas por quadro é ÍMPAR com o joelho ligado (knee + OutputPass +
-   * film) e PAR sem ele — ou seja, o alvo em que o `RenderPass`
-   * rasteriza a cena ALTERNAVA entre `renderTarget1` e `renderTarget2`
-   * de um quadro para o outro, e mudava de regime no meio da travessia
-   * da galáxia. Sem o grampo, dar amostras a UM alvo daria quadro liso
-   * sim, quadro serrilhado não; dar aos DOIS custa um resolve de tela
-   * cheia em CADA passe de quad — medido em 31/08, +73% a +90% de tempo
-   * de quadro nas três vistas, contra +55% a +69% com o grampo.
-   *
-   * Grampeado, `renderTarget1` é sempre onde a cena 3D cai (o
-   * `readBuffer` do `RenderPass`, do bloom e do clarão do campo) e
-   * `renderTarget2` é sempre rascunho de quad, que não tem beira para
-   * amostrar. Nada depende do buffer do quadro anterior — o `RenderPass`
-   * limpa o alvo antes de desenhar —, então o grampo não apaga
-   * informação de ninguém.
+   * O GRAMPO DOS BUFFERS. O `EffectComposer` não reinicia
+   * `readBuffer`/`writeBuffer` a cada quadro, e com o joelho ligado o
+   * número de trocas é ímpar — sem o grampo os dois buffers alternariam
+   * de papel de um quadro para o outro. A `CenaResolvidaUmaVez` resolve
+   * a cena na textura do `renderTarget1`; o grampo é o que garante que
+   * é ELE o `readBuffer` que o passe seguinte lê (senão o passe cai no
+   * caminho de segurança e paga a cópia).
    */
   render(time: number) {
     (this.film.uniforms as Record<string, { value: number }>).uTime.value = time;
@@ -1042,6 +1159,7 @@ export class Post {
   dispose() {
     // EffectComposer.dispose() NÃO dispõe os passes: o UnrealBloom
     // sozinho retém 11 render targets HDR na VRAM
+    this.cena.dispose();
     this.claraoDoCampo.dispose();
     this.bloom.dispose();
     this.film.dispose();

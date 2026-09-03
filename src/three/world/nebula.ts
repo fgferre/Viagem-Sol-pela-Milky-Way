@@ -56,6 +56,18 @@ export class Nebula {
   private camera = new THREE.OrthographicCamera();
   private material: THREE.ShaderMaterial;
   private scale: number;
+  /**
+   * O QUADRO CONGELADO (item 144). O raymarch não tem uniform de tempo:
+   * com a mesma câmera e os mesmos uniforms ele produz o MESMO pixel —
+   * e até 03/09 produzia a 60 Hz, 25–30% do quadro no Atlas parado
+   * (medido no M1 dele, `capturas/desempenho-m1-03-09.txt`). `sujo` é
+   * levantado por todo setter que muda um uniform de verdade; a chave
+   * da câmera (matriz de mundo + fov + aspecto) é comparada em `render`.
+   * Iguais os dois, o `rtBlur` do quadro anterior continua sendo o céu.
+   */
+  private sujo = true;
+  private chaveDaCamera = new Float64Array(18);
+  private ultimaChave = new Float64Array(18).fill(Number.NaN);
   // LUT equiretangular 256×128 da luz distante do disco; recalcula
   // somente após a câmera mover >2 pc.
   private lutRT: THREE.WebGLRenderTarget;
@@ -181,6 +193,7 @@ export class Nebula {
     this.rtBlur.setSize(rw, rh);
     (this.material.uniforms.uResolution.value as THREE.Vector2).set(rw, rh);
     (this.blurMaterial.uniforms.uTexel.value as THREE.Vector2).set(1 / rw, 1 / rh);
+    this.sujo = true;
   }
 
   /** alavanca do auto-quality sobre o custo do raymarch (~2× extra) */
@@ -204,7 +217,10 @@ export class Nebula {
   })();
 
   setSteps(n: number) {
-    this.material.uniforms.uSteps.value = this.stepsOverride || n;
+    const passos = this.stepsOverride || n;
+    if (this.material.uniforms.uSteps.value === passos) return;
+    this.material.uniforms.uSteps.value = passos;
+    this.sujo = true;
   }
 
   /** raymarch, LUT e blur, para a pré-compilação sob o véu (director.init) */
@@ -213,7 +229,9 @@ export class Nebula {
   }
 
   setFade(f: number) {
+    if (this.material.uniforms.uFade.value === f) return;
     this.material.uniforms.uFade.value = f;
+    this.sujo = true;
   }
 
   /**
@@ -268,6 +286,7 @@ export class Nebula {
     this.lutMaterial.uniforms.uDustMap.value = texture;
     this.lutMaterial.uniforms.uCartBlend.value = map ? blend : 0;
     this.lutDirty = true;
+    this.sujo = true;
   }
 
   /**
@@ -279,18 +298,32 @@ export class Nebula {
     const positions = u.uSeedClouds.value as THREE.Vector4[];
     const amps = u.uSeedCloudAmp.value as Float32Array;
     const n = Math.min(count, 32);
+    // as sementes chegam a cada 0,25 s (nuvensSemente.tique) com a câmera
+    // parada ou não: só o que MUDOU suja o quadro congelado
+    let mudou = u.uSeedCloudCount.value !== n;
     for (let i = 0; i < n; i++) {
       const o = i * 5;
-      positions[i].set(entries[o], entries[o + 1], entries[o + 2], entries[o + 3]);
-      amps[i] = entries[o + 4];
+      const p = positions[i];
+      if (
+        p.x !== entries[o] || p.y !== entries[o + 1] || p.z !== entries[o + 2] ||
+        p.w !== entries[o + 3] || amps[i] !== entries[o + 4]
+      ) {
+        p.set(entries[o], entries[o + 1], entries[o + 2], entries[o + 3]);
+        amps[i] = entries[o + 4];
+        mudou = true;
+      }
     }
     u.uSeedCloudCount.value = n;
+    if (mudou) this.sujo = true;
   }
 
   /** cavidade do observador itinerante (0 = desligada, perto do Sol) */
   setCavity(pos: THREE.Vector3, gate: number) {
-    (this.material.uniforms.uCavityPos.value as THREE.Vector3).copy(pos);
+    const p = this.material.uniforms.uCavityPos.value as THREE.Vector3;
+    if (p.equals(pos) && this.material.uniforms.uCavityGate.value === gate) return;
+    p.copy(pos);
     this.material.uniforms.uCavityGate.value = gate;
+    this.sujo = true;
   }
 
   private occluderPos = new THREE.Vector3();
@@ -301,8 +334,10 @@ export class Nebula {
    * director manda quando o grupo do Sol some ou ?nosun está ligado).
    */
   setSunOccluder(pos: THREE.Vector3, raio: number) {
+    if (this.occluderPos.equals(pos) && this.occluderR === raio) return;
     this.occluderPos.copy(pos);
     this.occluderR = raio;
+    this.sujo = true;
   }
 
   /**
@@ -336,7 +371,30 @@ export class Nebula {
     return Math.cos(seguro);
   }
 
+  /** a câmera desta chamada é a da anterior? (matriz de mundo, fov, aspecto) */
+  private cameraParada(camera: THREE.PerspectiveCamera): boolean {
+    const k = this.chaveDaCamera;
+    k.set(camera.matrixWorld.elements, 0);
+    k[16] = camera.fov;
+    k[17] = camera.aspect;
+    const antes = this.ultimaChave;
+    let igual = true;
+    for (let i = 0; i < 18; i++) {
+      if (k[i] !== antes[i]) {
+        igual = false;
+        break;
+      }
+    }
+    if (!igual) antes.set(k);
+    return igual;
+  }
+
   render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) {
+    // o quadro congelado: mesma câmera, mesmos uniforms, mesma LUT — o
+    // céu de antes continua valendo, e o raymarch inteiro fica parado
+    const parada = this.cameraParada(camera);
+    if (parada && !this.sujo && !this.lutDirty) return;
+    this.sujo = false;
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camera.position);
     camera.getWorldDirection(this.scratchFwd);

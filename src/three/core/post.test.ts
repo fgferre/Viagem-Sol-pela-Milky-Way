@@ -93,7 +93,7 @@ describe('a soma com recorte (a armadilha do premultiplied)', () => {
   });
 });
 
-describe('o MSAA do alvo do composer (item 120, F1 · L6)', () => {
+describe('o MSAA do alvo da cena (item 120, F1 · L6; resolvido uma vez desde o 144)', () => {
   it('são QUATRO amostras — o número da referência e o teto da placa', () => {
     // O literal deles (`{samples: 4}`, offset 261 634 do bundle) é também
     // o `MAX_SAMPLES` medido no ANGLE/Metal do M1: pedir 8 seria pedir 4
@@ -122,15 +122,23 @@ describe('o MSAA do alvo do composer (item 120, F1 · L6)', () => {
     expect(AMOSTRAS_POR_TIER.performance).toBeGreaterThan(0);
   });
 
-  it('as amostras vão para o alvo do COMPOSER, não para o renderer', () => {
+  it('as amostras vão para o alvo PRÓPRIO da cena, não para o renderer nem para o composer', () => {
     // A REVERSÃO INERTE, e ela já custou uma medição inteira em 31/08:
     // `antialias: true` no renderer governa só o framebuffer do CANVAS,
     // que neste app recebe um quad de tela cheia. Quem rasteriza a cena
-    // 3D é o `renderTarget1` do composer.
-    expect(post).toMatch(/composer\.renderTarget1\.samples =/);
+    // 3D é o alvo da `CenaResolvidaUmaVez`.
+    const classe = post.slice(post.indexOf('class CenaResolvidaUmaVez'));
+    const corpo = classe.slice(0, classe.indexOf('\nexport class Post'));
+    expect(corpo).toMatch(/samples: amostras/);
     const engine = readFileSync(new URL('./engine.ts', import.meta.url), 'utf8');
     expect(engine, 'o AA voltou para o renderer, onde é inerte')
       .toMatch(/antialias: false/);
+    // E A REVERSÃO CARA (item 144): amostras no buffer do composer fazem
+    // o three resolver o alvo de 15 MP a cada passe que escreve nele —
+    // três resolves a mais por quadro, 37% do quadro em cinema Retina.
+    expect(post, 'as amostras voltaram para o buffer do composer').not.toMatch(
+      /renderTarget1\.samples/
+    );
   });
 
   it('a troca de tier DISPÕE o alvo — senão ela não vale nada', () => {
@@ -148,20 +156,44 @@ describe('o MSAA do alvo do composer (item 120, F1 · L6)', () => {
     expect(director.match(/this\.post\.aplicarAmostras\(/g) ?? []).toHaveLength(2);
   });
 
-  it('o grampo dos buffers fixa em QUAL alvo a cena é rasterizada', () => {
-    // SEM ELE O MSAA PEGA QUADRO SIM, QUADRO NÃO: o `EffectComposer` não
-    // reinicia os buffers a cada quadro e o número de trocas por quadro é
-    // ímpar com o joelho ligado e par sem ele — o alvo da cena alternava
-    // entre `renderTarget1` e `renderTarget2`, e mudava de regime no meio
-    // da travessia da galáxia. Dar amostras aos DOIS custaria +73% a +90%
-    // em vez de +55% a +69% (medido em 31/08).
+  it('a cena resolve UMA vez: desenha no alvo próprio e copia para o buffer liso', () => {
+    // A SABOTAGEM ÓBVIA: renderizar a cena direto no `readBuffer` (o
+    // `RenderPass` de addons) e deixar o alvo multiamostrado ocioso —
+    // o pixel perde o MSAA e ninguém vê no md5 de uma vista sem fita.
+    const classe = post.slice(post.indexOf('class CenaResolvidaUmaVez'));
+    const corpo = classe.slice(0, classe.indexOf('\nexport class Post'));
+    const alvo = corpo.indexOf('renderer.setRenderTarget(this.alvo)');
+    const cena = corpo.indexOf('renderer.render(this.cena, this.camera)');
+    const copia = corpo.indexOf('renderer.setRenderTarget(readBuffer)');
+    expect(alvo).toBeGreaterThan(-1);
+    expect(cena).toBeGreaterThan(alvo);
+    expect(copia).toBeGreaterThan(cena);
+    // o resultado fica no `readBuffer`: sem `needsSwap = false` o passe
+    // seguinte leria o buffer errado
+    expect(corpo).toMatch(/this\.needsSwap = false/);
+    // e os buffers do composer nascem SEM profundidade: a cena não
+    // rasteriza mais neles
+    expect(post).toMatch(/depthBuffer: false,\n\s*\}\)\n\s*\);\n/);
+  });
+
+  it('o resolve cai DIRETO na textura do renderTarget1 — sem cópia, e o grampo garante o leitor', () => {
+    // A REVERSÃO CARA, medida em A/B alternado: copiar o alvo resolvido
+    // com um quad de tela cheia custava −15% em 1200×900 Retina. A
+    // textura é compartilhada, e o grampo fixa o `readBuffer` em
+    // `renderTarget1` para o passe seguinte ler onde o resolve caiu.
+    const classe = post.slice(post.indexOf('class CenaResolvidaUmaVez'));
+    const corpo = classe.slice(0, classe.indexOf('\nexport class Post'));
+    expect(corpo).toMatch(/this\.alvo\.texture = destino\.texture/);
+    expect(corpo).toMatch(/resolveDepthBuffer: false/);
     const metodo = post.slice(post.indexOf('render(time: number)'));
-    const corpo = metodo.slice(0, metodo.indexOf('\n  }'));
-    expect(corpo).toMatch(/readBuffer = this\.composer\.renderTarget1/);
-    expect(corpo).toMatch(/writeBuffer = this\.composer\.renderTarget2/);
-    // e o grampo tem de vir ANTES do render, senão ele fixa o quadro que
-    // já passou
-    expect(corpo.indexOf('renderTarget1')).toBeLessThan(corpo.indexOf('composer.render()'));
+    const render = metodo.slice(0, metodo.indexOf('\n  }'));
+    expect(render).toMatch(/readBuffer = this\.composer\.renderTarget1/);
+    expect(render.indexOf('renderTarget1')).toBeLessThan(render.indexOf('composer.render()'));
+    // e trocar as amostras dispõe os DOIS alvos — dispor só o da cena
+    // apaga a textura de GL que o framebuffer do composer ainda aponta
+    const amostras = post.slice(post.indexOf('aplicarAmostras(tier'));
+    const corpoAmostras = amostras.slice(0, amostras.indexOf('\n  }'));
+    expect(corpoAmostras).toMatch(/this\.composer\.renderTarget1\.dispose\(\)/);
   });
 });
 

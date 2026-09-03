@@ -96,14 +96,21 @@ cinema dá 19. Números e ablações em `capturas/desempenho-m1-03-09.txt`.
 - O instrumento por passe (timer query por draw) **mente no chip da
   Apple**: apontava as 16 estrelas-herói como 41% do quadro e a ablação
   deu zero. Ranking só por ablação em modo cru.
-**Obra, na ordem do ganho/custo:** (1) o composer resolver o MSAA UMA
-vez — a cena cai num alvo multiamostrado próprio, resolve uma vez e o
-pós roda em alvos lisos (técnica, decide-se aqui); (2) MSAA só nas fases
-com linha de órbita (`LINHAS_DE_ORBITA_POR_FASE`: o filme não tem e paga
-o mesmo) — visual, **espera a palavra dele**; (3) nebulosa congelada com
-a câmera parada, zero pixel mudado; (4) o orçamento de pixels de
-cinema em tela cheia Retina e a ideia dele de um menu de gráficos com
-preset Personalizado — decisão de produto, **espera a palavra dele**.
+**FEITO em 03/09 (duas obras, commit desta linha):** (1) o composer
+resolve o MSAA UMA vez — a cena cai num alvo multiamostrado próprio que
+COMPARTILHA a textura do `renderTarget1` (`CenaResolvidaUmaVez`), zero
+cópia; (3) a nebulosa congela com a câmera parada (`Nebula.render`,
+chave da câmera + `sujo` nos setters), bit-idêntica. Medido depois:
+Atlas 2560×1500 cinema **5,3 → 17,8 fps**; Atlas 1200×900 cinema 19 →
+23; filme t=100 dpr 1 9,1 → 14,8; filme dpr 2 não andou (9,8, causa não
+atribuída). Pixel: ≤ 1 nível em ≤ 0,02% dos pixels nas 4 sentinelas
+(ULP). **Sobra:** o MSAA da própria cena ainda custa ~26 ms em 1200×900
+Retina (`?msaa=0` bate no teto de 60) — (2) MSAA só nas fases com linha
+de órbita (o filme não tem) segue **esperando a palavra dele**; (4) o
+orçamento de pixels e o menu de gráficos, **idem**. Fora desta obra:
+`npm run lint` está vermelho em `Spotlight.tsx` (react-refresh, vem do
+130/F1), não deste item.
+
 
 **115.** A colheita da mineração do Eyes — **FECHADO em 02/09**; ARQUIVO.
 *(Blocos A e B cumpridos em 31/08: memória de texturas 1.083 → 70 MiB
