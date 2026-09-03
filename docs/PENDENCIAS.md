@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 138.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 140.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -145,6 +145,30 @@ dinamismo dos nomes do NASA Eyes".)*
 ## MÉDIA — afeta o produto, não salta aos olhos
 
 **134.** A ONDA DE SATURNO — a colheita do projeto Saturn dele (anéis com perfil medido e iluminação mútua; relevo das luas; nove luas esculpidas com o grão dele; jatos de Encélado; anéis E e F, raios do B, ondas de Dáfnis) — **FECHADA em 02/09**: cinco fases feitas, S3c pela palavra dele ("melhorou bastante... deixe do jeito que ficou"), lista do §19 aprovada e rodada (suíte 1×, z-fighting, ab-identidade); ARQUIVO.
+
+**138. Jápeto "totalmente feio" — e a paridade de TODAS as luas contra o
+projeto Saturn dele.** Palavras dele, 02/09, logo depois do fecho do 134:
+*"Iapetu totalmente feio. acho que vc deveria fazer a mesma coisa que vc fez
+para hyperion para todos os outros objetos contra o meu projeto saturno...
+delegue e seja coordenador. Analise porque."* Método: o da S3c — o mesmo
+corpo nos dois apps, mesmo enquadramento e mesmo ângulo de Sol (luz de
+lado), foto lado a lado, e a distância medida um ingrediente por vez
+(cor/curva, relevo e grão, luz, pós) até igualar. Ordem: Jápeto primeiro
+(é o que ele viu), depois Reia, Dione, Tétis, Encélado, Mimas (as seis
+com mapa dele) e Titã; as nove esculpidas herdam o material já igualado
+na S3c. Fotos no site dele: `abrirSessao` + `Page.navigate` + dormir +
+`captureScreenshot` (lição da S2b).
+
+**139. Dentro dos anéis de Saturno, no projeto dele, veem-se as partículas
+e pedras de gelo — aqui não.** Palavras dele, 02/09: *"Os aneis de saturno
+no meu projeto quando vc entra neles vc ve as particulas e pedras de gelo,
+achei que vc ia trazer isso pro nosso projeto, se trouxe, trouxe mal."*
+Não foi trazido: é a "lajota volumétrica" (`ringSlab.ts` dele, 65.536
+partículas instanciadas a partir do perfil do anel) que a S5 deixou fora
+por não estar na lista das quatro peças — a lista foi curta demais.
+Trazer com a matemática dele, ligada pela distância da câmera ao plano do
+anel (fora da lajota nada muda; o filme longe de Saturno segue idêntico),
+custo medido nos três tiers, foto de dentro do anel para o olho dele.
 
 **137.** Sobra da S1 do 134: os arquivos `public/textures/atlas/saturn/ring*` (8 arquivos, 216 KB) e o canal `ring` em `texturas.ts`, no manifesto e nos scripts de texturas ficaram órfãos — o anel lê o perfil medido. Remover com prova de não-uso (§6); os testes de `texturas.test.ts` que citam o canal entram na lista do §19 dessa faxina.
 
