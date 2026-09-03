@@ -89,6 +89,10 @@ export const HOSTS_PERMITIDOS = [
   'science.nasa.gov',
   'nasa3d.arc.nasa.gov',
   'astrogeology.usgs.gov',
+  // o host de BYTES do USGS Astrogeology: `astrogeology.usgs.gov` serve a
+  // página do produto e os arquivos saem daqui (item 141, 3ª fase — é de
+  // onde `gera-normal-de-dem.mjs` já lê os DEMs da Dawn e da MESSENGER)
+  'asc-pds-services.s3.us-west-2.amazonaws.com',
   'upload.wikimedia.org',
 ];
 
@@ -108,6 +112,32 @@ export function hostPermitido(url) {
  */
 export function webpCompensa(bytesFonte, bytesWebp) {
   return bytesWebp < bytesFonte;
+}
+
+/**
+ * GIRO DE LONGITUDE de uma imagem equiretangular, em COLUNAS inteiras
+ * (item 141, 3ª fase). Mesma convenção de sinal do `giraLongitude` do
+ * `gera-normal-de-dem.mjs`, que gira o DEM: a coluna `i` da saída vem da
+ * coluna `i + passos` da entrada, de modo que a borda esquerda passa da
+ * longitude `L` para `L + giroGraus`. Um mapa cuja borda esquerda está em
+ * `L` vai para a convenção da casa (borda em 180°) com `giroGraus = 180 − L`.
+ *
+ * O arredondamento em colunas é declarado: 150° de 2048 px dão 853,33
+ * colunas, e a saída fica 0,06° fora — 0,3 px, abaixo do que o olho e o
+ * juiz de energia de borda enxergam.
+ */
+export function giraColunasDeImagem(pixels, largura, altura, canais, giroGraus) {
+  const passos = ((Math.round((giroGraus / 360) * largura) % largura) + largura) % largura;
+  if (passos === 0) return pixels;
+  const saida = Buffer.allocUnsafe(pixels.length);
+  for (let j = 0; j < altura; j += 1) {
+    for (let i = 0; i < largura; i += 1) {
+      const de = (j * largura + ((i + passos) % largura)) * canais;
+      const para = (j * largura + i) * canais;
+      for (let c = 0; c < canais; c += 1) saida[para + c] = pixels[de + c];
+    }
+  }
+  return saida;
 }
 
 // ---- A CONFISSÃO, LIDA DO DOCUMENTO --------------------------------

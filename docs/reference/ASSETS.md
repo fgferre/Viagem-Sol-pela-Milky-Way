@@ -21,12 +21,16 @@ sobre a calota sul. Sem máscara/preenchimento não entra: o WRAP faria
 um anel negro no polo. Pendente: as 68 linhas tratadas + crédito USGS
 redigido.
 
-## Ceres — SSS admite invenção
+## Ceres — o inventado saiu (item 141, 3ª fase)
 
-Incumbente: Solar System Scope `2k_ceres_fictional`, **2048×1024**,
-CC BY 4.0 — a fonte **admite** que o mapa é inventado. Não há NASA 3D
-nem 2k real no SSS. Mosaico Dawn/USGS fica pendente (não há empacote
-com licença fechada nesta onda).
+Incumbente ATÉ 03/09: Solar System Scope `2k_ceres_fictional`,
+**2048×1024**, CC BY 4.0 — a fonte **admitia** que o mapa era inventado.
+Era a única textura da casa cuja própria origem se declarava ficção, e ela
+**perdeu**: no lugar entrou o mosaico global real da Framing Camera da Dawn
+(`Ceres_Dawn_FC_DLR_global_20ppd_Oct2015`, DLR via USGS Astrogeology,
+7383×3691, 27 MB, domínio público), entregue a **4096×2048**. O que a casa
+fez com ele está na seção do relevo, abaixo: giro de 180°, tingimento
+uniforme e preenchimento do polo sul. O mapa inventado não volta.
 
 ## 2k sem licença no doador (não atravessaram)
 
@@ -332,20 +336,47 @@ que é a forma de que a subtração do elipsoide precisa. Inclinação medida:
 px cada texel de Ceres cobre 0,73 km (contra 2,7 na Lua e 5,2 em Marte), e
 nessa régua a parede de cratera aparece inteira.
 
-**A GUARDA DE CERES NÃO PODE USAR O MAPA DA CASA.** O mapa de cor de Ceres é
-o `2k_ceres_fictional` do Solar System Scope, que a própria fonte declara
-inventado (seção acima) — correlacionar topografia medida com invenção não
-prova nada. Por isso o gerador declara para Ceres um `albedoDaGuarda`: o
-mosaico REAL da Dawn (`Ceres_Dawn_FC_DLR_global_20ppd_Oct2015`, 27 MB) é
-baixado SÓ para a guarda e apagado — nenhum byte dele entra na árvore.
-Medido contra ele: energia de borda **0,2124** na orientação declarada contra
-**−0,0056** na meia volta, com pico agudo em 0° na varredura das 72
-defasagens. A correlação COM SINAL dá **−0,39**, e é assim mesmo: em Ceres o
-chão claro é o fundo de cratera com sal (as fáculas de Occator), não a terra
-alta. **A consequência, dita na ficha**: a FORMA de Ceres passa a ser medida,
-mas ela ilumina uma cor inventada — cratera e mancha não se correspondem. O
-conserto de raiz é trocar o mapa de cor pelo mosaico da Dawn, que é domínio
-público e cabe na casa; fica **pendente**, fora deste item.
+**A GUARDA DE CERES, e o mapa de cor que ela obrigou a trocar.** Na 2ª fase
+o mapa de cor de Ceres era o `2k_ceres_fictional`, invenção declarada pela
+própria fonte, e correlacionar topografia medida com invenção não prova nada:
+a guarda mediu contra o mosaico REAL da Dawn, baixado só para isso — energia
+de borda **0,2124** na orientação declarada contra **−0,0056** na meia volta,
+pico agudo em 0° na varredura das 72 defasagens. A correlação COM SINAL dá
+**−0,39**, e é assim mesmo: em Ceres o chão claro é o fundo de cratera com
+sal (as fáculas de Occator), não a terra alta.
+
+**Na 3ª fase (03/09) esse mesmo mosaico virou o MAPA DE COR** e a exceção
+morreu — a guarda de Ceres passou a medir contra o que a tela mostra, como
+nos outros quatro. Medido depois da troca, contra o `map.jpg` entregue:
+**0,2134** na orientação declarada contra **−0,0029** na meia volta, pico
+agudo em 0° na varredura das 72 defasagens (a segunda melhor posição vale
+0,068) e correlação com sinal **−0,3843** — os mesmos números da 2ª fase,
+agora medidos contra o que a tela mostra. O que a casa faz com o mosaico, e
+só isto:
+
+- **giro de 180°** — o GeoTIFF declara meridiano central 180° (geokey 3088)
+  com a borda esquerda em 0°E, e as texturas da casa começam em 180°. É o
+  MESMO giro que o DTM leva, e é o que faz cratera e relevo caírem juntos.
+  Conferido por olho: a cratera **Occator**, com as fáculas de Cerealia, cai
+  em 239,3°E / 19,9°N, o que a IAU publica.
+- **tingimento uniforme, declarado**: a Framing Camera fotografou no filtro
+  claro, então o mosaico é CINZA — não existe cor de Ceres em imagem. O
+  cinza vira cor por um fator fixo por canal, **R 1,021 / G 1,000 / B 0,946**,
+  tirado dos índices de cor publicados contra os do Sol (B−V 0,71 contra
+  0,65; V−R 0,375 contra 0,352). É pouco de propósito: Ceres é quase neutro,
+  e o marrom vistoso do mapa antigo era invenção. O NÍVEL não é mexido — o
+  mosaico entra com o brilho que o USGS publicou (média 118/255).
+- **preenchimento do polo sul**: a Dawn mapeou Ceres com o polo sul em NOITE
+  POLAR, e 3,6 % dos texels do mosaico são vazio preto abaixo de −84°.
+  Deixá-los seria a mancha negra no polo que fez esta mesma bancada RECUSAR o
+  mosaico de Europa. O buraco é tapado com a média da última faixa de
+  latitude que tem dado, e o preenchimento é POLAR: só acima de |80°|. Fora
+  dos polos nada é tocado — os 0,04 % de texels escuros que sobram são sombra
+  de cratera, que é medida.
+
+Fica declarado o que NÃO foi corrigido: o mosaico não é achatado
+fotometricamente, e o brilho médio cai de 145/255 no equador para 84 no polo
+norte e 68 no sul — a luz da casa escurece de novo por cima disso.
 
 **Vesta**: `Vesta Dawn HAMO DTM Global 93m` (DLR, via USGS Astrogeology,
 <https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m>,
@@ -361,7 +392,7 @@ por eixo (`capturas/item141-anisotropia.mjs`) dá 11,66° leste-oeste contra
 13,33° norte-sul, razão 1,15 — a média de caixa que usa 2 das 4,2 linhas de
 origem NÃO está fabricando ruído (em Ceres a razão é 1,03, em Mercúrio 0,89).
 
-**OS 150° DE VESTA, MEDIDOS.** Vesta tem dois sistemas de longitude em
+**OS 150° DE VESTA — medidos na 2ª fase, consertados na 3ª.** Vesta tem dois sistemas de longitude em
 circulação — o "Claudia" com que a Dawn operou e o "Claudia Double Prime" que
 a IAU aprovou, ~150° apartados. Com a orientação que o rótulo do DEM declara,
 **a guarda reprovou**; a varredura das 72 defasagens achou o pico em **150°**
@@ -371,12 +402,20 @@ cor da própria USGS (74 px/grau, lido por faixas) contra o `map.jpg` da casa:
 pico **também em 150°**, com 0,3118. Os dois produtos da USGS/DLR concordam
 entre si, e quem está deslocado é **o mapa de cor que a casa carrega** (o
 mosaico embutido no modelo 3D da NASA). Como a casa orienta Vesta pela IAU
-(`iauOrientation.ts`, pck00011, W₀ = 285,39°), esse mapa de cor está 150° fora
-do meridiano que o próprio motor usa — defeito ANTERIOR a este item. O relevo
-foi alinhado AO MAPA DE COR (borda esquerda do DEM em 30° = 180 − 150), porque
-cratera e mancha casando é o que o olho vê; girar o mapa de cor e voltar o DEM
-ao rótulo é o conserto de raiz, e fica **pendente**. Rastro completo em
-`capturas/item141-vesta-longitude.txt`.
+(`iauOrientation.ts`, pck00011, W₀ = 285,39°), esse mapa de cor estava 150°
+fora do meridiano que o próprio motor usa — defeito ANTERIOR ao item 141. A 2ª
+fase alinhou o RELEVO ao mapa de cor (borda esquerda do DEM em 30° = 180 −
+150), porque cratera e mancha casando é o que o olho vê, e deixou o conserto
+de raiz pendente.
+
+**A 3ª fase fez o conserto de raiz**: o mapa de cor é girado **−150°** na
+aquisição (`baixa-texturas.mjs`, campo `giroDeLongitudeGraus`) e o relevo
+voltou ao rótulo do DEM (borda esquerda em 180°, giro 0). Agora os dois estão
+na IAU, e a face que o Sol ilumina numa data também é a certa — não só o
+casamento entre cratera e mancha. A guarda passa **sem varredura**, com a
+varredura confirmando pico em 0°. Rastro em
+`capturas/item141-vesta-longitude.txt` (2ª fase) e
+`capturas/item141c-guardas.txt` (3ª).
 
 **Só na iluminação, como nos outros.** Nada desloca vértice: a silhueta segue
 a do elipsoide de `BODY_AXES`, a esfera continua a de 128×64, e os dois saem
@@ -421,7 +460,7 @@ tocar num `.mjs`.
 
 | corpo/canal | nota |
 | --- | --- |
-| ceres/map | a fonte admite que este mapa é inventado — não existe mosaico real de Ceres com licença fechada, e o da sonda Dawn segue pendente |
+| ceres/map | mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha |
 | titan/map | 720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou |
 | europa/map | mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou |
 | venus/map | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |
@@ -431,7 +470,7 @@ tocar num `.mjs`.
 | moon/normal | topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela |
 | mercury/normal | topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem |
 | mars/normal | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |
-| ceres/normal | topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem |
+| ceres/normal | topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem |
 | vesta/normal | topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave |
 
 ### a forma (item 20)

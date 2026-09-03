@@ -86,16 +86,13 @@
 //      Marte 0,139 contra −0,016 (a varredura das 72 defasagens tem
 //      pico agudo exatamente na declarada nos três).
 //
-//      CERES NÃO TEM CONTRA O QUE MEDIR: o mapa de cor que a casa
-//      carrega é o `2k_ceres_fictional` do Solar System Scope, que a
-//      PRÓPRIA fonte declara inventado (ASSETS.md). Correlacionar o DEM
-//      com uma invenção não prova nada. Por isso Ceres declara
-//      `albedoDaGuarda`: o mosaico REAL da Dawn (USGS, 20 px/grau, 27
-//      MB) é baixado SÓ para a guarda, medido contra ele e apagado —
-//      nenhum byte dele entra na árvore. É o corpo real que aprova a
-//      orientação; o mapa de cor entregue segue inventado, e o relevo
-//      verdadeiro passa por baixo dele sem casar com as manchas (é o
-//      que o item 141 previu ao escolher Ceres).
+//      O ALBEDO É SEMPRE O MAPA ENTREGUE. Na 2ª fase Ceres precisou de
+//      exceção — o mapa da casa era o `2k_ceres_fictional`, que a
+//      própria fonte declarava inventado, e correlacionar um DEM com uma
+//      invenção não prova nada —, e a guarda media contra o mosaico real
+//      da Dawn, baixado só para isso. A 3ª fase pôs esse mosaico NA
+//      ÁRVORE como o mapa de cor de Ceres, e a exceção morreu: o que a
+//      guarda compara é o que a tela mostra, nos cinco corpos.
 //   2. CORRELAÇÃO COM SINAL (só onde ela é fato): na Lua, mares baixos
 //      E escuros, terras altas E claras dão +0,61, e o item 140 assou
 //      com o piso de +0,3. Em Mercúrio ela é NEGATIVA (−0,14) e em
@@ -239,14 +236,6 @@ export const CORPOS = {
       linhasPorSaida: 2,
       semDado: -32768,
     },
-    // ver o cabeçalho: o mapa de cor da casa é declaradamente inventado
-    albedoDaGuarda: {
-      nome: 'Ceres_Dawn_FC_DLR_global_20ppd_Oct2015.tif',
-      url: 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Ceres_Dawn_FC_DLR_global_20ppd_Oct2015.tif',
-      descricao: 'mosaico Dawn FC global 20 px/grau (DLR, via USGS) — só para a guarda',
-      // mesmo rótulo do DTM: CENTER_LONGITUDE 180, borda esquerda em 0°
-      longitudeDaBordaEsquerdaGraus: 0,
-    },
   },
 
   vesta: {
@@ -259,23 +248,19 @@ export const CORPOS = {
     // (medido: 279 km de média no equador, 224 no polo)
     offsetDoDado: 0,
     metrosPorUnidade: 1,
-    // OS 150° DE VESTA, MEDIDOS. O rótulo do DEM diz borda esquerda em
-    // 180° (CENTER_LONGITUDE 0, geokey 3088 = 0), que é a mesma da casa
-    // — e com essa declaração a guarda REPROVOU. A varredura das 72
-    // defasagens achou o pico em 150° (0,1359 contra 0,062 na declarada
-    // e um fundo de 0,065–0,085), que é exatamente a distância conhecida
-    // entre os DOIS sistemas de longitude de Vesta: o "Claudia" com que a
-    // Dawn operou e o "Claudia Double Prime" que a IAU aprovou. O mapa de
-    // COR da casa (mosaico da Dawn embutido no modelo 3D da NASA) está
-    // num; este DEM está no outro. Quem manda aqui é o mapa de cor —
-    // relevo e mancha têm de casar, que foi a lição do item 138 —, então
-    // a borda esquerda do DEM cai em 30° do sistema da casa (180 − 150).
-    // O PREÇO, declarado: se o mosaico de cor for o que está fora da IAU,
-    // a face que aponta para o Sol na data certa erra 150° — mas isso é
-    // defeito ANTIGO do mapa de cor, não deste relevo, e o olho não vê
-    // longitude absoluta num asteroide; vê cratera iluminada do lado
-    // errado, que é o que este giro corrige.
-    longitudeDaBordaEsquerdaGraus: 30,
+    // OS 150° DE VESTA, RESOLVIDOS NA COR (item 141, 3ª fase). Vesta tem
+    // DOIS sistemas de longitude a 150° um do outro: o "Claudia" com que a
+    // Dawn operou e o "Claudia Double Prime" que a IAU aprovou, que é o
+    // que `iauOrientation.ts` usa para girar o corpo. Este DEM está na
+    // IAU e o rótulo diz a verdade: CENTER_LONGITUDE 0 (geokey 3088 = 0),
+    // borda esquerda em 180°, a mesma da casa — giro 0.
+    // Na 2ª fase quem estava fora era o MAPA DE COR (o mosaico embutido
+    // no modelo 3D da NASA, no sistema da sonda), e o relevo foi torcido
+    // para acompanhá-lo (borda declarada em 30°). Agora a cor foi girada
+    // −150° na aquisição (`baixa-texturas.mjs`) e os dois estão na IAU:
+    // o relevo volta ao rótulo, e a face que o Sol ilumina numa data
+    // também passa a ser a certa.
+    longitudeDaBordaEsquerdaGraus: 180,
     // BODY_AXES.vesta = [289, 280, 229]; `a` é a média equatorial
     eixosDaCasaKm: { a: 284.5, c: 229 },
     fonte: {
@@ -684,21 +669,15 @@ async function guardaDeAlinhamento(corpo, contexto, mapaDeCor, varredura) {
   const grade = await lerAlturaEmMetros(corpo, contexto, L);
   const declarada = orientar(corpo, grade);
   const outra = orientar(corpo, grade, 180);
-  // O albedo entra na convenção DA CASA. O mapa entregue já está nela;
-  // um mosaico cru da fonte (o `albedoDaGuarda` de Ceres) nasce na
-  // convenção da fonte e tem de girar igual ao DEM, senão a guarda
-  // compararia duas coisas em sistemas diferentes e reprovaria o certo.
-  const cru = Float32Array.from(
+  // O albedo é o MAPA ENTREGUE, que já está na convenção da casa: a
+  // aquisição (`baixa-texturas.mjs`) é quem gira mapa de cor que nasce em
+  // outro sistema de longitude, e o que chega aqui é o que a tela mostra.
+  const alb = Float64Array.from(
     await sharp(mapaDeCor, { limitInputPixels: false })
       .resize(L, A, { fit: 'fill' })
       .greyscale()
       .raw()
       .toBuffer()
-  );
-  const bordaEsquerdaDoAlbedo =
-    corpo.albedoDaGuarda?.longitudeDaBordaEsquerdaGraus ?? LONGITUDE_ESQUERDA_DA_CASA;
-  const alb = Float64Array.from(
-    giraLongitude(cru, L, A, LONGITUDE_ESQUERDA_DA_CASA - bordaEsquerdaDoAlbedo)
   );
   const medidas = medirAlinhamento(declarada, outra, alb, L, A);
   const { bordaDeclarada, bordaOutra, comSinal } = medidas;
@@ -801,22 +780,12 @@ async function main() {
   }
 
   const destino = path.join(rootDirectory, 'public', 'textures', 'atlas', corpo.diretorio);
-  // o albedo CONTRA O QUAL a guarda mede: o mapa entregue, ou o mosaico
-  // real da fonte quando o entregue é invenção declarada (Ceres)
-  let mapaDeCor;
-  let albedoBaixado = false;
-  if (corpo.albedoDaGuarda) {
-    const arquivo = await garantirArquivo(corpo.albedoDaGuarda, '');
-    mapaDeCor = arquivo.caminho;
-    albedoBaixado = arquivo.baixado;
-    console.log(`albedo da guarda: ${corpo.albedoDaGuarda.descricao} — ${mapaDeCor}.`);
-  } else {
-    mapaDeCor = ['map.jpg', 'map.png', 'map_4096.jpg']
-      .map((n) => path.join(destino, n))
-      .find((p) => existsSync(p));
-    if (!mapaDeCor) {
-      throw new Error(`sem o mapa de cor em ${destino} — a guarda de alinhamento precisa dele.`);
-    }
+  // o albedo CONTRA O QUAL a guarda mede é sempre o MAPA ENTREGUE
+  const mapaDeCor = ['map.jpg', 'map.png', 'map_4096.jpg']
+    .map((n) => path.join(destino, n))
+    .find((p) => existsSync(p));
+  if (!mapaDeCor) {
+    throw new Error(`sem o mapa de cor em ${destino} — a guarda de alinhamento precisa dele.`);
   }
 
   const contexto = {
@@ -881,10 +850,6 @@ async function main() {
   if (baixado && !manter) {
     await unlink(contexto.caminho);
     console.log(`matéria-prima apagada: ${contexto.caminho} (use --manter para segurá-la).`);
-  }
-  if (albedoBaixado && !manter) {
-    await unlink(mapaDeCor);
-    console.log(`albedo da guarda apagado: ${mapaDeCor} (nunca entra na árvore).`);
   }
   console.log(
     `agora: node scripts/data/atlas/otimiza-texturas.mjs ${corpo.diretorio} && ` +

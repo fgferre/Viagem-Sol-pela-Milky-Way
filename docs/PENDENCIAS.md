@@ -233,14 +233,36 @@ cruzadas e taxa de quadro igual; disco 250,98 → 316,45 MB. Fotos
 cor inventado de Ceres pelo mosaico Dawn de domínio público (27 MB, existe e
 cabe), girar o mapa de cor de Vesta em 150°, Fobos/Deimos (é malha, não normal)
 e a lista do §19.
-  **Sobras da 2ª fase (03/09), a decidir por ele:** (a) o mapa de COR de
-  Ceres é inventado (fonte confessa) e agora não casa com o relevo medido —
-  há o mosaico real da Dawn (USGS, 20 ppd, 27 MB, domínio público) para
-  trocar; (b) o mapa de cor de Vesta está 150° fora do meridiano IAU que
-  `iauOrientation.ts` usa (os dois produtos USGS concordam entre si) — o
-  relevo foi alinhado à cor; o certo é girar a cor para a IAU; (c) Marte
-  carrega ~0,2° de rampa do achatamento por não ter `eixosDaCasaKm`
+  **Sobras da 2ª fase (03/09):** (a) e (b) FEITAS na 3ª fase (estado
+  abaixo, palavra dele "concordo com um e com dois"); abertas ainda: (c)
+  Marte carrega ~0,2° de rampa do achatamento por não ter `eixosDaCasaKm`
   (pequeno contra RMS 1,94°); (d) Fobos/Deimos por forma real (malha).
+
+**ESTADO (03/09 — 3ª fase: a COR de Ceres e de Vesta, falta a palavra dele).**
+As duas sobras fecharam. **Ceres** trocou o `2k_ceres_fictional` do Solar
+System Scope — a única textura da casa cuja própria fonte se declarava
+invenção — pelo mosaico global REAL da Framing Camera da Dawn (DLR via USGS,
+7383×3691, 27 MB, domínio público), entregue a 4096×2048. É preto-e-branco na
+origem (filtro claro), então a cor é um tingimento uniforme DECLARADO
+(R 1,021 / G 1,000 / B 0,946, tirado dos índices de cor publicados contra os
+do Sol) e o nível não foi mexido. O polo sul, que a Dawn pegou em noite polar
+(3,6 % de texels vazios abaixo de −84°), foi preenchido com a média da faixa
+de latitude vizinha — sem isso a casa teria a mancha preta que fez rejeitar o
+mosaico de Europa. A guarda passou a medir contra o mapa ENTREGUE (a exceção
+`albedoDaGuarda` morreu junto com o motivo): 0,2134 contra −0,0029 na meia
+volta, pico agudo em 0°, e o `normal.png` reassado sai BYTE A BYTE igual ao da
+2ª fase. **Vesta** teve o mapa de cor girado −150°, do sistema "Claudia" da
+sonda para o meridiano da IAU que o motor usa, e o relevo VOLTOU ao rótulo do
+DEM (borda esquerda 180°, giro 0): a guarda passa sem varredura, 0,1379 contra
+0,0749, e o normal novo girado 150° bate byte a byte com o antigo — só a
+longitude mudou. Agora a face que o Sol ilumina na data também é a certa.
+Disco 316,45 → 320,17 MB. Fotos `capturas/item141-{ceres,vesta}-cor-prancha.png`
+e `capturas/item141-ceres-occator.png` (a cratera Occator com as fáculas na
+tela, conferida contra os 239,33°E / 19,86°N publicados); guardas em
+`capturas/item141c-guardas.txt`. **FORA e RELATADO:** o pino
+`src/lib/atlas/ficha.test.ts` que exigia a palavra "inventado" na confissão de
+Ceres ficou desatualizado e NÃO foi tocado (fora do pacote); Fobos/Deimos (é
+malha, não normal); a lista do §19.
 
 **138.** Jápeto "totalmente feio" e a paridade das luas contra o projeto dele — **FECHADO em 03/09** (`c70a204`: mosaicos Schenk graduados como lá; o relevo estava meia volta errado nas seis desde a S2); nível e Titã laranja ficam como estão, palavra dele "tudo ok, já avaliei"; ARQUIVO.
 

@@ -414,9 +414,11 @@ describe('a imagem confessa — itens 19 e 20', () => {
     }
   });
 
-  it('Ceres diz na cara que o mapa é inventado pela fonte (item 19)', () => {
+  it('Ceres confessa o tingimento e a noite polar do mosaico real (item 141; era o mapa inventado do 19)', () => {
     const defeito = porRotulo('ceres', 'imagem').get('o defeito');
-    expect(defeito).toContain('inventado');
+    expect(defeito).toContain('tingimento');
+    expect(defeito).toContain('noite polar');
+    expect(defeito).not.toContain('inventado');
   });
 
   it('Titã confessa as emendas, Europa as 68 linhas, Vênus a falta de luz visível', () => {

@@ -30,8 +30,8 @@
 //
 // A CONFISSÃO SAI DO ASSETS.md (item 74 parte B, 2026-08-22, que
 // fecha os itens 19 e 20). A ficha do objeto imprime, na seção "a
-// imagem", o defeito MEDIDO de cada mapa — Ceres inventado pela
-// fonte, as emendas de Titã, as 68 linhas de Europa, Vênus sem foto
+// imagem", o defeito MEDIDO de cada mapa — a cor de Ceres que não é
+// medida, as emendas de Titã, as 68 linhas de Europa, Vênus sem foto
 // em luz visível — e a forma dos quatro corpos que são elipsoide
 // tendo malha publicada. Esses vereditos já moram, inteiros, em
 // `docs/reference/ASSETS.md`; então é ELE que este gerador lê, numa
@@ -329,9 +329,10 @@ const ORIGENS = {
     atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
     proveniencia: 'medido',
   },
-  // ---- F6 (anões). NASA 3D para Plutão/Caronte. Ceres SSS
-  // fictional (CC BY 4.0) — a fonte admite invenção; mosaico Dawn
-  // USGS fica pendente. Procedurais (Haumea/Makemake/Eris) sem mapa.
+  // ---- F6 (anões). NASA 3D para Plutão/Caronte. Ceres: mosaico REAL da
+  // Dawn desde o item 141, 3ª fase — o `2k_ceres_fictional` do SSS, que a
+  // própria fonte declarava invenção, saiu da árvore.
+  // Procedurais (Haumea/Makemake/Eris) sem mapa.
   'pluto/map': {
     fonte: 'NASA 3D Resources — Plutão (720×360)',
     url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto',
@@ -347,20 +348,23 @@ const ORIGENS = {
     proveniencia: 'medido',
   },
   'ceres/map': {
-    fonte: 'Solar System Scope — 2k_ceres_fictional (inventado na fonte; mosaico Dawn USGS pendente)',
-    url: 'https://www.solarsystemscope.com/textures/download/2k_ceres_fictional.jpg',
-    licenca: 'CC BY 4.0',
-    atribuicao: ATRIBUICAO_SSS,
-    proveniencia: 'medido',
+    fonte: 'Dawn FC — mosaico global de Ceres a 20 px/grau (DLR, via USGS Astrogeology)',
+    url: 'https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_global_mosaic_20ppd',
+    licenca: 'domínio público (NASA/DLR/USGS)',
+    atribuicao:
+      'Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul nesta casa (baixa-texturas.mjs).',
+    proveniencia: 'derivado',
   },
   // ---- F7 (asteroides). Vesta Dawn (NASA Science 3D model);
   // Hígia VLT CC BY 4.0. Palas sem mapa licenciado.
   'vesta/map': {
-    fonte: 'NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D',
+    fonte:
+      'NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema "Claudia" da sonda para o meridiano da IAU (item 141, 3ª fase)',
     url: 'https://science.nasa.gov/resource/vesta-3d-model/',
     licenca: 'NASA images and media usage guidelines',
-    atribuicao: 'Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn.',
-    proveniencia: 'medido',
+    atribuicao:
+      'Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude nesta casa (baixa-texturas.mjs).',
+    proveniencia: 'derivado',
   },
   'hygiea/map': {
     fonte: 'ESO VLT — mapa de Hígia (2017–2018), Wikimedia CC BY 4.0',
@@ -610,8 +614,8 @@ async function main() {
       },
       proveniencia: ehFonte ? declarada.proveniencia : 'derivado',
       // O DEFEITO É DA IMAGEM, não da variante: a escada de tamanhos e o
-      // webp saem do MESMO mapa, e o mapa de Ceres continua inventado em
-      // 512 px. A nota acompanha todas as variantes daquele canal, e a
+      // webp saem do MESMO mapa, e o polo preenchido de Ceres continua
+      // preenchido em 512 px. A nota acompanha todas as variantes, e a
       // ausência dela é a declaração de que a bancada não achou defeito.
       ...(nota ? { nota } : {}),
     });

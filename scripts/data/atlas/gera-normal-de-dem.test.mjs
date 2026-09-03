@@ -229,7 +229,8 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     expect(CORPOS.mercury).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 0.5, longitudeDaBordaEsquerdaGraus: 0 });
     expect(CORPOS.mars).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 0 });
     expect(CORPOS.ceres).toMatchObject({ offsetDoDado: 470000, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 0 });
-    // Vesta: o mapa de COR da casa está 150° fora da IAU; o relevo segue a cor
-    expect(CORPOS.vesta).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 30 });
+    // Vesta: na 3ª fase do 141 a COR foi girada −150° para a IAU na
+    // aquisição, e o relevo voltou ao rótulo do DEM (borda esquerda 180°)
+    expect(CORPOS.vesta).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 180 });
   });
 });

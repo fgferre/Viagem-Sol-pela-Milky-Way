@@ -136,50 +136,84 @@
       "arquivo": "textures/atlas/ceres/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 160946,
-      "sha256": "19e3ccce84e6ba563903dc568854b769573d939549da4ef446ff69f2a3ff555c",
+      "bytes": 164436,
+      "sha256": "339d42ab9ebc8631cc405f3d11fbab6541ff8593110a5e544bdbfed11a4fe181",
       "origem": {
-        "fonte": "Solar System Scope — 2k_ceres_fictional (inventado na fonte; mosaico Dawn USGS pendente)",
-        "url": "https://www.solarsystemscope.com/textures/download/2k_ceres_fictional.jpg",
-        "licenca": "CC BY 4.0",
-        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+        "fonte": "Dawn FC — mosaico global de Ceres a 20 px/grau (DLR, via USGS Astrogeology)",
+        "url": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_global_mosaic_20ppd",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul nesta casa (baixa-texturas.mjs)."
       },
       "proveniencia": "derivado",
-      "nota": "a fonte admite que este mapa é inventado — não existe mosaico real de Ceres com licença fechada, e o da sonda Dawn segue pendente"
+      "nota": "mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "map",
+      "arquivo": "textures/atlas/ceres/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 638789,
+      "sha256": "cddc6f4697a6a427ba50adcef3e18cdba5b16c33a537b6782215cd88bd8715e5",
+      "origem": {
+        "fonte": "Dawn FC — mosaico global de Ceres a 20 px/grau (DLR, via USGS Astrogeology)",
+        "url": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_global_mosaic_20ppd",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul nesta casa (baixa-texturas.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha"
+    },
+    {
+      "corpo": "ceres",
+      "canal": "map",
+      "arquivo": "textures/atlas/ceres/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 630410,
+      "sha256": "43069a2708b176a3c2a6306a85bf3de623f9f1244ca8d39680da746676f248bb",
+      "origem": {
+        "fonte": "Dawn FC — mosaico global de Ceres a 20 px/grau (DLR, via USGS Astrogeology)",
+        "url": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_global_mosaic_20ppd",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul nesta casa (baixa-texturas.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha"
     },
     {
       "corpo": "ceres",
       "canal": "map",
       "arquivo": "textures/atlas/ceres/map.jpg",
-      "larguraPx": 2048,
-      "alturaPx": 1024,
-      "bytes": 1127678,
-      "sha256": "ee59b2c7aa399dfdc810078c723373670133fe8505e439601dff4ce6f3cc5ad8",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 2666776,
+      "sha256": "aba40cd1ec719c805f0d67edc972863b2026a8e7134c0a2704f51a8fdaa3c501",
       "origem": {
-        "fonte": "Solar System Scope — 2k_ceres_fictional (inventado na fonte; mosaico Dawn USGS pendente)",
-        "url": "https://www.solarsystemscope.com/textures/download/2k_ceres_fictional.jpg",
-        "licenca": "CC BY 4.0",
-        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+        "fonte": "Dawn FC — mosaico global de Ceres a 20 px/grau (DLR, via USGS Astrogeology)",
+        "url": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_global_mosaic_20ppd",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul nesta casa (baixa-texturas.mjs)."
       },
-      "proveniencia": "medido",
-      "nota": "a fonte admite que este mapa é inventado — não existe mosaico real de Ceres com licença fechada, e o da sonda Dawn segue pendente"
+      "proveniencia": "derivado",
+      "nota": "mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha"
     },
     {
       "corpo": "ceres",
       "canal": "map",
       "arquivo": "textures/atlas/ceres/map.webp",
-      "larguraPx": 2048,
-      "alturaPx": 1024,
-      "bytes": 772714,
-      "sha256": "240fbbd669e4bc200ff167e2e5589dfda5210405d9ada726d9e7026eb118b103",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 2000758,
+      "sha256": "2fca3af7b97190cdafa70d0ab8413d643936568ab9d1bb3667193611ec0d2ce9",
       "origem": {
-        "fonte": "Solar System Scope — 2k_ceres_fictional (inventado na fonte; mosaico Dawn USGS pendente)",
-        "url": "https://www.solarsystemscope.com/textures/download/2k_ceres_fictional.jpg",
-        "licenca": "CC BY 4.0",
-        "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+        "fonte": "Dawn FC — mosaico global de Ceres a 20 px/grau (DLR, via USGS Astrogeology)",
+        "url": "https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_global_mosaic_20ppd",
+        "licenca": "domínio público (NASA/DLR/USGS)",
+        "atribuicao": "Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul nesta casa (baixa-texturas.mjs)."
       },
       "proveniencia": "derivado",
-      "nota": "a fonte admite que este mapa é inventado — não existe mosaico real de Ceres com licença fechada, e o da sonda Dawn segue pendente"
+      "nota": "mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha"
     },
     {
       "corpo": "ceres",
@@ -196,7 +230,7 @@
         "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
-      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+      "nota": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem"
     },
     {
       "corpo": "ceres",
@@ -213,7 +247,7 @@
         "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
-      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+      "nota": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem"
     },
     {
       "corpo": "ceres",
@@ -230,7 +264,7 @@
         "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
-      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+      "nota": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem"
     },
     {
       "corpo": "ceres",
@@ -247,7 +281,7 @@
         "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
-      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+      "nota": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem"
     },
     {
       "corpo": "ceres",
@@ -264,7 +298,7 @@
         "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
-      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+      "nota": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem"
     },
     {
       "corpo": "ceres",
@@ -281,7 +315,7 @@
         "atribuicao": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
-      "nota": "topografia real da Dawn: a FORMA aqui é medida, mas ela ilumina um mapa de cor inventado — cratera e mancha não se correspondem"
+      "nota": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem"
     },
     {
       "corpo": "charon",
@@ -3765,13 +3799,13 @@
       "arquivo": "textures/atlas/vesta/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 139295,
-      "sha256": "6d30fd92cacd45d56aca2913c8e2133a12e48fbe328bcaa462e0faff64dc015b",
+      "bytes": 139239,
+      "sha256": "7f8ea522a01cc820a40677c3f5fd7c16576c112d853cdc49b03493f5e597fff1",
       "origem": {
-        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D",
+        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema \"Claudia\" da sonda para o meridiano da IAU (item 141, 3ª fase)",
         "url": "https://science.nasa.gov/resource/vesta-3d-model/",
         "licenca": "NASA images and media usage guidelines",
-        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn."
+        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude nesta casa (baixa-texturas.mjs)."
       },
       "proveniencia": "derivado"
     },
@@ -3781,15 +3815,15 @@
       "arquivo": "textures/atlas/vesta/map.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 736920,
-      "sha256": "454d0d2542116cb7d5257e70f303cdc7f548c64fb47cbc0af310cfce0cf1503f",
+      "bytes": 626874,
+      "sha256": "5aa38490c3bd8abdde1571d854dd44376d6322413a7775ffbba4cd5bbeb6f68a",
       "origem": {
-        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D",
+        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema \"Claudia\" da sonda para o meridiano da IAU (item 141, 3ª fase)",
         "url": "https://science.nasa.gov/resource/vesta-3d-model/",
         "licenca": "NASA images and media usage guidelines",
-        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn."
+        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude nesta casa (baixa-texturas.mjs)."
       },
-      "proveniencia": "medido"
+      "proveniencia": "derivado"
     },
     {
       "corpo": "vesta",
@@ -3797,13 +3831,13 @@
       "arquivo": "textures/atlas/vesta/map.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 578212,
-      "sha256": "dc2cc035d6cffd751e33b5cc447f08e95d2b7689cd6d0f1a96cb8efc5a768378",
+      "bytes": 552496,
+      "sha256": "4213f6a47c47b8b9989072c01085fa12b2ff129733bd2b4845e099d022351fa0",
       "origem": {
-        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D",
+        "fonte": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema \"Claudia\" da sonda para o meridiano da IAU (item 141, 3ª fase)",
         "url": "https://science.nasa.gov/resource/vesta-3d-model/",
         "licenca": "NASA images and media usage guidelines",
-        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn."
+        "atribuicao": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude nesta casa (baixa-texturas.mjs)."
       },
       "proveniencia": "derivado"
     },
@@ -3813,8 +3847,8 @@
       "arquivo": "textures/atlas/vesta/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 1226740,
-      "sha256": "381f371c07c8d2b89e081986b7a73ebe62445acf36e01433857674f42d31f4c2",
+      "bytes": 1226470,
+      "sha256": "1f76377af975df39c7c5589ed984969f0a482a8f92ec5dd2ce0a6a7cb89e65c3",
       "origem": {
         "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
         "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
@@ -3830,8 +3864,8 @@
       "arquivo": "textures/atlas/vesta/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 834182,
-      "sha256": "3a4e9ec325dc701080a08f678bfd0537f528118e6aa485b57821dddf455e80f7",
+      "bytes": 834086,
+      "sha256": "ebf2fb805fb9c4cbb1f66ee2c2e8b8caea4d56ade9b013ac65fd08a5d7e6040b",
       "origem": {
         "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
         "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
@@ -3847,8 +3881,8 @@
       "arquivo": "textures/atlas/vesta/normal_2048.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 4764163,
-      "sha256": "6ea75435e531a52888bfdbd2c20f69ffadbffe3e79cb7c705dcb774f2ddf642a",
+      "bytes": 4764731,
+      "sha256": "822b2300ba3b22f29b3062ebeb2237a63079334c4f03b00d000c36cd253bc018",
       "origem": {
         "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
         "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
@@ -3864,8 +3898,8 @@
       "arquivo": "textures/atlas/vesta/normal_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2925222,
-      "sha256": "dd9c90daf6aed73e3c57d0ef3328e4226ef8598263841d99a70a7556d4929e5b",
+      "bytes": 2926254,
+      "sha256": "795555e30fb208870917b4ed50a7e58b3dd006bac081027dd13eedbd93bb3546",
       "origem": {
         "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
         "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
@@ -3881,8 +3915,8 @@
       "arquivo": "textures/atlas/vesta/normal.png",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 17702826,
-      "sha256": "64a5cf80a2b44959cdb14a09213a62023eacd7d9473a58271cc8d99c2fc263b3",
+      "bytes": 17702686,
+      "sha256": "a4e294f5cc95f75599ce21afb7d935b2175285131045ba372ac1f5537916292a",
       "origem": {
         "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
         "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
@@ -3898,8 +3932,8 @@
       "arquivo": "textures/atlas/vesta/normal.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 8802158,
-      "sha256": "6f6e283607bc8788a6a2ebd24da1e627fa2a14dbab4a9c836d424f5a45a567a9",
+      "bytes": 8803656,
+      "sha256": "75e30ea08bb5b6dc0fecf1fac59809bc440f96c20693177716f084e9b5a59fbb",
       "origem": {
         "fonte": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
         "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
