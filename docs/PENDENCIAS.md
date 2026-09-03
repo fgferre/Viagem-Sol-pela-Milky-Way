@@ -416,8 +416,18 @@ nas fichas dos corpos (`public/data/atlas/corpos.json`) e as legendas
 do filme. O mecanismo é pequeno (dicionário + língua na URL/navegador,
 sem biblioteca); o volume é a tradução. Ordem sugerida quando vier:
 (1) a chave de língua e o HUD/botões/dicas; (2) as fichas dos corpos;
-(3) as legendas do filme; (4) o resto. Antes de qualquer obra: censo
-por OLHO do que é texto de tela e do que é texto interno. **NA FILA
+(3) as legendas do filme; (4) o resto. **Censo por olho FEITO (03/09,
+mecanico): ~780 trechos de TELA** — HUD/botões/dicas ~106, selo+escala
+~65, unidades ~10, rótulos/famílias (atlasConfig) ~75, rótulos das fichas
+no código ~35, prosa das fichas em `corpos.json` ~439 (54 corpos; o "~280"
+de 01/09 estava subcontado), legendas do filme 48 (7 roteiros), outros 2.
+O "~460" de 01/09 misturava texto interno (cadastroDeRepresentacoes ~135,
+escala ~40, que nunca chegam à tela). Já bilíngue: `name` {pt,en} dos 54
+corpos; apelidos/constelações/lugares da busca (só para casar o termo).
+Templates que mudam de regra em inglês: unidades (plural, decimal, kg),
+selo/escala ("${nome} está ${fator}× maior"), data por extenso do tempo,
+contadores "X de Y". F1 (chave de idioma + HUD/painéis/selo/unidades/
+rótulos) delegada em 03/09. **NA FILA
 por ordem dele (01/09, "app inteiro bilingue na fila"): é a próxima
 frente depois de fechar o 129.** A busca (129/F5) já nasce bilíngue.
 
