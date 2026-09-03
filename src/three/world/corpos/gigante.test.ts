@@ -25,7 +25,8 @@ import { CORPOS_COM_ANEL } from '../../../lib/atlas/eclipse';
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
-import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
+import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
+import { orientacaoInercialDoAnelNaCena } from './orientacaoNaCena';
 import { RAIO_SOL_KM } from '../../escala';
 import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import { eixosDoMesh } from './terra';
@@ -935,5 +936,74 @@ describe('6. texto-fonte (as leis do cabeçalho, pinadas)', () => {
   it('a tabela da fase é o dado vivo: os 4 gigantes, Lambert, Saturno com anel', () => {
     expect(GIGANTES.map((c) => c.id)).toEqual(['jupiter', 'saturn', 'uranus', 'neptune']);
     expect(FONTE).toContain("this.idCorpo === 'saturn'");
+  });
+});
+
+// ------------------------------------------------------------
+// O CHÃO DO ANEL QUE O CORPO PUBLICA (item 139, segunda metade)
+// ------------------------------------------------------------
+
+/**
+ * QUEM CALCULA O CHÃO É SATURNO. O palco só registra o que o corpo
+ * entrega em `superficieDoAnel` — se este cálculo sumir, o near volta a
+ * medir o GLOBO a 54 mil km e o enxame de gelo é cortado inteiro (o
+ * defeito medido do item, 193 km de near a 40 km do plano). O juiz põe a
+ * câmera rente ao plano usando a MESMA orientação inercial do anel que o
+ * corpo usa, e cobra o ponto e o raio publicados.
+ */
+describe('o chão do anel: Saturno publica a segunda superfície (item 139)', () => {
+  const KM_PARA_PC = (km: number) => (km / AU_KM) * AU_PARA_PC;
+
+  /** câmera a `rKm` do eixo, no plano do anel, e `alturaKm` acima dele. */
+  async function saturnoRenteAoPlano(rKm: number, alturaKm: number) {
+    const { corpo } = giganteDeTeste('saturn');
+    const centro = centroPc('saturn', JD);
+    const inercial = orientacaoInercialDoAnelNaCena(IAU_ORIENTATIONS.saturn, JD);
+    const radial = new THREE.Vector3(...inercial.colunaX);
+    const polo = new THREE.Vector3(...inercial.colunaY);
+    const cam = centro
+      .clone()
+      .addScaledVector(radial, KM_PARA_PC(rKm))
+      .addScaledVector(polo, KM_PARA_PC(alturaKm));
+    const q = quadro('saturn', 4, { camPosPc: cam });
+    corpo.atualizar(q);
+    await flush();
+    const e = corpo.atualizar(q);
+    return { corpo, e, cam, polo };
+  }
+
+  it('a 40 km do plano, o corpo devolve o PONTO do plano e a meia-espessura', async () => {
+    const { corpo, e, cam, polo } = await saturnoRenteAoPlano(110_000, 40);
+    expect(e.emQuadro).toBe(true);
+    expect(e.superficieDoAnel).not.toBeNull();
+    const chao = e.superficieDoAnel!;
+    // o ponto publicado é a PROJEÇÃO da câmera no plano: 40 km abaixo
+    // dela, na direção do polo do anel
+    const desvio = chao.centroPc.clone().sub(cam);
+    expect((desvio.length() / AU_PARA_PC) * AU_KM).toBeCloseTo(40, 3);
+    expect(desvio.dot(polo)).toBeLessThan(0);
+    // e o "raio" é a meia-espessura da lajota, 12 km
+    expect((chao.raioPc / AU_PARA_PC) * AU_KM).toBeCloseTo(12, 6);
+    corpo.dispose();
+  });
+
+  it('FORA da janela do anel (dentro do D, ou além do F) não há chão', async () => {
+    for (const rKm of [30_000, 200_000]) {
+      const { corpo, e } = await saturnoRenteAoPlano(rKm, 40);
+      expect(e.superficieDoAnel, `r = ${rKm} km`).toBeNull();
+      corpo.dispose();
+    }
+  });
+
+  it('longe do plano, o chão publicado PERDE do globo — quem decide é o mínimo', async () => {
+    // não há segundo gate de altura no corpo, e é de propósito: o palco
+    // já escolhe a superfície mais próxima. A 900 mil km do plano o chão
+    // está atrás do globo, e é o globo que governa o near.
+    const { corpo, e, cam } = await saturnoRenteAoPlano(110_000, 900_000);
+    expect(e.superficieDoAnel).not.toBeNull();
+    const dChao = e.superficieDoAnel!.centroPc.distanceTo(cam) - e.superficieDoAnel!.raioPc;
+    const dGlobo = e.centroPc.distanceTo(cam) - e.raioPc;
+    expect(dChao).toBeGreaterThan(dGlobo);
+    corpo.dispose();
   });
 });

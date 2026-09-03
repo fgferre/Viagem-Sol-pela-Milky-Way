@@ -57,6 +57,7 @@ import { JD_DO_FILME_TDB, LUA_PC } from '../../cinematic/journey';
 import { passoDoPalco, quadroDoPalcoVazio } from '../../director/palco';
 import type { PostoNoPalco } from '../../director/palco';
 import {
+  ESCALA_DA_NORMAL_DA_LUA,
   LS_NORMALIZACAO,
   LS_NORMALIZACAO_GLSL,
   LUA_FRAG,
@@ -460,7 +461,7 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
     lua.dispose();
   });
 
-  it('o gate armando carrega a escada da LUA (um canal, tier cinema = 8k webp)', async () => {
+  it('o gate armando carrega a escada da LUA (dois canais, tier cinema = webp)', async () => {
     const { lua, chamadas } = luaDeTeste();
     const perto = centroPc(JD);
     perto.z += RAIO_LUA_PC * 4;
@@ -468,7 +469,9 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
     await flush();
     expect(chamadas[0]).toBe('manifest:data/atlas/texturas.json');
     expect(chamadas).toContain('tex:textures/atlas/moon/map.webp');
-    expect(chamadas.filter((c) => c.startsWith('tex:'))).toHaveLength(1);
+    // DOIS canais desde o item 140: a cor e o mapa de NORMAIS do LDEM
+    expect(chamadas).toContain('tex:textures/atlas/moon/normal.webp');
+    expect(chamadas.filter((c) => c.startsWith('tex:'))).toHaveLength(2);
     lua.dispose();
   });
 
@@ -799,6 +802,80 @@ describe('6. a ordem fotométrica — o ponto da Lua no fim do filme', () => {
       )
     ).toBe(false);
     planetas.dispose();
+    lua.dispose();
+  });
+});
+
+// ------------------------------------------------------------
+// 7. O RELEVO MEDIDO DA LUA (item 140) — na LUZ, nunca na forma
+// ------------------------------------------------------------
+
+/**
+ * O QUE O DONO PEDIU, 03/09: "a lua só aparece a iluminação fazendo como
+ * se fosse sombra nas crateras". O relevo entrou como MAPA DE NORMAIS
+ * assado do LDEM do LOLA/LRO e a Lua saiu de `BUMP_DO_ALBEDO` (o relevo
+ * derivado da COR, que afundava os mares e levantava os raios de Tycho).
+ *
+ * O QUE ESTE BLOCO COBRA, e por que os dois oráculos de cima seguem
+ * valendo: a normal do MAPA entra ANTES do BRDF — então o μ₀ que o
+ * Lommel-Seeliger de (1) normaliza e o sub-ponto solar que (2) mede são
+ * os do terreno, não os da esfera —, o mapa DESCE e chega ao material, e
+ * a SILHUETA não se mexe (nada desloca vértice).
+ */
+describe('7. o relevo medido entra na LUZ, não na forma (item 140)', () => {
+  it('o mapa de normais desce, chega ao material e a escala é a MEDIDA (ganho 1)', async () => {
+    const { lua, chamadas } = luaDeTeste();
+    const perto = centroPc(JD);
+    perto.z += RAIO_LUA_PC * 4;
+    lua.atualizar(quadro(perto));
+    await flush();
+    expect(lua.atualizar(quadro(perto)).emQuadro).toBe(true);
+    expect(chamadas.some((c) => c.includes('moon/normal'))).toBe(true);
+    const u = (malhaDaSuperficie(lua.group).material as THREE.ShaderMaterial).uniforms;
+    expect(u.uMapaNormal.value).not.toBeNull();
+    expect(u.uRelevoNormal.value).toBe(ESCALA_DA_NORMAL_DA_LUA);
+    expect(u.uRelevoNormal.value).toBe(1); // amplitude física, sem exagero
+    lua.dispose();
+  });
+
+  it('a normal do MAPA entra ANTES do BRDF — os dois oráculos medem com ela', () => {
+    // o chunk está no shader montado, com o gate que o desliga em 0
+    expect(LUA_FRAG).toContain('vec3 normalDoMapa(vec3 n, vec2 uv)');
+    expect(LUA_FRAG).toContain('if (uRelevoNormal <= 0.0) return n;');
+    // e a ORDEM: a normal é perturbada antes do primeiro cosseno de
+    // incidência, senão a cratera não faria sombra nenhuma
+    const perturba = LUA_FRAG.indexOf('normalDoMapa(n');
+    const primeiroMu = LUA_FRAG.indexOf('dot(n, uDirSolLocal)');
+    expect(perturba).toBeGreaterThan(0);
+    expect(primeiroMu).toBeGreaterThan(0);
+    expect(perturba).toBeLessThan(primeiroMu);
+    // ...e o Lommel-Seeliger é calculado depois disso, com esse μ₀
+    expect(LUA_FRAG.indexOf('float ls =')).toBeGreaterThan(perturba);
+  });
+
+  it('a Lua NÃO usa mais o relevo inventado da cor (o bump do albedo)', () => {
+    expect(FONTE).not.toContain('normalComBumpDoAlbedo');
+    expect(FONTE).not.toContain('escalaDoBumpDoAlbedo');
+    expect(LUA_FRAG).not.toContain('uBumpAlbedo');
+  });
+
+  it('a SILHUETA não muda: esfera lisa de 128x64, nenhum vértice deslocado', async () => {
+    const { lua } = luaDeTeste();
+    const perto = centroPc(JD);
+    perto.z += RAIO_LUA_PC * 4;
+    lua.atualizar(quadro(perto));
+    await flush();
+    lua.atualizar(quadro(perto));
+    const g = malhaDaSuperficie(lua.group).geometry as THREE.SphereGeometry;
+    expect(g.parameters.widthSegments).toBe(128);
+    expect(g.parameters.heightSegments).toBe(64);
+    expect(g.parameters.radius).toBe(1);
+    const pos = g.getAttribute('position');
+    for (const k of [0, 500, pos.count - 1]) {
+      expect(Math.hypot(pos.getX(k), pos.getY(k), pos.getZ(k)), `vértice ${k}`).toBeCloseTo(1, 5);
+    }
+    // e o vértice não lê mapa nenhum: nada de deslocamento
+    expect(FONTE).not.toContain('uMapaAltura');
     lua.dispose();
   });
 });

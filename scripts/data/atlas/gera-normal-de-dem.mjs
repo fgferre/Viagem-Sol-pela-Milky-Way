@@ -97,7 +97,7 @@ const rootDirectory = path.resolve(
  * (altura_m = (bruto − offset) × unidade); onde o arquivo carrega os
  * metadados, o script os lê e RECUSA a assar se divergirem daqui.
  */
-const CORPOS = {
+export const CORPOS = {
   moon: {
     nome: 'Lua',
     diretorio: 'moon',
@@ -168,10 +168,10 @@ const CORPOS = {
 const LARGURA_ALVO = 4096;
 
 /** Latitude onde o passo leste para de encolher (ver o cabeçalho). */
-const LATITUDE_DO_CLAMP_RAD = (80 * Math.PI) / 180;
+export const LATITUDE_DO_CLAMP_RAD = (80 * Math.PI) / 180;
 
 /** Quanto a orientação declarada tem de vencer a meia volta. */
-const MARGEM_DA_BORDA = 0.05;
+export const MARGEM_DA_BORDA = 0.05;
 
 /** Grade em que as duas medidas da guarda são feitas. */
 const LARGURA_DA_GUARDA = 720;
@@ -284,7 +284,7 @@ async function conferirRotuloPds(corpo) {
 // ------------------------------------------------------------
 
 /** Meia volta em colunas — o DEM vira para a convenção do mapa de cor. */
-function giraMeiaVolta(campo, largura, altura) {
+export function giraMeiaVolta(campo, largura, altura) {
   const meia = largura / 2;
   const saida = new Float32Array(campo.length);
   for (let j = 0; j < altura; j += 1) {
@@ -408,7 +408,7 @@ function orientar(corpo, grade, oposta = false) {
 // A GUARDA DE ALINHAMENTO
 // ------------------------------------------------------------
 
-function pearson(a, b) {
+export function pearson(a, b) {
   const n = a.length;
   let ma = 0;
   let mb = 0;
@@ -432,7 +432,7 @@ function pearson(a, b) {
 }
 
 /** |∇campo| por diferença central, com a longitude dando a volta. */
-function energiaDeBorda(campo, largura, altura) {
+export function energiaDeBorda(campo, largura, altura) {
   const saida = new Float64Array(campo.length);
   for (let j = 1; j < altura - 1; j += 1) {
     for (let i = 0; i < largura; i += 1) {
@@ -444,6 +444,35 @@ function energiaDeBorda(campo, largura, altura) {
     }
   }
   return saida;
+}
+
+/**
+ * AS TRÊS MEDIDAS da guarda, sem I/O — as duas energias de borda (a
+ * orientação declarada e a meia volta) e a correlação com sinal.
+ */
+export function medirAlinhamento(declarada, outra, albedo, largura, altura) {
+  const bordaAlb = energiaDeBorda(albedo, largura, altura);
+  return {
+    bordaDeclarada: pearson(energiaDeBorda(declarada, largura, altura), bordaAlb),
+    bordaOutra: pearson(energiaDeBorda(outra, largura, altura), bordaAlb),
+    comSinal: pearson(declarada, albedo),
+  };
+}
+
+/** O VEREDITO, sem I/O: passa calado ou joga o erro que impede o assamento. */
+export function conferirAlinhamento(corpo, medidas) {
+  if (!(medidas.bordaDeclarada > medidas.bordaOutra + MARGEM_DA_BORDA)) {
+    throw new Error(
+      `a orientação declarada não vence a meia volta por ${MARGEM_DA_BORDA} ` +
+        '— o DEM e o mapa de cor não estão na mesma convenção de longitude, não asso.'
+    );
+  }
+  if (corpo.correlacaoMinima !== undefined && !(medidas.comSinal > corpo.correlacaoMinima)) {
+    throw new Error(
+      `correlação com sinal ${medidas.comSinal.toFixed(4)} abaixo de ` +
+        `${corpo.correlacaoMinima} — não asso.`
+    );
+  }
 }
 
 async function guardaDeAlinhamento(corpo, contexto, mapaDeCor) {
@@ -459,33 +488,21 @@ async function guardaDeAlinhamento(corpo, contexto, mapaDeCor) {
       .raw()
       .toBuffer()
   );
-  const bordaAlb = energiaDeBorda(alb, L, A);
-  const bordaDeclarada = pearson(energiaDeBorda(declarada, L, A), bordaAlb);
-  const bordaOutra = pearson(energiaDeBorda(outra, L, A), bordaAlb);
-  const comSinal = pearson(declarada, alb);
+  const medidas = medirAlinhamento(declarada, outra, alb, L, A);
   console.log(
-    `guarda (${L}x${A}): energia de borda ${bordaDeclarada.toFixed(4)} na orientação ` +
+    `guarda (${L}x${A}): energia de borda ${medidas.bordaDeclarada.toFixed(4)} na orientação ` +
       `declarada (meia volta ${corpo.meiaVolta ? 'SIM' : 'não'}) contra ` +
-      `${bordaOutra.toFixed(4)} na outra; correlação com sinal ${comSinal.toFixed(4)}.`
+      `${medidas.bordaOutra.toFixed(4)} na outra; correlação com sinal ` +
+      `${medidas.comSinal.toFixed(4)}.`
   );
-  if (!(bordaDeclarada > bordaOutra + MARGEM_DA_BORDA)) {
-    throw new Error(
-      `a orientação declarada não vence a meia volta por ${MARGEM_DA_BORDA} ` +
-        '— o DEM e o mapa de cor não estão na mesma convenção de longitude, não asso.'
-    );
-  }
-  if (corpo.correlacaoMinima !== undefined && !(comSinal > corpo.correlacaoMinima)) {
-    throw new Error(
-      `correlação com sinal ${comSinal.toFixed(4)} abaixo de ${corpo.correlacaoMinima} — não asso.`
-    );
-  }
+  conferirAlinhamento(corpo, medidas);
 }
 
 // ------------------------------------------------------------
 // O ASSAMENTO
 // ------------------------------------------------------------
 
-function assaNormais(metros, largura, altura, raioM) {
+export function assaNormais(metros, largura, altura, raioM) {
   const dLon = (2 * Math.PI) / largura;
   const dLat = Math.PI / altura;
   const passoNorte = raioM * dLat;
@@ -616,7 +633,11 @@ async function main() {
   );
 }
 
-main().catch((erro) => {
-  console.error(erro.message);
-  process.exitCode = 1;
-});
+// só a LINHA DE COMANDO assa; importado (o juiz de `gera-normal-de-dem.test.mjs`)
+// o arquivo é uma biblioteca de funções puras e nada roda.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((erro) => {
+    console.error(erro.message);
+    process.exitCode = 1;
+  });
+}

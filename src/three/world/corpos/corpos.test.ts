@@ -15,12 +15,24 @@ import { AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_ARTISTICO_DO_SOL_PC } from '../../escala';
 import { repartir } from '../../estrela';
+import { PISO_DO_NEAR_EM_RAIOS, nearPlanePc } from '../../core/engine';
 import {
+  passoDoPalco,
+  quadroDoPalcoVazio,
+  type AtorDoPalco,
+  type EstadoNoPalco,
+  type PostoNoPalco,
+} from '../../director/palco';
+import {
+  BUMP_DO_ALBEDO,
+  BUMP_DO_ALBEDO_PADRAO,
   CORPOS_DEFAULT_ON,
   CUSHION_DO_GATE,
   CorposResolvidos,
+  GLSL_BUMP_DO_ALBEDO,
   LIMIAR_DO_GATE_PX,
   diametroAparentePx,
+  escalaDoBumpDoAlbedo,
   gateBinario,
 } from './corpos';
 
@@ -463,5 +475,182 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
       expect(g).toBeLessThanOrEqual(anterior);
       anterior = g;
     }
+  });
+});
+
+// ------------------------------------------------------------
+// O CHÃO DO ANEL COMO SUPERFÍCIE DO PALCO (item 139)
+// ------------------------------------------------------------
+
+/** km → pc pelos conversores únicos (nenhum literal novo de comprimento) */
+const kmParaPc = (km: number) => (km / AU_KM) * AU_PARA_PC;
+const pcParaKm = (pc: number) => (pc / AU_PARA_PC) * AU_KM;
+
+const RAIO_SATURNO_PC = kmParaPc(BODY_AXES.saturn[0]);
+/** a meia-espessura da lajota (12 km), que é o "raio" do chão do anel */
+const MEIA_ESPESSURA_PC = kmParaPc(12);
+/** Saturno a ~9,5 UA do Sol — o `distFromSun` do quadro */
+const SATURNO_UA = 9.5;
+
+describe('o chão do anel: a SEGUNDA superfície do mesmo corpo (item 139)', () => {
+  /**
+   * A CENA MEDIDA no item: câmera a 40 km do plano do anel, 110 000 km do
+   * eixo. O globo está a 49 732 km dali (o raio equatorial subtraído), o
+   * chão de gelo a 40 — e era o globo que mandava no near.
+   */
+  function palcoDaCena() {
+    const c = new CorposResolvidos();
+    c.ligado = true;
+    // o centro de Saturno na origem, a câmera 110 000 km ao lado e 40 km
+    // acima do plano (o eixo do anel é o z deste arranjo)
+    const cam = new THREE.Vector3(kmParaPc(110_000), 0, kmParaPc(40));
+    c.registrar('saturn', RAIO_SATURNO_PC, new THREE.Vector3(0, 0, 0));
+    // o chão: a PROJEÇÃO da câmera no plano, com raio = meia-espessura
+    c.registrar('saturn-anel', MEIA_ESPESSURA_PC, new THREE.Vector3(cam.x, cam.y, 0));
+    return { c, cam };
+  }
+
+  it('com os dois registrados, a superfície mais próxima é a do ANEL', () => {
+    const { c, cam } = palcoDaCena();
+    const s = c.superficieMaisProxima(cam);
+    // d = 40 km de altura menos os 12 km de meia-espessura
+    expect(pcParaKm(s.dSuperficiePc)).toBeCloseTo(28, 6);
+    expect(s.raioPc).toBe(MEIA_ESPESSURA_PC);
+  });
+
+  it('e o near sai nos 0,4% DELA: 0,112 km, não os 199 km do globo', () => {
+    const { c, cam } = palcoDaCena();
+    const s = c.superficieMaisProxima(cam);
+    const near = nearPlanePc(SATURNO_UA * AU_PARA_PC, s.dSuperficiePc, s.raioPc);
+    expect(pcParaKm(near)).toBeCloseTo(0.112, 3);
+    // é o REGIME proporcional, nunca o anteparo (12 km × 1e-3 = 12 m)
+    expect(near).toBeGreaterThan(s.raioPc * PISO_DO_NEAR_EM_RAIOS);
+  });
+
+  it('APAGADO o registro do anel, o near volta a 199 km — o defeito do item', () => {
+    const { c, cam } = palcoDaCena();
+    c.remover('saturn-anel');
+    const s = c.superficieMaisProxima(cam);
+    const near = nearPlanePc(SATURNO_UA * AU_PARA_PC, s.dSuperficiePc, s.raioPc);
+    expect(pcParaKm(near)).toBeCloseTo(198.9, 1);
+    // ...e é isso que cortava o chão de gelo: 1 700 vezes mais longe
+    expect(pcParaKm(near) / 0.112).toBeGreaterThan(1000);
+  });
+
+  it('DENTRO da lajota o anteparo é de 12 m — e só ele segura', () => {
+    const c = new CorposResolvidos();
+    c.ligado = true;
+    // a câmera a 2 km do plano: dentro dos ±12 km, d fica negativo
+    const cam = new THREE.Vector3(kmParaPc(110_000), 0, kmParaPc(2));
+    c.registrar('saturn', RAIO_SATURNO_PC, new THREE.Vector3(0, 0, 0));
+    c.registrar('saturn-anel', MEIA_ESPESSURA_PC, new THREE.Vector3(cam.x, cam.y, 0));
+    const s = c.superficieMaisProxima(cam);
+    expect(pcParaKm(s.dSuperficiePc)).toBeCloseTo(-10, 6);
+    const near = nearPlanePc(SATURNO_UA * AU_PARA_PC, s.dSuperficiePc, s.raioPc);
+    expect(pcParaKm(near) * 1000).toBeCloseTo(12, 3);
+  });
+});
+
+describe('o passo do palco publica o chão do anel como `<id>-anel`', () => {
+  /** um ator de mentira: devolve o estado que o teste mandar. */
+  function ator(estado: EstadoNoPalco): AtorDoPalco {
+    return { group: new THREE.Group(), atualizar: () => estado, dispose: () => {} };
+  }
+
+  function cenaDoPasso(superficieDoAnel: EstadoNoPalco['superficieDoAnel'], emQuadro = true) {
+    const palco = new CorposResolvidos();
+    palco.ligado = true;
+    const estado: EstadoNoPalco = {
+      emQuadro,
+      carregando: false,
+      gateArmado: true,
+      raioPc: RAIO_SATURNO_PC,
+      centroPc: new THREE.Vector3(0, 0, 0),
+      superficieDoAnel,
+    };
+    const posto: PostoNoPalco = {
+      corpo: ator(estado),
+      id: 'saturn',
+      pinoNoFilme: null,
+      temPonto: false,
+      temRetrato: true,
+      rotuloDeLua: false,
+      emQuadroAntes: false,
+      carregavaAntes: false,
+      carregando: false,
+      friaNoGate: false,
+    };
+    passoDoPalco([posto], quadroDoPalcoVazio(), {
+      palco,
+      planetas: null,
+      rotulos: {} as never,
+      efemeride: null,
+      noFilme: false,
+      noFoco: () => false,
+      noRoteiro: () => false,
+      perturbar: () => {},
+    });
+    return palco;
+  }
+
+  const chao = () => ({
+    raioPc: MEIA_ESPESSURA_PC,
+    centroPc: new THREE.Vector3(kmParaPc(110_000), 0, 0),
+  });
+
+  it('com o chão devolvido pelo corpo, o posto `saturn-anel` entra no palco', () => {
+    const palco = cenaDoPasso(chao());
+    expect(palco.tamanho).toBe(2);
+    const cam = new THREE.Vector3(kmParaPc(110_000), 0, kmParaPc(40));
+    expect(pcParaKm(palco.superficieMaisProxima(cam).dSuperficiePc)).toBeCloseTo(28, 6);
+  });
+
+  it('sem chão (`null`), só o globo entra — e o posto do anel SAI do palco', () => {
+    const palco = cenaDoPasso(null);
+    expect(palco.tamanho).toBe(1);
+    const cam = new THREE.Vector3(kmParaPc(110_000), 0, kmParaPc(40));
+    // sem o anel manda o globo: 49 732 km, os 199 km de near do defeito
+    expect(pcParaKm(palco.superficieMaisProxima(cam).dSuperficiePc)).toBeCloseTo(49_732, 0);
+  });
+
+  it('corpo FORA de quadro não publica chão nenhum — chão invisível não corta', () => {
+    const palco = cenaDoPasso(chao(), false);
+    expect(palco.tamanho).toBe(0);
+  });
+});
+
+// ------------------------------------------------------------
+// O RELEVO INVENTADO, APOSENTADO (itens 140 e 141)
+// ------------------------------------------------------------
+
+describe('o bump por derivada do albedo: quem tem normal medida saiu (140/141)', () => {
+  it('Mercúrio, Marte, Europa e Io estão ZERADOS — o interruptor, não a ausência', () => {
+    for (const id of ['mercury', 'mars', 'europa', 'io']) {
+      expect(BUMP_DO_ALBEDO[id], id).toBe(0);
+      expect(escalaDoBumpDoAlbedo(id), id).toBe(0);
+    }
+  });
+
+  it('a LUA nem está na tabela: ela não consome este chunk (item 140)', () => {
+    expect('moon' in BUMP_DO_ALBEDO).toBe(false);
+    // e o shader da Lua não tem o bloco nem o uniform dele
+    const luaFonte = readFileSync(new URL('./lua.ts', import.meta.url), 'utf8');
+    expect(luaFonte).not.toContain('normalComBumpDoAlbedo');
+    expect(luaFonte).not.toContain('uBumpAlbedo');
+    expect(luaFonte).toContain('GLSL_NORMAL_DO_MAPA');
+  });
+
+  it('quem NÃO tem relevo medido continua com a aproximação declarada', () => {
+    // Ganimedes e Calisto não têm DEM público na árvore: o padrão dele
+    expect(escalaDoBumpDoAlbedo('ganymede')).toBe(BUMP_DO_ALBEDO_PADRAO);
+    expect(BUMP_DO_ALBEDO_PADRAO).toBe(0.02);
+  });
+
+  it('os zeros de nuvem e de invenção seguem lá — Vênus, Titã e Ceres', () => {
+    for (const id of ['venus', 'titan', 'ceres']) expect(escalaDoBumpDoAlbedo(id), id).toBe(0);
+  });
+
+  it('o chunk inteiro apaga com escala 0 — o zero DESLIGA, não atenua', () => {
+    expect(GLSL_BUMP_DO_ALBEDO).toContain('if (uBumpAlbedo <= 0.0) return n;');
   });
 });

@@ -42,9 +42,12 @@ import {
   S_DO_TERMINADOR,
   ganhoDoGlobo,
 } from '../../../lib/atlas/luzDaVisita';
+import { escalaDoBumpDoAlbedo } from './corpos';
 import {
   type ConfigDoRochoso,
+  GRADUACAO_DO_MOSAICO,
   LIMIAR_LUA_ROCHOSA_PX,
+  NORMAL_MEDIDA,
   ROCHOSOS,
   ROCHOSO_LAMBERT_FRAG,
   ROCHOSO_LS_FRAG,
@@ -75,6 +78,10 @@ const JDS = [2460409.26395835, EPOCA_JD_TDB];
 const JD = JDS[0];
 
 const FONTE = readFileSync(new URL('./rochoso.ts', import.meta.url), 'utf8');
+/** o CÓDIGO sem a prosa — a guarda do literal de comprimento mede o que
+ *  a máquina executa, e não o comentário que explica de onde ele veio (o
+ *  item 141 escreveu "raio de 3396" numa explicação e reprovava). */
+const CODIGO = FONTE.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
 
 function grau360(deg: number): number {
   const r = deg % 360;
@@ -538,9 +545,9 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
 
   it('os raios saem de BODY_AXES — nenhum literal novo de comprimento', () => {
     expect(FONTE).toContain('BODY_AXES[id]');
-    expect(FONTE).not.toContain('2440');
-    expect(FONTE).not.toContain('6051');
-    expect(FONTE).not.toContain('3396');
+    expect(CODIGO).not.toContain('2440');
+    expect(CODIGO).not.toContain('6051');
+    expect(CODIGO).not.toContain('3396');
   });
 
   it('a tabela da fase é o dado vivo: LS nos opt-in + F7, Vanth/Weywot fora', () => {
@@ -636,6 +643,270 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
       const lua = LUAS_DO_SISTEMA.find((l) => l.id === c.id);
       expect(lua, `${c.id} fora de LUAS_DO_SISTEMA`).toBeTruthy();
       if (PARES_DE_ECLIPSE[c.id]) expect(PARES_DE_ECLIPSE[c.id]).toBe(lua!.pai);
+    }
+  });
+});
+
+// ------------------------------------------------------------
+// 6. A GRADUAÇÃO DO MOSAICO (item 138)
+// ------------------------------------------------------------
+
+/**
+ * A CONTA DO FRAGMENTO, em JS: `clamp(mix(c, luminância, desat) * ganho)`.
+ * Ela não é uma segunda fonte de verdade — a primeira linha deste bloco
+ * confere que o GLSL montado ainda é ESTA conta, letra por letra; o que
+ * o espelho serve é medir o EFEITO do par que o material publica.
+ */
+function graduar(c: readonly [number, number, number], desat: number, ganho: number) {
+  const lum = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  return c.map((v) => Math.min(1, Math.max(0, (v + (lum - v) * desat) * ganho))) as unknown as
+    number[];
+}
+
+/** o desvio de neutro de uma cor: 1 = cinza, >1 = mais vermelha que azul */
+const razaoRB = (c: readonly number[]) => c[0] / c[2];
+
+describe('6. a graduação do mosaico Cassini (item 138)', () => {
+  /** a cor CRUA de um mosaico de Schenk: realçada em IR/UV, R/B = 1,07 */
+  const CRUA = [0.62, 0.55, 0.58] as const;
+
+  it('o fragmento montado faz a conta dele, na ordem dele', () => {
+    for (const frag of [ROCHOSO_LS_FRAG, ROCHOSO_LAMBERT_FRAG]) {
+      expect(frag).toContain(
+        'return clamp(mix(c, vec3(alturaDoAlbedo(c)), uGraduacao.x) * uGraduacao.y, 0.0, 1.0);'
+      );
+      // e ela entra no CAMINHO da cor, não num canto morto do shader
+      expect(frag).toContain('graduarMosaico(texture2D(uMapaDia, vUv).rgb)');
+    }
+  });
+
+  it('o par do material SAI da tabela, para as seis luas de mosaico', async () => {
+    for (const id of Object.keys(GRADUACAO_DO_MOSAICO)) {
+      const { corpo } = rochosoDeTeste(id, 'lambert');
+      corpo.atualizar(quadro(id, 4));
+      await flush();
+      expect(corpo.atualizar(quadro(id, 4)).emQuadro, id).toBe(true);
+      const u = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
+      const par = u.uGraduacao.value as THREE.Vector2;
+      expect(par.x, `${id} desat`).toBe(GRADUACAO_DO_MOSAICO[id]!.desat);
+      expect(par.y, `${id} ganho`).toBe(GRADUACAO_DO_MOSAICO[id]!.ganho);
+      corpo.dispose();
+    }
+  });
+
+  it('em Mimas a graduação MUDA a cor: desatura de verdade e levanta o nível', () => {
+    const { desat, ganho } = GRADUACAO_DO_MOSAICO.mimas!;
+    // o par não é a identidade — zerar a tabela (a sabotagem) devolveria
+    // o mosaico cru, e estas três medidas caem juntas
+    expect(desat).toBeGreaterThan(0);
+    const graduada = graduar(CRUA, desat, ganho);
+    expect(razaoRB(CRUA)).toBeGreaterThan(1.05);
+    expect(razaoRB(graduada)).toBeLessThan(razaoRB(CRUA));
+    // a lua de gelo fica quase neutra (o realce IR/UV some)
+    expect(Math.abs(razaoRB(graduada) - 1)).toBeLessThan(0.05);
+    // e o nível sobe pelo ganho dele
+    expect(graduada[1]).toBeGreaterThan(CRUA[1]);
+  });
+
+  it('Encélado tem o maior ganho — é o corpo mais reflexivo do Sistema', () => {
+    const ganhos = Object.entries(GRADUACAO_DO_MOSAICO).map(([id, g]) => [id, g.ganho] as const);
+    const maior = ganhos.reduce((a, b) => (b[1] > a[1] ? b : a));
+    expect(maior[0]).toBe('enceladus');
+    expect(maior[1]).toBe(1.35);
+  });
+
+  it('FORA das seis o par é (0,1) e a cor sai bit a bit intocada', async () => {
+    for (const id of ['mercury', 'ganymede', 'titan']) {
+      expect(GRADUACAO_DO_MOSAICO[id]).toBeUndefined();
+      const { corpo } = rochosoDeTeste(id, 'lambert');
+      corpo.atualizar(quadro(id, 4));
+      await flush();
+      corpo.atualizar(quadro(id, 4));
+      const u = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
+      const par = u.uGraduacao.value as THREE.Vector2;
+      expect([par.x, par.y], id).toEqual([0, 1]);
+      corpo.dispose();
+    }
+    // e a conta com (0,1) é a identidade EXATA, não "quase"
+    expect(graduar(CRUA, 0, 1)).toEqual([...CRUA]);
+  });
+});
+
+// ------------------------------------------------------------
+// 7. A MEIA VOLTA DOS MAPAS DAS SEIS (item 138)
+// ------------------------------------------------------------
+
+/**
+ * A CONVENÇÃO DE LONGITUDE DOS ARQUIVOS. Os mosaicos de Schenk e os
+ * mapas de relevo do projeto Saturn nascem em layout Schenk, que pede o
+ * `offset 0.5` que ele aplica no shader e a casa não trouxe: até o item
+ * 138 o relevo das seis luas caía MEIA VOLTA fora do albedo. O conserto
+ * foi girar os doze mapas de relevo e os seis mosaicos NO ARQUIVO — uma
+ * convenção só na árvore, nada no shader —, e é o arquivo que este juiz
+ * lê.
+ *
+ * A MEDIDA é a do executor do 138 (`capturas/item138-medidas.txt`):
+ * Herschel, a cratera que cobre um terço de Mimas, está a 104° W, que na
+ * grade equiretangular centrada em 0° cai em u = 0,211; o mapa de altura
+ * dela, como veio da S2, tinha o mínimo em u = 0,695 — a meia volta
+ * exata — e depois do giro no arquivo ficou em u = 0,197. O juiz
+ * reamostra a faixa equatorial dos DOIS arquivos (barato: 64x32) e cobra
+ * o encontro.
+ */
+// Herschel a 104° W = 256° E; a grade da casa é centrada em 0° com o
+// leste crescendo para a direita, então u = (0,5 + lonLeste/360) mod 1.
+const U_DE_HERSCHEL = (0.5 + (360 - 104) / 360) % 1; // 0,2111…
+
+/** o perfil da faixa equatorial de um arquivo, em 64 colunas. */
+async function faixaEquatorial(caminho: string): Promise<number[]> {
+  const { default: sharp } = await import('sharp');
+  const L = 64;
+  const A = 32;
+  const { data, info } = await sharp(caminho)
+    .removeAlpha()
+    .resize(L, A, { fit: 'fill' })
+    .greyscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const perfil: number[] = [];
+  for (let x = 0; x < L; x += 1) {
+    let soma = 0;
+    for (let y = 13; y < 19; y += 1) soma += data[(y * L + x) * info.channels]!;
+    perfil.push(soma / 6);
+  }
+  return perfil;
+}
+
+/** o u da coluna mais escura da faixa. */
+function uDoMinimo(perfil: number[]): number {
+  let iMin = 0;
+  perfil.forEach((v, i) => {
+    if (v < perfil[iMin]!) iMin = i;
+  });
+  return (iMin + 0.5) / perfil.length;
+}
+
+/** distância entre dois u DANDO A VOLTA (0,98 e 0,02 distam 0,04). */
+const distanciaEmU = (a: number, b: number) => {
+  const d = Math.abs(a - b) % 1;
+  return Math.min(d, 1 - d);
+};
+
+const TEXTURAS = fileURLToPath(new URL('../../../../public/textures/atlas/', import.meta.url));
+
+describe('7. a meia volta dos mapas das seis luas de mosaico (item 138)', () => {
+  it('Herschel está a 104° W, que é u = 0,211 na grade da casa', () => {
+    expect(U_DE_HERSCHEL).toBeCloseTo(0.2111, 4);
+  });
+
+  it('o mapa de ALTURA de Mimas tem o fundo de Herschel em u ≈ 0,2 — não meia volta adiante', async () => {
+    const u = uDoMinimo(await faixaEquatorial(join(TEXTURAS, 'mimas/height.png')));
+    expect(distanciaEmU(u, U_DE_HERSCHEL), `mínimo em u = ${u.toFixed(3)}`).toBeLessThan(0.05);
+    // e NÃO no antípoda, que é onde a S2 o punha (u = 0,695 medido)
+    expect(distanciaEmU(u, U_DE_HERSCHEL + 0.5)).toBeGreaterThan(0.4);
+  });
+
+  it('o fundo é fundo mesmo: Herschel afunda muito abaixo do resto do equador', async () => {
+    const perfil = await faixaEquatorial(join(TEXTURAS, 'mimas/height.png'));
+    const media = perfil.reduce((a, b) => a + b, 0) / perfil.length;
+    expect(Math.min(...perfil)).toBeLessThan(media * 0.4);
+  });
+
+  it('o MOSAICO de Mimas está na MESMA convenção do relevo (os dois girados)', async () => {
+    const uAltura = uDoMinimo(await faixaEquatorial(join(TEXTURAS, 'mimas/height.png')));
+    const uAlbedo = uDoMinimo(await faixaEquatorial(join(TEXTURAS, 'mimas/map_1024.jpg')));
+    // a mancha escura do equador do mosaico cai junto do fundo da bacia;
+    // um dos dois arquivos girado sozinho poria os dois a meia volta
+    expect(distanciaEmU(uAlbedo, uAltura), `albedo em ${uAlbedo.toFixed(3)}`).toBeLessThan(0.1);
+  });
+
+  it('as seis têm os três mapas (mosaico, altura e normal) na árvore', async () => {
+    const { existsSync } = await import('node:fs');
+    for (const id of Object.keys(GRADUACAO_DO_MOSAICO)) {
+      for (const arq of ['map.jpg', 'height.png', 'normal.png']) {
+        expect(existsSync(join(TEXTURAS, id, arq)), `${id}/${arq}`).toBe(true);
+      }
+    }
+  });
+});
+
+// ------------------------------------------------------------
+// 8. O RELEVO MEDIDO E O BUMP APOSENTADO (itens 140 e 141)
+// ------------------------------------------------------------
+
+describe('8. o relevo de Mercúrio e Marte vem MEDIDO, e o inventado saiu (141)', () => {
+  it('Mercúrio e Marte: normal medida ligada em 1 (ganho nenhum) e bump ZERADO', async () => {
+    for (const id of ['mercury', 'mars']) {
+      const { corpo, chamadas } = rochosoDeTeste(id, id === 'mercury' ? 'ls' : 'lambert');
+      corpo.atualizar(quadro(id, 4));
+      await flush();
+      expect(corpo.atualizar(quadro(id, 4)).emQuadro, id).toBe(true);
+      const u = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
+      expect(u.uRelevoNormal.value, `${id} relevo`).toBe(NORMAL_MEDIDA[id]);
+      expect(u.uRelevoNormal.value, `${id} ganho`).toBe(1);
+      expect(u.uBumpAlbedo.value, `${id} bump`).toBe(0);
+      // o mapa de normais DESCE e CHEGA ao material — sem isso o relevo
+      // some sem ninguém notar
+      expect(chamadas.some((c) => c.includes(`${id}/normal`)), `${id} pediu a normal`).toBe(true);
+      expect(u.uMapaNormal.value, `${id} normal no material`).not.toBeNull();
+      corpo.dispose();
+    }
+  });
+
+  it('Europa e Io ficam LISAS: sem normal medida e sem bump inventado', async () => {
+    for (const id of ['europa', 'io']) {
+      const { corpo, chamadas } = rochosoDeTeste(id, 'ls');
+      corpo.atualizar(quadro(id, 4));
+      await flush();
+      corpo.atualizar(quadro(id, 4));
+      const u = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
+      expect(u.uRelevoNormal.value, `${id} relevo`).toBe(0);
+      expect(u.uBumpAlbedo.value, `${id} bump`).toBe(0);
+      // e nenhum canal de relevo é sequer pedido
+      expect(chamadas.some((c) => c.includes('/normal') || c.includes('/height')), id).toBe(false);
+      corpo.dispose();
+    }
+  });
+
+  it('quem não tem relevo medido continua com a aproximação do albedo', async () => {
+    const { corpo } = rochosoDeTeste('ganymede', 'ls');
+    corpo.atualizar(quadro('ganymede', 4));
+    await flush();
+    corpo.atualizar(quadro('ganymede', 4));
+    const u = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
+    expect(u.uBumpAlbedo.value).toBe(escalaDoBumpDoAlbedo('ganymede'));
+    expect(u.uBumpAlbedo.value).toBeGreaterThan(0);
+    expect(u.uRelevoNormal.value).toBe(0);
+    corpo.dispose();
+  });
+
+  it('no fragmento, a normal MEDIDA exclui o bump — nunca as duas juntas', () => {
+    for (const frag of [ROCHOSO_LS_FRAG, ROCHOSO_LAMBERT_FRAG]) {
+      expect(frag).toContain('n = uRelevoNormal > 0.0');
+      expect(frag).toContain('? normalDoMapa(n, vUv)');
+      expect(frag).toContain(': normalComBumpDoAlbedo(n, pElip, alturaDoAlbedo(albedo));');
+    }
+  });
+
+  it('a normal medida não desloca vértice: a malha das duas segue a esfera lisa', async () => {
+    for (const id of ['mercury', 'mars']) {
+      const { corpo } = rochosoDeTeste(id, 'lambert');
+      corpo.atualizar(quadro(id, 4));
+      await flush();
+      corpo.atualizar(quadro(id, 4));
+      const g = malhaDaSuperficie(corpo.group).geometry as THREE.SphereGeometry;
+      // a esfera de 128x64 da casa, não a malha densa do relevo de vértice
+      expect(g.parameters.widthSegments, id).toBe(128);
+      expect(g.parameters.heightSegments, id).toBe(64);
+      // e nenhum vértice saiu da esfera unitária
+      const pos = g.getAttribute('position');
+      for (const k of [0, 100, pos.count - 1]) {
+        expect(
+          Math.hypot(pos.getX(k), pos.getY(k), pos.getZ(k)),
+          `${id} vértice ${k}`
+        ).toBeCloseTo(1, 5);
+      }
+      corpo.dispose();
     }
   });
 });

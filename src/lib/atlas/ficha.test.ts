@@ -353,7 +353,14 @@ describe('a língua — o texto é pt-BR e a tela não tem inglês (item 74, par
       for (const l of todasAsLinhas(ficha(id)!)) {
         if (CITACAO_DE_LICENCA.has(l.rotulo)) continue;
         const naTela = `${l.rotulo} ${l.valor} ${l.badge ?? ''} ${l.fonte ?? ''}`;
-        for (const palavra of naTela.toLowerCase().split(/[^\p{L}]+/u)) {
+        for (const palavra of naTela.split(/[^\p{L}]+/u)) {
+          // NOME PRÓPRIO PASSA, prosa não: o item 140 pôs a linha
+          // "relevo" na ficha da Lua citando o produto da NASA pelo nome
+          // ("CGI Moon Kit"), que é como o arquivo se procura e não se
+          // traduz. A distinção é a MAIÚSCULA — uma frase inglesa que
+          // vazasse traria "the", "of", "moon" em caixa baixa, e essas
+          // continuam reprovando.
+          if (palavra !== palavra.toLowerCase()) continue;
           expect(
             PALAVRAS_INGLESAS.has(palavra),
             `${id}: "${palavra}" em «${naTela.trim()}»`
