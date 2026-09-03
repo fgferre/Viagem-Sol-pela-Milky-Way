@@ -123,8 +123,18 @@ export const PT = {
   'ajustes.msaa': 'Suavização de bordas (MSAA)',
   'ajustes.msaaNota':
     'Suaviza as beiras dos corpos e das linhas, e custa quadros. Troque aqui e compare com os quadros/s logo acima — a troca é na hora, sem recarregar. "Do preset" devolve a escolha à qualidade.',
-  'ajustes.msaaDoPreset': 'Do preset',
+  // "Do preset" é o estado sem escolha dos TRÊS controles da gaveta
+  'ajustes.doPreset': 'Do preset',
   'ajustes.msaaDesligada': 'Desligada',
+  'ajustes.nebulosaControle': 'Nebulosa (raymarch)',
+  'ajustes.nebulosaNota':
+    'O gás da Via Láctea é desenhado passo a passo, e é a parte mais cara do quadro. Menos passos deixam a nuvem mais chapada e mais granulada; mais passos a deixam macia e custam quadros.',
+  'ajustes.nebulosa.baixa': 'Baixa',
+  'ajustes.nebulosa.media': 'Média',
+  'ajustes.nebulosa.alta': 'Alta',
+  'ajustes.escalaDeResolucao': 'Escala de resolução',
+  'ajustes.escalaDeResolucaoNota':
+    'Quantos pixels a cena desenha, em fração da tela. 50% desenha um quarto dos pixels — é a alavanca mais forte daqui, e a que mais borra as beiras. O texto e os controles não mudam de tamanho.',
   'ajustes.texto': 'Tamanho do texto · {degrau}',
   'ajustes.textoNota':
     'Vale para o HUD inteiro — legenda, controles, selo e os nomes das estrelas. Não mexe na cena: dentro do Atlas o enquadramento recua um pouco para o texto maior não cobrir o alvo.',
@@ -324,6 +334,10 @@ export const PT = {
   'selo.desvio.camada': 'camada desligada: {nome}',
   'selo.desvio.msaa': 'suavização de bordas escolhida à mão',
   'selo.desvio.msaaCom': 'suavização de bordas escolhida à mão: {amostras}',
+  'selo.desvio.nebula': 'nebulosa escolhida à mão',
+  'selo.desvio.nebulaCom': 'nebulosa escolhida à mão: {nivel}',
+  'selo.desvio.escalaDeResolucao': 'escala de resolução escolhida à mão',
+  'selo.desvio.escalaDeResolucaoCom': 'escala de resolução escolhida à mão: {fator}',
 
   // ---- a acusação da escala (`three/escala.ts`) ---------------------
   'escala.acusacao': '{nome} está {fator} maior',

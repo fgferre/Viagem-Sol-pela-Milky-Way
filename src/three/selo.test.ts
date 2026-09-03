@@ -68,8 +68,11 @@ const LIMPA: EstadoDaVista = {
   tom: 'aces',
   camadasEscondidas: [],
   tier: 'cinema',
-  // gaveta Avançado intocada: quem manda no MSAA é o preset (item 145)
+  // gaveta Avançado intocada: nos três controles quem manda é o preset
+  // (item 145)
   amostras: null,
+  nebulosa: null,
+  escala: null,
   // `real` na FIXTURE de propósito: é o estado DEPOIS do clique "voltar
   // ao real". O default vivo do Atlas é `assistida` — e tem os próprios
   // testes (bloco 2c), porque ele É desvio declarado.
@@ -469,6 +472,30 @@ describe('2c. a política de luz se declara (Onda 6, D2/D8; reescrita no item 91
     // e o recíproco: a porta na URL com o estado JÁ de volta ao preset
     // não acusa nada (o mesmo contrato de `?luz=`)
     expect(estadoDoSelo(com({ portas: ['msaa'], amostras: null })).brilho).toBe('real');
+  });
+
+  it('a nebulosa e a escala de resolução da gaveta também se declaram (item 145)', () => {
+    // Mesmo contrato do MSAA acima, para os outros dois controles: os
+    // dois mudam a IMAGEM (menos passos = menos luz integrada do gás;
+    // menos pixels = outra cobertura por amostra), então um selo que os
+    // calasse prometeria uma vista que a máquina não desenhou.
+    expect(estadoDoSelo(com({ nebulosa: 'baixa' })).brilho).toBe('assistido');
+    expect(estadoDoSelo(com({ escala: 0.5 })).brilho).toBe('assistido');
+    // e o rótulo NOMEIA a escolha — "algo foi mexido" não serve
+    const nebula = estadoDoSelo(com({ nebulosa: 'baixa' })).desvios.find(
+      (c) => c.chave === 'nebula'
+    );
+    expect(nebula?.rotulo).toContain('Baixa');
+    const escala = estadoDoSelo(com({ escala: 0.75 })).desvios.find(
+      (c) => c.chave === 'escala'
+    );
+    expect(escala?.rotulo).toContain('75%');
+    // recíproca: a porta na URL com o estado JÁ de volta ao preset não
+    // acusa nada
+    expect(
+      estadoDoSelo(com({ portas: ['nebula', 'escala'], nebulosa: null, escala: null }))
+        .brilho
+    ).toBe('real');
   });
 
   it('a porta `?luz=` na URL não é desvio por presença — o estado VIVO manda', () => {

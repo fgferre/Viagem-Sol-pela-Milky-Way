@@ -37,7 +37,11 @@ import type { ChaveDeTexto } from '../lib/idioma';
 // só o TIPO: a união dos quatro estados do seletor mora no engine (é
 // ele quem lê a porta `?q=`), e o `import type` é apagado na compilação
 // — este arquivo continua sem importar three nem React.
-import type { EscolhaDeQualidade, EstadoDaQualidade } from './core/engine';
+import type {
+  EscolhaDeQualidade,
+  EstadoDaQualidade,
+  NivelDaNebulosa,
+} from './core/engine';
 
 /**
  * O AGRUPAMENTO DA GAVETA — três, e são as três escalas da casa: o que
@@ -220,16 +224,43 @@ const nomeDaQualidade = (id: EscolhaDeQualidade) =>
  * cada troca de tier a média recomeça, e fingir um número velho seria o
  * HUD mentindo sobre o instrumento.
  */
+/**
+ * O NÍVEL DA NEBULOSA COMO O VISITANTE O LÊ (item 145). Mesma doutrina
+ * da `classe`: o nível é chave (`baixa`/`media`/`alta`, a mesma que vai
+ * ao `?nebula=`), e a tradução mora no caminho da tela — a gaveta e o
+ * selo leem daqui, e não têm duas maneiras de nomear a mesma escolha.
+ */
+export function nivelDaNebulosaEmTexto(nivel: NivelDaNebulosa): string {
+  return t(`ajustes.nebulosa.${nivel}` as ChaveDeTexto);
+}
+
+/**
+ * A ESCALA DE RESOLUÇÃO COMO O VISITANTE A LÊ: fração vira porcentagem
+ * (0,5 → "50%"). Sem casa decimal porque os três degraus são inteiros
+ * em porcento; o dia em que não forem, a régua é esta função.
+ */
+export function rotuloDaEscalaDeResolucao(fator: number): string {
+  return `${Math.round(fator * 100)}%`;
+}
+
+/**
+ * MEXEU NA GAVETA AVANÇADO? (item 145) — qualquer um dos três controles
+ * fora do preset basta. É a régua do "Personalizado", e mora numa
+ * função só para o rótulo e quem mais precisar dela não divergirem.
+ */
+export const foraDoPreset = (e: EstadoDaQualidade): boolean =>
+  e.amostras !== null || e.nebulosa !== null || e.escala !== null;
+
 export function rotuloDaQualidade(e: EstadoDaQualidade): string {
-  // PERSONALIZADO (item 145): mexeu num controle da gaveta Avançado — hoje
-  // só a suavização de bordas —, e o nome do preset deixa de descrever o
-  // que a máquina desenha. O rótulo NÃO troca de frase por isso: só o
-  // nome do tier ganha a marca, e as quatro frases (medindo, auto
-  // medindo, auto pousou, confere/sugere) continuam inteiras.
-  const aqui =
-    e.amostras === null
-      ? nomeDaQualidade(e.tier)
-      : t('qualidade.personalizado', { tier: nomeDaQualidade(e.tier) });
+  // PERSONALIZADO (item 145): mexeu num controle da gaveta Avançado —
+  // suavização de bordas, nebulosa ou escala de resolução —, e o nome do
+  // preset deixa de descrever o que a máquina desenha. O rótulo NÃO
+  // troca de frase por isso: só o nome do tier ganha a marca, e as
+  // quatro frases (medindo, auto medindo, auto pousou, confere/sugere)
+  // continuam inteiras.
+  const aqui = foraDoPreset(e)
+    ? t('qualidade.personalizado', { tier: nomeDaQualidade(e.tier) })
+    : nomeDaQualidade(e.tier);
   if (!e.medicao) {
     return e.escolha === 'auto'
       ? t('qualidade.autoMedindo', { tier: aqui })

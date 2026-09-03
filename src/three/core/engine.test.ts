@@ -421,11 +421,12 @@ describe('a nitidez segue o monitor (item 6)', () => {
   });
 
   it('o applyQuality e o vigia aplicam a MESMA nitidez (uma função)', () => {
-    // o pixel ratio é min(DPR vivo, teto do tier) num lugar só — duas
-    // contas divergiriam no primeiro monitor novo
-    expect(
-      ENGINE.split('Math.min(window.devicePixelRatio || 1,').length - 1
-    ).toBe(1);
+    // o pixel ratio sai de UM lugar só — duas contas divergiriam no
+    // primeiro monitor novo. Desde o item 145 a conta tem dois ramos (o
+    // teto do preset e a escala escolhida à mão na gaveta Avançado), e
+    // os dois moram dentro do mesmo `aplicarNitidez`: o que se cobra é
+    // que o DPR vivo seja lido uma vez só.
+    expect(ENGINE.split('window.devicePixelRatio || 1').length - 1).toBe(1);
     const aplicar = ENGINE.slice(
       ENGINE.indexOf('applyQuality(q: QualityLevel'),
       ENGINE.indexOf('private aplicarNitidez()')

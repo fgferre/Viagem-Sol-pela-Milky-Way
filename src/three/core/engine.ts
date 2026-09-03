@@ -70,9 +70,61 @@ export function lerPortaExposicao(bruto: string | null | undefined): number | nu
   return Number.isFinite(v) && v > 0 ? v : null;
 }
 
+/**
+ * OS TRÊS NÍVEIS DA NEBULOSA (item 145) — o segundo controle da gaveta
+ * Avançado. Não são níveis NOVOS: são exatamente os três pares que os
+ * presets sempre aplicaram, agora com nome. Até aqui os passos moravam
+ * no preset e a escala do raymarch era um ternário solto no Director
+ * (`quality === 'performance' ? 0.35 : 0.5`) — duas metades do mesmo
+ * ajuste em dois arquivos, e um controle de painel teria de redigitar
+ * as duas. A tabela é a fonte ÚNICA: o preset aponta um nível, o painel
+ * escolhe um nível, e os números vivem só aqui.
+ */
+export type NivelDaNebulosa = 'baixa' | 'media' | 'alta';
+
+/** passos do raymarch e escala do alvo de meia resolução, por nível */
+export const NEBULOSA_POR_NIVEL: Record<
+  NivelDaNebulosa,
+  { passos: number; escala: number }
+> = {
+  baixa: { passos: 30, escala: 0.35 },
+  media: { passos: 44, escala: 0.5 },
+  alta: { passos: 56, escala: 0.5 },
+};
+
+/**
+ * A lei da porta `?nebula=`, no contrato de `lerPortaTom`: comparação
+ * por literal (a lição do `?tone=constructor`), `null` para "não
+ * pediram nada de válido" — e aí quem manda é o preset.
+ */
+export function lerPortaNebulosa(
+  bruto: string | null | undefined
+): NivelDaNebulosa | null {
+  return (Object.keys(NEBULOSA_POR_NIVEL) as NivelDaNebulosa[]).find((n) => n === bruto)
+    ?? null;
+}
+
+/**
+ * OS TRÊS DEGRAUS DA ESCALA DE RESOLUÇÃO (item 145) — o terceiro
+ * controle da gaveta Avançado, em fração da densidade NATIVA da tela.
+ * 100% é o `devicePixelRatio` do monitor (2,0 num Retina), 50% é metade
+ * dele — um quarto dos pixels, que é a alavanca mais grossa do quadro.
+ *
+ * É FRAÇÃO DA TELA e não o teto do preset de propósito: "50%" tem o
+ * mesmo significado em qualquer monitor, enquanto `pixelRatio: 1.0`
+ * significa nitidez cheia num monitor comum e metade num Retina.
+ */
+export const ESCALAS_DE_RESOLUCAO = [0.5, 0.75, 1] as const;
+
+/** a lei da porta `?escala=`: um dos três degraus, ou `null` */
+export function lerPortaEscala(bruto: string | null | undefined): number | null {
+  const v = Number(bruto);
+  return ESCALAS_DE_RESOLUCAO.find((f) => f === v) ?? null;
+}
+
 interface QualityPreset {
   pixelRatio: number;
-  nebulaSteps: number;
+  nebulosa: NivelDaNebulosa;
   grain: number;
 }
 
@@ -80,9 +132,9 @@ interface QualityPreset {
 // calibrado para o espaço linear onde o ACES o esmagava — em display
 // vira granulado de vídeo; cinema real fica em ~1% de swing.
 const PRESETS: Record<QualityLevel, QualityPreset> = {
-  cinema: { pixelRatio: 2.0, nebulaSteps: 56, grain: 0.012 },
-  alta: { pixelRatio: 1.5, nebulaSteps: 44, grain: 0.01 },
-  performance: { pixelRatio: 1.0, nebulaSteps: 30, grain: 0.008 },
+  cinema: { pixelRatio: 2.0, nebulosa: 'alta', grain: 0.012 },
+  alta: { pixelRatio: 1.5, nebulosa: 'media', grain: 0.01 },
+  performance: { pixelRatio: 1.0, nebulosa: 'baixa', grain: 0.008 },
 };
 
 /**
@@ -306,6 +358,18 @@ export interface EstadoDaQualidade {
    * publica é o Director, lendo o Post — não há segunda cópia.
    */
   amostras: number | null;
+  /**
+   * A NEBULOSA escolhida à mão na mesma gaveta (item 145) — `null` = o
+   * nível do preset. Quem a publica é o Director, que é onde o override
+   * mora: é ele que aplica passos e escala do raymarch.
+   */
+  nebulosa: NivelDaNebulosa | null;
+  /**
+   * A ESCALA DE RESOLUÇÃO escolhida à mão (item 145) — fração do
+   * `devicePixelRatio`, `null` = o teto do preset. O override mora no
+   * Engine (`forcarEscala`), que é o dono da nitidez.
+   */
+  escala: number | null;
 }
 
 /**
@@ -430,6 +494,14 @@ export class Engine {
   private travaDoVaivem = new TravaDoVaivem();
   /** a media query armada no DPR vivo — trocar de monitor a dispara */
   private vigiaDeDpr: MediaQueryList | null = null;
+  /**
+   * A ESCALA DE RESOLUÇÃO ESCOLHIDA À MÃO (item 145) — `null` = quem
+   * manda é o teto do preset. Nasce de `?escala=` (a URL vence no boot)
+   * e passa a ser o controle vivo da gaveta Avançado, por `forcarEscala`.
+   */
+  private escalaForcada: number | null = lerPortaEscala(
+    new URLSearchParams(window.location.search).get('escala')
+  );
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({
@@ -624,9 +696,38 @@ export class Engine {
    * quadro — a invariância de resolução da casa.
    */
   private aplicarNitidez() {
-    const pr = Math.min(window.devicePixelRatio || 1, this.preset.pixelRatio);
+    const dpr = window.devicePixelRatio || 1;
+    // A ESCALA À MÃO (item 145) é FRAÇÃO DA TELA, não teto: 100% é o
+    // DPR inteiro do monitor, então em Retina ela SOBE a nitidez acima
+    // do que `performance` permite. Por isso não há `Math.min` neste
+    // ramo — o visitante que pediu 100% pediu a tela toda.
+    const pr =
+      this.escalaForcada === null
+        ? Math.min(dpr, this.preset.pixelRatio)
+        : dpr * this.escalaForcada;
     this.renderer.setPixelRatio(pr);
     this.resize();
+  }
+
+  /** a escala de resolução escolhida à mão; `null` = a do preset */
+  get escala(): number | null {
+    return this.escalaForcada;
+  }
+
+  /**
+   * A ESCALA DE RESOLUÇÃO, TROCADA AO VIVO (item 145) — o controle mais
+   * grosso da gaveta Avançado: 50% desenha um quarto dos pixels.
+   *
+   * A reaplicação passa pelo MESMO `aplicarNitidez` do preset e do vigia
+   * de DPR — é ele que chama `resize()`, e é o `resize` que refaz o alvo
+   * do pós e o da nebulosa. Um `setPixelRatio` solto daqui deixaria a
+   * cena desenhando numa densidade e o composer noutra.
+   *
+   * `null` devolve o teto do preset, e o Auto volta a poder mexer nele.
+   */
+  forcarEscala(fator: number | null) {
+    this.escalaForcada = fator;
+    this.aplicarNitidez();
   }
 
   /**

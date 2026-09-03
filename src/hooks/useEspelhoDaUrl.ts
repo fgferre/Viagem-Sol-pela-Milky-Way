@@ -8,7 +8,11 @@ import { lerPortaRotulos3d } from '../lib/beta';
 // ============================================================
 import { useLayoutEffect, useState } from 'react';
 import type { Director, EstadoDaQualidade, Phase } from '../three/director';
-import type { EscolhaDeQualidade, ToneMapMode } from '../three/core/engine';
+import type {
+  EscolhaDeQualidade,
+  NivelDaNebulosa,
+  ToneMapMode,
+} from '../three/core/engine';
 import { lerPortaExposicao, lerPortaTom } from '../three/core/engine';
 import { chaveDoFoco, construirIndice } from '../lib/buscaEstrelas';
 import { CAMADAS } from '../three/atlasConfig';
@@ -263,6 +267,30 @@ export function useEspelhoDaUrl(dep: {
     );
   };
 
+  /**
+   * A NEBULOSA E A ESCALA DE RESOLUÇÃO, AO VIVO (item 145) — os outros
+   * dois controles da gaveta Avançado, no molde exato do de cima:
+   * nenhum estado em React (a verdade mora no Director e no Engine, e o
+   * painel a lê pelo `EstadoDaQualidade`), e a URL como ESPELHO —
+   * escrita só fora do preset, apagada na volta a ele.
+   *
+   * `?nebsteps=` NÃO passa por aqui: é bancada, vence tudo dentro da
+   * própria `Nebula` e continua declarada como porta no selo.
+   */
+  const trocarNebulosa = (nivel: NivelDaNebulosa | null) => {
+    directorRef.current?.forcarNebulosa(nivel);
+    window.history.replaceState(null, '', comParam('nebula', nivel));
+  };
+
+  const trocarEscala = (fator: number | null) => {
+    directorRef.current?.forcarEscala(fator);
+    window.history.replaceState(
+      null,
+      '',
+      comParam('escala', fator === null ? null : String(fator))
+    );
+  };
+
   // ---- o gosto, escrito num lugar só (estado + Director + URL) -------
   const trocarTom = (t: ToneMapMode) => {
     setTom(t);
@@ -361,6 +389,10 @@ export function useEspelhoDaUrl(dep: {
         // não conhece esta chave: o selo apagaria a linha da URL e a
         // cena continuaria com o número forçado
         d.forcarAmostras(null);
+      } else if (c.chave === 'nebula') {
+        d.forcarNebulosa(null);
+      } else if (c.chave === 'escala') {
+        d.forcarEscala(null);
       } else if (c.chave === 'luz') {
         // volta ao 1/d² cru no próximo quadro (D2 — volta 'vivo'), e o
         // carimbo porque esta é a única linha sem espelho em React: sem
@@ -436,6 +468,8 @@ export function useEspelhoDaUrl(dep: {
     urlComMomento,
     changeQuality,
     trocarAmostras,
+    trocarNebulosa,
+    trocarEscala,
     trocarTom,
     trocarExposicao,
     voltarAoBrilhoReal,

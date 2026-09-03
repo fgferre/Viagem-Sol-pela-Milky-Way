@@ -30,10 +30,14 @@
 // Módulo PURO: sem window, sem three, sem React.
 // ============================================================
 import { LIMIAR_SISTEMA_SOLAR_PC, acusacaoDaEscala } from './escala';
-import { CAMADAS } from './atlasConfig';
+import {
+  CAMADAS,
+  nivelDaNebulosaEmTexto,
+  rotuloDaEscalaDeResolucao,
+} from './atlasConfig';
 import { decimalDoIdioma, t } from '../lib/idioma';
 import { PT } from '../lib/idioma/pt';
-import type { QualityLevel, ToneMapMode } from './core/engine';
+import type { NivelDaNebulosa, QualityLevel, ToneMapMode } from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { LANTERNA_DE_LEITURA, PASSOS_DA_EXPOSICAO_REAL } from '../lib/atlas/luzDaVisita';
 
@@ -307,6 +311,17 @@ export interface EstadoDaVista {
    */
   amostras: number | null;
   /**
+   * O NÍVEL DA NEBULOSA escolhido à mão (item 145) — `null` = o do
+   * preset, e aí não há nada a declarar. Mesmo contrato do `amostras`:
+   * estado vivo do Director, não a porta `?nebula=`.
+   */
+  nebulosa: NivelDaNebulosa | null;
+  /**
+   * A ESCALA DE RESOLUÇÃO escolhida à mão (item 145), em fração do DPR
+   * da tela — `null` = o teto do preset. Estado vivo do Engine.
+   */
+  escala: number | null;
+  /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — o estado
    * VIVO do Director, não a porta: `?luz=` só o semeia no boot, e o
    * clique na linha BRILHO o troca ao vivo.
@@ -578,6 +593,40 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     rotuloVivo: (e) =>
       t('selo.desvio.msaaCom', {
         amostras: e.amostras === 0 ? t('ajustes.msaaDesligada') : `${e.amostras}×`,
+      }),
+  },
+  /*
+   * OS OUTROS DOIS CONTROLES DA GAVETA AVANÇADO (item 145), no mesmo
+   * molde do MSAA: estado VIVO, `volta: 'vivo'`, e a porta de URL como
+   * espelho — quem troca na gaveta não recarrega nada, e o selo tem de
+   * declarar a escolha, não o endereço.
+   *
+   * OS DOIS MEXEM NA IMAGEM, e não só no custo. Os passos do raymarch
+   * são a integral do gás: menos passos entregam MENOS luz acumulada da
+   * nebulosa, não a mesma imagem mais barata. A escala de resolução
+   * muda a área que cada amostra cobre — a mesma razão pela qual o tier
+   * abaixo de cinema já era desvio.
+   */
+  {
+    chave: 'nebula',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.nebula'); },
+    volta: 'vivo',
+    desvia: (e) => e.nebulosa !== null,
+    rotuloVivo: (e) =>
+      t('selo.desvio.nebulaCom', {
+        nivel: e.nebulosa === null ? '' : nivelDaNebulosaEmTexto(e.nebulosa),
+      }),
+  },
+  {
+    chave: 'escala',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.escalaDeResolucao'); },
+    volta: 'vivo',
+    desvia: (e) => e.escala !== null,
+    rotuloVivo: (e) =>
+      t('selo.desvio.escalaDeResolucaoCom', {
+        fator: e.escala === null ? '' : rotuloDaEscalaDeResolucao(e.escala),
       }),
   },
   porta('nobloom', 'bloom desligado'),

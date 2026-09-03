@@ -193,6 +193,16 @@ describe('o MSAA do alvo da cena (item 120, F1 · L6; resolvido uma vez desde o 
     const corpo = classe.slice(0, classe.indexOf('\nexport class Post'));
     expect(corpo).toMatch(/this\.alvo\.texture = destino\.texture/);
     expect(corpo).toMatch(/resolveDepthBuffer: false/);
+    // e o alvo segue o TAMANHO do destino a cada quadro (item 146): com
+    // a textura compartilhada, alvo de 5120×3200 num destino de
+    // 2560×1600 era framebuffer inválido — cena sumida, lençol cinza
+    const corpoRender = corpo.slice(corpo.indexOf('render(\n'));
+    expect(corpoRender.indexOf('this.sincronizar()')).toBeGreaterThan(-1);
+    expect(corpoRender.indexOf('this.sincronizar()')).toBeLessThan(
+      corpoRender.indexOf('renderer.render(this.cena')
+    );
+    // e quem dispõe o destino dispõe o alvo
+    expect(corpo).toMatch(/destino\.addEventListener\('dispose'/);
     const metodo = post.slice(post.indexOf('render(time: number)'));
     const render = metodo.slice(0, metodo.indexOf('\n  }'));
     expect(render).toMatch(/readBuffer = this\.composer\.renderTarget1/);

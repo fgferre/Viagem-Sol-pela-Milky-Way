@@ -3,7 +3,13 @@
 // API consumida pelo React: eventos de legenda/progresso/fase.
 // ============================================================
 import * as THREE from 'three';
-import { Engine, GRAMPO_DO_PASSO_S, modoDoToneMapping } from './core/engine';
+import {
+  Engine,
+  GRAMPO_DO_PASSO_S,
+  NEBULOSA_POR_NIVEL,
+  lerPortaNebulosa,
+  modoDoToneMapping,
+} from './core/engine';
 // `t` entra APELIDADO porque neste arquivo `t` já é o TEMPO (o segundo
 // argumento de todo tick e de toda curva). Um `t` de texto aqui dentro
 // seria sombreado pelo relógio no primeiro callback (item 130).
@@ -13,6 +19,7 @@ import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
   MedicaoDoQuadro,
+  NivelDaNebulosa,
   QualityLevel,
 } from './core/engine';
 import type { EstadoDaVista } from './selo';
@@ -543,6 +550,20 @@ export class Director {
   private readonly abortController = new AbortController();
   private readonly debug = new URLSearchParams(window.location.search);
   /**
+   * O NÍVEL DA NEBULOSA ESCOLHIDO À MÃO (item 145) — `null` = o do
+   * preset. O override mora AQUI e não na `Nebula` porque é o Director
+   * que aplica os dois ingredientes do nível (passos do raymarch e
+   * escala do alvo), e é ele que os reaplica a cada troca de tier.
+   *
+   * Lido no CAMPO e não no corpo do construtor: a semeadura da nebulosa
+   * acontece dentro dele, e um `?nebula=` lido depois só valeria na
+   * primeira troca de tier. (`?nebsteps=` continua vencendo isto tudo,
+   * dentro da própria `Nebula` — é bancada, não controle.)
+   */
+  private nebulosaForcada: NivelDaNebulosa | null = lerPortaNebulosa(
+    this.debug.get('nebula')
+  );
+  /**
    * O RAIO COM QUE O SOL FOI CONSTRUÍDO, em pc. Desde a F3 é SEMPRE o
    * físico (`RAIO_DO_SOL_NA_CENA`) — a porta `?solreal=1` da F1 morreu
    * quando ele virou o padrão. O campo fica porque é a fonte única para
@@ -662,12 +683,12 @@ export class Director {
     this.dust = new Dust();
     this.roam = new FreeRoam(canvas, this.engine.camera);
     this.engine.onQuality((quality) => {
-      this.nebula.setScale(quality === 'performance' ? 0.35 : 0.5);
-      // passos do raymarch: aqui e não no tick. Reescrever o mesmo valor
-      // 60×/s era ruído; quem muda o preset é quem tem de aplicá-lo — o
-      // auto-quality passa por aqui, e o default do Nebula (44) NÃO é o
-      // do cinema (56), então o valor inicial também vem daqui.
-      this.nebula.setSteps(this.engine.preset.nebulaSteps);
+      // passos e escala do raymarch: aqui e não no tick. Reescrever o
+      // mesmo valor 60×/s era ruído; quem muda o preset é quem tem de
+      // aplicá-lo — o auto-quality passa por aqui, e o default do Nebula
+      // (44) NÃO é o do cinema (56), então o valor inicial também vem
+      // daqui.
+      this.aplicarNebulosa();
       // o preset de grão era config morta — nunca chegava ao shader
       this.post.setGrain(this.engine.preset.grain);
       // as amostras do alvo do composer (item 120, F1): o MSAA é do tier
@@ -685,11 +706,11 @@ export class Director {
     this.engine.onMedicao((m) => this.aoMedirOQuadro(m));
     // o Engine já aplicou a qualidade no próprio construtor, antes destes
     // ouvintes existirem — o estado inicial precisa ser semeado à mão.
-    // O setScale faltava desta lista: em performance inicial o raymarch
+    // A ESCALA faltava desta lista: em performance inicial o raymarch
     // rodava a 0,5 (o default do construtor) em vez de 0,35 até a primeira
     // troca de tier — exatamente onde a economia mais importa (Onda 1e).
-    this.nebula.setScale(this.engine.quality === 'performance' ? 0.35 : 0.5);
-    this.nebula.setSteps(this.engine.preset.nebulaSteps);
+    // Desde o item 145 os dois ingredientes saem juntos da mesma tabela.
+    this.aplicarNebulosa();
     this.post.setGrain(this.engine.preset.grain);
     this.post.aplicarAmostras(this.engine.quality);
     // e o React TAMBÉM é ouvinte tardio: sem esta semente o painel de
@@ -1893,8 +1914,10 @@ export class Director {
     this.politicaDeQualidade = escolha === 'auto' ? 'auto' : 'manual';
     const q = escolha === 'auto' ? this.engine.medicao?.sugestao : escolha;
     if (q !== undefined && q !== this.engine.quality) {
+      // (o `setSteps` que havia aqui saiu no item 145: `applyQuality`
+      // dispara o `onQuality` acima, que já aplica a nebulosa inteira —
+      // era a mesma escrita duas vezes, e agora seria a metade dela)
       this.engine.applyQuality(q);
-      this.nebula.setSteps(this.engine.preset.nebulaSteps);
       this.perturbar();
       void this.reassarMundo(q);
     } else this.publicarQualidade();
@@ -1938,9 +1961,12 @@ export class Director {
       // segue rodando e o Auto segue ouvindo (`aoMedirOQuadro`): o que
       // para é o mostrador, não a régua.
       medicao: this.shotMode ? null : this.engine.medicao,
-      // o MSAA vivo da gaveta Avançado (item 145), lido do Post — a
-      // única casa dele
+      // os TRÊS controles vivos da gaveta Avançado (item 145), cada um
+      // lido da sua única casa: o MSAA mora no Post, o nível da nebulosa
+      // aqui, a escala de resolução no Engine
       amostras: this.post.amostras,
+      nebulosa: this.nebulosaForcada,
+      escala: this.engine.escala,
     });
   }
 
@@ -1952,6 +1978,43 @@ export class Director {
    */
   forcarAmostras(amostras: number | null) {
     this.post.forcarAmostras(amostras);
+    this.publicarQualidade();
+  }
+
+  /**
+   * OS DOIS INGREDIENTES DO NÍVEL DA NEBULOSA, num lugar só (item 145):
+   * passos do raymarch e escala do alvo de meia resolução. O nível vem
+   * do que o visitante escolheu na gaveta ou, na ausência dele, do
+   * preset — os números são os da tabela única (`NEBULOSA_POR_NIVEL`).
+   */
+  private aplicarNebulosa() {
+    const nivel = NEBULOSA_POR_NIVEL[this.nebulosaForcada ?? this.engine.preset.nebulosa];
+    this.nebula.setScale(nivel.escala);
+    this.nebula.setSteps(nivel.passos);
+  }
+
+  /**
+   * A NEBULOSA, TROCADA AO VIVO (item 145) — o raymarch é o maior item
+   * do quadro (58% medido), e por isso é o controle que mais move os
+   * quadros/s do painel. `null` devolve o nível ao preset.
+   */
+  forcarNebulosa(nivel: NivelDaNebulosa | null) {
+    this.nebulosaForcada = nivel;
+    this.aplicarNebulosa();
+    // a imagem mudou: a contagem de estabilidade da captura recomeça,
+    // como já recomeça na troca de tier
+    this.perturbar();
+    this.publicarQualidade();
+  }
+
+  /**
+   * A ESCALA DE RESOLUÇÃO, TROCADA AO VIVO (item 145). O estado mora no
+   * Engine (é ele o dono da nitidez); daqui saem o pedido, o abalo da
+   * captura e a publicação, no mesmo molde dos outros dois controles.
+   */
+  forcarEscala(fator: number | null) {
+    this.engine.forcarEscala(fator);
+    this.perturbar();
     this.publicarQualidade();
   }
 
@@ -2227,10 +2290,12 @@ export class Director {
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),
       camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
       tier: this.engine.quality,
-      // o MSAA escolhido à mão (item 145) — estado VIVO do Post, não a
-      // porta: o controle do painel o troca sem recarregar, e um selo
-      // que lesse só `?msaa=` calaria a escolha feita na gaveta
+      // os três controles da gaveta Avançado (item 145) — estado VIVO,
+      // não as portas: o painel os troca sem recarregar, e um selo que
+      // lesse só a URL calaria a escolha feita na gaveta
       amostras: this.post.amostras,
+      nebulosa: this.nebulosaForcada,
+      escala: this.engine.escala,
       luz: this.politicaDeLuz,
       stopsDoGloboEmFoco: this.stopsDoGloboEmFoco(),
       // a DOSE de ocupação do Sol (item 5): < 1 só no arranque do filme,

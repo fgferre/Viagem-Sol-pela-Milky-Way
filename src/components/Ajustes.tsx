@@ -35,10 +35,17 @@ import { IDIOMAS, definirIdioma, t } from '../lib/idioma';
 import type { ChaveDeTexto } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { DEGRAUS_DA_UI, rotuloDaEscala } from '../lib/uiScale';
-import { QUALIDADES, rotuloDaQualidade } from '../three/atlasConfig';
+import {
+  QUALIDADES,
+  nivelDaNebulosaEmTexto,
+  rotuloDaEscalaDeResolucao,
+  rotuloDaQualidade,
+} from '../three/atlasConfig';
+import { ESCALAS_DE_RESOLUCAO } from '../three/core/engine';
 import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
+  NivelDaNebulosa,
   ToneMapMode,
 } from '../three/core/engine';
 
@@ -64,10 +71,34 @@ const TONS: { id: ToneMapMode; nome: string; nota: ChaveDeTexto }[] = [
  * uma tabela de constantes nasceria na língua do primeiro import.
  */
 const AMOSTRAS: { valor: number | null; nome: () => string }[] = [
-  { valor: null, nome: () => t('ajustes.msaaDoPreset') },
+  { valor: null, nome: () => t('ajustes.doPreset') },
   { valor: 0, nome: () => t('ajustes.msaaDesligada') },
   { valor: 2, nome: () => '2×' },
   { valor: 4, nome: () => '4×' },
+];
+
+/**
+ * OS QUATRO ESTADOS DA NEBULOSA e os quatro da ESCALA DE RESOLUÇÃO
+ * (item 145) — o segundo e o terceiro controles da gaveta. Mesmo molde
+ * do MSAA: `null` é "do preset", e os valores são as CHAVES que vão à
+ * URL e ao selo. Os níveis da nebulosa não têm números aqui de
+ * propósito: quem guarda passos e escala é a tabela única do engine
+ * (`NEBULOSA_POR_NIVEL`), a mesma que os presets consultam.
+ */
+const NEBULOSAS: { valor: NivelDaNebulosa | null; nome: () => string }[] = [
+  { valor: null, nome: () => t('ajustes.doPreset') },
+  ...(['baixa', 'media', 'alta'] as const).map((n) => ({
+    valor: n,
+    nome: () => nivelDaNebulosaEmTexto(n),
+  })),
+];
+
+const ESCALAS: { valor: number | null; nome: () => string }[] = [
+  { valor: null, nome: () => t('ajustes.doPreset') },
+  ...ESCALAS_DE_RESOLUCAO.map((f) => ({
+    valor: f as number,
+    nome: () => rotuloDaEscalaDeResolucao(f),
+  })),
 ];
 
 export function Ajustes({
@@ -76,6 +107,8 @@ export function Ajustes({
   qualidade,
   onQualidade,
   onAmostras,
+  onNebulosa,
+  onEscala,
   tom,
   onTom,
   exposicao,
@@ -94,6 +127,10 @@ export function Ajustes({
   onQualidade: (q: EscolhaDeQualidade) => void;
   /** a suavização de bordas escolhida à mão (item 145); `null` = do preset */
   onAmostras: (amostras: number | null) => void;
+  /** o nível da nebulosa escolhido à mão (item 145); `null` = do preset */
+  onNebulosa: (nivel: NivelDaNebulosa | null) => void;
+  /** a escala de resolução escolhida à mão (item 145); `null` = do preset */
+  onEscala: (fator: number | null) => void;
   tom: ToneMapMode;
   onTom: (t: ToneMapMode) => void;
   exposicao: number;
@@ -250,6 +287,49 @@ export function Ajustes({
               onClick={() => onAmostras(a.valor)}
             >
               {a.nome()}
+            </button>
+          ))}
+        </div>
+
+        <p className="ajustes-nota">
+          <strong>{t('ajustes.nebulosaControle')}</strong> — {t('ajustes.nebulosaNota')}
+        </p>
+        <div
+          className="ajustes-linha"
+          aria-label={t('ajustes.nebulosaControle')}
+          role="group"
+        >
+          {NEBULOSAS.map((n) => (
+            <button
+              type="button"
+              key={String(n.valor)}
+              className={qualidade.nebulosa === n.valor ? 'on' : ''}
+              aria-pressed={qualidade.nebulosa === n.valor}
+              onClick={() => onNebulosa(n.valor)}
+            >
+              {n.nome()}
+            </button>
+          ))}
+        </div>
+
+        <p className="ajustes-nota">
+          <strong>{t('ajustes.escalaDeResolucao')}</strong> —{' '}
+          {t('ajustes.escalaDeResolucaoNota')}
+        </p>
+        <div
+          className="ajustes-linha"
+          aria-label={t('ajustes.escalaDeResolucao')}
+          role="group"
+        >
+          {ESCALAS.map((e) => (
+            <button
+              type="button"
+              key={String(e.valor)}
+              className={qualidade.escala === e.valor ? 'on' : ''}
+              aria-pressed={qualidade.escala === e.valor}
+              onClick={() => onEscala(e.valor)}
+            >
+              {e.nome()}
             </button>
           ))}
         </div>

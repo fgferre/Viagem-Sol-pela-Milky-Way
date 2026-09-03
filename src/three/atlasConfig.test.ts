@@ -24,7 +24,15 @@ import {
   rotuloDaQualidade,
   tituloDeCorpo,
 } from './atlasConfig';
-import { TIER_DE_PRODUTO, lerPortaQualidade, tierMedido } from './core/engine';
+import {
+  ESCALAS_DE_RESOLUCAO,
+  NEBULOSA_POR_NIVEL,
+  TIER_DE_PRODUTO,
+  lerPortaEscala,
+  lerPortaNebulosa,
+  lerPortaQualidade,
+  tierMedido,
+} from './core/engine';
 import { HUD_POR_FASE } from './fases';
 import { definirIdioma, t } from '../lib/idioma';
 
@@ -362,10 +370,12 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
       expect(nomeAcessivel, lingua).not.toMatch(/\d/);
     }
     definirIdioma('pt-BR');
-    // `amostras: null` de piso — a gaveta Avançado intocada (item 145)
+    // os TRÊS controles da gaveta Avançado em `null` de piso — a gaveta
+    // intocada (item 145)
     type Estado = Parameters<typeof rotuloDaQualidade>[0];
-    const estado = (m: Omit<Estado, 'amostras'> & Partial<Pick<Estado, 'amostras'>>) =>
-      rotuloDaQualidade({ amostras: null, ...m });
+    type Gaveta = 'amostras' | 'nebulosa' | 'escala';
+    const estado = (m: Omit<Estado, Gaveta> & Partial<Pick<Estado, Gaveta>>) =>
+      rotuloDaQualidade({ amostras: null, nebulosa: null, escala: null, ...m });
     // manual, medida boa: nada a sugerir — o painel não inventa alarme
     expect(
       estado({ escolha: 'cinema', tier: 'cinema', medicao: { fps: 59.6, sugestao: 'cinema' } })
@@ -396,6 +406,52 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     expect(estado({ escolha: 'auto', tier: 'alta', medicao: null, amostras: 4 })).toContain(
       'Alta (Personalizado)'
     );
+    // e a marca é de QUALQUER um dos três, não só do MSAA: um controle
+    // novo na gaveta que esquecesse de entrar em `foraDoPreset` deixaria
+    // o painel dizendo "Cinema" sobre uma cena que não é mais a do preset
+    expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, nebulosa: 'baixa' }))
+      .toContain('Cinema (Personalizado)');
+    expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, escala: 0.5 }))
+      .toContain('Cinema (Personalizado)');
+  });
+
+  it('a gaveta Avançado NÃO redigita os números do preset (item 145)', () => {
+    // A TABELA ÚNICA: os três níveis da nebulosa são exatamente os pares
+    // que os presets aplicam. Até aqui os passos moravam no preset e a
+    // escala era um ternário solto no Director — um controle de painel
+    // que redigitasse qualquer um dos dois divergiria do preset na
+    // primeira vez que alguém mexesse num deles.
+    //
+    // A SABOTAGEM: trocar `baixa.escala` para 0,5 (ou `alta.passos` para
+    // 44) e este teste reprova, porque é o preset que se cobra aqui.
+    expect(NEBULOSA_POR_NIVEL.baixa).toEqual({ passos: 30, escala: 0.35 });
+    expect(NEBULOSA_POR_NIVEL.media).toEqual({ passos: 44, escala: 0.5 });
+    expect(NEBULOSA_POR_NIVEL.alta).toEqual({ passos: 56, escala: 0.5 });
+    // e quem aplica o nível é UMA função no Director, para os dois
+    // ingredientes nunca saírem separados
+    const aplicar = DIRECTOR.slice(
+      DIRECTOR.indexOf('private aplicarNebulosa()'),
+      DIRECTOR.indexOf('forcarNebulosa(')
+    );
+    expect(aplicar).toContain('this.nebula.setScale(nivel.escala);');
+    expect(aplicar).toContain('this.nebula.setSteps(nivel.passos);');
+    // nenhum outro ponto do Director escreve passos ou escala da
+    // nebulosa por fora dela (era assim que o ternário 0.35/0.5 vivia)
+    expect(DIRECTOR.match(/this\.nebula\.setScale\(/g)?.length).toBe(1);
+    expect(DIRECTOR.match(/this\.nebula\.setSteps\(/g)?.length).toBe(1);
+
+    // as três portas de URL da gaveta só aceitam o que a gaveta oferece
+    for (const n of ['baixa', 'media', 'alta'] as const) {
+      expect(lerPortaNebulosa(n)).toBe(n);
+    }
+    expect(lerPortaNebulosa('constructor')).toBeNull();
+    expect(lerPortaNebulosa('ALTA')).toBeNull();
+    expect(lerPortaNebulosa(null)).toBeNull();
+    for (const f of ESCALAS_DE_RESOLUCAO) expect(lerPortaEscala(String(f))).toBe(f);
+    expect(lerPortaEscala('0.9')).toBeNull();
+    expect(lerPortaEscala('2')).toBeNull();
+    expect(lerPortaEscala('')).toBeNull();
+    expect(lerPortaEscala(null)).toBeNull();
   });
 
   it('o modo foto congela o MOSTRADOR da medição, e não a medição (item 66)', () => {

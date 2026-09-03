@@ -130,8 +130,17 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.msaa': 'Edge smoothing (MSAA)',
   'ajustes.msaaNota':
     'Smooths the edges of bodies and lines, and it costs frames. Switch here and compare with the frames/s just above — the change is immediate, with no reload. "From preset" hands the choice back to quality.',
-  'ajustes.msaaDoPreset': 'From preset',
+  'ajustes.doPreset': 'From preset',
   'ajustes.msaaDesligada': 'Off',
+  'ajustes.nebulosaControle': 'Nebula (raymarch)',
+  'ajustes.nebulosaNota':
+    'The gas of the Milky Way is drawn step by step, and it is the most expensive part of the frame. Fewer steps leave the cloud flatter and grainier; more steps make it smooth and cost frames.',
+  'ajustes.nebulosa.baixa': 'Low',
+  'ajustes.nebulosa.media': 'Medium',
+  'ajustes.nebulosa.alta': 'High',
+  'ajustes.escalaDeResolucao': 'Resolution scale',
+  'ajustes.escalaDeResolucaoNota':
+    'How many pixels the scene draws, as a fraction of your screen. 50% draws a quarter of the pixels — the strongest lever here, and the one that blurs edges the most. Text and controls keep their size.',
   'ajustes.texto': 'Text size · {degrau}',
   'ajustes.textoNota':
     'Applies to the whole HUD — captions, controls, seal and the star names. It does not touch the scene: inside the Atlas the framing backs off a little so the larger text does not cover the target.',
@@ -328,6 +337,10 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.camada': 'layer turned off: {nome}',
   'selo.desvio.msaa': 'edge smoothing set by hand',
   'selo.desvio.msaaCom': 'edge smoothing set by hand: {amostras}',
+  'selo.desvio.nebula': 'nebula set by hand',
+  'selo.desvio.nebulaCom': 'nebula set by hand: {nivel}',
+  'selo.desvio.escalaDeResolucao': 'resolution scale set by hand',
+  'selo.desvio.escalaDeResolucaoCom': 'resolution scale set by hand: {fator}',
 
   // ---- the scale accusation ----------------------------------------
   'escala.acusacao': '{nome} is {fator} larger',

@@ -77,21 +77,43 @@ esperam ordem. Backup em dia; site intocado (publicar só com pedido dele).
 quiser ela desliga isso, mas como eu não tenho hoje o toggle não consigo
 nem entender direito em tempo real qual é o impacto em performance e em
 qualidade visual."** (Palavras dele, 03/09, sobre o MSAA do item 144.)
-O controle da suavização de bordas (MSAA) é o PRIMEIRO da gaveta
-**Avançado** do menu de gráficos — presets na frente, controles
-individuais atrás. Quatro estados no painel de Ajustes ("Do preset",
-"Desligada", "2×", "4×"), troca na hora sem recarregar, com os
-quadros/s do próprio painel logo acima servindo de régua; mexeu num
-controle, o rótulo do seletor de qualidade passa a dizer "Personalizado".
-- **FEITO em 03/09** (commit desta linha): o override vive dentro do
-  `Post` (`forcarAmostras`, que reaplica pelo mesmo `aplicarAmostras` —
-  é ele que dispõe os dois alvos e faz a troca valer); o Director o
-  publica no `EstadoDaQualidade` e o selo o declara pelo estado VIVO, no
-  lugar da antiga porta `?msaa=` por presença. A URL segue sendo
-  ESPELHO: `?msaa=` é escrita só fora do preset e apagada na volta.
-- **Aberto:** a gaveta tem um controle só. Os próximos candidatos saem
-  do ranking do 144 (passos do raymarch da nebulosa, população da
-  galáxia) e ainda não têm ordem dele.
+A gaveta **Avançado** do menu de gráficos — presets na frente,
+controles individuais atrás — tem TRÊS controles, cada um com o mesmo
+desenho: quatro estados começando em "Do preset", troca na hora sem
+recarregar, os quadros/s do próprio painel logo acima servindo de
+régua, e o rótulo do seletor de qualidade passando a dizer
+"Personalizado" quando qualquer um deles sai do preset.
+- **FEITO em 03/09** (MSAA) e ampliado no mesmo dia com a nebulosa e a
+  escala de resolução (*"pode adicionar também a nebulosa e a escala de
+  resolução no Avançado"*):
+  - **Suavização de bordas (MSAA)** — Do preset / Desligada / 2× / 4×.
+    Override no `Post` (`forcarAmostras`, que reaplica pelo mesmo
+    `aplicarAmostras` — é ele que dispõe os dois alvos e faz a troca
+    valer). Espelho `?msaa=`.
+  - **Nebulosa (raymarch)** — Do preset / Baixa / Média / Alta. Os três
+    níveis são os pares que os presets já usavam, agora numa tabela só
+    (`NEBULOSA_POR_NIVEL`, no engine: 30/0,35 · 44/0,5 · 56/0,5) que o
+    preset APONTA em vez de redigitar — os passos moravam no preset e a
+    escala era um ternário solto no Director. Override no Director
+    (`forcarNebulosa` → `aplicarNebulosa`, o mesmo caminho do
+    `onQuality`). Espelho `?nebula=`. `?nebsteps=` continua vencendo
+    tudo, dentro da própria `Nebula`: é bancada, não controle.
+  - **Escala de resolução** — Do preset / 50% / 75% / 100%, em fração
+    da densidade NATIVA da tela (100% = `devicePixelRatio`). Override no
+    Engine (`forcarEscala` → o mesmo `aplicarNitidez` do preset e do
+    vigia de DPR). Espelho `?escala=`.
+  Os três se publicam no `EstadoDaQualidade` e o selo declara os três
+  pelo estado VIVO, nunca pela presença da porta; a URL é ESPELHO —
+  escrita só fora do preset, apagada na volta. "Personalizado" sai de
+  `foraDoPreset`, que olha os três.
+- **Medido** (Atlas, 1280×800 a DPR 2 = 2560×1600, cinema, fps contado
+  por rAF): preset 19 · escala 50% **57** · MSAA desligado 34 · nebulosa
+  Baixa 29 — a escala quase triplica; a nebulosa não move o quadro nesta
+  vista, e nem desligá-la inteira move (`?nonebula=1` dá o mesmo). Fotos
+  em `capturas/item145-ajustes-{gaveta,escala-50}.png`.
+- **Aberto:** por que a nebulosa não pesa no Atlas mesmo ocupando a tela
+  (ver o item 146); e o próximo candidato da gaveta pelo ranking do 144
+  (população da galáxia), sem ordem dele ainda.
 
 **144. "O app está um pouco pesado nessa máquina."** (Palavras dele,
 03/09, ao trazer o relatório de desempenho de outra IA.) Medido no M1
@@ -124,7 +146,13 @@ chave da câmera + `sujo` nos setters), bit-idêntica. Medido depois:
 Atlas 2560×1500 cinema **5,3 → 17,8 fps**; Atlas 1200×900 cinema 19 →
 23; filme t=100 dpr 1 9,1 → 14,8; filme dpr 2 não andou (9,8, causa não
 atribuída). Pixel: ≤ 1 nível em ≤ 0,02% dos pixels nas 4 sentinelas
-(ULP). **Sobra:** o MSAA da própria cena ainda custa ~26 ms em 1200×900
+(ULP). **Regressão pega e consertada no mesmo dia:** em Retina o alvo
+da cena ficava com tamanho diferente do buffer do composer (textura
+compartilhada, redimensionamento transitório do `EffectComposer` com
+alvo próprio) — cena preta e um lençol cinza crescendo; agora o alvo
+sincroniza o tamanho com o destino a cada quadro e o composer nasce em
+px de CSS. Os fps em dpr 2 medidos antes do conserto eram de cena preta
+e foram substituídos. **Sobra:** o MSAA da própria cena ainda custa ~26 ms em 1200×900
 Retina (`?msaa=0` bate no teto de 60) — (2) MSAA só nas fases com linha
 de órbita (o filme não tem) segue **esperando a palavra dele**; (4) o
 orçamento de pixels e o menu de gráficos, **idem**. Fora desta obra:

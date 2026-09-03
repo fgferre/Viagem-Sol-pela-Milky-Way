@@ -183,8 +183,11 @@ export default function App() {
     escolha: TIER_DE_PRODUTO,
     tier: TIER_DE_PRODUTO,
     medicao: null,
-    // sem escolha na gaveta Avançado: quem manda é o preset (item 145)
+    // sem escolha nos três controles da gaveta Avançado: quem manda é o
+    // preset (item 145)
     amostras: null,
+    nebulosa: null,
+    escala: null,
   });
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
@@ -617,6 +620,8 @@ export default function App() {
     urlComMomento,
     changeQuality,
     trocarAmostras,
+    trocarNebulosa,
+    trocarEscala,
     trocarTom,
     trocarExposicao,
     voltarAoBrilhoReal,
@@ -1063,6 +1068,8 @@ export default function App() {
         qualidade={quality}
         onQualidade={changeQuality}
         onAmostras={trocarAmostras}
+        onNebulosa={trocarNebulosa}
+        onEscala={trocarEscala}
         tom={tom}
         onTom={trocarTom}
         exposicao={exposicao}

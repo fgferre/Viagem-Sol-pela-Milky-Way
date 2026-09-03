@@ -782,6 +782,16 @@ class CenaResolvidaUmaVez extends Pass {
       resolveDepthBuffer: false,
     });
     this.alvo.texture = destino.texture;
+    // OS DOIS VIVEM OU MORREM JUNTOS. O composer redimensiona e dispõe o
+    // destino por conta própria (`EffectComposer.setSize`), e dispor um
+    // alvo apaga a textura de GL que o OUTRO ainda aponta: o alvo da cena
+    // ficava com um framebuffer órfão, a cena sumia e o bloom, somando
+    // num buffer que ninguém mais limpava, virava um lençol cinza que
+    // crescia até engolir a tela (item 146 — visto em Retina, onde a
+    // ordem das chamadas de tamanho deixava o alvo sem dispor). Quem
+    // dispõe o destino dispõe o alvo; a volta é explícita em
+    // `Post.aplicarAmostras`.
+    destino.addEventListener('dispose', () => this.alvo.dispose());
     this.copia = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.clone(CopyShader.uniforms),
       vertexShader: CopyShader.vertexShader,
@@ -793,9 +803,23 @@ class CenaResolvidaUmaVez extends Pass {
     this.quad = new FullScreenQuad(this.copia);
   }
 
-  /** o composer chama com px de BUFFER — a densidade certa para a cena */
-  setSize(largura: number, altura: number) {
-    this.alvo.setSize(largura, altura);
+  /**
+   * O alvo segue o TAMANHO DO DESTINO, não o número que o composer
+   * passa: textura compartilhada exige os dois framebuffers do mesmo
+   * tamanho, e o composer redimensiona o destino antes de chamar os
+   * passes. `sincronizar` fecha o caso em que a ordem das chamadas
+   * deixou o alvo para trás (item 146) — comparar dois inteiros por
+   * quadro não custa nada.
+   */
+  setSize() {
+    this.sincronizar();
+  }
+
+  private sincronizar() {
+    const d = this.destino;
+    if (this.alvo.width !== d.width || this.alvo.height !== d.height) {
+      this.alvo.setSize(d.width, d.height);
+    }
   }
 
   render(
@@ -803,6 +827,7 @@ class CenaResolvidaUmaVez extends Pass {
     _writeBuffer: THREE.WebGLRenderTarget,
     readBuffer: THREE.WebGLRenderTarget
   ) {
+    this.sincronizar();
     const limpavaSozinho = renderer.autoClear;
     renderer.autoClear = false;
     // 1. a cena no alvo multiamostrado — o ÚNICO resolve do quadro
@@ -859,14 +884,21 @@ export class Post {
     // os buffers do composer são LISOS e sem profundidade: a cena não
     // rasteriza mais neles (ver `CenaResolvidaUmaVez`), e quad de
     // pós-processamento não testa profundidade
-    const buffer = renderer.getDrawingBufferSize(new THREE.Vector2());
+    // O alvo nasce em px de CSS e o pixel ratio entra por `setPixelRatio`,
+    // EXATAMENTE como o construtor padrão do composer faz: com um alvo
+    // próprio ele assume pixel ratio 1 e toma a largura do alvo como
+    // largura lógica — dado em px de buffer, o primeiro `setPixelRatio(2)`
+    // dobrava tudo de novo (5120×3200 numa janela de 2560×1600) e o alvo
+    // da cena ficava para trás (item 146: cena sumida, lençol cinza).
+    const css = renderer.getSize(new THREE.Vector2());
     this.composer = new EffectComposer(
       renderer,
-      new THREE.WebGLRenderTarget(buffer.x, buffer.y, {
+      new THREE.WebGLRenderTarget(css.x, css.y, {
         type: THREE.HalfFloatType,
         depthBuffer: false,
       })
     );
+    this.composer.setPixelRatio(renderer.getPixelRatio());
     // O CAMINHO DE VOLTA E O LADO A DA BANCADA, no molde de `?bbloom=0`:
     // `?msaa=0` devolve o alvo sem amostras — o quadro anterior a esta
     // obra —, `?msaa=N` varre e vence a escada de tiers. Ausente, quem
