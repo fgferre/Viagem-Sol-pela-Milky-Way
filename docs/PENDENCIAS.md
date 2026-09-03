@@ -109,6 +109,25 @@ esperam ordem. Backup em dia; site intocado (publicar só com pedido dele).
 
 ## ALTA — o dono vê e incomoda
 
+**148. As luas de Urano e Tritão com o hemisfério nunca visto
+reconstruído** (decisão dele, 03/09: *"eu quero"*). O cinza liso do 147 é
+honesto mas pobre. **Medido em 03/09: o Celestia NÃO resolve.** Os mapas
+do repositório CelestiaContent (CC BY-SA 4.0, ItzImcool/Schenk/Stryk; Tritão
+CC BY 3.0, Anpilogov) são completos só no papel: 45–56 % de cada mapa das
+cinco é tom liso (o mesmo remédio do 147, com o hemisfério visto de cabeça
+para baixo em relação ao nosso IAU) e Tritão tem 38 % liso; o ganho seria
+só resolução (4096 px em Miranda, Ariel e Tritão) e nível mais claro. Os
+mapas pintados inteiros do `atlas-orbital` não têm origem registrada e o de
+Tritão traz marca d'água — não entram. Sobram dois caminhos, e a escolha é
+dele: (a) **IA generativa pela mão dele** (ChatGPT/Grok não são chamáveis
+daqui): ele sobe o mapa preenchido, pede para completar, e a casa cola o
+resultado SÓ no vazio (máscara do 147, emenda suavizada), confessando
+"reconstrução por IA" na ficha; risco: a projeção esticada nos polos e a
+emenda 0°/360°, que a IA não entende; (b) **crateras por código** (o
+gerador de `esculpido.ts` / o sintético de Reia e Jápeto), reprodutível e
+declarado, mas genérico. Cópias dos mapas do Celestia e a régua ficaram no
+scratchpad da sessão; nada entrou no repositório.
+
 **147. "Precisamos revisar as luas de Urano... algo estranho está
 acontecendo."** (Palavras dele, 03/09.) Miranda, Ariel, Umbriel, Titânia
 e Oberon saem como um **disco preto** no degrau `lua` do Atlas (Tritão
