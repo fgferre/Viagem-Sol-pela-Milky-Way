@@ -227,39 +227,49 @@ const ORIGENS = {
     proveniencia: 'medido',
   },
   'mimas/map': {
-    fonte: 'NASA 3D Resources — Mimas',
-    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Mimas',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
-    proveniencia: 'medido',
+    fonte:
+      'Mosaico global Cassini de Mimas (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
+    url: 'https://github.com/fgferre/Saturn',
+    licenca: 'domínio público (NASA/JPL-Caltech/SSI/LPI)',
+    atribuicao:
+      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18434). Graduação de cor: projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
   },
   'enceladus/map': {
-    fonte: 'NASA 3D Resources — Encélado',
-    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Enceladus',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
-    proveniencia: 'medido',
+    fonte:
+      'Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
+    url: 'https://github.com/fgferre/Saturn',
+    licenca: 'domínio público (NASA/JPL-Caltech/SSI/LPI)',
+    atribuicao:
+      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18435). Graduação de cor: projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
   },
   'tethys/map': {
-    fonte: 'NASA 3D Resources — Tétis',
-    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Tethys',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
-    proveniencia: 'medido',
+    fonte:
+      'Mosaico global Cassini de Tétis (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
+    url: 'https://github.com/fgferre/Saturn',
+    licenca: 'domínio público (NASA/JPL-Caltech/SSI/LPI)',
+    atribuicao:
+      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18436). Graduação de cor: projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
   },
   'dione/map': {
-    fonte: 'NASA 3D Resources — Dione',
-    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Dione',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
-    proveniencia: 'medido',
+    fonte:
+      'Mosaico global Cassini de Dione (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
+    url: 'https://github.com/fgferre/Saturn',
+    licenca: 'domínio público (NASA/JPL-Caltech/SSI/LPI)',
+    atribuicao:
+      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18437). Graduação de cor: projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
   },
   'rhea/map': {
-    fonte: 'NASA 3D Resources — Reia',
-    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Rhea',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
-    proveniencia: 'medido',
+    fonte:
+      'Mosaico global Cassini de Reia (Paul Schenk, PIA18438) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
+    url: 'https://github.com/fgferre/Saturn',
+    licenca: 'domínio público (NASA/JPL-Caltech/SSI/LPI)',
+    atribuicao:
+      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18438). Graduação de cor: projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
   },
   'titan/map': {
     fonte: 'NASA 3D Resources — Titã (720×360, névoa; mosaico Cassini fica pendente da bancada)',
@@ -269,11 +279,13 @@ const ORIGENS = {
     proveniencia: 'medido',
   },
   'iapetus/map': {
-    fonte: 'NASA 3D Resources — Jápeto',
-    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Iapetus',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
-    proveniencia: 'medido',
+    fonte:
+      'Mosaico global Cassini de Jápeto (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
+    url: 'https://github.com/fgferre/Saturn',
+    licenca: 'domínio público (NASA/JPL-Caltech/SSI/LPI)',
+    atribuicao:
+      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18439). Graduação de cor: projeto Saturn (Felipe Ferreira).',
+    proveniencia: 'derivado',
   },
   'miranda/map': {
     fonte: 'NASA 3D Resources — Miranda',

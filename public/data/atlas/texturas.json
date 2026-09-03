@@ -283,8 +283,8 @@
       "arquivo": "textures/atlas/dione/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 538153,
-      "sha256": "01fe48c5a554ea251f794b94a16a5d87521dbadf64b206d4f43c4398d037ab19",
+      "bytes": 367700,
+      "sha256": "a32e350eacab5d5372c747d2e21815f39790721706f05998654de6370b4b5655",
       "origem": {
         "fonte": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de ALTURA",
         "url": "https://sbn.psi.edu/pds/shape-models/",
@@ -299,8 +299,8 @@
       "arquivo": "textures/atlas/dione/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 234082,
-      "sha256": "1b6aad0b8f30c7f18805aa5339174cbed5f54a91a3788ee23b787284b1698e81",
+      "bytes": 234076,
+      "sha256": "f3fc681ae1a28f2fa329f4404f043cedd1b86b00c43603b691be6030abec184a",
       "origem": {
         "fonte": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de ALTURA",
         "url": "https://sbn.psi.edu/pds/shape-models/",
@@ -315,13 +315,13 @@
       "arquivo": "textures/atlas/dione/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 75529,
-      "sha256": "8d9316a7dc04d7b3af5bf1b960e18c1d66441cc016089111f59fd7041ff4c6c3",
+      "bytes": 186950,
+      "sha256": "b593145b87635e8b95356235b754fd1988c920a9b759c946c1ea3ce94f46b88b",
       "origem": {
-        "fonte": "NASA 3D Resources — Dione",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Dione",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Dione (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18437). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -331,13 +331,45 @@
       "arquivo": "textures/atlas/dione/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 65200,
-      "sha256": "06b72a54099fdb30b24d282d5bcb5a413597db0326d98e5551b546e34af176fa",
+      "bytes": 171942,
+      "sha256": "ff7dc9f0343d333f60edc76bca01610c3f4ad130e5addd874c83895aff8ce590",
       "origem": {
-        "fonte": "NASA 3D Resources — Dione",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Dione",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Dione (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18437). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "map",
+      "arquivo": "textures/atlas/dione/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 767344,
+      "sha256": "2c4a583c1b0f6301c61f0dd598b4fb8cd67cbbfdbb939bd7cc6eef1510b57592",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Dione (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18437). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "map",
+      "arquivo": "textures/atlas/dione/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 723476,
+      "sha256": "9582c72981db0e09ad67c19450e8363495605c1e1c4405672904a2a8e7690d93",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Dione (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18437). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -345,31 +377,31 @@
       "corpo": "dione",
       "canal": "map",
       "arquivo": "textures/atlas/dione/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 574654,
-      "sha256": "c55d228900524557b6aff323f4b9391fc9816433e213a24ccf348c9b4291f89e",
+      "larguraPx": 3840,
+      "alturaPx": 1920,
+      "bytes": 3961072,
+      "sha256": "191f10338169f2d9d29e9c5e7730d15f866cff1b8df678039a61ce7a5d44c534",
       "origem": {
-        "fonte": "NASA 3D Resources — Dione",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Dione",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Dione (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18437). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
-      "proveniencia": "medido"
+      "proveniencia": "derivado"
     },
     {
       "corpo": "dione",
       "canal": "map",
       "arquivo": "textures/atlas/dione/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 130488,
-      "sha256": "9dbd5b25ebc4a632a3ef8ba268fdd9207b69376067cfc18647c1780ce5a06576",
+      "larguraPx": 3840,
+      "alturaPx": 1920,
+      "bytes": 2432410,
+      "sha256": "3070d09049e75768a22da370f36a6ac14781cf0c51eff52301603d04eab034af",
       "origem": {
-        "fonte": "NASA 3D Resources — Dione",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Dione",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Dione (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18437). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -379,8 +411,8 @@
       "arquivo": "textures/atlas/dione/normal.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 867518,
-      "sha256": "44aa916b21fa60eb76dfecf22bcaf07c33752e40de8af28d15f9418cdb270321",
+      "bytes": 626209,
+      "sha256": "d5a44ba9da683b9b71fbefffe43515b4e46a846b305ea39185578708e5e0a98a",
       "origem": {
         "fonte": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
         "url": "https://sbn.psi.edu/pds/shape-models/",
@@ -395,8 +427,8 @@
       "arquivo": "textures/atlas/dione/normal.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 524902,
-      "sha256": "dec38ad879bb592834c5eb8be963959284c2ba3bafe2cc7ff2345785916c761c",
+      "bytes": 524940,
+      "sha256": "4cfbc6ddf5860b4cc6814254e1409b5b77ac505db0601e9a7b75b72f0ce2d00e",
       "origem": {
         "fonte": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
         "url": "https://sbn.psi.edu/pds/shape-models/",
@@ -1003,8 +1035,8 @@
       "arquivo": "textures/atlas/enceladus/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 516674,
-      "sha256": "6cc07502e1108c5c707f91f2e8c75a1ea136978c9826b3ea2978ccdbe071a04c",
+      "bytes": 450401,
+      "sha256": "73a8b6b6c015182531164199e320281963d42cecaff3df7132415a6e2e1cce8b",
       "origem": {
         "fonte": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de ALTURA",
         "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
@@ -1020,8 +1052,8 @@
       "arquivo": "textures/atlas/enceladus/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 303396,
-      "sha256": "082a2f1487b3ef95a7dd61aaf2f04d76343742cf1d4110165b5a7c534c42809f",
+      "bytes": 303410,
+      "sha256": "0f42db576a9f24fb6d2076059ab37d4cb8922eb67e8256f88a07c2fb00759028",
       "origem": {
         "fonte": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de ALTURA",
         "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
@@ -1037,13 +1069,13 @@
       "arquivo": "textures/atlas/enceladus/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 65121,
-      "sha256": "b18097750a86a5b1d8a5c729df8c5c38384a8faf73975a1cdde5aca8525ef337",
+      "bytes": 207230,
+      "sha256": "2b7c84f465755136fd018a1968b5460805351fd94ad5881eed2d2705e8262b1e",
       "origem": {
-        "fonte": "NASA 3D Resources — Encélado",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Enceladus",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18435). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -1053,13 +1085,45 @@
       "arquivo": "textures/atlas/enceladus/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 55766,
-      "sha256": "83ddc7b50de949be5f788094dac0ca6e8ddb5f3a77b8c8e043372d2b1ca3df99",
+      "bytes": 200710,
+      "sha256": "2f63dcefbf1912073e60dec03e887afc173f22f73fda9ed8d0b98b7410897233",
       "origem": {
-        "fonte": "NASA 3D Resources — Encélado",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Enceladus",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18435). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "map",
+      "arquivo": "textures/atlas/enceladus/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 861729,
+      "sha256": "baa383c265a6a6397996331518ed6ccd8dedf820309b958e9fdfd3130ea292a2",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18435). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "map",
+      "arquivo": "textures/atlas/enceladus/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 838738,
+      "sha256": "833fcc216616de5463568e8d7eab4d83faeea2c666ed804a570b65f224f28341",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18435). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -1067,31 +1131,31 @@
       "corpo": "enceladus",
       "canal": "map",
       "arquivo": "textures/atlas/enceladus/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 472211,
-      "sha256": "4e16d38b98b788468e4f005b56d04282ccfe2f086eebfb1c0e5d20d8fd65ebef",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 5076011,
+      "sha256": "1bacd2c1dcf5581ecf60fde29e02bbb4b31b551733d1887ee7ea2fa2b976ddca",
       "origem": {
-        "fonte": "NASA 3D Resources — Encélado",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Enceladus",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18435). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
-      "proveniencia": "medido"
+      "proveniencia": "derivado"
     },
     {
       "corpo": "enceladus",
       "canal": "map",
       "arquivo": "textures/atlas/enceladus/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 93154,
-      "sha256": "46111b839fa5b6cfec28094d6957095a319448cc04376c7dfbaee7f9b89b074b",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 2941846,
+      "sha256": "f3a66990a34ae0d7b1d909fc9e060070e63ab765f569390ebda6b40cda841495",
       "origem": {
-        "fonte": "NASA 3D Resources — Encélado",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Enceladus",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18435). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -1101,8 +1165,8 @@
       "arquivo": "textures/atlas/enceladus/normal.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 984846,
-      "sha256": "3e9127db1592b62572ff27477ebbff78a3258bd421e78403f8a0d372b0969ed1",
+      "bytes": 855270,
+      "sha256": "efb2691ad0c3e719ef6c03681a7f7743752ac58ee9c577a37e145e05e610839d",
       "origem": {
         "fonte": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura",
         "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
@@ -1117,8 +1181,8 @@
       "arquivo": "textures/atlas/enceladus/normal.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 745712,
-      "sha256": "21c7f207da5e82dc323270c21a80294e8f030c53524875759a28f5c577ad86b2",
+      "bytes": 745598,
+      "sha256": "491e6859520de4cd260350195295397d792998228eb868c2495c6cd64b6b2906",
       "origem": {
         "fonte": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura",
         "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
@@ -1281,8 +1345,8 @@
       "arquivo": "textures/atlas/iapetus/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 229295,
-      "sha256": "c49de83059a26d8d37c581612d234585e16c72613385913d4a34c4ccad3a0869",
+      "bytes": 137065,
+      "sha256": "3a946871230f61dee3f6d33e6c7f1974613f1406357b874fa59c13bd98f09243",
       "origem": {
         "fonte": "Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público), com a crista equatorial real modelada — mapa de ALTURA",
         "url": "https://github.com/fgferre/Saturn",
@@ -1298,8 +1362,8 @@
       "arquivo": "textures/atlas/iapetus/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 106826,
-      "sha256": "27effccc2ca9722ddd0fa05e8f9c57c33d4de3121eef647540ab2fe29dc2b322",
+      "bytes": 106900,
+      "sha256": "4d20491584b475583271823190e2bacb2c0a117c66b4805a544e48a53343e4d3",
       "origem": {
         "fonte": "Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público), com a crista equatorial real modelada — mapa de ALTURA",
         "url": "https://github.com/fgferre/Saturn",
@@ -1315,13 +1379,13 @@
       "arquivo": "textures/atlas/iapetus/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 45615,
-      "sha256": "bfe50b9c1ac114c0bf4cbe0ed01b8ff49bfb77365aa6d11764a520c5a91eb1ad",
+      "bytes": 129196,
+      "sha256": "d68ea3debdf48af3d1fc4080fee7bc5a89d32513c785ce9afa4c11e29d281e84",
       "origem": {
-        "fonte": "NASA 3D Resources — Jápeto",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Iapetus",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18439). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -1331,13 +1395,45 @@
       "arquivo": "textures/atlas/iapetus/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 30772,
-      "sha256": "a7e87764cefb8fbddc501a7b4ed615cc6c0e7fc990506392c1856efd1fd3ab00",
+      "bytes": 113164,
+      "sha256": "b316c003757ca1f9473d71dab2b9980b7567ebc091d187c0d397ccf421f8f250",
       "origem": {
-        "fonte": "NASA 3D Resources — Jápeto",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Iapetus",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18439). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "iapetus",
+      "canal": "map",
+      "arquivo": "textures/atlas/iapetus/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 492935,
+      "sha256": "a5720a517273dbc72790c3d02ca5844a5b0856a4d2cf0d9e4c2f7867b56908e8",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18439). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "iapetus",
+      "canal": "map",
+      "arquivo": "textures/atlas/iapetus/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 434258,
+      "sha256": "ae39467cbfe733c30ca71ba9ff0b6a105b8c19cbb8fac45f8edc061f605750a1",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18439). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -1345,31 +1441,31 @@
       "corpo": "iapetus",
       "canal": "map",
       "arquivo": "textures/atlas/iapetus/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 384551,
-      "sha256": "9acb66830defdeffcf7938976c737d772600d9bc808e8cf45829690e8d1c7405",
+      "larguraPx": 3840,
+      "alturaPx": 1920,
+      "bytes": 2604864,
+      "sha256": "104a1d8780e0d8dad58c2d617ed554680774cefdb65cce8f2149d1c7886468fb",
       "origem": {
-        "fonte": "NASA 3D Resources — Jápeto",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Iapetus",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18439). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
-      "proveniencia": "medido"
+      "proveniencia": "derivado"
     },
     {
       "corpo": "iapetus",
       "canal": "map",
       "arquivo": "textures/atlas/iapetus/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 47828,
-      "sha256": "24add648eeafcd0723cebc105ccd7fb994c0296c6f683533390cc5af029e9c3d",
+      "larguraPx": 3840,
+      "alturaPx": 1920,
+      "bytes": 1380190,
+      "sha256": "199afe075c0aca0d1c14f3dc7765242350243ce2746dec6903d7f7cdc88e0c05",
       "origem": {
-        "fonte": "NASA 3D Resources — Jápeto",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Iapetus",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18439). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -1379,8 +1475,8 @@
       "arquivo": "textures/atlas/iapetus/normal.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 480249,
-      "sha256": "a942056135115d3a1ce10c1d2511dc4ee15dabf5cbfdad53e66a04dee0dd83da",
+      "bytes": 285361,
+      "sha256": "df7c5994e047fe593682e73591cfacedaeb963cf5568e56e4c12ec40a67dad61",
       "origem": {
         "fonte": "Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura",
         "url": "https://github.com/fgferre/Saturn",
@@ -1395,8 +1491,8 @@
       "arquivo": "textures/atlas/iapetus/normal.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 214340,
-      "sha256": "617da1aa9668315a21efff7bfc5ce98415c86478d2b347176c9e97877a79b749",
+      "bytes": 214500,
+      "sha256": "ca17943423c635a69e4657c094ea157d5a6f133a94bcd1b6bca8b9ea1a7bf72b",
       "origem": {
         "fonte": "Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura",
         "url": "https://github.com/fgferre/Saturn",
@@ -1795,8 +1891,8 @@
       "arquivo": "textures/atlas/mimas/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 254416,
-      "sha256": "652d949393b268ac0673060b6064e25cd6621ac21b28f84fed53ab993814958d",
+      "bytes": 164163,
+      "sha256": "2374f052e8f8fb761e32bebd0cf6a9d57d967e8632b2594cece4f8cf6687a825",
       "origem": {
         "fonte": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de ALTURA",
         "url": "https://sbn.psi.edu/pds/shape-models/",
@@ -1811,8 +1907,8 @@
       "arquivo": "textures/atlas/mimas/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 105754,
-      "sha256": "0dcd6bda9304abf5028d19ad14c7321c8dcfa77d78739911c60664aa4aa105e4",
+      "bytes": 105518,
+      "sha256": "609431ad45d1c156e8622dcd8155d799675f36bae54f5c2878d4b9297aaa306c",
       "origem": {
         "fonte": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de ALTURA",
         "url": "https://sbn.psi.edu/pds/shape-models/",
@@ -1827,13 +1923,13 @@
       "arquivo": "textures/atlas/mimas/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 69317,
-      "sha256": "09a27832543fdec101144371956ac4355a9dbebc63af59a9bfdd4b079be212c2",
+      "bytes": 196108,
+      "sha256": "566a8370cb3aa964ce228b130850a19bbba4436a0a63a3464497e59d1e00c849",
       "origem": {
-        "fonte": "NASA 3D Resources — Mimas",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Mimas",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18434). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -1843,13 +1939,45 @@
       "arquivo": "textures/atlas/mimas/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 58342,
-      "sha256": "8793c6d20d0a2885ee27da882a28f1c1d2ced1a6e969cc9a5134a6de191b0b6f",
+      "bytes": 162392,
+      "sha256": "43c947e28f99fd475e61272fb7e23cd6e08b02defeb6e0f99b1393329b6381f9",
       "origem": {
-        "fonte": "NASA 3D Resources — Mimas",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Mimas",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18434). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "map",
+      "arquivo": "textures/atlas/mimas/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 613666,
+      "sha256": "7f76f35e69d1e793152ee80f1e7ad63435c38b966a06abdb540854bf63ca7245",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18434). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "map",
+      "arquivo": "textures/atlas/mimas/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 438568,
+      "sha256": "52fa5ea4de2b5619e06777a2de1580d0e11d6ddac3d74e9c8e42cfc45b374f9e",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18434). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -1857,31 +1985,31 @@
       "corpo": "mimas",
       "canal": "map",
       "arquivo": "textures/atlas/mimas/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 513028,
-      "sha256": "0836f8f98719dc1cb1ccc58b23d5f3e50cc3ba01d1a7f0535b4f7d11695a378b",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 3112347,
+      "sha256": "e9650f261b3c0e2ccefa9e9ca2a665682fca4f60c5bbba69bb6cfd9c727f38a0",
       "origem": {
-        "fonte": "NASA 3D Resources — Mimas",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Mimas",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18434). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
-      "proveniencia": "medido"
+      "proveniencia": "derivado"
     },
     {
       "corpo": "mimas",
       "canal": "map",
       "arquivo": "textures/atlas/mimas/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 109864,
-      "sha256": "062cbe1e093ceb1da89510a927d93ae0f021ecf3a399ebe85c0c64a20197e4ee",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1080574,
+      "sha256": "d2884dbd60f9d1d091ef87a6a7ed11d5fb34bc91ec3e17387c793f6e98c64470",
       "origem": {
-        "fonte": "NASA 3D Resources — Mimas",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Mimas",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18434). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -1891,8 +2019,8 @@
       "arquivo": "textures/atlas/mimas/normal.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 961629,
-      "sha256": "f8a28f74202e1a19b1d1f412ff5d6bd54035fa4756f36705868e3cfc65299ff9",
+      "bytes": 605393,
+      "sha256": "cde74a5206517934f99601490f1881f8157632e88c61681e52afc71686e4ce07",
       "origem": {
         "fonte": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
         "url": "https://sbn.psi.edu/pds/shape-models/",
@@ -1907,8 +2035,8 @@
       "arquivo": "textures/atlas/mimas/normal.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 488710,
-      "sha256": "0262a97d4ed5f1c7da00ccd39e4fc0951665a97db6c35bc164dd9a837f6daae1",
+      "bytes": 487944,
+      "sha256": "e35fde8920f3051c8a1f53ba359fa078850446933bc0b9f43149835dbd95705c",
       "origem": {
         "fonte": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
         "url": "https://sbn.psi.edu/pds/shape-models/",
@@ -2291,8 +2419,8 @@
       "arquivo": "textures/atlas/rhea/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 240776,
-      "sha256": "e6b43bfc79b41e9fa5056416888755780e858f22080bea1dc40b31f47c39c143",
+      "bytes": 144785,
+      "sha256": "59167040300bf3339744a47a88cbc92b32f6ce4c0d9f402e8d0d28223b506990",
       "origem": {
         "fonte": "Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de ALTURA",
         "url": "https://github.com/fgferre/Saturn",
@@ -2308,8 +2436,8 @@
       "arquivo": "textures/atlas/rhea/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 110794,
-      "sha256": "a6ccdd2c1ce9b0231d23b4f53b9c2db6a5e2f6eb08b8563d8aeaa8c843d9f7ae",
+      "bytes": 110864,
+      "sha256": "6ae58883f5ba664b5e057aa2e19a87f1fbafddee85db2a73727d16e8fac7dca2",
       "origem": {
         "fonte": "Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de ALTURA",
         "url": "https://github.com/fgferre/Saturn",
@@ -2325,13 +2453,13 @@
       "arquivo": "textures/atlas/rhea/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 59535,
-      "sha256": "f7558d10201f7293de7a529f154bb5fbe277c447f9311e30c87858b6fac5c561",
+      "bytes": 216228,
+      "sha256": "a45cef90aef349ba432e54033e8743791b12b68b39e8aa8c00a0777f4171e3e9",
       "origem": {
-        "fonte": "NASA 3D Resources — Reia",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Rhea",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Reia (Paul Schenk, PIA18438) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18438). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -2341,13 +2469,45 @@
       "arquivo": "textures/atlas/rhea/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 49164,
-      "sha256": "d483c3b697826a4c58425120ef8f88c65ea7c9c1a36a67c6947a31424a1009b8",
+      "bytes": 209046,
+      "sha256": "741d664256fcff1aa4a32c23fe897d821ff1c2050f86beb5d5b746e9ea5a8427",
       "origem": {
-        "fonte": "NASA 3D Resources — Reia",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Rhea",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Reia (Paul Schenk, PIA18438) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18438). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "rhea",
+      "canal": "map",
+      "arquivo": "textures/atlas/rhea/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 828416,
+      "sha256": "bfd88b9791d53b88336c3a567a70019b1d0df4d1fee8a7cb7a79325fe075fccc",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Reia (Paul Schenk, PIA18438) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18438). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "rhea",
+      "canal": "map",
+      "arquivo": "textures/atlas/rhea/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 811328,
+      "sha256": "9b9247cce5fda21d583f170d41d7b5b737dc5a1df9858df2f4ad907928e90014",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Reia (Paul Schenk, PIA18438) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18438). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -2355,31 +2515,31 @@
       "corpo": "rhea",
       "canal": "map",
       "arquivo": "textures/atlas/rhea/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 458149,
-      "sha256": "487f642639a3a4b2e8e21c2aaf9dc5cd010e5e4a91d2e6b6ff61aff97bc157ac",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 4657467,
+      "sha256": "be6556d01ce5d02fca72895e72e45d591833b19345c9e96b554a52b82ebf0212",
       "origem": {
-        "fonte": "NASA 3D Resources — Reia",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Rhea",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Reia (Paul Schenk, PIA18438) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18438). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
-      "proveniencia": "medido"
+      "proveniencia": "derivado"
     },
     {
       "corpo": "rhea",
       "canal": "map",
       "arquivo": "textures/atlas/rhea/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 102998,
-      "sha256": "ec0bd07f11721ceda4ba4e91dbc003431053c6d1984b8b990c2840440edcaab9",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 2690786,
+      "sha256": "163608444d74d86eda48afdcd3097f8b1fe05e992ae4624bab9c5afce7da70ba",
       "origem": {
-        "fonte": "NASA 3D Resources — Reia",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Rhea",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Reia (Paul Schenk, PIA18438) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18438). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -2389,8 +2549,8 @@
       "arquivo": "textures/atlas/rhea/normal.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 533095,
-      "sha256": "2981145f1e4b413058fcb25ccad86808450d1d91e5aee77c2b06a7767dd2ce56",
+      "bytes": 315491,
+      "sha256": "420c41263d1f2261269fb9b52c40c0104bfa2010fb3bfb1aa17d63ea18bd9ead",
       "origem": {
         "fonte": "Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura",
         "url": "https://github.com/fgferre/Saturn",
@@ -2405,8 +2565,8 @@
       "arquivo": "textures/atlas/rhea/normal.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 237346,
-      "sha256": "2900998d432fa216a2397853d8504d65cceb1cc3ce2dc3f54134ac95ad255959",
+      "bytes": 237422,
+      "sha256": "b583720524086bda437041bf8d8d5102f6de7ef38600cb90edf69839f1905a75",
       "origem": {
         "fonte": "Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura",
         "url": "https://github.com/fgferre/Saturn",
@@ -2645,8 +2805,8 @@
       "arquivo": "textures/atlas/tethys/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 368376,
-      "sha256": "89033a6f8cb9ffcb7fa08f6c941fcefce241acaeb290554613604b9b3796ff03",
+      "bytes": 236020,
+      "sha256": "730a6b34d84c814aa37bb049e4f99712e07e8d580cc03aeaab5b72bd8f8adea9",
       "origem": {
         "fonte": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de ALTURA",
         "url": "https://sbn.psi.edu/pds/shape-models/",
@@ -2661,8 +2821,8 @@
       "arquivo": "textures/atlas/tethys/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 147338,
-      "sha256": "73e05439c5800ea35ebff2150ad0b16d8073658fdf4049cca4685ab9ffcca07e",
+      "bytes": 147308,
+      "sha256": "0ed977c8823b9bdb153f2d3cc079aa4dfe991332bafbcf1d47601a4bf9fbdbf9",
       "origem": {
         "fonte": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de ALTURA",
         "url": "https://sbn.psi.edu/pds/shape-models/",
@@ -2677,13 +2837,13 @@
       "arquivo": "textures/atlas/tethys/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 97743,
-      "sha256": "64594579dcc1f0ecfa03a2f3893b2fcec17f63b2ee681d2cbf0668580543e6b6",
+      "bytes": 219890,
+      "sha256": "388bc00f2d5541b7d3b76014f12845cd6219a05ff939442cd00c5e2e388d0345",
       "origem": {
-        "fonte": "NASA 3D Resources — Tétis",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Tethys",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18436). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -2693,13 +2853,45 @@
       "arquivo": "textures/atlas/tethys/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 92746,
-      "sha256": "1369524bd9a97a73f0a7ff5814552a9b4c7e8eed7df48f73c47013b18d98fe3c",
+      "bytes": 212300,
+      "sha256": "7547d2b2d0ff020d70da326381b176618d2b862d430ffc9d5debe5f8312d9f0c",
       "origem": {
-        "fonte": "NASA 3D Resources — Tétis",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Tethys",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18436). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "map",
+      "arquivo": "textures/atlas/tethys/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 873467,
+      "sha256": "443e1ba9931f87cd5a5493adb36350758c60407d61587d99ac7bf972d3fbf3ef",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18436). Graduação de cor: projeto Saturn (Felipe Ferreira)."
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "map",
+      "arquivo": "textures/atlas/tethys/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 847926,
+      "sha256": "b22631a615a801a90a0720a3b2aa8d5532eef6ce55faa3128ac2246583f9308d",
+      "origem": {
+        "fonte": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18436). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -2707,31 +2899,31 @@
       "corpo": "tethys",
       "canal": "map",
       "arquivo": "textures/atlas/tethys/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 597139,
-      "sha256": "84f70e3fe6fa48661df4d973f78a540771e629ebbc68e032539d2e28e1d8eea1",
+      "larguraPx": 3840,
+      "alturaPx": 1920,
+      "bytes": 4487353,
+      "sha256": "f5b2ee52d23683d5fec588414ecf4058972ca598add52ba2430a42795e128b00",
       "origem": {
-        "fonte": "NASA 3D Resources — Tétis",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Tethys",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18436). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
-      "proveniencia": "medido"
+      "proveniencia": "derivado"
     },
     {
       "corpo": "tethys",
       "canal": "map",
       "arquivo": "textures/atlas/tethys/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 155058,
-      "sha256": "faee5d66d7589d63ba2f26826e84ca3b0e703d50f79a9c2e4a61d2b1ba9e1cb4",
+      "larguraPx": 3840,
+      "alturaPx": 1920,
+      "bytes": 2789684,
+      "sha256": "731353c32c59aed7195f08ef7170b082683aca858900c3b9c2a4144fe5f28b30",
       "origem": {
-        "fonte": "NASA 3D Resources — Tétis",
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Tethys",
-        "licenca": "NASA 3D Resources (uso livre)",
-        "atribuicao": "Textura: NASA 3D Resources — NASA/JPL-Caltech."
+        "fonte": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+        "atribuicao": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18436). Graduação de cor: projeto Saturn (Felipe Ferreira)."
       },
       "proveniencia": "derivado"
     },
@@ -2741,8 +2933,8 @@
       "arquivo": "textures/atlas/tethys/normal.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 847649,
-      "sha256": "9195f414a4608854e8b19f66fef2d32293d7ba4add4baa64a42089ce232521f2",
+      "bytes": 604834,
+      "sha256": "39fd74d31595a57fc2b31f51444dcaea565395674858266d114a2b218e53c0e8",
       "origem": {
         "fonte": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
         "url": "https://sbn.psi.edu/pds/shape-models/",
@@ -2757,8 +2949,8 @@
       "arquivo": "textures/atlas/tethys/normal.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 504552,
-      "sha256": "b208b3db9055eff4196b02741574d7ee9a1dfabfa75cafc9f74040e09c69b335",
+      "bytes": 504500,
+      "sha256": "f906a108a2fed94f944064c09c685da18cac6a78f9be7579576b41e8cb0f909e",
       "origem": {
         "fonte": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
         "url": "https://sbn.psi.edu/pds/shape-models/",

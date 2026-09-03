@@ -216,6 +216,30 @@ export const RELEVO_DA_LUA: Readonly<Record<string, { escala: number; vies: numb
 };
 
 /**
+ * A GRADUAÇÃO DO MOSAICO (item 138) — a tabela `MAP_GRADING` do projeto
+ * Saturn, letra por letra. Os mosaicos globais Cassini de Paul Schenk são
+ * de COR REALÇADA em IR/UV: o detalhe é o melhor que existe, mas o matiz
+ * é exagerado (as luas de gelo são quase neutras) e o nível é baixo. A
+ * receita dele é uma só e vale para as seis: puxar `desat` do caminho até
+ * a luminância e multiplicar por `ganho` — o de Encélado é 1,35 porque
+ * ela é o corpo mais reflexivo do Sistema Solar.
+ *
+ * SÓ AS SEIS: fora daqui o par é (0, 1) e o fragmento devolve o mapa cru,
+ * bit a bit — os mapas dos outros corpos não são realçados e uma
+ * graduação neles seria invenção.
+ */
+export const GRADUACAO_DO_MOSAICO: Readonly<
+  Record<string, { desat: number; ganho: number }>
+> = {
+  mimas: { desat: 0.35, ganho: 1.05 },
+  enceladus: { desat: 0.55, ganho: 1.35 },
+  tethys: { desat: 0.4, ganho: 1.1 },
+  dione: { desat: 0.35, ganho: 1.0 },
+  rhea: { desat: 0.35, ganho: 1.0 },
+  iapetus: { desat: 0.2, ganho: 1.0 },
+};
+
+/**
  * A MALHA DENSA que o deslocamento exige. A esfera de 128×64 da casa tem
  * 1,4° por segmento no equador — larga demais para uma cratera de 130 km
  * aparecer NO LIMBO, que é o defeito que a S2 conserta. 256×128 iguala o
@@ -337,6 +361,19 @@ vec3 normalDoMapa(vec3 n, vec2 uv) {
 }
 `;
 
+/**
+ * A GRADUAÇÃO NO FRAGMENTO — a conta dele (`createMoonMaterial`), na
+ * mesma ordem: desatura rumo à luminância, multiplica pelo ganho, prende
+ * em [0,1]. Fora das seis luas de mosaico o uniforme é (0,1) e a função
+ * devolve a cor intocada.
+ */
+const GLSL_GRADUACAO_DO_MOSAICO = /* glsl */ `
+uniform vec2 uGraduacao;  // (desatura, ganho); (0,1) = mapa cru
+vec3 graduarMosaico(vec3 c) {
+  return clamp(mix(c, vec3(alturaDoAlbedo(c)), uGraduacao.x) * uGraduacao.y, 0.0, 1.0);
+}
+`;
+
 const GLSL_NORMAL_ELIPSOIDE = /* glsl */ `
 // gradiente exato do elipsoide (x/a², y/c², z/b²) em unidades de a:
 // uNormalEsc = (1, a²/c², a²/b²) — esfera ⇒ (1,1,1) exato
@@ -370,12 +407,13 @@ ${GLSL_LUZ_DA_VISITA}
 ${GLSL_ALTURA_DO_ALBEDO}
 ${GLSL_BUMP_DO_ALBEDO}
 ${GLSL_NORMAL_DO_MAPA}
+${GLSL_GRADUACAO_DO_MOSAICO}
 ${GLSL_RUIDO_DE_VALOR}
 ${GLSL_GRAO_DO_CLOSE}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
-  vec3 albedo = texture2D(uMapaDia, vUv).rgb;
+  vec3 albedo = graduarMosaico(texture2D(uMapaDia, vUv).rgb);
   // B2: com mapa de relevo, a normal vem MEDIDA e o bump do albedo
   // não entra — seriam duas fontes para a mesma cratera. B1 é o
   // substituto de quem não tem mapa (uRelevoNormal == 0).
@@ -421,12 +459,13 @@ ${GLSL_LUZ_DA_VISITA}
 ${GLSL_ALTURA_DO_ALBEDO}
 ${GLSL_BUMP_DO_ALBEDO}
 ${GLSL_NORMAL_DO_MAPA}
+${GLSL_GRADUACAO_DO_MOSAICO}
 ${GLSL_RUIDO_DE_VALOR}
 ${GLSL_GRAO_DO_CLOSE}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
-  vec3 albedo = texture2D(uMapaDia, vUv).rgb;
+  vec3 albedo = graduarMosaico(texture2D(uMapaDia, vUv).rgb);
   // B2: com mapa de relevo, a normal vem MEDIDA e o bump do albedo
   // não entra — seriam duas fontes para a mesma cratera. B1 é o
   // substituto de quem não tem mapa (uRelevoNormal == 0).
@@ -944,6 +983,13 @@ export class RochosoResolvido {
           value: new THREE.Vector2(relevo?.escala ?? 0, relevo?.vies ?? 0),
         },
         uRelevoNormal: { value: relevo ? ESCALA_DA_NORMAL_DO_RELEVO : 0 },
+        // item 138 — a graduação do mosaico Cassini; (0,1) fora das seis
+        uGraduacao: {
+          value: new THREE.Vector2(
+            GRADUACAO_DO_MOSAICO[this.config.id]?.desat ?? 0,
+            GRADUACAO_DO_MOSAICO[this.config.id]?.ganho ?? 1
+          ),
+        },
         // E — o gate do grão. Quem escreve o tamanho VERDADEIRO é quem
         // publica o mapa (a variante do tier manda, não o manifesto);
         // (0,0) é "ainda não veio" e o chunk devolve 1 exato.

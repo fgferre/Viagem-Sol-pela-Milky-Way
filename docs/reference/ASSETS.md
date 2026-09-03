@@ -66,6 +66,59 @@ do repositório atlas-orbital não vale aqui.
   razão entre as faces se perdeu na assadura. Com ele, o canal `ring` da
   placa (`texturas.json`) deixou de ser pedido por Saturno.
 
+## Os mosaicos das seis luas de Saturno (item 138)
+
+O `map` de Mimas, Encélado, Tétis, Dione, Reia e Jápeto era o da NASA 3D
+Resources, **1440×720 e MONOCROMÁTICO** (R = G = B medido, R/B = 1,000 nos
+seis). Em Jápeto ele levava a dicotomia ao extremo — piso 2/255, desvio 88,8
+contra 57,7 do mosaico — e era isso que o dono via como *"totalmente feio"*:
+manchas pretas duras sobre branco estourado. Os seis foram trocados pelos
+**mosaicos globais Cassini de Paul Schenk (PIA18434–18439,
+NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute,
+domínio público)**, graduados para cor natural no **projeto Saturn do dono**
+(https://github.com/fgferre/Saturn, `public/textures/`) — 3840×1920 a
+4096×2048, coloridos (R/B 1,04 a 1,11).
+
+| lua | mosaico (px) | webp cinema | webp alta | webp perf. |
+| --- | --- | --- | --- | --- |
+| Mimas | 4096×2048 (fonte dele 6356×3178, reamostrada) | 1,03 MB | 0,42 MB | 0,15 MB |
+| Encélado | 4096×2048 | 2,81 MB | 0,80 MB | 0,19 MB |
+| Tétis | 3840×1920 | 2,66 MB | 0,81 MB | 0,20 MB |
+| Dione | 3840×1920 | 2,32 MB | 0,69 MB | 0,16 MB |
+| Reia | 4096×2048 | 2,57 MB | 0,77 MB | 0,20 MB |
+| Jápeto | 3840×1920 | 1,32 MB | 0,41 MB | 0,11 MB |
+
+Mimas veio 6356 px e foi **reamostrada para 4096** (lanczos3): a 1080 px de
+disco em cinema, 4096 já dá 1,9 texel por pixel, e o 6356 custaria 108 MB de
+VRAM contra 45 MB — a dose do §"alvo de pixels" existe para isso.
+
+**A MEIA VOLTA (o defeito que a S2 trouxe sem saber).** Os mosaicos dele —
+e os mapas de altura/normal assados a partir deles — usam o layout Schenk
+(*"east longitude 0..360 left→right"*), com o meridiano sub-Saturno na
+EMENDA; o `map` do atlas põe o sub-Saturno no MEIO. O projeto dele resolve
+com `tex.offset.x = 0.5` no carregador, e o `bake-moon-relief.mjs` dele
+avisa: *"pair with the runtime texture offset of 0.5"*. A S2 trouxe os
+mapas de altura/normal **sem essa meia volta**, e o relevo das SEIS luas
+ficou no antípoda do albedo. Medida: a bacia de Herschel está no albedo NASA
+3D de Mimas em u = 0,194 (o lugar certo: 104° W dá u = 0,211) e o mínimo do
+mapa de altura estava em u = 0,695 — meia volta exata. Conserto: os doze
+mapas de relevo e os seis mosaicos foram **girados meia volta no próprio
+arquivo** (`np.roll` de W/2), não no shader — assim toda a árvore fala UMA
+convenção e nenhum corpo precisa de bandeira de layout. Depois do giro o
+mínimo da altura de Mimas está em u = 0,197, e as duas Herschel (a do
+mosaico e a da altura) coincidem no mesmo x quando as folhas se empilham.
+
+**A GRADUAÇÃO.** Os mosaicos Schenk são de cor realçada em IR/UV: o detalhe
+é o melhor que existe, o matiz é exagerado e o nível é baixo. A tabela
+`MAP_GRADING` dele atravessou letra por letra para `GRADUACAO_DO_MOSAICO`
+(`world/corpos/rochoso.ts`) — desatura rumo à luminância e multiplica por um
+ganho, com Encélado em 1,35 por ser o corpo mais reflexivo do Sistema Solar.
+**Declarado:** os ganhos dele foram calibrados para a exposição DELE (AgX
+1,4, Sol 3,4); na exposição da casa (ACES 1,05) o nível linear dos seis
+mosaicos é 1,7× a 3,4× mais baixo que o dos mapas NASA 3D que saíram, e o
+disco renderizado sai 1,2× a 1,7× mais escuro que antes. Subir os ganhos até
+igualar estouraria de 1,4 % a 15 % do mapa — é decisão do dono, não conserto.
+
 ## Relevo das seis luas de Saturno (item 134, S2)
 
 Dois canais novos por lua — `height` (mapa de altura equiretangular, que

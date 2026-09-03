@@ -34,6 +34,15 @@
 //     espelhado, plausível e errado.
 //   - NASA 3D resources — https://science.nasa.gov/3d-resources/
 //     (fases futuras: Deimos etc.; nenhuma entrada nesta rodada).
+//   - Projeto Saturn do dono — https://github.com/fgferre/Saturn
+//     (item 138): os mosaicos globais Cassini de Paul Schenk
+//     (PIA18434–18439, NASA/JPL-Caltech/SSI/LPI, domínio público)
+//     graduados por ele. São SEIS entradas — mimas, enceladus,
+//     tethys, dione, rhea e iapetus —, e o `--offline` delas quer o
+//     diretório do SATURN, não o do atlas-orbital: os nomes são
+//     `public/textures/<lua>.jpg`. Os mapas de altura/normal das
+//     mesmas seis (item 134/S2) nunca entraram nesta tabela; a
+//     proveniência dos dois casos mora em docs/reference/ASSETS.md.
 //   - USGS Astrogeology — https://astrogeology.usgs.gov/
 //     (fases futuras: mosaicos Titan/Europa da bancada; crédito
 //     redigido ANTES de qualquer promoção — docs/reference/ASSETS.md).
@@ -224,32 +233,32 @@ const FONTES = [
   {
     corpo: 'mimas',
     canal: 'map',
-    url: 'https://science.nasa.gov/3d-resources/',
-    nomeNoDoador: 'mimas_nasa_3d_resource.jpg',
+    url: 'https://github.com/fgferre/Saturn',
+    nomeNoDoador: 'mimas.jpg',
   },
   {
     corpo: 'enceladus',
     canal: 'map',
-    url: 'https://science.nasa.gov/3d-resources/',
-    nomeNoDoador: 'enceladus_nasa_3d_resource.jpg',
+    url: 'https://github.com/fgferre/Saturn',
+    nomeNoDoador: 'enceladus.jpg',
   },
   {
     corpo: 'tethys',
     canal: 'map',
-    url: 'https://science.nasa.gov/3d-resources/',
-    nomeNoDoador: 'tethys_nasa_3d_resource.jpg',
+    url: 'https://github.com/fgferre/Saturn',
+    nomeNoDoador: 'tethys.jpg',
   },
   {
     corpo: 'dione',
     canal: 'map',
-    url: 'https://science.nasa.gov/3d-resources/',
-    nomeNoDoador: 'dione_nasa_3d_resource.jpg',
+    url: 'https://github.com/fgferre/Saturn',
+    nomeNoDoador: 'dione.jpg',
   },
   {
     corpo: 'rhea',
     canal: 'map',
-    url: 'https://science.nasa.gov/3d-resources/',
-    nomeNoDoador: 'rhea_nasa_3d_resource.jpg',
+    url: 'https://github.com/fgferre/Saturn',
+    nomeNoDoador: 'rhea.jpg',
   },
   {
     corpo: 'titan',
@@ -261,8 +270,8 @@ const FONTES = [
   {
     corpo: 'iapetus',
     canal: 'map',
-    url: 'https://science.nasa.gov/3d-resources/',
-    nomeNoDoador: 'iapetus_nasa_3d_resource.jpg',
+    url: 'https://github.com/fgferre/Saturn',
+    nomeNoDoador: 'iapetus.jpg',
   },
   {
     corpo: 'miranda',

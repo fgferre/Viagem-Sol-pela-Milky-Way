@@ -159,6 +159,34 @@ com mapa dele) e Titã; as nove esculpidas herdam o material já igualado
 na S3c. Fotos no site dele: `abrirSessao` + `Page.navigate` + dormir +
 `captureScreenshot` (lição da S2b).
 
+**ESTADO (02/09, noite — obra feita, falta a palavra dele).** A causa era
+DADO, não shader, e valia para as SEIS. (1) **O mapa**: o `map` das seis era
+o NASA 3D, 1440×720 e monocromático (R/B = 1,000 medido); em Jápeto o piso
+ia a 2/255 e o desvio a 88,8 — as manchas pretas duras que ele viu. Trocados
+pelos mosaicos Cassini de Schenk graduados no projeto dele (3840×1920 a
+4096×2048, coloridos), com a tabela `MAP_GRADING` dele copiada letra por
+letra. (2) **O relevo estava meia volta errado nas seis desde a S2**: os
+mapas dele são layout Schenk e pedem o `offset 0.5` que ele aplica e nós não
+trouxemos — Herschel medida no albedo de Mimas em u = 0,194 e na altura em
+u = 0,695. Os doze mapas de relevo e os seis mosaicos foram girados meia
+volta NO ARQUIVO (uma convenção só na árvore, nada no shader). Medido em
+Jápeto na mesma fase (66°) e no mesmo tamanho: desvio da chapa 65,3 → 49,5
+(o dele 53,3), R/B 1,062 (o dele 1,065). Disco 150,0 → 189,6 MB em disco,
+pior VRAM de cinema 45 MB por lua (contra 5,5 MB) (Mimas veio 6356 px e foi reamostrada para
+4096 pela dose); custo do passe da lua 23,7 → 23,3 ms (dentro do ruído; a
+máquina estava disputada). Titã: só foto, nada mexido. **FALTA A PALAVRA
+DELE em duas coisas**, as duas medidas e nenhuma tocada: (a) **o nível** —
+os ganhos dele foram calibrados para a exposição DELE (AgX 1,4), e na nossa
+(ACES 1,05) as seis saem 1,2× a 1,7× mais escuras do que estavam; subir os
+ganhos até igualar estoura de 1,4 % a 15 % do mapa, e o resto é o tonemap
+compartilhado que ele já mandou deixar como está na S3c; (b) **Titã está
+laranja demais** — R/B 8,29 no nosso contra 1,56 no dele, que mostra areia e
+não laranja de cone; o mapa é o NASA 3D de 720×360 e ele não tem substituto
+no projeto Saturn (o mosaico VIMS já foi reprovado na bancada, ASSETS.md).
+Fotos: `capturas/item138-<lua>-prancha.png` (dele | antes | depois) para as
+seis, `item138-titan-prancha.png` (dele | nosso) e os pares por ingrediente
+de Jápeto (`-relevo-`, `-mapa-`, `-graduacao-`).
+
 **139. Dentro dos anéis de Saturno, no projeto dele, veem-se as partículas
 e pedras de gelo — aqui não.** Palavras dele, 02/09: *"Os aneis de saturno
 no meu projeto quando vc entra neles vc ve as particulas e pedras de gelo,
