@@ -21,6 +21,8 @@ import type { HudDaFase } from '../three/fases';
 import type { EstadoDoTempo } from '../three/tempoDoAtlas';
 import type { Gaveta } from '../hooks/useGavetas';
 import { gatilhoDoDialogo } from '../lib/dialogFocus';
+import { t } from '../lib/idioma';
+import { useIdioma } from '../hooks/useIdioma';
 import { BotaoDaGaveta, BotaoDoTempo } from './HudDoAtlas';
 import { BotaoDaBusca } from './PaletaDeBusca';
 import { BotaoDaFicha } from './FichaDoObjeto';
@@ -88,6 +90,7 @@ export function BarraOuAlcas({
   freeRoam,
   changeQuality,
 }: BarraOuAlcasProps) {
+  useIdioma();
   /**
    * O ⚙ AJUSTES é o único gatilho que não tem componente próprio, e ele
    * nasce aqui para caber nos DOIS lugares sem ser escrito duas vezes: na
@@ -98,10 +101,10 @@ export function BarraOuAlcas({
     <button
       className="hud-btn small"
       onClick={() => alternarGaveta('ajustes')}
-      aria-label="Ajustes de renderização"
+      aria-label={t('barra.ajustesAria')}
       {...gatilhoDoDialogo('ajustes', gaveta === 'ajustes')}
     >
-      ⚙ Ajustes
+      {t('barra.ajustes')}
     </button>
   );
 
@@ -148,7 +151,7 @@ export function BarraOuAlcas({
     <div className={`controls-bar${chromeSumido}`}>
       {hud.botaoReviver && (
         <button className="hud-btn small" onClick={play}>
-              ↻ Reviver
+          {t('barra.reviver')}
         </button>
       )}
       {/* O PORTAL. Só no pausar-e-olhar: é o único momento do filme
@@ -156,7 +159,7 @@ export function BarraOuAlcas({
           "onde é isso?" tem lugar (D3). */}
       {inJourney && paused && (
         <button className="hud-btn small" onClick={entrarNoAtlas}>
-          Entrar no Atlas
+          {t('barra.entrarNoAtlas')}
         </button>
       )}
       {/* AS PORTAS ESTÃO AQUI OU NA FILEIRA DE ALÇAS, nunca nas duas
@@ -190,19 +193,23 @@ export function BarraOuAlcas({
           <button
             className="hud-btn small"
             onClick={play}
-            aria-label="Ver o filme desde o começo"
+            aria-label={t('barra.verOFilmeAria')}
           >
-            ▶ Ver o filme
+            {t('barra.verOFilme')}
           </button>
-          <button className="hud-btn small" onClick={freeRoam} aria-label="Explorar a galáxia">
-            ↗ Explorar
+          <button
+            className="hud-btn small"
+            onClick={freeRoam}
+            aria-label={t('barra.explorarAria')}
+          >
+            {t('barra.explorarAtlas')}
           </button>
         </>
       )}
       {/* ...e a SAÍDA só existe quando há para onde voltar */}
       {hud.botaoPartir && temFilmeGuardado && (
         <button className="hud-btn small" onClick={partirDoAtlas}>
-          ↩ Voltar ao filme
+          {t('barra.voltarAoFilme')}
         </button>
       )}
       {hud.botoesDaViagem && (
@@ -210,20 +217,20 @@ export function BarraOuAlcas({
           <button
             className="hud-btn small"
             onClick={togglePause}
-            aria-label={paused ? 'Retomar a viagem' : 'Pausar a viagem'}
+            aria-label={t(paused ? 'barra.retomarAria' : 'barra.pausarAria')}
           >
-            {paused ? '⏵ Retomar' : '⏸ Pausar'}
+            {t(paused ? 'barra.retomar' : 'barra.pausar')}
           </button>
           <button
             className="hud-btn small"
             onClick={ciclarVelocidade}
-            aria-label="Velocidade de reprodução"
-            title="← → pulam de capítulo"
+            aria-label={t('barra.velocidadeAria')}
+            title={t('barra.velocidadeDica')}
           >
             {rate}×
           </button>
           <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
-            Ver a galáxia
+            {t('barra.verAGalaxia')}
           </button>
           {/* "EXPLORAR", e não "Explorar livremente" (item 61, decisão do
               dono em 23/08). É a segunda vez que ele corta a mesma
@@ -234,7 +241,7 @@ export function BarraOuAlcas({
               ferramenta do Atlas (↗ Explorar) e esta dizem o MESMO nome
               para o MESMO destino. */}
           <button className="hud-btn small" onClick={freeRoam}>
-            Explorar
+            {t('barra.explorar')}
           </button>
         </>
       )}
@@ -258,7 +265,7 @@ export function BarraOuAlcas({
           região `aria-live` do painel, não renomeando o controle. */}
       <select
         className="hud-btn small"
-        aria-label="Qualidade gráfica"
+        aria-label={t('barra.qualidadeAria')}
         title={rotuloDaQualidade(quality)}
         value={quality.escolha}
         onChange={(e) => changeQuality(e.target.value as EscolhaDeQualidade)}
@@ -282,7 +289,7 @@ export function BarraOuAlcas({
       (fatia 9): quebrar em duas mudaria a base declarada e moveria a
       câmera no meio da sessão. */}
   {alcas && (
-    <div className="atlas-alcas" role="group" aria-label="Controles do Atlas">
+    <div className="atlas-alcas" role="group" aria-label={t('barra.alcasAria')}>
       {portaDaBusca}
       {portaDasCamadas}
       {hud.tempo && tempo && (

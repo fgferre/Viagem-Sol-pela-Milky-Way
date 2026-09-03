@@ -340,6 +340,33 @@ rótulos) delegada em 03/09. **NA FILA
 por ordem dele (01/09, "app inteiro bilingue na fila"): é a próxima
 frente depois de fechar o 129.** A busca (129/F5) já nasce bilíngue.
 
+**F1 FEITA (03/09) — o mecanismo e a tela do CÓDIGO.** Mecanismo sem
+biblioteca: `lib/idioma.ts` (estado, assinantes, `t(chave, params)`) com
+as tabelas em `lib/idioma/pt.ts` e `lib/idioma/en.ts` — a `en` é tipada
+contra a `pt`, então chave sem tradução não compila. A língua se resolve
+UMA vez, no `main.tsx`: preferência do visitante (localStorage
+`viagem-idioma`) > `navigator.languages` (`pt*`→pt-BR, resto→en) > pt-BR;
+fora do navegador ninguém chama e a casa fica em pt-BR, com a saída de
+toda função de texto igual à de sempre. Seletor NO PAINEL DE AJUSTES
+(primeira seção), troca ao vivo sem recarregar; `?lang=` existe SÓ como
+instrumento de captura, declarado como porta neutra no selo. Traduzidos
+**355 trechos** (contagem = chaves das tabelas): HUD e véus 35, etapas do
+carregamento 7, barra 19, ajustes 26, gaveta/selo/tempo do Atlas 34,
+busca 20, convite 14, ficha 70, selo 22, escala 11, camadas/famílias/
+qualidade/classe 39, máquina do tempo 30 (meses e a ORDEM da data por
+extenso), unidades 7 (plural pt "a partir de 2" × en "≠1", vírgula ×
+ponto, milhar), dicas de gesto e cena 20. **Fora da F1, por decisão:** os
+NOMES PRÓPRIOS dos corpos (a fonte é o `i18n` de `corpos.json`, o mesmo
+arquivo da F2, e o `nome` está assado nas tabelas que o pipeline de
+rótulo 3D lê por quadro); a prosa das fichas (F2); as legendas do filme
+(F3); os rótulos das ~50 portas de DEPURAÇÃO da URL no selo (só aparecem
+para quem digitou a porta); a `meta description` do `index.html` (o
+`<title>` já troca). **Risco declarado:** os juízes de navegador sobem
+Chrome com `navigator.languages` em `en-US`, então a partir daqui eles
+enxergam o app em INGLÊS — o conserto é de uma linha em
+`scripts/visual/chrome.mjs` (`--lang=pt-BR` no `GPU_FLAGS`) ou `?lang=pt-BR`
+no PIN de cada juiz, e ainda NÃO foi feito.
+
 **131. Aglomerados, nebulosas e nuvens na busca — roadmap futuro, depois
 da curadoria do desenho deles.** Palavras dele em 01/09, ao fechar o
 129: *"não vamos fazer isso agora. precisamos ver esses objetos com

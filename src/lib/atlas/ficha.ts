@@ -34,7 +34,7 @@
 //
 // A GRAFIA NÃO NASCE AQUI. `lib/unidades.ts` decide o degrau da distância
 // (`notaDeDistancia`) e a vírgula das três grandezas que a ficha escreve —
-// `comCasas`, `formatarMassaKg`, `formatarRazaoTerra` —, e `numeroPtBr`
+// `comCasas`, `formatarMassaKg`, `formatarRazaoTerra` —, e `numeroDoIdioma`
 // (`three/tempoDoAtlas`) é o formatador injetado. Quem escrever aqui uma
 // formatação nova está criando bug, não exceção.
 // ============================================================
@@ -45,9 +45,10 @@ import {
   notaDeDistancia,
   UA_POR_PC,
 } from '../unidades';
-import { NOMES_DOS_CORPOS } from '../../three/atlasConfig';
+import { NOMES_DOS_CORPOS, classeEmTexto } from '../../three/atlasConfig';
+import { t } from '../idioma';
 import type { Procedencia } from '../../three/selo';
-import { numeroPtBr } from '../../three/tempoDoAtlas';
+import { numeroDoIdioma } from '../../three/tempoDoAtlas';
 import { AU_KM } from './elementosOrbitais';
 import {
   gravidadeSuperficie,
@@ -182,13 +183,13 @@ export function formatarDuracao(dias: number): string | null {
   if (!Number.isFinite(dias) || dias <= 0) return null;
   if (dias < 1) {
     const horas = dias * HORAS_POR_DIA;
-    return `${numeroPtBr(horas)} ${horas >= 2 ? 'horas' : 'hora'}`;
+    return `${numeroDoIdioma(horas)} ${t(horas >= 2 ? 'ficha.horas' : 'ficha.hora')}`;
   }
   if (dias < 2 * DIAS_POR_ANO) {
-    return `${numeroPtBr(dias)} ${dias >= 2 ? 'dias' : 'dia'}`;
+    return `${numeroDoIdioma(dias)} ${t(dias >= 2 ? 'ficha.dias' : 'ficha.dia')}`;
   }
   const anos = dias / DIAS_POR_ANO;
-  return `${numeroPtBr(anos)} anos`;
+  return `${numeroDoIdioma(anos)} ${t('tempo.anos')}`;
 }
 
 const modulo = (v: PosicaoEcliptica) => Math.hypot(v.x, v.y, v.z);
@@ -268,9 +269,9 @@ function secaoAgora(entrada: EntradaDaFicha): LinhaDaFicha[] {
   let distancia: string | null = null;
   let velocidade: string | null = null;
   try {
-    distancia = notaDeDistancia(modulo(fonte.posicao(id, jd)), numeroPtBr);
+    distancia = notaDeDistancia(modulo(fonte.posicao(id, jd)), numeroDoIdioma);
     const v = modulo(fonte.velocidade(id, jd)) * KM_POR_S_POR_UA_DIA;
-    velocidade = Number.isFinite(v) ? `${numeroPtBr(v)} km/s` : null;
+    velocidade = Number.isFinite(v) ? `${numeroDoIdioma(v)} km/s` : null;
   } catch {
     // FORA DA JANELA DA TABELA o motor LANÇA, de propósito (adaptação b de
     // `efemerides.ts`), e é a máquina do tempo que já avisa o visitante na
@@ -280,13 +281,18 @@ function secaoAgora(entrada: EntradaDaFicha): LinhaDaFicha[] {
   }
 
   return [
-    linha(`distância — ${pai}`, distancia, 'medido', registro.modelo),
-    linha('velocidade orbital', velocidade, 'derivado', 'da efeméride'),
+    linha(t('ficha.campo.distanciaDe', { pai }), distancia, 'medido', registro.modelo),
     linha(
-      'iluminado daqui',
+      t('ficha.campo.velocidadeOrbital'),
+      velocidade,
+      'derivado',
+      t('ficha.fonte.daEfemeride')
+    ),
+    linha(
+      t('ficha.campo.iluminadoDaqui'),
       iluminacaoDaqui(entrada),
       'derivado',
-      'do ponto de vista da câmera'
+      t('ficha.fonte.daCamera')
     ),
   ].filter((l): l is LinhaDaFicha => l !== null);
 }
@@ -301,31 +307,31 @@ function secaoFisico(id: string): LinhaDaFicha[] {
 
   return [
     linha(
-      'raio (equador)',
-      raio === null ? null : `${numeroPtBr(Math.round(raio))} km`,
+      t('ficha.campo.raio'),
+      raio === null ? null : `${numeroDoIdioma(Math.round(raio))} km`,
       'medido',
       'IAU/WGCCRE, kernel pck00011',
       eDaTerra ? undefined : selo(raio, raioDaTerra)
     ),
     linha(
-      'gravidade',
-      g === null ? null : `${numeroPtBr(g)} m/s²`,
+      t('ficha.campo.gravidade'),
+      g === null ? null : `${numeroDoIdioma(g)} m/s²`,
       'derivado',
-      'de GM e do raio',
+      t('ficha.fonte.deGmEDoRaio'),
       eDaTerra ? undefined : selo(g, gravidadeSuperficie('earth'))
     ),
     linha(
-      'velocidade de escape',
-      escape === null ? null : `${numeroPtBr(escape)} km/s`,
+      t('ficha.campo.escape'),
+      escape === null ? null : `${numeroDoIdioma(escape)} km/s`,
       'derivado',
-      'de GM e do raio',
+      t('ficha.fonte.deGmEDoRaio'),
       eDaTerra ? undefined : selo(escape, velocidadeDeEscape('earth'))
     ),
     linha(
-      'massa',
+      t('ficha.campo.massa'),
       massa === null ? null : formatarMassaKg(massa),
       'derivado',
-      'de GM (gm_de440) e de G',
+      t('ficha.fonte.deGm'),
       eDaTerra ? undefined : selo(massa, massaDeGm('earth'))
     ),
   ].filter((l): l is LinhaDaFicha => l !== null);
@@ -341,21 +347,26 @@ function secaoOrbita(entrada: EntradaDaFicha): LinhaDaFicha[] {
   if (orbita) {
     const pai = NOMES_DOS_CORPOS[registro?.centro ?? '']?.nome ?? registro?.centro;
     linhas.push(
-      linha('período orbital', formatarDuracao(orbita.periodoDias), 'derivado', 'dos elementos da casa')
+      linha(
+        t('ficha.campo.periodo'),
+        formatarDuracao(orbita.periodoDias),
+        'derivado',
+        t('ficha.fonte.dosElementos')
+      )
     );
     // AS DUAS PONTAS NUMA LINHA SÓ, porque é assim que se lê a órbita: "de
     // 29,7 a 49,1 UA" diz num golpe o que duas linhas de "periélio" e
     // "afélio" diriam em quatro. A escada de unidade é a mesma dos dois
     // lados — em par lua↔pai as duas saem em quilômetros.
-    const min = notaDeDistancia(orbita.minUa, numeroPtBr);
-    const max = notaDeDistancia(orbita.maxUa, numeroPtBr);
+    const min = notaDeDistancia(orbita.minUa, numeroDoIdioma);
+    const max = notaDeDistancia(orbita.maxUa, numeroDoIdioma);
     if (min && max) {
       linhas.push(
         linha(
           `distância — ${pai}`,
           min === max ? min : `${min} a ${max}`,
           'derivado',
-          'mín e máx da órbita'
+          t('ficha.fonte.minEMax')
         )
       );
     }
@@ -363,10 +374,10 @@ function secaoOrbita(entrada: EntradaDaFicha): LinhaDaFicha[] {
     if (soma > 0) {
       linhas.push(
         linha(
-          'excentricidade',
+          t('ficha.campo.excentricidade'),
           comCasas((orbita.maxUa - orbita.minUa) / soma, 3),
           'derivado',
-          'dos elementos da casa'
+          t('ficha.fonte.dosElementos')
         )
       );
     }
@@ -377,10 +388,10 @@ function secaoOrbita(entrada: EntradaDaFicha): LinhaDaFicha[] {
     const dia = formatarDuracao(Math.abs(360 / iau.spinRateDegPerDay));
     linhas.push(
       linha(
-        'dia sideral',
+        t('ficha.campo.diaSideral'),
         dia === null ? null : iau.spinRateDegPerDay < 0 ? `${dia} (retrógrado)` : dia,
         'derivado',
-        'do modelo IAU de rotação'
+        t('ficha.fonte.rotacaoIau')
       )
     );
   }
@@ -391,7 +402,9 @@ function secaoOrbita(entrada: EntradaDaFicha): LinhaDaFicha[] {
   // texto dela é do `registroOrbital`, e traduzi-lo é obra própria.
   if (fonte && jd !== null && jd !== undefined && Number.isFinite(jd)) {
     try {
-      linhas.push(linha('modelo e validade', fonte.notaDeValidade(id, jd), 'medido'));
+      linhas.push(
+        linha(t('ficha.campo.modeloEValidade'), fonte.notaDeValidade(id, jd), 'medido')
+      );
     } catch {
       // corpo fora do registro: sem nota, sem linha
     }
@@ -414,11 +427,16 @@ function secaoCeu(entrada: EntradaDaFicha): LinhaDaFicha[] {
     return [];
   }
   if (!geometria) return [];
-  const FONTE = 'geométrico, de centro a centro';
+  const FONTE = t('ficha.fonte.geometrico');
   return [
-    linha('elongação do Sol', `${numeroPtBr(geometria.elongacaoDeg)}°`, 'derivado', FONTE),
     linha(
-      'disco iluminado',
+      t('ficha.campo.elongacao'),
+      `${numeroDoIdioma(geometria.elongacaoDeg)}°`,
+      'derivado',
+      FONTE
+    ),
+    linha(
+      t('ficha.campo.discoIluminado'),
       `${Math.round(geometria.fracaoIluminada * 100)}%`,
       'derivado',
       FONTE
@@ -434,29 +452,31 @@ function secaoCeu(entrada: EntradaDaFicha): LinhaDaFicha[] {
 function secaoContexto(pt: EditorialDoCorpo | undefined): LinhaDaFicha[] {
   if (!pt) return [];
   return [
-    linha('o que é', pt.description, 'derivado', 'texto editorial, sem fonte citada'),
-    linha('em uma linha', pt.info, 'derivado', 'texto editorial, sem fonte citada'),
+    linha(t('ficha.campo.oQueE'), pt.description, 'derivado', t('ficha.fonte.editorial')),
+    linha(t('ficha.campo.emUmaLinha'), pt.info, 'derivado', t('ficha.fonte.editorial')),
   ].filter((l): l is LinhaDaFicha => l !== null);
 }
 
 function secaoCuriosidades(pt: EditorialDoCorpo | undefined): LinhaDaFicha[] {
   if (!pt) return [];
   const linhas: (LinhaDaFicha | null)[] = [
-    linha('curiosidade', pt.curiosity, 'derivado', 'texto editorial, sem fonte citada'),
+    linha(t('ficha.campo.curiosidade'), pt.curiosity, 'derivado', t('ficha.fonte.editorial')),
   ];
   for (const fato of pt.facts ?? []) {
-    linhas.push(linha('fato', fato, 'derivado', 'texto editorial, sem fonte citada'));
+    linhas.push(linha(t('ficha.campo.fato'), fato, 'derivado', t('ficha.fonte.editorial')));
   }
   for (const recorde of pt.records ?? []) {
-    linhas.push(linha('recorde', recorde, 'derivado', 'texto editorial, sem fonte citada'));
+    linhas.push(
+      linha(t('ficha.campo.recorde'), recorde, 'derivado', t('ficha.fonte.editorial'))
+    );
   }
   if (pt.explorationMilestone) {
     linhas.push(
       linha(
-        'exploração',
+        t('ficha.campo.exploracao'),
         `${pt.explorationMilestone.year}: ${pt.explorationMilestone.description}`,
         'derivado',
-        'texto editorial, sem fonte citada'
+        t('ficha.fonte.editorial')
       )
     );
   }
@@ -546,20 +566,25 @@ function secaoImagem(
   if (mapa?.origem) {
     const tier = TIER_DA_IMAGEM[mapa.proveniencia ?? 'nao-resolvida'];
     linhas.push(
-      linha('fonte', mapa.origem.fonte, tier, `${numeroPtBr(mapa.larguraPx)} px de largura`),
-      linha('licença', mapa.origem.licenca, tier),
-      linha('atribuição', mapa.origem.atribuicao, tier)
+      linha(
+        t('ficha.campo.fonte'),
+        mapa.origem.fonte,
+        tier,
+        t('ficha.fonte.larguraPx', { px: numeroDoIdioma(mapa.larguraPx) })
+      ),
+      linha(t('ficha.campo.licenca'), mapa.origem.licenca, tier),
+      linha(t('ficha.campo.atribuicao'), mapa.origem.atribuicao, tier)
     );
     if (mapa.nota) {
-      linhas.push(linha('o defeito', mapa.nota, 'medido', 'bancada de texturas'));
+      linhas.push(linha(t('ficha.campo.oDefeito'), mapa.nota, 'medido', t('ficha.fonte.bancada')));
     }
   } else {
     linhas.push(
       linha(
-        'superfície',
-        'sem mapa: a cor e o relevo deste corpo são inventados',
+        t('ficha.campo.superficie'),
+        t('ficha.semMapa'),
         'artistico',
-        'não há textura com licença fechada'
+        t('ficha.fonte.semLicenca')
       )
     );
   }
@@ -580,29 +605,28 @@ function secaoImagem(
   if (relevo?.origem) {
     const tier = TIER_DA_IMAGEM[relevo.proveniencia ?? 'nao-resolvida'];
     linhas.push(
-      linha('relevo', relevo.origem.fonte, tier, `${numeroPtBr(relevo.larguraPx)} px de largura`)
+      linha(
+        t('ficha.campo.relevo'),
+        relevo.origem.fonte,
+        tier,
+        t('ficha.fonte.larguraPx', { px: numeroDoIdioma(relevo.larguraPx) })
+      )
     );
     if (relevo.nota) {
-      linhas.push(linha('o relevo admite', relevo.nota, 'medido', 'bancada de texturas'));
+      linhas.push(
+        linha(t('ficha.campo.oRelevoAdmite'), relevo.nota, 'medido', t('ficha.fonte.bancada'))
+      );
     }
   }
 
   const forma = manifest.formas?.[id];
-  if (forma) linhas.push(linha('forma', forma, 'artistico', 'bancada de texturas'));
+  if (forma) linhas.push(linha(t('ficha.campo.forma'), forma, 'artistico', t('ficha.fonte.bancada')));
 
   return linhas.filter((l): l is LinhaDaFicha => l !== null);
 }
 
-const TITULOS: Record<IdDeSecao, string> = {
-  agora: 'agora',
-  fisico: 'físico',
-  orbita: 'órbita',
-  ceu: 'no céu',
-  contexto: 'contexto',
-  curiosidades: 'curiosidades',
-  imagem: 'a imagem',
-  estrela: 'a estrela',
-};
+/** O título de cada seção, na língua de agora (item 130). */
+const TITULO = (id: IdDeSecao): string => t(`ficha.secao.${id}` as 'ficha.secao.agora');
 
 /**
  * A FICHA DE UMA ESTRELA (item 74; o cabeçalho na parte A, o conteúdo aqui).
@@ -636,7 +660,7 @@ export function montarFichaDeEstrela(
   if (!nome) return null;
   const linhas: (LinhaDaFicha | null)[] = [];
   if (estrela) {
-    const CATALOGO = 'catálogo HYG/AT-HYG';
+    const CATALOGO = t('ficha.fonte.catalogoHyg');
     const designacao = designacaoDeBayer(estrela.b, estrela.c);
     const catalogos = [
       estrela.hd === undefined ? null : `HD ${estrela.hd}`,
@@ -646,32 +670,32 @@ export function montarFichaDeEstrela(
     linhas.push(
       // A designação de Bayer é a MESMA estrela dita de outro jeito, e para
       // quem só conhece "Sirius" ela é a ponte com qualquer carta do céu.
-      linha('designação', designacao, 'medido', 'Bayer, sigla IAU'),
+      linha(t('ficha.campo.designacao'), designacao, 'medido', t('ficha.fonte.bayerIau')),
       linha(
-        'distância',
-        notaDeDistancia(estrela.d * UA_POR_PC, numeroPtBr),
+        t('ficha.campo.distancia'),
+        notaDeDistancia(estrela.d * UA_POR_PC, numeroDoIdioma),
         'medido',
-        'paralaxe Gaia DR3'
+        t('ficha.fonte.paralaxe')
       ),
-      linha('magnitude aparente', comCasas(estrela.m, 2), 'medido', CATALOGO),
-      linha('tipo espectral', estrela.s || null, 'medido', CATALOGO),
+      linha(t('ficha.campo.magnitude'), comCasas(estrela.m, 2), 'medido', CATALOGO),
+      linha(t('ficha.campo.tipoEspectral'), estrela.s || null, 'medido', CATALOGO),
       linha(
-        'cor B−V',
+        t('ficha.campo.corBV'),
         estrela.ci === undefined ? null : comCasas(estrela.ci, 3),
         'medido',
         CATALOGO
       ),
       linha(
-        'temperatura',
+        t('ficha.campo.temperatura'),
         estrela.ci === undefined
           ? null
-          : `${numeroPtBr(Number(temperatureFromBV(estrela.ci).toPrecision(3)))} K`,
+          : `${numeroDoIdioma(Number(temperatureFromBV(estrela.ci).toPrecision(3)))} K`,
         'derivado',
-        'de B−V, por Ballesteros'
+        t('ficha.fonte.ballesteros')
       ),
       // OS TRÊS ÍNDICES NUMA LINHA SÓ: eles não são três fatos, são três
       // endereços do mesmo objeto, e é assim que se procura por ele.
-      linha('catálogos', catalogos.join(' · ') || null, 'medido', CATALOGO)
+      linha(t('ficha.campo.catalogos'), catalogos.join(' · ') || null, 'medido', CATALOGO)
     );
   }
   const cheias = linhas.filter((l): l is LinhaDaFicha => l !== null);
@@ -681,8 +705,9 @@ export function montarFichaDeEstrela(
     // A PALAVRA DA CLASSE DIZ O QUE O OBJETO É (ordem dele, 01/09, ao ver
     // "Sagittarius A✱ · estrela"): a ficha só de cabeçalho é a do centro
     // galáctico, e ele é um buraco negro, não uma estrela do catálogo.
-    classe: estrela ? 'estrela' : 'buraco negro',
-    secoes: cheias.length > 0 ? [{ id: 'estrela', titulo: TITULOS.estrela, linhas: cheias }] : [],
+    classe: classeEmTexto(estrela ? 'estrela' : 'buraco negro'),
+    secoes:
+      cheias.length > 0 ? [{ id: 'estrela', titulo: TITULO('estrela'), linhas: cheias }] : [],
   };
 }
 
@@ -698,19 +723,19 @@ export function montarFicha(entrada: EntradaDaFicha): Ficha | null {
 
   const pt = entrada.editorial?.editorial?.pt;
   const secoes: SecaoDaFicha[] = [
-    { id: 'agora', titulo: TITULOS.agora, linhas: secaoAgora(entrada) },
-    { id: 'fisico', titulo: TITULOS.fisico, linhas: secaoFisico(entrada.id) },
-    { id: 'orbita', titulo: TITULOS.orbita, linhas: secaoOrbita(entrada) },
-    { id: 'ceu', titulo: TITULOS.ceu, linhas: secaoCeu(entrada) },
-    { id: 'contexto', titulo: TITULOS.contexto, linhas: secaoContexto(pt) },
-    { id: 'curiosidades', titulo: TITULOS.curiosidades, linhas: secaoCuriosidades(pt) },
-    { id: 'imagem', titulo: TITULOS.imagem, linhas: secaoImagem(entrada.id, entrada.texturas) },
+    { id: 'agora', titulo: TITULO('agora'), linhas: secaoAgora(entrada) },
+    { id: 'fisico', titulo: TITULO('fisico'), linhas: secaoFisico(entrada.id) },
+    { id: 'orbita', titulo: TITULO('orbita'), linhas: secaoOrbita(entrada) },
+    { id: 'ceu', titulo: TITULO('ceu'), linhas: secaoCeu(entrada) },
+    { id: 'contexto', titulo: TITULO('contexto'), linhas: secaoContexto(pt) },
+    { id: 'curiosidades', titulo: TITULO('curiosidades'), linhas: secaoCuriosidades(pt) },
+    { id: 'imagem', titulo: TITULO('imagem'), linhas: secaoImagem(entrada.id, entrada.texturas) },
   ];
 
   return {
     id: entrada.id,
     nome: nomes.nome,
-    classe: nomes.classe,
+    classe: classeEmTexto(nomes.classe),
     secoes: secoes.filter((s) => s.linhas.length > 0),
   };
 }

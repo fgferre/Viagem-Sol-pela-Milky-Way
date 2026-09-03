@@ -27,6 +27,9 @@
 // nunca por Date/UT cru).
 // ============================================================
 import { tdbToDate } from '../lib/atlas/time';
+import { decimalDoIdioma, t } from '../lib/idioma';
+import type { ChaveDeTexto } from '../lib/idioma';
+import { PT } from '../lib/idioma/pt';
 
 // ---- a escada -----------------------------------------------------
 
@@ -132,10 +135,15 @@ export function lerPortaJd(valor: string | null | undefined, jdDaEpoca: number):
 
 // ---- os dois formatadores, em pt-BR --------------------------------
 
-const MESES = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-];
+/**
+ * O NOME DO MÊS vem do dicionário (item 130): `tempo.mes.0`…`tempo.mes.11`.
+ * A lista de doze literais que morava aqui virou doze chaves, e a ORDEM
+ * da data por extenso — que em inglês é "January 1, 2026" e não "1 de
+ * janeiro de 2026" — é ela própria uma chave (`tempo.data`), porque
+ * traduzir só as palavras deixaria a data em inglês com a sintaxe
+ * portuguesa.
+ */
+const MES = (i: number) => t(`tempo.mes.${i}` as ChaveDeTexto);
 
 /**
  * Número em pt-BR com no máximo uma casa, sem a casa quando ela é
@@ -150,12 +158,22 @@ export function numeroPtBr(v: number): string {
   return v.toFixed(1).replace(/\.0$/, '').replace('.', ',');
 }
 
-const UNIDADES: readonly [number, string, string][] = [
-  [1, 'segundo', 'segundos'],
-  [60, 'minuto', 'minutos'],
-  [3600, 'hora', 'horas'],
-  [86400, 'dia', 'dias'],
-  [86400 * 365.25, 'ano', 'anos'],
+/**
+ * O MESMO NÚMERO, na grafia da LÍNGUA DE AGORA (item 130): vírgula em
+ * pt-BR, ponto em inglês. É este que a tela chama; `numeroPtBr` fica
+ * sendo a grafia pt-BR pura, que as guardas comparam e que
+ * `decimalDoIdioma` não pode mexer.
+ */
+export function numeroDoIdioma(v: number): string {
+  return decimalDoIdioma(v.toFixed(1).replace(/\.0$/, ''));
+}
+
+const UNIDADES: readonly [number, ChaveDeTexto, ChaveDeTexto][] = [
+  [1, 'tempo.segundo', 'tempo.segundos'],
+  [60, 'tempo.minuto', 'tempo.minutos'],
+  [3600, 'tempo.hora', 'tempo.horas'],
+  [86400, 'tempo.dia', 'tempo.dias'],
+  [86400 * 365.25, 'tempo.ano', 'tempo.anos'],
 ];
 
 /**
@@ -168,14 +186,17 @@ const UNIDADES: readonly [number, string, string][] = [
  * plural) — a mesma regra que a casa usa ao falar de distância.
  */
 export function formatarTaxa(segPorSeg: number): string {
-  if (!Number.isFinite(segPorSeg) || segPorSeg <= 0) return 'parado';
-  if (segPorSeg === 1) return 'tempo real';
+  if (!Number.isFinite(segPorSeg) || segPorSeg <= 0) return t('tempo.parado');
+  if (segPorSeg === 1) return t('tempo.tempoReal');
   let escolhida = UNIDADES[0];
   for (const u of UNIDADES) {
     if (segPorSeg >= u[0]) escolhida = u;
   }
   const valor = segPorSeg / escolhida[0];
-  return `${numeroPtBr(valor)} ${valor >= 2 ? escolhida[2] : escolhida[1]} por segundo`;
+  return t('tempo.taxa', {
+    valor: numeroDoIdioma(valor),
+    unidade: t(valor >= 2 ? escolhida[2] : escolhida[1]),
+  });
 }
 
 /**
@@ -185,12 +206,18 @@ export function formatarTaxa(segPorSeg: number): string {
  * data nenhuma a partir de milissegundos crus.
  */
 export function formatarInstante(jdTdb: number): string {
-  if (!Number.isFinite(jdTdb)) return 'instante indefinido';
+  if (!Number.isFinite(jdTdb)) return t('tempo.instanteIndefinido');
   const cru = tdbToDate(jdTdb);
   const d = new Date(Math.round(cru.getTime() / 60000) * 60000);
   const hh = String(d.getUTCHours()).padStart(2, '0');
   const mm = String(d.getUTCMinutes()).padStart(2, '0');
-  return `${d.getUTCDate()} de ${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()}, ${hh}:${mm}`;
+  return t('tempo.data', {
+    dia: d.getUTCDate(),
+    mes: MES(d.getUTCMonth()),
+    ano: d.getUTCFullYear(),
+    hh,
+    mm,
+  });
 }
 
 // ---- o estado que o HUD lê ----------------------------------------
@@ -254,10 +281,19 @@ export function mesmoMostrador(a: EstadoDoTempo, b: EstadoDoTempo): boolean {
 /** De onde vem a efeméride agora — o que decide o aviso. */
 export type FaseDaEfemeride = 'retrato' | 'buscando' | 'viva' | 'indisponivel';
 
-export const AVISO_SEM_EFEMERIDE = 'sem efeméride: a camada está congelada no retrato';
-export const AVISO_BUSCANDO = 'buscando a efeméride…';
-export const AVISO_FORA_DA_JANELA =
-  `fora de ${ANOS_DA_JANELA} TDB: a tabela embarcada para aqui`;
+/**
+ * OS TRÊS AVISOS EM pt-BR — o valor que as guardas comparam, tirado do
+ * dicionário para não haver duas redações da mesma frase. A TELA não lê
+ * daqui: `estadoDoTempo` monta o aviso com `t()`, na língua de agora
+ * (item 130). Em pt-BR os dois caminhos dão a MESMA string, que é o que
+ * mantém as guardas de sempre medindo o que sempre mediram.
+ */
+export const AVISO_SEM_EFEMERIDE = PT['tempo.semEfemeride'];
+export const AVISO_BUSCANDO = PT['tempo.buscando'];
+export const AVISO_FORA_DA_JANELA = PT['tempo.foraDaJanela'].replace(
+  '{anos}',
+  ANOS_DA_JANELA
+);
 
 /**
  * O ESTADO COMPLETO, puro — a mesma conta que o teste julga e que o
@@ -282,11 +318,11 @@ export function estadoDoTempo(entrada: {
   const jd = grampearJd(entrada.jdPedido);
   const aviso =
     entrada.efemeride === 'indisponivel'
-      ? AVISO_SEM_EFEMERIDE
+      ? t('tempo.semEfemeride')
       : entrada.efemeride === 'buscando'
-        ? AVISO_BUSCANDO
+        ? t('tempo.buscando')
         : entrada.naParede === true || foraDaJanela(entrada.jdPedido)
-          ? AVISO_FORA_DA_JANELA
+          ? t('tempo.foraDaJanela', { anos: ANOS_DA_JANELA })
           : '';
   return {
     jd,

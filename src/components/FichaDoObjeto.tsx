@@ -39,6 +39,8 @@
 // ============================================================
 import { useEffect, useMemo, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
+import { t } from '../lib/idioma';
+import { useIdioma } from '../hooks/useIdioma';
 import type { CorpoNoJson, CorposDoAtlas, FonteDaFicha, IdDeSecao } from '../lib/atlas/ficha';
 import { montarFicha, montarFichaDeEstrela } from '../lib/atlas/ficha';
 import type { NamedStar } from '../three/config';
@@ -116,6 +118,7 @@ export function FichaDoObjeto({
   onSistema: () => void;
 }) {
   const dialogo = useDialogFocus('ficha', aberta, onFechar);
+  const idioma = useIdioma();
   const [corpos, setCorpos] = useState<Map<string, CorpoNoJson> | null>(null);
   const [texturas, setTexturas] = useState<ManifestDeTexturas | null>(null);
   /**
@@ -181,7 +184,10 @@ export function FichaDoObjeto({
         : estrelaEmFoco
           ? montarFichaDeEstrela(estrelaEmFoco, estrela)
           : null,
-    [corpoId, estrelaEmFoco, estrela, jd, fonte, corpos, texturas, camaraUa]
+    // `idioma` entra na lista porque a ficha é TEXTO: rótulos, títulos
+    // de seção e a palavra da classe saem do dicionário, e sem ele o
+    // memo devolveria a ficha da língua anterior (item 130).
+    [corpoId, estrelaEmFoco, estrela, jd, fonte, corpos, texturas, camaraUa, idioma]
   );
 
   if (!aberta || !ficha) return null;
@@ -190,7 +196,7 @@ export function FichaDoObjeto({
   return (
     <div
       className="hud-cartao hud-dialogo atlas-ficha"
-      aria-label={`Ficha de ${ficha.nome}`}
+      aria-label={t('ficha.aria', { nome: ficha.nome })}
       {...dialogo}
     >
       <div className="atlas-ficha-topo">
@@ -204,7 +210,7 @@ export function FichaDoObjeto({
           </span>
           <span className="atlas-ficha-classe">{ficha.classe}</span>
         </div>
-        <button type="button" onClick={onFechar} aria-label="Fechar a ficha">
+        <button type="button" onClick={onFechar} aria-label={t('ficha.fechar')}>
           ✕
         </button>
       </div>
@@ -215,9 +221,9 @@ export function FichaDoObjeto({
             type="button"
             className="hud-btn small"
             onClick={onAproximar}
-            aria-label={`Aproximar: enquadrar ${ficha.nome} de perto`}
+            aria-label={t('ficha.aproximarAria', { nome: ficha.nome })}
           >
-            ⊕ Aproximar
+            {t('ficha.aproximar')}
           </button>
         )}
         {!noSistema && (
@@ -225,9 +231,9 @@ export function FichaDoObjeto({
             type="button"
             className="hud-btn small"
             onClick={onSistema}
-            aria-label="Voltar ao enquadramento do sistema solar"
+            aria-label={t('ficha.sistemaAria')}
           >
-            ⌂ Sistema
+            {t('ficha.sistema')}
           </button>
         )}
       </div>
@@ -313,11 +319,12 @@ export function BotaoDaFicha({
   nome: string;
   onAlternar: () => void;
 }) {
+  useIdioma();
   return (
     <button
       className="hud-btn small"
       onClick={onAlternar}
-      aria-label={`Ficha de ${nome}`}
+      aria-label={t('ficha.aria', { nome })}
       {...gatilhoDoDialogo('ficha', aberta)}
     >
       ⓘ {nome}

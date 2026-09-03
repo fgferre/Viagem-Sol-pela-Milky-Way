@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
 import { GAL } from './baseGalactica';
+import { classeEmTexto } from '../atlasConfig';
 
 /** a caixa julgada pela disputa, em px CSS do canvas (ver `StarLabel`) */
 export interface CaixaDaDisputa {
@@ -1016,7 +1017,10 @@ export function projectCorpos(
     out.push({
       name: corpos[i].nome,
       spect: '',
-      detalhe: classe,
+      // A CLASSE VAI TRADUZIDA PARA A TELA e crua para a hierarquia
+      // (item 130): `prioridadeDeCorpo` abaixo continua lendo o pt-BR,
+      // que é a CHAVE do peso; quem o visitante lê é o texto da língua.
+      detalhe: classeEmTexto(classe),
       distPc: dist,
       x: p.x,
       y: p.y,

@@ -1,6 +1,7 @@
 import { escalaDaUi } from '../lib/uiScale';
+import { t } from '../lib/idioma';
 import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
-import { numeroPtBr } from '../three/tempoDoAtlas';
+import { numeroDoIdioma } from '../three/tempoDoAtlas';
 import {
   OPACIDADE_MINIMA_DO_ROTULO,
   PRIORIDADE_DO_ROTULO,
@@ -436,7 +437,7 @@ export class LabelCanvas {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     const context = canvas.getContext('2d', { alpha: true });
-    if (!context) throw new Error('Canvas 2D indisponível para os rótulos.');
+    if (!context) throw new Error(t('cena.rotulosIndisponiveis'));
     this.context = context;
   }
 
@@ -1271,6 +1272,6 @@ function intersects(a: Rect, b: Rect, padding: number): boolean {
  */
 function detalheDoRotulo(label: StarLabel): string {
   const base = label.detalhe ?? label.spect.slice(0, 5);
-  const nota = notaDeDistancia(label.distPc * UA_POR_PC, numeroPtBr);
+  const nota = notaDeDistancia(label.distPc * UA_POR_PC, numeroDoIdioma);
   return nota ? `${base}  ·  ${nota}` : base;
 }

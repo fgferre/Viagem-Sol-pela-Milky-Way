@@ -4,6 +4,11 @@
 // ============================================================
 import * as THREE from 'three';
 import { Engine, GRAMPO_DO_PASSO_S, modoDoToneMapping } from './core/engine';
+// `t` entra APELIDADO porque neste arquivo `t` já é o TEMPO (o segundo
+// argumento de todo tick e de toda curva). Um `t` de texto aqui dentro
+// seria sombreado pelo relógio no primeiro callback (item 130).
+import { t as texto } from '../lib/idioma';
+import type { ChaveDeTexto } from '../lib/idioma';
 import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
@@ -136,16 +141,21 @@ export type { Phase } from './fases';
  * nenhum, e acrescentar uma etapa aqui move rótulo, trilho e ARIA juntos.
  */
 export const LOAD_STAGES = (
-  [
-    ['catalogs', 'recebendo os catálogos…'],
-    ['stars', 'acordando 328.749 estrelas…'],
-    ['dust', 'assando a poeira do disco…'],
-    ['structure', 'acoplando braços e warp…'],
-    ['galaxy', 'semeando o disco galáctico…'],
-    ['layers', 'revelando as lâminas do disco…'],
-    ['shaders', 'compilando os shaders…'],
-  ] as const
-).map(([id, label], i, all) => ({ id, label, index: i + 1, total: all.length }));
+  ['catalogs', 'stars', 'dust', 'structure', 'galaxy', 'layers', 'shaders'] as const
+).map((id, i, all) => ({
+  id,
+  /**
+   * O RÓTULO É GETTER (item 130): a frase de cada etapa mora no
+   * dicionário, sob `etapa.<id>`, e sai na língua de agora. Congelá-la
+   * no módulo prenderia a tela de carregamento na língua com que o
+   * bundle foi avaliado.
+   */
+  get label() {
+    return texto(`etapa.${id}` as ChaveDeTexto);
+  },
+  index: i + 1,
+  total: all.length,
+}));
 
 /*
  * (O PINO DO SOL DENTRO DO ATLAS morreu em 21/08 — item 5. Ele existia
@@ -806,18 +816,14 @@ export class Director {
       } catch (e) {
         console.error(e);
         this.desistir(
-          'A Viagem parou de desenhar: '
-            + (e instanceof Error ? e.message : String(e))
+          texto('hud.fatalTick') + (e instanceof Error ? e.message : String(e))
         );
       }
     });
     // A PLACA DE VÍDEO DESISTIU (o listener e o porquê de não restaurar
     // moram no Engine, que é quem tem o canvas e o laço).
     this.engine.onContextoPerdido(() =>
-      this.desistir(
-        'A placa de vídeo desistiu de desenhar a Viagem — o navegador '
-          + 'tirou o contexto 3D desta página.'
-      )
+      this.desistir(texto('hud.fatalContexto'))
     );
     } catch (e) {
       this.engine.dispose();

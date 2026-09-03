@@ -4,6 +4,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { LARGURA_DO_CELULAR_PX } from '../lib/uiScale';
+import { t } from '../lib/idioma';
+import { useIdioma } from '../hooks/useIdioma';
 import { LOAD_STAGES } from '../three/director';
 import type { LoadStage } from '../three/director';
 import { CartografiaCanvas } from './CartografiaCanvas';
@@ -60,9 +62,16 @@ export function LoadingVeil({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cartografia = useRef<CartografiaCanvas | null>(null);
   const [compacto, setCompacto] = useState(ehCompacto);
+  // a língua entra como DEPENDÊNCIA de render: sem ela o véu ficaria na
+  // língua com que foi pintado quando o seletor troca (item 130)
+  useIdioma();
   const falhou = state === 'error';
   const p = stage.index / stage.total;
-  const anuncio = `Etapa ${stage.index} de ${stage.total} — ${stage.label}`;
+  const anuncio = t('hud.etapaAnuncio', {
+    i: stage.index,
+    total: stage.total,
+    rotulo: stage.label,
+  });
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -116,23 +125,28 @@ export function LoadingVeil({
         {!compacto && (
           <>
             <div className="cv-telemetria esquerda">
-              <div>HYG · 328.749 estrelas</div>
-              <div>poeira APOGEE · CO · H II</div>
+              <div>{t('hud.telemetria.estrelas')}</div>
+              <div>{t('hud.telemetria.poeira')}</div>
             </div>
             <div className="cv-telemetria direita">
-              <div>aglomerados · Cefeidas Gaia DR3</div>
+              <div>{t('hud.telemetria.aglomerados')}</div>
               <div>RA 17h 45m · DEC −29° 00′</div>
             </div>
           </>
         )}
         <div className="cv-titulo">
-          <div className="title-kicker">HYG · VIA LÁCTEA · TEMPO REAL</div>
+          <div className="title-kicker">{t('hud.kicker')}</div>
+          {/* MAR DE ESTRELAS é o NOME do app, não uma frase: nome
+              próprio não se traduz, e é o mesmo nas duas línguas. */}
           <div className="title-big">MAR DE ESTRELAS</div>
           <div className="cv-etapa-rotulo">{stage.label}</div>
         </div>
         <div className="cv-trilho">
           <div className="cv-trilho-conta">
-            etapa {String(stage.index).padStart(2, '0')} / {String(stage.total).padStart(2, '0')}
+            {t('hud.etapaConta', {
+              i: String(stage.index).padStart(2, '0'),
+              total: String(stage.total).padStart(2, '0'),
+            })}
           </div>
           {/* progressbar discreto: a régua é a ETAPA, e o rótulo dela já
               vai no aria-valuetext — sem porcentagem, que mentiria (a rede
@@ -140,7 +154,7 @@ export function LoadingVeil({
           <div
             className="cv-trilho-marcos"
             role="progressbar"
-            aria-label="Progresso do carregamento"
+            aria-label={t('hud.progressoCarregamento')}
             aria-valuemin={1}
             aria-valuemax={stage.total}
             aria-valuenow={stage.index}
@@ -175,25 +189,24 @@ export function LoadingVeil({
       {falhou && (
         <div className="cv-falha" role="alert">
           <div className="title-kicker">
-            {emVoo ? 'FALHA DURANTE A VIAGEM' : 'FALHA DE INICIALIZAÇÃO'}
+            {t(emVoo ? 'hud.falhaEmVoo' : 'hud.falhaNoBoot')}
           </div>
           <div className="title-big error-title">
-            {emVoo ? 'A VIAGEM PAROU' : 'A VIAGEM NÃO PÔDE COMEÇAR'}
+            {t(emVoo ? 'hud.falhaEmVooTitulo' : 'hud.falhaNoBootTitulo')}
           </div>
           <div className="title-sub">
-            {emVoo ? (
-              'a cena deixou de ser desenhada — recarregue para começar de novo'
-            ) : (
-              <>
-                a cartografia parou na etapa {String(stage.index).padStart(2, '0')}/
-                {String(stage.total).padStart(2, '0')} — {stage.label}
-              </>
-            )}
+            {emVoo
+              ? t('hud.falhaEmVooNota')
+              : t('hud.falhaNoBootNota', {
+                  i: String(stage.index).padStart(2, '0'),
+                  total: String(stage.total).padStart(2, '0'),
+                  rotulo: stage.label,
+                })}
           </div>
           {error && <div className="cv-falha-detalhe">{error}</div>}
           <div className="title-rule cv-falha-regua" />
           <button className="hud-btn" onClick={onRetry}>
-            Tentar novamente
+            {t('hud.tentarNovamente')}
           </button>
         </div>
       )}
@@ -216,6 +229,7 @@ export function TitleVeil({
   onAtlas?: () => void;
   runtime?: number;
 }) {
+  useIdioma();
   const minutes = runtime ? Math.floor(runtime / 60) : 0;
   const seconds = runtime ? Math.round(runtime % 60) : 0;
   return (
@@ -226,13 +240,13 @@ export function TitleVeil({
     >
       {mode === 'intro' && (
         <>
-          <div className="title-kicker">HYG · VIA LÁCTEA · TEMPO REAL</div>
+          <div className="title-kicker">{t('hud.kicker')}</div>
           <div className="title-big">MAR DE ESTRELAS</div>
           <div className="title-rule" />
           <div className="title-sub">
-            do Sol às supergigantes de Órion, ao coração da galáxia — e de volta
+            {t('hud.abertura.linha1')}
             <br />
-            328.749 estrelas de catálogo · Via Láctea volumétrica reconstruída em tempo real
+            {t('hud.abertura.linha2')}
           </div>
           <div className="title-rule" />
           {/* AS TRÊS PORTAS DA ABERTURA. O "Explorar" já estava ligado
@@ -258,42 +272,44 @@ export function TitleVeil({
           <div className="abertura-portas">
             <div className="abertura-porta">
               <button className="hud-btn" onClick={onPlay} aria-describedby="porta-filme">
-                Iniciar a viagem
+                {t('hud.porta.filme')}
               </button>
               <span className="abertura-porta-nota" id="porta-filme">
-                um filme com roteiro e legendas — você assiste
+                {t('hud.porta.filmeNota')}
               </span>
             </div>
             {onExplore && (
               <div className="abertura-porta">
                 <button className="hud-btn" onClick={onExplore} aria-describedby="porta-voo">
-                  Explorar
+                  {t('hud.porta.explorar')}
                 </button>
                 <span className="abertura-porta-nota" id="porta-voo">
-                  você pilota a câmera, sem roteiro nem relógio
+                  {t('hud.porta.explorarNota')}
                 </span>
               </div>
             )}
             {onAtlas && (
               <div className="abertura-porta">
                 <button className="hud-btn" onClick={onAtlas} aria-describedby="porta-atlas">
-                  Entrar no Atlas
+                  {t('hud.porta.atlas')}
                 </button>
                 <span className="abertura-porta-nota" id="porta-atlas">
-                  o céu de hoje: escolha a data, visite os planetas
+                  {t('hud.porta.atlasNota')}
                 </span>
               </div>
             )}
           </div>
           <div className="journey-runtime">
-            experiência cinematográfica{minutes > 0 ? ` · ${minutes} min ${seconds} s` : ''}
+            {minutes > 0
+              ? t('hud.duracaoCom', { min: minutes, seg: seconds })
+              : t('hud.duracao')}
           </div>
         </>
       )}
       {mode === 'end' && (
         <>
           <div className="title-sub" style={{ letterSpacing: '0.42em' }}>
-            de volta a casa
+            {t('hud.fim.deVoltaACasa')}
           </div>
           <div className="title-rule" />
           {/* A FRASE DE ENCERRAMENTO É EMPRESTADA E ENCENADA (item 108,
@@ -340,7 +356,7 @@ export function TitleVeil({
             className="title-sub encerramento-rodape"
             style={{ animationDelay: `${ATRASO_DO_RODAPE}s` }}
           >
-            estrelas nomeadas em posições reais · Via Láctea reconstruída a partir de dados científicos
+            {t('hud.fim.rodape')}
           </div>
           <div className="title-rule encerramento-rodape"
             style={{ animationDelay: `${ATRASO_DO_RODAPE}s` }} />
@@ -357,11 +373,11 @@ export function TitleVeil({
             style={{ display: 'flex', gap: '0.8rem', animationDelay: `${ATRASO_DO_RODAPE}s` }}
           >
             <button className="hud-btn" onClick={onPlay}>
-              Reviver a viagem
+              {t('hud.fim.reviver')}
             </button>
             {onAtlas && (
               <button className="hud-btn" onClick={onAtlas}>
-                Ficar aqui
+                {t('hud.fim.ficarAqui')}
               </button>
             )}
             {/* "EXPLORAR", e não "Explorar livremente" (24/08). Era a
@@ -377,7 +393,7 @@ export function TitleVeil({
                 se ele preferir, é uma palavra em dois lugares. */}
             {onExplore && (
               <button className="hud-btn" onClick={onExplore}>
-                Explorar
+                {t('hud.porta.explorar')}
               </button>
             )}
           </div>
@@ -432,6 +448,7 @@ export function ProgressBar({
    */
   chromeVisivel?: boolean;
 }) {
+  useIdioma();
   const scrubDoEvento = (
     event: React.PointerEvent<HTMLDivElement>
   ) => {
@@ -443,7 +460,7 @@ export function ProgressBar({
       className={`progress-wrap${chromeVisivel ? '' : ' hud-sumido'}`}
       role="slider"
       tabIndex={0}
-      aria-label="Progresso da viagem"
+      aria-label={t('hud.progressoDaViagem')}
       // a régua é o CAPÍTULO, não a fração: o progresso fino anda a 60 Hz
       // por custom property justamente para o React ficar fora do caminho
       // quente, e o índice da legenda já re-renderiza — de graça e no
@@ -453,8 +470,12 @@ export function ProgressBar({
       aria-valuenow={capituloAtual + 1}
       aria-valuetext={
         ticks[capituloAtual]
-          ? `${capituloAtual + 1} de ${ticks.length} — ${ticks[capituloAtual].text}`
-          : `${ticks.length} capítulos`
+          ? t('hud.capituloDeTotal', {
+              n: capituloAtual + 1,
+              total: ticks.length,
+              texto: ticks[capituloAtual].text,
+            })
+          : t('hud.capitulos', { total: ticks.length })
       }
       onPointerDown={(event) => {
         // setPointerCapture: o arrasto continua valendo mesmo quando o

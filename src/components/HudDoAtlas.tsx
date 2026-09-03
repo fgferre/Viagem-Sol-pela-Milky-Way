@@ -15,16 +15,10 @@
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
-import { CAMADAS_POR_FAMILIA } from '../three/atlasConfig';
-import {
-  BRILHO_ASSISTIDO,
-  BRILHO_REAL,
-  ESCALA_REAL,
-  FORA_DE_ESCALA,
-  TESE_DO_SELO,
-  estadoDoSelo,
-  legendaDaProcedencia,
-} from '../three/selo';
+import { CAMADAS_POR_FAMILIA, familiaEmTexto } from '../three/atlasConfig';
+import { t } from '../lib/idioma';
+import { useIdioma } from '../hooks/useIdioma';
+import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
 import type { EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
 
@@ -71,12 +65,17 @@ export function GavetaDeCamadas({
   onCamada: (flag: string, ligar: boolean) => void;
 }) {
   const dialogo = useDialogFocus('camadas', aberta, onFechar);
+  useIdioma();
   if (!aberta) return null;
   return (
-    <div className="hud-cartao hud-dialogo atlas-gaveta" aria-label="Camadas da cena" {...dialogo}>
+    <div
+      className="hud-cartao hud-dialogo atlas-gaveta"
+      aria-label={t('atlas.camadasAria')}
+      {...dialogo}
+    >
       <div className="atlas-gaveta-topo">
-        <span>Camadas</span>
-        <button type="button" onClick={onFechar} aria-label="Fechar camadas">
+        <span>{t('atlas.camadas')}</span>
+        <button type="button" onClick={onFechar} aria-label={t('atlas.fecharCamadas')}>
           ✕
         </button>
       </div>
@@ -87,10 +86,14 @@ export function GavetaDeCamadas({
             key={familia}
             className="atlas-gaveta-familia"
             role="group"
-            aria-label={`${familia}: ${ligadas} de ${camadas.length} camadas ligadas`}
+            aria-label={t('atlas.familiaConta', {
+              familia: familiaEmTexto(familia),
+              ligadas,
+              total: camadas.length,
+            })}
           >
             <h3 className="atlas-gaveta-titulo">
-              <span>{familia}</span>
+              <span>{familiaEmTexto(familia)}</span>
               {/* a contagem já foi dita no `aria-label` do grupo, e ouvi-la
                   duas vezes a cada caixa seria ruído */}
               <span className="atlas-gaveta-conta" aria-hidden="true">
@@ -190,6 +193,7 @@ export function Selo({
 }) {
   const [aberto, setAberto] = useState(false);
   const caixa = useRef<HTMLDivElement>(null);
+  useIdioma();
   const { escala, brilho, desvios, culpados, exposicao } = estadoDoSelo(vista);
   const lista = desvios.map((d) => d.rotulo).join(' · ');
   const daParaVoltar = desvios.some((d) => d.volta !== 'nenhuma');
@@ -236,7 +240,7 @@ export function Selo({
    */
   const oQueSeVe =
     [exposicao, brilhoReal ? null : lista].filter(Boolean).join(' · ')
-    || 'a fotometria da casa, sem ajuste';
+    || t('atlas.semAjuste');
   /** o PIOR EIXO decide a bolinha do resumo: um desvio já tinge os dois */
   const algumDesvia = !escalaReal || !brilhoReal;
 
@@ -275,11 +279,11 @@ export function Selo({
       className="atlas-selo"
       ref={caixa}
       role="group"
-      aria-label="Selo de honestidade desta vista"
+      aria-label={t('atlas.seloAria')}
     >
       {aberto && (
         <div id="atlas-selo-detalhe" className="atlas-selo-detalhe hud-cartao">
-          <p className="atlas-selo-tese">{TESE_DO_SELO}</p>
+          <p className="atlas-selo-tese">{t('selo.tese')}</p>
 
           <button
             type="button"
@@ -288,13 +292,13 @@ export function Selo({
             disabled={escalaReal}
             aria-label={
               escalaReal
-                ? `${ESCALA_REAL}: o que domina o quadro está em 1:1`
-                : `${FORA_DE_ESCALA}: o disco do Sol nesta vista é ator. Clique para enquadrar o sistema em escala real`
+                ? t('atlas.escalaRealAria', { estado: t('selo.escalaReal') })
+                : t('atlas.foraDeEscalaAria', { estado: t('selo.foraDeEscala') })
             }
           >
-            <span className="atlas-selo-eixo">escala</span>
-            <strong>{escalaReal ? ESCALA_REAL : FORA_DE_ESCALA}</strong>
-            <em>{escalaReal ? 'o quadro está em 1:1' : 'clique: enquadrar em escala real'}</em>
+            <span className="atlas-selo-eixo">{t('atlas.eixoEscala')}</span>
+            <strong>{t(escalaReal ? 'selo.escalaReal' : 'selo.foraDeEscala')}</strong>
+            <em>{t(escalaReal ? 'atlas.escalaRealNota' : 'atlas.escalaDesvioNota')}</em>
           </button>
 
           {/* OS CULPADOS, e eles só saem quando há acusação: `estadoDoSelo`
@@ -328,17 +332,20 @@ export function Selo({
             onClick={onBrilhoReal}
             aria-label={
               brilhoReal
-                ? `${BRILHO_REAL}: ${exposicao ?? 'nada foi ajustado nesta vista.'}`
-                  + ' Clique para voltar à luz assistida.'
-                : `${BRILHO_ASSISTIDO}.${exposicao ? ` ${exposicao}` : ''}`
-                  + ` Ajustado: ${lista}.`
-                  + (daParaVoltar
-                    ? ' Clique para voltar ao brilho real.'
-                    : ' Clique para voltar à luz assistida.')
+                ? t('atlas.brilhoRealAria', {
+                    estado: t('selo.brilhoReal'),
+                    exposicao: exposicao ?? t('atlas.brilhoSemAjuste'),
+                  })
+                : t('atlas.brilhoDesvioAria', {
+                    estado: t('selo.brilhoAssistido'),
+                    exposicao: exposicao ? ` ${exposicao}` : '',
+                    lista,
+                    volta: t(daParaVoltar ? 'atlas.voltarAoReal' : 'atlas.voltarAAssistida'),
+                  })
             }
           >
-            <span className="atlas-selo-eixo">brilho</span>
-            <strong>{brilhoReal ? BRILHO_REAL : BRILHO_ASSISTIDO}</strong>
+            <span className="atlas-selo-eixo">{t('atlas.eixoBrilho')}</span>
+            <strong>{t(brilhoReal ? 'selo.brilhoReal' : 'selo.brilhoAssistido')}</strong>
             {/* A COPY DA VOLTA NOMEIA O QUE RESTOU, e é ela que responde
                 ao medo que armava a guarda antiga: oferecer a assistência
                 numa linha que ainda diz ASSISTIDO só engana se o texto
@@ -355,8 +362,8 @@ export function Selo({
                 o mesmo texto nos dois ramos do clique. */}
             <em>
               {podeReassistir
-                ? `${oQueSeVe} — clique: voltar à luz assistida`
-                : `clique: voltar ao real — ${oQueSeVe}`}
+                ? t('atlas.cliqueAssistida', { oQueSeVe })
+                : t('atlas.cliqueReal', { oQueSeVe })}
             </em>
           </button>
 
@@ -374,15 +381,15 @@ export function Selo({
         className={`atlas-selo-resumo ${algumDesvia ? 'desvio' : 'real'}`}
         aria-expanded={aberto}
         aria-controls="atlas-selo-detalhe"
-        title={TESE_DO_SELO}
+        title={t('selo.tese')}
         onClick={() => setAberto((v) => !v)}
       >
         <span className="atlas-selo-bolinha" aria-hidden="true" />
-        <span>{escalaReal ? ESCALA_REAL : FORA_DE_ESCALA}</span>
+        <span>{t(escalaReal ? 'selo.escalaReal' : 'selo.foraDeEscala')}</span>
         <span className="atlas-selo-meio" aria-hidden="true">
           ·
         </span>
-        <span>{brilhoReal ? BRILHO_REAL : BRILHO_ASSISTIDO}</span>
+        <span>{t(brilhoReal ? 'selo.brilhoReal' : 'selo.brilhoAssistido')}</span>
         <span className="atlas-selo-seta" aria-hidden="true">
           {aberto ? '▾' : '▸'}
         </span>
@@ -437,6 +444,7 @@ export function Bussola({ acesa, onEndireitar }: {
   acesa: boolean;
   onEndireitar: () => void;
 }) {
+  useIdioma();
   return (
     <button
       type="button"
@@ -449,8 +457,8 @@ export function Bussola({ acesa, onEndireitar }: {
       inert={!acesa}
       aria-hidden={!acesa}
       tabIndex={acesa ? 0 : -1}
-      aria-label="Endireitar o horizonte"
-      title="Endireitar o horizonte"
+      aria-label={t('atlas.endireitar')}
+      title={t('atlas.endireitar')}
     >
       <span className="atlas-bussola-agulha" aria-hidden="true">
         ⌃
@@ -493,20 +501,21 @@ export function BarraDoTempo({
   onAoVivo: () => void;
   onEpoca: () => void;
 }) {
+  useIdioma();
   const { data, taxa, sentido, aoVivo, naEpoca, aviso } = tempo;
   const parado = sentido === 0 && !aoVivo;
   return (
     <div className="atlas-tempo">
       <div className="atlas-tempo-linha">
-        <span className="atlas-tempo-olho">instante do céu</span>
+        <span className="atlas-tempo-olho">{t('atlas.instanteDoCeu')}</span>
         <span className="atlas-tempo-data">{data}</span>
       </div>
-      <div className="atlas-tempo-botoes" role="group" aria-label="Máquina do tempo">
+      <div className="atlas-tempo-botoes" role="group" aria-label={t('atlas.maquinaDoTempo')}>
         <button
           type="button"
           className="hud-btn small"
           aria-pressed={sentido === -1}
-          aria-label="Voltar no tempo"
+          aria-label={t('atlas.voltarNoTempo')}
           onClick={() => onSentido(sentido === -1 ? 0 : -1)}
         >
           ⏴
@@ -514,7 +523,7 @@ export function BarraDoTempo({
         <button
           type="button"
           className="hud-btn small"
-          aria-label="Parar o tempo"
+          aria-label={t('atlas.pararOTempo')}
           disabled={parado}
           onClick={() => onSentido(0)}
         >
@@ -524,7 +533,7 @@ export function BarraDoTempo({
           type="button"
           className="hud-btn small"
           aria-pressed={sentido === 1}
-          aria-label="Avançar no tempo"
+          aria-label={t('atlas.avancarNoTempo')}
           onClick={() => onSentido(sentido === 1 ? 0 : 1)}
         >
           ⏵
@@ -532,7 +541,7 @@ export function BarraDoTempo({
         <button
           type="button"
           className="hud-btn small atlas-tempo-taxa"
-          aria-label={`Velocidade do tempo: ${taxa}. Clique para o próximo degrau.`}
+          aria-label={t('atlas.taxaAria', { taxa })}
           onClick={onDegrau}
         >
           {taxa}
@@ -541,19 +550,19 @@ export function BarraDoTempo({
           type="button"
           className="hud-btn small"
           aria-pressed={aoVivo}
-          aria-label="Seguir o tempo real"
+          aria-label={t('atlas.aoVivoAria')}
           onClick={onAoVivo}
         >
-          Ao vivo
+          {t('atlas.aoVivo')}
         </button>
         <button
           type="button"
           className="hud-btn small"
-          aria-label="Voltar ao instante do retrato de 2026"
+          aria-label={t('atlas.epocaAria')}
           disabled={naEpoca && parado}
           onClick={onEpoca}
         >
-          Época
+          {t('atlas.epoca')}
         </button>
       </div>
       <p className="atlas-tempo-aviso" role="status" aria-live="polite">
@@ -598,16 +607,17 @@ export function GavetaDoTempo({
   onEpoca: () => void;
 }) {
   const dialogo = useDialogFocus('tempo', aberta, onFechar);
+  useIdioma();
   if (!aberta) return null;
   return (
     <div
       className="hud-cartao hud-dialogo atlas-gaveta"
-      aria-label="Máquina do tempo"
+      aria-label={t('atlas.maquinaDoTempo')}
       {...dialogo}
     >
       <div className="atlas-gaveta-topo">
-        <span>Tempo</span>
-        <button type="button" onClick={onFechar} aria-label="Fechar a máquina do tempo">
+        <span>{t('atlas.tempo')}</span>
+        <button type="button" onClick={onFechar} aria-label={t('atlas.fecharTempo')}>
           ✕
         </button>
       </div>
@@ -630,15 +640,16 @@ export function BotaoDoTempo({
   aberta: boolean;
   onAlternar: () => void;
 }) {
+  useIdioma();
   return (
     <button
       type="button"
       className="hud-btn small"
       onClick={onAlternar}
-      aria-label="Máquina do tempo"
+      aria-label={t('atlas.maquinaDoTempo')}
       {...gatilhoDoDialogo('tempo', aberta)}
     >
-      ⏱ Tempo
+      {t('atlas.tempoBotao')}
     </button>
   );
 }
@@ -656,14 +667,15 @@ export function BotaoDaGaveta({
   aberta: boolean;
   onAlternar: () => void;
 }) {
+  useIdioma();
   return (
     <button
       className="hud-btn small"
       onClick={onAlternar}
-      aria-label="Camadas da cena"
+      aria-label={t('atlas.camadasAria')}
       {...gatilhoDoDialogo('camadas', aberta)}
     >
-      ⧉ Camadas
+      {t('atlas.camadasBotao')}
     </button>
   );
 }

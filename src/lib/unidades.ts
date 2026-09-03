@@ -33,6 +33,7 @@
 // inverteria a seta (lib pura não depende do three).
 // ============================================================
 import { AU_KM } from './atlas/elementosOrbitais';
+import { decimalDoIdioma, idiomaAtual, t } from './idioma';
 
 /**
  * Anos-luz por parsec. É o número que as quatro cópias já usavam — e
@@ -99,17 +100,31 @@ export function notaDeDistancia(
 
   if (ua < UA_MINIMA) {
     const km = ua * AU_KM; // o conversor único da casa, importado
-    if (km >= 10_000) return `${formatar(Math.round(km / 1000))} mil km`;
-    return `${formatar(Math.round(km))} km`;
+    if (km >= 10_000) return t('unidade.milKm', { n: formatar(Math.round(km / 1000)) });
+    return t('unidade.km', { n: formatar(Math.round(km)) });
   }
 
   const al = ua / UA_POR_AL;
-  if (al < AL_MINIMO) return `${formatar(ua)} UA`;
+  if (al < AL_MINIMO) return t('unidade.ua', { n: formatar(ua) });
 
-  const unidade = al < 2 ? 'ano-luz' : 'anos-luz';
-  if (al < 100) return `${formatar(al)} ${unidade}`;
-  if (al < 10_000) return `${formatar(Math.round(al))} ${unidade}`;
-  return `${formatar(al / 1000)} mil anos-luz`;
+  if (al < 100) return t(chaveDoAnoLuz(al), { n: formatar(al) });
+  if (al < 10_000) {
+    const inteiro = Math.round(al);
+    return t(chaveDoAnoLuz(inteiro), { n: formatar(inteiro) });
+  }
+  return t('unidade.milAnosLuz', { n: formatar(al / 1000) });
+}
+
+/**
+ * SINGULAR OU PLURAL, e a REGRA MUDA DE LÍNGUA (item 130). Em pt-BR o
+ * plural começa em 2 — "1,5 ano-luz" é singular, "2,8 anos-luz" é
+ * plural —, a mesma regra do rótulo da taxa da máquina do tempo. Em
+ * inglês só o 1 EXATO é singular: "1.5 light-years" já é plural, e
+ * traduzir a regra da casa daria "1.5 light-year".
+ */
+function chaveDoAnoLuz(al: number): 'unidade.anoLuz' | 'unidade.anosLuz' {
+  const singular = idiomaAtual() === 'en' ? al === 1 : al < 2;
+  return singular ? 'unidade.anoLuz' : 'unidade.anosLuz';
 }
 
 // ============================================================
@@ -135,7 +150,7 @@ export function notaDeDistancia(
  * (0,017) em "0,02", e uma casa a mataria de vez.
  */
 export function comCasas(valor: number, casas: number): string {
-  return valor.toFixed(casas).replace('.', ',');
+  return decimalDoIdioma(valor.toFixed(casas));
 }
 
 const SOBRESCRITOS = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
@@ -160,7 +175,7 @@ export function formatarMassaKg(kg: number): string | null {
     .split('')
     .map((d) => SOBRESCRITOS[Number(d)])
     .join('');
-  return `${mantissa!.replace('.', ',')} × 10${n < 0 ? '⁻' : ''}${digitos} kg`;
+  return `${decimalDoIdioma(mantissa!)} × 10${n < 0 ? '⁻' : ''}${digitos} kg`;
 }
 
 /**
@@ -172,5 +187,5 @@ export function formatarMassaKg(kg: number): string | null {
 export function formatarRazaoTerra(razao: number): string {
   const texto =
     razao >= 1 ? razao.toFixed(2) : Number(razao.toPrecision(2)).toString();
-  return `${texto.replace('.', ',')}× Terra`;
+  return t('unidade.vezesTerra', { n: decimalDoIdioma(texto) });
 }

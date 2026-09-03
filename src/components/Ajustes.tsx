@@ -31,6 +31,9 @@
 // ============================================================
 import { useState } from 'react';
 import { useDialogFocus } from '../lib/dialogFocus';
+import { IDIOMAS, definirIdioma, t } from '../lib/idioma';
+import type { ChaveDeTexto } from '../lib/idioma';
+import { useIdioma } from '../hooks/useIdioma';
 import { DEGRAUS_DA_UI, rotuloDaEscala } from '../lib/uiScale';
 import { QUALIDADES, rotuloDaQualidade } from '../three/atlasConfig';
 import type {
@@ -39,11 +42,15 @@ import type {
   ToneMapMode,
 } from '../three/core/engine';
 
-const TONS: { id: ToneMapMode; nome: string; nota: string }[] = [
-  { id: 'aces', nome: 'ACES', nota: 'comprime e dessatura os altos' },
-  { id: 'agx', nome: 'AgX', nota: 'preserva croma, escurece' },
-  { id: 'neutral', nome: 'Neutral', nota: 'meio-termo' },
-  { id: 'linear', nome: 'Linear', nota: 'sem curva — estoura, mostra o cru' },
+/**
+ * As quatro curvas. O NOME é marca (ACES, AgX) e não se traduz; a NOTA
+ * é frase, e sai do dicionário na língua de agora (item 130).
+ */
+const TONS: { id: ToneMapMode; nome: string; nota: ChaveDeTexto }[] = [
+  { id: 'aces', nome: 'ACES', nota: 'ajustes.tom.aces' },
+  { id: 'agx', nome: 'AgX', nota: 'ajustes.tom.agx' },
+  { id: 'neutral', nome: 'Neutral', nota: 'ajustes.tom.neutral' },
+  { id: 'linear', nome: 'Linear', nota: 'ajustes.tom.linear' },
 ];
 
 export function Ajustes({
@@ -87,6 +94,7 @@ export function Ajustes({
   onReverConvite?: () => void;
 }) {
   const [copiado, setCopiado] = useState(false);
+  const idioma = useIdioma();
 
   // O painel NÃO aplica ?tone=/?exp= na montagem: efeito de filho roda antes
   // do efeito do pai, então o Director ainda não existe aqui. Quem aplica é o
@@ -100,55 +108,80 @@ export function Ajustes({
   if (!aberto) return null;
 
   return (
-    <div className="hud-cartao hud-dialogo ajustes" aria-label="Ajustes de renderização" {...dialogo}>
+    <div
+      className="hud-cartao hud-dialogo ajustes"
+      aria-label={t('ajustes.aria')}
+      {...dialogo}
+    >
       <div className="ajustes-topo">
-        <span>Ajustes</span>
-        <button type="button" onClick={onFechar} aria-label="Fechar ajustes">
+        <span>{t('ajustes.titulo')}</span>
+        <button type="button" onClick={onFechar} aria-label={t('ajustes.fechar')}>
           ✕
         </button>
       </div>
 
+      {/* O SELETOR DE IDIOMA (item 130, F1). Mora AQUI e não na barra
+          nem na URL: a barra é o lugar do que se usa a toda hora, e a
+          URL desta casa é espelho da vista, não painel — knob de URL
+          foi recusado pelo dono. É o mesmo molde de todo controle deste
+          painel (fileira de botões, o de agora com `on`) e troca a
+          língua AO VIVO, sem recarregar, como tudo o mais daqui.
+          O nome de cada língua vem NA PRÓPRIA LÍNGUA ("Português",
+          "English"): quem não lê a língua de agora precisa reconhecer a
+          dele na lista, e "Portuguese" não ajuda quem procura o
+          português. */}
       <div className="ajustes-secao">
-        <h3>Curva de tom</h3>
-        <p className="ajustes-nota">
-          Decide o que acontece com o que passa de 1. Muda croma e faixa
-          dinâmica — é escolha, não medida.
-        </p>
-        {TONS.map((t) => (
-          <label key={t.id} className="ajustes-radio">
+        <h3>{t('ajustes.idioma')}</h3>
+        <p className="ajustes-nota">{t('ajustes.idiomaNota')}</p>
+        <div className="ajustes-linha">
+          {IDIOMAS.map((lingua) => (
+            <button
+              type="button"
+              key={lingua.id}
+              lang={lingua.id}
+              className={idioma === lingua.id ? 'on' : ''}
+              aria-pressed={idioma === lingua.id}
+              onClick={() => definirIdioma(lingua.id)}
+            >
+              {lingua.nome}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ajustes-secao">
+        <h3>{t('ajustes.tom')}</h3>
+        <p className="ajustes-nota">{t('ajustes.tomNota')}</p>
+        {TONS.map((curva) => (
+          <label key={curva.id} className="ajustes-radio">
             <input
               type="radio"
               name="tom"
-              checked={tom === t.id}
-              onChange={() => onTom(t.id)}
+              checked={tom === curva.id}
+              onChange={() => onTom(curva.id)}
             />
-            <span>{t.nome}</span>
-            <em>{t.nota}</em>
+            <span>{curva.nome}</span>
+            <em>{t(curva.nota)}</em>
           </label>
         ))}
       </div>
 
       <div className="ajustes-secao">
-        <h3>Exposição · {exposicao.toFixed(2)}</h3>
+        <h3>{t('ajustes.exposicaoCom', { valor: exposicao.toFixed(2) })}</h3>
         <input
           type="range"
           min="0.4"
           max="2.2"
           step="0.02"
           value={exposicao}
-          aria-label="Exposição"
+          aria-label={t('ajustes.exposicao')}
           onChange={(e) => onExposicao(Number(e.target.value))}
         />
       </div>
 
       <div className="ajustes-secao">
-        <h3>Qualidade</h3>
-        <p className="ajustes-nota">
-          Troca ao vivo, sem recarregar. A parte pesada — a população da
-          galáxia e o Sol — é refeita em segundo plano e entra de uma vez;
-          até lá a cena continua como está. O <em>auto</em> deixa a medição
-          escolher — e ninguém escolhe por você sem esse clique.
-        </p>
+        <h3>{t('ajustes.qualidade')}</h3>
+        <p className="ajustes-nota">{t('ajustes.qualidadeNota')}</p>
         <div className="ajustes-linha">
           {QUALIDADES.map((q) => (
             <button
@@ -175,12 +208,8 @@ export function Ajustes({
       </div>
 
       <div className="ajustes-secao">
-        <h3>Tamanho do texto · {rotuloDaEscala(escalaUi)}</h3>
-        <p className="ajustes-nota">
-          Vale para o HUD inteiro — legenda, controles, selo e os nomes das
-          estrelas. Não mexe na cena: dentro do Atlas o enquadramento recua
-          um pouco para o texto maior não cobrir o alvo.
-        </p>
+        <h3>{t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}</h3>
+        <p className="ajustes-nota">{t('ajustes.textoNota')}</p>
         <div className="ajustes-linha">
           {DEGRAUS_DA_UI.map((f) => (
             <button
@@ -196,39 +225,32 @@ export function Ajustes({
       </div>
 
       <div>
-        <h3>Beta · Rótulos 3D</h3>
-        <p className="ajustes-nota">
-          Os nomes dos corpos viram texto dentro da própria cena, com
-          profundidade — o visual do projeto irmão. Quem aparece continua
-          sendo decidido pelas mesmas regras de sempre, e o anel segue
-          sendo o alvo do clique. Vale no Atlas; experimental.
-        </p>
+        <h3>{t('ajustes.rotulos3d')}</h3>
+        <p className="ajustes-nota">{t('ajustes.rotulos3dNota')}</p>
         <div className="ajustes-linha">
           <button
             type="button"
             className={rotulos3d ? '' : 'on'}
             onClick={() => onRotulos3d(false)}
           >
-            Desligados
+            {t('ajustes.desligados')}
           </button>
           <button
             type="button"
             className={rotulos3d ? 'on' : ''}
             onClick={() => onRotulos3d(true)}
           >
-            Ligados
+            {t('ajustes.ligados')}
           </button>
         </div>
       </div>
 
       {onReverConvite && (
         <div className="ajustes-secao">
-          <h3>Convite</h3>
-          <p className="ajustes-nota">
-            Os três gestos do voo livre, apontados na própria tela.
-          </p>
+          <h3>{t('ajustes.convite')}</h3>
+          <p className="ajustes-nota">{t('ajustes.conviteNota')}</p>
           <button type="button" className="ajustes-copiar" onClick={onReverConvite}>
-            rever o convite
+            {t('ajustes.reverConvite')}
           </button>
         </div>
       )}
@@ -244,7 +266,7 @@ export function Ajustes({
             });
           }}
         >
-          {copiado ? 'copiado' : 'copiar link deste instante'}
+          {t(copiado ? 'ajustes.copiado' : 'ajustes.copiarLink')}
         </button>
       </div>
     </div>

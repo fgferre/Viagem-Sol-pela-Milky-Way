@@ -31,6 +31,8 @@
 // ============================================================
 import { LIMIAR_SISTEMA_SOLAR_PC, acusacaoDaEscala } from './escala';
 import { CAMADAS } from './atlasConfig';
+import { decimalDoIdioma, t } from '../lib/idioma';
+import { PT } from '../lib/idioma/pt';
 import type { QualityLevel, ToneMapMode } from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { LANTERNA_DE_LEITURA, PASSOS_DA_EXPOSICAO_REAL } from '../lib/atlas/luzDaVisita';
@@ -39,13 +41,18 @@ import { LANTERNA_DE_LEITURA, PASSOS_DA_EXPOSICAO_REAL } from '../lib/atlas/luzD
 // "BRILHO ASSISTIDO" é MELHORIA declarada: o doador escreve só
 // "ASSISTIDO", e a casa iguala o padrão do eixo irmão (Estado da
 // Onda 5, conflito 6). ------------------------------------------------
-export const ESCALA_REAL = 'ESCALA REAL';
-export const FORA_DE_ESCALA = 'FORA DE ESCALA';
-export const BRILHO_REAL = 'BRILHO REAL';
-export const BRILHO_ASSISTIDO = 'BRILHO ASSISTIDO';
+// AS PALAVRAS DO VEREDITO — o valor em pt-BR, tirado do dicionário
+// (item 130) para não haver duas redações da mesma palavra. A TELA não
+// lê daqui: o HUD chama `t('selo.escalaReal')` e companhia, e troca de
+// língua ao vivo. Estes quatro continuam sendo a régua em pt-BR que as
+// guardas comparam.
+export const ESCALA_REAL = PT['selo.escalaReal'];
+export const FORA_DE_ESCALA = PT['selo.foraDeEscala'];
+export const BRILHO_REAL = PT['selo.brilhoReal'];
+export const BRILHO_ASSISTIDO = PT['selo.brilhoAssistido'];
 
 /** A tese do selo, em pt-BR — herdada do doador e traduzida. */
-export const TESE_DO_SELO = 'o que nesta vista é ajustado e o que é medido';
+export const TESE_DO_SELO = PT['selo.tese'];
 
 /**
  * OS TRÊS TIERS DE RÓTULO (D1) — a procedência de cada coisa que a cena
@@ -57,8 +64,14 @@ export const TESE_DO_SELO = 'o que nesta vista é ajustado e o que é medido';
 export type Procedencia = 'medido' | 'derivado' | 'artistico';
 
 export const PROCEDENCIA: Record<Procedencia, { rotulo: string; oQue: string }> = {
-  medido: { rotulo: 'medido', oQue: 'catálogo e efeméride' },
-  derivado: { rotulo: 'derivado', oQue: 'cor e temperatura por modelo' },
+  medido: {
+    get rotulo() { return t('selo.tier.medido'); },
+    get oQue() { return t('selo.tier.medidoOQue'); },
+  },
+  derivado: {
+    get rotulo() { return t('selo.tier.derivado'); },
+    get oQue() { return t('selo.tier.derivadoOQue'); },
+  },
   /**
    * O TERCEIRO ARTIFÍCIO, que entrou em 2026-08-13. Esta entrada
    * declarava DOIS — "o disco do Sol e o clarão" — e a cena desenhava
@@ -86,8 +99,8 @@ export const PROCEDENCIA: Record<Procedencia, { rotulo: string; oQue: string }> 
    * lê isto na tela é o visitante, não o shader.
    */
   artistico: {
-    rotulo: 'artístico',
-    oQue: 'o disco do Sol, o clarão e a cruz de luz das estrelas',
+    get rotulo() { return t('selo.tier.artistico'); },
+    get oQue() { return t('selo.tier.artisticoOQue'); },
   },
 };
 
@@ -102,7 +115,7 @@ export const PROCEDENCIA: Record<Procedencia, { rotulo: string; oQue: string }> 
  * continuam chegando e continuam medidos — dizer "medido: nada" seria a
  * mentira contrária.
  */
-export const CARTOGRAFIA_PROCEDURAL = 'cartografia: procedural (os mapas não chegaram)';
+export const CARTOGRAFIA_PROCEDURAL = PT['selo.cartografiaProcedural'];
 
 /**
  * A MESMA CARTOGRAFIA, PEDIDA. Com `?cart=off` os mapas nem são
@@ -111,7 +124,7 @@ export const CARTOGRAFIA_PROCEDURAL = 'cartografia: procedural (os mapas não ch
  * soa falha onde não houve nenhuma. Conferido no navegador em 22/08: as
  * duas situações imprimiam a MESMA linha.
  */
-export const CARTOGRAFIA_DESLIGADA = 'cartografia: procedural (os mapas desligados por ?cart=off)';
+export const CARTOGRAFIA_DESLIGADA = PT['selo.cartografiaDesligada'];
 
 /**
  * A LEGENDA DA PROCEDÊNCIA, montada aqui e não no JSX do componente —
@@ -134,7 +147,9 @@ export function legendaDaProcedencia(
     .map((t) => `${t.rotulo}: ${t.oQue}`)
     .join(' · ');
   if (cartografiaMedida) return tiers;
-  return `${tiers} · ${porEscolha ? CARTOGRAFIA_DESLIGADA : CARTOGRAFIA_PROCEDURAL}`;
+  return `${tiers} · ${
+    porEscolha ? t('selo.cartografiaDesligada') : t('selo.cartografiaProcedural')
+  }`;
 }
 
 /**
@@ -153,10 +168,7 @@ export function legendaDaProcedencia(
  * dono. A ordem verdadeira continua inteira onde ela se lê: no ponto de
  * cada corpo no céu.
  */
-export const COPY_LUZ_ASSISTIDA =
-  'cada mundo visitado é exposto para a luz que ELE recebe — uma foto tirada ali, ' +
-  'não com o ajuste da Terra. A ordem verdadeira de brilho continua no céu, ' +
-  'no ponto de cada corpo.';
+export const COPY_LUZ_ASSISTIDA = PT['selo.luzAssistida'];
 
 /**
  * A LANTERNA DE LEITURA, declarada em copy leiga (item 93).
@@ -171,9 +183,7 @@ export const COPY_LUZ_ASSISTIDA =
  * `?luz=real` a linha do selo nem existe — não há desvio nenhum a
  * declarar, que é a decisão 2 do dono valendo também para a copy.
  */
-export const COPY_LANTERNA_DE_LEITURA =
-  `Lanterna de leitura ${Math.round(LANTERNA_DE_LEITURA * 100)} %: ` +
-  'uma luz fraca na câmera deixa o lado noturno legível.';
+export const COPY_LANTERNA_DE_LEITURA = copyDaLanterna('pt-BR');
 
 /**
  * O TEMPO DE EXPOSIÇÃO DO MODO REAL, declarado na linha BRILHO — a Q14
@@ -201,10 +211,28 @@ export const COPY_LANTERNA_DE_LEITURA =
  * mais (o instrumento mediu zero pixels saturados dos dois lados; dizer
  * "satura" aqui desmentiria o próprio JSON da prova — achado do auditor).
  */
-export const COPY_EXPOSICAO_DO_REAL =
-  `tempo de exposição +${PASSOS_DA_EXPOSICAO_REAL} passos: a foto do quadro é longa. ` +
-  'A luz de cada mundo continua a física — o que abriu foi a chapa, e por isso ' +
-  'o céu ao fundo acende mais.';
+export const COPY_EXPOSICAO_DO_REAL = copyDaExposicaoDoReal('pt-BR');
+
+/**
+ * AS DUAS COPIES COM NÚMERO, na língua de agora (item 130). O `pt` força
+ * a tabela pt-BR e é o que dá os dois `COPY_*` acima — a régua que as
+ * guardas comparam; sem ele a frase sai na língua do visitante. O NÚMERO
+ * continua saindo da lei (`LANTERNA_DE_LEITURA`, `PASSOS_DA_EXPOSICAO_REAL`)
+ * e nunca é redigitado na tabela: o `{porcento}` e o `{passos}` do
+ * dicionário são buracos, não valores.
+ */
+function copyDaLanterna(lingua?: 'pt-BR'): string {
+  const porcento = Math.round(LANTERNA_DE_LEITURA * 100);
+  return lingua === 'pt-BR'
+    ? PT['selo.lanterna'].replace('{porcento}', String(porcento))
+    : t('selo.lanterna', { porcento });
+}
+
+function copyDaExposicaoDoReal(lingua?: 'pt-BR'): string {
+  return lingua === 'pt-BR'
+    ? PT['selo.exposicaoDoReal'].replace('{passos}', String(PASSOS_DA_EXPOSICAO_REAL))
+    : t('selo.exposicaoDoReal', { passos: PASSOS_DA_EXPOSICAO_REAL });
+}
 
 /**
  * O rótulo VIVO da linha `?luz=`: a copy leiga + o gasto do GLOBO em
@@ -219,10 +247,10 @@ export const COPY_EXPOSICAO_DO_REAL =
  * não ter consertado.
  */
 export function rotuloDaLuzAssistida(stops: number | null): string {
-  const base = `${COPY_LUZ_ASSISTIDA} ${COPY_LANTERNA_DE_LEITURA}`;
+  const base = `${t('selo.luzAssistida')} ${copyDaLanterna()}`;
   if (stops === null || !Number.isFinite(stops)) return base;
-  const passos = `${stops >= 0 ? '+' : ''}${stops.toFixed(1).replace('.', ',')}`;
-  return `${base} Este globo: ${passos} passos de luz sobre a luz física.`;
+  const passos = `${stops >= 0 ? '+' : ''}${decimalDoIdioma(stops.toFixed(1))}`;
+  return `${base} ${t('selo.esteGlobo', { passos })}`;
 }
 
 /**
@@ -398,7 +426,7 @@ const neutra = (chave: string, rotulo: string): CaminhoDoSelo => ({
 const camada = (flag: string, volta: Volta = 'vivo'): CaminhoDoSelo => ({
   chave: flag,
   eixo: 'brilho',
-  rotulo: `camada desligada: ${nomeDaCamada(flag)}`,
+  get rotulo() { return t('selo.desvio.camada', { nome: nomeDaCamada(flag) }); },
   volta,
   desvia: (e) => e.camadasEscondidas.includes(flag),
 });
@@ -429,7 +457,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   {
     chave: 'exp',
     eixo: 'brilho',
-    rotulo: 'exposição escolhida à mão',
+    get rotulo() { return t('selo.desvio.exp'); },
     volta: 'vivo',
     // o estado VIVO manda, não a porta: o latch do Director é o que a
     // auto-exposição consulta, e é ele que o selo desfaz
@@ -438,7 +466,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   {
     chave: 'tone',
     eixo: 'brilho',
-    rotulo: 'curva de tom trocada',
+    get rotulo() { return t('selo.desvio.tone'); },
     volta: 'vivo',
     desvia: (e) => e.tom !== 'aces',
   },
@@ -456,7 +484,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   {
     chave: 'dose-do-sol',
     eixo: 'brilho',
-    rotulo: 'o arranque mostra o Sol mais limpo do que a data pede',
+    get rotulo() { return t('selo.desvio.doseDoSol'); },
     volta: 'nenhuma',
     desvia: (e) => e.doseDoSol < 1,
   },
@@ -497,7 +525,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   {
     chave: 'luz',
     eixo: 'brilho',
-    rotulo: COPY_LUZ_ASSISTIDA,
+    get rotulo() { return t('selo.luzAssistida'); },
     volta: 'vivo',
     desvia: (e) => e.luz === 'assistida',
     rotuloVivo: (e) => rotuloDaLuzAssistida(e.stopsDoGloboEmFoco),
@@ -508,7 +536,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   {
     chave: 'q',
     eixo: 'brilho',
-    rotulo: 'amostragem abaixo de cinema',
+    get rotulo() { return t('selo.desvio.amostragem'); },
     // NÃO é gesto que se desfaz com um clique — e a razão mudou de dono
     // nos Ajustes D sem mudar de conclusão. Antes o tier podia ter sido
     // rebaixado SOZINHO (o auto-quality, D1) e o selo declarava o que o
@@ -665,6 +693,14 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   neutra('look', 'mira da câmera'),
   neutra('shot', 'modo foto (congela o tempo visual, não a luz)'),
   neutra('loader', 'fixar uma etapa do carregamento'),
+  // A PORTA DE CAPTURA DA LÍNGUA (item 130). Ela é NEUTRA e é declarada
+  // aqui pela razão de sempre: porta não declarada vira acusação
+  // ("porta não declarada: ?lang") no selo, e o capturador que pede uma
+  // língua não pode sujar o veredito de honestidade da vista. Não é
+  // painel do visitante — quem troca a língua é o seletor do painel de
+  // Ajustes, ao vivo; esta porta existe para o juiz de imagem pedir uma
+  // língua sem tocar no storage do perfil.
+  neutra('lang', 'língua da captura (instrumento, não ajuste de imagem)'),
   neutra('ajustes', 'abrir o painel de ajustes'),
   neutra('dbgfade', 'depuração: política de dominância'),
   neutra('dbgstar', 'depuração: projeção de Betelgeuse'),
@@ -818,7 +854,7 @@ export function aoClicarEmBrilho(e: EstadoDaVista): EstadoDaVista {
  *    já é desvio e já derruba o eixo para ASSISTIDO.
  */
 export function declaracaoDaExposicao(e: EstadoDaVista): string | null {
-  return e.luz === 'real' && !e.exposicaoManual ? COPY_EXPOSICAO_DO_REAL : null;
+  return e.luz === 'real' && !e.exposicaoManual ? copyDaExposicaoDoReal() : null;
 }
 
 /** O veredito completo, puro. */

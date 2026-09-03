@@ -58,6 +58,11 @@ if (!CHROME) throw new Error(`Chrome não encontrado (${process.platform})`);
 /** Flags de GPU comuns a todos os harnesses, com o backend da plataforma. */
 export const GPU_FLAGS = [
   '--headless=new',
+  // A LÍNGUA DO JUIZ (item 130/F1): o app escolhe pt-BR ou inglês pelo
+  // `navigator.languages`, e o Chrome headless nasce em en-US — sem esta
+  // linha todo juiz de imagem passaria a fotografar o app em inglês e
+  // toda referência pinada em português morreria de uma vez.
+  '--lang=pt-BR',
   '--enable-gpu',
   '--use-gl=angle',
   `--use-angle=${ANGLE[process.platform] ?? 'default'}`,

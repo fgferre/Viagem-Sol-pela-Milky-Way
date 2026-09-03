@@ -33,6 +33,9 @@
 // ============================================================
 import { useEffect, useState } from 'react';
 import type { MouseEvent, ReactNode } from 'react';
+import { t } from '../lib/idioma';
+import type { ChaveDeTexto } from '../lib/idioma';
+import { useIdioma } from '../hooks/useIdioma';
 
 /** No elemento que pode ser apontado. O valor é o nome do alvo. */
 export const ATRIBUTO_ALVO = 'data-spot';
@@ -151,11 +154,11 @@ export function Spotlight({ alvo, children }: { alvo: string | null; children: R
  * no `App`), e a cópia é a mesma coisa dita por extenso — a dica é
  * telegrama porque fica na tela o tempo todo; o convite passa uma vez.
  */
-export const PASSOS_DO_CONVITE = [
-  { alvo: 'olhar', texto: 'arraste para olhar em volta' },
-  { alvo: 'voar', texto: 'w a s d para voar · q e para subir e descer' },
-  { alvo: 'visitar', texto: 'clique num nome para visitar a estrela' },
-] as const;
+export const PASSOS_DO_CONVITE: readonly PassoDoConvite[] = [
+  { alvo: 'olhar', texto: 'convite.olhar' },
+  { alvo: 'voar', texto: 'convite.voar' },
+  { alvo: 'visitar', texto: 'convite.visitar' },
+];
 
 /**
  * OS QUATRO GESTOS DO ATLAS (item 73, 22/08), na ordem em que se
@@ -165,12 +168,12 @@ export const PASSOS_DO_CONVITE = [
  * pedaço do terceiro de propósito: escolher e ir são o mesmo botão do
  * mouse, e a dica tem uma linha só para os dois.
  */
-export const PASSOS_DO_CONVITE_DO_ATLAS = [
-  { alvo: 'girar', texto: 'arraste para girar em volta do que está em quadro' },
-  { alvo: 'zoom', texto: 'a roda aproxima e afasta do objeto escolhido' },
-  { alvo: 'escolher', texto: 'clique num nome para escolher o objeto' },
-  { alvo: 'escolher', texto: 'dois cliques para ir até ele' },
-] as const;
+export const PASSOS_DO_CONVITE_DO_ATLAS: readonly PassoDoConvite[] = [
+  { alvo: 'girar', texto: 'convite.girar' },
+  { alvo: 'zoom', texto: 'convite.roda' },
+  { alvo: 'escolher', texto: 'convite.escolherMouse' },
+  { alvo: 'escolher', texto: 'convite.irMouse' },
+];
 
 /**
  * OS MESMOS QUATRO GESTOS, NA LÍNGUA DO DEDO (item 62, etapa 2). Até
@@ -184,12 +187,22 @@ export const PASSOS_DO_CONVITE_DO_ATLAS = [
  * ("clique — escolher"); no dedo são dois gestos diferentes, então a
  * dica tem dois pedaços e o convite aponta cada um no seu.
  */
-export const PASSOS_DO_CONVITE_DO_ATLAS_TOQUE = [
-  { alvo: 'girar', texto: 'arraste para girar em volta do que está em quadro' },
-  { alvo: 'zoom', texto: 'a pinça de dois dedos aproxima e afasta' },
-  { alvo: 'escolher', texto: 'toque num nome para escolher o objeto' },
-  { alvo: 'ir', texto: 'toque duas vezes para ir até ele' },
-] as const;
+export const PASSOS_DO_CONVITE_DO_ATLAS_TOQUE: readonly PassoDoConvite[] = [
+  { alvo: 'girar', texto: 'convite.girar' },
+  { alvo: 'zoom', texto: 'convite.pinca' },
+  { alvo: 'escolher', texto: 'convite.escolherToque' },
+  { alvo: 'ir', texto: 'convite.irToque' },
+];
+
+/**
+ * UM PASSO DO CONVITE. O `texto` é a CHAVE do dicionário e não a frase
+ * (item 130): o convite é remontado a cada render, e a frase sai na
+ * língua de agora sem que o roteiro precise existir duas vezes.
+ */
+export interface PassoDoConvite {
+  alvo: string;
+  texto: ChaveDeTexto;
+}
 
 export function Convite({
   passo,
@@ -199,10 +212,11 @@ export function Convite({
 }: {
   passo: number;
   /** o roteiro: os três do voo livre ou os quatro do Atlas */
-  passos?: readonly { alvo: string; texto: string }[];
+  passos?: readonly PassoDoConvite[];
   onPasso: (n: number) => void;
   onFechar: () => void;
 }) {
+  useIdioma();
   const atual = passos[passo];
   if (!atual) return null;
   const ultimo = passo === passos.length - 1;
@@ -215,15 +229,15 @@ export function Convite({
   return (
     <Spotlight alvo={atual.alvo}>
       <p className="convite-texto" role="status" aria-live="polite">
-        {atual.texto}
+        {t(atual.texto)}
       </p>
       <div className="convite-linha">
         <span className="convite-conta">
-          {passo + 1} de {passos.length}
+          {t('convite.conta', { n: passo + 1, total: passos.length })}
         </span>
         {!ultimo && (
           <button type="button" onMouseDown={semRoubarFoco} onClick={onFechar}>
-            pular
+            {t('convite.pular')}
           </button>
         )}
         <button
@@ -232,7 +246,7 @@ export function Convite({
           onMouseDown={semRoubarFoco}
           onClick={() => (ultimo ? onFechar() : onPasso(passo + 1))}
         >
-          {ultimo ? 'entendi' : 'continuar'}
+          {t(ultimo ? 'convite.entendi' : 'convite.continuar')}
         </button>
       </div>
     </Spotlight>

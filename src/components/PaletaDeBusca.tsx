@@ -26,10 +26,13 @@
 // ============================================================
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { buscar, nomeDaEntrada } from '../lib/buscaEstrelas';
+import { classeEmTexto } from '../three/atlasConfig';
 import type { EntradaDaBusca, IndiceEstrelas } from '../lib/buscaEstrelas';
 import { gatilhoDoDialogo, useDialogFocus } from '../lib/dialogFocus';
 import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
-import { numeroPtBr } from '../three/tempoDoAtlas';
+import { numeroDoIdioma } from '../three/tempoDoAtlas';
+import { t } from '../lib/idioma';
+import { useIdioma } from '../hooks/useIdioma';
 
 /**
  * QUANTOS RESULTADOS, por dispositivo. No teclado são 8 (o mesmo
@@ -58,17 +61,18 @@ export const LIMITE_TOQUE = 5;
  */
 function notaDaEntrada(entrada: EntradaDaBusca): string {
   if (entrada.tipo === 'estrela') {
-    const distancia = notaDeDistancia(entrada.estrela.d * UA_POR_PC, numeroPtBr);
+    const distancia = notaDeDistancia(entrada.estrela.d * UA_POR_PC, numeroDoIdioma);
     return distancia ? `${distancia} · ${entrada.estrela.s}` : entrada.estrela.s;
   }
   // UM LUGAR mostra só a distância (item 129/F5): o centro galáctico não
   // tem tipo espectral nem órbita, e a nota não inventa uma palavra de
   // classe para preencher a linha — a mesma lei da lua sem efeméride
   if (entrada.tipo === 'lugar') {
-    return notaDeDistancia(entrada.lugar.d * UA_POR_PC, numeroPtBr) ?? '';
+    return notaDeDistancia(entrada.lugar.d * UA_POR_PC, numeroDoIdioma) ?? '';
   }
-  const { rUA, classe } = entrada.corpo;
-  const distancia = notaDeDistancia(rUA, numeroPtBr);
+  const { rUA, classe: chaveDaClasse } = entrada.corpo;
+  const classe = classeEmTexto(chaveDaClasse);
+  const distancia = notaDeDistancia(rUA, numeroDoIdioma);
   // o Sol não orbita nada (nota é a classe); uma lua sem efeméride
   // ainda não tem distância MEDIDA — nome honesto, número só medido
   return distancia ? `${distancia} · ${classe}` : classe;
@@ -109,6 +113,7 @@ export function PaletaDeBusca({
   // consulta anterior morrer sozinha, sem um efeito que a limpe e sem a
   // cascata de renders que ele custaria.
   const dialogo = useDialogFocus('busca', true, onFechar);
+  const idioma = useIdioma();
   const [consulta, setConsulta] = useState('');
   const [ativo, setAtivo] = useState(0);
   // a digitação é urgente, a lista é que pode esperar: o `useDeferredValue`
@@ -177,7 +182,9 @@ export function PaletaDeBusca({
   // verdadeira sozinha. `Intl` aqui é seguro, ao contrário do que o
   // formatador da casa evita: esta linha só existe no navegador, onde o
   // ICU é completo — a ressalva do `numeroPtBr` é sobre o Node dos testes.
-  const quantas = indice.nomeadas.length.toLocaleString('pt-BR');
+  const quantas = indice.nomeadas.length.toLocaleString(
+    idioma === 'en' ? 'en-US' : 'pt-BR'
+  );
   // OS CORPOS DO SISTEMA entram no índice no Atlas e no voo livre (item
   // 129), e a copy pergunta ao ÍNDICE em vez de perguntar à fase: quem
   // conta o alcance é quem o tem na mão.
@@ -185,24 +192,36 @@ export function PaletaDeBusca({
   // O VERBO É DA LINHA ESCOLHIDA, não só da fase: no voo livre uma
   // estrela "voa até lá" e um corpo "abre o Atlas nele".
   const escolhida = resultados[escolhido]?.entrada;
-  const oQueOEnterFaz =
-    verbo === 'enquadrar' ? 'enquadra'
-    : escolhida?.tipo === 'corpo' ? 'abre o atlas nele'
-    : 'voa até lá';
+  const oQueOEnterFaz = t(
+    verbo === 'enquadrar' ? 'busca.verboEnquadra'
+    : escolhida?.tipo === 'corpo' ? 'busca.verboAtlas'
+    : 'busca.verboVoa'
+  );
   const alcance = corpos > 0
-    ? `as ${quantas} nomeadas e os ${corpos} corpos do sistema`
-    : `as ${quantas} nomeadas`;
+    ? t('busca.alcanceComCorpos', { quantas, corpos })
+    : t('busca.alcance', { quantas });
+  // O EXEMPLO DE CORPO É O ÚNICO TERMO TRADUZIDO da lista: "terra" vira
+  // "earth", e a busca casa os dois (item 129/F5, tabelas bilíngues).
+  // Os outros quatro são NOMES e designações de catálogo — sirius, hd
+  // 48915 —, e nome próprio não muda de língua.
+  const exemplos = (corpos > 0 ? [t('busca.exemploCorpo'), ...EXEMPLOS] : EXEMPLOS)
+    .join(' · ');
   const aviso = vazio
-    ? `nada com esse nome entre ${alcance} — o catálogo guarda UM nome por `
-      + `estrela, o próprio quando existe. tente ${EXEMPLOS.join(' · ')}`
+    ? t('busca.vazio', { alcance, exemplos: EXEMPLOS.join(' · ') })
     : resultados.length > 0
-      ? `${resultados.length} ${resultados.length === 1 ? 'resultado' : 'resultados'} · `
-        + `setas escolhem · Enter ${oQueOEnterFaz}`
-      : `nome, designação (gama vel) ou catálogo (hd 48915) · `
-        + `${(corpos > 0 ? ['terra', ...EXEMPLOS] : EXEMPLOS).join(' · ')}`;
+      ? t('busca.contagem', {
+          n: resultados.length,
+          palavra: t(resultados.length === 1 ? 'busca.resultado' : 'busca.resultados'),
+          verbo: oQueOEnterFaz,
+        })
+      : t('busca.dica', { exemplos });
 
   return (
-    <div className="hud-cartao hud-dialogo atlas-busca" aria-label="Buscar um alvo" {...dialogo}>
+    <div
+      className="hud-cartao hud-dialogo atlas-busca"
+      aria-label={t('busca.aria')}
+      {...dialogo}
+    >
       <div className="atlas-busca-topo">
         <input
           type="text"
@@ -213,8 +232,10 @@ export function PaletaDeBusca({
             setAtivo(0);
           }}
           onKeyDown={aoTeclar}
-          placeholder={corpos > 0 ? 'buscar um corpo ou uma estrela' : 'buscar uma estrela'}
-          aria-label="Nome de um corpo do sistema, ou nome, designação ou catálogo da estrela"
+          placeholder={t(
+            corpos > 0 ? 'busca.campoCorposEEstrelas' : 'busca.campoEstrelas'
+          )}
+          aria-label={t('busca.campoAria')}
           role="combobox"
           aria-expanded={resultados.length > 0}
           aria-controls="atlas-busca-lista"
@@ -229,7 +250,7 @@ export function PaletaDeBusca({
           type="button"
           className="atlas-busca-fechar"
           onClick={onFechar}
-          aria-label="Fechar a busca"
+          aria-label={t('busca.fechar')}
         >
           ✕
         </button>
@@ -240,7 +261,7 @@ export function PaletaDeBusca({
         className="atlas-busca-lista"
         id="atlas-busca-lista"
         role="listbox"
-        aria-label="Alvos encontrados"
+        aria-label={t('busca.lista')}
       >
         {resultados.map((r, i) => (
           <li
@@ -277,19 +298,20 @@ export function BotaoDaBusca({
   aberta: boolean;
   onAlternar: () => void;
 }) {
+  useIdioma();
   return (
     <button
       className="hud-btn small"
       onClick={onAlternar}
-      aria-label="Buscar estrela"
+      aria-label={t('busca.botaoAria')}
       // o atalho declarado onde o leitor de tela o anuncia; o texto do
       // botão NÃO cresce — a barra tem orçamento de quebra por largura
       // (LARGURA_DA_QUEBRA_PX) medido com este comprimento
       aria-keyshortcuts="/ Control+K"
-      title="buscar — tecla / (ou Ctrl+K)"
+      title={t('busca.botaoDica')}
       {...gatilhoDoDialogo('busca', aberta)}
     >
-      ⌕ Buscar
+      {t('busca.botao')}
     </button>
   );
 }

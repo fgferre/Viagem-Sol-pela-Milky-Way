@@ -21,7 +21,8 @@ import {
 } from '../world/labels';
 import type { OclusorDeRotulo, StarLabel } from '../world/labels';
 import { GAL } from '../world/galaxy';
-import { numeroPtBr } from '../tempoDoAtlas';
+import { numeroDoIdioma } from '../tempoDoAtlas';
+import { t } from '../../lib/idioma';
 import { notaDeDistancia } from '../../lib/unidades';
 import { cenaPcParaHeliocentricaEclipticaUA } from '../../lib/atlas/frameGalactico';
 import { UA_POR_PC } from '../world/planetas/planetas';
@@ -521,7 +522,7 @@ export class Rotulos {
         // quando a distância não é positiva e finita — aí fica só o
         // nome do destino, em vez do "0.0 AL" que a cópia antiga
         // escrevia ao chegar em cima do alvo.
-        const nota = notaDeDistancia(d * UA_POR_PC, numeroPtBr);
+        const nota = notaDeDistancia(d * UA_POR_PC, numeroDoIdioma);
         const label = dest === 'SGR' ? 'SAGITTARIUS A✱' : dest.toUpperCase();
         text = nota ? `→ ${label} · ${nota}` : `→ ${label}`;
       }
@@ -549,8 +550,8 @@ export class Rotulos {
   private emitSol(camPos: THREE.Vector3, fase: Phase) {
     let text = '';
     if (fase === 'free') {
-      const nota = notaDeDistancia(camPos.length() * UA_POR_PC, numeroPtBr);
-      if (nota) text = `SOL · ${nota}`;
+      const nota = notaDeDistancia(camPos.length() * UA_POR_PC, numeroDoIdioma);
+      if (nota) text = t('cena.sol', { nota });
     }
     const changedKind = (text === '') !== (this.lastSol === '');
     if (text !== this.lastSol && (changedKind || this.solTimer > 0.25)) {
@@ -573,9 +574,9 @@ export class Rotulos {
   private emitLente(cam: THREE.PerspectiveCamera, fase: Phase) {
     let text = '';
     if (fase === 'journey') {
-      const nota = notaDeDistancia(cam.position.length() * UA_POR_PC, numeroPtBr);
+      const nota = notaDeDistancia(cam.position.length() * UA_POR_PC, numeroDoIdioma);
       const graus = Math.round(cam.fov);
-      if (nota && Number.isFinite(graus)) text = `LENTE ${graus}° · SOL ${nota}`;
+      if (nota && Number.isFinite(graus)) text = t('cena.lente', { graus, nota });
     }
     const changedKind = (text === '') !== (this.lastLente === '');
     if (text !== this.lastLente && (changedKind || this.lenteTimer > 0.25)) {

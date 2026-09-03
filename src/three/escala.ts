@@ -62,6 +62,8 @@ import { AU_KM } from '../lib/atlas/elementosOrbitais';
 // importa daqui — toda função dela que precisa de um raio o RECEBE — e é assim
 // que os dois cadastros da casa, o de tamanho e o de brilho, ficam sem ciclo.
 import { M_V_SOL, M_V_SOL_DO_CAMPO, SOBRETAXA_DO_HALO } from './luzDaCasa';
+import { decimalDoIdioma, idiomaAtual, t } from '../lib/idioma';
+import type { ChaveDeTexto } from '../lib/idioma';
 
 /**
  * km → pc pela MESMA cadeia que a cena usa para pôr corpo no lugar
@@ -504,18 +506,22 @@ export function culpadosDoBrilho(): readonly EscalaDeclarada[] {
  * nada a ninguém, e "27 bilhões de vezes menos luz" diz.
  */
 export function brilhoEmTexto(fator: number | null): string {
-  if (fator === null || !Number.isFinite(fator) || fator <= 0) return 'brilho de autor';
-  if (fator === 1) return 'na unidade da casa';
+  if (fator === null || !Number.isFinite(fator) || fator <= 0) return t('escala.brilhoDeAutor');
+  if (fator === 1) return t('escala.naUnidadeDaCasa');
   const vezes = fator > 1 ? fator : 1 / fator;
-  const lado = fator > 1 ? 'mais' : 'menos';
-  if (vezes < 100) return `${vezes.toFixed(1).replace('.', ',')}× ${lado} luz`;
+  const lado = t(fator > 1 ? 'escala.maisLuz' : 'escala.menosLuz');
+  if (vezes < 100) {
+    return t('escala.vezesLuz', { vezes: decimalDoIdioma(vezes.toFixed(1)), lado });
+  }
   const mag = 2.5 * Math.log10(vezes);
-  return `${mag.toFixed(1).replace('.', ',')} magnitudes de ${lado} luz`;
+  return t('escala.magnitudes', { mag: decimalDoIdioma(mag.toFixed(1)), lado });
 }
 
 /** A linha da acusação de brilho, no formato da de escala. */
 export function acusacaoDoBrilho(): readonly string[] {
-  return culpadosDoBrilho().map((e) => `${e.nome} emite ${brilhoEmTexto(e.fatorDeBrilho)}`);
+  return culpadosDoBrilho().map((e) =>
+    t('escala.acusacaoDeBrilho', { nome: nomeNaTela(e), quanto: brilhoEmTexto(e.fatorDeBrilho) })
+  );
 }
 
 /**
@@ -551,9 +557,23 @@ export function culpadosDaEscala(
  * Fator ausente vira a palavra honesta, não um número inventado.
  */
 export function fatorEmTexto(fator: number | null): string {
-  if (fator === null || !Number.isFinite(fator)) return 'raio de autor';
-  if (fator < 10) return `${fator.toFixed(1).replace('.', ',')}×`;
-  return `${Math.round(fator).toLocaleString('pt-BR')}×`;
+  if (fator === null || !Number.isFinite(fator)) return t('escala.raioDeAutor');
+  if (fator < 10) return `${decimalDoIdioma(fator.toFixed(1))}×`;
+  // o separador de MILHAR também é da língua: 487.441 aqui, 487,441 lá
+  return `${Math.round(fator).toLocaleString(idiomaAtual() === 'en' ? 'en-US' : 'pt-BR')}×`;
+}
+
+/**
+ * O NOME DE UM ACUSADO, na língua de agora (item 130). Só os de
+ * `classe: 'corpo'` chegam à tela — são eles que `deveDivida` e
+ * `deveDividaDeBrilho` deixam passar —, e por isso só eles têm chave no
+ * dicionário; o `nome` do cadastro continua sendo a régua em pt-BR do
+ * registro de auditoria.
+ */
+function nomeNaTela(e: EscalaDeclarada): string {
+  const chave = `escala.nome.${e.id}` as ChaveDeTexto;
+  const traduzido = t(chave);
+  return traduzido === chave ? e.nome : traduzido;
 }
 
 /**
@@ -562,6 +582,6 @@ export function fatorEmTexto(fator: number | null): string {
  */
 export function acusacaoDaEscala(raioDoSolPc?: number): readonly string[] {
   return culpadosDaEscala(raioDoSolPc).map(
-    (e) => `${e.nome} está ${fatorEmTexto(e.fator)} maior`
+    (e) => t('escala.acusacao', { nome: nomeNaTela(e), fator: fatorEmTexto(e.fator) })
   );
 }

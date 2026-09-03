@@ -32,6 +32,8 @@
 // é lido pelo HUD e pelo Director, e é isso que o mantém testável.
 // ============================================================
 import { IDS_FOTOMETRIA } from './world/planetas/fotometria';
+import { t } from '../lib/idioma';
+import type { ChaveDeTexto } from '../lib/idioma';
 // só o TIPO: a união dos quatro estados do seletor mora no engine (é
 // ele quem lê a porta `?q=`), e o `import type` é apagado na compilação
 // — este arquivo continua sem importar three nem React.
@@ -57,7 +59,8 @@ export const FAMILIAS_DE_CAMADAS: readonly FamiliaDeCamada[] = [
 export interface Camada {
   /** a flag que o Director já lê (`?nogal=1`, `hide.has('nogal')`) */
   flag: string;
-  /** rótulo em pt-BR — o que a gaveta mostra e o que o selo nomeia */
+  /** rótulo na língua de agora (item 130) — o que a gaveta mostra e o
+   *  que o selo nomeia; a chave do dicionário é a própria `flag` */
   nome: string;
   /** em que grupo da gaveta ela aparece */
   familia: FamiliaDeCamada;
@@ -100,23 +103,23 @@ export interface Camada {
  * com `?nosun=1` não tinha onde religar.
  */
 export const CAMADAS: readonly Camada[] = [
-  { flag: 'nogal', nome: 'Galáxia (tudo)', familia: 'Galáxia', viva: true },
-  { flag: 'nodisc', nome: 'Lâminas do disco', familia: 'Galáxia', viva: true },
-  { flag: 'nogdust', nome: 'Extinção por partícula', familia: 'Galáxia', viva: true },
-  { flag: 'noglow', nome: 'Brilho do bojo', familia: 'Galáxia', viva: true },
-  { flag: 'nocart', nome: 'Cartografia observada', familia: 'Galáxia', viva: true },
+  { flag: 'nogal', get nome() { return t('camada.nogal'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nodisc', get nome() { return t('camada.nodisc'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nogdust', get nome() { return t('camada.nogdust'); }, familia: 'Galáxia', viva: true },
+  { flag: 'noglow', get nome() { return t('camada.noglow'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nocart', get nome() { return t('camada.nocart'); }, familia: 'Galáxia', viva: true },
   // a bissecção de `nocart`: nuvens CO medidas e forjas estelares têm
   // chave própria — o tick as lê por quadro junto com a cartografia
-  { flag: 'noco', nome: 'Nuvens de CO', familia: 'Galáxia', viva: true },
-  { flag: 'noforge', nome: 'Forjas estelares', familia: 'Galáxia', viva: true },
-  { flag: 'nonebula', nome: 'Nebulosa volumétrica', familia: 'Galáxia', viva: true },
-  { flag: 'nowrap', nome: 'Campo envolvente', familia: 'Galáxia', viva: true },
+  { flag: 'noco', get nome() { return t('camada.noco'); }, familia: 'Galáxia', viva: true },
+  { flag: 'noforge', get nome() { return t('camada.noforge'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nonebula', get nome() { return t('camada.nonebula'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nowrap', get nome() { return t('camada.nowrap'); }, familia: 'Galáxia', viva: true },
   // a poeira de paralaxe perto da câmera (`world/dust.ts`) — o tick lê
   // `hide.has('nodust')` por quadro no fade dela. É poeira INTERESTELAR
   // vista de perto, não poeira do sistema solar: a família é a galáxia.
-  { flag: 'nodust', nome: 'Poeira próxima', familia: 'Galáxia', viva: true },
-  { flag: 'nobh', nome: 'Buraco negro (Sgr A✱)', familia: 'Galáxia', viva: true, icone: '✱' },
-  { flag: 'nocat', nome: 'Catálogo HYG', familia: 'Estrelas', viva: true, icone: '⁂' },
+  { flag: 'nodust', get nome() { return t('camada.nodust'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nobh', get nome() { return t('camada.nobh'); }, familia: 'Galáxia', viva: true, icone: '✱' },
+  { flag: 'nocat', get nome() { return t('camada.nocat'); }, familia: 'Estrelas', viva: true, icone: '⁂' },
   // OS NOMES NA TELA (item 82, N2) — a chave `Labels` que o NASA Eyes
   // tem e nós não tínhamos. As órbitas ganharam `noorbitas` no item 77 e
   // os nomes não tinham nada: quem achasse a tela poluída só podia sair
@@ -129,34 +132,34 @@ export const CAMADAS: readonly Camada[] = [
   // nomes de corpo e DEZESSETE de estrela. Ela mora ao lado das outras
   // duas coisas que uma estrela põe na tela — o ponto do catálogo e o
   // clarão —, e a terceira é o nome dela.
-  { flag: 'nonomes', nome: 'Nomes na tela', familia: 'Estrelas', viva: true, icone: '⌶' },
+  { flag: 'nonomes', get nome() { return t('camada.nonomes'); }, familia: 'Estrelas', viva: true, icone: '⌶' },
   // M2 da Lei: `nohero` virou `noclarao`. O que a chave desliga são as
   // DUAS camadas de fonte forte, e voltou a incluir as 16 heroes de
   // autor com o resgate de 16/08 (`world/heroStars.ts`): o tick esconde
   // `heroes.group` e o clarão de asas (`world/clarao.ts`, o Sol) pela
   // mesma `hide.has('noclarao')`.
-  { flag: 'noclarao', nome: 'Clarão das estrelas', familia: 'Estrelas', viva: true, icone: '✦' },
+  { flag: 'noclarao', get nome() { return t('camada.noclarao'); }, familia: 'Estrelas', viva: true, icone: '✦' },
   // o Sol inteiro em cena — o gate por quadro vive em
   // `director/solNoQuadro.ts` (`fios.escondido('nosun')`)
-  { flag: 'nosun', nome: 'Sol', familia: 'Sistema solar', viva: true },
-  { flag: 'nomarker', nome: 'Marcador do Sol', familia: 'Sistema solar', viva: true, icone: '⌖' },
-  { flag: 'noplan', nome: 'Planetas', familia: 'Sistema solar', viva: true, icone: '◉' },
+  { flag: 'nosun', get nome() { return t('camada.nosun'); }, familia: 'Sistema solar', viva: true },
+  { flag: 'nomarker', get nome() { return t('camada.nomarker'); }, familia: 'Sistema solar', viva: true, icone: '⌖' },
+  { flag: 'noplan', get nome() { return t('camada.noplan'); }, familia: 'Sistema solar', viva: true, icone: '◉' },
   // item 89: o ícone é camada SEPARADA do texto (Eyes: Labels ≠ Icons)
   // — desligar os nomes deixa o céu limpo E navegável; quem quiser o
   // silêncio de antes desliga as duas
-  { flag: 'noicones', nome: 'Ícones dos corpos', familia: 'Sistema solar', viva: true, icone: '◎' },
+  { flag: 'noicones', get nome() { return t('camada.noicones'); }, familia: 'Sistema solar', viva: true, icone: '◎' },
   // O PALCO LOCAL da Onda 6 (F0): os corpos resolvidos — os globos de
   // perto, distintos dos PONTOS fotométricos de `noplan`. Entra vazio
   // nesta fase (nenhum mesh ainda; o toggle não muda pixel até F2),
   // mas nasce DECLARADO aqui e no selo, como a lei das portas manda.
-  { flag: 'nocorpos', nome: 'Corpos de perto', familia: 'Sistema solar', viva: true, icone: '◐' },
+  { flag: 'nocorpos', get nome() { return t('camada.nocorpos'); }, familia: 'Sistema solar', viva: true, icone: '◐' },
   // AS LINHAS DE ÓRBITA (item 77, 23/08) — `world/orbitas.ts`. A órbita
   // é o DADO, não enfeite: sem ela o Atlas mostra dez pontos soltos e
   // ninguém lê que Marte está entre a Terra e Júpiter. É instrumento de
   // leitura, da família do marcador e dos rótulos, e não matéria — o
   // que a chave desliga é a curva, nunca um fóton. Com ícone ela entra
   // na gaveta de graça e o selo a declara pela derivação de sempre.
-  { flag: 'noorbitas', nome: 'Linhas de órbita', familia: 'Sistema solar', viva: true, icone: '◜' },
+  { flag: 'noorbitas', get nome() { return t('camada.noorbitas'); }, familia: 'Sistema solar', viva: true, icone: '◜' },
 ];
 
 /**
@@ -175,7 +178,7 @@ export const CAMADAS_POR_FAMILIA: readonly {
 /** Um estado do seletor de qualidade, como o visitante o lê. */
 export interface EscolhaNaUi {
   id: EscolhaDeQualidade;
-  /** o nome em pt-BR, o mesmo nos dois hospedeiros */
+  /** o nome na língua de agora (item 130), o mesmo nos dois hospedeiros */
   nome: string;
   /** o glifo da barra de controles — peso visual crescente */
   simbolo: string;
@@ -196,10 +199,10 @@ export interface EscolhaNaUi {
  * não tem como nascer sem passar por esta tabela.
  */
 export const QUALIDADES: readonly EscolhaNaUi[] = [
-  { id: 'cinema', nome: 'Cinema', simbolo: '◆' },
-  { id: 'alta', nome: 'Alta', simbolo: '◇' },
-  { id: 'performance', nome: 'Performance', simbolo: '◦' },
-  { id: 'auto', nome: 'Auto', simbolo: '⟳' },
+  { id: 'cinema', get nome() { return t('qualidade.cinema'); }, simbolo: '◆' },
+  { id: 'alta', get nome() { return t('qualidade.alta'); }, simbolo: '◇' },
+  { id: 'performance', get nome() { return t('qualidade.performance'); }, simbolo: '◦' },
+  { id: 'auto', get nome() { return t('qualidade.auto'); }, simbolo: '⟳' },
 ];
 
 const nomeDaQualidade = (id: EscolhaDeQualidade) =>
@@ -221,18 +224,41 @@ export function rotuloDaQualidade(e: EstadoDaQualidade): string {
   const aqui = nomeDaQualidade(e.tier);
   if (!e.medicao) {
     return e.escolha === 'auto'
-      ? `Auto: a qualidade está em ${aqui}, medindo o quadro.`
-      : `Qualidade ${aqui}, medindo o quadro.`;
+      ? t('qualidade.autoMedindo', { tier: aqui })
+      : t('qualidade.medindo', { tier: aqui });
   }
-  const quadros = `${Math.round(e.medicao.fps)} quadros/s`;
+  const quadros = t('qualidade.quadros', { fps: Math.round(e.medicao.fps) });
   if (e.escolha === 'auto') {
-    return `Auto: a medição pôs a qualidade em ${aqui}, a ${quadros}.`;
+    return t('qualidade.autoPousou', { tier: aqui, quadros });
   }
   if (e.medicao.sugestao === e.tier) {
-    return `Qualidade ${aqui}, e o quadro anda a ${quadros}.`;
+    return t('qualidade.confere', { tier: aqui, quadros });
   }
-  return `Qualidade ${aqui}, a ${quadros}`
-    + ` — ${nomeDaQualidade(e.medicao.sugestao)} deve andar melhor.`;
+  return t('qualidade.sugere', {
+    tier: aqui,
+    quadros,
+    sugestao: nomeDaQualidade(e.medicao.sugestao),
+  });
+}
+
+/**
+ * A CLASSE DE UM CORPO COMO O VISITANTE A LÊ (item 130). O campo
+ * `classe` das tabelas continua em pt-BR e continua sendo CHAVE — é por
+ * ele que `world/labels.prioridadeDeCorpo` decide o peso do rótulo, e
+ * traduzir o dado quebraria a hierarquia dos nomes. A tradução mora
+ * AQUI, no caminho da tela, e em nenhum outro lugar.
+ */
+export function classeEmTexto(classe: string): string {
+  return t(`classe.${classe}` as ChaveDeTexto);
+}
+
+/**
+ * A FAMÍLIA DE CAMADAS COMO A GAVETA A ESCREVE. Mesma doutrina da
+ * classe: `familia` é chave de agrupamento (e união de tipo), a
+ * tradução mora no caminho da tela.
+ */
+export function familiaEmTexto(familia: FamiliaDeCamada): string {
+  return t(`familia.${familia}` as ChaveDeTexto);
 }
 
 /**

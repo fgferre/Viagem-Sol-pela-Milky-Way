@@ -15,6 +15,8 @@ import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
 import { TIER_DE_PRODUTO } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
 import { sondarGl } from './lib/glProbe';
+import { t } from './lib/idioma';
+import { useIdioma } from './hooks/useIdioma';
 import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
 import { BarraOuAlcas } from './components/BarraOuAlcas';
 import {
@@ -144,6 +146,10 @@ const AREAS_RESERVADAS = [
 const telaDeToque = () => window.matchMedia?.('(pointer: coarse)').matches ?? false;
 
 export default function App() {
+  // A LÍNGUA COMO DEPENDÊNCIA DE RENDER (item 130): as dicas de gesto e
+  // o rótulo do canvas moram neste componente, e sem esta assinatura a
+  // troca no painel de Ajustes deixaria as duas na língua anterior.
+  useIdioma();
   const rootRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const labelCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -193,9 +199,7 @@ export default function App() {
   const [loadError, setLoadError] = useState(() => {
     const gl = sondarGl();
     if (gl.webgl2) return '';
-    return gl.suportado
-      ? 'Este navegador só tem WebGL 1, e a Viagem precisa de WebGL 2 para desenhar a galáxia. Atualize o navegador (ou ative a aceleração de hardware) e tente de novo.'
-      : 'Este navegador está sem WebGL utilizável — a Viagem precisa dele para desenhar a galáxia. Atualize o navegador ou ative a aceleração de hardware e tente de novo.';
+    return t(gl.suportado ? 'hud.semWebgl2' : 'hud.semWebgl');
   });
   const [loadStage, setLoadStage] = useState<LoadStage>(LOAD_STAGES[0]);
   // a loading é camada persistente: só desmonta DEPOIS do merge terminar
@@ -701,7 +705,7 @@ export default function App() {
         // que o `.bare-mode > *:not(.scene-canvas)` poupa em ?shot=2 e a
         // que o `voo-smoke` procura.
         className={`scene-canvas${arrastoFazAlgo(phase, paused) ? ' arrastavel' : ''}`}
-        aria-label="Simulação tridimensional da viagem pelo catálogo HYG e pela Via Láctea"
+        aria-label={t('cena.aria')}
       />
       <canvas ref={labelCanvasRef} className="label-canvas" aria-hidden="true" />
 
@@ -736,16 +740,16 @@ export default function App() {
           <div className="free-hint">
             {telaDeToque() ? (
               <>
-                <span data-spot="olhar">toque e arraste — olhar</span> ·{' '}
-                <span data-spot="visitar">toque num nome — visitar</span>
+                <span data-spot="olhar">{t('dica.toque.olhar')}</span> ·{' '}
+                <span data-spot="visitar">{t('dica.toque.visitar')}</span>
               </>
             ) : (
               <>
-                <span data-spot="olhar">arrastar — olhar</span> ·{' '}
-                <span data-spot="voar">wasd/qe — voar</span> · z/x — rolar · roda —
-                velocidade
+                <span data-spot="olhar">{t('dica.mouse.olhar')}</span> ·{' '}
+                <span data-spot="voar">{t('dica.mouse.voar')}</span> ·{' '}
+                {t('dica.mouse.rolarEVelocidade')}
                 <br />
-                <span data-spot="visitar">clique num nome — viajar até a estrela</span>
+                <span data-spot="visitar">{t('dica.mouse.visitar')}</span>
                 <br />
                 {/* O OPT-IN DA CAPTURA: quem decide é o visitante, e a dica
                     é onde a decisão mora — é a linha que ele já está lendo
@@ -759,11 +763,13 @@ export default function App() {
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => directorRef.current?.capturaDePonteiro.pedir()}
                 >
-                  {capturaNegada
-                    ? 'este navegador não devolveu a captura do ponteiro'
-                    : capturado
-                      ? 'ponteiro capturado — esc devolve'
-                      : 'capturar o ponteiro'}
+                  {t(
+                    capturaNegada
+                      ? 'dica.captura.negada'
+                      : capturado
+                        ? 'dica.captura.capturado'
+                        : 'dica.captura.pedir'
+                  )}
                 </button>
               </>
             )}
@@ -772,9 +778,7 @@ export default function App() {
 
         {/* dica do pausar-e-olhar */}
         {inJourney && paused && (
-          <div className="free-hint">
-            arraste — olhar ao redor · espaço — retomar a viagem
-          </div>
+          <div className="free-hint">{t('dica.pausado')}</div>
         )}
         </div>
       )}
@@ -893,16 +897,16 @@ export default function App() {
           <div className={`free-hint ${girouNoAtlas ? 'apagada' : ''}`}>
             {telaDeToque() ? (
               <>
-                <span data-spot="girar">arraste — girar</span> ·{' '}
-                <span data-spot="zoom">pinça — zoom</span> ·{' '}
-                <span data-spot="escolher">toque — escolher</span> ·{' '}
-                <span data-spot="ir">toque duplo — ir</span>
+                <span data-spot="girar">{t('dica.atlas.girar')}</span> ·{' '}
+                <span data-spot="zoom">{t('dica.atlas.pinca')}</span> ·{' '}
+                <span data-spot="escolher">{t('dica.atlas.escolherToque')}</span> ·{' '}
+                <span data-spot="ir">{t('dica.atlas.irToque')}</span>
               </>
             ) : (
               <>
-                <span data-spot="girar">arraste — girar</span> ·{' '}
-                <span data-spot="zoom">roda — zoom</span> ·{' '}
-                <span data-spot="escolher">clique — escolher</span> · esc — voltar
+                <span data-spot="girar">{t('dica.atlas.girar')}</span> ·{' '}
+                <span data-spot="zoom">{t('dica.atlas.roda')}</span> ·{' '}
+                <span data-spot="escolher">{t('dica.atlas.escolherEVoltar')}</span>
               </>
             )}
           </div>
