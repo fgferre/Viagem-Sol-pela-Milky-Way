@@ -272,8 +272,8 @@ export const BUMP_DO_ALBEDO_PADRAO = 0.02;
  */
 export const BUMP_DO_ALBEDO: Readonly<Record<string, number>> = {
   // A LEI DO DONO (02/09): "o relevo deve aparecer em tudo que tem relevo,
-  // sem atmosfera" — um universo só, filme, voo e Atlas. Io entra pelo
-  // padrão. Zero SÓ onde a mancha do mapa não é chão: Vênus é topo de
+  // sem atmosfera" — um universo só, filme, voo e Atlas. Zero SÓ onde a
+  // mancha do mapa não é chão: Vênus é topo de
   // nuvem e Titã é o topo da bruma (dito em rochoso.ts) — relevo tirado
   // dali seria montanha de nuvem.
   venus: 0,
@@ -289,6 +289,12 @@ export const BUMP_DO_ALBEDO: Readonly<Record<string, number>> = {
   // Ceres: a própria fonte admite mapa INVENTADO (ASSETS.md) — derivar
   // relevo de invenção seria inventar duas vezes.
   ceres: 0,
+  // ITEM 141 (decisão dele, 03/09, "pode zerar Europa e Io"): nas duas a
+  // mancha do mapa é COR, não forma — as linhas de Europa são gelo tingido
+  // sobre uma casca lisa, e Io é enxofre de todas as cores sobre planícies
+  // de lava. Derivar relevo daí levantava cristas onde há só tinta.
+  europa: 0,
+  io: 0,
 };
 
 /** A escala do bump de um corpo: o interruptor, ou o padrão. */

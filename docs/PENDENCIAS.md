@@ -166,6 +166,10 @@ são cor, não forma) e a decisão é dele: manter como aproximação declarada
 ou zerar. Ordem sugerida, depois de a Lua (140) provar a técnica: Mercúrio
 → Marte → Ceres → Vesta (um operário a cada dois corpos); Fobos/Deimos
 numa fase própria.
+  **DECISÃO DELE (03/09): "pode zerar Europa e Io"** — feito no mesmo
+  commit desta linha (`BUMP_DO_ALBEDO`), fotos `capturas/item141-{europa,io}-*`.
+  Mercúrio e Marte FEITOS (`f4f6db0`); faltam Ceres e Vesta (Dawn HAMO) e
+  Fobos/Deimos (forma real, malha).
 
 **ESTADO (03/09 — Mercúrio e Marte feitos, falta a palavra dele).** Os dois
 saíram do relevo INVENTADO da cor e ganharam o real, pelo mesmo caminho da Lua:
