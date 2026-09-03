@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 141.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 142.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -160,6 +160,25 @@ em todo corpo sem atmosfera) ligou na Lua — amplitude do bump, altura
 real, malha e textura maiores — e o custo de quadro; referência do "que
 observamos": as imagens do NASA SVS Moon Phase and Libration (LRO,
 domínio público) no mesmo instante.
+
+**141. Os outros candidatos à técnica da Lua (relevo real, só na luz).**
+Pedido dele, 03/09: *"ver que outros candidatos podem se beneficiar da mesma
+tecnica"*. Censo (03/09, cruzando o manifesto de texturas com os mapas de
+altura públicos que existem): hoje recebem o relevo INVENTADO da cor
+(bump do albedo, S2) todos os corpos com mapa menos Vênus/Titã/Ceres, as
+seis luas de Saturno (relevo real) e as nove esculpidas. Com mapa de altura
+global, real e de domínio público (NASA/USGS): **Mercúrio** (MESSENGER,
+665 m/px), **Marte** (MOLA+HRSC, 200 m/px), **Vesta** e **Ceres** (Dawn
+HAMO, ~100 m/px — Ceres ganharia relevo verdadeiro por baixo do mapa de cor
+que a própria fonte confessa inventado). **Fobos e Deimos** têm modelo de
+FORMA real (Gaskell/SPC), não mapa: o caminho é a malha esculpida com dado
+real, não normais. **Sem dado global** (só cobertura parcial de sobrevoo):
+Io, Europa, Ganimedes, Calisto, Plutão, Caronte, Tritão, as luas de Urano,
+Higia, Palas — nesses o relevo da cor continua sendo invenção (Europa e Io
+são cor, não forma) e a decisão é dele: manter como aproximação declarada
+ou zerar. Ordem sugerida, depois de a Lua (140) provar a técnica: Mercúrio
+→ Marte → Ceres → Vesta (um operário a cada dois corpos); Fobos/Deimos
+numa fase própria.
 
 **138. Jápeto "totalmente feio" — e a paridade de TODAS as luas contra o
 projeto Saturn dele.** Palavras dele, 02/09, logo depois do fecho do 134:
