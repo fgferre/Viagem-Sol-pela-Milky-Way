@@ -84,7 +84,7 @@ import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { GLSL_RUIDO_DE_VALOR, diametroAparentePx } from './corpos';
 import { AneisTenuesDeSaturno } from './aneisTenues';
 import type { QuadroDosAneisTenues } from './aneisTenues';
-import { LajotaDoAnel } from './lajotaDoAnel';
+import { LajotaDoAnel, VOLUME_DA_LAJOTA } from './lajotaDoAnel';
 import type { QuadroDaLajota } from './lajotaDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
@@ -1148,6 +1148,9 @@ export interface EstadoDoGigante {
   centroPc: THREE.Vector3;
   diametroPx: number;
   rUA: number;
+  /** item 139: o PLANO DO ANEL como superfície do palco — ver
+   *  `EstadoNoPalco.superficieDoAnel`. `null` fora do anel. */
+  superficieDoAnel: { raioPc: number; centroPc: THREE.Vector3 } | null;
 }
 
 /** O bloco comum de textura (`OpcoesDeTextura`) mais o id do gigante —
@@ -1202,6 +1205,9 @@ export class GiganteResolvido {
   private lajota: LajotaDoAnel | null = null;
   /** o quadro da lajota, REUSADO (zero alocação por tick, M4 da casa) */
   private quadroDaLajota: QuadroDaLajota | null = null;
+  /** item 139: o CHÃO do anel para o palco (o ponto do plano mais próximo
+   *  da câmera), REUSADO — nasce com a lajota, e só com ela */
+  private chaoDoAnel: { raioPc: number; centroPc: THREE.Vector3 } | null = null;
   /** o tier VIVO, lido na hora: a contagem de grãos da lajota é alocação,
    *  e alocação lê o tier antes de alocar (a regra das plumas) */
   private readonly tierVivo: OpcoesDoGigante['tier'];
@@ -1275,6 +1281,7 @@ export class GiganteResolvido {
       centroPc: this.centro,
       diametroPx: Number.NaN,
       rUA: Number.NaN,
+      superficieDoAnel: null,
     };
   }
 
@@ -1350,6 +1357,9 @@ export class GiganteResolvido {
         : stepRampToward(e.cede, alvo, q.dtS, RAMP_DURATION_MS);
     e.emRampa = e.cede !== alvo;
 
+    // o chão do anel (139) é do QUADRO, não do corpo: fora de quadro, ou
+    // com a câmera longe do plano, o palco não o vê
+    e.superficieDoAnel = null;
     if (emQuadro) this.posicionar(q);
     return e;
   }
@@ -1456,10 +1466,40 @@ export class GiganteResolvido {
         this.tenues.atualizar(t);
       }
 
+      // O CHÃO DO ANEL COMO SUPERFÍCIE DO PALCO (139, segunda metade). O
+      // anel é um CHÃO: com a câmera rente ao plano o que está mais perto
+      // dela não é o globo a 54 mil km, é o gelo debaixo dos pés. O corpo
+      // publica o PONTO DO PLANO mais próximo da câmera — a projeção dela
+      // no plano do anel, que dista |altura| — com "raio" = a meia-espessura
+      // da lajota; daí o palco tira d = |altura| − 12 km e o `nearPlanePc`
+      // os 0,4% de sempre. Sem isto o near valia 193 km a 40 km do plano e
+      // cortava todo o primeiro plano do enxame (o defeito que sobrou do
+      // item 135, uma altura abaixo).
+      //
+      // A JANELA é a da própria lajota (`VOLUME_DA_LAJOTA`, 55 000–160 000
+      // km, que contém o anel principal inteiro): fora dela a projeção da
+      // câmera cai onde não há chão nenhum, e o plano não é superfície.
+      // `this.vAnelY` é o POLO — a normal do plano do anel.
+      const alturaPc = delta.dot(this.vAnelY);
+      const rProjPc = Math.sqrt(
+        Math.max(0, delta.lengthSq() - alturaPc * alturaPc)
+      ) / this.raioA;
+      const chao = this.chaoDoAnel;
+      const noAnel =
+        chao !== null &&
+        rProjPc > VOLUME_DA_LAJOTA.rMin &&
+        rProjPc < VOLUME_DA_LAJOTA.rMax;
+      if (noAnel) {
+        chao.centroPc.copy(q.camPosPc).addScaledVector(this.vAnelY, -alturaPc);
+        this.estado.superficieDoAnel = chao;
+      }
+
       // A LAJOTA VOLUMÉTRICA (139). O NEAR sai do MESMO escritor que o
       // engine usa para o quadro (`nearPlanePc`), com os mesmos três
-      // argumentos: sem ele a soleira do grão colado na lente seria uma
-      // segunda conta do plano de corte, livre para divergir da primeira.
+      // argumentos — e, desde o chão acima, com a MESMA escolha de
+      // superfície que o palco faz: a de menor distância. Sem isso a
+      // soleira do grão colado na lente seria uma segunda conta do plano
+      // de corte, livre para divergir da primeira.
       if (this.lajota && this.quadroDaLajota) {
         const l = this.quadroDaLajota;
         l.dirSolLocal.copy(ua.uDirSolLocal.value as THREE.Vector3);
@@ -1467,9 +1507,14 @@ export class GiganteResolvido {
         l.luzGanho = ganho;
         l.solAngRad = solAngRad;
         l.kPolar = this.kPolar;
+        const dGlobo = delta.length() - this.raioA;
+        const dChao = noAnel ? Math.abs(alturaPc) - chao!.raioPc : Number.NaN;
+        const mandaOChao = noAnel && dChao < dGlobo;
         l.nearRaios =
           nearPlanePc(
-            q.camPosPc.length(), delta.length() - this.raioA, this.raioA
+            q.camPosPc.length(),
+            mandaOChao ? dChao : dGlobo,
+            mandaOChao ? chao!.raioPc : this.raioA
           ) / this.raioA;
         l.tier = this.tierVivo();
         this.lajota.fixarNoAnel(this.anel.matrix);
@@ -1607,6 +1652,12 @@ export class GiganteResolvido {
           kPolar: this.kPolar,
           nearRaios: PISO_DO_NEAR_EM_RAIOS,
           tier: 'cinema',
+        };
+        // o "raio" do chão é a MEIA-ESPESSURA da lajota: o palco tira
+        // d = |altura| − 12 km, e o anteparo (raio × 1e-3) fica em 12 m
+        this.chaoDoAnel = {
+          raioPc: VOLUME_DA_LAJOTA.meiaEspessura * this.raioA,
+          centroPc: new THREE.Vector3(),
         };
         this.group.add(this.lajota.malha);
         void this.ligarPerfilDoAnel();

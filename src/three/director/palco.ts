@@ -78,6 +78,18 @@ export interface EstadoNoPalco {
   centroPc: THREE.Vector3;
   cede?: number;
   emRampa?: boolean;
+  /**
+   * UMA SEGUNDA SUPERFÍCIE do mesmo corpo (item 139). O anel de Saturno
+   * é um CHÃO, não um globo: com a câmera rente ao plano a superfície
+   * mais próxima está a metros, mas o palco só conhecia o globo, a 54
+   * mil km — e o near de 0,4% daquilo cortava o chão de gelo inteiro.
+   * O corpo entrega aqui o PONTO DO PLANO mais próximo da câmera (com
+   * "raio" = a meia-espessura da lajota) e o palco o registra como
+   * `<id>-anel`; `null` = não vale neste quadro, e o posto sai do
+   * registro. Só Saturno a preenche; para todo o resto é `undefined` e
+   * o par (near, far) fica bit a bit no vigente.
+   */
+  superficieDoAnel?: { raioPc: number; centroPc: THREE.Vector3 } | null;
 }
 
 /** O contrato mínimo que os quatro tipos de corpo já cumprem: o nó que
@@ -163,6 +175,13 @@ export function passoDoPalco(
 
     if (e.emQuadro) palco.registrar(posto.id, e.raioPc, e.centroPc);
     else palco.remover(posto.id);
+
+    // a segunda superfície (o plano do anel, item 139): só com o corpo
+    // EM QUADRO, pela mesma razão que o globo — chão que não está em
+    // quadro não governa plano de corte
+    const anel = e.emQuadro ? e.superficieDoAnel : null;
+    if (anel) palco.registrar(`${posto.id}-anel`, anel.raioPc, anel.centroPc);
+    else palco.remover(`${posto.id}-anel`);
 
     // a cessão SUAVE (F2b/D5): reafirmada TODO quadro — a escrita é
     // idempotente (`gravar`), então reafirmar não sobe upload. E o

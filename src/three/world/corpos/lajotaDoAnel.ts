@@ -80,6 +80,20 @@ const ALTURA_DA_LIGACAO_KM = 1600;
 const RAIO_MIN_KM = 55000;
 const RAIO_MAX_KM = 160000;
 
+/**
+ * O VOLUME QUE A LAJOTA OCUPA, em RAIOS equatoriais — o mesmo anel e a
+ * mesma meia-espessura de cima, só convertidos. Quem lê é o corpo, para
+ * registrar o PLANO DO ANEL como superfície do palco (a segunda metade
+ * do item 139): sem isso o `nearPlanePc` continua medindo a distância ao
+ * GLOBO e corta o chão de gelo perto da câmera. Uma fonte de verdade —
+ * quem mudar o anel ou a espessura acima muda o palco junto.
+ */
+export const VOLUME_DA_LAJOTA = {
+  rMin: RAIO_MIN_KM / KM_POR_RAIO,
+  rMax: RAIO_MAX_KM / KM_POR_RAIO,
+  meiaEspessura: ESPESSURA_KM / KM_POR_RAIO,
+} as const;
+
 /** O alfa por grão (o `0.30` dele). */
 const DOSE = 0.3;
 
