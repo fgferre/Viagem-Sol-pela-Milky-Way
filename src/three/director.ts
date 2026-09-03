@@ -1938,7 +1938,21 @@ export class Director {
       // segue rodando e o Auto segue ouvindo (`aoMedirOQuadro`): o que
       // para é o mostrador, não a régua.
       medicao: this.shotMode ? null : this.engine.medicao,
+      // o MSAA vivo da gaveta Avançado (item 145), lido do Post — a
+      // única casa dele
+      amostras: this.post.amostras,
     });
+  }
+
+  /**
+   * A SUAVIZAÇÃO DE BORDAS, TROCADA AO VIVO (item 145). O estado mora no
+   * Post; daqui sai o pedido e a publicação — o painel e a barra releem
+   * o mesmo `EstadoDaQualidade` de sempre, e por isso o rótulo do
+   * seletor passa a dizer "Personalizado" no mesmo quadro.
+   */
+  forcarAmostras(amostras: number | null) {
+    this.post.forcarAmostras(amostras);
+    this.publicarQualidade();
   }
 
   /**
@@ -2213,6 +2227,10 @@ export class Director {
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),
       camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
       tier: this.engine.quality,
+      // o MSAA escolhido à mão (item 145) — estado VIVO do Post, não a
+      // porta: o controle do painel o troca sem recarregar, e um selo
+      // que lesse só `?msaa=` calaria a escolha feita na gaveta
+      amostras: this.post.amostras,
       luz: this.politicaDeLuz,
       stopsDoGloboEmFoco: this.stopsDoGloboEmFoco(),
       // a DOSE de ocupação do Sol (item 5): < 1 só no arranque do filme,

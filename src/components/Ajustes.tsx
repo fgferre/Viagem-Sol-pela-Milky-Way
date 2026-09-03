@@ -53,11 +53,29 @@ const TONS: { id: ToneMapMode; nome: string; nota: ChaveDeTexto }[] = [
   { id: 'linear', nome: 'Linear', nota: 'ajustes.tom.linear' },
 ];
 
+/**
+ * OS QUATRO ESTADOS DA SUAVIZAÇÃO DE BORDAS (item 145) — o primeiro
+ * controle da gaveta AVANÇADO. `null` é "do preset": a ausência de
+ * escolha, e o padrão. Os números são as amostras do alvo, e o rótulo
+ * deles é o próprio número (2×, 4×) — marca de hardware, não frase, e
+ * por isso não passa pelo dicionário.
+ *
+ * O nome sai por FUNÇÃO e não por texto assado: `t` lê a língua viva, e
+ * uma tabela de constantes nasceria na língua do primeiro import.
+ */
+const AMOSTRAS: { valor: number | null; nome: () => string }[] = [
+  { valor: null, nome: () => t('ajustes.msaaDoPreset') },
+  { valor: 0, nome: () => t('ajustes.msaaDesligada') },
+  { valor: 2, nome: () => '2×' },
+  { valor: 4, nome: () => '4×' },
+];
+
 export function Ajustes({
   aberto,
   onFechar,
   qualidade,
   onQualidade,
+  onAmostras,
   tom,
   onTom,
   exposicao,
@@ -74,6 +92,8 @@ export function Ajustes({
   /** o estado inteiro (escolha, tier vivo, medição) — Ajustes D */
   qualidade: EstadoDaQualidade;
   onQualidade: (q: EscolhaDeQualidade) => void;
+  /** a suavização de bordas escolhida à mão (item 145); `null` = do preset */
+  onAmostras: (amostras: number | null) => void;
   tom: ToneMapMode;
   onTom: (t: ToneMapMode) => void;
   exposicao: number;
@@ -205,6 +225,34 @@ export function Ajustes({
         <p className="ajustes-nota ajustes-medida" role="status" aria-live="polite">
           {rotuloDaQualidade(qualidade)}
         </p>
+      </div>
+
+      {/* A GAVETA AVANÇADO (item 145) — os presets na frente, os
+          controles individuais atrás. Ela mora COLADA na seção da
+          qualidade, e não no fim do painel, por causa da régua: o
+          número de quadros/s que o visitante compara é o da linha logo
+          acima, e um controle a três rolagens dela mediria memória em
+          vez de desempenho. Mexeu aqui, o rótulo do seletor passa a
+          dizer "Personalizado" — nos dois hospedeiros, porque a frase é
+          uma só (`rotuloDaQualidade`). */}
+      <div className="ajustes-secao">
+        <h3>{t('ajustes.avancado')}</h3>
+        <p className="ajustes-nota">
+          <strong>{t('ajustes.msaa')}</strong> — {t('ajustes.msaaNota')}
+        </p>
+        <div className="ajustes-linha" aria-label={t('ajustes.msaa')} role="group">
+          {AMOSTRAS.map((a) => (
+            <button
+              type="button"
+              key={String(a.valor)}
+              className={qualidade.amostras === a.valor ? 'on' : ''}
+              aria-pressed={qualidade.amostras === a.valor}
+              onClick={() => onAmostras(a.valor)}
+            >
+              {a.nome()}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="ajustes-secao">

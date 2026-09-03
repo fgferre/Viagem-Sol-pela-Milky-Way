@@ -237,6 +237,32 @@ export function useEspelhoDaUrl(dep: {
     window.history.replaceState(null, '', `${url.pathname}${url.search}`);
   };
 
+  /**
+   * A SUAVIZAÇÃO DE BORDAS, AO VIVO (item 145) — o primeiro controle da
+   * gaveta AVANÇADO. Palavras do dono: *"porque não deixamos isso como
+   * um toggle então... se a pessoa quiser ela desliga isso, mas como eu
+   * não tenho hoje o toggle não consigo nem entender direito em tempo
+   * real qual é o impacto em performance e em qualidade visual"*.
+   *
+   * NÃO HÁ ESTADO EM REACT AQUI, e é de propósito: o valor vivo mora no
+   * `Post`, o Director o publica dentro do `EstadoDaQualidade` (é o
+   * mesmo assunto na tela), e o painel lê de lá. Uma cópia local seria a
+   * segunda verdade que a F2 da Onda 5 tirou do tom e da exposição.
+   *
+   * A URL É ESPELHO: `?msaa=` já existia como porta de bancada e vira o
+   * reflexo do controle — escrita só quando o visitante saiu do preset,
+   * apagada quando ele volta, porque "do preset" é o padrão e a URL
+   * desta casa descreve a vista, não é painel.
+   */
+  const trocarAmostras = (amostras: number | null) => {
+    directorRef.current?.forcarAmostras(amostras);
+    window.history.replaceState(
+      null,
+      '',
+      comParam('msaa', amostras === null ? null : String(amostras))
+    );
+  };
+
   // ---- o gosto, escrito num lugar só (estado + Director + URL) -------
   const trocarTom = (t: ToneMapMode) => {
     setTom(t);
@@ -329,6 +355,12 @@ export function useEspelhoDaUrl(dep: {
       } else if (c.chave === 'tone') {
         d.engine.setToneMapping('aces');
         setTom('aces');
+      } else if (c.chave === 'msaa') {
+        // a suavização escolhida à mão volta ao preset (item 145) — e
+        // sem este ramo ela cairia no `setLayerHidden` lá embaixo, que
+        // não conhece esta chave: o selo apagaria a linha da URL e a
+        // cena continuaria com o número forçado
+        d.forcarAmostras(null);
       } else if (c.chave === 'luz') {
         // volta ao 1/d² cru no próximo quadro (D2 — volta 'vivo'), e o
         // carimbo porque esta é a única linha sem espelho em React: sem
@@ -403,6 +435,7 @@ export function useEspelhoDaUrl(dep: {
     setEscondidas,
     urlComMomento,
     changeQuality,
+    trocarAmostras,
     trocarTom,
     trocarExposicao,
     voltarAoBrilhoReal,

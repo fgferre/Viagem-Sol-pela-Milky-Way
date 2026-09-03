@@ -838,8 +838,20 @@ export class Post {
   private kneeOn = false;
   private outputPass!: OutputPass;
   private renderer: THREE.WebGLRenderer;
-  /** `?msaa=N` venceu a escada de tiers; `null` = quem manda é o tier */
-  private readonly amostrasForcadas: number | null;
+  /**
+   * O MSAA ESCOLHIDO À MÃO — `null` = quem manda é o tier (item 145).
+   * Nasce de `?msaa=N` (a URL vence no boot) e passa a ser o controle
+   * vivo do painel de Ajustes, por `forcarAmostras`.
+   */
+  private amostrasForcadas: number | null;
+  /**
+   * O tier da última aplicação. Guardado para `forcarAmostras` reaplicar
+   * pelo MESMO caminho de `aplicarAmostras` sem pedir o tier a ninguém —
+   * quem chama de fora continua sendo só o Director, nos dois pontos de
+   * sempre. Nasce em `cinema` porque é o que o construtor monta
+   * (`AMOSTRAS_DO_ALVO` = as amostras do cinema).
+   */
+  private tierDasAmostras: QualityLevel = 'cinema';
 
   constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
     this.renderer = renderer;
@@ -858,7 +870,9 @@ export class Post {
     // O CAMINHO DE VOLTA E O LADO A DA BANCADA, no molde de `?bbloom=0`:
     // `?msaa=0` devolve o alvo sem amostras — o quadro anterior a esta
     // obra —, `?msaa=N` varre e vence a escada de tiers. Ausente, quem
-    // manda é o tier (`aplicarAmostras`).
+    // manda é o tier (`aplicarAmostras`). Desde o item 145 esta leitura
+    // SEMEIA o controle vivo do painel: a URL vence no boot e o painel
+    // manda depois (`forcarAmostras`).
     const pedido = q.get('msaa');
     const forcado = pedido === null ? Number.NaN : Math.trunc(Number(pedido));
     this.amostrasForcadas = Number.isFinite(forcado) ? Math.max(0, forcado) : null;
@@ -1126,10 +1140,12 @@ export class Post {
    * consulta e o tier trocaria nada. Nada se perde na destruição — a
    * `CenaResolvidaUmaVez` limpa o alvo antes de desenhar, todo quadro.
    *
-   * `?msaa=` vence: uma bancada que fixou o número não pode ser desfeita
-   * pela auto-degradação no meio da medida.
+   * O ESCOLHIDO À MÃO VENCE (`?msaa=` no boot, o controle do painel
+   * depois): uma bancada — ou um visitante — que fixou o número não
+   * pode ser desfeita pela auto-degradação no meio da medida.
    */
   aplicarAmostras(tier: QualityLevel) {
+    this.tierDasAmostras = tier;
     const alvo = this.amostrasForcadas ?? AMOSTRAS_POR_TIER[tier];
     const rt = this.cena.alvo;
     if (rt.samples === alvo) return;
@@ -1138,6 +1154,32 @@ export class Post {
     // e o dono da textura compartilhada vai junto: dispor o alvo apagou a
     // textura de GL que o framebuffer do `renderTarget1` ainda aponta
     this.composer.renderTarget1.dispose();
+  }
+
+  /** o MSAA escolhido à mão agora; `null` = o do preset (item 145) */
+  get amostras(): number | null {
+    return this.amostrasForcadas;
+  }
+
+  /**
+   * O CONTROLE VIVO DO PAINEL (item 145). Palavras do dono: *"se a
+   * pessoa quiser ela desliga isso, mas como eu não tenho hoje o toggle
+   * não consigo nem entender direito em tempo real qual é o impacto em
+   * performance e em qualidade visual"* — o número que ele compara é o
+   * dos quadros/s do próprio painel, e por isso a troca não recarrega.
+   *
+   * O override mora AQUI, dentro do Post, e a reaplicação passa pelo
+   * mesmo `aplicarAmostras` de sempre — é ele que dispõe os dois alvos,
+   * que é o que faz a troca valer. Um caminho paralelo que escrevesse
+   * `samples` daqui seria a sabotagem silenciosa descrita ali em cima,
+   * com outro nome.
+   *
+   * `null` devolve a escada de tiers: o preset volta a mandar, e o Auto
+   * volta a poder mudar o número sozinho ao trocar de degrau.
+   */
+  forcarAmostras(amostras: number | null) {
+    this.amostrasForcadas = amostras;
+    this.aplicarAmostras(this.tierDasAmostras);
   }
 
   /**

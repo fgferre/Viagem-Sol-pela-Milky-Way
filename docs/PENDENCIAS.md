@@ -73,6 +73,26 @@ esperam ordem. Backup em dia; site intocado (publicar só com pedido dele).
 
 ## ALTA — o dono vê e incomoda
 
+**145. "Porque não deixamos isso como um toggle então... se a pessoa
+quiser ela desliga isso, mas como eu não tenho hoje o toggle não consigo
+nem entender direito em tempo real qual é o impacto em performance e em
+qualidade visual."** (Palavras dele, 03/09, sobre o MSAA do item 144.)
+O controle da suavização de bordas (MSAA) é o PRIMEIRO da gaveta
+**Avançado** do menu de gráficos — presets na frente, controles
+individuais atrás. Quatro estados no painel de Ajustes ("Do preset",
+"Desligada", "2×", "4×"), troca na hora sem recarregar, com os
+quadros/s do próprio painel logo acima servindo de régua; mexeu num
+controle, o rótulo do seletor de qualidade passa a dizer "Personalizado".
+- **FEITO em 03/09** (commit desta linha): o override vive dentro do
+  `Post` (`forcarAmostras`, que reaplica pelo mesmo `aplicarAmostras` —
+  é ele que dispõe os dois alvos e faz a troca valer); o Director o
+  publica no `EstadoDaQualidade` e o selo o declara pelo estado VIVO, no
+  lugar da antiga porta `?msaa=` por presença. A URL segue sendo
+  ESPELHO: `?msaa=` é escrita só fora do preset e apagada na volta.
+- **Aberto:** a gaveta tem um controle só. Os próximos candidatos saem
+  do ranking do 144 (passos do raymarch da nebulosa, população da
+  galáxia) e ainda não têm ordem dele.
+
 **144. "O app está um pouco pesado nessa máquina."** (Palavras dele,
 03/09, ao trazer o relatório de desempenho de outra IA.) Medido no M1
 dele, Atlas de abertura, janela 2560×1500, modo cru do `gpu-profile`:

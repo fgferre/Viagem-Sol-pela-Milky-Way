@@ -297,6 +297,15 @@ export interface EstadoDaQualidade {
   escolha: EscolhaDeQualidade;
   tier: QualityLevel;
   medicao: MedicaoDoQuadro | null;
+  /**
+   * O MSAA ESCOLHIDO À MÃO na gaveta Avançado (item 145) — `null` = o do
+   * preset. Ele viaja JUNTO da qualidade porque é o mesmo assunto na
+   * tela: o painel desenha os dois um embaixo do outro, e é este campo
+   * que faz `rotuloDaQualidade` dizer "Personalizado" em vez de fingir
+   * que o preset ainda descreve o que a máquina está desenhando. Quem o
+   * publica é o Director, lendo o Post — não há segunda cópia.
+   */
+  amostras: number | null;
 }
 
 /**
@@ -693,12 +702,23 @@ export class Engine {
           && this.upgradeCooldown <= 0
           && !this.travaDoVaivem.travada;
         const sugestao = tierMedido(this.quality, avg, noTeto);
-        const antes = this.medicaoAtual?.sugestao;
+        const antes = this.medicaoAtual;
         this.medicaoAtual = { fps: avg, sugestao };
-        // avisa só quando a SUGESTÃO muda (inclusive a primeira, que sai
-        // do "medindo"): o número anda a cada janela e um evento por
-        // janela seria um re-render do HUD a 0,4 Hz para dizer o mesmo.
-        if (sugestao !== antes) this.medicaoFns.forEach((fn) => fn(this.medicaoAtual!));
+        // AVISA QUANDO A SUGESTÃO MUDA (inclusive a primeira, que sai do
+        // "medindo") OU QUANDO O NÚMERO ANDOU DE VERDADE. O critério do
+        // número entrou no item 145: o mostrador virou a RÉGUA da gaveta
+        // Avançado — o dono troca a suavização de bordas e compara os
+        // quadros/s ali mesmo —, e sem ele o painel ficava preso no
+        // valor de ANTES da troca até a sugestão mudar (medido a
+        // 2560×1500: 21 quadros/s no rótulo com a cena já a 25).
+        // Movimento pequeno segue calado, que era a razão original do
+        // freio: o número balança sozinho de janela a janela, e um
+        // evento a cada 2,5 s para dizer o mesmo é re-render do HUD à
+        // toa. 5% é maior que esse balanço (a 60 quadros/s presos no
+        // vsync a variação medida fica abaixo de 1%).
+        if (!antes || sugestao !== antes.sugestao || Math.abs(avg - antes.fps) > antes.fps * 0.05) {
+          this.medicaoFns.forEach((fn) => fn(this.medicaoAtual!));
+        }
       }
 
       this.tickFns.forEach((f) => f(t, dt));

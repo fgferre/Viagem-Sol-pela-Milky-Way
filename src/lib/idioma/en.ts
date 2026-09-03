@@ -126,6 +126,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.qualidade': 'Quality',
   'ajustes.qualidadeNota':
     'Switches live, with no reload. The heavy part — the galaxy population and the Sun — is rebuilt in the background and swapped in at once; until then the scene stays as it is. Auto lets the measurement choose — and nobody chooses for you without that click.',
+  'ajustes.avancado': 'Advanced',
+  'ajustes.msaa': 'Edge smoothing (MSAA)',
+  'ajustes.msaaNota':
+    'Smooths the edges of bodies and lines, and it costs frames. Switch here and compare with the frames/s just above — the change is immediate, with no reload. "From preset" hands the choice back to quality.',
+  'ajustes.msaaDoPreset': 'From preset',
+  'ajustes.msaaDesligada': 'Off',
   'ajustes.texto': 'Text size · {degrau}',
   'ajustes.textoNota':
     'Applies to the whole HUD — captions, controls, seal and the star names. It does not touch the scene: inside the Atlas the framing backs off a little so the larger text does not cover the target.',
@@ -320,6 +326,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.doseDoSol': 'the opening shows the Sun cleaner than the date asks for',
   'selo.desvio.amostragem': 'sampling below cinema',
   'selo.desvio.camada': 'layer turned off: {nome}',
+  'selo.desvio.msaa': 'edge smoothing set by hand',
+  'selo.desvio.msaaCom': 'edge smoothing set by hand: {amostras}',
 
   // ---- the scale accusation ----------------------------------------
   'escala.acusacao': '{nome} is {fator} larger',
@@ -363,6 +371,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'qualidade.performance': 'Performance',
   'qualidade.auto': 'Auto',
   'qualidade.quadros': '{fps} frames/s',
+  'qualidade.personalizado': '{tier} (Custom)',
   'qualidade.autoMedindo': 'Auto: quality is at {tier}, measuring the frame.',
   'qualidade.medindo': 'Quality {tier}, measuring the frame.',
   'qualidade.autoPousou': 'Auto: the measurement put quality at {tier}, at {quadros}.',

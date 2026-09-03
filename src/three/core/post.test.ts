@@ -154,6 +154,14 @@ describe('o MSAA do alvo da cena (item 120, F1 · L6; resolvido uma vez desde o 
     // viva e a semeadura inicial (o engine aplica a qualidade no próprio
     // construtor, antes de os ouvintes existirem)
     expect(director.match(/this\.post\.aplicarAmostras\(/g) ?? []).toHaveLength(2);
+    // E O CONTROLE VIVO DO PAINEL (item 145) reaplica PELO MESMO
+    // caminho: um `rt.samples = n` escrito dentro de `forcarAmostras`
+    // seria a mesma sabotagem silenciosa com outro nome — e o override
+    // mora DENTRO do Post, então o director continua com duas chamadas.
+    const forcar = post.slice(post.indexOf('forcarAmostras(amostras'));
+    const corpoForcar = forcar.slice(0, forcar.indexOf('\n  }'));
+    expect(corpoForcar).toMatch(/this\.aplicarAmostras\(this\.tierDasAmostras\)/);
+    expect(corpoForcar).not.toMatch(/samples\s*=/);
   });
 
   it('a cena resolve UMA vez: desenha no alvo próprio e copia para o buffer liso', () => {

@@ -221,7 +221,15 @@ const nomeDaQualidade = (id: EscolhaDeQualidade) =>
  * HUD mentindo sobre o instrumento.
  */
 export function rotuloDaQualidade(e: EstadoDaQualidade): string {
-  const aqui = nomeDaQualidade(e.tier);
+  // PERSONALIZADO (item 145): mexeu num controle da gaveta Avançado — hoje
+  // só a suavização de bordas —, e o nome do preset deixa de descrever o
+  // que a máquina desenha. O rótulo NÃO troca de frase por isso: só o
+  // nome do tier ganha a marca, e as quatro frases (medindo, auto
+  // medindo, auto pousou, confere/sugere) continuam inteiras.
+  const aqui =
+    e.amostras === null
+      ? nomeDaQualidade(e.tier)
+      : t('qualidade.personalizado', { tier: nomeDaQualidade(e.tier) });
   if (!e.medicao) {
     return e.escolha === 'auto'
       ? t('qualidade.autoMedindo', { tier: aqui })

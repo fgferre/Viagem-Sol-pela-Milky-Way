@@ -119,6 +119,12 @@ export const PT = {
   'ajustes.qualidade': 'Qualidade',
   'ajustes.qualidadeNota':
     'Troca ao vivo, sem recarregar. A parte pesada — a população da galáxia e o Sol — é refeita em segundo plano e entra de uma vez; até lá a cena continua como está. O auto deixa a medição escolher — e ninguém escolhe por você sem esse clique.',
+  'ajustes.avancado': 'Avançado',
+  'ajustes.msaa': 'Suavização de bordas (MSAA)',
+  'ajustes.msaaNota':
+    'Suaviza as beiras dos corpos e das linhas, e custa quadros. Troque aqui e compare com os quadros/s logo acima — a troca é na hora, sem recarregar. "Do preset" devolve a escolha à qualidade.',
+  'ajustes.msaaDoPreset': 'Do preset',
+  'ajustes.msaaDesligada': 'Desligada',
   'ajustes.texto': 'Tamanho do texto · {degrau}',
   'ajustes.textoNota':
     'Vale para o HUD inteiro — legenda, controles, selo e os nomes das estrelas. Não mexe na cena: dentro do Atlas o enquadramento recua um pouco para o texto maior não cobrir o alvo.',
@@ -316,6 +322,8 @@ export const PT = {
   'selo.desvio.doseDoSol': 'o arranque mostra o Sol mais limpo do que a data pede',
   'selo.desvio.amostragem': 'amostragem abaixo de cinema',
   'selo.desvio.camada': 'camada desligada: {nome}',
+  'selo.desvio.msaa': 'suavização de bordas escolhida à mão',
+  'selo.desvio.msaaCom': 'suavização de bordas escolhida à mão: {amostras}',
 
   // ---- a acusação da escala (`three/escala.ts`) ---------------------
   'escala.acusacao': '{nome} está {fator} maior',
@@ -359,6 +367,7 @@ export const PT = {
   'qualidade.performance': 'Performance',
   'qualidade.auto': 'Auto',
   'qualidade.quadros': '{fps} quadros/s',
+  'qualidade.personalizado': '{tier} (Personalizado)',
   'qualidade.autoMedindo': 'Auto: a qualidade está em {tier}, medindo o quadro.',
   'qualidade.medindo': 'Qualidade {tier}, medindo o quadro.',
   'qualidade.autoPousou': 'Auto: a medição pôs a qualidade em {tier}, a {quadros}.',

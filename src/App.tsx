@@ -183,6 +183,8 @@ export default function App() {
     escolha: TIER_DE_PRODUTO,
     tier: TIER_DE_PRODUTO,
     medicao: null,
+    // sem escolha na gaveta Avançado: quem manda é o preset (item 145)
+    amostras: null,
   });
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
@@ -614,6 +616,7 @@ export default function App() {
     escalaUi,
     urlComMomento,
     changeQuality,
+    trocarAmostras,
     trocarTom,
     trocarExposicao,
     voltarAoBrilhoReal,
@@ -1059,6 +1062,7 @@ export default function App() {
         onFechar={() => fecharGaveta('ajustes')}
         qualidade={quality}
         onQualidade={changeQuality}
+        onAmostras={trocarAmostras}
         tom={tom}
         onTom={trocarTom}
         exposicao={exposicao}

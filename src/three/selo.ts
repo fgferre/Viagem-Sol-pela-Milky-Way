@@ -300,6 +300,13 @@ export interface EstadoDaVista {
   /** tier VIVO — no Auto ele anda sem clique, e isso conta (D1) */
   tier: QualityLevel;
   /**
+   * O MSAA ESCOLHIDO À MÃO (item 145) — `null` = o do preset, e aí não
+   * há nada a declarar. É estado VIVO do `Post`, não a porta `?msaa=`:
+   * o controle da gaveta Avançado o troca sem recarregar, e o selo tem
+   * de declarar a escolha, não o endereço.
+   */
+  amostras: number | null;
+  /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — o estado
    * VIVO do Director, não a porta: `?luz=` só o semeia no boot, e o
    * clique na linha BRILHO o troca ao vivo.
@@ -549,11 +556,30 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   },
   // --- portas de URL que mexem na luz ------------------------------
   porta('fov', 'lente forçada por ?fov='),
-  // `?msaa=N` vence a escada de tiers do MSAA (F1 da onda 125). Mexe na
-  // imagem duas vezes: suaviza toda beira e muda a cobertura area-correta
-  // da galáxia (−1,23% de face medido no selo da F1) — logo é desvio,
-  // não bancada neutra.
-  porta('msaa', 'amostras do MSAA forçadas por ?msaa='),
+  /*
+   * A SUAVIZAÇÃO DE BORDAS ESCOLHIDA À MÃO. Mexe na imagem duas vezes:
+   * suaviza toda beira e muda a cobertura area-correta da galáxia
+   * (−1,23% de face medido no selo da F1 da onda 125) — logo é desvio,
+   * não bancada neutra.
+   *
+   * DEIXOU DE SER SÓ PORTA no item 145: o número agora tem controle na
+   * gaveta Avançado do painel, e o desvio se lê no ESTADO VIVO
+   * (`e.amostras`) em vez da presença de `?msaa=` na URL. `?msaa=` segue
+   * semeando esse estado no boot e sendo o espelho dele, e por isso a
+   * chave não muda — o clique do selo continua sabendo o que apagar.
+   * `volta: 'vivo'` porque a troca não recarrega mais nada.
+   */
+  {
+    chave: 'msaa',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.msaa'); },
+    volta: 'vivo',
+    desvia: (e) => e.amostras !== null,
+    rotuloVivo: (e) =>
+      t('selo.desvio.msaaCom', {
+        amostras: e.amostras === 0 ? t('ajustes.msaaDesligada') : `${e.amostras}×`,
+      }),
+  },
   porta('nobloom', 'bloom desligado'),
   porta('knee', 'joelho asinh forçado'),
   porta('kneemode', 'modo do joelho trocado'),

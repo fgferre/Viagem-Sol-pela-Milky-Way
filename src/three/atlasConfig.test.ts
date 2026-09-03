@@ -362,7 +362,10 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
       expect(nomeAcessivel, lingua).not.toMatch(/\d/);
     }
     definirIdioma('pt-BR');
-    const estado = (m: Parameters<typeof rotuloDaQualidade>[0]) => rotuloDaQualidade(m);
+    // `amostras: null` de piso — a gaveta Avançado intocada (item 145)
+    type Estado = Parameters<typeof rotuloDaQualidade>[0];
+    const estado = (m: Omit<Estado, 'amostras'> & Partial<Pick<Estado, 'amostras'>>) =>
+      rotuloDaQualidade({ amostras: null, ...m });
     // manual, medida boa: nada a sugerir — o painel não inventa alarme
     expect(
       estado({ escolha: 'cinema', tier: 'cinema', medicao: { fps: 59.6, sugestao: 'cinema' } })
@@ -378,6 +381,21 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     // sem medida ainda: diz "medindo" em vez de fingir um número
     expect(estado({ escolha: 'auto', tier: 'cinema', medicao: null })).toContain('medindo');
     expect(estado({ escolha: 'alta', tier: 'alta', medicao: null })).toContain('medindo');
+    // E A GAVETA AVANÇADO (item 145): mexeu num controle, o nome do
+    // preset deixa de descrever o que a máquina desenha e ganha a marca
+    // — nas QUATRO frases, porque quem muda é o nome do tier, não a
+    // frase. A sabotagem: devolver `nomeDaQualidade(e.tier)` cru.
+    expect(
+      estado({
+        escolha: 'cinema',
+        tier: 'cinema',
+        medicao: { fps: 59.6, sugestao: 'cinema' },
+        amostras: 0,
+      })
+    ).toBe('Qualidade Cinema (Personalizado), e o quadro anda a 60 quadros/s.');
+    expect(estado({ escolha: 'auto', tier: 'alta', medicao: null, amostras: 4 })).toContain(
+      'Alta (Personalizado)'
+    );
   });
 
   it('o modo foto congela o MOSTRADOR da medição, e não a medição (item 66)', () => {

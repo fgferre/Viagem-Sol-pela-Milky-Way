@@ -68,6 +68,8 @@ const LIMPA: EstadoDaVista = {
   tom: 'aces',
   camadasEscondidas: [],
   tier: 'cinema',
+  // gaveta Avançado intocada: quem manda no MSAA é o preset (item 145)
+  amostras: null,
   // `real` na FIXTURE de propósito: é o estado DEPOIS do clique "voltar
   // ao real". O default vivo do Atlas é `assistida` — e tem os próprios
   // testes (bloco 2c), porque ele É desvio declarado.
@@ -453,6 +455,20 @@ describe('2c. a política de luz se declara (Onda 6, D2/D8; reescrita no item 91
     expect(lerPortaLuz(null)).toBeNull();
     expect(lerPortaLuz(undefined)).toBeNull();
     expect(lerPortaLuz('REAL')).toBeNull();
+  });
+
+  it('a suavização de bordas se declara pelo ESTADO VIVO, não por `?msaa=` (item 145)', () => {
+    // A SABOTAGEM EXATA: devolver o `porta('msaa', …)` que estava aqui
+    // até o item 145. O controle da gaveta Avançado troca o MSAA sem
+    // recarregar, e um selo que só olhasse a URL calaria a escolha feita
+    // no painel de quem abriu o app sem porta nenhuma.
+    expect(estadoDoSelo(com({ amostras: 0 })).brilho).toBe('assistido');
+    expect(estadoDoSelo(com({ amostras: 4 })).desvios.some((c) => c.chave === 'msaa')).toBe(
+      true
+    );
+    // e o recíproco: a porta na URL com o estado JÁ de volta ao preset
+    // não acusa nada (o mesmo contrato de `?luz=`)
+    expect(estadoDoSelo(com({ portas: ['msaa'], amostras: null })).brilho).toBe('real');
   });
 
   it('a porta `?luz=` na URL não é desvio por presença — o estado VIVO manda', () => {
