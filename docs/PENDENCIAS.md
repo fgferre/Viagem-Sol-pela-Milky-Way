@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 142.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 143.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -147,6 +147,27 @@ dinamismo dos nomes do NASA Eyes".)*
 **134.** A ONDA DE SATURNO — a colheita do projeto Saturn dele (anéis com perfil medido e iluminação mútua; relevo das luas; nove luas esculpidas com o grão dele; jatos de Encélado; anéis E e F, raios do B, ondas de Dáfnis) — **FECHADA em 02/09**: cinco fases feitas, S3c pela palavra dele ("melhorou bastante... deixe do jeito que ficou"), lista do §19 aprovada e rodada (suíte 1×, z-fighting, ab-identidade); ARQUIVO.
 
 **140.** A Lua "não ficou boa depois que levamos o relevo para ela" — **FECHADO em 03/09** (`d5991a9`: relevo real do LRO só na luz; o "lento" não era o relevo, medido); palavra dele "tudo ok, já avaliei"; ARQUIVO.
+
+**142. Texturas grandes e memória: trazer a técnica de tiles do NASA
+Eyes?** Palavras dele, 03/09, ao aprovar a cor real de Ceres e o giro de
+Vesta: *"estou preocupado com a questão do manejo de memória e essas
+texturas muito grandes. Estamos usando a solução do NASA Eyes para o
+manejo de memória de texturas grandes? não deveríamos talvez trazer essas
+texturas do NASA Eyes of the Solar System."* Estado medido (item 115,
+bloco A): a casa já traz do Eyes o que governa a memória — nível de textura
+pela demanda de pixels (escada 1024/2048/4096/8192 por tier + gate de 48
+px), só o corpo em foco residente, decodificação fora da thread e DESCARGA
+com carência de 15 s (1.083 → 70 MiB residentes no passeio de oito corpos).
+O que NÃO foi trazido é a **pirâmide de tiles** (`WMTSTile`/`CMTSTile` +
+`TextureLOD` do Eyes): lá o globo nunca carrega um 8k inteiro, só os
+ladrilhos em vista no nível pedido — é isso que permite close acima de 4k
+sem custo de memória nem de download. Os ARQUIVOS do Eyes não se trazem:
+vêm de servidores da NASA (não é dependência nossa) e são os mesmos mosaicos
+USGS/NASA que já usamos. O custo hoje não é memória (limitada e medida), é
+download por corpo em cinema (mapa 12 MB + normal 9 MB) e o disco do site
+(316 MB; a mineração mediu pirâmide estática viável a ~31 MB/corpo no nível
+2). Obra GRANDE (carregador de tiles + assamento + testes); sugerida DEPOIS
+do 130, ou antes se o alvo for celular/close acima de 4k — decisão dele.
 
 **141. Os outros candidatos à técnica da Lua (relevo real, só na luz).**
 Pedido dele, 03/09: *"ver que outros candidatos podem se beneficiar da mesma
