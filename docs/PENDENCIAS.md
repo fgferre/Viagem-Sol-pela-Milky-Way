@@ -166,8 +166,8 @@ vêm de servidores da NASA (não é dependência nossa) e são os mesmos mosaico
 USGS/NASA que já usamos. O custo hoje não é memória (limitada e medida), é
 download por corpo em cinema (mapa 12 MB + normal 9 MB) e o disco do site
 (316 MB; a mineração mediu pirâmide estática viável a ~31 MB/corpo no nível
-2). Obra GRANDE (carregador de tiles + assamento + testes); sugerida DEPOIS
-do 130, ou antes se o alvo for celular/close acima de 4k — decisão dele.
+2). Obra GRANDE (carregador de tiles + assamento + testes). **DECISÃO DELE
+(03/09): "deixa o 142 na fila depois do 130."**
 
 **141. Os outros candidatos à técnica da Lua (relevo real, só na luz).**
 Pedido dele, 03/09: *"ver que outros candidatos podem se beneficiar da mesma
