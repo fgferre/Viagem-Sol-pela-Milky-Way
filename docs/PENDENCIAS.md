@@ -51,6 +51,20 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (03/09, noite — FECHO por ordem dele)
 
+**03/09 (3ª janela — as luas de Urano).** Item **147** ("algo estranho"
+com as luas de Urano) diagnosticado na cena viva e consertado no mesmo
+dia: câmera, luz e textura estavam certas; os mapas da NASA 3D é que têm
+o hemisfério norte em preto (a Voyager 2 só viu o sul em 1986) e o Sol de
+2026 ilumina o norte. Preenchimento declarado na linha de produção
+(`preencherVazioSemDado`), seis mapas regerados, ficha confessa; o **116**
+(Tritão escuro) tinha a mesma causa e fechou junto. Fotos antes/depois em
+`capturas/item147-*`. **LISTA DO §19 desta janela, para ele aprovar ou
+cortar:** (a) `lib-texturas.test.mjs` +2 testes (tapa o vazio grande e
+deixa a sombra pequena; mapa sem vazio fica intocado) — rodados uma vez
+no portão; (b) `data:verify` verde (é portão de dados, não teste);
+(c) suíte cheia NÃO rodou. **Esperam a palavra dele:** o visual das seis
+(cinza liso onde não há foto) e, se quiser, crateras inventadas ali.
+
 **03/09 (2ª janela, noite — fecho por ordem dele).** Desempenho no M1 dele:
 **144** (resolve único do MSAA + nebulosa congelada; regressão da textura
 compartilhada em Retina pega e consertada no mesmo dia) e **145** (gaveta
@@ -92,6 +106,31 @@ esperam ordem. Backup em dia; site intocado (publicar só com pedido dele).
 ---
 
 ## ALTA — o dono vê e incomoda
+
+**147. "Precisamos revisar as luas de Urano... algo estranho está
+acontecendo."** (Palavras dele, 03/09.) Miranda, Ariel, Umbriel, Titânia
+e Oberon saem como um **disco preto** no degrau `lua` do Atlas (Tritão
+também — é o item 116, mesma causa); as duas mais distantes nem se
+distinguem do céu. Medido em 03/09 com a cena viva: a câmera está no lado
+do dia (70° do Sol), a luz chega certa, a textura está carregada — e o
+mapa é que é preto: **57–62 % de cada mapa da NASA 3D é preto puro**
+(hemisfério norte, que a Voyager 2 não viu em 1986; Tritão 80 %), e em
+2026 o Sol ilumina justamente o norte de Urano. Em `?jd=2446454.5`
+(a passagem da Voyager) o sul de Miranda aparece com a textura real e o
+norte é um buraco de borda dentada. Obra: preencher o vazio na linha de
+produção das texturas com o tom médio do hemisfério fotografado (o
+precedente do polo sul de Ceres), declarado na ficha; fotos antes/depois.
+- **FEITO em 03/09, espera a palavra dele.** `preencherVazioSemDado`
+  (lib-texturas.mjs, passo `preencher-vazio` da aquisição) tapa o vazio
+  GRANDE (vizinhança 15×15, >35 % sem dado, núcleo crescido meio raio)
+  com o tom médio do que foi fotografado; sombra de cratera fica. Os seis
+  mapas foram regerados (escada + webp + manifesto), `data:verify` verde,
+  a ficha confessa ("só o hemisfério sul foi fotografado…"). Fotos
+  `capturas/item147-<lua>-antes/depois.png` e a régua
+  `capturas/item147-vazio-dos-mapas.txt`. O que ele vê agora: as seis
+  luas cinzas e lisas no lado que nunca foi fotografado, com a textura
+  real onde há foto — se quiser relevo/crateras inventadas ali (o que o
+  SpaceEngine faz), é obra nova e decisão dele.
 
 **145. "Porque não deixamos isso como um toggle então... se a pessoa
 quiser ela desliga isso, mas como eu não tenho hoje o toggle não consigo
@@ -395,6 +434,9 @@ ou luz). Antes de tocar qualquer linha: par de capturas em dois jd
 diferentes e a conta do terminador (onde o Sol está em relação à
 câmera). A vista foi DESCARTADA do gate do 84 por isso; se for
 geometria honesta, vira candidata de novo com outro jd.
+- **Causa achada em 03/09 (item 147):** não é geometria nem o degrau —
+  o mapa de Tritão da NASA 3D é 80 % preto (só a faixa que a Voyager 2
+  fotografou tem dado). Preenchido junto com o 147 (FEITO em 03/09, espera a palavra dele).
 
 **VEREDITO (medido em 31/08 — luz e enquadramento INOCENTES; culpado é o
 MAPA).** A câmera está no lado do DIA: ângulo de fase 70,00° no jd

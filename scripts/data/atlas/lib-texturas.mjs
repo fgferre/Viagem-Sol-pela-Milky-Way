@@ -154,6 +154,114 @@ export function giraColunasDeImagem(pixels, largura, altura, canais, giroGraus) 
   return saida;
 }
 
+/**
+ * O VAZIO SEM DADO DE UM MAPA (item 147) — o hemisfério que a sonda não
+ * viu. A Voyager 2 passou por Urano em 1986 com o polo sul virado para o
+ * Sol e fotografou SÓ o sul de Miranda, Ariel, Umbriel, Titânia e Oberon;
+ * em Tritão (1989) viu ~40 %. Os mapas da NASA 3D deixam o resto em PRETO
+ * PURO — 57 a 62 % de cada mapa das cinco, 80 % do de Tritão —, e em 2026
+ * o Sol ilumina justamente o norte de Urano: a lua desenhada com o mapa
+ * cru é um disco preto no lado do dia.
+ *
+ * A receita é a do polo sul de Ceres (`preencherPolosSemDado`, na
+ * aquisição), estendida ao vazio de qualquer forma: texel sem dado é o
+ * que fica abaixo de `vazioAte` em todo canal, e é PREENCHIDO só quando
+ * pertence a um vazio GRANDE — a fração de texels sem dado na janela de
+ * `(2·raio+1)²` à volta dele passa de `fracaoMinima` — ou quando encosta
+ * num texel assim (o núcleo do vazio cresce meio raio, para os cantos
+ * côncavos da borda, onde a janela vê mais dado que vazio, não sobrarem
+ * como pontos pretos). Sombra de cratera é preta também, mas é pequena,
+ * cercada de dado e longe do núcleo: fica. A borda do vazio
+ * não é uma linha de latitude (é o terminador do dia da passagem, uma
+ * curva dentada que invade as linhas com dado — 6 a 21 % de preto dentro
+ * delas, medido), e é por isso que a régua é a vizinhança, não a linha.
+ *
+ * O TOM é a MÉDIA por canal do que tem dado, sem esticar nem escurecer:
+ * o nível do mapa não é mexido (a mesma disciplina do mosaico de Ceres).
+ * Não se inventa cratera nem se espelha o hemisfério visto — o que não
+ * foi fotografado entra liso e é confessado na ficha.
+ *
+ * Muta `pixels` no lugar e devolve a conta, para o log da aquisição e
+ * para o teste: `{ semDado, preenchidos, tom }`.
+ */
+export function preencherVazioSemDado(
+  pixels, largura, altura, canais,
+  { vazioAte = 12, raio = 7, fracaoMinima = 0.35 } = {}
+) {
+  const n = largura * altura;
+  const semDado = new Uint8Array(n);
+  const soma = new Array(canais).fill(0);
+  let comDado = 0;
+  let totalSemDado = 0;
+  for (let k = 0; k < n; k += 1) {
+    let maximo = 0;
+    for (let c = 0; c < canais; c += 1) {
+      const v = pixels[k * canais + c];
+      if (v > maximo) maximo = v;
+    }
+    if (maximo < vazioAte) {
+      semDado[k] = 1;
+      totalSemDado += 1;
+    } else {
+      comDado += 1;
+      for (let c = 0; c < canais; c += 1) soma[c] += pixels[k * canais + c];
+    }
+  }
+  const tom = soma.map((s) => (comDado > 0 ? Math.round(s / comDado) : 0));
+  if (totalSemDado === 0 || comDado === 0) return { semDado: totalSemDado, preenchidos: 0, tom };
+
+  // imagem integral de uma máscara: a soma de qualquer janela sai em
+  // O(1) por texel, e a mesma conta serve ao núcleo e ao crescimento
+  const L = largura + 1;
+  const integralDe = (mascara) => {
+    const integral = new Uint32Array(L * (altura + 1));
+    for (let j = 1; j <= altura; j += 1) {
+      let linha = 0;
+      for (let i = 1; i <= largura; i += 1) {
+        linha += mascara[(j - 1) * largura + (i - 1)];
+        integral[j * L + i] = integral[(j - 1) * L + i] + linha;
+      }
+    }
+    return integral;
+  };
+  const somaDaJanela = (integral, i, j, r) => {
+    const j0 = Math.max(0, j - r);
+    const j1 = Math.min(altura - 1, j + r);
+    const i0 = Math.max(0, i - r);
+    const i1 = Math.min(largura - 1, i + r);
+    const dentro =
+      integral[(j1 + 1) * L + (i1 + 1)] - integral[j0 * L + (i1 + 1)]
+      - integral[(j1 + 1) * L + i0] + integral[j0 * L + i0];
+    return { dentro, area: (j1 - j0 + 1) * (i1 - i0 + 1) };
+  };
+
+  // 1. o núcleo: sem dado e cercado de vazio
+  const integralSemDado = integralDe(semDado);
+  const nucleo = new Uint8Array(n);
+  for (let j = 0; j < altura; j += 1) {
+    for (let i = 0; i < largura; i += 1) {
+      const k = j * largura + i;
+      if (!semDado[k]) continue;
+      const { dentro, area } = somaDaJanela(integralSemDado, i, j, raio);
+      if (dentro / area >= fracaoMinima) nucleo[k] = 1;
+    }
+  }
+  // 2. o preenchimento: o núcleo e o vazio que encosta nele
+  const integralDoNucleo = integralDe(nucleo);
+  const crescimento = Math.ceil(raio / 2);
+  let preenchidos = 0;
+  for (let j = 0; j < altura; j += 1) {
+    for (let i = 0; i < largura; i += 1) {
+      const k = j * largura + i;
+      if (!semDado[k]) continue;
+      if (!nucleo[k] && somaDaJanela(integralDoNucleo, i, j, crescimento).dentro === 0) continue;
+      for (let c = 0; c < canais; c += 1) pixels[k * canais + c] = tom[c];
+      preenchidos += 1;
+    }
+  }
+  return { semDado: totalSemDado, preenchidos, tom };
+}
+
 // ---- A CONFISSÃO, LIDA DO DOCUMENTO --------------------------------
 // As frases que a ficha do objeto imprime na seção "a imagem" — Ceres
 // inventado pela fonte, as emendas de Titã, as 68 linhas de Europa,

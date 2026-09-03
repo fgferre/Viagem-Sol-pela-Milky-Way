@@ -10,6 +10,7 @@ import {
   analisarNomeDeTextura,
   degrausDaEscada,
   hostPermitido,
+  preencherVazioSemDado,
   webpCompensa,
 } from './lib-texturas.mjs';
 
@@ -97,5 +98,42 @@ describe('webpCompensa (item 17: guarda de pessimização)', () => {
     expect(webpCompensa(1000, 999)).toBe(true);
     expect(webpCompensa(1000, 1000)).toBe(false);
     expect(webpCompensa(1000, 1001)).toBe(false);
+  });
+});
+
+describe('preencherVazioSemDado (item 147: o hemisfério que a Voyager não viu)', () => {
+  // 64×32, 3 canais: metade norte PRETA (o vazio), metade sul cinza 120
+  // com uma sombra de cratera 3×3 e uma língua do vazio 24×6 que invade
+  // o sul — a borda dentada que os mapas reais têm.
+  function mapa() {
+    const largura = 64;
+    const altura = 32;
+    const px = Buffer.alloc(largura * altura * 3, 0);
+    for (let j = 16; j < altura; j += 1) {
+      for (let i = 0; i < largura; i += 1) px.fill(120, (j * largura + i) * 3, (j * largura + i) * 3 + 3);
+    }
+    for (let j = 16; j < 22; j += 1) for (let i = 20; i < 44; i += 1) px.fill(0, (j * largura + i) * 3, (j * largura + i) * 3 + 3);
+    for (let j = 26; j < 29; j += 1) for (let i = 8; i < 11; i += 1) px.fill(0, (j * largura + i) * 3, (j * largura + i) * 3 + 3);
+    return { px, largura, altura };
+  }
+  const em = (px, largura, i, j) => px[(j * largura + i) * 3];
+
+  it('tapa o vazio grande com o tom médio do que tem dado e deixa a sombra pequena', () => {
+    const { px, largura, altura } = mapa();
+    const conta = preencherVazioSemDado(px, largura, altura, 3);
+    expect(conta.tom).toEqual([120, 120, 120]);
+    expect(em(px, largura, 5, 5)).toBe(120); // o norte inteiro
+    expect(em(px, largura, 30, 19)).toBe(120); // a língua que invadia o sul
+    expect(em(px, largura, 9, 27)).toBe(0); // a sombra de cratera fica
+    expect(conta.preenchidos).toBe(conta.semDado - 9);
+  });
+
+  it('não toca um mapa sem vazio', () => {
+    const { px, largura, altura } = mapa();
+    px.fill(120);
+    const antes = Buffer.from(px);
+    const conta = preencherVazioSemDado(px, largura, altura, 3);
+    expect(conta.preenchidos).toBe(0);
+    expect(px.equals(antes)).toBe(true);
   });
 });

@@ -319,6 +319,15 @@ export const EM_INGLES = new Map([
     'mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou',
     'a monochrome global map: the higher-resolution USGS mosaic carries 68 black lines of missing data over the south pole and did not make it in',
   ],
+  // item 147 — as cinco de Urano (uma frase só) e Tritão
+  [
+    'só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu',
+    'only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw',
+  ],
+  [
+    'a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu',
+    'Voyager 2 photographed about 40 % of Triton (1989): the rest, never seen, comes in flat, in the mean tone of what the probe saw',
+  ],
   [
     'é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor',
     'this is the cloud tops, not the ground: the surface of Venus has no photograph in visible light — what exists is radar, and radar is not color',

@@ -424,6 +424,34 @@ quem tem a normal medida). Vesta entra nessa lista de zeros AGORA: o mosaico
 dela é real, mas o que o bump lia como cratera era em boa parte a mancha de
 composição da crosta. Os TIF de origem não ficam na árvore.
 
+## As cinco luas de Urano e Tritão — o hemisfério que a Voyager não viu (item 147)
+
+Os `map` de Miranda, Ariel, Umbriel, Titânia, Oberon e Tritão são os da NASA
+3D Resources (1440×720, monocromáticos), e cada um traz um **hemisfério em
+preto puro**: a Voyager 2 passou por Urano em janeiro de 1986 com o polo sul
+do sistema virado para o Sol e só fotografou o sul das cinco; em Tritão
+(agosto de 1989) viu cerca de 40 %. Medido nos mapas crus: **56,8 % (Miranda),
+61,1 % (Ariel), 58,7 % (Umbriel), 62,2 % (Titânia), 61,1 % (Oberon) e 79,6 %
+(Tritão) dos texels abaixo de 8/255**. A borda do vazio não é uma linha de
+latitude — é o terminador do dia da passagem, uma curva dentada que invade as
+linhas com dado (6 a 21 % de preto dentro delas).
+
+Era isto que o dono via em 03/09 (*"algo estranho está acontecendo"* com as
+luas de Urano): em 2026 o Sol ilumina o **norte** de Urano, e a lua desenhada
+com o mapa cru era um disco preto no lado do dia — câmera, luz e textura
+conferidos na cena viva, todos certos. O item 116 (Tritão "inteiramente
+escuro") tinha a mesma causa.
+
+**O preenchimento** (`preencherVazioSemDado`, `lib-texturas.mjs`, passo
+`preencher-vazio` da aquisição): texel sem dado é o que fica abaixo de 12/255
+em todo canal, e só é tapado quando pertence a um vazio GRANDE (mais de 35 %
+de texels sem dado numa janela de 15×15 à volta) — sombra de cratera, que é
+pequena e cercada de dado, fica. O tom é a **média por canal do que foi
+fotografado**, sem esticar nem escurecer (a disciplina do mosaico de Ceres):
+não se inventa cratera nem se espelha o hemisfério visto. O que não foi
+fotografado entra liso e é confessado na ficha (tabela abaixo). Os mapas crus
+da NASA 3D seguem no histórico do git (`5da9cc5`).
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**
@@ -472,6 +500,12 @@ tocar num `.mjs`.
 | mars/normal | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |
 | ceres/normal | topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem |
 | vesta/normal | topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave |
+| miranda/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
+| ariel/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
+| umbriel/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
+| titania/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
+| oberon/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
+| triton/map | a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu |
 
 ### a forma (item 20)
 

@@ -86,7 +86,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido } from './lib-texturas.mjs';
+import {
+  CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido, preencherVazioSemDado,
+} from './lib-texturas.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -110,6 +112,12 @@ const USGS_BYTES = 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic';
 // `bake` marca as entradas cujo caminho online baixa um TIFF e assa
 // (normal: reencode jpg; roughness: grayscale + NEGATE — a inversão
 // do item 14); no offline elas copiam o jpg já assado do doador.
+// O piso de bytes dos seis mapas PREENCHIDOS (item 147): metade do globo
+// vira um tom liso e o jpg encolhe — Umbriel cai a 49 KB, abaixo do piso
+// de 50 KB que pega página de erro e truncamento. 40 KB é o mesmo piso que
+// Titã (720×360) já usa, e `validarImagem` ainda confere que decodifica.
+const MINIMO_DE_BYTES_DO_MAPA_PREENCHIDO = 40_000;
+
 const FONTES = [
   {
     corpo: 'earth',
@@ -331,41 +339,59 @@ const FONTES = [
       larguraDoDestino: 1024,
     }))
   ),
+  // ---- As cinco de Urano e Tritão (item 147): a Voyager 2 só viu o
+  // hemisfério sul das cinco (1986) e ~40 % de Tritão (1989); a NASA 3D
+  // deixa o resto PRETO, e em 2026 o Sol ilumina o norte de Urano — a lua
+  // saía como disco preto no lado do dia. O passo `preencher-vazio` tapa
+  // o vazio com o tom médio do que foi fotografado
+  // (`preencherVazioSemDado`, lib-texturas.mjs), confessado na ficha.
   {
     corpo: 'miranda',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/',
     nomeNoDoador: 'miranda_nasa_3d_resource.jpg',
+    bake: 'preencher-vazio',
+    minimoBytes: MINIMO_DE_BYTES_DO_MAPA_PREENCHIDO,
   },
   {
     corpo: 'ariel',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/',
     nomeNoDoador: 'ariel_nasa_3d_resource.jpg',
+    bake: 'preencher-vazio',
+    minimoBytes: MINIMO_DE_BYTES_DO_MAPA_PREENCHIDO,
   },
   {
     corpo: 'umbriel',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/',
     nomeNoDoador: 'umbriel_nasa_3d_resource.jpg',
+    bake: 'preencher-vazio',
+    minimoBytes: MINIMO_DE_BYTES_DO_MAPA_PREENCHIDO,
   },
   {
     corpo: 'titania',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/',
     nomeNoDoador: 'titania_nasa_3d_resource.jpg',
+    bake: 'preencher-vazio',
+    minimoBytes: MINIMO_DE_BYTES_DO_MAPA_PREENCHIDO,
   },
   {
     corpo: 'oberon',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/',
     nomeNoDoador: 'oberon_nasa_3d_resource.jpg',
+    bake: 'preencher-vazio',
+    minimoBytes: MINIMO_DE_BYTES_DO_MAPA_PREENCHIDO,
   },
   {
     corpo: 'triton',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/',
     nomeNoDoador: 'triton_nasa_3d_resource.jpg',
+    bake: 'preencher-vazio',
+    minimoBytes: MINIMO_DE_BYTES_DO_MAPA_PREENCHIDO,
   },
   // ---- F6 (anões). Plutão/Caronte: NASA 3D Resources, crédito
   // redigido. Ceres: o mosaico REAL da Dawn (item 141, 3ª fase) no
@@ -603,6 +629,31 @@ async function assarMosaicoDeCeres(tifPath, destino) {
 }
 
 /**
+ * Tapa o hemisfério sem dado de um mapa de cor (item 147) — a decisão
+ * mora em `preencherVazioSemDado`; aqui só a leitura, o encode (jpg de
+ * cor, como toda a tabela) e o log com a conta, que é o número que o
+ * `ASSETS.md` declara.
+ */
+async function assarPreenchimentoDoVazio(origem, destino, rotulo) {
+  const { data, info } = await sharp(origem, { limitInputPixels: false })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const conta = preencherVazioSemDado(data, info.width, info.height, info.channels);
+  const texels = info.width * info.height;
+  console.log(
+    `${rotulo}: ${((100 * conta.semDado) / texels).toFixed(1)} % sem dado, ` +
+      `${((100 * conta.preenchidos) / texels).toFixed(1)} % preenchidos ` +
+      `com o tom ${conta.tom.join('/')}.`
+  );
+  await sharp(data, {
+    raw: { width: info.width, height: info.height, channels: info.channels },
+  })
+    .jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true })
+    .toFile(destino);
+}
+
+/**
  * Gira um mapa já adquirido para a convenção de longitude da casa, na
  * largura que a casa quer (`larguraDoDestino`; sem ela, a da fonte).
  *
@@ -695,7 +746,9 @@ async function main() {
     if (passoDaCasa) {
       try {
         if (fonte.bake === 'mosaico-ceres') await assarMosaicoDeCeres(cru, destino);
-        else if (fonte.bake) await assarPbr(cru, destino, fonte.bake);
+        else if (fonte.bake === 'preencher-vazio') {
+          await assarPreenchimentoDoVazio(cru, destino, `${fonte.corpo}/${fonte.canal}`);
+        } else if (fonte.bake) await assarPbr(cru, destino, fonte.bake);
         else {
           await girarMapa(
             cru, destino, fonte.canal,

@@ -63,8 +63,8 @@
       "arquivo": "textures/atlas/ariel/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 32768,
-      "sha256": "c1805f857397f1a13b5f3297efb48b2c01455f3f5a0c5ce2effd783239671ab2",
+      "bytes": 31516,
+      "sha256": "850867925d70bc7c6c5d011101f03d49f629e92660f7651a5f5cc7ef5a70f1bd",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Ariel",
@@ -80,7 +80,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "ariel",
@@ -88,8 +92,8 @@
       "arquivo": "textures/atlas/ariel/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 23652,
-      "sha256": "45efe916af775f37a17d783e108f1105cb548eb16237ccd214e7bc313dfea629",
+      "bytes": 22556,
+      "sha256": "fbcf13a3bf711115810e0ed3f70a949885d1a34151b9dcbd3d7677a4f34c7c15",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Ariel",
@@ -105,7 +109,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "ariel",
@@ -113,8 +121,8 @@
       "arquivo": "textures/atlas/ariel/map.jpg",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 254331,
-      "sha256": "fc0f8a59b5c29e44e4a3409e452f0427f5b53b8c9b41c89dc35d28babaae5cee",
+      "bytes": 69814,
+      "sha256": "e4e8ca1402d7d64533fca49af93bcdfc32da500f54e948e7a04273008f73bc29",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Ariel",
@@ -130,7 +138,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "ariel",
@@ -138,8 +150,8 @@
       "arquivo": "textures/atlas/ariel/map.webp",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 40904,
-      "sha256": "a2232b6e0d7be0c29d08f8559ffd5d80bc4df3a58e96e47fa68b33a5f06b1337",
+      "bytes": 41644,
+      "sha256": "8be3edb8a2d783b85d1e62ed0b7f6609e8c20b8df54df7b91e961e3f1a38ad7c",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Ariel",
@@ -155,7 +167,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "callisto",
@@ -3837,8 +3853,8 @@
       "arquivo": "textures/atlas/miranda/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 46692,
-      "sha256": "b6b5c7372f8b9b34fb1b018f0832b662c9562ce9c23e0bf389ee5bd2f7be7ae7",
+      "bytes": 46297,
+      "sha256": "c904e1afb36e3572a5bdbb5453690c3deb1bd86631a3b77e90be9f4903c53144",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Miranda",
@@ -3854,7 +3870,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "miranda",
@@ -3862,8 +3882,8 @@
       "arquivo": "textures/atlas/miranda/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 38658,
-      "sha256": "a84c3c63308b67ea6c132e22e487123dc3760d569f50b006a3ca3e3f54444746",
+      "bytes": 38872,
+      "sha256": "8975f851cdf6bca8201266194a5876de3ea5f4d8055dbb226b78fb6b577cabee",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Miranda",
@@ -3879,7 +3899,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "miranda",
@@ -3887,8 +3911,8 @@
       "arquivo": "textures/atlas/miranda/map.jpg",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 321268,
-      "sha256": "844b2deb88b8dbc93142bf5b85036ce7dd45db131e6251b4e6a95e179ae44c81",
+      "bytes": 103827,
+      "sha256": "52f89b3800b7ddf59c9ac82e9c48cc63426c616b33fd53172b0d9b8a99f3817e",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Miranda",
@@ -3904,7 +3928,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "miranda",
@@ -3912,8 +3940,8 @@
       "arquivo": "textures/atlas/miranda/map.webp",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 72500,
-      "sha256": "f0d016463ef2d47f4d42d6d40a0048816785541b05f8d471bce94c776be8317b",
+      "bytes": 70954,
+      "sha256": "229979d0aebccd788122a98c4ca8c65f04c33e25aa0565aacdc970b8df62eec5",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Miranda",
@@ -3929,7 +3957,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "moon",
@@ -4336,8 +4368,8 @@
       "arquivo": "textures/atlas/oberon/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 32966,
-      "sha256": "dba2d38892fba6748584351118dd5e13209b81158b113c7adee579b350f67167",
+      "bytes": 34313,
+      "sha256": "0a75d94741265f1b7bb1ab240347b40eff6457ddf65dcd0918a17b36fb540bdc",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Oberon",
@@ -4353,7 +4385,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "oberon",
@@ -4361,8 +4397,8 @@
       "arquivo": "textures/atlas/oberon/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 22002,
-      "sha256": "900f679909f9ee669e29dd0c2e9d40d39f9e7af12738fca44e25a58ea672fdae",
+      "bytes": 23882,
+      "sha256": "d6f4059b217e956165c368bb997f42bde0bf79940b5046171181f696d1068617",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Oberon",
@@ -4378,7 +4414,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "oberon",
@@ -4386,8 +4426,8 @@
       "arquivo": "textures/atlas/oberon/map.jpg",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 51214,
-      "sha256": "ed29842e1b1fb96ee9626a62d4ee7bbf53756997ef33b1edda2dbead43383460",
+      "bytes": 58656,
+      "sha256": "611c6f3faa29a934f75f3c31cca0802a357fa2939632379f47273f6d9104095a",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Oberon",
@@ -4403,7 +4443,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "oberon",
@@ -4411,8 +4455,8 @@
       "arquivo": "textures/atlas/oberon/map.webp",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 36504,
-      "sha256": "c4b15b1e6bbf2bd4ed191ee9347ca336f34fbf223a0fea34bc8894cc26086ad9",
+      "bytes": 41346,
+      "sha256": "dedfa85112fbd48b543775b05e409d1bded2ca7773d47ee89fa58b8932cbf91b",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Oberon",
@@ -4428,7 +4472,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "phobos",
@@ -5502,8 +5550,8 @@
       "arquivo": "textures/atlas/titania/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 38590,
-      "sha256": "c737e6fa36b0efa4c4a2fadf88723cb71b8c02f6676c755306a7be571a21f9dd",
+      "bytes": 38171,
+      "sha256": "7ba9be914e66dddc5b7b971f2bffec4c4f2f5a0b3bef6b8b1185574f8b5faaf1",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Titânia",
@@ -5519,7 +5567,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "titania",
@@ -5527,8 +5579,8 @@
       "arquivo": "textures/atlas/titania/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 29848,
-      "sha256": "3378f489e68f47c33a44b6e0396eab60a609503037f87a18a32324348cd14ebe",
+      "bytes": 29934,
+      "sha256": "a16b6b4f68d730805765dfa6acf89ad031414861bfe376710a1153c6d0dc3cf6",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Titânia",
@@ -5544,7 +5596,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "titania",
@@ -5552,8 +5608,8 @@
       "arquivo": "textures/atlas/titania/map.jpg",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 284122,
-      "sha256": "087425752c8f5090965f5a4fac7d50a4c450563edd50b807bbc1d45ebeedd312",
+      "bytes": 87009,
+      "sha256": "580a8c52073b57bbc9816abf4412eae9e1ba97a881865241efba1edbc4c8c69d",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Titânia",
@@ -5569,7 +5625,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "titania",
@@ -5577,8 +5637,8 @@
       "arquivo": "textures/atlas/titania/map.webp",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 56978,
-      "sha256": "40825d3d25454b92d2aaf152b150d4ad78ef0eef3ffc72958e6fcbfd8b0b7dcd",
+      "bytes": 55440,
+      "sha256": "6bce259791395fd4574efdf21c8404c025a85dd3c0f5711d718af97084e8ba08",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Titânia",
@@ -5594,7 +5654,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "triton",
@@ -5602,8 +5666,8 @@
       "arquivo": "textures/atlas/triton/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 29818,
-      "sha256": "82340484e1f93481323dfb706a8348c289b3fdd731855ffe91f81ddaf45d2c4e",
+      "bytes": 30287,
+      "sha256": "f27facd7d7b076f7462ee24220ac999c3295936c63fbbd2b1d993b69f2f9eddb",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Tritão",
@@ -5619,7 +5683,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "Voyager 2 photographed about 40 % of Triton (1989): the rest, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "triton",
@@ -5627,8 +5695,8 @@
       "arquivo": "textures/atlas/triton/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 20578,
-      "sha256": "ed0a5a6e79a603d645ebeed1b1d064f9bfae67f318fce693ec715c5a803c1098",
+      "bytes": 21368,
+      "sha256": "bad07a306afca7b8904f57b678bee2711ff278ac8b73a0c306a9ca8d190829af",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Tritão",
@@ -5644,7 +5712,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "Voyager 2 photographed about 40 % of Triton (1989): the rest, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "triton",
@@ -5652,8 +5724,8 @@
       "arquivo": "textures/atlas/triton/map.jpg",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 242012,
-      "sha256": "6a5015beaf860426d9505f054565c9ad28ba3822054d5b750c74b4d8e61eb4f3",
+      "bytes": 76484,
+      "sha256": "5e20300a274d069e6738cc41140ce8787c9f0eb00c6dba2e792571c9f3757b26",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Tritão",
@@ -5669,7 +5741,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "Voyager 2 photographed about 40 % of Triton (1989): the rest, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "triton",
@@ -5677,8 +5753,8 @@
       "arquivo": "textures/atlas/triton/map.webp",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 49542,
-      "sha256": "8a938e64d6e6ba3edef6f3ee195a8a4365f1d2d1d8e6fbb8e3245dfdb74faf46",
+      "bytes": 47650,
+      "sha256": "917a36769317b0bafa58c48f4e0db62243c23436de630efc518c7a9a47d18064",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Tritão",
@@ -5694,7 +5770,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "Voyager 2 photographed about 40 % of Triton (1989): the rest, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "umbriel",
@@ -5702,8 +5782,8 @@
       "arquivo": "textures/atlas/umbriel/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 23993,
-      "sha256": "a9a3bb5717876b15a326b9db857286707d46c474e129a2e3f30822e051f6dbc3",
+      "bytes": 23833,
+      "sha256": "166002ea6c3af1fe075d008de7e0b01d2d79241b49e49165e209e23ff206e90d",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Umbriel",
@@ -5719,7 +5799,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "umbriel",
@@ -5727,8 +5811,8 @@
       "arquivo": "textures/atlas/umbriel/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 15412,
-      "sha256": "fc077910f2dffd89d9d33ba4d6690b529faa401f1aac55023701c722837cdd4d",
+      "bytes": 15722,
+      "sha256": "61502d28760d9b84ac568418814008745b33207bd28197ab630aba78347048f7",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Umbriel",
@@ -5744,7 +5828,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "umbriel",
@@ -5752,8 +5840,8 @@
       "arquivo": "textures/atlas/umbriel/map.jpg",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 216661,
-      "sha256": "f1378bc2880bb0d4ddad50815083987aab38c9aae630cbd65465c6773495e511",
+      "bytes": 49090,
+      "sha256": "f19b8da210367637a7865220b188970e58bdc880cdfc33552bef68370ef2c2e5",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Umbriel",
@@ -5769,7 +5857,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "umbriel",
@@ -5777,8 +5869,8 @@
       "arquivo": "textures/atlas/umbriel/map.webp",
       "larguraPx": 1440,
       "alturaPx": 720,
-      "bytes": 24032,
-      "sha256": "ab56f66247e6d0475805b0e88b5cfd75894e56d10aa54dc5cb76d3ad76162d1a",
+      "bytes": 25924,
+      "sha256": "38844bb5a4d6db9776a6ae66c6554a18e4a38d601f339ada135ebfb26506b590",
       "origem": {
         "fonte": {
           "pt": "NASA 3D Resources — Umbriel",
@@ -5794,7 +5886,11 @@
           "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
+        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+      }
     },
     {
       "corpo": "uranus",
