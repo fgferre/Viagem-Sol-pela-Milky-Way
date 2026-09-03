@@ -23,6 +23,18 @@ import sharp from 'sharp';
 import { abrirSessao, APP_PADRAO, esperarPor } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
+/**
+ * A LÍNGUA DA CORRIDA (item 130, lista do §19). Sem a variável o juiz
+ * corre em pt-BR — `chrome.mjs` põe `lang=pt-BR` sozinho quando a vista
+ * não pede língua, e é em português que as legendas abaixo estão
+ * PINADAS. `FILME_SMOKE_LANG=en` roda o mesmo juiz com o app em inglês:
+ * ali os pinos de TEXTO reprovam de propósito (o inglês não é o texto
+ * pinado) e o que se lê é o veredito que independe da língua — a
+ * legenda CABER nas margens, que é a medida que a F3 deixou por fazer:
+ * a frase mais comprida em inglês tem 90 caracteres contra 82 em pt.
+ */
+const LANG = process.env.FILME_SMOKE_LANG || '';
+const comLang = (query) => (LANG ? `lang=${LANG}&${query}` : query);
 const SAIDA = process.env.FILME_SMOKE_SAIDA
   || resolve(tmpdir(), `filme-smoke-${process.pid}.png`);
 const falhas = [];
@@ -228,7 +240,7 @@ async function julgarLargura(sessao, largura, altura, captura) {
       mobile: false,
     });
 
-    const introAssentou = await sessao.ir('q=cinema&shot=1');
+    const introAssentou = await sessao.ir(comLang('q=cinema&shot=1'));
     conferir(introAssentou.via === 'sinal', `${largura}px · abertura assentou por ${introAssentou.via}`);
     const intro = normalizar(await sessao.js("document.querySelector('.veil-intro .title-sub')?.textContent"));
     conferir(
@@ -241,7 +253,7 @@ async function julgarLargura(sessao, largura, altura, captura) {
     );
     if (captura) frames.push({ png: await capturar(sessao), rotulo: `ABERTURA · ${largura}px` });
 
-    const viagemAssentou = await sessao.ir('q=cinema&shot=1&t=33');
+    const viagemAssentou = await sessao.ir(comLang('q=cinema&shot=1&t=33'));
     conferir(viagemAssentou.via === 'sinal', `${largura}px · viagem assentou por ${viagemAssentou.via}`);
 
     // A SENTINELA DA 2ª LARGURA (F5c do item 113, 30/08): a varredura

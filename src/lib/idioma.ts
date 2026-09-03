@@ -64,23 +64,6 @@ export function normalizarIdioma(bruto: string | null | undefined): Idioma | nul
 }
 
 /**
- * A LÍNGUA DO NAVEGADOR, pela lista de preferências: a primeira que se
- * reconhece manda. `pt*` é pt-BR; qualquer OUTRA língua conhecida do
- * visitante cai em inglês, porque inglês é a segunda língua que este app
- * tem — devolver pt-BR a quem pediu japonês seria escolher pelo lado
- * errado.
- */
-export function idiomaDaLista(linguas: readonly string[]): Idioma {
-  for (const lingua of linguas) {
-    const achada = normalizarIdioma(lingua);
-    if (achada) return achada;
-    // língua reconhecida mas sem tabela: o inglês é o fallback do mundo
-    if (lingua.trim().length > 0) return 'en';
-  }
-  return 'pt-BR';
-}
-
-/**
  * A ESCOLHA, UMA VEZ, no boot do navegador (`main.tsx`).
  *
  * `?lang=` é INSTRUMENTO DE CAPTURA e só isso: os juízes de imagem

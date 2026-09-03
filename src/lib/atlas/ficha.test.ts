@@ -5,7 +5,7 @@
 // alvo monta), honestidade (nenhum rótulo de procedência fora do selo) e
 // silêncio (campo ausente não vira linha).
 // ============================================================
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,6 +24,7 @@ import type { CorpoNoJson, CorposDoAtlas, EditorialDoCorpo, Ficha } from './fich
 import { formatarDuracao, montarFicha, montarFichaDeEstrela } from './ficha';
 import { temperatureFromBV } from './stellarPhysics';
 import { dateToTDB } from './time';
+import { definirIdioma } from '../idioma';
 
 const DATA_DIR = fileURLToPath(
   new URL('../../../public/data/atlas/', import.meta.url)
@@ -46,9 +47,12 @@ const texturas = JSON.parse(
 ) as ManifestDeTexturas;
 const porId = new Map<string, CorpoNoJson>(corposJson.corpos.map((c) => [c.id, c]));
 /**
- * O INGLÊS, QUE NÃO ESTÁ NO ARTEFATO. Ele é a régua da tradução e mora na
- * fonte; `corpos.json` só carrega o pt-BR, que é o que a tela lê. As duas
- * provas de fidelidade abaixo comparam as DUAS línguas, então leem daqui.
+ * O INGLÊS DA FONTE — e ele é lido daqui DE PROPÓSITO, mesmo depois de a
+ * F2 do item 130 o ter feito atravessar para `corpos.json`. Ele é a
+ * RÉGUA da tradução: as duas provas de fidelidade abaixo perguntam se o
+ * pt-BR do artefato bate com o original do dono, e ler as duas pontas do
+ * mesmo arquivo não perguntaria nada. Quem confere o artefato CONTRA a
+ * fonte é o `verify-assets`, campo a campo.
  */
 const editorialEn = new Map<string, EditorialDoCorpo>(
   (
@@ -763,5 +767,100 @@ describe('a massa na ficha', () => {
     expect(fisico.linhas.find((l) => l.rotulo === 'massa')!.valor).toBe(
       '5,97 × 10²⁴ kg'
     );
+  });
+});
+
+// ============================================================
+// A PROSA EM DUAS LÍNGUAS (item 130/F2, lista do §19).
+//
+// O inglês da prosa é o ORIGINAL do dono e atravessa o gerador desde a
+// F2; `editorialDoIdioma` escolhe em UM lugar, com o pt-BR de PISO. As
+// duas coisas que podem quebrar sem ninguém ver:
+//   · a ficha em inglês perder LINHA (um campo que só o pt tem, ou o
+//     contrário) — o visitante em inglês leria uma ficha menor;
+//   · o piso sumir — corpo sem `en` devolveria vazio em vez do pt.
+//
+// A prova é de COMPORTAMENTO: monta a ficha REAL nas duas línguas, com
+// o `corpos.json` real, e compara a ESTRUTURA (seções e rótulos) contra
+// o TEXTO (que tem de mudar).
+// ============================================================
+describe('a ficha nas duas línguas', () => {
+  afterEach(() => definirIdioma('pt-BR'));
+
+  /** só as seções de PROSA: o resto da ficha é número e efeméride */
+  const SECOES_DE_PROSA = ['contexto', 'curiosidades'];
+
+  const prosaDe = (id: string): { rotulos: string[]; textos: string[] } => {
+    const f = ficha(id)!;
+    const rotulos: string[] = [];
+    const textos: string[] = [];
+    for (const s of f.secoes) {
+      if (!SECOES_DE_PROSA.includes(s.id)) continue;
+      for (const l of s.linhas) {
+        rotulos.push(`${s.id}/${l.rotulo}`);
+        textos.push(l.valor);
+      }
+    }
+    return { rotulos, textos };
+  };
+
+  it('os 48 corpos têm o MESMO número de linhas de prosa nas duas línguas', () => {
+    const pt = new Map(ALVOS.map((id) => [id, prosaDe(id)]));
+    definirIdioma('en');
+    const divergentes: string[] = [];
+    for (const id of ALVOS) {
+      const en = prosaDe(id);
+      if (en.rotulos.length !== pt.get(id)!.rotulos.length) {
+        divergentes.push(`${id}: pt ${pt.get(id)!.rotulos.length} × en ${en.rotulos.length}`);
+      }
+    }
+    expect(ALVOS.length).toBe(48);
+    expect(divergentes).toEqual([]);
+  });
+
+  it('o TEXTO muda de língua — a ficha em inglês não é a portuguesa com outro rótulo', () => {
+    const pt = prosaDe('saturn');
+    definirIdioma('en');
+    const en = prosaDe('saturn');
+    expect(en.textos.length).toBeGreaterThan(4);
+    // nenhuma linha de prosa ficou em português
+    for (let i = 0; i < en.textos.length; i++) {
+      expect(en.textos[i], `linha ${pt.rotulos[i]}`).not.toBe(pt.textos[i]);
+    }
+    // e os RÓTULOS também são os da tabela inglesa
+    expect(en.rotulos.join('|')).not.toBe(pt.rotulos.join('|'));
+  });
+
+  it('corpo SEM `en` cai no português — o piso declarado', () => {
+    const semEn: CorpoNoJson = JSON.parse(JSON.stringify(porId.get('saturn')!)) as CorpoNoJson;
+    delete semEn.editorial!.en;
+    const monta = () =>
+      montarFicha({ id: 'saturn', jd: JD, fonte: motor, editorial: semEn, texturas });
+    const emPt = monta()!;
+    definirIdioma('en');
+    const emEn = monta()!;
+    const prosa = (f: Ficha) =>
+      f.secoes
+        .filter((s) => SECOES_DE_PROSA.includes(s.id))
+        .flatMap((s) => s.linhas.map((l) => l.valor));
+    // o TEXTO é o mesmo (o pt de piso), mas nenhuma linha some
+    expect(prosa(emEn)).toEqual(prosa(emPt));
+    expect(prosa(emEn).length).toBeGreaterThan(4);
+  });
+
+  it('e o piso não é um buraco: com `en`, a mesma ficha muda mesmo', () => {
+    // a contraprova do teste acima — sem ela, um `editorialDoIdioma` que
+    // devolvesse SEMPRE o pt passaria nos dois
+    definirIdioma('en');
+    const comEn = ficha('saturn')!;
+    const semEn: CorpoNoJson = JSON.parse(JSON.stringify(porId.get('saturn')!)) as CorpoNoJson;
+    delete semEn.editorial!.en;
+    const piso = montarFicha({ id: 'saturn', jd: JD, fonte: motor, editorial: semEn, texturas })!;
+    const prosa = (f: Ficha) =>
+      f.secoes
+        .filter((s) => SECOES_DE_PROSA.includes(s.id))
+        .flatMap((s) => s.linhas.map((l) => l.valor))
+        .join('|');
+    expect(prosa(comEn)).not.toBe(prosa(piso));
   });
 });

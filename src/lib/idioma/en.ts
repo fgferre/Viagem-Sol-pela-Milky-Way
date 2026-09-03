@@ -245,6 +245,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.afelioPerielio': 'aphelion · perihelion',
   'ficha.campo.excentricidade': 'eccentricity',
   'ficha.campo.diaSideral': 'sidereal day',
+  'ficha.valor.faixa': '{min} to {max}',
+  'ficha.valor.retrogrado': '{dia} (retrograde)',
   'ficha.campo.modeloEValidade': 'model and validity',
   'ficha.campo.elongacao': 'elongation from the Sun',
   'ficha.campo.discoIluminado': 'illuminated disk',

@@ -19,12 +19,14 @@ import {
   ANOES_DO_SISTEMA,
   ASTEROIDES_DO_SISTEMA,
   NOMES_DOS_CORPOS,
+  nomeDoCorpo,
   QUALIDADES,
   rotuloDaQualidade,
   tituloDeCorpo,
 } from './atlasConfig';
 import { TIER_DE_PRODUTO, lerPortaQualidade, tierMedido } from './core/engine';
 import { HUD_POR_FASE } from './fases';
+import { definirIdioma, t } from '../lib/idioma';
 
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 const GALAXY = readFileSync(new URL('./world/galaxy.ts', import.meta.url), 'utf8');
@@ -350,7 +352,16 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     // …e o NOME ACESSÍVEL do seletor fica parado: nome que muda a cada
     // janela de medida desorienta quem ouve a tela. O que anda é estado,
     // e estado se anuncia pela região `aria-live` do painel.
-    expect(APP).toContain('aria-label="Qualidade gráfica"');
+    // (o literal virou chave de tabela no item 130; o que a guarda mede
+    // é o mesmo: o nome acessível NÃO carrega a medição)
+    expect(APP).toContain("aria-label={t('barra.qualidadeAria')}");
+    for (const lingua of ['pt-BR', 'en'] as const) {
+      definirIdioma(lingua);
+      const nomeAcessivel = t('barra.qualidadeAria');
+      expect(nomeAcessivel.length).toBeGreaterThan(3);
+      expect(nomeAcessivel, lingua).not.toMatch(/\d/);
+    }
+    definirIdioma('pt-BR');
     const estado = (m: Parameters<typeof rotuloDaQualidade>[0]) => rotuloDaQualidade(m);
     // manual, medida boa: nada a sugerir — o painel não inventa alarme
     expect(
@@ -509,7 +520,7 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
 // ============================================================
 describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
   interface CorposJson {
-    corpos: { id: string; name: { pt?: string } }[];
+    corpos: { id: string; name: { pt?: string; en?: string } }[];
   }
   const json = JSON.parse(
     readFileSync(
@@ -518,6 +529,7 @@ describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
     )
   ) as CorposJson;
   const ptPorId = new Map(json.corpos.map((c) => [c.id, c.name.pt]));
+  const enPorId = new Map(json.corpos.map((c) => [c.id, c.name.en]));
 
   it('o título-caso trata o pt-BR de verdade — LUA→Lua, TITÃ→Titã, MERCÚRIO→Mercúrio', () => {
     expect(tituloDeCorpo('LUA')).toBe('Lua');
@@ -532,6 +544,54 @@ describe('a fonte única de nomes pt-BR (F2b, P-E10b)', () => {
       expect(pt, `corpos.json sem i18n.pt para '${id}'`).toBeTruthy();
       expect(entrada.nome, `nome divergente para '${id}'`).toBe(tituloDeCorpo(pt!));
     }
+  });
+
+  // ============================================================
+  // O ESPELHO DO INGLÊS (item 130/F2, lista do §19). O `nome` pt-BR já
+  // tinha guarda contra o `name.pt` do JSON desde a F2b; o `nomeEn`
+  // nasceu na F2 SEM guarda nenhuma — e ele é a grafia da IAU que o
+  // rótulo 3D, o foco do HUD, a busca e a ficha publicam em inglês.
+  // Uma entrada esquecida cairia no pt de piso e ninguém veria.
+  // ============================================================
+  it('TODO `nomeEn` da tabela é o `name.en` do corpos.json, sem exceção', () => {
+    const divergentes: string[] = [];
+    for (const [id, entrada] of Object.entries(NOMES_DOS_CORPOS)) {
+      const en = enPorId.get(id);
+      if (!en) {
+        divergentes.push(`${id}: corpos.json sem i18n.en`);
+        continue;
+      }
+      if (entrada.nomeEn !== tituloDeCorpo(en)) {
+        divergentes.push(`${id}: tabela '${entrada.nomeEn}' × json '${tituloDeCorpo(en)}'`);
+      }
+    }
+    expect(divergentes).toEqual([]);
+  });
+
+  it('o `nomeEn` NÃO é cópia do pt onde a IAU escreve diferente', () => {
+    // o modo de falha barato: alguém preenche `nomeEn` com o pt para o
+    // teste acima passar. Estes quatro têm grafia própria na IAU, e é
+    // justamente por eles que a F2 existiu.
+    expect(NOMES_DOS_CORPOS.iapetus!.nomeEn).toBe('Iapetus');
+    expect(NOMES_DOS_CORPOS.enceladus!.nomeEn).toBe('Enceladus');
+    expect(NOMES_DOS_CORPOS.tethys!.nomeEn).toBe('Tethys');
+    expect(NOMES_DOS_CORPOS.charon!.nomeEn).toBe('Charon');
+    for (const id of ['iapetus', 'enceladus', 'tethys', 'charon', 'mercury', 'moon']) {
+      expect(NOMES_DOS_CORPOS[id]!.nomeEn, id).not.toBe(NOMES_DOS_CORPOS[id]!.nome);
+    }
+  });
+
+  it('quem PUBLICA o nome segue a língua viva, e volta ao pt sem recarregar', () => {
+    // é a ponte que importa: a tabela pode estar certa e o leitor
+    // continuar publicando o pt em inglês
+    expect(nomeDoCorpo('iapetus')).toBe('Jápeto');
+    definirIdioma('en');
+    expect(nomeDoCorpo('iapetus')).toBe('Iapetus');
+    expect(nomeDoCorpo('moon')).toBe('Moon');
+    // corpo que não é desta casa continua sendo `null` nas duas línguas
+    expect(nomeDoCorpo('vulcano')).toBeNull();
+    definirIdioma('pt-BR');
+    expect(nomeDoCorpo('iapetus')).toBe('Jápeto');
   });
 
   it('completude: todo corpo BUSCÁVEL (os dez + as luas) tem nome e classe', () => {

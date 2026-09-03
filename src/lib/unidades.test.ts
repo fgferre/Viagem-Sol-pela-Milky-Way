@@ -9,7 +9,7 @@
 // de busca, a um palmo dele, dizia "8,6 anos-luz". A escada inteira
 // virou uma função; o gate dela é este arquivo.
 // ============================================================
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   UA_POR_AL,
   UA_POR_PC,
@@ -17,6 +17,7 @@ import {
   formatarMassaKg,
   notaDeDistancia,
 } from './unidades';
+import { definirIdioma } from './idioma';
 
 /** o formatador injetado dos testes: uma casa, vírgula decimal */
 const fmt = (v: number) => String(Math.round(v * 100) / 100).replace('.', ',');
@@ -109,5 +110,62 @@ describe('comCasas', () => {
     // seção da órbita existe para mostrar sumiria no arredondamento.
     expect(comCasas(0.0167, 3)).toBe('0,017');
     expect(comCasas(0.5, 2)).toBe('0,50');
+  });
+});
+
+// ============================================================
+// O PLURAL MUDA DE REGRA COM A LÍNGUA (item 130, lista do §19).
+//
+// Em pt-BR o plural começa em 2 — "1,5 ano-luz" é singular —, a mesma
+// regra do rótulo da taxa da máquina do tempo. Em inglês só o 1 EXATO é
+// singular: "1.5 light-years". Traduzir a regra da casa daria
+// "1.5 light-year", que é o erro que este bloco existe para pegar.
+//
+// A troca é AO VIVO: nenhuma das duas chamadas recarrega nada, e a
+// língua volta ao pt-BR no fim para o resto da suíte não herdar inglês.
+// ============================================================
+describe('notaDeDistancia — o plural muda de regra com a língua', () => {
+  /** o formatador cru: quem põe vírgula ou ponto é a língua, não ele */
+  const cru = (v: number) => String(Math.round(v * 10) / 10);
+  const emAnosLuz = (al: number) => notaDeDistancia(al * UA_POR_AL, cru);
+
+  afterEach(() => definirIdioma('pt-BR'));
+
+  it('pt-BR: 1,5 é SINGULAR e 2,8 é plural', () => {
+    expect(emAnosLuz(1.5)).toBe('1.5 ano-luz');
+    expect(emAnosLuz(2.8)).toBe('2.8 anos-luz');
+    expect(emAnosLuz(1)).toBe('1 ano-luz');
+  });
+
+  it('inglês: só o 1 EXATO é singular — 1.5 já é plural', () => {
+    definirIdioma('en');
+    expect(emAnosLuz(1.5)).toBe('1.5 light-years');
+    expect(emAnosLuz(2.8)).toBe('2.8 light-years');
+    expect(emAnosLuz(1)).toBe('1 light-year');
+  });
+
+  it('a escada inteira troca de língua, degrau por degrau', () => {
+    // em UA, um por degrau: Lua, órbita de Fobos, casa, Sirius, Alnilam,
+    // o centro da galáxia
+    const degraus = [0.00257, 0.0000626, 1, 8.6 * UA_POR_AL, 1913 * UA_POR_AL, 26000 * UA_POR_AL];
+    const pt = degraus.map((ua) => notaDeDistancia(ua, cru));
+    definirIdioma('en');
+    const en = degraus.map((ua) => notaDeDistancia(ua, cru));
+    // nenhum degrau ficou para trás em português
+    expect(pt.some((v) => v === null)).toBe(false);
+    // "9365 km" é igual nas duas línguas de propósito (km é km e o
+    // número é inteiro); todo degrau que carrega PALAVRA tem de mudar
+    for (const i of [0, 2, 3, 4, 5]) expect(en[i]).not.toBe(pt[i]);
+    expect(en[0]).toMatch(/thousand km$/);
+    expect(en[1]).toMatch(/^\d+ km$/);
+    expect(en[2]).toMatch(/ AU$/);
+    expect(en[3]).toMatch(/ light-years$/);
+    expect(en[5]).toMatch(/thousand light-years$/);
+  });
+
+  it('o separador decimal segue a língua na ficha', () => {
+    expect(comCasas(0.0167, 3)).toBe('0,017');
+    definirIdioma('en');
+    expect(comCasas(0.0167, 3)).toBe('0.017');
   });
 });

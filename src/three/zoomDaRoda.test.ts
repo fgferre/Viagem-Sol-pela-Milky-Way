@@ -297,6 +297,8 @@ describe('o piso e o teto não se atravessam', () => {
 // ------------------------------------------------------------
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 const GESTOS = readFileSync(new URL('./director/gestos.ts', import.meta.url), 'utf8');
+import { PT } from '../lib/idioma/pt';
+import { EN } from '../lib/idioma/en';
 const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
 
 describe('Director — a roda está ligada, e ligada do jeito que funciona', () => {
@@ -429,13 +431,19 @@ describe('Director — a roda está ligada, e ligada do jeito que funciona', () 
   });
 
   it('a dica conta ao visitante que a roda dá zoom', () => {
-    expect(APP).toMatch(/roda — zoom/);
+    // (a frase virou chave de tabela no item 130 — o que a guarda mede é
+    // o mesmo: a dica DIZ a roda, e diz nas duas línguas)
+    expect(APP).toContain("{t('dica.atlas.roda')}");
+    expect(PT['dica.atlas.roda']).toMatch(/roda/);
+    expect(EN['dica.atlas.roda']).toMatch(/wheel/i);
     // ...e em TELA DE TOQUE ela conta o gesto que existe lá: a pinça. O
     // convite do Atlas deixou de ser pulado no `coarse` pela mesma razão
     // — a frase que o pulava ("a roda não existe em tela de toque")
     // deixou de valer no dia em que a pinça passou a existir.
-    expect(APP).toMatch(/pinça — zoom/);
-    expect(APP).toMatch(/toque duplo — ir/);
+    expect(APP).toContain("{t('dica.atlas.pinca')}");
+    expect(APP).toContain("{t('dica.atlas.irToque')}");
+    expect(PT['dica.atlas.pinca']).toMatch(/pinça/);
+    expect(PT['dica.atlas.irToque']).toMatch(/toque duplo/);
     expect(APP).toContain("if (onde === 'voo' && telaDeToque()) return;");
   });
 

@@ -239,6 +239,10 @@ export const PT = {
   'ficha.campo.afelioPerielio': 'afélio · periélio',
   'ficha.campo.excentricidade': 'excentricidade',
   'ficha.campo.diaSideral': 'dia sideral',
+  // as DUAS PONTAS da órbita numa linha só, e o sentido do giro: os dois
+  // eram literal em `ficha.ts` até a varredura do 130 os achar
+  'ficha.valor.faixa': '{min} a {max}',
+  'ficha.valor.retrogrado': '{dia} (retrógrado)',
   'ficha.campo.modeloEValidade': 'modelo e validade',
   'ficha.campo.elongacao': 'elongação do Sol',
   'ficha.campo.discoIluminado': 'disco iluminado',

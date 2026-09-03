@@ -62,6 +62,13 @@ Sobra numerada: **137** (assets `ring*` órfãos). **Próxima frente: 130
 (app bilíngue pt-BR/EN)** — começar pelo censo por olho do que é texto de
 tela. Backup em dia; site intocado (publicar só com pedido dele).
 
+**Sobra SEM obra (03/09):** a dose do miolo dos jatos de Encélado
+(`DOSE_BASE = 0.055` em `world/corpos/plumas.ts`) é o número do projeto
+Saturn DELE, trazido como está. Ele viu a foto de contraluz
+(`item134-s4-encelado-contraluz.png`) e não pediu mudança: **fica como
+está, sem teste, declarado** — número de gosto, não de física medida
+nesta casa; não vira item nem entra na lista do §19.
+
 ---
 
 ## ALTA — o dono vê e incomoda

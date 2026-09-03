@@ -46,6 +46,7 @@ import { StarField } from '../stars';
 import {
   catalogApparentMag,
 } from '../lodStellar';
+import { CAMADAS } from '../../atlasConfig';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../../escala';
 import type { MetaEfemerides } from '../../../lib/atlas/efemerides';
 import { MotorEfemerides, decodeEfemerides } from '../../../lib/atlas/efemerides';
@@ -1158,10 +1159,14 @@ const maquina = readFileSync(
   // sempre: a camada dos planetas está listada como VIVA (troca sem
   // reload) e o hospedeiro do momento desenha a tabela do config único.
   it('o config único lista a camada como viva, e a gaveta desenha a tabela dele', () => {
-    const config = readFileSync(new URL('../../atlasConfig.ts', import.meta.url), 'utf8');
-    expect(config).toContain(
-      "{ flag: 'noplan', nome: 'Planetas', familia: 'Sistema solar', viva: true"
-    );
+    // (o `nome` virou getter da tabela de idioma no item 130 — a guarda
+    // deixou de ler o literal do fonte e passou a ler a TABELA, que é o
+    // que a gaveta desenha; o veredito é o mesmo)
+    const noplan = CAMADAS.find((c) => c.flag === 'noplan');
+    expect(noplan, 'a camada dos planetas sumiu do config único').toBeDefined();
+    expect(noplan!.familia).toBe('Sistema solar');
+    expect(noplan!.viva).toBe(true);
+    expect(noplan!.nome).toBe('Planetas');
     const gaveta = readFileSync(
       new URL('../../../components/HudDoAtlas.tsx', import.meta.url),
       'utf8'

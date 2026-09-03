@@ -26,7 +26,7 @@
 // que mudaram de propósito estão marcadas uma a uma, com o porquê.
 // ============================================================
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import type { NamedStar } from '../three/config';
 import {
   SCORE,
@@ -47,6 +47,7 @@ import type {
 import { CORPOS_DO_SISTEMA } from '../three/atlasConfig';
 import { RETRATO_2026 } from '../three/world/planetas/retrato2026';
 import type { IdRetrato } from '../three/world/planetas/retrato2026';
+import { definirIdioma } from './idioma';
 
 const meta = JSON.parse(
   readFileSync(new URL('../../public/data/stars_meta.json', import.meta.url), 'utf8')
@@ -555,5 +556,86 @@ describe('o centro galáctico é um lugar, e a busca o alcança', () => {
     // quando o que estava em quadro era o centro galáctico
     expect(chaveDoFoco('Sagittarius A✱', comLugar)).toBe('sagittarius-a');
     expect(achado('sagittarius-a')).toBe('sagittarius-a');
+  });
+});
+
+// ============================================================
+// AS DUAS GRAFIAS DE UM CORPO (item 130/F2, lista do §19).
+//
+// A divisão: o nome pt-BR é a CHAVE (índice da busca, `?foco=`,
+// `chaveDeLink`) e o inglês é a TELA. Dois modos de falha, os dois
+// mudos:
+//   · a LISTA da paleta continuar em português com a casa em inglês —
+//     `nomeDaEntrada` é quem a alimenta;
+//   · o `?foco=` SUMIR da URL depois de o visitante trocar de língua —
+//     o foco foi publicado numa grafia e `chaveDoFoco` procura na outra.
+//     A troca é ao vivo e não reenquadra nada, então o nome em quadro
+//     fica na grafia velha até o próximo enquadramento.
+// ============================================================
+describe('as duas grafias do corpo — a busca e o foco', () => {
+  const corpos: readonly CorpoBuscavel[] = CORPOS_DO_SISTEMA.map((c) => ({
+    id: c.id,
+    nome: c.nome,
+    nomeEn: c.nomeEn,
+    classe: c.classe,
+    rUA: c.id === 'sun' ? 0 : RETRATO_2026[c.id as IdRetrato].rUA,
+  }));
+  const comCorpos = construirIndice(nomeadas, corpos);
+  const doId = (id: string): EntradaDaBusca =>
+    comCorpos.entradas.find((e) => e.tipo === 'corpo' && e.corpo.id === id)!;
+
+  afterEach(() => definirIdioma('pt-BR'));
+
+  it('o NOME NA LISTA segue o idioma vivo, sem reconstruir o índice', () => {
+    expect(nomeDaEntrada(doId('mercury'))).toBe('Mercúrio');
+    expect(nomeDaEntrada(doId('earth'))).toBe('Terra');
+    definirIdioma('en');
+    // MESMO índice, mesma entrada: quem trocou foi a língua
+    expect(nomeDaEntrada(doId('mercury'))).toBe('Mercury');
+    expect(nomeDaEntrada(doId('earth'))).toBe('Earth');
+    definirIdioma('pt-BR');
+    expect(nomeDaEntrada(doId('mercury'))).toBe('Mercúrio');
+  });
+
+  it('a ESTRELA e o LUGAR não têm segunda grafia — e continuam iguais', () => {
+    const estrela = comCorpos.entradas.find((e) => e.tipo === 'estrela')!;
+    const antes = nomeDaEntrada(estrela);
+    definirIdioma('en');
+    expect(nomeDaEntrada(estrela)).toBe(antes);
+  });
+
+  it('o TERMO em português continua achando o corpo com a casa em inglês', () => {
+    // o índice é de CHAVES pt-BR e não se reconstrói na troca: quem
+    // digita "Mercúrio" num app em inglês tem de achar o planeta
+    definirIdioma('en');
+    const r = buscar('Mercúrio', comCorpos, 8)[0];
+    expect(r?.entrada.tipo).toBe('corpo');
+    expect(r.entrada.tipo === 'corpo' && r.entrada.corpo.id).toBe('mercury');
+    // e o termo em inglês também acha, pelo `id` anotado desde o item 126
+    expect(buscar('mercury', comCorpos, 8)[0]?.entrada.tipo).toBe('corpo');
+  });
+
+  it('`chaveDoFoco` aceita AS DUAS grafias, em qualquer língua', () => {
+    for (const lingua of ['pt-BR', 'en'] as const) {
+      definirIdioma(lingua);
+      expect(chaveDoFoco('Mercúrio', comCorpos), lingua).toBe('mercurio');
+      expect(chaveDoFoco('Mercury', comCorpos), lingua).toBe('mercurio');
+      expect(chaveDoFoco('Terra', comCorpos), lingua).toBe('terra');
+      expect(chaveDoFoco('Earth', comCorpos), lingua).toBe('terra');
+    }
+  });
+
+  it('a CHAVE gravada na URL é a mesma nas duas línguas — o link é um só', () => {
+    const emPt = chaveDeLink(doId('earth'));
+    definirIdioma('en');
+    expect(chaveDeLink(doId('earth'))).toBe(emPt);
+    // e o link escrito em inglês abre a mesma vista
+    expect(resolverFoco(emPt, comCorpos)?.entrada.tipo).toBe('corpo');
+  });
+
+  it('nome que não é do índice continua devolvendo `null` nas duas línguas', () => {
+    expect(chaveDoFoco('Vulcano', comCorpos)).toBeNull();
+    definirIdioma('en');
+    expect(chaveDoFoco('Vulcan', comCorpos)).toBeNull();
   });
 });

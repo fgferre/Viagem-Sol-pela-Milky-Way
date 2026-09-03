@@ -71,6 +71,7 @@ import { doseDaDramaturgia } from './director/doseDoSol';
 import { faseDoCiclo } from './estrela';
 import type { CalibracaoDaCasa } from './estrela';
 import { BETA_DA_EMISSAO } from './shaders/starShaders';
+import { reemitirLegenda } from './director/legendaNoAr';
 import { Escada } from './director/escada';
 import type { EstadoDaEscada } from './director/escada';
 import {
@@ -2369,14 +2370,10 @@ export class Director {
       this.events.onProgress(Math.min(t / this.rig.duration, 1));
       this.events.onWarp(this.reducedMotion ? 0 : warp);
 
-      // A LEGENDA E A LÍNGUA VIVA (item 130/F3). Comparar só o índice
-      // deixava a frase em português na tela até a PRÓXIMA legenda
-      // quando o visitante trocava de idioma no meio do filme — o
-      // roteiro não mudou de legenda, mas a frase mudou. Comparar o
-      // texto emitido pega as duas causas com uma condição só, e a
-      // troca aparece no quadro seguinte.
+      // A LEGENDA E A LÍNGUA VIVA (item 130/F3): a regra mora em
+      // `reemitirLegenda`, pura, no topo deste arquivo.
       const { index, key } = this.rig.captionAt(t);
-      if (index !== this.lastCaptionIdx || key.caption !== this.lastCaptionTexto) {
+      if (reemitirLegenda(index, key.caption, this.lastCaptionIdx, this.lastCaptionTexto)) {
         this.lastCaptionIdx = index;
         this.lastCaptionTexto = key.caption;
         this.events.onCaption(index, key.caption, key.sub);

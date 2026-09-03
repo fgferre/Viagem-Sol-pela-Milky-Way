@@ -49,6 +49,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { CAMADA_DOS_OCULTADORES } from '../../core/post';
+import { fetchBinary } from '../../config';
 // o NEAR do quadro pelo MESMO escritor que o engine usa (item 135): a
 // lajota do anel (139) apaga o grão que o plano de corte cortaria ao meio
 import { PISO_DO_NEAR_EM_RAIOS, nearPlanePc } from '../../core/engine';
@@ -563,9 +564,10 @@ let perfilDoAnelPedido: Promise<void> | null = null;
 
 async function pedirPerfilDoAnel(base: string): Promise<void> {
   perfilDoAnelPedido ??= (async () => {
-    const resposta = await fetch(`${base}${PERFIL_DO_ANEL.perfil}`);
-    if (!resposta.ok) throw new Error(`perfil do anel: HTTP ${resposta.status}`);
-    const bytes = new Uint8Array(await resposta.arrayBuffer());
+    // pelo MESMO caminho de rede dos outros .bin da casa: `fetchBinary`
+    // prefere o irmão .gz e descomprime no cliente (o Pages serve o cru
+    // opaco); só o .gz é publicado
+    const bytes = new Uint8Array(await fetchBinary(`${base}${PERFIL_DO_ANEL.perfil}`));
     const esperado = PERFIL_DO_ANEL.caixas * 4;
     if (bytes.length !== esperado) {
       throw new Error(`perfil do anel: ${bytes.length} B, esperado ${esperado}`);

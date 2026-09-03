@@ -35,7 +35,14 @@ import { describe, expect, it } from 'vitest';
 import type { StarLabel } from '../three/world/labels';
 import type { RotuloComVaga } from '../three/world/rotulos3d';
 
-(globalThis as { window?: unknown }).window = { devicePixelRatio: 1 };
+// O DUPLO DA JANELA. `location.search` entrou junto com a cadeia de
+// import que chega em `shaders/common.ts` (ele lê uma porta de URL na
+// carga do módulo): sem ela o arquivo INTEIRO deixava de coletar, e a
+// suíte acusava zero teste em vez de um teste vermelho.
+(globalThis as { window?: unknown }).window = {
+  devicePixelRatio: 1,
+  location: { search: '' },
+};
 
 const {
   LabelCanvas,

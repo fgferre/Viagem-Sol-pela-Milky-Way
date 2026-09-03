@@ -148,8 +148,22 @@ export interface IndiceEstrelas {
   /** as chaves de `porChave` na ordem de inserção — a id do motor é a
    *  posição aqui, e é por ela que um achado volta a ser entrada */
   chaves: readonly string[];
-  /** o MiniSearch das mesmas chaves, usado SÓ no degrau tolerante */
-  tolerancia: MiniSearch<ChaveIndexada>;
+  /** o motor das mesmas chaves, usado SÓ no degrau tolerante */
+  tolerancia: MotorTolerante;
+}
+
+/**
+ * O MOTOR VISTO DA FRONTEIRA — só o `search` que o degrau tolerante
+ * chama. A instância continua sendo do MiniSearch, mas o tipo dele
+ * (e o `ChaveIndexada`, que é interno) param aqui: quem importa
+ * `IndiceEstrelas` — a paleta de busca — não tipa mais contra a
+ * declaração da biblioteca.
+ */
+export interface MotorTolerante {
+  search(
+    consulta: string,
+    opcoes: { prefix: boolean; fuzzy: (termo: string) => number; combineWith: 'AND' }
+  ): { id: unknown; score: number }[];
 }
 
 /**

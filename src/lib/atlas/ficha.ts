@@ -382,8 +382,8 @@ function secaoOrbita(entrada: EntradaDaFicha): LinhaDaFicha[] {
     if (min && max) {
       linhas.push(
         linha(
-          `distância — ${pai}`,
-          min === max ? min : `${min} a ${max}`,
+          t('ficha.campo.distanciaDe', { pai }),
+          min === max ? min : t('ficha.valor.faixa', { min, max }),
           'derivado',
           t('ficha.fonte.minEMax')
         )
@@ -408,7 +408,11 @@ function secaoOrbita(entrada: EntradaDaFicha): LinhaDaFicha[] {
     linhas.push(
       linha(
         t('ficha.campo.diaSideral'),
-        dia === null ? null : iau.spinRateDegPerDay < 0 ? `${dia} (retrógrado)` : dia,
+        dia === null
+          ? null
+          : iau.spinRateDegPerDay < 0
+            ? t('ficha.valor.retrogrado', { dia })
+            : dia,
         'derivado',
         t('ficha.fonte.rotacaoIau')
       )

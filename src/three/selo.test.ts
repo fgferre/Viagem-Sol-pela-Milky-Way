@@ -51,6 +51,7 @@ import {
 import { DRAMA_T1, doseDaDramaturgia } from './director/doseDoSol';
 import { LIMIAR_SISTEMA_SOLAR_PC } from './escala';
 import { TONE_MAPPINGS } from './core/engine';
+import { definirIdioma, iniciarIdioma } from '../lib/idioma';
 import type { ToneMapMode } from './core/engine';
 
 /** o estado de uma vista limpa: nada tocado, nada na URL */
@@ -240,6 +241,39 @@ describe('2. nenhum controle desmente o selo', () => {
     for (const chave of ['nobloom', 'knee', 'kneeamt', 'kneemode', 'fov', 'dom', 'forgetau']) {
       expect(estadoDoSelo(com({ portas: [chave] })).brilho, chave).toBe('assistido');
     }
+  });
+
+  // ============================================================
+  // A PORTA DA LÍNGUA (item 130, lista do §19).
+  //
+  // `?lang=` é INSTRUMENTO DE CAPTURA: os juízes de imagem precisam
+  // pedir uma língua sem tocar no storage do perfil. Ela não muda um
+  // pixel de física, então NÃO pode derrubar o eixo BRILHO — mas
+  // também não pode ficar de fora do registro, porque porta não
+  // declarada vira acusação e o juiz de inglês fotografaria um selo
+  // dizendo "assistido" por causa da própria régua.
+  //
+  // As DUAS pontas amarradas de propósito: o nome que `iniciarIdioma`
+  // lê e a chave que o registro declara. Renomear um sem o outro
+  // quebra aqui.
+  // ============================================================
+  it('`?lang=` é porta DECLARADA e NEUTRA — o juiz em inglês não vira desvio', () => {
+    expect(iniciarIdioma('?lang=en')).toBe('en');
+    definirIdioma('pt-BR');
+
+    const entrada = REGISTRO.find((c) => c.chave === 'lang');
+    expect(entrada, '?lang= sem entrada no registro do selo').toBeDefined();
+    expect(entrada!.eixo).toBe('nenhum');
+    expect(entrada!.desvia(com({ portas: ['lang'] }))).toBe(false);
+
+    const v = estadoDoSelo(com({ portas: ['lang'] }));
+    expect(v.brilho).toBe('real');
+    expect(v.desvios).toEqual([]);
+    // e não é o caso trivial de "nenhuma porta conta": a porta ao lado,
+    // não declarada, continua acusando
+    expect(estadoDoSelo(com({ portas: ['lang', 'lingua'] })).desvios.map((d) => d.rotulo)).toEqual([
+      'porta não declarada: ?lingua',
+    ]);
   });
 });
 

@@ -11,9 +11,10 @@
 // real. Esta aqui é a que impede o defeito silencioso: o nome de Marte
 // sobre o ponto de Júpiter no dia em que alguém redigitar a ordem.
 // ============================================================
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA } from '../atlasConfig';
+import { definirIdioma } from '../../lib/idioma';
 import { IDS_FOTOMETRIA } from './planetas/fotometria';
 import type { StarLabel } from './labels';
 
@@ -872,5 +873,48 @@ describe('A10 — duas causas de sumiço, a MESMA duração de fade', () => {
     // SABOTAGEM QUE ISTO MORDE: dar à cessão por tamanho uma duração
     // própria (ou não a mandar para a rampa) rompe a igualdade das duas
     // trilhas na primeira linha.
+  });
+});
+
+// ============================================================
+// O RÓTULO 3D SEGUE A LÍNGUA VIVA (item 130/F2, lista do §19).
+//
+// `projectCorpos` roda POR QUADRO, então a troca do painel de Ajustes
+// tem de chegar ao nome sobre o globo no quadro seguinte, sem
+// reconstruir a lista de corpos. O modo de falha é mudo: o app inteiro
+// em inglês e os nomes sobre os planetas em português.
+// ============================================================
+describe('o rótulo 3D na língua viva', () => {
+  afterEach(() => definirIdioma('pt-BR'));
+
+  const nomes = (): Map<string, string> =>
+    new Map(
+      projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes()).map((l) => [l.key, l.name])
+    );
+
+  it('o NOME e a CLASSE trocam de língua no quadro seguinte, com a MESMA lista', () => {
+    const pt = nomes();
+    expect(pt.get(`${CHAVE_DE_CORPO}mercury`)).toBe('Mercúrio');
+    expect(pt.get(`${CHAVE_DE_CORPO}earth`)).toBe('Terra');
+
+    definirIdioma('en');
+    // a lista de entrada é a MESMA constante: nada foi reconstruído
+    const en = nomes();
+    expect(en.get(`${CHAVE_DE_CORPO}mercury`)).toBe('Mercury');
+    expect(en.get(`${CHAVE_DE_CORPO}earth`)).toBe('Earth');
+    // e o detalhe (a classe) também
+    const terra = projectCorpos(camera(), CORPOS_DO_SISTEMA, posicoes()).find(
+      (l) => l.key === `${CHAVE_DE_CORPO}earth`
+    )!;
+    expect(terra.detalhe).toBe('planet');
+
+    definirIdioma('pt-BR');
+    expect(nomes().get(`${CHAVE_DE_CORPO}mercury`)).toBe('Mercúrio');
+  });
+
+  it('a CHAVE do rótulo NÃO muda de língua — é por ela que o hit-test acha o corpo', () => {
+    const chavesPt = [...nomes().keys()].sort();
+    definirIdioma('en');
+    expect([...nomes().keys()].sort()).toEqual(chavesPt);
   });
 });
