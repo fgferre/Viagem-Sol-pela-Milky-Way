@@ -367,6 +367,46 @@ enxergam o app em INGLÊS — o conserto é de uma linha em
 `scripts/visual/chrome.mjs` (`--lang=pt-BR` no `GPU_FLAGS`) ou `?lang=pt-BR`
 no PIN de cada juiz, e ainda NÃO foi feito.
 
+**F2 FEITA (03/09) — as FICHAS DOS CORPOS e os NOMES.** O inglês da prosa
+NÃO precisou ser traduzido: ele é o ORIGINAL do dono, escrito por ele no
+projeto doador, e vive em `fonte/corpos-fonte.json` (`editorial.en`) desde
+sempre — o pt-BR é que nasceu dele. O gerador media uma língua contra a
+outra e JOGAVA O INGLÊS FORA ("no artefato seriam 268 campos que tela
+nenhuma lê"); agora ele atravessa. Formato: `editorial: { pt, en }`, dois
+blocos irmãos (o molde da própria fonte), e não `{pt,en}` campo a campo —
+o gerador já cobrava campo a campo a simetria das duas, então o par de
+blocos não perde garantia nenhuma e o diff fica só de adição.
+**439 trechos** em inglês em 48 corpos (description 48, curiosity 48, facts
+156, records 92, exploração 47, info 48), medidos iguais aos 439 do pt;
+`corpos.json` 78 → 136 KB. `ficha.ts` escolhe em UM lugar
+(`editorialDoIdioma`, com o pt de PISO quando faltar `en`) e as duas seções
+de prosa seguem sem saber que existe língua. Os NOMES: `NOMES_DOS_CORPOS`
+ganhou `nomeEn` (espelho do `name.en` do JSON, grafia da IAU — Iapetus,
+Enceladus, Tethys, Charon), `nomeDoCorpo`/`nomeNaLingua` resolvem na língua
+viva, e quem lê é o rótulo 3D (por quadro, então troca ao vivo), o foco do
+HUD, a lista da busca e a ficha; o `nome` pt-BR continua sendo a CHAVE
+(índice da busca, `?foco=`), a mesma divisão que a `classe` já tinha.
+**Mudança de juiz declarada:** `verify-assets.mjs` PROIBIA `editorial.en`
+no artefato — a guarda virou o cadeado inverso (cada campo inglês conferido
+byte a byte contra a fonte); 572 campos conferidos, 0 divergentes.
+**Defeito da F1 consertado de passagem:** `npm run data:corpos` estava
+QUEBRADO desde ela — `src/lib/idioma.ts` tem um irmão `src/lib/idioma/`, e o
+gancho de resolução do gerador só tratava `ERR_MODULE_NOT_FOUND`, não
+`ERR_UNSUPPORTED_DIR_IMPORT`. **Fora da F2, por decisão:** as CONFISSÕES da
+imagem e do relevo ("o defeito", "o relevo admite", fonte/licença/atribuição,
+a forma) NÃO são texto de código — vêm do manifesto `texturas.json`, que as
+lê de `docs/reference/ASSETS.md`; ficam em pt e são a F4, junto com os nomes
+de `lugaresDoFilme`, as legendas do filme (F3) e o `<title>` das portas de
+depuração. O `chaveDeLink` segue gravando o nome pt-BR normalizado na URL de
+propósito, para que um link escrito em inglês e um em português abram a
+mesma vista — `chaveDoFoco` aceita as duas grafias. **Pinos de teste:**
+nenhum reprova — a suíte roda em pt-BR (ninguém chama `iniciarIdioma`), e em
+pt-BR toda saída é byte a byte a de antes; o que envelheceu foi COMENTÁRIO:
+`ficha.test.ts` diz "O INGLÊS, QUE NÃO ESTÁ NO ARTEFATO" e lê o `en` da
+fonte (podia ler do artefato agora), e `atlasConfig.test.ts` confere o
+espelho só do `name.pt` — o `nomeEn` das 48 entradas ainda NÃO tem guarda
+contra o `name.en` do JSON. Os dois entram na lista do §19.
+
 **131. Aglomerados, nebulosas e nuvens na busca — roadmap futuro, depois
 da curadoria do desenho deles.** Palavras dele em 01/09, ao fechar o
 129: *"não vamos fazer isso agora. precisamos ver esses objetos com

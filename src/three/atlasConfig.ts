@@ -32,7 +32,7 @@
 // é lido pelo HUD e pelo Director, e é isso que o mantém testável.
 // ============================================================
 import { IDS_FOTOMETRIA } from './world/planetas/fotometria';
-import { t } from '../lib/idioma';
+import { idiomaAtual, t } from '../lib/idioma';
 import type { ChaveDeTexto } from '../lib/idioma';
 // só o TIPO: a união dos quatro estados do seletor mora no engine (é
 // ele quem lê a porta `?q=`), e o `import type` é apagado na compilação
@@ -284,9 +284,13 @@ export function familiaEmTexto(familia: FamiliaDeCamada): string {
 export interface CorpoDoSistema {
   /** id da camada — o mesmo de `IDS_FOTOMETRIA` e do retrato */
   id: string;
-  /** nome pt-BR: o que se digita, o que a lista mostra, o que o cabeçalho
-   *  da ficha do objeto anuncia */
+  /** nome pt-BR: a CHAVE (o que se digita na busca, o que o `?foco=` grava,
+   *  o que desempata dois alvos com o mesmo score). Quem o visitante LÊ sai
+   *  de `nomeNaLingua`/`nomeDoCorpo` — a mesma divisão que a `classe` já
+   *  tinha desde a F1 do item 130: crua para a máquina, traduzida na tela. */
   nome: string;
+  /** o mesmo nome em inglês, na grafia da IAU (`Iapetus`, `Enceladus`) */
+  nomeEn: string;
   /** a palavra que diz o que ele é, no vocabulário da legenda */
   classe: string;
   /** chave do rótulo — o hit-test reconhece um corpo por este prefixo */
@@ -306,65 +310,69 @@ export function tituloDeCorpo(nomePt: string): string {
 }
 
 /**
- * UMA FONTE DE NOME pt-BR (emenda P-E10b): esta tabela é ESPELHO
- * declarado do `i18n.pt` de `public/data/atlas/corpos.json`, com o case
- * tratado por `tituloDeCorpo` — e o teste de completude em
- * `atlasConfig.test.ts` cobra a igualdade entrada a entrada contra o
- * JSON real (uma divergência de grafia quebra o teste, não a tela).
- * Espelho e não fetch porque este módulo é síncrono e puro (é lido pelo
- * HUD e pelo Director antes de qualquer rede); a CLASSE é vocabulário
+ * UMA FONTE DE NOME (emenda P-E10b; as DUAS línguas desde o item 130/F2):
+ * esta tabela é ESPELHO declarado do `name` de
+ * `public/data/atlas/corpos.json` — `nome` do `name.pt`, `nomeEn` do
+ * `name.en` —, com o case tratado por `tituloDeCorpo`, e o teste de
+ * completude em `atlasConfig.test.ts` cobra a igualdade entrada a entrada
+ * contra o JSON real (uma divergência de grafia quebra o teste, não a
+ * tela). Espelho e não fetch porque este módulo é síncrono e puro (é lido
+ * pelo HUD e pelo Director antes de qualquer rede); a CLASSE é vocabulário
  * da legenda da casa, que o JSON não carrega.
  */
-export const NOMES_DOS_CORPOS: Record<string, { nome: string; classe: string }> = {
-  sun: { nome: 'Sol', classe: 'estrela' },
-  mercury: { nome: 'Mercúrio', classe: 'planeta' },
-  venus: { nome: 'Vênus', classe: 'planeta' },
-  earth: { nome: 'Terra', classe: 'planeta' },
-  mars: { nome: 'Marte', classe: 'planeta' },
-  jupiter: { nome: 'Júpiter', classe: 'planeta' },
-  saturn: { nome: 'Saturno', classe: 'planeta' },
-  uranus: { nome: 'Urano', classe: 'planeta' },
-  neptune: { nome: 'Netuno', classe: 'planeta' },
-  pluto: { nome: 'Plutão', classe: 'planeta anão' },
-  moon: { nome: 'Lua', classe: 'lua' },
-  phobos: { nome: 'Fobos', classe: 'lua' },
-  deimos: { nome: 'Deimos', classe: 'lua' },
-  io: { nome: 'Io', classe: 'lua' },
-  europa: { nome: 'Europa', classe: 'lua' },
-  ganymede: { nome: 'Ganimedes', classe: 'lua' },
-  callisto: { nome: 'Calisto', classe: 'lua' },
-  mimas: { nome: 'Mimas', classe: 'lua' },
-  enceladus: { nome: 'Encélado', classe: 'lua' },
-  tethys: { nome: 'Tétis', classe: 'lua' },
-  dione: { nome: 'Dione', classe: 'lua' },
-  rhea: { nome: 'Reia', classe: 'lua' },
-  titan: { nome: 'Titã', classe: 'lua' },
-  iapetus: { nome: 'Jápeto', classe: 'lua' },
+export const NOMES_DOS_CORPOS: Record<
+  string,
+  { nome: string; nomeEn: string; classe: string }
+> = {
+  sun: { nome: 'Sol', nomeEn: 'Sun', classe: 'estrela' },
+  mercury: { nome: 'Mercúrio', nomeEn: 'Mercury', classe: 'planeta' },
+  venus: { nome: 'Vênus', nomeEn: 'Venus', classe: 'planeta' },
+  earth: { nome: 'Terra', nomeEn: 'Earth', classe: 'planeta' },
+  mars: { nome: 'Marte', nomeEn: 'Mars', classe: 'planeta' },
+  jupiter: { nome: 'Júpiter', nomeEn: 'Jupiter', classe: 'planeta' },
+  saturn: { nome: 'Saturno', nomeEn: 'Saturn', classe: 'planeta' },
+  uranus: { nome: 'Urano', nomeEn: 'Uranus', classe: 'planeta' },
+  neptune: { nome: 'Netuno', nomeEn: 'Neptune', classe: 'planeta' },
+  pluto: { nome: 'Plutão', nomeEn: 'Pluto', classe: 'planeta anão' },
+  moon: { nome: 'Lua', nomeEn: 'Moon', classe: 'lua' },
+  phobos: { nome: 'Fobos', nomeEn: 'Phobos', classe: 'lua' },
+  deimos: { nome: 'Deimos', nomeEn: 'Deimos', classe: 'lua' },
+  io: { nome: 'Io', nomeEn: 'Io', classe: 'lua' },
+  europa: { nome: 'Europa', nomeEn: 'Europa', classe: 'lua' },
+  ganymede: { nome: 'Ganimedes', nomeEn: 'Ganymede', classe: 'lua' },
+  callisto: { nome: 'Calisto', nomeEn: 'Callisto', classe: 'lua' },
+  mimas: { nome: 'Mimas', nomeEn: 'Mimas', classe: 'lua' },
+  enceladus: { nome: 'Encélado', nomeEn: 'Enceladus', classe: 'lua' },
+  tethys: { nome: 'Tétis', nomeEn: 'Tethys', classe: 'lua' },
+  dione: { nome: 'Dione', nomeEn: 'Dione', classe: 'lua' },
+  rhea: { nome: 'Reia', nomeEn: 'Rhea', classe: 'lua' },
+  titan: { nome: 'Titã', nomeEn: 'Titan', classe: 'lua' },
+  iapetus: { nome: 'Jápeto', nomeEn: 'Iapetus', classe: 'lua' },
   // item 134/S3 — as nove luas esculpidas do projeto Saturn do autor.
-  pan: { nome: 'Pã', classe: 'lua' },
-  daphnis: { nome: 'Dafnis', classe: 'lua' },
-  atlas: { nome: 'Atlas', classe: 'lua' },
-  prometheus: { nome: 'Prometeu', classe: 'lua' },
-  pandora: { nome: 'Pandora', classe: 'lua' },
-  janus: { nome: 'Jano', classe: 'lua' },
-  epimetheus: { nome: 'Epimeteu', classe: 'lua' },
-  hyperion: { nome: 'Hipérion', classe: 'lua' },
-  phoebe: { nome: 'Febe', classe: 'lua' },
-  miranda: { nome: 'Miranda', classe: 'lua' },
-  ariel: { nome: 'Ariel', classe: 'lua' },
-  umbriel: { nome: 'Umbriel', classe: 'lua' },
-  titania: { nome: 'Titânia', classe: 'lua' },
-  oberon: { nome: 'Oberon', classe: 'lua' },
-  triton: { nome: 'Tritão', classe: 'lua' },
-  charon: { nome: 'Caronte', classe: 'lua' },
-  ceres: { nome: 'Ceres', classe: 'planeta anão' },
-  haumea: { nome: 'Haumea', classe: 'planeta anão' },
-  makemake: { nome: 'Makemake', classe: 'planeta anão' },
-  eris: { nome: 'Éris', classe: 'planeta anão' },
-  quaoar: { nome: 'Quaoar', classe: 'planeta anão' },
-  vesta: { nome: 'Vesta', classe: 'asteroide' },
-  pallas: { nome: 'Palas', classe: 'asteroide' },
-  hygiea: { nome: 'Hígia', classe: 'asteroide' },
+  pan: { nome: 'Pã', nomeEn: 'Pan', classe: 'lua' },
+  daphnis: { nome: 'Dafnis', nomeEn: 'Daphnis', classe: 'lua' },
+  atlas: { nome: 'Atlas', nomeEn: 'Atlas', classe: 'lua' },
+  prometheus: { nome: 'Prometeu', nomeEn: 'Prometheus', classe: 'lua' },
+  pandora: { nome: 'Pandora', nomeEn: 'Pandora', classe: 'lua' },
+  janus: { nome: 'Jano', nomeEn: 'Janus', classe: 'lua' },
+  epimetheus: { nome: 'Epimeteu', nomeEn: 'Epimetheus', classe: 'lua' },
+  hyperion: { nome: 'Hipérion', nomeEn: 'Hyperion', classe: 'lua' },
+  phoebe: { nome: 'Febe', nomeEn: 'Phoebe', classe: 'lua' },
+  miranda: { nome: 'Miranda', nomeEn: 'Miranda', classe: 'lua' },
+  ariel: { nome: 'Ariel', nomeEn: 'Ariel', classe: 'lua' },
+  umbriel: { nome: 'Umbriel', nomeEn: 'Umbriel', classe: 'lua' },
+  titania: { nome: 'Titânia', nomeEn: 'Titania', classe: 'lua' },
+  oberon: { nome: 'Oberon', nomeEn: 'Oberon', classe: 'lua' },
+  triton: { nome: 'Tritão', nomeEn: 'Triton', classe: 'lua' },
+  charon: { nome: 'Caronte', nomeEn: 'Charon', classe: 'lua' },
+  ceres: { nome: 'Ceres', nomeEn: 'Ceres', classe: 'planeta anão' },
+  haumea: { nome: 'Haumea', nomeEn: 'Haumea', classe: 'planeta anão' },
+  makemake: { nome: 'Makemake', nomeEn: 'Makemake', classe: 'planeta anão' },
+  eris: { nome: 'Éris', nomeEn: 'Eris', classe: 'planeta anão' },
+  quaoar: { nome: 'Quaoar', nomeEn: 'Quaoar', classe: 'planeta anão' },
+  vesta: { nome: 'Vesta', nomeEn: 'Vesta', classe: 'asteroide' },
+  pallas: { nome: 'Palas', nomeEn: 'Pallas', classe: 'asteroide' },
+  hygiea: { nome: 'Hígia', nomeEn: 'Hygiea', classe: 'asteroide' },
 };
 
 /** O prefixo que separa a chave de um corpo da de uma estrela. */
@@ -426,8 +434,21 @@ export const LUAS_DO_SISTEMA: readonly (CorpoDoSistema & { pai: string })[] = [
 ];
 
 /**
- * O NOME pt-BR DE UM CORPO PELO `id`, ou `null` para quem não é corpo
- * desta casa — a leitura única da tabela acima.
+ * O NOME NA LÍNGUA DE AGORA, de qualquer entrada que traga as duas grafias
+ * (item 130/F2). Sem `nomeEn` — os corpos falsos dos testes de projeção, que
+ * só declaram `chave`/`nome`/`classe` — a saída é o pt, que é o mesmo
+ * comportamento de antes: o inglês que falta some, não vira buraco.
+ *
+ * É AQUI QUE A LÍNGUA ENTRA E EM MAIS LUGAR NENHUM. Chamada por quadro no
+ * produtor de rótulos, e por isso é uma comparação e um `??`: nada de tabela
+ * nova, nada de `t()` com chave montada.
+ */
+export const nomeNaLingua = (entrada: { nome: string; nomeEn?: string }): string =>
+  idiomaAtual() === 'en' ? (entrada.nomeEn ?? entrada.nome) : entrada.nome;
+
+/**
+ * O NOME DE UM CORPO PELO `id`, NA LÍNGUA DE AGORA, ou `null` para quem não
+ * é corpo desta casa — a leitura única da tabela acima.
  *
  * ELA NASCEU DO ITEM 92 (25/08): o Director resolvia nome varrendo as
  * LISTAS (`CORPOS_DO_SISTEMA` → `LUAS_DO_SISTEMA` → `HELIO_SEM_PONTO`),
@@ -438,8 +459,10 @@ export const LUAS_DO_SISTEMA: readonly (CorpoDoSistema & { pai: string })[] = [
  * então perguntar a ELA é a mesma resposta por um caminho que não
  * depende de o corpo estar na lista certa.
  */
-export const nomeDoCorpo = (id: string): string | null =>
-  NOMES_DOS_CORPOS[id]?.nome ?? null;
+export const nomeDoCorpo = (id: string): string | null => {
+  const entrada = NOMES_DOS_CORPOS[id];
+  return entrada ? nomeNaLingua(entrada) : null;
+};
 
 /**
  * ANÕES SEM PONTO FOTOMÉTRICO (F6) — fora de CORPOS_DO_SISTEMA (aquela

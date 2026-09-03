@@ -468,15 +468,27 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
       }
       camposConferidos++;
     }
-  }
-  // E O INGLÊS NÃO ATRAVESSA. Ele é a régua da tradução e vive na fonte; um
-  // `editorial.en` de volta ao artefato são 268 campos que tela nenhuma lê.
-  const comIngles = corpos.filter((c) => c.editorial?.en !== undefined).map((c) => c.id);
-  if (comIngles.length > 0) {
-    throw new Error(
-      `atlas/corpos: [${comIngles.join(', ')}] trazem editorial.en de volta ao artefato — ` +
-        'o inglês mora em fonte/corpos-fonte.json, onde a tradução se confere.'
-    );
+    // O MESMO CADEADO PARA O INGLÊS (item 130/F2). A ficha em inglês lê este
+    // bloco, então ele merece a mesma desconfiança que o pt: o texto tem de
+    // ser, byte a byte, o `editorial.en` de `corpos-fonte.json` — que é o
+    // ORIGINAL do dono, escrito no projeto doador, e não uma tradução de
+    // volta a partir do pt.
+    const ingles = corpo.editorial?.en;
+    if (!ingles) {
+      throw new Error(
+        `atlas/corpos: alvo "${corpo.id}" sem editorial.en — a ficha em inglês dele ficaria ` +
+          'em português; rode npm run data:corpos.'
+      );
+    }
+    for (const campo of new Set([...Object.keys(en), ...Object.keys(ingles)])) {
+      if (JSON.stringify(ingles[campo]) !== JSON.stringify(en[campo])) {
+        throw new Error(
+          `atlas/corpos: "${corpo.id}", campo "${campo}": o texto inglês em corpos.json não é ` +
+            'o de corpos-fonte.json — a fonte é o documento; rode npm run data:corpos.'
+        );
+      }
+      camposConferidos++;
+    }
   }
   // E OS SEIS SEM ALVO NÃO TÊM EDITORIAL NENHUM: ficha que ninguém abre não
   // paga tradução, e a ausência aqui é a declaração.
@@ -542,7 +554,7 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
 
   console.log(
     `atlas/corpos: ${camposConferidos} campos editoriais conferidos contra a fonte ` +
-      `(${alvos.length} alvos), 0 divergentes; o inglês fica em corpos-fonte.json.`
+      `(${alvos.length} alvos, pt-BR e inglês), 0 divergentes.`
   );
 }
 

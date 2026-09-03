@@ -778,7 +778,7 @@ export class Escada {
     this.focoCorpoId = id;
     this.focoEstrela = false;
     this.ver = 'orbita';
-    this.events.onFoco(CORPOS_DO_SISTEMA[i].nome);
+    this.events.onFoco(nomeDoCorpo(CORPOS_DO_SISTEMA[i].id));
     this.emitirEscada();
     this.teletransportou();
   }
@@ -957,7 +957,7 @@ export class Escada {
     this.focoCorpoId = id;
     this.focoEstrela = false;
     this.ver = 'corpo';
-    this.events.onFoco(entrada.nome);
+    this.events.onFoco(nomeDoCorpo(entrada.id));
     this.emitirEscada();
     if (!this.maquinaDoTempo.efemeride) {
       // a ficha já anuncia a lua; o enquadramento chega com a fonte
@@ -1318,6 +1318,7 @@ export class Escada {
     const dez = CORPOS_DO_SISTEMA.map((c) => ({
       id: c.id,
       nome: c.nome,
+      nomeEn: c.nomeEn,
       classe: c.classe,
       rUA: c.id === 'sun' ? 0 : RETRATO_2026[c.id as IdRetrato].rUA,
     }));
@@ -1329,7 +1330,7 @@ export class Escada {
         const pai = this.maquinaDoTempo.efemeride.posicaoHeliocentrica(l.pai, jd);
         rUA = Math.hypot(p.x - pai.x, p.y - pai.y, p.z - pai.z);
       }
-      return { id: l.id, nome: l.nome, classe: l.classe, rUA, pai: l.pai };
+      return { id: l.id, nome: l.nome, nomeEn: l.nomeEn, classe: l.classe, rUA, pai: l.pai };
     });
     const anoes = HELIO_SEM_PONTO.map((a) => {
       let rUA = Number.NaN;
@@ -1337,7 +1338,7 @@ export class Escada {
         const p = this.maquinaDoTempo.efemeride.posicaoHeliocentrica(a.id, jd);
         rUA = Math.hypot(p.x, p.y, p.z);
       }
-      return { id: a.id, nome: a.nome, classe: a.classe, rUA };
+      return { id: a.id, nome: a.nome, nomeEn: a.nomeEn, classe: a.classe, rUA };
     });
     return [...dez, ...luas, ...anoes];
   }
@@ -1361,7 +1362,7 @@ export class Escada {
     this.focoCorpoId = id;
     this.focoEstrela = false;
     this.ver = 'orbita';
-    this.events.onFoco(entrada.nome);
+    this.events.onFoco(nomeDoCorpo(entrada.id));
     this.emitirEscada();
     // A EFEMÉRIDE VEM ANTES DOS DOIS DEGRAUS, e nesta classe isso não é
     // detalhe: os oito estão FORA do `RETRATO_2026`, então sem a fonte

@@ -20,12 +20,13 @@
 // dele simplesmente não tem a linha da massa. Seção que ficou sem nenhuma
 // linha não é desenhada.
 //
-// E O INGLÊS NÃO CHEGA AQUI. Os campos editoriais dos 45 corpos vieram do
-// doador em inglês, e ele ficou na fonte (`fonte/corpos-fonte.json`), que é
-// onde a tradução se confere contra ele; o que `corpos.json` traz é o pt-BR
-// dos 39 alvos e mais nada. Onde o `pt` faltar, a linha SOME: mostrar inglês
-// "por enquanto" seria a casa decidindo pelo dono que meia língua é melhor
-// que nenhuma.
+// E O INGLÊS CHEGA AQUI DESDE O ITEM 130/F2. Os campos editoriais dos 48
+// corpos com ficha nasceram em inglês, escritos pelo dono no projeto doador,
+// e o pt-BR é que foi traduzido deles; o gerador media uma língua contra a
+// outra e jogava o inglês fora. Agora `corpos.json` traz as DUAS, e
+// `editorialDoIdioma` escolhe. O pt-BR é o PISO: corpo sem `en` cai nele em
+// vez de perder a seção, porque uma ficha muda é pior que uma ficha na outra
+// língua. Onde faltarem as duas, a linha SOME, como sempre.
 //
 // UM VOCABULÁRIO DE PROCEDÊNCIA SÓ: os três tiers de `selo.ts`
 // (`medido | derivado | artistico`). O doador tinha quatro rótulos próprios
@@ -45,8 +46,8 @@ import {
   notaDeDistancia,
   UA_POR_PC,
 } from '../unidades';
-import { NOMES_DOS_CORPOS, classeEmTexto } from '../../three/atlasConfig';
-import { t } from '../idioma';
+import { NOMES_DOS_CORPOS, classeEmTexto, nomeDoCorpo } from '../../three/atlasConfig';
+import { idiomaAtual, t } from '../idioma';
 import type { Procedencia } from '../../three/selo';
 import { numeroDoIdioma } from '../../three/tempoDoAtlas';
 import { AU_KM } from './elementosOrbitais';
@@ -101,7 +102,7 @@ export interface SecaoDaFicha {
 
 export interface Ficha {
   id: string;
-  /** o nome pt-BR que o visitante lê */
+  /** o nome que o visitante lê, na língua de agora (item 130/F2) */
   nome: string;
   /** a palavra que diz o que ele é, no vocabulário da legenda */
   classe: string;
@@ -124,8 +125,25 @@ export interface CorpoNoJson {
   name: { en: string; pt: string };
   orbita?: { periodoDias: number; minUa: number; maxUa: number };
   semAlvo?: boolean;
-  /** só os 39 alvos têm; os seis sem alvo saem do gerador sem a chave */
-  editorial?: { pt: EditorialDoCorpo };
+  /**
+   * Só os 48 alvos têm; os seis sem alvo saem do gerador sem a chave. As
+   * duas línguas trazem, POR CONSTRUÇÃO DO GERADOR, os mesmos campos e o
+   * mesmo tamanho de lista — `en` é opcional aqui só para que um
+   * `corpos.json` antigo, de antes do item 130/F2, ainda monte a ficha em
+   * pt-BR em vez de quebrar.
+   */
+  editorial?: { pt: EditorialDoCorpo; en?: EditorialDoCorpo };
+}
+
+/**
+ * A PROSA NA LÍNGUA DE AGORA, com o pt-BR de piso (item 130/F2). Chamada uma
+ * vez por montagem de ficha, e o resultado atravessa as duas seções de prosa
+ * — nenhuma delas pergunta a língua, que é o que as manteve puras.
+ */
+function editorialDoIdioma(corpo: CorpoNoJson | null | undefined): EditorialDoCorpo | undefined {
+  const editorial = corpo?.editorial;
+  if (!editorial) return undefined;
+  return idiomaAtual() === 'en' ? (editorial.en ?? editorial.pt) : editorial.pt;
 }
 
 export interface CorposDoAtlas {
@@ -264,7 +282,7 @@ function secaoAgora(entrada: EntradaDaFicha): LinhaDaFicha[] {
   if (!fonte || jd === null || jd === undefined || !Number.isFinite(jd)) return [];
   const registro = REGISTRO_ORBITAL[id];
   if (!registro || id === 'sun') return [];
-  const pai = NOMES_DOS_CORPOS[registro.centro]?.nome ?? registro.centro;
+  const pai = nomeDoCorpo(registro.centro) ?? registro.centro;
 
   let distancia: string | null = null;
   let velocidade: string | null = null;
@@ -345,7 +363,7 @@ function secaoOrbita(entrada: EntradaDaFicha): LinhaDaFicha[] {
   const linhas: (LinhaDaFicha | null)[] = [];
 
   if (orbita) {
-    const pai = NOMES_DOS_CORPOS[registro?.centro ?? '']?.nome ?? registro?.centro;
+    const pai = nomeDoCorpo(registro?.centro ?? '') ?? registro?.centro;
     linhas.push(
       linha(
         t('ficha.campo.periodo'),
@@ -445,9 +463,11 @@ function secaoCeu(entrada: EntradaDaFicha): LinhaDaFicha[] {
 }
 
 /**
- * AS DUAS SEÇÕES DE PROSA. Elas leem `editorial.pt` e mais nada — e é por
- * isso que a parte B do item 74 foi DADO e não código: o arquivo de tradução
- * nasceu, o gerador o fundiu, e estas funções não mudaram uma linha.
+ * AS DUAS SEÇÕES DE PROSA. Elas leem O EDITORIAL JÁ ESCOLHIDO e mais nada —
+ * e é por isso que a parte B do item 74 foi DADO e não código, e que a F2 do
+ * item 130 também foi: o arquivo de tradução nasceu, o gerador o fundiu,
+ * depois o inglês voltou a atravessar, e estas funções seguem sem saber que
+ * existe língua. Quem escolhe é `editorialDoIdioma`, uma vez por ficha.
  */
 function secaoContexto(pt: EditorialDoCorpo | undefined): LinhaDaFicha[] {
   if (!pt) return [];
@@ -721,7 +741,7 @@ export function montarFicha(entrada: EntradaDaFicha): Ficha | null {
   const nomes = NOMES_DOS_CORPOS[entrada.id];
   if (!nomes) return null;
 
-  const pt = entrada.editorial?.editorial?.pt;
+  const pt = editorialDoIdioma(entrada.editorial);
   const secoes: SecaoDaFicha[] = [
     { id: 'agora', titulo: TITULO('agora'), linhas: secaoAgora(entrada) },
     { id: 'fisico', titulo: TITULO('fisico'), linhas: secaoFisico(entrada.id) },
@@ -734,7 +754,7 @@ export function montarFicha(entrada: EntradaDaFicha): Ficha | null {
 
   return {
     id: entrada.id,
-    nome: nomes.nome,
+    nome: nomeDoCorpo(entrada.id) ?? nomes.nome,
     classe: classeEmTexto(nomes.classe),
     secoes: secoes.filter((s) => s.linhas.length > 0),
   };

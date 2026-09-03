@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
 import { GAL } from './baseGalactica';
-import { classeEmTexto } from '../atlasConfig';
+import { classeEmTexto, nomeNaLingua } from '../atlasConfig';
 
 /** a caixa julgada pela disputa, em px CSS do canvas (ver `StarLabel`) */
 export interface CaixaDaDisputa {
@@ -909,7 +909,10 @@ export function projectLabels(
 export interface CorpoRotulavel {
   /** chave do rótulo — é por ela que o hit-test reconhece um corpo */
   chave: string;
+  /** o nome pt-BR, que aqui é o PISO: é ele que sai quando não há inglês */
   nome: string;
+  /** o nome inglês (item 130/F2); ausente, o rótulo fica em pt-BR */
+  nomeEn?: string;
   /** a palavra da classe, no lugar do tipo espectral */
   classe: string;
 }
@@ -1015,7 +1018,11 @@ export function projectCorpos(
       raio === null ? 1 : cessaoPorTamanhoAparente(raioAparenteNdc(raio, dist, tanHalfFov));
     const classe = corpos[i].classe;
     out.push({
-      name: corpos[i].nome,
+      // O NOME VAI NA LÍNGUA DE AGORA (item 130/F2), pela mesma régua da
+      // `classe` logo abaixo — e como este produtor roda POR QUADRO, a troca
+      // ao vivo do painel de Ajustes chega ao rótulo 3D no quadro seguinte,
+      // sem reconstruir lista nenhuma.
+      name: nomeNaLingua(corpos[i]),
       spect: '',
       // A CLASSE VAI TRADUZIDA PARA A TELA e crua para a hierarquia
       // (item 130): `prioridadeDeCorpo` abaixo continua lendo o pt-BR,

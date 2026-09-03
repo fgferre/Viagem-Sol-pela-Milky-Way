@@ -52,6 +52,7 @@ import type { NamedStar } from '../three/config';
 import { APELIDOS_DE_ESTRELAS } from './apelidosDeEstrelas';
 import { CONSTELACOES, NOMES_DAS_CONSTELACOES } from './atlas/constelacoes';
 import { LUGARES_DO_FILME } from './lugaresDoFilme';
+import { idiomaAtual } from './idioma';
 
 /** um documento do motor: UMA chave normalizada do índice de texto */
 interface ChaveIndexada {
@@ -70,8 +71,12 @@ interface ChaveIndexada {
 export interface CorpoBuscavel {
   /** id da camada de planetas ('earth') — o Director enquadra por ele */
   id: string;
-  /** nome pt-BR: o que se digita, o que a lista mostra */
+  /** nome pt-BR: a CHAVE do índice e do `?foco=`, em qualquer língua */
   nome: string;
+  /** nome inglês (item 130/F2): o que a LISTA mostra quando a casa fala
+   *  inglês. Não entra no índice — quem já casa o termo em inglês é o `id`
+   *  ('mars', 'charon'), anotado abaixo desde o item 126. */
+  nomeEn?: string;
   /** a palavra da classe, no vocabulário da legenda */
   classe: string;
   /** raio da ÓRBITA em UA — é o que a lista mostra e o que o Atlas
@@ -372,9 +377,21 @@ function pontuar(chave: string, consulta: string): number {
   return chave.includes(consulta) ? SCORE.parcial : 0;
 }
 
-/** o nome que a entrada mostra, seja ela de que família for */
+/**
+ * O nome que a entrada mostra, seja ela de que família for — e, para um
+ * CORPO, na língua de agora (item 130/F2).
+ *
+ * ELA É TAMBÉM A RÉGUA DO `?foco=`: `chaveDoFoco` procura a entrada cujo
+ * `nomeDaEntrada` bate com o nome que o Director publicou no foco. Os dois
+ * lados falam a mesma língua porque os dois passam por aqui — o que a URL
+ * GRAVA continua sendo o nome pt-BR normalizado (`chaveDeLink`), para que um
+ * link escrito em inglês e um escrito em português abram a mesma vista.
+ */
 export function nomeDaEntrada(entrada: EntradaDaBusca): string {
-  if (entrada.tipo === 'corpo') return entrada.corpo.nome;
+  if (entrada.tipo === 'corpo') {
+    const corpo = entrada.corpo;
+    return idiomaAtual() === 'en' ? (corpo.nomeEn ?? corpo.nome) : corpo.nome;
+  }
   if (entrada.tipo === 'lugar') return entrada.lugar.nome;
   return entrada.estrela.n;
 }
@@ -557,7 +574,16 @@ export function chaveDeLink(entrada: EntradaDaBusca): string {
  * do catálogo fazem, e lá o silêncio segue certo.
  */
 export function chaveDoFoco(nome: string, indice: IndiceEstrelas): string | null {
-  const entrada = indice.entradas.find((e) => nomeDaEntrada(e) === nome);
+  // AS DUAS GRAFIAS DE UM CORPO (item 130/F2). O nome chega na língua em que
+  // o foco foi PUBLICADO, e o visitante pode ter trocado de língua depois —
+  // a troca é ao vivo e não reenquadra nada. Comparar só com a grafia de
+  // agora apagaria o `?foco=` da URL até o próximo enquadramento, que é
+  // regressão silenciosa; aceitar as duas custa uma comparação.
+  const entrada = indice.entradas.find((e) =>
+    e.tipo === 'corpo'
+      ? e.corpo.nome === nome || e.corpo.nomeEn === nome
+      : nomeDaEntrada(e) === nome
+  );
   return entrada ? chaveDeLink(entrada) : null;
 }
 

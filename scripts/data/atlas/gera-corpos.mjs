@@ -1,19 +1,22 @@
 // ============================================================
-// corpos.json — o que a ficha do objeto lê dos 45 corpos do atlas: o nome, a
-// ÓRBITA dos 38 alvos que orbitam alguma coisa e o editorial em pt-BR dos 39.
+// corpos.json — o que a ficha do objeto lê dos 54 corpos do atlas: o nome, a
+// ÓRBITA dos 47 alvos que orbitam alguma coisa e o editorial dos 48, NAS DUAS
+// LÍNGUAS.
 //
 // A FONTE SÃO DOIS ARQUIVOS IRMÃOS, os dois desta casa:
 // `fonte/corpos-fonte.json` (o editorial em inglês, com a proveniência do
 // doador dentro dele) e `fonte/editorial-pt.json` (a tradução, um texto por
-// campo, os 39 alvos e nada para os seis sem alvo — ficha que ninguém abre
+// campo, os 48 alvos e nada para os seis sem alvo — ficha que ninguém abre
 // não paga tradução). O doador é especificação, nunca fornecedor em runtime.
 //
-// O INGLÊS NÃO ATRAVESSA para o artefato. Ele é a RÉGUA contra a qual o pt se
-// mede, campo a campo: o pt tem de ter exatamente os campos que o en tem, com
-// o mesmo número de fatos e de recordes e o mesmo `year` de exploração. Campo
-// a mais, campo a menos ou lista mais curta derrubam a geração — meia
-// tradução some da tela sem dizer por quê. Medida a régua, o inglês fica na
-// fonte: no artefato ele seriam 268 campos que tela nenhuma lê.
+// O INGLÊS ATRAVESSA DESDE O ITEM 130/F2. Ele continua sendo a RÉGUA contra a
+// qual o pt se mede, campo a campo: o pt tem de ter exatamente os campos que o
+// en tem, com o mesmo número de fatos e de recordes e o mesmo `year` de
+// exploração. Campo a mais, campo a menos ou lista mais curta derrubam a
+// geração — meia tradução some da tela sem dizer por quê. O que mudou é o
+// destino: o app ficou bilíngue, e a ficha em inglês precisa da prosa em
+// inglês. Ela NÃO se traduz de volta a partir do pt — o `en` daqui é o texto
+// ORIGINAL, escrito pelo dono no projeto doador, e o pt é que nasceu dele.
 //
 // A ÓRBITA — `orbita{periodoDias,minUa,maxUa}` — sai das tabelas desta casa
 // (elementos, efeméride embarcada e `GM_CORPOS`); nenhum `a`, `e` ou período
@@ -44,15 +47,24 @@ import { fileURLToPath } from 'node:url';
  * que o `tsc` resolve. O Node executa TypeScript por type stripping desde a
  * 22, mas resolve especificador como ESM puro, e ESM puro exige extensão.
  * Este gancho tenta a resolução normal e, só quando ela falha por módulo não
- * encontrado, tenta de novo com `.ts` — nunca inventa arquivo, nunca engole
- * outro erro.
+ * encontrado OU por dar em diretório, tenta de novo com `.ts` — nunca inventa
+ * arquivo, nunca engole outro erro.
+ *
+ * O DIRETÓRIO É O CASO DO `idioma` (item 130): `src/lib/idioma.ts` tem um
+ * irmão `src/lib/idioma/` (as tabelas pt e en), e `from '../lib/idioma'`
+ * resolve para a PASTA antes do arquivo — o erro que volta é
+ * `ERR_UNSUPPORTED_DIR_IMPORT`, não `ERR_MODULE_NOT_FOUND`. Sem esta segunda
+ * causa o gerador parava de rodar no dia em que `atlasConfig.ts` passou a
+ * importar `t()`.
  */
 registerHooks({
   resolve(especificador, contexto, proximo) {
     try {
       return proximo(especificador, contexto);
     } catch (erro) {
-      if (erro?.code !== 'ERR_MODULE_NOT_FOUND' || especificador.endsWith('.ts')) {
+      const recuperavel =
+        erro?.code === 'ERR_MODULE_NOT_FOUND' || erro?.code === 'ERR_UNSUPPORTED_DIR_IMPORT';
+      if (!recuperavel || especificador.endsWith('.ts')) {
         throw erro;
       }
       return proximo(`${especificador}.ts`, contexto);
@@ -397,11 +409,13 @@ const corpos = fonte.corpos.map((body) => {
     type: body.type,
     name: { en: body.name.en, pt: body.name.pt },
   };
-  // O INGLÊS NÃO ATRAVESSA. `en` entra na conferência acima (é contra ele que
-  // o pt se mede, campo a campo) e fica na fonte; no artefato ele seria 268
-  // campos que tela nenhuma lê. `editorial` só existe quando há `pt`, então
-  // os seis sem alvo saem daqui sem a chave.
-  if (pt) saida.editorial = { pt };
+  // AS DUAS LÍNGUAS NO ARTEFATO (item 130/F2). `en` é o mesmo objeto contra o
+  // qual o pt acabou de se medir, campo a campo — então as duas chaves têm,
+  // por construção, exatamente os mesmos campos e o mesmo tamanho de lista.
+  // `editorial` só existe quando há `pt`, então os seis sem alvo saem daqui
+  // sem a chave: ficha que ninguém abre não ocupa o artefato em língua
+  // nenhuma.
+  if (pt) saida.editorial = { pt, en };
   if (ALVOS.has(body.id)) {
     const orbita = orbitaDoCorpo(body.id);
     if (orbita) saida.orbita = orbita;
@@ -471,7 +485,18 @@ if (ptOrfaos.length > 0) {
 }
 
 const saida = {
-  _fonte: fonte._fonte,
+  // O ARTEFATO SE APRESENTA (não copia mais o `_fonte` de corpos-fonte.json,
+  // que fala do arquivo DELE): desde o item 130/F2 este JSON é bilíngue, e a
+  // frase herdada dizia o contrário — "guarda o INGLÊS e só ele".
+  _fonte:
+    'O QUE A FICHA DO OBJETO LÊ dos 54 corpos do atlas — SAÍDA DE MÁQUINA, ' +
+    'não se edita à mão: nome nas duas línguas, órbita derivada e o editorial ' +
+    'em pt-BR e inglês dos 48 alvos. As fontes são scripts/data/atlas/fonte/' +
+    'corpos-fonte.json (o inglês ORIGINAL, escrito pelo dono no projeto ' +
+    'doador) e fonte/editorial-pt.json (a tradução); o gerador funde os dois e ' +
+    'o npm run data:verify confere cada campo, nas duas línguas, contra elas. ' +
+    'Frase reescrita aqui é frase que fonte nenhuma respalda, e a verificação ' +
+    'a pega.',
   _proveniencia: {
     gerador: 'scripts/data/atlas/gera-corpos.mjs',
     editorial: 'scripts/data/atlas/fonte/corpos-fonte.json',
@@ -500,5 +525,5 @@ console.log(
       .map(([tipo, n]) => `${tipo} ${n}`)
       .join(', ') +
     `) — ${ALVOS.size} alvos, ${ALVOS.size - 1} com órbita, ` +
-    `${traduzidos.length} com pt-BR, ${semAlvo.length} sem alvo (${semAlvo.join(', ')}).`
+    `${traduzidos.length} com editorial pt-BR + en, ${semAlvo.length} sem alvo (${semAlvo.join(', ')}).`
 );
