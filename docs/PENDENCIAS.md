@@ -58,12 +58,14 @@ o hemisfério norte em preto (a Voyager 2 só viu o sul em 1986) e o Sol de
 2026 ilumina o norte. Preenchimento declarado na linha de produção
 (`preencherVazioSemDado`), seis mapas regerados, ficha confessa; o **116**
 (Tritão escuro) tinha a mesma causa e fechou junto. Fotos antes/depois em
-`capturas/item147-*`. **LISTA DO §19 desta janela, para ele aprovar ou
-cortar:** (a) `lib-texturas.test.mjs` +2 testes (tapa o vazio grande e
-deixa a sombra pequena; mapa sem vazio fica intocado) — rodados uma vez
-no portão; (b) `data:verify` verde (é portão de dados, não teste);
-(c) suíte cheia NÃO rodou. **Esperam a palavra dele:** o visual das seis
-(cinza liso onde não há foto) e, se quiser, crateras inventadas ali.
+`capturas/item147-*`. **Lista do §19 aprovada por ele e rodada (03/09):** (a)
+`lib-texturas.test.mjs` +2 testes, com sabotagem em árvore separada — o
+preenchimento que nunca acontece e o que tapa até a sombra pequena, os
+dois vermelhos; (b) `data:verify` verde; (c) suíte cheia 2900 verdes (1
+pulado), typecheck verde; lint vermelho só em `Spotlight.tsx`
+(react-refresh, herança do 130/F1) e um aviso em `FichaDoObjeto.tsx`.
+**Espera a palavra dele:** o visual das seis (cinza liso onde não há
+foto) e, se quiser, crateras inventadas ali.
 
 **03/09 (2ª janela, noite — fecho por ordem dele).** Desempenho no M1 dele:
 **144** (resolve único do MSAA + nebulosa congelada; regressão da textura
