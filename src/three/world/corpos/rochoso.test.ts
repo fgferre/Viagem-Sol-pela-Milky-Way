@@ -834,10 +834,17 @@ describe('7. a meia volta dos mapas das seis luas de mosaico (item 138)', () => 
 // 8. O RELEVO MEDIDO E O BUMP APOSENTADO (itens 140 e 141)
 // ------------------------------------------------------------
 
-describe('8. o relevo de Mercúrio e Marte vem MEDIDO, e o inventado saiu (141)', () => {
-  it('Mercúrio e Marte: normal medida ligada em 1 (ganho nenhum) e bump ZERADO', async () => {
-    for (const id of ['mercury', 'mars']) {
-      const { corpo, chamadas } = rochosoDeTeste(id, id === 'mercury' ? 'ls' : 'lambert');
+/** o brdf REAL de cada corpo, tirado do registro — nada de segunda tabela. */
+const brdfDe = (id: string) => ROCHOSOS.find((r) => r.id === id)!.brdf;
+
+describe('8. o relevo dos quatro da NORMAL_MEDIDA, e o inventado que saiu (141)', () => {
+  it('todos os da tabela: normal medida ligada em 1 (ganho nenhum) e bump ZERADO', async () => {
+    // A varredura é sobre a TABELA, não sobre uma lista de nomes: corpo
+    // novo que entrar no relevo medido é cobrado aqui no mesmo dia. Os
+    // quatro do item 141 — tabela esvaziada aprovaria por vazio.
+    expect(Object.keys(NORMAL_MEDIDA)).toEqual(['mercury', 'mars', 'ceres', 'vesta']);
+    for (const id of Object.keys(NORMAL_MEDIDA)) {
+      const { corpo, chamadas } = rochosoDeTeste(id, brdfDe(id));
       corpo.atualizar(quadro(id, 4));
       await flush();
       expect(corpo.atualizar(quadro(id, 4)).emQuadro, id).toBe(true);
@@ -850,6 +857,20 @@ describe('8. o relevo de Mercúrio e Marte vem MEDIDO, e o inventado saiu (141)'
       expect(chamadas.some((c) => c.includes(`${id}/normal`)), `${id} pediu a normal`).toBe(true);
       expect(u.uMapaNormal.value, `${id} normal no material`).not.toBeNull();
       corpo.dispose();
+    }
+  });
+
+  it('todo corpo da tabela tem o canal `normal` no manifesto, e com ORIGEM declarada', () => {
+    // O uniform ligado sem imagem na árvore seria relevo que não existe;
+    // e imagem sem origem seria dado sem procedência — a ficha do
+    // visitante lê exatamente este campo para dizer de onde o relevo vem.
+    for (const id of Object.keys(NORMAL_MEDIDA)) {
+      const normais = MANIFEST.entradas.filter((e) => e.corpo === id && e.canal === 'normal');
+      expect(normais.length, `${id} sem canal normal`).toBeGreaterThan(0);
+      for (const e of normais) {
+        expect(e.origem?.fonte, `${id} ${e.arquivo}: fonte`).toBeTruthy();
+        expect(e.origem?.licenca, `${id} ${e.arquivo}: licença`).toBeTruthy();
+      }
     }
   });
 
@@ -888,9 +909,9 @@ describe('8. o relevo de Mercúrio e Marte vem MEDIDO, e o inventado saiu (141)'
     }
   });
 
-  it('a normal medida não desloca vértice: a malha das duas segue a esfera lisa', async () => {
-    for (const id of ['mercury', 'mars']) {
-      const { corpo } = rochosoDeTeste(id, 'lambert');
+  it('a normal medida não desloca vértice: a malha dos quatro segue a esfera lisa', async () => {
+    for (const id of Object.keys(NORMAL_MEDIDA)) {
+      const { corpo } = rochosoDeTeste(id, brdfDe(id));
       corpo.atualizar(quadro(id, 4));
       await flush();
       corpo.atualizar(quadro(id, 4));

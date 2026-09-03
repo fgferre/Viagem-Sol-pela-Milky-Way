@@ -232,5 +232,13 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     // Vesta: na 3ª fase do 141 a COR foi girada −150° para a IAU na
     // aquisição, e o relevo voltou ao rótulo do DEM (borda esquerda 180°)
     expect(CORPOS.vesta).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 180 });
+    // e NINGUÉM fica de fora do pino: corpo novo entra na tabela com as
+    // três declarações ou reprova aqui, em vez de assar por padrão mudo
+    expect(Object.keys(CORPOS)).toEqual(['moon', 'mercury', 'mars', 'ceres', 'vesta']);
+    for (const [id, c] of Object.entries(CORPOS)) {
+      expect(Number.isFinite(c.offsetDoDado), `${id} offset`).toBe(true);
+      expect(Number.isFinite(c.metrosPorUnidade), `${id} escala`).toBe(true);
+      expect(Number.isFinite(c.longitudeDaBordaEsquerdaGraus), `${id} borda`).toBe(true);
+    }
   });
 });

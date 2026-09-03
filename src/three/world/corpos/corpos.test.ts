@@ -35,6 +35,9 @@ import {
   escalaDoBumpDoAlbedo,
   gateBinario,
 } from './corpos';
+// a tabela de quem tem relevo MEDIDO mora com os rochosos; aqui ela é a
+// régua da regra "uma fonte de relevo por corpo" (itens 140/141)
+import { NORMAL_MEDIDA } from './rochoso';
 
 /** raio equatorial de Júpiter em pc, DERIVADO da fonte única (BODY_AXES
  *  em km → UA pelo `AU_KM` → pc pelo `AU_PARA_PC`) — nenhum literal
@@ -624,10 +627,25 @@ describe('o passo do palco publica o chão do anel como `<id>-anel`', () => {
 // ------------------------------------------------------------
 
 describe('o bump por derivada do albedo: quem tem normal medida saiu (140/141)', () => {
-  it('Mercúrio, Marte, Europa e Io estão ZERADOS — o interruptor, não a ausência', () => {
-    for (const id of ['mercury', 'mars', 'europa', 'io']) {
-      expect(BUMP_DO_ALBEDO[id], id).toBe(0);
+  it('A REGRA: quem entra na normal MEDIDA sai do bump — uma fonte de relevo por corpo', () => {
+    // Não é lista de nomes: é a lei que vale para o próximo corpo também.
+    // Quem ganhar `NORMAL_MEDIDA` sem zerar o bump levaria as duas contas
+    // ao mesmo tempo — a medida e a inventada por cima dela.
+    const comNormalMedida = Object.keys(NORMAL_MEDIDA);
+    expect(comNormalMedida.length).toBeGreaterThan(0);
+    for (const id of comNormalMedida) {
+      expect(BUMP_DO_ALBEDO[id], `${id} na tabela`).toBe(0);
+      expect(escalaDoBumpDoAlbedo(id), `${id} na conta`).toBe(0);
+    }
+  });
+
+  it('Europa e Io estão zeradas SEM normal medida — decisão dele, não troca de fonte', () => {
+    // O outro lado da regra: zero também acontece por falta de dado (a
+    // mancha das duas é cor, não forma). Se um dia entrarem em
+    // `NORMAL_MEDIDA`, este teste avisa que a decisão mudou de natureza.
+    for (const id of ['europa', 'io']) {
       expect(escalaDoBumpDoAlbedo(id), id).toBe(0);
+      expect(id in NORMAL_MEDIDA, `${id} sem DEM global`).toBe(false);
     }
   });
 
@@ -646,8 +664,13 @@ describe('o bump por derivada do albedo: quem tem normal medida saiu (140/141)',
     expect(BUMP_DO_ALBEDO_PADRAO).toBe(0.02);
   });
 
-  it('os zeros de nuvem e de invenção seguem lá — Vênus, Titã e Ceres', () => {
-    for (const id of ['venus', 'titan', 'ceres']) expect(escalaDoBumpDoAlbedo(id), id).toBe(0);
+  it('os zeros de NUVEM seguem lá — Vênus e Titã, que não têm chão no mapa', () => {
+    // Ceres saiu desta lista no item 141: o zero dele agora é o da regra
+    // acima (tem normal medida da Dawn), não o da invenção do mapa.
+    for (const id of ['venus', 'titan']) {
+      expect(escalaDoBumpDoAlbedo(id), id).toBe(0);
+      expect(id in NORMAL_MEDIDA, `${id} não tem DEM`).toBe(false);
+    }
   });
 
   it('o chunk inteiro apaga com escala 0 — o zero DESLIGA, não atenua', () => {

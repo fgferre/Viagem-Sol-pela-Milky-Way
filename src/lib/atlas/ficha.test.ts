@@ -421,6 +421,21 @@ describe('a imagem confessa — itens 19 e 20', () => {
     expect(defeito).not.toContain('inventado');
   });
 
+  it('Ceres e Vesta trazem a linha «relevo», citando o DTM da Dawn (item 141)', () => {
+    // Os dois ganharam relevo MEDIDO por baixo da cor, e a ficha tem de
+    // dizê-lo: sem esta linha o visitante leria só a origem do mosaico e
+    // não saberia que a forma vem de outro produto, de outra fonte.
+    for (const id of ['ceres', 'vesta']) {
+      const relevo = porRotulo(id, 'imagem').get('relevo');
+      expect(relevo, `${id} sem linha de relevo`).toBeTruthy();
+      expect(relevo, id).toContain('Dawn');
+      expect(relevo, id).toContain('DTM');
+    }
+    // e a nota da bancada continua saindo na linha que admite o limite
+    expect(porRotulo('ceres', 'imagem').get('o relevo admite')).toContain('137 m');
+    expect(porRotulo('vesta', 'imagem').get('o relevo admite')).toContain('três eixos');
+  });
+
   it('Titã confessa as emendas, Europa as 68 linhas, Vênus a falta de luz visível', () => {
     expect(porRotulo('titan', 'imagem').get('o defeito')).toContain('emendas');
     expect(porRotulo('europa', 'imagem').get('o defeito')).toContain('68 linhas');
