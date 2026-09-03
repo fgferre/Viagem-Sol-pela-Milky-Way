@@ -31,6 +31,7 @@ import type { PT } from './pt';
 export const EN: Record<keyof typeof PT, string> = {
   // ---- the app -----------------------------------------------------
   'app.titulo': 'Sea of Stars — A Journey through the Milky Way',
+  'hud.nome': 'SEA OF STARS',
   'app.descricao':
     'A cinematic journey through 18,543 stars of the HYG catalog and the whole Milky Way.',
 

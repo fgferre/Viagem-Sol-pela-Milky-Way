@@ -10,8 +10,8 @@
 // é síncrona.
 //
 // A PRECEDÊNCIA: preferência guardada pelo visitante (localStorage) >
-// língua do navegador (`navigator.languages`, `pt*` → pt-BR, o resto →
-// en) > pt-BR. A URL NÃO entra nessa escada como painel: `?lang=` é
+// INGLÊS (o padrão, decisão dele em 03/09; a língua do navegador não
+// entra mais na escada). A URL NÃO entra nessa escada como painel: `?lang=` é
 // INSTRUMENTO DE CAPTURA (ver `iniciarIdioma`), declarado no capturador
 // que o usa, e nunca oferecido ao visitante — quem troca a língua é o
 // seletor do painel de Ajustes, e ele troca AO VIVO, sem recarregar.
@@ -96,7 +96,11 @@ export function iniciarIdioma(busca?: string): Idioma {
     idioma = daPorta;
     return idioma;
   }
-  idioma = lerPreferenciaDeIdioma() ?? idiomaDoNavegador();
+  // O PADRÃO É INGLÊS (ordem dele, 03/09: "queria que o inglês fosse a
+  // língua padrão"): sem preferência guardada, o app abre em inglês em
+  // qualquer navegador; o português é escolha do visitante no painel de
+  // Ajustes. A língua do navegador deixou de entrar na escada.
+  idioma = lerPreferenciaDeIdioma() ?? 'en';
   return idioma;
 }
 
@@ -106,15 +110,6 @@ export function lerPreferenciaDeIdioma(): Idioma | null {
     return normalizarIdioma(window.localStorage.getItem(CHAVE_NO_STORAGE));
   } catch {
     return null;
-  }
-}
-
-function idiomaDoNavegador(): Idioma {
-  try {
-    const lista = navigator.languages?.length ? navigator.languages : [navigator.language];
-    return idiomaDaLista(lista.filter(Boolean));
-  } catch {
-    return 'pt-BR';
   }
 }
 

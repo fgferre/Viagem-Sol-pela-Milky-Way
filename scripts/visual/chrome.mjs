@@ -58,11 +58,6 @@ if (!CHROME) throw new Error(`Chrome não encontrado (${process.platform})`);
 /** Flags de GPU comuns a todos os harnesses, com o backend da plataforma. */
 export const GPU_FLAGS = [
   '--headless=new',
-  // A LÍNGUA DO JUIZ (item 130/F1): o app escolhe pt-BR ou inglês pelo
-  // `navigator.languages`, e o Chrome headless nasce em en-US — sem esta
-  // linha todo juiz de imagem passaria a fotografar o app em inglês e
-  // toda referência pinada em português morreria de uma vez.
-  '--lang=pt-BR',
   '--enable-gpu',
   '--use-gl=angle',
   `--use-angle=${ANGLE[process.platform] ?? 'default'}`,
@@ -214,6 +209,23 @@ export async function esperarPor(s, expressao, teto = 3000) {
  * prontidão é OBRIGATÓRIO — ou um alvo que o operador apontou de propósito.
  */
 export const APP_PADRAO = 'http://127.0.0.1:5173';
+
+/**
+ * A LÍNGUA DO JUIZ (item 130). O app abre em INGLÊS por padrão (decisão
+ * do dono, 03/09) e toda referência pinada dos juízes é em português —
+ * então quem captura pede `lang=pt-BR` pela porta de instrumento quando
+ * a vista não pede língua nenhuma. A porta não grava nada no perfil e
+ * está declarada no selo como instrumento; o inglês se julga de
+ * propósito (`filme-smoke` com `?lang=en`, lista do §19 do 130).
+ */
+export const LINGUA_DO_JUIZ = 'pt-BR';
+export function comLinguaDoJuiz(query) {
+  return /(^|&)lang=/.test(query) ? query : `${query}${query ? '&' : ''}lang=${LINGUA_DO_JUIZ}`;
+}
+export function comLinguaDoJuizNaUrl(url) {
+  if (/[?&]lang=/.test(url)) return url;
+  return `${url}${url.includes('?') ? '&' : '?'}lang=${LINGUA_DO_JUIZ}`;
+}
 
 // `localhost` e `127.0.0.1` na mesma porta são o MESMO dev server; quem
 // exporta `APP_URL=http://localhost:5173` não está apontando para outro lugar
@@ -604,7 +616,7 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
     ir: async (query) => {
       cartografia = false;
       carregou = false;
-      await send('Page.navigate', { url: `${app}/?${query}` });
+      await send('Page.navigate', { url: `${app}/?${comLinguaDoJuiz(query)}` });
       // O DOCUMENTO NOVO PRIMEIRO — ver `carregou`. Sem esta espera a
       // prontidão da página VELHA responde pela nova e o md5 sai da
       // vista anterior.
@@ -806,7 +818,7 @@ export async function capturarCDP({
       source: 'window.__f=0;const o=window.requestAnimationFrame.bind(window);'
         + 'window.requestAnimationFrame=(c)=>o((t)=>{window.__f++;return c(t)});',
     });
-    await send('Page.navigate', { url });
+    await send('Page.navigate', { url: comLinguaDoJuizNaUrl(url) });
     const assentou = await esperarAssentar({
       send, cartografia: () => cartografia, quadros, teto,
     });

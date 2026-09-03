@@ -136,9 +136,10 @@ export function LoadingVeil({
         )}
         <div className="cv-titulo">
           <div className="title-kicker">{t('hud.kicker')}</div>
-          {/* MAR DE ESTRELAS é o NOME do app, não uma frase: nome
-              próprio não se traduz, e é o mesmo nas duas línguas. */}
-          <div className="title-big">MAR DE ESTRELAS</div>
+          {/* O NOME do app segue a língua (ordem dele, 03/09: "o título não
+              foi traduzido na página inicial"): MAR DE ESTRELAS / SEA OF STARS,
+              o mesmo par do <title> da aba. */}
+          <div className="title-big">{t('hud.nome')}</div>
           <div className="cv-etapa-rotulo">{stage.label}</div>
         </div>
         <div className="cv-trilho">

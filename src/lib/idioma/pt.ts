@@ -22,6 +22,7 @@
 export const PT = {
   // ---- o app -------------------------------------------------------
   'app.titulo': 'Mar de Estrelas — Viagem pela Via Láctea',
+  'hud.nome': 'MAR DE ESTRELAS',
   // a `<meta name="description">` do `index.html` — estática em pt-BR
   // para quem lê a página sem JS (buscador, prévia de link); o
   // `main.tsx` a reescreve quando a língua se resolve.

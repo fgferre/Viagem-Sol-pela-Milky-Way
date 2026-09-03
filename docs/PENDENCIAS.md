@@ -461,7 +461,14 @@ listou (confissões do manifesto/ASSETS, portas de depuração).
   erros de carga que o visitante pode ver entraram na tabela. Varredura:
   fora das tabelas só sobraram comentários, mensagens de console e a
   mensagem interna do canvas de cartografia. Portas de depuração do selo
-  não vazam para a tela normal.
+  não vazam para a tela normal. **Palavras dele depois da F4 (03/09):**
+  *"o título não foi traduzido na página inicial. queria que o inglês
+  fosse a língua padrão."* → o PADRÃO virou inglês (storage > en; a
+  língua do navegador saiu da escada); os juízes de imagem pedem
+  `lang=pt-BR` pela porta de instrumento (chrome.mjs) para as referências
+  pinadas seguirem em português; o inglês se julga de propósito (item 14
+  da lista). O título da página inicial: conferido pelo coordenador em
+  inglês depois da mudança (ver commit).
 - **LISTA DO §19 do 130 (consolidada, para o sim dele):** (1)
   `idioma.escolha` — storage > navegador > pt-BR, e pt-BR fora do
   navegador; (2) `idioma.tabelas` — pt e en com as mesmas chaves e os
