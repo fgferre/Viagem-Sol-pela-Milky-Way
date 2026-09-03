@@ -182,14 +182,29 @@ B: 2,08–2,14 ms com os 65 536 dele, acima do teto de 2 ms — o `cinema`
 ficou em 49 152 (`alta` 24 576 e `performance` 8 192 são os dele). Fotos
 em `capturas/item139-*`.
 
-**O QUE FICOU DE FORA E É PENDÊNCIA DE VERDADE: o plano NEAR.** Com a
-câmera a 40 km do plano do anel, `nearPlanePc` dá 193 km (0,4% da
-distância à superfície de Saturno) e CORTA todo o enxame perto — o chão
-de gelo some e sobra preto, que é o mesmo defeito do item 135 numa
-altura menor. A foto dele mostra o chão de pedras chegando até a lente;
-a nossa só a partir de ~300 km. A lajota já apaga o grão abaixo do near
-(sem estalo), mas quem manda ali é o engine, não ela — decidir isso é
-mudança de pixel em toda a casa e não coube neste item.
+**O PLANO NEAR — CONSERTADO em 02/09 (branch `obra-139b`).** O achado
+era: com a câmera a 40 km do plano do anel o `nearPlanePc` dava 193 km
+(0,4% da distância à superfície do GLOBO) e cortava todo o enxame perto
+— o chão de gelo só começava a ~300 km e sobrava preto. **O anel não era
+superfície do palco**, então perto do plano quem mandava no near ainda
+era Saturno, a 54 mil km. Agora o corpo com anel devolve uma SEGUNDA
+superfície (`EstadoNoPalco.superficieDoAnel`, `superficieDoAnel` do
+gigante): a projeção da câmera no plano do anel, com "raio" = a
+meia-espessura da lajota (12 km, `VOLUME_DA_LAJOTA`), registrada pelo
+`passoDoPalco` como `saturn-anel` enquanto o raio projetado cai na
+janela da lajota (55 000–160 000 km). Nada mudou em `nearPlanePc` nem no
+engine: é a MESMA regra dos 0,4%, com a superfície certa. **Medido no
+app** (`capturas/item139b-near.txt`): a 40 km do plano o near cai de
+193 km para **0,112 km**; a 2 km a câmera está DENTRO da lajota (d =
+−10 km) e vale o anteparo de **12 m**. A vista de 6 raios saiu com o
+MESMO md5 antes e depois (`21b1991…`) — de longe não muda um pixel. O
+limbo do globo a 50 mil km, com esse near, não tem dente nem faixa
+(olhado em lupa). Fotos `capturas/item139b-{no-plano,a-40km}-*`: a 40 km
+o chão de gelo chega à lente, com pedras grandes perto e grão fino ao
+longe, como na foto dele; a 3 km (dentro da lajota) o enxame vira névoa
+uniforme, sem pedra distinguível — é o que ser um grão de 4–14 km a
+metros da lente produz, e a foto DELE corresponde à nossa de 40 km.
+FALTA O OLHO DELE.
 
 **137.** Sobra da S1 do 134: os arquivos `public/textures/atlas/saturn/ring*` (8 arquivos, 216 KB) e o canal `ring` em `texturas.ts`, no manifesto e nos scripts de texturas ficaram órfãos — o anel lê o perfil medido. Remover com prova de não-uso (§6); os testes de `texturas.test.ts` que citam o canal entram na lista do §19 dessa faxina.
 
