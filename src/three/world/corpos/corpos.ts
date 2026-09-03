@@ -278,17 +278,25 @@ export const BUMP_DO_ALBEDO: Readonly<Record<string, number>> = {
   // dali seria montanha de nuvem.
   venus: 0,
   titan: 0,
-  // ITEM 141: Mercúrio e Marte têm agora a NORMAL MEDIDA do DEM público
-  // (`NORMAL_MEDIDA`, rochoso.ts), e o fragmento nem chega a este bump
-  // quando `uRelevoNormal > 0`. O zero é a declaração de que a
-  // aproximação foi APOSENTADA nos dois, e não que ela ficou de reserva:
-  // em Marte ela dizia 2 % do raio, 68 km de relevo falso onde o
-  // Olympus, o mais alto do Sistema Solar, tem 22 km.
+  // ITEM 141: Mercúrio, Marte, Ceres e Vesta têm agora a NORMAL MEDIDA
+  // do DEM público (`NORMAL_MEDIDA`, rochoso.ts), e o fragmento nem
+  // chega a este bump quando `uRelevoNormal > 0`. O zero é a declaração
+  // de que a aproximação foi APOSENTADA neles, e não que ela ficou de
+  // reserva: em Marte ela dizia 2 % do raio, 68 km de relevo falso onde
+  // o Olympus, o mais alto do Sistema Solar, tem 22 km.
   mercury: 0,
   mars: 0,
-  // Ceres: a própria fonte admite mapa INVENTADO (ASSETS.md) — derivar
-  // relevo de invenção seria inventar duas vezes.
+  // Ceres já era zero por outro motivo — a própria fonte admite mapa
+  // INVENTADO (ASSETS.md), e derivar relevo de invenção seria inventar
+  // duas vezes. Agora ele também tem a normal medida da Dawn, e o mapa
+  // de cor segue inventado por baixo dela.
   ceres: 0,
+  // Vesta entra no zero AGORA (item 141, segunda fase): o mosaico dela é
+  // real (Dawn), mas o que o bump lia como cratera era em boa parte a
+  // mancha de composição da crosta — o howardito claro contra o
+  // diogenito escuro de Rheasilvia — e não buraco. Com o DTM HAMO de 93
+  // m medido, a forma vem do dado.
+  vesta: 0,
   // ITEM 141 (decisão dele, 03/09, "pode zerar Europa e Io"): nas duas a
   // mancha do mapa é COR, não forma — as linhas de Europa são gelo tingido
   // sobre uma casca lisa, e Io é enxofre de todas as cores sobre planícies

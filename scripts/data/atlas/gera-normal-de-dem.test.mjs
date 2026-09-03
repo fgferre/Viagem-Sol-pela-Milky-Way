@@ -223,8 +223,13 @@ describe('3. a guarda de alinhamento recusa a meia volta', () => {
 
 describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
   it('a conversão declarada por cada fonte está pinada, e só ela muda', () => {
-    expect(CORPOS.moon).toMatchObject({ offsetDoDado: 20000, metrosPorUnidade: 0.5, meiaVolta: false });
-    expect(CORPOS.mercury).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 0.5, meiaVolta: true });
-    expect(CORPOS.mars).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, meiaVolta: true });
+    // convenção do GDAL desde a 2ª fase do 141: metros = valor·escala + offset;
+    // a meia volta virou a longitude da borda esquerda da fonte (180 = meia volta)
+    expect(CORPOS.moon).toMatchObject({ offsetDoDado: -10000, metrosPorUnidade: 0.5, longitudeDaBordaEsquerdaGraus: 180 });
+    expect(CORPOS.mercury).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 0.5, longitudeDaBordaEsquerdaGraus: 0 });
+    expect(CORPOS.mars).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 0 });
+    expect(CORPOS.ceres).toMatchObject({ offsetDoDado: 470000, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 0 });
+    // Vesta: o mapa de COR da casa está 150° fora da IAU; o relevo segue a cor
+    expect(CORPOS.vesta).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 30 });
   });
 });

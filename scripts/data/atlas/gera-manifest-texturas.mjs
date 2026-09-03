@@ -512,6 +512,35 @@ const ORIGENS = {
       'v2. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
     proveniencia: 'derivado',
   },
+  // ITEM 141, segunda fase: os dois corpos da Dawn. Ceres ganha relevo
+  // MEDIDO por baixo de um mapa de cor que a fonte declara inventado — a
+  // forma passa a ser fato mesmo onde a tinta não é.
+  'ceres/normal': {
+    fonte:
+      'Dawn FC HAMO DTM global 137 m (DLR, via USGS Astrogeology) — mapa ' +
+      'de NORMAIS derivado da altura, em amplitude física',
+    url: 'https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_dtm_global_137m',
+    licenca: 'domínio público (NASA/DLR/USGS)',
+    atribuicao:
+      'Topografia: DLR Institute of Planetary Research, a partir das ' +
+      'imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), ' +
+      'distribuída pelo USGS Astrogeology. Mapa de normais assado nesta ' +
+      'casa (gera-normal-de-dem.mjs).',
+    proveniencia: 'derivado',
+  },
+  'vesta/normal': {
+    fonte:
+      'Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de ' +
+      'NORMAIS derivado do raio, em amplitude física',
+    url: 'https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m',
+    licenca: 'domínio público (NASA/DLR/USGS)',
+    atribuicao:
+      'Topografia: DLR Institute of Planetary Research, a partir das ' +
+      'imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), ' +
+      'distribuída pelo USGS Astrogeology. Mapa de normais assado nesta ' +
+      'casa (gera-normal-de-dem.mjs).',
+    proveniencia: 'derivado',
+  },
 };
 
 // A marca da política do dono: arquivo presente sem linha em ORIGENS
