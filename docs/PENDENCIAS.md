@@ -180,6 +180,8 @@ download por corpo em cinema (mapa 12 MB + normal 9 MB) e o disco do site
 
 **143. O juiz de identidade marcou "INSTÁVEL com diff 0" em vistas que DIFEREM de fato.** Achado do coordenador, 03/09, ao fechar o 141: a rodada 625c86a→5135978 do `ab-identidade` deu 48 IGUAL + 6 INSTÁVEL (mercurio, mercurionb, vesta, anao-vesta-corpo, atlas-corpo-marte, foco-io) "com 0 pixel de diferença" — mas essas vistas contêm corpos que o 141 mudou de propósito, e a mesma vista `atlas-corpo-marte` fotografada por mim nas duas árvores (5222/5223, `capturas/item141-chk-marte-{antes-,}q700.png`) dá md5 diferente e **351 de 3.249 blocos tocados** (`diff-pixel`). Suspeita: o lado "antes" recapturado por vista isolada (ou a retomada de disco) pegou o servidor errado — em INSTÁVEL o "antes" traz dois hashes e um deles é o do "depois". A verificar no instrumento antes da próxima rodada; até lá, INSTÁVEL não vale como IGUAL: confere-se com foto nas duas árvores.
 
+**No mesmo item, sem obra (auditoria 03/09):** as mensagens de commit do 139b (`e24237f`, `c3b89a1`) dizem que o `nearPlanePc` sem o registro do anel dava **192,9 km** (192,858, medido no app), e o teste `corpos.test.ts` cobra **198,9 km** no mesmo caso ("APAGADO o registro do anel"). Os dois números são de palcos diferentes — o do app e o sintético do teste — e nenhum dos dois está errado; fica registrado para que a próxima leitura não trate a diferença como regressão. Nada a consertar.
+
 **138.** Jápeto "totalmente feio" e a paridade das luas contra o projeto dele — **FECHADO em 03/09** (`c70a204`: mosaicos Schenk graduados como lá; o relevo estava meia volta errado nas seis desde a S2); nível e Titã laranja ficam como estão, palavra dele "tudo ok, já avaliei"; ARQUIVO.
 
 **139.** Dentro dos anéis não se viam as partículas e pedras de gelo — **FECHADO em 03/09** (`4081729` lajota do projeto dele + `e24237f` o chão do anel chega à lente); palavra dele "tudo ok"; ARQUIVO.
@@ -351,29 +353,19 @@ frente depois de fechar o 129.** A busca (129/F5) já nasce bilíngue.
 biblioteca: `lib/idioma.ts` (estado, assinantes, `t(chave, params)`) com
 as tabelas em `lib/idioma/pt.ts` e `lib/idioma/en.ts` — a `en` é tipada
 contra a `pt`, então chave sem tradução não compila. A língua se resolve
-UMA vez, no `main.tsx`: preferência do visitante (localStorage
-`viagem-idioma`) > `navigator.languages` (`pt*`→pt-BR, resto→en) > pt-BR;
-fora do navegador ninguém chama e a casa fica em pt-BR, com a saída de
-toda função de texto igual à de sempre. Seletor NO PAINEL DE AJUSTES
-(primeira seção), troca ao vivo sem recarregar; `?lang=` existe SÓ como
-instrumento de captura, declarado como porta neutra no selo. Traduzidos
-**355 trechos** (contagem = chaves das tabelas): HUD e véus 35, etapas do
-carregamento 7, barra 19, ajustes 26, gaveta/selo/tempo do Atlas 34,
-busca 20, convite 14, ficha 70, selo 22, escala 11, camadas/famílias/
-qualidade/classe 39, máquina do tempo 30 (meses e a ORDEM da data por
-extenso), unidades 7 (plural pt "a partir de 2" × en "≠1", vírgula ×
-ponto, milhar), dicas de gesto e cena 20. **Fora da F1, por decisão:** os
-NOMES PRÓPRIOS dos corpos (a fonte é o `i18n` de `corpos.json`, o mesmo
-arquivo da F2, e o `nome` está assado nas tabelas que o pipeline de
-rótulo 3D lê por quadro); a prosa das fichas (F2); as legendas do filme
-(F3); os rótulos das ~50 portas de DEPURAÇÃO da URL no selo (só aparecem
-para quem digitou a porta); a `meta description` do `index.html` (o
-`<title>` já troca). **Risco declarado:** os juízes de navegador sobem
-Chrome com `navigator.languages` em `en-US`, então a partir daqui eles
-enxergam o app em INGLÊS — o conserto é de uma linha em
-`scripts/visual/chrome.mjs` (`--lang=pt-BR` no `GPU_FLAGS`) ou `?lang=pt-BR`
-no PIN de cada juiz — conferido em 03/09 na F3: o `--lang=pt-BR` JÁ está no
-`GPU_FLAGS`, os juízes seguem fotografando em português.
+UMA vez, no `main.tsx`, e a escada tem DOIS degraus: preferência do
+visitante (localStorage `viagem-idioma`) > INGLÊS (padrão, ordem dele em
+03/09; o `navigator` saiu da escada). Fora do navegador ninguém chama e a
+casa fica em pt-BR, com a saída de toda função de texto igual à de
+sempre. Seletor NO PAINEL DE AJUSTES (primeira seção), troca ao vivo sem
+recarregar; `?lang=` existe SÓ como instrumento de captura, e é por ela
+que os juízes de imagem pedem português (`comLinguaDoJuizNaUrl`, em
+`scripts/visual/chrome.mjs`). **355 trechos** traduzidos (contagem =
+chaves das tabelas). **Fora da F1, por decisão:** os NOMES PRÓPRIOS dos
+corpos (F2); a prosa das fichas (F2); as legendas do filme (F3); os
+rótulos das ~50 portas de DEPURAÇÃO da URL no selo (só aparecem para quem
+digitou a porta); a `meta description` do `index.html` (o `<title>` já
+troca).
 
 **F2 FEITA (03/09) — as FICHAS DOS CORPOS e os NOMES.** O inglês da prosa
 NÃO precisou ser traduzido: ele é o ORIGINAL do dono, escrito por ele no

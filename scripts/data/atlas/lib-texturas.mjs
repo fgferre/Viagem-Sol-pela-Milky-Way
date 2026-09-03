@@ -18,6 +18,13 @@
 // encode em `otimiza-texturas.mjs`.
 export const CANAIS = ['map', 'clouds', 'night', 'normal', 'roughness', 'ring', 'height'];
 
+// Os canais que se LEEM em vez de se olhar: `height` desloca o vértice e
+// `normal` gira a luz, então um erro de 8/255 neles é relevo falso, não
+// tom. Quem adquire (`baixa-texturas.mjs`) e quem reamostra
+// (`otimiza-texturas.mjs`) têm de concordar sobre QUAIS são — por isso a
+// lista mora aqui, e não em cópia nos dois.
+export const CANAIS_DE_DADO = new Set(['height', 'normal']);
+
 // Degraus da escada de reamostragem (D4 + emenda T-E7): o tier
 // performance consome ≤1k, alta ≤2k, cinema ≤4k; o 8k fica como
 // fonte para bancada/orçamento do dono. A escada NUNCA sobe:
@@ -115,12 +122,17 @@ export function webpCompensa(bytesFonte, bytesWebp) {
 }
 
 /**
- * GIRO DE LONGITUDE de uma imagem equiretangular, em COLUNAS inteiras
- * (item 141, 3ª fase). Mesma convenção de sinal do `giraLongitude` do
- * `gera-normal-de-dem.mjs`, que gira o DEM: a coluna `i` da saída vem da
- * coluna `i + passos` da entrada, de modo que a borda esquerda passa da
- * longitude `L` para `L + giroGraus`. Um mapa cuja borda esquerda está em
- * `L` vai para a convenção da casa (borda em 180°) com `giroGraus = 180 − L`.
+ * GIRO DE LONGITUDE de uma grade equiretangular, em COLUNAS inteiras
+ * (item 141, 3ª fase). A coluna `i` da saída vem da coluna `i + passos`
+ * da entrada, de modo que a borda esquerda passa da longitude `L` para
+ * `L + giroGraus`. Um mapa cuja borda esquerda está em `L` vai para a
+ * convenção da casa (borda em 180°) com `giroGraus = 180 − L`.
+ *
+ * SERVE OS DOIS LADOS DO PIPELINE, e é por isso que mora aqui: a
+ * aquisição gira IMAGEM (Buffer de 1 ou 3 canais por texel) e
+ * `gera-normal-de-dem.mjs` gira o DEM (Float32Array de metros, um canal).
+ * Era a mesma conta escrita duas vezes; `canais` é a única diferença, e a
+ * saída sai do mesmo tipo da entrada.
  *
  * O arredondamento em colunas é declarado: 150° de 2048 px dão 853,33
  * colunas, e a saída fica 0,06° fora — 0,3 px, abaixo do que o olho e o
@@ -129,7 +141,9 @@ export function webpCompensa(bytesFonte, bytesWebp) {
 export function giraColunasDeImagem(pixels, largura, altura, canais, giroGraus) {
   const passos = ((Math.round((giroGraus / 360) * largura) % largura) + largura) % largura;
   if (passos === 0) return pixels;
-  const saida = Buffer.allocUnsafe(pixels.length);
+  const saida = Buffer.isBuffer(pixels)
+    ? Buffer.allocUnsafe(pixels.length)
+    : new pixels.constructor(pixels.length);
   for (let j = 0; j < altura; j += 1) {
     for (let i = 0; i < largura; i += 1) {
       const de = (j * largura + ((i + passos) % largura)) * canais;

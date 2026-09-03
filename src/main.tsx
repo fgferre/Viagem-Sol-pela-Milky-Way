@@ -4,9 +4,9 @@ import App from './App.tsx'
 import { assinarIdioma, idiomaAtual, iniciarIdioma, t } from './lib/idioma'
 
 // A LÍNGUA SE RESOLVE AQUI, UMA VEZ (item 130). É o único ponto do
-// projeto que olha o storage, o `navigator` e a porta de captura
-// `?lang=`: fora do navegador — a suíte, os scripts de dado — ninguém
-// chama isto e a casa fica em pt-BR, byte a byte como sempre foi.
+// projeto que olha o storage e a porta de captura `?lang=`: fora do
+// navegador — a suíte, os scripts de dado — ninguém chama isto e a casa
+// fica em pt-BR, byte a byte como sempre foi.
 iniciarIdioma(window.location.search)
 // …e O QUE O `index.html` CARIMBA ESTÁTICO acompanha, porque ele não tem
 // como saber a língua antes do JS subir: o título da aba, a

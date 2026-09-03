@@ -37,12 +37,14 @@
 //   - Projeto Saturn do dono — https://github.com/fgferre/Saturn
 //     (item 138): os mosaicos globais Cassini de Paul Schenk
 //     (PIA18434–18439, NASA/JPL-Caltech/SSI/LPI, domínio público)
-//     graduados por ele. São SEIS entradas — mimas, enceladus,
-//     tethys, dione, rhea e iapetus —, e o `--offline` delas quer o
-//     diretório do SATURN, não o do atlas-orbital: os nomes são
-//     `public/textures/<lua>.jpg`. Os mapas de altura/normal das
-//     mesmas seis (item 134/S2) nunca entraram nesta tabela; a
-//     proveniência dos dois casos mora em docs/reference/ASSETS.md.
+//     graduados por ele, MAIS os mapas de altura/normal das mesmas
+//     seis (item 134/S2, `public/textures/relief/<lua>_<canal>.png`).
+//     São DEZOITO entradas, e o `--offline` delas quer o diretório do
+//     SATURN, não o do atlas-orbital: os mosaicos são
+//     `public/textures/<lua>.jpg`. Todas levam
+//     `giroDeLongitudeGraus: 180` — o layout Schenk põe o sub-Saturno
+//     na emenda e a casa o põe no meio (a meia volta do item 138). A
+//     proveniência de cada modelo mora em docs/reference/ASSETS.md.
 //     Mesma família, item 141 (3ª fase): o mapa de cor de VESTA é o
 //     mosaico da Dawn do modelo 3D da NASA GIRADO 150° para a IAU — o
 //     produto original está no sistema "Claudia" com que a sonda operou,
@@ -84,7 +86,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { giraColunasDeImagem, hostPermitido } from './lib-texturas.mjs';
+import { CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido } from './lib-texturas.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -246,35 +248,58 @@ const FONTES = [
     url: 'https://science.nasa.gov/3d-resources/',
     nomeNoDoador: 'callisto_nasa_3d_resource.jpg',
   },
+  // ---- AS SEIS DO PROJETO SATURN (item 138) e o RELEVO delas (item
+  // 134/S2). Tudo o que sai de lá — os seis mosaicos e os doze mapas de
+  // altura/normal — vem no layout Schenk, com o sub-Saturno na EMENDA; as
+  // texturas desta casa são centradas em 0°, ou seja borda esquerda em
+  // 180°. Daí `giroDeLongitudeGraus: 180` nas dezoito: é a MEIA VOLTA que
+  // o 138 aplicou aos arquivos à mão (`np.roll` de W/2) e que a tabela
+  // não declarava — sem ela, reaquirir devolvia o relevo no antípoda do
+  // albedo, que foi o defeito daquele item.
+  //
+  // DECLARADO, e não re-medido: os arquivos que estão na árvore hoje
+  // nasceram da aquisição à mão da S2 mais o giro do 138, não deste
+  // caminho. As entradas abaixo reconstroem o procedimento (arquivo do
+  // doador → meia volta → largura da casa); o sha do manifest é prova dos
+  // bytes em disco, não de que este caminho os reproduz byte a byte.
   {
     corpo: 'mimas',
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     nomeNoDoador: 'mimas.jpg',
+    giroDeLongitudeGraus: 180,
+    // a única cujo mosaico não vem na largura da casa: 6356 px custariam
+    // 108 MB de VRAM contra 45, e a 1080 px de disco o 4096 já dá 1,9
+    // texel por pixel (ASSETS.md, "alvo de pixels")
+    larguraDoDestino: 4096,
   },
   {
     corpo: 'enceladus',
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     nomeNoDoador: 'enceladus.jpg',
+    giroDeLongitudeGraus: 180,
   },
   {
     corpo: 'tethys',
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     nomeNoDoador: 'tethys.jpg',
+    giroDeLongitudeGraus: 180,
   },
   {
     corpo: 'dione',
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     nomeNoDoador: 'dione.jpg',
+    giroDeLongitudeGraus: 180,
   },
   {
     corpo: 'rhea',
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     nomeNoDoador: 'rhea.jpg',
+    giroDeLongitudeGraus: 180,
   },
   {
     corpo: 'titan',
@@ -288,7 +313,24 @@ const FONTES = [
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     nomeNoDoador: 'iapetus.jpg',
+    giroDeLongitudeGraus: 180,
   },
+  // O RELEVO DAS SEIS (item 134/S2): `height` e `normal` de cada uma, em
+  // 1024×512 — o mesmo `public/textures/relief/` do projeto Saturn, a
+  // mesma meia volta. Encélado é o único que vem em 2048 e desce para a
+  // largura da casa. A proveniência de cada modelo (Gaskell, Schenk &
+  // McKinnon, Weirich, e os dois SINTÉTICOS de Reia e Jápeto) mora em
+  // docs/reference/ASSETS.md e no manifest, não aqui.
+  ...['mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'iapetus'].flatMap((corpo) =>
+    ['height', 'normal'].map((canal) => ({
+      corpo,
+      canal,
+      url: 'https://github.com/fgferre/Saturn',
+      nomeNoDoador: `relief/${corpo}_${canal}.png`,
+      giroDeLongitudeGraus: 180,
+      larguraDoDestino: 1024,
+    }))
+  ),
   {
     corpo: 'miranda',
     canal: 'map',
@@ -560,20 +602,34 @@ async function assarMosaicoDeCeres(tifPath, destino) {
     .toFile(destino);
 }
 
-/** Gira um mapa já adquirido para a convenção de longitude da casa. */
-async function girarMapa(origem, destino, giroGraus) {
-  const { data, info } = await sharp(origem, { limitInputPixels: false })
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+/**
+ * Gira um mapa já adquirido para a convenção de longitude da casa, na
+ * largura que a casa quer (`larguraDoDestino`; sem ela, a da fonte).
+ *
+ * O ENCODE segue o CANAL: `height` e `normal` são DADO e saem em PNG —
+ * jpg neles erra 8/255 na altura, que são 0,64 km de relevo falso (a
+ * mesma medida que fez `otimiza-texturas.mjs` recusar o webp com perda
+ * para `CANAIS_DE_DADO`). Cor sai em jpg, como o resto da tabela.
+ */
+async function girarMapa(origem, destino, canal, giroGraus, larguraDoDestino) {
+  let entrada = sharp(origem, { limitInputPixels: false }).removeAlpha();
+  if (larguraDoDestino) {
+    entrada = entrada.resize(larguraDoDestino, larguraDoDestino / 2, {
+      fit: 'fill',
+      kernel: 'lanczos3',
+    });
+  }
+  const { data, info } = await entrada.raw().toBuffer({ resolveWithObject: true });
   const girado = giraColunasDeImagem(
     data, info.width, info.height, info.channels, giroGraus
   );
-  await sharp(girado, {
+  const saida = sharp(girado, {
     raw: { width: info.width, height: info.height, channels: info.channels },
-  })
-    .jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true })
-    .toFile(destino);
+  });
+  await (CANAIS_DE_DADO.has(canal)
+    ? saida.png({ compressionLevel: 9, adaptiveFiltering: false })
+    : saida.jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true })
+  ).toFile(destino);
 }
 
 async function main() {
@@ -601,13 +657,14 @@ async function main() {
     const diretorioDestino = path.join(destinoRaiz, fonte.corpo);
     await mkdir(diretorioDestino, { recursive: true });
     // A extensão do destino é sempre a do artefato final — todo PASSO DA
-    // CASA (bake do PBR, mosaico de Ceres, giro de Vesta) entrega jpg; as
-    // demais fontes já chegam jpg/png na origem; URL de PÁGINA — o caso
-    // NASA 3D, que só existe no modo offline — herda a extensão do nome
-    // no doador.
+    // CASA (bake do PBR, mosaico de Ceres, giro de Vesta e das seis luas)
+    // entrega jpg, MENOS os canais de dado, que saem em png; as demais
+    // fontes já chegam jpg/png na origem; URL de PÁGINA — o caso NASA 3D e
+    // o do projeto Saturn, que só existem no modo offline — herda a
+    // extensão do nome no doador.
     const passoDaCasa = fonte.bake || fonte.giroDeLongitudeGraus !== undefined;
     const extensao = passoDaCasa
-      ? 'jpg'
+      ? (CANAIS_DE_DADO.has(fonte.canal) ? 'png' : 'jpg')
       : path.extname(new URL(fonte.url).pathname).slice(1) ||
         path.extname(fonte.nomeNoDoador).slice(1);
     const destino = path.join(diretorioDestino, `${fonte.canal}.${extensao}`);
@@ -639,7 +696,12 @@ async function main() {
       try {
         if (fonte.bake === 'mosaico-ceres') await assarMosaicoDeCeres(cru, destino);
         else if (fonte.bake) await assarPbr(cru, destino, fonte.bake);
-        else await girarMapa(cru, destino, fonte.giroDeLongitudeGraus);
+        else {
+          await girarMapa(
+            cru, destino, fonte.canal,
+            fonte.giroDeLongitudeGraus, fonte.larguraDoDestino
+          );
+        }
       } finally {
         await unlink(cru).catch(() => {});
       }

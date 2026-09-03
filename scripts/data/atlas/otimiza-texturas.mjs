@@ -57,6 +57,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import {
+  CANAIS_DE_DADO,
   alturaProporcional,
   analisarNomeDeTextura,
   degrausDaEscada,
@@ -76,9 +77,6 @@ const OPCOES_JPEG = { quality: 88, mozjpeg: true, chromaSubsampling: '4:4:4' };
 const OPCOES_PNG = { compressionLevel: 9, adaptiveFiltering: false };
 const OPCOES_WEBP = { quality: 88, effort: 6 };
 const OPCOES_WEBP_DADO = { lossless: true, effort: 6 };
-/** Os canais que se LEEM em vez de se olhar — ver o cabeçalho. */
-const CANAIS_DE_DADO = new Set(['height', 'normal']);
-
 /** Os corpos a varrer; vazio = a árvore inteira. */
 const escopo = new Set(process.argv.slice(2));
 const noEscopo = (arquivo) =>

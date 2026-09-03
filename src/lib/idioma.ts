@@ -17,12 +17,12 @@
 // seletor do painel de Ajustes, e ele troca AO VIVO, sem recarregar.
 //
 // O PADRÃO É pt-BR E ELE NÃO SE RESOLVE SOZINHO. `iniciarIdioma()` é
-// chamado UMA vez, no `main.tsx`, e é o único ponto que olha storage,
-// navegador ou URL. Fora do navegador — testes em Node, scripts de
-// dado — ninguém o chama e a língua fica em pt-BR: a saída de toda
-// função de texto da casa continua sendo, byte a byte, a que sempre
-// foi. Resolver no primeiro `t()` faria o jsdom (que se declara `en-US`)
-// virar o app inteiro em inglês dentro da suíte, calado.
+// chamado UMA vez, no `main.tsx`, e é o único ponto que olha storage ou
+// URL. Fora do navegador — testes em Node, scripts de dado — ninguém o
+// chama e a língua fica em pt-BR: a saída de toda função de texto da
+// casa continua sendo, byte a byte, a que sempre foi. Resolver no
+// primeiro `t()` faria o jsdom (que se declara `en-US`) virar o app
+// inteiro em inglês dentro da suíte, calado.
 //
 // MÓDULO PURO fora de `iniciarIdioma`/`definirIdioma`: sem React, sem
 // three, sem DOM. É por isso que `lib/unidades.ts` pode lê-lo sem
@@ -138,11 +138,6 @@ export function t(chave: ChaveDeTexto, params?: Record<string, string | number>)
   return cru.replace(/\{(\w+)\}/g, (inteiro, nome: string) =>
     nome in params ? String(params[nome]) : inteiro
   );
-}
-
-/** O separador decimal da língua — a vírgula do pt-BR, o ponto do inglês. */
-export function separadorDecimal(): string {
-  return idioma === 'en' ? '.' : ',';
 }
 
 /** Um número com ponto decimal vira o da língua: `1.5` → `1,5` em pt-BR. */

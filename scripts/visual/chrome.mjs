@@ -219,9 +219,6 @@ export const APP_PADRAO = 'http://127.0.0.1:5173';
  * propósito (`filme-smoke` com `?lang=en`, lista do §19 do 130).
  */
 export const LINGUA_DO_JUIZ = 'pt-BR';
-export function comLinguaDoJuiz(query) {
-  return /(^|&)lang=/.test(query) ? query : `${query}${query ? '&' : ''}lang=${LINGUA_DO_JUIZ}`;
-}
 export function comLinguaDoJuizNaUrl(url) {
   if (/[?&]lang=/.test(url)) return url;
   return `${url}${url.includes('?') ? '&' : '?'}lang=${LINGUA_DO_JUIZ}`;
@@ -616,7 +613,9 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
     ir: async (query) => {
       cartografia = false;
       carregou = false;
-      await send('Page.navigate', { url: `${app}/?${comLinguaDoJuiz(query)}` });
+      await send('Page.navigate', {
+        url: comLinguaDoJuizNaUrl(`${app}/${query ? `?${query}` : ''}`),
+      });
       // O DOCUMENTO NOVO PRIMEIRO — ver `carregou`. Sem esta espera a
       // prontidão da página VELHA responde pela nova e o md5 sai da
       // vista anterior.

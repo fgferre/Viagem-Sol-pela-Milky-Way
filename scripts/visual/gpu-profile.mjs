@@ -22,7 +22,7 @@
 // esta medida se validou (16,15 ms → 60,0 fps; 16,92 ms → 56,3 fps).
 import { resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { GPU_FLAGS, lancarChrome, dorme } from './chrome.mjs';
+import { GPU_FLAGS, comLinguaDoJuizNaUrl, lancarChrome, dorme } from './chrome.mjs';
 
 const QUERY = process.argv[2] || '?t=100';
 const SECONDS = Number(process.argv[3] || 15);
@@ -41,7 +41,11 @@ const CRU = process.argv[7] === 'cru';
 // do MSAA, que nenhum timer query de draw enxerga).
 const SEM_VSYNC = process.env.SEM_VSYNC === '1';
 const PORT = 9300 + (process.pid % 200);
-const APP = (process.env.APP_URL || 'http://127.0.0.1:5173') + '/' + QUERY;
+// pela porta de instrumento como todo juiz (`comLinguaDoJuizNaUrl`): as
+// referências de custo desta régua foram medidas com o app em português
+const APP = comLinguaDoJuizNaUrl(
+  (process.env.APP_URL || 'http://127.0.0.1:5173') + '/' + QUERY
+);
 
 
 // Roda ANTES de qualquer script da página: embrulha getContext e, dentro dele,

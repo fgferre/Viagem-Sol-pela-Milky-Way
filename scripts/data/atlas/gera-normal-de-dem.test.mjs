@@ -17,24 +17,37 @@
 //     orientação declarada vence a meia volta; com o DEM girado meia
 //     volta contra o mapa de cor, a guarda RECUSA a assar.
 //
+//  4. A TABELA. As declarações por corpo estão pinadas contra as fontes
+//     de verdade da CASA: os eixos do elipsoide contra `BODY_AXES`
+//     (`iauOrientation.ts`) e a lista de corpos contra `NORMAL_MEDIDA`
+//     (`rochoso.ts`) — quem assa e quem consome não podem divergir em
+//     silêncio.
+//
 // Nada aqui toca rede, disco ou o DEM: o script foi partido em funções
-// puras (`assaNormais`, `medirAlinhamento`, `conferirAlinhamento`,
-// `giraMeiaVolta`) sem mudar uma conta — os mapas já assados da Lua, de
-// Mercúrio e de Marte continuam byte a byte os mesmos.
+// puras (`assaNormais`, `medirAlinhamento`, `conferirAlinhamento`) sem
+// mudar uma conta — os mapas já assados da Lua, de Mercúrio e de Marte
+// continuam byte a byte os mesmos. O giro do DEM é `giraColunasDeImagem`
+// (`lib-texturas.mjs`), a MESMA função que gira imagem na aquisição.
 // ============================================================
 import { describe, expect, it } from 'vitest';
+import { BODY_AXES } from '../../../src/lib/atlas/iauOrientation.ts';
+import { NORMAL_MEDIDA } from '../../../src/three/world/corpos/rochoso.ts';
+import { giraColunasDeImagem } from './lib-texturas.mjs';
 import {
   CORPOS,
   MARGEM_DA_BORDA,
   assaNormais,
   conferirAlinhamento,
-  giraMeiaVolta,
   medirAlinhamento,
 } from './gera-normal-de-dem.mjs';
 
 const L = 64;
 const A = 32;
 const RAIO_M = 1737400;
+
+/** meia volta no DEM — o caso do gerador, um canal por texel. */
+const meiaVolta = (campo, largura = L, altura = A) =>
+  giraColunasDeImagem(campo, largura, altura, 1, 180);
 
 /** o canal do pixel (i,j) do RGB assado, já de volta em [-1, 1] */
 function normalEm(rgb, i, j, largura = L) {
@@ -181,7 +194,7 @@ describe('2. a amplitude é FÍSICA — a inclinação medida sai como inclinaç
 describe('3. a guarda de alinhamento recusa a meia volta', () => {
   /** albedo que ACOMPANHA o relevo (o degrau de terreno é degrau de imagem) */
   const albedoDaCalota = Float64Array.from(CALOTA, (h) => 40 + h / 20);
-  const naOutraOrientacao = giraMeiaVolta(CALOTA, L, A);
+  const naOutraOrientacao = meiaVolta(CALOTA);
 
   it('com o DEM e o mapa na MESMA convenção, a declarada vence e a guarda passa', () => {
     const m = medirAlinhamento(CALOTA, naOutraOrientacao, albedoDaCalota, L, A);
@@ -214,8 +227,8 @@ describe('3. a guarda de alinhamento recusa a meia volta', () => {
   });
 
   it('a meia volta é involutiva e não perde texel — girar duas vezes volta ao mesmo', () => {
-    const ida = giraMeiaVolta(CALOTA, L, A);
-    const volta = giraMeiaVolta(ida, L, A);
+    const ida = meiaVolta(CALOTA);
+    const volta = meiaVolta(ida);
     expect(Array.from(volta)).toEqual(Array.from(CALOTA));
     expect(ida[16 * L + 16 + L / 2]).toBe(CALOTA[16 * L + 16]);
   });
@@ -240,5 +253,81 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
       expect(Number.isFinite(c.metrosPorUnidade), `${id} escala`).toBe(true);
       expect(Number.isFinite(c.longitudeDaBordaEsquerdaGraus), `${id} borda`).toBe(true);
     }
+  });
+
+  it('os `eixosDaCasaKm` de Ceres e Vesta SÃO os `BODY_AXES` da casa', () => {
+    // o gerador DESCONTA este elipsoide do DEM para não contar a figura
+    // global duas vezes (a rampa de ~8° de Vesta). Se a casa mudar de
+    // eixos e o gerador não, o relevo passa a descontar uma forma que o
+    // corpo não tem — e nada na tela grita. Aqui grita.
+    const [aCeres, bCeres, cCeres] = BODY_AXES.ceres;
+    expect(aCeres).toBe(bCeres); // Ceres é esférico em a/b: a média é o próprio a
+    expect(CORPOS.ceres.eixosDaCasaKm).toEqual({ a: aCeres, c: cCeres });
+
+    const [aVesta, bVesta, cVesta] = BODY_AXES.vesta;
+    // Vesta tem TRÊS eixos; o gerador usa a média equatorial
+    expect(aVesta).not.toBe(bVesta);
+    expect(CORPOS.vesta.eixosDaCasaKm).toEqual({ a: (aVesta + bVesta) / 2, c: cVesta });
+  });
+
+  it('quem o gerador assa é quem o `rochoso.ts` lê como NORMAL_MEDIDA (+ a Lua)', () => {
+    // as duas listas se desencontram calado: um corpo assado e fora da
+    // `NORMAL_MEDIDA` gasta disco que o shader nunca lê, e um corpo na
+    // `NORMAL_MEDIDA` sem entrada aqui pede um normal.png que ninguém
+    // assa. A Lua é a exceção declarada: ela lê a normal por outro
+    // caminho (`RELEVO_DA_LUA`/mapa), não pelo interruptor do bump.
+    expect(Object.keys(CORPOS).sort()).toEqual(
+      [...Object.keys(NORMAL_MEDIDA), 'moon'].sort()
+    );
+  });
+});
+
+describe('5. o giro do DEM é a MESMA conta que gira imagem', () => {
+  /**
+   * A CONTA ANTIGA, letra por letra como vivia em `gera-normal-de-dem.mjs`
+   * antes de virar uma função só com a da aquisição (`giraColunasDeImagem`,
+   * em `lib-texturas.mjs`). Está aqui como ORÁCULO: se a unificação tivesse
+   * mudado um índice, a Lua, Mercúrio, Marte, Ceres e Vesta reassariam
+   * diferentes — e isso não pode passar por md5 de ninguém.
+   */
+  function giroAntigo(campo, largura, altura, giroGraus) {
+    const passos = ((Math.round((giroGraus / 360) * largura) % largura) + largura) % largura;
+    if (passos === 0) return campo;
+    const saida = new Float32Array(campo.length);
+    for (let j = 0; j < altura; j += 1) {
+      for (let i = 0; i < largura; i += 1) {
+        saida[j * largura + i] = campo[j * largura + ((i + passos) % largura)];
+      }
+    }
+    return saida;
+  }
+
+  it('a nova bate com a antiga em todos os giros que a casa usa', () => {
+    // 180 é a meia volta da Lua/Vesta, -150 é Vesta na cor, 0 é o caso
+    // sem giro (Mercúrio/Marte/Ceres já saem na borda certa depois da
+    // conta de `orientar`), e 37 é um giro qualquer que não divide 360
+    for (const giro of [0, 180, -150, 37, 360, -180]) {
+      const novo = giraColunasDeImagem(CALOTA, L, A, 1, giro);
+      expect(Array.from(novo), `giro ${giro}`).toEqual(
+        Array.from(giroAntigo(CALOTA, L, A, giro))
+      );
+    }
+  });
+
+  it('a saída sai do MESMO tipo da entrada — Float32Array no DEM', () => {
+    // o DEM é metro em ponto flutuante; devolver Buffer truncaria cada
+    // altura para 0..255 e o relevo viraria degrau
+    expect(meiaVolta(CALOTA)).toBeInstanceOf(Float32Array);
+  });
+
+  it('com 3 canais por texel o giro leva o PIXEL inteiro, não o byte', () => {
+    // é o caminho da aquisição (`baixa-texturas.mjs`): trocar a ordem dos
+    // canais aqui pintaria o mapa de cor errada em vez de girá-lo
+    const largura = 4;
+    const rgb = Buffer.from([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+    ]);
+    const girado = giraColunasDeImagem(rgb, largura, 1, 3, 180);
+    expect(Array.from(girado)).toEqual([7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]);
   });
 });

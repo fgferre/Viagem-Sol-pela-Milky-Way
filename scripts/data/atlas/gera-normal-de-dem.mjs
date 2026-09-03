@@ -124,6 +124,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { giraColunasDeImagem } from './lib-texturas.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -279,7 +280,7 @@ export const CORPOS = {
 const LARGURA_ALVO = 4096;
 
 /** Latitude onde o passo leste para de encolher (ver o cabeçalho). */
-export const LATITUDE_DO_CLAMP_RAD = (80 * Math.PI) / 180;
+const LATITUDE_DO_CLAMP_RAD = (80 * Math.PI) / 180;
 
 /** Quanto a orientação declarada tem de vencer a meia volta. */
 export const MARGEM_DA_BORDA = 0.05;
@@ -410,28 +411,6 @@ async function conferirRotuloPds(corpo) {
 // ------------------------------------------------------------
 // A ALTURA EM METROS, na grade que se pedir
 // ------------------------------------------------------------
-
-/**
- * GIRO EM COLUNAS — o DEM vira para a convenção do mapa de cor. O
- * deslocamento é a diferença entre a longitude da borda esquerda da
- * FONTE e a da CASA, e meia volta é só o caso mais comum dele.
- */
-export function giraLongitude(campo, largura, altura, giroGraus) {
-  const passos = ((Math.round((giroGraus / 360) * largura) % largura) + largura) % largura;
-  if (passos === 0) return campo;
-  const saida = new Float32Array(campo.length);
-  for (let j = 0; j < altura; j += 1) {
-    for (let i = 0; i < largura; i += 1) {
-      saida[j * largura + i] = campo[j * largura + ((i + passos) % largura)];
-    }
-  }
-  return saida;
-}
-
-/** MEIA VOLTA — o caso mais comum do giro (o que os testes exercitam). */
-export function giraMeiaVolta(campo, largura, altura) {
-  return giraLongitude(campo, largura, altura, 180);
-}
 
 /**
  * A MÉDIA DE CAIXA de uma grade crua para a grade de saída. `daLinha`
@@ -589,14 +568,15 @@ function descontarElipsoideDaCasa(corpo, metros, largura, altura) {
 function orientar(corpo, grade, defasagemExtraGraus = 0) {
   const giro =
     LONGITUDE_ESQUERDA_DA_CASA - corpo.longitudeDaBordaEsquerdaGraus + defasagemExtraGraus;
-  return giraLongitude(grade.metros, grade.largura, grade.altura, giro);
+  // o DEM é um canal (metros por texel) — a mesma conta que gira imagem
+  return giraColunasDeImagem(grade.metros, grade.largura, grade.altura, 1, giro);
 }
 
 // ------------------------------------------------------------
 // A GUARDA DE ALINHAMENTO
 // ------------------------------------------------------------
 
-export function pearson(a, b) {
+function pearson(a, b) {
   const n = a.length;
   let ma = 0;
   let mb = 0;
@@ -620,7 +600,7 @@ export function pearson(a, b) {
 }
 
 /** |∇campo| por diferença central, com a longitude dando a volta. */
-export function energiaDeBorda(campo, largura, altura) {
+function energiaDeBorda(campo, largura, altura) {
   const saida = new Float64Array(campo.length);
   for (let j = 1; j < altura - 1; j += 1) {
     for (let i = 0; i < largura; i += 1) {
