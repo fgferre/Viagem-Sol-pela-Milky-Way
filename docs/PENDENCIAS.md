@@ -51,6 +51,26 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (03/09, noite — FECHO por ordem dele)
 
+**03/09 (2ª janela, noite — fecho por ordem dele).** Desempenho no M1 dele:
+**144** (resolve único do MSAA + nebulosa congelada; regressão da textura
+compartilhada em Retina pega e consertada no mesmo dia) e **145** (gaveta
+Avançado: MSAA, nebulosa, escala de resolução, ao vivo). Atlas 2560×1500
+cinema 5,3 → 12,3 fps; 1200×900 19 → 40. Commits `1bcef79..d092299`,
+backup em dia, site intocado. **LISTA DO §19 desta janela, para ele
+aprovar ou cortar:** (a) `nebula.test.ts` NOVO (4 testes: 2ª chamada
+desenha nada; câmera/uniform/LUT acordam) — rodado uma vez no portão;
+(b) pinos repinados em `post.test.ts`, `atlasConfig.test.ts`,
+`selo.test.ts`, `engine.test.ts` — rodados no portão dos tocados; (c)
+suíte cheia NÃO rodou nesta janela; (d) `npm run lint` vermelho em
+`Spotlight.tsx` (react-refresh) vem do 130/F1 — conserto de 5 min, sem
+dono. **Sobras:** filme t=100 em dpr 2 anda pouco (12,1) sem causa
+atribuída; MSAA da própria cena ainda custa ~26 ms em 1200×900 Retina;
+esperam a palavra dele: MSAA fora do filme, orçamento de pixels, Auto
+aplicando na 1ª visita. **Lição** (memória + `reguas-nao-bastam`): fps em
+dpr 2 sem foto em dpr 2 era cena preta — número só com foto da mesma
+configuração; "preexistente" de agente se prova contra o commit ANTERIOR
+à obra.
+
 **03/09 (noite — janela encerrada com a varredura de fecho).** Nesta
 janela fecharam **134** (onda de Saturno, S3c pela palavra dele), **135**
 (anel cortado "como se batesse na lente"), **136** (órbitas verificadas
@@ -106,14 +126,15 @@ régua, e o rótulo do seletor de qualidade passando a dizer
   pelo estado VIVO, nunca pela presença da porta; a URL é ESPELHO —
   escrita só fora do preset, apagada na volta. "Personalizado" sai de
   `foraDoPreset`, que olha os três.
-- **Medido** (Atlas, 1280×800 a DPR 2 = 2560×1600, cinema, fps contado
-  por rAF): preset 19 · escala 50% **57** · MSAA desligado 34 · nebulosa
-  Baixa 29 — a escala quase triplica; a nebulosa não move o quadro nesta
-  vista, e nem desligá-la inteira move (`?nonebula=1` dá o mesmo). Fotos
-  em `capturas/item145-ajustes-{gaveta,escala-50}.png`.
-- **Aberto:** por que a nebulosa não pesa no Atlas mesmo ocupando a tela
-  (ver o item 146); e o próximo candidato da gaveta pelo ranking do 144
-  (população da galáxia), sem ordem dele ainda.
+- **Medido depois do conserto do 144** (Retina, cena conferida, modo
+  cru, Atlas 2560×1500 cinema 12,3 fps de partida): `?msaa=0` bate no
+  teto de 60 em 1200×900, a escala 50% é a alavanca maior; os fps que o
+  agente contou ao construir a gaveta eram de cena preta e não valem
+  (`capturas/desempenho-m1-03-09.txt`). Fotos em
+  `capturas/item145-ajustes-{gaveta,escala-50}.png`.
+- **Aberto:** próximos controles candidatos (população da galáxia,
+  grão) e o orçamento de pixels / Auto aplicando na 1ª visita — decisão
+  dele.
 
 **144. "O app está um pouco pesado nessa máquina."** (Palavras dele,
 03/09, ao trazer o relatório de desempenho de outra IA.) Medido no M1
@@ -143,9 +164,9 @@ resolve o MSAA UMA vez — a cena cai num alvo multiamostrado próprio que
 COMPARTILHA a textura do `renderTarget1` (`CenaResolvidaUmaVez`), zero
 cópia; (3) a nebulosa congela com a câmera parada (`Nebula.render`,
 chave da câmera + `sujo` nos setters), bit-idêntica. Medido depois:
-Atlas 2560×1500 cinema **5,3 → 17,8 fps**; Atlas 1200×900 cinema 19 →
-23; filme t=100 dpr 1 9,1 → 14,8; filme dpr 2 não andou (9,8, causa não
-atribuída). Pixel: ≤ 1 nível em ≤ 0,02% dos pixels nas 4 sentinelas
+Atlas 2560×1500 cinema **5,3 → 12,3 fps** (alta 8,3 → 18,3;
+performance 24 → 46,9); Atlas 1200×900 cinema 19 → 40,3; filme t=100
+dpr 1 9,1 → 15,0, dpr 2 9,8 → 12,1. Pixel: ≤ 1 nível em ≤ 0,02% dos pixels nas 4 sentinelas
 (ULP). **Regressão pega e consertada no mesmo dia:** em Retina o alvo
 da cena ficava com tamanho diferente do buffer do composer (textura
 compartilhada, redimensionamento transitório do `EffectComposer` com
