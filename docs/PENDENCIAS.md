@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 140.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 141.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -145,6 +145,21 @@ dinamismo dos nomes do NASA Eyes".)*
 ## MÉDIA — afeta o produto, não salta aos olhos
 
 **134.** A ONDA DE SATURNO — a colheita do projeto Saturn dele (anéis com perfil medido e iluminação mútua; relevo das luas; nove luas esculpidas com o grão dele; jatos de Encélado; anéis E e F, raios do B, ondas de Dáfnis) — **FECHADA em 02/09**: cinco fases feitas, S3c pela palavra dele ("melhorou bastante... deixe do jeito que ficou"), lista do §19 aprovada e rodada (suíte 1×, z-fighting, ab-identidade); ARQUIVO.
+
+**140. A Lua "não ficou boa depois que levamos o relevo para ela"** —
+ficou lenta e "não corresponde mais ao que observamos". Palavras dele,
+03/09: *"a lua nao ficou boa depois que levamos o relevo para ela... o app
+de tempo do iphone traz uma lua com sensacao de relevo tao interessante,
+acho que era mais esse modelo que eu estava buscando... inclusive deixou o
+app lento e nao corresponde mais ao que observamos. No app tempo do
+iphone a lua so aparece a iluminacao fazendo como se fosse sombra nas
+crateras."* O modelo que ele quer: esfera lisa, a luz do Sol desenhando
+sombra dentro das crateras (mapa de normais/altura só na iluminação, sem
+deformar a silhueta), fase correta, leve. A verificar: o que a S2 (relevo
+em todo corpo sem atmosfera) ligou na Lua — amplitude do bump, altura
+real, malha e textura maiores — e o custo de quadro; referência do "que
+observamos": as imagens do NASA SVS Moon Phase and Libration (LRO,
+domínio público) no mesmo instante.
 
 **138. Jápeto "totalmente feio" — e a paridade de TODAS as luas contra o
 projeto Saturn dele.** Palavras dele, 02/09, logo depois do fecho do 134:
