@@ -167,6 +167,23 @@ ou zerar. Ordem sugerida, depois de a Lua (140) provar a técnica: Mercúrio
 → Marte → Ceres → Vesta (um operário a cada dois corpos); Fobos/Deimos
 numa fase própria.
 
+**ESTADO (03/09 — Mercúrio e Marte feitos, falta a palavra dele).** Os dois
+saíram do relevo INVENTADO da cor e ganharam o real, pelo mesmo caminho da Lua:
+normal medida, só na luz, silhueta intacta. **Mercúrio** — DEM MESSENGER 665 m
+da USGS (530 MB, lido pela REDE em faixas, sem baixar: 212 MiB), normal
+4096×2048, inclinação RMS 2,86° e máxima 56,43°. **Marte** — MOLA MEGDR a 16
+px/grau (33 MB), RMS 1,94° e máxima 30,35°: Marte é liso nesta régua, e o
+"relevo" que ele tinha antes era 2 % do raio, 68 km de montanha falsa. Os dois
+DEMs nascem meia volta virados em relação às nossas texturas, e o giro é
+CONFERIDO por medida (energia de borda altura×albedo: Mercúrio 0,201 contra
+0,018 na meia volta, Marte 0,133 contra −0,017). O gerador da Lua virou um só
+para os três (`gera-normal-de-dem.mjs`) e a Lua sai dele byte a byte igual.
+Custo: passe do corpo 0,311→0,315 ms em Mercúrio e 0,398→0,402 em Marte — as
+faixas dos dois lados se cruzam, e a taxa de quadro não mudou; disco 218,65 →
+250,98 MB. Fotos `capturas/item141-{mercury,mars}-prancha.png`, custo em
+`capturas/item141-custo-{antes,depois}.txt`. FORA: Ceres e Vesta (Dawn HAMO,
+a próxima dupla), Fobos/Deimos (é malha, não normal) e a lista do §19.
+
 **138.** Jápeto "totalmente feio" e a paridade das luas contra o projeto dele — **FECHADO em 03/09** (`c70a204`: mosaicos Schenk graduados como lá; o relevo estava meia volta errado nas seis desde a S2); nível e Titã laranja ficam como estão, palavra dele "tudo ok, já avaliei"; ARQUIVO.
 
 **139.** Dentro dos anéis não se viam as partículas e pedras de gelo — **FECHADO em 03/09** (`4081729` lajota do projeto dele + `e24237f` o chão do anel chega à lente); palavra dele "tudo ok"; ARQUIVO.

@@ -154,7 +154,7 @@ export const LS_NORMALIZACAO_GLSL = LS_NORMALIZACAO.toFixed(7);
  * A ESCALA TANGENCIAL DO RELEVO DA LUA — 1,0, ou seja NENHUM ganho.
  *
  * O mapa de normais dela é assado do LDEM do LRO em amplitude FÍSICA
- * (`scripts/data/atlas/gera-normal-da-lua.mjs`): a inclinação que o
+ * (`scripts/data/atlas/gera-normal-de-dem.mjs`): a inclinação que o
  * texel carrega é a inclinação medida do terreno, RMS 6,9° e máxima
  * 40,2°. As luas de Saturno usam 1,2 porque o número é o do projeto do
  * dono; aqui não há de onde tirar um exagero que não seja invenção — e

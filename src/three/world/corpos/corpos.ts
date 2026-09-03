@@ -272,12 +272,20 @@ export const BUMP_DO_ALBEDO_PADRAO = 0.02;
  */
 export const BUMP_DO_ALBEDO: Readonly<Record<string, number>> = {
   // A LEI DO DONO (02/09): "o relevo deve aparecer em tudo que tem relevo,
-  // sem atmosfera" — um universo só, filme, voo e Atlas. Mercúrio, Marte,
-  // Io e a Lua entram pelo padrão. Zero SÓ onde a mancha do mapa não é
-  // chão: Vênus é topo de nuvem e Titã é o topo da bruma (dito em
-  // rochoso.ts) — relevo tirado dali seria montanha de nuvem.
+  // sem atmosfera" — um universo só, filme, voo e Atlas. Io entra pelo
+  // padrão. Zero SÓ onde a mancha do mapa não é chão: Vênus é topo de
+  // nuvem e Titã é o topo da bruma (dito em rochoso.ts) — relevo tirado
+  // dali seria montanha de nuvem.
   venus: 0,
   titan: 0,
+  // ITEM 141: Mercúrio e Marte têm agora a NORMAL MEDIDA do DEM público
+  // (`NORMAL_MEDIDA`, rochoso.ts), e o fragmento nem chega a este bump
+  // quando `uRelevoNormal > 0`. O zero é a declaração de que a
+  // aproximação foi APOSENTADA nos dois, e não que ela ficou de reserva:
+  // em Marte ela dizia 2 % do raio, 68 km de relevo falso onde o
+  // Olympus, o mais alto do Sistema Solar, tem 22 km.
+  mercury: 0,
+  mars: 0,
   // Ceres: a própria fonte admite mapa INVENTADO (ASSETS.md) — derivar
   // relevo de invenção seria inventar duas vezes.
   ceres: 0,

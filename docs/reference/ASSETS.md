@@ -234,7 +234,7 @@ Moon Kit (<https://svs.gsfc.nasa.gov/4720>, domínio público). Entrou o
 bits com o deslocamento que a própria página declara — altura em metros =
 `(valor − 20000) × 0,5`, sobre a esfera de referência de 1737,4 km.
 
-`scripts/data/atlas/gera-normal-da-lua.mjs` assa dele um mapa de NORMAIS
+`scripts/data/atlas/gera-normal-de-dem.mjs` assa dele um mapa de NORMAIS
 equiretangular de 4096×2048 (escada 2048/1024), em **amplitude física**: as
 derivadas são metros por metro sobre a esfera (passo leste `R·cos(lat)·dLon`,
 passo norte `R·dLat`), **sem ganho nenhum** — inclinação RMS medida 6,9° e
@@ -255,6 +255,54 @@ altura com a luminância do mapa de cor (mares baixos e escuros, terras altas
 e claras) e recusa a assar abaixo de +0,3. Sem deslocamento nenhum ela dá
 **+0,61** — o LDEM e o mapa da Solar System Scope estão na mesma convenção
 de longitude, e não há a meia volta que o item 138 achou nas luas de Saturno.
+
+## O relevo de Mercúrio e de Marte (item 141)
+
+A mesma técnica da Lua, nos dois corpos seguintes que têm DEM global,
+público e de domínio público. Os dois vinham do **bump por derivada do
+albedo**, e em Marte a aproximação era grotesca: 2 % do raio de pico a pico
+são 68 km de relevo falso, num planeta cujo Olympus Mons — o mais alto do
+Sistema Solar — tem 22 km.
+
+**Mercúrio**: `Mercury MESSENGER Global DEM 665 m v2` do USGS Astrogeology
+(<https://astrogeology.usgs.gov/search/map/mercury_messenger_usgs_dem_global_665m_v2>,
+domínio público), 23040×11520, inteiro COM sinal de 16 bits. A conversão
+está no próprio GeoTIFF e o script a LÊ (`GDALMetadata`: `OFFSET` 0,
+`SCALE` 0,5) — altura em metros = `valor × 0,5` sobre a esfera de 2439,4 km
+que a geokey do arquivo declara; ele recusa a assar se esses metadados
+divergirem da tabela. O arquivo tem 530 MB e **não é baixado**: ele é um
+TIFF sem compressão, uma tira por linha e tiras contíguas, então a leitura
+é por FAIXAS HTTP — só as linhas que a grade de 4096×2048 usa: 212 MiB
+medidos (180 do assamento + 32 da guarda) em vez de 530 MB. Preço declarado: das 5,6 linhas de origem que cabem em cada
+linha de saída, a média usa 2 (nas colunas ela é completa); é borrão de
+latitude, não deslocamento. Inclinação medida: RMS 2,86°, máxima 56,43°.
+
+**Marte**: `MOLA MEGDR` a 16 pixels por grau (`megt90n000eb.img`, PDS
+Geosciences, <https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/>,
+domínio público), 5760×2880, inteiro com sinal MSB, **em metros diretos**
+sobre o areoide — o rótulo PDS não traz escala nem deslocamento, e o script
+baixa esse rótulo e confere dimensões, tipo, bits e raio (3396 km) antes de
+assar. Inclinação medida: RMS 1,94°, máxima 30,35°. Marte é liso nesta
+régua, e isso é fato, não perda: a 5,2 km por texel o que a luz desenha é a
+parede de Valles Marineris e o flanco dos vulcões, não a duna.
+
+**A MEIA VOLTA, medida.** Os dois DEMs nascem com a borda esquerda em
+longitude 0° (meridiano central 180°) e as texturas de cor da casa são
+centradas em 0° — meia volta de diferença, que é o defeito que o item 138
+achou nas luas de Saturno. O giro é feito no dado, e a guarda do gerador o
+CONFERE: ela correlaciona a energia de borda (`|∇altura|` contra
+`|∇albedo|`) na orientação declarada e na meia volta, e recusa a assar se a
+declarada não vencer. Medido: Mercúrio 0,201 contra 0,018, Marte 0,133
+contra −0,017, Lua 0,261 contra 0,008. A correlação COM SINAL do item 140
+(mar baixo e escuro, terra alta e clara, +0,61) continua valendo **só na
+Lua**: em Mercúrio ela é negativa (−0,15) e em Marte fraca (+0,17), porque
+lá o albedo é composição e poeira, não forma — exigir sinal seria exigir
+uma física que não existe.
+
+**Só na iluminação, como na Lua.** Nada desloca vértice: a silhueta segue a
+do elipsoide de `BODY_AXES`, a esfera continua a de 128×64, e os dois saem
+da tabela `BUMP_DO_ALBEDO` (`NORMAL_MEDIDA`, em `rochoso.ts`, é a lista de
+quem tem a normal medida). Os TIF/IMG de origem não ficam na árvore.
 
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
@@ -300,6 +348,8 @@ tocar num `.mjs`.
 | rhea/height | relevo SINTÉTICO: não existe DTM público de Reia — o campo de crateras foi gerado por código no projeto Saturn do autor, e não é medida |
 | iapetus/height | relevo SINTÉTICO: não existe DTM público de Jápeto — o campo de crateras foi gerado por código no projeto Saturn do autor (só a crista equatorial é feição real, modelada), e não é medida |
 | moon/normal | topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela |
+| mercury/normal | topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem |
+| mars/normal | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |
 
 ### a forma (item 20)
 

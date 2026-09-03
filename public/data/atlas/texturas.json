@@ -1790,6 +1790,108 @@
       "proveniencia": "derivado"
     },
     {
+      "corpo": "mars",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mars/normal_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 368065,
+      "sha256": "5c505dbdc4836694ecd15fb2c71cf08f73a07442a24fbbc4a9d9d7636926a2f6",
+      "origem": {
+        "fonte": "MOLA MEGDR a 16 pixels por grau (megt90n000eb, PDS Geosciences) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR v2. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna"
+    },
+    {
+      "corpo": "mars",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mars/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 284208,
+      "sha256": "09473c30d9962c6439c7b69c6258e58001de0b1d0c063177ff09042ddf979a7a",
+      "origem": {
+        "fonte": "MOLA MEGDR a 16 pixels por grau (megt90n000eb, PDS Geosciences) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR v2. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna"
+    },
+    {
+      "corpo": "mars",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mars/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1663567,
+      "sha256": "8e5f23a4935fc05ab560dec59864c55334da8013649fa95ed8f9370cdef68d30",
+      "origem": {
+        "fonte": "MOLA MEGDR a 16 pixels por grau (megt90n000eb, PDS Geosciences) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR v2. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna"
+    },
+    {
+      "corpo": "mars",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mars/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1265458,
+      "sha256": "0f41449e0b2d9d4d207867207489eb6f90daad369f8151efeedef71982272589",
+      "origem": {
+        "fonte": "MOLA MEGDR a 16 pixels por grau (megt90n000eb, PDS Geosciences) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR v2. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna"
+    },
+    {
+      "corpo": "mars",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mars/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 6352889,
+      "sha256": "a1e8914da7ab206254d4fa7917092f6eab150040dcca262d0d4d02e40991c17b",
+      "origem": {
+        "fonte": "MOLA MEGDR a 16 pixels por grau (megt90n000eb, PDS Geosciences) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR v2. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna"
+    },
+    {
+      "corpo": "mars",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mars/normal.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 4519538,
+      "sha256": "e70f3cd44d3bf676285ab2dd8308f55239dfe7af600d2bf00532b0c7da10071c",
+      "origem": {
+        "fonte": "MOLA MEGDR a 16 pixels por grau (megt90n000eb, PDS Geosciences) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/",
+        "licenca": "domínio público (NASA)",
+        "atribuicao": "Topografia: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR v2. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna"
+    },
+    {
       "corpo": "mercury",
       "canal": "map",
       "arquivo": "textures/atlas/mercury/map_1024.jpg",
@@ -1884,6 +1986,108 @@
         "atribuicao": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
       },
       "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mercury/normal_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 591108,
+      "sha256": "5cef5cf45ed72f778246ffaad862f85a3dd08802ed160b54d6c9c5832c3009a4",
+      "origem": {
+        "fonte": "MESSENGER Global DEM 665 m v2 (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/mercury_messenger_usgs_dem_global_665m_v2",
+        "licenca": "domínio público (NASA/USGS)",
+        "atribuicao": "Topografia: USGS Astrogeology Science Center, a partir das imagens estéreo da MDIS (MESSENGER, NASA/JHUAPL/Carnegie). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mercury/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 440846,
+      "sha256": "2f458896250e1754ebc927aa4a895f06611c5793f5ebc41231adcc63ca423442",
+      "origem": {
+        "fonte": "MESSENGER Global DEM 665 m v2 (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/mercury_messenger_usgs_dem_global_665m_v2",
+        "licenca": "domínio público (NASA/USGS)",
+        "atribuicao": "Topografia: USGS Astrogeology Science Center, a partir das imagens estéreo da MDIS (MESSENGER, NASA/JHUAPL/Carnegie). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mercury/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2470530,
+      "sha256": "95ac09780d2badc58af0129417457aee9a090213321d684e977085b0874e1e99",
+      "origem": {
+        "fonte": "MESSENGER Global DEM 665 m v2 (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/mercury_messenger_usgs_dem_global_665m_v2",
+        "licenca": "domínio público (NASA/USGS)",
+        "atribuicao": "Topografia: USGS Astrogeology Science Center, a partir das imagens estéreo da MDIS (MESSENGER, NASA/JHUAPL/Carnegie). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mercury/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1775304,
+      "sha256": "413960930b1def471d233eb0e07cb725642f684abba257e680409d93c236d2a3",
+      "origem": {
+        "fonte": "MESSENGER Global DEM 665 m v2 (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/mercury_messenger_usgs_dem_global_665m_v2",
+        "licenca": "domínio público (NASA/USGS)",
+        "atribuicao": "Topografia: USGS Astrogeology Science Center, a partir das imagens estéreo da MDIS (MESSENGER, NASA/JHUAPL/Carnegie). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mercury/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 8730923,
+      "sha256": "3a281a63785f35827594e944abe24e916c84b97791e2ae392f9998c376d10469",
+      "origem": {
+        "fonte": "MESSENGER Global DEM 665 m v2 (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/mercury_messenger_usgs_dem_global_665m_v2",
+        "licenca": "domínio público (NASA/USGS)",
+        "atribuicao": "Topografia: USGS Astrogeology Science Center, a partir das imagens estéreo da MDIS (MESSENGER, NASA/JHUAPL/Carnegie). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem"
+    },
+    {
+      "corpo": "mercury",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mercury/normal.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 5438032,
+      "sha256": "61edf5a1739e9c387c57733a09b9fa8e1589ef3f60a0e3d69d0db06b7a9412fa",
+      "origem": {
+        "fonte": "MESSENGER Global DEM 665 m v2 (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+        "url": "https://astrogeology.usgs.gov/search/map/mercury_messenger_usgs_dem_global_665m_v2",
+        "licenca": "domínio público (NASA/USGS)",
+        "atribuicao": "Topografia: USGS Astrogeology Science Center, a partir das imagens estéreo da MDIS (MESSENGER, NASA/JHUAPL/Carnegie). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
+      },
+      "proveniencia": "derivado",
+      "nota": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem"
     },
     {
       "corpo": "mimas",
@@ -2201,7 +2405,7 @@
         "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
         "url": "https://svs.gsfc.nasa.gov/4720",
         "licenca": "domínio público (NASA)",
-        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
       "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"
@@ -2218,7 +2422,7 @@
         "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
         "url": "https://svs.gsfc.nasa.gov/4720",
         "licenca": "domínio público (NASA)",
-        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
       "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"
@@ -2235,7 +2439,7 @@
         "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
         "url": "https://svs.gsfc.nasa.gov/4720",
         "licenca": "domínio público (NASA)",
-        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
       "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"
@@ -2252,7 +2456,7 @@
         "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
         "url": "https://svs.gsfc.nasa.gov/4720",
         "licenca": "domínio público (NASA)",
-        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
       "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"
@@ -2269,7 +2473,7 @@
         "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
         "url": "https://svs.gsfc.nasa.gov/4720",
         "licenca": "domínio público (NASA)",
-        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
       "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"
@@ -2286,7 +2490,7 @@
         "fonte": "LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física",
         "url": "https://svs.gsfc.nasa.gov/4720",
         "licenca": "domínio público (NASA)",
-        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-da-lua.mjs)."
+        "atribuicao": "Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs)."
       },
       "proveniencia": "derivado",
       "nota": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela"

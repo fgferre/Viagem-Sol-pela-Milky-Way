@@ -259,6 +259,33 @@ const SEGMENTOS_COM_RELEVO: readonly [number, number] = [256, 128];
 /** A escala TANGENCIAL do mapa de normais — o 1,2 dele (`normalScale`). */
 const ESCALA_DA_NORMAL_DO_RELEVO = 1.2;
 
+/**
+ * A NORMAL MEDIDA (item 141) — os corpos cujo relevo vem de DEM público
+ * e entra SÓ NA LUZ. É o caminho que a Lua estreou no item 140, agora em
+ * Mercúrio e Marte: `scripts/data/atlas/gera-normal-de-dem.mjs` assa o
+ * mapa de normais em AMPLITUDE FÍSICA (a inclinação do texel é a
+ * inclinação medida do terreno) e o shader o consome pelo frame
+ * tangente.
+ *
+ * A DIFERENÇA PARA `RELEVO_DA_LUA`: lá o mapa de ALTURA também desloca
+ * vértice, e por isso a malha engrossa e a silhueta muda. Aqui NADA
+ * desloca vértice — a silhueta segue a do elipsoide exato de
+ * `BODY_AXES`, a esfera continua a de 128x64, e o que o mapa faz é
+ * girar a normal para o Sol desenhar sombra DENTRO da cratera. Em
+ * Mercúrio e Marte o relevo real é milésimo do raio — a faixa INTEIRA de
+ * altura de Mercúrio mede 9,6 km (medida na grade de 720 do DEM) num raio de
+ * 2439, e a de Marte 29 km num raio de 3396; deslocar vértice não
+ * mudaria pixel de limbo e custaria a malha densa.
+ *
+ * O valor é a ESCALA TANGENCIAL, e é 1 — nenhum ganho. As luas de
+ * Saturno usam 1,2 porque o número é o do projeto do dono; aqui a
+ * amplitude já é a medida, e exagerá-la seria voltar a inventar.
+ */
+export const NORMAL_MEDIDA: Readonly<Record<string, number>> = {
+  mercury: 1,
+  mars: 1,
+};
+
 /** Raios do corpo em pc — BODY_AXES (a fonte única) pelos
  *  conversores únicos; nenhum literal novo de comprimento. */
 export function raiosDoRochosoPc(id: string): { a: number; c: number; b: number } {
@@ -668,7 +695,9 @@ export class RochosoResolvido {
           ? []
           : this.config.id in RELEVO_DA_LUA
             ? [CANAL_MAP, CANAL_ALTURA, CANAL_NORMAL]
-            : [CANAL_MAP],
+            : this.config.id in NORMAL_MEDIDA
+              ? [CANAL_MAP, CANAL_NORMAL]
+              : [CANAL_MAP],
       rede: opcoes,
       oQueNaoNasce: 'o corpo não nasce nesta sessão',
       publicar: (porCanal) => {
@@ -681,7 +710,9 @@ export class RochosoResolvido {
           const img = tex.image as { width?: number; height?: number } | undefined;
           (u.uTamanhoDoMapa.value as THREE.Vector2).set(img?.width ?? 0, img?.height ?? 0);
         }
-        // o lote é ATÔMICO (texturas.ts): ou vieram os três, ou nenhum
+        // o lote é ATÔMICO (texturas.ts): ou veio inteiro, ou nenhum —
+        // três canais com relevo de vértice, dois com normal medida
+        // (item 141), um no resto
         const alt = porCanal.get('height');
         if (alt) u.uMapaAltura.value = alt;
         const nrm = porCanal.get('normal');
@@ -950,7 +981,11 @@ export class RochosoResolvido {
         uRelevo: {
           value: new THREE.Vector2(relevo?.escala ?? 0, relevo?.vies ?? 0),
         },
-        uRelevoNormal: { value: relevo ? ESCALA_DA_NORMAL_DO_RELEVO : 0 },
+        uRelevoNormal: {
+          value: relevo
+            ? ESCALA_DA_NORMAL_DO_RELEVO
+            : (NORMAL_MEDIDA[this.config.id] ?? 0),
+        },
         // item 138 — a graduação do mosaico Cassini; (0,1) fora das seis
         uGraduacao: {
           value: new THREE.Vector2(

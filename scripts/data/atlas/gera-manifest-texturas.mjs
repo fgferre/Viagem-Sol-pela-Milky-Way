@@ -471,7 +471,7 @@ const ORIGENS = {
   // de Tycho. Agora a normal vem da topografia do LRO, que é o melhor
   // dado de terreno que existe fora da Terra. 'derivado' porque o
   // produto publicado é o mapa de ALTURA: a normal é assada dele aqui,
-  // por `scripts/data/atlas/gera-normal-da-lua.mjs`.
+  // por `scripts/data/atlas/gera-normal-de-dem.mjs`.
   'moon/normal': {
     fonte:
       'LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — ' +
@@ -481,7 +481,35 @@ const ORIGENS = {
     atribuicao:
       'Topografia: NASA/Goddard Space Flight Center Scientific Visualization ' +
       'Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de ' +
-      'normais assado nesta casa (gera-normal-da-lua.mjs).',
+      'normais assado nesta casa (gera-normal-de-dem.mjs).',
+    proveniencia: 'derivado',
+  },
+
+  // ---- ITEM 141 (2026-09-03): a mesma técnica em MERCÚRIO e MARTE. Os
+  // dois recebiam o bump do albedo (0,02 do raio — em Marte, 68 km de
+  // relevo falso) e agora recebem a topografia medida. Mesmo caminho da
+  // Lua: DEM público, normal assada em amplitude física, luz só.
+  'mercury/normal': {
+    fonte:
+      'MESSENGER Global DEM 665 m v2 (USGS Astrogeology) — mapa de ' +
+      'NORMAIS derivado da altura, em amplitude física',
+    url: 'https://astrogeology.usgs.gov/search/map/mercury_messenger_usgs_dem_global_665m_v2',
+    licenca: 'domínio público (NASA/USGS)',
+    atribuicao:
+      'Topografia: USGS Astrogeology Science Center, a partir das imagens ' +
+      'estéreo da MDIS (MESSENGER, NASA/JHUAPL/Carnegie). Mapa de normais ' +
+      'assado nesta casa (gera-normal-de-dem.mjs).',
+    proveniencia: 'derivado',
+  },
+  'mars/normal': {
+    fonte:
+      'MOLA MEGDR a 16 pixels por grau (megt90n000eb, PDS Geosciences) — ' +
+      'mapa de NORMAIS derivado da altura, em amplitude física',
+    url: 'https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg016/',
+    licenca: 'domínio público (NASA)',
+    atribuicao:
+      'Topografia: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR ' +
+      'v2. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
     proveniencia: 'derivado',
   },
 };
