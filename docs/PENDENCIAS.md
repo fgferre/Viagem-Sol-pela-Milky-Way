@@ -73,6 +73,38 @@ esperam ordem. Backup em dia; site intocado (publicar só com pedido dele).
 
 ## ALTA — o dono vê e incomoda
 
+**144. "O app está um pouco pesado nessa máquina."** (Palavras dele,
+03/09, ao trazer o relatório de desempenho de outra IA.) Medido no M1
+dele, Atlas de abertura, janela 2560×1500, modo cru do `gpu-profile`:
+**cinema 5,3–5,6 fps, alta 8,3, performance 24**; em janela 1200×900,
+cinema dá 19. Números e ablações em `capturas/desempenho-m1-03-09.txt`.
+- A causa maior é o **MSAA do item 120/F1** (31/08): o código de 24/08,
+  no mesmo Chrome e na mesma vista, faz 10,5 fps onde hoje faz 5,3, e o
+  filme (`?t=100`, 1200×900) 15,8 onde hoje faz 9,1 — com `?msaa=0`
+  o filme volta a 15,3. O preço não é a beira suavizada: é o composer
+  escrevendo QUATRO vezes no `renderTarget1` multiamostrado (cena, blend
+  do bloom, soma do `ClaraoDoCampo`, `OutputPass`), e o three resolve o
+  alvo de 15 MP ao fim de cada `render()`. Com os cobertores desligados o
+  MSAA custa 24 ms; com eles, 67 (37% do quadro).
+- Depois dele: a nebulosa (25–30%, `Nebula.render` sem uniform de tempo —
+  parada, o quadro é bit-idêntico e é recalculado a 60 Hz mesmo assim) e
+  os 4,02 M pontos da galáxia (16%; disco, brilho e poeira custam ~0).
+  Estrelas do catálogo, as 16 estrelas-herói, órbitas e nomes: abaixo da
+  resolução da medida.
+- Fora do MSAA, sobra +6 ms desde 24/08 no Atlas 1200×900 (33,4 → 27,6
+  fps com `?msaa=0`); Saturno S5 declarou +1,9; o resto não atribuído.
+- O instrumento por passe (timer query por draw) **mente no chip da
+  Apple**: apontava as 16 estrelas-herói como 41% do quadro e a ablação
+  deu zero. Ranking só por ablação em modo cru.
+**Obra, na ordem do ganho/custo:** (1) o composer resolver o MSAA UMA
+vez — a cena cai num alvo multiamostrado próprio, resolve uma vez e o
+pós roda em alvos lisos (técnica, decide-se aqui); (2) MSAA só nas fases
+com linha de órbita (`LINHAS_DE_ORBITA_POR_FASE`: o filme não tem e paga
+o mesmo) — visual, **espera a palavra dele**; (3) nebulosa congelada com
+a câmera parada, zero pixel mudado; (4) o orçamento de pixels de
+cinema em tela cheia Retina e a ideia dele de um menu de gráficos com
+preset Personalizado — decisão de produto, **espera a palavra dele**.
+
 **115.** A colheita da mineração do Eyes — **FECHADO em 02/09**; ARQUIVO.
 *(Blocos A e B cumpridos em 31/08: memória de texturas 1.083 → 70 MiB
 residentes com descarga de 15 s, decodificação fora da thread e
@@ -481,7 +513,8 @@ movimento nem histórico), então cabe num passe de pós: **renderizar a
 esperado: **30–50% do tempo de GPU devolvido** — e isso importa porque o
 app **é GPU-bound**: **36–42 fps** no M1 em `cinema`/`pixelRatio` 2,0 —
 medido em **24/08 com `scripts/visual/gpu-profile.mjs`**, janela
-1200×900. (O mesmo instrumento, na vista das galileanas, deu 22,8 fps:
+1200×900 *(cifra que NÃO reproduz em 03/09 nem no código de 24/08: 33,4
+no Atlas e 12,6 no filme, modo cru — item 144)*. (O mesmo instrumento, na vista das galileanas, deu 22,8 fps:
 a faixa depende da vista, e quem citar o número tem de citar qual.)
 
 **A RESSALVA, escrita antes de alguém se animar:** a nossa cena é o

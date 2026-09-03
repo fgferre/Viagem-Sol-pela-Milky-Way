@@ -266,7 +266,9 @@ acrescentar uma cegueira acrescenta um item, e mais nada:
 - **Referência visual entre 1 e 40 UA.** As vistas `ua2`…`ua2000` existem;
   foto-oráculo nessa faixa, não (item 12).
 - **O FPS É CEGO A CUSTO DE THREAD — medido em 24/08.** No M1, a 1200×900
-  em cinema, o app anda a **36–42 fps** preso pela GPU: sobram ~25 ms de
+  em cinema, o app anda preso pela GPU (a cifra de 36–42 fps escrita em
+  24/08 não reproduz: em 03/09 o código de 24/08 dá 33,4 no Atlas e 12,6
+  no filme, modo cru — item 144): sobram dezenas de ms de
   orçamento por quadro, e trabalho de JS de poucos milissegundos se
   ESCONDE inteiro atrás da folga. Um A/B de quadro não o enxerga — e não
   enxergar não é não existir. Quando a mudança é de CPU (React, HUD,
