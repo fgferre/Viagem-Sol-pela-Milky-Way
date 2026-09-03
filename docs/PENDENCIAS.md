@@ -49,25 +49,25 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ---
 
-## O BASTÃO — onde a rodada parou (02/09, noite)
+## O BASTÃO — onde a rodada parou (03/09, noite — FECHO por ordem dele)
 
-**02/09 (noite — a ONDA DE SATURNO FECHOU).** O item **134** está
-completo: S1–S5 feitas, S3c fechada pela palavra dele (a luz assistida
-fica como está), **135** (anel cortado "como se batesse na lente") e
-**136** (órbitas "muito próximas", verificadas contra a JPL) fechados no
-caminho. A lista do §19 foi aprovada e rodou: unidades 287/287, suíte
-inteira 1× (30 falhas → 28 guardas atualizadas + 2 defeitos consertados),
-z-fighting OK, ab-identidade 48 IGUAL + 6 INSTÁVEL conhecidas + 0 DIFERE.
-Sobra numerada: **137** (assets `ring*` órfãos). **Próxima frente: 130
-(app bilíngue pt-BR/EN)** — começar pelo censo por olho do que é texto de
-tela. Backup em dia; site intocado (publicar só com pedido dele).
-
-**Sobra SEM obra (03/09):** a dose do miolo dos jatos de Encélado
-(`DOSE_BASE = 0.055` em `world/corpos/plumas.ts`) é o número do projeto
-Saturn DELE, trazido como está. Ele viu a foto de contraluz
-(`item134-s4-encelado-contraluz.png`) e não pediu mudança: **fica como
-está, sem teste, declarado** — número de gosto, não de física medida
-nesta casa; não vira item nem entra na lista do §19.
+**03/09 (noite — janela encerrada com a varredura de fecho).** Nesta
+janela fecharam **134** (onda de Saturno, S3c pela palavra dele), **135**
+(anel cortado "como se batesse na lente"), **136** (órbitas verificadas
+contra a JPL), **138** (Jápeto e as luas com os mosaicos dele; o relevo
+estava meia volta errado desde a S2), **139** (partículas dentro dos
+anéis + o chão do anel no plano próximo), **140** (a Lua com o relevo
+real do LRO), **141** (relevo real em Mercúrio, Marte, Ceres e Vesta;
+Ceres com mosaico real; Vesta girada para a IAU; Europa/Io sem relevo
+inventado) e **130** (app bilíngue, inglês como padrão). Testes: todas as
+listas do §19 aprovadas por ele e rodadas (suíte 2885 verde no fim).
+Auditoria de 7 pontos sobre `925df66..7c07ad8` com um conserto por achado
+(`8d7cd1d`); varredura das cinco perguntas sobre `7c07ad8..e911b8e` sem
+achado (mecanico, só leitura). **FILA, na ordem dele:** **142** (tiles de
+textura do NASA Eyes — obra grande, anunciar custo), **143** (o juiz de
+identidade lê INSTÁVEL como igual), **137** (assets `ring*` órfãos),
+**132** (re-pinar o juiz do atlas), **114**; Fobos/Deimos por forma real
+esperam ordem. Backup em dia; site intocado (publicar só com pedido dele).
 
 ---
 
