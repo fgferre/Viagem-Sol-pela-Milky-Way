@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 143.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 144.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -169,100 +169,9 @@ download por corpo em cinema (mapa 12 MB + normal 9 MB) e o disco do site
 2). Obra GRANDE (carregador de tiles + assamento + testes). **DECISÃO DELE
 (03/09): "deixa o 142 na fila depois do 130."**
 
-**141. Os outros candidatos à técnica da Lua (relevo real, só na luz).**
-Pedido dele, 03/09: *"ver que outros candidatos podem se beneficiar da mesma
-tecnica"*. Censo (03/09, cruzando o manifesto de texturas com os mapas de
-altura públicos que existem): hoje recebem o relevo INVENTADO da cor
-(bump do albedo, S2) todos os corpos com mapa menos Vênus/Titã/Ceres, as
-seis luas de Saturno (relevo real) e as nove esculpidas. Com mapa de altura
-global, real e de domínio público (NASA/USGS): **Mercúrio** (MESSENGER,
-665 m/px), **Marte** (MOLA+HRSC, 200 m/px), **Vesta** e **Ceres** (Dawn
-HAMO, ~100 m/px — Ceres ganharia relevo verdadeiro por baixo do mapa de cor
-que a própria fonte confessa inventado). **Fobos e Deimos** têm modelo de
-FORMA real (Gaskell/SPC), não mapa: o caminho é a malha esculpida com dado
-real, não normais. **Sem dado global** (só cobertura parcial de sobrevoo):
-Io, Europa, Ganimedes, Calisto, Plutão, Caronte, Tritão, as luas de Urano,
-Higia, Palas — nesses o relevo da cor continua sendo invenção (Europa e Io
-são cor, não forma) e a decisão é dele: manter como aproximação declarada
-ou zerar. Ordem sugerida, depois de a Lua (140) provar a técnica: Mercúrio
-→ Marte → Ceres → Vesta (um operário a cada dois corpos); Fobos/Deimos
-numa fase própria.
-  **DECISÃO DELE (03/09): "pode zerar Europa e Io"** — feito no mesmo
-  commit desta linha (`BUMP_DO_ALBEDO`), fotos `capturas/item141-{europa,io}-*`.
-  Mercúrio e Marte FEITOS (`f4f6db0`); Ceres e Vesta FEITOS (2ª fase, estado
-  abaixo); falta Fobos/Deimos (forma real, malha).
+**141.** Relevo real (só na luz) nos candidatos — **FECHADO em 03/09**: Mercúrio e Marte (`f4f6db0`), Ceres e Vesta (`a6a6cc4`), Ceres com o mosaico real da Dawn e Vesta girada para a IAU (`5135978`), Europa e Io fora do relevo inventado (`804825e`); gerador único `gera-normal-de-dem.mjs`; testes aprovados rodados (`a5d35b5`); sobra sem ordem dele: Fobos/Deimos por forma real; ARQUIVO.
 
-**ESTADO (03/09 — Mercúrio e Marte feitos, falta a palavra dele).** Os dois
-saíram do relevo INVENTADO da cor e ganharam o real, pelo mesmo caminho da Lua:
-normal medida, só na luz, silhueta intacta. **Mercúrio** — DEM MESSENGER 665 m
-da USGS (530 MB, lido pela REDE em faixas, sem baixar: 212 MiB), normal
-4096×2048, inclinação RMS 2,86° e máxima 56,43°. **Marte** — MOLA MEGDR a 16
-px/grau (33 MB), RMS 1,94° e máxima 30,35°: Marte é liso nesta régua, e o
-"relevo" que ele tinha antes era 2 % do raio, 68 km de montanha falsa. Os dois
-DEMs nascem meia volta virados em relação às nossas texturas, e o giro é
-CONFERIDO por medida (energia de borda altura×albedo: Mercúrio 0,201 contra
-0,018 na meia volta, Marte 0,133 contra −0,017). O gerador da Lua virou um só
-para os três (`gera-normal-de-dem.mjs`) e a Lua sai dele byte a byte igual.
-Custo: passe do corpo 0,311→0,315 ms em Mercúrio e 0,398→0,402 em Marte — as
-faixas dos dois lados se cruzam, e a taxa de quadro não mudou; disco 218,65 →
-250,98 MB. Fotos `capturas/item141-{mercury,mars}-prancha.png`, custo em
-`capturas/item141-custo-{antes,depois}.txt`. FORA: Fobos/Deimos (é malha, não
-normal) e a lista do §19.
-
-**ESTADO (03/09 — Ceres e Vesta feitos, falta a palavra dele).** Os dois corpos
-da Dawn entraram pelo mesmo caminho, com uma diferença que os três primeiros
-não tinham: o elipsoide de `BODY_AXES` deles NÃO é quase-esfera (Ceres
-487,3×446, Vesta 289×280×229) e `normalDoCorpo` já desenha essa figura, então o
-gerador **subtrai o elipsoide da casa** antes de derivar — sem isso, Vesta
-levaria duas vezes os ~8° de rampa do próprio achatamento. **Ceres** — DTM Dawn
-FC HAMO 137 m (DLR/USGS, 466 MB lidos por faixas: 198,41 MB), RMS 10,86° e
-máxima 63,62°; a guarda não pôde usar o mapa de cor da casa (o
-`2k_ceres_fictional`, invenção declarada) e mediu contra o mosaico REAL da Dawn,
-baixado só para isso e apagado: 0,2124 contra −0,0056 na meia volta, pico agudo
-em 0°. **Vesta** — DTM Dawn HAMO 93 m em float32 (o leitor por faixas aprendeu
-o formato), 597 MB lidos como 317,46 MB, RMS 17,44° e máxima 84,61°; a guarda
-REPROVOU a orientação do rótulo e a varredura das 72 defasagens achou o pico em
-**150°** — os dois sistemas de longitude de Vesta. A segunda medida (mosaico de
-cor da USGS contra o `map.jpg` da casa, pico também em 150°, 0,3118) mostra que
-**quem está fora da IAU é o mapa de COR da casa**, não o DEM; o relevo foi
-alinhado à cor, e girar a cor 150° fica PENDENTE (`capturas/item141-vesta-longitude.txt`).
-Custo: passe do corpo 0,616→0,617 ms em Ceres e 0,359→0,362 em Vesta, faixas
-cruzadas e taxa de quadro igual; disco 250,98 → 316,45 MB. Fotos
-`capturas/item141-{ceres,vesta}-prancha.png`, custo em
-`capturas/item141b-custo-{antes,depois}.txt`. FORA e RELATADO: trocar o mapa de
-cor inventado de Ceres pelo mosaico Dawn de domínio público (27 MB, existe e
-cabe), girar o mapa de cor de Vesta em 150°, Fobos/Deimos (é malha, não normal)
-e a lista do §19.
-  **Sobras da 2ª fase (03/09):** (a) e (b) FEITAS na 3ª fase (estado
-  abaixo, palavra dele "concordo com um e com dois"); abertas ainda: (c)
-  Marte carrega ~0,2° de rampa do achatamento por não ter `eixosDaCasaKm`
-  (pequeno contra RMS 1,94°); (d) Fobos/Deimos por forma real (malha).
-
-**ESTADO (03/09 — 3ª fase: a COR de Ceres e de Vesta, falta a palavra dele).**
-As duas sobras fecharam. **Ceres** trocou o `2k_ceres_fictional` do Solar
-System Scope — a única textura da casa cuja própria fonte se declarava
-invenção — pelo mosaico global REAL da Framing Camera da Dawn (DLR via USGS,
-7383×3691, 27 MB, domínio público), entregue a 4096×2048. É preto-e-branco na
-origem (filtro claro), então a cor é um tingimento uniforme DECLARADO
-(R 1,021 / G 1,000 / B 0,946, tirado dos índices de cor publicados contra os
-do Sol) e o nível não foi mexido. O polo sul, que a Dawn pegou em noite polar
-(3,6 % de texels vazios abaixo de −84°), foi preenchido com a média da faixa
-de latitude vizinha — sem isso a casa teria a mancha preta que fez rejeitar o
-mosaico de Europa. A guarda passou a medir contra o mapa ENTREGUE (a exceção
-`albedoDaGuarda` morreu junto com o motivo): 0,2134 contra −0,0029 na meia
-volta, pico agudo em 0°, e o `normal.png` reassado sai BYTE A BYTE igual ao da
-2ª fase. **Vesta** teve o mapa de cor girado −150°, do sistema "Claudia" da
-sonda para o meridiano da IAU que o motor usa, e o relevo VOLTOU ao rótulo do
-DEM (borda esquerda 180°, giro 0): a guarda passa sem varredura, 0,1379 contra
-0,0749, e o normal novo girado 150° bate byte a byte com o antigo — só a
-longitude mudou. Agora a face que o Sol ilumina na data também é a certa.
-Disco 316,45 → 320,17 MB. Fotos `capturas/item141-{ceres,vesta}-cor-prancha.png`
-e `capturas/item141-ceres-occator.png` (a cratera Occator com as fáculas na
-tela, conferida contra os 239,33°E / 19,86°N publicados); guardas em
-`capturas/item141c-guardas.txt`. **FORA e RELATADO:** o pino
-`src/lib/atlas/ficha.test.ts` que exigia a palavra "inventado" na confissão de
-Ceres ficou desatualizado e NÃO foi tocado (fora do pacote); Fobos/Deimos (é
-malha, não normal); a lista do §19.
+**143. O juiz de identidade marcou "INSTÁVEL com diff 0" em vistas que DIFEREM de fato.** Achado do coordenador, 03/09, ao fechar o 141: a rodada 625c86a→5135978 do `ab-identidade` deu 48 IGUAL + 6 INSTÁVEL (mercurio, mercurionb, vesta, anao-vesta-corpo, atlas-corpo-marte, foco-io) "com 0 pixel de diferença" — mas essas vistas contêm corpos que o 141 mudou de propósito, e a mesma vista `atlas-corpo-marte` fotografada por mim nas duas árvores (5222/5223, `capturas/item141-chk-marte-{antes-,}q700.png`) dá md5 diferente e **351 de 3.249 blocos tocados** (`diff-pixel`). Suspeita: o lado "antes" recapturado por vista isolada (ou a retomada de disco) pegou o servidor errado — em INSTÁVEL o "antes" traz dois hashes e um deles é o do "depois". A verificar no instrumento antes da próxima rodada; até lá, INSTÁVEL não vale como IGUAL: confere-se com foto nas duas árvores.
 
 **138.** Jápeto "totalmente feio" e a paridade das luas contra o projeto dele — **FECHADO em 03/09** (`c70a204`: mosaicos Schenk graduados como lá; o relevo estava meia volta errado nas seis desde a S2); nível e Titã laranja ficam como estão, palavra dele "tudo ok, já avaliei"; ARQUIVO.
 
