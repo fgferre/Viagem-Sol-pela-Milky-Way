@@ -49,6 +49,9 @@
 // ============================================================
 import * as THREE from 'three';
 import { CAMADA_DOS_OCULTADORES } from '../../core/post';
+// o NEAR do quadro pelo MESMO escritor que o engine usa (item 135): a
+// lajota do anel (139) apaga o grão que o plano de corte cortaria ao meio
+import { PISO_DO_NEAR_EM_RAIOS, nearPlanePc } from '../../core/engine';
 import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import {
   AU_PARA_PC,
@@ -81,6 +84,8 @@ import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { GLSL_RUIDO_DE_VALOR, diametroAparentePx } from './corpos';
 import { AneisTenuesDeSaturno } from './aneisTenues';
 import type { QuadroDosAneisTenues } from './aneisTenues';
+import { LajotaDoAnel } from './lajotaDoAnel';
+import type { QuadroDaLajota } from './lajotaDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
 import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
@@ -948,6 +953,25 @@ float ondasDeDafnis(float uBase, float ang, float dafnisLon) {
 `;
 
 /**
+ * AS CONSTANTES DO ANEL EM GLSL — a régua do perfil (`U_ESCALA`/`U_BASE`),
+ * a âncora de I/F e as duas cores. Vivem num pedaço só porque a LAJOTA
+ * VOLUMÉTRICA (item 139, `lajotaDoAnel.ts`) amostra o MESMO perfil com a
+ * MESMA croma relativa: redigitá-las lá seria a segunda fonte de verdade
+ * de sempre — e ela é passada por parâmetro, não importada, para não
+ * abrir aresta de volta a este arquivo.
+ *
+ * `ALBEDO_GEO` entra no bloco embora só o planetshine o use: tirá-lo
+ * mudaria a ORDEM do texto do `ANEL_FRAG`, e o que este recorte promete é
+ * um shader byte a byte igual ao que já estava provado.
+ */
+export const GLSL_CONSTANTES_DO_ANEL = /* glsl */ `const float IF_RETRO = ${IF_RETRO_DO_GELO};
+const vec3 COR_DO_GELO = vec3(${COR_DO_GELO_DO_ANEL.join(', ')});
+const vec3 COR_B_DO_PERFIL = vec3(${COR_B_DO_PERFIL.join(', ')});
+const float ALBEDO_GEO = ${ALBEDO_GEO_SATURNO};
+const float U_ESCALA = ${U_PERFIL_ESCALA};
+const float U_BASE = ${U_PERFIL_BASE};`;
+
+/**
  * Anel de Saturno: perfil radial medido + camada de partículas +
  * planetshine + sombra do planeta elipsoide. vPos está no frame da
  * RingGeometry (plano XY); o mesh aplica Rx(−π/2), então +Z deste frame
@@ -965,12 +989,7 @@ uniform float uFaseDosRaios;
 uniform float uDafnisLon;
 varying vec3 vPos;
 const float PI = 3.14159265358979;
-const float IF_RETRO = ${IF_RETRO_DO_GELO};
-const vec3 COR_DO_GELO = vec3(${COR_DO_GELO_DO_ANEL.join(', ')});
-const vec3 COR_B_DO_PERFIL = vec3(${COR_B_DO_PERFIL.join(', ')});
-const float ALBEDO_GEO = ${ALBEDO_GEO_SATURNO};
-const float U_ESCALA = ${U_PERFIL_ESCALA};
-const float U_BASE = ${U_PERFIL_BASE};
+${GLSL_CONSTANTES_DO_ANEL}
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
 ${GLSL_CAMADA_DO_ANEL}
@@ -1179,6 +1198,13 @@ export class GiganteResolvido {
   private tenues: AneisTenuesDeSaturno | null = null;
   /** o quadro dos dois véus, REUSADO (zero alocação por tick, M4 da casa) */
   private quadroDosTenues: QuadroDosAneisTenues | null = null;
+  /** item 139: a lajota volumétrica — só Saturno a tem (`lajotaDoAnel.ts`) */
+  private lajota: LajotaDoAnel | null = null;
+  /** o quadro da lajota, REUSADO (zero alocação por tick, M4 da casa) */
+  private quadroDaLajota: QuadroDaLajota | null = null;
+  /** o tier VIVO, lido na hora: a contagem de grãos da lajota é alocação,
+   *  e alocação lê o tier antes de alocar (a regra das plumas) */
+  private readonly tierVivo: OpcoesDoGigante['tier'];
   /** a LUT de latitudes do ringshine — só Saturno tem uma */
   private ringshine: RingshineDoAnel | null = null;
   /** BASE_URL do vite, para buscar o perfil medido do anel */
@@ -1213,6 +1239,7 @@ export class GiganteResolvido {
   constructor(opcoes: OpcoesDoGigante) {
     this.idCorpo = opcoes.id;
     this.base = opcoes.base;
+    this.tierVivo = opcoes.tier;
     const { a, c, b } = raiosDoGigantePc(this.idCorpo);
     this.raioA = a;
     this.razaoC = c / a;
@@ -1428,6 +1455,26 @@ export class GiganteResolvido {
         this.tenues.fixarNoAnel(this.anel.matrix);
         this.tenues.atualizar(t);
       }
+
+      // A LAJOTA VOLUMÉTRICA (139). O NEAR sai do MESMO escritor que o
+      // engine usa para o quadro (`nearPlanePc`), com os mesmos três
+      // argumentos: sem ele a soleira do grão colado na lente seria uma
+      // segunda conta do plano de corte, livre para divergir da primeira.
+      if (this.lajota && this.quadroDaLajota) {
+        const l = this.quadroDaLajota;
+        l.dirSolLocal.copy(ua.uDirSolLocal.value as THREE.Vector3);
+        l.camLocal.copy(ua.uCamLocal.value as THREE.Vector3);
+        l.luzGanho = ganho;
+        l.solAngRad = solAngRad;
+        l.kPolar = this.kPolar;
+        l.nearRaios =
+          nearPlanePc(
+            q.camPosPc.length(), delta.length() - this.raioA, this.raioA
+          ) / this.raioA;
+        l.tier = this.tierVivo();
+        this.lajota.fixarNoAnel(this.anel.matrix);
+        this.lajota.atualizar(l);
+      }
     }
   }
 
@@ -1543,6 +1590,25 @@ export class GiganteResolvido {
           fase: 0,
         };
         this.group.add(this.tenues.grupo);
+        // item 139 — a lajota volumétrica: as partículas e pedras de gelo
+        // de DENTRO do anel. Nasce com o anel e vive escondida: só entra
+        // no desenho com a câmera rente ao plano (ver `atualizar` dela).
+        this.lajota = new LajotaDoAnel({
+          glslSombraDoPlaneta: GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
+          glslConstantesDoAnel: GLSL_CONSTANTES_DO_ANEL,
+          rInt: anel.rInt,
+          rExt: anel.rExt,
+        });
+        this.quadroDaLajota = {
+          dirSolLocal: new THREE.Vector3(),
+          camLocal: new THREE.Vector3(),
+          luzGanho: 1,
+          solAngRad: 0,
+          kPolar: this.kPolar,
+          nearRaios: PISO_DO_NEAR_EM_RAIOS,
+          tier: 'cinema',
+        };
+        this.group.add(this.lajota.malha);
         void this.ligarPerfilDoAnel();
       }
     }
@@ -1564,6 +1630,7 @@ export class GiganteResolvido {
     if (this.disposto || !perfilDoAnelVivo) return;
     const { textura, bytes } = perfilDoAnelVivo;
     if (this.matAnel) this.matAnel.uniforms.uMapaAnel.value = textura;
+    this.lajota?.ligarPerfil(textura);
     if (this.matSuperficie) {
       this.matSuperficie.uniforms.uMapaAnel.value = textura;
       this.ringshine = new RingshineDoAnel(bytes, this.kPolar);
@@ -1582,6 +1649,7 @@ export class GiganteResolvido {
     this.geoAnel?.dispose();
     this.matAnel?.dispose();
     this.tenues?.dispose();
+    this.lajota?.dispose();
     this.dummyAnel?.dispose();
     this.texturas.dispose();
   }

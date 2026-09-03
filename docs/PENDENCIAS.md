@@ -170,6 +170,27 @@ Trazer com a matemática dele, ligada pela distância da câmera ao plano do
 anel (fora da lajota nada muda; o filme longe de Saturno segue idêntico),
 custo medido nos três tiers, foto de dentro do anel para o olho dele.
 
+**ESTADO 02/09 — A LAJOTA ENTROU (`src/three/world/corpos/lajotaDoAnel.ts`,
+branch `obra-139`), FALTA O OLHO DELE.** Os números são dele: ladrilho de
+7 000 km ancorado no mundo, espessura ±12 km, grão de 4 a 14 km, dose
+0,30, lobo para a frente `0,55 + 1,6·cos⁴`, ligação a 1 600 km do plano
+com fade linear e entre 55 000 e 160 000 km do eixo. Ganhou o que o dele
+não tem: a sombra elipsoide do globo. **Fora da lajota nada muda** — a
+vista de 6 raios saiu com o MESMO md5 antes e depois, e a lajota nem
+compila o programa. Custo do passe em cinema, na vista de dentro do anel
+B: 2,08–2,14 ms com os 65 536 dele, acima do teto de 2 ms — o `cinema`
+ficou em 49 152 (`alta` 24 576 e `performance` 8 192 são os dele). Fotos
+em `capturas/item139-*`.
+
+**O QUE FICOU DE FORA E É PENDÊNCIA DE VERDADE: o plano NEAR.** Com a
+câmera a 40 km do plano do anel, `nearPlanePc` dá 193 km (0,4% da
+distância à superfície de Saturno) e CORTA todo o enxame perto — o chão
+de gelo some e sobra preto, que é o mesmo defeito do item 135 numa
+altura menor. A foto dele mostra o chão de pedras chegando até a lente;
+a nossa só a partir de ~300 km. A lajota já apaga o grão abaixo do near
+(sem estalo), mas quem manda ali é o engine, não ela — decidir isso é
+mudança de pixel em toda a casa e não coube neste item.
+
 **137.** Sobra da S1 do 134: os arquivos `public/textures/atlas/saturn/ring*` (8 arquivos, 216 KB) e o canal `ring` em `texturas.ts`, no manifesto e nos scripts de texturas ficaram órfãos — o anel lê o perfil medido. Remover com prova de não-uso (§6); os testes de `texturas.test.ts` que citam o canal entram na lista do §19 dessa faxina.
 
 

@@ -406,6 +406,24 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
       'são de verdade (140 180 km o F, 170 000 a 330 000 km o E) e os três só ' +
       'somam luz por cima, sem escrever profundidade',
   },
+  {
+    id: 'lajota-do-anel-de-saturno',
+    nome: 'as partículas e pedras de gelo de dentro do anel',
+    classe: 'instrumento',
+    fator: 24,
+    fatorDeBrilho: null,
+    endereco: 'src/three/world/corpos/lajotaDoAnel.ts:66',
+    razao:
+      'SÃO DOIS EXAGEROS, os dois dele (o ringSlab.ts do projeto Saturn). A ' +
+      'ESPESSURA: a lajota tem 24 km de altura (±12 km) contra um anel real de ' +
+      '~10 m a ~1 km — 24× o limite superior medido, e é o fator declarado ' +
+      'nesta linha; sem ele a camada é fina demais para a câmera atravessar e ' +
+      'ver volume. O GRÃO: cada sprite tem de 4 a 14 km de diâmetro contra a ' +
+      'partícula real de centímetros a metros, porque um sprite representa uma ' +
+      'multidão — é a mesma doutrina das plumas de Encélado. Os dois só somam ' +
+      'luz por cima (aditivo, sem escrever profundidade), e o RAIO em que o ' +
+      'enxame vive é o do perfil medido, sem exagero nenhum',
+  },
 ] as const;
 
 /**

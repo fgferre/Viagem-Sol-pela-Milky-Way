@@ -412,6 +412,28 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'A dose do miolo ainda não foi medida na unidade da casa: fatorDeBrilho null ' +
       'é a dívida escrita, o mesmo molde da poeira',
   },
+  {
+    // item 139: a lajota volumétrica não emite gl_PointSize — ela desenha
+    // em QUAD aditivo, que é exatamente o buraco que a SEGUNDA varredura
+    // (`PADRAO_DE_QUAD_ADITIVO`) existe para fechar.
+    id: 'lajota-do-anel-de-saturno',
+    nome: 'as partículas e pedras de gelo de dentro do anel (quads aditivos)',
+    arquivos: ['src/three/world/corpos/lajotaDoAnel.ts'],
+    consomeL1: false,
+    leiVelhaApagada: false,
+    fatorDeBrilho: null,
+    destino: 'fora-da-lei',
+    migracao: null,
+    emiteGlPointSize: false,
+    razao:
+      'não é fonte estelar: cada sprite é luz do SOL espalhada por uma multidão ' +
+      'de partículas de gelo do anel (densidade e cor do perfil medido, dose pela ' +
+      'exposição da visita e pela sombra elipsoide do globo), e o tamanho é ' +
+      'geométrico — o grão pela matriz do modelo, num quad deitado no plano da ' +
+      'câmera, sem gl_PointSize e por isso sem teto de 48 px. A dose (0,30 dele) ' +
+      'ainda não foi medida na unidade da casa: fatorDeBrilho null é a dívida ' +
+      'escrita, o mesmo molde das plumas',
+  },
 ];
 
 /**
