@@ -111,6 +111,10 @@
   font-size: 0.58rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  /* rótulo com espaço ("Do preset", "From preset") não quebra em duas
+     linhas: o botão cresce até o texto e os vizinhos cedem, como
+     "PERFORMANCE" já fazia por não ter espaço onde quebrar */
+  white-space: nowrap;
   transition: all 0.25s ease;
 }
 .ajustes-linha button:hover,
