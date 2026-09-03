@@ -146,39 +146,7 @@ dinamismo dos nomes do NASA Eyes".)*
 
 **134.** A ONDA DE SATURNO — a colheita do projeto Saturn dele (anéis com perfil medido e iluminação mútua; relevo das luas; nove luas esculpidas com o grão dele; jatos de Encélado; anéis E e F, raios do B, ondas de Dáfnis) — **FECHADA em 02/09**: cinco fases feitas, S3c pela palavra dele ("melhorou bastante... deixe do jeito que ficou"), lista do §19 aprovada e rodada (suíte 1×, z-fighting, ab-identidade); ARQUIVO.
 
-**140. A Lua "não ficou boa depois que levamos o relevo para ela"** —
-ficou lenta e "não corresponde mais ao que observamos". Palavras dele,
-03/09: *"a lua nao ficou boa depois que levamos o relevo para ela... o app
-de tempo do iphone traz uma lua com sensacao de relevo tao interessante,
-acho que era mais esse modelo que eu estava buscando... inclusive deixou o
-app lento e nao corresponde mais ao que observamos. No app tempo do
-iphone a lua so aparece a iluminacao fazendo como se fosse sombra nas
-crateras."* O modelo que ele quer: esfera lisa, a luz do Sol desenhando
-sombra dentro das crateras (mapa de normais/altura só na iluminação, sem
-deformar a silhueta), fase correta, leve. A verificar: o que a S2 (relevo
-em todo corpo sem atmosfera) ligou na Lua — amplitude do bump, altura
-real, malha e textura maiores — e o custo de quadro; referência do "que
-observamos": as imagens do NASA SVS Moon Phase and Libration (LRO,
-domínio público) no mesmo instante.
-
-**ESTADO (03/09 — obra feita, falta a palavra dele).** O "lento" NÃO era o
-relevo: medido nos três tiers, o passe da Lua dá 8,58 ms com o bump da S2,
-8,67 ms com o mapa novo e 8,70 ms SEM relevo nenhum — os três iguais dentro
-de 1,4%, e o quadro não muda (22,0 / 24,5 / 42,7 fps em cinema/alta/
-performance, mesmos números dos dois lados). O que pesa naquela vista são as
-estrelas-herói (32 draws, 32% do quadro) e o bloom (17%). O "não corresponde"
-era REAL e foi consertado na raiz: o relevo da Lua vinha do gradiente da COR
-(mares viravam buracos, raios de Tycho viravam cristas) e virou topografia
-medida — mapa de NORMAIS 4096×2048 assado do LDEM do LOLA/LRO (NASA SVS,
-domínio público) em amplitude física, sem ganho, RMS 6,9°. Entra SÓ na
-iluminação: silhueta intacta, nada desloca vértice. A Lua saiu da tabela
-`BUMP_DO_ALBEDO` (quem tem normal medida não precisa da inventada) e a ficha
-ganhou a linha "relevo" com a fonte. Custo em disco: +29,6 MB (texturas de
-189,0 → 218,65 MB); no tier cinema a Lua baixa 8,72 MB de normal — cair para
-fonte de 2048 (2,56 MB) é trocar um número no gerador, se ele preferir leveza
-a detalhe. Fotos `capturas/item140-{svs-referencia,lua-prancha,terminador-
-antes,terminador-depois}.png`, custo em `capturas/item140-custo-{antes,
-depois}.txt`. Falta: a palavra dele sobre a foto, e a lista do §19.
+**140.** A Lua "não ficou boa depois que levamos o relevo para ela" — **FECHADO em 03/09** (`d5991a9`: relevo real do LRO só na luz; o "lento" não era o relevo, medido); palavra dele "tudo ok, já avaliei"; ARQUIVO.
 
 **141. Os outros candidatos à técnica da Lua (relevo real, só na luz).**
 Pedido dele, 03/09: *"ver que outros candidatos podem se beneficiar da mesma
@@ -199,93 +167,9 @@ ou zerar. Ordem sugerida, depois de a Lua (140) provar a técnica: Mercúrio
 → Marte → Ceres → Vesta (um operário a cada dois corpos); Fobos/Deimos
 numa fase própria.
 
-**138. Jápeto "totalmente feio" — e a paridade de TODAS as luas contra o
-projeto Saturn dele.** Palavras dele, 02/09, logo depois do fecho do 134:
-*"Iapetu totalmente feio. acho que vc deveria fazer a mesma coisa que vc fez
-para hyperion para todos os outros objetos contra o meu projeto saturno...
-delegue e seja coordenador. Analise porque."* Método: o da S3c — o mesmo
-corpo nos dois apps, mesmo enquadramento e mesmo ângulo de Sol (luz de
-lado), foto lado a lado, e a distância medida um ingrediente por vez
-(cor/curva, relevo e grão, luz, pós) até igualar. Ordem: Jápeto primeiro
-(é o que ele viu), depois Reia, Dione, Tétis, Encélado, Mimas (as seis
-com mapa dele) e Titã; as nove esculpidas herdam o material já igualado
-na S3c. Fotos no site dele: `abrirSessao` + `Page.navigate` + dormir +
-`captureScreenshot` (lição da S2b).
+**138.** Jápeto "totalmente feio" e a paridade das luas contra o projeto dele — **FECHADO em 03/09** (`c70a204`: mosaicos Schenk graduados como lá; o relevo estava meia volta errado nas seis desde a S2); nível e Titã laranja ficam como estão, palavra dele "tudo ok, já avaliei"; ARQUIVO.
 
-**ESTADO (02/09, noite — obra feita, falta a palavra dele).** A causa era
-DADO, não shader, e valia para as SEIS. (1) **O mapa**: o `map` das seis era
-o NASA 3D, 1440×720 e monocromático (R/B = 1,000 medido); em Jápeto o piso
-ia a 2/255 e o desvio a 88,8 — as manchas pretas duras que ele viu. Trocados
-pelos mosaicos Cassini de Schenk graduados no projeto dele (3840×1920 a
-4096×2048, coloridos), com a tabela `MAP_GRADING` dele copiada letra por
-letra. (2) **O relevo estava meia volta errado nas seis desde a S2**: os
-mapas dele são layout Schenk e pedem o `offset 0.5` que ele aplica e nós não
-trouxemos — Herschel medida no albedo de Mimas em u = 0,194 e na altura em
-u = 0,695. Os doze mapas de relevo e os seis mosaicos foram girados meia
-volta NO ARQUIVO (uma convenção só na árvore, nada no shader). Medido em
-Jápeto na mesma fase (66°) e no mesmo tamanho: desvio da chapa 65,3 → 49,5
-(o dele 53,3), R/B 1,062 (o dele 1,065). Disco 150,0 → 189,6 MB em disco,
-pior VRAM de cinema 45 MB por lua (contra 5,5 MB) (Mimas veio 6356 px e foi reamostrada para
-4096 pela dose); custo do passe da lua 23,7 → 23,3 ms (dentro do ruído; a
-máquina estava disputada). Titã: só foto, nada mexido. **FALTA A PALAVRA
-DELE em duas coisas**, as duas medidas e nenhuma tocada: (a) **o nível** —
-os ganhos dele foram calibrados para a exposição DELE (AgX 1,4), e na nossa
-(ACES 1,05) as seis saem 1,2× a 1,7× mais escuras do que estavam; subir os
-ganhos até igualar estoura de 1,4 % a 15 % do mapa, e o resto é o tonemap
-compartilhado que ele já mandou deixar como está na S3c; (b) **Titã está
-laranja demais** — R/B 8,29 no nosso contra 1,56 no dele, que mostra areia e
-não laranja de cone; o mapa é o NASA 3D de 720×360 e ele não tem substituto
-no projeto Saturn (o mosaico VIMS já foi reprovado na bancada, ASSETS.md).
-Fotos: `capturas/item138-<lua>-prancha.png` (dele | antes | depois) para as
-seis, `item138-titan-prancha.png` (dele | nosso) e os pares por ingrediente
-de Jápeto (`-relevo-`, `-mapa-`, `-graduacao-`).
-
-**139. Dentro dos anéis de Saturno, no projeto dele, veem-se as partículas
-e pedras de gelo — aqui não.** Palavras dele, 02/09: *"Os aneis de saturno
-no meu projeto quando vc entra neles vc ve as particulas e pedras de gelo,
-achei que vc ia trazer isso pro nosso projeto, se trouxe, trouxe mal."*
-Não foi trazido: é a "lajota volumétrica" (`ringSlab.ts` dele, 65.536
-partículas instanciadas a partir do perfil do anel) que a S5 deixou fora
-por não estar na lista das quatro peças — a lista foi curta demais.
-Trazer com a matemática dele, ligada pela distância da câmera ao plano do
-anel (fora da lajota nada muda; o filme longe de Saturno segue idêntico),
-custo medido nos três tiers, foto de dentro do anel para o olho dele.
-
-**ESTADO 02/09 — A LAJOTA ENTROU (`src/three/world/corpos/lajotaDoAnel.ts`,
-branch `obra-139`), FALTA O OLHO DELE.** Os números são dele: ladrilho de
-7 000 km ancorado no mundo, espessura ±12 km, grão de 4 a 14 km, dose
-0,30, lobo para a frente `0,55 + 1,6·cos⁴`, ligação a 1 600 km do plano
-com fade linear e entre 55 000 e 160 000 km do eixo. Ganhou o que o dele
-não tem: a sombra elipsoide do globo. **Fora da lajota nada muda** — a
-vista de 6 raios saiu com o MESMO md5 antes e depois, e a lajota nem
-compila o programa. Custo do passe em cinema, na vista de dentro do anel
-B: 2,08–2,14 ms com os 65 536 dele, acima do teto de 2 ms — o `cinema`
-ficou em 49 152 (`alta` 24 576 e `performance` 8 192 são os dele). Fotos
-em `capturas/item139-*`.
-
-**O PLANO NEAR — CONSERTADO em 02/09 (branch `obra-139b`).** O achado
-era: com a câmera a 40 km do plano do anel o `nearPlanePc` dava 193 km
-(0,4% da distância à superfície do GLOBO) e cortava todo o enxame perto
-— o chão de gelo só começava a ~300 km e sobrava preto. **O anel não era
-superfície do palco**, então perto do plano quem mandava no near ainda
-era Saturno, a 54 mil km. Agora o corpo com anel devolve uma SEGUNDA
-superfície (`EstadoNoPalco.superficieDoAnel`, `superficieDoAnel` do
-gigante): a projeção da câmera no plano do anel, com "raio" = a
-meia-espessura da lajota (12 km, `VOLUME_DA_LAJOTA`), registrada pelo
-`passoDoPalco` como `saturn-anel` enquanto o raio projetado cai na
-janela da lajota (55 000–160 000 km). Nada mudou em `nearPlanePc` nem no
-engine: é a MESMA regra dos 0,4%, com a superfície certa. **Medido no
-app** (`capturas/item139b-near.txt`): a 40 km do plano o near cai de
-193 km para **0,112 km**; a 2 km a câmera está DENTRO da lajota (d =
-−10 km) e vale o anteparo de **12 m**. A vista de 6 raios saiu com o
-MESMO md5 antes e depois (`21b1991…`) — de longe não muda um pixel. O
-limbo do globo a 50 mil km, com esse near, não tem dente nem faixa
-(olhado em lupa). Fotos `capturas/item139b-{no-plano,a-40km}-*`: a 40 km
-o chão de gelo chega à lente, com pedras grandes perto e grão fino ao
-longe, como na foto dele; a 3 km (dentro da lajota) o enxame vira névoa
-uniforme, sem pedra distinguível — é o que ser um grão de 4–14 km a
-metros da lente produz, e a foto DELE corresponde à nossa de 40 km.
-FALTA O OLHO DELE.
+**139.** Dentro dos anéis não se viam as partículas e pedras de gelo — **FECHADO em 03/09** (`4081729` lajota do projeto dele + `e24237f` o chão do anel chega à lente); palavra dele "tudo ok"; ARQUIVO.
 
 **137.** Sobra da S1 do 134: os arquivos `public/textures/atlas/saturn/ring*` (8 arquivos, 216 KB) e o canal `ring` em `texturas.ts`, no manifesto e nos scripts de texturas ficaram órfãos — o anel lê o perfil medido. Remover com prova de não-uso (§6); os testes de `texturas.test.ts` que citam o canal entram na lista do §19 dessa faxina.
 
