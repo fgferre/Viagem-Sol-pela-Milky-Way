@@ -117,23 +117,20 @@ esperam ordem. Backup em dia; site intocado (publicar só com pedido dele).
 ## ALTA — o dono vê e incomoda
 
 **148. As luas de Urano e Tritão com o hemisfério nunca visto
-reconstruído** (decisão dele, 03/09: *"eu quero"*). O cinza liso do 147 é
-honesto mas pobre. O Celestia foi medido e NÃO resolve (45–56 % de tom liso
-nas cinco, 38 % em Tritão); os mapas pintados do `atlas-orbital` não têm
-origem. O caminho que ficou: **imagem gerada por IA pela mão dele** a partir
-do mapa preenchido do 147.
-- **Miranda FEITA em 03/09, por decisão dele** (*"ficou MUITO próxima da
-  real; não quero montagem, use a que gerei"*): a imagem dele
-  (`scripts/data/atlas/fonte/miranda-ia.png`, 1774×887) é o mapa inteiro,
-  fonte LOCAL da aquisição (`arquivoLocal`); a ficha confessa que nada
-  ali é medida (sul redesenhado sobre a Voyager, norte inventado);
-  manifesto e `data:verify` verdes; fotos `capturas/item148-miranda-ia*.png`.
-  A colagem só-no-vazio que cheguei a escrever foi descartada por ele.
-- **Faltam Ariel, Umbriel, Titânia, Oberon e Tritão**: ele gera a imagem
-  de cada uma (o pedido que funcionou está no chat de 03/09: mapa
-  equirretangular, metade cinza é o que falta, completar no mesmo estilo,
-  bordas contínuas), a casa liga pela mesma porta (`arquivoLocal` +
-  origem + confissão). Cada uma entra assim que a imagem chegar.
+reconstruído** (decisão dele, 03/09: *"eu quero"*; *"não quero montagem,
+use a que gerei"*; *"faça o uso do computador e acesse meu ChatGPT"*).
+- **FEITO em 03/09, à noite, nas seis.** O mapa inteiro de cada uma é a
+  imagem gerada por IA na conta dele: Miranda pela mão dele; Ariel,
+  Umbriel, Titânia, Oberon e Tritão geradas pelo Chrome dele com amostras
+  melhores (mosaicos de Schenk/LPI 2020 e o mapa NASA/LPI de Tritão a
+  600 m, vazio tapado em tom liso por `amostra-para-ia.mjs`). Celestia
+  medido e descartado (tom liso em 45–56 % e menos detalhe que a NASA 3D);
+  os mapas pintados do `atlas-orbital` sem origem não entram. Fontes locais
+  em `scripts/data/atlas/fonte/<lua>-ia.png`; ficha confessa "redesenho por
+  IA, nada é medida" nas duas línguas; `data:verify` verde. Fotos
+  `capturas/item148-<lua>-ia.png`. Fecha o **116** e o resto do **147**.
+  Espera a palavra dele sobre o visual; **lista do §19:** nada novo
+  (nenhum teste novo; a suíte cheia não rodou nesta janela).
 
 **147. "Precisamos revisar as luas de Urano... algo estranho está
 acontecendo."** (Palavras dele, 03/09.) Miranda, Ariel, Umbriel, Titânia

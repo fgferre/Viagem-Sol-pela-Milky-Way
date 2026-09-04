@@ -89,6 +89,46 @@ export const EM_INGLES = new Map([
   ['NASA 3D Resources — Miranda', 'NASA 3D Resources — Miranda'],
   // item 148 — Miranda redesenhada por IA pelo dono
   [
+    'Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Ariel (Schenk, LPI 2020)',
+    "The author's generative-AI reconstruction over the Voyager 2 mosaic of Ariel (Schenk, LPI 2020)",
+  ],
+  [
+    'Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Umbriel (Schenk, LPI 2020)',
+    "The author's generative-AI reconstruction over the Voyager 2 mosaic of Umbriel (Schenk, LPI 2020)",
+  ],
+  [
+    'Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Titânia (Schenk, LPI 2020)',
+    "The author's generative-AI reconstruction over the Voyager 2 mosaic of Titania (Schenk, LPI 2020)",
+  ],
+  [
+    'Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Oberon (Schenk, LPI 2020)',
+    "The author's generative-AI reconstruction over the Voyager 2 mosaic of Oberon (Schenk, LPI 2020)",
+  ],
+  [
+    'imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)',
+    "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)",
+  ],
+  [
+    'Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.',
+    "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement.",
+  ],
+  [
+    'Reconstrução por IA generativa do autor sobre o mapa global de Tritão da Voyager 2 (NASA/JPL-Caltech/LPI, 600 m)',
+    "The author's generative-AI reconstruction over the Voyager 2 global map of Triton (NASA/JPL-Caltech/LPI, 600 m)",
+  ],
+  [
+    'imagem do autor (Felipe Ferreira), gerada com IA sobre o mapa NASA/JPL-Caltech/LPI (uso livre)',
+    "the author's image (Felipe Ferreira), generated with AI over the NASA/JPL-Caltech/LPI map (free to use)",
+  ],
+  [
+    'Textura: mapa global de Tritão (NASA/JPL-Caltech/Lunar and Planetary Institute, Voyager 2) redesenhado por IA generativa pelo autor, com a parte nunca vista inventada — não é medida.',
+    'Texture: the global map of Triton (NASA/JPL-Caltech/Lunar and Planetary Institute, Voyager 2) redrawn by generative AI by the author, with the never-seen part invented — not a measurement.',
+  ],
+  [
+    'o mapa inteiro é um redesenho por IA generativa: a parte fotografada segue o mapa da Voyager 2 (1989), o resto, nunca visto, é inventado — nada aqui é medida',
+    'the whole map is a generative-AI redraw: the photographed part follows the Voyager 2 map (1989), the rest, never seen, is invented — nothing here is a measurement',
+  ],
+  [
     'Reconstrução por IA generativa do autor sobre o mapa NASA 3D Resources — Miranda',
     "The author's generative-AI reconstruction over the NASA 3D Resources map — Miranda",
   ],

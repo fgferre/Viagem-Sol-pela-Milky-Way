@@ -63,114 +63,85 @@
       "arquivo": "textures/atlas/ariel/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 31516,
-      "sha256": "850867925d70bc7c6c5d011101f03d49f629e92660f7651a5f5cc7ef5a70f1bd",
+      "bytes": 135718,
+      "sha256": "192896b927aeb17fb88fba97946f062b8399df6ba9d22490709c2d037f33ff26",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Ariel",
-          "en": "NASA 3D Resources — Ariel"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Ariel (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Ariel (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Ariel",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
-      }
-    },
-    {
-      "corpo": "ariel",
-      "canal": "map",
-      "arquivo": "textures/atlas/ariel/map_1024.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 22556,
-      "sha256": "fbcf13a3bf711115810e0ed3f70a949885d1a34151b9dcbd3d7677a4f34c7c15",
-      "origem": {
-        "fonte": {
-          "pt": "NASA 3D Resources — Ariel",
-          "en": "NASA 3D Resources — Ariel"
-        },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Ariel",
-        "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
-        },
-        "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
-        }
-      },
-      "proveniencia": "derivado",
-      "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "ariel",
       "canal": "map",
       "arquivo": "textures/atlas/ariel/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 69814,
-      "sha256": "e4e8ca1402d7d64533fca49af93bcdfc32da500f54e948e7a04273008f73bc29",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 481773,
+      "sha256": "37e9cfccdcaaaf167d1b83dff2f42b2c204c7174eee623cdfed9f990b188769d",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Ariel",
-          "en": "NASA 3D Resources — Ariel"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Ariel (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Ariel (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Ariel",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "ariel",
       "canal": "map",
       "arquivo": "textures/atlas/ariel/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 41644,
-      "sha256": "8be3edb8a2d783b85d1e62ed0b7f6609e8c20b8df54df7b91e961e3f1a38ad7c",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 422814,
+      "sha256": "451ee168506b7479667e536f165db0e52cc7c46b4d22efc1b5c63071d2c34fe2",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Ariel",
-          "en": "NASA 3D Resources — Ariel"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Ariel (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Ariel (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Ariel",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
@@ -4339,114 +4310,85 @@
       "arquivo": "textures/atlas/oberon/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 34313,
-      "sha256": "0a75d94741265f1b7bb1ab240347b40eff6457ddf65dcd0918a17b36fb540bdc",
+      "bytes": 179383,
+      "sha256": "a30f5a00431c4e7b42cd0db3f9dcf37b96307c329b89a75dca6bc96d67e545fc",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Oberon",
-          "en": "NASA 3D Resources — Oberon"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Oberon (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Oberon (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Oberon",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
-      }
-    },
-    {
-      "corpo": "oberon",
-      "canal": "map",
-      "arquivo": "textures/atlas/oberon/map_1024.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 23882,
-      "sha256": "d6f4059b217e956165c368bb997f42bde0bf79940b5046171181f696d1068617",
-      "origem": {
-        "fonte": {
-          "pt": "NASA 3D Resources — Oberon",
-          "en": "NASA 3D Resources — Oberon"
-        },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Oberon",
-        "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
-        },
-        "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
-        }
-      },
-      "proveniencia": "derivado",
-      "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "oberon",
       "canal": "map",
       "arquivo": "textures/atlas/oberon/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 58656,
-      "sha256": "611c6f3faa29a934f75f3c31cca0802a357fa2939632379f47273f6d9104095a",
+      "larguraPx": 1773,
+      "alturaPx": 887,
+      "bytes": 597557,
+      "sha256": "a5a697c85d2343b8076a4341140ac3d67800e412db35d2075881eda2194d04d5",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Oberon",
-          "en": "NASA 3D Resources — Oberon"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Oberon (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Oberon (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Oberon",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "oberon",
       "canal": "map",
       "arquivo": "textures/atlas/oberon/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 41346,
-      "sha256": "dedfa85112fbd48b543775b05e409d1bded2ca7773d47ee89fa58b8932cbf91b",
+      "larguraPx": 1773,
+      "alturaPx": 887,
+      "bytes": 542996,
+      "sha256": "abdba0341249232ed99953d698431f8cef707de16d24964128d515aba56b7efe",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Oberon",
-          "en": "NASA 3D Resources — Oberon"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Oberon (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Oberon (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Oberon",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
@@ -5521,114 +5463,85 @@
       "arquivo": "textures/atlas/titania/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 38171,
-      "sha256": "7ba9be914e66dddc5b7b971f2bffec4c4f2f5a0b3bef6b8b1185574f8b5faaf1",
+      "bytes": 156712,
+      "sha256": "da0097a8bd40a72171bce7fad4038b71296e7532810913ec632fa994ad251f18",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Titânia",
-          "en": "NASA 3D Resources — Titania"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Titânia (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Titania (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Titania",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
-      }
-    },
-    {
-      "corpo": "titania",
-      "canal": "map",
-      "arquivo": "textures/atlas/titania/map_1024.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 29934,
-      "sha256": "a16b6b4f68d730805765dfa6acf89ad031414861bfe376710a1153c6d0dc3cf6",
-      "origem": {
-        "fonte": {
-          "pt": "NASA 3D Resources — Titânia",
-          "en": "NASA 3D Resources — Titania"
-        },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Titania",
-        "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
-        },
-        "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
-        }
-      },
-      "proveniencia": "derivado",
-      "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "titania",
       "canal": "map",
       "arquivo": "textures/atlas/titania/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 87009,
-      "sha256": "580a8c52073b57bbc9816abf4412eae9e1ba97a881865241efba1edbc4c8c69d",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 521609,
+      "sha256": "363981bbf28df2f281acc67728ed5003519dc3ee0a63f156a7ede6a43cfd6b4f",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Titânia",
-          "en": "NASA 3D Resources — Titania"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Titânia (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Titania (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Titania",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "titania",
       "canal": "map",
       "arquivo": "textures/atlas/titania/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 55440,
-      "sha256": "6bce259791395fd4574efdf21c8404c025a85dd3c0f5711d718af97084e8ba08",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 459246,
+      "sha256": "0095cb936d7c0227a065adb6bb1f718f5609d994f5f7cfe746cf5f12cb47b2ae",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Titânia",
-          "en": "NASA 3D Resources — Titania"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Titânia (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Titania (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Titania",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
@@ -5637,27 +5550,27 @@
       "arquivo": "textures/atlas/triton/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 30287,
-      "sha256": "f27facd7d7b076f7462ee24220ac999c3295936c63fbbd2b1d993b69f2f9eddb",
+      "bytes": 163202,
+      "sha256": "7b8453d762fb1d718de61208f46eb17519ce11e812a140f37dcff7804b2d3eab",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Tritão",
-          "en": "NASA 3D Resources — Triton"
+          "pt": "Reconstrução por IA generativa do autor sobre o mapa global de Tritão da Voyager 2 (NASA/JPL-Caltech/LPI, 600 m)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 global map of Triton (NASA/JPL-Caltech/LPI, 600 m)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Neptune%20-%20Triton",
+        "url": "https://science.nasa.gov/photojournal/map-of-triton",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mapa NASA/JPL-Caltech/LPI (uso livre)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over the NASA/JPL-Caltech/LPI map (free to use)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mapa global de Tritão (NASA/JPL-Caltech/Lunar and Planetary Institute, Voyager 2) redesenhado por IA generativa pelo autor, com a parte nunca vista inventada — não é medida.",
+          "en": "Texture: the global map of Triton (NASA/JPL-Caltech/Lunar and Planetary Institute, Voyager 2) redrawn by generative AI by the author, with the never-seen part invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "Voyager 2 photographed about 40 % of Triton (1989): the rest, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: a parte fotografada segue o mapa da Voyager 2 (1989), o resto, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the photographed part follows the Voyager 2 map (1989), the rest, never seen, is invented — nothing here is a measurement"
       }
     },
     {
@@ -5666,85 +5579,85 @@
       "arquivo": "textures/atlas/triton/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 21368,
-      "sha256": "bad07a306afca7b8904f57b678bee2711ff278ac8b73a0c306a9ca8d190829af",
+      "bytes": 161734,
+      "sha256": "7b6a23aaba75fd0574a17ea1ff9035ae0b3b79defc3b5e478e5b51d25f5b5422",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Tritão",
-          "en": "NASA 3D Resources — Triton"
+          "pt": "Reconstrução por IA generativa do autor sobre o mapa global de Tritão da Voyager 2 (NASA/JPL-Caltech/LPI, 600 m)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 global map of Triton (NASA/JPL-Caltech/LPI, 600 m)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Neptune%20-%20Triton",
+        "url": "https://science.nasa.gov/photojournal/map-of-triton",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mapa NASA/JPL-Caltech/LPI (uso livre)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over the NASA/JPL-Caltech/LPI map (free to use)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mapa global de Tritão (NASA/JPL-Caltech/Lunar and Planetary Institute, Voyager 2) redesenhado por IA generativa pelo autor, com a parte nunca vista inventada — não é medida.",
+          "en": "Texture: the global map of Triton (NASA/JPL-Caltech/Lunar and Planetary Institute, Voyager 2) redrawn by generative AI by the author, with the never-seen part invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "Voyager 2 photographed about 40 % of Triton (1989): the rest, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: a parte fotografada segue o mapa da Voyager 2 (1989), o resto, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the photographed part follows the Voyager 2 map (1989), the rest, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "triton",
       "canal": "map",
       "arquivo": "textures/atlas/triton/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 76484,
-      "sha256": "5e20300a274d069e6738cc41140ce8787c9f0eb00c6dba2e792571c9f3757b26",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 579933,
+      "sha256": "76ce06bb97ff7624ea155205bad40020e3caaf78930154a37f4dc34a7dd714b8",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Tritão",
-          "en": "NASA 3D Resources — Triton"
+          "pt": "Reconstrução por IA generativa do autor sobre o mapa global de Tritão da Voyager 2 (NASA/JPL-Caltech/LPI, 600 m)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 global map of Triton (NASA/JPL-Caltech/LPI, 600 m)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Neptune%20-%20Triton",
+        "url": "https://science.nasa.gov/photojournal/map-of-triton",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mapa NASA/JPL-Caltech/LPI (uso livre)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over the NASA/JPL-Caltech/LPI map (free to use)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mapa global de Tritão (NASA/JPL-Caltech/Lunar and Planetary Institute, Voyager 2) redesenhado por IA generativa pelo autor, com a parte nunca vista inventada — não é medida.",
+          "en": "Texture: the global map of Triton (NASA/JPL-Caltech/Lunar and Planetary Institute, Voyager 2) redrawn by generative AI by the author, with the never-seen part invented — not a measurement."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "Voyager 2 photographed about 40 % of Triton (1989): the rest, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: a parte fotografada segue o mapa da Voyager 2 (1989), o resto, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the photographed part follows the Voyager 2 map (1989), the rest, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "triton",
       "canal": "map",
       "arquivo": "textures/atlas/triton/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 47650,
-      "sha256": "917a36769317b0bafa58c48f4e0db62243c23436de630efc518c7a9a47d18064",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 441670,
+      "sha256": "6e7f17b00b25939e378900272bb2813accf24427943adf1ce621477452171d22",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Tritão",
-          "en": "NASA 3D Resources — Triton"
+          "pt": "Reconstrução por IA generativa do autor sobre o mapa global de Tritão da Voyager 2 (NASA/JPL-Caltech/LPI, 600 m)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 global map of Triton (NASA/JPL-Caltech/LPI, 600 m)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Neptune%20-%20Triton",
+        "url": "https://science.nasa.gov/photojournal/map-of-triton",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mapa NASA/JPL-Caltech/LPI (uso livre)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over the NASA/JPL-Caltech/LPI map (free to use)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mapa global de Tritão (NASA/JPL-Caltech/Lunar and Planetary Institute, Voyager 2) redesenhado por IA generativa pelo autor, com a parte nunca vista inventada — não é medida.",
+          "en": "Texture: the global map of Triton (NASA/JPL-Caltech/Lunar and Planetary Institute, Voyager 2) redrawn by generative AI by the author, with the never-seen part invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "Voyager 2 photographed about 40 % of Triton (1989): the rest, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: a parte fotografada segue o mapa da Voyager 2 (1989), o resto, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the photographed part follows the Voyager 2 map (1989), the rest, never seen, is invented — nothing here is a measurement"
       }
     },
     {
@@ -5753,114 +5666,85 @@
       "arquivo": "textures/atlas/umbriel/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 23833,
-      "sha256": "166002ea6c3af1fe075d008de7e0b01d2d79241b49e49165e209e23ff206e90d",
+      "bytes": 162724,
+      "sha256": "07d32c0ebab31c9f9a08d245aa1c53098acfd703b63f0a4c3797dc545886996c",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Umbriel",
-          "en": "NASA 3D Resources — Umbriel"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Umbriel (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Umbriel (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Umbriel",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
-      }
-    },
-    {
-      "corpo": "umbriel",
-      "canal": "map",
-      "arquivo": "textures/atlas/umbriel/map_1024.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 15722,
-      "sha256": "61502d28760d9b84ac568418814008745b33207bd28197ab630aba78347048f7",
-      "origem": {
-        "fonte": {
-          "pt": "NASA 3D Resources — Umbriel",
-          "en": "NASA 3D Resources — Umbriel"
-        },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Umbriel",
-        "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
-        },
-        "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
-        }
-      },
-      "proveniencia": "derivado",
-      "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "umbriel",
       "canal": "map",
       "arquivo": "textures/atlas/umbriel/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 49090,
-      "sha256": "f19b8da210367637a7865220b188970e58bdc880cdfc33552bef68370ef2c2e5",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 547071,
+      "sha256": "a6bf846c3df0d20203f9d462650e1589d2bdcb2430e398a0a9b6492c43c87c4c",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Umbriel",
-          "en": "NASA 3D Resources — Umbriel"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Umbriel (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Umbriel (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Umbriel",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "umbriel",
       "canal": "map",
       "arquivo": "textures/atlas/umbriel/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 25924,
-      "sha256": "38844bb5a4d6db9776a6ae66c6554a18e4a38d601f339ada135ebfb26506b590",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 500512,
+      "sha256": "ff126bb22ab8ae9763d275e3afe2fb670abcc82e04732d65c02c2e3809de93ad",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Umbriel",
-          "en": "NASA 3D Resources — Umbriel"
+          "pt": "Reconstrução por IA generativa do autor sobre o mosaico Voyager 2 de Umbriel (Schenk, LPI 2020)",
+          "en": "The author's generative-AI reconstruction over the Voyager 2 mosaic of Umbriel (Schenk, LPI 2020)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Umbriel",
+        "url": "https://hdl.handle.net/20.500.11753/1687",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre o mosaico de Paul Schenk (LPI, sem linha de licença; uso com crédito)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over Paul Schenk's mosaic (LPI, no licence line; use with credit)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 de Paul Schenk (Lunar and Planetary Institute, 2020; NASA/JPL) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: Paul Schenk's Voyager 2 mosaic (Lunar and Planetary Institute, 2020; NASA/JPL) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {

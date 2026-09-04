@@ -471,8 +471,23 @@ o mosaico da Voyager 2, o norte é invenção plausível. A ficha diz isso na
 seção "a imagem" e a origem no manifesto credita a NASA/JPL-Caltech pelo
 mosaico e o autor pela imagem. O mapa cru da NASA 3D segue no histórico
 (`5da9cc5`); a colagem só-no-vazio que chegou a ser escrita (`comporNoVazio`)
-foi descartada pela palavra dele e não existe no código. As outras cinco luas
-seguem com o tom liso do 147 até terem a própria imagem pela mesma porta.
+foi descartada pela palavra dele e não existe no código.
+
+**As outras cinco (03/09, à noite)** entraram pela mesma porta, com amostras
+melhores que a NASA 3D (*"senão vira shit in, shit out"*): Ariel, Umbriel,
+Titânia e Oberon a partir dos **mosaicos globais de Paul Schenk (LPI, 2020,
+`hdl.handle.net/20.500.11753/1687`; Miranda 6294 px, Ariel 3652, Titânia
+1722, Oberon 957, Umbriel 919 — a resolução nativa de cada lua, e Umbriel,
+Titânia e Oberon são um quadro só da Voyager, 3 a 5 km/px, o limite físico)**,
+e Tritão do **mapa global colorido NASA/JPL-Caltech/LPI de 600 m (PIA18668,
+14.138 px)**. Cada amostra teve o vazio tapado com `preencherVazioSemDado`
+(tom liso), foi enviada ao ChatGPT na conta dele pelo navegador e a imagem
+devolvida (1774×887) é o mapa inteiro, sem montagem. Os mosaicos de Schenk
+não trazem linha de licença (o ReadMe pede contato com o autor antes de uso
+em análises) — documentado, como os anéis de Saturno; o de Tritão é crédito
+NASA/JPL-Caltech/LPI. Os do Celestia foram medidos e descartados: 45–56 % de
+tom liso e menos detalhe real que a NASA 3D apesar dos 4096 px. As cinco
+fontes moram em `scripts/data/atlas/fonte/<lua>-ia.png`.
 
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
@@ -523,11 +538,11 @@ tocar num `.mjs`.
 | ceres/normal | topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem |
 | vesta/normal | topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave |
 | miranda/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
-| ariel/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
-| umbriel/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
-| titania/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
-| oberon/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
-| triton/map | a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu |
+| ariel/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
+| umbriel/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
+| titania/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
+| oberon/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
+| triton/map | o mapa inteiro é um redesenho por IA generativa: a parte fotografada segue o mapa da Voyager 2 (1989), o resto, nunca visto, é inventado — nada aqui é medida |
 
 ### a forma (item 20)
 
