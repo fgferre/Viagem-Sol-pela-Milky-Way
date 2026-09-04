@@ -330,23 +330,28 @@ const ORIGENS = {
     atribuicao: 'Textura: mapa global de Tritão (NASA/JPL-Caltech/Lunar and Planetary Institute, Voyager 2) redesenhado por IA generativa pelo autor, com a parte nunca vista inventada — não é medida.',
     proveniencia: 'derivado',
   },
-  // ---- F6 (anões). NASA 3D para Plutão/Caronte. Ceres: mosaico REAL da
-  // Dawn desde o item 141, 3ª fase — o `2k_ceres_fictional` do SSS, que a
-  // própria fonte declarava invenção, saiu da árvore.
+  // ---- F6 (anões). Plutão e Caronte: os mosaicos da New Horizons desde o
+  // item 149 — os mapas NASA 3D de 720×360 eram anteriores ao sobrevoo de
+  // 2015 e não tinham geografia nenhuma. Ceres: mosaico REAL da Dawn desde
+  // o item 141, 3ª fase — o `2k_ceres_fictional` do SSS, que a própria
+  // fonte declarava invenção, saiu da árvore.
   // Procedurais (Haumea/Makemake/Eris) sem mapa.
   'pluto/map': {
-    fonte: 'NASA 3D Resources — Plutão (720×360)',
-    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
-    proveniencia: 'medido',
+    fonte: 'New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)',
+    url: 'https://science.nasa.gov/photojournal/pluto-color-map/',
+    licenca: 'domínio público (NASA)',
+    atribuicao:
+      'Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).',
+    proveniencia: 'derivado',
   },
   'charon/map': {
-    fonte: 'NASA 3D Resources — Caronte (720×360)',
-    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto%20-%20Charon',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
-    proveniencia: 'medido',
+    fonte:
+      'New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)',
+    url: 'https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m',
+    licenca: 'domínio público (NASA/USGS)',
+    atribuicao:
+      'Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).',
+    proveniencia: 'derivado',
   },
   'ceres/map': {
     fonte: 'Dawn FC — mosaico global de Ceres a 20 px/grau (DLR, via USGS Astrogeology)',

@@ -147,8 +147,33 @@ export const EM_INGLES = new Map([
   ['NASA 3D Resources — Ganimedes', 'NASA 3D Resources — Ganymede'],
   ['NASA 3D Resources — Titânia', 'NASA 3D Resources — Titania'],
   ['NASA 3D Resources — Tritão', 'NASA 3D Resources — Triton'],
-  ['NASA 3D Resources — Plutão (720×360)', 'NASA 3D Resources — Pluto (720×360)'],
-  ['NASA 3D Resources — Caronte (720×360)', 'NASA 3D Resources — Charon (720×360)'],
+  // ---- o defeito: Plutão e Caronte (item 149) -----------------------
+  [
+    'mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu',
+    "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see",
+  ],
+  [
+    'mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu',
+    'a real New Horizons mosaic, and colorless: there is no global color map of Charon — and the south pole, in polar night during the flyby, is another third that came in flat, with the average tone of what the spacecraft did see',
+  ],
+
+  // ---- fontes: New Horizons (item 149) ------------------------------
+  [
+    'New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)',
+    'New Horizons Ralph/MVIC — global color map of Pluto (PIA11707, 5926×2963)',
+  ],
+  [
+    'New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)',
+    'New Horizons LORRI+MVIC — global mosaic of Charon at 300 m (USGS Astrogeology, 12693×6347)',
+  ],
+  [
+    'Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).',
+    'Images: New Horizons Ralph/MVIC on the July 14, 2015 flyby (NASA/Johns Hopkins APL/Southwest Research Institute). Longitude rotation and filling of the south with no data done here (baixa-texturas.mjs).',
+  ],
+  [
+    'Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).',
+    'Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done here (baixa-texturas.mjs).',
+  ],
   [
     'NASA 3D Resources — modelo 3D de Fobos (textura)',
     'NASA 3D Resources — 3D model of Phobos (texture)',

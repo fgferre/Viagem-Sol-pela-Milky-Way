@@ -489,6 +489,82 @@ NASA/JPL-Caltech/LPI. Os do Celestia foram medidos e descartados: 45–56 % de
 tom liso e menos detalhe real que a NASA 3D apesar dos 4096 px. As cinco
 fontes moram em `scripts/data/atlas/fonte/<lua>-ia.png`.
 
+## Plutão e Caronte — os mosaicos da New Horizons (item 149)
+
+Incumbentes ATÉ 03/09: os `map` da NASA 3D Resources, **720×360**, sem
+detalhe nenhum acima disso. E eram piores do que pequenos: **eram anteriores
+ao sobrevoo de 2015**. No de Plutão não existe a Sputnik Planitia, no de
+Caronte não existe a Mordor Macula. Medido (régua em
+`capturas/item149-orientacao.txt`): contra os mosaicos reais o melhor
+coeficiente de correlação é **0,31** (Plutão) e **0,09** (Caronte), com
+transformação vencedora absurda — espelho vertical num, rotação de 180° no
+outro. Não havia geografia neles: é o `2k_ceres_fictional` de novo, com a
+diferença de que estes não confessavam.
+
+No lugar entraram os produtos do sobrevoo de **14 de julho de 2015**:
+
+- **Plutão** — `PIA11707`, o mapa global **em cor** da Ralph/MVIC,
+  **5926×2963**, 29 MB, domínio público (NASA/Johns Hopkins APL/SwRI), do
+  NASA Photojournal. É o único produto de cor do sobrevoo em cilíndrica
+  simples; o mosaico USGS de 300 m, mais fino, é pancromático.
+- **Caronte** — `Charon_NewHorizons_Global_Mosaic_300m_Jul2017`,
+  **12693×6347** em UM canal, 77 MB, domínio público (NASA/USGS), do USGS
+  Astrogeology. **Não existe mapa global em cor de Caronte**: só há vistas
+  de disco em cor realçada. Caronte entra em cinza — inventar matiz aqui
+  seria voltar ao mapa que saiu. Reamostrado ao teto da casa, **8192 px**.
+
+**A ORIENTAÇÃO saiu da georreferência, não do incumbente** — que, como
+acima, não serve de régua. O GeoTIFF do USGS de Plutão declara meridiano
+central **180°** (geokey 3088), ou seja borda esquerda em 0°E, e o PIA11707
+casa com ele na **identidade, giro 0°, r = 0,981**: mesmo layout. A casa
+centra em 0°, então o giro é `180 − 0 = 180`, o mesmo de Ceres. O de Caronte
+declara meridiano central **0°** — que JÁ é a convenção da casa —, e por
+isso a entrada leva `giroDeLongitudeGraus: 0` explícito: o zero é medido,
+não é ausência de exame. Confere por feição nos dois: a Cthulhu Macula
+(20–160°E) cai à direita no mapa de Plutão e a Sputnik Planitia (175°E) na
+emenda, que é o lugar dela (a Sputnik é quase antípoda do ponto
+sub-Caronte); em Caronte o hemisfério nítido, o voltado para Plutão (0°E),
+fica no MEIO e o borrado de 40 km/px nas bordas.
+
+**O SUL DOS DOIS NÃO FOI FOTOGRAFADO.** No sobrevoo o polo sul do sistema
+estava em noite polar, e os mosaicos deixam a calota em preto puro: medido
+nas fontes, **30,2 % do mapa de Plutão** (primeira linha inteiramente vazia
+em −55,6°, com dentes que sobem até +19,4°) e **35,0 % do de Caronte**
+(linha cheia em −37,4°). O passo `preencherVazio` da aquisição aplica a
+receita do item 147 (`preencherVazioSemDado`): tapou **30,3 %** do mapa de
+Plutão com o tom médio **135/112/104** e **34,0 %** do de Caronte com
+**118/118/118**.
+
+**A JANELA DO VAZIO MEDE-SE EM GRAUS, não em texels** — a única mudança de
+receita que o 149 trouxe, e ela nasceu de um erro visto na esfera. O padrão
+de `preencherVazioSemDado` (raio 7, janela de 15×15) nasceu em mapas de
+1440 px, onde 15×15 são 3,8° de longitude; nos mosaicos da New Horizons, de
+5926 e 12693 px, os mesmos 15×15 são 0,4°. Com essa janela, qualquer buraco
+entre imagens vira "vazio GRANDE" e é tapado com a média GLOBAL do mapa: em
+Caronte isso pintou manchas CLARAS de tom 118, com contorno escuro, no meio
+do terreno escuro do hemisfério anti-Plutão — pior que o buraco, e visível
+na esfera (`capturas/item149-charon-depois.png`, a versão descartada).
+Trocada por uma janela de **14° de longitude** (230 px em Plutão, 494 em
+Caronte), só a calota polar — o vazio grande na escala do GLOBO —
+qualifica, e o buraco pequeno fica como o USGS o publicou: **1,3 % do mapa
+de Caronte** continua escuro de propósito. A foto boa é a `-depois-v2`.
+**E o preenchimento vem ANTES da reamostragem**: reduzir primeiro deixa, na
+borda de cada buraco, um degrau de lanczos que já não conta como "sem dado"
+e por isso nunca seria tapado — um fio escuro em volta do remendo.
+
+**O nível não foi mexido**, e isto está medido por faixa de latitude em
+Caronte (média do canal na fonte → no mapa, os dois lidos a 1440×720):
++90..+60 `54 → 53`, +60..+30 `131 → 131`, +30..0 `143 → 142`,
+0..−30 `125 → 135`. Só muda onde não havia dado — a faixa 0..−30 já toca a
+borda dentada da calota, e −30..−60 vai de `6 → 118`. A **Mordor Macula
+continua escura** (a faixa do polo norte não subiu), e nada foi esticado
+nem escurecido.
+
+Em 2026 o Sol ilumina o **norte** do sistema de Plutão (a obliquidade é de
+~120° e a latitude subsolar era +51,6° em 2015, subindo), ou seja o lado
+fotografado: a calota lisa fica na noite, ao contrário do que aconteceu com
+as luas de Urano no item 147.
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**
@@ -526,6 +602,8 @@ tocar num `.mjs`.
 | corpo/canal | nota |
 | --- | --- |
 | ceres/map | mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha |
+| pluto/map | mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu |
+| charon/map | mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu |
 | titan/map | 720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou |
 | europa/map | mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou |
 | venus/map | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |

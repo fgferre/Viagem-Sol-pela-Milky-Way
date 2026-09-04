@@ -541,52 +541,234 @@
     {
       "corpo": "charon",
       "canal": "map",
-      "arquivo": "textures/atlas/charon/map.jpg",
-      "larguraPx": 720,
-      "alturaPx": 360,
-      "bytes": 265536,
-      "sha256": "c1fb3c19d448c82b9cc29c769d0875250cb2731cab0bb7c8d67243cd2272570b",
+      "arquivo": "textures/atlas/charon/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 67386,
+      "sha256": "e3f44f1a02efd26cab1b695f8db51f3abe92b3c06330b604b3845c1e669c5f34",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Caronte (720×360)",
-          "en": "NASA 3D Resources — Charon (720×360)"
+          "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
+          "en": "New Horizons LORRI+MVIC — global mosaic of Charon at 300 m (USGS Astrogeology, 12693×6347)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto%20-%20Charon",
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done here (baixa-texturas.mjs)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real New Horizons mosaic, and colorless: there is no global color map of Charon — and the south pole, in polar night during the flyby, is another third that came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "charon",
+      "canal": "map",
+      "arquivo": "textures/atlas/charon/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 60642,
+      "sha256": "76ed6179ab60ee346e0d26a8923e77821f17ead5a64470339d375cf270686c80",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
+          "en": "New Horizons LORRI+MVIC — global mosaic of Charon at 300 m (USGS Astrogeology, 12693×6347)"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real New Horizons mosaic, and colorless: there is no global color map of Charon — and the south pole, in polar night during the flyby, is another third that came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "charon",
+      "canal": "map",
+      "arquivo": "textures/atlas/charon/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 234040,
+      "sha256": "8ec23f4fb1dd36f470c9344bb216d83f1f5bd8eea14beac602cd4157c1be15d3",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
+          "en": "New Horizons LORRI+MVIC — global mosaic of Charon at 300 m (USGS Astrogeology, 12693×6347)"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real New Horizons mosaic, and colorless: there is no global color map of Charon — and the south pole, in polar night during the flyby, is another third that came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "charon",
+      "canal": "map",
+      "arquivo": "textures/atlas/charon/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 204304,
+      "sha256": "18eabc97f197da56b05cc325fb37a2ebc9c1bce409d8bf4f6568dce8117f7859",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
+          "en": "New Horizons LORRI+MVIC — global mosaic of Charon at 300 m (USGS Astrogeology, 12693×6347)"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real New Horizons mosaic, and colorless: there is no global color map of Charon — and the south pole, in polar night during the flyby, is another third that came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "charon",
+      "canal": "map",
+      "arquivo": "textures/atlas/charon/map_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 806658,
+      "sha256": "13e54a17d315e1b67848c481b41b303ad8e31c8e4046a99e268a3257abd40140",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
+          "en": "New Horizons LORRI+MVIC — global mosaic of Charon at 300 m (USGS Astrogeology, 12693×6347)"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real New Horizons mosaic, and colorless: there is no global color map of Charon — and the south pole, in polar night during the flyby, is another third that came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "charon",
+      "canal": "map",
+      "arquivo": "textures/atlas/charon/map_4096.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 667774,
+      "sha256": "1bd9ce9ebb8f6ac0557957a6bbc6850f8fe5d870cbee709a0d02ffadbd6bf988",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
+          "en": "New Horizons LORRI+MVIC — global mosaic of Charon at 300 m (USGS Astrogeology, 12693×6347)"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real New Horizons mosaic, and colorless: there is no global color map of Charon — and the south pole, in polar night during the flyby, is another third that came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "charon",
+      "canal": "map",
+      "arquivo": "textures/atlas/charon/map.jpg",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 3043642,
+      "sha256": "45d53c0061357411993a779e1fc5a43662b12580fe1e164f0cefb9d04d7ba763",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
+          "en": "New Horizons LORRI+MVIC — global mosaic of Charon at 300 m (USGS Astrogeology, 12693×6347)"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real New Horizons mosaic, and colorless: there is no global color map of Charon — and the south pole, in polar night during the flyby, is another third that came in flat, with the average tone of what the spacecraft did see"
+      }
     },
     {
       "corpo": "charon",
       "canal": "map",
       "arquivo": "textures/atlas/charon/map.webp",
-      "larguraPx": 720,
-      "alturaPx": 360,
-      "bytes": 62204,
-      "sha256": "898bdfb666891cd6c74b604af51bdc3e2ab824ef6894a1a680edab2f1332f3f7",
+      "larguraPx": 8192,
+      "alturaPx": 4096,
+      "bytes": 1938858,
+      "sha256": "affe0d8b606d6421a11c421f51cfac09647433ed91fe3a349c4f68a1579c5271",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Caronte (720×360)",
-          "en": "NASA 3D Resources — Charon (720×360)"
+          "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
+          "en": "New Horizons LORRI+MVIC — global mosaic of Charon at 300 m (USGS Astrogeology, 12693×6347)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto%20-%20Charon",
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done here (baixa-texturas.mjs)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real New Horizons mosaic, and colorless: there is no global color map of Charon — and the south pole, in polar night during the flyby, is another third that came in flat, with the average tone of what the spacecraft did see"
+      }
     },
     {
       "corpo": "deimos",
@@ -4494,52 +4676,234 @@
     {
       "corpo": "pluto",
       "canal": "map",
-      "arquivo": "textures/atlas/pluto/map.jpg",
-      "larguraPx": 720,
-      "alturaPx": 360,
-      "bytes": 351885,
-      "sha256": "a921387426a506b6f6ae8fd24872eeab59b81f963cd9c010b59d825059b29c64",
+      "arquivo": "textures/atlas/pluto/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 81033,
+      "sha256": "e28bfaabc2458ac6709a1f3f3ab45dce61c7e3b96415dbee5f4c575503dd46b3",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Plutão (720×360)",
-          "en": "NASA 3D Resources — Pluto (720×360)"
+          "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
+          "en": "New Horizons Ralph/MVIC — global color map of Pluto (PIA11707, 5926×2963)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto",
+        "url": "https://science.nasa.gov/photojournal/pluto-color-map/",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons Ralph/MVIC on the July 14, 2015 flyby (NASA/Johns Hopkins APL/Southwest Research Institute). Longitude rotation and filling of the south with no data done here (baixa-texturas.mjs)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "map",
+      "arquivo": "textures/atlas/pluto/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 57550,
+      "sha256": "7ef4b952dca28ebc3516f6b12451ab311291e0969150bfb70639b73c01b66e8d",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
+          "en": "New Horizons Ralph/MVIC — global color map of Pluto (PIA11707, 5926×2963)"
+        },
+        "url": "https://science.nasa.gov/photojournal/pluto-color-map/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons Ralph/MVIC on the July 14, 2015 flyby (NASA/Johns Hopkins APL/Southwest Research Institute). Longitude rotation and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "map",
+      "arquivo": "textures/atlas/pluto/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 296644,
+      "sha256": "6cfaa164ac228dae15498e70ff1a4e2aad601de1d611c4b85440913080393e70",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
+          "en": "New Horizons Ralph/MVIC — global color map of Pluto (PIA11707, 5926×2963)"
+        },
+        "url": "https://science.nasa.gov/photojournal/pluto-color-map/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons Ralph/MVIC on the July 14, 2015 flyby (NASA/Johns Hopkins APL/Southwest Research Institute). Longitude rotation and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "map",
+      "arquivo": "textures/atlas/pluto/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 218734,
+      "sha256": "cde3757679974c37bb16f9825fbbdacc927b47000fd535f6d246af1c0a3e838b",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
+          "en": "New Horizons Ralph/MVIC — global color map of Pluto (PIA11707, 5926×2963)"
+        },
+        "url": "https://science.nasa.gov/photojournal/pluto-color-map/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons Ralph/MVIC on the July 14, 2015 flyby (NASA/Johns Hopkins APL/Southwest Research Institute). Longitude rotation and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "map",
+      "arquivo": "textures/atlas/pluto/map_4096.jpg",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1056401,
+      "sha256": "12d3cb4b549214767f3cf2c72f218486150f85de5b7adb3c598d04c52201d248",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
+          "en": "New Horizons Ralph/MVIC — global color map of Pluto (PIA11707, 5926×2963)"
+        },
+        "url": "https://science.nasa.gov/photojournal/pluto-color-map/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons Ralph/MVIC on the July 14, 2015 flyby (NASA/Johns Hopkins APL/Southwest Research Institute). Longitude rotation and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "map",
+      "arquivo": "textures/atlas/pluto/map_4096.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 724482,
+      "sha256": "c687184de60c85f294b140a34e37983d45f20c2cc3c187f8c2b89c00a0f05696",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
+          "en": "New Horizons Ralph/MVIC — global color map of Pluto (PIA11707, 5926×2963)"
+        },
+        "url": "https://science.nasa.gov/photojournal/pluto-color-map/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons Ralph/MVIC on the July 14, 2015 flyby (NASA/Johns Hopkins APL/Southwest Research Institute). Longitude rotation and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "map",
+      "arquivo": "textures/atlas/pluto/map.jpg",
+      "larguraPx": 5926,
+      "alturaPx": 2963,
+      "bytes": 2682975,
+      "sha256": "5f303073c889f1df101a0d96192b5d34fd2a791ddf4ad247f64012d6e43641e5",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
+          "en": "New Horizons Ralph/MVIC — global color map of Pluto (PIA11707, 5926×2963)"
+        },
+        "url": "https://science.nasa.gov/photojournal/pluto-color-map/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons Ralph/MVIC on the July 14, 2015 flyby (NASA/Johns Hopkins APL/Southwest Research Institute). Longitude rotation and filling of the south with no data done here (baixa-texturas.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see"
+      }
     },
     {
       "corpo": "pluto",
       "canal": "map",
       "arquivo": "textures/atlas/pluto/map.webp",
-      "larguraPx": 720,
-      "alturaPx": 360,
-      "bytes": 70652,
-      "sha256": "3b7cd87e52f5b1899378ae412279a7633e361a161d69e4fa94ac45841d9a10f2",
+      "larguraPx": 5926,
+      "alturaPx": 2963,
+      "bytes": 1493962,
+      "sha256": "bfcfb656183c929cb2127607cecea8a67cc2ee406fea82142c95814771642d4e",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Plutão (720×360)",
-          "en": "NASA 3D Resources — Pluto (720×360)"
+          "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
+          "en": "New Horizons Ralph/MVIC — global color map of Pluto (PIA11707, 5926×2963)"
         },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto",
+        "url": "https://science.nasa.gov/photojournal/pluto-color-map/",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).",
+          "en": "Images: New Horizons Ralph/MVIC on the July 14, 2015 flyby (NASA/Johns Hopkins APL/Southwest Research Institute). Longitude rotation and filling of the south with no data done here (baixa-texturas.mjs)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu",
+        "en": "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see"
+      }
     },
     {
       "corpo": "rhea",

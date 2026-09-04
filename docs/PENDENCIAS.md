@@ -136,6 +136,23 @@ mosaicos globais (domínio público). Obra: trocar os dois pela fonte
 primária, reamostrada ao teto da casa, orientação conferida contra o mapa
 atual, origem/licença/confissão, `data:verify`, fotos. Delegado ao
 operário (Opus) em 03/09, à noite.
+- **FEITO em 03/09, à noite, nos dois.** Plutão pelo `PIA11707`, o mapa
+  global EM COR da Ralph/MVIC (5926×2963, domínio público NASA/APL/SwRI);
+  Caronte pelo `Charon_NewHorizons_Global_Mosaic_300m_Jul2017` do USGS
+  (12693×6347, um canal, reamostrado a 8192) — **não existe mapa global em
+  cor de Caronte**, e ele entra em cinza em vez de matiz inventado. Os dois
+  entram por URL, sem arquivo vendorizado. Os mapas que saíram eram
+  ANTERIORES ao sobrevoo de 2015: correlacionam 0,31 e 0,09 com os mosaicos
+  reais, ou seja não tinham geografia nenhuma (era o `2k_ceres_fictional`
+  outra vez, sem a confissão da fonte). Orientação decidida pela
+  georreferência do GeoTIFF, não por eles (Plutão gira 180°, Caronte 0° —
+  régua em `capturas/item149-orientacao.txt`). Confessado: o polo sul dos
+  dois estava em noite polar no sobrevoo, e 30 % (Plutão) e 34 % (Caronte)
+  do mapa entraram lisos com o tom médio do que a sonda viu; Caronte
+  confessa também que é pancromático. `data:verify` verde, eslint limpo.
+  Fotos `capturas/item149-{pluto,charon}-{antes,depois-v2}.png` e
+  `item149-pluto-sputnik.png` (meia rotação depois, para a Sputnik
+  Planitia aparecer).
 
 **150. Hígia entra na esfera com um GRÁFICO como textura** (censo de
 03/09): o "mapa" do ESO/Wikimedia é uma figura científica — metade preta,

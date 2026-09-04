@@ -54,8 +54,15 @@
 //     lê os DEMs). Entrou no item 141 (3ª fase) com o mosaico global da
 //     Dawn para CERES, que substitui o `2k_ceres_fictional` do SSS — a
 //     única textura da casa cuja própria fonte se declarava inventada.
-//     Pendentes: mosaicos Titan/Europa da bancada; crédito redigido
-//     ANTES de qualquer promoção — docs/reference/ASSETS.md.
+//     Voltou no item 149 com o mosaico global de 300 m de CARONTE
+//     (New Horizons, LORRI+MVIC, julho de 2017). Pendentes: mosaicos
+//     Titan/Europa da bancada; crédito redigido ANTES de qualquer
+//     promoção — docs/reference/ASSETS.md.
+//   - NASA Photojournal — https://science.nasa.gov/photojournal/ (bytes
+//     em assets.science.nasa.gov). Entrou no item 149 com o PIA11707, o
+//     mapa global EM COR de PLUTÃO da Ralph/MVIC: é o único produto de
+//     cor do sobrevoo de 2015 em cilíndrica simples, e o mosaico de
+//     300 m do USGS, mais fino, é pancromático.
 //
 // MODO OFFLINE (o desta rodada): `--offline <dir-do-doador>`
 // copia os MESMOS arquivos do doador local, ARQUIVO A ARQUIVO
@@ -86,7 +93,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido } from './lib-texturas.mjs';
+import {
+  CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido, preencherVazioSemDado,
+} from './lib-texturas.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -377,21 +386,43 @@ const FONTES = [
     url: 'https://science.nasa.gov/photojournal/map-of-triton',
     arquivoLocal: 'fonte/triton-ia.png',
   },
-  // ---- F6 (anões). Plutão/Caronte: NASA 3D Resources, crédito
-  // redigido. Ceres: o mosaico REAL da Dawn (item 141, 3ª fase) no
-  // lugar do `2k_ceres_fictional` que a própria fonte declarava
-  // inventado. Haumea/Makemake/Eris/Quaoar NÃO baixam mapa (procedurais).
+  // ---- F6 (anões). Plutão e Caronte: os mosaicos globais da New Horizons
+  // (item 149) no lugar dos mapas NASA 3D de 720×360, que eram ANTERIORES
+  // ao sobrevoo de 2015 — não traziam a Sputnik Planitia nem a Mordor
+  // Macula, e correlacionam 0,31 e 0,09 com os mosaicos reais: não havia
+  // geografia neles. É a mesma figura do `2k_ceres_fictional`, com a
+  // diferença de que estes não confessavam. Ceres: o mosaico REAL da Dawn
+  // (item 141, 3ª fase). Haumea/Makemake/Eris/Quaoar NÃO baixam mapa
+  // (procedurais).
+  //
+  // O SUL DOS DOIS NÃO FOI FOTOGRAFADO: no sobrevoo o polo sul do sistema
+  // estava em noite polar, e os mosaicos deixam a calota em preto puro —
+  // daí `preencherVazio` (a receita do item 147, tom médio liso, sem
+  // esticar o nível), confessado na ficha.
   {
     corpo: 'pluto',
     canal: 'map',
-    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto',
-    nomeNoDoador: 'pluto_nasa_3d_resource.jpg',
+    // PIA11707, o mapa global EM COR da Ralph/MVIC (5926×2963). O layout é
+    // o mesmo do mosaico USGS de 300 m, que é georreferenciado e declara
+    // meridiano central 180° (geokey 3088) — medido, os dois casam na
+    // IDENTIDADE com giro 0 e r = 0,981. Borda esquerda em 0°E, então o
+    // giro para a convenção da casa (borda em 180°) é 180 − 0 = 180.
+    url: 'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia11/pia11707/PIA11707.tif',
+    giroDeLongitudeGraus: 180,
+    preencherVazio: true,
   },
   {
     corpo: 'charon',
     canal: 'map',
-    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Pluto%20-%20Charon',
-    nomeNoDoador: 'charon_nasa_3d_resource.jpg',
+    // O mosaico global de 300 m (12693×6347, UM canal): não existe mapa
+    // global em cor de Caronte, e inventar matiz aqui seria voltar ao mapa
+    // que saiu. O GeoTIFF declara meridiano central 0° (geokey 3088), que
+    // JÁ é a convenção da casa — giro 0, e é por isso que o campo aparece
+    // com zero em vez de sumir: o zero é medido, não é ausência de exame.
+    url: `${USGS_BYTES}/Charon_NewHorizons_Global_Mosaic_300m_Jul2017_8bit.tif`,
+    giroDeLongitudeGraus: 0,
+    larguraDoDestino: 8192,
+    preencherVazio: true,
   },
   {
     corpo: 'ceres',
@@ -620,9 +651,46 @@ async function assarMosaicoDeCeres(tifPath, destino) {
  * jpg neles erra 8/255 na altura, que são 0,64 km de relevo falso (a
  * mesma medida que fez `otimiza-texturas.mjs` recusar o webp com perda
  * para `CANAIS_DE_DADO`). Cor sai em jpg, como o resto da tabela.
+ *
+ * `preencherVazio` (item 149, a receita do 147) tapa o hemisfério que a
+ * sonda não viu com o tom médio do que foi fotografado — a decisão inteira
+ * mora em `preencherVazioSemDado`, aqui só a chamada e o log com a conta,
+ * que é o número que o `ASSETS.md` declara.
+ *
+ * ELE VEM ANTES DA REAMOSTRAGEM: reduzir primeiro cria, na borda de cada
+ * buraco, um degrau de lanczos que já não conta como "sem dado" e portanto
+ * nunca seria tapado — um fio escuro em volta do remendo. No tamanho da
+ * fonte o remendo entra inteiro e a redução só o mistura com a vizinhança.
+ *
+ * E A JANELA MEDE-SE EM GRAUS, não em texels. O padrão de
+ * `preencherVazioSemDado` (raio 7) nasceu em mapas de 1440 px, onde 15×15
+ * texels são 3,8° de longitude; nos mosaicos da New Horizons, de 5926 e
+ * 12693 px, os mesmos 15×15 são 0,4° — janela pequena demais, que chama de
+ * "vazio GRANDE" qualquer buraco entre imagens e o tapa com a média GLOBAL
+ * do mapa. Em Caronte isso pintava manchas CLARAS (tom 118) no meio do
+ * terreno escuro do hemisfério anti-Plutão: pior que o buraco. Com a
+ * janela em graus só o vazio grande na escala do GLOBO — a calota polar —
+ * qualifica, e o buraco pequeno fica como o USGS o publicou.
  */
-async function girarMapa(origem, destino, canal, giroGraus, larguraDoDestino) {
+const GRAUS_DA_JANELA_DO_VAZIO = 14;
+async function girarMapa(
+  origem, destino, canal,
+  { giroGraus = 0, larguraDoDestino, preencherVazio = false, rotulo = '' } = {}
+) {
   let entrada = sharp(origem, { limitInputPixels: false }).removeAlpha();
+  if (preencherVazio) {
+    const cru = await entrada.raw().toBuffer({ resolveWithObject: true });
+    const { width, height, channels } = cru.info;
+    const raio = Math.round((width * GRAUS_DA_JANELA_DO_VAZIO) / 360);
+    const conta = preencherVazioSemDado(cru.data, width, height, channels, { raio });
+    const texels = width * height;
+    console.log(
+      `${rotulo}: ${((100 * conta.semDado) / texels).toFixed(1)} % sem dado, ` +
+        `${((100 * conta.preenchidos) / texels).toFixed(1)} % preenchidos ` +
+        `com o tom ${conta.tom.join('/')}.`
+    );
+    entrada = sharp(cru.data, { raw: { width, height, channels } });
+  }
   if (larguraDoDestino) {
     entrada = entrada.resize(larguraDoDestino, larguraDoDestino / 2, {
       fit: 'fill',
@@ -675,7 +743,8 @@ async function main() {
     // Fonte LOCAL (item 148): o arquivo já mora no repositório
     // (`scripts/data/atlas/fonte/`) e só é reencodado no formato do canal.
     const passoDaCasa =
-      fonte.bake || fonte.giroDeLongitudeGraus !== undefined || fonte.arquivoLocal;
+      fonte.bake || fonte.giroDeLongitudeGraus !== undefined || fonte.arquivoLocal
+      || fonte.preencherVazio;
     const extensao = passoDaCasa
       ? (CANAIS_DE_DADO.has(fonte.canal) ? 'png' : 'jpg')
       : path.extname(new URL(fonte.url).pathname).slice(1) ||
@@ -694,8 +763,9 @@ async function main() {
         )
       : destino;
     // Offline: cópia ARQUIVO A ARQUIVO do doador (nunca a pasta). Entrada
-    // SEM par no doador — o mosaico Dawn de Ceres — baixa da fonte mesmo
-    // aqui: o doador nunca a teve, e fingir o contrário quebraria o modo.
+    // SEM par no doador — o mosaico Dawn de Ceres e os dois da New Horizons
+    // (item 149) — baixa da fonte mesmo aqui: o doador nunca as teve, e
+    // fingir o contrário quebraria o modo.
     if (fonte.arquivoLocal) {
       await copyFile(
         path.resolve(path.dirname(fileURLToPath(import.meta.url)), fonte.arquivoLocal), cru
@@ -712,14 +782,18 @@ async function main() {
     if (passoDaCasa) {
       try {
         if (fonte.arquivoLocal && !fonte.bake) {
-          await girarMapa(cru, destino, fonte.canal, 0, fonte.larguraDoDestino);
+          await girarMapa(cru, destino, fonte.canal, {
+            larguraDoDestino: fonte.larguraDoDestino,
+          });
         } else if (fonte.bake === 'mosaico-ceres') await assarMosaicoDeCeres(cru, destino);
         else if (fonte.bake) await assarPbr(cru, destino, fonte.bake);
         else {
-          await girarMapa(
-            cru, destino, fonte.canal,
-            fonte.giroDeLongitudeGraus, fonte.larguraDoDestino
-          );
+          await girarMapa(cru, destino, fonte.canal, {
+            giroGraus: fonte.giroDeLongitudeGraus,
+            larguraDoDestino: fonte.larguraDoDestino,
+            preencherVazio: fonte.preencherVazio,
+            rotulo: `${fonte.corpo}/${fonte.canal}`,
+          });
         }
       } finally {
         await unlink(cru).catch(() => {});
