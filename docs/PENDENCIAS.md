@@ -36,7 +36,7 @@ debaixo de 318 commits — ver o item **98**.
 - A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
 - **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
   seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 144.** Quem abrir um item usa este e soma um aqui,
+- **Próximo número livre: 145.** Quem abrir um item usa este e soma um aqui,
   no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
   *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
   31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
@@ -433,6 +433,27 @@ download por corpo em cinema (mapa 12 MB + normal 9 MB) e o disco do site
 (03/09): "deixa o 142 na fila depois do 130."**
 
 **141.** Relevo real (só na luz) nos candidatos — **FECHADO em 03/09**: Mercúrio e Marte (`f4f6db0`), Ceres e Vesta (`a6a6cc4`), Ceres com o mosaico real da Dawn e Vesta girada para a IAU (`5135978`), Europa e Io fora do relevo inventado (`804825e`); gerador único `gera-normal-de-dem.mjs`; testes aprovados rodados (`a5d35b5`); sobra sem ordem dele: Fobos/Deimos por forma real; ARQUIVO.
+
+**144. Dezoito corpos ainda têm o relevo INVENTADO da cor — desfazer, com
+relevo real onde houver mapa de altura.** Palavras dele, 03/09, ao encerrar:
+*"acabo de perceber outros objetos que estao com o mesmo problema, triton
+lua de netuno, parece ser um deles, quais outros? acho que temos que desfazer
+isso, mas nao nessa sessao... se tiver mapa de alturas aplicamos o relevo
+assim, senao deixamos sem o relevo."* Censo (mecanico, 03/09; tabela em
+scratchpad da sessão, resumo aqui): com o bump da cor LIGADO hoje — Fobos,
+Deimos, Ganimedes, Calisto, Miranda, Ariel, Umbriel, Titânia, Oberon, Tritão,
+Plutão, Caronte, Palas, Hígia, Haumea, Makemake, Éris, Quaoar (18).
+- **Relevo real pronto (aplicar como no 141):** Plutão e Caronte — DEM da
+  New Horizons (Schenk et al. 2018, USGS Astropedia, 300 m/px, quase global,
+  sem o polo sul — a mesma lacuna da cor do 149).
+- **Real por FORMA (malha, não normais):** Fobos (Gaskell/SPC, PDS) e Deimos
+  (PDS) — caminho do esculpido com dado real, fase própria.
+- **Parcial, decisão dele:** Tritão tem DEM real (Schenk/LPI) em ~40 % da
+  superfície — aceitar meio globo sem dado, ou zerar.
+- **Sem dado (zerar o bump, como Europa/Io):** Ganimedes, Calisto, as cinco
+  luas de Urano, Palas, Hígia, Haumea, Makemake, Éris, Quaoar (13).
+Ordem sugerida: Plutão+Caronte → zerar os 13 → Fobos+Deimos → Tritão
+(com a palavra dele). NA FILA, sem obra nesta janela (ordem dele).
 
 **143. O juiz de identidade marcou "INSTÁVEL com diff 0" em vistas que DIFEREM de fato.** Achado do coordenador, 03/09, ao fechar o 141: a rodada 625c86a→5135978 do `ab-identidade` deu 48 IGUAL + 6 INSTÁVEL (mercurio, mercurionb, vesta, anao-vesta-corpo, atlas-corpo-marte, foco-io) "com 0 pixel de diferença" — mas essas vistas contêm corpos que o 141 mudou de propósito, e a mesma vista `atlas-corpo-marte` fotografada por mim nas duas árvores (5222/5223, `capturas/item141-chk-marte-{antes-,}q700.png`) dá md5 diferente e **351 de 3.249 blocos tocados** (`diff-pixel`). Suspeita: o lado "antes" recapturado por vista isolada (ou a retomada de disco) pegou o servidor errado — em INSTÁVEL o "antes" traz dois hashes e um deles é o do "depois". A verificar no instrumento antes da próxima rodada; até lá, INSTÁVEL não vale como IGUAL: confere-se com foto nas duas árvores.
 
