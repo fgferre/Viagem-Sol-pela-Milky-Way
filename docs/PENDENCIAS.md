@@ -116,6 +116,18 @@ esperam ordem. Backup em dia; site intocado (publicar só com pedido dele).
 
 ## ALTA — o dono vê e incomoda
 
+**151. Ilustrações por IA para os seis corpos sem foto de superfície**
+(pedido dele, 03/09: *"fale os fatos conhecidos se não houver nenhuma
+textura para fornecer, explique qual o objeto e suas características para
+que o modelo crie o asset"*). Hígia, Palas, Haumea, Makemake, Éris e
+Quaoar: nenhuma sonda os visitou; hoje são procedurais (e Hígia usa um
+gráfico, item 150). Obra: um operário barato gera no ChatGPT do dono, pelo
+Chrome dele, um mapa por corpo a partir dos fatos conhecidos (tamanho,
+albedo, cor, crateras vistas de longe), nível casado com o albedo
+declarado, entra como fonte local, ficha confessa "ilustração por IA, não
+há foto". Pacote pronto no scratchpad da sessão; despacha depois do 149
+(um operário por vez, §12). Fecha o 150.
+
 **149. Plutão e Caronte com mapa de 720 px sem detalhe** (censo de
 03/09, pergunta dele: *"tem mais algum corpo que precisa melhorar a
 textura?"*). Os mapas da NASA 3D têm 720×360 e detalhe zero acima disso; a
