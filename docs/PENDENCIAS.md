@@ -51,6 +51,13 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (03/09, noite — FECHO por ordem dele)
 
+**03/09 (3ª janela, continuação — item 148).** Miranda ganhou o mapa
+inteiro gerado por IA pela mão dele (fonte local `miranda-ia.png`,
+confissão na ficha); Celestia medido e descartado; a colagem só-no-vazio
+foi escrita e descartada pela palavra dele. Faltam as outras cinco, uma a
+uma, conforme ele gerar as imagens. Testes: nenhum novo (a porta
+`arquivoLocal` é cópia + reencode, coberta pelo `data:verify`).
+
 **03/09 (3ª janela — as luas de Urano).** Item **147** ("algo estranho"
 com as luas de Urano) diagnosticado na cena viva e consertado no mesmo
 dia: câmera, luz e textura estavam certas; os mapas da NASA 3D é que têm
@@ -111,22 +118,22 @@ esperam ordem. Backup em dia; site intocado (publicar só com pedido dele).
 
 **148. As luas de Urano e Tritão com o hemisfério nunca visto
 reconstruído** (decisão dele, 03/09: *"eu quero"*). O cinza liso do 147 é
-honesto mas pobre. **Medido em 03/09: o Celestia NÃO resolve.** Os mapas
-do repositório CelestiaContent (CC BY-SA 4.0, ItzImcool/Schenk/Stryk; Tritão
-CC BY 3.0, Anpilogov) são completos só no papel: 45–56 % de cada mapa das
-cinco é tom liso (o mesmo remédio do 147, com o hemisfério visto de cabeça
-para baixo em relação ao nosso IAU) e Tritão tem 38 % liso; o ganho seria
-só resolução (4096 px em Miranda, Ariel e Tritão) e nível mais claro. Os
-mapas pintados inteiros do `atlas-orbital` não têm origem registrada e o de
-Tritão traz marca d'água — não entram. Sobram dois caminhos, e a escolha é
-dele: (a) **IA generativa pela mão dele** (ChatGPT/Grok não são chamáveis
-daqui): ele sobe o mapa preenchido, pede para completar, e a casa cola o
-resultado SÓ no vazio (máscara do 147, emenda suavizada), confessando
-"reconstrução por IA" na ficha; risco: a projeção esticada nos polos e a
-emenda 0°/360°, que a IA não entende; (b) **crateras por código** (o
-gerador de `esculpido.ts` / o sintético de Reia e Jápeto), reprodutível e
-declarado, mas genérico. Cópias dos mapas do Celestia e a régua ficaram no
-scratchpad da sessão; nada entrou no repositório.
+honesto mas pobre. O Celestia foi medido e NÃO resolve (45–56 % de tom liso
+nas cinco, 38 % em Tritão); os mapas pintados do `atlas-orbital` não têm
+origem. O caminho que ficou: **imagem gerada por IA pela mão dele** a partir
+do mapa preenchido do 147.
+- **Miranda FEITA em 03/09, por decisão dele** (*"ficou MUITO próxima da
+  real; não quero montagem, use a que gerei"*): a imagem dele
+  (`scripts/data/atlas/fonte/miranda-ia.png`, 1774×887) é o mapa inteiro,
+  fonte LOCAL da aquisição (`arquivoLocal`); a ficha confessa que nada
+  ali é medida (sul redesenhado sobre a Voyager, norte inventado);
+  manifesto e `data:verify` verdes; fotos `capturas/item148-miranda-ia*.png`.
+  A colagem só-no-vazio que cheguei a escrever foi descartada por ele.
+- **Faltam Ariel, Umbriel, Titânia, Oberon e Tritão**: ele gera a imagem
+  de cada uma (o pedido que funcionou está no chat de 03/09: mapa
+  equirretangular, metade cinza é o que falta, completar no mesmo estilo,
+  bordas contínuas), a casa liga pela mesma porta (`arquivoLocal` +
+  origem + confissão). Cada uma entra assim que a imagem chegar.
 
 **147. "Precisamos revisar as luas de Urano... algo estranho está
 acontecendo."** (Palavras dele, 03/09.) Miranda, Ariel, Umbriel, Titânia

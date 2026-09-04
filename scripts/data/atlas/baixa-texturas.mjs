@@ -345,13 +345,16 @@ const FONTES = [
   // saía como disco preto no lado do dia. O passo `preencher-vazio` tapa
   // o vazio com o tom médio do que foi fotografado
   // (`preencherVazioSemDado`, lib-texturas.mjs), confessado na ficha.
+  // Miranda (item 148, decisão dele): o mapa INTEIRO é a imagem que o dono
+  // gerou com IA a partir do mapa preenchido do 147 (sul real da Voyager
+  // redesenhado, norte inventado) — "ficou MUITO próxima da real; não quero
+  // montagem, use a que gerei". Fonte LOCAL, guardada no repositório; a
+  // confissão da ficha diz que não é medida.
   {
     corpo: 'miranda',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/',
-    nomeNoDoador: 'miranda_nasa_3d_resource.jpg',
-    bake: 'preencher-vazio',
-    minimoBytes: MINIMO_DE_BYTES_DO_MAPA_PREENCHIDO,
+    arquivoLocal: 'fonte/miranda-ia.png',
   },
   {
     corpo: 'ariel',
@@ -713,7 +716,10 @@ async function main() {
     // fontes já chegam jpg/png na origem; URL de PÁGINA — o caso NASA 3D e
     // o do projeto Saturn, que só existem no modo offline — herda a
     // extensão do nome no doador.
-    const passoDaCasa = fonte.bake || fonte.giroDeLongitudeGraus !== undefined;
+    // Fonte LOCAL (item 148): o arquivo já mora no repositório
+    // (`scripts/data/atlas/fonte/`) e só é reencodado no formato do canal.
+    const passoDaCasa =
+      fonte.bake || fonte.giroDeLongitudeGraus !== undefined || fonte.arquivoLocal;
     const extensao = passoDaCasa
       ? (CANAIS_DE_DADO.has(fonte.canal) ? 'png' : 'jpg')
       : path.extname(new URL(fonte.url).pathname).slice(1) ||
@@ -734,7 +740,11 @@ async function main() {
     // Offline: cópia ARQUIVO A ARQUIVO do doador (nunca a pasta). Entrada
     // SEM par no doador — o mosaico Dawn de Ceres — baixa da fonte mesmo
     // aqui: o doador nunca a teve, e fingir o contrário quebraria o modo.
-    if (diretorioDoador && fonte.nomeNoDoador) {
+    if (fonte.arquivoLocal) {
+      await copyFile(
+        path.resolve(path.dirname(fileURLToPath(import.meta.url)), fonte.arquivoLocal), cru
+      );
+    } else if (diretorioDoador && fonte.nomeNoDoador) {
       await copyFile(
         path.join(diretorioDoador, 'public', 'textures', fonte.nomeNoDoador), cru
       );
@@ -745,7 +755,9 @@ async function main() {
     // ---- o passo da casa, quando existe
     if (passoDaCasa) {
       try {
-        if (fonte.bake === 'mosaico-ceres') await assarMosaicoDeCeres(cru, destino);
+        if (fonte.arquivoLocal && !fonte.bake) {
+          await girarMapa(cru, destino, fonte.canal, 0, fonte.larguraDoDestino);
+        } else if (fonte.bake === 'mosaico-ceres') await assarMosaicoDeCeres(cru, destino);
         else if (fonte.bake === 'preencher-vazio') {
           await assarPreenchimentoDoVazio(cru, destino, `${fonte.corpo}/${fonte.canal}`);
         } else if (fonte.bake) await assarPbr(cru, destino, fonte.bake);

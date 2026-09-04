@@ -3853,114 +3853,85 @@
       "arquivo": "textures/atlas/miranda/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 46297,
-      "sha256": "c904e1afb36e3572a5bdbb5453690c3deb1bd86631a3b77e90be9f4903c53144",
+      "bytes": 146347,
+      "sha256": "e5446337a97494af3bf8994dd47d468a821d43f5c702bef29585bda825e72d7d",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Miranda",
-          "en": "NASA 3D Resources — Miranda"
+          "pt": "Reconstrução por IA generativa do autor sobre o mapa NASA 3D Resources — Miranda",
+          "en": "The author's generative-AI reconstruction over the NASA 3D Resources map — Miranda"
         },
         "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Miranda",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre NASA 3D Resources (uso livre)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over NASA 3D Resources (free to use)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 (NASA 3D Resources — NASA/JPL-Caltech) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: the Voyager 2 mosaic (NASA 3D Resources — NASA/JPL-Caltech) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
-      }
-    },
-    {
-      "corpo": "miranda",
-      "canal": "map",
-      "arquivo": "textures/atlas/miranda/map_1024.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 38872,
-      "sha256": "8975f851cdf6bca8201266194a5876de3ea5f4d8055dbb226b78fb6b577cabee",
-      "origem": {
-        "fonte": {
-          "pt": "NASA 3D Resources — Miranda",
-          "en": "NASA 3D Resources — Miranda"
-        },
-        "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Miranda",
-        "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
-        },
-        "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
-        }
-      },
-      "proveniencia": "derivado",
-      "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "miranda",
       "canal": "map",
       "arquivo": "textures/atlas/miranda/map.jpg",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 103827,
-      "sha256": "52f89b3800b7ddf59c9ac82e9c48cc63426c616b33fd53172b0d9b8a99f3817e",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 485237,
+      "sha256": "63a462c664cb56e29e90fcda8e26472278e960a696d4f2068436f48e0f636913",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Miranda",
-          "en": "NASA 3D Resources — Miranda"
+          "pt": "Reconstrução por IA generativa do autor sobre o mapa NASA 3D Resources — Miranda",
+          "en": "The author's generative-AI reconstruction over the NASA 3D Resources map — Miranda"
         },
         "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Miranda",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre NASA 3D Resources (uso livre)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over NASA 3D Resources (free to use)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 (NASA 3D Resources — NASA/JPL-Caltech) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: the Voyager 2 mosaic (NASA 3D Resources — NASA/JPL-Caltech) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {
       "corpo": "miranda",
       "canal": "map",
       "arquivo": "textures/atlas/miranda/map.webp",
-      "larguraPx": 1440,
-      "alturaPx": 720,
-      "bytes": 70954,
-      "sha256": "229979d0aebccd788122a98c4ca8c65f04c33e25aa0565aacdc970b8df62eec5",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 418770,
+      "sha256": "0f35d6164cfd4c17e6353236c62b2494e485b76064ced58589969230156514b7",
       "origem": {
         "fonte": {
-          "pt": "NASA 3D Resources — Miranda",
-          "en": "NASA 3D Resources — Miranda"
+          "pt": "Reconstrução por IA generativa do autor sobre o mapa NASA 3D Resources — Miranda",
+          "en": "The author's generative-AI reconstruction over the NASA 3D Resources map — Miranda"
         },
         "url": "https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Miranda",
         "licenca": {
-          "pt": "NASA 3D Resources (uso livre)",
-          "en": "NASA 3D Resources (free to use)"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA sobre NASA 3D Resources (uso livre)",
+          "en": "the author's image (Felipe Ferreira), generated with AI over NASA 3D Resources (free to use)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA 3D Resources — NASA/JPL-Caltech.",
-          "en": "Texture: NASA 3D Resources — NASA/JPL-Caltech."
+          "pt": "Textura: mosaico Voyager 2 (NASA 3D Resources — NASA/JPL-Caltech) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.",
+          "en": "Texture: the Voyager 2 mosaic (NASA 3D Resources — NASA/JPL-Caltech) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu",
-        "en": "only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw"
+        "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
+        "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
       }
     },
     {

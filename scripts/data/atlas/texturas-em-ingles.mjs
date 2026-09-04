@@ -87,6 +87,19 @@ export const EM_INGLES = new Map([
   // ---- fontes: NASA 3D Resources -----------------------------------
   ['NASA 3D Resources — Io (B)', 'NASA 3D Resources — Io (B)'],
   ['NASA 3D Resources — Miranda', 'NASA 3D Resources — Miranda'],
+  // item 148 — Miranda redesenhada por IA pelo dono
+  [
+    'Reconstrução por IA generativa do autor sobre o mapa NASA 3D Resources — Miranda',
+    "The author's generative-AI reconstruction over the NASA 3D Resources map — Miranda",
+  ],
+  [
+    'imagem do autor (Felipe Ferreira), gerada com IA sobre NASA 3D Resources (uso livre)',
+    "the author's image (Felipe Ferreira), generated with AI over NASA 3D Resources (free to use)",
+  ],
+  [
+    'Textura: mosaico Voyager 2 (NASA 3D Resources — NASA/JPL-Caltech) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.',
+    'Texture: the Voyager 2 mosaic (NASA 3D Resources — NASA/JPL-Caltech) redrawn by generative AI by the author, with the northern hemisphere invented — not a measurement.',
+  ],
   ['NASA 3D Resources — Ariel', 'NASA 3D Resources — Ariel'],
   ['NASA 3D Resources — Umbriel', 'NASA 3D Resources — Umbriel'],
   ['NASA 3D Resources — Oberon', 'NASA 3D Resources — Oberon'],
@@ -320,6 +333,10 @@ export const EM_INGLES = new Map([
     'a monochrome global map: the higher-resolution USGS mosaic carries 68 black lines of missing data over the south pole and did not make it in',
   ],
   // item 147 — as cinco de Urano (uma frase só) e Tritão
+  [
+    'o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida',
+    'the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement',
+  ],
   [
     'só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu',
     'only the southern hemisphere was photographed (Voyager 2, 1986): the north, never seen, comes in flat, in the mean tone of what the probe saw',

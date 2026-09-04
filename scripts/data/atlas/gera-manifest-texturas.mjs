@@ -289,11 +289,11 @@ const ORIGENS = {
     proveniencia: 'derivado',
   },
   'miranda/map': {
-    fonte: 'NASA 3D Resources — Miranda',
+    fonte: 'Reconstrução por IA generativa do autor sobre o mapa NASA 3D Resources — Miranda',
     url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Uranus%20-%20Miranda',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
-    proveniencia: 'medido',
+    licenca: 'imagem do autor (Felipe Ferreira), gerada com IA sobre NASA 3D Resources (uso livre)',
+    atribuicao: 'Textura: mosaico Voyager 2 (NASA 3D Resources — NASA/JPL-Caltech) redesenhado por IA generativa pelo autor, com o hemisfério norte inventado — não é medida.',
+    proveniencia: 'derivado',
   },
   'ariel/map': {
     fonte: 'NASA 3D Resources — Ariel',

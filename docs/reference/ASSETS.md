@@ -452,6 +452,28 @@ não se inventa cratera nem se espelha o hemisfério visto. O que não foi
 fotografado entra liso e é confessado na ficha (tabela abaixo). Os mapas crus
 da NASA 3D seguem no histórico do git (`5da9cc5`).
 
+## Miranda — o mapa redesenhado por IA (item 148)
+
+Depois do tom liso do item 147 o dono quis o hemisfério nunca visto com
+terreno (*"eu quero"*). O repositório do Celestia foi medido e **não** o tem
+(45–56 % de tom liso nas cinco de Urano, 38 % em Tritão); os mapas pintados
+inteiros do `atlas-orbital` não têm origem registrada e o de Tritão traz marca
+d'água. O que entrou foi a **imagem que o próprio dono gerou com IA**
+(Codex/ChatGPT, 03/09/2026, a partir do `map.jpg` preenchido do 147,
+1774×887): `scripts/data/atlas/fonte/miranda-ia.png`, fonte LOCAL da
+aquisição (`arquivoLocal`), reencodada em jpg sem giro nem reamostragem.
+
+**É o mapa inteiro, por decisão dele** (*"ficou MUITO próxima da real; não
+quero montagem, use a que gerei"*): a IA redesenhou também o hemisfério
+fotografado — medido contra o mosaico NASA 3D, a metade sul correlaciona
+0,31 e sai 6 % mais escura —, então **nada neste mapa é medida**: o sul segue
+o mosaico da Voyager 2, o norte é invenção plausível. A ficha diz isso na
+seção "a imagem" e a origem no manifesto credita a NASA/JPL-Caltech pelo
+mosaico e o autor pela imagem. O mapa cru da NASA 3D segue no histórico
+(`5da9cc5`); a colagem só-no-vazio que chegou a ser escrita (`comporNoVazio`)
+foi descartada pela palavra dele e não existe no código. As outras cinco luas
+seguem com o tom liso do 147 até terem a própria imagem pela mesma porta.
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**
@@ -500,7 +522,7 @@ tocar num `.mjs`.
 | mars/normal | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |
 | ceres/normal | topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem |
 | vesta/normal | topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave |
-| miranda/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
+| miranda/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
 | ariel/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
 | umbriel/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
 | titania/map | só o hemisfério sul foi fotografado (Voyager 2, 1986): o norte, nunca visto, entra liso, no tom médio do que a sonda viu |
