@@ -172,12 +172,14 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   { id: 'charon', brdf: 'lambert' },
   { id: 'ceres', brdf: 'lambert' },
   { id: 'vesta', brdf: 'ls' },
-  { id: 'pallas', brdf: 'ls', superficie: 'procedural' },
+  // Item 151: as seis sem foto de superfície ganharam ilustração por IA
+  // (fonte local, `baixa-texturas.mjs`) — nenhuma é mais `procedural`.
+  { id: 'pallas', brdf: 'ls' },
   { id: 'hygiea', brdf: 'ls' },
-  { id: 'haumea', brdf: 'ls', superficie: 'procedural' },
-  { id: 'makemake', brdf: 'lambert', superficie: 'procedural' },
-  { id: 'eris', brdf: 'lambert', superficie: 'procedural' },
-  { id: 'quaoar', brdf: 'lambert', superficie: 'procedural' },
+  { id: 'haumea', brdf: 'ls' },
+  { id: 'makemake', brdf: 'lambert' },
+  { id: 'eris', brdf: 'lambert' },
+  { id: 'quaoar', brdf: 'lambert' },
   // S3 (item 134) — as nove esculpidas de Saturno. Todas `lambert` com o
   // `terminadorSuave` da casa: o disco chato de Lommel-Seeliger é o fato
   // que uma FOTO confere, e não há foto destes nove com que conferir —
@@ -563,15 +565,10 @@ void main() {
 }
 `;
 
-/** Cores-base do −3 inventado (doador proceduralSurface / celestialBodies). */
-export const ALBEDO_PROCEDURAL: Record<string, readonly [number, number, number]> = {
-  haumea: [0.91, 0.835, 0.769],
-  makemake: [0.831, 0.647, 0.455],
-  eris: [0.941, 0.902, 0.824],
-  quaoar: [0.533, 0.329, 0.259],
-  // Palas: sem mapa licenciado — o #8C8578 do doador.
-  pallas: [0.549, 0.522, 0.471],
-};
+// A tabela de cores-base do −3 inventado (haumea/makemake/eris/quaoar/
+// pallas) saiu no item 151: as cinco ganharam ilustração por IA e
+// nenhuma ROCHOSOS entra mais como `superficie: 'procedural'` — sem
+// config nenhuma nesse ramo, a tabela não tinha mais leitor (§6).
 
 // ------------------------------------------------------------
 // A classe — o molde é a Lua; o que a Terra tem a mais (cessão,
@@ -961,7 +958,9 @@ export class RochosoResolvido {
         ? new THREE.SphereGeometry(1, ...SEGMENTOS_COM_RELEVO)
         : new THREE.SphereGeometry(1, 128, 64);
     const procedural = this.config.superficie === 'procedural';
-    const albedo = ALBEDO_PROCEDURAL[this.config.id] ?? [0.5, 0.5, 0.5];
+    // sem ROCHOSOS `procedural` hoje (item 151), `uAlbedoBase` nunca é lido
+    // por um fragmento vivo — o cinza neutro é só o padrão do uniform.
+    const albedo: readonly [number, number, number] = [0.5, 0.5, 0.5];
     this.matSuperficie = new THREE.ShaderMaterial({
       vertexShader: esculpido
         ? ESCULPIDO_VERT

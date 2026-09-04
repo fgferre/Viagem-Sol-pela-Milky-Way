@@ -127,6 +127,32 @@ albedo, cor, crateras vistas de longe), nível casado com o albedo
 declarado, entra como fonte local, ficha confessa "ilustração por IA, não
 há foto". Pacote pronto no scratchpad da sessão; despacha depois do 149
 (um operário por vez, §12). Fecha o 150.
+- **FEITO em 03/09, à noite.** Um chat por corpo no ChatGPT do dono
+  (Chrome dele, receita do item 148), pedido só com os fatos publicados —
+  sem imagem de referência, para não ensinar a IA a copiar o gráfico
+  errado ou o cinza procedural. Seis mapas 1774×887, fonte LOCAL
+  (`scripts/data/atlas/fonte/<corpo>-ia.png`). NÍVEL casado ao albedo: um
+  passo novo do pipeline (`bake: 'ilustracao-ia'`, `baixa-texturas.mjs`)
+  mede a média do mapa em linear e escala por um ganho até bater no
+  albedo geométrico — Hígia 0,0296→×2,367→0,07; Palas 0,1991→×0,804→0,16;
+  Haumea 0,5744→×1,219→0,70; Makemake 0,2172→×3,683→0,80; Éris
+  0,8178→×1,101→0,90 (grampeado do medido 0,96); Quaoar 0,0570→×1,931→
+  0,11. `rochoso.ts`: as cinco saíram de `superficie: 'procedural'`
+  (agora usam mapa, como as irmãs); a tabela `ALBEDO_PROCEDURAL` ficou
+  sem leitor e saiu (§6) — os shaders procedurais continuam (testados em
+  `rochoso.test.ts`), só não são mais alcançados por nenhum corpo hoje.
+  Origem no manifesto credita a imagem ao autor (Felipe Ferreira, gerada
+  com IA); ficha confessa nas duas línguas que nada é medida. `data:verify`
+  verde, eslint limpo, `tsc -b` verde. Fotos
+  `capturas/item151-<corpo>-{antes,depois}.png` (higia, palas, haumea,
+  makemake, eris, quaoar) — o antes de Hígia mostra o gráfico do 150
+  (grade e "90°"/"180°" por cima), o antes dos outros cinco mostra o cinza
+  procedural liso; todas conferidas por olho (luz de um lado, sombra do
+  outro, tom coerente com o albedo). Fecha o 150.
+- **Sobra (auditoria do coordenador, §13):** o ramo `superficie: 'procedural'`
+  de `rochoso.ts` (dois shaders e o interruptor) ficou sem consumidor — nenhum
+  corpo o usa desde o 151; `rochoso.test.ts` ainda o exercita. Remover na
+  próxima passada em `rochoso.ts`, com o ajuste do teste na lista do §19.
 
 **149. Plutão e Caronte com mapa de 720 px sem detalhe** (censo de
 03/09, pergunta dele: *"tem mais algum corpo que precisa melhorar a
@@ -161,6 +187,10 @@ existe foto de superfície de Hígia. Obra mínima: sair o gráfico, entrar a
 superfície procedural declarada (como Palas), ficha confessando; a forma
 irregular do DAMIT (CC BY, já anotada no ASSETS) fica para depois, com o
 pipeline de malha. Depois do 149.
+- **FEITO em 03/09, à noite, pelo item 151**: o gráfico saiu; Hígia entra
+  com a ilustração por IA (`hygiea/map`), não com o procedural que este
+  item cogitava — texto e fotos no 151. A forma irregular do DAMIT segue
+  pendente, com o pipeline de malha.
 
 **148. As luas de Urano e Tritão com o hemisfério nunca visto
 reconstruído** (decisão dele, 03/09: *"eu quero"*; *"não quero montagem,

@@ -565,6 +565,51 @@ Em 2026 o Sol ilumina o **norte** do sistema de Plutão (a obliquidade é de
 fotografado: a calota lisa fica na noite, ao contrário do que aconteceu com
 as luas de Urano no item 147.
 
+## Os seis sem foto — ilustrações por IA (item 151)
+
+Hígia, Palas, Haumea, Makemake, Éris e Quaoar: nenhuma sonda os visitou.
+Hígia entrava com um **gráfico científico do ESO/VLT** como se fosse mapa
+(item 150, errado — metade preta, grade de latitude e barra de cores
+desenhadas por cima); os outros cinco eram `superficie: 'procedural'`
+(`rochoso.ts`), cor-base lisa + ruído sem feição nenhuma. Pedido dele
+(03/09): *"fale os fatos conhecidos se não houver nenhuma textura para
+fornecer, explique qual o objeto e suas características para que o
+modelo crie o asset"*.
+
+**O pedido ao ChatGPT** (uma conversa por corpo, na conta dele) levou só
+os fatos publicados — tamanho, forma, albedo, cor, as poucas crateras
+vistas de longe — e pediu explicitamente iluminação uniforme (mapa de
+albedo, não foto com sombra de lado) e bordas contínuas. Nenhuma imagem
+de referência foi enviada: não existe fotografia de nenhum dos seis, e
+mandar uma incumbente inventada (o gráfico do ESO, o cinza procedural)
+teria ensinado a IA a copiar erro. Cada imagem voltou em 1774×887, fonte
+LOCAL da aquisição (`scripts/data/atlas/fonte/<corpo>-ia.png`).
+
+**O nível casado com o albedo.** A IA escolhe brilho por estética, não por
+física — o mapa de Hígia saiu cinza médio, não carvão. O passo `bake:
+'ilustracao-ia'` (`baixa-texturas.mjs`) mede a média do mapa em **linear**
+(sRGB→linear; a luz soma em linear) e aplica um ganho até essa média bater
+no albedo geométrico do corpo — o mesmo raciocínio do tingimento uniforme
+de Ceres, mas em brilho, e não à mão:
+
+| corpo | média linear da IA | ganho aplicado | albedo-alvo |
+| --- | --- | --- | --- |
+| Hígia | 0,0296 | ×2,367 | 0,07 |
+| Palas | 0,1991 | ×0,804 | 0,16 |
+| Haumea | 0,5744 | ×1,219 | 0,70 |
+| Makemake | 0,2172 | ×3,683 | 0,80 |
+| Éris | 0,8178 | ×1,101 | 0,90 (grampeado do medido 0,96, para não estourar em branco puro) |
+| Quaoar | 0,0570 | ×1,931 | 0,11 |
+
+**Nada aqui é medida.** Tamanho, forma (a malha da casa, já triaxial em
+Haumea) e a cor média vêm dos fatos publicados; o terreno — cratera,
+mancha, textura de superfície — é invenção plausível da IA, sem coordenada
+nenhuma que bata com um relevo real. O anel de Haumea e o de Quaoar
+continuam desenhados pela casa (não pintados no mapa). A ficha confessa
+isso nas duas línguas (tabela abaixo); a origem no manifesto credita a
+imagem ao autor (Felipe Ferreira, gerada com IA), sem fingir fonte
+fotográfica.
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**
@@ -621,6 +666,12 @@ tocar num `.mjs`.
 | titania/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
 | oberon/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
 | triton/map | o mapa inteiro é um redesenho por IA generativa: a parte fotografada segue o mapa da Voyager 2 (1989), o resto, nunca visto, é inventado — nada aqui é medida |
+| hygiea/map | não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida |
+| pallas/map | não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida |
+| haumea/map | não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida |
+| makemake/map | não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida |
+| eris/map | não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida |
+| quaoar/map | não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida |
 
 ### a forma (item 20)
 

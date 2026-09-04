@@ -433,10 +433,9 @@ const FONTES = [
     bake: 'mosaico-ceres',
   },
   // ---- F7 (asteroides). Vesta: mosaico Dawn embutido no modelo
-  // NASA Science (crédito NASA/JPL-Caltech/UCLA/MPS/DLR/IDA). Hígia:
-  // mapa VLT ESO CC BY 4.0. Palas sem mapa com licença — não entra.
-  // Modelos GLB/OBJ (DAMIT CC BY / NASA) ficam pendentes (sem
-  // GLTFLoader/OBJLoader na casa).
+  // NASA Science (crédito NASA/JPL-Caltech/UCLA/MPS/DLR/IDA). Modelos
+  // GLB/OBJ (DAMIT CC BY / NASA) ficam pendentes (sem GLTFLoader/
+  // OBJLoader na casa).
   {
     corpo: 'vesta',
     canal: 'map',
@@ -449,11 +448,59 @@ const FONTES = [
     // 180°. O giro que a põe na convenção da casa é 180 − 330 = −150.
     giroDeLongitudeGraus: -150,
   },
+  // ---- Os seis sem foto de superfície (item 151): nenhuma sonda visitou
+  // Hígia, Palas, Haumea, Makemake, Éris ou Quaoar. Hígia usava um
+  // GRÁFICO científico do ESO/VLT com grade e barra de cores por cima
+  // (item 150, errado — não é textura); os outros cinco eram
+  // `superficie: 'procedural'` (rochoso.ts). Cada um agora é uma
+  // ILUSTRAÇÃO gerada por IA (ChatGPT do dono) a partir dos fatos
+  // conhecidos — tamanho, albedo, cor, crateras vistas de longe —, fonte
+  // LOCAL (`arquivoLocal`), com o brilho casado ao albedo geométrico pelo
+  // bake `ilustracao-ia` (a receita e o ganho de cada corpo moram acima,
+  // `ALBEDO_DA_ILUSTRACAO`). `url` é a página da NASA sobre o corpo (ou o
+  // JPL Small-Body Database quando não há página dedicada) — não a fonte
+  // do mapa, que não existe.
   {
     corpo: 'hygiea',
     canal: 'map',
-    url: 'https://commons.wikimedia.org/wiki/File:Hygiea_VLT_2017-2018_map.png',
-    nomeNoDoador: 'hygiea_vlt_2017_2018_map.png',
+    url: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Hygiea',
+    arquivoLocal: 'fonte/hygiea-ia.png',
+    bake: 'ilustracao-ia',
+  },
+  {
+    corpo: 'pallas',
+    canal: 'map',
+    url: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Pallas',
+    arquivoLocal: 'fonte/pallas-ia.png',
+    bake: 'ilustracao-ia',
+  },
+  {
+    corpo: 'haumea',
+    canal: 'map',
+    url: 'https://science.nasa.gov/dwarf-planets/haumea/',
+    arquivoLocal: 'fonte/haumea-ia.png',
+    bake: 'ilustracao-ia',
+  },
+  {
+    corpo: 'makemake',
+    canal: 'map',
+    url: 'https://science.nasa.gov/dwarf-planets/makemake/',
+    arquivoLocal: 'fonte/makemake-ia.png',
+    bake: 'ilustracao-ia',
+  },
+  {
+    corpo: 'eris',
+    canal: 'map',
+    url: 'https://science.nasa.gov/dwarf-planets/eris/',
+    arquivoLocal: 'fonte/eris-ia.png',
+    bake: 'ilustracao-ia',
+  },
+  {
+    corpo: 'quaoar',
+    canal: 'map',
+    url: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Quaoar',
+    arquivoLocal: 'fonte/quaoar-ia.png',
+    bake: 'ilustracao-ia',
   },
 ];
 
@@ -644,6 +691,67 @@ async function assarMosaicoDeCeres(tifPath, destino) {
 }
 
 /**
+ * O NÍVEL CASADO COM O ALBEDO (item 151). Hígia, Palas, Haumea, Makemake,
+ * Éris e Quaoar não têm foto de superfície nenhuma: o mapa inteiro é uma
+ * ILUSTRAÇÃO gerada por IA (ChatGPT do dono) a partir dos fatos conhecidos
+ * (tamanho, albedo, cor, crateras vistas de longe). A IA não sabe o albedo
+ * geométrico do corpo — o brilho que ela escolhe é estético, não físico —
+ * e por isso a média do mapa é MEDIDA em linear (a luz soma em linear, não
+ * em sRGB) e escalada por um ganho até bater no albedo declarado: mesmo
+ * raciocínio do tingimento uniforme de Ceres (`assarMosaicoDeCeres`), mas
+ * em BRILHO, não em matiz. O ganho não é aplicado à mão (edição de
+ * imagem): é medido e gravado no log a cada corrida, e o `ASSETS.md`
+ * confessa o número.
+ */
+const ALBEDO_DA_ILUSTRACAO = {
+  hygiea: 0.07,
+  pallas: 0.16,
+  haumea: 0.7,
+  makemake: 0.8,
+  // 0,96 medido é o mais brilhante do Sistema Solar depois de Encélado;
+  // grampeado em 0,9 para o mapa não estourar em branco puro (item 151).
+  eris: 0.9,
+  quaoar: 0.11,
+};
+
+function srgbParaLinear(canal) {
+  const c = canal / 255;
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+function linearParaSrgb(linear) {
+  const c = linear <= 0.0031308 ? linear * 12.92 : 1.055 * linear ** (1 / 2.4) - 0.055;
+  return Math.max(0, Math.min(255, Math.round(c * 255)));
+}
+
+async function assarIlustracaoIA(origem, destino, corpo) {
+  const albedoAlvo = ALBEDO_DA_ILUSTRACAO[corpo];
+  if (albedoAlvo === undefined) {
+    throw new Error(`assarIlustracaoIA: sem albedo declarado para ${corpo} (item 151)`);
+  }
+  const { data, info } = await sharp(origem, { limitInputPixels: false })
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  let somaLinear = 0;
+  for (let i = 0; i < data.length; i += 1) somaLinear += srgbParaLinear(data[i]);
+  const medioLinear = somaLinear / data.length;
+  const ganho = albedoAlvo / Math.max(medioLinear, 1e-6);
+  const saida = Buffer.allocUnsafe(data.length);
+  for (let i = 0; i < data.length; i += 1) {
+    saida[i] = linearParaSrgb(srgbParaLinear(data[i]) * ganho);
+  }
+  console.log(
+    `${corpo}/map (ilustração IA): média linear ${medioLinear.toFixed(4)} → ganho ` +
+      `${ganho.toFixed(3)} → albedo-alvo ${albedoAlvo}.`
+  );
+  await sharp(saida, {
+    raw: { width: info.width, height: info.height, channels: info.channels },
+  })
+    .jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true })
+    .toFile(destino);
+}
+
+/**
  * Gira um mapa já adquirido para a convenção de longitude da casa, na
  * largura que a casa quer (`larguraDoDestino`; sem ela, a da fonte).
  *
@@ -786,6 +894,7 @@ async function main() {
             larguraDoDestino: fonte.larguraDoDestino,
           });
         } else if (fonte.bake === 'mosaico-ceres') await assarMosaicoDeCeres(cru, destino);
+        else if (fonte.bake === 'ilustracao-ia') await assarIlustracaoIA(cru, destino, fonte.corpo);
         else if (fonte.bake) await assarPbr(cru, destino, fonte.bake);
         else {
           await girarMapa(cru, destino, fonte.canal, {

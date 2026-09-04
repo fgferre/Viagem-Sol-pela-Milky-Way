@@ -335,7 +335,6 @@ const ORIGENS = {
   // 2015 e não tinham geografia nenhuma. Ceres: mosaico REAL da Dawn desde
   // o item 141, 3ª fase — o `2k_ceres_fictional` do SSS, que a própria
   // fonte declarava invenção, saiu da árvore.
-  // Procedurais (Haumea/Makemake/Eris) sem mapa.
   'pluto/map': {
     fonte: 'New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)',
     url: 'https://science.nasa.gov/photojournal/pluto-color-map/',
@@ -361,8 +360,7 @@ const ORIGENS = {
       'Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul nesta casa (baixa-texturas.mjs).',
     proveniencia: 'derivado',
   },
-  // ---- F7 (asteroides). Vesta Dawn (NASA Science 3D model);
-  // Hígia VLT CC BY 4.0. Palas sem mapa licenciado.
+  // ---- F7 (asteroides). Vesta Dawn (NASA Science 3D model).
   'vesta/map': {
     fonte:
       'NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema "Claudia" da sonda para o meridiano da IAU (item 141, 3ª fase)',
@@ -372,12 +370,54 @@ const ORIGENS = {
       'Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude nesta casa (baixa-texturas.mjs).',
     proveniencia: 'derivado',
   },
+  // ---- Os seis sem foto de superfície (item 151): Hígia, Palas, Haumea,
+  // Makemake, Éris e Quaoar não foram visitados por sonda nenhuma. O mapa
+  // de cada um é uma ILUSTRAÇÃO gerada por IA a partir dos fatos
+  // conhecidos — não há fonte fotográfica para citar, e a frase o diz.
+  // Hígia trocou o gráfico científico do ESO/VLT (item 150, errado: era
+  // figura com grade e barra de cores, não textura); os outros cinco
+  // trocaram o `superficie: 'procedural'` (rochoso.ts).
   'hygiea/map': {
-    fonte: 'ESO VLT — mapa de Hígia (2017–2018), Wikimedia CC BY 4.0',
-    url: 'https://commons.wikimedia.org/wiki/File:Hygiea_VLT_2017-2018_map.png',
-    licenca: 'CC BY 4.0',
-    atribuicao: 'Textura: ESO / VLT / Vernazza et al. — CC BY 4.0.',
-    proveniencia: 'medido',
+    fonte: 'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Hígia',
+    url: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Hygiea',
+    licenca: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    atribuicao: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    proveniencia: 'derivado',
+  },
+  'pallas/map': {
+    fonte: 'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Palas',
+    url: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Pallas',
+    licenca: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    atribuicao: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    proveniencia: 'derivado',
+  },
+  'haumea/map': {
+    fonte: 'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Haumea',
+    url: 'https://science.nasa.gov/dwarf-planets/haumea/',
+    licenca: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    atribuicao: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    proveniencia: 'derivado',
+  },
+  'makemake/map': {
+    fonte: 'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Makemake',
+    url: 'https://science.nasa.gov/dwarf-planets/makemake/',
+    licenca: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    atribuicao: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    proveniencia: 'derivado',
+  },
+  'eris/map': {
+    fonte: 'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Éris',
+    url: 'https://science.nasa.gov/dwarf-planets/eris/',
+    licenca: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    atribuicao: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    proveniencia: 'derivado',
+  },
+  'quaoar/map': {
+    fonte: 'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Quaoar',
+    url: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Quaoar',
+    licenca: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    atribuicao: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    proveniencia: 'derivado',
   },
 
   // ---- S2 do item 134 (2026-09-02): O RELEVO DAS LUAS, colhido do

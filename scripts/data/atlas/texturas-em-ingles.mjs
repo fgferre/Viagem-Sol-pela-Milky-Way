@@ -217,7 +217,7 @@ export const EM_INGLES = new Map([
     'Cassini global mosaic of Iapetus (Paul Schenk, PIA18439) — IR/UV enhanced color, graded to natural color in the Saturn project',
   ],
 
-  // ---- fontes: Ceres, Vesta e Hígia --------------------------------
+  // ---- fontes: Ceres e Vesta ----------------------------------------
   [
     'Dawn FC — mosaico global de Ceres a 20 px/grau (DLR, via USGS Astrogeology)',
     'Dawn FC — global mosaic of Ceres at 20 px/degree (DLR, via USGS Astrogeology)',
@@ -226,9 +226,36 @@ export const EM_INGLES = new Map([
     'NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema "Claudia" da sonda para o meridiano da IAU (item 141, 3ª fase)',
     'NASA Science / Dawn — Vesta mosaic embedded in the 3D model, rotated 150° from the spacecraft\'s "Claudia" system to the IAU prime meridian (item 141, 3rd phase)',
   ],
+
+  // ---- fontes: os seis sem foto de superfície, ilustrados por IA
+  // (item 151) — Hígia, Palas, Haumea, Makemake, Éris e Quaoar.
   [
-    'ESO VLT — mapa de Hígia (2017–2018), Wikimedia CC BY 4.0',
-    'ESO VLT — map of Hygiea (2017–2018), Wikimedia CC BY 4.0',
+    'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Hígia',
+    "The author's generative-AI illustration from the known facts — there is no photo of Hygiea's surface",
+  ],
+  [
+    'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Palas',
+    "The author's generative-AI illustration from the known facts — there is no photo of Pallas's surface",
+  ],
+  [
+    'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Haumea',
+    "The author's generative-AI illustration from the known facts — there is no photo of Haumea's surface",
+  ],
+  [
+    'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Makemake',
+    "The author's generative-AI illustration from the known facts — there is no photo of Makemake's surface",
+  ],
+  [
+    'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Éris',
+    "The author's generative-AI illustration from the known facts — there is no photo of Eris's surface",
+  ],
+  [
+    'Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Quaoar',
+    "The author's generative-AI illustration from the known facts — there is no photo of Quaoar's surface",
+  ],
+  [
+    'imagem do autor (Felipe Ferreira), gerada com IA',
+    "the author's image (Felipe Ferreira), generated with AI",
   ],
 
   // ---- fontes: relevo (altura e normais) ---------------------------
@@ -309,10 +336,6 @@ export const EM_INGLES = new Map([
   [
     'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
     'Texture: NASA 3D Resources — NASA/JPL-Caltech.',
-  ],
-  [
-    'Textura: ESO / VLT / Vernazza et al. — CC BY 4.0.',
-    'Texture: ESO / VLT / Vernazza et al. — CC BY 4.0.',
   ],
   [
     'Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude nesta casa (baixa-texturas.mjs).',
@@ -409,6 +432,11 @@ export const EM_INGLES = new Map([
   [
     'a Voyager 2 fotografou cerca de 40 % de Tritão (1989): o resto, nunca visto, entra liso, no tom médio do que a sonda viu',
     'Voyager 2 photographed about 40 % of Triton (1989): the rest, never seen, comes in flat, in the mean tone of what the probe saw',
+  ],
+  // item 151 — os seis sem foto de superfície (uma frase só)
+  [
+    'não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida',
+    'there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement',
   ],
   [
     'é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor',

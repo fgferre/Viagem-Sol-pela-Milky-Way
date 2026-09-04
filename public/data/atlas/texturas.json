@@ -2304,6 +2304,122 @@
       "proveniencia": "derivado"
     },
     {
+      "corpo": "eris",
+      "canal": "map",
+      "arquivo": "textures/atlas/eris/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 60977,
+      "sha256": "d789d42a33b2d3381365cbdb7201acd4c025545f1e90fb87d3d50e460ae08556",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Éris",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Eris's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/eris/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "eris",
+      "canal": "map",
+      "arquivo": "textures/atlas/eris/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 39076,
+      "sha256": "ef0986618da5cd16db00f85b47768df519b6ec1b8280e1c0440b67049fa7909b",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Éris",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Eris's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/eris/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "eris",
+      "canal": "map",
+      "arquivo": "textures/atlas/eris/map.jpg",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 246994,
+      "sha256": "e4a47bcbaebd3b4bc60a6941daf774c531a773ee2645838a8c1aad2d8946113e",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Éris",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Eris's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/eris/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "eris",
+      "canal": "map",
+      "arquivo": "textures/atlas/eris/map.webp",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 117620,
+      "sha256": "5dfa89f21e52a50002ddcbc9deaffa8088fbac2bda8e4998a1436a13672e1646",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Éris",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Eris's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/eris/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
       "corpo": "europa",
       "canal": "map",
       "arquivo": "textures/atlas/europa/map_1024.jpg",
@@ -2495,54 +2611,207 @@
       "proveniencia": "derivado"
     },
     {
+      "corpo": "haumea",
+      "canal": "map",
+      "arquivo": "textures/atlas/haumea/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 119790,
+      "sha256": "ef98ddde4563f39e939f066890aa9c4f95e11729390599c1db3f8ee3205c25ee",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Haumea",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Haumea's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/haumea/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "haumea",
+      "canal": "map",
+      "arquivo": "textures/atlas/haumea/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 95542,
+      "sha256": "b323c3eac214cbdba7ac0f507b9da92ad814cf5c202a0cd0913f8bd1e2bd996c",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Haumea",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Haumea's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/haumea/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "haumea",
+      "canal": "map",
+      "arquivo": "textures/atlas/haumea/map.jpg",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 415780,
+      "sha256": "56ceeb238c010dfd80c48b7ca40c212b07941b294d3ec317603695efc90052a9",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Haumea",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Haumea's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/haumea/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "haumea",
+      "canal": "map",
+      "arquivo": "textures/atlas/haumea/map.webp",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 249336,
+      "sha256": "08ddef982412980877bbeb0feba5403c07787a63709825b19e0bff2171b9f0e2",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Haumea",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Haumea's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/haumea/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "hygiea",
+      "canal": "map",
+      "arquivo": "textures/atlas/hygiea/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 157300,
+      "sha256": "2713e1695350008de95620f7d15898c8cff455f8746457c37ab9fa0c989ed650",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Hígia",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Hygiea's surface"
+        },
+        "url": "https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Hygiea",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
       "corpo": "hygiea",
       "canal": "map",
       "arquivo": "textures/atlas/hygiea/map.jpg",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 62879,
-      "sha256": "71f60a61d9eb84b90da340a32f6f6432bf82201d31f06eb8714254abbde9bf47",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 552275,
+      "sha256": "a9fe9674b12614e5e3d885a6c51ff68ec117e9912efabb7d2a3d96689ce2b77a",
       "origem": {
         "fonte": {
-          "pt": "ESO VLT — mapa de Hígia (2017–2018), Wikimedia CC BY 4.0",
-          "en": "ESO VLT — map of Hygiea (2017–2018), Wikimedia CC BY 4.0"
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Hígia",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Hygiea's surface"
         },
-        "url": "https://commons.wikimedia.org/wiki/File:Hygiea_VLT_2017-2018_map.png",
+        "url": "https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Hygiea",
         "licenca": {
-          "pt": "CC BY 4.0",
-          "en": "CC BY 4.0"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
         },
         "atribuicao": {
-          "pt": "Textura: ESO / VLT / Vernazza et al. — CC BY 4.0.",
-          "en": "Texture: ESO / VLT / Vernazza et al. — CC BY 4.0."
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
     },
     {
       "corpo": "hygiea",
       "canal": "map",
       "arquivo": "textures/atlas/hygiea/map.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 19328,
-      "sha256": "2c801488f5b8c19ba3cd6477de66768709112449ca7459340674b7e9bcabe51e",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 493274,
+      "sha256": "7aced95221f300ebd9218120ed17394d1fb717b64d8628da2d29880dfad489b1",
       "origem": {
         "fonte": {
-          "pt": "ESO VLT — mapa de Hígia (2017–2018), Wikimedia CC BY 4.0",
-          "en": "ESO VLT — map of Hygiea (2017–2018), Wikimedia CC BY 4.0"
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Hígia",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Hygiea's surface"
         },
-        "url": "https://commons.wikimedia.org/wiki/File:Hygiea_VLT_2017-2018_map.png",
+        "url": "https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Hygiea",
         "licenca": {
-          "pt": "CC BY 4.0",
-          "en": "CC BY 4.0"
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
         },
         "atribuicao": {
-          "pt": "Textura: ESO / VLT / Vernazza et al. — CC BY 4.0.",
-          "en": "Texture: ESO / VLT / Vernazza et al. — CC BY 4.0."
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
     },
     {
       "corpo": "iapetus",
@@ -3051,6 +3320,122 @@
         }
       },
       "proveniencia": "derivado"
+    },
+    {
+      "corpo": "makemake",
+      "canal": "map",
+      "arquivo": "textures/atlas/makemake/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 208345,
+      "sha256": "ce55a62391b38bc4b51cee97bdbcff88def0185265b5a480d3b3d925870f3936",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Makemake",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Makemake's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/makemake/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "makemake",
+      "canal": "map",
+      "arquivo": "textures/atlas/makemake/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 145510,
+      "sha256": "678855cb9dea1b254b2a21897fd1b30bc00f3b425a12084d2f9898d50b099e0e",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Makemake",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Makemake's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/makemake/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "makemake",
+      "canal": "map",
+      "arquivo": "textures/atlas/makemake/map.jpg",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 808569,
+      "sha256": "2739a1c14e24be2119edd8fd0821d2890a003c232837de0a948e641d1292d40f",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Makemake",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Makemake's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/makemake/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "makemake",
+      "canal": "map",
+      "arquivo": "textures/atlas/makemake/map.webp",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 444880,
+      "sha256": "2c19f4d1efcbb0db11fa8d0e4545a1662f089c32ae88140cec9fb135f1bb637e",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Makemake",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Makemake's surface"
+        },
+        "url": "https://science.nasa.gov/dwarf-planets/makemake/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
     },
     {
       "corpo": "mars",
@@ -4574,6 +4959,93 @@
       }
     },
     {
+      "corpo": "pallas",
+      "canal": "map",
+      "arquivo": "textures/atlas/pallas/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 142008,
+      "sha256": "b22c46bda6652cbebd56ee3e353acba5d78b41b60aa702cd591a0e2a11665515",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Palas",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Pallas's surface"
+        },
+        "url": "https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Pallas",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "pallas",
+      "canal": "map",
+      "arquivo": "textures/atlas/pallas/map.jpg",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 506786,
+      "sha256": "db98f0e86528dd5fd2b35d246cb7678a20481117f62450ed49520352cc0dfa13",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Palas",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Pallas's surface"
+        },
+        "url": "https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Pallas",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "pallas",
+      "canal": "map",
+      "arquivo": "textures/atlas/pallas/map.webp",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 404258,
+      "sha256": "388a662779104b5307bb9bab933fcd7ed6915109a161bcbc9d99d35745996521",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Palas",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Pallas's surface"
+        },
+        "url": "https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Pallas",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
       "corpo": "phobos",
       "canal": "map",
       "arquivo": "textures/atlas/phobos/map_1024.jpg",
@@ -4903,6 +5375,122 @@
       "nota": {
         "pt": "mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu",
         "en": "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "quaoar",
+      "canal": "map",
+      "arquivo": "textures/atlas/quaoar/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 142435,
+      "sha256": "e33d68a2ec96b68675f2c09d780fba0ff2a251af0de61708ddc18a66b2df9a1e",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Quaoar",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Quaoar's surface"
+        },
+        "url": "https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Quaoar",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "quaoar",
+      "canal": "map",
+      "arquivo": "textures/atlas/quaoar/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 126818,
+      "sha256": "7415223612e597de8203e0c90b410367bb3995dd52e24b49846fda68b99ac108",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Quaoar",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Quaoar's surface"
+        },
+        "url": "https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Quaoar",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "quaoar",
+      "canal": "map",
+      "arquivo": "textures/atlas/quaoar/map.jpg",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 531862,
+      "sha256": "30a9ab2141b841240be449564fafec24982bc665a50868684ca938df9d908765",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Quaoar",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Quaoar's surface"
+        },
+        "url": "https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Quaoar",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "quaoar",
+      "canal": "map",
+      "arquivo": "textures/atlas/quaoar/map.webp",
+      "larguraPx": 1774,
+      "alturaPx": 887,
+      "bytes": 348338,
+      "sha256": "a77490d7c6263a1afdb48154d65fdacd36ce016b863f2c364525bf580d8b950c",
+      "origem": {
+        "fonte": {
+          "pt": "Ilustração por IA generativa do autor a partir dos fatos conhecidos — não há foto da superfície de Quaoar",
+          "en": "The author's generative-AI illustration from the known facts — there is no photo of Quaoar's surface"
+        },
+        "url": "https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Quaoar",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
+        "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
       }
     },
     {
