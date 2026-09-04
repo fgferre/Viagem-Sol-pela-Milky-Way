@@ -5,7 +5,7 @@ O que o Eyes realmente faz, lido no JavaScript público
 1,7 MiB). Não é os `atlas-estudo-*.md` (pesquisa de IA sem fonte
 primária). Não é cópia do fonte: são as **regras** que o desenho obedece.
 A **iluminação dos globos** (por que Saturno lá é palha e aqui some)
-mora no irmão `nasa-eyes-iluminacao-planetas.md` — outro assunto,
+mora no irmão `nasa-eyes-iluminacao-planetas.md` (apagado em 04/09/2026; recupere com `git show 35340d8:docs/reference/nasa-eyes-iluminacao-planetas.md`) — outro assunto,
 outro arquivo.
 
 Peças da casa citadas pelo nome: `LabelCanvas`, `projectCorpos`,
@@ -386,7 +386,7 @@ de contas** (medido em 24/08; é o **L2.5** do item 83). O miter do
 `LineMesh` deles continua sendo o que não temos.
 **O que também NÃO veio:** o `resolutionFactor` na janela (a nossa
 largura é fixa; a do Eyes escala com `min(janela)/800`) e o hover de
-2 px (é o L5, que segue aberto). Ver `orbitas-eyes-releitura.md` para a
+2 px (é o L5, que segue aberto). Ver `orbitas-eyes-releitura.md` (apagado em 04/09/2026; recupere com `git show 35340d8:docs/reference/orbitas-eyes-releitura.md`) para a
 dívida de COBERTURA que sobrou. Este corte é o volume que o
 olho pede nas linhas; é independente dos nomes.
 

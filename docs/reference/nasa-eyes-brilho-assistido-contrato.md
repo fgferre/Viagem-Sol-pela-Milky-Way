@@ -82,7 +82,7 @@ contrato autoriza em letra (§3), e caíram medidos: o ganho de casa era
 0,063 %, menos de um nível de 255.
 
 Este arquivo é a especificação **viva**. O estudo
-`nasa-eyes-iluminacao-planetas.md` continua sendo a leitura do fonte
+`nasa-eyes-iluminacao-planetas.md` (apagado em 04/09/2026; recupere com `git show 35340d8:docs/reference/nasa-eyes-iluminacao-planetas.md`) continua sendo a leitura do fonte
 do Eyes; o ⚠️ de 25/08 lá descreve o que o item **91** fez. O 91 pagou
 o dia. Este contrato pede a **receita**.
 

@@ -5,6 +5,5 @@
 - `src/three/world/corpos/rochoso.ts`: the procedural-surface branch has no consumer since item 151; remove it with its test.
 - The six AI-illustrated maps (Hígia, Palas, Haumea, Makemake, Éris, Quaoar) enter `public/data/atlas/texturas.json` as proveniencia `derivado`, so the ficha's seal calls an invented image "derivado"; owner's call whether it should read `artistico`.
 - `npm test` needs a Chrome binary because `scripts/visual/chrome.mjs` resolves it at import time; a lazy resolve would let the suite run anywhere and retire that trap from AGENTS.md.
-- `docs/RENDERER_CARTOGRAPHY.md` predates the 17/08 architecture wave; truth pass or delete.
-- `docs/NORTE.md`, `docs/PLANO-ATLAS.md`, `docs/reference/nasa-eyes-estudo-completo.md` and `nasa-eyes-brilho-assistido-contrato.md` still link to reference docs deleted on 2026-09-04; recover any with `git show 35340d8:docs/reference/<file>`.
+- `docs/RENDERER_CARTOGRAPHY.md` predates the 17/08 architecture wave; a 2026-09-04 spot check (5 paths, 3 mechanisms) still matched the code, so a full truth pass is the remaining doubt.
 - `docs/PENDENCIAS-ARQUIVO.md` (567 KB) duplicates what git history holds; owner decides whether it goes.

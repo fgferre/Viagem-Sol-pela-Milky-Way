@@ -39,7 +39,7 @@ Artefatos que permitem refazer a auditoria:
 1. Leia este relatório e o `README.md` local, não o bundle inteiro.
 2. Para nome, órbita e rastro, abra `nasa-eyes-algoritmos.md` nas seções
    pedidas.
-3. Para luz de planetas, abra `nasa-eyes-iluminacao-planetas.md` até a seção
+3. Para luz de planetas, abra `nasa-eyes-iluminacao-planetas.md` (apagado em 04/09/2026; recupere com `git show 35340d8:docs/reference/nasa-eyes-iluminacao-planetas.md`) até a seção
    13. As seções 14 em diante são registro histórico de uma implementação já
    superada e **não** descrevem o Atlas atual.
 4. Só então pesquise o símbolo exato em `src/app.js` com `rg`.
@@ -410,8 +410,8 @@ registradas em `docs/NORTE.md` e `docs/PENDENCIAS.md`.
 ## Referências internas
 
 - [Algoritmos de labels e trajetórias](nasa-eyes-algoritmos.md)
-- [Iluminação observada no NASA Eyes](nasa-eyes-iluminacao-planetas.md)
-- [Mineração de mecanismos 30-31/08 — 9 mergulhos comparados](nasa-eyes-mineracao-mecanismos.md)
+- Iluminação observada no NASA Eyes — `nasa-eyes-iluminacao-planetas.md` (apagado em 04/09/2026; recupere com `git show 35340d8:docs/reference/nasa-eyes-iluminacao-planetas.md`)
+- Mineração de mecanismos 30-31/08 — 9 mergulhos comparados — `nasa-eyes-mineracao-mecanismos.md` (apagado em 04/09/2026; recupere com `git show 35340d8:docs/reference/nasa-eyes-mineracao-mecanismos.md`)
   — a fronteira que este relatório não cobriu (transição multi-escala,
   profundidade, navegação, enquadramento, catálogo de muitos corpos, UX,
   shaders 38/38, fita/rótulos, assets/memória), confrontada com o nosso
