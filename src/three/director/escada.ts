@@ -535,7 +535,7 @@ export class Escada {
    * retrato — o A/B de `?jd=EPOCA` é bit a bit); sem fonte fica o
    * retrato congelado com o badge do tempo contando a verdade — o
    * caminho existente. O fecho da onda re-registra a pendência no
-   * PLANO-ATLAS ("justificativa errada conta como falha", Onda 9).
+   * docs/PENDENCIAS.md, item 220 ("justificativa errada conta como falha", Onda 9).
    */
   focarNoSistema() {
     // SEM EFEMÉRIDE CARREGADA fica o RETRATO congelado — o caminho de

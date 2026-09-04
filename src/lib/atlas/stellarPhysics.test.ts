@@ -2,8 +2,8 @@
 // ============================================================
 // Oráculo da física estelar — 7 verdades-terreno nomeadas + bordas.
 //
-// PROVENIÊNCIA (teste/oráculo migra verbatim, PLANO-ATLAS §0.2
-// categoria 1): vendorizado do atlas-orbital
+// PROVENIÊNCIA (teste/oráculo migra verbatim, doutrina de travessia em
+// docs/NORTE.md): vendorizado do atlas-orbital
 // `src/lib/stellarPhysics.test.ts`, linhas 13–388 + 570–852, em
 // 2026-08-10. Estes números valem independentemente de quem
 // escreveu o código julgado — são o instrumento que autorizou a

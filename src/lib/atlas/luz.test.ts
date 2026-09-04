@@ -2,7 +2,7 @@
 // ============================================================
 // Oráculos da lei de luz — a régua que autorizou `luz.ts`.
 //
-// PROVENIÊNCIA (teste/oráculo migra, PLANO-ATLAS §0.2 categoria 1):
+// PROVENIÊNCIA (teste/oráculo migra, doutrina de travessia em docs/NORTE.md):
 // traduzidos do atlas-orbital `src/lib/graphics/solarIrradiance.test.ts`
 // em 2026-08-12, com os valores numéricos do doador copiados EXATOS
 // (10.4058 ±1e-3; 1/900 ±1e-9; 2.27; 1/10.8; razão < 30; quarteio a

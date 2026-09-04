@@ -7,7 +7,7 @@
 // neutralidade de fluxo atravessam de `regolithPhotometryPatch.ts`
 // como FÍSICA declarada (o oráculo por QUADRATURA migra traduzido em
 // `lua.test.ts`); nenhuma linha de código dele atravessou (doutrina de
-// travessia, PLANO-ATLAS §0). O wrapper per-light de lá morreu com o
+// travessia, docs/NORTE.md). O wrapper per-light de lá morreu com o
 // motivo: a casa não usa o pipeline de luzes do three — o shader é
 // próprio e a única luz direta é o Sol.
 //

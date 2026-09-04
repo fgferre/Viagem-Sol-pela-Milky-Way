@@ -2,7 +2,7 @@
 // ============================================================
 // Oráculos do cone de eclipse — a régua que autorizou `eclipse.ts`.
 //
-// PROVENIÊNCIA (teste/oráculo migra, PLANO-ATLAS §0.2 categoria 1):
+// PROVENIÊNCIA (teste/oráculo migra, doutrina de travessia em docs/NORTE.md):
 // os 14 de `eclipseGeometry.test.ts` + os 7 de `eclipseMath.test.ts`
 // do atlas-orbital, traduzidos em 2026-08-12 com os valores numéricos
 // do doador copiados EXATOS (umbra +64,9 km; penumbra 3.417,5 km;

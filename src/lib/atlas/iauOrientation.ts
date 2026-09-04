@@ -2,7 +2,7 @@
 // Orientação IAU — coeficientes de polo, meridiano-primo e spin dos
 // 31 corpos com solução de rotação medida, MAIS os raios triaxiais.
 //
-// PROVENIÊNCIA (dado migra verbatim, PLANO-ATLAS §0.2 categoria 1):
+// PROVENIÊNCIA (dado migra verbatim, doutrina de travessia em docs/NORTE.md):
 // gerado por `scripts/data/atlas/derive-iau-orientation.js` (vendorizado
 // do atlas-orbital) contra o kernel oficial
 //   https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc

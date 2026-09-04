@@ -1,6 +1,6 @@
 // ============================================================
 // VENDORIZADO do atlas-orbital (scripts/derive-elements-from-fixtures.js).
-// Ferramenta offline julgada por oráculo (PLANO-ATLAS §0.2). Três notas:
+// Ferramenta offline julgada por oráculo (doutrina de travessia, docs/NORTE.md). Três notas:
 //   1. FIXTURES_DIR adaptado à profundidade desta raiz ("// Casa:").
 //   2. Hygiea entra em BODIES — a adição da Onda 2 ("// Casa:").
 //   3. DIVERGÊNCIA MEDIDA E MANTIDA: o isoToTDB_JD abaixo usa ΔT clampado

@@ -309,7 +309,7 @@ describe('decodeEfemerides / interpolação Hermite', () => {
 });
 
 // Consertos da revisão de olhos frescos da Onda 2 — cada teste abaixo é a
-// regressão de um achado verificado por reprodução (ata no PLANO-ATLAS).
+// regressão de um achado verificado por reprodução (ata em `git show 923dc20:docs/PLANO-ATLAS.md`).
 describe('achados da revisão de olhos frescos', () => {
   // O achado importante: posicaoHeliocentrica('vanth') compunha até o pai
   // e morria em 'corpo desconhecido "orcus"'. A regressão é de FECHAMENTO,

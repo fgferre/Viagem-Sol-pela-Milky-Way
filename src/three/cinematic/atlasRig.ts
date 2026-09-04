@@ -11,7 +11,7 @@
 // atravessa é o que é conferível — `d = r/sen(θ/2)`, o
 // `max(distVertical, distHorizontal)` que salva tela ultrawide, e a
 // correção pelo retângulo que sobra depois do HUD. A implementação é
-// FUNÇÃO PURA, e o rig é o fio que a liga à câmera (PLANO-ATLAS §2.3).
+// FUNÇÃO PURA, e o rig é o fio que a liga à câmera (`git show 923dc20:docs/PLANO-ATLAS.md` §2.3).
 // ============================================================
 import * as THREE from 'three';
 import {

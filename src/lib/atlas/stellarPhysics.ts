@@ -3,7 +3,8 @@
 // visual, raio e o descritor visual por estrela.
 //
 // PROVENIÊNCIA (runtime que MIGRA pela exceção das duas provas,
-// PLANO-ATLAS §0.3; linha da matriz em §2): vendorizado VERBATIM do
+// doutrina de travessia em docs/NORTE.md; linha da matriz em
+// `git show 923dc20:docs/PLANO-ATLAS.md` §2): vendorizado VERBATIM do
 // atlas-orbital `src/lib/stellarPhysics.ts`, subconjunto linhas
 // 54–527 + 584–868, em 2026-08-10. TS puro: o subconjunto não tem
 // UMA importação — os três `import` do topo do doador alimentavam

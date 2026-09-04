@@ -79,8 +79,8 @@ export const WORLD = {
  * MEDIDO da Terra (W₀ = 190.147°): o alinhamento passou a ser derivado, não
  * calibrado. NENHUMA constante deste bloco pode readquirir esse papel —
  * ângulo calibrado à mão sobre um corpo com modelo de rotação publicado é
- * regressão de fidelidade, não calibração. (É a lápide que o PLANO-ATLAS
- * manda preservar.)
+ * regressão de fidelidade, não calibração. (É a lápide que
+ * docs/NORTE.md manda preservar.)
  */
 export const CALIBRACAO_ATLAS = {
   /** Multiplicador da emissão das luzes de cidade no lado noturno da Terra. */

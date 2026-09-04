@@ -288,7 +288,7 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
 
   it('o storage não guarda campo que ninguém lê (a lápide da Wikipedia)', () => {
     // `wikipediaLigada` viveu no envelope sem UM chamador — o painel que
-    // o PLANO-ATLAS promete nunca nasceu. Campo assim promete uma opção
+    // docs/PENDENCIAS.md (item 212) promete nunca nasceu. Campo assim promete uma opção
     // que não existe e faz o saneamento fingir que protege algo. Quando
     // o painel nascer, o campo nasce com ele; até lá, ausência cobrada.
     // O `?` é do CAMPO opcional, como na lápide do tierQueRodou acima:

@@ -9,7 +9,7 @@
 //
 // ESTE ARQUIVO SÓ DESENHA. Toda a montagem — que linha existe, que unidade
 // ela usa, de onde o número veio — mora em `lib/atlas/ficha.ts`, sem three e
-// sem React. É a fronteira que o `PLANO-ATLAS` §3 nomeia como o
+// sem React. É a fronteira que o `docs/NORTE.md` nomeia como o
 // anti-padrão do doador, onde vis-viva, parser de sobrescrito e layout
 // dividiam o mesmo corpo.
 //
@@ -30,7 +30,7 @@
 // `buscarManifestUmaVez` — uma promessa por URL, guardada no módulo.
 //
 // E O "AGORA" RELÊ NO `onTempo`, nunca no laço de quadro (anti-padrão 3 do
-// `PLANO-ATLAS`): o `jd` chega por prop, na cadência do mostrador da máquina
+// `docs/NORTE.md`): o `jd` chega por prop, na cadência do mostrador da máquina
 // do tempo. Desde 24/08 essa cadência é o MINUTO enquanto o relógio anda ao
 // vivo (era 4 Hz — ver `mesmoMostrador`), que é a mesma resolução da data na
 // tela: o "AGORA" da ficha e o relógio do rodapé deixaram de contar minutos

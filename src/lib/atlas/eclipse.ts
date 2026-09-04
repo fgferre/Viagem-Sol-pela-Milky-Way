@@ -10,7 +10,7 @@
 // `src/lib/astrophysics.ts` para a tabela de pares) — os seus 21
 // testes-oráculo migraram traduzidos em `eclipse.test.ts` ao lado,
 // com os valores numéricos copiados exatos; nenhuma linha de código
-// dele atravessou (doutrina de travessia, PLANO-ATLAS §0).
+// dele atravessou (doutrina de travessia, docs/NORTE.md).
 //
 // UMA CÓPIA SÓ DO CONE, por doutrina herdada do doador: este é o
 // único predicado "há eclipse agora, e de que tamanho" da casa. O

@@ -2,7 +2,7 @@
 // A FICHA DE UM CORPO — a montagem, e só ela.
 //
 // O ANTI-PADRÃO QUE ESTE ARQUIVO EXISTE PARA NÃO REPETIR está nomeado no
-// `PLANO-ATLAS` §3 e é literalmente o painel do doador: `Sidebar.tsx`, 778
+// `docs/NORTE.md` e é literalmente o painel do doador: `Sidebar.tsx`, 778
 // linhas em que vis-viva, parser de sobrescrito Unicode e Tailwind moram no
 // mesmo corpo. Aqui a conta e o texto ficam deste lado — sem three, sem
 // React, testável em milissegundos —, e `FichaDoObjeto.tsx` só desenha o que

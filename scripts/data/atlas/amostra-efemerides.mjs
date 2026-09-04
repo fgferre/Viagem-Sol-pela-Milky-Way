@@ -3,7 +3,7 @@
 // ============================================================
 // Amostrador de efemérides — converte as teorias analíticas do
 // atlas-orbital em TABELAS embarcadas (runtime → offline, a conversão
-// que o PLANO-ATLAS exige para a Onda 2: o navegador não avalia VSOP87
+// que a doutrina de travessia (docs/NORTE.md) exige para a Onda 2: o navegador não avalia VSOP87
 // a cada frame; ele interpola uma tabela auditada no build).
 //
 // FONTES (astronomia@4.2.0, o MESMO pacote e as MESMAS teorias que o

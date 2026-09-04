@@ -1,53 +1,8 @@
 # Pendências — o que está quebrado e o que falta
 
-**Este é o primeiro arquivo a ler.** Lista viva do que está aberto, no jeito
-que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
-`LEI-DA-ESTRELA.md`.
-
-**A REGRA DE LEITURA — são DOIS arquivos, e não se leem do mesmo jeito
-(25/08, item 98).**
-
-- **Este arquivo é o VIVO.** Só mora aqui o que ainda exige obra ou uma
-  decisão dele. **Na janela de quem coordena, lê-se o BASTÃO, a fila que
-  vale, e o item da vez** — o resto se mira com `grep`/trecho (item
-  **106**, 28/08). O "inteiro" de 25/08 era o contraste com o MUSEU, não
-  a ordem de despejar ~1.800 linhas em toda retomada.
-- **[`PENDENCIAS-ARQUIVO.md`](PENDENCIAS-ARQUIVO.md) é o MUSEU:** a história
-  completa e verbatim dos itens fechados, com o número intacto.
-  **Consulta pontual por número (`grep -n '^\*\*61\.' docs/PENDENCIAS-ARQUIVO.md`),
-  NUNCA leitura completa por agente.** Ninguém precisa do museu para
-  trabalhar — ele existe para quando alguém perguntar *por que* uma coisa
-  é como é.
-
-**DECISÃO SEM NÚMERO MORRE — regra do dono, 25/08.** Toda decisão que exige
-obra vira **item numerado AQUI, no mesmo commit em que é decidida**. Memória
-de coordenador, relatório e conversa são PONTEIRO, nunca casa de trabalho.
-A história de uma linha que instituiu a regra: a reforma da documentação foi
-decidida em **14/08**, nunca ganhou número, e ficou **11 dias perdida**
-debaixo de 318 commits — ver o item **98**.
-
-**Como esta lista funciona:**
-
-- O dono reportou um problema? Escreva aqui **naquele momento**, com as
-  palavras dele.
-- Item resolvido **sai da lista**: vira commit, deixa UMA linha aqui e a
-  história vai para o ARQUIVO com o número intacto. Isto é o que está
-  aberto, não um diário.
-- A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
-- **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
-  seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 145.** Quem abrir um item usa este e soma um aqui,
-  no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
-  *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
-  31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
-  o 122 nasceram sem somá-la; quem abrir item confere o maior número vivo
-  antes de confiar nela. Os 123 e 124 nasceram na faxina da estação do
-  115, conferindo primeiro. Em 01/09 ela ficou de novo atrás — o 129 nasceu
-  com ela ainda em 126; re-somada.)*
-
-A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
-
----
+Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
+Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 223.**
 
 ## O BASTÃO — onde a rodada parou (03/09, noite — FECHO por ordem dele)
 
@@ -405,6 +360,12 @@ dinamismo dos nomes do NASA Eyes".)*
 
 **113.** Os minutos dos juízes — **FECHADO em 30/08**; ARQUIVO.
 
+**210. Viagem solar.** Filme próprio de quatro minutos no mesmo motor
+declarativo do filme galáctico. Conclui com Terra/Lua, Júpiter/Io,
+Saturno/luas e o afastamento final, ciência e unidades revisadas, gate
+visual e exibição completa aprovada pelo dono. *(Era a fila ativa do
+plano do cinema, arquivado — `git show 923dc20:docs/PLANO-CINEMA.md`.)*
+
 ## MÉDIA — afeta o produto, não salta aos olhos
 
 **134.** A ONDA DE SATURNO — a colheita do projeto Saturn dele (anéis com perfil medido e iluminação mútua; relevo das luas; nove luas esculpidas com o grão dele; jatos de Encélado; anéis E e F, raios do B, ondas de Dáfnis) — **FECHADA em 02/09**: cinco fases feitas, S3c pela palavra dele ("melhorou bastante... deixe do jeito que ficou"), lista do §19 aprovada e rodada (suíte 1×, z-fighting, ab-identidade); ARQUIVO.
@@ -599,6 +560,21 @@ distâncias e a receita de recomputo em `capturas/item116-tritao.json`.
 **117.** Aro azulado fino na borda dos globos em close-up — **FECHADO em 02/09**; ARQUIVO.
 
 **126.** `?foco=mars` caía na estrela Marsic, não em Marte — **FECHADO em 01/09**; ARQUIVO.
+
+**211. Camada de fatos relacionais na ficha do objeto** (idade da luz, o
+Sol visto de lá, a Lua conferível hoje à noite). A ficha do objeto já é a
+casa dela (`FichaDoObjeto` + `lib/atlas/ficha.ts`); falta o conteúdo em si.
+
+**212. Wikipedia no painel, opt-out persistido.** Falta a 2ª prova:
+IndexedDB, CORS no GitHub Pages e opt-out verificável (desligado ⇒ zero
+requisições). Se falhar, a linha cai para Renasce.
+
+**213. Orçamento de payload por tier.** Teto de efemérides/texturas e o
+recorte da identidade no `sc1` (hoje só as 1.726 nomeadas; as 328k
+esperam) — decisão do dono pendente; libera o dado, não a busca.
+
+**214. `arriveDist` com termo angular** (câmera, não luz) — hoje a câmera
+pousaria igual em Betelgeuse e em Proxima.
 ---
 
 ## BAIXA — dívida interna, ninguém vê
@@ -789,6 +765,37 @@ uma ironia isso estar dentro do caderno ainda".)*
 **123.** As forjas estelares perdiam brilho ao dobrar a resolução — **FECHADO em 02/09**; ARQUIVO.
 
 **124.** O porteiro do censo reprovava por uma palavra — **FECHADO em 31/08**; ARQUIVO.
+
+**215. Roadmap de conteúdo: sondas, créditos, tours, cinturões,
+cometas.** Grade solta de features futuras do Atlas (cometas e cinturões
+se sobrepõem em parte ao censo do item 114).
+
+**216. Beat "escala real" animado no filme, nunca toggle.** Falta do
+repensar do roteiro do filme.
+
+**217. `starOptics` rotulável com interruptor.** A cruz de 4 spikes está
+cravada, sem desligar — é honestidade de instrumento, não fotometria;
+falta o rótulo e o interruptor.
+
+**218. Consumir `stellarPhysics.ts` no runtime.** `temperatureFromBV` já
+chegou à ficha de estrela; raio, luminosidade e os valores pinados do
+resto do arquivo seguem sem consumidor.
+
+**219. `teffK` e `convective` nos 14 vendorizados.** Exige editar o
+núcleo do Sol; sem 2ª instância de `StellarBody` enquanto `SUN_RADIUS =
+2.2` e `cme.js` capturarem a câmera na criação.
+
+**220. Onda 9 — arquivar o doador.** `atlas-orbital` vira read-only
+quando cada linha da matriz de migração tiver destino cumprido ou virar
+pendência nomeada (evidência por linha: estava viva no doador? o destino
+tem o equivalente? o número foi medido ou estimado? o que atravessou foi
+dado/oráculo ou runtime?).
+
+**221. Candidato sem onda: pisar num rochoso.** Céu e câmera são
+baratos; o custo inteiro é o terreno (MOLA). Sem gate esperando.
+
+**222. Encontros estelares como beats do filme** (sub-passo 7b) —
+decisão do dono pendente; default: sem decisão, 7b não entra.
 
 ---
 
