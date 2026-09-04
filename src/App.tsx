@@ -243,6 +243,9 @@ export default function App() {
   const [foco, setFoco] = useState<string | null>(null);
   /** o DEGRAU da escada (F2b/D7) — decide os botões do cabeçalho da ficha
    *  e o `?ver=corpo` do link; publicado pelo Director junto com o foco */
+  /** o eco do interruptor da ficha — o VALOR mora no corpo (Director);
+   *  isto só existe para a ficha rerenderizar ao clicar */
+  const [, setSuperficieProcedural] = useState(false);
   const [escada, setEscada] = useState<EstadoDaEscada>({
     degrau: 'sistema',
     podeAproximar: false,
@@ -1044,6 +1047,13 @@ export default function App() {
         noSistema={escada.degrau === 'sistema'}
         onAproximar={() => directorRef.current?.aproximarDoCorpo()}
         onSistema={() => directorRef.current?.focarNoSistema()}
+        superficieProcedural={directorRef.current?.superficieProcedural(escada.corpoId) ?? null}
+        onSuperficieProcedural={(ligado) => {
+          if (!escada.corpoId) return;
+          directorRef.current?.definirSuperficieProcedural(escada.corpoId, ligado);
+          // o valor mora no corpo; o estado só força a ficha a reler
+          setSuperficieProcedural(ligado);
+        }}
       />
 
       {/* A PALETA DE BUSCA (F3) — filha DIRETA de .hud-root, como todo

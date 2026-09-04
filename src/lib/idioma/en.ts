@@ -239,6 +239,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.aproximarAria': 'Closer: frame {nome} up close',
   'ficha.sistema': '⌂ System',
   'ficha.sistemaAria': 'Back to the solar system framing',
+  'ficha.procedural': '◐ Invented surface',
+  'ficha.proceduralAria':
+    "Swap {nome}'s map for an invented procedural surface over the map's mean colour",
 
   // ---- section titles and field labels -----------------------------
   'ficha.secao.agora': 'right now',

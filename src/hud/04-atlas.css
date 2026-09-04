@@ -76,6 +76,13 @@
 .atlas-ficha-escada:empty {
   margin-bottom: 0;
 }
+/* o interruptor da superfície inventada, ACESO no mesmo âmbar dos botões
+   da máquina do tempo */
+.atlas-ficha-escada .hud-btn[aria-pressed='true'] {
+  border-color: rgba(255, 214, 150, 0.85);
+  background: rgba(255, 214, 150, 0.16);
+  color: #fff;
+}
 
 /* AS SEÇÕES DOBRÁVEIS, no vocabulário do `.atlas-gaveta-titulo`: caixa
    alta, espaçada, fria, com uma régua embaixo. O título INTEIRO é o botão —

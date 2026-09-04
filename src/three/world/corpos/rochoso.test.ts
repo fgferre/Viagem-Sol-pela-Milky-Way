@@ -618,6 +618,38 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(829).toBeGreaterThan(LIMIAR_LUA_ROCHOSA_PX);
   });
 
+  it('o interruptor da ficha troca o fragmento do globo ao vivo, e volta', async () => {
+    const { corpo } = rochosoDeTeste('mercury', 'lambert');
+    expect(corpo.superficieProcedural).toBe(false);
+    corpo.atualizar(quadro('mercury', 4));
+    await flush();
+    expect(corpo.atualizar(quadro('mercury', 4)).emQuadro).toBe(true);
+    const mat = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
+    expect(mat.fragmentShader).toBe(ROCHOSO_LAMBERT_FRAG);
+    corpo.definirSuperficieProcedural(true);
+    expect(corpo.superficieProcedural).toBe(true);
+    expect(mat.fragmentShader).toBe(ROCHOSO_PROC_FRAG);
+    expect(mat.uniforms.uBumpAlbedo.value).toBe(0);
+    corpo.definirSuperficieProcedural(false);
+    expect(mat.fragmentShader).toBe(ROCHOSO_LAMBERT_FRAG);
+    expect(mat.uniforms.uBumpAlbedo.value).toBe(escalaDoBumpDoAlbedo('mercury'));
+    corpo.dispose();
+
+    // ligado ANTES de a casca nascer: `garantirCasca` lê a flag
+    const { corpo: cedo } = rochosoDeTeste('ceres', 'ls');
+    cedo.definirSuperficieProcedural(true);
+    cedo.atualizar(quadro('ceres', 4));
+    await flush();
+    expect(cedo.atualizar(quadro('ceres', 4)).emQuadro).toBe(true);
+    const matCedo = malhaDaSuperficie(cedo.group).material as THREE.ShaderMaterial;
+    expect(matCedo.fragmentShader).toBe(ROCHOSO_PROC_LS_FRAG);
+    cedo.dispose();
+
+    // sem o que trocar: esculpido e config já procedural dizem `null`
+    expect(rochosoDeTeste('phoebe', 'lambert', 'esculpido').corpo.superficieProcedural).toBeNull();
+    expect(rochosoDeTeste('quaoar', 'lambert', 'procedural').corpo.superficieProcedural).toBeNull();
+  });
+
   it('todo rochoso tem IAU, BODY_AXES e textura ou procedural', () => {
     for (const c of ROCHOSOS) {
       expect(IAU_ORIENTATIONS[c.id], `${c.id} sem IAU`).toBeTruthy();

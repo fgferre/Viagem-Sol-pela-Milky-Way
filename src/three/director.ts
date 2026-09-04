@@ -1517,6 +1517,17 @@ export class Director {
     this.escada.aproximarDoCorpo();
   }
 
+  /** o interruptor da ficha (superfície procedural) do corpo em foco —
+   *  `null` fora dos rochosos com mapa (Terra, Lua, gigantes, esculpidos). */
+  superficieProcedural(id: string | null): boolean | null {
+    return this.rochosos.find((r) => r.corpo.id === id)?.corpo.superficieProcedural ?? null;
+  }
+
+  definirSuperficieProcedural(id: string, ligado: boolean) {
+    this.rochosos.find((r) => r.corpo.id === id)?.corpo.definirSuperficieProcedural(ligado);
+    this.perturbar();
+  }
+
   focarNaLua(id: string = 'moon') {
     this.escada.focarNaLua(id);
   }

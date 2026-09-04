@@ -567,8 +567,43 @@ void main() {
 
 // A tabela de cores-base do −3 inventado (haumea/makemake/eris/quaoar/
 // pallas) saiu no item 151: as cinco ganharam ilustração por IA e
-// nenhuma ROCHOSOS entra mais como `superficie: 'procedural'` — sem
-// config nenhuma nesse ramo, a tabela não tinha mais leitor (§6).
+// nenhuma ROCHOSOS entra mais como `superficie: 'procedural'`. O ramo
+// ficou como INTERRUPTOR da ficha (decisão dele, 04/09/2026): qualquer
+// rochoso com mapa pode mostrar o −3 sobre a cor média do próprio mapa.
+
+/**
+ * A cor média do mapa, em linear — a base do −3 inventado quando a ficha
+ * liga a superfície procedural. Reduz a imagem a 32×16 numa tela 2D e
+ * tira a média já linearizada (o sampler do shader também lê linear).
+ * `null` fora do navegador, sem imagem, ou com imagem que a tela 2D não
+ * desenha (aí fica o cinza padrão do uniform).
+ */
+export function corMediaDoMapa(tex: THREE.Texture): [number, number, number] | null {
+  const img = tex.image as CanvasImageSource | undefined;
+  if (!img || typeof document === 'undefined') return null;
+  const largura = 32;
+  const altura = 16;
+  const tela = document.createElement('canvas');
+  tela.width = largura;
+  tela.height = altura;
+  const ctx = tela.getContext('2d');
+  if (!ctx) return null;
+  try {
+    ctx.drawImage(img, 0, 0, largura, altura);
+  } catch {
+    return null;
+  }
+  const px = ctx.getImageData(0, 0, largura, altura).data;
+  const soma = [0, 0, 0];
+  // sRGB → linear à mão: o `SRGBToLinear` do three existe nos tipos e não
+  // no bundle (r17x), e um TypeError aqui derruba a carga da textura
+  const linear = (c: number) => (c < 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  for (let i = 0; i < px.length; i += 4) {
+    for (let c = 0; c < 3; c++) soma[c] += linear(px[i + c] / 255);
+  }
+  const n = largura * altura;
+  return [soma[0] / n, soma[1] / n, soma[2] / n];
+}
 
 // ------------------------------------------------------------
 // A classe — o molde é a Lua; o que a Terra tem a mais (cessão,
@@ -645,6 +680,8 @@ export class RochosoResolvido {
 
   private geometria: THREE.BufferGeometry | null = null;
   private superficie: THREE.Mesh | null = null;
+  /** o interruptor da ficha: mostrar o −3 inventado no lugar do mapa */
+  private procedural = false;
   private matSuperficie: THREE.ShaderMaterial | null = null;
   private geoAnel: THREE.RingGeometry | null = null;
   private anel: THREE.Mesh | null = null;
@@ -717,6 +754,9 @@ export class RochosoResolvido {
           u.uMapaDia.value = tex;
           const img = tex.image as { width?: number; height?: number } | undefined;
           (u.uTamanhoDoMapa.value as THREE.Vector2).set(img?.width ?? 0, img?.height ?? 0);
+          // a base do −3 da ficha é a cor média deste mapa
+          const media = corMediaDoMapa(tex);
+          if (media) (u.uAlbedoBase.value as THREE.Vector3).set(media[0], media[1], media[2]);
         }
         // o lote é ATÔMICO (texturas.ts): ou veio inteiro, ou nenhum —
         // três canais com relevo de vértice, dois com normal medida
@@ -943,6 +983,33 @@ export class RochosoResolvido {
     }
   }
 
+  /** o fragmento do globo com mapa: texturado, ou o −3 inventado (ruído
+   *  sobre `uAlbedoBase`) — o BRDF é o da config nos dois. */
+  private fragmentoDoGlobo(procedural: boolean): string {
+    if (procedural) return this.config.brdf === 'ls' ? ROCHOSO_PROC_LS_FRAG : ROCHOSO_PROC_FRAG;
+    return this.config.brdf === 'ls' ? ROCHOSO_LS_FRAG : ROCHOSO_LAMBERT_FRAG;
+  }
+
+  /** o interruptor da ficha — `null` onde não há o que trocar: o
+   *  esculpido (a forma é o dado) e a config já procedural (sem mapa). */
+  get superficieProcedural(): boolean | null {
+    if (this.config.superficie !== undefined && this.config.superficie !== 'mapa') return null;
+    return this.procedural;
+  }
+
+  /** liga/desliga o −3 inventado AO VIVO: só o fragmento e o bump do
+   *  albedo trocam; geometria, mapa residente e uniforms ficam. Antes de
+   *  a casca nascer, só a flag muda e `garantirCasca` a lê. */
+  definirSuperficieProcedural(ligado: boolean) {
+    if (this.superficieProcedural === null || this.procedural === ligado) return;
+    this.procedural = ligado;
+    const mat = this.matSuperficie;
+    if (!mat) return;
+    mat.fragmentShader = this.fragmentoDoGlobo(ligado);
+    mat.uniforms.uBumpAlbedo.value = ligado ? 0 : escalaDoBumpDoAlbedo(this.config.id);
+    mat.needsUpdate = true;
+  }
+
   /** geometria + material + mesh, UMA vez, na primeira necessidade. */
   private garantirCasca() {
     if (this.geometria || this.disposto) return;
@@ -957,9 +1024,9 @@ export class RochosoResolvido {
       : relevo
         ? new THREE.SphereGeometry(1, ...SEGMENTOS_COM_RELEVO)
         : new THREE.SphereGeometry(1, 128, 64);
-    const procedural = this.config.superficie === 'procedural';
-    // sem ROCHOSOS `procedural` hoje (item 151), `uAlbedoBase` nunca é lido
-    // por um fragmento vivo — o cinza neutro é só o padrão do uniform.
+    const procedural = this.config.superficie === 'procedural' || this.procedural;
+    // o cinza neutro é só o padrão do uniform: com mapa, `publicar` o
+    // troca pela cor média do mapa antes de o interruptor da ficha ligar.
     const albedo: readonly [number, number, number] = [0.5, 0.5, 0.5];
     this.matSuperficie = new THREE.ShaderMaterial({
       vertexShader: esculpido
@@ -967,15 +1034,7 @@ export class RochosoResolvido {
         : relevo
           ? ROCHOSO_VERT_RELEVO
           : ROCHOSO_VERT,
-      fragmentShader: esculpido
-        ? ESCULPIDO_FRAG
-        : procedural
-          ? this.config.brdf === 'ls'
-            ? ROCHOSO_PROC_LS_FRAG
-            : ROCHOSO_PROC_FRAG
-          : this.config.brdf === 'ls'
-            ? ROCHOSO_LS_FRAG
-            : ROCHOSO_LAMBERT_FRAG,
+      fragmentShader: esculpido ? ESCULPIDO_FRAG : this.fragmentoDoGlobo(procedural),
       uniforms: {
         uMapaDia: { value: null },
         // B1 — o interruptor por corpo; procedural não tem mapa de onde

@@ -93,6 +93,8 @@ export function FichaDoObjeto({
   noSistema,
   onAproximar,
   onSistema,
+  superficieProcedural,
+  onSuperficieProcedural,
 }: {
   aberta: boolean;
   onFechar: () => void;
@@ -116,6 +118,10 @@ export function FichaDoObjeto({
   noSistema: boolean;
   onAproximar: () => void;
   onSistema: () => void;
+  /** o interruptor da superfície inventada (rochoso com mapa); `null`
+   *  onde não há o que trocar — e o botão nem aparece */
+  superficieProcedural: boolean | null;
+  onSuperficieProcedural: (ligado: boolean) => void;
 }) {
   const dialogo = useDialogFocus('ficha', aberta, onFechar);
   const idioma = useIdioma();
@@ -234,6 +240,17 @@ export function FichaDoObjeto({
             aria-label={t('ficha.sistemaAria')}
           >
             {t('ficha.sistema')}
+          </button>
+        )}
+        {superficieProcedural !== null && (
+          <button
+            type="button"
+            className="hud-btn small"
+            aria-pressed={superficieProcedural}
+            onClick={() => onSuperficieProcedural(!superficieProcedural)}
+            aria-label={t('ficha.proceduralAria', { nome: ficha.nome })}
+          >
+            {t('ficha.procedural')}
           </button>
         )}
       </div>
