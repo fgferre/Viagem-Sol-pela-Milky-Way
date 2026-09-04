@@ -1,66 +1,45 @@
-# Princípios para agentes
+# AGENTS.md
+Mar de Estrelas: a WebGL2/Three.js journey from the Sun, through the real star catalogue, to a 3D Milky Way, with an explorable solar-system Atlas near home. Built for its owner, who does not program and judges by screenshots; published on GitHub Pages for anyone.
+Keep this file under 50 lines; every agent reads every line, every session. Add a line only after the same mistake happens twice; when a line can become a check (lint rule, test, hook), do that and delete the line.
+Commands
 
-A ordem dos capítulos é a ordem do trabalho: ler → dimensionar → decidir
-→ mexer → provar → auditar → registrar. Cada capítulo constrói sobre o
-anterior; leia de cima a baixo na primeira vez, por seção depois. **Os
-números das regras são históricos e não mudam** — commits e memórias os
-citam —, por isso dentro das seções eles não são sequenciais.
+* Setup: `npm ci`
+* Done means: `npm run done` (typecheck + lint + tests) passes. Run it once, at the end, before you say a task is finished.
+* While working, run only the tests for what you touched: `npm run test:tocados` picks them from the files you changed. Only commands with non-obvious arguments go here; the rest is in the manifests.
 
-## Ler antes de agir
+How to work
 
-1. Leia o `docs/PENDENCIAS.md` primeiro — é a lista viva do que está quebrado e do que falta, na língua do dono. **Na janela de quem coordena, o vivo é o BASTÃO, a fila que vale, e o item da vez** — o resto se mira com `grep`/trecho. Despejar o arquivo inteiro a cada retomada queima a sessão antes da obra (item **106**). **O `docs/PENDENCIAS-ARQUIVO.md` é MUSEU** e consulta-se por número (`grep`), nunca por leitura completa — ele guarda a história dos itens fechados e não diz nada sobre o que falta fazer. Depois o `docs/NORTE.md` (o que ainda decide) e o `docs/LEI-DA-ESTRELA.md` (contrato do trabalho de estrela) **por seção, guiado pelo índice/`grep` do assunto da obra — inteiros só quando a obra é sobre eles**: os dois somam ~50 mil tokens, um terço de uma janela de 256k antes de qualquer trabalho. O `README.md` e o código atual antes de editar; o `PLANO-ATLAS.md` só cobre o que falta da fusão do Atlas. Relatórios, prompts e planos são hipóteses, não fontes de verdade. O `NORTE.md` diz para onde o projeto vai, o que já foi decidido e o que não se repete — mantenha-o vivo: o que virou código sai de lá, o que ainda decide algo entra.
+* Before starting: if the request seems mistaken, has a simpler path, or misses something (existing code, an edge case, security), say so in one or two sentences. Then do what was asked, unless it's on the ask list. State any assumption.
+* Do what was asked, no more. If you spot a bug or an improvement nearby, leave it and add one line to `BACKLOG.md`.
+* Before writing a helper, component, or util, look for an existing one and extend it. One way to do each thing.
+* Do the simplest thing that works. No abstractions, options, or config for needs that don't exist yet.
+* Change as little as possible: targeted edits, not whole-file rewrites. Match the patterns already in the file; formatting is the linter's job.
+* When you replace something, delete the old version. No commented-out code, unused functions, or leftover files.
+* Create new files (docs, tests, scripts, notes) only when the task needs them. Delete scratch files before you finish.
+* Tests go where the task asks, or where this repo already keeps tests for that kind of change. One focused test per behavior, sized like the neighbors.
+* If you can delegate (main session only): keep judgment (plan, decide, hard bugs, review) and hand execution (search, reading many files, tests, mechanical edits) to workers on a cheaper model, so your own context stays small. Each worker gets one task, the files, and what not to do; workers return a summary and never ask.
+* When done, say plainly what changed and what you did not do. If something failed, show the output.
+* One commit per task; the message says why, not what. Push only to the backup branch: `git push origin main:backup`.
 
-## O tamanho e o custo
+When to ask
+Go ahead on your own with anything local and easy to undo. Stop and ask only when:
 
-12. **O processo custa na medida da obra, e o tamanho da sessão é o tamanho dela** (duas decisões do dono: 2026-08-25, "vamos simplificar — três dias gastaram o plano inteiro"; e item **106**, 28/08, "as sessões gastam milhões de tokens em tarefa simples"). No primeiro ato, classifique a sessão: **pequena** (a mão que coordena faz sozinha: uma leitura, a mudança, a prova da peça, commit, backup); **média** (no máximo um executor econômico e uma auditoria curta da própria mão); **grande** (custo anunciado ANTES, com a opção curta — "isso custa X, quer a versão barata?" —, nunca descoberto no extrato). Trabalho pequeno se faz DIRETO, sem agente: agente separado só quando a tarefa paga a releitura de contexto que ele custa, e um por vez, nunca cadeia. Leitura, busca, alteração mecânica e espera de teste usam modelo econômico — **o modelo caro não é o operário da sessão**: ele decide, julga e olha. Agente recebe um **pacote curto** (o item, os arquivos, o critério de saída), nunca o histórico da conversa nem o PENDENCIAS inteiro; o relatório volta COMPACTO (dezenas de linhas, não centenas). A prova mede o que mudou: durante a obra, só os testes dos arquivos tocados; a suíte inteira roda UMA vez, no fechamento; os juízes de imagem caros (A/B completo, varreduras longas) só no fechamento de rodada ou quando pixel muda de propósito — tudo isso hoje DENTRO da lista aprovada do §19. **A janela de quem coordena é o recurso que encerra a sessão quando acaba** — arquivo grande não se lê inteiro nela (mira-se com `grep`/trecho, ou delega-se a leitura a um agente que volta com resumo curto); nada se relê por conforto; o resumo ao dono é curto porque também mora na janela. Esperar agente parado é queimar dinheiro: checagem curta faz-se na hora, por quem espera. Uma falha permite um conserto e uma prova; segundo auditor, segunda suíte e cadeia de agentes são o mesmo desperdício com outro nome, e são proibidos. Quando o dono mandar encerrar, ou quando faltar a reserva para documentar, commitar e mandar ao `origin/backup`, a sessão **só fecha** — a varredura do §13 faz parte do fecho; não abre obra nova. Vale para qualquer modelo, agente ou ferramenta; nenhum instrumento decide a arquitetura.
-18. **Fundido no §12** (arrumação de 01/09, sem mudança de conteúdo): o que este número dizia — tamanho da sessão no primeiro ato, delegação ao modelo econômico, pacote curto, proibição de cadeia e o fecho com reserva — mora no §12. O número fica porque commits e memórias até 01/09 o citam.
+* the action is hard to undo or touches shared things: deleting data, migrations, force-push, publishing, secrets, pushing `main` (it publishes the site), regenerating `public/data`, adding tests or image judges beyond what the task needs (the owner approves that list at the end of a round);
+* the request needs a second way of doing something the project already does one way;
+* two readings of the request would lead to clearly different work.
 
-## A direção
+Otherwise pick a sensible option, say what you assumed, and keep going. If nobody is watching (unattended run), don't ask: write the assumption, or "BLOCKED: <reason>", and stop.
+Traps (not obvious from the code, caused a mistake before; one line each, with the reason; max 5)
 
-9. **Melhoria visível é a direção do trabalho.** Palavras do dono em 2026-08-11: "Nunca foi criada essa regra que nada muda na tela. Estamos sempre caminhando no sentido das melhorias, se nada muda na tela isso fica impossível". E em 2026-08-13: "nada é fixo, tudo sempre pode ser questionado se melhora UX" — decisão herdada, número ou formato não estão protegidos quando atrapalham a experiência.
-10. **Você é o juiz da mecânica interna.** Técnica de render, arquitetura, número, formato: decida, faça, e volte com IMAGEM. Pergunte ao dono só o que é gosto, prioridade ou escopo.
+* `base: './'` in vite.config.ts must stay relative — the site lives under a subpath on GitHub Pages, and `'/'` breaks the data loading only in production, never in dev.
+* Every push to `main` publishes the site (deploy.yml runs on it). Back up without publishing: `git push origin main:backup`.
+* One NaN pixel plus bloom turns the whole screen white — `pow` with a negative base and `smoothstep` with reversed edges are the usual sources; `?nobloom=1` shows the scene behind it.
+* `npm test` imports `scripts/visual/chrome.mjs`, which locates the Chrome binary at import time — without Chrome the suite fails for reasons unrelated to `src/`.
+* `capturas/` and `sky/` are ignored by git and hold the only copy of each proof image — never overwrite one; write a `-v2` beside it.
 
-## A obra
+Memory
 
-2. Procure a implementação existente antes de criar arquivo, dependência, helper ou documentação.
-3. Faça a menor mudança coerente; não adicione abstração, compatibilidade ou feature especulativa.
-4. Mantenha uma fonte de verdade. Atualize o contrato existente em vez de duplicá-lo.
-11. **Um arquivo, um assunto.** Arquivo que acumulou assuntos divide-se na primeira mudança que o tocar — mover e agrupar, nunca reescrever — e quem só precisa do referencial não importa o mundo inteiro junto.
-6. Só remova código após provar que não há import, chamada, script ou uso em runtime. Preserve dados científicos e alterações do usuário.
-5. Apague logs, caches, builds, capturas e temporários quando terminarem de servir. **Processo também é sujeira**: ao terminar, cada agente derruba os servidores e navegadores que **ele** subiu — pelo pid, nunca `pkill` largo, que mata o do vizinho — e remove as worktrees temporárias que criou; quem coordena confere as portas depois, porque porta viva de agente morto é a próxima meia hora perdida.
-
-## A prova
-
-7. Valide a mudança com os gates relevantes, e **a prova tem de medir o que mudou**: vista capturada sem HUD não prova trabalho de HUD; vista com o relógio parado não prova nada que só apareça em movimento. Se o gate existente não cobre a mudança, a obrigação é **criar a vista que cobre**, nunca exibir a que não cobre. Gate bit-idêntico é **detector de regressão** — nunca objetivo, nunca justificativa para desfazer melhoria. Renderização só está pronta depois de verificação no navegador. **Prancha ou foto de prova recomposta grava-se AO LADO da original (`-v2`), nunca por cima** — `capturas/` vive fora do git, e sobrescrever mata a única testemunha do que se alega idêntico.
-16. **Fase visual é exclusiva.** Captura e teste de imagem só com a árvore parada; edição em paralelo apenas com arquivos disjuntos e commit por caminho explícito; A/B sempre de árvore limpa, ou com a sujeira nomeada no carimbo — lado medido durante uma edição mede a edição, não a mudança.
-17. **Imagem entregue é imagem olhada.** Antes de mandar qualquer captura ao dono, quem entrega **abre a imagem** e confere a física da cena — luz de um lado, sombra do outro, tamanho e cor plausíveis —, não só se o objeto está lá. Legenda de agente não é prova: três filtros já deixaram passar cena fisicamente errada, e quem viu foi o dono.
-14. **Prova sem arquivo não vale.** Todo número declarado — medição, A/B, tabela, "rodei e deu X" — precisa de rastro em disco que outro possa recomputar; prosa órfã não é prova, é achado de auditoria. O §7 exige que a prova meça o que mudou; esta diz onde ela mora.
-15. **Guarda mede comportamento, não texto.** Busca de string no fonte e pino de constante não protegem nada: o teste só vale se **apagar a fiação da peça o fizer reprovar**. Se a peça pode sumir com a suíte inteira verde, o gate é enfeite.
-19. **Teste roda com aprovação do dono** (ordem dele, 2026-09-01, na F4 da onda 125: fase "curta" passou de 1h30 porque o rito de provas escalava sozinho — 13 sabotagens numa fase, 23 na seguinte). Durante a obra: implementa-se e capturam-se as FOTOS de prova (foto não é teste; o olho continua sendo o juiz, §17). Testes, sabotagens e suítes ficam em LISTA: no fim da rodada, quem coordena apresenta ao dono a lista curta — nome do teste + uma linha do porquê, linguagem simples — e ele aprova ou corta; só então roda. Rodar ANTES do fim da rodada exige justificativa prévia ao dono, simples e clara (ex.: "sem isto não sei se quebrei o filme"). Isto aperta o §12 (que já limitava a prova ao que mudou) e substitui o "sabotagem que morde em cada peça" como gesto automático — a sabotagem continua existindo, mas entra na lista e roda depois do sim.
-
-## A auditoria
-
-13. **Auditoria proporcional, uma passada.** Etapa GRANDE (diff extenso, ou que toca juiz/pino/física da luz) ganha revisão por mão independente: lixo e duplicidade, documento que não veio no mesmo commit, comentário que virou mentira — e **sabotagem** de cada teste NOVO em árvore separada (recoloca o defeito exato que o teste promete pegar; passou verde, o teste é decoração), **hoje via lista do §19, depois do sim do dono**. Etapa pequena ganha o mesmo checklist feito pela própria mão, em minutos, sem agente. Os achados têm UM conserto e seguem — sem re-auditoria do conserto (a revisão da etapa seguinte o cobre). Mudança de juiz ou de pino é a exceção sem desconto no rigor: número medido e declaração no commit, sempre — e a sabotagem correspondente entra na lista do §19. **Quando o dono disser que a janela está longa e é hora de encerrar, a última obra é varrer o CONJUNTO da sessão, não repetir a prova** (item **107**). Cinco perguntas, e só elas: nasceu peça, arquivo ou caminho que já existia? ficou código que ninguém chama? cabia adaptar o que já estava, e nasceu um emaranhado? o desenho ficou mais complexo que a obra? comentário ou documento mente? Sessão pequena: a própria mão, em minutos. Sessão longa (muitos arquivos, peça nova, desenho novo): um leitor fresco e barato recebe o *diff da sessão* e estas perguntas — nunca a conversa — e volta um laudo curto. Achado: UM conserto, e fecha. Isto não é suíte, não é segundo revisor da mesma prova, não é sabotagem de teste velho.
-
-## O registro
-
-8. Registre apenas o resultado, os testes e os limites reais. Não deixe diários, prompts ou relatórios já consumidos no projeto. **Com o dono, fale simples** — ele é leigo em programação: frases curtas, sem jargão e **sem assumir que ele carrega o contexto**, porque cada resposta tem de se explicar sozinha para quem acabou de chegar; jargão inevitável ganha tradução de uma frase no mesmo parêntese. Densidade técnica vai para commits e documentos, nunca para o chat. Em documento, cite a **peça** (`aproximarDoSol`, `RAIO_SOL_PC`), nunca o número de linha — a linha anda, o nome não.
-
-Crie um commit local a cada checkpoint coerente de implementação validada — sem esperar pedido. **Depois de cada etapa, `git push origin main:backup`**: guarda o trabalho na nuvem sem publicar nada. Push na `main` **publica o site** (o `deploy.yml` roda a cada push nela) — esse só com pedido explícito do dono.
-
-Quando o dono reportar um problema, escreva-o em `docs/PENDENCIAS.md` **naquele momento** — não no fim da sessão, não "depois que eu confirmar". Este projeto não sofre de falta de registro; sofre de conversa que morre com a janela. Escreva com as palavras dele, não com as suas: o que ele VÊ é o item; a causa técnica, quando houver, é uma linha abaixo. Item resolvido sai da lista e vira commit — a lista é do que está aberto, não um diário. **E item fechado ENCOLHE o caderno**: a narrativa do que se fez mora no commit e no bastão, nunca em parágrafo colado ao item.
-
-**Decisão sem número morre.** Toda decisão que exige obra vira **item numerado** no `docs/PENDENCIAS.md`, **no mesmo commit em que é tomada** — memória de coordenador, relatório e conversa são ponteiro, nunca casa de trabalho. A história que instituiu esta regra mora no cabeçalho do `PENDENCIAS.md`; aqui fica só a lei.
-
-**Regra de processo mora aqui.** Decisão do dono em 2026-08-25: o que vale para todo agente escreve-se neste arquivo, que qualquer ferramenta lê; memória de coordenador é operação pessoal de uma sessão e ninguém mais a enxerga. Regra que só existe na cabeça de quem coordena morre junto com a janela — é o mesmo defeito de "decisão sem número", aplicado a lei em vez de obra.
-
-## Trazer um documento de volta
-
-A reforma de 2026-08-14 apagou diário, não ciência. O ponto de restauro é a tag `docs-antes-da-reforma`. Qualquer arquivo volta com:
-
-```
-git show docs-antes-da-reforma:docs/NORTE.md
-git checkout docs-antes-da-reforma -- docs/RETOMADA.md
-```
-
-Não recrie pasta de história: o git é o diário.
+* The repo is the memory: code, git history, and the two files below. Don't create other notes, summaries, or docs on your own.
+* `PLAN.md` (root, optional): for a task that spans sessions or is handed to another model. First line: task and date; then steps in order, files involved, decisions already made, and what's out of scope. Mark steps done as you go. If you find one you didn't write, read it first. Delete when done.
+* `BACKLOG.md` (root, max 30 lines): things noticed but not done, one line each. When it's full, triage before adding. The owner's own list is `docs/PENDENCIAS.md`: read only its first section (O BASTÃO) before starting, and write there only what he reports, in his words.
+* Don't edit this file during normal work; if a rule seems missing, say so in your final message. Anything that must always happen (formatting, blocked commands) lives in hooks, linters, or CI, not here.

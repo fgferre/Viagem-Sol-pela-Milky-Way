@@ -32,9 +32,8 @@ import { FichaDoObjeto } from './components/FichaDoObjeto';
 import { construirIndice } from './lib/buscaEstrelas';
 import {
   Convite,
-  PASSOS_DO_CONVITE_DO_ATLAS,
-  PASSOS_DO_CONVITE_DO_ATLAS_TOQUE,
 } from './components/Spotlight';
+import { PASSOS_DO_CONVITE_DO_ATLAS, PASSOS_DO_CONVITE_DO_ATLAS_TOQUE } from './components/passosDoConvite';
 import { Ajustes } from './components/Ajustes';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
 import { useDirector, escolherAlvo, LUGARES_DA_BUSCA } from './hooks/useDirector';
