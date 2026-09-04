@@ -116,6 +116,23 @@ esperam ordem. Backup em dia; site intocado (publicar só com pedido dele).
 
 ## ALTA — o dono vê e incomoda
 
+**149. Plutão e Caronte com mapa de 720 px sem detalhe** (censo de
+03/09, pergunta dele: *"tem mais algum corpo que precisa melhorar a
+textura?"*). Os mapas da NASA 3D têm 720×360 e detalhe zero acima disso; a
+New Horizons fotografou os dois a 300 m/px e a NASA/USGS publica os
+mosaicos globais (domínio público). Obra: trocar os dois pela fonte
+primária, reamostrada ao teto da casa, orientação conferida contra o mapa
+atual, origem/licença/confissão, `data:verify`, fotos. Delegado ao
+operário (Opus) em 03/09, à noite.
+
+**150. Hígia entra na esfera com um GRÁFICO como textura** (censo de
+03/09): o "mapa" do ESO/Wikimedia é uma figura científica — metade preta,
+grade de latitude, números e barra de cores desenhados por cima. Não
+existe foto de superfície de Hígia. Obra mínima: sair o gráfico, entrar a
+superfície procedural declarada (como Palas), ficha confessando; a forma
+irregular do DAMIT (CC BY, já anotada no ASSETS) fica para depois, com o
+pipeline de malha. Depois do 149.
+
 **148. As luas de Urano e Tritão com o hemisfério nunca visto
 reconstruído** (decisão dele, 03/09: *"eu quero"*; *"não quero montagem,
 use a que gerei"*; *"faça o uso do computador e acesse meu ChatGPT"*).
