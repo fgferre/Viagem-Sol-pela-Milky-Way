@@ -51,28 +51,36 @@ A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e s
 
 ## O BASTÃO — onde a rodada parou (03/09, noite — FECHO por ordem dele)
 
-**03/09 (3ª janela, continuação — item 148).** Miranda ganhou o mapa
-inteiro gerado por IA pela mão dele (fonte local `miranda-ia.png`,
-confissão na ficha); Celestia medido e descartado; a colagem só-no-vazio
-foi escrita e descartada pela palavra dele. Faltam as outras cinco, uma a
-uma, conforme ele gerar as imagens. Testes: nenhum novo (a porta
-`arquivoLocal` é cópia + reencode, coberta pelo `data:verify`).
-
-**03/09 (3ª janela — as luas de Urano).** Item **147** ("algo estranho"
-com as luas de Urano) diagnosticado na cena viva e consertado no mesmo
-dia: câmera, luz e textura estavam certas; os mapas da NASA 3D é que têm
-o hemisfério norte em preto (a Voyager 2 só viu o sul em 1986) e o Sol de
-2026 ilumina o norte. Preenchimento declarado na linha de produção
-(`preencherVazioSemDado`), seis mapas regerados, ficha confessa; o **116**
-(Tritão escuro) tinha a mesma causa e fechou junto. Fotos antes/depois em
-`capturas/item147-*`. **Lista do §19 aprovada por ele e rodada (03/09):** (a)
-`lib-texturas.test.mjs` +2 testes, com sabotagem em árvore separada — o
-preenchimento que nunca acontece e o que tapa até a sombra pequena, os
-dois vermelhos; (b) `data:verify` verde; (c) suíte cheia 2900 verdes (1
-pulado), typecheck verde; lint vermelho só em `Spotlight.tsx`
-(react-refresh, herança do 130/F1) e um aviso em `FichaDoObjeto.tsx`.
-**Espera a palavra dele:** o visual das seis (cinza liso onde não há
-foto) e, se quiser, crateras inventadas ali.
+**03/09 (3ª janela, noite — FECHO por ordem dele: "amei. faltou
+algo?" → "encerrar rodada").** A onda das TEXTURAS: **147** (as luas de
+Urano saíam pretas — o mapa tinha o hemisfério norte em preto, não a luz;
+tom liso declarado; o **116** fechou junto), **148** (as cinco de Urano e
+Tritão com o mapa inteiro gerado por IA na conta dele — Miranda pela mão
+dele, as outras pelo Chrome dele; amostras dos mosaicos de Schenk/LPI e do
+mapa NASA/LPI de Tritão; Celestia medido e descartado), **149** (Plutão e
+Caronte com a New Horizons; os mapas antigos eram anteriores ao sobrevoo —
+operário Opus), **150/151** (Hígia, Palas, Haumea, Makemake, Éris e
+Quaoar ilustrados por IA a partir dos fatos conhecidos, nível casado com o
+albedo — operário Sonnet). Commits `170a192..286c825`, backup em dia, site
+intocado. **Lista do §19 desta janela:** a única aprovada e rodada foi a
+do 147 (2 testes novos com sabotagem vermelha, suíte 2900 verde); 148–151
+não criaram teste (portas `arquivoLocal`/`ilustracao-ia` são cópia,
+reencode e ganho, cobertas pelo `data:verify` verde a cada passo).
+Varredura de fecho (cinco perguntas, mão própria): nada duplicado, nenhum
+temporário, documentos no mesmo commit; **um achado, sem conserto nesta
+janela**: o ramo `superficie: 'procedural'` de `rochoso.ts` (dois shaders
+e casos em `rochoso.test.ts`) ficou sem consumidor — remover exige mexer
+em teste, entra na lista do §19 da próxima rodada. **Esperam a palavra
+dele:** o visual das doze texturas novas; Caronte cinza ao lado de Plutão
+colorido (cabe o tingimento uniforme declarado de Ceres, obra pequena); a
+vista padrão de Plutão cair no hemisfério anti-Caronte; Titã névoa vs
+superfície. **Sobras:** Febe e Hipérion têm foto Cassini e seguem só
+esculpidas; Vanth/Weywot sem malha; mosaicos de Schenk sem linha de
+licença (documentado; contato com o autor antes de publicar). **Lição** (na
+memória): sites com bloqueio anti-robô abrem com curl imitando o Chrome
+(nível 1 do skill `fonte-cascade` dele); o Chrome dele grava o download
+inteiro num temporário antes de perguntar onde salvar — copiar dali, sem
+navegar antes.
 
 **03/09 (2ª janela, noite — fecho por ordem dele).** Desempenho no M1 dele:
 **144** (resolve único do MSAA + nebulosa congelada; regressão da textura
