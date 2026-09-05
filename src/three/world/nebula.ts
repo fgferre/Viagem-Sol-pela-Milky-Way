@@ -62,12 +62,17 @@ export class Nebula {
    * e até 03/09 produzia a 60 Hz, 25–30% do quadro no Atlas parado
    * (medido no M1 dele, `capturas/desempenho-m1-03-09.txt`). `sujo` é
    * levantado por todo setter que muda um uniform de verdade; a chave
-   * da câmera (matriz de mundo + fov + aspecto) é comparada em `render`.
-   * Iguais os dois, o `rtBlur` do quadro anterior continua sendo o céu.
+   * da câmera é comparada em `render`. A chave NÃO é a matriz de mundo:
+   * a câmera do filme parado treme nos últimos dígitos do double a cada
+   * quadro (52 raymarches em 2,5 s com o filme pausado, medido em 05/09)
+   * e a matriz nunca repetia. A chave é o que a GPU RECEBE — os uniforms
+   * de câmera e do cone do Sol, já arredondados a float32 pelo
+   * `Float32Array`. Iguais os dois, o `rtBlur` do quadro anterior
+   * continua sendo o céu.
    */
   private sujo = true;
-  private chaveDaCamera = new Float64Array(18);
-  private ultimaChave = new Float64Array(18).fill(Number.NaN);
+  private chaveDaCamera = new Float32Array(18);
+  private ultimaChave = new Float32Array(18).fill(Number.NaN);
   // LUT equiretangular 256×128 da luz distante do disco; recalcula
   // somente após a câmera mover >2 pc.
   private lutRT: THREE.WebGLRenderTarget;
@@ -371,12 +376,21 @@ export class Nebula {
     return Math.cos(seguro);
   }
 
-  /** a câmera desta chamada é a da anterior? (matriz de mundo, fov, aspecto) */
-  private cameraParada(camera: THREE.PerspectiveCamera): boolean {
+  /**
+   * Os uniforms de câmera desta chamada, como a GPU os recebe (float32),
+   * são os da anterior? Chamar DEPOIS de escrevê-los nos uniforms.
+   */
+  private cameraParada(): boolean {
+    const u = this.material.uniforms;
     const k = this.chaveDaCamera;
-    k.set(camera.matrixWorld.elements, 0);
-    k[16] = camera.fov;
-    k[17] = camera.aspect;
+    (u.uCamPos.value as THREE.Vector3).toArray(k, 0);
+    (u.uCamFwd.value as THREE.Vector3).toArray(k, 3);
+    (u.uCamRight.value as THREE.Vector3).toArray(k, 6);
+    (u.uCamUp.value as THREE.Vector3).toArray(k, 9);
+    k[12] = u.uTanHalfFov.value as number;
+    k[13] = u.uAspect.value as number;
+    k[14] = u.uSunCos.value as number;
+    (u.uSunDir.value as THREE.Vector3).toArray(k, 15);
     const antes = this.ultimaChave;
     let igual = true;
     for (let i = 0; i < 18; i++) {
@@ -390,11 +404,6 @@ export class Nebula {
   }
 
   render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) {
-    // o quadro congelado: mesma câmera, mesmos uniforms, mesma LUT — o
-    // céu de antes continua valendo, e o raymarch inteiro fica parado
-    const parada = this.cameraParada(camera);
-    if (parada && !this.sujo && !this.lutDirty) return;
-    this.sujo = false;
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camera.position);
     camera.getWorldDirection(this.scratchFwd);
@@ -405,6 +414,10 @@ export class Nebula {
     u.uAspect.value = camera.aspect;
     // depois do tanHalfFov: sunCone lê o uniform para converter texel em ângulo
     u.uSunCos.value = this.sunCone(camera);
+    // o quadro congelado: mesma câmera, mesmos uniforms, mesma LUT — o
+    // céu de antes continua valendo, e o raymarch inteiro fica parado
+    if (this.cameraParada() && !this.sujo && !this.lutDirty) return;
+    this.sujo = false;
     const prev = renderer.getRenderTarget();
     if (this.lutDirty || this.lutCamPos.distanceToSquared(camera.position) > 4) {
       this.lutDirty = false;
