@@ -17,8 +17,7 @@ Etapas
 - A1b [x] (05/09) O seletor de detalhe do gás: opção nos presets (padrão por preset a decidir com o dono) e no custom, troca ao vivo (materiais recompilados ou três materiais prontos), rótulos pt/en, teste sized like the neighbors.
 - Fecho [ ] `npm run done`, backup, fotos finais. Nada de apagar caminho: o dono quer poder voltar ao app de hoje.
 
-Próximo item (autorizado 05/09): a camada da GALÁXIA dentro do disco (BACKLOG). Mesma regra: o modo de hoje fica como opção.
-
-Fora de escopo: LUT da faixa distante, pós-processamento, estrelas heróis (segundo peso do quadro; item próprio).
-
-Achado 05/09 (fora deste plano, item próprio; detalhes no BACKLOG): em t=140 (dentro do disco) a camada da GALÁXIA (`?nogal=1`) custa ~75 ms dos ~87 ms do quadro em DPR 2; o gás não é o peso ali. Régua contínua: Chrome visível com `--disable-gpu-vsync --disable-frame-rate-limit` (SEMVSYNC=1 no `fps-real.mjs`), consistente com a de vsync e sem os degraus de 16,7 ms.
+Próximo item (autorizado 05/09, o modo de hoje fica como opção): o QUADRO DENTRO DO DISCO (t=140–160), ~87 ms em DPR 2.
+- Fatos medidos: `?nogal=1` → 14–25 ms (zera os fades de pontos, discos, brilhos e poeira da galáxia). `?nogdust=1` ≈ −23 ms — não é camada visual: é a extinção por partícula (16 amostras VTF por ponto nos 4 M pontos, galaxyShaders.ts ~188–220). Depois do nogdust, nodisc e noglow não tiram mais nada. Ablação por MATERIAL apontou os brilhos `haloMat` (uSize 6000 pc) e `dwarfMat` (1150 pc), sem LOD, e as 16 estrelas heróis (`heroStars.ts`, 16 quads com spikes e ruído, `?noclarao=1` esconde) — mas com a máquina quente e o filme parado as medidas se contradisseram (esconder halo+anã "piorou"). O timer de GPU (`gpu-profile`, DPR 1 e 2) ordena heroStars > brilho GLOW > knee > blur > pontos.
+- Protocolo para a próxima rodada: máquina fria; `fps-real.mjs` com SEMVSYNC=1 e o filme ANDANDO em janela fixa (`?t=150&play=1`), comparando sempre com base do mesmo minuto; esconder por MATERIAL (`material.visible=false`), nunca `visible` de objeto, que `Galaxy.update()` reescreve a cada quadro.
+- Candidatos que preservam o modo de hoje como opção: (1) brilhos/halo/anã num RT de 1/4 de resolução (são suaves); (2) estrelas heróis: não desenhar quando `farFade == 0` (>900 pc de casa — exato); (3) extinção dos pontos com menos amostras por preset.
