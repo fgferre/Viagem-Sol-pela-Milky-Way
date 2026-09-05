@@ -105,6 +105,31 @@ export function lerPortaNebulosa(
 }
 
 /**
+ * O GÁS VOLUMÉTRICO (item 145b, PLAN.md A1b) — o quarto controle da
+ * gaveta Avançado. Três formas de assar/ler a mesma densidade do gás
+ * (`nebulaFrag`/`nebulaBakeFrag` em `shaders/nebulaShaders.ts`):
+ * `antigo` (tudo por amostra, sem volume assado), `fino` (assa os termos
+ * suaves e mantém as duas frequências mais finas ao vivo) e `macio`
+ * (assa tudo). Eram as portas de bancada `?nebvol=0`/`?nebfino=1` da
+ * rodada de aprovação — agora é configuração de verdade, no mesmo
+ * molde da nebulosa: o preset aponta uma variante, a gaveta escolhe
+ * uma variante, e quem aplica ao vivo é `Nebula.setVariante` (item 3
+ * do design).
+ */
+export type GasVolumetrico = 'antigo' | 'fino' | 'macio';
+
+const GASES_VOLUMETRICOS: readonly GasVolumetrico[] = ['antigo', 'fino', 'macio'];
+
+/**
+ * A lei da porta `?gas=`, no mesmo contrato de `lerPortaNebulosa`:
+ * comparação por literal, `null` para "não pediram nada de válido" — e
+ * aí quem manda é o preset.
+ */
+export function lerPortaGas(bruto: string | null | undefined): GasVolumetrico | null {
+  return GASES_VOLUMETRICOS.find((v) => v === bruto) ?? null;
+}
+
+/**
  * OS TRÊS DEGRAUS DA ESCALA DE RESOLUÇÃO (item 145) — o terceiro
  * controle da gaveta Avançado, em fração da densidade NATIVA da tela.
  * 100% é o `devicePixelRatio` do monitor (2,0 num Retina), 50% é metade
@@ -126,15 +151,25 @@ interface QualityPreset {
   pixelRatio: number;
   nebulosa: NivelDaNebulosa;
   grain: number;
+  /** a variante do gás volumétrico do preset (item 145b) — `null` não
+   *  existe aqui: todo preset aponta uma, e a gaveta é quem sobrepõe com
+   *  `null` (o do preset). */
+  gas: GasVolumetrico;
 }
 
 // grain agora é DISPLAY-space (film pass pós-tonemap): 0.055 era
 // calibrado para o espaço linear onde o ACES o esmagava — em display
 // vira granulado de vídeo; cinema real fica em ~1% de swing.
+//
+// GÁS (item 145b): cinema aponta `fino` (mais nitidez, é o tier caro);
+// alta e performance apontam `macio` (mais barato — os dois tiers que já
+// abrem mão de passos/escala do raymarch). Decisão do dono (05/09,
+// PLAN.md) — as três variantes ficam como opção de detalhe gráfico, e
+// esta é a distribuição inicial; a gaveta Avançado sobrepõe à mão.
 const PRESETS: Record<QualityLevel, QualityPreset> = {
-  cinema: { pixelRatio: 2.0, nebulosa: 'alta', grain: 0.012 },
-  alta: { pixelRatio: 1.5, nebulosa: 'media', grain: 0.01 },
-  performance: { pixelRatio: 1.0, nebulosa: 'baixa', grain: 0.008 },
+  cinema: { pixelRatio: 2.0, nebulosa: 'alta', grain: 0.012, gas: 'fino' },
+  alta: { pixelRatio: 1.5, nebulosa: 'media', grain: 0.01, gas: 'macio' },
+  performance: { pixelRatio: 1.0, nebulosa: 'baixa', grain: 0.008, gas: 'macio' },
 };
 
 /**
@@ -370,6 +405,13 @@ export interface EstadoDaQualidade {
    * Engine (`forcarEscala`), que é o dono da nitidez.
    */
   escala: number | null;
+  /**
+   * O GÁS VOLUMÉTRICO escolhido à mão (item 145b) — `null` = a variante
+   * do preset. Quem o publica é o Director, que é onde o override mora
+   * (`forcarGas`/`aplicarGas`, no mesmo molde de `forcarNebulosa`): é ele
+   * que troca o material da `Nebula` ao vivo.
+   */
+  gas: GasVolumetrico | null;
 }
 
 /**

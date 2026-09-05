@@ -10,6 +10,7 @@ import { useLayoutEffect, useState } from 'react';
 import type { Director, EstadoDaQualidade, Phase } from '../three/director';
 import type {
   EscolhaDeQualidade,
+  GasVolumetrico,
   NivelDaNebulosa,
   ToneMapMode,
 } from '../three/core/engine';
@@ -291,6 +292,15 @@ export function useEspelhoDaUrl(dep: {
     );
   };
 
+  /**
+   * O GÁS VOLUMÉTRICO, AO VIVO (item 145b) — o quarto controle da
+   * gaveta Avançado, no mesmo molde exato dos três de cima.
+   */
+  const trocarGas = (variante: GasVolumetrico | null) => {
+    directorRef.current?.forcarGas(variante);
+    window.history.replaceState(null, '', comParam('gas', variante));
+  };
+
   // ---- o gosto, escrito num lugar só (estado + Director + URL) -------
   const trocarTom = (t: ToneMapMode) => {
     setTom(t);
@@ -393,6 +403,8 @@ export function useEspelhoDaUrl(dep: {
         d.forcarNebulosa(null);
       } else if (c.chave === 'escala') {
         d.forcarEscala(null);
+      } else if (c.chave === 'gas') {
+        d.forcarGas(null);
       } else if (c.chave === 'luz') {
         // volta ao 1/d² cru no próximo quadro (D2 — volta 'vivo'), e o
         // carimbo porque esta é a única linha sem espelho em React: sem
@@ -470,6 +482,7 @@ export function useEspelhoDaUrl(dep: {
     trocarAmostras,
     trocarNebulosa,
     trocarEscala,
+    trocarGas,
     trocarTom,
     trocarExposicao,
     voltarAoBrilhoReal,

@@ -95,4 +95,23 @@ describe('o quadro congelado da nebulosa (item 144)', () => {
     nebula.render(renderer, camera); // parada de novo, dentro da nova margem: nada
     expect(desenhos()).toBe(262);
   });
+
+  // item 145b — a variante do gás volumétrico troca ao vivo: o quad do
+  // raymarch ganha outro material E o volume assado reassa (fino/macio
+  // têm layouts de canal diferentes; ver glslBakeDensity em common.ts).
+  // A câmera não se move nestes dois renders: a diferença de desenhos é
+  // só o efeito de `setVariante`, isolado do resto do quadro congelado.
+  it('setVariante troca o material e suja o volume; a mesma variante de novo é no-op', () => {
+    const { renderer, camera, nebula, desenhos } = bancada();
+    nebula.render(renderer, camera); // bake (128) + LUT + raymarch + blur
+    expect(desenhos()).toBe(131);
+    nebula.setVariante('fino');
+    nebula.render(renderer, camera); // reassa (128) + raymarch + blur — LUT reusa (câmera parada)
+    expect(desenhos()).toBe(261);
+    nebula.render(renderer, camera); // nada mudou: quadro congelado de novo
+    expect(desenhos()).toBe(261);
+    nebula.setVariante('fino'); // já é a variante ativa: no-op
+    nebula.render(renderer, camera);
+    expect(desenhos()).toBe(261);
+  });
 });

@@ -7,6 +7,7 @@ import {
   Engine,
   GRAMPO_DO_PASSO_S,
   NEBULOSA_POR_NIVEL,
+  lerPortaGas,
   lerPortaNebulosa,
   modoDoToneMapping,
 } from './core/engine';
@@ -18,6 +19,7 @@ import type { ChaveDeTexto } from '../lib/idioma';
 import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
+  GasVolumetrico,
   MedicaoDoQuadro,
   NivelDaNebulosa,
   QualityLevel,
@@ -564,6 +566,14 @@ export class Director {
     this.debug.get('nebula')
   );
   /**
+   * O GÁS VOLUMÉTRICO ESCOLHIDO À MÃO (item 145b) — `null` = a variante
+   * do preset. Mesmo contrato do `nebulosaForcada`: lido no CAMPO, e não
+   * no corpo do construtor, para a semeadura acontecer antes da primeira
+   * troca de tier e antes do warm-up de shaders (`init`) compilar a
+   * variante certa.
+   */
+  private gasForcado: GasVolumetrico | null = lerPortaGas(this.debug.get('gas'));
+  /**
    * O RAIO COM QUE O SOL FOI CONSTRUÍDO, em pc. Desde a F3 é SEMPRE o
    * físico (`RAIO_DO_SOL_NA_CENA`) — a porta `?solreal=1` da F1 morreu
    * quando ele virou o padrão. O campo fica porque é a fonte única para
@@ -689,6 +699,9 @@ export class Director {
       // (44) NÃO é o do cinema (56), então o valor inicial também vem
       // daqui.
       this.aplicarNebulosa();
+      // a variante do gás (item 145b) troca de preset junto com os
+      // passos/escala — mesmo motivo: quem muda o preset aplica os dois.
+      this.aplicarGas();
       // o preset de grão era config morta — nunca chegava ao shader
       this.post.setGrain(this.engine.preset.grain);
       // as amostras do alvo do composer (item 120, F1): o MSAA é do tier
@@ -711,6 +724,10 @@ export class Director {
     // troca de tier — exatamente onde a economia mais importa (Onda 1e).
     // Desde o item 145 os dois ingredientes saem juntos da mesma tabela.
     this.aplicarNebulosa();
+    // a variante do gás (item 145b) precisa estar aplicada ANTES do
+    // warm-up de shaders (`init`, mais abaixo): é ele que lê
+    // `nebula.warmupMaterials`, e o material tem de já ser o certo.
+    this.aplicarGas();
     this.post.setGrain(this.engine.preset.grain);
     this.post.aplicarAmostras(this.engine.quality);
     // e o React TAMBÉM é ouvinte tardio: sem esta semente o painel de
@@ -1973,12 +1990,13 @@ export class Director {
       // segue rodando e o Auto segue ouvindo (`aoMedirOQuadro`): o que
       // para é o mostrador, não a régua.
       medicao: this.shotMode ? null : this.engine.medicao,
-      // os TRÊS controles vivos da gaveta Avançado (item 145), cada um
-      // lido da sua única casa: o MSAA mora no Post, o nível da nebulosa
-      // aqui, a escala de resolução no Engine
+      // os QUATRO controles vivos da gaveta Avançado (item 145, +145b),
+      // cada um lido da sua única casa: o MSAA mora no Post, o nível da
+      // nebulosa e o gás aqui, a escala de resolução no Engine
       amostras: this.post.amostras,
       nebulosa: this.nebulosaForcada,
       escala: this.engine.escala,
+      gas: this.gasForcado,
     });
   }
 
@@ -2015,6 +2033,29 @@ export class Director {
     this.aplicarNebulosa();
     // a imagem mudou: a contagem de estabilidade da captura recomeça,
     // como já recomeça na troca de tier
+    this.perturbar();
+    this.publicarQualidade();
+  }
+
+  /**
+   * A VARIANTE DO GÁS VOLUMÉTRICO, num lugar só (item 145b): a que o
+   * visitante escolheu na gaveta ou, na ausência dela, a do preset —
+   * `Nebula.setVariante` decide sozinha se troca alguma coisa (é
+   * no-op se a variante pedida já é a que está no ar).
+   */
+  private aplicarGas() {
+    this.nebula.setVariante(this.gasForcado ?? this.engine.preset.gas);
+  }
+
+  /**
+   * O GÁS VOLUMÉTRICO, TROCADO AO VIVO (item 145b) — troca de material
+   * na `Nebula`, sem recarregar. `null` devolve a variante ao preset.
+   */
+  forcarGas(variante: GasVolumetrico | null) {
+    this.gasForcado = variante;
+    this.aplicarGas();
+    // a imagem mudou (as três variantes desenham gás diferente, não a
+    // mesma nuvem mais barata): a contagem de estabilidade recomeça
     this.perturbar();
     this.publicarQualidade();
   }
@@ -2302,12 +2343,13 @@ export class Director {
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),
       camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
       tier: this.engine.quality,
-      // os três controles da gaveta Avançado (item 145) — estado VIVO,
-      // não as portas: o painel os troca sem recarregar, e um selo que
-      // lesse só a URL calaria a escolha feita na gaveta
+      // os quatro controles da gaveta Avançado (item 145, +145b) — estado
+      // VIVO, não as portas: o painel os troca sem recarregar, e um selo
+      // que lesse só a URL calaria a escolha feita na gaveta
       amostras: this.post.amostras,
       nebulosa: this.nebulosaForcada,
       escala: this.engine.escala,
+      gas: this.gasForcado,
       luz: this.politicaDeLuz,
       stopsDoGloboEmFoco: this.stopsDoGloboEmFoco(),
       // a DOSE de ocupação do Sol (item 5): < 1 só no arranque do filme,

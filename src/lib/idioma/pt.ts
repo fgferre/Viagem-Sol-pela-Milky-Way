@@ -135,6 +135,12 @@ export const PT = {
   'ajustes.escalaDeResolucao': 'Escala de resolução',
   'ajustes.escalaDeResolucaoNota':
     'Quantos pixels a cena desenha, em fração da tela. 50% desenha um quarto dos pixels — é a alavanca mais forte daqui, e a que mais borra as beiras. O texto e os controles não mudam de tamanho.',
+  'ajustes.gasControle': 'Gás volumétrico',
+  'ajustes.gasNota':
+    'Como o gás da Via Láctea é calculado: original refaz tudo a cada passo; fino assa a maior parte e mantém dois detalhes finos ao vivo; macio assa tudo e é o mais barato.',
+  'ajustes.gas.antigo': 'Original',
+  'ajustes.gas.fino': 'Fino',
+  'ajustes.gas.macio': 'Macio',
   'ajustes.texto': 'Tamanho do texto · {degrau}',
   'ajustes.textoNota':
     'Vale para o HUD inteiro — legenda, controles, selo e os nomes das estrelas. Não mexe na cena: dentro do Atlas o enquadramento recua um pouco para o texto maior não cobrir o alvo.',
@@ -341,6 +347,8 @@ export const PT = {
   'selo.desvio.nebulaCom': 'nebulosa escolhida à mão: {nivel}',
   'selo.desvio.escalaDeResolucao': 'escala de resolução escolhida à mão',
   'selo.desvio.escalaDeResolucaoCom': 'escala de resolução escolhida à mão: {fator}',
+  'selo.desvio.gas': 'gás volumétrico escolhido à mão',
+  'selo.desvio.gasCom': 'gás volumétrico escolhido à mão: {variante}',
 
   // ---- a acusação da escala (`three/escala.ts`) ---------------------
   'escala.acusacao': '{nome} está {fator} maior',

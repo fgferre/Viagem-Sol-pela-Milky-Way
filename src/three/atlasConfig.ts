@@ -40,6 +40,7 @@ import type { ChaveDeTexto } from '../lib/idioma';
 import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
+  GasVolumetrico,
   NivelDaNebulosa,
 } from './core/engine';
 
@@ -235,6 +236,15 @@ export function nivelDaNebulosaEmTexto(nivel: NivelDaNebulosa): string {
 }
 
 /**
+ * O GÁS VOLUMÉTRICO COMO O VISITANTE O LÊ (item 145b). Mesma doutrina
+ * do nível da nebulosa: a variante é chave (`antigo`/`fino`/`macio`, a
+ * mesma que vai ao `?gas=`), e a tradução mora no caminho da tela.
+ */
+export function gasVolumetricoEmTexto(variante: GasVolumetrico): string {
+  return t(`ajustes.gas.${variante}` as ChaveDeTexto);
+}
+
+/**
  * A ESCALA DE RESOLUÇÃO COMO O VISITANTE A LÊ: fração vira porcentagem
  * (0,5 → "50%"). Sem casa decimal porque os três degraus são inteiros
  * em porcento; o dia em que não forem, a régua é esta função.
@@ -244,17 +254,17 @@ export function rotuloDaEscalaDeResolucao(fator: number): string {
 }
 
 /**
- * MEXEU NA GAVETA AVANÇADO? (item 145) — qualquer um dos três controles
- * fora do preset basta. É a régua do "Personalizado", e mora numa
- * função só para o rótulo e quem mais precisar dela não divergirem.
+ * MEXEU NA GAVETA AVANÇADO? (item 145, +145b) — qualquer um dos quatro
+ * controles fora do preset basta. É a régua do "Personalizado", e mora
+ * numa função só para o rótulo e quem mais precisar dela não divergirem.
  */
 export const foraDoPreset = (e: EstadoDaQualidade): boolean =>
-  e.amostras !== null || e.nebulosa !== null || e.escala !== null;
+  e.amostras !== null || e.nebulosa !== null || e.escala !== null || e.gas !== null;
 
 export function rotuloDaQualidade(e: EstadoDaQualidade): string {
-  // PERSONALIZADO (item 145): mexeu num controle da gaveta Avançado —
-  // suavização de bordas, nebulosa ou escala de resolução —, e o nome do
-  // preset deixa de descrever o que a máquina desenha. O rótulo NÃO
+  // PERSONALIZADO (item 145, +145b): mexeu num controle da gaveta Avançado —
+  // suavização de bordas, nebulosa, escala de resolução ou gás volumétrico —,
+  // e o nome do preset deixa de descrever o que a máquina desenha. O rótulo NÃO
   // troca de frase por isso: só o nome do tier ganha a marca, e as
   // quatro frases (medindo, auto medindo, auto pousou, confere/sugere)
   // continuam inteiras.

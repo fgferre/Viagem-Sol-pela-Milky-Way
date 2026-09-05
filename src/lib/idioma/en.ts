@@ -141,6 +141,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.escalaDeResolucao': 'Resolution scale',
   'ajustes.escalaDeResolucaoNota':
     'How many pixels the scene draws, as a fraction of your screen. 50% draws a quarter of the pixels — the strongest lever here, and the one that blurs edges the most. Text and controls keep their size.',
+  'ajustes.gasControle': 'Volumetric gas',
+  'ajustes.gasNota':
+    'How the gas of the Milky Way is computed: original redoes everything every step; fine bakes most of it and keeps two fine details live; soft bakes everything and is the cheapest.',
+  'ajustes.gas.antigo': 'Original',
+  'ajustes.gas.fino': 'Fine',
+  'ajustes.gas.macio': 'Soft',
   'ajustes.texto': 'Text size · {degrau}',
   'ajustes.textoNota':
     'Applies to the whole HUD — captions, controls, seal and the star names. It does not touch the scene: inside the Atlas the framing backs off a little so the larger text does not cover the target.',
@@ -344,6 +350,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.nebulaCom': 'nebula set by hand: {nivel}',
   'selo.desvio.escalaDeResolucao': 'resolution scale set by hand',
   'selo.desvio.escalaDeResolucaoCom': 'resolution scale set by hand: {fator}',
+  'selo.desvio.gas': 'volumetric gas set by hand',
+  'selo.desvio.gasCom': 'volumetric gas set by hand: {variante}',
 
   // ---- the scale accusation ----------------------------------------
   'escala.acusacao': '{nome} is {fator} larger',

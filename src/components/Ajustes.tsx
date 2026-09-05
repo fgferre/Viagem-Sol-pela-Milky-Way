@@ -37,6 +37,7 @@ import { useIdioma } from '../hooks/useIdioma';
 import { DEGRAUS_DA_UI, rotuloDaEscala } from '../lib/uiScale';
 import {
   QUALIDADES,
+  gasVolumetricoEmTexto,
   nivelDaNebulosaEmTexto,
   rotuloDaEscalaDeResolucao,
   rotuloDaQualidade,
@@ -45,6 +46,7 @@ import { ESCALAS_DE_RESOLUCAO } from '../three/core/engine';
 import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
+  GasVolumetrico,
   NivelDaNebulosa,
   ToneMapMode,
 } from '../three/core/engine';
@@ -101,6 +103,19 @@ const ESCALAS: { valor: number | null; nome: () => string }[] = [
   })),
 ];
 
+/**
+ * OS QUATRO ESTADOS DO GÁS VOLUMÉTRICO (item 145b) — o quarto controle
+ * da gaveta, no mesmo molde da nebulosa: `null` é "do preset", e os
+ * valores são as chaves que vão à URL (`?gas=`) e ao selo.
+ */
+const GASES: { valor: GasVolumetrico | null; nome: () => string }[] = [
+  { valor: null, nome: () => t('ajustes.doPreset') },
+  ...(['antigo', 'fino', 'macio'] as const).map((g) => ({
+    valor: g,
+    nome: () => gasVolumetricoEmTexto(g),
+  })),
+];
+
 export function Ajustes({
   aberto,
   onFechar,
@@ -109,6 +124,7 @@ export function Ajustes({
   onAmostras,
   onNebulosa,
   onEscala,
+  onGas,
   tom,
   onTom,
   exposicao,
@@ -131,6 +147,8 @@ export function Ajustes({
   onNebulosa: (nivel: NivelDaNebulosa | null) => void;
   /** a escala de resolução escolhida à mão (item 145); `null` = do preset */
   onEscala: (fator: number | null) => void;
+  /** o gás volumétrico escolhido à mão (item 145b); `null` = do preset */
+  onGas: (variante: GasVolumetrico | null) => void;
   tom: ToneMapMode;
   onTom: (t: ToneMapMode) => void;
   exposicao: number;
@@ -308,6 +326,27 @@ export function Ajustes({
               onClick={() => onNebulosa(n.valor)}
             >
               {n.nome()}
+            </button>
+          ))}
+        </div>
+
+        <p className="ajustes-nota">
+          <strong>{t('ajustes.gasControle')}</strong> — {t('ajustes.gasNota')}
+        </p>
+        <div
+          className="ajustes-linha"
+          aria-label={t('ajustes.gasControle')}
+          role="group"
+        >
+          {GASES.map((g) => (
+            <button
+              type="button"
+              key={String(g.valor)}
+              className={qualidade.gas === g.valor ? 'on' : ''}
+              aria-pressed={qualidade.gas === g.valor}
+              onClick={() => onGas(g.valor)}
+            >
+              {g.nome()}
             </button>
           ))}
         </div>

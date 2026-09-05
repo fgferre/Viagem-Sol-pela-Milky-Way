@@ -5,14 +5,20 @@
 import * as THREE from 'three';
 import {
   NEBULA_VERT,
-  NEBULA_FRAG,
-  NEBULA_BAKE_FRAG,
+  nebulaFrag,
+  nebulaBakeFrag,
   nebulaLutFrag,
   NEBULA_BLUR_FRAG,
-  NEBVOL_ANTIGO,
 } from '../shaders/nebulaShaders';
 import { makeBlueNoiseTexture } from './blueNoise';
 import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
+import type { GasVolumetrico } from '../core/engine';
+
+/** a variante de nascença — a mesma que o fragment do raymarch e do bake
+ *  sempre foram antes do item 145b (macio: tudo assado, sem `?nebvol=`
+ *  nem `?nebfino=` vivos). O Director aplica a do preset/gaveta logo
+ *  depois de construir (`aplicarGas`), antes do primeiro `render()`. */
+const VARIANTE_DE_NASCENCA = 'macio';
 
 // Luzes embutidas no gás — posições reais do catálogo HYG (pc)
 const BETELGEUSE = new THREE.Vector3(3.189, 151.364, 19.682); // supergigante vermelha
@@ -57,6 +63,22 @@ export class Nebula {
   private scene = new THREE.Scene();
   private camera = new THREE.OrthographicCamera();
   private material: THREE.ShaderMaterial;
+  /** o quad fullscreen do raymarch — guardado para `setVariante` trocar o
+   *  material sem recriar a cena. */
+  private quad: THREE.Mesh;
+  /**
+   * A VARIANTE DO GÁS VOLUMÉTRICO (item 145b) e o CACHE de materiais já
+   * compilados por variante — um para o raymarch, outro para o bake
+   * (este sem entrada `antigo`: o caminho antigo nunca assa, ver
+   * `render()`). Todo material do cache COMPARTILHA o mesmo objeto de
+   * uniforms de sempre (o de `this.material`/`this.volumeMaterial`
+   * originais, que nunca mudam de identidade — só o fragment muda), então
+   * nenhum setter (`setFade`, `setCavity`...) precisa saber que a
+   * variante trocou.
+   */
+  private variante: GasVolumetrico = VARIANTE_DE_NASCENCA;
+  private materiaisRaymarch = new Map<GasVolumetrico, THREE.ShaderMaterial>();
+  private materiaisBake = new Map<GasVolumetrico, THREE.ShaderMaterial>();
   private scale: number;
   /**
    * O QUADRO CONGELADO (item 144). O raymarch não tem uniform de tempo:
@@ -89,6 +111,9 @@ export class Nebula {
   private volumeRT: THREE.WebGL3DRenderTarget;
   private volumeScene = new THREE.Scene();
   private volumeMaterial: THREE.ShaderMaterial;
+  /** o quad fullscreen do bake — guardado para `setVariante` trocar o
+   *  material sem recriar a cena. */
+  private volumeQuad: THREE.Mesh;
   /** meia-aresta do cubo assado (pc) — tMax do raymarch (650) + margem (350) */
   private static readonly MEIA_ARESTA = 1000;
   private static readonly VOXEIS = 128;
@@ -234,7 +259,7 @@ export class Nebula {
     this.sementesTex.needsUpdate = true;
     this.volumeMaterial = new THREE.ShaderMaterial({
       vertexShader: NEBULA_VERT,
-      fragmentShader: NEBULA_BAKE_FRAG,
+      fragmentShader: nebulaBakeFrag(VARIANTE_DE_NASCENCA),
       uniforms: {
         uFatia: { value: 0 },
         uDustMap: { value: this.fallbackDustMap },
@@ -246,13 +271,14 @@ export class Nebula {
       depthWrite: false,
       depthTest: false,
     });
-    const volumeQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.volumeMaterial);
-    volumeQuad.frustumCulled = false;
-    this.volumeScene.add(volumeQuad);
+    this.materiaisBake.set(VARIANTE_DE_NASCENCA, this.volumeMaterial);
+    this.volumeQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.volumeMaterial);
+    this.volumeQuad.frustumCulled = false;
+    this.volumeScene.add(this.volumeQuad);
 
     this.material = new THREE.ShaderMaterial({
       vertexShader: NEBULA_VERT,
-      fragmentShader: NEBULA_FRAG,
+      fragmentShader: nebulaFrag(VARIANTE_DE_NASCENCA),
       uniforms: {
         uCamPos: { value: new THREE.Vector3() },
         uCamRight: { value: new THREE.Vector3(1, 0, 0) },
@@ -291,9 +317,79 @@ export class Nebula {
       depthWrite: false,
       depthTest: false,
     });
-    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.material);
-    quad.frustumCulled = false;
-    this.scene.add(quad);
+    this.materiaisRaymarch.set(VARIANTE_DE_NASCENCA, this.material);
+    this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.material);
+    this.quad.frustumCulled = false;
+    this.scene.add(this.quad);
+  }
+
+  /**
+   * O material do raymarch para uma variante, do cache ou construído na
+   * hora — todos os materiais desta lista COMPARTILHAM o mesmo objeto de
+   * uniforms (o de `this.material`, que nasce com `VARIANTE_DE_NASCENCA`
+   * e nunca muda de identidade): trocar de variante troca só o fragment
+   * que lê os mesmos uniforms, então nenhum setter (`setFade`,
+   * `setCavity`...) precisa saber que a variante mudou.
+   */
+  private materialDoRaymarch(v: GasVolumetrico): THREE.ShaderMaterial {
+    let m = this.materiaisRaymarch.get(v);
+    if (!m) {
+      m = new THREE.ShaderMaterial({
+        vertexShader: NEBULA_VERT,
+        fragmentShader: nebulaFrag(v),
+        uniforms: this.material.uniforms,
+        depthWrite: false,
+        depthTest: false,
+      });
+      this.materiaisRaymarch.set(v, m);
+    }
+    return m;
+  }
+
+  /**
+   * O material do bake para uma variante — mesmo contrato do raymarch,
+   * mas só fino/macio: o caminho antigo nunca assa (ver `render()`), e
+   * quem chama aqui já garantiu isso.
+   */
+  private materialDoBake(v: Exclude<GasVolumetrico, 'antigo'>): THREE.ShaderMaterial {
+    let m = this.materiaisBake.get(v);
+    if (!m) {
+      m = new THREE.ShaderMaterial({
+        vertexShader: NEBULA_VERT,
+        fragmentShader: nebulaBakeFrag(v),
+        uniforms: this.volumeMaterial.uniforms,
+        depthWrite: false,
+        depthTest: false,
+      });
+      this.materiaisBake.set(v, m);
+    }
+    return m;
+  }
+
+  /**
+   * A VARIANTE DO GÁS VOLUMÉTRICO, TROCADA AO VIVO (item 145b) — troca
+   * só o `material`/`volumeMaterial` dos dois quads fullscreen, os
+   * mesmos uniforms por baixo. `fino` e `macio` têm layouts de canal
+   * DIFERENTES no volume assado (ver `glslBakeDensity` em common.ts),
+   * então a troca marca `volumeSujo`: o próximo `render()` reassa antes
+   * do raymarch, sempre — não há como aproveitar o volume da variante
+   * anterior. `antigo` não tem bake (`volumeMaterial` fica como estava,
+   * intocado — `render()` nunca o usa nesse caminho).
+   */
+  setVariante(v: GasVolumetrico) {
+    if (v === this.variante) return;
+    this.variante = v;
+    this.material = this.materialDoRaymarch(v);
+    this.quad.material = this.material;
+    if (v !== 'antigo') {
+      this.volumeMaterial = this.materialDoBake(v);
+      this.volumeQuad.material = this.volumeMaterial;
+      this.volumeSujo = true;
+    }
+    // a imagem mudou: o quadro congelado (item 144) precisa refazer o
+    // raymarch mesmo com a câmera parada, senão o céu da variante
+    // anterior persistiria
+    this.sujo = true;
   }
 
   private lastW = 960;
@@ -410,9 +506,9 @@ export class Nebula {
 
   /**
    * Nuvens-semente do catálogo perto da câmera: entradas
-   * [x, y, z, raio, amplitude] em pc na cena. Só alimenta o caminho
-   * ANTIGO (`?nebvol=0`) — o novo lê o volume assado, que usa
-   * `setBakeSeedClouds` abaixo.
+   * [x, y, z, raio, amplitude] em pc na cena. Só alimenta a variante
+   * ANTIGA (item 145b, `Nebula.setVariante('antigo')`) — as outras duas
+   * leem o volume assado, que usa `setBakeSeedClouds` abaixo.
    */
   setSeedClouds(entries: Float32Array, count: number) {
     const u = this.material.uniforms;
@@ -601,13 +697,12 @@ export class Nebula {
   }
 
   /**
-   * REDESIGN (PLAN.md, 05/09) — reassa as 128 fatias do volume 3D.
-   * Chamada de `render()`, ANTES do raymarch, só quando `volumeSujo`
-   * (insumo sem posição mudou) ou a câmera saiu da margem, e só no
-   * caminho novo (`?nebvol=0` nunca lê a textura, então nunca assa —
-   * `NEBVOL_ANTIGO` vem do mesmo módulo que decide o GLSL do raymarch,
-   * então os dois nunca discordam sobre qual caminho está ativo).
-   * `pedirSementes` roda ANTES do laço: o bake precisa da textura de
+   * REDESIGN (PLAN.md, 05/09; item 145b) — reassa as 128 fatias do
+   * volume 3D. Chamada de `render()`, ANTES do raymarch, só quando
+   * `volumeSujo` (insumo sem posição mudou, ou `setVariante` trocou
+   * fino/macio) ou a câmera saiu da margem, e só nas duas variantes que
+   * assam (`this.variante !== 'antigo'` — a variante antiga nunca lê a
+   * textura, então nunca assa). `pedirSementes` roda ANTES do laço: o bake precisa da textura de
    * sementes já atualizada para o centro que `render()` acabou de fixar.
    * `renderer.setRenderTarget(rt, fatia)` grava a fatia de PROFUNDIDADE
    * `fatia` do Data3DTexture — é a peça de `WebGL3DRenderTarget` que faz
@@ -630,7 +725,7 @@ export class Nebula {
   }
 
   render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) {
-    if (!NEBVOL_ANTIGO) {
+    if (this.variante !== 'antigo') {
       const recentrar = this.precisaRecentrar(camera.position);
       if (recentrar) this.recentrar(camera.position);
       if (this.volumeSujo || recentrar) this.bake(renderer);
@@ -669,10 +764,13 @@ export class Nebula {
     this.rtBlur.dispose();
     this.lutRT.dispose();
     this.volumeRT.dispose();
-    this.material.dispose();
+    // TODOS os materiais em cache (item 145b) — não só o que está no ar:
+    // `setVariante` nunca descarta o anterior (é a troca ao vivo sem
+    // recompilar de novo), então o dono deles é o `dispose` final.
+    for (const m of this.materiaisRaymarch.values()) m.dispose();
+    for (const m of this.materiaisBake.values()) m.dispose();
     this.blurMaterial.dispose();
     this.lutMaterial.dispose();
-    this.volumeMaterial.dispose();
     this.sementesTex.dispose();
     this.fallbackDustMap.dispose();
     const bn = this.material.uniforms.uBlueNoise.value as THREE.Texture;

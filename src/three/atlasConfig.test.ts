@@ -370,12 +370,12 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
       expect(nomeAcessivel, lingua).not.toMatch(/\d/);
     }
     definirIdioma('pt-BR');
-    // os TRÊS controles da gaveta Avançado em `null` de piso — a gaveta
-    // intocada (item 145)
+    // os QUATRO controles da gaveta Avançado em `null` de piso — a
+    // gaveta intocada (item 145, +145b)
     type Estado = Parameters<typeof rotuloDaQualidade>[0];
-    type Gaveta = 'amostras' | 'nebulosa' | 'escala';
+    type Gaveta = 'amostras' | 'nebulosa' | 'escala' | 'gas';
     const estado = (m: Omit<Estado, Gaveta> & Partial<Pick<Estado, Gaveta>>) =>
-      rotuloDaQualidade({ amostras: null, nebulosa: null, escala: null, ...m });
+      rotuloDaQualidade({ amostras: null, nebulosa: null, escala: null, gas: null, ...m });
     // manual, medida boa: nada a sugerir — o painel não inventa alarme
     expect(
       estado({ escolha: 'cinema', tier: 'cinema', medicao: { fps: 59.6, sugestao: 'cinema' } })
@@ -406,12 +406,14 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     expect(estado({ escolha: 'auto', tier: 'alta', medicao: null, amostras: 4 })).toContain(
       'Alta (Personalizado)'
     );
-    // e a marca é de QUALQUER um dos três, não só do MSAA: um controle
+    // e a marca é de QUALQUER um dos quatro, não só do MSAA: um controle
     // novo na gaveta que esquecesse de entrar em `foraDoPreset` deixaria
     // o painel dizendo "Cinema" sobre uma cena que não é mais a do preset
     expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, nebulosa: 'baixa' }))
       .toContain('Cinema (Personalizado)');
     expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, escala: 0.5 }))
+      .toContain('Cinema (Personalizado)');
+    expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, gas: 'fino' }))
       .toContain('Cinema (Personalizado)');
   });
 
