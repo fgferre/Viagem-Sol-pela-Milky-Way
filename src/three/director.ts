@@ -1517,14 +1517,15 @@ export class Director {
     this.escada.aproximarDoCorpo();
   }
 
-  /** o interruptor da ficha (superfície procedural) do corpo em foco —
-   *  `null` fora dos rochosos com mapa (Terra, Lua, gigantes, esculpidos). */
-  superficieProcedural(id: string | null): boolean | null {
-    return this.rochosos.find((r) => r.corpo.id === id)?.corpo.superficieProcedural ?? null;
+  /** o interruptor da ficha (relevo fingido da cor) do corpo em foco —
+   *  `null` onde ele não existe (Terra, Lua, gigantes, esculpidos e todo
+   *  rochoso com relevo medido ou bump zerado). */
+  relevoDaCor(id: string | null): boolean | null {
+    return this.rochosos.find((r) => r.corpo.id === id)?.corpo.relevoDaCor ?? null;
   }
 
-  definirSuperficieProcedural(id: string, ligado: boolean) {
-    this.rochosos.find((r) => r.corpo.id === id)?.corpo.definirSuperficieProcedural(ligado);
+  definirRelevoDaCor(id: string, ligado: boolean) {
+    this.rochosos.find((r) => r.corpo.id === id)?.corpo.definirRelevoDaCor(ligado);
     this.perturbar();
   }
 

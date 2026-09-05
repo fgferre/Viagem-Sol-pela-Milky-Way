@@ -234,9 +234,9 @@ export const PT = {
   'ficha.aproximarAria': 'Aproximar: enquadrar {nome} de perto',
   'ficha.sistema': '⌂ Sistema',
   'ficha.sistemaAria': 'Voltar ao enquadramento do sistema solar',
-  'ficha.procedural': '◐ Superfície inventada',
-  'ficha.proceduralAria':
-    'Trocar o mapa de {nome} por uma superfície procedural inventada, sobre a cor média do mapa',
+  'ficha.relevoDaCor': '◐ Relevo inventado',
+  'ficha.relevoDaCorAria':
+    'Ligar um relevo inventado a partir da cor da foto de {nome} — não existe mapa de relevo',
 
   // ---- os títulos de seção e os rótulos de campo (`lib/atlas/ficha.ts`)
   'ficha.secao.agora': 'agora',

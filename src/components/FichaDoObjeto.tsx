@@ -93,8 +93,8 @@ export function FichaDoObjeto({
   noSistema,
   onAproximar,
   onSistema,
-  superficieProcedural,
-  onSuperficieProcedural,
+  relevoDaCor,
+  onRelevoDaCor,
 }: {
   aberta: boolean;
   onFechar: () => void;
@@ -118,10 +118,10 @@ export function FichaDoObjeto({
   noSistema: boolean;
   onAproximar: () => void;
   onSistema: () => void;
-  /** o interruptor da superfície inventada (rochoso com mapa); `null`
-   *  onde não há o que trocar — e o botão nem aparece */
-  superficieProcedural: boolean | null;
-  onSuperficieProcedural: (ligado: boolean) => void;
+  /** o interruptor do relevo fingido da cor (rochoso com foto e sem mapa
+   *  de relevo); `null` onde ele não existe — e o botão nem aparece */
+  relevoDaCor: boolean | null;
+  onRelevoDaCor: (ligado: boolean) => void;
 }) {
   const dialogo = useDialogFocus('ficha', aberta, onFechar);
   const idioma = useIdioma();
@@ -242,15 +242,15 @@ export function FichaDoObjeto({
             {t('ficha.sistema')}
           </button>
         )}
-        {superficieProcedural !== null && (
+        {relevoDaCor !== null && (
           <button
             type="button"
             className="hud-btn small"
-            aria-pressed={superficieProcedural}
-            onClick={() => onSuperficieProcedural(!superficieProcedural)}
-            aria-label={t('ficha.proceduralAria', { nome: ficha.nome })}
+            aria-pressed={relevoDaCor}
+            onClick={() => onRelevoDaCor(!relevoDaCor)}
+            aria-label={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
           >
-            {t('ficha.procedural')}
+            {t('ficha.relevoDaCor')}
           </button>
         )}
       </div>

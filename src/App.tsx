@@ -245,7 +245,7 @@ export default function App() {
    *  e o `?ver=corpo` do link; publicado pelo Director junto com o foco */
   /** o eco do interruptor da ficha — o VALOR mora no corpo (Director);
    *  isto só existe para a ficha rerenderizar ao clicar */
-  const [, setSuperficieProcedural] = useState(false);
+  const [, setRelevoDaCor] = useState(false);
   const [escada, setEscada] = useState<EstadoDaEscada>({
     degrau: 'sistema',
     podeAproximar: false,
@@ -1047,12 +1047,12 @@ export default function App() {
         noSistema={escada.degrau === 'sistema'}
         onAproximar={() => directorRef.current?.aproximarDoCorpo()}
         onSistema={() => directorRef.current?.focarNoSistema()}
-        superficieProcedural={directorRef.current?.superficieProcedural(escada.corpoId) ?? null}
-        onSuperficieProcedural={(ligado) => {
+        relevoDaCor={directorRef.current?.relevoDaCor(escada.corpoId) ?? null}
+        onRelevoDaCor={(ligado) => {
           if (!escada.corpoId) return;
-          directorRef.current?.definirSuperficieProcedural(escada.corpoId, ligado);
+          directorRef.current?.definirRelevoDaCor(escada.corpoId, ligado);
           // o valor mora no corpo; o estado só força a ficha a reler
-          setSuperficieProcedural(ligado);
+          setRelevoDaCor(ligado);
         }}
       />
 

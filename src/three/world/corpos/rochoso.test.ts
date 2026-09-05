@@ -618,40 +618,41 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(829).toBeGreaterThan(LIMIAR_LUA_ROCHOSA_PX);
   });
 
-  it('o interruptor da ficha troca o fragmento do globo ao vivo, e volta', async () => {
+  it('o relevo fingido da cor nasce desligado e a ficha o liga ao vivo', async () => {
     const { corpo } = rochosoDeTeste('ganymede', 'lambert');
-    expect(corpo.superficieProcedural).toBe(false);
+    expect(corpo.relevoDaCor).toBe(false);
     corpo.atualizar(quadro('ganymede', 4));
     await flush();
     expect(corpo.atualizar(quadro('ganymede', 4)).emQuadro).toBe(true);
     const mat = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
+    // a foto fica; só o bump nasce em zero (item 144)
     expect(mat.fragmentShader).toBe(ROCHOSO_LAMBERT_FRAG);
-    corpo.definirSuperficieProcedural(true);
-    expect(corpo.superficieProcedural).toBe(true);
-    expect(mat.fragmentShader).toBe(ROCHOSO_PROC_FRAG);
     expect(mat.uniforms.uBumpAlbedo.value).toBe(0);
-    corpo.definirSuperficieProcedural(false);
+    corpo.definirRelevoDaCor(true);
+    expect(corpo.relevoDaCor).toBe(true);
     expect(mat.fragmentShader).toBe(ROCHOSO_LAMBERT_FRAG);
     expect(mat.uniforms.uBumpAlbedo.value).toBe(escalaDoBumpDoAlbedo('ganymede'));
+    corpo.definirRelevoDaCor(false);
+    expect(mat.uniforms.uBumpAlbedo.value).toBe(0);
     corpo.dispose();
 
     // ligado ANTES de a casca nascer: `garantirCasca` lê a flag
     const { corpo: cedo } = rochosoDeTeste('triton', 'ls');
-    cedo.definirSuperficieProcedural(true);
+    cedo.definirRelevoDaCor(true);
     cedo.atualizar(quadro('triton', 4));
     await flush();
     expect(cedo.atualizar(quadro('triton', 4)).emQuadro).toBe(true);
     const matCedo = malhaDaSuperficie(cedo.group).material as THREE.ShaderMaterial;
-    expect(matCedo.fragmentShader).toBe(ROCHOSO_PROC_LS_FRAG);
+    expect(matCedo.uniforms.uBumpAlbedo.value).toBe(escalaDoBumpDoAlbedo('triton'));
     cedo.dispose();
 
-    // sem o que trocar: esculpido, config já procedural, relevo medido
+    // sem o que ligar: esculpido, config já procedural, relevo medido
     // (Mercúrio, Mimas) e bump zerado (Europa) dizem `null` — o botão só
-    // existe onde o relevo é fingido da cor
-    expect(rochosoDeTeste('phoebe', 'lambert', 'esculpido').corpo.superficieProcedural).toBeNull();
-    expect(rochosoDeTeste('quaoar', 'lambert', 'procedural').corpo.superficieProcedural).toBeNull();
+    // existe onde o relevo seria fingido da cor
+    expect(rochosoDeTeste('phoebe', 'lambert', 'esculpido').corpo.relevoDaCor).toBeNull();
+    expect(rochosoDeTeste('quaoar', 'lambert', 'procedural').corpo.relevoDaCor).toBeNull();
     for (const id of ['mercury', 'mimas', 'europa']) {
-      expect(rochosoDeTeste(id, 'lambert').corpo.superficieProcedural, id).toBeNull();
+      expect(rochosoDeTeste(id, 'lambert').corpo.relevoDaCor, id).toBeNull();
     }
   });
 
@@ -926,15 +927,18 @@ describe('8. o relevo dos quatro da NORMAL_MEDIDA, e o inventado que saiu (141)'
     }
   });
 
-  it('quem não tem relevo medido continua com a aproximação do albedo', async () => {
+  it('quem não tem relevo medido nasce sem a aproximação do albedo; a ficha a liga', async () => {
     const { corpo } = rochosoDeTeste('ganymede', 'ls');
     corpo.atualizar(quadro('ganymede', 4));
     await flush();
     corpo.atualizar(quadro('ganymede', 4));
     const u = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
+    // item 144 + o interruptor (04/09): desligado por padrão, foto crua
+    expect(u.uBumpAlbedo.value).toBe(0);
+    expect(u.uRelevoNormal.value).toBe(0);
+    corpo.definirRelevoDaCor(true);
     expect(u.uBumpAlbedo.value).toBe(escalaDoBumpDoAlbedo('ganymede'));
     expect(u.uBumpAlbedo.value).toBeGreaterThan(0);
-    expect(u.uRelevoNormal.value).toBe(0);
     corpo.dispose();
   });
 
