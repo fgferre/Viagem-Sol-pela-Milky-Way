@@ -18,4 +18,4 @@ Etapas
 
 Fora de escopo: LUT da faixa distante, pós-processamento, estrelas heróis (segundo peso do quadro; item próprio).
 
-Achado 05/09 (fora deste plano, item próprio): em t=140 (dentro do disco) a camada da GALÁXIA (`?nogal=1`) custa ~75 ms dos ~87 ms do quadro em DPR 2; o gás não é o peso ali. Régua contínua: Chrome visível com `--disable-gpu-vsync --disable-frame-rate-limit` (SEMVSYNC=1 no `fps-real.mjs`), consistente com a de vsync e sem os degraus de 16,7 ms.
+Achado 05/09 (fora deste plano, item próprio; detalhes no BACKLOG): em t=140 (dentro do disco) a camada da GALÁXIA (`?nogal=1`) custa ~75 ms dos ~87 ms do quadro em DPR 2; o gás não é o peso ali. Régua contínua: Chrome visível com `--disable-gpu-vsync --disable-frame-rate-limit` (SEMVSYNC=1 no `fps-real.mjs`), consistente com a de vsync e sem os degraus de 16,7 ms.
