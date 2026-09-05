@@ -149,6 +149,15 @@ export interface StarLabel {
    */
   caixaDaDisputa?: CaixaDaDisputa;
   /**
+   * A MARCA da âncora (anel ou ponto) do mesmo candidato, como entrou na
+   * árvore da disputa — "a marca é OPONENTE de todo mundo" (LabelCanvas,
+   * `disputar`): um nome pode perder para a marca de um corpo cujo TEXTO
+   * foi cortado, ou cujo texto passa a 2 px da caixa dele. Exposta para o
+   * juiz (item 132): sem ela, Urano perdia para o anel do Sol e o juiz
+   * não achava vencedor.
+   */
+  caixaDaMarca?: CaixaDaDisputa;
+  /**
    * O roteiro declarou este nome como assunto do plano. Só esses nomes
    * podem procurar uma posição alternativa quando colidem; o fundo
    * continua sob a lei geral de um lugar por nome.

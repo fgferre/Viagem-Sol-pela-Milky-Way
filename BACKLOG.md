@@ -7,3 +7,4 @@
 - `docs/RENDERER_CARTOGRAPHY.md` predates the 17/08 architecture wave; a 2026-09-04 spot check (5 paths, 3 mechanisms) still matched the code, so a full truth pass is the remaining doubt.
 - `docs/PENDENCIAS-ARQUIVO.md` (567 KB) duplicates what git history holds; owner decides whether it goes.
 - `src/three/world/corpos/rochoso.ts`: the procedural-surface shader branch (`superficie: 'procedural'`) has no consumer since item 151; remove it with its test (owner approves).
+- The public-data hook (`.claude/hooks/bloqueia-public-data.sh`) blocks read-only commands (`git diff`, `sed -n`, even a heredoc) that merely mention an atlas data-script path; it should key on the command verb, not on the path token.

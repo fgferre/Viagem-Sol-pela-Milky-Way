@@ -4,7 +4,33 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 223.**
 
-## O BASTÃO — onde a rodada parou (03/09, noite — FECHO por ordem dele)
+## O BASTÃO — onde a rodada parou (04/09, noite)
+
+**04/09 (noite — itens pequenos da fila, por ordem dele: "segue os itens
+pequenos da fila").** Antes deles, por decisão dele nesta janela: a lista
+fica nos arquivos (sem GitHub Issues) e o relevo fingido da cor virou o
+botão "Relevo inventado" na ficha, DESLIGADO por padrão, só nos rochosos
+com foto e sem mapa de relevo (`4e453d1..9117cfe`; ele corrigiu minha
+leitura duas vezes — não é superfície de ruído, é o bump da cor por cima
+da foto). **143 FECHADO** (`8de801c`): o juiz de identidade grava o
+servidor de cada lado e só refaz o "antes" no mesmo binário. **137 feito
+menos a regeneração**: os 8 arquivos `ring*` e o canal saíram do código,
+scripts, testes e ASSETS; falta ELE rodar o gerador do manifesto e o
+`data:verify` (o gancho barra o agente; ele já disse "sim, regenere").
+**132 quase fechado**: de 9 falhas para 1 — aviso do tempo piscando
+(defeito real: o tick repedia a efeméride a cada quadro depois da falha;
+consertado), prova da recarga passa a comparar a CENA sem o painel (1 px
+de raster na linha da exposição, geometria idêntica, medido), a marca da
+âncora passou a contar como vencedora (Urano perde para o anel do Sol),
+censo re-pinado em 17 (3 corpos + 14 estrelas, medido 3×), toque no
+celular mira Netuno (Plutão perde para Netuno pela lei). **A que sobra
+espera a palavra dele**: no telefone a ficha abre como folha de baixo
+(y 327–732 de 844) e cobre o nome tocado — foto em
+`capturas/item132-toque-netuno-390x844.png`; ou a folha encolhe/o alvo
+sobe, ou a prova muda de pergunta. Fotos da abertura re-pinada:
+`capturas/item132-abertura-{1200x900,390x844}.png`. Lição: o gancho de
+`public/data` barra até `git diff` que cite o nome de um script (BACKLOG).
+
 
 **03/09 (3ª janela, noite — FECHO por ordem dele: "amei. faltou
 algo?" → "encerrar rodada").** A onda das TEXTURAS: **147** (as luas de
@@ -415,8 +441,6 @@ Plutão, Caronte, Palas, Hígia, Haumea, Makemake, Éris, Quaoar (18).
   luas de Urano, Palas, Hígia, Haumea, Makemake, Éris, Quaoar (13).
 Ordem sugerida: Plutão+Caronte → zerar os 13 → Fobos+Deimos → Tritão
 (com a palavra dele). NA FILA, sem obra nesta janela (ordem dele).
-
-**143. O juiz de identidade marcou "INSTÁVEL com diff 0" em vistas que DIFEREM de fato.** Achado do coordenador, 03/09, ao fechar o 141: a rodada 625c86a→5135978 do `ab-identidade` deu 48 IGUAL + 6 INSTÁVEL (mercurio, mercurionb, vesta, anao-vesta-corpo, atlas-corpo-marte, foco-io) "com 0 pixel de diferença" — mas essas vistas contêm corpos que o 141 mudou de propósito, e a mesma vista `atlas-corpo-marte` fotografada por mim nas duas árvores (5222/5223, `capturas/item141-chk-marte-{antes-,}q700.png`) dá md5 diferente e **351 de 3.249 blocos tocados** (`diff-pixel`). Suspeita: o lado "antes" recapturado por vista isolada (ou a retomada de disco) pegou o servidor errado — em INSTÁVEL o "antes" traz dois hashes e um deles é o do "depois". A verificar no instrumento antes da próxima rodada; até lá, INSTÁVEL não vale como IGUAL: confere-se com foto nas duas árvores.
 
 **No mesmo item, sem obra (auditoria 03/09):** as mensagens de commit do 139b (`e24237f`, `c3b89a1`) dizem que o `nearPlanePc` sem o registro do anel dava **192,9 km** (192,858, medido no app), e o teste `corpos.test.ts` cobra **198,9 km** no mesmo caso ("APAGADO o registro do anel"). Os dois números são de palcos diferentes — o do app e o sintético do teste — e nenhum dos dois está errado; fica registrado para que a próxima leitura não trate a diferença como regressão. Nada a consertar.
 

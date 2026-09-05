@@ -2541,8 +2541,14 @@ export class Director {
     // A CODA RESOLVE A LUA, e a Lua não tem retrato congelado: a fonte
     // de efemérides precisa estar viva antes de o raspão chegar. Mesmo
     // pedido de preload do roteiro (hoje no estilingue, junto às
-    // texturas); `garantirEfemerides` é idempotente e abortável.
-    if (this.palcoQuente) this.maquinaDoTempo.garantirEfemerides();
+    // texturas); `garantirEfemerides` é idempotente e abortável — mas só
+    // enquanto NINGUÉM pediu ('retrato'): depois de uma falha, pedir de
+    // novo a cada quadro refazia o fetch 60× por segundo e o aviso do
+    // tempo piscava entre "buscando" e "sem efeméride" (item 132). A
+    // segunda tentativa, a única permitida, mora logo abaixo.
+    if (this.palcoQuente && this.maquinaDoTempo.faseDaEfemeride === 'retrato') {
+      this.maquinaDoTempo.garantirEfemerides();
+    }
 
     // O FILME CORRE NA DATA DELE, do primeiro segundo ao último — o
     // calendário é do roteiro (`jdDoFilme`: o instante do retrato até

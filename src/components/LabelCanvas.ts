@@ -650,6 +650,8 @@ export class LabelCanvas {
    * quando o juiz mede. (`StarLabel.caixaDaDisputa`.)
    */
   private readonly caixas = new Map<string, CaixaDaDisputa>();
+  /** a marca de cada candidato, pelo mesmo motivo (`StarLabel.caixaDaMarca`) */
+  private readonly marcas = new Map<string, CaixaDaDisputa>();
 
   /** o plano geométrico do quadro, na ordem da lista */
   private readonly plano: PlanoDoRotulo[] = [];
@@ -696,6 +698,7 @@ export class LabelCanvas {
         label.desenhado = this.desenhadosAntes.has(label.key);
         label.perdeuAVaga = this.veredito.get(label.key) === true;
         label.caixaDaDisputa = this.caixas.get(label.key);
+        label.caixaDaMarca = this.marcas.get(label.key);
         const lado = this.desenhadosAntes.get(label.key);
         if (lado !== undefined) (label as RotuloComVaga).ladoEsquerdo = lado;
       }
@@ -710,11 +713,13 @@ export class LabelCanvas {
     if (labels.length === 0) {
       this.veredito.clear();
       this.caixas.clear();
+    this.marcas.clear();
       this.arvore = new QuadtreeDeRotulos(this.width, this.height);
       this.quadrosSemMudanca = 0;
       return;
     }
     this.caixas.clear();
+    this.marcas.clear();
     ctx.textBaseline = 'middle';
     ctx.lineCap = 'round';
 
@@ -806,6 +811,15 @@ export class LabelCanvas {
         };
         label.caixaDaDisputa = caixa;
         this.caixas.set(label.key, caixa);
+        const icone = p.caixaDoIcone;
+        if (icone) {
+          const marca: CaixaDaDisputa = {
+            left: icone.left, right: icone.right, top: icone.top, bottom: icone.bottom,
+            folga: 2 * k,
+          };
+          label.caixaDaMarca = marca;
+          this.marcas.set(label.key, marca);
+        }
       }
       // O NOME QUE PERDEU É IMAGEM, NÃO OCUPANTE (item 115, bloco B;
       // item 125, F3 · P4). Ele pinta enquanto a rampa de 750 ms desce —

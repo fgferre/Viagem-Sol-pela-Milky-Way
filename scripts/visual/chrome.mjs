@@ -710,13 +710,17 @@ export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefi
       if (r.exceptionDetails) throw new Error(`js: ${r.exceptionDetails.text}`);
       return r.result.value;
     },
-    md5: async () => {
+    /** `clip` ({x, y, width, height}, em px de CSS) recorta a foto — é
+     *  como um juiz compara a CENA sem o painel (item 132). */
+    md5: async (clip = null) => {
       // o segundo termo do obturador — ver `esperarCapaSair`. Sob
       // `?shot=2` (o pino de todo md5 desta casa) ela devolve `ausente`
       // sem esperar nada; num quadro COM HUD ela é o que impede a foto
       // de sair com a tela de carga por cima.
       await esperarCapaSair(send);
-      const shot = await send('Page.captureScreenshot', { format: 'png' });
+      const shot = await send('Page.captureScreenshot', {
+        format: 'png', ...(clip ? { clip: { ...clip, scale: 1 } } : {}),
+      });
       const buf = Buffer.from(shot.data, 'base64');
       if (buf.length < 20000) throw new Error(`captura suspeita de vazia (${buf.length} B)`);
       return createHash('md5').update(buf).digest('hex').slice(0, 12);
