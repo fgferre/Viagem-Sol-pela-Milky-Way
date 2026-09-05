@@ -141,6 +141,12 @@ export const PT = {
   'ajustes.gas.antigo': 'Original',
   'ajustes.gas.fino': 'Fino',
   'ajustes.gas.macio': 'Macio',
+  'ajustes.particulasControle': 'Partículas da galáxia',
+  'ajustes.particulasNota':
+    'Quantas das partículas carregadas a cena desenha, com o brilho total compensado: menos pontos, cada um mais forte — o mesmo fluxo, granulação diferente.',
+  'ajustes.particulas.todas': 'Todas',
+  'ajustes.particulas.metade': 'Metade',
+  'ajustes.particulas.quarto': 'Um quarto',
   'ajustes.texto': 'Tamanho do texto · {degrau}',
   'ajustes.textoNota':
     'Vale para o HUD inteiro — legenda, controles, selo e os nomes das estrelas. Não mexe na cena: dentro do Atlas o enquadramento recua um pouco para o texto maior não cobrir o alvo.',
@@ -349,6 +355,8 @@ export const PT = {
   'selo.desvio.escalaDeResolucaoCom': 'escala de resolução escolhida à mão: {fator}',
   'selo.desvio.gas': 'gás volumétrico escolhido à mão',
   'selo.desvio.gasCom': 'gás volumétrico escolhido à mão: {variante}',
+  'selo.desvio.particulas': 'partículas da galáxia escolhidas à mão',
+  'selo.desvio.particulasCom': 'partículas da galáxia escolhidas à mão: {nivel}',
 
   // ---- a acusação da escala (`three/escala.ts`) ---------------------
   'escala.acusacao': '{nome} está {fator} maior',

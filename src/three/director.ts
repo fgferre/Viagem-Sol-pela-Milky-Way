@@ -5,10 +5,12 @@
 import * as THREE from 'three';
 import {
   Engine,
+  FRACAO_DE_PARTICULAS,
   GRAMPO_DO_PASSO_S,
   NEBULOSA_POR_NIVEL,
   lerPortaGas,
   lerPortaNebulosa,
+  lerPortaParticulas,
   modoDoToneMapping,
 } from './core/engine';
 // `t` entra APELIDADO porque neste arquivo `t` já é o TEMPO (o segundo
@@ -22,6 +24,7 @@ import type {
   GasVolumetrico,
   MedicaoDoQuadro,
   NivelDaNebulosa,
+  ParticulasDaGalaxia,
   QualityLevel,
 } from './core/engine';
 import type { EstadoDaVista } from './selo';
@@ -574,6 +577,14 @@ export class Director {
    */
   private gasForcado: GasVolumetrico | null = lerPortaGas(this.debug.get('gas'));
   /**
+   * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA ESCOLHIDA À MÃO (item 149) —
+   * `null` = a do preset. Mesmo contrato de `gasForcado`: lido no CAMPO,
+   * para valer já na primeira galáxia que o init carrega.
+   */
+  private particulasForcadas: ParticulasDaGalaxia | null = lerPortaParticulas(
+    this.debug.get('particulas')
+  );
+  /**
    * O RAIO COM QUE O SOL FOI CONSTRUÍDO, em pc. Desde a F3 é SEMPRE o
    * físico (`RAIO_DO_SOL_NA_CENA`) — a porta `?solreal=1` da F1 morreu
    * quando ele virou o padrão. O campo fica porque é a fonte única para
@@ -702,6 +713,9 @@ export class Director {
       // a variante do gás (item 145b) troca de preset junto com os
       // passos/escala — mesmo motivo: quem muda o preset aplica os dois.
       this.aplicarGas();
+      // a fração de partículas (item 149) troca de preset do mesmo jeito
+      // — sem efeito ainda quando a galáxia não nasceu (init).
+      this.aplicarParticulas();
       // o preset de grão era config morta — nunca chegava ao shader
       this.post.setGrain(this.engine.preset.grain);
       // as amostras do alvo do composer (item 120, F1): o MSAA é do tier
@@ -728,6 +742,10 @@ export class Director {
     // warm-up de shaders (`init`, mais abaixo): é ele que lê
     // `nebula.warmupMaterials`, e o material tem de já ser o certo.
     this.aplicarGas();
+    // a fração de partículas (item 149): a galáxia ainda não existe
+    // aqui (nasce mais abaixo, no `stage('galaxy')`) — quem a veste com
+    // a fração certa é `vestirGalaxia`, no parto dela.
+    this.aplicarParticulas();
     this.post.setGrain(this.engine.preset.grain);
     this.post.aplicarAmostras(this.engine.quality);
     // e o React TAMBÉM é ouvinte tardio: sem esta semente o painel de
@@ -1990,13 +2008,15 @@ export class Director {
       // segue rodando e o Auto segue ouvindo (`aoMedirOQuadro`): o que
       // para é o mostrador, não a régua.
       medicao: this.shotMode ? null : this.engine.medicao,
-      // os QUATRO controles vivos da gaveta Avançado (item 145, +145b),
-      // cada um lido da sua única casa: o MSAA mora no Post, o nível da
-      // nebulosa e o gás aqui, a escala de resolução no Engine
+      // os CINCO controles vivos da gaveta Avançado (item 145, +145b,
+      // +149), cada um lido da sua única casa: o MSAA mora no Post, o
+      // nível da nebulosa, o gás e as partículas aqui, a escala de
+      // resolução no Engine
       amostras: this.post.amostras,
       nebulosa: this.nebulosaForcada,
       escala: this.engine.escala,
       gas: this.gasForcado,
+      particulas: this.particulasForcadas,
     });
   }
 
@@ -2061,6 +2081,32 @@ export class Director {
   }
 
   /**
+   * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA, num lugar só (item 149): a que o
+   * visitante escolheu na gaveta ou, na ausência dela, a do preset. É
+   * no-op enquanto a galáxia ainda não nasceu (`this.galaxy` é `null`
+   * durante o `init`) — `vestirGalaxia` cobre o parto dela.
+   */
+  private aplicarParticulas() {
+    this.galaxy?.setFracaoDeParticulas(
+      FRACAO_DE_PARTICULAS[this.particulasForcadas ?? this.engine.preset.particulas]
+    );
+  }
+
+  /**
+   * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA, TROCADA AO VIVO (item 149) —
+   * `drawRange` na `Galaxy`, sem recarregar. `null` devolve à fração do
+   * preset.
+   */
+  forcarParticulas(nivel: ParticulasDaGalaxia | null) {
+    this.particulasForcadas = nivel;
+    this.aplicarParticulas();
+    // a granulação mudou (menos pontos, cada um mais forte): a contagem
+    // de estabilidade da captura recomeça, como nos outros três controles
+    this.perturbar();
+    this.publicarQualidade();
+  }
+
+  /**
    * A ESCALA DE RESOLUÇÃO, TROCADA AO VIVO (item 145). O estado mora no
    * Engine (é ele o dono da nitidez); daqui saem o pedido, o abalo da
    * captura e a publicação, no mesmo molde dos outros dois controles.
@@ -2083,6 +2129,11 @@ export class Director {
   private vestirGalaxia(g: Galaxy) {
     for (const f of this.hide) g.setLayerHidden(f, true);
     g.setCartography(this.debug.has('discoff') ? 'off' : this.cartMode);
+    // a fração de partículas (item 149) é a mesma lei de `aplicarParticulas`
+    // — só que aplicada na galáxia NOVA, antes de ela existir em `this.galaxy`
+    g.setFracaoDeParticulas(
+      FRACAO_DE_PARTICULAS[this.particulasForcadas ?? this.engine.preset.particulas]
+    );
   }
 
   /**
@@ -2343,13 +2394,14 @@ export class Director {
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),
       camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
       tier: this.engine.quality,
-      // os quatro controles da gaveta Avançado (item 145, +145b) — estado
-      // VIVO, não as portas: o painel os troca sem recarregar, e um selo
-      // que lesse só a URL calaria a escolha feita na gaveta
+      // os cinco controles da gaveta Avançado (item 145, +145b, +149) —
+      // estado VIVO, não as portas: o painel os troca sem recarregar, e
+      // um selo que lesse só a URL calaria a escolha feita na gaveta
       amostras: this.post.amostras,
       nebulosa: this.nebulosaForcada,
       escala: this.engine.escala,
       gas: this.gasForcado,
+      particulas: this.particulasForcadas,
       luz: this.politicaDeLuz,
       stopsDoGloboEmFoco: this.stopsDoGloboEmFoco(),
       // a DOSE de ocupação do Sol (item 5): < 1 só no arranque do filme,

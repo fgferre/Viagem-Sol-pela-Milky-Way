@@ -49,6 +49,16 @@ export class Galaxy {
   private dustMap: THREE.Texture;
   private structureMap: THREE.Texture;
   private brightPts!: THREE.Points;
+  /** total de registros no buffer intercalado — o teto do `drawRange`. */
+  private totalParticulas = 0;
+  /**
+   * A FRAÇÃO AO VIVO das partículas desenhadas (item 149) — `1` desenha
+   * tudo. O buffer foi embaralhado UMA VEZ no fim de `buildGalaxy` (ver o
+   * comentário lá): um prefixo de qualquer tamanho já é amostra uniforme
+   * de TODAS as populações, e por isso cortar em `drawRange` não escolhe
+   * disco OU bojo — escolhe menos de cada um, na mesma proporção.
+   */
+  private fracaoDeParticulas = 1;
   private glowMesh!: THREE.Mesh;
   private haloMat!: THREE.ShaderMaterial;
   private haloMesh!: THREE.Mesh;
@@ -67,6 +77,8 @@ export class Galaxy {
   private showGlow = !Galaxy.dbg.has('noglow');
   /** ?nodisc=1 — só as partículas, para medir a divisão de fluxo */
   private showDisc = !Galaxy.dbg.has('nodisc');
+  /** ?nopts=1 — sem as partículas, a quarta régua da divisão de fluxo */
+  private showPts = !Galaxy.dbg.has('nopts');
   /**
    * A 1×1 zerada do `uTauMap` (τ⊥ = 0 ⇒ exp(0) = 1): o valor de REPOUSO
    * do uniform — antes do bake e sempre que a extinção por partícula
@@ -117,6 +129,7 @@ export class Galaxy {
     geo.setAttribute('aSize', new THREE.InterleavedBufferAttribute(brightBuffer, 1, 6));
     geo.setAttribute('aAlpha', new THREE.InterleavedBufferAttribute(brightBuffer, 1, 7));
     geo.boundingSphere = new THREE.Sphere(GAL.GC_POS.clone(), 40000);
+    this.totalParticulas = buffers.brightCount;
 
     this.brightMat = new THREE.ShaderMaterial({
       vertexShader: GALAXY_VERT,
@@ -483,6 +496,19 @@ export class Galaxy {
   }
 
   /**
+   * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA, TROCADA AO VIVO (item 149).
+   * `drawRange` desenha só o PREFIXO do buffer — barato porque
+   * `buildGalaxy` o embaralhou uma vez (ver o comentário lá): o prefixo
+   * já é amostra uniforme de todas as populações, não só do disco. O
+   * fluxo total é conservado em `update()` (`uFade ÷ fracaoDeParticulas`)
+   * — menos pontos, cada um mais brilhante.
+   */
+  setFracaoDeParticulas(fracao: number) {
+    this.fracaoDeParticulas = fracao;
+    this.brightPts.geometry.setDrawRange(0, Math.round(this.totalParticulas * fracao));
+  }
+
+  /**
    * externalFade revela a galáxia vista de fora; localBandFade reutiliza
    * somente suas partículas e poeira quando a câmera ainda está dentro
    * do disco. Assim a faixa celeste é geometria 3D real, nunca um skybox.
@@ -526,7 +552,10 @@ export class Galaxy {
       (u.uCamPos.value as THREE.Vector3).copy(camPos);
       u.uScreenH.value = screenH;
       u.uTanHalfFov.value = tanHalfFov;
-      u.uFade.value = brightFade;
+      // ÷ fracaoDeParticulas (item 149): menos pontos desenhados, cada um
+      // mais brilhante — o fluxo INTEGRADO da galáxia não muda com o
+      // ajuste, só a granulação.
+      u.uFade.value = brightFade / this.fracaoDeParticulas;
     }
     // As lâminas contínuas só entram na vista externa. De dentro
     // seriam planos infinitos; a faixa local vem das partículas 3D.
@@ -574,7 +603,7 @@ export class Galaxy {
     // dentro do disco — tem termo próprio de localBandFade; halo e anã
     // não, e sem gate desenhavam um billboard quase de tela cheia
     // somando exatamente zero durante toda a viagem interna.
-    this.brightPts.visible = brightFade > 0.001;
+    this.brightPts.visible = this.showPts && brightFade > 0.001;
     this.glowMesh.visible =
       this.showGlow && (this.glowMat.uniforms.uFade.value as number) > 0.001;
     this.haloMesh.visible =

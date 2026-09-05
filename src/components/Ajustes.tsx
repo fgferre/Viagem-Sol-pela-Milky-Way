@@ -39,6 +39,7 @@ import {
   QUALIDADES,
   gasVolumetricoEmTexto,
   nivelDaNebulosaEmTexto,
+  particulasDaGalaxiaEmTexto,
   rotuloDaEscalaDeResolucao,
   rotuloDaQualidade,
 } from '../three/atlasConfig';
@@ -48,6 +49,7 @@ import type {
   EstadoDaQualidade,
   GasVolumetrico,
   NivelDaNebulosa,
+  ParticulasDaGalaxia,
   ToneMapMode,
 } from '../three/core/engine';
 
@@ -116,6 +118,19 @@ const GASES: { valor: GasVolumetrico | null; nome: () => string }[] = [
   })),
 ];
 
+/**
+ * OS QUATRO ESTADOS DAS PARTÍCULAS DA GALÁXIA (item 149) — o quinto
+ * controle da gaveta, no mesmo molde do gás: `null` é "do preset", e os
+ * valores são as chaves que vão à URL (`?particulas=`) e ao selo.
+ */
+const PARTICULAS: { valor: ParticulasDaGalaxia | null; nome: () => string }[] = [
+  { valor: null, nome: () => t('ajustes.doPreset') },
+  ...(['todas', 'metade', 'quarto'] as const).map((p) => ({
+    valor: p,
+    nome: () => particulasDaGalaxiaEmTexto(p),
+  })),
+];
+
 export function Ajustes({
   aberto,
   onFechar,
@@ -125,6 +140,7 @@ export function Ajustes({
   onNebulosa,
   onEscala,
   onGas,
+  onParticulas,
   tom,
   onTom,
   exposicao,
@@ -149,6 +165,8 @@ export function Ajustes({
   onEscala: (fator: number | null) => void;
   /** o gás volumétrico escolhido à mão (item 145b); `null` = do preset */
   onGas: (variante: GasVolumetrico | null) => void;
+  /** a fração de partículas da galáxia escolhida à mão (item 149); `null` = do preset */
+  onParticulas: (nivel: ParticulasDaGalaxia | null) => void;
   tom: ToneMapMode;
   onTom: (t: ToneMapMode) => void;
   exposicao: number;
@@ -347,6 +365,28 @@ export function Ajustes({
               onClick={() => onGas(g.valor)}
             >
               {g.nome()}
+            </button>
+          ))}
+        </div>
+
+        <p className="ajustes-nota">
+          <strong>{t('ajustes.particulasControle')}</strong> —{' '}
+          {t('ajustes.particulasNota')}
+        </p>
+        <div
+          className="ajustes-linha"
+          aria-label={t('ajustes.particulasControle')}
+          role="group"
+        >
+          {PARTICULAS.map((p) => (
+            <button
+              type="button"
+              key={String(p.valor)}
+              className={qualidade.particulas === p.valor ? 'on' : ''}
+              aria-pressed={qualidade.particulas === p.valor}
+              onClick={() => onParticulas(p.valor)}
+            >
+              {p.nome()}
             </button>
           ))}
         </div>

@@ -188,6 +188,7 @@ export default function App() {
     nebulosa: null,
     escala: null,
     gas: null,
+    particulas: null,
   });
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
@@ -626,6 +627,7 @@ export default function App() {
     trocarNebulosa,
     trocarEscala,
     trocarGas,
+    trocarParticulas,
     trocarTom,
     trocarExposicao,
     voltarAoBrilhoReal,
@@ -1082,6 +1084,7 @@ export default function App() {
         onNebulosa={trocarNebulosa}
         onEscala={trocarEscala}
         onGas={trocarGas}
+        onParticulas={trocarParticulas}
         tom={tom}
         onTom={trocarTom}
         exposicao={exposicao}

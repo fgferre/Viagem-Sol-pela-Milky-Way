@@ -42,6 +42,7 @@ import type {
   EstadoDaQualidade,
   GasVolumetrico,
   NivelDaNebulosa,
+  ParticulasDaGalaxia,
 } from './core/engine';
 
 /**
@@ -245,6 +246,15 @@ export function gasVolumetricoEmTexto(variante: GasVolumetrico): string {
 }
 
 /**
+ * AS PARTÍCULAS DA GALÁXIA COMO O VISITANTE AS LÊ (item 149). Mesma
+ * doutrina do gás: o nível é chave (`todas`/`metade`/`quarto`, a mesma
+ * que vai ao `?particulas=`), e a tradução mora no caminho da tela.
+ */
+export function particulasDaGalaxiaEmTexto(nivel: ParticulasDaGalaxia): string {
+  return t(`ajustes.particulas.${nivel}` as ChaveDeTexto);
+}
+
+/**
  * A ESCALA DE RESOLUÇÃO COMO O VISITANTE A LÊ: fração vira porcentagem
  * (0,5 → "50%"). Sem casa decimal porque os três degraus são inteiros
  * em porcento; o dia em que não forem, a régua é esta função.
@@ -254,17 +264,23 @@ export function rotuloDaEscalaDeResolucao(fator: number): string {
 }
 
 /**
- * MEXEU NA GAVETA AVANÇADO? (item 145, +145b) — qualquer um dos quatro
- * controles fora do preset basta. É a régua do "Personalizado", e mora
- * numa função só para o rótulo e quem mais precisar dela não divergirem.
+ * MEXEU NA GAVETA AVANÇADO? (item 145, +145b, +149) — qualquer um dos
+ * cinco controles fora do preset basta. É a régua do "Personalizado", e
+ * mora numa função só para o rótulo e quem mais precisar dela não
+ * divergirem.
  */
 export const foraDoPreset = (e: EstadoDaQualidade): boolean =>
-  e.amostras !== null || e.nebulosa !== null || e.escala !== null || e.gas !== null;
+  e.amostras !== null ||
+  e.nebulosa !== null ||
+  e.escala !== null ||
+  e.gas !== null ||
+  e.particulas !== null;
 
 export function rotuloDaQualidade(e: EstadoDaQualidade): string {
-  // PERSONALIZADO (item 145, +145b): mexeu num controle da gaveta Avançado —
-  // suavização de bordas, nebulosa, escala de resolução ou gás volumétrico —,
-  // e o nome do preset deixa de descrever o que a máquina desenha. O rótulo NÃO
+  // PERSONALIZADO (item 145, +145b, +149): mexeu num controle da gaveta
+  // Avançado — suavização de bordas, nebulosa, escala de resolução, gás
+  // volumétrico ou partículas da galáxia —, e o nome do preset deixa de
+  // descrever o que a máquina desenha. O rótulo NÃO
   // troca de frase por isso: só o nome do tier ganha a marca, e as
   // quatro frases (medindo, auto medindo, auto pousou, confere/sugere)
   // continuam inteiras.

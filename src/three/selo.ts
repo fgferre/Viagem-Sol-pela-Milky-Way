@@ -34,11 +34,18 @@ import {
   CAMADAS,
   gasVolumetricoEmTexto,
   nivelDaNebulosaEmTexto,
+  particulasDaGalaxiaEmTexto,
   rotuloDaEscalaDeResolucao,
 } from './atlasConfig';
 import { decimalDoIdioma, t } from '../lib/idioma';
 import { PT } from '../lib/idioma/pt';
-import type { GasVolumetrico, NivelDaNebulosa, QualityLevel, ToneMapMode } from './core/engine';
+import type {
+  GasVolumetrico,
+  NivelDaNebulosa,
+  ParticulasDaGalaxia,
+  QualityLevel,
+  ToneMapMode,
+} from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { LANTERNA_DE_LEITURA, PASSOS_DA_EXPOSICAO_REAL } from '../lib/atlas/luzDaVisita';
 
@@ -328,6 +335,12 @@ export interface EstadoDaVista {
    * não a porta `?gas=`.
    */
   gas: GasVolumetrico | null;
+  /**
+   * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA escolhida à mão (item 149) —
+   * `null` = a do preset. Mesmo contrato do `gas`: estado vivo do
+   * Director, não a porta `?particulas=`.
+   */
+  particulas: ParticulasDaGalaxia | null;
   /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — o estado
    * VIVO do Director, não a porta: `?luz=` só o semeia no boot, e o
@@ -652,6 +665,24 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     rotuloVivo: (e) =>
       t('selo.desvio.gasCom', {
         variante: e.gas === null ? '' : gasVolumetricoEmTexto(e.gas),
+      }),
+  },
+  /**
+   * O QUINTO CONTROLE DA GAVETA AVANÇADO (item 149), no mesmo molde dos
+   * quatro de cima: estado VIVO, `volta: 'vivo'`, porta de URL como
+   * espelho. Mexe na imagem de verdade — menos pontos desenhados, mesmo
+   * fluxo integrado (a compensação mora em `Galaxy.update`), mas a
+   * granulação muda.
+   */
+  {
+    chave: 'particulas',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.particulas'); },
+    volta: 'vivo',
+    desvia: (e) => e.particulas !== null,
+    rotuloVivo: (e) =>
+      t('selo.desvio.particulasCom', {
+        nivel: e.particulas === null ? '' : particulasDaGalaxiaEmTexto(e.particulas),
       }),
   },
   porta('nobloom', 'bloom desligado'),

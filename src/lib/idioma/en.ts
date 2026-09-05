@@ -147,6 +147,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.gas.antigo': 'Original',
   'ajustes.gas.fino': 'Fine',
   'ajustes.gas.macio': 'Soft',
+  'ajustes.particulasControle': 'Galaxy particles',
+  'ajustes.particulasNota':
+    'How many of the loaded particles the scene draws, with total brightness compensated: fewer points, each stronger — same flux, different grain.',
+  'ajustes.particulas.todas': 'All',
+  'ajustes.particulas.metade': 'Half',
+  'ajustes.particulas.quarto': 'A quarter',
   'ajustes.texto': 'Text size · {degrau}',
   'ajustes.textoNota':
     'Applies to the whole HUD — captions, controls, seal and the star names. It does not touch the scene: inside the Atlas the framing backs off a little so the larger text does not cover the target.',
@@ -352,6 +358,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.escalaDeResolucaoCom': 'resolution scale set by hand: {fator}',
   'selo.desvio.gas': 'volumetric gas set by hand',
   'selo.desvio.gasCom': 'volumetric gas set by hand: {variante}',
+  'selo.desvio.particulas': 'galaxy particles set by hand',
+  'selo.desvio.particulasCom': 'galaxy particles set by hand: {nivel}',
 
   // ---- the scale accusation ----------------------------------------
   'escala.acusacao': '{nome} is {fator} larger',
