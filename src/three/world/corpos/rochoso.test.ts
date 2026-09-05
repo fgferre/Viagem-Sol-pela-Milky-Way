@@ -619,11 +619,11 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
   });
 
   it('o interruptor da ficha troca o fragmento do globo ao vivo, e volta', async () => {
-    const { corpo } = rochosoDeTeste('mercury', 'lambert');
+    const { corpo } = rochosoDeTeste('ganymede', 'lambert');
     expect(corpo.superficieProcedural).toBe(false);
-    corpo.atualizar(quadro('mercury', 4));
+    corpo.atualizar(quadro('ganymede', 4));
     await flush();
-    expect(corpo.atualizar(quadro('mercury', 4)).emQuadro).toBe(true);
+    expect(corpo.atualizar(quadro('ganymede', 4)).emQuadro).toBe(true);
     const mat = malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial;
     expect(mat.fragmentShader).toBe(ROCHOSO_LAMBERT_FRAG);
     corpo.definirSuperficieProcedural(true);
@@ -632,22 +632,27 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(mat.uniforms.uBumpAlbedo.value).toBe(0);
     corpo.definirSuperficieProcedural(false);
     expect(mat.fragmentShader).toBe(ROCHOSO_LAMBERT_FRAG);
-    expect(mat.uniforms.uBumpAlbedo.value).toBe(escalaDoBumpDoAlbedo('mercury'));
+    expect(mat.uniforms.uBumpAlbedo.value).toBe(escalaDoBumpDoAlbedo('ganymede'));
     corpo.dispose();
 
     // ligado ANTES de a casca nascer: `garantirCasca` lê a flag
-    const { corpo: cedo } = rochosoDeTeste('ceres', 'ls');
+    const { corpo: cedo } = rochosoDeTeste('triton', 'ls');
     cedo.definirSuperficieProcedural(true);
-    cedo.atualizar(quadro('ceres', 4));
+    cedo.atualizar(quadro('triton', 4));
     await flush();
-    expect(cedo.atualizar(quadro('ceres', 4)).emQuadro).toBe(true);
+    expect(cedo.atualizar(quadro('triton', 4)).emQuadro).toBe(true);
     const matCedo = malhaDaSuperficie(cedo.group).material as THREE.ShaderMaterial;
     expect(matCedo.fragmentShader).toBe(ROCHOSO_PROC_LS_FRAG);
     cedo.dispose();
 
-    // sem o que trocar: esculpido e config já procedural dizem `null`
+    // sem o que trocar: esculpido, config já procedural, relevo medido
+    // (Mercúrio, Mimas) e bump zerado (Europa) dizem `null` — o botão só
+    // existe onde o relevo é fingido da cor
     expect(rochosoDeTeste('phoebe', 'lambert', 'esculpido').corpo.superficieProcedural).toBeNull();
     expect(rochosoDeTeste('quaoar', 'lambert', 'procedural').corpo.superficieProcedural).toBeNull();
+    for (const id of ['mercury', 'mimas', 'europa']) {
+      expect(rochosoDeTeste(id, 'lambert').corpo.superficieProcedural, id).toBeNull();
+    }
   });
 
   it('todo rochoso tem IAU, BODY_AXES e textura ou procedural', () => {

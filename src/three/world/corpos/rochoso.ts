@@ -990,10 +990,16 @@ export class RochosoResolvido {
     return this.config.brdf === 'ls' ? ROCHOSO_LS_FRAG : ROCHOSO_LAMBERT_FRAG;
   }
 
-  /** o interruptor da ficha — `null` onde não há o que trocar: o
-   *  esculpido (a forma é o dado) e a config já procedural (sem mapa). */
+  /** o interruptor da ficha — só onde o relevo é FINGIDO da cor do mapa
+   *  (B1, `escalaDoBumpDoAlbedo` > 0 e sem relevo medido). `null` onde
+   *  não há o que trocar: o esculpido (a forma é o dado), a config já
+   *  procedural (sem mapa), e quem tem relevo real ou o bump zerado —
+   *  Mercúrio, Marte, Ceres, Vesta, Europa, Io, Vênus, Titã, as seis de
+   *  Saturno com o relevo do mosaico (decisão dele, 04/09/2026). */
   get superficieProcedural(): boolean | null {
     if (this.config.superficie !== undefined && this.config.superficie !== 'mapa') return null;
+    const id = this.config.id;
+    if (id in RELEVO_DA_LUA || id in NORMAL_MEDIDA || escalaDoBumpDoAlbedo(id) <= 0) return null;
     return this.procedural;
   }
 
