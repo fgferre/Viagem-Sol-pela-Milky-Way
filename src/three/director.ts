@@ -1036,7 +1036,7 @@ export class Director {
           'da visada — desenham depois do quad multiplicativo'
       );
       this.engine.scene.add(this.starForges.points);
-      this.nuvensSemente.construir(galactic);
+      this.nuvensSemente.construir(galactic, this.nebula);
       console.info(
         `[cartografia] APOGEE ${(carga.coberturaDaPoeira * 100).toFixed(1)}% ` +
           'do disco; campo acoplado com ' +

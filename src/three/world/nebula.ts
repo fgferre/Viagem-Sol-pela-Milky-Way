@@ -6,8 +6,10 @@ import * as THREE from 'three';
 import {
   NEBULA_VERT,
   NEBULA_FRAG,
+  NEBULA_BAKE_FRAG,
   nebulaLutFrag,
   NEBULA_BLUR_FRAG,
+  NEBVOL_ANTIGO,
 } from '../shaders/nebulaShaders';
 import { makeBlueNoiseTexture } from './blueNoise';
 import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
@@ -73,6 +75,51 @@ export class Nebula {
   private sujo = true;
   private chaveDaCamera = new Float32Array(18);
   private ultimaChave = new Float32Array(18).fill(Number.NaN);
+  /**
+   * REDESIGN (PLAN.md, 05/09) — GÁS ASSADO NUM CUBO QUE SEGUE A CÂMERA.
+   * A primeira versão assava uma caixa FIXA em torno do Sol — inútil,
+   * porque o gás liga em qualquer ponto do disco (`nebulaFade`/`inDisk`
+   * em director.ts), não só perto de casa. `volumeSujo` sobe quando um
+   * insumo que não depende da posição muda (`setDustMap`); o desvio da
+   * câmera além da margem é checado a cada `render()` (`precisaRecentrar`).
+   * Qualquer um dos dois dispara `bake()`, que primeiro pede sementes
+   * novas do centro (via `pedirSementes`) e só depois assa.
+   */
+  private volumeSujo = true;
+  private volumeRT: THREE.WebGL3DRenderTarget;
+  private volumeScene = new THREE.Scene();
+  private volumeMaterial: THREE.ShaderMaterial;
+  /** meia-aresta do cubo assado (pc) — tMax do raymarch (650) + margem (350) */
+  private static readonly MEIA_ARESTA = 1000;
+  private static readonly VOXEIS = 128;
+  /** aresta do voxel: 2000/128 = 15,625 pc — `centro` é sempre múltiplo
+   * disto, para um re-bake num centro novo amostrar as MESMAS posições
+   * de mundo que o bake anterior amostrava (sem isso, o gás treme: o
+   * mesmo ponto do espaço cairia num offset de sub-voxel diferente a
+   * cada bake). */
+  private static readonly VOXEL_PC =
+    (2 * Nebula.MEIA_ARESTA) / Nebula.VOXEIS;
+  /** reassa quando a câmera se afasta do centro assado além disto, em
+   * qualquer eixo — a mesma margem que separa tMax da meia-aresta, então
+   * o raio nunca sai do cubo entre um bake e o próximo. */
+  private static readonly MARGEM_REBAKE = 350;
+  /** ≤256 nuvens-semente mais perto do CENTRO do volume (não da câmera),
+   * numa DataTexture 256×2 — ver `setBakeSeedClouds`. */
+  private static readonly SEMENTES_MAX = 256;
+  private sementesTex: THREE.DataTexture;
+  private sementesData = new Float32Array(Nebula.SEMENTES_MAX * 2 * 4);
+  /** centro do cubo assado, sempre múltiplo de VOXEL_PC; NaN = nenhum
+   * bake ainda aconteceu (força o primeiro na próxima render()). */
+  private centro = new THREE.Vector3(NaN, NaN, NaN);
+  /**
+   * O director liga isto ao NuvensSemente depois que o pool do catálogo
+   * carrega (`nuvensSemente.construir`). A Nebula PEDE pelo CENTRO do
+   * volume, nunca pela câmera direto: quem decide "as ≤256 mais perto de
+   * onde o cubo está" é `nuvensSemente.sementesParaBake`, e a Nebula não
+   * precisa importar NuvensSemente para isso (evita o ciclo de módulos —
+   * nuvensSemente.ts já importa `type Nebula`).
+   */
+  private pedirSementes: ((centro: THREE.Vector3) => void) | null = null;
   // LUT equiretangular 256×128 da luz distante do disco; recalcula
   // somente após a câmera mover >2 pc.
   private lutRT: THREE.WebGLRenderTarget;
@@ -147,6 +194,62 @@ export class Nebula {
     const lutQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.lutMaterial);
     lutQuad.frustumCulled = false;
     this.lutScene.add(lutQuad);
+
+    // REDESIGN (PLAN.md, 05/09) — o volume assado: 128³, RGBA16F (R =
+    // campo estático + sementes, G = lanes×gasDensity, B = envelope, A =
+    // ruído da paleta), filtro linear (a única diferença aceita de visual
+    // é o borrão da interpolação trilinear). ClampToEdgeWrapping em
+    // wrapS/wrapT/wrapR NÃO é passado aqui porque já É o default de
+    // Data3DTexture (e de Texture, para S/T) — passar wrapR explícito
+    // dispara um aviso inofensivo do three (a primeira passagem de
+    // _setTextureOptions, dentro do construtor da classe-base, roda
+    // sobre a Texture 2D provisória que WebGL3DRenderTarget ainda vai
+    // substituir, e essa não tem wrapR). O raymarch testa a caixa antes
+    // de amostrar (ver nebulaDensity em common.ts), então o wrap nem entra.
+    this.volumeRT = new THREE.WebGL3DRenderTarget(
+      Nebula.VOXEIS,
+      Nebula.VOXEIS,
+      Nebula.VOXEIS,
+      {
+        format: THREE.RGBAFormat,
+        type: THREE.HalfFloatType,
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        depthBuffer: false,
+      }
+    );
+    // sementes do bake: DataTexture 256×2 (linha 0 = xyz+raio, linha 1 =
+    // .x = amplitude), lida por texelFetch em glslBakeDensity — não um
+    // array de uniform, que não comportaria 256 slots em todo driver.
+    this.sementesTex = new THREE.DataTexture(
+      this.sementesData,
+      Nebula.SEMENTES_MAX,
+      2,
+      THREE.RGBAFormat,
+      THREE.FloatType
+    );
+    this.sementesTex.minFilter = THREE.NearestFilter;
+    this.sementesTex.magFilter = THREE.NearestFilter;
+    this.sementesTex.generateMipmaps = false;
+    this.sementesTex.needsUpdate = true;
+    this.volumeMaterial = new THREE.ShaderMaterial({
+      vertexShader: NEBULA_VERT,
+      fragmentShader: NEBULA_BAKE_FRAG,
+      uniforms: {
+        uFatia: { value: 0 },
+        uDustMap: { value: this.fallbackDustMap },
+        uSeedCloudTex: { value: this.sementesTex },
+        uSeedCloudCount: { value: 0 },
+        uVolMin: { value: new THREE.Vector3() },
+        uVolTamanho: { value: new THREE.Vector3(1, 1, 1).multiplyScalar(2 * Nebula.MEIA_ARESTA) },
+      },
+      depthWrite: false,
+      depthTest: false,
+    });
+    const volumeQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.volumeMaterial);
+    volumeQuad.frustumCulled = false;
+    this.volumeScene.add(volumeQuad);
+
     this.material = new THREE.ShaderMaterial({
       vertexShader: NEBULA_VERT,
       fragmentShader: NEBULA_FRAG,
@@ -177,6 +280,13 @@ export class Nebula {
         uCavityGate: { value: 0 },
         uSunDir: { value: new THREE.Vector3(0, 0, 1) },
         uSunCos: { value: 2 },
+        // REDESIGN (PLAN.md, 05/09): o volume assado que o caminho novo lê
+        // a cada amostra — ver `bake()` e `nebulaDensity(p, t)` em
+        // common.ts. `uVolMin` MUDA a cada re-bake (o cubo segue a
+        // câmera); `uVolTamanho` é a mesma aresta constante do bake.
+        uVolume: { value: this.volumeRT.texture },
+        uVolMin: { value: new THREE.Vector3() },
+        uVolTamanho: { value: new THREE.Vector3(1, 1, 1).multiplyScalar(2 * Nebula.MEIA_ARESTA) },
       },
       depthWrite: false,
       depthTest: false,
@@ -290,13 +400,19 @@ export class Nebula {
     this.material.uniforms.uDustMap.value = texture;
     this.lutMaterial.uniforms.uDustMap.value = texture;
     this.lutMaterial.uniforms.uCartBlend.value = map ? blend : 0;
+    // o bake lê o MESMO mapa (diskGasEnvelope dentro de nebulaBake) —
+    // reassa na próxima render()
+    this.volumeMaterial.uniforms.uDustMap.value = texture;
+    this.volumeSujo = true;
     this.lutDirty = true;
     this.sujo = true;
   }
 
   /**
    * Nuvens-semente do catálogo perto da câmera: entradas
-   * [x, y, z, raio, amplitude] em pc na cena.
+   * [x, y, z, raio, amplitude] em pc na cena. Só alimenta o caminho
+   * ANTIGO (`?nebvol=0`) — o novo lê o volume assado, que usa
+   * `setBakeSeedClouds` abaixo.
    */
   setSeedClouds(entries: Float32Array, count: number) {
     const u = this.material.uniforms;
@@ -320,6 +436,55 @@ export class Nebula {
     }
     u.uSeedCloudCount.value = n;
     if (mudou) this.sujo = true;
+  }
+
+  /**
+   * REDESIGN (PLAN.md, 05/09) — as ≤256 nuvens-semente mais perto do
+   * CENTRO do volume assado (não da câmera — o cubo pode estar até 350 pc
+   * à frente dela), sem fade de fronteira: reassar já é o evento
+   * discreto que escondia o popping no caminho antigo (32 slots, seleção
+   * por proximidade da câmera a cada 0,25 s). Escreve na DataTexture
+   * 256×2 que `glslBakeDensity` lê por `texelFetch` — não um array de
+   * uniform, que não caberia. Chamada de dentro de `bake()`, via
+   * `pedirSementes`, nunca direto pelo director.
+   */
+  setBakeSeedClouds(entries: Float32Array, count: number) {
+    const n = Math.min(count, Nebula.SEMENTES_MAX);
+    const d = this.sementesData;
+    d.fill(0);
+    for (let i = 0; i < n; i++) {
+      const o = i * 5;
+      // linha 0 (y=0): texel i = xyz + raio
+      const p0 = i * 4;
+      d[p0] = entries[o];
+      d[p0 + 1] = entries[o + 1];
+      d[p0 + 2] = entries[o + 2];
+      d[p0 + 3] = entries[o + 3];
+      // linha 1 (y=1): texel i, canal .x = amplitude crua (sem fade)
+      const p1 = Nebula.SEMENTES_MAX * 4 + i * 4;
+      d[p1] = entries[o + 4];
+    }
+    this.sementesTex.needsUpdate = true;
+    this.volumeMaterial.uniforms.uSeedCloudCount.value = n;
+  }
+
+  /**
+   * Liga o pedido de sementes ao NuvensSemente — ver o comentário do
+   * campo `pedirSementes` acima. Chamada uma vez, quando o pool do
+   * catálogo nasce (`nuvensSemente.construir`).
+   */
+  setPedirSementes(cb: (centro: THREE.Vector3) => void) {
+    this.pedirSementes = cb;
+  }
+
+  /**
+   * Força um reassar na próxima `render()` — para insumos do bake que
+   * não têm setter próprio (o pool de sementes acabou de nascer, por
+   * exemplo: o centro não mudou, então `foraDaMargem` não pegaria isso
+   * sozinho).
+   */
+  marcarVolumeSujo() {
+    this.volumeSujo = true;
   }
 
   /** cavidade do observador itinerante (0 = desligada, perto do Sol) */
@@ -403,7 +568,73 @@ export class Nebula {
     return igual;
   }
 
+  /**
+   * A câmera saiu da margem assada, ou nenhum bake aconteceu ainda
+   * (`centro` nasce NaN — qualquer comparação com NaN é falsa, por isso
+   * o `!Number.isFinite` explícito em vez de confiar no `>`).
+   */
+  private precisaRecentrar(camPos: THREE.Vector3): boolean {
+    if (!Number.isFinite(this.centro.x)) return true;
+    return (
+      Math.abs(camPos.x - this.centro.x) > Nebula.MARGEM_REBAKE ||
+      Math.abs(camPos.y - this.centro.y) > Nebula.MARGEM_REBAKE ||
+      Math.abs(camPos.z - this.centro.z) > Nebula.MARGEM_REBAKE
+    );
+  }
+
+  /**
+   * Recentra `centro` na câmera, arredondado a múltiplos de VOXEL_PC: um
+   * re-bake num centro novo tem que amostrar as MESMAS posições de mundo
+   * que o bake anterior amostrava, senão o gás treme (cada ponto do
+   * espaço cairia num offset de sub-voxel diferente a cada bake).
+   */
+  private recentrar(camPos: THREE.Vector3) {
+    const v = Nebula.VOXEL_PC;
+    this.centro.set(
+      Math.round(camPos.x / v) * v,
+      Math.round(camPos.y / v) * v,
+      Math.round(camPos.z / v) * v
+    );
+    const min = this.centro.clone().subScalar(Nebula.MEIA_ARESTA);
+    (this.volumeMaterial.uniforms.uVolMin.value as THREE.Vector3).copy(min);
+    (this.material.uniforms.uVolMin.value as THREE.Vector3).copy(min);
+  }
+
+  /**
+   * REDESIGN (PLAN.md, 05/09) — reassa as 128 fatias do volume 3D.
+   * Chamada de `render()`, ANTES do raymarch, só quando `volumeSujo`
+   * (insumo sem posição mudou) ou a câmera saiu da margem, e só no
+   * caminho novo (`?nebvol=0` nunca lê a textura, então nunca assa —
+   * `NEBVOL_ANTIGO` vem do mesmo módulo que decide o GLSL do raymarch,
+   * então os dois nunca discordam sobre qual caminho está ativo).
+   * `pedirSementes` roda ANTES do laço: o bake precisa da textura de
+   * sementes já atualizada para o centro que `render()` acabou de fixar.
+   * `renderer.setRenderTarget(rt, fatia)` grava a fatia de PROFUNDIDADE
+   * `fatia` do Data3DTexture — é a peça de `WebGL3DRenderTarget` que faz
+   * um passe fullscreen 2D assar um volume 3D, uma camada por vez.
+   */
+  private bake(renderer: THREE.WebGLRenderer) {
+    this.pedirSementes?.(this.centro);
+    const prev = renderer.getRenderTarget();
+    const uFatia = this.volumeMaterial.uniforms.uFatia;
+    for (let fatia = 0; fatia < Nebula.VOXEIS; fatia++) {
+      uFatia.value = fatia;
+      renderer.setRenderTarget(this.volumeRT, fatia);
+      renderer.render(this.volumeScene, this.camera);
+    }
+    renderer.setRenderTarget(prev);
+    this.volumeSujo = false;
+    // o volume mudou: o quadro congelado (item 144) precisa refazer o
+    // raymarch mesmo com a câmera parada, senão o céu antigo persistiria
+    this.sujo = true;
+  }
+
   render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) {
+    if (!NEBVOL_ANTIGO) {
+      const recentrar = this.precisaRecentrar(camera.position);
+      if (recentrar) this.recentrar(camera.position);
+      if (this.volumeSujo || recentrar) this.bake(renderer);
+    }
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camera.position);
     camera.getWorldDirection(this.scratchFwd);
@@ -437,9 +668,12 @@ export class Nebula {
     this.rt.dispose();
     this.rtBlur.dispose();
     this.lutRT.dispose();
+    this.volumeRT.dispose();
     this.material.dispose();
     this.blurMaterial.dispose();
     this.lutMaterial.dispose();
+    this.volumeMaterial.dispose();
+    this.sementesTex.dispose();
     this.fallbackDustMap.dispose();
     const bn = this.material.uniforms.uBlueNoise.value as THREE.Texture;
     bn.dispose();
@@ -451,6 +685,9 @@ export class Nebula {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });
     this.blurScene.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.geometry.dispose();
+    });
+    this.volumeScene.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });
   }

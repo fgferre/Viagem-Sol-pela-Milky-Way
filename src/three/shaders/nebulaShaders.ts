@@ -5,7 +5,7 @@
 // ============================================================
 import { WORLD } from '../config';
 import { GLSL_CARTOGRAPHY, LUT_DISK } from '../cartography/galacticModel';
-import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY, corridorCore } from './common';
+import { GLSL_NOISE, GLSL_GALAXY, glslDensity, glslBakeDensity, corridorCore } from './common';
 import { blackbodyLinear } from '../luzDaCasa';
 import { glslNumber } from '../glslNumber';
 import { GLSL_UNRESOLVED, glslResolvedCatalog } from '../world/wrappedStars';
@@ -18,6 +18,22 @@ const qnum = (k: string, d: number) => {
   const v = parseFloat(new URLSearchParams(window.location.search).get(k) ?? '');
   return Number.isFinite(v) ? v : d;
 };
+// A1 (PLAN.md) — GÁS ASSADO. `?nebvol=0` devolve o raymarch por amostra de
+// antes da etapa, byte a byte (nebulaDensity(p, oct, t) em common.ts); o
+// padrão (ausente ou qualquer outro valor) é o novo, que lê a textura 3D.
+// Some no fecho da etapa (regra iv da Lei) — não é para sobreviver à
+// rodada de aprovação.
+export const NEBVOL_ANTIGO =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('nebvol') === '0';
+// Rodada de aprovação (PLAN.md): duas formas de assar o gás novo, o dono
+// escolhe pela foto e pelo ritmo (fps) — a perdedora some no fecho junto
+// com `?nebvol=0`. "macio" (padrão) assa tudo, inclusive n1/lanes/m; "fino"
+// (`?nebfino=1`) mantém n2 e lanes AO VIVO por amostra (as duas frequências
+// mais finas) e só assa os termos suaves (envelope, n1, sementes, m).
+export const NEBVOL_FINO =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('nebfino') === '1';
 // A POEIRA da faixa mora na camada de GÁS, não na das estrelas: mesma
 // altura de escala que `diskGasEnvelope` já usa no raymarch (70 pc, com
 // flare) em vez dos 210 pc do disco fino estelar. ?dusth= varre; 210
@@ -275,13 +291,19 @@ uniform sampler2D uBlueNoise;
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_CARTOGRAPHY}
-${GLSL_DENSITY}
+${glslDensity(32, NEBVOL_ANTIGO, NEBVOL_FINO)}
 
 const vec3 GAS_COOL = vec3(${cool});
 const vec3 GAS_WARM = vec3(${warm});
 
-vec3 palette(vec3 p, float d) {
-  float m = fbm(p * 0.035 + 7.7, 3);
+// REDESIGN (PLAN.md, 05/09): 'm' era computado AQUI DENTRO, um fbm de 3
+// oitavas por amostra visível — a ablação mediu que tirá-lo (junto com
+// n1/n2/lanes/sementes) do raymarch por amostra é o que derruba 83 → 33
+// ms. No caminho novo ele já vem ASSADO no canal A do volume (ver
+// nebulaDensity em common.ts, que escreve gPaletteM); no antigo o
+// chamador continua computando o mesmo fbm na hora, byte a byte, e só
+// passa o resultado como parâmetro em vez de uma variável local.
+vec3 palette(vec3 p, float d, float m) {
   float k = smoothstep(0.32, 0.72, m);
   // núcleos densos → H-alfa quente; filamentos tênues → azul de reflexão
   float byDensity = smoothstep(0.15, 1.1, d);
@@ -466,6 +488,34 @@ void main() {
 }
 `;
 
+// REDESIGN (PLAN.md, 05/09) — fragment do BAKE: assa nebulaBake (a parte
+// da densidade que não depende da câmera nem dos núcleos do corredor —
+// ver common.ts) numa fatia z do volume 128³ que segue a câmera.
+// nebula.ts renderiza 128 vezes, uma por fatia (uFatia 0..127), num
+// THREE.WebGL3DRenderTarget RGBA — R/G/B/A na ordem que nebulaBake
+// devolve. As sementes vêm de uSeedCloudTex (256×2, texelFetch): as
+// ≤256 nuvens do catálogo mais perto do CENTRO do volume, escolhidas por
+// nuvensSemente.sementesParaBake a cada pedido de reassar.
+export const NEBULA_BAKE_FRAG = /* glsl */ `
+precision highp float;
+uniform float uFatia;
+// a caixa do bake: os mesmos dois uniforms que o raymarch usa para LER
+// a grade (declarados lá em glslDensity; este fragment não o inclui)
+uniform vec3 uVolMin;
+uniform vec3 uVolTamanho;
+
+${GLSL_NOISE}
+${GLSL_GALAXY}
+${GLSL_CARTOGRAPHY}
+${glslBakeDensity(256, NEBVOL_FINO)}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / 128.0;
+  vec3 p = uVolMin + vec3(uv, (uFatia + 0.5) / 128.0) * uVolTamanho;
+  gl_FragColor = nebulaBake(p);
+}
+`;
+
 // Fragment do LUT da faixa: uma direção por texel (256×128 equirect
 // no referencial galáctico), integração distante completa.
 /**
@@ -557,11 +607,15 @@ void main() {
 
   vec3 acc = vec3(0.0);
   float T = 1.0;
-  // uma vez por raio: fora do intervalo devolvido aqui, nenhuma das 32
+${
+  NEBVOL_ANTIGO
+    ? `  // uma vez por raio: fora do intervalo devolvido aqui, nenhuma das 32
   // nuvens-semente alcança, e o laço de teste por amostra é provadamente
   // inútil (ver seedSpan em common.ts)
   seedSpan(ro, rd);
-  vec3 galacticLight = texture2D(uBandLUT, dirToBand(rd)).rgb;
+`
+    : ''
+}  vec3 galacticLight = texture2D(uBandLUT, dirToBand(rd)).rgb;
   // +1e-4: normalize(vec3(0)) = NaN quando ?pos=0,0,0 (origem exata)
   vec3 toSun = normalize(uSunPos - ro + vec3(1e-4));
   float phaseSun = pow(max(dot(rd, toSun), 0.0), 24.0) * 2.2 +
@@ -582,7 +636,7 @@ void main() {
     float t = (t0 + t1) * 0.5;
     float dt = max(t1 - t0, 0.01);
     vec3 p = ro + rd * t;
-    float d = nebulaDensity(p, 4, t);
+    float d = ${NEBVOL_ANTIGO ? 'nebulaDensity(p, 4, t)' : 'nebulaDensity(p, t)'};
 
     if (d > 0.003) {
       // ambiente frio proporcional ao envelope do gás — reusa o valor
@@ -597,7 +651,7 @@ void main() {
       // Emissão bicolor integrada por alpha volumétrico. A cor se
       // acumula sem depender do tamanho do passo e os núcleos densos
       // preservam silhuetas escuras em vez de virar branco uniforme.
-      vec3 sampleColor = palette(p, d) * (0.22 + rim * 1.55);
+      vec3 sampleColor = palette(p, d, ${NEBVOL_ANTIGO ? 'fbm(p * 0.035 + 7.7, 3)' : 'gPaletteM'}) * (0.22 + rim * 1.55);
       sampleColor *= 0.55 + min(d, 1.8) * 0.72;
       sampleColor *= exp(-max(d - 0.9, 0.0) * 0.55);
       sampleColor += GAS_COOL * slab * 0.012;
