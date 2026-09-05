@@ -1255,9 +1255,8 @@ export class GiganteResolvido {
     this.kPolar = c / a;
     this.temAnel = (CORPOS_COM_ANEL as readonly string[]).includes(this.idCorpo);
     this.group.visible = false;
-    // Só o `map`: o canal `ring` (a placa) morreu na S1 do item 134 — o
-    // anel de Saturno lê o perfil medido (`PERFIL_DO_ANEL`), 8 KB no lugar
-    // de ~22 MiB que ficavam residentes sem alimentar nada.
+    // Só o `map`: o canal `ring` e os 8 arquivos da placa foram apagados
+    // no item 137 — o anel de Saturno lê o perfil medido (`PERFIL_DO_ANEL`).
     this.texturas = new TexturasDoCorpo({
       corpo: this.idCorpo,
       canais: [CANAL_MAP],

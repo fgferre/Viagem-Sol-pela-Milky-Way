@@ -159,7 +159,7 @@ const ORIGENS = {
     atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
     proveniencia: 'medido',
   },
-  // ---- F4 (gigantes + anel). Mesma linha SSS CC BY 4.0. O 8k_jupiter
+  // ---- F4 (gigantes). Mesma linha SSS CC BY 4.0. O 8k_jupiter
   // do SSS mede 4096 px (a armadilha do nome — o manifest re-mede).
   'jupiter/map': {
     fonte: 'Solar System Scope — 8k_jupiter',
@@ -171,13 +171,6 @@ const ORIGENS = {
   'saturn/map': {
     fonte: 'Solar System Scope — 8k_saturn',
     url: 'https://www.solarsystemscope.com/textures/download/8k_saturn.jpg',
-    licenca: 'CC BY 4.0',
-    atribuicao: ATRIBUICAO_SSS,
-    proveniencia: 'medido',
-  },
-  'saturn/ring': {
-    fonte: 'Solar System Scope — 8k_saturn_ring_alpha (placa alpha)',
-    url: 'https://www.solarsystemscope.com/textures/download/8k_saturn_ring_alpha.png',
     licenca: 'CC BY 4.0',
     atribuicao: ATRIBUICAO_SSS,
     proveniencia: 'medido',

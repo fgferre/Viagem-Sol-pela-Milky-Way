@@ -13,10 +13,9 @@ botão "Relevo inventado" na ficha, DESLIGADO por padrão, só nos rochosos
 com foto e sem mapa de relevo (`4e453d1..9117cfe`; ele corrigiu minha
 leitura duas vezes — não é superfície de ruído, é o bump da cor por cima
 da foto). **143 FECHADO** (`8de801c`): o juiz de identidade grava o
-servidor de cada lado e só refaz o "antes" no mesmo binário. **137 feito
-menos a regeneração**: os 8 arquivos `ring*` e o canal saíram do código,
-scripts, testes e ASSETS; falta ELE rodar o gerador do manifesto e o
-`data:verify` (o gancho barra o agente; ele já disse "sim, regenere").
+servidor de cada lado e só refaz o "antes" no mesmo binário. **137 FECHADO**: os 8 arquivos `ring*` e o canal saíram do código, scripts,
+testes e ASSETS; ele mesmo regenerou o manifesto ("rodei o comando") e o
+`data:verify` passou (261 variantes).
 **132 quase fechado**: de 9 falhas para 1 — aviso do tempo piscando
 (defeito real: o tick repedia a efeméride a cada quadro depois da falha;
 consertado), prova da recarga passa a comparar a CENA sem o painel (1 px
@@ -447,8 +446,6 @@ Ordem sugerida: Plutão+Caronte → zerar os 13 → Fobos+Deimos → Tritão
 **138.** Jápeto "totalmente feio" e a paridade das luas contra o projeto dele — **FECHADO em 03/09** (`c70a204`: mosaicos Schenk graduados como lá; o relevo estava meia volta errado nas seis desde a S2); nível e Titã laranja ficam como estão, palavra dele "tudo ok, já avaliei"; ARQUIVO.
 
 **139.** Dentro dos anéis não se viam as partículas e pedras de gelo — **FECHADO em 03/09** (`4081729` lajota do projeto dele + `e24237f` o chão do anel chega à lente); palavra dele "tudo ok"; ARQUIVO.
-
-**137.** Sobra da S1 do 134: os arquivos `public/textures/atlas/saturn/ring*` (8 arquivos, 216 KB) e o canal `ring` em `texturas.ts`, no manifesto e nos scripts de texturas ficaram órfãos — o anel lê o perfil medido. Remover com prova de não-uso (§6); os testes de `texturas.test.ts` que citam o canal entram na lista do §19 dessa faxina.
 
 
 **135.** Perto de Saturno ou dos anéis a imagem cortava "como se batesse na lente" — **FECHADO em 02/09** (o piso do plano próximo era metade do raio do corpo, 30 mil km em Saturno; virou um milésimo, `PISO_DO_NEAR_EM_RAIOS`); ARQUIVO.
