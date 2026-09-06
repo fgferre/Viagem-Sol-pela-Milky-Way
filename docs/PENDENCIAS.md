@@ -2,7 +2,7 @@
 
 Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
-Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 225.**
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 226.**
 
 ## O BASTÃO — onde a rodada parou (06/09, madrugada)
 
@@ -456,6 +456,14 @@ declarativo do filme galáctico. Conclui com Terra/Lua, Júpiter/Io,
 Saturno/luas e o afastamento final, ciência e unidades revisadas, gate
 visual e exibição completa aprovada pelo dono. *(Era a fila ativa do
 plano do cinema, arquivado — `git show 923dc20:docs/PLANO-CINEMA.md`.)*
+
+**225. Bugs intermitentes — suspeita de memória de vídeo.** Palavra
+dele (06/09): "desconfio que estejamos tendo problemas de memoria de
+video... alguns bugs tem acontecido de forma intermitente. as vezes no
+final do filme desaparece a terra e a lua e fica so o texto do pale
+blue dot". No mesmo dia, na vista de órbita de Netuno, os nomes e os
+anéis dos corpos não apareceram numa sessão e apareceram na seguinte
+("agora apareceu"). Ainda sem causa.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
