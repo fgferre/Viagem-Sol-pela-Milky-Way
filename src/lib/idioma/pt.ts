@@ -412,6 +412,48 @@ export const PT = {
   'camada.noicones': 'Ícones dos corpos',
   'camada.nocorpos': 'Corpos de perto',
   'camada.noorbitas': 'Linhas de órbita',
+  // AS NOTAS (06/09) — o padrão de Ajustes aplicado à gaveta: uma frase
+  // factual sob o "?", derivada do que a flag realmente desliga em
+  // `director.ts` e nos mundos que ela apaga.
+  'camada.nogal.nota':
+    'Desliga a galáxia inteira — todas as partículas do disco, o bojo e o marcador do Sol, na vista de fora.',
+  'camada.nodisc.nota':
+    'Esconde as lâminas volumétricas do disco da galáxia, deixando visíveis só as partículas de estrelas.',
+  'camada.nogdust.nota':
+    'Desliga o escurecimento de cada partícula da galáxia pela poeira interestelar no caminho da luz até ela.',
+  'camada.noglow.nota':
+    'Desliga o brilho difuso do bojo galáctico — o halo de luz suave no centro da galáxia.',
+  'camada.nocart.nota':
+    'Desliga a cartografia observada da galáxia: nuvens moleculares reais desenhadas como cartazes 3D, visíveis no disco.',
+  'camada.noco.nota':
+    'Desliga só as nuvens de monóxido de carbono medidas — as fendas escuras reais da Via Láctea no disco.',
+  'camada.noforge.nota':
+    'Desliga as forjas estelares — regiões de formação de estrelas mapeadas, visíveis no disco da galáxia.',
+  'camada.nonebula.nota':
+    'Desliga o gás volumétrico da nebulosa, visível de perto dentro do disco da galáxia.',
+  'camada.nowrap.nota':
+    'Desliga a população estelar procedural que preenche o céu ao redor da câmera além do catálogo real.',
+  'camada.nodust.nota':
+    'Desliga a poeira interestelar com paralaxe perto da câmera, visível ao atravessar o disco da galáxia.',
+  'camada.nobh.nota':
+    'Desliga o buraco negro Sagitário A*, visível só de perto, no centro da galáxia.',
+  'camada.nocat.nota':
+    'Desliga os pontos do catálogo real de estrelas (HYG), visíveis perto do sistema solar.',
+  'camada.nonomes.nota':
+    'Desliga os nomes escritos sobre estrelas e corpos, em toda a cena.',
+  'camada.noclarao.nota':
+    'Desliga o clarão de luz forte das estrelas em destaque e do Sol.',
+  'camada.nosun.nota':
+    'Desliga o Sol inteiro — corpo e clarão —, visível de perto no sistema solar.',
+  'camada.nomarker.nota':
+    "Desliga o marcador \"você está aqui\" que aponta a posição do Sol na vista de fora da galáxia.",
+  'camada.noplan.nota': 'Desliga os pontos fotométricos dos planetas do sistema solar.',
+  'camada.noicones.nota':
+    'Desliga os ícones dos corpos do sistema solar, separados dos nomes de texto.',
+  'camada.nocorpos.nota':
+    'Desliga os globos 3D dos corpos vistos de perto, diferentes dos pontos fotométricos distantes.',
+  'camada.noorbitas.nota':
+    'Desliga as linhas de órbita dos corpos do sistema solar ao redor do Sol.',
   'qualidade.cinema': 'Cinema',
   'qualidade.alta': 'Alta',
   'qualidade.performance': 'Performance',

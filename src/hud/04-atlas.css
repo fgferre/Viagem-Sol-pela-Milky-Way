@@ -469,11 +469,12 @@
    promessa em comentário: a marcação pede `hud-cartao hud-dialogo`
    (fatia 1) e aqui fica só o que é DELA. */
 .atlas-gaveta {
-  /* 17 linhas em três famílias desde o item 61 (22/08), e os nomes mais
-     longos da tabela — "Extinção por partícula", "Buraco negro (Sgr A✱)"
-     — não cabiam nos 15rem de quando a gaveta mostrava seis. O termo do
-     `min()` continua sendo a tela: em janela estreita ela encolhe. */
-  width: min(17rem, calc(100vw - 3.2rem));
+  /* PADRÃO DE AJUSTES (06/09): a linha ganhou o "?" de ajuda e o
+     interruptor à direita, e os 17rem de quando a gaveta era só nome +
+     caixa não sobravam para os dois. 22rem é o mesmo teto de largura
+     que a paleta de busca usa. O termo do `min()` continua sendo a
+     tela: em janela estreita ela encolhe. */
+  width: min(22rem, calc(100vw - 3.2rem));
   /* A GAVETA PARA ACIMA DO SELO desde o item 61 (22/08) — a 768×600 com
      `?ui=1,4` ela ficava POR CIMA dele, e o mockup do dono mostrou a frase
      do selo cortada em "…" por baixo. A conta que a faz parar é
@@ -527,32 +528,107 @@
   letter-spacing: 0.1em;
   color: rgba(200, 214, 235, 0.55);
 }
-/* 0,18rem e não 0,22: com 17 linhas em três famílias a gaveta passou a
-   disputar altura com o selo (o teto dela desconta os dois), e quatro
-   centésimos de rem por linha são os ~22 px que fazem as três famílias
-   caberem inteiras numa janela de mesa. O que não couber continua
-   rolando — o teto é geometria, não gosto. */
+/* A LINHA (06/09) — o padrão de Ajustes aplicado à gaveta: rótulo (com
+   o "?") à esquerda, interruptor à direita. `position: relative` ancora
+   a dica da mesma forma que `.ajustes-item` faz em 08-ajustes.css — ela
+   flutua sobre a LINHA inteira, não só sobre a caixinha do "?". A
+   altura mínima e a separação em fio são as do painel irmão: é o mesmo
+   tipo de coisa, e um segundo vocabulário aqui seria ruído.*/
 .atlas-gaveta-linha {
+  position: relative;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.18rem 0;
+  min-height: 2.3rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid rgba(220, 230, 248, 0.1);
   cursor: pointer;
 }
-.atlas-gaveta-linha input {
-  accent-color: rgba(255, 200, 130, 0.9);
-  cursor: pointer;
+.atlas-gaveta-familia .atlas-gaveta-linha:last-child {
+  border-bottom: none;
 }
-/* A COLUNA DO GLIFO existe em TODA linha, com ou sem glifo: oito das
-   dezenove têm ícone (a oitava é `nonomes`, item 82 — quem conta é
-   `atlasConfig.test.ts`), e sem a coluna reservada os nomes da mesma
-   família começariam em dois recuos diferentes. `flex: 0 0 auto` para a
-   célula vazia não encolher a zero. */
+.atlas-gaveta-rotulo-caixa {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+/* O RÓTULO — mesma caixa alta espaçada do painel de Ajustes
+   (`.ajustes-rotulo`), para as duas telas contarem a mesma linguagem. */
+.atlas-gaveta-nome {
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(235, 240, 250, 0.9);
+}
+/* A COLUNA DO GLIFO existe em TODA linha, com ou sem glifo: nove das
+   vinte têm ícone (quem conta é `atlasConfig.test.ts`), e sem a coluna
+   reservada os nomes da mesma família começariam em dois recuos
+   diferentes. `flex: 0 0 auto` para a célula vazia não encolher a zero. */
 .atlas-gaveta-icone {
   flex: 0 0 auto;
   width: 1.1rem;
   text-align: center;
   color: rgba(255, 214, 150, 0.8);
+}
+
+/* O INTERRUPTOR — o `<input type="checkbox">` de sempre (o juiz de a11y
+   conta as vinte caixas e o teclado/espaço continuam funcionando: só a
+   PELE muda), desenhado como pílula no molde do segmento ligado de
+   Ajustes (`.ajustes-seg button.on`) — mesmo dourado, mesmo brilho. */
+.atlas-gaveta-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  position: relative;
+  margin: 0;
+  width: 2.2rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(8, 12, 22, 0.5);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.atlas-gaveta-toggle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0.15rem;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: rgba(200, 214, 235, 0.55);
+  transform: translateY(-50%);
+  transition: left 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.atlas-gaveta-toggle:checked {
+  background: rgba(255, 214, 150, 0.34);
+  border-color: rgba(255, 214, 150, 1);
+  box-shadow: 0 0 10px rgba(255, 214, 150, 0.28);
+}
+.atlas-gaveta-toggle:checked::after {
+  left: calc(100% - 0.85rem - 0.15rem);
+  background: #fff6e6;
+  box-shadow: 0 0 6px rgba(255, 214, 150, 0.6);
+}
+.atlas-gaveta-toggle:focus-visible {
+  outline: 2px solid rgba(255, 214, 150, 0.85);
+  outline-offset: 2px;
+}
+
+/* A DICA da gaveta paira sobre a LINHA (mesma régua de `.ajustes-item`
+   em 08-ajustes.css). A gaveta tem MUITO mais linhas que o painel de
+   Ajustes — abrir sempre para baixo cortaria a dica das últimas de cada
+   família no `overflow-y: auto` do diálogo, então a régua aqui é o
+   `nth-last-of-type` DENTRO da família (a mesma dela é sempre um
+   `label`, como a linha de ação de Ajustes é sempre um `div`). */
+.atlas-gaveta-familia .atlas-gaveta-linha:nth-last-of-type(-n + 2) .hud-dica {
+  top: auto;
+  bottom: calc(100% + 0.3rem);
 }
 
 /* A PALETA DE BUSCA (F3): mesmo desenho da gaveta e do painel de

@@ -53,6 +53,8 @@ import { useDialogFocus } from '../lib/dialogFocus';
 import { IDIOMAS, definirIdioma, t } from '../lib/idioma';
 import type { ChaveDeTexto } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
+import { useDicaPresa } from '../hooks/useDicaPresa';
+import { Ajuda } from './Ajuda';
 import { DEGRAUS_DA_UI, rotuloDaEscala } from '../lib/uiScale';
 import {
   QUALIDADES,
@@ -206,9 +208,10 @@ function Segmentado<T>({
  * botões vira UM elemento, e a explicação só aparece quando pedida.
  *
  * A DICA mostra no hover/foco do "?" (CSS, `:hover`/`:focus-within` em
- * `.ajustes-ajuda-caixa`) e FIXA no clique — só uma por vez, e é por
- * isso que o estado mora no painel, não na linha: fixar a de baixo tem
- * de apagar a de cima.
+ * `.hud-ajuda-caixa`) e FIXA no clique — só uma por vez, e é por isso
+ * que o estado mora no painel, não na linha: fixar a de baixo tem de
+ * apagar a de cima. O botão em si é `components/Ajuda.tsx` (06/09) —
+ * a gaveta de Camadas usa o mesmo átomo.
  */
 function LinhaDeAjuste({
   id,
@@ -234,31 +237,13 @@ function LinhaDeAjuste({
       <span className="ajustes-rotulo-caixa">
         <span className="ajustes-rotulo">{rotulo}</span>
         {dica != null && (
-          <span className="ajustes-ajuda-caixa">
-            <button
-              type="button"
-              className="ajustes-ajuda"
-              aria-label={t('ajustes.ajuda', { rotulo })}
-              aria-expanded={presa}
-              aria-controls={`ajustes-dica-${id}`}
-              onClick={(evento) => {
-                // o clique NÃO pode borbulhar até o "clique fora fecha"
-                // do painel (ver `onClick` do diálogo), senão a mesma
-                // interação que fixa a dica a desfixaria no mesmo gesto
-                evento.stopPropagation();
-                onAlternarDica(id);
-              }}
-            >
-              ?
-            </button>
-            <span
-              id={`ajustes-dica-${id}`}
-              role="tooltip"
-              className={'ajustes-dica' + (presa ? ' presa' : '')}
-            >
-              {dica}
-            </span>
-          </span>
+          <Ajuda
+            id={id}
+            rotulo={rotulo}
+            texto={dica}
+            presa={presa}
+            onAlternar={() => onAlternarDica(id)}
+          />
         )}
       </span>
       <div className="ajustes-controle">{children}</div>
@@ -322,11 +307,8 @@ export function Ajustes({
   onReverConvite?: () => void;
 }) {
   const [copiado, setCopiado] = useState(false);
-  const [dicaPresa, setDicaPresa] = useState<string | null>(null);
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
   const idioma = useIdioma();
-
-  const alternarDica = (id: string) =>
-    setDicaPresa((atual) => (atual === id ? null : id));
 
   // O painel NÃO aplica ?tone=/?exp= na montagem: efeito de filho roda antes
   // do efeito do pai, então o Director ainda não existe aqui. Quem aplica é o
@@ -356,7 +338,7 @@ export function Ajustes({
         // CLIQUE EM QUALQUER LUGAR DO PAINEL desfixa a dica presa — o "?"
         // que a fixou já parou o próprio clique (`stopPropagation`), então
         // só chega aqui quem clicou fora dela.
-        if (dicaPresa) setDicaPresa(null);
+        if (dicaPresa) limparDica();
       }}
       onKeyDownCapture={(evento) => {
         // ESC COM DICA PRESA desfixa e NÃO fecha o diálogo — mas só
@@ -367,7 +349,7 @@ export function Ajustes({
         // aqui impede o evento de sequer chegar lá.
         if (evento.key === 'Escape' && dicaPresa) {
           evento.stopPropagation();
-          setDicaPresa(null);
+          limparDica();
         }
       }}
     >

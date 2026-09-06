@@ -404,6 +404,48 @@ export const EN: Record<keyof typeof PT, string> = {
   'camada.noicones': 'Body icons',
   'camada.nocorpos': 'Bodies up close',
   'camada.noorbitas': 'Orbit lines',
+  // THE NOTES (06/09) — the Ajustes pattern applied to the drawer: one
+  // factual sentence under the "?", derived from what the flag actually
+  // switches off in `director.ts` and the worlds it hides.
+  'camada.nogal.nota':
+    'Turns off the whole galaxy — every disc particle, the bulge and the Sun marker, in the outside view.',
+  'camada.nodisc.nota':
+    'Hides the volumetric disc slices of the galaxy, leaving only the star particles visible.',
+  'camada.nogdust.nota':
+    "Turns off the dimming of each galaxy particle by interstellar dust along the light's path to it.",
+  'camada.noglow.nota':
+    "Turns off the diffuse glow of the galactic bulge — the soft halo of light at the galaxy's center.",
+  'camada.nocart.nota':
+    "Turns off the galaxy's observed cartography: real molecular clouds drawn as 3D billboards in the disc.",
+  'camada.noco.nota':
+    'Turns off only the measured carbon-monoxide clouds — the real dark rifts of the Milky Way in the disc.',
+  'camada.noforge.nota':
+    "Turns off the stellar forges — mapped star-forming regions, visible in the galaxy's disc.",
+  'camada.nonebula.nota':
+    "Turns off the nebula's volumetric gas, visible up close inside the galaxy's disc.",
+  'camada.nowrap.nota':
+    'Turns off the procedural star field that fills the sky around the camera beyond the real catalogue.',
+  'camada.nodust.nota':
+    "Turns off the interstellar dust with parallax near the camera, visible while crossing the galaxy's disc.",
+  'camada.nobh.nota':
+    "Turns off the Sagittarius A* black hole, visible only up close, at the galaxy's center.",
+  'camada.nocat.nota':
+    'Turns off the real star catalogue points (HYG), visible near the solar system.',
+  'camada.nonomes.nota':
+    'Turns off the names written over stars and bodies, across the whole scene.',
+  'camada.noclarao.nota':
+    'Turns off the strong glare of the featured stars and of the Sun.',
+  'camada.nosun.nota':
+    'Turns off the whole Sun — body and glare —, visible up close in the solar system.',
+  'camada.nomarker.nota':
+    'Turns off the "you are here" marker pointing to the Sun in the outside view of the galaxy.',
+  'camada.noplan.nota': "Turns off the solar system's planets' photometric points.",
+  'camada.noicones.nota':
+    "Turns off the solar system's body icons, separate from their text names.",
+  'camada.nocorpos.nota':
+    'Turns off the 3D globes of bodies seen up close, distinct from the distant photometric points.',
+  'camada.noorbitas.nota':
+    "Turns off the solar system's orbit lines around the Sun.",
   'qualidade.cinema': 'Cinema',
   'qualidade.alta': 'High',
   'qualidade.performance': 'Performance',

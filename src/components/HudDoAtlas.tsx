@@ -18,6 +18,8 @@ import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { CAMADAS_POR_FAMILIA, familiaEmTexto } from '../three/atlasConfig';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
+import { useDicaPresa } from '../hooks/useDicaPresa';
+import { Ajuda } from './Ajuda';
 import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
 import type { EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
@@ -66,12 +68,27 @@ export function GavetaDeCamadas({
 }) {
   const dialogo = useDialogFocus('camadas', aberta, onFechar);
   useIdioma();
+  // A DICA PRESA (06/09) — o mesmo padrão do painel de Ajustes, com o
+  // mesmo hook: fixar uma "?" apaga a de cima, clique fora do diálogo
+  // desfixa, e Esc desfixa ANTES de fechar a gaveta (mesma doutrina do
+  // `onKeyDownCapture` de `Ajustes.tsx` — a captura corre antes do Esc
+  // de fechar que `useDialogFocus` já prendeu na bolha).
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
   if (!aberta) return null;
   return (
     <div
       className="hud-cartao hud-dialogo atlas-gaveta"
       aria-label={t('atlas.camadasAria')}
       {...dialogo}
+      onClick={() => {
+        if (dicaPresa) limparDica();
+      }}
+      onKeyDownCapture={(evento) => {
+        if (evento.key === 'Escape' && dicaPresa) {
+          evento.stopPropagation();
+          limparDica();
+        }
+      }}
     >
       <div className="atlas-gaveta-topo">
         <span>{t('atlas.camadas')}</span>
@@ -104,19 +121,30 @@ export function GavetaDeCamadas({
               const ligada = !escondidas.has(c.flag);
               return (
                 <label key={c.flag} className="atlas-gaveta-linha">
+                  <span className="atlas-gaveta-rotulo-caixa">
+                    {/* o ícone é ornamento do rótulo que vem logo ao lado:
+                        quem ouve a tela já recebe o nome, e ouvir
+                        "asterisco" antes dele seria ruído. A coluna fica
+                        mesmo sem glifo — é ela que alinha os nomes da
+                        família uns com os outros. */}
+                    <span className="atlas-gaveta-icone" aria-hidden="true">
+                      {c.icone ?? ''}
+                    </span>
+                    <span className="atlas-gaveta-nome">{c.nome}</span>
+                    <Ajuda
+                      id={c.flag}
+                      rotulo={c.nome}
+                      texto={c.nota}
+                      presa={dicaPresa === c.flag}
+                      onAlternar={() => alternarDica(c.flag)}
+                    />
+                  </span>
                   <input
                     type="checkbox"
+                    className="atlas-gaveta-toggle"
                     checked={ligada}
                     onChange={() => onCamada(c.flag, !ligada)}
                   />
-                  {/* o ícone é ornamento do rótulo que vem logo ao lado: quem
-                      ouve a tela já recebe o nome, e ouvir "asterisco" antes
-                      dele seria ruído. A coluna fica mesmo sem glifo — é ela
-                      que alinha os nomes da família uns com os outros. */}
-                  <span className="atlas-gaveta-icone" aria-hidden="true">
-                    {c.icone ?? ''}
-                  </span>
-                  <span>{c.nome}</span>
                 </label>
               );
             })}

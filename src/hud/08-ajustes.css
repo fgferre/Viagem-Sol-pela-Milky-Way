@@ -125,11 +125,16 @@
 /* ---- O "?" DE AJUDA e a dica -----------------------------------------
    A explicação em letra miúda que cobria o painel inteiro agora só
    aparece por pedido: passar o mouse ou focar o botão (CSS puro), ou
-   fixar com um clique (estado do componente, só uma de cada vez). */
-.ajustes-ajuda-caixa {
+   fixar com um clique (estado do componente, só uma de cada vez).
+   NOME NEUTRO (`hud-`, não `ajustes-`) desde 06/09: o átomo mudou para
+   `components/Ajuda.tsx` e passou a servir também a gaveta de Camadas —
+   uma classe com o nome do primeiro dono confundiria quem lesse o CSS
+   dela. A REGRA DE POSICIONAMENTO continua sendo da LINHA que hospeda
+   (`.ajustes-item`, embaixo; `.atlas-gaveta-linha`, em 04-atlas.css). */
+.hud-ajuda-caixa {
   display: inline-flex;
 }
-.ajustes-ajuda {
+.hud-ajuda {
   width: 1.05rem;
   height: 1.05rem;
   border-radius: 50%;
@@ -143,12 +148,12 @@
   cursor: pointer;
   padding: 0;
 }
-.ajustes-ajuda:hover,
-.ajustes-ajuda:focus-visible {
+.hud-ajuda:hover,
+.hud-ajuda:focus-visible {
   border-color: rgba(255, 214, 150, 0.85);
   color: rgba(255, 214, 150, 0.95);
 }
-.ajustes-dica {
+.hud-dica {
   display: none;
   position: absolute;
   top: calc(100% + 0.3rem);
@@ -186,15 +191,15 @@
    como a própria linha de ação — por isso ela é sempre a 1ª a partir do
    fim, e as duas de cima dela são a 2ª e a 3ª, presente ou não o convite
    opcional (F5, só existe no voo livre). */
-.ajustes-item:nth-last-of-type(2) .ajustes-dica,
-.ajustes-item:nth-last-of-type(3) .ajustes-dica {
+.ajustes-item:nth-last-of-type(2) .hud-dica,
+.ajustes-item:nth-last-of-type(3) .hud-dica {
   top: auto;
   bottom: calc(100% + 0.3rem);
 }
-.ajustes-dica p {
+.hud-dica p {
   margin: 0 0 0.4rem;
 }
-.ajustes-dica p:last-child {
+.hud-dica p:last-child {
   margin-bottom: 0;
 }
 .ajustes-dica-lista {
@@ -209,9 +214,9 @@
   color: rgba(255, 214, 150, 0.85);
   font-weight: 400;
 }
-.ajustes-ajuda-caixa:hover .ajustes-dica,
-.ajustes-ajuda-caixa:focus-within .ajustes-dica,
-.ajustes-dica.presa {
+.hud-ajuda-caixa:hover .hud-dica,
+.hud-ajuda-caixa:focus-within .hud-dica,
+.hud-dica.presa {
   display: block;
 }
 

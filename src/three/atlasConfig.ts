@@ -68,6 +68,14 @@ export interface Camada {
   /** rótulo na língua de agora (item 130) — o que a gaveta mostra e o
    *  que o selo nomeia; a chave do dicionário é a própria `flag` */
   nome: string;
+  /**
+   * A NOTA da linha (06/09, padrão de Ajustes aplicado à gaveta) — UMA
+   * frase factual, sob o "?": o que a camada desenha e onde se vê,
+   * derivada do próprio código que a flag desliga (`director.ts` e os
+   * mundos). Mesma doutrina do `nome`: getter na língua de agora, chave
+   * `camada.<flag>.nota` no dicionário.
+   */
+  nota: string;
   /** em que grupo da gaveta ela aparece */
   familia: FamiliaDeCamada;
   /**
@@ -109,23 +117,23 @@ export interface Camada {
  * com `?nosun=1` não tinha onde religar.
  */
 export const CAMADAS: readonly Camada[] = [
-  { flag: 'nogal', get nome() { return t('camada.nogal'); }, familia: 'Galáxia', viva: true },
-  { flag: 'nodisc', get nome() { return t('camada.nodisc'); }, familia: 'Galáxia', viva: true },
-  { flag: 'nogdust', get nome() { return t('camada.nogdust'); }, familia: 'Galáxia', viva: true },
-  { flag: 'noglow', get nome() { return t('camada.noglow'); }, familia: 'Galáxia', viva: true },
-  { flag: 'nocart', get nome() { return t('camada.nocart'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nogal', get nome() { return t('camada.nogal'); }, get nota() { return t('camada.nogal.nota'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nodisc', get nome() { return t('camada.nodisc'); }, get nota() { return t('camada.nodisc.nota'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nogdust', get nome() { return t('camada.nogdust'); }, get nota() { return t('camada.nogdust.nota'); }, familia: 'Galáxia', viva: true },
+  { flag: 'noglow', get nome() { return t('camada.noglow'); }, get nota() { return t('camada.noglow.nota'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nocart', get nome() { return t('camada.nocart'); }, get nota() { return t('camada.nocart.nota'); }, familia: 'Galáxia', viva: true },
   // a bissecção de `nocart`: nuvens CO medidas e forjas estelares têm
   // chave própria — o tick as lê por quadro junto com a cartografia
-  { flag: 'noco', get nome() { return t('camada.noco'); }, familia: 'Galáxia', viva: true },
-  { flag: 'noforge', get nome() { return t('camada.noforge'); }, familia: 'Galáxia', viva: true },
-  { flag: 'nonebula', get nome() { return t('camada.nonebula'); }, familia: 'Galáxia', viva: true },
-  { flag: 'nowrap', get nome() { return t('camada.nowrap'); }, familia: 'Galáxia', viva: true },
+  { flag: 'noco', get nome() { return t('camada.noco'); }, get nota() { return t('camada.noco.nota'); }, familia: 'Galáxia', viva: true },
+  { flag: 'noforge', get nome() { return t('camada.noforge'); }, get nota() { return t('camada.noforge.nota'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nonebula', get nome() { return t('camada.nonebula'); }, get nota() { return t('camada.nonebula.nota'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nowrap', get nome() { return t('camada.nowrap'); }, get nota() { return t('camada.nowrap.nota'); }, familia: 'Galáxia', viva: true },
   // a poeira de paralaxe perto da câmera (`world/dust.ts`) — o tick lê
   // `hide.has('nodust')` por quadro no fade dela. É poeira INTERESTELAR
   // vista de perto, não poeira do sistema solar: a família é a galáxia.
-  { flag: 'nodust', get nome() { return t('camada.nodust'); }, familia: 'Galáxia', viva: true },
-  { flag: 'nobh', get nome() { return t('camada.nobh'); }, familia: 'Galáxia', viva: true, icone: '✱' },
-  { flag: 'nocat', get nome() { return t('camada.nocat'); }, familia: 'Estrelas', viva: true, icone: '⁂' },
+  { flag: 'nodust', get nome() { return t('camada.nodust'); }, get nota() { return t('camada.nodust.nota'); }, familia: 'Galáxia', viva: true },
+  { flag: 'nobh', get nome() { return t('camada.nobh'); }, get nota() { return t('camada.nobh.nota'); }, familia: 'Galáxia', viva: true, icone: '✱' },
+  { flag: 'nocat', get nome() { return t('camada.nocat'); }, get nota() { return t('camada.nocat.nota'); }, familia: 'Estrelas', viva: true, icone: '⁂' },
   // OS NOMES NA TELA (item 82, N2) — a chave `Labels` que o NASA Eyes
   // tem e nós não tínhamos. As órbitas ganharam `noorbitas` no item 77 e
   // os nomes não tinham nada: quem achasse a tela poluída só podia sair
@@ -138,34 +146,34 @@ export const CAMADAS: readonly Camada[] = [
   // nomes de corpo e DEZESSETE de estrela. Ela mora ao lado das outras
   // duas coisas que uma estrela põe na tela — o ponto do catálogo e o
   // clarão —, e a terceira é o nome dela.
-  { flag: 'nonomes', get nome() { return t('camada.nonomes'); }, familia: 'Estrelas', viva: true, icone: '⌶' },
+  { flag: 'nonomes', get nome() { return t('camada.nonomes'); }, get nota() { return t('camada.nonomes.nota'); }, familia: 'Estrelas', viva: true, icone: '⌶' },
   // M2 da Lei: `nohero` virou `noclarao`. O que a chave desliga são as
   // DUAS camadas de fonte forte, e voltou a incluir as 16 heroes de
   // autor com o resgate de 16/08 (`world/heroStars.ts`): o tick esconde
   // `heroes.group` e o clarão de asas (`world/clarao.ts`, o Sol) pela
   // mesma `hide.has('noclarao')`.
-  { flag: 'noclarao', get nome() { return t('camada.noclarao'); }, familia: 'Estrelas', viva: true, icone: '✦' },
+  { flag: 'noclarao', get nome() { return t('camada.noclarao'); }, get nota() { return t('camada.noclarao.nota'); }, familia: 'Estrelas', viva: true, icone: '✦' },
   // o Sol inteiro em cena — o gate por quadro vive em
   // `director/solNoQuadro.ts` (`fios.escondido('nosun')`)
-  { flag: 'nosun', get nome() { return t('camada.nosun'); }, familia: 'Sistema solar', viva: true },
-  { flag: 'nomarker', get nome() { return t('camada.nomarker'); }, familia: 'Sistema solar', viva: true, icone: '⌖' },
-  { flag: 'noplan', get nome() { return t('camada.noplan'); }, familia: 'Sistema solar', viva: true, icone: '◉' },
+  { flag: 'nosun', get nome() { return t('camada.nosun'); }, get nota() { return t('camada.nosun.nota'); }, familia: 'Sistema solar', viva: true },
+  { flag: 'nomarker', get nome() { return t('camada.nomarker'); }, get nota() { return t('camada.nomarker.nota'); }, familia: 'Sistema solar', viva: true, icone: '⌖' },
+  { flag: 'noplan', get nome() { return t('camada.noplan'); }, get nota() { return t('camada.noplan.nota'); }, familia: 'Sistema solar', viva: true, icone: '◉' },
   // item 89: o ícone é camada SEPARADA do texto (Eyes: Labels ≠ Icons)
   // — desligar os nomes deixa o céu limpo E navegável; quem quiser o
   // silêncio de antes desliga as duas
-  { flag: 'noicones', get nome() { return t('camada.noicones'); }, familia: 'Sistema solar', viva: true, icone: '◎' },
+  { flag: 'noicones', get nome() { return t('camada.noicones'); }, get nota() { return t('camada.noicones.nota'); }, familia: 'Sistema solar', viva: true, icone: '◎' },
   // O PALCO LOCAL da Onda 6 (F0): os corpos resolvidos — os globos de
   // perto, distintos dos PONTOS fotométricos de `noplan`. Entra vazio
   // nesta fase (nenhum mesh ainda; o toggle não muda pixel até F2),
   // mas nasce DECLARADO aqui e no selo, como a lei das portas manda.
-  { flag: 'nocorpos', get nome() { return t('camada.nocorpos'); }, familia: 'Sistema solar', viva: true, icone: '◐' },
+  { flag: 'nocorpos', get nome() { return t('camada.nocorpos'); }, get nota() { return t('camada.nocorpos.nota'); }, familia: 'Sistema solar', viva: true, icone: '◐' },
   // AS LINHAS DE ÓRBITA (item 77, 23/08) — `world/orbitas.ts`. A órbita
   // é o DADO, não enfeite: sem ela o Atlas mostra dez pontos soltos e
   // ninguém lê que Marte está entre a Terra e Júpiter. É instrumento de
   // leitura, da família do marcador e dos rótulos, e não matéria — o
   // que a chave desliga é a curva, nunca um fóton. Com ícone ela entra
   // na gaveta de graça e o selo a declara pela derivação de sempre.
-  { flag: 'noorbitas', get nome() { return t('camada.noorbitas'); }, familia: 'Sistema solar', viva: true, icone: '◜' },
+  { flag: 'noorbitas', get nome() { return t('camada.noorbitas'); }, get nota() { return t('camada.noorbitas.nota'); }, familia: 'Sistema solar', viva: true, icone: '◜' },
 ];
 
 /**
