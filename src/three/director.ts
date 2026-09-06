@@ -1180,22 +1180,12 @@ export class Director {
       // tudo renderiza DENTRO do composer (linear). Compilar sem RT gera a
       // variante errada e o primeiro frame re-linka tudo (medido: 8,7 s).
       const { warm, warmRt, descartar } = montarCenaDeAquecimento({
-        comNormal: [...this.nebula.warmupMaterials],
-        semNormal: [...(this.blackHole?.warmupMaterials ?? []), ...this.post.warmupMaterials],
+        comNormal: this.nebula.warmupMaterials,
+        semNormal: [
+          ...(this.blackHole?.warmupMaterials ?? []),
+          ...this.post.warmupMaterials,
+        ],
       });
-      // Terra, Lua e o par do CME do Sol (casca + partículas) NÃO usam
-      // material contra geometria de mentira: medido 05/09, mesmo
-      // "com normal" a Lua e as partículas ainda relinkavam na chegada
-      // (3,4 s e 3,0 s) — a chave de programa do three lê TODO booleano
-      // de atributo da geometria, não só `vertexNormals`. Cada um entra
-      // pelo OBJETO REAL (`compileAsync(objeto, camera, warm)`, sem
-      // reparentar — `warm` só empresta luzes/fog/environment, os
-      // getters ficam em terra.ts/lua.ts/stellarBody.ts).
-      const objetosReais: THREE.Object3D[] = [
-        ...corpos.terra.corpo.warmupObjetos,
-        ...corpos.lua.corpo.warmupObjetos,
-        ...this.sun.warmupObjetos,
-      ];
       this.engine.renderer.setRenderTarget(warmRt);
       try {
         // guardado porque o dispose PRECISA esperar por ele: o
@@ -1206,9 +1196,6 @@ export class Director {
         this.warmup = Promise.all([
           this.engine.renderer.compileAsync(this.engine.scene, this.engine.camera),
           this.engine.renderer.compileAsync(warm, this.engine.camera),
-          ...objetosReais.map((objeto) =>
-            this.engine.renderer.compileAsync(objeto, this.engine.camera, warm)
-          ),
         ]);
         await this.warmup;
       } finally {

@@ -263,25 +263,6 @@ export function descartarTextura(tex: THREE.Texture): void {
 }
 
 /**
- * 1×1 opaca — sampler válido para o material nascer no CONSTRUTOR, antes
- * de qualquer texel real chegar (o aquecimento de shaders do boot precisa
- * do material pronto sob o véu; o mesmo padrão de `nebula.ts`/`galaxy.ts`).
- * O conteúdo não importa: a casca some do palco antes de renderizar de
- * verdade (gate fechado), e o `publicar` do corpo troca só o `.value`.
- */
-export function texturaPlaceholder1x1(): THREE.DataTexture {
-  const tex = new THREE.DataTexture(
-    new Uint8Array([255, 255, 255, 255]),
-    1,
-    1,
-    THREE.RGBAFormat,
-    THREE.UnsignedByteType
-  );
-  tex.needsUpdate = true;
-  return tex;
-}
-
-/**
  * O que TODO corpo resolvido precisa saber para pedir os pixels dele —
  * o bloco que era copiado nas quatro `Opcoes*`, palavra por palavra.
  */

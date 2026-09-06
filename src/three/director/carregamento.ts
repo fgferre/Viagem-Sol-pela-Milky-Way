@@ -280,20 +280,9 @@ export function montarCorposDoPalco(opts: {
  * programa inclui a PRESENÇA do atributo normal (vertexNormals): o
  * quad da nebulosa é PlaneGeometry (tem normal), o FullScreenQuad do
  * BH é um triângulo só com position+uv — cada material compila contra
- * a geometria que vai usá-lo.
- *
- * Terra, Lua e o par do CME do Sol NÃO entram mais aqui (medido 05/09:
- * mesmo com geometria "com normal", a Lua e as partículas do CME ainda
- * relinkavam na chegada — 3,4 s e 3,0 s). A chave do programa do three
- * inclui TODOS os booleanos de atributo da geometria (`vertexTangents`,
- * `vertexUv*`, `hasPositionAttribute`, contagem de morph targets…), e
- * uma geometria de mentira só acerta por coincidência; o único jeito de
- * garantir a MESMA variante é compilar o OBJETO REAL. Esses três
- * corpos entram por `renderer.compileAsync(objetoReal, camera, warm)`
- * direto no director (ver ali), usando esta mesma `warm` como
- * `targetScene` (luzes/fog/environment) sem reparentá-los — o `visible
- * = false` deles não os esconde do `compile()` do three, que varre com
- * `traverse` (não `traverseVisible`) para achar materiais.
+ * a geometria que vai usá-lo. Devolve a cena e o que o shell precisa
+ * DESCARTAR no finally (o try/finally e o `this.warmup` que o dispose
+ * espera ficam na fachada — são disciplina do teardown dela).
  */
 export function montarCenaDeAquecimento(materiais: {
   comNormal: readonly THREE.Material[];

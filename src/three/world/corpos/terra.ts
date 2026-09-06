@@ -98,7 +98,7 @@ import {
 } from '../../shaders/terraShaders';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import type { OrientacaoNaCena } from './orientacaoNaCena';
-import { type Seguradores, TexturasDoCorpo, texturaPlaceholder1x1 } from './texturas';
+import { type Seguradores, TexturasDoCorpo } from './texturas';
 import type { CanalPedido, OpcoesDeTextura } from './texturas';
 import {
   escreverSombraDeEclipse,
@@ -397,8 +397,6 @@ export class TerraResolvida {
   private matSuperficie: THREE.ShaderMaterial | null = null;
   private matNuvens: THREE.ShaderMaterial | null = null;
   private matAtmosfera: THREE.ShaderMaterial | null = null;
-  /** a 1×1 de mentira dos uniforms de imagem, até o primeiro texel real */
-  private marcador1x1: THREE.Texture | null = null;
 
   // rascunhos reusados — zero alocação por quadro (M4 da casa)
   private readonly vX = new THREE.Vector3();
@@ -427,16 +425,6 @@ export class TerraResolvida {
       );
     }
     this.group.visible = false;
-    // AS CASCAS NASCEM AQUI, NO CONSTRUTOR — não mais na chegada da
-    // primeira textura. Medido 05/09 em Cinema: o link da superfície
-    // (10,3 KB) levava 4,7 s na volta pra casa do filme porque a GPU
-    // estava saturada por quadros pesados (com a placa livre, o mesmo
-    // link leva <20 ms) — o `garantirCascas` tardio empurrava o custo
-    // para o pior momento possível. Agora o material entra no
-    // aquecimento sob o véu (`warmupMaterials`, lido pelo director) com
-    // texturas 1×1 de mentira em todo uniform de imagem; a chegada real
-    // só troca o `.value` (nunca recompila o programa).
-    this.garantirCascas();
     this.texturas = new TexturasDoCorpo({
       corpo: 'earth',
       canais: PEDIDO_DA_TERRA,
@@ -444,6 +432,7 @@ export class TerraResolvida {
       etiqueta: 'terra',
       oQueNaoNasce: 'o globo não nasce nesta sessão',
       publicar: (porCanal) => {
+        this.garantirCascas();
         const uS = this.matSuperficie!.uniforms;
         uS.uMapaDia.value = porCanal.get('map');
         uS.uMapaNoite.value = porCanal.get('night');
@@ -675,25 +664,21 @@ export class TerraResolvida {
     escreverSombraDeEclipse(uA, this.sombra, this.vX, this.vY, this.vZ, 0);
   }
 
-  /** geometria + materiais + meshes, UMA vez — hoje no CONSTRUTOR, para o
-   *  aquecimento do boot achar o programa pronto (ver o comentário lá). */
+  /** geometria + materiais + meshes, UMA vez, na primeira necessidade. */
   private garantirCascas() {
     if (this.geometria || this.disposto) return;
     // uma geometria unitária para as três cascas — o raio mora na matriz
     this.geometria = new THREE.SphereGeometry(1, 128, 64);
-    // 1×1 de mentira em todo uniform de imagem: o programa compila igual
-    // sem depender de um texel real (ver `texturaPlaceholder1x1`).
-    const marcador = (this.marcador1x1 = texturaPlaceholder1x1());
 
     const achat = RAIO_POLAR_TERRA_PC / RAIO_EQ_TERRA_PC;
     this.matSuperficie = new THREE.ShaderMaterial({
       vertexShader: TERRA_VERT,
       fragmentShader: TERRA_FRAG,
       uniforms: {
-        uMapaDia: { value: marcador },
-        uMapaNoite: { value: marcador },
-        uMapaNormal: { value: marcador },
-        uMapaRugosidade: { value: marcador },
+        uMapaDia: { value: null },
+        uMapaNoite: { value: null },
+        uMapaNormal: { value: null },
+        uMapaRugosidade: { value: null },
         uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
         uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
         uLuzGanho: { value: 1 },
@@ -720,7 +705,7 @@ export class TerraResolvida {
       vertexShader: TERRA_VERT,
       fragmentShader: NUVENS_FRAG,
       uniforms: {
-        uMapaNuvens: { value: marcador },
+        uMapaNuvens: { value: null },
         uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
         uLuzGanho: { value: 1 },
         ...uniformsDeEclipseNeutros(),
@@ -769,20 +754,6 @@ export class TerraResolvida {
     this.group.add(this.superficie, this.nuvens, this.atmosfera);
   }
 
-  /** o GRUPO real (as três cascas, geometria e material verdadeiros),
-   *  para a pré-compilação sob o véu (director.init) via
-   *  `renderer.compileAsync(objeto, camera, warm)` — NÃO um material
-   *  contra geometria de mentira: a chave de programa do three inclui
-   *  todo booleano de atributo da geometria (`vertexNormals`,
-   *  `vertexUv*`…), e só o objeto de verdade garante a MESMA variante
-   *  que o filme vai usar (medido 05/09: a Lua e o CME, tratados por
-   *  material solto, ainda relinkavam na chegada). `visible = false`
-   *  não esconde nada do `compile()` do three (ele varre por
-   *  `traverse`, não `traverseVisible`, atrás de materiais). */
-  get warmupObjetos(): THREE.Object3D[] {
-    return [this.group];
-  }
-
   dispose() {
     this.disposto = true;
     this.group.clear();
@@ -790,7 +761,6 @@ export class TerraResolvida {
     this.matSuperficie?.dispose();
     this.matNuvens?.dispose();
     this.matAtmosfera?.dispose();
-    this.marcador1x1?.dispose();
     this.texturas.dispose();
   }
 }

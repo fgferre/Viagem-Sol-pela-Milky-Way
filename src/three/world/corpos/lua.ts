@@ -126,13 +126,7 @@ import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { GLSL_NORMAL_DO_MAPA, diametroAparentePx } from './corpos';
 import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
-import {
-  CANAL_MAP,
-  CANAL_NORMAL,
-  type Seguradores,
-  TexturasDoCorpo,
-  texturaPlaceholder1x1,
-} from './texturas';
+import { CANAL_MAP, CANAL_NORMAL, type Seguradores, TexturasDoCorpo } from './texturas';
 import type { OpcoesDeTextura } from './texturas';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import {
@@ -324,8 +318,6 @@ export class LuaResolvida {
   private geometria: THREE.SphereGeometry | null = null;
   private superficie: THREE.Mesh | null = null;
   private matSuperficie: THREE.ShaderMaterial | null = null;
-  /** a 1×1 de mentira dos uniforms de imagem, até o primeiro texel real */
-  private marcador1x1: THREE.Texture | null = null;
 
   // rascunhos reusados — zero alocação por quadro (M4 da casa)
   private readonly vX = new THREE.Vector3();
@@ -343,15 +335,6 @@ export class LuaResolvida {
 
   constructor(opcoes: OpcoesDaLua) {
     this.group.visible = false;
-    // A CASCA NASCE AQUI, NO CONSTRUTOR — não mais na chegada da primeira
-    // textura. Medido 05/09 em Cinema: o link do material (8,9 KB) levava
-    // 4,2 s na volta pra casa do filme porque a GPU estava saturada por
-    // quadros pesados (com a placa livre, o mesmo link leva <20 ms) — o
-    // `garantirCasca` tardio empurrava o custo para o pior momento
-    // possível. Agora o material entra no aquecimento sob o véu
-    // (`warmupMaterials`, lido pelo director) com texturas 1×1 de mentira
-    // nos uniforms de imagem; a chegada real só troca o `.value`.
-    this.garantirCasca();
     // DOIS canais desde o item 140 (`map` e `normal`), na transação
     // única. A dose de VRAM é POR CANAL (`alvoDePixels`), e as duas
     // doses são as de sempre: `map` é canal de ASSUNTO e fica com o 8k
@@ -368,6 +351,7 @@ export class LuaResolvida {
       // ser um mundo e volta a ser o que é de longe, uma luz
       oQueNaoNasce: 'a Lua não nasce nesta sessão',
       publicar: (porCanal) => {
+        this.garantirCasca();
         // o lote é ATÔMICO (texturas.ts): ou vieram os dois, ou nenhum —
         // é o que permite ao shader confiar em `uMapaNormal` sempre que
         // houver casca
@@ -544,20 +528,16 @@ export class LuaResolvida {
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
   }
 
-  /** geometria + material + mesh, UMA vez — hoje no CONSTRUTOR, para o
-   *  aquecimento do boot achar o programa pronto (ver o comentário lá). */
+  /** geometria + material + mesh, UMA vez, na primeira necessidade. */
   private garantirCasca() {
     if (this.geometria || this.disposto) return;
     this.geometria = new THREE.SphereGeometry(1, 128, 64);
-    // 1×1 de mentira nos dois uniforms de imagem — o programa compila
-    // igual sem depender de um texel real (ver `texturaPlaceholder1x1`).
-    const marcador = (this.marcador1x1 = texturaPlaceholder1x1());
     this.matSuperficie = new THREE.ShaderMaterial({
       vertexShader: LUA_VERT,
       fragmentShader: LUA_FRAG,
       uniforms: {
-        uMapaDia: { value: marcador },
-        uMapaNormal: { value: marcador },
+        uMapaDia: { value: null },
+        uMapaNormal: { value: null },
         uRelevoNormal: { value: ESCALA_DA_NORMAL_DA_LUA },
         uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
         uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
@@ -579,25 +559,11 @@ export class LuaResolvida {
     this.group.add(this.superficie);
   }
 
-  /** o GRUPO real (a casca, geometria e material verdadeiros), para a
-   *  pré-compilação sob o véu (director.init) via
-   *  `renderer.compileAsync(objeto, camera, warm)` — NÃO um material
-   *  contra geometria de mentira: medido 05/09 a Lua relinkou 3,4 s na
-   *  chegada mesmo com a geometria de mentira "com normal" (a chave do
-   *  programa do three inclui todo booleano de atributo da geometria
-   *  real, não só `vertexNormals`). `visible = false` não esconde nada
-   *  do `compile()` do three (ele varre por `traverse`, não
-   *  `traverseVisible`, atrás de materiais). */
-  get warmupObjetos(): THREE.Object3D[] {
-    return [this.group];
-  }
-
   dispose() {
     this.disposto = true;
     this.group.clear();
     this.geometria?.dispose();
     this.matSuperficie?.dispose();
-    this.marcador1x1?.dispose();
     this.texturas.dispose();
   }
 }
