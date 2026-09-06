@@ -23,4 +23,4 @@ Item seguinte (autorizado 05/09, o modo de hoje fica como opção): o QUADRO DEN
 - [ ] O dono testa as visualizações e decide os padrões por preset.
 - [ ] Ideia exata pendente (BACKLOG): partículas com alpha exatamente zero não rasterizarem.
 
-Engasgos (05/09, item novo): ver BACKLOG "Engasgos de LINK de shader". Feito: CME do Sol no aquecimento da abertura (commit desta noite). A fazer: Terra/Lua aquecidas na abertura com texturas 1×1; perfilar o engasgo de 4,4 s em t≈15.
+Engasgos (05/09): FALSO POSITIVO da régua sem vsync — com vsync não há engasgo na chegada; os aquecimentos de Terra/Lua/CME foram revertidos (ver BACKLOG 'ARMADILHA DA RÉGUA').
