@@ -2,9 +2,41 @@
 
 Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
-Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 224.**
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 225.**
 
-## O BASTÃO — onde a rodada parou (05/09, madrugada)
+## O BASTÃO — onde a rodada parou (06/09, madrugada)
+
+**06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar
+rodada").** Começou com o veredito dele sobre a gaveta Avançado dos
+Ajustes: "esse menu de seletores ficou muito complexo… muitas
+explicações em letra pequena e pouco claro o que é a opção que está
+sendo alterada, ela não em destaque… o layout está pobre e confuso,
+longe de ser um menu de jogo AAA profissional. as explicações deveriam
+ir para um ícone de interrogação, quando o mouse planar em cima ou
+quando for clicado". Nasceu o molde: uma linha por ajuste, rótulo forte
+à esquerda, controle segmentado à direita com o valor ativo em dourado
+(e o valor que o PRESET escolheu sublinhado), explicação só no botão ?
+(balão no hover/foco, preso no clique), peça única `Ajuda.tsx` +
+`useDicaPresa`. Ele pediu "rótulos longos em uma linha só, e o dourado
+mais forte", e depois "aplica o mesmo padrão" em Camadas
+(interruptores + 20 frases de explicação MINHAS, uma por camada, para
+ele revisar), Busca (cabeçalho com ?, campo com lupa, etiqueta de tipo
+nos resultados), Tempo (data em destaque; folha com Transporte,
+Velocidade, Referência; barra de mesa compacta) e na ficha dos corpos
+(rótulo/valor por linha, procedência com ponto de cor, seções como
+linhas, ? dos selos). Ele estranhou uma foto com o balão aberto:
+"porque tem toda essa explicação aparecendo?" — era eu clicando no ?
+para mostrar; o defeito real (balão abrindo sozinho ao abrir a folha,
+foco caindo no ?) foi consertado no foco de entrada de todo diálogo
+(pula ? e ✕, sem rolar). Fotos: `capturas/ajustes-v5-*.png`,
+`camadas-v2-*.png`, `busca-v3-*.png`, `tempo-v3/v6-*.png`,
+`ficha-v4-*.png`. **224 ABERTO — ele revisa os cinco painéis e as 20
+frases das camadas.** Continuam as duas falhas de juiz anteriores
+(nome na ficha ao mudar o foco; rótulo de Netuno sob a ficha no toque)
+e o 223 (seletores de gás e partículas) segue esperando a verificação
+dele. Servidor: `npm run dev -- --host`.
+
+## O BASTÃO anterior (05/09, madrugada)
 
 **05/09 (rodada de FLUIDEZ, encerrada por ordem dele: "encerrar
 rodada"; ele ainda "não verificou": "siga com o próximo item e no
