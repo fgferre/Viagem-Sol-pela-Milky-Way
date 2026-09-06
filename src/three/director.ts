@@ -1211,13 +1211,6 @@ export class Director {
           ),
         ]);
         await this.warmup;
-        // UM DESENHO DE VERDADE dos objetos reais, ainda na carga. Compilar
-        // não basta no Metal: o pipeline nasce no PRIMEIRO DRAW, e com a
-        // placa saturada pelo filme esse primeiro draw custou 3,0 s nas
-        // partículas do CME (medido 05/09, 3 de 3 corridas, com o programa
-        // já aquecido e único em renderer.info). Cada objeto entra
-        // emprestado na cena de aquecimento, visível, e volta ao pai.
-        this.desenharUmaVez(objetosReais, warm);
       } finally {
         this.warmup = null;
         this.engine.renderer.setRenderTarget(null);
@@ -1236,35 +1229,6 @@ export class Director {
     // seguinte consertaria (o tier pedido já é o vivo).
     if (this.engine.quality !== this.tierDoMundo) {
       void this.reassarMundo(this.engine.quality);
-    }
-  }
-
-  /** ver o aquecimento em `init`: reparenta, força `visible`, desenha, devolve */
-  private desenharUmaVez(objetos: THREE.Object3D[], cena: THREE.Scene) {
-    const guardados = objetos.map((o) => ({ o, pai: o.parent, visivel: o.visible }));
-    for (const g of guardados) {
-      cena.add(g.o);
-      g.o.visible = true;
-      g.o.traverse((f) => {
-        (f as THREE.Object3D & { __visivel?: boolean }).__visivel = f.visible;
-        f.visible = true;
-      });
-    }
-    try {
-      this.engine.renderer.render(cena, this.engine.camera);
-    } finally {
-      for (const g of guardados) {
-        g.o.traverse((f) => {
-          const c = f as THREE.Object3D & { __visivel?: boolean };
-          if (c.__visivel !== undefined) {
-            f.visible = c.__visivel;
-            delete c.__visivel;
-          }
-        });
-        g.o.visible = g.visivel;
-        if (g.pai) g.pai.add(g.o);
-        else cena.remove(g.o);
-      }
     }
   }
 
