@@ -174,7 +174,7 @@ export function lerPortaEscala(bruto: string | null | undefined): number | null 
   return ESCALAS_DE_RESOLUCAO.find((f) => f === v) ?? null;
 }
 
-interface QualityPreset {
+export interface QualityPreset {
   pixelRatio: number;
   nebulosa: NivelDaNebulosa;
   grain: number;
@@ -204,7 +204,11 @@ interface QualityPreset {
 // campo e aponta `metade`. Medido em tela real, t=150 dentro do disco,
 // 2560×1266: 72 ms com todas as partículas, 14 ms escondendo-as
 // (`?nopts=1`) — a fração é a alavanca nova.
-const PRESETS: Record<QualityLevel, QualityPreset> = {
+// EXPORTADO (redesenho do painel de Ajustes): o painel precisa mostrar
+// qual valor da gaveta o preset RESOLVE, para marcar o segmento efetivo
+// quando o controle está em "do preset" — sem isso ele lê `null` e não
+// tem como dizer "média" quando o preset é `alta`.
+export const PRESETS: Record<QualityLevel, QualityPreset> = {
   cinema: { pixelRatio: 2.0, nebulosa: 'alta', grain: 0.012, gas: 'fino', particulas: 'todas' },
   alta: { pixelRatio: 1.5, nebulosa: 'media', grain: 0.01, gas: 'macio', particulas: 'metade' },
   performance: {

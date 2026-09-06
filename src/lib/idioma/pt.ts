@@ -105,6 +105,9 @@ export const PT = {
   'ajustes.titulo': 'Ajustes',
   'ajustes.aria': 'Ajustes de renderização',
   'ajustes.fechar': 'Fechar ajustes',
+  // o rótulo do botão "?" de cada linha — a explicação em letra miúda
+  // saiu do fluxo e virou dica sob demanda (redesenho do painel, 05/09)
+  'ajustes.ajuda': 'Ajuda: {rotulo}',
   'ajustes.idioma': 'Idioma',
   'ajustes.idiomaNota': 'Troca a língua do app agora, sem recarregar nada.',
   'ajustes.tom': 'Curva de tom',
@@ -115,24 +118,32 @@ export const PT = {
   'ajustes.tom.neutral': 'meio-termo',
   'ajustes.tom.linear': 'sem curva — estoura, mostra o cru',
   'ajustes.exposicao': 'Exposição',
-  'ajustes.exposicaoCom': 'Exposição · {valor}',
   'ajustes.qualidade': 'Qualidade',
   'ajustes.qualidadeNota':
     'Troca ao vivo, sem recarregar. A parte pesada — a população da galáxia e o Sol — é refeita em segundo plano e entra de uma vez; até lá a cena continua como está. O auto deixa a medição escolher — e ninguém escolhe por você sem esse clique.',
   'ajustes.avancado': 'Avançado',
-  'ajustes.msaa': 'Suavização de bordas (MSAA)',
+  // ROTULO CURTO (polimento 06/09): a linha virou coluna única de
+  // 13.5rem para o controle, e "Suavização de bordas" não cabia ao
+  // lado do "?" sem quebrar — o "de bordas" já está na dica.
+  'ajustes.msaa': 'Anti-aliasing',
   'ajustes.msaaNota':
     'Suaviza as beiras dos corpos e das linhas, e custa quadros. Troque aqui e compare com os quadros/s logo acima — a troca é na hora, sem recarregar. "Do preset" devolve a escolha à qualidade.',
-  // "Do preset" é o estado sem escolha dos TRÊS controles da gaveta
-  'ajustes.doPreset': 'Do preset',
-  'ajustes.msaaDesligada': 'Desligada',
-  'ajustes.nebulosaControle': 'Nebulosa (raymarch)',
+  // "Preset" é o primeiro segmento dos CINCO controles da gaveta —
+  // o estado sem escolha à mão. Era "Do preset"; o redesenho do painel
+  // (05/09) o encurta para caber no segmento junto dos outros.
+  'ajustes.preset': 'Preset',
+  'ajustes.msaaDesligada': 'Off',
+  // ROTULO CURTO (polimento 06/09): "(raymarch)" era jargão de motor,
+  // não de gosto — some do rótulo e continua na dica de quem quiser.
+  'ajustes.nebulosaControle': 'Nebulosa',
   'ajustes.nebulosaNota':
     'O gás da Via Láctea é desenhado passo a passo, e é a parte mais cara do quadro. Menos passos deixam a nuvem mais chapada e mais granulada; mais passos a deixam macia e custam quadros.',
   'ajustes.nebulosa.baixa': 'Baixa',
   'ajustes.nebulosa.media': 'Média',
   'ajustes.nebulosa.alta': 'Alta',
-  'ajustes.escalaDeResolucao': 'Escala de resolução',
+  // ROTULO CURTO (polimento 06/09): "Escala de" era redundante com os
+  // próprios segmentos (que já mostram a fração/percentual).
+  'ajustes.escalaDeResolucao': 'Resolução',
   'ajustes.escalaDeResolucaoNota':
     'Quantos pixels a cena desenha, em fração da tela. 50% desenha um quarto dos pixels — é a alavanca mais forte daqui, e a que mais borra as beiras. O texto e os controles não mudam de tamanho.',
   'ajustes.gasControle': 'Gás volumétrico',
@@ -141,16 +152,22 @@ export const PT = {
   'ajustes.gas.antigo': 'Original',
   'ajustes.gas.fino': 'Fino',
   'ajustes.gas.macio': 'Macio',
-  'ajustes.particulasControle': 'Partículas da galáxia',
+  // ROTULO CURTO (polimento 06/09): "da galáxia" é óbvio pela seção
+  // (Avançado, ao lado do gás e da nebulosa) e pela dica.
+  'ajustes.particulasControle': 'Partículas',
   'ajustes.particulasNota':
     'Quantas das partículas carregadas a cena desenha, com o brilho total compensado: menos pontos, cada um mais forte — o mesmo fluxo, granulação diferente.',
   'ajustes.particulas.todas': 'Todas',
   'ajustes.particulas.metade': 'Metade',
-  'ajustes.particulas.quarto': 'Um quarto',
-  'ajustes.texto': 'Tamanho do texto · {degrau}',
+  'ajustes.particulas.quarto': '¼',
+  // ROTULO CURTO (polimento 06/09): com o "{degrau}" (ex.: "· 140%")
+  // sempre junto, "Tamanho do texto" só não cabia por ele.
+  'ajustes.texto': 'Texto · {degrau}',
   'ajustes.textoNota':
     'Vale para o HUD inteiro — legenda, controles, selo e os nomes das estrelas. Não mexe na cena: dentro do Atlas o enquadramento recua um pouco para o texto maior não cobrir o alvo.',
-  'ajustes.rotulos3d': 'Beta · Rótulos 3D',
+  // ROTULO CURTO (polimento 06/09): o "Beta ·" some do rótulo — a dica
+  // já termina em "experimental".
+  'ajustes.rotulos3d': 'Rótulos 3D',
   'ajustes.rotulos3dNota':
     'Os nomes dos corpos viram texto dentro da própria cena, com profundidade — o visual do projeto irmão. Quem aparece continua sendo decidido pelas mesmas regras de sempre, e o anel segue sendo o alvo do clique. Vale no Atlas; experimental.',
   'ajustes.desligados': 'Desligados',

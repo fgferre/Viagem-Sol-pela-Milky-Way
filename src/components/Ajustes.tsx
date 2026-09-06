@@ -11,6 +11,24 @@
 // para a mesma tabela. A porta agora é a gaveta (`GavetaDeCamadas`), nos
 // dois modos, e este painel ficou com o que é dele.
 //
+// REDESENHO (05/09) — veredito do dono: *"muito complexo, muitas
+// explicações em letra pequena, pouco claro o que é a opção que está
+// sendo alterada"*. Três mudanças:
+//  1. LINHA, não parágrafo — cada controle é `.ajustes-item`: rótulo à
+//     esquerda, controle à direita. O `<h3>` de seção só sobrevive onde
+//     agrupa MAIS de uma linha (a gaveta Avançado); nos demais o próprio
+//     rótulo da linha já diz o que ela é, e repetir num título acima
+//     seria a mesma complexidade que o dono apontou.
+//  2. AS NOTAS VIRARAM DICA — o texto miúdo que explicava cada opção só
+//     aparece sob um "?": no hover/foco (CSS) ou fixado por clique
+//     (estado `dicaPresa`, só um por vez).
+//  3. GRUPOS DE BOTÃO VIRARAM SEGMENTADO — mesma semântica
+//     (`role="group"`, `aria-pressed`), moldura só. Nos cinco controles
+//     da gaveta Avançado, o segmento que bate com o valor que o PRESET
+//     resolve ganha `.efetivo` — visível SÓ quando "Preset" é a escolha
+//     ativa, para o visitante ver o que a máquina está desenhando sem
+//     abrir mão de "Preset" para descobrir.
+//
 // AO VIVO: tom, exposição e tamanho do texto — o tick lê a cada quadro,
 // então a troca é imediata.
 //
@@ -30,6 +48,7 @@
 // deixava o slider mostrando o valor antigo. Um estado, um dono.
 // ============================================================
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { useDialogFocus } from '../lib/dialogFocus';
 import { IDIOMAS, definirIdioma, t } from '../lib/idioma';
 import type { ChaveDeTexto } from '../lib/idioma';
@@ -43,7 +62,7 @@ import {
   rotuloDaEscalaDeResolucao,
   rotuloDaQualidade,
 } from '../three/atlasConfig';
-import { ESCALAS_DE_RESOLUCAO } from '../three/core/engine';
+import { PRESETS, ESCALAS_DE_RESOLUCAO } from '../three/core/engine';
 import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
@@ -52,6 +71,7 @@ import type {
   ParticulasDaGalaxia,
   ToneMapMode,
 } from '../three/core/engine';
+import { AMOSTRAS_POR_TIER } from '../three/core/post';
 
 /**
  * As quatro curvas. O NOME é marca (ACES, AgX) e não se traduz; a NOTA
@@ -75,7 +95,7 @@ const TONS: { id: ToneMapMode; nome: string; nota: ChaveDeTexto }[] = [
  * uma tabela de constantes nasceria na língua do primeiro import.
  */
 const AMOSTRAS: { valor: number | null; nome: () => string }[] = [
-  { valor: null, nome: () => t('ajustes.doPreset') },
+  { valor: null, nome: () => t('ajustes.preset') },
   { valor: 0, nome: () => t('ajustes.msaaDesligada') },
   { valor: 2, nome: () => '2×' },
   { valor: 4, nome: () => '4×' },
@@ -90,7 +110,7 @@ const AMOSTRAS: { valor: number | null; nome: () => string }[] = [
  * (`NEBULOSA_POR_NIVEL`), a mesma que os presets consultam.
  */
 const NEBULOSAS: { valor: NivelDaNebulosa | null; nome: () => string }[] = [
-  { valor: null, nome: () => t('ajustes.doPreset') },
+  { valor: null, nome: () => t('ajustes.preset') },
   ...(['baixa', 'media', 'alta'] as const).map((n) => ({
     valor: n,
     nome: () => nivelDaNebulosaEmTexto(n),
@@ -98,7 +118,7 @@ const NEBULOSAS: { valor: NivelDaNebulosa | null; nome: () => string }[] = [
 ];
 
 const ESCALAS: { valor: number | null; nome: () => string }[] = [
-  { valor: null, nome: () => t('ajustes.doPreset') },
+  { valor: null, nome: () => t('ajustes.preset') },
   ...ESCALAS_DE_RESOLUCAO.map((f) => ({
     valor: f as number,
     nome: () => rotuloDaEscalaDeResolucao(f),
@@ -111,7 +131,7 @@ const ESCALAS: { valor: number | null; nome: () => string }[] = [
  * valores são as chaves que vão à URL (`?gas=`) e ao selo.
  */
 const GASES: { valor: GasVolumetrico | null; nome: () => string }[] = [
-  { valor: null, nome: () => t('ajustes.doPreset') },
+  { valor: null, nome: () => t('ajustes.preset') },
   ...(['antigo', 'fino', 'macio'] as const).map((g) => ({
     valor: g,
     nome: () => gasVolumetricoEmTexto(g),
@@ -124,12 +144,127 @@ const GASES: { valor: GasVolumetrico | null; nome: () => string }[] = [
  * valores são as chaves que vão à URL (`?particulas=`) e ao selo.
  */
 const PARTICULAS: { valor: ParticulasDaGalaxia | null; nome: () => string }[] = [
-  { valor: null, nome: () => t('ajustes.doPreset') },
+  { valor: null, nome: () => t('ajustes.preset') },
   ...(['todas', 'metade', 'quarto'] as const).map((p) => ({
     valor: p,
     nome: () => particulasDaGalaxiaEmTexto(p),
   })),
 ];
+
+/** Um segmento do `.ajustes-seg`. `efetivo` é o sublinhado dourado que
+ *  mostra o que o PRESET resolve quando "Preset" é a escolha ativa. */
+interface Segmento<T> {
+  valor: T;
+  nome: string;
+  lang?: string;
+  efetivo?: boolean;
+}
+
+/**
+ * O SEGMENTADO — moldura única para toda fileira de botões do painel
+ * (idioma, tom, qualidade e os cinco da gaveta). Mesma semântica de
+ * antes (`role="group"`, `aria-pressed`); o que muda é que os botões
+ * ficam JUNTOS, com borda e preenchimento partilhados, em vez de uma
+ * fileira de botões soltos — o molde de um menu de jogo, não de um
+ * formulário.
+ */
+function Segmentado<T>({
+  aria,
+  valor,
+  opcoes,
+  onEscolher,
+}: {
+  aria: string;
+  valor: T;
+  opcoes: Segmento<T>[];
+  onEscolher: (v: T) => void;
+}) {
+  return (
+    <div className="ajustes-seg" role="group" aria-label={aria}>
+      {opcoes.map((o) => (
+        <button
+          type="button"
+          key={String(o.valor)}
+          lang={o.lang}
+          className={
+            (valor === o.valor ? 'on' : '') + (o.efetivo ? ' efetivo' : '')
+          }
+          aria-pressed={valor === o.valor}
+          onClick={() => onEscolher(o.valor)}
+        >
+          {o.nome}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * UMA LINHA DO PAINEL — rótulo à esquerda (com o "?" de ajuda quando há
+ * dica), controle à direita. É o átomo do redesenho: o que era um
+ * `<h3>` mais um `<p className="ajustes-nota">` mais a fileira de
+ * botões vira UM elemento, e a explicação só aparece quando pedida.
+ *
+ * A DICA mostra no hover/foco do "?" (CSS, `:hover`/`:focus-within` em
+ * `.ajustes-ajuda-caixa`) e FIXA no clique — só uma por vez, e é por
+ * isso que o estado mora no painel, não na linha: fixar a de baixo tem
+ * de apagar a de cima.
+ */
+function LinhaDeAjuste({
+  id,
+  rotulo,
+  largo,
+  dica,
+  dicaPresa,
+  onAlternarDica,
+  children,
+}: {
+  id: string;
+  rotulo: string;
+  /** o controle ocupa a largura toda, abaixo do rótulo (a qualidade) */
+  largo?: boolean;
+  dica?: ReactNode;
+  dicaPresa: string | null;
+  onAlternarDica: (id: string) => void;
+  children: ReactNode;
+}) {
+  const presa = dicaPresa === id;
+  return (
+    <div className={'ajustes-item' + (largo ? ' ajustes-item--largo' : '')}>
+      <span className="ajustes-rotulo-caixa">
+        <span className="ajustes-rotulo">{rotulo}</span>
+        {dica != null && (
+          <span className="ajustes-ajuda-caixa">
+            <button
+              type="button"
+              className="ajustes-ajuda"
+              aria-label={t('ajustes.ajuda', { rotulo })}
+              aria-expanded={presa}
+              aria-controls={`ajustes-dica-${id}`}
+              onClick={(evento) => {
+                // o clique NÃO pode borbulhar até o "clique fora fecha"
+                // do painel (ver `onClick` do diálogo), senão a mesma
+                // interação que fixa a dica a desfixaria no mesmo gesto
+                evento.stopPropagation();
+                onAlternarDica(id);
+              }}
+            >
+              ?
+            </button>
+            <span
+              id={`ajustes-dica-${id}`}
+              role="tooltip"
+              className={'ajustes-dica' + (presa ? ' presa' : '')}
+            >
+              {dica}
+            </span>
+          </span>
+        )}
+      </span>
+      <div className="ajustes-controle">{children}</div>
+    </div>
+  );
+}
 
 export function Ajustes({
   aberto,
@@ -187,7 +322,11 @@ export function Ajustes({
   onReverConvite?: () => void;
 }) {
   const [copiado, setCopiado] = useState(false);
+  const [dicaPresa, setDicaPresa] = useState<string | null>(null);
   const idioma = useIdioma();
+
+  const alternarDica = (id: string) =>
+    setDicaPresa((atual) => (atual === id ? null : id));
 
   // O painel NÃO aplica ?tone=/?exp= na montagem: efeito de filho roda antes
   // do efeito do pai, então o Director ainda não existe aqui. Quem aplica é o
@@ -198,6 +337,14 @@ export function Ajustes({
   // declara `aria-modal` — as três coisas que este painel não tinha.
   const dialogo = useDialogFocus('ajustes', aberto, onFechar);
 
+  // O PRESET VIVO — o que MSAA/nebulosa/gás/partículas resolvem quando o
+  // visitante não escolheu nada na gaveta. `qualidade.tier` é o tier
+  // QUE ESTÁ RODANDO (em Auto ele muda sem clique), então o "efetivo" que
+  // a linha mostra é sempre o do quadro de agora, nunca o de um tier que
+  // só existe no seletor.
+  const presetVivo = PRESETS[qualidade.tier];
+  const amostrasEfetivas = AMOSTRAS_POR_TIER[qualidade.tier];
+
   if (!aberto) return null;
 
   return (
@@ -205,6 +352,24 @@ export function Ajustes({
       className="hud-cartao hud-dialogo ajustes"
       aria-label={t('ajustes.aria')}
       {...dialogo}
+      onClick={() => {
+        // CLIQUE EM QUALQUER LUGAR DO PAINEL desfixa a dica presa — o "?"
+        // que a fixou já parou o próprio clique (`stopPropagation`), então
+        // só chega aqui quem clicou fora dela.
+        if (dicaPresa) setDicaPresa(null);
+      }}
+      onKeyDownCapture={(evento) => {
+        // ESC COM DICA PRESA desfixa e NÃO fecha o diálogo — mas só
+        // quando há dica presa: sem isso o Esc de sempre (fechar) some,
+        // e o juiz de a11y cobra exatamente esse Esc. A CAPTURA é o que
+        // garante rodar ANTES do listener de fechar do `useDialogFocus`
+        // (que está na fase de bolha, no mesmo nó): parar a propagação
+        // aqui impede o evento de sequer chegar lá.
+        if (evento.key === 'Escape' && dicaPresa) {
+          evento.stopPropagation();
+          setDicaPresa(null);
+        }
+      }}
     >
       <div className="ajustes-topo">
         <span>{t('ajustes.titulo')}</span>
@@ -216,51 +381,65 @@ export function Ajustes({
       {/* O SELETOR DE IDIOMA (item 130, F1). Mora AQUI e não na barra
           nem na URL: a barra é o lugar do que se usa a toda hora, e a
           URL desta casa é espelho da vista, não painel — knob de URL
-          foi recusado pelo dono. É o mesmo molde de todo controle deste
-          painel (fileira de botões, o de agora com `on`) e troca a
-          língua AO VIVO, sem recarregar, como tudo o mais daqui.
+          foi recusado pelo dono. Troca a língua AO VIVO, sem recarregar.
           O nome de cada língua vem NA PRÓPRIA LÍNGUA ("Português",
           "English"): quem não lê a língua de agora precisa reconhecer a
           dele na lista, e "Portuguese" não ajuda quem procura o
           português. */}
-      <div className="ajustes-secao">
-        <h3>{t('ajustes.idioma')}</h3>
-        <p className="ajustes-nota">{t('ajustes.idiomaNota')}</p>
-        <div className="ajustes-linha">
-          {IDIOMAS.map((lingua) => (
-            <button
-              type="button"
-              key={lingua.id}
-              lang={lingua.id}
-              className={idioma === lingua.id ? 'on' : ''}
-              aria-pressed={idioma === lingua.id}
-              onClick={() => definirIdioma(lingua.id)}
-            >
-              {lingua.nome}
-            </button>
-          ))}
-        </div>
-      </div>
+      <LinhaDeAjuste
+        id="idioma"
+        rotulo={t('ajustes.idioma')}
+        dica={t('ajustes.idiomaNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.idioma')}
+          valor={idioma}
+          opcoes={IDIOMAS.map((lingua) => ({
+            valor: lingua.id,
+            nome: lingua.nome,
+            lang: lingua.id,
+          }))}
+          onEscolher={definirIdioma}
+        />
+      </LinhaDeAjuste>
 
-      <div className="ajustes-secao">
-        <h3>{t('ajustes.tom')}</h3>
-        <p className="ajustes-nota">{t('ajustes.tomNota')}</p>
-        {TONS.map((curva) => (
-          <label key={curva.id} className="ajustes-radio">
-            <input
-              type="radio"
-              name="tom"
-              checked={tom === curva.id}
-              onChange={() => onTom(curva.id)}
-            />
-            <span>{curva.nome}</span>
-            <em>{t(curva.nota)}</em>
-          </label>
-        ))}
-      </div>
+      <LinhaDeAjuste
+        id="tom"
+        rotulo={t('ajustes.tom')}
+        dica={
+          <>
+            <p>{t('ajustes.tomNota')}</p>
+            <ul className="ajustes-dica-lista">
+              {TONS.map((curva) => (
+                <li key={curva.id}>
+                  <strong>{curva.nome}</strong> — {t(curva.nota)}
+                </li>
+              ))}
+            </ul>
+          </>
+        }
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.tom')}
+          valor={tom}
+          opcoes={TONS.map((curva) => ({ valor: curva.id, nome: curva.nome }))}
+          onEscolher={onTom}
+        />
+      </LinhaDeAjuste>
 
-      <div className="ajustes-secao">
-        <h3>{t('ajustes.exposicaoCom', { valor: exposicao.toFixed(2) })}</h3>
+      {/* EXPOSIÇÃO não tem "?": nunca teve nota própria (a frase que
+          existia era só o valor, não uma explicação), e o redesenho não
+          inventa texto novo — o valor mora ao lado do controle. */}
+      <LinhaDeAjuste
+        id="exposicao"
+        rotulo={t('ajustes.exposicao')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
         <input
           type="range"
           min="0.4"
@@ -270,199 +449,200 @@ export function Ajustes({
           aria-label={t('ajustes.exposicao')}
           onChange={(e) => onExposicao(Number(e.target.value))}
         />
-      </div>
+        <span className="ajustes-valor">{exposicao.toFixed(2)}</span>
+      </LinhaDeAjuste>
 
-      <div className="ajustes-secao">
-        <h3>{t('ajustes.qualidade')}</h3>
-        <p className="ajustes-nota">{t('ajustes.qualidadeNota')}</p>
-        <div className="ajustes-linha">
-          {QUALIDADES.map((q) => (
-            <button
-              type="button"
-              key={q.id}
-              className={qualidade.escolha === q.id ? 'on' : ''}
-              onClick={() => onQualidade(q.id)}
-            >
-              {q.nome}
-            </button>
-          ))}
-        </div>
-        {/* A MEDIÇÃO, DITA (Ajustes D). A frase é a mesma do título do
-            seletor da barra — uma função só (`rotuloDaQualidade`), senão
-            os dois hospedeiros contariam a mesma coisa de dois jeitos.
-            Ela é `aria-live` porque muda SOZINHA: quem está com o painel
-            aberto quando o quadro engasga tem de ouvir a sugestão sem
-            precisar reabrir nada — e por isso a região tem SÓ a frase que
-            muda. O convite ao auto é copy fixa e mora na nota acima; aqui
-            dentro ele seria relido em voz alta a cada medida nova. */}
-        <p className="ajustes-nota ajustes-medida" role="status" aria-live="polite">
-          {rotuloDaQualidade(qualidade)}
-        </p>
-      </div>
+      <LinhaDeAjuste
+        id="qualidade"
+        largo
+        rotulo={t('ajustes.qualidade')}
+        dica={t('ajustes.qualidadeNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.qualidade')}
+          valor={qualidade.escolha}
+          opcoes={QUALIDADES.map((q) => ({ valor: q.id, nome: q.nome }))}
+          onEscolher={onQualidade}
+        />
+      </LinhaDeAjuste>
+      {/* A MEDIÇÃO, DITA (Ajustes D). A frase é a mesma do título do
+          seletor da barra — uma função só (`rotuloDaQualidade`), senão
+          os dois hospedeiros contariam a mesma coisa de dois jeitos.
+          Ela é `aria-live` porque muda SOZINHA: quem está com o painel
+          aberto quando o quadro engasga tem de ouvir a sugestão sem
+          precisar reabrir nada. */}
+      {/* CLASSE MANTIDA (`ajustes-medida`): `scripts/visual/atlas-smoke.mjs`
+          lê este seletor para tirar a leitura de q/s da captura — trocar o
+          nome quebraria um consumidor fora deste arquivo, calado. */}
+      <p className="ajustes-medida" role="status" aria-live="polite">
+        {rotuloDaQualidade(qualidade)}
+      </p>
 
       {/* A GAVETA AVANÇADO (item 145) — os presets na frente, os
           controles individuais atrás. Ela mora COLADA na seção da
           qualidade, e não no fim do painel, por causa da régua: o
           número de quadros/s que o visitante compara é o da linha logo
           acima, e um controle a três rolagens dela mediria memória em
-          vez de desempenho. Mexeu aqui, o rótulo do seletor passa a
-          dizer "Personalizado" — nos dois hospedeiros, porque a frase é
-          uma só (`rotuloDaQualidade`). */}
-      <div className="ajustes-secao">
-        <h3>{t('ajustes.avancado')}</h3>
-        <p className="ajustes-nota">
-          <strong>{t('ajustes.msaa')}</strong> — {t('ajustes.msaaNota')}
-        </p>
-        <div className="ajustes-linha" aria-label={t('ajustes.msaa')} role="group">
-          {AMOSTRAS.map((a) => (
-            <button
-              type="button"
-              key={String(a.valor)}
-              className={qualidade.amostras === a.valor ? 'on' : ''}
-              aria-pressed={qualidade.amostras === a.valor}
-              onClick={() => onAmostras(a.valor)}
-            >
-              {a.nome()}
-            </button>
-          ))}
-        </div>
+          vez de desempenho. É o ÚNICO `<h3>` que sobrou no corpo do
+          painel: agrupa CINCO linhas, e é aí que um título continua
+          sendo economia, não repetição. */}
+      <h3 className="ajustes-titulo-secao">{t('ajustes.avancado')}</h3>
 
-        <p className="ajustes-nota">
-          <strong>{t('ajustes.nebulosaControle')}</strong> — {t('ajustes.nebulosaNota')}
-        </p>
-        <div
-          className="ajustes-linha"
-          aria-label={t('ajustes.nebulosaControle')}
-          role="group"
-        >
-          {NEBULOSAS.map((n) => (
-            <button
-              type="button"
-              key={String(n.valor)}
-              className={qualidade.nebulosa === n.valor ? 'on' : ''}
-              aria-pressed={qualidade.nebulosa === n.valor}
-              onClick={() => onNebulosa(n.valor)}
-            >
-              {n.nome()}
-            </button>
-          ))}
-        </div>
+      <LinhaDeAjuste
+        id="msaa"
+        rotulo={t('ajustes.msaa')}
+        dica={t('ajustes.msaaNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.msaa')}
+          valor={qualidade.amostras}
+          opcoes={AMOSTRAS.map((a) => ({
+            valor: a.valor,
+            nome: a.nome(),
+            efetivo:
+              qualidade.amostras === null &&
+              a.valor !== null &&
+              a.valor === amostrasEfetivas,
+          }))}
+          onEscolher={onAmostras}
+        />
+      </LinhaDeAjuste>
 
-        <p className="ajustes-nota">
-          <strong>{t('ajustes.gasControle')}</strong> — {t('ajustes.gasNota')}
-        </p>
-        <div
-          className="ajustes-linha"
-          aria-label={t('ajustes.gasControle')}
-          role="group"
-        >
-          {GASES.map((g) => (
-            <button
-              type="button"
-              key={String(g.valor)}
-              className={qualidade.gas === g.valor ? 'on' : ''}
-              aria-pressed={qualidade.gas === g.valor}
-              onClick={() => onGas(g.valor)}
-            >
-              {g.nome()}
-            </button>
-          ))}
-        </div>
+      <LinhaDeAjuste
+        id="nebulosa"
+        rotulo={t('ajustes.nebulosaControle')}
+        dica={t('ajustes.nebulosaNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.nebulosaControle')}
+          valor={qualidade.nebulosa}
+          opcoes={NEBULOSAS.map((n) => ({
+            valor: n.valor,
+            nome: n.nome(),
+            efetivo:
+              qualidade.nebulosa === null &&
+              n.valor !== null &&
+              n.valor === presetVivo.nebulosa,
+          }))}
+          onEscolher={onNebulosa}
+        />
+      </LinhaDeAjuste>
 
-        <p className="ajustes-nota">
-          <strong>{t('ajustes.particulasControle')}</strong> —{' '}
-          {t('ajustes.particulasNota')}
-        </p>
-        <div
-          className="ajustes-linha"
-          aria-label={t('ajustes.particulasControle')}
-          role="group"
-        >
-          {PARTICULAS.map((p) => (
-            <button
-              type="button"
-              key={String(p.valor)}
-              className={qualidade.particulas === p.valor ? 'on' : ''}
-              aria-pressed={qualidade.particulas === p.valor}
-              onClick={() => onParticulas(p.valor)}
-            >
-              {p.nome()}
-            </button>
-          ))}
-        </div>
+      <LinhaDeAjuste
+        id="gas"
+        rotulo={t('ajustes.gasControle')}
+        dica={t('ajustes.gasNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.gasControle')}
+          valor={qualidade.gas}
+          opcoes={GASES.map((g) => ({
+            valor: g.valor,
+            nome: g.nome(),
+            efetivo:
+              qualidade.gas === null && g.valor !== null && g.valor === presetVivo.gas,
+          }))}
+          onEscolher={onGas}
+        />
+      </LinhaDeAjuste>
 
-        <p className="ajustes-nota">
-          <strong>{t('ajustes.escalaDeResolucao')}</strong> —{' '}
-          {t('ajustes.escalaDeResolucaoNota')}
-        </p>
-        <div
-          className="ajustes-linha"
-          aria-label={t('ajustes.escalaDeResolucao')}
-          role="group"
-        >
-          {ESCALAS.map((e) => (
-            <button
-              type="button"
-              key={String(e.valor)}
-              className={qualidade.escala === e.valor ? 'on' : ''}
-              aria-pressed={qualidade.escala === e.valor}
-              onClick={() => onEscala(e.valor)}
-            >
-              {e.nome()}
-            </button>
-          ))}
-        </div>
-      </div>
+      <LinhaDeAjuste
+        id="particulas"
+        rotulo={t('ajustes.particulasControle')}
+        dica={t('ajustes.particulasNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.particulasControle')}
+          valor={qualidade.particulas}
+          opcoes={PARTICULAS.map((p) => ({
+            valor: p.valor,
+            nome: p.nome(),
+            efetivo:
+              qualidade.particulas === null &&
+              p.valor !== null &&
+              p.valor === presetVivo.particulas,
+          }))}
+          onEscolher={onParticulas}
+        />
+      </LinhaDeAjuste>
 
-      <div className="ajustes-secao">
-        <h3>{t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}</h3>
-        <p className="ajustes-nota">{t('ajustes.textoNota')}</p>
-        <div className="ajustes-linha">
-          {DEGRAUS_DA_UI.map((f) => (
-            <button
-              type="button"
-              key={f}
-              className={escalaUi === f ? 'on' : ''}
-              onClick={() => onEscalaUi(f)}
-            >
-              {rotuloDaEscala(f)}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* ESCALA DE RESOLUÇÃO não ganha `.efetivo`: o teto do preset é
+          `min(dpr do monitor, pixelRatio do preset)` — depende do
+          MONITOR, não é uma fração fixa entre as três da lista, e
+          fingir uma marcaria o segmento errado em metade das telas. */}
+      <LinhaDeAjuste
+        id="escala"
+        rotulo={t('ajustes.escalaDeResolucao')}
+        dica={t('ajustes.escalaDeResolucaoNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.escalaDeResolucao')}
+          valor={qualidade.escala}
+          opcoes={ESCALAS.map((e) => ({ valor: e.valor, nome: e.nome() }))}
+          onEscolher={onEscala}
+        />
+      </LinhaDeAjuste>
 
-      <div>
-        <h3>{t('ajustes.rotulos3d')}</h3>
-        <p className="ajustes-nota">{t('ajustes.rotulos3dNota')}</p>
-        <div className="ajustes-linha">
-          <button
-            type="button"
-            className={rotulos3d ? '' : 'on'}
-            onClick={() => onRotulos3d(false)}
-          >
-            {t('ajustes.desligados')}
-          </button>
-          <button
-            type="button"
-            className={rotulos3d ? 'on' : ''}
-            onClick={() => onRotulos3d(true)}
-          >
-            {t('ajustes.ligados')}
-          </button>
-        </div>
-      </div>
+      <LinhaDeAjuste
+        id="texto"
+        rotulo={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
+        dica={t('ajustes.textoNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
+          valor={escalaUi}
+          opcoes={DEGRAUS_DA_UI.map((f) => ({ valor: f, nome: rotuloDaEscala(f) }))}
+          onEscolher={onEscalaUi}
+        />
+      </LinhaDeAjuste>
+
+      <LinhaDeAjuste
+        id="rotulos3d"
+        rotulo={t('ajustes.rotulos3d')}
+        dica={t('ajustes.rotulos3dNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.rotulos3d')}
+          valor={rotulos3d}
+          opcoes={[
+            { valor: false, nome: t('ajustes.desligados') },
+            { valor: true, nome: t('ajustes.ligados') },
+          ]}
+          onEscolher={onRotulos3d}
+        />
+      </LinhaDeAjuste>
 
       {onReverConvite && (
-        <div className="ajustes-secao">
-          <h3>{t('ajustes.convite')}</h3>
-          <p className="ajustes-nota">{t('ajustes.conviteNota')}</p>
+        <LinhaDeAjuste
+          id="convite"
+          rotulo={t('ajustes.convite')}
+          dica={t('ajustes.conviteNota')}
+          dicaPresa={dicaPresa}
+          onAlternarDica={alternarDica}
+        >
           <button type="button" className="ajustes-copiar" onClick={onReverConvite}>
             {t('ajustes.reverConvite')}
           </button>
-        </div>
+        </LinhaDeAjuste>
       )}
 
-      <div className="ajustes-secao">
+      <div className="ajustes-item ajustes-item-acao">
         <button
           type="button"
           className="ajustes-copiar"

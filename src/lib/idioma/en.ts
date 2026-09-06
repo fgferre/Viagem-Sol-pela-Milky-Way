@@ -112,6 +112,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.titulo': 'Settings',
   'ajustes.aria': 'Rendering settings',
   'ajustes.fechar': 'Close settings',
+  // the "?" button label on each row — the fine print left the flow and
+  // became an on-demand tip (panel redesign, 05/09)
+  'ajustes.ajuda': 'Help: {rotulo}',
   'ajustes.idioma': 'Language',
   'ajustes.idiomaNota': "Switches the app's language right now, with no reload.",
   'ajustes.tom': 'Tone curve',
@@ -122,17 +125,20 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.tom.neutral': 'middle ground',
   'ajustes.tom.linear': 'no curve — clips, shows the raw frame',
   'ajustes.exposicao': 'Exposure',
-  'ajustes.exposicaoCom': 'Exposure · {valor}',
   'ajustes.qualidade': 'Quality',
   'ajustes.qualidadeNota':
     'Switches live, with no reload. The heavy part — the galaxy population and the Sun — is rebuilt in the background and swapped in at once; until then the scene stays as it is. Auto lets the measurement choose — and nobody chooses for you without that click.',
   'ajustes.avancado': 'Advanced',
-  'ajustes.msaa': 'Edge smoothing (MSAA)',
+  // SHORT LABEL (polish 09/06): the row is now a single line with a
+  // fixed control column — "Edge smoothing" didn't fit beside the "?".
+  'ajustes.msaa': 'Anti-aliasing',
   'ajustes.msaaNota':
     'Smooths the edges of bodies and lines, and it costs frames. Switch here and compare with the frames/s just above — the change is immediate, with no reload. "From preset" hands the choice back to quality.',
-  'ajustes.doPreset': 'From preset',
+  'ajustes.preset': 'Preset',
   'ajustes.msaaDesligada': 'Off',
-  'ajustes.nebulosaControle': 'Nebula (raymarch)',
+  // SHORT LABEL (polish 09/06): "(raymarch)" was engine jargon, not
+  // taste — it stays in the tooltip for whoever wants it.
+  'ajustes.nebulosaControle': 'Nebula',
   'ajustes.nebulosaNota':
     'The gas of the Milky Way is drawn step by step, and it is the most expensive part of the frame. Fewer steps leave the cloud flatter and grainier; more steps make it smooth and cost frames.',
   'ajustes.nebulosa.baixa': 'Low',
@@ -152,7 +158,7 @@ export const EN: Record<keyof typeof PT, string> = {
     'How many of the loaded particles the scene draws, with total brightness compensated: fewer points, each stronger — same flux, different grain.',
   'ajustes.particulas.todas': 'All',
   'ajustes.particulas.metade': 'Half',
-  'ajustes.particulas.quarto': 'A quarter',
+  'ajustes.particulas.quarto': '¼',
   'ajustes.texto': 'Text size · {degrau}',
   'ajustes.textoNota':
     'Applies to the whole HUD — captions, controls, seal and the star names. It does not touch the scene: inside the Atlas the framing backs off a little so the larger text does not cover the target.',

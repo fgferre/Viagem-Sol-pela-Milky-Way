@@ -10,7 +10,10 @@
    Aqui ficam a largura e as DUAS EXCEÇÕES deste painel — os únicos dois
    pontos em que ele não é a gaveta, a paleta nem a ficha. */
 .ajustes {
-  width: min(19rem, calc(100vw - 3.2rem));
+  /* REDESENHO (05/09): 19rem cabia parágrafo; fileira PRESET/2×/4×/…
+     precisa de mais respiro — 24rem é o mesmo teto que a gaveta usa
+     para caber cinco segmentos sem quebrar palavra. */
+  width: min(26rem, calc(100vw - 3.2rem));
   /* EXCEÇÃO 1 — o teto tem dois termos A MAIS que o comum. Os outros três
      diálogos cabem na tela sozinhos; este é o mais alto da casa e precisa
      parar antes. Os dois primeiros mandam em qualquer tela com espaço, e
@@ -44,65 +47,256 @@
 .ajustes-topo button:hover {
   color: rgba(255, 214, 150, 0.95);
 }
-.ajustes-secao {
-  padding-top: 0.9rem;
-}
-.ajustes-secao h3 {
-  margin: 0 0 0.45rem;
+
+/* O ÚNICO `<h3>` que sobrou no corpo do painel (a gaveta Avançado, que
+   agrupa cinco linhas) — o resto virou `.ajustes-item` direto, porque
+   um título acima de UMA linha só repetiria o próprio rótulo dela. */
+.ajustes-titulo-secao {
+  margin: 0.9rem 0 0.1rem;
   font-size: 0.6rem;
   font-weight: 400;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(255, 214, 150, 0.85);
 }
-.ajustes-nota {
-  margin: 0 0 0.6rem;
-  font-size: 0.64rem;
-  line-height: 1.45;
-  color: rgba(215, 224, 240, 0.55);
+
+/* ---- A LINHA — o átomo do redesenho ---------------------------------
+   Rótulo (+ "?") à esquerda, controle à direita — em UMA coluna fixa de
+   13.5rem, para a linha caber numa só (item 2 do polimento de 06/09):
+   segmentado, slider ou o par de idioma sempre têm a MESMA largura de
+   controle, e é o rótulo que se ajusta ao que sobra. `position:
+   relative` é o que ancora a dica: ela flutua sobre a LINHA inteira,
+   não só sobre a caixinha do botão "?", e por isso não cabe nele. */
+.ajustes-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 15rem;
+  align-items: center;
+  column-gap: 0.8rem;
+  min-height: 2.5rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(220, 230, 248, 0.1);
 }
-.ajustes-radio,
-.ajustes-check {
+.ajustes-item:last-child {
+  border-bottom: none;
+}
+.ajustes-rotulo-caixa {
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.22rem 0;
-  cursor: pointer;
-}
-.ajustes-radio em {
-  font-style: normal;
-  font-size: 0.6rem;
-  color: rgba(215, 224, 240, 0.45);
-  margin-left: auto;
-  text-align: right;
-}
-.ajustes-radio input,
-.ajustes-check input {
-  accent-color: rgba(255, 214, 150, 0.9);
-  cursor: pointer;
-}
-.ajustes-secao input[type='range'] {
-  width: 100%;
-  accent-color: rgba(255, 214, 150, 0.9);
-  cursor: pointer;
-}
-.ajustes-linha {
-  display: flex;
+  align-items: center;
   gap: 0.35rem;
 }
-/* A NOTA DA MEDIÇÃO (Ajustes D) vem DEPOIS dos botões, e é a única nota
-   do painel que muda sozinha — daí a margem em cima, no lugar da de
-   baixo que as outras usam. */
+.ajustes-rotulo {
+  font-size: 0.64rem;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(235, 240, 250, 0.88);
+}
+.ajustes-controle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+.ajustes-controle .ajustes-seg {
+  /* preenche a coluna fixa — inclusive o par de idioma, que antes do
+     polimento sobrava do lado esquerdo do controle */
+  width: 100%;
+}
+.ajustes-controle .ajustes-copiar {
+  /* dentro de uma linha o botão some do tamanho do painel inteiro; fora
+     dela (a linha de ação, no fim) ele continua ocupando tudo */
+  width: auto;
+}
+
+/* A LINHA DE AÇÃO — copiar link, sem rótulo: é a própria ação, e o
+   botão preenche a largura porque não divide a coluna com controle
+   nenhum (a linha vira UMA coluna só, não as duas de sempre). */
+.ajustes-item-acao {
+  grid-template-columns: 1fr;
+}
+.ajustes-item-acao .ajustes-copiar {
+  width: 100%;
+}
+
+/* ---- O "?" DE AJUDA e a dica -----------------------------------------
+   A explicação em letra miúda que cobria o painel inteiro agora só
+   aparece por pedido: passar o mouse ou focar o botão (CSS puro), ou
+   fixar com um clique (estado do componente, só uma de cada vez). */
+.ajustes-ajuda-caixa {
+  display: inline-flex;
+}
+.ajustes-ajuda {
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  border: 1px solid rgba(220, 230, 248, 0.35);
+  background: none;
+  color: rgba(215, 224, 240, 0.6);
+  font-size: 0.56rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+.ajustes-ajuda:hover,
+.ajustes-ajuda:focus-visible {
+  border-color: rgba(255, 214, 150, 0.85);
+  color: rgba(255, 214, 150, 0.95);
+}
+.ajustes-dica {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  right: 0;
+  /* a régua é a LINHA (`.ajustes-item`, o ancestral posicionado — a
+     caixinha do "?" perdeu o próprio `position: relative` de propósito),
+     não a caixinha do "?": por isso a dica cabe a largura da linha
+     inteira, como pede a especificação, mesmo nascendo dentro do botão.
+     Antes disso ela flutuava relativa à caixinha do "?" (~1rem de
+     largura) e virava uma coluna de uma palavra por linha. */
+  z-index: 5;
+  padding: 0.7rem 0.85rem;
+  /* a mesma pele de `.hud-cartao` (fatia 1), um tom mais opaca (0.96) e
+     com sombra própria — ela paira SOBRE as linhas de baixo, não é mais
+     um cartão dentro do fluxo */
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  border-top: 2px solid rgba(255, 214, 150, 0.85);
+  border-radius: 3px;
+  background: rgba(6, 9, 18, 0.96);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-size: 0.66rem;
+  line-height: 1.45;
+  color: rgba(215, 224, 240, 0.8);
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+}
+/* AS DUAS ÚLTIMAS LINHAS DE CONTROLE abrem a dica PARA CIMA: o painel
+   rola (`overflow-y: auto` em `.hud-dialogo`) e recorta qualquer filho
+   absoluto que nasça abaixo da borda — a dica dessas duas linhas nasceria
+   cortada. Conta a partir do fim ignorando a linha de ação (que não tem
+   dica): `nth-last-of-type` sobre `.ajustes-item`, que é sempre um `div`,
+   como a própria linha de ação — por isso ela é sempre a 1ª a partir do
+   fim, e as duas de cima dela são a 2ª e a 3ª, presente ou não o convite
+   opcional (F5, só existe no voo livre). */
+.ajustes-item:nth-last-of-type(2) .ajustes-dica,
+.ajustes-item:nth-last-of-type(3) .ajustes-dica {
+  top: auto;
+  bottom: calc(100% + 0.3rem);
+}
+.ajustes-dica p {
+  margin: 0 0 0.4rem;
+}
+.ajustes-dica p:last-child {
+  margin-bottom: 0;
+}
+.ajustes-dica-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ajustes-dica-lista li {
+  padding: 0.15rem 0;
+}
+.ajustes-dica-lista strong {
+  color: rgba(255, 214, 150, 0.85);
+  font-weight: 400;
+}
+.ajustes-ajuda-caixa:hover .ajustes-dica,
+.ajustes-ajuda-caixa:focus-within .ajustes-dica,
+.ajustes-dica.presa {
+  display: block;
+}
+
+/* ---- O SLIDER DE EXPOSIÇÃO -------------------------------------------
+   Único controle que não é segmentado: a faixa cresce, o número fica
+   parado do lado direito, tabular para não empurrar o traço a cada
+   dígito. */
+.ajustes-item input[type='range'] {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: rgba(255, 214, 150, 0.9);
+  cursor: pointer;
+}
+.ajustes-valor {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.64rem;
+  color: rgba(255, 214, 150, 0.9);
+  white-space: nowrap;
+}
+
+/* A NOTA DA MEDIÇÃO (Ajustes D) — a classe É a que `atlas-smoke.mjs` lê
+   para tirar a leitura de q/s da captura; trocar o nome quebraria um
+   consumidor fora deste arquivo, calado. Fica embaixo da linha
+   "Qualidade", pequena e à direita: é o único texto do painel que muda
+   sozinho, e não é rótulo de controle nenhum. */
 .ajustes-medida {
-  margin: 0.55rem 0 0;
+  margin: -0.15rem 0 0.35rem;
+  text-align: right;
+  font-size: 0.6rem;
+  line-height: 1.4;
+  color: rgba(215, 224, 240, 0.5);
 }
 .ajustes-medida em {
   font-style: normal;
   color: rgba(255, 214, 150, 0.85);
 }
-.ajustes-linha button,
-.ajustes-copiar {
+
+/* ---- O SEGMENTADO — a fileira de botões virou UMA peça ---------------
+   Mesma semântica de sempre (`role="group"`, `aria-pressed`); a moldura
+   é que muda: borda só na volta, sem gap entre segmentos, cada um
+   dividindo a linha com o vizinho. */
+.ajustes-seg {
+  display: flex;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  border-radius: 2px;
+  overflow: hidden;
+  max-width: 100%;
+}
+.ajustes-seg button {
   flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  padding: 0.42rem 0.3rem;
+  border: none;
+  border-right: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(8, 12, 22, 0.5);
+  color: rgba(220, 230, 248, 0.72);
+  font-size: 0.54rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.25s ease;
+}
+.ajustes-seg button:last-child {
+  border-right: none;
+}
+.ajustes-seg button:hover {
+  color: #fff;
+}
+.ajustes-seg button.on {
+  background: rgba(255, 214, 150, 0.2);
+  color: rgba(255, 232, 196, 1);
+  box-shadow: inset 0 0 0 1px rgba(255, 214, 150, 0.9);
+}
+/* O SEGMENTO EFETIVO — o que o PRESET resolve, sublinhado a ouro, só
+   quando "Preset" é a escolha ativa (é a outra caixa que fica `.on`
+   nesse instante). Sem isso o visitante escolhe "Preset" e não sabe o
+   que a máquina está desenhando até abrir a régua de q/s. */
+.ajustes-seg button.efetivo {
+  color: #fff;
+  box-shadow: inset 0 -2px rgba(255, 214, 150, 0.85);
+}
+
+/* Botões que ainda não são segmentado (rever convite, copiar link) —
+   mesma pele de sempre, herdada de antes do redesenho. */
+.ajustes-copiar {
   cursor: pointer;
   padding: 0.4rem 0.5rem;
   border: 1px solid rgba(220, 230, 248, 0.28);
@@ -111,21 +305,39 @@
   font-size: 0.58rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  /* rótulo com espaço ("Do preset", "From preset") não quebra em duas
-     linhas: o botão cresce até o texto e os vizinhos cedem, como
-     "PERFORMANCE" já fazia por não ter espaço onde quebrar */
   white-space: nowrap;
   transition: all 0.25s ease;
 }
-.ajustes-linha button:hover,
 .ajustes-copiar:hover {
   border-color: rgba(255, 214, 150, 0.7);
   color: #fff;
 }
-.ajustes-linha button.on {
-  border-color: rgba(255, 214, 150, 0.85);
-  background: rgba(255, 214, 150, 0.14);
+
+/* ---- TELA ESTREITA — a linha quebra em duas: rótulo em cima, controle
+   embaixo ocupando a largura toda. O painel vira folha de baixo a
+   partir daqui (fatia 9); esta regra só decide a FILEIRA por dentro
+   dela. */
+@media (max-width: 760px) {
+  .ajustes-item {
+    grid-template-columns: 1fr;
+    row-gap: 0.3rem;
+    align-items: flex-start;
+  }
+  .ajustes-controle {
+    justify-content: stretch;
+  }
+  .ajustes-controle input[type='range'] {
+    width: 100%;
+  }
 }
-.ajustes-copiar {
-  width: 100%;
+
+/* A LINHA LARGA: a qualidade é o ajuste-título e tem quatro nomes longos
+   (PERFORMANCE não cabe na coluna fixa sem reticência) — o controle
+   ocupa a largura toda, abaixo do rótulo, como um menu de jogo faz com o
+   seletor principal. */
+.ajustes-item--largo {
+  grid-template-columns: 1fr;
+}
+.ajustes-item--largo .ajustes-controle {
+  grid-column: 1 / -1;
 }
