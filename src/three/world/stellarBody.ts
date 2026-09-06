@@ -869,17 +869,25 @@ export class StellarBody {
   // variante certa; a maioria dos meshes do group entra na cena antes
   // do compileAsync do director e é coberta por ele. As DUAS exceções
   // são o par do CME (medido 05/09: 6,0s + 4,2s de link síncrono na
-  // volta pra casa do filme, em t≈184/188) — nascem no boot mas
+  // volta pra casa do filme, em t≈184/188 — e mesmo depois de entrar
+  // no aquecimento por MATERIAL contra geometria de mentira, as
+  // partículas ainda relinkavam 3,0s: a chave de programa do three lê
+  // TODO booleano de atributo da geometria real, e uma geometria de
+  // mentira só acerta por coincidência) — nascem no boot mas
   // ESCONDIDOS (cme.js), e o director os põe no aquecimento explícito
-  // via este getter.
-  /** o material da casca do CME e o das partículas (ping-pong), para
-   * a pré-compilação sob o véu (director.init) */
-  get warmupMaterials(): { mesh: THREE.Material[]; pontos: THREE.Material[] } {
+  // via este getter, compilando o OBJETO REAL
+  // (`renderer.compileAsync(objeto, camera, warm)`).
+  /** a casca do CME (Mesh) e um dos dois Points do ping-pong das
+   * partículas (a mesma geometria/material do outro — só um basta para
+   * a chave de programa), para a pré-compilação sob o véu
+   * (director.init). `visible = false` não os esconde do `compile()`
+   * do three, que varre com `traverse`, não `traverseVisible`. */
+  get warmupObjetos(): THREE.Object3D[] {
     const ctx = this.ctx;
-    return {
-      mesh: ctx.cmeMesh ? [ctx.cmeMesh.material as THREE.Material] : [],
-      pontos: ctx.cmePts?.ptsMat ? [ctx.cmePts.ptsMat as THREE.Material] : [],
-    };
+    return [
+      ...(ctx.cmeMesh ? [ctx.cmeMesh as THREE.Object3D] : []),
+      ...(ctx.cmePts?.meshes?.[0] ? [ctx.cmePts.meshes[0] as THREE.Object3D] : []),
+    ];
   }
 
   /**

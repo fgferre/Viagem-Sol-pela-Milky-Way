@@ -280,43 +280,40 @@ export function montarCorposDoPalco(opts: {
  * programa inclui a PRESENÇA do atributo normal (vertexNormals): o
  * quad da nebulosa é PlaneGeometry (tem normal), o FullScreenQuad do
  * BH é um triângulo só com position+uv — cada material compila contra
- * a geometria que vai usá-lo. `pontos` é o terceiro caso (medido
- * 05/09: as duas materiais do CME do Sol linkavam de síncrono na volta
- * pra casa do filme, 6,0s+4,2s — nasciam no boot mas fora daqui): o
- * material dos pontos (ping-pong do CME) referencia os atributos
- * `aPos`/`aVel` que só um THREE.Points supre, então ganha uma
- * geometria própria (1 ponto, atributos a zero) em vez do Mesh dos
- * outros dois casos. Devolve a cena e o que o shell precisa DESCARTAR
- * no finally (o try/finally e o `this.warmup` que o dispose espera
- * ficam na fachada — são disciplina do teardown dela).
+ * a geometria que vai usá-lo.
+ *
+ * Terra, Lua e o par do CME do Sol NÃO entram mais aqui (medido 05/09:
+ * mesmo com geometria "com normal", a Lua e as partículas do CME ainda
+ * relinkavam na chegada — 3,4 s e 3,0 s). A chave do programa do three
+ * inclui TODOS os booleanos de atributo da geometria (`vertexTangents`,
+ * `vertexUv*`, `hasPositionAttribute`, contagem de morph targets…), e
+ * uma geometria de mentira só acerta por coincidência; o único jeito de
+ * garantir a MESMA variante é compilar o OBJETO REAL. Esses três
+ * corpos entram por `renderer.compileAsync(objetoReal, camera, warm)`
+ * direto no director (ver ali), usando esta mesma `warm` como
+ * `targetScene` (luzes/fog/environment) sem reparentá-los — o `visible
+ * = false` deles não os esconde do `compile()` do three, que varre com
+ * `traverse` (não `traverseVisible`) para achar materiais.
  */
 export function montarCenaDeAquecimento(materiais: {
   comNormal: readonly THREE.Material[];
   semNormal: readonly THREE.Material[];
-  pontos?: readonly THREE.Material[];
 }) {
   const warm = new THREE.Scene();
   const warmGeo = new THREE.PlaneGeometry(2, 2);
   const warmGeoBH = new THREE.PlaneGeometry(2, 2);
   warmGeoBH.deleteAttribute('normal');
-  const warmGeoPts = new THREE.BufferGeometry();
-  warmGeoPts.setAttribute('aPos', new THREE.Float32BufferAttribute(4, 4));
-  warmGeoPts.setAttribute('aVel', new THREE.Float32BufferAttribute(4, 4));
   for (const m of materiais.comNormal) {
     warm.add(new THREE.Mesh(warmGeo, m));
   }
   for (const m of materiais.semNormal) {
     warm.add(new THREE.Mesh(warmGeoBH, m));
   }
-  for (const m of materiais.pontos ?? []) {
-    warm.add(new THREE.Points(warmGeoPts, m));
-  }
   const warmRt = new THREE.WebGLRenderTarget(2, 2);
   const descartar = () => {
     warmRt.dispose();
     warmGeo.dispose();
     warmGeoBH.dispose();
-    warmGeoPts.dispose();
   };
   return { warm, warmRt, descartar };
 }
