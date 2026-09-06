@@ -865,9 +865,22 @@ export class StellarBody {
     renderer.setRenderTarget(prev);
   }
 
-  // (sem warmupMaterials: os quads de sim/bake compilam no prime(),
-  // com RT amarrado — a variante certa; os meshes do group entram na
-  // cena antes do compileAsync do director e são cobertos por ele)
+  // Os quads de sim/bake compilam no prime(), com RT amarrado — a
+  // variante certa; a maioria dos meshes do group entra na cena antes
+  // do compileAsync do director e é coberta por ele. As DUAS exceções
+  // são o par do CME (medido 05/09: 6,0s + 4,2s de link síncrono na
+  // volta pra casa do filme, em t≈184/188) — nascem no boot mas
+  // ESCONDIDOS (cme.js), e o director os põe no aquecimento explícito
+  // via este getter.
+  /** o material da casca do CME e o das partículas (ping-pong), para
+   * a pré-compilação sob o véu (director.init) */
+  get warmupMaterials(): { mesh: THREE.Material[]; pontos: THREE.Material[] } {
+    const ctx = this.ctx;
+    return {
+      mesh: ctx.cmeMesh ? [ctx.cmeMesh.material as THREE.Material] : [],
+      pontos: ctx.cmePts?.ptsMat ? [ctx.cmePts.ptsMat as THREE.Material] : [],
+    };
+  }
 
   /**
    * O corpo tem um retrato COMPLETO publicado: nenhum bake fatiado a meio

@@ -22,3 +22,5 @@ Item seguinte (autorizado 05/09, o modo de hoje fica como opção): o QUADRO DEN
 - [x] Seletor "Partículas da galáxia" (todas/metade/quarto) nos presets (cinema todas, alta metade, performance todas — o performance já carrega 28% via populationScale) e no custom, troca ao vivo por drawRange sobre o buffer embaralhado (permutação semeada no fim de buildGalaxy) com o brilho compensado por 1/fração. Medido t=150: todas 79 ms / metade 43 / quarto 28,5; em movimento 82 → 34. Fotos `capturas/particulas-t{120,150,166}-tres.png`; brilho médio igual dentro de 1%.
 - [ ] O dono testa as visualizações e decide os padrões por preset.
 - [ ] Ideia exata pendente (BACKLOG): partículas com alpha exatamente zero não rasterizarem.
+
+Engasgos (05/09, item novo): ver BACKLOG "Engasgos de LINK de shader". Feito: CME do Sol no aquecimento da abertura (commit desta noite). A fazer: Terra/Lua aquecidas na abertura com texturas 1×1; perfilar o engasgo de 4,4 s em t≈15.

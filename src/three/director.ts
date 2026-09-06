@@ -1180,11 +1180,13 @@ export class Director {
       // tudo renderiza DENTRO do composer (linear). Compilar sem RT gera a
       // variante errada e o primeiro frame re-linka tudo (medido: 8,7 s).
       const { warm, warmRt, descartar } = montarCenaDeAquecimento({
-        comNormal: this.nebula.warmupMaterials,
+        comNormal: [...this.nebula.warmupMaterials, ...this.sun.warmupMaterials.mesh],
         semNormal: [
           ...(this.blackHole?.warmupMaterials ?? []),
           ...this.post.warmupMaterials,
         ],
+        // o par do CME (casca + partículas) — ver o getter em stellarBody.ts
+        pontos: this.sun.warmupMaterials.pontos,
       });
       this.engine.renderer.setRenderTarget(warmRt);
       try {
