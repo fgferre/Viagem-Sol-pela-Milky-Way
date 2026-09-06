@@ -216,6 +216,7 @@ export const PT = {
   'atlas.epocaAria': 'Voltar ao instante do retrato de 2026',
 
   // ---- a paleta de busca (`components/PaletaDeBusca.tsx`) -----------
+  'busca.titulo': 'Busca',
   'busca.aria': 'Buscar um alvo',
   'busca.botao': '⌕ Buscar',
   'busca.botaoAria': 'Buscar estrela',
@@ -226,10 +227,17 @@ export const PT = {
   'busca.campoEstrelas': 'buscar uma estrela',
   'busca.campoAria':
     'Nome de um corpo do sistema, ou nome, designação ou catálogo da estrela',
+  // A DICA DO "?" (redesenho, pedido do dono: "aplica o mesmo padrão no
+  // painel de Busca") — junta o que `busca.campoAria` diz (o que se pode
+  // digitar) com os exemplos de `busca.dica` e a explicação do UM NOME
+  // POR ESTRELA, que saiu da frase do estado vazio para morar só aqui.
+  'busca.ajuda':
+    'Digite o nome de um corpo do sistema, ou o nome, a designação (gama vel) ou o catálogo (hd 48915) de uma estrela — {exemplos}. O catálogo guarda um nome por estrela, o próprio quando existe.',
   'busca.alcanceComCorpos': 'as {quantas} nomeadas e os {corpos} corpos do sistema',
   'busca.alcance': 'as {quantas} nomeadas',
-  'busca.vazio':
-    'nada com esse nome entre {alcance} — o catálogo guarda UM nome por estrela, o próprio quando existe. tente {exemplos}',
+  // ENCURTADA (redesenho): a explicação do "um nome por estrela" mudou
+  // para `busca.ajuda` — a frase do estado vazio agora é UMA linha.
+  'busca.vazio': 'nada com esse nome entre {alcance} — tente {exemplos}',
   'busca.contagem':
     '{n} {palavra} · setas escolhem · Enter {verbo}',
   'busca.resultado': 'resultado',

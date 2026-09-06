@@ -631,8 +631,10 @@
   bottom: calc(100% + 0.3rem);
 }
 
-/* A PALETA DE BUSCA (F3): mesmo desenho da gaveta e do painel de
-   Ajustes — é o mesmo tipo de coisa (diálogo ancorado sob a barra de
+/* A PALETA DE BUSCA (F3, redesenho de 06/09 — pedido do dono: "aplica o
+   mesmo padrão no painel de Busca"): mesmo cabeçalho do painel de
+   Ajustes (título + "?" + ✕) e mesma linha-por-resultado da gaveta de
+   Camadas — é o mesmo tipo de coisa (diálogo ancorado sob a barra de
    controles), e um segundo vocabulário visual para a mesma função seria
    ruído. Ela é a única peça daqui que serve DUAS fases: o Atlas e o voo
    livre. Tudo em rem puro, sem termo vw: uma paleta que mudasse de
@@ -641,20 +643,82 @@
    Pele e ancoragem vêm de `hud-cartao hud-dialogo` (fatia 1); aqui fica
    a largura, que é a única coisa que distingue as três caixas. */
 .atlas-busca {
-  width: min(22rem, calc(100vw - 3.2rem));
+  width: min(24rem, calc(100vw - 3.2rem));
+  /* SÓ AQUI: o DOM tem a caixa de texto ANTES do cabeçalho (comentário no
+     componente explica o porquê — `useDialogFocus` foca o primeiro
+     focável do DOM ao abrir, e é a caixa quem tem de receber o foco). O
+     `flex` + `order` do cabeçalho é o que devolve a ordem VISUAL certa
+     sem mexer no foco: CSS decide o que se vê, o DOM decide quem foca. */
+  display: flex;
+  flex-direction: column;
 }
+/* O CABEÇALHO, no molde de `.ajustes-topo` (08-ajustes.css): título à
+   esquerda, "?" e ✕ à direita. A caixa de texto desceu para a linha de
+   baixo — dividir a largura com o cabeçalho a deixava curta demais para
+   um nome de estrela inteiro. */
 .atlas-busca-topo {
+  /* VISUALMENTE PRIMEIRO apesar de vir depois no DOM — ver o comentário
+     de `.atlas-busca` acima. */
+  order: -1;
+  /* ÂNCORA da dica do "?" (`.hud-dica`, 08-ajustes.css): ela flutua
+     sobre a LINHA inteira, e a linha é quem tem de ser o ancestral
+     posicionado — mesma régua de `.ajustes-item`/`.atlas-gaveta-linha`. */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid rgba(220, 230, 248, 0.16);
 }
-/* a única caixa da casa que recebe texto do visitante. Herda o desenho
-   do botão MENOS o tracking: nome de estrela com 0,22em de espaçamento
-   entre letras vira sopa, e aqui o que se lê é justamente o nome */
+.atlas-busca-topo > span {
+  /* o título NÃO estica: o ? fica colado nele, como nos outros painéis;
+     quem vai para a ponta é o ✕ (margin-left: auto abaixo) */
+  flex: 0 0 auto;
+}
+.atlas-busca-topo .atlas-busca-fechar {
+  margin-left: auto;
+}
+.atlas-busca-topo .atlas-busca-fechar {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+}
+.atlas-busca-topo .atlas-busca-fechar:hover {
+  color: rgba(255, 214, 150, 0.95);
+}
+/* A LINHA DA CAIXA, sozinha — a única da casa que recebe texto do
+   visitante. Herda o desenho do botão MENOS o tracking: nome de estrela
+   com 0,22em de espaçamento entre letras vira sopa, e aqui o que se lê é
+   justamente o nome. */
+.atlas-busca-campo-linha {
+  position: relative;
+  margin-top: 0.6rem;
+}
+/* A LUPA é ornamento do campo que já diz o que é pelo `aria-label` — por
+   isso `aria-hidden`, como o ícone das linhas da gaveta de Camadas. Um
+   `span` posicionado e não `::before`: `<input>` é elemento substituído
+   e não gera pseudo-elemento em todo motor. */
+.atlas-busca-lupa {
+  position: absolute;
+  left: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 0.85rem;
+  color: rgba(200, 214, 235, 0.55);
+}
 .atlas-busca-campo {
-  flex: 1;
-  min-width: 0;
-  padding: 0.45rem 0.6rem;
+  width: 100%;
+  height: 2.3rem;
+  box-sizing: border-box;
+  padding: 0 0.6rem 0 1.85rem;
   border: 1px solid rgba(220, 230, 248, 0.35);
   background: rgba(8, 12, 22, 0.55);
   color: rgba(235, 240, 250, 0.95);
@@ -668,56 +732,87 @@
   outline: 1px solid rgba(255, 219, 164, 0.95);
   outline-offset: 2px;
 }
-.atlas-busca-fechar {
-  border: 0;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.8rem;
-  line-height: 1;
-  padding: 0.2rem 0.3rem;
-}
-.atlas-busca-fechar:hover {
-  color: #fff;
-}
 .atlas-busca-lista {
   list-style: none;
   margin: 0.6rem 0 0;
   padding: 0;
   /* teto em rem, não em vh: a lista tem no máximo oito linhas por
      contrato (LIMITE_TECLADO), e um teto em vh a faria rolar numa
-     janela baixa mesmo com três resultados. 18rem = as oito linhas
-     medidas (35,2 px cada a 16 px de raiz) e mais uma folga: com 17rem
-     a última ficava cortada por 10 px, que é o jeito de uma lista
-     parecer ter mais coisa do que tem */
-  max-height: 18rem;
+     janela baixa mesmo com três resultados. 19rem = as oito linhas de
+     2,3rem cada mais uma folga — sem ela a última fica cortada, que é o
+     jeito de uma lista parecer ter mais coisa do que tem */
+  max-height: 19rem;
   overflow-y: auto;
 }
+/* CADA RESULTADO é uma LINHA de duas colunas, no molde da gaveta de
+   Camadas: nome (+ selo de tipo) à esquerda, nota à direita — não mais
+   duas linhas empilhadas por item. */
 .atlas-busca-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 0.6rem;
+  min-height: 2.3rem;
+  box-sizing: border-box;
   padding: 0.3rem 0.45rem;
   border-left: 2px solid transparent;
+  border-bottom: 1px solid rgba(220, 230, 248, 0.1);
   cursor: pointer;
+}
+.atlas-busca-item:last-child {
+  border-bottom: none;
+}
+.atlas-busca-item:hover {
+  background: rgba(220, 230, 248, 0.06);
 }
 /* a escolha corrente — o mesmo jeito que a máquina do tempo mostra o
    botão apertado: borda e fundo, nunca movimento */
 .atlas-busca-item.ativo {
   border-left-color: rgba(255, 214, 150, 0.85);
-  background: rgba(255, 214, 150, 0.12);
+  background: rgba(255, 214, 150, 0.22);
+}
+.atlas-busca-nome-linha {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
 }
 .atlas-busca-nome {
+  font-size: 0.72rem;
   letter-spacing: 0.06em;
+  color: rgba(235, 240, 250, 0.92);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atlas-busca-item.ativo .atlas-busca-nome {
+  color: #fff6e6;
+}
+/* O SELO DE TIPO — planeta, lua, estrela, anão… (`tipoDaEntrada` no
+   componente). Moldura de contorno só, no vocabulário do `.ajustes-seg`
+   sem o preenchimento: aqui é rótulo, não botão. */
+.atlas-busca-tipo {
+  flex: 0 0 auto;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  border-radius: 2px;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 214, 150, 0.75);
 }
 .atlas-busca-nota {
+  flex: 0 0 auto;
   font-size: 0.58rem;
   letter-spacing: 0.1em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: rgba(200, 214, 235, 0.62);
 }
-/* a linha viva. Altura para DUAS linhas porque o estado vazio mora
-   aqui: "não achei, e olha o que funciona" é mais longo que "8
-   estrelas", e a caixa não pode pular de tamanho entre os dois */
+/* a linha viva. Altura para DUAS linhas porque o estado de contagem e o
+   vazio podem quebrar em telas estreitas mesmo curtos agora — a caixa
+   não pode pular de tamanho entre os estados */
 .atlas-busca-aviso {
   margin: 0.55rem 0 0;
   min-height: 2.4rem;
@@ -725,6 +820,18 @@
   line-height: 1.5;
   letter-spacing: 0.08em;
   color: rgba(200, 214, 235, 0.62);
+}
+
+/* TELA ESTREITA — a nota desce para debaixo do nome quando as duas
+   colunas apertam demais (mesmo limiar de 08-ajustes.css). */
+@media (max-width: 760px) {
+  .atlas-busca-item {
+    grid-template-columns: 1fr;
+    row-gap: 0.15rem;
+  }
+  .atlas-busca-nota {
+    text-align: left;
+  }
 }
 
 /* --- indicador de warp --- */

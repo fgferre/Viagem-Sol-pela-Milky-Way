@@ -211,6 +211,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'atlas.epocaAria': 'Back to the instant of the 2026 portrait',
 
   // ---- the search palette ------------------------------------------
+  'busca.titulo': 'Search',
   'busca.aria': 'Search for a target',
   'busca.botao': '⌕ Search',
   'busca.botaoAria': 'Search for a star',
@@ -221,10 +222,11 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.campoEstrelas': 'search for a star',
   'busca.campoAria':
     'Name of a body in the system, or name, designation or catalog of the star',
+  'busca.ajuda':
+    'Type the name of a body in the system, or the name, designation (gamma vel) or catalog (hd 48915) of a star — {exemplos}. The catalog keeps one name per star, its own when it has one.',
   'busca.alcanceComCorpos': 'the {quantas} named stars and the {corpos} bodies of the system',
   'busca.alcance': 'the {quantas} named stars',
-  'busca.vazio':
-    'nothing by that name among {alcance} — the catalog keeps ONE name per star, its own when it has one. try {exemplos}',
+  'busca.vazio': 'nothing by that name among {alcance} — try {exemplos}',
   'busca.contagem': '{n} {palavra} · arrows choose · Enter {verbo}',
   'busca.resultado': 'result',
   'busca.resultados': 'results',
