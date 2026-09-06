@@ -396,8 +396,12 @@
 }
 /* a leitura em cima, os controles embaixo. Uma linha só cabia à custa
    de encostar no selo quando o rótulo da taxa crescia — e rótulo que
-   muda de comprimento a cada clique não pode governar o layout */
+   muda de comprimento a cada clique não pode governar o layout.
+   `position: relative` ANCORA o "?" da barra (`comAjuda`, HudDoAtlas.tsx)
+   — mesma régua de `.ajustes-item`/`.atlas-gaveta-linha`: a dica flutua
+   sobre a LINHA, não sobre a caixinha de 1rem do botão. */
 .atlas-tempo-linha {
+  position: relative;
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
@@ -414,46 +418,93 @@
   letter-spacing: 0.1em;
   color: rgba(235, 240, 250, 0.92);
 }
-/* A LINHA DOS CONTROLES QUEBRA — em QUALQUER largura, e não só na
-   quebra estreita do CSS. Sem isto ela é uma linha que não cede: os
-   seis controles são pedidos em `rem` (crescem com `?ui=`) dentro de
-   uma coluna em `vw` (que não cresce), e o que não cabe era PINTADO
-   FORA da coluna, por cima do selo — medido em 2026-08-20 a 768, 899 e
-   até 1.280 px com `?ui=1,4` (`scrollWidth > clientWidth`, e na
-   captura o "Época" escrito em cima de "O QUE NESTA VISTA É AJUSTADO").
-   A garantia geométrica do rodapé (a coluna acaba em 52vw) só vale se
-   o conteúdo respeitar a coluna, e quem faz respeitar é a quebra.
-   Ela também é o que a declaração do retângulo útil já supunha desde a
-   F4 (`LARGURA_DA_QUEBRA_DO_TEMPO_PX`): a base pagava por uma quebra
-   que o CSS não fazia. */
+/* A DICA DA BARRA ABRE PARA CIMA — a barra vive no rodapé (`.atlas-rodape`),
+   então "embaixo da linha" a jogaria para fora da tela. Mesma régua das
+   duas últimas linhas de Ajustes (08-ajustes.css), lido ao contrário: lá
+   é EXCEÇÃO perto do fim do painel, aqui é a REGRA da casa inteira. */
+.atlas-rodape .hud-dica {
+  top: auto;
+  bottom: calc(100% + 0.3rem);
+}
+/* REDESENHO (06/09, pedido do dono: "aplica o mesmo padrão no painel de
+   Tempo") — os seis botões viram TRÊS GRUPOS `.ajustes-seg` (a peça de
+   `Ajustes.tsx`/08-ajustes.css: moldura, `.on` dourado e tudo o mais já
+   vêm de lá; aqui só mora o que é PRÓPRIO da máquina do tempo). A LINHA
+   QUEBRA em QUALQUER largura, e não só na quebra estreita do CSS: os
+   grupos são pedidos em `rem` (crescem com `?ui=`) dentro de uma coluna
+   em `vw` (que não cresce), e o que não cabe era PINTADO FORA da coluna
+   até 2026-08-20 — ver `LARGURA_DA_QUEBRA_DO_TEMPO_PX`, que é a
+   declaração que paga por esta quebra. */
 .atlas-tempo-botoes {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   margin-top: 0.28rem;
 }
-/* largura fixa: o rótulo da taxa muda de comprimento a cada degrau, e
-   sem isto os botões vizinhos dançariam a cada clique. O número é
-   ABSOLUTO de propósito — `min(11rem, 100%)` parece mais seguro e é
-   pior: a porcentagem fica indefinida no cálculo de largura intrínseca,
-   a linha dos controles encolhe como se o botão medisse o texto dele, e
-   aí quebra em duas ONDE CABIA EM UMA (medido: 1.280 px com `?ui=1`, a
-   linha do tempo 34 px mais alta sem motivo). O teto da coluna estreita
-   mora na fatia 6, onde 11rem realmente não cabe. */
-.atlas-tempo-taxa {
-  min-width: 11rem;
-  /* o rótulo é uma frase, não um selo: com o tracking dos botões da
-     casa ele passava de 240 px e a linha alcançava o selo */
-  letter-spacing: 0.1em;
+/* SEM BORDA ENTRE ELES: os três grupos são peças distintas (sentido,
+   velocidade, referência), e uma borda contínua os leria como um só. */
+.atlas-tempo-botoes .ajustes-seg {
+  border-radius: 2px;
 }
-.atlas-tempo-botoes .hud-btn[aria-pressed='true'] {
-  border-color: rgba(255, 214, 150, 0.85);
-  background: rgba(255, 214, 150, 0.16);
-  color: #fff;
+/* A BARRA DE MESA NÃO DIVIDE A LINHA EM TERÇOS — a régua de `.ajustes-seg`
+   vem com `flex: 1` no botão (para preencher a coluna fixa de um painel),
+   e herdada sem ajuste aqui ela ENCOLHIA os três grupos até truncar
+   "AO VI…"/"ÉPOCA" antes de a linha quebrar: cada grupo é tamanho de
+   CONTEÚDO, e quem não cabe vai para a linha de baixo (`flex-wrap`, acima),
+   nunca fica espremido na de cima. */
+.atlas-rodape .atlas-tempo-botoes {
+  gap: 0.6rem;
 }
-.atlas-tempo-botoes .hud-btn:disabled {
+.atlas-rodape .atlas-tempo-botoes .ajustes-seg {
+  flex: 0 0 auto;
+  width: auto;
+}
+.atlas-rodape .atlas-tempo-botoes .ajustes-seg button {
+  flex: 0 0 auto;
+  width: auto;
+  white-space: nowrap;
+  min-width: max-content;
+  overflow: visible;
+  text-overflow: clip;
+}
+/* ⏸ (já parado) e Época (já na época, já parado) — a mesma pele apagada
+   que `.ajustes-seg` não precisava até aqui, porque nenhum segmento de
+   Ajustes se desabilita. */
+.atlas-tempo-botoes .ajustes-seg button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+/* O RÓTULO DA TAXA muda de comprimento a cada degrau (de "1×" a "115,7
+   dias/s"), e sem largura mínima os grupos vizinhos dançariam a cada
+   clique — a mesma razão de sempre, agora no GRUPO em vez do botão só.
+   `min(13rem, 100%)` continua sendo pior que o absoluto: a porcentagem
+   fica indefinida no cálculo de largura intrínseca (comentário histórico
+   em `retanguloDoAtlas.ts`). 13rem é o piso do rótulo mais comprido da
+   escada ("16,7 minutos por segundo"/"16.7 minutes per second") com a
+   largura de conteúdo que a barra de mesa ganhou acima — sem ele o grupo
+   ainda pulava de tamanho a cada clique. */
+.atlas-tempo-taxa-seg {
+  min-width: 13rem;
+}
+/* O RÓTULO EM SI é dourado FIXO — item 149's redesign: a taxa não é um
+   interruptor de dois estados (não tem "desligada"), é uma AÇÃO que
+   sempre avança um degrau, e o "›" ao lado é quem diz isso. Pintá-la só
+   quando "ativa" (como os outros segmentos) mentiria uma alternância que
+   não existe. */
+.atlas-tempo-taxa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  color: #fff6e6;
+  /* o rótulo é uma frase, não um selo: com o tracking do segmentado
+     normal (0,06em) ela ainda cabia, mas 0,1em é o que a casa já usava
+     aqui e a troca de pele não muda a régua de leitura */
+  letter-spacing: 0.1em;
+}
+.atlas-tempo-taxa-seta {
+  color: rgba(255, 214, 150, 0.85);
+  font-size: 0.62rem;
 }
 .atlas-tempo-aviso {
   margin: 0.22rem 0 0;
@@ -461,6 +512,83 @@
   font-size: 0.5rem;
   letter-spacing: 0.14em;
   color: rgba(255, 214, 150, 0.85);
+}
+
+/* ---- A GAVETA (telefone) — as mesmas peças, em COLUNA ----------------
+   Cada `.ajustes-seg` vira sua própria LINHA cheia (a leitura do
+   mockup: TRANSPORTE / VELOCIDADE / REFERÊNCIA, uma embaixo da outra),
+   em vez de flutuarem lado a lado como na barra de mesa. Só CSS muda —
+   a marcação de `BarraDoTempo` é a mesma nos dois lugares (item 3 do
+   pedido do dono). */
+.atlas-gaveta .atlas-tempo {
+  /* a coluna da barra de mesa alinha ao início; na folha tudo estica,
+     senão os grupos ficam com a largura do mais largo (208 px, foto 06/09) */
+  align-items: stretch;
+}
+.atlas-gaveta .atlas-tempo-botoes {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+.atlas-gaveta .atlas-tempo-botoes .ajustes-seg {
+  width: 100%;
+}
+/* O RÓTULO DE CADA GRUPO (`comRotulos`, HudDoAtlas.tsx) — só existe dentro
+   da gaveta: mesmo átomo `.ajustes-item` (rótulo à esquerda, controle à
+   direita), com o nome que a barra de mesa dispensa porque os próprios
+   botões já dizem o que cada grupo é. Abaixo de 760px o rótulo sobe para
+   a própria linha e o controle ocupa a largura toda — a mesma quebra de
+   `.ajustes-item` em 08-ajustes.css. */
+.atlas-tempo-grupo {
+  display: grid;
+  grid-template-columns: 1fr 15rem;
+  align-items: center;
+  column-gap: 0.8rem;
+  width: 100%;
+}
+.atlas-tempo-rotulo {
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(235, 240, 250, 0.9);
+}
+.atlas-tempo-grupo .ajustes-seg,
+/* mais específico que a regra da barra de mesa (`.atlas-rodape … .ajustes-seg`,
+   flex 0 0 auto / width auto): na folha do celular a gaveta mora DENTRO do
+   rodapé, e sem isto o grupo ficava com metade da largura (foto 06/09) */
+.atlas-rodape .atlas-gaveta .atlas-tempo-grupo .ajustes-seg,
+.atlas-rodape .atlas-gaveta .atlas-tempo-botoes .ajustes-seg {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+}
+.atlas-rodape .atlas-gaveta .atlas-tempo-botoes .ajustes-seg button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+@media (max-width: 760px) {
+  .atlas-tempo-grupo {
+    grid-template-columns: 1fr;
+    row-gap: 0.3rem;
+  }
+}
+/* A LINHA "INSTANTE DO CÉU" no padrão `.ajustes-item`: rótulo à esquerda,
+   valor em EVIDÊNCIA à direita — a régua exata que o dono pediu (0,78rem,
+   #fff6e6, números tabulares para o relógio não dançar dígito a dígito). */
+.atlas-gaveta .atlas-tempo-linha {
+  justify-content: space-between;
+  min-height: 2.3rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid rgba(220, 230, 248, 0.1);
+}
+.atlas-gaveta .atlas-tempo-data {
+  font-size: 0.78rem;
+  color: #fff6e6;
+  font-variant-numeric: tabular-nums;
 }
 
 /* a gaveta de camadas: mesmo desenho do painel de Ajustes — é o mesmo
@@ -481,17 +609,24 @@
      `--teto-dialogo` e vem da fatia 1: era daqui e da ficha, escrita duas
      vezes, e agora é dos quatro diálogos. */
 }
+/* GAP + "✕" empurrado por `margin-left: auto` em vez de `space-between`
+   desde 06/09 — a gaveta do Tempo intercala um "?" entre o título e o
+   fechar (`.atlas-tempo-topo`, abaixo), e `space-between` com três
+   filhos jogaria o "?" para o MEIO da linha. Com dois filhos (o caso de
+   Camadas, sempre) o resultado visual é idêntico ao de antes. */
 .atlas-gaveta-topo {
+  position: relative;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   font-size: 0.6rem;
   color: rgba(200, 214, 235, 0.7);
   margin-bottom: 0.7rem;
 }
-.atlas-gaveta-topo button {
+.atlas-gaveta-topo button:not(.hud-ajuda) {
+  margin-left: auto;
   border: 0;
   background: none;
   color: inherit;
@@ -500,8 +635,20 @@
   line-height: 1;
   padding: 0.2rem 0.3rem;
 }
-.atlas-gaveta-topo button:hover {
+.atlas-gaveta-topo button:not(.hud-ajuda):hover {
   color: #fff;
+}
+/* O TÍTULO + "?" da gaveta do Tempo (redesenho, mesmo pedido de sempre:
+   "aplica o mesmo padrão"). O `position: relative` que ancora a dica do
+   "?" (`.hud-dica`, 08-ajustes.css) mora no `.atlas-gaveta-topo`, acima
+   — não aqui: uma caixinha desta largura (~5rem) ancoraria a dica
+   estreita e a viraria uma coluna de uma palavra por linha, o mesmo
+   defeito que o comentário de `.hud-dica` já registra para
+   `.ajustes-item`. Esta caixa só agrupa título e "?" visualmente. */
+.atlas-tempo-topo {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 /* AS TRÊS FAMÍLIAS (item 61). O título de cada grupo carrega a
    contagem à direita — "3/4" —, e é ela que diz, sem varrer as caixas,

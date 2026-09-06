@@ -209,6 +209,16 @@ export const EN: Record<keyof typeof PT, string> = {
   'atlas.aoVivoAria': 'Follow real time',
   'atlas.epoca': 'Epoch',
   'atlas.epocaAria': 'Back to the instant of the 2026 portrait',
+  // THE THREE ROW LABELS (`comRotulos`), sheet only — the desktop bar
+  // skips them because the buttons themselves already say what each
+  // group is.
+  'atlas.tempoTransporte': 'Transport',
+  'atlas.tempoVelocidade': 'Speed',
+  'atlas.tempoReferencia': 'Reference',
+  // The "?" in the gaveta header and the bar (redesign, the owner's
+  // request: "apply the same pattern to the Time panel") — ≤45 words.
+  'atlas.tempoAjuda':
+    'The time machine moves the sky and the planets. ◀ ⏸ ▶ set the direction; the speed button cycles from real time to ~116 days per second. "Live" follows the visitor\'s clock; "Epoch" freezes the J2000 reference portrait. Ephemerides cover 1950–2050.',
 
   // ---- the search palette ------------------------------------------
   'busca.titulo': 'Search',

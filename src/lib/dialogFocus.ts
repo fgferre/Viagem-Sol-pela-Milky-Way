@@ -120,7 +120,10 @@ export function useDialogFocus(
 
     // o foco ENTRA: no primeiro controle, ou no próprio contêiner quando
     // o diálogo é só texto
-    (focaveis()[0] ?? caixa).focus();
+    // …pulando o botão de ajuda (`.hud-ajuda`): com o foco nele o balão
+    // abre sozinho ao abrir a folha (foto do Tempo, 06/09)
+    const lista0 = focaveis();
+    (lista0.find((e) => !e.classList.contains('hud-ajuda')) ?? lista0[0] ?? caixa).focus();
 
     const aoTeclar = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {

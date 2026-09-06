@@ -214,6 +214,15 @@ export const PT = {
   'atlas.aoVivoAria': 'Seguir o tempo real',
   'atlas.epoca': 'Época',
   'atlas.epocaAria': 'Voltar ao instante do retrato de 2026',
+  // OS RÓTULOS DAS TRÊS LINHAS (`comRotulos`), só na gaveta — a barra da
+  // mesa não os usa porque os próprios botões já dizem o que cada grupo é.
+  'atlas.tempoTransporte': 'Transporte',
+  'atlas.tempoVelocidade': 'Velocidade',
+  'atlas.tempoReferencia': 'Referência',
+  // O "?" do cabeçalho da gaveta e da barra (redesenho, pedido do dono:
+  // "aplica o mesmo padrão no painel de Tempo") — ≤45 palavras.
+  'atlas.tempoAjuda':
+    'A máquina do tempo move o céu e os planetas. ◀ ⏸ ▶ escolhem o sentido; o botão de velocidade cicla do tempo real a ~116 dias por segundo. Ao vivo segue o relógio do visitante; Época volta ao retrato J2000. Efemérides cobrem 1950–2050.',
 
   // ---- a paleta de busca (`components/PaletaDeBusca.tsx`) -----------
   'busca.titulo': 'Busca',
