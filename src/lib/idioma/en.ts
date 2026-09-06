@@ -272,6 +272,10 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.relevoDaCor': '◐ Invented relief',
   'ficha.relevoDaCorAria':
     "Turn on relief invented from the colour of {nome}'s photo — there is no relief map",
+  // The "?" in the header (redesign, the owner's request: "apply the same
+  // pattern to the fact sheet") — ≤40 words.
+  'ficha.ajuda':
+    "Each seal says where the number comes from: measured is a number from the cited source; derived is calculated from measured ones; artistic is a declared illustration or invention. The '×Terra' beside a value compares it with Earth's own figure.",
 
   // ---- section titles and field labels -----------------------------
   'ficha.secao.agora': 'right now',

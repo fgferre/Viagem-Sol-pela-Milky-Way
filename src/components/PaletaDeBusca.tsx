@@ -305,7 +305,7 @@ export function PaletaDeBusca({
         />
         <button
           type="button"
-          className="atlas-busca-fechar"
+          className="atlas-busca-fechar hud-fechar"
           onClick={onFechar}
           aria-label={t('busca.fechar')}
         >

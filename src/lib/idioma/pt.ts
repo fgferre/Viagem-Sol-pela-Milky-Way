@@ -283,6 +283,10 @@ export const PT = {
   'ficha.relevoDaCor': '◐ Relevo inventado',
   'ficha.relevoDaCorAria':
     'Ligar um relevo inventado a partir da cor da foto de {nome} — não existe mapa de relevo',
+  // O "?" do cabeçalho (redesenho, pedido do dono: "aplica o mesmo padrão
+  // na ficha dos corpos") — ≤40 palavras.
+  'ficha.ajuda':
+    "Cada selo diz de onde vem o número: medido é o número da fonte citada; derivado é calculado a partir de medidos; artístico é ilustração ou invenção declarada. O '×Terra' junto a um valor compara com o dado da Terra.",
 
   // ---- os títulos de seção e os rótulos de campo (`lib/atlas/ficha.ts`)
   'ficha.secao.agora': 'agora',

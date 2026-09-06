@@ -30,7 +30,7 @@
   gap: 0.6rem;
   margin-bottom: 0.5rem;
 }
-.atlas-ficha-topo button {
+.atlas-ficha-topo button:not(.hud-ajuda) {
   border: 0;
   background: none;
   color: inherit;
@@ -39,7 +39,7 @@
   line-height: 1;
   padding: 0.2rem 0.3rem;
 }
-.atlas-ficha-topo button:hover {
+.atlas-ficha-topo button:not(.hud-ajuda):hover {
   color: #fff;
 }
 .atlas-ficha-identidade {
@@ -60,28 +60,30 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* A LINHA DA CLASSE + O "?" (redesenho, 06/09, pedido do dono: "aplica o
+   mesmo padrão na ficha dos corpos") — `position: relative` ancora a
+   dica (`.hud-dica`, 08-ajustes.css), que flutua sobre esta linha, não
+   sobre a caixinha do botão. */
+.atlas-ficha-classe-linha {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
 .atlas-ficha-classe {
   font-size: 0.54rem;
   letter-spacing: 0.34em;
   text-transform: uppercase;
   color: rgba(200, 214, 235, 0.62);
 }
-/* os dois gestos da escada, em linha e logo abaixo do nome */
+/* OS DOIS GESTOS DA ESCADA viram UM GRUPO `.ajustes-seg` (redesenho,
+   06/09): não são alternância (nenhum "ligado" permanece), então nenhum
+   segmento ganha `.on` — só o hover de sempre do segmentado. */
 .atlas-ficha-escada {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
   margin-bottom: 0.7rem;
 }
 .atlas-ficha-escada:empty {
   margin-bottom: 0;
-}
-/* o interruptor da superfície inventada, ACESO no mesmo âmbar dos botões
-   da máquina do tempo */
-.atlas-ficha-escada .hud-btn[aria-pressed='true'] {
-  border-color: rgba(255, 214, 150, 0.85);
-  background: rgba(255, 214, 150, 0.16);
-  color: #fff;
 }
 
 /* AS SEÇÕES DOBRÁVEIS, no vocabulário do `.atlas-gaveta-titulo`: caixa
@@ -98,6 +100,9 @@
   font-size: 0.6rem;
   font-weight: 300;
 }
+/* O TÍTULO em ouro, no vocabulário do `.atlas-gaveta-titulo` (mesma cor,
+   mesmo tracking) — redesenho de 06/09, pedido do dono: "aplica o mesmo
+   padrão na ficha dos corpos". */
 .atlas-ficha-titulo button {
   display: flex;
   justify-content: space-between;
@@ -112,10 +117,10 @@
   letter-spacing: 0.24em;
   text-transform: uppercase;
   font-size: 0.6rem;
-  color: rgba(200, 214, 235, 0.7);
+  color: rgba(255, 214, 150, 0.72);
 }
 .atlas-ficha-titulo button:hover {
-  color: rgba(235, 240, 250, 0.95);
+  color: rgba(255, 214, 150, 0.95);
 }
 .atlas-ficha-seta {
   font-size: 0.7rem;
@@ -126,31 +131,53 @@
   margin: 0;
   padding: 0;
 }
-/* rótulo em cima, valor embaixo — e não duas colunas: a 23rem de largura um
-   valor como "1,898e+27 kg" mais o selo "317,83× Terra" não cabem ao lado de
-   um rótulo, e a coluna estreita quebraria os dois em três linhas cada. */
+/* CADA LINHA VIRA DUAS COLUNAS (redesenho, 06/09): rótulo à esquerda,
+   valor em evidência à direita — a régua de `.ajustes-item`/
+   `.atlas-tempo-linha` aplicada aqui. `grid-template-columns: 1fr auto`
+   deixa a coluna do valor do tamanho do CONTEÚDO (o "1fr" cede para o
+   rótulo), e é essa mesma regra que faz `.larga` empilhar sem marcação
+   extra: uma coluna só, e `dd` desce para a linha de baixo sozinho. */
 .atlas-ficha-linha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.8rem;
+  align-items: baseline;
+  min-height: 2.1rem;
   padding: 0.35rem 0;
 }
 .atlas-ficha-linha + .atlas-ficha-linha {
-  border-top: 1px solid rgba(220, 230, 248, 0.07);
+  border-top: 1px solid rgba(220, 230, 248, 0.1);
 }
 .atlas-ficha-linha dt {
   font-size: 0.58rem;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(200, 214, 235, 0.62);
+  color: rgba(220, 230, 248, 0.62);
 }
 .atlas-ficha-linha dd {
-  margin: 0.15rem 0 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  /* VALOR LONGO QUEBRA DENTRO DA PRÓPRIA COLUNA até 24 caracteres — acima
+     disso o componente marca a linha `.larga` (abaixo) em vez de espremer
+     uma frase em 60% da largura. */
+  max-width: 60%;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.atlas-ficha-valor-linha {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
+  justify-content: flex-end;
   gap: 0.4rem;
 }
 .atlas-ficha-valor {
-  font-size: 0.78rem;
-  color: rgba(235, 240, 250, 0.95);
+  font-size: 0.8rem;
+  color: #fff6e6;
+  font-variant-numeric: tabular-nums;
 }
 /* o "×Terra" — o mesmo âmbar dos números do rodapé do Atlas */
 .atlas-ficha-badge {
@@ -158,20 +185,55 @@
   letter-spacing: 0.1em;
   color: rgba(255, 214, 150, 0.85);
 }
-/* A PROCEDÊNCIA DE CADA NÚMERO, na linha inteira e fria: ela é para ser
-   lida quando se procura, não para competir com o valor. As três cores são
-   as do selo — verde para medido, âmbar para derivado. */
+/* A PROCEDÊNCIA DE CADA NÚMERO, sob o valor e fria: ela é para ser lida
+   quando se procura, não para competir com o valor. A bolinha (molde do
+   `.atlas-selo-bolinha`) repete a cor do texto por `currentcolor`, e as
+   três cores são as do selo — verde para medido, âmbar para derivado; o
+   artístico fica na cor neutra de sempre, sem selo próprio. */
 .atlas-ficha-proc {
-  flex-basis: 100%;
-  font-size: 0.54rem;
+  grid-column: 1 / -1;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.52rem;
   letter-spacing: 0.06em;
   color: rgba(200, 214, 235, 0.45);
+}
+.atlas-ficha-proc::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  flex: none;
+  border-radius: 50%;
+  background: currentcolor;
 }
 .atlas-ficha-proc.medido {
   color: rgba(150, 220, 180, 0.6);
 }
 .atlas-ficha-proc.derivado {
   color: rgba(255, 214, 150, 0.55);
+}
+/* A LINHA LARGA (redesenho, 06/09) — texto longo (frases, listas de
+   catálogo) não cabe nos 60% de `dd` sem virar uma coluna de uma palavra;
+   uma coluna só faz o valor descer para debaixo do rótulo, como a
+   `.ajustes-item--largo` da Qualidade. O componente decide (mais de ~24
+   caracteres), o CSS só muda a grade. */
+.atlas-ficha-linha.larga {
+  grid-template-columns: 1fr;
+  row-gap: 0.3rem;
+}
+.atlas-ficha-linha.larga dd {
+  max-width: 100%;
+  align-items: flex-start;
+  text-align: left;
+}
+.atlas-ficha-linha.larga .atlas-ficha-valor-linha {
+  justify-content: flex-start;
 }
 
 /* O SELO DE HONESTIDADE, DOBRADO EM UMA LINHA (item 61, 22/08): canto
@@ -725,8 +787,13 @@
 /* O INTERRUPTOR — o `<input type="checkbox">` de sempre (o juiz de a11y
    conta as vinte caixas e o teclado/espaço continuam funcionando: só a
    PELE muda), desenhado como pílula no molde do segmento ligado de
-   Ajustes (`.ajustes-seg button.on`) — mesmo dourado, mesmo brilho. */
-.atlas-gaveta-toggle {
+   Ajustes (`.ajustes-seg button.on`) — mesmo dourado, mesmo brilho.
+   NOME NEUTRO (`hud-`, não `atlas-gaveta-`) desde o redesenho da ficha
+   (06/09, pedido do dono: "aplica o mesmo padrão na ficha dos corpos"):
+   o interruptor do "Relevo inventado" precisa da MESMA pílula, e uma
+   segunda cópia do CSS por causa do nome seria a mesma peça contada
+   duas vezes. */
+.hud-interruptor {
   appearance: none;
   -webkit-appearance: none;
   flex: 0 0 auto;
@@ -740,7 +807,7 @@
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease;
 }
-.atlas-gaveta-toggle::after {
+.hud-interruptor::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -752,17 +819,17 @@
   transform: translateY(-50%);
   transition: left 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
-.atlas-gaveta-toggle:checked {
+.hud-interruptor:checked {
   background: rgba(255, 214, 150, 0.34);
   border-color: rgba(255, 214, 150, 1);
   box-shadow: 0 0 10px rgba(255, 214, 150, 0.28);
 }
-.atlas-gaveta-toggle:checked::after {
+.hud-interruptor:checked::after {
   left: calc(100% - 0.85rem - 0.15rem);
   background: #fff6e6;
   box-shadow: 0 0 6px rgba(255, 214, 150, 0.6);
 }
-.atlas-gaveta-toggle:focus-visible {
+.hud-interruptor:focus-visible {
   outline: 2px solid rgba(255, 214, 150, 0.85);
   outline-offset: 2px;
 }
@@ -1075,4 +1142,15 @@
   .atlas-bussola {
     transition: none;
   }
+}
+
+/* O VALOR NÃO QUEBRA: "1,4" e "UA" em linhas separadas era o efeito da
+   coluna estreita (foto 06/09). Valor curto fica inteiro à direita; o
+   valor longo já tem a linha `.larga`, empilhada, e continua quebrando. */
+.atlas-ficha-linhas dd:not(.larga dd) .atlas-ficha-valor-linha,
+.atlas-ficha-linhas .atlas-ficha-valor-linha {
+  white-space: nowrap;
+}
+.atlas-ficha-linhas .larga .atlas-ficha-valor-linha {
+  white-space: normal;
 }

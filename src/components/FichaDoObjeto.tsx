@@ -41,11 +41,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
+import { useDicaPresa } from '../hooks/useDicaPresa';
+import { Ajuda } from './Ajuda';
 import type { CorpoNoJson, CorposDoAtlas, FonteDaFicha, IdDeSecao } from '../lib/atlas/ficha';
 import { montarFicha, montarFichaDeEstrela } from '../lib/atlas/ficha';
 import type { NamedStar } from '../three/config';
 import type { ManifestDeTexturas } from '../three/world/corpos/texturas';
 import { PROCEDENCIA } from '../three/selo';
+
+/** Acima disso uma frase não cabe nos 60% da coluna de valor sem virar
+ *  uma palavra por linha — a linha empilha inteira (`.larga`, 04-atlas.css)
+ *  em vez de espremer. O número é medido, não gosto: "317,83× Terra" tem
+ *  14 caracteres e cabe; "definição" ou uma frase de contexto passam
+ *  fácil dos 24. */
+const LIMIAR_DA_LINHA_LARGA = 24;
 
 /**
  * OS DOIS ARQUIVOS DA FICHA, cada um com a sua promessa única. Módulo e não
@@ -125,6 +134,10 @@ export function FichaDoObjeto({
 }) {
   const dialogo = useDialogFocus('ficha', aberta, onFechar);
   const idioma = useIdioma();
+  // A DICA PRESA (redesenho, 06/09) — o mesmo padrão de Ajustes e das
+  // gavetas: fixar uma "?" apaga a de cima, clique fora do diálogo
+  // desfixa, e Esc desfixa ANTES de fechar a ficha.
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
   const [corpos, setCorpos] = useState<Map<string, CorpoNoJson> | null>(null);
   const [texturas, setTexturas] = useState<ManifestDeTexturas | null>(null);
   /**
@@ -204,6 +217,21 @@ export function FichaDoObjeto({
       className="hud-cartao hud-dialogo atlas-ficha"
       aria-label={t('ficha.aria', { nome: ficha.nome })}
       {...dialogo}
+      onClick={() => {
+        // CLIQUE EM QUALQUER LUGAR DA FICHA desfixa a dica presa — o "?"
+        // que a fixou já parou o próprio clique (`stopPropagation`), então
+        // só chega aqui quem clicou fora dela (doutrina de `Ajustes.tsx`).
+        if (dicaPresa) limparDica();
+      }}
+      onKeyDownCapture={(evento) => {
+        // ESC COM DICA PRESA desfixa e NÃO fecha o diálogo — a CAPTURA
+        // corre antes do Esc de fechar que `useDialogFocus` já prendeu na
+        // bolha.
+        if (evento.key === 'Escape' && dicaPresa) {
+          evento.stopPropagation();
+          limparDica();
+        }
+      }}
     >
       <div className="atlas-ficha-topo">
         <div className="atlas-ficha-identidade">
@@ -214,46 +242,88 @@ export function FichaDoObjeto({
           <span className="atlas-ficha-nome" role="status" aria-live="polite">
             {ficha.nome}
           </span>
-          <span className="atlas-ficha-classe">{ficha.classe}</span>
+          {/* A CLASSE + O "?" (redesenho, 06/09, pedido do dono: "aplica
+              o mesmo padrão na ficha dos corpos") — explica os três selos
+              de procedência e o "×Terra" que aparecem lá embaixo, nas
+              linhas. */}
+          <span className="atlas-ficha-classe-linha">
+            <span className="atlas-ficha-classe">{ficha.classe}</span>
+            <Ajuda
+              id="ficha"
+              rotulo={ficha.nome}
+              texto={t('ficha.ajuda')}
+              presa={dicaPresa === 'ficha'}
+              onAlternar={() => alternarDica('ficha')}
+            />
+          </span>
         </div>
-        <button type="button" onClick={onFechar} aria-label={t('ficha.fechar')}>
+        <button
+          type="button"
+          className="hud-fechar"
+          onClick={onFechar}
+          aria-label={t('ficha.fechar')}
+        >
           ✕
         </button>
       </div>
 
+      {/* OS DOIS GESTOS DA ESCADA viram UM GRUPO SEGMENTADO (redesenho,
+          06/09): são AÇÕES, não alternância — nenhum dos dois fica "ligado"
+          depois do clique, e por isso nenhum ganha `aria-pressed` nem a
+          classe `.on` do segmentado de Ajustes. */}
       <div className="atlas-ficha-escada">
-        {podeAproximar && (
-          <button
-            type="button"
-            className="hud-btn small"
-            onClick={onAproximar}
-            aria-label={t('ficha.aproximarAria', { nome: ficha.nome })}
-          >
-            {t('ficha.aproximar')}
-          </button>
-        )}
-        {!noSistema && (
-          <button
-            type="button"
-            className="hud-btn small"
-            onClick={onSistema}
-            aria-label={t('ficha.sistemaAria')}
-          >
-            {t('ficha.sistema')}
-          </button>
-        )}
-        {relevoDaCor !== null && (
-          <button
-            type="button"
-            className="hud-btn small"
-            aria-pressed={relevoDaCor}
-            onClick={() => onRelevoDaCor(!relevoDaCor)}
-            aria-label={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
-          >
-            {t('ficha.relevoDaCor')}
-          </button>
+        {(podeAproximar || !noSistema) && (
+          <div className="ajustes-seg">
+            {podeAproximar && (
+              <button
+                type="button"
+                onClick={onAproximar}
+                aria-label={t('ficha.aproximarAria', { nome: ficha.nome })}
+              >
+                {t('ficha.aproximar')}
+              </button>
+            )}
+            {!noSistema && (
+              <button
+                type="button"
+                onClick={onSistema}
+                aria-label={t('ficha.sistemaAria')}
+              >
+                {t('ficha.sistema')}
+              </button>
+            )}
+          </div>
         )}
       </div>
+
+      {/* O RELEVO INVENTADO vira uma LINHA própria, no molde de
+          `.ajustes-item`: rótulo + "?" à esquerda, interruptor à direita —
+          a MESMA pílula da gaveta de Camadas (`.hud-interruptor`). O
+          `aria-label` que era do botão migra para a caixa, porque agora
+          quem recebe o clique é ela. */}
+      {relevoDaCor !== null && (
+        <label className="ajustes-item">
+          <span className="ajustes-rotulo-caixa">
+            <span className="ajustes-rotulo">{t('ficha.relevoDaCor')}</span>
+            <Ajuda
+              id="relevo"
+              rotulo={t('ficha.relevoDaCor')}
+              texto={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
+              presa={dicaPresa === 'relevo'}
+              onAlternar={() => alternarDica('relevo')}
+            />
+          </span>
+          <span className="ajustes-controle">
+            <input
+              type="checkbox"
+              className="hud-interruptor"
+              checked={relevoDaCor}
+              aria-label={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
+              onChange={() => onRelevoDaCor(!relevoDaCor)}
+            />
+          </span>
+        </label>
+      )}
 
       {ficha.secoes.map((secao) => {
         const estaAberta =
@@ -283,18 +353,31 @@ export function FichaDoObjeto({
             </h3>
             {estaAberta && (
               <dl className="atlas-ficha-linhas" id={`ficha-${secao.id}`}>
-                {secao.linhas.map((l, i) => (
-                  <div className="atlas-ficha-linha" key={`${l.rotulo}-${i}`}>
-                    <dt>{l.rotulo}</dt>
-                    <dd>
-                      <span className="atlas-ficha-valor">{l.valor}</span>
-                      {l.badge && (
-                        <span className="atlas-ficha-badge">{l.badge}</span>
-                      )}
+                {secao.linhas.map((l, i) => {
+                  // TEXTO LONGO (frase, lista de catálogo) empilha a linha
+                  // inteira em vez de espremer em 60% da largura — ver o
+                  // comentário do `.larga` em 04-atlas.css.
+                  const larga = l.valor.length > LIMIAR_DA_LINHA_LARGA;
+                  return (
+                    <div
+                      className={'atlas-ficha-linha' + (larga ? ' larga' : '')}
+                      key={`${l.rotulo}-${i}`}
+                    >
+                      <dt>{l.rotulo}</dt>
+                      <dd>
+                        <span className="atlas-ficha-valor-linha">
+                          <span className="atlas-ficha-valor">{l.valor}</span>
+                          {l.badge && (
+                            <span className="atlas-ficha-badge">{l.badge}</span>
+                          )}
+                        </span>
+                      </dd>
                       {/* A PROCEDÊNCIA DE CADA NÚMERO, no vocabulário do
                           selo e em nenhum outro — o `rotulo` é o do tier, e
                           uma segunda redação aqui seria o quarto tier
-                          fantasma.
+                          fantasma. IRMÃ de `dd` (não filha, redesenho 06/09):
+                          `grid-column: 1 / -1` só alcança a linha inteira
+                          como item direto da grade de `.atlas-ficha-linha`.
                           O `title` é o da LINHA (`l.fonte`), não o do tier: o
                           `oQue` do selo fala das ESTRELAS ("cor e temperatura
                           por modelo"), e ele estava aparecendo ao passar o
@@ -309,9 +392,9 @@ export function FichaDoObjeto({
                         {PROCEDENCIA[l.procedencia].rotulo}
                         {l.fonte ? ` · ${l.fonte}` : ''}
                       </span>
-                    </dd>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </dl>
             )}
           </section>

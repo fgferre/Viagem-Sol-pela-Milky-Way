@@ -93,7 +93,12 @@ export function GavetaDeCamadas({
     >
       <div className="atlas-gaveta-topo">
         <span>{t('atlas.camadas')}</span>
-        <button type="button" onClick={onFechar} aria-label={t('atlas.fecharCamadas')}>
+        <button
+          type="button"
+          className="hud-fechar"
+          onClick={onFechar}
+          aria-label={t('atlas.fecharCamadas')}
+        >
           ✕
         </button>
       </div>
@@ -142,7 +147,7 @@ export function GavetaDeCamadas({
                   </span>
                   <input
                     type="checkbox"
-                    className="atlas-gaveta-toggle"
+                    className="hud-interruptor"
                     checked={ligada}
                     onChange={() => onCamada(c.flag, !ligada)}
                   />
@@ -745,7 +750,12 @@ export function GavetaDoTempo({
             onAlternar={() => alternarDica('tempo')}
           />
         </span>
-        <button type="button" onClick={onFechar} aria-label={t('atlas.fecharTempo')}>
+        <button
+          type="button"
+          className="hud-fechar"
+          onClick={onFechar}
+          aria-label={t('atlas.fecharTempo')}
+        >
           ✕
         </button>
       </div>

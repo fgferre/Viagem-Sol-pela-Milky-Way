@@ -355,7 +355,12 @@ export function Ajustes({
     >
       <div className="ajustes-topo">
         <span>{t('ajustes.titulo')}</span>
-        <button type="button" onClick={onFechar} aria-label={t('ajustes.fechar')}>
+        <button
+          type="button"
+          className="hud-fechar"
+          onClick={onFechar}
+          aria-label={t('ajustes.fechar')}
+        >
           ✕
         </button>
       </div>
