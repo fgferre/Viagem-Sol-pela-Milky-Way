@@ -20,7 +20,7 @@ Etapas
 Item seguinte (autorizado 05/09, o modo de hoje fica como opção): o QUADRO DENTRO DO DISCO.
 - [x] Diagnóstico fechado (05/09, tela real, t=150 parado, 72–79 ms): `?nopts=1` (partículas da galáxia escondidas, chave nova de medição) → 14 ms; `?galstat=1` mostra 99,99% dos 4,02 M pontos no frustum ali. Discos, brilhos, heróis e nuvens observadas custam ~0 nessa vista (os toggles por material dentro da página eram ruído; só a URL vale).
 - [x] Seletor "Partículas da galáxia" (todas/metade/quarto) nos presets (cinema todas, alta metade, performance todas — o performance já carrega 28% via populationScale) e no custom, troca ao vivo por drawRange sobre o buffer embaralhado (permutação semeada no fim de buildGalaxy) com o brilho compensado por 1/fração. Medido t=150: todas 79 ms / metade 43 / quarto 28,5; em movimento 82 → 34. Fotos `capturas/particulas-t{120,150,166}-tres.png`; brilho médio igual dentro de 1%.
-- [ ] O dono testa as visualizações e decide os padrões por preset.
+- [ ] O dono testa as visualizações e decide os padrões por preset (item 223 em PENDENCIAS; rodada encerrada 05/09 sem a verificação dele).
 - [ ] Ideia exata pendente (BACKLOG): partículas com alpha exatamente zero não rasterizarem.
 
 Engasgos (05/09): FALSO POSITIVO da régua sem vsync — com vsync não há engasgo na chegada; os aquecimentos de Terra/Lua/CME foram revertidos (ver BACKLOG 'ARMADILHA DA RÉGUA').

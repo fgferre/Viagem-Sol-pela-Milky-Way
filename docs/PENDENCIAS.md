@@ -2,9 +2,43 @@
 
 Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
-Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 223.**
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 224.**
 
-## O BASTÃO — onde a rodada parou (04/09, noite)
+## O BASTÃO — onde a rodada parou (05/09, madrugada)
+
+**05/09 (rodada de FLUIDEZ, encerrada por ordem dele: "encerrar
+rodada"; ele ainda "não verificou": "siga com o próximo item e no
+final verifico tudo").** Partiu da análise de fluidez do ChatGPT (4
+caminhos): ele mandou "todos são caminhos a testar". Dos quatro só o
+cache do gás parado valeu (12 → 19 fps parado, captura idêntica); os
+outros três foram medidos e descartados (BACKLOG). Depois perguntou por
+"uma forma mais inteligente de montar essas nuvens volumétricas que
+custe menos sem ser com sprite", e ele topou a grade 3D assada: "topo,
+abre o plano e mãos à obra". Decisão dele sobre as versões: "ficam
+todas, isso parece uma oportunidade de um toggle de detalhes gráficos…
+que podem conviver dentro de presets já presentes, incluindo o preset
+custom", e "vamos tentar manter a originalidade como uma das opções
+novas… de forma que possamos voltar ao que é o app hoje". Assim
+nasceram os dois seletores da gaveta Avançado, em `?gas=` e
+`?particulas=`: **223 ABERTO — ele verifica os dois seletores** (Gás
+volumétrico: Original/Fino/Macio; Partículas da galáxia:
+Todas/Metade/Um quarto), os padrões por preset que eu assumi (Cinema:
+Fino + Todas; Alta: Macio + Metade; Performance: Macio + Todas) e as
+fotos em `capturas/nebvol3-t*-tres.png`, `capturas/particulas-t*-tres.png`
+e `capturas/ajustes-gas-volumetrico.png`. Medido em tela real (Cinema,
+DPR 2, t=100 em movimento): gás 12 / 18 / 31 fps; partículas em t=150:
+79 / 43 / 28 ms. Ele estranhou uma tarefa de 4h30 ("tem algo realmente
+acontecendo ou travou?"): era minha régua presa sem teto, matei e pus
+teto. Pediu "tente fazer essa verificação novamente… monitore… timing
+coerente": refeita com vigia, e a conclusão virou — os engasgos de
+segundos eram artefato da régua SEM vsync; com vsync não há engasgo na
+chegada; os três aquecimentos construídos em cima foram revertidos no
+mesmo dia (BACKLOG "ARMADILHA DA RÉGUA"). `PLAN.md` fica aberto com as
+etapas seguintes do gás (pular o vazio; o mapa real de poeira na
+grade). Servidor de rede local: `npm run dev -- --host` e abrir
+`http://10.0.0.78:5173/` no celular.
+
+## O BASTÃO anterior (04/09, noite)
 
 **04/09 (noite — itens pequenos da fila, por ordem dele: "segue os itens
 pequenos da fila").** Antes deles, por decisão dele nesta janela: a lista
