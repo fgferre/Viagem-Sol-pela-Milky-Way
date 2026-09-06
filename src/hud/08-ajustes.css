@@ -13,7 +13,7 @@
   /* REDESENHO (05/09): 19rem cabia parágrafo; fileira PRESET/2×/4×/…
      precisa de mais respiro — 24rem é o mesmo teto que a gaveta usa
      para caber cinco segmentos sem quebrar palavra. */
-  width: min(26rem, calc(100vw - 3.2rem));
+  width: min(27rem, calc(100vw - 3.2rem));
   /* EXCEÇÃO 1 — o teto tem dois termos A MAIS que o comum. Os outros três
      diálogos cabem na tela sozinhos; este é o mais alto da casa e precisa
      parar antes. Os dois primeiros mandam em qualquer tela com espaço, e
@@ -86,11 +86,14 @@
   gap: 0.35rem;
 }
 .ajustes-rotulo {
-  font-size: 0.64rem;
+  font-size: 0.6rem;
   font-weight: 400;
-  letter-spacing: 0.18em;
+  /* uma linha só, pedido do dono (06/09): espaçamento menor e o painel
+     um pouco mais largo cabem "Gás volumétrico" ao lado do ? */
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(235, 240, 250, 0.88);
+  white-space: nowrap;
+  color: rgba(235, 240, 250, 0.9);
 }
 .ajustes-controle {
   display: flex;
@@ -281,9 +284,12 @@
   color: #fff;
 }
 .ajustes-seg button.on {
-  background: rgba(255, 214, 150, 0.2);
-  color: rgba(255, 232, 196, 1);
-  box-shadow: inset 0 0 0 1px rgba(255, 214, 150, 0.9);
+  /* "o dourado mais forte" (dono, 06/09) */
+  background: rgba(255, 214, 150, 0.34);
+  color: #fff6e6;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 214, 150, 1),
+    0 0 10px rgba(255, 214, 150, 0.28);
 }
 /* O SEGMENTO EFETIVO — o que o PRESET resolve, sublinhado a ouro, só
    quando "Preset" é a escolha ativa (é a outra caixa que fica `.on`
