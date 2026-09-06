@@ -638,6 +638,12 @@ export class Director {
       meta: () => this.meta,
       rochosos: () => this.rochosos,
       gigantes: () => this.gigantes,
+      // a terceira pega do mesmo alvo (item 120 · L11): o traço da órbita
+      // responde como o nome, e só no Atlas, onde as linhas existem
+      corpoNaOrbita: (x, y) =>
+        this.phase === 'atlas' && this.orbitas
+          ? this.orbitas.corpoNoPonto(x, y, this.engine.camera, window.innerWidth, window.innerHeight)
+          : null,
     },
   });
   private disposed = false;

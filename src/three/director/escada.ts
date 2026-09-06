@@ -213,6 +213,8 @@ export class Escada {
     meta: () => StarsMeta | undefined;
     rochosos: () => readonly { corpo: RochosoResolvido }[];
     gigantes: () => readonly { corpo: GiganteResolvido }[];
+    /** o corpo cuja LINHA de órbita está sob o ponteiro (0..1), ou null */
+    corpoNaOrbita: (x: number, y: number) => string | null;
   };
 
   constructor(dono: {
@@ -235,7 +237,7 @@ export class Escada {
     this.escolha = new Escolha({
       escada: this,
       rotulos: dono.rotulos,
-      fios: { fase: dono.fios.fase, meta: dono.fios.meta },
+      fios: { fase: dono.fios.fase, meta: dono.fios.meta, corpoNaOrbita: dono.fios.corpoNaOrbita },
     });
   }
 

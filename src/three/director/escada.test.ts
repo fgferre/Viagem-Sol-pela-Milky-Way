@@ -167,6 +167,7 @@ function bancada({ comEfemeride = false, comAnoes = false } = {}) {
       engine: () => ({ camera }) as unknown as Engine,
       roam: () => ({}) as unknown as FreeRoam,
       fase: () => 'atlas',
+      corpoNaOrbita: () => null,
       // 0 = primeiro quadro do modo: sem rampa, o enquadramento é direto
       quadrosDaFase: () => 0,
       shotMode: () => true,

@@ -1257,6 +1257,30 @@ export interface QuadroEmPx {
   pixelRatio: number;
 }
 
+/**
+ * O RAIO DE ACERTO do hit-test da LINHA (item 120, F1 · L11), em px de
+ * tela — apontar o TRAÇO tem de responder como apontar o NOME (§5g), e a
+ * régua é a mesma folga que um dedo/mouse erra por um fio fino de 1-2 px.
+ */
+const TOLERANCIA_DA_LINHA_PX = 8;
+
+/**
+ * Distância de um ponto a um SEGMENTO, em pixel de tela — a conta de
+ * livro (projeção no segmento, presa a `[0,1]`). Pura e sem alocação: só
+ * números entram e saem.
+ */
+function distanciaAoSegmentoPx(
+  ax: number, ay: number, bx: number, by: number, px: number, py: number
+): number {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const comprimento2 = dx * dx + dy * dy;
+  const t = comprimento2 > 0
+    ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / comprimento2))
+    : 0;
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
 export class Orbitas {
   readonly group = new THREE.Group();
 
@@ -1302,6 +1326,9 @@ export class Orbitas {
    */
   private readonly rascunhoDoLaco = new Float32Array(PONTOS_POR_ORBITA * 3);
   private readonly rascunhoNdc = new THREE.Vector3();
+  /** os dois pontos de um segmento, reusados no hit-test — ver `corpoNoPonto` */
+  private readonly pickInicio = new THREE.Vector3();
+  private readonly pickFim = new THREE.Vector3();
   /** onde o CORPO dono da linha está neste quadro — rascunho reusado */
   private readonly pontoDoCorpo = new THREE.Vector3();
   /** raio físico por corpo, memoizado — ver `raioDe` */
@@ -1728,6 +1755,67 @@ export class Orbitas {
    */
   nucleoDe(corpoId: string): THREE.Vector4 | null {
     return this.linhas.find((l) => l.corpo.id === corpoId)?.nucleo.value ?? null;
+  }
+
+  /**
+   * O HIT-TEST DA LINHA (item 120, F1 · L11) — quem está sob o ponteiro
+   * pela GEOMETRIA da fita, e não pelo rótulo. `Escolha.alvoNoPonto` já
+   * pergunta aos nomes; esta é a pergunta que falta para apontar/clicar o
+   * TRAÇO da órbita valer como apontar/clicar o nome dela (§5g).
+   *
+   * `x`,`y` em 0..1, a MESMA convenção de `projectPoint` (`labels.ts`).
+   * Só as linhas DESENHADAS entram na varredura — invisível ou no alfa
+   * abaixo de `ALFA_INVISIVEL` não compete por clique nenhum, mesmo que o
+   * rótulo do corpo dela ainda exista na lista (é o caso que este método
+   * existe para cobrir: ver `Escolha.alvoNoPonto`).
+   *
+   * Projeta os DOIS pontos de cada um dos 256 segmentos — no frame de
+   * MUNDO, via `fita.matrixWorld` (as luas têm o pai como centro, §4) — e
+   * mede a distância em PIXEL até o ponteiro. `TOLERANCIA_DA_LINHA_PX` é
+   * o raio de acerto; a mais perto dentro dele vence.
+   */
+  corpoNoPonto(
+    x: number,
+    y: number,
+    cam: THREE.PerspectiveCamera,
+    larguraPx: number,
+    alturaPx: number
+  ): string | null {
+    if (!(larguraPx > 0) || !(alturaPx > 0)) return null;
+    const alvoX = x * larguraPx;
+    const alvoY = y * alturaPx;
+    let melhorId: string | null = null;
+    let melhorD = TOLERANCIA_DA_LINHA_PX;
+    for (const linha of this.linhas) {
+      if (!linha.fita.visible) continue;
+      if (linha.material.opacity <= ALFA_INVISIVEL) continue;
+      const array = linha.segmentos.array as Float32Array;
+      for (let k = 0; k < PONTOS_POR_ORBITA; k++) {
+        const base = k * PASSO_DA_FITA;
+        this.pickInicio
+          .set(array[base], array[base + 1], array[base + 2])
+          .applyMatrix4(linha.fita.matrixWorld)
+          .project(cam);
+        this.pickFim
+          .set(array[base + 3], array[base + 4], array[base + 5])
+          .applyMatrix4(linha.fita.matrixWorld)
+          .project(cam);
+        // atrás da câmera (ou fora do near/far): mesmo corte de
+        // `projectPoint` (labels.ts) — o segmento não tem pixel que preste
+        if (this.pickInicio.z > 1 || this.pickInicio.z < -1) continue;
+        if (this.pickFim.z > 1 || this.pickFim.z < -1) continue;
+        const ax = ((this.pickInicio.x + 1) / 2) * larguraPx;
+        const ay = ((1 - this.pickInicio.y) / 2) * alturaPx;
+        const bx = ((this.pickFim.x + 1) / 2) * larguraPx;
+        const by = ((1 - this.pickFim.y) / 2) * alturaPx;
+        const d = distanciaAoSegmentoPx(ax, ay, bx, by, alvoX, alvoY);
+        if (d < melhorD) {
+          melhorD = d;
+          melhorId = linha.corpo.id;
+        }
+      }
+    }
+    return melhorId;
   }
 
   /** quantas linhas estão acesas neste quadro — leitura de régua/teste */
