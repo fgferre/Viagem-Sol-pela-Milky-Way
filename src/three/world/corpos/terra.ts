@@ -7,7 +7,7 @@
 // `linstep(-0,1, 0,1, -NdotL)` das luzes noturnas (a versão smoothstep
 // vazava 16% de luz no lado diurno) e o terminador de nuvens do
 // `cloudTerminatorMath.ts` atravessaram como NÚMEROS declarados; nenhuma
-// linha de código dele atravessou (doutrina de travessia, PLANO-ATLAS §0).
+// linha de código dele atravessou (doutrina de travessia, docs/NORTE.md).
 //
 // AS QUATRO LEIS QUE ESTE ARQUIVO OBEDECE:
 //  1. A LUZ É UM ESCALAR SÓ (D2): `uLuzGanho = ganhoDoGlobo(dUA, política)`

@@ -14,10 +14,13 @@
 // nas 18 vistas oficiais e o filme perderia pixel.
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
+import type { ReactElement } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { CAMADAS_POR_FAMILIA, familiaEmTexto } from '../three/atlasConfig';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
+import { useDicaPresa } from '../hooks/useDicaPresa';
+import { Ajuda } from './Ajuda';
 import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
 import type { EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
@@ -66,16 +69,36 @@ export function GavetaDeCamadas({
 }) {
   const dialogo = useDialogFocus('camadas', aberta, onFechar);
   useIdioma();
+  // A DICA PRESA (06/09) — o mesmo padrão do painel de Ajustes, com o
+  // mesmo hook: fixar uma "?" apaga a de cima, clique fora do diálogo
+  // desfixa, e Esc desfixa ANTES de fechar a gaveta (mesma doutrina do
+  // `onKeyDownCapture` de `Ajustes.tsx` — a captura corre antes do Esc
+  // de fechar que `useDialogFocus` já prendeu na bolha).
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
   if (!aberta) return null;
   return (
     <div
       className="hud-cartao hud-dialogo atlas-gaveta"
       aria-label={t('atlas.camadasAria')}
       {...dialogo}
+      onClick={() => {
+        if (dicaPresa) limparDica();
+      }}
+      onKeyDownCapture={(evento) => {
+        if (evento.key === 'Escape' && dicaPresa) {
+          evento.stopPropagation();
+          limparDica();
+        }
+      }}
     >
       <div className="atlas-gaveta-topo">
         <span>{t('atlas.camadas')}</span>
-        <button type="button" onClick={onFechar} aria-label={t('atlas.fecharCamadas')}>
+        <button
+          type="button"
+          className="hud-fechar"
+          onClick={onFechar}
+          aria-label={t('atlas.fecharCamadas')}
+        >
           ✕
         </button>
       </div>
@@ -104,19 +127,30 @@ export function GavetaDeCamadas({
               const ligada = !escondidas.has(c.flag);
               return (
                 <label key={c.flag} className="atlas-gaveta-linha">
+                  <span className="atlas-gaveta-rotulo-caixa">
+                    {/* o ícone é ornamento do rótulo que vem logo ao lado:
+                        quem ouve a tela já recebe o nome, e ouvir
+                        "asterisco" antes dele seria ruído. A coluna fica
+                        mesmo sem glifo — é ela que alinha os nomes da
+                        família uns com os outros. */}
+                    <span className="atlas-gaveta-icone" aria-hidden="true">
+                      {c.icone ?? ''}
+                    </span>
+                    <span className="atlas-gaveta-nome">{c.nome}</span>
+                    <Ajuda
+                      id={c.flag}
+                      rotulo={c.nome}
+                      texto={c.nota}
+                      presa={dicaPresa === c.flag}
+                      onAlternar={() => alternarDica(c.flag)}
+                    />
+                  </span>
                   <input
                     type="checkbox"
+                    className="hud-interruptor"
                     checked={ligada}
                     onChange={() => onCamada(c.flag, !ligada)}
                   />
-                  {/* o ícone é ornamento do rótulo que vem logo ao lado: quem
-                      ouve a tela já recebe o nome, e ouvir "asterisco" antes
-                      dele seria ruído. A coluna fica mesmo sem glifo — é ela
-                      que alinha os nomes da família uns com os outros. */}
-                  <span className="atlas-gaveta-icone" aria-hidden="true">
-                    {c.icone ?? ''}
-                  </span>
-                  <span>{c.nome}</span>
                 </label>
               );
             })}
@@ -487,6 +521,22 @@ export function Bussola({ acesa, onEndireitar }: {
  * A velocidade CICLA num botão só, no precedente do `1×/2×/4×` do
  * filme: o rótulo diz sempre em que degrau se está, e oito botões de
  * taxa seriam um painel, não um HUD.
+ *
+ * REDESENHO (06/09, pedido do dono: "aplica o mesmo padrão no painel de
+ * Tempo") — os seis botões viram TRÊS GRUPOS SEGMENTADOS (`.ajustes-seg`,
+ * a mesma peça de `Ajustes.tsx`): sentido, velocidade e referência. Nem
+ * `aria-label` nem `aria-pressed` mudam — só a moldura, e o `.on` que a
+ * pele já sabe pintar em dourado. NENHUM RÓTULO NOVO nasce para as três
+ * fileiras: "transporte"/"velocidade"/"referência" não têm chave no
+ * dicionário, e o pedido do dono foi claro em não inventar texto além da
+ * dica do "?" — os próprios ícones e rótulos dos botões já dizem o que
+ * cada grupo é, como sempre disseram.
+ *
+ * O "?" É CONDICIONAL (`comAjuda`): na gaveta ele mora no cabeçalho
+ * (`.atlas-gaveta-topo`, ao lado de "Tempo"), e nascer de novo aqui
+ * duplicaria a mesma dica. Na barra de mesa, sem cabeçalho, ele mora
+ * aqui, depois da data — e abre PARA CIMA (CSS), porque a barra vive no
+ * rodapé.
  */
 export function BarraDoTempo({
   tempo,
@@ -494,76 +544,133 @@ export function BarraDoTempo({
   onDegrau,
   onAoVivo,
   onEpoca,
+  comAjuda = true,
+  comRotulos = false,
 }: {
   tempo: EstadoDoTempo;
   onSentido: (sentido: SentidoDoTempo) => void;
   onDegrau: () => void;
   onAoVivo: () => void;
   onEpoca: () => void;
+  /** falso dentro da gaveta — lá o "?" já mora no cabeçalho dela */
+  comAjuda?: boolean;
+  /**
+   * VERDADEIRO SÓ DENTRO DA GAVETA (item 06/09, os controles renderizados
+   * em 40% de largura sem nome de linha): lá cada grupo ganha o rótulo
+   * ("Transporte"/"Velocidade"/"Referência") no molde `.ajustes-item`
+   * — rótulo à esquerda, controle à direita. Na barra de mesa os próprios
+   * botões já dizem o que cada grupo é, e um rótulo a mais seria ruído.
+   */
+  comRotulos?: boolean;
 }) {
   useIdioma();
   const { data, taxa, sentido, aoVivo, naEpoca, aviso } = tempo;
   const parado = sentido === 0 && !aoVivo;
+  /** envolve o grupo com o rótulo da linha SÓ quando `comRotulos` pede */
+  const grupo = (rotulo: string, conteudo: ReactElement) =>
+    comRotulos ? (
+      <div className="atlas-tempo-grupo">
+        <span className="atlas-tempo-rotulo">{rotulo}</span>
+        {conteudo}
+      </div>
+    ) : (
+      conteudo
+    );
+  // A DICA DESTE "?", só existe quando `comAjuda` a usa — o mesmo padrão
+  // de `useDicaPresa` dos outros diálogos, mas sem o `onKeyDownCapture`
+  // deles: a barra não é diálogo (não tem Esc que feche nada), então só
+  // falta o clique fora para desfixar.
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
   return (
-    <div className="atlas-tempo">
+    <div
+      className="atlas-tempo"
+      onClick={() => {
+        if (comAjuda && dicaPresa) limparDica();
+      }}
+    >
       <div className="atlas-tempo-linha">
         <span className="atlas-tempo-olho">{t('atlas.instanteDoCeu')}</span>
         <span className="atlas-tempo-data">{data}</span>
+        {comAjuda && (
+          <Ajuda
+            id="tempo-barra"
+            rotulo={t('atlas.tempo')}
+            texto={t('atlas.tempoAjuda')}
+            presa={dicaPresa === 'tempo-barra'}
+            onAlternar={() => alternarDica('tempo-barra')}
+          />
+        )}
       </div>
       <div className="atlas-tempo-botoes" role="group" aria-label={t('atlas.maquinaDoTempo')}>
-        <button
-          type="button"
-          className="hud-btn small"
-          aria-pressed={sentido === -1}
-          aria-label={t('atlas.voltarNoTempo')}
-          onClick={() => onSentido(sentido === -1 ? 0 : -1)}
-        >
-          ⏴
-        </button>
-        <button
-          type="button"
-          className="hud-btn small"
-          aria-label={t('atlas.pararOTempo')}
-          disabled={parado}
-          onClick={() => onSentido(0)}
-        >
-          ⏸
-        </button>
-        <button
-          type="button"
-          className="hud-btn small"
-          aria-pressed={sentido === 1}
-          aria-label={t('atlas.avancarNoTempo')}
-          onClick={() => onSentido(sentido === 1 ? 0 : 1)}
-        >
-          ⏵
-        </button>
-        <button
-          type="button"
-          className="hud-btn small atlas-tempo-taxa"
-          aria-label={t('atlas.taxaAria', { taxa })}
-          onClick={onDegrau}
-        >
-          {taxa}
-        </button>
-        <button
-          type="button"
-          className="hud-btn small"
-          aria-pressed={aoVivo}
-          aria-label={t('atlas.aoVivoAria')}
-          onClick={onAoVivo}
-        >
-          {t('atlas.aoVivo')}
-        </button>
-        <button
-          type="button"
-          className="hud-btn small"
-          aria-label={t('atlas.epocaAria')}
-          disabled={naEpoca && parado}
-          onClick={onEpoca}
-        >
-          {t('atlas.epoca')}
-        </button>
+        {grupo(
+          t('atlas.tempoTransporte'),
+          <div className="ajustes-seg">
+            <button
+              type="button"
+              className={sentido === -1 ? 'on' : ''}
+              aria-pressed={sentido === -1}
+              aria-label={t('atlas.voltarNoTempo')}
+              onClick={() => onSentido(sentido === -1 ? 0 : -1)}
+            >
+              ⏴
+            </button>
+            <button
+              type="button"
+              aria-label={t('atlas.pararOTempo')}
+              disabled={parado}
+              onClick={() => onSentido(0)}
+            >
+              ⏸
+            </button>
+            <button
+              type="button"
+              className={sentido === 1 ? 'on' : ''}
+              aria-pressed={sentido === 1}
+              aria-label={t('atlas.avancarNoTempo')}
+              onClick={() => onSentido(sentido === 1 ? 0 : 1)}
+            >
+              ⏵
+            </button>
+          </div>,
+        )}
+        {grupo(
+          t('atlas.tempoVelocidade'),
+          <div className="ajustes-seg atlas-tempo-taxa-seg">
+            <button
+              type="button"
+              className="atlas-tempo-taxa"
+              aria-label={t('atlas.taxaAria', { taxa })}
+              onClick={onDegrau}
+            >
+              {taxa}
+              <span className="atlas-tempo-taxa-seta" aria-hidden="true">
+                ›
+              </span>
+            </button>
+          </div>,
+        )}
+        {grupo(
+          t('atlas.tempoReferencia'),
+          <div className="ajustes-seg">
+            <button
+              type="button"
+              className={aoVivo ? 'on' : ''}
+              aria-pressed={aoVivo}
+              aria-label={t('atlas.aoVivoAria')}
+              onClick={onAoVivo}
+            >
+              {t('atlas.aoVivo')}
+            </button>
+            <button
+              type="button"
+              aria-label={t('atlas.epocaAria')}
+              disabled={naEpoca && parado}
+              onClick={onEpoca}
+            >
+              {t('atlas.epoca')}
+            </button>
+          </div>,
+        )}
       </div>
       <p className="atlas-tempo-aviso" role="status" aria-live="polite">
         {aviso}
@@ -588,6 +695,13 @@ export function BarraDoTempo({
  * altura de rodapé é DISTÂNCIA DE CÂMERA (`retanguloUtilDoAtlas`). Atrás
  * de uma alça eles custam uma linha de 44 px quando ninguém os está
  * usando.
+ *
+ * REDESENHO (06/09) — o cabeçalho ganha o "?" do mesmo átomo das outras
+ * três gavetas (`components/Ajuda.tsx`), com o MESMO padrão de dica
+ * presa: fixa no clique, um clique em qualquer lugar do diálogo desfixa,
+ * e Esc desfixa ANTES de fechar (a doutrina de `Ajustes.tsx`/
+ * `GavetaDeCamadas`, repetida aqui palavra por palavra). `BarraDoTempo`
+ * recebe `comAjuda={false}`: o "?" dela ficaria duplicado com este.
  */
 export function GavetaDoTempo({
   aberta,
@@ -608,16 +722,40 @@ export function GavetaDoTempo({
 }) {
   const dialogo = useDialogFocus('tempo', aberta, onFechar);
   useIdioma();
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
   if (!aberta) return null;
   return (
     <div
       className="hud-cartao hud-dialogo atlas-gaveta"
       aria-label={t('atlas.maquinaDoTempo')}
       {...dialogo}
+      onClick={() => {
+        if (dicaPresa) limparDica();
+      }}
+      onKeyDownCapture={(evento) => {
+        if (evento.key === 'Escape' && dicaPresa) {
+          evento.stopPropagation();
+          limparDica();
+        }
+      }}
     >
       <div className="atlas-gaveta-topo">
-        <span>{t('atlas.tempo')}</span>
-        <button type="button" onClick={onFechar} aria-label={t('atlas.fecharTempo')}>
+        <span className="atlas-tempo-topo">
+          <span>{t('atlas.tempo')}</span>
+          <Ajuda
+            id="tempo"
+            rotulo={t('atlas.tempo')}
+            texto={t('atlas.tempoAjuda')}
+            presa={dicaPresa === 'tempo'}
+            onAlternar={() => alternarDica('tempo')}
+          />
+        </span>
+        <button
+          type="button"
+          className="hud-fechar"
+          onClick={onFechar}
+          aria-label={t('atlas.fecharTempo')}
+        >
           ✕
         </button>
       </div>
@@ -627,6 +765,8 @@ export function GavetaDoTempo({
         onDegrau={onDegrau}
         onAoVivo={onAoVivo}
         onEpoca={onEpoca}
+        comAjuda={false}
+        comRotulos
       />
     </div>
   );

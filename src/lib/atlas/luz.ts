@@ -7,9 +7,9 @@
 // (`src/lib/graphics/solarIrradiance.ts`) entra só como ESPEC — os
 // seus testes-oráculo migraram traduzidos em `luz.test.ts` ao lado,
 // com os valores numéricos copiados exatos; nenhuma linha de código
-// dele atravessou (doutrina de travessia, PLANO-ATLAS §0).
+// dele atravessou (doutrina de travessia, docs/NORTE.md).
 //
-// DIVERGÊNCIA DECLARADA do §7.4 do PLANO-ATLAS: o esboço de lá pede
+// DIVERGÊNCIA DECLARADA do §7.4 de `git show 923dc20:docs/PLANO-ATLAS.md`: o esboço de lá pede
 // "UM EV de CENA por frame antes do ACES"; aqui o ganho é POR CORPO,
 // dentro do material. Razão: a exposição global é da Onda 8, e as 18
 // vistas oficiais do filme não podem mover um pixel nesta onda.
@@ -32,7 +32,7 @@
 // lados do clamp.
 //
 // SEM PISO DE AMBIENTE, por doutrina: os anti-padrões 3 e 9 de
-// docs/PLANO-ATLAS.md (anti-padrões) registram o que o piso 0,02 do
+// docs/NORTE.md (anti-padrões) registram o que o piso 0,02 do
 // doador custou (σ calibrado contra outra alavanca de display em
 // silêncio; modo "real" sabidamente errado sem guarda). Lado escuro
 // em `real` é escuro.

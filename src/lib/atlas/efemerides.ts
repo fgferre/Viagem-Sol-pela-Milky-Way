@@ -3,7 +3,7 @@
 // interpola Hermite cúbica e responde posição parent-centered em UA,
 // eclíptica média J2000, com cache instrumentado.
 //
-// RENASCE (doutrina de travessia, PLANO-ATLAS §0): o OrbitalEngine do
+// RENASCE (doutrina de travessia, docs/NORTE.md): o OrbitalEngine do
 // doador (engine.ts) não atravessa — ele devolvia THREE.Vector3 no
 // frame Y-up da cena, avaliava as teorias ao vivo e carregava uma
 // máquina de providers com fallback. Aqui o motor é PURO: zero import

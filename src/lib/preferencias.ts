@@ -19,7 +19,7 @@
 // sobrou aqui; para o tier, ela encolheu para URL > produto.
 //
 // LÁPIDE DE `wikipediaLigada` (2026-08-21). O campo nasceu com o
-// PLANO-ATLAS ("Wikipedia no painel, opt-out persistido"), e o painel
+// docs/PENDENCIAS.md, item 212 ("Wikipedia no painel, opt-out persistido"), e o painel
 // NUNCA nasceu: ninguém no projeto o leu nem o escreveu — nem código,
 // nem teste, nem captura. Era um envelope guardando a preferência de um
 // visitante que não tinha onde exprimi-la, e um campo assim mente duas

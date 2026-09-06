@@ -32,12 +32,20 @@
 import { LIMIAR_SISTEMA_SOLAR_PC, acusacaoDaEscala } from './escala';
 import {
   CAMADAS,
+  gasVolumetricoEmTexto,
   nivelDaNebulosaEmTexto,
+  particulasDaGalaxiaEmTexto,
   rotuloDaEscalaDeResolucao,
 } from './atlasConfig';
 import { decimalDoIdioma, t } from '../lib/idioma';
 import { PT } from '../lib/idioma/pt';
-import type { NivelDaNebulosa, QualityLevel, ToneMapMode } from './core/engine';
+import type {
+  GasVolumetrico,
+  NivelDaNebulosa,
+  ParticulasDaGalaxia,
+  QualityLevel,
+  ToneMapMode,
+} from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { LANTERNA_DE_LEITURA, PASSOS_DA_EXPOSICAO_REAL } from '../lib/atlas/luzDaVisita';
 
@@ -321,6 +329,18 @@ export interface EstadoDaVista {
    * da tela — `null` = o teto do preset. Estado vivo do Engine.
    */
   escala: number | null;
+  /**
+   * O GÁS VOLUMÉTRICO escolhido à mão (item 145b) — `null` = a variante
+   * do preset. Mesmo contrato do `nebulosa`: estado vivo do Director,
+   * não a porta `?gas=`.
+   */
+  gas: GasVolumetrico | null;
+  /**
+   * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA escolhida à mão (item 149) —
+   * `null` = a do preset. Mesmo contrato do `gas`: estado vivo do
+   * Director, não a porta `?particulas=`.
+   */
+  particulas: ParticulasDaGalaxia | null;
   /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — o estado
    * VIVO do Director, não a porta: `?luz=` só o semeia no boot, e o
@@ -627,6 +647,42 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     rotuloVivo: (e) =>
       t('selo.desvio.escalaDeResolucaoCom', {
         fator: e.escala === null ? '' : rotuloDaEscalaDeResolucao(e.escala),
+      }),
+  },
+  /**
+   * O QUARTO CONTROLE DA GAVETA AVANÇADO (item 145b, PLAN.md A1b), no
+   * mesmo molde dos três de cima: estado VIVO, `volta: 'vivo'`, porta de
+   * URL como espelho. Mexe na imagem de verdade — as três variantes não
+   * são a mesma nuvem mais barata: `antigo` e `fino` recalculam n2/lanes
+   * por amostra em vez de ler o volume assado.
+   */
+  {
+    chave: 'gas',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.gas'); },
+    volta: 'vivo',
+    desvia: (e) => e.gas !== null,
+    rotuloVivo: (e) =>
+      t('selo.desvio.gasCom', {
+        variante: e.gas === null ? '' : gasVolumetricoEmTexto(e.gas),
+      }),
+  },
+  /**
+   * O QUINTO CONTROLE DA GAVETA AVANÇADO (item 149), no mesmo molde dos
+   * quatro de cima: estado VIVO, `volta: 'vivo'`, porta de URL como
+   * espelho. Mexe na imagem de verdade — menos pontos desenhados, mesmo
+   * fluxo integrado (a compensação mora em `Galaxy.update`), mas a
+   * granulação muda.
+   */
+  {
+    chave: 'particulas',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.particulas'); },
+    volta: 'vivo',
+    desvia: (e) => e.particulas !== null,
+    rotuloVivo: (e) =>
+      t('selo.desvio.particulasCom', {
+        nivel: e.particulas === null ? '' : particulasDaGalaxiaEmTexto(e.particulas),
       }),
   },
   porta('nobloom', 'bloom desligado'),

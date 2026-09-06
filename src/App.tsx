@@ -32,9 +32,8 @@ import { FichaDoObjeto } from './components/FichaDoObjeto';
 import { construirIndice } from './lib/buscaEstrelas';
 import {
   Convite,
-  PASSOS_DO_CONVITE_DO_ATLAS,
-  PASSOS_DO_CONVITE_DO_ATLAS_TOQUE,
 } from './components/Spotlight';
+import { PASSOS_DO_CONVITE_DO_ATLAS, PASSOS_DO_CONVITE_DO_ATLAS_TOQUE } from './components/passosDoConvite';
 import { Ajustes } from './components/Ajustes';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
 import { useDirector, escolherAlvo, LUGARES_DA_BUSCA } from './hooks/useDirector';
@@ -188,6 +187,8 @@ export default function App() {
     amostras: null,
     nebulosa: null,
     escala: null,
+    gas: null,
+    particulas: null,
   });
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
@@ -244,6 +245,9 @@ export default function App() {
   const [foco, setFoco] = useState<string | null>(null);
   /** o DEGRAU da escada (F2b/D7) — decide os botões do cabeçalho da ficha
    *  e o `?ver=corpo` do link; publicado pelo Director junto com o foco */
+  /** o eco do interruptor da ficha — o VALOR mora no corpo (Director);
+   *  isto só existe para a ficha rerenderizar ao clicar */
+  const [, setRelevoDaCor] = useState(false);
   const [escada, setEscada] = useState<EstadoDaEscada>({
     degrau: 'sistema',
     podeAproximar: false,
@@ -622,6 +626,8 @@ export default function App() {
     trocarAmostras,
     trocarNebulosa,
     trocarEscala,
+    trocarGas,
+    trocarParticulas,
     trocarTom,
     trocarExposicao,
     voltarAoBrilhoReal,
@@ -1045,6 +1051,13 @@ export default function App() {
         noSistema={escada.degrau === 'sistema'}
         onAproximar={() => directorRef.current?.aproximarDoCorpo()}
         onSistema={() => directorRef.current?.focarNoSistema()}
+        relevoDaCor={directorRef.current?.relevoDaCor(escada.corpoId) ?? null}
+        onRelevoDaCor={(ligado) => {
+          if (!escada.corpoId) return;
+          directorRef.current?.definirRelevoDaCor(escada.corpoId, ligado);
+          // o valor mora no corpo; o estado só força a ficha a reler
+          setRelevoDaCor(ligado);
+        }}
       />
 
       {/* A PALETA DE BUSCA (F3) — filha DIRETA de .hud-root, como todo
@@ -1070,6 +1083,8 @@ export default function App() {
         onAmostras={trocarAmostras}
         onNebulosa={trocarNebulosa}
         onEscala={trocarEscala}
+        onGas={trocarGas}
+        onParticulas={trocarParticulas}
         tom={tom}
         onTom={trocarTom}
         exposicao={exposicao}

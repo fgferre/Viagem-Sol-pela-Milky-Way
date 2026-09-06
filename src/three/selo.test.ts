@@ -68,11 +68,13 @@ const LIMPA: EstadoDaVista = {
   tom: 'aces',
   camadasEscondidas: [],
   tier: 'cinema',
-  // gaveta Avançado intocada: nos três controles quem manda é o preset
-  // (item 145)
+  // gaveta Avançado intocada: nos cinco controles quem manda é o
+  // preset (item 145, +145b, +149)
   amostras: null,
   nebulosa: null,
   escala: null,
+  gas: null,
+  particulas: null,
   // `real` na FIXTURE de propósito: é o estado DEPOIS do clique "voltar
   // ao real". O default vivo do Atlas é `assistida` — e tem os próprios
   // testes (bloco 2c), porque ele É desvio declarado.

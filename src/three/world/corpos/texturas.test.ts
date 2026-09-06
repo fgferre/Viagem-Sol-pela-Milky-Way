@@ -15,7 +15,6 @@ import { fileURLToPath } from 'node:url';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import {
-  ALVO_DE_APOIO_CINEMA,
   CANAL_MAP,
   CARENCIA_DA_DESCARGA_S,
   RECARGAS_ATE_DESISTIR,
@@ -141,69 +140,6 @@ describe('furo (a): a carga é TRANSAÇÃO — cai um canal, não sobra nenhum',
     );
     expect(fora).toBeNull();
     expect(descartadas).toHaveLength(5);
-  });
-});
-
-// ------------------------------------------------------------
-// FURO (b): Saturno publicava o mapa antes de ter o anel
-// ------------------------------------------------------------
-
-describe('furo (b): o anel de Saturno é do MESMO lote que o mapa', () => {
-  const SATURNO: readonly CanalPedido[] = [
-    CANAL_MAP,
-    { canal: 'ring', cor: true, repetirEmU: false },
-  ];
-
-  it('anel que cai leva o mapa junto — nenhum texel residente', async () => {
-    const descartadas: string[] = [];
-    const opcoes: OpcoesDeTextura = {
-      tier: () => 'cinema',
-      maxTextureSize: 16384,
-      base: '',
-      webp: true,
-      buscarManifest: async () => MANIFEST,
-      carregarTextura: async (url) => {
-        if (url.includes('/ring')) throw new Error('HTTP 404');
-        return texturaContada(descartadas, url);
-      },
-    };
-    // três tentativas, como manda RECARGAS_ATE_DESISTIR. Antes, cada
-    // uma deixava um `map` de Saturno residente (42,7 MiB em cinema) e
-    // o planeta nunca aparecia.
-    for (let i = 0; i < 3; i++) {
-      await carregarCanaisDoCorpo('saturn', SATURNO, opcoes, 'cinema', nunca).catch(() => undefined);
-    }
-    expect(descartadas).toHaveLength(3);
-  });
-
-  it('o anel mantém a dose de assunto (8k em cinema), não a de apoio', () => {
-    // não é dose nova: `gigante.ts` já pedia o anel com o alvo do 'map'.
-    // O que mudou é que agora está escrito onde a dose se decide.
-    expect(alvoDePixels('cinema', 'ring', 16384)).toBe(8192);
-    expect(alvoDePixels('cinema', 'clouds', 16384)).toBe(ALVO_DE_APOIO_CINEMA);
-    expect(
-      escolherVariante(MANIFEST.entradas, 'saturn', 'ring', 8192, true)?.larguraPx
-    ).toBe(8192);
-  });
-
-  it('o anel NÃO repete em U — a placa é radial, não equiretangular', async () => {
-    const lote = await carregarCanaisDoCorpo(
-      'saturn',
-      SATURNO,
-      {
-        tier: () => 'cinema',
-        maxTextureSize: 16384,
-        base: '',
-        webp: true,
-        buscarManifest: async () => MANIFEST,
-        carregarTextura: async () => new THREE.Texture(),
-      },
-      'cinema',
-      nunca
-    );
-    expect(lote?.get('map')!.wrapS).toBe(THREE.RepeatWrapping);
-    expect(lote?.get('ring')!.wrapS).toBe(THREE.ClampToEdgeWrapping);
-    expect(lote?.get('ring')!.wrapT).toBe(THREE.ClampToEdgeWrapping);
   });
 });
 

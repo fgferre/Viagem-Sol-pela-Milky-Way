@@ -604,6 +604,26 @@ export function buildGalaxy(
     );
   }
 
+  // EMBARALHA O BUFFER UMA VEZ (item 149). As populações nascem em
+  // SEQUÊNCIA (disco, esporão local, bojo, HII, halo, anã de Sagitário):
+  // um PREFIXO cru teria só disco, nunca bojo nem HII. O ajuste
+  // "Partículas da galáxia" desenha só um prefixo (`Galaxy.
+  // setFracaoDeParticulas`, `drawRange`) para cortar o custo de vértice
+  // mantendo o fluxo total — e para o prefixo ser amostra REPRESENTATIVA
+  // de TODAS as populações, e não só do disco, embaralhamos o buffer
+  // inteiro uma vez, com o MESMO RNG semeado (Fisher–Yates):
+  // determinístico, sem outro gerador e sem custo extra de memória.
+  for (let i = brightCount - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    if (j === i) continue;
+    const oi = i * 8;
+    const oj = j * 8;
+    for (let k = 0; k < 8; k++) {
+      const tmp = bright[oi + k];
+      bright[oi + k] = bright[oj + k];
+      bright[oj + k] = tmp;
+    }
+  }
 
   return { bright, brightCount };
 }

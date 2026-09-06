@@ -1,7 +1,7 @@
 // ============================================================
 // Frame galáctico — a ponte completa de referenciais do modo Atlas:
 // eclíptica J2000 → equatorial J2000 → galáctica (IAU 1958) → base
-// de cena do projeto. Runtime RENASCIDO (PLANO-ATLAS §0): o doador
+// de cena do projeto. Runtime RENASCIDO (doutrina de travessia, docs/NORTE.md): o doador
 // espalhava essas rotações entre coordUtils.ts (tudo THREE.Vector3),
 // uma cópia local da obliquidade em hygFrame.ts e o par
 // ecliptic2ThreeJs/equatorial2Ecliptic; aqui a álgebra é tupla pura —

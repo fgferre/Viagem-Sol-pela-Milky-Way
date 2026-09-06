@@ -105,6 +105,9 @@ export const PT = {
   'ajustes.titulo': 'Ajustes',
   'ajustes.aria': 'Ajustes de renderização',
   'ajustes.fechar': 'Fechar ajustes',
+  // o rótulo do botão "?" de cada linha — a explicação em letra miúda
+  // saiu do fluxo e virou dica sob demanda (redesenho do painel, 05/09)
+  'ajustes.ajuda': 'Ajuda: {rotulo}',
   'ajustes.idioma': 'Idioma',
   'ajustes.idiomaNota': 'Troca a língua do app agora, sem recarregar nada.',
   'ajustes.tom': 'Curva de tom',
@@ -115,30 +118,56 @@ export const PT = {
   'ajustes.tom.neutral': 'meio-termo',
   'ajustes.tom.linear': 'sem curva — estoura, mostra o cru',
   'ajustes.exposicao': 'Exposição',
-  'ajustes.exposicaoCom': 'Exposição · {valor}',
   'ajustes.qualidade': 'Qualidade',
   'ajustes.qualidadeNota':
     'Troca ao vivo, sem recarregar. A parte pesada — a população da galáxia e o Sol — é refeita em segundo plano e entra de uma vez; até lá a cena continua como está. O auto deixa a medição escolher — e ninguém escolhe por você sem esse clique.',
   'ajustes.avancado': 'Avançado',
-  'ajustes.msaa': 'Suavização de bordas (MSAA)',
+  // ROTULO CURTO (polimento 06/09): a linha virou coluna única de
+  // 13.5rem para o controle, e "Suavização de bordas" não cabia ao
+  // lado do "?" sem quebrar — o "de bordas" já está na dica.
+  'ajustes.msaa': 'Anti-aliasing',
   'ajustes.msaaNota':
     'Suaviza as beiras dos corpos e das linhas, e custa quadros. Troque aqui e compare com os quadros/s logo acima — a troca é na hora, sem recarregar. "Do preset" devolve a escolha à qualidade.',
-  // "Do preset" é o estado sem escolha dos TRÊS controles da gaveta
-  'ajustes.doPreset': 'Do preset',
-  'ajustes.msaaDesligada': 'Desligada',
-  'ajustes.nebulosaControle': 'Nebulosa (raymarch)',
+  // "Preset" é o primeiro segmento dos CINCO controles da gaveta —
+  // o estado sem escolha à mão. Era "Do preset"; o redesenho do painel
+  // (05/09) o encurta para caber no segmento junto dos outros.
+  'ajustes.preset': 'Preset',
+  'ajustes.msaaDesligada': 'Off',
+  // ROTULO CURTO (polimento 06/09): "(raymarch)" era jargão de motor,
+  // não de gosto — some do rótulo e continua na dica de quem quiser.
+  'ajustes.nebulosaControle': 'Nebulosa',
   'ajustes.nebulosaNota':
     'O gás da Via Láctea é desenhado passo a passo, e é a parte mais cara do quadro. Menos passos deixam a nuvem mais chapada e mais granulada; mais passos a deixam macia e custam quadros.',
   'ajustes.nebulosa.baixa': 'Baixa',
   'ajustes.nebulosa.media': 'Média',
   'ajustes.nebulosa.alta': 'Alta',
-  'ajustes.escalaDeResolucao': 'Escala de resolução',
+  // ROTULO CURTO (polimento 06/09): "Escala de" era redundante com os
+  // próprios segmentos (que já mostram a fração/percentual).
+  'ajustes.escalaDeResolucao': 'Resolução',
   'ajustes.escalaDeResolucaoNota':
     'Quantos pixels a cena desenha, em fração da tela. 50% desenha um quarto dos pixels — é a alavanca mais forte daqui, e a que mais borra as beiras. O texto e os controles não mudam de tamanho.',
-  'ajustes.texto': 'Tamanho do texto · {degrau}',
+  'ajustes.gasControle': 'Gás volumétrico',
+  'ajustes.gasNota':
+    'Como o gás da Via Láctea é calculado: original refaz tudo a cada passo; fino assa a maior parte e mantém dois detalhes finos ao vivo; macio assa tudo e é o mais barato.',
+  'ajustes.gas.antigo': 'Original',
+  'ajustes.gas.fino': 'Fino',
+  'ajustes.gas.macio': 'Macio',
+  // ROTULO CURTO (polimento 06/09): "da galáxia" é óbvio pela seção
+  // (Avançado, ao lado do gás e da nebulosa) e pela dica.
+  'ajustes.particulasControle': 'Partículas',
+  'ajustes.particulasNota':
+    'Quantas das partículas carregadas a cena desenha, com o brilho total compensado: menos pontos, cada um mais forte — o mesmo fluxo, granulação diferente.',
+  'ajustes.particulas.todas': 'Todas',
+  'ajustes.particulas.metade': 'Metade',
+  'ajustes.particulas.quarto': '¼',
+  // ROTULO CURTO (polimento 06/09): com o "{degrau}" (ex.: "· 140%")
+  // sempre junto, "Tamanho do texto" só não cabia por ele.
+  'ajustes.texto': 'Texto · {degrau}',
   'ajustes.textoNota':
     'Vale para o HUD inteiro — legenda, controles, selo e os nomes das estrelas. Não mexe na cena: dentro do Atlas o enquadramento recua um pouco para o texto maior não cobrir o alvo.',
-  'ajustes.rotulos3d': 'Beta · Rótulos 3D',
+  // ROTULO CURTO (polimento 06/09): o "Beta ·" some do rótulo — a dica
+  // já termina em "experimental".
+  'ajustes.rotulos3d': 'Rótulos 3D',
   'ajustes.rotulos3dNota':
     'Os nomes dos corpos viram texto dentro da própria cena, com profundidade — o visual do projeto irmão. Quem aparece continua sendo decidido pelas mesmas regras de sempre, e o anel segue sendo o alvo do clique. Vale no Atlas; experimental.',
   'ajustes.desligados': 'Desligados',
@@ -185,8 +214,18 @@ export const PT = {
   'atlas.aoVivoAria': 'Seguir o tempo real',
   'atlas.epoca': 'Época',
   'atlas.epocaAria': 'Voltar ao instante do retrato de 2026',
+  // OS RÓTULOS DAS TRÊS LINHAS (`comRotulos`), só na gaveta — a barra da
+  // mesa não os usa porque os próprios botões já dizem o que cada grupo é.
+  'atlas.tempoTransporte': 'Transporte',
+  'atlas.tempoVelocidade': 'Velocidade',
+  'atlas.tempoReferencia': 'Referência',
+  // O "?" do cabeçalho da gaveta e da barra (redesenho, pedido do dono:
+  // "aplica o mesmo padrão no painel de Tempo") — ≤45 palavras.
+  'atlas.tempoAjuda':
+    'A máquina do tempo move o céu e os planetas. ◀ ⏸ ▶ escolhem o sentido; o botão de velocidade cicla do tempo real a ~116 dias por segundo. Ao vivo segue o relógio do visitante; Época volta ao retrato J2000. Efemérides cobrem 1950–2050.',
 
   // ---- a paleta de busca (`components/PaletaDeBusca.tsx`) -----------
+  'busca.titulo': 'Busca',
   'busca.aria': 'Buscar um alvo',
   'busca.botao': '⌕ Buscar',
   'busca.botaoAria': 'Buscar estrela',
@@ -197,10 +236,17 @@ export const PT = {
   'busca.campoEstrelas': 'buscar uma estrela',
   'busca.campoAria':
     'Nome de um corpo do sistema, ou nome, designação ou catálogo da estrela',
+  // A DICA DO "?" (redesenho, pedido do dono: "aplica o mesmo padrão no
+  // painel de Busca") — junta o que `busca.campoAria` diz (o que se pode
+  // digitar) com os exemplos de `busca.dica` e a explicação do UM NOME
+  // POR ESTRELA, que saiu da frase do estado vazio para morar só aqui.
+  'busca.ajuda':
+    'Digite o nome de um corpo do sistema, ou o nome, a designação (gama vel) ou o catálogo (hd 48915) de uma estrela — {exemplos}. O catálogo guarda um nome por estrela, o próprio quando existe.',
   'busca.alcanceComCorpos': 'as {quantas} nomeadas e os {corpos} corpos do sistema',
   'busca.alcance': 'as {quantas} nomeadas',
-  'busca.vazio':
-    'nada com esse nome entre {alcance} — o catálogo guarda UM nome por estrela, o próprio quando existe. tente {exemplos}',
+  // ENCURTADA (redesenho): a explicação do "um nome por estrela" mudou
+  // para `busca.ajuda` — a frase do estado vazio agora é UMA linha.
+  'busca.vazio': 'nada com esse nome entre {alcance} — tente {exemplos}',
   'busca.contagem':
     '{n} {palavra} · setas escolhem · Enter {verbo}',
   'busca.resultado': 'resultado',
@@ -234,6 +280,13 @@ export const PT = {
   'ficha.aproximarAria': 'Aproximar: enquadrar {nome} de perto',
   'ficha.sistema': '⌂ Sistema',
   'ficha.sistemaAria': 'Voltar ao enquadramento do sistema solar',
+  'ficha.relevoDaCor': '◐ Relevo inventado',
+  'ficha.relevoDaCorAria':
+    'Ligar um relevo inventado a partir da cor da foto de {nome} — não existe mapa de relevo',
+  // O "?" do cabeçalho (redesenho, pedido do dono: "aplica o mesmo padrão
+  // na ficha dos corpos") — ≤40 palavras.
+  'ficha.ajuda':
+    "Cada selo diz de onde vem o número: medido é o número da fonte citada; derivado é calculado a partir de medidos; artístico é ilustração ou invenção declarada. O '×Terra' junto a um valor compara com o dado da Terra.",
 
   // ---- os títulos de seção e os rótulos de campo (`lib/atlas/ficha.ts`)
   'ficha.secao.agora': 'agora',
@@ -338,6 +391,10 @@ export const PT = {
   'selo.desvio.nebulaCom': 'nebulosa escolhida à mão: {nivel}',
   'selo.desvio.escalaDeResolucao': 'escala de resolução escolhida à mão',
   'selo.desvio.escalaDeResolucaoCom': 'escala de resolução escolhida à mão: {fator}',
+  'selo.desvio.gas': 'gás volumétrico escolhido à mão',
+  'selo.desvio.gasCom': 'gás volumétrico escolhido à mão: {variante}',
+  'selo.desvio.particulas': 'partículas da galáxia escolhidas à mão',
+  'selo.desvio.particulasCom': 'partículas da galáxia escolhidas à mão: {nivel}',
 
   // ---- a acusação da escala (`three/escala.ts`) ---------------------
   'escala.acusacao': '{nome} está {fator} maior',
@@ -376,6 +433,48 @@ export const PT = {
   'camada.noicones': 'Ícones dos corpos',
   'camada.nocorpos': 'Corpos de perto',
   'camada.noorbitas': 'Linhas de órbita',
+  // AS NOTAS (06/09) — o padrão de Ajustes aplicado à gaveta: uma frase
+  // factual sob o "?", derivada do que a flag realmente desliga em
+  // `director.ts` e nos mundos que ela apaga.
+  'camada.nogal.nota':
+    'Desliga a galáxia inteira — todas as partículas do disco, o bojo e o marcador do Sol, na vista de fora.',
+  'camada.nodisc.nota':
+    'Esconde as lâminas volumétricas do disco da galáxia, deixando visíveis só as partículas de estrelas.',
+  'camada.nogdust.nota':
+    'Desliga o escurecimento de cada partícula da galáxia pela poeira interestelar no caminho da luz até ela.',
+  'camada.noglow.nota':
+    'Desliga o brilho difuso do bojo galáctico — o halo de luz suave no centro da galáxia.',
+  'camada.nocart.nota':
+    'Desliga a cartografia observada da galáxia: nuvens moleculares reais desenhadas como cartazes 3D, visíveis no disco.',
+  'camada.noco.nota':
+    'Desliga só as nuvens de monóxido de carbono medidas — as fendas escuras reais da Via Láctea no disco.',
+  'camada.noforge.nota':
+    'Desliga as forjas estelares — regiões de formação de estrelas mapeadas, visíveis no disco da galáxia.',
+  'camada.nonebula.nota':
+    'Desliga o gás volumétrico da nebulosa, visível de perto dentro do disco da galáxia.',
+  'camada.nowrap.nota':
+    'Desliga a população estelar procedural que preenche o céu ao redor da câmera além do catálogo real.',
+  'camada.nodust.nota':
+    'Desliga a poeira interestelar com paralaxe perto da câmera, visível ao atravessar o disco da galáxia.',
+  'camada.nobh.nota':
+    'Desliga o buraco negro Sagitário A*, visível só de perto, no centro da galáxia.',
+  'camada.nocat.nota':
+    'Desliga os pontos do catálogo real de estrelas (HYG), visíveis perto do sistema solar.',
+  'camada.nonomes.nota':
+    'Desliga os nomes escritos sobre estrelas e corpos, em toda a cena.',
+  'camada.noclarao.nota':
+    'Desliga o clarão de luz forte das estrelas em destaque e do Sol.',
+  'camada.nosun.nota':
+    'Desliga o Sol inteiro — corpo e clarão —, visível de perto no sistema solar.',
+  'camada.nomarker.nota':
+    "Desliga o marcador \"você está aqui\" que aponta a posição do Sol na vista de fora da galáxia.",
+  'camada.noplan.nota': 'Desliga os pontos fotométricos dos planetas do sistema solar.',
+  'camada.noicones.nota':
+    'Desliga os ícones dos corpos do sistema solar, separados dos nomes de texto.',
+  'camada.nocorpos.nota':
+    'Desliga os globos 3D dos corpos vistos de perto, diferentes dos pontos fotométricos distantes.',
+  'camada.noorbitas.nota':
+    'Desliga as linhas de órbita dos corpos do sistema solar ao redor do Sol.',
   'qualidade.cinema': 'Cinema',
   'qualidade.alta': 'Alta',
   'qualidade.performance': 'Performance',

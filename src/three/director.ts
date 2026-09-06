@@ -5,9 +5,12 @@
 import * as THREE from 'three';
 import {
   Engine,
+  FRACAO_DE_PARTICULAS,
   GRAMPO_DO_PASSO_S,
   NEBULOSA_POR_NIVEL,
+  lerPortaGas,
   lerPortaNebulosa,
+  lerPortaParticulas,
   modoDoToneMapping,
 } from './core/engine';
 // `t` entra APELIDADO porque neste arquivo `t` já é o TEMPO (o segundo
@@ -18,8 +21,10 @@ import type { ChaveDeTexto } from '../lib/idioma';
 import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
+  GasVolumetrico,
   MedicaoDoQuadro,
   NivelDaNebulosa,
+  ParticulasDaGalaxia,
   QualityLevel,
 } from './core/engine';
 import type { EstadoDaVista } from './selo';
@@ -564,6 +569,22 @@ export class Director {
     this.debug.get('nebula')
   );
   /**
+   * O GÁS VOLUMÉTRICO ESCOLHIDO À MÃO (item 145b) — `null` = a variante
+   * do preset. Mesmo contrato do `nebulosaForcada`: lido no CAMPO, e não
+   * no corpo do construtor, para a semeadura acontecer antes da primeira
+   * troca de tier e antes do warm-up de shaders (`init`) compilar a
+   * variante certa.
+   */
+  private gasForcado: GasVolumetrico | null = lerPortaGas(this.debug.get('gas'));
+  /**
+   * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA ESCOLHIDA À MÃO (item 149) —
+   * `null` = a do preset. Mesmo contrato de `gasForcado`: lido no CAMPO,
+   * para valer já na primeira galáxia que o init carrega.
+   */
+  private particulasForcadas: ParticulasDaGalaxia | null = lerPortaParticulas(
+    this.debug.get('particulas')
+  );
+  /**
    * O RAIO COM QUE O SOL FOI CONSTRUÍDO, em pc. Desde a F3 é SEMPRE o
    * físico (`RAIO_DO_SOL_NA_CENA`) — a porta `?solreal=1` da F1 morreu
    * quando ele virou o padrão. O campo fica porque é a fonte única para
@@ -617,6 +638,12 @@ export class Director {
       meta: () => this.meta,
       rochosos: () => this.rochosos,
       gigantes: () => this.gigantes,
+      // a terceira pega do mesmo alvo (item 120 · L11): o traço da órbita
+      // responde como o nome, e só no Atlas, onde as linhas existem
+      corpoNaOrbita: (x, y) =>
+        this.phase === 'atlas' && this.orbitas
+          ? this.orbitas.corpoNoPonto(x, y, this.engine.camera, window.innerWidth, window.innerHeight)
+          : null,
     },
   });
   private disposed = false;
@@ -689,6 +716,12 @@ export class Director {
       // (44) NÃO é o do cinema (56), então o valor inicial também vem
       // daqui.
       this.aplicarNebulosa();
+      // a variante do gás (item 145b) troca de preset junto com os
+      // passos/escala — mesmo motivo: quem muda o preset aplica os dois.
+      this.aplicarGas();
+      // a fração de partículas (item 149) troca de preset do mesmo jeito
+      // — sem efeito ainda quando a galáxia não nasceu (init).
+      this.aplicarParticulas();
       // o preset de grão era config morta — nunca chegava ao shader
       this.post.setGrain(this.engine.preset.grain);
       // as amostras do alvo do composer (item 120, F1): o MSAA é do tier
@@ -711,6 +744,14 @@ export class Director {
     // troca de tier — exatamente onde a economia mais importa (Onda 1e).
     // Desde o item 145 os dois ingredientes saem juntos da mesma tabela.
     this.aplicarNebulosa();
+    // a variante do gás (item 145b) precisa estar aplicada ANTES do
+    // warm-up de shaders (`init`, mais abaixo): é ele que lê
+    // `nebula.warmupMaterials`, e o material tem de já ser o certo.
+    this.aplicarGas();
+    // a fração de partículas (item 149): a galáxia ainda não existe
+    // aqui (nasce mais abaixo, no `stage('galaxy')`) — quem a veste com
+    // a fração certa é `vestirGalaxia`, no parto dela.
+    this.aplicarParticulas();
     this.post.setGrain(this.engine.preset.grain);
     this.post.aplicarAmostras(this.engine.quality);
     // e o React TAMBÉM é ouvinte tardio: sem esta semente o painel de
@@ -1036,7 +1077,7 @@ export class Director {
           'da visada — desenham depois do quad multiplicativo'
       );
       this.engine.scene.add(this.starForges.points);
-      this.nuvensSemente.construir(galactic);
+      this.nuvensSemente.construir(galactic, this.nebula);
       console.info(
         `[cartografia] APOGEE ${(carga.coberturaDaPoeira * 100).toFixed(1)}% ` +
           'do disco; campo acoplado com ' +
@@ -1517,6 +1558,18 @@ export class Director {
     this.escada.aproximarDoCorpo();
   }
 
+  /** o interruptor da ficha (relevo fingido da cor) do corpo em foco —
+   *  `null` onde ele não existe (Terra, Lua, gigantes, esculpidos e todo
+   *  rochoso com relevo medido ou bump zerado). */
+  relevoDaCor(id: string | null): boolean | null {
+    return this.rochosos.find((r) => r.corpo.id === id)?.corpo.relevoDaCor ?? null;
+  }
+
+  definirRelevoDaCor(id: string, ligado: boolean) {
+    this.rochosos.find((r) => r.corpo.id === id)?.corpo.definirRelevoDaCor(ligado);
+    this.perturbar();
+  }
+
   focarNaLua(id: string = 'moon') {
     this.escada.focarNaLua(id);
   }
@@ -1961,12 +2014,15 @@ export class Director {
       // segue rodando e o Auto segue ouvindo (`aoMedirOQuadro`): o que
       // para é o mostrador, não a régua.
       medicao: this.shotMode ? null : this.engine.medicao,
-      // os TRÊS controles vivos da gaveta Avançado (item 145), cada um
-      // lido da sua única casa: o MSAA mora no Post, o nível da nebulosa
-      // aqui, a escala de resolução no Engine
+      // os CINCO controles vivos da gaveta Avançado (item 145, +145b,
+      // +149), cada um lido da sua única casa: o MSAA mora no Post, o
+      // nível da nebulosa, o gás e as partículas aqui, a escala de
+      // resolução no Engine
       amostras: this.post.amostras,
       nebulosa: this.nebulosaForcada,
       escala: this.engine.escala,
+      gas: this.gasForcado,
+      particulas: this.particulasForcadas,
     });
   }
 
@@ -2008,6 +2064,55 @@ export class Director {
   }
 
   /**
+   * A VARIANTE DO GÁS VOLUMÉTRICO, num lugar só (item 145b): a que o
+   * visitante escolheu na gaveta ou, na ausência dela, a do preset —
+   * `Nebula.setVariante` decide sozinha se troca alguma coisa (é
+   * no-op se a variante pedida já é a que está no ar).
+   */
+  private aplicarGas() {
+    this.nebula.setVariante(this.gasForcado ?? this.engine.preset.gas);
+  }
+
+  /**
+   * O GÁS VOLUMÉTRICO, TROCADO AO VIVO (item 145b) — troca de material
+   * na `Nebula`, sem recarregar. `null` devolve a variante ao preset.
+   */
+  forcarGas(variante: GasVolumetrico | null) {
+    this.gasForcado = variante;
+    this.aplicarGas();
+    // a imagem mudou (as três variantes desenham gás diferente, não a
+    // mesma nuvem mais barata): a contagem de estabilidade recomeça
+    this.perturbar();
+    this.publicarQualidade();
+  }
+
+  /**
+   * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA, num lugar só (item 149): a que o
+   * visitante escolheu na gaveta ou, na ausência dela, a do preset. É
+   * no-op enquanto a galáxia ainda não nasceu (`this.galaxy` é `null`
+   * durante o `init`) — `vestirGalaxia` cobre o parto dela.
+   */
+  private aplicarParticulas() {
+    this.galaxy?.setFracaoDeParticulas(
+      FRACAO_DE_PARTICULAS[this.particulasForcadas ?? this.engine.preset.particulas]
+    );
+  }
+
+  /**
+   * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA, TROCADA AO VIVO (item 149) —
+   * `drawRange` na `Galaxy`, sem recarregar. `null` devolve à fração do
+   * preset.
+   */
+  forcarParticulas(nivel: ParticulasDaGalaxia | null) {
+    this.particulasForcadas = nivel;
+    this.aplicarParticulas();
+    // a granulação mudou (menos pontos, cada um mais forte): a contagem
+    // de estabilidade da captura recomeça, como nos outros três controles
+    this.perturbar();
+    this.publicarQualidade();
+  }
+
+  /**
    * A ESCALA DE RESOLUÇÃO, TROCADA AO VIVO (item 145). O estado mora no
    * Engine (é ele o dono da nitidez); daqui saem o pedido, o abalo da
    * captura e a publicação, no mesmo molde dos outros dois controles.
@@ -2030,6 +2135,11 @@ export class Director {
   private vestirGalaxia(g: Galaxy) {
     for (const f of this.hide) g.setLayerHidden(f, true);
     g.setCartography(this.debug.has('discoff') ? 'off' : this.cartMode);
+    // a fração de partículas (item 149) é a mesma lei de `aplicarParticulas`
+    // — só que aplicada na galáxia NOVA, antes de ela existir em `this.galaxy`
+    g.setFracaoDeParticulas(
+      FRACAO_DE_PARTICULAS[this.particulasForcadas ?? this.engine.preset.particulas]
+    );
   }
 
   /**
@@ -2290,12 +2400,14 @@ export class Director {
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),
       camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
       tier: this.engine.quality,
-      // os três controles da gaveta Avançado (item 145) — estado VIVO,
-      // não as portas: o painel os troca sem recarregar, e um selo que
-      // lesse só a URL calaria a escolha feita na gaveta
+      // os cinco controles da gaveta Avançado (item 145, +145b, +149) —
+      // estado VIVO, não as portas: o painel os troca sem recarregar, e
+      // um selo que lesse só a URL calaria a escolha feita na gaveta
       amostras: this.post.amostras,
       nebulosa: this.nebulosaForcada,
       escala: this.engine.escala,
+      gas: this.gasForcado,
+      particulas: this.particulasForcadas,
       luz: this.politicaDeLuz,
       stopsDoGloboEmFoco: this.stopsDoGloboEmFoco(),
       // a DOSE de ocupação do Sol (item 5): < 1 só no arranque do filme,
@@ -2529,8 +2641,14 @@ export class Director {
     // A CODA RESOLVE A LUA, e a Lua não tem retrato congelado: a fonte
     // de efemérides precisa estar viva antes de o raspão chegar. Mesmo
     // pedido de preload do roteiro (hoje no estilingue, junto às
-    // texturas); `garantirEfemerides` é idempotente e abortável.
-    if (this.palcoQuente) this.maquinaDoTempo.garantirEfemerides();
+    // texturas); `garantirEfemerides` é idempotente e abortável — mas só
+    // enquanto NINGUÉM pediu ('retrato'): depois de uma falha, pedir de
+    // novo a cada quadro refazia o fetch 60× por segundo e o aviso do
+    // tempo piscava entre "buscando" e "sem efeméride" (item 132). A
+    // segunda tentativa, a única permitida, mora logo abaixo.
+    if (this.palcoQuente && this.maquinaDoTempo.faseDaEfemeride === 'retrato') {
+      this.maquinaDoTempo.garantirEfemerides();
+    }
 
     // O FILME CORRE NA DATA DELE, do primeiro segundo ao último — o
     // calendário é do roteiro (`jdDoFilme`: o instante do retrato até

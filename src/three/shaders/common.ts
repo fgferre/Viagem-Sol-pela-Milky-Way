@@ -133,17 +133,41 @@ function coresGLSL(): string {
 // galactocêntrico via canais B/A do dust map (braços/warp bakeados
 // — 1 fetch no lugar de ~40 transcendentais POR AMOSTRA) + nuvens-
 // semente do catálogo. Requer GLSL_GALAXY e GLSL_CARTOGRAPHY antes.
-export const GLSL_DENSITY = /* glsl */ `
+//
+// REDESIGN (PLAN.md, 05/09) — GÁS ASSADO NUM CUBO QUE SEGUE A CÂMERA. A
+// primeira versão da A1 assava numa caixa FIXA em torno do Sol — inútil,
+// porque `nebulaFade`/`inDisk` (director.ts) liga o gás em QUALQUER ponto
+// do disco, não só perto de casa (medido: `?t=100` a câmera está a
+// (−448, −1204, −1416) pc e não via gás nenhum). Agora o cubo (meia-aresta
+// 1000 pc, 128³ voxels) é recentrado na CÂMERA sempre que ela sai de uma
+// margem de 350 pc — `Nebula.bake()` decide quando, `nuvensSemente.ts`
+// devolve as sementes do NOVO centro pelo callback `pedirSementes`. O
+// bake mora em `glslBakeDensity` (mais abaixo, escrito só uma vez para
+// `NEBULA_BAKE_FRAG` em nebulaShaders.ts); aqui fica só `nebulaDensity(p,
+// t)`, que LÊ o volume RGBA (R = campo estático + sementes, G = fator das
+// lanes × gasDensity, B = envelope, A = ruído da paleta) e soma o que
+// NUNCA pode ser assado: os núcleos do corredor (baratos — a ablação
+// mediu que tirá-los do raymarch por amostra não é o que pesa — então
+// ficam AO VIVO em vez de gastar resolução do voxel) e a cavidade do
+// observador (depende da câmera).
+//
+// `antigo=true` (?nebvol=0) devolve a função ÚNICA de antes, byte a byte,
+// com `seedSpan`/`gSeedLo`/`gSeedHi` de volta — o caminho que a rodada de
+// aprovação usa para comparar aparência.
+//
+// `seedMax` só serve mais ao caminho ANTIGO — o array fixo de nuvens-
+// semente por proximidade da câmera (`nuvensSemente.ts`, 32 slots). O
+// bake novo lê as sementes de uma DATA TEXTURE (256×2, `texelFetch`), não
+// de um array de uniform: ver `glslBakeDensity`.
+//
+// Compartilhado entre o raymarch (`glslDensity`) e o bake
+// (`glslBakeDensity`): o envelope do gás não muda de forma entre os dois,
+// só quem o consome. `gGasEnvelope`/`gPaletteM` moram aqui por serem lidos
+// pelo MESMO idioma nos dois lugares (cache do último valor avaliado —
+// ver o comentário original abaixo); o bake nunca escreve `gPaletteM` (é
+// puro, devolve o `m` no canal A), só o raymarch novo o usa de verdade.
+const GLSL_DISK_GAS_ENVELOPE = /* glsl */ `
 uniform sampler2D uDustMap; // RGBA: poeira APOGEE + braços/warp bakeados
-// Nuvens-semente do catálogo CO perto da câmera (0 = desligado).
-uniform int uSeedCloudCount;
-uniform vec4 uSeedClouds[32];   // xyz = posição na cena (pc), w = raio
-uniform float uSeedCloudAmp[32];
-// Cavidade do observador (superbolhas são onipresentes: qualquer
-// ponto do disco está dentro de uma). 0 perto do Sol — lá a Bolha
-// Local e os núcleos artísticos do corredor assumem.
-uniform vec3 uCavityPos;
-uniform float uCavityGate;
 
 // Envelope do gás molecular galáctico: perfil radial exponencial,
 // camada vertical FINA (h≈55 pc, flare no disco externo — o gás é
@@ -173,13 +197,40 @@ float diskGasEnvelope(vec3 p) {
 
 // último envelope avaliado — o loop do raymarch reusa em vez de
 // pagar o fetch + ALU de diskGasEnvelope duas vezes pela mesma p
+// (no caminho novo é o volume assado quem escreve aqui, canal B)
 float gGasEnvelope = 0.0;
+// idem para o ruído da paleta (canal A do volume) — só o raymarch novo
+// escreve e lê; o antigo continua computando m na hora, e o bake é
+// puro (devolve m no retorno, nunca lê nem escreve este global).
+float gPaletteM = 0.0;
+`;
 
+export function glslDensity(seedMax: number, antigo: boolean, fino: boolean): string {
+  return /* glsl */ `
+${GLSL_DISK_GAS_ENVELOPE}
+// Nuvens-semente do catálogo CO (0 = desligado). Só o caminho ANTIGO usa
+// este array fixo — a densidade nova lê tudo já assado no volume, que
+// tem sua própria textura de sementes (ver uSeedCloudTex em
+// glslBakeDensity).
+uniform int uSeedCloudCount;
+uniform vec4 uSeedClouds[${seedMax}];   // xyz = posição na cena (pc), w = raio
+uniform float uSeedCloudAmp[${seedMax}];
+// Cavidade do observador (superbolhas são onipresentes: qualquer
+// ponto do disco está dentro de uma). 0 perto do Sol — lá a Bolha
+// Local e os núcleos artísticos do corredor assumem. Depende da
+// câmera: só entra em nebulaDensity, nunca na parte assada.
+uniform vec3 uCavityPos;
+uniform float uCavityGate;
+${
+  antigo
+    ? `
 // Intervalo em t onde ALGUMA nuvem-semente pode contribuir, calculado UMA
 // vez por raio em vez de uma vez por amostra. O laço lá embaixo roda
 // uSeedCloudCount iterações em CADA amostra e isso custa **1,20 ms dos
 // 9,12 do raymarch (13%)**, medido por sonda — enquanto em t=100 nenhuma
-// das 32 nuvens escolhidas encosta no raio.
+// das 32 nuvens escolhidas encosta no raio. SÓ no caminho antigo: o bake
+// avalia cada voxel uma vez só, sem raio — a otimização por raio não
+// existe para ele nem falta.
 // Conservador por construção: a nuvem só entra em d2c < 5.5, ou seja
 // |p−c| < √5,5·r, e o intervalo é a UNIÃO das interseções raio-esfera desse
 // raio. Dilatado em 1 pc porque p = ro + rd·t acumula erro de ponto
@@ -191,7 +242,7 @@ float gSeedHi = -1e9;
 void seedSpan(vec3 ro, vec3 rd) {
   gSeedLo = 1e9;
   gSeedHi = -1e9;
-  for (int i = 0; i < 32; i++) {
+  for (int i = 0; i < ${seedMax}; i++) {
     if (i >= uSeedCloudCount) break;
     vec3 c = uSeedClouds[i].xyz - ro;
     float r = max(uSeedClouds[i].w, 8.0);
@@ -205,7 +256,88 @@ void seedSpan(vec3 ro, vec3 rd) {
     }
   }
 }
+`
+    : ''
+}
+// O volume assado — cubo heliocêntrico de meia-aresta 1000 pc, 128³
+// voxels, que SEGUE A CÂMERA (Nebula.bake() recentra e reamostra sempre
+// que ela sai de uma margem de 350 pc; ver o comentário do topo do
+// arquivo). R = campo estático + sementes (SEM os núcleos do corredor —
+// ficam ao vivo aqui embaixo), G = fator das lanes × gasDensity já
+// aplicado, B = envelope do gás, A = ruído da paleta (o m que
+// palette() computava por amostra — ver nebulaShaders.ts).
+uniform highp sampler3D uVolume;
+uniform vec3 uVolMin;
+uniform vec3 uVolTamanho;
 
+// Parte do raymarch: lê o volume já assado e soma só o que NUNCA pode
+// morar nele — os núcleos do corredor (a ablação mediu que são baratos:
+// tirar n1/n2/lanes/paleta/sementes juntos economiza 50 ms, os núcleos
+// gateados não aparecem nessa conta) e a cavidade do observador, que
+// depende da câmera.
+//
+// Duas variantes de rodada de aprovação (PLAN.md): "macio" (fino=false)
+// assa TUDO — o volume já entrega clumps prontos (canal G) e só resta
+// multiplicar. "fino" (?nebfino=1) mantém as DUAS frequências mais finas
+// (n2 e lanes) AO VIVO por amostra — o canal G do volume vira n1 puro em
+// vez do fator de clumps — para o dono comparar se o ganho de nitidez
+// compensa o custo; a perdedora some no fecho da etapa.
+float nebulaDensity(vec3 p, float t) {
+  // Mesmo gate de antes, mesma exatidão bit a bit (ver nota do caminho
+  // antigo abaixo): dentro de 25 pc com o portão fechado a densidade é
+  // ZERO provada, e aqui poupa até o fetch de textura.
+  vec3 cav0 = p - uCavityPos;
+  if (uCavityGate >= 1.0 && dot(cav0, cav0) <= 625.0) return 0.0;
+  vec3 q = (p - uVolMin) / uVolTamanho;
+  if (any(lessThan(q, vec3(0.0))) || any(greaterThan(q, vec3(1.0)))) return 0.0;
+  vec4 s = texture(uVolume, q);
+  gGasEnvelope = s.b;
+  gPaletteM = s.a;
+${
+  fino
+    ? `  // vácuo: mesma exatidão do caminho antigo — sem envelope e sem
+  // nenhuma semente por perto, a amostra é zero.
+  if (s.b < 0.004 && s.r == 0.0) return 0.0;
+  // n2 (0,048) fica AO VIVO — clumps ganha detalhe fino que o voxel de
+  // 15,6 pc não resolveria.
+  float n2 = fbm(p * 0.048 + 17.3, 3);
+  float clumps = smoothstep(0.50, 0.90, s.g * 0.70 + n2 * 0.30);
+  float d = s.b * clumps * 0.75 + s.r;
+  // núcleos do corredor: mesmo texto gerado que o caminho antigo usava
+  // por amostra, aqui pago uma vez por passo do raymarch.
+  int oct = 4;
+${coresGLSL()}
+  if (d == 0.0) return 0.0;
+  // lanes (0,085) também AO VIVO — a segunda frequência fina.
+  float lanes = fbm(p * 0.085 + 41.0, 2);
+  d *= mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes));
+  d *= ${glslNumber(WORLD.gasDensity)};
+`
+    : `  float d = s.r;
+  // núcleos do corredor: mesmo texto gerado que o caminho antigo usava
+  // por amostra, aqui pago uma vez por passo do raymarch (não por voxel
+  // do bake) — sempre com oct = 4, a mesma octave que todo chamador daqui
+  // sempre passou.
+  int oct = 4;
+${coresGLSL()}
+  d *= s.g;
+`
+}
+  // Bolha Local: sub-voxel (a aresta do voxel é 15,6 pc; o smoothstep vai
+  // de 1,2 a 6,5 pc), então fica ao vivo — o bake não a resolveria.
+  d *= smoothstep(1.2, 6.5, length(p));
+  // cavidade do observador itinerante (estilização "inferred"
+  // fundamentada: superbolhas de ~300 pc povoam todo o disco)
+  float cav = length(cav0);
+  d *= mix(1.0, smoothstep(25.0, 240.0, cav), uCavityGate);
+  return d;
+}
+${
+  antigo
+    ? `
+// CAMINHO ANTIGO (?nebvol=0): a função ÚNICA de antes da A1, sem tocar
+// uma vírgula — calcula tudo por amostra, inclusive a cavidade, que aqui
+// dentro pode usar o span de seedSpan porque há um raio de verdade.
 float nebulaDensity(vec3 p, int oct, float t) {
   // uCavityPos É a posição da câmera — director.ts passa a mesma
   // cam.position que vira uCamPos —, logo esta distância é o próprio t
@@ -242,7 +374,7 @@ ${coresGLSL()}
   // essas subtrações somavam 13% do raymarch. seedSpan já provou, uma
   // vez por raio, que fora deste intervalo nenhuma nuvem alcança.
   if (t >= gSeedLo && t <= gSeedHi) {
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < ${seedMax}; i++) {
       if (i >= uSeedCloudCount) break;
       vec3 cq = (p - uSeedClouds[i].xyz) / max(uSeedClouds[i].w, 8.0);
       float d2c = dot(cq, cq);
@@ -273,8 +405,108 @@ ${coresGLSL()}
   d *= mix(1.0, smoothstep(25.0, 240.0, cav), uCavityGate);
   return d * ${glslNumber(WORLD.gasDensity)};
 }
-
+`
+    : ''
+}
 `;
+}
+
+// O BAKE (PLAN.md, redesign 05/09) — a parte da densidade que NÃO depende
+// da câmera nem dos núcleos do corredor (ficam ao vivo em `nebulaDensity`,
+// ver acima): envelope, n1/n2, clumps, sementes, lanes e o ruído da
+// paleta, uma vez por voxel do volume 128³ que `Nebula.bake()` assa.
+// Usado só por `NEBULA_BAKE_FRAG` (nebulaShaders.ts).
+//
+// `seedSlots` é o teto do loop de sementes (256 — a textura de dados que
+// `nuvensSemente.sementesParaBake` escreve, não um array de uniform).
+// Sem seleção por raio (não há raio, é um voxel só) nem fade de fronteira
+// (a textura não tem limite de 32; reassar já é o evento discreto que
+// escondia o popping no caminho antigo).
+export function glslBakeDensity(seedSlots: number, fino: boolean): string {
+  return /* glsl */ `
+${GLSL_DISK_GAS_ENVELOPE}
+// Sementes numa DATA TEXTURE, não um array de uniform (256 não cabe no
+// teto de uniforms de todo driver): linha 0 = xyz + raio, linha 1 = .x =
+// amplitude. nuvensSemente.sementesParaBake escreve, sem fade.
+uniform sampler2D uSeedCloudTex;
+uniform int uSeedCloudCount;
+
+// Devolve as 4 saídas do bake num vec4 só. "macio" (fino=false): R =
+// campo estático + sementes, G = fator das lanes × gasDensity, B =
+// envelope, A = ruído da paleta — tudo pronto, o raymarch só multiplica.
+// "fino" (?nebfino=1): R = só a soma das sementes (o envelope×clumps some
+// daqui — clumps passa a viver no raymarch, ao vivo, com n2 fresco), G =
+// n1 puro (sem clumps), B = envelope, A = m — só os termos SUAVES são
+// assados; ver nebulaDensity acima para quem consome cada canal.
+vec4 nebulaBake(vec3 p) {
+  float envelope = min(diskGasEnvelope(p), 3.0);
+  float r = 0.0;
+${
+  fino
+    ? `  // Vácuo: só a soma das sementes entra em R aqui — sem termo de
+  // envelope×clumps (ele agora é calculado ao vivo no raymarch).
+  if (!(envelope < 0.004 && uSeedCloudCount == 0)) {
+    for (int i = 0; i < ${seedSlots}; i++) {
+      if (i >= uSeedCloudCount) break;
+      vec4 posRaio = texelFetch(uSeedCloudTex, ivec2(i, 0), 0);
+      float amp = texelFetch(uSeedCloudTex, ivec2(i, 1), 0).x;
+      vec3 cq = (p - posRaio.xyz) / max(posRaio.w, 8.0);
+      float d2c = dot(cq, cq);
+      if (d2c < 5.5) {
+        float g = exp(-d2c * 1.4);
+        // fase pela IDENTIDADE da nuvem (posição estável), nunca pelo
+        // slot da textura — o rank muda a cada refresh de centro
+        float phase = hash13(posRaio.xyz) * 118.3;
+        float subst =
+          0.35 + 1.35 * smoothstep(0.45, 0.85, fbm(p * 0.11 + phase, 2));
+        r += g * amp * subst;
+      }
+    }
+  }
+  float n1 = fbm(p * 0.0135, 4);
+  float aCanal = fbm(p * 0.035 + 7.7, 3);
+  return vec4(r, n1, envelope, aCanal);
+`
+    : `  // Vácuo: mesma guarda conservadora da primeira versão da A1 — sem raio
+  // (é um voxel, não uma amostra ao longo de um raio), só resta saber se
+  // EXISTE alguma nuvem no pool deste bake (já filtrado pelo centro do
+  // volume em sementesParaBake). Por construção nunca muda o
+  // resultado de R, só o custo — e G/B/A são escritos DE QUALQUER JEITO
+  // logo abaixo, porque o bake assa o voxel inteiro de uma vez.
+  if (!(envelope < 0.004 && uSeedCloudCount == 0)) {
+    float n1 = fbm(p * 0.0135, 4);
+    float n2 = fbm(p * 0.048 + 17.3, 3);
+    // grumos raros e compactos — gás molecular ocupa ≪1% do volume
+    float clumps = smoothstep(0.50, 0.90, n1 * 0.70 + n2 * 0.30);
+    r = envelope * clumps * 0.75;
+    // nuvens-semente reais: metaballs com subestrutura FBM — mesma conta
+    // do caminho antigo, só que lendo a textura em vez do array.
+    for (int i = 0; i < ${seedSlots}; i++) {
+      if (i >= uSeedCloudCount) break;
+      vec4 posRaio = texelFetch(uSeedCloudTex, ivec2(i, 0), 0);
+      float amp = texelFetch(uSeedCloudTex, ivec2(i, 1), 0).x;
+      vec3 cq = (p - posRaio.xyz) / max(posRaio.w, 8.0);
+      float d2c = dot(cq, cq);
+      if (d2c < 5.5) {
+        float g = exp(-d2c * 1.4);
+        // fase pela IDENTIDADE da nuvem (posição estável), nunca pelo
+        // slot da textura — o rank muda a cada refresh de centro
+        float phase = hash13(posRaio.xyz) * 118.3;
+        float subst =
+          0.35 + 1.35 * smoothstep(0.45, 0.85, fbm(p * 0.11 + phase, 2));
+        r += g * amp * subst;
+      }
+    }
+  }
+  float lanes = fbm(p * 0.085 + 41.0, 2);
+  float gCanal = mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes)) * ${glslNumber(WORLD.gasDensity)};
+  float aCanal = fbm(p * 0.035 + 7.7, 3);
+  return vec4(r, gCanal, envelope, aCanal);
+`
+}
+}
+`;
+}
 
 // Variante LOCAL barata (estrelas HYG e poeira próxima — camadas
 // gated por dHome < 2,3 kpc, onde o envelope galáctico ≈ o slab

@@ -833,12 +833,26 @@ try {
     `de volta a 1,02: a AUTO-exposição volta (${devolta.exp.toFixed(4)}), latch desligado,`
       + ` url '${devolta.url}'`
   );
-  const telaDevolta = await sessao.md5();
+  // A CENA, não o painel (item 132, 04/09): depois da ida e volta do
+  // slider a linha "Exposição" do painel rasteriza 1 px acima da recarga
+  // — geometria idêntica (getBoundingClientRect bit a bit, sem scroll,
+  // sem transform), 1.551 px numa caixa de 268×37, dy = 1 exato; um
+  // tremor do compositor sobre uma seção em y fracionário, que a seção
+  // Idioma (item 130) empurrou para lá. O que esta prova cobra é que a
+  // auto-exposição VOLTOU no pixel do céu, então a foto é o quadro à
+  // ESQUERDA do painel, bit a bit; o painel fica de fora em vez de o
+  // dente afrouxar.
+  const cena = JSON.parse(await sessao.js(`JSON.stringify((() => {
+    const p = document.querySelector('[data-dialogo="ajustes"]').getBoundingClientRect();
+    return { x: 0, y: 0, width: Math.floor(p.left) - 2, height: innerHeight };
+  })())`));
+  const telaDevolta = await sessao.md5(cena);
   await sessao.ir(devolta.url.replace(/^\?/, ''));
-  const recarregada = await sessao.md5();
+  const recarregada = await sessao.md5(cena);
   conferir(
     telaDevolta === recarregada,
-    `e a URL sem ?exp= reproduz a tela, pixel a pixel (${telaDevolta} vs ${recarregada})`
+    `e a URL sem ?exp= reproduz a CENA (à esquerda do painel, ${cena.width}×${cena.height}),`
+      + ` pixel a pixel (${telaDevolta} vs ${recarregada})`
   );
 
   // ---- 14: A QUALIDADE TROCA AO VIVO, IDA E VOLTA (Ajustes C) -------
@@ -1443,12 +1457,20 @@ try {
         }
       }
     }
+    // E A MARCA VENCE TAMBÉM (item 132, 04/09): a âncora (anel ou ponto)
+    // entra na árvore como oponente de todo mundo, então um nome pode
+    // perder para a marca de um vencedor cujo TEXTO nem encosta nele —
+    // Urano, na abertura, perde para o anel do Sol enquanto o texto do
+    // Sol passa a 2 px da caixa dele. A marca vem julgada do desenho
+    // (StarLabel.caixaDaMarca), como a caixa do texto.
+    const marca = (l) => l.caixaDaMarca ?? null;
     const semCulpado = [];
     let peloHud = 0;
     const perdedorComCaixa = corte.filter((l) => caixa(l));
     for (const p of perdedorComCaixa) {
       const c = caixa(p);
-      const dono = naTela.find((v) => cruza(c, caixa(v), c.folga) && vence(v, p));
+      const dono = naTela.find((v) =>
+        (cruza(c, caixa(v), c.folga) || cruza(c, marca(v), c.folga)) && vence(v, p));
       if (dono) continue;
       if (hud.some((h) => cruza(c, h, c.folga))) peloHud++;
       else semCulpado.push(p.key);
@@ -1502,7 +1524,13 @@ try {
   // vista mudarem, este pino se REESCREVE com o número novo, do jeito
   // que este aqui foi escrito; afrouxar o dente para o juiz calar é que
   // não vale.
-  const NA_ABERTURA = 15;
+  // RE-PINADO EM 04/09 (item 132): 15 → 17. A onda 125 (F4
+  // encobrimento, F5 tipografia e ícones, F7 portas) mudou quem cabe e
+  // só rodou a suíte, não este juiz. Medido três vezes no mesmo binário
+  // (1200×900, jd=EPOCA): 17 assentados — 3 corpos + 14 estrelas; Skat
+  // aparece na primeira leitura e some 4 s depois, quando o rodízio dá a
+  // volta. A lei que os dois vereditos abaixo guardam não mudou.
+  const NA_ABERTURA = 17;
   const CORPOS_COM_NOME = ['neptune', 'pluto', 'sun'];
   const corposDaAbertura = [...nomesDaAbertura.corpos].sort();
   const bateOsCorpos =
@@ -1532,9 +1560,11 @@ try {
   // candidatas estelares têm teto (24, `TETO_DE_CANDIDATAS_ESTELARES`) e
   // as que a margem escondia passaram a disputá-lo. São doze nas duas
   // leis; o que mudou foi QUAIS.
+  // (E EM 04/09, item 132, catorze: entram Alnair, Sargas e Shaula —
+  // que a F5 passou a separar — e Fuyue sai; medido, não escolhido.)
   const ESTRELAS_DA_ABERTURA = [
-    'Aldhanab', 'Ankaa', 'Arkab Posterior', 'Cervantes', 'Fomalhaut', 'Fuyue',
-    'Lang-Exster', 'Peacock', 'Rukbat', 'Safina', 'Tiaki', 'ε Ind',
+    'Aldhanab', 'Alnair', 'Ankaa', 'Arkab Posterior', 'Cervantes', 'Fomalhaut',
+    'Lang-Exster', 'Peacock', 'Rukbat', 'Safina', 'Sargas', 'Shaula', 'Tiaki', 'ε Ind',
   ];
   const estrelasNaTela = [...nomesDaAbertura.nomesDeEstrela].sort();
   const bateEstrelas =
@@ -1559,7 +1589,9 @@ try {
   // (E EM 01/09, NA F4: onze próprias e UMA Bayer — `δ Pav` perdeu a
   // candidatura para `Safina`, que a margem escondia. A lei que o
   // veredito guarda é a mesma.)
-  const PROPRIAS_DA_ABERTURA = 11;
+  // (E EM 04/09, item 132: treze próprias — as três que entraram têm
+  // nome próprio — e a mesma Bayer.)
+  const PROPRIAS_DA_ABERTURA = 13;
   const BAYER_DA_ABERTURA = ['ε Ind'];
   const bayerNaTela = [...nomesDaAbertura.estrelasBayer].sort();
   conferir(
@@ -1659,7 +1691,9 @@ try {
   const NO_TETO = ['neptune', 'pluto', 'sun'];
   // e o total, que desde a revogação do orçamento (item 125, F3) já não
   // é o número de corpos: as estrelas de fundo que não colidem ficam
-  const NOMES_NO_TETO = 15;
+  // (re-pinado em 04/09, item 132: 17 — as mesmas catorze estrelas da
+  // abertura, medidas duas vezes no mesmo binário)
+  const NOMES_NO_TETO = 17;
   const corposDoTeto = [...nomesDoTeto.corpos].sort();
   const bateOTeto =
     corposDoTeto.length === NO_TETO.length
@@ -2453,8 +2487,15 @@ try {
   // DO PRIMEIRO TOQUE — a metade que faltava, descoberta em 24/08
   // (item 82). Se o rótulo ficar debaixo da ficha, a prova FALHA com
   // essa frase, em vez de ir às compras noutro corpo.
-  const ALVO_DO_TOQUE = 'corpo:pluto';
-  const NOME_DO_ALVO = 'Plutão';
+  //
+  // E DESDE 04/09 (item 132) O ALVO É NETUNO: a 390×844 Plutão perde a
+  // caixa para Netuno pela lei do Eyes (peso 50 contra 28, a caixa de um
+  // a 8 px da do outro) — medido: Plutão cortado por 'disputa' com Netuno
+  // desenhado cruzando a caixa dele. Netuno é o corpo com nome que sobra
+  // no céu do telefone (com o Sol); se a ficha aberta cobrir o rótulo
+  // dele, a prova falha com a frase própria em vez de trocar de alvo.
+  const ALVO_DO_TOQUE = 'corpo:neptune';
+  const NOME_DO_ALVO = 'Netuno';
   const rotulosNoCeu = async () => JSON.parse(await sessao.js(`JSON.stringify(
     window.__director.rotulos.alvos
       .filter((l) => l.desenhado === true && l.opacity >= 0.15)

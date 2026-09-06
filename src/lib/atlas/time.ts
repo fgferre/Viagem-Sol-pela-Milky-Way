@@ -7,7 +7,7 @@
 // Cicatriz do doador que a M6 registra: viés de ~77 s / ~1,0° em
 // Phobos por `Date.parse` (UT) contra provider em TDB.
 //
-// Runtime que MIGRA sob a exceção das duas provas (PLANO-ATLAS §0.3):
+// Runtime que MIGRA sob a exceção das duas provas (doutrina de travessia, docs/NORTE.md):
 // 1ª prova, qualidade medida com o arquivo aberto — zero imports,
 //   TypeScript puro sem dependência de framework; a tabela ΔT é DADO
 //   publicado (Espenak & Meeus, *Five Millennium Canon of Solar

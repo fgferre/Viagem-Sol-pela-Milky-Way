@@ -1197,6 +1197,14 @@ describe('a caixa da disputa viaja no rótulo', () => {
     expect(vivo.caixaDaDisputa!.folga).toBe(8);
     expect(cedido.caixaDaDisputa).toBeUndefined();
     expect(apagado.caixaDaDisputa).toBeUndefined();
+    // e a MARCA viaja junto (item 132): é oponente de todo mundo, e o
+    // juiz precisa dela para achar quem venceu um nome cortado
+    expect(vivo.caixaDaMarca).toBeDefined();
+    expect(vivo.caixaDaMarca!.folga).toBe(2);
+    // sem anel a marca é o PONTO do objeto, de tamanho (0,0) como no Eyes
+    expect(vivo.caixaDaMarca!.right).toBe(vivo.caixaDaMarca!.left);
+    expect(cedido.caixaDaMarca).toBeUndefined();
+    expect(apagado.caixaDaMarca).toBeUndefined();
   });
 
   it('NENHUM par de caixas desenhadas se sobrepõe — a lei nova, medida', () => {

@@ -213,6 +213,8 @@ export class Escada {
     meta: () => StarsMeta | undefined;
     rochosos: () => readonly { corpo: RochosoResolvido }[];
     gigantes: () => readonly { corpo: GiganteResolvido }[];
+    /** o corpo cuja LINHA de órbita está sob o ponteiro (0..1), ou null */
+    corpoNaOrbita: (x: number, y: number) => string | null;
   };
 
   constructor(dono: {
@@ -235,7 +237,7 @@ export class Escada {
     this.escolha = new Escolha({
       escada: this,
       rotulos: dono.rotulos,
-      fios: { fase: dono.fios.fase, meta: dono.fios.meta },
+      fios: { fase: dono.fios.fase, meta: dono.fios.meta, corpoNaOrbita: dono.fios.corpoNaOrbita },
     });
   }
 
@@ -535,7 +537,7 @@ export class Escada {
    * retrato — o A/B de `?jd=EPOCA` é bit a bit); sem fonte fica o
    * retrato congelado com o badge do tempo contando a verdade — o
    * caminho existente. O fecho da onda re-registra a pendência no
-   * PLANO-ATLAS ("justificativa errada conta como falha", Onda 9).
+   * docs/PENDENCIAS.md, item 220 ("justificativa errada conta como falha", Onda 9).
    */
   focarNoSistema() {
     // SEM EFEMÉRIDE CARREGADA fica o RETRATO congelado — o caminho de

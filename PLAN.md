@@ -1,0 +1,26 @@
+# Gás volumétrico assado em textura 3D (aberto 05/09/2026, aprovado pelo dono)
+
+Meta: o raymarch da nebulosa em movimento custa ~33 ms/quadro em DPR 2 (metade do quadro) porque inventa a densidade a cada passo com ~45 oitavas de fbm. Trocar por leitura de uma grade 3D assada, sem sprite, mantendo a aparência (A) e depois deixando o mapa REAL de poeira entrar (B). Régua: Chrome visível DPR 2 contando rAF (receita no BACKLOG); fotos antes/depois nas vistas fixas; juiz `luz-do-quadro`. Um commit por etapa; push só em `main:backup`.
+
+Decisões já tomadas (revistas 05/09 depois de medir)
+- O gás local é calculado em QUALQUER ponto do disco (`nebulaFade = inDisk`), não só perto do Sol. A grade ACOMPANHA a câmera: cubo de ±1000 pc (alcance do raio 650 + margem 350), 128³ RGBA16F (15,6 pc/voxel), centro encaixado em múltiplos do voxel (reassar no mesmo lugar dá as mesmas amostras: sem tremor). Reassa quando a câmera sai da margem de 350 pc ou um insumo muda.
+- Ablação em tela real (t=100 em movimento, caminho antigo): tirar n1+n2+lanes+ruído da paleta+sementes → 83 → 33 ms; núcleos do corredor são baratos (gate espacial). Logo: canais R = envelope·clumps·0,75 + sementes, G = fator das lanes × gasDensity, B = envelope, A = ruído da paleta. Por passo ficam: núcleos (texto GLSL idêntico), Bolha Local (sub-voxel), cavidade do observador, luz.
+- Sementes: o pool tem 6603 nuvens (8107 pequenas + 84 grandes), não 84. O bake recebe as 256 mais próximas do centro da caixa por textura de dados (texelFetch), sem fade; o caminho antigo segue com suas 32.
+- Assar na GPU (WebGL3DRenderTarget, 128 fatias) com o mesmo GLSL — sem porte para JS, sem arquivo novo na etapa A.
+- DECISÃO DO DONO (05/09): as TRÊS versões do gás ficam (antigo / fino / macio) como opção de detalhe gráfico dentro dos presets existentes e do preset custom; nada é apagado agora. A chave `?nebvol=0`/`?nebfino=1` vira uma configuração de verdade (preset + custom), não uma leitura de módulo na carga.
+- Régua que vale: Chrome visível, DPR 2, contar rAF (rascunho `fps-real.mjs` no scratchpad; receita no BACKLOG). Fotos A/B no mesmo binário com `?nebvol=0`.
+
+Etapas
+- A1 [~] 2ª versão construída e medida em tela real 05/09: t=100 em movimento 12,2 → 29,1 fps (83 → 33 ms), sem erro de shader (o primeiro build tinha `uVolMin` sem declarar no fragment do bake: os testes não compilam GLSL). Variante `?nebfino=1` (n2+lanes por passo, resto assado) construída: t=100 em movimento antigo 12 / fino 18 / macio 31 fps; fotos em `capturas/nebvol3-t{60,100,140}-tres.png` enviadas ao dono para escolher. Reassar não gera quadro >100 ms (medido). skyError: antigo 0,761 / fino 0,831 / macio 0,852. (1ª versão, a 1ª, caixa fixa no Sol + 96 sementes, ficou sem gás em t=100: `capturas/nebvol-t100-lado-a-lado.png`) Grade assada + raymarch lendo a grade. Aparência preservada (fotos), custo medido. Arquivos: `src/three/shaders/common.ts` (nebulaDensity), `src/three/shaders/nebulaShaders.ts`, `src/three/world/nebula.ts`, `src/three/world/nuvensSemente.ts` (amplitude sem fade), `src/three/world/nebula.test.ts`.
+- A2 [ ] Pular o vazio: grade grosseira de máximo (ex. 32×32×8) lida do bake; passo salta onde max = 0. Medir de novo.
+- B  [ ] O mapa real: `scripts/data/build-galactic-assets.mjs` gera `public/data/galaxy/dust-volume.bin` (grade 3D medida + confiança a partir de `dust-density.bin`); o bake usa medido onde há cobertura e o modelo inferido onde não há (regra do manifesto). Precisa de `data:verify`, manifesto, docs (`GALACTIC_DATA_FOUNDATION.md`, `RENDERER_CARTOGRAPHY.md`) e fotos do dono.
+- A1b [x] (05/09) O seletor de detalhe do gás: opção nos presets (padrão por preset a decidir com o dono) e no custom, troca ao vivo (materiais recompilados ou três materiais prontos), rótulos pt/en, teste sized like the neighbors.
+- Fecho [ ] `npm run done`, backup, fotos finais. Nada de apagar caminho: o dono quer poder voltar ao app de hoje.
+
+Item seguinte (autorizado 05/09, o modo de hoje fica como opção): o QUADRO DENTRO DO DISCO.
+- [x] Diagnóstico fechado (05/09, tela real, t=150 parado, 72–79 ms): `?nopts=1` (partículas da galáxia escondidas, chave nova de medição) → 14 ms; `?galstat=1` mostra 99,99% dos 4,02 M pontos no frustum ali. Discos, brilhos, heróis e nuvens observadas custam ~0 nessa vista (os toggles por material dentro da página eram ruído; só a URL vale).
+- [x] Seletor "Partículas da galáxia" (todas/metade/quarto) nos presets (cinema todas, alta metade, performance todas — o performance já carrega 28% via populationScale) e no custom, troca ao vivo por drawRange sobre o buffer embaralhado (permutação semeada no fim de buildGalaxy) com o brilho compensado por 1/fração. Medido t=150: todas 79 ms / metade 43 / quarto 28,5; em movimento 82 → 34. Fotos `capturas/particulas-t{120,150,166}-tres.png`; brilho médio igual dentro de 1%.
+- [ ] O dono testa as visualizações e decide os padrões por preset (item 223 em PENDENCIAS; rodada encerrada 05/09 sem a verificação dele).
+- [ ] Ideia exata pendente (BACKLOG): partículas com alpha exatamente zero não rasterizarem.
+
+Engasgos (05/09): FALSO POSITIVO da régua sem vsync — com vsync não há engasgo na chegada; os aquecimentos de Terra/Lua/CME foram revertidos (ver BACKLOG 'ARMADILHA DA RÉGUA').

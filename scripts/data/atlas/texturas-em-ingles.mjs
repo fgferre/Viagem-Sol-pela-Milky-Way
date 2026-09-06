@@ -64,10 +64,6 @@ export const EM_INGLES = new Map([
     'Solar System Scope — 4k_venus_atmosphere (cloud tops)',
   ],
   [
-    'Solar System Scope — 8k_saturn_ring_alpha (placa alpha)',
-    'Solar System Scope — 8k_saturn_ring_alpha (alpha plate)',
-  ],
-  [
     'Solar System Scope — 2k_uranus (incumbente; sem 8k SSS)',
     'Solar System Scope — 2k_uranus (incumbent; SSS has no 8k)',
   ],

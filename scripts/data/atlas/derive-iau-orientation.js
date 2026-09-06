@@ -2,7 +2,7 @@
 
 // ============================================================
 // VENDORIZADO do atlas-orbital (scripts/derive-iau-orientation.js).
-// Ferramenta offline julgada por oráculo (PLANO-ATLAS §0.2): a saída é
+// Ferramenta offline julgada por oráculo (doutrina de travessia, docs/NORTE.md): a saída é
 // conferível contra o kernel pck00011.tpc da NAIF e contra o oráculo
 // sub-ponto solar. O consumidor na casa é
 // `src/lib/atlas/iauOrientation.ts` (o bloco impresso cola lá).

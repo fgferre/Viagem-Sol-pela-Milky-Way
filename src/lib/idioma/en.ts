@@ -112,6 +112,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.titulo': 'Settings',
   'ajustes.aria': 'Rendering settings',
   'ajustes.fechar': 'Close settings',
+  // the "?" button label on each row — the fine print left the flow and
+  // became an on-demand tip (panel redesign, 05/09)
+  'ajustes.ajuda': 'Help: {rotulo}',
   'ajustes.idioma': 'Language',
   'ajustes.idiomaNota': "Switches the app's language right now, with no reload.",
   'ajustes.tom': 'Tone curve',
@@ -122,17 +125,20 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.tom.neutral': 'middle ground',
   'ajustes.tom.linear': 'no curve — clips, shows the raw frame',
   'ajustes.exposicao': 'Exposure',
-  'ajustes.exposicaoCom': 'Exposure · {valor}',
   'ajustes.qualidade': 'Quality',
   'ajustes.qualidadeNota':
     'Switches live, with no reload. The heavy part — the galaxy population and the Sun — is rebuilt in the background and swapped in at once; until then the scene stays as it is. Auto lets the measurement choose — and nobody chooses for you without that click.',
   'ajustes.avancado': 'Advanced',
-  'ajustes.msaa': 'Edge smoothing (MSAA)',
+  // SHORT LABEL (polish 09/06): the row is now a single line with a
+  // fixed control column — "Edge smoothing" didn't fit beside the "?".
+  'ajustes.msaa': 'Anti-aliasing',
   'ajustes.msaaNota':
     'Smooths the edges of bodies and lines, and it costs frames. Switch here and compare with the frames/s just above — the change is immediate, with no reload. "From preset" hands the choice back to quality.',
-  'ajustes.doPreset': 'From preset',
+  'ajustes.preset': 'Preset',
   'ajustes.msaaDesligada': 'Off',
-  'ajustes.nebulosaControle': 'Nebula (raymarch)',
+  // SHORT LABEL (polish 09/06): "(raymarch)" was engine jargon, not
+  // taste — it stays in the tooltip for whoever wants it.
+  'ajustes.nebulosaControle': 'Nebula',
   'ajustes.nebulosaNota':
     'The gas of the Milky Way is drawn step by step, and it is the most expensive part of the frame. Fewer steps leave the cloud flatter and grainier; more steps make it smooth and cost frames.',
   'ajustes.nebulosa.baixa': 'Low',
@@ -141,6 +147,18 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.escalaDeResolucao': 'Resolution scale',
   'ajustes.escalaDeResolucaoNota':
     'How many pixels the scene draws, as a fraction of your screen. 50% draws a quarter of the pixels — the strongest lever here, and the one that blurs edges the most. Text and controls keep their size.',
+  'ajustes.gasControle': 'Volumetric gas',
+  'ajustes.gasNota':
+    'How the gas of the Milky Way is computed: original redoes everything every step; fine bakes most of it and keeps two fine details live; soft bakes everything and is the cheapest.',
+  'ajustes.gas.antigo': 'Original',
+  'ajustes.gas.fino': 'Fine',
+  'ajustes.gas.macio': 'Soft',
+  'ajustes.particulasControle': 'Galaxy particles',
+  'ajustes.particulasNota':
+    'How many of the loaded particles the scene draws, with total brightness compensated: fewer points, each stronger — same flux, different grain.',
+  'ajustes.particulas.todas': 'All',
+  'ajustes.particulas.metade': 'Half',
+  'ajustes.particulas.quarto': '¼',
   'ajustes.texto': 'Text size · {degrau}',
   'ajustes.textoNota':
     'Applies to the whole HUD — captions, controls, seal and the star names. It does not touch the scene: inside the Atlas the framing backs off a little so the larger text does not cover the target.',
@@ -191,8 +209,19 @@ export const EN: Record<keyof typeof PT, string> = {
   'atlas.aoVivoAria': 'Follow real time',
   'atlas.epoca': 'Epoch',
   'atlas.epocaAria': 'Back to the instant of the 2026 portrait',
+  // THE THREE ROW LABELS (`comRotulos`), sheet only — the desktop bar
+  // skips them because the buttons themselves already say what each
+  // group is.
+  'atlas.tempoTransporte': 'Transport',
+  'atlas.tempoVelocidade': 'Speed',
+  'atlas.tempoReferencia': 'Reference',
+  // The "?" in the gaveta header and the bar (redesign, the owner's
+  // request: "apply the same pattern to the Time panel") — ≤45 words.
+  'atlas.tempoAjuda':
+    'The time machine moves the sky and the planets. ◀ ⏸ ▶ set the direction; the speed button cycles from real time to ~116 days per second. "Live" follows the visitor\'s clock; "Epoch" freezes the J2000 reference portrait. Ephemerides cover 1950–2050.',
 
   // ---- the search palette ------------------------------------------
+  'busca.titulo': 'Search',
   'busca.aria': 'Search for a target',
   'busca.botao': '⌕ Search',
   'busca.botaoAria': 'Search for a star',
@@ -203,10 +232,11 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.campoEstrelas': 'search for a star',
   'busca.campoAria':
     'Name of a body in the system, or name, designation or catalog of the star',
+  'busca.ajuda':
+    'Type the name of a body in the system, or the name, designation (gamma vel) or catalog (hd 48915) of a star — {exemplos}. The catalog keeps one name per star, its own when it has one.',
   'busca.alcanceComCorpos': 'the {quantas} named stars and the {corpos} bodies of the system',
   'busca.alcance': 'the {quantas} named stars',
-  'busca.vazio':
-    'nothing by that name among {alcance} — the catalog keeps ONE name per star, its own when it has one. try {exemplos}',
+  'busca.vazio': 'nothing by that name among {alcance} — try {exemplos}',
   'busca.contagem': '{n} {palavra} · arrows choose · Enter {verbo}',
   'busca.resultado': 'result',
   'busca.resultados': 'results',
@@ -239,6 +269,13 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.aproximarAria': 'Closer: frame {nome} up close',
   'ficha.sistema': '⌂ System',
   'ficha.sistemaAria': 'Back to the solar system framing',
+  'ficha.relevoDaCor': '◐ Invented relief',
+  'ficha.relevoDaCorAria':
+    "Turn on relief invented from the colour of {nome}'s photo — there is no relief map",
+  // The "?" in the header (redesign, the owner's request: "apply the same
+  // pattern to the fact sheet") — ≤40 words.
+  'ficha.ajuda':
+    "Each seal says where the number comes from: measured is a number from the cited source; derived is calculated from measured ones; artistic is a declared illustration or invention. The '×Terra' beside a value compares it with Earth's own figure.",
 
   // ---- section titles and field labels -----------------------------
   'ficha.secao.agora': 'right now',
@@ -341,6 +378,10 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.nebulaCom': 'nebula set by hand: {nivel}',
   'selo.desvio.escalaDeResolucao': 'resolution scale set by hand',
   'selo.desvio.escalaDeResolucaoCom': 'resolution scale set by hand: {fator}',
+  'selo.desvio.gas': 'volumetric gas set by hand',
+  'selo.desvio.gasCom': 'volumetric gas set by hand: {variante}',
+  'selo.desvio.particulas': 'galaxy particles set by hand',
+  'selo.desvio.particulasCom': 'galaxy particles set by hand: {nivel}',
 
   // ---- the scale accusation ----------------------------------------
   'escala.acusacao': '{nome} is {fator} larger',
@@ -379,6 +420,48 @@ export const EN: Record<keyof typeof PT, string> = {
   'camada.noicones': 'Body icons',
   'camada.nocorpos': 'Bodies up close',
   'camada.noorbitas': 'Orbit lines',
+  // THE NOTES (06/09) — the Ajustes pattern applied to the drawer: one
+  // factual sentence under the "?", derived from what the flag actually
+  // switches off in `director.ts` and the worlds it hides.
+  'camada.nogal.nota':
+    'Turns off the whole galaxy — every disc particle, the bulge and the Sun marker, in the outside view.',
+  'camada.nodisc.nota':
+    'Hides the volumetric disc slices of the galaxy, leaving only the star particles visible.',
+  'camada.nogdust.nota':
+    "Turns off the dimming of each galaxy particle by interstellar dust along the light's path to it.",
+  'camada.noglow.nota':
+    "Turns off the diffuse glow of the galactic bulge — the soft halo of light at the galaxy's center.",
+  'camada.nocart.nota':
+    "Turns off the galaxy's observed cartography: real molecular clouds drawn as 3D billboards in the disc.",
+  'camada.noco.nota':
+    'Turns off only the measured carbon-monoxide clouds — the real dark rifts of the Milky Way in the disc.',
+  'camada.noforge.nota':
+    "Turns off the stellar forges — mapped star-forming regions, visible in the galaxy's disc.",
+  'camada.nonebula.nota':
+    "Turns off the nebula's volumetric gas, visible up close inside the galaxy's disc.",
+  'camada.nowrap.nota':
+    'Turns off the procedural star field that fills the sky around the camera beyond the real catalogue.',
+  'camada.nodust.nota':
+    "Turns off the interstellar dust with parallax near the camera, visible while crossing the galaxy's disc.",
+  'camada.nobh.nota':
+    "Turns off the Sagittarius A* black hole, visible only up close, at the galaxy's center.",
+  'camada.nocat.nota':
+    'Turns off the real star catalogue points (HYG), visible near the solar system.',
+  'camada.nonomes.nota':
+    'Turns off the names written over stars and bodies, across the whole scene.',
+  'camada.noclarao.nota':
+    'Turns off the strong glare of the featured stars and of the Sun.',
+  'camada.nosun.nota':
+    'Turns off the whole Sun — body and glare —, visible up close in the solar system.',
+  'camada.nomarker.nota':
+    'Turns off the "you are here" marker pointing to the Sun in the outside view of the galaxy.',
+  'camada.noplan.nota': "Turns off the solar system's planets' photometric points.",
+  'camada.noicones.nota':
+    "Turns off the solar system's body icons, separate from their text names.",
+  'camada.nocorpos.nota':
+    'Turns off the 3D globes of bodies seen up close, distinct from the distant photometric points.',
+  'camada.noorbitas.nota':
+    "Turns off the solar system's orbit lines around the Sun.",
   'qualidade.cinema': 'Cinema',
   'qualidade.alta': 'High',
   'qualidade.performance': 'Performance',

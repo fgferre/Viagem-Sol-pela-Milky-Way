@@ -1083,8 +1083,8 @@ describe('7. o que o selo declara — os passos de luz', () => {
  * é o mesmo teto de sempre.
  *
  * A prova MEDIDA da escada de aproximação (a captura de 25/08, com os
- * degraus 800→3 raios sem recuo) continua no item 91 do
- * `docs/PENDENCIAS-ARQUIVO.md`.
+ * degraus 800→3 raios sem recuo) continua no item 91, no
+ * histórico do git (`git log --all --grep=91`).
  */
 describe('8. o handoff ponto↔globo — o degrau que não existe', () => {
   it('a exposição da visita NÃO é função da câmera: o mesmo corpo, o mesmo ganho', () => {

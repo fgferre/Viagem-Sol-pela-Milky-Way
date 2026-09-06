@@ -2,7 +2,7 @@
 // Orientação de corpo — o avaliador IAU/WGCCRE da casa: polo (α, δ),
 // meridiano-primo W e o sub-ponto solar que o oráculo Horizons julga.
 //
-// RENASCE (doutrina de travessia, PLANO-ATLAS §0): o bodyOrientation.ts
+// RENASCE (doutrina de travessia, docs/NORTE.md): o bodyOrientation.ts
 // do doador devolvia THREE.Quaternion na base Y-up da cena — física
 // amarrada ao renderer. Aqui tudo é número puro em EQUATORIAL J2000,
 // o frame em que as tabelas IAU são publicadas: zero three, zero cena;

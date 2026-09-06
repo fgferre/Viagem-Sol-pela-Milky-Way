@@ -15,7 +15,7 @@
 // a guarda de `process.argv[1]`; só importar `chrome.mjs` ainda exige o Chrome
 // instalado (ele resolve o caminho no topo do módulo, de propósito).
 import { describe, it, expect } from 'vitest';
-import { julgarVistas, carimboDoCodigo } from './ab-identidade.mjs';
+import { julgarVistas, carimboDoCodigo, mesmoBinario } from './ab-identidade.mjs';
 
 const VISTAS = ['sol', 'interno', 'ua150'];
 // H = o par (as vistas pinadas em ×2 e a era pré-113); U = a captura ÚNICA,
@@ -220,3 +220,19 @@ describe('carimboDoCodigo', () => {
     expect(carimboDoCodigo()).toBe(a);
   });
 });
+
+describe('mesmoBinario (item 143)', () => {
+  const base = { carimbo: 'abc', carimboAtual: 'abc', app: 'http://127.0.0.1:5222', appAtual: 'http://127.0.0.1:5222' };
+  it('carimbo e servidor iguais: o outro lado é o mesmo binário', () => {
+    expect(mesmoBinario(base)).toBe(true);
+  });
+  it('mesmo carimbo em OUTRO servidor não é o mesmo binário — era o INSTÁVEL com diff 0', () => {
+    expect(mesmoBinario({ ...base, appAtual: 'http://127.0.0.1:5223' })).toBe(false);
+  });
+  it('sem servidor gravado (estado anterior ao 143) ou carimbo diferente: não vale', () => {
+    expect(mesmoBinario({ ...base, app: null })).toBe(false);
+    expect(mesmoBinario({ ...base, carimbo: 'zzz' })).toBe(false);
+    expect(mesmoBinario({ ...base, carimbo: null, carimboAtual: null })).toBe(false);
+  });
+});
+

@@ -2,7 +2,7 @@
 
 // ============================================================
 // VENDORIZADO do atlas-orbital (scripts/generate-horizons-fixtures.js).
-// Ferramenta offline julgada por oráculo (PLANO-ATLAS §0.2). Três
+// Ferramenta offline julgada por oráculo (doutrina de travessia, docs/NORTE.md). Três
 // adaptações declaradas, todas marcadas com "// Casa:" no corpo:
 //   1. FIXTURES_DIR aponta para o src/test/fixtures/horizons desta raiz
 //      (o script mudou de profundidade de diretório).

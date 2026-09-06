@@ -16,7 +16,7 @@
 // `height` entrou na S2 do item 134: o mapa de altura que desloca o
 // vértice da lua (`rochoso.ts`). É DADO, não cor — ver a exceção de
 // encode em `otimiza-texturas.mjs`.
-export const CANAIS = ['map', 'clouds', 'night', 'normal', 'roughness', 'ring', 'height'];
+export const CANAIS = ['map', 'clouds', 'night', 'normal', 'roughness', 'height'];
 
 // Os canais que se LEEM em vez de se olhar: `height` desloca o vértice e
 // `normal` gira a luz, então um erro de 8/255 neles é relevo falso, não

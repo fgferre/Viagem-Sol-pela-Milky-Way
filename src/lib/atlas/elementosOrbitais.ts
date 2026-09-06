@@ -1,5 +1,5 @@
 // ============================================================
-// Elementos orbitais — DADO, migra verbatim (PLANO-ATLAS §0.2 categoria 1).
+// Elementos orbitais — DADO, migra verbatim (doutrina de travessia em docs/NORTE.md).
 //
 // PROVENIÊNCIA (transcrito do atlas-orbital em 2026-08-10):
 //   - src/lib/orbital/analytical/satellites.ts — os 20 satélites analíticos
@@ -715,7 +715,7 @@ export const ASTEROIDS: Record<string, EclipticElements> = {
 
 /**
  * Casa: luas de TNO que seguem como Kepler DE CATÁLOGO (matriz §2.2 do
- * PLANO-ATLAS). Elementos copiados verbatim de
+ * `git show 923dc20:docs/PLANO-ATLAS.md`). Elementos copiados verbatim de
  * `src/data/celestialBodies.ts` do doador (vanth ~l.2691, weywot ~l.2746),
  * onde vivem como `orbit: { a, e, i, O, w, M0, n }` com n em °/dia e época
  * J2000 implícita (M = M0 + n·diasDesdeJ2000 no keplerProvider.ts do

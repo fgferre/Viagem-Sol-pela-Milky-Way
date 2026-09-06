@@ -50,6 +50,14 @@ export class Escolha {
   private readonly fios: {
     fase: () => Phase;
     meta: () => StarsMeta | undefined;
+    /**
+     * O HIT-TEST DA LINHA (item 120, F1 · L11) — a pergunta que
+     * `Orbitas.corpoNoPonto` responde, feita SÓ quando os nomes não
+     * acertaram nada (ver `alvoNoPonto`). Opcional porque nem todo dono
+     * de `Escolha` tem uma camada de órbitas para perguntar — sem fio,
+     * o comportamento é o de sempre.
+     */
+    corpoNaOrbita?: (x: number, y: number) => string | null;
   };
 
   constructor(dono: {
@@ -105,7 +113,15 @@ export class Escolha {
         best = label;
       }
     }
-    return best;
+    if (best) return best;
+    // NENHUM NOME ACERTOU — a pergunta que falta é a da LINHA (item 120,
+    // F1 · L11): apontar/clicar o TRAÇO da órbita vale como apontar/
+    // clicar o nome dela (§5g de `orbitas.ts`), mesmo com o rótulo
+    // INVISÍVEL — é exatamente esse o caso que este fio existe para
+    // cobrir, e por isso SEM os filtros de `desenhado`/`opacity` de cima.
+    const id = this.fios.corpoNaOrbita?.(x, y);
+    if (!id) return null;
+    return this.rotulos.alvos.find((l) => l.key === CHAVE_DE_CORPO + id) ?? null;
   }
 
   /**

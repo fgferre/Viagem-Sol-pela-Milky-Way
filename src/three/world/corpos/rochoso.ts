@@ -645,6 +645,9 @@ export class RochosoResolvido {
 
   private geometria: THREE.BufferGeometry | null = null;
   private superficie: THREE.Mesh | null = null;
+  /** o interruptor da ficha: o relevo FINGIDO da cor do mapa (B1),
+   *  desligado por padrão (item 144: "desfazer o relevo inventado") */
+  private relevoDaCorLigado = false;
   private matSuperficie: THREE.ShaderMaterial | null = null;
   private geoAnel: THREE.RingGeometry | null = null;
   private anel: THREE.Mesh | null = null;
@@ -943,6 +946,34 @@ export class RochosoResolvido {
     }
   }
 
+  /** o interruptor da ficha — só onde o relevo é FINGIDO da cor do mapa
+   *  (B1, `escalaDoBumpDoAlbedo` > 0) e NÃO há mapa de relevo. `null`
+   *  onde não há o que ligar: esculpido (a forma é o dado), config já
+   *  procedural (sem mapa), relevo medido (Mercúrio, Marte, Ceres, Vesta,
+   *  as seis de Saturno com o mosaico) e bump zerado (Europa, Io, Vênus,
+   *  Titã). Decisão dele, 04/09/2026. */
+  get relevoDaCor(): boolean | null {
+    if (this.config.superficie !== undefined && this.config.superficie !== 'mapa') return null;
+    const id = this.config.id;
+    if (id in RELEVO_DA_LUA || id in NORMAL_MEDIDA || escalaDoBumpDoAlbedo(id) <= 0) return null;
+    return this.relevoDaCorLigado;
+  }
+
+  /** o `uBumpAlbedo` que vale agora: a escala da tabela só com o
+   *  interruptor ligado; zero no resto (e onde o interruptor não existe). */
+  private escalaDoBumpVivo(): number {
+    return this.relevoDaCor === true ? escalaDoBumpDoAlbedo(this.config.id) : 0;
+  }
+
+  /** liga/desliga o relevo fingido AO VIVO: só o uniform muda; mapa,
+   *  geometria e shader ficam. Antes de a casca nascer, só a flag muda e
+   *  `garantirCasca` a lê. */
+  definirRelevoDaCor(ligado: boolean) {
+    if (this.relevoDaCor === null || this.relevoDaCor === ligado) return;
+    this.relevoDaCorLigado = ligado;
+    if (this.matSuperficie) this.matSuperficie.uniforms.uBumpAlbedo.value = this.escalaDoBumpVivo();
+  }
+
   /** geometria + material + mesh, UMA vez, na primeira necessidade. */
   private garantirCasca() {
     if (this.geometria || this.disposto) return;
@@ -978,9 +1009,10 @@ export class RochosoResolvido {
             : ROCHOSO_LAMBERT_FRAG,
       uniforms: {
         uMapaDia: { value: null },
-        // B1 — o interruptor por corpo; procedural não tem mapa de onde
-        // tirar gradiente, e o shader dele nem declara o bloco
-        uBumpAlbedo: { value: procedural ? 0 : escalaDoBumpDoAlbedo(this.config.id) },
+        // B1 — o relevo fingido da cor nasce DESLIGADO (item 144) e só a
+        // ficha o liga (`definirRelevoDaCor`); onde há relevo medido ou o
+        // bump zerado o interruptor nem existe, e o zero é definitivo
+        uBumpAlbedo: { value: this.escalaDoBumpVivo() },
         // S3: cor/fundo/borda/crista da família de regolito. Só o corpo
         // esculpido lê estes; nos outros o bloco nem existe no shader.
         ...(esculpido ? uniformsDoEsculpido(this.config.id) : {}),

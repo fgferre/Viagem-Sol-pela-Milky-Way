@@ -878,6 +878,24 @@ export function carimboDoCodigo() {
 }
 const CARIMBO = carimboDoCodigo();
 const carimboDoLado = (lado) => resolve(tmpdir(), `ab-identidade-${lado}${SUFIXO}-codigo.txt`);
+// O SERVIDOR DE CADA LADO anda ao lado do carimbo (item 143). O carimbo é da
+// ÁRVORE em que o juiz roda, não do código que o servidor serve: num A/B por
+// servidores (`APP_URL` 5222 para o "antes", 5223 para o "depois"), os dois
+// lados rodados do mesmo checkout têm o MESMO carimbo, e a re-mira do
+// "antes" ia fotografar o servidor do "depois" — o "antes" ganhava um segundo
+// md5 igual ao do "depois" e a vista saía INSTÁVEL com diff 0. Sem o
+// servidor gravado, o carimbo igual não prova nada.
+const appDoLado = (lado) => resolve(tmpdir(), `ab-identidade-${lado}${SUFIXO}-app.txt`);
+const lerApp = (lado) =>
+  existsSync(appDoLado(lado)) ? readFileSync(appDoLado(lado), 'utf8').trim() : null;
+/**
+ * O estado do OUTRO lado só vale como o mesmo binário quando carimbo E
+ * servidor batem; sem servidor gravado (estado anterior ao item 143) não vale.
+ * Exportada para o teste.
+ */
+export function mesmoBinario({ carimbo, carimboAtual, app, appAtual }) {
+  return carimbo !== null && carimbo === carimboAtual && app !== null && app === appAtual;
+}
 const lerCarimbo = (lado) =>
   existsSync(carimboDoLado(lado)) ? readFileSync(carimboDoLado(lado), 'utf8').trim() : null;
 // o filho recebe a sua fatia por ambiente; a linha de comando continua sendo
@@ -1147,10 +1165,14 @@ async function pai() {
   // cópia dele.
   if (LADO === 'antes' && !Object.keys(md5).length && !process.env.DOZERO) {
     const arqOutro = resolve(tmpdir(), `ab-identidade-depois${SUFIXO}.json`);
-    if (existsSync(arqOutro) && lerCarimbo('depois') === CARIMBO) {
+    const mesmo = mesmoBinario({
+      carimbo: lerCarimbo('depois'), carimboAtual: CARIMBO, app: lerApp('depois'), appAtual: APP,
+    });
+    if (existsSync(arqOutro) && mesmo) {
       md5 = JSON.parse(readFileSync(arqOutro, 'utf8'));
       console.log(
-        `lado "antes" semeado do estado do lado "depois" (carimbo de árvore igual: ${CARIMBO})`
+        `lado "antes" semeado do estado do lado "depois" (carimbo de árvore igual: ${CARIMBO}, `
+        + `mesmo servidor: ${APP})`
       );
     }
   }
@@ -1161,6 +1183,7 @@ async function pai() {
   // carimbo velho, e a próxima leva o retomaria como se valesse.
   writeFileSync(ESTADO, JSON.stringify(md5, null, 1));
   writeFileSync(carimboDoLado(LADO), CARIMBO);
+  writeFileSync(appDoLado(LADO), APP);
 
   const lista = VISTAS.filter(([nome]) => {
     if (SO) return nome === SO;
@@ -1271,10 +1294,14 @@ async function pai() {
       });
       Object.assign(md5, reD.out);
       vias.push(...reD.vias);
-      // o lado `antes` só se recaptura quando ele é do MESMO código (A/A,
-      // knob por EXTRA): num A/B de verdade o binário dele já não existe, e
-      // recapturá-lo com o código novo envenenaria a baseline
-      if (lerCarimbo('antes') === CARIMBO) {
+      // o lado `antes` só se recaptura quando ele é do MESMO binário — mesmo
+      // código E mesmo servidor (A/A, knob por EXTRA): num A/B de verdade o
+      // binário dele já não existe (ou vive noutro servidor, item 143), e
+      // recapturá-lo daqui envenenaria a baseline
+      const mesmoAntes = mesmoBinario({
+        carimbo: lerCarimbo('antes'), carimboAtual: CARIMBO, app: lerApp('antes'), appAtual: APP,
+      });
+      if (mesmoAntes) {
         const reA = await capturarLista(vistasRe, arqAntes, '[re-antes] ', antes, {
           vezes: 2, acumular: true, ladoDoPng: 'antes',
         });
@@ -1282,8 +1309,8 @@ async function pai() {
         vias.push(...reA.vias);
       } else {
         console.log(
-          'o lado "antes" é de outro código — re-mira só no "depois"; '
-          + 'a captura única do "antes" fica'
+          `o lado "antes" é de outro código ou de outro servidor (${lerApp('antes') ?? 'sem servidor gravado'}) `
+          + '— re-mira só no "depois"; a captura única do "antes" fica'
         );
       }
       juizo = julgarVistas({ vistas: nomes, antes, depois: md5 });

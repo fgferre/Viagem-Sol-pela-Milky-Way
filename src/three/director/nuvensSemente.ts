@@ -12,13 +12,30 @@ import type { Nebula } from '../world/nebula';
 export class NuvensSemente {
   private pool: Float32Array | null = null;
   private readonly scratch = new Float32Array(32 * 5);
+  /** scratch das ≤256 sementes do bake — ver `sementesParaBake` */
+  private readonly scratchBake = new Float32Array(256 * 5);
   private timer = 0;
+  /**
+   * meia-aresta do volume assado (Nebula.MEIA_ARESTA) + margem por nuvem
+   * (3× o raio — cobre a metaball inteira, d2c < 5.5 ⇒ |p−c| < √5.5·r
+   * ≈ 2.35·r, com folga): o alcance de `sementesParaBake` por nuvem.
+   */
+  private static readonly ALCANCE_BASE = 1000;
 
-  /** nuvens CO/complexos em coords de cena para semear o raymarch */
-  construir(galactic: {
-    molecularClouds: { data: Float32Array; count: number; stride: number };
-    largeMolecularClouds: { data: Float32Array; count: number; stride: number };
-  }) {
+  /**
+   * Nuvens CO/complexos em coords de cena para semear o raymarch. Guarda
+   * o pool CRU (amplitudes SEM o fade de proximidade que `atualizar()`
+   * aplica depois) e liga o pedido de sementes do bake (REDESIGN,
+   * PLAN.md 05/09): a Nebula passa o CENTRO do volume, nunca a câmera
+   * direto, e `sementesParaBake` devolve as ≤256 mais perto dele.
+   */
+  construir(
+    galactic: {
+      molecularClouds: { data: Float32Array; count: number; stride: number };
+      largeMolecularClouds: { data: Float32Array; count: number; stride: number };
+    },
+    nebula: Nebula
+  ) {
     const out: number[] = [];
     const scratch = new THREE.Vector3();
     {
@@ -47,6 +64,47 @@ export class NuvensSemente {
       }
     }
     this.pool = new Float32Array(out);
+    nebula.setPedirSementes((centro) => this.sementesParaBake(centro, nebula));
+    // o pool acabou de nascer: o centro do volume (se já houver um) não
+    // mudou, então `foraDaMargem` não pegaria isso sozinho — força o
+    // primeiro bake com sementes de verdade.
+    nebula.marcarVolumeSujo();
+  }
+
+  /**
+   * REDESIGN (PLAN.md, 05/09) — as ≤256 nuvens do pool mais perto do
+   * CENTRO do volume assado (não da câmera: o cubo pode estar até 350 pc
+   * à frente dela). Sem fade de fronteira — a textura de sementes não
+   * tem limite de 32 nem precisa esconder popping, porque reassar já é
+   * o evento discreto. Chamada de dentro de `Nebula.bake()`, pelo
+   * callback ligado em `construir()`.
+   */
+  private sementesParaBake(centro: THREE.Vector3, nebula: Nebula) {
+    const pool = this.pool;
+    if (!pool) return;
+    const candidatos: Array<{ d: number; o: number }> = [];
+    for (let o = 0; o < pool.length; o += 5) {
+      const dx = pool[o] - centro.x;
+      const dy = pool[o + 1] - centro.y;
+      const dz = pool[o + 2] - centro.z;
+      const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      const alcance = NuvensSemente.ALCANCE_BASE + 3 * pool[o + 3];
+      if (d > alcance) continue;
+      candidatos.push({ d, o });
+    }
+    candidatos.sort((a, b) => a.d - b.d);
+    const n = Math.min(candidatos.length, 256);
+    const saida = this.scratchBake;
+    for (let i = 0; i < n; i++) {
+      const o = candidatos[i].o;
+      const t = i * 5;
+      saida[t] = pool[o];
+      saida[t + 1] = pool[o + 1];
+      saida[t + 2] = pool[o + 2];
+      saida[t + 3] = pool[o + 3];
+      saida[t + 4] = pool[o + 4]; // amplitude crua, sem fade
+    }
+    nebula.setBakeSeedClouds(saida, n);
   }
 
   /** seleciona as ≤32 nuvens do catálogo mais próximas da câmera */

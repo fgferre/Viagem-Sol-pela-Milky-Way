@@ -30,7 +30,7 @@
   gap: 0.6rem;
   margin-bottom: 0.5rem;
 }
-.atlas-ficha-topo button {
+.atlas-ficha-topo button:not(.hud-ajuda) {
   border: 0;
   background: none;
   color: inherit;
@@ -39,7 +39,7 @@
   line-height: 1;
   padding: 0.2rem 0.3rem;
 }
-.atlas-ficha-topo button:hover {
+.atlas-ficha-topo button:not(.hud-ajuda):hover {
   color: #fff;
 }
 .atlas-ficha-identidade {
@@ -60,17 +60,26 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* A LINHA DA CLASSE + O "?" (redesenho, 06/09, pedido do dono: "aplica o
+   mesmo padrão na ficha dos corpos") — `position: relative` ancora a
+   dica (`.hud-dica`, 08-ajustes.css), que flutua sobre esta linha, não
+   sobre a caixinha do botão. */
+.atlas-ficha-classe-linha {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
 .atlas-ficha-classe {
   font-size: 0.54rem;
   letter-spacing: 0.34em;
   text-transform: uppercase;
   color: rgba(200, 214, 235, 0.62);
 }
-/* os dois gestos da escada, em linha e logo abaixo do nome */
+/* OS DOIS GESTOS DA ESCADA viram UM GRUPO `.ajustes-seg` (redesenho,
+   06/09): não são alternância (nenhum "ligado" permanece), então nenhum
+   segmento ganha `.on` — só o hover de sempre do segmentado. */
 .atlas-ficha-escada {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
   margin-bottom: 0.7rem;
 }
 .atlas-ficha-escada:empty {
@@ -91,6 +100,9 @@
   font-size: 0.6rem;
   font-weight: 300;
 }
+/* O TÍTULO em ouro, no vocabulário do `.atlas-gaveta-titulo` (mesma cor,
+   mesmo tracking) — redesenho de 06/09, pedido do dono: "aplica o mesmo
+   padrão na ficha dos corpos". */
 .atlas-ficha-titulo button {
   display: flex;
   justify-content: space-between;
@@ -105,10 +117,10 @@
   letter-spacing: 0.24em;
   text-transform: uppercase;
   font-size: 0.6rem;
-  color: rgba(200, 214, 235, 0.7);
+  color: rgba(255, 214, 150, 0.72);
 }
 .atlas-ficha-titulo button:hover {
-  color: rgba(235, 240, 250, 0.95);
+  color: rgba(255, 214, 150, 0.95);
 }
 .atlas-ficha-seta {
   font-size: 0.7rem;
@@ -119,31 +131,53 @@
   margin: 0;
   padding: 0;
 }
-/* rótulo em cima, valor embaixo — e não duas colunas: a 23rem de largura um
-   valor como "1,898e+27 kg" mais o selo "317,83× Terra" não cabem ao lado de
-   um rótulo, e a coluna estreita quebraria os dois em três linhas cada. */
+/* CADA LINHA VIRA DUAS COLUNAS (redesenho, 06/09): rótulo à esquerda,
+   valor em evidência à direita — a régua de `.ajustes-item`/
+   `.atlas-tempo-linha` aplicada aqui. `grid-template-columns: 1fr auto`
+   deixa a coluna do valor do tamanho do CONTEÚDO (o "1fr" cede para o
+   rótulo), e é essa mesma regra que faz `.larga` empilhar sem marcação
+   extra: uma coluna só, e `dd` desce para a linha de baixo sozinho. */
 .atlas-ficha-linha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.8rem;
+  align-items: baseline;
+  min-height: 2.1rem;
   padding: 0.35rem 0;
 }
 .atlas-ficha-linha + .atlas-ficha-linha {
-  border-top: 1px solid rgba(220, 230, 248, 0.07);
+  border-top: 1px solid rgba(220, 230, 248, 0.1);
 }
 .atlas-ficha-linha dt {
   font-size: 0.58rem;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(200, 214, 235, 0.62);
+  color: rgba(220, 230, 248, 0.62);
 }
 .atlas-ficha-linha dd {
-  margin: 0.15rem 0 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  /* VALOR LONGO QUEBRA DENTRO DA PRÓPRIA COLUNA até 24 caracteres — acima
+     disso o componente marca a linha `.larga` (abaixo) em vez de espremer
+     uma frase em 60% da largura. */
+  max-width: 60%;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.atlas-ficha-valor-linha {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
+  justify-content: flex-end;
   gap: 0.4rem;
 }
 .atlas-ficha-valor {
-  font-size: 0.78rem;
-  color: rgba(235, 240, 250, 0.95);
+  font-size: 0.8rem;
+  color: #fff6e6;
+  font-variant-numeric: tabular-nums;
 }
 /* o "×Terra" — o mesmo âmbar dos números do rodapé do Atlas */
 .atlas-ficha-badge {
@@ -151,20 +185,55 @@
   letter-spacing: 0.1em;
   color: rgba(255, 214, 150, 0.85);
 }
-/* A PROCEDÊNCIA DE CADA NÚMERO, na linha inteira e fria: ela é para ser
-   lida quando se procura, não para competir com o valor. As três cores são
-   as do selo — verde para medido, âmbar para derivado. */
+/* A PROCEDÊNCIA DE CADA NÚMERO, sob o valor e fria: ela é para ser lida
+   quando se procura, não para competir com o valor. A bolinha (molde do
+   `.atlas-selo-bolinha`) repete a cor do texto por `currentcolor`, e as
+   três cores são as do selo — verde para medido, âmbar para derivado; o
+   artístico fica na cor neutra de sempre, sem selo próprio. */
 .atlas-ficha-proc {
-  flex-basis: 100%;
-  font-size: 0.54rem;
+  grid-column: 1 / -1;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.52rem;
   letter-spacing: 0.06em;
   color: rgba(200, 214, 235, 0.45);
+}
+.atlas-ficha-proc::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  flex: none;
+  border-radius: 50%;
+  background: currentcolor;
 }
 .atlas-ficha-proc.medido {
   color: rgba(150, 220, 180, 0.6);
 }
 .atlas-ficha-proc.derivado {
   color: rgba(255, 214, 150, 0.55);
+}
+/* A LINHA LARGA (redesenho, 06/09) — texto longo (frases, listas de
+   catálogo) não cabe nos 60% de `dd` sem virar uma coluna de uma palavra;
+   uma coluna só faz o valor descer para debaixo do rótulo, como a
+   `.ajustes-item--largo` da Qualidade. O componente decide (mais de ~24
+   caracteres), o CSS só muda a grade. */
+.atlas-ficha-linha.larga {
+  grid-template-columns: 1fr;
+  row-gap: 0.3rem;
+}
+.atlas-ficha-linha.larga dd {
+  max-width: 100%;
+  align-items: flex-start;
+  text-align: left;
+}
+.atlas-ficha-linha.larga .atlas-ficha-valor-linha {
+  justify-content: flex-start;
 }
 
 /* O SELO DE HONESTIDADE, DOBRADO EM UMA LINHA (item 61, 22/08): canto
@@ -389,8 +458,12 @@
 }
 /* a leitura em cima, os controles embaixo. Uma linha só cabia à custa
    de encostar no selo quando o rótulo da taxa crescia — e rótulo que
-   muda de comprimento a cada clique não pode governar o layout */
+   muda de comprimento a cada clique não pode governar o layout.
+   `position: relative` ANCORA o "?" da barra (`comAjuda`, HudDoAtlas.tsx)
+   — mesma régua de `.ajustes-item`/`.atlas-gaveta-linha`: a dica flutua
+   sobre a LINHA, não sobre a caixinha de 1rem do botão. */
 .atlas-tempo-linha {
+  position: relative;
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
@@ -407,46 +480,93 @@
   letter-spacing: 0.1em;
   color: rgba(235, 240, 250, 0.92);
 }
-/* A LINHA DOS CONTROLES QUEBRA — em QUALQUER largura, e não só na
-   quebra estreita do CSS. Sem isto ela é uma linha que não cede: os
-   seis controles são pedidos em `rem` (crescem com `?ui=`) dentro de
-   uma coluna em `vw` (que não cresce), e o que não cabe era PINTADO
-   FORA da coluna, por cima do selo — medido em 2026-08-20 a 768, 899 e
-   até 1.280 px com `?ui=1,4` (`scrollWidth > clientWidth`, e na
-   captura o "Época" escrito em cima de "O QUE NESTA VISTA É AJUSTADO").
-   A garantia geométrica do rodapé (a coluna acaba em 52vw) só vale se
-   o conteúdo respeitar a coluna, e quem faz respeitar é a quebra.
-   Ela também é o que a declaração do retângulo útil já supunha desde a
-   F4 (`LARGURA_DA_QUEBRA_DO_TEMPO_PX`): a base pagava por uma quebra
-   que o CSS não fazia. */
+/* A DICA DA BARRA ABRE PARA CIMA — a barra vive no rodapé (`.atlas-rodape`),
+   então "embaixo da linha" a jogaria para fora da tela. Mesma régua das
+   duas últimas linhas de Ajustes (08-ajustes.css), lido ao contrário: lá
+   é EXCEÇÃO perto do fim do painel, aqui é a REGRA da casa inteira. */
+.atlas-rodape .hud-dica {
+  top: auto;
+  bottom: calc(100% + 0.3rem);
+}
+/* REDESENHO (06/09, pedido do dono: "aplica o mesmo padrão no painel de
+   Tempo") — os seis botões viram TRÊS GRUPOS `.ajustes-seg` (a peça de
+   `Ajustes.tsx`/08-ajustes.css: moldura, `.on` dourado e tudo o mais já
+   vêm de lá; aqui só mora o que é PRÓPRIO da máquina do tempo). A LINHA
+   QUEBRA em QUALQUER largura, e não só na quebra estreita do CSS: os
+   grupos são pedidos em `rem` (crescem com `?ui=`) dentro de uma coluna
+   em `vw` (que não cresce), e o que não cabe era PINTADO FORA da coluna
+   até 2026-08-20 — ver `LARGURA_DA_QUEBRA_DO_TEMPO_PX`, que é a
+   declaração que paga por esta quebra. */
 .atlas-tempo-botoes {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   margin-top: 0.28rem;
 }
-/* largura fixa: o rótulo da taxa muda de comprimento a cada degrau, e
-   sem isto os botões vizinhos dançariam a cada clique. O número é
-   ABSOLUTO de propósito — `min(11rem, 100%)` parece mais seguro e é
-   pior: a porcentagem fica indefinida no cálculo de largura intrínseca,
-   a linha dos controles encolhe como se o botão medisse o texto dele, e
-   aí quebra em duas ONDE CABIA EM UMA (medido: 1.280 px com `?ui=1`, a
-   linha do tempo 34 px mais alta sem motivo). O teto da coluna estreita
-   mora na fatia 6, onde 11rem realmente não cabe. */
-.atlas-tempo-taxa {
-  min-width: 11rem;
-  /* o rótulo é uma frase, não um selo: com o tracking dos botões da
-     casa ele passava de 240 px e a linha alcançava o selo */
-  letter-spacing: 0.1em;
+/* SEM BORDA ENTRE ELES: os três grupos são peças distintas (sentido,
+   velocidade, referência), e uma borda contínua os leria como um só. */
+.atlas-tempo-botoes .ajustes-seg {
+  border-radius: 2px;
 }
-.atlas-tempo-botoes .hud-btn[aria-pressed='true'] {
-  border-color: rgba(255, 214, 150, 0.85);
-  background: rgba(255, 214, 150, 0.16);
-  color: #fff;
+/* A BARRA DE MESA NÃO DIVIDE A LINHA EM TERÇOS — a régua de `.ajustes-seg`
+   vem com `flex: 1` no botão (para preencher a coluna fixa de um painel),
+   e herdada sem ajuste aqui ela ENCOLHIA os três grupos até truncar
+   "AO VI…"/"ÉPOCA" antes de a linha quebrar: cada grupo é tamanho de
+   CONTEÚDO, e quem não cabe vai para a linha de baixo (`flex-wrap`, acima),
+   nunca fica espremido na de cima. */
+.atlas-rodape .atlas-tempo-botoes {
+  gap: 0.6rem;
 }
-.atlas-tempo-botoes .hud-btn:disabled {
+.atlas-rodape .atlas-tempo-botoes .ajustes-seg {
+  flex: 0 0 auto;
+  width: auto;
+}
+.atlas-rodape .atlas-tempo-botoes .ajustes-seg button {
+  flex: 0 0 auto;
+  width: auto;
+  white-space: nowrap;
+  min-width: max-content;
+  overflow: visible;
+  text-overflow: clip;
+}
+/* ⏸ (já parado) e Época (já na época, já parado) — a mesma pele apagada
+   que `.ajustes-seg` não precisava até aqui, porque nenhum segmento de
+   Ajustes se desabilita. */
+.atlas-tempo-botoes .ajustes-seg button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+/* O RÓTULO DA TAXA muda de comprimento a cada degrau (de "1×" a "115,7
+   dias/s"), e sem largura mínima os grupos vizinhos dançariam a cada
+   clique — a mesma razão de sempre, agora no GRUPO em vez do botão só.
+   `min(13rem, 100%)` continua sendo pior que o absoluto: a porcentagem
+   fica indefinida no cálculo de largura intrínseca (comentário histórico
+   em `retanguloDoAtlas.ts`). 13rem é o piso do rótulo mais comprido da
+   escada ("16,7 minutos por segundo"/"16.7 minutes per second") com a
+   largura de conteúdo que a barra de mesa ganhou acima — sem ele o grupo
+   ainda pulava de tamanho a cada clique. */
+.atlas-tempo-taxa-seg {
+  min-width: 13rem;
+}
+/* O RÓTULO EM SI é dourado FIXO — item 149's redesign: a taxa não é um
+   interruptor de dois estados (não tem "desligada"), é uma AÇÃO que
+   sempre avança um degrau, e o "›" ao lado é quem diz isso. Pintá-la só
+   quando "ativa" (como os outros segmentos) mentiria uma alternância que
+   não existe. */
+.atlas-tempo-taxa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  color: #fff6e6;
+  /* o rótulo é uma frase, não um selo: com o tracking do segmentado
+     normal (0,06em) ela ainda cabia, mas 0,1em é o que a casa já usava
+     aqui e a troca de pele não muda a régua de leitura */
+  letter-spacing: 0.1em;
+}
+.atlas-tempo-taxa-seta {
+  color: rgba(255, 214, 150, 0.85);
+  font-size: 0.62rem;
 }
 .atlas-tempo-aviso {
   margin: 0.22rem 0 0;
@@ -456,34 +576,119 @@
   color: rgba(255, 214, 150, 0.85);
 }
 
+/* ---- A GAVETA (telefone) — as mesmas peças, em COLUNA ----------------
+   Cada `.ajustes-seg` vira sua própria LINHA cheia (a leitura do
+   mockup: TRANSPORTE / VELOCIDADE / REFERÊNCIA, uma embaixo da outra),
+   em vez de flutuarem lado a lado como na barra de mesa. Só CSS muda —
+   a marcação de `BarraDoTempo` é a mesma nos dois lugares (item 3 do
+   pedido do dono). */
+.atlas-gaveta .atlas-tempo {
+  /* a coluna da barra de mesa alinha ao início; na folha tudo estica,
+     senão os grupos ficam com a largura do mais largo (208 px, foto 06/09) */
+  align-items: stretch;
+}
+.atlas-gaveta .atlas-tempo-botoes {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+.atlas-gaveta .atlas-tempo-botoes .ajustes-seg {
+  width: 100%;
+}
+/* O RÓTULO DE CADA GRUPO (`comRotulos`, HudDoAtlas.tsx) — só existe dentro
+   da gaveta: mesmo átomo `.ajustes-item` (rótulo à esquerda, controle à
+   direita), com o nome que a barra de mesa dispensa porque os próprios
+   botões já dizem o que cada grupo é. Abaixo de 760px o rótulo sobe para
+   a própria linha e o controle ocupa a largura toda — a mesma quebra de
+   `.ajustes-item` em 08-ajustes.css. */
+.atlas-tempo-grupo {
+  display: grid;
+  grid-template-columns: 1fr 15rem;
+  align-items: center;
+  column-gap: 0.8rem;
+  width: 100%;
+}
+.atlas-tempo-rotulo {
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(235, 240, 250, 0.9);
+}
+.atlas-tempo-grupo .ajustes-seg,
+/* mais específico que a regra da barra de mesa (`.atlas-rodape … .ajustes-seg`,
+   flex 0 0 auto / width auto): na folha do celular a gaveta mora DENTRO do
+   rodapé, e sem isto o grupo ficava com metade da largura (foto 06/09) */
+.atlas-rodape .atlas-gaveta .atlas-tempo-grupo .ajustes-seg,
+.atlas-rodape .atlas-gaveta .atlas-tempo-botoes .ajustes-seg {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+}
+.atlas-rodape .atlas-gaveta .atlas-tempo-botoes .ajustes-seg button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+@media (max-width: 760px) {
+  .atlas-tempo-grupo {
+    grid-template-columns: 1fr;
+    row-gap: 0.3rem;
+  }
+}
+/* A LINHA "INSTANTE DO CÉU" no padrão `.ajustes-item`: rótulo à esquerda,
+   valor em EVIDÊNCIA à direita — a régua exata que o dono pediu (0,78rem,
+   #fff6e6, números tabulares para o relógio não dançar dígito a dígito). */
+.atlas-gaveta .atlas-tempo-linha {
+  justify-content: space-between;
+  min-height: 2.3rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid rgba(220, 230, 248, 0.1);
+}
+.atlas-gaveta .atlas-tempo-data {
+  font-size: 0.78rem;
+  color: #fff6e6;
+  font-variant-numeric: tabular-nums;
+}
+
 /* a gaveta de camadas: mesmo desenho do painel de Ajustes — é o mesmo
    tipo de coisa (diálogo de controle), e um segundo vocabulário visual
    para a mesma função seria ruído. O "mesmo desenho" deixou de ser
    promessa em comentário: a marcação pede `hud-cartao hud-dialogo`
    (fatia 1) e aqui fica só o que é DELA. */
 .atlas-gaveta {
-  /* 17 linhas em três famílias desde o item 61 (22/08), e os nomes mais
-     longos da tabela — "Extinção por partícula", "Buraco negro (Sgr A✱)"
-     — não cabiam nos 15rem de quando a gaveta mostrava seis. O termo do
-     `min()` continua sendo a tela: em janela estreita ela encolhe. */
-  width: min(17rem, calc(100vw - 3.2rem));
+  /* PADRÃO DE AJUSTES (06/09): a linha ganhou o "?" de ajuda e o
+     interruptor à direita, e os 17rem de quando a gaveta era só nome +
+     caixa não sobravam para os dois. 22rem é o mesmo teto de largura
+     que a paleta de busca usa. O termo do `min()` continua sendo a
+     tela: em janela estreita ela encolhe. */
+  width: min(22rem, calc(100vw - 3.2rem));
   /* A GAVETA PARA ACIMA DO SELO desde o item 61 (22/08) — a 768×600 com
      `?ui=1,4` ela ficava POR CIMA dele, e o mockup do dono mostrou a frase
      do selo cortada em "…" por baixo. A conta que a faz parar é
      `--teto-dialogo` e vem da fatia 1: era daqui e da ficha, escrita duas
      vezes, e agora é dos quatro diálogos. */
 }
+/* GAP + "✕" empurrado por `margin-left: auto` em vez de `space-between`
+   desde 06/09 — a gaveta do Tempo intercala um "?" entre o título e o
+   fechar (`.atlas-tempo-topo`, abaixo), e `space-between` com três
+   filhos jogaria o "?" para o MEIO da linha. Com dois filhos (o caso de
+   Camadas, sempre) o resultado visual é idêntico ao de antes. */
 .atlas-gaveta-topo {
+  position: relative;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   font-size: 0.6rem;
   color: rgba(200, 214, 235, 0.7);
   margin-bottom: 0.7rem;
 }
-.atlas-gaveta-topo button {
+.atlas-gaveta-topo button:not(.hud-ajuda) {
+  margin-left: auto;
   border: 0;
   background: none;
   color: inherit;
@@ -492,8 +697,20 @@
   line-height: 1;
   padding: 0.2rem 0.3rem;
 }
-.atlas-gaveta-topo button:hover {
+.atlas-gaveta-topo button:not(.hud-ajuda):hover {
   color: #fff;
+}
+/* O TÍTULO + "?" da gaveta do Tempo (redesenho, mesmo pedido de sempre:
+   "aplica o mesmo padrão"). O `position: relative` que ancora a dica do
+   "?" (`.hud-dica`, 08-ajustes.css) mora no `.atlas-gaveta-topo`, acima
+   — não aqui: uma caixinha desta largura (~5rem) ancoraria a dica
+   estreita e a viraria uma coluna de uma palavra por linha, o mesmo
+   defeito que o comentário de `.hud-dica` já registra para
+   `.ajustes-item`. Esta caixa só agrupa título e "?" visualmente. */
+.atlas-tempo-topo {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 /* AS TRÊS FAMÍLIAS (item 61). O título de cada grupo carrega a
    contagem à direita — "3/4" —, e é ela que diz, sem varrer as caixas,
@@ -520,27 +737,46 @@
   letter-spacing: 0.1em;
   color: rgba(200, 214, 235, 0.55);
 }
-/* 0,18rem e não 0,22: com 17 linhas em três famílias a gaveta passou a
-   disputar altura com o selo (o teto dela desconta os dois), e quatro
-   centésimos de rem por linha são os ~22 px que fazem as três famílias
-   caberem inteiras numa janela de mesa. O que não couber continua
-   rolando — o teto é geometria, não gosto. */
+/* A LINHA (06/09) — o padrão de Ajustes aplicado à gaveta: rótulo (com
+   o "?") à esquerda, interruptor à direita. `position: relative` ancora
+   a dica da mesma forma que `.ajustes-item` faz em 08-ajustes.css — ela
+   flutua sobre a LINHA inteira, não só sobre a caixinha do "?". A
+   altura mínima e a separação em fio são as do painel irmão: é o mesmo
+   tipo de coisa, e um segundo vocabulário aqui seria ruído.*/
 .atlas-gaveta-linha {
+  position: relative;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.18rem 0;
+  min-height: 2.3rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid rgba(220, 230, 248, 0.1);
   cursor: pointer;
 }
-.atlas-gaveta-linha input {
-  accent-color: rgba(255, 200, 130, 0.9);
-  cursor: pointer;
+.atlas-gaveta-familia .atlas-gaveta-linha:last-child {
+  border-bottom: none;
 }
-/* A COLUNA DO GLIFO existe em TODA linha, com ou sem glifo: oito das
-   dezenove têm ícone (a oitava é `nonomes`, item 82 — quem conta é
-   `atlasConfig.test.ts`), e sem a coluna reservada os nomes da mesma
-   família começariam em dois recuos diferentes. `flex: 0 0 auto` para a
-   célula vazia não encolher a zero. */
+.atlas-gaveta-rotulo-caixa {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+/* O RÓTULO — mesma caixa alta espaçada do painel de Ajustes
+   (`.ajustes-rotulo`), para as duas telas contarem a mesma linguagem. */
+.atlas-gaveta-nome {
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(235, 240, 250, 0.9);
+}
+/* A COLUNA DO GLIFO existe em TODA linha, com ou sem glifo: nove das
+   vinte têm ícone (quem conta é `atlasConfig.test.ts`), e sem a coluna
+   reservada os nomes da mesma família começariam em dois recuos
+   diferentes. `flex: 0 0 auto` para a célula vazia não encolher a zero. */
 .atlas-gaveta-icone {
   flex: 0 0 auto;
   width: 1.1rem;
@@ -548,8 +784,71 @@
   color: rgba(255, 214, 150, 0.8);
 }
 
-/* A PALETA DE BUSCA (F3): mesmo desenho da gaveta e do painel de
-   Ajustes — é o mesmo tipo de coisa (diálogo ancorado sob a barra de
+/* O INTERRUPTOR — o `<input type="checkbox">` de sempre (o juiz de a11y
+   conta as vinte caixas e o teclado/espaço continuam funcionando: só a
+   PELE muda), desenhado como pílula no molde do segmento ligado de
+   Ajustes (`.ajustes-seg button.on`) — mesmo dourado, mesmo brilho.
+   NOME NEUTRO (`hud-`, não `atlas-gaveta-`) desde o redesenho da ficha
+   (06/09, pedido do dono: "aplica o mesmo padrão na ficha dos corpos"):
+   o interruptor do "Relevo inventado" precisa da MESMA pílula, e uma
+   segunda cópia do CSS por causa do nome seria a mesma peça contada
+   duas vezes. */
+.hud-interruptor {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  position: relative;
+  margin: 0;
+  width: 2.2rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  background: rgba(8, 12, 22, 0.5);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.hud-interruptor::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0.15rem;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: rgba(200, 214, 235, 0.55);
+  transform: translateY(-50%);
+  transition: left 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.hud-interruptor:checked {
+  background: rgba(255, 214, 150, 0.34);
+  border-color: rgba(255, 214, 150, 1);
+  box-shadow: 0 0 10px rgba(255, 214, 150, 0.28);
+}
+.hud-interruptor:checked::after {
+  left: calc(100% - 0.85rem - 0.15rem);
+  background: #fff6e6;
+  box-shadow: 0 0 6px rgba(255, 214, 150, 0.6);
+}
+.hud-interruptor:focus-visible {
+  outline: 2px solid rgba(255, 214, 150, 0.85);
+  outline-offset: 2px;
+}
+
+/* A DICA da gaveta paira sobre a LINHA (mesma régua de `.ajustes-item`
+   em 08-ajustes.css). A gaveta tem MUITO mais linhas que o painel de
+   Ajustes — abrir sempre para baixo cortaria a dica das últimas de cada
+   família no `overflow-y: auto` do diálogo, então a régua aqui é o
+   `nth-last-of-type` DENTRO da família (a mesma dela é sempre um
+   `label`, como a linha de ação de Ajustes é sempre um `div`). */
+.atlas-gaveta-familia .atlas-gaveta-linha:nth-last-of-type(-n + 2) .hud-dica {
+  top: auto;
+  bottom: calc(100% + 0.3rem);
+}
+
+/* A PALETA DE BUSCA (F3, redesenho de 06/09 — pedido do dono: "aplica o
+   mesmo padrão no painel de Busca"): mesmo cabeçalho do painel de
+   Ajustes (título + "?" + ✕) e mesma linha-por-resultado da gaveta de
+   Camadas — é o mesmo tipo de coisa (diálogo ancorado sob a barra de
    controles), e um segundo vocabulário visual para a mesma função seria
    ruído. Ela é a única peça daqui que serve DUAS fases: o Atlas e o voo
    livre. Tudo em rem puro, sem termo vw: uma paleta que mudasse de
@@ -558,20 +857,82 @@
    Pele e ancoragem vêm de `hud-cartao hud-dialogo` (fatia 1); aqui fica
    a largura, que é a única coisa que distingue as três caixas. */
 .atlas-busca {
-  width: min(22rem, calc(100vw - 3.2rem));
+  width: min(24rem, calc(100vw - 3.2rem));
+  /* SÓ AQUI: o DOM tem a caixa de texto ANTES do cabeçalho (comentário no
+     componente explica o porquê — `useDialogFocus` foca o primeiro
+     focável do DOM ao abrir, e é a caixa quem tem de receber o foco). O
+     `flex` + `order` do cabeçalho é o que devolve a ordem VISUAL certa
+     sem mexer no foco: CSS decide o que se vê, o DOM decide quem foca. */
+  display: flex;
+  flex-direction: column;
 }
+/* O CABEÇALHO, no molde de `.ajustes-topo` (08-ajustes.css): título à
+   esquerda, "?" e ✕ à direita. A caixa de texto desceu para a linha de
+   baixo — dividir a largura com o cabeçalho a deixava curta demais para
+   um nome de estrela inteiro. */
 .atlas-busca-topo {
+  /* VISUALMENTE PRIMEIRO apesar de vir depois no DOM — ver o comentário
+     de `.atlas-busca` acima. */
+  order: -1;
+  /* ÂNCORA da dica do "?" (`.hud-dica`, 08-ajustes.css): ela flutua
+     sobre a LINHA inteira, e a linha é quem tem de ser o ancestral
+     posicionado — mesma régua de `.ajustes-item`/`.atlas-gaveta-linha`. */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid rgba(220, 230, 248, 0.16);
 }
-/* a única caixa da casa que recebe texto do visitante. Herda o desenho
-   do botão MENOS o tracking: nome de estrela com 0,22em de espaçamento
-   entre letras vira sopa, e aqui o que se lê é justamente o nome */
+.atlas-busca-topo > span {
+  /* o título NÃO estica: o ? fica colado nele, como nos outros painéis;
+     quem vai para a ponta é o ✕ (margin-left: auto abaixo) */
+  flex: 0 0 auto;
+}
+.atlas-busca-topo .atlas-busca-fechar {
+  margin-left: auto;
+}
+.atlas-busca-topo .atlas-busca-fechar {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+}
+.atlas-busca-topo .atlas-busca-fechar:hover {
+  color: rgba(255, 214, 150, 0.95);
+}
+/* A LINHA DA CAIXA, sozinha — a única da casa que recebe texto do
+   visitante. Herda o desenho do botão MENOS o tracking: nome de estrela
+   com 0,22em de espaçamento entre letras vira sopa, e aqui o que se lê é
+   justamente o nome. */
+.atlas-busca-campo-linha {
+  position: relative;
+  margin-top: 0.6rem;
+}
+/* A LUPA é ornamento do campo que já diz o que é pelo `aria-label` — por
+   isso `aria-hidden`, como o ícone das linhas da gaveta de Camadas. Um
+   `span` posicionado e não `::before`: `<input>` é elemento substituído
+   e não gera pseudo-elemento em todo motor. */
+.atlas-busca-lupa {
+  position: absolute;
+  left: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 0.85rem;
+  color: rgba(200, 214, 235, 0.55);
+}
 .atlas-busca-campo {
-  flex: 1;
-  min-width: 0;
-  padding: 0.45rem 0.6rem;
+  width: 100%;
+  height: 2.3rem;
+  box-sizing: border-box;
+  padding: 0 0.6rem 0 1.85rem;
   border: 1px solid rgba(220, 230, 248, 0.35);
   background: rgba(8, 12, 22, 0.55);
   color: rgba(235, 240, 250, 0.95);
@@ -585,56 +946,87 @@
   outline: 1px solid rgba(255, 219, 164, 0.95);
   outline-offset: 2px;
 }
-.atlas-busca-fechar {
-  border: 0;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.8rem;
-  line-height: 1;
-  padding: 0.2rem 0.3rem;
-}
-.atlas-busca-fechar:hover {
-  color: #fff;
-}
 .atlas-busca-lista {
   list-style: none;
   margin: 0.6rem 0 0;
   padding: 0;
   /* teto em rem, não em vh: a lista tem no máximo oito linhas por
      contrato (LIMITE_TECLADO), e um teto em vh a faria rolar numa
-     janela baixa mesmo com três resultados. 18rem = as oito linhas
-     medidas (35,2 px cada a 16 px de raiz) e mais uma folga: com 17rem
-     a última ficava cortada por 10 px, que é o jeito de uma lista
-     parecer ter mais coisa do que tem */
-  max-height: 18rem;
+     janela baixa mesmo com três resultados. 19rem = as oito linhas de
+     2,3rem cada mais uma folga — sem ela a última fica cortada, que é o
+     jeito de uma lista parecer ter mais coisa do que tem */
+  max-height: 19rem;
   overflow-y: auto;
 }
+/* CADA RESULTADO é uma LINHA de duas colunas, no molde da gaveta de
+   Camadas: nome (+ selo de tipo) à esquerda, nota à direita — não mais
+   duas linhas empilhadas por item. */
 .atlas-busca-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 0.6rem;
+  min-height: 2.3rem;
+  box-sizing: border-box;
   padding: 0.3rem 0.45rem;
   border-left: 2px solid transparent;
+  border-bottom: 1px solid rgba(220, 230, 248, 0.1);
   cursor: pointer;
+}
+.atlas-busca-item:last-child {
+  border-bottom: none;
+}
+.atlas-busca-item:hover {
+  background: rgba(220, 230, 248, 0.06);
 }
 /* a escolha corrente — o mesmo jeito que a máquina do tempo mostra o
    botão apertado: borda e fundo, nunca movimento */
 .atlas-busca-item.ativo {
   border-left-color: rgba(255, 214, 150, 0.85);
-  background: rgba(255, 214, 150, 0.12);
+  background: rgba(255, 214, 150, 0.22);
+}
+.atlas-busca-nome-linha {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
 }
 .atlas-busca-nome {
+  font-size: 0.72rem;
   letter-spacing: 0.06em;
+  color: rgba(235, 240, 250, 0.92);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atlas-busca-item.ativo .atlas-busca-nome {
+  color: #fff6e6;
+}
+/* O SELO DE TIPO — planeta, lua, estrela, anão… (`tipoDaEntrada` no
+   componente). Moldura de contorno só, no vocabulário do `.ajustes-seg`
+   sem o preenchimento: aqui é rótulo, não botão. */
+.atlas-busca-tipo {
+  flex: 0 0 auto;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid rgba(220, 230, 248, 0.28);
+  border-radius: 2px;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 214, 150, 0.75);
 }
 .atlas-busca-nota {
+  flex: 0 0 auto;
   font-size: 0.58rem;
   letter-spacing: 0.1em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: rgba(200, 214, 235, 0.62);
 }
-/* a linha viva. Altura para DUAS linhas porque o estado vazio mora
-   aqui: "não achei, e olha o que funciona" é mais longo que "8
-   estrelas", e a caixa não pode pular de tamanho entre os dois */
+/* a linha viva. Altura para DUAS linhas porque o estado de contagem e o
+   vazio podem quebrar em telas estreitas mesmo curtos agora — a caixa
+   não pode pular de tamanho entre os estados */
 .atlas-busca-aviso {
   margin: 0.55rem 0 0;
   min-height: 2.4rem;
@@ -642,6 +1034,18 @@
   line-height: 1.5;
   letter-spacing: 0.08em;
   color: rgba(200, 214, 235, 0.62);
+}
+
+/* TELA ESTREITA — a nota desce para debaixo do nome quando as duas
+   colunas apertam demais (mesmo limiar de 08-ajustes.css). */
+@media (max-width: 760px) {
+  .atlas-busca-item {
+    grid-template-columns: 1fr;
+    row-gap: 0.15rem;
+  }
+  .atlas-busca-nota {
+    text-align: left;
+  }
 }
 
 /* --- indicador de warp --- */
@@ -738,4 +1142,15 @@
   .atlas-bussola {
     transition: none;
   }
+}
+
+/* O VALOR NÃO QUEBRA: "1,4" e "UA" em linhas separadas era o efeito da
+   coluna estreita (foto 06/09). Valor curto fica inteiro à direita; o
+   valor longo já tem a linha `.larga`, empilhada, e continua quebrando. */
+.atlas-ficha-linhas dd:not(.larga dd) .atlas-ficha-valor-linha,
+.atlas-ficha-linhas .atlas-ficha-valor-linha {
+  white-space: nowrap;
+}
+.atlas-ficha-linhas .larga .atlas-ficha-valor-linha {
+  white-space: normal;
 }

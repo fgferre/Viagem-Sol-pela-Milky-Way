@@ -68,7 +68,8 @@ do repositório atlas-orbital não vale aqui.
   `world/corpos/gigante.ts` (τ, cor e sombra do anel). O segundo binário
   dele (retro/frente/lado escuro) ficou de fora: normalizado por canal, a
   razão entre as faces se perdeu na assadura. Com ele, o canal `ring` da
-  placa (`texturas.json`) deixou de ser pedido por Saturno.
+  placa deixou de ser pedido por Saturno; o item 137 (04/09/2026) apagou
+  o canal e os 8 arquivos de `public/textures/atlas/saturn/ring*`.
 
 ## Os mosaicos das seis luas de Saturno (item 138)
 

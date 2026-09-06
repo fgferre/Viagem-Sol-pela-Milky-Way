@@ -4,7 +4,7 @@
 // Nada de fetch, de three e de React aqui — o array `named` entra
 // injetado e a UI da F3 monta a paleta em cima do que sai.
 //
-// PROVENIÊNCIA (PLANO-ATLAS §2, linha `hygNameIndex` — "Renasce"): do
+// PROVENIÊNCIA (`git show 923dc20:docs/PLANO-ATLAS.md` §2, linha `hygNameIndex` — "Renasce"): do
 // doador atlas-orbital vem a INTENÇÃO — normalização NFD (teclado
 // pt-BR digita sem acento), rubrica de score de 4 degraus, chave dupla
 // abreviação/glifo grego. O código é novo e o dado é OUTRO: a casa

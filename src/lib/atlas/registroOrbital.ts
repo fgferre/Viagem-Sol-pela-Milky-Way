@@ -1,6 +1,6 @@
 // ============================================================
 // Registro orbital — que modelo responde por cada corpo, em que
-// janela, com que acurácia MEDIDA. Dado + renasce (PLANO-ATLAS §0):
+// janela, com que acurácia MEDIDA. Dado + renasce (doutrina de travessia, docs/NORTE.md):
 // as constantes de acurácia e as janelas migram verbatim do doador
 // (atlas-orbital/src/lib/orbital/registry.ts:37-125, VALIDITY_RANGES);
 // a ESTRUTURA renasce, porque a máquina de providers/fallback do

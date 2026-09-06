@@ -1,7 +1,7 @@
 // ============================================================
 // A ESCALA DA UI — o tamanho do texto do HUD, num número só.
 //
-// O CONTRATO (Onda 5/F6, PLANO-ATLAS §2.3 "UI Scale"): `?ui=<fator>`
+// O CONTRATO (Onda 5/F6, `git show 923dc20:docs/PLANO-ATLAS.md` §2.3 "UI Scale"): `?ui=<fator>`
 // na URL e `font-size` na RAIZ. Não é slider de gosto guardado num
 // canto: é a porta pela qual quem não enxerga texto pequeno lê o HUD
 // inteiro — legenda, selo, máquina do tempo, rótulos das estrelas.

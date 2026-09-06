@@ -14,9 +14,9 @@
 // o cursor fica na caixa de texto (senão cada tecla digitada exigiria
 // devolver o foco à caixa) e a opção corrente é apontada por
 // `aria-activedescendant`. As setas escolhem, o Enter confirma. O efeito
-// colateral bom: o Tab tem só dois destinos aqui dentro (a caixa e o
-// fechar), então o foco preso não vira uma volta de oito passos por uma
-// lista que muda a cada tecla.
+// colateral bom: o Tab tem só três destinos aqui dentro (a caixa, o "?"
+// e o fechar), então o foco preso não vira uma volta de oito passos por
+// uma lista que muda a cada tecla.
 //
 // FILHA DIRETA de `.hud-root` (montada no App): a regra do `.bare-mode`
 // que apaga o HUD no `?shot=2` só alcança filhos diretos, e uma paleta
@@ -33,6 +33,8 @@ import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
 import { numeroDoIdioma } from '../three/tempoDoAtlas';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
+import { useDicaPresa } from '../hooks/useDicaPresa';
+import { Ajuda } from './Ajuda';
 
 /**
  * QUANTOS RESULTADOS, por dispositivo. No teclado são 8 (o mesmo
@@ -70,12 +72,27 @@ function notaDaEntrada(entrada: EntradaDaBusca): string {
   if (entrada.tipo === 'lugar') {
     return notaDeDistancia(entrada.lugar.d * UA_POR_PC, numeroDoIdioma) ?? '';
   }
-  const { rUA, classe: chaveDaClasse } = entrada.corpo;
-  const classe = classeEmTexto(chaveDaClasse);
-  const distancia = notaDeDistancia(rUA, numeroDoIdioma);
-  // o Sol não orbita nada (nota é a classe); uma lua sem efeméride
-  // ainda não tem distância MEDIDA — nome honesto, número só medido
-  return distancia ? `${distancia} · ${classe}` : classe;
+  // A CLASSE SAIU DAQUI (redesenho, pedido do dono: "aplica o mesmo
+  // padrão no painel de Busca") — ela virou o selo `.atlas-busca-tipo`
+  // (ver `tipoDaEntrada`), e repeti-la na nota seria a mesma coisa duas
+  // vezes na mesma linha. O Sol e uma lua sem efeméride ficam sem nota
+  // (nome honesto, número só medido), não com a classe sozinha.
+  return notaDeDistancia(entrada.corpo.rUA, numeroDoIdioma) ?? '';
+}
+
+/**
+ * O SELO DE TIPO (`.atlas-busca-tipo`) — planeta, lua, estrela, anão…
+ * Vem de dado que já existe: a `classe` do corpo (a mesma que a nota
+ * mostrava antes) ou, para uma estrela nomeada, a própria classe
+ * "estrela" (`classe.estrela`, a mesma chave que o Sol usa). UM LUGAR
+ * não tem `classe` na `LugarBuscavel` — inventar uma aqui seria a
+ * mesma mentira que a nota já recusa (comentário acima), e por isso o
+ * selo simplesmente não aparece nessa linha.
+ */
+function tipoDaEntrada(entrada: EntradaDaBusca): string | null {
+  if (entrada.tipo === 'estrela') return classeEmTexto('estrela');
+  if (entrada.tipo === 'corpo') return classeEmTexto(entrada.corpo.classe);
+  return null;
 }
 
 /**
@@ -114,6 +131,10 @@ export function PaletaDeBusca({
   // cascata de renders que ele custaria.
   const dialogo = useDialogFocus('busca', true, onFechar);
   const idioma = useIdioma();
+  // A DICA FIXA (redesenho, mesmo padrão de Ajustes e da gaveta de
+  // Camadas) — só a peça "?" do cabeçalho usa, mas o estado é o mesmo
+  // hook pelo mesmo motivo: fixar-e-desfixar por Esc antes de fechar.
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
   const [consulta, setConsulta] = useState('');
   const [ativo, setAtivo] = useState(0);
   // a digitação é urgente, a lista é que pode esperar: o `useDeferredValue`
@@ -221,8 +242,33 @@ export function PaletaDeBusca({
       className="hud-cartao hud-dialogo atlas-busca"
       aria-label={t('busca.aria')}
       {...dialogo}
+      onClick={() => {
+        // MESMA REGRA do painel de Ajustes e da gaveta de Camadas: clicar
+        // em qualquer lugar do diálogo desfixa a dica presa — o "?" que a
+        // fixou já parou o próprio clique (`stopPropagation`).
+        if (dicaPresa) limparDica();
+      }}
+      onKeyDownCapture={(evento) => {
+        // ESC COM DICA PRESA desfixa e não fecha — o mesmo Esc de sempre
+        // (fechar a paleta) só chega depois, na bolha, se não houver dica
+        // presa. Sem isto o `busca-smoke`/`julgarDialogo` perderiam o Esc
+        // que fecha de fato quando a dica nunca foi aberta.
+        if (evento.key === 'Escape' && dicaPresa) {
+          evento.stopPropagation();
+          limparDica();
+        }
+      }}
     >
-      <div className="atlas-busca-topo">
+      {/* A CAIXA VEM PRIMEIRO NO DOM, de propósito — mesmo o cabeçalho
+          aparecendo ACIMA dela na tela (`.atlas-busca-topo` tem
+          `order: -1`, só visual). `useDialogFocus` foca o PRIMEIRO
+          focável do DOM ao abrir, e aqui isso não é detalhe: é o campo
+          que precisa nascer com o foco para a digitação valer no
+          instante em que a paleta abre — mover a caixa para depois do
+          "?" e do "✕" no markup roubaria esse foco para o botão de
+          ajuda, e "/" pararia de cair no campo. */}
+      <div className="atlas-busca-campo-linha">
+        <span className="atlas-busca-lupa" aria-hidden="true">⌕</span>
         <input
           type="text"
           className="atlas-busca-campo"
@@ -246,9 +292,20 @@ export function PaletaDeBusca({
           autoComplete="off"
           spellCheck={false}
         />
+      </div>
+
+      <div className="atlas-busca-topo">
+        <span>{t('busca.titulo')}</span>
+        <Ajuda
+          id="busca"
+          rotulo={t('busca.titulo')}
+          texto={t('busca.ajuda', { exemplos })}
+          presa={dicaPresa === 'busca'}
+          onAlternar={() => alternarDica('busca')}
+        />
         <button
           type="button"
-          className="atlas-busca-fechar"
+          className="atlas-busca-fechar hud-fechar"
           onClick={onFechar}
           aria-label={t('busca.fechar')}
         >
@@ -263,22 +320,28 @@ export function PaletaDeBusca({
         role="listbox"
         aria-label={t('busca.lista')}
       >
-        {resultados.map((r, i) => (
-          <li
-            key={r.indice}
-            id={`atlas-busca-op-${i}`}
-            role="option"
-            aria-selected={i === escolhido}
-            className={`atlas-busca-item${i === escolhido ? ' ativo' : ''}`}
-            // o ponteiro só MOVE a escolha; quem confirma é o clique.
-            // Assim o mouse passando por cima nunca enquadra sozinho.
-            onMouseMove={() => setAtivo(i)}
-            onClick={() => confirmar(i)}
-          >
-            <span className="atlas-busca-nome">{nomeDaEntrada(r.entrada)}</span>
-            <span className="atlas-busca-nota">{notaDaEntrada(r.entrada)}</span>
-          </li>
-        ))}
+        {resultados.map((r, i) => {
+          const tipo = tipoDaEntrada(r.entrada);
+          return (
+            <li
+              key={r.indice}
+              id={`atlas-busca-op-${i}`}
+              role="option"
+              aria-selected={i === escolhido}
+              className={`atlas-busca-item${i === escolhido ? ' ativo' : ''}`}
+              // o ponteiro só MOVE a escolha; quem confirma é o clique.
+              // Assim o mouse passando por cima nunca enquadra sozinho.
+              onMouseMove={() => setAtivo(i)}
+              onClick={() => confirmar(i)}
+            >
+              <span className="atlas-busca-nome-linha">
+                <span className="atlas-busca-nome">{nomeDaEntrada(r.entrada)}</span>
+                {tipo && <span className="atlas-busca-tipo">{tipo}</span>}
+              </span>
+              <span className="atlas-busca-nota">{notaDaEntrada(r.entrada)}</span>
+            </li>
+          );
+        })}
       </ul>
 
       {/* SEMPRE montada, como o aviso da máquina do tempo: região viva

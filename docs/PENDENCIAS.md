@@ -1,55 +1,101 @@
 # Pendências — o que está quebrado e o que falta
 
-**Este é o primeiro arquivo a ler.** Lista viva do que está aberto, no jeito
-que o dono vê. O detalhe técnico mora nos commits, no `NORTE.md` e na
-`LEI-DA-ESTRELA.md`.
+Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
+Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 226.**
 
-**A REGRA DE LEITURA — são DOIS arquivos, e não se leem do mesmo jeito
-(25/08, item 98).**
+## O BASTÃO — onde a rodada parou (06/09, madrugada)
 
-- **Este arquivo é o VIVO.** Só mora aqui o que ainda exige obra ou uma
-  decisão dele. **Na janela de quem coordena, lê-se o BASTÃO, a fila que
-  vale, e o item da vez** — o resto se mira com `grep`/trecho (item
-  **106**, 28/08). O "inteiro" de 25/08 era o contraste com o MUSEU, não
-  a ordem de despejar ~1.800 linhas em toda retomada.
-- **[`PENDENCIAS-ARQUIVO.md`](PENDENCIAS-ARQUIVO.md) é o MUSEU:** a história
-  completa e verbatim dos itens fechados, com o número intacto.
-  **Consulta pontual por número (`grep -n '^\*\*61\.' docs/PENDENCIAS-ARQUIVO.md`),
-  NUNCA leitura completa por agente.** Ninguém precisa do museu para
-  trabalhar — ele existe para quando alguém perguntar *por que* uma coisa
-  é como é.
+**06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar
+rodada").** Começou com o veredito dele sobre a gaveta Avançado dos
+Ajustes: "esse menu de seletores ficou muito complexo… muitas
+explicações em letra pequena e pouco claro o que é a opção que está
+sendo alterada, ela não em destaque… o layout está pobre e confuso,
+longe de ser um menu de jogo AAA profissional. as explicações deveriam
+ir para um ícone de interrogação, quando o mouse planar em cima ou
+quando for clicado". Nasceu o molde: uma linha por ajuste, rótulo forte
+à esquerda, controle segmentado à direita com o valor ativo em dourado
+(e o valor que o PRESET escolheu sublinhado), explicação só no botão ?
+(balão no hover/foco, preso no clique), peça única `Ajuda.tsx` +
+`useDicaPresa`. Ele pediu "rótulos longos em uma linha só, e o dourado
+mais forte", e depois "aplica o mesmo padrão" em Camadas
+(interruptores + 20 frases de explicação MINHAS, uma por camada, para
+ele revisar), Busca (cabeçalho com ?, campo com lupa, etiqueta de tipo
+nos resultados), Tempo (data em destaque; folha com Transporte,
+Velocidade, Referência; barra de mesa compacta) e na ficha dos corpos
+(rótulo/valor por linha, procedência com ponto de cor, seções como
+linhas, ? dos selos). Ele estranhou uma foto com o balão aberto:
+"porque tem toda essa explicação aparecendo?" — era eu clicando no ?
+para mostrar; o defeito real (balão abrindo sozinho ao abrir a folha,
+foco caindo no ?) foi consertado no foco de entrada de todo diálogo
+(pula ? e ✕, sem rolar). Fotos: `capturas/ajustes-v5-*.png`,
+`camadas-v2-*.png`, `busca-v3-*.png`, `tempo-v3/v6-*.png`,
+`ficha-v4-*.png`. **224 ABERTO — ele revisa os cinco painéis e as 20
+frases das camadas.** Continuam as duas falhas de juiz anteriores
+(nome na ficha ao mudar o foco; rótulo de Netuno sob a ficha no toque)
+e o 223 (seletores de gás e partículas) segue esperando a verificação
+dele. Servidor: `npm run dev -- --host`.
 
-**DECISÃO SEM NÚMERO MORRE — regra do dono, 25/08.** Toda decisão que exige
-obra vira **item numerado AQUI, no mesmo commit em que é decidida**. Memória
-de coordenador, relatório e conversa são PONTEIRO, nunca casa de trabalho.
-A história de uma linha que instituiu a regra: a reforma da documentação foi
-decidida em **14/08**, nunca ganhou número, e ficou **11 dias perdida**
-debaixo de 318 commits — ver o item **98**.
+## O BASTÃO anterior (05/09, madrugada)
 
-**Como esta lista funciona:**
+**05/09 (rodada de FLUIDEZ, encerrada por ordem dele: "encerrar
+rodada"; ele ainda "não verificou": "siga com o próximo item e no
+final verifico tudo").** Partiu da análise de fluidez do ChatGPT (4
+caminhos): ele mandou "todos são caminhos a testar". Dos quatro só o
+cache do gás parado valeu (12 → 19 fps parado, captura idêntica); os
+outros três foram medidos e descartados (BACKLOG). Depois perguntou por
+"uma forma mais inteligente de montar essas nuvens volumétricas que
+custe menos sem ser com sprite", e ele topou a grade 3D assada: "topo,
+abre o plano e mãos à obra". Decisão dele sobre as versões: "ficam
+todas, isso parece uma oportunidade de um toggle de detalhes gráficos…
+que podem conviver dentro de presets já presentes, incluindo o preset
+custom", e "vamos tentar manter a originalidade como uma das opções
+novas… de forma que possamos voltar ao que é o app hoje". Assim
+nasceram os dois seletores da gaveta Avançado, em `?gas=` e
+`?particulas=`: **223 ABERTO — ele verifica os dois seletores** (Gás
+volumétrico: Original/Fino/Macio; Partículas da galáxia:
+Todas/Metade/Um quarto), os padrões por preset que eu assumi (Cinema:
+Fino + Todas; Alta: Macio + Metade; Performance: Macio + Todas) e as
+fotos em `capturas/nebvol3-t*-tres.png`, `capturas/particulas-t*-tres.png`
+e `capturas/ajustes-gas-volumetrico.png`. Medido em tela real (Cinema,
+DPR 2, t=100 em movimento): gás 12 / 18 / 31 fps; partículas em t=150:
+79 / 43 / 28 ms. Ele estranhou uma tarefa de 4h30 ("tem algo realmente
+acontecendo ou travou?"): era minha régua presa sem teto, matei e pus
+teto. Pediu "tente fazer essa verificação novamente… monitore… timing
+coerente": refeita com vigia, e a conclusão virou — os engasgos de
+segundos eram artefato da régua SEM vsync; com vsync não há engasgo na
+chegada; os três aquecimentos construídos em cima foram revertidos no
+mesmo dia (BACKLOG "ARMADILHA DA RÉGUA"). `PLAN.md` fica aberto com as
+etapas seguintes do gás (pular o vazio; o mapa real de poeira na
+grade). Servidor de rede local: `npm run dev -- --host` e abrir
+`http://10.0.0.78:5173/` no celular.
 
-- O dono reportou um problema? Escreva aqui **naquele momento**, com as
-  palavras dele.
-- Item resolvido **sai da lista**: vira commit, deixa UMA linha aqui e a
-  história vai para o ARQUIVO com o número intacto. Isto é o que está
-  aberto, não um diário.
-- A ordem é por **o quanto incomoda quem usa**, não por dificuldade.
-- **O número é IDENTIDADE, não posição.** Item novo entra no fim da sua
-  seção, com o próximo número livre. Números aposentados não se reaproveitam.
-- **Próximo número livre: 145.** Quem abrir um item usa este e soma um aqui,
-  no mesmo commit — é esta linha que os agentes leem, não a contagem à mão.
-  *(O **107** saiu em 28/08: a varredura de fecho, no `AGENTS.md`. Em
-  31/08 esta linha foi pega TRÊS vezes atrás da verdade — o 114, o 115 e
-  o 122 nasceram sem somá-la; quem abrir item confere o maior número vivo
-  antes de confiar nela. Os 123 e 124 nasceram na faxina da estação do
-  115, conferindo primeiro. Em 01/09 ela ficou de novo atrás — o 129 nasceu
-  com ela ainda em 126; re-somada.)*
+## O BASTÃO anterior (04/09, noite)
 
-A primeira mensagem de uma conversa nova pode ser: *"Leia docs/PENDENCIAS.md e siga."*
+**04/09 (noite — itens pequenos da fila, por ordem dele: "segue os itens
+pequenos da fila").** Antes deles, por decisão dele nesta janela: a lista
+fica nos arquivos (sem GitHub Issues) e o relevo fingido da cor virou o
+botão "Relevo inventado" na ficha, DESLIGADO por padrão, só nos rochosos
+com foto e sem mapa de relevo (`4e453d1..9117cfe`; ele corrigiu minha
+leitura duas vezes — não é superfície de ruído, é o bump da cor por cima
+da foto). **143 FECHADO** (`8de801c`): o juiz de identidade grava o
+servidor de cada lado e só refaz o "antes" no mesmo binário. **137 FECHADO**: os 8 arquivos `ring*` e o canal saíram do código, scripts,
+testes e ASSETS; ele mesmo regenerou o manifesto ("rodei o comando") e o
+`data:verify` passou (261 variantes).
+**132 quase fechado**: de 9 falhas para 1 — aviso do tempo piscando
+(defeito real: o tick repedia a efeméride a cada quadro depois da falha;
+consertado), prova da recarga passa a comparar a CENA sem o painel (1 px
+de raster na linha da exposição, geometria idêntica, medido), a marca da
+âncora passou a contar como vencedora (Urano perde para o anel do Sol),
+censo re-pinado em 17 (3 corpos + 14 estrelas, medido 3×), toque no
+celular mira Netuno (Plutão perde para Netuno pela lei). **A que sobra
+espera a palavra dele**: no telefone a ficha abre como folha de baixo
+(y 327–732 de 844) e cobre o nome tocado — foto em
+`capturas/item132-toque-netuno-390x844.png`; ou a folha encolhe/o alvo
+sobe, ou a prova muda de pergunta. Fotos da abertura re-pinada:
+`capturas/item132-abertura-{1200x900,390x844}.png`. Lição: o gancho de
+`public/data` barra até `git diff` que cite o nome de um script (BACKLOG).
 
----
-
-## O BASTÃO — onde a rodada parou (03/09, noite — FECHO por ordem dele)
 
 **03/09 (3ª janela, noite — FECHO por ordem dele: "amei. faltou
 algo?" → "encerrar rodada").** A onda das TEXTURAS: **147** (as luas de
@@ -405,6 +451,20 @@ dinamismo dos nomes do NASA Eyes".)*
 
 **113.** Os minutos dos juízes — **FECHADO em 30/08**; ARQUIVO.
 
+**210. Viagem solar.** Filme próprio de quatro minutos no mesmo motor
+declarativo do filme galáctico. Conclui com Terra/Lua, Júpiter/Io,
+Saturno/luas e o afastamento final, ciência e unidades revisadas, gate
+visual e exibição completa aprovada pelo dono. *(Era a fila ativa do
+plano do cinema, arquivado — `git show 923dc20:docs/PLANO-CINEMA.md`.)*
+
+**225. Bugs intermitentes — suspeita de memória de vídeo.** Palavra
+dele (06/09): "desconfio que estejamos tendo problemas de memoria de
+video... alguns bugs tem acontecido de forma intermitente. as vezes no
+final do filme desaparece a terra e a lua e fica so o texto do pale
+blue dot". No mesmo dia, na vista de órbita de Netuno, os nomes e os
+anéis dos corpos não apareceram numa sessão e apareceram na seguinte
+("agora apareceu"). Ainda sem causa.
+
 ## MÉDIA — afeta o produto, não salta aos olhos
 
 **134.** A ONDA DE SATURNO — a colheita do projeto Saturn dele (anéis com perfil medido e iluminação mútua; relevo das luas; nove luas esculpidas com o grão dele; jatos de Encélado; anéis E e F, raios do B, ondas de Dáfnis) — **FECHADA em 02/09**: cinco fases feitas, S3c pela palavra dele ("melhorou bastante... deixe do jeito que ficou"), lista do §19 aprovada e rodada (suíte 1×, z-fighting, ab-identidade); ARQUIVO.
@@ -455,15 +515,11 @@ Plutão, Caronte, Palas, Hígia, Haumea, Makemake, Éris, Quaoar (18).
 Ordem sugerida: Plutão+Caronte → zerar os 13 → Fobos+Deimos → Tritão
 (com a palavra dele). NA FILA, sem obra nesta janela (ordem dele).
 
-**143. O juiz de identidade marcou "INSTÁVEL com diff 0" em vistas que DIFEREM de fato.** Achado do coordenador, 03/09, ao fechar o 141: a rodada 625c86a→5135978 do `ab-identidade` deu 48 IGUAL + 6 INSTÁVEL (mercurio, mercurionb, vesta, anao-vesta-corpo, atlas-corpo-marte, foco-io) "com 0 pixel de diferença" — mas essas vistas contêm corpos que o 141 mudou de propósito, e a mesma vista `atlas-corpo-marte` fotografada por mim nas duas árvores (5222/5223, `capturas/item141-chk-marte-{antes-,}q700.png`) dá md5 diferente e **351 de 3.249 blocos tocados** (`diff-pixel`). Suspeita: o lado "antes" recapturado por vista isolada (ou a retomada de disco) pegou o servidor errado — em INSTÁVEL o "antes" traz dois hashes e um deles é o do "depois". A verificar no instrumento antes da próxima rodada; até lá, INSTÁVEL não vale como IGUAL: confere-se com foto nas duas árvores.
-
 **No mesmo item, sem obra (auditoria 03/09):** as mensagens de commit do 139b (`e24237f`, `c3b89a1`) dizem que o `nearPlanePc` sem o registro do anel dava **192,9 km** (192,858, medido no app), e o teste `corpos.test.ts` cobra **198,9 km** no mesmo caso ("APAGADO o registro do anel"). Os dois números são de palcos diferentes — o do app e o sintético do teste — e nenhum dos dois está errado; fica registrado para que a próxima leitura não trate a diferença como regressão. Nada a consertar.
 
 **138.** Jápeto "totalmente feio" e a paridade das luas contra o projeto dele — **FECHADO em 03/09** (`c70a204`: mosaicos Schenk graduados como lá; o relevo estava meia volta errado nas seis desde a S2); nível e Titã laranja ficam como estão, palavra dele "tudo ok, já avaliei"; ARQUIVO.
 
 **139.** Dentro dos anéis não se viam as partículas e pedras de gelo — **FECHADO em 03/09** (`4081729` lajota do projeto dele + `e24237f` o chão do anel chega à lente); palavra dele "tudo ok"; ARQUIVO.
-
-**137.** Sobra da S1 do 134: os arquivos `public/textures/atlas/saturn/ring*` (8 arquivos, 216 KB) e o canal `ring` em `texturas.ts`, no manifesto e nos scripts de texturas ficaram órfãos — o anel lê o perfil medido. Remover com prova de não-uso (§6); os testes de `texturas.test.ts` que citam o canal entram na lista do §19 dessa faxina.
 
 
 **135.** Perto de Saturno ou dos anéis a imagem cortava "como se batesse na lente" — **FECHADO em 02/09** (o piso do plano próximo era metade do raio do corpo, 30 mil km em Saturno; virou um milésimo, `PISO_DO_NEAR_EM_RAIOS`); ARQUIVO.
@@ -599,6 +655,21 @@ distâncias e a receita de recomputo em `capturas/item116-tritao.json`.
 **117.** Aro azulado fino na borda dos globos em close-up — **FECHADO em 02/09**; ARQUIVO.
 
 **126.** `?foco=mars` caía na estrela Marsic, não em Marte — **FECHADO em 01/09**; ARQUIVO.
+
+**211. Camada de fatos relacionais na ficha do objeto** (idade da luz, o
+Sol visto de lá, a Lua conferível hoje à noite). A ficha do objeto já é a
+casa dela (`FichaDoObjeto` + `lib/atlas/ficha.ts`); falta o conteúdo em si.
+
+**212. Wikipedia no painel, opt-out persistido.** Falta a 2ª prova:
+IndexedDB, CORS no GitHub Pages e opt-out verificável (desligado ⇒ zero
+requisições). Se falhar, a linha cai para Renasce.
+
+**213. Orçamento de payload por tier.** Teto de efemérides/texturas e o
+recorte da identidade no `sc1` (hoje só as 1.726 nomeadas; as 328k
+esperam) — decisão do dono pendente; libera o dado, não a busca.
+
+**214. `arriveDist` com termo angular** (câmera, não luz) — hoje a câmera
+pousaria igual em Betelgeuse e em Proxima.
 ---
 
 ## BAIXA — dívida interna, ninguém vê
@@ -789,6 +860,37 @@ uma ironia isso estar dentro do caderno ainda".)*
 **123.** As forjas estelares perdiam brilho ao dobrar a resolução — **FECHADO em 02/09**; ARQUIVO.
 
 **124.** O porteiro do censo reprovava por uma palavra — **FECHADO em 31/08**; ARQUIVO.
+
+**215. Roadmap de conteúdo: sondas, créditos, tours, cinturões,
+cometas.** Grade solta de features futuras do Atlas (cometas e cinturões
+se sobrepõem em parte ao censo do item 114).
+
+**216. Beat "escala real" animado no filme, nunca toggle.** Falta do
+repensar do roteiro do filme.
+
+**217. `starOptics` rotulável com interruptor.** A cruz de 4 spikes está
+cravada, sem desligar — é honestidade de instrumento, não fotometria;
+falta o rótulo e o interruptor.
+
+**218. Consumir `stellarPhysics.ts` no runtime.** `temperatureFromBV` já
+chegou à ficha de estrela; raio, luminosidade e os valores pinados do
+resto do arquivo seguem sem consumidor.
+
+**219. `teffK` e `convective` nos 14 vendorizados.** Exige editar o
+núcleo do Sol; sem 2ª instância de `StellarBody` enquanto `SUN_RADIUS =
+2.2` e `cme.js` capturarem a câmera na criação.
+
+**220. Onda 9 — arquivar o doador.** `atlas-orbital` vira read-only
+quando cada linha da matriz de migração tiver destino cumprido ou virar
+pendência nomeada (evidência por linha: estava viva no doador? o destino
+tem o equivalente? o número foi medido ou estimado? o que atravessou foi
+dado/oráculo ou runtime?).
+
+**221. Candidato sem onda: pisar num rochoso.** Céu e câmera são
+baratos; o custo inteiro é o terreno (MOLA). Sem gate esperando.
+
+**222. Encontros estelares como beats do filme** (sub-passo 7b) —
+decisão do dono pendente; default: sem decisão, 7b não entra.
 
 ---
 

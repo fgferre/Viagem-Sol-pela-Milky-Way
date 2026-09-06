@@ -38,3 +38,6 @@ sky_*/
 
 # Pastas temporárias de agentes: relatório efêmero não se versiona (AGENTS, regra 10)
 scratchpad/
+
+# Notas pessoais de sessão do Claude, nunca versionadas
+CLAUDE.local.md

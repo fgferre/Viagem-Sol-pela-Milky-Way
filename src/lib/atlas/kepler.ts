@@ -1,7 +1,7 @@
 // ============================================================
 // Kepler novo — o propagador de dois corpos da casa.
 //
-// RENASCE (doutrina de travessia, PLANO-ATLAS §0): o runtime do doador
+// RENASCE (doutrina de travessia, docs/NORTE.md): o runtime do doador
 // (satellites.ts / asteroids.ts / coordUtils.ts) não atravessa — ele
 // devolvia THREE.Vector3 no frame Y-up da cena, amarrando a física ao
 // renderer. Aqui o propagador é PURO: números entram (id + jdTdb),

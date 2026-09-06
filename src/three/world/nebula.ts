@@ -5,12 +5,20 @@
 import * as THREE from 'three';
 import {
   NEBULA_VERT,
-  NEBULA_FRAG,
+  nebulaFrag,
+  nebulaBakeFrag,
   nebulaLutFrag,
   NEBULA_BLUR_FRAG,
 } from '../shaders/nebulaShaders';
 import { makeBlueNoiseTexture } from './blueNoise';
 import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
+import type { GasVolumetrico } from '../core/engine';
+
+/** a variante de nascença — a mesma que o fragment do raymarch e do bake
+ *  sempre foram antes do item 145b (macio: tudo assado, sem `?nebvol=`
+ *  nem `?nebfino=` vivos). O Director aplica a do preset/gaveta logo
+ *  depois de construir (`aplicarGas`), antes do primeiro `render()`. */
+const VARIANTE_DE_NASCENCA = 'macio';
 
 // Luzes embutidas no gás — posições reais do catálogo HYG (pc)
 const BETELGEUSE = new THREE.Vector3(3.189, 151.364, 19.682); // supergigante vermelha
@@ -55,6 +63,22 @@ export class Nebula {
   private scene = new THREE.Scene();
   private camera = new THREE.OrthographicCamera();
   private material: THREE.ShaderMaterial;
+  /** o quad fullscreen do raymarch — guardado para `setVariante` trocar o
+   *  material sem recriar a cena. */
+  private quad: THREE.Mesh;
+  /**
+   * A VARIANTE DO GÁS VOLUMÉTRICO (item 145b) e o CACHE de materiais já
+   * compilados por variante — um para o raymarch, outro para o bake
+   * (este sem entrada `antigo`: o caminho antigo nunca assa, ver
+   * `render()`). Todo material do cache COMPARTILHA o mesmo objeto de
+   * uniforms de sempre (o de `this.material`/`this.volumeMaterial`
+   * originais, que nunca mudam de identidade — só o fragment muda), então
+   * nenhum setter (`setFade`, `setCavity`...) precisa saber que a
+   * variante trocou.
+   */
+  private variante: GasVolumetrico = VARIANTE_DE_NASCENCA;
+  private materiaisRaymarch = new Map<GasVolumetrico, THREE.ShaderMaterial>();
+  private materiaisBake = new Map<GasVolumetrico, THREE.ShaderMaterial>();
   private scale: number;
   /**
    * O QUADRO CONGELADO (item 144). O raymarch não tem uniform de tempo:
@@ -62,12 +86,65 @@ export class Nebula {
    * e até 03/09 produzia a 60 Hz, 25–30% do quadro no Atlas parado
    * (medido no M1 dele, `capturas/desempenho-m1-03-09.txt`). `sujo` é
    * levantado por todo setter que muda um uniform de verdade; a chave
-   * da câmera (matriz de mundo + fov + aspecto) é comparada em `render`.
-   * Iguais os dois, o `rtBlur` do quadro anterior continua sendo o céu.
+   * da câmera é comparada em `render`. A chave NÃO é a matriz de mundo:
+   * a câmera do filme parado treme nos últimos dígitos do double a cada
+   * quadro (52 raymarches em 2,5 s com o filme pausado, medido em 05/09)
+   * e a matriz nunca repetia. A chave é o que a GPU RECEBE — os uniforms
+   * de câmera e do cone do Sol, já arredondados a float32 pelo
+   * `Float32Array`. Iguais os dois, o `rtBlur` do quadro anterior
+   * continua sendo o céu.
    */
   private sujo = true;
-  private chaveDaCamera = new Float64Array(18);
-  private ultimaChave = new Float64Array(18).fill(Number.NaN);
+  private chaveDaCamera = new Float32Array(18);
+  private ultimaChave = new Float32Array(18).fill(Number.NaN);
+  /**
+   * REDESIGN (PLAN.md, 05/09) — GÁS ASSADO NUM CUBO QUE SEGUE A CÂMERA.
+   * A primeira versão assava uma caixa FIXA em torno do Sol — inútil,
+   * porque o gás liga em qualquer ponto do disco (`nebulaFade`/`inDisk`
+   * em director.ts), não só perto de casa. `volumeSujo` sobe quando um
+   * insumo que não depende da posição muda (`setDustMap`); o desvio da
+   * câmera além da margem é checado a cada `render()` (`precisaRecentrar`).
+   * Qualquer um dos dois dispara `bake()`, que primeiro pede sementes
+   * novas do centro (via `pedirSementes`) e só depois assa.
+   */
+  private volumeSujo = true;
+  private volumeRT: THREE.WebGL3DRenderTarget;
+  private volumeScene = new THREE.Scene();
+  private volumeMaterial: THREE.ShaderMaterial;
+  /** o quad fullscreen do bake — guardado para `setVariante` trocar o
+   *  material sem recriar a cena. */
+  private volumeQuad: THREE.Mesh;
+  /** meia-aresta do cubo assado (pc) — tMax do raymarch (650) + margem (350) */
+  private static readonly MEIA_ARESTA = 1000;
+  private static readonly VOXEIS = 128;
+  /** aresta do voxel: 2000/128 = 15,625 pc — `centro` é sempre múltiplo
+   * disto, para um re-bake num centro novo amostrar as MESMAS posições
+   * de mundo que o bake anterior amostrava (sem isso, o gás treme: o
+   * mesmo ponto do espaço cairia num offset de sub-voxel diferente a
+   * cada bake). */
+  private static readonly VOXEL_PC =
+    (2 * Nebula.MEIA_ARESTA) / Nebula.VOXEIS;
+  /** reassa quando a câmera se afasta do centro assado além disto, em
+   * qualquer eixo — a mesma margem que separa tMax da meia-aresta, então
+   * o raio nunca sai do cubo entre um bake e o próximo. */
+  private static readonly MARGEM_REBAKE = 350;
+  /** ≤256 nuvens-semente mais perto do CENTRO do volume (não da câmera),
+   * numa DataTexture 256×2 — ver `setBakeSeedClouds`. */
+  private static readonly SEMENTES_MAX = 256;
+  private sementesTex: THREE.DataTexture;
+  private sementesData = new Float32Array(Nebula.SEMENTES_MAX * 2 * 4);
+  /** centro do cubo assado, sempre múltiplo de VOXEL_PC; NaN = nenhum
+   * bake ainda aconteceu (força o primeiro na próxima render()). */
+  private centro = new THREE.Vector3(NaN, NaN, NaN);
+  /**
+   * O director liga isto ao NuvensSemente depois que o pool do catálogo
+   * carrega (`nuvensSemente.construir`). A Nebula PEDE pelo CENTRO do
+   * volume, nunca pela câmera direto: quem decide "as ≤256 mais perto de
+   * onde o cubo está" é `nuvensSemente.sementesParaBake`, e a Nebula não
+   * precisa importar NuvensSemente para isso (evita o ciclo de módulos —
+   * nuvensSemente.ts já importa `type Nebula`).
+   */
+  private pedirSementes: ((centro: THREE.Vector3) => void) | null = null;
   // LUT equiretangular 256×128 da luz distante do disco; recalcula
   // somente após a câmera mover >2 pc.
   private lutRT: THREE.WebGLRenderTarget;
@@ -142,9 +219,66 @@ export class Nebula {
     const lutQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.lutMaterial);
     lutQuad.frustumCulled = false;
     this.lutScene.add(lutQuad);
+
+    // REDESIGN (PLAN.md, 05/09) — o volume assado: 128³, RGBA16F (R =
+    // campo estático + sementes, G = lanes×gasDensity, B = envelope, A =
+    // ruído da paleta), filtro linear (a única diferença aceita de visual
+    // é o borrão da interpolação trilinear). ClampToEdgeWrapping em
+    // wrapS/wrapT/wrapR NÃO é passado aqui porque já É o default de
+    // Data3DTexture (e de Texture, para S/T) — passar wrapR explícito
+    // dispara um aviso inofensivo do three (a primeira passagem de
+    // _setTextureOptions, dentro do construtor da classe-base, roda
+    // sobre a Texture 2D provisória que WebGL3DRenderTarget ainda vai
+    // substituir, e essa não tem wrapR). O raymarch testa a caixa antes
+    // de amostrar (ver nebulaDensity em common.ts), então o wrap nem entra.
+    this.volumeRT = new THREE.WebGL3DRenderTarget(
+      Nebula.VOXEIS,
+      Nebula.VOXEIS,
+      Nebula.VOXEIS,
+      {
+        format: THREE.RGBAFormat,
+        type: THREE.HalfFloatType,
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        depthBuffer: false,
+      }
+    );
+    // sementes do bake: DataTexture 256×2 (linha 0 = xyz+raio, linha 1 =
+    // .x = amplitude), lida por texelFetch em glslBakeDensity — não um
+    // array de uniform, que não comportaria 256 slots em todo driver.
+    this.sementesTex = new THREE.DataTexture(
+      this.sementesData,
+      Nebula.SEMENTES_MAX,
+      2,
+      THREE.RGBAFormat,
+      THREE.FloatType
+    );
+    this.sementesTex.minFilter = THREE.NearestFilter;
+    this.sementesTex.magFilter = THREE.NearestFilter;
+    this.sementesTex.generateMipmaps = false;
+    this.sementesTex.needsUpdate = true;
+    this.volumeMaterial = new THREE.ShaderMaterial({
+      vertexShader: NEBULA_VERT,
+      fragmentShader: nebulaBakeFrag(VARIANTE_DE_NASCENCA),
+      uniforms: {
+        uFatia: { value: 0 },
+        uDustMap: { value: this.fallbackDustMap },
+        uSeedCloudTex: { value: this.sementesTex },
+        uSeedCloudCount: { value: 0 },
+        uVolMin: { value: new THREE.Vector3() },
+        uVolTamanho: { value: new THREE.Vector3(1, 1, 1).multiplyScalar(2 * Nebula.MEIA_ARESTA) },
+      },
+      depthWrite: false,
+      depthTest: false,
+    });
+    this.materiaisBake.set(VARIANTE_DE_NASCENCA, this.volumeMaterial);
+    this.volumeQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.volumeMaterial);
+    this.volumeQuad.frustumCulled = false;
+    this.volumeScene.add(this.volumeQuad);
+
     this.material = new THREE.ShaderMaterial({
       vertexShader: NEBULA_VERT,
-      fragmentShader: NEBULA_FRAG,
+      fragmentShader: nebulaFrag(VARIANTE_DE_NASCENCA),
       uniforms: {
         uCamPos: { value: new THREE.Vector3() },
         uCamRight: { value: new THREE.Vector3(1, 0, 0) },
@@ -172,13 +306,90 @@ export class Nebula {
         uCavityGate: { value: 0 },
         uSunDir: { value: new THREE.Vector3(0, 0, 1) },
         uSunCos: { value: 2 },
+        // REDESIGN (PLAN.md, 05/09): o volume assado que o caminho novo lê
+        // a cada amostra — ver `bake()` e `nebulaDensity(p, t)` em
+        // common.ts. `uVolMin` MUDA a cada re-bake (o cubo segue a
+        // câmera); `uVolTamanho` é a mesma aresta constante do bake.
+        uVolume: { value: this.volumeRT.texture },
+        uVolMin: { value: new THREE.Vector3() },
+        uVolTamanho: { value: new THREE.Vector3(1, 1, 1).multiplyScalar(2 * Nebula.MEIA_ARESTA) },
       },
       depthWrite: false,
       depthTest: false,
     });
-    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.material);
-    quad.frustumCulled = false;
-    this.scene.add(quad);
+    this.materiaisRaymarch.set(VARIANTE_DE_NASCENCA, this.material);
+    this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.material);
+    this.quad.frustumCulled = false;
+    this.scene.add(this.quad);
+  }
+
+  /**
+   * O material do raymarch para uma variante, do cache ou construído na
+   * hora — todos os materiais desta lista COMPARTILHAM o mesmo objeto de
+   * uniforms (o de `this.material`, que nasce com `VARIANTE_DE_NASCENCA`
+   * e nunca muda de identidade): trocar de variante troca só o fragment
+   * que lê os mesmos uniforms, então nenhum setter (`setFade`,
+   * `setCavity`...) precisa saber que a variante mudou.
+   */
+  private materialDoRaymarch(v: GasVolumetrico): THREE.ShaderMaterial {
+    let m = this.materiaisRaymarch.get(v);
+    if (!m) {
+      m = new THREE.ShaderMaterial({
+        vertexShader: NEBULA_VERT,
+        fragmentShader: nebulaFrag(v),
+        uniforms: this.material.uniforms,
+        depthWrite: false,
+        depthTest: false,
+      });
+      this.materiaisRaymarch.set(v, m);
+    }
+    return m;
+  }
+
+  /**
+   * O material do bake para uma variante — mesmo contrato do raymarch,
+   * mas só fino/macio: o caminho antigo nunca assa (ver `render()`), e
+   * quem chama aqui já garantiu isso.
+   */
+  private materialDoBake(v: Exclude<GasVolumetrico, 'antigo'>): THREE.ShaderMaterial {
+    let m = this.materiaisBake.get(v);
+    if (!m) {
+      m = new THREE.ShaderMaterial({
+        vertexShader: NEBULA_VERT,
+        fragmentShader: nebulaBakeFrag(v),
+        uniforms: this.volumeMaterial.uniforms,
+        depthWrite: false,
+        depthTest: false,
+      });
+      this.materiaisBake.set(v, m);
+    }
+    return m;
+  }
+
+  /**
+   * A VARIANTE DO GÁS VOLUMÉTRICO, TROCADA AO VIVO (item 145b) — troca
+   * só o `material`/`volumeMaterial` dos dois quads fullscreen, os
+   * mesmos uniforms por baixo. `fino` e `macio` têm layouts de canal
+   * DIFERENTES no volume assado (ver `glslBakeDensity` em common.ts),
+   * então a troca marca `volumeSujo`: o próximo `render()` reassa antes
+   * do raymarch, sempre — não há como aproveitar o volume da variante
+   * anterior. `antigo` não tem bake (`volumeMaterial` fica como estava,
+   * intocado — `render()` nunca o usa nesse caminho).
+   */
+  setVariante(v: GasVolumetrico) {
+    if (v === this.variante) return;
+    this.variante = v;
+    this.material = this.materialDoRaymarch(v);
+    this.quad.material = this.material;
+    if (v !== 'antigo') {
+      this.volumeMaterial = this.materialDoBake(v);
+      this.volumeQuad.material = this.volumeMaterial;
+      this.volumeSujo = true;
+    }
+    // a imagem mudou: o quadro congelado (item 144) precisa refazer o
+    // raymarch mesmo com a câmera parada, senão o céu da variante
+    // anterior persistiria
+    this.sujo = true;
   }
 
   private lastW = 960;
@@ -285,13 +496,19 @@ export class Nebula {
     this.material.uniforms.uDustMap.value = texture;
     this.lutMaterial.uniforms.uDustMap.value = texture;
     this.lutMaterial.uniforms.uCartBlend.value = map ? blend : 0;
+    // o bake lê o MESMO mapa (diskGasEnvelope dentro de nebulaBake) —
+    // reassa na próxima render()
+    this.volumeMaterial.uniforms.uDustMap.value = texture;
+    this.volumeSujo = true;
     this.lutDirty = true;
     this.sujo = true;
   }
 
   /**
    * Nuvens-semente do catálogo perto da câmera: entradas
-   * [x, y, z, raio, amplitude] em pc na cena.
+   * [x, y, z, raio, amplitude] em pc na cena. Só alimenta a variante
+   * ANTIGA (item 145b, `Nebula.setVariante('antigo')`) — as outras duas
+   * leem o volume assado, que usa `setBakeSeedClouds` abaixo.
    */
   setSeedClouds(entries: Float32Array, count: number) {
     const u = this.material.uniforms;
@@ -315,6 +532,55 @@ export class Nebula {
     }
     u.uSeedCloudCount.value = n;
     if (mudou) this.sujo = true;
+  }
+
+  /**
+   * REDESIGN (PLAN.md, 05/09) — as ≤256 nuvens-semente mais perto do
+   * CENTRO do volume assado (não da câmera — o cubo pode estar até 350 pc
+   * à frente dela), sem fade de fronteira: reassar já é o evento
+   * discreto que escondia o popping no caminho antigo (32 slots, seleção
+   * por proximidade da câmera a cada 0,25 s). Escreve na DataTexture
+   * 256×2 que `glslBakeDensity` lê por `texelFetch` — não um array de
+   * uniform, que não caberia. Chamada de dentro de `bake()`, via
+   * `pedirSementes`, nunca direto pelo director.
+   */
+  setBakeSeedClouds(entries: Float32Array, count: number) {
+    const n = Math.min(count, Nebula.SEMENTES_MAX);
+    const d = this.sementesData;
+    d.fill(0);
+    for (let i = 0; i < n; i++) {
+      const o = i * 5;
+      // linha 0 (y=0): texel i = xyz + raio
+      const p0 = i * 4;
+      d[p0] = entries[o];
+      d[p0 + 1] = entries[o + 1];
+      d[p0 + 2] = entries[o + 2];
+      d[p0 + 3] = entries[o + 3];
+      // linha 1 (y=1): texel i, canal .x = amplitude crua (sem fade)
+      const p1 = Nebula.SEMENTES_MAX * 4 + i * 4;
+      d[p1] = entries[o + 4];
+    }
+    this.sementesTex.needsUpdate = true;
+    this.volumeMaterial.uniforms.uSeedCloudCount.value = n;
+  }
+
+  /**
+   * Liga o pedido de sementes ao NuvensSemente — ver o comentário do
+   * campo `pedirSementes` acima. Chamada uma vez, quando o pool do
+   * catálogo nasce (`nuvensSemente.construir`).
+   */
+  setPedirSementes(cb: (centro: THREE.Vector3) => void) {
+    this.pedirSementes = cb;
+  }
+
+  /**
+   * Força um reassar na próxima `render()` — para insumos do bake que
+   * não têm setter próprio (o pool de sementes acabou de nascer, por
+   * exemplo: o centro não mudou, então `foraDaMargem` não pegaria isso
+   * sozinho).
+   */
+  marcarVolumeSujo() {
+    this.volumeSujo = true;
   }
 
   /** cavidade do observador itinerante (0 = desligada, perto do Sol) */
@@ -371,12 +637,21 @@ export class Nebula {
     return Math.cos(seguro);
   }
 
-  /** a câmera desta chamada é a da anterior? (matriz de mundo, fov, aspecto) */
-  private cameraParada(camera: THREE.PerspectiveCamera): boolean {
+  /**
+   * Os uniforms de câmera desta chamada, como a GPU os recebe (float32),
+   * são os da anterior? Chamar DEPOIS de escrevê-los nos uniforms.
+   */
+  private cameraParada(): boolean {
+    const u = this.material.uniforms;
     const k = this.chaveDaCamera;
-    k.set(camera.matrixWorld.elements, 0);
-    k[16] = camera.fov;
-    k[17] = camera.aspect;
+    (u.uCamPos.value as THREE.Vector3).toArray(k, 0);
+    (u.uCamFwd.value as THREE.Vector3).toArray(k, 3);
+    (u.uCamRight.value as THREE.Vector3).toArray(k, 6);
+    (u.uCamUp.value as THREE.Vector3).toArray(k, 9);
+    k[12] = u.uTanHalfFov.value as number;
+    k[13] = u.uAspect.value as number;
+    k[14] = u.uSunCos.value as number;
+    (u.uSunDir.value as THREE.Vector3).toArray(k, 15);
     const antes = this.ultimaChave;
     let igual = true;
     for (let i = 0; i < 18; i++) {
@@ -389,12 +664,72 @@ export class Nebula {
     return igual;
   }
 
+  /**
+   * A câmera saiu da margem assada, ou nenhum bake aconteceu ainda
+   * (`centro` nasce NaN — qualquer comparação com NaN é falsa, por isso
+   * o `!Number.isFinite` explícito em vez de confiar no `>`).
+   */
+  private precisaRecentrar(camPos: THREE.Vector3): boolean {
+    if (!Number.isFinite(this.centro.x)) return true;
+    return (
+      Math.abs(camPos.x - this.centro.x) > Nebula.MARGEM_REBAKE ||
+      Math.abs(camPos.y - this.centro.y) > Nebula.MARGEM_REBAKE ||
+      Math.abs(camPos.z - this.centro.z) > Nebula.MARGEM_REBAKE
+    );
+  }
+
+  /**
+   * Recentra `centro` na câmera, arredondado a múltiplos de VOXEL_PC: um
+   * re-bake num centro novo tem que amostrar as MESMAS posições de mundo
+   * que o bake anterior amostrava, senão o gás treme (cada ponto do
+   * espaço cairia num offset de sub-voxel diferente a cada bake).
+   */
+  private recentrar(camPos: THREE.Vector3) {
+    const v = Nebula.VOXEL_PC;
+    this.centro.set(
+      Math.round(camPos.x / v) * v,
+      Math.round(camPos.y / v) * v,
+      Math.round(camPos.z / v) * v
+    );
+    const min = this.centro.clone().subScalar(Nebula.MEIA_ARESTA);
+    (this.volumeMaterial.uniforms.uVolMin.value as THREE.Vector3).copy(min);
+    (this.material.uniforms.uVolMin.value as THREE.Vector3).copy(min);
+  }
+
+  /**
+   * REDESIGN (PLAN.md, 05/09; item 145b) — reassa as 128 fatias do
+   * volume 3D. Chamada de `render()`, ANTES do raymarch, só quando
+   * `volumeSujo` (insumo sem posição mudou, ou `setVariante` trocou
+   * fino/macio) ou a câmera saiu da margem, e só nas duas variantes que
+   * assam (`this.variante !== 'antigo'` — a variante antiga nunca lê a
+   * textura, então nunca assa). `pedirSementes` roda ANTES do laço: o bake precisa da textura de
+   * sementes já atualizada para o centro que `render()` acabou de fixar.
+   * `renderer.setRenderTarget(rt, fatia)` grava a fatia de PROFUNDIDADE
+   * `fatia` do Data3DTexture — é a peça de `WebGL3DRenderTarget` que faz
+   * um passe fullscreen 2D assar um volume 3D, uma camada por vez.
+   */
+  private bake(renderer: THREE.WebGLRenderer) {
+    this.pedirSementes?.(this.centro);
+    const prev = renderer.getRenderTarget();
+    const uFatia = this.volumeMaterial.uniforms.uFatia;
+    for (let fatia = 0; fatia < Nebula.VOXEIS; fatia++) {
+      uFatia.value = fatia;
+      renderer.setRenderTarget(this.volumeRT, fatia);
+      renderer.render(this.volumeScene, this.camera);
+    }
+    renderer.setRenderTarget(prev);
+    this.volumeSujo = false;
+    // o volume mudou: o quadro congelado (item 144) precisa refazer o
+    // raymarch mesmo com a câmera parada, senão o céu antigo persistiria
+    this.sujo = true;
+  }
+
   render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) {
-    // o quadro congelado: mesma câmera, mesmos uniforms, mesma LUT — o
-    // céu de antes continua valendo, e o raymarch inteiro fica parado
-    const parada = this.cameraParada(camera);
-    if (parada && !this.sujo && !this.lutDirty) return;
-    this.sujo = false;
+    if (this.variante !== 'antigo') {
+      const recentrar = this.precisaRecentrar(camera.position);
+      if (recentrar) this.recentrar(camera.position);
+      if (this.volumeSujo || recentrar) this.bake(renderer);
+    }
     const u = this.material.uniforms;
     (u.uCamPos.value as THREE.Vector3).copy(camera.position);
     camera.getWorldDirection(this.scratchFwd);
@@ -405,6 +740,10 @@ export class Nebula {
     u.uAspect.value = camera.aspect;
     // depois do tanHalfFov: sunCone lê o uniform para converter texel em ângulo
     u.uSunCos.value = this.sunCone(camera);
+    // o quadro congelado: mesma câmera, mesmos uniforms, mesma LUT — o
+    // céu de antes continua valendo, e o raymarch inteiro fica parado
+    if (this.cameraParada() && !this.sujo && !this.lutDirty) return;
+    this.sujo = false;
     const prev = renderer.getRenderTarget();
     if (this.lutDirty || this.lutCamPos.distanceToSquared(camera.position) > 4) {
       this.lutDirty = false;
@@ -424,9 +763,15 @@ export class Nebula {
     this.rt.dispose();
     this.rtBlur.dispose();
     this.lutRT.dispose();
-    this.material.dispose();
+    this.volumeRT.dispose();
+    // TODOS os materiais em cache (item 145b) — não só o que está no ar:
+    // `setVariante` nunca descarta o anterior (é a troca ao vivo sem
+    // recompilar de novo), então o dono deles é o `dispose` final.
+    for (const m of this.materiaisRaymarch.values()) m.dispose();
+    for (const m of this.materiaisBake.values()) m.dispose();
     this.blurMaterial.dispose();
     this.lutMaterial.dispose();
+    this.sementesTex.dispose();
     this.fallbackDustMap.dispose();
     const bn = this.material.uniforms.uBlueNoise.value as THREE.Texture;
     bn.dispose();
@@ -438,6 +783,9 @@ export class Nebula {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });
     this.blurScene.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.geometry.dispose();
+    });
+    this.volumeScene.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });
   }

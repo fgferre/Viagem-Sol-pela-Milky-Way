@@ -105,6 +105,58 @@ export function lerPortaNebulosa(
 }
 
 /**
+ * O GÁS VOLUMÉTRICO (item 145b, PLAN.md A1b) — o quarto controle da
+ * gaveta Avançado. Três formas de assar/ler a mesma densidade do gás
+ * (`nebulaFrag`/`nebulaBakeFrag` em `shaders/nebulaShaders.ts`):
+ * `antigo` (tudo por amostra, sem volume assado), `fino` (assa os termos
+ * suaves e mantém as duas frequências mais finas ao vivo) e `macio`
+ * (assa tudo). Eram as portas de bancada `?nebvol=0`/`?nebfino=1` da
+ * rodada de aprovação — agora é configuração de verdade, no mesmo
+ * molde da nebulosa: o preset aponta uma variante, a gaveta escolhe
+ * uma variante, e quem aplica ao vivo é `Nebula.setVariante` (item 3
+ * do design).
+ */
+export type GasVolumetrico = 'antigo' | 'fino' | 'macio';
+
+const GASES_VOLUMETRICOS: readonly GasVolumetrico[] = ['antigo', 'fino', 'macio'];
+
+/**
+ * A lei da porta `?gas=`, no mesmo contrato de `lerPortaNebulosa`:
+ * comparação por literal, `null` para "não pediram nada de válido" — e
+ * aí quem manda é o preset.
+ */
+export function lerPortaGas(bruto: string | null | undefined): GasVolumetrico | null {
+  return GASES_VOLUMETRICOS.find((v) => v === bruto) ?? null;
+}
+
+/**
+ * AS PARTÍCULAS DA GALÁXIA (item 149) — o quinto controle da gaveta
+ * Avançado. É uma fração AO VIVO do que já foi carregado (o buffer de
+ * 4,02 M pontos em cinema): `Galaxy.setFracaoDeParticulas` desenha só
+ * um prefixo (`drawRange`) e compensa o fluxo (`uFade ÷ fração`), sem
+ * recarregar nada. NÃO é `populationScale` (`director/carregamento.ts`)
+ * — aquele decide quanto se GERA no carregamento; este decide quanto do
+ * já gerado se DESENHA agora.
+ */
+export type ParticulasDaGalaxia = 'todas' | 'metade' | 'quarto';
+
+/** a fração de cada nível — a única tabela que traduz nome em número. */
+export const FRACAO_DE_PARTICULAS: Record<ParticulasDaGalaxia, number> = {
+  todas: 1,
+  metade: 0.5,
+  quarto: 0.25,
+};
+
+const NIVEIS_DE_PARTICULAS: readonly ParticulasDaGalaxia[] = ['todas', 'metade', 'quarto'];
+
+/** a lei da porta `?particulas=`, no mesmo contrato de `lerPortaGas`. */
+export function lerPortaParticulas(
+  bruto: string | null | undefined
+): ParticulasDaGalaxia | null {
+  return NIVEIS_DE_PARTICULAS.find((v) => v === bruto) ?? null;
+}
+
+/**
  * OS TRÊS DEGRAUS DA ESCALA DE RESOLUÇÃO (item 145) — o terceiro
  * controle da gaveta Avançado, em fração da densidade NATIVA da tela.
  * 100% é o `devicePixelRatio` do monitor (2,0 num Retina), 50% é metade
@@ -122,19 +174,50 @@ export function lerPortaEscala(bruto: string | null | undefined): number | null 
   return ESCALAS_DE_RESOLUCAO.find((f) => f === v) ?? null;
 }
 
-interface QualityPreset {
+export interface QualityPreset {
   pixelRatio: number;
   nebulosa: NivelDaNebulosa;
   grain: number;
+  /** a variante do gás volumétrico do preset (item 145b) — `null` não
+   *  existe aqui: todo preset aponta uma, e a gaveta é quem sobrepõe com
+   *  `null` (o do preset). */
+  gas: GasVolumetrico;
+  /** a fração de partículas da galáxia do preset (item 149) — mesma
+   *  regra do gás: todo preset aponta uma, `null` é só da gaveta. */
+  particulas: ParticulasDaGalaxia;
 }
 
 // grain agora é DISPLAY-space (film pass pós-tonemap): 0.055 era
 // calibrado para o espaço linear onde o ACES o esmagava — em display
 // vira granulado de vídeo; cinema real fica em ~1% de swing.
-const PRESETS: Record<QualityLevel, QualityPreset> = {
-  cinema: { pixelRatio: 2.0, nebulosa: 'alta', grain: 0.012 },
-  alta: { pixelRatio: 1.5, nebulosa: 'media', grain: 0.01 },
-  performance: { pixelRatio: 1.0, nebulosa: 'baixa', grain: 0.008 },
+//
+// GÁS (item 145b): cinema aponta `fino` (mais nitidez, é o tier caro);
+// alta e performance apontam `macio` (mais barato — os dois tiers que já
+// abrem mão de passos/escala do raymarch). Decisão do dono (05/09,
+// PLAN.md) — as três variantes ficam como opção de detalhe gráfico, e
+// esta é a distribuição inicial; a gaveta Avançado sobrepõe à mão.
+//
+// PARTÍCULAS (item 149): cinema e performance apontam `todas` — cinema
+// porque é o tier caro, e performance porque ele já cortou a alocação na
+// origem (`populationScale` 0,28 — 28% do que cinema gera); cortar de
+// novo ao vivo empobreceria a mesma galáxia duas vezes. Alta é o meio de
+// campo e aponta `metade`. Medido em tela real, t=150 dentro do disco,
+// 2560×1266: 72 ms com todas as partículas, 14 ms escondendo-as
+// (`?nopts=1`) — a fração é a alavanca nova.
+// EXPORTADO (redesenho do painel de Ajustes): o painel precisa mostrar
+// qual valor da gaveta o preset RESOLVE, para marcar o segmento efetivo
+// quando o controle está em "do preset" — sem isso ele lê `null` e não
+// tem como dizer "média" quando o preset é `alta`.
+export const PRESETS: Record<QualityLevel, QualityPreset> = {
+  cinema: { pixelRatio: 2.0, nebulosa: 'alta', grain: 0.012, gas: 'fino', particulas: 'todas' },
+  alta: { pixelRatio: 1.5, nebulosa: 'media', grain: 0.01, gas: 'macio', particulas: 'metade' },
+  performance: {
+    pixelRatio: 1.0,
+    nebulosa: 'baixa',
+    grain: 0.008,
+    gas: 'macio',
+    particulas: 'todas',
+  },
 };
 
 /**
@@ -370,6 +453,20 @@ export interface EstadoDaQualidade {
    * Engine (`forcarEscala`), que é o dono da nitidez.
    */
   escala: number | null;
+  /**
+   * O GÁS VOLUMÉTRICO escolhido à mão (item 145b) — `null` = a variante
+   * do preset. Quem o publica é o Director, que é onde o override mora
+   * (`forcarGas`/`aplicarGas`, no mesmo molde de `forcarNebulosa`): é ele
+   * que troca o material da `Nebula` ao vivo.
+   */
+  gas: GasVolumetrico | null;
+  /**
+   * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA escolhida à mão (item 149) —
+   * `null` = a do preset. Quem a publica é o Director, que é onde o
+   * override mora (`forcarParticulas`/`aplicarParticulas`): é ele que
+   * troca o `drawRange` da `Galaxy` ao vivo.
+   */
+  particulas: ParticulasDaGalaxia | null;
 }
 
 /**

@@ -127,14 +127,11 @@ export const ALVO_DE_APOIO_CINEMA = 4096;
 
 /**
  * Os canais que o olho LÊ como assunto, e por isso ficam com o 8k de
- * cinema. O `map` sempre foi um; o `ring` de Saturno entrou por escrito
- * em 22/08 — não é mudança de dose, é a dose que já vigorava saindo do
- * esconderijo: `gigante.ts` calculava o alvo do anel com o canal 'map'
- * (`alvoDePixels(tier, 'map')`) e a linha não dizia por quê. O anel É o
- * assunto de Saturno em close, e a placa 8192×500 custa 21,8 MiB com
- * mip — um oitavo do que um `map` 8k custa, porque não é equiretangular.
+ * cinema. O `map` sempre foi um. O `ring` de Saturno entrou por escrito
+ * em 22/08 e saiu no item 137: o anel lê o perfil medido
+ * (`PERFIL_DO_ANEL`), não textura, então o canal não tem mais dono.
  */
-const CANAIS_DE_ASSUNTO = new Set(['map', 'ring']);
+const CANAIS_DE_ASSUNTO = new Set(['map']);
 
 /**
  * O ALVO de pixels por tier E POR CANAL — a política do dono (D4/decisão
@@ -298,7 +295,7 @@ export interface OpcoesDeTextura {
 
 /** Um canal que o corpo quer, com o pouco que varia entre eles. */
 export interface CanalPedido {
-  /** o nome no manifest — 'map', 'night', 'clouds', 'ring'… */
+  /** o nome no manifest — 'map', 'night', 'clouds'… */
   canal: string;
   /**
    * COR (sRGB, o sampler decodifica para linear) ou DADO (linear cru).

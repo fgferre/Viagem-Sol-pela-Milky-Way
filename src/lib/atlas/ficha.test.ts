@@ -484,15 +484,16 @@ describe('a imagem confessa — itens 19 e 20', () => {
     expect(linhas.find((l) => l.rotulo === 'forma')!.procedencia).toBe('artistico');
   });
 
-  it('os cinco sem textura dizem que a superfície é inventada', () => {
-    // Palas, Haumea, Makemake, Éris e Quaoar — `superficie: procedural` em
-    // `rochoso.ts`, e é o terceiro tier do selo estreando nesta peça.
-    for (const id of ['pallas', 'haumea', 'makemake', 'eris', 'quaoar']) {
+  it('os seis sem foto confessam a ilustração por IA (item 151)', () => {
+    // Hígia, Palas, Haumea, Makemake, Éris e Quaoar não têm foto de
+    // superfície: o mapa é ilustração por IA a partir dos fatos conhecidos,
+    // e a ficha tem de dizer isso na fonte E no defeito — nunca "medido".
+    for (const id of ['hygiea', 'pallas', 'haumea', 'makemake', 'eris', 'quaoar']) {
+      const imagem = porRotulo(id, 'imagem');
+      expect(imagem.get('fonte'), id).toContain('IA');
+      expect(imagem.get('o defeito'), id).toContain('não existe foto');
       const linhas = ficha(id)!.secoes.find((s) => s.id === 'imagem')!.linhas;
-      const superficie = linhas.find((l) => l.rotulo === 'superfície')!;
-      expect(superficie.valor, id).toContain('inventados');
-      expect(superficie.procedencia, id).toBe('artistico');
-      expect(linhas.find((l) => l.rotulo === 'licença'), id).toBeUndefined();
+      expect(linhas.find((l) => l.rotulo === 'fonte')!.procedencia, id).not.toBe('medido');
     }
   });
 

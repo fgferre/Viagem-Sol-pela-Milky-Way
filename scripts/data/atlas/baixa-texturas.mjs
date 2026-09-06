@@ -192,10 +192,10 @@ const FONTES = [
     url: 'https://science.nasa.gov/resource/deimos-mars-moon-3d-model/',
     nomeNoDoador: 'deimos_nasa_3d_resource.jpg',
   },
-  // ---- F4 (gigantes + anel). SSS CC BY 4.0, a mesma linha Terra/Lua/
+  // ---- F4 (gigantes). SSS CC BY 4.0, a mesma linha Terra/Lua/
   // Mercúrio. Urano/Netuno entram pelo incumbente 2k (não há 8k SSS).
-  // A placa do anel é o alpha 8k (W5-B do doador). Júpiteres sem
-  // licença clara no doador (jupiter_vgr1_2025.jpg etc.) NÃO entram.
+  // Júpiteres sem licença clara no doador (jupiter_vgr1_2025.jpg etc.)
+  // NÃO entram.
   {
     corpo: 'jupiter',
     canal: 'map',
@@ -207,12 +207,6 @@ const FONTES = [
     canal: 'map',
     url: `${SSS}/8k_saturn.jpg`,
     nomeNoDoador: '8k_saturn.jpg',
-  },
-  {
-    corpo: 'saturn',
-    canal: 'ring',
-    url: `${SSS}/8k_saturn_ring_alpha.png`,
-    nomeNoDoador: '8k_saturn_ring_alpha.png',
   },
   {
     corpo: 'uranus',

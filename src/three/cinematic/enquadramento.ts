@@ -34,7 +34,7 @@ export const ORIGEM = new THREE.Vector3(0, 0, 0);
 // ---- as quatro constantes medidas, num lugar só ------------------
 // Herdadas do doador como VALORES MEDIDOS a reaproveitar, não como
 // código: quem quiser mudar uma delas muda aqui, e o teste da função
-// pura cobra o efeito. (PLANO-ATLAS §2.3, linha `PrivilegedPosition`.)
+// pura cobra o efeito. (`git show 923dc20:docs/PLANO-ATLAS.md` §2.3, linha `PrivilegedPosition`.)
 
 /**
  * Ângulo de fase da câmera medido a partir da DIREÇÃO ILUMINADA — a

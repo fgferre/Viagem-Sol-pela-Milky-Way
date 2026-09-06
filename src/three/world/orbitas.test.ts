@@ -638,6 +638,67 @@ describe('a camada no quadro', () => {
   });
 });
 
+describe('o hit-test da LINHA (item 120, F1 · L11)', () => {
+  /** a mesma câmera do teto do zoom (`cameraDoTeto` acima), auto-contida
+   *  aqui porque aquela é local ao describe anterior */
+  function camera224Ua(): THREE.PerspectiveCamera {
+    const c = new THREE.PerspectiveCamera(35, 1, 1e-9, 1e6);
+    c.position.set(0, 0, 224 / UA_POR_PC);
+    c.lookAt(0, 0, 0);
+    c.updateMatrixWorld(true);
+    return c;
+  }
+  const TAN_35 = Math.tan((35 * Math.PI) / 360);
+  const LADO_PX = 1800;
+
+  it('acha o corpo dono do traço bem em cima dele, e nada num canto vazio', () => {
+    const orbitas = new Orbitas();
+    orbitas.ligado = true;
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const camera = camera224Ua();
+    orbitas.update(
+      camera, { larguraPx: LADO_PX, alturaPx: LADO_PX, pixelRatio: 1 }, TAN_35, 0, null, null, 'atlas'
+    );
+
+    // ONDE A TERRA ESTÁ AGORA — o vértice 0 do laço dela, por construção
+    // algébrica (§1 de orbitas.ts): o ponto vivo do corpo está SOBRE a
+    // própria linha, sempre.
+    const p = motor.posicaoHeliocentrica('earth', EPOCA_JD_TDB);
+    const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+    const mundo = new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
+    const ndc = mundo.clone().project(camera);
+    const x = (ndc.x + 1) / 2;
+    const y = (1 - ndc.y) / 2;
+    expect(orbitas.corpoNoPonto(x, y, camera, LADO_PX, LADO_PX)).toBe('earth');
+
+    // um canto da tela, longe de qualquer elipse: no teto do zoom (224 UA,
+    // 35°) a borda visível tem ~70 UA de raio e a maior órbita (Plutão,
+    // ~40 UA) não chega perto do canto — fora da tolerância de 8 px
+    expect(orbitas.corpoNoPonto(0.02, 0.02, camera, LADO_PX, LADO_PX)).toBeNull();
+    orbitas.dispose();
+  });
+
+  it('linha apagada (porta fechada) não responde ao ponteiro em cima dela', () => {
+    const orbitas = new Orbitas();
+    orbitas.ligado = false; // nunca abriu: `fita.visible` fica no `false` de fábrica
+    orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+    const camera = camera224Ua();
+    orbitas.update(
+      camera, { larguraPx: LADO_PX, alturaPx: LADO_PX, pixelRatio: 1 }, TAN_35, 0, null, null, 'atlas'
+    );
+    expect(orbitas.acesas).toBe(0);
+
+    const p = motor.posicaoHeliocentrica('earth', EPOCA_JD_TDB);
+    const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+    const mundo = new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
+    const ndc = mundo.clone().project(camera);
+    const x = (ndc.x + 1) / 2;
+    const y = (1 - ndc.y) / 2;
+    expect(orbitas.corpoNoPonto(x, y, camera, LADO_PX, LADO_PX)).toBeNull();
+    orbitas.dispose();
+  });
+});
+
 describe('A ÓRBITA VIRA FITA (item 83 · L2)', () => {
   /** o buffer interleaved de uma linha, pelo objeto do three */
   function segmentosDe(orbitas: Orbitas, id: string) {
