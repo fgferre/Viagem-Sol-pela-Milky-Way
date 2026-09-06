@@ -886,7 +886,10 @@ export class StellarBody {
     const ctx = this.ctx;
     return [
       ...(ctx.cmeMesh ? [ctx.cmeMesh as THREE.Object3D] : []),
-      ...(ctx.cmePts?.meshes?.[0] ? [ctx.cmePts.meshes[0] as THREE.Object3D] : []),
+      // os DOIS cartazes do ping-pong: mesmo material e mesma geometria, mas
+      // custa nada e fecha a dúvida (um relink de ~3 s apareceu numa corrida
+      // com ejeção disparada, medido 05/09)
+      ...((ctx.cmePts?.meshes ?? []).slice(0, 2) as THREE.Object3D[]),
     ];
   }
 
