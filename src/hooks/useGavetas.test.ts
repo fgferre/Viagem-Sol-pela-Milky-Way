@@ -236,4 +236,15 @@ describe('7. a ficha no celular: compacta/expandida (PLAN-UI.md §7, item 225)',
     // — reação SEPARADA de `aoAbrirFicha`, porque `celular` não é `Gaveta`
     expect(HOOK).toContain('setFichaExpandida(false)');
   });
+
+  it('o arrasto para baixo na EXPANDIDA recolhe — o mesmo gesto, outro efeito (Lote 5)', () => {
+    // §7: "'Recolher', arrasto para baixo no topo da rolagem → compacta"
+    // — NENHUMA mecânica nova: o mesmo `arrastoFecha`/`scrollTop === 0`
+    // da saída de sempre, só que quando a ficha está EXPANDIDA o gesto
+    // recolhe em vez de fechar a gaveta
+    expect(HOOK).toContain("if (gaveta === 'ficha' && fichaExpandida) {\n        setFichaExpandida(false);");
+    // e o efeito precisa reler `fichaExpandida` a cada troca dela —
+    // senão o ramo acima checaria sempre o valor da primeira montagem
+    expect(HOOK).toMatch(/\}, \[celular, gaveta, fichaExpandida\]\);/);
+  });
 });

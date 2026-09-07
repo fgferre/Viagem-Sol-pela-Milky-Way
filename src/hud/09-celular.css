@@ -298,6 +298,181 @@
   .hud-root:has([data-dialogo]) .atlas-rodape .free-hint {
     opacity: 0;
   }
+
+  /* ---- A FICHA COMPACTA/EXPANDIDA (Lote 5, PLAN-UI.md §7) ------------
+     O TETO da compacta é a MESMA constante que a câmera já respeita
+     (`App.tsx`, `TETO_DA_FOLHA_COMPACTA_REM`) — 8,5rem, 136 px em
+     `ui = 1`. Vive AQUI, e não em `01-base.css` (fora do escopo deste
+     lote): só existe no celular, a mesa nunca lê esta variável. */
+  .hud-root {
+    --ficha-compacta-altura: 8.5rem;
+  }
+
+  /* A TRANSIÇÃO é `height`/`max-height` (item 6 do §2 pede as duas; só a
+     compacta declara `height`, então é só ela que a anima de verdade —
+     a expandida transiciona `max-height` sozinho, o truque de sempre
+     para "altura automática" em CSS puro). Zero com `?shot=1`
+     (`.shot-mode *` já zera TODA transição, fatia 7, `!important`) e com
+     `prefers-reduced-motion` (a regra já existe embaixo, mais uma linha).
+     `overflow: hidden` durante a troca evita o flash de barra de
+     rolagem enquanto o conteúdo ainda não decidiu se cabe. */
+  .atlas-ficha[data-ficha-estado] {
+    transition:
+      height var(--t-folha) var(--curva),
+      max-height var(--t-folha) var(--curva);
+    overflow: hidden;
+  }
+  /* A COMPACTA: altura FIXA (§3.5, "8,5rem/136 px"), sem rolagem — o
+     nome tem prioridade sobre "Detalhes" (nunca o contrário), e é por
+     isso que o cabeçalho vira uma linha só, abaixo. */
+  .atlas-ficha[data-ficha-estado='compacta'] {
+    height: var(--ficha-compacta-altura);
+    max-height: var(--ficha-compacta-altura);
+  }
+  /* A EXPANDIDA volta a rolar por dentro: `.hud-dialogo` (fatia 1) já
+     declara `max-height: var(--teto-dialogo)`, que no celular É o teto
+     de 48svh (`--teto-dialogo-tela`, acima) — nenhum número novo aqui,
+     só a rolagem de volta por cima do `overflow: hidden` da transição. */
+  .atlas-ficha[data-ficha-estado='expandida'] {
+    overflow-y: auto;
+  }
+
+  /* O CABEÇALHO DA COMPACTA VIRA UMA LINHA SÓ ("PLANETA · Netuno
+     [Detalhes ˄] [✕]", §3.5) SEM TOCAR `CabecalhoDoPainel.tsx` (fora do
+     escopo deste lote): `display: contents` nos dois nós que hoje
+     EMPACOTAM eyebrow+ações numa linha e o nome noutra apaga só a
+     CAIXA deles (não os filhos), promovendo eyebrow, "?",
+     "Detalhes"/"Recolher", "✕" e o nome a IRMÃOS diretos de
+     `.hud-cabecalho`, que passa a ser a grade flexível única. Dali em
+     diante é `order` puro. Nenhum nó muda de componente — só o BOX TREE
+     (a promessa de `display: contents`) —, então o `role="status"` do
+     nome (`FichaDoObjeto.tsx`) continua no MESMO elemento e o
+     `aria-live` continua valendo: só o ancestral perdeu a caixa. */
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-corpo,
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-linha {
+    display: contents;
+  }
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 0.4rem;
+    padding-bottom: 0.4rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--borda);
+  }
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-alca {
+    order: 0;
+    flex: 0 0 100%;
+  }
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-eyebrow {
+    order: 1;
+    flex: 0 0 auto;
+  }
+  /* "PLANETA · Netuno" (§3.5) — o "·" É CSS, não texto novo do
+     dicionário (item 3: a chave já era só a classe, "Planeta"). */
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-eyebrow::after {
+    content: '\00a0\00b7\00a0';
+  }
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-titulo--nome {
+    order: 2;
+    /* `flex-basis: 0` (não `auto`) — COM `auto` o navegador decide se a
+       linha quebra pelo tamanho de CONTEÚDO do nome, antes de encolher
+       nada; medido a 320 px/`ui`1,4: "Detalhes"/"✕" caíam para uma
+       TERCEIRA linha do cabeçalho mesmo com `min-width: 0` no nome, e a
+       ficha estourava os 8,5rem. Com base zero o nome nasce "sem
+       tamanho" e só CRESCE com o que sobra — nunca força quebra. */
+    flex: 1 1 0%;
+    min-width: 0;
+    margin: 0;
+    /* Inter 500, não a serifada da mesa/expandida (§3.5: "eyebrow + nome
+       em Inter 500" é a régua só da COMPACTA). */
+    font-family: var(--fonte-ui);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    letter-spacing: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* O ITEM PROMOVIDO É O BOTÃO, não a caixa: `.hud-ajuda-caixa` já é
+     `display: contents` de fábrica (08-ajustes.css, "sem caixa
+     própria") — ela não gera box nenhuma, então `order`/`flex` nela não
+     tem ONDE pegar, e é o `.hud-ajuda` (o botão de dentro) que sobe a
+     ser item flex de `.hud-cabecalho` (dois `contents` empilhados: a
+     linha, a caixa). */
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-ajuda {
+    order: 3;
+    flex: 0 0 auto;
+  }
+  .atlas-ficha[data-ficha-estado='compacta'] .atlas-ficha-detalhes {
+    order: 4;
+    flex: 0 0 auto;
+  }
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-fechar {
+    order: 5;
+    flex: 0 0 auto;
+  }
+
+  /* "DETALHES"/"RECOLHER" — texto + chevron, alvo de 44×44 sempre
+     (`min-height`/`min-width`); o padding lateral só entra quando o
+     texto está visível (a régua estreita, abaixo, tira as duas coisas). */
+  .atlas-ficha-detalhes {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    padding: 0 0.6rem;
+    border: 0;
+    background: none;
+    color: var(--texto-2);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  .atlas-ficha-detalhes:hover {
+    color: var(--texto);
+  }
+  .atlas-ficha-detalhes:focus-visible {
+    outline: 2px solid var(--foco);
+    outline-offset: 2px;
+  }
+}
+
+/* ≤360 px (§3.3, "Larguras estreitas"): o NOME tem prioridade — o botão
+   "Detalhes" perde o texto e vira só o chevron, num alvo que continua
+   44×44 (o `min-width`/`min-height` de cima não mudam), com o
+   `aria-label` descrevendo a ação por inteiro.
+   NÃO NASCE COMO UMA REGRA DE JANELA NESTE ARQUIVO, de propósito:
+   `uiScale.test.ts` cobra que TODA quebra de largura do HUD seja
+   `LARGURA_DO_CELULAR_PX` (760) — uma segunda fronteira aqui quebraria
+   essa regra (e o próprio texto deste comentário, se citasse a sintaxe
+   da regra de janela por extenso, também quebraria a varredura — ela
+   lê comentário como CSS). O ajuste abaixo é ESTREITO DEMAIS da FICHA,
+   não uma segunda fronteira de layout. O seletor é o
+   `[data-ficha-largura]` que `FichaDoObjeto.tsx` escreve por
+   `matchMedia` COM OUVINTE em JavaScript (o mesmo padrão de
+   `useCelular.ts` para os 760) — a mesma pergunta ao navegador, só que
+   feita de um lugar que este teste não varre.
+   O CABEÇALHO ENCOLHE O RESPIRO (não o alvo de toque: os 44×44 de
+   "?"/"Detalhes"/"✕" não mudam) — medido a 320 px com `ui = 1,4`:
+   "PLANETA · Netuno [?][˄][✕]" não cabia numa linha só mesmo com o
+   nome no mínimo (`flex-basis: 0`), porque os TRÊS alvos de toque mais
+   o eyebrow já somam mais que a largura da folha; o `column-gap` e o
+   separador (abaixo) são o que sobra para cortar. */
+.atlas-ficha[data-ficha-estado='compacta'][data-ficha-largura='estreita'] .hud-cabecalho {
+  column-gap: 0.15rem;
+}
+.atlas-ficha[data-ficha-estado='compacta'][data-ficha-largura='estreita']
+  .hud-cabecalho-eyebrow::after {
+  content: '\00b7';
+}
+.atlas-ficha[data-ficha-largura='estreita'] .atlas-ficha-detalhes-texto {
+  display: none;
+}
+.atlas-ficha[data-ficha-largura='estreita'] .atlas-ficha-detalhes {
+  padding: 0;
 }
 
 /* MOVIMENTO REDUZIDO: a folha APARECE, não sobe.
@@ -310,5 +485,10 @@
   .hud-dialogo,
   .hud-dialogo[inert] {
     animation: none;
+  }
+  /* A COMPACTA/EXPANDIDA (Lote 5, §7): a mesma lei, a mesma razão — quem
+     declara a transição (acima, mesma fatia) é quem tem de zerá-la. */
+  .atlas-ficha[data-ficha-estado] {
+    transition: none;
   }
 }

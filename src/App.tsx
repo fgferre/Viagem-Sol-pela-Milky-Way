@@ -307,7 +307,7 @@ export default function App() {
   // a regra "há seleção ⇒ há ficha" (por onde a escada as abre) e a saída de
   // 260 ms da folha do telefone. `montada` é a que está DESENHADA — a aberta,
   // ou a que está descendo.
-  const { gaveta, montada, alternarGaveta, fecharGaveta, fecharTodas } =
+  const { gaveta, montada, alternarGaveta, fecharGaveta, fecharTodas, fichaExpandida, alternarFichaExpandida } =
     useGavetas(escada, foco, phase, celular);
 
   // O BOOT do Director e os atalhos do teclado moram em hooks próprios
@@ -1122,6 +1122,8 @@ export default function App() {
           setRelevoDaCor(ligado);
         }}
         celular={celular}
+        fichaExpandida={fichaExpandida}
+        onAlternarFichaExpandida={alternarFichaExpandida}
       />
 
       {/* A PALETA DE BUSCA (F3) — filha DIRETA de .hud-root, como todo

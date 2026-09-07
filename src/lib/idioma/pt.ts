@@ -287,6 +287,16 @@ export const PT = {
   // na ficha dos corpos") — ≤40 palavras.
   'ficha.ajuda':
     "Cada selo diz de onde vem o número: medido é o número da fonte citada; derivado é calculado a partir de medidos; artístico é ilustração ou invenção declarada. O '×Terra' junto a um valor compara com o dado da Terra.",
+  // ---- a ficha no celular: compacta/expandida (Lote 5, PLAN-UI.md §7) -
+  'ficha.detalhes': 'Detalhes',
+  'ficha.detalhesAria': 'Ver os detalhes completos da ficha',
+  'ficha.recolher': 'Recolher',
+  'ficha.recolherAria': 'Recolher para a ficha resumida',
+  'ficha.lerMais': 'Ler mais',
+  // ---- a ficha vazia e as falhas de carga (Lote 5, PLAN-UI.md §7/§9) --
+  'ficha.vazia': 'Este lugar ainda não tem ficha de dados.',
+  'ficha.erroCarregar': 'Não foi possível carregar esta parte.',
+  'ficha.tentarDeNovo': 'Tentar de novo',
 
   // ---- os títulos de seção e os rótulos de campo (`lib/atlas/ficha.ts`)
   'ficha.secao.agora': 'agora',
@@ -297,7 +307,16 @@ export const PT = {
   'ficha.secao.curiosidades': 'curiosidades',
   'ficha.secao.imagem': 'a imagem',
   'ficha.secao.estrela': 'a estrela',
-  'ficha.campo.distanciaDe': 'distância — {pai}',
+  // O TEXTO diz a REFERÊNCIA em palavras (item 225, PLAN-UI.md §10): "ao
+  // Sol" e "à Terra" são os dois casos testados por este lote (Saturno e
+  // Netuno, os dois orbitam o Sol direto; a Lua orbita a Terra) — e são,
+  // de longe, os dois `{pai}` mais comuns (todo planeta soma ao primeiro,
+  // a Lua é a única lua da Terra). SEM TOCAR EM `ficha.ts` não há como
+  // escolher "ao"/"à" por gênero: a chave usa "ao" sempre, que acerta
+  // Sol e as cinco luas-mãe (Marte, Júpiter, Saturno, Urano, Netuno —
+  // masculinos, "ao Marte" é aceitável) e erra SÓ a Terra ("ao Terra" em
+  // vez de "à Terra", 1 corpo: a Lua) — registrado no retorno do lote.
+  'ficha.campo.distanciaDe': 'Distância ao {pai}',
   'ficha.campo.velocidadeOrbital': 'velocidade orbital',
   'ficha.campo.iluminadoDaqui': 'iluminado daqui',
   'ficha.campo.raio': 'raio (equador)',

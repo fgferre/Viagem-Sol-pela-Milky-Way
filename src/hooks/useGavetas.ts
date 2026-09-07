@@ -425,6 +425,16 @@ export function useGavetas(
       // o gesto cumpriu o que tinha a cumprir: o resto dele não é de
       // ninguém, e sem isto cada quadro seguinte repetiria o `set`
       arrasto.esquecer();
+      // A FICHA EXPANDIDA RECOLHE em vez de fechar (Lote 5, PLAN-UI.md
+      // §7: "'Recolher', arrasto para baixo no topo da rolagem →
+      // compacta"). NENHUMA MECÂNICA NOVA: o mesmo gesto que fecha as
+      // outras quatro gavetas (e a ficha COMPACTA) só arma com
+      // `folha.scrollTop === 0` — na folha expandida isso já É "o topo
+      // da rolagem" do enunciado. Só o que o gesto FAZ muda com o estado.
+      if (gaveta === 'ficha' && fichaExpandida) {
+        setFichaExpandida(false);
+        return;
+      }
       setGaveta((atual) => aoFechar(atual, gaveta));
     };
     const soltar = (e: TouchEvent) => {
@@ -444,7 +454,7 @@ export function useGavetas(
       window.removeEventListener('touchend', soltar);
       window.removeEventListener('touchcancel', soltar);
     };
-  }, [celular, gaveta]);
+  }, [celular, gaveta, fichaExpandida]);
 
   const alternarGaveta = useCallback(
     (qual: Gaveta) => setGaveta((atual) => aoAlternar(atual, qual)),

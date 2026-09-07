@@ -37,7 +37,7 @@
 // diferentes. Na viagem em degrau rápido ela continua rápida, porque ali a
 // data realmente muda.
 // ============================================================
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
@@ -107,6 +107,8 @@ export function FichaDoObjeto({
   relevoDaCor,
   onRelevoDaCor,
   celular = false,
+  fichaExpandida = false,
+  onAlternarFichaExpandida,
 }: {
   aberta: boolean;
   onFechar: () => void;
@@ -136,6 +138,11 @@ export function FichaDoObjeto({
   onRelevoDaCor: (ligado: boolean) => void;
   /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
   celular?: boolean;
+  /** compacta (`false`) ou expandida (`true`) — só existe apresentação
+   *  no celular; a mesa ignora as duas props (Lote 5, PLAN-UI.md §7) */
+  fichaExpandida?: boolean;
+  /** o toque em "Detalhes"/"Recolher" — `useGavetas().alternarFichaExpandida` */
+  onAlternarFichaExpandida?: () => void;
 }) {
   const dialogo = useDialogFocus('ficha', aberta, onFechar);
   const idioma = useIdioma();
@@ -145,6 +152,16 @@ export function FichaDoObjeto({
   const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
   const [corpos, setCorpos] = useState<Map<string, CorpoNoJson> | null>(null);
   const [texturas, setTexturas] = useState<ManifestDeTexturas | null>(null);
+  // AS DUAS FALHAS VISÍVEIS (Lote 5, PLAN-UI.md §9) — um booleano por
+  // arquivo, e não um só: `corpos.json` alimenta contexto/curiosidades/
+  // parte da órbita, `texturas.json` alimenta a imagem, e podem falhar
+  // em momentos diferentes (o segundo é quase de graça, o cache do
+  // navegador; o primeiro é rede de verdade). "Tentar de novo" zera SÓ o
+  // booleano dele: a condição do efeito abaixo (`!corpos && !erroCorpos`)
+  // volta a valer, e `buscarUmaVez` já apaga a entrada de `emVoo` no
+  // próprio catch — o fetch novo é automático, não precisa de contador.
+  const [erroCorpos, setErroCorpos] = useState(false);
+  const [erroTexturas, setErroTexturas] = useState(false);
   /**
    * QUE SEÇÕES ESTÃO ABERTAS — e de QUE corpo, no mesmo estado.
    *
@@ -175,24 +192,28 @@ export function FichaDoObjeto({
     // SEM OS JSONs A FICHA CONTINUA ÚTIL: raio, gravidade, escape, distância
     // e velocidade não dependem deles. O que falta é a órbita, a prosa e a
     // procedência da imagem — e cada uma some sozinha, sem linha a explicar.
-    if (!corpos) {
+    if (!corpos && !erroCorpos) {
       buscarUmaVez<CorposDoAtlas>('data/atlas/corpos.json')
         .then((doc) => {
           if (vivo) setCorpos(new Map(doc.corpos.map((c) => [c.id, c])));
         })
-        .catch(() => {});
+        .catch(() => {
+          if (vivo) setErroCorpos(true);
+        });
     }
-    if (!texturas) {
+    if (!texturas && !erroTexturas) {
       buscarUmaVez<ManifestDeTexturas>('data/atlas/texturas.json')
         .then((doc) => {
           if (vivo) setTexturas(doc);
         })
-        .catch(() => {});
+        .catch(() => {
+          if (vivo) setErroTexturas(true);
+        });
     }
     return () => {
       vivo = false;
     };
-  }, [aberta, corpos, texturas]);
+  }, [aberta, corpos, erroCorpos, texturas, erroTexturas]);
 
   const ficha = useMemo(
     () =>
@@ -216,12 +237,86 @@ export function FichaDoObjeto({
     [corpoId, estrelaEmFoco, estrela, jd, fonte, corpos, texturas, camaraUa, idioma]
   );
 
+  /**
+   * A INTRODUÇÃO (Lote 5, PLAN-UI.md §3.5) — as três primeiras linhas do
+   * texto da seção Contexto ("o que é"), ou da primeira curiosidade
+   * quando não há contexto; NUNCA as duas, e nunca inventada: sem
+   * nenhuma das duas, sem introdução (o `null` abaixo). `useMemo` e não
+   * cálculo direto no JSX porque `ficha` pode ser `null` até aqui — o
+   * hook precisa correr em toda passada, antes do `return null` de baixo.
+   */
+  const introducao = useMemo(() => {
+    const contexto = ficha?.secoes.find((s) => s.id === 'contexto');
+    if (contexto && contexto.linhas.length > 0) {
+      return { secaoId: 'contexto' as const, texto: contexto.linhas[0].valor };
+    }
+    const curiosidades = ficha?.secoes.find((s) => s.id === 'curiosidades');
+    if (curiosidades && curiosidades.linhas.length > 0) {
+      return { secaoId: 'curiosidades' as const, texto: curiosidades.linhas[0].valor };
+    }
+    return null;
+  }, [ficha]);
+
+  /**
+   * O FOCO SEGUE O TOQUE (Lote 5, PLAN-UI.md §7): ao expandir, para
+   * "Recolher"; ao recolher, para "Detalhes". SÓ quando a troca acontece
+   * com a ficha JÁ aberta — a guarda `prev.aberta` é o que distingue
+   * "acabou de expandir" de "acabou de abrir compacta" (que também muda
+   * `fichaExpandida` de `true`, se sobrou de uma sessão anterior, para
+   * `false` — e aí quem manda é `useDialogFocus`, não este efeito).
+   */
+  const detalhesRef = useRef<HTMLButtonElement>(null);
+  const recolherRef = useRef<HTMLButtonElement>(null);
+  const transicaoAnterior = useRef({ aberta, fichaExpandida });
+  useEffect(() => {
+    const anterior = transicaoAnterior.current;
+    transicaoAnterior.current = { aberta, fichaExpandida };
+    if (!celular || !aberta || !anterior.aberta || anterior.fichaExpandida === fichaExpandida) {
+      return;
+    }
+    (fichaExpandida ? recolherRef : detalhesRef).current?.focus();
+  }, [celular, aberta, fichaExpandida]);
+
+  /**
+   * A LARGURA ESTREITA (PLAN-UI.md §3.3, "≤ 360 px"): lida por
+   * `matchMedia` COM OUVINTE — o mesmo padrão de `useCelular.ts` para os
+   * 760 —, e NÃO por um segundo `@media` em `09-celular.css`. A casa tem
+   * uma regra testada (`uiScale.test.ts`, "TODA quebra de largura do HUD
+   * é LARGURA_DO_CELULAR_PX"): nenhum `@media(max-width)` no CSS do HUD
+   * pode declarar outro número além de 760, e o botão "Detalhes" só-
+   * ícone é um ajuste ESTREITO DEMAIS da FICHA, não uma segunda fronteira
+   * de layout. O atributo abaixo é a MESMA porta que `data-ficha-estado`
+   * já abre para o CSS (seletor de atributo, não `@media`).
+   */
+  const [larguraEstreita, setLarguraEstreita] = useState(
+    () => window.matchMedia?.('(max-width: 360px)').matches ?? false
+  );
+  useEffect(() => {
+    const consulta = window.matchMedia('(max-width: 360px)');
+    const ouvir = () => setLarguraEstreita(consulta.matches);
+    ouvir();
+    consulta.addEventListener('change', ouvir);
+    return () => consulta.removeEventListener('change', ouvir);
+  }, []);
+
   if (!aberta || !ficha) return null;
   const primeira = ficha.secoes[0]?.id;
+  // A COMPACTA (Lote 5, §7): só existe apresentação no celular; a mesa
+  // sempre mostra o conteúdo cheio (introdução, seções, esqueleto, erro).
+  const compacta = celular && !fichaExpandida;
 
   return (
     <div
       className="hud-cartao hud-dialogo atlas-ficha"
+      // O ESTADO NO PRÓPRIO NÓ (Lote 5, PLAN-UI.md §7) — só existe no
+      // celular; a mesa não tem o atributo, e é ele que `09-celular.css`
+      // lê para trocar altura fixa por teto rolável, e que os juízes
+      // podem ler para saber qual dos dois está na tela.
+      data-ficha-estado={celular ? (fichaExpandida ? 'expandida' : 'compacta') : undefined}
+      // A LARGURA ESTREITA (comentário acima do `useState`) — só importa
+      // junto da compacta; presente sempre que ela vale, inofensiva fora
+      // do celular (o CSS só a lê dentro de `[data-ficha-estado]`).
+      data-ficha-largura={celular && larguraEstreita ? 'estreita' : undefined}
       aria-label={t('ficha.aria', { nome: ficha.nome })}
       {...dialogo}
       onClick={() => {
@@ -259,6 +354,28 @@ export function FichaDoObjeto({
             onAlternar={() => alternarDica('ficha')}
           />
         }
+        // "DETALHES"/"RECOLHER" (Lote 5, §7) — só existe no celular; a
+        // prop `acoes` já é o lugar do `CabecalhoDoPainel` para botões
+        // extras entre o "?" e o fechar, então nem esse componente
+        // precisa mudar. O `ref` é o alvo do foco ao trocar de estado
+        // (o efeito lá em cima); o texto encolhe a só-ícone abaixo de
+        // 360 px (09-celular.css), o `aria-label` sobrevive sempre.
+        acoes={
+          celular ? (
+            <button
+              type="button"
+              ref={fichaExpandida ? recolherRef : detalhesRef}
+              className="atlas-ficha-detalhes"
+              aria-label={t(fichaExpandida ? 'ficha.recolherAria' : 'ficha.detalhesAria')}
+              onClick={() => onAlternarFichaExpandida?.()}
+            >
+              <span className="atlas-ficha-detalhes-texto">
+                {t(fichaExpandida ? 'ficha.recolher' : 'ficha.detalhes')}
+              </span>
+              <Icone nome={fichaExpandida ? 'chevronBaixo' : 'chevronCima'} tamanho={16} />
+            </button>
+          ) : undefined
+        }
         onFechar={onFechar}
         rotuloFechar={t('ficha.fechar')}
         celular={celular}
@@ -295,64 +412,112 @@ export function FichaDoObjeto({
         )}
       </div>
 
-      {/* O RELEVO INVENTADO vira uma LINHA própria, no molde de
-          `.ajustes-item`: rótulo + "?" à esquerda, interruptor à direita —
-          a MESMA pílula da gaveta de Camadas (`.hud-interruptor`). O
-          `aria-label` que era do botão migra para a caixa, porque agora
-          quem recebe o clique é ela. */}
-      {relevoDaCor !== null && (
-        <label className="ajustes-item">
-          <span className="ajustes-rotulo-caixa">
-            <span className="ajustes-rotulo">{t('ficha.relevoDaCor')}</span>
-            <Ajuda
-              id="relevo"
-              rotulo={t('ficha.relevoDaCor')}
-              texto={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
-              presa={dicaPresa === 'relevo'}
-              onAlternar={() => alternarDica('relevo')}
-            />
-          </span>
-          <span className="ajustes-controle">
-            <input
-              type="checkbox"
-              className="hud-interruptor"
-              checked={relevoDaCor}
-              aria-label={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
-              onChange={() => onRelevoDaCor(!relevoDaCor)}
-            />
-          </span>
-        </label>
-      )}
-
-      {ficha.secoes.map((secao) => {
-        const estaAberta =
-          escolhidas === null ? secao.id === primeira : escolhidas.includes(secao.id);
-        return (
-          <section key={secao.id} className="atlas-ficha-secao">
-            <h3 className="atlas-ficha-titulo">
+      {/* A COMPACTA PARA AQUI (Lote 5, §7): alça, nome, Detalhes/✕ (no
+          cabeçalho acima) e a escada (acima) — nada de introdução,
+          seções, esqueleto ou erro, que não têm onde caber em 8,5rem e
+          não são o que a compacta promete mostrar. */}
+      {!compacta && (
+        <>
+          {/* A INTRODUÇÃO (§3.5) — três linhas do texto de Contexto, ou
+              da primeira curiosidade sem ele; "Ler mais" abre a seção de
+              origem e rola até ela, sem duplicar o texto. O BOTÃO FICA
+              FORA do `<p>` clampado de propósito: um filho inline dentro
+              de `-webkit-line-clamp` mede a caixa errado (medido: o
+              recorte parava numa altura maior que 3 linhas e "Ler mais"
+              saía cortado sem elipse) — irmão depois do parágrafo, o
+              clamp mede só o texto que existe para ser cortado. */}
+          {introducao && (
+            <div className="atlas-ficha-intro-bloco">
+              <p className="atlas-ficha-intro">{introducao.texto}</p>
               <button
                 type="button"
-                aria-expanded={estaAberta}
-                aria-controls={`ficha-${secao.id}`}
+                className="atlas-ficha-lermais"
                 onClick={() => {
+                  const secaoId = introducao.secaoId;
                   const base = escolhidas ?? (primeira ? [primeira] : []);
-                  setAbertas({
-                    corpo: alvo,
-                    secoes: base.includes(secao.id)
-                      ? base.filter((s) => s !== secao.id)
-                      : [...base, secao.id],
-                  });
+                  if (!base.includes(secaoId)) {
+                    setAbertas({ corpo: alvo, secoes: [...base, secaoId] });
+                  }
+                  document
+                    .getElementById(`ficha-secao-${secaoId}`)
+                    ?.scrollIntoView({ block: 'nearest' });
                 }}
               >
-                <span>{secao.titulo}</span>
-                <span className="atlas-ficha-seta" aria-hidden="true">
-                  <Icone nome={estaAberta ? 'chevronBaixo' : 'chevronDireita'} tamanho={16} />
-                </span>
+                {t('ficha.lerMais')}
               </button>
-            </h3>
-            {estaAberta && (
-              <dl className="atlas-ficha-linhas" id={`ficha-${secao.id}`}>
-                {secao.linhas.map((l, i) => {
+            </div>
+          )}
+
+          {/* A FICHA VAZIA (Lote 0/5) — o centro galáctico é foco e não é
+              estrela do catálogo (`ficha.ts`, `montarFichaDeEstrela`):
+              zero seções, e a linha diz isso em vez de um esqueleto que
+              nunca teria o que preencher. SÓ para foco estelar sem
+              catálogo — um corpo real (`corpoId`) com zero seções é
+              coisa da REDE ainda em voo (esqueleto abaixo), não vazio. */}
+          {!corpoId && ficha.secoes.length === 0 && (
+            <p className="atlas-ficha-vazia">{t('ficha.vazia')}</p>
+          )}
+
+          {/* O ESQUELETO (§9) — enquanto `corpos.json`/`texturas.json`
+              ainda estão em voo (e não erraram): três linhas, sem
+              nenhuma animação em loop (a régua do §2 item 6 proíbe). */}
+          {corpoId && ((!corpos && !erroCorpos) || (!texturas && !erroTexturas)) && (
+            <div className="atlas-ficha-esqueleto" aria-busy="true">
+              <span className="atlas-ficha-esqueleto-linha" />
+              <span className="atlas-ficha-esqueleto-linha" />
+              <span className="atlas-ficha-esqueleto-linha" />
+            </div>
+          )}
+
+          {/* AS DUAS FALHAS (§9) — "Tentar de novo" só zera o booleano
+              dela; o efeito de carga (lá em cima) refaz o `fetch`
+              sozinho. O que já carregou (o resto da ficha) fica. */}
+          {corpoId && erroCorpos && (
+            <p className="atlas-ficha-erro">
+              {t('ficha.erroCarregar')}
+              <button type="button" onClick={() => setErroCorpos(false)}>
+                {t('ficha.tentarDeNovo')}
+              </button>
+            </p>
+          )}
+          {corpoId && corpoId !== 'sun' && erroTexturas && (
+            <p className="atlas-ficha-erro">
+              {t('ficha.erroCarregar')}
+              <button type="button" onClick={() => setErroTexturas(false)}>
+                {t('ficha.tentarDeNovo')}
+              </button>
+            </p>
+          )}
+
+          {ficha.secoes.map((secao) => {
+            const estaAberta =
+              escolhidas === null ? secao.id === primeira : escolhidas.includes(secao.id);
+            return (
+              <section key={secao.id} id={`ficha-secao-${secao.id}`} className="atlas-ficha-secao">
+                <h3 className="atlas-ficha-titulo">
+                  <button
+                    type="button"
+                    aria-expanded={estaAberta}
+                    aria-controls={`ficha-${secao.id}`}
+                    onClick={() => {
+                      const base = escolhidas ?? (primeira ? [primeira] : []);
+                      setAbertas({
+                        corpo: alvo,
+                        secoes: base.includes(secao.id)
+                          ? base.filter((s) => s !== secao.id)
+                          : [...base, secao.id],
+                      });
+                    }}
+                  >
+                    <span>{secao.titulo}</span>
+                    <span className="atlas-ficha-seta" aria-hidden="true">
+                      <Icone nome={estaAberta ? 'chevronBaixo' : 'chevronDireita'} tamanho={16} />
+                    </span>
+                  </button>
+                </h3>
+                {estaAberta && (
+                  <dl className="atlas-ficha-linhas" id={`ficha-${secao.id}`}>
+                    {secao.linhas.map((l, i) => {
                   // TEXTO LONGO (frase, lista de catálogo) empilha a linha
                   // inteira em vez de espremer em 60% da largura — ver o
                   // comentário do `.larga` em 04-atlas.css.
@@ -393,12 +558,43 @@ export function FichaDoObjeto({
                       </span>
                     </div>
                   );
-                })}
-              </dl>
-            )}
-          </section>
-        );
-      })}
+                    })}
+                    {/* O RELEVO INVENTADO mora AQUI (Lote 5, PLAN-UI.md §3.5:
+                        "vai para a seção 'A imagem'") — é a MESMA linha de
+                        sempre (rótulo + "?" à esquerda, `.hud-interruptor` à
+                        direita, no molde de `.ajustes-item`), só que agora
+                        dentro da seção que fala da foto, e não mais solta
+                        acima de todas as seções. Fecha e reabre com ela. */}
+                    {secao.id === 'imagem' && relevoDaCor !== null && (
+                      <label className="ajustes-item">
+                        <span className="ajustes-rotulo-caixa">
+                          <span className="ajustes-rotulo">{t('ficha.relevoDaCor')}</span>
+                          <Ajuda
+                            id="relevo"
+                            rotulo={t('ficha.relevoDaCor')}
+                            texto={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
+                            presa={dicaPresa === 'relevo'}
+                            onAlternar={() => alternarDica('relevo')}
+                          />
+                        </span>
+                        <span className="ajustes-controle">
+                          <input
+                            type="checkbox"
+                            className="hud-interruptor"
+                            checked={relevoDaCor}
+                            aria-label={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
+                            onChange={() => onRelevoDaCor(!relevoDaCor)}
+                          />
+                        </span>
+                      </label>
+                    )}
+                  </dl>
+                )}
+              </section>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }

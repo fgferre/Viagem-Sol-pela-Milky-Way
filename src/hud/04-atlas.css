@@ -42,6 +42,135 @@
 .atlas-ficha-escada:empty {
   margin-bottom: 0;
 }
+/* ÍCONE E TEXTO COLADOS (Lote 5, PLAN-UI.md item 2) — o `.ajustes-seg
+   button` de `08-ajustes.css` não declara `gap` porque os outros usos
+   dele (a máquina do tempo) são ícone SOZINHO; aqui, mais específico
+   que aquela regra, o "⊕ Aproximar"/"⌂ Sistema" ganham 0,4rem entre o
+   SVG e a palavra. */
+.atlas-ficha-escada .ajustes-seg button {
+  gap: 0.4rem;
+}
+
+/* O RÓTULO DA LINHA NASCE MINÚSCULO DO DICIONÁRIO ("distância — Sol",
+   "gravidade"…) — a pele B pede caixa normal com a PRIMEIRA letra
+   maiúscula (Lote 5, PLAN-UI.md item 2), e resolver por `::first-letter`
+   aqui poupa reescrever as ~30 chaves de `ficha.campo.*` nos dois
+   dicionários. `text-transform: capitalize` (a palavra inteira) faria a
+   mesma coisa errado em rótulos de duas palavras ("Velocidade Orbital"),
+   por isso é só a primeira letra. */
+.atlas-ficha-linha dt::first-letter {
+  text-transform: uppercase;
+}
+
+/* A INTRODUÇÃO (Lote 5, PLAN-UI.md §3.5) — as três primeiras linhas do
+   texto de Contexto (ou da primeira curiosidade sem ele); "Ler mais"
+   é IRMÃO do parágrafo clampado, não filho dele (`FichaDoObjeto.tsx`
+   explica o porquê: um filho inline dentro de `-webkit-line-clamp`
+   media a caixa do recorte errado, medido nesta pele). */
+.atlas-ficha-intro-bloco {
+  margin: 0 0 0.9rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--borda);
+}
+.atlas-ficha-intro {
+  margin: 0 0 0.3rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--texto-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.atlas-ficha-lermais {
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--acento);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: text-decoration-color var(--t-rapido) var(--curva);
+}
+.atlas-ficha-lermais:hover,
+.atlas-ficha-lermais:focus-visible {
+  text-decoration-color: currentcolor;
+}
+.atlas-ficha-lermais:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* A FICHA VAZIA (Lote 0/5, item 3) — o centro galáctico não inventa
+   seção nenhuma; uma linha diz que não há dados, no corpo de texto de
+   sempre, sem esqueleto (não há nada em voo para ela esperar). */
+.atlas-ficha-vazia {
+  margin: 0;
+  padding: 0.5rem 0;
+  font-size: 0.8125rem;
+  color: var(--texto-2);
+}
+
+/* O ESQUELETO (Lote 5, §9) — três barras ESTÁTICAS: a régua do §2 item 6
+   ("nada em loop") proíbe o brilho correndo que o padrão de mercado usa,
+   então aqui é só o `--hover` da casa, parado, com `aria-busy` fazendo o
+   trabalho de avisar quem ouve a tela. */
+.atlas-ficha-esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0 0 0.9rem;
+}
+.atlas-ficha-esqueleto-linha {
+  display: block;
+  height: 0.85rem;
+  border-radius: 4px;
+  background: var(--hover);
+}
+.atlas-ficha-esqueleto-linha:nth-child(1) {
+  width: 78%;
+}
+.atlas-ficha-esqueleto-linha:nth-child(2) {
+  width: 92%;
+}
+.atlas-ficha-esqueleto-linha:nth-child(3) {
+  width: 60%;
+}
+
+/* AS DUAS FALHAS (Lote 5, §9) — "Não foi possível carregar esta parte."
+   com "Tentar de novo" ao lado; o botão é o vocabulário de controle
+   frio de sempre (borda `--borda`, sem preenchimento), pequeno o
+   bastante para não competir com as ações do cabeçalho. */
+.atlas-ficha-erro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.9rem;
+  padding: 0.5rem 0;
+  font-size: 0.8125rem;
+  color: var(--texto-2);
+}
+.atlas-ficha-erro button {
+  flex: none;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-controle);
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  cursor: pointer;
+}
+.atlas-ficha-erro button:hover {
+  background: var(--hover);
+}
+.atlas-ficha-erro button:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
 
 /* AS SEÇÕES DOBRÁVEIS, no vocabulário do `.atlas-gaveta-titulo`: caixa
    alta, espaçada, fria, com uma régua embaixo. O título INTEIRO é o botão —

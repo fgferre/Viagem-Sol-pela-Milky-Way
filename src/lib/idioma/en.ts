@@ -276,6 +276,16 @@ export const EN: Record<keyof typeof PT, string> = {
   // pattern to the fact sheet") — ≤40 words.
   'ficha.ajuda':
     "Each seal says where the number comes from: measured is a number from the cited source; derived is calculated from measured ones; artistic is a declared illustration or invention. The '×Terra' beside a value compares it with Earth's own figure.",
+  // ---- the fact sheet on phone: compact/expanded (Lote 5, PLAN-UI.md §7)
+  'ficha.detalhes': 'Details',
+  'ficha.detalhesAria': 'View the full fact sheet',
+  'ficha.recolher': 'Collapse',
+  'ficha.recolherAria': 'Collapse to the summary sheet',
+  'ficha.lerMais': 'Read more',
+  // ---- the empty fact sheet and the load failures (Lote 5, §7/§9) --
+  'ficha.vazia': 'This place has no data sheet yet.',
+  'ficha.erroCarregar': "This part couldn't be loaded.",
+  'ficha.tentarDeNovo': 'Try again',
 
   // ---- section titles and field labels -----------------------------
   'ficha.secao.agora': 'right now',
@@ -286,7 +296,13 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.secao.curiosidades': 'trivia',
   'ficha.secao.imagem': 'the image',
   'ficha.secao.estrela': 'the star',
-  'ficha.campo.distanciaDe': 'distance — {pai}',
+  // "to the Sun"/"to Earth" (item 225, PLAN-UI.md §10) — same limit as
+  // the PT key beside it: without touching `ficha.ts` there is no way to
+  // pick the article by body, so this key always keeps "the", which is
+  // right for the Sun (the dominant, tested case: every planet's line)
+  // and wrong only for Earth and the five moon-parent planets ("to the
+  // Mars" reads odd) — registered in the lote's report.
+  'ficha.campo.distanciaDe': 'Distance to the {pai}',
   'ficha.campo.velocidadeOrbital': 'orbital speed',
   'ficha.campo.iluminadoDaqui': 'lit from here',
   'ficha.campo.raio': 'radius (equator)',
