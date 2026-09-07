@@ -15,6 +15,8 @@ Escrito para um executor menos capaz (trabalhador Sonnet orquestrado pela sessã
 | Abertura | **Explorar o Atlas** é o botão principal; Ver o filme (com a duração) e Voo livre ficam logo abaixo. |
 | Fonte | **Sim**, fonte própria embutida (woff2, subconjunto latino, ≤ 160 KB no total). |
 | Destinos da busca vazia | **10**: Terra, Lua, Marte, Júpiter, Saturno, Plutão · Sirius, Betelgeuse, Rigil Kentaurus · Centro galáctico (Sgr A*). |
+| Pele (portão 1, 07/09, maquetes M1–M6) | **B — Atlas editorial** (§4). Composição das seis telas aprovada sem mudanças. Detalhe a corrigir na implementação: nome do objeto na ficha em caixa normal ("Saturno"), como na abertura. |
+| Tarjas de cinema no Atlas | **Saem do Atlas; ficam no filme.** Na mesa, `.letterbox` não é montada no Atlas e `LETTERBOX_FRACAO` deixa o ramo de mesa de `retanguloUtilDoAtlas` (Lote 4, remedido pelo juiz). O filme não muda. |
 
 **Premissas (assumidas, não perguntadas):**
 - Mesa e celular são ambos de primeira classe; a referência principal é 1440×900 e 390×844.
@@ -103,7 +105,8 @@ Composição centrada (a cena do Sol continua atrás; véu radial escuro só no 
 ### 3.3 Atlas no celular (`09-celular.css`, `BarraOuAlcas.tsx`)
 
 - **Topo (uma linha, 44 px):** marca + contexto truncado à esquerda ("Sistema Solar › Marte"); à direita, [▶ Filme] [⇗ Explorar] como chips com ícone e rótulo (Retomar quando houver).
-- **Base:** cinco alças em grade de 5 colunas iguais: ícone 20 px sobre rótulo 11 px (Buscar · Camadas · Tempo · Ajustes · Ficha=nome do alvo). Altura 64 px + `safe-area-inset-bottom`. Ativa: ícone e texto na cor de acento + linha de 2 px no topo da alça. Se não couber (320 px com `ui` 1,4) a fileira ROLA, como hoje; a alça aberta rola para a vista (efeito existente em `useGavetas.ts`). Nunca esconder rótulo, nunca duas linhas.
+- **Base:** cinco alças em grade de 5 colunas iguais: ícone 20 px sobre rótulo 11 px (Buscar · Camadas · Tempo · Ajustes · Ficha=nome do alvo). Altura 64 px + `safe-area-inset-bottom`. Ativa: ícone e texto na cor de acento + linha de 2 px no topo da alça. **Regra de encaixe (portão 2, 07/09: o dono reprovou a fileira cortada a 320 px com `ui` 1,4):** as cinco alças SEMPRE cabem na largura; o rótulo escala com a largura da janela e é limitado pelo `--ui`: `font-size: clamp(11px, 3.2vw, calc(11px * var(--ui)))`; o nome do alvo na quinta alça trunca com reticências (nome completo no `aria-label`). Nunca esconder rótulo, nunca duas linhas, nunca rolar. O `scrollIntoView` da alça aberta em `useGavetas.ts` fica, inofensivo.
+- **Larguras estreitas (≤ 360 px ou `ui` ≥ 1,2):** o contexto do topo mostra só o último trecho ("Netuno"); o chip do selo fica numa linha com `text-overflow: ellipsis` e nunca cobre o rótulo do alvo; na folha compacta o NOME tem prioridade e o botão "Detalhes" vira só o chevron (44×44, `aria-label`).
 - **Selo:** chip numa linha acima da barra, à direita (como hoje).
 - **Folha:** sobe do pé, teto `48svh` (existente, `--teto-dialogo-tela`), fundo sólido (sem blur), alça + cabeçalho fixos; fecha por ✕, Esc, toque no céu e arrasto para baixo no topo da rolagem (tudo existente).
 - **Nenhum painel abre sozinho** ao entrar no Atlas; convites e tutorial mantêm regras atuais (`Spotlight.tsx`).
