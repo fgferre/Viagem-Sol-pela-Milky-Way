@@ -58,6 +58,8 @@ export class Escolha {
      * o comportamento é o de sempre.
      */
     corpoNaOrbita?: (x: number, y: number) => string | null;
+    /** o tamanho da tela em px de CSS — para ler as caixas que o desenho julgou */
+    tela: () => { largura: number; altura: number };
   };
 
   constructor(dono: {
@@ -100,6 +102,22 @@ export class Escolha {
    * que é o comportamento de sempre.
    */
   private alvoNoPonto(x: number, y: number): StarLabel | null {
+    // O TEXTO É ALVO (07/09). O nome desenhado se estende dezenas de px
+    // para o lado da âncora, e um nome longo passa do raio de 6% de
+    // baixo — medido no juiz de a11y: a ponta de "Júpiter" ficava a 77 px
+    // da âncora numa tela de 1200, e o clique ali não escolhia nada. A
+    // caixa é a que o desenho julgou (`caixaDaDisputa`, em px de CSS), a
+    // mesma que o juiz mede; o raio continua valendo para quem clica
+    // perto da marca sem acertar a letra.
+    const tela = this.fios.tela();
+    const px = x * tela.largura;
+    const py = y * tela.altura;
+    for (const label of this.rotulos.alvos) {
+      if (label.desenhado === false) continue;
+      if (label.opacity < 0.15) continue;
+      const c = label.caixaDaDisputa;
+      if (c && px >= c.left && px <= c.right && py >= c.top && py <= c.bottom) return label;
+    }
     let best: StarLabel | null = null;
     let bestD = 0.0035; // ~6% da tela ao quadrado
     for (const label of this.rotulos.alvos) {

@@ -237,7 +237,17 @@ export class Escada {
     this.escolha = new Escolha({
       escada: this,
       rotulos: dono.rotulos,
-      fios: { fase: dono.fios.fase, meta: dono.fios.meta, corpoNaOrbita: dono.fios.corpoNaOrbita },
+      fios: {
+        fase: dono.fios.fase,
+        meta: dono.fios.meta,
+        corpoNaOrbita: dono.fios.corpoNaOrbita,
+        // a tela do canvas da cena: o canvas dos rótulos cobre o mesmo
+        // retângulo, então as caixas dele lêem-se nestes px de CSS
+        tela: () => {
+          const c = dono.fios.engine().renderer.domElement;
+          return { largura: c.clientWidth, altura: c.clientHeight };
+        },
+      },
     });
   }
 
