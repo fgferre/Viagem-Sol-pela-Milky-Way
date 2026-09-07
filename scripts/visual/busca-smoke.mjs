@@ -597,9 +597,9 @@ try {
       + `("${naFicha.primeiraLinha}" = "${naFicha.valor}"; seções: ${naFicha.secoes.join(', ')})`
   );
 
-  // O CLIQUE. Perto do centro do retângulo útil, no enquadramento da
-  // órbita da Terra. Antes do conserto o clique ali não achava rótulo
-  // nenhum (não havia rótulo de corpo) e nada acontecia.
+  // O CLIQUE. No enquadramento da órbita da Terra. Antes do conserto o
+  // clique ali não achava rótulo nenhum (não havia rótulo de corpo) e
+  // nada acontecia.
   //
   // O QUE ELE FAZ MUDOU DUAS VEZES EM 22/08 (item 73). Primeiro
   // `?foco=terra` passou a pôr a TERRA no centro (e não o Sol com uma
@@ -628,8 +628,23 @@ try {
     Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) / Math.hypot(...b);
   const antesDoClique = await degrau();
   const cameraAntes = await posDaCamera();
-  const px = Math.round(tela.w * 0.5);
-  const py = Math.round(tela.h * 0.45);
+  // O PONTO NA TELA É LIDO DO APP, NUNCA DECORADO. Era (50%, 45%) fixo —
+  // onde a Terra costumava cair —, mas a ficha do objeto (que `?foco=`
+  // abre sozinha) reserva a faixa DIREITA da câmera para o painel
+  // (`retanguloUtil.direita`, hoje ≈ 0,33), e o enquadramento empurra o
+  // alvo para a esquerda: o ponto decorado errava a Terra sem nada de
+  // errado no app. A âncora vem da MESMA lista que o hit-test do clique
+  // lê (`Rotulos.alvos`, `alvos` de `director/rotulos.ts` — `private` só
+  // para o TypeScript; em runtime é a mesma instância do objeto que
+  // `window.__director` publica para este harness), então o clique mira
+  // onde o corpo REALMENTE está neste quadro, com a ficha aberta ou
+  // fechada.
+  const alvoDaTerra = JSON.parse(await sessao.js(`JSON.stringify(
+    window.__director.rotulos.alvos.find((a) => a.key === 'corpo:earth') || null
+  )`));
+  if (!alvoDaTerra) throw new Error('a âncora de corpo:earth não está na lista de rótulos');
+  const px = Math.round(tela.w * alvoDaTerra.x);
+  const py = Math.round(tela.h * alvoDaTerra.y);
   await sessao.clicar(px, py);
   await sessao.assentar();
   const depoisDoClique = await contexto(sessao);
