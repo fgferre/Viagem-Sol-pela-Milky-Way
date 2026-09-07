@@ -4,7 +4,29 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 226.**
 
-## O BASTÃO — onde a rodada parou (06/09, madrugada)
+## O BASTÃO — onde a rodada parou (07/09)
+
+**07/09 (rodada da VARREDURA, encerrada por ordem dele: "encerrar
+rodada").** Abriu com a pergunta dele: "o que faltou? pode continuar.
+Será que estamos deixando bugs para trás?" Resposta medida: sim, e
+três foram consertados — clicar na PONTA de um nome longo não escolhia
+o corpo (o acerto só valia perto da âncora; agora a palavra inteira
+vale — era a falha antiga do juiz de a11y), a prova da busca esperava
+39 corpos e o Atlas tem 48 desde as luas de Saturno, e o aviso de lint
+da ficha calou com o motivo. Duas pistas eram FALSAS e saíram do
+backlog: os nomes vazios na órbita de Netuno eram o painel do navegador
+embutido escondido (página parada), e o nome de Netuno sob a ficha do
+telefone não veio do redesenho (a ficha abre na mesma altura de antes;
+é a prova que mira um nome baixo demais — ele decide se a ficha do
+telefone deve cobrir menos céu). O 225 (Terra e Lua sumindo no fim do
+filme) NÃO reproduziu: seis voltas em Chrome de verdade, todas com os
+dois na tela; o cache do gás parado não pode esconder corpos. Falta ele
+contar o que fazia na hora (trocou de aba? redimensionou?) e, se der,
+o console aberto — "context lost" explicaria de uma vez. **Continuam
+abertos 223, 224 e 225.** Juízes: a11y e busca verdes; atlas-smoke com
+a única falha de Netuno sob a ficha (backlog). Servidor: `npm run dev -- --host`.
+
+## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar
 rodada").** Começou com o veredito dele sobre a gaveta Avançado dos
