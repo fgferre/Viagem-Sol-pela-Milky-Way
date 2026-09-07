@@ -205,7 +205,9 @@ export function FichaDoObjeto({
           : null,
     // `idioma` entra na lista porque a ficha é TEXTO: rótulos, títulos
     // de seção e a palavra da classe saem do dicionário, e sem ele o
-    // memo devolveria a ficha da língua anterior (item 130).
+    // memo devolveria a ficha da língua anterior (item 130). O lint não
+    // vê a dependência porque ela chega pelo dicionário, não pelo nome.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [corpoId, estrelaEmFoco, estrela, jd, fonte, corpos, texturas, camaraUa, idioma]
   );
 
