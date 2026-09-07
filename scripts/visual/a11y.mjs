@@ -1378,6 +1378,9 @@ try {
   // ---- A FICHA DO OBJETO: dobra, cabe e não cobre o selo (item 74) --
   await julgarAreaDaFicha(sessao);
 
+  // ---- A RESERVA DA FICHA NO RETÂNGULO ÚTIL (Lote 3, item 225) -----
+  await julgarReservaDaFicha(sessao);
+
   // ---- O HUD DO CELULAR: as alças no pé e a folha que sobe (item 62) --
   await julgarCelular(sessao, { conferir, medirCobertura, PIN, trocarUiAoVivo });
 
@@ -1803,6 +1806,80 @@ async function julgarAreaDaFicha(s) {
     !fechou[0].aberta && !fechou[0].corpo && fechou[1].aberta,
     `ficha: clicar na primeira a FECHA, e o corpo dela sai do DOM (${fechou.map((x) => (x.aberta ? '▾' : '▸')).join('')})`
   );
+}
+
+/**
+ * A RESERVA DA FICHA NO RETÂNGULO ÚTIL (Lote 3, PLAN-UI.md §6, item
+ * 225) — a MESMA promessa de `medirCobertura` ("declarado ≥ medido"),
+ * na borda que `medirCobertura` não olha: ela só mede topo/base, e a
+ * ficha soma na DIREITA (mesa) ou na BASE (celular). `medirCobertura`
+ * também exclui a ficha DE PROPÓSITO (é diálogo, não HUD permanente) —
+ * esta prova é a companheira dela, com a ficha ABERTA.
+ *
+ * MESA: Saturno, `direita` — o painel encostado à borda, sem teto (a
+ * reserva ali é a largura + o afastamento inteiros, medidos direto).
+ *
+ * CELULAR (390×844): Netuno, `base` — e AQUI a leitura não pode ser
+ * "bater no DOM da folha e comparar direto": a folha REAL de hoje ainda
+ * não é a compacta do Lote 5 (cresce com a seção aberta, hoje bem além
+ * do teto de 8,5rem/136 px em `ui=1` — `App.tsx`,
+ * `TETO_DA_FOLHA_COMPACTA_REM`), então medir a folha inteira reprovaria
+ * uma declaração CORRETA por um componente que ainda não encolheu. A
+ * prova mede a DIFERENÇA (`util.base` com a ficha aberta menos o mesmo
+ * `util.base` com ela fechada) — a reserva que a abertura realmente
+ * ACRESCENTOU — e cobra que essa diferença seja o teto compacto, dentro
+ * de 1 px: é a prova de que a CÂMERA aplica o `min(medido, teto)`
+ * certo, não de que a folha de hoje já é pequena.
+ */
+async function julgarReservaDaFicha(s) {
+  const MEDIR_MESA = `(() => {
+    const W = window.innerWidth;
+    const b = document.querySelector('.atlas-ficha')?.getBoundingClientRect() ?? null;
+    return { util: window.__director.retanguloUtil, direita: b ? (W - b.left) / W : 0 };
+  })()`;
+  await s.ir(`foco=saturno&${PIN}`);
+  const mesa = await s.js(MEDIR_MESA);
+  process.stdout.write(
+    `  ·     retângulo útil (mesa, ficha de Saturno aberta): direita declarada `
+      + `${mesa.util.direita.toFixed(3)} · medida ${mesa.direita.toFixed(3)}\n`
+  );
+  conferir(
+    mesa.direita > 0 && mesa.direita <= mesa.util.direita,
+    `retângulo útil (mesa, ficha de Saturno aberta): direita declarada `
+      + `${mesa.util.direita.toFixed(3)} ≥ medida ${mesa.direita.toFixed(3)}`
+  );
+
+  // O TETO, na mesma fonte de `App.tsx` (`TETO_DA_FOLHA_COMPACTA_REM =
+  // 8.5`), em px com `ui = 1` — o `PIN` desta prova não pede `?ui=`.
+  const TETO_DA_FOLHA_COMPACTA_PX = 8.5 * 16;
+  await s.send('Emulation.setDeviceMetricsOverride', {
+    width: 390, height: 844, deviceScaleFactor: 1, mobile: false,
+  });
+  await s.ir(`atlas=1&${PIN}`);
+  const semFicha = await s.js('JSON.stringify(window.__director.retanguloUtil)');
+  await s.ir(`foco=netuno&${PIN}`);
+  const celular = await s.js(`(() => {
+    const H = window.innerHeight;
+    const b = document.querySelector('.atlas-ficha')?.getBoundingClientRect() ?? null;
+    return {
+      util: window.__director.retanguloUtil,
+      folhaRealPx: b ? b.height : 0,
+    };
+  })()`);
+  const reservaAcrescida = (celular.util.base - JSON.parse(semFicha).base) * 844;
+  const reservaEsperadaPx = Math.min(celular.folhaRealPx, TETO_DA_FOLHA_COMPACTA_PX);
+  process.stdout.write(
+    `  ·     retângulo útil (celular 390×844, ficha de Netuno aberta): base declarada `
+      + `${celular.util.base.toFixed(3)} — reserva acrescida ${reservaAcrescida.toFixed(1)} px `
+      + `(folha real ${celular.folhaRealPx.toFixed(1)} px, teto ${TETO_DA_FOLHA_COMPACTA_PX} px)\n`
+  );
+  conferir(
+    Math.abs(reservaAcrescida - reservaEsperadaPx) < 1,
+    `retângulo útil (celular 390×844, ficha de Netuno aberta): a reserva que a abertura `
+      + `acrescentou (${reservaAcrescida.toFixed(1)} px) é o min(folha real, teto compacto) `
+      + `(${reservaEsperadaPx.toFixed(1)} px)`
+  );
+  await s.send('Emulation.clearDeviceMetricsOverride');
 }
 
 // ============================================================

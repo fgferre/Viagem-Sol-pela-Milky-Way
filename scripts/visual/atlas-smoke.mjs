@@ -2540,10 +2540,29 @@ try {
       dedo('touchEnd', []),
     ]);
     await sessao.assentar();
-    const aindaCeu = await sessao.js(`(() => {
-      const e = document.elementFromPoint(${nome.x}, ${nome.y});
-      return String(Boolean(e && e.classList.contains('scene-canvas')));
-    })()`);
+    // A LEITURA (Lote 3, PLAN-UI.md §6, item 225): até aqui "ainda é céu"
+    // relia o PONTO DE ANTES do toque — sozinho, sem câmera se movendo, a
+    // posição do rótulo não mudava e o ponto velho valia pelo novo. Desde
+    // que a ficha reserva espaço na câmera (`Director.reservarParaAFicha`),
+    // o alvo escolhido SUBIU de propósito para escapar da folha, e o ponto
+    // de antes do toque (onde o dedo tocou) fica DENTRO da folha de hoje —
+    // que ainda não é a compacta do Lote 5, e por isso é mais alta que o
+    // teto que a câmera já respeita. O alvo continua sendo Netuno; o que
+    // muda é ESPERAR o rótulo aparecer de novo — e não `esperarAlvoAssentar`
+    // (que exige posição ESTÁVEL entre duas leituras, a régua certa para um
+    // alvo que ainda está migrando de degrau, não para este: a câmera já
+    // assentou, então a posição já não muda, e a única variável é a
+    // DISPUTA de espaço por rótulo — o rodízio de julgamento do
+    // `LabelCanvas` — que pode perder a vaga num quadro e ganhá-la no
+    // seguinte enquanto o vizinho mais próximo (agora mais apertado, perto
+    // do teto que a câmera reserva) também se rearranja. Por isso a leitura
+    // aqui é "apareceu ALGUMA vez", não "ficou parado duas vezes".
+    let depoisDoToque = null;
+    for (let i = 0; i < 20 && !depoisDoToque; i++) {
+      depoisDoToque = await rotuloDoAlvo();
+      if (!depoisDoToque) await dorme(250);
+    }
+    const aindaCeu = String(Boolean(depoisDoToque));
     await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
     await sessao.assentar();
     nome = await esperarAlvoAssentar();

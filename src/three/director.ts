@@ -101,6 +101,7 @@ import {
 import type { PostoNoPalco } from './director/palco';
 import type { GalacticAssets } from './cartography/galacticAssets';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
+import type { ReservaDaFicha } from './cinematic/retanguloDoAtlas';
 import { ORIGEM } from './cinematic/enquadramento';
 import { escalaDaUi, larguraDeCss } from '../lib/uiScale';
 import {
@@ -140,6 +141,17 @@ const CALIBRACAO_DA_CASA: CalibracaoDaCasa = {
   sigmaPx: SIGMA_PX,
   beta: BETA_DA_EMISSAO,
 };
+
+/**
+ * A RAMPA DA RESERVA DA FICHA (Lote 3, PLAN-UI.md §6, item 225) — 240 ms,
+ * o número que o próprio plano fixa. Ela existe para a câmera não SALTAR
+ * quando a ficha abre/fecha ou troca de tamanho (mesa→painel,
+ * celular→folha): o valor CORRENTE anda até o alvo por este tempo, com o
+ * mesmo smoothstep de toda rampa da casa (`t*t*(3-2*t)`), e
+ * `reservarParaAFicha` pula direto para o alvo com `shotMode`/
+ * `reducedMotion` — captura e acessibilidade não esperam animação.
+ */
+const RESERVA_DA_FICHA_RAMPA_S = 0.24;
 
 // A fase e o inventário de quem decide por ela moram em `fases.ts` —
 // o App também os lê, e duplicar a união aqui era o começo da segunda
@@ -438,6 +450,21 @@ export class Director {
   private jaGirouNoAtlas = false;
   /** o último veredito da bússola que o React já ouviu (item 102) */
   private bussolaAcesa = false;
+
+  // ---- A RESERVA DA FICHA (Lote 3, PLAN-UI.md §6, item 225) ---------
+  // O App mede pixels (largura do painel na mesa, altura da folha no
+  // celular) e chama `reservarParaAFicha`; aqui dentro eles viram
+  // FRAÇÃO — a mesma unidade de `RetanguloUtil` — e andam do valor
+  // CORRENTE até o alvo por rampa (`RESERVA_DA_FICHA_RAMPA_S`). É o
+  // CORRENTE que entra em `atlas.apply` (tick, mais abaixo) e no getter
+  // `retanguloUtil` — o juiz de a11y tem de ver a reserva que a câmera
+  // está usando AGORA, não o alvo dela.
+  private reservaFichaAlvo: ReservaDaFicha = { base: 0, direita: 0 };
+  /** de onde a rampa partiu — o CORRENTE no instante em que o alvo mudou */
+  private reservaFichaPartida: ReservaDaFicha = { base: 0, direita: 0 };
+  private reservaFichaCorrente: ReservaDaFicha = { base: 0, direita: 0 };
+  /** progresso da rampa, 0..1 — 1 quando o corrente já é o alvo */
+  private reservaFichaRampaT = 1;
 
   /**
    * O QUE O PORTAL GUARDA quando o visitante entra no Atlas — e devolve
@@ -2356,13 +2383,59 @@ export class Director {
   }
 
   /**
+   * A RESERVA DA FICHA (Lote 3, PLAN-UI.md §6, item 225) — o App chama
+   * isto DENTRO do `medir()` dele (nunca por quadro), com os pixels REAIS
+   * do painel (mesa) ou da folha (celular). `null` é "a ficha fechou":
+   * a reserva volta a 0 nas duas bordas.
+   *
+   * OS PIXELS VIRAM FRAÇÃO aqui — `basePx` por `window.innerHeight`,
+   * `direitaPx` por `larguraDeCss()` — porque é fração que
+   * `retanguloUtilDoAtlas` soma; o App só mede DOM, nunca converte.
+   *
+   * MUDAR O ALVO PERTURBA: o sinal de prontidão das capturas não pode
+   * assentar com a câmera ainda a meio caminho da rampa. E a rampa
+   * reparte do CORRENTE de agora, não do alvo anterior — uma segunda
+   * troca no meio da primeira rampa não pode saltar para trás.
+   */
+  reservarParaAFicha(px: { basePx: number; direitaPx: number } | null) {
+    const alturaJanela = window.innerHeight;
+    const larguraJanela = larguraDeCss();
+    const base =
+      px && Number.isFinite(px.basePx) && px.basePx > 0 && alturaJanela > 0
+        ? px.basePx / alturaJanela
+        : 0;
+    const direita =
+      px && Number.isFinite(px.direitaPx) && px.direitaPx > 0 && larguraJanela > 0
+        ? px.direitaPx / larguraJanela
+        : 0;
+    if (base === this.reservaFichaAlvo.base && direita === this.reservaFichaAlvo.direita) {
+      return;
+    }
+    this.reservaFichaPartida = { ...this.reservaFichaCorrente };
+    this.reservaFichaAlvo = { base, direita };
+    if (this.shotMode || this.reducedMotion) {
+      // captura e acessibilidade não esperam animação — o valor pula
+      // direto para o alvo, como toda rampa da casa faz com as duas portas
+      this.reservaFichaCorrente = { base, direita };
+      this.reservaFichaRampaT = 1;
+    } else {
+      this.reservaFichaRampaT = 0;
+    }
+    this.perturbar();
+  }
+
+  /**
    * O RETÂNGULO ÚTIL que o enquadramento está usando agora — publicado
    * para o juiz de a11y poder comparar a declaração (`atlasRig.ts`) com
    * as áreas REAIS que o HUD ocupa na página. Sem esta ponte, as duas
    * fontes (o número no TS e a altura no CSS) só se encontrariam a olho.
+   *
+   * `reservaFichaCorrente` entra aqui pela mesma razão do `atlas.apply`
+   * no tick (F2b/item 225): o juiz precisa ver a reserva que a câmera
+   * está usando NESTE quadro, e não o alvo dela.
    */
   get retanguloUtil() {
-    return retanguloUtilDoAtlas(escalaDaUi(), larguraDeCss());
+    return retanguloUtilDoAtlas(escalaDaUi(), larguraDeCss(), this.reservaFichaCorrente);
   }
 
   /**
@@ -2596,11 +2669,32 @@ export class Director {
       // distância de DESTINO dela (item 112) — o gesto da roda nunca se
       // perde e continua havendo UMA lei escrevendo a distância.
       this.gestos?.avancarZoom(dt);
+      // A RAMPA DA RESERVA DA FICHA (item 225) anda AQUI, no mesmo ponto
+      // do quadro — ela só entra na câmera pelo `atlas.apply` de baixo, e
+      // fora do Atlas não há o que avançar (filme e voo livre não leem a
+      // reserva). Mesmo smoothstep de toda rampa da casa.
+      if (this.reservaFichaRampaT < 1) {
+        this.reservaFichaRampaT = Math.min(
+          1,
+          this.reservaFichaRampaT +
+            (Number.isFinite(dt) ? Math.max(dt, 0) : 0) / RESERVA_DA_FICHA_RAMPA_S
+        );
+        const t = this.reservaFichaRampaT;
+        const k = t * t * (3 - 2 * t);
+        this.reservaFichaCorrente = {
+          base:
+            this.reservaFichaPartida.base +
+            (this.reservaFichaAlvo.base - this.reservaFichaPartida.base) * k,
+          direita:
+            this.reservaFichaPartida.direita +
+            (this.reservaFichaAlvo.direita - this.reservaFichaPartida.direita) * k,
+        };
+      }
       // o MESMO ponto do quadro em que a JourneyRig escreveria a dela —
       // inclusive o fov, que aqui é o pino do Atlas e não o resíduo
       // amortecido do shot onde o visitante pausou. O dt alimenta a
       // rampa entre degraus (F2b) — fora dela é ignorado.
-      this.atlas.apply(cam, escalaDaUi(), larguraDeCss(), dt);
+      this.atlas.apply(cam, escalaDaUi(), larguraDeCss(), dt, this.reservaFichaCorrente);
       // ...e a bússola do HUD, na BORDA: o rig recalculou o veredito
       // com histerese neste mesmo `apply`, e só a virada atravessa
       if (this.atlas.horizonteTorto !== this.bussolaAcesa) {

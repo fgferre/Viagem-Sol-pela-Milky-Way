@@ -22,6 +22,7 @@ import { describe, expect, it } from 'vitest';
 import type { Gaveta } from './useGavetas';
 import {
   ARRASTO_QUE_FECHA_PX,
+  aoAbrirFicha,
   aoAlternar,
   aoFechar,
   aoFocar,
@@ -200,5 +201,39 @@ describe('6. a QUARTA saída: arrastar a folha para baixo (item 62, 23/08)', () 
 
   it('fecha "a mim", como as outras três saídas', () => {
     expect(HOOK).toContain('setGaveta((atual) => aoFechar(atual, gaveta))');
+  });
+});
+
+describe('7. a ficha no celular: compacta/expandida (PLAN-UI.md §7, item 225)', () => {
+  it('ABRIR — de outra gaveta, ou de nenhuma — sempre volta a compacta', () => {
+    // a tabela do §7: "seleção de alvo com ficha fechada" e "alça Ficha
+    // na barra" são a MESMA transição vista daqui — qualquer coisa que
+    // não seja 'ficha' virando 'ficha'
+    for (const anterior of [null, 'busca', 'camadas', 'ajustes', 'tempo'] as const) {
+      expect(aoAbrirFicha(anterior, 'ficha', true), `${anterior} → ficha`).toBe(false);
+      expect(aoAbrirFicha(anterior, 'ficha', false), `${anterior} → ficha`).toBe(false);
+    }
+  });
+
+  it('TROCA DE ALVO com a ficha JÁ aberta — mantém o estado dos dois lados', () => {
+    // §7: "troca de alvo com ficha aberta: compacta/expandida → mantém
+    // o estado (conteúdo troca)" — `aoFocar` já mantinha `atual` em
+    // 'ficha'; esta é a MESMA transição ('ficha' → 'ficha')
+    expect(aoAbrirFicha('ficha', 'ficha', true)).toBe(true);
+    expect(aoAbrirFicha('ficha', 'ficha', false)).toBe(false);
+  });
+
+  it('fechar ou trocar para outra gaveta não força nada — não é o que a regra decide', () => {
+    expect(aoAbrirFicha('ficha', null, true)).toBe(true);
+    expect(aoAbrirFicha('ficha', 'busca', false)).toBe(false);
+  });
+
+  it('o estado e as duas portas são do HOOK, expostas em Gavetas', () => {
+    expect(HOOK).toContain('fichaExpandida,');
+    expect(HOOK).toContain('alternarFichaExpandida,');
+    expect(HOOK).toContain('definirFichaExpandida,');
+    // §7: "rotação do aparelho / mesa → celular: zera quando `celular` muda"
+    // — reação SEPARADA de `aoAbrirFicha`, porque `celular` não é `Gaveta`
+    expect(HOOK).toContain('setFichaExpandida(false)');
   });
 });

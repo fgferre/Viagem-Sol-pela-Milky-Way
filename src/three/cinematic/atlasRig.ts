@@ -32,6 +32,7 @@ import {
 } from './enquadramento';
 import { slerpDir } from './movimentos';
 import { LARGURA_DE_MESA_PX, retanguloUtilDoAtlas } from './retanguloDoAtlas';
+import type { ReservaDaFicha } from './retanguloDoAtlas';
 import { ORIGEM } from './enquadramento';
 
 // A FACHADA: o retângulo útil e a matemática do enquadramento moram
@@ -1291,12 +1292,18 @@ export class AtlasRig {
    * números vivos) para o rig continuar sem saber que existe DOM: texto
    * maior ⇒ HUD mais alto ⇒ retângulo útil menor ⇒ câmera um pouco mais
    * atrás; janela mais estreita ⇒ a barra quebra ⇒ o mesmo efeito.
+   *
+   * `extra` é a reserva da FICHA (Lote 3, PLAN-UI.md §6, item 225) — o
+   * Director já a entrega em FRAÇÃO, com a rampa dela já resolvida (o
+   * valor CORRENTE, não o alvo); este rig só a repassa a
+   * `retanguloUtilDoAtlas`, sem saber que existe DOM nem gaveta.
    */
   apply(
     camera: THREE.PerspectiveCamera,
     fatorUi = 1,
     larguraPx = LARGURA_DE_MESA_PX,
-    dt = 0
+    dt = 0,
+    extra?: ReservaDaFicha
   ) {
     // O GIRO DO VISITANTE ENTRA AQUI, filtrado pela inércia — antes de
     // qualquer pose ser escrita, e nos dois caminhos (com rampa e sem),
@@ -1316,7 +1323,7 @@ export class AtlasRig {
         this.escreverPose(
           camera, fatorUi, larguraPx,
           this.alvo, this.raio, this.eixoDe, this.pai, this.giro, this.polo,
-          this.distanciaPinada
+          this.distanciaPinada, extra
         )
       );
       return;
@@ -1335,7 +1342,7 @@ export class AtlasRig {
       this.escreverPose(
         camera, fatorUi, larguraPx,
         this.alvo, this.raio, this.eixoDe, this.pai, this.giro, this.polo,
-        this.distanciaPinada
+        this.distanciaPinada, extra
       )
     );
     _posDestino.copy(camera.position);
@@ -1344,7 +1351,7 @@ export class AtlasRig {
       camera, fatorUi, larguraPx,
       this.partida.alvo, this.partida.raio, this.partida.eixoDe,
       this.partida.temPai ? this.partida.pai : null, this.partida.giro,
-      this.partida.polo, this.partida.distancia
+      this.partida.polo, this.partida.distancia, extra
     );
     _posPartida.copy(camera.position);
     _quatPartida.copy(camera.quaternion);
@@ -1403,13 +1410,14 @@ export class AtlasRig {
     pai: THREE.Vector3 | null,
     giro: THREE.Quaternion,
     polo: THREE.Vector3,
-    pinada: number | null = null
+    pinada: number | null = null,
+    extra?: ReservaDaFicha
   ): number {
     const { distancia, giroY, giroX } = enquadrar({
       rAlvo: raio,
       fovDeg: ATLAS_FOV_GRAUS,
       aspect: camera.aspect,
-      retanguloUtil: retanguloUtilDoAtlas(fatorUi, larguraPx),
+      retanguloUtil: retanguloUtilDoAtlas(fatorUi, larguraPx, extra),
     });
     // o MESMO polo governa a pose de repouso e o alto da tela: se a
     // inclinação subisse rumo a um polo e a tela mostrasse outro, o

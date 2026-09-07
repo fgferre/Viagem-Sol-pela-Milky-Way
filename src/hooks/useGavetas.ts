@@ -88,6 +88,29 @@ export const aoFocar = (atual: Gaveta | null, alvo: string | null): Gaveta | nul
   atual === 'ajustes' ? atual : alvo ? 'ficha' : atual === 'ficha' ? null : atual;
 
 /**
+ * A FICHA NO CELULAR — MÁQUINA DE ESTADOS (Lote 3, PLAN-UI.md §7, item
+ * 225): `fichaExpandida` decide compacta/expandida, e esta é a ÚNICA
+ * regra pura dela — a compacta/expandida em si (o toque em "Detalhes"
+ * ou "Recolher", o arrasto na alça) é encanamento do Lote 5; aqui só o
+ * que decide QUANDO ela VOLTA a compacta sozinha.
+ *
+ * A FICHA ABRE ⇒ COMPACTA, sempre — venha de outra gaveta ou de
+ * nenhuma (`anterior !== 'ficha'`), nunca da troca de ALVO com a ficha
+ * JÁ aberta (`anterior === atual === 'ficha'`, a mesma cláusula que
+ * `aoFocar` já trata como "conteúdo troca sem fechar"): abrir de novo é
+ * abrir de novo, e o dono decidiu que "expandir" não é estado que
+ * sobreviva a uma seleção nova (§7, "Rotação do aparelho / mesa →
+ * celular... estado zera quando `celular` muda" é a MESMA lei lida
+ * pela porta do aparelho — esse gatilho mora no `useState` do hook, e
+ * não aqui, porque `celular` não é `Gaveta`).
+ */
+export const aoAbrirFicha = (
+  anterior: Gaveta | null,
+  atual: Gaveta | null,
+  expandida: boolean
+): boolean => (atual === 'ficha' && anterior !== 'ficha' ? false : expandida);
+
+/**
  * QUANTO DURA A SAÍDA DA FOLHA — o mesmo 260 ms da entrada (o
  * `@keyframes folhaSobe`, fatia 9), porque é o mesmo movimento ao
  * contrário. Mora aqui e não no CSS porque quem segura o nó desmontando
@@ -142,6 +165,17 @@ export interface Gavetas {
   fecharGaveta: (qual: Gaveta) => void;
   /** o TOQUE NO CÉU: fecha a folha que estiver aberta, seja qual for */
   fecharTodas: () => void;
+  /**
+   * A FICHA NO CELULAR (Lote 3, PLAN-UI.md §7, item 225): compacta
+   * (`false`) ou expandida (`true`). Não existe apresentação própria na
+   * mesa — o Lote 5 desenha compacta/expandida; por agora é só o
+   * ESTADO e a regra (`aoAbrirFicha`).
+   */
+  fichaExpandida: boolean;
+  /** alterna compacta ⇄ expandida — o toque em "Detalhes"/"Recolher" */
+  alternarFichaExpandida: () => void;
+  /** força um dos dois — o arrasto na alça, que já sabe para ONDE vai */
+  definirFichaExpandida: (v: boolean) => void;
 }
 
 export function useGavetas(
@@ -186,6 +220,39 @@ export function useGavetas(
   if (alvo !== alvoAnterior) {
     setAlvoAnterior(alvo);
     setGaveta((atual) => aoFocar(atual, alvo));
+  }
+
+  /**
+   * A FICHA NO CELULAR — COMPACTA POR PADRÃO (Lote 3, PLAN-UI.md §7,
+   * item 225). MESMO PADRÃO das reações acima (ajuste durante o
+   * render, um segundo estado como "anterior"): `aoAbrirFicha` decide
+   * se ela ABRIU agora (zera para compacta) ou se já estava aberta
+   * (mantém). O "anterior" AQUI é a `gaveta` de antes deste render, e
+   * não o `gavetaAnterior` de cima — são a MESMA variável em espírito,
+   * mas o React só garante o valor lido "durante o render" quando é o
+   * PRÓPRIO efeito quem o guarda, e um terceiro estado colidiria com o
+   * de `alvoAnterior`/`faseAnterior` se fosse o mesmo nome.
+   */
+  const [gavetaAnteriorParaFicha, setGavetaAnteriorParaFicha] = useState<Gaveta | null>(gaveta);
+  const [fichaExpandida, setFichaExpandida] = useState(false);
+  if (gavetaAnteriorParaFicha !== gaveta) {
+    setGavetaAnteriorParaFicha(gaveta);
+    setFichaExpandida((atual) => aoAbrirFicha(gavetaAnteriorParaFicha, gaveta, atual));
+  }
+
+  /**
+   * MESA ⇄ CELULAR ZERA A FICHA (§7: "estado zera quando `celular`
+   * muda") — e é uma reação SEPARADA da de cima porque `celular` não é
+   * `Gaveta`: virar a mesa não muda `gaveta` nenhuma, então a reação
+   * acima nunca dispararia sozinha. Sem isto, expandir no celular e
+   * girar o aparelho para paisagem (que no fim é outra largura, e pode
+   * cruzar a fronteira de `useCelular`) devolveria o visitante à mesa
+   * com a ficha marcada expandida — apresentação que a mesa nem tem.
+   */
+  const [celularAnterior, setCelularAnterior] = useState(celular);
+  if (celularAnterior !== celular) {
+    setCelularAnterior(celular);
+    setFichaExpandida(false);
   }
 
   /**
@@ -398,11 +465,19 @@ export function useGavetas(
    */
   const fecharTodas = useCallback(() => setGaveta(null), []);
 
+  /** o toque em "Detalhes"/"Recolher" (Lote 5) — compacta ⇄ expandida */
+  const alternarFichaExpandida = useCallback(() => setFichaExpandida((atual) => !atual), []);
+  /** o arrasto na alça (Lote 5), que já sabe para ONDE vai */
+  const definirFichaExpandida = useCallback((v: boolean) => setFichaExpandida(v), []);
+
   return {
     gaveta,
     montada: gaveta ?? saindo,
     alternarGaveta,
     fecharGaveta,
     fecharTodas,
+    fichaExpandida,
+    alternarFichaExpandida,
+    definirFichaExpandida,
   };
 }

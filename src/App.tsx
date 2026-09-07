@@ -42,6 +42,7 @@ import { useChromeDoFilme } from './hooks/useChromeDoFilme';
 import { useEspelhoDaUrl } from './hooks/useEspelhoDaUrl';
 import { useGavetas } from './hooks/useGavetas';
 import { useCelular } from './hooks/useCelular';
+import { escalaDaUi } from './lib/uiScale';
 // O HUD em 9 fatias contíguas — a ORDEM destes imports é a cascata do
 // antigo hud.css e não pode se reordenar (empates de especificidade,
 // @media e .shot-mode dependem dela).
@@ -143,6 +144,22 @@ const AREAS_RESERVADAS = [
  * do componente porque não tem estado e é chamado de dois lugares.
  */
 const telaDeToque = () => window.matchMedia?.('(pointer: coarse)').matches ?? false;
+
+/**
+ * O TETO DA FOLHA COMPACTA (PLAN-UI.md §3.5/§6, item 225) — 8,5rem
+ * (136 px em `ui = 1`, o mesmo `--ficha-compacta-altura` que o Lote 5
+ * vai desenhar). A folha COMPACTA em si ainda não existe: hoje há uma
+ * folha SÓ, que cresce com a seção aberta até `--teto-dialogo-tela`
+ * (48svh). Até o Lote 5 chegar, é este teto que limita a RESERVA DA
+ * CÂMERA no celular — sem ele, abrir uma seção dentro da ficha
+ * empurraria o alvo para cima a cada clique, e a régua do item 8 do
+ * PLAN-UI ("selecionar um alvo não… provoca salto de câmera") proíbe
+ * isso. `16` é o `font-size` de fábrica do navegador — a raiz declara
+ * `calc(100% * var(--ui))` (`uiScale.ts`), então `rem` em px é sempre
+ * `16 × escalaDaUi()` enquanto o visitante não usa o zoom do próprio
+ * navegador por cima.
+ */
+const TETO_DA_FOLHA_COMPACTA_REM = 8.5;
 
 export default function App() {
   // A LÍNGUA COMO DEPENDÊNCIA DE RENDER (item 130): as dicas de gesto e
@@ -401,6 +418,38 @@ export default function App() {
           .filter((b) => b.width > 0 && b.height > 0)
           .map((b) => ({ left: b.left, right: b.right, top: b.top, bottom: b.bottom }))
       );
+      // A RESERVA DA FICHA NA CÂMERA (Lote 3, PLAN-UI.md §6, item 225):
+      // a ÚNICA gaveta que entra no retângulo útil do Atlas, porque ela
+      // é o painel DO ALVO — nasce com a seleção. Na MESA cobre a
+      // DIREITA: `window.innerWidth - rect.left` mede o painel e o
+      // afastamento dele da borda numa conta só (a soma que "largura +
+      // afastamento" pediria, sem duas leituras que pudessem arredondar
+      // diferente). No CELULAR cobre a BASE — a altura da folha,
+      // limitada ao TETO da folha compacta (constante acima): sem o
+      // teto, abrir uma seção dentro da ficha cresce a folha até 48svh
+      // e recuaria a câmera a cada clique. Sem seleção, ou em
+      // `.bare-mode` (`?shot=2`, onde a ficha existe no DOM mas o CSS a
+      // apaga) o retângulo medido é 0×0 — a MESMA guarda que já protege
+      // os rótulos, duas linhas acima — e a reserva volta a zero.
+      const painelDaFicha =
+        gaveta === 'ficha' ? root.querySelector<HTMLElement>('[data-dialogo="ficha"]') : null;
+      const retFicha = painelDaFicha?.getBoundingClientRect() ?? null;
+      if (retFicha && retFicha.width > 0 && retFicha.height > 0) {
+        if (celular) {
+          const tetoPx = TETO_DA_FOLHA_COMPACTA_REM * 16 * escalaDaUi();
+          directorRef.current?.reservarParaAFicha({
+            basePx: Math.min(retFicha.height, tetoPx),
+            direitaPx: 0,
+          });
+        } else {
+          directorRef.current?.reservarParaAFicha({
+            basePx: 0,
+            direitaPx: window.innerWidth - retFicha.left,
+          });
+        }
+      } else {
+        directorRef.current?.reservarParaAFicha(null);
+      }
     };
     medir();
     const observador = new ResizeObserver(medir);
@@ -412,12 +461,24 @@ export default function App() {
     // É a caixa que enxerga a quebra, e é dela que sai o `--barra-fim`.
     const barra = root.querySelector('.controls-bar');
     if (barra) observador.observe(barra);
+    // A FICHA CHEGA TARDE (item 225): `corpos.json`/`texturas.json` são
+    // buscados na REDE na primeira abertura (`FichaDoObjeto.tsx`), então
+    // no instante em que este efeito roda — a MESMA passagem em que
+    // `gaveta` virou 'ficha' — o `[data-dialogo="ficha"]` ainda não
+    // existe, e o `ResizeObserver` de cima só observa quem já está na
+    // tela. Um `MutationObserver` ESTREITO (`childList`, sem `subtree` —
+    // não é medição por quadro, é por INSERÇÃO/remoção de um filho
+    // DIRETO de `.hud-root`, o mesmo contrato de `AREAS_RESERVADAS`)
+    // refaz a medição quando ela chega.
+    const chegadaDaFicha = new MutationObserver(medir);
+    chegadaDaFicha.observe(root, { childList: true });
     window.addEventListener('resize', medir);
     return () => {
       observador.disconnect();
+      chegadaDaFicha.disconnect();
       window.removeEventListener('resize', medir);
     };
-  }, [phase, gaveta]);
+  }, [phase, gaveta, celular]);
 
   // estado da camada de carregamento; `done` é o que dispara o merge.
   // O erro ganha do ?loader= fixo: uma captura de QA com asset quebrado

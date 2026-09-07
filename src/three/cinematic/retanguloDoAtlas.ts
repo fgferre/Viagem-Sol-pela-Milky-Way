@@ -350,6 +350,21 @@ export const RETANGULO_CHEIO: RetanguloUtil = {
 };
 
 /**
+ * A RESERVA DA FICHA (Lote 3, PLAN-UI.md §6, item 225) — a ÚNICA gaveta
+ * que entra no retângulo útil, e só enquanto está aberta: ela é o
+ * painel DO ALVO (nasce com a seleção), não um painel qualquer que o
+ * visitante abriu por um instante. `base` cobre a folha do celular
+ * (âncora no pé); `direita` cobre o painel da mesa (âncora na direita).
+ * As duas em FRAÇÃO da tela, na mesma unidade do resto de
+ * `RetanguloUtil` — quem converte pixel medido em fração é o
+ * `Director` (`reservarParaAFicha`), nunca esta função.
+ */
+export interface ReservaDaFicha {
+  base: number;
+  direita: number;
+}
+
+/**
  * O ÚNICO produtor do retângulo útil do Atlas — tarjas de cinema mais
  * as áreas REAIS do HUD do modo (F2). A conta não se repete dentro de
  * componente nenhum: quem enquadra pergunta aqui.
@@ -371,14 +386,30 @@ export const RETANGULO_CHEIO: RetanguloUtil = {
  * `max-width: 60vw` da barra de controles vive). Ela entra porque a
  * quebra da barra é fenômeno de largura×texto e não de texto sozinho —
  * ver `LARGURA_DA_QUEBRA_PX`.
+ *
+ * `extra` é a ÚNICA exceção à frase "as cinco gavetas não entram nesta
+ * conta" — a ficha, e só ela (ver `ReservaDaFicha` acima). Soma-se nos
+ * DOIS ramos (mesa e telefone), porque a fração já sai correta do lado
+ * de quem mede (o `Director` só passa `direita` quando o painel existe
+ * de mesa, só passa `base` quando a folha existe de celular). SEM
+ * `extra` (ou com os dois campos a 0) o resultado é BIT A BIT o de
+ * antes desta reserva: `+0` não muda nenhuma soma de ponto flutuante, e
+ * é disso que as provas de `?foco` e os md5 do `atlas-smoke` dependem
+ * (`retanguloDoAtlas.test.ts`, caso "sem extra"). Valor não finito ou
+ * negativo — uma medição de DOM que falhasse antes do layout assentar —
+ * vira 0 em vez de recuar a câmera por lixo.
  */
 export function retanguloUtilDoAtlas(
   fatorUi = 1,
-  larguraPx = LARGURA_DE_MESA_PX
+  larguraPx = LARGURA_DE_MESA_PX,
+  extra?: ReservaDaFicha
 ): RetanguloUtil {
   const k = Number.isFinite(fatorUi) && fatorUi > 0 ? fatorUi : 1;
   const largura =
     Number.isFinite(larguraPx) && larguraPx > 0 ? larguraPx : LARGURA_DE_MESA_PX;
+  const reservaBase = Number.isFinite(extra?.base) && extra!.base > 0 ? extra!.base : 0;
+  const reservaDireita =
+    Number.isFinite(extra?.direita) && extra!.direita > 0 ? extra!.direita : 0;
   // O TELEFONE É OUTRO HUD, não o de mesa apertado — ver o bloco das
   // três frações acima. Ele não tem tarja desde 24/08 (decisão dele em
   // 23/08, código no dia seguinte),
@@ -389,14 +420,14 @@ export function retanguloUtilDoAtlas(
   if (largura <= LARGURA_DO_CELULAR_PX) {
     return {
       esquerda: 0,
-      direita: 0,
+      direita: 0 + reservaDireita,
       topo: SAIDA_FRACAO * k,
-      base: (ALCAS_FRACAO + SELO_FRACAO_CELULAR) * k,
+      base: (ALCAS_FRACAO + SELO_FRACAO_CELULAR) * k + reservaBase,
     };
   }
   return {
     esquerda: 0,
-    direita: 0,
+    direita: 0 + reservaDireita,
     topo:
       LETTERBOX_FRACAO +
       CONTEXTO_FRACAO * k +
@@ -405,6 +436,7 @@ export function retanguloUtilDoAtlas(
       LETTERBOX_FRACAO +
       Math.max(SELO_FRACAO, TEMPO_FRACAO) * k +
       (largura < LARGURA_DA_QUEBRA_DO_TEMPO_PX * k ? TEMPO_QUEBRADO_FRACAO : 0) +
-      (largura < LARGURA_DA_TERCEIRA_LINHA_PX * k ? TEMPO_EM_TRES_LINHAS_FRACAO : 0),
+      (largura < LARGURA_DA_TERCEIRA_LINHA_PX * k ? TEMPO_EM_TRES_LINHAS_FRACAO : 0) +
+      reservaBase,
   };
 }
