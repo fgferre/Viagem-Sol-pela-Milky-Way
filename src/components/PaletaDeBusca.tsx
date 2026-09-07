@@ -134,7 +134,7 @@ export function PaletaDeBusca({
   // A DICA FIXA (redesenho, mesmo padrão de Ajustes e da gaveta de
   // Camadas) — só a peça "?" do cabeçalho usa, mas o estado é o mesmo
   // hook pelo mesmo motivo: fixar-e-desfixar por Esc antes de fechar.
-  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
   const [consulta, setConsulta] = useState('');
   const [ativo, setAtivo] = useState(0);
   // a digitação é urgente, a lista é que pode esperar: o `useDeferredValue`
@@ -248,16 +248,10 @@ export function PaletaDeBusca({
         // fixou já parou o próprio clique (`stopPropagation`).
         if (dicaPresa) limparDica();
       }}
-      onKeyDownCapture={(evento) => {
-        // ESC COM DICA PRESA desfixa e não fecha — o mesmo Esc de sempre
-        // (fechar a paleta) só chega depois, na bolha, se não houver dica
-        // presa. Sem isto o `busca-smoke`/`julgarDialogo` perderiam o Esc
-        // que fecha de fato quando a dica nunca foi aberta.
-        if (evento.key === 'Escape' && dicaPresa) {
-          evento.stopPropagation();
-          limparDica();
-        }
-      }}
+      // ESC COM DICA PRESA desfixa e não fecha (`aoTeclarEsc`,
+      // `hooks/useDicaPresa.ts`) — o mesmo Esc de sempre (fechar a
+      // paleta) só chega depois, na bolha, se não houver dica presa.
+      onKeyDownCapture={aoTeclarEsc}
     >
       {/* A CAIXA VEM PRIMEIRO NO DOM, de propósito — mesmo o cabeçalho
           aparecendo ACIMA dela na tela (`.atlas-busca-topo` tem

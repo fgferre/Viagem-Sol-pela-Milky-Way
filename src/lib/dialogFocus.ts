@@ -91,8 +91,21 @@ export interface PropsDoDialogo {
 export function useDialogFocus(
   nome: string,
   aberto: boolean,
-  aoFechar: () => void
+  aoFechar: () => void,
+  opcoes?: {
+    /**
+     * ONDE O FOCO ENTRA ao abrir (Lote 2a, PLAN-UI.md §3.4/§11 — a busca
+     * no celular por toque quer focar o CABEÇALHO, não o campo de texto,
+     * para não abrir o teclado sozinha). `'primeiro'` é o padrão de
+     * sempre, IGUAL bit a bit ao comportamento antes desta opção existir:
+     * o primeiro focável (pulando `.hud-ajuda`/`.hud-fechar`), ou o
+     * próprio contêiner quando o diálogo é só texto. `'caixa'` foca
+     * sempre o contêiner, mesmo havendo controles dentro.
+     */
+    focoInicial?: 'primeiro' | 'caixa';
+  }
 ): PropsDoDialogo {
+  const focoInicial = opcoes?.focoInicial ?? 'primeiro';
   const ref = useRef<HTMLDivElement>(null);
   const fechar = useRef(aoFechar);
   // efeito sem lista: roda depois de TODO render, e é a única forma
@@ -125,9 +138,11 @@ export function useDialogFocus(
     // abrir a folha (foto do Tempo, 06/09), e no segundo o gesto mais
     // comum (Tab, Tab, Enter) fecharia o diálogo que acabou de abrir.
     const lista0 = focaveis();
-    (lista0.find((e) => !e.classList.contains('hud-ajuda') && !e.classList.contains('hud-fechar')) ??
-      lista0[0] ??
-      caixa
+    (focoInicial === 'caixa'
+      ? caixa
+      : lista0.find((e) => !e.classList.contains('hud-ajuda') && !e.classList.contains('hud-fechar')) ??
+        lista0[0] ??
+        caixa
     ).focus({
       // sem rolar: focar um controle no meio da folha enquanto ela sobe
       // rolava a folha e quebrava o juiz do celular (medido 3 de 3, 06/09)
@@ -183,7 +198,7 @@ export function useDialogFocus(
         focoAnterior;
       if (gatilho?.isConnected) gatilho.focus();
     };
-  }, [aberto, nome]);
+  }, [aberto, nome, focoInicial]);
 
   return {
     ref,

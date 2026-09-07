@@ -61,18 +61,24 @@
 }
 
 /* ---- A LINHA — o átomo do redesenho ---------------------------------
-   Rótulo (+ "?") à esquerda, controle à direita — em UMA coluna fixa de
-   13.5rem, para a linha caber numa só (item 2 do polimento de 06/09):
+   Rótulo (+ "?") à esquerda, controle à direita — o controle com 15rem
+   fixos, para a linha caber numa só (item 2 do polimento de 06/09):
    segmentado, slider ou o par de idioma sempre têm a MESMA largura de
-   controle, e é o rótulo que se ajusta ao que sobra. `position:
-   relative` é o que ancora a dica: ela flutua sobre a LINHA inteira,
-   não só sobre a caixinha do botão "?", e por isso não cabe nele. */
+   controle, e é o rótulo que se ajusta ao que sobra.
+   FLEX, não grid, desde o Lote 2a (PLAN-UI.md §8): a dica (`.hud-dica`)
+   agora é um BLOCO abaixo da linha, não flutua por cima — e um item
+   flex de `flex-basis: 100%` quebra para a linha seguinte sozinho
+   (`flex-wrap: wrap`), o que a grade não faz sem template próprio.
+   `.ajustes-rotulo-caixa` (e `.hud-ajuda-caixa`, 08-ajustes.css/comum)
+   virou `display: contents`: sem caixa própria, o RÓTULO e o "?" que
+   moravam dentro dela passam a ser itens diretos desta linha — é o que
+   deixa a dica (a terceira coisa lá dentro) escapar da coluna estreita
+   do rótulo e ocupar a largura CHEIA da linha quando aparece. */
 .ajustes-item {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 15rem;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: 0.8rem;
+  gap: 0.35rem;
   min-height: 2.5rem;
   padding: 0.35rem 0;
   border-bottom: 1px solid rgba(220, 230, 248, 0.1);
@@ -81,9 +87,7 @@
   border-bottom: none;
 }
 .ajustes-rotulo-caixa {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
+  display: contents;
 }
 .ajustes-rotulo {
   font-size: 0.6rem;
@@ -100,6 +104,12 @@
   align-items: center;
   gap: 0.5rem;
   justify-content: flex-end;
+  /* 15rem fixos (era a coluna 2 da grade) + empurrado para a ponta da
+     linha (era a coluna 2 da grade cedendo a 1fr da coluna 1 — agora
+     que a linha é flex com o rótulo em `display: contents`, o
+     `margin-left: auto` faz o mesmo trabalho). */
+  flex: 0 0 15rem;
+  margin-left: auto;
 }
 .ajustes-controle .ajustes-seg {
   /* preenche a coluna fixa — inclusive o par de idioma, que antes do
@@ -113,58 +123,87 @@
 }
 
 /* A LINHA DE AÇÃO — copiar link, sem rótulo: é a própria ação, e o
-   botão preenche a largura porque não divide a coluna com controle
-   nenhum (a linha vira UMA coluna só, não as duas de sempre). */
-.ajustes-item-acao {
-  grid-template-columns: 1fr;
-}
+   botão preenche a linha porque é o ÚNICO item dela (sem `.ajustes-
+   rotulo-caixa`, sem `.ajustes-controle`). */
 .ajustes-item-acao .ajustes-copiar {
   width: 100%;
 }
 
-/* ---- O "?" DE AJUDA e a dica -----------------------------------------
+/* ---- O "?" DE AJUDA e a dica (contrato do §8, redesenho Lote 2a) -----
    A explicação em letra miúda que cobria o painel inteiro agora só
    aparece por pedido: passar o mouse ou focar o botão (CSS puro), ou
    fixar com um clique (estado do componente, só uma de cada vez).
    NOME NEUTRO (`hud-`, não `ajustes-`) desde 06/09: o átomo mudou para
-   `components/Ajuda.tsx` e passou a servir também a gaveta de Camadas —
-   uma classe com o nome do primeiro dono confundiria quem lesse o CSS
-   dela. A REGRA DE POSICIONAMENTO continua sendo da LINHA que hospeda
-   (`.ajustes-item`, embaixo; `.atlas-gaveta-linha`, em 04-atlas.css). */
+   `components/Ajuda.tsx` e passou a servir também a gaveta de Camadas.
+
+   `.hud-ajuda-caixa` virou `display: contents` (Lote 2a): sem caixa
+   própria, o BOTÃO e a DICA (que moravam dentro dela) passam a ser
+   itens diretos da LINHA que hospeda — é o que deixa a dica escapar da
+   caixinha do "?" e ocupar a largura cheia da linha quando aparece
+   (ver `.ajustes-item`/`.atlas-gaveta-linha`, abaixo e em
+   04-atlas.css). Não muda nada onde a dica continua flutuando por cima
+   (a barra de Tempo, a busca, a ficha, a gaveta do Tempo — Lote 2b). */
 .hud-ajuda-caixa {
-  display: inline-flex;
+  display: contents;
 }
 .hud-ajuda {
-  width: 1.05rem;
-  height: 1.05rem;
+  /* 24 px visuais (era ~17 px) — o alvo de toque de 44×44 vem do
+     `::before`, abaixo, sem empurrar o layout ao redor. */
+  position: relative;
+  width: 1.5rem;
+  height: 1.5rem;
   border-radius: 50%;
   border: 1px solid rgba(220, 230, 248, 0.35);
   background: none;
   color: rgba(215, 224, 240, 0.6);
-  font-size: 0.56rem;
+  font-size: 0.72rem;
   line-height: 1;
   display: grid;
   place-items: center;
   cursor: pointer;
   padding: 0;
+  transition: border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
 }
-.hud-ajuda:hover,
+.hud-ajuda::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translate(-50%, -50%);
+}
+/* hover só onde hover É um gesto de verdade (§8 item 1): num toque,
+   `:hover` "pega" depois do clique e a dica fica presa sem que ninguém
+   tenha passado o mouse — o mesmo defeito que `@media (hover: hover)`
+   já evita noutros lugares da casa. */
+@media (hover: hover) {
+  .hud-ajuda:hover {
+    border-color: rgba(255, 214, 150, 0.85);
+    color: rgba(255, 214, 150, 0.95);
+  }
+  .hud-ajuda:hover + .hud-dica {
+    display: block;
+  }
+}
 .hud-ajuda:focus-visible {
   border-color: rgba(255, 214, 150, 0.85);
   color: rgba(255, 214, 150, 0.95);
 }
 .hud-dica {
   display: none;
+  /* fora de `.ajustes-item`/`.atlas-gaveta-linha` (Lote 2b) ela continua
+     flutuando por cima da linha, como sempre: */
   position: absolute;
   top: calc(100% + 0.3rem);
   left: 0;
   right: 0;
-  /* a régua é a LINHA (`.ajustes-item`, o ancestral posicionado — a
-     caixinha do "?" perdeu o próprio `position: relative` de propósito),
-     não a caixinha do "?": por isso a dica cabe a largura da linha
-     inteira, como pede a especificação, mesmo nascendo dentro do botão.
-     Antes disso ela flutuava relativa à caixinha do "?" (~1rem de
-     largura) e virava uma coluna de uma palavra por linha. */
+  /* DENTRO delas (regra abaixo, mais específica) ela é um BLOCO: estes
+     dois bastam para a linha quebrar sozinha (`flex-wrap: wrap` no
+     contêiner) quando `position` deixa de ser `absolute`. */
+  order: 5;
+  flex-basis: 100%;
+  width: 100%;
   z-index: 5;
   padding: 0.7rem 0.85rem;
   /* a mesma pele de `.hud-cartao` (fatia 1), um tom mais opaca (0.96) e
@@ -182,19 +221,19 @@
   text-transform: none;
   letter-spacing: normal;
   white-space: normal;
+  transition: opacity var(--t-rapido) var(--curva);
 }
-/* AS DUAS ÚLTIMAS LINHAS DE CONTROLE abrem a dica PARA CIMA: o painel
-   rola (`overflow-y: auto` em `.hud-dialogo`) e recorta qualquer filho
-   absoluto que nasça abaixo da borda — a dica dessas duas linhas nasceria
-   cortada. Conta a partir do fim ignorando a linha de ação (que não tem
-   dica): `nth-last-of-type` sobre `.ajustes-item`, que é sempre um `div`,
-   como a própria linha de ação — por isso ela é sempre a 1ª a partir do
-   fim, e as duas de cima dela são a 2ª e a 3ª, presente ou não o convite
-   opcional (F5, só existe no voo livre). */
-.ajustes-item:nth-last-of-type(2) .hud-dica,
-.ajustes-item:nth-last-of-type(3) .hud-dica {
-  top: auto;
-  bottom: calc(100% + 0.3rem);
+/* BLOCO abaixo da linha, nunca flutuando para fora do painel (§8 item
+   2): `.ajustes-item` e `.atlas-gaveta-linha` (04-atlas.css) são flex
+   com `flex-wrap: wrap`, e aqui a dica sai do fluxo absoluto e entra no
+   fluxo normal — `flex-basis: 100%` (acima) já garante que ela quebra
+   para a própria linha; `scrollIntoView` (`components/Ajuda.tsx`) traz
+   a dica presa para a vista quando ela nasce fora, substituindo o
+   `nth-last-of-type` que abria as últimas linhas para cima. */
+.ajustes-item .hud-dica,
+.atlas-gaveta-linha .hud-dica {
+  position: static;
+  margin-top: 0.3rem;
 }
 .hud-dica p {
   margin: 0 0 0.4rem;
@@ -214,10 +253,15 @@
   color: rgba(255, 214, 150, 0.85);
   font-weight: 400;
 }
-.hud-ajuda-caixa:hover .hud-dica,
-.hud-ajuda-caixa:focus-within .hud-dica,
+.hud-ajuda:focus-visible + .hud-dica,
 .hud-dica.presa {
   display: block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hud-ajuda,
+  .hud-dica {
+    transition: none;
+  }
 }
 
 /* ---- O SLIDER DE EXPOSIÇÃO -------------------------------------------
@@ -330,11 +374,12 @@
    dela. */
 @media (max-width: 760px) {
   .ajustes-item {
-    grid-template-columns: 1fr;
     row-gap: 0.3rem;
     align-items: flex-start;
   }
   .ajustes-controle {
+    flex-basis: 100%;
+    margin-left: 0;
     justify-content: stretch;
   }
   .ajustes-controle input[type='range'] {
@@ -346,9 +391,7 @@
    (PERFORMANCE não cabe na coluna fixa sem reticência) — o controle
    ocupa a largura toda, abaixo do rótulo, como um menu de jogo faz com o
    seletor principal. */
-.ajustes-item--largo {
-  grid-template-columns: 1fr;
-}
 .ajustes-item--largo .ajustes-controle {
-  grid-column: 1 / -1;
+  flex-basis: 100%;
+  margin-left: 0;
 }

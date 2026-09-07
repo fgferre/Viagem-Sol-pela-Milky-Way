@@ -207,8 +207,9 @@ function Segmentado<T>({
  * `<h3>` mais um `<p className="ajustes-nota">` mais a fileira de
  * botões vira UM elemento, e a explicação só aparece quando pedida.
  *
- * A DICA mostra no hover/foco do "?" (CSS, `:hover`/`:focus-within` em
- * `.hud-ajuda-caixa`) e FIXA no clique — só uma por vez, e é por isso
+ * A DICA mostra no hover/foco do "?" (CSS, `@media (hover: hover)` +
+ * `:focus-visible` em `.hud-ajuda`, 08-ajustes.css) e FIXA no clique —
+ * só uma por vez, e é por isso
  * que o estado mora no painel, não na linha: fixar a de baixo tem de
  * apagar a de cima. O botão em si é `components/Ajuda.tsx` (06/09) —
  * a gaveta de Camadas usa o mesmo átomo.
@@ -307,7 +308,7 @@ export function Ajustes({
   onReverConvite?: () => void;
 }) {
   const [copiado, setCopiado] = useState(false);
-  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
   const idioma = useIdioma();
 
   // O painel NÃO aplica ?tone=/?exp= na montagem: efeito de filho roda antes
@@ -340,18 +341,10 @@ export function Ajustes({
         // só chega aqui quem clicou fora dela.
         if (dicaPresa) limparDica();
       }}
-      onKeyDownCapture={(evento) => {
-        // ESC COM DICA PRESA desfixa e NÃO fecha o diálogo — mas só
-        // quando há dica presa: sem isso o Esc de sempre (fechar) some,
-        // e o juiz de a11y cobra exatamente esse Esc. A CAPTURA é o que
-        // garante rodar ANTES do listener de fechar do `useDialogFocus`
-        // (que está na fase de bolha, no mesmo nó): parar a propagação
-        // aqui impede o evento de sequer chegar lá.
-        if (evento.key === 'Escape' && dicaPresa) {
-          evento.stopPropagation();
-          limparDica();
-        }
-      }}
+      // ESC COM DICA PRESA desfixa e NÃO fecha o diálogo (`aoTeclarEsc`,
+      // `hooks/useDicaPresa.ts` — o mesmo handler dos outros quatro
+      // painéis, Lote 2a).
+      onKeyDownCapture={aoTeclarEsc}
     >
       <div className="ajustes-topo">
         <span>{t('ajustes.titulo')}</span>

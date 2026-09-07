@@ -1017,6 +1017,7 @@ export default function App() {
         onFechar={() => fecharGaveta('camadas')}
         escondidas={escondidas}
         onCamada={alternarCamada}
+        celular={celular}
       />
 
       {/* A MÁQUINA DO TEMPO ATRÁS DA ALÇA (item 62) — a MESMA

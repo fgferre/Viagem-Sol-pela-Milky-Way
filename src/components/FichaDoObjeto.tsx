@@ -137,7 +137,7 @@ export function FichaDoObjeto({
   // A DICA PRESA (redesenho, 06/09) — o mesmo padrão de Ajustes e das
   // gavetas: fixar uma "?" apaga a de cima, clique fora do diálogo
   // desfixa, e Esc desfixa ANTES de fechar a ficha.
-  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
   const [corpos, setCorpos] = useState<Map<string, CorpoNoJson> | null>(null);
   const [texturas, setTexturas] = useState<ManifestDeTexturas | null>(null);
   /**
@@ -225,15 +225,9 @@ export function FichaDoObjeto({
         // só chega aqui quem clicou fora dela (doutrina de `Ajustes.tsx`).
         if (dicaPresa) limparDica();
       }}
-      onKeyDownCapture={(evento) => {
-        // ESC COM DICA PRESA desfixa e NÃO fecha o diálogo — a CAPTURA
-        // corre antes do Esc de fechar que `useDialogFocus` já prendeu na
-        // bolha.
-        if (evento.key === 'Escape' && dicaPresa) {
-          evento.stopPropagation();
-          limparDica();
-        }
-      }}
+      // ESC COM DICA PRESA desfixa e NÃO fecha o diálogo (`aoTeclarEsc`,
+      // `hooks/useDicaPresa.ts`).
+      onKeyDownCapture={aoTeclarEsc}
     >
       <div className="atlas-ficha-topo">
         <div className="atlas-ficha-identidade">

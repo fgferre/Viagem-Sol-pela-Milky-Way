@@ -738,17 +738,23 @@
   color: rgba(200, 214, 235, 0.55);
 }
 /* A LINHA (06/09) — o padrão de Ajustes aplicado à gaveta: rótulo (com
-   o "?") à esquerda, interruptor à direita. `position: relative` ancora
-   a dica da mesma forma que `.ajustes-item` faz em 08-ajustes.css — ela
-   flutua sobre a LINHA inteira, não só sobre a caixinha do "?". A
-   altura mínima e a separação em fio são as do painel irmão: é o mesmo
-   tipo de coisa, e um segundo vocabulário aqui seria ruído.*/
+   o "?") à esquerda, interruptor à direita. A altura mínima e a
+   separação em fio são as do painel irmão: é o mesmo tipo de coisa, e
+   um segundo vocabulário aqui seria ruído.
+   FLEX COM QUEBRA (Lote 2a, PLAN-UI.md §8) — a mesma régua de
+   `.ajustes-item` (08-ajustes.css): a dica (`.hud-dica`) é um BLOCO
+   abaixo da linha, não flutua por cima, e `.atlas-gaveta-rotulo-caixa`
+   virou `display: contents` para o ícone/nome/"?" saírem da coluna
+   estreita do rótulo e a dica poder ocupar a largura CHEIA da linha
+   (`flex-basis: 100%` em `.hud-dica`, 08-ajustes.css). O interruptor
+   (`.hud-interruptor`, embaixo) troca o `justify-content: space-between`
+   de antes por `margin-left: auto` — mesmo lugar na tela, sem depender
+   de haver só dois filhos. */
 .atlas-gaveta-linha {
-  position: relative;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.35rem;
   min-height: 2.3rem;
   padding: 0.2rem 0;
   border-bottom: 1px solid rgba(220, 230, 248, 0.1);
@@ -758,10 +764,7 @@
   border-bottom: none;
 }
 .atlas-gaveta-rotulo-caixa {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
+  display: contents;
 }
 /* O RÓTULO — mesma caixa alta espaçada do painel de Ajustes
    (`.ajustes-rotulo`), para as duas telas contarem a mesma linguagem. */
@@ -833,17 +836,20 @@
   outline: 2px solid rgba(255, 214, 150, 0.85);
   outline-offset: 2px;
 }
-
-/* A DICA da gaveta paira sobre a LINHA (mesma régua de `.ajustes-item`
-   em 08-ajustes.css). A gaveta tem MUITO mais linhas que o painel de
-   Ajustes — abrir sempre para baixo cortaria a dica das últimas de cada
-   família no `overflow-y: auto` do diálogo, então a régua aqui é o
-   `nth-last-of-type` DENTRO da família (a mesma dela é sempre um
-   `label`, como a linha de ação de Ajustes é sempre um `div`). */
-.atlas-gaveta-familia .atlas-gaveta-linha:nth-last-of-type(-n + 2) .hud-dica {
-  top: auto;
-  bottom: calc(100% + 0.3rem);
+/* empurrado para a ponta da linha — era o lado direito do
+   `justify-content: space-between` de antes, agora que a linha
+   flattenou o rótulo (`.atlas-gaveta-rotulo-caixa`, acima) em vários
+   itens em vez de dois. */
+.atlas-gaveta-linha .hud-interruptor {
+  margin-left: auto;
 }
+
+/* A DICA da gaveta é um BLOCO abaixo da linha (`.hud-dica`,
+   08-ajustes.css, Lote 2a) — a régua de posição estática que reage a
+   `.atlas-gaveta-linha` cobre este contêiner; a dica presa que nasça
+   fora da vista se traz sozinha com `scrollIntoView`
+   (`components/Ajuda.tsx`), no lugar do antigo `nth-last-of-type` que
+   abria as últimas linhas de cada família para cima. */
 
 /* A PALETA DE BUSCA (F3, redesenho de 06/09 — pedido do dono: "aplica o
    mesmo padrão no painel de Busca"): mesmo cabeçalho do painel de

@@ -21,6 +21,7 @@ import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
 import { Ajuda } from './Ajuda';
+import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
 import type { EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
@@ -61,11 +62,15 @@ export function GavetaDeCamadas({
   onFechar,
   escondidas,
   onCamada,
+  celular = false,
 }: {
   aberta: boolean;
   onFechar: () => void;
   escondidas: ReadonlySet<string>;
   onCamada: (flag: string, ligar: boolean) => void;
+  /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do
+   *  celular (Lote 2a, piloto do cabeçalho único, PLAN-UI.md §3.2) */
+  celular?: boolean;
 }) {
   const dialogo = useDialogFocus('camadas', aberta, onFechar);
   useIdioma();
@@ -74,7 +79,7 @@ export function GavetaDeCamadas({
   // desfixa, e Esc desfixa ANTES de fechar a gaveta (mesma doutrina do
   // `onKeyDownCapture` de `Ajustes.tsx` — a captura corre antes do Esc
   // de fechar que `useDialogFocus` já prendeu na bolha).
-  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
   if (!aberta) return null;
   return (
     <div
@@ -84,24 +89,14 @@ export function GavetaDeCamadas({
       onClick={() => {
         if (dicaPresa) limparDica();
       }}
-      onKeyDownCapture={(evento) => {
-        if (evento.key === 'Escape' && dicaPresa) {
-          evento.stopPropagation();
-          limparDica();
-        }
-      }}
+      onKeyDownCapture={aoTeclarEsc}
     >
-      <div className="atlas-gaveta-topo">
-        <span>{t('atlas.camadas')}</span>
-        <button
-          type="button"
-          className="hud-fechar"
-          onClick={onFechar}
-          aria-label={t('atlas.fecharCamadas')}
-        >
-          ✕
-        </button>
-      </div>
+      <CabecalhoDoPainel
+        titulo={t('atlas.camadas')}
+        onFechar={onFechar}
+        rotuloFechar={t('atlas.fecharCamadas')}
+        celular={celular}
+      />
       {CAMADAS_POR_FAMILIA.map(({ familia, camadas }) => {
         const ligadas = camadas.filter((c) => !escondidas.has(c.flag)).length;
         return (
@@ -722,7 +717,7 @@ export function GavetaDoTempo({
 }) {
   const dialogo = useDialogFocus('tempo', aberta, onFechar);
   useIdioma();
-  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
+  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
   if (!aberta) return null;
   return (
     <div
@@ -732,12 +727,7 @@ export function GavetaDoTempo({
       onClick={() => {
         if (dicaPresa) limparDica();
       }}
-      onKeyDownCapture={(evento) => {
-        if (evento.key === 'Escape' && dicaPresa) {
-          evento.stopPropagation();
-          limparDica();
-        }
-      }}
+      onKeyDownCapture={aoTeclarEsc}
     >
       <div className="atlas-gaveta-topo">
         <span className="atlas-tempo-topo">
