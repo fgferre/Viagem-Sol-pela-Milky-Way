@@ -1032,6 +1032,7 @@ export default function App() {
           onDegrau={() => directorRef.current?.ciclarDegrau()}
           onAoVivo={() => directorRef.current?.alternarAoVivo()}
           onEpoca={() => directorRef.current?.voltarAEpoca()}
+          celular={celular}
         />
       )}
 
@@ -1059,6 +1060,7 @@ export default function App() {
           // o valor mora no corpo; o estado só força a ficha a reler
           setRelevoDaCor(ligado);
         }}
+        celular={celular}
       />
 
       {/* A PALETA DE BUSCA (F3) — filha DIRETA de .hud-root, como todo
@@ -1073,6 +1075,7 @@ export default function App() {
           indice={indice}
           verbo={phase === 'atlas' ? 'enquadrar' : 'visitar'}
           onEscolher={(entrada) => escolherAlvo(entrada, directorRef.current)}
+          celular={celular}
         />
       )}
 
@@ -1103,6 +1106,7 @@ export default function App() {
               }
             : undefined
         }
+        celular={celular}
       />
 
       {/* O CONVITE — filho DIRETO de .hud-root como todo overlay da casa

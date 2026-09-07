@@ -22,6 +22,7 @@ import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
 import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
+import { Icone } from './Icone';
 import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
 import type { EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
@@ -413,14 +414,13 @@ export function Selo({
         title={t('selo.tese')}
         onClick={() => setAberto((v) => !v)}
       >
-        <span className="atlas-selo-bolinha" aria-hidden="true" />
         <span>{t(escalaReal ? 'selo.escalaReal' : 'selo.foraDeEscala')}</span>
         <span className="atlas-selo-meio" aria-hidden="true">
           ·
         </span>
         <span>{t(brilhoReal ? 'selo.brilhoReal' : 'selo.brilhoAssistido')}</span>
         <span className="atlas-selo-seta" aria-hidden="true">
-          {aberto ? '▾' : '▸'}
+          <Icone nome={aberto ? 'chevronBaixo' : 'chevronDireita'} tamanho={12} />
         </span>
       </button>
     </div>
@@ -528,7 +528,7 @@ export function Bussola({ acesa, onEndireitar }: {
  * cada grupo é, como sempre disseram.
  *
  * O "?" É CONDICIONAL (`comAjuda`): na gaveta ele mora no cabeçalho
- * (`.atlas-gaveta-topo`, ao lado de "Tempo"), e nascer de novo aqui
+ * (`CabecalhoDoPainel`, ao lado de "Tempo"), e nascer de novo aqui
  * duplicaria a mesma dica. Na barra de mesa, sem cabeçalho, ele mora
  * aqui, depois da data — e abre PARA CIMA (CSS), porque a barra vive no
  * rodapé.
@@ -607,7 +607,7 @@ export function BarraDoTempo({
               aria-label={t('atlas.voltarNoTempo')}
               onClick={() => onSentido(sentido === -1 ? 0 : -1)}
             >
-              ⏴
+              <Icone nome="voltarCapitulo" tamanho={16} />
             </button>
             <button
               type="button"
@@ -615,7 +615,7 @@ export function BarraDoTempo({
               disabled={parado}
               onClick={() => onSentido(0)}
             >
-              ⏸
+              <Icone nome="pausa" tamanho={16} />
             </button>
             <button
               type="button"
@@ -624,7 +624,7 @@ export function BarraDoTempo({
               aria-label={t('atlas.avancarNoTempo')}
               onClick={() => onSentido(sentido === 1 ? 0 : 1)}
             >
-              ⏵
+              <Icone nome="avancarCapitulo" tamanho={16} />
             </button>
           </div>,
         )}
@@ -706,6 +706,7 @@ export function GavetaDoTempo({
   onDegrau,
   onAoVivo,
   onEpoca,
+  celular = false,
 }: {
   aberta: boolean;
   onFechar: () => void;
@@ -714,6 +715,8 @@ export function GavetaDoTempo({
   onDegrau: () => void;
   onAoVivo: () => void;
   onEpoca: () => void;
+  /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
+  celular?: boolean;
 }) {
   const dialogo = useDialogFocus('tempo', aberta, onFechar);
   useIdioma();
@@ -729,9 +732,9 @@ export function GavetaDoTempo({
       }}
       onKeyDownCapture={aoTeclarEsc}
     >
-      <div className="atlas-gaveta-topo">
-        <span className="atlas-tempo-topo">
-          <span>{t('atlas.tempo')}</span>
+      <CabecalhoDoPainel
+        titulo={t('atlas.tempo')}
+        ajuda={
           <Ajuda
             id="tempo"
             rotulo={t('atlas.tempo')}
@@ -739,16 +742,11 @@ export function GavetaDoTempo({
             presa={dicaPresa === 'tempo'}
             onAlternar={() => alternarDica('tempo')}
           />
-        </span>
-        <button
-          type="button"
-          className="hud-fechar"
-          onClick={onFechar}
-          aria-label={t('atlas.fecharTempo')}
-        >
-          ✕
-        </button>
-      </div>
+        }
+        onFechar={onFechar}
+        rotuloFechar={t('atlas.fecharTempo')}
+        celular={celular}
+      />
       <BarraDoTempo
         tempo={tempo}
         onSentido={onSentido}
@@ -779,6 +777,7 @@ export function BotaoDoTempo({
       aria-label={t('atlas.maquinaDoTempo')}
       {...gatilhoDoDialogo('tempo', aberta)}
     >
+      <Icone nome="relogio" tamanho={16} />
       {t('atlas.tempoBotao')}
     </button>
   );
@@ -805,6 +804,7 @@ export function BotaoDaGaveta({
       aria-label={t('atlas.camadasAria')}
       {...gatilhoDoDialogo('camadas', aberta)}
     >
+      <Icone nome="camadas" tamanho={16} />
       {t('atlas.camadasBotao')}
     </button>
   );

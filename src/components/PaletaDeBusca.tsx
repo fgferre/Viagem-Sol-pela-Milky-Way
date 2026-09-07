@@ -35,6 +35,8 @@ import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
 import { Ajuda } from './Ajuda';
+import { CabecalhoDoPainel } from './CabecalhoDoPainel';
+import { Icone } from './Icone';
 
 /**
  * QUANTOS RESULTADOS, por dispositivo. No teclado são 8 (o mesmo
@@ -116,6 +118,7 @@ export function PaletaDeBusca({
   indice,
   verbo,
   onEscolher,
+  celular = false,
 }: {
   onFechar: () => void;
   indice: IndiceEstrelas;
@@ -124,6 +127,8 @@ export function PaletaDeBusca({
    *  fora do Atlas a escolha o abre nele (item 129) */
   verbo: 'enquadrar' | 'visitar';
   onEscolher: (entrada: EntradaDaBusca) => void;
+  /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
+  celular?: boolean;
 }) {
   // MONTADA É ABERTA: quem decide a presença é o App (precedente do
   // Convite), e fechar DESMONTA. Não é detalhe de estilo — é o que faz a
@@ -254,7 +259,7 @@ export function PaletaDeBusca({
       onKeyDownCapture={aoTeclarEsc}
     >
       {/* A CAIXA VEM PRIMEIRO NO DOM, de propósito — mesmo o cabeçalho
-          aparecendo ACIMA dela na tela (`.atlas-busca-topo` tem
+          aparecendo ACIMA dela na tela (`.atlas-busca .hud-cabecalho` tem
           `order: -1`, só visual). `useDialogFocus` foca o PRIMEIRO
           focável do DOM ao abrir, e aqui isso não é detalhe: é o campo
           que precisa nascer com o foco para a digitação valer no
@@ -262,7 +267,9 @@ export function PaletaDeBusca({
           "?" e do "✕" no markup roubaria esse foco para o botão de
           ajuda, e "/" pararia de cair no campo. */}
       <div className="atlas-busca-campo-linha">
-        <span className="atlas-busca-lupa" aria-hidden="true">⌕</span>
+        <span className="atlas-busca-lupa" aria-hidden="true">
+          <Icone nome="busca" tamanho={16} />
+        </span>
         <input
           type="text"
           className="atlas-busca-campo"
@@ -288,24 +295,21 @@ export function PaletaDeBusca({
         />
       </div>
 
-      <div className="atlas-busca-topo">
-        <span>{t('busca.titulo')}</span>
-        <Ajuda
-          id="busca"
-          rotulo={t('busca.titulo')}
-          texto={t('busca.ajuda', { exemplos })}
-          presa={dicaPresa === 'busca'}
-          onAlternar={() => alternarDica('busca')}
-        />
-        <button
-          type="button"
-          className="atlas-busca-fechar hud-fechar"
-          onClick={onFechar}
-          aria-label={t('busca.fechar')}
-        >
-          ✕
-        </button>
-      </div>
+      <CabecalhoDoPainel
+        titulo={t('busca.titulo')}
+        ajuda={
+          <Ajuda
+            id="busca"
+            rotulo={t('busca.titulo')}
+            texto={t('busca.ajuda', { exemplos })}
+            presa={dicaPresa === 'busca'}
+            onAlternar={() => alternarDica('busca')}
+          />
+        }
+        onFechar={onFechar}
+        rotuloFechar={t('busca.fechar')}
+        celular={celular}
+      />
 
       <ul
         ref={listaRef}
@@ -368,6 +372,7 @@ export function BotaoDaBusca({
       title={t('busca.botaoDica')}
       {...gatilhoDoDialogo('busca', aberta)}
     >
+      <Icone nome="busca" tamanho={16} />
       {t('busca.botao')}
     </button>
   );

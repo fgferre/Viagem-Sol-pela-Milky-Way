@@ -26,10 +26,37 @@
   color: #fff;
   box-shadow: 0 0 24px rgba(255, 200, 120, 0.18);
 }
+/* OS BOTÕES PEQUENOS (Lote 2b, PLAN-UI.md item 3: "Controles") — os
+   gatilhos das quatro gavetas (Buscar, Camadas, Tempo, Ficha), na barra
+   de mesa e nas alças do celular. Cantos e cor da pele B; o TAMANHO
+   fica como estava — `.controls-bar`/o topo do celular são RESERVA DE
+   CÂMERA declarada em `retanguloDoAtlas.ts` (Lote 4, fora de escopo
+   aqui), e crescer a caixa deste botão sem remedir lá é o que fez o
+   juiz de a11y reprovar (topo medido > declarado a 320 px). As alças
+   do celular já têm o próprio alvo de 44 px (`09-celular.css`), que
+   não usa este tamanho de fonte. */
 .hud-btn.small {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.45rem 0.9rem;
   font-size: 0.58rem;
   letter-spacing: 0.22em;
+  border-color: var(--borda);
+  border-radius: var(--raio-controle);
+  text-indent: 0;
+  text-transform: none;
+  transition: background var(--t-rapido) var(--curva), border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+.hud-btn.small:hover {
+  background: var(--hover);
+  border-color: var(--borda-forte);
+  color: var(--texto);
+  box-shadow: none;
+}
+.hud-btn.small:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
 }
 .controls-bar select.hud-btn {
   appearance: none;

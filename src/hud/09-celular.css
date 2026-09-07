@@ -33,6 +33,10 @@
      duas casa. */
   .hud-root {
     --alcas-altura: 0rem;
+    /* PADDING DO PAINEL NO CELULAR (Lote 2b, PLAN-UI.md item 3): 16 px —
+       a mesma variável que `.hud-dialogo`/`.hud-cabecalho` leem em
+       `01-base.css`, só o valor muda. */
+    --pad-painel: 1rem;
   }
   .hud-root:has(.atlas-alcas) {
     /* MEDIDA, não escolhida: a alça tem 2,75rem de alvo de toque e a
@@ -211,6 +215,12 @@
      declarado. */
   .hud-root {
     --teto-dialogo-tela: 48svh;
+  }
+
+  /* O NOME DA FICHA (com `eyebrow`) encolhe de 24 para 22 px no celular
+     — a régua da ficha, §3.5 ("24 px mesa / 22 px celular"). */
+  .hud-cabecalho-titulo--nome {
+    font-size: 1.375rem;
   }
 
   .hud-dialogo {

@@ -176,7 +176,7 @@ export const EN: Record<keyof typeof PT, string> = {
   // ---- the layer drawer and the seal -------------------------------
   'atlas.camadasAria': 'Scene layers',
   'atlas.camadas': 'Layers',
-  'atlas.camadasBotao': '⧉ Layers',
+  'atlas.camadasBotao': 'Layers',
   'atlas.fecharCamadas': 'Close layers',
   'atlas.familiaConta': '{familia}: {ligadas} of {total} layers on',
   'atlas.seloAria': 'Honesty seal for this view',
@@ -199,7 +199,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'atlas.instanteDoCeu': 'sky time',
   'atlas.maquinaDoTempo': 'Time machine',
   'atlas.tempo': 'Time',
-  'atlas.tempoBotao': '⏱ Time',
+  'atlas.tempoBotao': 'Time',
   'atlas.fecharTempo': 'Close the time machine',
   'atlas.voltarNoTempo': 'Go back in time',
   'atlas.pararOTempo': 'Stop time',
@@ -223,7 +223,7 @@ export const EN: Record<keyof typeof PT, string> = {
   // ---- the search palette ------------------------------------------
   'busca.titulo': 'Search',
   'busca.aria': 'Search for a target',
-  'busca.botao': '⌕ Search',
+  'busca.botao': 'Search',
   'busca.botaoAria': 'Search for a star',
   'busca.botaoDica': 'search — press / (or Ctrl+K)',
   'busca.fechar': 'Close the search',
@@ -265,9 +265,9 @@ export const EN: Record<keyof typeof PT, string> = {
   // ---- the object fact sheet ---------------------------------------
   'ficha.aria': 'Fact sheet: {nome}',
   'ficha.fechar': 'Close the fact sheet',
-  'ficha.aproximar': '⊕ Closer',
+  'ficha.aproximar': 'Closer',
   'ficha.aproximarAria': 'Closer: frame {nome} up close',
-  'ficha.sistema': '⌂ System',
+  'ficha.sistema': 'System',
   'ficha.sistemaAria': 'Back to the solar system framing',
   'ficha.relevoDaCor': '◐ Invented relief',
   'ficha.relevoDaCorAria':

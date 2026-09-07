@@ -43,6 +43,8 @@ import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
 import { Ajuda } from './Ajuda';
+import { CabecalhoDoPainel } from './CabecalhoDoPainel';
+import { Icone } from './Icone';
 import type { CorpoNoJson, CorposDoAtlas, FonteDaFicha, IdDeSecao } from '../lib/atlas/ficha';
 import { montarFicha, montarFichaDeEstrela } from '../lib/atlas/ficha';
 import type { NamedStar } from '../three/config';
@@ -104,6 +106,7 @@ export function FichaDoObjeto({
   onSistema,
   relevoDaCor,
   onRelevoDaCor,
+  celular = false,
 }: {
   aberta: boolean;
   onFechar: () => void;
@@ -131,6 +134,8 @@ export function FichaDoObjeto({
    *  de relevo); `null` onde ele não existe — e o botão nem aparece */
   relevoDaCor: boolean | null;
   onRelevoDaCor: (ligado: boolean) => void;
+  /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
+  celular?: boolean;
 }) {
   const dialogo = useDialogFocus('ficha', aberta, onFechar);
   const idioma = useIdioma();
@@ -229,39 +234,35 @@ export function FichaDoObjeto({
       // `hooks/useDicaPresa.ts`).
       onKeyDownCapture={aoTeclarEsc}
     >
-      <div className="atlas-ficha-topo">
-        <div className="atlas-ficha-identidade">
-          {/* `role="status"` como a legenda do filme: trocar de alvo é
-              notícia para quem ouve a tela. Os
-              BOTÕES ficam fora dele — controle dentro de região viva seria
-              relido inteiro a cada troca. */}
+      {/* O CABEÇALHO ÚNICO (Lote 2b, PLAN-UI.md §3.5): a classe ("Planeta")
+          é o EYEBROW — 11 px caixa alta, acima do nome — e é ela que leva
+          o "?" (o mesmo de sempre, explicando os selos de procedência e o
+          "×Terra" das linhas). O nome vem no `titulo`, e o `role="status"`
+          continua nele: trocar de alvo é notícia para quem ouve a tela, e
+          os botões (fora do título) não são relidos a cada troca. As duas
+          classes (`atlas-ficha-nome`/`atlas-ficha-classe`) SOBREVIVEM ao
+          componente novo: `busca-smoke.mjs` e `a11y.mjs` leem o texto por
+          elas. */}
+      <CabecalhoDoPainel
+        eyebrow={<span className="atlas-ficha-classe">{ficha.classe}</span>}
+        titulo={
           <span className="atlas-ficha-nome" role="status" aria-live="polite">
             {ficha.nome}
           </span>
-          {/* A CLASSE + O "?" (redesenho, 06/09, pedido do dono: "aplica
-              o mesmo padrão na ficha dos corpos") — explica os três selos
-              de procedência e o "×Terra" que aparecem lá embaixo, nas
-              linhas. */}
-          <span className="atlas-ficha-classe-linha">
-            <span className="atlas-ficha-classe">{ficha.classe}</span>
-            <Ajuda
-              id="ficha"
-              rotulo={ficha.nome}
-              texto={t('ficha.ajuda')}
-              presa={dicaPresa === 'ficha'}
-              onAlternar={() => alternarDica('ficha')}
-            />
-          </span>
-        </div>
-        <button
-          type="button"
-          className="hud-fechar"
-          onClick={onFechar}
-          aria-label={t('ficha.fechar')}
-        >
-          ✕
-        </button>
-      </div>
+        }
+        ajuda={
+          <Ajuda
+            id="ficha"
+            rotulo={ficha.nome}
+            texto={t('ficha.ajuda')}
+            presa={dicaPresa === 'ficha'}
+            onAlternar={() => alternarDica('ficha')}
+          />
+        }
+        onFechar={onFechar}
+        rotuloFechar={t('ficha.fechar')}
+        celular={celular}
+      />
 
       {/* OS DOIS GESTOS DA ESCADA viram UM GRUPO SEGMENTADO (redesenho,
           06/09): são AÇÕES, não alternância — nenhum dos dois fica "ligado"
@@ -276,6 +277,7 @@ export function FichaDoObjeto({
                 onClick={onAproximar}
                 aria-label={t('ficha.aproximarAria', { nome: ficha.nome })}
               >
+                <Icone nome="aproximar" tamanho={16} />
                 {t('ficha.aproximar')}
               </button>
             )}
@@ -285,6 +287,7 @@ export function FichaDoObjeto({
                 onClick={onSistema}
                 aria-label={t('ficha.sistemaAria')}
               >
+                <Icone nome="sistema" tamanho={16} />
                 {t('ficha.sistema')}
               </button>
             )}
@@ -343,7 +346,7 @@ export function FichaDoObjeto({
               >
                 <span>{secao.titulo}</span>
                 <span className="atlas-ficha-seta" aria-hidden="true">
-                  {estaAberta ? '▾' : '▸'}
+                  <Icone nome={estaAberta ? 'chevronBaixo' : 'chevronDireita'} tamanho={16} />
                 </span>
               </button>
             </h3>
@@ -423,7 +426,8 @@ export function BotaoDaFicha({
       aria-label={t('ficha.aria', { nome })}
       {...gatilhoDoDialogo('ficha', aberta)}
     >
-      ⓘ {nome}
+      <Icone nome="info" tamanho={16} />
+      {nome}
     </button>
   );
 }

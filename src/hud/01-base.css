@@ -88,6 +88,12 @@
   --t-normal: 200ms;
   --t-folha: 260ms;
   --curva: cubic-bezier(0.2, 0, 0, 1);
+  /* O PADDING DO PAINEL (Lote 2b, PLAN-UI.md item 3): 20 px na mesa, 16 no
+     celular — UMA variável para o corpo (`.hud-dialogo`) e o cabeçalho
+     (que cancela e devolve o mesmo respiro, `01-base.css` acima), para os
+     dois nunca dessincronizarem. O celular sobrescreve em `09-celular.css`
+     (`.hud-root`, dentro do `@media`, a mesma régua de `--selo-base`). */
+  --pad-painel: 1.25rem;
 }
 
 .hud-root {
@@ -215,10 +221,17 @@
    Mora aqui pela mesma razão que `--camada-dialogo` e `--barra-fim`: é
    vocabulário da casa, não peça de um modo. */
 .hud-cartao {
-  border: 1px solid rgba(220, 230, 248, 0.28);
-  background: rgba(6, 9, 18, 0.86);
-  backdrop-filter: blur(14px);
-  color: rgba(235, 240, 250, 0.92);
+  /* ACABAMENTO DA PELE B (Lote 2b, PLAN-UI.md §4/item 3): fundo sólido
+     (sem `backdrop-filter` — `--blur-painel` é 0), filete interno
+     branco-quente e borda âmbar fria. O box-shadow faz as duas coisas
+     de uma vez: o filete `inset` (pele-b.css: ".painel, .folha") e o
+     raio do cartão (`var(--raio-painel)`, abaixo). */
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-painel);
+  background: var(--fundo-painel);
+  backdrop-filter: blur(var(--blur-painel));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  color: var(--texto);
 }
 
 /* ---- O DIÁLOGO ANCORADO SOB A BARRA ----------------------------------
@@ -244,7 +257,7 @@
   overflow-y: auto;
   pointer-events: auto;
   z-index: var(--camada-dialogo);
-  padding: 0.9rem 1.1rem 1rem;
+  padding: var(--pad-painel);
   font-size: 0.72rem;
   font-weight: 300;
 }
@@ -262,8 +275,8 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  margin: -0.9rem -1.1rem 0.7rem;
-  padding: 0.9rem 1.1rem 0;
+  margin: calc(-1 * var(--pad-painel)) calc(-1 * var(--pad-painel)) 0.7rem;
+  padding: var(--pad-painel) var(--pad-painel) 0;
   background: var(--fundo-painel);
 }
 .hud-alca {
@@ -274,12 +287,39 @@
   background: var(--borda-forte);
   margin: 0 auto 0.6rem;
 }
-.hud-cabecalho-linha {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+/* O CORPO leva o filete de baixo (Lote 2b): com `eyebrow` ele fecha
+   DEPOIS das duas linhas (eyebrow+ações, depois o nome) — a régua da
+   ficha (§3.5); sem `eyebrow` ele contém só a linha única, e o visual é
+   bit a bit igual ao do Lote 2a (só mudou QUEM declara a borda). */
+.hud-cabecalho-corpo {
   padding-bottom: 0.7rem;
   border-bottom: 1px solid var(--borda);
+}
+.hud-cabecalho-linha {
+  display: flex;
+  /* PERMITE A DICA QUEBRAR PARA A LINHA DE BAIXO (Lote 2b, PLAN-UI.md
+     §8, "dica em bloco") — o mesmo truque de `.ajustes-item`/
+     `.atlas-gaveta-linha`: a dica (`.hud-dica`, 08-ajustes.css) ganha
+     `flex-basis: 100%` quando mora aqui dentro, e só quebra por si com
+     `flex-wrap: wrap` no contêiner. */
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* O EYEBROW (Lote 2b, §3.5) — a classe do corpo, acima do nome: caixa
+   alta 11 px, 0,12 em, `--texto-2` (a régua comum de todo eyebrow da
+   casa, §4). Ocupa o lugar do título nesta linha; o "?" e o fechar vêm
+   ao lado dele, e o NOME desce para a linha de baixo. */
+.hud-cabecalho-eyebrow {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--texto-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .hud-cabecalho-titulo {
   flex: 1;
@@ -293,6 +333,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--texto);
+}
+/* O NOME (com `eyebrow`) é maior — 24 px na mesa, a régua da ficha
+   (§3.5); 22 px no celular é o `.hud-dialogo` virando folha (fatia 9),
+   ver a regra ali. `margin-top` separa da linha do eyebrow. */
+.hud-cabecalho-titulo--nome {
+  margin-top: 0.15rem;
+  font-size: 1.5rem;
 }
 .hud-cabecalho-fechar {
   flex: none;

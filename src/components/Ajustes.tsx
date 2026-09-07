@@ -55,6 +55,8 @@ import type { ChaveDeTexto } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
 import { Ajuda } from './Ajuda';
+import { CabecalhoDoPainel } from './CabecalhoDoPainel';
+import { Segmentado } from './Segmentado';
 import { DEGRAUS_DA_UI, rotuloDaEscala } from '../lib/uiScale';
 import {
   QUALIDADES,
@@ -153,54 +155,6 @@ const PARTICULAS: { valor: ParticulasDaGalaxia | null; nome: () => string }[] = 
   })),
 ];
 
-/** Um segmento do `.ajustes-seg`. `efetivo` é o sublinhado dourado que
- *  mostra o que o PRESET resolve quando "Preset" é a escolha ativa. */
-interface Segmento<T> {
-  valor: T;
-  nome: string;
-  lang?: string;
-  efetivo?: boolean;
-}
-
-/**
- * O SEGMENTADO — moldura única para toda fileira de botões do painel
- * (idioma, tom, qualidade e os cinco da gaveta). Mesma semântica de
- * antes (`role="group"`, `aria-pressed`); o que muda é que os botões
- * ficam JUNTOS, com borda e preenchimento partilhados, em vez de uma
- * fileira de botões soltos — o molde de um menu de jogo, não de um
- * formulário.
- */
-function Segmentado<T>({
-  aria,
-  valor,
-  opcoes,
-  onEscolher,
-}: {
-  aria: string;
-  valor: T;
-  opcoes: Segmento<T>[];
-  onEscolher: (v: T) => void;
-}) {
-  return (
-    <div className="ajustes-seg" role="group" aria-label={aria}>
-      {opcoes.map((o) => (
-        <button
-          type="button"
-          key={String(o.valor)}
-          lang={o.lang}
-          className={
-            (valor === o.valor ? 'on' : '') + (o.efetivo ? ' efetivo' : '')
-          }
-          aria-pressed={valor === o.valor}
-          onClick={() => onEscolher(o.valor)}
-        >
-          {o.nome}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 /**
  * UMA LINHA DO PAINEL — rótulo à esquerda (com o "?" de ajuda quando há
  * dica), controle à direita. É o átomo do redesenho: o que era um
@@ -272,6 +226,7 @@ export function Ajustes({
   onRotulos3d,
   urlParaCopiar,
   onReverConvite,
+  celular = false,
 }: {
   aberto: boolean;
   onFechar: () => void;
@@ -306,6 +261,8 @@ export function Ajustes({
    * voar seria um botão que não faz nada.
    */
   onReverConvite?: () => void;
+  /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
+  celular?: boolean;
 }) {
   const [copiado, setCopiado] = useState(false);
   const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
@@ -346,17 +303,12 @@ export function Ajustes({
       // painéis, Lote 2a).
       onKeyDownCapture={aoTeclarEsc}
     >
-      <div className="ajustes-topo">
-        <span>{t('ajustes.titulo')}</span>
-        <button
-          type="button"
-          className="hud-fechar"
-          onClick={onFechar}
-          aria-label={t('ajustes.fechar')}
-        >
-          ✕
-        </button>
-      </div>
+      <CabecalhoDoPainel
+        titulo={t('ajustes.titulo')}
+        onFechar={onFechar}
+        rotuloFechar={t('ajustes.fechar')}
+        celular={celular}
+      />
 
       {/* O SELETOR DE IDIOMA (item 130, F1). Mora AQUI e não na barra
           nem na URL: a barra é o lugar do que se usa a toda hora, e a

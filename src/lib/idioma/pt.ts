@@ -181,7 +181,7 @@ export const PT = {
   // ---- a gaveta de camadas e o selo (`components/HudDoAtlas.tsx`) ---
   'atlas.camadasAria': 'Camadas da cena',
   'atlas.camadas': 'Camadas',
-  'atlas.camadasBotao': '⧉ Camadas',
+  'atlas.camadasBotao': 'Camadas',
   'atlas.fecharCamadas': 'Fechar camadas',
   'atlas.familiaConta': '{familia}: {ligadas} de {total} camadas ligadas',
   'atlas.seloAria': 'Selo de honestidade desta vista',
@@ -204,7 +204,7 @@ export const PT = {
   'atlas.instanteDoCeu': 'instante do céu',
   'atlas.maquinaDoTempo': 'Máquina do tempo',
   'atlas.tempo': 'Tempo',
-  'atlas.tempoBotao': '⏱ Tempo',
+  'atlas.tempoBotao': 'Tempo',
   'atlas.fecharTempo': 'Fechar a máquina do tempo',
   'atlas.voltarNoTempo': 'Voltar no tempo',
   'atlas.pararOTempo': 'Parar o tempo',
@@ -227,7 +227,7 @@ export const PT = {
   // ---- a paleta de busca (`components/PaletaDeBusca.tsx`) -----------
   'busca.titulo': 'Busca',
   'busca.aria': 'Buscar um alvo',
-  'busca.botao': '⌕ Buscar',
+  'busca.botao': 'Buscar',
   'busca.botaoAria': 'Buscar estrela',
   'busca.botaoDica': 'buscar — tecla / (ou Ctrl+K)',
   'busca.fechar': 'Fechar a busca',
@@ -276,9 +276,9 @@ export const PT = {
   // ---- a ficha do objeto (`components/FichaDoObjeto.tsx`) -----------
   'ficha.aria': 'Ficha de {nome}',
   'ficha.fechar': 'Fechar a ficha',
-  'ficha.aproximar': '⊕ Aproximar',
+  'ficha.aproximar': 'Aproximar',
   'ficha.aproximarAria': 'Aproximar: enquadrar {nome} de perto',
-  'ficha.sistema': '⌂ Sistema',
+  'ficha.sistema': 'Sistema',
   'ficha.sistemaAria': 'Voltar ao enquadramento do sistema solar',
   'ficha.relevoDaCor': '◐ Relevo inventado',
   'ficha.relevoDaCorAria':
