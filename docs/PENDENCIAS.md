@@ -133,7 +133,12 @@ antigas. `npm run done` verde. Backup em `main:backup`. **Falta o Lote 9**
 (verificação final: matriz de preservação, provas do §14, EN/PT, escalas,
 backlog do que ficou de fora, apagar maquetes temporárias). Rodada encerrada
 por ordem dele: *"vamos encerrar por aqui, o lote 9 numa conversa nova"*.
-Tudo commitado e em `main:backup`; servidor parado. Servidor: `npm run dev`.
+Depois, pergunta dele: *"porque quando nao tem nenhum objeto selecionado, nao
+deixamos o botao de informacoes esmaecido ao inves de tirar ele da
+interface?"* — na mesa a aba já fica esmaecida (Lote 4½); no celular a alça
+some. Registrado para o Lote 9 nas palavras combinadas: *"no celular, a alça
+Ficha fica esmaecida sem alvo, como na mesa"*. Tudo commitado e em
+`main:backup`; servidor parado. Servidor: `npm run dev`.
 
 ## O BASTÃO anterior (06/09, madrugada)
 
