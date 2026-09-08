@@ -131,8 +131,9 @@ em duas fileiras. Fotos em `capturas/lote8-*` (antes em `lote8-antes-*`).
 Juízes: a11y, filme, busca e voo verdes; atlas-smoke com as mesmas 7 falhas
 antigas. `npm run done` verde. Backup em `main:backup`. **Falta o Lote 9**
 (verificação final: matriz de preservação, provas do §14, EN/PT, escalas,
-backlog do que ficou de fora, apagar maquetes temporárias) — melhor numa
-conversa nova. Servidor: `npm run dev`.
+backlog do que ficou de fora, apagar maquetes temporárias). Rodada encerrada
+por ordem dele: *"vamos encerrar por aqui, o lote 9 numa conversa nova"*.
+Tudo commitado e em `main:backup`; servidor parado. Servidor: `npm run dev`.
 
 ## O BASTÃO anterior (06/09, madrugada)
 
