@@ -26,6 +26,17 @@ o console aberto — "context lost" explicaria de uma vez. **Continuam
 abertos 223, 224 e 225.** Juízes: a11y e busca verdes; atlas-smoke com
 a única falha de Netuno sob a ficha (backlog). Servidor: `npm run dev -- --host`.
 
+**07/09 (noite, rodada da INTERFACE — plano em `PLAN-UI.md`).** Palavras
+dele: *"já que colocamos um label com o endereço, acho que deixa de ser
+importante o botão com o nome do objeto selecionado. Ao invés de usar esse
+botão, essa janela de informações poderia virar um fichário, uma aba, a
+exemplo do que a interface do atlas orbital faz"* — e *"registre para a
+gente fazer isso numa conversa limpa, pois aqui o contexto já está se
+deteriorando"*. Registrado como o Lote 4½ do `PLAN-UI.md`, com maquete
+como portão. Estado da rodada: pele B escolhida; lotes 0–3 e 5 commitados;
+lote 4 (barra do Atlas, tarjas fora) em fechamento; faltam 4½, 6, 7, 8, 9.
+Nada foi para o backup ainda.
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar
