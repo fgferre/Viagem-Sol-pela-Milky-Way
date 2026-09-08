@@ -584,6 +584,144 @@ async function julgarGavetaDeCamadas(s, onde) {
 }
 
 /**
+ * ESC COM DICA PRESA NÃO FECHA O DIÁLOGO (contrato do Lote 2a,
+ * `hooks/useDicaPresa.ts`) — pedido do dono em 08/09/2026, depois de a
+ * máquina do tempo ter ficado surda a cliques reais por três lotes sem
+ * nenhum juiz notar (ver `julgarCliqueDeVerdade`, abaixo): o contrato
+ * genérico do `dialogFocus` só cobra Esc FECHANDO; aqui há um Esc do
+ * MEIO que o `onKeyDownCapture` da dica intercepta antes — solta a
+ * dica presa e PÁRA aí, sem chegar ao Esc de fechar. Só o SEGUNDO Esc
+ * alcança o `dialogFocus` e fecha de fato, devolvendo o foco ao
+ * gatilho. A gaveta de Camadas é o alvo: cada linha carrega o seu "?"
+ * (`components/Ajuda.tsx`) e nenhum juiz jamais clicou um.
+ */
+async function julgarEscComDicaPresa(s, onde) {
+  await s.js(`(() => {
+    const b = document.querySelector('[data-abre-dialogo="camadas"]');
+    b.focus();
+    b.click();
+  })()`);
+  await dorme(200);
+  await s.js("document.querySelector('[data-dialogo=\"camadas\"] .hud-ajuda').click()");
+  const presa = await s.js(
+    "!!document.querySelector('[data-dialogo=\"camadas\"] .hud-dica.presa')"
+  );
+  conferir(presa, `${onde} · camadas: clicar o "?" PRENDE a dica (".hud-dica.presa" na tela)`);
+
+  await s.teclar('Escape');
+  await dorme(150);
+  const meio = await s.js(`(() => {
+    const d = document.querySelector('[data-dialogo="camadas"]');
+    return {
+      aberto: Boolean(d && d.getClientRects().length > 0),
+      presa: !!document.querySelector('[data-dialogo="camadas"] .hud-dica.presa'),
+    };
+  })()`);
+  conferir(
+    meio.aberto && !meio.presa,
+    `${onde} · camadas: o PRIMEIRO Esc solta a dica e o painel CONTINUA aberto`
+  );
+
+  await s.teclar('Escape');
+  await dorme(150);
+  const depois = await s.js(`(() => {
+    const d = document.querySelector('[data-dialogo="camadas"]');
+    const g = document.querySelector('[data-abre-dialogo="camadas"]');
+    return { fechou: !d || d.getClientRects().length === 0, devolveu: document.activeElement === g };
+  })()`);
+  conferir(
+    depois.fechou && depois.devolveu,
+    `${onde} · camadas: o SEGUNDO Esc fecha o painel e devolve o foco ao gatilho`
+  );
+}
+
+/**
+ * O CLIQUE DE VERDADE (pedido do dono, 08/09/2026, depois de e67a96e:
+ * "a máquina do tempo da mesa volta a responder a cliques de verdade").
+ * Toda prova daqui abre diálogo com `.click()` em JS, que nunca passa
+ * pelo hit-test do navegador — foi assim que a coluna do rodapé ficou
+ * SURDA por três lotes sem nenhum juiz notar, porque nenhum perguntava
+ * "o que está DE VERDADE embaixo do dedo/mouse?". Esta prova pergunta:
+ * para cada controle VISÍVEL e HABILITADO dentro de `.hud-root`, o
+ * CENTRO da sua caixa tem de devolver, por `elementFromPoint`, algo que
+ * more dentro do HUD — o próprio controle, um descendente, ou OUTRO
+ * controle por cima (sobreposição legítima, não é surdez). "Surdo" é só
+ * quem devolve o CANVAS da cena ou qualquer coisa fora de `.hud-root` —
+ * a falha exata que um `pointer-events: none` mal aplicado causa.
+ * `:not([inert])` fora do alvo: a Bússola existe sempre no DOM mas só
+ * responde a ponteiro quando `acesa` (o resto do tempo é `inert` por
+ * desenho, não por bug) — um controle assim não é "surdo", é apagado.
+ */
+async function julgarCliqueDeVerdade(s, onde) {
+  const SELETOR =
+    'button:not(:disabled):not([inert]), select:not(:disabled), input:not(:disabled), '
+    + 'a[href], [role="button"]:not([inert]), [role="tab"]';
+  const r = await s.js(`(() => {
+    const raiz = document.querySelector('.hud-root');
+    const W = innerWidth;
+    const H = innerHeight;
+    const alvos = [...document.querySelectorAll('${SELETOR}')].filter((e) => raiz.contains(e));
+    let testados = 0;
+    const surdos = [];
+    for (const e of alvos) {
+      const b = e.getBoundingClientRect();
+      if (b.width === 0 || b.height === 0) continue;
+      const cx = b.left + b.width / 2;
+      const cy = b.top + b.height / 2;
+      if (cx < 0 || cy < 0 || cx > W || cy > H) continue;
+      testados++;
+      const bateu = document.elementFromPoint(cx, cy);
+      if (!bateu || !bateu.closest('.hud-root')) {
+        surdos.push(e.getAttribute('aria-label') || e.textContent.trim() || ('<' + e.tagName.toLowerCase() + '>'));
+      }
+    }
+    return { testados, surdos };
+  })()`);
+  conferir(
+    r.surdos.length === 0,
+    `${onde}: clique de verdade em ${r.testados} controle(s) do HUD — 0 surdo(s)`
+      + (r.surdos.length ? ` — surdos: ${r.surdos.join(' · ')}` : '')
+  );
+}
+
+/**
+ * UM CLIQUE REAL POR CDP (`Input.dispatchMouseEvent`, dentro de
+ * `s.clicar`), não `.click()` em JS — é a diferença que a prova de cima
+ * mede, aqui aplicada ao caso exato que a abriu: um botão da máquina do
+ * tempo do RODAPÉ da mesa. O de "pausar" nasce DESABILITADO (o Atlas
+ * abre no retrato, parado, não ao vivo) e "voltar"/"avançar" podem
+ * bater NA PAREDE do fim da tabela de efeméride — aí o pedido "não
+ * acontece" por desenho (item 115, `andarNoTempo`) e `aria-pressed`
+ * fica em `false` de propósito, o que faria esta prova mentir. O AO
+ * VIVO é o único alternador incondicional (`alternarAoVivo` não olha
+ * parede nenhuma): um clique inverte `aria-pressed` sempre.
+ */
+async function julgarCliqueRealNoTempo(s) {
+  const pegar = `(() => {
+    const g = document.querySelectorAll('.atlas-rodape .atlas-tempo-botoes .ajustes-seg')[2];
+    const b = g ? g.querySelectorAll('button')[0] : null;
+    if (!b) return null;
+    const r = b.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, pressed: b.getAttribute('aria-pressed') };
+  })()`;
+  const antes = await s.js(pegar);
+  if (!antes) {
+    conferir(false, 'clique real na mesa: o botão "Ao vivo" da máquina do tempo não foi achado no rodapé');
+    return;
+  }
+  await s.clicar(antes.x, antes.y);
+  await dorme(150);
+  const depois = await s.js(pegar);
+  conferir(
+    antes.pressed === 'false' && depois && depois.pressed === 'true',
+    `clique real na mesa: aria-pressed do botão "Ao vivo" ${antes.pressed} → ${depois && depois.pressed}`
+  );
+  // devolve ao estado de antes, para não vazar "ao vivo" às provas seguintes
+  await s.clicar(antes.x, antes.y);
+  await dorme(150);
+}
+
+/**
  * O CHROME DO FILME SOME SOZINHO (item 61, 22/08).
  *
  * A resposta do dono aos mockups, em duas palavras: *"2) somem
@@ -979,6 +1117,7 @@ try {
   // existe quando há SELEÇÃO, e sem ela o juiz não teria o que abrir.
   const vivasAtlas = await julgarPagina(sessao, 'atlas=1&foco=terra', 'atlas');
   await julgarGavetaDeCamadas(sessao, 'atlas');
+  await julgarEscComDicaPresa(sessao, 'atlas');
   conferir(
     vivasAtlas.some((r) => r.papel === 'status' && r.v === 'polite' && r.texto),
     'atlas: há região viva com role="status" e texto'
@@ -1393,6 +1532,27 @@ try {
     `selo: a volta a cinema tira o desvio da tela (${tierVoltou} ms)`
   );
 
+  // ---- O CLIQUE DE VERDADE, mesa e celular (pedido do dono, 08/09) --
+  const abrirFicha = () => sessao.js(`(() => {
+    const b = document.querySelector('[data-abre-dialogo="ficha"]');
+    if (b && b.getAttribute('aria-expanded') !== 'true') b.click();
+  })()`);
+  await mudarJanela(sessao, 1440, 900);
+  await sessao.ir(`foco=saturno&${PIN}`);
+  await abrirFicha();
+  await dorme(200);
+  await julgarCliqueDeVerdade(sessao, 'mesa 1440×900, foco=saturno, ficha aberta');
+  await julgarCliqueRealNoTempo(sessao);
+
+  await mudarJanela(sessao, 390, 844, true);
+  await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+  await dorme(200);
+  await abrirFicha();
+  await dorme(200);
+  await julgarCliqueDeVerdade(sessao, 'celular 390×844, foco=saturno, ficha aberta');
+  await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+  await sessao.send('Emulation.clearDeviceMetricsOverride');
+
   // ---- A ÁREA DO SELO E A GAVETA QUE PARA ACIMA DELE (item 61) -----
   await julgarAreaDoSelo(sessao);
 
@@ -1586,12 +1746,226 @@ try {
   await sessao.ir(`atlas=1&${PIN}`);
   await julgarListbox(sessao);
 
+  // ---- O PAINEL DE AJUSTES: avançado, qualidade, link e convite -----
+  // (pedido do dono, 08/09/2026 — quatro recursos que só tinham
+  // conferência por LEITURA de código, nunca por corrida.) O convite já
+  // marcado como visto evita o autoabrir do boot: é ELE que a prova de
+  // "rever convite" reabre de propósito, mais abaixo.
+  await sessao.js(
+    "window.localStorage.setItem('viagem-prefs', JSON.stringify({ conviteAtlasVisto: true }))"
+  );
+  await sessao.ir(`atlas=1&ajustes=1&${PIN}`);
+
+  // A GAVETA "AVANÇADO" É RECOLHÍVEL E FECHADA POR PADRÃO (Lote 7) — os
+  // cinco controles (MSAA/amostras, nebulosa, gás, partículas, escala,
+  // um `.ajustes-item` cada dentro de `#ajustes-avancado`) NÃO estão no
+  // DOM até o "?" abrir; um juiz que só olhasse `aria-expanded` não veria
+  // que a MONTAGEM também muda.
+  const contarAvancado = () => sessao.js(
+    "(() => { const alvo = document.getElementById('ajustes-avancado'); "
+      + "return alvo ? alvo.querySelectorAll('.ajustes-item').length : 0; })()"
+  );
+  const expandidoAntes = await sessao.js(
+    "document.querySelector('.ajustes-titulo-secao button').getAttribute('aria-expanded')"
+  );
+  const fechadoAntes = await contarAvancado();
+  await sessao.js("document.querySelector('.ajustes-titulo-secao button').click()");
+  await dorme(150);
+  const expandidoDepois = await sessao.js(
+    "document.querySelector('.ajustes-titulo-secao button').getAttribute('aria-expanded')"
+  );
+  const abertoDepois = await contarAvancado();
+  await sessao.js("document.querySelector('.ajustes-titulo-secao button').click()");
+  await dorme(150);
+  const fechadoDeNovo = await contarAvancado();
+  conferir(
+    expandidoAntes === 'false' && fechadoAntes === 0
+      && expandidoDepois === 'true' && abertoDepois === 5
+      && fechadoDeNovo === 0,
+    'ajustes · avançado: fechado por padrão (0 controles em #ajustes-avancado),'
+      + ` abre os 5 (achado ${abertoDepois}) e desmonta ao recolher (achado ${fechadoDeNovo})`
+  );
+
+  // A MEDIDA DE QUALIDADE É `aria-live` DE VERDADE — muda sozinha quando
+  // o tier muda, e quem está com o painel aberto ouve a troca sem
+  // reabrir nada.
+  const medidaAntes = await sessao.js(`(() => {
+    const p = document.querySelector('.ajustes-medida');
+    return p && {
+      papel: p.getAttribute('role'),
+      viva: p.getAttribute('aria-live'),
+      texto: p.textContent.trim(),
+    };
+  })()`);
+  conferir(
+    Boolean(medidaAntes) && medidaAntes.papel === 'status' && Boolean(medidaAntes.viva)
+      && medidaAntes.texto.length > 0,
+    `ajustes · qualidade: role="${medidaAntes && medidaAntes.papel}"`
+      + ` aria-live="${medidaAntes && medidaAntes.viva}" com texto ("${medidaAntes && medidaAntes.texto}")`
+  );
+  await sessao.js(`(() => {
+    const b = [...document.querySelectorAll('[data-dialogo="ajustes"] button')]
+      .find((e) => e.textContent.trim() === 'Performance');
+    b.click();
+  })()`);
+  await dorme(300);
+  const textoDepois = (await sessao.js(
+    "(document.querySelector('.ajustes-medida') || {}).textContent || ''"
+  )).trim();
+  const aindaViva = await sessao.js(`(() => {
+    const p = document.querySelector('.ajustes-medida');
+    return Boolean(p && p.getAttribute('role') === 'status' && p.textContent.trim());
+  })()`);
+  conferir(
+    textoDepois !== medidaAntes.texto || aindaViva,
+    'ajustes · qualidade: trocar para Performance muda a região viva'
+      + ` ("${medidaAntes.texto}" → "${textoDepois}")`
+  );
+
+  // COPIAR LINK, sucesso e falha (§9) — só tinha conferência por LEITURA
+  // de `navigator.clipboard.writeText` resolvendo ou rejeitando; nunca
+  // um clique de verdade nos dois ramos.
+  await sessao.js("navigator.clipboard.writeText = () => Promise.resolve()");
+  await sessao.js("document.querySelector('.ajustes-acoes > button').click()");
+  const copiouEm = await esperarPor(
+    sessao,
+    "(document.querySelector('.ajustes-copiar-estado') || {}).textContent.trim().length > 0"
+  );
+  const textoCopiado = (
+    await sessao.js("(document.querySelector('.ajustes-copiar-estado') || {}).textContent || ''")
+  ).trim();
+  conferir(
+    copiouEm !== null && textoCopiado === 'Copiado ✓',
+    `ajustes · copiar link (sucesso): a região viva mostra "${textoCopiado}" (em ${copiouEm} ms)`
+  );
+
+  await sessao.js(
+    "navigator.clipboard.writeText = () => Promise.reject(new Error('bloqueado pelo juiz'))"
+  );
+  await sessao.js("document.querySelector('.ajustes-acoes > button').click()");
+  const falhouEm = await esperarPor(sessao, "!!document.querySelector('.ajustes-aviso-falha')");
+  const campo = await sessao.js(`(() => {
+    const c = document.querySelector('.ajustes-campo-leitura');
+    if (!c) return null;
+    return {
+      visivel: c.getClientRects().length > 0,
+      focado: document.activeElement === c,
+      selecionado: c.selectionStart === 0 && c.selectionEnd === c.value.length,
+      valor: c.value,
+    };
+  })()`);
+  conferir(
+    falhouEm !== null && Boolean(campo) && campo.visivel,
+    `ajustes · copiar link (falha): ".ajustes-aviso-falha" aparece (em ${falhouEm} ms) com o campo de leitura`
+  );
+  conferir(
+    Boolean(campo) && campo.focado && campo.selecionado && campo.valor.length > 0,
+    'ajustes · copiar link (falha): o campo chega FOCADO com o texto inteiro selecionado'
+      + ` ("${campo && campo.valor}")`
+  );
+
+  // REVER CONVITE reabre o spotlight (só existe com Atlas ativo) — por
+  // ÚLTIMO nesta seção porque o próprio clique FECHA o painel de
+  // Ajustes (`fecharGaveta('ajustes')` antes de abrir o convite, App.tsx).
+  await sessao.js(`(() => {
+    const b = [...document.querySelectorAll('.ajustes-acoes button')]
+      .find((e) => e.textContent.trim() === 'Rever o convite');
+    b.click();
+  })()`);
+  const convitEm = await esperarPor(sessao, "!!document.querySelector('.spotlight')");
+  conferir(convitEm !== null, `ajustes · rever convite: abre o spotlight (em ${convitEm} ms)`);
+  await sessao.js(`(() => {
+    const b = [...document.querySelectorAll('.convite-linha button')]
+      .find((x) => x.textContent.trim() === 'pular');
+    if (b) b.click();
+  })()`);
+  await dorme(150);
+  conferir(
+    (await sessao.js("!document.querySelector('.spotlight')")) === true,
+    'ajustes · rever convite: fecha pelo botão "pular"'
+  );
+  await sessao.js("window.localStorage.removeItem('viagem-prefs')");
+
   // O VOO LIVRE, desde a F5: o painel de Ajustes ganhou uma seção que só
   // existe nesta fase ("rever o convite"), e o convite dos três gestos
   // fica na tela ao lado dele. Sem julgar a fase, uma seção nova podia
   // quebrar o foco preso do painel sem ninguém ver; e um convite que
   // roubasse o foco não apareceria em prova nenhuma.
   await julgarPagina(sessao, 'pos=0,0,0.1&look=0,0,0', 'free');
+
+  // ---- CARREGAMENTO E FALHA (pedido do dono, 08/09/2026) -----------
+  // `?loader=<etapa>` (App.tsx, `LOAD_STAGES`) fixa uma etapa da tela de
+  // carga — só valia com `?shot=`, que o PIN já traz. `galaxy` é a
+  // quinta das sete: a etapa, a contagem e a telemetria só tinham
+  // conferência por LEITURA de código, nunca por corrida.
+  await sessao.ir(`loader=galaxy&${PIN}`);
+  const carga = await sessao.js(`(() => ({
+    etapa: (document.querySelector('.cv-etapa-rotulo') || {}).textContent || '',
+    contagem: (document.querySelector('.cv-trilho-conta') || {}).textContent || '',
+    telemetria: [...document.querySelectorAll('.cv-telemetria div')].map((d) => d.textContent.trim()),
+  }))()`);
+  conferir(
+    carga.etapa.trim() === 'semeando o disco galáctico…' && carga.contagem.trim() === 'etapa 05 / 07',
+    `carregamento (?loader=galaxy): etapa "${carga.etapa.trim()}", contagem "${carga.contagem.trim()}"`
+  );
+  conferir(
+    carga.telemetria.length === 4 && carga.telemetria.every((t) => t.length > 0),
+    `carregamento (?loader=galaxy): telemetria com ${carga.telemetria.length} linha(s)`
+      + ` — ${carga.telemetria.join(' · ')}`
+  );
+
+  // A TELA DE FALHA: sem gancho de "forçar falha", o caminho
+  // determinístico é bloquear o arquivo que a ETAPA 'catalogs' busca de
+  // verdade (`loadStarData`, `three/config.ts`) — `stars_meta.json`
+  // indisponível vira "Catálogo estelar indisponível" e o `.catch` de
+  // `useDirector` acende o véu de erro (mesmo precedente do
+  // `atlas-smoke.mjs`, que bloqueia a efeméride para provar degradação).
+  await sessao.bloquear(['*data/stars_meta.json*']);
+  // NÃO `sessao.ir()`: ela espera o SINAL DE PRONTIDÃO (`esperarAssentar`,
+  // via `[cartografia]`/quadros) — e um boot que FALHA de propósito nunca
+  // o acende, então `ir()` estouraria os 180 s dela num `throw` e
+  // derrubaria o juiz inteiro. `Page.navigate` cru + um poll tolerante a
+  // erro (o documento troca no meio) é o caminho certo aqui.
+  await sessao.send('Page.navigate', { url: `${APP}/?${PIN}&lang=pt-BR` });
+  let falhouNoBootEm = null;
+  for (let i = 0; i < 60 && falhouNoBootEm === null; i++) {
+    await dorme(300);
+    try {
+      if (await sessao.js("!!document.querySelector('.cv-falha')")) falhouNoBootEm = (i + 1) * 300;
+    } catch {
+      // o documento ainda está trocando — tenta de novo
+    }
+  }
+  const falha = await sessao.js(`(() => {
+    const f = document.querySelector('.cv-falha');
+    if (!f) return null;
+    return {
+      detalhes: !!f.querySelector('details.cv-falha-tecnico summary'),
+      tentar: !!f.querySelector('button'),
+    };
+  })()`);
+  conferir(
+    falhouNoBootEm !== null && Boolean(falha) && falha.detalhes && falha.tentar,
+    `falha no boot (catálogo bloqueado): a tela de falha aparece (em ${falhouNoBootEm} ms) com`
+      + ' "Detalhes técnicos" e o botão de tentar de novo'
+  );
+
+  // DESBLOQUEIA e CLICA — o botão recarrega a página (`onRetry`,
+  // App.tsx: `window.location.reload()`), então a espera é por um SINAL
+  // vivo (`window.__director`, só existe DEV — e o resto do juiz já
+  // depende dele) e tolera o instante em que o documento troca.
+  await sessao.bloquear([]);
+  await sessao.js("document.querySelector('.cv-falha button').click()");
+  let recuperou = false;
+  for (let i = 0; i < 60 && !recuperou; i++) {
+    await dorme(300);
+    try {
+      recuperou = await sessao.js("!document.querySelector('.cv-falha') && !!window.__director");
+    } catch {
+      // o documento está trocando no meio do reload — tenta de novo
+    }
+  }
+  conferir(recuperou, 'falha no boot: desbloqueado e "tentar de novo", o app carrega de novo');
 } finally {
   sessao.fechar();
 }

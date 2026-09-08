@@ -161,6 +161,28 @@ gosto do backlog (Ajustes rola 25 px a 1440×900; títulos das legendas em
 caixa alta; barra do filme no celular em duas fileiras; parar antes do
 centro da galáxia). Backup em `main:backup`. Servidor: `npm run dev`.
 
+**08/09 (fim da rodada — as quatro respostas dele).** Palavras dele: *"1) sim
+2) sim 3) sai, se já foi consumido não precisa acumular md no repo 4) quais
+são as opções?"*. Feito: as páginas de maquete das duas peles foram apagadas
+(as imagens ficaram); o `PLAN-UI.md` saiu do repositório (a matriz e as
+decisões ficam na história, commit 6ef0fa4); e os juízes ganharam as provas
+aprovadas — clique de verdade em cada controle visível (zero surdo na mesa e
+no celular), Esc com dica presa, copiar link com sucesso e com falha,
+cartões de destino contra a busca (os dez chegam ao mesmo alvo), Limpar
+busca, e os recursos que só tinham conferência por leitura (velocidade,
+capítulos e Ver a galáxia; Ver o filme e Explorar do Atlas; Ao vivo e
+Época; selo; cartografia desligada; Ler mais, relevo inventado e falha da
+ficha; Avançado; rever convite; carregamento por etapa e falha no boot com
+tentar de novo; gaveta do tempo no celular; botão direito). Juízes verdes (o
+do Atlas com as 7 falhas antigas), `npm run done` verde, backup em
+`main:backup`. **Aberto: as opções do item 4 foram mandadas com fotos**
+(painel de Ajustes na tela grande: descer até o pé / apertar / deixar;
+títulos das legendas: manter caixa alta / reescrever o roteiro em caixa
+normal; barra do filme no celular: duas fileiras destapando o destino / uma
+fileira rolável / descer para o pé; centro da galáxia: parar antes olhando
+para ele / continuar entrando / tocar o trecho do filme) — ele escolhe.
+Servidor: `npm run dev` (caiu no meio desta rodada; foi levantado de novo).
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar

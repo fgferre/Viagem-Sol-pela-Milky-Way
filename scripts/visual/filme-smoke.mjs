@@ -230,6 +230,146 @@ const JANELAS = [
   { t: 187, title: 'A TERRA', sub: 'o único ponto com oceano de onde a galáxia inteira foi decifrada' },
 ];
 
+/**
+ * OS CONTROLES DO FILME — velocidade, capítulos e "Ver a galáxia"
+ * (`.filme-transporte`, `BarraOuAlcas.tsx`/`Hud.tsx`). Só tinham
+ * conferência por LEITURA na matriz de preservação (lista aprovada
+ * pelo dono, 08/09/2026) — nenhum clique de verdade.
+ *
+ * NÃO HÁ BOTÃO "capítulo seguinte/anterior" na tela — só o atalho de
+ * teclado (`useAtalhos.ts`). A metade do clique usa o mesmo substituto
+ * que `conferirMovimento` já usa para Pausar/Retomar: chamar o método
+ * que o botão chamaria (`window.__director.skipChapter`), direto.
+ */
+async function conferirControles(sessao) {
+  const emT100 = await sessao.ir(comLang('q=cinema&shot=1&t=100'));
+  conferir(emT100.via === 'sinal', `controles: assentou em t=100 por ${emT100.via}`);
+
+  // ---- VELOCIDADE: o clique cicla o RÓTULO pela lista de taxas ------
+  // 1× → 2× → 4× → 1×, e o director muda junto (cyclePlaybackRate).
+  const botaoDaVelocidade = () => sessao.js(`(() => {
+    const b = document.querySelectorAll('.filme-transporte button')[1].getBoundingClientRect();
+    return JSON.stringify({ x: Math.round(b.left + b.width / 2), y: Math.round(b.top + b.height / 2) });
+  })()`);
+  const lerVelocidade = () => sessao.js(`JSON.stringify({
+    rotulo: document.querySelectorAll('.filme-transporte button')[1].textContent.trim(),
+    taxa: window.__director.playbackRate,
+  })`);
+  const ciclo = [];
+  for (let i = 0; i < 3; i++) {
+    const { x, y } = JSON.parse(await botaoDaVelocidade());
+    await sessao.clicar(x, y);
+    const assentouClique = await sessao.assentar();
+    conferir(assentouClique.via === 'sinal', `velocidade: clique ${i + 1} assentou por ${assentouClique.via}`);
+    ciclo.push(JSON.parse(await lerVelocidade()));
+  }
+  conferir(
+    ciclo[0].rotulo === '2×' && ciclo[0].taxa === 2,
+    `velocidade: 1º clique cicla 1×→2× (rótulo "${ciclo[0].rotulo}", director ${ciclo[0].taxa})`
+  );
+  conferir(
+    ciclo[1].rotulo === '4×' && ciclo[1].taxa === 4,
+    `velocidade: 2º clique cicla 2×→4× (rótulo "${ciclo[1].rotulo}", director ${ciclo[1].taxa})`
+  );
+  conferir(
+    ciclo[2].rotulo === '1×' && ciclo[2].taxa === 1,
+    `velocidade: 3º clique fecha a volta e devolve 1× (rótulo "${ciclo[2].rotulo}", director ${ciclo[2].taxa})`
+  );
+
+  // ---- CAPÍTULOS: "próximo"/"anterior" e as setas fazem o mesmo -----
+  // O observável é o RELÓGIO (`currentTime`), não o índice da legenda:
+  // `skipChapter` salta entre TIQUES do roteiro (`rig.ticks`), que não
+  // coincidem com a janela de exibição de cada legenda — medido: o
+  // índice pode cair em "sem legenda" (-1) num tique válido, então não
+  // é régua de "capítulo maior/menor". Reseta a t=100 antes de cada
+  // metade para não herdar de onde a anterior parou.
+  const relogio = () => sessao.js('window.__director.currentTime');
+  await sessao.js('window.__director.seek(100)');
+  await sessao.assentar();
+  const antesDoProximo = await relogio();
+  await sessao.js('window.__director.skipChapter(1)');
+  const assentouProximo = await sessao.assentar();
+  conferir(assentouProximo.via === 'sinal', `capítulo seguinte: assentou por ${assentouProximo.via}`);
+  const depoisDoProximo = await relogio();
+  conferir(
+    depoisDoProximo > antesDoProximo,
+    `"próximo capítulo" avança o relógio (${antesDoProximo} → ${depoisDoProximo})`
+  );
+  await sessao.js('window.__director.skipChapter(-1)');
+  const assentouAnterior = await sessao.assentar();
+  conferir(assentouAnterior.via === 'sinal', `capítulo anterior: assentou por ${assentouAnterior.via}`);
+  const depoisDoAnterior = await relogio();
+  conferir(
+    depoisDoAnterior < depoisDoProximo,
+    `"capítulo anterior" volta o relógio (${depoisDoProximo} → ${depoisDoAnterior})`
+  );
+
+  // as SETAS (`useAtalhos.ts`) são o caminho de teclado de verdade — sem
+  // foco em nenhum controle, é a janela inteira quem escuta. Os cliques
+  // de velocidade acima deixam o FOCO no botão (Chromium foca ao
+  // clicar) — e a guarda do atalho ("dentro de um controle, as setas
+  // não são dele") engoliria as setas se o foco não fosse solto antes.
+  await sessao.js('document.activeElement && document.activeElement.blur()');
+  await sessao.js('window.__director.seek(100)');
+  await sessao.assentar();
+  const antesDaSetaDireita = await relogio();
+  await sessao.teclar('ArrowRight');
+  const assentouSetaDireita = await sessao.assentar();
+  conferir(assentouSetaDireita.via === 'sinal', `ArrowRight: assentou por ${assentouSetaDireita.via}`);
+  const depoisDaSetaDireita = await relogio();
+  conferir(
+    depoisDaSetaDireita > antesDaSetaDireita,
+    `ArrowRight avança o relógio (${antesDaSetaDireita} → ${depoisDaSetaDireita})`
+  );
+  await sessao.teclar('ArrowLeft');
+  const assentouSetaEsquerda = await sessao.assentar();
+  conferir(assentouSetaEsquerda.via === 'sinal', `ArrowLeft: assentou por ${assentouSetaEsquerda.via}`);
+  const depoisDaSetaEsquerda = await relogio();
+  conferir(
+    depoisDaSetaEsquerda < depoisDaSetaDireita,
+    `ArrowLeft volta o relógio (${depoisDaSetaDireita} → ${depoisDaSetaEsquerda})`
+  );
+
+  // ---- VER A GALÁXIA: salta para o Ato IV ---------------------------
+  // O alvo é `revealTime` (director.ts, grep revealGalaxy) — lido do
+  // app, nunca decorado aqui. O "antes" usa t=123.2 — já provado acima
+  // nesta mesma corrida como "SAGITTARIUS A✱" — em vez de um deslocamento
+  // relativo a `revealTime`: os vãos sem legenda deste corte passam de
+  // 12 s, e um deslocamento fixo caiu num vão na 1ª tentativa.
+  await sessao.js('window.__director.seek(123.2)');
+  await sessao.assentar();
+  const antesDoReveal = await lerLegenda(sessao);
+  const revealTime = await sessao.js('window.__director.revealTime');
+  const { x: xReveal, y: yReveal } = JSON.parse(await sessao.js(`(() => {
+    const b = document.querySelector('.reveal-btn').getBoundingClientRect();
+    return JSON.stringify({ x: Math.round(b.left + b.width / 2), y: Math.round(b.top + b.height / 2) });
+  })()`));
+  await sessao.clicar(xReveal, yReveal);
+  // "Ver a galáxia" solta o relógio (`d.play()` antes do `seek`) — pausa
+  // de novo no primeiro tique possível, para o tempo não fugir de
+  // `revealTime` enquanto a sessão assenta.
+  await sessao.js('window.__director.togglePause()');
+  const assentouReveal = await sessao.assentar();
+  conferir(assentouReveal.via === 'sinal', `Ver a galáxia: assentou por ${assentouReveal.via}`);
+  const tempoDepoisDoReveal = await sessao.js('window.__director.currentTime');
+  conferir(
+    tempoDepoisDoReveal >= revealTime && tempoDepoisDoReveal - revealTime < 1,
+    `Ver a galáxia salta o relógio para o Ato IV `
+      + `(t=${tempoDepoisDoReveal.toFixed(2)} contra revealTime=${revealTime.toFixed(2)})`
+  );
+  // `revealTime` em si é o "único trecho em que nada que dependa do
+  // relógio está em quadro" (journey.ts) — de propósito, sem legenda.
+  // Anda mais 3 s, ainda dentro do Ato IV, para ler o capítulo que o
+  // salto abre.
+  await sessao.js(`window.__director.seek(${tempoDepoisDoReveal + 3})`);
+  await sessao.assentar();
+  const legendaDepoisDoReveal = await lerLegenda(sessao);
+  conferir(
+    legendaDepoisDoReveal.title !== '' && legendaDepoisDoReveal.title !== antesDoReveal.title,
+    `e o capítulo muda ("${antesDoReveal.title || '—'}" → "${legendaDepoisDoReveal.title || '—'}")`
+  );
+}
+
 async function julgarLargura(sessao, largura, altura, captura) {
   const frames = [];
   {
@@ -378,6 +518,7 @@ async function julgarLargura(sessao, largura, altura, captura) {
 // o `ir()` de cada largura boota o documento já no tamanho novo.
 const sessao = await abrirSessao({ janela: '1200x900', app: APP, prefixo: 'filme' });
 try {
+  await conferirControles(sessao);
   const frames = await julgarLargura(sessao, 1200, 900, 'todas');
   frames.push(...await julgarLargura(sessao, 820, 900, 'compacta'));
   await salvarFolha(frames);

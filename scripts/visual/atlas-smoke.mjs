@@ -2435,6 +2435,323 @@ try {
     );
   }
 
+  // ---- 23: A BARRA DO ATLAS TROCA DE MODO — filme e voo livre -------
+  // Lista aprovada pelo dono em 08/09 (matriz de preservação, Lote 9):
+  // "Ver o filme" e "Explorar" (`saidasDoAtlas`, fases.ts — só existem
+  // no Atlas) só tinham conferência de leitura. Cada um tem observável
+  // próprio: o filme veste o `.filme-transporte` e apaga a régua de
+  // abas do Atlas; o voo livre acende a `.free-hint` da dica de gestos.
+  {
+    const clicarPorAria = (rotulo) => sessao.js(`(() => {
+      const b = [...document.querySelectorAll('button')]
+        .find((e) => (e.getAttribute('aria-label') || '') === ${JSON.stringify(rotulo)});
+      if (!b) return false;
+      b.click();
+      return true;
+    })()`);
+
+    await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
+    const foiParaOFilme = await clicarPorAria('Ver o filme desde o começo');
+    await dorme(500);
+    const noFilme = JSON.parse(await sessao.js(`JSON.stringify({
+      fase: window.__director.captura.fase,
+      transporte: Boolean(document.querySelector('.filme-transporte')),
+      regua: Boolean(document.querySelector('.atlas-regua')),
+    })`));
+    conferir(
+      foiParaOFilme && noFilme.fase === 'journey' && noFilme.transporte && !noFilme.regua,
+      `"Ver o filme" troca para o filme: fase='${noFilme.fase}', transporte=${noFilme.transporte},`
+        + ` régua do Atlas=${noFilme.regua}`
+    );
+
+    await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
+    const foiExplorar = await clicarPorAria('Explorar a galáxia');
+    await dorme(500);
+    const noVooLivre = JSON.parse(await sessao.js(`JSON.stringify({
+      fase: window.__director.captura.fase,
+      dica: Boolean(document.querySelector('.free-hint')),
+    })`));
+    conferir(
+      foiExplorar && noVooLivre.fase === 'free' && noVooLivre.dica,
+      `"Explorar" troca para o voo livre: fase='${noVooLivre.fase}', dica=${noVooLivre.dica}`
+    );
+  }
+
+  // ---- 24: O BOTÃO DIREITO NÃO ABRE O MENU DO NAVEGADOR -------------
+  // `onContextMenu` (director/gestos.ts) chama `preventDefault()` em
+  // TODAS as fases — um menu do Chrome por cima da cena quebra a
+  // imersão. Só a leitura do código garantia isso; aqui é o evento de
+  // verdade no canvas.
+  {
+    await sessao.ir('atlas=1&foco=saturno&jd=EPOCA&q=cinema');
+    const evitado = await sessao.js(`(() => {
+      const e = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      document.querySelector('canvas').dispatchEvent(e);
+      return String(e.defaultPrevented);
+    })()`);
+    conferir(
+      evitado === 'true',
+      `o botão direito no canvas não abre o menu do navegador (defaultPrevented=${evitado})`
+    );
+  }
+
+  // ---- 25: A MÁQUINA DO TEMPO — "Época" traz o relógio de volta -----
+  // A prova 10 já cobra que ⏸ e "Partir" parem o relógio, mas só lê o
+  // ESTADO do director; faltava o terceiro botão da mesma barra
+  // (`onEpoca` em App.tsx → `director.voltarAEpoca()`) e o SINAL do
+  // próprio botão "Ao vivo" MARCADO (aria-pressed) — os dois entraram
+  // na lista aprovada do Lote 9.
+  {
+    await sessao.ir('atlas=1&q=cinema&shot=1');
+    // a MESMA constante que o botão usa, lida do próprio director — e
+    // não redigitada aqui (a disciplina anti-deriva do item 99)
+    const jdDeReferencia = await sessao.js(
+      '(() => { window.__director.voltarAEpoca(); return window.__director.tempo.jd; })()'
+    );
+    await apertar('Seguir o tempo real');
+    await dorme(1500);
+    const vivoAgora = JSON.parse(await relogio());
+    const marcado = JSON.parse(await sessao.js(`JSON.stringify((() => {
+      const b = [...document.querySelectorAll('.atlas-tempo button')]
+        .find((e) => (e.getAttribute('aria-label') || '') === 'Seguir o tempo real');
+      return {
+        pressionado: b ? b.getAttribute('aria-pressed') : null,
+        ligado: b ? b.classList.contains('on') : false,
+      };
+    })())`));
+    conferir(
+      vivoAgora.aoVivo === true && marcado.pressionado === 'true' && marcado.ligado,
+      `"Ao vivo" MARCA o próprio botão: aria-pressed=${marcado.pressionado}, classe .on=${marcado.ligado}`
+    );
+    await apertar('Voltar ao instante do retrato de 2026');
+    await dorme(300);
+    const naEpoca = JSON.parse(await relogio());
+    conferir(
+      naEpoca.aoVivo === false && naEpoca.jd === jdDeReferencia,
+      `"Época" traz o jd de volta ao retrato: ${vivoAgora.jd} → ${naEpoca.jd}`
+        + ` (referência ${jdDeReferencia}) e desliga o AO VIVO`
+    );
+  }
+
+  // ---- 26: O SELO — "Escala real" (mão única) e abrir/fechar o chip -
+  // A prova 20 já cobra a linha BRILHO (as duas vias); faltava a linha
+  // ESCALA (`onEscalaReal` → `director.focarNoSistema()`), que é mão
+  // ÚNICA — o botão nasce `disabled` assim que a escala já é 1:1
+  // (HudDoAtlas.tsx) —, e faltava o próprio CHIP fechado de novo: o
+  // MESMO botão `.atlas-selo-resumo` abre E fecha (`aria-expanded`).
+  {
+    await sessao.ir('atlas=1&foco=saturno&jd=EPOCA&q=cinema');
+    const resumo = JSON.parse(await sessao.js(SELO('.atlas-selo-resumo')));
+    conferir(resumo !== null, 'o resumo do selo está na tela para abrir/fechar');
+    if (resumo) {
+      const fechado0 = await sessao.js(
+        `document.querySelector('.atlas-selo-resumo').getAttribute('aria-expanded')`
+      );
+      await sessao.clicar(resumo.x, resumo.y);
+      await dorme(300);
+      const aberto1 = JSON.parse(await sessao.js(`JSON.stringify({
+        expandido: document.querySelector('.atlas-selo-resumo').getAttribute('aria-expanded'),
+        detalhe: Boolean(document.querySelector('.atlas-selo-detalhe')),
+      })`));
+      conferir(
+        fechado0 === 'false' && aberto1.expandido === 'true' && aberto1.detalhe,
+        `o clique no chip ABRE a procedência: aria-expanded ${fechado0} → ${aberto1.expandido}`
+          + ` (detalhe presente: ${aberto1.detalhe})`
+      );
+      await sessao.clicar(resumo.x, resumo.y);
+      await dorme(300);
+      const fechado2 = JSON.parse(await sessao.js(`JSON.stringify({
+        expandido: document.querySelector('.atlas-selo-resumo').getAttribute('aria-expanded'),
+        detalhe: Boolean(document.querySelector('.atlas-selo-detalhe')),
+      })`));
+      conferir(
+        fechado2.expandido === 'false' && !fechado2.detalhe,
+        `...e o MESMO chip esconde de novo: aria-expanded=${fechado2.expandido}`
+          + ` (detalhe presente: ${fechado2.detalhe})`
+      );
+    }
+
+    // a vista fora de escala: o mesmo trio da prova 1 (t=100, degrau
+    // céu, 1.911 pc de casa) — bem além do LIMIAR_SISTEMA_SOLAR_PC
+    // (0,05 pc, `three/escala.ts`)
+    await sessao.ir('t=100&jd=EPOCA&q=cinema');
+    await sessao.js('window.__director.entrarNoAtlas()');
+    await sessao.assentar();
+    const abriu = await abrirOSelo();
+    conferir(abriu, 'o selo abre na vista fora de escala (degrau céu, t=100)');
+    if (abriu) {
+      const antes = JSON.parse(await sessao.js(SELO('.atlas-selo-linha', 0)));
+      const textoAntes = await sessao.js(
+        `(document.querySelectorAll('.atlas-selo-linha')[0] || {}).textContent || ''`
+      );
+      conferir(
+        antes !== null && !antes.dis,
+        `longe do sistema a linha ESCALA está fora de escala e clicável ("${textoAntes.trim()}")`
+      );
+      if (antes) {
+        await sessao.clicar(antes.x, antes.y);
+        await dorme(500);
+        const depois = JSON.parse(await sessao.js(SELO('.atlas-selo-linha', 0)));
+        const textoDepois = await sessao.js(
+          `(document.querySelectorAll('.atlas-selo-linha')[0] || {}).textContent || ''`
+        );
+        conferir(
+          depois !== null && depois.dis,
+          `...e o clique traz a escala para 1:1 — a linha DESABILITA (mão única):`
+            + ` "${textoDepois.trim()}"`
+        );
+      }
+    }
+  }
+
+  // ---- 27: ?cart=off DESLIGA A CARTOGRAFIA REAL DA GALÁXIA -----------
+  // (App.tsx:248) só é lido no BOOT (`startLoading` decide `cartMode` e
+  // `vestirGalaxia` chama `galaxy.setCartography` ANTES do bake). O
+  // uniforme que essa escolha arma (`uCartBlend`) não sobrevive à
+  // pergunta: `setCartography` roda antes de `bakeDiscLayers`, e o bake
+  // CONGELA a escolha dentro da textura (`uBaked`) — o material vivo,
+  // medido no navegador, já não carrega `uCartBlend` nenhum. Quem
+  // sobrevive e é o mesmo dado é o campo do boot, `director.cartMode`.
+  {
+    const cartMode = () => sessao.js('window.__director.cartMode');
+    await sessao.ir('atlas=1&cart=off&jd=EPOCA&q=cinema');
+    const semCartografia = await cartMode();
+    conferir(semCartografia === 'off', `?cart=off desliga a cartografia real (cartMode=${semCartografia})`);
+
+    await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
+    const comCartografia = await cartMode();
+    conferir(
+      comCartografia === 'blend',
+      `sem o parâmetro a cartografia real fica ligada por padrão (cartMode=${comCartografia})`
+    );
+  }
+
+  // ---- 28: A FICHA — "Ler mais" e o interruptor "Relevo inventado" --
+  // As duas só tinham conferência de leitura. "Ler mais" (§3.5) expande
+  // a seção de onde a introdução veio; o interruptor (`onRelevoDaCor` →
+  // `Rochoso.definirRelevoDaCor`) liga/desliga o relevo FINGIDO da cor
+  // — em MEMÓRIA, por corpo: `src/lib/preferencias.ts` só guarda o
+  // convite visto, e o comentário de lá é explícito ("Tom, exposição e
+  // camadas NÃO se persistem"). Não existe `localStorage` para este
+  // interruptor — não inventamos o gancho; testamos só a troca de
+  // estado.
+  {
+    // `?foco=` JÁ ABRE A FICHA sozinho (`aoFocar`, useGavetas.ts: "HÁ
+    // SELEÇÃO ⇒ HÁ FICHA") — clicar no gatilho aqui A FECHARIA (o mesmo
+    // botão liga e desliga, `aoAlternar`).
+    await sessao.ir('atlas=1&foco=saturno&jd=EPOCA&q=cinema');
+    await sessao.assentar();
+    // ESPERA DE ESTADO, não parede fixa: `corpos.json`/`texturas.json`
+    // chegam por rede na primeira abertura (FichaDoObjeto.tsx) — o
+    // esqueleto (`aria-busy`) sai sozinho quando os dois assentam.
+    await esperarPor(sessao, `!document.querySelector('.atlas-ficha-esqueleto')`, 8000);
+    const abertasAntes = await sessao.js(`document.querySelectorAll('.atlas-ficha-linhas').length`);
+    const temLerMais = await sessao.js(`Boolean(document.querySelector('.atlas-ficha-lermais'))`);
+    conferir(temLerMais, 'a introdução da ficha de Saturno oferece "Ler mais"');
+    if (temLerMais) {
+      await sessao.js(`document.querySelector('.atlas-ficha-lermais').click()`);
+      await dorme(300);
+      const abertasDepois = await sessao.js(
+        `document.querySelectorAll('.atlas-ficha-linhas').length`
+      );
+      conferir(
+        abertasDepois > abertasAntes,
+        `"Ler mais" expande a seção de origem: ${abertasAntes} → ${abertasDepois} seções com`
+          + ' conteúdo visível'
+      );
+    }
+
+    // o corpo SAI da tabela viva do director, nunca digitado aqui: o
+    // primeiro rochoso cujo interruptor exista (não-nulo)
+    const idComRelevo = await sessao.js(`(() => {
+      const d = window.__director;
+      const c = d.corpos.find((c) => d.relevoDaCor(c.id) !== null);
+      return c ? c.id : null;
+    })()`);
+    conferir(
+      idComRelevo !== null,
+      `existe um corpo com o interruptor "Relevo inventado" (achado: ${idComRelevo})`
+    );
+    if (idComRelevo) {
+      await sessao.ir(`atlas=1&foco=${idComRelevo}&jd=EPOCA&q=cinema`);
+      await sessao.assentar();
+      await esperarPor(sessao, `!document.querySelector('.atlas-ficha-esqueleto')`, 8000);
+      const temCaixa = () => sessao.js(
+        `Boolean(document.querySelector('#ficha-imagem input.hud-interruptor'))`
+      );
+      if (!(await temCaixa())) {
+        // a seção "imagem" pode não ser a primeira aberta — abre-a
+        await sessao.js(`(() => {
+          const b = document.querySelector('button[aria-controls="ficha-imagem"]');
+          if (b) b.click();
+        })()`);
+        await dorme(300);
+      }
+      if (!(await temCaixa())) {
+        conferir(false, `a seção "imagem" de ${idComRelevo} não expôs o interruptor de relevo`);
+      } else {
+        const checado = () => sessao.js(`(() => {
+          const i = document.querySelector('#ficha-imagem input.hud-interruptor');
+          return i ? i.checked : null;
+        })()`);
+        const inicial = await checado();
+        await sessao.js(`document.querySelector('#ficha-imagem input.hud-interruptor').click()`);
+        await dorme(200);
+        const ligado = await checado();
+        await sessao.js(`document.querySelector('#ficha-imagem input.hud-interruptor').click()`);
+        await dorme(200);
+        const desligado = await checado();
+        conferir(
+          inicial === false && ligado === true && desligado === false,
+          `"Relevo inventado" (${idComRelevo}) alterna nos dois sentidos: ${inicial} → ${ligado}`
+            + ` → ${desligado}`
+        );
+      }
+    }
+  }
+
+  // ---- 29: A FICHA SEM REDE — a falha e "Tentar de novo" ------------
+  // `corpos.json`/`texturas.json` (FichaDoObjeto.tsx) só tinham
+  // conferência de leitura para o caminho de erro. Bloqueando os dois
+  // arquivos (o mesmo `sessao.bloquear` da prova 9) a ficha declara a
+  // falha com "Tentar de novo"; desbloqueando e clicando, o efeito de
+  // carga relê sozinho (o retry só zera o booleano do erro).
+  {
+    // `?foco=` já abre a ficha sozinho (`aoFocar`, useGavetas.ts) — sem
+    // clique nenhum no gatilho, que a fecharia de volta (`aoAlternar`).
+    await sessao.bloquear(['*data/atlas/corpos.json*', '*data/atlas/texturas.json*']);
+    await sessao.ir('atlas=1&foco=saturno&jd=EPOCA&q=cinema');
+    await sessao.assentar();
+    const apareceu = await esperarPor(
+      sessao, `document.querySelectorAll('.atlas-ficha-erro').length > 0`, 10000
+    );
+    const falha = JSON.parse(await sessao.js(`JSON.stringify({
+      erros: document.querySelectorAll('.atlas-ficha-erro').length,
+      todosTentarDeNovo: [...document.querySelectorAll('.atlas-ficha-erro button')]
+        .every((b) => b.textContent.trim() === 'Tentar de novo'),
+    })`));
+    conferir(
+      apareceu !== null && falha.erros >= 1 && falha.todosTentarDeNovo,
+      `sem rede a ficha mostra a falha com "Tentar de novo" (${falha.erros} aviso(s) em`
+        + ` ${apareceu} ms)`
+    );
+
+    await sessao.bloquear([]);
+    await sessao.js(
+      `[...document.querySelectorAll('.atlas-ficha-erro button')].forEach((b) => b.click())`
+    );
+    const recuperou = await esperarPor(
+      sessao,
+      `document.querySelectorAll('.atlas-ficha-erro').length === 0`
+        + ` && document.querySelectorAll('.atlas-ficha-secao').length > 0`,
+      10000
+    );
+    conferir(
+      recuperou !== null,
+      `desbloqueada a rede, "Tentar de novo" recupera as seções em ${recuperou} ms`
+    );
+  }
+
   // ---- 19: OS GESTOS DE DEDO, num APARELHO (item 62, etapa 2) -------
   //
   // A prova 15 mede a roda e a pinça de TRACKPAD — as duas chegam como

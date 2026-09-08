@@ -962,5 +962,54 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
   // o convite de MESA precisa de uma primeira entrada, e a parte 0
   // gravou `conviteAtlasVisto` neste perfil
   await s.js("window.localStorage.removeItem('viagem-prefs')");
+
+  // ---- PARTE 6: A GAVETA DO TEMPO POR DENTRO (pedido do dono, 08/09) --
+  // As partes 1 e 2 só medem a folha por FORA (moldura, cobertura); por
+  // dentro, nunca — a gaveta podia perder um controle e nenhum juiz
+  // veria. Conta os mesmos seis que a mesa mostra (`BarraDoTempo` com
+  // `comRotulos`: transporte×3, velocidade×1, referência×2, cada grupo
+  // um `.atlas-tempo-grupo`) e cobra o Esc que o contrato genérico do
+  // `dialogFocus` só roda em tela de mesa — nunca em aparelho, aqui.
+  await vestirAparelho(s, ...APARELHOS[0]);
+  await s.ir(`atlas=1&${PIN}`);
+  await s.js(`(() => {
+    const b = document.querySelector('[data-abre-dialogo="tempo"]');
+    b.focus();
+    b.click();
+  })()`);
+  await dorme(200);
+  const gaveta = await s.js(`(() => {
+    const d = document.querySelector('[data-dialogo="tempo"]');
+    if (!d) return null;
+    const grupos = [...d.querySelectorAll('.atlas-tempo-grupo')];
+    return {
+      data: (d.querySelector('.atlas-tempo-data') || {}).textContent || '',
+      grupos: grupos.length,
+      botoesPorGrupo: grupos.map((g) => g.querySelectorAll('button').length),
+    };
+  })()`);
+  conferir(
+    Boolean(gaveta) && gaveta.data.trim().length > 0 && gaveta.grupos === 3
+      && JSON.stringify(gaveta.botoesPorGrupo) === JSON.stringify([3, 1, 2]),
+    'celular · gaveta do tempo: data + 3 grupos (transporte 3, velocidade 1, ao vivo/época 2)'
+      + ` — data "${gaveta && gaveta.data.trim()}", grupos ${JSON.stringify(gaveta && gaveta.botoesPorGrupo)}`
+  );
+  await s.teclar('Escape');
+  // ESPERA MEDIDA e não `dorme` fixo: o fechamento e a devolução do foco
+  // vêm do MESMO `dialogFocus`, mas depois de uma corrida longa (esta
+  // gaveta é a PARTE 6, ao final de centenas de navegações) 150 ms fixos
+  // já flutuaram numa corrida — o poll espera o sinal de verdade.
+  await esperarPor(s, "!document.querySelector('[data-dialogo=\"tempo\"]')", 3000);
+  await dorme(100);
+  const depoisDoEsc = await s.js(`(() => {
+    const d = document.querySelector('[data-dialogo="tempo"]');
+    const g = document.querySelector('[data-abre-dialogo="tempo"]');
+    return { fechou: !d || d.getClientRects().length === 0, devolveu: document.activeElement === g };
+  })()`);
+  conferir(
+    depoisDoEsc.fechou && depoisDoEsc.devolveu,
+    'celular · gaveta do tempo: Esc fecha a folha e o foco volta à alça'
+  );
+
   await despirAparelho(s);
 }

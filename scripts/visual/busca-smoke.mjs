@@ -321,6 +321,95 @@ try {
     `e o vazio diz o que não achou E o que funciona: "${vazio.aviso}"`
   );
 
+  // ---- 4a: "Limpar busca" devolve o campo ao estado inicial --------
+  // Só tinha conferência por leitura na matriz de preservação — ninguém
+  // clicava (lista aprovada pelo dono, 08/09/2026). Reaproveita o vazio
+  // de "xkcd" que a prova de cima já deixou na tela.
+  await sessao.js("document.querySelector('.atlas-busca-aviso + button').click()");
+  await esperarPor(sessao, "document.querySelectorAll('.atlas-destino').length > 0");
+  const depoisDeLimpar = JSON.parse(await sessao.js(`JSON.stringify({
+    valor: document.querySelector('.atlas-busca-campo').value,
+    focado: document.activeElement === document.querySelector('.atlas-busca-campo'),
+    destinos: document.querySelectorAll('.atlas-destino').length,
+  })`));
+  conferir(
+    depoisDeLimpar.valor === '' && depoisDeLimpar.focado,
+    `"Limpar busca" esvazia o campo e devolve o foco a ele `
+      + `(valor "${depoisDeLimpar.valor}", focado ${depoisDeLimpar.focado})`
+  );
+  conferir(
+    depoisDeLimpar.destinos > 0,
+    `e os cartões de destino voltam à tela (${depoisDeLimpar.destinos} cartões)`
+  );
+
+  // ---- 4b: os cartões de destino chegam ao MESMO alvo que a busca --
+  // Os dez cartões da busca vazia (Lote 6) só tinham conferência por
+  // leitura na matriz de preservação — nenhum clicado por este harness
+  // (lista aprovada pelo dono, 08/09/2026). Para cada um: o CLIQUE no
+  // cartão e a MESMA consulta digitada têm de abrir o MESMO alvo. As
+  // "consulta" abaixo são as do próprio `destinosDaBusca.ts`, na MESMA
+  // ordem — um destino que não resolvesse não apareceria, e não haveria
+  // cartão para clicar.
+  const DESTINOS_DA_BUSCA_VAZIA = [
+    { id: 'earth', categoria: 'sistema', consulta: 'earth' },
+    { id: 'moon', categoria: 'sistema', consulta: 'moon' },
+    { id: 'mars', categoria: 'sistema', consulta: 'mars' },
+    { id: 'jupiter', categoria: 'sistema', consulta: 'jupiter' },
+    { id: 'saturn', categoria: 'sistema', consulta: 'saturn' },
+    { id: 'pluto', categoria: 'sistema', consulta: 'pluto' },
+    { id: 'sirius', categoria: 'estrelas', consulta: 'Sirius' },
+    { id: 'betelgeuse', categoria: 'estrelas', consulta: 'Betelgeuse' },
+    { id: 'rigil-kentaurus', categoria: 'estrelas', consulta: 'Rigil Kentaurus' },
+    { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a' },
+  ];
+  const FILTRO_DA_CATEGORIA = { sistema: 0, estrelas: 1, galaxia: 2 };
+  // foco/nome/contexto: o mesmo "e/ou" que a prova pede — o centro
+  // galáctico é um `lugar`, não uma estrela do catálogo, e pode não
+  // deixar as três igualmente estáveis.
+  const medirAlvo = async () => JSON.parse(await sessao.js(`JSON.stringify({
+    foco: new URLSearchParams(location.search).get('foco'),
+    nome: (document.querySelector('.atlas-ficha-nome') || {}).textContent || '',
+    contexto: (document.querySelector('.atlas-contexto') || {}).innerText || '',
+  })`));
+  const indiceNaCategoria = {};
+  for (const destino of DESTINOS_DA_BUSCA_VAZIA) {
+    const i = indiceNaCategoria[destino.categoria] || 0;
+    indiceNaCategoria[destino.categoria] = i + 1;
+
+    // (a) o clique no cartão, na busca vazia
+    await sessao.ir(`atlas=1&${PIN}`);
+    await abrirPaleta(sessao);
+    const filtro = FILTRO_DA_CATEGORIA[destino.categoria];
+    if (filtro > 0) {
+      await sessao.js(
+        `document.querySelectorAll('[data-dialogo="busca"] .ajustes-seg button')[${filtro}].click()`
+      );
+      await dorme(150);
+    }
+    await sessao.js(`document.querySelectorAll('.atlas-destino')[${i}].click()`);
+    await sessao.assentar();
+    const porCartao = await medirAlvo();
+
+    // (b) recarrega e chega à MESMA consulta, digitada na paleta
+    await sessao.ir(`atlas=1&${PIN}`);
+    await abrirPaleta(sessao);
+    await sessao.digitar(destino.consulta);
+    await dorme(300);
+    await sessao.teclar('Enter');
+    await sessao.assentar();
+    const porBusca = await medirAlvo();
+
+    const mesmoAlvo =
+      (porCartao.foco !== null && porCartao.foco === porBusca.foco)
+      || (porCartao.nome !== '' && porCartao.nome === porBusca.nome)
+      || (porCartao.contexto !== '' && porCartao.contexto === porBusca.contexto);
+    conferir(
+      mesmoAlvo,
+      `destino "${destino.id}": o cartão e a busca chegam ao mesmo alvo `
+        + `(foco "${porCartao.foco}"/"${porBusca.foco}", ficha "${porCartao.nome}"/"${porBusca.nome}")`
+    );
+  }
+
   // ---- 5: no VOO LIVRE, a mesma paleta VOA -------------------------
   // O verbo é da fase, e a promessa está escrita no rótulo: no Atlas o
   // Enter "enquadra", no voo livre ele "voa até lá". Sem esta prova a
