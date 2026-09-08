@@ -309,7 +309,19 @@ export const HUD_POR_FASE = {
   atlas: {
     sol: false,
     lente: false,
-    letterbox: true,
+    // SEM TARJA (Lote 4, PLAN-UI.md §0, 07/09): "tarjas de cinema saem do
+    // Atlas; ficam no filme" — decisão do dono de 07/09. A tarja é a
+    // moldura da NARRATIVA (jornada, abertura, encerramento); o Atlas é
+    // instrumento, não cena dirigida. `LETTERBOX_FRACAO` sai do ramo de
+    // mesa de `retanguloUtilDoAtlas` (o Atlas nunca teve tarja no
+    // telefone, desde 24/08) — as duas metades andam juntas, como sempre
+    // nesta casa: pintar sem descontar (ou o contrário) recuaria a câmera
+    // por uma faixa que já não existe. As duas `<div className="letterbox">`
+    // continuam no DOM (fatia 2, `App.tsx`) — `height: 0` sem a classe
+    // `.on`, a mesma transição de 2,2 s que já existia: se a tarja estava
+    // animando na travessia do filme para o Atlas, ela termina de
+    // recolher já dentro dele, em vez de sumir num corte seco.
+    letterbox: false,
     legenda: false,
     rumo: false,
     progresso: false,

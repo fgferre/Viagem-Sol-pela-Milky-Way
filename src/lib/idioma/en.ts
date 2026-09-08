@@ -87,16 +87,30 @@ export const EN: Record<keyof typeof PT, string> = {
   'etapa.layers': 'revealing the disk slices…',
   'etapa.shaders': 'compiling the shaders…',
 
-  // ---- the control bar ---------------------------------------------
-  'barra.ajustes': '⚙ Settings',
+  // ---- the control bar -----------------------------------------------
+  // GLYPHS ARE GONE (Lote 4, item 2): `<Icone>` (SVG) draws next to plain
+  // text now, the same swap Lote 2b already made for Search/Layers/Time.
+  // Only the FILM's own buttons (`barra.reviver`, `barra.retomar`,
+  // `barra.pausar`) keep glyph+text — out of this lote's scope.
+  'barra.ajustes': 'Settings',
   'barra.ajustesAria': 'Rendering settings',
   'barra.reviver': '↻ Replay',
   'barra.entrarNoAtlas': 'Enter the Atlas',
-  'barra.verOFilme': '▶ Watch the film',
+  'barra.verOFilme': 'Watch the film',
   'barra.verOFilmeAria': 'Watch the film from the beginning',
-  'barra.explorarAtlas': '↗ Explore',
+  'barra.explorarAtlas': 'Explore',
   'barra.explorarAria': 'Explore the galaxy',
-  'barra.voltarAoFilme': '↩ Back to the film',
+  // "RESUME", not "Back to the film" anymore (item 2, mockup §3.2: "↩
+  // Resume"). The KEY stays — it names the DESTINATION, not the label.
+  'barra.voltarAoFilme': 'Resume',
+  // THE THREE TOP CHIPS ON MOBILE (found in the Lote 4 screenshots,
+  // 09-07): "Watch the film" clips at 320 px inside the 44 px row of
+  // item 6. The SHORT keys apply only there; the button's `aria-label`
+  // stays the LONG label above — shortening the visible text can't
+  // shorten what a screen reader announces.
+  'barra.verOFilmeCurto': 'Film',
+  'barra.explorarCurto': 'Explore',
+  'barra.voltarAoFilmeCurto': 'Resume',
   'barra.retomar': '⏵ Resume',
   'barra.pausar': '⏸ Pause',
   'barra.retomarAria': 'Resume the journey',
@@ -107,6 +121,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'barra.explorar': 'Explore',
   'barra.qualidadeAria': 'Graphics quality',
   'barra.alcasAria': 'Atlas controls',
+
+  // ---- the brand and the context line (Lote 4, item 2) ----------------
+  // "Sea of Stars", the same name `app.titulo` already uses in English.
+  'marca.nome': 'Sea of Stars',
+  'contexto.viaLactea': 'The Milky Way',
+  'contexto.sistemaSolar': 'Solar System',
 
   // ---- the settings panel ------------------------------------------
   'ajustes.titulo': 'Settings',
@@ -538,6 +558,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'unidade.anosLuz': '{n} light-years',
   'unidade.milAnosLuz': '{n} thousand light-years',
   'unidade.vezesTerra': '{n}× Earth',
+
+  // ---- what the numbers mean (Lote 4, item 5/§10) ---------------------
+  'rotulo.distanciaDaqui': '{nota} from here',
 
   // ---- the always-on gesture hint ----------------------------------
   'cena.aria': 'Three-dimensional simulation of the journey through the HYG catalog and the Milky Way',

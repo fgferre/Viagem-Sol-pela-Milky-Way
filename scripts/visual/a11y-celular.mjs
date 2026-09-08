@@ -67,9 +67,9 @@ const MEDIR_CELULAR = `(() => {
   // guardava o literal 'Partir', e o que importa nunca foi o rótulo: é a
   // BARRA que tem de estar encostada no topo, porque é a altura dela que
   // é o topo declarado do retângulo útil. Desde o item 61 ela pode
-  // ter três botões (▶ Ver o filme · ↗ Explorar · ↩ Voltar ao filme), e
-  // o último só existe com filme guardado — cobrar um nome era cobrar
-  // uma composição, e a composição mudou.
+  // ter três botões (contexto + chips Ver o filme · Explorar · Retomar,
+  // Lote 4), e o último só existe com filme guardado — cobrar um nome
+  // era cobrar uma composição, e a composição mudou.
   const barra = document.querySelector('.controls-bar');
   return {
     W, H,

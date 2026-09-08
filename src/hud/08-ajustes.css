@@ -10,10 +10,8 @@
    Aqui ficam a largura e as DUAS EXCEÇÕES deste painel — os únicos dois
    pontos em que ele não é a gaveta, a paleta nem a ficha. */
 .ajustes {
-  /* REDESENHO (05/09): 19rem cabia parágrafo; fileira PRESET/2×/4×/…
-     precisa de mais respiro — 24rem é o mesmo teto que a gaveta usa
-     para caber cinco segmentos sem quebrar palavra. */
-  width: min(27rem, calc(100vw - 3.2rem));
+  /* 440 px / 34vw (Lote 4, item 4: "ajustes 440") — era 27rem (432 px). */
+  width: min(27.5rem, 34vw);
   /* EXCEÇÃO 1 — o teto tem dois termos A MAIS que o comum. Os outros três
      diálogos cabem na tela sozinhos; este é o mais alto da casa e precisa
      parar antes. Os dois primeiros mandam em qualquer tela com espaço, e

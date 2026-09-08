@@ -39,78 +39,130 @@
     --pad-painel: 1rem;
   }
   .hud-root:has(.atlas-alcas) {
-    /* MEDIDA, não escolhida: a alça tem 2,75rem de alvo de toque e a
-       fileira 0,35rem de respiro em cima e embaixo — 3,45rem, e 3,6
-       declara isso com folga. Errar para baixo põe o selo por cima da
-       fileira, que é o defeito que o juiz de a11y cobra a 390 e 320. */
-    --alcas-altura: 3.6rem;
+    /* CONSERTO 2 (Lote 4, 07/09, PLAN-UI.md §2 item 1): 3,5rem — o
+       "céu a 320×568" media 67,1% livre contra a meta de 70% (a11y.mjs).
+       4rem (item 7: "a barra cresce de 3,6 rem para 4 rem + safe area")
+       ainda cabe ícone (20px) + rótulo (11px) + respiro empilhados a
+       56 px, com folga; é `rem`, então escala com `?ui=` como sempre. */
+    --alcas-altura: 3.5rem;
     /* O SELO SOBE JUNTO. `--selo-base` é a linha de base que TRÊS peças
        leem (fatia 1) — o selo, o rodapé do Atlas e o teto dos diálogos —,
        então somar a fileira aqui basta para as três pararem acima dela.
        `env(safe-area-inset-bottom)` entra porque a barra de gestos do iOS
        come esse pedaço; o Chrome sem cabeça reporta 0 e o juiz não a mede
-       — limite declarado, conferido à mão. */
-    --selo-base: calc(var(--alcas-altura) + 0.6rem + env(safe-area-inset-bottom));
+       — limite declarado, conferido à mão. CONSERTO 2: o vão para a
+       fileira desce de 0,6rem para 0,375rem (6 px) — o chip do selo
+       ganha altura própria (`.atlas-selo-resumo`, abaixo) em vez de
+       precisar do respiro antigo. */
+    --selo-base: calc(var(--alcas-altura) + 0.375rem + env(safe-area-inset-bottom));
   }
 
-  /* ---- A FILEIRA DE ALÇAS -------------------------------------------
+  /* ---- A FILEIRA DE ALÇAS (Lote 4, item 7 — regra de encaixe do portão
+     2) -------------------------------------------------------------
      ⌕ Buscar · ⧉ Camadas · ⏱ Tempo · ⚙ Ajustes, e a Ficha como quinta
      quando há seleção. São as MESMAS peças da barra de controles, com o
      mesmo `data-abre-dialogo`: quem decide em qual das duas elas nascem é
      o `useCelular`, nunca o CSS — duas cópias no documento seriam dois
      gatilhos com o mesmo nome, e o contrato do `dialogFocus` proíbe.
 
-     UMA LINHA QUE NUNCA QUEBRA. `flex-wrap: nowrap` com `overflow-x:
-     auto`: quebrar em duas linhas mudaria a altura da base declarada e
-     MOVERIA A CÂMERA no meio da sessão — a mesma lição da dica do rodapé
-     (`.free-hint.apagada`, fatia 3). Com cinco alças e o texto em 140%
-     num aparelho de 320 px a fileira não cabe, e o certo é ela ROLAR. */
+     GRADE DE 5 COLUNAS IGUAIS, SEMPRE — e não `flex` que rola: era a
+     saída ANTES do portão 2, e o dono reprovou a fileira cortada a
+     320 px com `ui` 1,4 (uma alça saindo pela borda é pior que rolar,
+     mas nenhuma das duas é a promessa de "cinco portas sempre à mão").
+     `grid-template-columns: repeat(5, 1fr)` reserva a QUINTA coluna
+     mesmo quando a Ficha ainda não existe (sem seleção): as quatro
+     primeiras não pulam de lugar no instante em que ela aparece. NUNCA
+     ROLA, NUNCA CORTA: quem cede é o RÓTULO (`clamp`, abaixo), nunca a
+     grade. */
+  /* CONSERTO 2 (Lote 4, 07/09): o chip do selo ganha altura PRÓPRIA de
+     28 px — antes ele media o que o padding/texto davam (~21 px) e o
+     vão de 0,6rem para a fileira cobria a diferença; agora o vão caiu
+     para 6 px (acima) e é o chip quem garante a leitura sem encostar. */
+  .hud-root:has(.atlas-alcas) .atlas-selo-resumo {
+    min-height: 1.75rem;
+  }
   .atlas-alcas {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: env(safe-area-inset-bottom);
+    bottom: 0;
     z-index: 45;
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    align-items: center;
-    /* O RESPIRO É ORÇAMENTO DE LARGURA, e o orçamento tem um número: as
-       QUATRO alças do estado de sempre têm de caber INTEIRAS num aparelho
-       de 390 px no tamanho de fábrica, que é a primeira tela que o
-       visitante vê. Com 0,4rem de vão e 0,8rem de folga lateral por alça
-       elas somavam 414 px e o ⚙ Ajustes nascia cortado pela borda — a
-       fileira rolava desde o primeiro quadro, o que é a saída certa para
-       a QUINTA alça e para o texto grande, nunca para o estado comum. */
-    gap: 0.3rem;
-    padding: 0.35rem 0.45rem;
-    min-height: var(--alcas-altura);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: calc(var(--alcas-altura) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
     background: linear-gradient(to top, rgba(3, 5, 10, 0.88), rgba(3, 5, 10, 0));
-    /* a barra de rolagem não é desenho: a fileira rola com o dedo */
-    scrollbar-width: none;
-  }
-  .atlas-alcas::-webkit-scrollbar {
-    display: none;
   }
 
   /* O ALVO DE TOQUE MORA NA ALÇA, nunca no `.hud-btn` comum: `.hud-btn
-     .small` mede ~27 px, e crescer o botão da casa moveria pixel na mesa,
-     na barra do filme e no painel de Ajustes. 2,75rem é 44 px no tamanho
-     de fábrica, que é o alvo mínimo que as duas plataformas pedem — e
-     acompanha o `?ui=`, como todo o resto do HUD.
-     `flex: 0 0 auto` porque a fileira ROLA: alça que encolhe para caber
-     é alça que ninguém acerta. */
+     .small` é o tamanho oblíquo da barra de mesa (ícone ao lado do
+     rótulo), e crescer o botão da casa moveria pixel lá. Aqui o par
+     ícone/rótulo EMPILHA (`flex-direction: column`) — a régua de todo
+     rodapé de app (Maps, Eyes) —, ocupa a COLUNA inteira da grade (sem
+     `flex: 0 0 auto`: não há mais o que "encolher para caber", a grade
+     já reserva o espaço) e nunca quebra em duas linhas de rótulo
+     (`white-space: nowrap`, e a QUINTA tem `ellipsis` própria — ver
+     `.atlas-alca-rotulo`).
+     ATIVA (Lote 4, item 7): `--acento` + filete de 2 px no topo — lida
+     do MESMO `aria-expanded` que `gatilhoDoDialogo` já escreve em cada
+     botão (`lib/dialogFocus.ts`), sem estado novo nem classe nova. */
   .atlas-alcas > .hud-btn {
-    flex: 0 0 auto;
-    min-height: 2.75rem;
-    padding: 0.45rem 0.55rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    min-height: 0;
+    height: 100%;
+    padding: 0.3rem 0.2rem;
+    border: 0;
+    border-top: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    white-space: nowrap;
+  }
+  .atlas-alcas > .hud-btn[aria-expanded='true'] {
+    border-top-color: var(--acento);
+    color: var(--acento);
+  }
+  /* O ÍCONE (item 7): `calc(20px * min(var(--ui), 1.2))` — cresce com o
+     texto ampliado até 1,2×, e para aí: acima disso o ícone competiria
+     por altura com o rótulo dentro dos mesmos 4rem. `min()`/`calc()` em
+     `width`/`height` não é `font-size` — a regra de `uiScale.test.ts`
+     ("todo font-size do HUD reage à raiz, nunca em px") não alcança
+     dimensão de ícone, só texto. */
+  .atlas-alcas > .hud-btn svg {
+    width: calc(20px * min(var(--ui, 1), 1.2));
+    height: calc(20px * min(var(--ui, 1), 1.2));
+  }
+  /* O RÓTULO (item 7): `clamp(11px, 3,2vw, 11px × ui)` — o piso do §2
+     item 2 (11 px é o mínimo de "eyebrows"), um termo FLUIDO que cede
+     largura antes de a grade ceder (a mesma disciplina de
+     `atlas-tempo-taxa-seg`), e o teto de sempre pelo `?ui=`. Escrito em
+     `rem` com o termo `vw` multiplicado por `var(--ui)` — a mesma régua
+     que `uiScale.test.ts` cobra de todo `font-size` do HUD (nada aqui é
+     exceção só por morar numa alça). NO BOTÃO INTEIRO, não só no rótulo
+     da ficha: as outras quatro alças (Buscar, Camadas, Tempo, Ajustes)
+     escrevem o nome como texto solto, sem `<span>` — e um nó de texto
+     herda `font-size` do pai normalmente, só não tem caixa própria para
+     `text-overflow` (por isso a ficha, cujo nome VARIA de tamanho, ganhou
+     o `<span>` que os outros quatro, com palavras fixas, não precisam). */
+  .atlas-alcas > .hud-btn {
+    font-size: clamp(0.6875rem, calc(3.2vw * var(--ui)), calc(0.6875rem * var(--ui)));
+    letter-spacing: 0;
+  }
+  .atlas-alca-rotulo {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* ---- O QUE SAI DA TELA PARA DAR LUGAR ------------------------------
      A BARRA DE CONTROLES DO ATLAS ENCOSTA NO TOPO DA TELA. Sobraram nela
-     as SAÍDAS do modo (▶ Ver o filme · ↗ Explorar, e ↩ Voltar ao filme
-     quando há filme guardado) porque saída por ponteiro não vira alça —
+     o CONTEXTO (item 6, sem marca — a linha inteira é a única do topo) e
+     as SAÍDAS do modo (▶ Ver o filme · ↗ Explorar, e ↩ Retomar quando há
+     filme guardado) porque saída por ponteiro não vira alça —
      `subirDegrau()` devolve `false` no degrau `sistema` e o Esc não sai
      do Atlas. Os 0,4vh a encostam no alto: ali ela é a ÚNICA peça
      permanente do topo, e o retângulo útil desconta a caixa dela e mais
@@ -125,9 +177,57 @@
      exatamente onde a fatia 6 a deixou. */
   .hud-root:has(.atlas-alcas) .controls-bar {
     top: 0.4vh;
+    /* CONSERTO 2 (Lote 4, 07/09, PLAN-UI.md §2 item 1): 40 px — era
+       44 px (item 6: "uma linha de 44 px"), mas o "céu a 320×568" media
+       67,1% livre contra a meta de 70%; o alvo de toque de 44 px segue
+       garantido pela fileira de alças logo abaixo (o gate real do juiz,
+       `ALVO_DE_TOQUE_PX`), esta linha é navegação eventual (▶ Filme,
+       ⇗ Explorar), não a base de toque diária. */
+    min-height: 2.5rem;
   }
   .hud-root:has(.atlas-alcas) .controls-bar select.hud-btn {
     display: none;
+  }
+  .hud-root:has(.atlas-alcas) .controls-bar .hud-btn {
+    min-height: 2.5rem;
+  }
+  /* O CONTEXTO OCUPA O QUE SOBRA à esquerda dos chips e NUNCA QUEBRA
+     (item 6: "uma linha de 44 px") — os `.hud-btn` continuam de tamanho
+     fixo (`flex: 0 0 auto`, abaixo) e o texto é quem cede, nunca os
+     botões. `flex-wrap: nowrap` sobrescreve o `wrap` da mesa
+     (`.atlas-contexto`, 04-atlas.css — lá o bloco tem duas linhas de
+     sobra para isso, aqui não): sem ele os PRÓPRIOS TRECHOS do
+     breadcrumb (cada um um item flex) quebravam em duas linhas dentro da
+     própria barra, e a barra do celular deixava de ser UMA linha —
+     achado medido pelo juiz de a11y (`julgarCelular`, "a barra do Atlas
+     é UMA linha").
+     `align-self`/`align-items: flex-start` (achado do Lote 4, 07/09,
+     `julgarFerramentasDoAtlas` em a11y.mjs — a OUTRA prova de "UMA
+     linha", que conta `top` de CADA `<button>`): o contexto herda
+     `align-items: baseline` da mesa (04-atlas.css), uma linha de texto
+     de ~18 px; a barra tem 44 px de altura (`.hud-btn` acima). Com
+     `align-items: center` no `.controls-bar` (03-controles.css) os dois
+     ficavam centralizados na MESMA faixa mas com TOPOS diferentes — o
+     botão "Sistema Solar" do breadcrumb a ~13 px do topo da barra, os
+     chips a 0 — dois `top` distintos por arredondamento, e o juiz conta
+     isso como DUAS linhas mesmo sem quebra visual nenhuma. Alinhando os
+     dois ao TOPO da barra (fora e dentro do contexto) os dois `top`
+     colapsam no mesmo valor. */
+  /* ITEM 2 (Lote 4, 07/09): `min-width: 0` deixava o contexto encolher
+     ATÉ ZERO quando os dois chips (Filme/Explorar) sozinhos já não cabem
+     a 320 px com `ui = 1,4` — o texto sumia INTEIRO, alvo pior que o
+     corte que este mesmo item veio consertar. Os trechos de dentro (a
+     regra `.atlas-contexto > span…`, 04-atlas.css) já garantem que só o
+     ÚLTIMO some por igual e nunca trunca; `min-content` aqui estende essa
+     garantia ao CONTÊINER — ele nunca fica menor que o último trecho
+     precisa, e quem cede é a BARRA (`overflow-x: auto`, abaixo), que já
+     rola por essa mesma razão. */
+  .hud-root:has(.atlas-alcas) .controls-bar .atlas-contexto {
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    min-width: min-content;
+    align-self: flex-start;
+    align-items: flex-start;
   }
 
   /* ...E ELA ROLA EM VEZ DE QUEBRAR (item 61, 23/08). Com as duas
@@ -140,7 +240,12 @@
      moveria a câmera no meio da sessão, calada.
      O remédio é o mesmo que a fileira de alças já usa, e pela mesma
      razão: `flex: 0 0 auto` porque botão que encolhe para caber é botão
-     que ninguém acerta. A barra vira uma linha que ROLA. */
+     que ninguém acerta. A barra vira uma linha que ROLA.
+     O SELETOR É DESCENDENTE (`.hud-btn`), não filho direto (`>`), desde
+     o Lote 4: os botões moram dentro de `.atlas-barra-grupo` (item 2),
+     e `>` parava de achá-los — sem `flex: 0 0 auto` o botão ENCOLHIA e o
+     texto de dentro QUEBRAVA em duas linhas, o mesmo defeito que a
+     `white-space: nowrap` (abaixo) tranca pela outra ponta. */
   .hud-root:has(.atlas-alcas) .controls-bar {
     flex-wrap: nowrap;
     justify-content: flex-start;
@@ -150,8 +255,9 @@
   .hud-root:has(.atlas-alcas) .controls-bar::-webkit-scrollbar {
     display: none;
   }
-  .hud-root:has(.atlas-alcas) .controls-bar > .hud-btn {
+  .hud-root:has(.atlas-alcas) .controls-bar .hud-btn {
     flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   /* A MÁQUINA DO TEMPO PERMANENTE SAI DO RODAPÉ — ela virou a alça ⏱
@@ -279,12 +385,19 @@
      por OPACIDADE com a caixa no lugar; aqui ela nunca entra na caixa —
      `absolute` sobre o rodapé, acima do selo e portanto acima da fileira.
      Fora do fluxo desde o começo, apagar não move nada. */
+  /* ITEM 4 (Lote 4, 07/09): UMA linha, nunca duas — no celular a dica
+     de duas linhas era quem derrubava o "céu ≥ 70%" a 320×568 (medindo
+     68,6%): a segunda linha some com `ellipsis` em vez de crescer a
+     coluna. */
   .atlas-rodape .free-hint {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 100%;
     margin-bottom: 0.4rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     text-align: right;
   }
 

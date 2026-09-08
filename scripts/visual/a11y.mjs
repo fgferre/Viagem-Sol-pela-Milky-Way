@@ -841,13 +841,15 @@ async function julgarFerramentasDoAtlas(s) {
   await s.ir(`atlas=1&foco=terra&${PIN}`);
   await s.assentar();
   const semFilme = JSON.parse(await s.js(LER));
+  // OS GLIFOS SAÍRAM (Lote 4, item 2): o desenho é `<Icone>` (SVG) e o
+  // texto ficou puro — a mesma troca que Busca/Camadas/Tempo já tinham.
   conferir(
-    semFilme.includes('▶ Ver o filme') && semFilme.includes('↗ Explorar'),
+    semFilme.includes('Ver o filme') && semFilme.includes('Explorar'),
     `atlas: as duas ferramentas estão na barra (${semFilme.join(' · ')})`
   );
   conferir(
-    !semFilme.some((t) => t.includes('Voltar ao filme')),
-    'atlas sem filme guardado: NÃO oferece "↩ Voltar ao filme" — não há para onde voltar'
+    !semFilme.some((t) => t.includes('Retomar')),
+    'atlas sem filme guardado: NÃO oferece "Retomar" — não há para onde voltar'
   );
   // e a ORDEM do Tab é a da tela, como manda a casa
   const ordem = JSON.parse(await s.js(
@@ -866,7 +868,7 @@ async function julgarFerramentasDoAtlas(s) {
   await s.assentar();
   const comFilme = JSON.parse(await s.js(LER));
   conferir(
-    comFilme.some((t) => t.includes('Voltar ao filme')),
+    comFilme.some((t) => t.includes('Retomar')),
     `atlas vindo do filme: a saída existe e diz para onde vai (${comFilme.join(' · ')})`
   );
 
@@ -2147,6 +2149,22 @@ async function julgarEscalaDaUi(s) {
       mobile: false,
     });
     await esperarPor(s, `window.innerWidth === ${Math.round(1200 / zoom)}`);
+    // O REACT AINDA NÃO VIU O TAMANHO NOVO (achado do Lote 4, 07/09):
+    // `innerWidth` muda no mesmo instante do override do CDP, mas o
+    // `matchMedia` do `useCelular` só troca o DOM (`.atlas-alcas`) num
+    // re-render — um `tick` depois. A 600 px (zoom 200%) essa janela
+    // pegava a MESA ainda desenhada (barra larga, sem quebra, e
+    // `.atlas-tempo` do rodapé ainda visível porque o CSS que o esconde
+    // é `:has(.atlas-alcas)`), numa tela de 450 px de altura — e as duas
+    // caixas se atropelavam. Antes do Lote 4 a barra de mesa era estreita
+    // o bastante para não alcançar o rodapé nessa mesma janela de
+    // instabilidade; os botões maiores do item 2/3 a alargaram até
+    // alcançar. A espera abaixo cobra o mesmo ESTADO que a barra de
+    // celular usa para se esconder, em vez de confiar num número de ms.
+    await esperarPor(
+      s,
+      "matchMedia('(max-width: 760px)').matches === Boolean(document.querySelector('.atlas-alcas'))"
+    );
     const q = await s.js(MEDIR_QUEBRAS);
     conferir(
       q.foraDaTela.length === 0 && q.atropelos.length === 0,

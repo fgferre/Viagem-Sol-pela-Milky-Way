@@ -251,8 +251,11 @@
    termos a mais e o rodapé mais alto. */
 .hud-dialogo {
   position: absolute;
-  top: calc(var(--barra-fim) + 0.8rem);
-  right: 1.6rem;
+  /* 16 px dos dois lados (Lote 4, item 4: "--barra-fim + 16px" / "16px da
+     borda direita") — eram 0,8rem/1,6rem (12,8/25,6 px); 1rem = 16 px no
+     tamanho de fábrica e cresce com `?ui=` como o resto do painel. */
+  top: calc(var(--barra-fim) + 1rem);
+  right: 1rem;
   max-height: var(--teto-dialogo);
   overflow-y: auto;
   pointer-events: auto;

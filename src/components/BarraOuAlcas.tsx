@@ -14,18 +14,21 @@
 // decisão não tinha nome. A semântica é a mesma, linha a linha: o que
 // mudou de lugar não mudou de conteúdo.
 // ============================================================
-import { QUALIDADES, rotuloDaQualidade } from '../three/atlasConfig';
+import { useEffect, useState } from 'react';
+import { QUALIDADES, nomeDoCorpo, rotuloDaQualidade } from '../three/atlasConfig';
 import type { EscolhaDeQualidade } from '../three/core/engine';
-import type { EstadoDaQualidade } from '../three/director';
+import type { EstadoDaEscada, EstadoDaQualidade } from '../three/director';
 import type { HudDaFase } from '../three/fases';
 import type { EstadoDoTempo } from '../three/tempoDoAtlas';
 import type { Gaveta } from '../hooks/useGavetas';
 import { gatilhoDoDialogo } from '../lib/dialogFocus';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
+import { REGISTRO_ORBITAL } from '../lib/atlas/registroOrbital';
 import { BotaoDaGaveta, BotaoDoTempo } from './HudDoAtlas';
 import { BotaoDaBusca } from './PaletaDeBusca';
 import { BotaoDaFicha } from './FichaDoObjeto';
+import { Icone } from './Icone';
 
 export interface BarraOuAlcasProps {
   /** as peças que a FASE hospeda */
@@ -52,6 +55,13 @@ export interface BarraOuAlcasProps {
    */
   temFilmeGuardado: boolean;
   foco: string | null;
+  /**
+   * A ESCADA (Lote 4, item 2) — de onde a LINHA DE CONTEXTO deriva:
+   * "Via Láctea › Sistema Solar › Terra › Lua". Só existe de verdade no
+   * Atlas (`hud.saidasDoAtlas`), mas o tipo vem sempre — o mesmo padrão
+   * de `foco`, que também é `null` fora dele.
+   */
+  escada: EstadoDaEscada;
   tempo: EstadoDoTempo | null;
   inJourney: boolean;
   paused: boolean;
@@ -65,6 +75,118 @@ export interface BarraOuAlcasProps {
   revealGalaxy: () => void;
   freeRoam: () => void;
   changeQuality: (escolha: EscolhaDeQualidade) => void;
+  /** "Sistema Solar" da linha de contexto — o MESMO `focarNoSistema` do
+   *  botão Sistema da ficha (item 2). */
+  focarNoSistema: () => void;
+  /** o corpo-pai da linha de contexto — a MESMA seleção que a busca usa
+   *  para um corpo (`escolherAlvo`, dentro do Atlas: `focarNoCorpo`). */
+  focarNoCorpo: (id: string) => void;
+}
+
+/**
+ * A LINHA DE CONTEXTO (Lote 4, item 2/§3.2) — "Via Láctea › Sistema Solar
+ * › Terra › Lua", derivada da escada, NUNCA digitada à mão: o degrau, o
+ * `corpoId` e o corpo-PAI (`REGISTRO_ORBITAL[id].centro`, o mesmo dado que
+ * `ficha.ts` já lê para a linha "Distância — {pai}") decidem os
+ * trechos. Só "Sistema Solar" e o corpo-pai são BOTÕES — os únicos dois
+ * trechos com ação existente; "Via Láctea" e o alvo atual são texto, como
+ * o plano manda: um breadcrumb não é um menu, é uma leitura de onde se
+ * está, com dois atalhos para voltar.
+ */
+/** um trecho do breadcrumb — texto puro, ou botão quando há ação real */
+interface TrechoDoContexto {
+  chave: string;
+  texto: string;
+  aoClicar?: () => void;
+  atual?: boolean;
+}
+
+/**
+ * OS TRECHOS, na ordem da leitura — nunca o JSX direto, porque o modo
+ * ESTREITO (abaixo de 360 px, item 6: "só o último trecho") precisa do
+ * ÚLTIMO sem desenhar os outros, e recortar um array pronto é mais
+ * simples e mais seguro que esconder nós por CSS (que ainda os deixaria
+ * no DOM, tabuláveis).
+ */
+function trechosDoContexto(
+  escada: EstadoDaEscada,
+  foco: string | null,
+  focarNoSistema: () => void,
+  focarNoCorpo: (id: string) => void,
+  comViaLactea: boolean
+): TrechoDoContexto[] {
+  const viaLactea: TrechoDoContexto[] = comViaLactea
+    ? [{ chave: 'via-lactea', texto: t('contexto.viaLactea') }]
+    : [];
+  // A ESTRELA FICA FORA DA ESCADA DE CORPOS (escada.ts, `EstadoDaEscada`):
+  // "Via Láctea › Sirius", sem o degrau "Sistema Solar" no meio — o alvo
+  // não é do sistema.
+  if (escada.degrau === 'estrela') {
+    return foco ? [...viaLactea, { chave: 'alvo', texto: foco, atual: true }] : viaLactea;
+  }
+  const sistemaSolar: TrechoDoContexto = {
+    chave: 'sistema-solar',
+    texto: t('contexto.sistemaSolar'),
+    aoClicar: focarNoSistema,
+  };
+  // O CORPO-PAI só entra quando o centro da órbita NÃO é o Sol (uma lua):
+  // um planeta é "Sistema Solar › Marte", nunca "Sistema Solar › Sol ›
+  // Marte" — repetir o Sol no meio não ajudaria ninguém a se achar.
+  const pai = escada.corpoId ? REGISTRO_ORBITAL[escada.corpoId]?.centro : null;
+  const nomeDoPai = pai && pai !== 'sun' ? nomeDoCorpo(pai) : null;
+  const trechos = [...viaLactea, sistemaSolar];
+  if (nomeDoPai && pai) {
+    trechos.push({ chave: 'pai', texto: nomeDoPai, aoClicar: () => focarNoCorpo(pai) });
+  }
+  if (foco) trechos.push({ chave: 'alvo', texto: foco, atual: true });
+  return trechos;
+}
+
+function ContextoDoAlvo({
+  escada,
+  foco,
+  focarNoSistema,
+  focarNoCorpo,
+  estreito = false,
+  comViaLactea = true,
+}: {
+  escada: EstadoDaEscada;
+  foco: string | null;
+  focarNoSistema: () => void;
+  focarNoCorpo: (id: string) => void;
+  /** ≤ 360 px (item 6/§3.3): só o último trecho, nunca os outros no DOM */
+  estreito?: boolean;
+  /**
+   * ≤ 760 px (achado das capturas do Lote 4, 07/09): "Via Láctea" some
+   * da linha DE PROPÓSITO no telefone, antes de qualquer corte por
+   * largura — era ela quem cortava "Via Láctea › Sistema Solar › ..." no
+   * MEIO DA PALAVRA ("Via Láctea › S") na barra de uma linha do celular.
+   * Falso só no Atlas de mesa, onde a linha tem duas linhas de sobra.
+   */
+  comViaLactea?: boolean;
+}) {
+  const todos = trechosDoContexto(escada, foco, focarNoSistema, focarNoCorpo, comViaLactea);
+  const trechos = estreito ? todos.slice(-1) : todos;
+  return (
+    <p className="atlas-contexto">
+      {trechos.map((trecho, i) => (
+        <span key={trecho.chave} style={{ display: 'contents' }}>
+          {i > 0 && (
+            <span className="atlas-contexto-sep" aria-hidden="true">
+              ›
+            </span>
+          )}
+          {trecho.aoClicar ? (
+            <button type="button" className="atlas-contexto-botao" onClick={trecho.aoClicar}>
+              {trecho.texto}
+            </button>
+          ) : (
+            <span aria-current={trecho.atual ? 'location' : undefined}>{trecho.texto}</span>
+          )}
+        </span>
+      ))}
+    </p>
+  );
 }
 
 export function BarraOuAlcas({
@@ -76,6 +198,7 @@ export function BarraOuAlcas({
   ofereceFicha,
   temFilmeGuardado,
   foco,
+  escada,
   tempo,
   inJourney,
   paused,
@@ -89,13 +212,35 @@ export function BarraOuAlcas({
   revealGalaxy,
   freeRoam,
   changeQuality,
+  focarNoSistema,
+  focarNoCorpo,
 }: BarraOuAlcasProps) {
   useIdioma();
+  /**
+   * A LARGURA ESTREITA (item 6/§3.3, "≤ 360 px: só o último trecho"),
+   * lida por `matchMedia` COM OUVINTE — o mesmo padrão de `useCelular.ts`
+   * e de `FichaDoObjeto.tsx` (`data-ficha-largura`), e NÃO um segundo
+   * `@media` em `09-celular.css`: a casa tem uma regra testada
+   * (`uiScale.test.ts`, "TODA quebra de largura do HUD é
+   * LARGURA_DO_CELULAR_PX") que reprovaria um segundo número de largura
+   * escrito em CSS.
+   */
+  const [larguraEstreita, setLarguraEstreita] = useState(
+    () => window.matchMedia?.('(max-width: 360px)').matches ?? false
+  );
+  useEffect(() => {
+    const consulta = window.matchMedia('(max-width: 360px)');
+    const ouvir = () => setLarguraEstreita(consulta.matches);
+    ouvir();
+    consulta.addEventListener('change', ouvir);
+    return () => consulta.removeEventListener('change', ouvir);
+  }, []);
   /**
    * O ⚙ AJUSTES é o único gatilho que não tem componente próprio, e ele
    * nasce aqui para caber nos DOIS lugares sem ser escrito duas vezes: na
    * barra (mesa, filme e voo livre) ou na fileira de alças (Atlas em
-   * telefone).
+   * telefone). Ícone + rótulo (Lote 4, item 2), no mesmo molde que as
+   * outras portas (Busca, Camadas, Ficha) já ganharam no Lote 2b.
    */
   const botaoDeAjustes = (
     <button
@@ -104,6 +249,7 @@ export function BarraOuAlcas({
       aria-label={t('barra.ajustesAria')}
       {...gatilhoDoDialogo('ajustes', gaveta === 'ajustes')}
     >
+      <Icone nome="ajustes" tamanho={16} />
       {t('barra.ajustes')}
     </button>
   );
@@ -139,8 +285,28 @@ export function BarraOuAlcas({
     />
   );
 
+  // A MARCA + A LINHA DE CONTEXTO (Lote 4, item 2/§3.2) — só no Atlas de
+  // mesa (`hud.saidasDoAtlas` é o mesmo sinal que já distingue o modo na
+  // barra, duas linhas acima) e nunca nas alças, que têm o próprio topo
+  // de uma linha (item 6). É FILHA DIRETA de `.hud-root`, como todo
+  // overlay da casa — `.bare-mode` a apaga no `?shot=2` do mesmo jeito.
+  const marcaEContexto = hud.saidasDoAtlas && !alcas && (
+    <div className={`atlas-topo-esquerda${chromeSumido}`}>
+      <span className="atlas-marca" aria-hidden="true">
+        {t('marca.nome')}
+      </span>
+      <ContextoDoAlvo
+        escada={escada}
+        foco={foco}
+        focarNoSistema={focarNoSistema}
+        focarNoCorpo={focarNoCorpo}
+      />
+    </div>
+  );
+
   return (
     <>
+  {marcaEContexto}
   {/* A BARRA — e é ELA que some sozinha no filme correndo (item 61):
       `hud-sumido` esmaece por opacidade e desliga o ponteiro dela e
       dos filhos, sem tirar a caixa do fluxo. A altura desta barra é
@@ -149,6 +315,21 @@ export function BarraOuAlcas({
       do HUD no meio da viagem. */}
   {hud.controles && (
     <div className={`controls-bar${chromeSumido}`}>
+      {/* NO CELULAR (item 6) o contexto mora NA PRÓPRIA barra, sem marca
+          — a linha inteira é a única do topo, 44 px. Nunca mostra "Via
+          Láctea" (`comViaLactea={false}`, achado do Lote 4: era ela quem
+          cortava a linha no meio da palavra a 390 px). `≤ 360 px` mostra
+          só o último trecho (`larguraEstreita`, acima). */}
+      {alcas && hud.saidasDoAtlas && (
+        <ContextoDoAlvo
+          escada={escada}
+          foco={foco}
+          focarNoSistema={focarNoSistema}
+          focarNoCorpo={focarNoCorpo}
+          estreito={larguraEstreita}
+          comViaLactea={false}
+        />
+      )}
       {hud.botaoReviver && (
         <button className="hud-btn small" onClick={play}>
           {t('barra.reviver')}
@@ -162,55 +343,65 @@ export function BarraOuAlcas({
           {t('barra.entrarNoAtlas')}
         </button>
       )}
-      {/* AS PORTAS ESTÃO AQUI OU NA FILEIRA DE ALÇAS, nunca nas duas
-          (item 62): elas carregam o `data-abre-dialogo`, e duas cópias
-          seriam dois gatilhos com o mesmo nome no documento. O rótulo da
-          ficha carrega o nome do alvo — é ele que devolve à barra o que a
-          antiga linha "em quadro" dizia no alto.
-          SÃO DOIS PONTOS DE ENTRADA e não um porque a ORDEM da barra é
-          desenho: o ⚙ Ajustes é a ÚLTIMA peça dela (abaixo, depois do
-          seletor de qualidade) e a QUARTA da fileira. Juntar os dois
-          pontos moveria o ⚙ na mesa, que ninguém pediu. */}
+      {/* GRUPO "MODOS" (Lote 4, item 2) — ▶ Ver o filme · ⇗ Explorar ·
+          ↩ Retomar (quando há filme guardado). AS DUAS FERRAMENTAS DO
+          ATLAS (item 61, 23/08). Palavras do dono: *"a viagem na verdade
+          para mim é só uma ferramenta do modo atlas"*. Elas ficam na
+          BARRA e não na fileira de alças do telefone, e a escolha é de
+          significado: a fileira é feita de PORTAS — cada alça sobe uma
+          folha e volta a fechar —, e estas duas TROCAM DE MODO. Pôr uma
+          troca de modo entre gavetas seria prometer que ela também "abre
+          e fecha". No telefone elas entram na mesma BARRA de cima que já
+          hospeda a saída, que é exatamente o lugar onde as trocas de
+          modo moram. (Era "tarja" até 24/08, quando ela saiu do
+          telefone; a barra ficou.) */}
+      {(hud.saidasDoAtlas || (hud.botaoPartir && temFilmeGuardado)) && (
+        <div className="atlas-barra-grupo">
+          {hud.saidasDoAtlas && (
+            <>
+              <button
+                className="hud-btn small"
+                onClick={play}
+                aria-label={t('barra.verOFilmeAria')}
+              >
+                <Icone nome="play" tamanho={16} />
+                {alcas ? t('barra.verOFilmeCurto') : t('barra.verOFilme')}
+              </button>
+              <button
+                className="hud-btn small"
+                onClick={freeRoam}
+                aria-label={t('barra.explorarAria')}
+              >
+                <Icone nome="explorar" tamanho={16} />
+                {alcas ? t('barra.explorarCurto') : t('barra.explorarAtlas')}
+              </button>
+            </>
+          )}
+          {/* ...e a SAÍDA só existe quando há para onde voltar */}
+          {hud.botaoPartir && temFilmeGuardado && (
+            <button
+              className="hud-btn small"
+              onClick={partirDoAtlas}
+              aria-label={t('barra.voltarAoFilme')}
+            >
+              <Icone nome="retomar" tamanho={16} />
+              {alcas ? t('barra.voltarAoFilmeCurto') : t('barra.voltarAoFilme')}
+            </button>
+          )}
+        </div>
+      )}
+      {/* GRUPO "FERRAMENTAS" (item 2) — ⌕ Buscar · ⧉ Camadas · ⓘ nome do
+          alvo. AS PORTAS ESTÃO AQUI OU NA FILEIRA DE ALÇAS, nunca nas
+          duas (item 62): elas carregam o `data-abre-dialogo`, e duas
+          cópias seriam dois gatilhos com o mesmo nome no documento. O
+          rótulo da ficha carrega o nome do alvo — é ele que devolve à
+          barra o que a antiga linha "em quadro" dizia no alto. */}
       {!alcas && (
-        <>
+        <div className="atlas-barra-grupo">
           {portaDaBusca}
           {portaDasCamadas}
           {portaDaFicha}
-        </>
-      )}
-      {/* AS DUAS FERRAMENTAS DO ATLAS (item 61, 23/08). Palavras do
-          dono: *"a viagem na verdade para mim é só uma ferramenta do
-          modo atlas"*. Elas ficam na BARRA e não na fileira de alças do
-          telefone, e a escolha é de significado: a fileira é feita de
-          PORTAS — cada alça sobe uma folha e volta a fechar —, e estas
-          duas TROCAM DE MODO. Pôr uma troca de modo entre gavetas seria
-          prometer que ela também "abre e fecha". No telefone elas
-          entram na mesma BARRA de cima que já hospeda a saída, que é
-          exatamente o lugar onde as trocas de modo moram. (Era "tarja"
-          até 24/08, quando ela saiu do telefone; a barra ficou.) */}
-      {hud.saidasDoAtlas && (
-        <>
-          <button
-            className="hud-btn small"
-            onClick={play}
-            aria-label={t('barra.verOFilmeAria')}
-          >
-            {t('barra.verOFilme')}
-          </button>
-          <button
-            className="hud-btn small"
-            onClick={freeRoam}
-            aria-label={t('barra.explorarAria')}
-          >
-            {t('barra.explorarAtlas')}
-          </button>
-        </>
-      )}
-      {/* ...e a SAÍDA só existe quando há para onde voltar */}
-      {hud.botaoPartir && temFilmeGuardado && (
-        <button className="hud-btn small" onClick={partirDoAtlas}>
-          {t('barra.voltarAoFilme')}
-        </button>
+        </div>
       )}
       {hud.botoesDaViagem && (
         <>
@@ -245,38 +436,45 @@ export function BarraOuAlcas({
           </button>
         </>
       )}
-      {/* O SELETOR DE QUALIDADE — quatro estados desde os Ajustes D
-          (o Auto é o quarto). Os rótulos saem da tabela única
-          (`QUALIDADES`, atlasConfig), NUNCA digitados aqui: o painel
-          oferece a mesma lista e as duas discordariam no primeiro
-          estado novo.
+      {/* GRUPO "SISTEMA" (item 2) — o chip de qualidade e ⚙ Ajustes. */}
+      <div className="atlas-barra-grupo">
+        {/* O SELETOR DE QUALIDADE, ESTILIZADO COMO CHIP (item 2) — quatro
+            estados desde os Ajustes D (o Auto é o quarto). Os rótulos
+            saem da tabela única (`QUALIDADES`, atlasConfig), NUNCA
+            digitados aqui: o painel oferece a mesma lista e as duas
+            discordariam no primeiro estado novo. O CHEVRON já é o mesmo
+            `<select>` nativo de sempre — `.controls-bar select.hud-btn`
+            (03-controles.css) já o desenha por `background-image`; o
+            chip é a MESMA peça, só o resto da barra cresceu ao redor
+            dela.
 
-          O RÓTULO DO AUTO NÃO CARREGA O TIER VIVO, e é orçamento de
-          largura, não descuido: um `<select>` nativo se dimensiona
-          pela opção MAIS LARGA, então "⟳ Auto · performance" alargaria
-          a barra de controles em toda tela — inclusive nas estreitas
-          que o juiz de a11y mede com o texto em 140%. O tier em que o
-          Auto pousou é dito onde há espaço para dizê-lo: no `title`
-          (abaixo) e na nota do painel.
+            O RÓTULO DO AUTO NÃO CARREGA O TIER VIVO, e é orçamento de
+            largura, não descuido: um `<select>` nativo se dimensiona
+            pela opção MAIS LARGA, então "⟳ Auto · performance" alargaria
+            a barra de controles em toda tela — inclusive nas estreitas
+            que o juiz de a11y mede com o texto em 140%. O tier em que o
+            Auto pousou é dito onde há espaço para dizê-lo: no `title`
+            (abaixo) e na nota do painel.
 
-          O `aria-label` FICA PARADO enquanto o `title` anda: nome
-          acessível que muda a cada janela de medida desorienta quem
-          ouve a tela — o que muda é ESTADO, e estado se anuncia pela
-          região `aria-live` do painel, não renomeando o controle. */}
-      <select
-        className="hud-btn small"
-        aria-label={t('barra.qualidadeAria')}
-        title={rotuloDaQualidade(quality)}
-        value={quality.escolha}
-        onChange={(e) => changeQuality(e.target.value as EscolhaDeQualidade)}
-      >
-        {QUALIDADES.map((q) => (
-          <option key={q.id} value={q.id}>
-            {q.simbolo} {q.nome}
-          </option>
-        ))}
-      </select>
-      {!alcas && botaoDeAjustes}
+            O `aria-label` FICA PARADO enquanto o `title` anda: nome
+            acessível que muda a cada janela de medida desorienta quem
+            ouve a tela — o que muda é ESTADO, e estado se anuncia pela
+            região `aria-live` do painel, não renomeando o controle. */}
+        <select
+          className="hud-btn small"
+          aria-label={t('barra.qualidadeAria')}
+          title={rotuloDaQualidade(quality)}
+          value={quality.escolha}
+          onChange={(e) => changeQuality(e.target.value as EscolhaDeQualidade)}
+        >
+          {QUALIDADES.map((q) => (
+            <option key={q.id} value={q.id}>
+              {q.simbolo} {q.nome}
+            </option>
+          ))}
+        </select>
+        {!alcas && botaoDeAjustes}
+      </div>
     </div>
   )}
 

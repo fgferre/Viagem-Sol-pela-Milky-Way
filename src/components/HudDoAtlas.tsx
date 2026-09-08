@@ -489,9 +489,10 @@ export function Bussola({ acesa, onEndireitar }: {
       aria-label={t('atlas.endireitar')}
       title={t('atlas.endireitar')}
     >
-      <span className="atlas-bussola-agulha" aria-hidden="true">
-        ⌃
-      </span>
+      {/* O ÍCONE (Lote 4, item 3): `<Icone nome="bussola">` no lugar do
+          glifo `⌃` — mesmo comportamento, mesmo `aria-label`, só o
+          desenho troca (a régua de `Icone.tsx`, §4 do plano). */}
+      <Icone nome="bussola" tamanho={18} />
     </button>
   );
 }
@@ -637,7 +638,12 @@ export function BarraDoTempo({
               aria-label={t('atlas.taxaAria', { taxa })}
               onClick={onDegrau}
             >
-              {taxa}
+              {/* ITEM 4 (Lote 4, 07/09): `taxa` chega minúscula quando é
+                  "tempo real" (`tempoDoAtlas.ts`, `formatarTaxa`) — certo
+                  no meio de uma frase (o `aria-label` acima), errado como
+                  rótulo sozinho. O `::first-letter` (abaixo) corrige só a
+                  TELA; o dado e o `aria-label` continuam intocados. */}
+              <span className="atlas-tempo-taxa-texto">{taxa}</span>
               <span className="atlas-tempo-taxa-seta" aria-hidden="true">
                 ›
               </span>

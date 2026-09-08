@@ -111,8 +111,13 @@ const AREAS_RESERVADAS = [
   // A FICHA DO OBJETO não precisa de linha própria (item 74): ela é um
   // diálogo de verdade, então o `[data-dialogo]` lá em cima já a alcança —
   // que é exatamente o que aquele seletor promete ("diálogo novo passa a
-  // afastar os rótulos no dia em que nascer"). A `.atlas-contexto`, que
-  // morava aqui, virou o cabeçalho dela e deixou de existir.
+  // afastar os rótulos no dia em que nascer").
+  // A MARCA + A LINHA DE CONTEXTO voltaram no Lote 4 (07/09, item 2),
+  // agora como `.atlas-topo-esquerda` — um `fixed` PRÓPRIO fora de
+  // `.controls-bar` (04-atlas.css), então o seletor da barra acima não a
+  // alcança sozinho. Sem esta linha os nomes de estrela nasciam por cima
+  // da marca "Mar de Estrelas" e do breadcrumb, no canto oposto da barra.
+  '.atlas-topo-esquerda',
   '.atlas-rodape',
   '.atlas-selo',
   // A FILEIRA DE ALÇAS (item 62): só existe no Atlas em telefone, e ali
@@ -767,6 +772,7 @@ export default function App() {
   return (
     <div
       ref={rootRef}
+      data-fase={phase}
       className={`hud-root${shotMode ? ' shot-mode' : ''}${
         bareMode ? ' bare-mode' : ''
       }`}
@@ -1051,6 +1057,7 @@ export default function App() {
           phase === 'atlas' && (directorRef.current?.momentoGuardado ?? null) !== null
         }
         foco={foco}
+        escada={escada}
         tempo={tempo}
         inJourney={inJourney}
         paused={paused}
@@ -1064,6 +1071,12 @@ export default function App() {
         revealGalaxy={revealGalaxy}
         freeRoam={freeRoam}
         changeQuality={changeQuality}
+        // A LINHA DE CONTEXTO (Lote 4, item 2) usa os MESMOS dois
+        // caminhos que já existiam: `focarNoSistema` é o do botão
+        // Sistema da ficha; `focarNoCorpo` é o mesmo verbo que
+        // `escolherAlvo` chama para um corpo dentro do Atlas (a busca).
+        focarNoSistema={() => directorRef.current?.focarNoSistema()}
+        focarNoCorpo={(id) => directorRef.current?.focarNoCorpo(id, 'orbita')}
       />
 
       {/* A GAVETA DE CAMADAS, e ela é a ÚNICA porta das camadas desde o

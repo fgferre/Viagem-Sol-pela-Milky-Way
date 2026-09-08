@@ -81,15 +81,31 @@ export const PT = {
   'etapa.shaders': 'compilando os shaders…',
 
   // ---- a barra de controles (`components/BarraOuAlcas.tsx`) ---------
-  'barra.ajustes': '⚙ Ajustes',
+  // OS GLIFOS SAÍRAM (Lote 4, item 2): as chaves abaixo hospedam texto
+  // puro desde que `<Icone>` (SVG) assumiu o desenho ao lado — a mesma
+  // troca que o Lote 2b já tinha feito em Busca/Camadas/Tempo. Ficam
+  // glifo+texto só os botões do FILME (`barra.reviver`, `barra.retomar`,
+  // `barra.pausar`), fora do escopo deste lote.
+  'barra.ajustes': 'Ajustes',
   'barra.ajustesAria': 'Ajustes de renderização',
   'barra.reviver': '↻ Reviver',
   'barra.entrarNoAtlas': 'Entrar no Atlas',
-  'barra.verOFilme': '▶ Ver o filme',
+  'barra.verOFilme': 'Ver o filme',
   'barra.verOFilmeAria': 'Ver o filme desde o começo',
-  'barra.explorarAtlas': '↗ Explorar',
+  'barra.explorarAtlas': 'Explorar',
   'barra.explorarAria': 'Explorar a galáxia',
-  'barra.voltarAoFilme': '↩ Voltar ao filme',
+  // "RETOMAR", não mais "Voltar ao filme" (item 2, mockup §3.2: "↩
+  // Retomar"). A CHAVE fica — ela nomeia o DESTINO (o filme guardado),
+  // não o rótulo.
+  'barra.voltarAoFilme': 'Retomar',
+  // OS TRÊS CHIPS DO TOPO NO CELULAR (achado das capturas do Lote 4,
+  // 07/09): "Ver o filme" corta a 320 px dentro da linha de 44 px do
+  // item 6. As chaves CURTAS valem só ali; o `aria-label` do botão
+  // continua o rótulo LONGO acima — encurtar o texto visível não pode
+  // encurtar o nome que o leitor de tela anuncia.
+  'barra.verOFilmeCurto': 'Filme',
+  'barra.explorarCurto': 'Explorar',
+  'barra.voltarAoFilmeCurto': 'Retomar',
   'barra.retomar': '⏵ Retomar',
   'barra.pausar': '⏸ Pausar',
   'barra.retomarAria': 'Retomar a viagem',
@@ -100,6 +116,13 @@ export const PT = {
   'barra.explorar': 'Explorar',
   'barra.qualidadeAria': 'Qualidade gráfica',
   'barra.alcasAria': 'Controles do Atlas',
+
+  // ---- a marca e a linha de contexto (Lote 4, item 2) ----------------
+  // "Mar de Estrelas" — chave nova: até aqui o nome só existia no
+  // `<title>` do documento (`app.titulo`), nunca escrito na tela.
+  'marca.nome': 'Mar de Estrelas',
+  'contexto.viaLactea': 'Via Láctea',
+  'contexto.sistemaSolar': 'Sistema Solar',
 
   // ---- o painel de ajustes (`components/Ajustes.tsx`) ---------------
   'ajustes.titulo': 'Ajustes',
@@ -556,6 +579,12 @@ export const PT = {
   'unidade.anosLuz': '{n} anos-luz',
   'unidade.milAnosLuz': '{n} mil anos-luz',
   'unidade.vezesTerra': '{n}× Terra',
+
+  // ---- o significado dos números (Lote 4, item 5/§10) ----------------
+  // "35,9 UA DAQUI" — o rótulo na CENA (`LabelCanvas`) diz que a
+  // distância é da CÂMERA, não do Sol; a ficha e a busca dizem "do Sol"
+  // por chaves próprias, sem passar por aqui.
+  'rotulo.distanciaDaqui': '{nota} daqui',
 
   // ---- a dica de gestos, sempre na tela (`App.tsx`) -----------------
   'cena.aria': 'Simulação tridimensional da viagem pelo catálogo HYG e pela Via Láctea',

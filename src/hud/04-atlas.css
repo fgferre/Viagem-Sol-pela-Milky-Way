@@ -6,6 +6,113 @@
    que as apaga em ?shot=2, e ela só alcança filhos diretos.
    NADA aqui pisca, pulsa ou anima: o modo é silencioso como o filme. */
 
+/* A MARCA + A LINHA DE CONTEXTO (Lote 4, item 2/§3.2) — canto oposto ao
+   da barra de controles, no MESMO topo: a marca não-interativa ("Mar de
+   Estrelas", Fraunces 300) e, abaixo, o breadcrumb do alvo ("Via Láctea
+   › Sistema Solar › Terra › Lua"). É `position: fixed` PRÓPRIA — não um
+   filho flex de `.controls-bar` (que é o filme e o voo livre também, sem
+   marca nem contexto) — e por isso as duas caixas convivem no topo do
+   mesmo jeito que `.atlas-selo` e `.atlas-rodape` já convivem no pé: dois
+   `fixed` independentes, cada um com a própria borda, sem precisar de um
+   pai comum. `hud-sumido` chega pela mesma classe da barra (o chrome do
+   filme que soma sozinho, fatia 3) — aqui ela só existe no Atlas, então
+   nunca ACENDE de verdade, mas a classe entra igual por doutrina: um dia
+   em que este bloco servir outra fase sem querer, o esmaecimento já
+   funciona. */
+.atlas-topo-esquerda {
+  position: fixed;
+  /* CONSERTO 1 (Lote 4, 07/09): mesma âncora nova da barra de controles
+     (`.controls-bar`, 03-controles.css) — este bloco só existe na mesa
+     do Atlas (`!alcas`, `BarraOuAlcas.tsx`), então não precisa de
+     `data-fase` para se distinguir do celular. */
+  top: 1.5rem;
+  left: 3vw;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  max-width: 40vw;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+/* A MARCA: Fraunces 300, 18 px (item 2) — não interativa (`aria-hidden`,
+   no componente): é identidade, não navegação. */
+.atlas-marca {
+  font-family: var(--fonte-display);
+  font-weight: 300;
+  font-size: 1.125rem;
+  letter-spacing: 0;
+  color: var(--texto);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+/* A LINHA DE CONTEXTO: Inter 13 px (item 2) — "Via Láctea › Sistema
+   Solar › Terra › Lua". Os trechos SEM ação (Via Láctea, o alvo atual)
+   são `<span>`; os com ação (Sistema Solar, o corpo-pai) são `<button>`,
+   discretos, sublinhados só no hover — a régua do plano ("mesma
+   tipografia, sublinhado no hover"). `pointer-events` volta a `auto` só
+   nos botões: o resto da linha (e a marca acima) não rouba o arrasto da
+   cena. */
+.atlas-contexto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+  color: var(--texto-2);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+}
+/* ITEM 2 (Lote 4, 07/09) — o ÚLTIMO trecho (o alvo) NUNCA trunca: quando
+   a linha não cabe, quem cede é o trecho ANTERIOR ("Sistema Solar ›"),
+   com reticências e depois largura zero, nunca "Netuno" virando "Net".
+   Cada trecho é um `<span style="display: contents">` (no componente) —
+   ele próprio não gera caixa (`overflow`/`min-width` nele não fariam
+   nada), então quem recebe as regras é o FILHO dele: o separador e o
+   texto/botão. `:last-child` no SELETOR DE FORA escolhe o último
+   WRAPPER (o trecho final, seja ele o alvo ou "Sistema Solar" quando não
+   há alvo); dentro dele, só o separador (se houver) cede — o conteúdo,
+   por ser o ÚLTIMO filho do último wrapper, nunca entra na primeira
+   regra. */
+.atlas-contexto > span:not(:last-child) > *,
+.atlas-contexto > span:last-child > *:not(:last-child) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.atlas-contexto > span:last-child > *:last-child {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.atlas-contexto-sep {
+  opacity: 0.5;
+}
+.atlas-contexto [aria-current='location'] {
+  color: var(--texto);
+}
+.atlas-contexto-botao {
+  pointer-events: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: color var(--t-rapido) var(--curva), text-decoration-color var(--t-rapido) var(--curva);
+}
+.atlas-contexto-botao:hover {
+  color: var(--texto);
+  text-decoration-color: currentcolor;
+}
+.atlas-contexto-botao:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
 /* A FICHA DO OBJETO (item 74, 22/08) — a QUARTA `.hud-dialogo`.
    O que é comum aos quatro diálogos (o topo pendurado na barra medida, o
    encosto à direita, o teto, a camada, o respiro e o corpo de texto) mora na
@@ -17,8 +124,12 @@
    coisa que esta caixa declara: o teto (parar acima do selo, e a fração de
    tela do telefone) nasceu aqui e virou `--teto-dialogo`, da fatia 1, no dia
    em que ficou claro que valia para as quatro. */
+/* 400 px / 34vw (Lote 4, item 4) — era 23rem (368 px) com o teto em
+   `calc(100vw - 3.2rem)`, que só apertava perto da largura mínima da
+   mesa; `34vw` é o teto explícito do plano, e passa a apertar bem antes
+   (a 1200 px, por exemplo, 34vw = 408 px < 25rem). */
 .atlas-ficha {
-  width: min(23rem, calc(100vw - 3.2rem));
+  width: min(25rem, 34vw);
 }
 
 /* O CABEÇALHO É `CabecalhoDoPainel` (Lote 2b, PLAN-UI.md §3.5): a
@@ -358,7 +469,13 @@
    retângulo útil do enquadramento (`retanguloDoAtlas.ts`) desconta esta
    faixa, e um bloco que empurrasse ao abrir moveria a CÂMERA no clique —
    o mesmo motivo pelo qual a máquina do tempo tem a linha de aviso sempre
-   montada. É o juiz de a11y quem mede as duas coisas. */
+   montada. É o juiz de a11y quem mede as duas coisas.
+
+   O Z-INDEX PRÓPRIO NÃO BASTA — achado no Passo 0 do Lote 4 (07/09), veja
+   o comentário do z-index em `.atlas-rodape` logo abaixo: quem decide se
+   este selo pinta por cima de um diálogo é o z-index do PAI (esta caixa é
+   filha de `.atlas-rodape` no App, e um `position: fixed` filho de outro
+   herda a camada de empilhamento dele, não a disputa sozinho). */
 .atlas-selo {
   position: fixed;
   right: 3vw;
@@ -371,8 +488,10 @@
   /* NÃO é largura de coluna: a linha fechada mede o próprio texto e o
      teto continua sendo o de sempre — é dele que sai a garantia
      geométrica declarada no `.atlas-rodape` ("nunca começa antes de
-     55vw"). */
-  max-width: min(21rem, 42vw);
+     55vw"). ITEM 3 (Lote 4, 07/09): `calc(100vw - 2rem)` entra no `min`
+     — a 320×568 com `ui = 1,4` os outros dois termos (em `rem`/`vw`)
+     ainda deixavam o chip vazar a borda direita da tela. */
+  max-width: min(21rem, 42vw, calc(100vw - 2rem));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -390,6 +509,12 @@
   align-items: center;
   gap: 0.34em;
   max-width: 100%;
+  /* ITEM 3 (Lote 4, 07/09): sem isto o botão, filho de um flex column
+     (`.atlas-selo`), não encolhe abaixo do texto — `min-width: auto` do
+     flexbox vence o `max-width` e o `overflow`/`ellipsis` abaixo nunca
+     chegam a cortar nada; era isto que vazava a borda direita a 320 px
+     com `ui = 1,4`. */
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 0.16rem 0 0.16rem 0.6rem;
@@ -531,11 +656,48 @@
    em 52vw. Os dois blocos não podem se tocar em NENHUM tamanho de
    texto nem em nenhuma largura de tela — e é por isso que o número é
    um limite declarado aqui e não uma medição que envelhece. */
+/* CONSERTO 1 (Lote 4, 07/09, PLAN-UI.md §2 item 1): "topo + base <= 22%
+   da altura" na mesa do Atlas — o rodapé (máquina do tempo, dica dos
+   gestos) e o selo, os dois ancorados em `bottom: var(--selo-base)`,
+   colavam a 7,4vh. `--selo-base` é a MESMA variável que o celular já
+   redeclara dentro do próprio `@media` (09-celular.css); aqui ela muda
+   só na mesa do Atlas, por fase, sem tocar o valor-base de
+   `01-base.css` nem o do celular. */
+@media (min-width: 761px) {
+  .hud-root[data-fase='atlas'] {
+    --selo-base: 1.5rem;
+  }
+}
 .atlas-rodape {
   position: fixed;
   left: 6vw;
   bottom: var(--selo-base);
-  z-index: 40;
+  /* ACIMA DE QUALQUER DIÁLOGO (Passo 0 do Lote 4, 07/09) — achado pelo
+     `atlas-smoke.mjs` QUEBRANDO (não reprovando) na porta de duas vias do
+     BRILHO, com Saturno focado e a FICHA aberta: o detalhe do selo, filho
+     desta caixa (`position: absolute`, cresce para cima a partir do selo
+     fechado), e o painel da ficha disputam o MESMO canto inferior
+     direito — `--teto-dialogo` (`01-base.css`) só desconta a altura da
+     linha FECHADA do selo, nunca a do detalhe aberto (não dá para prever
+     o tamanho dele, que varia com os CULPADOS). Com `z-index: 40` a ficha
+     (`--camada-dialogo: 46`) pintava por cima bem em cima do botão
+     BRILHO: `document.elementFromPoint` no centro da linha devolvia o
+     botão "órbita" da FICHA, não o do selo — um clique de verdade (mouse
+     ou dedo) erraria o alvo do mesmo jeito que o juiz errou, e é POR ISSO
+     que era crash (`.textContent` de um elemento que sumiu, porque o
+     clique fechou o selo por "fora" em vez de acionar o BRILHO), não
+     reprovação. TROCAR O Z-INDEX DO `.atlas-selo` FILHO NÃO BASTAVA: ele
+     é `position: fixed` dentro de um pai que já criou a própria camada de
+     empilhamento (este `position: fixed` + `z-index`), então quem disputa
+     com a ficha por fora é O PAI. 47 fica acima de QUALQUER diálogo (46) e
+     abaixo do Spotlight/convite (48, que tem de vencer tudo); a coluna
+     também carrega a máquina do tempo e a dica dos gestos, mas os dois
+     moram à ESQUERDA (`left: 6vw`, `max-width: 46vw`) e a garantia
+     geométrica logo abaixo ("nunca começa antes de 55vw") já impede
+     qualquer diálogo — todos ancorados à direita — de cruzar com eles: só
+     o selo (`right: 3vw`, reancorado à direita dentro deste pai) tinha o
+     problema, e só ele precisava da camada mais alta. */
+  z-index: 47;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
@@ -572,35 +734,41 @@
   align-items: baseline;
   gap: 0.5rem;
 }
-/* O TAMANHO FICA PEQUENO AQUI (Lote 2b) — o rodapé da MESA é RESERVA DE
-   CÂMERA declarada em `retanguloDoAtlas.ts` (TEMPO_FRACAO, Lote 4, fora
-   de escopo): crescer para os 11/18 px do item 3 sem remedir lá fez o
-   juiz de a11y reprovar a base medida > declarada. A gaveta do celular
-   (`.atlas-gaveta`, abaixo) não tem essa reserva — ali o tamanho cheio
-   entra sem custo. */
+/* O TAMANHO CHEGA AO PISO DO ITEM 3 (Lote 4, 07/09) — eyebrow "INSTANTE
+   DO CÉU" 11 px caps, data 18 px, na MESA e na gaveta do celular por
+   igual. CONSERTO 1 (mesmo lote, mesmo dia) encolhe de novo só a MESA
+   (data 16 px, abaixo) para caber no orçamento de "topo + base <= 22%
+   da altura" do §2 item 1 — a gaveta do celular, que não paga reserva
+   de câmera nenhuma, mantém os 18 px cheios. */
 .atlas-tempo-olho {
-  font-size: 0.5rem;
-  letter-spacing: 0.24em;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--texto-3);
 }
 .atlas-tempo-data {
-  font-size: 0.82rem;
+  font-size: 1.125rem;
   font-weight: 300;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--texto);
 }
-/* NA GAVETA (celular) o tamanho vai ao piso do item 3 — eyebrow 11 px,
-   valor 18 px — porque ali não há reserva fixa de câmera: a folha
-   cresce com o conteúdo dela mesma. */
+/* CONSERTO 1: o rodapé de MESA fica compacto (data 16 px, controles
+   40 px de altura — abaixo, junto de `.atlas-tempo-botoes`); a gaveta
+   do celular (`.atlas-gaveta`, que nunca abre na mesa — só o telefone
+   vira a máquina do tempo em alça) não é alcançada por este seletor e
+   segue com os 18/44 px de sempre. */
+@media (min-width: 761px) {
+  .hud-root[data-fase='atlas'] .atlas-rodape .atlas-tempo-data {
+    font-size: 1rem;
+  }
+}
+/* A GAVETA (celular) segue a cor de leitura mais próxima do texto —
+   a mesma régua de sempre, só a cor mudava do rodapé de mesa para cá. */
 .atlas-gaveta .atlas-tempo-olho {
-  font-size: 0.6875rem;
-  letter-spacing: 0.12em;
   color: var(--texto-2);
 }
 .atlas-gaveta .atlas-tempo-data {
-  font-size: 1.125rem;
   font-weight: 400;
   letter-spacing: 0;
 }
@@ -653,6 +821,31 @@
   overflow: visible;
   text-overflow: clip;
 }
+/* OS CONTROLES DA MÁQUINA DO TEMPO COMO INSTRUMENTO (Lote 4, item 3):
+   44 px de alvo — o transporte ◂ ‖ ▸, a velocidade e a referência —, com
+   o texto no piso do §2 item 2 (12 px controles). `.ajustes-seg button`
+   (08-ajustes.css) é 0,54rem/sem `min-height` de propósito: ele serve os
+   32 controles do painel de Ajustes, que não têm reserva de câmera atrás
+   deles. Aqui, escopado ao `.atlas-tempo-botoes` (único em toda a casa),
+   o tamanho sobe sem mexer no resto — a régua "declarado ≥ medido" de
+   `retanguloDoAtlas.ts` (TEMPO_FRACAO e os dois degraus de quebra) foi
+   remedida para este tamanho novo. */
+.atlas-tempo-botoes .ajustes-seg button {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+}
+/* CONSERTO 1 (Lote 4, 07/09): a linha de controles da MESA desce para
+   40 px — a meta de "topo + base <= 22%" do §2 item 1. Só o rodapé de
+   mesa (`.atlas-rodape`, mouse — não é alvo de toque); a alça do
+   celular (`.atlas-gaveta`, item 5 do §2: "alvos >= 44x44 px") não é
+   alcançada por este seletor e mantém os 44 px. */
+@media (min-width: 761px) {
+  .hud-root[data-fase='atlas'] .atlas-rodape .atlas-tempo-botoes .ajustes-seg button {
+    min-height: 2.5rem;
+  }
+}
 /* ⏸ (já parado) e Época (já na época, já parado) — a mesma pele apagada
    que `.ajustes-seg` não precisava até aqui, porque nenhum segmento de
    Ajustes se desabilita. */
@@ -684,6 +877,16 @@
   gap: 0.25rem;
   color: var(--texto);
   letter-spacing: 0;
+}
+/* ITEM 4 (Lote 4, 07/09): "tempo real" (a única taxa com nome próprio,
+   `formatarTaxa`) chega minúscula — `::first-letter` só funciona em
+   contêiner de bloco, daí o `inline-block` aqui; um flex não aceita o
+   pseudo-elemento. */
+.atlas-tempo-taxa-texto {
+  display: inline-block;
+}
+.atlas-tempo-taxa-texto::first-letter {
+  text-transform: uppercase;
 }
 .atlas-tempo-taxa-seta {
   color: var(--acento);
@@ -775,12 +978,10 @@
    promessa em comentário: a marcação pede `hud-cartao hud-dialogo`
    (fatia 1) e aqui fica só o que é DELA. */
 .atlas-gaveta {
-  /* PADRÃO DE AJUSTES (06/09): a linha ganhou o "?" de ajuda e o
-     interruptor à direita, e os 17rem de quando a gaveta era só nome +
-     caixa não sobravam para os dois. 22rem é o mesmo teto de largura
-     que a paleta de busca usa. O termo do `min()` continua sendo a
-     tela: em janela estreita ela encolhe. */
-  width: min(22rem, calc(100vw - 3.2rem));
+  /* 400 px / 34vw (Lote 4, item 4: "camadas 400") — era 22rem (352 px).
+     A mesma caixa serve a gaveta de Tempo (`GavetaDoTempo`), que o item
+     4 não nomeia com largura própria — fica na largura da irmã. */
+  width: min(25rem, 34vw);
   /* A GAVETA PARA ACIMA DO SELO desde o item 61 (22/08) — a 768×600 com
      `?ui=1,4` ela ficava POR CIMA dele, e o mockup do dono mostrou a frase
      do selo cortada em "…" por baixo. A conta que a faz parar é
@@ -957,8 +1158,9 @@
    NADA aqui pisca — o que está escolhido tem borda e fundo, não pulso.
    Pele e ancoragem vêm de `hud-cartao hud-dialogo` (fatia 1); aqui fica
    a largura, que é a única coisa que distingue as três caixas. */
+/* 440 px / 34vw (Lote 4, item 4) — era 24rem (384 px). */
 .atlas-busca {
-  width: min(24rem, calc(100vw - 3.2rem));
+  width: min(27.5rem, 34vw);
   /* SÓ AQUI: o DOM tem a caixa de texto ANTES do cabeçalho (comentário no
      componente explica o porquê — `useDialogFocus` foca o primeiro
      focável do DOM ao abrir, e é a caixa quem tem de receber o foco). O
@@ -1158,8 +1360,12 @@
   top: 50%;
   transform: translateY(-50%);
   z-index: 40;
-  width: 2.4rem;
-  height: 2.4rem;
+  /* 44 px (Lote 4, item 3: "botão redondo 44 px") — era 2,4rem (38,4 px),
+     abaixo do alvo de toque mínimo da casa (§2 item 5). A posição
+     continua fora do fluxo (não desconta retângulo útil, comentário
+     acima) e o `<Icone nome="bussola">` ocupa o miolo do círculo maior. */
+  width: 2.75rem;
+  height: 2.75rem;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -1200,14 +1406,6 @@
 .atlas-bussola:focus-visible {
   outline: 1px solid rgba(255, 219, 164, 0.95);
   outline-offset: 4px;
-}
-/* a AGULHA, não a rosa: a 2,4 rem uma rosa dos ventos vira borrão, e o
-   que a peça promete é «isto volta a ficar de pé». */
-.atlas-bussola-agulha {
-  font-size: 1.05rem;
-  line-height: 1;
-  /* o glifo `⌃` nasce alto na caixa dele; o empurrão o centra no botão */
-  transform: translateY(0.12em);
 }
 @media (prefers-reduced-motion: reduce) {
   .atlas-bussola {

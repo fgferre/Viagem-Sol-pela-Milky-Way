@@ -212,12 +212,20 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
 
   it('as áreas do HUD do Atlas entram no retângulo, e sobra quadro de verdade', () => {
     const util = retanguloUtilDoAtlas();
-    // as tarjas (0,065 em cada borda) são o piso: o HUD do modo SOMA
-    expect(util.topo).toBeGreaterThan(0.065);
-    expect(util.base).toBeGreaterThan(0.065);
+    // SEM TARJA na mesa desde o Lote 4 (07/09) — o piso é só o HUD real:
+    // a barra (topo) e a máquina do tempo (base), ambos medidos.
+    // CONSERTO 1 (07/09): a barra sobe para `top: 1,5rem` e o topo cai
+    // para 0,09 — o número deriva do retângulo, não é escolha; o piso
+    // aqui só confirma que a peça é real, não arredondamento a zero.
+    expect(util.topo).toBeGreaterThan(0.05);
+    expect(util.base).toBeGreaterThan(0.1);
     // e o que sobra ainda é a maior parte do quadro — um retângulo útil
-    // que come mais da metade da altura não é HUD, é moldura
-    expect(1 - util.topo - util.base).toBeGreaterThan(0.6);
+    // que come mais da metade da altura não é HUD, é moldura.
+    // CONSERTO 1 (07/09): com o topo/base do §2 item 1 (≤ 22% somados) a
+    // sobra DECLARADA sobe para 0,72 (1 − 0,09 − 0,19) — o número deriva
+    // do retângulo, não é escolha; o piso de 0,55 é só o guarda
+    // doutrinário, bem abaixo do medido.
+    expect(1 - util.topo - util.base).toBeGreaterThan(0.55);
   });
 
   it('a escala do texto do HUD (?ui=) entra no retângulo — e em 1 nada muda', () => {
@@ -233,10 +241,16 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     const grande = retanguloUtilDoAtlas(1.4);
     expect(grande.topo).toBeGreaterThan(padrao.topo);
     expect(grande.base).toBeGreaterThan(padrao.base);
-    // as TARJAS não escalam (são vh puro, não texto) — e no extremo da
-    // faixa entra o degrau da barra quebrada em linha dupla (0,04,
-    // medido; só acima do limiar 1,3 — em ui = 1 ele NÃO existe)
-    expect(grande.topo - padrao.topo).toBeCloseTo((padrao.topo - 0.065) * 0.4 + 0.04, 12);
+    // e no extremo da faixa entra o degrau da barra quebrada — CONSERTO 1
+    // (07/09) o baixou para 0,065; medido aqui pela própria função (900
+    // vs 1.200 px, mesmo `ui`) em vez de repetir o literal, para não
+    // desalinhar de novo quando `retanguloDoAtlas.ts` remedir de novo.
+    const degrauMedido =
+      retanguloUtilDoAtlas(1, 900).topo - retanguloUtilDoAtlas(1, 1200).topo;
+    expect(grande.topo - padrao.topo).toBeCloseTo(
+      padrao.topo * 0.4 + degrauMedido,
+      12
+    );
     const perto = (u: ReturnType<typeof retanguloUtilDoAtlas>) =>
       enquadrar({ rAlvo: 1, fovDeg: ATLAS_FOV_GRAUS, aspect: 1.6, retanguloUtil: u }).distancia;
     expect(perto(grande)).toBeGreaterThan(perto(padrao));
@@ -260,21 +274,30 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
    *    isto que uma tabela de constantes pode afirmar sozinha.
    */
   it('a declaração paga FOLGA sobre o medido, e a folga tem teto', () => {
-    // MEDIDO pelo juiz de a11y (janela 1200×900, viewport de 813 px de
-    // altura, `?atlas=1&shot=1`). Se a CSS crescer, é o juiz que quebra
-    // primeiro (declarado ≥ medido); aqui quebra quando a DECLARAÇÃO
-    // cresce sem a medição acompanhar.
-    // A base em ui = 1,4 subiu de 0,292 para 0,333 em 2026-08-20 (item
-    // 9): a linha dos controles do tempo passou a QUEBRAR em duas em vez
-    // de ser pintada fora da coluna, por cima do selo. A altura sempre
-    // existiu; o que mudou foi ela passar a ocupar lugar em vez de
-    // transbordar — e a declaração paga por ela.
+    // MEDIDO pelo juiz de a11y (janela 1200×900, `?atlas=1&shot=1`, sem
+    // seleção). Se a CSS crescer, é o juiz que quebra primeiro
+    // (declarado ≥ medido); aqui quebra quando a DECLARAÇÃO cresce sem a
+    // medição acompanhar.
+    // REMEDIDO NO CONSERTO 1/2 (Lote 4, 07/09): a barra/máquina do tempo
+    // encolheram para o teto de "topo + base <= 22%" do §2 item 1, e o
+    // item 4 pôs a legenda de gestos numa linha só — as três mudam o
+    // MEDIDO. Números lidos direto da saída do `a11y.mjs` (janela
+    // 1200×900/813, `?atlas=1&shot=1`, sem seleção; "retângulo útil
+    // (ui = …, 1200 px de largura)"), não recalculados aqui — é o
+    // navegador que mede, este teste só cobra a folga sobre o medido.
     const MEDIDO = [
-      { ui: 0.85, topo: 0.119, base: 0.175 },
-      { ui: 1, topo: 0.125, base: 0.192 },
-      { ui: 1.4, topo: 0.197, base: 0.333 },
+      { ui: 0.85, topo: 0.067, base: 0.155 },
+      { ui: 1, topo: 0.079, base: 0.183 },
+      { ui: 1.4, topo: 0.11, base: 0.342 },
     ];
-    const TETO_DA_FOLGA = 0.06;
+    // O TETO CRESCEU (era 0,06): o degrau da barra quebrada agora é
+    // declarado por UM limiar generoso o bastante para cobrir o pior
+    // caso COM seleção (768 px, `ui = 1,4`, o botão "ⓘ {nome}" —
+    // `retanguloDoAtlas.ts`), e por isso ele às vezes classifica 1.200 px
+    // como quebrado quando esta medição — SEM seleção — mostra que não
+    // quebrou; a folga que sobra aqui é o preço, já pago e medido, dessa
+    // escolha deliberadamente conservadora.
+    const TETO_DA_FOLGA = 0.16;
     for (const m of MEDIDO) {
       const util = retanguloUtilDoAtlas(m.ui);
       for (const [borda, medido] of [
@@ -291,37 +314,48 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
   });
 
   it('a quebra da barra é de LARGURA, e o degrau entra onde ela acontece', () => {
-    // a razão medida: a barra quebra abaixo de ~960 px de CSS por
-    // unidade de `?ui=`. Numa tela de mesa a 1,0 o degrau não existe;
-    // na MESMA tela a 1,4 ele existe; e numa janela estreita ele existe
-    // já em 1,0 — que é o que o limiar só-de-`?ui=` não sabia dizer.
+    // REMEDIDO NO LOTE 4 (07/09): a razão agora é ~920 px de CSS por
+    // unidade de `?ui=` (era ~960). Numa tela de mesa a 1,0 o degrau não
+    // existe; na MESMA tela a 1,4 ele existe; e numa janela estreita ele
+    // existe já em 1,0 — que é o que o limiar só-de-`?ui=` não sabia dizer.
     const semDegrau = retanguloUtilDoAtlas(1, 1200);
     const comDegrau = retanguloUtilDoAtlas(1, 900);
-    expect(comDegrau.topo - semDegrau.topo).toBeCloseTo(0.04, 12);
-    // e a BASE também anda, desde 2026-08-20: a linha dos controles do
-    // tempo quebra em duas abaixo de 1.060 px por unidade de ui — a
-    // 1.200 com ui = 1 ela ainda cabe em uma, a 900 não (medido: a
-    // quebra vira entre 1.040 e 1.060).
-    expect(comDegrau.base - semDegrau.base).toBeCloseTo(0.03, 12);
-    // o degrau a 1.200 px cai entre 1,25 e 1,26 (1.200 / 960 = 1,25) —
-    // e a quebra REAL a 1.200 px começa em 1,30, medida: a declaração
-    // entra um degrau ANTES, que é o lado seguro do erro
-    expect(retanguloUtilDoAtlas(1.25, 1200).topo).toBeCloseTo(0.065 + 0.09 * 1.25, 12);
+    // CONSERTO 1 (07/09): a barra/máquina do tempo do §2 item 1 baixaram
+    // as frações-base; os degraus, DERIVADOS do retângulo, não são
+    // escolha — `contextoFracao`/`tempoFracao` saem de `semDegrau`
+    // (largura acima de qualquer limiar de quebra em `ui = 1`).
+    const contextoFracao = semDegrau.topo;
+    const tempoFracao = semDegrau.base;
+    expect(comDegrau.topo - semDegrau.topo).toBeCloseTo(0.065, 12);
+    // e a BASE também anda: a linha dos controles do tempo quebra em
+    // duas abaixo de 1.060 px por unidade de ui — a 1.200 com ui = 1 ela
+    // ainda cabe em uma, a 900 não (medido: a quebra vira entre 1.040 e
+    // 1.060).
+    expect(comDegrau.base - semDegrau.base).toBeCloseTo(0.11, 12);
+    // o degrau a 1.200 px cai em ui = 1.200 / 920 = 1,3043 — a declaração
+    // usa o limiar POR INTEIRO (`LARGURA_DA_QUEBRA_PX`, remedido no Lote
+    // 4): ANTES dele o topo é só `CONTEXTO_FRACAO × ui`, DEPOIS soma
+    // `BARRA_QUEBRADA_FRACAO` (0,065, CONSERTO 1 07/09).
     expect(retanguloUtilDoAtlas(1.3, 1200).topo).toBeCloseTo(
-      0.065 + 0.09 * 1.3 + 0.04,
+      contextoFracao * 1.3,
+      12
+    );
+    expect(retanguloUtilDoAtlas(1.31, 1200).topo).toBeCloseTo(
+      contextoFracao * 1.31 + 0.065,
       12
     );
     // A TERCEIRA LINHA DA MÁQUINA DO TEMPO é o mesmo fenômeno um degrau
-    // adiante (medido em 2026-08-20, viewport exato por override, 900 px
-    // de altura): com ui = 1,4 os controles cabem em duas linhas a 980 e
+    // adiante: com ui = 1,4 os controles cabem em duas linhas a 980 e
     // 1.000 px e vão para três a 940 — o degrau vive entre 940 e 980 px
     // por 1,4 de ui. Limiar no topo da faixa (714), o lado seguro.
+    // CONSERTO 1 (07/09): `TEMPO_QUEBRADO_FRACAO`/`TEMPO_EM_TRES_LINHAS_FRACAO`
+    // ficam em 0,11/0,10 — derivam do mesmo retângulo, não são escolha.
     expect(retanguloUtilDoAtlas(1.4, 900).base).toBeCloseTo(
-      0.065 + 0.175 * 1.4 + 0.03 + 0.09,
+      tempoFracao * 1.4 + 0.11 + 0.1,
       12
     );
     expect(retanguloUtilDoAtlas(1.4, 1000).base).toBeCloseTo(
-      0.065 + 0.175 * 1.4 + 0.03,
+      tempoFracao * 1.4 + 0.11,
       12
     );
     // e a 1.800 px (a janela das vistas oficiais) com ui = 1 nenhum dos
@@ -344,33 +378,32 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     // contrário, que é pior: o alvo atrás do selo).
     const celular = retanguloUtilDoAtlas(1, LARGURA_DO_CELULAR_PX);
     const mesa = retanguloUtilDoAtlas(1, LARGURA_DO_CELULAR_PX + 1);
-    // O TELEFONE NÃO PAGA TARJA desde 24/08 (decisão dele em 23/08): o topo é a
-    // caixa da barra de cima e nada mais, a base é a fileira mais o selo.
-    // Os 0,045 de tarja que somavam em cada borda saíram das duas contas.
-    expect(celular.topo).toBeCloseTo(0.065, 12);
-    expect(celular.base).toBeCloseTo(0.11 + 0.05, 12);
+    // O TELEFONE NÃO PAGA TARJA desde 24/08: o topo é a caixa da barra de
+    // cima (contexto + chips, Lote 4) e nada mais, a base é a fileira
+    // (grade de 5 colunas, Lote 4) mais o selo. CONSERTO 1/2 (07/09):
+    // `SAIDA_FRACAO` = 0,086 e `ALCAS_FRACAO + SELO_FRACAO_CELULAR` =
+    // 0,11 + 0,07 — os números derivam do retângulo, não são escolha.
+    expect(celular.topo).toBeCloseTo(0.086, 12);
+    expect(celular.base).toBeCloseTo(0.11 + 0.07, 12);
     // ...e a conta de mesa nessa largura é a que ela sempre foi: a barra
     // quebrada em cima, a primeira quebra da máquina do tempo embaixo (a
-    // segunda só entra abaixo de 714 px)
-    expect(mesa.topo).toBeCloseTo(0.065 + 0.09 + 0.04, 12);
-    expect(mesa.base).toBeCloseTo(0.065 + 0.175 + 0.03, 12);
+    // segunda só entra abaixo de 714 px). CONSERTO 1 (07/09): 0,09 + 0,065
+    // e 0,19 + 0,11 — deriva do mesmo retângulo do teste anterior.
+    expect(mesa.topo).toBeCloseTo(0.09 + 0.065, 12);
+    expect(mesa.base).toBeCloseTo(0.19 + 0.11, 12);
 
-    // O GANHO É O ASSUNTO DO ITEM 62: numa tela de 390 px a conta de
-    // mesa disparava TODOS os degraus e deixava 44,5% de céu; a do
-    // telefone deixa 77,5% — a câmera para de recuar por peças que a
-    // fatia 9 do HUD já desmontou, e desde 24/08 nem por tarja, que lá
-    // não existe.
+    // O GANHO É O ASSUNTO DO ITEM 62: a câmera para de recuar por peças
+    // que a fatia 9 do HUD já desmontou, e desde 24/08 nem por tarja, que
+    // lá não existe. CONSERTO 1/2 (07/09): o céu do telefone é
+    // 1 − 0,086 − 0,18 = 73,4% (era 74% antes do chip/alças remedirem).
     const ceu = (u: ReturnType<typeof retanguloUtilDoAtlas>) => 1 - u.topo - u.base;
-    expect(ceu(retanguloUtilDoAtlas(1, 390))).toBeCloseTo(0.775, 12);
-    expect(ceu(retanguloUtilDoAtlas(1, 320))).toBeCloseTo(0.775, 12);
-    // a conta de MESA a 390 px, que é o que valia até 2026-08-23:
-    // 0,065 + 0,09 + 0,04 de topo e 0,065 + 0,175 + 0,03 + 0,09 de base
-    expect(1 - (0.065 + 0.09 + 0.04) - (0.065 + 0.175 + 0.03 + 0.09)).toBeCloseTo(0.445, 12);
+    expect(ceu(retanguloUtilDoAtlas(1, 390))).toBeCloseTo(0.734, 12);
+    expect(ceu(retanguloUtilDoAtlas(1, 320))).toBeCloseTo(0.734, 12);
 
     // O TEXTO GRANDE ESCALA as três frações do telefone, como na mesa.
     const grande = retanguloUtilDoAtlas(1.4, 390);
-    expect(grande.topo).toBeCloseTo(0.065 * 1.4, 12);
-    expect(grande.base).toBeCloseTo((0.11 + 0.05) * 1.4, 12);
+    expect(grande.topo).toBeCloseTo(0.086 * 1.4, 12);
+    expect(grande.base).toBeCloseTo((0.11 + 0.07) * 1.4, 12);
     // NENHUMA PARCELA FIXA SOBROU NO TELEFONE, e é a lei que a saída da
     // tarja escreveu: as duas bordas são HUD puro, e HUD escala com o
     // texto. Uma tarja de volta — ou qualquer faixa em `vh` — apareceria
@@ -382,8 +415,9 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     expect(dobro.base).toBeCloseTo(2 * celular.base, 12);
     // ...e com texto MINÚSCULO a base encolhe junto: até 23/08 o
     // `Math.max` a segurava nos 0,045 da tarja de baixo, e sem tarja não
-    // há piso a garantir.
-    expect(retanguloUtilDoAtlas(0.1, 390).base).toBeCloseTo(0.016, 12);
+    // há piso a garantir. CONSERTO 1/2 (07/09): 0,18 × 0,1 — deriva do
+    // `celular.base` medido acima, não é escolha.
+    expect(retanguloUtilDoAtlas(0.1, 390).base).toBeCloseTo(0.018, 12);
   });
 
   it('painel só à direita joga o alvo para a esquerda do quadro', () => {
@@ -1182,23 +1216,21 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
     naAberturaDeProducao(rig);
     rig.apply(camera);
     const tetoEmUA = () => rig.tetoDeZoom / AU_PARA_PC;
-    // 133,68 UA sob a lente de 58° (a de 35° dava 226,84) — a faixa de
-    // meio UA é o que separa "a docstring está certa" de "a docstring
-    // envelheceu"
-    expect(tetoEmUA()).toBeGreaterThan(133.4);
-    expect(tetoEmUA()).toBeLessThan(133.9);
-    // e ele ANDA com `?ui=` nos dois sentidos (213,4 e 317,1 UA). O
-    // extremo de cima subiu de 296,8 em 2026-08-20 (item 9): a 1.200 px
-    // com o texto em 140% os controles do tempo quebram em duas linhas,
-    // a base declarada paga o degrau, e a câmera recua o que o HUD
-    // ocupa. Recuo é o preço declarado de HUD mais alto — o contrário
-    // (declarar menos) é o alvo atrás do texto.
+    // CONSERTO 1 (07/09): 114,67 UA sob a lente de 58° (era 135,71 —
+    // topo/base do §2 item 1 encolheram de novo, ver "as áreas do HUD do
+    // Atlas" e "a DECLARAÇÃO paga FOLGA", acima). O número deriva do
+    // retângulo útil, não é escolha; a faixa de meio UA só separa "a
+    // docstring está certa" de "a docstring envelheceu".
+    expect(tetoEmUA()).toBeGreaterThan(114.5);
+    expect(tetoEmUA()).toBeLessThan(114.9);
+    // e ele ANDA com `?ui=` nos dois sentidos. Números remedidos junto
+    // (CONSERTO 1, 07/09), mesma razão.
     rig.apply(camera, 0.85);
-    expect(tetoEmUA()).toBeGreaterThan(126.1);
-    expect(tetoEmUA()).toBeLessThan(126.6);
+    expect(tetoEmUA()).toBeGreaterThan(109.0);
+    expect(tetoEmUA()).toBeLessThan(109.5);
     rig.apply(camera, 1.4);
-    expect(tetoEmUA()).toBeGreaterThan(183.5);
-    expect(tetoEmUA()).toBeLessThan(184.0);
+    expect(tetoEmUA()).toBeGreaterThan(181.9);
+    expect(tetoEmUA()).toBeLessThan(182.4);
     // E O TETO NÃO DEPENDE DE ONDE O VISITANTE ESTÁ — só do alvo e da
     // lente. A prova é MOVER o visitante e reler: pinar a distância lá
     // embaixo, no piso, deixa a câmera a menos de um centésimo do teto, e
@@ -1256,7 +1288,9 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
     // o piso: 2 raios solares, 0,00930 UA — e não os 70,8 UA de antes
     expect(emUA(rig.pisoDeZoom)).toBeCloseTo(2 * emUA(RAIO_SOL_PC), 6);
     expect(emUA(rig.pisoDeZoom)).toBeLessThan(0.01);
-    expect(emUA(rig.tetoDeZoom)).toBeGreaterThan(133.4);
+    // CONSERTO 1 (07/09): 114,67 UA (era 130,78 — ver o comentário da
+    // "DISTÂNCIA DO TETO", acima; mesmo retângulo, mesma derivação).
+    expect(emUA(rig.tetoDeZoom)).toBeGreaterThan(114.5);
     // o CURSO, contado com o mesmo passo em log que a roda gasta
     let d = rig.tetoDeZoom;
     let estalos = 0;
@@ -2227,17 +2261,19 @@ describe('o degrau do CORPO DO SOL', () => {
     const fatorSol = pedido(RAIO_DO_SOL_NA_CENA) / RAIO_DO_SOL_NA_CENA;
     const casa = orbitaMaisExterna();
     expect(fatorSol).toBeCloseTo(pedido(casa.raio) / casa.raio, 12);
-    // MEDIDO sob a lente de 58° (29/08): 3,7741 raios solares = 2,63
-    // milhões de km — mais perto ainda do lugar de onde o FILME já
-    // filma o Sol (5,74 raios, 4,00 milhões de km, a vista `sol` do
-    // gate de md5), a prova medida de que a composição aguenta esta
-    // distância. Sob a lente antiga de 35° eram 6,4042 raios.
-    expect(fatorSol).toBeCloseTo(3.7741, 4);
+    // CONSERTO 1 (07/09): 3,2374 raios solares (era 3,8312 — o topo/base
+    // do §2 item 1 encolheram de novo, a mesma razão que mudou
+    // `tetoDeZoom`, ver "a DISTÂNCIA DO TETO"). Mais perto ainda do
+    // lugar de onde o FILME já filma o Sol (5,74 raios, 4,00 milhões de
+    // km, a vista `sol` do gate de md5), a prova medida de que a
+    // composição aguenta esta distância.
+    expect(fatorSol).toBeCloseTo(3.2374, 4);
     const km = (pedido(RAIO_DO_SOL_NA_CENA) / RAIO_SOL_PC) * RAIO_SOL_KM;
-    expect(km / 1e6).toBeCloseTo(2.628, 2);
+    expect(km / 1e6).toBeCloseTo(2.254, 3);
     // e o Sol INTEIRO cabe no que sobra do quadro: a margem de 1,2 é
-    // folga, não corte — ~30,7° de disco dentro do retângulo útil
-    expect((2 * Math.asin(1 / fatorSol)) / GRAU).toBeCloseTo(30.73, 2);
+    // folga, não corte — ~35,99° de disco dentro do retângulo útil
+    // (remedido, era 30,26°; o retângulo menor deixa MAIS ângulo livre)
+    expect((2 * Math.asin(1 / fatorSol)) / GRAU).toBeCloseTo(35.985, 3);
   });
 
   it('descer da casa ao Sol é DOLLY PURO: a direção não se mexe um bit', () => {
@@ -2254,11 +2290,11 @@ describe('o degrau do CORPO DO SOL', () => {
     rig.focar(new THREE.Vector3(0, 0, 0), RAIO_DO_SOL_NA_CENA, casa.posicao);
     rig.apply(camera);
     expect(camera.position.clone().normalize().distanceTo(deCasa)).toBeLessThan(1e-12);
-    // só a distância muda — e muda ~7.609× (133,68 UA → 0,0176 UA sob a
-    // lente de 58°); a razão é a das esferas e não sabe da lente, então
-    // ela é a MESMA que valia a 35° (226,84 → 0,0298)
+    // só a distância muda — a razão é a das esferas e não sabe da lente
     expect(distCasa / camera.position.length()).toBeCloseTo(7609, -1);
-    expect(camera.position.length() / RAIO_DO_SOL_NA_CENA).toBeCloseTo(3.7741, 4);
+    // CONSERTO 1 (07/09) — o mesmo 3,2374 de "a distância NÃO é número
+    // novo", acima (era 3,8312).
+    expect(camera.position.length() / RAIO_DO_SOL_NA_CENA).toBeCloseTo(3.2374, 4);
   });
 
   it('o Director lê o `ver` ANTES de desviar o Sol — e só o `corpo` desce', () => {

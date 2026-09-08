@@ -623,7 +623,12 @@ export function BotaoDaFicha({
       {...gatilhoDoDialogo('ficha', aberta)}
     >
       <Icone nome="info" tamanho={16} />
-      {nome}
+      {/* O RÓTULO EM SEU PRÓPRIO `<span>` (Lote 4, item 7) — a quinta
+          alça do celular trunca o nome com `ellipsis` (o nome completo
+          fica no `aria-label` acima); um nó de texto solto não tem caixa
+          própria para o CSS recortar. Na mesa nada muda: `.hud-btn` não
+          declara nada para este seletor. */}
+      <span className="atlas-alca-rotulo">{nome}</span>
     </button>
   );
 }

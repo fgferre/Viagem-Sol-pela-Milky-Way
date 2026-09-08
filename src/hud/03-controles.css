@@ -26,22 +26,24 @@
   color: #fff;
   box-shadow: 0 0 24px rgba(255, 200, 120, 0.18);
 }
-/* OS BOTÕES PEQUENOS (Lote 2b, PLAN-UI.md item 3: "Controles") — os
-   gatilhos das quatro gavetas (Buscar, Camadas, Tempo, Ficha), na barra
-   de mesa e nas alças do celular. Cantos e cor da pele B; o TAMANHO
-   fica como estava — `.controls-bar`/o topo do celular são RESERVA DE
-   CÂMERA declarada em `retanguloDoAtlas.ts` (Lote 4, fora de escopo
-   aqui), e crescer a caixa deste botão sem remedir lá é o que fez o
-   juiz de a11y reprovar (topo medido > declarado a 320 px). As alças
-   do celular já têm o próprio alvo de 44 px (`09-celular.css`), que
-   não usa este tamanho de fonte. */
+/* OS BOTÕES DA BARRA CHEGAM AO TAMANHO CHEIO (Lote 4, item 2: "botões de
+   40 px, ícone 16 px + rótulo 13 px caixa normal") — os gatilhos das
+   quatro gavetas (Buscar, Camadas, Tempo, Ficha), as duas ferramentas do
+   Atlas, o chip de qualidade e ⚙ Ajustes, na barra de mesa e nas alças
+   do celular. Até o Lote 2b o tamanho ficava PEQUENO de propósito
+   (0,58rem/9,3 px, abaixo do piso de 12 px do §2 item 2): crescer sem
+   remedir a reserva de câmera em `retanguloDoAtlas.ts` fazia o juiz de
+   a11y reprovar (topo medido > declarado). Agora `CONTEXTO_FRACAO` e o
+   degrau da quebra foram REMEDIDOS para este tamanho — é o próprio Lote
+   4 que paga a dívida que o comentário antigo declarava. */
 .hud-btn.small {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.9rem;
-  font-size: 0.58rem;
-  letter-spacing: 0.22em;
+  gap: 0.4rem;
+  min-height: 2.5rem;
+  padding: 0 0.85rem;
+  font-size: 0.8125rem;
+  letter-spacing: 0;
   border-color: var(--borda);
   border-radius: var(--raio-controle);
   text-indent: 0;
@@ -92,9 +94,49 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
   max-width: 94vw;
   gap: 0.6rem;
   transition: opacity 0.45s ease;
+}
+/* CONSERTO 1 (Lote 4, 07/09, PLAN-UI.md §2 item 1): "topo + base <= 22%
+   da altura" na mesa do Atlas — 8,5vh sobrava agora que a tarja saiu e a
+   marca+contexto (`.atlas-topo-esquerda`) já ancora no mesmo `1,5rem`.
+   Só na mesa do Atlas (`data-fase="atlas"`, `min-width: 761px` — abaixo
+   disso o celular já responde com o próprio `top: 0,4vh`, 09-celular.css);
+   filme e voo livre continuam em 8,5vh, sem marcador de fase. */
+@media (min-width: 761px) {
+  .hud-root[data-fase='atlas'] .controls-bar {
+    top: 1.5rem;
+  }
+}
+
+/* OS TRÊS GRUPOS DA BARRA DO ATLAS (Lote 4, item 2: "três grupos com
+   24 px de vão e um filete vertical de 1 px entre eles") — modos,
+   ferramentas, sistema. Cada grupo é um `<div>` com o gap PEQUENO de
+   sempre entre os próprios botões; o vão GRANDE e o filete só entram
+   ENTRE grupos (`margin-left`, nunca no primeiro — `:first-child` não
+   tem vizinho à esquerda para separar). Fora do Atlas (filme, voo
+   livre) o mesmo `<div>` aparece só como agrupador de portas
+   compartilhadas (Busca/Camadas na fase que as tem) — sem um segundo
+   grupo ao lado, o filete nunca desenha, e a barra fica como estava. */
+.atlas-barra-grupo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.atlas-barra-grupo + .atlas-barra-grupo {
+  position: relative;
+  margin-left: 1.5rem;
+}
+.atlas-barra-grupo + .atlas-barra-grupo::before {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  top: 20%;
+  bottom: 20%;
+  width: 1px;
+  background: var(--borda);
 }
 
 /* ---- O CHROME QUE SOME SOZINHO (item 61, 22/08) ---------------------
@@ -203,11 +245,14 @@
    `position: fixed; left: 6vw; bottom: 11vh` que morava aqui era o
    MESMO ponto da legenda, e foi assim que as duas passaram a ser
    escritas uma por cima da outra. */
+/* ITEM 4 (Lote 4, 07/09, PLAN-UI.md §3.2): caixa normal, sem
+   espaçamento de letra, tamanho de texto de sempre (13 px) — o
+   acabamento antigo (caixa alta espaçada, 0,62rem) saiu daqui. */
 .free-hint {
-  color: rgba(200, 214, 235, 0.75);
-  font-size: 0.62rem;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+  color: var(--texto-3);
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+  text-transform: none;
   line-height: 2;
   pointer-events: none;
   transition: opacity 0.6s ease;

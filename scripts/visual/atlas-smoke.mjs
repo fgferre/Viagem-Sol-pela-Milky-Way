@@ -1530,7 +1530,12 @@ try {
   // (1200×900, jd=EPOCA): 17 assentados — 3 corpos + 14 estrelas; Skat
   // aparece na primeira leitura e some 4 s depois, quando o rodízio dá a
   // volta. A lei que os dois vereditos abaixo guardam não mudou.
-  const NA_ABERTURA = 17;
+  // RE-PINADO EM 07/09 (Lote 4, PLAN-UI.md §2 item 1): 17 → 18. As
+  // tarjas de cinema saíram do Atlas de mesa (`retanguloDoAtlas.ts`,
+  // Lote 4) — sem elas sobra mais céu na abertura, e Skat deixa de
+  // depender do rodízio: agora fica assentada o tempo todo, sem sumir.
+  // Decisão do dono: mais nome cabendo é o CORRETO, não regressão.
+  const NA_ABERTURA = 18;
   const CORPOS_COM_NOME = ['neptune', 'pluto', 'sun'];
   const corposDaAbertura = [...nomesDaAbertura.corpos].sort();
   const bateOsCorpos =
@@ -1562,9 +1567,13 @@ try {
   // leis; o que mudou foi QUAIS.
   // (E EM 04/09, item 132, catorze: entram Alnair, Sargas e Shaula —
   // que a F5 passou a separar — e Fuyue sai; medido, não escolhido.)
+  // RE-PINADO EM 07/09 (Lote 4): Skat entra — a mesma estrela que antes
+  // aparecia e sumia com o rodízio (comentário de `NA_ABERTURA` acima),
+  // agora assentada o tempo todo porque sobra mais céu sem a tarja.
   const ESTRELAS_DA_ABERTURA = [
     'Aldhanab', 'Alnair', 'Ankaa', 'Arkab Posterior', 'Cervantes', 'Fomalhaut',
-    'Lang-Exster', 'Peacock', 'Rukbat', 'Safina', 'Sargas', 'Shaula', 'Tiaki', 'ε Ind',
+    'Lang-Exster', 'Peacock', 'Rukbat', 'Safina', 'Sargas', 'Shaula', 'Skat', 'Tiaki',
+    'ε Ind',
   ];
   const estrelasNaTela = [...nomesDaAbertura.nomesDeEstrela].sort();
   const bateEstrelas =
@@ -1591,7 +1600,9 @@ try {
   // veredito guarda é a mesma.)
   // (E EM 04/09, item 132: treze próprias — as três que entraram têm
   // nome próprio — e a mesma Bayer.)
-  const PROPRIAS_DA_ABERTURA = 13;
+  // RE-PINADO EM 07/09 (Lote 4): 13 → 14 — Skat é nome próprio, a
+  // designação de Bayer (ε Ind) não muda.
+  const PROPRIAS_DA_ABERTURA = 14;
   const BAYER_DA_ABERTURA = ['ε Ind'];
   const bayerNaTela = [...nomesDaAbertura.estrelasBayer].sort();
   conferir(
@@ -1693,7 +1704,10 @@ try {
   // é o número de corpos: as estrelas de fundo que não colidem ficam
   // (re-pinado em 04/09, item 132: 17 — as mesmas catorze estrelas da
   // abertura, medidas duas vezes no mesmo binário)
-  const NOMES_NO_TETO = 17;
+  // (re-pinado em 07/09, Lote 4: 17 → 18 — mesma causa de `NA_ABERTURA`,
+  // tarjas fora do Atlas: sobra mais céu e cabe um nome a mais — decisão
+  // do dono.)
+  const NOMES_NO_TETO = 18;
   const corposDoTeto = [...nomesDoTeto.corpos].sort();
   const bateOTeto =
     corposDoTeto.length === NO_TETO.length

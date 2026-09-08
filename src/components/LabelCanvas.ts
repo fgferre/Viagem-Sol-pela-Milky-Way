@@ -231,7 +231,18 @@ interface PlanoDoRotulo {
   peso: PesoDoRotulo;
 }
 
-/** a família do HUD, escrita uma vez (era repetida em quatro linhas) */
+/**
+ * A FAMÍLIA DO HUD, escrita uma vez (era repetida em quatro linhas).
+ *
+ * TENTADO NO LOTE 4 (07/09, item 5) e REVERTIDO: trocar para
+ * `var(--fonte-ui)` (Inter, lida do CSS computado após
+ * `document.fonts.ready`) muda as MÉTRICAS de largura o bastante para
+ * mexer no VEREDITO da régua de relevância — medido no `atlas-smoke.mjs`,
+ * a abertura passa a desenhar 18 nomes em vez de 17 (a estrela "Skat"
+ * ganha lugar que não tinha com a fonte do sistema) em DOIS pontos do
+ * juiz (a abertura e o teto do zoom). A cláusula do item 5 é literal:
+ * "se reprovar... mantenha a fonte antiga nos rótulos e diga" — fica.
+ */
 const FAMILIA = '"Segoe UI", Arial, sans-serif';
 
 /**
@@ -1287,5 +1298,12 @@ function intersects(a: Rect, b: Rect, padding: number): boolean {
 function detalheDoRotulo(label: StarLabel): string {
   const base = label.detalhe ?? label.spect.slice(0, 5);
   const nota = notaDeDistancia(label.distPc * UA_POR_PC, numeroDoIdioma);
-  return nota ? `${base}  ·  ${nota}` : base;
+  // "35,9 UA DAQUI" / "35.9 AU FROM HERE" (Lote 4, item 5/§10) — a
+  // distância aqui é sempre a da CÂMERA (`label.distPc`), e a palavra diz
+  // isso: `notaDeDistancia` é COMPARTILHADA (a ficha diz "do Sol", a
+  // busca "do Sol" também), então o texto entra AQUI, envolvendo o
+  // resultado, e não dentro dela — mudar `notaDeDistancia` mudaria as
+  // outras réguas junto. Só texto: a conta de `notaDeDistancia` não muda.
+  const comReferencia = nota ? t('rotulo.distanciaDaqui', { nota }) : null;
+  return comReferencia ? `${base}  ·  ${comReferencia}` : base;
 }

@@ -8,9 +8,11 @@
 // SÃO DOIS ARRANJOS DE HUD, e por isso duas contas: a MESA (a barra
 // de controles em cima, o selo e a máquina do tempo embaixo) e o
 // TELEFONE (item 62: a barra de cima com as trocas de modo, a fileira
-// de alças no pé e o selo numa linha em cima dela — SEM tarja nenhuma
-// desde 23/08, ver `SAIDA_FRACAO` e o `Math.max` que caiu no fim deste
-// arquivo). A fronteira é
+// de alças no pé e o selo numa linha em cima dela). NENHUM DOS DOIS TEM
+// TARJA — o telefone desde 23/08 (`SAIDA_FRACAO` e o `Math.max` que caiu
+// no fim deste arquivo), a mesa desde o Lote 4 (07/09, PLAN-UI.md §0:
+// "tarjas de cinema saem do Atlas; ficam no filme", decisão do dono). A
+// fronteira entre os dois arranjos é
 // `LARGURA_DO_CELULAR_PX`, o mesmo número que o `@media` do HUD usa
 // e que o `useCelular` lê para decidir quem está no DOM — a câmera
 // não pode recuar por um rodapé que o CSS já desmontou.
@@ -18,48 +20,27 @@
 import { LARGURA_DO_CELULAR_PX } from '../../lib/uiScale';
 
 /**
- * As tarjas de cinema comem 6,5% da altura em CADA borda
- * (`.letterbox.on { height: 6.5vh }`, fatia 2 do HUD) e o Atlas as
- * mantém — é o mesmo quadro do filme. Fonte única do número para o
- * retângulo útil; se a tarja mudar no CSS, muda aqui. NO TELEFONE NÃO HÁ
- * TARJA desde 24/08 (a fatia 6 a tira do documento; a decisão foi
- * dele em 23/08, o código pousou no dia seguinte), e por isso este
- * número não aparece no ramo de lá.
+ * A TARJA SAIU DA CONTA DE MESA NO LOTE 4 (07/09). Ela comia 6,5% da
+ * altura em CADA borda (`.letterbox.on { height: 6.5vh }`, fatia 2 do
+ * HUD) enquanto o Atlas a mantinha — o mesmo quadro do filme. Palavra do
+ * dono no portão do §0: *"tarjas de cinema saem do Atlas; ficam no
+ * filme"*. `HUD_POR_FASE.atlas.letterbox` virou `false` (`three/fases.ts`)
+ * e as duas metades andam juntas — pintar sem descontar (ou o contrário)
+ * recuaria a câmera por uma faixa que já não existe. NO TELEFONE NÃO
+ * HAVIA TARJA desde 24/08 (decisão dele em 23/08, código no dia
+ * seguinte); a mesa só agora alcança a mesma regra.
  */
-const LETTERBOX_FRACAO = 0.065;
 
 /**
- * O que o HUD DO ATLAS come, além das tarjas, em fração da altura —
- * espelho dos números que o `hud.css` usa, na mesma disciplina do
- * `LETTERBOX_FRACAO`. Não são chutes de folga: o juiz de a11y mede os
- * retângulos REAIS dos dois elementos no navegador e cobra que a
- * declaração aqui os cubra (`scripts/visual/a11y.mjs`, prova "o
- * retângulo útil cobre o HUD do Atlas"). Se a CSS crescer, o gate
- * quebra antes de o alvo começar a ser enquadrado por baixo do selo.
- *
- * TOPO: era `.atlas-contexto` e `.controls-bar` na mesma linha (`top:
- * 8,5vh`) — medido 12,5% da altura a 1280×720, tarja incluída. Desde a F3 a
- * barra carrega o botão da busca e QUEBRA LINHA no texto grande: medido
- * 19,7% a 1200×900 com `?ui=1,4`, e já era ela, e não a linha de contexto,
- * quem dimensionava a faixa. Em 22/08 a linha de contexto virou o cabeçalho
- * da FICHA DO OBJETO (item 74) e saiu do topo: sobrou a barra sozinha, que
- * era quem mandava. `CONTEXTO_FRACAO` fica onde está de propósito — baixá-lo
- * moveria a CÂMERA de todas as vistas do Atlas, e essa é decisão de
- * enquadramento com foto para o dono, não efeito colateral de uma obra de
- * HUD. Enquanto isso a declaração sobra em vez de faltar, que é o lado
- * seguro do erro declarado logo abaixo.
- * BASE: `.atlas-selo`, ancorado em `bottom: 7,4vh`. Ele foi a peça mais
- * alta do modo enquanto eram quatro blocos de texto sempre abertos
- * (19,6% da altura com a tarja). O item 61 o dobrou numa LINHA em
- * 2026-08-22: medido no juiz de a11y, 9,4% a 1200×900 e 10,0% com
- * `?ui=1,4` — a gaveta que sobe dele é `absolute` e não entra na conta,
- * pelo mesmo critério que não conta diálogo aberto. `SELO_FRACAO` fica
- * em 0,14 porque quem dimensiona a base é o `Math.max` com
- * `TEMPO_FRACAO` (0,175), e baixá-lo não moveria a câmera um pixel:
- * seria trocar um número declarado com folga por outro, sem prova.
- *
- * As duas frações são de tela de mesa (medidas a 1280×720 e 1200×900),
- * e valem em `ui = 1`.
+ * O que o HUD DO ATLAS come — sem tarja nenhuma, desde o Lote 4 — em
+ * fração da altura, espelho dos números que o `hud.css` usa. Não são
+ * chutes de folga: o juiz de a11y mede os retângulos REAIS dos elementos
+ * no navegador e cobra que a declaração aqui os cubra
+ * (`scripts/visual/a11y.mjs`, prova "o retângulo útil cobre o HUD do
+ * Atlas"). Se a CSS crescer, o gate quebra antes de o alvo começar a ser
+ * enquadrado por baixo do selo. Cada constante abaixo traz a MEDIÇÃO que
+ * a justifica, com data — a disciplina desta casa: número aqui nasce de
+ * `getBoundingClientRect`, nunca de aritmética de comentário.
  *
  * A UI SCALE DA F6 MEXE NESTES NÚMEROS, e a F6 respondeu assim: o
  * retângulo é produzido COM o fator (`retanguloUtilDoAtlas(fatorUi)`),
@@ -72,90 +53,160 @@ const LETTERBOX_FRACAO = 0.065;
  * declarado ≥ medido em cada canto (ver `LARGURA_UTIL_MINIMA_PX`).
  */
 /**
- * A FAIXA DO TOPO que a barra de controles ocupa, em fração da altura —
- * medida pelo juiz de a11y, que cobra declarado ≥ medido em toda a grade
- * largura×ui.
+ * REMEDIDO NO LOTE 4 (07/09) — o topo cresceu por dois motivos de uma
+ * vez: os botões da barra chegaram ao tamanho cheio do §2 item 2 (40 px,
+ * ícone 16 + rótulo 13, contra os 0,58rem/9,3 px de antes) e a MARCA +
+ * LINHA DE CONTEXTO (`.atlas-topo-esquerda`) nasceu ao lado — as duas
+ * entraram na cobrança do juiz de a11y (`medirCobertura`, `pecas`).
+ *
+ * A JANELA TEM DUAS ALTURAS DE VERDADE, e a primeira rodada desta
+ * medição esqueceu a segunda: o `a11y.mjs` mede a maior parte da grade
+ * (768/1.000/1.200 × 1/1,25/1,4) com `Emulation.setDeviceMetricsOverride`
+ * — altura EXATA de 900 px —, mas a prova do painel de Ajustes (linha
+ * 1548, "com a linha da escada", que cobre `ui = 0,85`) roda na janela
+ * NATURAL da sessão: 1.200×900 PEDIDOS ao Chrome viram 1.200×813 de
+ * VIEWPORT — a moldura do navegador come o resto, mesmo headless. A
+ * âncora `top: 8,5vh` do topo (e `bottom: 7,4vh` da base, ver
+ * `TEMPO_FRACAO`) é fração da altura da JANELA, então a MESMA barra é
+ * uma fração maior a 813 px do que a 900 — e a primeira versão desta
+ * constante, medida só a 900, ficava ABAIXO do real bem no canto mais
+ * comum de todos (texto de fábrica, sessão recém-aberta).
+ *
+ * MEDIDO (2026-09-07, `?atlas=1&shot=1`), o PIOR de três estados por
+ * canto — sem seleção, com um PLANETA (Saturno, a barra ganha "ⓘ
+ * Saturno") e com uma LUA (a linha de contexto ganha o quarto trecho,
+ * "› Terra ›") —, nas duas alturas:
+ *
+ *   largura   altura  ui     topo medido (pior de sem/Saturno/Lua)
+ *   1.200 px  813     0,85   12,89%
+ *   1.200 px  900     0,85   12,47%  ← pior RAZÃO a 900 (÷0,85 = 14,67%)
+ *   1.200 px  813     0,85   12,89%  ← pior RAZÃO a 813 (÷0,85 = 15,16%), governa CONTEXTO_FRACAO
+ *   1.200 px  813     1,00   13,69%
+ *   1.000 px  900     1,00   13,19%
+ *   768 px    900     1,00   18,45%
+ *   1.200 px  813     1,25   14,89%
+ *   1.000 px  900     1,25   20,94%  (com Saturno)
+ *   768 px    900     1,25   20,94%
+ *   1.200 px  813     1,40   23,93%  (com Saturno)
+ *   1.000 px  900     1,40   22,44%
+ *   768 px    900     1,40   30,15%  (com Saturno) ← pior ABSOLUTO, governa BARRA_QUEBRADA_FRACAO
+ *
+ * `CONTEXTO_FRACAO` sai da pior RAZÃO medido/`ui` entre os cantos SEM
+ * quebra, agora incluindo a janela de 813: 0,1289/0,85 = 0,1516 — 0,16
+ * cobre com ~0,008 de folga por unidade de `ui`.
+ *
+ * A QUEBRA CRESCEU DE FENÔMENO: com os grupos e o filete (24 px de vão
+ * entre eles) a barra quebra bem mais cedo do que antes, e o botão da
+ * ficha (com seleção) a empurra ainda mais — a 768 px com Saturno e
+ * `ui = 1,4` ela chega a TRÊS linhas. Declarar um degrau por estado
+ * (sem seleção / planeta / lua) e por altura de janela exigiria remedir
+ * cada combinação nos dois; o caminho mais simples e ainda seguro é
+ * declarar UM degrau generoso o bastante para cobrir o PIOR já medido.
+ * `LARGURA_DA_QUEBRA_PX` sai de 960 para 920: em `ui = 0,85` só ele
+ * classifica 768 px como quebrado (768 < 920×0,85 = 782) — abaixo de 900
+ * essa borda escapava pela fresta. Em troca, a 1.200/1.000 px com
+ * `ui = 1,4` ele classifica "quebrado" um caso que às vezes não quebra
+ * de verdade (920×1,4 = 1.288 > 1.200) — o lado seguro do erro, pago em
+ * folga extra ali (ver o teste de FOLGA COM TETO). `BARRA_QUEBRADA_FRACAO`
+ * sai de 0,04 para 0,083: o pior caso quebrado (768×1,40 com Saturno,
+ * 30,15%, a 900 px de altura) pede `0,16×1,4 + B ≥ 0,3015` →
+ * `B ≥ 0,0775` — 0,083 cobre com ~0,006.
+ *
+ * REMEDIDO DE NOVO NO CONSERTO 1 DO MESMO LOTE (07/09) — a barra sobe de
+ * `top: 8,5vh` para `top: 1,5rem` na mesa do Atlas (§2 item 1: "topo +
+ * base <= 22%"), então a conta acima fica velha. MEDIDO (`a11y.mjs`
+ * depois do conserto), pior RAZAO medido/`ui` por canto SEM quebra:
+ * 1.200x813,ui=1: 7,9%/1=7,90% (pior, governa); 1.200x813,ui=0,85:
+ * 6,7%/0,85=7,88%; 1.200x900,ui=1: 7,1%; 1.000x900,ui=1: 7,1%;
+ * 1.200x900,ui=1,25: 8,9%/1,25=7,12%. `CONTEXTO_FRACAO` = 0,079+0,01 =
+ * 0,09.
+ *
+ * E o pior caso QUEBRADO (768 e 1.000 px a `ui = 1,4`, ambos 17,7%):
+ * `0,09×1,4 + B ≥ 0,177` → `B ≥ 0,051` — `BARRA_QUEBRADA_FRACAO` = 0,065.
  */
 const CONTEXTO_FRACAO = 0.09;
-
+const LARGURA_DA_QUEBRA_PX = 920;
+const BARRA_QUEBRADA_FRACAO = 0.065;
 /**
- * O DEGRAU DA BARRA QUEBRADA — e ele é fenômeno de LARGURA, não de
- * `?ui=`. Com o botão da busca (F3) a barra de controles passa a QUEBRAR
- * LINHA quando o texto não cabe nos `max-width: 60vw` que o `hud.css`
- * lhe dá (o CSS prefere quebrar a invadir a linha de contexto —
- * garantia geométrica da F6). Ou seja: quem quebra é a razão entre o
- * TAMANHO DO TEXTO e a LARGURA da janela, e declarar o degrau só em
- * função de `?ui=` deixava metade do fenômeno de fora.
+ * REMEDIDO NO LOTE 4 (07/09) — o selo cresceu um pouco (chip com filete,
+ * item 3) mas continua BEM abaixo da máquina do tempo (que também
+ * cresceu, e mais): medido entre 9,7% e 11,0% de altura, contra
+ * 19,1%–52,5% da máquina do tempo nas mesmas janelas. 0,12 cobre o pior
+ * medido com folga; ele nunca é quem decide o `Math.max` com
+ * `TEMPO_FRACAO` — fica registrado porque o próximo redesenho do selo
+ * pode mudar essa conta.
  *
- * MEDIDO (2026-08-12, `?atlas=1&shot=1`, viewport de 813 px de altura),
- * a menor largura de CSS em que a barra ainda NÃO quebra:
- *
- *   ui = 1,00 → entre 930 e 940 px      (razão 930–940)
- *   ui = 1,15 → entre 1.050 e 1.100 px  (razão 913–957)
- *   ui = 1,25 → entre 1.150 e 1.200 px  (razão 920–960)
- *   ui = 1,29 → entre 1.150 e 1.200 px  (razão 891–930)
- *   ui = 1,30 → já quebrada a 1.200 px  (`.controls-bar` 35,0 → 84,9 px
- *               entre 1,25 e 1,30 — o degrau é de 50 px, não uma rampa)
- *
- * A razão é constante dentro da medição: ~930–960 px de largura por
- * unidade de `ui`. `LARGURA_DA_QUEBRA_PX` fica no TOPO da faixa (960)
- * porque errar para cima declara o degrau CEDO — custa um recuo de
- * câmera — e errar para baixo põe o alvo atrás da barra.
- *
- * O que isto corrige, medido: o limiar anterior era `ui > 1,3` numa
- * janela só, e a quebra a 1.200 px começa EM 1,30 — a comparação
- * estrita deixava passar exatamente o degrau (declarado 0,163 contra
- * 0,189 medido). Na lei nova, a 1.200 px o degrau entra a partir de
- * `ui > 1,25`, e em janela estreita ele entra onde a quebra realmente
- * acontece.
+ * REMEDIDO DE NOVO NO CONSERTO 1 (07/09) — `--selo-base` cai de 7,4vh
+ * para 1,5rem na mesa, então o selo (que ancora nele) mede bem menos:
+ * pior razão medido/`ui` = 0,049/0,85 = 0,0576 (1.200x813, `ui = 0,85`).
+ * `SELO_FRACAO` = 0,0576 + 0,01 = 0,07.
  */
-const LARGURA_DA_QUEBRA_PX = 960;
-const BARRA_QUEBRADA_FRACAO = 0.04;
-const SELO_FRACAO = 0.14;
+const SELO_FRACAO = 0.07;
 
 /**
- * OS DOIS DEGRAUS DA MÁQUINA DO TEMPO — o fenômeno da barra de controles
- * repetido na BASE: largura×texto, não texto sozinho. Os seis controles
- * são pedidos em `rem` (crescem com `?ui=`) dentro de uma coluna em `vw`
- * (que não cresce), então a linha deles quebra em duas e depois em três.
+ * OS DOIS DEGRAUS DA MÁQUINA DO TEMPO, REMEDIDOS NO LOTE 4 (07/09) — os
+ * controles chegaram ao alvo de 44 px e o texto ao piso de 12/18 px do
+ * item 3 (eram 44/13 px sem reserva própria — o comentário antigo do
+ * `04-atlas.css` dizia "o tamanho fica pequeno aqui... Lote 4"; esta é a
+ * obra que paga essa dívida). Os limiares de LARGURA — onde a linha dos
+ * seis controles quebra em duas, e depois em três — não mudam: eles são
+ * geometria de COLUNA (`vw`) contra CONTEÚDO (`rem`), e o Lote 4 não
+ * mexeu na largura da coluna nem na proporção entre os três grupos, só
+ * no tamanho de cada um; o que muda são as FRAÇÕES que cada degrau paga.
  *
- * ATÉ 2026-08-20 havia UM degrau declarado (714 px por unidade de ui) e
- * o CSS não quebrava linha nenhuma acima da faixa estreita: o que não
- * cabia era PINTADO FORA da coluna, por cima do selo. A declaração
- * pagava por uma quebra que não acontecia, e a tela mostrava o "Época"
- * escrito em cima de "O QUE NESTA VISTA É AJUSTADO" (768 px, item 9).
- * Com a quebra de verdade no CSS (`.atlas-tempo-botoes`, fatia 4 do
- * HUD), os dois degraus passam a existir e são MEDIDOS, um a um.
+ * A MESMA DUPLA ALTURA DE `CONTEXTO_FRACAO` vale aqui — a âncora
+ * `bottom: 7,4vh` do rodapé também não encolhe com `ui`, e a sessão
+ * NATURAL do Chrome (1.200×900 pedidos, 813 de viewport) entra na conta
+ * ao lado da grade oficial (900 px exatos):
  *
- * MEDIDO em 2026-08-20 (viewport exato por override, 900 px de altura,
- * `?atlas=1&shot=1`, macOS do dono):
+ *   largura   altura  ui     base medida   linhas de `.atlas-tempo-botoes`
+ *   1.200 px  900     0,85   19,13%        1 (sem degrau)
+ *   1.200 px  813     0,85   20,38%        1 ← pior RAZÃO (÷0,85 = 23,98%), governa TEMPO_FRACAO
+ *   1.200 px  813     1,00   22,60%        1
+ *   1.000 px  900     1,00   29,51%        2
+ *   768 px    900     0,85   26,28%        2
+ *   768 px    900     1,00   31,32%        2
+ *   1.200 px  813     1,25   37,88%        2
+ *   1.000 px  900     1,25   37,36%        2
+ *   1.200 px  813     1,40   44,42%        2 ← pior EM DUAS linhas, governa TEMPO_QUEBRADO_FRACAO
+ *   1.000 px  900     1,40   40,84%        2
+ *   768 px    900     1,25   45,02%        3
+ *   768 px    900     1,40   52,48%        3 ← pior EM TRÊS linhas, governa TEMPO_EM_TRES_LINHAS_FRACAO
  *
- *   1ª quebra (uma linha → duas): a 1.040 px ela já aconteceu, a 1.060
- *   ainda não — com `?ui=1`. Razão 1.040–1.060 px de largura por
- *   unidade de ui; o limiar fica no TOPO da faixa (1.060), que é o lado
- *   seguro do erro: declarar cedo custa um recuo de câmera, declarar
- *   tarde põe o alvo atrás da leitura do tempo. A 1.200 px com `ui = 1`
- *   ela NÃO acontece — é o que mantém a tela de mesa (e as vistas
- *   oficiais, que rodam a 1.800 px) exatamente onde estavam.
+ * `TEMPO_FRACAO` sai da pior RAZÃO sem degrau (1.200×813, ui=0,85:
+ * 0,2038/0,85 = 0,2398) — 0,245 cobre com ~0,005 de folga por `ui`.
  *
- *   2ª quebra (duas linhas → três): entre 940 e 980 px com `?ui=1,4`
- *   (razão 671–700). O limiar de 714 que já morava aqui está no topo
- *   dessa faixa e continua valendo — o que mudou foi o que ele paga.
+ * `TEMPO_QUEBRADO_FRACAO` (a 2ª linha) sai do pior caso EM DUAS linhas
+ * (1.200×813, ui=1,4): `0,245×1,4 + Q ≥ 0,4442` → `Q ≥ 0,1012` — 0,107
+ * cobre com ~0,006.
  *
- * AS FRAÇÕES saem da mesma medição, pela base MEDIDA menos as tarjas,
- * normalizada por ui: duas linhas custam 0,175–0,191 (o extremo é o
- * viewport mais BAIXO, 813 px, onde a mesma altura é fração maior) e o
- * `TEMPO_FRACAO` sozinho já declara 0,175 — daí 0,03, que cobre o
- * extremo com folga. Três linhas custam 0,229 a 900 px e 0,251 a 768,
- * e os 0,09 cobrem o pior com 0,013 de folga. Fontes de outra máquina
- * movem estas margens (o juiz roda no macOS do dono e na nuvem), que é
- * por que a declaração paga o degrau inteiro em vez de raspar o número
- * de uma máquina só.
+ * `TEMPO_EM_TRES_LINHAS_FRACAO` (a 3ª, somada em cima da 2ª) sai do pior
+ * caso EM TRÊS linhas: `0,245×1,4 + 0,107 + T ≥ 0,5248` → `T ≥ 0,0748` —
+ * 0,08 cobre com ~0,005 de folga.
+ *
+ * Os dois limiares de largura CONTINUAM os mesmos (1.060 e 714): a
+ * classificação de quantas linhas cada combinação usa, acima, já sai
+ * deles sem discordar de nenhuma medição — a razão largura/`ui` que
+ * decide a quebra não mudou, só o preço dela.
+ *
+ * REMEDIDO DE NOVO NO CONSERTO 1 (07/09) — a data cai para 16 px e os
+ * controles para 40 px na mesa (§2 item 1), e `--selo-base` cai junto
+ * (ver `SELO_FRACAO`): a máquina do tempo mede bem menos. MEDIDO
+ * (`a11y.mjs` depois do conserto), pior razão medido/`ui` SEM degrau =
+ * 0,149/0,85 = 0,1753 (1.200x813, `ui = 0,85`). `TEMPO_FRACAO` =
+ * 0,1753 + 0,01 = 0,19.
+ *
+ * Pior caso EM DUAS linhas (1.200x813, `ui = 1,4`, 36,5%):
+ * `0,19×1,4 + Q ≥ 0,365` → `Q ≥ 0,099` — `TEMPO_QUEBRADO_FRACAO` = 0,11.
+ *
+ * Pior caso EM TRÊS linhas (768x900, `ui = 1,4`, 46,4%):
+ * `0,19×1,4 + 0,11 + T ≥ 0,464` → `T ≥ 0,088` —
+ * `TEMPO_EM_TRES_LINHAS_FRACAO` = 0,10.
  */
 const LARGURA_DA_QUEBRA_DO_TEMPO_PX = 1060;
-const TEMPO_QUEBRADO_FRACAO = 0.03;
+const TEMPO_QUEBRADO_FRACAO = 0.11;
 const LARGURA_DA_TERCEIRA_LINHA_PX = 714;
-const TEMPO_EM_TRES_LINHAS_FRACAO = 0.09;
+const TEMPO_EM_TRES_LINHAS_FRACAO = 0.1;
 
 /**
  * A LARGURA DE REFERÊNCIA — a tela de mesa em que as frações acima
@@ -190,58 +241,27 @@ export const LARGURA_UTIL_MINIMA_PX = 768;
  * selo. Ela e o selo dividem a mesma faixa de baixo, e por isso o que
  * entra no retângulo é o MAIOR dos dois e não a soma: descontar as
  * duas alturas empurraria a câmera para trás por uma faixa que ninguém
- * ocupa inteira.
- *
- * MEDIDO pelo juiz de a11y a 1200×900: `.atlas-tempo` (leitura em
- * cima, seis controles embaixo, linha de aviso sempre montada) ocupa
- * 22,0% da altura contando a tarja — 15,5% além dela. Ela PASSOU A SER
- * a peça mais alta do modo: o selo mede 18,8% na mesma janela. 0,175
- * declara isso com folga de ~1,5% da altura para variação de fonte, e
- * é este número que o juiz confere contra o retângulo real.
+ * ocupa inteira. O NÚMERO em si — e os dois degraus de quebra dela —
+ * está declarado e medido de novo (Lote 4, 07/09) junto de
+ * `LARGURA_DA_QUEBRA_DO_TEMPO_PX`, no alto deste arquivo: sem tarja
+ * nenhuma na conta de mesa, e com os controles no tamanho cheio do
+ * item 3, é ela — e não mais o selo — quem sempre decide o `Math.max`.
+ * REMEDIDO DE NOVO NO CONSERTO 1 (07/09): 0,19 — a conta está no
+ * comentário de `LARGURA_DA_QUEBRA_DO_TEMPO_PX`, junto dos dois degraus.
  */
-const TEMPO_FRACAO = 0.175;
+const TEMPO_FRACAO = 0.19;
 
 /**
  * ---- O TELEFONE (item 62, etapa 2) ---------------------------------
  *
- * ABAIXO DE 761 px O HUD É OUTRO, e até 2026-08-23 a câmera não sabia:
- * a fatia 9 do HUD desfez a barra de controles (sobrou uma linha só, no
- * alto), tirou a máquina do tempo do rodapé (virou a alça ⏱),
- * pôs as portas numa fileira de alças no pé e reduziu o selo a uma linha
- * em cima dela — e o retângulo continuava descontando a base de MESA,
- * `Math.max(SELO_FRACAO, TEMPO_FRACAO)` mais os dois degraus da máquina
- * do tempo, que numa tela de 390 px disparam os dois. Ou seja: a câmera
- * recuava por um rodapé que o CSS já tinha desmontado. Medido a 390×844
- * com `ui = 1`: 44,5% de céu declarado contra 84,5% de HUD real fora do
- * caminho.
- *
- * AS TRÊS FRAÇÕES SÃO MEDIDAS, uma a uma, pelo juiz de a11y
- * (`julgarCelular`, parte 5) nos SEIS cantos da faixa nova — 390×844 e
+ * ABAIXO DE 761 px O HUD É OUTRO: a fatia 9 do HUD desfaz a barra de
+ * controles (sobra uma linha só, no alto, com o CONTEXTO desde o Lote 4),
+ * tira a máquina do tempo do rodapé (vira a alça ⏱), põe as portas numa
+ * GRADE de alças no pé (Lote 4, item 7) e reduz o selo a uma linha em
+ * cima dela. AS TRÊS FRAÇÕES SÃO MEDIDAS, uma a uma, pelo juiz de a11y
+ * (`julgarCelular`, parte 5) nos SEIS cantos da faixa — 390×844 e
  * 320×568, com `?ui=` 0,85, 1 e 1,4 —, e ele cobra declarado ≥ medido em
- * cada um. É a disciplina de `LARGURA_DA_QUEBRA_DO_TEMPO_PX`: número que
- * entra aqui nasce de uma leitura de `getBoundingClientRect`, nunca de
- * aritmética de comentário. Eram QUATRO até 24/08; a quarta era a tarja,
- * e ela saiu do telefone inteira (ver logo abaixo).
- *
- * MEDIDO em 2026-08-23 (Chrome com `mobile: true` e toque emulado,
- * `?atlas=1&q=cinema&shot=1`), em fração da altura da janela. A coluna da
- * TARJA fica no registro porque é ela que explica os números do topo: até
- * 23/08 a barra era declarada como o que SOBRAVA dela, e hoje a caixa da
- * barra é o topo inteiro.
- *
- *              tarja    barra       fileira    selo (linha + vão)
- *   390, 0,85  0,0450   0,0327      0,0580     0,0847 − 0,0580 = 0,0267
- *   390, 1,00  0,0450   0,0364      0,0682     0,0987 − 0,0682 = 0,0305
- *   390, 1,40  0,0450   0,0492      0,0955     0,1389 − 0,0955 = 0,0434
- *   320, 0,85  0,0450   0,0466      0,0862     0,1258 − 0,0862 = 0,0396
- *   320, 1,00  0,0450   0,0522      0,1014     0,1466 − 0,1014 = 0,0452
- *   320, 1,40  0,0450   0,0712      0,1419     0,2064 − 0,1419 = 0,0645
- *
- * NORMALIZADAS por `ui`, a fileira dá 0,0682 (390) e 0,1014 (320) em
- * TODOS os três degraus — ela é `rem` puro (`--alcas-altura: 3.6rem`), e
- * a diferença entre os dois aparelhos é só a altura da janela. O selo
- * acima dela dá 0,0314 (390) e 0,0466 (320). O aparelho PEQUENO manda,
- * porque a mesma peça em `rem` é fração maior numa tela mais baixa.
+ * cada um; a medição de cada constante está no comentário dela, abaixo.
  */
 
 /**
@@ -253,64 +273,99 @@ const TEMPO_FRACAO = 0.175;
  * andaram no mesmo diff de propósito — tirar a pintura sem tirar o
  * desconto deixaria a câmera recuando por uma faixa que já não existe.
  *
- * NA MESA A TARJA FICA: `LETTERBOX_FRACAO` continua governando o ramo de
- * baixo, e nenhum pixel de tela grande se moveu.
+ * NA MESA A TARJA TAMBÉM SAIU, no Lote 4 (07/09) — ver o comentário de
+ * `LETTERBOX_FRACAO` (que morreu junto com o uso) no alto do arquivo.
  */
 
 /**
  * A BARRA DE CIMA DO TELEFONE, medida do TOPO DA JANELA até a base dela.
  * Ela é a única peça permanente do alto do modo (`.controls-bar` ancorada
- * em `top: 0.4vh`, fatia 9) e carrega hoje ▶ Ver o filme · ↗ Explorar,
- * mais ↩ Voltar ao filme quando há filme guardado.
+ * em `top: 0.4vh`, fatia 9) e carrega hoje o CONTEXTO (item 6, Lote 4 —
+ * sem marca, a linha inteira é a única do topo) e os chips ▶ Filme ·
+ * ⇗ Explorar, mais ↩ Retomar quando há filme guardado.
  *
- * ATÉ 24/08 ESTE NÚMERO ERA UM EXCEDENTE — os 0,025 que a barra sobrava
- * DA TARJA —, e o topo era a soma dos dois. Sem tarja não há de que
- * sobrar: a fração passa a ser a caixa inteira, do topo da janela até o
- * pé da barra. É a mesma medida que o juiz já cobrava; o que mudou foi
- * quem paga a primeira parcela.
+ * REMEDIDO NO LOTE 4 (07/09): a linha cresceu de 2,75rem (44 px já era o
+ * alvo antes) para o mesmo alvo, MEDIDO DE NOVO porque o `.hud-btn`
+ * dentro dela cresceu (item 2, 40 px de base) e um `min-height: 2,75rem`
+ * próprio do topo do celular (`09-celular.css`) passou a mandar por
+ * cima. MEDIDO (Chrome com `mobile: true`, `?atlas=1&shot=1`), em fração
+ * da altura da janela, NORMALIZADO por `ui` (a âncora de 0,4vh não
+ * escala com o texto, então o pior caso é o `ui` MENOR):
  *
- * MEDIDO em 2026-08-23 (Chrome com `mobile: true`, `?atlas=1&shot=1`), em
- * fração da altura da janela, e NORMALIZADO por `ui` — a âncora de 0,4vh
- * não escala com o texto, então o pior caso é o `ui` MENOR, e não o maior:
+ *   390, 0,85 → 0,0483 / 0,85 = 0,0568
+ *   390, 1,00 → 0,0561
+ *   390, 1,40 → 0,0981 / 1,40 = 0,0701
+ *   320, 0,85 → 0,0698 / 0,85 = 0,0821   ← o pior
+ *   320, 1,00 → 0,0815
+ *   320, 1,40 → 0,1124 / 1,40 = 0,0803
  *
- *   390, 0,85 → 0,0327 / 0,85 = 0,0385
- *   390, 1,00 → 0,0364
- *   390, 1,40 → 0,0492 / 1,40 = 0,0351
- *   320, 0,85 → 0,0466 / 0,85 = 0,0548   ← o pior
- *   320, 1,00 → 0,0522
- *   320, 1,40 → 0,0712 / 1,40 = 0,0509
+ * 0,085 cobre o pior (0,0821) com ~0,003 de folga por unidade de `ui`.
+ * O contexto (texto que muda de tamanho com o alvo) NÃO cresce a linha:
+ * ele trunca com `ellipsis` dentro da própria caixa (`.atlas-contexto`,
+ * `04-atlas.css`) em vez de quebrar — por isso a medição acima, feita
+ * sem seleção, vale igual com um alvo focado.
  *
- * 0,065 cobre o pior (0,0548) com **0,0102 de folga por unidade de
- * `ui`** — que no canto que aperta (320 px, `ui` 0,85) são 0,0087 DE
- * TELA. Os dois números são a mesma folga lida em duas réguas, e o
- * rótulo estava trocado até 24/08: num arquivo que proíbe aritmética de
- * comentário, dizer "por unidade" sobre o número da tela é o defeito que
- * ele existe para não ter. A folga é para fonte de outra máquina — o
- * juiz roda no macOS do dono e na nuvem. O que sumiu do topo foram os
- * 0,045 da tarja, que a câmera não paga mais.
+ * REMEDIDO NO CONSERTO 2 (07/09, PLAN-UI.md §2 item 1: "o CÉU a 320×568
+ * <70%") — a linha cai de 44 para 40 px. MEDIDO (`a11y.mjs`), pior razão
+ * medido/`ui` = 0,064/0,85 = 0,0753 (320, `ui = 0,85`). `SAIDA_FRACAO`
+ * = 0,0753 + 0,01 = 0,086.
  */
-const SAIDA_FRACAO = 0.065;
+const SAIDA_FRACAO = 0.086;
 
 /**
  * A FILEIRA DE ALÇAS, que é a base de verdade do telefone. Ela é `fixed`
- * no pé e é a ÚNICA peça permanente de lá desde que a tarja de baixo saiu:
- * 0,11 cobre o pior medido (0,1014 no aparelho pequeno) com 0,0086 de folga.
- * O alvo de toque dela — 2,75rem, 44 px em `ui = 1` — é o que a dimensiona,
- * e é ele que não se aperta: quando as quatro alças não couberam em 390 px,
- * quem cedeu foram o `gap` e o `padding` da `.atlas-alcas` (fatia 9 do
- * HUD), que são LARGURA; o `min-height` de 2,75rem ficou onde estava.
+ * no pé e é a ÚNICA peça permanente de lá desde que a tarja de baixo saiu.
+ *
+ * REMEDIDO NO LOTE 4 (07/09, item 7 — regra de encaixe do portão 2): a
+ * fileira virou GRADE de 5 colunas com ícone sobre rótulo (empilhados),
+ * e `--alcas-altura` subiu de 3,6rem para 4rem (o próprio item 7 já
+ * declarava o número novo — o par ícone/rótulo empilhado não cabia mais
+ * nos 2,75rem de alvo de toque sozinho, que agora é a ALTURA da alça
+ * inteira, não uma medida isolada dentro dela). MEDIDO (Chrome com
+ * `mobile: true`, `?atlas=1&shot=1`), a caixa da fileira:
+ *
+ *   390, 0,85 → 0,0644 / 0,85 = 0,0758
+ *   390, 1,00 → 0,0758
+ *   390, 1,40 → 0,1062 / 1,40 = 0,0759
+ *   320, 0,85 → 0,0958 / 0,85 = 0,1127   ← o pior
+ *   320, 1,00 → 0,1127
+ *   320, 1,40 → 0,1577 / 1,40 = 0,1126
+ *
+ * 0,115 cobre o pior (0,1127) com ~0,002 de folga.
+ *
+ * REMEDIDO NO CONSERTO 2 (07/09) — `--alcas-altura` cai de 4rem para
+ * 3,5rem (56 px). MEDIDO (`a11y.mjs`), pior razão medido/`ui` = 0,099/1
+ * = 0,099 (320, `ui = 1`; praticamente empatado com 0,85 e 1,4, já que
+ * é `rem`). `ALCAS_FRACAO` = 0,099 + 0,01 = 0,11.
  */
 const ALCAS_FRACAO = 0.11;
 
 /**
  * O SELO, que no telefone é UMA LINHA acima da fileira — `--selo-base`
  * soma `--alcas-altura` dentro de si (fatia 9), então o que entra aqui é
- * só o que ele acrescenta POR CIMA dela. 0,05 cobre o pior medido
- * (0,0466) com 0,0034 de folga. Nada do `SELO_FRACAO` de mesa (0,14)
- * atravessa: lá ele dividia a faixa com a máquina do tempo, e aqui a
- * máquina do tempo é uma alça.
+ * só o que ele acrescenta POR CIMA dela (a caixa do selo MENOS a da
+ * fileira, ambas medidas do pé da tela até o próprio topo).
+ *
+ * REMEDIDO NO LOTE 4 (07/09), na mesma corrida de `ALCAS_FRACAO`:
+ *
+ *   390, 0,85 → (0,0970 − 0,0644) / 0,85 = 0,0384
+ *   390, 1,00 → 0,1122 − 0,0758 = 0,0364
+ *   390, 1,40 → (0,1566 − 0,1062) / 1,40 = 0,0360
+ *   320, 0,85 → (0,1442 − 0,0958) / 0,85 = 0,0569   ← o pior
+ *   320, 1,00 → 0,1667 − 0,1127 = 0,0540
+ *   320, 1,40 → (0,2327 − 0,1577) / 1,40 = 0,0536
+ *
+ * 0,06 cobre o pior (0,0569) com ~0,003 de folga. Nada do `SELO_FRACAO`
+ * de mesa (0,12) atravessa: lá ele disputa o `Math.max` com a máquina do
+ * tempo, e aqui a máquina do tempo é uma alça.
+ *
+ * REMEDIDO NO CONSERTO 2 (07/09) — o chip ganha altura própria de 28 px
+ * e o vão para a fileira cai de 0,6rem para 0,375rem (6 px). MEDIDO
+ * (`a11y.mjs`), pior razão (selo − alças)/`ui` = (0,158 − 0,099)/1 =
+ * 0,059 (320, `ui = 1`; ~0,06 nos três `ui`, ui-invariante por ser
+ * `rem`). `SELO_FRACAO_CELULAR` = 0,06 + 0,01 = 0,07.
  */
-const SELO_FRACAO_CELULAR = 0.05;
+const SELO_FRACAO_CELULAR = 0.07;
 
 /**
  * A DICA DOS GESTOS NÃO ENTRA NA BASE DO TELEFONE, e é decisão declarada
@@ -425,15 +480,16 @@ export function retanguloUtilDoAtlas(
       base: (ALCAS_FRACAO + SELO_FRACAO_CELULAR) * k + reservaBase,
     };
   }
+  // SEM TARJA (Lote 4, 07/09) — o `LETTERBOX_FRACAO` que somava aqui nas
+  // duas bordas morreu junto com a pintura: ver o comentário no alto do
+  // arquivo. As duas bordas voltam a ser só HUD, como no telefone.
   return {
     esquerda: 0,
     direita: 0 + reservaDireita,
     topo:
-      LETTERBOX_FRACAO +
       CONTEXTO_FRACAO * k +
       (largura < LARGURA_DA_QUEBRA_PX * k ? BARRA_QUEBRADA_FRACAO : 0),
     base:
-      LETTERBOX_FRACAO +
       Math.max(SELO_FRACAO, TEMPO_FRACAO) * k +
       (largura < LARGURA_DA_QUEBRA_DO_TEMPO_PX * k ? TEMPO_QUEBRADO_FRACAO : 0) +
       (largura < LARGURA_DA_TERCEIRA_LINHA_PX * k ? TEMPO_EM_TRES_LINHAS_FRACAO : 0) +
