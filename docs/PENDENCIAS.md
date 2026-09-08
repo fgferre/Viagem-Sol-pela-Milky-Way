@@ -68,7 +68,10 @@ cartões e os filtros); visitar o centro da galáxia pela busca põe a câmera
 dentro do gás (névoa bege) — a foto do cartão usa o quadro do filme, e a
 decisão de parar antes do centro é dele (backlog). Juízes: a11y verde;
 busca com a prova do toque adaptada à regra nova do foco. **Faltam os
-lotes 7, 8 e 9.**
+lotes 7, 8 e 9.** Rodada encerrada por ordem dele: *"vamos encerrar por aqui,
+contexto cheio"* — o Lote 7 (Ajustes, Camadas, Tempo, Spotlight, copiar
+link) começa numa conversa nova, lendo o `PLAN-UI.md`. Tudo commitado e em
+`main:backup`; servidor parado.
 
 ## O BASTÃO anterior (06/09, madrugada)
 
