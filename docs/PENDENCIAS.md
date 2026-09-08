@@ -53,6 +53,23 @@ falhas antigas (contagem de nomes e décadas do zoom, backlog) e uma prova
 adaptada ao rótulo novo. `npm run done` verde. Backup em `main:backup`.
 **Faltam os lotes 6, 7, 8 e 9 do `PLAN-UI.md`.** Servidor: `npm run dev`.
 
+**08/09 (rodada da BUSCA COM DESTINOS — Lote 6).** Palavras dele: *"pode
+seguir para o lote 6"*. Implementado e commitado: com a busca vazia
+aparecem três filtros (Sistema Solar · Estrelas · Galáxia) e cartões com
+foto dos dez destinos do plano (Terra, Lua, Marte, Júpiter, Saturno,
+Plutão · Sirius, Betelgeuse, Rigil Kentaurus · centro da galáxia); o
+cartão faz o mesmo que escolher na lista; digitar mostra a lista de sempre;
+sem resultado há o botão "Limpar busca"; no celular os cartões viram linhas
+com miniatura e abrir a busca pelo toque não sobe o teclado (só o toque no
+campo). As fotos dos destinos são capturas do próprio app (script
+`previas-de-destino.mjs`), 165 KB no total. Aprendido: o painel inteiro
+rola com o cabeçalho preso (a lista de cartões rolando sozinha esmagava os
+cartões e os filtros); visitar o centro da galáxia pela busca põe a câmera
+dentro do gás (névoa bege) — a foto do cartão usa o quadro do filme, e a
+decisão de parar antes do centro é dele (backlog). Juízes: a11y verde;
+busca com a prova do toque adaptada à regra nova do foco. **Faltam os
+lotes 7, 8 e 9.**
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar

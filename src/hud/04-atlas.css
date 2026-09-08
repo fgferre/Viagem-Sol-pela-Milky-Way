@@ -1471,6 +1471,103 @@
   }
 }
 
+/* A DICA "/" DENTRO DO CAMPO (Lote 6) — mesma régua da lupa, espelhada:
+   à direita, ornamento que o `aria-hidden` já cobre (o atalho em si é
+   anunciado pelo botão que abre a busca, `busca.botaoDica`). */
+.atlas-busca-atalho {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--borda);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.6875rem;
+  color: var(--texto-3);
+  pointer-events: none;
+}
+
+/* OS CARTÕES DE DESTINO (consulta vazia, Lote 6, PLAN-UI.md §3.4) — dez
+   portas fixas para quem abre a busca sem saber o que digitar. O
+   PRINCIPAL de cada categoria (o primeiro do array) ocupa as duas
+   colunas com imagem mais alta; os demais dividem a grade. Superfície
+   sólida (`--fundo-painel`), nunca transparente: é foto sobre a cena, e
+   uma borda só não segura o quadro sozinha. */
+.atlas-destinos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+/* QUEM ROLA É O DIÁLOGO INTEIRO (`.hud-dialogo`, 01-base.css: `overflow-y:
+   auto` com o cabeçalho preso), a MESMA anatomia dos outros painéis —
+   nada aqui encolhe para caber. Sem isto a coluna de flex apertava os
+   filhos em vez de rolar: os cartões saíam com 115 px e o texto cortado
+   na mesa, e os filtros viravam 20 px de rótulos cortados no celular
+   (1ª foto do Lote 6). A lista de resultados guarda o próprio teto
+   (`.atlas-busca-lista`, acima), como sempre. */
+.atlas-busca > * {
+  flex: none;
+}
+.atlas-destino {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-controle);
+  overflow: hidden;
+  background: var(--fundo-painel);
+  color: var(--texto);
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+.atlas-destino--principal {
+  grid-column: 1 / -1;
+}
+.atlas-destino:hover {
+  border-color: var(--acento);
+}
+.atlas-destino:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+.atlas-destino-imagem {
+  display: block;
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  background: #000;
+}
+.atlas-destino--principal .atlas-destino-imagem {
+  height: 128px;
+}
+.atlas-destino-nome {
+  display: block;
+  padding: 0.5rem 0.65rem 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--texto);
+}
+.atlas-destino-convite {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  padding: 0 0.65rem 0.65rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--texto-2);
+}
+/* O BOTÃO "LIMPAR BUSCA" (Lote 6) mora sozinho, abaixo do aviso — o
+   `.hud-btn.small` de sempre, só sem esticar a largura toda (o pai é
+   coluna de flex com `stretch` por padrão). */
+.atlas-busca-aviso + .hud-btn.small {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+}
+
 /* --- indicador de warp --- */
 .warp-vignette {
   position: fixed;

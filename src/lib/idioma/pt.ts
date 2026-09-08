@@ -256,8 +256,8 @@ export const PT = {
   'busca.botaoDica': 'buscar — tecla / (ou Ctrl+K)',
   'busca.fechar': 'Fechar a busca',
   'busca.lista': 'Alvos encontrados',
-  'busca.campoCorposEEstrelas': 'buscar um corpo ou uma estrela',
-  'busca.campoEstrelas': 'buscar uma estrela',
+  'busca.campoCorposEEstrelas': 'Buscar um destino…',
+  'busca.campoEstrelas': 'Buscar uma estrela…',
   'busca.campoAria':
     'Nome de um corpo do sistema, ou nome, designação ou catálogo da estrela',
   // A DICA DO "?" (redesenho, pedido do dono: "aplica o mesmo padrão no
@@ -280,6 +280,27 @@ export const PT = {
   'busca.verboVoa': 'voa até lá',
   'busca.dica': 'nome, designação (gama vel) ou catálogo (hd 48915) · {exemplos}',
   'busca.exemploCorpo': 'terra',
+
+  // ---- os cartões de destino da busca vazia (Lote 6, §3.4) ----------
+  'busca.filtro.sistema': 'Sistema Solar',
+  'busca.filtro.estrelas': 'Estrelas',
+  'busca.filtro.galaxia': 'Galáxia',
+  'busca.filtrosAria': 'Categoria dos destinos',
+  'busca.destinosAria': 'Destinos sugeridos',
+  'busca.limpar': 'Limpar busca',
+  'busca.destino.earth': 'Nosso ponto de partida',
+  'busca.destino.moon': 'A vizinha mais próxima',
+  'busca.destino.mars': 'O planeta vermelho, de perto',
+  'busca.destino.jupiter': 'O gigante e suas quatro luas',
+  'busca.destino.saturn': 'Os anéis, de perto',
+  'busca.destino.pluto': 'A borda do sistema',
+  'busca.destino.sirius': 'A estrela mais brilhante do céu',
+  'busca.destino.betelgeuse': 'Uma supergigante em Órion',
+  'busca.destino.rigil-kentaurus': 'O sistema estelar mais próximo',
+  // SEM promessa de filme (item 129/F5 continua valendo): o clique aqui
+  // faz o MESMO que a entrada "lugar" da busca já faz — enquadra o
+  // centro galáctico no Atlas, não entra no filme.
+  'busca.destino.sagittarius-a': 'Até o centro da galáxia',
 
   // ---- o convite dos gestos (`components/Spotlight.tsx`) ------------
   'convite.olhar': 'arraste para olhar em volta',

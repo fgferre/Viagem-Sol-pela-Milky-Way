@@ -816,25 +816,52 @@ try {
       dedo('touchMove', [{ x: p.x + 6, y: p.y + 6, id: 1 }]),
       dedo('touchEnd', []),
     ]);
-    // espera por ESTADO: a folha aberta com o campo focado é o fim do
-    // gesto — era dorme(400); o estouro reprova na leitura de baixo
+    // espera por ESTADO: a folha aberta com o foco DENTRO dela é o fim do
+    // gesto — era dorme(400); o estouro reprova na leitura de baixo.
+    // O FOCO NÃO VAI AO CAMPO (Lote 6 da UI, PLAN-UI.md §3.4): abrir por
+    // TOQUE foca o contêiner da folha, porque campo focado é teclado
+    // virtual subindo sozinho e cobrindo metade da tela; só o toque
+    // DIRETO no campo o chama (provado logo abaixo). Até 07/09 a prova
+    // cobrava o contrário — "campo focado true".
     await esperarPor(sessao, `(() => {
-      const c = document.querySelector('.atlas-busca-campo');
-      return Boolean(c) && document.activeElement === c;
+      const f = document.querySelector('[data-dialogo="busca"]');
+      return Boolean(f) && f.contains(document.activeElement);
     })()`);
     const aberta = JSON.parse(await sessao.js(`JSON.stringify((() => {
       const campo = document.querySelector('.atlas-busca-campo');
       const f = document.querySelector('[data-dialogo="busca"]');
       const r = f ? f.getBoundingClientRect() : null;
+      const c = campo ? campo.getBoundingClientRect() : null;
       return { aberta: Boolean(f), focada: document.activeElement === campo,
+        dentro: Boolean(f) && f.contains(document.activeElement),
         folha: r ? [Math.round(r.left), Math.round(r.top),
-          Math.round(r.width), Math.round(r.height)] : null };
+          Math.round(r.width), Math.round(r.height)] : null,
+        campo: c ? { x: Math.round(c.left + c.width / 2), y: Math.round(c.top + c.height / 2) } : null };
     })())`));
     conferir(
-      aberta.aberta && aberta.focada && aberta.folha[2] === 390,
+      aberta.aberta && aberta.dentro && !aberta.focada && aberta.folha[2] === 390,
       `o DEDO abre a paleta pela alça ⌕ (alvo de ${p.alto} px de alto):`
-        + ` folha [${aberta.folha ?? 'ausente'}] de borda a borda, campo focado`
-        + ` ${aberta.focada}`
+        + ` folha [${aberta.folha ?? 'ausente'}] de borda a borda, foco dentro da folha`
+        + ` (${aberta.dentro}) e FORA do campo — o teclado não sobe sozinho (campo focado ${aberta.focada})`
+    );
+    // ...E O TOQUE NO CAMPO É QUEM CHAMA O TECLADO: o mesmo dedo, agora
+    // sobre a caixa de texto, tem de deixá-la focada antes de digitar.
+    if (aberta.campo) {
+      await Promise.all([
+        dedo('touchStart', [{ x: aberta.campo.x, y: aberta.campo.y, id: 1 }]),
+        dedo('touchEnd', []),
+      ]);
+    }
+    await esperarPor(sessao, `(() => {
+      const c = document.querySelector('.atlas-busca-campo');
+      return Boolean(c) && document.activeElement === c;
+    })()`).catch(() => {});
+    const campoFocado = await sessao.js(
+      `document.activeElement === document.querySelector('.atlas-busca-campo')`
+    );
+    conferir(
+      campoFocado === true,
+      `...e o toque DIRETO no campo o foca (${campoFocado}) — é ele quem chama o teclado`
     );
     await sessao.digitar('netuno');
     await dorme(300);

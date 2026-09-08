@@ -249,8 +249,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.botaoDica': 'search — press / (or Ctrl+K)',
   'busca.fechar': 'Close the search',
   'busca.lista': 'Targets found',
-  'busca.campoCorposEEstrelas': 'search for a body or a star',
-  'busca.campoEstrelas': 'search for a star',
+  'busca.campoCorposEEstrelas': 'Search a destination…',
+  'busca.campoEstrelas': 'Search a star…',
   'busca.campoAria':
     'Name of a body in the system, or name, designation or catalog of the star',
   'busca.ajuda':
@@ -266,6 +266,27 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.verboVoa': 'flies there',
   'busca.dica': 'name, designation (gamma vel) or catalog (hd 48915) · {exemplos}',
   'busca.exemploCorpo': 'earth',
+
+  // ---- the destination cards of the empty search (Lote 6, §3.4) -----
+  'busca.filtro.sistema': 'Solar System',
+  'busca.filtro.estrelas': 'Stars',
+  'busca.filtro.galaxia': 'Galaxy',
+  'busca.filtrosAria': 'Destination category',
+  'busca.destinosAria': 'Suggested destinations',
+  'busca.limpar': 'Clear search',
+  'busca.destino.earth': 'Where we start',
+  'busca.destino.moon': 'Our nearest neighbour',
+  'busca.destino.mars': 'The red planet, up close',
+  'busca.destino.jupiter': 'The giant and its four moons',
+  'busca.destino.saturn': 'The rings, up close',
+  'busca.destino.pluto': 'The edge of the system',
+  'busca.destino.sirius': 'The brightest star in the sky',
+  'busca.destino.betelgeuse': 'A supergiant in Orion',
+  'busca.destino.rigil-kentaurus': 'The nearest star system',
+  // NO film promise (item 129/F5 still holds): the click here does the
+  // SAME thing the "place" search entry already does — frames the
+  // galactic centre in the Atlas, does not start the film.
+  'busca.destino.sagittarius-a': 'To the galactic centre',
 
   // ---- the gesture walkthrough -------------------------------------
   'convite.olhar': 'drag to look around',

@@ -28,15 +28,19 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { buscar, nomeDaEntrada } from '../lib/buscaEstrelas';
 import { classeEmTexto } from '../three/atlasConfig';
 import type { EntradaDaBusca, IndiceEstrelas } from '../lib/buscaEstrelas';
+import { destinosDaBusca } from '../lib/destinosDaBusca';
+import type { CategoriaDeDestino } from '../lib/destinosDaBusca';
 import { gatilhoDoDialogo, useDialogFocus } from '../lib/dialogFocus';
 import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
 import { numeroDoIdioma } from '../three/tempoDoAtlas';
 import { t } from '../lib/idioma';
+import type { ChaveDeTexto } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
 import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
+import { Segmentado } from './Segmentado';
 
 /**
  * QUANTOS RESULTADOS, por dispositivo. No teclado são 8 (o mesmo
@@ -134,7 +138,13 @@ export function PaletaDeBusca({
   // Convite), e fechar DESMONTA. Não é detalhe de estilo — é o que faz a
   // consulta anterior morrer sozinha, sem um efeito que a limpe e sem a
   // cascata de renders que ele custaria.
-  const dialogo = useDialogFocus('busca', true, onFechar);
+  // NO CELULAR o foco inicial vai para o CONTÊINER, não para o campo: um
+  // toque que abre a busca não pode abrir o teclado virtual sozinho — só
+  // o toque DIRETO no campo abre. Na mesa o padrão de sempre continua
+  // ('primeiro' foca o campo, que é o primeiro focável do DOM).
+  const dialogo = useDialogFocus('busca', true, onFechar, {
+    focoInicial: celular ? 'caixa' : 'primeiro',
+  });
   const idioma = useIdioma();
   // A DICA FIXA (redesenho, mesmo padrão de Ajustes e da gaveta de
   // Camadas) — só a peça "?" do cabeçalho usa, mas o estado é o mesmo
@@ -142,6 +152,10 @@ export function PaletaDeBusca({
   const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
   const [consulta, setConsulta] = useState('');
   const [ativo, setAtivo] = useState(0);
+  // A CATEGORIA DOS CARTÕES (consulta vazia, Lote 6): 'sistema' sempre
+  // que a paleta abre (ela desmonta ao fechar — comentário do topo), e
+  // sobrevive a digitar-e-apagar porque nada aqui a reseta.
+  const [categoria, setCategoria] = useState<CategoriaDeDestino>('sistema');
   // a digitação é urgente, a lista é que pode esperar: o `useDeferredValue`
   // deixa o cursor andar no ritmo do teclado mesmo quando a varredura das
   // ~5 mil chaves de texto cai numa tecla mais cara
@@ -150,10 +164,18 @@ export function PaletaDeBusca({
     window.matchMedia?.('(pointer: coarse)').matches ? LIMITE_TOQUE : LIMITE_TECLADO
   );
   const listaRef = useRef<HTMLUListElement>(null);
+  const campoRef = useRef<HTMLInputElement>(null);
 
   const resultados = useMemo(
     () => buscar(consultaLenta, indice, limite),
     [consultaLenta, indice, limite]
+  );
+  // OS CARTÕES DE DESTINO (consulta vazia) só mudam com a categoria e o
+  // índice — a digitação já troca de estado sozinha (o `<ul>` de
+  // resultados assume a cena), então recalcular a cada tecla seria à toa.
+  const destinos = useMemo(
+    () => destinosDaBusca(indice, categoria),
+    [indice, categoria]
   );
   // a lista encolhe entre um render e outro (a consulta cresceu): sem
   // isto o `aria-activedescendant` apontaria para uma opção que saiu
@@ -165,22 +187,42 @@ export function PaletaDeBusca({
     listaRef.current?.children[escolhido]?.scrollIntoView({ block: 'nearest' });
   }, [escolhido]);
 
+  // O CAMINHO COMUM de qualquer escolha — uma linha de resultado ou um
+  // cartão de destino (Lote 6), tanto faz: os dois chamam `onEscolher` e
+  // fecham no MESMO tique.
+  //
+  // FECHA NO PRÓXIMO TIQUE, e o motivo é o Enter. Fechar aqui desmonta a
+  // paleta e devolve o foco ao botão que a abriu — tudo isso AINDA
+  // DENTRO do evento da tecla; e aí a ação padrão do Enter cai no botão
+  // recém-focado e a paleta se REABRE sozinha, no instante exato em que
+  // o visitante escolheu (medido pelo juiz de a11y: o foco acabava
+  // dentro da caixa de texto de novo, em vez de voltar ao gatilho). O
+  // `preventDefault` da tecla não alcança isso: quem recebe a ação
+  // padrão é o elemento que está com o foco quando ela é aplicada, e a
+  // essa altura já é outro — um cartão é um `<button>`, e o Enter sobre
+  // ele corre o MESMO risco.
+  //
+  // Um tique é o bastante — e serve os três caminhos (mouse, teclado,
+  // toque num cartão), porque três caminhos de fechamento seriam três
+  // comportamentos.
+  const escolher = (entrada: EntradaDaBusca) => {
+    onEscolher(entrada);
+    setTimeout(onFechar);
+  };
+
   const confirmar = (i: number) => {
     const alvo = resultados[i];
     if (!alvo) return;
-    onEscolher(alvo.entrada);
-    // FECHA NO PRÓXIMO TIQUE, e o motivo é o Enter. Fechar aqui desmonta
-    // a paleta e devolve o foco ao botão que a abriu — tudo isso AINDA
-    // DENTRO do evento da tecla; e aí a ação padrão do Enter cai no
-    // botão recém-focado e a paleta se REABRE sozinha, no instante exato
-    // em que o visitante escolheu (medido pelo juiz de a11y: o foco
-    // acabava dentro da caixa de texto de novo, em vez de voltar ao
-    // gatilho). O `preventDefault` da tecla não alcança isso: quem
-    // recebe a ação padrão é o elemento que está com o foco quando ela é
-    // aplicada, e a essa altura já é outro.
-    // Um tique é o bastante — e serve os dois caminhos, mouse e teclado,
-    // porque dois caminhos de fechamento seriam dois comportamentos.
-    setTimeout(onFechar);
+    escolher(alvo.entrada);
+  };
+
+  // "LIMPAR BUSCA" (Lote 6, sem resultado): devolve o campo ao estado
+  // inicial e o foco a ele — sem isto o visitante ficaria com o foco
+  // pendurado num botão que acabou de sumir da tela.
+  const limparBusca = () => {
+    setConsulta('');
+    setAtivo(0);
+    campoRef.current?.focus();
   };
 
   // Esc e Tab NÃO aparecem aqui: são do módulo de diálogo, que escuta no
@@ -202,6 +244,11 @@ export function PaletaDeBusca({
     }
   };
 
+  // CONSULTA VAZIA-DE-VERDADE (Lote 6): decide se a paleta mostra
+  // filtros + cartões (abaixo) ou a lista de resultados — troca no
+  // MESMO instante em que `resultados` troca, porque as duas vêm da
+  // mesma `consultaLenta`.
+  const semConsulta = consultaLenta.trim().length === 0;
   const vazio = consultaLenta.trim().length > 0 && resultados.length === 0;
   // o alcance vem CONTADO do índice, não digitado na copy: o dia em que o
   // catálogo ganhar uma estrela, a frase que diz quantas são continua
@@ -271,6 +318,7 @@ export function PaletaDeBusca({
           <Icone nome="busca" tamanho={16} />
         </span>
         <input
+          ref={campoRef}
           type="text"
           className="atlas-busca-campo"
           value={consulta}
@@ -293,6 +341,10 @@ export function PaletaDeBusca({
           autoComplete="off"
           spellCheck={false}
         />
+        {/* A DICA "/" (Lote 6) — só decora (some no celular, 09-celular.css,
+            onde não existe tecla física para o atalho valer); o atalho de
+            verdade já é anunciado pelo botão que abre a busca. */}
+        <kbd className="atlas-busca-atalho" aria-hidden="true">/</kbd>
       </div>
 
       <CabecalhoDoPainel
@@ -310,6 +362,54 @@ export function PaletaDeBusca({
         rotuloFechar={t('busca.fechar')}
         celular={celular}
       />
+
+      {/* CONSULTA VAZIA (Lote 6, PLAN-UI.md §3.4): filtros + cartões de
+          destino no lugar da lista. A lista continua montada logo abaixo
+          (vazia, sem `<li>` nenhum), e é por isso que o `aria-controls`
+          do campo nunca aponta para um id que sumiu do DOM. Digitar troca
+          de estado sozinho, porque `semConsulta` e `resultados` nascem da
+          mesma `consultaLenta`. */}
+      {semConsulta && (
+        <>
+          <Segmentado
+            aria={t('busca.filtrosAria')}
+            valor={categoria}
+            opcoes={[
+              { valor: 'sistema', nome: t('busca.filtro.sistema') },
+              { valor: 'estrelas', nome: t('busca.filtro.estrelas') },
+              { valor: 'galaxia', nome: t('busca.filtro.galaxia') },
+            ]}
+            onEscolher={setCategoria}
+          />
+          <div className="atlas-destinos" role="group" aria-label={t('busca.destinosAria')}>
+            {destinos.map((destino, i) => (
+              <button
+                key={destino.id}
+                type="button"
+                className={
+                  'atlas-destino' + (i === 0 ? ' atlas-destino--principal' : '')
+                }
+                onClick={() => escolher(destino.entrada)}
+              >
+                <img
+                  className="atlas-destino-imagem"
+                  src={`${import.meta.env.BASE_URL}previas/${destino.id}.webp`}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+                <span className="atlas-destino-nome">{nomeDaEntrada(destino.entrada)}</span>
+                <span className="atlas-destino-convite">
+                  {t(`busca.destino.${destino.id}` as ChaveDeTexto)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <ul
         ref={listaRef}
@@ -347,6 +447,11 @@ export function PaletaDeBusca({
       <p className="atlas-busca-aviso" role="status" aria-live="polite">
         {aviso}
       </p>
+      {vazio && (
+        <button type="button" className="hud-btn small" onClick={limparBusca}>
+          {t('busca.limpar')}
+        </button>
+      )}
     </div>
   );
 }
