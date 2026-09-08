@@ -34,7 +34,7 @@ exemplo do que a interface do atlas orbital faz"* — e *"registre para a
 gente fazer isso numa conversa limpa, pois aqui o contexto já está se
 deteriorando"*. Registrado como o Lote 4½ do `PLAN-UI.md`, com maquete
 como portão. Estado da rodada: pele B escolhida; lotes 0–3 e 5 commitados;
-lote 4 (barra do Atlas, tarjas fora) em fechamento; faltam 4½, 6, 7, 8, 9.
+lote 4 (barra do Atlas, tarjas fora) commitado; faltam 4½, 6, 7, 8, 9. Seis provas do `atlas-smoke` ficaram vermelhas por causa do céu maior (backlog).
 Nada foi para o backup ainda.
 
 ## O BASTÃO anterior (06/09, madrugada)
