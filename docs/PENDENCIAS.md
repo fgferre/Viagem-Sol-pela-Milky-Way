@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 226.**
 
-## O BASTÃO — onde a rodada parou (07/09)
+## O BASTÃO — onde a rodada parou (08/09)
 
 **07/09 (rodada da VARREDURA, encerrada por ordem dele: "encerrar
 rodada").** Abriu com a pergunta dele: "o que faltou? pode continuar.
@@ -72,6 +72,30 @@ lotes 7, 8 e 9.** Rodada encerrada por ordem dele: *"vamos encerrar por aqui,
 contexto cheio"* — o Lote 7 (Ajustes, Camadas, Tempo, Spotlight, copiar
 link) começa numa conversa nova, lendo o `PLAN-UI.md`. Tudo commitado e em
 `main:backup`; servidor parado.
+
+**08/09 (rodada dos AJUSTES, CAMADAS, TEMPO E CONVITE — Lote 7).** Palavras
+dele: *"continue de onde paramos"*. Implementado e commitado (três
+trabalhadores em paralelo, revisão e consertos na sessão principal): nos
+Ajustes o "Avançado" virou uma seção que abre e fecha (fechada ao entrar; os
+cinco controles avançados continuam obedecendo ao Preset), cada linha tem o
+nome à esquerda e o controle à direita no tamanho natural (o "Performance"
+aparecia cortado), os dois botões de ação ficaram em largura cheia (o "?" do
+convite continua ao lado) e o "copiar link" agora anuncia "Copiado ✓" e,
+quando o navegador não deixa copiar, mostra o aviso e um campo com o
+endereço já selecionado; as Camadas perderam a coluna de glifos e ganharam o
+filete entre linhas, como na maquete; no celular a gaveta do Tempo ficou como
+a maquete M10 (linhas de 44 px com filete); o convite passou a usar a pele
+dos painéis. Achado de tabela: o cabeçalho preso de TODO painel cobria a
+primeira linha do corpo (o "GALÁXIA" das Camadas e o "INSTANTE DO CÉU" do
+Tempo saíam cortados) — consertado na base, vale para os cinco painéis. Duas
+coisas ficaram para ele decidir (backlog): o rodapé do tempo na mesa continua
+compacto (16/40 px, o conserto do Lote 4 para caber na cota de 22 % do próprio
+plano) e o painel Ajustes a 1440×900 ainda rola ~25 px porque para acima do
+selo. Fotos em `capturas/lote7-*-v2.png` (e `-en-`). Juízes: a11y e busca
+verdes; atlas-smoke com as mesmas 7 falhas antigas (nomes e décadas). `npm run
+done` verde. Backup em `main:backup`. **Faltam os lotes 8 e 9.** Prova nova
+proposta para a lista dele: "falha da área de transferência mostra o campo"
+(hoje é só a foto). Servidor: `npm run dev`.
 
 ## O BASTÃO anterior (06/09, madrugada)
 

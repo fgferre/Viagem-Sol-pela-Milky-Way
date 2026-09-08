@@ -198,9 +198,10 @@ export const PT = {
   'ajustes.ligados': 'Ligados',
   'ajustes.convite': 'Convite',
   'ajustes.conviteNota': 'Os três gestos do voo livre, apontados na própria tela.',
-  'ajustes.reverConvite': 'rever o convite',
-  'ajustes.copiado': 'copiado',
-  'ajustes.copiarLink': 'copiar link deste instante',
+  'ajustes.reverConvite': 'Rever o convite',
+  'ajustes.copiado': 'Copiado ✓',
+  'ajustes.copiarLink': 'Copiar link deste instante',
+  'ajustes.copiaFalhou': 'Não deu para copiar automaticamente. Copie o endereço:',
 
   // ---- a gaveta de camadas e o selo (`components/HudDoAtlas.tsx`) ---
   'atlas.camadasAria': 'Camadas da cena',

@@ -326,7 +326,7 @@
   position: fixed;
   max-width: min(24rem, 82vw);
   pointer-events: auto;
-  padding: 0.8rem 1rem 0.7rem;
+  padding: 1rem 1.125rem 0.875rem;
 }
 /* sem alvo na tela: o cartão fica no meio, sozinho */
 .spotlight-cartao.solto {
@@ -335,41 +335,60 @@
   transform: translate(-50%, -50%);
 }
 .convite-texto {
-  margin: 0 0 0.7rem;
-  font-size: 0.82rem;
-  font-weight: 300;
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 400;
   line-height: 1.5;
+  color: var(--texto);
 }
 .convite-linha {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.5rem;
 }
 .convite-conta {
+  white-space: nowrap;
   margin-right: auto;
-  font-size: 0.54rem;
-  letter-spacing: 0.28em;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(200, 214, 235, 0.55);
+  color: var(--texto-2);
 }
 .convite-linha button {
-  padding: 0.24rem 0.7rem;
-  border: 1px solid rgba(220, 230, 248, 0.28);
-  background: none;
-  color: rgba(200, 214, 235, 0.8);
-  font: inherit;
-  font-size: 0.6rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  min-height: 2.75rem;
   cursor: pointer;
-  transition: border-color 0.25s ease, color 0.25s ease;
+  padding: 0 0.9rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-controle);
+  background: transparent;
+  color: var(--texto);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: background var(--t-rapido) var(--curva), border-color var(--t-rapido) var(--curva);
+}
+/* o dicionário guarda os rótulos em minúsculas ("pular", "continuar",
+   "entendi"); a maiúscula inicial é só cosmética, por CSS. */
+.convite-linha button::first-letter {
+  text-transform: uppercase;
 }
 .convite-linha button:hover {
-  border-color: rgba(255, 214, 150, 0.6);
-  color: rgba(235, 240, 250, 0.95);
+  background: var(--hover);
+  border-color: var(--borda-forte);
+}
+.convite-linha button:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
 }
 .convite-linha .convite-adiante {
-  border-color: rgba(255, 214, 150, 0.45);
-  color: rgba(255, 224, 180, 0.92);
+  border-color: var(--acento);
+  color: var(--acento);
+  background: var(--acento-fundo);
+}
+.convite-linha .convite-adiante:hover {
+  color: var(--texto);
+  border-color: var(--acento);
 }
 

@@ -281,7 +281,12 @@
    outros quatro painéis entram no Lote 2b. */
 .hud-cabecalho {
   position: sticky;
-  top: 0;
+  /* O "preso" mede a partir da caixa de CONTEÚDO do rolo (o Chrome desconta
+     o padding do diálogo): com `top: 0` o cabeçalho descia um `--pad-painel`
+     abaixo da posição de fluxo e cobria a primeira linha do corpo (o eyebrow
+     das Camadas e do Tempo, Lote 7). O `top` negativo devolve-o ao topo do
+     cartão, onde a margem negativa já o punha. */
+  top: calc(-1 * var(--pad-painel));
   z-index: 1;
   margin: calc(-1 * var(--pad-painel)) calc(-1 * var(--pad-painel)) 0.7rem;
   padding: var(--pad-painel) var(--pad-painel) 0;

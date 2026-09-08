@@ -190,9 +190,10 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.ligados': 'On',
   'ajustes.convite': 'Walkthrough',
   'ajustes.conviteNota': 'The three free-flight gestures, pointed out on screen.',
-  'ajustes.reverConvite': 'see the walkthrough again',
-  'ajustes.copiado': 'copied',
-  'ajustes.copiarLink': 'copy a link to this moment',
+  'ajustes.reverConvite': 'See the walkthrough again',
+  'ajustes.copiado': 'Copied ✓',
+  'ajustes.copiarLink': 'Copy a link to this moment',
+  'ajustes.copiaFalhou': "Couldn't copy automatically. Copy the address:",
 
   // ---- the layer drawer and the seal -------------------------------
   'atlas.camadasAria': 'Scene layers',

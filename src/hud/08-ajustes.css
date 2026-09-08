@@ -31,16 +31,11 @@
 /* O ÚNICO `<h3>` que sobrou no corpo do painel (a gaveta Avançado, que
    agrupa cinco linhas) — o resto virou `.ajustes-item` direto, porque
    um título acima de UMA linha só repetiria o próprio rótulo dela.
-   Inter 500, caixa normal (Lote 2b: "controles"), não mais eyebrow —
-   ela agrupa CINCO linhas de controle, não é a classe do alvo. */
-.ajustes-titulo-secao {
-  margin: 0.9rem 0 0.1rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--texto-2);
-}
+   MESMA ANATOMIA do título de seção da ficha (Lote 7) — recolhível,
+   fechada por padrão: o `<h3>` só hospeda o botão, e a pele (serifa
+   17 px, filete embaixo, chevron) vem de `.atlas-ficha-titulo button`
+   em `04-atlas.css`, que estende o seletor para `.ajustes-titulo-secao
+   button` também — sem duplicar regra. */
 
 /* ---- A LINHA — o átomo do redesenho ---------------------------------
    Rótulo (+ "?") à esquerda, controle à direita — o controle com 15rem
@@ -89,29 +84,11 @@
   align-items: center;
   gap: 0.5rem;
   justify-content: flex-end;
-  /* 15rem fixos (era a coluna 2 da grade) + empurrado para a ponta da
-     linha (era a coluna 2 da grade cedendo a 1fr da coluna 1 — agora
-     que a linha é flex com o rótulo em `display: contents`, o
-     `margin-left: auto` faz o mesmo trabalho). */
-  flex: 0 0 15rem;
+  /* LARGURA NATURAL, encostada à direita (Lote 7) — só o slider de
+     exposição pede um tamanho fixo (regra própria, abaixo); os demais
+     controles (segmentado, par de idioma) ocupam só o que precisam. */
+  flex: 0 1 auto;
   margin-left: auto;
-}
-.ajustes-controle .ajustes-seg {
-  /* preenche a coluna fixa — inclusive o par de idioma, que antes do
-     polimento sobrava do lado esquerdo do controle */
-  width: 100%;
-}
-.ajustes-controle .ajustes-copiar {
-  /* dentro de uma linha o botão some do tamanho do painel inteiro; fora
-     dela (a linha de ação, no fim) ele continua ocupando tudo */
-  width: auto;
-}
-
-/* A LINHA DE AÇÃO — copiar link, sem rótulo: é a própria ação, e o
-   botão preenche a linha porque é o ÚNICO item dela (sem `.ajustes-
-   rotulo-caixa`, sem `.ajustes-controle`). */
-.ajustes-item-acao .ajustes-copiar {
-  width: 100%;
 }
 
 /* ---- O "?" DE AJUDA e a dica (contrato do §8, redesenho Lote 2a) -----
@@ -249,12 +226,15 @@
 }
 
 /* ---- O SLIDER DE EXPOSIÇÃO -------------------------------------------
-   Único controle que não é segmentado: a faixa cresce, o número fica
-   parado do lado direito, tabular para não empurrar o traço a cada
-   dígito. */
+   Único controle que não é segmentado: 15rem fixos (Lote 7 — os demais
+   controles passaram a largura natural, mas a faixa de arrastar precisa
+   de espaço), o número fica parado do lado direito, tabular para não
+   empurrar o traço a cada dígito. `flex-basis` some de propósito: com
+   ela ausente, `width` decide o tamanho também na tela estreita, onde
+   `.ajustes-controle input[type='range']` (abaixo) o leva a 100%. */
 .ajustes-item input[type='range'] {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
+  width: 15rem;
   accent-color: var(--acento);
   cursor: pointer;
 }
@@ -271,11 +251,11 @@
    "Qualidade", pequena e à direita: é o único texto do painel que muda
    sozinho, e não é rótulo de controle nenhum. */
 .ajustes-medida {
-  margin: -0.15rem 0 0.35rem;
-  text-align: right;
-  font-size: 0.6rem;
-  line-height: 1.4;
-  color: var(--texto-3);
+  margin: 0 0 0.75rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--texto-2);
 }
 .ajustes-medida em {
   font-style: normal;
@@ -297,7 +277,10 @@
   max-width: 100%;
 }
 .ajustes-seg button {
-  flex: 1;
+  /* largura pelo CONTEÚDO mais a sobra em partes iguais (Lote 7): com
+     `flex: 1` os quatro nomes da qualidade viravam quatro caixas iguais e
+     "Performance" saía cortado. */
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -385,6 +368,34 @@
   outline-offset: 2px;
 }
 
+/* OS DOIS BOTÕES DE AÇÃO (Lote 7) — "Rever o convite" (quando presente)
+   e "Copiar link deste instante", empilhados em largura cheia, sem
+   filete entre eles: cada um já é a própria ação, mesma anatomia de
+   `.ajustes-copiar`. Substitui a antiga `.ajustes-item-acao`, que dava
+   esse tratamento só ao botão de copiar. */
+.ajustes-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.ajustes-acoes .ajustes-copiar {
+  width: 100%;
+}
+/* "Rever o convite" leva o "?" ao lado (a nota do convite continua
+   acessível — nada some); a linha é um `.ajustes-item` só para a dica
+   virar bloco embaixo, sem o filete nem a altura mínima da fileira. */
+.ajustes-acao {
+  gap: 0.35rem;
+  min-height: 0;
+  padding: 0;
+  border-bottom: none;
+}
+.ajustes-acao .ajustes-copiar {
+  flex: 1 1 auto;
+  width: auto;
+}
+
 /* ---- TELA ESTREITA — a linha quebra em duas: rótulo em cima, controle
    embaixo ocupando a largura toda. O painel vira folha de baixo a
    partir daqui (fatia 9); esta regra só decide a FILEIRA por dentro
@@ -404,11 +415,47 @@
   }
 }
 
-/* A LINHA LARGA: a qualidade é o ajuste-título e tem quatro nomes longos
-   (PERFORMANCE não cabe na coluna fixa sem reticência) — o controle
-   ocupa a largura toda, abaixo do rótulo, como um menu de jogo faz com o
-   seletor principal. */
-.ajustes-item--largo .ajustes-controle {
-  flex-basis: 100%;
-  margin-left: 0;
+/* A FALHA DO CLIPBOARD (§9) — promessa rejeitada ou sem
+   `navigator.clipboard`: o aviso e o campo somente-leitura aparecem
+   logo abaixo dos botões, com a URL já selecionada (foco por
+   `useEffect`, `Ajustes.tsx`). */
+.ajustes-aviso-falha {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--erro);
+  margin-top: 0.75rem;
+}
+.ajustes-campo-leitura {
+  width: 100%;
+  min-height: 2.75rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--texto);
+  background: transparent;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-controle);
+  padding: 0 0.75rem;
+  margin-top: 0.5rem;
+}
+.ajustes-campo-leitura:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* O ESTADO DE SUCESSO ("Copiado ✓") — sempre presente logo abaixo dos
+   botões (vazio fora do sucesso), para o leitor de tela anunciar a
+   troca; o rótulo do botão não muda mais. */
+.ajustes-copiar-estado {
+  font-size: 0.8125rem;
+  color: var(--texto-2);
+  min-height: 1.25rem;
+  margin: 0.5rem 0 0;
+}
+/* vazio (fora do "Copiado ✓") não reserva altura: a região viva existe,
+   mas não empurra o painel para rolar por um espaço em branco. */
+.ajustes-copiar-estado:empty {
+  min-height: 0;
+  margin: 0;
 }

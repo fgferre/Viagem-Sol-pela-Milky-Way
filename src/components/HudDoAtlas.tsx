@@ -124,14 +124,6 @@ export function GavetaDeCamadas({
               return (
                 <label key={c.flag} className="atlas-gaveta-linha">
                   <span className="atlas-gaveta-rotulo-caixa">
-                    {/* o ícone é ornamento do rótulo que vem logo ao lado:
-                        quem ouve a tela já recebe o nome, e ouvir
-                        "asterisco" antes dele seria ruído. A coluna fica
-                        mesmo sem glifo — é ela que alinha os nomes da
-                        família uns com os outros. */}
-                    <span className="atlas-gaveta-icone" aria-hidden="true">
-                      {c.icone ?? ''}
-                    </span>
                     <span className="atlas-gaveta-nome">{c.nome}</span>
                     <Ajuda
                       id={c.flag}

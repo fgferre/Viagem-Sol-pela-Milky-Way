@@ -439,7 +439,8 @@
 .atlas-ficha-secao + .atlas-ficha-secao {
   margin-top: 0.7rem;
 }
-.atlas-ficha-titulo {
+.atlas-ficha-titulo,
+.ajustes-titulo-secao {
   margin: 0 0 0.3rem;
   /* o `h3` traz tamanho e peso do navegador; os dois são zerados aqui, e o
      tamanho em `rem` porque o HUD inteiro reage ao `?ui=` (uiScale.test.ts
@@ -452,7 +453,8 @@
    dos painéis, não mais eyebrow em caixa alta. O chevron troca de
    sentido com o estado (`<Icone>`, direita fechado / baixo aberto),
    nunca gira — a régua do componente. */
-.atlas-ficha-titulo button {
+.atlas-ficha-titulo button,
+.ajustes-titulo-secao button {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -472,17 +474,20 @@
   color: var(--texto);
   transition: color var(--t-rapido) var(--curva);
 }
-.atlas-ficha-titulo button:hover {
+.atlas-ficha-titulo button:hover,
+.ajustes-titulo-secao button:hover {
   color: var(--acento);
 }
 /* O TÍTULO VEM MINÚSCULO DO DICIONÁRIO ("agora", "no céu"…) — a pele
    anterior o levava a caixa alta por CSS; a pele B lê frase normal
    ("Agora", "No céu"), então só a PRIMEIRA letra sobe, e nenhuma
    string do dicionário muda (item 3, "nenhum texto novo"). */
-.atlas-ficha-titulo button > span:first-child::first-letter {
+.atlas-ficha-titulo button > span:first-child::first-letter,
+.ajustes-titulo-secao button > span:first-child::first-letter {
   text-transform: uppercase;
 }
-.atlas-ficha-titulo button:focus-visible {
+.atlas-ficha-titulo button:focus-visible,
+.ajustes-titulo-secao button:focus-visible {
   outline: 2px solid var(--foco);
   outline-offset: 2px;
 }
@@ -592,8 +597,8 @@
 }
 /* A LINHA LARGA (redesenho, 06/09) — texto longo (frases, listas de
    catálogo) não cabe nos 60% de `dd` sem virar uma coluna de uma palavra;
-   uma coluna só faz o valor descer para debaixo do rótulo, como a
-   `.ajustes-item--largo` da Qualidade. O componente decide (mais de ~24
+   uma coluna só faz o valor descer para debaixo do rótulo, como uma
+   linha de Ajustes faz quando o controle não cabe ao lado. O componente decide (mais de ~24
    caracteres), o CSS só muda a grade. */
 .atlas-ficha-linha.larga {
   grid-template-columns: 1fr;
@@ -1064,7 +1069,6 @@
 .atlas-gaveta .atlas-tempo-botoes {
   flex-direction: column;
   align-items: stretch;
-  gap: 0.5rem;
   margin-top: 0.5rem;
   width: 100%;
 }
@@ -1083,6 +1087,16 @@
   align-items: center;
   column-gap: 0.8rem;
   width: 100%;
+  /* LINHA ≥ 44 px, no molde de `.atlas-gaveta-linha`/`.ajustes-item`. */
+  min-height: 2.75rem;
+  padding: 0.2rem 0;
+}
+/* FILETE ENTRE AS TRÊS LINHAS (maquete `m10-cel-tempo-pele-b.png`, Lote
+   7) — mesma régua de `.atlas-gaveta-linha`: no topo de toda linha
+   menos a primeira, que encosta no filete da data (`.atlas-gaveta
+   .atlas-tempo-linha`, acima). */
+.atlas-tempo-grupo + .atlas-tempo-grupo {
+  border-top: 1px solid var(--borda);
 }
 .atlas-tempo-rotulo {
   font-size: 0.875rem;
@@ -1146,7 +1160,7 @@
    que alguma coisa daquela escala está desligada. Mesmo vocabulário do
    `.atlas-gaveta-topo`: caixa alta, espaçada, fria. */
 .atlas-gaveta-familia + .atlas-gaveta-familia {
-  margin-top: 0.7rem;
+  margin-top: 1.25rem;
 }
 /* O TÍTULO DA FAMÍLIA é o eyebrow do grupo (item 3: caixa alta 11 px,
    0,12 em, `--texto-2`) — a régua comum de todo eyebrow da casa (§4);
@@ -1190,11 +1204,14 @@
   /* LINHA ≥ 44 px (Lote 2b, item 3: "Linhas de Camadas ≥ 44 px") */
   min-height: 2.75rem;
   padding: 0.2rem 0;
-  border-bottom: 1px solid var(--borda);
   cursor: pointer;
 }
-.atlas-gaveta-familia .atlas-gaveta-linha:last-child {
-  border-bottom: none;
+/* FILETE ENTRE LINHAS (maquete `m9-camadas-pele-b.png`, Lote 7): no topo
+   de toda linha menos a primeira da família — a primeira encosta no
+   filete do título (`.atlas-gaveta-titulo`, acima) e não precisa de um
+   segundo. */
+.atlas-gaveta-familia .atlas-gaveta-linha + .atlas-gaveta-linha {
+  border-top: 1px solid var(--borda);
 }
 .atlas-gaveta-rotulo-caixa {
   display: contents;
@@ -1209,17 +1226,6 @@
   white-space: nowrap;
   color: var(--texto);
 }
-/* A COLUNA DO GLIFO existe em TODA linha, com ou sem glifo: nove das
-   vinte têm ícone (quem conta é `atlasConfig.test.ts`), e sem a coluna
-   reservada os nomes da mesma família começariam em dois recuos
-   diferentes. `flex: 0 0 auto` para a célula vazia não encolher a zero. */
-.atlas-gaveta-icone {
-  flex: 0 0 auto;
-  width: 1.1rem;
-  text-align: center;
-  color: var(--acento);
-}
-
 /* O INTERRUPTOR — o `<input type="checkbox">` de sempre (o juiz de a11y
    conta as vinte caixas e o teclado/espaço continuam funcionando: só a
    PELE muda), desenhado como pílula no molde do segmento ligado de

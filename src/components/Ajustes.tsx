@@ -47,7 +47,7 @@
 // brilho, e com o estado aqui dentro o selo dizendo "voltei ao real"
 // deixava o slider mostrando o valor antigo. Um estado, um dono.
 // ============================================================
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useDialogFocus } from '../lib/dialogFocus';
 import { IDIOMAS, definirIdioma, t } from '../lib/idioma';
@@ -56,6 +56,7 @@ import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
 import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
+import { Icone } from './Icone';
 import { Segmentado } from './Segmentado';
 import { DEGRAUS_DA_UI, rotuloDaEscala } from '../lib/uiScale';
 import {
@@ -171,7 +172,6 @@ const PARTICULAS: { valor: ParticulasDaGalaxia | null; nome: () => string }[] = 
 function LinhaDeAjuste({
   id,
   rotulo,
-  largo,
   dica,
   dicaPresa,
   onAlternarDica,
@@ -179,8 +179,6 @@ function LinhaDeAjuste({
 }: {
   id: string;
   rotulo: string;
-  /** o controle ocupa a largura toda, abaixo do rótulo (a qualidade) */
-  largo?: boolean;
   dica?: ReactNode;
   dicaPresa: string | null;
   onAlternarDica: (id: string) => void;
@@ -188,7 +186,7 @@ function LinhaDeAjuste({
 }) {
   const presa = dicaPresa === id;
   return (
-    <div className={'ajustes-item' + (largo ? ' ajustes-item--largo' : '')}>
+    <div className="ajustes-item">
       <span className="ajustes-rotulo-caixa">
         <span className="ajustes-rotulo">{rotulo}</span>
         {dica != null && (
@@ -265,6 +263,13 @@ export function Ajustes({
   celular?: boolean;
 }) {
   const [copiado, setCopiado] = useState(false);
+  // "AVANÇADO" RECOLHÍVEL (Lote 7) — fechado por padrão, sem persistir;
+  // mesma anatomia do título de seção da ficha (`FichaDoObjeto.tsx`).
+  const [avancadoAberto, setAvancadoAberto] = useState(false);
+  // A FALHA DO CLIPBOARD (§9) — `null` é "sem falha"; enquanto houver uma
+  // URL aqui, o campo somente-leitura fica visível logo abaixo dos botões.
+  const [urlSemCopia, setUrlSemCopia] = useState<string | null>(null);
+  const campoSemCopiaRef = useRef<HTMLInputElement>(null);
   const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
   const idioma = useIdioma();
 
@@ -284,6 +289,37 @@ export function Ajustes({
   // só existe no seletor.
   const presetVivo = PRESETS[qualidade.tier];
   const amostrasEfetivas = AMOSTRAS_POR_TIER[qualidade.tier];
+
+  // AO APARECER, o campo da falha recebe foco com a URL selecionada — quem
+  // não conseguiu copiar automaticamente já sai com o texto pronto para
+  // Ctrl+C (§9).
+  useEffect(() => {
+    if (urlSemCopia != null) {
+      campoSemCopiaRef.current?.focus();
+      campoSemCopiaRef.current?.select();
+    }
+  }, [urlSemCopia]);
+
+  // COPIAR LINK (§9) — `urlParaCopiar` não muda; sucesso mostra "Copiado ✓"
+  // por 1,5 s (o rótulo do botão não muda mais), falha (promessa rejeitada
+  // ou sem `navigator.clipboard`) guarda a URL para o campo de leitura. Um
+  // novo clique sempre limpa a falha antes de tentar de novo.
+  function aoClicarCopiarLink() {
+    setUrlSemCopia(null);
+    const url = urlParaCopiar();
+    const falha = () => setUrlSemCopia(url);
+    if (!navigator.clipboard?.writeText) {
+      falha();
+      return;
+    }
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        setCopiado(true);
+        setTimeout(() => setCopiado(false), 1500);
+      })
+      .catch(falha);
+  }
 
   if (!aberto) return null;
 
@@ -386,7 +422,6 @@ export function Ajustes({
 
       <LinhaDeAjuste
         id="qualidade"
-        largo
         rotulo={t('ajustes.qualidade')}
         dica={t('ajustes.qualidadeNota')}
         dicaPresa={dicaPresa}
@@ -419,8 +454,30 @@ export function Ajustes({
           acima, e um controle a três rolagens dela mediria memória em
           vez de desempenho. É o ÚNICO `<h3>` que sobrou no corpo do
           painel: agrupa CINCO linhas, e é aí que um título continua
-          sendo economia, não repetição. */}
-      <h3 className="ajustes-titulo-secao">{t('ajustes.avancado')}</h3>
+          sendo economia, não repetição.
+
+          RECOLHÍVEL, FECHADA POR PADRÃO (Lote 7) — mesma anatomia do
+          título de seção da ficha (`FichaDoObjeto.tsx`): o `<h3>` só
+          hospeda o botão, que carrega `aria-expanded`/`aria-controls` e
+          o chevron que troca de sentido. Abrir/recolher não chama
+          nenhum handler de valor; o `.efetivo` de cada segmento
+          continua respondendo ao PRESET vivo, escondido ou não. */}
+      <h3 className="ajustes-titulo-secao">
+        <button
+          type="button"
+          aria-expanded={avancadoAberto}
+          aria-controls="ajustes-avancado"
+          onClick={() => setAvancadoAberto((v) => !v)}
+        >
+          <span>{t('ajustes.avancado')}</span>
+          <span className="atlas-ficha-seta" aria-hidden="true">
+            <Icone nome={avancadoAberto ? 'chevronBaixo' : 'chevronDireita'} tamanho={16} />
+          </span>
+        </button>
+      </h3>
+
+      {avancadoAberto && (
+      <div id="ajustes-avancado">
 
       <LinhaDeAjuste
         id="msaa"
@@ -527,6 +584,9 @@ export function Ajustes({
         />
       </LinhaDeAjuste>
 
+      </div>
+      )}
+
       <LinhaDeAjuste
         id="texto"
         rotulo={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
@@ -560,34 +620,50 @@ export function Ajustes({
         />
       </LinhaDeAjuste>
 
-      {onReverConvite && (
-        <LinhaDeAjuste
-          id="convite"
-          rotulo={t('ajustes.convite')}
-          dica={t('ajustes.conviteNota')}
-          dicaPresa={dicaPresa}
-          onAlternarDica={alternarDica}
-        >
-          <button type="button" className="ajustes-copiar" onClick={onReverConvite}>
-            {t('ajustes.reverConvite')}
-          </button>
-        </LinhaDeAjuste>
-      )}
-
-      <div className="ajustes-item ajustes-item-acao">
-        <button
-          type="button"
-          className="ajustes-copiar"
-          onClick={() => {
-            void navigator.clipboard.writeText(urlParaCopiar()).then(() => {
-              setCopiado(true);
-              setTimeout(() => setCopiado(false), 1500);
-            });
-          }}
-        >
-          {t(copiado ? 'ajustes.copiado' : 'ajustes.copiarLink')}
+      {/* OS DOIS BOTÕES DE AÇÃO (Lote 7) — largura cheia, empilhados, sem
+          rótulo; "rever o convite" só existe no voo livre (`onReverConvite`
+          ausente fora dele) e conserva o "?" com a nota do convite. */}
+      <div className="ajustes-acoes">
+        {onReverConvite && (
+          <div className="ajustes-item ajustes-acao">
+            <button type="button" className="ajustes-copiar" onClick={onReverConvite}>
+              {t('ajustes.reverConvite')}
+            </button>
+            <Ajuda
+              id="convite"
+              rotulo={t('ajustes.convite')}
+              texto={t('ajustes.conviteNota')}
+              presa={dicaPresa === 'convite'}
+              onAlternar={() => alternarDica('convite')}
+            />
+          </div>
+        )}
+        <button type="button" className="ajustes-copiar" onClick={aoClicarCopiarLink}>
+          {t('ajustes.copiarLink')}
         </button>
       </div>
+      {/* ESTADO SEMPRE PRESENTE (§9) — vazio fora do sucesso, só para o
+          leitor de tela anunciar a troca quando "Copiado ✓" aparece. */}
+      <p className="ajustes-copiar-estado" role="status" aria-live="polite">
+        {copiado ? t('ajustes.copiado') : ''}
+      </p>
+      {urlSemCopia != null && (
+        <>
+          <div className="ajustes-aviso-falha" role="alert">
+            <Icone nome="alerta" tamanho={16} />
+            <span>{t('ajustes.copiaFalhou')}</span>
+          </div>
+          <input
+            ref={campoSemCopiaRef}
+            className="ajustes-campo-leitura"
+            type="text"
+            readOnly
+            value={urlSemCopia}
+            aria-label={t('ajustes.copiarLink')}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+        </>
+      )}
     </div>
   );
 }
