@@ -30,9 +30,12 @@ import { dorme, esperarPor } from './chrome.mjs';
 /** os aparelhos que este juiz abre — o comum e o pequeno */
 const APARELHOS = [[390, 844], [320, 568]];
 
-/** a fileira do pé, na ordem do mockup; a ficha é a quinta, com seleção */
-const ALCAS_SEM_SELECAO = ['busca', 'camadas', 'tempo', 'ajustes'];
-const ALCAS_COM_SELECAO = [...ALCAS_SEM_SELECAO, 'ficha'];
+/** a fileira do pé, na ordem do mockup; a ficha é a quinta — SEMPRE na
+ * fileira, e apagada (`disabled`, sem `data-abre-dialogo`, logo `null`)
+ * enquanto não há seleção (Lote 9, pedido do dono: "no celular, a alça
+ * Ficha fica esmaecida sem alvo, como na mesa") */
+const ALCAS_COM_SELECAO = ['busca', 'camadas', 'tempo', 'ajustes', 'ficha'];
+const ALCAS_SEM_SELECAO = [...ALCAS_COM_SELECAO.slice(0, -1), null];
 
 /**
  * O QUE A TELA DO TELEFONE DIZ DE SI — uma leitura só, porque as
@@ -54,6 +57,7 @@ const MEDIR_CELULAR = `(() => {
     const r = b.getBoundingClientRect();
     return {
       nome: b.getAttribute('data-abre-dialogo'),
+      apagada: b.disabled,
       rotulo: b.textContent.trim(),
       topo: Math.round(r.top),
       alto: r.height,
@@ -300,13 +304,14 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
       ['atlas=1', ALCAS_SEM_SELECAO],
       ['foco=marte', ALCAS_COM_SELECAO],
     ]) {
+      const comSelecao = esperadas.at(-1) === 'ficha';
       await vestirAparelho(s, ...APARELHOS[0]);
       if (!bootou) {
         await s.ir(`${query}&ui=${fator}&${PIN}`);
         bootou = true;
       } else {
         await trocarUiAoVivo(s, fator);
-        if (esperadas.length === 5) {
+        if (comSelecao) {
           await s.js("window.__director.focarNoCorpo('mars')");
           await s.assentar();
         } else {
@@ -317,15 +322,23 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
         await vestirAparelho(s, w, h);
         await dorme(200);
         const m = await s.js(MEDIR_CELULAR);
-        const onde = `${w}×${h}, ui = ${fator}, ${esperadas.length === 5 ? 'com' : 'sem'} seleção`;
+        const onde = `${w}×${h}, ui = ${fator}, ${comSelecao ? 'com' : 'sem'} seleção`;
         conferir(
           JSON.stringify(m.alcas.map((a) => a.nome)) === JSON.stringify(esperadas),
           `alças (${onde}): ${m.alcas.length} na fileira, na ordem do mockup`
             + ` — ${m.alcas.map((a) => a.rotulo).join(' · ') || 'NENHUMA'}`
         );
+        // A QUINTA SEM ALVO É APAGADA (Lote 9): está na fileira,
+        // `disabled`, e por isso NÃO se declara com data-abre-dialogo —
+        // não abre nada. As outras quatro, e a ficha com alvo, seguem se
+        // declarando; a fileira tem cinco lugares nos dois estados.
         conferir(
-          m.alcas.length > 0 && m.alcas.every((a) => a.nome),
-          `alças (${onde}): todas se declaram com data-abre-dialogo`
+          m.alcas.length > 0 && m.alcas.every((a) => a.nome || a.apagada),
+          `alças (${onde}): todas se declaram com data-abre-dialogo (menos a apagada)`
+        );
+        conferir(
+          m.alcas.length === 5 && m.alcas[4].apagada === !comSelecao,
+          `alças (${onde}): a quinta (Ficha) ${comSelecao ? 'ATIVA com alvo' : 'APAGADA sem alvo'}`
         );
         conferir(
           m.linhas === 1 && m.dentro,

@@ -311,11 +311,13 @@ export function BarraOuAlcas({
       onAlternar={() => alternarGaveta('ficha')}
     />
   ) : (
-    // SÓ NA RÉGUA (Lote 4½) a ausência de alvo desenha algo: a aba
-    // desabilitada dá à ficha um lugar fixo ali. Na barra do
-    // filme/voo livre e na fileira do celular `regua` é falso e o
-    // resultado é o de sempre — nada.
-    regua && <BotaoDaFicha nome={null} />
+    // SEM ALVO a ficha ainda tem lugar fixo: a aba apagada da régua
+    // (Lote 4½) e, desde o Lote 9 (pedido do dono: "no celular, a alça
+    // Ficha fica esmaecida sem alvo, como na mesa"), a quinta alça do
+    // telefone, apagada — a fileira deixa de mudar de tamanho ao
+    // escolher um alvo. Na barra do filme/voo livre `regua` e `alcas`
+    // são falsos e o resultado é o de sempre — nada (não há seleção lá).
+    (regua || alcas) && <BotaoDaFicha nome={null} />
   );
 
   // A MARCA + A LINHA DE CONTEXTO (Lote 4, item 2/§3.2) — só no Atlas de
@@ -572,7 +574,8 @@ export function BarraOuAlcas({
       (`> *:not(.scene-canvas)`) que a apaga no `?shot=2`, e ela só
       alcança filhos diretos.
       A ORDEM é a do mockup: buscar, camadas, tempo, ajustes — e a
-      ficha como QUINTA, só com seleção. Uma linha que nunca quebra
+      ficha como QUINTA, sempre presente e apagada sem seleção (Lote 9,
+      pedido do dono). Uma linha que nunca quebra
       (fatia 9): quebrar em duas mudaria a base declarada e moveria a
       câmera no meio da sessão. */}
   {alcas && (

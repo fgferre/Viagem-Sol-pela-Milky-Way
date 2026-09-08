@@ -125,6 +125,14 @@
     border-top-color: var(--acento);
     color: var(--acento);
   }
+  /* SEM ALVO (Lote 9, pedido do dono: "no celular, a alça Ficha fica
+     esmaecida sem alvo, como na mesa"): a quinta alça nasce sempre e só
+     apaga — a fileira não muda de tamanho ao escolher um alvo. A mesma
+     tinta da aba apagada da régua de mesa (`04-atlas.css`). */
+  .atlas-alcas > .hud-btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
   /* O ÍCONE (item 7): `calc(20px * min(var(--ui), 1.2))` — cresce com o
      texto ampliado até 1,2×, e para aí: acima disso o ícone competiria
      por altura com o rótulo dentro dos mesmos 4rem. `min()`/`calc()` em

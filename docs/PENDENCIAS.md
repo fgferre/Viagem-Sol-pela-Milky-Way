@@ -140,6 +140,27 @@ some. Registrado para o Lote 9 nas palavras combinadas: *"no celular, a alça
 Ficha fica esmaecida sem alvo, como na mesa"*. Tudo commitado e em
 `main:backup`; servidor parado. Servidor: `npm run dev`.
 
+**08/09 (rodada da VERIFICAÇÃO FINAL — Lote 9, conversa nova).** Palavras
+dele: *"vamos continuar de onde paramos"*. Feito e commitado: no celular a
+alça Ficha agora fica sempre na fileira, apagada quando não há objeto
+escolhido (o pedido dele ao fechar o Lote 8) — a fileira não muda mais de
+tamanho ao escolher, e o juiz do celular aprendeu a regra. A verificação
+final do plano: a matriz de preservação (§13 do `PLAN-UI.md`, 117 linhas,
+comparando o código de antes do redesenho com o de hoje) não achou nada que
+sumiu — as nove mudanças são decisões dos lotes, com o mesmo comportamento
+por baixo; PT e EN têm as mesmas 478 chaves; juízes verdes (o do Atlas com
+as mesmas 7 falhas antigas de nomes e décadas); `npm run done` verde; 26
+fotos em `capturas/lote9-*-v2.png` (mesa, celular, EN, texto a 85 % e 140 %,
+sem animação, sem HUD, 1200, 760/761, paisagem, 320 com texto grande),
+revistas uma a uma. **O plano da interface está concluído.** Ficam para ele
+decidir: apagar os arquivos de maquete de `capturas/maquetes/` (os PNG
+ficam); a lista de juízes novos (clique de verdade em cada controle; falha
+do copiar mostra o campo; Esc com dica presa; cartões de destino; os 34
+recursos sem prova automática); o destino do `PLAN-UI.md`; e os itens de
+gosto do backlog (Ajustes rola 25 px a 1440×900; títulos das legendas em
+caixa alta; barra do filme no celular em duas fileiras; parar antes do
+centro da galáxia). Backup em `main:backup`. Servidor: `npm run dev`.
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar

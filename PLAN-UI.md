@@ -364,10 +364,234 @@ Regras gerais: um lote = um trabalhador Sonnet (a sessão principal planeja, rev
 ### Lote 9 — Verificação final e encerramento
 - **Pedido do dono (08/09, ao fechar o Lote 8):** *"no celular, a alça Ficha fica esmaecida sem alvo, como na mesa"* — hoje a quinta alça só nasce com alvo (`BarraOuAlcas.tsx`, `portaDaFicha`: sem `regua` o resultado é nada); passa a nascer sempre, apagada sem alvo, como `BotaoDaFicha nome={null}` já faz na régua. A fileira deixa de mudar de tamanho ao escolher um alvo; o juiz `a11y.mjs` que conta as alças ("5 na fileira" com alvo) aprende a regra nova (5 sempre; a quinta desabilitada sem alvo). Filme e voo livre não mudam (não há seleção lá).
 - Matriz de preservação (§13) preenchida a partir do inventário do Lote 0; provas visuais do §14; `npm run done`; EN e PT; `ui` 0,85 e 1,4; revisão da sessão principal olhando as imagens antes de dizer "pronto"; `BACKLOG.md` recebe o que ficou de fora (uma linha cada); apagar maquetes temporárias só depois de guardar os PNG; nunca apagar provas anteriores; propor ao dono a lista de juízes/testes novos para aprovação (AGENTS.md).
+- **FEITO (08/09):** a quinta alça do celular nasce sempre e fica apagada sem alvo (`BarraOuAlcas.tsx`: `(regua || alcas) && <BotaoDaFicha nome={null} />`; tinta em `09-celular.css`, a mesma da aba apagada da régua); o juiz `a11y-celular.mjs` (a perna do celular do `a11y.mjs`) espera 5 alças nos dois estados e cobra "a quinta (Ficha) APAGADA sem alvo / ATIVA com alvo" (12 provas novas, verdes). Matriz do §13 preenchida abaixo (117 linhas, a partir do commit `450d1ad` — o inventário do Lote 0, `capturas/inventario-ui-2026-09-07.md`, nunca foi gravado; a matriz saiu direto da comparação das duas árvores): nenhum "NÃO ACHEI", 9 "MUDOU" (todos decisões dos lotes, mesmo handler por baixo), 1 chave de dicionário removida sem substituta (`hud.duracao`, decisão do Lote 8), 478 chaves em PT e em EN (paridade imposta pelo tipo `Record<keyof typeof PT, string>`), 34 recursos sem prova automática (linha no BACKLOG). Juízes: a11y (com a perna do celular), busca, filme e voo verdes; atlas-smoke só com as 7 falhas antigas do BACKLOG (nomes e décadas). `npm run done` verde (94 arquivos, 2924 testes). 26 fotos em `capturas/lote9-*-v2.png` (as v1 são a mesma rodada com o convite de primeira visita na frente): 1440×900 PT/EN/`ui` 0,85/`ui` 1,4/`prefers-reduced-motion`/`shot=2`, 1200×900, 760 e 761 (troca de arranjo), 844×390, 390×844 PT/EN, 320×568 com `ui` 1,4 — revistas pela sessão principal (alça apagada, ficha de mesa e de celular, busca com destinos, filme, escala 1,4, fronteira 760/761, paisagem). Ficou para o dono: apagar os arquivos de maquete de `capturas/maquetes/` (os PNG ficam); a lista de juízes novos (as três do §14, "clique de verdade em cada controle visível" e as provas dos 34 recursos sem prova automática); o destino deste arquivo; e as decisões de gosto que já estão no BACKLOG (Ajustes rola ~25 px a 1440×900, títulos das legendas em caixa alta, barra do filme do celular em duas fileiras, parar antes do centro da galáxia).
 
 ## 13. Preservação — inventário e matriz
 
-Matriz obrigatória (uma linha por recurso): **recurso → onde estava → onde está → callback preservado → como foi verificado**. Cobre, no mínimo: entradas e transições dos três modos (inclusive Retomar × Reviver); todos os controles do filme (pausa, velocidade, capítulos, Ver a galáxia, legendas, encerramento); busca (apelidos, catálogo, lugares, limites por toque/teclado, atalhos); navegação (aproximar, Sistema, bússola, zoom pinado, pinça, órbita como pega, clique no nome); fichas (todas as seções, relevo inventado, `role="status"`); máquina do tempo (sentidos, pausa, velocidade, época, avisos); 19 camadas em 3 famílias; presets e os cinco controles avançados com `Preset`; idioma, escala do texto, rótulos 3D, rever convite; selo e procedência; copiar link; carregamento e recuperação de falha; `?shot=`, `?foco=`, `?jd=`, `?t=`, `?ui=`, `?ajustes=`; Esc, Tab, foco, `aria-live`.
+Matriz obrigatória (uma linha por recurso): **recurso → onde estava → onde está → callback preservado → como foi verificado**. Cobre, no mínimo: entradas e transições dos três modos (inclusive Retomar × Reviver); todos os controles do filme (pausa, velocidade, capítulos, Ver a galáxia, legendas, encerramento); busca (apelidos, catálogo, lugares, limites por toque/teclado, atalhos); navegação (aproximar, Sistema, bússola, zoom pinado, pinça, órbita como pega, clique no nome); fichas (todas as seções, relevo inventado, `role="status"`); máquina do tempo (sentidos, pausa, velocidade, época, avisos); 20 camadas em 3 famílias (o plano dizia 19; `atlasConfig.ts` tem 11 + 3 + 6 desde antes do redesenho); presets e os cinco controles avançados com `Preset`; idioma, escala do texto, rótulos 3D, rever convite; selo e procedência; copiar link; carregamento e recuperação de falha; `?shot=`, `?foco=`, `?jd=`, `?t=`, `?ui=`, `?ajustes=`; Esc, Tab, foco, `aria-live`.
+
+### Matriz preenchida (Lote 9, 08/09/2026)
+
+Rodada de 08/09/2026: ANTES = commit `450d1ad` (antes de qualquer código do redesenho), DEPOIS = o HEAD do Lote 9. Onde a coluna "como foi verificado" cita um juiz ou teste, ele rodou verde nesta rodada (a11y com a perna do celular, busca, filme e voo verdes; atlas-smoke com as 7 falhas antigas de nomes e décadas; `npm run done` verde); onde diz "sem prova automática", o recurso foi conferido por leitura (mesmo handler nas duas árvores) e, quando visual, pela foto do Lote 9 em `capturas/lote9-*-v2.png`.
+
+Comparação entre a árvore ANTES (commit `450d1ad`, antes de qualquer código do redesenho) e a árvore DEPOIS (HEAD atual). Caminhos são relativos à raiz do repo; a coluna "onde estava"/"onde está" cita `arquivo:linha` de cada árvore. "Callback preservado": **SIM** (mesmo nome de função/handler, citado), **MUDOU** (o que mudou), **NÃO ACHEI**, ou **NOVO** (recurso que não existia no ANTES — não é perda, é o que o redesenho acrescentou; listado porque o grupo pedia explicitamente).
+
+Método: `diff`/`grep -n`/`sed -n` nas duas árvores; leitura de componente inteiro só quando < 700 linhas. Vários arquivos centrais do motor 3D e dos hooks são **byte-idênticos** entre as duas árvores (confirmado por `diff`, saída vazia) — quando isso vale para o arquivo inteiro, está dito uma vez no início do grupo e todas as linhas daquele grupo herdam "SIM, arquivo idêntico".
+
+Arquivos confirmados **byte-idênticos** (inteiros) entre ANTES e DEPOIS: `src/hooks/useAtalhos.ts`, `src/hooks/useDirector.ts`, `src/hooks/useEspelhoDaUrl.ts`, `src/hooks/useChromeDoFilme.ts`, `src/hooks/useIdioma.ts`, `src/hooks/useCelular.ts`, `src/three/director/gestos.ts`, `src/three/director/maquinaDoTempo.ts`, `src/three/atlasConfig.ts`, `src/three/arrastoDePonteiro.ts`, `src/three/zoomDaRoda.ts`, `src/lib/atlas/ficha.ts`, `src/lib/buscaEstrelas.ts`, `src/lib/idioma.ts`, `src/lib/uiScale.ts`, `src/three/world/rotulos3d.ts`, `src/components/Spotlight.tsx`, `src/lib/idioma.test.ts`. Nenhum arquivo de `src/three/world/`, `src/three/shaders/`, `src/three/cartography/`, `src/three/world/corpos/`, `src/three/world/sol/` ou `src/three/world/planetas/` mudou — o redesenho não tocou cena, física nem dados. Nenhum arquivo de código-fonte foi apagado (`diff` das listagens de `src/` mostra só adições).
+
+---
+
+#### 1. Entradas e transições dos três modos
+
+| recurso | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| Porta "Ver o filme" (abertura → filme) | `src/components/Hud.tsx:275` `onClick={onPlay}` | `src/components/Hud.tsx:284` `onClick={onPlay}` | SIM (`onPlay`) | `scripts/visual/a11y.mjs:290-323` (as 3 portas da abertura, `.abertura-porta`) |
+| Porta "Explorar o Atlas" (abertura → Atlas) | `src/components/Hud.tsx:295` `onClick={onAtlas}`, rotulada "Entrar no Atlas", sem destaque de cor | `src/components/Hud.tsx:269` `onClick={onAtlas}`, promovida a `veil-btn--primario` (âmbar), rotulada "Explorar o Atlas" | SIM (`onAtlas` → `App.tsx` `entrarNoAtlas`) | `a11y.mjs:317-323` (porta principal única em cor, decisão do dono citada no comentário) |
+| Porta "Voo livre" (abertura → voo livre) | `src/components/Hud.tsx:284` `onClick={onExplore}`, rótulo "Explorar" (chave `hud.porta.explorar`) | `src/components/Hud.tsx:301` `onClick={onExplore}`, rótulo "Voo livre" (chave nova `hud.porta.voo`) | MUDOU (mesmo handler `onExplore`; só o rótulo visível trocou de "Explorar" para "Voo livre" — decisão de copy do Lote 8) | `filme-smoke.mjs:245-246` (as duas frases da abertura, `.title-sub`) + `a11y.mjs` (3 portas) |
+| Retomar (Atlas → filme já em curso, quando há filme guardado) | `src/components/BarraOuAlcas.tsx:211` `onClick={partirDoAtlas}`, chave `barra.voltarAoFilme`="Retomar" | `src/components/BarraOuAlcas.tsx:422` `onClick={partirDoAtlas}` | SIM (`partirDoAtlas`) | `scripts/visual/atlas-smoke.mjs:222,308,620` (`window.__director.partirDoAtlas()`) |
+| Reviver (fim do filme → reinicia do zero) | `src/components/Hud.tsx:376` `onClick={onPlay}`, chave `hud.fim.reviver` | `src/components/Hud.tsx:381` `onClick={onPlay}` | SIM (`onPlay`) | `a11y.mjs:902-910` lê o rótulo dos 3 botões do véu final (não clica este) — prova parcial |
+| Entrar no Atlas a partir do filme (pausar-e-olhar) | `src/components/BarraOuAlcas.tsx:161` `onClick={entrarNoAtlas}` | `src/components/BarraOuAlcas.tsx:459` `onClick={entrarNoAtlas}` | SIM (`entrarNoAtlas`) | `atlas-smoke.mjs:188,615,1845` (`window.__director.entrarNoAtlas()`) |
+| Voltar ao filme / "Ver o filme" a partir do Atlas | `src/components/BarraOuAlcas.tsx:195` `onClick={play}` | `src/components/BarraOuAlcas.tsx:402` `onClick={play}` | SIM (`play`) | sem prova automática direta encontrada (grep não achou clique neste botão específico em juiz) |
+| Explorar a partir do Atlas (Atlas → voo livre) | `src/components/BarraOuAlcas.tsx:202` `onClick={freeRoam}` | `src/components/BarraOuAlcas.tsx:410` `onClick={freeRoam}` | SIM (`freeRoam`) | sem prova automática direta |
+| Ficar aqui (fim do filme → Atlas, na pose da coda) | `src/components/Hud.tsx:380` `onClick={onAtlas}`, chave `hud.fim.ficarAqui` | `src/components/Hud.tsx:385` `onClick={onAtlas}` | SIM (`onAtlas`) | `a11y.mjs:902-931` — clica de verdade em "Ficar aqui" e mede que a câmera pousa na MESMA pose (desvio < 1e-9 do raio) |
+| Explorar (fim do filme → voo livre) | `src/components/Hud.tsx:396` `onClick={onExplore}` | `src/components/Hud.tsx:401` `onClick={onExplore}` | SIM (`onExplore`) | `a11y.mjs:902-910` lê o rótulo (não clica este) — prova parcial |
+
+#### 2. Todos os controles do filme
+
+| recurso | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| Pausa/Retomar | `src/components/BarraOuAlcas.tsx:219` `onClick={togglePause}` | `src/components/BarraOuAlcas.tsx:480` `onClick={togglePause}` (cartão `.filme-transporte`) | SIM (`togglePause`) | `scripts/visual/a11y.mjs:655-668` (Espaço → `togglePause`, mede opacidade da barra e `pausado`) |
+| Velocidade (cicla a taxa) | `src/components/BarraOuAlcas.tsx:226` `onClick={ciclarVelocidade}` | `src/components/BarraOuAlcas.tsx:488` `onClick={ciclarVelocidade}` | SIM (`ciclarVelocidade`) | sem prova automática (grep não achou clique neste botão em juiz/teste) |
+| Capítulos — avançar/retroceder | `src/components/Hud.tsx:496,499` `onSkipChapter(1)/onSkipChapter(-1)` | `src/components/Hud.tsx:501,504` idem | SIM (`onSkipChapter`) | sem prova automática do CLIQUE na barra (o atalho de teclado ArrowLeft/Right é o mesmo `d.skipChapter`, ver Grupo 13, mas não achei juiz clicando a barra) |
+| Indicador/barra de progresso dos capítulos | `src/components/Hud.tsx:471-479` `aria-valuenow={capituloAtual+1}`, texto `hud.capituloDeTotal` | `src/components/Hud.tsx:476-484` idem | SIM (byte a byte nesta região; só glifos ⏴/⏸/⏵ viraram `<Icone>`) | `scripts/visual/filme-smoke.mjs:48-74` (`lerLegenda`, checa `.caption-title`/`.caption-sub` dentro da margem) |
+| Ver a galáxia (revelar) | `src/components/BarraOuAlcas.tsx:232` `onClick={revealGalaxy}` | `src/components/BarraOuAlcas.tsx:495` `onClick={revealGalaxy}` (dentro do cartão `.filme-transporte`) | SIM (`revealGalaxy`) | sem prova automática direta encontrada |
+| Legendas (`Caption`) | `src/components/Hud.tsx:407-424` `role="status" aria-live="polite"`, entra/sai por CSS | `src/components/Hud.tsx:412-429` idem | SIM (mesmo componente `Caption`, mesmas classes `caption-wrap`/`caption-title`/`caption-sub`) | `filme-smoke.mjs:48-74,244-282` (top-8 legendas mais compridas + margens) |
+| Encerramento — as 3 saídas (Reviver/Ficar aqui/Explorar) | ver Grupo 1 | ver Grupo 1 | SIM (ver Grupo 1) | `a11y.mjs:895-931` |
+| Chrome do filme some sozinho durante a viagem corrida | `src/hooks/useChromeDoFilme.ts` (arquivo inteiro) | idêntico | SIM (arquivo byte-idêntico) | `a11y.mjs:626-668` (mede opacidade pausado/correndo) |
+
+#### 3. Busca
+
+| recurso | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| Apelidos de estrela | `src/lib/buscaEstrelas.ts` (byte-idêntico) importa `APELIDOS_DE_ESTRELAS` | idêntico | SIM (arquivo idêntico) | `src/lib/buscaEstrelas.test.ts:154` (`'apelido popular, nas duas línguas, acha a estrela do catálogo'`) |
+| Catálogo (texto livre, designação de Bayer, constelação) | `src/lib/buscaEstrelas.ts` `buscar()` | idêntico | SIM | `buscaEstrelas.test.ts` (suíte inteira) |
+| Lugares (centro galáctico etc.) | `src/lib/buscaEstrelas.ts` tipo `LugarBuscavel`; `PaletaDeBusca.tsx:72-74` `entrada.tipo === 'lugar'` | idêntico (`PaletaDeBusca.tsx:78-79`) | SIM | `buscaEstrelas.test.ts:164` (`'a constelação é um LUGAR...'`) |
+| Limite de resultados por teclado (8) | `src/components/PaletaDeBusca.tsx:48` `LIMITE_TECLADO = 8` | `src/components/PaletaDeBusca.tsx:54` idem | SIM (byte-idêntico) | sem prova automática dedicada encontrada (não é o mesmo que o limite de toque, abaixo) |
+| Limite de resultados por toque (5) | `PaletaDeBusca.tsx:49` `LIMITE_TOQUE = 5` | `PaletaDeBusca.tsx:55` idem | SIM | `busca-smoke.mjs:778-812` (seção de toque, `mobile: true`) |
+| Atalho "/" e Ctrl+K | `src/hooks/useAtalhos.ts` (byte-idêntico) | idêntico | SIM (arquivo idêntico) | `busca-smoke.mjs:205-240` (seção "1c: o atalho do teclado abre a paleta") |
+| "Limpar busca" (sem resultado) | não existia | `PaletaDeBusca.tsx:222-226,451-454` `limparBusca()` | NOVO (Lote 6) | sem prova automática encontrada por grep |
+| Destinos novos (cartões da consulta vazia) | não existia | `PaletaDeBusca.tsx:176-179,384-410` usa `destinosDaBusca()` | NOVO (Lote 6) | `src/lib/destinosDaBusca.test.ts:48-77` (10 destinos resolvem; categorias 6/3/1; primeiro de cada categoria é o principal) |
+| Filtro segmentado (Sistema/Estrelas/Galáxia) na busca vazia | não existia | `PaletaDeBusca.tsx:374-383` `<Segmentado>` | NOVO (Lote 6) | `destinosDaBusca.test.ts:71-76` (contagem por categoria) |
+
+#### 4. Navegação
+
+| recurso | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| Aproximar (na ficha, desce um degrau da escada) | `src/components/FichaDoObjeto.tsx:281` `onClick={onAproximar}` | `src/components/FichaDoObjeto.tsx:391` `onClick={onAproximar}` | SIM (`onAproximar`) | `a11y.mjs:1414-1443` — clica "Aproximar" de verdade e mede a câmera indo a ~0,0006 UA da Terra |
+| Sistema (sobe até "Sistema Solar") | `FichaDoObjeto.tsx:289` `onClick={onSistema}` | `FichaDoObjeto.tsx:401` `onClick={onSistema}` | SIM (`onSistema`) | `a11y.mjs:1466-1487` testa a MESMA transição via Esc (`subirDegrau`, o botão chama a mesma função) — o clique no botão em si não é exercitado, só o efeito equivalente |
+| Bússola (endireitar) | `src/components/HudDoAtlas.tsx:486` `onClick={onEndireitar}` | `src/components/HudDoAtlas.tsx:473` `onClick={onEndireitar}` | SIM (`onEndireitar`) | sem prova automática encontrada |
+| Zoom pinado (trava a distância da câmera) | `src/three/cinematic/atlasRig.ts` campo `distanciaPinada` | idem, mais o parâmetro novo e opcional `extra: ReservaDaFicha` | SIM (`distanciaPinada` intocado; o parâmetro novo é aditivo) | `src/three/cinematic/retanguloDoAtlas.test.ts:18` ("sem extra é BIT A BIT o de antes, na mesa e no telefone") |
+| Pinça de dois dedos (zoom por toque) | `src/three/director/gestos.ts` (byte-idêntico) `dedos`/`distanciaDosDedos()` | idêntico | SIM (arquivo idêntico) | `atlas-smoke.mjs:2751-2757` (aproximar/afastar dedos move a câmera) |
+| Órbita como "pega" (arrastar gira a câmera) | `gestos.ts` `onPointerMove` (byte-idêntico) | idêntico | SIM | `src/three/arrastoDePonteiro.test.ts` (suíte de dono do gesto/multitoque) |
+| Clique no nome escolhe o alvo | `gestos.ts:290-291` `fios.selecionar(x, y)` dentro de `onPointerUp` | idêntico | SIM (`fios.selecionar`) | `atlas-smoke.mjs` ("clicar num corpo ESCOLHE e a câmera não sai do lugar", linha ~660) |
+| Toque duplo mergulha no alvo | `gestos.ts` `onDuploClique`, `canvas.addEventListener('dblclick', onDuploClique)` | idêntico | SIM (`onDuploClique`) | sem prova automática dedicada encontrada por grep de `dblclick`/`onDuploClique` nos juízes |
+| Roda do mouse / pinça de trackpad (zoom) | `gestos.ts` `onRoda`, `canvas.addEventListener('wheel', onRoda)` | idêntico | SIM (`onRoda`) | sem prova automática dedicada encontrada (distinto da prova de toque acima) |
+
+#### 5. Fichas
+
+| recurso | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| Nome do alvo com `role="status"` | `src/components/FichaDoObjeto.tsx:244` `<span className="atlas-ficha-nome" role="status" aria-live="polite">` | `FichaDoObjeto.tsx:344` idêntico, agora dentro de `titulo` do `CabecalhoDoPainel` | SIM (mesma classe, mesmo `role`/`aria-live`) | `busca-smoke.mjs`/`a11y.mjs` leem `.atlas-ficha-nome` por texto (citado no comentário do componente) |
+| As 8 seções (estrela/agora/fisico/orbita/ceu/contexto/curiosidades/imagem) | `src/lib/atlas/ficha.ts` (byte-idêntico) `secoes: [...]` | idêntico | SIM (arquivo idêntico) | `src/lib/atlas/ficha.test.ts:105` ("são 48 alvos e os 48 montam"); `:112` (nenhuma ficha vaza `undefined`/`NaN`/"N/A") |
+| Relevo inventado (toggle de sombreamento) | `FichaDoObjeto.tsx:301-335` `<label>` solta acima das seções, `onChange={() => onRelevoDaCor(!relevoDaCor)}` | `FichaDoObjeto.tsx:561-585` mesma linha, agora DENTRO da seção "imagem" | SIM (`onRelevoDaCor`, mesmo `checked`/`aria-label`) — só mudou de lugar no layout (Lote 5, §3.5) | `ficha.test.ts` (indireto, não testa o toggle de UI) — sem prova automática do clique |
+| Botão "Detalhes"/"Recolher" (celular, compacta ⇄ expandida) | não existia (mesa e celular mostravam o mesmo corpo cheio) | `FichaDoObjeto.tsx:365-381` `onClick={() => onAlternarFichaExpandida?.()}` | NOVO (Lote 5) | `src/hooks/useGavetas.test.ts:207-247` (seção "7. a ficha no celular: compacta/expandida") |
+| Aproximar/Sistema (nav.) | ver Grupo 4 | ver Grupo 4 | SIM | ver Grupo 4 |
+| Botão que abre a ficha (barra/régua/alças) | `src/components/FichaDoObjeto.tsx:410-432` `BotaoDaFicha`, só existe COM alvo selecionado | `FichaDoObjeto.tsx:603-651` `BotaoDaFicha`, agora SEMPRE presente na régua/alças, desabilitado (`nome=null`) sem alvo | MUDOU (Lote 9, pedido do dono: "a alça Ficha fica esmaecida sem alvo, como na mesa") — mesmo `onAlternar`/`gatilhoDoDialogo` quando há alvo | `a11y.mjs` conta "5 na fileira" (comentário do Lote 9 no `BarraOuAlcas.tsx:577`) |
+| Esqueleto de carregamento (3 linhas, `aria-busy`) | não existia | `FichaDoObjeto.tsx:475-482` | NOVO (Lote 5, §9) | sem prova automática encontrada |
+| Falha ao carregar + "Tentar de novo" | não existia | `FichaDoObjeto.tsx:485-501` `setErroCorpos(false)`/`setErroTexturas(false)` | NOVO (Lote 5, §9) | sem prova automática encontrada |
+| Introdução + "Ler mais" (3 linhas antes das seções) | não existia | `FichaDoObjeto.tsx:240-259,425-448` | NOVO (Lote 5, §3.5) | sem prova automática encontrada |
+
+#### 6. Máquina do tempo (mesa e celular)
+
+Arquivo `src/three/director/maquinaDoTempo.ts` é **byte-idêntico**; a função `BarraDoTempo` em `HudDoAtlas.tsx` só trocou glifos (⏴/⏸/⏵/`{taxa}`) por `<Icone>`/`<span>`, sem tocar em nenhum handler.
+
+| recurso | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| Sentido (andar/pausar/inverter o tempo) | `src/App.tsx:856` `onSentido={(s) => directorRef.current?.andarNoTempo(s)}` | `src/App.tsx:933` idêntico | SIM (`andarNoTempo`) | `src/three/director/maquinaDoTempo.test.ts:102` ("o ⏸ segue o caminho de sempre") |
+| Degrau/velocidade (cicla o passo) | `App.tsx:857` `onDegrau={() => directorRef.current?.ciclarDegrau()}` | `App.tsx:934` idêntico | SIM (`ciclarDegrau`) | `maquinaDoTempo.test.ts:89` ("longe das bordas o ⏵ é o de sempre — anda, perturba e publica") |
+| Ao vivo (pula para o agora) | `App.tsx:858` `onAoVivo={() => directorRef.current?.alternarAoVivo()}` | `App.tsx:935` idêntico | SIM (`alternarAoVivo`) | sem prova automática dedicada encontrada além do `describe` geral de `maquinaDoTempo.test.ts` |
+| Época (volta à época de referência) | `App.tsx:859` `onEpoca={() => directorRef.current?.voltarAEpoca()}` | `App.tsx:936` idêntico | SIM (`voltarAEpoca`) | sem prova automática dedicada além da suíte geral |
+| Avisos (parede do tempo) | `src/components/HudDoAtlas.tsx:675` `<p className="atlas-tempo-aviso" role="status" aria-live="polite">{aviso}</p>` | `HudDoAtlas.tsx:668` idêntico | SIM (mesma classe/role) | `maquinaDoTempo.test.ts:44-102` (suíte "a parede do tempo — o relógio assenta em vez de piscar") |
+| Rodapé da MESA (permanente) | `App.tsx:854` `<BarraDoTempo ...>` | `App.tsx:931` idêntico | SIM | `a11y.mjs` (o conserto do mesmo dia 08/09 — cliques reais em 5 resoluções, citado no commit `e67a96e`) |
+| Gaveta do celular (`GavetaDoTempo`) | `HudDoAtlas.tsx:706-773` cabeçalho próprio (`.atlas-gaveta-topo`) | `HudDoAtlas.tsx:699-761` cabeçalho unificado (`<CabecalhoDoPainel celular={celular}>`), maquete M10 | MUDOU (mesmos props `onFechar`/`onSentido`/`onDegrau`/`onAoVivo`/`onEpoca`, só o cabeçalho trocou de peça) | sem prova automática visual dedicada encontrada por grep (fotos `capturas/lote7-*` citadas no plano, fora do escopo de grep) |
+| Alça "⏱ Tempo" (só celular) | `HudDoAtlas.tsx:776` `BotaoDoTempo`, `onClick={onAlternar}` | `HudDoAtlas.tsx:762` idêntico | SIM (`onAlternar`) | sem prova automática dedicada |
+
+#### 7. As camadas em 3 famílias
+
+**Contagem lida do código** (`src/three/atlasConfig.ts`, arquivo byte-idêntico entre as duas árvores — `grep -c "flag: '"` = 20 nas duas): **Galáxia = 11**, **Estrelas = 3**, **Sistema solar = 6** → total **20 camadas**, não 19. Essa contagem já valia no ANTES (mesmo arquivo, mesmas 20 entradas) — não é uma mudança do redesenho; é uma imprecisão do texto do §13/§14 do plano, sinalizada aqui como pedido ("lidas dos dados/código, não de memória").
+
+| recurso | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| Alternar uma camada (checkbox) | `src/components/HudDoAtlas.tsx:132` `onChange={() => onCamada(c.flag, !ligada)}` | `HudDoAtlas.tsx:129` idêntico | SIM (`onCamada`) | `src/three/atlasConfig.test.ts` (suíte transversal, citada no §14 do plano) |
+| Família "Galáxia" (11 camadas: nogal, nodisc, nogdust, noglow, nocart, noco, noforge, nonebula, nowrap, nodust, nobh) | `atlasConfig.ts:120-135` | idêntico | SIM (arquivo idêntico) | `atlasConfig.test.ts` |
+| Família "Estrelas" (3 camadas: nocat, nonomes, noclarao) | `atlasConfig.ts:136-155` | idêntico | SIM | `atlasConfig.test.ts` |
+| Família "Sistema solar" (6 camadas: nosun, nomarker, noplan, noicones, nocorpos, noorbitas) | `atlasConfig.ts:158-176` | idêntico | SIM | `atlasConfig.test.ts` |
+| Cabeçalho de família com eyebrow + contagem (`3/3` etc.) | `HudDoAtlas.tsx:104-112` `atlas.familiaConta`, `.atlas-gaveta-conta` | `HudDoAtlas.tsx:100-108` idêntico | SIM (já existia antes do redesenho — o Lote 7 mudou só o CSS, não esta lógica) | sem prova automática dedicada além de `a11y.mjs` genérico |
+| Coluna de glifo por camada (✱/⁂/⌶/✦/⌖/◉/◎/◐/◜) | `HudDoAtlas.tsx:131-138` `<span className="atlas-gaveta-icone">{c.icone ?? ''}</span>` | REMOVIDA — não existe mais coluna de glifo | MUDOU (removida por decisão de design, Lote 7: "sem a coluna de glifos, filete entre linhas") — dado `c.icone` continua existindo em `atlasConfig.ts`, só não é mais desenhado na gaveta | n/a (mudança visual deliberada, documentada no PLAN-UI.md) |
+
+#### 8. Presets e os cinco controles avançados
+
+`src/three/atlasConfig.ts` é byte-idêntico: `foraDoPreset` (linha 280) e os cinco campos (`amostras`, `nebulosa`, `escala`, `gas`, `particulas`) não mudaram uma vírgula.
+
+| recurso | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| Regra "Personalizado" (`foraDoPreset`) | `src/three/atlasConfig.ts:280-286` | idêntico | SIM (arquivo idêntico) | `src/three/atlasConfig.test.ts:402-427` (rótulo "(Personalizado)" quando qualquer um dos 5 diverge do preset) |
+| Amostras (antialiasing) | `src/components/Ajustes.tsx` região "avançado" (byte-idêntica na região dos 5 controles) | idêntico | SIM | `atlasConfig.test.ts:429-437` ("a gaveta Avançado NÃO redigita os números do preset") |
+| Nebulosa | idem | idem | SIM | idem |
+| Escala de resolução | idem | idem | SIM | idem |
+| Gás volumétrico | idem | idem | SIM | idem |
+| Partículas da galáxia | idem | idem | SIM | idem |
+| Seção "Avançado" (agora recolhível) | `Ajustes.tsx:477-478` `<h3>` fixo, sempre visível | `Ajustes.tsx:459-481` `<h3><button aria-expanded={avancadoAberto}>` fechada por padrão | MUDOU (novo estado de UI `avancadoAberto`; os 5 controles internos são os mesmos nós, só ficam desmontados quando fechada) | sem prova automática dedicada encontrada |
+| `<select>` de qualidade (chip da barra) | `src/components/BarraOuAlcas.tsx:266-278` `onChange={(e) => changeQuality(...)}` | `BarraOuAlcas.tsx:531-543` idêntico | SIM (`changeQuality`) | sem prova automática dedicada de clique; `QUALIDADES`/`rotuloDaQualidade` cobertos por `atlasConfig.test.ts` |
+| `?ajustes=1` (abre o painel direto) | `src/hooks/useGavetas.ts:166` `.has('ajustes') ? 'ajustes' : null` | `src/hooks/useGavetas.ts:200` idêntico | SIM | `src/hooks/useGavetas.test.ts:81-108` ("o `?ajustes=1` abre o painel sobre a tela de TÍTULO"; "o ⚙ Ajustes resiste à seleção") |
+
+#### 9. Idioma, escala do texto, rótulos 3D, rever convite, ajuda "?"
+
+| recurso | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| Seletor de idioma | `src/hooks/useIdioma.ts` (byte-idêntico) | idêntico | SIM (arquivo idêntico) | `src/lib/idioma.test.ts` (arquivo também byte-idêntico) — 4 perguntas: escada de escolha, paridade de tabelas/`{param}`, troca ao vivo, varredura de texto solto |
+| Escala do texto (`?ui=`, `DEGRAUS_DA_UI`) | `src/lib/uiScale.ts` (byte-idêntico) | idêntico | SIM (arquivo idêntico) | `src/lib/uiScale.test.ts:38-98` (porta `?ui=`, grampo de faixa, nenhuma declaração de fonte foge de `var(--ui)`) |
+| Rótulos 3D (nome + distância sobre a cena) | `src/components/LabelCanvas.ts:234-290` fonte do HUD + `notaDaEntrada` | `LabelCanvas.ts:234-308` mesma fonte (tentativa de trocar foi revertida, comentário cita a régua de relevância) + texto novo "X UA daqui" | MUDOU (aditivo: `notaDeDistancia` continua igual; só a frase ganhou `rotulo.distanciaDaqui` ao redor) | `src/components/LabelCanvas.test.ts` (não lido linha a linha, citado por nome; existia igual nas duas árvores) |
+| Clique no nome / raycast dos rótulos | ver Grupo 4 | ver Grupo 4 | SIM | ver Grupo 4 |
+| Convite guiado (Spotlight, Atlas e voo livre) | `src/components/Spotlight.tsx` (byte-idêntico, 200/200 linhas) | idêntico | SIM (arquivo idêntico) | `a11y.mjs` seção "O CONVITE DO ATLAS" (~linha 1489+, clica e mede o furo/máscara); `voo-smoke.mjs` julga o convite do voo livre por inteiro (citado no comentário do juiz) |
+| "Rever convite" (reabre o Spotlight pelos Ajustes) | `src/App.tsx:1097` `onReverConvite={...}` chama `setConvite({ onde, passo: 0 })` | `src/App.tsx:1187` idêntico | SIM (mesmo corpo de função, byte a byte) | sem prova automática dedicada além da suíte geral do convite acima |
+| Ajuda "?" (dica inline de cada controle) | `src/components/Ajuda.tsx` (57 linhas) `onAlternar`/`presa` | `src/components/Ajuda.tsx` (73 linhas) mesmos props + `scrollIntoView` ao fixar | SIM (mesma API; a adição é aditiva) | `a11y.mjs` referencia dicas presas em várias seções (Esc com dica presa, Grupo 12) |
+
+#### 10. Selo/procedência, copiar link, carregamento e falha
+
+| recurso | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| Selo — "Escala real" | `src/components/HudDoAtlas.tsx:325` `onClick={onEscalaReal}` | `HudDoAtlas.tsx:313` `onClick={onEscalaReal}` | SIM | sem prova automática dedicada encontrada por grep |
+| Selo — "Brilho real" | `HudDoAtlas.tsx:366` `onClick={onBrilhoReal}` | `HudDoAtlas.tsx:354` `onClick={onBrilhoReal}` | SIM | sem prova automática dedicada encontrada |
+| Selo — abrir/fechar (procedência) | `HudDoAtlas.tsx:428` glifo `▾`/`▸` | `HudDoAtlas.tsx:415` `<Icone nome={aberto ? 'chevronBaixo' : 'chevronDireita'}>` | SIM (mesmo estado `aberto`, só o glifo virou ícone) | sem prova automática dedicada |
+| Copiar link | `src/components/Ajustes.tsx:626-634` `navigator.clipboard.writeText(urlParaCopiar())` inline | `Ajustes.tsx:294-311` `aoClicarCopiarLink()`, mesma chamada de `urlParaCopiar()` | MUDOU (extraído para função nomeada; comportamento de sucesso idêntico — "Copiado ✓" 1,5 s) | `src/App.tsx:1186` `urlParaCopiar={() => urlComMomento().toString()}` idêntico nas duas árvores (via `useEspelhoDaUrl.ts`, byte-idêntico) |
+| Falha ao copiar (clipboard indisponível/rejeitado) | não existia (falha ficava muda) | `Ajustes.tsx:296-311,645-666` `urlSemCopia`, campo somente-leitura focado e selecionado | NOVO (Lote 7) | citado no commit `ee53b8f` ("simular `navigator.clipboard` ausente no chrome.mjs") — não confirmado por grep de teste específico nesta sessão |
+| Carregamento (etapas, telemetria, contagem) | `src/components/Hud.tsx` região `mode === 'loading'` (não alterada no diff) | idêntica | SIM (região fora do diff do Lote 8 — só a tipografia ao redor mudou) | sem prova automática dedicada encontrada além dos juízes gerais de carregamento citados no plano |
+| Tela de falha — mensagem | `Hud.tsx:198-207` `<div className="title-sub">`/`cv-falha-detalhe` sempre visível | `Hud.tsx:199-213` mesma estrutura, texto técnico dentro de `<details>` | MUDOU (o texto de erro em si — `error` — é o mesmo; só passou a morar dentro de `<details><summary>{t('hud.falhaDetalhes')}</summary>`) | sem prova automática dedicada encontrada |
+| Botão "Tentar de novo" (falha) | `Hud.tsx:215` `onClick={onRetry}` | `Hud.tsx:215` idêntico (linha fora do diff) | SIM (`onRetry`, byte-idêntico) | sem prova automática dedicada encontrada |
+
+#### 11. Parâmetros de URL
+
+Todos os `.get('...')`/`.has('...')` relevantes vêm de arquivos confirmados **byte-idênticos** (`useDirector.ts`, `useEspelhoDaUrl.ts`, `idioma.ts`) ou de linhas que não mudaram dentro de `App.tsx`/`director.ts` (confirmado por grep comparando as duas árvores lado a lado — mesmo texto, só a numeração de linha desloca por causa de comentários novos em volta).
+
+| parâmetro | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| `?shot=` | `src/App.tsx:702` | `src/App.tsx:778` | SIM (mesma linha de código) | `filme-smoke.mjs`/`a11y.mjs` usam `?shot=` extensivamente para captura determinística |
+| `?foco=` | `src/hooks/useDirector.ts:261` (arquivo idêntico) | idêntico | SIM | `useGavetas.test.ts:104-108` ("o ⚙ Ajustes resiste à seleção — o link `?ajustes=1&foco=` é a razão") |
+| `?jd=` | `src/three/director.ts:1714` (BASE) / `:1741` (HEAD) | — | SIM (mesmo corpo, `lerPortaJd`) | `src/three/director.test.ts:595-608` |
+| `?t=` | `useDirector.ts:259` (idêntico) | idêntico | SIM | `atlas-smoke.mjs` (`t=192.5&play=1` etc., uso extensivo) |
+| `?ui=` | `src/hooks/useEspelhoDaUrl.ts:89` (idêntico) | idêntico | SIM | `uiScale.test.ts:38-51` (porta `?ui=`) |
+| `?ajustes=` | `src/hooks/useGavetas.ts:166` (BASE) / `:200` (HEAD) | — | SIM (mesma linha) | `useGavetas.test.ts:81-108` |
+| `?nobloom=` | `src/three/director.ts:773` (BASE) / `:800` (HEAD) `this.debug.has('nobloom')` | — | SIM | citado em `src/three/core/post.ts` (item 72) e `selo.ts:688`; sem juiz específico achado nesta sessão |
+| `?loader=` | `App.tsx:334` (BASE) / `:361` (HEAD) | — | SIM (mesma linha) | sem prova automática dedicada encontrada |
+| `?cart=` | `App.tsx:221` (BASE) / `:248` (HEAD) | — | SIM (mesma linha) | sem prova automática dedicada encontrada |
+| `?d=` | `useDirector.ts:290` (idêntico) | idêntico | SIM | citado nas prévias de destino (`previas-de-destino.mjs`, `ver=corpo&d=`) |
+| `?q=` (qualidade) | `useDirector.ts:214` + `three/core/engine.ts:641` (idênticos) | idênticos | SIM | `atlasConfig.test.ts` (indireto, `EscolhaDeQualidade`) |
+| `?atlas=` | `useDirector.ts:262` `query.has('atlas')` + `useEspelhoDaUrl.ts:149-150` (idênticos) | idênticos | SIM | `retanguloDoAtlas.test.ts`, `atlas-smoke.mjs` (`?atlas=1` em toda a suíte) |
+| `?lang=` | `src/lib/idioma.ts:77` (byte-idêntico) | idêntico | SIM (arquivo idêntico) | `idioma.test.ts` (escada de escolha do idioma) |
+
+#### 12. Esc (cadeia; dica presa), Tab/foco, `aria-live`
+
+| recurso | onde estava (antes) | onde está (depois) | callback preservado | como foi verificado |
+|---|---|---|---|---|
+| Esc fecha o diálogo (foco volta ao gatilho) | `src/lib/dialogFocus.ts` `useDialogFocus` (lógica de Esc/Tab não tocada pelo diff) | idêntica | SIM | `a11y.mjs:1423-1432` ("descer: aproximar enquadra..."); trap de Tab em `a11y.mjs:223,226,336` |
+| Esc com dica presa solta só a dica (não fecha o painel) | Cada painel escrevia o mesmo `onKeyDownCapture` à mão 5 vezes (ex. `src/components/Ajustes.tsx` BASE:343-354, `PaletaDeBusca.tsx` BASE:251-260, `HudDoAtlas.tsx` BASE:87-92 e 734-739, `FichaDoObjeto.tsx` BASE:228-236) | Centralizado em `src/hooks/useDicaPresa.ts:22-25` (`decidirEscDaDica`) + `:33-44` (`aoTeclarEsc`), consumido igual nos 5 painéis via `onKeyDownCapture={aoTeclarEsc}` | MUDOU (refatorado para um hook único; `stopPropagation()`+`limpar()` idênticos ao código antigo) | `src/hooks/useDicaPresa.test.ts:10-19` (3 casos: consome com dica presa, não consome sem dica, nunca consome outra tecla) |
+| Esc sobe um degrau na escada do Atlas (só sem diálogo aberto) | `src/hooks/useAtalhos.ts:61-70` (byte-idêntico) | idêntico | SIM (arquivo idêntico) | `a11y.mjs:1449-1487` (Esc com diálogo aberto fecha o diálogo e NÃO sobe degrau; Esc livre sobe um degrau por vez) |
+| Tab preso dentro do diálogo aberto (focus trap) | `dialogFocus.ts` (só ganhou a opção `focoInicial`, o resto do contrato de Tab não mudou) | idêntico | SIM | `a11y.mjs:223,226,336` (`s.teclar('Tab')`/`Tab, {shift:true}`) |
+| `aria-live` — legenda do filme | `src/components/Hud.tsx:420` `role="status" aria-live="polite"` | `Hud.tsx:425` idêntico | SIM | `filme-smoke.mjs` (`.caption-title`/`.caption-sub`) |
+| `aria-live` — nome do alvo na ficha | ver Grupo 5 | ver Grupo 5 | SIM | ver Grupo 5 |
+| `aria-live` — aviso da busca | `PaletaDeBusca.tsx:349` `role="status" aria-live="polite"` | `PaletaDeBusca.tsx:447` idêntico | SIM | `busca-smoke.mjs` |
+| `aria-live` — aviso da máquina do tempo | ver Grupo 6 | ver Grupo 6 | SIM | ver Grupo 6 |
+| `aria-live` — convite (Spotlight) | `Spotlight.tsx:177` (arquivo idêntico) | idêntico | SIM | ver Grupo 9 |
+| `aria-live` — medida de qualidade (Ajustes) | `Ajustes.tsx:466` (BASE) | `Ajustes.tsx:446` idêntico | SIM | sem prova automática dedicada além da suíte geral de a11y |
+| `aria-live` — "Copiado ✓" | não existia | `Ajustes.tsx:647` `role="status" aria-live="polite"` | NOVO (Lote 7) | sem prova automática dedicada encontrada |
+
+#### 13. Atalhos de teclado e gestos
+
+`src/hooks/useAtalhos.ts` e `src/three/director/gestos.ts` são **byte-idênticos** entre as duas árvores — todo este grupo herda "SIM, arquivo idêntico" salvo indicação em contrário.
+
+| atalho/gesto | onde mora | callback | como foi verificado |
+|---|---|---|---|
+| `/` e Ctrl+K → abre a busca | `useAtalhos.ts:33-50` | `abrirBusca()` | `busca-smoke.mjs:205-240` |
+| Espaço → pausa/retoma o filme | `useAtalhos.ts:82-84` | `setPaused(d.togglePause())` | `a11y.mjs:655-668` |
+| ArrowRight/ArrowLeft → avança/retrocede capítulo | `useAtalhos.ts:85-91` | `d.skipChapter(1)/(-1)` | sem prova automática dedicada encontrada (o botão equivalente também não tem, ver Grupo 2) |
+| Esc → sobe degrau da escada do Atlas (guardado por diálogo) | `useAtalhos.ts:61-70` | `d.subirDegrau()` | `a11y.mjs:1449-1487` |
+| Clique curto e parado → escolhe o alvo | `gestos.ts:290-291` | `fios.selecionar(x,y)` | `atlas-smoke.mjs` ("clicar num corpo ESCOLHE...") |
+| Duplo clique/toque → mergulha no alvo escolhido | `gestos.ts` `onDuploClique` | `onDuploClique` | sem prova automática dedicada encontrada |
+| Arrastar → orbita a câmera (ou olha ao redor, pausado) | `gestos.ts` `onPointerMove` | `arrasto.mover()` | `src/three/arrastoDePonteiro.test.ts` |
+| Roda do mouse / Ctrl+roda (trackpad) → zoom | `gestos.ts:398` `onRoda` | `onRoda`/`roda.empurrar()` | `src/three/zoomDaRoda.test.ts` (arquivo idêntico, citado por nome) |
+| Pinça de dois dedos (toque) → zoom | `gestos.ts:204-211` `distanciaDosDedos()` | `roda.empurrar(pixelsDaPinca(...))` | `atlas-smoke.mjs:2751-2757` |
+| Botão direito → menu de contexto desativado | `gestos.ts:378-380` `onContextMenu` → `preventDefault()` | `onContextMenu` | sem prova automática dedicada encontrada |
+
+---
+
+#### Chaves de dicionário removidas (pt.ts, ANTES → DEPOIS)
+
+Comparação completa das chaves de `src/lib/idioma/pt.ts` entre as duas árvores (regex `^\s*'([^']+)':` nas duas, via Node — 442 chaves no ANTES, 478 no DEPOIS, 37 chaves novas).
+
+**Uma única chave sumiu sem substituta equivalente:**
+
+- **`hud.duracao`** (valor: `'experiência cinematográfica'`) — usada só como rótulo de fallback da porta "Ver o filme" quando não havia duração calculada, e no `.journey-runtime` do rodapé da abertura antiga. Removida no Lote 8 junto com `.journey-runtime` (que também saiu do DOM). **Não é um achado de bug**: está documentada no commit `9a67100`/`PLAN-UI.md` Lote 8 como decisão de copy do dono, aprovada na maquete M1 — "hud.duracaoCom virou só {min} min {seg} s e hud.duracao/.journey-runtime saíram — a frase 'experiência cinematográfica' não aparece mais, como na maquete". A chave irmã `hud.duracaoCom` continua existindo nas duas árvores, só com o valor mais curto.
+
+Nenhuma outra chave do pt.ts do ANTES ficou sem correspondente no DEPOIS.
+
+#### Paridade pt.ts / en.ts (DEPOIS)
+
+- `src/lib/idioma/pt.ts`: **478 chaves**
+- `src/lib/idioma/en.ts`: **478 chaves**
+- Diferença de conjunto (chaves só num lado): **zero** nos dois sentidos.
+- Essa paridade é também **imposta pelo compilador**: `en.ts:31` declara `export const EN: Record<keyof typeof PT, string> = {...}` — uma chave nova em `pt.ts` sem par em `en.ts` não compila (`npm run done` reprovaria antes de qualquer teste rodar).
 
 ## 14. Verificação
 
