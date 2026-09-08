@@ -1947,10 +1947,20 @@ async function medirCobertura(s, quando, cobra = true, fatorUi = 1) {
     const dica = pecas.find((p) => p.sel === '.free-hint');
     const noTopo = cobradas.filter((p) => p.topo < 0.5);
     const naBase = cobradas.filter((p) => p.topo >= 0.5);
+    // A RÉGUA DE ABAS (Lote 4½, PLAN-UI.md): a ÚNICA peça permanente que
+    // come a DIREITA na mesa — fração da LARGURA, da borda esquerda dela
+    // até a borda da janela, medida do mesmo jeito que topo/base. Nulo
+    // no telefone (a fileira de alças é o fichário lá e a régua não
+    // está no DOM): a declaração de direita é 0 e não há o que cobrar.
+    const regua = document.querySelector('.atlas-regua');
+    const direitaMedida = regua
+      ? (window.innerWidth - regua.getBoundingClientRect().left) / window.innerWidth
+      : null;
     return {
       util,
       largura: window.innerWidth,
       noTelefone,
+      direitaMedida,
       dicaBase: noTelefone && dica ? dica.base : null,
       noTopo: noTopo.length,
       naBase: naBase.length,
@@ -2019,6 +2029,18 @@ async function medirCobertura(s, quando, cobra = true, fatorUi = 1) {
       + `${cobertura.util.base.toFixed(3)} ≥ medida ${cobertura.baseMedida.toFixed(3)} `
       + `(${cobertura.pecas.join(' · ')})`
   );
+  // A DIREITA (Lote 4½): a régua de abas é chrome permanente da mesa,
+  // declarada em `REGUA_LARGURA_PX` (retanguloDoAtlas.ts) sem folga — os
+  // dois lados leem o mesmo 56 px × ui — e cobrada aqui como topo e base:
+  // declarado ≥ medido. O epsilon é só o arredondamento do layout (1/64
+  // px): a régua é 3,5rem e a declaração é a mesma conta em px.
+  if (cobertura.direitaMedida !== null) {
+    conferir(
+      cobertura.direitaMedida <= cobertura.util.direita + 1e-6,
+      `retângulo útil (${onde}): direita declarada ${cobertura.util.direita.toFixed(4)} ≥ medida `
+        + `${cobertura.direitaMedida.toFixed(4)} (régua de abas)`
+    );
+  }
   // O PISO DOUTRINÁRIO, sobre o MEDIDO e não sobre a declaração. Ele
   // vivia no vitest, cobrando o número declarado — e ali virou catraca:
   // a declaração paga folga por cima do medido, então o piso pinava "o

@@ -149,6 +149,7 @@ function ContextoDoAlvo({
   focarNoCorpo,
   estreito = false,
   comViaLactea = true,
+  abrirFicha,
 }: {
   escada: EstadoDaEscada;
   foco: string | null;
@@ -164,6 +165,14 @@ function ContextoDoAlvo({
    * Falso só no Atlas de mesa, onde a linha tem duas linhas de sobra.
    */
   comViaLactea?: boolean;
+  /**
+   * O ÚLTIMO TRECHO TAMBÉM ABRE A FICHA (Lote 4½, palavra do dono no
+   * portão: "clicar no último trecho da linha de contexto... também
+   * abre a ficha"). Só existe quando a régua existe — é o segundo
+   * caminho até a mesma gaveta, nunca um terceiro estado; `undefined`
+   * mantém o trecho como texto puro, o comportamento de sempre.
+   */
+  abrirFicha?: () => void;
 }) {
   const todos = trechosDoContexto(escada, foco, focarNoSistema, focarNoCorpo, comViaLactea);
   const trechos = estreito ? todos.slice(-1) : todos;
@@ -178,6 +187,16 @@ function ContextoDoAlvo({
           )}
           {trecho.aoClicar ? (
             <button type="button" className="atlas-contexto-botao" onClick={trecho.aoClicar}>
+              {trecho.texto}
+            </button>
+          ) : trecho.atual && abrirFicha ? (
+            <button
+              type="button"
+              className="atlas-contexto-alvo"
+              aria-current="location"
+              aria-label={t('ficha.aria', { nome: trecho.texto })}
+              onClick={abrirFicha}
+            >
               {trecho.texto}
             </button>
           ) : (
@@ -216,6 +235,14 @@ export function BarraOuAlcas({
   focarNoCorpo,
 }: BarraOuAlcasProps) {
   useIdioma();
+  /**
+   * A RÉGUA (Lote 4½, PLAN-UI.md) — o Atlas de mesa: as quatro
+   * ferramentas saem da barra e viram abas verticais na borda direita.
+   * É o MESMO sinal que já decidia `marcaEContexto` (linhas abaixo),
+   * agora com nome, porque passa a decidir também onde as portas
+   * (Buscar, Camadas, Ficha, Ajustes) desenham.
+   */
+  const regua = hud.saidasDoAtlas && !alcas;
   /**
    * A LARGURA ESTREITA (item 6/§3.3, "≤ 360 px: só o último trecho"),
    * lida por `matchMedia` COM OUVINTE — o mesmo padrão de `useCelular.ts`
@@ -277,12 +304,18 @@ export function BarraOuAlcas({
       onAlternar={() => alternarGaveta('camadas')}
     />
   );
-  const portaDaFicha = ofereceFicha && foco && (
+  const portaDaFicha = ofereceFicha && foco ? (
     <BotaoDaFicha
       aberta={gaveta === 'ficha'}
       nome={foco}
       onAlternar={() => alternarGaveta('ficha')}
     />
+  ) : (
+    // SÓ NA RÉGUA (Lote 4½) a ausência de alvo desenha algo: a aba
+    // desabilitada dá à ficha um lugar fixo ali. Na barra do
+    // filme/voo livre e na fileira do celular `regua` é falso e o
+    // resultado é o de sempre — nada.
+    regua && <BotaoDaFicha nome={null} />
   );
 
   // A MARCA + A LINHA DE CONTEXTO (Lote 4, item 2/§3.2) — só no Atlas de
@@ -300,6 +333,17 @@ export function BarraOuAlcas({
         foco={foco}
         focarNoSistema={focarNoSistema}
         focarNoCorpo={focarNoCorpo}
+        // O ÚLTIMO TRECHO (o alvo) também abre a ficha (Lote 4½) — só
+        // quando a régua existe (`regua`, abaixo) e há alvo elegível;
+        // NUNCA fecha, só abre — clicar de novo no nome não esconde a
+        // ficha, é a aba quem faz isso.
+        abrirFicha={
+          regua && ofereceFicha && foco
+            ? () => {
+                if (gaveta !== 'ficha') alternarGaveta('ficha');
+              }
+            : undefined
+        }
       />
     </div>
   );
@@ -390,13 +434,14 @@ export function BarraOuAlcas({
           )}
         </div>
       )}
-      {/* GRUPO "FERRAMENTAS" (item 2) — ⌕ Buscar · ⧉ Camadas · ⓘ nome do
-          alvo. AS PORTAS ESTÃO AQUI OU NA FILEIRA DE ALÇAS, nunca nas
-          duas (item 62): elas carregam o `data-abre-dialogo`, e duas
-          cópias seriam dois gatilhos com o mesmo nome no documento. O
-          rótulo da ficha carrega o nome do alvo — é ele que devolve à
-          barra o que a antiga linha "em quadro" dizia no alto. */}
-      {!alcas && (
+      {/* GRUPO "FERRAMENTAS" (item 2) — ⌕ Buscar · ⧉ Camadas · Ficha. AS
+          PORTAS ESTÃO AQUI, NA RÉGUA (Lote 4½, Atlas de mesa) OU NA
+          FILEIRA DE ALÇAS (celular), nunca em duas ao mesmo tempo (item
+          62): elas carregam o `data-abre-dialogo`, e duas cópias seriam
+          dois gatilhos com o mesmo nome no documento. Este grupo só
+          sobra para o filme e o voo livre de mesa — no Atlas de mesa
+          `regua` é verdadeiro e as portas moram na régua. */}
+      {!alcas && !regua && (
         <div className="atlas-barra-grupo">
           {portaDaBusca}
           {portaDasCamadas}
@@ -473,8 +518,31 @@ export function BarraOuAlcas({
             </option>
           ))}
         </select>
-        {!alcas && botaoDeAjustes}
+        {!alcas && !regua && botaoDeAjustes}
       </div>
+    </div>
+  )}
+
+  {/* A RÉGUA DE ABAS (Lote 4½, PLAN-UI.md) — as MESMAS portas do grupo
+      "ferramentas" de cima, presas na borda direita abaixo da barra,
+      filha DIRETA de .hud-root como todo overlay da casa (`.bare-mode`
+      a apaga em ?shot=2 do mesmo jeito). Só existe no Atlas de mesa
+      (`regua`); a aba Ficha nunca mostra o nome do alvo — a linha de
+      contexto acima já mostra — e fica desabilitada sem seleção
+      (`portaDaFicha` decide isso sozinho). `com-painel` veste a régua
+      quando alguma gaveta está aberta, para o painel encostar nela sem
+      costura (04-atlas.css). */}
+  {regua && (
+    <div
+      className={`atlas-regua${gaveta ? ' com-painel' : ''}`}
+      role="group"
+      aria-label={t('barra.reguaAria')}
+    >
+      {portaDaBusca}
+      {portaDasCamadas}
+      {portaDaFicha}
+      <span className="atlas-regua-filete" aria-hidden="true" />
+      {botaoDeAjustes}
     </div>
   )}
 

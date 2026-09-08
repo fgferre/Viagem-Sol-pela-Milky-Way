@@ -420,6 +420,20 @@ export interface ReservaDaFicha {
 }
 
 /**
+ * A LARGURA DA RÉGUA DE ABAS (Lote 4½, PLAN-UI.md) — 56 px em `ui = 1`,
+ * o mesmo número que `.atlas-regua` declara em `04-atlas.css`
+ * (`width: 3.5rem`). AO CONTRÁRIO das frações acima (medidas pelo juiz
+ * de a11y, com folga sobre o pior caso), esta não é uma leitura: régua
+ * e retângulo útil concordam por CONSTRUÇÃO, os dois lendo o mesmo
+ * número — a folga é 0, a régua é exatamente 3,5rem. É chrome
+ * PERMANENTE do Atlas de mesa (existe com ou sem painel aberto), por
+ * isso entra direto na conta de `direita` da mesa, ANTES de
+ * `reservaDireita` (a ficha, transitória, que se soma por cima). O
+ * juiz de a11y é quem mede — outro trabalhador roda essa prova.
+ */
+const REGUA_LARGURA_PX = 56;
+
+/**
  * O ÚNICO produtor do retângulo útil do Atlas — tarjas de cinema mais
  * as áreas REAIS do HUD do modo (F2). A conta não se repete dentro de
  * componente nenhum: quem enquadra pergunta aqui.
@@ -482,10 +496,13 @@ export function retanguloUtilDoAtlas(
   }
   // SEM TARJA (Lote 4, 07/09) — o `LETTERBOX_FRACAO` que somava aqui nas
   // duas bordas morreu junto com a pintura: ver o comentário no alto do
-  // arquivo. As duas bordas voltam a ser só HUD, como no telefone.
+  // arquivo. A ESQUERDA volta a ser só HUD, como no telefone — mas a
+  // DIREITA não (Lote 4½): a régua de abas é chrome permanente do Atlas
+  // de mesa, então `REGUA_LARGURA_PX` entra sempre, e é sobre ela que a
+  // reserva transitória da ficha (`reservaDireita`) se soma.
   return {
     esquerda: 0,
-    direita: 0 + reservaDireita,
+    direita: (REGUA_LARGURA_PX * k) / largura + reservaDireita,
     topo:
       CONTEXTO_FRACAO * k +
       (largura < LARGURA_DA_QUEBRA_PX * k ? BARRA_QUEBRADA_FRACAO : 0),

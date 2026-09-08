@@ -2616,8 +2616,12 @@ try {
     const cameraAntes = await ondeEstaACamera();
     await tocar();
     await sessao.assentar();
+    // O NOME DO ALVO SAIU DO TEXTO DO GATILHO (Lote 4½ da UI, 07/09: a
+    // aba diz só "Ficha", a linha de contexto diz o nome) e mora no
+    // `aria-label` ("Ficha de Netuno") — é ele que esta prova lê agora.
     const escolhido = await sessao.js(
-      `(document.querySelector('[data-abre-dialogo="ficha"]') || {}).textContent || ''`
+      `(() => { const b = document.querySelector('[data-abre-dialogo="ficha"]');`
+        + ` return b ? b.getAttribute('aria-label') || '' : ''; })()`
     );
     const cameraDoToque = await ondeEstaACamera();
     conferir(

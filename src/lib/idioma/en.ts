@@ -121,6 +121,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'barra.explorar': 'Explore',
   'barra.qualidadeAria': 'Graphics quality',
   'barra.alcasAria': 'Atlas controls',
+  'barra.reguaAria': 'Atlas tools',
 
   // ---- the brand and the context line (Lote 4, item 2) ----------------
   // "Sea of Stars", the same name `app.titulo` already uses in English.
@@ -284,6 +285,8 @@ export const EN: Record<keyof typeof PT, string> = {
 
   // ---- the object fact sheet ---------------------------------------
   'ficha.aria': 'Fact sheet: {nome}',
+  'ficha.aba': 'Info',
+  'ficha.abaSemAlvo': 'Fact sheet (choose an object)',
   'ficha.fechar': 'Close the fact sheet',
   'ficha.aproximar': 'Closer',
   'ficha.aproximarAria': 'Closer: frame {nome} up close',

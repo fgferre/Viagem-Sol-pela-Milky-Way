@@ -37,6 +37,22 @@ como portão. Estado da rodada: pele B escolhida; lotes 0–3 e 5 commitados;
 lote 4 (barra do Atlas, tarjas fora) commitado; faltam 4½, 6, 7, 8, 9. Seis provas do `atlas-smoke` ficaram vermelhas por causa do céu maior (backlog).
 Nada foi para o backup ainda.
 
+**07/09 (madrugada, rodada do FICHÁRIO — Lote 4½, conversa limpa).** As quatro
+maquetes (mesa com ficha, mesa com busca, régua em repouso, celular) foram
+mostradas e ele decidiu: *"aprovado, pode implementar com a linha âmbar do
+lado de dentro"*. Implementado e commitado: no Atlas de mesa as quatro
+ferramentas viraram abas numa régua colada à borda direita, abaixo da
+barra; a aba Ficha diz só "Ficha" (o nome fica na linha de contexto, e
+clicar no nome ali também abre a ficha); sem alvo a aba fica apagada; o
+painel aberto encosta na régua; a barra de cima ficou com Ver o filme,
+Explorar e o chip de qualidade; a câmera reserva a régua sempre e a ficha
+só quando aberta; no celular só o rótulo da quinta alça mudou para
+"Ficha". Fotos em `capturas/lote45-*-v3.png`. Juízes: a11y (agora cobra
+também a direita da régua) e busca verdes; atlas-smoke com as mesmas
+falhas antigas (contagem de nomes e décadas do zoom, backlog) e uma prova
+adaptada ao rótulo novo. `npm run done` verde. Backup em `main:backup`.
+**Faltam os lotes 6, 7, 8 e 9 do `PLAN-UI.md`.** Servidor: `npm run dev`.
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar

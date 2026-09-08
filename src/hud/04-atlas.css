@@ -112,6 +112,156 @@
   outline: 2px solid var(--foco);
   outline-offset: 2px;
 }
+/* O ÚLTIMO TRECHO (o alvo) TAMBÉM ABRE A FICHA (Lote 4½, só quando a
+   régua existe — `abrirFicha` no componente) — mesmo botão zerado do
+   resto da linha, mas SEM cor de link: ele já é `[aria-current=
+   'location']` duas regras acima, que dita `var(--texto)` com
+   especificidade maior que a desta classe, então a cor "atual" nunca
+   muda; só o sublinhado chega no hover, a mesma régua dos outros
+   trechos clicáveis. */
+.atlas-contexto-alvo {
+  pointer-events: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: color var(--t-rapido) var(--curva), text-decoration-color var(--t-rapido) var(--curva);
+}
+.atlas-contexto-alvo:hover {
+  text-decoration-color: currentcolor;
+}
+.atlas-contexto-alvo:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* A RÉGUA DE ABAS (Lote 4½, PLAN-UI.md) — as quatro ferramentas do
+   Atlas de mesa (Buscar, Camadas, Ficha, Ajustes), presas na borda
+   direita abaixo da barra, uma aba por painel — referência de
+   composição em `~/Github/atlas-orbital/RightControlRail.tsx`, pele B.
+   Só existe no Atlas de mesa (o componente não a desenha no filme, no
+   voo livre nem no celular — a fileira de alças já É o fichário lá).
+   Z-INDEX 47: o mesmo do `.atlas-rodape` (comentário lá embaixo) — ACIMA
+   de qualquer diálogo (`--camada-dialogo: 46`) e abaixo do
+   Spotlight/convite (48). Sem isso a aba ativa, que "abre para dentro"
+   do painel encostado (a costura escondida abaixo), pintaria por baixo
+   dele. */
+.atlas-regua {
+  position: fixed;
+  /* O MESMO topo dos diálogos (`.hud-dialogo`, 01-base.css: `--barra-fim`
+     + 1rem) — a régua e o painel encostado compartilham a borda de cima;
+     com só `--barra-fim` a régua nascia 16 px acima e sobrava um degrau
+     no canto onde os dois se encontram (visto na primeira foto). */
+  top: calc(var(--barra-fim) + 1rem);
+  right: 0;
+  z-index: 47;
+  width: 3.5rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem 0;
+  background: var(--fundo-painel);
+  border: 1px solid var(--borda);
+  border-right: none;
+  border-radius: var(--raio-painel) 0 0 var(--raio-painel);
+}
+/* COM PAINEL ABERTO, o canto de cima que encostava na cena vira reto —
+   é o painel quem faz a curva ali, encostado sem gap (ver `right` do
+   `.hud-dialogo` mais abaixo, `--regua-largura`). */
+.atlas-regua.com-painel {
+  border-radius: 0;
+  border-left: none;
+}
+.atlas-regua > .hud-btn {
+  position: relative;
+  width: 100%;
+  height: 4rem;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--texto-2);
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+.atlas-regua > .hud-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+/* O HOVER JÁ É O `.hud-btn.small:hover` da casa (03-controles.css,
+   `background: var(--hover); color: var(--texto)`) — mais específico
+   que o reset acima, então chega sozinho; escrevê-lo de novo aqui só
+   criaria uma segunda cópia para as duas cores discordarem um dia. */
+/* ABA ATIVA — cor de acento e o filete de 2 px na borda INTERNA (decisão
+   do dono no portão, 07/09: "com a linha âmbar do lado de dentro"; a
+   maquete tinha na externa e ele mandou trocar). */
+.atlas-regua > .hud-btn[aria-expanded='true'] {
+  color: var(--acento);
+}
+.atlas-regua > .hud-btn[aria-expanded='true']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  width: 2px;
+  background: var(--acento);
+}
+/* ...e some a costura de 1 px com o painel encostado, na MESMA borda
+   interna — só existe com `.com-painel`, porque sem painel não há
+   costura nenhuma para esconder. */
+.atlas-regua.com-painel > .hud-btn[aria-expanded='true']::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--fundo-painel);
+}
+.atlas-regua > .hud-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.atlas-regua > .hud-btn:disabled:hover {
+  background: none;
+  color: var(--texto-2);
+}
+.atlas-regua-filete {
+  height: 1px;
+  margin: 0.25rem 0.875rem;
+  background: var(--borda);
+}
+/* JANELAS BAIXAS (celular deitado, 844×390 e afins) — a régua encolhe
+   para nunca disputar altura com o selo/máquina do tempo do canto
+   oposto; ela é chrome PERMANENTE e não pode empurrar a câmera ao
+   crescer, então quem cede é a própria aba. */
+@media (max-height: 520px) {
+  .atlas-regua > .hud-btn {
+    height: 3.25rem;
+  }
+}
+/* O MECANISMO DA RESERVA (Lote 4½): `--regua-largura` só existe quando
+   a régua é filha direta de `.hud-root` (`:has`, Chrome ≥ 105 — a
+   mesma base da casa); os quatro diálogos (`.hud-dialogo`,
+   `01-base.css`) leem essa variável com fallback para o `right: 1rem`
+   de sempre, então filme/voo livre/celular (sem régua) não mudam nada.
+   Encostar sem gap (nenhuma soma, nenhuma folga) é o pedido do portão:
+   "o painel aberto encosta na régua, à esquerda dela". */
+.hud-root:has(> .atlas-regua) {
+  --regua-largura: 3.5rem;
+}
+.hud-root:has(> .atlas-regua) .hud-dialogo {
+  border-top-right-radius: 0;
+}
 
 /* A FICHA DO OBJETO (item 74, 22/08) — a QUARTA `.hud-dialogo`.
    O que é comum aos quatro diálogos (o topo pendurado na barra medida, o

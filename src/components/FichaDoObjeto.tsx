@@ -600,35 +600,55 @@ export function FichaDoObjeto({
 }
 
 /**
- * O botão que abre a ficha, na barra de controles — irmão do "⧉ Camadas" e
- * do "⌕ Buscar". Ele só existe quando há SELEÇÃO: sem alvo em foco não há
- * ficha para abrir, e um botão que não faz nada é pior que botão nenhum.
+ * O botão que abre a ficha — irmão do "⧉ Camadas" e do "⌕ Buscar", na
+ * régua de abas (Atlas de mesa) ou na fileira de alças (celular). O
+ * RÓTULO NÃO É MAIS O NOME DO ALVO (Lote 4½: a linha de contexto já diz
+ * o nome; o botão dizia duas coisas de uma vez) — é sempre "Ficha", e o
+ * nome vai só no `aria-label`.
+ *
+ * `nome: null` (só existe na régua) é a aba SEM seleção: continua no
+ * documento, com o mesmo ícone e rótulo, mas desabilitada e SEM
+ * `data-abre-dialogo`/`aria-haspopup`/`aria-expanded` — o juiz de a11y
+ * varre `[data-abre-dialogo]` e não pode achar um gatilho morto.
  */
 export function BotaoDaFicha({
   aberta,
   nome,
   onAlternar,
 }: {
-  aberta: boolean;
-  /** o nome do corpo em foco — vai no rótulo acessível */
-  nome: string;
-  onAlternar: () => void;
+  aberta?: boolean;
+  /** o nome do corpo em foco — vai no `aria-label`; `null` = sem seleção */
+  nome: string | null;
+  onAlternar?: () => void;
 }) {
   useIdioma();
+  if (nome === null) {
+    return (
+      <button
+        className="hud-btn small"
+        disabled
+        aria-disabled="true"
+        aria-label={t('ficha.abaSemAlvo')}
+      >
+        <Icone nome="info" tamanho={16} />
+        <span className="atlas-alca-rotulo">{t('ficha.aba')}</span>
+      </button>
+    );
+  }
   return (
     <button
       className="hud-btn small"
       onClick={onAlternar}
       aria-label={t('ficha.aria', { nome })}
-      {...gatilhoDoDialogo('ficha', aberta)}
+      {...gatilhoDoDialogo('ficha', Boolean(aberta))}
     >
       <Icone nome="info" tamanho={16} />
       {/* O RÓTULO EM SEU PRÓPRIO `<span>` (Lote 4, item 7) — a quinta
-          alça do celular trunca o nome com `ellipsis` (o nome completo
-          fica no `aria-label` acima); um nó de texto solto não tem caixa
-          própria para o CSS recortar. Na mesa nada muda: `.hud-btn` não
-          declara nada para este seletor. */}
-      <span className="atlas-alca-rotulo">{nome}</span>
+          alça do celular trunca com `ellipsis` (o nome completo fica no
+          `aria-label` acima); um nó de texto solto não tem caixa própria
+          para o CSS recortar. Na mesa nada muda: `.hud-btn` não declara
+          nada para este seletor. */}
+      <span className="atlas-alca-rotulo">{t('ficha.aba')}</span>
     </button>
   );
 }

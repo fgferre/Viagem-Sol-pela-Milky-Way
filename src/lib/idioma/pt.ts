@@ -116,6 +116,7 @@ export const PT = {
   'barra.explorar': 'Explorar',
   'barra.qualidadeAria': 'Qualidade gráfica',
   'barra.alcasAria': 'Controles do Atlas',
+  'barra.reguaAria': 'Ferramentas do Atlas',
 
   // ---- a marca e a linha de contexto (Lote 4, item 2) ----------------
   // "Mar de Estrelas" — chave nova: até aqui o nome só existia no
@@ -298,6 +299,8 @@ export const PT = {
 
   // ---- a ficha do objeto (`components/FichaDoObjeto.tsx`) -----------
   'ficha.aria': 'Ficha de {nome}',
+  'ficha.aba': 'Ficha',
+  'ficha.abaSemAlvo': 'Ficha (escolha um objeto)',
   'ficha.fechar': 'Fechar a ficha',
   'ficha.aproximar': 'Aproximar',
   'ficha.aproximarAria': 'Aproximar: enquadrar {nome} de perto',

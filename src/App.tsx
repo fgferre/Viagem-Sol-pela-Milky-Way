@@ -118,6 +118,11 @@ const AREAS_RESERVADAS = [
   // alcança sozinho. Sem esta linha os nomes de estrela nasciam por cima
   // da marca "Mar de Estrelas" e do breadcrumb, no canto oposto da barra.
   '.atlas-topo-esquerda',
+  // A RÉGUA DE ABAS (Lote 4½): outro `fixed` PRÓPRIO fora de
+  // `.controls-bar`, pelas mesmas duas razões da marca + contexto
+  // acima — o seletor da barra não a alcança sozinha, e sem esta linha
+  // os nomes de estrela nasciam por baixo das abas na borda direita.
+  '.atlas-regua',
   '.atlas-rodape',
   '.atlas-selo',
   // A FILEIRA DE ALÇAS (item 62): só existe no Atlas em telefone, e ali
@@ -426,10 +431,15 @@ export default function App() {
       // A RESERVA DA FICHA NA CÂMERA (Lote 3, PLAN-UI.md §6, item 225):
       // a ÚNICA gaveta que entra no retângulo útil do Atlas, porque ela
       // é o painel DO ALVO — nasce com a seleção. Na MESA cobre a
-      // DIREITA: `window.innerWidth - rect.left` mede o painel e o
-      // afastamento dele da borda numa conta só (a soma que "largura +
-      // afastamento" pediria, sem duas leituras que pudessem arredondar
-      // diferente). No CELULAR cobre a BASE — a altura da folha,
+      // DIREITA: só a LARGURA do painel (`rect.width`), NÃO MAIS
+      // `window.innerWidth - rect.left` (Lote 4½) — a régua de abas já
+      // é reserva PERMANENTE e declarada em `retanguloDoAtlas.ts`
+      // (`REGUA_LARGURA_PX`), e o painel encosta nela sem gap
+      // (`--regua-largura`, 04-atlas.css); somar o afastamento até a
+      // borda da JANELA contaria a régua DUAS vezes — a permanente e a
+      // que já mora dentro da distância até `rect.left`. A largura
+      // sozinha é exatamente o que o painel soma ALÉM da régua.
+      // No CELULAR cobre a BASE — a altura da folha,
       // limitada ao TETO da folha compacta (constante acima): sem o
       // teto, abrir uma seção dentro da ficha cresce a folha até 48svh
       // e recuaria a câmera a cada clique. Sem seleção, ou em
@@ -449,7 +459,7 @@ export default function App() {
         } else {
           directorRef.current?.reservarParaAFicha({
             basePx: 0,
-            direitaPx: window.innerWidth - retFicha.left,
+            direitaPx: retFicha.width,
           });
         }
       } else {

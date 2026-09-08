@@ -186,7 +186,7 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     expect(semiAnguloOcupado(1, comHud.distancia)).toBeCloseTo(esperado.v, 12);
   });
 
-  it('o HUD do Atlas é simétrico na horizontal e NÃO na vertical: o alvo sobe o quanto o selo pede', () => {
+  it('o HUD do Atlas NÃO é mais simétrico em eixo nenhum: a régua de abas desloca o alvo na horizontal, o selo na vertical', () => {
     const util = retanguloUtilDoAtlas();
     const { giroX, giroY } = enquadrar({
       rAlvo: 1,
@@ -194,10 +194,18 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
       aspect: 1.6,
       retanguloUtil: util,
     });
-    // nada come as laterais: giro horizontal zero EXATO
+    // A RÉGUA DE ABAS (Lote 4½) é chrome permanente da direita — deixou
+    // de ser "zero EXATO": o giro horizontal agora segue a MESMA conta
+    // fechada do giro vertical (abaixo), só que no eixo esquerda/direita.
+    // Negativo porque `direita > esquerda`: a régua empurra o alvo para
+    // a ESQUERDA da tela (`rotateY(-)`), o oposto de `rotateY(+)`.
     expect(util.esquerda).toBe(0);
-    expect(util.direita).toBe(0);
-    expect(giroY).toBe(0);
+    expect(util.direita).toBeGreaterThan(0);
+    expect(giroY).toBeLessThan(0);
+    expect(giroY).toBeCloseTo(
+      Math.atan(Math.tan((35 * GRAU) / 2) * 1.6 * (util.esquerda - util.direita) * Math.cos(giroX)),
+      15
+    );
     // o selo (base) é mais alto que a faixa da barra (topo), então o
     // retângulo útil tem o centro ACIMA do centro do quadro — e o alvo
     // tem de subir junto. `rotateX(+)` levanta a câmera e leva o alvo
@@ -359,8 +367,13 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
       12
     );
     // e a 1.800 px (a janela das vistas oficiais) com ui = 1 nenhum dos
-    // dois degraus existe: o enquadramento de mesa é o de sempre
-    expect(retanguloUtilDoAtlas(1, 1800)).toEqual(semDegrau);
+    // dois degraus existe: TOPO e BASE são os de sempre. `direita` NÃO
+    // entra nesta comparação desde o Lote 4½: a régua de abas é `px`
+    // fixo dividido pela LARGURA, então ela própria muda com a janela
+    // (56/1800 ≠ 56/1200) — é o degrau de TOPO/BASE que este teste
+    // cobra, não a régua (coberta à parte, `retanguloDoAtlas.test.ts`).
+    expect(retanguloUtilDoAtlas(1, 1800).topo).toBe(semDegrau.topo);
+    expect(retanguloUtilDoAtlas(1, 1800).base).toBe(semDegrau.base);
     // largura envenenada cai na tela de mesa de referência, não em NaN
     for (const cru of [Number.NaN, 0, -100, Number.POSITIVE_INFINITY]) {
       expect(retanguloUtilDoAtlas(1, cru)).toEqual(retanguloUtilDoAtlas(1, LARGURA_DE_MESA_PX));
