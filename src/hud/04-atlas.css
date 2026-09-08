@@ -866,6 +866,18 @@
      gaveta dele (as duas, logo acima). */
   pointer-events: none;
 }
+/* A MÁQUINA DO TEMPO VOLTA A RECEBER O CLIQUE (08/09, pedido do dono: "quero
+   verificar se nos modos de tela maior os cliques no time-machine estão
+   funcionando"): desde o Lote 4 os controles dela são `.ajustes-seg`, não
+   `.hud-btn`, e o `none` da coluna (acima) os engolia — `elementFromPoint`
+   no centro de cada botão devolvia o canvas, em toda tela de mesa. Os
+   juízes não viram porque clicam por `.click()`, que não passa pelo teste
+   de acerto. Só os controles voltam, nunca a coluna: o arrasto continua
+   passando pelos vãos. */
+.atlas-rodape .atlas-tempo-botoes .ajustes-seg,
+.atlas-rodape .atlas-tempo .hud-ajuda {
+  pointer-events: auto;
+}
 .atlas-rodape .atlas-tempo,
 .atlas-rodape .free-hint {
   position: static;

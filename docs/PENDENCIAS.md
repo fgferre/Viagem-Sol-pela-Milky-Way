@@ -97,6 +97,21 @@ done` verde. Backup em `main:backup`. **Faltam os lotes 8 e 9.** Prova nova
 proposta para a lista dele: "falha da área de transferência mostra o campo"
 (hoje é só a foto). Servidor: `npm run dev`.
 
+**08/09 (mesma conversa, depois do Lote 7).** Palavras dele: *"vamos deixar o
+rodapé do tempo do jeito que está, mas quero verificar se nos modos de tela
+maior os cliques no time-machine estao funcioanndo. depois vamos seguir para
+o proximo lote."* Rodapé fica como está (saiu do backlog). O palpite dele
+estava certo: com cliques de verdade (não os cliques por programa dos
+juízes) NENHUM botão da máquina do tempo da mesa respondia, em qualquer
+tamanho de tela — a coluna do rodapé recusa o ponteiro para o arrasto do
+céu passar, e só devolvia o clique aos botões da pele antiga; no Lote 4 os
+controles mudaram de classe e ficaram surdos. Consertado e medido com
+cliques reais em cinco telas (até 2560×1440 e a Retina em DPR 2) e com o
+texto a 140%; varredura de todo controle visível do Atlas, mesa e celular,
+sem outro surdo. Prova nova proposta para a lista dele: clique de verdade
+em cada controle (os juízes de hoje não pegam isso). `npm run done` verde;
+commitado e em `main:backup`. **Segue para o Lote 8.**
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar
