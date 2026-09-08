@@ -379,14 +379,6 @@ export function BarraOuAlcas({
           {t('barra.reviver')}
         </button>
       )}
-      {/* O PORTAL. Só no pausar-e-olhar: é o único momento do filme
-          em que o visitante já parou por conta própria e a pergunta
-          "onde é isso?" tem lugar (D3). */}
-      {inJourney && paused && (
-        <button className="hud-btn small" onClick={entrarNoAtlas}>
-          {t('barra.entrarNoAtlas')}
-        </button>
-      )}
       {/* GRUPO "MODOS" (Lote 4, item 2) — ▶ Ver o filme · ⇗ Explorar ·
           ↩ Retomar (quando há filme guardado). AS DUAS FERRAMENTAS DO
           ATLAS (item 61, 23/08). Palavras do dono: *"a viagem na verdade
@@ -439,50 +431,79 @@ export function BarraOuAlcas({
           FILEIRA DE ALÇAS (celular), nunca em duas ao mesmo tempo (item
           62): elas carregam o `data-abre-dialogo`, e duas cópias seriam
           dois gatilhos com o mesmo nome no documento. Este grupo só
-          sobra para o filme e o voo livre de mesa — no Atlas de mesa
-          `regua` é verdadeiro e as portas moram na régua. */}
-      {!alcas && !regua && (
+          sobra para o voo livre de mesa — no Atlas de mesa `regua` é
+          verdadeiro e as portas moram na régua; no filme (Lote 8) as
+          Camadas mudaram de grupo (veja `hud.botoesDaViagem` abaixo). */}
+      {!alcas && !regua && !hud.botoesDaViagem && (
         <div className="atlas-barra-grupo">
           {portaDaBusca}
           {portaDasCamadas}
           {portaDaFicha}
         </div>
       )}
+      {/* LOTE 8 (PLAN-UI.md §3.7, maquete M7) — o topo do filme vira DOIS
+          grupos: modos à esquerda (Portal + Explorar), sistema à direita
+          (grupo "SISTEMA" abaixo, que ganhou as Camadas). Pausar/Retomar,
+          velocidade e Ver a galáxia descem para o cartão preso à barra
+          de capítulos (`.filme-transporte`, 03-controles.css) — MESMOS
+          textos, MESMOS aria-label, só o lugar mudou. */}
       {hud.botoesDaViagem && (
         <>
-          <button
-            className="hud-btn small"
-            onClick={togglePause}
-            aria-label={t(paused ? 'barra.retomarAria' : 'barra.pausarAria')}
-          >
-            {t(paused ? 'barra.retomar' : 'barra.pausar')}
-          </button>
-          <button
-            className="hud-btn small"
-            onClick={ciclarVelocidade}
-            aria-label={t('barra.velocidadeAria')}
-            title={t('barra.velocidadeDica')}
-          >
-            {rate}×
-          </button>
-          <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
-            {t('barra.verAGalaxia')}
-          </button>
-          {/* "EXPLORAR", e não "Explorar livremente" (item 61, decisão do
-              dono em 23/08). É a segunda vez que ele corta a mesma
-              palavra: na abertura ela saiu em 22/08 — *"sugiro tirar a
-              palavra livremente"* —, e aqui ela era a sobra da mesma
-              frase, no botão mais largo da barra do filme. Com o corte a
-              barra fala como o resto da casa: a porta da abertura, a
-              ferramenta do Atlas (↗ Explorar) e esta dizem o MESMO nome
-              para o MESMO destino. */}
-          <button className="hud-btn small" onClick={freeRoam}>
-            {t('barra.explorar')}
-          </button>
+          <div className="atlas-barra-grupo">
+            {/* O PORTAL. Só no pausar-e-olhar: é o único momento do filme
+                em que o visitante já parou por conta própria e a
+                pergunta "onde é isso?" tem lugar (D3). */}
+            {inJourney && paused && (
+              <button className="hud-btn small" onClick={entrarNoAtlas}>
+                <Icone nome="setaEsquerda" tamanho={16} />
+                {t('barra.entrarNoAtlas')}
+              </button>
+            )}
+            {/* "EXPLORAR", e não "Explorar livremente" (item 61, decisão do
+                dono em 23/08). É a segunda vez que ele corta a mesma
+                palavra: na abertura ela saiu em 22/08 — *"sugiro tirar a
+                palavra livremente"* —, e aqui ela era a sobra da mesma
+                frase, no botão mais largo da barra do filme. Com o corte a
+                barra fala como o resto da casa: a porta da abertura, a
+                ferramenta do Atlas (↗ Explorar) e esta dizem o MESMO nome
+                para o MESMO destino. */}
+            <button className="hud-btn small" onClick={freeRoam}>
+              <Icone nome="explorar" tamanho={16} />
+              {t('barra.explorar')}
+            </button>
+          </div>
+          <div className="filme-transporte">
+            <button
+              className="hud-btn small"
+              onClick={togglePause}
+              aria-label={t(paused ? 'barra.retomarAria' : 'barra.pausarAria')}
+            >
+              <Icone nome={paused ? 'play' : 'pausa'} tamanho={16} />
+              {t(paused ? 'barra.retomar' : 'barra.pausar')}
+            </button>
+            <button
+              className="hud-btn small"
+              onClick={ciclarVelocidade}
+              aria-label={t('barra.velocidadeAria')}
+              title={t('barra.velocidadeDica')}
+            >
+              <Icone nome="velocidade" tamanho={16} />
+              {rate}×
+            </button>
+            <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
+              <Icone nome="galaxia" tamanho={16} />
+              {t('barra.verAGalaxia')}
+            </button>
+          </div>
         </>
       )}
-      {/* GRUPO "SISTEMA" (item 2) — o chip de qualidade e ⚙ Ajustes. */}
+      {/* GRUPO "SISTEMA" (item 2) — o chip de qualidade e ⚙ Ajustes; no
+          FILME (Lote 8) as Camadas entram aqui também, para fechar num
+          grupo só a direita do M7 (PLAN-UI.md §3.7) — duas
+          `.atlas-barra-grupo` vizinhas desenhariam o filete que só faz
+          sentido entre grupos de fato distintos. */}
       <div className="atlas-barra-grupo">
+        {hud.botoesDaViagem && portaDasCamadas}
         {/* O SELETOR DE QUALIDADE, ESTILIZADO COMO CHIP (item 2) — quatro
             estados desde os Ajustes D (o Auto é o quarto). Os rótulos
             saem da tabela única (`QUALIDADES`, atlasConfig), NUNCA

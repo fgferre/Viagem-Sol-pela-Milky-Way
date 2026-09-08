@@ -112,6 +112,28 @@ sem outro surdo. Prova nova proposta para a lista dele: clique de verdade
 em cada controle (os juízes de hoje não pegam isso). `npm run done` verde;
 commitado e em `main:backup`. **Segue para o Lote 8.**
 
+**08/09 (rodada da ABERTURA, FILME, CARREGAMENTO, ENCERRAMENTO E FALHA —
+Lote 8, mesma conversa).** Palavras dele: *"depois vamos seguir para o
+proximo lote"*. Implementado e commitado (dois trabalhadores em paralelo,
+revisão e consertos na sessão principal): a abertura ficou como a maquete —
+marca em serifa e caixa normal, "Explorar o Atlas" como botão principal em
+âmbar, "Ver o filme · 3 min 13 s" e "Voo livre" lado a lado (a frase
+"experiência cinematográfica" saiu, como na maquete aprovada); o filme
+ganhou a barra em dois grupos, o transporte num cartão centrado sobre a
+barra de capítulos e a legenda em serifa; o carregamento e a tela de falha
+entraram na tipografia da marca (a falha agora esconde o texto técnico num
+"Detalhes técnicos"); o encerramento tem a citação em serifa e os botões
+na pele nova. Dois juízes precisaram mudar de ideia por decisão dele (a
+abertura tinha a regra "três portas iguais"; agora é "uma principal, duas
+iguais"). Duas coisas para ele decidir (backlog): os títulos das legendas
+do filme vêm em caixa alta do roteiro, e no celular a barra do filme quebra
+em duas fileiras. Fotos em `capturas/lote8-*` (antes em `lote8-antes-*`).
+Juízes: a11y, filme, busca e voo verdes; atlas-smoke com as mesmas 7 falhas
+antigas. `npm run done` verde. Backup em `main:backup`. **Falta o Lote 9**
+(verificação final: matriz de preservação, provas do §14, EN/PT, escalas,
+backlog do que ficou de fora, apagar maquetes temporárias) — melhor numa
+conversa nova. Servidor: `npm run dev`.
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar

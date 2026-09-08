@@ -56,7 +56,10 @@
 .caption-wrap {
   opacity: 0;
   transform: translateY(14px);
-  max-width: min(42rem, 72vw);
+  /* LARGURA (Lote 8): a legenda para antes do cartão de transporte, que
+     mora no centro da base (metade dele ≈ 10,5rem + folga) — no celular
+     o cartão fica ABAIXO da legenda (06-responsivo.css), não ao lado. */
+  max-width: min(42rem, calc(44vw - 12rem));
 }
 /* a VIDA da legenda agora é do roteiro (janelas em tempo de viagem no
    journey.ts) — o CSS só anima a entrada; a saída é a janela fechando */
@@ -66,17 +69,23 @@
 @keyframes captionIn {
   to { opacity: 1; transform: translateY(0); }
 }
+/* LOTE 8 (PLAN-UI.md §3.7, maquete M7): título em Fraunces 300, igual
+   à `.atlas-marca` (mesmo peso, mesmo `letter-spacing: 0`, mesmo
+   `text-shadow` de texto solto sobre a cena) — o rastro largo/caixa
+   alta era da pele A. O tamanho e o `--ui` na fórmula do `vw` não
+   mudam: já eram os do M7 (`uiScale.test.ts` cobra `vw` com `--ui`). */
 .caption-title {
-  color: #f5f1e8;
+  font-family: var(--fonte-display);
+  color: var(--texto);
   font-size: clamp(1.5rem, calc(3.2vw * var(--ui)), 2.6rem);
-  font-weight: 200;
-  letter-spacing: 0.42em;
-  text-shadow: 0 0 24px rgba(140, 180, 255, 0.45);
+  font-weight: 300;
+  letter-spacing: 0;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
   text-wrap: balance;
 }
 .caption-sub {
-  color: rgba(200, 214, 235, 0.88);
-  font-size: clamp(0.78rem, calc(1.15vw * var(--ui)), 1.05rem);
+  color: var(--texto-2);
+  font-size: 1rem;
   font-weight: 300;
   letter-spacing: 0.04em;
   line-height: 1.45;
@@ -84,9 +93,9 @@
   max-width: 38rem;
 }
 .caption-rule {
-  width: 3.2rem;
+  width: 4.5rem;
   height: 1px;
-  background: linear-gradient(90deg, rgba(255, 214, 150, 0.9), transparent);
+  background: var(--borda);
   margin-bottom: 0.8rem;
 }
 
@@ -119,11 +128,12 @@
 .progress-wrap:hover {
   background: rgba(255, 255, 255, 0.22);
 }
+/* LOTE 8 (maquete M7): preenchido sólido em `--acento` — a pele B não
+   usa o brilho gradiente azul/laranja da pele A. */
 .progress-fill {
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, rgba(255, 200, 130, 0.95), rgba(150, 190, 255, 0.95));
-  box-shadow: 0 0 8px rgba(180, 200, 255, 0.6);
+  background: var(--acento);
   transform: scaleX(var(--journey-progress, 0));
   transform-origin: left center;
   transition: transform 0.18s linear;
@@ -173,6 +183,9 @@
    nesta casa quem sequencia camadas é o `transition-delay`. */
 .veil.veil-intro {
   transition-delay: 0.8s;
+  /* tela curta: a abertura rola em vez de cortar kicker ou botões —
+     sem reduzir fonte (Lote 8, PLAN-UI.md §3.1) */
+  overflow-y: auto;
 }
 .veil.veil-intro.hidden-veil {
   transition-delay: 0s;
@@ -198,13 +211,16 @@
     opacity 1.6s ease,
     visibility 0s linear 1.6s;
 }
+/* MARCA (Lote 8, PLAN-UI.md §3.1/§3.8): a mesma tipografia nas quatro
+   telas de véu — abertura, carregamento, encerramento e falha —, porque
+   `.title-kicker`/`.title-big` são as classes compartilhadas por todas. */
 .title-big {
-  color: #f7f3ea;
-  font-weight: 100;
-  letter-spacing: 0.55em;
-  text-indent: 0.55em;
-  font-size: clamp(1.5rem, calc(4.2vw * var(--ui)), 3.4rem);
-  text-shadow: 0 0 40px rgba(150, 180, 255, 0.5);
+  font-family: var(--fonte-display);
+  font-weight: 300;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  font-size: clamp(2.5rem, calc(6vw * var(--ui)), 4rem);
+  color: var(--texto);
   max-width: 88vw;
   margin: 0 auto;
   padding: 0 3vw;
@@ -214,33 +230,30 @@
 }
 .title-kicker {
   margin-bottom: 1.15rem;
-  color: rgba(177, 196, 225, 0.72);
-  font-size: clamp(0.55rem, calc(0.8vw * var(--ui)), 0.7rem);
-  font-weight: 400;
-  letter-spacing: 0.46em;
-  text-indent: 0.46em;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--texto-2);
 }
 .error-title {
   max-width: 24ch;
   font-size: clamp(1.25rem, calc(3vw * var(--ui)), 2.2rem);
 }
-.journey-runtime {
-  margin-top: 1rem;
-  color: rgba(165, 180, 202, 0.58);
-  font-size: 0.56rem;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-}
 .title-sub {
-  color: rgba(190, 205, 228, 0.85);
-  letter-spacing: 0.34em;
-  text-indent: 0.34em;
-  text-transform: uppercase;
-  font-weight: 300;
-  font-size: clamp(0.62rem, calc(1.2vw * var(--ui)), 0.9rem);
+  color: var(--texto);
+  font-weight: 400;
+  font-size: 1rem;
   margin-top: 1.4rem;
-  line-height: 2;
+  line-height: 1.5;
   text-align: center;
+}
+/* a segunda linha da abertura (item 60): menor e mais discreta que a
+   primeira, sem outra classe além do modificador — `.title-sub` sozinho
+   continua existindo na primeira linha, para quem lê por essa classe */
+.title-sub--linha2 {
+  margin-top: 0.35rem;
+  font-size: 0.875rem;
+  color: var(--texto-2);
 }
 .title-rule {
   width: 5rem;
@@ -263,10 +276,10 @@
    `components/encerramento.ts`): quem manda no ritmo é o roteiro, não
    esta folha — ela só sabe encenar uma lista de linhas, qualquer uma.
 
-   A TIPOGRAFIA É OUTRA da dos títulos de propósito: `title-big` é
-   letreiro (caixa alta, tracking de 0,55em); citação é PROSA — caixa
-   normal, tracking curto, entrelinha larga, e as aspas tipográficas
-   entram no texto pelas pontas da lista. */
+   A TIPOGRAFIA É OUTRA da dos títulos de propósito: `title-big` é a
+   MARCA (Fraunces 300, um tamanho só); citação é PROSA — corpo maior,
+   entrelinha mais apertada (Lote 8), e as aspas tipográficas entram no
+   texto pelas pontas da lista. */
 .encerramento {
   display: flex;
   flex-direction: column;
@@ -275,11 +288,12 @@
   text-align: center;
 }
 .encerramento-linha {
-  color: #f7f3ea;
-  font-weight: 200;
-  font-size: clamp(1.05rem, calc(2.5vw * var(--ui)), 2rem);
+  font-family: var(--fonte-display);
+  color: var(--texto);
+  font-weight: 300;
+  font-size: clamp(1.6rem, calc(3vw * var(--ui)), 2.4rem);
   letter-spacing: 0.06em;
-  line-height: 1.75;
+  line-height: 1.3;
   text-shadow: 0 0 34px rgba(150, 180, 255, 0.45);
 }
 .encerramento-credito {
@@ -287,19 +301,28 @@
   /* a sombra é legibilidade, não enfeite: o crédito cai em cima do
      disco da Terra, que é claro, e sem ela some no Atlântico */
   text-shadow: 0 0 14px rgba(0, 0, 6, 0.95), 0 0 4px rgba(0, 0, 6, 0.9);
-  color: rgba(206, 218, 236, 0.92);
-  font-weight: 300;
-  font-size: clamp(0.72rem, calc(1.1vw * var(--ui)), 0.92rem);
-  letter-spacing: 0.24em;
-  text-indent: 0.24em;
+  color: var(--texto);
+  font-weight: 400;
+  font-size: 0.875rem;
+  /* LOTE 8 (maquete M11b): crédito em Inter normal, sem o rastro largo da pele A */
+  letter-spacing: 0;
+  text-indent: 0;
 }
 .encerramento-fonte {
   display: block;
   margin-top: 0.5rem;
-  color: rgba(178, 192, 214, 0.72);
-  font-size: 0.72em;
-  letter-spacing: 0.2em;
-  text-indent: 0.2em;
+  color: var(--texto-2);
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+  text-indent: 0;
+}
+/* a nota do rodapé ("estrelas nomeadas em posições reais...") é um
+   `.title-sub`, mas aqui menor e mais discreta — o composto pega só
+   ela, não a régua nem a linha dos botões, que também usam
+   `.encerramento-rodape` mas não `.title-sub` */
+.title-sub.encerramento-rodape {
+  font-size: 0.8125rem;
+  color: var(--texto-2);
 }
 /* as três coisas que esperam a citação terminar: selo, régua e botões */
 .veil-end .encerramento-linha,
@@ -334,64 +357,95 @@
   }
 }
 
-/* ---- AS TRÊS PORTAS DA ABERTURA (item 60; o TAMANHO, item 61) -------
-   Era um `style=` embutido no JSX com três propriedades de flex; virou
-   classe quando a terceira porta chegou e cada botão passou a carregar
-   uma linha embaixo.
-
-   AS TRÊS SÃO IGUAIS POR CONSTRUÇÃO — decisão do dono em 22/08 ("3
-   botoes iguais"). Até aqui cada botão era do tamanho do NOME dele, e
-   foi isso que ele viu na foto do item 60: medidos a 1200 px, os três
-   davam 201,79 · 243,24 · 205,78 px. Agora a COLUNA tem largura
-   declarada e o botão ocupa a coluna inteira: a largura vem do CSS e
-   não do texto, então o próximo nome que crescer não desalinha a
-   fileira. As três colunas têm a mesma base de flex, logo encolhem
-   juntas em tela estreita e continuam iguais em qualquer largura; em
-   `rem`, para andarem com o `?ui=`.
-
-   `align-items: flex-start` e não `stretch`: a altura de cada coluna é
-   a dela — as notas têm 1 ou 2 linhas, e esticar todas até a mais alta
-   só abriria vão embaixo do texto curto. Os BOTÕES já saem com a mesma
-   altura por serem o primeiro item de cada coluna. */
-.abertura-portas {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  /* o vão entre colunas é maior que o de cima porque quem quase se
-     encosta são as NOTAS, que são mais largas que os botões */
-  gap: 0.9rem 2.2rem;
+/* ---- AS PORTAS DA ABERTURA (Lote 8, PLAN-UI.md §3.1) -----------------
+   Uma PRIMÁRIA ("Explorar o Atlas", largura da coluna) e, abaixo dela,
+   duas SECUNDÁRIAS lado a lado ("Ver o filme", "Voo livre") — troca a
+   antiga fileira de três botões iguais (item 60/61) pela hierarquia da
+   maquete M1. `.abertura-coluna` é a caixa que centraliza tudo (kicker,
+   marca, filete, subtítulo e portas) numa largura de leitura. */
+.abertura-coluna {
+  width: 35rem;
+  max-width: calc(100% - 3rem);
+  margin: 0 auto;
+  text-align: center;
+}
+.abertura-coluna > .abertura-porta {
+  margin-top: 1.5rem;
 }
 .abertura-porta {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
-  /* 14rem = 224 px no tamanho de sempre. A FOLGA, REMEDIDA em 24/08
-     porque o número que estava aqui não fechava: dizia "acima dos
-     205,78 px do nome mais largo", esquecendo que o `.hud-btn` gasta
-     `0 1.9rem` de recheio dos dois lados (60,8 px). A conta certa é
-     contra a CAIXA DE TEXTO, não contra o botão: 224 − 60,8 = 163,2 px
-     de caixa, e o nome mais largo ("Entrar no Atlas", em caixa alta com
-     0,3em de tracking) pede 147,2 px medidos no navegador. Sobram
-     16,0 px — o texto não aperta, e nenhum dos três quebra linha.
-     A três colunas lado a lado a fileira ainda cabe no maior degrau de
-     `?ui=` (a 1,4 os três medem 313,59×58,06 px, iguais, e o juiz de
-     a11y cobra que nada saia da tela). */
-  width: 14rem;
+  gap: 0.5rem;
 }
-.abertura-porta .hud-btn {
+.abertura-porta .veil-btn {
   width: 100%;
 }
-/* A LINHA QUE DIZ O QUE A PORTA É. Fica no tom da `free-hint`, não no do
-   `title-sub`: é dica, não título — sem caixa alta e sem o tracking de
-   0,34em, que a esta altura da tela viraria um quarto título. */
-.abertura-porta-nota {
-  color: rgba(165, 180, 202, 0.72);
-  font-size: 0.62rem;
-  font-weight: 300;
-  letter-spacing: 0.06em;
-  line-height: 1.5;
+/* a fileira das duas secundárias: `flex: 1 1 0` as iguala, e a largura
+   mínima em `rem` (que cresce com `?ui=`) é o que dispara o
+   `flex-wrap` — com texto ampliado ou tela estreita elas não cabem mais
+   lado a lado e empilham sem precisar de um segundo ponto de quebra. */
+.abertura-portas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.abertura-portas .abertura-porta {
+  /* base de 12rem: a coluna de 35rem leva as duas lado a lado; com
+     `?ui=` grande ou tela estreita a base não cabe e cada uma vira uma
+     linha — sem media query (uiScale.test.ts: só 760 é quebra de HUD). */
+  flex: 1 1 12rem;
+}
+
+/* ---- botões da abertura e do encerramento (mesma anatomia) ---------- */
+.veil-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--raio-controle);
+  font-family: var(--fonte-ui);
+  font-weight: 500;
+  font-size: 0.875rem;
   text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+}
+.veil-btn:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+.veil-btn--primario {
+  height: 3.25rem;
+  background: var(--acento);
+  border: 1px solid var(--acento);
+  color: var(--acento-texto);
+}
+.veil-btn--primario:hover {
+  filter: brightness(1.05);
+}
+.veil-btn--secundario {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  background: transparent;
+  border: 1px solid var(--borda);
+  color: var(--texto);
+}
+.veil-btn--secundario:hover {
+  background: var(--hover);
+  border-color: var(--borda-forte);
+}
+/* A LINHA QUE DIZ O QUE A PORTA É. Fica no tom da `free-hint`, não no do
+   `title-sub`: é dica, não título. */
+.abertura-porta-nota {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--texto-3);
+  text-align: center;
+  line-height: 1.5;
+}
+.abertura-porta-nota--secundaria {
+  font-size: 0.6875rem;
 }
 

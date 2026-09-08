@@ -31,7 +31,7 @@ import type { PT } from './pt';
 export const EN: Record<keyof typeof PT, string> = {
   // ---- the app -----------------------------------------------------
   'app.titulo': 'Sea of Stars — A Journey through the Milky Way',
-  'hud.nome': 'SEA OF STARS',
+  'hud.nome': 'Sea of Stars',
   'app.descricao':
     'A cinematic journey through 18,543 stars of the HYG catalog and the whole Milky Way.',
 
@@ -45,11 +45,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'hud.progressoCarregamento': 'Loading progress',
   'hud.falhaEmVoo': 'FAILURE IN FLIGHT',
   'hud.falhaNoBoot': 'STARTUP FAILURE',
-  'hud.falhaEmVooTitulo': 'THE JOURNEY STOPPED',
-  'hud.falhaNoBootTitulo': 'THE JOURNEY COULD NOT BEGIN',
+  'hud.falhaEmVooTitulo': 'The journey stopped',
+  'hud.falhaNoBootTitulo': 'The journey could not begin',
   'hud.falhaEmVooNota': 'the scene stopped being drawn — reload to start again',
   'hud.falhaNoBootNota': 'the cartography stopped at stage {i}/{total} — {rotulo}',
   'hud.tentarNovamente': 'Try again',
+  'hud.falhaDetalhes': 'Technical details',
   'hud.fatalTick': 'The Journey stopped drawing: ',
   'hud.semWebgl2':
     'This browser only has WebGL 1, and the Journey needs WebGL 2 to draw the galaxy. Update the browser (or turn hardware acceleration on) and try again.',
@@ -61,14 +62,14 @@ export const EN: Record<keyof typeof PT, string> = {
     'from the Sun to the supergiants of Orion, to the heart of the galaxy — and back',
   'hud.abertura.linha2':
     '328,749 cataloged stars · volumetric Milky Way rebuilt in real time',
-  'hud.porta.filme': 'Start the journey',
+  'hud.porta.filme': 'Watch the film',
   'hud.porta.filmeNota': 'a film with a script and captions — you watch',
   'hud.porta.explorar': 'Explore',
   'hud.porta.explorarNota': 'you fly the camera, with no script and no clock',
-  'hud.porta.atlas': 'Enter the Atlas',
+  'hud.porta.voo': 'Free flight',
+  'hud.porta.atlas': 'Explore the Atlas',
   'hud.porta.atlasNota': "today's sky: pick the date, visit the planets",
-  'hud.duracao': 'a cinematic experience',
-  'hud.duracaoCom': 'a cinematic experience · {min} min {seg} s',
+  'hud.duracaoCom': '{min} min {seg} s',
   'hud.fim.deVoltaACasa': 'back home',
   'hud.fim.rodape':
     'named stars in real positions · Milky Way rebuilt from scientific data',
@@ -111,8 +112,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'barra.verOFilmeCurto': 'Film',
   'barra.explorarCurto': 'Explore',
   'barra.voltarAoFilmeCurto': 'Resume',
-  'barra.retomar': '⏵ Resume',
-  'barra.pausar': '⏸ Pause',
+  'barra.retomar': 'Resume',
+  'barra.pausar': 'Pause',
   'barra.retomarAria': 'Resume the journey',
   'barra.pausarAria': 'Pause the journey',
   'barra.velocidadeAria': 'Playback speed',

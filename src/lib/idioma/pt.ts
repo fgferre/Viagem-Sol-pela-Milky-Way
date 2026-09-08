@@ -22,7 +22,7 @@
 export const PT = {
   // ---- o app -------------------------------------------------------
   'app.titulo': 'Mar de Estrelas — Viagem pela Via Láctea',
-  'hud.nome': 'MAR DE ESTRELAS',
+  'hud.nome': 'Mar de Estrelas',
   // a `<meta name="description">` do `index.html` — estática em pt-BR
   // para quem lê a página sem JS (buscador, prévia de link); o
   // `main.tsx` a reescreve quando a língua se resolve.
@@ -39,11 +39,12 @@ export const PT = {
   'hud.progressoCarregamento': 'Progresso do carregamento',
   'hud.falhaEmVoo': 'FALHA DURANTE A VIAGEM',
   'hud.falhaNoBoot': 'FALHA DE INICIALIZAÇÃO',
-  'hud.falhaEmVooTitulo': 'A VIAGEM PAROU',
-  'hud.falhaNoBootTitulo': 'A VIAGEM NÃO PÔDE COMEÇAR',
+  'hud.falhaEmVooTitulo': 'A viagem parou',
+  'hud.falhaNoBootTitulo': 'A viagem não pôde começar',
   'hud.falhaEmVooNota': 'a cena deixou de ser desenhada — recarregue para começar de novo',
   'hud.falhaNoBootNota': 'a cartografia parou na etapa {i}/{total} — {rotulo}',
   'hud.tentarNovamente': 'Tentar novamente',
+  'hud.falhaDetalhes': 'Detalhes técnicos',
   'hud.fatalTick': 'A Viagem parou de desenhar: ',
   'hud.semWebgl2':
     'Este navegador só tem WebGL 1, e a Viagem precisa de WebGL 2 para desenhar a galáxia. Atualize o navegador (ou ative a aceleração de hardware) e tente de novo.',
@@ -54,14 +55,14 @@ export const PT = {
   'hud.abertura.linha1': 'do Sol às supergigantes de Órion, ao coração da galáxia — e de volta',
   'hud.abertura.linha2':
     '328.749 estrelas de catálogo · Via Láctea volumétrica reconstruída em tempo real',
-  'hud.porta.filme': 'Iniciar a viagem',
+  'hud.porta.filme': 'Ver o filme',
   'hud.porta.filmeNota': 'um filme com roteiro e legendas — você assiste',
   'hud.porta.explorar': 'Explorar',
   'hud.porta.explorarNota': 'você pilota a câmera, sem roteiro nem relógio',
-  'hud.porta.atlas': 'Entrar no Atlas',
+  'hud.porta.voo': 'Voo livre',
+  'hud.porta.atlas': 'Explorar o Atlas',
   'hud.porta.atlasNota': 'o céu de hoje: escolha a data, visite os planetas',
-  'hud.duracao': 'experiência cinematográfica',
-  'hud.duracaoCom': 'experiência cinematográfica · {min} min {seg} s',
+  'hud.duracaoCom': '{min} min {seg} s',
   'hud.fim.deVoltaACasa': 'de volta a casa',
   'hud.fim.rodape':
     'estrelas nomeadas em posições reais · Via Láctea reconstruída a partir de dados científicos',
@@ -106,8 +107,8 @@ export const PT = {
   'barra.verOFilmeCurto': 'Filme',
   'barra.explorarCurto': 'Explorar',
   'barra.voltarAoFilmeCurto': 'Retomar',
-  'barra.retomar': '⏵ Retomar',
-  'barra.pausar': '⏸ Pausar',
+  'barra.retomar': 'Retomar',
+  'barra.pausar': 'Pausar',
   'barra.retomarAria': 'Retomar a viagem',
   'barra.pausarAria': 'Pausar a viagem',
   'barra.velocidadeAria': 'Velocidade de reprodução',

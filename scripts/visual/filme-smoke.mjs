@@ -242,7 +242,8 @@ async function julgarLargura(sessao, largura, altura, captura) {
 
     const introAssentou = await sessao.ir(comLang('q=cinema&shot=1'));
     conferir(introAssentou.via === 'sinal', `${largura}px · abertura assentou por ${introAssentou.via}`);
-    const intro = normalizar(await sessao.js("document.querySelector('.veil-intro .title-sub')?.textContent"));
+    // LOTE 8: as duas frases são dois `.title-sub` (a segunda menor); junta os dois
+    const intro = normalizar(await sessao.js("[...document.querySelectorAll('.veil-intro .title-sub')].map((e) => e.textContent).join(' ')"));
     conferir(
       intro.includes('do Sol às supergigantes de Órion, ao coração da galáxia — e de volta'),
       `${largura}px · primeira frase da abertura preservada`

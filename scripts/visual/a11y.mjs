@@ -314,11 +314,19 @@ async function julgarAbertura(s) {
         + ` (aria-describedby=${p.descrito} → "${p.nota}")`
     );
   }
+  // LOTE 8 (PLAN-UI.md §3.1, maquete M1 aprovada em 07/09): UMA porta é a
+  // principal — a do Atlas, na tinta do acento — e as duas secundárias
+  // vestem a MESMA tinta entre si. Até o Lote 8 a régua era "as três com a
+  // mesma tinta"; a decisão do dono ("Explorar o Atlas é o botão principal")
+  // inverteu a prova.
   const tintas = [...new Set((portas || []).map((p) => p.tinta))];
+  const principal = (portas || []).find((p) => p.descrito === 'porta-atlas');
+  const secundarias = (portas || []).filter((p) => p.descrito !== 'porta-atlas');
   conferir(
-    tintas.length === 1,
-    `abertura: nenhuma porta destacada em cor — as três com a mesma tinta`
-      + (tintas.length === 1 ? ` (${tintas[0]})` : ` — ${tintas.length} tintas: ${tintas.join(' vs ')}`)
+    tintas.length === 2 && Boolean(principal) && secundarias.length === 2
+      && secundarias[0].tinta === secundarias[1].tinta && principal.tinta !== secundarias[0].tinta,
+    `abertura: só a porta do Atlas é destacada em cor e as duas secundárias têm a mesma tinta`
+      + ` — ${tintas.length} tintas: ${tintas.join(' vs ')}`
   );
 
   // o Tab passa nas três, na ordem da tela
@@ -357,19 +365,28 @@ async function julgarAbertura(s) {
       }
       return out;
     })()`);
-    const tamanhos = [...new Set(caixas.map((c) => c.caixa))];
+    // LOTE 8: as DUAS secundárias medem o mesmo retângulo entre si, e a
+    // principal (a primeira da coluna) é mais LARGA que cada uma — a
+    // coluna inteira contra metade dela (maquete M1).
+    const [principalCx, ...secundariasCx] = caixas;
+    const larguraDe = (c) => Number(c.caixa.split('×')[0]);
+    const alturaDe = (c) => Number(c.caixa.split('×')[1]);
+    // "mesmo retângulo" a menos de meio pixel: o flex reparte a coluna em
+    // duas e a metade pode cair em subpixel diferente (383,59 × 383,61 a
+    // ui=1,4) — isso é aritmética do navegador, não desigualdade de desenho
+    const iguais = secundariasCx.length === 2
+      && Math.abs(larguraDe(secundariasCx[0]) - larguraDe(secundariasCx[1])) <= 0.5
+      && Math.abs(alturaDe(secundariasCx[0]) - alturaDe(secundariasCx[1])) <= 0.5;
     conferir(
-      tamanhos.length === 1,
-      `abertura com ui=${fator}: os três botões medem o MESMO retângulo`
-        + (tamanhos.length === 1
-          ? ` (${tamanhos[0]} px)`
-          : ` — ${tamanhos.length} tamanhos: ${caixas.map((c) => `"${c.nome}" ${c.caixa}`).join(' vs ')}`)
+      iguais && larguraDe(principalCx) > larguraDe(secundariasCx[0]),
+      `abertura com ui=${fator}: as duas secundárias medem o MESMO retângulo e a principal é mais larga`
+        + ` — ${caixas.map((c) => `"${c.nome}" ${c.caixa}`).join(' vs ')}`
     );
 
     const fora = await s.js(`(() => {
       const W = window.innerWidth; const H = window.innerHeight;
       const alvos = [...document.querySelectorAll('.veil-intro .abertura-porta, '
-        + '.veil-intro .title-big, .veil-intro .journey-runtime')];
+        + '.veil-intro .title-big, .veil-intro .abertura-porta-nota')];
       return alvos.map((e) => { const b = e.getBoundingClientRect(); return {
         c: (typeof e.className === 'string' ? e.className : '').split(' ')[0],
         l: Math.round(b.left), t: Math.round(b.top),
@@ -394,7 +411,9 @@ async function julgarAbertura(s) {
   const rolagem = await s.js(`(() => {
     const veu = document.querySelector('.veil-intro');
     const topo = document.querySelector('.veil-intro .title-kicker');
-    const rodape = document.querySelector('.veil-intro .journey-runtime');
+    // LOTE 8: a última coisa da coluna é a nota da última porta (a linha
+    // da duração, .journey-runtime, entrou no botão do filme)
+    const rodape = [...document.querySelectorAll('.veil-intro .abertura-porta-nota')].pop();
     const caixa = (e) => { const r = e.getBoundingClientRect(); return {
       topo: r.top, base: r.bottom,
     }; };
@@ -441,7 +460,7 @@ async function julgarAbertura(s) {
   // nada passaria em todas as de cima.
   await s.ir(PIN);
   await s.js("[...document.querySelectorAll('.veil-intro button')]"
-    + ".find((b) => b.textContent.trim() === 'Entrar no Atlas').click()");
+    + ".find((b) => b.textContent.trim() === 'Explorar o Atlas').click()");
   const entrou = await esperarPor(s, "window.__director.captura.fase === 'atlas'", 8000);
   conferir(
     entrou !== null,

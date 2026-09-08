@@ -60,14 +60,11 @@
 
   .title-big {
     max-width: 94vw;
-    letter-spacing: 0.34em;
-    text-indent: 0.34em;
+    font-size: 2.5rem;
   }
 
   .title-sub {
     max-width: 88vw;
-    letter-spacing: 0.2em;
-    text-indent: 0.2em;
     line-height: 1.8;
   }
 
@@ -84,16 +81,10 @@
     justify-content: safe center;
   }
 
-  /* AS TRÊS PORTAS EMPILHAM AQUI, uma por linha — e então os 14rem que
-     as igualam lado a lado só apertariam a NOTA de cada uma, que passa
-     a quebrar em mais linhas e empurra a última linha da abertura para
-     fora da tela (medido a 390×844 com `?ui=1.4`: a fileira ia de 314
-     para 356 px de altura). Empilhadas elas tomam a largura que o
-     telefone dá — as TRÊS a mesma, que é a promessa —, e a nota volta a
-     caber. `88vw` é o mesmo teto do `.title-sub` logo acima. */
-  .abertura-porta {
-    width: min(20rem, 88vw);
-  }
+  /* AS PORTAS DA ABERTURA (Lote 8): a primária já é 100% da coluna e as
+     duas secundárias empilham sozinhas quando não cabem (`02-filme.css`) — a
+     largura fixa que existia aqui para as três colunas iguais saiu
+     junto com aquele arranjo. */
 
   /* a quebra e o alinhamento à direita subiram para a fatia 3: valem em
      toda largura desde que a barra ganhou teto (94vw). Aqui fica o que
@@ -111,6 +102,13 @@
   .controls-bar select.hud-btn {
     min-width: 0;
     max-width: 5.6rem;
+  }
+
+  /* LOTE 8 (M7): o cartão de transporte do filme recalcula o `bottom`
+     contra a `.progress-wrap` DESTA largura (6,4vh aqui, não 7,4vh da
+     mesa) — senão a folga de "12 px acima da barra" cresceria sozinha. */
+  .filme-transporte {
+    bottom: calc(6.4vh + 2px + 0.75rem);
   }
 
   .atlas-rodape {
@@ -146,13 +144,32 @@
        linha de rumo: a folga acompanha `?ui=`, que é onde o atropelo
        piorava. Em tela de mesa a coluna é só à esquerda e nada disto
        existe — os 11vh de sempre continuam lá. */
-    bottom: calc(9.6vh + 1.1rem);
+    /* LOTE 8: e ACIMA do cartão de transporte (`.filme-transporte`, base a
+       6,4vh + 2px + 0,75rem, 3,625rem de altura, mais 0,75rem de folga) —
+       cobre também a linha de rumo (9,6vh + 1,1rem), que é menor. */
+    bottom: calc(6.4vh + 5.25rem);
     align-items: stretch;
   }
+  /* a legenda ocupa a coluna inteira: o cartão de transporte fica ABAIXO
+     dela aqui, então a conta de mesa (`44vw − 12rem`, que a 390 px dá
+     negativo) não vale */
+  .caption-wrap {
+    max-width: 100%;
+  }
+  /* A LINHA DA LENTE ("LENTE 47° · SOL 1 UA") sobe para debaixo da barra
+     no filme: no canto de baixo à direita ela dividia o pixel com o
+     cartão de transporte (Lote 8), que agora mora na base centrada. */
+  .hud-root[data-fase='journey'] .lente-line {
+    bottom: auto;
+    top: calc(6.5vh + 8rem);
+    right: 5vw;
+  }
 
+  /* LOTE 8 (M7): mesmo corte da mesa — Fraunces não leva o rastro
+     largo da pele A. */
   .caption-title {
     font-size: clamp(1.15rem, calc(7vw * var(--ui)), 1.8rem);
-    letter-spacing: 0.28em;
+    letter-spacing: 0;
   }
 
   .caption-sub {
@@ -177,16 +194,6 @@
   .cv-titulo {
     top: 58%;
     gap: 0.8rem;
-  }
-
-  .cv-titulo .title-big {
-    letter-spacing: 0.34em;
-    text-indent: 0.34em;
-  }
-
-  .cv-etapa-rotulo {
-    letter-spacing: 0.2em;
-    text-indent: 0.2em;
   }
 }
 
@@ -308,8 +315,6 @@
 
   .cv-titulo .title-big {
     font-size: clamp(1rem, calc(3.4vw * var(--ui)), 1.6rem);
-    letter-spacing: 0.38em;
-    text-indent: 0.38em;
   }
 
   .cv-trilho {

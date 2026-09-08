@@ -133,9 +133,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  color: rgba(165, 180, 202, 0.58);
-  font-size: 0.56rem;
-  letter-spacing: 0.24em;
+  color: var(--texto-3);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 .cv-telemetria.esquerda { left: 3vw; text-align: left; }
@@ -157,12 +157,11 @@
 .cv-titulo .title-kicker { margin-bottom: 0; }
 .cv-titulo .title-big { white-space: nowrap; }
 .cv-etapa-rotulo {
-  color: rgba(190, 205, 228, 0.85);
-  letter-spacing: 0.34em;
-  text-indent: 0.34em;
+  color: var(--texto-2);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   font-weight: 300;
-  font-size: clamp(0.62rem, calc(1.1vw * var(--ui)), 0.82rem);
+  font-size: 0.8125rem;
 }
 
 /* trilho inferior: "etapa NN / 07" + um marco por etapa */
@@ -176,9 +175,9 @@
   gap: 1.4rem;
 }
 .cv-trilho-conta {
-  color: rgba(165, 180, 202, 0.58);
-  font-size: 0.56rem;
-  letter-spacing: 0.24em;
+  color: var(--texto-3);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -193,16 +192,14 @@
   background: rgba(255, 255, 255, 0.13);
   transition: background 0.6s ease, box-shadow 0.6s ease;
 }
-/* concluídos: fatias do MESMO gradiente âmbar→azul da barra da viagem —
-   700% de largura, cada marco deslocado para a sua fatia (inline) */
+/* concluídos e o atual: sólidos em var(--acento) — o anel do "agora" é
+   o mesmo de sempre, só a cor que passa a vir do token da pele */
 .cv-marco.feito {
-  background-image: linear-gradient(90deg, rgba(255, 200, 130, 0.95), rgba(150, 190, 255, 0.95));
-  background-size: 700% 100%;
-  background-repeat: no-repeat;
+  background: var(--acento);
 }
 .cv-marco.agora {
-  background: rgba(255, 226, 180, 0.95);
-  box-shadow: 0 0 8px rgba(255, 214, 150, 0.6);
+  background: var(--acento);
+  box-shadow: 0 0 0 2px rgba(226, 184, 114, 0.3);
 }
 .cv-error .cv-marco.agora {
   background: rgba(255, 140, 110, 0.9);
@@ -246,15 +243,54 @@
 .cv-em-voo .cv-scene {
   opacity: 1;
 }
+/* a mensagem curta e legível (§3.8) — o texto TÉCNICO da falha (ex.:
+   "Failed to fetch") vai à parte, em `.cv-falha-tecnico` (um
+   `<details>`), para não competir com ela */
 .cv-falha-detalhe {
   margin-top: 1.1rem;
+  max-width: 32rem;
+  color: var(--texto-2);
+  font-size: 1rem;
+  letter-spacing: 0;
+  line-height: 1.6;
+  text-align: center;
+}
+.cv-falha-tecnico {
+  margin-top: 0.8rem;
   max-width: 60ch;
-  color: rgba(190, 205, 228, 0.6);
-  font-size: 0.62rem;
-  letter-spacing: 0.16em;
-  line-height: 1.8;
+  color: var(--texto-3);
+  font-size: 0.8125rem;
+}
+.cv-falha-tecnico summary {
+  cursor: pointer;
+}
+.cv-falha-tecnico summary:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
 }
 .cv-falha-regua {
   background: linear-gradient(90deg, transparent, rgba(255, 140, 110, 0.9), transparent);
+}
+/* o botão de novo tentar guarda a classe e o texto do `.hud-btn` de
+   sempre (§3.8) — só o alvo de toque cresce até o piso das outras
+   telas do Lote 8 */
+.cv-falha .hud-btn {
+  /* anatomia secundária da pele B (Lote 8) — a base de `.hud-btn` ainda é a
+     pele antiga (caixa alta espaçada), que o Atlas e o filme sobrescrevem
+     cada um no seu lugar; aqui também. */
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-controle);
+  background: transparent;
+  color: var(--texto);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.cv-falha .hud-btn:hover {
+  background: var(--hover);
+  border-color: var(--borda-forte);
 }
 

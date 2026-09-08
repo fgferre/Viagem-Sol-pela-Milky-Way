@@ -9,6 +9,7 @@ import { useIdioma } from '../hooks/useIdioma';
 import { LOAD_STAGES } from '../three/director';
 import type { LoadStage } from '../three/director';
 import { CartografiaCanvas } from './CartografiaCanvas';
+import { Icone } from './Icone';
 import {
   linhasDoEncerramento, ATRIBUICAO, FONTE_DA_CITACAO,
   ATRASO_DA_LINHA, ATRASO_DA_ATRIBUICAO, ATRASO_DO_RODAPE,
@@ -137,7 +138,7 @@ export function LoadingVeil({
         <div className="cv-titulo">
           <div className="title-kicker">{t('hud.kicker')}</div>
           {/* O NOME do app segue a língua (ordem dele, 03/09: "o título não
-              foi traduzido na página inicial"): MAR DE ESTRELAS / SEA OF STARS,
+              foi traduzido na página inicial"): Mar de Estrelas / Sea of Stars (caixa normal desde o Lote 8),
               o mesmo par do <title> da aba. */}
           <div className="title-big">{t('hud.nome')}</div>
           <div className="cv-etapa-rotulo">{stage.label}</div>
@@ -195,7 +196,7 @@ export function LoadingVeil({
           <div className="title-big error-title">
             {t(emVoo ? 'hud.falhaEmVooTitulo' : 'hud.falhaNoBootTitulo')}
           </div>
-          <div className="title-sub">
+          <div className="cv-falha-detalhe">
             {emVoo
               ? t('hud.falhaEmVooNota')
               : t('hud.falhaNoBootNota', {
@@ -204,7 +205,12 @@ export function LoadingVeil({
                   rotulo: stage.label,
                 })}
           </div>
-          {error && <div className="cv-falha-detalhe">{error}</div>}
+          {error && (
+            <details className="cv-falha-tecnico">
+              <summary>{t('hud.falhaDetalhes')}</summary>
+              {error}
+            </details>
+          )}
           <div className="title-rule cv-falha-regua" />
           <button className="hud-btn" onClick={onRetry}>
             {t('hud.tentarNovamente')}
@@ -240,78 +246,77 @@ export function TitleVeil({
       aria-hidden={!visible}
     >
       {mode === 'intro' && (
-        <>
+        <div className="abertura-coluna">
           <div className="title-kicker">{t('hud.kicker')}</div>
           <div className="title-big">{t('hud.nome')}</div>
           <div className="title-rule" />
-          <div className="title-sub">
-            {t('hud.abertura.linha1')}
-            <br />
-            {t('hud.abertura.linha2')}
-          </div>
-          <div className="title-rule" />
-          {/* AS TRÊS PORTAS DA ABERTURA. O "Explorar" já estava ligado
-              aqui (App passa onExplore ao véu) e só era desenhado no
-              fim — quem não quer 3 min de filme fechava a aba em vez de
-              entrar na galáxia. O "Entrar no Atlas" é o item 60, e é o
-              MESMO `entrarNoAtlas` do portal do pausar-e-olhar: dois
-              caminhos até o mesmo modo, um só código.
-              NENHUMA das três é destacada em cor: o nome de cada porta
-              não diz o que ela é, então cada uma leva a sua linha — e
-              ela é `aria-describedby`, não texto solto, para que quem
-              ouve a tela receba a explicação junto com o botão.
-              E NENHUMA é maior que as outras (dono, 22/08: "3 botoes
-              iguais"). A palavra que sobrava saiu por pedido dele —
-              *"botao explorar livremente está com tamanho diferente dos
-              outros, sugiro tirar a palavra livremente"* —, mas o
-              tamanho igual NÃO vem do texto: vem do CSS
-              (`.abertura-porta`), senão o próximo nome que crescer
-              desalinha a fileira de novo. Dos três lugares que diziam
-              "Explorar livremente" não sobrou nenhum: a BARRA DO FILME
-              encurtou em 24/08 e o VÉU DO FIM foi junto no mesmo dia,
-              quando ele nomeou a sobra. Uma ação, uma palavra. */}
+          <div className="title-sub">{t('hud.abertura.linha1')}</div>
+          <div className="title-sub title-sub--linha2">{t('hud.abertura.linha2')}</div>
+          {/* AS PORTAS DA ABERTURA (Lote 8, PLAN-UI.md §3.1). O "Explorar"
+              já estava ligado aqui (App passa onExplore ao véu) e só era
+              desenhado no fim — quem não quer 3 min de filme fechava a
+              aba em vez de entrar na galáxia. O "Entrar no Atlas" é o
+              item 60, agora rotulado "Explorar o Atlas" e promovido a
+              PRIMÁRIO: é o MESMO `entrarNoAtlas` do portal do
+              pausar-e-olhar, dois caminhos até o mesmo modo, um só
+              código. As notas de cada porta continuam por
+              `aria-describedby`, não texto solto, para que quem ouve a
+              tela receba a explicação junto com o botão. */}
+          {onAtlas && (
+            <div className="abertura-porta">
+              <button
+                className="veil-btn veil-btn--primario"
+                onClick={onAtlas}
+                aria-describedby="porta-atlas"
+              >
+                <Icone nome="bussola" tamanho={16} />
+                {t('hud.porta.atlas')}
+              </button>
+              <span className="abertura-porta-nota" id="porta-atlas">
+                {t('hud.porta.atlasNota')}
+              </span>
+            </div>
+          )}
           <div className="abertura-portas">
             <div className="abertura-porta">
-              <button className="hud-btn" onClick={onPlay} aria-describedby="porta-filme">
-                {t('hud.porta.filme')}
+              <button
+                className="veil-btn veil-btn--secundario"
+                onClick={onPlay}
+                aria-describedby="porta-filme"
+              >
+                <Icone nome="play" tamanho={16} />
+                {/* "Ver o filme · 3 min 13 s" numa linha só (maquete M1): a
+                    duração vem do runtime como sempre; sem duração, só o
+                    rótulo. */}
+                {minutes > 0
+                  ? `${t('hud.porta.filme')} · ${t('hud.duracaoCom', { min: minutes, seg: seconds })}`
+                  : t('hud.porta.filme')}
               </button>
-              <span className="abertura-porta-nota" id="porta-filme">
+              <span className="abertura-porta-nota abertura-porta-nota--secundaria" id="porta-filme">
                 {t('hud.porta.filmeNota')}
               </span>
             </div>
             {onExplore && (
               <div className="abertura-porta">
-                <button className="hud-btn" onClick={onExplore} aria-describedby="porta-voo">
-                  {t('hud.porta.explorar')}
+                <button
+                  className="veil-btn veil-btn--secundario"
+                  onClick={onExplore}
+                  aria-describedby="porta-voo"
+                >
+                  <Icone nome="explorar" tamanho={16} />
+                  {t('hud.porta.voo')}
                 </button>
-                <span className="abertura-porta-nota" id="porta-voo">
+                <span className="abertura-porta-nota abertura-porta-nota--secundaria" id="porta-voo">
                   {t('hud.porta.explorarNota')}
                 </span>
               </div>
             )}
-            {onAtlas && (
-              <div className="abertura-porta">
-                <button className="hud-btn" onClick={onAtlas} aria-describedby="porta-atlas">
-                  {t('hud.porta.atlas')}
-                </button>
-                <span className="abertura-porta-nota" id="porta-atlas">
-                  {t('hud.porta.atlasNota')}
-                </span>
-              </div>
-            )}
           </div>
-          <div className="journey-runtime">
-            {minutes > 0
-              ? t('hud.duracaoCom', { min: minutes, seg: seconds })
-              : t('hud.duracao')}
-          </div>
-        </>
+        </div>
       )}
       {mode === 'end' && (
         <>
-          <div className="title-sub" style={{ letterSpacing: '0.42em' }}>
-            {t('hud.fim.deVoltaACasa')}
-          </div>
+          <div className="title-kicker">{t('hud.fim.deVoltaACasa')}</div>
           <div className="title-rule" />
           {/* A FRASE DE ENCERRAMENTO É EMPRESTADA E ENCENADA (item 108,
               pedidos do dono em 31/08: "podemos trocar a frase de
@@ -371,13 +376,13 @@ export function TitleVeil({
               com o pouso (`Escada.pousarDoFilme`). */}
           <div
             className="encerramento-rodape"
-            style={{ display: 'flex', gap: '0.8rem', animationDelay: `${ATRASO_DO_RODAPE}s` }}
+            style={{ display: 'flex', gap: '0.75rem', animationDelay: `${ATRASO_DO_RODAPE}s` }}
           >
-            <button className="hud-btn" onClick={onPlay}>
+            <button className="veil-btn veil-btn--secundario" onClick={onPlay}>
               {t('hud.fim.reviver')}
             </button>
             {onAtlas && (
-              <button className="hud-btn" onClick={onAtlas}>
+              <button className="veil-btn veil-btn--secundario" onClick={onAtlas}>
                 {t('hud.fim.ficarAqui')}
               </button>
             )}
@@ -393,7 +398,7 @@ export function TitleVeil({
                 REGISTRADO como alternativa aceita (PENDENCIAS, item 61):
                 se ele preferir, é uma palavra em dois lugares. */}
             {onExplore && (
-              <button className="hud-btn" onClick={onExplore}>
+              <button className="veil-btn veil-btn--secundario" onClick={onExplore}>
                 {t('hud.porta.explorar')}
               </button>
             )}

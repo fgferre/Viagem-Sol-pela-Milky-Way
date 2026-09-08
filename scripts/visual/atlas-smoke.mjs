@@ -287,7 +287,7 @@ try {
   const daUrl = await sessao.md5();
   await sessao.ir(PIN);
   await sessao.js("[...document.querySelectorAll('.veil-intro button')]"
-    + ".find((b) => b.textContent.trim() === 'Entrar no Atlas').click()");
+    + ".find((b) => b.textContent.trim() === 'Explorar o Atlas').click()");
   await sessao.assentar();
   const faseDaPorta = await sessao.js('window.__director.captura.fase');
   const daPorta = await sessao.md5();
