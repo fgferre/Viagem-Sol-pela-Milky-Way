@@ -524,7 +524,7 @@ export class FreeRoam {
     this.camera.getWorldDirection(fwd);
     // yaw/pitch no referencial do polo galáctico — o MESMO norte da
     // viagem. A decomposição em Y do mundo descartava o up galáctico
-    // e o horizonte saltava ao clicar em "Explorar livremente".
+    // e o horizonte saltava ao clicar em "Voo livre".
     const p = fwd.dot(GALACTIC_NORTH);
     this.pitch = Math.asin(THREE.MathUtils.clamp(p, -0.999, 0.999));
     this.yaw = Math.atan2(fwd.dot(FRAME_B), fwd.dot(FRAME_A));

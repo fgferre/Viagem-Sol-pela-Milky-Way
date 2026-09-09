@@ -183,6 +183,14 @@ const dentroDoDialogo = (nome) => `(() => {
 })()`;
 
 async function julgarDialogo(s, nome, onde) {
+  // A FICHA É A ÚNICA EXCEÇÃO (dialogFocus.ts, opção `modal: false`,
+  // primeira leva do relatório de UI, 09/09): painel da SELEÇÃO, não
+  // uma folha por cima do resto — o mouse já escolhe outro corpo com
+  // ela aberta, então nem `aria-modal` nem o Tab preso são a promessa
+  // dela. As outras duas (foco entra, Esc fecha e devolve) continuam
+  // cobradas como em qualquer diálogo.
+  const modal = nome !== 'ficha';
+
   // ABRE PELO TECLADO: o gatilho recebe o foco e é ele que dispara — é
   // esse o caminho em que a devolução do foco tem sentido.
   await s.js(`(() => {
@@ -210,26 +218,47 @@ async function julgarDialogo(s, nome, onde) {
     return;
   }
   conferir(
-    info.role === 'dialog' && info.modal === 'true',
+    info.role === 'dialog' && (modal ? info.modal === 'true' : info.modal === null),
     `${onde} · "${nome}": role="${info.role}" aria-modal="${info.modal}"`
   );
   conferir(Boolean(info.rotulo), `${onde} · "${nome}": tem nome acessível ("${info.rotulo}")`);
   conferir(info.dentro, `${onde} · "${nome}": o foco ENTRA no diálogo ao abrir`);
 
-  // FOCO PRESO: uma volta inteira e mais duas — quem vaza, vaza no
-  // primeiro Tab depois do último controle.
-  let vazou = 0;
-  for (let i = 0; i < info.focaveis + 2; i++) {
-    await s.teclar('Tab');
+  if (modal) {
+    // FOCO PRESO: uma volta inteira e mais duas — quem vaza, vaza no
+    // primeiro Tab depois do último controle.
+    let vazou = 0;
+    for (let i = 0; i < info.focaveis + 2; i++) {
+      await s.teclar('Tab');
+      if (!(await s.js(dentroDoDialogo(nome)))) vazou++;
+    }
+    await s.teclar('Tab', { shift: true });
     if (!(await s.js(dentroDoDialogo(nome)))) vazou++;
+    conferir(
+      vazou === 0,
+      `${onde} · "${nome}": foco preso em ${info.focaveis + 3} passos de Tab`
+        + (vazou ? ` — vazou ${vazou}×` : '')
+    );
+  } else {
+    // NÃO MODAL: o Tab tem de poder SAIR do cartão — foca o ÚLTIMO
+    // controle direto e cobra que Tab tire o foco de dentro. Shift+Tab
+    // devolve o foco para dentro logo em seguida, porque a prova
+    // seguinte (Esc) precisa dele DENTRO para o listener do diálogo
+    // escutar a tecla.
+    await s.js(`(() => {
+      const d = document.querySelector('[data-dialogo="${nome}"]');
+      const foc = [...d.querySelectorAll('${FOCAVEIS}')]
+        .filter((e) => e.getClientRects().length > 0);
+      foc[foc.length - 1]?.focus();
+    })()`);
+    await s.teclar('Tab');
+    const saiu = !(await s.js(dentroDoDialogo(nome)));
+    conferir(
+      saiu,
+      `${onde} · "${nome}": o foco NÃO fica preso — Tab tira o foco do cartão no último controle`
+    );
+    await s.teclar('Tab', { shift: true });
   }
-  await s.teclar('Tab', { shift: true });
-  if (!(await s.js(dentroDoDialogo(nome)))) vazou++;
-  conferir(
-    vazou === 0,
-    `${onde} · "${nome}": foco preso em ${info.focaveis + 3} passos de Tab`
-      + (vazou ? ` — vazou ${vazou}×` : '')
-  );
 
   // Esc FECHA e o foco VOLTA ao gatilho
   await s.teclar('Escape');
@@ -603,23 +632,32 @@ async function julgarEscComDicaPresa(s, onde) {
   })()`);
   await dorme(200);
   await s.js("document.querySelector('[data-dialogo=\"camadas\"] .hud-ajuda').click()");
-  const presa = await s.js(
-    "!!document.querySelector('[data-dialogo=\"camadas\"] .hud-dica.presa')"
+  // A CAIXA VIVE NO document.body (`createPortal`, `components/Ajuda.tsx`,
+  // primeira leva do relatório de UI, 09/09) — não é mais descendente do
+  // painel. É achada pelo `aria-controls` do botão que a abriu, o mesmo
+  // `id` que o contrato do componente publica; ela fica sempre MONTADA,
+  // então "solta" é o atributo `hidden`, não o desaparecimento do nó.
+  const dicaDoBotao = `(() => {
+    const b = document.querySelector('[data-dialogo="camadas"] .hud-ajuda');
+    const d = b && document.getElementById(b.getAttribute('aria-controls'));
+    return { presa: Boolean(d && d.classList.contains('presa')), escondida: Boolean(d && d.hidden) };
+  })()`;
+  const antes = await s.js(dicaDoBotao);
+  conferir(
+    antes.presa && !antes.escondida,
+    `${onde} · camadas: clicar o "?" PRENDE a dica (".hud-dica.presa" na tela)`
   );
-  conferir(presa, `${onde} · camadas: clicar o "?" PRENDE a dica (".hud-dica.presa" na tela)`);
 
   await s.teclar('Escape');
   await dorme(150);
   const meio = await s.js(`(() => {
     const d = document.querySelector('[data-dialogo="camadas"]');
-    return {
-      aberto: Boolean(d && d.getClientRects().length > 0),
-      presa: !!document.querySelector('[data-dialogo="camadas"] .hud-dica.presa'),
-    };
+    return { aberto: Boolean(d && d.getClientRects().length > 0) };
   })()`);
+  const meioDica = await s.js(dicaDoBotao);
   conferir(
-    meio.aberto && !meio.presa,
-    `${onde} · camadas: o PRIMEIRO Esc solta a dica e o painel CONTINUA aberto`
+    meio.aberto && meioDica.escondida && !meioDica.presa,
+    `${onde} · camadas: o PRIMEIRO Esc solta a dica ("hidden") e o painel CONTINUA aberto`
   );
 
   await s.teclar('Escape');
@@ -2217,7 +2255,7 @@ async function julgarAreaDaFicha(s) {
  * CELULAR (390×844): Netuno, `base` — e AQUI a leitura não pode ser
  * "bater no DOM da folha e comparar direto": a folha REAL de hoje ainda
  * não é a compacta do Lote 5 (cresce com a seção aberta, hoje bem além
- * do teto de 8,5rem/136 px em `ui=1` — `App.tsx`,
+ * do teto de 10rem/160 px em `ui=1` (8,5rem até 09/09) — `App.tsx`,
  * `TETO_DA_FOLHA_COMPACTA_REM`), então medir a folha inteira reprovaria
  * uma declaração CORRETA por um componente que ainda não encolheu. A
  * prova mede a DIFERENÇA (`util.base` com a ficha aberta menos o mesmo

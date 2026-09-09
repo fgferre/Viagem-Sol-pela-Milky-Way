@@ -287,7 +287,7 @@ const TEMPO_FRACAO = 0.19;
  * Ela é a única peça permanente do alto do modo (`.controls-bar` ancorada
  * em `top: 0.4vh`, fatia 9) e carrega hoje o CONTEXTO (item 6, Lote 4 —
  * sem marca, a linha inteira é a única do topo) e os chips ▶ Filme ·
- * ⇗ Explorar, mais ↩ Retomar quando há filme guardado.
+ * ⇗ Voo livre, mais ↩ Retomar quando há filme guardado.
  *
  * REMEDIDO NO LOTE 4 (07/09): a linha cresceu de 2,75rem (44 px já era o
  * alvo antes) para o mesmo alvo, MEDIDO DE NOVO porque o `.hud-btn`

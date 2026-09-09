@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { CAMADAS_POR_FAMILIA, familiaEmTexto } from '../three/atlasConfig';
-import type { Camada, FamiliaDeCamada } from '../three/atlasConfig';
+import type { Camada } from '../three/atlasConfig';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
@@ -82,11 +82,11 @@ const ORDEM_GALAXIA_DEPOIS_DO_MESTRE: readonly string[] = [
   'nowrap',
 ];
 
-function camadasParaExibir(
-  familia: FamiliaDeCamada,
-  camadas: readonly Camada[],
-): readonly Camada[] {
-  if (familia !== 'Galáxia') return camadas;
+function camadasParaExibir(camadas: readonly Camada[]): readonly Camada[] {
+  // A família é reconhecida pela sua camada-mestre, não pelo nome que
+  // aparece na tela: o juiz `idioma.semSobra` proíbe literal acentuado
+  // fora das tabelas de idioma, e o nome da família É um desses literais.
+  if (!camadas.some((c) => c.flag === CAMADA_GALAXIA_MESTRE)) return camadas;
   const posicao = (flag: string) => {
     if (flag === CAMADA_GALAXIA_MESTRE) return 0;
     const i = ORDEM_GALAXIA_DEPOIS_DO_MESTRE.indexOf(flag);
@@ -156,7 +156,7 @@ export function GavetaDeCamadas({
                 {ligadas}/{camadas.length}
               </span>
             </h3>
-            {camadasParaExibir(familia, camadas).map((c) => {
+            {camadasParaExibir(camadas).map((c) => {
               const ligada = !escondidas.has(c.flag);
               return (
                 <label key={c.flag} className="atlas-gaveta-linha">

@@ -173,7 +173,7 @@ export interface HudDaFase {
    * seria um controle que não faz nada.
    */
   busca: boolean;
-  /** ⏸ Pausar · velocidade · Ver a galáxia · Explorar */
+  /** ⏸ Pausar · velocidade · Ver a galáxia · Voo livre */
   botoesDaViagem: boolean;
   /** ↻ Reviver */
   botaoReviver: boolean;
@@ -185,7 +185,7 @@ export interface HudDaFase {
    */
   botaoPartir: boolean;
   /**
-   * ▶ Ver o filme · ↗ Explorar — as duas FERRAMENTAS do Atlas (item 61,
+   * ▶ Ver o filme · ↗ Voo livre — as duas FERRAMENTAS do Atlas (item 61,
    * 23/08). Palavras do dono em 22/08: *"o modo atlas na minha visão
    * deveria ser o modo único, a viagem na verdade para mim é só uma
    * ferramenta do modo atlas"*. Até aqui a barra do Atlas só tinha a
@@ -396,7 +396,7 @@ export const HUD_POR_FASE = {
  * 27. botão ↻ Reviver ................................ não monta. [mapa]
  * 28. botões da viagem ............................... não; em lugar
  *     deles, as DUAS ferramentas (`saidasDoAtlas`: ▶ Ver o filme e
- *     ↗ Explorar) e o ↩ Voltar ao filme, que só monta com filme
+ *     ↗ Voo livre) e o ↩ Voltar ao filme, que só monta com filme
  *     guardado (item 61, 23/08). [mapa]
  *
  * world/orbitas.ts
