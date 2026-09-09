@@ -183,6 +183,23 @@ fileira rolável / descer para o pé; centro da galáxia: parar antes olhando
 para ele / continuar entrando / tocar o trecho do filme) — ele escolhe.
 Servidor: `npm run dev` (caiu no meio desta rodada; foi levantado de novo).
 
+**09/09 (madrugada — os quatro itens de gosto).** Palavras dele: *"pode
+seguir com as suas sugestões nos quatro"*. Feito e commitado: o painel de
+Ajustes na tela grande desce até onde precisar (como a maquete M8) e o
+"Copiar link" aparece inteiro; os títulos das legendas do filme passaram a
+caixa normal nos sete roteiros, em português e inglês ("O berçário", "A
+Via Láctea, de dentro", "The nursery"…), e os testes e juízes que os
+procuravam pelo texto antigo aprenderam a grafia nova; a barra do filme
+no celular virou uma fileira só que rola de lado, e a linha do destino
+("→ Sagittarius A✱ · 21 mil anos-luz"), que ficava escondida atrás do
+cartão de transporte, subiu para debaixo da barra junto com a linha da
+lente; e o centro da galáxia escolhido na busca deixa de entrar no gás:
+a câmera para a uns 63 mil anos-luz do centro, do lado do Sol e 30° acima
+do plano, com a galáxia inteira no quadro e o rótulo do Sol à vista — a
+vista que o cartão promete (a roda ainda desce até o gás se ele quiser).
+Fotos em `capturas/gosto*-v2.png` e `capturas/lote9-mesa-chegada-centro-
+galaxia-v3.png`. Servidor: `npm run dev`.
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar

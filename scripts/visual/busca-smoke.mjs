@@ -408,6 +408,24 @@ try {
       `destino "${destino.id}": o cartão e a busca chegam ao mesmo alvo `
         + `(foco "${porCartao.foco}"/"${porBusca.foco}", ficha "${porCartao.nome}"/"${porBusca.nome}")`
     );
+    // O CENTRO DA GALÁXIA PARA ANTES DO GÁS (decisão do dono, 08/09/2026):
+    // a lei estelar deixava a câmera a ~29 pc de Sgr A✱, dentro do bojo,
+    // e a vista era uma névoa bege; agora o lugar tem a própria esfera
+    // (`RAIO_DO_CENTRO_GALACTICO_PC`, escada.ts) e a câmera fica a
+    // dezenas de kpc, 30° acima do plano, com a galáxia no quadro. A
+    // distância vem do rig (`atlas.distancia`), a mesma régua da foto.
+    if (destino.id === 'sagittarius-a') {
+      const distanciaPc = await sessao.js(`(() => {
+        const d = window.__director;
+        const at = (d && d.escada && d.escada.atlas) || (d && d.atlas) || null;
+        return at && typeof at.distancia === 'number' ? at.distancia : null;
+      })()`);
+      conferir(
+        distanciaPc !== null && distanciaPc > 12000 && distanciaPc < 30000,
+        `destino "sagittarius-a": a câmera para a ${distanciaPc === null ? '?' : (distanciaPc / 1000).toFixed(1)} kpc`
+          + ' do centro — fora do gás do bojo, com a galáxia no quadro'
+      );
+    }
   }
 
   // ---- 5: no VOO LIVRE, a mesma paleta VOA -------------------------

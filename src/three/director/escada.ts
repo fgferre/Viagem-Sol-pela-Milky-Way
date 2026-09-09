@@ -50,6 +50,7 @@ import type { MaquinaDoTempo } from './maquinaDoTempo';
 import type { Rotulos } from './rotulos';
 import type { AtlasRig } from '../cinematic/atlasRig';
 import { orbitaMaisExterna, raioDeEnquadramentoEstelar } from '../cinematic/atlasRig';
+import { GAL } from '../world/baseGalactica';
 import {
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
@@ -121,6 +122,15 @@ export interface EstadoDaEscada {
    */
   corpoId: string | null;
 }
+
+/**
+ * A ESFERA ENQUADRADA quando o alvo da busca é o CENTRO DA GALÁXIA, em pc
+ * (ver `irAte`): 2 kpc de raio põem a câmera a ~4 kpc de Sgr A✱ sob a
+ * lente do Atlas — fora do bojo (escala de 900 pc) e, a 30° sobre o
+ * plano, fora da espessura do disco; o bojo e a barra ficam inteiros no
+ * quadro, com os braços em volta.
+ */
+const RAIO_DO_CENTRO_GALACTICO_PC = 6000;
 
 export class Escada {
   /**
@@ -442,8 +452,20 @@ export class Escada {
    */
   irAte(pos: THREE.Vector3, arriveDist: number, nome: string | null = null) {
     if (this.phase === 'atlas') {
-      this.atlas.focar(pos, raioDeEnquadramentoEstelar(pos.length()), pos, {
+      // O CENTRO DA GALÁXIA NÃO É UMA ESTRELA (decisão do dono, 08/09/2026).
+      // A lei estelar satura em 9 pc e punha a câmera a ~29 pc de Sgr A✱,
+      // DENTRO do gás do bojo (escala de 900 pc): a vista era uma névoa
+      // bege sem estrela, e o cartão da busca prometia a galáxia. O lugar
+      // ganha a lei da casa (`focarNoSistema`): a esfera enquadrada tem
+      // alguns kpc, o polo no alto é o galáctico (o horizonte é o disco) e
+      // a pose de repouso põe a câmera do lado do Sol, 30° acima do plano
+      // (`PHASE_OFFSET_GRAUS`), olhando para o centro. O piso do zoom
+      // continua o de estrela: quem quiser desce a roda até o gás.
+      const centroGalactico = pos.distanceToSquared(GAL.GC_POS) < 1;
+      const raioEstelar = raioDeEnquadramentoEstelar(pos.length());
+      this.atlas.focar(pos, centroGalactico ? RAIO_DO_CENTRO_GALACTICO_PC : raioEstelar, pos, {
         rampa: this.rampaDaEscada(),
+        ...(centroGalactico ? { polo: GAL.NGP, pisoRaio: raioEstelar } : {}),
       });
       this.enquadrarAgora();
       // estrela em foco: nenhum CORPO em foco — o ΔEV do selo cala
