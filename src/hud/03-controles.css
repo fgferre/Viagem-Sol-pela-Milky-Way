@@ -1,30 +1,36 @@
 /* HUD, fatia 3/9 — a cascata é a ordem dos prefixos numéricos:
    App.tsx importa nessa ordem e os testes concatenam por sort(). */
 /* --- botões --- */
+/* A PELE B É A BASE (fix, 09/09) — borda/fundo/tipografia do botão comum
+   da casa, a mesma anatomia que `.convite-linha button` e
+   `.ajustes-copiar` (08-ajustes.css) já usam: existiam SÓ para desfazer
+   aqui o que a pele ANTIGA ainda escrevia (caixa alta, tracking 0,3em,
+   peso 300, blur) — `.cv-falha .hud-btn` era outra dessas cópias e saiu
+   com ela. Os modificadores abaixo (`.small` e quem veste um `.hud-btn`
+   dentro do próprio contexto) agora só mudam TAMANHO/FORMA; a pintura é
+   uma só. */
 .hud-btn {
   pointer-events: auto;
   cursor: pointer;
-  border: 1px solid rgba(220, 230, 248, 0.35);
-  background: rgba(8, 12, 22, 0.35);
-  color: rgba(235, 240, 250, 0.92);
-  letter-spacing: 0.3em;
-  text-indent: 0.3em;
-  text-transform: uppercase;
-  font-size: 0.68rem;
-  font-weight: 300;
-  padding: 0.85rem 1.9rem;
-  transition: all 0.35s ease;
-  backdrop-filter: blur(6px);
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-controle);
+  background: transparent;
+  color: var(--texto);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: background var(--t-rapido) var(--curva), border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
 }
 .hud-btn:focus-visible {
-  outline: 1px solid rgba(255, 219, 164, 0.95);
-  outline-offset: 4px;
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
 }
 .hud-btn:hover {
-  background: rgba(255, 214, 150, 0.14);
-  border-color: rgba(255, 214, 150, 0.75);
-  color: #fff;
-  box-shadow: 0 0 24px rgba(255, 200, 120, 0.18);
+  background: var(--hover);
+  border-color: var(--borda-forte);
 }
 /* OS BOTÕES DA BARRA CHEGAM AO TAMANHO CHEIO (Lote 4, item 2: "botões de
    40 px, ícone 16 px + rótulo 13 px caixa normal") — os gatilhos das
@@ -35,30 +41,29 @@
    remedir a reserva de câmera em `retanguloDoAtlas.ts` fazia o juiz de
    a11y reprovar (topo medido > declarado). Agora `CONTEXTO_FRACAO` e o
    degrau da quebra foram REMEDIDOS para este tamanho — é o próprio Lote
-   4 que paga a dívida que o comentário antigo declarava. */
+   4 que paga a dívida que o comentário antigo declarava.
+   SÓ TAMANHO: a pintura (borda, fundo, tipografia, hover, foco) é a do
+   `.hud-btn` base (fix, 09/09) — o botão da barra é só MENOR que o
+   padrão do diálogo. */
 .hud-btn.small {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   min-height: 2.5rem;
   padding: 0 0.85rem;
-  font-size: 0.8125rem;
-  letter-spacing: 0;
-  border-color: var(--borda);
-  border-radius: var(--raio-controle);
-  text-indent: 0;
-  text-transform: none;
-  transition: background var(--t-rapido) var(--curva), border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
 }
+/* O HOVER FICA REESCRITO AQUI (mesmos valores do `.hud-btn` base) só pela
+   ESPECIFICIDADE: dentro da régua/das alças do Atlas, `.atlas-regua >
+   .hud-btn`/`.atlas-alcas > .hud-btn` (04-atlas.css/09-celular.css) zeram
+   fundo e cor incondicionalmente com a MESMA especificidade de 2 classes
+   do `.hud-btn:hover` da base — empatam, e por CASCATA (arquivos
+   carregados depois) o reset venceria o hover. As 3 classes daqui
+   (`.hud-btn.small:hover`) resolvem o empate a favor do hover, como
+   sempre foi. */
 .hud-btn.small:hover {
   background: var(--hover);
   border-color: var(--borda-forte);
   color: var(--texto);
-  box-shadow: none;
-}
-.hud-btn.small:focus-visible {
-  outline: 2px solid var(--foco);
-  outline-offset: 2px;
 }
 .controls-bar select.hud-btn {
   appearance: none;
@@ -78,9 +83,9 @@
    DISCRETAS ao lado de "Mais": texto puro, sem moldura nem fundo, para
    não competir com o botão que de fato revela algo. O ícone continua
    opcional — `display:flex`/`gap` já vêm de `.hud-btn.small`, esta
-   classe só troca a pintura. O seletor soma as MESMAS três classes de
-   `.hud-btn.small:hover` (a especificidade que ele já tem) para vencer
-   sem depender da ordem no arquivo. */
+   classe só troca a pintura. O seletor soma as MESMAS três classes
+   (`.hud-btn.small.hud-btn--discreto`) para vencer `.hud-btn:hover` por
+   especificidade, sem depender da ordem no arquivo. */
 .hud-btn.small.hud-btn--discreto {
   border-color: transparent;
   background: transparent;

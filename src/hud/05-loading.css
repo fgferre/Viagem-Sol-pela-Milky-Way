@@ -272,25 +272,6 @@
   background: linear-gradient(90deg, transparent, rgba(255, 140, 110, 0.9), transparent);
 }
 /* o botão de novo tentar guarda a classe e o texto do `.hud-btn` de
-   sempre (§3.8) — só o alvo de toque cresce até o piso das outras
-   telas do Lote 8 */
-.cv-falha .hud-btn {
-  /* anatomia secundária da pele B (Lote 8) — a base de `.hud-btn` ainda é a
-     pele antiga (caixa alta espaçada), que o Atlas e o filme sobrescrevem
-     cada um no seu lugar; aqui também. */
-  min-height: 2.75rem;
-  padding: 0 1rem;
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-controle);
-  background: transparent;
-  color: var(--texto);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-}
-.cv-falha .hud-btn:hover {
-  background: var(--hover);
-  border-color: var(--borda-forte);
-}
+   sempre (§3.8) — agora a própria base já É essa pele (fix, 09/09),
+   nada para vestir aqui. */
 

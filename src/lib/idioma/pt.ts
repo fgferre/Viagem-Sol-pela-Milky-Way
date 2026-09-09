@@ -117,7 +117,7 @@ export const PT = {
   'barra.pausarAria': 'Pausar a viagem',
   'barra.velocidadeAria': 'Velocidade de reprodução',
   'barra.velocidadeDica': '← → pulam de capítulo',
-  'barra.verAGalaxia': 'Ver a galáxia',
+  'barra.verAGalaxia': 'Ir direto à galáxia',
   'barra.explorar': 'Voo livre',
   // O "MAIS" DO FILME (E1) — Camadas, qualidade e Ajustes se recolhem
   // atrás de um gatilho só, fechado a cada carga; o rótulo é curto
@@ -363,7 +363,10 @@ export const PT = {
   'ficha.lerMais': 'Ler mais',
   // ---- a ficha vazia e as falhas de carga (Lote 5, PLAN-UI.md §7/§9) --
   'ficha.vazia': 'Este lugar ainda não tem ficha de dados.',
-  'ficha.erroCarregar': 'Não foi possível carregar esta parte.',
+  'ficha.erroDados':
+    'A ficha deste objeto não carregou. Ele continua no céu, com imagem e órbita.',
+  'ficha.erroTextura':
+    'A textura deste objeto não carregou; ele aparece na cor de base. Os dados abaixo continuam válidos.',
   'ficha.tentarDeNovo': 'Tentar de novo',
 
   // ---- os títulos de seção e os rótulos de campo (`lib/atlas/ficha.ts`)

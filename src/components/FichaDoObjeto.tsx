@@ -543,7 +543,7 @@ export function FichaDoObjeto({
               sozinho. O que já carregou (o resto da ficha) fica. */}
           {corpoId && erroCorpos && (
             <p className="atlas-ficha-erro">
-              {t('ficha.erroCarregar')}
+              {t('ficha.erroDados')}
               <button type="button" onClick={() => setErroCorpos(false)}>
                 {t('ficha.tentarDeNovo')}
               </button>
@@ -551,7 +551,7 @@ export function FichaDoObjeto({
           )}
           {corpoId && corpoId !== 'sun' && erroTexturas && (
             <p className="atlas-ficha-erro">
-              {t('ficha.erroCarregar')}
+              {t('ficha.erroTextura')}
               <button type="button" onClick={() => setErroTexturas(false)}>
                 {t('ficha.tentarDeNovo')}
               </button>

@@ -528,7 +528,7 @@ export function BarraOuAlcas({
           Lote 8/M7) — o `margin-left: auto` que empurra este grupo único
           até a borda direita mora em 02-filme.css, escopado à fase
           'journey', para não mexer na regra de dois grupos que outra
-          fase ainda usa. Pausar/Retomar, velocidade e Ver a galáxia
+          fase ainda usa. Pausar/Retomar, velocidade e Ir direto à galáxia
           continuam no cartão preso à barra de capítulos
           (`.filme-transporte`, 03-controles.css) — essa parte não mudou. */}
       {hud.botoesDaViagem && (

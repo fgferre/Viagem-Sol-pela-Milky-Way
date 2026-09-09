@@ -406,8 +406,9 @@
   width: 60%;
 }
 
-/* AS DUAS FALHAS (Lote 5, §9) — "Não foi possível carregar esta parte."
-   com "Tentar de novo" ao lado; o botão é o vocabulário de controle
+/* AS DUAS FALHAS (Lote 5, §9; frases específicas desde 09/09: a dos
+   dados e a da textura, cada uma dizendo o que ainda funciona) — com
+   "Tentar de novo" ao lado; o botão é o vocabulário de controle
    frio de sempre (borda `--borda`, sem preenchimento), pequeno o
    bastante para não competir com as ações do cabeçalho. */
 .atlas-ficha-erro {

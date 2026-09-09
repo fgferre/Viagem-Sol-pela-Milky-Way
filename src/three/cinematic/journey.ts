@@ -714,7 +714,7 @@ export const CAPTURE_T = {
   edge: Math.round(APOIOS_DO_FILME.instanteDeQA('edge')),
   face: Math.round(APOIOS_DO_FILME.instanteDeQA('face')),
 };
-/** início do Ato IV — o botão "Ver a galáxia" salta para cá. Achado pelo
+/** início do Ato IV — o botão "Ir direto à galáxia" salta para cá. Achado pelo
  *  NOME do beat (a fuga do estilingue), não por índice mágico: a conta de
  *  planos muda com o corte, o nome não. */
 export const REVEAL_T =

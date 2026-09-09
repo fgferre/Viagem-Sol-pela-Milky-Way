@@ -122,7 +122,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'barra.pausarAria': 'Pause the journey',
   'barra.velocidadeAria': 'Playback speed',
   'barra.velocidadeDica': '← → skip chapters',
-  'barra.verAGalaxia': 'Show the galaxy',
+  'barra.verAGalaxia': 'Straight to the galaxy',
   'barra.explorar': 'Free flight',
   // THE FILM'S "MORE" (E1) — Layers, quality and Settings collapse
   // behind a single trigger, closed on every load; the label stays
@@ -343,7 +343,10 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.lerMais': 'Read more',
   // ---- the empty fact sheet and the load failures (Lote 5, §7/§9) --
   'ficha.vazia': 'This place has no data sheet yet.',
-  'ficha.erroCarregar': "This part couldn't be loaded.",
+  'ficha.erroDados':
+    "This object's card didn't load. It is still in the sky, with its image and orbit.",
+  'ficha.erroTextura':
+    "This object's texture didn't load; it shows in its base colour. The data below still stands.",
   'ficha.tentarDeNovo': 'Try again',
 
   // ---- section titles and field labels -----------------------------
