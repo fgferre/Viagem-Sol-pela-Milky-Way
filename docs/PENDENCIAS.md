@@ -211,6 +211,41 @@ cortando "Explorar" na tela pequena com texto grande, o rodapé do tempo
 quebrando em três linhas na paisagem, e os itens antigos de fluidez.
 Servidor parado. Servidor: `npm run dev`.
 
+**09/09 (rodada das TRÊS FRENTES — investigar em paralelo, consertar por
+agente).** Palavras dele: *"continue, analise o git history antes. nosso
+preceito de orquestração, lembre-se"* e, à pergunta de por qual frente
+seguir, *"vamos abrir todas as frentes para investigar em paralelo, depois
+vc lança agentes específicos para consertar. use o reasoning correto para
+isso e os modelos mais adequados, nada de fable, vc só coordena"*. Três
+investigadores só de leitura (interface, fluidez, item 225), depois um
+consertador por frente, e uma verificação sequencial no fim. Feito e
+commitado: INTERFACE — sombra de rolagem nas barras do celular (o
+"Explorar" sumia sem sinal a 320 px com texto grande), reticências no chip
+do selo, e o juiz do Atlas de volta ao verde por calibração (duas rodadas
+iguais: 16 nomes, do grupo disputado só δ Pav); o "Netuno → Net" já estava
+consertado desde 07/09. ITEM 225 — cinco consertos defensivos: o
+encerramento conta como filme para o segurador de texturas e para o pino
+das 16:00, a falha de carga de textura deixa de ser sentença, a Lua deixa
+de exigir a efeméride quando tem posição, os rótulos ganham piso de tempo,
+e o resize ignora 0×0. O caso dele NÃO reproduziu; a tela também segura a
+textura enquanto o globo é grande (revisão do Grok, conferida no código),
+então o primeiro só morde com falha real de carga; o que mais parece com o
+relato é a aba escondida parando o relógio (Netuno sem nomes). FLUIDEZ —
+régua de tela real (`scripts/visual/fps-real.mjs`); o atalho do vazio no
+gás (A2) foi construído, provado idêntico na imagem, medido sem ganho e
+revertido; mapa de custo em Cinema/DPR 2: t=60 62 ms (42 sem nebulosa),
+t=100 72–80 ms (68 sem nebulosa, 49 sem partículas da galáxia); a alavanca
+que resta são os pontos da galáxia de perto, decisão de olho dele com fotos
+A/B (PLAN.md). RODAPÉ — palavras dele na foto do celular deitado: *"acho
+que precisamos ter uniformidade da forma como tratamos o layout do app"* e
+*"ok"* à proposta de o telefone deitado seguir a mesa: o rodapé cabe numa
+fileira em qualquer mesa, o selo cede, a câmera reserva por um limiar só.
+`npm run done` verde; juízes a11y, atlas-smoke (2×), busca e filme verdes.
+**Continuam abertos 223, 224 e 225.** Para o 225 faltam as respostas dele:
+assistiu inteiro ou pulou para o fim? tinha visitado um planeta de perto na
+mesma aba? a aba ficou na frente o tempo todo? Backlog: a régua de abas não
+cabe na altura do celular deitado com texto grande. Servidor: `npm run dev`.
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar
