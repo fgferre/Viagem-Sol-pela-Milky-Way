@@ -47,15 +47,16 @@ describe('o clique só ALTERNA a dica NO TOQUE — em quem tem mouse é NO-OP (d
       FONTE.indexOf('onClick={(evento) => {'),
       FONTE.indexOf('      >\n        ?\n      </button>')
     );
-    const iGuarda = onClick.indexOf('if (!hoverCapaz) {');
+    const iGuarda = onClick.indexOf('if (!hoverCapaz) onAlternar();');
     const iAlternar = onClick.indexOf('onAlternar();');
     const iFecho = onClick.indexOf('setFoco(false);');
     expect(iGuarda).toBeGreaterThan(-1);
-    // onAlternar() e o setFoco(false) que zera o foco residual moram
-    // DENTRO da mesma guarda — no mouse não há pino para religar por
-    // foco, e chamar isso ali fecharia a caixa que hover/foco acabaram
-    // de abrir
-    expect(iAlternar).toBeGreaterThan(iGuarda);
+    // onAlternar() mora DENTRO da guarda (só o toque prende); o
+    // setFoco(false) vem DEPOIS dela, FORA, em qualquer aparelho — na
+    // mesa o clique deixa o botão focado, e sem soltar o foco a caixa
+    // seguiria aberta depois que o mouse saísse (a "presa" por outra
+    // porta, 09/09)
+    expect(iAlternar).toBeGreaterThanOrEqual(iGuarda);
     expect(iFecho).toBeGreaterThan(iAlternar);
     // e o stopPropagation() do clique continua FORA da guarda — ele
     // segue valendo em qualquer dispositivo (o <label> da gaveta de
