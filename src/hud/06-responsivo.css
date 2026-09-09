@@ -156,12 +156,39 @@
   .caption-wrap {
     max-width: 100%;
   }
-  /* A LINHA DA LENTE ("LENTE 47° · SOL 1 UA") sobe para debaixo da barra
-     no filme: no canto de baixo à direita ela dividia o pixel com o
-     cartão de transporte (Lote 8), que agora mora na base centrada. */
+  /* A BARRA DO FILME É UMA FILEIRA SÓ, que rola de lado — a mesma receita
+     da barra do Atlas no telefone (`09-celular.css`). Antes quebrava em
+     duas (Entrar no Atlas · Explorar / Camadas · Cinema · Ajustes), sem
+     maquete que a justificasse; decisão do dono, 08/09/2026. */
+  .hud-root[data-fase='journey'] .controls-bar {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .hud-root[data-fase='journey'] .controls-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .hud-root[data-fase='journey'] .controls-bar .hud-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  /* A LINHA DE RUMO ("→ Sagittarius A✱ · 21 mil anos-luz") E A DA LENTE
+     ("LENTE 47° · SOL 1 UA") sobem para debaixo da barra no filme: no
+     canto de baixo à direita as duas dividiam o pixel com o cartão de
+     transporte (Lote 8), que mora na base centrada — a lente subiu no
+     Lote 8, o rumo ficou ESCONDIDO atrás do cartão até 08/09/2026. A
+     barra agora tem uma fileira (2,5rem a partir de 6,5vh), o rumo
+     fica logo abaixo dela e a lente abaixo do rumo, na mesma ordem da
+     mesa (rumo acima, lente abaixo). */
+  .hud-root[data-fase='journey'] .dest-line {
+    bottom: auto;
+    top: calc(6.5vh + 3.4rem);
+    right: 5vw;
+  }
   .hud-root[data-fase='journey'] .lente-line {
     bottom: auto;
-    top: calc(6.5vh + 8rem);
+    top: calc(6.5vh + 4.6rem);
     right: 5vw;
   }
 
