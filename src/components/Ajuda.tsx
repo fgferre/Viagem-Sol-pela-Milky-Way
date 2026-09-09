@@ -173,16 +173,17 @@ export function Ajuda({
           // dentro do `<label>` também alternar a caixa de seleção)
           evento.stopPropagation();
           // SÓ NO TOQUE o clique prende (design do dono, 09/09): em quem
-          // tem mouse ele é NO-OP além do foco padrão do botão — a caixa
-          // já mostra por `foco`, e prender por clique era o bug
-          // relatado (a dica presa por mouse nunca soltava sozinha).
-          if (!hoverCapaz) {
-            onAlternar();
-            // sem isto, um segundo toque/Enter vindo do teclado não
-            // fechava de verdade: o foco continuava no botão e reabria a
-            // caixa sozinha por `aberta = hover || foco || presa`
-            setFoco(false);
-          }
+          // tem mouse a caixa mostra pelo hover e pelo foco do TECLADO, e
+          // prender por clique era o bug relatado (a dica presa por mouse
+          // nunca soltava sozinha).
+          if (!hoverCapaz) onAlternar();
+          // EM QUALQUER APARELHO o clique solta o foco como motivo de
+          // mostrar: na mesa o clique deixa o botão focado, e sem isto a
+          // caixa seguiria aberta depois que o mouse saísse — a mesma
+          // "presa" de antes, por outra porta; no toque, sem isto um
+          // segundo toque não fechava de verdade (o foco reabria a caixa
+          // por `aberta = hover || foco || presa`).
+          setFoco(false);
         }}
       >
         ?
