@@ -66,7 +66,7 @@ export const PT = {
   'hud.fim.rodape':
     'estrelas nomeadas em posições reais · Via Láctea reconstruída a partir de dados científicos',
   'hud.fim.reviver': 'Reviver a viagem',
-  'hud.fim.ficarAqui': 'Ficar aqui',
+  'hud.fim.ficarAqui': 'Ficar neste céu',
   'hud.progressoDaViagem': 'Progresso da viagem',
   'hud.capituloDeTotal': '{n} de {total} — {texto}',
   'hud.capitulos': '{total} capítulos',
@@ -119,6 +119,11 @@ export const PT = {
   'barra.velocidadeDica': '← → pulam de capítulo',
   'barra.verAGalaxia': 'Ver a galáxia',
   'barra.explorar': 'Voo livre',
+  // O "MAIS" DO FILME (E1) — Camadas, qualidade e Ajustes se recolhem
+  // atrás de um gatilho só, fechado a cada carga; o rótulo é curto
+  // porque o `aria-label` abaixo já diz o que ele abre.
+  'barra.mais': 'Mais',
+  'barra.maisAria': 'Mostrar Camadas, qualidade e Ajustes',
   'barra.qualidadeAria': 'Qualidade gráfica',
   'barra.alcasAria': 'Controles do Atlas',
   'barra.reguaAria': 'Ferramentas do Atlas',
@@ -236,16 +241,16 @@ export const PT = {
   'atlas.tempo': 'Tempo',
   'atlas.tempoBotao': 'Tempo',
   'atlas.fecharTempo': 'Fechar a máquina do tempo',
-  'atlas.voltarNoTempo': 'Voltar no tempo',
-  'atlas.pararOTempo': 'Parar o tempo',
-  'atlas.avancarNoTempo': 'Avançar no tempo',
-  'atlas.taxaAria': 'Velocidade do tempo: {taxa}. Clique para o próximo degrau.',
-  'atlas.aoVivo': 'Ao vivo',
   // O TOGGLE DA BARRA DE MESA EM REPOUSO (item A1.1) — a linha "INSTANTE
   // DO CÉU" começa recolhida, e este par de aria diz o que o botão "▸"/"▾"
   // faz, no mesmo molde de `atlas.fecharTempo`.
   'atlas.mostrarControlesDoTempo': 'Mostrar os controles do tempo',
   'atlas.esconderControlesDoTempo': 'Esconder os controles do tempo',
+  'atlas.voltarNoTempo': 'Voltar no tempo',
+  'atlas.pararOTempo': 'Parar o tempo',
+  'atlas.avancarNoTempo': 'Avançar no tempo',
+  'atlas.taxaAria': 'Velocidade do tempo: {taxa}. Clique para o próximo degrau.',
+  'atlas.aoVivo': 'Ao vivo',
   'atlas.aoVivoAria': 'Seguir o tempo real',
   'atlas.epoca': 'Época',
   'atlas.epocaAria': 'Voltar ao instante do retrato de 2026',

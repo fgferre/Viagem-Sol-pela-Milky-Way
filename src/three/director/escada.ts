@@ -1458,7 +1458,7 @@ export class Escada {
    *
    *  1. dentro, com um corpo perto do eixo de vista → o CORPO, com o
    *     raio físico dele (o degrau `corpo` de sempre). É o caso da coda,
-   *     e é o que faz "Ficar aqui" pousar na Terra em vez de girar para
+   *     e é o que faz "Ficar neste céu" pousar na Terra em vez de girar para
    *     o Sol;
    *  2. dentro, sem corpo em quadro → o SOL, com a esfera do degrau
    *     `sistema` — que desde o item 61 é a borda do sistema INTERNO, a
@@ -1564,7 +1564,7 @@ export class Escada {
    * ~10 mil km da Terra, e dali qualquer diferença de horas entre a
    * efeméride do FILME e a do instante pedido move a direção câmera→Terra
    * dezenas de graus. Um teste angular reprovava o caso mais importante
-   * que existe — o "Ficar aqui" da coda. A distância não tem essa
+   * que existe — o "Ficar neste céu" da coda. A distância não tem essa
    * fragilidade: quem está a 10 mil km da Terra está ao lado da Terra,
    * qualquer que seja a hora.
    *

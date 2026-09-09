@@ -74,6 +74,25 @@
   background-repeat: no-repeat;
 }
 
+/* E1 — as SAÍDAS do filme ("← Entrar no Atlas", "Voo livre") ficam
+   DISCRETAS ao lado de "Mais": texto puro, sem moldura nem fundo, para
+   não competir com o botão que de fato revela algo. O ícone continua
+   opcional — `display:flex`/`gap` já vêm de `.hud-btn.small`, esta
+   classe só troca a pintura. O seletor soma as MESMAS três classes de
+   `.hud-btn.small:hover` (a especificidade que ele já tem) para vencer
+   sem depender da ordem no arquivo. */
+.hud-btn.small.hud-btn--discreto {
+  border-color: transparent;
+  background: transparent;
+  color: var(--texto-2);
+}
+.hud-btn.small.hud-btn--discreto:hover,
+.hud-btn.small.hud-btn--discreto:focus-visible {
+  border-color: transparent;
+  background: transparent;
+  color: var(--texto);
+}
+
 /* --- controles fixos --- */
 /* A BARRA NUNCA SAI DA TELA PELA ESQUERDA. Ela é `fixed` só pela
    direita, então cresce para a esquerda sem limite: no filme com

@@ -73,7 +73,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'hud.fim.rodape':
     'named stars in real positions · Milky Way rebuilt from scientific data',
   'hud.fim.reviver': 'Watch it again',
-  'hud.fim.ficarAqui': 'Stay here',
+  'hud.fim.ficarAqui': 'Stay in this sky',
   'hud.progressoDaViagem': 'Journey progress',
   'hud.capituloDeTotal': '{n} of {total} — {texto}',
   'hud.capitulos': '{total} chapters',
@@ -124,6 +124,11 @@ export const EN: Record<keyof typeof PT, string> = {
   'barra.velocidadeDica': '← → skip chapters',
   'barra.verAGalaxia': 'Show the galaxy',
   'barra.explorar': 'Free flight',
+  // THE FILM'S "MORE" (E1) — Layers, quality and Settings collapse
+  // behind a single trigger, closed on every load; the label stays
+  // short because the `aria-label` below already says what it opens.
+  'barra.mais': 'More',
+  'barra.maisAria': 'Show Layers, quality and Settings',
   'barra.qualidadeAria': 'Graphics quality',
   'barra.alcasAria': 'Atlas controls',
   'barra.reguaAria': 'Atlas tools',
@@ -228,16 +233,16 @@ export const EN: Record<keyof typeof PT, string> = {
   'atlas.tempo': 'Time',
   'atlas.tempoBotao': 'Time',
   'atlas.fecharTempo': 'Close the time machine',
-  'atlas.voltarNoTempo': 'Go back in time',
-  'atlas.pararOTempo': 'Stop time',
-  'atlas.avancarNoTempo': 'Go forward in time',
-  'atlas.taxaAria': 'Time speed: {taxa}. Click for the next step.',
-  'atlas.aoVivo': 'Live',
   // THE DESKTOP BAR TOGGLE AT REST (item A1.1) — the "SKY TIME" line
   // starts collapsed, and this pair of aria strings names what the
   // "▸"/"▾" button does, in the same mold as `atlas.fecharTempo`.
   'atlas.mostrarControlesDoTempo': 'Show the time controls',
   'atlas.esconderControlesDoTempo': 'Hide the time controls',
+  'atlas.voltarNoTempo': 'Go back in time',
+  'atlas.pararOTempo': 'Stop time',
+  'atlas.avancarNoTempo': 'Go forward in time',
+  'atlas.taxaAria': 'Time speed: {taxa}. Click for the next step.',
+  'atlas.aoVivo': 'Live',
   'atlas.aoVivoAria': 'Follow real time',
   'atlas.epoca': 'Epoch',
   'atlas.epocaAria': 'Back to the instant of the 2026 portrait',

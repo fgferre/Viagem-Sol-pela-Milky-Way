@@ -584,12 +584,26 @@ try {
   //
   // `?shot=1` e não `shot=2`: o objeto do juízo são os botões.
   const relogio = () => sessao.js('JSON.stringify(window.__director.tempo)');
-  const apertar = (rotulo) =>
-    sessao.js(`(() => {
+  // A BARRA DE MESA REPOUSA RECOLHIDA (A1.1, relatório de UI de 09/09): os
+  // botões de transporte/velocidade/referência somem do DOM até alguém
+  // abrir `.atlas-tempo-alternar` — em `?shot=1` o HUD é interativo. O
+  // clique que expande vai num `Runtime.evaluate` PRÓPRIO, separado do
+  // que procura e aperta o botão-alvo: dentro do MESMO `evaluate` o
+  // `setAberta` do React ainda não tinha comprometido no DOM (medido —
+  // o clique duplo bater na mesma chamada achava `aria-expanded="false"`
+  // logo depois de clicar), e só a volta ao laço de eventos do navegador,
+  // entre uma chamada CDP e outra, deixa o commit acontecer.
+  const apertar = async (rotulo) => {
+    const fechado = await sessao.js(
+      "document.querySelector('.atlas-tempo-alternar')?.getAttribute('aria-expanded') === 'false'"
+    );
+    if (fechado) await sessao.js("document.querySelector('.atlas-tempo-alternar').click()");
+    return sessao.js(`(() => {
       const b = [...document.querySelectorAll('.atlas-tempo button')]
         .find((e) => (e.getAttribute('aria-label') || '').startsWith(${JSON.stringify(rotulo)}));
       b.click();
     })()`);
+  };
 
   await sessao.ir('atlas=1&q=cinema&shot=1');
   await apertar('Seguir o tempo real');

@@ -86,4 +86,13 @@ describe('o chrome do filme some sozinho (item 61)', () => {
     expect(APP).not.toContain('`filme-rodape${');
     expect(APP).not.toContain('`dest-line${');
   });
+
+  it('o "Mais" do filme fecha quando o chrome some (E1)', () => {
+    // a régua atrás de "Mais" (Camadas, qualidade, Ajustes) reabrir
+    // sozinha ao voltar do esmaecimento seria uma surpresa — ela lê o
+    // MESMO `chromeSumido` que esmaece a barra (`.hud-sumido`, acima) e
+    // fecha no mesmo evento, para nunca sobrar aberta atrás de uma barra
+    // invisível.
+    expect(APP).toContain('if (chromeSumido) setMaisAberto(false);');
+  });
 });

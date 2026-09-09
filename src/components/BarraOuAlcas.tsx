@@ -263,6 +263,28 @@ export function BarraOuAlcas({
     return () => consulta.removeEventListener('change', ouvir);
   }, []);
   /**
+   * O "MAIS" DO FILME (E1) — Camadas, qualidade e ⚙ Ajustes se recolhem
+   * atrás de UM gatilho, e a régua nasce FECHADA a cada carga: `useState`
+   * puro, sem ler storage nem URL — é chrome, não gosto salvo. Fecha de
+   * novo quando o chrome do filme some sozinho (item 61): o mesmo
+   * `chromeSumido` que esmaece a barra também fecha a régua, para o
+   * visitante nunca reencontrar Camadas/Ajustes abertos atrás de uma
+   * barra invisível.
+   *
+   * AJUSTE DURANTE O RENDER, e não efeito — o mesmo caminho de
+   * `useGavetas.ts` (`alvoAnterior`) e o que a regra `set-state-in-effect`
+   * pede: fechar não toca DOM, rede nem relógio, só deriva `maisAberto`
+   * de uma entrada (`chromeSumido`) que MUDOU. O "anterior" é um SEGUNDO
+   * estado, não um `useRef` — ref lido durante o render não re-renderiza,
+   * e é do re-render ANTES do commit que o ajuste depende.
+   */
+  const [maisAberto, setMaisAberto] = useState(false);
+  const [chromeSumidoAnterior, setChromeSumidoAnterior] = useState(chromeSumido);
+  if (chromeSumido !== chromeSumidoAnterior) {
+    setChromeSumidoAnterior(chromeSumido);
+    if (chromeSumido) setMaisAberto(false);
+  }
+  /**
    * O ⚙ AJUSTES é o único gatilho que não tem componente próprio, e ele
    * nasce aqui para caber nos DOIS lugares sem ser escrito duas vezes: na
    * barra (mesa, filme e voo livre) ou na fileira de alças (Atlas em
@@ -279,6 +301,46 @@ export function BarraOuAlcas({
       <Icone nome="ajustes" tamanho={16} />
       {t('barra.ajustes')}
     </button>
+  );
+
+  /**
+   * O SELETOR DE QUALIDADE, ESTILIZADO COMO CHIP (item 2), escrito UMA vez
+   * — desde o E1 ele mora em DOIS lugares (o grupo "sistema" do Atlas de
+   * mesa/voo livre, e atrás do "Mais" do filme), daí a extração. Quatro
+   * estados desde os Ajustes D (o Auto é o quarto). Os rótulos saem da
+   * tabela única (`QUALIDADES`, atlasConfig), NUNCA digitados aqui: o
+   * painel oferece a mesma lista e as duas discordariam no primeiro
+   * estado novo. O CHEVRON já é o mesmo `<select>` nativo de sempre —
+   * `.controls-bar select.hud-btn` (03-controles.css) já o desenha por
+   * `background-image`; o chip é a MESMA peça, só o resto da barra
+   * cresceu ao redor dela.
+   *
+   * O RÓTULO DO AUTO NÃO CARREGA O TIER VIVO, e é orçamento de largura,
+   * não descuido: um `<select>` nativo se dimensiona pela opção MAIS
+   * LARGA, então "⟳ Auto · performance" alargaria a barra de controles em
+   * toda tela — inclusive nas estreitas que o juiz de a11y mede com o
+   * texto em 140%. O tier em que o Auto pousou é dito onde há espaço para
+   * dizê-lo: no `title` (abaixo) e na nota do painel.
+   *
+   * O `aria-label` FICA PARADO enquanto o `title` anda: nome acessível
+   * que muda a cada janela de medida desorienta quem ouve a tela — o que
+   * muda é ESTADO, e estado se anuncia pela região `aria-live` do painel,
+   * não renomeando o controle.
+   */
+  const seletorDeQualidade = (
+    <select
+      className="hud-btn small"
+      aria-label={t('barra.qualidadeAria')}
+      title={rotuloDaQualidade(quality)}
+      value={quality.escolha}
+      onChange={(e) => changeQuality(e.target.value as EscolhaDeQualidade)}
+    >
+      {QUALIDADES.map((q) => (
+        <option key={q.id} value={q.id}>
+          {q.simbolo} {q.nome}
+        </option>
+      ))}
+    </select>
   );
 
   /**
@@ -459,20 +521,28 @@ export function BarraOuAlcas({
           {portaDaFicha}
         </div>
       )}
-      {/* LOTE 8 (PLAN-UI.md §3.7, maquete M7) — o topo do filme vira DOIS
-          grupos: modos à esquerda (Portal + Voo livre), sistema à direita
-          (grupo "SISTEMA" abaixo, que ganhou as Camadas). Pausar/Retomar,
-          velocidade e Ver a galáxia descem para o cartão preso à barra
-          de capítulos (`.filme-transporte`, 03-controles.css) — MESMOS
-          textos, MESMOS aria-label, só o lugar mudou. */}
+      {/* E1 — o topo do filme vira UM grupo só, à direita: as duas saídas
+          (Portal + Voo livre) ficam discretas ao lado de "Mais", que
+          recolhe Camadas, qualidade e ⚙ Ajustes (fechado a cada carga).
+          Antes eram DOIS grupos (modos à esquerda, sistema à direita,
+          Lote 8/M7) — o `margin-left: auto` que empurra este grupo único
+          até a borda direita mora em 02-filme.css, escopado à fase
+          'journey', para não mexer na regra de dois grupos que outra
+          fase ainda usa. Pausar/Retomar, velocidade e Ver a galáxia
+          continuam no cartão preso à barra de capítulos
+          (`.filme-transporte`, 03-controles.css) — essa parte não mudou. */}
       {hud.botoesDaViagem && (
         <>
           <div className="atlas-barra-grupo">
             {/* O PORTAL. Só no pausar-e-olhar: é o único momento do filme
                 em que o visitante já parou por conta própria e a
-                pergunta "onde é isso?" tem lugar (D3). */}
+                pergunta "onde é isso?" tem lugar (D3). AGORA DISCRETO
+                (E1): texto sem moldura, para não competir com "Mais". */}
             {inJourney && paused && (
-              <button className="hud-btn small" onClick={entrarNoAtlas}>
+              <button
+                className="hud-btn small hud-btn--discreto"
+                onClick={entrarNoAtlas}
+              >
                 <Icone nome="setaEsquerda" tamanho={16} />
                 {t('barra.entrarNoAtlas')}
               </button>
@@ -485,10 +555,37 @@ export function BarraOuAlcas({
                 barra fala como o resto da casa: a porta da abertura, a
                 ferramenta do Atlas (↗ Voo livre) e esta dizem o MESMO nome
                 para o MESMO destino. */}
-            <button className="hud-btn small" onClick={freeRoam}>
+            <button className="hud-btn small hud-btn--discreto" onClick={freeRoam}>
               <Icone nome="explorar" tamanho={16} />
               {t('barra.explorar')}
             </button>
+            {/* "MAIS" (E1) — um botão comum, sem o contrato de diálogo
+                (`gatilhoDoDialogo`/`data-abre-dialogo`): não sobe uma
+                folha por cima da cena, só revela os três controles a
+                seguir NA MESMA barra. Nasce CEDO no documento, logo
+                depois das saídas — quem tabula alcança "Mais" antes de
+                Camadas/qualidade/Ajustes, que vêm DEPOIS dele no DOM
+                (Tab natural, do jeito que se espera de uma revelação).
+                A ORDEM VISUAL é outra: o `order` inline empurra "Mais"
+                para o fim da fileira, então os três aparecem à ESQUERDA
+                dele quando abertos — quem enxerga lê da esquerda para a
+                direita e vê o conteúdo antes do botão que o abriu. */}
+            <button
+              className="hud-btn small"
+              style={{ order: 1 }}
+              onClick={() => setMaisAberto((v) => !v)}
+              aria-expanded={maisAberto}
+              aria-label={t('barra.maisAria')}
+            >
+              {t('barra.mais')}
+            </button>
+            {maisAberto && (
+              <>
+                {portaDasCamadas}
+                {seletorDeQualidade}
+                {botaoDeAjustes}
+              </>
+            )}
           </div>
           <div className="filme-transporte">
             <button
@@ -515,50 +612,15 @@ export function BarraOuAlcas({
           </div>
         </>
       )}
-      {/* GRUPO "SISTEMA" (item 2) — o chip de qualidade e ⚙ Ajustes; no
-          FILME (Lote 8) as Camadas entram aqui também, para fechar num
-          grupo só a direita do M7 (PLAN-UI.md §3.7) — duas
-          `.atlas-barra-grupo` vizinhas desenhariam o filete que só faz
-          sentido entre grupos de fato distintos. */}
-      <div className="atlas-barra-grupo">
-        {hud.botoesDaViagem && portaDasCamadas}
-        {/* O SELETOR DE QUALIDADE, ESTILIZADO COMO CHIP (item 2) — quatro
-            estados desde os Ajustes D (o Auto é o quarto). Os rótulos
-            saem da tabela única (`QUALIDADES`, atlasConfig), NUNCA
-            digitados aqui: o painel oferece a mesma lista e as duas
-            discordariam no primeiro estado novo. O CHEVRON já é o mesmo
-            `<select>` nativo de sempre — `.controls-bar select.hud-btn`
-            (03-controles.css) já o desenha por `background-image`; o
-            chip é a MESMA peça, só o resto da barra cresceu ao redor
-            dela.
-
-            O RÓTULO DO AUTO NÃO CARREGA O TIER VIVO, e é orçamento de
-            largura, não descuido: um `<select>` nativo se dimensiona
-            pela opção MAIS LARGA, então "⟳ Auto · performance" alargaria
-            a barra de controles em toda tela — inclusive nas estreitas
-            que o juiz de a11y mede com o texto em 140%. O tier em que o
-            Auto pousou é dito onde há espaço para dizê-lo: no `title`
-            (abaixo) e na nota do painel.
-
-            O `aria-label` FICA PARADO enquanto o `title` anda: nome
-            acessível que muda a cada janela de medida desorienta quem
-            ouve a tela — o que muda é ESTADO, e estado se anuncia pela
-            região `aria-live` do painel, não renomeando o controle. */}
-        <select
-          className="hud-btn small"
-          aria-label={t('barra.qualidadeAria')}
-          title={rotuloDaQualidade(quality)}
-          value={quality.escolha}
-          onChange={(e) => changeQuality(e.target.value as EscolhaDeQualidade)}
-        >
-          {QUALIDADES.map((q) => (
-            <option key={q.id} value={q.id}>
-              {q.simbolo} {q.nome}
-            </option>
-          ))}
-        </select>
-        {!alcas && !regua && botaoDeAjustes}
-      </div>
+      {/* GRUPO "SISTEMA" (item 2) — o chip de qualidade e ⚙ Ajustes; NO
+          FILME os dois moram atrás de "Mais" (E1, grupo acima), então
+          este grupo passa a ser só do Atlas de mesa e do voo livre. */}
+      {!hud.botoesDaViagem && (
+        <div className="atlas-barra-grupo">
+          {seletorDeQualidade}
+          {!alcas && !regua && botaoDeAjustes}
+        </div>
+      )}
     </div>
   )}
 

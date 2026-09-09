@@ -366,8 +366,8 @@ export function TitleVeil({
           </div>
           <div className="title-rule encerramento-rodape"
             style={{ animationDelay: `${ATRASO_DO_RODAPE}s` }} />
-          {/* A TERCEIRA SAÍDA DO FIM (item 61, 23/08): "Ficar aqui" entra
-              no Atlas NA POSE DA CODA. É a frase do dono virada em botão —
+          {/* A TERCEIRA SAÍDA DO FIM (item 61, 23/08): "Ficar neste céu"
+              entra no Atlas NA POSE DA CODA. É a frase do dono virada em botão —
               *"a viagem na verdade para mim é só uma ferramenta do modo
               atlas"*: o filme acabou onde acabou, e o visitante fica ali,
               com a Terra em quadro e a data do pouso, em vez de ser
@@ -381,8 +381,11 @@ export function TitleVeil({
             <button className="veil-btn veil-btn--secundario" onClick={onPlay}>
               {t('hud.fim.reviver')}
             </button>
+            {/* "Ficar aqui" virou o botão PRIMÁRIO do fim (D1) — o mesmo
+                âmbar da abertura: a coda é o pouso, e as outras duas
+                saídas (reviver, voo livre) continuam secundárias. */}
             {onAtlas && (
-              <button className="veil-btn veil-btn--secundario" onClick={onAtlas}>
+              <button className="veil-btn veil-btn--primario" onClick={onAtlas}>
                 {t('hud.fim.ficarAqui')}
               </button>
             )}

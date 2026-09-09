@@ -145,6 +145,30 @@
   height: 6px;
   background: rgba(255, 255, 255, 0.4);
 }
+/* D1 — o véu do fim esmaece a barra de capítulos embaixo dele. Ela
+   continua de pé (é por ela que se volta a um momento preferido) mas
+   não pode competir com a citação e os botões do véu. Escopo por FASE
+   ('end'), não por `chromeSumido`: nessa fase `useChromeDoFilme` fica
+   sempre "ativo=false" (não é 'journey'), então `.hud-sumido` nunca
+   entra aqui — as duas opacidades não disputam a mesma regra. */
+.hud-root[data-fase='end'] .progress-wrap {
+  opacity: 0.35;
+}
+
+/* E1 — no filme de MESA (min-width 761px) a barra vira UM grupo só
+   (`.atlas-barra-grupo`, em `BarraOuAlcas.tsx`), empurrado até a borda
+   direita por margem automática. A regra de DOIS grupos
+   (`justify-content: space-between`, 03-controles.css) fica PARADA de
+   propósito — com um item só ela cairia para o início (a distribuição
+   de `space-between` sem par vira `flex-start`, CSS Box Alignment) — e
+   a margem automática resolve sem tocar naquela regra: ela absorve o
+   espaço livre ANTES do `justify-content` do pai entrar em jogo, então
+   vale qualquer que seja o valor dele. */
+@media (min-width: 761px) {
+  .hud-root[data-fase='journey'] .controls-bar > .atlas-barra-grupo {
+    margin-left: auto;
+  }
+}
 
 /* --- véu do Atlas ---------------------------------------------------
    Filho direto de .hud-root de propósito: em ?shot=2 a regra do

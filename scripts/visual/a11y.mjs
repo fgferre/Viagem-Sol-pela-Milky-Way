@@ -497,11 +497,18 @@ async function julgarAbertura(s) {
   );
 }
 
-async function julgarPagina(s, query, onde) {
+async function julgarPagina(s, query, onde, aposNavegar) {
   const assentou = await s.ir(`${query}&${PIN}`);
   conferir(assentou.via === 'sinal', `${onde}: assentou por via=${assentou.via}`);
   const fase = await s.js('window.__director.captura.fase');
   conferir(fase === onde, `${onde}: a fase da página é '${fase}'`);
+
+  // GANCHO OPCIONAL, pós-navegação e antes da varredura — o contrato
+  // continua GENÉRICO (ele não sabe o que é "Mais" nem Ajustes); só o
+  // chamador que precisa preparar a tela antes da varredura (E1: abrir o
+  // "Mais" do filme, sem o qual a fase 'journey' chegaria aqui com ZERO
+  // gatilhos de diálogo) passa um.
+  if (aposNavegar) await aposNavegar(s);
 
   const nomes = await s.js(
     "[...document.querySelectorAll('[data-abre-dialogo]')]"
@@ -534,6 +541,48 @@ async function julgarPagina(s, query, onde) {
     `${onde}: ${vivas.length} região(ões) aria-live, todas com valor válido`
   );
   return vivas;
+}
+
+/**
+ * O "MAIS" DO FILME (E1) — Camadas, qualidade e Ajustes se recolhem
+ * atrás de UM gatilho, fechado a cada carga; as duas saídas ("← Entrar
+ * no Atlas"/"Voo livre") continuam soltas ao lado dele. Roda como
+ * GANCHO de `julgarPagina` (o parâmetro `aposNavegar`), logo depois da
+ * navegação e ANTES da varredura genérica de diálogos: sem abrir o
+ * "Mais" aqui, aquela varredura chegaria à fase 'journey' com ZERO
+ * gatilhos (`conferir(nomes.length > 0, …)` reprovaria), e o clique em
+ * Camadas de `julgarGavetaDeCamadas` — chamado logo depois, na MESMA
+ * página — não acharia o botão.
+ *
+ * Devolve a régua ABERTA de propósito: é o estado que a varredura de
+ * `julgarPagina` e `julgarGavetaDeCamadas` esperam encontrar em seguida.
+ */
+async function julgarMaisDoFilme(s) {
+  const MAIS = '[aria-label="Mostrar Camadas, qualidade e Ajustes"]';
+  const MEDIR = `(() => {
+    const mais = document.querySelector('${MAIS}');
+    return {
+      expandido: mais ? mais.getAttribute('aria-expanded') : null,
+      camadas: Boolean(document.querySelector('[data-abre-dialogo="camadas"]')),
+      ajustes: Boolean(document.querySelector('[data-abre-dialogo="ajustes"]')),
+      saida: [...document.querySelectorAll('.controls-bar button')]
+        .some((b) => b.textContent.trim() === 'Voo livre'),
+    };
+  })()`;
+  const antes = await s.js(MEDIR);
+  conferir(
+    antes.expandido === 'false' && !antes.camadas && !antes.ajustes && antes.saida,
+    `filme · "Mais" (E1): fechado por padrão — Camadas e Ajustes fora do`
+      + ` DOM, a saída "Voo livre" continua na barra (aria-expanded=${antes.expandido})`
+  );
+  await s.js(`document.querySelector('${MAIS}').click()`);
+  await dorme(200);
+  const depois = await s.js(MEDIR);
+  conferir(
+    depois.expandido === 'true' && depois.camadas && depois.ajustes,
+    `filme · "Mais" (E1): o clique revela Camadas e Ajustes na MESMA barra`
+      + ` (aria-expanded=${depois.expandido})`
+  );
 }
 
 /**
@@ -735,6 +784,17 @@ async function julgarCliqueDeVerdade(s, onde) {
  * parede nenhuma): um clique inverte `aria-pressed` sempre.
  */
 async function julgarCliqueRealNoTempo(s) {
+  // A LINHA NASCE RECOLHIDA (item A1.1, relatório de UI de 09/09) — só
+  // "INSTANTE DO CÉU + data" e o "▸" ficam na tela até alguém abrir; os
+  // seis controles (e o "Ao vivo" que este clique real testa) só entram
+  // no DOM depois. Abrir é PRECONDIÇÃO desta prova, não o que ela mede —
+  // por isso um `.click()` de JS, não `s.clicar` (a diferença de CDP é o
+  // que o clique de baixo, no "Ao vivo", precisa provar).
+  await s.js(`(() => {
+    const alt = document.querySelector('.atlas-rodape .atlas-tempo-alternar');
+    if (alt && alt.getAttribute('aria-expanded') !== 'true') alt.click();
+  })()`);
+  await dorme(100);
   const pegar = `(() => {
     const g = document.querySelectorAll('.atlas-rodape .atlas-tempo-botoes .ajustes-seg')[2];
     const b = g ? g.querySelectorAll('button')[0] : null;
@@ -784,17 +844,6 @@ async function julgarCliqueRealNoTempo(s) {
  * um meio-termo de crossfade.
  */
 async function julgarChromeDoFilme(s) {
-  // A LINHA NASCE RECOLHIDA (item A1.1, relatório de UI de 09/09) — só
-  // "INSTANTE DO CÉU + data" e o "▸" ficam na tela até alguém abrir; os
-  // seis controles (e o "Ao vivo" que este clique real testa) só entram
-  // no DOM depois. Abrir é PRECONDIÇÃO desta prova, não o que ela mede —
-  // por isso um `.click()` de JS, não `s.clicar` (a diferença de CDP é o
-  // que o clique de baixo, no "Ao vivo", precisa provar).
-  await s.js(`(() => {
-    const alt = document.querySelector('.atlas-rodape .atlas-tempo-alternar');
-    if (alt && alt.getAttribute('aria-expanded') !== 'true') alt.click();
-  })()`);
-  await dorme(100);
   const MEDIR = `(() => {
     const ler = (sel) => {
       const e = document.querySelector(sel);
@@ -1078,7 +1127,7 @@ async function julgarFerramentasDoAtlas(s) {
     `atlas vindo do filme: a saída existe e diz para onde vai (${comFilme.join(' · ')})`
   );
 
-  // 3. O FIM DO FILME oferece "Ficar aqui" — a coda vira Atlas na pose.
+  // 3. O FIM DO FILME oferece "Ficar neste céu" — a coda vira Atlas na pose.
   // A fase `end` não se alcança por `?t=`: ela é o roteiro CHEGANDO ao
   // fim, então o juiz solta o relógio meio segundo antes e ESPERA a fase
   // (nunca um número de ms — a régua da casa).
@@ -1090,7 +1139,7 @@ async function julgarFerramentasDoAtlas(s) {
       .map((b) => b.textContent.trim()))`
   ));
   conferir(
-    noFim.includes('Ficar aqui'),
+    noFim.includes('Ficar neste céu'),
     `o véu do fim oferece as TRÊS saídas (${noFim.join(' · ')})`
   );
   // ...e ela LEVA a câmera: entrar dali pousa na pose da coda, não na
@@ -1099,7 +1148,7 @@ async function julgarFerramentasDoAtlas(s) {
     'JSON.stringify(window.__director.engine.camera.position.toArray())'
   ));
   await s.js("[...document.querySelectorAll('.veil-end button')]"
-    + ".find((b) => b.textContent.trim() === 'Ficar aqui').click()");
+    + ".find((b) => b.textContent.trim() === 'Ficar neste céu').click()");
   await s.assentar();
   const depoisDoFim = JSON.parse(await s.js(
     'JSON.stringify(window.__director.engine.camera.position.toArray())'
@@ -1108,7 +1157,7 @@ async function julgarFerramentasDoAtlas(s) {
   const desvio = Math.hypot(...antesDoFim.map((v, i) => v - depoisDoFim[i]));
   conferir(
     (await s.js('window.__director.captura.fase')) === 'atlas' && desvio / raio < 1e-9,
-    `"Ficar aqui" entra no Atlas NA POSE da coda — desvio`
+    `"Ficar neste céu" entra no Atlas NA POSE da coda — desvio`
       + ` ${(desvio / raio).toExponential(2)} do raio, degrau`
       + ` '${await s.js('window.__director.escadaViva.degrau')}'`
   );
@@ -1148,8 +1197,10 @@ try {
   await julgarAbertura(sessao);
 
   // O FILME PAUSADO: é lá que o painel de Ajustes sempre viveu, e é a
-  // prova de que a reforma do D7 não é privilégio do modo novo.
-  await julgarPagina(sessao, 't=100', 'journey');
+  // prova de que a reforma do D7 não é privilégio do modo novo. O gancho
+  // abre o "Mais" (E1) ANTES da varredura de diálogos — sem ele Camadas
+  // e Ajustes não estariam no DOM para ela achar.
+  await julgarPagina(sessao, 't=100', 'journey', julgarMaisDoFilme);
   // …e a GAVETA DE CAMADAS existe AQUI desde o item 61: era o painel de
   // Ajustes que servia as camadas ao filme, e com elas fora dele o filme
   // ficaria sem nenhuma se a gaveta fosse só do Atlas.
