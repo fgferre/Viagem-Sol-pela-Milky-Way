@@ -12,14 +12,22 @@
 .ajustes {
   /* 440 px / 34vw (Lote 4, item 4: "ajustes 440") — era 27rem (432 px). */
   width: min(27.5rem, 34vw);
-  /* EXCEÇÃO 1 — o teto tem dois termos A MAIS que o comum. Os outros três
-     diálogos cabem na tela sozinhos; este é o mais alto da casa e precisa
-     parar antes. Os dois primeiros mandam em qualquer tela com espaço, e
-     `--teto-dialogo` (o comum, o da âncora medida — que desconta o selo e,
-     no telefone, aperta em fração de tela) só ganha quando o espaço acabou
-     — foi ele que impediu o conserto do topo de virar outro defeito, com o
-     pé do painel 57 px fora de uma janela de 600×450 e o texto em 140%. */
-  max-height: min(66vh, 40rem, var(--teto-dialogo));
+  /* EXCEÇÃO 1 — este painel DESCE ATÉ O PÉ DA TELA, como a maquete M8
+     aprovada, e cobre a linha do selo enquanto está aberto (decisão do
+     dono, 08/09/2026: a 1440×900 o teto comum, que desconta o selo, e o
+     `66vh` de antes cortavam o "Copiar link" por ~25 px). É o mais alto
+     da casa, então o teto tem os próprios termos: o teto absoluto de
+     40rem (só morde em tela muito alta), a janela menos a barra e uma
+     folga de 1,4rem no pé (o topo já fica a 1rem da barra, como os
+     outros), e `--teto-dialogo-tela` (a fatia 6: no telefone e na tela
+     baixa o painel vira folha e aperta em fração de tela). O que não
+     couber ROLA, como nos outros três — a 600×450 com o texto em 140%
+     o pé do painel continua dentro da janela. */
+  max-height: min(
+    40rem,
+    calc(100vh - var(--barra-fim) - 2.4rem),
+    var(--teto-dialogo-tela)
+  );
   /* EXCEÇÃO 2 — o rodapé é 0,2rem mais alto que o dos outros dois
      (`var(--pad-painel)`, 01-base.css — Lote 2b). */
   padding-bottom: calc(var(--pad-painel) + 0.2rem);

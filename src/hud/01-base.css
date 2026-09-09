@@ -153,8 +153,10 @@
      clique.
      A GEOMETRIA PASSOU A EXISTIR em 22/08, com o selo dobrado numa linha
      (item 61): `--teto-dialogo` desconta `--selo-base` e `--selo-linha`,
-     e os quatro param acima do selo. A pilha continua de pé porque ela
-     resolve o clique, não a geometria.
+     e Camadas, Busca e Ficha param acima do selo — o Ajustes desce até o
+     pé da tela por decisão do dono (08/09/2026, maquete M8; ver
+     `08-ajustes.css`). A pilha continua de pé porque ela resolve o
+     clique, não a geometria.
      Entre a barra de controles (45) e o holofote (48), e abaixo dos véus
      (50+): o painel cobre o HUD fixo, nunca o filme passando por cima. */
   --camada-dialogo: 46;
