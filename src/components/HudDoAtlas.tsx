@@ -406,11 +406,13 @@ export function Selo({
         title={t('selo.tese')}
         onClick={() => setAberto((v) => !v)}
       >
-        <span>{t(escalaReal ? 'selo.escalaReal' : 'selo.foraDeEscala')}</span>
-        <span className="atlas-selo-meio" aria-hidden="true">
-          ·
+        <span className="atlas-selo-resumo-texto">
+          <span>{t(escalaReal ? 'selo.escalaReal' : 'selo.foraDeEscala')}</span>
+          <span className="atlas-selo-meio" aria-hidden="true">
+            ·
+          </span>
+          <span>{t(brilhoReal ? 'selo.brilhoReal' : 'selo.brilhoAssistido')}</span>
         </span>
-        <span>{t(brilhoReal ? 'selo.brilhoReal' : 'selo.brilhoAssistido')}</span>
         <span className="atlas-selo-seta" aria-hidden="true">
           <Icone nome={aberto ? 'chevronBaixo' : 'chevronDireita'} tamanho={12} />
         </span>

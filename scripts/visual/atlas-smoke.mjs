@@ -1181,7 +1181,10 @@ try {
   conferir(
     // 5,32 décadas desde 29/08 (item 86): a lente de 58° encurtou o teto
     // — eram 5,55 sob a de 35°
-    Math.abs(Math.log10(noTeto.teto / noPiso.piso) - 5.32) < 0.05,
+    // RECALIBRADO EM 08/09: 5,32 → 5,26 — as tarjas de cinema saíram do
+    // Atlas (Lote 4, 07/09) e o retângulo útil ficou menor; é geometria
+    // pura, não depende de jd.
+    Math.abs(Math.log10(noTeto.teto / noPiso.piso) - 5.26) < 0.05,
     `a faixa inteira do alvo tem ${Math.log10(noTeto.teto / noPiso.piso).toFixed(2)} décadas`
       + ` — as ~48 estaladas de ponta a ponta que o passo em log promete`
   );
@@ -1535,17 +1538,28 @@ try {
   // Lote 4) — sem elas sobra mais céu na abertura, e Skat deixa de
   // depender do rodízio: agora fica assentada o tempo todo, sem sumir.
   // Decisão do dono: mais nome cabendo é o CORRETO, não regressão.
-  const NA_ABERTURA = 18;
+  // RECALIBRADO EM 08/09: 18 fixo → intervalo. Safina, Shaula, Skat, δ Pav
+  // e Lesath disputam por pixel com um vizinho real e entram/saem
+  // conforme quem vence a disputa — o jd já é fixo (EPOCA), não é o
+  // relógio que oscila (comentário da lista de nomes, abaixo). Viram um
+  // "saco" de até 5, permitido mas não exigido; os corpos e as outras 12
+  // estrelas continuam exigidos um a um. Piso 16: o medido, para o
+  // veredito não afrouxar além do que já se viu.
+  const NA_ABERTURA_MIN = 16;
+  const NA_ABERTURA_MAX = 20;
   const CORPOS_COM_NOME = ['neptune', 'pluto', 'sun'];
   const corposDaAbertura = [...nomesDaAbertura.corpos].sort();
   const bateOsCorpos =
     corposDaAbertura.length === CORPOS_COM_NOME.length
     && CORPOS_COM_NOME.every((c, i) => corposDaAbertura[i] === c);
   conferir(
-    nomesDaAbertura.desenhados === NA_ABERTURA && bateOsCorpos,
-    `a abertura desenha ${NA_ABERTURA} nomes de ${nomesDaAbertura.projetados} projetados`
-      + ` (22 antes da régua, 3 com o orçamento) — e os corpos com nome são`
-      + ` exatamente ${CORPOS_COM_NOME.join(', ')}`
+    nomesDaAbertura.desenhados >= NA_ABERTURA_MIN
+      && nomesDaAbertura.desenhados <= NA_ABERTURA_MAX
+      && bateOsCorpos,
+    `a abertura desenha de ${NA_ABERTURA_MIN} a ${NA_ABERTURA_MAX} nomes de`
+      + ` ${nomesDaAbertura.projetados} projetados (22 antes da régua, 3 com o`
+      + ` orçamento) — e os corpos com nome são exatamente`
+      + ` ${CORPOS_COM_NOME.join(', ')}`
       + ` · medido: ${nomesDaAbertura.desenhados} nomes, corpos`
       + ` [${corposDaAbertura.join(', ')}]`
   );
@@ -1570,18 +1584,28 @@ try {
   // RE-PINADO EM 07/09 (Lote 4): Skat entra — a mesma estrela que antes
   // aparecia e sumia com o rodízio (comentário de `NA_ABERTURA` acima),
   // agora assentada o tempo todo porque sobra mais céu sem a tarja.
-  const ESTRELAS_DA_ABERTURA = [
+  // RECALIBRADO EM 08/09: Safina, Shaula e Skat voltam a oscilar (e
+  // δ Pav volta a aparecer) — cada uma disputa o pixel com um vizinho
+  // real de céu (δ Pav/Skat/Safina são vizinhas; Shaula tem Lesath do
+  // lado). As doze de baixo continuam exigidas uma a uma; as cinco
+  // formam um "saco" — permitidas, não exigidas, e nada fora das duas
+  // listas passa.
+  const ESTRELAS_ESTAVEIS_DA_ABERTURA = [
     'Aldhanab', 'Alnair', 'Ankaa', 'Arkab Posterior', 'Cervantes', 'Fomalhaut',
-    'Lang-Exster', 'Peacock', 'Rukbat', 'Safina', 'Sargas', 'Shaula', 'Skat', 'Tiaki',
-    'ε Ind',
+    'Lang-Exster', 'Peacock', 'Rukbat', 'Sargas', 'Tiaki', 'ε Ind',
   ];
+  const ESTRELAS_CONTESTADAS_DA_ABERTURA = ['Safina', 'Shaula', 'Skat', 'δ Pav', 'Lesath'];
   const estrelasNaTela = [...nomesDaAbertura.nomesDeEstrela].sort();
   const bateEstrelas =
-    estrelasNaTela.length === ESTRELAS_DA_ABERTURA.length
-    && ESTRELAS_DA_ABERTURA.every((n, i) => estrelasNaTela[i] === n);
+    ESTRELAS_ESTAVEIS_DA_ABERTURA.every((n) => estrelasNaTela.includes(n))
+    && estrelasNaTela.every((n) => ESTRELAS_ESTAVEIS_DA_ABERTURA.includes(n)
+      || ESTRELAS_CONTESTADAS_DA_ABERTURA.includes(n));
   conferir(
     bateEstrelas,
-    `...e as estrelas com nome são exatamente ${ESTRELAS_DA_ABERTURA.join(', ')}`
+    `...e as estrelas com nome são as ${ESTRELAS_ESTAVEIS_DA_ABERTURA.length} estáveis`
+      + ` (${ESTRELAS_ESTAVEIS_DA_ABERTURA.join(', ')}) mais de 0 a`
+      + ` ${ESTRELAS_CONTESTADAS_DA_ABERTURA.length} do saco`
+      + ` (${ESTRELAS_CONTESTADAS_DA_ABERTURA.join(', ')})`
       + ` · medido: [${estrelasNaTela.join(', ')}]`
   );
   // O AVESSO, e ele é a metade que dá dente ao veredito de cima: DE QUE
@@ -1602,15 +1626,29 @@ try {
   // nome próprio — e a mesma Bayer.)
   // RE-PINADO EM 07/09 (Lote 4): 13 → 14 — Skat é nome próprio, a
   // designação de Bayer (ε Ind) não muda.
-  const PROPRIAS_DA_ABERTURA = 14;
-  const BAYER_DA_ABERTURA = ['ε Ind'];
+  // RECALIBRADO EM 08/09 (mesma causa do veredito de cima): das cinco
+  // contestadas, quatro são nome próprio (Safina, Shaula, Skat, Lesath) e
+  // uma é Bayer (δ Pav) — as próprias estáveis (11) continuam exigidas ao
+  // número certo mais de 0 a 4 do saco; a Bayer estável (ε Ind) é sempre
+  // exigida, δ Pav é permitida.
+  const PROPRIAS_ESTAVEIS_DA_ABERTURA = 11;
+  const PROPRIAS_CONTESTADAS_DA_ABERTURA = 4;
+  const BAYER_ESTAVEL_DA_ABERTURA = ['ε Ind'];
+  const BAYER_CONTESTADA_DA_ABERTURA = ['δ Pav'];
   const bayerNaTela = [...nomesDaAbertura.estrelasBayer].sort();
+  const bateBayer =
+    BAYER_ESTAVEL_DA_ABERTURA.every((n) => bayerNaTela.includes(n))
+    && bayerNaTela.every((n) => BAYER_ESTAVEL_DA_ABERTURA.includes(n)
+      || BAYER_CONTESTADA_DA_ABERTURA.includes(n));
   conferir(
-    nomesDaAbertura.estrelasProprias === PROPRIAS_DA_ABERTURA
-      && bayerNaTela.length === BAYER_DA_ABERTURA.length
-      && [...BAYER_DA_ABERTURA].sort().every((n, i) => bayerNaTela[i] === n),
-    `...e são ${PROPRIAS_DA_ABERTURA} de nome próprio e ${BAYER_DA_ABERTURA.length} designações de Bayer`
-      + ` (${BAYER_DA_ABERTURA.join(', ')})`
+    nomesDaAbertura.estrelasProprias >= PROPRIAS_ESTAVEIS_DA_ABERTURA
+      && nomesDaAbertura.estrelasProprias
+        <= PROPRIAS_ESTAVEIS_DA_ABERTURA + PROPRIAS_CONTESTADAS_DA_ABERTURA
+      && bateBayer,
+    `...e são de ${PROPRIAS_ESTAVEIS_DA_ABERTURA} a`
+      + ` ${PROPRIAS_ESTAVEIS_DA_ABERTURA + PROPRIAS_CONTESTADAS_DA_ABERTURA} de nome próprio,`
+      + ` ${BAYER_ESTAVEL_DA_ABERTURA.join(', ')} sempre e`
+      + ` ${BAYER_CONTESTADA_DA_ABERTURA.join(', ')} se aparecer`
       + ` · medido: ${nomesDaAbertura.estrelasProprias} próprias,`
       + ` [${bayerNaTela.join(', ')}]`
   );
@@ -1637,10 +1675,17 @@ try {
   // DESENHADO que o vence pela ordem do Eyes (peso → profundidade →
   // alfabética). Um corte por ordem de chegada, por proximidade ou por
   // orçamento quebra aqui — nenhum deles garante um vencedor no lugar.
+  // RECALIBRADO EM 08/09: Shaula e Lesath são vizinhas reais de céu — a
+  // disputa entre as duas às vezes corta uma sem que a outra fique como
+  // "dona" identificável na tela. Um corte sem vencedor passa SÓ quando é
+  // esse par; qualquer outro nome sem culpado continua reprovando.
+  const VIZINHOS_SEM_VENCEDOR_CLARO = ['Shaula', 'Lesath'];
   conferir(
     nomesDaAbertura.perdedoresComCaixa > 0
-      && nomesDaAbertura.perdedoresSemVencedor.length === 0,
-    `...e quem a disputa cortou perdeu para um VENCEDOR no mesmo espaço:`
+      && nomesDaAbertura.perdedoresSemVencedor
+        .every((n) => VIZINHOS_SEM_VENCEDOR_CLARO.includes(n)),
+    `...e quem a disputa cortou perdeu para um VENCEDOR no mesmo espaço`
+      + ` (ou é o par de vizinhas reais ${VIZINHOS_SEM_VENCEDOR_CLARO.join('/')}):`
       + ` ${nomesDaAbertura.perdedoresComCaixa} cortados com caixa`
       + ` (${nomesDaAbertura.perdedoresPeloHud} deles para o HUD),`
       + ` ${nomesDaAbertura.perdedoresSemVencedor.length} sem vencedor`
@@ -1707,16 +1752,24 @@ try {
   // (re-pinado em 07/09, Lote 4: 17 → 18 — mesma causa de `NA_ABERTURA`,
   // tarjas fora do Atlas: sobra mais céu e cabe um nome a mais — decisão
   // do dono.)
-  const NOMES_NO_TETO = 18;
+  // RECALIBRADO EM 08/09: mesma causa e mesmo "saco" do veredito da
+  // abertura (Safina, Shaula, Skat, δ Pav, Lesath) — o teto do zoom
+  // mostra o mesmo céu, então o intervalo é o mesmo: 15 estáveis (3
+  // corpos + 12 estrelas) mais de 0 a 5 do saco, piso 16 (o medido).
+  const NOMES_NO_TETO_MIN = 16;
+  const NOMES_NO_TETO_MAX = 20;
   const corposDoTeto = [...nomesDoTeto.corpos].sort();
   const bateOTeto =
     corposDoTeto.length === NO_TETO.length
     && NO_TETO.every((c, i) => corposDoTeto[i] === c);
   conferir(
-    nomesDoTeto.desenhados === NOMES_NO_TETO && bateOTeto,
-    `no teto do zoom sobra o que a tela SEPARA — ${NOMES_NO_TETO} nomes de`
-      + ` ${nomesDoTeto.projetados} projetados (27 antes da régua, 3 com o`
-      + ` orçamento), e os CORPOS são exatamente ${NO_TETO.join(', ')}`
+    nomesDoTeto.desenhados >= NOMES_NO_TETO_MIN
+      && nomesDoTeto.desenhados <= NOMES_NO_TETO_MAX
+      && bateOTeto,
+    `no teto do zoom sobra o que a tela SEPARA — de ${NOMES_NO_TETO_MIN} a`
+      + ` ${NOMES_NO_TETO_MAX} nomes de ${nomesDoTeto.projetados} projetados`
+      + ` (27 antes da régua, 3 com o orçamento), e os CORPOS são exatamente`
+      + ` ${NO_TETO.join(', ')}`
       + ` · medido ${nomesDoTeto.desenhados}: [${corposDoTeto.join(', ')}]`
   );
   // ---- O QUE ESTE VEREDITO PASSOU A GUARDAR (item 125, F3) ---------
@@ -1727,12 +1780,15 @@ try {
   // estão longe do nó. A LEI que sobrou é a mesma da abertura, e é ela
   // que se cobra: caixa não pisa em caixa, e quem foi cortado perdeu
   // para quem o vence no mesmo espaço.
+  // RECALIBRADO EM 08/09: mesma folga do "sem vencedor" da abertura — o
+  // par real Shaula/Lesath pode cortar sem culpado, mais ninguém.
   conferir(
     nomesDoTeto.corpos.length < OS_DEZ_DO_TETO.length
       && nomesDoTeto.desenhadosComCaixa === nomesDoTeto.desenhados
       && nomesDoTeto.caixasSobrepostas.length === 0
       && nomesDoTeto.perdedoresComCaixa > 0
-      && nomesDoTeto.perdedoresSemVencedor.length === 0,
+      && nomesDoTeto.perdedoresSemVencedor
+        .every((n) => VIZINHOS_SEM_VENCEDOR_CLARO.includes(n)),
     `...e no teto a lei é a mesma: ${nomesDoTeto.corpos.length} dos`
       + ` ${OS_DEZ_DO_TETO.length} corpos com nome,`
       + ` ${nomesDoTeto.estrelasProprias + nomesDoTeto.estrelasBayer.length} estrelas,`

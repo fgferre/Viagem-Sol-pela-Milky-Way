@@ -666,12 +666,10 @@
   max-width: 100%;
   /* ITEM 3 (Lote 4, 07/09): sem isto o botão, filho de um flex column
      (`.atlas-selo`), não encolhe abaixo do texto — `min-width: auto` do
-     flexbox vence o `max-width` e o `overflow`/`ellipsis` abaixo nunca
-     chegam a cortar nada; era isto que vazava a borda direita a 320 px
-     com `ui = 1,4`. */
+     flexbox vence o `max-width`, e é o que deixa o botão de fato
+     encolher a 320 px com `ui = 1,4` (o corte em si é o texto, abaixo,
+     em `.atlas-selo-resumo-texto`). */
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   padding: 0.16rem 0 0.16rem 0.6rem;
   border: 0;
   border-left: 2px solid currentcolor;
@@ -681,8 +679,23 @@
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
-  white-space: nowrap;
   cursor: pointer;
+}
+/* RECALIBRADO (08/09): `text-overflow: ellipsis` não se aplica a um
+   contêiner `display: flex` — o corte era seco, sem reticências, porque
+   o CSS simplesmente ignorava a propriedade no próprio `.atlas-selo-
+   resumo`. As quatro propriedades (min-width/overflow/text-overflow/
+   white-space) que faziam esse trabalho mudam para este envelope só de
+   texto — um `<span>` de bloco em volta dos três `<span>` de texto
+   (`HudDoAtlas.tsx`), que É um contexto onde ellipsis funciona. A seta
+   (`.atlas-selo-seta`, abaixo) fica DE FORA dele, com `flex-shrink: 0`,
+   para nunca ser ela a cortada. */
+.atlas-selo-resumo-texto {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .atlas-selo-resumo.real {
   color: var(--ok);
@@ -697,6 +710,7 @@
   opacity: 0.42;
 }
 .atlas-selo-seta {
+  flex-shrink: 0;
   opacity: 0.55;
   letter-spacing: 0;
 }

@@ -173,6 +173,9 @@
     flex: 0 0 auto;
     white-space: nowrap;
   }
+  /* A sombra de rolagem (`mask-image` + `padding-inline`) desta barra
+     está definida junto com a do Atlas, UMA vez só, em `09-celular.css`
+     (mesmo seletor combinado, mesmo `@media`) — não duplicar aqui. */
   /* A LINHA DE RUMO ("→ Sagittarius A✱ · 21 mil anos-luz") E A DA LENTE
      ("LENTE 47° · SOL 1 UA") sobem para debaixo da barra no filme: no
      canto de baixo à direita as duas dividiam o pixel com o cartão de

@@ -268,6 +268,34 @@
     white-space: nowrap;
   }
 
+  /* SOMBRA DE ROLAGEM NAS DUAS BORDAS — a barra acima rola sem nenhuma
+     pista visual: a 320×568 com `?ui=1.4` o conteúdo mede 439 px numa
+     janela de 294 px e "Explorar" some sem sinal de que há mais barra.
+     A MESMA barra do filme (`06-responsivo.css`, fase `journey`) tem o
+     defeito idêntico, e é por isso que o seletor combina as duas aqui —
+     definida UMA vez para não copiar o gradiente duas vezes. `padding-
+     inline` do mesmo tamanho do recorte do `mask-image` (16px) garante
+     que o esmaecimento caia sobre espaço vazio: no início ou no fim da
+     rolagem o primeiro/último botão fica inteiro, opaco. */
+  .hud-root:has(.atlas-alcas) .controls-bar,
+  .hud-root[data-fase='journey'] .controls-bar {
+    padding-inline: 16px;
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 16px,
+      #000 calc(100% - 16px),
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 16px,
+      #000 calc(100% - 16px),
+      transparent
+    );
+  }
+
   /* A MÁQUINA DO TEMPO PERMANENTE SAI DO RODAPÉ — ela virou a alça ⏱
      Tempo (resposta do dono nos mockups: *"3) vira alça"*). O seletor
      nomeia o RODAPÉ de propósito: a mesma `BarraDoTempo`, a MESMA peça,
