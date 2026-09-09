@@ -742,10 +742,15 @@
   text-shadow: none;
 }
 .atlas-selo-tese {
+  /* legibilidade (contrato da dica flutuante, primeira leva do
+     relatório de UI (09/09)): caixa alta
+     espaçada em 8 px era eyebrow demais para uma frase de explicação —
+     caixa normal, corpo maior, alinhada à esquerda como qualquer texto. */
   margin: 0 0 0.1rem;
-  font-size: 0.5rem;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  text-align: left;
   color: var(--texto-3);
 }
 .atlas-selo-linha {

@@ -99,20 +99,29 @@
   margin-left: auto;
 }
 
-/* ---- O "?" DE AJUDA e a dica (contrato do §8, redesenho Lote 2a) -----
-   A explicação em letra miúda que cobria o painel inteiro agora só
-   aparece por pedido: passar o mouse ou focar o botão (CSS puro), ou
-   fixar com um clique (estado do componente, só uma de cada vez).
+/* ---- O "?" DE AJUDA e a dica (contrato do §8, redesenho Lote 2a;
+   FLUTUANTE desde a primeira leva do relatório de UI (09/09)) — a
+   explicação em letra miúda só aparece
+   por pedido: passar o mouse ou focar o botão, ou fixar com um clique
+   (estado do componente, só uma de cada vez — `useDicaPresa`).
    NOME NEUTRO (`hud-`, não `ajustes-`) desde 06/09: o átomo mudou para
    `components/Ajuda.tsx` e passou a servir também a gaveta de Camadas.
 
-   `.hud-ajuda-caixa` virou `display: contents` (Lote 2a): sem caixa
-   própria, o BOTÃO e a DICA (que moravam dentro dela) passam a ser
-   itens diretos da LINHA que hospeda — é o que deixa a dica escapar da
-   caixinha do "?" e ocupar a largura cheia da linha quando aparece
-   (ver `.ajustes-item`/`.atlas-gaveta-linha`, abaixo e em
-   04-atlas.css). Não muda nada onde a dica continua flutuando por cima
-   (a barra de Tempo, a busca, a ficha, a gaveta do Tempo — Lote 2b). */
+   `.hud-ajuda-caixa` continua `display: contents` (Lote 2a): sem caixa
+   própria, o BOTÃO — o único filho que sobra na LINHA que hospeda —
+   vira item direto dela.
+
+   A DICA VIROU PORTAL (primeira leva do relatório de UI (09/09),
+   pedido do dono: "flutuar por cima,
+   nunca empurrar o layout"): `Ajuda.tsx` a desenha com `createPortal`
+   direto em `document.body`, `position: fixed`, e por isso ela NUNCA
+   MAIS É FILHA da linha nem do painel — a visibilidade e a posição
+   (`top`/`left`/`width`) são do COMPONENTE (estado + `posicionarDica`,
+   `hooks/useDicaPresa.ts`), não deste arquivo. Quem esconde e mostra é
+   o atributo `hidden` — por isso NENHUMA regra abaixo declara
+   `display` para `.hud-dica`: uma que declarasse venceria o `[hidden]`
+   do navegador (CSS de autor sempre vence CSS de agente do usuário) e
+   a caixa ficaria visível para sempre. */
 .hud-ajuda-caixa {
   display: contents;
 }
@@ -144,16 +153,13 @@
   transform: translate(-50%, -50%);
 }
 /* hover só onde hover É um gesto de verdade (§8 item 1): num toque,
-   `:hover` "pega" depois do clique e a dica fica presa sem que ninguém
-   tenha passado o mouse — o mesmo defeito que `@media (hover: hover)`
-   já evita noutros lugares da casa. */
+   `:hover` "pega" depois do clique — por isso o componente também só
+   conta `pointerType === 'mouse'` para decidir se a dica aparece; aqui
+   é só o traço do BOTÃO, que continua CSS puro. */
 @media (hover: hover) {
   .hud-ajuda:hover {
     border-color: var(--acento);
     color: var(--acento);
-  }
-  .hud-ajuda:hover + .hud-dica {
-    display: block;
   }
 }
 .hud-ajuda:focus-visible {
@@ -161,48 +167,37 @@
   color: var(--acento);
 }
 .hud-dica {
-  display: none;
-  /* fora de `.ajustes-item`/`.atlas-gaveta-linha` (Lote 2b) ela continua
-     flutuando por cima da linha, como sempre: */
-  position: absolute;
-  top: calc(100% + 0.3rem);
-  left: 0;
-  right: 0;
-  /* DENTRO delas (regra abaixo, mais específica) ela é um BLOCO: estes
-     dois bastam para a linha quebrar sozinha (`flex-wrap: wrap` no
-     contêiner) quando `position` deixa de ser `absolute`. */
-  order: 5;
-  flex-basis: 100%;
-  width: 100%;
-  z-index: 5;
-  padding: 0.7rem 0.85rem;
-  /* a mesma pele de `.hud-cartao` (fatia 1), sólida — ela paira SOBRE as
-     linhas de baixo, não é mais um cartão dentro do fluxo */
+  /* FIXA na janela, não mais na linha — `Ajuda.tsx` escreve `top`/
+     `left`/`width` por cima a cada abertura (`posicionarDica`). */
+  position: fixed;
+  /* acima de qualquer painel (`--camada-dialogo: 46`, 01-base.css) e do
+     maior z-index fixo do resto do HUD (`.progress-wrap`, 60,
+     02-filme.css) — a dica paira sobre tudo, nunca por baixo de nada. */
+  z-index: 70;
+  /* É TEXTO, não controle: o clique atravessa para o que estiver
+     embaixo (o painel, a cena) — quem fecha a dica é o Esc, o hover
+     saindo ou o clique fora que o painel já trata, nunca um clique NELA. */
+  pointer-events: none;
+  padding: 0.55rem 0.7rem;
+  /* a mesma pele de `.hud-cartao` (fatia 1), sólida */
   border: 1px solid var(--borda-forte);
   border-top: 2px solid var(--acento);
   border-radius: var(--raio-controle);
   background: var(--fundo-painel);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  font-size: 0.66rem;
+  /* FORA do `.hud-root` (o portal mora no `body`) a caixa herdaria a
+     fonte de display do corpo — a serifa apareceu na foto de 09/09;
+     a família e o espaçamento da interface entram aqui à mão. */
+  font-family: var(--fonte-ui);
+  letter-spacing: normal;
+  font-size: 0.8rem;
   line-height: 1.45;
+  text-align: left;
   color: var(--texto);
   text-transform: none;
   letter-spacing: normal;
   white-space: normal;
   transition: opacity var(--t-rapido) var(--curva);
-}
-/* BLOCO abaixo da linha, nunca flutuando para fora do painel (§8 item
-   2): `.ajustes-item` e `.atlas-gaveta-linha` (04-atlas.css) são flex
-   com `flex-wrap: wrap`, e aqui a dica sai do fluxo absoluto e entra no
-   fluxo normal — `flex-basis: 100%` (acima) já garante que ela quebra
-   para a própria linha; `scrollIntoView` (`components/Ajuda.tsx`) traz
-   a dica presa para a vista quando ela nasce fora, substituindo o
-   `nth-last-of-type` que abria as últimas linhas para cima. */
-.ajustes-item .hud-dica,
-.atlas-gaveta-linha .hud-dica,
-.hud-cabecalho-linha .hud-dica {
-  position: static;
-  margin-top: 0.3rem;
 }
 .hud-dica p {
   margin: 0 0 0.4rem;
@@ -222,10 +217,6 @@
   color: var(--acento);
   font-weight: 500;
 }
-.hud-ajuda:focus-visible + .hud-dica,
-.hud-dica.presa {
-  display: block;
-}
 @media (prefers-reduced-motion: reduce) {
   .hud-ajuda,
   .hud-dica {
@@ -237,6 +228,15 @@
    Único controle que não é segmentado: 15rem fixos (Lote 7 — os demais
    controles passaram a largura natural, mas a faixa de arrastar precisa
    de espaço), o número fica parado do lado direito, tabular para não
+   empurrar o traço a cada dígito. `flex-basis` some de propósito: com
+   ela ausente, `width` decide o tamanho também na tela estreita, onde
+   `.ajustes-controle input[type='range']` (abaixo) o leva a 100%. */
+.ajustes-item input[type='range'] {
+  flex: 0 0 auto;
+  width: 15rem;
+  accent-color: var(--acento);
+  cursor: pointer;
+}
 /* A LARGURA RESERVADA (fix, 09/09): "0.40" a "2.20" — sempre um
    dígito, o ponto, duas casas (`exposicao.toFixed(2)`, Ajustes.tsx),
    4 caracteres exatos, sem sinal nem unidade. Sem isto o número não
@@ -245,23 +245,14 @@
    disputa a mesma linha. `flex-shrink: 0` é o que faz a reserva valer
    de verdade: sem ele o número ainda podia ceder espaço ao slider
    numa linha apertada. */
-   empurrar o traço a cada dígito. `flex-basis` some de propósito: com
-   ela ausente, `width` decide o tamanho também na tela estreita, onde
-   `.ajustes-controle input[type='range']` (abaixo) o leva a 100%. */
-.ajustes-item input[type='range'] {
-  flex: 0 0 auto;
-  width: 4ch;
-  flex-shrink: 0;
-  text-align: right;
-  width: 15rem;
-  accent-color: var(--acento);
-  cursor: pointer;
-}
 .ajustes-valor {
   font-variant-numeric: tabular-nums;
   font-size: 0.875rem;
   color: var(--texto);
   white-space: nowrap;
+  width: 4ch;
+  flex-shrink: 0;
+  text-align: right;
 }
 
 /* A NOTA DA MEDIÇÃO (Ajustes D) — a classe É a que `atlas-smoke.mjs` lê
