@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { CAMADAS_POR_FAMILIA, familiaEmTexto } from '../three/atlasConfig';
+import type { Camada, FamiliaDeCamada } from '../three/atlasConfig';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
@@ -58,6 +59,42 @@ import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
  * É um diálogo de verdade — nasce no `dialogFocus` como todo diálogo da
  * casa (D7), e por isso o juiz de a11y a julga sem uma linha a mais.
  */
+
+/**
+ * A ORDEM DE EXIBIÇÃO da família "Galáxia" nesta gaveta — cotidiano
+ * antes de técnico (brilho, névoa, poeira antes de cartografia, forjas,
+ * CO, lâminas, extinção, campo envolvente), o mestre sempre primeiro.
+ * `CAMADAS_POR_FAMILIA` continua sendo a ÚNICA fonte — Director e selo
+ * derivam dela — esta lista só reordena o que a GAVETA mostra, nunca o
+ * conteúdo. Uma camada da família que não estiver aqui aparece logo
+ * depois do mestre, nunca some.
+ */
+const CAMADA_GALAXIA_MESTRE = 'nogal';
+const ORDEM_GALAXIA_DEPOIS_DO_MESTRE: readonly string[] = [
+  'noglow',
+  'nonebula',
+  'nodust',
+  'nocart',
+  'noforge',
+  'noco',
+  'nodisc',
+  'nogdust',
+  'nowrap',
+];
+
+function camadasParaExibir(
+  familia: FamiliaDeCamada,
+  camadas: readonly Camada[],
+): readonly Camada[] {
+  if (familia !== 'Galáxia') return camadas;
+  const posicao = (flag: string) => {
+    if (flag === CAMADA_GALAXIA_MESTRE) return 0;
+    const i = ORDEM_GALAXIA_DEPOIS_DO_MESTRE.indexOf(flag);
+    return i === -1 ? 1 : i + 2;
+  };
+  return [...camadas].sort((a, b) => posicao(a.flag) - posicao(b.flag));
+}
+
 export function GavetaDeCamadas({
   aberta,
   onFechar,
@@ -119,7 +156,7 @@ export function GavetaDeCamadas({
                 {ligadas}/{camadas.length}
               </span>
             </h3>
-            {camadas.map((c) => {
+            {camadasParaExibir(familia, camadas).map((c) => {
               const ligada = !escondidas.has(c.flag);
               return (
                 <label key={c.flag} className="atlas-gaveta-linha">

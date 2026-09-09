@@ -374,50 +374,18 @@ export function Ajustes({
       </LinhaDeAjuste>
 
       <LinhaDeAjuste
-        id="tom"
-        rotulo={t('ajustes.tom')}
-        dica={
-          <>
-            <p>{t('ajustes.tomNota')}</p>
-            <ul className="ajustes-dica-lista">
-              {TONS.map((curva) => (
-                <li key={curva.id}>
-                  <strong>{curva.nome}</strong> — {t(curva.nota)}
-                </li>
-              ))}
-            </ul>
-          </>
-        }
+        id="texto"
+        rotulo={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
+        dica={t('ajustes.textoNota')}
         dicaPresa={dicaPresa}
         onAlternarDica={alternarDica}
       >
         <Segmentado
-          aria={t('ajustes.tom')}
-          valor={tom}
-          opcoes={TONS.map((curva) => ({ valor: curva.id, nome: curva.nome }))}
-          onEscolher={onTom}
+          aria={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
+          valor={escalaUi}
+          opcoes={DEGRAUS_DA_UI.map((f) => ({ valor: f, nome: rotuloDaEscala(f) }))}
+          onEscolher={onEscalaUi}
         />
-      </LinhaDeAjuste>
-
-      {/* EXPOSIÇÃO não tem "?": nunca teve nota própria (a frase que
-          existia era só o valor, não uma explicação), e o redesenho não
-          inventa texto novo — o valor mora ao lado do controle. */}
-      <LinhaDeAjuste
-        id="exposicao"
-        rotulo={t('ajustes.exposicao')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <input
-          type="range"
-          min="0.4"
-          max="2.2"
-          step="0.02"
-          value={exposicao}
-          aria-label={t('ajustes.exposicao')}
-          onChange={(e) => onExposicao(Number(e.target.value))}
-        />
-        <span className="ajustes-valor">{exposicao.toFixed(2)}</span>
       </LinhaDeAjuste>
 
       <LinhaDeAjuste
@@ -446,6 +414,27 @@ export function Ajustes({
       <p className="ajustes-medida" role="status" aria-live="polite">
         {rotuloDaQualidade(qualidade)}
       </p>
+
+      {/* EXPOSIÇÃO não tem "?": nunca teve nota própria (a frase que
+          existia era só o valor, não uma explicação), e o redesenho não
+          inventa texto novo — o valor mora ao lado do controle. */}
+      <LinhaDeAjuste
+        id="exposicao"
+        rotulo={t('ajustes.exposicao')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <input
+          type="range"
+          min="0.4"
+          max="2.2"
+          step="0.02"
+          value={exposicao}
+          aria-label={t('ajustes.exposicao')}
+          onChange={(e) => onExposicao(Number(e.target.value))}
+        />
+        <span className="ajustes-valor">{exposicao.toFixed(2)}</span>
+      </LinhaDeAjuste>
 
       {/* A GAVETA AVANÇADO (item 145) — os presets na frente, os
           controles individuais atrás. Ela mora COLADA na seção da
@@ -478,6 +467,32 @@ export function Ajustes({
 
       {avancadoAberto && (
       <div id="ajustes-avancado">
+
+      <LinhaDeAjuste
+        id="tom"
+        rotulo={t('ajustes.tom')}
+        dica={
+          <>
+            <p>{t('ajustes.tomNota')}</p>
+            <ul className="ajustes-dica-lista">
+              {TONS.map((curva) => (
+                <li key={curva.id}>
+                  <strong>{curva.nome}</strong> — {t(curva.nota)}
+                </li>
+              ))}
+            </ul>
+          </>
+        }
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.tom')}
+          valor={tom}
+          opcoes={TONS.map((curva) => ({ valor: curva.id, nome: curva.nome }))}
+          onEscolher={onTom}
+        />
+      </LinhaDeAjuste>
 
       <LinhaDeAjuste
         id="msaa"
@@ -586,21 +601,6 @@ export function Ajustes({
 
       </div>
       )}
-
-      <LinhaDeAjuste
-        id="texto"
-        rotulo={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
-        dica={t('ajustes.textoNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
-          valor={escalaUi}
-          opcoes={DEGRAUS_DA_UI.map((f) => ({ valor: f, nome: rotuloDaEscala(f) }))}
-          onEscolher={onEscalaUi}
-        />
-      </LinhaDeAjuste>
 
       <LinhaDeAjuste
         id="rotulos3d"

@@ -975,7 +975,7 @@ async function julgarListbox(s) {
  * ser o modo único, a viagem na verdade para mim é só uma ferramenta do
  * modo atlas"*. Até aqui a barra do Atlas tinha UMA porta — "Partir" —, e
  * "Partir" sem filme atrás devolvia a TELA DE TÍTULO: o modo confessando
- * ser o secundário. Agora ele oferece ▶ Ver o filme e ↗ Explorar, e a
+ * ser o secundário. Agora ele oferece ▶ Ver o filme e ↗ Voo livre, e a
  * saída ↩ Voltar ao filme só monta quando o portal guardou um instante.
  *
  * O QUE SE COBRA: os rótulos, a ORDEM do Tab (a barra é o que ela lê), a
@@ -1001,7 +1001,7 @@ async function julgarFerramentasDoAtlas(s) {
   // OS GLIFOS SAÍRAM (Lote 4, item 2): o desenho é `<Icone>` (SVG) e o
   // texto ficou puro — a mesma troca que Busca/Camadas/Tempo já tinham.
   conferir(
-    semFilme.includes('Ver o filme') && semFilme.includes('Explorar'),
+    semFilme.includes('Ver o filme') && semFilme.includes('Voo livre'),
     `atlas: as duas ferramentas estão na barra (${semFilme.join(' · ')})`
   );
   conferir(
@@ -1757,10 +1757,10 @@ try {
   await sessao.ir(`atlas=1&ajustes=1&${PIN}`);
 
   // A GAVETA "AVANÇADO" É RECOLHÍVEL E FECHADA POR PADRÃO (Lote 7) — os
-  // cinco controles (MSAA/amostras, nebulosa, gás, partículas, escala,
-  // um `.ajustes-item` cada dentro de `#ajustes-avancado`) NÃO estão no
-  // DOM até o "?" abrir; um juiz que só olhasse `aria-expanded` não veria
-  // que a MONTAGEM também muda.
+  // seis controles (curva de tom, MSAA/amostras, nebulosa, gás,
+  // partículas, escala, um `.ajustes-item` cada dentro de
+  // `#ajustes-avancado`) NÃO estão no DOM até o "?" abrir; um juiz que só
+  // olhasse `aria-expanded` não veria que a MONTAGEM também muda.
   const contarAvancado = () => sessao.js(
     "(() => { const alvo = document.getElementById('ajustes-avancado'); "
       + "return alvo ? alvo.querySelectorAll('.ajustes-item').length : 0; })()"
@@ -1780,10 +1780,10 @@ try {
   const fechadoDeNovo = await contarAvancado();
   conferir(
     expandidoAntes === 'false' && fechadoAntes === 0
-      && expandidoDepois === 'true' && abertoDepois === 5
+      && expandidoDepois === 'true' && abertoDepois === 6
       && fechadoDeNovo === 0,
     'ajustes · avançado: fechado por padrão (0 controles em #ajustes-avancado),'
-      + ` abre os 5 (achado ${abertoDepois}) e desmonta ao recolher (achado ${fechadoDeNovo})`
+      + ` abre os 6 (achado ${abertoDepois}) e desmonta ao recolher (achado ${fechadoDeNovo})`
   );
 
   // A MEDIDA DE QUALIDADE É `aria-live` DE VERDADE — muda sozinha quando
