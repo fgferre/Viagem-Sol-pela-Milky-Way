@@ -233,6 +233,11 @@ export const EN: Record<keyof typeof PT, string> = {
   'atlas.avancarNoTempo': 'Go forward in time',
   'atlas.taxaAria': 'Time speed: {taxa}. Click for the next step.',
   'atlas.aoVivo': 'Live',
+  // THE DESKTOP BAR TOGGLE AT REST (item A1.1) — the "SKY TIME" line
+  // starts collapsed, and this pair of aria strings names what the
+  // "▸"/"▾" button does, in the same mold as `atlas.fecharTempo`.
+  'atlas.mostrarControlesDoTempo': 'Show the time controls',
+  'atlas.esconderControlesDoTempo': 'Hide the time controls',
   'atlas.aoVivoAria': 'Follow real time',
   'atlas.epoca': 'Epoch',
   'atlas.epocaAria': 'Back to the instant of the 2026 portrait',
@@ -605,12 +610,6 @@ export const EN: Record<keyof typeof PT, string> = {
   'dica.captura.capturado': 'pointer captured — esc releases it',
   'dica.captura.pedir': 'capture the pointer',
   'dica.pausado': 'drag — look around · space — resume the journey',
-  'dica.atlas.girar': 'drag — orbit',
-  'dica.atlas.pinca': 'pinch — zoom',
-  'dica.atlas.roda': 'wheel — zoom',
-  'dica.atlas.escolherToque': 'tap — choose',
-  'dica.atlas.irToque': 'double tap — go',
-  'dica.atlas.escolherEVoltar': 'click — choose · esc — back',
 
   // ---- the heading drawn over the scene ----------------------------
   'cena.rotulosIndisponiveis': '2D canvas unavailable for the labels.',

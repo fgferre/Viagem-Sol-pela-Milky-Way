@@ -380,11 +380,32 @@
   pointer-events: auto;
   padding: 1rem 1.125rem 0.875rem;
 }
-/* sem alvo na tela: o cartão fica no meio, sozinho */
+/* SEM ALVO NA TELA (item A1.3, relatório de UI de 09/09) — a dica
+   permanente do rodapé do Atlas que os quatro passos do convite apontavam
+   saiu do modo, e o cartão passa a nascer SOLTO (sem `top`/`left`
+   calculados a partir de um retângulo que não há mais). Ele NASCE ONDE A
+   DICA FICAVA, não no meio da tela: centrado, ele cobria o Sol/os
+   planetas na mesa e a folha de busca no telefone — os juízes que clicam
+   um corpo ou tocam o campo de busca passavam a acertar o CARTÃO, não o
+   alvo de verdade. Canto inferior esquerdo, acima da linha fechada da
+   máquina do tempo (`.atlas-rodape`); a versão do telefone (abaixo) mora
+   na largura inteira, acima da fileira de alças. */
 .spotlight-cartao.solto {
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  left: 1.5rem;
+  bottom: 5.5rem;
+  max-width: min(22rem, 82vw);
+}
+@media (max-width: 760px) {
+  /* mesmo raciocínio, no rodapé do telefone: grudado nas duas bordas,
+     acima da fileira de alças (`--selo-base` já reserva a altura dela) —
+     pode encostar na folha compacta da ficha, a mesma sobra que a dica
+     antiga também aceitava ali. */
+  .spotlight-cartao.solto {
+    left: 1rem;
+    right: 1rem;
+    bottom: calc(var(--selo-base) + 1rem);
+    max-width: none;
+  }
 }
 .convite-texto {
   margin: 0 0 0.75rem;

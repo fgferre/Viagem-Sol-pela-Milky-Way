@@ -784,6 +784,17 @@ async function julgarCliqueRealNoTempo(s) {
  * um meio-termo de crossfade.
  */
 async function julgarChromeDoFilme(s) {
+  // A LINHA NASCE RECOLHIDA (item A1.1, relatório de UI de 09/09) — só
+  // "INSTANTE DO CÉU + data" e o "▸" ficam na tela até alguém abrir; os
+  // seis controles (e o "Ao vivo" que este clique real testa) só entram
+  // no DOM depois. Abrir é PRECONDIÇÃO desta prova, não o que ela mede —
+  // por isso um `.click()` de JS, não `s.clicar` (a diferença de CDP é o
+  // que o clique de baixo, no "Ao vivo", precisa provar).
+  await s.js(`(() => {
+    const alt = document.querySelector('.atlas-rodape .atlas-tempo-alternar');
+    if (alt && alt.getAttribute('aria-expanded') !== 'true') alt.click();
+  })()`);
+  await dorme(100);
   const MEDIR = `(() => {
     const ler = (sel) => {
       const e = document.querySelector(sel);
@@ -1721,14 +1732,18 @@ try {
     `atlas: o convite tem os QUATRO gestos do modo ("${convite.conta.trim()}" ·`
       + ` "${convite.texto}")`
   );
-  // o furo é ANCORADO no pedaço REAL da dica do rodapé: sem isso o
-  // convite apontaria um lugar onde não há nada a lembrar depois
+  // A DICA PERMANENTE SAIU DO ATLAS (item A1.3, relatório de UI de
+  // 09/09) — e com ela os quatro `data-spot` que o furo mirava (o
+  // convite já ensina os gestos pelo TEXTO de cada passo, a razão
+  // declarada da obra). Sem alvo real, o Spotlight não abre furo — a
+  // prova que cobrava "furo ancorado no alvo" agora cobra o oposto: nem
+  // um nem outro existem, e o cartão nasce `solto` (sem `top`/`left`
+  // calculados a partir de um retângulo que não há).
   conferir(
-    convite.furoLargura !== null && convite.alvoLargura !== null
-      && Math.abs(convite.furoLargura - convite.alvoLargura - 16) <= 2,
-    `atlas: o furo é o retângulo do "arraste — girar" da dica`
-      + ` (${convite.furoLargura} px de furo sobre ${convite.alvoLargura} px de alvo`
-      + ` + 8 de folga de cada lado)`
+    convite.furoLargura === null && convite.alvoLargura === null,
+    `atlas: sem a dica permanente não há alvo para o furo — o convite`
+      + ` segue só pelo texto de cada passo (furo ${convite.furoLargura},`
+      + ` alvo ${convite.alvoLargura})`
   );
   // "continuar" três vezes chega ao último passo, e "entendi" fecha e
   // grava a chave PRÓPRIA — não a do voo livre
@@ -2283,8 +2298,8 @@ async function julgarReservaDaFicha(s) {
   );
 
   // O TETO, na mesma fonte de `App.tsx` (`TETO_DA_FOLHA_COMPACTA_REM =
-  // 8.5`), em px com `ui = 1` — o `PIN` desta prova não pede `?ui=`.
-  const TETO_DA_FOLHA_COMPACTA_PX = 8.5 * 16;
+  // 10`), em px com `ui = 1` — o `PIN` desta prova não pede `?ui=`.
+  const TETO_DA_FOLHA_COMPACTA_PX = 10 * 16;
   await s.send('Emulation.setDeviceMetricsOverride', {
     width: 390, height: 844, deviceScaleFactor: 1, mobile: false,
   });

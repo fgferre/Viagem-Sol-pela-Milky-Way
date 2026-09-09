@@ -573,6 +573,7 @@ export function BarraDoTempo({
   onEpoca,
   comAjuda = true,
   comRotulos = false,
+  recolhivel = true,
 }: {
   tempo: EstadoDoTempo;
   onSentido: (sentido: SentidoDoTempo) => void;
@@ -589,6 +590,16 @@ export function BarraDoTempo({
    * botões já dizem o que cada grupo é, e um rótulo a mais seria ruído.
    */
   comRotulos?: boolean;
+  /**
+   * A BARRA DE MESA EM REPOUSO (A1.1, relatório de UI de 09/09) — VERDADE
+   * POR PADRÃO, porque é o rodapé PERMANENTE de mesa (App.tsx) quem a
+   * quer, e App.tsx não chama esta peça nomeando prop nenhuma. Recolhida
+   * mostra só a linha "INSTANTE DO CÉU + data", o "▸" e o "?"; sem
+   * guardar a escolha (recolhida de novo a cada carga). `GavetaDoTempo`
+   * (a folha do celular, que o visitante já abriu de propósito) é quem
+   * desliga — ali os seis controles continuam inteiros, sempre.
+   */
+  recolhivel?: boolean;
 }) {
   useIdioma();
   const { data, taxa, sentido, aoVivo, naEpoca, aviso } = tempo;
@@ -608,6 +619,41 @@ export function BarraDoTempo({
   // deles: a barra não é diálogo (não tem Esc que feche nada), então só
   // falta o clique fora para desfixar.
   const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
+  const [aberta, setAberta] = useState(!recolhivel);
+  /**
+   * O Esc RECOLHE quando ABERTA (A1.1) — mesma doutrina do `Selo` acima:
+   * captura em `window`, para rodar ANTES do Esc da escada (`useAtalhos`,
+   * que só sobe degrau se `!event.defaultPrevented`). A ORDEM da casa:
+   * DIÁLOGO ABERTO come o Esc primeiro (a guarda `[data-dialogo]`); a
+   * DICA PRESA deste "?" vem depois (a mesma prioridade que
+   * `decidirEscDaDica` já dá aos outros diálogos, `useDicaPresa.ts`); só
+   * então a linha recolhe.
+   */
+  useEffect(() => {
+    if (!recolhivel || (!aberta && dicaPresa !== 'tempo-barra')) return;
+    const onTecla = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || document.querySelector('[data-dialogo]')) return;
+      if (dicaPresa === 'tempo-barra') {
+        e.preventDefault();
+        limparDica();
+        return;
+      }
+      e.preventDefault();
+      setAberta(false);
+    };
+    window.addEventListener('keydown', onTecla, true);
+    return () => window.removeEventListener('keydown', onTecla, true);
+  }, [recolhivel, aberta, dicaPresa, limparDica]);
+  // O BADGE DA VERDADE ("sem efeméride" etc.) É UM SÓ ELEMENTO, montado em
+  // UM dos dois lugares por vez: na linha fechada (abaixo) enquanto os
+  // controles estão fora do fluxo, ou depois de `.atlas-tempo-botoes`
+  // quando abrem — nunca os dois, e nunca nenhum: o visitante não pode
+  // perder a leitura só porque recolheu a barra.
+  const avisoDoTempo = (
+    <p className="atlas-tempo-aviso" role="status" aria-live="polite">
+      {aviso}
+    </p>
+  );
   return (
     <div
       className="atlas-tempo"
@@ -616,8 +662,27 @@ export function BarraDoTempo({
       }}
     >
       <div className="atlas-tempo-linha">
-        <span className="atlas-tempo-olho">{t('atlas.instanteDoCeu')}</span>
-        <span className="atlas-tempo-data">{data}</span>
+        {/* RECOLHIDA (A1.1): a própria linha "instante do céu" vira o
+            gatilho — clicar nela alterna, no molde do `<button>` que já
+            abre/fecha as seções da ficha (`.atlas-ficha-titulo button`).
+            O "▸"/"▾" no fim da linha (abaixo, depois do "?") é o SEGUNDO
+            jeito de fazer a mesma coisa, o que a régua do dono pede. */}
+        {recolhivel ? (
+          <button
+            type="button"
+            className="atlas-tempo-cabecalho"
+            onClick={() => setAberta((v) => !v)}
+          >
+            <span className="atlas-tempo-olho">{t('atlas.instanteDoCeu')}</span>
+            <span className="atlas-tempo-data">{data}</span>
+          </button>
+        ) : (
+          <>
+            <span className="atlas-tempo-olho">{t('atlas.instanteDoCeu')}</span>
+            <span className="atlas-tempo-data">{data}</span>
+          </>
+        )}
+        {recolhivel && !aberta && avisoDoTempo}
         {comAjuda && (
           <Ajuda
             id="tempo-barra"
@@ -627,7 +692,22 @@ export function BarraDoTempo({
             onAlternar={() => alternarDica('tempo-barra')}
           />
         )}
+        {recolhivel && (
+          <button
+            type="button"
+            className="atlas-tempo-alternar"
+            onClick={() => setAberta((v) => !v)}
+            aria-expanded={aberta}
+            aria-label={t(
+              aberta ? 'atlas.esconderControlesDoTempo' : 'atlas.mostrarControlesDoTempo'
+            )}
+          >
+            <Icone nome={aberta ? 'chevronBaixo' : 'chevronDireita'} tamanho={12} />
+          </button>
+        )}
       </div>
+      {(!recolhivel || aberta) && (
+      <>
       <div className="atlas-tempo-botoes" role="group" aria-label={t('atlas.maquinaDoTempo')}>
         {grupo(
           t('atlas.tempoTransporte'),
@@ -704,9 +784,9 @@ export function BarraDoTempo({
           </div>,
         )}
       </div>
-      <p className="atlas-tempo-aviso" role="status" aria-live="polite">
-        {aviso}
-      </p>
+      {avisoDoTempo}
+      </>
+      )}
     </div>
   );
 }
@@ -792,6 +872,7 @@ export function GavetaDoTempo({
         onEpoca={onEpoca}
         comAjuda={false}
         comRotulos
+        recolhivel={false}
       />
     </div>
   );

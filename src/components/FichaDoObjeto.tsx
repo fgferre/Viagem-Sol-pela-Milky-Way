@@ -138,8 +138,9 @@ export function FichaDoObjeto({
   onRelevoDaCor: (ligado: boolean) => void;
   /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
   celular?: boolean;
-  /** compacta (`false`) ou expandida (`true`) — só existe apresentação
-   *  no celular; a mesa ignora as duas props (Lote 5, PLAN-UI.md §7) */
+  /** compacta (`false`) ou expandida (`true`) — no celular sempre, e na
+   *  mesa também numa janela BAIXA (B2, 09/09; `janelaBaixa` abaixo);
+   *  fora das duas a mesa ignora as duas props (Lote 5, PLAN-UI.md §7) */
   fichaExpandida?: boolean;
   /** o toque em "Detalhes"/"Recolher" — `useGavetas().alternarFichaExpandida` */
   onAlternarFichaExpandida?: () => void;
@@ -322,20 +323,50 @@ export function FichaDoObjeto({
     return () => consulta.removeEventListener('change', ouvir);
   }, []);
 
+  /**
+   * A JANELA BAIXA (B2, 09/09) — mesmo limiar que a paisagem baixa já usa
+   * (`06-responsivo.css`, "`@media (max-height: 480px) and (orientation:
+   * landscape)`"): abaixo dela a ficha CHEIA da mesa (coluna à direita,
+   * largura própria) domina a tela — medido a 844×390. SEM a cláusula de
+   * orientação aqui: ela só entra em jogo onde `celular` já é falso
+   * (largura > 760 px), e uma janela mais larga que alta com esta altura
+   * já É paisagem, por definição — repeti-la não mudaria nada.
+   * `matchMedia` COM OUVINTE, o mesmo padrão de `larguraEstreita` acima e
+   * de `useCelular.ts`: o juiz de a11y redimensiona a janela no meio da
+   * sessão, e uma leitura sem ouvinte ficaria presa no tamanho do boot.
+   */
+  const [janelaBaixa, setJanelaBaixa] = useState(
+    () => window.matchMedia?.('(max-height: 480px)').matches ?? false
+  );
+  useEffect(() => {
+    const consulta = window.matchMedia('(max-height: 480px)');
+    const ouvir = () => setJanelaBaixa(consulta.matches);
+    ouvir();
+    consulta.addEventListener('change', ouvir);
+    return () => consulta.removeEventListener('change', ouvir);
+  }, []);
+
   if (!aberta || !ficha) return null;
   const primeira = ficha.secoes[0]?.id;
-  // A COMPACTA (Lote 5, §7): só existe apresentação no celular; a mesa
-  // sempre mostra o conteúdo cheio (introdução, seções, esqueleto, erro).
-  const compacta = celular && !fichaExpandida;
+  // A COMPACTA (Lote 5, §7 + B2, 09/09): existe no celular OU numa
+  // janela BAIXA da mesa (`compactavel`) — as duas são "onde a ficha
+  // cheia não cabe sem cobrir o quadro". Fora delas a mesa sempre mostra
+  // o conteúdo cheio (introdução, seções, esqueleto, erro).
+  const compactavel = celular || janelaBaixa;
+  const compacta = compactavel && !fichaExpandida;
 
   return (
     <div
       className="hud-cartao hud-dialogo atlas-ficha"
-      // O ESTADO NO PRÓPRIO NÓ (Lote 5, PLAN-UI.md §7) — só existe no
-      // celular; a mesa não tem o atributo, e é ele que `09-celular.css`
-      // lê para trocar altura fixa por teto rolável, e que os juízes
-      // podem ler para saber qual dos dois está na tela.
-      data-ficha-estado={celular ? (fichaExpandida ? 'expandida' : 'compacta') : undefined}
+      // O ESTADO NO PRÓPRIO NÓ (Lote 5, PLAN-UI.md §7 + B2, 09/09) — no
+      // celular sempre, e na mesa também numa janela BAIXA
+      // (`compactavel`); fora dos dois a mesa não tem o atributo. No
+      // celular é ele que `09-celular.css` lê para trocar altura fixa
+      // por teto rolável (`--ficha-compacta-altura`, só ali — a mesa
+      // nunca lê essa variável); na mesa a altura já é a do conteúdo,
+      // sem regra a mais. Os juízes podem ler o atributo para saber qual
+      // dos dois está na tela.
+      data-ficha-estado={compactavel ? (fichaExpandida ? 'expandida' : 'compacta') : undefined}
       // A LARGURA ESTREITA (comentário acima do `useState`) — só importa
       // junto da compacta; presente sempre que ela vale, inofensiva fora
       // do celular (o CSS só a lê dentro de `[data-ficha-estado]`).
@@ -377,14 +408,18 @@ export function FichaDoObjeto({
             onAlternar={() => alternarDica('ficha')}
           />
         }
-        // "DETALHES"/"RECOLHER" (Lote 5, §7) — só existe no celular; a
+        // "DETALHES"/"RECOLHER" (Lote 5, §7 + B2, 09/09) — existe onde a
+        // ficha é `compactavel` (celular OU janela baixa da mesa); a
         // prop `acoes` já é o lugar do `CabecalhoDoPainel` para botões
         // extras entre o "?" e o fechar, então nem esse componente
         // precisa mudar. O `ref` é o alvo do foco ao trocar de estado
-        // (o efeito lá em cima); o texto encolhe a só-ícone abaixo de
-        // 360 px (09-celular.css), o `aria-label` sobrevive sempre.
+        // SÓ no celular (o efeito lá em cima: na mesa o clique do mouse
+        // já deixa o foco no próprio botão, sem gesto de arrasto que
+        // precise repô-lo); o texto encolhe a só-ícone abaixo de 360 px
+        // (09-celular.css, que só existe no celular — na mesa o botão
+        // sempre mostra o texto), o `aria-label` sobrevive sempre.
         acoes={
-          celular ? (
+          compactavel ? (
             <button
               type="button"
               ref={fichaExpandida ? recolherRef : detalhesRef}

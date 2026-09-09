@@ -297,8 +297,6 @@ describe('o piso e o teto não se atravessam', () => {
 // ------------------------------------------------------------
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 const GESTOS = readFileSync(new URL('./director/gestos.ts', import.meta.url), 'utf8');
-import { PT } from '../lib/idioma/pt';
-import { EN } from '../lib/idioma/en';
 const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
 
 describe('Director — a roda está ligada, e ligada do jeito que funciona', () => {
@@ -430,20 +428,16 @@ describe('Director — a roda está ligada, e ligada do jeito que funciona', () 
     expect(bloco.indexOf('avancarZoom')).toBeLessThan(bloco.indexOf('this.atlas.apply'));
   });
 
-  it('a dica conta ao visitante que a roda dá zoom', () => {
-    // (a frase virou chave de tabela no item 130 — o que a guarda mede é
-    // o mesmo: a dica DIZ a roda, e diz nas duas línguas)
-    expect(APP).toContain("{t('dica.atlas.roda')}");
-    expect(PT['dica.atlas.roda']).toMatch(/roda/);
-    expect(EN['dica.atlas.roda']).toMatch(/wheel/i);
-    // ...e em TELA DE TOQUE ela conta o gesto que existe lá: a pinça. O
-    // convite do Atlas deixou de ser pulado no `coarse` pela mesma razão
-    // — a frase que o pulava ("a roda não existe em tela de toque")
-    // deixou de valer no dia em que a pinça passou a existir.
-    expect(APP).toContain("{t('dica.atlas.pinca')}");
-    expect(APP).toContain("{t('dica.atlas.irToque')}");
-    expect(PT['dica.atlas.pinca']).toMatch(/pinça/);
-    expect(PT['dica.atlas.irToque']).toMatch(/toque duplo/);
+  it('o convite do Atlas se oferece em tela de toque; o do voo livre, não', () => {
+    // A DICA PERMANENTE SAIU DO ATLAS (item A1.3, relatório de UI de
+    // 09/09) — o convite do primeiro acesso já ensina os quatro gestos, e
+    // este teste media a FRASE da dica ("a roda dá zoom", "a pinça dá
+    // zoom"…), que não existe mais. O que sobra, e continua verdade: o
+    // Atlas deixou de pular o convite em `pointer: coarse` no dia em que
+    // a PINÇA passou a existir ("a roda não existe em tela de toque" era
+    // a razão do pulo, e parou de valer); o VOO LIVRE segue pulando —
+    // dois dos três gestos de lá são WASD, e ensinar teclado a quem não
+    // tem teclado continua sendo mentira.
     expect(APP).toContain("if (onde === 'voo' && telaDeToque()) return;");
   });
 

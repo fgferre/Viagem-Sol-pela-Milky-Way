@@ -45,16 +45,65 @@
        ainda cabe ícone (20px) + rótulo (11px) + respiro empilhados a
        56 px, com folga; é `rem`, então escala com `?ui=` como sempre. */
     --alcas-altura: 3.5rem;
-    /* O SELO SOBE JUNTO. `--selo-base` é a linha de base que TRÊS peças
-       leem (fatia 1) — o selo, o rodapé do Atlas e o teto dos diálogos —,
-       então somar a fileira aqui basta para as três pararem acima dela.
-       `env(safe-area-inset-bottom)` entra porque a barra de gestos do iOS
-       come esse pedaço; o Chrome sem cabeça reporta 0 e o juiz não a mede
-       — limite declarado, conferido à mão. CONSERTO 2: o vão para a
-       fileira desce de 0,6rem para 0,375rem (6 px) — o chip do selo
-       ganha altura própria (`.atlas-selo-resumo`, abaixo) em vez de
-       precisar do respiro antigo. */
-    --selo-base: calc(var(--alcas-altura) + 0.375rem + env(safe-area-inset-bottom));
+    /* `--selo-base` é a linha de base que o rodapé do Atlas e o teto dos
+       diálogos leem (fatia 1) — a fileira basta para os dois pararem
+       acima dela. `env(safe-area-inset-bottom)` entra porque a barra de
+       gestos do iOS come esse pedaço; o Chrome sem cabeça reporta 0 e o
+       juiz não a mede — limite declarado, conferido à mão.
+       O SELO SAIU DAQUI (item C1, relatório de UI de 09/09): o chip
+       mudou para o canto superior esquerdo, sob a linha de endereço, e
+       parou de disputar espaço com a fileira — sem ele não sobra mais
+       nada para reservar por cima de `--alcas-altura`, e a folha volta a
+       sentar direto na barra de baixo (ver `.hud-dialogo`, abaixo). */
+    --selo-base: calc(var(--alcas-altura) + env(safe-area-inset-bottom));
+  }
+
+  /* ---- O SELO NO CANTO SUPERIOR DIREITO (item C1, relatório de UI de
+     09/09) ---------------------------------------------------------
+     Ele deixa o pé da tela — onde disputava altura com a fileira de
+     alças — e sobe para logo abaixo da barra de cima, um chip de uma
+     linha só. A ÂNCORA É `--barra-fim` (App.tsx MEDE a barra de verdade
+     a cada resize/troca de texto, nunca um número escrito à mão), a
+     mesma que já ancora `.atlas-bussola` no telefone: o chip nunca sobe
+     por cima da barra, mesmo quando ela cresce com `?ui=` ou ganha o
+     alvo focado. À DIREITA, e não à esquerda como na maquete C1: o canto
+     esquerdo já é da bússola (`.atlas-bussola`, 06-responsivo.css, no
+     MESMO `left: 4vw` sob a MESMA âncora) — o juiz do Atlas flagrou os
+     dois encostados ("encosta") no primeiro dia; o lado direito, abaixo
+     de "Voo livre", está livre.
+     CONTRASTE CHEIO e o FILETE âmbar/verde continuam — o repouso
+     discreto de A1.2 (fonte menor, opacidade 0,7, sem filete) é só de
+     MESA: no telefone o chip é a única leitura permanente que sobrou
+     ali, e precisa se ler à primeira vista, sem hover que a acorde.
+     `max-width: 60vw` é o teto do CHIP FECHADO — pequeno de propósito, e
+     bem longe de qualquer botão da barra de cima (que fica INTEIRA
+     acima da linha de `--barra-fim`, nunca ao lado do chip). O texto que
+     não couber corta com reticências (`.atlas-selo-resumo-texto`,
+     04-atlas.css), o mesmo remédio de sempre. */
+  .hud-root:has(.atlas-alcas) .atlas-selo {
+    position: fixed;
+    top: calc(var(--barra-fim) + 0.5rem);
+    right: 4vw;
+    left: auto;
+    bottom: auto;
+    align-items: flex-end;
+    text-align: right;
+    max-width: 60vw;
+  }
+  .hud-root:has(.atlas-alcas) .atlas-selo-resumo {
+    font-size: 0.6rem;
+  }
+  /* A GAVETA ABRE PARA BAIXO daqui — `.atlas-selo-detalhe` (04-atlas.css)
+     cresce PARA CIMA a partir do chip na mesa, porque lá o chip mora no
+     PÉ da tela; aqui ele mora no TOPO, e crescer para cima a levaria
+     para fora da janela (negativo). */
+  .hud-root:has(.atlas-alcas) .atlas-selo-detalhe {
+    bottom: auto;
+    top: 100%;
+    right: 0;
+    left: auto;
+    margin-bottom: 0;
+    margin-top: 0.3rem;
   }
 
   /* ---- A FILEIRA DE ALÇAS (Lote 4, item 7 — regra de encaixe do portão
@@ -74,13 +123,6 @@
      primeiras não pulam de lugar no instante em que ela aparece. NUNCA
      ROLA, NUNCA CORTA: quem cede é o RÓTULO (`clamp`, abaixo), nunca a
      grade. */
-  /* CONSERTO 2 (Lote 4, 07/09): o chip do selo ganha altura PRÓPRIA de
-     28 px — antes ele media o que o padding/texto davam (~21 px) e o
-     vão de 0,6rem para a fileira cobria a diferença; agora o vão caiu
-     para 6 px (acima) e é o chip quem garante a leitura sem encostar. */
-  .hud-root:has(.atlas-alcas) .atlas-selo-resumo {
-    min-height: 1.75rem;
-  }
   .atlas-alcas {
     position: fixed;
     left: 0;
@@ -314,13 +356,14 @@
      juntas, sem componente novo, sem segundo mecanismo e sem uma linha
      por peça.
 
-     A GEOMETRIA É UMA EXPRESSÃO SÓ, e ela reusa `--selo-base`, que já é o
-     número que três peças leem: como o celular soma a fileira DENTRO dele
-     (acima), `bottom: --selo-base + --selo-linha + respiro` garante as
-     DUAS promessas de uma vez — a folha não cobre o selo nem a alça que a
-     abriu. No filme e no voo livre, onde não há fileira nem selo,
-     `--alcas-altura` é zero e a mesma linha vira um respiro de 3,4rem no
-     pé; a expressão continua sendo uma.
+     A GEOMETRIA REUSA `--selo-base`, que já é o número que o rodapé do
+     Atlas e esta folha leem: como o celular soma a fileira DENTRO dele
+     (acima), `bottom: --selo-base` já garante que a folha não cobre a
+     alça que a abriu. O SELO SAIU DESTA CONTA (item C1, relatório de UI
+     de 09/09): o chip mora no canto superior esquerdo agora, não mais
+     acima da fileira, e com ele saiu o respiro extra (`--selo-linha` +
+     0,4rem) que só existia para a folha não encostar nele — ela senta
+     DIRETO na barra de baixo.
 
      A CASCATA É A FATIA. `.ajustes` (fatia 8), `.atlas-ficha` (4),
      `.atlas-gaveta` (4) e `.atlas-busca` (4) declaram a LARGURA de cada
@@ -370,7 +413,7 @@
     left: 0;
     right: 0;
     width: auto;
-    bottom: calc(var(--selo-base) + var(--selo-linha) + 0.4rem);
+    bottom: var(--selo-base);
     /* de borda a borda a moldura lateral não emoldura nada: some, e a
        folha vira uma faixa que sobe */
     border-left: 0;
@@ -414,40 +457,6 @@
     }
   }
 
-  /* A DICA DOS GESTOS SAI DO FLUXO, e é a mesma lei de sempre com outro
-     remédio: ela APAGA depois do primeiro arrasto (`.free-hint.apagada`),
-     e no fluxo isso encolheria a coluna do rodapé, cresceria o retângulo
-     útil e daria um pulo de câmera no meio da sessão. Na mesa ela some
-     por OPACIDADE com a caixa no lugar; aqui ela nunca entra na caixa —
-     `absolute` sobre o rodapé, acima do selo e portanto acima da fileira.
-     Fora do fluxo desde o começo, apagar não move nada. */
-  /* ITEM 4 (Lote 4, 07/09): UMA linha, nunca duas — no celular a dica
-     de duas linhas era quem derrubava o "céu ≥ 70%" a 320×568 (medindo
-     68,6%): a segunda linha some com `ellipsis` em vez de crescer a
-     coluna. */
-  .atlas-rodape .free-hint {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 100%;
-    margin-bottom: 0.4rem;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    text-align: right;
-  }
-
-  /* E ELA CEDE À FOLHA. Fora do fluxo a dica passa a ficar logo acima do
-     selo, e a folha para 0,4rem acima do selo — as duas disputam a mesma
-     faixa de ~18 px, e o que se via era meia linha de texto espiando por
-     baixo da folha. Quem cede é a dica: ela é ENSINO DE GESTO e some
-     sozinha no primeiro arrasto; a folha é o que o visitante acabou de
-     abrir. Por opacidade, como sempre — ela já está fora do fluxo, então
-     não há geometria para mover. */
-  .hud-root:has([data-dialogo]) .atlas-rodape .free-hint {
-    opacity: 0;
-  }
-
   /* ---- A FICHA COMPACTA/EXPANDIDA (Lote 5, PLAN-UI.md §7) ------------
      O TETO da compacta é a MESMA constante que a câmera já respeita
      (`App.tsx`, `TETO_DA_FOLHA_COMPACTA_REM`) — 10rem, 160 px em
@@ -460,25 +469,11 @@
     --ficha-compacta-altura: 10rem;
   }
 
-  /* A LINHA DA COMPACTA (fix, 09/09; `atlas-ficha-resumo`,
-     `FichaDoObjeto.tsx`) — "rótulo · valor" sob o nome, dentro do MESMO
-     8,5rem: essa altura também é a RESERVA DA CÂMERA no celular
-     (`TETO_DA_FOLHA_COMPACTA_REM`, `App.tsx` — fora do escopo deste
-     ajuste), então crescê-la aqui sem remedir lá desalinharia o que a
-     3D reserva do que a folha realmente ocupa — o mesmo defeito que o
-     comentário de `--ficha-compacta-altura` acima já descreve para
-     quem mexe nela. A linha entra no orçamento que já existe: uma
-     fonte pequena, sem margem alta, uma linha só (nunca duas — `.hud-
-     dialogo` ampliaria com `text-overflow`, não com altura). */
-  .atlas-ficha-resumo {
-    margin: -0.15rem 0 0.4rem;
-    font-size: 0.75rem;
-    line-height: 1.2;
-    color: var(--texto-2);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  /* A LINHA DA COMPACTA ("rótulo · valor" sob o nome, `atlas-ficha-resumo`,
+     `FichaDoObjeto.tsx`) — a REGRA (não só a altura fixa acima) mudou de
+     casa (B2, 09/09): ela também vale na ficha da MESA numa janela baixa,
+     que este `@media` não alcança, então mora agora em `06-responsivo.css`,
+     num `@media` que reúne as duas condições. */
 
   /* A TRANSIÇÃO é `height`/`max-height` (item 6 do §2 pede as duas; só a
      compacta declara `height`, então é só ela que a anima de verdade —
@@ -586,30 +581,12 @@
     flex: 0 0 auto;
   }
 
-  /* "DETALHES"/"RECOLHER" — texto + chevron, alvo de 44×44 sempre
-     (`min-height`/`min-width`); o padding lateral só entra quando o
-     texto está visível (a régua estreita, abaixo, tira as duas coisas). */
-  .atlas-ficha-detalhes {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    min-height: 2.75rem;
-    min-width: 2.75rem;
-    padding: 0 0.6rem;
-    border: 0;
-    background: none;
-    color: var(--texto-2);
-    font: inherit;
-    font-size: 0.75rem;
-    cursor: pointer;
-  }
-  .atlas-ficha-detalhes:hover {
-    color: var(--texto);
-  }
-  .atlas-ficha-detalhes:focus-visible {
-    outline: 2px solid var(--foco);
-    outline-offset: 2px;
-  }
+  /* "DETALHES"/"RECOLHER" (texto + chevron, alvo de 44×44 sempre) MUDOU
+     DE CASA (B2, 09/09): a ficha da MESA numa janela baixa ganhou o
+     mesmo botão, e este `@media` não a alcança — a regra mora agora em
+     `06-responsivo.css`, num `@media` que reúne as duas condições. A
+     régua ESTREITA abaixo (≤360 px) continua aqui: ela só existe no
+     celular (largura), então não precisa da mesma mudança. */
 
   /* OS CARTÕES DE DESTINO (Lote 6) — no celular a grade vira LISTA,
      linha por linha, miniatura à esquerda: dedo é alvo vertical, não

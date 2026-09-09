@@ -241,6 +241,11 @@ export const PT = {
   'atlas.avancarNoTempo': 'Avançar no tempo',
   'atlas.taxaAria': 'Velocidade do tempo: {taxa}. Clique para o próximo degrau.',
   'atlas.aoVivo': 'Ao vivo',
+  // O TOGGLE DA BARRA DE MESA EM REPOUSO (item A1.1) — a linha "INSTANTE
+  // DO CÉU" começa recolhida, e este par de aria diz o que o botão "▸"/"▾"
+  // faz, no mesmo molde de `atlas.fecharTempo`.
+  'atlas.mostrarControlesDoTempo': 'Mostrar os controles do tempo',
+  'atlas.esconderControlesDoTempo': 'Esconder os controles do tempo',
   'atlas.aoVivoAria': 'Seguir o tempo real',
   'atlas.epoca': 'Época',
   'atlas.epocaAria': 'Voltar ao instante do retrato de 2026',
@@ -635,12 +640,6 @@ export const PT = {
   'dica.captura.capturado': 'ponteiro capturado — esc devolve',
   'dica.captura.pedir': 'capturar o ponteiro',
   'dica.pausado': 'arraste — olhar ao redor · espaço — retomar a viagem',
-  'dica.atlas.girar': 'arraste — girar',
-  'dica.atlas.pinca': 'pinça — zoom',
-  'dica.atlas.roda': 'roda — zoom',
-  'dica.atlas.escolherToque': 'toque — escolher',
-  'dica.atlas.irToque': 'toque duplo — ir',
-  'dica.atlas.escolherEVoltar': 'clique — escolher · esc — voltar',
 
   // ---- o rumo desenhado sobre a cena (`three/director`) -------------
   'cena.rotulosIndisponiveis': 'Canvas 2D indisponível para os rótulos.',

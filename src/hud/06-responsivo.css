@@ -329,15 +329,6 @@
 /* paisagem baixa (844×390): a composição sobe e o bloco de texto encolhe
    para caber entre a galáxia e o trilho */
 @media (max-height: 480px) and (orientation: landscape) {
-  /* Numa tela desta altura o rodapé do Atlas não cabe inteiro com o
-     texto grande — a máquina do tempo encostava na barra de controles.
-     Quem cede é a DICA, que é ensino de gesto e se descobre arrastando;
-     fica a máquina do tempo, que é controle e não se adivinha. Mesmo
-     critério do "Ver a galáxia" no celular, logo acima. */
-  .atlas-rodape .free-hint {
-    display: none;
-  }
-
   .cv-titulo {
     top: 56%;
     gap: 0.55rem;
@@ -349,6 +340,60 @@
 
   .cv-trilho {
     bottom: 5vh;
+  }
+}
+
+/* A LINHA "RÓTULO · VALOR" DA COMPACTA E O BOTÃO "DETALHES"/"RECOLHER"
+   (`atlas-ficha-resumo`/`atlas-ficha-detalhes`, `FichaDoObjeto.tsx`) —
+   item B2, 09/09. A MESMA peça em dois lugares agora: a folha do
+   celular (por LARGURA, `@media (max-width: 760px)`, 09-celular.css) e
+   a ficha da MESA numa janela BAIXA (por ALTURA — o mesmo limiar de
+   480px que a paisagem baixa acima já usa, sem a cláusula de
+   orientação: qualquer janela mais larga que 760px e mais baixa que
+   isto já É paisagem, por definição). As duas regras moravam só em
+   09-celular.css; migraram para cá, com as duas condições reunidas num
+   só `@media` em OR, porque `FichaDoObjeto.tsx` (`compactavel`) passou
+   a acionar as duas — um seletor só, para não copiar o mesmo botão duas
+   vezes em dois arquivos. */
+@media (max-width: 760px), (max-height: 480px) {
+  /* "rótulo · valor" sob o nome — fonte pequena, sem margem alta, uma
+     linha só (nunca duas: quem não couber corta com `text-overflow`,
+     não cresce a caixa). */
+  .atlas-ficha-resumo {
+    margin: -0.15rem 0 0.4rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    color: var(--texto-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* texto + chevron, alvo de 44×44 sempre (`min-height`/`min-width`); o
+     padding lateral só entra quando o texto está visível (a régua
+     estreita do celular, ≤360px em 09-celular.css, tira as duas
+     coisas — ela só existe em largura de celular, não precisa entrar
+     aqui). */
+  .atlas-ficha-detalhes {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    padding: 0 0.6rem;
+    border: 0;
+    background: none;
+    color: var(--texto-2);
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  .atlas-ficha-detalhes:hover {
+    color: var(--texto);
+  }
+  .atlas-ficha-detalhes:focus-visible {
+    outline: 2px solid var(--foco);
+    outline-offset: 2px;
   }
 }
 

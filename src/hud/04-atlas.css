@@ -725,6 +725,26 @@
   opacity: 0.55;
   letter-spacing: 0;
 }
+/* O SELO EM REPOUSO NA MESA (A1.2, relatório de UI de 09/09) — discreto
+   quando ninguém olha: menor, apagado, sem o filete âmbar/verde. No
+   hover/foco ele volta ao contraste cheio E ao filete — o clique-para-
+   abrir (acima) não muda em nada. SÓ NA MESA: no telefone o chip mudou
+   de canto (C1) e continua no contraste cheio de sempre — a régua do
+   `--ui` também não entra aqui, é tamanho fixo de repouso, não texto que
+   cresce com a leitura. */
+@media (min-width: 761px) {
+  .atlas-selo-resumo {
+    font-size: 0.62rem;
+    opacity: 0.7;
+    border-left-color: transparent;
+    transition: opacity var(--t-rapido) var(--curva), border-color var(--t-rapido) var(--curva);
+  }
+  .atlas-selo-resumo:hover,
+  .atlas-selo-resumo:focus-visible {
+    opacity: 1;
+    border-left-color: currentcolor;
+  }
+}
 /* A GAVETA DO SELO — sobe da linha fechada, encostada à direita nela. */
 .atlas-selo-detalhe {
   pointer-events: auto;
@@ -918,8 +938,7 @@
 .atlas-rodape .atlas-tempo .hud-ajuda {
   pointer-events: auto;
 }
-.atlas-rodape .atlas-tempo,
-.atlas-rodape .free-hint {
+.atlas-rodape .atlas-tempo {
   position: static;
   max-width: 100%;
 }
@@ -940,6 +959,44 @@
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
+}
+/* A LINHA RECOLHÍVEL DA MESA EM REPOUSO (A1.1) — dois botões zerados que
+   fazem a MESMA coisa: `.atlas-tempo-cabecalho` embrulha o eyebrow e a
+   data (o mesmo `gap`/`align-items` de `.atlas-tempo-linha`, porque um
+   `<button>` não é `display: contents`), e `.atlas-tempo-alternar` é o
+   "▸"/"▾" no fim da linha, empurrado para lá por `margin-left: auto` —
+   nenhum dos dois muda o desenho de `.atlas-tempo-olho`/`.atlas-tempo-data`.
+   Só existem quando `recolhivel` (a barra permanente da mesa); a gaveta
+   do celular não os monta. */
+.atlas-tempo-cabecalho {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.atlas-tempo-alternar {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  padding: 0.2rem;
+  border: 0;
+  background: none;
+  color: var(--texto-3);
+  cursor: pointer;
+}
+.atlas-tempo-alternar:hover {
+  color: var(--texto);
+}
+.atlas-tempo-cabecalho:focus-visible,
+.atlas-tempo-alternar:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
 }
 /* O TAMANHO CHEGA AO PISO DO ITEM 3 (Lote 4, 07/09) — eyebrow "INSTANTE
    DO CÉU" 11 px caps, data 18 px, na MESA e na gaveta do celular por

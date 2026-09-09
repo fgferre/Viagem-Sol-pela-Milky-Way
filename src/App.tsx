@@ -938,71 +938,17 @@ export default function App() {
               onEpoca={() => directorRef.current?.voltarAEpoca()}
             />
           )}
-          {/* A DICA DESCREVE OS GESTOS REAIS (item 73). Prometer degrau
-              na roda e enquadramento no clique era descrever a navegação
-              que o dono chamou de monstro: a roda pulava de degrau em vez
-              de dar zoom, e o clique reposicionava em vez de escolher. Os quatro
-              verbos passam a ser os do padrão da indústria — girar, zoom,
-              escolher, voltar —, e cada um é o que o gesto faz de verdade.
-
-              O VERBO DO CLIQUE VIROU "ESCOLHER" quando o clique passou a
-              escolher (22/08, o passo do duplo clique). "IR" não some do
-              produto: quem ensina os dois cliques é o CONVITE DO ATLAS,
-              que aponta justamente este pedaço da linha, e o botão "⊕
-              Aproximar" da linha de contexto é o mesmo gesto com nome.
-              Pôr os dois na dica custaria 80 caracteres, e o orçamento
-              medido abaixo é 68.
-
-              OS TRÊS `data-spot` são os alvos do convite do Atlas: o
-              furo do Spotlight se abre sobre o pedaço REAL da dica que
-              repete aquele gesto para sempre — quando o convite sai, o
-              lembrete fica.
-
-              O COMPRIMENTO É ORÇAMENTO, não gosto: a dica mora na mesma
-              coluna da máquina do tempo, então cada linha que ela ganha
-              empurra a barra para cima e come o retângulo útil (é o juiz
-              de a11y quem cobra, `base declarada ≥ medida`). MEDIDO em
-              `ui = 1,4` e 900 px de largura, na época o canto mais
-              apertado da faixa declarada (desde o item 9 ela desce a
-              768), a quebra da 2ª para a 3ª linha acontece entre 68 e 70
-              caracteres, e a 3ª linha estoura a base declarada de então
-              (0,328 contra 0,310). A linha tinha 67 caracteres antes
-              desta obra, caiu para 58 e voltou a 64 com "escolher" —
-              dentro do orçamento, com quatro de folga, e o `a11y.mjs`
-              é quem cobra (base declarada ≥ medida).
-
-              E ELA SOME DEPOIS DO PRIMEIRO ARRASTO (decisão do dono nos
-              mockups), por OPACIDADE e com a caixa no lugar: ver
-              `.free-hint.apagada`. Tirá-la do fluxo cresceria o retângulo
-              útil e a câmera daria um pulo no meio da sessão. */}
-          {/* E A DICA TROCA DE GESTOS NA TELA DE TOQUE (item 62, etapa
-              2). Não é uma segunda dica: são as MESMAS quatro coisas
-              ditas na língua do aparelho. Duas trocam de nome (a roda
-              vira a PINÇA, que passou a existir; o clique vira o toque)
-              e a quarta troca de conteúdo — no mouse "escolher" e "ir"
-              são o mesmo botão e cabem numa palavra só, no dedo são
-              gestos diferentes (um toque, dois toques) e o "esc — voltar"
-              sai porque não há tecla para tocar.
-              O ORÇAMENTO É O MESMO, e continua medido: 68 caracteres
-              contra os 64 do mouse, dentro das duas linhas que o juiz de
-              a11y mede a 320×568 — uma terceira linha comeria o céu que
-              esta mesma etapa acabou de devolver. */}
-          <div className={`free-hint ${girouNoAtlas ? 'apagada' : ''}`}>
-            {telaDeToque() ? (
-              <>
-                <span data-spot="girar">{t('dica.atlas.girar')}</span> ·{' '}
-                <span data-spot="zoom">{t('dica.atlas.pinca')}</span> ·{' '}
-                <span data-spot="escolher">{t('dica.atlas.escolherToque')}</span> ·{' '}
-                <span data-spot="ir">{t('dica.atlas.irToque')}</span>
-              </>
-            ) : (
-              <>
-                <span data-spot="girar">{t('dica.atlas.girar')}</span> ·{' '}
-                <span data-spot="zoom">{t('dica.atlas.roda')}</span> ·{' '}
-                <span data-spot="escolher">{t('dica.atlas.escolherEVoltar')}</span>
-              </>
-            )}
-          </div>
+          {/* A DICA DOS GESTOS SAIU DO ATLAS (item A1.3, relatório de UI de
+              09/09) — o convite do primeiro acesso (`Convite`, mais
+              abaixo) já ensina os quatro gestos, e a linha permanente
+              (`.free-hint`, que ainda mora no voo livre — 03-controles.css
+              — e cujo desaparecimento aqui apagou os quatro `data-spot`
+              que o convite deste modo mirava) parou de ser necessária no
+              regime. Os quatro passos do Atlas (`passosDoConvite.ts`)
+              passaram a `alvo: null`, que o `Spotlight` já tolera (sem
+              furo, só o véu e o cartão soltos). O `girouNoAtlas` continua
+              vivo: ele ainda decide se o convite se oferece (abaixo), só
+              deixou de apagar uma dica que não existe mais. */}
 
           {/* O SELO. Lê o estado da vista do Director a cada render — e o
               render acontece quando o foco muda, que é quando a vista

@@ -132,10 +132,6 @@ const MEDIR_CELULAR = `(() => {
         .filter((b) => b.getClientRects().length > 0)
         .map((b) => b.textContent.trim())
       : [],
-    dicaFora: (() => {
-      const d = document.querySelector('.atlas-rodape .free-hint');
-      return d ? getComputedStyle(d).position : null;
-    })(),
     dialogos: [...document.querySelectorAll('[data-dialogo]')]
       .map((d) => d.getAttribute('data-dialogo')),
     folha: cx('[data-dialogo]'),
@@ -265,27 +261,23 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
       .find((x) => /continuar|entendi/.test(x.textContent.trim())); if (b) b.click(); })()`);
     await dorme(150);
   }
-  const dicaDeToque = await s.js(
-    "(document.querySelector('.atlas-rodape .free-hint') || {}).textContent || ''"
-  );
+  // A DICA PERMANENTE SAIU DO ATLAS (item A1.3, relatório de UI de
+  // 09/09) — e com ela saíram os quatro `data-spot` que o furo do
+  // Spotlight mirava (`girar`/`zoom`/`escolher`/`ir` moravam dentro dela,
+  // App.tsx). O convite CONTINUA ensinando pelo TEXTO de cada passo (a
+  // razão declarada da obra: "o convite já ensina os gestos"); o que ele
+  // perdeu foi o FURO — sem alvo real para medir, `alvo` é `null` nos
+  // quatro passos, e é isso que a prova abaixo passa a cobrar.
   conferir(
-    passos.every((p) => p.texto && p.alvo !== null),
-    `convite no telefone: os 4 passos abrem e cada um FURA um pedaço da dica —`
-      + ` ${passos.map((p) => `${p.conta.trim()}:${p.alvo}px`).join(' · ')}`
+    passos.every((p) => p.texto && p.alvo === null),
+    `convite no telefone: os 4 passos abrem com texto, sem furo real (a`
+      + ` dica que o furo mirava saiu do Atlas) — `
+      + `${passos.map((p) => `${p.conta.trim()}:${p.alvo}`).join(' · ')}`
   );
   conferir(
     /pinça/i.test(passos[1].texto) && /toque num nome/i.test(passos[2].texto)
       && /duas vezes/i.test(passos[3].texto),
     `convite no telefone: os gestos são os do DEDO — "${passos.map((p) => p.texto).join('" · "')}"`
-  );
-  conferir(
-    /pinça — zoom/.test(dicaDeToque) && /toque duplo — ir/.test(dicaDeToque)
-      // os dois gestos que NÃO existem no aparelho: a roda e a tecla.
-      // (`esc — voltar` inteiro, e não só "esc": "escolher" tem as três
-      // letras dentro, e a primeira versão desta linha reprovou por isso)
-      && !/roda/.test(dicaDeToque) && !/esc —/.test(dicaDeToque),
-    `dica no telefone: a roda e o Esc saem, a pinça e o toque duplo entram —`
-      + ` "${dicaDeToque}"`
   );
   conferir(
     (await s.js("!!document.querySelector('.spotlight')")) === false,
@@ -382,11 +374,6 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
           `alças (${onde}): NÃO HÁ TARJA no telefone — a imagem ocupa a tela`
             + ` inteira (${m.tarjaPx.toFixed(1)} px de faixa preta,`
             + ` ${(m.tarjaPx / m.H * 100).toFixed(2)}% da tela; eram 9,00%)`
-        );
-        conferir(
-          m.dicaFora === 'absolute',
-          `alças (${onde}): a dica está FORA DO FLUXO (position: ${m.dicaFora}) —`
-            + ` apagá-la não move a câmera`
         );
         // O ESTADO DE SEMPRE CABE INTEIRO. A fileira ROLA de propósito —
         // é a saída certa para a QUINTA alça e para o texto grande —,
@@ -916,9 +903,15 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
         const b = e.getBoundingClientRect();
         return b.height === 0 ? 0 : b;
       };
-      const topo = Math.max(...['.controls-bar', '.letterbox.top']
+      // O SELO MUDOU DE CANTO (item C1, relatório de UI de 09/09): ele
+      // saiu do PÉ da tela — onde entrava em base, acima da fileira —
+      // e desceu para logo abaixo da barra de cima, então agora é o
+      // TOPO quem o mede. O free-hint saiu de vez da Atlas (item A1.3):
+      // não é mais nem topo nem base, então some sozinho da lista pelo
+      // mesmo filter(Boolean) que já cobre qualquer seletor ausente.
+      const topo = Math.max(...['.controls-bar', '.atlas-selo', '.letterbox.top']
         .map(cx).filter(Boolean).map((b) => b.bottom / H));
-      const base = Math.max(...['.atlas-selo', '.free-hint', '.atlas-alcas', '.letterbox.bottom']
+      const base = Math.max(...['.atlas-alcas', '.letterbox.bottom']
         .map(cx).filter(Boolean).map((b) => (H - b.top) / H));
       return { pct: (1 - topo - base) * 100, util: window.__director.retanguloUtil };
     })()`);

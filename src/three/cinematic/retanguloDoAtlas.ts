@@ -7,8 +7,9 @@
 //
 // SÃO DOIS ARRANJOS DE HUD, e por isso duas contas: a MESA (a barra
 // de controles em cima, o selo e a máquina do tempo embaixo) e o
-// TELEFONE (item 62: a barra de cima com as trocas de modo, a fileira
-// de alças no pé e o selo numa linha em cima dela). NENHUM DOS DOIS TEM
+// TELEFONE (item 62: a barra de cima com as trocas de modo, o selo
+// numa linha logo abaixo dela desde 09/09 e a fileira de alças sozinha
+// no pé). NENHUM DOS DOIS TEM
 // TARJA — o telefone desde 23/08 (`SAIDA_FRACAO` e o `Math.max` que caiu
 // no fim deste arquivo), a mesa desde o Lote 4 (07/09, PLAN-UI.md §0:
 // "tarjas de cinema saem do Atlas; ficam no filme", decisão do dono). A
@@ -262,11 +263,13 @@ const TEMPO_FRACAO = 0.19;
  * ABAIXO DE 761 px O HUD É OUTRO: a fatia 9 do HUD desfaz a barra de
  * controles (sobra uma linha só, no alto, com o CONTEXTO desde o Lote 4),
  * tira a máquina do tempo do rodapé (vira a alça ⏱), põe as portas numa
- * GRADE de alças no pé (Lote 4, item 7) e reduz o selo a uma linha em
- * cima dela. AS TRÊS FRAÇÕES SÃO MEDIDAS, uma a uma, pelo juiz de a11y
- * (`julgarCelular`, parte 5) nos SEIS cantos da faixa — 390×844 e
- * 320×568, com `?ui=` 0,85, 1 e 1,4 —, e ele cobra declarado ≥ medido em
- * cada um; a medição de cada constante está no comentário dela, abaixo.
+ * GRADE de alças no pé (Lote 4, item 7) e reduz o selo a um chip de uma
+ * linha logo abaixo da barra de cima (item C1, relatório de UI de 09/09
+ * — até então ele morava numa linha acima da fileira). AS TRÊS FRAÇÕES
+ * SÃO MEDIDAS, uma a uma, pelo juiz de a11y (`julgarCelular`, parte 5)
+ * nos SEIS cantos da faixa — 390×844 e 320×568, com `?ui=` 0,85, 1 e
+ * 1,4 —, e ele cobra declarado ≥ medido em cada um; a medição de cada
+ * constante está no comentário dela, abaixo.
  */
 
 /**
@@ -346,31 +349,39 @@ const SAIDA_FRACAO = 0.086;
 const ALCAS_FRACAO = 0.11;
 
 /**
- * O SELO, que no telefone é UMA LINHA acima da fileira — `--selo-base`
- * soma `--alcas-altura` dentro de si (fatia 9), então o que entra aqui é
- * só o que ele acrescenta POR CIMA dela (a caixa do selo MENOS a da
- * fileira, ambas medidas do pé da tela até o próprio topo).
+ * O SELO, que no telefone MUDOU DE CANTO (item C1, relatório de UI de
+ * 09/09): ele saiu do PÉ da tela — onde entrava em `base`, uma linha
+ * acima da fileira — e desceu para logo abaixo da BARRA DE CIMA
+ * (`top: calc(var(--barra-fim) + 0.5rem)`, `09-celular.css`), como um
+ * chip de uma linha só, âncorado na barra que `App.tsx` mede ao vivo.
+ * O que ele come agora é TOPO, não mais base: soma-se a `SAIDA_FRACAO`
+ * — que já cobre a barra sozinha —, e este campo é só o que o chip
+ * ACRESCENTA por cima dela (o vão de 0,5rem mais a caixa do chip, do
+ * fim da barra até o fim do chip). Com o selo fora do rodapé,
+ * `--selo-base` (CSS) deixou de somar a caixa dele: a fileira volta a
+ * ser sozinha na base, e é por isso que `ALCAS_FRACAO` sozinho passa a
+ * governar `base` no ramo do telefone (ver `retanguloUtilDoAtlas`).
  *
- * REMEDIDO NO LOTE 4 (07/09), na mesma corrida de `ALCAS_FRACAO`:
+ * MEDIDO (2026-09-09, Chrome headless com `mobile: true`,
+ * `?atlas=1&ui=…&shot=1`), `(selo.bottom − barra.bottom) / altura da
+ * janela`, nos SEIS cantos da faixa:
  *
- *   390, 0,85 → (0,0970 − 0,0644) / 0,85 = 0,0384
- *   390, 1,00 → 0,1122 − 0,0758 = 0,0364
- *   390, 1,40 → (0,1566 − 0,1062) / 1,40 = 0,0360
- *   320, 0,85 → (0,1442 − 0,0958) / 0,85 = 0,0569   ← o pior
- *   320, 1,00 → 0,1667 − 0,1127 = 0,0540
- *   320, 1,40 → (0,2327 − 0,1577) / 1,40 = 0,0536
+ *   390, 0,85 → 0,0293 / 0,85 = 0,0345
+ *   390, 1,00 → 0,0317
+ *   390, 1,40 → 0,0402 / 1,40 = 0,0287
+ *   320, 0,85 → 0,0438 / 0,85 = 0,0515   ← o pior
+ *   320, 1,00 → 0,0472
+ *   320, 1,40 → 0,0600 / 1,40 = 0,0429
  *
- * 0,06 cobre o pior (0,0569) com ~0,003 de folga. Nada do `SELO_FRACAO`
- * de mesa (0,12) atravessa: lá ele disputa o `Math.max` com a máquina do
- * tempo, e aqui a máquina do tempo é uma alça.
- *
- * REMEDIDO NO CONSERTO 2 (07/09) — o chip ganha altura própria de 28 px
- * e o vão para a fileira cai de 0,6rem para 0,375rem (6 px). MEDIDO
- * (`a11y.mjs`), pior razão (selo − alças)/`ui` = (0,158 − 0,099)/1 =
- * 0,059 (320, `ui = 1`; ~0,06 nos três `ui`, ui-invariante por ser
- * `rem`). `SELO_FRACAO_CELULAR` = 0,06 + 0,01 = 0,07.
+ * AO CONTRÁRIO DA MEDIÇÃO ANTERIOR ("ui-invariante por ser rem"), a
+ * razão aqui NÃO é constante: o vão e a caixa do chip escalam com o
+ * texto, mas a barra por cima deles escala um pouco mais rápido — o
+ * pior canto é o `ui` MENOR, a mesma lei de `SAIDA_FRACAO` e
+ * `ALCAS_FRACAO`. `SELO_FRACAO_CELULAR` sai da pior RAZÃO (320,
+ * ui = 0,85): 0,0515 + 0,01 = 0,0615 — 0,065 cobre com ~0,0035 de
+ * folga por unidade de `ui`.
  */
-const SELO_FRACAO_CELULAR = 0.07;
+const SELO_FRACAO_CELULAR = 0.065;
 
 /**
  * A DICA DOS GESTOS NÃO ENTRA NA BASE DO TELEFONE, e é decisão declarada
@@ -487,16 +498,17 @@ export function retanguloUtilDoAtlas(
   // O TELEFONE É OUTRO HUD, não o de mesa apertado — ver o bloco das
   // três frações acima. Ele não tem tarja desde 24/08 (decisão dele em
   // 23/08, código no dia seguinte),
-  // e por isso as duas bordas são só HUD: a barra em cima, a fileira mais
-  // o selo embaixo. O `Math.max` que segurava o piso da tarja na base
-  // morreu com ela — sem uma faixa preta a cobrir, não há piso a garantir,
-  // e um `max` contra zero é ruído que finge decidir algo.
+  // e por isso as duas bordas são só HUD: a barra mais o selo em cima
+  // (o selo mudou de canto no item C1, 09/09 — ver `SELO_FRACAO_CELULAR`),
+  // a fileira sozinha embaixo. O `Math.max` que segurava o piso da tarja
+  // na base morreu com ela — sem uma faixa preta a cobrir, não há piso a
+  // garantir, e um `max` contra zero é ruído que finge decidir algo.
   if (largura <= LARGURA_DO_CELULAR_PX) {
     return {
       esquerda: 0,
       direita: 0 + reservaDireita,
-      topo: SAIDA_FRACAO * k,
-      base: (ALCAS_FRACAO + SELO_FRACAO_CELULAR) * k + reservaBase,
+      topo: (SAIDA_FRACAO + SELO_FRACAO_CELULAR) * k,
+      base: ALCAS_FRACAO * k + reservaBase,
     };
   }
   // SEM TARJA (Lote 4, 07/09) — o `LETTERBOX_FRACAO` que somava aqui nas
