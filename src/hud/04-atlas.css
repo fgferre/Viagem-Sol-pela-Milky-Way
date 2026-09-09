@@ -939,6 +939,25 @@
 .atlas-rodape .atlas-tempo .hud-ajuda {
   pointer-events: auto;
 }
+/* O HOVER PARA ABRIR (09/09, pedido do dono) pede o MESMO acerto, um
+   degrau antes: sem `auto` aqui, o mouse de verdade nunca alcançava
+   `.atlas-tempo-cabecalho`/`.atlas-tempo-alternar` (`elementFromPoint`
+   devolvia o `scene-canvas`, o `none` da coluna por trás) — só o
+   `.click()` de teste furava o `none`, o gesto de hover não tem
+   equivalente sintético. A coluna continua sem roubar o arrasto fora
+   destes dois botões. */
+.atlas-rodape .atlas-tempo-cabecalho,
+.atlas-rodape .atlas-tempo-alternar {
+  pointer-events: auto;
+}
+/* E O BLOCO INTEIRO É ALVO ENQUANTO ABERTO: com o `none` herdado da coluna,
+   o vão entre as fileiras devolvia o canvas, e o mouse parado num vão por
+   mais de 350 ms fechava a máquina do tempo no meio do uso. Aberto (por
+   hover, foco ou clique — `data-aberta`, HudDoAtlas.tsx) o bloco vira
+   painel e segura o ponteiro; recolhido, só os dois botões acima. */
+.atlas-rodape .atlas-tempo[data-aberta='true'] {
+  pointer-events: auto;
+}
 .atlas-rodape .atlas-tempo {
   position: static;
   max-width: 100%;

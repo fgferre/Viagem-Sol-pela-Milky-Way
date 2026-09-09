@@ -619,7 +619,84 @@ export function BarraDoTempo({
   // deles: a barra não é diálogo (não tem Esc que feche nada), então só
   // falta o clique fora para desfixar.
   const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
-  const [aberta, setAberta] = useState(!recolhivel);
+  /**
+   * ABRE NO HOVER (pedido do dono, 09/09) — o mesmo desenho do "?" de
+   * `Ajuda.tsx`: `presa` é o clique (TRANCA aberta), `hover` é o mouse
+   * parado em cima (só `pointerType === 'mouse'` — toque não deixa hover
+   * preso, mesma guarda de `Ajuda`) e `foco` é o Tab chegando de fora,
+   * para o teclado ver as linhas sem precisar clicar. `aberta` é a soma
+   * dos três — SÓ quando `recolhivel`: dentro da gaveta do celular
+   * (`recolhivel=false`) nada disto entra em jogo, e `presa` sozinha já
+   * vale `true` para sempre (o `!recolhivel` do `useState` abaixo).
+   */
+  const [presa, setPresa] = useState(!recolhivel);
+  const [hover, setHover] = useState(false);
+  const [foco, setFoco] = useState(false);
+  const aberta = recolhivel ? presa || hover || foco : presa;
+  /** o atraso de saída (~350 ms), cancelado a cada novo hover/clique e
+   *  limpo no desmonte — para não vazar um `setTimeout` de uma barra que
+   *  já não existe */
+  const timerFechar = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * O CABEÇALHO SOBE QUANDO ABRE — a coluna cresce PARA CIMA (ancorada
+   * pela base, `.atlas-rodape`), então o pixel exato onde o mouse ficou
+   * PARADO deixa de ser o cabeçalho assim que a coluna cresce, e volta a
+   * SER o cabeçalho assim que ela encolhe de novo. Sem esta guarda, um
+   * mouse parado nesse pixel via um "entrar" de mentira toda vez que a
+   * coluna encolhe (o cabeçalho volta para debaixo dele) — abre, o vão
+   * sem controle que sobra ali quando cresce manda fechar, fechar traz o
+   * cabeçalho de volta, reabre, para sempre. Só conta como hover quem
+   * MEXEU o mouse de verdade: `aoEntrarComMouse` compara com o último
+   * ponto real e ignora um "entrar" que chega nas MESMAS coordenadas.
+   */
+  const ultimaPosicaoRealDoMouse = useRef<{ x: number; y: number } | null>(null);
+  useEffect(
+    () => () => {
+      if (timerFechar.current !== null) clearTimeout(timerFechar.current);
+    },
+    []
+  );
+  const aoEntrarComMouse = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!recolhivel || e.pointerType !== 'mouse') return;
+    const mesmoPonto =
+      ultimaPosicaoRealDoMouse.current?.x === e.clientX
+      && ultimaPosicaoRealDoMouse.current?.y === e.clientY;
+    ultimaPosicaoRealDoMouse.current = { x: e.clientX, y: e.clientY };
+    if (mesmoPonto) return;
+    if (timerFechar.current !== null) {
+      clearTimeout(timerFechar.current);
+      timerFechar.current = null;
+    }
+    setHover(true);
+  };
+  const aoSairComMouse = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!recolhivel || e.pointerType !== 'mouse') return;
+    if (timerFechar.current !== null) clearTimeout(timerFechar.current);
+    timerFechar.current = setTimeout(() => setHover(false), 350);
+  };
+  const aoFocarDentro = () => {
+    if (recolhivel) setFoco(true);
+  };
+  const aoDesfocarDentro = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (!recolhivel || e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setFoco(false);
+  };
+  /** o clique TRANCA/DESTRANCA `presa` — e ao destrancar solta hover/foco
+   *  junto (mesma régua de `Ajuda.tsx`): sem isso, quem clicou com o mouse
+   *  ainda em cima, ou quem chegou pelo teclado, via a linha reabrir
+   *  sozinha por um hover/foco que o clique não tinha apagado. */
+  const alternarPresa = () => {
+    if (timerFechar.current !== null) {
+      clearTimeout(timerFechar.current);
+      timerFechar.current = null;
+    }
+    const nova = !presa;
+    setPresa(nova);
+    if (!nova) {
+      setHover(false);
+      setFoco(false);
+    }
+  };
   /**
    * O Esc RECOLHE quando ABERTA (A1.1) — mesma doutrina do `Selo` acima:
    * captura em `window`, para rodar ANTES do Esc da escada (`useAtalhos`,
@@ -627,7 +704,8 @@ export function BarraDoTempo({
    * DIÁLOGO ABERTO come o Esc primeiro (a guarda `[data-dialogo]`); a
    * DICA PRESA deste "?" vem depois (a mesma prioridade que
    * `decidirEscDaDica` já dá aos outros diálogos, `useDicaPresa.ts`); só
-   * então a linha recolhe.
+   * então a linha recolhe — soltando as TRÊS travas (presa, hover, foco),
+   * senão o mouse ainda em cima ou o foco ainda dentro reabririam sozinhos.
    */
   useEffect(() => {
     if (!recolhivel || (!aberta && dicaPresa !== 'tempo-barra')) return;
@@ -639,7 +717,13 @@ export function BarraDoTempo({
         return;
       }
       e.preventDefault();
-      setAberta(false);
+      if (timerFechar.current !== null) {
+        clearTimeout(timerFechar.current);
+        timerFechar.current = null;
+      }
+      setPresa(false);
+      setHover(false);
+      setFoco(false);
     };
     window.addEventListener('keydown', onTecla, true);
     return () => window.removeEventListener('keydown', onTecla, true);
@@ -657,9 +741,14 @@ export function BarraDoTempo({
   return (
     <div
       className="atlas-tempo"
+      data-aberta={aberta}
       onClick={() => {
         if (comAjuda && dicaPresa) limparDica();
       }}
+      onPointerEnter={aoEntrarComMouse}
+      onPointerLeave={aoSairComMouse}
+      onFocus={aoFocarDentro}
+      onBlur={aoDesfocarDentro}
     >
       <div className="atlas-tempo-linha">
         {/* RECOLHIDA (A1.1): a própria linha "instante do céu" vira o
@@ -671,7 +760,7 @@ export function BarraDoTempo({
           <button
             type="button"
             className="atlas-tempo-cabecalho"
-            onClick={() => setAberta((v) => !v)}
+            onClick={alternarPresa}
           >
             <span className="atlas-tempo-olho">{t('atlas.instanteDoCeu')}</span>
             <span className="atlas-tempo-data">{data}</span>
@@ -696,7 +785,7 @@ export function BarraDoTempo({
           <button
             type="button"
             className="atlas-tempo-alternar"
-            onClick={() => setAberta((v) => !v)}
+            onClick={alternarPresa}
             aria-expanded={aberta}
             aria-label={t(
               aberta ? 'atlas.esconderControlesDoTempo' : 'atlas.mostrarControlesDoTempo'
