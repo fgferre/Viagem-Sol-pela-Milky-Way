@@ -64,11 +64,10 @@ export const EN: Record<keyof typeof PT, string> = {
     '328,749 cataloged stars · volumetric Milky Way rebuilt in real time',
   'hud.porta.filme': 'Watch the film',
   'hud.porta.filmeNota': 'a film with a script and captions — you watch',
-  'hud.porta.explorar': 'Explore',
   'hud.porta.explorarNota': 'you fly the camera, with no script and no clock',
   'hud.porta.voo': 'Free flight',
   'hud.porta.atlas': 'Explore the Atlas',
-  'hud.porta.atlasNota': "today's sky: pick the date, visit the planets",
+  'hud.porta.atlasNota': "today's sky: visit the planets and run the clock",
   'hud.duracaoCom': '{min} min {seg} s',
   'hud.fim.deVoltaACasa': 'back home',
   'hud.fim.rodape':
@@ -97,10 +96,15 @@ export const EN: Record<keyof typeof PT, string> = {
   'barra.ajustesAria': 'Rendering settings',
   'barra.reviver': '↻ Replay',
   'barra.entrarNoAtlas': 'Enter the Atlas',
+  // FREE FLIGHT HAS A WAY BACK (item 2): a button beside ↻ Replay in the
+  // free-flight bar, calling the SAME `entrarNoAtlas` as the opening
+  // door and the pause-and-look "Enter the Atlas".
+  'barra.atlas': 'Atlas',
+  'barra.atlasAria': 'Back to the Atlas',
   'barra.verOFilme': 'Watch the film',
   'barra.verOFilmeAria': 'Watch the film from the beginning',
-  'barra.explorarAtlas': 'Explore',
-  'barra.explorarAria': 'Explore the galaxy',
+  'barra.explorarAtlas': 'Free flight',
+  'barra.explorarAria': 'Leave for free flight',
   // "RESUME", not "Back to the film" anymore (item 2, mockup §3.2: "↩
   // Resume"). The KEY stays — it names the DESTINATION, not the label.
   'barra.voltarAoFilme': 'Resume',
@@ -110,7 +114,7 @@ export const EN: Record<keyof typeof PT, string> = {
   // stays the LONG label above — shortening the visible text can't
   // shorten what a screen reader announces.
   'barra.verOFilmeCurto': 'Film',
-  'barra.explorarCurto': 'Explore',
+  'barra.explorarCurto': 'Free flight',
   'barra.voltarAoFilmeCurto': 'Resume',
   'barra.retomar': 'Resume',
   'barra.pausar': 'Pause',
@@ -119,7 +123,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'barra.velocidadeAria': 'Playback speed',
   'barra.velocidadeDica': '← → skip chapters',
   'barra.verAGalaxia': 'Show the galaxy',
-  'barra.explorar': 'Explore',
+  'barra.explorar': 'Free flight',
   'barra.qualidadeAria': 'Graphics quality',
   'barra.alcasAria': 'Atlas controls',
   'barra.reguaAria': 'Atlas tools',
@@ -257,10 +261,9 @@ export const EN: Record<keyof typeof PT, string> = {
     'Name of a body in the system, or name, designation or catalog of the star',
   'busca.ajuda':
     'Type the name of a body in the system, or the name, designation (gamma vel) or catalog (hd 48915) of a star — {exemplos}. The catalog keeps one name per star, its own when it has one.',
-  'busca.alcanceComCorpos': 'the {quantas} named stars and the {corpos} bodies of the system',
-  'busca.alcance': 'the {quantas} named stars',
-  'busca.vazio': 'nothing by that name among {alcance} — try {exemplos}',
+  'busca.vazio': 'Nothing by that name. Try Earth, Sirius or Andromeda.',
   'busca.contagem': '{n} {palavra} · arrows choose · Enter {verbo}',
+  'busca.contagemToque': '{n} {palavra}',
   'busca.resultado': 'result',
   'busca.resultados': 'results',
   'busca.verboEnquadra': 'frames it',

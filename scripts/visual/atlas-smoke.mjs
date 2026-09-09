@@ -2493,7 +2493,7 @@ try {
 
   // ---- 23: A BARRA DO ATLAS TROCA DE MODO — filme e voo livre -------
   // Lista aprovada pelo dono em 08/09 (matriz de preservação, Lote 9):
-  // "Ver o filme" e "Explorar" (`saidasDoAtlas`, fases.ts — só existem
+  // "Ver o filme" e "Voo livre" (`saidasDoAtlas`, fases.ts — só existem
   // no Atlas) só tinham conferência de leitura. Cada um tem observável
   // próprio: o filme veste o `.filme-transporte` e apaga a régua de
   // abas do Atlas; o voo livre acende a `.free-hint` da dica de gestos.
@@ -2521,15 +2521,15 @@ try {
     );
 
     await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
-    const foiExplorar = await clicarPorAria('Explorar a galáxia');
+    const foiVooLivre = await clicarPorAria('Sair para o voo livre');
     await dorme(500);
     const noVooLivre = JSON.parse(await sessao.js(`JSON.stringify({
       fase: window.__director.captura.fase,
       dica: Boolean(document.querySelector('.free-hint')),
     })`));
     conferir(
-      foiExplorar && noVooLivre.fase === 'free' && noVooLivre.dica,
-      `"Explorar" troca para o voo livre: fase='${noVooLivre.fase}', dica=${noVooLivre.dica}`
+      foiVooLivre && noVooLivre.fase === 'free' && noVooLivre.dica,
+      `"Voo livre" troca para o voo livre: fase='${noVooLivre.fase}', dica=${noVooLivre.dica}`
     );
   }
 

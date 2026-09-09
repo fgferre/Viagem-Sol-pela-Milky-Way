@@ -145,7 +145,7 @@ export function PaletaDeBusca({
   const dialogo = useDialogFocus('busca', true, onFechar, {
     focoInicial: celular ? 'caixa' : 'primeiro',
   });
-  const idioma = useIdioma();
+  useIdioma();
   // A DICA FIXA (redesenho, mesmo padrão de Ajustes e da gaveta de
   // Camadas) — só a peça "?" do cabeçalho usa, mas o estado é o mesmo
   // hook pelo mesmo motivo: fixar-e-desfixar por Esc antes de fechar.
@@ -163,6 +163,9 @@ export function PaletaDeBusca({
   const [limite] = useState(() =>
     window.matchMedia?.('(pointer: coarse)').matches ? LIMITE_TOQUE : LIMITE_TECLADO
   );
+  // A CONTAGEM ENCURTA NO TOQUE (item 4c): "setas escolhem" descreve um
+  // gesto que não existe ali — a MESMA detecção que já decidiu `limite`.
+  const ehToque = limite === LIMITE_TOQUE;
   const listaRef = useRef<HTMLUListElement>(null);
   const campoRef = useRef<HTMLInputElement>(null);
 
@@ -250,14 +253,6 @@ export function PaletaDeBusca({
   // mesma `consultaLenta`.
   const semConsulta = consultaLenta.trim().length === 0;
   const vazio = consultaLenta.trim().length > 0 && resultados.length === 0;
-  // o alcance vem CONTADO do índice, não digitado na copy: o dia em que o
-  // catálogo ganhar uma estrela, a frase que diz quantas são continua
-  // verdadeira sozinha. `Intl` aqui é seguro, ao contrário do que o
-  // formatador da casa evita: esta linha só existe no navegador, onde o
-  // ICU é completo — a ressalva do `numeroPtBr` é sobre o Node dos testes.
-  const quantas = indice.nomeadas.length.toLocaleString(
-    idioma === 'en' ? 'en-US' : 'pt-BR'
-  );
   // OS CORPOS DO SISTEMA entram no índice no Atlas e no voo livre (item
   // 129), e a copy pergunta ao ÍNDICE em vez de perguntar à fase: quem
   // conta o alcance é quem o tem na mão.
@@ -270,9 +265,6 @@ export function PaletaDeBusca({
     : escolhida?.tipo === 'corpo' ? 'busca.verboAtlas'
     : 'busca.verboVoa'
   );
-  const alcance = corpos > 0
-    ? t('busca.alcanceComCorpos', { quantas, corpos })
-    : t('busca.alcance', { quantas });
   // O EXEMPLO DE CORPO É O ÚNICO TERMO TRADUZIDO da lista: "terra" vira
   // "earth", e a busca casa os dois (item 129/F5, tabelas bilíngues).
   // Os outros quatro são NOMES e designações de catálogo — sirius, hd
@@ -280,9 +272,9 @@ export function PaletaDeBusca({
   const exemplos = (corpos > 0 ? [t('busca.exemploCorpo'), ...EXEMPLOS] : EXEMPLOS)
     .join(' · ');
   const aviso = vazio
-    ? t('busca.vazio', { alcance, exemplos: EXEMPLOS.join(' · ') })
+    ? t('busca.vazio')
     : resultados.length > 0
-      ? t('busca.contagem', {
+      ? t(ehToque ? 'busca.contagemToque' : 'busca.contagem', {
           n: resultados.length,
           palavra: t(resultados.length === 1 ? 'busca.resultado' : 'busca.resultados'),
           verbo: oQueOEnterFaz,
@@ -371,6 +363,10 @@ export function PaletaDeBusca({
           mesma `consultaLenta`. */}
       {semConsulta && (
         <>
+          {/* O RÓTULO "DESTINOS SUGERIDOS" (item 4a) — reaproveita o
+              texto já existente de `busca.destinosAria` e o eyebrow comum
+              dos painéis (`CabecalhoDoPainel`), sem CSS nova. */}
+          <span className="hud-cabecalho-eyebrow">{t('busca.destinosAria')}</span>
           <Segmentado
             aria={t('busca.filtrosAria')}
             valor={categoria}

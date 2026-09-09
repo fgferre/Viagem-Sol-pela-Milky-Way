@@ -309,7 +309,7 @@ try {
   // de baixo, que é o veredito certo
   await esperarPor(
     sessao,
-    "/nada com esse nome/.test((document.querySelector('.atlas-busca-aviso') || {}).textContent || '')"
+    "/Nada com esse nome/.test((document.querySelector('.atlas-busca-aviso') || {}).textContent || '')"
   );
   const vazio = await sessao.js(`(() => ({
     opcoes: document.querySelectorAll('[role="option"]').length,
@@ -317,7 +317,7 @@ try {
   }))()`);
   conferir(vazio.opcoes === 0, `"xkcd" não acende opção nenhuma (${vazio.opcoes})`);
   conferir(
-    /nada com esse nome/.test(vazio.aviso) && /sirius/.test(vazio.aviso),
+    /Nada com esse nome/.test(vazio.aviso) && /Sírius/.test(vazio.aviso),
     `e o vazio diz o que não achou E o que funciona: "${vazio.aviso}"`
   );
 
@@ -567,7 +567,7 @@ try {
     })()`);
   await clicar('Reviver');
   await dorme(300);
-  await clicar('Explorar');
+  await clicar('Voo livre');
   // espera por ESTADO: a fase é o que o clique promete — era dorme(400)
   await esperarPor(sessao, "window.__director.captura.fase === 'free'");
   const aoVoltar = await sessao.js(`JSON.stringify({

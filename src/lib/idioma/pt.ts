@@ -57,11 +57,10 @@ export const PT = {
     '328.749 estrelas de catálogo · Via Láctea volumétrica reconstruída em tempo real',
   'hud.porta.filme': 'Ver o filme',
   'hud.porta.filmeNota': 'um filme com roteiro e legendas — você assiste',
-  'hud.porta.explorar': 'Explorar',
   'hud.porta.explorarNota': 'você pilota a câmera, sem roteiro nem relógio',
   'hud.porta.voo': 'Voo livre',
   'hud.porta.atlas': 'Explorar o Atlas',
-  'hud.porta.atlasNota': 'o céu de hoje: escolha a data, visite os planetas',
+  'hud.porta.atlasNota': 'o céu de hoje: visite os planetas e corra o tempo',
   'hud.duracaoCom': '{min} min {seg} s',
   'hud.fim.deVoltaACasa': 'de volta a casa',
   'hud.fim.rodape':
@@ -91,10 +90,15 @@ export const PT = {
   'barra.ajustesAria': 'Ajustes de renderização',
   'barra.reviver': '↻ Reviver',
   'barra.entrarNoAtlas': 'Entrar no Atlas',
+  // O VOO LIVRE TEM VOLTA (item 2): botão que fica ao lado do ↻ Reviver
+  // na barra do voo livre e chama o MESMO `entrarNoAtlas` da porta da
+  // abertura e do "Entrar no Atlas" do pausar-e-olhar.
+  'barra.atlas': 'Atlas',
+  'barra.atlasAria': 'Voltar ao Atlas',
   'barra.verOFilme': 'Ver o filme',
   'barra.verOFilmeAria': 'Ver o filme desde o começo',
-  'barra.explorarAtlas': 'Explorar',
-  'barra.explorarAria': 'Explorar a galáxia',
+  'barra.explorarAtlas': 'Voo livre',
+  'barra.explorarAria': 'Sair para o voo livre',
   // "RETOMAR", não mais "Voltar ao filme" (item 2, mockup §3.2: "↩
   // Retomar"). A CHAVE fica — ela nomeia o DESTINO (o filme guardado),
   // não o rótulo.
@@ -105,7 +109,7 @@ export const PT = {
   // continua o rótulo LONGO acima — encurtar o texto visível não pode
   // encurtar o nome que o leitor de tela anuncia.
   'barra.verOFilmeCurto': 'Filme',
-  'barra.explorarCurto': 'Explorar',
+  'barra.explorarCurto': 'Voo livre',
   'barra.voltarAoFilmeCurto': 'Retomar',
   'barra.retomar': 'Retomar',
   'barra.pausar': 'Pausar',
@@ -114,7 +118,7 @@ export const PT = {
   'barra.velocidadeAria': 'Velocidade de reprodução',
   'barra.velocidadeDica': '← → pulam de capítulo',
   'barra.verAGalaxia': 'Ver a galáxia',
-  'barra.explorar': 'Explorar',
+  'barra.explorar': 'Voo livre',
   'barra.qualidadeAria': 'Qualidade gráfica',
   'barra.alcasAria': 'Controles do Atlas',
   'barra.reguaAria': 'Ferramentas do Atlas',
@@ -268,13 +272,18 @@ export const PT = {
   // POR ESTRELA, que saiu da frase do estado vazio para morar só aqui.
   'busca.ajuda':
     'Digite o nome de um corpo do sistema, ou o nome, a designação (gama vel) ou o catálogo (hd 48915) de uma estrela — {exemplos}. O catálogo guarda um nome por estrela, o próprio quando existe.',
-  'busca.alcanceComCorpos': 'as {quantas} nomeadas e os {corpos} corpos do sistema',
-  'busca.alcance': 'as {quantas} nomeadas',
   // ENCURTADA (redesenho): a explicação do "um nome por estrela" mudou
-  // para `busca.ajuda` — a frase do estado vazio agora é UMA linha.
-  'busca.vazio': 'nada com esse nome entre {alcance} — tente {exemplos}',
+  // para `busca.ajuda` — a frase do estado vazio agora é UMA linha. FIXA
+  // (item 4b), sem `{alcance}` nem `{exemplos}`: o tamanho do catálogo e
+  // as dicas de formato moram só em `busca.ajuda`/`busca.dica` — aqui só
+  // três nomes que qualquer visitante reconhece.
+  'busca.vazio': 'Nada com esse nome. Tente Terra, Sírius ou Andrômeda.',
   'busca.contagem':
     '{n} {palavra} · setas escolhem · Enter {verbo}',
+  // NO TOQUE (sem mouse) a frase encurta: "setas escolhem" descreve um
+  // gesto de teclado que não existe ali — a mesma detecção que já decide
+  // quantos resultados cabem (LIMITE_TOQUE, `PaletaDeBusca.tsx`).
+  'busca.contagemToque': '{n} {palavra}',
   'busca.resultado': 'resultado',
   'busca.resultados': 'resultados',
   'busca.verboEnquadra': 'enquadra',

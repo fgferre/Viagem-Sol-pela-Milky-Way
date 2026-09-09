@@ -376,12 +376,28 @@ export function BarraOuAlcas({
           comViaLactea={false}
         />
       )}
+      {/* O VOO LIVRE TEM VOLTA (item 2) — ↻ Reviver e ↗ Atlas juntos no
+          MESMO grupo: `hud.botaoReviver` só é verdadeiro na fase 'free'
+          (fases.ts), o mesmo sinal que já isolava o Reviver sozinho aqui,
+          então os dois nascem e somem juntos sem flag nova. O Atlas
+          chama o MESMO `entrarNoAtlas` da porta da abertura e do "Entrar
+          no Atlas" do pausar-e-olhar — um só código para os três. */}
       {hud.botaoReviver && (
-        <button className="hud-btn small" onClick={play}>
-          {t('barra.reviver')}
-        </button>
+        <div className="atlas-barra-grupo">
+          <button className="hud-btn small" onClick={play}>
+            {t('barra.reviver')}
+          </button>
+          <button
+            className="hud-btn small"
+            onClick={entrarNoAtlas}
+            aria-label={t('barra.atlasAria')}
+          >
+            <Icone nome="bussola" tamanho={16} />
+            {t('barra.atlas')}
+          </button>
+        </div>
       )}
-      {/* GRUPO "MODOS" (Lote 4, item 2) — ▶ Ver o filme · ⇗ Explorar ·
+      {/* GRUPO "MODOS" (Lote 4, item 2) — ▶ Ver o filme · ⇗ Voo livre ·
           ↩ Retomar (quando há filme guardado). AS DUAS FERRAMENTAS DO
           ATLAS (item 61, 23/08). Palavras do dono: *"a viagem na verdade
           para mim é só uma ferramenta do modo atlas"*. Elas ficam na
@@ -444,7 +460,7 @@ export function BarraOuAlcas({
         </div>
       )}
       {/* LOTE 8 (PLAN-UI.md §3.7, maquete M7) — o topo do filme vira DOIS
-          grupos: modos à esquerda (Portal + Explorar), sistema à direita
+          grupos: modos à esquerda (Portal + Voo livre), sistema à direita
           (grupo "SISTEMA" abaixo, que ganhou as Camadas). Pausar/Retomar,
           velocidade e Ver a galáxia descem para o cartão preso à barra
           de capítulos (`.filme-transporte`, 03-controles.css) — MESMOS
@@ -467,7 +483,7 @@ export function BarraOuAlcas({
                 palavra livremente"* —, e aqui ela era a sobra da mesma
                 frase, no botão mais largo da barra do filme. Com o corte a
                 barra fala como o resto da casa: a porta da abertura, a
-                ferramenta do Atlas (↗ Explorar) e esta dizem o MESMO nome
+                ferramenta do Atlas (↗ Voo livre) e esta dizem o MESMO nome
                 para o MESMO destino. */}
             <button className="hud-btn small" onClick={freeRoam}>
               <Icone nome="explorar" tamanho={16} />

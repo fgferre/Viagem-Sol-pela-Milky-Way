@@ -399,7 +399,7 @@ export function TitleVeil({
                 se ele preferir, é uma palavra em dois lugares. */}
             {onExplore && (
               <button className="veil-btn veil-btn--secundario" onClick={onExplore}>
-                {t('hud.porta.explorar')}
+                {t('hud.porta.voo')}
               </button>
             )}
           </div>
