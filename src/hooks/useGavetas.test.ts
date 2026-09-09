@@ -248,3 +248,32 @@ describe('7. a ficha no celular: compacta/expandida (PLAN-UI.md §7, item 225)',
     expect(HOOK).toMatch(/\}, \[celular, gaveta, fichaExpandida\]\);/);
   });
 });
+
+describe('8. a folha segue o dedo — o arrasto desenha, o SOLTAR decide (fix, 09/09)', () => {
+  it('o MOVER só desenha (translateY clampado ao sentido que fecha, nunca para cima)', () => {
+    expect(HOOK).toContain('folha.style.transform = `translateY(${Math.max(0, dy)}px)`;');
+  });
+
+  it('a decisão saiu do MEIO do arrasto — fechar ali faria a folha sumir debaixo do dedo', () => {
+    // a linha antiga (`mover` fechando sozinho) não pode sobrar…
+    expect(HOOK).not.toContain('if (!arrastoFecha(dx, dy)) return;');
+    // …e o SOLTAR decide com o MESMO `arrastoFecha`, sem trocar o limiar
+    expect(HOOK).toContain('if (!arrastoFecha(dx, dy)) {');
+  });
+
+  it('a entrada (`folhaSobe`) larga o transform só quando o arrasto de verdade começa', () => {
+    // ela preenche `transform` com `fill: both` depois de terminar — sem
+    // desligá-la, o transform do arrasto seria ignorado (animação de CSS
+    // vence estilo em linha enquanto preenche)
+    expect(HOOK).toContain("folha.style.animation = 'none';");
+  });
+
+  it('a folha que não fecha (ou só recolhe a ficha) limpa o próprio rastro', () => {
+    expect(HOOK).toContain("folha.style.transform = '';");
+    expect(HOOK).toContain("folha.style.transition = '';");
+  });
+
+  it('respeita prefers-reduced-motion na volta ao lugar', () => {
+    expect(HOOK).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
+  });
+});

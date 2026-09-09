@@ -156,9 +156,11 @@ const AREAS_RESERVADAS = [
 const telaDeToque = () => window.matchMedia?.('(pointer: coarse)').matches ?? false;
 
 /**
- * O TETO DA FOLHA COMPACTA (PLAN-UI.md §3.5/§6, item 225) — 8,5rem
- * (136 px em `ui = 1`, o mesmo `--ficha-compacta-altura` que o Lote 5
- * vai desenhar). A folha COMPACTA em si ainda não existe: hoje há uma
+ * O TETO DA FOLHA COMPACTA (PLAN-UI.md §3.5/§6, item 225) — 10rem
+ * (160 px em `ui = 1`, o mesmo `--ficha-compacta-altura` de
+ * `09-celular.css`; eram 8,5rem até a primeira leva do relatório de UI,
+ * 09/09, quando a compacta ganhou a linha "rótulo · valor" e os dois
+ * botões deixaram de caber — os dois números mudam SEMPRE juntos). A folha COMPACTA em si ainda não existe: hoje há uma
  * folha SÓ, que cresce com a seção aberta até `--teto-dialogo-tela`
  * (48svh). Até o Lote 5 chegar, é este teto que limita a RESERVA DA
  * CÂMERA no celular — sem ele, abrir uma seção dentro da ficha
@@ -169,7 +171,7 @@ const telaDeToque = () => window.matchMedia?.('(pointer: coarse)').matches ?? fa
  * `16 × escalaDaUi()` enquanto o visitante não usa o zoom do próprio
  * navegador por cima.
  */
-const TETO_DA_FOLHA_COMPACTA_REM = 8.5;
+const TETO_DA_FOLHA_COMPACTA_REM = 10;
 
 export default function App() {
   // A LÍNGUA COMO DEPENDÊNCIA DE RENDER (item 130): as dicas de gesto e

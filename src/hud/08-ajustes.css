@@ -237,11 +237,22 @@
    Único controle que não é segmentado: 15rem fixos (Lote 7 — os demais
    controles passaram a largura natural, mas a faixa de arrastar precisa
    de espaço), o número fica parado do lado direito, tabular para não
+/* A LARGURA RESERVADA (fix, 09/09): "0.40" a "2.20" — sempre um
+   dígito, o ponto, duas casas (`exposicao.toFixed(2)`, Ajustes.tsx),
+   4 caracteres exatos, sem sinal nem unidade. Sem isto o número não
+   tinha caixa própria e podia estourar a 320–390 px, onde o slider
+   mobile (`.ajustes-controle input[type='range']`, abaixo) cresce e
+   disputa a mesma linha. `flex-shrink: 0` é o que faz a reserva valer
+   de verdade: sem ele o número ainda podia ceder espaço ao slider
+   numa linha apertada. */
    empurrar o traço a cada dígito. `flex-basis` some de propósito: com
    ela ausente, `width` decide o tamanho também na tela estreita, onde
    `.ajustes-controle input[type='range']` (abaixo) o leva a 100%. */
 .ajustes-item input[type='range'] {
   flex: 0 0 auto;
+  width: 4ch;
+  flex-shrink: 0;
+  text-align: right;
   width: 15rem;
   accent-color: var(--acento);
   cursor: pointer;
@@ -419,7 +430,11 @@
     justify-content: stretch;
   }
   .ajustes-controle input[type='range'] {
-    width: 100%;
+    /* SOBRA A LARGURA RESERVADA DO NÚMERO (4ch, `.ajustes-valor` acima)
+       mais o gap de 0,5rem entre os dois — sem descontar, o slider a
+       100% e o número reservado ao lado somavam mais que a linha, e o
+       número estourava a 320–390 px. */
+    width: calc(100% - 4ch - 0.5rem);
   }
 }
 

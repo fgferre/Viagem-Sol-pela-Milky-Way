@@ -116,9 +116,11 @@ export const aoAbrirFicha = (
  * contrário. Mora aqui e não no CSS porque quem segura o nó desmontando
  * é JavaScript: uma folha que fechou já não tem elemento para animar.
  *
- * PRIVADA: quem a lê é o `useLayoutEffect` daqui de baixo e mais ninguém.
- * Ela nasceu exportada por hábito, e um `export` sem consumidor é
- * superfície pública que envelhece calada.
+ * PRIVADA: os dois leitores são deste arquivo — o `useLayoutEffect` daqui
+ * de baixo (o desmonte) e o `soltar` do arrasto que segue a folha (fix,
+ * 09/09: a MESMA curva/duração de `folhaDesce` termina o arrasto fora da
+ * tela) — e mais ninguém. Ela nasceu exportada por hábito, e um `export`
+ * sem consumidor é superfície pública que envelhece calada.
  */
 const SAIDA_DA_FOLHA_MS = 260;
 
@@ -390,6 +392,11 @@ export function useGavetas(
     const arrasto = new ArrastoDePonteiro();
     let dx = 0;
     let dy = 0;
+    // A FOLHA SEGUE O DEDO (fix, 09/09): só vira `true` quando o gesto já
+    // passou da zona morta do toque (o primeiro `passo` não nulo de
+    // `mover`, abaixo) — um toque que nunca chega a arrastar não deixa
+    // rastro nenhum para `soltar` limpar.
+    let arrastando = false;
     const comoPonteiro = (t: Touch) => ({
       pointerId: t.identifier,
       button: 0,
@@ -403,6 +410,14 @@ export function useGavetas(
       // resposta que `director/gestos.ts` dá ao segundo dedo
       if (!dedo || e.touches.length > 1) {
         arrasto.esquecer();
+        // A PINÇA ABANDONA um arrasto que já tinha começado — sem isto
+        // a folha ficava presa a meio caminho, sem `soltar` nenhum para
+        // limpá-la (o segundo dedo nunca gera `touchend` do PRIMEIRO).
+        if (arrastando) {
+          arrastando = false;
+          folha.style.transform = '';
+          folha.style.transition = '';
+        }
         return;
       }
       if (folha.scrollTop > 0) return;
@@ -421,10 +436,54 @@ export function useGavetas(
       if (!passo) return;
       dx += passo.dx;
       dy += passo.dy;
-      if (!arrastoFecha(dx, dy)) return;
-      // o gesto cumpriu o que tinha a cumprir: o resto dele não é de
-      // ninguém, e sem isto cada quadro seguinte repetiria o `set`
-      arrasto.esquecer();
+      if (!arrastando) {
+        arrastando = true;
+        // A ENTRADA (`@keyframes folhaSobe`, 09-celular.css) já rodou e
+        // continua "preenchendo" `transform` (`fill: both`) — sem
+        // desligá-la, o `transform` que este arrasto escreve abaixo
+        // seria IGNORADO: animação de CSS vence estilo em linha
+        // enquanto preenche. Ela já cumpriu o papel (a folha parada,
+        // aberta); desligar agora não move nada na tela.
+        folha.style.animation = 'none';
+        folha.style.transition = 'none';
+      }
+      // SÓ PARA BAIXO — o sentido que fecha (`dy` negativo é clampado a
+      // zero: a mão voltando não "abre mais" a folha para cima). A
+      // DECISÃO de fechar continua a mesma (`arrastoFecha`, mesmo
+      // limiar), só que agora corre em `soltar`, e não aqui: fechar no
+      // MEIO do arrasto faria a folha sumir debaixo do dedo, ainda
+      // encostado.
+      folha.style.transform = `translateY(${Math.max(0, dy)}px)`;
+    };
+    const soltar = (e: TouchEvent) => {
+      const dedo = e.changedTouches[0];
+      if (dedo) arrasto.cancelar(comoPonteiro(dedo));
+      if (!arrastando) return;
+      arrastando = false;
+      const reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const transicao = reduzido
+        ? 'none'
+        : `transform ${SAIDA_DA_FOLHA_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+      // A FOLHA QUE FICA (não fechou, ou a ficha só vai RECOLHER — as
+      // duas continuam montadas) tem de voltar a zero e SER LIMPA
+      // depois: um `transform`/`transition` esquecidos atrapalhariam o
+      // próximo arrasto, ou a transição de altura da compacta.
+      const voltarAoLugar = () => {
+        folha.style.transition = transicao;
+        folha.style.transform = 'translateY(0)';
+        window.setTimeout(
+          () => {
+            folha.style.transform = '';
+            folha.style.transition = '';
+            folha.style.animation = '';
+          },
+          reduzido ? 0 : SAIDA_DA_FOLHA_MS
+        );
+      };
+      if (!arrastoFecha(dx, dy)) {
+        voltarAoLugar();
+        return;
+      }
       // A FICHA EXPANDIDA RECOLHE em vez de fechar (Lote 5, PLAN-UI.md
       // §7: "'Recolher', arrasto para baixo no topo da rolagem →
       // compacta"). NENHUMA MECÂNICA NOVA: o mesmo gesto que fecha as
@@ -433,13 +492,18 @@ export function useGavetas(
       // da rolagem" do enunciado. Só o que o gesto FAZ muda com o estado.
       if (gaveta === 'ficha' && fichaExpandida) {
         setFichaExpandida(false);
+        // RECOLHE NÃO DESMONTA — a ficha só encolhe (a transição de
+        // altura já existe, 09-celular.css), então o transform volta a
+        // ZERO, não para fora da tela.
+        voltarAoLugar();
         return;
       }
+      // FECHA DE VERDADE: a folha vai desmontar (`saindo`, mais abaixo)
+      // — o gesto termina fora da tela, no mesmo lugar de `folhaDesce`,
+      // e o desmonte que já vem a caminho não deixa resto para limpar.
+      folha.style.transition = transicao;
+      folha.style.transform = 'translateY(110%)';
       setGaveta((atual) => aoFechar(atual, gaveta));
-    };
-    const soltar = (e: TouchEvent) => {
-      const dedo = e.changedTouches[0];
-      if (dedo) arrasto.cancelar(comoPonteiro(dedo));
     };
     // PASSIVO, e de graça: `comecar` não chama `preventDefault` em
     // caminho nenhum — declarar isso deixa o navegador começar a rolagem

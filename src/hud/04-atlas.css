@@ -294,22 +294,27 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* OS DOIS GESTOS DA ESCADA viram UM GRUPO `.ajustes-seg` (redesenho,
-   06/09): não são alternância (nenhum "ligado" permanece), então nenhum
-   segmento ganha `.on` — só o hover de sempre do segmentado. */
+/* OS DOIS GESTOS DA ESCADA (fix, 09/09): AÇÕES lado a lado, uma linha
+   só — até aqui vestiam `.ajustes-seg` (redesenho de 06/09), a moldura
+   do GRUPO DE ESCOLHA de Ajustes, com filete entre os dois e sublinhado
+   de "ligado"; nenhum dos dois liga depois do clique, então a fantasia
+   mentia uma alternância que não existe. Agora são `.hud-btn small`
+   (03-controles.css) soltos, com o próprio respiro entre ícone e
+   rótulo — daí o `gap` aqui em vez de um por botão. */
 .atlas-ficha-escada {
+  display: flex;
+  gap: 0.5rem;
   margin-bottom: 0.7rem;
 }
 .atlas-ficha-escada:empty {
   margin-bottom: 0;
 }
-/* ÍCONE E TEXTO COLADOS (Lote 5, PLAN-UI.md item 2) — o `.ajustes-seg
-   button` de `08-ajustes.css` não declara `gap` porque os outros usos
-   dele (a máquina do tempo) são ícone SOZINHO; aqui, mais específico
-   que aquela regra, o "⊕ Aproximar"/"⌂ Sistema" ganham 0,4rem entre o
-   SVG e a palavra. */
-.atlas-ficha-escada .ajustes-seg button {
-  gap: 0.4rem;
+/* ALVO DE TOQUE ≥ 44 px (a mesma régua de "dentro de um diálogo" que
+   `.hud-dialogo .ajustes-seg button`, 08-ajustes.css, já dava a este
+   par quando ele era segmentado) — `.hud-btn.small` sozinho para em
+   2,5rem/40 px, o tamanho da barra de fora de um diálogo. */
+.atlas-ficha-escada .hud-btn {
+  min-height: 2.75rem;
 }
 
 /* O RÓTULO DA LINHA NASCE MINÚSCULO DO DICIONÁRIO ("distância — Sol",

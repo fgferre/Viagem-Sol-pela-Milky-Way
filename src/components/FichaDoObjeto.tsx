@@ -144,7 +144,12 @@ export function FichaDoObjeto({
   /** o toque em "Detalhes"/"Recolher" — `useGavetas().alternarFichaExpandida` */
   onAlternarFichaExpandida?: () => void;
 }) {
-  const dialogo = useDialogFocus('ficha', aberta, onFechar);
+  // NÃO MODAL PARA O TECLADO (dialogFocus.ts): a ficha é o painel da
+  // SELEÇÃO, e o mouse já pode escolher outro corpo com ela aberta
+  // (a exceção em `director/gestos.ts`) — sem `modal: false` o Tab
+  // ficaria preso e o `aria-modal` mentiria um bloqueio que o clique
+  // nunca respeitou.
+  const dialogo = useDialogFocus('ficha', aberta, onFechar, { modal: false });
   const idioma = useIdioma();
   // A DICA PRESA (redesenho, 06/09) — o mesmo padrão de Ajustes e das
   // gavetas: fixar uma "?" apaga a de cima, clique fora do diálogo
@@ -255,6 +260,24 @@ export function FichaDoObjeto({
       return { secaoId: 'curiosidades' as const, texto: curiosidades.linhas[0].valor };
     }
     return null;
+  }, [ficha]);
+
+  /**
+   * A LINHA DA COMPACTA (fix, 09/09) — "rótulo · valor" sob o nome, a
+   * única coisa que a compacta (§7, 8,5rem) mostra além do cabeçalho e
+   * da escada. PREFERE a seção "agora" (`lib/atlas/ficha.ts`): quando
+   * ela existe é sempre a PRIMEIRA seção montada, e a primeira linha
+   * dela é sempre a distância ao pai (Sol, ou Terra para a Lua) — a
+   * mesma pergunta que "prefira a distância" pede, sem procurar texto
+   * por rótulo (que mudaria de língua). SEM "agora" (a ficha de
+   * ESTRELA, que não tem essa seção, ou um corpo cuja efeméride ainda
+   * não respondeu), cai na primeira linha da primeira seção que
+   * houver. Sem seção nenhuma, `null` — a compacta não desenha
+   * esqueleto, então sem dado não sai linha nenhuma.
+   */
+  const resumoCompacto = useMemo(() => {
+    const secao = ficha?.secoes.find((s) => s.id === 'agora') ?? ficha?.secoes[0];
+    return secao?.linhas[0] ?? null;
   }, [ficha]);
 
   /**
@@ -381,34 +404,45 @@ export function FichaDoObjeto({
         celular={celular}
       />
 
-      {/* OS DOIS GESTOS DA ESCADA viram UM GRUPO SEGMENTADO (redesenho,
-          06/09): são AÇÕES, não alternância — nenhum dos dois fica "ligado"
-          depois do clique, e por isso nenhum ganha `aria-pressed` nem a
-          classe `.on` do segmentado de Ajustes. */}
+      {/* A LINHA DA COMPACTA (fix, 09/09) — "rótulo · valor" sob o
+          nome, só nela: a expandida e a mesa já mostram o mesmo dado
+          dentro da seção "Agora". Sem esqueleto quando falta: `null`
+          simplesmente não desenha nada (comentário do `useMemo`). */}
+      {compacta && resumoCompacto && (
+        <p className="atlas-ficha-resumo">
+          {resumoCompacto.rotulo} · {resumoCompacto.valor}
+        </p>
+      )}
+
+      {/* OS DOIS GESTOS DA ESCADA são AÇÕES, não alternância — nenhum
+          dos dois fica "ligado" depois do clique. Até aqui vestiam a
+          classe do segmentado (`.ajustes-seg`, redesenho de 06/09), a
+          MESMA de um grupo de ESCOLHA como Ajustes — o par tinha a
+          fantasia errada. Agora são `.hud-btn small`, o botão de ação
+          de sempre (o mesmo de "⌕ Buscar"/"⧉ Camadas" na barra); o
+          `Segmentado` (`components/Segmentado.tsx`) não muda. */}
       <div className="atlas-ficha-escada">
-        {(podeAproximar || !noSistema) && (
-          <div className="ajustes-seg">
-            {podeAproximar && (
-              <button
-                type="button"
-                onClick={onAproximar}
-                aria-label={t('ficha.aproximarAria', { nome: ficha.nome })}
-              >
-                <Icone nome="aproximar" tamanho={16} />
-                {t('ficha.aproximar')}
-              </button>
-            )}
-            {!noSistema && (
-              <button
-                type="button"
-                onClick={onSistema}
-                aria-label={t('ficha.sistemaAria')}
-              >
-                <Icone nome="sistema" tamanho={16} />
-                {t('ficha.sistema')}
-              </button>
-            )}
-          </div>
+        {podeAproximar && (
+          <button
+            type="button"
+            className="hud-btn small"
+            onClick={onAproximar}
+            aria-label={t('ficha.aproximarAria', { nome: ficha.nome })}
+          >
+            <Icone nome="aproximar" tamanho={16} />
+            {t('ficha.aproximar')}
+          </button>
+        )}
+        {!noSistema && (
+          <button
+            type="button"
+            className="hud-btn small"
+            onClick={onSistema}
+            aria-label={t('ficha.sistemaAria')}
+          >
+            <Icone nome="sistema" tamanho={16} />
+            {t('ficha.sistema')}
+          </button>
         )}
       </div>
 

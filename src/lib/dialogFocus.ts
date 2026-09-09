@@ -19,6 +19,17 @@
 // sem uma linha a mais no juiz; diálogo que nasça fora dele não tem
 // como se declarar e não é julgado — por isso todo diálogo do Atlas
 // nasce aqui.
+//
+// A FICHA É A ÚNICA EXCEÇÃO ÀS QUATRO (`modal: false`, abaixo): ela é o
+// painel da SELEÇÃO, não uma folha por cima do resto, e o MOUSE já
+// escolhe outro corpo com ela aberta (a exceção declarada em
+// `director/gestos.ts`) — um `aria-modal="true"` e um Tab preso
+// mentiam, para o teclado, um bloqueio que o rato nunca respeitou. Sem
+// `aria-modal` e sem prender o Tab, ela ainda cumpre as outras duas
+// promessas (o foco entra, o Esc fecha e devolve) — só as duas do
+// "isto trava o resto" saem. `scripts/visual/a11y.mjs` ainda cobra as
+// quatro de TODO diálogo, sem saber da exceção: julgar a ficha por ele
+// hoje reprova por desenho, não por defeito.
 // ============================================================
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
@@ -63,7 +74,10 @@ export function gatilhoDoDialogo(nome: string, aberto: boolean): PropsDoGatilho 
 export interface PropsDoDialogo {
   ref: RefObject<HTMLDivElement | null>;
   role: 'dialog';
-  'aria-modal': true;
+  /** ausente quando `modal: false` (ver `opcoes` de `useDialogFocus`) —
+   *  nunca `"false"`: um `aria-modal` presente e falso ainda anuncia
+   *  "isto é modal" para muito leitor de tela. */
+  'aria-modal'?: true;
   /** o próprio contêiner recebe o foco quando não há controle dentro */
   tabIndex: -1;
   'data-dialogo': string;
@@ -103,9 +117,24 @@ export function useDialogFocus(
      * sempre o contêiner, mesmo havendo controles dentro.
      */
     focoInicial?: 'primeiro' | 'caixa';
+    /**
+     * MODAL PARA O TECLADO — `false` só na ficha (item 74/D7: a EXCEÇÃO
+     * de `director/gestos.ts`, que já deixa o CLIQUE escolher outro
+     * corpo com a ficha aberta, porque ela é o painel da seleção, não
+     * uma folha que o visitante abriu por cima do resto). Com o padrão
+     * (`true`) o diálogo declarava `aria-modal="true"` e prendia o Tab
+     * enquanto o MOUSE já furava — o teclado mentia um bloqueio que o
+     * rato não respeitava. `false` tira as duas coisas: sem
+     * `aria-modal`, sem o Tab dar a volta sozinho — o Esc continua
+     * fechando e o foco continua entrando ao abrir, porque nenhuma das
+     * duas promessas depende de ser modal. `true` é o padrão, IGUAL bit
+     * a bit ao comportamento antes desta opção existir.
+     */
+    modal?: boolean;
   }
 ): PropsDoDialogo {
   const focoInicial = opcoes?.focoInicial ?? 'primeiro';
+  const modal = opcoes?.modal ?? true;
   const ref = useRef<HTMLDivElement>(null);
   const fechar = useRef(aoFechar);
   // efeito sem lista: roda depois de TODO render, e é a única forma
@@ -156,6 +185,11 @@ export function useDialogFocus(
         return;
       }
       if (event.key !== 'Tab') return;
+      // NÃO MODAL: o Tab segue o caminho normal da página — só a ficha
+      // usa isto, e é o teclado alcançando o que o mouse já podia (a
+      // exceção de `director/gestos.ts`, escolher outro corpo com a
+      // ficha aberta).
+      if (!modal) return;
       const lista = focaveis();
       if (lista.length === 0) {
         // nada focável dentro: o Tab não tem para onde ir e sair seria
@@ -198,12 +232,15 @@ export function useDialogFocus(
         focoAnterior;
       if (gatilho?.isConnected) gatilho.focus();
     };
-  }, [aberto, nome, focoInicial]);
+  }, [aberto, nome, focoInicial, modal]);
 
   return {
     ref,
     role: 'dialog',
-    'aria-modal': true,
+    // AUSENTE quando não modal, nunca `false`: `undefined` some do DOM
+    // (React omite o atributo); um `aria-modal="false"` continuaria
+    // anunciando "isto é um diálogo modal" para quem ouve a tela.
+    ...(modal ? { 'aria-modal': true as const } : {}),
     tabIndex: -1,
     [ATRIBUTO_DIALOGO]: nome,
   } as PropsDoDialogo;

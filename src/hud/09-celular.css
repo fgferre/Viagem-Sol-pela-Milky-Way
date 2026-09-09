@@ -450,11 +450,34 @@
 
   /* ---- A FICHA COMPACTA/EXPANDIDA (Lote 5, PLAN-UI.md §7) ------------
      O TETO da compacta é a MESMA constante que a câmera já respeita
-     (`App.tsx`, `TETO_DA_FOLHA_COMPACTA_REM`) — 8,5rem, 136 px em
-     `ui = 1`. Vive AQUI, e não em `01-base.css` (fora do escopo deste
-     lote): só existe no celular, a mesa nunca lê esta variável. */
+     (`App.tsx`, `TETO_DA_FOLHA_COMPACTA_REM`) — 10rem, 160 px em
+     `ui = 1` (eram 8,5rem até a primeira leva do relatório de UI, 09/09:
+     a linha "rótulo · valor" da compacta mais os dois botões de 44 px
+     não cabiam em 136 px — a foto cortava os botões ao meio). Vive AQUI,
+     e não em `01-base.css` (fora do escopo deste lote): só existe no
+     celular, a mesa nunca lê esta variável. */
   .hud-root {
-    --ficha-compacta-altura: 8.5rem;
+    --ficha-compacta-altura: 10rem;
+  }
+
+  /* A LINHA DA COMPACTA (fix, 09/09; `atlas-ficha-resumo`,
+     `FichaDoObjeto.tsx`) — "rótulo · valor" sob o nome, dentro do MESMO
+     8,5rem: essa altura também é a RESERVA DA CÂMERA no celular
+     (`TETO_DA_FOLHA_COMPACTA_REM`, `App.tsx` — fora do escopo deste
+     ajuste), então crescê-la aqui sem remedir lá desalinharia o que a
+     3D reserva do que a folha realmente ocupa — o mesmo defeito que o
+     comentário de `--ficha-compacta-altura` acima já descreve para
+     quem mexe nela. A linha entra no orçamento que já existe: uma
+     fonte pequena, sem margem alta, uma linha só (nunca duas — `.hud-
+     dialogo` ampliaria com `text-overflow`, não com altura). */
+  .atlas-ficha-resumo {
+    margin: -0.15rem 0 0.4rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    color: var(--texto-2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* A TRANSIÇÃO é `height`/`max-height` (item 6 do §2 pede as duas; só a
