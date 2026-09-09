@@ -476,15 +476,22 @@ export async function ligarSocketCDP(alvo, aoEvento = () => {}) {
  * duas cópias do contrato de lançamento é exatamente o defeito que o
  * cabeçalho deste arquivo existe para não repetir.
  */
-export async function abrirSessao({ janela = '1200x900', app = APP_PADRAO, prefixo = 'sessao' } = {}) {
+export async function abrirSessao({
+  janela = '1200x900', app = APP_PADRAO, prefixo = 'sessao', dpr = 1, visivel = false,
+} = {}) {
   const [w, h] = String(janela).split('x');
   const perfil = resolve(tmpdir(), `${prefixo}-${process.pid}`);
+  // ADITIVOS (régua de fps real): `dpr` só troca o `--force-device-scale-factor`
+  // de sempre; `visivel` tira `--headless=new` de GPU_FLAGS — nenhum dos dois
+  // mexe em nada quando não passado, então todo chamador existente continua
+  // headless em DPR 1, byte a byte.
+  const flags = visivel ? GPU_FLAGS.filter((f) => f !== '--headless=new') : GPU_FLAGS;
   const { encerrar } = lancarChrome({
     perfil,
     args: [
-      ...GPU_FLAGS,
+      ...flags,
       '--hide-scrollbars', '--no-first-run', '--mute-audio',
-      '--force-device-scale-factor=1', `--window-size=${w},${h}`,
+      `--force-device-scale-factor=${dpr}`, `--window-size=${w},${h}`,
       '--remote-debugging-port=0', 'about:blank',
     ],
   });

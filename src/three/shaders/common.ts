@@ -269,6 +269,16 @@ void seedSpan(vec3 ro, vec3 rd) {
 uniform highp sampler3D uVolume;
 uniform vec3 uVolMin;
 uniform vec3 uVolTamanho;
+// GRADE GROSSA DE MÁXIMO (etapa A2, PLAN.md) — 16³, reduzida da textura
+// acima logo depois de CADA bake (Nebula.reduzir(), em nebula.ts):
+// companheira de uVolume, nunca lida com texture() filtrado, só
+// texelFetch — ver nebulaDensity abaixo e o cabeçalho de
+// NEBULA_REDUCE_FRAG em nebulaShaders.ts.
+uniform highp sampler3D uVolumeGrosso;
+// 1.0 = curto-circuito ligado (o padrão novo); ?nebskip=0 (nebula.ts) põe
+// 0.0 para a medição A/B da fase seguinte comparar com/sem o atalho no
+// MESMO binário.
+uniform float uNebSkip;
 
 // Parte do raymarch: lê o volume já assado e soma só o que NUNCA pode
 // morar nele — os núcleos do corredor (a ablação mediu que são baratos:
@@ -290,6 +300,13 @@ float nebulaDensity(vec3 p, float t) {
   if (uCavityGate >= 1.0 && dot(cav0, cav0) <= 625.0) return 0.0;
   vec3 q = (p - uVolMin) / uVolTamanho;
   if (any(lessThan(q, vec3(0.0))) || any(greaterThan(q, vec3(1.0)))) return 0.0;
+  // PULAR O VAZIO (etapa A2): o bloco 8×8×8 inteiro é o MÁXIMO de 512
+  // texels finos (NEBULA_REDUCE_FRAG) — o limiar é a METADE do corte de
+  // "há gás" que nebulaMain usa (0.003), de propósito MAIS conservador:
+  // um bloco só é descartado quando nem a amostra mais forte dentro dele
+  // chegaria perto do corte real, então nenhum passo visível se perde.
+  ivec3 qg = clamp(ivec3(q * 16.0), ivec3(0), ivec3(15));
+  if (uNebSkip > 0.5 && texelFetch(uVolumeGrosso, qg, 0).r < 0.0015) return 0.0;
   vec4 s = texture(uVolume, q);
   gGasEnvelope = s.b;
   gPaletteM = s.a;

@@ -513,6 +513,51 @@ void main() {
 `;
 }
 
+// REDESIGN (PLAN.md, etapa A2) — a GRADE GROSSA DE MÁXIMO: reduz o volume
+// fino recém-assado (128³) para 16³, um voxel grosso por bloco 8×8×8 do
+// fino (nebula.ts, `Nebula.reduzir()`, chamada logo depois das 128 fatias
+// do bake). `nebulaDensity` (common.ts) faz `texelFetch` nela para pular o
+// passo inteiro — fetch fino MAIS os núcleos do corredor — onde o bloco
+// inteiro está vazio.
+//
+// `texelFetch` nas DUAS PONTAS de propósito, aqui para LER o volume fino e
+// em `nebulaDensity` para ler esta grade: `texture()` filtrado mistura um
+// voxel cheio com um vizinho vazio (a interpolação trilinear do próprio
+// volume fino) e apagaria nuvem fina — o mesmo motivo que já vale para
+// `uSeedCloudTex` em `glslBakeDensity`. Sem `readPixels` nem cópia para a
+// CPU: os 512 texels do bloco são varridos DENTRO do fragment, um voxel
+// grosso por invocação — nada sai da GPU.
+//
+// Não é a variante FINO nem MACIO: o mesmo texto serve às duas, porque o
+// indicador de "há gás" é o MÁXIMO de R (macio: campo estático+sementes;
+// fino: só as sementes) e B (o envelope, que os dois canais carregam
+// igual) — ver o comentário de `nebulaDensity` para o porquê dos dois.
+export const NEBULA_REDUCE_FRAG = /* glsl */ `
+precision highp float;
+uniform float uFatiaGrossa;
+uniform highp sampler3D uVolumeFino;
+
+void main() {
+  ivec3 base = ivec3(ivec2(gl_FragCoord.xy), int(uFatiaGrossa)) * 8;
+  float m = 0.0;
+  // Bloco DILATADO em um texel para cada lado (10×10×10, recortado nas
+  // bordas do volume): texture() trilinear numa amostra encostada na face
+  // de um bloco mistura até meio texel do bloco vizinho — sem a margem, um
+  // bloco vazio ao lado de um denso leria 0 onde o filtro daria até metade
+  // do texel vizinho, e apareceria uma costura escura nas faces.
+  for (int dz = -1; dz < 9; dz++) {
+    for (int dy = -1; dy < 9; dy++) {
+      for (int dx = -1; dx < 9; dx++) {
+        ivec3 c = clamp(base + ivec3(dx, dy, dz), ivec3(0), ivec3(127));
+        vec4 s = texelFetch(uVolumeFino, c, 0);
+        m = max(m, max(s.r, s.b));
+      }
+    }
+  }
+  gl_FragColor = vec4(m, 0.0, 0.0, 0.0);
+}
+`;
+
 // Fragment do LUT da faixa: uma direção por texel (256×128 equirect
 // no referencial galáctico), integração distante completa.
 /**

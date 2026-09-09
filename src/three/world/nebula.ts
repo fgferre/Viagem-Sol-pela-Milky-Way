@@ -9,6 +9,7 @@ import {
   nebulaBakeFrag,
   nebulaLutFrag,
   NEBULA_BLUR_FRAG,
+  NEBULA_REDUCE_FRAG,
 } from '../shaders/nebulaShaders';
 import { makeBlueNoiseTexture } from './blueNoise';
 import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
@@ -117,6 +118,9 @@ export class Nebula {
   /** meia-aresta do cubo assado (pc) — tMax do raymarch (650) + margem (350) */
   private static readonly MEIA_ARESTA = 1000;
   private static readonly VOXEIS = 128;
+  /** etapa A2 (PLAN.md) — grade GROSSA de máximo: um voxel por bloco
+   *  8×8×8 do fino (128/16 = 8); ver `reduzir()`. */
+  private static readonly VOXEIS_GROSSOS = 16;
   /** aresta do voxel: 2000/128 = 15,625 pc — `centro` é sempre múltiplo
    * disto, para um re-bake num centro novo amostrar as MESMAS posições
    * de mundo que o bake anterior amostrava (sem isso, o gás treme: o
@@ -164,6 +168,21 @@ export class Nebula {
     THREE.RGBAFormat,
     THREE.UnsignedByteType
   );
+  /**
+   * etapa A2 (PLAN.md) — GRADE GROSSA DE MÁXIMO: `nebulaDensity`
+   * (common.ts) lê este uniform para pular o fetch fino e os núcleos do
+   * corredor onde o bloco 8×8×8 inteiro está vazio. `?nebskip=0` desliga
+   * (0.0) para a medição A/B da fase seguinte comparar com/sem o atalho
+   * no MESMO binário — lido uma vez na carga, mesmo padrão de
+   * `stepsOverride` abaixo. Ausente ou ≠ "0" = ligado (o padrão novo).
+   */
+  private skipOverride = (() => {
+    if (typeof window === 'undefined') return 1;
+    return new URLSearchParams(window.location.search).get('nebskip') === '0' ? 0 : 1;
+  })();
+  private volumeGrossoRT: THREE.WebGL3DRenderTarget;
+  private reduceScene = new THREE.Scene();
+  private reduceMaterial: THREE.ShaderMaterial;
 
   constructor(scale = 0.5) {
     this.scale = scale;
@@ -276,6 +295,36 @@ export class Nebula {
     this.volumeQuad.frustumCulled = false;
     this.volumeScene.add(this.volumeQuad);
 
+    // etapa A2 (PLAN.md) — a redução: MESMO formato do bake (RGBA16F),
+    // NearestFilter porque só é lida por texelFetch, tanto aqui quanto em
+    // nebulaDensity (common.ts) — nunca por `texture()` filtrado, que
+    // misturaria um voxel cheio com um vizinho vazio e apagaria nuvem fina.
+    this.volumeGrossoRT = new THREE.WebGL3DRenderTarget(
+      Nebula.VOXEIS_GROSSOS,
+      Nebula.VOXEIS_GROSSOS,
+      Nebula.VOXEIS_GROSSOS,
+      {
+        format: THREE.RGBAFormat,
+        type: THREE.HalfFloatType,
+        minFilter: THREE.NearestFilter,
+        magFilter: THREE.NearestFilter,
+        depthBuffer: false,
+      }
+    );
+    this.reduceMaterial = new THREE.ShaderMaterial({
+      vertexShader: NEBULA_VERT,
+      fragmentShader: NEBULA_REDUCE_FRAG,
+      uniforms: {
+        uFatiaGrossa: { value: 0 },
+        uVolumeFino: { value: this.volumeRT.texture },
+      },
+      depthWrite: false,
+      depthTest: false,
+    });
+    const reduceQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.reduceMaterial);
+    reduceQuad.frustumCulled = false;
+    this.reduceScene.add(reduceQuad);
+
     this.material = new THREE.ShaderMaterial({
       vertexShader: NEBULA_VERT,
       fragmentShader: nebulaFrag(VARIANTE_DE_NASCENCA),
@@ -313,6 +362,9 @@ export class Nebula {
         uVolume: { value: this.volumeRT.texture },
         uVolMin: { value: new THREE.Vector3() },
         uVolTamanho: { value: new THREE.Vector3(1, 1, 1).multiplyScalar(2 * Nebula.MEIA_ARESTA) },
+        // etapa A2 — a grade grossa e a chave que a desliga (?nebskip=0)
+        uVolumeGrosso: { value: this.volumeGrossoRT.texture },
+        uNebSkip: { value: this.skipOverride },
       },
       depthWrite: false,
       depthTest: false,
@@ -717,11 +769,30 @@ export class Nebula {
       renderer.setRenderTarget(this.volumeRT, fatia);
       renderer.render(this.volumeScene, this.camera);
     }
+    this.reduzir(renderer);
     renderer.setRenderTarget(prev);
     this.volumeSujo = false;
     // o volume mudou: o quadro congelado (item 144) precisa refazer o
     // raymarch mesmo com a câmera parada, senão o céu antigo persistiria
     this.sujo = true;
+  }
+
+  /**
+   * etapa A2 (PLAN.md) — reduz o volume fino recém-assado (128³) para a
+   * grade grossa de máximo (16³, um voxel por bloco 8×8×8), inteiramente
+   * na GPU: sem `readPixels`, sem cópia para a CPU (é o par que o
+   * BACKLOG mede em segundos de engasgo). Chamada de dentro de `bake()`,
+   * sempre que ele roda — a grade grossa nunca fica mais velha que o
+   * volume fino que ela resume. `nebulaDensity` (common.ts) é quem lê o
+   * resultado, por `texelFetch`.
+   */
+  private reduzir(renderer: THREE.WebGLRenderer) {
+    const uFatiaGrossa = this.reduceMaterial.uniforms.uFatiaGrossa;
+    for (let fatia = 0; fatia < Nebula.VOXEIS_GROSSOS; fatia++) {
+      uFatiaGrossa.value = fatia;
+      renderer.setRenderTarget(this.volumeGrossoRT, fatia);
+      renderer.render(this.reduceScene, this.camera);
+    }
   }
 
   render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) {
@@ -764,6 +835,7 @@ export class Nebula {
     this.rtBlur.dispose();
     this.lutRT.dispose();
     this.volumeRT.dispose();
+    this.volumeGrossoRT.dispose();
     // TODOS os materiais em cache (item 145b) — não só o que está no ar:
     // `setVariante` nunca descarta o anterior (é a troca ao vivo sem
     // recompilar de novo), então o dono deles é o `dispose` final.
@@ -771,6 +843,7 @@ export class Nebula {
     for (const m of this.materiaisBake.values()) m.dispose();
     this.blurMaterial.dispose();
     this.lutMaterial.dispose();
+    this.reduceMaterial.dispose();
     this.sementesTex.dispose();
     this.fallbackDustMap.dispose();
     const bn = this.material.uniforms.uBlueNoise.value as THREE.Texture;
@@ -786,6 +859,9 @@ export class Nebula {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });
     this.volumeScene.traverse((o) => {
+      if (o instanceof THREE.Mesh) o.geometry.dispose();
+    });
+    this.reduceScene.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });
   }
