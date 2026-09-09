@@ -2,8 +2,8 @@
 // O "?" DE AJUDA — átomo extraído do redesenho do painel de Ajustes
 // (05/09) para servir também a gaveta de Camadas (06/09, pedido do
 // dono: "aplica o mesmo padrão no painel de Camadas"). Um botão, uma
-// dica que aparece no hover/foco ou fixa no clique — e agora só há UM
-// lugar que sabe desenhar isso, não dois.
+// dica que aparece no hover/foco e, só no TOQUE, fixa no clique — e
+// agora só há UM lugar que sabe desenhar isso, não dois.
 //
 // O ESTADO (qual dica está presa) continua morando em quem chama —
 // `useDicaPresa` — porque fixar uma tem de apagar a de cima, e isso só
@@ -21,15 +21,25 @@
 // 08-ajustes.css).
 //
 // ABERTA = hover (só mouse — toque não deixa hover preso) OU foco OU
-// presa. Um clique alterna `presa` e SEMPRE solta o `foco` local: sem
-// isso, o segundo clique/Enter de quem chegou pelo teclado não fechava
-// de verdade — o foco continuava no botão e reabria a caixa sozinha. O
-// Esc (via `aoTeclarEsc`, em quem chama) solta a dica pelo `presa`; o
-// ajuste de estado logo no corpo do componente, amarrado a `presa`,
-// solta hover/foco junto sempre que `presa` cai — por Esc, por outro
-// "?" tomar o lugar, ou pelo clique fora que o painel já trata — para a
-// caixa sumir de vez mesmo com o mouse ainda em cima do botão (só
-// reaparece ao sair e voltar).
+// presa. O CLIQUE SÓ ALTERNA `presa` NO TOQUE (design do dono, 09/09,
+// `hoverCapaz` abaixo — `matchMedia('(hover: hover)')`, uma vez por
+// componente): em quem tem mouse ele é NO-OP além do foco padrão do
+// `<button>` — a caixa já mostra por `foco`. Antes o clique prendia em
+// QUALQUER dispositivo, e era o bug relatado pelo dono: a dica presa por
+// mouse nunca soltava sozinha (cada linha do painel solta
+// `stopPropagation()` no próprio clique, e o "clique fora fecha" do
+// diálogo nunca a alcançava). No toque, o clique segue alternando
+// `presa` e SEMPRE solta o `foco` local: sem isso, o segundo toque/Enter
+// de quem chegou pelo teclado não fechava de verdade — o foco continuava
+// no botão e reabria a caixa sozinha. O Esc (via `aoTeclarEsc`, em quem
+// chama) solta a dica pelo `presa` — só existe pino a soltar no toque;
+// em quem tem mouse o Esc vai direto fechar o painel, sem estágio do
+// meio. O ajuste de estado logo no corpo do componente, amarrado a
+// `presa`, solta hover/foco junto sempre que `presa` cai — por Esc, por
+// outro "?" tomar o lugar, ou pelo toque fora (um `pointerdown` em
+// CAPTURA no `document`, `hooks/useDicaPresa.ts`, imune ao
+// `stopPropagation()` da bolha) — para a caixa sumir de vez mesmo com o
+// dedo/mouse ainda em cima do botão (só reaparece ao sair e voltar).
 //
 // A POSIÇÃO é `posicionarDica` (`hooks/useDicaPresa.ts`), a conta pura
 // por trás disto; aqui só mora a leitura do DOM (o retângulo do botão,
@@ -59,6 +69,10 @@ export function Ajuda({
 }) {
   const botaoRef = useRef<HTMLButtonElement>(null);
   const dicaRef = useRef<HTMLDivElement>(null);
+  // O DISPOSITIVO TEM MOUSE? — detectado UMA VEZ por componente (não
+  // reage a plugar/tirar um mouse durante a sessão, o caso raro que este
+  // contrato não cobre). Só o CLIQUE, abaixo, olha para isto.
+  const [hoverCapaz] = useState(() => window.matchMedia?.('(hover: hover)').matches ?? true);
   const [hover, setHover] = useState(false);
   const [foco, setFoco] = useState(false);
   // `presa` CAINDO solta hover/foco JUNTO (Esc, outro "?" tomando o
@@ -158,11 +172,17 @@ export function Ajuda({
           // painel (e, na gaveta, evita o efeito colateral de um botão
           // dentro do `<label>` também alternar a caixa de seleção)
           evento.stopPropagation();
-          onAlternar();
-          // sem isto, um segundo clique/Enter vindo do teclado não
-          // fechava de verdade: o foco continuava no botão e reabria a
-          // caixa sozinha por `aberta = hover || foco || presa`
-          setFoco(false);
+          // SÓ NO TOQUE o clique prende (design do dono, 09/09): em quem
+          // tem mouse ele é NO-OP além do foco padrão do botão — a caixa
+          // já mostra por `foco`, e prender por clique era o bug
+          // relatado (a dica presa por mouse nunca soltava sozinha).
+          if (!hoverCapaz) {
+            onAlternar();
+            // sem isto, um segundo toque/Enter vindo do teclado não
+            // fechava de verdade: o foco continuava no botão e reabria a
+            // caixa sozinha por `aberta = hover || foco || presa`
+            setFoco(false);
+          }
         }}
       >
         ?

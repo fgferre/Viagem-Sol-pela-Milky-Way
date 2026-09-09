@@ -31,6 +31,40 @@ describe('a dica é um PORTAL — nunca filha da LINHA (Lote 9)', () => {
   });
 });
 
+describe('o clique só ALTERNA a dica NO TOQUE — em quem tem mouse é NO-OP (design do dono, 09/09)', () => {
+  it('o dispositivo é lido por matchMedia(hover: hover), uma vez por componente (useState sem ouvinte)', () => {
+    // SEM ouvinte de propósito: ao contrário de `useCelular` (que reage a
+    // `change` porque a LARGURA muda ao vivo no juiz de a11y), ter mouse
+    // ou não não muda durante a sessão — um `useState` com inicializador
+    // preguiçoso já é "uma vez por componente".
+    expect(FONTE).toContain(
+      "const [hoverCapaz] = useState(() => window.matchMedia?.('(hover: hover)').matches ?? true);"
+    );
+  });
+
+  it('onAlternar() só corre DENTRO de `if (!hoverCapaz)` — mouse não prende nada', () => {
+    const onClick = FONTE.slice(
+      FONTE.indexOf('onClick={(evento) => {'),
+      FONTE.indexOf('      >\n        ?\n      </button>')
+    );
+    const iGuarda = onClick.indexOf('if (!hoverCapaz) {');
+    const iAlternar = onClick.indexOf('onAlternar();');
+    const iFecho = onClick.indexOf('setFoco(false);');
+    expect(iGuarda).toBeGreaterThan(-1);
+    // onAlternar() e o setFoco(false) que zera o foco residual moram
+    // DENTRO da mesma guarda — no mouse não há pino para religar por
+    // foco, e chamar isso ali fecharia a caixa que hover/foco acabaram
+    // de abrir
+    expect(iAlternar).toBeGreaterThan(iGuarda);
+    expect(iFecho).toBeGreaterThan(iAlternar);
+    // e o stopPropagation() do clique continua FORA da guarda — ele
+    // segue valendo em qualquer dispositivo (o <label> da gaveta de
+    // Camadas não pode alternar a caixa de seleção em nenhum dos dois)
+    expect(onClick.indexOf('evento.stopPropagation();')).toBeGreaterThan(-1);
+    expect(onClick.indexOf('evento.stopPropagation();')).toBeLessThan(iGuarda);
+  });
+});
+
 describe('Esc fecha de vez — mesmo com o mouse ainda em cima do "?"', () => {
   it('presa cair a false solta HOVER e FOCO junto, não só o pino', () => {
     // o ajuste de estado a partir da prop `presa` — `aoTeclarEsc`

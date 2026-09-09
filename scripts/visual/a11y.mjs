@@ -662,16 +662,22 @@ async function julgarGavetaDeCamadas(s, onde) {
 }
 
 /**
- * ESC COM DICA PRESA NÃO FECHA O DIÁLOGO (contrato do Lote 2a,
- * `hooks/useDicaPresa.ts`) — pedido do dono em 08/09/2026, depois de a
- * máquina do tempo ter ficado surda a cliques reais por três lotes sem
- * nenhum juiz notar (ver `julgarCliqueDeVerdade`, abaixo): o contrato
- * genérico do `dialogFocus` só cobra Esc FECHANDO; aqui há um Esc do
- * MEIO que o `onKeyDownCapture` da dica intercepta antes — solta a
- * dica presa e PÁRA aí, sem chegar ao Esc de fechar. Só o SEGUNDO Esc
- * alcança o `dialogFocus` e fecha de fato, devolvendo o foco ao
- * gatilho. A gaveta de Camadas é o alvo: cada linha carrega o seu "?"
- * (`components/Ajuda.tsx`) e nenhum juiz jamais clicou um.
+ * HOVER MOSTRA SEM PRENDER, E O Esc VAI DIRETO AO PAINEL (design do
+ * dono, 09/09/2026, sobre o contrato do Lote 2a, `hooks/useDicaPresa.ts`)
+ * — antes um CLIQUE no "?" prendia a dica em QUALQUER dispositivo, e era
+ * o bug que o dono relatou: a dica presa por MOUSE nunca soltava
+ * sozinha, porque cada linha do painel solta `stopPropagation()` no
+ * próprio clique e o "clique fora fecha" do diálogo (pela bolha) nunca a
+ * alcançava — só um segundo clique no MESMO "?" ou o Esc a soltavam.
+ * Agora, em quem tem mouse (esta sessão: Chrome de mesa, sem emulação de
+ * toque), o clique é NO-OP — só existe pino no TOQUE, que `a11y-celular.mjs`
+ * ainda não cobra para o "?" (nenhuma seção de lá o testava antes desta
+ * troca) — e o HOVER de verdade (`Input.dispatchMouseEvent`, não `.click()`
+ * em JS)
+ * é quem mostra a caixa. Sem pino, o Esc não tem mais ESTÁGIO do meio:
+ * uma tecla só fecha o painel direto, como qualquer outro diálogo. A
+ * gaveta de Camadas é o alvo: cada linha carrega o seu "?"
+ * (`components/Ajuda.tsx`) e nenhum juiz jamais fez hover num.
  */
 async function julgarEscComDicaPresa(s, onde) {
   await s.js(`(() => {
@@ -680,7 +686,18 @@ async function julgarEscComDicaPresa(s, onde) {
     b.click();
   })()`);
   await dorme(200);
-  await s.js("document.querySelector('[data-dialogo=\"camadas\"] .hud-ajuda').click()");
+  // O HOVER DE VERDADE — o centro do "?" da primeira linha, medido no
+  // DOM (não um clique em JS, que nunca passa pelo hit-test do
+  // navegador nem dispara pointerenter).
+  const alvo = await s.js(`(() => {
+    const b = document.querySelector('[data-dialogo="camadas"] .hud-ajuda');
+    const r = b.getBoundingClientRect();
+    return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+  })()`);
+  await s.send('Input.dispatchMouseEvent', {
+    type: 'mouseMoved', x: alvo.x, y: alvo.y, buttons: 0, pointerType: 'mouse',
+  });
+  await dorme(150);
   // A CAIXA VIVE NO document.body (`createPortal`, `components/Ajuda.tsx`,
   // primeira leva do relatório de UI, 09/09) — não é mais descendente do
   // painel. É achada pelo `aria-controls` do botão que a abriu, o mesmo
@@ -693,20 +710,8 @@ async function julgarEscComDicaPresa(s, onde) {
   })()`;
   const antes = await s.js(dicaDoBotao);
   conferir(
-    antes.presa && !antes.escondida,
-    `${onde} · camadas: clicar o "?" PRENDE a dica (".hud-dica.presa" na tela)`
-  );
-
-  await s.teclar('Escape');
-  await dorme(150);
-  const meio = await s.js(`(() => {
-    const d = document.querySelector('[data-dialogo="camadas"]');
-    return { aberto: Boolean(d && d.getClientRects().length > 0) };
-  })()`);
-  const meioDica = await s.js(dicaDoBotao);
-  conferir(
-    meio.aberto && meioDica.escondida && !meioDica.presa,
-    `${onde} · camadas: o PRIMEIRO Esc solta a dica ("hidden") e o painel CONTINUA aberto`
+    !antes.escondida && !antes.presa,
+    `${onde} · camadas: o HOVER de mouse MOSTRA a dica sem PRENDER (".hud-dica" visível, sem ".presa")`
   );
 
   await s.teclar('Escape');
@@ -718,7 +723,7 @@ async function julgarEscComDicaPresa(s, onde) {
   })()`);
   conferir(
     depois.fechou && depois.devolveu,
-    `${onde} · camadas: o SEGUNDO Esc fecha o painel e devolve o foco ao gatilho`
+    `${onde} · camadas: sem pino, UM Esc já fecha o painel e devolve o foco ao gatilho (sem estágio do meio)`
   );
 }
 

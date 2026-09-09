@@ -14,7 +14,20 @@
 // `decidirEscDaDica` é a REGRA PURA por trás (testável sem DOM, sem
 // React — o runner da casa é `node`): com dica presa, Esc consome o
 // evento (solta a dica e PÁRA aí); sem dica presa, deixa passar para o
-// Esc de sempre (`useDialogFocus`, que fecha o painel).
+// Esc de sempre (`useDialogFocus`, que fecha o painel). Desde o design do
+// dono de 09/09, só existe pino no TOQUE (`components/Ajuda.tsx` decide
+// isso pelo clique) — em quem tem mouse `presa` nunca liga, e por isso o
+// Esc vai direto fechar o painel, sem o estágio do meio.
+//
+// O TOQUE FORA FECHA (mesmo design, 09/09) — cada painel (`onClick={()
+// => { if (dicaPresa) limparDica(); }}` no próprio `<div>` do diálogo)
+// já tentava isso pela BOLHA, e é frágil: qualquer controle no caminho
+// que chame `stopPropagation()` no PRÓPRIO clique — outro "?", um
+// `<label>` de caixa de seleção, um botão do segmentado — barra o clique
+// antes de chegar lá (o bug relatado pelo dono: a dica fixada por mouse
+// nunca soltava sozinha). `aoTocarFora`, abaixo, resolve isso por
+// CAPTURA no `document`: roda ANTES de qualquer `stopPropagation()` da
+// bolha, então nenhum controle no meio do caminho consegue escondê-la.
 //
 // A DICA FLUTUA POR CIMA (Lote 9, pedido do dono: "flutuar por cima,
 // nunca empurrar o layout") — `Ajuda.tsx` a desenha com `createPortal`
@@ -24,7 +37,7 @@
 // de verdade) — quem lê o layout é o componente; esta função só decide
 // onde a caixa cai, dado o que o componente mediu.
 // ============================================================
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
 /** A decisão pura do Esc (§8): com dica presa, ele é DELA — solta e para
@@ -114,6 +127,32 @@ export function useDicaPresa() {
   const [presa, setPresa] = useState<string | null>(null);
   const alternar = (id: string) => setPresa((atual) => (atual === id ? null : id));
   const limpar = () => setPresa(null);
+
+  /**
+   * O TOQUE FORA FECHA (design do dono, 09/09) — ver o cabeçalho. Roda só
+   * enquanto HÁ dica presa (nunca liga em quem tem mouse, onde `presa`
+   * não existe) e ouve `pointerdown` — antes do `click`, e antes de
+   * qualquer `stopPropagation()` que a bolha do clique venha a sofrer.
+   *
+   * TODO "?" fica de fora do gatilho, não só o preso: tocar o MESMO "?"
+   * tem de deixar o `onClick` dele (`Ajuda.tsx`) alternar (desligar)
+   * sozinho — se esta função chamasse `limpar()` primeiro, o `alternar`
+   * leria `presa` já nula e a religaria (`atual === id` daria falso
+   * contra `null`). Tocar OUTRO "?" também passa livre: o `onClick` dele
+   * troca o pino sem ajuda daqui (`alternar` não olha o valor antigo).
+   * Sobra para fechar por aqui: qualquer toque que NÃO é em nenhum "?".
+   */
+  useEffect(() => {
+    if (presa == null) return undefined;
+    const aoTocarFora = (evento: PointerEvent) => {
+      const alvo = evento.target;
+      if (alvo instanceof Element && alvo.closest('.hud-ajuda')) return;
+      limpar();
+    };
+    document.addEventListener('pointerdown', aoTocarFora, true);
+    return () => document.removeEventListener('pointerdown', aoTocarFora, true);
+  }, [presa]);
+
   /**
    * O handler reutilizável de `onKeyDownCapture`. A CAPTURA é o que
    * garante rodar ANTES do listener de fechar que `useDialogFocus` prende
