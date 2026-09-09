@@ -276,6 +276,30 @@ com painel aberto e com o tempo; o lugar e o peso do selo no celular; a
 janela baixa; o fim do filme com "Ficar aqui" em destaque; o que volta
 junto quando os controles do filme reaparecem. Servidor parado.
 
+**09/09 (segunda leva do relatório de UI — maquetes e a escolha dele).**
+Palavras dele: *"ok. proximo passo."* e, diante das cinco folhas de
+maquetes fotografadas em cima do app de verdade (Atlas de mesa em repouso,
+janela baixa, selo no celular, fim do filme, controles do filme), *"A1, B2,
+C1, D1, E1"*. Feito e commitado em duas partes. ATLAS — o relógio da mesa
+nasce recolhido numa linha só (abre no clique, fecha no Esc, e o aviso de
+verdade do céu segue visível), o selo fica discreto até o mouse chegar, a
+dica dos gestos saiu (o tour já ensina; o cartão do tour nasce no canto de
+baixo, sem furo — backlog), no celular o selo subiu para o canto superior
+DIREITO (a maquete C1 era à esquerda; ali ele encostava na bússola, que o
+juiz flagrou — ele ainda não viu o lado direito) e a folha senta direto na
+barra, com a reserva da câmera acompanhando; numa janela baixa a ficha abre
+mínima (nome, um dado, dois botões; "Detalhes" abre o resto). FILME —
+"Ficar neste céu" em destaque no âmbar da abertura, com a linha do tempo
+apagada, e os controles em duas camadas: transporte na frente, Camadas,
+qualidade e Ajustes atrás de um "Mais", saídas discretas ao lado.
+`npm run done` verde (2944 testes); juízes a11y, busca e atlas-smoke
+verdes, rodados um de cada vez (em paralelo com fotos eles tropeçam:
+backlog). Cinco pares de fotos antes/depois enviados a ele. **O que espera
+o olho dele:** o selo no lado direito do celular e o tour sem furo. Com
+isso o relatório de UI está atendido por inteiro; o que sobrou são
+apontamentos no backlog. Servidor parado.
+
+
 
 ## O BASTÃO anterior (06/09, madrugada)
 
