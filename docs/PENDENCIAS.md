@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 226.**
 
-## O BASTÃO — onde a rodada parou (08/09)
+## O BASTÃO — onde a rodada parou (09/09)
 
 **07/09 (rodada da VARREDURA, encerrada por ordem dele: "encerrar
 rodada").** Abriu com a pergunta dele: "o que faltou? pode continuar.
@@ -199,6 +199,17 @@ do plano, com a galáxia inteira no quadro e o rótulo do Sol à vista — a
 vista que o cartão promete (a roda ainda desce até o gás se ele quiser).
 Fotos em `capturas/gosto*-v2.png` e `capturas/lote9-mesa-chegada-centro-
 galaxia-v3.png`. Servidor: `npm run dev`.
+
+**09/09 (rodada ENCERRADA por ordem dele: "vamos encerrar a rodada").**
+Estado: tudo commitado e em `main:backup`; o plano da interface (pele B,
+lotes 0–9, provas novas e os quatro itens de gosto) está concluído e o
+`PLAN-UI.md` saiu do repositório por decisão dele. Nada aberto do lado
+dele. O que sobrou está no `BACKLOG.md`: as 7 falhas antigas do juiz do
+Atlas (contagem de nomes e décadas do zoom), o esqueleto da ficha e o
+cabeçalho de família das Camadas sem prova, a barra de cima do celular
+cortando "Explorar" na tela pequena com texto grande, o rodapé do tempo
+quebrando em três linhas na paisagem, e os itens antigos de fluidez.
+Servidor parado. Servidor: `npm run dev`.
 
 ## O BASTÃO anterior (06/09, madrugada)
 
