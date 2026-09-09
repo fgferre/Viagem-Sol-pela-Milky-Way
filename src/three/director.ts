@@ -1495,7 +1495,7 @@ export class Director {
     return this.freezeJourney;
   }
 
-  /** início do Ato IV — o botão "Ir direto à galáxia" salta para cá */
+  /** início do Ato IV — o botão "Ir à galáxia" salta para cá */
   get revealTime() {
     return REVEAL_T;
   }

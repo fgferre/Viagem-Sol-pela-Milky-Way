@@ -528,89 +528,64 @@ export function BarraOuAlcas({
           Lote 8/M7) — o `margin-left: auto` que empurra este grupo único
           até a borda direita mora em 02-filme.css, escopado à fase
           'journey', para não mexer na regra de dois grupos que outra
-          fase ainda usa. Pausar/Retomar, velocidade e Ir direto à galáxia
-          continuam no cartão preso à barra de capítulos
-          (`.filme-transporte`, 03-controles.css) — essa parte não mudou. */}
+          fase ainda usa. Pausar/Retomar, velocidade e Ir à galáxia
+          moram no cartão de transporte (`.filme-transporte`), agora IRMÃO
+          desta barra — veja o bloco logo abaixo dela. */}
       {hud.botoesDaViagem && (
-        <>
-          <div className="atlas-barra-grupo">
-            {/* O PORTAL. Só no pausar-e-olhar: é o único momento do filme
-                em que o visitante já parou por conta própria e a
-                pergunta "onde é isso?" tem lugar (D3). AGORA DISCRETO
-                (E1): texto sem moldura, para não competir com "Mais". */}
-            {inJourney && paused && (
-              <button
-                className="hud-btn small hud-btn--discreto"
-                onClick={entrarNoAtlas}
-              >
-                <Icone nome="setaEsquerda" tamanho={16} />
-                {t('barra.entrarNoAtlas')}
-              </button>
-            )}
-            {/* "EXPLORAR", e não "Explorar livremente" (item 61, decisão do
-                dono em 23/08). É a segunda vez que ele corta a mesma
-                palavra: na abertura ela saiu em 22/08 — *"sugiro tirar a
-                palavra livremente"* —, e aqui ela era a sobra da mesma
-                frase, no botão mais largo da barra do filme. Com o corte a
-                barra fala como o resto da casa: a porta da abertura, a
-                ferramenta do Atlas (↗ Voo livre) e esta dizem o MESMO nome
-                para o MESMO destino. */}
-            <button className="hud-btn small hud-btn--discreto" onClick={freeRoam}>
-              <Icone nome="explorar" tamanho={16} />
-              {t('barra.explorar')}
-            </button>
-            {/* "MAIS" (E1) — um botão comum, sem o contrato de diálogo
-                (`gatilhoDoDialogo`/`data-abre-dialogo`): não sobe uma
-                folha por cima da cena, só revela os três controles a
-                seguir NA MESMA barra. Nasce CEDO no documento, logo
-                depois das saídas — quem tabula alcança "Mais" antes de
-                Camadas/qualidade/Ajustes, que vêm DEPOIS dele no DOM
-                (Tab natural, do jeito que se espera de uma revelação).
-                A ORDEM VISUAL é outra: o `order` inline empurra "Mais"
-                para o fim da fileira, então os três aparecem à ESQUERDA
-                dele quando abertos — quem enxerga lê da esquerda para a
-                direita e vê o conteúdo antes do botão que o abriu. */}
+        <div className="atlas-barra-grupo">
+          {/* O PORTAL. Só no pausar-e-olhar: é o único momento do filme
+              em que o visitante já parou por conta própria e a
+              pergunta "onde é isso?" tem lugar (D3). AGORA DISCRETO
+              (E1): texto sem moldura, para não competir com "Mais". */}
+          {inJourney && paused && (
             <button
-              className="hud-btn small"
-              style={{ order: 1 }}
-              onClick={() => setMaisAberto((v) => !v)}
-              aria-expanded={maisAberto}
-              aria-label={t('barra.maisAria')}
+              className="hud-btn small hud-btn--discreto"
+              onClick={entrarNoAtlas}
             >
-              {t('barra.mais')}
+              <Icone nome="setaEsquerda" tamanho={16} />
+              {t('barra.entrarNoAtlas')}
             </button>
-            {maisAberto && (
-              <>
-                {portaDasCamadas}
-                {seletorDeQualidade}
-                {botaoDeAjustes}
-              </>
-            )}
-          </div>
-          <div className="filme-transporte">
-            <button
-              className="hud-btn small"
-              onClick={togglePause}
-              aria-label={t(paused ? 'barra.retomarAria' : 'barra.pausarAria')}
-            >
-              <Icone nome={paused ? 'play' : 'pausa'} tamanho={16} />
-              {t(paused ? 'barra.retomar' : 'barra.pausar')}
-            </button>
-            <button
-              className="hud-btn small"
-              onClick={ciclarVelocidade}
-              aria-label={t('barra.velocidadeAria')}
-              title={t('barra.velocidadeDica')}
-            >
-              <Icone nome="velocidade" tamanho={16} />
-              {rate}×
-            </button>
-            <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
-              <Icone nome="galaxia" tamanho={16} />
-              {t('barra.verAGalaxia')}
-            </button>
-          </div>
-        </>
+          )}
+          {/* "EXPLORAR", e não "Explorar livremente" (item 61, decisão do
+              dono em 23/08). É a segunda vez que ele corta a mesma
+              palavra: na abertura ela saiu em 22/08 — *"sugiro tirar a
+              palavra livremente"* —, e aqui ela era a sobra da mesma
+              frase, no botão mais largo da barra do filme. Com o corte a
+              barra fala como o resto da casa: a porta da abertura, a
+              ferramenta do Atlas (↗ Voo livre) e esta dizem o MESMO nome
+              para o MESMO destino. */}
+          <button className="hud-btn small hud-btn--discreto" onClick={freeRoam}>
+            <Icone nome="explorar" tamanho={16} />
+            {t('barra.explorar')}
+          </button>
+          {/* "MAIS" (E1) — um botão comum, sem o contrato de diálogo
+              (`gatilhoDoDialogo`/`data-abre-dialogo`): não sobe uma
+              folha por cima da cena, só revela os três controles a
+              seguir NA MESMA barra. Nasce CEDO no documento, logo
+              depois das saídas — quem tabula alcança "Mais" antes de
+              Camadas/qualidade/Ajustes, que vêm DEPOIS dele no DOM
+              (Tab natural, do jeito que se espera de uma revelação).
+              A ORDEM VISUAL é outra: o `order` inline empurra "Mais"
+              para o fim da fileira, então os três aparecem à ESQUERDA
+              dele quando abertos — quem enxerga lê da esquerda para a
+              direita e vê o conteúdo antes do botão que o abriu. */}
+          <button
+            className="hud-btn small"
+            style={{ order: 1 }}
+            onClick={() => setMaisAberto((v) => !v)}
+            aria-expanded={maisAberto}
+            aria-label={t('barra.maisAria')}
+          >
+            {t('barra.mais')}
+          </button>
+          {maisAberto && (
+            <>
+              {portaDasCamadas}
+              {seletorDeQualidade}
+              {botaoDeAjustes}
+            </>
+          )}
+        </div>
       )}
       {/* GRUPO "SISTEMA" (item 2) — o chip de qualidade e ⚙ Ajustes; NO
           FILME os dois moram atrás de "Mais" (E1, grupo acima), então
@@ -621,6 +596,45 @@ export function BarraOuAlcas({
           {!alcas && !regua && botaoDeAjustes}
         </div>
       )}
+    </div>
+  )}
+
+  {/* O CARTÃO DE TRANSPORTE (Lote 8, maquete M7) — Pausar/Retomar,
+      velocidade e Ir à galáxia. IRMÃO da barra, não filho (achado
+      do celular, 09/09): a barra do filme é uma fileira que rola de lado
+      desde 08/09 (`overflow-x: auto` + `mask-image`,
+      06-responsivo.css/09-celular.css), e um filho `position: fixed`
+      continua RECORTADO pelo `overflow` do pai mesmo fora do fluxo — o
+      cartão ficava dentro do viewport, mas invisível, sempre que o filme
+      pausava no celular. Filho DIRETO de `.hud-root`, como todo overlay
+      da casa (`.bare-mode` o apaga em `?shot=2` do mesmo jeito), ele
+      escapa do recorte. `chromeSumido` entra aqui direto — antes vinha
+      HERDADO do pai (`.controls-bar.hud-sumido`), e a herança de opacidade
+      não atravessa quem deixou de ser filho —, o mesmo padrão de
+      `.atlas-topo-esquerda`, acima. */}
+  {hud.controles && hud.botoesDaViagem && (
+    <div className={`filme-transporte${chromeSumido}`}>
+      <button
+        className="hud-btn small"
+        onClick={togglePause}
+        aria-label={t(paused ? 'barra.retomarAria' : 'barra.pausarAria')}
+      >
+        <Icone nome={paused ? 'play' : 'pausa'} tamanho={16} />
+        {t(paused ? 'barra.retomar' : 'barra.pausar')}
+      </button>
+      <button
+        className="hud-btn small"
+        onClick={ciclarVelocidade}
+        aria-label={t('barra.velocidadeAria')}
+        title={t('barra.velocidadeDica')}
+      >
+        <Icone nome="velocidade" tamanho={16} />
+        {rate}×
+      </button>
+      <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
+        <Icone nome="galaxia" tamanho={16} />
+        {t('barra.verAGalaxia')}
+      </button>
     </div>
   )}
 

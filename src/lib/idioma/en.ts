@@ -122,7 +122,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'barra.pausarAria': 'Pause the journey',
   'barra.velocidadeAria': 'Playback speed',
   'barra.velocidadeDica': '← → skip chapters',
-  'barra.verAGalaxia': 'Straight to the galaxy',
+  'barra.verAGalaxia': 'Go to the galaxy',
   'barra.explorar': 'Free flight',
   // THE FILM'S "MORE" (E1) — Layers, quality and Settings collapse
   // behind a single trigger, closed on every load; the label stays

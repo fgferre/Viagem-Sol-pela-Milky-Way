@@ -231,7 +231,7 @@ const JANELAS = [
 ];
 
 /**
- * OS CONTROLES DO FILME — velocidade, capítulos e "Ir direto à galáxia"
+ * OS CONTROLES DO FILME — velocidade, capítulos e "Ir à galáxia"
  * (`.filme-transporte`, `BarraOuAlcas.tsx`/`Hud.tsx`). Só tinham
  * conferência por LEITURA na matriz de preservação (lista aprovada
  * pelo dono, 08/09/2026) — nenhum clique de verdade.
@@ -345,16 +345,16 @@ async function conferirControles(sessao) {
     return JSON.stringify({ x: Math.round(b.left + b.width / 2), y: Math.round(b.top + b.height / 2) });
   })()`));
   await sessao.clicar(xReveal, yReveal);
-  // "Ir direto à galáxia" solta o relógio (`d.play()` antes do `seek`) — pausa
+  // "Ir à galáxia" solta o relógio (`d.play()` antes do `seek`) — pausa
   // de novo no primeiro tique possível, para o tempo não fugir de
   // `revealTime` enquanto a sessão assenta.
   await sessao.js('window.__director.togglePause()');
   const assentouReveal = await sessao.assentar();
-  conferir(assentouReveal.via === 'sinal', `Ir direto à galáxia: assentou por ${assentouReveal.via}`);
+  conferir(assentouReveal.via === 'sinal', `Ir à galáxia: assentou por ${assentouReveal.via}`);
   const tempoDepoisDoReveal = await sessao.js('window.__director.currentTime');
   conferir(
     tempoDepoisDoReveal >= revealTime && tempoDepoisDoReveal - revealTime < 1,
-    `Ir direto à galáxia salta o relógio para o Ato IV `
+    `Ir à galáxia salta o relógio para o Ato IV `
       + `(t=${tempoDepoisDoReveal.toFixed(2)} contra revealTime=${revealTime.toFixed(2)})`
   );
   // `revealTime` em si é o "único trecho em que nada que dependa do

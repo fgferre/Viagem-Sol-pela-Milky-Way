@@ -176,13 +176,14 @@
 
 /* O CARTÃO DE TRANSPORTE (Lote 8, maquete M7) — Pausar/Retomar,
    velocidade e Ver a galáxia saem da fileira de cima e descem para um
-   cartão preso à barra de capítulos: TERCEIRO filho de `.controls-bar`,
-   para herdar o MESMO `.hud-sumido` que apaga a barra (a regra abaixo é
-   opacidade + pointer-events no PAI — alcança todo filho `fixed`,
-   inclusive este; nenhuma classe extra precisa entrar nele). O `bottom`
-   soma o topo real de `.progress-wrap` (`7.4vh` + 2px de altura,
-   02-filme.css) com 0,75rem de respiro — os "12 px acima da barra de
-   capítulos" da maquete. */
+   cartão preso à barra de capítulos: IRMÃO de `.controls-bar`, não
+   filho (achado do celular, 09/09 — a barra rola com `overflow-x` +
+   `mask-image`, 06-responsivo.css/09-celular.css, e um filho `fixed`
+   ainda era recortado por elas). `BarraOuAlcas.tsx` aplica a classe
+   `hud-sumido` direto nele (`chromeSumido`), porque a herança do PAI que
+   antes bastava deixou de alcançá-lo. O `bottom` soma o topo real de
+   `.progress-wrap` (`7.4vh` + 2px de altura, 02-filme.css) com 0,75rem
+   de respiro — os "12 px acima da barra de capítulos" da maquete. */
 .filme-transporte {
   position: fixed;
   left: 50%;

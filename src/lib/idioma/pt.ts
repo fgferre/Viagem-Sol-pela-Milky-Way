@@ -117,7 +117,7 @@ export const PT = {
   'barra.pausarAria': 'Pausar a viagem',
   'barra.velocidadeAria': 'Velocidade de reprodução',
   'barra.velocidadeDica': '← → pulam de capítulo',
-  'barra.verAGalaxia': 'Ir direto à galáxia',
+  'barra.verAGalaxia': 'Ir à galáxia',
   'barra.explorar': 'Voo livre',
   // O "MAIS" DO FILME (E1) — Camadas, qualidade e Ajustes se recolhem
   // atrás de um gatilho só, fechado a cada carga; o rótulo é curto

@@ -1464,7 +1464,7 @@ try {
     // que a executa.
     const raiz = document.querySelector('.hud-root');
     const hud = [];
-    for (const s of [':scope > [data-dialogo]', '.letterbox', '.controls-bar > *',
+    for (const s of [':scope > [data-dialogo]', '.letterbox', '.controls-bar > *', '.filme-transporte',
                      '.atlas-rodape', '.atlas-selo', '.atlas-alcas',
                      '.atlas-selo-detalhe', '.atlas-bussola.acesa', '.filme-rodape']) {
       for (const e of raiz.querySelectorAll(s)) {

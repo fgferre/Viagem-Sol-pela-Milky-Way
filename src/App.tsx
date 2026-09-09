@@ -108,6 +108,11 @@ const AREAS_RESERVADAS = [
   // não tem altura e não reserva nada.
   '.letterbox',
   '.controls-bar > *',
+  // O CARTÃO DE TRANSPORTE DO FILME saiu de dentro da barra (09/09: no
+  // celular a barra rola de lado com esmaecimento nas bordas, e o cartão,
+  // pintado como parte dela, sumia) — como irmão, precisa da própria
+  // linha para seguir afastando os rótulos.
+  '.filme-transporte',
   // A FICHA DO OBJETO não precisa de linha própria (item 74): ela é um
   // diálogo de verdade, então o `[data-dialogo]` lá em cima já a alcança —
   // que é exatamente o que aquele seletor promete ("diálogo novo passa a
