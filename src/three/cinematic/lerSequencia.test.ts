@@ -14,7 +14,7 @@ const pontos = { inicio: new Vector3(1, 2, 3) };
 const plano = {
   camera,
   legendas: [{ em: 0.25, texto: 'PRIMEIRA', subtexto: 'Detalhe', duracao: 1, ponte: true }],
-  assuntos: ['SOL', 'Sirius'],
+  assuntos: ['Sol', 'Sirius'],
   fundoSilencioso: false,
   destino: 'Sirius',
   olhar: 'tras',
@@ -27,7 +27,7 @@ describe('lerSequencia — item 75', () => {
     expect(a.pos(0.5, new Vector3()).toArray()).toEqual([2.5, 3.5, 4.5]);
     expect(b.look(1, new Vector3()).toArray()).toEqual([0, 0, 0]);
     expect(a.captions).toEqual([{ at: 0.25, text: 'PRIMEIRA', sub: 'Detalhe', dur: 1, bridge: true }]);
-    expect([a.target, a.quiet, a.dest, a.lingua]).toEqual([['SOL', 'Sirius'], false, 'Sirius', 'tras']);
+    expect([a.target, a.quiet, a.dest, a.lingua]).toEqual([['Sol', 'Sirius'], false, 'Sirius', 'tras']);
   });
 
   it('copia os dados editoriais e conserva os padrões quando campos opcionais faltam', () => {
@@ -38,7 +38,7 @@ describe('lerSequencia — item 75', () => {
     dado.planos[0].legendas[0].texto = 'ALTERADO';
     dado.planos[0].assuntos.push('Rigel');
     expect(a.captions?.[0].text).toBe('PRIMEIRA');
-    expect(a.target).toEqual(['SOL', 'Sirius']);
+    expect(a.target).toEqual(['Sol', 'Sirius']);
     expect(b.captions?.[0]).toEqual({ at: 0, text: 'SÓ TEXTO', sub: undefined, dur: undefined, bridge: undefined });
     expect([b.target, b.quiet, b.dest, b.lingua]).toEqual([undefined, undefined, undefined, undefined]);
     expect(lerSequencia({ planos: [{ camera }] }, pontos)[0].captions).toBeUndefined();
@@ -55,7 +55,7 @@ describe('lerSequencia — item 75', () => {
       [leg({ em: -0.1 }), /\.em/], [leg({ em: 1 }), /\.em/], [leg({ em: NaN }), /\.em/],
       [leg({ texto: '' }), /texto/], [leg({ texto: 3 }), /texto/], [leg({ subtexto: null }), /subtexto/],
       [leg({ duracao: 0 }), /duracao/], [leg({ duracao: Infinity }), /duracao/], [leg({ ponte: 1 }), /ponte/],
-      [com({ assuntos: 'SOL' }), /assuntos/], [com({ assuntos: [' '] }), /assuntos\[0\]/],
+      [com({ assuntos: 'Sol' }), /assuntos/], [com({ assuntos: [' '] }), /assuntos\[0\]/],
       [com({ fundoSilencioso: 'false' }), /fundoSilencioso/], [com({ destino: '' }), /destino/],
       [com({ olhar: 'lado' }), /olhar/],
     ];
@@ -110,7 +110,7 @@ describe('lerSequencia — item 75', () => {
       expect(rig.metaAt(inicio + 1)).toEqual({ target: ['Rigel'], quiet: false, dest: 'Sirius' });
       expect(rig.metaAt(inicio + 2).target).toEqual(['Alnitak', 'Alnilam', 'Mintaka']);
       expect(new Journey().at(inicio + 5).pos.toArray()).toEqual([101, 103, 107]);
-      expect(audit.captions.some((c) => c.text === 'AS TRÊS MARIAS' || c.text === 'UM PASSO AO LADO')).toBe(false);
+      expect(audit.captions.some((c) => c.text === 'As Três Marias' || c.text === 'Um passo ao lado')).toBe(false);
     } finally {
       vi.doUnmock('./roteiros/cinturao.json');
       vi.resetModules();

@@ -369,7 +369,7 @@ try {
   // portal acima entrou vindo de t=100 e agora POUSA onde o filme
   // estava — 1.911 pc de casa, o degrau `céu`. Lá o rótulo que o
   // hit-test acha primeiro é o `sol-home`, e clicar nele é a exceção
-  // declarada de `selecionarNoPonto`: a esta distância "SOL" quer dizer
+  // declarada de `selecionarNoPonto`: a esta distância "Sol" quer dizer
   // VOLTAR, e o gesto move a câmera de propósito. As provas daqui para
   // baixo medem o GESTO, não o portal — então elas pedem a casa antes de
   // medir, em vez de julgar o clique num quadro em que ele promete outra

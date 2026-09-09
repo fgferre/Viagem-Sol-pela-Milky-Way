@@ -313,7 +313,7 @@ describe('a auditoria editorial do filme', () => {
     expect(CAPTURE_T).toEqual({ edge: 153, face: 167 });
   });
 
-  // A SEGUNDA PONTE NASCEU COM O DOLLY ZOOM (item 108 v2). "A TERRA"
+  // A SEGUNDA PONTE NASCEU COM O DOLLY ZOOM (item 108 v2). "A Terra"
   // sempre durou 60 s — ela é a assinatura do fim, não um beat —, e
   // enquanto o take era o último plano ela não cruzava corte nenhum.
   // Agora o take entrega o filme a três planos de arremate, e a legenda
@@ -323,33 +323,33 @@ describe('a auditoria editorial do filme', () => {
     expect(auditoria.overlaps).toEqual([]);
     expect(auditoria.crossings.filter((caption) => !caption.bridge)).toEqual([]);
     expect(auditoria.crossings).toEqual([
-      { text: 'SOL', shotIndex: 0, shotEnd: 6, t1: 10.8, bridge: true },
-      { text: 'A TERRA', shotIndex: 24, shotEnd: 190, t1: 246.28, bridge: true },
+      { text: 'Sol', shotIndex: 0, shotEnd: 6, t1: 10.8, bridge: true },
+      { text: 'A Terra', shotIndex: 24, shotEnd: 190, t1: 246.28, bridge: true },
     ]);
     expect(auditoria.captions.filter((caption) => caption.bridge).map((caption) => caption.text))
-      .toEqual(['SOL', 'A TERRA']);
+      .toEqual(['Sol', 'A Terra']);
   });
 
   it('as saídas de Sirius, Casa, Rigel e Antares não vazam para o plano seguinte', () => {
     const fim = (text: string) => auditoria.captions.find((caption) => caption.text === text)?.t1;
-    expect(fim('SIRIUS')).toBeCloseTo(36.8, 10);
-    expect(fim('RIGEL')).toBeCloseTo(72.75, 10);
-    expect(fim('CASA')).toBeCloseTo(79.85, 10);
-    expect(fim('ANTARES')).toBeCloseTo(87.84, 10);
-    expect(journey.captionAt(36.79).key.caption).toBe('SIRIUS');
+    expect(fim('Sirius')).toBeCloseTo(36.8, 10);
+    expect(fim('Rigel')).toBeCloseTo(72.75, 10);
+    expect(fim('Casa')).toBeCloseTo(79.85, 10);
+    expect(fim('Antares')).toBeCloseTo(87.84, 10);
+    expect(journey.captionAt(36.79).key.caption).toBe('Sirius');
     expect(journey.captionAt(36.81).key.caption).toBe('');
-    expect(journey.captionAt(79.84).key.caption).toBe('CASA');
+    expect(journey.captionAt(79.84).key.caption).toBe('Casa');
     expect(journey.captionAt(79.86).key.caption).toBe('');
   });
 
   it('Sagittarius A* só é nomeado durante a curva rasante', () => {
-    const sgr = auditoria.captions.filter((caption) => caption.text === 'SAGITTARIUS A✱');
+    const sgr = auditoria.captions.filter((caption) => caption.text === 'Sagittarius A✱');
     expect(sgr).toHaveLength(1);
     expect(sgr[0].t0).toBeCloseTo(122.4, 10);
     expect(sgr[0].t1).toBeCloseTo(127.9, 10);
     expect(journey.captionAt(122).key.caption).toBe('');
     expect(journey.captionAt(122.39).key.caption).toBe('');
-    expect(journey.captionAt(122.41).key.caption).toBe('SAGITTARIUS A✱');
+    expect(journey.captionAt(122.41).key.caption).toBe('Sagittarius A✱');
   });
 
   it('o roteiro final tem as 24 janelas editoriais do corte', () => {
@@ -357,7 +357,7 @@ describe('a auditoria editorial do filme', () => {
   });
 
   it('o berçário é nomeado onde as estrelas reais passam', () => {
-    const bercario = auditoria.captions.find((c) => c.text === 'O BERÇÁRIO');
+    const bercario = auditoria.captions.find((c) => c.text === 'O berçário');
     expect(bercario).toBeDefined();
     expect(bercario!.t0).toBeGreaterThanOrEqual(94);
     expect(bercario!.t1).toBeLessThanOrEqual(104);
@@ -731,7 +731,7 @@ describe('EstadoDaCaptura — o backoff das três negativas', () => {
 });
 
 describe('a lente do modo fotografia (item 100, fase 2 — a variante (a) dele)', () => {
-  const T_MARIAS = 46; // meio do plano fixo "AS TRÊS MARIAS"
+  const T_MARIAS = 46; // meio do plano fixo "As Três Marias"
 
   // dt GRANDE converge o amortecimento do fov num apply só (kFov≈1);
   // com dt=0 o k é zero e o apply não escreve fov nenhum — pegadinha

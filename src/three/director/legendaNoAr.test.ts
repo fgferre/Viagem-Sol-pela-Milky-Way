@@ -39,10 +39,10 @@ describe('a legenda segue a língua no meio do filme', () => {
 
     // uma legenda que TEM inglês e cuja janela é longa o bastante para
     // o visitante trocar de idioma no meio dela
-    const legenda = auditarRoteiro().captions.find((c) => c.text === 'O MERGULHO')!;
+    const legenda = auditarRoteiro().captions.find((c) => c.text === 'O mergulho')!;
     const t = legenda.t0 + 0.05;
 
-    expect(quadro(t)).toBe('O MERGULHO');
+    expect(quadro(t)).toBe('O mergulho');
     // o quadro seguinte, mesma língua, mesmo instante: nada a publicar
     expect(quadro(t)).toBeNull();
 
@@ -50,13 +50,13 @@ describe('a legenda segue a língua no meio do filme', () => {
     // MESMO instante, MESMO índice — e mesmo assim vai ao ar
     const emIngles = quadro(t);
     expect(emIngles).not.toBeNull();
-    expect(emIngles).not.toBe('O MERGULHO');
+    expect(emIngles).not.toBe('O mergulho');
     // e agora o latch segura de novo
     expect(quadro(t)).toBeNull();
 
     // voltar ao português reemite outra vez
     definirIdioma('pt-BR');
-    expect(quadro(t)).toBe('O MERGULHO');
+    expect(quadro(t)).toBe('O mergulho');
   });
 
   it('trocar de língua NÃO reemite uma legenda de NOME PRÓPRIO — nada a publicar', async () => {
@@ -67,9 +67,9 @@ describe('a legenda segue a língua no meio do filme', () => {
     const { auditarRoteiro } = await import('../cinematic/journey');
     const rig = new JourneyRig();
     const quadro = reprodutor(rig);
-    const legenda = auditarRoteiro().captions.find((c) => c.text === 'SIRIUS')!;
+    const legenda = auditarRoteiro().captions.find((c) => c.text === 'Sirius')!;
     const t = legenda.t0 + 0.05;
-    expect(quadro(t)).toBe('SIRIUS');
+    expect(quadro(t)).toBe('Sirius');
     definirIdioma('en');
     expect(quadro(t)).toBeNull();
   });

@@ -183,51 +183,51 @@ async function conferirMovimento(sessao, nome, t, legenda, grampo) {
 // STARTS/captions do journey.ts e morrem junto com qualquer
 // retemporização.
 const JANELAS = [
-  { t: 21.5, title: 'A VIA LÁCTEA, DE DENTRO', sub: 'a faixa no céu é o disco: cem mil anos-luz vistos de dentro' },
+  { t: 21.5, title: 'A Via Láctea, de dentro', sub: 'a faixa no céu é o disco: cem mil anos-luz vistos de dentro' },
   { t: 30.1, title: '', sub: '' },
-  { t: 33.2, title: 'SIRIUS', sub: 'brilha tanto por estar a 8,6 anos-luz — é só uma vizinha' },
+  { t: 33.2, title: 'Sirius', sub: 'brilha tanto por estar a 8,6 anos-luz — é só uma vizinha' },
   { t: 36.9, title: '', sub: '' },
-  { t: 39, title: 'A BOLHA LOCAL', sub: 'gás a um milhão de graus, esculpido por supernovas antigas' },
+  { t: 39, title: 'A Bolha Local', sub: 'gás a um milhão de graus, esculpido por supernovas antigas' },
   { t: 43, title: '', sub: '' },
-  { t: 44.5, title: 'AS TRÊS MARIAS', sub: 'Alnitak, Alnilam, Mintaka — três supergigantes alinhadas só daqui' },
+  { t: 44.5, title: 'As Três Marias', sub: 'Alnitak, Alnilam, Mintaka — três supergigantes alinhadas só daqui' },
   { t: 48.9, title: '', sub: '' },
-  { t: 50, title: 'UM PASSO AO LADO', sub: 'Alnilam está 1.200 anos-luz mais ao fundo — a fila era um ponto de vista' },
+  { t: 50, title: 'Um passo ao lado', sub: 'Alnilam está 1.200 anos-luz mais ao fundo — a fila era um ponto de vista' },
   { t: 54.95, title: '', sub: '' },
-  { t: 61, title: 'BETELGEUSE', sub: 'supergigante vermelha à beira de explodir — engoliria a órbita de Júpiter' },
+  { t: 61, title: 'Betelgeuse', sub: 'supergigante vermelha à beira de explodir — engoliria a órbita de Júpiter' },
   { t: 66, title: '', sub: '' },
-  { t: 68.5, title: 'RIGEL', sub: 'supergigante azul a 12.000 K — 40.000 sóis em poucos milhões de anos' },
+  { t: 68.5, title: 'Rigel', sub: 'supergigante azul a 12.000 K — 40.000 sóis em poucos milhões de anos' },
   { t: 72.85, title: '', sub: '' },
-  { t: 76.5, title: 'CASA', sub: 'a 800 anos-luz o Sol caiu para magnitude 12: invisível a olho nu' },
+  { t: 76.5, title: 'Casa', sub: 'a 800 anos-luz o Sol caiu para magnitude 12: invisível a olho nu' },
   { t: 79.95, title: '', sub: '' },
-  { t: 84, title: 'ANTARES', sub: 'brasa a 550 anos-luz, no alinhamento do centro da galáxia' },
+  { t: 84, title: 'Antares', sub: 'brasa a 550 anos-luz, no alinhamento do centro da galáxia' },
   { t: 87.95, title: '', sub: '' },
-  { t: 98, title: 'O MERGULHO', sub: 'braço de Sagitário: a poeira extingue e avermelha as estrelas' },
+  { t: 98, title: 'O mergulho', sub: 'braço de Sagitário: a poeira extingue e avermelha as estrelas' },
   { t: 98.9, title: '', sub: '' },
-  { t: 100, title: 'O BERÇÁRIO', sub: 'Shaula, Dschubba, Lesath — o berçário de Escorpião no caminho' },
+  { t: 100, title: 'O berçário', sub: 'Shaula, Dschubba, Lesath — o berçário de Escorpião no caminho' },
   { t: 104.2, title: '', sub: '' },
-  { t: 106.5, title: 'O ÚLTIMO BRAÇO', sub: 'Scutum-Centaurus — o gás comprime e acende estrelas azuis' },
+  { t: 106.5, title: 'O último braço', sub: 'Scutum-Centaurus — o gás comprime e acende estrelas azuis' },
   { t: 110.4, title: '', sub: '' },
-  { t: 123.2, title: 'SAGITTARIUS A✱', sub: 'quatro milhões de sóis num volume menor que a órbita de Mercúrio' },
+  { t: 123.2, title: 'Sagittarius A✱', sub: 'quatro milhões de sóis num volume menor que a órbita de Mercúrio' },
   { t: 127.95, title: '', sub: '' },
-  { t: 129, title: 'O HORIZONTE', sub: 'a gravidade curva a luz ao redor da sombra — lente de Einstein' },
+  { t: 129, title: 'O horizonte', sub: 'a gravidade curva a luz ao redor da sombra — lente de Einstein' },
   { t: 134.7, title: '', sub: '' },
-  { t: 137, title: 'O ESTILINGUE', sub: 'do coração para o vazio acima do disco' },
+  { t: 137, title: 'O estilingue', sub: 'do coração para o vazio acima do disco' },
   { t: 140.1, title: '', sub: '' },
-  { t: 146.5, title: 'A VIA LÁCTEA, POR FORA', sub: 'reconstrução a partir de 1,8 bilhão de estrelas da missão Gaia' },
+  { t: 146.5, title: 'A Via Láctea, por fora', sub: 'reconstrução a partir de 1,8 bilhão de estrelas da missão Gaia' },
   { t: 149.8, title: '', sub: '' },
-  { t: 151.5, title: 'ELA NÃO É PLANA', sub: 'cem mil anos-luz de lado, mil de espessura — as bordas ondulam' },
+  { t: 151.5, title: 'Ela não é plana', sub: 'cem mil anos-luz de lado, mil de espessura — as bordas ondulam' },
   { t: 155, title: '', sub: '' },
-  { t: 158, title: 'OS BRAÇOS', sub: 'não são braços rígidos — são ondas que comprimem o gás em espiral' },
+  { t: 158, title: 'Os braços', sub: 'não são braços rígidos — são ondas que comprimem o gás em espiral' },
   { t: 163.1, title: '', sub: '' },
-  { t: 165.5, title: 'NOSSA GALÁXIA', sub: 'espiral barrada — centenas de bilhões de estrelas a 220 km/s' },
+  { t: 165.5, title: 'Nossa galáxia', sub: 'espiral barrada — centenas de bilhões de estrelas a 220 km/s' },
   { t: 169, title: '', sub: '' },
-  { t: 171.5, title: 'VOCÊ ESTÁ AQUI', sub: 'Esporão de Órion, 26 mil anos-luz do centro — uma volta a cada 230 milhões de anos' },
+  { t: 171.5, title: 'Você está aqui', sub: 'Esporão de Órion, 26 mil anos-luz do centro — uma volta a cada 230 milhões de anos' },
   { t: 175.9, title: '', sub: '' },
-  { t: 177.5, title: 'A VOLTA PARA CASA', sub: '26 mil anos-luz até os minutos-luz de casa' },
+  { t: 177.5, title: 'A volta para casa', sub: '26 mil anos-luz até os minutos-luz de casa' },
   { t: 180.9, title: '', sub: '' },
-  { t: 183, title: 'A LUA', sub: '1,3 segundo-luz — o mais longe que o ser humano já chegou' },
+  { t: 183, title: 'A Lua', sub: '1,3 segundo-luz — o mais longe que o ser humano já chegou' },
   { t: 186.05, title: '', sub: '' },
-  { t: 187, title: 'A TERRA', sub: 'o único ponto com oceano de onde a galáxia inteira foi decifrada' },
+  { t: 187, title: 'A Terra', sub: 'o único ponto com oceano de onde a galáxia inteira foi decifrada' },
 ];
 
 /**
@@ -333,7 +333,7 @@ async function conferirControles(sessao) {
   // ---- VER A GALÁXIA: salta para o Ato IV ---------------------------
   // O alvo é `revealTime` (director.ts, grep revealGalaxy) — lido do
   // app, nunca decorado aqui. O "antes" usa t=123.2 — já provado acima
-  // nesta mesma corrida como "SAGITTARIUS A✱" — em vez de um deslocamento
+  // nesta mesma corrida como "Sagittarius A✱" — em vez de um deslocamento
   // relativo a `revealTime`: os vãos sem legenda deste corte passam de
   // 12 s, e um deslocamento fixo caiu num vão na 1ª tentativa.
   await sessao.js('window.__director.seek(123.2)');
@@ -430,7 +430,7 @@ async function julgarLargura(sessao, largura, altura, captura) {
         [123.2, 'SAGITTARIUS A✱ · 123 s'],
         [152, 'PERFIL · 152 s'],
         [166, 'FACE-ON · 166 s'],
-        [172, 'VOCÊ ESTÁ AQUI · 172 s'],
+        [172, 'Você está aqui · 172 s'],
         [183, 'A LUA · 183 s'],
         [191.5, 'A TERRA · 191 s'],
       ] : [
@@ -451,15 +451,15 @@ async function julgarLargura(sessao, largura, altura, captura) {
           `${largura}px · o app publica o grampo do passo (${grampo} s)`
         );
         for (const [nome, t, legenda] of [
-          ['Sirius', 33.2, 'SIRIUS'],
-          ['Casa', 76.5, 'CASA'],
-          ['mergulho', 98, 'O MERGULHO'],
-          ['Sagittarius A*', 123.2, 'SAGITTARIUS A✱'],
-          ['perfil', 152, 'ELA NÃO É PLANA'],
-          ['face-on', 166, 'NOSSA GALÁXIA'],
-          ['galáxia final', 172, 'VOCÊ ESTÁ AQUI'],
-          ['a Lua', 183, 'A LUA'],
-          ['a Terra', 187, 'A TERRA'],
+          ['Sirius', 33.2, 'Sirius'],
+          ['Casa', 76.5, 'Casa'],
+          ['mergulho', 98, 'O mergulho'],
+          ['Sagittarius A*', 123.2, 'Sagittarius A✱'],
+          ['perfil', 152, 'Ela não é plana'],
+          ['face-on', 166, 'Nossa galáxia'],
+          ['galáxia final', 172, 'Você está aqui'],
+          ['a Lua', 183, 'A Lua'],
+          ['a Terra', 187, 'A Terra'],
         ]) await conferirMovimento(sessao, nome, t, legenda, grampo);
       }
     }

@@ -19,10 +19,10 @@
       "olhar": "tras",
       "legendas": [{
         "em": 0.2,
-        "texto": "O ESTILINGUE",
+        "texto": "O estilingue",
         "subtexto": "do coração para o vazio acima do disco",
         "en": {
-          "texto": "THE SLINGSHOT",
+          "texto": "The slingshot",
           "subtexto": "from the heart out into the void above the disk"
         },
         "duracao": 4
@@ -53,10 +53,10 @@
       "olhar": "assunto",
       "legendas": [{
         "em": 0.55,
-        "texto": "A VIA LÁCTEA, POR FORA",
+        "texto": "A Via Láctea, por fora",
         "subtexto": "reconstrução a partir de 1,8 bilhão de estrelas da missão Gaia",
         "en": {
-          "texto": "THE MILKY WAY, FROM OUTSIDE",
+          "texto": "The Milky Way, from outside",
           "subtexto": "reconstructed from 1.8 billion stars of the Gaia mission"
         },
         "duracao": 4.2
@@ -75,10 +75,10 @@
       "olhar": "assunto",
       "legendas": [{
         "em": 0.1,
-        "texto": "ELA NÃO É PLANA",
+        "texto": "Ela não é plana",
         "subtexto": "cem mil anos-luz de lado, mil de espessura — as bordas ondulam",
         "en": {
-          "texto": "IT IS NOT FLAT",
+          "texto": "It is not flat",
           "subtexto": "a hundred thousand light-years across, a thousand thick — the edges warp"
         },
         "duracao": 4.4
@@ -103,10 +103,10 @@
       "olhar": "assunto",
       "legendas": [{
         "em": 0.22,
-        "texto": "OS BRAÇOS",
+        "texto": "Os braços",
         "subtexto": "não são braços rígidos — são ondas que comprimem o gás em espiral",
         "en": {
-          "texto": "THE ARMS",
+          "texto": "The arms",
           "subtexto": "not rigid arms — waves that compress the gas into a spiral"
         },
         "duracao": 6
@@ -125,10 +125,10 @@
       "olhar": "assunto",
       "legendas": [{
         "em": 0.1,
-        "texto": "NOSSA GALÁXIA",
+        "texto": "Nossa galáxia",
         "subtexto": "espiral barrada — centenas de bilhões de estrelas a 220 km/s",
         "en": {
-          "texto": "OUR GALAXY",
+          "texto": "Our galaxy",
           "subtexto": "a barred spiral — hundreds of billions of stars at 220 km/s"
         },
         "duracao": 4.4
@@ -153,10 +153,10 @@
       "olhar": "assunto",
       "legendas": [{
         "em": 0.2,
-        "texto": "VOCÊ ESTÁ AQUI",
+        "texto": "Você está aqui",
         "subtexto": "Esporão de Órion, 26 mil anos-luz do centro — uma volta a cada 230 milhões de anos",
         "en": {
-          "texto": "YOU ARE HERE",
+          "texto": "You are here",
           "subtexto": "the Orion Spur, 26 thousand light-years from the center — one turn every 230 million years"
         },
         "duracao": 5.4

@@ -88,8 +88,8 @@ describe('apoios do roteiro — item 75', () => {
       const { Director } = await import('../director');
       const { CAPTURE_T, REVEAL_T, auditarRoteiro } = await import('./journey');
       const audit = auditarRoteiro();
-      const perfil = audit.shots[audit.captions.find((c) => c.text === 'ELA NÃO É PLANA')!.shotIndex];
-      const face = audit.shots[audit.captions.find((c) => c.text === 'NOSSA GALÁXIA')!.shotIndex];
+      const perfil = audit.shots[audit.captions.find((c) => c.text === 'Ela não é plana')!.shotIndex];
+      const face = audit.shots[audit.captions.find((c) => c.text === 'Nossa galáxia')!.shotIndex];
       expect(CAPTURE_T.edge).toBe(Math.round(perfil.t0 + perfil.dur * 0.2));
       expect(CAPTURE_T.face).toBe(Math.round(face.t0 + face.dur * 0.8));
       // Métodos reais, sem construir DOM/GPU. Só o estado que a política lê.

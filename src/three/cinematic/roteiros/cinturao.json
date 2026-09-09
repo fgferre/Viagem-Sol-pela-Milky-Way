@@ -19,10 +19,10 @@
       "destino": "Alnilam",
       "legendas": [{
         "em": 0.22,
-        "texto": "A BOLHA LOCAL",
+        "texto": "A Bolha Local",
         "subtexto": "gás a um milhão de graus, esculpido por supernovas antigas",
         "en": {
-          "texto": "THE LOCAL BUBBLE",
+          "texto": "The Local Bubble",
           "subtexto": "gas at a million degrees, carved out by ancient supernovae"
         },
         "duracao": 4.5
@@ -42,10 +42,10 @@
       "olhar": "assunto",
       "legendas": [{
         "em": 0.12,
-        "texto": "AS TRÊS MARIAS",
+        "texto": "As Três Marias",
         "subtexto": "Alnitak, Alnilam, Mintaka — três supergigantes alinhadas só daqui",
         "en": {
-          "texto": "ORION'S BELT",
+          "texto": "Orion's Belt",
           "subtexto": "Alnitak, Alnilam, Mintaka — three supergiants aligned only from here"
         },
         "duracao": 5
@@ -65,10 +65,10 @@
       "olhar": "assunto",
       "legendas": [{
         "em": 0.08,
-        "texto": "UM PASSO AO LADO",
+        "texto": "Um passo ao lado",
         "subtexto": "Alnilam está 1.200 anos-luz mais ao fundo — a fila era um ponto de vista",
         "en": {
-          "texto": "ONE STEP ASIDE",
+          "texto": "One step aside",
           "subtexto": "Alnilam lies 1,200 light-years further back — the row was a point of view"
         },
         "duracao": 5.4

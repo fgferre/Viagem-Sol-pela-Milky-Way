@@ -718,7 +718,7 @@ export const CAPTURE_T = {
  *  NOME do beat (a fuga do estilingue), não por índice mágico: a conta de
  *  planos muda com o corte, o nome não. */
 export const REVEAL_T =
-  STARTS[SHOTS.findIndex((s) => s.captions?.[0]?.text === 'O ESTILINGUE')];
+  STARTS[SHOTS.findIndex((s) => s.captions?.[0]?.text === 'O estilingue')];
 
 /**
  * O CALENDÁRIO DO FILME — que dia o céu mostra em cada segundo do

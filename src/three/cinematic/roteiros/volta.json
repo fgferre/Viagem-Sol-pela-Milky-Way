@@ -21,10 +21,10 @@
       "fundoSilencioso": true,
       "legendas": [{
         "em": 0.12,
-        "texto": "A VOLTA PARA CASA",
+        "texto": "A volta para casa",
         "subtexto": "26 mil anos-luz até os minutos-luz de casa",
         "en": {
-          "texto": "THE WAY HOME",
+          "texto": "The way home",
           "subtexto": "26 thousand light-years down to the light-minutes of home"
         },
         "duracao": 4.2
@@ -94,20 +94,20 @@
       "legendas": [
         {
           "em": 0.08,
-          "texto": "A LUA",
+          "texto": "A Lua",
           "subtexto": "1,3 segundo-luz — o mais longe que o ser humano já chegou",
           "en": {
-            "texto": "THE MOON",
+            "texto": "The Moon",
             "subtexto": "1.3 light-seconds — the farthest a human being has ever gone"
           },
           "duracao": 4.2
         },
         {
           "em": 0.5866666666666667,
-          "texto": "A TERRA",
+          "texto": "A Terra",
           "subtexto": "o único ponto com oceano de onde a galáxia inteira foi decifrada",
           "en": {
-            "texto": "EARTH",
+            "texto": "Earth",
             "subtexto": "the only point with an ocean, and the one the whole galaxy was deciphered from"
           },
           "duracao": 60,

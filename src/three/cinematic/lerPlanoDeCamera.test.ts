@@ -11,7 +11,7 @@ import cinturao from './roteiros/cinturao.json';
 import mergulho from './roteiros/mergulho.json';
 import abertura from './roteiros/abertura.json';
 
-const passoAoLado = cinturao.planos.find((p) => p.legendas[0].texto === 'UM PASSO AO LADO')!.camera;
+const passoAoLado = cinturao.planos.find((p) => p.legendas[0].texto === 'Um passo ao lado')!.camera;
 
 const a = new THREE.Vector3(2, 5, -3);
 const b = new THREE.Vector3(-1, 6, 2);
@@ -448,7 +448,7 @@ describe('lerPlanoDeCamera — item 75', () => {
     const { Journey, auditarRoteiro } = await import('./journey');
     const { JourneyRig } = await import('./cameraRig');
     const audit = auditarRoteiro();
-    const legenda = audit.captions.find((c) => c.text === 'UM PASSO AO LADO')!;
+    const legenda = audit.captions.find((c) => c.text === 'Um passo ao lado')!;
     const { t0, dur } = audit.shots[legenda.shotIndex];
     const filme = new Journey();
     const inicio = filme.at(t0).pos;
@@ -494,7 +494,7 @@ describe('lerPlanoDeCamera — item 75', () => {
       const { Journey, auditarRoteiro } = await import('./journey');
       const { JourneyRig, galacticUp } = await import('./cameraRig');
       const audit = auditarRoteiro();
-      const legenda = audit.captions.find((c) => c.text === 'UM PASSO AO LADO')!;
+      const legenda = audit.captions.find((c) => c.text === 'Um passo ao lado')!;
       const plano = audit.shots[legenda.shotIndex];
       expect(plano.dur).toBe(9);
       const t = plano.t0 + plano.dur / 4;
@@ -531,7 +531,7 @@ describe('lerPlanoDeCamera — item 75', () => {
   it('as cinco cenas do mergulho respondem ao JSON, incluindo rampas no giro e no pós-processamento', async () => {
     const { auditarRoteiro: auditarAntes } = await import('./journey');
     const antes = auditarAntes();
-    const indice = antes.captions.find((c) => c.text === 'ANTARES')!.shotIndex;
+    const indice = antes.captions.find((c) => c.text === 'Antares')!.shotIndex;
     const inicio = antes.shots[indice].t0;
     const efeitos = [
       { tipo: 'fixo', valor: 0.5 },

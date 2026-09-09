@@ -20,10 +20,10 @@
       "destino": "Antares",
       "legendas": [{
         "em": 0.38,
-        "texto": "ANTARES",
+        "texto": "Antares",
         "subtexto": "brasa a 550 anos-luz, no alinhamento do centro da galáxia",
         "en": {
-          "texto": "ANTARES",
+          "texto": "Antares",
           "subtexto": "an ember 550 light-years away, in line with the center of the galaxy"
         },
         "duracao": 4.8
@@ -65,19 +65,19 @@
       "assuntos": ["Shaula", "Dschubba", "Lesath", "Paikauhale"],
       "legendas": [
         {
-          "em": 0.06, "texto": "O MERGULHO",
+          "em": 0.06, "texto": "O mergulho",
           "subtexto": "braço de Sagitário: a poeira extingue e avermelha as estrelas",
           "en": {
-            "texto": "THE DIVE",
+            "texto": "The dive",
             "subtexto": "the Sagittarius Arm: dust dims and reddens the stars"
           },
           "duracao": 4.2
         },
         {
-          "em": 0.5, "texto": "O BERÇÁRIO",
+          "em": 0.5, "texto": "O berçário",
           "subtexto": "Shaula, Dschubba, Lesath — o berçário de Escorpião no caminho",
           "en": {
-            "texto": "THE NURSERY",
+            "texto": "The nursery",
             "subtexto": "Shaula, Dschubba, Lesath — the Scorpius nursery along the way"
           },
           "duracao": 4.8
@@ -101,10 +101,10 @@
       },
       "destino": "SGR",
       "legendas": [{
-        "em": 0.18, "texto": "O ÚLTIMO BRAÇO",
+        "em": 0.18, "texto": "O último braço",
         "subtexto": "Scutum-Centaurus — o gás comprime e acende estrelas azuis",
         "en": {
-          "texto": "THE LAST ARM",
+          "texto": "The last arm",
           "subtexto": "Scutum-Centaurus — the gas compresses and lights up blue stars"
         },
         "duracao": 5
@@ -163,20 +163,20 @@
       "legendas": [
         {
           "em": 0.1,
-          "texto": "SAGITTARIUS A✱",
+          "texto": "Sagittarius A✱",
           "subtexto": "quatro milhões de sóis num volume menor que a órbita de Mercúrio",
           "en": {
-            "texto": "SAGITTARIUS A✱",
+            "texto": "Sagittarius A✱",
             "subtexto": "four million suns in a volume smaller than the orbit of Mercury"
           },
           "duracao": 5.5
         },
         {
           "em": 0.5,
-          "texto": "O HORIZONTE",
+          "texto": "O horizonte",
           "subtexto": "a gravidade curva a luz ao redor da sombra — lente de Einstein",
           "en": {
-            "texto": "THE HORIZON",
+            "texto": "The horizon",
             "subtexto": "gravity bends light around the shadow — an Einstein lens"
           },
           "duracao": 6.6
