@@ -299,6 +299,24 @@ o olho dele:** o selo no lado direito do celular e o tour sem furo. Com
 isso o relatório de UI está atendido por inteiro; o que sobrou são
 apontamentos no backlog. Servidor parado.
 
+**09/09 (as sobras do relatório e um achado da foto).** Palavras dele:
+*"ok. agora proxima etapa"*. Feitas as sobras do último item do relatório:
+os botões da interface ganharam UMA pele só (a base antiga ainda dava peso
+fino e desfoque a todo botão em repouso), as duas falhas da ficha ganharam
+frases próprias (dados × textura, dizendo o que ainda funciona), e o botão
+do filme que salta para o Ato IV passou a dizer que salta: "Ir à galáxia".
+A foto do celular revelou um defeito de 08/09: o cartão de transporte do
+filme (Retomar · velocidade · salto) estava invisível no telefone com o
+filme pausado — a barra de cima rola de lado com esmaecimento nas bordas e
+o cartão, pintado como parte dela, sumia; consertado tirando o cartão de
+dentro da barra, com os rótulos das estrelas desviando dele. `npm run done`
+verde; juízes filme, a11y e atlas-smoke verdes, um de cada vez. **Aguarda a
+escolha dele da próxima frente**, oferecida em quatro: publicar o site com
+a interface nova; o gás (mapa real de poeira e os padrões de partículas por
+preset, item 223); a Terra e a Lua no fim do filme (item 225, depende das
+respostas dele); a fila antiga (142, 143, 137, 132, 114). Servidor parado.
+
+
 
 
 ## O BASTÃO anterior (06/09, madrugada)
