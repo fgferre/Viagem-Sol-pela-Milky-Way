@@ -246,6 +246,37 @@ assistiu inteiro ou pulou para o fim? tinha visitado um planeta de perto na
 mesma aba? a aba ficou na frente o tempo todo? Backlog: a régua de abas não
 cabe na altura do celular deitado com texto grande. Servidor: `npm run dev`.
 
+**09/09 (rodada do RELATÓRIO DE UI — primeira leva, aprovada com um "ok").**
+Ele trouxe o relatório consolidado sobre a interface (GPT Astra 6 e Grok
+4.6, revisto por um terceiro); palavras dele: *"relatório interessantíssimo
+sobre oportunidades grandes de UI/UX"* e, à proposta de duas levas, *"ok"*.
+Antes de mexer, cada ponto foi conferido no código e em foto: valia quase
+tudo; o relatório ERRA em dois pontos — o selo não corta linha de painel
+nenhum (o painel para acima dele), e "escolha a data" está meio cumprida
+(há máquina do tempo, não há campo de data). Feito e commitado em cinco
+partes: NOMES — "Voo livre" em todo botão que leva ao voo livre, botão
+"Atlas" na barra do voo livre, a nota da entrada sem prometer data, a busca
+com "Destinos sugeridos", vazio com Terra/Sírius/Andrômeda e contagem sem
+setas no toque; ORDEM — Ajustes começa por idioma, texto, qualidade e
+exposição (curva de tom no Avançado) e a família Galáxia das Camadas mostra
+o cotidiano antes do técnico; FICHA E CELULAR — a ficha deixa de prender o
+teclado (segue escolhendo pelo mouse), "Aproximar"/"Sistema" viram botões
+de ação, a exposição ganha largura no celular, a folha acompanha o dedo, e a
+compacta mostra "Distância ao Sol · 9,4 UA" (a folha subiu de 8,5 para
+10rem junto com a reserva da câmera: a foto cortava os botões); AJUDA —
+a explicação do "?" flutua por cima da interface (portal, presa ao botão,
+vira para cima quando não cabe, Esc fecha de verdade, texto maior; a tese
+do selo em caixa normal); JUÍZES — a11y aprende a ficha não-modal e a dica
+no corpo da página. `npm run done` verde (2941 testes); a11y verde (a 1ª
+rodada caiu nas alças, sob carga), busca verde, atlas-smoke com duas quedas
+da máquina do tempo sob carga e verde duas vezes sozinho no mesmo commit
+(backlog). Seis pares de fotos antes/depois enviados a ele. **SEGUNDA
+LEVA, pendente do olho dele com fotos:** a composição do Atlas em repouso,
+com painel aberto e com o tempo; o lugar e o peso do selo no celular; a
+janela baixa; o fim do filme com "Ficar aqui" em destaque; o que volta
+junto quando os controles do filme reaparecem. Servidor parado.
+
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar

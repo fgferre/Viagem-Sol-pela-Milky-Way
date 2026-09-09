@@ -979,14 +979,6 @@
   font-weight: 400;
   letter-spacing: 0;
 }
-/* A DICA DA BARRA ABRE PARA CIMA — a barra vive no rodapé (`.atlas-rodape`),
-   então "embaixo da linha" a jogaria para fora da tela. Mesma régua das
-   duas últimas linhas de Ajustes (08-ajustes.css), lido ao contrário: lá
-   é EXCEÇÃO perto do fim do painel, aqui é a REGRA da casa inteira. */
-.atlas-rodape .hud-dica {
-  top: auto;
-  bottom: calc(100% + 0.3rem);
-}
 /* REDESENHO (06/09, pedido do dono: "aplica o mesmo padrão no painel de
    Tempo") — os seis botões viram TRÊS GRUPOS `.ajustes-seg` (a peça de
    `Ajustes.tsx`/08-ajustes.css: moldura, `.on` dourado e tudo o mais já
