@@ -2805,7 +2805,11 @@ export class Director {
         planetas: this.planetas,
         rotulos: this.rotulos,
         efemeride: this.maquinaDoTempo.efemeride,
-        noFilme: this.phase === 'journey',
+        // O encerramento (`end`) ainda é filme para o pino das 16:00: a
+        // legenda do pálido ponto azul fica na tela com Terra e Lua, e
+        // derrubar o pino ali jogava a Terra a 1,76 milhão de km no
+        // primeiro recálculo (item 225).
+        noFilme: this.phase === 'journey' || this.phase === 'end',
         noFoco: this.corpoNoFoco,
         noRoteiro: this.corpoNoRoteiro,
         perturbar: this.perturbarDoPalco,

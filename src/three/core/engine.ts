@@ -563,6 +563,17 @@ export function farPlanePc(distFromSun: number): number {
   return THREE.MathUtils.clamp(distFromSun * 12, 60000, 400000);
 }
 
+/**
+ * A MEDIDA DO RESIZE É VÁLIDA? (item 225) — 0×0 ACONTECE (o DOM que a
+ * mede ainda sem layout, um iframe recolhido, uma janela minimizada), e
+ * 0/0 no aspecto é NaN: a matriz de projeção NaN apaga a cena inteira,
+ * deixando só o DOM por trás. `resize()` ignora a medida quando ela não
+ * é válida — o aspecto anterior fica de pé até a próxima medida boa.
+ */
+export function medidaDeResizeValida(w: number, h: number): boolean {
+  return w > 0 && h > 0;
+}
+
 export class Engine {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
@@ -863,6 +874,7 @@ export class Engine {
   private resize = () => {
     const w = window.innerWidth;
     const h = window.innerHeight;
+    if (!medidaDeResizeValida(w, h)) return;
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();

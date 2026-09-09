@@ -585,13 +585,21 @@ export class RampasDeRotulo {
    * opacidade de cada rótulo pela rampa dele e devolve à lista, como
    * `saindo`, quem a régua cortou e ainda tem tinta.
    *
-   * `dt = 0` NÃO É SAÍDA (mudou em 01/09, F2): o passo não anda, mas os
-   * alfas do canal continuam sendo escritos na lista. Antes disso um
+   * `dt = 0` NÃO É SAÍDA (mudou em 01/09, F2): os alfas do canal
+   * continuam sendo escritos na lista mesmo sem tempo. Antes disso um
    * quadro sem tempo deixaria `alfaDoTexto` indefinido e o desenho
    * pintaria o nome cheio por um quadro — um pisca que ninguém pediu.
+   *
+   * E `dt ≤ 0` TAMBÉM NÃO É ZERO DE VERDADE (item 225): o piso de um
+   * quadro a 60 Hz evita que a aba escondida — que zera `dt` em TODO
+   * quadro, `THREE.Timer.update` em `core/engine.ts` — trave a rampa de
+   * ENTRADA em 0 para sempre, com nomes e anéis novos invisíveis até o
+   * relógio voltar a andar. O piso não reabre o pisca que o 01/09
+   * fechou: aquele era um SALTO ao alfa cheio; isto é um incremento do
+   * tamanho de um quadro.
    */
   aplicar(lista: readonly StarLabel[], dt: number): void {
-    const passo = dt > 0 ? dt : 0;
+    const passo = dt > 0 ? dt : 1 / 60;
     const sobe = passo / RAMPA_DE_ENTRADA_S;
     const desce = passo / RAMPA_DE_SAIDA_S;
     const vistos = new Set<string>();
@@ -617,11 +625,12 @@ export class RampasDeRotulo {
         l.saindo = true;
       }
     }
-    if (passo <= 0) return;
     // QUEM SUMIU DA LISTA TAMBÉM DESCE. Sem isto o nome que sai do
     // quadro por um instante e volta renasceria do zero — a memória é
     // exatamente o que impede o pisca-pisca que a assimetria promete
     // matar. Zerou, sai do mapa: a memória vive no máximo 750 ms.
+    // (`passo` nunca é ≤ 0 desde o piso do item 225 — este laço roda
+    // sempre, com o mesmo piso de um quadro que a subida de cima usa.)
     for (const [key, v] of this.alfa) {
       if (vistos.has(key)) continue;
       const novo = this.andar(v, 0, sobe, desce);

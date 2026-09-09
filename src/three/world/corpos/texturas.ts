@@ -679,6 +679,14 @@ export class TexturasDoCorpo {
   /** quantos seguram os texels AGORA — 0 é a carência correndo */
   private quantosSeguram = 0;
   /**
+   * NINGUÉM SEGURAVA NO TICK ANTERIOR (item 225) — a BORDA que a
+   * ressurreição de `'falhou'` espera, nunca o NÍVEL: sem ela, um corpo
+   * desistido e CONTINUAMENTE segurado martelaria a rede a cada tick
+   * enquanto o teto de `RECARGAS_ATE_DESISTIR` reabrisse e fechasse de
+   * novo. Começa `true` — ninguém segura antes do primeiro tick.
+   */
+  private ninguemSegurava = true;
+  /**
    * O ABORTO do lote EM VOO (item 115, peça 3). A geração já invalidava
    * o lote — mas invalidar é decidir que os bytes não servem, não parar
    * de recebê-los: até aqui o `map` de cinema da Terra descia INTEIRO
@@ -756,12 +764,24 @@ export class TexturasDoCorpo {
     this.quantosSeguram =
       (seguram.tela ? 1 : 0) + (seguram.foco ? 1 : 0) + (seguram.filme ? 1 : 0);
     if (!gatilho) {
+      this.ninguemSegurava = true;
       this.aoSoltar(tS);
       return;
     }
     // RESSURREIÇÃO: qualquer segurador que volte zera o relógio da
     // carência — é o `clearTimeout` do `acquire` deles.
     this.soltoDesde = null;
+    // E 'falhou' TAMBÉM RESSUSCITA (item 225) — mas só na BORDA de um
+    // segurador que VOLTA depois de ter ido embora, nunca a cada tick:
+    // martelar a rede a 60 Hz contra quem já disse não três vezes é o
+    // mesmo defeito que a carência evita do outro lado. O teto de
+    // `RECARGAS_ATE_DESISTIR` reabre por ciclo de armação — um 404 de
+    // uma visita não deve envenenar a visita seguinte.
+    if (this.estado === 'falhou' && this.ninguemSegurava) {
+      this.estado = 'fria';
+      this.recargas = 0;
+    }
+    this.ninguemSegurava = false;
     if (this.estado === 'fria') {
       this.pedir();
       return;

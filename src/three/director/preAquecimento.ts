@@ -23,9 +23,16 @@ export function corpoNoFocoDoAtlas(fase: Phase, foco: string | null, id: string)
  * corpo e responde `t >= inicio`, então uma vez aceso ele fica aceso até
  * o filme acabar. É essa monotonia que garante que a descarga nunca
  * tire do roteiro um corpo que ele vai usar em seguida.
+ *
+ * 'journey' OU 'end' CONTAM COMO FILME (item 225): a legenda do
+ * encerramento ("pálido ponto azul") vive na fase 'end', e até aqui só
+ * 'journey' segurava a textura — a carência de 15 s descarregava Terra
+ * e Lua bem na hora da citação. `end` é o MESMO filme, só congelado no
+ * último quadro do roteiro (ver `fases.ts`), então o segurador tem de
+ * valer nas duas.
  */
 export function corpoPedidoPeloRoteiro(fase: Phase, t: number, id: string): boolean {
-  return fase === 'journey' && APOIOS_DO_FILME.preAquecerCorpo(t, id);
+  return (fase === 'journey' || fase === 'end') && APOIOS_DO_FILME.preAquecerCorpo(t, id);
 }
 
 /** Efemérides continuam idempotentes/abortáveis; isto só declara a intenção. */

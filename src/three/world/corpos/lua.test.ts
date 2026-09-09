@@ -497,6 +497,25 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
     lua.dispose();
   });
 
+  it('o pino faz a Lua EXISTIR mesmo com a fonte null (item 225) — emQuadro não é refém da efeméride', async () => {
+    // O DEFEITO: `emQuadro` exigia `q.fonte !== null`, então uma
+    // efeméride que caísse ou chegasse tarde apagava a Lua da coda
+    // mesmo com o PINO das 16:00 dando um centro perfeitamente finito —
+    // a mesma posição que o teste acima já prova correta, aqui também
+    // cobrada para a VISIBILIDADE, não só para o lugar.
+    const { lua } = luaDeTeste();
+    const pin = centroPc(JD);
+    const perto = pin.clone();
+    perto.z += RAIO_LUA_PC * 4;
+    lua.atualizar(quadro(perto, { focoDoAtlas: true }));
+    await flush();
+    lua.atualizar(quadro(perto));
+    const e = lua.atualizar(quadro(perto, { fonte: null, centroPinadoPc: pin }));
+    expect(e.emQuadro).toBe(true);
+    expect(lua.group.visible).toBe(true);
+    lua.dispose();
+  });
+
   it('o pino MANDA sobre a efeméride VIVA — o relógio sequestrado não move a Lua (item 108)', async () => {
     // O DEFEITO, de 30/08: o pino só valia SEM fonte (`!q.fonte`), e por
     // isso não salvava o quadro quando um `?jd=` — que o PRÓPRIO app

@@ -775,8 +775,27 @@ describe('A8/A9 — os fades do rótulo em DUAS camadas, e a final é o produto'
     expect(planeta.alfaDoTexto).toBe(ALFA_DO_TEXTO_PRIMARIO);
     // o canal do ÍCONE viaja calculado, para a F5 plugar
     expect(comum.alfaDoIcone).toBe(ALFA_DO_TEXTO_SECUNDARIO);
-    // e a camada de FORA ainda está subindo: a final é o PRODUTO
-    expect(comum.opacity).toBe(0);
+    // e a camada de FORA ainda está longe do alvo — a final é o PRODUTO.
+    // Não é MAIS exatamente 0: o piso de um quadro do item 225 (ver
+    // `aplicar`) já tira a camada de fora do zero desde o primeiro
+    // `dt=0`, para a aba escondida não travá-la lá para sempre.
+    expect(comum.opacity).toBeCloseTo(1 / 60 / RAMPA_DE_ENTRADA_S, 12);
+  });
+
+  it('item 225: muitos quadros com dt=0 seguidos (aba escondida) não travam a rampa para sempre', () => {
+    const rampas = new RampasDeRotulo();
+    const l = rot();
+    // `THREE.Timer.update` zera `dt` em TODO quadro enquanto a aba está
+    // escondida — sem o piso de um quadro a rampa de entrada travaria
+    // aqui, para sempre, e o nome nunca apareceria de volta. `opacity`
+    // volta a 1 a cada quadro porque é o PRODUTOR (`projectCorpos`) que
+    // a recalcula do zero; só a rampa (`this.alfa`, por chave) é que
+    // persiste entre quadros — como no teste "descem juntos" acima.
+    for (let i = 0; i < 20; i++) {
+      l.opacity = 1;
+      rampas.aplicar([l], 0);
+    }
+    expect(l.opacity).toBe(1);
   });
 
   it('a opacidade final é o produto das DUAS camadas', () => {

@@ -26,6 +26,7 @@ import {
   farPlanePc,
   lerPortaExposicao,
   lerPortaTom,
+  medidaDeResizeValida,
   nearPlanePc,
   PISO_DO_NEAR_EM_RAIOS,
   tierMedido,
@@ -682,5 +683,14 @@ describe('o Auto não balança para sempre (trava de vai-e-volta)', () => {
     );
     expect(aplicar).toContain('this.travaDoVaivem.anotar(antes, q,');
     expect(aplicar).toContain('const daMedicao = q === this.medicaoAtual?.sugestao;');
+  });
+});
+
+describe('resize — 0×0 é guarda, não medida (item 225)', () => {
+  it('só 0×0 vira NaN no aspecto — largura OU altura em 0 já basta para reprovar', () => {
+    expect(medidaDeResizeValida(1200, 900)).toBe(true);
+    expect(medidaDeResizeValida(0, 900)).toBe(false);
+    expect(medidaDeResizeValida(1200, 0)).toBe(false);
+    expect(medidaDeResizeValida(0, 0)).toBe(false);
   });
 });

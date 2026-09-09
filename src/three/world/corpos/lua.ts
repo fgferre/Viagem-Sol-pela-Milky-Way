@@ -456,8 +456,13 @@ export class LuaResolvida {
     this.seguram.filme = q.pedidoDoRoteiro;
     this.texturas.aoTick(this.seguram, q.tS);
 
-    const emQuadro =
-      this.armado && q.ligado && this.texturas.pronta && q.fonte !== null;
+    // A LUA TEM LUGAR? (item 225) — posição finita, e NUNCA `q.fonte !==
+    // null` sozinho: com o PINO da coda o centro nasce do vetor pré-
+    // computado, sem tocar a efeméride, e `efemerides.bin`, o
+    // `_meta.json` ou o `import()` do módulo podem cair ou chegar tarde
+    // sem que isso apague a Lua que o roteiro já pôs no lugar certo.
+    const temLugar = Number.isFinite(this.centro.x);
+    const emQuadro = this.armado && q.ligado && this.texturas.pronta && temLugar;
     e.emQuadro = emQuadro;
     e.carregando = this.texturas.carregando;
     e.gateArmado = this.armado;
@@ -469,7 +474,6 @@ export class LuaResolvida {
     // animar um crossfade a partir de "não existe" seria mentir
     // movimento). O mesh fora de quadro devolve 0 e o ponto fica
     // inteiro: é ele quem mostra a Lua antes dos 4 px do gate.
-    const temLugar = Number.isFinite(this.centro.x);
     const alvo = temLugar
       ? alvoDaCessaoDoCorpo(
           aMagBaseDe(FOTOMETRIA.moon.H, this.rUA) + DESLOCAMENTO_UA_PARA_PC,

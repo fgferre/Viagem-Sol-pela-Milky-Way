@@ -516,6 +516,47 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
   });
 });
 
+describe('"falhou" não é sentença: um segurador que sai e VOLTA ressuscita (item 225)', () => {
+  it('a rede volta a ser tentada só na BORDA de um segurador que volta, nunca a cada tick', async () => {
+    const b = bancadaDaTroca('cinema');
+    b.derrubarARede(true);
+    const avisos: string[] = [];
+    const warn = console.warn;
+    console.warn = (m: string) => avisos.push(m);
+    try {
+      // 1 carga + RECARGAS_ATE_DESISTIR recargas — a PRIMEIRA carga
+      // nunca chega a 'pronta', então este é o ramo terminal de verdade
+      // ("a troca que CAI", acima, nunca passa por 'falhou').
+      for (let i = 0; i < 1 + RECARGAS_ATE_DESISTIR; i++) {
+        b.tick({ tela: true });
+        await b.entregar();
+      }
+    } finally {
+      console.warn = warn;
+    }
+    expect(b.casa.pronta).toBe(false);
+    expect(avisos).toHaveLength(1);
+    expect(avisos[0]).toContain('[terra]');
+    expect(avisos[0]).toContain('carga de textura falhou');
+
+    // continua segurado, sem sair e voltar: NENHUM pedido novo —
+    // martelar a rede a cada tick contra quem já disse não três vezes é
+    // o defeito que a ressurreição por BORDA existe para não repetir
+    const antesDeSoltar = b.pedidos.length;
+    for (let i = 0; i < 5; i++) b.tick({ tela: true });
+    expect(b.pedidos).toHaveLength(antesDeSoltar);
+
+    // o segurador SAI e VOLTA — é o evento que ressuscita
+    b.tick();
+    b.derrubarARede(false);
+    b.tick({ tela: true });
+    await b.respirar();
+    expect(b.pedidos.length, 'a volta pediu de novo').toBe(antesDeSoltar + 1);
+    await b.entregar();
+    expect(b.casa.pronta).toBe(true);
+  });
+});
+
 describe('a descarga adiada: os três que seguram e a carência de 15 s', () => {
   it('BASTA UM: o foco solta, a TELA continua segurando, e nada é devolvido', async () => {
     const b = bancadaDaTroca('cinema');
