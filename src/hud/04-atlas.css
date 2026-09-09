@@ -646,7 +646,13 @@
      55vw"). ITEM 3 (Lote 4, 07/09): `calc(100vw - 2rem)` entra no `min`
      — a 320×568 com `ui = 1,4` os outros dois termos (em `rem`/`vw`)
      ainda deixavam o chip vazar a borda direita da tela. */
-  max-width: min(21rem, 42vw, calc(100vw - 2rem));
+  /* ...e o quarto termo (09/09) é O QUE SOBRA à direita do rodapé da
+     mesa: 100vw menos `right: 3vw`, menos o `left: 6vw` do rodapé,
+     menos a largura dele (a mesma conta de `.atlas-rodape`), menos o
+     vão de 3vw de sempre = 88vw − rodapé. Na mesa larga não decide
+     (a 1.060 px sobra 445 px, mais que 21rem); na estreita o chip
+     cede e corta com reticências (`.atlas-selo-resumo-texto`). */
+  max-width: min(21rem, 42vw, calc(100vw - 2rem), calc(88vw - max(46vw, min(63vw, 30rem))));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -861,7 +867,7 @@
      com a ficha por fora é O PAI. 47 fica acima de QUALQUER diálogo (46) e
      abaixo do Spotlight/convite (48, que tem de vencer tudo); a coluna
      também carrega a máquina do tempo e a dica dos gestos, mas os dois
-     moram à ESQUERDA (`left: 6vw`, `max-width: 46vw`) e a garantia
+     moram à ESQUERDA (`left: 6vw`, `max-width: max(46vw, min(63vw, 30rem))`) e a garantia
      geométrica logo abaixo ("nunca começa antes de 55vw") já impede
      qualquer diálogo — todos ancorados à direita — de cruzar com eles: só
      o selo (`right: 3vw`, reancorado à direita dentro deste pai) tinha o
@@ -870,7 +876,17 @@
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
-  max-width: 46vw;
+  /* O ORÇAMENTO DE LARGURA (09/09, decisão do dono: o telefone deitado
+     continua com a interface da mesa; só o rodapé muda de conta): a
+     fileira dos controles mede 471 px a `ui = 1` (medido sem quebra) e
+     cabe em `30rem` — o `rem` da raiz cresce com `--ui`, então o teto
+     cresce junto. `46vw` é a conta da mesa larga de sempre; abaixo de
+     1.044 px ela não segura a fileira, e o `min(63vw, 30rem)` assume:
+     no piso da mesa (761 px) 63vw = 479 px, ainda uma fileira só. Sem
+     `@media` — toda quebra de largura do HUD é a do celular (teste em
+     uiScale.test.ts); a câmera reserva a 2ª linha pelo mesmo número,
+     ver `LARGURA_DA_QUEBRA_DO_TEMPO_PX` em retanguloDoAtlas.ts. */
+  max-width: max(46vw, min(63vw, 30rem));
   /* O RETÂNGULO DA COLUNA NÃO ROUBA O ARRASTO — mesma lei do
      `.filme-rodape`. Um `div` sem fundo continua recebendo o ponteiro
      dentro da própria caixa, e na tela estreita esta caixa passou a ir

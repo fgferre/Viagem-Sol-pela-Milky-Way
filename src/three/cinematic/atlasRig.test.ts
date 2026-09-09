@@ -296,7 +296,10 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     const MEDIDO = [
       { ui: 0.85, topo: 0.067, base: 0.155 },
       { ui: 1, topo: 0.079, base: 0.183 },
-      { ui: 1.4, topo: 0.11, base: 0.342 },
+      // base remedida em 09/09 (1.200×813): o rodapé cabe numa fileira a
+      // `ui = 1,4` desde o orçamento novo (`max(46vw, min(63vw, 30rem))`);
+      // era 0,342 em duas linhas
+      { ui: 1.4, topo: 0.11, base: 0.254 },
     ];
     // O TETO CRESCEU (era 0,06): o degrau da barra quebrada agora é
     // declarado por UM limiar generoso o bastante para cobrir o pior
@@ -336,10 +339,12 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     const tempoFracao = semDegrau.base;
     expect(comDegrau.topo - semDegrau.topo).toBeCloseTo(0.065, 12);
     // e a BASE também anda: a linha dos controles do tempo quebra em
-    // duas abaixo de 1.060 px por unidade de ui — a 1.200 com ui = 1 ela
-    // ainda cabe em uma, a 900 não (medido: a quebra vira entre 1.040 e
-    // 1.060).
-    expect(comDegrau.base - semDegrau.base).toBeCloseTo(0.11, 12);
+    // duas abaixo de 750 px por unidade de ui (até 08/09 era 1.060).
+    // 09/09: em qualquer largura de mesa o rodapé cabe numa fileira a
+    // `ui = 1` (63vw), então a 900 px o degrau da barra do tempo NÃO
+    // entra; ele só entra quando o texto cresce (abaixo) — ver
+    // LARGURA_DA_QUEBRA_DO_TEMPO_PX (750 por unidade de `ui`) em retanguloDoAtlas.ts.
+    expect(comDegrau.base - semDegrau.base).toBeCloseTo(0, 12);
     // o degrau a 1.200 px cai em ui = 1.200 / 920 = 1,3043 — a declaração
     // usa o limiar POR INTEIRO (`LARGURA_DA_QUEBRA_PX`, remedido no Lote
     // 4): ANTES dele o topo é só `CONTEXTO_FRACAO × ui`, DEPOIS soma
@@ -358,8 +363,10 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     // por 1,4 de ui. Limiar no topo da faixa (714), o lado seguro.
     // CONSERTO 1 (07/09): `TEMPO_QUEBRADO_FRACAO`/`TEMPO_EM_TRES_LINHAS_FRACAO`
     // ficam em 0,11/0,10 — derivam do mesmo retângulo, não são escolha.
+    // a terceira linha não existe mais (09/09): com texto grande a barra
+    // quebra em DUAS linhas, na faixa estreita ou na larga
     expect(retanguloUtilDoAtlas(1.4, 900).base).toBeCloseTo(
-      tempoFracao * 1.4 + 0.11 + 0.1,
+      tempoFracao * 1.4 + 0.11,
       12
     );
     expect(retanguloUtilDoAtlas(1.4, 1000).base).toBeCloseTo(
@@ -403,7 +410,8 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     // segunda só entra abaixo de 714 px). CONSERTO 1 (07/09): 0,09 + 0,065
     // e 0,19 + 0,11 — deriva do mesmo retângulo do teste anterior.
     expect(mesa.topo).toBeCloseTo(0.09 + 0.065, 12);
-    expect(mesa.base).toBeCloseTo(0.19 + 0.11, 12);
+    // 09/09: a 761 px o rodapé da mesa já cabe numa fileira (63vw) — sem degrau
+    expect(mesa.base).toBeCloseTo(0.19, 12);
 
     // O GANHO É O ASSUNTO DO ITEM 62: a câmera para de recuar por peças
     // que a fatia 9 do HUD já desmontou, e desde 24/08 nem por tarja, que
@@ -1242,8 +1250,10 @@ describe('o rig e a esfera do sistema inteiro — o teto do zoom', () => {
     expect(tetoEmUA()).toBeGreaterThan(109.0);
     expect(tetoEmUA()).toBeLessThan(109.5);
     rig.apply(camera, 1.4);
-    expect(tetoEmUA()).toBeGreaterThan(181.9);
-    expect(tetoEmUA()).toBeLessThan(182.4);
+    // 09/09: o rodapé numa fileira reserva menos a `ui = 1,4` (0,266 em vez
+    // de 0,376), e o teto desce de ~182 para ~147,5 UA
+    expect(tetoEmUA()).toBeGreaterThan(147.3);
+    expect(tetoEmUA()).toBeLessThan(147.7);
     // E O TETO NÃO DEPENDE DE ONDE O VISITANTE ESTÁ — só do alvo e da
     // lente. A prova é MOVER o visitante e reler: pinar a distância lá
     // embaixo, no piso, deixa a câmera a menos de um centésimo do teto, e

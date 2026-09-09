@@ -924,7 +924,7 @@ export class AtlasRig {
    * sob a lente de 58° (item 86; a 35° eram 226,84) —, e como o alvo é
    * a própria origem essa distância é a distância a casa, sem triângulo
    * nenhum. Ela ANDA com o HUD e com `?ui=`: 126,30 UA em `ui = 0,85`,
-   * 183,73 UA em `ui = 1,4`. O trilho de `atlasRig.test.ts` deriva o
+   * 147,48 UA em `ui = 1,4` (desde 09/09, com o rodapé numa fileira). O trilho de `atlasRig.test.ts` deriva o
    * número de `enquadrar()` e quebra se ele envelhecer aqui.
    *
    * ATÉ 23/08 ESTE NÚMERO MORAVA num método `focarNoSistema` do rig, que

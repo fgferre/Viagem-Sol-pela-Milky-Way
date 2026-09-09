@@ -70,3 +70,40 @@ describe('retanguloUtilDoAtlas — a reserva da ficha (item 225)', () => {
     }
   });
 });
+
+// O RODAPÉ NUMA FILEIRA (09/09): o CSS dá `max(46vw, min(63vw, 30rem))`
+// ao rodapé e o `rem` cresce com `ui`; a 2ª linha só entra abaixo de
+// 750 px por unidade de `ui`. A derivação está no comentário de
+// `LARGURA_DA_QUEBRA_DO_TEMPO_PX`.
+describe('retanguloUtilDoAtlas — o rodapé numa fileira, 09/09', () => {
+  const TEMPO_FRACAO = 0.19;
+  const TEMPO_QUEBRADO_FRACAO = 0.11;
+
+  it('a `ui = 1` a fileira nunca quebra em largura nenhuma de mesa', () => {
+    for (const largura of [761, 768, 900, 1000, 1060, 1061, 1440]) {
+      expect(retanguloUtilDoAtlas(1, largura).base).toBeCloseTo(TEMPO_FRACAO, 12);
+    }
+  });
+
+  it('a `ui = 1,25` quebra abaixo de 937 px (medido: 914) e cabe acima', () => {
+    for (const largura of [768, 900]) {
+      expect(retanguloUtilDoAtlas(1.25, largura).base).toBeCloseTo(
+        TEMPO_FRACAO * 1.25 + TEMPO_QUEBRADO_FRACAO,
+        12
+      );
+    }
+    expect(retanguloUtilDoAtlas(1.25, 1000).base).toBeCloseTo(TEMPO_FRACAO * 1.25, 12);
+  });
+
+  it('a `ui = 1,4` quebra abaixo de 1.050 px (medido: 1.012), nunca em três linhas, e não tem degrau em 1.060', () => {
+    for (const largura of [768, 1000]) {
+      expect(retanguloUtilDoAtlas(1.4, largura).base).toBeCloseTo(
+        TEMPO_FRACAO * 1.4 + TEMPO_QUEBRADO_FRACAO,
+        12
+      );
+    }
+    for (const largura of [1060, 1061, 1200]) {
+      expect(retanguloUtilDoAtlas(1.4, largura).base).toBeCloseTo(TEMPO_FRACAO * 1.4, 12);
+    }
+  });
+});
