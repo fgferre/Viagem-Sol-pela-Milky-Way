@@ -1084,7 +1084,7 @@
      `BarraDoTempo`, que lê este token para saber quando desmontar. Um
      número, uma casa — a lei que o plano de motion cobra. */
   --t-respiro: 350ms;
-  animation: apareceRelogio var(--t-rapido) var(--curva) both;
+  animation: apareceRelogio var(--t-entrada) var(--curva) both;
 }
 /* ...E O DESAPARECER É UM ESMAECER (pedido do dono em 10/09: *"quando
    passamos o mouse na data, nao seria interessante uma animacao de fade
@@ -1095,12 +1095,25 @@
 .atlas-tempo-botoes.sumindo {
   animation: sumeRelogio var(--t-respiro) var(--curva) both;
 }
+/* A ENTRADA SOBE, e não só acende. A primeira versão era um fade de
+   120 ms e o dono não conseguia vê-lo — *"nao conseigo perceber o
+   fade-in para entrar a barra de tempo na tela, só percebo o
+   fade-out"*. Ele estava certo, e por dois motivos somados: 120 ms
+   contra os 350 do sair é rápido demais para o olho pegar, e a linha da
+   data PULA de lugar no mesmo instante (a coluna é ancorada na base e
+   cresce para cima), o que rouba a atenção do que está acontecendo
+   embaixo. Movimento se percebe muito melhor que claridade: os
+   controles agora SOBEM 8 px para o lugar, no tempo de entrada da casa.
+   `transform` não participa de layout, então a coluna não cresce duas
+   vezes nem a câmera remede nada por causa disto. */
 @keyframes apareceRelogio {
   from {
     opacity: 0;
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 @keyframes sumeRelogio {
