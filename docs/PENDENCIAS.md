@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 226.**
 
-## O BASTÃO — onde a rodada parou (09/09)
+## O BASTÃO — onde a rodada parou (10/09)
 
 **07/09 (rodada da VARREDURA, encerrada por ordem dele: "encerrar
 rodada").** Abriu com a pergunta dele: "o que faltou? pode continuar.
@@ -339,6 +339,71 @@ preset, item 223); a Terra e a Lua no fim do filme (item 225, depende das
 respostas dele); a fila antiga (142, 143, 137, 132, 114). **Continuam abertos
 223, 224 e 225.** Duas coisas esperam o olho dele no app: o selo no lado
 direito do celular e o tour sem furo. Site intocado. Servidor parado.
+
+**09–10/09 (rodada do MOVIMENTO DA INTERFACE — o plano em
+`docs/PLANO-MOTION-UI.md`, do Codex Astra 6).** Palavras dele para abrir:
+*"Leia agents e siga em frente no plano acima"*. Feitos e commitados os
+lotes M0, M1 e M2 do plano (o registro completo, com evidências e o que
+ficou por verificar, está no fim da seção 8 daquele arquivo).
+
+FUNDAÇÃO (M1). Três defeitos reais, dois medidos no app: reabrir a folha do
+telefone antes de ela terminar de descer devolvia um painel MORTO (o
+`inert` era posto à mão e nunca tirado); sem movimento a desenhar
+(movimento reduzido ou `?shot=`) o JavaScript ainda segurava o nó os 260 ms
+inteiros, o que fotografa um painel já fechado; e girar o aparelho no meio
+da saída reapareceria a folha como painel de mesa. A política de captura
+passou a alcançar os PORTAIS: a explicação do "?" mora no corpo da página e
+nem o congelamento do `?shot=1` nem o apagamento do `?shot=2` chegavam nela
+— é candidata à instabilidade do juiz de a11y que o `BACKLOG.md` registra.
+
+FAMÍLIAS (M2). Um vocabulário de movimento com política única: os tokens de
+DESLOCAMENTO zeram numa só regra em `prefers-reduced-motion`, e tudo que é
+construído sobre eles obedece sem repetir a regra. Na tela: o botão afunda
+3 % sob o dedo (medido: 0,9700 em duas famílias), o filete âmbar acende do
+meio para as pontas na régua e nas alças, o sublinhado do segmentado ANDA
+de um segmento ao outro (medido contra a posição real do botão), o ícone da
+porta escolhida assenta uma vez, e uma luz atravessa a borda de cima do
+painel que abre.
+
+TRÊS CORREÇÕES DELE NO MEIO DA RODADA, todas certas. (1) *"nao seja
+preguiçoso!!!! nunca... nao fugimos do trabalho, estamos sempre em busca de
+melhorar a UX custe o que custar"* — eu tinha deixado a entrada do painel
+de mesa de fora por ser trabalhosa (a câmera MEDE o painel para reservar
+céu, e um painel que entra deslizando é medido no lugar de onde parte); a
+resposta foi resolver a medição, que agora espera o painel assentar — e
+isso conserta de quebra um defeito que o telefone já tinha. (2) *"porque
+nao faszemos uma animacao para surgirem os menus no modo desktop/tablet
+igual a animacao que fazemos no modo mobile... nao me parece que o menu
+está saindo da lateral"* — o empurrãozinho de 8 px virou o MESMO movimento
+da folha, no outro eixo: o painel percorre a própria largura mais o
+afastamento da régua e parte de fora da janela (só a largura deixava uma
+tira de texto espiando abaixo da régua, que é mais curta que o painel).
+(3) *"nao conseigo perceber o fade-in para entrar a barra de tempo na tela,
+só percebo o fade-out"* — não era defeito, era rápido demais (120 ms contra
+350); a entrada passou a durar o tempo de entrada da casa e a SUBIR 8 px.
+
+MAIS DOIS PEDIDOS DELE, feitos: a máquina do tempo da mesa esmaece ao abrir
+no hover e ao sair (o respiro de meio segundo virou UM número, declarado no
+CSS e lido de lá pelo TypeScript que desmonta); e, de uma foto dele,
+*"qaundo a caixa de pesquisa está com o rim azul, sobrepoe o texto suggested
+destinations"* — o anel de foco vive 4 px para FORA da caixa e não ocupa
+espaço no layout; o rótulo ganhou respiro e a folga passou a 12 px.
+
+DOIS TROPEÇOS MEUS, para a próxima IA não repetir. Quebrei o app com um
+descuido e não rodei o verificador de tipos na hora: passei uma hora
+caçando a causa no lugar errado e cheguei a culpar a máquina. E os vídeos
+de prova mentiam: 14 quadros a 30 por segundo tocam 462 ms, então uma
+animação de 200 ms aparecia no vídeo com o dobro da duração real.
+
+`npm run done` verde (2.967 testes); a11y, atlas, busca e filme verdes,
+rodados um de cada vez (em paralelo eles tropeçam, como o backlog já dizia).
+Tudo em `main:backup`. Site intocado. **Continuam abertos 223, 224 e 225.**
+**Faltam os lotes M3 a M7 do plano de motion** — o próximo é o M3
+(conteúdo: busca, ficha, Ajustes, selo e tempo). Espera o olho dele no app:
+se a entrada da máquina do tempo já dá para perceber. Não verificado: o
+afundar do botão no Safari de iPhone e o movimento reduzido ligado no
+sistema de um aparelho real. Servidor parado.
+
 
 
 
