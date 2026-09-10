@@ -28,6 +28,7 @@ import {
   aoFocar,
   aoTravessar,
   arrastoFecha,
+  folhaQueSai,
 } from './useGavetas';
 // a zona morta do dedo vem da peça que o arrasto realmente usa: o gesto
 // que o dono aprovou é a SOMA dos dois números, e ela só se mede juntando
@@ -275,5 +276,38 @@ describe('8. a folha segue o dedo — o arrasto desenha, o SOLTAR decide (fix, 0
 
   it('respeita prefers-reduced-motion na volta ao lugar', () => {
     expect(HOOK).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
+  });
+});
+
+describe('9. a saída da folha é INTERROMPÍVEL (plano de motion, M1)', () => {
+  it('só a folha do CELULAR que fecha DE VERDADE sai andando', () => {
+    expect(folhaQueSai(true, 'ficha', null, false)).toBe('ficha');
+    // trocar de gaveta não é sair: o conteúdo troca no mesmo lugar
+    expect(folhaQueSai(true, 'ficha', 'busca', false)).toBe(null);
+    // abrir a primeira também não
+    expect(folhaQueSai(true, null, 'busca', false)).toBe(null);
+    // e a mesa nunca teve descida nenhuma para animar
+    expect(folhaQueSai(false, 'ficha', null, false)).toBe(null);
+  });
+
+  it('sem movimento a desenhar, a folha desmonta no MESMO commit', () => {
+    // era aqui que o `?shot=1` fotografava um painel que já tinha fechado:
+    // o CSS zera a animação, mas o nó ficava 260 ms parado na tela
+    expect(folhaQueSai(true, 'ficha', null, true)).toBe(null);
+  });
+
+  it('as duas situações que zeram a saída são lidas na HORA da troca', () => {
+    expect(HOOK).toContain("'(prefers-reduced-motion: reduce)'");
+    expect(HOOK).toContain(
+      "new URLSearchParams(window.location.search).has('shot')"
+    );
+  });
+
+  it('reabrir antes do fim tira o `inert` — sem isso a folha volta viva e invisível', () => {
+    expect(HOOK).toContain("if (no?.isConnected) no.removeAttribute('inert');");
+  });
+
+  it('virar mesa no meio da saída termina a saída, em vez de deixar um painel surdo', () => {
+    expect(HOOK).toMatch(/\}, \[saindo, celular\]\);/);
   });
 });

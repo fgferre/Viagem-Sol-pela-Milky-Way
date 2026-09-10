@@ -22,4 +22,25 @@
 .bare-mode > *:not(.scene-canvas) {
   display: none !important;
 }
+/* --- os PORTAIS, que não descendem da raiz do HUD ---------------------
+   As duas classes acima moram na `.hud-root` (`App.tsx`), e a explicação
+   do "?" é um `createPortal` para o `document.body` (`Ajuda.tsx`, para
+   poder flutuar por cima de qualquer painel sem ser cortada). Ela não é
+   descendente de `.hud-root`: nem o reset de transições do `?shot=1` nem
+   o `display: none` do `?shot=2` chegavam nela. Sem isto, o `?shot=1`
+   fotografa a dica no meio do seu próprio fade — o juiz de a11y, que
+   captura com `shot=1` depois de abrir uma dica, lê uma opacidade
+   diferente a cada corrida.
+   O `:has()` pergunta pela raiz de baixo para cima e evita uma SEGUNDA
+   classe no `<body>`, que no caso do `.bare-mode` apagaria a página
+   inteira: `> *:not(.scene-canvas)` teria o `<body>` como filho. */
+body:has(.shot-mode) .hud-dica,
+body:has(.shot-mode) .hud-dica::before,
+body:has(.shot-mode) .hud-dica::after {
+  transition: none !important;
+  animation: none !important;
+}
+body:has(.bare-mode) .hud-dica {
+  display: none !important;
+}
 

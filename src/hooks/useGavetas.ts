@@ -125,6 +125,42 @@ export const aoAbrirFicha = (
 const SAIDA_DA_FOLHA_MS = 260;
 
 /**
+ * NÃO HÁ MOVIMENTO NENHUM PARA ESPERAR. Duas situações zeram a saída da
+ * folha, e as duas já andam juntas em toda a casa (`App.tsx` na tela de
+ * carga, `director.ts` na travessia): `prefers-reduced-motion`, onde a
+ * fatia 9 já declara `animation: none` para `.hud-dialogo[inert]`, e o
+ * `?shot=`, onde a fatia 7 zera TODA transição e animação do HUD.
+ *
+ * Nos dois casos o CSS já não desenha a descida — mas o JavaScript
+ * continuava segurando o nó 260 ms. O resultado é o oposto do que cada
+ * modo promete: uma folha PARADA no meio da tela, surda, esperando um
+ * temporizador; e, na captura, um painel que devia ter fechado aparecendo
+ * inteiro na foto.
+ *
+ * Lido UMA VEZ POR TROCA (quem chama só roda quando a gaveta muda), nunca
+ * por quadro — e, por ser lido na hora, obedece à preferência do sistema
+ * mesmo que ela mude com o app aberto.
+ */
+const semMovimento = () =>
+  (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false) ||
+  new URLSearchParams(window.location.search).has('shot');
+
+/**
+ * QUEM GANHA UMA SAÍDA DESENHADA — a única gaveta que sai andando é a
+ * folha do CELULAR ao fechar de verdade. Trocar de gaveta não é sair (o
+ * conteúdo é substituído no lugar), abrir a primeira não é sair, e a mesa
+ * nunca teve descida nenhuma para animar. Sem movimento a desenhar, o
+ * valor é `null` e o nó desmonta no MESMO commit, sem fase intermediária.
+ */
+export const folhaQueSai = (
+  celular: boolean,
+  anterior: Gaveta | null,
+  gaveta: Gaveta | null,
+  imovel: boolean
+): Gaveta | null =>
+  celular && !imovel && anterior !== null && gaveta === null ? anterior : null;
+
+/**
  * QUANTO O DEDO DESCE PARA A FOLHA FECHAR — a QUARTA saída (item 62,
  * decisão do dono em 23/08). A folha do telefone já fechava pela alça,
  * pelo Esc e pelo toque no céu; ele aprovou a quarta, *"arrastando para
@@ -304,7 +340,7 @@ export function useGavetas(
   const [anterior, setAnterior] = useState<Gaveta | null>(gaveta);
   if (anterior !== gaveta) {
     setAnterior(gaveta);
-    setSaindo(celular && anterior !== null && gaveta === null ? anterior : null);
+    setSaindo(folhaQueSai(celular, anterior, gaveta, semMovimento()));
   }
 
   /**
@@ -316,12 +352,38 @@ export function useGavetas(
    */
   useLayoutEffect(() => {
     if (!saindo) return;
-    document
-      .querySelector(`[${'data-dialogo'}="${saindo}"]`)
-      ?.setAttribute('inert', '');
+    /**
+     * A JANELA VIROU MESA NO MEIO DA SAÍDA (girar o aparelho, arrastar a
+     * borda): a folha que descia deixou de ser folha — o
+     * `.hud-dialogo[inert]` que a desenha mora dentro do `@media
+     * (max-width: 760px)` da fatia 9. `montada` já não a monta (lá
+     * embaixo), então não há nó nenhum a marcar; sobra apagar o estado, e
+     * disso o temporizador de sempre dá conta.
+     */
+    const no = celular
+      ? document.querySelector(`[${'data-dialogo'}="${saindo}"]`)
+      : null;
+    no?.setAttribute('inert', '');
     const id = window.setTimeout(() => setSaindo(null), SAIDA_DA_FOLHA_MS);
-    return () => window.clearTimeout(id);
-  }, [saindo]);
+    return () => {
+      window.clearTimeout(id);
+      /**
+       * REABRIR ANTES DE A FOLHA TERMINAR DE DESCER. O `inert` foi posto
+       * à mão, e o que é posto à mão tem de ser tirado à mão: o React não
+       * sabe dele, e na reabertura `montada` continua sendo a MESMA
+       * gaveta — o mesmo nó volta com o atributo grudado, sem toque, sem
+       * foco, fora da árvore de quem ouve a tela e, pelo
+       * `.hud-dialogo[inert]`, ainda descendo para fora do quadro. Uma
+       * folha viva e invisível, que só voltava a si depois de fechar de
+       * novo e esperar os 260 ms inteiros.
+       *
+       * Uma limpeza cobre as DUAS saídas deste estado: a que o
+       * temporizador termina (o nó já foi, `isConnected` é falso, nada a
+       * fazer) e a que a reabertura cancela.
+       */
+      if (no?.isConnected) no.removeAttribute('inert');
+    };
+  }, [saindo, celular]);
 
   /**
    * A ALÇA ABERTA VEM PARA A TELA. A fileira não quebra linha (quebrar
@@ -546,7 +608,10 @@ export function useGavetas(
 
   return {
     gaveta,
-    montada: gaveta ?? saindo,
+    // o `celular &&` é a rotação no meio da saída: sem ele, a folha que
+    // descia reapareceria por 260 ms como painel de MESA, no canto, já
+    // fechada — um fantasma que ninguém pediu
+    montada: gaveta ?? (celular ? saindo : null),
     alternarGaveta,
     fecharGaveta,
     fecharTodas,
