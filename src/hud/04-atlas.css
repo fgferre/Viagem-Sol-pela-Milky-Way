@@ -1559,6 +1559,22 @@
   outline: 2px solid var(--foco);
   outline-offset: 2px;
 }
+/* O RÓTULO "DESTINOS SUGERIDOS" PRECISA DE AR PARA O ANEL DE FOCO (achado
+   do dono, 10/09, em foto: com o campo focado, *"a caixa de pesquisa está
+   com o rim azul, sobrepoe o texto suggested destinations"*). O anel é
+   `outline: 2px` com `outline-offset: 2px` — quatro pixels PARA FORA da
+   caixa, que não ocupam espaço nenhum no layout e por isso caíam em cima
+   da primeira linha de texto abaixo.
+   O rótulo é o eyebrow comum dos painéis, reaproveitado aqui sem caixa
+   própria (`PaletaDeBusca`); em linha, ele nem aceitava margem. Vira
+   bloco e ganha os dois respiros: o de cima é o que deixa o anel caber,
+   o de baixo separa do filtro. FILHO DIRETO no seletor de propósito — o
+   eyebrow do CABEÇALHO deste mesmo painel mora dentro de `.hud-cabecalho`
+   e não pode herdar margem nenhuma daqui. */
+.atlas-busca > .hud-cabecalho-eyebrow {
+  display: block;
+  margin: 0.75rem 0 0.4rem;
+}
 .atlas-busca-lista {
   list-style: none;
   margin: 0.6rem 0 0;
