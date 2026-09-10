@@ -316,6 +316,31 @@ a interface nova; o gás (mapa real de poeira e os padrões de partículas por
 preset, item 223); a Terra e a Lua no fim do filme (item 225, depende das
 respostas dele); a fila antiga (142, 143, 137, 132, 114). Servidor parado.
 
+**09/09 (rodada ENCERRADA por ordem dele: "vamos fechar essa rodada").**
+Antes de fechar, dois pedidos dele, feitos e commitados: *"o menu da
+máquina do tempo nao deveria aparecer quando o mouse passa por cima ou
+quando no modo tela o dedo toca?"* — na mesa a máquina do tempo abre no
+hover e fecha quando o mouse sai (meio segundo de respiro), o clique prende,
+o Tab abre, o Esc fecha; e a coluna do rodapé não deixava o mouse de verdade
+alcançar a linha da data (só o clique sintético dos juízes furava), consertado.
+E *"percebi um bug quando vc clica em alguns tool tips com o mouse… acho que
+no desktop nao deveria funcionar o comportamento de clique, só o hover"* —
+regra dele adotada: na mesa a explicação do "?" mostra só por hover ou foco
+de teclado (o clique não prende nada e solta o foco), no toque o dedo abre e
+fecha e um toque em qualquer outro lugar fecha, detectado na fase de captura
+para nenhum painel engolir; o juiz de a11y prova o hover com mouse de verdade.
+Estado: tudo commitado e em `main:backup`; `npm run done` verde; juízes a11y,
+busca, atlas-smoke e filme verdes na última rodada de cada um. O relatório de
+UI (GPT Astra 6 + Grok 4.6) está atendido por inteiro, nas duas levas e nas
+sobras. **Ele NÃO escolheu a próxima frente** — as quatro oferecidas
+continuam de pé: publicar o site com a interface nova (só com pedido dele);
+o gás (mapa real de poeira, PLAN.md etapa B, e os padrões de partículas por
+preset, item 223); a Terra e a Lua no fim do filme (item 225, depende das
+respostas dele); a fila antiga (142, 143, 137, 132, 114). **Continuam abertos
+223, 224 e 225.** Duas coisas esperam o olho dele no app: o selo no lado
+direito do celular e o tour sem furo. Site intocado. Servidor parado.
+
+
 
 
 
