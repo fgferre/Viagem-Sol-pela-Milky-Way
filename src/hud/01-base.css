@@ -88,6 +88,13 @@
   --t-normal: 200ms;
   --t-folha: 260ms;
   --curva: cubic-bezier(0.2, 0, 0, 1);
+  /* A CURVA DE UMA SUPERFÍCIE QUE ENTRA PELA PRÓPRIA BORDA — sai
+     depressa e assenta devagar, sem passar do ponto. Era um
+     `cubic-bezier` digitado dentro do `@keyframes` da folha do telefone
+     (fatia 9); virou token quando o painel da MESA passou a fazer o
+     mesmo movimento no outro eixo, porque duas cópias do mesmo número
+     são duas chances de discordarem. */
+  --curva-folha: cubic-bezier(0.22, 1, 0.36, 1);
   /* ---- O VOCABULÁRIO DO MOVIMENTO (M2 do plano de motion, 09/09) -----
      Os três tempos acima são de COR, altura e presença — o que a
      interface já sabia animar. Estes descrevem DESLOCAMENTO, que ela não
@@ -105,13 +112,8 @@
   --t-pressao: 70ms;
   --t-assenta: 180ms;
   --t-entrada: 200ms;
-  --t-saida: 150ms;
   --t-reflexo: 360ms;
   --escala-pressao: 0.97;
-  /* A SAÍDA ACELERA em vez de frear. A `--curva` da casa termina devagar,
-     que é o certo para o que CHEGA e assenta; o que sai não precisa ser
-     acompanhado até o fim, e frear na saída faz o painel parecer preso. */
-  --curva-saida: cubic-bezier(0.4, 0, 1, 1);
   /* O PADDING DO PAINEL (Lote 2b, PLAN-UI.md item 3): 20 px na mesa, 16 no
      celular — UMA variável para o corpo (`.hud-dialogo`) e o cabeçalho
      (que cancela e devolve o mesmo respiro, `01-base.css` acima), para os
@@ -133,7 +135,7 @@
     --t-pressao: 0.01ms;
     --t-assenta: 0.01ms;
     --t-entrada: 0.01ms;
-    --t-saida: 0.01ms;
+    --t-folha: 0.01ms;
     --t-reflexo: 0.01ms;
     --escala-pressao: 1;
   }
@@ -313,53 +315,66 @@
   padding: var(--pad-painel);
   font-size: 0.72rem;
   font-weight: 300;
-  /* A ENTRADA NA MESA E NO TABLET (M2 do plano de motion) — até aqui o
-     painel simplesmente APARECIA, e só o telefone tinha movimento
-     (`folhaSobe`, fatia 9, que sobrescreve esta linha dentro do `@media`
-     dele). Ele nasce 8 px à direita, ou seja, DE BAIXO DA RÉGUA DE ABAS
-     em que se clicou, e assenta encostado nela: o painel vem da porta
-     por onde se entrou, e não do nada.
+  /* A ENTRADA NA MESA E NO TABLET (M2 do plano de motion) — O MESMO
+     MOVIMENTO DA FOLHA DO TELEFONE, no outro eixo. Até aqui o painel
+     simplesmente APARECIA; a primeira tentativa deu-lhe um empurrão de
+     8 px, e o dono viu o que era: *"nao me parece que o menu está saindo
+     da lateral e entrando na tela suavemente"*. Ele tinha razão — 8 px
+     não é entrar, é piscar deslocado.
+     Agora ele percorre a própria largura MAIS o afastamento da régua
+     (`--regua-largura`, a mesma variável que o posiciona em repouso, com
+     o `1rem` de sempre onde a régua não existe): assim a borda esquerda
+     dele começa exatamente NA BORDA DA JANELA, e a raiz do HUD
+     (`position: fixed; overflow: hidden`) o corta inteiro. Ele sai de
+     fora da tela, passando por trás da régua — que pinta acima dele
+     (`z-index` 47 contra 46).
+     SÓ A LARGURA NÃO BASTAVA, e a primeira gravação mostrou por quê: a
+     régua tem a altura dos quatro ícones e o painel é bem mais alto, então
+     sobrava uma tira de TEXTO do painel espiando na borda, abaixo dela.
+     Sem `opacity`: uma gaveta não desbota, ela chega.
+     MESMO TEMPO E MESMA CURVA DA FOLHA (`--t-folha`, `--curva-folha`),
+     porque é o mesmo gesto — só o eixo muda. O `@media` do telefone
+     (fatia 9) sobrescreve esta linha com `folhaSobe`, que é este
+     movimento em Y.
      `animation` e não `transition`, pela mesma razão do telefone: as
      gavetas DESMONTAM ao fechar, e sem quadro inicial no DOM não há de
      onde uma transição partir.
      QUEM ANIMA MEXE NA MEDIDA: `App.tsx` mede este nó para reservar céu
-     (`AREAS_RESERVADAS`), e uma medição feita no primeiro quadro pegaria
-     os 8 px de onde ele PARTE. Por isso o App refaz a conta quando esta
-     animação termina — pelo NOME dela, e de nenhuma outra. */
-  animation: entraPainel var(--t-entrada) var(--curva) both;
+     (`AREAS_RESERVADAS`), e a medição do primeiro quadro pega o painel
+     onde ele PARTE — fora da tela. Por isso o App refaz a conta quando
+     esta animação termina, pelo NOME dela e de nenhuma outra. No meio do
+     caminho a reserva fica adiantada, e não atrasada: o que ela deixa de
+     proteger é justamente o retângulo que o painel opaco está chegando
+     para cobrir. */
+  animation: entraPainel var(--t-folha) var(--curva-folha) both;
 }
 @keyframes entraPainel {
   from {
-    opacity: 0;
-    transform: translateX(8px);
+    transform: translateX(calc(100% + var(--regua-largura, 1rem)));
   }
   to {
-    opacity: 1;
     transform: translateX(0);
   }
 }
-/* A SAÍDA NA MESA — o painel recua para a régua de onde veio e some.
-   Até aqui ele entrava (acima) e depois desaparecia de um quadro para o
-   outro, o que é pior que não animar nada: a assimetria faz o fechar
-   parecer um engasgo.
-   O `[inert]` é o sinal de que o `useGavetas` está segurando o nó por
-   mais um instante — o MESMO contrato do telefone (fatia 9) — e é ao
-   mesmo tempo a coisa certa a pôr num painel que sai: nada dentro dele
-   recebe toque, nada recebe foco, e ele some da árvore de quem ouve a
-   tela apesar de continuar visível. Um atributo, três garantias.
-   A duração tem um gêmeo em `useGavetas.ts` (`SAIDA_DO_PAINEL_MS`), que
-   é quem desmonta: um painel fechado não tem elemento para animar. */
+/* A SAÍDA NA MESA — o mesmo caminho de volta, e a metade que CSS nenhum
+   resolve sozinho: quando a gaveta fecha, o nó DESMONTA. Quem o segura
+   por mais um instante é o `useGavetas`, e o sinal de que ele está
+   segurando é o `inert` — que é, ao mesmo tempo, a coisa CERTA a pôr num
+   painel que sai: nada dentro dele recebe toque, nada recebe foco, e ele
+   some da árvore de quem ouve a tela apesar de continuar visível. Um
+   atributo, três garantias, e nenhuma classe inventada. É o MESMO
+   contrato do telefone (fatia 9).
+   Quem desmonta PERGUNTA a duração a este nó (`duracaoDaSaida`, em
+   `useGavetas.ts`) em vez de repetir o número em JavaScript. */
 .hud-dialogo[inert] {
-  animation: saiPainel var(--t-saida) var(--curva-saida) both;
+  animation: saiPainel var(--t-folha) var(--curva-folha) both;
 }
 @keyframes saiPainel {
   from {
-    opacity: 1;
     transform: translateX(0);
   }
   to {
-    opacity: 0;
-    transform: translateX(8px);
+    transform: translateX(calc(100% + var(--regua-largura, 1rem)));
   }
 }
 

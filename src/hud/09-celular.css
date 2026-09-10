@@ -444,7 +444,7 @@
        nenhum risco de a folha piscar no lugar antes de descer. É o mesmo
        recurso do `captionIn` (fatia 2), com a curva da casa. A SAÍDA é
        outra história e não cabe em CSS nenhum: o nó já foi. */
-    animation: folhaSobe 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: folhaSobe var(--t-folha) var(--curva-folha) both;
   }
 
   @keyframes folhaSobe {
@@ -464,7 +464,7 @@
      da árvore de quem ouve a tela apesar de continuar na tela.
      Um atributo, três garantias, e nenhuma classe inventada. */
   .hud-dialogo[inert] {
-    animation: folhaDesce 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: folhaDesce var(--t-folha) var(--curva-folha) both;
   }
 
   @keyframes folhaDesce {

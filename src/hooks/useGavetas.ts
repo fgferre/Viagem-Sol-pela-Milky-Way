@@ -127,12 +127,11 @@ const SAIDA_DA_FOLHA_MS = 260;
 
 /**
  * QUANTO ESPERAR ANTES DE DESMONTAR — PERGUNTADO AO PRÓPRIO NÓ, e não
- * escrito aqui. São dois movimentos com durações diferentes (a folha do
- * telefone percorre a altura dela, o painel da mesa recua 8 px) e três
- * situações que os zeram (movimento reduzido, captura, e o dia em que
- * alguém retimar o CSS) — uma cópia em JavaScript de cada número seria
- * um segundo relógio para discordar do primeiro, que é exatamente o que
- * o plano de motion proíbe.
+ * escrito aqui. São duas regras diferentes (`folhaDesce` no telefone,
+ * `saiPainel` na mesa) e três situações que as zeram (movimento
+ * reduzido, captura, e o dia em que alguém retimar o CSS) — uma cópia
+ * em JavaScript de cada duração seria um segundo relógio para discordar
+ * do primeiro, que é exatamente o que o plano de motion proíbe.
  *
  * `animationDuration` do nó JÁ marcado com `inert` devolve a duração
  * EFETIVA da regra que o navegador escolheu: `saiPainel` na mesa,

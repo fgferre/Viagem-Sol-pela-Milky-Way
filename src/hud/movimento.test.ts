@@ -28,14 +28,16 @@ const CSS = readdirSync(HUD_DIR)
   .join('\n');
 const BASE = readFileSync(new URL('./01-base.css', HUD_DIR), 'utf8');
 
-/** Os tokens que descrevem DESLOCAMENTO. `--t-rapido`, `--t-normal` e
- *  `--t-folha` ficam de fora de propósito: eles cronometram cor,
- *  altura e presença, que continuam suaves em movimento reduzido. */
+/** Os tokens que descrevem DESLOCAMENTO. `--t-rapido` e `--t-normal`
+ *  ficam de fora de propósito: eles cronometram cor e presença, que
+ *  continuam suaves em movimento reduzido. `--t-folha` ENTROU quando o
+ *  painel da mesa passou a percorrer a própria largura com ela — a mesma
+ *  superfície entrando pela própria borda, nos dois arranjos. */
 const TOKENS_DE_MOVIMENTO = [
   '--t-pressao',
   '--t-assenta',
   '--t-entrada',
-  '--t-saida',
+  '--t-folha',
   '--t-reflexo',
   '--escala-pressao',
 ];
