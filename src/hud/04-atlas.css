@@ -1076,6 +1076,50 @@
   flex-wrap: wrap;
   gap: 0.4rem;
   margin-top: 0.28rem;
+  /* O RESPIRO DO MOUSE — quanto a máquina do tempo espera antes de fechar
+     depois que o mouse sai dela (pedido do dono em 09/09: abrir no hover,
+     com meio segundo de folga para quem tira o mouse sem querer).
+     MORA AQUI, e não no TypeScript, porque tem DOIS leitores: a animação
+     de saída logo abaixo, que esmaece o corpo DURANTE a espera, e o
+     `BarraDoTempo`, que lê este token para saber quando desmontar. Um
+     número, uma casa — a lei que o plano de motion cobra. */
+  --t-respiro: 350ms;
+  animation: apareceRelogio var(--t-rapido) var(--curva) both;
+}
+/* ...E O DESAPARECER É UM ESMAECER (pedido do dono em 10/09: *"quando
+   passamos o mouse na data, nao seria interessante uma animacao de fade
+   in rápida para aparecer e fade-out para sumir"*). O corpo já ficava
+   montado durante o respiro; o que faltava era mostrar que ele está
+   indo. Quem volta com o mouse no meio do caminho cancela a classe, a
+   animação some com ela e o corpo volta inteiro no ato. */
+.atlas-tempo-botoes.sumindo {
+  animation: sumeRelogio var(--t-respiro) var(--curva) both;
+}
+@keyframes apareceRelogio {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes sumeRelogio {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+/* MOVIMENTO REDUZIDO: aparece e some, sem esmaecer. O RESPIRO CONTINUA —
+   ele é tempo de espera, não movimento, e tirá-lo faria a máquina do
+   tempo fechar no instante em que o mouse escorrega. Quem declara o
+   movimento é quem declara a ausência dele. */
+@media (prefers-reduced-motion: reduce) {
+  .atlas-tempo-botoes,
+  .atlas-tempo-botoes.sumindo {
+    animation: none;
+  }
 }
 /* SEM BORDA ENTRE ELES: os três grupos são peças distintas (sentido,
    velocidade, referência), e uma borda contínua os leria como um só. */

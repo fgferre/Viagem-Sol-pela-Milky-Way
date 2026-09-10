@@ -645,6 +645,19 @@ export function BarraDoTempo({
   const [hover, setHover] = useState(false);
   const [foco, setFoco] = useState(false);
   const aberta = recolhivel ? presa || hover || foco : presa;
+  /**
+   * O CORPO ESTÁ INDO EMBORA — o mouse saiu e o respiro está correndo.
+   * É só isto que separa "some de um quadro para o outro" de "esmaece":
+   * o corpo JÁ ficava montado durante a espera, faltava dizer ao CSS que
+   * ele está de saída.
+   *
+   * `!presa && !foco` não é detalhe: com a linha trancada pelo clique, ou
+   * com o teclado dentro dela, o mouse pode sair à vontade e nada fecha —
+   * esmaecer ali deixaria um painel VIVO e invisível. A classe cai
+   * sozinha quando qualquer um dos dois chega, e a animação cai com ela.
+   */
+  const [saindo, setSaindo] = useState(false);
+  const sumindo = saindo && !presa && !foco;
   /** o atraso de saída (~350 ms), cancelado a cada novo hover/clique e
    *  limpo no desmonte — para não vazar um `setTimeout` de uma barra que
    *  já não existe */
@@ -679,12 +692,30 @@ export function BarraDoTempo({
       clearTimeout(timerFechar.current);
       timerFechar.current = null;
     }
+    setSaindo(false);
     setHover(true);
   };
   const aoSairComMouse = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!recolhivel || e.pointerType !== 'mouse') return;
     if (timerFechar.current !== null) clearTimeout(timerFechar.current);
-    timerFechar.current = setTimeout(() => setHover(false), 350);
+    setSaindo(true);
+    /**
+     * O RESPIRO É PERGUNTADO AO CSS (`--t-respiro`, em `04-atlas.css`),
+     * porque lá ele também cronometra o esmaecer: dois números iguais em
+     * duas casas são duas chances de discordarem no dia em que alguém
+     * mudar um deles, e aí ou o corpo some antes de acabar de apagar ou
+     * fica um instante invisível esperando o temporizador.
+     * Sem o token, fecha NO ATO: um menu preso aberto é pior que um menu
+     * que não esmaece.
+     */
+    const corpo = e.currentTarget.querySelector('.atlas-tempo-botoes');
+    const respiro = corpo
+      ? Number.parseFloat(getComputedStyle(corpo).getPropertyValue('--t-respiro'))
+      : Number.NaN;
+    timerFechar.current = setTimeout(() => {
+      setHover(false);
+      setSaindo(false);
+    }, Number.isFinite(respiro) ? respiro : 0);
   };
   const aoFocarDentro = () => {
     if (recolhivel) setFoco(true);
@@ -809,7 +840,11 @@ export function BarraDoTempo({
       </div>
       {(!recolhivel || aberta) && (
       <>
-      <div className="atlas-tempo-botoes" role="group" aria-label={t('atlas.maquinaDoTempo')}>
+      <div
+        className={'atlas-tempo-botoes' + (sumindo ? ' sumindo' : '')}
+        role="group"
+        aria-label={t('atlas.maquinaDoTempo')}
+      >
         {grupo(
           t('atlas.tempoTransporte'),
           <div className="ajustes-seg" ref={molduraTransporte}>

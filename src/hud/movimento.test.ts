@@ -154,3 +154,28 @@ describe('4. TODA moldura de segmentado passa pelo mesmo mecanismo', () => {
     for (const m of molduras) expect(m[0]).toContain('ref={');
   });
 });
+
+describe('5. o respiro do mouse na máquina do tempo tem UMA casa', () => {
+  // O número que decide quanto a linha do tempo espera antes de fechar
+  // cronometra DUAS coisas: o esmaecer, no CSS, e o desmonte, no
+  // TypeScript. Escrito nas duas, um dia elas discordam — e aí ou o corpo
+  // some antes de acabar de apagar, ou fica um instante invisível
+  // esperando o temporizador.
+  const BARRA = readFileSync(
+    new URL('../components/HudDoAtlas.tsx', import.meta.url),
+    'utf8'
+  );
+
+  it('o token é declarado uma vez só, no CSS', () => {
+    expect(CSS.match(/--t-respiro:/g)?.length).toBe(1);
+  });
+
+  it('...e é ele que cronometra o esmaecer', () => {
+    expect(corpoDaRegra('.atlas-tempo-botoes.sumindo')).toContain('var(--t-respiro)');
+  });
+
+  it('...e o desmonte PERGUNTA por ele, em vez de repetir o número', () => {
+    expect(BARRA).toContain("getPropertyValue('--t-respiro')");
+    expect(BARRA).not.toContain('setHover(false), 350)');
+  });
+});
