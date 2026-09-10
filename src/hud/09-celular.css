@@ -149,6 +149,8 @@
      do MESMO `aria-expanded` que `gatilhoDoDialogo` já escreve em cada
      botão (`lib/dialogFocus.ts`), sem estado novo nem classe nova. */
   .atlas-alcas > .hud-btn {
+    /* âncora do filete que acende (`::before`, abaixo) */
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -158,14 +160,31 @@
     height: 100%;
     padding: 0.3rem 0.2rem;
     border: 0;
+    /* a borda transparente FICA: ela é quem reserva os 2 px no topo, e
+       sem essa reserva a fileira inteira subiria 2 px ao escolher */
     border-top: 2px solid transparent;
     border-radius: 0;
     background: none;
     white-space: nowrap;
   }
   .atlas-alcas > .hud-btn[aria-expanded='true'] {
-    border-top-color: var(--acento);
     color: var(--acento);
+  }
+  /* O FILETE DA ALÇA (M2 do plano de motion) — o mesmo vocabulário da
+     régua de mesa, no eixo horizontal: acende do meio para as pontas.
+     Deixou de ser `border-top-color` porque borda não se escala; o
+     `top: -2px` põe a faixa exatamente sobre a borda transparente que
+     continua reservando o espaço acima. */
+  .atlas-alcas > .hud-btn[aria-expanded='true']::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -2px;
+    height: 2px;
+    background: var(--acento);
+    transform-origin: center;
+    animation: acendeFileteHorizontal var(--t-entrada) var(--curva) both;
   }
   /* SEM ALVO (Lote 9, pedido do dono: "no celular, a alça Ficha fica
      esmaecida sem alvo, como na mesa"): a quinta alça nasce sempre e só

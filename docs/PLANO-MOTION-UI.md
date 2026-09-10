@@ -1,6 +1,6 @@
 # UI expressiva e futurista — auditoria e plano de movimento
 
-Data: 09/09/2026. Base auditada: commit `e9a5977`. Entrega desta rodada: relatório; nenhuma implementação de interface.
+Data: 09/09/2026. Base auditada: commit `e9a5977`. Entrega da rodada da auditoria: só este relatório. A execução começou no mesmo dia, a partir do commit `f02b57b` — o que já foi feito está no registro no fim da seção 8.
 
 Direção escolhida pelo dono nesta conversa: **“Mais expressiva e futurista, com luz e efeitos especiais perceptíveis.”**
 
@@ -273,7 +273,7 @@ Uma segunda ideia, posterior, é tornar a bússola um pequeno indicador vivo de 
 
 ## 8. Plano de implementação por lotes
 
-Os lotes estão **pendentes de execução**. Este relatório não implementa nem marca nenhum deles como concluído.
+M0, M1 e M2 foram executados em 09/09/2026 (registro no fim desta seção). M3 em diante seguem pendentes.
 
 | Lote | Entrega | Arquivos principais | Critério de saída |
 | --- | --- | --- | --- |
@@ -287,6 +287,38 @@ Os lotes estão **pendentes de execução**. Este relatório não implementa nem
 | M7 — fechamento | Matriz de preservação, acessibilidade, desempenho e limpeza | Testes/scripts pertinentes; este documento | Evidência de movimento real e estado final; `npm run done` passa |
 
 M1 é dependência dos demais. M4 depende de M1–M3; M6 depende de uma versão CSS completa e de baseline comparável. Fazer um commit por tarefa delimitada, conforme `AGENTS.md`; não juntar toda a interface e shaders em um único commit. Não publicar nem enviar para `main` por consequência deste plano.
+
+### Registro de execução
+
+**M0 — referência (09/09/2026).** Não houve rodada de clipes própria, e o motivo é o que a leitura mostrou: não havia movimento de deslocamento a registrar. Três auditorias só de leitura (tokens e transições existentes; presença e foco dos painéis; famílias de controle) confirmaram que a interface animava **cor, altura e presença**, e nada mais — nenhum `:active` em família de botão, nenhum filete que cresça, nenhum reflexo. O inventário está nas seções 3 e 4. O baseline de desempenho continua o do `BACKLOG.md` (Cinema, DPR 2: t=60 62 ms; t=100 72–80 ms), medido antes desta frente: nenhuma regra nova roda em repouso, então não há par com/sem a comparar ainda.
+
+**M1 — fundamento (commit `f28fa28`).** Presença interrompível e política de captura. Três defeitos reais, dois deles medidos no app:
+
+1. Reabrir a folha do celular antes de ela terminar de descer devolvia um painel **morto**: o `inert` era posto à mão e a limpeza do efeito só apagava o temporizador. Medido em 375×812 com a ficha de Saturno — fechar e reabrir dentro de 260 ms deixava `inert` no nó e a folha em `translateY(110%)`, fora do quadro; depois do conserto, `inert` ausente e a folha de volta ao lugar.
+2. Sem movimento a desenhar (`prefers-reduced-motion` ou `?shot=`) o JavaScript continuava segurando o nó os 260 ms inteiros, contra o que os dois modos prometem — e em captura isso fotografa um painel já fechado. A decisão virou função pura (`folhaQueSai`), lida uma vez por troca.
+3. Girar o aparelho no meio da saída reapareceria a folha por 260 ms como painel de mesa.
+
+A política de captura passou a alcançar os **portais**: a explicação do "?" mora em `document.body`, fora de `.hud-root`, e nem o congelamento do `?shot=1` nem o apagamento do `?shot=2` chegavam nela (medido: `transition-duration` 0,12 s com `shot-mode` ligado; 0 s depois da regra). É candidato à instabilidade do juiz de a11y registrada no `BACKLOG.md`.
+
+**M2 — famílias.** Um vocabulário de movimento (`--t-pressao`, `--t-assenta`, `--t-entrada`, `--t-saida`, `--t-reflexo`, `--curva-saida`, `--escala-pressao`) e cinco gestos:
+
+- **Pressão.** Todo controle recua 3 % enquanto pressionado, por UMA regra com lista de famílias — barra, régua, alça, ✕ do cabeçalho, "?" e segmentado. `:not(:disabled)`; a caixa de toque em repouso não muda.
+- **O painel da mesa entra e sai.** Ele nasce 8 px à direita — de baixo da régua de abas em que se clicou — e assenta encostado nela em 200 ms; ao fechar, recua pelo mesmo caminho em 150 ms (mais curto de propósito: quem chega é acompanhado, quem sai só precisa sumir). **O desmonte PERGUNTA a duração ao próprio nó** (`animationDuration` do painel já marcado com `inert`) em vez de repetir o número em JavaScript: são dois movimentos com durações diferentes e três situações que os zeram, e uma cópia de cada número seria o segundo relógio que a §5 deste plano proíbe. *Esta parte entrou depois de o dono apontar a falta: "vc nao animou a entrada dos menus quando está no modo desktop ou tablet… ele só slide quando vem de baixo no mobile".* A saída obrigou a estender a fase de saída do `useGavetas`, que até aqui só existia no telefone.
+- **A medição do painel passou a esperar ele assentar.** `App.tsx` mede `[data-dialogo]` para reservar céu, e nem `ResizeObserver` nem `MutationObserver` veem uma translação TERMINAR — a reserva ficava presa onde o painel NASCEU. Agora o App refaz a conta no fim de `entraPainel` e de `folhaSobe`, pelo NOME da animação (o filete e o reflexo também terminam, e remedir a cada um seria layout forçado à toa). **O telefone já tinha esse defeito antes desta rodada**: a folha era medida com ela ainda abaixo da tela.
+- **Filete que acende.** A aba da régua de mesa (vertical) e a alça do telefone (horizontal) crescem do meio para as pontas em 200 ms, com os mesmos dois `@keyframes`. O da alça deixou de ser `border-top-color`, porque borda não se escala.
+- **Filete que ANDA, no segmentado.** O sublinhado da escolha desliza do segmento antigo para o novo em vez de apagar num e acender no outro. Os segmentos têm larguras diferentes de propósito, então a posição só se sabe MEDINDO: `useFileteDoSegmentado` escreve `--seg-x`/`--seg-w` na moldura e o CSS transita esses dois números — nada é animado por JavaScript. Mora em arquivo próprio porque serve os DOIS desenhos de segmentado da casa (o componente `Segmentado` e os três grupos crus da máquina do tempo, onde ação e alternância convivem); um filete que deslizasse só num deles daria duas marcas de escolha lado a lado na mesma tela. Anda só quando a ESCOLHA muda: um relayout (outra língua, outro `?ui=`) o faz nascer no lugar novo, sem escorregar. Sem segmento marcado — "parar o tempo" —, ele apaga onde está.
+- **O ícone da porta escolhida assenta uma vez** (8 %, 180 ms): a cor e o filete dizem o estado, o assentamento diz o instante.
+- **Reflexo de abertura.** Uma faixa âmbar atravessa a borda de cima do painel, uma vez, em 360 ms. Mora no cabeçalho preso (o `.hud-dialogo` é o rolo) e viaja por `background-position` — deslocá-la por `transform` pediria barra de rolagem horizontal. Curva `linear`, e não a `--curva` da casa: com a curva ela cruzava dois terços da borda nos primeiros 90 ms e virava estalo. **É invisível em repouso** — regra achada na revisão do próprio diff: como o `?shot=1` desliga toda animação do HUD, o que sobra é o estado de repouso, e sem `opacity: 0` ali a faixa ficava parada e visível na borda de todo painel aberto, em toda foto determinística da casa.
+
+**A preferência de movimento reduzido virou política, e não mais exceção**: os quatro tokens zeram numa única regra na raiz, e tudo construído sobre eles obedece. `src/hud/movimento.test.ts` cobra as três leis (os tokens zeram; toda família da lista de pressão cronometra o `transform`; as três famílias acendem com o mesmo filete) por regra sobre o arquivo, não por lista de seletores.
+
+**Chevrons ficaram como estão**: a decisão escrita em `04-atlas.css` é que eles TROCAM de sentido em vez de girar. O plano pede "chevron único", que já é o caso.
+
+**O filete que anda foi conferido por medida:** com "Português" marcado, `--seg-x` = 0 px e `--seg-w` = 89,125 px, contra 0,000 e 89,125 px medidos no botão; depois de escolher "English", 89,125 e 69,094 px, contra 89,125 e 69,094. O primeiro rascunho usava `offsetLeft` e errava 1 px — de onde `offsetLeft` conta varia entre motores; dois retângulos subtraídos, não.
+
+**Evidência:** três quadros da aba acendendo (0 %, 40 %, 100 %) e o reflexo cruzando a borda do painel Ajustes, capturados em Chrome de verdade a 1440×900, DPR 2, congelando por esticar `--t-entrada`/`--t-reflexo` em tempo de execução. A pressão foi **medida**, não fotografada — a foto não a distinguia do número de quadros por segundo mudando ao lado: com o botão apertado por CDP, `getBoundingClientRect().width` cai de 49,555 para 48,068 px no segmento "Alta" e de 44,000 para 42,680 px no ✕ de fechar (0,9700 nos dois), com `transform: matrix(0.97, 0, 0, 0.97, 0, 0)`, e volta ao original ao soltar. *(Achado técnico: congelar por `Animation.currentTime`/`pause()` não é confiável em Chrome headless — o `getComputedStyle` dá o valor certo e a captura sai adiantada, provavelmente corrida entre a thread principal e a de composição. Esticar a duração e esperar em relógio de parede foi reproduzível.)*
+
+**O que NÃO foi verificado nesta rodada:** o `:active` em Safari de iPhone (o WebKit historicamente não aplica `:active` sem ouvinte de toque no próprio elemento — pertence à matriz de aparelhos do M4/M7); e `prefers-reduced-motion` ligado no sistema operacional de um aparelho real, que aqui só foi provado por regra sobre o CSS.
 
 ### Instrução operacional para a IA executora
 
@@ -346,6 +378,6 @@ Estas fontes apoiam escolhas de plataforma; não substituem leitura do app nem p
 
 ## 11. Estado da entrega documental
 
-Auditoria e plano concluídos; implementações M0–M7 ainda não iniciadas. O escopo desta entrega é exclusivamente este arquivo. Não foram alterados componentes, estilos, shaders, dados ou dependências; não foram gerados novos juízes nem publicada uma versão do site.
+Auditoria e plano concluídos em 09/09/2026; **M0, M1 e M2 executados no mesmo dia** (o registro, com evidências e o que ficou por verificar, está no fim da seção 8). M3 a M7 seguem pendentes. Nada foi publicado: nenhuma versão do site saiu desta frente.
 
 Verificação desta rodada: `npm run done` passou (typecheck, lint, 97 arquivos de teste; 2.948 testes aprovados e 1 ignorado). Houve mensagens de stderr nos testes de texturas, inclusive `ERR_INVALID_URL` para o perfil do anel no ambiente Node, sem reprovação da suíte. Isso verifica o estado do repositório, não a aparência ou o desempenho das animações propostas. `git diff --check` sem erros.

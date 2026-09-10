@@ -14,6 +14,8 @@
 // (texto `--acento` + filete embaixo), moldura em `--borda`.
 // ============================================================
 
+import { useFileteDoSegmentado } from '../hooks/useFileteDoSegmentado';
+
 /** Um segmento do `.ajustes-seg`. `efetivo` é o sublinhado pontilhado
  *  que mostra o que o PRESET resolve quando "Preset" é a escolha ativa. */
 export interface Segmento<T> {
@@ -34,8 +36,9 @@ export function Segmentado<T>({
   opcoes: Segmento<T>[];
   onEscolher: (v: T) => void;
 }) {
+  const moldura = useFileteDoSegmentado();
   return (
-    <div className="ajustes-seg" role="group" aria-label={aria}>
+    <div className="ajustes-seg" role="group" aria-label={aria} ref={moldura}>
       {opcoes.map((o) => (
         <button
           type="button"

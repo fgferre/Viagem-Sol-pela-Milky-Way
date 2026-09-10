@@ -141,7 +141,7 @@
   place-items: center;
   cursor: pointer;
   padding: 0;
-  transition: border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+  transition: border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva), transform var(--t-pressao) var(--curva);
 }
 .hud-ajuda::before {
   content: '';
@@ -280,11 +280,41 @@
    embaixo, nunca um fundo pintado — o botão primário da casa (fora
    deste componente) é que continua preenchido. */
 .ajustes-seg {
+  /* âncora do filete que anda (`::after`, abaixo) */
+  position: relative;
   display: flex;
   border: 1px solid var(--borda);
   border-radius: var(--raio-controle);
   overflow: hidden;
   max-width: 100%;
+}
+/* O FILETE DA ESCOLHA, QUE ANDA (M2 do plano de motion) — UM por
+   moldura, e não um por botão: é assim que ele consegue DESLIZAR do
+   segmento antigo para o novo em vez de apagar aqui e acender ali.
+   Onde ele começa e quanto ele mede vêm de `useFileteDoSegmentado`
+   (`Segmentado.tsx`), que MEDE o segmento marcado — os segmentos têm
+   larguras diferentes de propósito, e nenhuma conta de CSS as descobre.
+   O que este arquivo faz é só transitar os dois números.
+   `--seg-t` é 0 quando a medida veio de um relayout (outra língua, outro
+   `?ui=`, outra janela): ali o filete NASCE no lugar certo, porque
+   escorregar por causa de uma palavra mais larga seria movimento sem
+   causa. Ele vale `var(--t-entrada)` só quando a escolha de fato mudou —
+   e por isso obedece de graça ao movimento reduzido.
+   `--seg-visivel` é 0 quando NENHUM segmento está marcado (o "parar o
+   tempo" da máquina do tempo): o filete apaga onde está, sem correr para
+   um canto. */
+.ajustes-seg::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: var(--seg-x, 0);
+  width: var(--seg-w, 0);
+  height: 2px;
+  background: var(--acento);
+  opacity: var(--seg-visivel, 0);
+  pointer-events: none;
+  transition: left var(--seg-t, 0ms) var(--curva), width var(--seg-t, 0ms) var(--curva),
+    opacity var(--t-rapido) var(--curva);
 }
 .ajustes-seg button {
   /* largura pelo CONTEÚDO mais a sobra em partes iguais (Lote 7): com
@@ -308,7 +338,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color var(--t-rapido) var(--curva), background var(--t-rapido) var(--curva);
+  transition: color var(--t-rapido) var(--curva), background var(--t-rapido) var(--curva), transform var(--t-pressao) var(--curva);
 }
 .ajustes-seg button:last-child {
   border-right: none;
@@ -338,7 +368,6 @@
 .ajustes-seg button.on {
   background: transparent;
   color: var(--acento);
-  box-shadow: inset 0 -2px 0 0 var(--acento);
 }
 /* O SEGMENTO EFETIVO — o que o PRESET resolve, só quando "Preset" é a
    escolha ativa (é a OUTRA caixa que fica `.on` nesse instante). Sem

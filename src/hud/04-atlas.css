@@ -214,6 +214,12 @@
   bottom: 0.75rem;
   width: 2px;
   background: var(--acento);
+  /* ACENDE do meio para as pontas (M2 do plano de motion): o filete só
+     existe enquanto a aba está aberta, então ele NASCE a cada abertura —
+     e uma `animation` roda sozinha na montagem, sem estado novo e sem
+     quadro de atraso. É o mesmo recurso do `folhaSobe` (fatia 9). */
+  transform-origin: center;
+  animation: acendeFileteVertical var(--t-entrada) var(--curva) both;
 }
 /* ...e some a costura de 1 px com o painel encostado, na MESMA borda
    interna — só existe com `.com-painel`, porque sem painel não há

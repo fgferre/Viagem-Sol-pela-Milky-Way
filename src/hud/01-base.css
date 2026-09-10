@@ -88,12 +88,55 @@
   --t-normal: 200ms;
   --t-folha: 260ms;
   --curva: cubic-bezier(0.2, 0, 0, 1);
+  /* ---- O VOCABULÁRIO DO MOVIMENTO (M2 do plano de motion, 09/09) -----
+     Os três tempos acima são de COR, altura e presença — o que a
+     interface já sabia animar. Estes descrevem DESLOCAMENTO, que ela não
+     tinha nenhum: o botão que afunda sob o dedo, o filete âmbar que
+     acende onde a escolha caiu, o painel da mesa que entra de baixo da
+     régua e recua para ela ao fechar, o reflexo que atravessa a borda.
+     Por descreverem deslocamento, e não cor, eles ZERAM em
+     `prefers-reduced-motion` (logo abaixo) — e com isso toda regra
+     construída sobre eles obedece à preferência sem precisar ser
+     reescrita uma a uma. É a lei da casa ("quem declara o movimento
+     declara a ausência dele") cumprida no lugar onde ele é declarado,
+     em vez de espalhada por sete fatias.
+     `--escala-pressao`: 3 % de recuo. Acima disso o texto do botão
+     encolhe à vista; abaixo, ninguém percebe que apertou. */
+  --t-pressao: 70ms;
+  --t-assenta: 180ms;
+  --t-entrada: 200ms;
+  --t-saida: 150ms;
+  --t-reflexo: 360ms;
+  --escala-pressao: 0.97;
+  /* A SAÍDA ACELERA em vez de frear. A `--curva` da casa termina devagar,
+     que é o certo para o que CHEGA e assenta; o que sai não precisa ser
+     acompanhado até o fim, e frear na saída faz o painel parecer preso. */
+  --curva-saida: cubic-bezier(0.4, 0, 1, 1);
   /* O PADDING DO PAINEL (Lote 2b, PLAN-UI.md item 3): 20 px na mesa, 16 no
      celular — UMA variável para o corpo (`.hud-dialogo`) e o cabeçalho
      (que cancela e devolve o mesmo respiro, `01-base.css` acima), para os
      dois nunca dessincronizarem. O celular sobrescreve em `09-celular.css`
      (`.hud-root`, dentro do `@media`, a mesma régua de `--selo-base`). */
   --pad-painel: 1.25rem;
+}
+
+/* MOVIMENTO REDUZIDO — a política, e não mais uma exceção. Zerar os
+   tokens de deslocamento na RAIZ desliga de uma vez a pressão, o filete
+   que acende, a entrada e a saída dos painéis e o reflexo da borda, em
+   toda família e em toda fatia, sem que nenhuma delas precise repetir a
+   regra. O que NÃO se
+   toca aqui é `transform` em geral: a esfera do interruptor anda para o
+   lado porque está marcada, e a bússola aponta — apagar isso seria
+   apagar informação, não movimento (§4 do plano). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-pressao: 0.01ms;
+    --t-assenta: 0.01ms;
+    --t-entrada: 0.01ms;
+    --t-saida: 0.01ms;
+    --t-reflexo: 0.01ms;
+    --escala-pressao: 1;
+  }
 }
 
 .hud-root {
@@ -270,6 +313,54 @@
   padding: var(--pad-painel);
   font-size: 0.72rem;
   font-weight: 300;
+  /* A ENTRADA NA MESA E NO TABLET (M2 do plano de motion) — até aqui o
+     painel simplesmente APARECIA, e só o telefone tinha movimento
+     (`folhaSobe`, fatia 9, que sobrescreve esta linha dentro do `@media`
+     dele). Ele nasce 8 px à direita, ou seja, DE BAIXO DA RÉGUA DE ABAS
+     em que se clicou, e assenta encostado nela: o painel vem da porta
+     por onde se entrou, e não do nada.
+     `animation` e não `transition`, pela mesma razão do telefone: as
+     gavetas DESMONTAM ao fechar, e sem quadro inicial no DOM não há de
+     onde uma transição partir.
+     QUEM ANIMA MEXE NA MEDIDA: `App.tsx` mede este nó para reservar céu
+     (`AREAS_RESERVADAS`), e uma medição feita no primeiro quadro pegaria
+     os 8 px de onde ele PARTE. Por isso o App refaz a conta quando esta
+     animação termina — pelo NOME dela, e de nenhuma outra. */
+  animation: entraPainel var(--t-entrada) var(--curva) both;
+}
+@keyframes entraPainel {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+/* A SAÍDA NA MESA — o painel recua para a régua de onde veio e some.
+   Até aqui ele entrava (acima) e depois desaparecia de um quadro para o
+   outro, o que é pior que não animar nada: a assimetria faz o fechar
+   parecer um engasgo.
+   O `[inert]` é o sinal de que o `useGavetas` está segurando o nó por
+   mais um instante — o MESMO contrato do telefone (fatia 9) — e é ao
+   mesmo tempo a coisa certa a pôr num painel que sai: nada dentro dele
+   recebe toque, nada recebe foco, e ele some da árvore de quem ouve a
+   tela apesar de continuar visível. Um atributo, três garantias.
+   A duração tem um gêmeo em `useGavetas.ts` (`SAIDA_DO_PAINEL_MS`), que
+   é quem desmonta: um painel fechado não tem elemento para animar. */
+.hud-dialogo[inert] {
+  animation: saiPainel var(--t-saida) var(--curva-saida) both;
+}
+@keyframes saiPainel {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(8px);
+  }
 }
 
 /* ---- O CABEÇALHO ÚNICO DOS PAINÉIS (Lote 2a, PLAN-UI.md §3.2/§11) ---
@@ -369,7 +460,7 @@
   background: none;
   color: var(--texto-2);
   cursor: pointer;
-  transition: background var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+  transition: background var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva), transform var(--t-pressao) var(--curva);
 }
 .hud-cabecalho-fechar:hover {
   background: var(--hover);
@@ -385,3 +476,141 @@
   }
 }
 
+
+/* ---- A RESPOSTA AO TOQUE, UMA SÓ PARA A CASA (M2 do plano de motion) -
+   Todo controle afunda 3 % enquanto está pressionado e volta ao soltar.
+   UMA regra com uma lista, e não um `:active` por família: o que se quer
+   é justamente que barra, régua, alça, cabeçalho, segmentado e o "?"
+   respondam IGUAL — seis cópias seriam seis chances de discordarem um
+   dia. Ela pode morar aqui, na fatia da base, porque `transform` não
+   aparece em nenhuma dessas famílias: não há cascata a disputar.
+   A CAIXA DE TOQUE NÃO MUDA. O `:active` só existe com o dedo JÁ em
+   cima, então o alvo que o visitante mira é sempre o de repouso; e
+   `transform` não participa de layout, então nada em volta se desloca.
+   FICAM DE FORA os controles cujo `transform` já CARREGA informação — a
+   esfera do interruptor, que anda para o lado quando marcada, e a
+   bússola, que aponta. Comprimi-los por cima apagaria o dado.
+   O tempo da ida e da volta vem do `transition` de cada família (cada
+   uma declara o seu, como manda a cascata), sempre com `--t-pressao`. */
+.hud-root
+  :is(
+    .hud-btn,
+    .veil-btn,
+    .hud-cabecalho-fechar,
+    .hud-ajuda,
+    .ajustes-seg button,
+    .convite-linha button
+  ):active:not(:disabled) {
+  transform: scale(var(--escala-pressao));
+}
+
+/* ---- O REFLEXO DE ABERTURA (M2) ------------------------------------
+   Quando um painel abre, uma faixa âmbar atravessa UMA vez a borda de
+   cima e some. Mora no cabeçalho, e não no `.hud-dialogo`, por um
+   motivo prático: o diálogo é o rolo (`overflow-y: auto`), e uma faixa
+   presa nele desceria junto com o texto; o cabeçalho é `sticky`, então
+   a borda de cima do painel é exatamente onde ela fica.
+   NÃO PASSA POR CIMA DO TEXTO (2 px de altura, colada no topo) e não
+   recebe ponteiro. E acontece na MONTAGEM, uma vez: `animation` roda
+   sozinha quando o nó nasce, então trocar de gaveta acende de novo,
+   mas mudar um dado dentro do painel aberto não reinicia nada. */
+.hud-cabecalho::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  pointer-events: none;
+  /* INVISÍVEL EM REPOUSO, e isto não é detalhe: quando a animação é
+     desligada (`?shot=` zera toda animação do HUD na fatia 7), o que
+     sobra é ESTE estado. Sem a linha, a captura determinística
+     fotografava uma faixa âmbar parada no canto esquerdo da borda de
+     todo painel aberto — um enfeite que ninguém desenhou, em toda foto
+     de prova da casa. O estado de repouso É o estado final. */
+  opacity: 0;
+  /* A faixa VIAJA pelo fundo, e não por `transform`: o painel é o rolo
+     (`overflow-y: auto`, o que faz o eixo X virar `auto` também), e um
+     filho deslocado para fora dele pediria barra de rolagem horizontal
+     por 360 ms. `background-position` não transborda de nada — e a área
+     repintada é a largura do painel por 2 px de altura. */
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--acento) 50%,
+    transparent 100%
+  );
+  background-size: 60% 100%;
+  background-repeat: no-repeat;
+  /* LINEAR, e não a `--curva` da casa: um reflexo é uma luz que
+     ATRAVESSA, e com a curva de saída da casa ele percorria dois terços
+     da borda nos primeiros 90 ms e sumia — ficava um estalo, não uma
+     passagem. A curva serve ao que CHEGA e assenta (o filete, o painel);
+     ao que apenas passa, serve velocidade constante. */
+  animation: reflexoDeAbertura var(--t-reflexo) linear both;
+}
+@keyframes reflexoDeAbertura {
+  from {
+    opacity: 0;
+    background-position: -60% 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    background-position: 160% 0;
+  }
+}
+
+/* O FILETE QUE ACENDE (M2) — a mesma luz nas três famílias que marcam
+   escolha: a aba da régua (vertical, fatia 4), a alça do telefone e o
+   segmento (horizontais, fatias 9 e 8). Cresce do centro para as duas
+   pontas em vez de aparecer inteiro, e é o que dá à escolha um instante
+   de resposta sem mexer no texto nem na caixa. Os `@keyframes` moram
+   aqui, com o token que os cronometra; quem os usa é cada fatia. */
+@keyframes acendeFileteVertical {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes acendeFileteHorizontal {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* O ÍCONE DA PORTA ESCOLHIDA ASSENTA UMA VEZ (M2, §2 movimento 3) — 8 %
+   e volta, junto com o filete que acende ao lado dele. É o que separa
+   "esta aba está marcada" de "foi ISTO que você acabou de abrir": a cor
+   e o filete dizem o estado, o assentamento diz o instante.
+   UMA regra para as duas famílias, como a da pressão, porque a régua da
+   mesa (fatia 4) e a fileira do telefone (fatia 9) são a MESMA porta em
+   dois arranjos. `svg` não tem `transform` próprio em nenhuma das duas,
+   então não há cascata a disputar.
+   Uma vez, e SÓ na que abriu: o `[aria-expanded='true']` nasce com a
+   abertura, e uma `animation` roda sozinha quando o estado chega. */
+.atlas-regua > .hud-btn[aria-expanded='true'] svg,
+.atlas-alcas > .hud-btn[aria-expanded='true'] svg {
+  animation: assentaIcone var(--t-assenta) var(--curva) both;
+}
+@keyframes assentaIcone {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

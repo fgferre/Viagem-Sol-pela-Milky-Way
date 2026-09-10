@@ -28,7 +28,7 @@ import {
   aoFocar,
   aoTravessar,
   arrastoFecha,
-  folhaQueSai,
+  gavetaQueSai,
 } from './useGavetas';
 // a zona morta do dedo vem da peça que o arrasto realmente usa: o gesto
 // que o dono aprovou é a SOMA dos dois números, e ela só se mede juntando
@@ -280,20 +280,27 @@ describe('8. a folha segue o dedo — o arrasto desenha, o SOLTAR decide (fix, 0
 });
 
 describe('9. a saída da folha é INTERROMPÍVEL (plano de motion, M1)', () => {
-  it('só a folha do CELULAR que fecha DE VERDADE sai andando', () => {
-    expect(folhaQueSai(true, 'ficha', null, false)).toBe('ficha');
+  it('quem sai andando é a gaveta que FECHA DE VERDADE — nos dois arranjos', () => {
+    expect(gavetaQueSai('ficha', null, false)).toBe('ficha');
     // trocar de gaveta não é sair: o conteúdo troca no mesmo lugar
-    expect(folhaQueSai(true, 'ficha', 'busca', false)).toBe(null);
+    expect(gavetaQueSai('ficha', 'busca', false)).toBe(null);
     // abrir a primeira também não
-    expect(folhaQueSai(true, null, 'busca', false)).toBe(null);
-    // e a mesa nunca teve descida nenhuma para animar
-    expect(folhaQueSai(false, 'ficha', null, false)).toBe(null);
+    expect(gavetaQueSai(null, 'busca', false)).toBe(null);
   });
 
-  it('sem movimento a desenhar, a folha desmonta no MESMO commit', () => {
+  it('sem movimento a desenhar, a gaveta desmonta no MESMO commit', () => {
     // era aqui que o `?shot=1` fotografava um painel que já tinha fechado:
-    // o CSS zera a animação, mas o nó ficava 260 ms parado na tela
-    expect(folhaQueSai(true, 'ficha', null, true)).toBe(null);
+    // o CSS zera a animação, mas o nó ficava parado na tela esperando
+    expect(gavetaQueSai('ficha', null, true)).toBe(null);
+  });
+
+  it('a duração da saída é PERGUNTADA ao nó — nunca um segundo relógio', () => {
+    // são dois movimentos (a folha percorre a tela, o painel recua 8 px) e
+    // três situações que os zeram; copiar cada número para cá seria um
+    // relógio para discordar do CSS no dia em que alguém retimar um deles
+    expect(HOOK).toContain('getComputedStyle(no)');
+    expect(HOOK).toContain('.animationDuration');
+    expect(HOOK).toContain('duracaoDaSaida(no)');
   });
 
   it('as duas situações que zeram a saída são lidas na HORA da troca', () => {
@@ -307,7 +314,10 @@ describe('9. a saída da folha é INTERROMPÍVEL (plano de motion, M1)', () => {
     expect(HOOK).toContain("if (no?.isConnected) no.removeAttribute('inert');");
   });
 
-  it('virar mesa no meio da saída termina a saída, em vez de deixar um painel surdo', () => {
-    expect(HOOK).toMatch(/\}, \[saindo, celular\]\);/);
+  it('o `inert` é posto ANTES da leitura — é ele que escolhe a regra da saída', () => {
+    const efeito = HOOK.slice(HOOK.indexOf('if (!saindo) return;'));
+    expect(efeito.indexOf("setAttribute('inert'")).toBeLessThan(
+      efeito.indexOf('duracaoDaSaida(no)')
+    );
   });
 });

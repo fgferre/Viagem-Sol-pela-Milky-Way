@@ -494,10 +494,28 @@ export default function App() {
     // refaz a medição quando ela chega.
     const chegadaDaFicha = new MutationObserver(medir);
     chegadaDaFicha.observe(root, { childList: true });
+    // O PAINEL QUE ENTRA É MEDIDO ONDE ELE COMEÇA (M2 do plano de
+    // motion). A mesa faz o painel entrar deslizando 8 px de baixo da
+    // régua (`entraPainel`, fatia 1) e o telefone faz a folha subir
+    // (`folhaSobe`, fatia 9). Nos dois casos o `MutationObserver` acima
+    // mede no PRIMEIRO quadro, com o nó ainda no ponto de PARTIDA — e
+    // nenhum dos dois observadores vê uma translação TERMINAR, porque
+    // uma translação não muda tamanho nem árvore. A reserva do céu
+    // ficava presa onde o painel nasceu: 8 px ao lado na mesa, e uma
+    // folha inteira abaixo da tela no telefone (esse já era o caso antes
+    // desta rodada, e é o mesmo conserto).
+    // PELO NOME DA ANIMAÇÃO, e não em qualquer `animationend`: o filete
+    // das abas e o reflexo da borda também terminam, e remedir a cada um
+    // deles seria forçar layout à toa.
+    const aoAssentar = (e: AnimationEvent) => {
+      if (e.animationName === 'entraPainel' || e.animationName === 'folhaSobe') medir();
+    };
+    root.addEventListener('animationend', aoAssentar);
     window.addEventListener('resize', medir);
     return () => {
       observador.disconnect();
       chegadaDaFicha.disconnect();
+      root.removeEventListener('animationend', aoAssentar);
       window.removeEventListener('resize', medir);
     };
   }, [phase, gaveta, celular]);

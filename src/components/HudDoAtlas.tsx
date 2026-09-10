@@ -24,6 +24,7 @@ import { useDicaPresa } from '../hooks/useDicaPresa';
 import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
+import { useFileteDoSegmentado } from '../hooks/useFileteDoSegmentado';
 import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
 import type { EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
@@ -604,6 +605,17 @@ export function BarraDoTempo({
   useIdioma();
   const { data, taxa, sentido, aoVivo, naEpoca, aviso } = tempo;
   const parado = sentido === 0 && !aoVivo;
+  /**
+   * OS TRÊS GRUPOS DESTA BARRA USAM `.ajustes-seg` CRU (o componente
+   * `Segmentado` não os serve: aqui ação e alternância convivem no mesmo
+   * grupo), e mesmo assim o filete da escolha tem de ser O MESMO da casa
+   * — inclusive andando. O hook é o mecanismo único; a marcação continua
+   * sendo a daqui. O grupo da velocidade é um botão de AÇÃO sozinho,
+   * nunca marcado: nele o filete simplesmente não aparece.
+   */
+  const molduraTransporte = useFileteDoSegmentado();
+  const molduraTaxa = useFileteDoSegmentado();
+  const molduraReferencia = useFileteDoSegmentado();
   /** envolve o grupo com o rótulo da linha SÓ quando `comRotulos` pede */
   const grupo = (rotulo: string, conteudo: ReactElement) =>
     comRotulos ? (
@@ -800,7 +812,7 @@ export function BarraDoTempo({
       <div className="atlas-tempo-botoes" role="group" aria-label={t('atlas.maquinaDoTempo')}>
         {grupo(
           t('atlas.tempoTransporte'),
-          <div className="ajustes-seg">
+          <div className="ajustes-seg" ref={molduraTransporte}>
             <button
               type="button"
               className={sentido === -1 ? 'on' : ''}
@@ -831,7 +843,7 @@ export function BarraDoTempo({
         )}
         {grupo(
           t('atlas.tempoVelocidade'),
-          <div className="ajustes-seg atlas-tempo-taxa-seg">
+          <div className="ajustes-seg atlas-tempo-taxa-seg" ref={molduraTaxa}>
             <button
               type="button"
               className="atlas-tempo-taxa"
@@ -852,7 +864,7 @@ export function BarraDoTempo({
         )}
         {grupo(
           t('atlas.tempoReferencia'),
-          <div className="ajustes-seg">
+          <div className="ajustes-seg" ref={molduraReferencia}>
             <button
               type="button"
               className={aoVivo ? 'on' : ''}

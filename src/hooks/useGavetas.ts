@@ -116,26 +116,58 @@ export const aoAbrirFicha = (
  * contrário. Mora aqui e não no CSS porque quem segura o nó desmontando
  * é JavaScript: uma folha que fechou já não tem elemento para animar.
  *
- * PRIVADA: os dois leitores são deste arquivo — o `useLayoutEffect` daqui
- * de baixo (o desmonte) e o `soltar` do arrasto que segue a folha (fix,
- * 09/09: a MESMA curva/duração de `folhaDesce` termina o arrasto fora da
- * tela) — e mais ninguém. Ela nasceu exportada por hábito, e um `export`
- * sem consumidor é superfície pública que envelhece calada.
+ * PRIVADA, e com UM leitor só: o `soltar` do arrasto que segue a folha
+ * (fix, 09/09: a MESMA curva/duração de `folhaDesce` termina o arrasto
+ * fora da tela). O desmonte, que era o outro leitor, passou a PERGUNTAR
+ * a duração ao nó (`duracaoDaSaida`, abaixo) em vez de repetir o número.
+ * Ela nasceu exportada por hábito, e um `export` sem consumidor é
+ * superfície pública que envelhece calada.
  */
 const SAIDA_DA_FOLHA_MS = 260;
 
 /**
- * NÃO HÁ MOVIMENTO NENHUM PARA ESPERAR. Duas situações zeram a saída da
- * folha, e as duas já andam juntas em toda a casa (`App.tsx` na tela de
- * carga, `director.ts` na travessia): `prefers-reduced-motion`, onde a
- * fatia 9 já declara `animation: none` para `.hud-dialogo[inert]`, e o
- * `?shot=`, onde a fatia 7 zera TODA transição e animação do HUD.
+ * QUANTO ESPERAR ANTES DE DESMONTAR — PERGUNTADO AO PRÓPRIO NÓ, e não
+ * escrito aqui. São dois movimentos com durações diferentes (a folha do
+ * telefone percorre a altura dela, o painel da mesa recua 8 px) e três
+ * situações que os zeram (movimento reduzido, captura, e o dia em que
+ * alguém retimar o CSS) — uma cópia em JavaScript de cada número seria
+ * um segundo relógio para discordar do primeiro, que é exatamente o que
+ * o plano de motion proíbe.
  *
- * Nos dois casos o CSS já não desenha a descida — mas o JavaScript
- * continuava segurando o nó 260 ms. O resultado é o oposto do que cada
- * modo promete: uma folha PARADA no meio da tela, surda, esperando um
- * temporizador; e, na captura, um painel que devia ter fechado aparecendo
- * inteiro na foto.
+ * `animationDuration` do nó JÁ marcado com `inert` devolve a duração
+ * EFETIVA da regra que o navegador escolheu: `saiPainel` na mesa,
+ * `folhaDesce` no telefone, `0s` onde o CSS declara `animation: none`.
+ * Uma leitura por fechamento, nunca por quadro.
+ */
+const duracaoDaSaida = (no: Element | null): number => {
+  if (!no) return 0;
+  return Math.max(
+    0,
+    ...getComputedStyle(no)
+      .animationDuration.split(',')
+      .map((cru) => {
+        const termo = cru.trim();
+        const n = Number.parseFloat(termo);
+        if (!Number.isFinite(n)) return 0;
+        // o navegador devolve segundos ("0.15s") ou milissegundos
+        return termo.endsWith('ms') ? n : n * 1000;
+      })
+  );
+};
+
+/**
+ * NÃO HÁ MOVIMENTO NENHUM PARA ESPERAR. Duas situações zeram a saída, e
+ * as duas já andam juntas em toda a casa (`App.tsx` na tela de carga,
+ * `director.ts` na travessia): `prefers-reduced-motion`, onde os tokens
+ * de deslocamento zeram na raiz (fatia 1) e a fatia 9 declara
+ * `animation: none` para a folha, e o `?shot=`, onde a fatia 7 zera TODA
+ * transição e animação do HUD.
+ *
+ * Nos dois casos o CSS já não desenha a saída — mas o JavaScript
+ * continuava segurando o nó o tempo inteiro. O resultado é o oposto do
+ * que cada modo promete: um painel PARADO na tela, surdo, esperando um
+ * temporizador; e, na captura, uma gaveta que devia ter fechado
+ * aparecendo inteira na foto.
  *
  * Lido UMA VEZ POR TROCA (quem chama só roda quando a gaveta muda), nunca
  * por quadro — e, por ser lido na hora, obedece à preferência do sistema
@@ -146,19 +178,21 @@ const semMovimento = () =>
   new URLSearchParams(window.location.search).has('shot');
 
 /**
- * QUEM GANHA UMA SAÍDA DESENHADA — a única gaveta que sai andando é a
- * folha do CELULAR ao fechar de verdade. Trocar de gaveta não é sair (o
- * conteúdo é substituído no lugar), abrir a primeira não é sair, e a mesa
- * nunca teve descida nenhuma para animar. Sem movimento a desenhar, o
- * valor é `null` e o nó desmonta no MESMO commit, sem fase intermediária.
+ * QUEM GANHA UMA SAÍDA DESENHADA — a gaveta que FECHA DE VERDADE, nos
+ * dois arranjos: a folha do telefone descendo e, desde o M2 do plano de
+ * motion, o painel da mesa recuando para debaixo da régua.
+ *
+ * Trocar de gaveta NÃO é sair (o conteúdo é substituído no mesmo lugar, e
+ * abrir uma segunda superfície viva só para ter travessia duplicaria
+ * diálogo, ids e anúncio), e abrir a primeira também não. Sem movimento a
+ * desenhar (`imovel`), o valor é `null` e o nó desmonta no MESMO commit,
+ * sem fase intermediária.
  */
-export const folhaQueSai = (
-  celular: boolean,
+export const gavetaQueSai = (
   anterior: Gaveta | null,
   gaveta: Gaveta | null,
   imovel: boolean
-): Gaveta | null =>
-  celular && !imovel && anterior !== null && gaveta === null ? anterior : null;
+): Gaveta | null => (!imovel && anterior !== null && gaveta === null ? anterior : null);
 
 /**
  * QUANTO O DEDO DESCE PARA A FOLHA FECHAR — a QUARTA saída (item 62,
@@ -340,31 +374,24 @@ export function useGavetas(
   const [anterior, setAnterior] = useState<Gaveta | null>(gaveta);
   if (anterior !== gaveta) {
     setAnterior(gaveta);
-    setSaindo(folhaQueSai(celular, anterior, gaveta, semMovimento()));
+    setSaindo(gavetaQueSai(anterior, gaveta, semMovimento()));
   }
 
   /**
    * `useLayoutEffect` e não `useEffect`: o `inert` tem de estar no nó
-   * ANTES do primeiro paint em que ele já é a folha que sai. Um efeito
-   * comum roda depois do paint, e nesse quadro a folha ainda receberia
-   * toque — e, pior, o CSS da saída (`.hud-dialogo[inert]`, fatia 9) só
-   * começaria um quadro atrasado, com a folha parada no lugar.
+   * ANTES do primeiro paint em que ele já é a gaveta que sai. Um efeito
+   * comum roda depois do paint, e nesse quadro ela ainda receberia toque
+   * — e, pior, o CSS da saída (`.hud-dialogo[inert]`: `saiPainel` na
+   * fatia 1, `folhaDesce` na 9) só começaria um quadro atrasado, com o
+   * painel parado no lugar.
    */
   useLayoutEffect(() => {
     if (!saindo) return;
-    /**
-     * A JANELA VIROU MESA NO MEIO DA SAÍDA (girar o aparelho, arrastar a
-     * borda): a folha que descia deixou de ser folha — o
-     * `.hud-dialogo[inert]` que a desenha mora dentro do `@media
-     * (max-width: 760px)` da fatia 9. `montada` já não a monta (lá
-     * embaixo), então não há nó nenhum a marcar; sobra apagar o estado, e
-     * disso o temporizador de sempre dá conta.
-     */
-    const no = celular
-      ? document.querySelector(`[${'data-dialogo'}="${saindo}"]`)
-      : null;
+    const no = document.querySelector(`[${'data-dialogo'}="${saindo}"]`);
+    // o `inert` ANTES da leitura: é ele que faz o navegador escolher a
+    // regra da saída, e é a duração DELA que se quer perguntar
     no?.setAttribute('inert', '');
-    const id = window.setTimeout(() => setSaindo(null), SAIDA_DA_FOLHA_MS);
+    const id = window.setTimeout(() => setSaindo(null), duracaoDaSaida(no));
     return () => {
       window.clearTimeout(id);
       /**
@@ -373,9 +400,9 @@ export function useGavetas(
        * sabe dele, e na reabertura `montada` continua sendo a MESMA
        * gaveta — o mesmo nó volta com o atributo grudado, sem toque, sem
        * foco, fora da árvore de quem ouve a tela e, pelo
-       * `.hud-dialogo[inert]`, ainda descendo para fora do quadro. Uma
-       * folha viva e invisível, que só voltava a si depois de fechar de
-       * novo e esperar os 260 ms inteiros.
+       * `.hud-dialogo[inert]`, ainda saindo de cena. Uma gaveta viva e
+       * invisível, que só voltava a si depois de fechar de novo e
+       * esperar a saída inteira.
        *
        * Uma limpeza cobre as DUAS saídas deste estado: a que o
        * temporizador termina (o nó já foi, `isConnected` é falso, nada a
@@ -383,7 +410,7 @@ export function useGavetas(
        */
       if (no?.isConnected) no.removeAttribute('inert');
     };
-  }, [saindo, celular]);
+  }, [saindo]);
 
   /**
    * A ALÇA ABERTA VEM PARA A TELA. A fileira não quebra linha (quebrar
@@ -608,10 +635,7 @@ export function useGavetas(
 
   return {
     gaveta,
-    // o `celular &&` é a rotação no meio da saída: sem ele, a folha que
-    // descia reapareceria por 260 ms como painel de MESA, no canto, já
-    // fechada — um fantasma que ninguém pediu
-    montada: gaveta ?? (celular ? saindo : null),
+    montada: gaveta ?? saindo,
     alternarGaveta,
     fecharGaveta,
     fecharTodas,
