@@ -70,21 +70,32 @@ try {
     'o convite é filho DIRETO de .hud-root (a regra do .bare-mode só alcança esses)'
   );
 
-  /** o furo do Spotlight contra o retângulo medido do alvo declarado */
-  const ancoragem = () => js(`(() => {
+  /** o furo do Spotlight contra o retângulo medido do alvo declarado. O
+   *  recorte DESLIZA de um alvo ao próximo desde o C5 (`ef624b2`): a
+   *  geometria chega pelo `style` (x/y/width/height em CSS, interpolados
+   *  por uma transição), não mais por atributo — então a leitura espera
+   *  a transição acabar (teto de 1,5 s) e lê o valor COMPUTADO. */
+  const ancoragem = async () => {
+    for (let i = 0; i < 30; i++) {
+      const parado = await js(
+        "(document.querySelector('.spotlight-recorte')?.getAnimations().length ?? 0) === 0"
+      );
+      if (parado) break;
+      await dorme(50);
+    }
+    return js(`(() => {
     const cartaz = document.querySelector('.spotlight-cartao');
-    const furos = [...document.querySelectorAll('.spotlight-mascara rect')]
-      .filter((r) => r.getAttribute('width') !== '100%');
-    if (!furos.length) return null;
-    const f = furos[0];
+    const f = document.querySelector('.spotlight-recorte');
+    if (!f) return null;
     const caixa = (el) => { const b = el.getBoundingClientRect();
       return { x: b.left, y: b.top, w: b.width, h: b.height }; };
     const spots = [...document.querySelectorAll('[data-spot]')].map((e) => ({
       nome: e.getAttribute('data-spot'), ...caixa(e),
     }));
+    const cs = getComputedStyle(f);
     const furo = {
-      x: +f.getAttribute('x'), y: +f.getAttribute('y'),
-      w: +f.getAttribute('width'), h: +f.getAttribute('height'),
+      x: parseFloat(cs.x), y: parseFloat(cs.y),
+      w: parseFloat(cs.width), h: parseFloat(cs.height),
     };
     // de qual alvo este furo é? o que casa em folga constante nos 4 lados
     const dono = spots.find((s) =>
@@ -99,6 +110,7 @@ try {
       spots: spots.map((s) => s.nome).join(','),
     };
   })()`);
+  };
 
   const passo1 = await ancoragem();
   conferir(
