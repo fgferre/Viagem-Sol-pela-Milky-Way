@@ -23,6 +23,7 @@
 //   node scripts/visual/sonda-motion.mjs --app=http://localhost:58697
 //   node scripts/visual/sonda-motion.mjs --folha --app=http://localhost:58697
 //   node scripts/visual/sonda-motion.mjs --c5 --app=http://localhost:58697
+//   node scripts/visual/sonda-motion.mjs --contorno --app=http://localhost:5180
 //
 // Saída (nomes inéditos — nunca sobrescreve, ver `semSobrescrever`):
 //   capturas/motion-c0-<commit>.json       todas as amostras + metadados
@@ -91,6 +92,14 @@ const FOLHA = process.argv.includes('--folha');
 // Não é um gate de PASSA/FALHA — roda uma vez e relata os números.
 // Opt-in: sem a flag, nada aqui muda.
 const C5 = process.argv.includes('--c5');
+// `--contorno` troca a corrida de sempre pelo A/B do C6 do plano de
+// motion (docs/PLANO-MOTION-UI.md §7 e §12.5): o reflexo CSS de sempre
+// (A) contra A + o protótipo de halo WebGL (B, `?contorno=webgl`,
+// `three/core/contornoDaUi.ts`) na mesma abertura da aba Camadas —
+// clipes recortados na borda, prova por luminância e custo pareado de
+// GPU/quadro. Roda uma vez e relata os números, como `--c5`; não é
+// PASSA/FALHA. Opt-in: sem a flag, nada aqui muda.
+const CONTORNO = process.argv.includes('--contorno');
 
 const SEL_CAMADAS_GATILHO = '[data-abre-dialogo="camadas"]';
 const SEL_AJUSTES_GATILHO = '[data-abre-dialogo="ajustes"]';
@@ -2549,6 +2558,522 @@ async function rodarC5() {
 }
 
 // ============================================================
+// `--contorno` — C6 do plano de motion (docs/PLANO-MOTION-UI.md §7 e
+// §12.5): o A/B do halo WebGL de borda (`three/core/contornoDaUi.ts`,
+// `?contorno=webgl`) contra o reflexo CSS de sempre
+// (`reflexoDeAbertura`, `01-base.css`, que roda nos dois lados — esta
+// sonda nunca o desliga). Quatro peças, na ordem do enunciado:
+//   1) dois clipes (A sem a flag, B com ela) recortados na FAIXA da
+//      borda esquerda/superior do painel (60px fora + 20px dentro),
+//      só os 450ms depois do clique, mais UMA imagem lado a lado (A em
+//      cima, B embaixo, mesmos instantes relativos ao clique);
+//   2) prova por luminância: a faixa 4–20px fora da borda ESQUERDA tem
+//      de clarear mais em B que em A enquanto o halo está vivo e
+//      voltar a bater com A depois de ~450ms — e ficar no nível de A
+//      também em B com `&shot=1` e com "reduzir movimento" ligado (os
+//      dois portões que `App.tsx`/`Director` já fecham por código;
+//      isto é a PROVA, não a implementação);
+//   3) custo pareado: o tempo de GPU do desenho do halo (só existe em
+//      B — o mesmo truque de `EXT_disjoint_timer_query_webgl2` de
+//      `gpu-profile.mjs`, reescrito aqui porque aquele arquivo dispara
+//      um Chrome property ao ser importado, não é uma função) e a
+//      distribuição do tempo de quadro (rAF) nos 450ms depois de CADA
+//      abertura, A×B, dez aberturas cada — abrindo/fechando a aba
+//      Camadas dez vezes, sempre esperando a saída terminar (só assim
+//      `montada` volta a `null` e o próximo clique é de novo um
+//      nascimento "do nada", o único gatilho que o C6 liga).
+// Roda uma vez e relata os números — não é PASSA/FALHA como
+// `--interrupcoes`/`--folha`: o veredito de adoção é do dono (aceite
+// do C6, linha 542), a régua só mede.
+// ============================================================
+
+/**
+ * O INSTRUMENTO DE GPU/QUADRO, injetado por
+ * `Page.addScriptToEvaluateOnNewDocument` (uma vez por sessão — CDP
+ * reaplica sozinho em CADA navegação seguinte). Mesma técnica de
+ * `gpu-profile.mjs` (timer query por draw, rótulo pelo texto do
+ * shader), reescrita aqui porque IMPORTAR aquele arquivo dispararia o
+ * Chrome dele — o cabeçalho desta sonda pede exatamente o contrário.
+ * Dois desvios do original: (a) só um rótulo interessa —
+ * `distanciaAoRetangulo`, função só do fragment shader do halo
+ * (`contornoDaUi.ts`) — o resto vira `outro` e é descartado; (b) o
+ * embrulho do `requestAnimationFrame` roda SEMPRE, mesmo sem a
+ * extensão — o tempo de quadro (rAF) não depende dela, só o tempo de
+ * GPU depende.
+ */
+const SCRIPT_GPU_HALO = `
+window.__contornoProf = { ready: 0, ext: 0, err: null, halo: [], rafAbs: [] };
+(() => {
+  const G = window.__contornoProf;
+  const origGet = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, attrs) {
+    const gl = origGet.call(this, type, attrs);
+    if (gl && !G.ready && this.isConnected && (type === 'webgl2' || type === 'webgl')) {
+      try { instrument(gl, type === 'webgl2'); } catch (e) { G.err = String((e && e.stack) || e); }
+    }
+    return gl;
+  };
+  function instrument(gl, is2) {
+    G.ready = 1;
+    const ext = gl.getExtension(is2 ? 'EXT_disjoint_timer_query_webgl2' : 'EXT_disjoint_timer_query');
+    G.ext = ext ? 1 : 0;
+    let poll = () => {};
+    if (ext) {
+      const TE = ext.TIME_ELAPSED_EXT;
+      const src = new WeakMap();
+      const shaders = new WeakMap();
+      const label = new WeakMap();
+      const oSrc = gl.shaderSource.bind(gl);
+      gl.shaderSource = (sh, s) => { src.set(sh, s); oSrc(sh, s); };
+      const oAtt = gl.attachShader.bind(gl);
+      gl.attachShader = (p, sh) => {
+        const a = shaders.get(p) || [];
+        a.push(sh);
+        shaders.set(p, a);
+        oAtt(p, sh);
+      };
+      const labelOf = (p) => {
+        let l = label.get(p);
+        if (l) return l;
+        const s = (shaders.get(p) || []).map((sh) => src.get(sh) || '').join('\\n');
+        l = s.includes('distanciaAoRetangulo') ? 'halo:contorno' : 'outro';
+        label.set(p, l);
+        return l;
+      };
+      let cur = null;
+      const oUse = gl.useProgram.bind(gl);
+      gl.useProgram = (p) => { cur = p; oUse(p); };
+      const free = [];
+      const pending = [];
+      let active = null;
+      const nomes = ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements'];
+      for (const nome of nomes) {
+        if (typeof gl[nome] !== 'function') continue;
+        const orig = gl[nome].bind(gl);
+        gl[nome] = function (...a) {
+          if (active) return orig(...a);
+          const q = free.pop() || gl.createQuery();
+          try { gl.beginQuery(TE, q); active = q; } catch (e) { return orig(...a); }
+          const r = orig(...a);
+          gl.endQuery(TE);
+          active = null;
+          pending.push({ q, l: cur ? labelOf(cur) : 'semPrograma' });
+          return r;
+        };
+      }
+      poll = () => {
+        while (pending.length) {
+          const r = pending[0];
+          if (!gl.getQueryParameter(r.q, gl.QUERY_RESULT_AVAILABLE)) break;
+          pending.shift();
+          const dis = gl.getParameter(ext.GPU_DISJOINT_EXT);
+          const ns = gl.getQueryParameter(r.q, gl.QUERY_RESULT);
+          free.push(r.q);
+          if (dis) continue;
+          if (r.l === 'halo:contorno') G.halo.push({ ns, t: performance.now() });
+        }
+      };
+    }
+    const oRAF = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (cb) => oRAF((t) => {
+      poll();
+      G.rafAbs.push(t);
+      return cb(t);
+    });
+  }
+})();
+`;
+
+/** p50/p95 (ou o que `p` pedir, 0..1) — `null` sem amostra nenhuma, o
+ *  caso esperado do halo em A (a flag nem existe lá). */
+function percentilDe(valores, p) {
+  if (!valores.length) return null;
+  const s = [...valores].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.floor(p * (s.length - 1)))];
+}
+
+/** o quadro (de `gravarClipe`) cujo instante REAL (`ts`, segundos,
+ *  `Page.screencastFrame.metadata.timestamp`) mais se aproxima de
+ *  `t0Ms + alvoMs` — `t0Ms` é `Date.now()` do Node, a mesma base de
+ *  época (UTC, unix) que o CDP usa nesse campo, por isso a comparação
+ *  é direta, sem segundo relógio para reconciliar. */
+function quadroMaisProximoDoAlvo(quadros, t0Ms, alvoMs) {
+  let melhor = null;
+  let menorDif = Infinity;
+  for (const q of quadros) {
+    const dif = Math.abs(q.ts * 1000 - (t0Ms + alvoMs));
+    if (dif < menorDif) { menorDif = dif; melhor = q; }
+  }
+  return melhor;
+}
+
+/** a luminância MÉDIA (`YAVG`, 0–255) de uma região de um PNG — prova
+ *  se B clareia uma faixa que A não alcança. `signalstats` calcula,
+ *  `metadata=print:file=-` manda o valor para STDOUT (não o log de
+ *  sempre do ffmpeg, que vai para stderr). */
+function luminanciaMediaPng(arquivoPng, { x, y, largura, altura }) {
+  const r = spawnSync(FFMPEG, [
+    '-i', arquivoPng,
+    '-vf', `crop=${largura}:${altura}:${x}:${y},signalstats,metadata=print:file=-`,
+    '-f', 'null', '-',
+  ], { stdio: 'pipe' });
+  if (r.status !== 0) {
+    throw new Error(`ffmpeg (luminância) falhou (${r.status}): ${(r.stderr || '').toString().slice(-800)}`);
+  }
+  const m = /lavfi\.signalstats\.YAVG=([\d.]+)/.exec((r.stdout || '').toString());
+  if (!m) throw new Error(`luminância: YAVG não encontrado em ${arquivoPng}`);
+  return Number.parseFloat(m[1]);
+}
+
+/** arredonda para PAR — a mesma exigência que já derrubou um clipe
+ *  desta sonda antes (comentário de `abrirSonda`, "altura ÍMPAR, que o
+ *  libx264 recusa"): o recorte do C6 vira `-pix_fmt yuv420p` de novo. */
+const parPixel = (n) => {
+  const r = Math.round(n);
+  return r % 2 === 0 ? r : r - 1;
+};
+
+/** a faixa do RECORTE (clipes `-a-`/`-b-`): 60px fora + 20px dentro na
+ *  horizontal (a borda ESQUERDA), 60px de folga acima do topo até o pé
+ *  do painel (cobre também a borda de CIMA, e o percurso inteiro do
+ *  ponto quente que desce a esquerda — seção 7/12.5 do plano). */
+function faixaDoRecorte(painel) {
+  const FORA = 60;
+  const DENTRO = 20;
+  const x = Math.max(0, Math.round(painel.x - FORA));
+  const y = Math.max(0, Math.round(painel.y - FORA));
+  const x1 = painel.x + DENTRO;
+  const y1 = painel.y + painel.height + FORA;
+  const largura = Math.min(parPixel(x1 - x), 1440 - x);
+  const altura = Math.min(parPixel(y1 - y), 900 - y);
+  return { x, y, largura, altura };
+}
+
+/** a faixa da PROVA por luminância: 16px de largura, 4–20px fora da
+ *  borda ESQUERDA de repouso — fora do DOM opaco do painel (regra 5 da
+ *  seção 7: o halo só existe onde a página não pintou nada), altura
+ *  inteira do painel (o termo `base` do shader não decai com Y, só a
+ *  intensidade geral do envelope de tempo — qualquer Y already mostra
+ *  a diferença). */
+function faixaDeLuminancia(painel) {
+  return {
+    x: Math.max(0, Math.round(painel.x - 20)),
+    y: Math.round(painel.y),
+    largura: 16,
+    altura: Math.max(2, Math.round(painel.height)),
+  };
+}
+
+/** recorta ESPACIALMENTE (a faixa da borda) e no TEMPO (janela relativa
+ *  ao clique, calculada por quem chama) um clipe já bruto — o clipe
+ *  final `-a-`/`-b-` do C6. */
+function recortarClipeContorno(clipeOrigem, retangulo, { inicioSeg, duracaoSeg }, destinoFinal) {
+  const destino = semSobrescrever(destinoFinal);
+  const r = spawnSync(FFMPEG, [
+    '-y', '-i', clipeOrigem,
+    '-ss', Math.max(0, inicioSeg).toFixed(3), '-t', duracaoSeg.toFixed(3),
+    '-vf', `crop=${retangulo.largura}:${retangulo.altura}:${retangulo.x}:${retangulo.y}`,
+    '-pix_fmt', 'yuv420p',
+    destino,
+  ], { stdio: 'pipe' });
+  if (r.status !== 0) {
+    throw new Error(`ffmpeg (recorte c6) falhou (${r.status}): ${(r.stderr || '').toString().slice(-800)}`);
+  }
+  return destino;
+}
+
+/** UMA imagem, A empilhado sobre B, nos MESMOS instantes relativos ao
+ *  clique: `QUADROS_LADO` colunas por clipe (`tile=Nx1`, o mesmo par
+ *  fps-calculado/tile de `renderizarContato`), depois `vstack`. */
+function ladoALadoContorno(clipeA, clipeB, janelaSegundos, destinoFinal) {
+  const QUADROS_LADO = 5;
+  const fps = (QUADROS_LADO + 1) / Math.max(janelaSegundos, 0.1);
+  const destino = semSobrescrever(destinoFinal);
+  const r = spawnSync(FFMPEG, [
+    '-y', '-i', clipeA, '-i', clipeB,
+    '-filter_complex',
+    `[0:v]fps=${fps.toFixed(4)},tile=${QUADROS_LADO}x1[a];`
+      + `[1:v]fps=${fps.toFixed(4)},tile=${QUADROS_LADO}x1[b];`
+      + '[a][b]vstack=inputs=2[saida]',
+    '-map', '[saida]', '-frames:v', '1',
+    destino,
+  ], { stdio: 'pipe' });
+  if (r.status !== 0) {
+    throw new Error(`ffmpeg (lado a lado c6) falhou (${r.status}): ${(r.stderr || '').toString().slice(-800)}`);
+  }
+  return destino;
+}
+
+/** área do quad (px², DPR 1) a partir do retângulo do painel — a mesma
+ *  conta de `contornoDaUi.ts` (`MARGEM_DO_QUAD_PX = SIGMA_PX * 4 = 48`,
+ *  o quad cresce 48px para cada lado nos dois eixos). */
+const areaDoQuadPx = (r) => (r.width + 96) * (r.height + 96);
+
+async function rodarContorno() {
+  mkdirSync(CAPTURAS, { recursive: true });
+  const pastaA = resolve(tmpdir(), `sonda-motion-contorno-a-${process.pid}`);
+  const pastaB = resolve(tmpdir(), `sonda-motion-contorno-b-${process.pid}`);
+  let sessao = null;
+  try {
+    const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
+    const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
+
+    sessao = await abrirSonda({ janela: '1440x900', prefixo: 'sonda-motion-contorno' });
+    const viewport = {
+      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+    };
+    await sessao.send('Emulation.setDeviceMetricsOverride', viewport);
+    sessao.marcarViewport(viewport);
+    const versaoChrome = await sessao.send('Browser.getVersion');
+    await sessao.send('Page.addScriptToEvaluateOnNewDocument', { source: SCRIPT_GPU_HALO });
+
+    const carregar = async (query) => {
+      let assentou = null;
+      let ultimoErro = null;
+      for (let tentativa = 1; tentativa <= 3 && !assentou; tentativa++) {
+        try {
+          assentou = await sessao.ir(query);
+        } catch (e) {
+          ultimoErro = e;
+          process.stdout.write(`tentativa ${tentativa}/3 de carregar o app falhou: ${e.message}\n`);
+          await dorme(500);
+        }
+      }
+      if (!assentou) throw new Error(`o app não carregou em 3 tentativas (${ultimoErro?.message})`);
+      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_GATILHO}'))`, 10000);
+      await pularTour(sessao);
+      await dorme(300);
+    };
+
+    // UMA abertura GRAVADA (passo 1) — o painel some de novo antes de
+    // devolver, para a página ficar limpa para as dez do passo 3, na
+    // MESMA navegação.
+    const capturarAbertura = async (pasta) => {
+      let t0Ms = 0;
+      const quadros = await gravarClipe(
+        sessao,
+        { largura: 1440, altura: 900, pastaQuadros: pasta },
+        async () => {
+          await dorme(150); // quadros "de antes", para o recorte ter contexto
+          await clicarReal(sessao, SEL_CAMADAS_GATILHO);
+          t0Ms = Date.now();
+          await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_PAINEL}'))`, 3000);
+          await dorme(600); // 450ms pedidos + folga além do teto do halo (400ms)
+        }
+      );
+      const painel = await retanguloDe(sessao, SEL_CAMADAS_PAINEL);
+      await clicarReal(sessao, `${SEL_CAMADAS_PAINEL} .hud-fechar`);
+      await esperarPor({ js: sessao.js }, `document.querySelector('${SEL_CAMADAS_PAINEL}') === null`, 3000);
+      await dorme(200);
+      return { quadros, t0Ms, painel };
+    };
+
+    // DEZ aberturas SEM gravação (passo 3, custo) — marca o clique no
+    // relógio DA PÁGINA (`performance.now()`, a base do `rAF`/GPU do
+    // instrumento), espera a janela medida, fecha e ESPERA A SAÍDA
+    // TERMINAR antes da próxima: sem isso `montada` não volta a `null`
+    // e o próximo clique seria uma TROCA, não um nascimento — e o C6
+    // nunca ligaria de novo (`App.tsx`, guarda `anterior !== null`).
+    const medirCusto = async () => {
+      const t0sPerf = [];
+      for (let i = 0; i < 10; i++) {
+        await clicarReal(sessao, SEL_CAMADAS_GATILHO);
+        t0sPerf.push(await sessao.js('performance.now()'));
+        await dorme(600);
+        await clicarReal(sessao, `${SEL_CAMADAS_PAINEL} .hud-fechar`);
+        await esperarPor({ js: sessao.js }, `document.querySelector('${SEL_CAMADAS_PAINEL}') === null`, 3000);
+        await dorme(150);
+      }
+      const prof = await sessao.js('window.__contornoProf');
+      return { t0sPerf, prof };
+    };
+
+    // uma foto só (`Page.captureScreenshot`) para `&shot=1` e para
+    // "reduzir movimento" — os dois não têm abertura animada nenhuma
+    // para recortar no tempo, e os dois portões já são código
+    // (`semMovimento()`/`Director.shotMode`); isto só fotografa o
+    // resultado.
+    const medirSemHalo = async ({ query, reduzido, arquivo }) => {
+      await carregar(query);
+      if (reduzido) {
+        await sessao.send('Emulation.setEmulatedMedia', {
+          features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+        });
+      }
+      await clicarReal(sessao, SEL_CAMADAS_GATILHO);
+      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_PAINEL}'))`, 3000);
+      await dorme(200); // o pico do halo (60ms), se existisse, já teria passado
+      const shot = await sessao.send('Page.captureScreenshot', { format: 'png' });
+      const painel = await retanguloDe(sessao, SEL_CAMADAS_PAINEL);
+      if (reduzido) await sessao.send('Emulation.setEmulatedMedia', { features: [] });
+      if (!painel) throw new Error('painel de Camadas não encontrado (shot/reduzido)');
+      writeFileSync(arquivo, Buffer.from(shot.data, 'base64'));
+      return luminanciaMediaPng(arquivo, faixaDeLuminancia(painel));
+    };
+
+    process.stdout.write('  ·     A (CSS só)…\n');
+    await carregar(QUERY);
+    const capA = await capturarAbertura(pastaA);
+    const custoA = await medirCusto();
+
+    process.stdout.write('  ·     B (CSS + halo WebGL)…\n');
+    await carregar(`${QUERY}&contorno=webgl`);
+    const capB = await capturarAbertura(pastaB);
+    const custoB = await medirCusto();
+
+    if (!capA.painel || !capB.painel) {
+      throw new Error('painel de Camadas não encontrado ao medir o retângulo de repouso');
+    }
+
+    // A REFERÊNCIA de cada checagem é o MESMO modo (shot/reduzido) SEM a
+    // flag — não o repouso "ao vivo" de A: medido (11/09), `shot=1`
+    // sozinho já muda a cena determinística nesta faixa (27,5 contra
+    // ~22 "ao vivo"), sem `contorno=webgl` nenhum — comparar B contra o
+    // repouso ao vivo teria acusado um halo que não existe.
+    process.stdout.write('  ·     shot=1, sem a flag (referência)…\n');
+    const luminanciaShotA = await medirSemHalo({
+      query: `${QUERY}&shot=1`, reduzido: false, arquivo: resolve(pastaA, 'still-shot.png'),
+    });
+    process.stdout.write('  ·     B com &shot=1…\n');
+    const luminanciaShotB = await medirSemHalo({
+      query: `${QUERY}&contorno=webgl&shot=1`, reduzido: false, arquivo: resolve(pastaB, 'still-shot.png'),
+    });
+    process.stdout.write('  ·     reduzir-movimento, sem a flag (referência)…\n');
+    const luminanciaReduzidoA = await medirSemHalo({
+      query: QUERY, reduzido: true, arquivo: resolve(pastaA, 'still-reduzido.png'),
+    });
+    process.stdout.write('  ·     B com reduzir-movimento…\n');
+    const luminanciaReduzidoB = await medirSemHalo({
+      query: `${QUERY}&contorno=webgl`, reduzido: true, arquivo: resolve(pastaB, 'still-reduzido.png'),
+    });
+
+    // ---- passo 1: clipes recortados + lado a lado ----
+    const brutoA = renderizarClipe(capA.quadros, resolve(pastaA, 'bruto.mp4'));
+    const brutoB = renderizarClipe(capB.quadros, resolve(pastaB, 'bruto.mp4'));
+    const janelaA = { inicioSeg: capA.t0Ms / 1000 - capA.quadros[0].ts, duracaoSeg: 0.45 };
+    const janelaB = { inicioSeg: capB.t0Ms / 1000 - capB.quadros[0].ts, duracaoSeg: 0.45 };
+    const clipeA = recortarClipeContorno(
+      brutoA, faixaDoRecorte(capA.painel), janelaA, resolve(CAPTURAS, `motion-c6-a-${commit}.mp4`)
+    );
+    const clipeB = recortarClipeContorno(
+      brutoB, faixaDoRecorte(capB.painel), janelaB, resolve(CAPTURAS, `motion-c6-b-${commit}.mp4`)
+    );
+    const ladoALado = ladoALadoContorno(
+      clipeA, clipeB, 0.45, resolve(CAPTURAS, `motion-c6-lado-a-lado-${commit}.png`)
+    );
+
+    // ---- passo 2: prova por luminância ----
+    const ALVOS_MS = [100, 200, 300, 600];
+    const luminanciaEm = (cap) => Object.fromEntries(ALVOS_MS.map((alvoMs) => {
+      const q = quadroMaisProximoDoAlvo(cap.quadros, cap.t0Ms, alvoMs);
+      return [`t${alvoMs}`, q ? luminanciaMediaPng(q.arquivo, faixaDeLuminancia(cap.painel)) : null];
+    }));
+    const luminanciaA = luminanciaEm(capA);
+    const luminanciaB = luminanciaEm(capB);
+
+    // ---- passo 3: custo pareado ----
+    const dentroDeAlgumaAbertura = (t, t0sPerf) => t0sPerf.some((t0) => t >= t0 && t <= t0 + 450);
+    const haloMs = custoB.prof.halo
+      .filter((h) => dentroDeAlgumaAbertura(h.t, custoB.t0sPerf))
+      .map((h) => h.ns / 1e6);
+    const frameTimeDe = ({ t0sPerf, prof }) => {
+      const deltas = [];
+      for (let i = 1; i < prof.rafAbs.length; i++) {
+        if (dentroDeAlgumaAbertura(prof.rafAbs[i], t0sPerf)) deltas.push(prof.rafAbs[i] - prof.rafAbs[i - 1]);
+      }
+      return deltas;
+    };
+    const frameTimeA = frameTimeDe(custoA);
+    const frameTimeB = frameTimeDe(custoB);
+
+    const relatorio = {
+      meta: {
+        commit,
+        dirty,
+        // O SERVIDOR É DE OUTRA ÁRVORE (isolada, item obrigatório do
+        // enunciado): `commit`/`dirty` acima são desta sonda, não do
+        // app que ela mede.
+        appCommit: 'dcc08ea (servidor isolado, árvore limpa)',
+        chrome: versaoChrome.product,
+        app: APP,
+        viewport: { width: 1440, height: 900 },
+        dpr: 1,
+        idioma: 'pt-BR',
+        preset: 'performance',
+        geradoEm: new Date().toISOString(),
+      },
+      clipes: { a: clipeA, b: clipeB, ladoALado },
+      recorte: { a: faixaDoRecorte(capA.painel), b: faixaDoRecorte(capB.painel) },
+      areaDoQuadPx: { a: areaDoQuadPx(capA.painel), b: areaDoQuadPx(capB.painel) },
+      luminancia: {
+        faixaPx: '4–20px fora da borda esquerda, largura 16px, altura do painel',
+        a: luminanciaA,
+        b: luminanciaB,
+        // referência = MESMO modo (shot/reduzido) sem `contorno=webgl` —
+        // não o repouso "ao vivo" de `a` acima (ver comentário no ponto
+        // de coleta, mais acima nesta função).
+        shot: { a: luminanciaShotA, b: luminanciaShotB },
+        reduzido: { a: luminanciaReduzidoA, b: luminanciaReduzidoB },
+      },
+      custo: {
+        extDisponivel: { a: Boolean(custoA.prof.ext), b: Boolean(custoB.prof.ext) },
+        haloGpuMs: {
+          amostras: haloMs.length,
+          p50: percentilDe(haloMs, 0.5),
+          p95: percentilDe(haloMs, 0.95),
+        },
+        haloDesenhouEmA: custoA.prof.halo.length, // esperado 0 — a flag nem existe em A
+        frameTimeMs: {
+          a: { amostras: frameTimeA.length, p50: percentilDe(frameTimeA, 0.5), p95: percentilDe(frameTimeA, 0.95) },
+          b: { amostras: frameTimeB.length, p50: percentilDe(frameTimeB, 0.5), p95: percentilDe(frameTimeB, 0.95) },
+        },
+        aberturas: 10,
+        janelaMs: 450,
+      },
+    };
+    const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-c6-${commit}.json`));
+    writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
+
+    const fmt = (n, casas = 1) => (n === null || n === undefined ? '-' : n.toFixed(casas));
+    const linhas = [
+      `=== sonda-motion c6 (halo WebGL × CSS) — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app dcc08ea (servidor isolado) ===`,
+      `Chrome ${versaoChrome.product} | mesa 1440x900 DPR1 | pt-BR | q=performance`,
+      `clipe A: ${clipeA}`,
+      `clipe B: ${clipeB}`,
+      `lado a lado: ${ladoALado}`,
+      `luminância (YAVG 0-255, faixa 4-20px fora da borda esquerda) — `
+        + `A: 100ms=${fmt(luminanciaA.t100)} 200ms=${fmt(luminanciaA.t200)} 300ms=${fmt(luminanciaA.t300)} 600ms=${fmt(luminanciaA.t600)} | `
+        + `B: 100ms=${fmt(luminanciaB.t100)} 200ms=${fmt(luminanciaB.t200)} 300ms=${fmt(luminanciaB.t300)} 600ms=${fmt(luminanciaB.t600)}`,
+      `shot=1 — sem a flag: ${fmt(luminanciaShotA)} | B: ${fmt(luminanciaShotB)} `
+        + `(a referência é o PRÓPRIO shot=1 sem a flag, não o repouso ao vivo de A: `
+        + `medido, shot=1 sozinho já muda essa faixa para ~27 contra ~22 ao vivo)`,
+      `reduzir-movimento — sem a flag: ${fmt(luminanciaReduzidoA)} | B: ${fmt(luminanciaReduzidoB)}`,
+      `GPU do halo (só existe em B) — ${relatorio.custo.haloGpuMs.amostras} amostras, `
+        + `p50=${fmt(relatorio.custo.haloGpuMs.p50, 3)}ms p95=${fmt(relatorio.custo.haloGpuMs.p95, 3)}ms `
+        + `(halo desenhou em A: ${relatorio.custo.haloDesenhouEmA} vezes — esperado 0) `
+        + `[EXT_disjoint_timer_query_webgl2 disponível: A=${relatorio.custo.extDisponivel.a} B=${relatorio.custo.extDisponivel.b}]`,
+      `tempo de quadro nos 450ms após cada abertura (rAF, ms), 10 aberturas cada — `
+        + `A: ${frameTimeA.length} amostras p50=${fmt(relatorio.custo.frameTimeMs.a.p50, 2)} p95=${fmt(relatorio.custo.frameTimeMs.a.p95, 2)} | `
+        + `B: ${frameTimeB.length} amostras p50=${fmt(relatorio.custo.frameTimeMs.b.p50, 2)} p95=${fmt(relatorio.custo.frameTimeMs.b.p95, 2)}`,
+      'números crus deste Mac, cabeça headless: sob vsync o rAF só entrega múltiplos de ~16,7ms — uma '
+        + 'diferença de custo menor que isso pode não aparecer no tempo de quadro mesmo existindo na GPU '
+        + '(mesmo ponto do comentário `SEM_VSYNC` em gpu-profile.mjs); por isso o p50/p95 da GPU acima é '
+        + 'a medida mais confiável do custo do passe em si.',
+      `área do quad (retângulo do painel + 48px de margem por lado, DPR 1) — A: ${areaDoQuadPx(capA.painel)}px² B: ${areaDoQuadPx(capB.painel)}px²`,
+      `JSON: ${destinoJson}`,
+    ];
+    process.stdout.write(`${linhas.join('\n')}\n`);
+  } catch (erro) {
+    process.stdout.write(`BLOCKED: ${erro.stack || erro.message}\n`);
+    process.exitCode = 1;
+  } finally {
+    if (sessao) await sessao.fechar();
+    rmSync(pastaA, { recursive: true, force: true });
+    rmSync(pastaB, { recursive: true, force: true });
+  }
+}
+
+// ============================================================
 // A CORRIDA
 // ============================================================
 // SEM REINDENTAR o bloco padrão abaixo (C3, `--sequencia`): é a corrida
@@ -2562,6 +3087,8 @@ if (FOLHA) {
   await rodarInterrupcoes();
 } else if (C5) {
   await rodarC5();
+} else if (CONTORNO) {
+  await rodarContorno();
 } else if (!SEQUENCIA) {
 mkdirSync(CAPTURAS, { recursive: true });
 const pastaQuadrosMesa = resolve(tmpdir(), `sonda-motion-mesa-${process.pid}`);
