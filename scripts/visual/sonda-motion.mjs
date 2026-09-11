@@ -49,10 +49,51 @@ const FFMPEG = process.env.FFMPEG || '/opt/homebrew/bin/ffmpeg';
 
 const argApp = process.argv.find((a) => a.startsWith('--app='));
 const APP = argApp ? argApp.slice('--app='.length) : 'http://localhost:58697';
-const QUERY = 'atlas=1&q=performance&lang=pt-BR';
+
+// --dpr=N — o deviceScaleFactor usado em TODA emulação de métricas desta
+// sonda (todo `Emulation.setDeviceMetricsOverride`) e na flag do Chrome
+// que abre a aba (`abrirSonda`, `--force-device-scale-factor`). Ausente,
+// o padrão de sempre (1) — nenhum comportamento muda.
+const argDpr = process.argv.find((a) => a.startsWith('--dpr='));
+const DPR = argDpr ? Number(argDpr.slice('--dpr='.length)) : 1;
+
+// --query=k=v&k2=v2 — mescla por CIMA da query base de cada modo,
+// sobrescrevendo as mesmas chaves (as outras sobrevivem); ausente, a
+// query de sempre, intocada. `URLSearchParams.set` atualiza uma chave já
+// presente NO LUGAR dela (ex.: `lang=pt-BR` vira `lang=en` sem mudar a
+// ordem) — só uma chave nova vai para o fim.
+const argQuery = process.argv.find((a) => a.startsWith('--query='));
+const QUERY_OVERRIDES = argQuery ? argQuery.slice('--query='.length) : '';
+function mesclarQuery(base) {
+  if (!QUERY_OVERRIDES) return base;
+  const params = new URLSearchParams(base);
+  for (const [chave, valor] of new URLSearchParams(QUERY_OVERRIDES)) params.set(chave, valor);
+  return params.toString();
+}
+
+// --janela=WxH — o viewport de MESA que todo modo na mesa usa para abrir
+// a aba e para VOLTAR depois de testar um redimensionamento; ausente,
+// 1440x900 de sempre.
+const argJanela = process.argv.find((a) => a.startsWith('--janela='));
+const JANELA = argJanela ? argJanela.slice('--janela='.length) : '1440x900';
+const [JANELA_W, JANELA_H] = JANELA.split('x').map(Number);
+
+// --telefone=WxH — o viewport de CELULAR (retrato) que todo modo no
+// celular usa; ausente, 390x844 de sempre.
+const argTelefone = process.argv.find((a) => a.startsWith('--telefone='));
+const TELEFONE = argTelefone ? argTelefone.slice('--telefone='.length) : '390x844';
+const [TELEFONE_W, TELEFONE_H] = TELEFONE.split('x').map(Number);
+
+// --app-commit=<texto> — substitui o commit fixo do "servidor isolado" no
+// meta de todo modo; ausente, "mesmo commit da árvore" (o caso comum: a
+// sonda medindo o MESMO servidor que ela roda).
+const argAppCommit = process.argv.find((a) => a.startsWith('--app-commit='));
+const APP_COMMIT = argAppCommit ? argAppCommit.slice('--app-commit='.length) : 'mesmo commit da árvore';
+
+const QUERY = mesclarQuery('atlas=1&q=performance&lang=pt-BR');
 // `--c5` usa o FILME (sem `?atlas=1`) nas cenas V1–V6 — a mesma língua e
 // o mesmo preset "performance" do resto da sonda, só sem o Atlas.
-const QUERY_FILME = 'lang=pt-BR&q=performance';
+const QUERY_FILME = mesclarQuery('lang=pt-BR&q=performance');
 // `--sequencia` troca as seis provas E1–E6 (paralelas, sem história entre
 // si) por UM fluxo contínuo só (C3, docs/PLANO-MOTION-UI.md linha 511:
 // "mostrar uma sequência contínua Buscar Saturno → abrir seção → copiar
@@ -114,7 +155,17 @@ const SEL_CAMADAS_GATILHO = '[data-abre-dialogo="camadas"]';
 const SEL_AJUSTES_GATILHO = '[data-abre-dialogo="ajustes"]';
 const SEL_CAMADAS_PAINEL = '[data-dialogo="camadas"]';
 const SEL_AJUSTES_PAINEL = '[data-dialogo="ajustes"]';
-const SEL_SEG_QUALIDADE = `${SEL_AJUSTES_PAINEL} .ajustes-seg[aria-label="Qualidade"]`;
+// O CONTAINER do segmentado "Qualidade" — pela POSIÇÃO (3º `.ajustes-seg`
+// do painel: Idioma, Texto, Qualidade, nesta ordem fixa em Ajustes.tsx),
+// nunca pelo `aria-label`: ele é TRADUZIDO (`t('ajustes.qualidade')`), e
+// um seletor em português quebra sob `--query=lang=en` (achado rodando
+// M1, DPR2+EN, 11/09 — "Qualidade" não existe em inglês). `nth-of-type`
+// não serve — cada `.ajustes-seg` é filho único do seu próprio
+// `.ajustes-controle`, então CSS puro não conta "o 3º da classe"; só um
+// `querySelectorAll` em ORDEM DE DOCUMENTO faz essa conta, daí ser uma
+// EXPRESSÃO JS (usada dentro de outro `(() => {...})()`), não um seletor
+// CSS como os `SEL_*` vizinhos.
+const jsSegQualidade = () => `Array.from(document.querySelectorAll('${SEL_AJUSTES_PAINEL} .ajustes-seg'))[2]`;
 const SEL_BUSCA_GATILHO = '[data-abre-dialogo="busca"]';
 const SEL_BUSCA_PAINEL = '[data-dialogo="busca"]';
 const SEL_FICHA_PAINEL = '[data-dialogo="ficha"]';
@@ -172,7 +223,7 @@ async function abrirSonda({ janela, prefixo }) {
     args: [
       ...GPU_FLAGS,
       '--hide-scrollbars', '--no-first-run', '--mute-audio',
-      '--force-device-scale-factor=1', `--window-size=${w},${h}`,
+      `--force-device-scale-factor=${DPR}`, `--window-size=${w},${h}`,
       '--remote-debugging-port=0', 'about:blank',
     ],
   });
@@ -658,6 +709,14 @@ function renderizarClipe(quadros, destinoFinal) {
   const destino = semSobrescrever(destinoFinal);
   const r = spawnSync(FFMPEG, [
     '-y', '-f', 'concat', '-safe', '0', '-i', arquivoLista,
+    // FORÇA PAR (`trunc(iw/2)*2`) — os quadros saem do tamanho real do
+    // viewport (`--janela`/`--telefone`, nunca esticados pelo `maxWidth`
+    // do screencast), e um viewport de largura ÍMPAR (761px, M4a, a
+    // fronteira 760/761) faz o `libx264` recusar o encoder ("Could not
+    // open encoder"), igual ao achado antigo da barra de abas no
+    // cabeçalho deste arquivo. Em toda largura/altura PAR de sempre isto
+    // é identidade (`trunc(x/2)*2 === x`) — nenhum clipe existente muda.
+    '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
     '-vsync', 'vfr', '-pix_fmt', 'yuv420p', destino,
   ], { stdio: 'pipe' });
   if (r.status !== 0) {
@@ -711,9 +770,9 @@ async function rodarSequencia() {
     const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
     const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
 
-    sessao = await abrirSonda({ janela: '1440x900', prefixo: 'sonda-motion-seq' });
+    sessao = await abrirSonda({ janela: JANELA, prefixo: 'sonda-motion-seq' });
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
     // SEM ISTO o Chrome recusa `navigator.clipboard.writeText` em
     // automação — "Copiar link deste instante" falharia sempre, e o anel
@@ -942,7 +1001,7 @@ async function rodarSequencia() {
     // as checagens de DOM.
     const quadrosNormais = await gravarClipe(
       sessao,
-      { largura: 1440, altura: 900, pastaQuadros: pastaNormal },
+      { largura: JANELA_W, altura: JANELA_H, pastaQuadros: pastaNormal },
       () => executarFluxo({ fatorEspera: 1, registrar: true })
     );
     const clipeNormal = renderizarClipe(quadrosNormais, resolve(CAPTURAS, `motion-c3-sequencia-${commit}.mp4`));
@@ -955,7 +1014,7 @@ async function rodarSequencia() {
     await desacelerar();
     const quadrosLentos = await gravarClipe(
       sessao,
-      { largura: 1440, altura: 900, pastaQuadros: pastaLenta },
+      { largura: JANELA_W, altura: JANELA_H, pastaQuadros: pastaLenta },
       () => executarFluxo({ fatorEspera: 6, registrar: false })
     );
     const clipeLento = renderizarClipe(
@@ -971,7 +1030,8 @@ async function rodarSequencia() {
 
     const relatorio = {
       meta: {
-        commit, dirty, chrome: versaoChrome.product, app: APP, query: QUERY,
+        commit, dirty, appCommit: APP_COMMIT, chrome: versaoChrome.product, app: APP, query: QUERY,
+        viewport: { width: JANELA_W, height: JANELA_H }, dpr: DPR,
         geradoEm: new Date().toISOString(),
       },
       checagens,
@@ -1024,9 +1084,9 @@ async function rodarInterrupcoes() {
     const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
     const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
 
-    sessao = await abrirSonda({ janela: '1440x900', prefixo: 'sonda-motion-int' });
+    sessao = await abrirSonda({ janela: JANELA, prefixo: 'sonda-motion-int' });
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
     const versaoChrome = await sessao.send('Browser.getVersion');
 
@@ -1092,7 +1152,7 @@ async function rodarInterrupcoes() {
     let i1Reentrada = [];
     const quadrosSanfona = await gravarClipe(
       sessao,
-      { largura: 1440, altura: 900, pastaQuadros: pastaSanfona },
+      { largura: JANELA_W, altura: JANELA_H, pastaQuadros: pastaSanfona },
       async () => {
         await clicarReal(sessao, SEL_AVANCADO_GATILHO); // abre de novo
         await dorme(400);
@@ -1203,6 +1263,13 @@ async function rodarInterrupcoes() {
     // "o navegador decidiu que este movimento não vai terminar como
     // começou".
     // ---------------------------------------------------------------
+    // OUTRO TAMANHO DE MESA (a/b) — DERIVADO de `--janela`, nunca um
+    // literal absoluto: um delta fixo (p.ex. -160px) cruzaria os 760px
+    // se `--janela` já abrir perto da fronteira (M4a, 761×800); o
+    // `Math.max` mantém mesa dos dois lados, qualquer que seja a base.
+    const outraMesaA = { w: Math.max(JANELA_W - 160, 900), h: Math.max(JANELA_H - 100, 600) };
+    const outraMesaB = { w: Math.max(JANELA_W - 140, 900), h: Math.max(JANELA_H - 50, 600) };
+
     // (a) mesa, painel SAINDO
     await clicarReal(sessao, SEL_CAMADAS_GATILHO);
     await dorme(400);
@@ -1210,12 +1277,12 @@ async function rodarInterrupcoes() {
     await clicarReal(sessao, `${SEL_CAMADAS_PAINEL} .hud-fechar`);
     await esperarAte(t0I3a, 40);
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 1280, height: 800, deviceScaleFactor: 1, mobile: false,
+      width: outraMesaA.w, height: outraMesaA.h, deviceScaleFactor: DPR, mobile: false,
     });
     const t1I3a = Date.now();
     const [i3aAmostra] = await amostrarSequencia(sessao, t1I3a, [10], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
     const i3aPassa = i3aAmostra.existe === false;
 
@@ -1224,12 +1291,12 @@ async function rodarInterrupcoes() {
     await clicarReal(sessao, SEL_CAMADAS_GATILHO);
     await esperarAte(t0I3b, 40);
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 1300, height: 850, deviceScaleFactor: 1, mobile: false,
+      width: outraMesaB.w, height: outraMesaB.h, deviceScaleFactor: DPR, mobile: false,
     });
     const t1I3b = Date.now();
     const [i3bAmostra] = await amostrarSequencia(sessao, t1I3b, [10], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
     await pressionarEscape(sessao);
     await dorme(400);
@@ -1239,7 +1306,7 @@ async function rodarInterrupcoes() {
     // LARGURA (390) nunca cruza os 760px que definem o layout de
     // celular.
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
+      width: TELEFONE_W, height: TELEFONE_H, deviceScaleFactor: DPR, mobile: true,
     });
     await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
     await dorme(300);
@@ -1253,12 +1320,12 @@ async function rodarInterrupcoes() {
     })()`);
     await esperarAte(t0I3c, 40);
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 390, height: 700, deviceScaleFactor: 1, mobile: true,
+      width: TELEFONE_W, height: Math.max(TELEFONE_H - 144, 300), deviceScaleFactor: DPR, mobile: true,
     });
     const t1I3c = Date.now();
     const [i3cAmostra] = await amostrarSequencia(sessao, t1I3c, [10], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
     await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: false });
     const i3cPassa = i3cAmostra.existe === false;
@@ -1281,8 +1348,11 @@ async function rodarInterrupcoes() {
     await moverMouse(sessao, 10, 10);
     await dorme(1000); // fecha (o respiro de ~350ms, com folga)
 
+    // SÓ A ALTURA muda (I4 é sobre redimensionamento vertical) — a
+    // LARGURA fica igual a `--janela`, nunca cruzando fronteira nenhuma.
+    const alturaI4 = Math.max(JANELA_H - 140, 400);
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 1440, height: 760, deviceScaleFactor: 1, mobile: false,
+      width: JANELA_W, height: alturaI4, deviceScaleFactor: DPR, mobile: false,
     });
     await dorme(400);
     const y0I4 = await sessao.js(
@@ -1293,7 +1363,7 @@ async function rodarInterrupcoes() {
     const rectCabecalhoI4b = await retanguloDe(sessao, SEL_TEMPO_CABECALHO);
     const quadrosTempo = await gravarClipe(
       sessao,
-      { largura: 1440, altura: 760, pastaQuadros: pastaTempo },
+      { largura: JANELA_W, altura: alturaI4, pastaQuadros: pastaTempo },
       async () => {
         const t0I4 = Date.now();
         await moverMouse(
@@ -1315,7 +1385,7 @@ async function rodarInterrupcoes() {
     await moverMouse(sessao, 10, 10);
     await dorme(1000);
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
     await dorme(400);
 
@@ -1352,8 +1422,8 @@ async function rodarInterrupcoes() {
     // ---------------------------------------------------------------
     const relatorio = {
       meta: {
-        commit, dirty, chrome: versaoChrome.product, app: APP, query: QUERY,
-        viewport: { width: 1440, height: 900 }, dpr, geradoEm: new Date().toISOString(),
+        commit, dirty, appCommit: APP_COMMIT, chrome: versaoChrome.product, app: APP, query: QUERY,
+        viewport: { width: JANELA_W, height: JANELA_H }, dpr, geradoEm: new Date().toISOString(),
       },
       i1: {
         repousoAberta: i1RepousoAberta,
@@ -1387,8 +1457,8 @@ async function rodarInterrupcoes() {
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
 
     const linhas = [
-      `=== sonda-motion interrupções — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} ===`,
-      `Chrome ${versaoChrome.product} | mesa 1440x900 DPR${dpr} | pt-BR | q=performance`,
+      `=== sonda-motion interrupções — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
+      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${dpr} | pt-BR | q=performance`,
       `I1 sanfona (fechar/reabrir no meio): repouso aberta=${i1RepousoAberta.overflow}, `
         + `fechar 20/80/150ms=${i1Fechar1.map((a) => a.overflow).join('/')}, `
         + `reentrada 20/100/400ms=${[i1Aos20, ...i1Reentrada].map((a) => `${a?.overflow}${a && sanfonaAnimando(a) ? '(animando)' : '(repouso)'}@${a?.dtMs}ms`).join(' / ')}, `
@@ -1446,14 +1516,14 @@ async function rodarFolha() {
     const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
     const num = (n) => (typeof n === 'number' ? n.toFixed(1) : String(n));
 
-    sessao = await abrirSonda({ janela: '1440x900', prefixo: 'sonda-motion-folha' });
+    sessao = await abrirSonda({ janela: JANELA, prefixo: 'sonda-motion-folha' });
     // O TELEFONE DESDE O PRIMEIRO CARREGAMENTO, e não trocado depois (o
     // padrão do modo default): o override de CDP vale para o alvo
     // inteiro e sobrevive a `Page.navigate`, então marcar antes da
     // primeira `ir()` já entrega a folha no layout que ela testa, sem
     // uma passagem pela mesa no meio.
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
+      width: TELEFONE_W, height: TELEFONE_H, deviceScaleFactor: DPR, mobile: true,
     });
     await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
     const versaoChrome = await sessao.send('Browser.getVersion');
@@ -1503,7 +1573,7 @@ async function rodarFolha() {
 
     const quadrosClipe = await gravarClipe(
       sessao,
-      { largura: 390, altura: 844, pastaQuadros: pastaClipe },
+      { largura: TELEFONE_W, altura: TELEFONE_H, pastaQuadros: pastaClipe },
       async () => {
         // F1 — expandir: 12 `touchMove` para cima totalizando 140 px
         const pontoF1 = await pontoDaAlca(sessao);
@@ -1710,7 +1780,7 @@ async function rodarFolha() {
     // com `celular`); só confere que nada quebrou.
     // ---------------------------------------------------------------
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 844, height: 390, deviceScaleFactor: 1, mobile: true,
+      width: TELEFONE_H, height: TELEFONE_W, deviceScaleFactor: DPR, mobile: true,
     });
     await carregarFichaDeSaturno();
     const f8Antes = await sessao.js(
@@ -1733,11 +1803,11 @@ async function rodarFolha() {
         // enunciado): `commit`/`dirty` acima são desta sonda, não do app
         // que ela mede — os dois podem divergir, e é por isso que o app
         // ganha o campo dele, à parte.
-        appCommit: '793df4d (servidor isolado, árvore limpa)',
+        appCommit: APP_COMMIT,
         chrome: versaoChrome.product,
         app: APP,
         query: queryComFoco,
-        viewport: { width: 390, height: 844 },
+        viewport: { width: TELEFONE_W, height: TELEFONE_H },
         dpr,
         geradoEm: new Date().toISOString(),
       },
@@ -1766,8 +1836,8 @@ async function rodarFolha() {
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
 
     const linhas = [
-      `=== sonda-motion folha — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app 793df4d (servidor isolado) ===`,
-      `Chrome ${versaoChrome.product} | celular 390x844 DPR${dpr} | pt-BR | q=performance | foco=saturno`,
+      `=== sonda-motion folha — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
+      `Chrome ${versaoChrome.product} | celular ${TELEFONE_W}x${TELEFONE_H} DPR${dpr} | pt-BR | q=performance | foco=saturno`,
       `clipe F1+F2: ${clipe} (${quadrosClipe.length} quadros)`,
       `folha de contato: ${folhaContato}`,
       `F1 expandir: top0=${num(top0)} move12.top=${num(f1Move12?.top)} esperado≈${num(esperadoTopoMove12)} `
@@ -1785,7 +1855,7 @@ async function rodarFolha() {
         + `${f6Passa ? 'PASSA' : 'FALHA'}`,
       `F7 expandida+rolada (scrollTop=${scrollTopAntesDoArrasto}): final estado=${f7Final?.estado} `
         + `transform=${f7Final?.transform} — ${f7Passa ? 'PASSA' : 'FALHA'}`,
-      `F8 paisagem baixa 844x390: data-ficha-estado antes=${f8Antes} depois=${f8Depois}`,
+      `F8 paisagem baixa ${TELEFONE_H}x${TELEFONE_W}: data-ficha-estado antes=${f8Antes} depois=${f8Depois}`,
       `JSON: ${destinoJson}`,
     ];
     process.stdout.write(`${linhas.join('\n')}\n`);
@@ -2635,9 +2705,9 @@ async function rodarC5(quais = null) {
     const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
     const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
 
-    sessao = await abrirSonda({ janela: '1440x900', prefixo: 'sonda-motion-c5' });
+    sessao = await abrirSonda({ janela: JANELA, prefixo: 'sonda-motion-c5' });
     const viewport = {
-      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     };
     await sessao.send('Emulation.setDeviceMetricsOverride', viewport);
     // registra o viewport para o vigia da aba intrusa reaplicar depois de
@@ -2671,10 +2741,10 @@ async function rodarC5(quais = null) {
         // O SERVIDOR É DE OUTRA ÁRVORE (isolada, item obrigatório do
         // enunciado): `commit`/`dirty` acima são desta sonda, não do
         // app que ela mede.
-        appCommit: 'dcc08ea (servidor isolado, árvore limpa)',
+        appCommit: APP_COMMIT,
         chrome: versaoChrome.product,
         app: APP,
-        viewport: { width: 1440, height: 900 },
+        viewport: { width: JANELA_W, height: JANELA_H },
         dpr,
         idioma: 'pt-BR',
         preset: 'performance',
@@ -2687,8 +2757,8 @@ async function rodarC5(quais = null) {
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
 
     const linhas = [
-      `=== sonda-motion c5 — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app dcc08ea (servidor isolado) ===`,
-      `Chrome ${versaoChrome.product} | mesa 1440x900 DPR${dpr} | pt-BR | q=performance`,
+      `=== sonda-motion c5 — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
+      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${dpr} | pt-BR | q=performance`,
     ];
     if (v1) {
       linhas.push(
@@ -3020,9 +3090,9 @@ async function rodarContorno() {
     const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
     const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
 
-    sessao = await abrirSonda({ janela: '1440x900', prefixo: 'sonda-motion-contorno' });
+    sessao = await abrirSonda({ janela: JANELA, prefixo: 'sonda-motion-contorno' });
     const viewport = {
-      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     };
     await sessao.send('Emulation.setDeviceMetricsOverride', viewport);
     sessao.marcarViewport(viewport);
@@ -3195,11 +3265,11 @@ async function rodarContorno() {
         // O SERVIDOR É DE OUTRA ÁRVORE (isolada, item obrigatório do
         // enunciado): `commit`/`dirty` acima são desta sonda, não do
         // app que ela mede.
-        appCommit: 'dcc08ea (servidor isolado, árvore limpa)',
+        appCommit: APP_COMMIT,
         chrome: versaoChrome.product,
         app: APP,
-        viewport: { width: 1440, height: 900 },
-        dpr: 1,
+        viewport: { width: JANELA_W, height: JANELA_H },
+        dpr: DPR,
         idioma: 'pt-BR',
         preset: 'performance',
         geradoEm: new Date().toISOString(),
@@ -3238,8 +3308,8 @@ async function rodarContorno() {
 
     const fmt = (n, casas = 1) => (n === null || n === undefined ? '-' : n.toFixed(casas));
     const linhas = [
-      `=== sonda-motion c6 (halo WebGL × CSS) — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app dcc08ea (servidor isolado) ===`,
-      `Chrome ${versaoChrome.product} | mesa 1440x900 DPR1 | pt-BR | q=performance`,
+      `=== sonda-motion c6 (halo WebGL × CSS) — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
+      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${DPR} | pt-BR | q=performance`,
       `clipe A: ${clipeA}`,
       `clipe B: ${clipeB}`,
       `lado a lado: ${ladoALado}`,
@@ -3300,10 +3370,10 @@ try {
   const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
   const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
 
-  const sessao = await abrirSonda({ janela: '1440x900', prefixo: 'sonda-motion' });
+  const sessao = await abrirSonda({ janela: JANELA, prefixo: 'sonda-motion' });
   try {
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
     const versaoChrome = await sessao.send('Browser.getVersion');
 
@@ -3337,7 +3407,7 @@ try {
     const mesa = {};
     const quadrosMesa = await gravarClipe(
       sessao,
-      { largura: 1440, altura: 900, pastaQuadros: pastaQuadrosMesa },
+      { largura: JANELA_W, altura: JANELA_H, pastaQuadros: pastaQuadrosMesa },
       async () => {
         // a) abrir Camadas
         await limparEventos(sessao);
@@ -3377,14 +3447,26 @@ try {
 
     // e) segmentado "Qualidade": escolhe outra opção e mede o filete
     const antesSeg = await sessao.js(`(() => {
-      const g = document.querySelector(${JSON.stringify(SEL_SEG_QUALIDADE)});
+      const g = ${jsSegQualidade()};
       const on = g && g.querySelector(':scope > .on');
       return on ? on.textContent.trim() : null;
     })()`);
     const t0e = Date.now();
-    await clicarReal(sessao, `${SEL_SEG_QUALIDADE} button:not(.on):not(:disabled)`);
+    // `clicarReal` não serve aqui — ela exige um SELETOR CSS, e
+    // `jsSegQualidade()` é uma expressão JS (comentário na constante). O
+    // ponto vem do próprio DOM e o clique continua REAL (mousePressed +
+    // mouseReleased via `clicarEmPonto`), só a localização muda.
+    const rBotaoSeg = await sessao.js(`(() => {
+      const g = ${jsSegQualidade()};
+      const b = g && g.querySelector('button:not(.on):not(:disabled)');
+      if (!b) return null;
+      const r = b.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    })()`);
+    if (!rBotaoSeg) throw new Error('segmentado Qualidade: nenhum botão não-ativo encontrado');
+    await clicarEmPonto(sessao, rBotaoSeg.x, rBotaoSeg.y);
     const amostrasSeg = await amostrarSequencia(sessao, t0e, [45, 120, 450], () => `(() => {
-      const g = document.querySelector(${JSON.stringify(SEL_SEG_QUALIDADE)});
+      const g = ${jsSegQualidade()};
       if (!g) return { existe: false };
       const cs = getComputedStyle(g);
       const on = g.querySelector(':scope > .on');
@@ -3452,15 +3534,15 @@ try {
     // TELEFONE — 390×844, toque emulado
     // ---------------------------------------------------------------
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
+      width: TELEFONE_W, height: TELEFONE_H, deviceScaleFactor: DPR, mobile: true,
     });
     await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
     await dorme(300);
 
-    const telefone = { viewportInicial: { width: 390, height: 844, dpr: 1 } };
+    const telefone = { viewportInicial: { width: TELEFONE_W, height: TELEFONE_H, dpr: DPR } };
     const quadrosToque = await gravarClipe(
       sessao,
-      { largura: 390, altura: 844, pastaQuadros: pastaQuadrosToque },
+      { largura: TELEFONE_W, altura: TELEFONE_H, pastaQuadros: pastaQuadrosToque },
       async () => {
         await sessao.js(`document.querySelector('${SEL_CAMADAS_GATILHO}').click()`);
         await dorme(400);
@@ -3497,18 +3579,18 @@ try {
     })()`);
     await dorme(30); // a saída (saiPainel, ~260ms) já começou
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 844, height: 390, deviceScaleFactor: 1, mobile: true,
+      width: TELEFONE_H, height: TELEFONE_W, deviceScaleFactor: DPR, mobile: true,
     });
     const tGiro = Date.now();
     const [amostraGiro] = await amostrarSequencia(sessao, tGiro, [100], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
-    telefone.reabrirEGirar = { viewportGirado: { width: 844, height: 390 }, amostra: amostraGiro };
+    telefone.reabrirEGirar = { viewportGirado: { width: TELEFONE_H, height: TELEFONE_W }, amostra: amostraGiro };
 
     // ---------------------------------------------------------------
     // MOVIMENTO REDUZIDO — mesa de novo, prefers-reduced-motion: reduce
     // ---------------------------------------------------------------
     await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: false });
     await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
     await sessao.send('Emulation.setEmulatedMedia', {
       features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
@@ -3540,22 +3622,27 @@ try {
     // ---------------------------------------------------------------
     // RELATÓRIO
     // ---------------------------------------------------------------
+    // OS TRÊS ABAIXO (idioma/preset/ui) leem a QUERY EFETIVA (depois de
+    // `--query`, se houver) — nunca um texto fixo, que ficaria errado
+    // assim que `lang=`/`q=`/`ui=` chegassem por ali sobrescritos.
+    const paramsQuery = new URLSearchParams(QUERY);
     const relatorio = {
       meta: {
         commit,
         dirty,
+        appCommit: APP_COMMIT,
         chrome: versaoChrome.product,
         userAgent: versaoChrome.userAgent,
         app: APP,
         query: QUERY,
-        idioma: 'pt-BR',
-        preset: 'performance',
-        ui: 'default (sem ?ui=)',
+        idioma: paramsQuery.get('lang') ?? 'pt-BR',
+        preset: paramsQuery.get('q') ?? 'performance',
+        ui: paramsQuery.get('ui') ? `?ui=${paramsQuery.get('ui')}` : 'default (sem ?ui=)',
         viewportInicial,
         dpr,
         geradoEm: new Date().toISOString(),
       },
-      mesa: { viewport: { width: 1440, height: 900, dpr: 1 }, ...mesa },
+      mesa: { viewport: { width: JANELA_W, height: JANELA_H, dpr: DPR }, ...mesa },
       telefone,
       reducedMotion: { camadasInterruptor: reducedMotion },
     };
@@ -3607,8 +3694,8 @@ try {
     const e6Reproduz = amostraGiro.existe === true && amostraGiro.inert === true;
 
     const linhas = [
-      `=== sonda-motion c0 — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} ===`,
-      `Chrome ${versaoChrome.product} | mesa 1440x900 DPR${dpr} | pt-BR | q=performance`,
+      `=== sonda-motion c0 — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
+      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${dpr} | pt-BR | q=performance`,
       `clipe mesa: ${mesa.clipe} (${quadrosMesa.length} quadros)`,
       `clipe toque: ${telefone.clipe} (${quadrosToque.length} quadros)`,
       `E1 folha solta (toque): presente aos ${e1UltimoPresente ? e1UltimoPresente.dtMs.toFixed(1) : '—'}ms, `

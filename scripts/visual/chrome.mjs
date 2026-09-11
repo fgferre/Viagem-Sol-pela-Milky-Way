@@ -52,7 +52,7 @@ const CAMINHOS = {
 
 const ANGLE = { darwin: 'metal', win32: 'd3d11', linux: 'gl' };
 
-export const CHROME = (CAMINHOS[process.platform] ?? []).find((p) => existsSync(p));
+export const CHROME = process.env.CHROME_BIN || (CAMINHOS[process.platform] ?? []).find((p) => existsSync(p));
 if (!CHROME) throw new Error(`Chrome não encontrado (${process.platform})`);
 
 /** Flags de GPU comuns a todos os harnesses, com o backend da plataforma. */
