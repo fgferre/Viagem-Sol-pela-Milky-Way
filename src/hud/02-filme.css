@@ -439,7 +439,7 @@
 /* a pressão da casa (01-base.css) afunda ícone/rótulo (`> *`), nunca
    este botão. */
 .veil-btn > * {
-  transition: transform var(--t-pressao) var(--curva);
+  transition: scale var(--t-pressao) var(--curva);
 }
 .veil-btn:focus-visible {
   outline: 2px solid var(--foco);

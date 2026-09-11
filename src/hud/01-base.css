@@ -440,7 +440,7 @@
 /* quem afunda é o ícone (`> *`, filho direto), não a caixa de 44 px —
    a régua da pressão da casa, acima; o tempo continua `--t-pressao`. */
 .hud-cabecalho-fechar > * {
-  transition: transform var(--t-pressao) var(--curva);
+  transition: scale var(--t-pressao) var(--curva);
 }
 .hud-cabecalho-fechar:hover {
   background: var(--hover);
@@ -461,8 +461,8 @@
    Todo controle comprime 6 % de DESENHO INTERNO enquanto está pressionado
    e volta ao soltar. UMA regra com uma lista, e não um `:active` por
    família: o que se quer é que barra, régua, alça, cabeçalho, segmentado,
-   selo, contexto, destinos e o "?" respondam IGUAL — doze cópias seriam
-   doze chances de discordarem um dia.
+   selo, contexto, destinos, bússola e o "?" respondam IGUAL — treze
+   cópias seriam treze chances de discordarem um dia.
    A CAIXA NUNCA MUDA (E4 da auditoria: o "✕" ia de 44 para 42,68 px
    porque a escala pegava o PRÓPRIO botão). Por isso o alvo é `> *` — o(s)
    filho(s) diretos (ícone, rótulo, imagem) —, nunca o controle: hit-test,
@@ -470,12 +470,17 @@
    elemento (o "?", os rótulos do segmentado e das ações) ganhou um
    `<span>` só para isto no componente — mesmo nome acessível, mesmo
    `gap` ao redor de um ícone quando há um.
-   FICAM DE FORA os controles cujo `transform` já CARREGA informação — a
-   esfera do interruptor, que anda para o lado quando marcada, e a
-   bússola, que aponta. Comprimir por cima apagaria o dado. Um `<select>`
-   nativo (`.controls-bar select.hud-btn`) também não ganha compressão
-   visível: `> *` cai nos `<option>`, que o navegador desenha por fora da
-   caixa — nada para encolher, e a caixa já não se mexe mais.
+   A ESCALA É A PROPRIEDADE INDIVIDUAL `scale` (C3e, reaudit), não mais
+   `transform: scale(...)` — assim compõe sem disputa com qualquer
+   `transform`/`rotate` que o filho já carregue. Foi isso que liberou a
+   bússola: seu ícone hoje é só a agulha parada, mas se um dia apontar de
+   verdade o giro mora em `transform`/`rotate` e a pressão em `scale`,
+   cada um no seu canto.
+   FICA DE FORA o interruptor, cuja esfera anda para o lado por
+   `transform` quando marcada — comprimir por cima apagaria o dado. Um
+   `<select>` nativo (`.controls-bar select.hud-btn`) também não ganha
+   compressão visível: `> *` cai nos `<option>`, que o navegador desenha
+   por fora da caixa — nada para encolher, e a caixa já não se mexe mais.
    O tempo da ida e da volta vem do `transition` de cada família (cada
    uma declara o seu no `> *`, como manda a cascata), sempre com
    `--t-pressao`. */
@@ -488,13 +493,14 @@
     .ajustes-seg button,
     .convite-linha button,
     .ajustes-copiar,
+    .atlas-bussola,
     .atlas-contexto-botao,
     .atlas-contexto-alvo,
     .atlas-destino,
     .atlas-selo-resumo,
     .atlas-selo-linha
   ):active:not(:disabled) > * {
-  transform: scale(var(--escala-pressao));
+  scale: var(--escala-pressao);
 }
 
 /* ---- O REFLEXO DE ABERTURA (M2) ------------------------------------

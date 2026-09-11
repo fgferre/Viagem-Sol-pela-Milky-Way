@@ -108,7 +108,7 @@
    C2) — o rótulo (`> *`, o texto solto em `<span>` no componente)
    afunda; o botão zerado (sem caixa própria) não muda. */
 .atlas-contexto-botao > * {
-  transition: transform var(--t-pressao) var(--curva);
+  transition: scale var(--t-pressao) var(--curva);
 }
 .atlas-contexto-botao:hover {
   color: var(--texto);
@@ -141,7 +141,7 @@
    régua de pressão, senão o último trecho da linha (o alvo atual)
    desafinaria do resto da migalha de pão sob o dedo. */
 .atlas-contexto-alvo > * {
-  transition: transform var(--t-pressao) var(--curva);
+  transition: scale var(--t-pressao) var(--curva);
 }
 .atlas-contexto-alvo:hover {
   text-decoration-color: currentcolor;
@@ -572,8 +572,8 @@
   line-height: 1;
   /* GIRA, NÃO TROCA DE DESENHO (C3c, reaudit) — `rotate` é a propriedade
      INDIVIDUAL (não `transform`): compõe sem disputa com a escala da
-     pressão da casa (`transform: scale(...)`, 01-base.css) no dia em
-     que um destes botões entrar na lista dela. */
+     pressão da casa (`scale`, 01-base.css) no dia em que um destes
+     botões entrar na lista dela. */
   rotate: 0deg;
   transition: rotate var(--t-assenta) var(--curva);
 }
@@ -781,7 +781,7 @@
    filhos diretos já eram elemento (`.atlas-selo-resumo-texto`, a seta),
    então nenhum `<span>` novo foi preciso aqui. */
 .atlas-selo-resumo > * {
-  transition: transform var(--t-pressao) var(--curva);
+  transition: scale var(--t-pressao) var(--curva);
 }
 /* RECALIBRADO (08/09): `text-overflow: ellipsis` não se aplica a um
    contêiner `display: flex` — o corte era seco, sem reticências, porque
@@ -912,7 +912,7 @@
    linhas de detalhe já são três elementos (`.atlas-selo-eixo`, `strong`,
    `em`), então nenhum `<span>` novo foi preciso aqui. */
 .atlas-selo-linha > * {
-  transition: transform var(--t-pressao) var(--curva);
+  transition: scale var(--t-pressao) var(--curva);
 }
 .atlas-selo-linha:disabled {
   cursor: default;
@@ -1319,12 +1319,15 @@
 }
 /* O SENTIDO ACENA UMA VEZ (C3f, U27) — o ícone do botão ESCOLHIDO da
    direção nudga na própria direção e volta; parado faz um pequeno
-   recolhimento. `translate`/`scale` SOZINHOS, nunca `transform`: a
-   pressão do dedo já escreve a própria escala em `transform` neste MESMO
-   filho (`:active > *`, 01-base.css), e as duas propriedades COMPÕEM em
-   vez de uma apagar a outra. Sem `0%`/`100%` explícitos: o
-   navegador completa com o valor de repouso (nenhuma translação/escala),
-   que é exatamente para onde cada uma volta sozinha. */
+   recolhimento. Os nudges de direção usam `translate` SOZINHO: a
+   pressão do dedo escreve a própria escala neste MESMO filho
+   (`:active > *`, 01-base.css) e as duas propriedades COMPÕEM em vez de
+   uma apagar a outra. O recolhimento do "parado" passou para `transform:
+   scale(...)` na C3e (reaudit) — a pressão da casa virou a propriedade
+   INDIVIDUAL `scale`, e as duas escalas no mesmo `scale` brigariam pelo
+   mesmo filho; em `transform` elas voltam a compor. Sem `0%`/`100%`
+   explícitos: o navegador completa com o valor de repouso (nenhuma
+   translação/escala), que é exatamente para onde cada uma volta sozinha. */
 @keyframes tempoNudgePassado {
   30% {
     translate: -4px 0;
@@ -1337,7 +1340,7 @@
 }
 @keyframes tempoAssentaParado {
   45% {
-    scale: 0.88;
+    transform: scale(0.88);
   }
 }
 .atlas-tempo-nudge-passado {
@@ -1902,7 +1905,7 @@
      mas com `--t-assenta` — ENTROU na lista de pressão da casa em C2
      (01-base.css, `--escala-pressao`), e o levantar do hover é
      deslocamento como outro qualquer (E5 da auditoria: `--t-rapido` não
-     zera sob preferência reduzida). `transform` é a própria pressão, e
+     zera sob preferência reduzida). `scale` é a própria pressão, e
      ela afunda os filhos (`> *`, abaixo), nunca o cartão. */
   transition:
     translate var(--t-assenta) var(--curva),
@@ -1912,7 +1915,7 @@
 /* os filhos (imagem/nome/convite) afundam sob o dedo; a caixa do
    cartão — a que o hover levanta com `translate` — não muda de tamanho. */
 .atlas-destino > * {
-  transition: transform var(--t-pressao) var(--curva);
+  transition: scale var(--t-pressao) var(--curva);
 }
 .atlas-destino--principal {
   grid-column: 1 / -1;
@@ -2055,6 +2058,16 @@
     visibility 0s linear 0.35s,
     border-color 0.35s ease,
     background 0.35s ease;
+}
+/* ENTROU na lista de pressão da casa na C3e (reaudit, 01-base.css) — o
+   ícone (`<Icone nome="bussola">`) já é elemento, então nenhum `<span>`
+   novo foi preciso aqui. A régua afunda pela propriedade INDIVIDUAL
+   `scale`, e não `transform`: o `translateY(-50%)` que centra o BOTÃO
+   na vertical é dono do controle, nunca deste filho, e o giro que a
+   agulha ganhar um dia mora em `transform`/`rotate` — as duas compõem
+   sem disputa. */
+.atlas-bussola > * {
+  transition: scale var(--t-pressao) var(--curva);
 }
 .atlas-bussola.acesa {
   opacity: 1;

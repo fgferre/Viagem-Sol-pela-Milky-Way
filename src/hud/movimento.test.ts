@@ -11,7 +11,7 @@
 //    assim que a preferência deixou de ser sete exceções espalhadas por
 //    sete fatias: quem constrói sobre os tokens obedece de graça.
 // 2. QUEM AFUNDA SOB O DEDO SABE VOLTAR. Pôr uma família na lista da
-//    pressão sem lhe dar a transição de `transform` faz o botão saltar
+//    pressão sem lhe dar a transição de `scale` faz o botão saltar
 //    sem tempo nenhum — o defeito não aparece em foto, só ao vivo. E a
 //    pressão afunda o FILHO (`> *`), nunca a caixa do controle (C2 da
 //    auditoria, E4: o botão fechar ia de 44 para 42,68 px sob o dedo).
@@ -100,20 +100,24 @@ describe('2. a pressão é uma só, e toda família dela sabe voltar', () => {
     // E4 da auditoria: a escala pegava o próprio botão fechar, que ia de
     // 44 para 42,68 px sob o dedo. C2 move o alvo para o(s) filho(s)
     // diretos — a caixa, o outline e o hit-test ficam parados.
+    // C3e: virou a propriedade INDIVIDUAL `scale` (não mais
+    // `transform: scale(...)`) para compor sem disputa com qualquer
+    // `transform`/`rotate` que o filho já carregue — foi isso que
+    // liberou a bússola para entrar na lista.
     expect(CSS).toMatch(
-      /:active:not\(:disabled\) > \*\s*\{\s*\n\s*transform: scale\(var\(--escala-pressao\)\);/
+      /:active:not\(:disabled\) > \*\s*\{\s*\n\s*scale: var\(--escala-pressao\);/
     );
   });
 
-  it('cada família da lista cronometra o `transform` do FILHO com --t-pressao', () => {
+  it('cada família da lista cronometra o `scale` do FILHO com --t-pressao', () => {
     for (const familia of familias) {
       expect(corpoDaRegra(`${familia} > *`), familia).toContain(
-        'transform var(--t-pressao)'
+        'scale var(--t-pressao)'
       );
       // e a família NÃO pode continuar a mover a si mesma — senão a
       // caixa voltaria a encolher por cima da compressão do filho.
       expect(corpoDaRegra(familia), familia).not.toContain(
-        'transform var(--t-pressao)'
+        'scale var(--t-pressao)'
       );
     }
   });

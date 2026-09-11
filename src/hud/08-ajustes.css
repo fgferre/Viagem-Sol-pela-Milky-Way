@@ -146,7 +146,7 @@
 /* a pressão afunda o "?" (`> *`, o `<span>` do rótulo), não este botão
    redondo — a régua da casa (01-base.css). */
 .hud-ajuda > * {
-  transition: transform var(--t-pressao) var(--curva);
+  transition: scale var(--t-pressao) var(--curva);
 }
 .hud-ajuda::before {
   content: '';
@@ -348,7 +348,7 @@
 /* a pressão afunda o rótulo (`> *`, o `<span>` do texto), não o botão —
    senão o filete do segmentado (que mede ESTE botão) herdaria o recuo. */
 .ajustes-seg button > * {
-  transition: transform var(--t-pressao) var(--curva);
+  transition: scale var(--t-pressao) var(--curva);
 }
 .ajustes-seg button:last-child {
   border-right: none;
@@ -417,7 +417,7 @@
    ação da pele B. O rótulo (`> *`) é o texto solto envolvido em `<span>`
    no componente (`Ajustes.tsx`). */
 .ajustes-copiar > * {
-  transition: transform var(--t-pressao) var(--curva);
+  transition: scale var(--t-pressao) var(--curva);
 }
 .ajustes-copiar:hover {
   background: var(--hover);
