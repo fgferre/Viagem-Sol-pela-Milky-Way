@@ -13,7 +13,7 @@
 // uma peça portalizada para o `body` (ou aninhada numa outra) apareceria
 // nas 18 vistas oficiais e o filme perderia pixel.
 // ============================================================
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { CAMADAS_POR_FAMILIA, familiaEmTexto } from '../three/atlasConfig';
@@ -22,10 +22,13 @@ import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
 import { usePresenca } from '../hooks/usePresenca';
+import { useRealce } from '../hooks/useRealce';
 import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
 import { useFileteDoSegmentado } from '../hooks/useFileteDoSegmentado';
+import { lerTokens } from '../hooks/movimentoDaGaveta';
+import { semMovimento } from '../hooks/useGavetas';
 import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
 import type { EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
@@ -633,6 +636,17 @@ export function BarraDoTempo({
   const { data, taxa, sentido, aoVivo, naEpoca, aviso } = tempo;
   const parado = sentido === 0 && !aoVivo;
   /**
+   * OS TRÊS SINAIS DE MODO (C3f, U26–U28) — `useRealce` conta quantas
+   * vezes cada valor MUDOU desde que esta barra nasceu; quem confirma
+   * escreve `key={vezes}` num trecho decorativo, e o React remonta só
+   * ELE a cada mudança — nunca o botão, nunca o filete que já anda
+   * sozinho. Guardado aqui, uma vez, porque as três famílias abaixo
+   * (sentido, taxa, ao vivo) o leem.
+   */
+  const realceSentido = useRealce(sentido);
+  const realceTaxa = useRealce(taxa);
+  const realceAoVivo = useRealce(aoVivo);
+  /**
    * OS TRÊS GRUPOS DESTA BARRA USAM `.ajustes-seg` CRU (o componente
    * `Segmentado` não os serve: aqui ação e alternância convivem no mesmo
    * grupo), e mesmo assim o filete da escolha tem de ser O MESMO da casa
@@ -672,6 +686,21 @@ export function BarraDoTempo({
   const [hover, setHover] = useState(false);
   const [foco, setFoco] = useState(false);
   const aberta = recolhivel ? presa || hover || foco : presa;
+  /**
+   * A LINHA NÃO SALTA QUANDO O CORPO NASCE (C3f) — a coluna do rodapé é
+   * ancorada pela BASE (`.atlas-rodape`, `bottom`) e cresce para CIMA:
+   * sem isto, o instante em que `.atlas-tempo-botoes` monta empurra esta
+   * linha alguns pixels para cima no MESMO quadro, porque tudo o que já
+   * estava ACIMA do conteúdo novo sobe junto com o topo da coluna. FLIP —
+   * o "antes" vem da chamada ANTERIOR deste mesmo efeito (a régua do
+   * plano: layout effect no abrir, não por quadro); o "depois" é medido
+   * já com o corpo montado; a diferença anima com a MESMA entrada da
+   * casa (`--t-entrada`/`--curva`, lidos uma vez) em vez de a linha
+   * simplesmente aparecer deslocada.
+   */
+  const linhaRef = useRef<HTMLDivElement>(null);
+  const retanguloAntesDaLinha = useRef<DOMRect | null>(null);
+  const animacaoDaLinha = useRef<Animation | null>(null);
   /**
    * O CORPO ESTÁ INDO EMBORA — o mouse saiu e o respiro está correndo.
    * É só isto que separa "some de um quadro para o outro" de "esmaece":
@@ -798,6 +827,43 @@ export function BarraDoTempo({
     window.addEventListener('keydown', onTecla, true);
     return () => window.removeEventListener('keydown', onTecla, true);
   }, [recolhivel, aberta, dicaPresa, limparDica]);
+  /**
+   * O FLIP DA LINHA (C3f) — só o "depois" é medido AQUI: o "antes" já
+   * está em `retanguloAntesDaLinha`, gravado pela chamada anterior deste
+   * MESMO efeito (por isso ele roda a cada `aberta`, e não a cada
+   * quadro: enquanto `aberta` não muda, a linha não se move por este
+   * motivo). `useLayoutEffect`, não `useEffect`: tem de medir e escrever
+   * o transform de partida ANTES do primeiro paint em que o corpo já
+   * nasceu, senão o olho vê o salto de qualquer jeito e a animação só
+   * mostraria a volta.
+   */
+  useLayoutEffect(() => {
+    const no = linhaRef.current;
+    if (!no) return;
+    const depois = no.getBoundingClientRect();
+    const antes = retanguloAntesDaLinha.current;
+    retanguloAntesDaLinha.current = depois;
+    // SÓ ao ABRIR, e só quando já existe um "antes" para comparar (nunca
+    // na primeira pintura — nascer não é abrir). O fechamento já tem a
+    // saída dele (o esmaecer existente); aqui só a chegada.
+    // NOS DOIS SENTIDOS: ao fechar, o corpo some ao fim do respiro e a
+    // linha cairia de uma vez para o lugar de repouso — o mesmo salto,
+    // só que para baixo, logo depois de o corpo terminar de esmaecer
+    if (!antes) return;
+    const delta = antes.top - depois.top;
+    if (!delta) return;
+    const raiz = no.closest('.hud-root') ?? no;
+    const { duracao, curva } = lerTokens(raiz, '--t-entrada', '--curva');
+    if (semMovimento() || duracao <= 1) return;
+    // A ÚLTIMA INTENÇÃO VENCE: um segundo abrir antes do primeiro
+    // assentar cancela a animação em curso, nunca as duas disputando o
+    // mesmo transform.
+    animacaoDaLinha.current?.cancel();
+    animacaoDaLinha.current = no.animate(
+      [{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0px)' }],
+      { duration: duracao, easing: curva }
+    );
+  }, [aberta]);
   // O BADGE DA VERDADE ("sem efeméride" etc.) É UM SÓ ELEMENTO, montado em
   // UM dos dois lugares por vez: na linha fechada (abaixo) enquanto os
   // controles estão fora do fluxo, ou depois de `.atlas-tempo-botoes`
@@ -820,7 +886,7 @@ export function BarraDoTempo({
       onFocus={aoFocarDentro}
       onBlur={aoDesfocarDentro}
     >
-      <div className="atlas-tempo-linha">
+      <div className="atlas-tempo-linha" ref={linhaRef}>
         {/* RECOLHIDA (A1.1): a própria linha "instante do céu" vira o
             gatilho — clicar nela alterna, no molde do `<button>` que já
             abre/fecha as seções da ficha (`.atlas-ficha-titulo button`).
@@ -882,7 +948,20 @@ export function BarraDoTempo({
               aria-label={t('atlas.voltarNoTempo')}
               onClick={() => onSentido(sentido === -1 ? 0 : -1)}
             >
-              <Icone nome="voltarCapitulo" tamanho={16} />
+              {/* O SENTIDO ACENA UMA VEZ (C3f) — o `key` muda a cada troca
+                  de sentido (`useRealce`), mas só o botão ESCOLHIDO ganha
+                  a classe que anima; os outros dois remontam o `<span>`
+                  sem efeito nenhum, do mesmo jeito inerte que um `<span>`
+                  sem classe sempre foi. O BOTÃO em si nunca remonta — só
+                  este filho decorativo. */}
+              <span
+                key={realceSentido}
+                className={
+                  sentido === -1 && realceSentido > 0 ? 'atlas-tempo-nudge-passado' : undefined
+                }
+              >
+                <Icone nome="voltarCapitulo" tamanho={16} />
+              </span>
             </button>
             <button
               type="button"
@@ -890,7 +969,14 @@ export function BarraDoTempo({
               disabled={parado}
               onClick={() => onSentido(0)}
             >
-              <Icone nome="pausa" tamanho={16} />
+              <span
+                key={realceSentido}
+                className={
+                  sentido === 0 && realceSentido > 0 ? 'atlas-tempo-nudge-parado' : undefined
+                }
+              >
+                <Icone nome="pausa" tamanho={16} />
+              </span>
             </button>
             <button
               type="button"
@@ -899,7 +985,14 @@ export function BarraDoTempo({
               aria-label={t('atlas.avancarNoTempo')}
               onClick={() => onSentido(sentido === 1 ? 0 : 1)}
             >
-              <Icone nome="avancarCapitulo" tamanho={16} />
+              <span
+                key={realceSentido}
+                className={
+                  sentido === 1 && realceSentido > 0 ? 'atlas-tempo-nudge-futuro' : undefined
+                }
+              >
+                <Icone nome="avancarCapitulo" tamanho={16} />
+              </span>
             </button>
           </div>,
         )}
@@ -917,7 +1010,16 @@ export function BarraDoTempo({
                   no meio de uma frase (o `aria-label` acima), errado como
                   rótulo sozinho. O `::first-letter` (abaixo) corrige só a
                   TELA; o dado e o `aria-label` continuam intocados. */}
-              <span className="atlas-tempo-taxa-texto">{taxa}</span>
+              {/* A TAXA CONFIRMA UMA VEZ (C3f) — `.realce-texto` da casa
+                  (01-base.css), só depois da primeira troca real
+                  (`realceTaxa > 0`): nascer com o painel não é confirmar
+                  escolha nenhuma. */}
+              <span
+                key={realceTaxa}
+                className={'atlas-tempo-taxa-texto' + (realceTaxa > 0 ? ' realce-texto' : '')}
+              >
+                {taxa}
+              </span>
               <span className="atlas-tempo-taxa-seta" aria-hidden="true">
                 ›
               </span>
@@ -937,6 +1039,14 @@ export function BarraDoTempo({
               {/* `<span>` (C2): a pressão afunda o filho, não o botão que
                   o filete do segmentado mede. */}
               <span>{t('atlas.aoVivo')}</span>
+              {/* O ANEL CONFIRMA SÓ QUANDO LIGA (C3f) — nunca ao desligar,
+                  e nunca na primeira pintura (`realceAoVivo > 0` exige
+                  uma troca real já ocorrida). `.realce-anel` é da casa
+                  (01-base.css); o botão precisa de `position: relative`
+                  (`.atlas-tempo-botoes .ajustes-seg button`, 04-atlas.css). */}
+              {aoVivo && realceAoVivo > 0 && (
+                <span className="realce-anel" aria-hidden="true" key={realceAoVivo} />
+              )}
             </button>
             <button
               type="button"

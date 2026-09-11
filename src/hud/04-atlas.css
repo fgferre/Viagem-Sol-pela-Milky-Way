@@ -1287,6 +1287,11 @@
    `retanguloDoAtlas.ts` (TEMPO_FRACAO e os dois degraus de quebra) foi
    remedida para este tamanho novo. */
 .atlas-tempo-botoes .ajustes-seg button {
+  /* ÂNCORA DO ANEL DE CONFIRMAÇÃO (C3f, `.realce-anel`, 01-base.css) —
+     sem isto o `position: absolute; inset: 0` do anel subiria até o
+     primeiro ancestral posicionado de verdade, que aqui é a MOLDURA
+     inteira (`.ajustes-seg`), não o botão do "ao vivo" sozinho. */
+  position: relative;
   min-height: 2.75rem;
   padding: 0.5rem 0.65rem;
   font-size: 0.8125rem;
@@ -1308,6 +1313,38 @@
 .atlas-tempo-botoes .ajustes-seg button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+/* O SENTIDO ACENA UMA VEZ (C3f, U27) — o ícone do botão ESCOLHIDO da
+   direção nudga na própria direção e volta; parado faz um pequeno
+   recolhimento. `translate`/`scale` SOZINHOS, nunca `transform`: a
+   pressão do dedo já escreve a própria escala em `transform` neste MESMO
+   filho (`:active > *`, 01-base.css), e as duas propriedades COMPÕEM em
+   vez de uma apagar a outra. Sem `0%`/`100%` explícitos: o
+   navegador completa com o valor de repouso (nenhuma translação/escala),
+   que é exatamente para onde cada uma volta sozinha. */
+@keyframes tempoNudgePassado {
+  30% {
+    translate: -4px 0;
+  }
+}
+@keyframes tempoNudgeFuturo {
+  30% {
+    translate: 4px 0;
+  }
+}
+@keyframes tempoAssentaParado {
+  45% {
+    scale: 0.88;
+  }
+}
+.atlas-tempo-nudge-passado {
+  animation: tempoNudgePassado var(--t-assenta) var(--curva) both;
+}
+.atlas-tempo-nudge-futuro {
+  animation: tempoNudgeFuturo var(--t-assenta) var(--curva) both;
+}
+.atlas-tempo-nudge-parado {
+  animation: tempoAssentaParado var(--t-assenta) var(--curva) both;
 }
 /* O RÓTULO DA TAXA muda de comprimento a cada degrau (de "1×" a "115,7
    dias/s"), e sem largura mínima os grupos vizinhos dançariam a cada
