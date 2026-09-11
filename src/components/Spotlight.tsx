@@ -97,6 +97,17 @@ export function Spotlight({ alvo, children }: { alvo: string | null; children: R
     largura: caixa.largura + FOLGA * 2,
     altura: caixa.altura + FOLGA * 2,
   };
+  // O RECORTE (na máscara) e o CONTORNO (a borda âmbar) são o MESMO
+  // retângulo desenhado duas vezes — por isso viajam JUNTOS: x/y/
+  // width/height vão pelo `style`, não pelo atributo, porque só assim
+  // o CSS transiciona a geometria SVG de um alvo para o outro, com a
+  // MESMA duração/curva nos dois (`.spotlight-recorte`/
+  // `.spotlight-contorno`, 03-controles.css). Ao nascer — sem
+  // retângulo anterior no DOM — não há o que transicionar: o recorte
+  // aparece direto no lugar, nunca desliza de fora (C5, U48).
+  const estiloDoRecorte = furo
+    ? { x: furo.x, y: furo.y, width: furo.largura, height: furo.altura }
+    : undefined;
   // o cartão se põe do lado de DENTRO do quadro: acima do alvo quando
   // ele está na metade de baixo (a dica de voo está), abaixo quando não
   const cartao = furo
@@ -112,14 +123,7 @@ export function Spotlight({ alvo, children }: { alvo: string | null; children: R
           <mask id="spotlight-furo">
             <rect x="0" y="0" width="100%" height="100%" fill="#fff" />
             {furo && (
-              <rect
-                x={furo.x}
-                y={furo.y}
-                width={furo.largura}
-                height={furo.altura}
-                rx="4"
-                fill="#000"
-              />
+              <rect className="spotlight-recorte" style={estiloDoRecorte} rx="4" fill="#000" />
             )}
           </mask>
         </defs>
@@ -133,10 +137,8 @@ export function Spotlight({ alvo, children }: { alvo: string | null; children: R
         />
         {furo && (
           <rect
-            x={furo.x}
-            y={furo.y}
-            width={furo.largura}
-            height={furo.altura}
+            className="spotlight-contorno"
+            style={estiloDoRecorte}
             rx="4"
             fill="none"
             stroke="rgba(255, 214, 150, 0.45)"
@@ -174,8 +176,16 @@ export function Convite({
   const semRoubarFoco = (e: MouseEvent) => e.preventDefault();
   return (
     <Spotlight alvo={atual.alvo}>
+      {/* A REGIÃO VIVA FICA, o TEXTO troca (C5, U48): `key={passo}` mora
+          no trecho de dentro, e não no `<p>` — remontar o parágrafo criaria
+          uma região viva nova a cada passo, e região que nasce junto com a
+          mensagem costuma não ser anunciada. O fade de troca é
+          `.convite-texto-troca` (03-controles.css); os botões abaixo
+          ficam de fora da chave e nunca remontam. */}
       <p className="convite-texto" role="status" aria-live="polite">
-        {t(atual.texto)}
+        <span key={passo} className="convite-texto-troca">
+          {t(atual.texto)}
+        </span>
       </p>
       <div className="convite-linha">
         <span className="convite-conta">

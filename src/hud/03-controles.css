@@ -83,6 +83,18 @@
   background-size: 4px 4px, 4px 4px;
   background-repeat: no-repeat;
 }
+/* O ENVELOPE DO CHIP DE QUALIDADE (C5, U19) — um `<select>` nativo não
+   pode hospedar o `<span class="realce-anel">` (só <option>/<optgroup>
+   são filhos válidos), então este é o mínimo indispensável:
+   `inline-flex` para abraçar o select sem sobra de linha/baseline,
+   MESMO raio do `.hud-btn` (o anel herda `border-radius: inherit`) e
+   nenhuma borda/padding própria — tamanho do chip, espaçamento da
+   barra e outline de foco do select ficam exatamente como eram. */
+.chip-qualidade-envelope {
+  position: relative;
+  display: inline-flex;
+  border-radius: var(--raio-controle);
+}
 
 /* E1 — as SAÍDAS do filme ("← Entrar no Atlas", "Voo livre") ficam
    DISCRETAS ao lado de "Mais": texto puro, sem moldura nem fundo, para
@@ -430,8 +442,11 @@
    .bare-mode (`> *:not(.scene-canvas)`) que os apaga em ?shot=2.
    O véu NÃO recebe ponteiro — o visitante tem de poder arrastar o céu
    enquanto lê "arraste para olhar em volta"; só o cartão é clicável.
-   A ÚNICA transição aqui é a opacidade da entrada, e ela some sob
-   prefers-reduced-motion (bloco lá embaixo): nada pisca nem pulsa. */
+   A opacidade da entrada é a única transição do VÉU, e ela some sob
+   prefers-reduced-motion (bloco lá embaixo, 06-responsivo.css): nada
+   pisca nem pulsa. Desde C5 (U48) o recorte/contorno também
+   transicionam — token à parte, logo abaixo — para viajarem juntos de
+   um alvo ao outro. */
 .spotlight {
   position: fixed;
   inset: 0;
@@ -448,6 +463,20 @@
   inset: 0;
   width: 100%;
   height: 100%;
+}
+/* O RECORTE (na máscara) e o CONTORNO (a borda âmbar) são o mesmo
+   retângulo desenhado duas vezes (item 42, seção 1) — por isso viajam
+   JUNTOS, com a MESMA duração/curva: x/y/width/height chegam pelo
+   `style` (Spotlight.tsx), então o CSS interpola a geometria SVG de um
+   alvo para o outro. O branco de fundo da máscara, acima, fica de fora
+   de propósito — nenhum `style`, nunca anima. Sob
+   `prefers-reduced-motion` o `--t-entrada` zera (01-base.css) e a troca
+   volta a ser instantânea; `.shot-mode` mata a transição inteira
+   (07-foto.css) e a geometria pousa já no valor final. */
+.spotlight-recorte,
+.spotlight-contorno {
+  transition: x var(--t-entrada) var(--curva), y var(--t-entrada) var(--curva),
+    width var(--t-entrada) var(--curva), height var(--t-entrada) var(--curva);
 }
 /* a pele vem de `.hud-cartao` (fatia 1). Este é o único dos quatro
    cartões que NÃO é o diálogo ancorado: ele é `fixed` e persegue o alvo
@@ -485,12 +514,28 @@
     max-width: none;
   }
 }
+/* CONFIRMA A TROCA DE PASSO (C5, U48) com um fade curto — o mesmo
+   desenho de "troca de conteúdo" que a busca já usa (`trocaConteudo`,
+   04-atlas.css), só que local ao texto: `key={passo}` (Spotlight.tsx)
+   remonta SÓ o trecho de dentro do parágrafo — nem a região viva (que
+   precisa continuar a mesma para o leitor de tela anunciar a troca) nem
+   os botões ao lado, que seguem com foco e estado intactos. */
 .convite-texto {
   margin: 0 0 0.75rem;
   font-size: 0.875rem;
   font-weight: 400;
   line-height: 1.5;
   color: var(--texto);
+}
+.convite-texto-troca {
+  display: block;
+  animation: conviteTroca var(--t-entrada) var(--curva) backwards;
+}
+@keyframes conviteTroca {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
 }
 .convite-linha {
   display: flex;

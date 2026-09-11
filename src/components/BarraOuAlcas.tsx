@@ -367,21 +367,35 @@ export function BarraOuAlcas({
    * que muda a cada janela de medida desorienta quem ouve a tela — o que
    * muda é ESTADO, e estado se anuncia pela região `aria-live` do painel,
    * não renomeando o controle.
+   *
+   * O CHIP CONFIRMA A ESCOLHA (C5, U19) — um `.realce-anel` quando É O
+   * VISITANTE quem troca `quality.escolha`, nunca quando só o tier
+   * automático muda por trás dela: `useRealce` compara `escolha`, e a
+   * medição de desempenho nunca escreve nela. O envelope
+   * (`.chip-qualidade-envelope`, 03-controles.css) é quem ganha
+   * `position: relative` — o `<select>` nativo não pode hospedar o
+   * `<span>` decorativo e nunca remonta.
    */
+  const vezesQualidade = useRealce(quality.escolha);
   const seletorDeQualidade = (
-    <select
-      className="hud-btn small"
-      aria-label={t('barra.qualidadeAria')}
-      title={rotuloDaQualidade(quality)}
-      value={quality.escolha}
-      onChange={(e) => changeQuality(e.target.value as EscolhaDeQualidade)}
-    >
-      {QUALIDADES.map((q) => (
-        <option key={q.id} value={q.id}>
-          {q.simbolo} {q.nome}
-        </option>
-      ))}
-    </select>
+    <span className="chip-qualidade-envelope">
+      <select
+        className="hud-btn small"
+        aria-label={t('barra.qualidadeAria')}
+        title={rotuloDaQualidade(quality)}
+        value={quality.escolha}
+        onChange={(e) => changeQuality(e.target.value as EscolhaDeQualidade)}
+      >
+        {QUALIDADES.map((q) => (
+          <option key={q.id} value={q.id}>
+            {q.simbolo} {q.nome}
+          </option>
+        ))}
+      </select>
+      {vezesQualidade > 0 && (
+        <span className="realce-anel" aria-hidden="true" key={vezesQualidade} />
+      )}
+    </span>
   );
 
   /**
