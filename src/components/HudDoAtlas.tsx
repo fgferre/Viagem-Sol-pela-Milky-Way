@@ -27,7 +27,7 @@ import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
 import { useFileteDoSegmentado } from '../hooks/useFileteDoSegmentado';
-import { lerTokens } from '../hooks/movimentoDaGaveta';
+import { cancelar, ir, lerTokens, REPOUSO } from '../hooks/movimentoDaGaveta';
 import { semMovimento } from '../hooks/useGavetas';
 import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
 import type { EstadoDaVista } from '../three/selo';
@@ -585,6 +585,17 @@ export function Bussola({ acesa, onEndireitar }: {
   );
 }
 
+/** quanto uma animação em curso ainda desloca o nó na vertical (0 em
+ *  repouso) — o transform COMPUTADO é o único que sabe o quadro de agora */
+const translacaoY = (no: Element): number => {
+  const transform = getComputedStyle(no).transform;
+  return transform === 'none' ? 0 : new DOMMatrixReadOnly(transform).m42;
+};
+
+/** o topo do nó na tela SEM o deslocamento que ele mesmo estiver fazendo —
+ *  medir no meio de uma animação não pode gravar um "antes" torto */
+const topoDeRepouso = (no: Element): number => no.getBoundingClientRect().top - translacaoY(no);
+
 /**
  * A MÁQUINA DO TEMPO (F4/D2). Uma linha de leitura — o instante do céu
  * em pt-BR — e seis controles: o sentido em três botões, a velocidade
@@ -719,14 +730,15 @@ export function BarraDoTempo({
    * linha alguns pixels para cima no MESMO quadro, porque tudo o que já
    * estava ACIMA do conteúdo novo sobe junto com o topo da coluna. FLIP —
    * o "antes" vem da chamada ANTERIOR deste mesmo efeito (a régua do
-   * plano: layout effect no abrir, não por quadro); o "depois" é medido
-   * já com o corpo montado; a diferença anima com a MESMA entrada da
-   * casa (`--t-entrada`/`--curva`, lidos uma vez) em vez de a linha
+   * plano: layout effect no abrir, não por quadro), remedido quando a
+   * coluna ou a janela mudam de tamanho no meio-tempo; o "depois" é
+   * medido já com o corpo montado; a diferença anima com a MESMA entrada
+   * da casa (`--t-entrada`/`--curva`, lidos uma vez) em vez de a linha
    * simplesmente aparecer deslocada.
    */
   const linhaRef = useRef<HTMLDivElement>(null);
-  const retanguloAntesDaLinha = useRef<DOMRect | null>(null);
-  const animacaoDaLinha = useRef<Animation | null>(null);
+  /** o topo de REPOUSO da linha na última medida válida (`topoDeRepouso`) */
+  const topoAntesDaLinha = useRef<number | null>(null);
   /**
    * O CORPO ESTÁ INDO EMBORA — o mouse saiu e o respiro está correndo.
    * É só isto que separa "some de um quadro para o outro" de "esmaece":
@@ -855,10 +867,10 @@ export function BarraDoTempo({
   }, [recolhivel, aberta, dicaPresa, limparDica]);
   /**
    * O FLIP DA LINHA (C3f) — só o "depois" é medido AQUI: o "antes" já
-   * está em `retanguloAntesDaLinha`, gravado pela chamada anterior deste
-   * MESMO efeito (por isso ele roda a cada `aberta`, e não a cada
-   * quadro: enquanto `aberta` não muda, a linha não se move por este
-   * motivo). `useLayoutEffect`, não `useEffect`: tem de medir e escrever
+   * está em `topoAntesDaLinha`, gravado pela chamada anterior deste
+   * MESMO efeito ou pelo remedir logo abaixo (por isso ele roda a cada
+   * `aberta`, e não a cada quadro: enquanto `aberta` não muda, a linha
+   * não se move por este motivo). `useLayoutEffect`, não `useEffect`: tem de medir e escrever
    * o transform de partida ANTES do primeiro paint em que o corpo já
    * nasceu, senão o olho vê o salto de qualquer jeito e a animação só
    * mostraria a volta.
@@ -866,30 +878,55 @@ export function BarraDoTempo({
   useLayoutEffect(() => {
     const no = linhaRef.current;
     if (!no) return;
-    const depois = no.getBoundingClientRect();
-    const antes = retanguloAntesDaLinha.current;
-    retanguloAntesDaLinha.current = depois;
-    // SÓ ao ABRIR, e só quando já existe um "antes" para comparar (nunca
-    // na primeira pintura — nascer não é abrir). O fechamento já tem a
-    // saída dele (o esmaecer existente); aqui só a chegada.
+    const emCurso = translacaoY(no);
+    const depois = topoDeRepouso(no);
+    const antes = topoAntesDaLinha.current;
+    topoAntesDaLinha.current = depois;
+    // Só quando já existe um "antes" para comparar (nunca na primeira
+    // pintura — nascer não é abrir).
     // NOS DOIS SENTIDOS: ao fechar, o corpo some ao fim do respiro e a
     // linha cairia de uma vez para o lugar de repouso — o mesmo salto,
     // só que para baixo, logo depois de o corpo terminar de esmaecer
-    if (!antes) return;
-    const delta = antes.top - depois.top;
+    if (antes === null) return;
+    const delta = antes - depois;
     if (!delta) return;
     const raiz = no.closest('.hud-root') ?? no;
     const { duracao, curva } = lerTokens(raiz, '--t-entrada', '--curva');
-    if (semMovimento() || duracao <= 1) return;
-    // A ÚLTIMA INTENÇÃO VENCE: um segundo abrir antes do primeiro
-    // assentar cancela a animação em curso, nunca as duas disputando o
-    // mesmo transform.
-    animacaoDaLinha.current?.cancel();
-    animacaoDaLinha.current = no.animate(
-      [{ transform: `translateY(${delta}px)` }, { transform: 'translateY(0px)' }],
-      { duration: duracao, easing: curva }
-    );
+    // O MESMO DONO DO MOVIMENTO DAS GAVETAS (`ir`, movimentoDaGaveta.ts):
+    // a última intenção vence e parte de onde a linha ESTÁ — o
+    // deslocamento em curso entra no "de", então abrir e fechar de novo
+    // antes de assentar não pula —, e ligar "reduzir movimento" ou
+    // redimensionar a janela no meio assenta a linha na hora.
+    ir(no, `translateY(${delta + emCurso}px)`, REPOUSO, {
+      duracao: semMovimento() ? 0 : duracao,
+      curva,
+      segurar: false,
+    });
   }, [aberta]);
+  /**
+   * O "ANTES" ACOMPANHA A TELA: a coluna é ancorada pela base, então a
+   * janela mudar de altura, ou o aviso da verdade, o idioma e a escala
+   * mudarem o tamanho da coluna ENTRE uma abertura e outra, move a linha
+   * sem que `aberta` mude — e o próximo FLIP partiria de um lugar onde
+   * ela já não estava. Remedir por evento (o observador de tamanho da
+   * coluna e o `resize` da janela), nunca por quadro.
+   */
+  useEffect(() => {
+    const no = linhaRef.current;
+    const coluna = no?.closest<HTMLElement>('.atlas-rodape') ?? no?.parentElement;
+    if (!no || !coluna) return;
+    const remedir = () => {
+      topoAntesDaLinha.current = topoDeRepouso(no);
+    };
+    const observador = new ResizeObserver(remedir);
+    observador.observe(coluna);
+    window.addEventListener('resize', remedir);
+    return () => {
+      observador.disconnect();
+      window.removeEventListener('resize', remedir);
+      cancelar(no);
+    };
+  }, []);
   // O BADGE DA VERDADE ("sem efeméride" etc.) É UM SÓ ELEMENTO, montado em
   // UM dos dois lugares por vez: na linha fechada (abaixo) enquanto os
   // controles estão fora do fluxo, ou depois de `.atlas-tempo-botoes`

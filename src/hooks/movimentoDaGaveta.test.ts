@@ -13,7 +13,7 @@
 // um `cancel()` de verdade já rejeitaria sozinho, e isso provaria só a
 // rejeição, não o contador que é a segunda linha de defesa do C1.
 // ============================================================
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   cancelar,
   desvanecer,
@@ -29,7 +29,10 @@ const noFalso = (animate: (...args: unknown[]) => unknown) =>
   ({ style: { transform: '' }, animate }) as unknown as HTMLElement;
 
 /** uma `Animation` falsa com `finished` controlável de fora — resolve
- *  ou rejeita quando o teste manda, não quando o navegador manda. */
+ *  ou rejeita quando o teste manda, não quando o navegador manda.
+ *  `finish` faz o que o de verdade faz (resolve `finished`); `cancel`
+ *  NÃO rejeita sozinho, de propósito — é o que deixa a seção 4 provar o
+ *  contador, e não só a rejeição. */
 function animacaoFalsa() {
   let resolver: () => void = () => {};
   let rejeitar: (erro?: unknown) => void = () => {};
@@ -38,7 +41,7 @@ function animacaoFalsa() {
     rejeitar = rej;
   });
   return {
-    anim: { cancel: vi.fn(), finished } as unknown as Animation,
+    anim: { cancel: vi.fn(), finish: vi.fn(() => resolver()), finished } as unknown as Animation,
     resolver,
     rejeitar,
   };
@@ -173,7 +176,10 @@ describe('6. `desvanecer` — a troca não desloca a moldura, só os filhos pisc
   });
 
   it('cada filho anima a PRÓPRIA opacidade — nunca um wrapper único', () => {
-    const filhos = [{ animate: vi.fn() }, { animate: vi.fn() }];
+    const filhos = [
+      { animate: vi.fn(() => animacaoFalsa().anim) },
+      { animate: vi.fn(() => animacaoFalsa().anim) },
+    ];
     desvanecer(filhos as unknown as Element[], 120, 'ease');
     for (const filho of filhos) {
       expect(filho.animate).toHaveBeenCalledWith([{ opacity: 0 }, { opacity: 1 }], {
@@ -181,5 +187,89 @@ describe('6. `desvanecer` — a troca não desloca a moldura, só os filhos pisc
         easing: 'ease',
       });
     }
+  });
+});
+
+describe('7. o que já corre assenta quando a preferência muda ou a janela muda de tamanho', () => {
+  // Um MÓDULO NOVO por teste (`vi.resetModules`): a lista de animações
+  // vivas é do módulo, e as animações falsas das seções de cima, que
+  // nunca terminam, deixariam os ouvintes instalados de antemão.
+  const janelaFalsa = () => {
+    const preferencia = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const janela = {
+      matchMedia: vi.fn(() => preferencia),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    vi.stubGlobal('window', janela);
+    return { janela, preferencia };
+  };
+  const moduloNovo = async () => {
+    vi.resetModules();
+    return import('./movimentoDaGaveta');
+  };
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('ligar "reduzir movimento" no meio de uma saída a TERMINA — e o painel desmonta na hora', async () => {
+    const { preferencia } = janelaFalsa();
+    const m = await moduloNovo();
+    const chamada = animacaoFalsa();
+    const assentou = vi.fn();
+    m.ir(noFalso(() => chamada.anim), 'de', 'fora', { duracao: 260, curva: 'ease', segurar: true }, assentou);
+
+    const [, aoMudar] = preferencia.addEventListener.mock.calls[0] as [string, (e: unknown) => void];
+    aoMudar({ matches: true });
+    await proximoQuadro();
+
+    expect(chamada.anim.finish).toHaveBeenCalledTimes(1);
+    expect(chamada.anim.cancel).not.toHaveBeenCalled();
+    expect(assentou).toHaveBeenCalledTimes(1);
+  });
+
+  it('desligar a preferência não mexe no que corre', async () => {
+    const { preferencia } = janelaFalsa();
+    const m = await moduloNovo();
+    const chamada = animacaoFalsa();
+    m.ir(noFalso(() => chamada.anim), 'de', 'para', { duracao: 260, curva: 'ease', segurar: false });
+    const [, aoMudar] = preferencia.addEventListener.mock.calls[0] as [string, (e: unknown) => void];
+    aoMudar({ matches: false });
+    expect(chamada.anim.finish).not.toHaveBeenCalled();
+  });
+
+  it('o resize da janela assenta a entrada e o conteúdo da troca, sem cruzar fronteira nenhuma', async () => {
+    const { janela } = janelaFalsa();
+    const m = await moduloNovo();
+    const entrada = animacaoFalsa();
+    const troca = animacaoFalsa();
+    m.ir(noFalso(() => entrada.anim), 'de', 'para', { duracao: 260, curva: 'ease', segurar: false });
+    m.desvanecer([{ animate: () => troca.anim }] as unknown as Element[], 120, 'ease');
+
+    const aoRedimensionar = janela.addEventListener.mock.calls.find(([tipo]) => tipo === 'resize')?.[1] as () => void;
+    aoRedimensionar();
+
+    expect(entrada.anim.finish).toHaveBeenCalledTimes(1);
+    expect(troca.anim.finish).toHaveBeenCalledTimes(1);
+  });
+
+  it('os ouvintes entram com a primeira animação e saem com a última — nada pendurado', async () => {
+    const { janela, preferencia } = janelaFalsa();
+    const m = await moduloNovo();
+    const a = animacaoFalsa();
+    const b = animacaoFalsa();
+    m.ir(noFalso(() => a.anim), 'de', 'para', { duracao: 200, curva: 'ease', segurar: false });
+    m.ir(noFalso(() => b.anim), 'de', 'para', { duracao: 200, curva: 'ease', segurar: false });
+    expect(janela.addEventListener).toHaveBeenCalledTimes(1);
+    expect(preferencia.addEventListener).toHaveBeenCalledTimes(1);
+
+    a.resolver();
+    await proximoQuadro();
+    expect(janela.removeEventListener).not.toHaveBeenCalled();
+
+    b.rejeitar(new Error('cancelada'));
+    await proximoQuadro();
+    expect(janela.removeEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
+    expect(preferencia.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
   });
 });

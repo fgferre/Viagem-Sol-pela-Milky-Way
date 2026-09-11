@@ -133,6 +133,65 @@ interface EstadoDoNo {
   intencao: number;
 }
 
+/**
+ * AS ANIMAÇÕES VIVAS DESTE CONTROLADOR — as que `ir` e `desvanecer`
+ * começaram e ainda não terminaram nem foram canceladas. Existem por uma
+ * razão só: uma mudança que invalida o movimento EM CURSO tem de assentar
+ * tudo agora, e não 260 ms depois (§4/§5 do plano de motion: "a
+ * preferência vale também se mudar com o app aberto"; "redimensionado:
+ * cancelar trajetória desatualizada e assentar no estado válido"). Ler a
+ * preferência só ao COMEÇAR (`semMovimento`, em quem chama) cobria as
+ * próximas animações, nunca a que já corria — reproduzido na reauditoria
+ * de 11/09: ligar "reduzir movimento" no meio de uma saída deixava o
+ * painel `inert` deslizando os 260 ms inteiros.
+ */
+const vivas = new Set<Animation>();
+
+/**
+ * TERMINA TODA ANIMAÇÃO VIVA NO FIM DA PRÓPRIA INTENÇÃO — `finish()`, e
+ * não `cancel()`: cancelar devolveria cada nó ao ponto de PARTIDA (uma
+ * saída voltaria para dentro da tela), enquanto terminar entrega o que
+ * a intenção de agora pediu — a entrada no repouso, a saída fora da
+ * tela, o conteúdo da troca aceso — e resolve `finished`, que é o que
+ * roda o `aoAssentar` de quem a pediu: a saída desmonta o painel na
+ * hora, sem `inert` preso na tela. O contador de `ir` não muda aqui,
+ * então a última intenção continua sendo a que assenta.
+ */
+export function assentarTudo(): void {
+  for (const anim of Array.from(vivas)) anim.finish();
+}
+
+const MOVIMENTO_REDUZIDO = '(prefers-reduced-motion: reduce)';
+let preferencia: MediaQueryList | null = null;
+const aoMudarPreferencia = (e: MediaQueryListEvent) => {
+  if (e.matches) assentarTudo();
+};
+
+/**
+ * OUVE SÓ ENQUANTO ALGO SE MOVE: os dois ouvintes (a preferência de
+ * movimento e o `resize` da janela, que também chega ao girar o
+ * aparelho) entram com a primeira animação viva e saem com a última —
+ * nenhum ouvinte fica pendurado num app parado. Uma janela redimensionada
+ * no meio do movimento assenta mesmo sem cruzar a fronteira mesa/celular:
+ * a largura ou a altura do painel mudou, e a trajetória calculada no
+ * começo já não leva ao lugar certo.
+ */
+function vigiar(anim: Animation): void {
+  if (vivas.size === 0 && typeof window !== 'undefined') {
+    preferencia = window.matchMedia?.(MOVIMENTO_REDUZIDO) ?? null;
+    preferencia?.addEventListener('change', aoMudarPreferencia);
+    window.addEventListener('resize', assentarTudo);
+  }
+  vivas.add(anim);
+  const largar = () => {
+    if (!vivas.delete(anim) || vivas.size > 0 || typeof window === 'undefined') return;
+    preferencia?.removeEventListener('change', aoMudarPreferencia);
+    preferencia = null;
+    window.removeEventListener('resize', assentarTudo);
+  };
+  anim.finished.then(largar, largar);
+}
+
 /** um estado por nó, e não por gaveta: o `useGavetas` já garante que só
  *  existe UM `[data-dialogo]` de cada vez, mas o `WeakMap` não precisa
  *  saber disso — e não vaza nó nenhum quando o React o remove. */
@@ -199,6 +258,7 @@ export function ir(
     fill: segurar ? 'forwards' : 'none',
   });
   estado.anim = anim;
+  vigiar(anim);
   anim.finished
     .then(() => {
       if (estado.intencao === minhaIntencao) aoAssentar?.();
@@ -236,6 +296,6 @@ export function cancelar(no: HTMLElement): void {
 export function desvanecer(filhos: ArrayLike<Element>, duracao: number, curva: string): void {
   if (duracao <= 1) return;
   for (const no of Array.from(filhos)) {
-    no.animate([{ opacity: 0 }, { opacity: 1 }], { duration: duracao, easing: curva });
+    vigiar(no.animate([{ opacity: 0 }, { opacity: 1 }], { duration: duracao, easing: curva }));
   }
 }

@@ -163,7 +163,9 @@ export const duracaoDaSaida = (no: Element | null): number => {
  *
  * Lido UMA VEZ POR TROCA (quem chama só roda quando a gaveta muda), nunca
  * por quadro — e, por ser lido na hora, obedece à preferência do sistema
- * mesmo que ela mude com o app aberto.
+ * mesmo que ela mude com o app aberto. O movimento que JÁ CORRE quando
+ * ela muda não passa por aqui: quem o termina na hora é `assentarTudo`
+ * (`movimentoDaGaveta.ts`), que ouve a preferência enquanto algo se move.
  */
 export const semMovimento = () =>
   (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false) ||
@@ -765,6 +767,11 @@ export function useGavetas(
       window.removeEventListener('touchmove', mover);
       window.removeEventListener('touchend', soltar);
       window.removeEventListener('touchcancel', abortar);
+      // UM ARRASTO QUE O CONTEXTO INTERROMPEU (girar o aparelho, a ficha
+      // expandir, outra gaveta abrir com o dedo ainda na tela) não deixa
+      // a folha onde o dedo estava: o transform em linha é deste gesto, e
+      // o gesto acabou sem `soltar` nenhum para limpá-lo (E8).
+      if (arrastando) folha.style.transform = '';
     };
   }, [celular, gaveta, fichaExpandida]);
 
