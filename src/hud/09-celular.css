@@ -521,6 +521,21 @@
   .atlas-ficha[data-ficha-estado='expandida'] {
     overflow-y: auto;
   }
+  /* O DEDO MANDA NA ALTURA (C4 do plano de motion): enquanto um arrasto
+     está na tela (`data-arrasto`, `useGavetas.ts`), a ficha troca de
+     compacta para expandida sob o dedo sem a transição de altura acima —
+     com ela a expandida cresceria sozinha por 260 ms debaixo de um dedo
+     que já dita onde a borda está. O soltar é que anima. */
+  .atlas-ficha[data-arrasto] {
+    transition: none;
+  }
+  /* A ALÇA É O CABEÇALHO INTEIRO (C4): o traço de 36 px é só o desenho, a
+     área de pegar é o cabeçalho (≥ 44 px). Nele o navegador não rola a
+     folha — um arrasto que começa ali é do gesto, com a rolagem onde
+     estiver, e os botões de dentro continuam recebendo o toque. */
+  .hud-dialogo .hud-cabecalho {
+    touch-action: none;
+  }
 
   /* O CABEÇALHO DA COMPACTA VIRA UMA LINHA SÓ ("PLANETA · Netuno
      [Detalhes ˄] [✕]", §3.5) SEM TOCAR `CabecalhoDoPainel.tsx` (fora do

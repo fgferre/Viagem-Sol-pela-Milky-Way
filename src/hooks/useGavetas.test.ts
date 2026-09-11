@@ -28,6 +28,8 @@ import {
   aoFocar,
   aoTravessar,
   arrastoFecha,
+  deslocamentoDaFolha,
+  destinoDoArrasto,
   gavetaQueSai,
 } from './useGavetas';
 // a zona morta do dedo vem da peça que o arrasto realmente usa: o gesto
@@ -240,26 +242,69 @@ describe('7. a ficha no celular: compacta/expandida (PLAN-UI.md §7, item 225)',
 
   it('o arrasto para baixo na EXPANDIDA recolhe — o mesmo gesto, outro efeito (Lote 5)', () => {
     // §7: "'Recolher', arrasto para baixo no topo da rolagem → compacta"
-    // — NENHUMA mecânica nova: o mesmo `arrastoFecha`/`scrollTop === 0`
-    // da saída de sempre, só que quando a ficha está EXPANDIDA o gesto
-    // recolhe em vez de fechar a gaveta
-    expect(HOOK).toContain("if (gaveta === 'ficha' && fichaExpandida) {\n        setFichaExpandida(false);");
-    // e o efeito precisa reler `fichaExpandida` a cada troca dela —
-    // senão o ramo acima checaria sempre o valor da primeira montagem
-    expect(HOOK).toMatch(/\}, \[celular, gaveta, fichaExpandida\]\);/);
+    // — o MESMO limiar da saída de sempre, só que quando a ficha está
+    // EXPANDIDA o gesto recolhe em vez de fechar a gaveta
+    expect(destinoDoArrasto(0, 48, 'expandida', false)).toBe('recolher');
+    expect(destinoDoArrasto(0, 47, 'expandida', false)).toBe('voltar');
+    expect(destinoDoArrasto(0, 48, 'compacta', false)).toBe('fechar');
+  });
+
+  it('o gesto SOBREVIVE à troca de estado que ele mesmo causa (C4)', () => {
+    // expandir no meio do arrasto muda `fichaExpandida`; se o efeito do
+    // gesto dependesse dela, o React desligaria os ouvintes no meio do
+    // dedo e o arrasto morreria — o estado é lido por ref, na hora
+    expect(HOOK).toMatch(/\}, \[celular, gaveta\]\);/);
+    expect(HOOK).toContain('fichaExpandidaRef.current');
+  });
+});
+
+describe('7b. a folha guiada pela alça: expandir para cima (C4 do plano de motion)', () => {
+  it('só a ALÇA da COMPACTA expande, com o mesmo limiar da saída, espelhado', () => {
+    // os números são literais pela mesma razão da seção 6: o gesto se
+    // mede em pixels de tela, e o limiar novo é o de sempre para cima
+    expect(destinoDoArrasto(0, -48, 'compacta', true)).toBe('expandir');
+    expect(destinoDoArrasto(0, -47, 'compacta', true)).toBe('voltar');
+    // mais para o lado do que para cima não é expandir
+    expect(destinoDoArrasto(-200, -60, 'compacta', true)).toBe('voltar');
+    // no CORPO da folha, subir é rolar ou nada — nunca expandir
+    expect(destinoDoArrasto(0, -200, 'compacta', false)).toBe('voltar');
+    // a expandida já está no topo; as outras gavetas não têm estado
+    expect(destinoDoArrasto(0, -200, 'expandida', true)).toBe('voltar');
+    expect(destinoDoArrasto(0, -200, null, true)).toBe('voltar');
+  });
+
+  it('pela alça, descer continua fechando (compacta e outras) e recolhendo (expandida)', () => {
+    expect(destinoDoArrasto(0, 48, 'compacta', true)).toBe('fechar');
+    expect(destinoDoArrasto(0, 48, null, true)).toBe('fechar');
+    expect(destinoDoArrasto(0, 48, 'expandida', true)).toBe('recolher');
+  });
+
+  it('o dedo é seguido SEM curva: o deslocamento é conta, não animação', () => {
+    // sem expansão: só para baixo, como sempre
+    expect(deslocamentoDaFolha(30, null)).toBe(30);
+    expect(deslocamentoDaFolha(-30, null)).toBe(0);
+    // expandindo: a folha já tem a altura da expandida (he) e aparece com
+    // a da compacta (hc) mais o que o dedo subiu — nunca além do topo
+    expect(deslocamentoDaFolha(-60, { hc: 160, he: 400 })).toBe(180);
+    expect(deslocamentoDaFolha(-500, { hc: 160, he: 400 })).toBe(0);
+    // e o dedo que volta para baixo do começo leva a folha junto
+    expect(deslocamentoDaFolha(20, { hc: 160, he: 400 })).toBe(260);
+    // antes de a expandida pintar (a altura dela ainda não existe), a
+    // compacta fica parada no lugar
+    expect(deslocamentoDaFolha(-60, { hc: 160, he: null })).toBe(0);
   });
 });
 
 describe('8. a folha segue o dedo — o arrasto desenha, o SOLTAR decide (fix, 09/09)', () => {
-  it('o MOVER só desenha (translateY clampado ao sentido que fecha, nunca para cima)', () => {
-    expect(HOOK).toContain('folha.style.transform = `translateY(${Math.max(0, dy)}px)`;');
+  it('o MOVER só desenha (o deslocamento da conta pura, nunca uma decisão)', () => {
+    expect(HOOK).toContain('folha.style.transform = `translateY(${deslocamentoDaFolha(dy, expansao)}px)`;');
   });
 
   it('a decisão saiu do MEIO do arrasto — fechar ali faria a folha sumir debaixo do dedo', () => {
     // a linha antiga (`mover` fechando sozinho) não pode sobrar…
     expect(HOOK).not.toContain('if (!arrastoFecha(dx, dy)) return;');
-    // …e o SOLTAR decide com o MESMO `arrastoFecha`, sem trocar o limiar
-    expect(HOOK).toContain('if (!arrastoFecha(dx, dy)) {');
+    // …e o SOLTAR decide com `destinoDoArrasto`, que usa o MESMO limiar
+    expect(HOOK).toContain('destinoDoArrasto(dx, dy, fichaNoComeco, pelaAlca)');
   });
 
   it('a animação em curso é PARADA só quando o arrasto de verdade começa', () => {

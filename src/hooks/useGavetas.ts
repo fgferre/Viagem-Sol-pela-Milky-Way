@@ -248,6 +248,79 @@ export const ARRASTO_QUE_FECHA_PX = 48;
 export const arrastoFecha = (dx: number, dy: number): boolean =>
   dy >= ARRASTO_QUE_FECHA_PX && dy > Math.abs(dx);
 
+/** o que um arrasto da folha decide AO SOLTAR — ver `destinoDoArrasto` */
+export type DestinoDoArrasto = 'voltar' | 'fechar' | 'expandir' | 'recolher';
+
+/**
+ * A FOLHA GUIADA PELA MÃO (C4 do plano de motion): o que o gesto decide
+ * quando o dedo sai da tela, pelo deslocamento total e pelo estado da
+ * ficha NO COMEÇO do gesto (`null` nas outras quatro gavetas, que não têm
+ * compacta nem expandida).
+ *
+ * O LIMIAR DE FECHAR CONTINUA O DE SEMPRE (`arrastoFecha`), e o de
+ * EXPANDIR é o mesmo gesto espelhado: 48 px para cima depois da zona
+ * morta do dedo, mais vertical que horizontal. Só a ALÇA (o cabeçalho da
+ * folha, `pelaAlca`) expande — no corpo, subir o dedo é rolar ou nada —,
+ * e só a compacta tem para onde crescer. Descer na expandida recolhe
+ * (Lote 5); descer na compacta, ou em qualquer outra gaveta, fecha.
+ *
+ * PURA, pela razão de sempre deste arquivo: o runner é `node`.
+ */
+export const destinoDoArrasto = (
+  dx: number,
+  dy: number,
+  ficha: 'compacta' | 'expandida' | null,
+  pelaAlca: boolean
+): DestinoDoArrasto => {
+  if (arrastoFecha(dx, dy)) return ficha === 'expandida' ? 'recolher' : 'fechar';
+  if (ficha === 'compacta' && pelaAlca && arrastoFecha(dx, -dy)) return 'expandir';
+  return 'voltar';
+};
+
+/**
+ * UMA EXPANSÃO PELO DEDO EM CURSO (C4). A compacta não tem o corpo da
+ * ficha montado (`FichaDoObjeto.tsx` só o desenha expandida), então o
+ * dedo que sobe pela alça troca a ficha para a expandida NO MEIO do
+ * gesto e passa a mostrar só o pedaço de cima dela: `hc` é a altura da
+ * compacta de onde partiu, `he` a da expandida depois que ela pinta sob
+ * o dedo (`null` até lá), `dy` o quanto o dedo andou, e `recolhendo`
+ * marca a volta para a compacta — a animação segura o transform até o
+ * layout compacto chegar, e só então ele sai, no mesmo quadro.
+ */
+export interface ExpansaoPeloDedo {
+  hc: number;
+  he: number | null;
+  dy: number;
+  recolhendo: boolean;
+}
+
+/**
+ * QUANTO A FOLHA DESCE AGORA (px), dado o dedo — conta pura, sem curva:
+ * durante o gesto a folha SEGUE o dedo, e quem anima é só o soltar.
+ * Sem expansão, só para baixo (o sentido que fecha). Expandindo, a folha
+ * já tem a altura da expandida e aparece com a da compacta mais o que o
+ * dedo subiu, nunca além do topo; antes de a expandida pintar, a
+ * compacta fica parada no lugar.
+ */
+export const deslocamentoDaFolha = (
+  dy: number,
+  expansao: Pick<ExpansaoPeloDedo, 'hc' | 'he'> | null
+): number => {
+  if (!expansao) return Math.max(0, dy);
+  if (expansao.he === null) return 0;
+  return Math.max(0, expansao.he - expansao.hc + dy);
+};
+
+/** a altura da COMPACTA em px, lida do token da casa
+ *  (`--ficha-compacta-altura`, 09-celular.css): ele é escrito em rem, e
+ *  o rem da raiz já carrega a escala da UI (`index.css`) — a mesma conta
+ *  que a câmera faz para o teto da compacta (`App.tsx`). */
+const alturaDaCompacta = (no: Element): number => {
+  const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const token = Number.parseFloat(getComputedStyle(no).getPropertyValue('--ficha-compacta-altura'));
+  return (token || 10) * rem;
+};
+
 export interface Gavetas {
   /** qual está aberta AGORA, ou `null` */
   gaveta: Gaveta | null;
@@ -473,11 +546,46 @@ export function useGavetas(
    * de render). SEM lista de dependências — roda a CADA commit, antes
    * dos efeitos de baixo (a mesma ordem de declaração, useLayoutEffect
    * atrás de useLayoutEffect) — para nunca ficar um commit atrasado.
+   *
+   * `fichaExpandida` PELO MESMO CANO (C4): expandir pela alça muda esse
+   * estado NO MEIO do arrasto, e o efeito do gesto, se dependesse dele,
+   * desligaria os ouvintes com o dedo ainda na tela.
    */
   const celularRef = useRef(celular);
+  const fichaExpandidaRef = useRef(fichaExpandida);
   useLayoutEffect(() => {
     celularRef.current = celular;
+    fichaExpandidaRef.current = fichaExpandida;
   });
+
+  /** a expansão pelo dedo em curso (`ExpansaoPeloDedo`) — dividida entre
+   *  o gesto e o efeito logo abaixo, que a completa quando o layout da
+   *  ficha muda */
+  const expansaoRef = useRef<ExpansaoPeloDedo | null>(null);
+  /**
+   * A FICHA MUDOU DE ESTADO NO MEIO DE UMA EXPANSÃO PELO DEDO (C4) — duas
+   * pontas, as duas antes do paint (`useLayoutEffect`):
+   * - a EXPANDIDA acabou de montar sob o dedo: mede a altura dela uma vez
+   *   e já a desenha na posição do dedo, senão um quadro mostraria a
+   *   expandida inteira antes de o próximo `touchmove` a pôr no lugar;
+   * - a COMPACTA voltou, ao fim da animação que levou a folha até a borda
+   *   dela (`segurar`): o layout compacto já está no DOM, então o
+   *   transform segurado sai neste mesmo quadro, sem piscar.
+   */
+  useLayoutEffect(() => {
+    const expansao = expansaoRef.current;
+    if (!expansao) return;
+    const folha = document.querySelector<HTMLElement>(`[${'data-dialogo'}="ficha"]`);
+    if (!folha) return;
+    if (fichaExpandida && expansao.he === null && !expansao.recolhendo) {
+      expansao.he = folha.offsetHeight;
+      folha.style.transform = `translateY(${deslocamentoDaFolha(expansao.dy, expansao)}px)`;
+    } else if (!fichaExpandida && expansao.recolhendo) {
+      cancelar(folha);
+      folha.style.transform = '';
+      expansaoRef.current = null;
+    }
+  }, [fichaExpandida]);
 
   /**
    * `useLayoutEffect` e não `useEffect`: o `inert` tem de estar no nó
@@ -629,6 +737,13 @@ export function useGavetas(
    * FECHA "A MIM", nunca "o que estiver aberto": `aoFechar` com o nome da
    * folha que recebeu o dedo, pela razão escrita lá em cima — entre o
    * gesto e o `set` a escolha de um corpo pode ter aberto a ficha.
+   *
+   * A ALÇA GUIA A FOLHA (C4 do plano de motion): o gesto que começa no
+   * cabeçalho, fora dos botões dele, vale com a rolagem onde estiver e
+   * nos dois sentidos — para cima a compacta expande seguindo o dedo,
+   * para baixo a expandida recolhe e as outras fecham. `deslocamentoDaFolha`
+   * desenha durante o gesto; `destinoDoArrasto` decide ao soltar, e o
+   * assentamento (até `--t-folha`) é do mesmo dono de sempre, `ir`.
    */
   useEffect(() => {
     if (!celular || !gaveta) return;
@@ -642,6 +757,13 @@ export function useGavetas(
     // `mover`, abaixo) — um toque que nunca chega a arrastar não deixa
     // rastro nenhum para `soltar` limpar.
     let arrastando = false;
+    // A ALÇA (C4): o gesto começou no cabeçalho da folha, fora dos botões
+    // dele — ali o dedo manda na folha com a rolagem onde estiver, e é o
+    // único lugar de onde a compacta expande.
+    let pelaAlca = false;
+    // o estado da ficha QUANDO o dedo encostou — a expansão pelo dedo o
+    // muda no meio do gesto, e a decisão do soltar é sobre o de partida
+    let fichaNoComeco: 'compacta' | 'expandida' | null = null;
     const comoPonteiro = (t: Touch) => ({
       pointerId: t.identifier,
       button: 0,
@@ -649,19 +771,51 @@ export function useGavetas(
       clientY: t.clientY,
       pointerType: 'touch',
     });
-    /** VOLTAR AO REPOUSO sem fechar — o "de" é o PRÓPRIO `dy` acumulado,
-     *  não `'atual'`: quem escreveu o transform foi este arrasto, à
-     *  mão, então o número já está na mão, sem precisar perguntar ao
-     *  navegador. Limpa o inline ANTES de chamar `ir`: as duas linhas
-     *  são síncronas (não há paint entre elas), e é essa limpeza que
-     *  evita a folha "grudar" na posição arrastada quando a animação
-     *  termina e devolve o `transform` ao CSS (`fill: 'none'`). */
-    const voltar = () => {
+    const opcoes = (segurar: boolean) => {
       const raiz = folha.closest('.hud-root') ?? folha;
       const { duracao, curva } = lerTokens(raiz, '--t-folha', '--curva-folha');
-      const de = `translateY(${Math.max(0, dy)}px)`;
+      return { duracao: semMovimento() ? 0 : duracao, curva, segurar };
+    };
+    /** VOLTAR AO REPOUSO sem fechar — o "de" é o PRÓPRIO deslocamento
+     *  que o arrasto desenhou (`deslocamentoDaFolha`), não `'atual'`:
+     *  quem escreveu o transform foi este arrasto, à mão, então o número
+     *  já está na mão, sem precisar perguntar ao navegador. Limpa o
+     *  inline ANTES de chamar `ir`: as duas linhas são síncronas (não há
+     *  paint entre elas), e é essa limpeza que evita a folha "grudar" na
+     *  posição arrastada quando a animação termina e devolve o
+     *  `transform` ao CSS (`fill: 'none'`). */
+    const voltar = () => {
+      const de = `translateY(${deslocamentoDaFolha(dy, expansaoRef.current)}px)`;
+      expansaoRef.current = null;
       folha.style.transform = '';
-      ir(folha, de, REPOUSO, { duracao: semMovimento() ? 0 : duracao, curva, segurar: false });
+      ir(folha, de, REPOUSO, opcoes(false));
+    };
+    /** ASSENTAR NA COMPACTA a partir da expandida (C4) — a folha desliza
+     *  até onde a borda de cima da compacta vai ficar (`he − hc` abaixo do
+     *  repouso da expandida), SEGURA ali, e só então a ficha vira compacta:
+     *  o efeito de layout acima tira o transform no commit do layout
+     *  compacto, sem piscar a expandida inteira. Trocar de estado ANTES
+     *  pularia a folha do lugar do dedo para a altura nova de uma vez. */
+    const assentarNaCompacta = (he: number, hc: number) => {
+      const de = `translateY(${deslocamentoDaFolha(dy, expansaoRef.current)}px)`;
+      expansaoRef.current = { hc, he, dy, recolhendo: true };
+      folha.style.transform = '';
+      ir(folha, de, `translateY(${Math.max(0, he - hc)}px)`, opcoes(true), () =>
+        setFichaExpandida(false)
+      );
+    };
+    /** O GESTO NÃO VALEU (não passou do limiar, foi cancelado, virou
+     *  pinça): a folha volta ao estado em que o dedo a encontrou. Uma
+     *  expansão já pintada recolhe até a compacta; uma que nem chegou a
+     *  pintar é só desfeita. */
+    const desfazer = () => {
+      const expansao = expansaoRef.current;
+      if (expansao?.he != null && !expansao.recolhendo) {
+        assentarNaCompacta(expansao.he, expansao.hc);
+        return;
+      }
+      if (expansao) setFichaExpandida(false);
+      voltar();
     };
     const comecar = (e: TouchEvent) => {
       const dedo = e.changedTouches[0];
@@ -676,11 +830,22 @@ export function useGavetas(
         // nunca gera `touchend` do PRIMEIRO).
         if (arrastando) {
           arrastando = false;
-          voltar();
+          folha.removeAttribute('data-arrasto');
+          desfazer();
         }
         return;
       }
-      if (folha.scrollTop > 0) return;
+      const alvo = e.target instanceof Element ? e.target : null;
+      // UM CONTROLE QUE TAMBÉM ARRASTA (o deslizante da exposição, da
+      // escala) nunca começa um arrasto da folha: o dedo é dele
+      if (alvo?.closest('input[type="range"]')) return;
+      // a folha ainda está voltando para a compacta (`assentarNaCompacta`,
+      // no máximo `--t-folha`): um dedo novo agora encontraria o layout
+      // da expandida sob o transform segurado — espera o assentamento
+      if (expansaoRef.current?.recolhendo) return;
+      pelaAlca = Boolean(alvo?.closest('.hud-cabecalho')) && !alvo?.closest('button, a');
+      if (!pelaAlca && folha.scrollTop > 0) return;
+      fichaNoComeco = gaveta === 'ficha' ? (fichaExpandidaRef.current ? 'expandida' : 'compacta') : null;
       dx = 0;
       dy = 0;
       arrasto.comecar(comoPonteiro(dedo), performance.now());
@@ -688,7 +853,9 @@ export function useGavetas(
     const mover = (e: TouchEvent) => {
       const dedo = e.changedTouches[0];
       if (!dedo) return;
-      if (folha.scrollTop > 0) {
+      // pela alça a rolagem não entra na conta: o cabeçalho não rola a
+      // folha (`touch-action: none`, 09-celular.css), o dedo é do gesto
+      if (!pelaAlca && folha.scrollTop > 0) {
         arrasto.esquecer();
         return;
       }
@@ -705,36 +872,50 @@ export function useGavetas(
         // linha, o mesmo motivo que a versão em CSS tinha para desligar
         // `animation` antes de escrever `transform` aqui.
         cancelar(folha);
+        // o dedo manda na altura: a transição de altura da ficha
+        // (09-celular.css) não disputa com ele enquanto ele está na tela
+        folha.setAttribute('data-arrasto', '');
       }
-      // SÓ PARA BAIXO — o sentido que fecha (`dy` negativo é clampado a
-      // zero: a mão voltando não "abre mais" a folha para cima). A
-      // DECISÃO de fechar continua a mesma (`arrastoFecha`, mesmo
-      // limiar), só que agora corre em `soltar`, e não aqui: fechar no
-      // MEIO do arrasto faria a folha sumir debaixo do dedo, ainda
-      // encostado.
-      folha.style.transform = `translateY(${Math.max(0, dy)}px)`;
+      // A EXPANSÃO COMEÇA (C4): o dedo subiu pela alça da compacta. A ficha
+      // vira expandida já (o corpo dela só existe expandida), e o efeito
+      // de layout acima a mede e a põe sob o dedo antes do paint.
+      if (fichaNoComeco === 'compacta' && pelaAlca && dy < 0 && !expansaoRef.current) {
+        expansaoRef.current = { hc: folha.offsetHeight, he: null, dy, recolhendo: false };
+        setFichaExpandida(true);
+      }
+      const expansao = expansaoRef.current;
+      if (expansao) expansao.dy = dy;
+      // SEM CURVA — a folha segue o dedo (`deslocamentoDaFolha`): só para
+      // baixo sem expansão, e com ela o quanto o dedo subiu. A DECISÃO
+      // (fechar, recolher, expandir) corre em `soltar`, e não aqui:
+      // decidir no MEIO do arrasto faria a folha fugir de debaixo do
+      // dedo, ainda encostado.
+      folha.style.transform = `translateY(${deslocamentoDaFolha(dy, expansao)}px)`;
     };
     const soltar = (e: TouchEvent) => {
       const dedo = e.changedTouches[0];
       if (dedo) arrasto.cancelar(comoPonteiro(dedo));
       if (!arrastando) return;
       arrastando = false;
-      if (!arrastoFecha(dx, dy)) {
+      folha.removeAttribute('data-arrasto');
+      const destino = destinoDoArrasto(dx, dy, fichaNoComeco, pelaAlca);
+      if (destino === 'expandir') {
+        // a expandida já está sob o dedo (ou pinta no próximo commit):
+        // só falta assentar no topo, a partir de onde o dedo largou
         voltar();
         return;
       }
-      // A FICHA EXPANDIDA RECOLHE em vez de fechar (Lote 5, PLAN-UI.md
-      // §7: "'Recolher', arrasto para baixo no topo da rolagem →
-      // compacta"). NENHUMA MECÂNICA NOVA: o mesmo gesto que fecha as
-      // outras quatro gavetas (e a ficha COMPACTA) só arma com
-      // `folha.scrollTop === 0` — na folha expandida isso já É "o topo
-      // da rolagem" do enunciado. Só o que o gesto FAZ muda com o estado.
-      if (gaveta === 'ficha' && fichaExpandida) {
-        setFichaExpandida(false);
-        // RECOLHE NÃO DESMONTA — a ficha só encolhe (a transição de
-        // altura já existe, 09-celular.css), então o transform volta ao
-        // REPOUSO, não para fora da tela.
-        voltar();
+      if (destino === 'recolher') {
+        // A FICHA EXPANDIDA RECOLHE em vez de fechar (Lote 5, PLAN-UI.md
+        // §7: "'Recolher', arrasto para baixo no topo da rolagem →
+        // compacta") — e desde o C4 recolhe DESLIZANDO até a borda da
+        // compacta, em vez de a altura pular e o transform voltar de
+        // longe
+        assentarNaCompacta(folha.offsetHeight, alturaDaCompacta(folha));
+        return;
+      }
+      if (destino === 'voltar') {
+        desfazer();
         return;
       }
       // FECHA DE VERDADE: quem desliza a folha para fora agora é o
@@ -742,6 +923,7 @@ export function useGavetas(
       // partir do transform ATUAL, que é exatamente este `translateY`
       // que o arrasto acabou de escrever. Nada a animar por aqui, só a
       // intenção.
+      expansaoRef.current = null;
       setGaveta((atual) => aoFechar(atual, gaveta));
     };
     // `touchcancel` NUNCA FECHA, só RETORNA — a mesma regra do segundo
@@ -753,7 +935,8 @@ export function useGavetas(
       if (dedo) arrasto.cancelar(comoPonteiro(dedo));
       if (!arrastando) return;
       arrastando = false;
-      voltar();
+      folha.removeAttribute('data-arrasto');
+      desfazer();
     };
     // PASSIVO, e de graça: `comecar` não chama `preventDefault` em
     // caminho nenhum — declarar isso deixa o navegador começar a rolagem
@@ -772,8 +955,13 @@ export function useGavetas(
       // a folha onde o dedo estava: o transform em linha é deste gesto, e
       // o gesto acabou sem `soltar` nenhum para limpá-lo (E8).
       if (arrastando) folha.style.transform = '';
+      folha.removeAttribute('data-arrasto');
+      expansaoRef.current = null;
     };
-  }, [celular, gaveta, fichaExpandida]);
+    // SEM `fichaExpandida` aqui (C4): expandir pela alça muda esse estado
+    // com o dedo na tela, e o gesto tem de sobreviver à troca que ele
+    // mesmo causa — ele é lido por `fichaExpandidaRef`, na hora
+  }, [celular, gaveta]);
 
   const alternarGaveta = useCallback(
     (qual: Gaveta) => setGaveta((atual) => aoAlternar(atual, qual)),
