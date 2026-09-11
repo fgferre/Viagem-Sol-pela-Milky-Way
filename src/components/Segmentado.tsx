@@ -50,7 +50,10 @@ export function Segmentado<T>({
           aria-pressed={valor === o.valor}
           onClick={() => onEscolher(o.valor)}
         >
-          {o.nome}
+          {/* `<span>` (C2 do plano de motion): a pressão da casa afunda o
+              filho (`> *`), e o filete do segmentado mede o BOTÃO, que
+              precisa ficar do tamanho de sempre. */}
+          <span>{o.nome}</span>
         </button>
       ))}
     </div>

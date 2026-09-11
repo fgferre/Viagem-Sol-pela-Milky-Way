@@ -934,7 +934,9 @@ export function BarraDoTempo({
               aria-label={t('atlas.aoVivoAria')}
               onClick={onAoVivo}
             >
-              {t('atlas.aoVivo')}
+              {/* `<span>` (C2): a pressão afunda o filho, não o botão que
+                  o filete do segmentado mede. */}
+              <span>{t('atlas.aoVivo')}</span>
             </button>
             <button
               type="button"
@@ -942,7 +944,7 @@ export function BarraDoTempo({
               disabled={naEpoca && parado}
               onClick={onEpoca}
             >
-              {t('atlas.epoca')}
+              <span>{t('atlas.epoca')}</span>
             </button>
           </div>,
         )}
@@ -1063,7 +1065,7 @@ export function BotaoDoTempo({
       {...gatilhoDoDialogo('tempo', aberta)}
     >
       <Icone nome="relogio" tamanho={16} />
-      {t('atlas.tempoBotao')}
+      <span>{t('atlas.tempoBotao')}</span>
     </button>
   );
 }
@@ -1090,7 +1092,7 @@ export function BotaoDaGaveta({
       {...gatilhoDoDialogo('camadas', aberta)}
     >
       <Icone nome="camadas" tamanho={16} />
-      {t('atlas.camadasBotao')}
+      <span>{t('atlas.camadasBotao')}</span>
     </button>
   );
 }

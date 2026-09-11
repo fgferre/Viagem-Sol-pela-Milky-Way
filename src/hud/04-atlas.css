@@ -104,6 +104,12 @@
   text-decoration-color: transparent;
   transition: color var(--t-rapido) var(--curva), text-decoration-color var(--t-rapido) var(--curva);
 }
+/* trecho do contexto entrou na lista de pressão da casa (01-base.css,
+   C2) — o rótulo (`> *`, o texto solto em `<span>` no componente)
+   afunda; o botão zerado (sem caixa própria) não muda. */
+.atlas-contexto-botao > * {
+  transition: transform var(--t-pressao) var(--curva);
+}
 .atlas-contexto-botao:hover {
   color: var(--texto);
   text-decoration-color: currentcolor;
@@ -130,6 +136,12 @@
   text-decoration: underline;
   text-decoration-color: transparent;
   transition: color var(--t-rapido) var(--curva), text-decoration-color var(--t-rapido) var(--curva);
+}
+/* mesma anatomia de `.atlas-contexto-botao` acima — entra na mesma
+   régua de pressão, senão o último trecho da linha (o alvo atual)
+   desafinaria do resto da migalha de pão sob o dedo. */
+.atlas-contexto-alvo > * {
+  transition: transform var(--t-pressao) var(--curva);
 }
 .atlas-contexto-alvo:hover {
   text-decoration-color: currentcolor;
@@ -699,6 +711,12 @@
   text-transform: none;
   cursor: pointer;
 }
+/* ENTROU na lista de pressão da casa em C2 (01-base.css) — os dois
+   filhos diretos já eram elemento (`.atlas-selo-resumo-texto`, a seta),
+   então nenhum `<span>` novo foi preciso aqui. */
+.atlas-selo-resumo > * {
+  transition: transform var(--t-pressao) var(--curva);
+}
 /* RECALIBRADO (08/09): `text-overflow: ellipsis` não se aplica a um
    contêiner `display: flex` — o corte era seco, sem reticências, porque
    o CSS simplesmente ignorava a propriedade no próprio `.atlas-selo-
@@ -823,6 +841,12 @@
   font: inherit;
   text-align: right;
   cursor: pointer;
+}
+/* ENTROU na lista de pressão da casa em C2 (01-base.css) — as duas
+   linhas de detalhe já são três elementos (`.atlas-selo-eixo`, `strong`,
+   `em`), então nenhum `<span>` novo foi preciso aqui. */
+.atlas-selo-linha > * {
+  transition: transform var(--t-pressao) var(--curva);
 }
 .atlas-selo-linha:disabled {
   cursor: default;
@@ -1488,7 +1512,13 @@
   height: 1.125rem;
   border-radius: 50%;
   background: var(--texto-3);
-  transition: transform var(--t-normal) var(--curva), background var(--t-normal) var(--curva);
+  /* E5 da auditoria: `--t-normal` não zera sob preferência reduzida (é
+     tempo de COR/presença, não de deslocamento), e a bolinha continuava
+     andando 200 ms mesmo assim. `--t-entrada` é o mesmo número — só que
+     zera — então nada muda para quem não pediu reduzida; a cor
+     (`background`) pode continuar em `--t-normal`, ela tem permissão de
+     esmaecer (não é a translação que preocupa aqui, é o deslocamento). */
+  transition: transform var(--t-entrada) var(--curva), background var(--t-normal) var(--curva);
 }
 .hud-interruptor:checked {
   background: var(--acento-fundo);
@@ -1765,15 +1795,21 @@
      hover, e ele nunca mais se moveria. */
   animation: surgeCartao var(--t-entrada) var(--curva) backwards;
   animation-delay: calc(var(--i) * var(--t-entrada) / 10);
-  /* `translate`/`box-shadow`/`border-color` cronometram o hover, logo
-     abaixo; `transform` é a família da pressão da casa (01-base.css,
-     `--escala-pressao`) — o cartão ainda não entrou na lista de lá, mas
-     já cronometra certo com `--t-pressao` para o dia em que entrar. */
+  /* `box-shadow`/`border-color` cronometram o hover; `translate` também,
+     mas com `--t-assenta` — ENTROU na lista de pressão da casa em C2
+     (01-base.css, `--escala-pressao`), e o levantar do hover é
+     deslocamento como outro qualquer (E5 da auditoria: `--t-rapido` não
+     zera sob preferência reduzida). `transform` é a própria pressão, e
+     ela afunda os filhos (`> *`, abaixo), nunca o cartão. */
   transition:
-    translate var(--t-rapido) var(--curva),
+    translate var(--t-assenta) var(--curva),
     box-shadow var(--t-rapido) var(--curva),
-    border-color var(--t-rapido) var(--curva),
-    transform var(--t-pressao) var(--curva);
+    border-color var(--t-rapido) var(--curva);
+}
+/* os filhos (imagem/nome/convite) afundam sob o dedo; a caixa do
+   cartão — a que o hover levanta com `translate` — não muda de tamanho. */
+.atlas-destino > * {
+  transition: transform var(--t-pressao) var(--curva);
 }
 .atlas-destino--principal {
   grid-column: 1 / -1;

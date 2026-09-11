@@ -187,7 +187,9 @@ function ContextoDoAlvo({
           )}
           {trecho.aoClicar ? (
             <button type="button" className="atlas-contexto-botao" onClick={trecho.aoClicar}>
-              {trecho.texto}
+              {/* `<span>` (C2): a pressão afunda o filho, não o botão
+                  zerado da migalha de pão. */}
+              <span>{trecho.texto}</span>
             </button>
           ) : trecho.atual && abrirFicha ? (
             <button
@@ -197,7 +199,7 @@ function ContextoDoAlvo({
               aria-label={t('ficha.aria', { nome: trecho.texto })}
               onClick={abrirFicha}
             >
-              {trecho.texto}
+              <span>{trecho.texto}</span>
             </button>
           ) : (
             <span aria-current={trecho.atual ? 'location' : undefined}>{trecho.texto}</span>
@@ -299,7 +301,10 @@ export function BarraOuAlcas({
       {...gatilhoDoDialogo('ajustes', gaveta === 'ajustes')}
     >
       <Icone nome="ajustes" tamanho={16} />
-      {t('barra.ajustes')}
+      {/* `<span>` no rótulo (C2 do plano de motion, aqui e nos botões
+          abaixo): a pressão da casa afunda o filho (`> *`), e texto
+          solto ao lado do ícone não tinha caixa própria para comprimir. */}
+      <span>{t('barra.ajustes')}</span>
     </button>
   );
 
@@ -447,7 +452,7 @@ export function BarraOuAlcas({
       {hud.botaoReviver && (
         <div className="atlas-barra-grupo">
           <button className="hud-btn small" onClick={play}>
-            {t('barra.reviver')}
+            <span>{t('barra.reviver')}</span>
           </button>
           <button
             className="hud-btn small"
@@ -455,7 +460,7 @@ export function BarraOuAlcas({
             aria-label={t('barra.atlasAria')}
           >
             <Icone nome="bussola" tamanho={16} />
-            {t('barra.atlas')}
+            <span>{t('barra.atlas')}</span>
           </button>
         </div>
       )}
@@ -543,7 +548,7 @@ export function BarraOuAlcas({
               onClick={entrarNoAtlas}
             >
               <Icone nome="setaEsquerda" tamanho={16} />
-              {t('barra.entrarNoAtlas')}
+              <span>{t('barra.entrarNoAtlas')}</span>
             </button>
           )}
           {/* "EXPLORAR", e não "Explorar livremente" (item 61, decisão do
@@ -556,7 +561,7 @@ export function BarraOuAlcas({
               para o MESMO destino. */}
           <button className="hud-btn small hud-btn--discreto" onClick={freeRoam}>
             <Icone nome="explorar" tamanho={16} />
-            {t('barra.explorar')}
+            <span>{t('barra.explorar')}</span>
           </button>
           {/* "MAIS" (E1) — um botão comum, sem o contrato de diálogo
               (`gatilhoDoDialogo`/`data-abre-dialogo`): não sobe uma
@@ -576,7 +581,7 @@ export function BarraOuAlcas({
             aria-expanded={maisAberto}
             aria-label={t('barra.maisAria')}
           >
-            {t('barra.mais')}
+            <span>{t('barra.mais')}</span>
           </button>
           {maisAberto && (
             <>
@@ -620,7 +625,7 @@ export function BarraOuAlcas({
         aria-label={t(paused ? 'barra.retomarAria' : 'barra.pausarAria')}
       >
         <Icone nome={paused ? 'play' : 'pausa'} tamanho={16} />
-        {t(paused ? 'barra.retomar' : 'barra.pausar')}
+        <span>{t(paused ? 'barra.retomar' : 'barra.pausar')}</span>
       </button>
       <button
         className="hud-btn small"
@@ -629,11 +634,11 @@ export function BarraOuAlcas({
         title={t('barra.velocidadeDica')}
       >
         <Icone nome="velocidade" tamanho={16} />
-        {rate}×
+        <span>{rate}×</span>
       </button>
       <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
         <Icone nome="galaxia" tamanho={16} />
-        {t('barra.verAGalaxia')}
+        <span>{t('barra.verAGalaxia')}</span>
       </button>
     </div>
   )}

@@ -186,7 +186,9 @@ export function Ajuda({
           setFoco(false);
         }}
       >
-        ?
+        {/* `<span>` (C2 do plano de motion): a pressão da casa afunda o
+            filho (`> *`), e o "?" solto não tinha caixa própria. */}
+        <span>?</span>
       </button>
       {createPortal(
         <div

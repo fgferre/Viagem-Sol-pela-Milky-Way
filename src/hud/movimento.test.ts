@@ -12,10 +12,15 @@
 //    sete fatias: quem constrói sobre os tokens obedece de graça.
 // 2. QUEM AFUNDA SOB O DEDO SABE VOLTAR. Pôr uma família na lista da
 //    pressão sem lhe dar a transição de `transform` faz o botão saltar
-//    sem tempo nenhum — o defeito não aparece em foto, só ao vivo.
+//    sem tempo nenhum — o defeito não aparece em foto, só ao vivo. E a
+//    pressão afunda o FILHO (`> *`), nunca a caixa do controle (C2 da
+//    auditoria, E4: o botão fechar ia de 44 para 42,68 px sob o dedo).
 // 3. AS TRÊS FAMÍLIAS QUE MARCAM ESCOLHA acendem com o MESMO filete: a
 //    aba da régua de mesa, a alça do telefone e o segmento. Se uma delas
 //    ganhar um movimento próprio, é aqui que se descobre.
+// 4. NENHUM `transition` DE TRANSFORM ESCAPA DA POLÍTICA (C2, E5): todo
+//    `transform`/`translate`/`scale`/`rotate` cronometrado por token usa
+//    um dos que zeram — nunca `--t-normal`/`--t-rapido`, que são de cor.
 // ============================================================
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -91,9 +96,23 @@ describe('2. a pressão é uma só, e toda família dela sabe voltar', () => {
     expect(CSS.match(/var\(--escala-pressao\)/g)?.length).toBe(1);
   });
 
-  it('cada família da lista cronometra o `transform` com --t-pressao', () => {
+  it('a pressão afunda o FILHO (`> *`), nunca a caixa do controle', () => {
+    // E4 da auditoria: a escala pegava o próprio botão fechar, que ia de
+    // 44 para 42,68 px sob o dedo. C2 move o alvo para o(s) filho(s)
+    // diretos — a caixa, o outline e o hit-test ficam parados.
+    expect(CSS).toMatch(
+      /:active:not\(:disabled\) > \*\s*\{\s*\n\s*transform: scale\(var\(--escala-pressao\)\);/
+    );
+  });
+
+  it('cada família da lista cronometra o `transform` do FILHO com --t-pressao', () => {
     for (const familia of familias) {
-      expect(corpoDaRegra(familia), familia).toContain(
+      expect(corpoDaRegra(`${familia} > *`), familia).toContain(
+        'transform var(--t-pressao)'
+      );
+      // e a família NÃO pode continuar a mover a si mesma — senão a
+      // caixa voltaria a encolher por cima da compressão do filho.
+      expect(corpoDaRegra(familia), familia).not.toContain(
         'transform var(--t-pressao)'
       );
     }
@@ -177,5 +196,32 @@ describe('5. o respiro do mouse na máquina do tempo tem UMA casa', () => {
   it('...e o desmonte PERGUNTA por ele, em vez de repetir o número', () => {
     expect(BARRA).toContain("getPropertyValue('--t-respiro')");
     expect(BARRA).not.toContain('setHover(false), 350)');
+  });
+});
+
+describe('6. nenhum `transition` de transform escapa da preferência reduzida (E5)', () => {
+  // Procura, no texto de TODA fatia, `transform`/`translate`/`scale`/
+  // `rotate` seguido do token que cronometra a transição — do jeito que
+  // uma lista de `transition:` sempre escreve (`propriedade var(--token)
+  // var(--curva)`). Não olha para `animation:` (a folha e o painel têm
+  // dono próprio, outro worker) nem para valores estáticos sem token
+  // (`transform: translateY(-50%)`, a régua fixa da bússola) — só o que
+  // TEMPORIZA deslocamento com um nome de variável é candidato a vazar.
+  const CONSUMO = /(?:transform|translate|scale|rotate)\s+var\((--[a-z-]+)\)/g;
+
+  it('todo consumo de transform/translate/scale/rotate usa um token que zera', () => {
+    const infratores: string[] = [];
+    for (const [trecho, token] of CSS.matchAll(CONSUMO)) {
+      if (!TOKENS_DE_MOVIMENTO.includes(token)) infratores.push(`${trecho} (${token})`);
+    }
+    expect(infratores).toEqual([]);
+  });
+
+  it('o exemplo que a auditoria mediu — a bolinha do interruptor — está na lista', () => {
+    // prova negativa (o teste acima) e prova positiva (este): confirma
+    // que a régua de fato ENXERGA o consumidor, e não só a ausência dele
+    expect(corpoDaRegra('.hud-interruptor::after')).toContain(
+      'transform var(--t-entrada)'
+    );
   });
 });

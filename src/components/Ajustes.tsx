@@ -631,7 +631,10 @@ export function Ajustes({
         {onReverConvite && (
           <div className="ajustes-item ajustes-acao">
             <button type="button" className="ajustes-copiar" onClick={onReverConvite}>
-              {t('ajustes.reverConvite')}
+              {/* `<span>` (C2 do plano de motion): a pressão da casa
+                  afunda o filho (`> *`), e texto solto não tinha caixa
+                  própria para comprimir. */}
+              <span>{t('ajustes.reverConvite')}</span>
             </button>
             <Ajuda
               id="convite"
@@ -643,7 +646,7 @@ export function Ajustes({
           </div>
         )}
         <button type="button" className="ajustes-copiar" onClick={aoClicarCopiarLink}>
-          {t('ajustes.copiarLink')}
+          <span>{t('ajustes.copiarLink')}</span>
         </button>
       </div>
       {/* ESTADO SEMPRE PRESENTE (§9) — vazio fora do sucesso, só para o

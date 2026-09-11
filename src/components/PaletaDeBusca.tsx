@@ -459,7 +459,8 @@ export function PaletaDeBusca({
       </p>
       {vazio && (
         <button type="button" className="hud-btn small" onClick={limparBusca}>
-          {t('busca.limpar')}
+          {/* `<span>` (C2): a pressão afunda o filho, não o botão. */}
+          <span>{t('busca.limpar')}</span>
         </button>
       )}
     </div>
@@ -488,7 +489,7 @@ export function BotaoDaBusca({
       {...gatilhoDoDialogo('busca', aberta)}
     >
       <Icone nome="busca" tamanho={16} />
-      {t('busca.botao')}
+      <span>{t('busca.botao')}</span>
     </button>
   );
 }

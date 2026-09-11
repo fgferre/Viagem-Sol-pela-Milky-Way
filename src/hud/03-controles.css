@@ -22,7 +22,12 @@
   font-size: 0.8125rem;
   letter-spacing: 0;
   text-transform: none;
-  transition: background var(--t-rapido) var(--curva), border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva), transform var(--t-pressao) var(--curva);
+  transition: background var(--t-rapido) var(--curva), border-color var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+/* a pressão da casa (01-base.css) afunda o ícone/rótulo (`> *`), nunca
+   este botão — a caixa de toque não muda de tamanho. */
+.hud-btn > * {
+  transition: transform var(--t-pressao) var(--curva);
 }
 .hud-btn:focus-visible {
   outline: 2px solid var(--foco);
@@ -465,7 +470,11 @@
   font-size: 0.8125rem;
   letter-spacing: 0;
   text-transform: none;
-  transition: background var(--t-rapido) var(--curva), border-color var(--t-rapido) var(--curva), transform var(--t-pressao) var(--curva);
+  transition: background var(--t-rapido) var(--curva), border-color var(--t-rapido) var(--curva);
+}
+/* a pressão afunda o rótulo (`> *`), não este botão — mesma régua. */
+.convite-linha button > * {
+  transition: transform var(--t-pressao) var(--curva);
 }
 /* o dicionário guarda os rótulos em minúsculas ("pular", "continuar",
    "entendi"); a maiúscula inicial é só cosmética, por CSS. */

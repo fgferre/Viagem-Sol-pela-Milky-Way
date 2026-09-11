@@ -471,7 +471,8 @@ export function FichaDoObjeto({
             aria-label={t('ficha.aproximarAria', { nome: ficha.nome })}
           >
             <Icone nome="aproximar" tamanho={16} />
-            {t('ficha.aproximar')}
+            {/* `<span>` (C2): a pressão afunda o filho, não o botão. */}
+            <span>{t('ficha.aproximar')}</span>
           </button>
         )}
         {!noSistema && (
@@ -482,7 +483,7 @@ export function FichaDoObjeto({
             aria-label={t('ficha.sistemaAria')}
           >
             <Icone nome="sistema" tamanho={16} />
-            {t('ficha.sistema')}
+            <span>{t('ficha.sistema')}</span>
           </button>
         )}
       </div>

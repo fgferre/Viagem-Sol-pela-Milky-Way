@@ -213,7 +213,10 @@ export function LoadingVeil({
           )}
           <div className="title-rule cv-falha-regua" />
           <button className="hud-btn" onClick={onRetry}>
-            {t('hud.tentarNovamente')}
+            {/* rótulo em `<span>` (C2 do plano de motion): a pressão da
+                casa afunda o filho (`> *`), e texto solto não tem caixa
+                própria para comprimir. */}
+            <span>{t('hud.tentarNovamente')}</span>
           </button>
         </div>
       )}
@@ -270,7 +273,9 @@ export function TitleVeil({
                 aria-describedby="porta-atlas"
               >
                 <Icone nome="bussola" tamanho={16} />
-                {t('hud.porta.atlas')}
+                {/* rótulo em `<span>` (C2): texto solto ao lado do ícone
+                    não tem caixa própria para a pressão comprimir. */}
+                <span>{t('hud.porta.atlas')}</span>
               </button>
               <span className="abertura-porta-nota" id="porta-atlas">
                 {t('hud.porta.atlasNota')}
@@ -287,10 +292,13 @@ export function TitleVeil({
                 <Icone nome="play" tamanho={16} />
                 {/* "Ver o filme · 3 min 13 s" numa linha só (maquete M1): a
                     duração vem do runtime como sempre; sem duração, só o
-                    rótulo. */}
-                {minutes > 0
-                  ? `${t('hud.porta.filme')} · ${t('hud.duracaoCom', { min: minutes, seg: seconds })}`
-                  : t('hud.porta.filme')}
+                    rótulo. Em `<span>` (C2): a pressão afunda o filho, não
+                    um nó de texto solto. */}
+                <span>
+                  {minutes > 0
+                    ? `${t('hud.porta.filme')} · ${t('hud.duracaoCom', { min: minutes, seg: seconds })}`
+                    : t('hud.porta.filme')}
+                </span>
               </button>
               <span className="abertura-porta-nota abertura-porta-nota--secundaria" id="porta-filme">
                 {t('hud.porta.filmeNota')}
@@ -304,7 +312,7 @@ export function TitleVeil({
                   aria-describedby="porta-voo"
                 >
                   <Icone nome="explorar" tamanho={16} />
-                  {t('hud.porta.voo')}
+                  <span>{t('hud.porta.voo')}</span>
                 </button>
                 <span className="abertura-porta-nota abertura-porta-nota--secundaria" id="porta-voo">
                   {t('hud.porta.explorarNota')}
@@ -379,14 +387,15 @@ export function TitleVeil({
             style={{ display: 'flex', gap: '0.75rem', animationDelay: `${ATRASO_DO_RODAPE}s` }}
           >
             <button className="veil-btn veil-btn--secundario" onClick={onPlay}>
-              {t('hud.fim.reviver')}
+              {/* `<span>` (C2): a pressão afunda o filho, nunca o botão. */}
+              <span>{t('hud.fim.reviver')}</span>
             </button>
             {/* "Ficar aqui" virou o botão PRIMÁRIO do fim (D1) — o mesmo
                 âmbar da abertura: a coda é o pouso, e as outras duas
                 saídas (reviver, voo livre) continuam secundárias. */}
             {onAtlas && (
               <button className="veil-btn veil-btn--primario" onClick={onAtlas}>
-                {t('hud.fim.ficarAqui')}
+                <span>{t('hud.fim.ficarAqui')}</span>
               </button>
             )}
             {/* "EXPLORAR", e não "Explorar livremente" (24/08). Era a
@@ -402,7 +411,7 @@ export function TitleVeil({
                 se ele preferir, é uma palavra em dois lugares. */}
             {onExplore && (
               <button className="veil-btn veil-btn--secundario" onClick={onExplore}>
-                {t('hud.porta.voo')}
+                <span>{t('hud.porta.voo')}</span>
               </button>
             )}
           </div>

@@ -9,7 +9,7 @@
 // duplicá-lo daria dois desenhos para a mesma marca de escolha, lado a
 // lado na mesma tela. Um arquivo, um mecanismo.
 // ============================================================
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 /**
  * O SUBLINHADO QUE ANDA (M2 do plano de motion, §2 movimento 2) — o
@@ -34,13 +34,21 @@ import { useCallback, useLayoutEffect, useRef } from 'react';
  * SEM ESCOLHA, SEM FILETE: no grupo do transporte, "parar o tempo" não
  * marca nenhum segmento — aí o filete apaga no lugar em vez de correr
  * para um canto, e volta a andar quando a escolha volta.
+ *
+ * O NÓ PODE NASCER DEPOIS (E9 da auditoria de motion, C2): a barra do
+ * Tempo recolhível só monta os três grupos quando abre, e um `useRef`
+ * puro instalava o `ResizeObserver` na PRIMEIRA execução do efeito —
+ * se a moldura ainda não existia ali, ele nunca mais era religado. Um
+ * `useState` guardando o PRÓPRIO nó dispara um render quando ele nasce,
+ * é substituído ou some, e é esse render que o efeito abaixo aproveita
+ * para (re)ligar o observador no nó certo. A API pública não muda: quem
+ * chama continua só fazendo `ref={moldura}` no `.ajustes-seg`.
  */
 export function useFileteDoSegmentado() {
-  const moldura = useRef<HTMLDivElement>(null);
+  const [caixa, moldura] = useState<HTMLDivElement | null>(null);
   const alvoAnterior = useRef<HTMLElement | null>(null);
 
   const medir = useCallback(() => {
-    const caixa = moldura.current;
     if (!caixa) return;
     const alvo = caixa.querySelector<HTMLElement>(':scope > .on');
     if (!alvo) {
@@ -69,7 +77,7 @@ export function useFileteDoSegmentado() {
     caixa.style.setProperty('--seg-w', `${segmento.width}px`);
     caixa.style.setProperty('--seg-visivel', '1');
     alvoAnterior.current = alvo;
-  }, []);
+  }, [caixa]);
 
   // TODA RENDERIZAÇÃO, sem lista de dependências: quem move o filete é a
   // classe `.on` mudando de botão, e isso é um render de quem chama.
@@ -77,16 +85,18 @@ export function useFileteDoSegmentado() {
     medir();
   });
 
-  // ...e UMA vez o observador, porque a moldura também muda de tamanho
-  // SEM render nenhum: outra língua, outra escala de texto, outra janela.
+  // ...e o observador acompanha O NÓ (dependência `caixa`, não só na
+  // montagem): quando ele nasce, é substituído ou desmonta, este efeito
+  // desliga o observador antigo e liga um novo no nó atual — a moldura
+  // também muda de tamanho SEM render nenhum (outra língua, outra escala
+  // de texto, outra janela), e por isso ainda precisa do observador.
   useLayoutEffect(() => {
-    const caixa = moldura.current;
     if (!caixa) return;
     const observador = new ResizeObserver(medir);
     observador.observe(caixa);
     for (const filho of caixa.children) observador.observe(filho);
     return () => observador.disconnect();
-  }, [medir]);
+  }, [caixa, medir]);
 
   return moldura;
 }

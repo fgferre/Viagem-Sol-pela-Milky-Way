@@ -183,7 +183,9 @@ export function Convite({
         </span>
         {!ultimo && (
           <button type="button" onMouseDown={semRoubarFoco} onClick={onFechar}>
-            {t('convite.pular')}
+            {/* `<span>` (C2 do plano de motion): a pressão da casa afunda
+                o filho (`> *`), e texto solto não tinha caixa própria. */}
+            <span>{t('convite.pular')}</span>
           </button>
         )}
         <button
@@ -192,7 +194,7 @@ export function Convite({
           onMouseDown={semRoubarFoco}
           onClick={() => (ultimo ? onFechar() : onPasso(passo + 1))}
         >
-          {t(ultimo ? 'convite.entendi' : 'convite.continuar')}
+          <span>{t(ultimo ? 'convite.entendi' : 'convite.continuar')}</span>
         </button>
       </div>
     </Spotlight>

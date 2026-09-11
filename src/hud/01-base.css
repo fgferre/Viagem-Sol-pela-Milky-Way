@@ -107,13 +107,16 @@
      reescrita uma a uma. É a lei da casa ("quem declara o movimento
      declara a ausência dele") cumprida no lugar onde ele é declarado,
      em vez de espalhada por sete fatias.
-     `--escala-pressao`: 3 % de recuo. Acima disso o texto do botão
-     encolhe à vista; abaixo, ninguém percebe que apertou. */
+     `--escala-pressao`: 6 % de recuo na CAMADA INTERNA do controle (C2
+     do plano de motion) — nunca na caixa. Os 3 % de antes encolhiam o
+     PRÓPRIO botão (o "✕" ia de 44 para 42,68 px, achado da auditoria) e,
+     por isso mesmo, já eram perceptíveis; comprimir só o ícone/rótulo de
+     16–18 px pede o dobro para se notar. */
   --t-pressao: 70ms;
   --t-assenta: 180ms;
   --t-entrada: 200ms;
   --t-reflexo: 360ms;
-  --escala-pressao: 0.97;
+  --escala-pressao: 0.94;
   /* O PADDING DO PAINEL (Lote 2b, PLAN-UI.md item 3): 20 px na mesa, 16 no
      celular — UMA variável para o corpo (`.hud-dialogo`) e o cabeçalho
      (que cancela e devolve o mesmo respiro, `01-base.css` acima), para os
@@ -432,7 +435,12 @@
   background: none;
   color: var(--texto-2);
   cursor: pointer;
-  transition: background var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva), transform var(--t-pressao) var(--curva);
+  transition: background var(--t-rapido) var(--curva), color var(--t-rapido) var(--curva);
+}
+/* quem afunda é o ícone (`> *`, filho direto), não a caixa de 44 px —
+   a régua da pressão da casa, acima; o tempo continua `--t-pressao`. */
+.hud-cabecalho-fechar > * {
+  transition: transform var(--t-pressao) var(--curva);
 }
 .hud-cabecalho-fechar:hover {
   background: var(--hover);
@@ -449,21 +457,28 @@
 }
 
 
-/* ---- A RESPOSTA AO TOQUE, UMA SÓ PARA A CASA (M2 do plano de motion) -
-   Todo controle afunda 3 % enquanto está pressionado e volta ao soltar.
-   UMA regra com uma lista, e não um `:active` por família: o que se quer
-   é justamente que barra, régua, alça, cabeçalho, segmentado e o "?"
-   respondam IGUAL — seis cópias seriam seis chances de discordarem um
-   dia. Ela pode morar aqui, na fatia da base, porque `transform` não
-   aparece em nenhuma dessas famílias: não há cascata a disputar.
-   A CAIXA DE TOQUE NÃO MUDA. O `:active` só existe com o dedo JÁ em
-   cima, então o alvo que o visitante mira é sempre o de repouso; e
-   `transform` não participa de layout, então nada em volta se desloca.
+/* ---- A RESPOSTA AO TOQUE, UMA SÓ PARA A CASA (M2, refeita em C2) -----
+   Todo controle comprime 6 % de DESENHO INTERNO enquanto está pressionado
+   e volta ao soltar. UMA regra com uma lista, e não um `:active` por
+   família: o que se quer é que barra, régua, alça, cabeçalho, segmentado,
+   selo, contexto, destinos e o "?" respondam IGUAL — doze cópias seriam
+   doze chances de discordarem um dia.
+   A CAIXA NUNCA MUDA (E4 da auditoria: o "✕" ia de 44 para 42,68 px
+   porque a escala pegava o PRÓPRIO botão). Por isso o alvo é `> *` — o(s)
+   filho(s) diretos (ícone, rótulo, imagem) —, nunca o controle: hit-test,
+   outline e layout ficam no de repouso o tempo inteiro. Texto puro sem
+   elemento (o "?", os rótulos do segmentado e das ações) ganhou um
+   `<span>` só para isto no componente — mesmo nome acessível, mesmo
+   `gap` ao redor de um ícone quando há um.
    FICAM DE FORA os controles cujo `transform` já CARREGA informação — a
    esfera do interruptor, que anda para o lado quando marcada, e a
-   bússola, que aponta. Comprimi-los por cima apagaria o dado.
+   bússola, que aponta. Comprimir por cima apagaria o dado. Um `<select>`
+   nativo (`.controls-bar select.hud-btn`) também não ganha compressão
+   visível: `> *` cai nos `<option>`, que o navegador desenha por fora da
+   caixa — nada para encolher, e a caixa já não se mexe mais.
    O tempo da ida e da volta vem do `transition` de cada família (cada
-   uma declara o seu, como manda a cascata), sempre com `--t-pressao`. */
+   uma declara o seu no `> *`, como manda a cascata), sempre com
+   `--t-pressao`. */
 .hud-root
   :is(
     .hud-btn,
@@ -471,8 +486,14 @@
     .hud-cabecalho-fechar,
     .hud-ajuda,
     .ajustes-seg button,
-    .convite-linha button
-  ):active:not(:disabled) {
+    .convite-linha button,
+    .ajustes-copiar,
+    .atlas-contexto-botao,
+    .atlas-contexto-alvo,
+    .atlas-destino,
+    .atlas-selo-resumo,
+    .atlas-selo-linha
+  ):active:not(:disabled) > * {
   transform: scale(var(--escala-pressao));
 }
 
