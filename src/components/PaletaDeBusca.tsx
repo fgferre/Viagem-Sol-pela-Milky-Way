@@ -25,6 +25,7 @@
 // NADA AQUI PISCA: o que muda de estado muda de borda e de rótulo.
 // ============================================================
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { buscar, nomeDaEntrada } from '../lib/buscaEstrelas';
 import { classeEmTexto } from '../three/atlasConfig';
 import type { EntradaDaBusca, IndiceEstrelas } from '../lib/buscaEstrelas';
@@ -253,6 +254,11 @@ export function PaletaDeBusca({
   // mesma `consultaLenta`.
   const semConsulta = consultaLenta.trim().length === 0;
   const vazio = consultaLenta.trim().length > 0 && resultados.length === 0;
+  // A CATEGORIA DE CONTEÚDO (U33, motion): nasce de `semConsulta`/`vazio`,
+  // que já trocam no mesmo instante que `resultados` — o crossfade em CSS
+  // (`[data-conteudo=...]`, 04-atlas.css) só acende quando ESTE valor
+  // muda, nunca a cada tecla dentro da mesma categoria.
+  const conteudo = semConsulta ? 'destinos' : vazio ? 'vazio' : 'resultados';
   // OS CORPOS DO SISTEMA entram no índice no Atlas e no voo livre (item
   // 129), e a copy pergunta ao ÍNDICE em vez de perguntar à fase: quem
   // conta o alcance é quem o tem na mão.
@@ -285,6 +291,7 @@ export function PaletaDeBusca({
     <div
       className="hud-cartao hud-dialogo atlas-busca"
       aria-label={t('busca.aria')}
+      data-conteudo={conteudo}
       {...dialogo}
       onClick={() => {
         // MESMA REGRA do painel de Ajustes e da gaveta de Camadas: clicar
@@ -385,6 +392,7 @@ export function PaletaDeBusca({
                 className={
                   'atlas-destino' + (i === 0 ? ' atlas-destino--principal' : '')
                 }
+                style={{ '--i': i } as CSSProperties}
                 onClick={() => escolher(destino.entrada)}
               >
                 <img

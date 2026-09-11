@@ -1758,12 +1758,35 @@
   cursor: pointer;
   padding: 0;
   font: inherit;
+  /* ENTRADA ÚNICA (U32, motion): cada cartão nasce oito pixels abaixo e
+     opaco, e sobe uma vez só ao abrir a busca; `--i` (via `style`, no
+     componente) escalona a largada entre eles. `backwards` só — um fill
+     `forwards` prenderia o valor final por cima do `translate` do
+     hover, e ele nunca mais se moveria. */
+  animation: surgeCartao var(--t-entrada) var(--curva) backwards;
+  animation-delay: calc(var(--i) * var(--t-entrada) / 10);
+  /* `translate`/`box-shadow`/`border-color` cronometram o hover, logo
+     abaixo; `transform` é a família da pressão da casa (01-base.css,
+     `--escala-pressao`) — o cartão ainda não entrou na lista de lá, mas
+     já cronometra certo com `--t-pressao` para o dia em que entrar. */
+  transition:
+    translate var(--t-rapido) var(--curva),
+    box-shadow var(--t-rapido) var(--curva),
+    border-color var(--t-rapido) var(--curva),
+    transform var(--t-pressao) var(--curva);
 }
 .atlas-destino--principal {
   grid-column: 1 / -1;
 }
-.atlas-destino:hover {
-  border-color: var(--acento);
+/* HOVER só onde é capacidade de verdade (U32): mouse em tela pequena e
+   toque em tela grande também caem aqui — o toque confirma sozinho, sem
+   depender disto. */
+@media (hover: hover) {
+  .atlas-destino:hover {
+    border-color: var(--acento);
+    translate: 0 -2px;
+    box-shadow: 0 6px 18px rgba(226, 184, 114, 0.2);
+  }
 }
 .atlas-destino:focus-visible {
   outline: 2px solid var(--foco);
@@ -1796,12 +1819,36 @@
   line-height: 1.35;
   color: var(--texto-2);
 }
+@keyframes surgeCartao {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
 /* O BOTÃO "LIMPAR BUSCA" (Lote 6) mora sozinho, abaixo do aviso — o
    `.hud-btn.small` de sempre, só sem esticar a largura toda (o pai é
    coluna de flex com `stretch` por padrão). */
 .atlas-busca-aviso + .hud-btn.small {
   align-self: flex-start;
   margin-top: 0.5rem;
+}
+
+/* TROCA DE CATEGORIA (U33, motion) — candidato a migrar para a fatia da
+   base como vocabulário compartilhado. */
+@keyframes trocaConteudo {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+/* Acende só quando `data-conteudo` (PaletaDeBusca.tsx) passa a valer
+   'resultados'/'vazio' — dentro da MESMA categoria o valor não muda, o
+   nome da animação não muda, e digitar não reinicia nada. */
+[data-conteudo='resultados'] .atlas-busca-lista {
+  animation: trocaConteudo var(--t-entrada) var(--curva) backwards;
+}
+[data-conteudo='vazio'] .atlas-busca-aviso + .hud-btn.small {
+  animation: trocaConteudo var(--t-entrada) var(--curva) backwards;
 }
 
 /* --- indicador de warp --- */
