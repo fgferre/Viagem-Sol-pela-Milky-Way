@@ -51,6 +51,19 @@ const QUERY = 'atlas=1&q=performance&lang=pt-BR';
 // link → mudar tempo"). Opt-in: sem a flag, o comportamento é o de
 // sempre, intocado — ver o `if (!SEQUENCIA)` no fim do arquivo.
 const SEQUENCIA = process.argv.includes('--sequencia');
+// `--interrupcoes` troca a corrida de sempre por CINCO cenários de
+// INTERROMPER um movimento no meio (I1–I5, o complemento do C1/C2/C3:
+// aquelas provas rodam o gesto inteiro sem cutucar — estas cutucam de
+// propósito). Cobre quatro formas de interrupção: fechar a sanfona
+// "Avançado" no meio de uma abertura e reabri-la no meio de um
+// fechamento; ligar "reduzir movimento" NO MEIO de uma transição
+// (painel entrando/saindo, linha do tempo); redimensionar a janela sem
+// cruzar o ponto de quebra do celular (760px) enquanto algo anima; e
+// interromper a própria linha do tempo com um redimensionamento (I4) ou
+// um Esc (I5). Cada cenário amostra com `amostrarSequencia` (dtMs REAL,
+// nunca o nominal) e imprime PASSA/FALHA a partir dos números — não
+// julga por fora, só mede. Opt-in: sem a flag, nada aqui muda.
+const INTERRUPCOES = process.argv.includes('--interrupcoes');
 
 const SEL_CAMADAS_GATILHO = '[data-abre-dialogo="camadas"]';
 const SEL_AJUSTES_GATILHO = '[data-abre-dialogo="ajustes"]';
@@ -60,6 +73,12 @@ const SEL_SEG_QUALIDADE = `${SEL_AJUSTES_PAINEL} .ajustes-seg[aria-label="Qualid
 const SEL_BUSCA_GATILHO = '[data-abre-dialogo="busca"]';
 const SEL_BUSCA_PAINEL = '[data-dialogo="busca"]';
 const SEL_FICHA_PAINEL = '[data-dialogo="ficha"]';
+// A SANFONA "AVANÇADO" (I1) e A LINHA DO TEMPO (I2c, I4, I5) — únicos
+// alvos novos desta sonda que não são um `[data-dialogo]`.
+const SEL_AVANCADO_GATILHO = '[aria-controls="ajustes-avancado"]';
+const SEL_AVANCADO_CORPO = '#ajustes-avancado';
+const SEL_TEMPO_CABECALHO = '.atlas-tempo-cabecalho';
+const SEL_TEMPO_LINHA = '.atlas-tempo-linha';
 // OS SEIS TOKENS DE DESLOCAMENTO (movimento.test.ts, `TOKENS_DE_MOVIMENTO`
 // + `--t-rapido`) que a gravação lenta da C3 multiplica por 6 — a mesma
 // lista, e não um subconjunto, porque a sequência inteira (busca, ficha,
@@ -322,6 +341,59 @@ function jsAmostraTempo() {
       animationName: cs.animationName,
       dataRect,
     };
+  })()`;
+}
+
+/** a leitura composta da SANFONA "Avançado" dos Ajustes (I1,
+ *  `--interrupcoes`): existência, as classes (`abrindo`/`saindo`, que
+ *  convivem — comentário de `usePresenca.ts`, "reabrir no meio da saída
+ *  reinicia a entrada"), e o par que decide se o corte está ativo —
+ *  `overflow` computado do `.sanfona-miolo` (nunca a classe, que só diz
+ *  a INTENÇÃO) e as duas alturas (`sanfonaClientHeight` colapsada,
+ *  `mioloScrollHeight` cheio) para enxergar o meio do caminho mesmo sem
+ *  o overflow mudar. */
+function jsAmostraSanfona() {
+  return `(() => {
+    const el = document.querySelector(${JSON.stringify(SEL_AVANCADO_CORPO)});
+    if (!el) return { existe: false };
+    const miolo = el.querySelector('.sanfona-miolo');
+    return {
+      existe: true,
+      className: el.className,
+      overflow: miolo ? getComputedStyle(miolo).overflow : null,
+      sanfonaClientHeight: el.clientHeight,
+      mioloScrollHeight: miolo ? miolo.scrollHeight : null,
+      linhaDoTempo: document.timeline.currentTime,
+    };
+  })()`;
+}
+
+/** a sanfona está ANIMANDO nesta amostra? Pelo estado dela, e não pelo
+ *  relógio da sonda: saindo, ou com a caixa menor que o conteúdo. O
+ *  cronômetro da sonda não serve para isso — com a gravação ligada a
+ *  página às vezes fica sem quadro e um alvo de "+400 ms" cai no meio
+ *  da animação (medido: a reabertura só começou aos ~450 ms). */
+const sanfonaAnimando = (a) =>
+  a.existe && (a.className.includes('saindo') || a.sanfonaClientHeight < a.mioloScrollHeight - 1);
+
+/** o `transform` computado da linha do tempo (I2c, `--interrupcoes`) —
+ *  só o campo que aquele passo precisa, para não confundir com a leitura
+ *  cheia de `jsAmostraTempo` (que é sobre `.atlas-tempo-botoes`, não
+ *  `.atlas-tempo-linha`). */
+function jsTransformDaLinhaDoTempo() {
+  return `(() => {
+    const el = document.querySelector(${JSON.stringify(SEL_TEMPO_LINHA)});
+    return { transform: el ? getComputedStyle(el).transform : null };
+  })()`;
+}
+
+/** o `y` da linha do tempo (I4/I5, `--interrupcoes`) — o FLIP de
+ *  `HudDoAtlas.tsx` anima esta linha por `translateY`, então a posição
+ *  na tela (não o transform bruto) é o que conta um salto de verdade. */
+function jsYDaLinhaDoTempo() {
+  return `(() => {
+    const el = document.querySelector(${JSON.stringify(SEL_TEMPO_LINHA)});
+    return { y: el ? el.getBoundingClientRect().y : null };
   })()`;
 }
 
@@ -757,6 +829,424 @@ async function rodarSequencia() {
   }
 }
 
+/**
+ * `--interrupcoes` — CINCO cenários de INTERROMPER um movimento no meio
+ * (I1–I5, o complemento de C1/C2/C3: aquelas provas rodam o gesto
+ * inteiro sem cutucar no meio, estas cutucam de propósito). Cada
+ * cenário tem o seu próprio `t0` e usa `amostrarSequencia` para o
+ * `dtMs` REAL — o mesmo padrão de `rodarSequencia`, só que sem um fluxo
+ * único: os cinco são independentes, e cada um decide sozinho se PASSA
+ * ou FALHA a partir dos números medidos, sem espera extra para o
+ * veredito bater.
+ */
+async function rodarInterrupcoes() {
+  mkdirSync(CAPTURAS, { recursive: true });
+  const pastaSanfona = resolve(tmpdir(), `sonda-motion-int-sanfona-${process.pid}`);
+  const pastaTempo = resolve(tmpdir(), `sonda-motion-int-tempo-${process.pid}`);
+  let sessao = null;
+  try {
+    const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
+    const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
+
+    sessao = await abrirSonda({ janela: '1440x900', prefixo: 'sonda-motion-int' });
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+    });
+    const versaoChrome = await sessao.send('Browser.getVersion');
+
+    // NAVEGAÇÃO com até 3 tentativas — mesma régua do bloco padrão
+    // (abaixo de `if (!SEQUENCIA)`): "Chrome não sobe" e "app não
+    // carrega" são achados que se reportam, não se escondem num loop.
+    let assentou = null;
+    let ultimoErro = null;
+    for (let tentativa = 1; tentativa <= 3 && !assentou; tentativa++) {
+      try {
+        assentou = await sessao.ir(QUERY);
+      } catch (e) {
+        ultimoErro = e;
+        process.stdout.write(`tentativa ${tentativa}/3 de carregar o app falhou: ${e.message}\n`);
+        await dorme(500);
+      }
+    }
+    if (!assentou) throw new Error(`o app não carregou em 3 tentativas (${ultimoErro?.message})`);
+    process.stdout.write(`app assentou por "${assentou.via}" em ${assentou.ms}ms\n`);
+    await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_GATILHO}'))`, 10000);
+    await pularTour(sessao);
+    await dorme(300);
+
+    const dpr = await sessao.js('window.devicePixelRatio');
+
+    // espera até `t0 + alvoMs` (nunca negativo) — o mesmo cálculo que
+    // `amostrarSequencia` já faz por amostra, aqui isolado porque estes
+    // cenários intercalam UMA AÇÃO (o clique, o resize, o "reduzir
+    // movimento") entre amostras, e não só amostras em fila.
+    const esperarAte = async (t0, alvoMs) => {
+      const resta = alvoMs - (Date.now() - t0);
+      if (resta > 0) await dorme(resta);
+    };
+    // "a entrada assentou" — `transform: none` (CSS) OU a WAAPI vazia ou
+    // toda `finished` (o dono do movimento desde o C1, `movimentoDaGaveta.ts`)
+    // — nunca `existe === false`, que aqui é falha (um painel que estava
+    // ENTRANDO tem de existir).
+    const emRepouso = (amostra) => {
+      if (amostra.existe === false) return false;
+      if (amostra.transform === 'none') return true;
+      return (amostra.waapi ?? []).length === 0 || amostra.waapi.every((w) => w.playState === 'finished');
+    };
+
+    // ---------------------------------------------------------------
+    // I1 — a sanfona "Avançado": fechar no meio de uma ABERTURA e
+    // REABRIR no meio de um FECHAMENTO (o `abrindo`/`saindo` que
+    // convivem, comentário de `usePresenca.ts`). O corte
+    // (`overflow: hidden` do `.sanfona-miolo`) só pode existir ENQUANTO
+    // anima — em repouso, aberta OU fechada, tem de sumir.
+    // ---------------------------------------------------------------
+    await clicarReal(sessao, SEL_AJUSTES_GATILHO);
+    await dorme(400);
+    await clicarReal(sessao, SEL_AVANCADO_GATILHO); // abre
+    await dorme(400);
+    const i1RepousoAberta = await sessao.js(jsAmostraSanfona());
+
+    const t0Fechar1 = Date.now();
+    await clicarReal(sessao, SEL_AVANCADO_GATILHO); // fecha, sem interromper
+    const i1Fechar1 = await amostrarSequencia(sessao, t0Fechar1, [20, 80, 150], jsAmostraSanfona);
+    await dorme(400); // assenta fechada antes do gesto que entra no clipe
+
+    let i1Aos20 = null;
+    let i1Reentrada = [];
+    const quadrosSanfona = await gravarClipe(
+      sessao,
+      { largura: 1440, altura: 900, pastaQuadros: pastaSanfona },
+      async () => {
+        await clicarReal(sessao, SEL_AVANCADO_GATILHO); // abre de novo
+        await dorme(400);
+        const t0Fechar2 = Date.now();
+        await clicarReal(sessao, SEL_AVANCADO_GATILHO); // fecha de novo
+        // aos 20ms a reabertura (60ms) ainda não aconteceu — esta
+        // amostra tem de sair ANTES do clique, senão mede o efeito
+        // errado.
+        await esperarAte(t0Fechar2, 20);
+        i1Aos20 = { alvoMs: 20, dtMs: Date.now() - t0Fechar2, ...(await sessao.js(jsAmostraSanfona())) };
+        await esperarAte(t0Fechar2, 60);
+        await clicarReal(sessao, SEL_AVANCADO_GATILHO); // reabre NO MEIO da saída
+        i1Reentrada = await amostrarSequencia(sessao, t0Fechar2, [100, 400], jsAmostraSanfona);
+      }
+    );
+    const clipeSanfona = renderizarClipe(quadrosSanfona, resolve(CAPTURAS, `motion-interrupcoes-sanfona-${commit}.mp4`));
+    const duracaoSanfona = quadrosSanfona[quadrosSanfona.length - 1].ts - quadrosSanfona[0].ts;
+    const folhaSanfona = renderizarContato(
+      clipeSanfona,
+      duracaoSanfona,
+      resolve(CAPTURAS, `motion-interrupcoes-sanfona-${commit}.png`)
+    );
+
+    // O REPOUSO DEPOIS DA REABERTURA é lido quando a gravação já parou e o
+    // clipe já foi montado — a animação (--t-entrada) acabou há muito; é
+    // uma amostra de repouso, não uma espera para o veredito passar
+    const i1RepousoReaberta = await sessao.js(jsAmostraSanfona());
+    // cada amostra é julgada pelo PRÓPRIO estado (`sanfonaAnimando`):
+    // animando → corte ligado; em repouso → corte desligado
+    const i1Amostras = [...i1Fechar1, i1Aos20, ...i1Reentrada].filter((a) => a?.existe);
+    const i1AnimandoEscondeu = i1Amostras
+      .filter(sanfonaAnimando)
+      .every((a) => a.overflow === 'hidden');
+    const i1RepousoVisivel = [i1RepousoAberta, i1RepousoReaberta, ...i1Amostras.filter((a) => !sanfonaAnimando(a))]
+      .every((a) => !a.existe || a.overflow === 'visible');
+    const i1ReabriuDeVerdade = i1RepousoReaberta.existe && !sanfonaAnimando(i1RepousoReaberta);
+    const i1Passa = i1AnimandoEscondeu && i1RepousoVisivel && i1ReabriuDeVerdade;
+
+    // fecha os Ajustes antes do I2 (deixa o app limpo para o próximo gesto)
+    await pressionarEscape(sessao);
+    await dorme(400);
+
+    // ---------------------------------------------------------------
+    // I2 — "reduzir movimento" ligado NO MEIO da transição: painel
+    // saindo, painel entrando, linha do tempo entrando. Ligar
+    // `prefers-reduced-motion: reduce` no meio tem de travar o
+    // movimento EM CURSO, não só bloquear o próximo.
+    // ---------------------------------------------------------------
+    const ligarReduzido = () => sessao.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+    });
+    const desligarReduzido = () => sessao.send('Emulation.setEmulatedMedia', { features: [] });
+
+    // (a) painel SAINDO
+    await clicarReal(sessao, SEL_CAMADAS_GATILHO);
+    await dorme(400);
+    const t0I2a = Date.now();
+    await clicarReal(sessao, `${SEL_CAMADAS_PAINEL} .hud-fechar`);
+    await esperarAte(t0I2a, 40);
+    const t1I2a = Date.now();
+    await ligarReduzido();
+    const i2aAmostras = await amostrarSequencia(sessao, t1I2a, [10, 60], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
+    await desligarReduzido();
+    await dorme(300);
+    const i2aAos60 = i2aAmostras[1];
+    // "no pior caso" ainda presente, mas inerte — nunca interativo
+    const i2aSumiu = i2aAos60.existe === false || i2aAos60.inert === true;
+    const i2aFocoVoltou = i2aAos60.active?.gatilho === 'camadas';
+    const i2aPassa = i2aSumiu && i2aFocoVoltou;
+
+    // (b) painel ENTRANDO
+    const t0I2b = Date.now();
+    await clicarReal(sessao, SEL_CAMADAS_GATILHO);
+    await esperarAte(t0I2b, 40);
+    const t1I2b = Date.now();
+    await ligarReduzido();
+    // +10 fica no registro, mas quem julga é +60 — a mesma régua do (a):
+    // a página só fica sabendo da preferência nova no PRÓXIMO quadro (o
+    // evento `change` da media query nasce no passo de renderização), e
+    // aos 10 ms esse quadro ainda não tinha chegado (medido: a WAAPI da
+    // entrada ainda em 17 ms, sem um quadro entre o comando e a amostra)
+    const [i2bAos10, i2bAmostra] = await amostrarSequencia(sessao, t1I2b, [10, 60], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
+    await desligarReduzido();
+    await pressionarEscape(sessao);
+    await dorme(400);
+    const i2bPassa = emRepouso(i2bAmostra);
+
+    // (c) linha do tempo ENTRANDO (hover)
+    const rectCabecalhoI2 = await retanguloDe(sessao, SEL_TEMPO_CABECALHO);
+    const t0I2c = Date.now();
+    await moverMouse(sessao, rectCabecalhoI2.x + rectCabecalhoI2.width / 2, rectCabecalhoI2.y + rectCabecalhoI2.height / 2);
+    await esperarAte(t0I2c, 40);
+    const t1I2c = Date.now();
+    await ligarReduzido();
+    // mesma régua do (b): julga no quadro seguinte (+60), guarda o +10
+    const [i2cAos10, i2cAmostra] = await amostrarSequencia(sessao, t1I2c, [10, 60], jsTransformDaLinhaDoTempo);
+    await desligarReduzido();
+    await moverMouse(sessao, 10, 10);
+    await dorme(1000);
+    const i2cPassa = i2cAmostra.transform === 'none';
+
+    const i2Passa = i2aPassa && i2bPassa && i2cPassa;
+
+    // ---------------------------------------------------------------
+    // I3 — redimensionar a janela NO MEIO de uma transição, sem cruzar
+    // os 760px do ponto de quebra do celular — a mesma guarda de
+    // "reduzir movimento" (I2) vale para resize: as duas são formas de
+    // "o navegador decidiu que este movimento não vai terminar como
+    // começou".
+    // ---------------------------------------------------------------
+    // (a) mesa, painel SAINDO
+    await clicarReal(sessao, SEL_CAMADAS_GATILHO);
+    await dorme(400);
+    const t0I3a = Date.now();
+    await clicarReal(sessao, `${SEL_CAMADAS_PAINEL} .hud-fechar`);
+    await esperarAte(t0I3a, 40);
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280, height: 800, deviceScaleFactor: 1, mobile: false,
+    });
+    const t1I3a = Date.now();
+    const [i3aAmostra] = await amostrarSequencia(sessao, t1I3a, [10], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+    });
+    const i3aPassa = i3aAmostra.existe === false;
+
+    // (b) mesa, painel ENTRANDO
+    const t0I3b = Date.now();
+    await clicarReal(sessao, SEL_CAMADAS_GATILHO);
+    await esperarAte(t0I3b, 40);
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 1300, height: 850, deviceScaleFactor: 1, mobile: false,
+    });
+    const t1I3b = Date.now();
+    const [i3bAmostra] = await amostrarSequencia(sessao, t1I3b, [10], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+    });
+    await pressionarEscape(sessao);
+    await dorme(400);
+    const i3bPassa = emRepouso(i3bAmostra);
+
+    // (c) celular, painel SAINDO — só a ALTURA muda (844→700): a
+    // LARGURA (390) nunca cruza os 760px que definem o layout de
+    // celular.
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
+    });
+    await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+    await dorme(300);
+    await sessao.js(`document.querySelector('${SEL_CAMADAS_GATILHO}').click()`);
+    await dorme(400);
+    const t0I3c = Date.now();
+    await sessao.js(`(() => {
+      const b = document.querySelector('${SEL_CAMADAS_PAINEL} .hud-fechar');
+      if (b) b.click();
+      return Boolean(b);
+    })()`);
+    await esperarAte(t0I3c, 40);
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 390, height: 700, deviceScaleFactor: 1, mobile: true,
+    });
+    const t1I3c = Date.now();
+    const [i3cAmostra] = await amostrarSequencia(sessao, t1I3c, [10], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+    });
+    await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+    const i3cPassa = i3cAmostra.existe === false;
+
+    const i3Passa = i3aPassa && i3bPassa && i3cPassa;
+
+    // ---------------------------------------------------------------
+    // I4 — a linha do tempo depois de UM REDIMENSIONAMENTO (mesa): não
+    // pode saltar de onde estava — o FLIP de `HudDoAtlas.tsx` tem de
+    // repartir do topo medido DEPOIS do resize, não de um "antes" que já
+    // não existe.
+    // ---------------------------------------------------------------
+    const rectCabecalhoI4a = await retanguloDe(sessao, SEL_TEMPO_CABECALHO);
+    await moverMouse(
+      sessao,
+      rectCabecalhoI4a.x + rectCabecalhoI4a.width / 2,
+      rectCabecalhoI4a.y + rectCabecalhoI4a.height / 2
+    );
+    await dorme(700); // abre — garante fechada-depois-aberta, não confia no estado anterior
+    await moverMouse(sessao, 10, 10);
+    await dorme(1000); // fecha (o respiro de ~350ms, com folga)
+
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 1440, height: 760, deviceScaleFactor: 1, mobile: false,
+    });
+    await dorme(400);
+    const y0I4 = await sessao.js(
+      `document.querySelector('${SEL_TEMPO_LINHA}')?.getBoundingClientRect().y ?? null`
+    );
+
+    let i4Amostras = [];
+    const rectCabecalhoI4b = await retanguloDe(sessao, SEL_TEMPO_CABECALHO);
+    const quadrosTempo = await gravarClipe(
+      sessao,
+      { largura: 1440, altura: 760, pastaQuadros: pastaTempo },
+      async () => {
+        const t0I4 = Date.now();
+        await moverMouse(
+          sessao,
+          rectCabecalhoI4b.x + rectCabecalhoI4b.width / 2,
+          rectCabecalhoI4b.y + rectCabecalhoI4b.height / 2
+        );
+        i4Amostras = await amostrarSequencia(sessao, t0I4, [15, 60, 150, 450], jsYDaLinhaDoTempo);
+      }
+    );
+    const clipeTempo = renderizarClipe(quadrosTempo, resolve(CAPTURAS, `motion-interrupcoes-tempo-${commit}.mp4`));
+
+    const y15 = i4Amostras.find((a) => a.alvoMs === 15)?.y ?? null;
+    const y450 = i4Amostras.find((a) => a.alvoMs === 450)?.y ?? null;
+    const i4SemSalto = y0I4 !== null && y15 !== null && Math.abs(y15 - y0I4) <= 8;
+    const i4Assentou = y0I4 !== null && y450 !== null && y450 < y0I4;
+    const i4Passa = i4SemSalto && i4Assentou;
+
+    await moverMouse(sessao, 10, 10);
+    await dorme(1000);
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+    });
+    await dorme(400);
+
+    // ---------------------------------------------------------------
+    // I5 — interromper a PRÓPRIA linha do tempo com um Esc: clicar trava
+    // aberta (`alternarPresa`), o Esc solta as três travas de uma vez
+    // (`presa`/`hover`/`foco`, `HudDoAtlas.tsx`) — não pode saltar na
+    // volta nem ficar presa aberta.
+    // ---------------------------------------------------------------
+    await moverMouse(sessao, 10, 10);
+    await dorme(500); // garante fechada antes de medir o repouso de referência
+    const yRepousoFechadaI5 = await sessao.js(
+      `document.querySelector('${SEL_TEMPO_LINHA}')?.getBoundingClientRect().y ?? null`
+    );
+
+    const t0I5 = Date.now();
+    await clicarReal(sessao, SEL_TEMPO_CABECALHO); // trava aberta
+    await esperarAte(t0I5, 80);
+    const yPreI5 = await sessao.js(
+      `document.querySelector('${SEL_TEMPO_LINHA}')?.getBoundingClientRect().y ?? null`
+    );
+    const t1I5 = Date.now();
+    await pressionarEscape(sessao);
+    const i5Amostras = await amostrarSequencia(sessao, t1I5, [15, 500], jsYDaLinhaDoTempo);
+    const yPostI5 = i5Amostras.find((a) => a.alvoMs === 15)?.y ?? null;
+    const y500I5 = i5Amostras.find((a) => a.alvoMs === 500)?.y ?? null;
+    const i5SemSalto = yPreI5 !== null && yPostI5 !== null && Math.abs(yPostI5 - yPreI5) <= 12;
+    const i5Assentou =
+      y500I5 !== null && yRepousoFechadaI5 !== null && Math.abs(y500I5 - yRepousoFechadaI5) <= 8;
+    const i5Passa = i5SemSalto && i5Assentou;
+
+    // ---------------------------------------------------------------
+    // RELATÓRIO
+    // ---------------------------------------------------------------
+    const relatorio = {
+      meta: {
+        commit, dirty, chrome: versaoChrome.product, app: APP, query: QUERY,
+        viewport: { width: 1440, height: 900 }, dpr, geradoEm: new Date().toISOString(),
+      },
+      i1: {
+        repousoAberta: i1RepousoAberta,
+        fechar1: i1Fechar1,
+        fechar2ReabreNoMeio: [i1Aos20, ...i1Reentrada],
+        repousoReaberta: i1RepousoReaberta,
+        passa: i1Passa,
+        clipe: clipeSanfona,
+        folha: folhaSanfona,
+      },
+      i2: {
+        a: { amostras: i2aAmostras, passa: i2aPassa },
+        b: { aos10: i2bAos10, amostra: i2bAmostra, passa: i2bPassa },
+        c: { aos10: i2cAos10, amostra: i2cAmostra, passa: i2cPassa },
+        passa: i2Passa,
+      },
+      i3: {
+        a: { amostra: i3aAmostra, passa: i3aPassa },
+        b: { amostra: i3bAmostra, passa: i3bPassa },
+        c: { amostra: i3cAmostra, passa: i3cPassa },
+        passa: i3Passa,
+      },
+      i4: {
+        y0: y0I4, amostras: i4Amostras, passa: i4Passa, clipe: clipeTempo,
+      },
+      i5: {
+        yRepousoFechada: yRepousoFechadaI5, yPre: yPreI5, amostras: i5Amostras, passa: i5Passa,
+      },
+    };
+    const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-interrupcoes-${commit}.json`));
+    writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
+
+    const linhas = [
+      `=== sonda-motion interrupções — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} ===`,
+      `Chrome ${versaoChrome.product} | mesa 1440x900 DPR${dpr} | pt-BR | q=performance`,
+      `I1 sanfona (fechar/reabrir no meio): repouso aberta=${i1RepousoAberta.overflow}, `
+        + `fechar 20/80/150ms=${i1Fechar1.map((a) => a.overflow).join('/')}, `
+        + `reentrada 20/100/400ms=${[i1Aos20, ...i1Reentrada].map((a) => `${a?.overflow}${a && sanfonaAnimando(a) ? '(animando)' : '(repouso)'}@${a?.dtMs}ms`).join(' / ')}, `
+        + `repouso reaberta=${i1RepousoReaberta.overflow} — `
+        + `${i1Passa ? 'PASSA' : 'FALHA'}`,
+      `I2 reduzir movimento no meio: a) saindo existe@60ms=${i2aAos60.existe} inert=${i2aAos60.inert} foco=${i2aAos60.active?.gatilho ?? '-'} `
+        + `(${i2aPassa ? 'PASSA' : 'FALHA'}) `
+        + `b) entrando transform=${i2bAmostra.transform} waapi=${JSON.stringify(i2bAmostra.waapi)} (${i2bPassa ? 'PASSA' : 'FALHA'}) `
+        + `c) linha do tempo transform=${i2cAmostra.transform} (${i2cPassa ? 'PASSA' : 'FALHA'}) — `
+        + `${i2Passa ? 'PASSA' : 'FALHA'}`,
+      `I3 resize no meio sem cruzar 760px: a) mesa saindo existe@10ms=${i3aAmostra.existe} (${i3aPassa ? 'PASSA' : 'FALHA'}) `
+        + `b) mesa entrando transform=${i3bAmostra.transform} waapi=${JSON.stringify(i3bAmostra.waapi)} (${i3bPassa ? 'PASSA' : 'FALHA'}) `
+        + `c) celular saindo existe@10ms=${i3cAmostra.existe} (${i3cPassa ? 'PASSA' : 'FALHA'}) — `
+        + `${i3Passa ? 'PASSA' : 'FALHA'}`,
+      `I4 linha do tempo após resize: Y0=${y0I4} y(+15)=${y15} (Δ=${y0I4 !== null && y15 !== null ? Math.abs(y15 - y0I4).toFixed(1) : '?'}px) y(+450)=${y450} — `
+        + `${i4Passa ? 'PASSA' : 'FALHA'}`,
+      `I5 interromper a linha com Esc: y_pre=${yPreI5} y_post(+15ms)=${yPostI5} (Δ=${yPreI5 !== null && yPostI5 !== null ? Math.abs(yPostI5 - yPreI5).toFixed(1) : '?'}px) y(+500ms)=${y500I5} repouso fechada=${yRepousoFechadaI5} — `
+        + `${i5Passa ? 'PASSA' : 'FALHA'}`,
+      `clipe sanfona: ${clipeSanfona} (${quadrosSanfona.length} quadros)`,
+      `folha sanfona: ${folhaSanfona}`,
+      `clipe linha do tempo: ${clipeTempo} (${quadrosTempo.length} quadros)`,
+      `JSON: ${destinoJson}`,
+    ];
+    process.stdout.write(`${linhas.join('\n')}\n`);
+  } catch (erro) {
+    process.stdout.write(`BLOCKED: ${erro.stack || erro.message}\n`);
+    process.exitCode = 1;
+  } finally {
+    if (sessao) await sessao.fechar();
+    rmSync(pastaSanfona, { recursive: true, force: true });
+    rmSync(pastaTempo, { recursive: true, force: true });
+  }
+}
+
 // ============================================================
 // A CORRIDA
 // ============================================================
@@ -765,7 +1255,9 @@ async function rodarSequencia() {
 // ~330 linhas por estética arriscava mais erro de transcrição do que
 // resolvia, e o enunciado pede o comportamento de sempre "exatamente
 // como está", não o arquivo mais bonito.
-if (!SEQUENCIA) {
+if (INTERRUPCOES) {
+  await rodarInterrupcoes();
+} else if (!SEQUENCIA) {
 mkdirSync(CAPTURAS, { recursive: true });
 const pastaQuadrosMesa = resolve(tmpdir(), `sonda-motion-mesa-${process.pid}`);
 const pastaQuadrosToque = resolve(tmpdir(), `sonda-motion-toque-${process.pid}`);
