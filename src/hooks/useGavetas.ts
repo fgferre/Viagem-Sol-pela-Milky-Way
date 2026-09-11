@@ -938,6 +938,31 @@ export function useGavetas(
       folha.removeAttribute('data-arrasto');
       desfazer();
     };
+    /**
+     * A TELA MUDOU DE TAMANHO COM O DEDO ENCOSTADO (girar, a barra do
+     * navegador, a janela — mesmo sem cruzar a fronteira do celular, que
+     * já desmontaria este efeito): as medidas do gesto (`hc`, `he`, o
+     * deslocamento) são da tela de antes, e nenhuma conta em cima delas
+     * leva ao lugar certo. O gesto é ABANDONADO, a mesma leitura que
+     * `assentarTudo` faz da animação que corre: a folha volta ao estado em
+     * que o dedo a encontrou, SEM animar a partir de números velhos, e o
+     * dono do arrasto é esquecido — os `touchmove` seguintes não o
+     * religam e o `touchend` não confirma a intenção abandonada. O
+     * assentamento que já corria depois de soltar (`recolhendo`) não é
+     * gesto: `assentarTudo` o termina pelo `aoAssentar` dele.
+     */
+    const invalidar = () => {
+      arrasto.esquecer();
+      if (!arrastando) return;
+      arrastando = false;
+      cancelar(folha);
+      folha.style.transform = '';
+      folha.removeAttribute('data-arrasto');
+      if (expansaoRef.current) {
+        expansaoRef.current = null;
+        setFichaExpandida(false);
+      }
+    };
     // PASSIVO, e de graça: `comecar` não chama `preventDefault` em
     // caminho nenhum — declarar isso deixa o navegador começar a rolagem
     // sem esperar o ouvinte responder.
@@ -945,11 +970,13 @@ export function useGavetas(
     window.addEventListener('touchmove', mover);
     window.addEventListener('touchend', soltar);
     window.addEventListener('touchcancel', abortar);
+    window.addEventListener('resize', invalidar);
     return () => {
       folha.removeEventListener('touchstart', comecar);
       window.removeEventListener('touchmove', mover);
       window.removeEventListener('touchend', soltar);
       window.removeEventListener('touchcancel', abortar);
+      window.removeEventListener('resize', invalidar);
       // UM ARRASTO QUE O CONTEXTO INTERROMPEU (girar o aparelho, a ficha
       // expandir, outra gaveta abrir com o dedo ainda na tela) não deixa
       // a folha onde o dedo estava: o transform em linha é deste gesto, e
