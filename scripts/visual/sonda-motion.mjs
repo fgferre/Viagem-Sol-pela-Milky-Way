@@ -273,7 +273,8 @@ function jsAmostraPainel(seletor) {
       cls: (typeof ae.className === 'string' ? ae.className : ''),
       gatilho: (ae.getAttribute && ae.getAttribute('data-abre-dialogo')) || null,
     } : null;
-    if (!el) return { existe: false, active: ativo };
+    const linhaDoTempo = document.timeline.currentTime;
+    if (!el) return { existe: false, active: ativo, linhaDoTempo };
     const r = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
     return {
@@ -285,6 +286,18 @@ function jsAmostraPainel(seletor) {
       animationDuration: cs.animationDuration,
       transitionProperty: cs.transitionProperty,
       transitionDuration: cs.transitionDuration,
+      // QUEM MOVE O PAINEL DESDE O C1 É A WAAPI (movimentoDaGaveta.ts) —
+      // os campos de CSS acima ficam em "none"/"0s" o tempo todo. O estado
+      // real é este: pendente (ainda sem quadro para começar), rodando,
+      // terminada. E a linha do tempo do documento só anda quando o
+      // navegador produz quadro: é ela que separa "a animação parou" de
+      // "o Chrome da sonda não desenhou nada".
+      waapi: el.getAnimations().map((a) => ({
+        playState: a.playState,
+        pending: a.pending,
+        currentTime: a.currentTime === null ? null : Math.round(Number(a.currentTime)),
+      })),
+      linhaDoTempo,
       active: ativo,
     };
   })()`;
@@ -1035,6 +1048,23 @@ try {
     const e1UltimoPresente = [...e1].reverse().find((a) => a.existe === true);
     const e1PrimeiroAusente = e1.find((a) => a.existe === false);
     const e1ReproduzCedo = Boolean(e1PrimeiroAusente && e1PrimeiroAusente.alvoMs <= 60);
+    // PRESA SÓ SE O RELÓGIO DA PÁGINA ANDOU (reauditoria de 11/09): numa
+    // rodada a folha ficou no ponto da soltura de 13 a 501 ms, e a mesma
+    // base, repetida com e sem gravação, em Chrome visível e headless,
+    // sempre saiu e desmontou antes dos 500 ms. A saída fica PENDENTE até
+    // o próximo quadro (medido: nenhum quadro nos primeiros ~45 ms depois
+    // de soltar, em toda configuração); se o Chrome da sonda para de
+    // desenhar, a linha do tempo do documento para junto e nada anda com
+    // ela. Sem esta conta a sonda chamava de defeito um navegador parado.
+    const e1Primeira = e1[0];
+    const e1Ultima = e1[e1.length - 1];
+    const e1RelogioMs =
+      typeof e1Primeira?.linhaDoTempo === 'number' && typeof e1Ultima?.linhaDoTempo === 'number'
+        ? e1Ultima.linhaDoTempo - e1Primeira.linhaDoTempo
+        : null;
+    const e1ParedeMs = e1Ultima && e1Primeira ? e1Ultima.dtMs - e1Primeira.dtMs : 0;
+    const e1SemQuadros = !e1PrimeiroAusente && e1RelogioMs !== null && e1RelogioMs < e1ParedeMs / 2;
+    const e1Waapi = e1UltimoPresente?.waapi?.[0];
     const e2 = em(mesa.fecharEscape.amostras, 40);
     const e2Reproduz = e2.existe === true && e2.active?.tag === 'BODY';
     const e3 = em(mesa.trocarAjustes.amostras, 50);
@@ -1057,8 +1087,12 @@ try {
       `clipe toque: ${telefone.clipe} (${quadrosToque.length} quadros)`,
       `E1 folha solta (toque): presente aos ${e1UltimoPresente ? e1UltimoPresente.dtMs.toFixed(1) : '—'}ms, `
         + `ausente aos ${e1PrimeiroAusente ? e1PrimeiroAusente.dtMs.toFixed(1) : 'nunca (ficou até o fim)'}ms `
-        + `(transição declarada ${e1UltimoPresente?.transitionDuration ?? '?'}) — `
-        + `${e1ReproduzCedo ? 'reproduz (some bem antes da transição acabar)' : e1PrimeiroAusente ? 'não reproduz' : 'PRESA (a saída não desmontou)'}`,
+        + `(WAAPI por último: ${e1Waapi ? `${e1Waapi.playState}${e1Waapi.pending ? ' pendente' : ''} em ${e1Waapi.currentTime}ms` : 'nenhuma'}; `
+        + `linha do tempo da página andou ${e1RelogioMs === null ? '?' : Math.round(e1RelogioMs)}ms em ${e1ParedeMs}ms de relógio) — `
+        + `${e1ReproduzCedo ? 'reproduz (some bem antes da transição acabar)'
+          : e1PrimeiroAusente ? 'não reproduz'
+          : e1SemQuadros ? 'INCONCLUSIVO (o Chrome da sonda quase não desenhou quadro: a saída ficou pendente, não presa — repita a rodada)'
+          : 'PRESA (a página desenhou e a saída não desmontou)'}`,
       `E2 foco no Esc (mesa): aos ${e2.dtMs}ms active=${e2.active?.tag}/${e2.active?.gatilho ?? '-'} painel=${e2.existe} — `
         + `${e2Reproduz ? 'reproduz (foco em BODY, painel ainda visível)' : 'não reproduz'}`,
       `E3 troca Camadas→Ajustes (mesa): aos ${e3.dtMs}ms deslocado ${e3OffsetX}px do repouso — `
