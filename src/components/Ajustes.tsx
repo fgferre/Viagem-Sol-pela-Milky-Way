@@ -269,6 +269,12 @@ export function Ajustes({
   celular?: boolean;
 }) {
   const [copiado, setCopiado] = useState(false);
+  // O ANEL DE CONFIRMAÇÃO (reaudito C3d) — conta só sucessos REAIS do
+  // clipboard; a falha (abaixo) nunca incrementa, então nunca acende — é
+  // a mentira que o reaudito proíbe. `key={sucessosDeCopia}` remonta só o
+  // `<span>` decorativo a cada sucesso (`.realce-anel`, 01-base.css), sem
+  // tocar o botão em si.
+  const [sucessosDeCopia, setSucessosDeCopia] = useState(0);
   // "AVANÇADO" RECOLHÍVEL (Lote 7) — fechado por padrão, sem persistir;
   // mesma anatomia do título de seção da ficha (`FichaDoObjeto.tsx`).
   const [avancadoAberto, setAvancadoAberto] = useState(false);
@@ -322,6 +328,7 @@ export function Ajustes({
       .writeText(url)
       .then(() => {
         setCopiado(true);
+        setSucessosDeCopia((n) => n + 1);
         setTimeout(() => setCopiado(false), 1500);
       })
       .catch(falha);
@@ -648,6 +655,9 @@ export function Ajustes({
         )}
         <button type="button" className="ajustes-copiar" onClick={aoClicarCopiarLink}>
           <span>{t('ajustes.copiarLink')}</span>
+          {sucessosDeCopia > 0 && (
+            <span className="realce-anel" aria-hidden="true" key={sucessosDeCopia} />
+          )}
         </button>
       </div>
       {/* ESTADO SEMPRE PRESENTE (§9) — vazio fora do sucesso, só para o

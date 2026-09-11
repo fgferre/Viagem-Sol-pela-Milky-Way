@@ -259,6 +259,13 @@ export interface Gavetas {
   alternarGaveta: (qual: Gaveta) => void;
   /** o "✕" de uma gaveta: fecha se for ELA que está aberta */
   fecharGaveta: (qual: Gaveta) => void;
+  /**
+   * A MESMA PORTA DE `fecharGaveta`, mas sem a saída desenhada (reaudito
+   * C3d) — hoje só "Rever convite" (Ajustes.tsx) usa: o tour aparece na
+   * hora, e esperar o painel recuar debaixo da régua o deixaria visível
+   * por baixo do tour. Mesma exclusividade de sempre; só o "como" muda.
+   */
+  fecharGavetaImovel: (qual: Gaveta) => void;
   /** o TOQUE NO CÉU: fecha a folha que estiver aberta, seja qual for */
   fecharTodas: () => void;
   /**
@@ -395,6 +402,14 @@ export function useGavetas(
    *  MESMO ajuste que decide `saindo` logo abaixo, porque as duas
    *  perguntas leem o MESMO par de valores "de antes desta transição". */
   const [tipoDeAbertura, setTipoDeAbertura] = useState<TipoDeEntrada>(null);
+  /**
+   * QUEM PEDIU PARA FECHAR SEM A SAÍDA DESENHADA (`fecharGavetaImovel`,
+   * abaixo) — sinal de UMA vez para o ajuste logo abaixo, não uma
+   * segunda presença: só decide se `imovel` (terceiro argumento de
+   * `gavetaQueSai`) vale para ESTA transição, e é consumido (zerado) no
+   * mesmo ajuste que o lê.
+   */
+  const [fecharImovelAlvo, setFecharImovelAlvo] = useState<Gaveta | null>(null);
   // o "anterior" é um SEGUNDO estado e não um `useRef`, e é o que a
   // regra dos refs cobra com razão: ref lido durante o render não faz o
   // componente re-renderizar, e é justamente do re-render antes do
@@ -403,7 +418,9 @@ export function useGavetas(
   if (anterior !== gaveta) {
     setTipoDeAbertura(tipoDeEntrada(anterior, gaveta, saindo));
     setAnterior(gaveta);
-    setSaindo(gavetaQueSai(anterior, gaveta, semMovimento()));
+    const imovel = fecharImovelAlvo === anterior || semMovimento();
+    if (fecharImovelAlvo !== null) setFecharImovelAlvo(null);
+    setSaindo(gavetaQueSai(anterior, gaveta, imovel));
   }
 
   /**
@@ -762,6 +779,17 @@ export function useGavetas(
   );
 
   /**
+   * A MESMA PORTA, avisando `fecharImovelAlvo` (acima) antes: o ajuste
+   * que decide `saindo` lê o aviso na MESMA transição e pula a saída
+   * desenhada. Hoje só "Rever convite" chama — o tour não espera o
+   * painel recuar debaixo da régua.
+   */
+  const fecharGavetaImovel = useCallback((qual: Gaveta) => {
+    setFecharImovelAlvo(qual);
+    setGaveta((atual) => aoFechar(atual, qual));
+  }, []);
+
+  /**
    * O TOQUE NO CÉU (item 62). Quem o chama é `director/gestos.ts`, que é
    * onde mora a regra de qual toque fecha o quê — aqui é só a porta.
    * `useCallback` com lista vazia porque o consumidor é o Director, que
@@ -780,6 +808,7 @@ export function useGavetas(
     montada: gaveta ?? saindo,
     alternarGaveta,
     fecharGaveta,
+    fecharGavetaImovel,
     fecharTodas,
     fichaExpandida,
     alternarFichaExpandida,

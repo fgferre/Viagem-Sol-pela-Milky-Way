@@ -752,6 +752,9 @@
    linha, `text-overflow: ellipsis` (nunca cobre o rótulo do alvo, no
    celular, item §3.3). */
 .atlas-selo-resumo {
+  /* âncora do `.realce-anel` do resumo (reaudito C3e) — sem `top/left`,
+     `relative` só cria o contexto para o `<span>` absoluto filho. */
+  position: relative;
   pointer-events: auto;
   display: flex;
   align-items: center;

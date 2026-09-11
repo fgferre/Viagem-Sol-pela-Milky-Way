@@ -352,8 +352,16 @@ export default function App() {
   // a regra "há seleção ⇒ há ficha" (por onde a escada as abre) e a saída de
   // 260 ms da folha do telefone. `montada` é a que está DESENHADA — a aberta,
   // ou a que está descendo.
-  const { gaveta, montada, alternarGaveta, fecharGaveta, fecharTodas, fichaExpandida, alternarFichaExpandida } =
-    useGavetas(escada, foco, phase, celular);
+  const {
+    gaveta,
+    montada,
+    alternarGaveta,
+    fecharGaveta,
+    fecharGavetaImovel,
+    fecharTodas,
+    fichaExpandida,
+    alternarFichaExpandida,
+  } = useGavetas(escada, foco, phase, celular);
 
   // O BOOT do Director e os atalhos do teclado moram em hooks próprios
   // (onda da arquitetura, corte 6) — os fios são os mesmos de sempre.
@@ -1198,7 +1206,11 @@ export default function App() {
         onReverConvite={
           hud.dicaDeVoo || phase === 'atlas'
             ? () => {
-                fecharGaveta('ajustes');
+                // SEM A SAÍDA DESENHADA (reaudito C3d): o tour aparece na
+                // hora, e esperar o painel recuar debaixo da régua o
+                // deixaria visível por baixo do tour (`fecharGavetaImovel`,
+                // `useGavetas.ts`).
+                fecharGavetaImovel('ajustes');
                 setConvite({ onde: phase === 'atlas' ? 'atlas' : 'voo', passo: 0 });
               }
             : undefined

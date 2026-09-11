@@ -394,6 +394,10 @@
    mesma anatomia dos controles da pele B: borda fria, sem preenchimento,
    Inter 500 caixa normal. */
 .ajustes-copiar {
+  /* âncora do `.realce-anel` do sucesso de cópia (reaudito C3d) — não
+     move nada: sem `top/left`, `relative` só cria o contexto para o
+     `<span>` absoluto filho. */
+  position: relative;
   min-height: 2.75rem;
   cursor: pointer;
   padding: 0 0.9rem;

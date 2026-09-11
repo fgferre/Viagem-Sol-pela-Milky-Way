@@ -324,6 +324,25 @@ export function Selo({
   const algumDesvia = !escalaReal || !brilhoReal;
 
   /**
+   * O REALCE DO RESUMO FECHADO (reaudito C3e) — acende só quando o
+   * VISITANTE muda o que o resumo mostra, nunca quando o tier cai
+   * sozinho (auto-quality, D1) ou a dose do arranque do filme muda
+   * (fora do filme ela é sempre 1, mas o Atlas não confia nisso à toa):
+   * as duas são `volta: 'nenhuma'` no registro — "não é gesto do
+   * visitante" já é a lei escrita em `selo.ts`, aqui só se lê.
+   *
+   * A CHAVE ignora esses desvios "sem gesto" só para decidir SE acende —
+   * o texto exibido (`brilhoReal`, acima) continua o veredito completo,
+   * porque o conteúdo tem de seguir vivo mesmo com o realce quieto.
+   * ESCALA entra direto: não tem `volta` (não é um desvio da lista), sai
+   * da distância da câmera, sempre fruto de navegação ou de um alvo
+   * escolhido — nunca do relógio ou da medição de desempenho.
+   */
+  const desviosDeGesto = desvios.filter((d) => d.volta !== 'nenhuma');
+  const brilhoAcionavelPeloVisitante = desviosDeGesto.length === 0;
+  const vezesQueMudouPeloVisitante = useRealce(`${escalaReal}-${brilhoAcionavelPeloVisitante}`);
+
+  /**
    * AS DUAS SAÍDAS que não são o clique na própria linha: Esc e clique
    * fora. Ambas em CAPTURA, e a razão é a ordem de quem reivindica o Esc
    * dentro do Atlas (`useAtalhos.ts`): DIÁLOGO ABERTO COME O Esc
@@ -484,6 +503,13 @@ export function Selo({
         <span className="atlas-selo-seta" aria-hidden="true">
           <Icone nome={aberto ? 'chevronBaixo' : 'chevronDireita'} tamanho={12} />
         </span>
+        {vezesQueMudouPeloVisitante > 0 && (
+          <span
+            className="realce-anel"
+            aria-hidden="true"
+            key={vezesQueMudouPeloVisitante}
+          />
+        )}
       </button>
     </div>
   );
