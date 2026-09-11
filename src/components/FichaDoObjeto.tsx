@@ -94,6 +94,7 @@ function buscarUmaVez<T>(caminho: string): Promise<T> {
 
 export function FichaDoObjeto({
   aberta,
+  ativa,
   onFechar,
   corpoId,
   estrelaEmFoco,
@@ -112,6 +113,10 @@ export function FichaDoObjeto({
   onAlternarFichaExpandida,
 }: {
   aberta: boolean;
+  /** o FECHAMENTO LÓGICO (`gaveta === 'ficha'`), para o foco — distinto
+   *  de `aberta` (presença): ver `GavetaDeCamadas` (E2, PLANO-MOTION-UI.md
+   *  §12.5 C1.2) */
+  ativa: boolean;
   onFechar: () => void;
   /** o corpo em FOCO — a escada é a única escritora dele */
   corpoId: string | null;
@@ -151,7 +156,7 @@ export function FichaDoObjeto({
   // (a exceção em `director/gestos.ts`) — sem `modal: false` o Tab
   // ficaria preso e o `aria-modal` mentiria um bloqueio que o clique
   // nunca respeitou.
-  const dialogo = useDialogFocus('ficha', aberta, onFechar, { modal: false });
+  const dialogo = useDialogFocus('ficha', ativa, onFechar, { modal: false });
   const idioma = useIdioma();
   // A DICA PRESA (redesenho, 06/09) — o mesmo padrão de Ajustes e das
   // gavetas: fixar uma "?" apaga a de cima, clique fora do diálogo

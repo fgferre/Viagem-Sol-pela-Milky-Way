@@ -207,6 +207,7 @@ function LinhaDeAjuste({
 
 export function Ajustes({
   aberto,
+  ativo,
   onFechar,
   qualidade,
   onQualidade,
@@ -228,6 +229,10 @@ export function Ajustes({
   celular = false,
 }: {
   aberto: boolean;
+  /** o FECHAMENTO LÓGICO (`gaveta === 'ajustes'`), para o foco — distinto
+   *  de `aberto` (presença): ver `GavetaDeCamadas` (E2, PLANO-MOTION-UI.md
+   *  §12.5 C1.2) */
+  ativo: boolean;
   onFechar: () => void;
   /** o estado inteiro (escolha, tier vivo, medição) — Ajustes D */
   qualidade: EstadoDaQualidade;
@@ -281,7 +286,7 @@ export function Ajustes({
   // O Esc que ficava num listener de `window` aqui virou parte do módulo
   // único (D7): o mesmo hook que prende o foco, devolve ao gatilho e
   // declara `aria-modal` — as três coisas que este painel não tinha.
-  const dialogo = useDialogFocus('ajustes', aberto, onFechar);
+  const dialogo = useDialogFocus('ajustes', ativo, onFechar);
 
   // O PRESET VIVO — o que MSAA/nebulosa/gás/partículas resolvem quando o
   // visitante não escolheu nada na gaveta. `qualidade.tier` é o tier

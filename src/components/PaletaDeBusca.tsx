@@ -119,12 +119,16 @@ function tipoDaEntrada(entrada: EntradaDaBusca): string | null {
 const EXEMPLOS = ['sirius', 'rigil', 'gama vel', 'hd 48915'];
 
 export function PaletaDeBusca({
+  aberta,
   onFechar,
   indice,
   verbo,
   onEscolher,
   celular = false,
 }: {
+  /** a busca está aberta DE VERDADE — e não só desenhada: durante a
+   *  saída ela continua montada, e o foco já tem de ter voltado */
+  aberta: boolean;
   onFechar: () => void;
   indice: IndiceEstrelas;
   /** o que a escolha de uma ESTRELA faz nesta fase — o aviso não pode
@@ -135,15 +139,17 @@ export function PaletaDeBusca({
   /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
   celular?: boolean;
 }) {
-  // MONTADA É ABERTA: quem decide a presença é o App (precedente do
-  // Convite), e fechar DESMONTA. Não é detalhe de estilo — é o que faz a
+  // QUEM DECIDE A PRESENÇA É O APP (precedente do Convite), e fechar
+  // DESMONTA — depois da saída. Não é detalhe de estilo — é o que faz a
   // consulta anterior morrer sozinha, sem um efeito que a limpe e sem a
-  // cascata de renders que ele custaria.
+  // cascata de renders que ele custaria. Montada, porém, já não quer
+  // dizer aberta: a paleta que sai continua desenhada, e o foco segue
+  // `aberta` (a intenção), para voltar ao gatilho antes de ela ficar surda.
   // NO CELULAR o foco inicial vai para o CONTÊINER, não para o campo: um
   // toque que abre a busca não pode abrir o teclado virtual sozinho — só
   // o toque DIRETO no campo abre. Na mesa o padrão de sempre continua
   // ('primeiro' foca o campo, que é o primeiro focável do DOM).
-  const dialogo = useDialogFocus('busca', true, onFechar, {
+  const dialogo = useDialogFocus('busca', aberta, onFechar, {
     focoInicial: celular ? 'caixa' : 'primeiro',
   });
   useIdioma();

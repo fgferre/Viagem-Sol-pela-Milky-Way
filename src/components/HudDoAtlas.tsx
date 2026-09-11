@@ -99,12 +99,18 @@ function camadasParaExibir(camadas: readonly Camada[]): readonly Camada[] {
 
 export function GavetaDeCamadas({
   aberta,
+  ativa,
   onFechar,
   escondidas,
   onCamada,
   celular = false,
 }: {
   aberta: boolean;
+  /** o FECHAMENTO LÓGICO (`gaveta === 'camadas'`), para o foco — distinto
+   *  de `aberta` (presença): na saída, `aberta` ainda vale durante a
+   *  animação, mas `ativa` já virou `false` no mesmo commit da intenção
+   *  (E2, PLANO-MOTION-UI.md §12.5 C1.2) */
+  ativa: boolean;
   onFechar: () => void;
   escondidas: ReadonlySet<string>;
   onCamada: (flag: string, ligar: boolean) => void;
@@ -112,7 +118,7 @@ export function GavetaDeCamadas({
    *  celular (Lote 2a, piloto do cabeçalho único, PLAN-UI.md §3.2) */
   celular?: boolean;
 }) {
-  const dialogo = useDialogFocus('camadas', aberta, onFechar);
+  const dialogo = useDialogFocus('camadas', ativa, onFechar);
   useIdioma();
   // A DICA PRESA (06/09) — o mesmo padrão do painel de Ajustes, com o
   // mesmo hook: fixar uma "?" apaga a de cima, clique fora do diálogo
@@ -974,6 +980,7 @@ export function BarraDoTempo({
  */
 export function GavetaDoTempo({
   aberta,
+  ativa,
   onFechar,
   tempo,
   onSentido,
@@ -983,6 +990,9 @@ export function GavetaDoTempo({
   celular = false,
 }: {
   aberta: boolean;
+  /** o FECHAMENTO LÓGICO (`gaveta === 'tempo'`), para o foco — ver o
+   *  mesmo prop em `GavetaDeCamadas` (E2, PLANO-MOTION-UI.md §12.5 C1.2) */
+  ativa: boolean;
   onFechar: () => void;
   tempo: EstadoDoTempo;
   onSentido: (sentido: SentidoDoTempo) => void;
@@ -992,7 +1002,7 @@ export function GavetaDoTempo({
   /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
   celular?: boolean;
 }) {
-  const dialogo = useDialogFocus('tempo', aberta, onFechar);
+  const dialogo = useDialogFocus('tempo', ativa, onFechar);
   useIdioma();
   const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
   if (!aberta) return null;

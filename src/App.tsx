@@ -1070,6 +1070,7 @@ export default function App() {
           filhos diretos). */}
       <GavetaDeCamadas
         aberta={montada === 'camadas' && hud.gaveta}
+        ativa={gaveta === 'camadas' && hud.gaveta}
         onFechar={() => fecharGaveta('camadas')}
         escondidas={escondidas}
         onCamada={alternarCamada}
@@ -1082,6 +1083,7 @@ export default function App() {
       {alcas && hud.tempo && tempo && (
         <GavetaDoTempo
           aberta={montada === 'tempo'}
+          ativa={gaveta === 'tempo'}
           onFechar={() => fecharGaveta('tempo')}
           tempo={tempo}
           onSentido={(s: SentidoDoTempo) => directorRef.current?.andarNoTempo(s)}
@@ -1098,6 +1100,7 @@ export default function App() {
           apaga no `?shot=2`, e ela só alcança filhos diretos. */}
       <FichaDoObjeto
         aberta={montada === 'ficha' && hud.ficha}
+        ativa={gaveta === 'ficha' && hud.ficha}
         onFechar={() => fecharGaveta('ficha')}
         corpoId={escada.corpoId}
         estrelaEmFoco={escada.degrau === 'estrela' ? foco : null}
@@ -1129,6 +1132,7 @@ export default function App() {
           enquadra — de fora do Atlas, entrando nele (item 129). */}
       {montada === 'busca' && hud.busca && (
         <PaletaDeBusca
+          aberta={gaveta === 'busca'}
           onFechar={() => fecharGaveta('busca')}
           indice={indice}
           verbo={phase === 'atlas' ? 'enquadrar' : 'visitar'}
@@ -1139,6 +1143,7 @@ export default function App() {
 
       <Ajustes
         aberto={montada === 'ajustes'}
+        ativo={gaveta === 'ajustes'}
         onFechar={() => fecharGaveta('ajustes')}
         qualidade={quality}
         onQualidade={changeQuality}

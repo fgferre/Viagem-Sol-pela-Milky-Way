@@ -31,7 +31,7 @@
 // quatro de TODO diálogo, sem saber da exceção: julgar a ficha por ele
 // hoje reprova por desenho, não por defeito.
 // ============================================================
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 
 /** No elemento do diálogo. O valor é o nome dele (o mesmo do gatilho). */
@@ -84,13 +84,25 @@ export interface PropsDoDialogo {
 }
 
 /**
+ * O NOME de quem tomou o foco por último — módulo, não estado: as cinco
+ * instâncias do hook (uma por diálogo) não se enxergam por prop nenhuma,
+ * e a troca A → B pode fechar A e abrir B no MESMO commit. Sem isto, a
+ * ORDEM em que o React re-executa os efeitos de A e B decidiria quem
+ * fica com o foco — e às vezes seria A, devolvendo ao SEU gatilho
+ * DEPOIS de B já ter posto o foco lá dentro. Com isto, quem abre por
+ * último AVISA aqui, e quem fecha só devolve foco se ainda for o dono —
+ * do contrário, brigar pelo foco seria roubá-lo de volta de B.
+ */
+let donoDoFoco: string | null = null;
+
+/**
  * Prende o foco enquanto `aberto`, devolve ao gatilho ao fechar e trata
  * Esc. Espalhe o retorno no elemento-raiz do diálogo:
  *
  *   const dialogo = useDialogFocus('ajustes', aberto, onFechar);
  *   return <div className="ajustes" {...dialogo} aria-label="…">…</div>;
  *
- * Duas armadilhas que o código evita de propósito:
+ * Três armadilhas que o código evita de propósito:
  *
  * 1. `aoFechar` NÃO entra na lista de dependências. Quem chama passa uma
  *    arrow inline (`() => setAberto(false)`), que muda de identidade a
@@ -101,6 +113,15 @@ export interface PropsDoDialogo {
  * 2. A devolução checa `isConnected`: o gatilho pode ter desmontado
  *    junto com a fase (a barra de controles some ao trocar de fase), e
  *    `focus()` num nó órfão perde o foco para o `<body>` em silêncio.
+ * 3. `aberto` é o FECHAMENTO LÓGICO (`gaveta === nome`), não a presença
+ *    visual — quem chama não pode passar a presença (`montada`, que
+ *    ainda vale durante a saída animada). Com a presença, a devolução só
+ *    corria na DESMONTAGEM, no fim da animação de saída: nesse meio-tempo
+ *    o painel que sai vira inert e o foco cai no `<body>` (E2,
+ *    PLANO-MOTION-UI.md §12.5 C1.2, medido: `<body>` ~40–130 ms após
+ *    Esc). Com o lógico, o efeito abaixo desmonta o TRAP no mesmo commit
+ *    em que a intenção muda — e como é `useLayoutEffect`, isso corre
+ *    ANTES da pintura, nunca depois.
  */
 export function useDialogFocus(
   nome: string,
@@ -144,8 +165,12 @@ export function useDialogFocus(
     fechar.current = aoFechar;
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!aberto) return;
+    // AVISA que é o dono do foco agora — antes de focar qualquer coisa,
+    // para uma troca A → B no mesmo commit já achar isto trocado quando
+    // a saída de A for decidir se devolve (ver o comentário no fim).
+    donoDoFoco = nome;
     const caixa = ref.current;
     if (!caixa) return;
     // o foco de ANTES é só a reserva — quem manda é o gatilho declarado
@@ -227,6 +252,12 @@ export function useDialogFocus(
       // Procurar na hora também sobrevive a re-render: o nó do botão
       // pode ter sido recriado desde a abertura, e um nó órfão engole o
       // foco em silêncio (daí o `isConnected` da reserva).
+      //
+      // SE JÁ NÃO SOU O DONO, outro diálogo abriu no mesmo commit (troca
+      // A → B) e já pôs o foco onde devia — devolver aqui seria roubá-lo
+      // de volta para o gatilho de QUEM SAIU. Só o dono atual devolve.
+      if (donoDoFoco !== nome) return;
+      donoDoFoco = null;
       const gatilho =
         document.querySelector<HTMLElement>(`[${ATRIBUTO_GATILHO}="${nome}"]`) ??
         focoAnterior;
