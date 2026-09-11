@@ -484,6 +484,9 @@ try {
     });
     await dorme(180);
     const rectFecharDurante = await retanguloDe(sessao, `${SEL_AJUSTES_PAINEL} .hud-fechar`);
+    // o DESENHO de dentro (o ícone), que é quem deve afundar desde o C2 —
+    // a caixa acima tem de ficar igual, e este tem de encolher
+    const rectIconeDurante = await retanguloDe(sessao, `${SEL_AJUSTES_PAINEL} .hud-fechar > *`);
     await sessao.send('Input.dispatchMouseEvent', {
       x: cx, y: cy - 100, type: 'mouseMoved', pointerType: 'mouse', buttons: 1,
     });
@@ -492,7 +495,14 @@ try {
     });
     await dorme(450);
     const rectFecharDepois = await retanguloDe(sessao, `${SEL_AJUSTES_PAINEL} .hud-fechar`);
-    mesa.segurarFechar = { antes: rectFecharAntes, durante: rectFecharDurante, depois: rectFecharDepois };
+    const rectIconeDepois = await retanguloDe(sessao, `${SEL_AJUSTES_PAINEL} .hud-fechar > *`);
+    mesa.segurarFechar = {
+      antes: rectFecharAntes,
+      durante: rectFecharDurante,
+      depois: rectFecharDepois,
+      iconeDurante: rectIconeDurante,
+      iconeDepois: rectIconeDepois,
+    };
 
     // fecha de vez (Escape) antes de passar à máquina do tempo
     await pressionarEscape(sessao);
@@ -541,7 +551,9 @@ try {
         telefone.arrastarESoltar = {
           antes,
           beforeRelease,
-          amostras: await amostrarSequencia(sessao, tSolta, [13, 18, 60, 150, 300], () => jsAmostraPainel(SEL_CAMADAS_PAINEL)),
+          // o 500 confere que a saída TERMINA e desmonta — sem ele, uma folha
+          // que escorrega até fora da tela e fica presa lá passaria por boa
+          amostras: await amostrarSequencia(sessao, tSolta, [13, 18, 60, 150, 300, 500], () => jsAmostraPainel(SEL_CAMADAS_PAINEL)),
           eventos: await lerEventos(sessao),
         };
       }
@@ -639,8 +651,14 @@ try {
     const e2 = em(mesa.fecharEscape.amostras, 40);
     const e2Reproduz = e2.existe === true && e2.active?.tag === 'BODY';
     const e3 = em(mesa.trocarAjustes.amostras, 50);
-    const e3OffsetX = e3.existe ? e3.rect.x : null;
-    const e3Reproduz = e3.existe && Math.abs(e3.rect.x) > 100;
+    // DESLOCADO EM RELAÇÃO A ONDE ASSENTA, e não em relação à borda da
+    // tela: o Ajustes mora em x≈944 numa janela de 1440, então "x > 100"
+    // acusava o próprio lugar de repouso como recomeço.
+    const e3Assentado = mesa.trocarAjustes.amostras[mesa.trocarAjustes.amostras.length - 1];
+    const e3OffsetX = e3.existe && e3Assentado?.existe ? e3.rect.x - e3Assentado.rect.x : null;
+    const e3Reproduz = e3OffsetX !== null && Math.abs(e3OffsetX) > 4;
+    const iconeDurante = mesa.segurarFechar.iconeDurante;
+    const iconeDepois = mesa.segurarFechar.iconeDepois;
     const e4Encolhe = rectFecharDurante.width < rectFecharAntes.width - 0.5;
     const e5Reproduz = reducedMotion && Number.parseFloat(reducedMotion.bolinhaTransitionDuration) > 0.05;
     const e6Reproduz = amostraGiro.existe === true && amostraGiro.inert === true;
@@ -653,13 +671,14 @@ try {
       `E1 folha solta (toque): presente aos ${e1UltimoPresente ? e1UltimoPresente.dtMs.toFixed(1) : '—'}ms, `
         + `ausente aos ${e1PrimeiroAusente ? e1PrimeiroAusente.dtMs.toFixed(1) : 'nunca (ficou até o fim)'}ms `
         + `(transição declarada ${e1UltimoPresente?.transitionDuration ?? '?'}) — `
-        + `${e1ReproduzCedo ? 'reproduz (some bem antes da transição acabar)' : 'não reproduz'}`,
+        + `${e1ReproduzCedo ? 'reproduz (some bem antes da transição acabar)' : e1PrimeiroAusente ? 'não reproduz' : 'PRESA (a saída não desmontou)'}`,
       `E2 foco no Esc (mesa): aos ${e2.dtMs}ms active=${e2.active?.tag}/${e2.active?.gatilho ?? '-'} painel=${e2.existe} — `
         + `${e2Reproduz ? 'reproduz (foco em BODY, painel ainda visível)' : 'não reproduz'}`,
-      `E3 troca Camadas→Ajustes (mesa): aos ${e3.dtMs}ms rect.x=${e3OffsetX} — `
+      `E3 troca Camadas→Ajustes (mesa): aos ${e3.dtMs}ms deslocado ${e3OffsetX}px do repouso — `
         + `${e3Reproduz ? 'reproduz (recomeça deslocado)' : 'não reproduz (já assentado)'}`,
       `E4 caixa do fechar sob pressão: antes ${rectFecharAntes.width.toFixed(2)}px, durante ${rectFecharDurante.width.toFixed(2)}px, depois ${rectFecharDepois.width.toFixed(2)}px — `
-        + `${e4Encolhe ? 'reproduz (encolhe sob pressão)' : 'não reproduz'}`,
+        + `${e4Encolhe ? 'reproduz (encolhe sob pressão)' : 'não reproduz'}`
+        + ` | ícone ${iconeDurante ? iconeDurante.width.toFixed(2) : '?'}px pressionado × ${iconeDepois ? iconeDepois.width.toFixed(2) : '?'}px solto`,
       `E5 reduced motion (bolinha do interruptor de Camadas, ::after): transitionDuration=${reducedMotion?.bolinhaTransitionDuration ?? '?'} (caixa=${reducedMotion?.transitionDuration}/--t-rapido=${reducedMotion?.tokenRapido}, --t-entrada=${reducedMotion?.tokenEntrada}, --t-normal=${reducedMotion?.tokenNormal}) — `
         + `${e5Reproduz ? 'reproduz (a bolinha ainda transiciona por --t-normal)' : 'não reproduz'}`,
       `E6 giro durante a saída (toque): aos ${amostraGiro.dtMs}ms existe=${amostraGiro.existe} inert=${amostraGiro.inert} animation=${amostraGiro.animationName} — `
