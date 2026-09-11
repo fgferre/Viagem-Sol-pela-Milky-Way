@@ -1,7 +1,7 @@
 // ============================================================
 // App — canvas WebGL + HUD cinematográfico sobre a simulação.
 // ============================================================
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Director, LOAD_STAGES } from './three/director';
 import type {
   EstadoDaEscada,
@@ -40,9 +40,14 @@ import { useDirector, escolherAlvo, LUGARES_DA_BUSCA } from './hooks/useDirector
 import { useAtalhos } from './hooks/useAtalhos';
 import { useChromeDoFilme } from './hooks/useChromeDoFilme';
 import { useEspelhoDaUrl } from './hooks/useEspelhoDaUrl';
-import { useGavetas } from './hooks/useGavetas';
+import { useGavetas, semMovimento } from './hooks/useGavetas';
+import type { Gaveta } from './hooks/useGavetas';
 import { useCelular } from './hooks/useCelular';
 import { escalaDaUi } from './lib/uiScale';
+// C6 (protótipo B, docs/PLANO-MOTION-UI.md §7/§12.5) — só a função pura
+// de leitura do deslocamento inicial; o resto do módulo mora inteiro em
+// three/core/contornoDaUi.ts.
+import { deslocamentoInicialDoTransform } from './three/core/contornoDaUi';
 // O HUD em 9 fatias contíguas — a ORDEM destes imports é a cascata do
 // antigo hud.css e não pode se reordenar (empates de especificidade,
 // @media e .shot-mode dependem dela).
@@ -218,6 +223,9 @@ export default function App() {
   const directorRef = useRef<Director | null>(null);
   /** o pintor dos nomes das estrelas — o HUD lhe diz onde NÃO desenhar */
   const labelsRef = useRef<LabelCanvas | null>(null);
+  /** C6 — a última `montada` vista, só para o halo de contorno saber se
+   *  a gaveta atual nasceu DO NADA (ver o efeito perto de `useGavetas`). */
+  const montadaAnteriorRef = useRef<Gaveta | null>(null);
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [caption, setCaption] = useState<{ idx: number; text: string; sub?: string }>({
@@ -362,6 +370,53 @@ export default function App() {
     fichaExpandida,
     alternarFichaExpandida,
   } = useGavetas(escada, foco, phase, celular);
+
+  // C6 (protótipo B, docs/PLANO-MOTION-UI.md §7/§12.5) — o halo de
+  // contorno WebGL só existe sob esta porta; o lado A (o reflexo CSS,
+  // `01-base.css`) continua rodando igual nos dois casos. Lida uma vez,
+  // como as outras portas de URL do boot (`cartografiaDesligada` acima).
+  const [contornoWebgl] = useState(
+    () => new URLSearchParams(window.location.search).get('contorno') === 'webgl'
+  );
+  /**
+   * C6 — O GATILHO: só quando a gaveta nasce DO NADA, `montada` vindo
+   * de `null`. Uma TROCA entre painéis ou uma REABERTURA no meio de uma
+   * saída nunca zeram `montada` no caminho (`gavetaQueSai`/
+   * `tipoDeEntrada`, `useGavetas.ts` — quem sai continua "montada" até
+   * desmontar), então a mesma comparação já as exclui.
+   * `useLayoutEffect`, e não `useEffect`, PELA MESMA razão do efeito de
+   * entrada dentro de `useGavetas.ts`: este hook é chamado DEPOIS de
+   * `useGavetas` no corpo do componente, e o React roda os efeitos de
+   * camada na ORDEM em que foram declarados — então quando este roda, o
+   * `ir()` que inicia a animação de entrada já rodou no MESMO commit, e
+   * `no.getAnimations()` já a vê.
+   */
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const anterior = montadaAnteriorRef.current;
+    montadaAnteriorRef.current = montada;
+    if (!contornoWebgl || !root || celular || semMovimento()) return;
+    // só a mesa, e só uma gaveta nascendo do nada (nunca troca/reabertura)
+    if (anterior !== null || montada === null) return;
+    const no = root.querySelector<HTMLElement>(`[data-dialogo="${montada}"]`);
+    const retangulo = no ? caixaDeRepouso(no, root) : null;
+    const animacao = no?.getAnimations()[0];
+    const effect = animacao?.effect;
+    const keyframes = effect instanceof KeyframeEffect ? effect.getKeyframes() : [];
+    const transformBruto = keyframes[0]?.transform;
+    if (!retangulo || !animacao || typeof transformBruto !== 'string') return;
+    directorRef.current?.acenderContorno({
+      retangulo,
+      animacao,
+      deslocamentoInicialPx: deslocamentoInicialDoTransform(transformBruto),
+    });
+  }, [montada, contornoWebgl, celular]);
+  // C6 — FECHAR APAGA O HALO: a saída mantém `montada` até desmontar, mas a
+  // intenção já é outra (§7, regra 3) — o halo não brilha em volta de um
+  // painel que está indo embora.
+  useEffect(() => {
+    if (contornoWebgl && gaveta === null) directorRef.current?.apagarContorno();
+  }, [contornoWebgl, gaveta]);
 
   // O BOOT do Director e os atalhos do teclado moram em hooks próprios
   // (onda da arquitetura, corte 6) — os fios são os mesmos de sempre.

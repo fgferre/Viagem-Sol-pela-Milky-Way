@@ -772,6 +772,12 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
    */
   neutra('ui', 'tamanho do texto do HUD'),
   /**
+   * `?contorno=webgl` — o protótipo B do C6 do plano de motion: um halo
+   * de interface em volta do painel que abre, desenhado depois da
+   * composição científica e desligado em captura. Muda o HUD, não a cena.
+   */
+  neutra('contorno', 'halo de interface na borda do painel (protótipo)'),
+  /**
    * `?foco=` — O ALVO EM QUADRO (F3/D4), e a decisão é a mesma família
    * de `?pos=`: ela diz PARA ONDE se olha, nunca com quanta luz.
    *

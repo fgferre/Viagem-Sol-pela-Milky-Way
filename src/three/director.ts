@@ -30,6 +30,10 @@ import type {
 import type { EstadoDaVista } from './selo';
 import type { MotorEfemerides } from '../lib/atlas/efemerides';
 import { CAMADA_DO_CAMPO, Post } from './core/post';
+// C6 (protótipo B, docs/PLANO-MOTION-UI.md §7/§12.5) — o halo de
+// contorno WebGL, isolado neste módulo único; ver `acenderContorno`.
+import { ContornoDaUi } from './core/contornoDaUi';
+import type { ParametrosDoContorno } from './core/contornoDaUi';
 // (A PUPILA morreu INTEIRA no M2 da LEI-DA-ESTRELA — arquivo, teste e a
 // espinha de `uExposicao`. O que substitui a adaptação é a compressão
 // fixa em dois pontos, que é padrão desde 15/08; a medição que ela fez
@@ -298,6 +302,10 @@ export class Director {
   /** o painel de ajustes mexe em tom e exposição ao vivo */
   readonly engine: Engine;
   private post: Post;
+  // C6 — sem dependência do construtor (não precisa do renderer nem do
+  // canvas), então nasce como os outros campos sem estado externo,
+  // fora do corpo do construtor.
+  private readonly contorno = new ContornoDaUi();
   private nebula: Nebula;
   private stars!: StarField;
   /** BETA dos rótulos 3D (item 109) — decisão dele, 29/08 */
@@ -2425,6 +2433,27 @@ export class Director {
   }
 
   /**
+   * C6 (protótipo B) — LIGA o halo de contorno WebGL para UMA abertura.
+   * App.tsx já filtrou o gatilho (flag, mesa, gaveta nascendo do nada,
+   * sem `semMovimento()`); a única régua que falta perguntar por fora
+   * é esta: NUNCA em `shotMode` (`?shot=`). A captura determinística já
+   * congela o tempo visual do resto da cena (`tick`, `time` acima), e
+   * este efeito é inerentemente transiente — não existe "acabamento
+   * estático" dele que fizesse sentido fotografar, então desligar por
+   * completo é a leitura certa da regra 6 da seção 7 ("em shot=1, usar
+   * o acabamento estático definido ou desligá-la deterministicamente").
+   */
+  acenderContorno(parametros: ParametrosDoContorno): void {
+    if (this.shotMode) return;
+    this.contorno.acender(parametros);
+  }
+
+  /** C6 — a intenção mudou (o painel fechou): o halo some na hora. */
+  apagarContorno(): void {
+    this.contorno.apagar();
+  }
+
+  /**
    * O RETÂNGULO ÚTIL que o enquadramento está usando agora — publicado
    * para o juiz de a11y poder comparar a declaração (`atlasRig.ts`) com
    * as áreas REAIS que o HUD ocupa na página. Sem esta ponte, as duas
@@ -3240,6 +3269,10 @@ export class Director {
       this.nebula.render(this.engine.renderer, cam);
     }
     this.post.render(time);
+    // C6 (protótipo B) — o passe decorativo do halo, sempre DEPOIS do
+    // composite científico. Sai sozinho na primeira linha quando não há
+    // abertura em curso (`ContornoDaUi.desenhar`); nada roda em repouso.
+    this.contorno.desenhar(this.engine.renderer);
     // DEPOIS do render, e é o único lugar que soma: o sinal de prontidão
     // conta quadros DESENHADOS, não quadros agendados (ver `captura`).
     this.quadrosEstaveis++;
@@ -3338,6 +3371,7 @@ export class Director {
     step('dust', () => this.dust.dispose());
     step('nebula', () => this.nebula.dispose());
     step('post', () => this.post.dispose());
+    step('contorno', () => this.contorno.dispose()); // C6
     step('engine', () => this.engine.dispose());
   }
 }
