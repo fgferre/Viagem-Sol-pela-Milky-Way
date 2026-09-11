@@ -1,5 +1,7 @@
 # UI expressiva e futurista — auditoria e plano de movimento
 
+> **Atualização de 10/09/2026, base `16e852d`: começar pela seção 12.** Ela audita a implementação, corrige o status de M0–M2 e dá ao Claude a sequência complementar, com arquivos e critérios de aceite. Em conflito com propostas anteriores ou com o registro histórico da seção 8, prevalecem as decisões do dono e as instruções da seção 12. Este continua sendo o único plano desta frente.
+
 Data: 09/09/2026. Base auditada: commit `e9a5977`. Entrega da rodada da auditoria: só este relatório. A execução começou no mesmo dia, a partir do commit `f02b57b` — o que já foi feito está no registro no fim da seção 8.
 
 Direção escolhida pelo dono nesta conversa: **“Mais expressiva e futurista, com luz e efeitos especiais perceptíveis.”**
@@ -59,7 +61,7 @@ Manter a pele existente: âmbar, fundos escuros, Inter para controles e Fraunces
 
 | Ação | Resposta desejada | Quando termina |
 | --- | --- | --- |
-| Abrir Camadas na régua | Aba acende; painel revela conteúdo e borda recebe reflexo | Conteúdo assentado em 200 ms; reflexo até 400 ms |
+| Abrir Camadas na régua | Aba acende; painel entra inteiramente pela lateral e borda recebe reflexo | Painel assentado em 260 ms; reflexo até 400 ms; decisão posterior do dono, seção 12 |
 | Trocar Camadas por Ajustes | Moldura permanece; corpo troca com fade curto; aba ativa muda | Até 160 ms, sem fechar e reabrir a folha |
 | Escolher Saturno | Seleção acontece imediatamente; contexto e nome confirmam juntos | Realce de até 220 ms; câmera mantém sua animação própria |
 | Expandir ficha com o dedo | Alça responde e folha acompanha; conteúdo não fica elástico | Enquanto arrasta; assentamento de até 260 ms |
@@ -150,8 +152,8 @@ Preservar nomes e valores atuais onde já cumprem o papel; adicionar apenas o ne
 | Pressão | 70 ms | Saída rápida, escala interna 1 → 0,97 |
 | Hover, cor, foco decorativo | `--t-rapido`, 120 ms | `--curva` atual; outline de foco aparece imediatamente |
 | Troca de conteúdo local | 120–160 ms | Opacidade; sem viajar texto por longas distâncias |
-| Entrada de painel desktop | `--t-normal`, 200 ms | `--curva`; até 8 px a partir da borda de origem |
-| Saída de painel desktop | 140–160 ms | Aceleração suave; estado lógico fecha imediatamente |
+| Entrada de painel desktop | `--t-folha`, 260 ms | Percurso lateral completo, largura do painel + afastamento; decisão posterior do dono em `300f8c5` |
+| Saída de painel desktop | `--t-folha`, 260 ms | Retorno pela mesma lateral; estado lógico fecha imediatamente |
 | Folha mobile | `--t-folha`, 260 ms | Curva existente `cubic-bezier(0.22, 1, 0.36, 1)` |
 | Assentamento de ícone | 180 ms | Um pequeno retorno; nunca exceder o espaço do controle |
 | Reflexo de abertura | 320–400 ms | Passagem única; mesma textura luminosa por família |
@@ -273,7 +275,7 @@ Uma segunda ideia, posterior, é tornar a bússola um pequeno indicador vivo de 
 
 ## 8. Plano de implementação por lotes
 
-M0, M1 e M2 foram executados em 09/09/2026 (registro no fim desta seção). M3 em diante seguem pendentes.
+O registro original declarou M0–M2 executados. **A reauditoria de 10/09/2026 os classifica como parciais**, pelos critérios de saída abaixo; ver seção 12. M3–M7 seguem pendentes, com antecipações pontuais no Tempo. O registro abaixo é histórico, não aprovação integral.
 
 | Lote | Entrega | Arquivos principais | Critério de saída |
 | --- | --- | --- | --- |
@@ -289,6 +291,8 @@ M0, M1 e M2 foram executados em 09/09/2026 (registro no fim desta seção). M3 e
 M1 é dependência dos demais. M4 depende de M1–M3; M6 depende de uma versão CSS completa e de baseline comparável. Fazer um commit por tarefa delimitada, conforme `AGENTS.md`; não juntar toda a interface e shaders em um único commit. Não publicar nem enviar para `main` por consequência deste plano.
 
 ### Registro de execução
+
+**Ressalva da reauditoria:** preservar este relato para rastreabilidade, mas não repetir como conclusões atuais a ausência de deslocamento anterior, a cobertura integral de movimento reduzido ou a preservação da caixa clicável. A seção 12 confronta essas afirmações com código e medidas novas. As provas antigas descritas aqui não equivalem a clipes em velocidade real nem a um perfil de desempenho desta frente.
 
 **M0 — referência (09/09/2026).** Não houve rodada de clipes própria, e o motivo é o que a leitura mostrou: não havia movimento de deslocamento a registrar. Três auditorias só de leitura (tokens e transições existentes; presença e foco dos painéis; famílias de controle) confirmaram que a interface animava **cor, altura e presença**, e nada mais — nenhum `:active` em família de botão, nenhum filete que cresça, nenhum reflexo. O inventário está nas seções 3 e 4. O baseline de desempenho continua o do `BACKLOG.md` (Cinema, DPR 2: t=60 62 ms; t=100 72–80 ms), medido antes desta frente: nenhuma regra nova roda em repouso, então não há par com/sem a comparar ainda.
 
@@ -379,6 +383,224 @@ Estas fontes apoiam escolhas de plataforma; não substituem leitura do app nem p
 
 ## 11. Estado da entrega documental
 
-Auditoria e plano concluídos em 09/09/2026; **M0, M1 e M2 executados no mesmo dia** (o registro, com evidências e o que ficou por verificar, está no fim da seção 8). M3 a M7 seguem pendentes. Nada foi publicado: nenhuma versão do site saiu desta frente.
+Auditoria e plano iniciais entregues em 09/09/2026. O registro de execução posterior declarou M0–M2 feitos; a reauditoria de 10/09/2026, na seção 12, corrige esse status para **parcial**. M3 a M7 seguem pendentes na base `16e852d`. Esta entrega documental não publica o site.
 
 Verificação desta rodada: `npm run done` passou (typecheck, lint, 97 arquivos de teste; 2.948 testes aprovados e 1 ignorado). Houve mensagens de stderr nos testes de texturas, inclusive `ERR_INVALID_URL` para o perfil do anel no ambiente Node, sem reprovação da suíte. Isso verifica o estado do repositório, não a aparência ou o desempenho das animações propostas. `git diff --check` sem erros.
+
+## 12. Reauditoria e complemento de execução para o Claude — 10/09/2026
+
+### 12.1 Parecer, escopo e precedência
+
+**A implementação se aproximou da visão, mas ainda não cumpriu o plano.** A interface ganhou uma linguagem visível: entrada lateral, pressão, filetes que acendem e deslizam, assentamento de ícones, reflexo de borda e abertura perceptível do Tempo. O trabalho mais expressivo de conteúdo, gestos e narrativa ainda está por fazer. Além disso, há contratos de M1/M2 quebrados; portanto, não basta seguir diretamente para M3 supondo a fundação concluída.
+
+Esta conclusão compara o plano introduzido em `c977354`, baseado em `e9a5977`, com o diff completo até `16e852d`, mais os componentes e integrações afetados. Também considera a sequência recente do redesenho, cujas decisões já estavam na base do plano. Não atribuir a M2 conquistas que existiam antes dele. Não calcular um percentual fictício: 48 grupos de superfícies não têm o mesmo peso, e cobertura de código não é aprovação visual em todos os aparelhos.
+
+Foi feita leitura de código, revisão de histórico e sondagem do app em Chrome com movimento ligado, usando o helper existente `scripts/visual/chrome.mjs` e eventos de mouse, teclado e touch via CDP. Não houve perfil de GPU/p95, teste em telefone físico ou rodada multiengine nesta reauditoria. As medidas abaixo demonstram comportamentos específicos; não provam fluidez universal nem substituem o olho do dono.
+
+**Base congelada do parecer: `16e852d`.** Logo após as duas sondagens, `git status --short` mostrava apenas `?? src/hooks/useRealce.ts`, sem alterações em arquivos rastreados. As modificações concorrentes em componentes, CSS e hooks apareceram depois, durante a redação. Portanto, as sondagens correspondem ao código rastreado da base; não foram feitas em checkout isolado. Nenhum desses arquivos concorrentes foi alterado por esta entrega. Antes de implementar, ler o `git status` e o diff atual, aproveitar o que já atende e corrigir o que diverge; não reiniciar a frente nem sobrescrever trabalho alheio. A entrega desta reauditoria altera documentação, não implementa UI.
+
+### 12.2 Histórico relevante: o que avançou de fato
+
+| Commits / sequência | Resultado observado no código e papel na avaliação |
+| --- | --- |
+| Redesenho de 07–08/09, incluindo `ee53b8f`, `9a67100`, `6ef0fa4`, `3aa63ce`, `11e561a`, `e1d3ca6`; ajuste `2d2d0e1` | Pele B, painéis/controles reorganizados, abertura/fim, alça Ficha estável, encaixe e rolagem no celular, Tempo em janela baixa. São a composição a preservar; não são entregas novas do plano de motion. Os registros de fechamento do antigo plano de UI não encerram este plano. |
+| `105c27a`, `7e51788`, `4bc4abe`, `0d5468e`, `614bf07` | Nomes consistentes, prioridade dos Ajustes, ficha não modal, acompanhamento do dedo, dica em portal e testes ajustados. Melhoram UX real e fundamentam o motion. Não reverter foco não modal, ações Aproximar/Sistema ou portal para facilitar animações. |
+| `608941c`, `90aebc3` | Composição aprovada: Tempo compacto, selo discreto e à direita no telefone, ficha mínima em janela baixa, tour Atlas sem furo, “Mais” e encerramento com “Ficar neste céu”. Preservar. |
+| `579cf36`, `ec6d673` | Pele de botões unificada, erros/rótulo do salto refinados; transporte separado da barra que rola. Reutilizar esse desenho. Recolocar transporte dentro do overflow da barra recriaria defeito resolvido. |
+| `462c55e`, `f2f5f3d`, `8880234`, `e9a5977` | Contratos de hover/foco/clique no Tempo e nas dicas. Já existiam quando o plano foi escrito. Animação deve respeitar esses contratos. |
+| `c977354`, `f02b57b` | Plano de movimento e registro de fechamento da rodada anterior. Documentação, não implementação de M0. |
+| `f28fa28` | Corrige `inert` na reabertura, evita retenção sem movimento e cobre portais em captura. Avanço real de M1, ainda insuficiente para foco, gestos, geometria e mudança de viewport. |
+| `3812962` | Tokens, pressão, entrada/saída desktop, luz e filetes, hook compartilhado dos segmentados e remedição ao fim da entrada. Núcleo de M2 implementado. Testes de CSS são estruturais; não demonstram os contratos temporais abaixo. |
+| `300f8c5` | Entrada/saída desktop passam a percorrer toda a lateral em 260 ms, por pedido explícito do dono. **É a referência atual**, substituindo a proposta inicial de deslocamento de 8 px no desktop. |
+| `6c84455`, `5642fd0` | Fade do Tempo com respiro de 350 ms lido do CSS; entrada evolui para 200 ms e subida de 8 px porque o dono não percebia o fade anterior. Boa antecipação de U26/M3; não significa conclusão do lote. |
+| `821fc66` | Corrige espaço do outline da busca. Preservar também ao introduzir wrappers e fades no conteúdo. |
+| `16e852d` | Registro declara M0–M2 concluídos e M3–M7 pendentes. A primeira declaração precisa da correção de status deste complemento; a segunda descreve corretamente trabalho ainda não feito. |
+
+Os commits de documentação intercalados registram decisões e encerramentos; não contam como efeitos implementados. Mudanças de gás, catálogo e correções científicas próximas no histórico não são parte desta avaliação de motion.
+
+### 12.3 Evidências e lacunas encontradas
+
+Linhas abaixo referem-se a `16e852d`. Localizar também o símbolo, pois mudanças concorrentes deslocam linhas. “Medido” significa observado nesta sessão; “código” significa caminho lido, com impacto visual ainda a verificar.
+
+| ID | Evidência e consequência | Fonte / encaminhamento |
+| --- | --- | --- |
+| E1 — saída por gesto cortada, **medido** | Após arrastar Camadas 115 px e soltar, a folha tinha `animation: none`, `animationDuration: 0s` e `transition: transform 0.26s`. Estava presente/inert em ~12,8 ms e ausente em ~17,6 ms. O acabamento de 260 ms não pode terminar. | `useGavetas.ts:139` lê só `animationDuration`; o gesto em `:535`, `:592` usa transition após desligar animation. Resolver em C1. Não “corrigir” removendo a saída por gesto. |
+| E2 — foco atrasado, **medido** | Escape em Ajustes: aos ~40 ms, painel ainda visível/inert e foco em `BODY`; depois da saída, foco no gatilho Ajustes. O foco volta apenas na desmontagem visual. | `App.tsx` passa presença `montada`; `dialogFocus.ts:147–234` associa foco à presença. Resolver em C1, mantendo a ficha não modal. |
+| E3 — troca recomeça percurso inteiro, **medido** | Camadas → Ajustes dispara outro `entraPainel`. Aos ~50 ms, o novo painel ainda estava deslocado ~246,6 px. A troca não mantém a moldura assentada como pede o roteiro. | `01-base.css:352`, composição em `App.tsx`, estado de `useGavetas`. Separar primeira abertura de troca em C1. O pedido de entrada lateral completa não pediu fechar/reabrir a ferramenta a cada troca. |
+| E4 — caixa de botão encolhe, **medido** | O botão fechar passa de 44 × 44 para aproximadamente 42,68 × 42,68 px sob pressão. Isso confirma a medida já escrita no registro de M2 e contradiz “desenho interno com caixa estável”. Não foi demonstrada perda de clique; o desvio de geometria é suficiente. | `01-base.css:510–520` transforma o próprio botão. C2 deve mover a escala para a camada interna. |
+| E5 — reduced motion incompleto, **medido + código** | Com preferência reduzida emulada, os tokens novos ficam mínimos, mas o switch ainda computa `transitionDuration: 0.2s, 0.2s`, incluindo transform. | `04-atlas.css:1461` usa `--t-normal`, que permanece 200 ms. `movimento.test.ts` exclui esse token supondo que sirva só a cor/presença. Corrigir consumidores e teste em C2. Não zerar o transform estrutural do switch marcado. |
+| E6 — mudança de eixo durante saída, **medido** | Fechar a folha em 390 × 844 e mudar para 844 × 390 durante a saída deixou o painel presente/inert executando `saiPainel` lateral. A trajetória antiga não foi finalizada antes da nova geometria. | `useGavetas.ts:323–327`, `:387–412`, `montada` em `:637`; CSS troca de eixo na fronteira responsiva. C1 deve assentar/cancelar, sem continuar uma saída antiga no eixo novo. |
+| E7 — reserva transitória incompleta, **código** | `animationend` corrige a medida final, mas durante a entrada os rótulos recebem o retângulo transformado. Na saída da ficha, a reserva da **câmera** é liberada quando `gaveta` deixa de ser ficha, embora `montada` ainda a desenhe. A reserva de rótulos segue outro caminho, lendo os nós presentes; não confundir as duas. | `App.tsx:429`, `:457–473`, `:509`. Não foi medido salto de câmera nesta sessão. C1 deve definir explicitamente caixa conservadora durante movimento e reserva da ficha até desaparecer. |
+| E8 — cancelamento do gesto incompleto, **código** | O temporizador de `voltarAoLugar` não é guardado/cancelado; cleanup remove listeners, mas não limpa o movimento inline. `touchcancel` chama o mesmo `soltar` que pode confirmar fechamento. | `useGavetas.ts:560–608`. Verificar e corrigir nova intenção, segundo dedo, cancelamento e rotação em C1/C4; não declarar todos reproduzidos só porque o caminho existe. |
+| E9 — segmentado e remount, **código** | O observador do hook só é instalado na primeira execução do efeito. No Tempo recolhível, as refs dos grupos podem estar nulas nessa execução e nascer depois. A medição a cada render ajuda, mas não garante resize sem render ou a ligação do observador ao nó novo. | `useFileteDoSegmentado.ts:78–91`; grupos condicionais de `BarraDoTempo`, `HudDoAtlas.tsx`. C2 deve fazer observação acompanhar o nó real. Não foi medido desalinhamento em aparelho nesta auditoria. |
+| E10 — evidência insuficiente para M0/M2 | Não há clipe de baseline M0; o argumento de que antes não havia deslocamento ignora a folha que já acompanhava o dedo e a entrada mobile. O baseline de gás é de outra carga. Quadros M2 com durações esticadas ajudam a inspecionar, mas não provam percepção em velocidade normal. Não foram identificados caminhos inequívocos dessas provas no registro. | Registro da seção 8 e `movimento.test.ts` (asserções sobre texto de arquivos). C0/C6 devem produzir referências reproduzíveis. Isso não invalida os efeitos existentes; invalida a conclusão de aprovação completa. |
+
+**Chevrons:** `FichaDoObjeto.tsx:583` e `Ajustes.tsx:463` trocam `chevronDireita`/`chevronBaixo` instantaneamente. A redação anterior “chevron único” não especificava o ângulo/duração; não atribuir ao dono uma aprovação nem uma rejeição da rotação com base no comentário antigo do CSS. C3 abaixo fecha essa ambiguidade: um desenho estável que gira 90° em 180 ms, junto da seção, é a visão complementar agora proposta.
+
+**Artefatos opcionais desta máquina, não versionados:** [sondagem desktop](../capturas/auditoria-motion-20260910-16e852d.json), [sondagem touch](../capturas/auditoria-motion-20260910-toque-16e852d.json), [composição de Ajustes](../capturas/auditoria-motion-20260910-ajustes-16e852d.png). São arquivos novos em diretório ignorado pelo Git: outra máquina pode não tê-los. As medidas e receitas necessárias estão transcritas aqui para o plano continuar utilizável. O JSON desktop registra a janela solicitada de 1440 × 900; o PNG/viewport capturado tem **1440 × 728**, DPR 1. Touch emulado: 390 × 844, depois 844 × 390, DPR 1. URL funcional: `?atlas=1&q=performance&lang=pt-BR`, sem `shot`. A captura estática documenta composição, não qualidade temporal. A versão do Chrome não foi registrada; registrar nos próximos lotes.
+
+### 12.4 Visão que o Claude deve seguir
+
+**Um observatório de instrumentos luminosos, com ações nítidas e movimento perceptível.** A ferramenta vem fisicamente da sua borda, uma luz âmbar confirma a ativação e a informação responde à seleção. A sensação deve continuar clara na primeira visualização em velocidade normal. Preservar Inter, Fraunces, painel escuro opaco, hierarquia e composição aprovadas.
+
+As decisões do dono que prevalecem sobre a proposta inicial são: entrada lateral completa na mesa/tablet em layout de mesa; movimento equivalente vertical na folha; entrada do Tempo suficientemente visível. Não voltar a um pequeno fade desktop ou ao fade de 120 ms do Tempo para economizar implementação. Se houver custo medido, otimizar a camada e a área do efeito, mantendo essa intenção perceptível.
+
+| Momento | Receita visual de referência para executar | Relação com a ação |
+| --- | --- | --- |
+| Primeira abertura / abertura depois de fechar | Mesa: painel inteiro percorre sua largura + afastamento em 260 ms, sem fade global. Folha: movimento vertical equivalente. Filete da aba acende em 200 ms; reflexo de borda percorre uma faixa estreita em 360 ms e termina até 400 ms. Usar os tokens e curvas atuais. | Painel, foco e comandos assumem o estado imediatamente; nenhum atraso de input para terminar luz. Não somar 260 + 360 ms em sequência. |
+| Troca de ferramenta já aberta | Posição externa assentada; novo corpo entra com fade local de 120–160 ms. Aba atualiza de imediato. Sem deslizar de novo o painel inteiro e sem exigir duas regiões interativas. | A nova ferramenta já pode ser usada; manter ajuste natural de altura quando os conteúdos diferirem. |
+| Seleção de astro | Um acento âmbar de 180–220 ms no nome/contexto alterado e, em seu lote, no marcador já existente do astro. Evitar reiniciar a luz de abertura do painel. | Nome, identificação e dados pertencem ao mesmo alvo; câmera mantém o movimento próprio. Não realçar a cada atualização de distância. |
+| Pressão / escolha de opção | Só desenho interno comprime 0,97 em 70 ms; filete do segmentado desloca-se até a largura real da nova opção. | Caixa, outline, foco e valor são estáveis/imediatos. Dispositivo touch não precisa de hover. |
+| Tempo expandindo | Preservar corpo subindo 8 px + fade em 200 ms; saída usa o respiro existente de 350 ms. Corrigir estabilidade da linha da data em C3, sem tornar a entrada imperceptível. | Hover permite acesso ao corpo; clique prende; foco interno impede recolhimento; aviso continua visível. |
+| Confirmação / erro | Sucesso real: realce localizado de até 200 ms junto da mensagem existente. Erro: mensagem legível imediatamente, sem sacudir a UI. | Acento comunica o resultado, nunca antecipa sucesso do clipboard, download ou câmera. |
+| Repouso | A luz transitória desaparece; indicadores ativos e texto continuam claros. | Novos efeitos são acionados por eventos. Não preencher o céu com partículas decorativas que pareçam astros. |
+
+Esta especificação e o app atual bastam para os lotes C0–C5; **uma maquete HTML estática não resolveria as falhas de ciclo de vida nem provaria o motion**. A referência visual obrigatória será a execução real em clipes curtos. Em C6, a comparação visual CSS × WebGL é parte da entrega, não uma promessa textual.
+
+### 12.5 Ordem complementar: corrigir a base e concluir a experiência
+
+Os itens abaixo são **pendentes para implementação**, não trabalho feito nesta auditoria. Um commit por tarefa delimitada. Não considerar C1/C2 uma nova rodada de redesenho: preservar a composição e corrigir os mecanismos existentes. C1/C2 recuperam e completam os lotes originais, não os substituem por uma definição menor de pronto: o aceite exige também os contratos das seções 4–9. M2 só encerra depois dos chevrons de C3c e da conferência de suas famílias.
+
+#### C0 — restabelecer uma referência verificável (completa M0)
+
+Antes da próxima alteração, registrar HEAD e alterações locais, navegador/versão, viewport efetivo, DPR, preset, idioma e escala. Usar `16e852d` como referência histórica; se novos commits já existem, anotar a base real. Não apagar trabalho em andamento para voltar a essa base.
+
+Produzir clipes em velocidade normal de: abrir/trocar/fechar painéis na mesa; trocar segmentado; abrir/arrastar/soltar folha; expandir Tempo. Registrar posição/foco nos instantes de comando, intermediário e assentado. Não esticar tokens para o clipe de aceite; câmera lenta pode ser uma segunda prova identificada. Usar scripts/helper existentes, nomes inéditos em `capturas/` e caminhos no registro deste documento. O cenário de `q=performance` serve para isolar comportamento; a aprovação de custo deve incluir a cena/preset de uso e comparação pareada, conforme seção 9.
+
+**Aceite:** outra IA consegue repetir a ação, saber qual commit está vendo e distinguir foto, clipe, medição temporal e perfil de custo. Registrar também receitas e medidas no texto versionado; links para arquivos locais sozinhos não bastam. Se uma máquina não estiver disponível, registrar a lacuna sem marcar o aparelho aprovado.
+
+#### C1 — um dono para presença, gesto, foco e geometria (completa M1)
+
+**Alterar:** `src/hooks/useGavetas.ts` (`saindo`, `montada`, `duracaoDaSaida`, efeito do gesto e de viewport); `src/lib/dialogFocus.ts` (`useDialogFocus`); `src/App.tsx` (props dos painéis e efeito `medir`); declarações de movimento de `.hud-dialogo` em `src/hud/01-base.css` e `09-celular.css`. Propagar somente o contrato necessário para `PaletaDeBusca`, `FichaDoObjeto`, `Ajustes`, `GavetaDeCamadas` e `GavetaDoTempo`.
+
+1. Manter `gaveta` como intenção lógica e `montada` como presença visual. O controlador existente precisa distinguir abertura de troca, sem um gerenciador por componente. Na troca A → B, marcar o novo painel como troca, suprimir sua entrada espacial e aplicar o fade apenas ao conteúdo. Preservar raiz `[data-dialogo]` filha direta de `.hud-root`; não introduzir wrapper externo que quebre reservas ou captura.
+2. Separar atividade de foco da presença. No fechamento lógico, devolver foco ao gatilho válido **antes de tornar a saída inert**, remover os listeners de trap e manter apenas a pintura saindo. Ao trocar, o destino de foco é a nova ferramenta; cleanup antigo não pode roubá-lo depois. Na ficha, manter `modal: false`. Na busca, preservar a escolha adiada e `aoFechar(atual, qual)` que protegem a ficha nova.
+3. Dar ao movimento da superfície um único proprietário dentro de `useGavetas`. Para continuidade e interrupções, usar WAAPI nesse acabamento finito, conforme seção 5: ler duração/curva dos tokens efetivos uma vez, guardar a animação atual, cancelá-la e partir do transform visual atual quando chegar nova intenção. Durante o dedo, manter o acompanhamento direto existente; ao soltar, transferir do deslocamento atual para o mesmo proprietário de finalização. Retirar a disputa de CSS keyframes, transition inline e temporizador fixo sobre o mesmo transform; manter CSS para luz, filetes e feedback simples. Não criar biblioteca ou segundo caminho de presença.
+4. Cada conclusão deve conferir a intenção que a originou; uma saída velha não desmonta uma nova abertura. Tratar `finished` rejeitado por cancelamento. Duração zero/shot/reduced resolve imediatamente sem depender de evento; eventuais salvaguardas de tempo derivam da mesma duração, nunca de outro `260` copiado. Remover o uso concorrente de `SAIDA_DA_FOLHA_MS` e a leitura exclusiva de `animationDuration` para controlar o gesto.
+5. Ao mudar viewport/eixo, modo, preferência de movimento ou desmontar: cancelar acabamento, invalidar callbacks antigos, limpar estilos inline/listeners e assentar no estado lógico válido. Para fechar, retirar o nó; para permanecer aberto, colocá-lo na geometria final nova. `touchcancel` e segundo dedo abortam a intenção de gesto e devolvem a folha ao estado válido, sem confirmar fechamento nem emitir clique residual. Não substituir o adaptador touch sem provar a rolagem nativa.
+6. Em `App.tsx`, reservar para rótulos uma caixa final conservadora enquanto a superfície inteira se desloca; manter essa reserva até o término da saída. Derivar a posição de repouso sem depender do retângulo transformado intermediário — descontar a translação controlada ou medir antes de iniciar a animação. Reusar a medida por abertura/troca/resize, sem leitura de DOM a cada quadro. Ao assentar ou cancelar, reconciliar com o layout real.
+7. Para a **câmera**, conservar a reserva da ficha enquanto ela ainda estiver visualmente presente; liberar uma vez ao concluir a saída. Preservar teto da compacta, reserva da régua e exceção `shot=2`. Expansão de seção não pode recuar o astro continuamente. Se novo painel substituir a ficha, atualizar a reserva para a nova composição sem aguardar timer da ficha velha.
+
+**Aceite C1:** E1–E3 e E6 deixam de reproduzir; nenhuma janela de foco em BODY após Escape quando há gatilho válido; abrir/fechar 10 vezes, A → B → A e reabrir aos 80 ms de saída deixam só a última intenção ativa. Arrasto de 115 px continua do ponto de soltura até fora da tela. Rotação, mudança de preferência e `shot` não mantêm saída órfã. Reservas medidas no início/meio/fim protegem o céu sem varredura por frame. Fazer testes de comportamento pertinentes em `useGavetas.test.ts` e no fluxo visual de a11y com movimento ligado; a prova atual em `shot=1` sozinha não cobre isso.
+
+#### C2 — completar as famílias e a política de movimento (completa M2)
+
+**Alterar:** `src/hud/01-base.css`, consumidores nas fatias 03/04/08/09; `CabecalhoDoPainel.tsx`, `BarraOuAlcas.tsx`, `Segmentado.tsx` e controles específicos que precisem de camada visual; `src/hooks/useFileteDoSegmentado.ts`; `src/hud/movimento.test.ts`.
+
+1. Remover a escala do elemento interativo em `:active`. Aplicá-la a filho visual existente ou camada interna mínima, compartilhando a regra. Se um botão só tiver texto, introduzir a camada interna necessária sem trocar seu nome acessível. Não usar wrapper que encolha também o hit-test, `pointer-events` que impeça o controle ou pseudo-elemento que cubra o outline. Preservar padding e caixa mínima atuais.
+2. Fazer uma lista explícita de famílias: botões base/CTA; fechar/ajuda; abas/alças; segmentados; ações da ficha; copiar/rever convite; breadcrumb/contexto; destinos/filtros; selo; bússola; transporte/Tempo. A lista atual de pressão não cobre automaticamente classes como `ajustes-copiar`. Para cada família, marcar camada interna aplicada ou exceção justificada (ex.: thumb de slider e switch já têm movimento próprio). Não aplicar a mesma escala ao trilho inteiro. `disabled`/`aria-disabled` não recebem confirmação de ação válida.
+3. Auditar os **consumidores** de todos os tokens, inclusive `--t-normal` e `--t-rapido`. No switch, tornar instantânea a mudança de posição sob reduced, mantendo a posição marcada. Portais continuam com política própria de `07-foto.css`. Mudar a preferência com app aberto cancela também animações JS novas. Testes precisam conferir resultado computado/estado, além da existência de strings CSS.
+4. Preservar o filete único e as larguras reais. Fazer a instalação/remoção do ResizeObserver acompanhar a ref quando ela nasce, é substituída ou desmonta; a barra Tempo recolhida inicialmente é caso obrigatório. Não animar filete por simples rerender de data, idioma ou escala. Separar medidas de layout do filho visual sob pressão, para o sublinhado não herdar o encolhimento.
+5. O `left/width` animado do filete atual envolve layout; isso é fato, **não prova de custo ruim**. Preferir faixa decorativa com translateX/scaleX se mantiver a mesma precisão e simplificar o custo; não tornar essa troca pré-condição para todos os demais efeitos sem medir. O reflexo atual por `background-position` numa faixa pequena pode permanecer se o perfil e o clipe forem bons. Não alegar custo zero.
+
+**Aceite C2:** botão fechar mantém 44 × 44 px antes/durante/depois, com desenho interno perceptivelmente comprimido; conferir também toque na borda, foco e cancelamento. Switch chega ao estado correto sem translação animada sob reduced. Filetes conferidos após abrir Tempo pela primeira vez, fechar/reabrir, PT/EN, resize e `ui=0.85/1.4`. Nenhuma escolha nova é atrasada; distinção `.on`/`.efetivo` permanece.
+
+#### C3 — conteúdo vivo e coerente (executa M3)
+
+**Visão:** a ferramenta permanece estável; muda a informação que a ação realmente mudou. Implementar em sublotes abaixo. Compartilhar o mecanismo finito de realce se já existir — inclusive reconciliar eventual `useRealce` em andamento — mas não usar `key` para remontar painel, input, botão focado ou subtree com estado de formulário. Reiniciar só decoração/trecho textual seguro, sem destruir foco ou estado.
+
+| Sublote / IDs | Onde alterar | Comportamento exato e prova de saída |
+| --- | --- | --- |
+| C3a Busca — U31–U33 | `PaletaDeBusca.tsx`: `semConsulta`, `vazio`, destinos/filtros, lista; CSS de busca em `04-atlas.css` | Fade local de 120–160 ms somente ao trocar destinos/resultados/vazio. Filtro usa filete da família; cartão ganha leve luz em hover capaz e pressão interna no toque. Não reiniciar efeito a cada tecla. Preservar input, IME, setas, Enter, lista e `aria-activedescendant` apontando para opção existente; manter espaçamento do outline corrigido em `821fc66`. |
+| C3b Seleção/ficha — U16, U34, U36–U40 | Contexto de `BarraOuAlcas.tsx`; `FichaDoObjeto.tsx`: nome, carregamento, introdução, ações e `atlas-ficha-secao`; CSS 04 | Realce de 180–220 ms por identidade de alvo alterada, sem remontar painel e sem nome novo com ficha velha. Loading permanece estático; dados prontos entram uma vez com fade de 160 ms; erro aparece no ato. “Ler mais” mantém scroll/foco existentes e realça o destino uma vez. Aproximar/Sistema disparam câmera imediatamente. |
+| C3c Acordeões — U39, U42 | `FichaDoObjeto.tsx:565–583`, `Ajustes.tsx:454–463`, `.atlas-ficha-seta`, corpos de seções e CSS 04/08 | Um SVG `chevronDireita` estável gira 0→90° em 180 ms; expansão/recolhimento em 180–200 ms, sem escalar texto. Aplicar a mesma receita nos dois componentes. Presença do corpo retida apenas para fechar visualmente; mover foco ao gatilho antes de inert/ocultação. Se usar grid, conter layout e medir, como seção 5. Reduced: posição final imediata. |
+| C3d Ajustes/retorno — U41, U43–U46 | `Ajustes.tsx`: sliders, `aoClicarCopiarLink`, estado/campo de cópia, `onReverConvite`; CSS 08 | Slider e número acompanham entrada real. Sucesso do clipboard confirma em até 200 ms após sucesso; falha preserva campo focado/selecionado e mensagem existente, sem confirmação falsa. Rever convite cancela decoração do painel e inicia fluxo sem espera adicional. Segmentados/switches reusam C2. |
+| C3e Selo/bússola — U23–U25 | `Selo` e `Bussola` em `HudDoAtlas.tsx`, CSS 04 | Detalhe do selo abre/fecha em 160 ms junto do resumo; realce só quando ação do usuário altera a representação. Manter repouso discreto, texto de desvios e posição mobile atual. Bússola recebe pressão interna; assentamento não promete que a câmera já endireitou. Indicador de inclinação real é evolução opcional separada, não requisito para concluir M3. |
+| C3f Tempo — U26–U28 | `BarraDoTempo`/`GavetaDoTempo`, `HudDoAtlas.tsx`; corpo/cabeçalho em CSS 04 | Preservar entrada 200 ms + 8 px e saída/respiro de 350 ms. A linha da data não deve saltar no frame em que o corpo nasce: reservar/ancorar sua caixa final e revelar corpo na área prevista, ajustando reserva do rodapé. Não mover a câmera a cada abertura. Direção/taxa/Ao vivo realçam uma vez por mudança de modo; data não pulsa por tique. Hover, clique preso, foco, Esc e retorno do mouse durante saída mantêm contratos atuais; drawer reusa os mesmos controles. |
+
+**Aceite C3:** mostrar uma sequência contínua Buscar Saturno → abrir seção → copiar link → mudar tempo. A diferença precisa ser visível em velocidade normal, com luz e continuidade local, sem input atrasado. Incluir vazio/erro e teclado, não só o caminho bonito. Fazer status U por sublote; um acento no título da ficha não conclui todo M3.
+
+#### C4 — folha guiada pela mão (executa M4)
+
+**Alterar:** gesto em `useGavetas.ts`, região da alça em `CabecalhoDoPainel.tsx`, estados compacta/expandida em `FichaDoObjeto.tsx`, CSS `09-celular.css` e variante de janela baixa de `06-responsivo.css`.
+
+Após C1, implementar expansão para cima iniciada na região explícita da alça/cabeçalho, com área de captura de pelo menos 44 px de altura; o traço visual pode continuar pequeno. Preservar botões/ajuda/fechar fora dessa captura e “Detalhes/Recolher” como alternativa de teclado. Durante gesto, seguir o dedo sem easing; ao soltar, assentar no estado compacto ou expandido em até 260 ms usando o mesmo proprietário de movimento. Preservar o limiar de fechamento atual antes de adicionar novos limiares; documentar os de expansão e mostrar o resultado real.
+
+Resistência além do limite, se incluída, desloca pouco a decoração/alça e nunca estica conteúdo. Conteúdo rolável, exposição, links e seleção de texto continuam operáveis. Arrasto para baixo na ficha expandida recolhe; na compacta fecha, conforme contrato atual. Pinça/segundo dedo/cancelamento não confirmam gesto. Não pôr scrim interativo sobre o céu: a ficha deve continuar permitindo selecionar outro objeto.
+
+**Aceite C4:** clipe em touch emulado e teste em telefone real, retrato/paisagem e teclado virtual; expandir/recolher/fechar, scroll até topo, slider e cancelamento. Enquanto não houver telefone real, registrar implementação e prova emulada separadamente, sem chamar M4 inteiramente validado.
+
+#### C5 — narrativa, orientação e presença nas demais superfícies (executa M5)
+
+| Grupo / IDs | Onde alterar | Entrega delimitada |
+| --- | --- | --- |
+| Abertura e falhas — U01–U04 | `Hud.tsx`: `LoadingVeil`, telemetria, `TitleVeil`; `CartografiaCanvas.ts` apenas se necessário; `05-loading.css` | Preservar cartografia/fusão existentes. Realce único de etapa verdadeira e CTA ao ficar disponível. Erro/retry imediatamente legíveis/operáveis inclusive sem WebGL. Sem falso percentual, espera ou shimmer permanente. |
+| Filme e controles — U05–U10, U14 | `Hud.tsx`: Caption, ProgressBar, final; `BarraOuAlcas.tsx`: Mais/transporte; `useChromeDoFilme.ts`; CSS02/03/06 | Preservar tarjas/cadência de legenda/encerramento. “Mais” tem entrada e saída conjunta de 120–160 ms com foco correto. Transporte usa troca curta de ícone e confirmação de taxa, sem girar Play. Progresso engrossa só camada visual interna por scaleY e mostra thumb em foco/drag; valor segue o dedo. “Ficar neste céu” mantém protagonismo e recebe um único acento. |
+| Contexto, voo e travessia — U11–U13, U15, U19 | `App.tsx`: rumo/lente/estado de captura, integração com `BarraOuAlcas`; `director/veu.ts` e `useChromeDoFilme` somente se o contrato exigir | Realçar mudança semântica de destino/modo; não animar números continuamente nem pulsar qualidade a cada medição. Mostrar captura/negação real do mouse sem roubar controles de voo. Preservar warp ligado à velocidade e travessia existente entre modos; encerrar decoração local ao atravessar. |
+| Céu selecionado — U29–U30 | `LabelCanvas.ts`, `three/director/rotulos.ts`, integração do Director; `three/world/rotulos3d.ts` só se necessário para equivalência | Um acento de 180–220 ms no marcador já existente da seleção, coordenado com contexto/ficha. Não alterar posição, colisão ou hit-test; não criar astro luminoso fictício. Preservar opção dos rótulos 3D e política de captura. Não migrar texto de UI para a cena. |
+| Dicas — U47 | `Ajuda.tsx`, `useDicaPresa.ts`, CSS04/07 | Fade de 100–140 ms depois de posicionar. Fechar logicamente de imediato, manter só acabamento visual se necessário. Corrigir coordenadas de flip/scroll sem animar a correção. Desktop hover/foco teclado; toque prende e clique fora fecha. Esc mantém supressão até nova intenção, sem reabrir por hover residual. |
+| Convites — U48 | `Spotlight.tsx`, `passosDoConvite.ts`, CSS da família | Cartão confirma mudança de passo com fade de 160 ms. Atlas continua com `alvo:null`, sem furo. No voo, interpolar apenas o retângulo do recorte e o contorno correspondente, juntos; não animar o retângulo branco de fundo da máscara. Alvo removido assenta no fallback válido. Tour continua não modal e Pular funciona durante a animação. |
+
+**Aceite C5:** revisar Atlas, loading/pronto/erro, filme rodando/pausado/fim e voo, com movimento ligado. Preservar conscientemente as animações existentes também conta como decisão de cobertura, desde que verificada e registrada. Não é necessário inventar um efeito novo para cada linha do inventário.
+
+#### C6 — acabamento óptico que valha a integração (executa M6)
+
+Depois da versão CSS coerente, executar o experimento da seção 7. A preferência expressiva pede **exploração real**, não encerrar o assunto com “CSS basta” sem comparação, nem instalar um framework só para dizer que usa tecnologia nova.
+
+Usar o reflexo CSS atual como A. Para B, investigar `three/core/engine.ts`, `three/core/post.ts`, geometria em `App.tsx` e prontidão em `three/director/prontidao.ts`. Protótipo: um halo âmbar direcional curto, com dispersão localizada, no contorno **exterior** visível do painel — o DOM opaco cobre o canvas atrás dele. Duração máxima inicial 400 ms; sem passar sobre texto, alterar fotometria/bloom científico ou criar outro contexto. Reutilizar renderer/loop e medidas de C1; passe não executa em repouso. Fallback CSS quando indisponível, reduced ou contexto perdido; nenhum efeito de UI em `shot=2`.
+
+**Aceite C6:** clipes A/B na mesma cena, geometria e velocidade real, mais custo pareado e implementação do fallback. Registrar ganho visível, custo e decisão do dono sobre adoção. Se a diferença não for perceptível, remover o protótipo descartado e manter CSS; isso conclui o experimento com uma decisão, não equivale a ter entregue UI WebGL. Não publicar como consequência da aprovação visual.
+
+#### C7 — fechar cobertura com provas, não com adjetivos (executa M7)
+
+Reconciliar cada grupo abaixo, executar a matriz da seção 9 nos ambientes disponíveis e declarar os indisponíveis. Para cada sublote, registrar commit, U cobertos, comportamento, caminho de prova, limitações e decisão visual. Manter o registro aqui. Não reusar “todos os juízes verdes” para afirmar fluidez; complementar os fluxos pertinentes com movimento ligado.
+
+`src/hud/movimento.test.ts` pode manter checagens estruturais úteis, mas precisa deixar de certificar políticas por lista incompleta de tokens/seletores. Não escrever teste que exige especificamente `left/width` ou o mesmo número copiado da implementação como prova de UX. Testar invariantes: hitbox estável, última intenção vence, foco correto, estado final sem movimento e interação durante a saída. Reusar `useGavetas.test.ts`, testes de ficha/dica e scripts de a11y/busca/Atlas/filme/voo conforme o comportamento alterado. Não criar bateria genérica de novos juízes.
+
+Para cada tarefa de implementação, rodar testes focados durante o trabalho e `npm run done` uma vez ao final, conforme `AGENTS.md`. Provar `shot=1/2` separadamente dos clipes de motion; medir sem capturas concorrentes. Não regenerar catálogo ou dados, não modificar gás/tonemapping para baratear efeito de UI, não fazer push/publicação como efeito colateral.
+
+### 12.6 Cobertura dos 48 grupos e estado dos lotes
+
+Esta tabela cobre todos os IDs da seção 3 exatamente uma vez. **Parcial** significa que algum efeito transversal ou local já chegou, mas o contrato inteiro não foi aprovado. **Pendente** inclui refinamento e verificação de algo que já existe; não significa ausência total de animação na superfície.
+
+| IDs | Estado em `16e852d` | Próxima responsabilidade |
+| --- | --- | --- |
+| U01–U03 | Movimento/estados anteriores preservados; refinamento motion pendente | C5 abertura/falhas + C7 |
+| U04 | Pressão transversal parcial; apresentação do CTA pendente | C2 + C5 |
+| U05–U07 | Ritmo anterior preservado; verificação/refinamento pendente | C5 filme |
+| U08–U10 | Pressão parcial em controles; presença de Mais/progresso pendente | C2 + C5 filme |
+| U11–U13 | Comportamento anterior; realce de contexto e verificação pendentes | C5 voo/contexto |
+| U14 | Composição anterior aprovada, pressão parcial; acento/validação pendentes | C2 + C5 encerramento |
+| U15 | Travessia anterior a preservar; cancelamento integrado pendente | C1 + C5 travessia |
+| U16 | Confirmação da seleção pendente | C3b |
+| U17–U18 | Filetes/ícones implementados; hitbox/interrupção/variantes parciais | C1 + C2 |
+| U19 | Pressão parcial; confirmação semântica e preservação de medições pendentes | C2 + C5 contexto |
+| U20–U21 | Entrada/saída/luz implementadas; presença/foco/reserva parciais | C1 + C2 |
+| U22 | Switch anterior; reduced/resposta de linha parciais | C2 + C3 |
+| U23–U25 | Composição e fades anteriores; refinamento local pendente | C2 + C3e |
+| U26–U28 | Entrada/saída Tempo e filetes antecipados; estabilidade/estados parciais | C2 + C3f |
+| U29–U30 | Caminhos de rótulos existentes; acento e preservação integrada pendentes | C5 céu |
+| U31–U33 | Superfície geral animada; estados internos pendentes | C1 + C2 + C3a |
+| U34 | Superfície geral animada; seleção semântica pendente | C3b |
+| U35 | Compacta/expandida e altura anteriores; gesto de expansão pendente | C1 + C4 |
+| U36–U40 | Pressão parcial; seções/dados/feedback pendentes | C2 + C3b/C3c |
+| U41 | Segmentados implementados; política/relayout parciais | C2 + C3d |
+| U42 | Acordeão existente; continuidade visual pendente | C3c |
+| U43–U44 | Ações funcionais existentes; feedback/cancelamento pendentes | C1 + C2 + C3d |
+| U45 | Filete móvel implementado; observação/variantes parciais | C2 |
+| U46 | Switch existente; reduced incompleto | C2 |
+| U47 | Portal/captura melhorados; presença/fade e variantes parciais | C5 dicas |
+| U48 | Convite anterior preservado; transição de passos/recorte pendente | C5 convites |
+
+| Lote original | Status corrigido | Concluir por |
+| --- | --- | --- |
+| M0 | Parcial: inventário existe; referência temporal/pareada insuficiente | C0 |
+| M1 | Parcial: correções úteis, contratos ainda falham | C1 |
+| M2 | Parcial: linguagem visual chegou; famílias/políticas incompletas | C2, chevrons em C3c |
+| M3 | Pendente, com antecipações no Tempo | C3 |
+| M4 | Pendente; acompanhamento básico do dedo já existia | C4 |
+| M5 | Pendente; preservar narrativa já existente faz parte do lote | C5 |
+| M6 | Pendente; nenhum novo efeito óptico WebGL da UI entregue no diff auditado | C6 |
+| M7 | Pendente; testes existentes não encerram a matriz do plano | C7 |
+
+### 12.7 Instrução pronta para encaminhar ao Claude
+
+> Continue `docs/PLANO-MOTION-UI.md`, começando pela seção 12. Reconcile mudanças posteriores a `16e852d` antes de editar. Preserve a entrada lateral completa de 260 ms, a entrada perceptível do Tempo, a pele e a composição aprovadas. M0–M2 estão parciais: registre uma referência C0, corrija C1 (saída por gesto, foco, troca, cancelamento e reservas) e C2 (pressão interna, reduced e filetes) antes de espalhar efeitos. Em seguida execute C3–C5 por sublotes, com luz e continuidade perceptíveis, mantendo comandos imediatos. Faça a comparação óptica C6 no renderer existente e feche C7 com evidências. Use os arquivos, receitas e critérios de aceite especificados; não remonte controles focados para reiniciar animação, não invente valores científicos e não mude layout/navegação para facilitar o motion. Registre commits e clipes reais neste mesmo documento. Não declare um lote concluído com base apenas em testes de texto de CSS ou screenshots; não publique o site.
+
+### 12.8 Validação desta entrega documental
+
+A auditoria e o complemento estão concluídos; C0–C7 são o trabalho futuro do executor. As únicas mudanças autorais desta entrega são neste documento. As sondagens locais descritas em 12.3 terminaram e suas sessões de Chrome foram fechadas. Nenhum código de UI foi corrigido pela auditoria.
+
+Fontes técnicas reconferidas em 10/09/2026: [cancelamento WAAPI e rejeição de finished](https://developer.mozilla.org/en-US/docs/Web/API/Animation/cancel), [preferência de movimento reduzido](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-reduced-motion) e [composição versus layout/pintura em animações](https://web.dev/articles/animations-guide). Elas fundamentam o mecanismo proposto; a evidência dos defeitos é a leitura e execução deste app descrita acima.
+
+Verificação em 10/09/2026: `npm run done` passou — typecheck, lint, 98 arquivos de teste, 2.967 testes aprovados e 1 ignorado. Houve stderr de cenários de textura, incluindo `ERR_INVALID_URL` do perfil do anel no Node, sem reprovação. Esse comando foi executado no working tree compartilhado, já com alterações concorrentes; não constitui aprovação delas nem perfil do motion. `git diff --check` passou. A tabela de cobertura foi conferida: U01–U48 presentes uma vez cada, sem omissões. Nenhum teste novo foi adicionado por esta entrega.
