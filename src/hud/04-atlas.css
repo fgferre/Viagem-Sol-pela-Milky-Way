@@ -767,6 +767,36 @@
   gap: 0.16rem;
   padding: 0.6rem 0.75rem 0.55rem;
   text-shadow: none;
+  /* A ENTRADA/SAÍDA (`usePresenca.ts`, PLAN-MOTION-UI.md §5) nasce da
+     PONTA que encosta no chip fechado — `bottom: 100%` a ancora ali —,
+     então a escala cresce a partir do canto inferior direito, o MESMO
+     canto que `right: 0` já usa. No telefone o chip mora no topo
+     (`09-celular.css` inverte para `top: 100%`), e a origem inverte
+     junto com o sentido do deslocamento. */
+  transform-origin: bottom right;
+}
+/* SOBE 6px + ESCALA DE 0,96 + FADE, a partir da ponta que toca o chip —
+   `backwards` pinta o quadro inicial ANTES do primeiro paint, para a
+   gaveta nunca picar no tamanho final por um instante. */
+.atlas-selo-detalhe.abrindo {
+  animation: entraSeloDetalhe var(--t-entrada) var(--curva) backwards;
+}
+@keyframes entraSeloDetalhe {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+}
+/* A SAÍDA É A ENTRADA AO CONTRÁRIO, com `forwards`: o `usePresenca.ts`
+   segura o nó (`inert`) pelo tempo desta animação antes de desmontar. */
+.atlas-selo-detalhe.saindo {
+  animation: saiSeloDetalhe var(--t-entrada) var(--curva) forwards;
+}
+@keyframes saiSeloDetalhe {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
 }
 .atlas-selo-tese {
   /* legibilidade (contrato da dica flutuante, primeira leva do

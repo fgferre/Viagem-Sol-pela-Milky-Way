@@ -138,7 +138,7 @@ const SAIDA_DA_FOLHA_MS = 260;
  * `folhaDesce` no telefone, `0s` onde o CSS declara `animation: none`.
  * Uma leitura por fechamento, nunca por quadro.
  */
-const duracaoDaSaida = (no: Element | null): number => {
+export const duracaoDaSaida = (no: Element | null): number => {
   if (!no) return 0;
   return Math.max(
     0,
@@ -172,7 +172,7 @@ const duracaoDaSaida = (no: Element | null): number => {
  * por quadro — e, por ser lido na hora, obedece à preferência do sistema
  * mesmo que ela mude com o app aberto.
  */
-const semMovimento = () =>
+export const semMovimento = () =>
   (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false) ||
   new URLSearchParams(window.location.search).has('shot');
 

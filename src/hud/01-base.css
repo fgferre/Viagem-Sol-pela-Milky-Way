@@ -629,3 +629,60 @@
     transform: scale(1);
   }
 }
+
+/* ---- A SANFONA: CONTEÚDO DOBRÁVEL COM PRESENÇA (PLAN-MOTION-UI.md §5,
+   "Acordeões") — as seções da ficha e o "Avançado" dos Ajustes,
+   `Sanfona.tsx`/`usePresenca.ts`. Grid de `0fr` a `1fr`, como o plano
+   pede, e não `max-height`: anima de verdade sem precisar saber de
+   antemão a altura final. O MIOLO com `min-height: 0` é o que deixa a
+   fileira da grade colapsar — sem ele o conteúdo intrínseco trava a
+   fileira no próprio tamanho. */
+.sanfona {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+.sanfona-miolo {
+  min-height: 0;
+}
+.sanfona.abrindo {
+  animation: abreSanfona var(--t-entrada) var(--curva) backwards;
+}
+@keyframes abreSanfona {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+/* A SAÍDA VENCE A ENTRADA quando as duas classes convivem — `abrindo` é
+   um TRINCO (`usePresenca.ts`) que não desliga ao fechar, então reabrir
+   no meio do caminho deixa as duas no `className` ao mesmo tempo. Esta
+   regra vem DEPOIS, mesma especificidade da de cima: é ela que corre
+   enquanto a seção sai, e é ela que solta o lugar assim que a entrada
+   reaparecer sozinha. */
+.sanfona.saindo {
+  animation: fechaSanfona var(--t-entrada) var(--curva) forwards;
+}
+@keyframes fechaSanfona {
+  to {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}
+/* O CORTE SÓ EXISTE ENQUANTO O MOVIMENTO CORRE. `overflow` não é número,
+   é discreto — declarado IGUAL em `from` e `to` ele vale `hidden` do
+   início ao fim da animação e nenhum instante além disso: sem
+   `forwards`, o repouso volta sozinho ao `visible` implícito do miolo,
+   que é o que deixa o contorno de foco de qualquer coisa lá dentro
+   aparecer inteiro fora do movimento. */
+.sanfona.abrindo > .sanfona-miolo,
+.sanfona.saindo > .sanfona-miolo {
+  animation: sanfonaCorta var(--t-entrada) var(--curva);
+}
+@keyframes sanfonaCorta {
+  from {
+    overflow: hidden;
+  }
+  to {
+    overflow: hidden;
+  }
+}

@@ -21,6 +21,7 @@ import type { Camada } from '../three/atlasConfig';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
+import { usePresenca } from '../hooks/usePresenca';
 import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
@@ -253,6 +254,15 @@ export function Selo({
 }) {
   const [aberto, setAberto] = useState(false);
   const caixa = useRef<HTMLDivElement>(null);
+  // A ENTRADA/SAÍDA DA GAVETA (PLAN-MOTION-UI.md §5) — `usePresenca`
+  // direto, sem `Sanfona`: o movimento daqui é deslocamento + escala, não
+  // a grade `0fr→1fr` que a Sanfona desenha para as OUTRAS duas.
+  const {
+    montada: detalheMontado,
+    abrindo: detalheAbrindo,
+    saindo: detalheSaindo,
+    ref: detalheRef,
+  } = usePresenca<HTMLDivElement>(aberto);
   useIdioma();
   const { escala, brilho, desvios, culpados, exposicao } = estadoDoSelo(vista);
   const lista = desvios.map((d) => d.rotulo).join(' · ');
@@ -341,8 +351,19 @@ export function Selo({
       role="group"
       aria-label={t('atlas.seloAria')}
     >
-      {aberto && (
-        <div id="atlas-selo-detalhe" className="atlas-selo-detalhe hud-cartao">
+      {detalheMontado && (
+        <div
+          id="atlas-selo-detalhe"
+          ref={detalheRef}
+          className={
+            'atlas-selo-detalhe hud-cartao' +
+            (detalheAbrindo ? ' abrindo' : '') +
+            (detalheSaindo ? ' saindo' : '')
+          }
+          // A SAÍDA JÁ NÃO RECEBE TOQUE, FOCO NEM LEITOR DE TELA — o
+          // mesmo contrato do `[inert]` das gavetas (`useGavetas.ts`).
+          inert={detalheSaindo}
+        >
           <p className="atlas-selo-tese">{t('selo.tese')}</p>
 
           <button

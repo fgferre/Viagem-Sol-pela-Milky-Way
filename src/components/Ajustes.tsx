@@ -57,6 +57,7 @@ import { useDicaPresa } from '../hooks/useDicaPresa';
 import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
+import { Sanfona } from './Sanfona';
 import { Segmentado } from './Segmentado';
 import { DEGRAUS_DA_UI, rotuloDaEscala } from '../lib/uiScale';
 import {
@@ -465,8 +466,7 @@ export function Ajustes({
         </button>
       </h3>
 
-      {avancadoAberto && (
-      <div id="ajustes-avancado">
+      <Sanfona id="ajustes-avancado" aberta={avancadoAberto}>
 
       <LinhaDeAjuste
         id="tom"
@@ -599,8 +599,7 @@ export function Ajustes({
         />
       </LinhaDeAjuste>
 
-      </div>
-      )}
+      </Sanfona>
 
       <LinhaDeAjuste
         id="rotulos3d"

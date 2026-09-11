@@ -45,6 +45,7 @@ import { useDicaPresa } from '../hooks/useDicaPresa';
 import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
+import { Sanfona } from './Sanfona';
 import type { CorpoNoJson, CorposDoAtlas, FonteDaFicha, IdDeSecao } from '../lib/atlas/ficha';
 import { montarFicha, montarFichaDeEstrela } from '../lib/atlas/ficha';
 import type { NamedStar } from '../three/config';
@@ -584,8 +585,8 @@ export function FichaDoObjeto({
                     </span>
                   </button>
                 </h3>
-                {estaAberta && (
-                  <dl className="atlas-ficha-linhas" id={`ficha-${secao.id}`}>
+                <Sanfona id={`ficha-${secao.id}`} aberta={estaAberta}>
+                  <dl className="atlas-ficha-linhas">
                     {secao.linhas.map((l, i) => {
                   // TEXTO LONGO (frase, lista de catálogo) empilha a linha
                   // inteira em vez de espremer em 60% da largura — ver o
@@ -658,7 +659,7 @@ export function FichaDoObjeto({
                       </label>
                     )}
                   </dl>
-                )}
+                </Sanfona>
               </section>
             );
           })}

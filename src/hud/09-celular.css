@@ -104,6 +104,30 @@
     left: auto;
     margin-bottom: 0;
     margin-top: 0.3rem;
+    /* A ORIGEM DA ESCALA INVERTE junto com o sentido: aqui o chip mora
+       no topo, então a ponta que a gaveta toca é a de CIMA. */
+    transform-origin: top right;
+  }
+  /* E O DESLOCAMENTO DA ENTRADA/SAÍDA (04-atlas.css) INVERTE COM ELA —
+     na mesa a gaveta SOBE 6px a partir do chip; aqui ela desce da mesma
+     distância, porque o chip que a ancora mora do outro lado. */
+  .hud-root:has(.atlas-alcas) .atlas-selo-detalhe.abrindo {
+    animation-name: entraSeloDetalheCelular;
+  }
+  @keyframes entraSeloDetalheCelular {
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.96);
+    }
+  }
+  .hud-root:has(.atlas-alcas) .atlas-selo-detalhe.saindo {
+    animation-name: saiSeloDetalheCelular;
+  }
+  @keyframes saiSeloDetalheCelular {
+    to {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.96);
+    }
   }
 
   /* ---- A FILEIRA DE ALÇAS (Lote 4, item 7 — regra de encaixe do portão
