@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 226.**
 
-## O BASTÃO — onde a rodada parou (10/09)
+## O BASTÃO — onde a rodada parou (11/09)
 
 **07/09 (rodada da VARREDURA, encerrada por ordem dele: "encerrar
 rodada").** Abriu com a pergunta dele: "o que faltou? pode continuar.
@@ -403,6 +403,40 @@ Tudo em `main:backup`. Site intocado. **Continuam abertos 223, 224 e 225.**
 se a entrada da máquina do tempo já dá para perceber. Não verificado: o
 afundar do botão no Safari de iPhone e o movimento reduzido ligado no
 sistema de um aparelho real. Servidor parado.
+
+**10–11/09 (rodada da REAUDITORIA DO MOVIMENTO — o plano continua em
+`docs/PLANO-MOTION-UI.md`, agora pela seção 12, com o registro em 12.9).**
+Palavras dele para abrir: *"vamos continuar?"*. No meio da rodada apareceu
+no plano uma reauditoria escrita por outra IA (commit `7d60a53`) dizendo
+que M0–M2 tinham ficado parciais; perguntado, ele escolheu *"Seguir a
+reauditoria"*. Feito e commitado, na ordem dela: a SONDA do movimento
+(Chrome de verdade, as mesmas ações sempre, vídeo em velocidade real) —
+os seis defeitos que a reauditoria mediu reproduziam no começo e nenhum
+reproduz no fim; UM dono só para o movimento dos painéis e da folha (a
+folha solta pelo dedo não some mais no meio, trocar de painel não desliza
+de novo, girar o aparelho durante a saída não deixa saída velha rodando) e
+o foco que volta ao botão que abriu na hora (o próprio React desfazia a
+devolução — achado e consertado); apertar afunda o DESENHO e não a caixa
+(o ✕ fica com 44 px), nada desliza com "reduzir movimento", a bússola
+também afunda. E a M3 inteira: a busca com cartões que entram um a um; as
+seções da ficha e o "Avançado" abrem e fecham em movimento, com a seta
+girando; escolher um astro acende o nome e o contexto juntos; o "copiar
+link" acende só quando copia de verdade; "Rever o convite" sem o painel
+deslizando por baixo; o selo acende quando muda por gesto dele; o tempo
+acena ao trocar sentido, velocidade e "ao vivo", e a linha da data desliza
+em vez de pular. Um nome comprido na ficha tinha perdido as reticências —
+visto no app e consertado. Juízes a11y (um item adaptado ao motor novo),
+busca, atlas e filme verdes, um de cada vez; `npm run done` verde. Vídeos
+da sequência buscar → Júpiter → seção → copiar → tempo em
+`capturas/motion-c3-*`. Tudo em `main:backup`. Site intocado. **Faltam C4
+a C7 da seção 12** (a folha guiada pela alça; filme, abertura, dicas,
+convites e céu; a comparação com WebGL2; o fechamento com a matriz de
+aparelhos). **Continuam abertos 223, 224 e 225.** Espera o olho dele no
+app: se o brilho do nome, o anel do "copiar link" e o aceno do tempo dão
+para perceber na velocidade normal, e se o recuo de 6 % só no desenho dos
+botões está bom. Não verificado: telefone de verdade. Prova nova proposta
+para a lista dele: a sonda (`scripts/visual/sonda-motion.mjs`, com e sem
+`--sequencia`). Servidor: `npm run dev`.
 
 
 
