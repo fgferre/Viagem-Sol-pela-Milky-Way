@@ -46,9 +46,11 @@ import { useCelular } from './hooks/useCelular';
 import { useRealce } from './hooks/useRealce';
 import { escalaDaUi } from './lib/uiScale';
 // C6 (protótipo B, docs/PLANO-MOTION-UI.md §7/§12.5) — só a função pura
-// de leitura do deslocamento inicial; o resto do módulo mora inteiro em
+// de leitura do deslocamento inicial, a duração e o relógio que assenta
+// com as gavetas; o resto do módulo mora inteiro em
 // three/core/contornoDaUi.ts.
-import { deslocamentoInicialDoTransform } from './three/core/contornoDaUi';
+import { DURACAO_DO_HALO_MS, deslocamentoInicialDoTransform } from './three/core/contornoDaUi';
+import { relogio } from './hooks/movimentoDaGaveta';
 // O HUD em 9 fatias contíguas — a ORDEM destes imports é a cascata do
 // antigo hud.css e não pode se reordenar (empates de especificidade,
 // @media e .shot-mode dependem dela).
@@ -396,7 +398,13 @@ export default function App() {
     const root = rootRef.current;
     const anterior = montadaAnteriorRef.current;
     montadaAnteriorRef.current = montada;
-    if (!contornoWebgl || !root || celular || semMovimento()) return;
+    if (!contornoWebgl) return;
+    // A TROCA APAGA O HALO da gaveta anterior: o nó dela sai da página,
+    // mas a animação de entrada que o halo acompanha continua correndo
+    // fora dela — sem esta linha ele brilharia em volta da ferramenta
+    // que já foi, e a remedição de `medir` o poria em volta da nova.
+    if (anterior !== null && anterior !== montada) directorRef.current?.apagarContorno();
+    if (!root || celular || semMovimento()) return;
     // só a mesa, e só uma gaveta nascendo do nada (nunca troca/reabertura)
     if (anterior !== null || montada === null) return;
     const no = root.querySelector<HTMLElement>(`[data-dialogo="${montada}"]`);
@@ -405,11 +413,13 @@ export default function App() {
     const effect = animacao?.effect;
     const keyframes = effect instanceof KeyframeEffect ? effect.getKeyframes() : [];
     const transformBruto = keyframes[0]?.transform;
-    if (!retangulo || !animacao || typeof transformBruto !== 'string') return;
-    directorRef.current?.acenderContorno({
+    const director = directorRef.current;
+    if (!retangulo || !animacao || typeof transformBruto !== 'string' || !director) return;
+    director.acenderContorno({
       retangulo,
       animacao,
       deslocamentoInicialPx: deslocamentoInicialDoTransform(transformBruto),
+      relogio: relogio(DURACAO_DO_HALO_MS),
     });
   }, [montada, contornoWebgl, celular]);
   // C6 — FECHAR APAGA O HALO: a saída mantém `montada` até desmontar, mas a
@@ -535,6 +545,14 @@ export default function App() {
           .filter((b): b is DOMRect => b !== null && b.width > 0 && b.height > 0)
           .map((b) => ({ left: b.left, right: b.right, top: b.top, bottom: b.bottom }))
       );
+      // C6 — o halo aceso segue a caixa de repouso do painel quando ELA
+      // muda (texto, idioma, o dado que chega à ficha), por esta mesma
+      // medição rara; a troca de gaveta já o apagou, e o resize da janela
+      // o encerra pelo relógio (`relogio`, movimentoDaGaveta.ts).
+      const painelDoContorno =
+        contornoWebgl && montada ? root.querySelector<HTMLElement>(`[data-dialogo="${montada}"]`) : null;
+      const retContorno = painelDoContorno ? caixaDeRepouso(painelDoContorno, root) : null;
+      if (retContorno) directorRef.current?.atualizarContorno(retContorno);
       // A RESERVA DA FICHA NA CÂMERA (Lote 3, PLAN-UI.md §6, item 225):
       // a ÚNICA gaveta que entra no retângulo útil do Atlas, porque ela
       // é o painel DO ALVO — nasce com a seleção. Na MESA cobre a
@@ -617,7 +635,7 @@ export default function App() {
       chegadaDaFicha.disconnect();
       window.removeEventListener('resize', medir);
     };
-  }, [phase, montada, celular]);
+  }, [phase, montada, celular, contornoWebgl]);
 
   // estado da camada de carregamento; `done` é o que dispara o merge.
   // O erro ganha do ?loader= fixo: uma captura de QA com asset quebrado

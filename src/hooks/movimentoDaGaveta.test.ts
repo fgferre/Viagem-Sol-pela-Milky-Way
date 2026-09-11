@@ -272,4 +272,32 @@ describe('7. o que já corre assenta quando a preferência muda ou a janela muda
     expect(janela.removeEventListener).toHaveBeenCalledWith('resize', expect.any(Function));
     expect(preferencia.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
   });
+
+  it('o relógio sem alvo do halo (C6) entra na mesma lista: o resize e a preferência o terminam', async () => {
+    const { janela, preferencia } = janelaFalsa();
+    const m = await moduloNovo();
+    const primeiro = animacaoFalsa();
+    const segundo = animacaoFalsa();
+    const fila = [primeiro, segundo];
+    vi.stubGlobal('document', { timeline: {} });
+    vi.stubGlobal('KeyframeEffect', vi.fn());
+    vi.stubGlobal(
+      'Animation',
+      vi.fn(function () {
+        return { ...fila.shift()!.anim, play: vi.fn() };
+      })
+    );
+
+    const r1 = m.relogio(400);
+    expect(r1.play).toHaveBeenCalledTimes(1);
+    const aoRedimensionar = janela.addEventListener.mock.calls.find(([tipo]) => tipo === 'resize')?.[1] as () => void;
+    aoRedimensionar();
+    expect(primeiro.anim.finish).toHaveBeenCalledTimes(1);
+
+    await proximoQuadro();
+    m.relogio(400);
+    const [, aoMudar] = preferencia.addEventListener.mock.calls[1] as [string, (e: unknown) => void];
+    aoMudar({ matches: true });
+    expect(segundo.anim.finish).toHaveBeenCalledTimes(1);
+  });
 });

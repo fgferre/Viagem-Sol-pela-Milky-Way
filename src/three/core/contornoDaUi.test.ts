@@ -1,4 +1,4 @@
-// Serve: chão — a posição do halo, o N lido do transform e o envelope de tempo são número puro, e o runner (node) prova os três sem WebGL
+// Serve: chão — a posição do halo, o N lido do transform e o envelope de tempo são número puro, e o runner (node) prova os três sem WebGL, mais a regra de parar pelo relógio
 // ============================================================
 // O HALO DE CONTORNO (C6, protótipo B) — SÓ A MATEMÁTICA PURA. A cena,
 // a câmera e o material do `ContornoDaUi` pedem `THREE.WebGLRenderer`
@@ -9,14 +9,16 @@
 // idioma da casa para o que não roda sem GPU"). O que fica isolado em
 // funções soltas — a posição X pelo progresso da animação, o N do
 // primeiro quadro-chave, o envelope de tempo — é exatamente o que este
-// arquivo prova.
+// arquivo prova. A seção 4 é a exceção que cabe sem GPU: PARAR é o
+// caminho de `desenhar` que sai antes de tocar o renderer.
 // ============================================================
-import { describe, expect, it } from 'vitest';
+import type * as THREE from 'three';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  ContornoDaUi,
   DURACAO_DO_HALO_MS,
   SUBIDA_DO_HALO_MS,
   deslocamentoInicialDoTransform,
-  efeitoTerminou,
   envelopeDoTempo,
   posicaoXDoHalo,
 } from './contornoDaUi';
@@ -81,13 +83,35 @@ describe('3. envelopeDoTempo — sobe em 60 ms, some aos 400 ms (seção 7: "dur
   });
 });
 
-describe('4. efeitoTerminou — quando `desenhar` para de desenhar sozinho', () => {
-  it('ainda não, um instante antes do teto', () => {
-    expect(efeitoTerminou(DURACAO_DO_HALO_MS - 1)).toBe(false);
+describe('4. o relógio manda — "reduzir movimento" e o resize apagam o halo', () => {
+  const relogioFalso = (playState: AnimationPlayState) =>
+    ({ playState, currentTime: 100, cancel: vi.fn() }) as unknown as Animation;
+  const parametros = (relogio: Animation) => ({
+    retangulo: { x: 0, y: 0, width: 10, height: 10 },
+    animacao: { playState: 'finished' } as unknown as Animation,
+    deslocamentoInicialPx: 0,
+    relogio,
   });
 
-  it('no teto, e depois dele, já terminou', () => {
-    expect(efeitoTerminou(DURACAO_DO_HALO_MS)).toBe(true);
-    expect(efeitoTerminou(DURACAO_DO_HALO_MS + 1)).toBe(true);
+  it('relógio terminado (`finished`) — também depois que a entrada assentou: nada desenha', () => {
+    const contorno = new ContornoDaUi();
+    contorno.acender(parametros(relogioFalso('finished')));
+    const renderer = { render: vi.fn() } as unknown as THREE.WebGLRenderer;
+    contorno.desenhar(renderer);
+    contorno.desenhar(renderer);
+    expect(renderer.render).not.toHaveBeenCalled();
+    contorno.dispose();
+  });
+
+  it('apagar e uma abertura nova CANCELAM o relógio anterior — nenhum ouvinte fica de pé', () => {
+    const contorno = new ContornoDaUi();
+    const a = relogioFalso('running');
+    const b = relogioFalso('running');
+    contorno.acender(parametros(a));
+    contorno.acender(parametros(b));
+    expect(a.cancel).toHaveBeenCalledTimes(1);
+    contorno.apagar();
+    expect(b.cancel).toHaveBeenCalledTimes(1);
+    contorno.dispose();
   });
 });

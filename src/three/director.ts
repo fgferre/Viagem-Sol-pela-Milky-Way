@@ -33,7 +33,7 @@ import { CAMADA_DO_CAMPO, Post } from './core/post';
 // C6 (protótipo B, docs/PLANO-MOTION-UI.md §7/§12.5) — o halo de
 // contorno WebGL, isolado neste módulo único; ver `acenderContorno`.
 import { ContornoDaUi } from './core/contornoDaUi';
-import type { ParametrosDoContorno } from './core/contornoDaUi';
+import type { ParametrosDoContorno, RetanguloDoContorno } from './core/contornoDaUi';
 // (A PUPILA morreu INTEIRA no M2 da LEI-DA-ESTRELA — arquivo, teste e a
 // espinha de `uExposicao`. O que substitui a adaptação é a compressão
 // fixa em dois pontos, que é padrão desde 15/08; a medição que ela fez
@@ -2444,13 +2444,21 @@ export class Director {
    * o acabamento estático definido ou desligá-la deterministicamente").
    */
   acenderContorno(parametros: ParametrosDoContorno): void {
-    if (this.shotMode) return;
+    if (this.shotMode) {
+      parametros.relogio.cancel();
+      return;
+    }
     this.contorno.acender(parametros);
   }
 
-  /** C6 — a intenção mudou (o painel fechou): o halo some na hora. */
+  /** C6 — a intenção mudou (o painel fechou ou foi trocado): o halo some na hora. */
   apagarContorno(): void {
     this.contorno.apagar();
+  }
+
+  /** C6 — a caixa de repouso do painel mudou com o halo aceso. */
+  atualizarContorno(retangulo: RetanguloDoContorno): void {
+    this.contorno.atualizarRetangulo(retangulo);
   }
 
   /**

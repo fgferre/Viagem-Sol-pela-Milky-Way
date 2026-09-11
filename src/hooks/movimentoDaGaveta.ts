@@ -192,6 +192,22 @@ function vigiar(anim: Animation): void {
   anim.finished.then(largar, largar);
 }
 
+/**
+ * UM RELÓGIO QUE ASSENTA COM O RESTO (C6, o halo WebGL de
+ * `three/core/contornoDaUi.ts`) — uma animação SEM ALVO, só tempo, para
+ * um efeito que não é WAAPI obedecer à mesma regra das gavetas: ligar
+ * "reduzir movimento" ou redimensionar a janela o TERMINA junto com elas
+ * (`assentarTudo`). O halo dura mais que a entrada do painel (400 contra
+ * 260 ms), e é este relógio na lista `vivas` que mantém os dois ouvintes
+ * de pé até o fim DELE. Sem alvo, nenhum `getAnimations()` de nó o vê.
+ */
+export function relogio(duracao: number): Animation {
+  const anim = new Animation(new KeyframeEffect(null, null, duracao), document.timeline);
+  anim.play();
+  vigiar(anim);
+  return anim;
+}
+
 /** um estado por nó, e não por gaveta: o `useGavetas` já garante que só
  *  existe UM `[data-dialogo]` de cada vez, mas o `WeakMap` não precisa
  *  saber disso — e não vaza nó nenhum quando o React o remove. */

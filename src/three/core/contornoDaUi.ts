@@ -9,9 +9,9 @@
 //
 // ISOLADO DE PROPÓSITO (aceite do C6: "se a diferença não for
 // perceptível, remover o protótipo descartado e manter CSS"): só este
-// arquivo, o método `Director.acenderContorno` e algumas linhas
-// marcadas "C6" em App.tsx sabem que ele existe. Descartar B é apagar
-// os três.
+// arquivo, os métodos `Director.*Contorno`, `relogio` em
+// movimentoDaGaveta.ts e algumas linhas marcadas "C6" em App.tsx sabem
+// que ele existe. Descartar B é apagar os quatro.
 //
 // NADA RODA EM REPOUSO (regra 4 da seção 7): `desenhar` sai na
 // primeira linha sem um `acender` pendente, sem tocar o renderer. UMA
@@ -88,28 +88,30 @@ export const envelopeDoTempo = (decorridoMs: number): number => {
   return 1 - (decorridoMs - SUBIDA_DO_HALO_MS) / (DURACAO_DO_HALO_MS - SUBIDA_DO_HALO_MS);
 };
 
-/** o efeito já terminou? — `desenhar` some no quadro em que isto vira
- *  `true`, sem esperar o próximo `acender`. */
-export const efeitoTerminou = (decorridoMs: number): boolean => decorridoMs >= DURACAO_DO_HALO_MS;
+/** a caixa de repouso do painel, em px de CSS */
+export interface RetanguloDoContorno {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 /**
  * O QUE UMA ABERTURA ENTREGA (App.tsx, glue do C6): a caixa de repouso
  * do painel (`caixaDeRepouso` — SEM o transform da animação), a
- * animação de entrada em curso (`no.getAnimations()[0]`) e N, já
- * resolvido por `deslocamentoInicialDoTransform`.
+ * animação de entrada em curso (`no.getAnimations()[0]`), N, já
+ * resolvido por `deslocamentoInicialDoTransform`, e o RELÓGIO do efeito
+ * (`relogio(DURACAO_DO_HALO_MS)`, movimentoDaGaveta.ts) — o tempo
+ * próprio do halo (item 7 da seção 7: nada de medir pelo relógio da
+ * cena, que congela sob `?shot=`), que "reduzir movimento" e o resize
+ * da janela terminam junto com as gavetas, também depois que a entrada
+ * já assentou.
  */
 export interface ParametrosDoContorno {
-  retangulo: { x: number; y: number; width: number; height: number };
+  retangulo: RetanguloDoContorno;
   animacao: Animation;
   deslocamentoInicialPx: number;
-}
-
-interface EstadoAtivo extends ParametrosDoContorno {
-  /** `performance.now()` de QUANDO esta intenção chegou — relógio
-   *  próprio (item 7 da seção 7: nada de medir pelo relógio da cena,
-   *  que congela sob `?shot=` — e este efeito nem roda lá, ver
-   *  `Director.acenderContorno`). */
-  inicioMs: number;
+  relogio: Animation;
 }
 
 const VERTEX_SHADER = /* glsl */ `
@@ -185,7 +187,7 @@ const FRAGMENT_SHADER = /* glsl */ `
  * o mesmo `WebGLRenderer`/loop, e é UM passe, não uma cena por painel).
  */
 export class ContornoDaUi {
-  private estado: EstadoAtivo | null = null;
+  private estado: ParametrosDoContorno | null = null;
   private readonly cena = new THREE.Scene();
   private readonly camera = new THREE.OrthographicCamera(0, 1, 0, 1, 0.1, 10);
   private readonly geometria = new THREE.PlaneGeometry(1, 1);
@@ -223,11 +225,25 @@ export class ContornoDaUi {
   /** LIGA/RETARGETA — uma nova abertura sempre substitui a anterior
    *  (regra 3 da seção 7: "não enfileirar rastros luminosos"). */
   acender(parametros: ParametrosDoContorno): void {
-    this.estado = { ...parametros, inicioMs: performance.now() };
+    this.apagar();
+    this.estado = parametros;
   }
 
+  /** o relógio é CANCELADO, e não só esquecido: é ele que mantém os
+   *  ouvintes de "reduzir movimento" e resize de pé (`relogio`). */
   apagar(): void {
+    this.estado?.relogio.cancel();
     this.estado = null;
+  }
+
+  /**
+   * A CAIXA DE REPOUSO MUDOU com o halo aceso (texto, idioma, o dado que
+   * chega à ficha) — App.tsx a remede pela mesma medição rara dos
+   * rótulos (ResizeObserver), nunca por quadro. O resize da janela nem
+   * chega aqui: ele já encerrou o efeito pelo relógio.
+   */
+  atualizarRetangulo(retangulo: RetanguloDoContorno): void {
+    if (this.estado) this.estado.retangulo = retangulo;
   }
 
   /**
@@ -241,12 +257,18 @@ export class ContornoDaUi {
   desenhar(renderer: THREE.WebGLRenderer): void {
     const estado = this.estado;
     if (!estado) return;
-    const decorridoMs = performance.now() - estado.inicioMs;
-    // A INTENÇÃO MUDOU (§7, regra 3): a entrada que o halo acompanha foi
-    // cancelada — o painel está saindo ou foi trocado —, então o halo some
+    // O EFEITO ACABOU: o relógio chegou aos 400 ms, ou foi terminado por
+    // "reduzir movimento"/resize (`assentarTudo`) — `finished`, não mais
+    // `running`. OU A INTENÇÃO MUDOU (§7, regra 3): a entrada que o halo
+    // acompanha foi cancelada — o painel está saindo —, então o halo some
     // junto, em vez de brilhar no lugar de repouso de um painel que já foi.
-    if (efeitoTerminou(decorridoMs) || estado.animacao.playState === 'idle') {
-      this.estado = null;
+    const decorridoMs = estado.relogio.currentTime;
+    if (
+      estado.relogio.playState !== 'running' ||
+      typeof decorridoMs !== 'number' ||
+      estado.animacao.playState === 'idle'
+    ) {
+      this.apagar();
       return;
     }
     const progress = estado.animacao.effect?.getComputedTiming().progress ?? 1;
@@ -288,7 +310,7 @@ export class ContornoDaUi {
   /** descarte explícito (regra 4 da seção 7) — chamado por
    *  `Director.dispose()`, junto dos outros passes. */
   dispose(): void {
-    this.estado = null;
+    this.apagar();
     this.geometria.dispose();
     this.material.dispose();
   }
