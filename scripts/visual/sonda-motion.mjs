@@ -94,6 +94,15 @@ const QUERY = mesclarQuery('atlas=1&q=performance&lang=pt-BR');
 // `--c5` usa o FILME (sem `?atlas=1`) nas cenas V1–V6 — a mesma língua e
 // o mesmo preset "performance" do resto da sonda, só sem o Atlas.
 const QUERY_FILME = mesclarQuery('lang=pt-BR&q=performance');
+// `q`/`lang`/`ui` DE VERDADE da query desta corrida, para o meta e o
+// cabeçalho de todo modo — um 'performance'/'pt-BR' escrito à mão mentia
+// assim que alguém rodasse com `--query=` (a matriz do C7 roda em inglês,
+// com `ui=1.4` e com `q=cinema`).
+const paramsDaQuery = new URLSearchParams(QUERY);
+const META_DA_QUERY = {
+  q: paramsDaQuery.get('q'), lang: paramsDaQuery.get('lang'), ui: paramsDaQuery.get('ui'),
+};
+const ROTULO_DA_QUERY = `${META_DA_QUERY.lang} | q=${META_DA_QUERY.q}${META_DA_QUERY.ui ? ` | ui=${META_DA_QUERY.ui}` : ''}`;
 // `--sequencia` troca as seis provas E1–E6 (paralelas, sem história entre
 // si) por UM fluxo contínuo só (C3, docs/PLANO-MOTION-UI.md linha 511:
 // "mostrar uma sequência contínua Buscar Saturno → abrir seção → copiar
@@ -149,7 +158,34 @@ const C5_QUAIS = argC5 && argC5.includes('=')
 // clipes recortados na borda, prova por luminância e custo pareado de
 // GPU/quadro. Roda uma vez e relata os números, como `--c5`; não é
 // PASSA/FALHA. Opt-in: sem a flag, nada aqui muda.
-const CONTORNO = process.argv.includes('--contorno');
+// `--contorno=cancelamento` (vírgula não se aplica aqui — um valor só)
+// troca o A/B de sempre pelo sub-modo PASSA/FALHA do C6 (K0–K6): prova
+// que o halo CANCELA o desenho nos jeitos que o conserto promete
+// (reduzir movimento, resize, o painel mudar de tamanho sozinho, a
+// troca de ferramenta) — ver `rodarCancelamento`.
+const argContorno = process.argv.find((a) => a === '--contorno' || a.startsWith('--contorno='));
+const CONTORNO = Boolean(argContorno);
+const CONTORNO_MODO = argContorno && argContorno.includes('=')
+  ? argContorno.slice('--contorno='.length)
+  : null; // null = o A/B de sempre (clipes + stills + custo)
+// `--visivel` — `abrirSonda` sobe o Chrome SEM `--headless=new` (mesmo
+// padrão de `abrirSessao`, chrome.mjs): uma janela de verdade na tela
+// do dono, para conferir a olho o que a sonda está fazendo. Ausente, o
+// padrão de sempre (headless) não muda em nada.
+const VISIVEL = process.argv.includes('--visivel');
+// `--sem-timer` (com `--contorno`) — mede o tempo de quadro SEM as timer
+// queries por desenho: medido em 11/09 (Chrome visível, DPR 2), a soma
+// delas por quadro dava 700–900ms, impossível — a própria consulta mexe
+// no regime da placa. Com a flag o instrumento só marca rAF e os
+// desenhos do halo, e o custo sai só do tempo de quadro pareado A×B.
+const SEM_TIMER = process.argv.includes('--sem-timer');
+// `--aberturas=N` (com `--contorno`) — quantas aberturas por bloco do
+// custo (A1/B1/B2/A2); ausente, 5. O tempo de quadro sob vsync anda em
+// degraus de ~16,7ms e cinco aberturas por bloco não bastaram para
+// separar ruído de custo (11/09, DPR 2: B1 e B2 discordaram) — a regra
+// do §9 é aumentar a observação em vez de declarar.
+const argAberturas = process.argv.find((a) => a.startsWith('--aberturas='));
+const ABERTURAS_POR_BLOCO = argAberturas ? Number(argAberturas.slice('--aberturas='.length)) : 5;
 
 const SEL_CAMADAS_GATILHO = '[data-abre-dialogo="camadas"]';
 const SEL_AJUSTES_GATILHO = '[data-abre-dialogo="ajustes"]';
@@ -166,6 +202,14 @@ const SEL_AJUSTES_PAINEL = '[data-dialogo="ajustes"]';
 // EXPRESSÃO JS (usada dentro de outro `(() => {...})()`), não um seletor
 // CSS como os `SEL_*` vizinhos.
 const jsSegQualidade = () => `Array.from(document.querySelectorAll('${SEL_AJUSTES_PAINEL} .ajustes-seg'))[2]`;
+// OS BOTÕES DA MÁQUINA DO TEMPO, pela mesma razão: o `aria-label` deles
+// é traduzido ("Avançar no tempo" não existe sob `--query=lang=en`, achado
+// rodando `--sequencia` em inglês, 11/09). Os três segmentados de
+// `.atlas-tempo-botoes` têm ordem fixa em HudDoAtlas.tsx — transporte
+// (voltar, pausar, avançar), velocidade, referência (ao vivo, …) — e os
+// botões são os filhos DIRETOS de cada um. Expressão JS, como a de cima.
+const jsBotaoDoTempo = (grupo, indice) =>
+  `Array.from(document.querySelectorAll('.atlas-tempo-botoes .ajustes-seg'))[${grupo}]?.querySelectorAll(':scope > button')[${indice}]`;
 const SEL_BUSCA_GATILHO = '[data-abre-dialogo="busca"]';
 const SEL_BUSCA_PAINEL = '[data-dialogo="busca"]';
 const SEL_FICHA_PAINEL = '[data-dialogo="ficha"]';
@@ -201,7 +245,25 @@ document.addEventListener('animationstart', (e) => {
   const alvo = (typeof e.target.className === 'string') ? e.target.className : {};
   window.__eventosMotion.push({ time: e.timeStamp, name: e.animationName, target: alvo });
 }, true);
+window.__toquesEntregues = 0;
+window.addEventListener('touchstart', () => { window.__toquesEntregues++; }, { capture: true, passive: true });
 `;
+
+/** quantos `touchstart` a PÁGINA recebeu desde que nasceu — o toque
+ *  emulado pelo CDP às vezes para de ser entregue no meio de uma sessão
+ *  longa (medido a 760×900, depois do arrasto no deslizante da F6: zero
+ *  eventos de toque na página na F7 inteira), e um cenário sem toque
+ *  nenhum não diz nada sobre o app — é INCONCLUSIVO, nunca FALHA. */
+const lerToques = (sessao) => sessao.js('window.__toquesEntregues ?? 0');
+
+/** o veredito de um grupo de casos (I2/I3, K0–K6): FALHA se algum caso
+ *  falhou; senão INCONCLUSIVO se algum ficou sem prova; só PASSA se todos
+ *  passaram — um caso sem prova nunca vira aprovação por arrasto. */
+const combinarVereditos = (vereditos) => {
+  if (vereditos.some((v) => v === 'FALHA')) return 'FALHA';
+  if (vereditos.some((v) => v === 'INCONCLUSIVO')) return 'INCONCLUSIVO';
+  return 'PASSA';
+};
 
 /**
  * UMA SESSÃO DE CHROME PRÓPRIA, e não `abrirSessao` de `chrome.mjs`: esta
@@ -218,10 +280,14 @@ document.addEventListener('animationstart', (e) => {
 async function abrirSonda({ janela, prefixo }) {
   const [w, h] = janela.split('x').map(Number);
   const perfil = resolve(tmpdir(), `${prefixo}-${process.pid}`);
+  // `--visivel` tira `--headless=new` de GPU_FLAGS — mesmo padrão de
+  // `abrirSessao` (chrome.mjs, comentário lá tem o histórico). Ausente,
+  // `GPU_FLAGS` intocado, headless de sempre.
+  const flagsGpu = VISIVEL ? GPU_FLAGS.filter((f) => f !== '--headless=new') : GPU_FLAGS;
   const { encerrar } = lancarChrome({
     perfil,
     args: [
-      ...GPU_FLAGS,
+      ...flagsGpu,
       '--hide-scrollbars', '--no-first-run', '--mute-audio',
       `--force-device-scale-factor=${DPR}`, `--window-size=${w},${h}`,
       '--remote-debugging-port=0', 'about:blank',
@@ -364,10 +430,47 @@ async function clicarEmPonto(sessao, x, y) {
   return { x, y };
 }
 
+/** ROLA ATÉ O ALVO, como a pessoa rolaria, antes de clicar nele: com o
+ *  texto grande (`ui=1.4`) o "Copiar link" dos Ajustes nasce abaixo da
+ *  tela, dentro da rolagem do painel (medido 11/09, 1440×900: botão em
+ *  919–980 px), e o clique no centro dele caía fora da página. Só o eixo
+ *  VERTICAL e só o primeiro ancestral que ROLA de verdade (`overflow-y`
+ *  auto/scroll) — `scrollIntoView` também rolaria um contêiner com
+ *  `overflow: hidden` e deslocaria o HUD inteiro. Alvo já visível: nada. */
+const jsTrazerParaAVista = (expressao) => `(() => {
+  const el = ${expressao};
+  if (!el) return false;
+  let rolador = el.parentElement;
+  while (rolador && !/(auto|scroll)/.test(getComputedStyle(rolador).overflowY)) rolador = rolador.parentElement;
+  if (!rolador) return false;
+  const r = el.getBoundingClientRect();
+  const v = rolador.getBoundingClientRect();
+  const fundo = Math.min(v.bottom, innerHeight);
+  const topo = Math.max(v.top, 0);
+  if (r.bottom > fundo) rolador.scrollTop += r.bottom - fundo + 8;
+  else if (r.top < topo) rolador.scrollTop -= topo - r.top + 8;
+  return true;
+})()`;
+
+/** o clique real de `clicarReal` num alvo dado por EXPRESSÃO JS (as
+ *  `js*` acima), e não por seletor — o ponto sai do próprio DOM. */
+async function clicarNaExpressao(sessao, expressao, nome) {
+  await sessao.js(jsTrazerParaAVista(expressao));
+  const p = await sessao.js(`(() => {
+    const el = ${expressao};
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  })()`);
+  if (!p) throw new Error(`clicarNaExpressao: ${nome} não encontrado`);
+  return clicarEmPonto(sessao, p.x, p.y);
+}
+
 /** clique real de mouse (mousePressed+mouseReleased) no centro do alvo —
  *  o par que `Input.dispatchMouseEvent` gera é o que faz o Chrome
  *  decidir `:focus-visible` como um clique de verdade decidiria. */
 async function clicarReal(sessao, seletor) {
+  await sessao.js(jsTrazerParaAVista(`document.querySelector(${JSON.stringify(seletor)})`));
   const r = await retanguloDe(sessao, seletor);
   if (!r) throw new Error(`clicarReal: "${seletor}" não encontrado`);
   return clicarEmPonto(sessao, r.x + r.width / 2, r.y + r.height / 2);
@@ -456,21 +559,30 @@ async function tocarSoltar(sessao) {
  *  ponto não caiu dentro de um botão — o eyebrow é só texto (o "?" e os
  *  botões são IRMÃOS dele, nunca filhos), mas a checagem é em tempo de
  *  execução, não por confiança na leitura do código; se cair, usa a
- *  borda esquerda do próprio cabeçalho, onde não há botão nenhum. */
+ *  borda esquerda do próprio cabeçalho, onde não há botão nenhum. O
+ *  eyebrow e o cabeçalho são os DA FICHA: todo painel da casa tem um
+ *  `.hud-cabecalho-eyebrow`, e o primeiro do documento pode ser de outro.
+ *  Um ponto que não cai na alça da ficha é relatado na saída — o dedo
+ *  estaria em outro lugar, e o veredito do cenário não diria nada. */
 async function pontoDaAlca(sessao) {
-  const r = await retanguloDe(sessao, SEL_FICHA_EYEBROW);
-  if (!r) throw new Error(`pontoDaAlca: "${SEL_FICHA_EYEBROW}" não encontrado`);
+  const r = await retanguloDe(sessao, `${SEL_FICHA_PAINEL} ${SEL_FICHA_EYEBROW}`);
+  if (!r) throw new Error(`pontoDaAlca: "${SEL_FICHA_EYEBROW}" da ficha não encontrado`);
   let x = Math.round(r.x + r.width / 2);
   let y = Math.round(r.y + r.height / 2);
   const dentroDeBotao = await sessao.js(
     `Boolean(document.elementFromPoint(${x}, ${y})?.closest('button'))`
   );
   if (dentroDeBotao) {
-    const cab = await retanguloDe(sessao, '.hud-cabecalho');
-    if (!cab) throw new Error('pontoDaAlca: ".hud-cabecalho" não encontrado');
+    const cab = await retanguloDe(sessao, `${SEL_FICHA_PAINEL} .hud-cabecalho`);
+    if (!cab) throw new Error('pontoDaAlca: ".hud-cabecalho" da ficha não encontrado');
     x = Math.round(cab.x + 16);
     y = Math.round(cab.y + cab.height / 2);
   }
+  const alvo = await sessao.js(`(() => {
+    const e = document.elementFromPoint(${x}, ${y});
+    return { naAlca: Boolean(e?.closest('${SEL_FICHA_PAINEL} .hud-cabecalho')), alvo: e ? e.tagName + '.' + (typeof e.className === 'string' ? e.className : '') : null };
+  })()`);
+  if (!alvo.naAlca) process.stdout.write(`  ·     pontoDaAlca: (${x}, ${y}) caiu fora da alça da ficha — em ${alvo.alvo}\n`);
   return { x, y };
 }
 
@@ -513,6 +625,11 @@ function jsAmostraPainel(seletor) {
         playState: a.playState,
         pending: a.pending,
         currentTime: a.currentTime === null ? null : Math.round(Number(a.currentTime)),
+        // a duração (ms) — junto com currentTime, é o que sobra da
+        // animação em curso; observarAposEvento/--interrupcoes (I2/I3)
+        // usa os dois para saber se ela já ia terminar sozinha antes do
+        // evento que a interrompeu chegar.
+        duration: a.effect?.getComputedTiming().duration,
       })),
       linhaDoTempo,
       active: ativo,
@@ -529,7 +646,12 @@ function jsAmostraFolha() {
   return `(() => {
     const el = document.querySelector(${JSON.stringify(SEL_FICHA_PAINEL)});
     const linhaDoTempo = document.timeline.currentTime;
-    if (!el) return { existe: false, estado: null, top: null, transform: null, waapi: [], linhaDoTempo };
+    if (!el) {
+      return {
+        existe: false, estado: null, top: null, transform: null, transformInline: null,
+        dataArrasto: false, waapi: [], linhaDoTempo,
+      };
+    }
     const r = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
     return {
@@ -537,10 +659,19 @@ function jsAmostraFolha() {
       estado: el.getAttribute('data-ficha-estado'),
       top: r.top,
       transform: cs.transform,
+      // transformInline e dataArrasto são o que o PRÓPRIO gesto escreve
+      // (useGavetas.ts: folha.style.transform e o atributo data-arrasto,
+      // os dois só enquanto o dedo segura) — F1 (a zona morta do toque)
+      // e F9 (resize com o dedo no ar) precisam de saber se o arrasto
+      // ainda está "com o dedo", não só o transform computado.
+      transformInline: el.style.transform,
+      dataArrasto: el.hasAttribute('data-arrasto'),
       waapi: el.getAnimations().map((a) => ({
         playState: a.playState,
         pending: a.pending,
         currentTime: a.currentTime === null ? null : Math.round(Number(a.currentTime)),
+        tipo: a.constructor.name,
+        propriedade: a.transitionProperty ?? null,
       })),
       linhaDoTempo,
     };
@@ -601,14 +732,27 @@ function jsAmostraSanfona() {
 const sanfonaAnimando = (a) =>
   a.existe && (a.className.includes('saindo') || a.sanfonaClientHeight < a.mioloScrollHeight - 1);
 
-/** o `transform` computado da linha do tempo (I2c, `--interrupcoes`) —
- *  só o campo que aquele passo precisa, para não confundir com a leitura
- *  cheia de `jsAmostraTempo` (que é sobre `.atlas-tempo-botoes`, não
- *  `.atlas-tempo-linha`). */
+/** o `transform` computado da linha do tempo MAIS a WAAPI dela (I2c,
+ *  `--interrupcoes`) — não confundir com a leitura cheia de
+ *  `jsAmostraTempo` (que é sobre `.atlas-tempo-botoes`, não
+ *  `.atlas-tempo-linha`). A WAAPI entrou junto do `transform`: desde que
+ *  I2c passou a julgar por `observarAposEvento`, "assentou" precisa do
+ *  mesmo par que o painel usa (`playState`/`duration`/`currentTime`),
+ *  senão não dá para saber se o FLIP (`ir`, `HudDoAtlas.tsx`) ainda tem
+ *  algo em curso ou se já parou de verdade. */
 function jsTransformDaLinhaDoTempo() {
   return `(() => {
     const el = document.querySelector(${JSON.stringify(SEL_TEMPO_LINHA)});
-    return { transform: el ? getComputedStyle(el).transform : null };
+    if (!el) return { transform: null, waapi: [] };
+    return {
+      transform: getComputedStyle(el).transform,
+      waapi: el.getAnimations().map((a) => ({
+        playState: a.playState,
+        pending: a.pending,
+        currentTime: a.currentTime === null ? null : Math.round(Number(a.currentTime)),
+        duration: a.effect?.getComputedTiming().duration,
+      })),
+    };
   })()`;
 }
 
@@ -635,6 +779,92 @@ async function amostrarSequencia(sessao, t0, alvosMs, construirJs) {
     amostras.push({ alvoMs, dtMs, ...dado });
   }
   return amostras;
+}
+
+/**
+ * OBSERVA O PRÓXIMO EVENTO da página (`evento`: `'resize'` — o `resize`
+ * da `window` — ou `'reduzido'` — o `change` de
+ * `matchMedia('(prefers-reduced-motion: reduce)')`, só quando ele chega
+ * com `matches === true`) e o que os `quadros` `requestAnimationFrame`
+ * seguintes veem — usado por I2/I3 (`--interrupcoes`) e F9 (`--folha`)
+ * para julgar UM comando de CDP (`Emulation.setEmulatedMedia`/
+ * `setDeviceMetricsOverride`) pelo relógio da PRÓPRIA página
+ * (`performance.now()`), nunca pelo `Date.now()` do Node — os dois não
+ * batem exato, e essa folga era o que produzia os vereditos de
+ * +10/+60ms fixos que este helper substitui.
+ *
+ * `construirAmostra` é a MESMA fábrica zero-args que `amostrarSequencia`
+ * já recebe (`jsAmostraFolha`, ou `() => jsAmostraPainel(seletor)`): uma
+ * função que devolve a expressão JS (a string já é o IIFE invocado).
+ * Chamada uma vez aqui do lado do Node para o `antesDoComando`, e
+ * embrulhada em `() => (<expr>)` para virar uma função de VERDADE
+ * dentro da página — só assim o laço de quadros reavalia a amostra a
+ * cada `requestAnimationFrame`, em vez de reler um valor congelado na
+ * hora da instalação.
+ *
+ * `agir` é o comando de CDP que dispara o evento, chamado só DEPOIS do
+ * listener instalado — instalar tarde perde o evento. O retorno não
+ * julga nada: quem chama decide PASSA/FALHA/INCONCLUSIVO a partir de
+ * `antesDoComando`, `chegou` e `amostras`.
+ */
+async function observarAposEvento(sessao, { evento, construirAmostra, quadros = 4, tetoMs = 2000 }, agir) {
+  const exprAmostra = construirAmostra();
+  const antesDoComando = await sessao.js(`(() => {
+    const amostra = (${exprAmostra});
+    return { ...amostra, tAntes: performance.now() };
+  })()`);
+
+  await sessao.js(`(() => {
+    window.__obsEvento = { chegou: false, tEvento: null, noEvento: null, amostras: [], pronto: false };
+    const construirAmostra = () => (${exprAmostra});
+    const aoAcontecer = () => {
+      const tEvento = performance.now();
+      window.__obsEvento.chegou = true;
+      window.__obsEvento.tEvento = tEvento;
+      window.__obsEvento.noEvento = construirAmostra();
+      let quadro = 0;
+      const passo = () => {
+        quadro++;
+        window.__obsEvento.amostras.push({
+          quadro, msAposEvento: performance.now() - tEvento, ...construirAmostra(),
+        });
+        if (quadro < ${quadros}) {
+          requestAnimationFrame(passo);
+        } else {
+          window.__obsEvento.pronto = true;
+        }
+      };
+      requestAnimationFrame(passo);
+    };
+    if (${JSON.stringify(evento)} === 'resize') {
+      window.addEventListener('resize', aoAcontecer, { once: true });
+    } else {
+      const mq = matchMedia('(prefers-reduced-motion: reduce)');
+      const aoMudar = (e) => {
+        if (!e.matches) return;
+        mq.removeEventListener('change', aoMudar);
+        aoAcontecer();
+      };
+      mq.addEventListener('change', aoMudar);
+    }
+  })()`);
+
+  await agir();
+
+  const t0Poll = Date.now();
+  let estado = await sessao.js('window.__obsEvento');
+  while (!estado.pronto && Date.now() - t0Poll < tetoMs) {
+    await dorme(25);
+    estado = await sessao.js('window.__obsEvento');
+  }
+
+  return {
+    antesDoComando,
+    chegou: estado.chegou,
+    msAntesAteEvento: estado.chegou ? estado.tEvento - antesDoComando.tAntes : null,
+    noEvento: estado.noEvento,
+    amostras: estado.amostras,
+  };
 }
 
 async function pularTour(sessao) {
@@ -979,7 +1209,7 @@ async function rodarSequencia() {
       );
       guardar('linhaDaData', { antes: dataAntes, depois: dataDepois });
 
-      await clicarReal(sessao, '[aria-label="Avançar no tempo"]');
+      await clicarNaExpressao(sessao, jsBotaoDoTempo(0, 2), 'o botão "avançar no tempo"');
       await esperarPor(
         { js: sessao.js },
         `document.querySelector('.atlas-tempo-nudge-futuro') !== null`,
@@ -990,9 +1220,9 @@ async function rodarSequencia() {
       await clicarReal(sessao, '.atlas-tempo-taxa');
       await pausa(300);
 
-      const aoVivoExiste = await sessao.js(`document.querySelector('[aria-label="Seguir o tempo real"]') !== null`);
+      const aoVivoExiste = await sessao.js(`Boolean(${jsBotaoDoTempo(2, 0)})`);
       if (aoVivoExiste) {
-        await clicarReal(sessao, '[aria-label="Seguir o tempo real"]');
+        await clicarNaExpressao(sessao, jsBotaoDoTempo(2, 0), 'o botão "ao vivo"');
         await pausa(300);
       }
     };
@@ -1066,6 +1296,22 @@ async function rodarSequencia() {
 }
 
 /**
+ * um QUADRO de verdade — o duplo rAF garante que o quadro atual já foi
+ * pintado antes de resolver (o primeiro rAF ainda é DESTE quadro, o
+ * segundo já é do PRÓXIMO). É o ritmo do dedo em `--folha` (um
+ * `touchMove` por quadro entre as amostras, nunca um atraso torcido
+ * para o veredito passar) e, em `--interrupcoes`, a espera depois de
+ * cada restauração de viewport, antes do próximo clique.
+ */
+async function esperarQuadro(sessao) {
+  return sessao.send('Runtime.evaluate', {
+    expression: 'new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(1))))',
+    awaitPromise: true,
+    returnByValue: true,
+  });
+}
+
+/**
  * `--interrupcoes` — CINCO cenários de INTERROMPER um movimento no meio
  * (I1–I5, o complemento de C1/C2/C3: aquelas provas rodam o gesto
  * inteiro sem cutucar no meio, estas cutucam de propósito). Cada
@@ -1119,6 +1365,22 @@ async function rodarInterrupcoes() {
     const esperarAte = async (t0, alvoMs) => {
       const resta = alvoMs - (Date.now() - t0);
       if (resta > 0) await dorme(resta);
+    };
+    // depois de CADA restauração de viewport (I3a/I3b/I3c/I4, sempre de
+    // volta para `JANELA_W`×`JANELA_H`): sem isto o resize de uma
+    // restauração podia chegar DEPOIS do clique do PRÓXIMO caso e
+    // assentar a entrada dele antes de a sonda agir (I3b saiu
+    // INCONCLUSIVO numa rodada por isto) — espera a PRÓPRIA página
+    // confirmar o tamanho, não um `dorme` de prazo fixo, e mais dois
+    // quadros de sobra.
+    const esperarRestaurar = async () => {
+      await esperarPor(
+        { js: sessao.js },
+        `window.innerWidth === ${JANELA_W} && window.innerHeight === ${JANELA_H}`,
+        2000
+      );
+      await esperarQuadro(sessao);
+      await esperarQuadro(sessao);
     };
     // "a entrada assentou" — `transform: none` (CSS) OU a WAAPI vazia ou
     // toda `finished` (o dono do movimento desde o C1, `movimentoDaGaveta.ts`)
@@ -1199,69 +1461,116 @@ async function rodarInterrupcoes() {
     // I2 — "reduzir movimento" ligado NO MEIO da transição: painel
     // saindo, painel entrando, linha do tempo entrando. Ligar
     // `prefers-reduced-motion: reduce` no meio tem de travar o
-    // movimento EM CURSO, não só bloquear o próximo.
+    // movimento EM CURSO, não só bloquear o próximo. Julgado pelo que a
+    // PRÓPRIA página viu (`observarAposEvento`), nunca por +10/+60ms
+    // fixos — o evento `change` da media query só chega no quadro
+    // seguinte ao comando, e nem sempre no mesmo tempo de parede.
     // ---------------------------------------------------------------
     const ligarReduzido = () => sessao.send('Emulation.setEmulatedMedia', {
       features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
     });
     const desligarReduzido = () => sessao.send('Emulation.setEmulatedMedia', { features: [] });
 
+    // A MESMA régua para os seis casos de I2/I3 (saída, entrada, linha
+    // do tempo) — só o "assentou?" (`assentouAgora`) muda por `tipo`.
+    // INCONCLUSIVO quando o evento não chegou, quando não havia nada
+    // rodando ANTES do comando para interromper, ou quando o
+    // `restanteNaturalMs` (quanto faltava, pelo relógio da PÁGINA, para
+    // a animação em curso acabar sozinha, contado do instante do
+    // evento) já era <= 0 ou só foi coberto DEPOIS dele — nesses casos a
+    // amostra não prova que o comando interrompeu coisa nenhuma. PASSA
+    // exige o assentamento dentro de 3 quadros do evento E antes desse
+    // `restanteNaturalMs`; senão, FALHA.
+    const julgarInterrupcao = async (tipo, opcoes, agir, gatilho) => {
+      const obs = await observarAposEvento(sessao, opcoes, agir);
+      const base = {
+        evento: { chegou: obs.chegou, msAntesAteEvento: obs.msAntesAteEvento },
+        antesDoComando: obs.antesDoComando,
+        amostras: obs.amostras,
+      };
+      const inconclusivo = (restanteNaturalMs = null, amostra = null) => ({
+        ...base,
+        assentouNoQuadro: amostra?.quadro ?? null,
+        msAteAssentar: amostra?.msAposEvento ?? null,
+        restanteNaturalMs,
+        veredito: 'INCONCLUSIVO',
+      });
+      if (!obs.chegou) return inconclusivo();
+      const emCurso = (obs.antesDoComando.waapi ?? []).find((w) => w.playState === 'running');
+      if (!emCurso) return inconclusivo();
+      const restanteNaturalMs = (emCurso.duration ?? 0) - (emCurso.currentTime ?? 0) - obs.msAntesAteEvento;
+      if (restanteNaturalMs <= 0) return inconclusivo(restanteNaturalMs);
+
+      const assentouAgora = (a) => {
+        if (tipo === 'saida') return a.existe === false && (!gatilho || a.active?.gatilho === gatilho);
+        if (tipo === 'entrada') return emRepouso(a);
+        return a.transform === 'none' && (a.waapi ?? []).every((w) => w.playState !== 'running');
+      };
+      const primeiro = obs.amostras.find(assentouAgora);
+      if (!primeiro) {
+        return { ...base, assentouNoQuadro: null, msAteAssentar: null, restanteNaturalMs, veredito: 'FALHA' };
+      }
+      if (primeiro.msAposEvento >= restanteNaturalMs) return inconclusivo(restanteNaturalMs, primeiro);
+
+      return {
+        ...base,
+        assentouNoQuadro: primeiro.quadro,
+        msAteAssentar: primeiro.msAposEvento,
+        restanteNaturalMs,
+        veredito: primeiro.quadro <= 3 ? 'PASSA' : 'FALHA',
+      };
+    };
     // (a) painel SAINDO
     await clicarReal(sessao, SEL_CAMADAS_GATILHO);
     await dorme(400);
     const t0I2a = Date.now();
     await clicarReal(sessao, `${SEL_CAMADAS_PAINEL} .hud-fechar`);
     await esperarAte(t0I2a, 40);
-    const t1I2a = Date.now();
-    await ligarReduzido();
-    const i2aAmostras = await amostrarSequencia(sessao, t1I2a, [10, 60], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
+    const i2a = await julgarInterrupcao(
+      'saida',
+      { evento: 'reduzido', construirAmostra: () => jsAmostraPainel(SEL_CAMADAS_PAINEL) },
+      ligarReduzido,
+      'camadas'
+    );
     await desligarReduzido();
     await dorme(300);
-    const i2aAos60 = i2aAmostras[1];
-    // "no pior caso" ainda presente, mas inerte — nunca interativo
-    const i2aSumiu = i2aAos60.existe === false || i2aAos60.inert === true;
-    const i2aFocoVoltou = i2aAos60.active?.gatilho === 'camadas';
-    const i2aPassa = i2aSumiu && i2aFocoVoltou;
 
     // (b) painel ENTRANDO
     const t0I2b = Date.now();
     await clicarReal(sessao, SEL_CAMADAS_GATILHO);
     await esperarAte(t0I2b, 40);
-    const t1I2b = Date.now();
-    await ligarReduzido();
-    // +10 fica no registro, mas quem julga é +60 — a mesma régua do (a):
-    // a página só fica sabendo da preferência nova no PRÓXIMO quadro (o
-    // evento `change` da media query nasce no passo de renderização), e
-    // aos 10 ms esse quadro ainda não tinha chegado (medido: a WAAPI da
-    // entrada ainda em 17 ms, sem um quadro entre o comando e a amostra)
-    const [i2bAos10, i2bAmostra] = await amostrarSequencia(sessao, t1I2b, [10, 60], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
+    const i2b = await julgarInterrupcao(
+      'entrada',
+      { evento: 'reduzido', construirAmostra: () => jsAmostraPainel(SEL_CAMADAS_PAINEL) },
+      ligarReduzido
+    );
     await desligarReduzido();
     await pressionarEscape(sessao);
     await dorme(400);
-    const i2bPassa = emRepouso(i2bAmostra);
 
     // (c) linha do tempo ENTRANDO (hover)
     const rectCabecalhoI2 = await retanguloDe(sessao, SEL_TEMPO_CABECALHO);
     const t0I2c = Date.now();
     await moverMouse(sessao, rectCabecalhoI2.x + rectCabecalhoI2.width / 2, rectCabecalhoI2.y + rectCabecalhoI2.height / 2);
     await esperarAte(t0I2c, 40);
-    const t1I2c = Date.now();
-    await ligarReduzido();
-    // mesma régua do (b): julga no quadro seguinte (+60), guarda o +10
-    const [i2cAos10, i2cAmostra] = await amostrarSequencia(sessao, t1I2c, [10, 60], jsTransformDaLinhaDoTempo);
+    const i2c = await julgarInterrupcao(
+      'tempo',
+      { evento: 'reduzido', construirAmostra: jsTransformDaLinhaDoTempo },
+      ligarReduzido
+    );
     await desligarReduzido();
     await moverMouse(sessao, 10, 10);
     await dorme(1000);
-    const i2cPassa = i2cAmostra.transform === 'none';
 
-    const i2Passa = i2aPassa && i2bPassa && i2cPassa;
+    const i2Veredito = combinarVereditos([i2a.veredito, i2b.veredito, i2c.veredito]);
 
     // ---------------------------------------------------------------
     // I3 — redimensionar a janela NO MEIO de uma transição, sem cruzar
     // os 760px do ponto de quebra do celular — a mesma guarda de
     // "reduzir movimento" (I2) vale para resize: as duas são formas de
     // "o navegador decidiu que este movimento não vai terminar como
-    // começou".
+    // começou". Julgado pela MESMA régua de I2 (`julgarInterrupcao`),
+    // com o evento `resize` no lugar do `change` da media query.
     // ---------------------------------------------------------------
     // OUTRO TAMANHO DE MESA (a/b) — DERIVADO de `--janela`, nunca um
     // literal absoluto: um delta fixo (p.ex. -160px) cruzaria os 760px
@@ -1276,31 +1585,35 @@ async function rodarInterrupcoes() {
     const t0I3a = Date.now();
     await clicarReal(sessao, `${SEL_CAMADAS_PAINEL} .hud-fechar`);
     await esperarAte(t0I3a, 40);
-    await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: outraMesaA.w, height: outraMesaA.h, deviceScaleFactor: DPR, mobile: false,
-    });
-    const t1I3a = Date.now();
-    const [i3aAmostra] = await amostrarSequencia(sessao, t1I3a, [10], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
+    const i3a = await julgarInterrupcao(
+      'saida',
+      { evento: 'resize', construirAmostra: () => jsAmostraPainel(SEL_CAMADAS_PAINEL) },
+      () => sessao.send('Emulation.setDeviceMetricsOverride', {
+        width: outraMesaA.w, height: outraMesaA.h, deviceScaleFactor: DPR, mobile: false,
+      })
+    );
     await sessao.send('Emulation.setDeviceMetricsOverride', {
       width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
-    const i3aPassa = i3aAmostra.existe === false;
+    await esperarRestaurar();
 
     // (b) mesa, painel ENTRANDO
     const t0I3b = Date.now();
     await clicarReal(sessao, SEL_CAMADAS_GATILHO);
     await esperarAte(t0I3b, 40);
-    await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: outraMesaB.w, height: outraMesaB.h, deviceScaleFactor: DPR, mobile: false,
-    });
-    const t1I3b = Date.now();
-    const [i3bAmostra] = await amostrarSequencia(sessao, t1I3b, [10], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
+    const i3b = await julgarInterrupcao(
+      'entrada',
+      { evento: 'resize', construirAmostra: () => jsAmostraPainel(SEL_CAMADAS_PAINEL) },
+      () => sessao.send('Emulation.setDeviceMetricsOverride', {
+        width: outraMesaB.w, height: outraMesaB.h, deviceScaleFactor: DPR, mobile: false,
+      })
+    );
     await sessao.send('Emulation.setDeviceMetricsOverride', {
       width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
+    await esperarRestaurar();
     await pressionarEscape(sessao);
     await dorme(400);
-    const i3bPassa = emRepouso(i3bAmostra);
 
     // (c) celular, painel SAINDO — só a ALTURA muda (844→700): a
     // LARGURA (390) nunca cruza os 760px que definem o layout de
@@ -1319,18 +1632,20 @@ async function rodarInterrupcoes() {
       return Boolean(b);
     })()`);
     await esperarAte(t0I3c, 40);
-    await sessao.send('Emulation.setDeviceMetricsOverride', {
-      width: TELEFONE_W, height: Math.max(TELEFONE_H - 144, 300), deviceScaleFactor: DPR, mobile: true,
-    });
-    const t1I3c = Date.now();
-    const [i3cAmostra] = await amostrarSequencia(sessao, t1I3c, [10], () => jsAmostraPainel(SEL_CAMADAS_PAINEL));
+    const i3c = await julgarInterrupcao(
+      'saida',
+      { evento: 'resize', construirAmostra: () => jsAmostraPainel(SEL_CAMADAS_PAINEL) },
+      () => sessao.send('Emulation.setDeviceMetricsOverride', {
+        width: TELEFONE_W, height: Math.max(TELEFONE_H - 144, 300), deviceScaleFactor: DPR, mobile: true,
+      })
+    );
     await sessao.send('Emulation.setDeviceMetricsOverride', {
       width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
+    await esperarRestaurar();
     await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: false });
-    const i3cPassa = i3cAmostra.existe === false;
 
-    const i3Passa = i3aPassa && i3bPassa && i3cPassa;
+    const i3Veredito = combinarVereditos([i3a.veredito, i3b.veredito, i3c.veredito]);
 
     // ---------------------------------------------------------------
     // I4 — a linha do tempo depois de UM REDIMENSIONAMENTO (mesa): não
@@ -1387,7 +1702,7 @@ async function rodarInterrupcoes() {
     await sessao.send('Emulation.setDeviceMetricsOverride', {
       width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
-    await dorme(400);
+    await esperarRestaurar();
 
     // ---------------------------------------------------------------
     // I5 — interromper a PRÓPRIA linha do tempo com um Esc: clicar trava
@@ -1434,18 +1749,8 @@ async function rodarInterrupcoes() {
         clipe: clipeSanfona,
         folha: folhaSanfona,
       },
-      i2: {
-        a: { amostras: i2aAmostras, passa: i2aPassa },
-        b: { aos10: i2bAos10, amostra: i2bAmostra, passa: i2bPassa },
-        c: { aos10: i2cAos10, amostra: i2cAmostra, passa: i2cPassa },
-        passa: i2Passa,
-      },
-      i3: {
-        a: { amostra: i3aAmostra, passa: i3aPassa },
-        b: { amostra: i3bAmostra, passa: i3bPassa },
-        c: { amostra: i3cAmostra, passa: i3cPassa },
-        passa: i3Passa,
-      },
+      i2: { a: i2a, b: i2b, c: i2c, veredito: i2Veredito },
+      i3: { a: i3a, b: i3b, c: i3c, veredito: i3Veredito },
       i4: {
         y0: y0I4, amostras: i4Amostras, passa: i4Passa, clipe: clipeTempo,
       },
@@ -1456,23 +1761,32 @@ async function rodarInterrupcoes() {
     const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-interrupcoes-${commit}.json`));
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
 
+    // resume um caso de I2/I3 (`julgarInterrupcao`) numa linha: veredito
+    // + quadros/ms, para bater o pedido de relatório sem repetir a conta
+    // três (I2) e mais três (I3) vezes.
+    const fmtCaso = (caso) => {
+      const ev = caso.evento.chegou ? `chegou@${caso.evento.msAntesAteEvento.toFixed(1)}ms` : 'não chegou';
+      const assentou = caso.assentouNoQuadro !== null
+        ? `assentou quadro ${caso.assentouNoQuadro}@${caso.msAteAssentar.toFixed(1)}ms`
+        : 'nunca assentou';
+      const restante = caso.restanteNaturalMs !== null ? `${caso.restanteNaturalMs.toFixed(1)}ms` : '-';
+      return `${caso.veredito} (evento ${ev}, ${assentou}, restante~${restante})`;
+    };
+
     const linhas = [
       `=== sonda-motion interrupções — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
-      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${dpr} | pt-BR | q=performance`,
+      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${dpr} | ${ROTULO_DA_QUERY}`,
       `I1 sanfona (fechar/reabrir no meio): repouso aberta=${i1RepousoAberta.overflow}, `
         + `fechar 20/80/150ms=${i1Fechar1.map((a) => a.overflow).join('/')}, `
         + `reentrada 20/100/400ms=${[i1Aos20, ...i1Reentrada].map((a) => `${a?.overflow}${a && sanfonaAnimando(a) ? '(animando)' : '(repouso)'}@${a?.dtMs}ms`).join(' / ')}, `
         + `repouso reaberta=${i1RepousoReaberta.overflow} — `
         + `${i1Passa ? 'PASSA' : 'FALHA'}`,
-      `I2 reduzir movimento no meio: a) saindo existe@60ms=${i2aAos60.existe} inert=${i2aAos60.inert} foco=${i2aAos60.active?.gatilho ?? '-'} `
-        + `(${i2aPassa ? 'PASSA' : 'FALHA'}) `
-        + `b) entrando transform=${i2bAmostra.transform} waapi=${JSON.stringify(i2bAmostra.waapi)} (${i2bPassa ? 'PASSA' : 'FALHA'}) `
-        + `c) linha do tempo transform=${i2cAmostra.transform} (${i2cPassa ? 'PASSA' : 'FALHA'}) — `
-        + `${i2Passa ? 'PASSA' : 'FALHA'}`,
-      `I3 resize no meio sem cruzar 760px: a) mesa saindo existe@10ms=${i3aAmostra.existe} (${i3aPassa ? 'PASSA' : 'FALHA'}) `
-        + `b) mesa entrando transform=${i3bAmostra.transform} waapi=${JSON.stringify(i3bAmostra.waapi)} (${i3bPassa ? 'PASSA' : 'FALHA'}) `
-        + `c) celular saindo existe@10ms=${i3cAmostra.existe} (${i3cPassa ? 'PASSA' : 'FALHA'}) — `
-        + `${i3Passa ? 'PASSA' : 'FALHA'}`,
+      `I2 reduzir movimento no meio: a) saindo ${fmtCaso(i2a)} `
+        + `b) entrando ${fmtCaso(i2b)} `
+        + `c) linha do tempo ${fmtCaso(i2c)} — ${i2Veredito}`,
+      `I3 resize no meio sem cruzar 760px: a) mesa saindo ${fmtCaso(i3a)} `
+        + `b) mesa entrando ${fmtCaso(i3b)} `
+        + `c) celular saindo ${fmtCaso(i3c)} — ${i3Veredito}`,
       `I4 linha do tempo após resize: Y0=${y0I4} y(+15)=${y15} (Δ=${y0I4 !== null && y15 !== null ? Math.abs(y15 - y0I4).toFixed(1) : '?'}px) y(+450)=${y450} — `
         + `${i4Passa ? 'PASSA' : 'FALHA'}`,
       `I5 interromper a linha com Esc: y_pre=${yPreI5} y_post(+15ms)=${yPostI5} (Δ=${yPreI5 !== null && yPostI5 !== null ? Math.abs(yPostI5 - yPreI5).toFixed(1) : '?'}px) y(+500ms)=${y500I5} repouso fechada=${yRepousoFechadaI5} — `
@@ -1564,8 +1878,8 @@ async function rodarFolha() {
     // ---------------------------------------------------------------
     const top0 = (await sessao.js(jsAmostraFolha())).top;
 
-    let f1Move6 = null;
-    let f1Move12 = null;
+    let dedoY0F1 = null;
+    let f1Passos = [];
     let f1PosSolta = [];
     let f2Move6 = null;
     let f2Move12 = null;
@@ -1575,8 +1889,13 @@ async function rodarFolha() {
       sessao,
       { largura: TELEFONE_W, altura: TELEFONE_H, pastaQuadros: pastaClipe },
       async () => {
-        // F1 — expandir: 12 `touchMove` para cima totalizando 140 px
+        // F1 — expandir: 12 `touchMove` para cima totalizando 140 px, uma
+        // amostra (+ o Y do dedo) depois de CADA um — é o que separa a
+        // zona morta do toque (`aindaEhToque`, `arrastoDePonteiro.ts`: o
+        // arrasto só desconta do dedo depois de <16px E <500ms) do
+        // arrasto de verdade.
         const pontoF1 = await pontoDaAlca(sessao);
+        dedoY0F1 = pontoF1.y;
         await sessao.send('Input.dispatchTouchEvent', {
           type: 'touchStart', touchPoints: [{ x: pontoF1.x, y: pontoF1.y }],
         });
@@ -1585,8 +1904,8 @@ async function rodarFolha() {
           await sessao.send('Input.dispatchTouchEvent', {
             type: 'touchMove', touchPoints: [{ x: pontoF1.x, y }],
           });
-          if (n === 6) f1Move6 = { passo: n, ...(await sessao.js(jsAmostraFolha())) };
-          if (n === 12) f1Move12 = { passo: n, ...(await sessao.js(jsAmostraFolha())) };
+          await esperarQuadro(sessao); // o ritmo do dedo: um `touchMove` por quadro
+          f1Passos.push({ passo: n, dedoY: y, ...(await sessao.js(jsAmostraFolha())) });
         }
         const t0F1 = await tocarSoltar(sessao);
         f1PosSolta = await amostrarSequencia(sessao, t0F1, [16, 120, 300, 600], jsAmostraFolha);
@@ -1603,6 +1922,7 @@ async function rodarFolha() {
           await sessao.send('Input.dispatchTouchEvent', {
             type: 'touchMove', touchPoints: [{ x: pontoF2.x, y }],
           });
+          await esperarQuadro(sessao); // o ritmo do dedo: um `touchMove` por quadro
           if (n === 6) f2Move6 = { passo: n, ...(await sessao.js(jsAmostraFolha())) };
           if (n === 12) f2Move12 = { passo: n, ...(await sessao.js(jsAmostraFolha())) };
         }
@@ -1614,25 +1934,67 @@ async function rodarFolha() {
     const duracaoClipe = quadrosClipe[quadrosClipe.length - 1].ts - quadrosClipe[0].ts;
     const folhaContato = renderizarContato(clipe, duracaoClipe, resolve(CAPTURAS, `motion-folha-${commit}.png`));
 
-    // F1 PASSA: aos 12 movimentos a folha já segue o dedo (a zona morta
-    // de 16px é comida uma vez só), o repouso final é
-    // expandida/transform none/sem WAAPI correndo, e o topo subiu bem
-    // acima do repouso da compacta.
-    const esperadoTopoMove12 = top0 - (140 - 16);
-    const f1Segue =
-      f1Move12 && f1Move12.top !== null && Math.abs(f1Move12.top - esperadoTopoMove12) <= 8;
+    // F1 PASSA: a zona morta do toque (`aindaEhToque`) come alguma
+    // quantia FIXA de percurso do dedo antes de a folha começar a segui-
+    // lo — em algum lugar de [0, 16) px, nunca um valor único — e a
+    // partir daí o dedo e a folha andam juntos até soltar. `comido(n)` é
+    // essa conta: quanto o dedo andou menos quanto a folha subiu.
+    const comido = (p) => (dedoY0F1 - p.dedoY) - (top0 - p.top);
+    // `inicioEfetivo` — primeiro passo em que o topo já se moveu de
+    // verdade (>0.5px); antes disso o dedo ainda está DENTRO da zona
+    // morta e a folha nem deveria se mexer.
+    const idxInicioEfetivo = f1Passos.findIndex((p) => p.top !== null && Math.abs(p.top - top0) > 0.5);
+    const inicioEfetivo = idxInicioEfetivo === -1 ? null : {
+      passo: f1Passos[idxInicioEfetivo].passo,
+      dedoY: f1Passos[idxInicioEfetivo].dedoY,
+      comidoPx: comido(f1Passos[idxInicioEfetivo]),
+    };
+    // o repouso EXPANDIDO medido depois de soltar — adiantado para cá
+    // porque a exceção da janela de continuidade, logo abaixo, precisa
+    // dele.
     const f1Final = f1PosSolta[f1PosSolta.length - 1] ?? null;
+    // continuidade: A PARTIR do passo DEPOIS do início efetivo (um passo
+    // de atraso é aceito bem no começo, enquanto o layout da expandida
+    // ainda não pintou) `comido(n)` fica dentro de ±1.5px de uma
+    // constante entre −1.5 e 17.5, e a folha nunca anda CONTRA o dedo —
+    // EXCETO nos passos em que ela já chegou no topo de repouso da
+    // expandida (top ≤ topo final + 0.5px, a tela curta do item (c): a
+    // expansão para antes do dedo terminar). Ali não sobra mais nada
+    // para "comer" e a constante quebra por definição, não por falha; a
+    // proibição de andar CONTRA o dedo continua valendo para eles
+    // (`nuncaContraODedo`, alguns parágrafos abaixo, olha TODOS os
+    // passos, não só esta janela).
+    const comidosNaJanela = idxInicioEfetivo === -1
+      ? []
+      : f1Passos.slice(idxInicioEfetivo + 1)
+          .filter((p) => p.top !== null && !(f1Final?.top != null && p.top <= f1Final.top + 0.5))
+          .map(comido);
+    let f1ComidoConst = null;
+    let f1Continuo = false;
+    if (comidosNaJanela.length > 0) {
+      const min = Math.min(...comidosNaJanela);
+      const max = Math.max(...comidosNaJanela);
+      f1ComidoConst = (min + max) / 2;
+      const toposDesdeInicio = [top0, ...f1Passos.map((p) => p.top)];
+      const nuncaContraODedo = toposDesdeInicio.every(
+        (t, i) => i === 0 || t === null || toposDesdeInicio[i - 1] === null || t <= toposDesdeInicio[i - 1] + 0.1
+      );
+      f1Continuo = (max - min) / 2 <= 1.5
+        && f1ComidoConst >= -1.5 && f1ComidoConst <= 17.5
+        && nuncaContraODedo;
+    }
     const f1SemAnimando =
       f1Final && ((f1Final.waapi ?? []).length === 0 || f1Final.waapi.every((w) => w.playState === 'finished'));
     const f1EstadoFinalOk =
       f1Final && f1Final.estado === 'expandida' && f1Final.transform === 'none' && f1SemAnimando;
     const f1SubiuBem = f1Final && f1Final.top !== null && f1Final.top < top0 - 50;
-    const f1Passa = Boolean(f1Segue && f1EstadoFinalOk && f1SubiuBem);
+    const f1Passa = Boolean(f1Continuo && f1EstadoFinalOk && f1SubiuBem);
 
     // F2 PASSA: repouso final compacta/transform none, o topo volta a
-    // ~top0, e nenhuma amostra depois de soltar RECUA (o topo só pode
-    // crescer rumo a top0 — um recuo é o "flash" da folha inteira antes
-    // de assentar). SEM checar WAAPI vazia aqui, ao contrário do F1: a
+    // ~top0, e os topos pós-soltar andam sempre no MESMO sentido — da
+    // soltura rumo ao repouso final, seja ele subir ou descer — sem
+    // reverter mais que 4px (uma reversão maior é o "flash" da folha
+    // inteira antes de assentar). SEM checar WAAPI vazia aqui, ao contrário do F1: a
     // COMPACTA declara `height`/`max-height` própria (09-celular.css,
     // ".atlas-ficha[data-ficha-estado]"), então virar compacta acende
     // uma transição de CSS própria (a caixa encolhendo até 10rem) que
@@ -1646,7 +2008,13 @@ async function rodarFolha() {
     const f2EstadoFinalOk = f2Final && f2Final.estado === 'compacta' && f2Final.transform === 'none';
     const f2VoltouAoTopo = f2Final && f2Final.top !== null && Math.abs(f2Final.top - top0) <= 4;
     const toposF2 = f2PosSolta.map((a) => a.top).filter((t) => t !== null);
-    const f2SemSalto = toposF2.every((t, i) => i === 0 || t >= toposF2[i - 1] - 4);
+    // o sentido vem dos dois extremos da própria amostra (soltura → final),
+    // não de um "sobe" fixo — a folha pode soltar já quase no repouso e
+    // andar o resto do caminho no sentido contrário ao de F1.
+    const direcaoF2 = toposF2.length > 1 && toposF2[toposF2.length - 1] < toposF2[0] ? -1 : 1;
+    const f2SemSalto = toposF2.every(
+      (t, i) => i === 0 || (t - toposF2[i - 1]) * direcaoF2 >= -4
+    );
     const f2Passa = Boolean(f2EstadoFinalOk && f2VoltouAoTopo && f2SemSalto);
 
     // ---------------------------------------------------------------
@@ -1659,6 +2027,7 @@ async function rodarFolha() {
     for (let n = 1; n <= 12; n++) {
       const y = pontoF3.y - Math.round((40 * n) / 12);
       await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: pontoF3.x, y }] });
+      await esperarQuadro(sessao); // o ritmo do dedo: um `touchMove` por quadro
     }
     const t0F3 = await tocarSoltar(sessao);
     const f3Amostras = await amostrarSequencia(sessao, t0F3, [16, 120, 300, 600], jsAmostraFolha);
@@ -1675,6 +2044,7 @@ async function rodarFolha() {
     for (let n = 1; n <= 12; n++) {
       const y = pontoF4.y + Math.round((140 * n) / 12);
       await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: pontoF4.x, y }] });
+      await esperarQuadro(sessao); // o ritmo do dedo: um `touchMove` por quadro
     }
     const t0F4 = await tocarSoltar(sessao);
     const f4Amostras = await amostrarSequencia(sessao, t0F4, [16, 120, 300, 600], jsAmostraFolha);
@@ -1693,6 +2063,7 @@ async function rodarFolha() {
     for (let n = 1; n <= 12; n++) {
       yF5 = pontoF5.y - Math.round((100 * n) / 12);
       await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: pontoF5.x, y: yF5 }] });
+      await esperarQuadro(sessao); // o ritmo do dedo: um `touchMove` por quadro
     }
     const t0F5 = Date.now();
     // O SEGUNDO DEDO É UM `touchStart` COM OS DOIS PONTOS (o protocolo
@@ -1708,38 +2079,6 @@ async function rodarFolha() {
     const f5Final = f5Amostras[f5Amostras.length - 1];
     const f5Passa = Boolean(f5Final && f5Final.estado === 'compacta' && f5Final.transform === 'none');
 
-    // ---------------------------------------------------------------
-    // F6 — um controle deslizante nunca começa o arrasto da folha
-    // ---------------------------------------------------------------
-    await sessao.js(`document.querySelector('${SEL_AJUSTES_GATILHO}').click()`);
-    await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_AJUSTES_PAINEL}'))`, 5000);
-    await dorme(400); // assenta a entrada (--t-folha) antes do toque
-    const seletorSlider = `${SEL_AJUSTES_PAINEL} input[type="range"]`;
-    const rSlider = await retanguloDe(sessao, seletorSlider);
-    if (!rSlider) throw new Error(`F6: "${seletorSlider}" não encontrado`);
-    const pontoSlider = {
-      x: Math.round(rSlider.x + rSlider.width / 2),
-      y: Math.round(rSlider.y + rSlider.height / 2),
-    };
-    const f6Durante = [];
-    await sessao.send('Input.dispatchTouchEvent', {
-      type: 'touchStart', touchPoints: [{ x: pontoSlider.x, y: pontoSlider.y }],
-    });
-    for (let n = 1; n <= 12; n++) {
-      const x = pontoSlider.x + Math.round((60 * n) / 12);
-      const y = pontoSlider.y + Math.round((60 * n) / 12);
-      await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] });
-      if (n === 6 || n === 12) {
-        f6Durante.push({ passo: n, ...(await sessao.js(jsAmostraPainel(SEL_AJUSTES_PAINEL))) });
-      }
-    }
-    const t0F6 = await tocarSoltar(sessao);
-    const f6PosSolta = await amostrarSequencia(
-      sessao, t0F6, [16, 120, 300, 600], () => jsAmostraPainel(SEL_AJUSTES_PAINEL)
-    );
-    const f6TudoNone = [...f6Durante, ...f6PosSolta].every((a) => a.transform === 'none');
-    const f6AjustesAberto = f6PosSolta[f6PosSolta.length - 1]?.existe === true;
-    const f6Passa = Boolean(f6TudoNone && f6AjustesAberto);
 
     // ---------------------------------------------------------------
     // F7 — expandida e rolada: a alça ainda fecha (a rolagem não entra
@@ -1760,6 +2099,7 @@ async function rodarFolha() {
     const scrollTopAntesDoArrasto = await sessao.js(
       `document.querySelector('${SEL_FICHA_PAINEL}')?.scrollTop ?? null`
     );
+    const toquesAntesF7 = await lerToques(sessao);
     const pontoF7 = await pontoDaAlca(sessao);
     await sessao.send('Input.dispatchTouchEvent', {
       type: 'touchStart', touchPoints: [{ x: pontoF7.x, y: pontoF7.y }],
@@ -1767,11 +2107,14 @@ async function rodarFolha() {
     for (let n = 1; n <= 12; n++) {
       const y = pontoF7.y + Math.round((140 * n) / 12);
       await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: pontoF7.x, y }] });
+      await esperarQuadro(sessao); // o ritmo do dedo: um `touchMove` por quadro
     }
     const t0F7 = await tocarSoltar(sessao);
     const f7Amostras = await amostrarSequencia(sessao, t0F7, [16, 120, 300, 600], jsAmostraFolha);
     const f7Final = f7Amostras[f7Amostras.length - 1];
     const f7Passa = Boolean(f7Final && f7Final.estado === 'compacta' && f7Final.transform === 'none');
+    const f7ToqueChegou = (await lerToques(sessao)) > toquesAntesF7;
+    const f7Veredito = !f7ToqueChegou ? 'INCONCLUSIVO' : f7Passa ? 'PASSA' : 'FALHA';
 
     // ---------------------------------------------------------------
     // F8 — paisagem baixa da MESA (844×390): `compactavel` por
@@ -1793,6 +2136,168 @@ async function rodarFolha() {
     );
 
     // ---------------------------------------------------------------
+    // F9 — redimensionar (a virada mesa↔celular, ou o teclado virtual
+    // abrindo/fechando) com o DEDO AINDA NO AR, no meio do arrasto pela
+    // alça — nos dois sentidos (abrir e fechar): o resize não pode
+    // deixar a folha arrastando sozinha (`data-arrasto` órfão) nem
+    // destravar o gesto do dedo que ainda a segurava.
+    // ---------------------------------------------------------------
+    const restaurarTelefone = () => sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: TELEFONE_W, height: TELEFONE_H, deviceScaleFactor: DPR, mobile: true,
+    });
+
+    // O ESQUELETO é o mesmo para abrir (F9a) e fechar (F9b) — só o
+    // `sinal` do arrasto (para cima/para baixo) e o `estadoEsperado`
+    // ANTES do resize mudam. Sem esse estado batendo (o dedo ainda não
+    // cruzou a zona morta, ou a expansão não teve tempo de aparecer),
+    // devolve INCONCLUSIVO sem chegar a mexer no viewport.
+    const rodarF9 = async (sinal, estadoEsperado) => {
+      await restaurarTelefone();
+      await carregarFichaDeSaturno();
+      const toquesAntes = await lerToques(sessao);
+      const ponto = await pontoDaAlca(sessao);
+      await sessao.send('Input.dispatchTouchEvent', {
+        type: 'touchStart', touchPoints: [{ x: ponto.x, y: ponto.y }],
+      });
+      let y = ponto.y;
+      for (let n = 1; n <= 6; n++) {
+        y = ponto.y + sinal * Math.round((84 * n) / 6);
+        await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: ponto.x, y }] });
+        await esperarQuadro(sessao); // o ritmo do dedo: um `touchMove` por quadro
+      }
+      const antesDoResize = await sessao.js(jsAmostraFolha());
+      if (!antesDoResize.dataArrasto || antesDoResize.estado !== estadoEsperado) {
+        await tocarSoltar(sessao); // solta o dedo pendente antes de seguir para o próximo sub-caso
+        await restaurarTelefone();
+        return { antesDoResize, toqueChegou: (await lerToques(sessao)) > toquesAntes, veredito: 'INCONCLUSIVO' };
+      }
+
+      // COM O DEDO AINDA NO AR: o resize acontece NO MEIO do arrasto —
+      // `observarAposEvento` é o mesmo helper de I2/I3, só que aqui quem
+      // chama já sabe que o gesto está em curso (checado acima).
+      const obsResize = await observarAposEvento(
+        sessao,
+        { evento: 'resize', construirAmostra: jsAmostraFolha },
+        () => sessao.send('Emulation.setDeviceMetricsOverride', {
+          width: TELEFONE_W, height: Math.max(TELEFONE_H - 144, 300), deviceScaleFactor: DPR, mobile: true,
+        })
+      );
+
+      for (let n = 1; n <= 4; n++) {
+        y = ponto.y + sinal * Math.round(84 + (40 * n) / 4);
+        await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: ponto.x, y }] });
+        await esperarQuadro(sessao); // o ritmo do dedo: um `touchMove` por quadro
+      }
+      const posMoves = await sessao.js(jsAmostraFolha());
+      const t0Solta = await tocarSoltar(sessao);
+      const [posSolta] = await amostrarSequencia(sessao, t0Solta, [600], jsAmostraFolha);
+      await restaurarTelefone();
+
+      return {
+        antesDoResize,
+        resize: { chegou: obsResize.chegou, msAntesAteEvento: obsResize.msAntesAteEvento, amostras: obsResize.amostras },
+        posMoves,
+        posSolta,
+      };
+    };
+
+    // F9a — intenção de EXPANDIR (arrasto para cima): o resize tem de
+    // CANCELAR o gesto — a folha assenta compacta, nunca "arrastando
+    // sozinha" com um `data-arrasto` que ninguém mais solta.
+    const f9aBruto = await rodarF9(-1, 'expandida');
+    let f9a;
+    if (f9aBruto.veredito === 'INCONCLUSIVO') {
+      f9a = f9aBruto;
+    } else {
+      // "sem animação rodando" ignora a MESMA transição de CSS que o F2
+      // (comentário lá em cima) sabe ser da ALTURA da compacta, nunca da
+      // POSIÇÃO — sem a exceção, essa transição (que ainda corre por
+      // ~260ms) nunca deixava `assentou` bater. Em troca, exige que o
+      // `top` fique parado (±1px) do quadro em que assentou até o
+      // último quadro observado — é isto que pega um sheet ancorado
+      // embaixo que a exceção acima deixaria passar se a altura ainda
+      // estivesse de fato empurrando a posição.
+      const semAnimacaoRodando = (a) => (a.waapi ?? [])
+        .filter((w) => !(w.tipo === 'CSSTransition' && (w.propriedade === 'height' || w.propriedade === 'max-height')))
+        .every((w) => w.playState !== 'running');
+      const assentouAgora = (a) => a.dataArrasto === false && a.transformInline === '' && a.transform === 'none'
+        && a.estado === 'compacta' && semAnimacaoRodando(a);
+      const candidatosF9a = f9aBruto.resize.amostras.slice(0, 3);
+      const idxAssentouF9a = candidatosF9a.findIndex(assentouAgora);
+      const assentou = idxAssentouF9a === -1 ? undefined : candidatosF9a[idxAssentouF9a];
+      const toposDepoisDeAssentar = idxAssentouF9a === -1
+        ? []
+        : f9aBruto.resize.amostras.slice(idxAssentouF9a).map((a) => a.top).filter((t) => t !== null);
+      const topParado = toposDepoisDeAssentar.length > 0
+        && Math.max(...toposDepoisDeAssentar) - Math.min(...toposDepoisDeAssentar) <= 2;
+      const posMovesOk = f9aBruto.posMoves.dataArrasto === false && f9aBruto.posMoves.transform === 'none';
+      const posSoltaOk = f9aBruto.posSolta.estado === 'compacta' && f9aBruto.posSolta.transform === 'none';
+      f9a = {
+        ...f9aBruto,
+        assentouNoQuadro: assentou?.quadro ?? null,
+        veredito: (assentou && topParado && posMovesOk && posSoltaOk) ? 'PASSA' : 'FALHA',
+      };
+    }
+
+    // F9b — intenção de FECHAR (arrasto para baixo, a partir da
+    // compacta): o resize não pode deixar a folha arrastando sozinha nem
+    // fechá-la por conta própria — ela existe, assenta, e sobrevive ao
+    // soltar do dedo.
+    const f9bBruto = await rodarF9(1, 'compacta');
+    let f9b;
+    if (f9bBruto.veredito === 'INCONCLUSIVO') {
+      f9b = f9bBruto;
+    } else {
+      const assentouAgora = (a) => a.existe === true && a.transform === 'none' && a.dataArrasto === false
+        && a.estado === 'compacta';
+      const assentou = f9bBruto.resize.amostras.slice(0, 3).find(assentouAgora);
+      const existeAoFim = f9bBruto.posSolta.existe === true;
+      f9b = {
+        ...f9bBruto,
+        assentouNoQuadro: assentou?.quadro ?? null,
+        veredito: (assentou && existeAoFim) ? 'PASSA' : 'FALHA',
+      };
+    }
+
+    // ---------------------------------------------------------------
+    // F6 — um controle deslizante nunca começa o arrasto da folha. RODA
+    // POR ÚLTIMO (depois da F9): a 760×900 o arrasto no deslizante deixa
+    // o toque EMULADO do CDP sem entregar mais nada à página pelo resto
+    // da sessão (medido: zero `touchstart` na F7 seguinte; sem este gesto
+    // a F7 e a F9 passam) — nenhum cenário de toque pode vir depois dele.
+    // ---------------------------------------------------------------
+    await sessao.js(`document.querySelector('${SEL_AJUSTES_GATILHO}').click()`);
+    await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_AJUSTES_PAINEL}'))`, 5000);
+    await dorme(400); // assenta a entrada (--t-folha) antes do toque
+    const seletorSlider = `${SEL_AJUSTES_PAINEL} input[type="range"]`;
+    const rSlider = await retanguloDe(sessao, seletorSlider);
+    if (!rSlider) throw new Error(`F6: "${seletorSlider}" não encontrado`);
+    const pontoSlider = {
+      x: Math.round(rSlider.x + rSlider.width / 2),
+      y: Math.round(rSlider.y + rSlider.height / 2),
+    };
+    const f6Durante = [];
+    await sessao.send('Input.dispatchTouchEvent', {
+      type: 'touchStart', touchPoints: [{ x: pontoSlider.x, y: pontoSlider.y }],
+    });
+    for (let n = 1; n <= 12; n++) {
+      const x = pontoSlider.x + Math.round((60 * n) / 12);
+      const y = pontoSlider.y + Math.round((60 * n) / 12);
+      await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] });
+      await esperarQuadro(sessao); // o ritmo do dedo: um `touchMove` por quadro
+      if (n === 6 || n === 12) {
+        f6Durante.push({ passo: n, ...(await sessao.js(jsAmostraPainel(SEL_AJUSTES_PAINEL))) });
+      }
+    }
+    const t0F6 = await tocarSoltar(sessao);
+    const f6PosSolta = await amostrarSequencia(
+      sessao, t0F6, [16, 120, 300, 600], () => jsAmostraPainel(SEL_AJUSTES_PAINEL)
+    );
+    const f6TudoNone = [...f6Durante, ...f6PosSolta].every((a) => a.transform === 'none');
+    const f6AjustesAberto = f6PosSolta[f6PosSolta.length - 1]?.existe === true;
+    const f6Passa = Boolean(f6TudoNone && f6AjustesAberto);
+
+    // ---------------------------------------------------------------
     // RELATÓRIO
     // ---------------------------------------------------------------
     const relatorio = {
@@ -1812,7 +2317,14 @@ async function rodarFolha() {
         geradoEm: new Date().toISOString(),
       },
       f1: {
-        top0, move6: f1Move6, move12: f1Move12, posSolta: f1PosSolta, passa: f1Passa,
+        top0,
+        passos: f1Passos,
+        inicioEfetivo,
+        comidoMin: comidosNaJanela.length ? Math.min(...comidosNaJanela) : null,
+        comidoMax: comidosNaJanela.length ? Math.max(...comidosNaJanela) : null,
+        continuo: f1Continuo,
+        posSolta: f1PosSolta,
+        passa: f1Passa,
       },
       f2: {
         move6: f2Move6, move12: f2Move12, posSolta: f2PosSolta, semSalto: f2SemSalto, passa: f2Passa,
@@ -1827,23 +2339,35 @@ async function rodarFolha() {
         ajustesAberto: f6AjustesAberto,
         passa: f6Passa,
       },
-      f7: { scrollTopAntesDoArrasto, amostras: f7Amostras, passa: f7Passa },
+      f7: { scrollTopAntesDoArrasto, amostras: f7Amostras, toqueChegou: f7ToqueChegou, veredito: f7Veredito },
       f8: { antes: f8Antes, depois: f8Depois },
+      f9: { a: f9a, b: f9b },
       clipe,
       folhaContato,
     };
     const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-folha-${commit}.json`));
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
 
+    // resume um sub-caso de F9 numa linha — INCONCLUSIVO nunca chegou a
+    // fazer o resize, então só tem `antesDoResize` para mostrar.
+    const fmtF9 = (caso) => (caso.veredito === 'INCONCLUSIVO'
+      ? `INCONCLUSIVO (antes do resize dataArrasto=${caso.antesDoResize.dataArrasto} estado=${caso.antesDoResize.estado}`
+        + `${caso.toqueChegou === false ? '; o toque emulado não chegou à página' : ''})`
+      : `assentou quadro=${caso.assentouNoQuadro ?? '-'} `
+        + `pós-solta(+600ms) existe=${caso.posSolta.existe} estado=${caso.posSolta.estado} `
+        + `transform=${caso.posSolta.transform} — ${caso.veredito}`);
+
     const linhas = [
       `=== sonda-motion folha — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
-      `Chrome ${versaoChrome.product} | celular ${TELEFONE_W}x${TELEFONE_H} DPR${dpr} | pt-BR | q=performance | foco=saturno`,
+      `Chrome ${versaoChrome.product} | celular ${TELEFONE_W}x${TELEFONE_H} DPR${dpr} | ${ROTULO_DA_QUERY} | foco=saturno`,
       `clipe F1+F2: ${clipe} (${quadrosClipe.length} quadros)`,
       `folha de contato: ${folhaContato}`,
-      `F1 expandir: top0=${num(top0)} move12.top=${num(f1Move12?.top)} esperado≈${num(esperadoTopoMove12)} `
-        + `(${f1Segue ? 'segue o dedo' : 'NÃO segue'}) final estado=${f1Final?.estado} transform=${f1Final?.transform} `
+      `F1 expandir: top0=${num(top0)} inicioEfetivo=${inicioEfetivo ? `passo ${inicioEfetivo.passo} comido=${num(inicioEfetivo.comidoPx)}px` : 'nunca'} `
+        + `comido[min/max]=${comidosNaJanela.length ? `${num(Math.min(...comidosNaJanela))}/${num(Math.max(...comidosNaJanela))}` : '-'} `
+        + `(${f1Continuo ? 'contínuo' : 'DESCONTÍNUO'}) final estado=${f1Final?.estado} transform=${f1Final?.transform} `
         + `top=${num(f1Final?.top)} — ${f1Passa ? 'PASSA' : 'FALHA'}`,
-      `F2 recolher: final estado=${f2Final?.estado} transform=${f2Final?.transform} top=${num(f2Final?.top)} `
+      `F2 recolher: final estado=${f2Final?.estado} transform=${f2Final?.transform} transformInline=${f2Final?.transformInline} `
+        + `top=${num(f2Final?.top)} waapi=${JSON.stringify(f2Final?.waapi)} `
         + `(top0=${num(top0)}) topos pós-soltar=${toposF2.map((t) => t.toFixed(1)).join('/')} `
         + `(${f2SemSalto ? 'sem recuo' : 'COM RECUO'}) — ${f2Passa ? 'PASSA' : 'FALHA'}`,
       `F3 arrasto curto (40px): final estado=${f3Final?.estado} transform=${f3Final?.transform} — `
@@ -1854,8 +2378,11 @@ async function rodarFolha() {
       `F6 controle deslizante: transform sempre none=${f6TudoNone}, Ajustes aberto ao fim=${f6AjustesAberto} — `
         + `${f6Passa ? 'PASSA' : 'FALHA'}`,
       `F7 expandida+rolada (scrollTop=${scrollTopAntesDoArrasto}): final estado=${f7Final?.estado} `
-        + `transform=${f7Final?.transform} — ${f7Passa ? 'PASSA' : 'FALHA'}`,
+        + `transform=${f7Final?.transform} transformInline=${f7Final?.transformInline} top=${num(f7Final?.top)} `
+        + `waapi=${JSON.stringify(f7Final?.waapi)}${f7ToqueChegou ? '' : ' (o toque emulado não chegou à página)'} — ${f7Veredito}`,
       `F8 paisagem baixa ${TELEFONE_H}x${TELEFONE_W}: data-ficha-estado antes=${f8Antes} depois=${f8Depois}`,
+      `F9a expandir + resize com o dedo no ar: ${fmtF9(f9a)}`,
+      `F9b fechar + resize com o dedo no ar: ${fmtF9(f9b)}`,
       `JSON: ${destinoJson}`,
     ];
     process.stdout.write(`${linhas.join('\n')}\n`);
@@ -2746,8 +3273,9 @@ async function rodarC5(quais = null) {
         app: APP,
         viewport: { width: JANELA_W, height: JANELA_H },
         dpr,
-        idioma: 'pt-BR',
-        preset: 'performance',
+        idioma: META_DA_QUERY.lang,
+        preset: META_DA_QUERY.q,
+        ui: META_DA_QUERY.ui,
         cenas: quais ? [...quais].join(',') : 'v1-v8',
         geradoEm: new Date().toISOString(),
       },
@@ -2758,7 +3286,7 @@ async function rodarC5(quais = null) {
 
     const linhas = [
       `=== sonda-motion c5 — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
-      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${dpr} | pt-BR | q=performance`,
+      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${dpr} | ${ROTULO_DA_QUERY}`,
     ];
     if (v1) {
       linhas.push(
@@ -2866,15 +3394,33 @@ async function rodarC5(quais = null) {
  * `gpu-profile.mjs` (timer query por draw, rótulo pelo texto do
  * shader), reescrita aqui porque IMPORTAR aquele arquivo dispararia o
  * Chrome dele — o cabeçalho desta sonda pede exatamente o contrário.
- * Dois desvios do original: (a) só um rótulo interessa —
- * `distanciaAoRetangulo`, função só do fragment shader do halo
- * (`contornoDaUi.ts`) — o resto vira `outro` e é descartado; (b) o
- * embrulho do `requestAnimationFrame` roda SEMPRE, mesmo sem a
- * extensão — o tempo de quadro (rAF) não depende dela, só o tempo de
- * GPU depende.
+ * Só um rótulo interessa — `distanciaAoRetangulo`, função só do
+ * fragment shader do halo (`contornoDaUi.ts`) — o resto vira `outro` e
+ * é descartado.
+ *
+ * TRÊS COISAS SEMPRE ligadas, com ou sem `EXT_disjoint_timer_query*`
+ * (só o tempo de GPU depende da extensão): o rótulo de todo programa
+ * (pelo texto dos shaders), o embrulho de TODO desenho (`drawArrays` e
+ * primos) e o embrulho do `requestAnimationFrame` (o tempo de quadro
+ * não depende da extensão nenhuma). Dois campos novos, para o
+ * `--contorno=cancelamento` (`rodarCancelamento`) confirmar que o halo
+ * CANCELA, não só que ele desenha:
+ *   `desenhosHalo`  — um `{ t, ret }` por desenho do halo (`ret` é o
+ *                     ÚLTIMO valor mandado para o uniform `uRetangulo`
+ *                     — x, y, width, height em px CSS — do PROGRAMA do
+ *                     halo; three.js só reenvia um uniform quando ele
+ *                     MUDA, então "o último mandado" já é o corrente).
+ *   `gpuPorQuadro`  — um `{ t, ns }` por quadro (rAF), com o tempo de
+ *                     GPU de TODOS os desenhos daquele quadro somado
+ *                     (não só o halo) — cada query pendente carrega o
+ *                     número do quadro em que nasceu (`frame`,
+ *                     incrementado no embrulho do rAF) para saber onde
+ *                     somar quando o resultado chega, quadros depois.
  */
 const SCRIPT_GPU_HALO = `
-window.__contornoProf = { ready: 0, ext: 0, err: null, halo: [], rafAbs: [] };
+window.__contornoProf = {
+  ready: 0, ext: 0, err: null, halo: [], rafAbs: [], desenhosHalo: [], gpuPorQuadro: [],
+};
 (() => {
   const G = window.__contornoProf;
   const origGet = HTMLCanvasElement.prototype.getContext;
@@ -2887,52 +3433,88 @@ window.__contornoProf = { ready: 0, ext: 0, err: null, halo: [], rafAbs: [] };
   };
   function instrument(gl, is2) {
     G.ready = 1;
-    const ext = gl.getExtension(is2 ? 'EXT_disjoint_timer_query_webgl2' : 'EXT_disjoint_timer_query');
+    const ext = window.__contornoSemTimer
+      ? null
+      : gl.getExtension(is2 ? 'EXT_disjoint_timer_query_webgl2' : 'EXT_disjoint_timer_query');
     G.ext = ext ? 1 : 0;
+    const TE = ext ? ext.TIME_ELAPSED_EXT : null;
+
+    const src = new WeakMap();
+    const shaders = new WeakMap();
+    const label = new WeakMap();
+    const oSrc = gl.shaderSource.bind(gl);
+    gl.shaderSource = (sh, s) => { src.set(sh, s); oSrc(sh, s); };
+    const oAtt = gl.attachShader.bind(gl);
+    gl.attachShader = (p, sh) => {
+      const a = shaders.get(p) || [];
+      a.push(sh);
+      shaders.set(p, a);
+      oAtt(p, sh);
+    };
+    const labelOf = (p) => {
+      let l = label.get(p);
+      if (l) return l;
+      const s = (shaders.get(p) || []).map((sh) => src.get(sh) || '').join('\\n');
+      l = s.includes('distanciaAoRetangulo') ? 'halo:contorno' : 'outro';
+      label.set(p, l);
+      return l;
+    };
+    let cur = null;
+    const oUse = gl.useProgram.bind(gl);
+    gl.useProgram = (p) => { cur = p; oUse(p); };
+
+    // O ÚLTIMO VALOR de \`uRetangulo\` POR PROGRAMA — \`getUniformLocation\`
+    // guarda de quem (programa, nome) é cada location devolvida,
+    // \`uniform4f\`/\`uniform4fv\` gravam o valor mandado por último nela.
+    const infoDaLocation = new WeakMap();
+    const ultimoRetPorPrograma = new WeakMap();
+    const oGetLoc = gl.getUniformLocation.bind(gl);
+    gl.getUniformLocation = (programa, nome) => {
+      const loc = oGetLoc(programa, nome);
+      if (loc) infoDaLocation.set(loc, { programa, nome });
+      return loc;
+    };
+    const registrarRetangulo = (location, valores) => {
+      const info = infoDaLocation.get(location);
+      if (!info || info.nome !== 'uRetangulo') return;
+      ultimoRetPorPrograma.set(info.programa, valores);
+    };
+    const oUniform4f = gl.uniform4f.bind(gl);
+    gl.uniform4f = (location, x, y, z, w) => {
+      registrarRetangulo(location, [x, y, z, w]);
+      return oUniform4f(location, x, y, z, w);
+    };
+    const oUniform4fv = gl.uniform4fv.bind(gl);
+    gl.uniform4fv = (location, valor) => {
+      registrarRetangulo(location, Array.from(valor).slice(0, 4));
+      return oUniform4fv(location, valor);
+    };
+
+    const free = [];
+    const pending = [];
+    let active = null;
+    let quadroAtual = -1;
+    const nomes = ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements'];
+    for (const nome of nomes) {
+      if (typeof gl[nome] !== 'function') continue;
+      const orig = gl[nome].bind(gl);
+      gl[nome] = function (...a) {
+        const rotulo = cur ? labelOf(cur) : 'semPrograma';
+        if (rotulo === 'halo:contorno') {
+          G.desenhosHalo.push({ t: performance.now(), ret: ultimoRetPorPrograma.get(cur) ?? null });
+        }
+        if (!ext || active) return orig(...a);
+        const q = free.pop() || gl.createQuery();
+        try { gl.beginQuery(TE, q); active = q; } catch (e) { return orig(...a); }
+        const r = orig(...a);
+        gl.endQuery(TE);
+        active = null;
+        pending.push({ q, l: rotulo, frame: quadroAtual });
+        return r;
+      };
+    }
     let poll = () => {};
     if (ext) {
-      const TE = ext.TIME_ELAPSED_EXT;
-      const src = new WeakMap();
-      const shaders = new WeakMap();
-      const label = new WeakMap();
-      const oSrc = gl.shaderSource.bind(gl);
-      gl.shaderSource = (sh, s) => { src.set(sh, s); oSrc(sh, s); };
-      const oAtt = gl.attachShader.bind(gl);
-      gl.attachShader = (p, sh) => {
-        const a = shaders.get(p) || [];
-        a.push(sh);
-        shaders.set(p, a);
-        oAtt(p, sh);
-      };
-      const labelOf = (p) => {
-        let l = label.get(p);
-        if (l) return l;
-        const s = (shaders.get(p) || []).map((sh) => src.get(sh) || '').join('\\n');
-        l = s.includes('distanciaAoRetangulo') ? 'halo:contorno' : 'outro';
-        label.set(p, l);
-        return l;
-      };
-      let cur = null;
-      const oUse = gl.useProgram.bind(gl);
-      gl.useProgram = (p) => { cur = p; oUse(p); };
-      const free = [];
-      const pending = [];
-      let active = null;
-      const nomes = ['drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements'];
-      for (const nome of nomes) {
-        if (typeof gl[nome] !== 'function') continue;
-        const orig = gl[nome].bind(gl);
-        gl[nome] = function (...a) {
-          if (active) return orig(...a);
-          const q = free.pop() || gl.createQuery();
-          try { gl.beginQuery(TE, q); active = q; } catch (e) { return orig(...a); }
-          const r = orig(...a);
-          gl.endQuery(TE);
-          active = null;
-          pending.push({ q, l: cur ? labelOf(cur) : 'semPrograma' });
-          return r;
-        };
-      }
       poll = () => {
         while (pending.length) {
           const r = pending[0];
@@ -2943,11 +3525,15 @@ window.__contornoProf = { ready: 0, ext: 0, err: null, halo: [], rafAbs: [] };
           free.push(r.q);
           if (dis) continue;
           if (r.l === 'halo:contorno') G.halo.push({ ns, t: performance.now() });
+          const quadro = G.gpuPorQuadro[r.frame];
+          if (quadro) quadro.ns += ns;
         }
       };
     }
     const oRAF = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = (cb) => oRAF((t) => {
+      quadroAtual += 1;
+      G.gpuPorQuadro[quadroAtual] = { t, ns: 0 };
       poll();
       G.rafAbs.push(t);
       return cb(t);
@@ -2962,6 +3548,32 @@ function percentilDe(valores, p) {
   if (!valores.length) return null;
   const s = [...valores].sort((a, b) => a - b);
   return s[Math.min(s.length - 1, Math.floor(p * (s.length - 1)))];
+}
+
+/** `-` sem amostra (`null`/`undefined`), senão `n` casas decimais — o
+ *  formatador de toda linha impressa de `--contorno`/`--contorno=cancelamento`. */
+const fmt = (n, casas = 1) => (n === null || n === undefined ? '-' : n.toFixed(casas));
+
+/** amostras → `{ amostras, media, p50, p95, max, acimaDeUmEMeio }` — o resumo
+ *  usado pelas TRÊS distribuições do custo (tempo de GPU do halo,
+ *  tempo de GPU por quadro, intervalo do rAF): `max` e
+ *  `acimaDeUmEMeio` (quantos valores passam de 1,5× a PRÓPRIA mediana
+ *  da amostra) só importam para o intervalo do rAF, mas calcular os
+ *  quatro sempre é mais simples que três funções quase iguais. */
+function resumoDeMs(valores) {
+  const p50 = percentilDe(valores, 0.5);
+  const p95 = percentilDe(valores, 0.95);
+  return {
+    amostras: valores.length,
+    // a MÉDIA também: sob vsync o intervalo do rAF anda em degraus de
+    // ~16,7ms e a mediana pula de um degrau para o outro com pouco
+    // custo a mais — a média enxerga a fração de quadros que pulou.
+    media: valores.length ? valores.reduce((s, v) => s + v, 0) / valores.length : null,
+    p50,
+    p95,
+    max: valores.length ? Math.max(...valores) : null,
+    acimaDeUmEMeio: p50 !== null ? valores.filter((v) => v > p50 * 1.5).length : 0,
+  };
 }
 
 /** o quadro (de `gravarClipe`) cujo instante REAL (`ts`, segundos,
@@ -3081,6 +3693,83 @@ function ladoALadoContorno(clipeA, clipeB, janelaSegundos, destinoFinal) {
  *  o quad cresce 48px para cada lado nos dois eixos). */
 const areaDoQuadPx = (r) => (r.width + 96) * (r.height + 96);
 
+/** o tamanho REAL do framebuffer do canvas principal (`drawingBuffer`,
+ *  já em pixels FÍSICOS — largura CSS × DPR) e o DPR que a página
+ *  enxerga — a checagem de sanidade do custo (§12.5): pega o contexto
+ *  DE NOVO no mesmo canvas (WebGL devolve o MESMO contexto numa
+ *  segunda chamada, nunca cria outro) para não interferir em nada que
+ *  `SCRIPT_GPU_HALO` já instrumentou. */
+const jsInfoCanvas = () => `(() => {
+  const canvas = document.querySelector('canvas');
+  if (!canvas) return null;
+  const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+  return {
+    drawingBufferWidth: gl ? gl.drawingBufferWidth : null,
+    drawingBufferHeight: gl ? gl.drawingBufferHeight : null,
+    devicePixelRatio: window.devicePixelRatio,
+  };
+})()`;
+
+/** a CAIXA DE REPOUSO de um painel `[data-dialogo]` — a mesma conta que
+ *  `contornoDaUi.ts` faz (K5, `--contorno=cancelamento`): soma
+ *  `offsetLeft`/`offsetTop` subindo por `offsetParent` até `.hud-root`
+ *  (sem incluir o dele mesmo), mais `offsetWidth`/`offsetHeight` — a
+ *  posição/tamanho do painel PARADO, e não o `getBoundingClientRect()`
+ *  ao vivo (que inclui o deslocamento da entrada em curso). */
+function jsCaixaDeRepouso(seletorPainel) {
+  return `(() => {
+    const el = document.querySelector(${JSON.stringify(seletorPainel)});
+    const raiz = document.querySelector('.hud-root');
+    if (!el || !raiz) return null;
+    let x = 0;
+    let y = 0;
+    let node = el;
+    while (node && node !== raiz) {
+      x += node.offsetLeft;
+      y += node.offsetTop;
+      node = node.offsetParent;
+    }
+    return { x, y, width: el.offsetWidth, height: el.offsetHeight };
+  })()`;
+}
+
+/** espera exatamente `n` quadros de verdade (`n` voltas de
+ *  `requestAnimationFrame`) — o "wait 3 frames" do K5 depois de mudar
+ *  `--ui`, tempo do CSS/React reagirem antes de ler a caixa de
+ *  repouso. */
+function esperarQuadros(sessao, n) {
+  return sessao.send('Runtime.evaluate', {
+    expression: `new Promise((r) => {
+      let restam = ${n};
+      const passo = () => { restam -= 1; if (restam <= 0) r(1); else requestAnimationFrame(passo); };
+      requestAnimationFrame(passo);
+    })`,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+}
+
+/** carrega uma query na sonda de `--contorno`/`--contorno=cancelamento`
+ *  — até 3 tentativas (a régua de sempre), tour pulado, um respiro de
+ *  300ms; usado pelas duas corridas para não repetir o mesmo miolo. */
+async function carregarNoContorno(sessao, query) {
+  let assentou = null;
+  let ultimoErro = null;
+  for (let tentativa = 1; tentativa <= 3 && !assentou; tentativa++) {
+    try {
+      assentou = await sessao.ir(query);
+    } catch (e) {
+      ultimoErro = e;
+      process.stdout.write(`tentativa ${tentativa}/3 de carregar o app falhou: ${e.message}\n`);
+      await dorme(500);
+    }
+  }
+  if (!assentou) throw new Error(`o app não carregou em 3 tentativas (${ultimoErro?.message})`);
+  await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_GATILHO}'))`, 10000);
+  await pularTour(sessao);
+  await dorme(300);
+}
+
 async function rodarContorno() {
   mkdirSync(CAPTURAS, { recursive: true });
   const pastaA = resolve(tmpdir(), `sonda-motion-contorno-a-${process.pid}`);
@@ -3097,25 +3786,9 @@ async function rodarContorno() {
     await sessao.send('Emulation.setDeviceMetricsOverride', viewport);
     sessao.marcarViewport(viewport);
     const versaoChrome = await sessao.send('Browser.getVersion');
-    await sessao.send('Page.addScriptToEvaluateOnNewDocument', { source: SCRIPT_GPU_HALO });
-
-    const carregar = async (query) => {
-      let assentou = null;
-      let ultimoErro = null;
-      for (let tentativa = 1; tentativa <= 3 && !assentou; tentativa++) {
-        try {
-          assentou = await sessao.ir(query);
-        } catch (e) {
-          ultimoErro = e;
-          process.stdout.write(`tentativa ${tentativa}/3 de carregar o app falhou: ${e.message}\n`);
-          await dorme(500);
-        }
-      }
-      if (!assentou) throw new Error(`o app não carregou em 3 tentativas (${ultimoErro?.message})`);
-      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_GATILHO}'))`, 10000);
-      await pularTour(sessao);
-      await dorme(300);
-    };
+    await sessao.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `${SEM_TIMER ? 'window.__contornoSemTimer = true;\n' : ''}${SCRIPT_GPU_HALO}`,
+    });
 
     // UMA abertura GRAVADA (passo 1) — o painel some de novo antes de
     // devolver, para a página ficar limpa para as dez do passo 3, na
@@ -3140,15 +3813,18 @@ async function rodarContorno() {
       return { quadros, t0Ms, painel };
     };
 
-    // DEZ aberturas SEM gravação (passo 3, custo) — marca o clique no
-    // relógio DA PÁGINA (`performance.now()`, a base do `rAF`/GPU do
-    // instrumento), espera a janela medida, fecha e ESPERA A SAÍDA
-    // TERMINAR antes da próxima: sem isso `montada` não volta a `null`
-    // e o próximo clique seria uma TROCA, não um nascimento — e o C6
-    // nunca ligaria de novo (`App.tsx`, guarda `anterior !== null`).
-    const medirCusto = async () => {
+    // CINCO aberturas SEM gravação por BLOCO (passo 3, custo) — marca o
+    // clique no relógio DA PÁGINA (`performance.now()`, a base do
+    // `rAF`/GPU do instrumento), espera a janela medida, fecha e ESPERA
+    // A SAÍDA TERMINAR antes da próxima: sem isso `montada` não volta a
+    // `null` e o próximo clique seria uma TROCA, não um nascimento — e
+    // o C6 nunca ligaria de novo (`App.tsx`, guarda `anterior !== null`).
+    // `n` aberturas por chamada — quem chama já fez o `carregarNoContorno`
+    // do bloco (cada bloco é a SUA PRÓPRIA navegação, item 4 do
+    // enunciado), então `window.__contornoProf` nasce zerado aqui.
+    const medirCustoBloco = async (n) => {
       const t0sPerf = [];
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < n; i++) {
         await clicarReal(sessao, SEL_CAMADAS_GATILHO);
         t0sPerf.push(await sessao.js('performance.now()'));
         await dorme(600);
@@ -3157,7 +3833,8 @@ async function rodarContorno() {
         await dorme(150);
       }
       const prof = await sessao.js('window.__contornoProf');
-      return { t0sPerf, prof };
+      const canvas = await sessao.js(jsInfoCanvas());
+      return { t0sPerf, prof, canvas };
     };
 
     // uma foto só (`Page.captureScreenshot`) para `&shot=1` e para
@@ -3166,7 +3843,7 @@ async function rodarContorno() {
     // (`semMovimento()`/`Director.shotMode`); isto só fotografa o
     // resultado.
     const medirSemHalo = async ({ query, reduzido, arquivo }) => {
-      await carregar(query);
+      await carregarNoContorno(sessao, query);
       if (reduzido) {
         await sessao.send('Emulation.setEmulatedMedia', {
           features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
@@ -3184,14 +3861,12 @@ async function rodarContorno() {
     };
 
     process.stdout.write('  ·     A (CSS só)…\n');
-    await carregar(QUERY);
+    await carregarNoContorno(sessao, QUERY);
     const capA = await capturarAbertura(pastaA);
-    const custoA = await medirCusto();
 
     process.stdout.write('  ·     B (CSS + halo WebGL)…\n');
-    await carregar(`${QUERY}&contorno=webgl`);
+    await carregarNoContorno(sessao, `${QUERY}&contorno=webgl`);
     const capB = await capturarAbertura(pastaB);
-    const custoB = await medirCusto();
 
     if (!capA.painel || !capB.painel) {
       throw new Error('painel de Camadas não encontrado ao medir o retângulo de repouso');
@@ -3220,8 +3895,12 @@ async function rodarContorno() {
     });
 
     // ---- passo 1: clipes recortados + lado a lado ----
-    const brutoA = renderizarClipe(capA.quadros, resolve(pastaA, 'bruto.mp4'));
-    const brutoB = renderizarClipe(capB.quadros, resolve(pastaB, 'bruto.mp4'));
+    // O CLIPE INTEIRO (janela toda, sem recorte) vai DIRETO para
+    // `capturas/` — `renderizarClipe` já passa `destinoFinal` por
+    // `semSobrescrever` sozinho, então isto também é o clipe "inteiro"
+    // pedido, sem precisar duplicar o arquivo.
+    const brutoA = renderizarClipe(capA.quadros, resolve(CAPTURAS, `motion-c6-a-inteiro-${commit}.mp4`));
+    const brutoB = renderizarClipe(capB.quadros, resolve(CAPTURAS, `motion-c6-b-inteiro-${commit}.mp4`));
     const janelaA = { inicioSeg: capA.t0Ms / 1000 - capA.quadros[0].ts, duracaoSeg: 0.45 };
     const janelaB = { inicioSeg: capB.t0Ms / 1000 - capB.quadros[0].ts, duracaoSeg: 0.45 };
     const clipeA = recortarClipeContorno(
@@ -3243,20 +3922,62 @@ async function rodarContorno() {
     const luminanciaA = luminanciaEm(capA);
     const luminanciaB = luminanciaEm(capB);
 
-    // ---- passo 3: custo pareado ----
+    // ---- passo 3: custo em blocos A1/B1/B2/A2 (`--aberturas`, 5 por padrão) ----
+    // ORDEM A→B→B→A, cada bloco na SUA PRÓPRIA navegação (`item 4`):
+    // pool A1+A2 × B1+B2 mostra deriva térmica (o Chrome esquenta ao
+    // longo da corrida) sem confundi-la com "A sempre roda primeiro,
+    // frio" — a intercalação pesa os dois lados igualmente.
+    process.stdout.write(`  ·     bloco A1 (custo, ${ABERTURAS_POR_BLOCO} aberturas)…\n`);
+    await carregarNoContorno(sessao, QUERY);
+    const blocoA1 = await medirCustoBloco(ABERTURAS_POR_BLOCO);
+    process.stdout.write(`  ·     bloco B1 (custo, ${ABERTURAS_POR_BLOCO} aberturas)…\n`);
+    await carregarNoContorno(sessao, `${QUERY}&contorno=webgl`);
+    const blocoB1 = await medirCustoBloco(ABERTURAS_POR_BLOCO);
+    process.stdout.write(`  ·     bloco B2 (custo, ${ABERTURAS_POR_BLOCO} aberturas)…\n`);
+    await carregarNoContorno(sessao, `${QUERY}&contorno=webgl`);
+    const blocoB2 = await medirCustoBloco(ABERTURAS_POR_BLOCO);
+    process.stdout.write(`  ·     bloco A2 (custo, ${ABERTURAS_POR_BLOCO} aberturas)…\n`);
+    await carregarNoContorno(sessao, QUERY);
+    const blocoA2 = await medirCustoBloco(ABERTURAS_POR_BLOCO);
+
     const dentroDeAlgumaAbertura = (t, t0sPerf) => t0sPerf.some((t0) => t >= t0 && t <= t0 + 450);
-    const haloMs = custoB.prof.halo
-      .filter((h) => dentroDeAlgumaAbertura(h.t, custoB.t0sPerf))
+    const haloMsDoBloco = (bloco) => bloco.prof.halo
+      .filter((h) => dentroDeAlgumaAbertura(h.t, bloco.t0sPerf))
       .map((h) => h.ns / 1e6);
-    const frameTimeDe = ({ t0sPerf, prof }) => {
+    const frameTimeMsDoBloco = (bloco) => {
       const deltas = [];
-      for (let i = 1; i < prof.rafAbs.length; i++) {
-        if (dentroDeAlgumaAbertura(prof.rafAbs[i], t0sPerf)) deltas.push(prof.rafAbs[i] - prof.rafAbs[i - 1]);
+      for (let i = 1; i < bloco.prof.rafAbs.length; i++) {
+        if (dentroDeAlgumaAbertura(bloco.prof.rafAbs[i], bloco.t0sPerf)) {
+          deltas.push(bloco.prof.rafAbs[i] - bloco.prof.rafAbs[i - 1]);
+        }
       }
       return deltas;
     };
-    const frameTimeA = frameTimeDe(custoA);
-    const frameTimeB = frameTimeDe(custoB);
+    // GPU TOTAL por quadro (`G.gpuPorQuadro`, TODOS os desenhos — não só
+    // o halo) dentro da MESMA janela de 450ms de cada abertura, em ms.
+    const gpuQuadroMsDoBloco = (bloco) => bloco.prof.gpuPorQuadro
+      .filter((q) => q && dentroDeAlgumaAbertura(q.t, bloco.t0sPerf))
+      .map((q) => q.ns / 1e6);
+    const resumoDoBloco = (bloco) => ({
+      extDisponivel: Boolean(bloco.prof.ext),
+      canvas: bloco.canvas,
+      halo: resumoDeMs(haloMsDoBloco(bloco)), // esperado ~0 amostras nos blocos A
+      gpuPorQuadro: resumoDeMs(gpuQuadroMsDoBloco(bloco)),
+      frameTime: resumoDeMs(frameTimeMsDoBloco(bloco)),
+    });
+    const poolar = (blocos, extrair) => blocos.flatMap(extrair);
+    const pooledA = {
+      canvas: blocoA1.canvas,
+      halo: resumoDeMs(poolar([blocoA1, blocoA2], haloMsDoBloco)), // esperado 0 — a flag nem existe em A
+      gpuPorQuadro: resumoDeMs(poolar([blocoA1, blocoA2], gpuQuadroMsDoBloco)),
+      frameTime: resumoDeMs(poolar([blocoA1, blocoA2], frameTimeMsDoBloco)),
+    };
+    const pooledB = {
+      canvas: blocoB1.canvas,
+      halo: resumoDeMs(poolar([blocoB1, blocoB2], haloMsDoBloco)),
+      gpuPorQuadro: resumoDeMs(poolar([blocoB1, blocoB2], gpuQuadroMsDoBloco)),
+      frameTime: resumoDeMs(poolar([blocoB1, blocoB2], frameTimeMsDoBloco)),
+    };
 
     const relatorio = {
       meta: {
@@ -3270,11 +3991,16 @@ async function rodarContorno() {
         app: APP,
         viewport: { width: JANELA_W, height: JANELA_H },
         dpr: DPR,
-        idioma: 'pt-BR',
-        preset: 'performance',
+        visivel: VISIVEL,
+        semTimer: SEM_TIMER,
+        q: META_DA_QUERY.q,
+        lang: META_DA_QUERY.lang,
+        ui: META_DA_QUERY.ui,
         geradoEm: new Date().toISOString(),
       },
-      clipes: { a: clipeA, b: clipeB, ladoALado },
+      clipes: {
+        a: clipeA, b: clipeB, aInteiro: brutoA, bInteiro: brutoB, ladoALado,
+      },
       recorte: { a: faixaDoRecorte(capA.painel), b: faixaDoRecorte(capB.painel) },
       areaDoQuadPx: { a: areaDoQuadPx(capA.painel), b: areaDoQuadPx(capB.painel) },
       luminancia: {
@@ -3288,30 +4014,33 @@ async function rodarContorno() {
         reduzido: { a: luminanciaReduzidoA, b: luminanciaReduzidoB },
       },
       custo: {
-        extDisponivel: { a: Boolean(custoA.prof.ext), b: Boolean(custoB.prof.ext) },
-        haloGpuMs: {
-          amostras: haloMs.length,
-          p50: percentilDe(haloMs, 0.5),
-          p95: percentilDe(haloMs, 0.95),
-        },
-        haloDesenhouEmA: custoA.prof.halo.length, // esperado 0 — a flag nem existe em A
-        frameTimeMs: {
-          a: { amostras: frameTimeA.length, p50: percentilDe(frameTimeA, 0.5), p95: percentilDe(frameTimeA, 0.95) },
-          b: { amostras: frameTimeB.length, p50: percentilDe(frameTimeB, 0.5), p95: percentilDe(frameTimeB, 0.95) },
-        },
-        aberturas: 10,
+        aberturasPorBloco: ABERTURAS_POR_BLOCO,
         janelaMs: 450,
+        ordemDosBlocos: ['A1', 'B1', 'B2', 'A2'],
+        porBloco: {
+          a1: resumoDoBloco(blocoA1),
+          b1: resumoDoBloco(blocoB1),
+          b2: resumoDoBloco(blocoB2),
+          a2: resumoDoBloco(blocoA2),
+        },
+        pooled: { a: pooledA, b: pooledB },
       },
     };
     const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-c6-${commit}.json`));
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
 
-    const fmt = (n, casas = 1) => (n === null || n === undefined ? '-' : n.toFixed(casas));
+    // uma linha por lado (bloco OU pool) — halo, GPU/quadro e rAF, os
+    // três pelo mesmo `resumoDeMs`.
+    const linhaCusto = (r) => `halo p50=${fmt(r.halo.p50, 3)}ms p95=${fmt(r.halo.p95, 3)}ms (${r.halo.amostras} am.) | `
+      + `GPU/quadro p50=${fmt(r.gpuPorQuadro.p50, 2)}ms p95=${fmt(r.gpuPorQuadro.p95, 2)}ms (${r.gpuPorQuadro.amostras} am.) | `
+      + `rAF média=${fmt(r.frameTime.media, 2)} p50=${fmt(r.frameTime.p50, 2)} p95=${fmt(r.frameTime.p95, 2)} max=${fmt(r.frameTime.max, 2)} `
+      + `(${r.frameTime.acimaDeUmEMeio}/${r.frameTime.amostras} > 1,5×mediana)`;
     const linhas = [
       `=== sonda-motion c6 (halo WebGL × CSS) — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
-      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${DPR} | pt-BR | q=performance`,
-      `clipe A: ${clipeA}`,
-      `clipe B: ${clipeB}`,
+      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${DPR} | visível=${VISIVEL} | `
+        + `lang=${META_DA_QUERY.lang} q=${META_DA_QUERY.q}${META_DA_QUERY.ui ? ` ui=${META_DA_QUERY.ui}` : ''}`,
+      `clipe A: ${clipeA} (inteiro: ${brutoA})`,
+      `clipe B: ${clipeB} (inteiro: ${brutoB})`,
       `lado a lado: ${ladoALado}`,
       `luminância (YAVG 0-255, faixa 4-20px fora da borda esquerda) — `
         + `A: 100ms=${fmt(luminanciaA.t100)} 200ms=${fmt(luminanciaA.t200)} 300ms=${fmt(luminanciaA.t300)} 600ms=${fmt(luminanciaA.t600)} | `
@@ -3320,13 +4049,18 @@ async function rodarContorno() {
         + `(a referência é o PRÓPRIO shot=1 sem a flag, não o repouso ao vivo de A: `
         + `medido, shot=1 sozinho já muda essa faixa para ~27 contra ~22 ao vivo)`,
       `reduzir-movimento — sem a flag: ${fmt(luminanciaReduzidoA)} | B: ${fmt(luminanciaReduzidoB)}`,
-      `GPU do halo (só existe em B) — ${relatorio.custo.haloGpuMs.amostras} amostras, `
-        + `p50=${fmt(relatorio.custo.haloGpuMs.p50, 3)}ms p95=${fmt(relatorio.custo.haloGpuMs.p95, 3)}ms `
-        + `(halo desenhou em A: ${relatorio.custo.haloDesenhouEmA} vezes — esperado 0) `
-        + `[EXT_disjoint_timer_query_webgl2 disponível: A=${relatorio.custo.extDisponivel.a} B=${relatorio.custo.extDisponivel.b}]`,
-      `tempo de quadro nos 450ms após cada abertura (rAF, ms), 10 aberturas cada — `
-        + `A: ${frameTimeA.length} amostras p50=${fmt(relatorio.custo.frameTimeMs.a.p50, 2)} p95=${fmt(relatorio.custo.frameTimeMs.a.p95, 2)} | `
-        + `B: ${frameTimeB.length} amostras p50=${fmt(relatorio.custo.frameTimeMs.b.p50, 2)} p95=${fmt(relatorio.custo.frameTimeMs.b.p95, 2)}`,
+      `custo por bloco (${ABERTURAS_POR_BLOCO} aberturas cada, ordem A1→B1→B2→A2, janela 450ms):`,
+      `  A1 — ${linhaCusto(relatorio.custo.porBloco.a1)}`,
+      `  B1 — ${linhaCusto(relatorio.custo.porBloco.b1)}`,
+      `  B2 — ${linhaCusto(relatorio.custo.porBloco.b2)}`,
+      `  A2 — ${linhaCusto(relatorio.custo.porBloco.a2)}`,
+      `custo POOLADO — A (A1+A2) ${linhaCusto(pooledA)}`,
+      `custo POOLADO — B (B1+B2) ${linhaCusto(pooledB)}`,
+      `canvas principal — A1: ${pooledA.canvas?.drawingBufferWidth}x${pooledA.canvas?.drawingBufferHeight} dpr=${pooledA.canvas?.devicePixelRatio} | `
+        + `B1: ${pooledB.canvas?.drawingBufferWidth}x${pooledB.canvas?.drawingBufferHeight} dpr=${pooledB.canvas?.devicePixelRatio}`,
+      `[EXT_disjoint_timer_query_webgl2 disponível — A1=${relatorio.custo.porBloco.a1.extDisponivel} `
+        + `B1=${relatorio.custo.porBloco.b1.extDisponivel} B2=${relatorio.custo.porBloco.b2.extDisponivel} `
+        + `A2=${relatorio.custo.porBloco.a2.extDisponivel}]`,
       'números crus deste Mac, cabeça headless: sob vsync o rAF só entrega múltiplos de ~16,7ms — uma '
         + 'diferença de custo menor que isso pode não aparecer no tempo de quadro mesmo existindo na GPU '
         + '(mesmo ponto do comentário `SEM_VSYNC` em gpu-profile.mjs); por isso o p50/p95 da GPU acima é '
@@ -3345,6 +4079,371 @@ async function rodarContorno() {
   }
 }
 
+/**
+ * `--contorno=cancelamento` — o sub-modo PASSA/FALHA do C6: prova que o
+ * halo WebGL CANCELA o desenho nos seis jeitos que o conserto promete
+ * (K1–K6), mais um controle sem ação nenhuma (K0) que só confirma que,
+ * sem interrupção, o halo desenha "do nada" por ~400ms como sempre —
+ * sem K0, um PASSA em K1–K6 não provaria cancelamento, só ausência.
+ * Usa o MESMO `SCRIPT_GPU_HALO` de `--contorno` (`desenhosHalo`: um
+ * `{ t, ret }` por desenho, `ret` o uniform `uRetangulo` no instante)
+ * numa ÚNICA navegação para os sete casos — sem gravar clipe nenhum,
+ * só números e veredito, como `--interrupcoes`.
+ *
+ * Todo caso: abre Camadas DO NADA (o único gatilho que o halo liga,
+ * `App.tsx`), age num atraso fixo do relógio DA PÁGINA, mede os
+ * desenhos do halo, fecha o painel e só DEPOIS restaura
+ * mídia/viewport/`--ui` — nessa ordem, para a restauração nunca
+ * disputar com a leitura, e sempre incondicional (é NO-OP quando o
+ * caso não tocou aquele estado), para nada vazar de um K para o
+ * seguinte.
+ */
+async function rodarCancelamento() {
+  mkdirSync(CAPTURAS, { recursive: true });
+  let sessao = null;
+  try {
+    const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
+    const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
+
+    sessao = await abrirSonda({ janela: JANELA, prefixo: 'sonda-motion-cancelamento' });
+    const viewport = {
+      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
+    };
+    await sessao.send('Emulation.setDeviceMetricsOverride', viewport);
+    sessao.marcarViewport(viewport);
+    const versaoChrome = await sessao.send('Browser.getVersion');
+    await sessao.send('Page.addScriptToEvaluateOnNewDocument', { source: SCRIPT_GPU_HALO });
+    await carregarNoContorno(sessao, `${QUERY}&contorno=webgl`);
+
+    const fecharPainel = async (seletorPainel) => {
+      await sessao.js(`(() => {
+        const b = document.querySelector('${seletorPainel} .hud-fechar');
+        if (b) b.click();
+      })()`);
+      await esperarPor({ js: sessao.js }, `document.querySelector('${seletorPainel}') === null`, 3000);
+      await dorme(300);
+    };
+    const esperarRestaurarJanela = async () => {
+      await esperarPor(
+        { js: sessao.js },
+        `window.innerWidth === ${JANELA_W} && window.innerHeight === ${JANELA_H}`,
+        2000
+      );
+      await esperarQuadro(sessao);
+      await esperarQuadro(sessao);
+    };
+    const restaurarTudo = async () => {
+      await sessao.send('Emulation.setEmulatedMedia', { features: [] });
+      await sessao.send('Emulation.setDeviceMetricsOverride', viewport);
+      await esperarRestaurarJanela();
+      await sessao.js("document.documentElement.style.removeProperty('--ui')");
+    };
+    const abrirCamadasDoNada = async () => {
+      // garante ausente antes de abrir "do nada" — o único gatilho que
+      // o halo liga (`App.tsx`, guarda `anterior !== null`)
+      await esperarPor({ js: sessao.js }, `document.querySelector('${SEL_CAMADAS_PAINEL}') === null`, 3000);
+      await clicarReal(sessao, SEL_CAMADAS_GATILHO);
+      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_PAINEL}'))`, 3000);
+      return sessao.js('performance.now()'); // relógio DA PÁGINA, nunca o do Node
+    };
+    const contarDesenhos = () => sessao.js('window.__contornoProf.desenhosHalo.length');
+    const lerDesenhosDesde = async (antes) => (await sessao.js('window.__contornoProf.desenhosHalo')).slice(antes);
+    // espera até a página relatar `alvoMs` desde `tPagina` (relógio DA
+    // PÁGINA) — uma leitura, um `dorme`, sem laço: a mesma folga de
+    // `esperarAte` (`--interrupcoes`), contra `performance.now()` em
+    // vez do `Date.now()` do Node.
+    const esperarAtePagina = async (tPagina, alvoMs) => {
+      const agora = await sessao.js('performance.now()');
+      const resta = alvoMs - (agora - tPagina);
+      if (resta > 0) await dorme(resta);
+      return sessao.js('performance.now()');
+    };
+    // ESPERA A ENTRADA ACABAR, no quadro em que ela acaba (K2/K4): um
+    // atraso fixo não serve — a entrada termina ~260–290ms depois do
+    // clique, conforme o commit do React, e o resize ainda leva ~60ms do
+    // comando até a página; entre "a entrada já acabou" e "o halo ainda
+    // vive" (400ms) sobra uma janela estreita que um número fixo erra
+    // para os dois lados (medido: +280ms agia com a entrada ainda viva,
+    // +320ms fazia o evento chegar só aos ~380ms). Teto de 600ms.
+    const esperarFimDaEntrada = () => sessao.send('Runtime.evaluate', {
+      expression: `new Promise((r) => {
+        const t0 = performance.now();
+        const olhar = () => {
+          const el = document.querySelector('${SEL_CAMADAS_PAINEL}');
+          const acabou = !el || el.getAnimations().every((a) => a.playState === 'finished');
+          if (acabou || performance.now() - t0 > 600) r(performance.now());
+          else requestAnimationFrame(olhar);
+        };
+        olhar();
+      })`,
+      awaitPromise: true,
+      returnByValue: true,
+    });
+    // quando a entrada (WAAPI) do painel termina, pela amostra tirada
+    // enquanto ela ainda RODAVA — `duration - currentTime` é quanto
+    // falta, do relógio da PRÓPRIA página (`linhaDoTempo`,
+    // `document.timeline.currentTime`, a mesma base de
+    // `performance.now()` que `desenhosHalo[].t`).
+    const tempoDeFimDeEntrada = (amostra) => {
+      const emCurso = (amostra.waapi ?? []).find((w) => w.playState === 'running');
+      return emCurso
+        ? amostra.linhaDoTempo + ((emCurso.duration ?? 0) - (emCurso.currentTime ?? 0))
+        : amostra.linhaDoTempo; // já tinha acabado quando a amostra foi tirada
+    };
+    const ligarReduzido = () => sessao.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+    });
+    const agirResize = () => sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: JANELA_W - 140, height: JANELA_H - 50, deviceScaleFactor: DPR, mobile: false,
+    });
+
+    // ---------------------------------------------------------------
+    // K0 — CONTROLE, sem ação nenhuma: o halo tem de desenhar "do nada"
+    // por ~400ms quando NADA o interrompe.
+    // ---------------------------------------------------------------
+    const casoK0 = async () => {
+      const tPagina = await abrirCamadasDoNada();
+      const antes = await contarDesenhos();
+      await dorme(600); // 450ms pedidos + folga além do teto do halo (400ms), igual ao resto da sonda
+      const desenhos = await lerDesenhosDesde(antes);
+      await fecharPainel(SEL_CAMADAS_PAINEL);
+      await restaurarTudo();
+      const tempos = desenhos.map((d) => d.t);
+      const primeiro = tempos.length ? Math.min(...tempos) : null;
+      const ultimo = tempos.length ? Math.max(...tempos) : null;
+      const duracaoMs = primeiro !== null ? ultimo - primeiro : null;
+      const passa = desenhos.length >= 3 && duracaoMs !== null && duracaoMs >= 250 && duracaoMs <= 450;
+      return {
+        veredito: passa ? 'PASSA' : 'FALHA',
+        desenhosAntes: antes,
+        desenhosDepois: antes + desenhos.length,
+        contagem: desenhos.length,
+        duracaoMs,
+        msUltimoDesenhoAposAcao: ultimo !== null ? ultimo - tPagina : null,
+      };
+    };
+
+    // ---------------------------------------------------------------
+    // K1–K4 — SUPRESSÃO: reduzir movimento (K1/K2) ou redimensionar
+    // (K3/K4) em dois instantes (+100ms, dentro da entrada de 260ms; e
+    // no quadro em que ela acaba, `esperarFimDaEntrada`). PASSA exige >=1 desenho ANTES do evento
+    // (o halo tinha mesmo começado) e NENHUM depois de evento+20ms.
+    // K2/K4 acrescentam a PROVA DE LACUNA: a entrada já tinha acabado
+    // quando o comando chegou ("at the command", a amostra que
+    // `observarAposEvento` tira ANTES de agir) E houve pelo menos um
+    // desenho do halo depois do fim da entrada (`tempoDeFimDeEntrada`,
+    // de uma amostra tirada logo na abertura, ainda com ela rodando) —
+    // sem os dois, K2/K4 não provam que o halo sobreviveu à entrada
+    // por conta própria, e saem INCONCLUSIVO.
+    // ---------------------------------------------------------------
+    const rodarCasoDeSupressao = async ({
+      evento, delayMs, comLacuna, agir,
+    }) => {
+      const tPagina = await abrirCamadasDoNada();
+      const amostraAbertura = comLacuna ? await sessao.js(jsAmostraPainel(SEL_CAMADAS_PAINEL)) : null;
+      const tFimEntrada = amostraAbertura ? tempoDeFimDeEntrada(amostraAbertura) : null;
+      const antes = await contarDesenhos();
+      if (comLacuna) await esperarFimDaEntrada();
+      else await esperarAtePagina(tPagina, delayMs);
+      const obs = await observarAposEvento(
+        sessao,
+        { evento, construirAmostra: () => jsAmostraPainel(SEL_CAMADAS_PAINEL) },
+        agir
+      );
+      await dorme(500); // deixa o resto da janela do halo (até 400ms) terminar, se ainda estiver correndo
+      const desenhos = await lerDesenhosDesde(antes);
+      await fecharPainel(SEL_CAMADAS_PAINEL);
+      await restaurarTudo();
+
+      const base = { desenhosAntes: antes, desenhosDepois: antes + desenhos.length };
+      if (comLacuna) {
+        const entradaAcabouNoComando = (obs.antesDoComando.waapi ?? []).length === 0
+          || obs.antesDoComando.waapi.every((w) => w.playState === 'finished');
+        const desenhoDepoisDaEntrada = desenhos.some((d) => d.t > tFimEntrada);
+        if (!(entradaAcabouNoComando && desenhoDepoisDaEntrada)) {
+          return {
+            ...base,
+            veredito: 'INCONCLUSIVO',
+            motivo: 'sem prova de que o halo sobreviveu ao fim da entrada',
+            entradaAcabouNoComando,
+            desenhoDepoisDaEntrada,
+          };
+        }
+      }
+      if (!obs.chegou) return { ...base, veredito: 'INCONCLUSIVO', motivo: 'evento não chegou' };
+      const tEvento = obs.antesDoComando.tAntes + obs.msAntesAteEvento;
+      // O EVENTO TEM DE PEGAR O HALO VIVO: ele dura 400ms desde a abertura,
+      // e um evento que só chega depois disso (medido no build velho, K4:
+      // o resize de +320ms chegou à página aos ~400ms) acharia "nenhum
+      // desenho depois" porque o halo já tinha acabado SOZINHO — um
+      // PASSA vazio. Perto do fim natural, nada se prova.
+      if (tEvento - tPagina >= 380) {
+        return { ...base, veredito: 'INCONCLUSIVO', motivo: 'o evento chegou depois do fim natural do halo', tEventoMs: tEvento - tPagina };
+      }
+      const antesDoEvento = desenhos.filter((d) => d.t < tEvento).length;
+      const depoisDoLimite = desenhos.filter((d) => d.t > tEvento + 20).length;
+      const passa = antesDoEvento >= 1 && depoisDoLimite === 0;
+      const ultimo = desenhos.length ? Math.max(...desenhos.map((d) => d.t)) : null;
+      return {
+        ...base,
+        veredito: passa ? 'PASSA' : 'FALHA',
+        tEventoMs: tEvento - tPagina,
+        desenhosAntesDoEvento: antesDoEvento,
+        desenhosDepoisDoLimite: depoisDoLimite,
+        msUltimoDesenhoAposAcao: ultimo !== null ? ultimo - tEvento : null,
+      };
+    };
+
+    // ---------------------------------------------------------------
+    // K5 — o painel muda de TAMANHO sozinho (`--ui`, sem resize de
+    // janela): o halo tem de seguir a caixa de REPOUSO nova
+    // (`jsCaixaDeRepouso`, a mesma conta de `contornoDaUi.ts`) a partir
+    // de 2 quadros depois da mudança — Y/largura/altura sempre; X só
+    // depois que a entrada (260ms) já tinha acabado, porque até lá o X
+    // do halo segue o deslizar da entrada, não o repouso.
+    // ---------------------------------------------------------------
+    const casoK5 = async () => {
+      const tPagina = await abrirCamadasDoNada();
+      const amostraAbertura = await sessao.js(jsAmostraPainel(SEL_CAMADAS_PAINEL));
+      const tFimEntrada = tempoDeFimDeEntrada(amostraAbertura);
+      const antes = await contarDesenhos();
+      await esperarAtePagina(tPagina, 150);
+      const quadrosAntes = await sessao.js('window.__contornoProf.rafAbs.length');
+      await sessao.js("document.documentElement.style.setProperty('--ui', '1.2')");
+      await esperarQuadros(sessao, 3);
+      const caixa = await sessao.js(jsCaixaDeRepouso(SEL_CAMADAS_PAINEL));
+      // "2 quadros depois da mudança" — o 3º quadro novo desde
+      // `quadrosAntes` (os índices 0 e 1 ainda são transição de layout).
+      const limiarT = await sessao.js(`window.__contornoProf.rafAbs[${quadrosAntes + 2}] ?? performance.now()`);
+      await dorme(250); // deixa o resto da janela de 400ms do halo passar
+      const desenhos = await lerDesenhosDesde(antes);
+      await fecharPainel(SEL_CAMADAS_PAINEL);
+      await restaurarTudo();
+
+      const base = { desenhosAntes: antes, desenhosDepois: antes + desenhos.length, caixaDeRepouso: caixa };
+      if (!caixa) return { ...base, veredito: 'INCONCLUSIVO', motivo: '.hud-root ou painel não encontrado' };
+      const dentroDeUmPx = (a, b) => Math.abs(a - b) <= 1;
+      const relevantes = desenhos.filter((d) => d.t >= limiarT && d.ret);
+      const bate = (d) => dentroDeUmPx(d.ret[1], caixa.y)
+        && dentroDeUmPx(d.ret[2], caixa.width)
+        && dentroDeUmPx(d.ret[3], caixa.height)
+        && (d.t < tFimEntrada || dentroDeUmPx(d.ret[0], caixa.x));
+      const todasBatem = relevantes.length > 0 && relevantes.every(bate);
+      const ultimo = desenhos.length ? Math.max(...desenhos.map((d) => d.t)) : null;
+      return {
+        ...base,
+        veredito: relevantes.length === 0 ? 'INCONCLUSIVO' : (todasBatem ? 'PASSA' : 'FALHA'),
+        tFimEntradaMs: tFimEntrada - tPagina,
+        desenhosVerificados: relevantes.length,
+        msUltimoDesenhoAposAcao: ultimo !== null ? ultimo - tPagina : null,
+      };
+    };
+
+    // ---------------------------------------------------------------
+    // K6 — TROCA DE FERRAMENTA: Ajustes substitui Camadas (nunca fecha
+    // "vazio") — o halo, preso ao painel que morreu, não pode continuar
+    // desenhando depois do clique que troca.
+    // ---------------------------------------------------------------
+    const casoK6 = async () => {
+      const tPagina = await abrirCamadasDoNada();
+      const antes = await contarDesenhos();
+      await esperarAtePagina(tPagina, 100);
+      const tAcao = await sessao.js(`(() => {
+        document.querySelector('${SEL_AJUSTES_GATILHO}')?.click();
+        return performance.now();
+      })()`);
+      const trocou = await esperarPor(
+        { js: sessao.js }, `Boolean(document.querySelector('${SEL_AJUSTES_PAINEL}'))`, 3000
+      );
+      await dorme(500);
+      const desenhos = await lerDesenhosDesde(antes);
+      await fecharPainel(SEL_AJUSTES_PAINEL);
+      await restaurarTudo();
+
+      const base = { desenhosAntes: antes, desenhosDepois: antes + desenhos.length };
+      if (trocou === null) return { ...base, veredito: 'INCONCLUSIVO', motivo: 'Ajustes não abriu' };
+      const depoisDoLimite = desenhos.filter((d) => d.t > tAcao + 50).length;
+      const ultimo = desenhos.length ? Math.max(...desenhos.map((d) => d.t)) : null;
+      return {
+        ...base,
+        veredito: depoisDoLimite === 0 ? 'PASSA' : 'FALHA',
+        tAcaoMs: tAcao - tPagina,
+        desenhosDepoisDoLimite: depoisDoLimite,
+        msUltimoDesenhoAposAcao: ultimo !== null ? ultimo - tAcao : null,
+      };
+    };
+
+    process.stdout.write('  ·     K0 controle (sem ação)…\n');
+    const k0 = await casoK0();
+    process.stdout.write('  ·     K1 reduzir-movimento @100ms…\n');
+    const k1 = await rodarCasoDeSupressao({
+      evento: 'reduzido', delayMs: 100, comLacuna: false, agir: ligarReduzido,
+    });
+    process.stdout.write('  ·     K2 reduzir-movimento no fim da entrada (lacuna)…\n');
+    const k2 = await rodarCasoDeSupressao({
+      evento: 'reduzido', comLacuna: true, agir: ligarReduzido,
+    });
+    process.stdout.write('  ·     K3 resize @100ms…\n');
+    const k3 = await rodarCasoDeSupressao({
+      evento: 'resize', delayMs: 100, comLacuna: false, agir: agirResize,
+    });
+    process.stdout.write('  ·     K4 resize no fim da entrada (lacuna)…\n');
+    const k4 = await rodarCasoDeSupressao({
+      evento: 'resize', comLacuna: true, agir: agirResize,
+    });
+    process.stdout.write('  ·     K5 painel muda de tamanho sozinho…\n');
+    const k5 = await casoK5();
+    process.stdout.write('  ·     K6 troca de ferramenta…\n');
+    const k6 = await casoK6();
+
+    const veredito = combinarVereditos([k0, k1, k2, k3, k4, k5, k6].map((k) => k.veredito));
+
+    const relatorio = {
+      meta: {
+        commit,
+        dirty,
+        appCommit: APP_COMMIT,
+        chrome: versaoChrome.product,
+        app: APP,
+        viewport: { width: JANELA_W, height: JANELA_H },
+        dpr: DPR,
+        visivel: VISIVEL,
+        geradoEm: new Date().toISOString(),
+      },
+      k0, k1, k2, k3, k4, k5, k6,
+      veredito,
+    };
+    const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-c6-cancelamento-${commit}.json`));
+    writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
+
+    const linhas = [
+      `=== sonda-motion contorno cancelamento — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
+      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${DPR} | visível=${VISIVEL}`,
+      `K0 controle: ${k0.veredito} (desenhos=${k0.contagem}, duração=${fmt(k0.duracaoMs, 0)}ms)`,
+      `K1 reduzir-movimento @100ms: ${k1.veredito} `
+        + `(antes-do-evento=${k1.desenhosAntesDoEvento ?? '-'}, depois-do-limite=${k1.desenhosDepoisDoLimite ?? '-'}, motivo=${k1.motivo ?? '-'})`,
+      `K2 reduzir-movimento no fim da entrada (lacuna): ${k2.veredito} `
+        + `(antes-do-evento=${k2.desenhosAntesDoEvento ?? '-'}, depois-do-limite=${k2.desenhosDepoisDoLimite ?? '-'}, motivo=${k2.motivo ?? '-'})`,
+      `K3 resize @100ms: ${k3.veredito} `
+        + `(antes-do-evento=${k3.desenhosAntesDoEvento ?? '-'}, depois-do-limite=${k3.desenhosDepoisDoLimite ?? '-'}, motivo=${k3.motivo ?? '-'})`,
+      `K4 resize no fim da entrada (lacuna): ${k4.veredito} `
+        + `(antes-do-evento=${k4.desenhosAntesDoEvento ?? '-'}, depois-do-limite=${k4.desenhosDepoisDoLimite ?? '-'}, motivo=${k4.motivo ?? '-'})`,
+      `K5 painel muda de tamanho sozinho: ${k5.veredito} `
+        + `(desenhos-verificados=${k5.desenhosVerificados ?? '-'}, motivo=${k5.motivo ?? '-'})`,
+      `K6 troca de ferramenta: ${k6.veredito} `
+        + `(depois-do-limite=${k6.desenhosDepoisDoLimite ?? '-'}, motivo=${k6.motivo ?? '-'})`,
+      `veredito geral: ${veredito}`,
+      `JSON: ${destinoJson}`,
+    ];
+    process.stdout.write(`${linhas.join('\n')}\n`);
+  } catch (erro) {
+    process.stdout.write(`BLOCKED: ${erro.stack || erro.message}\n`);
+    process.exitCode = 1;
+  } finally {
+    if (sessao) await sessao.fechar();
+  }
+}
+
 // ============================================================
 // A CORRIDA
 // ============================================================
@@ -3360,7 +4459,11 @@ if (FOLHA) {
 } else if (C5) {
   await rodarC5(C5_QUAIS);
 } else if (CONTORNO) {
-  await rodarContorno();
+  if (CONTORNO_MODO === 'cancelamento') {
+    await rodarCancelamento();
+  } else {
+    await rodarContorno();
+  }
 } else if (!SEQUENCIA) {
 mkdirSync(CAPTURAS, { recursive: true });
 const pastaQuadrosMesa = resolve(tmpdir(), `sonda-motion-mesa-${process.pid}`);
@@ -3625,7 +4728,6 @@ try {
     // OS TRÊS ABAIXO (idioma/preset/ui) leem a QUERY EFETIVA (depois de
     // `--query`, se houver) — nunca um texto fixo, que ficaria errado
     // assim que `lang=`/`q=`/`ui=` chegassem por ali sobrescritos.
-    const paramsQuery = new URLSearchParams(QUERY);
     const relatorio = {
       meta: {
         commit,
@@ -3635,9 +4737,9 @@ try {
         userAgent: versaoChrome.userAgent,
         app: APP,
         query: QUERY,
-        idioma: paramsQuery.get('lang') ?? 'pt-BR',
-        preset: paramsQuery.get('q') ?? 'performance',
-        ui: paramsQuery.get('ui') ? `?ui=${paramsQuery.get('ui')}` : 'default (sem ?ui=)',
+        idioma: META_DA_QUERY.lang,
+        preset: META_DA_QUERY.q,
+        ui: META_DA_QUERY.ui ? `?ui=${META_DA_QUERY.ui}` : 'default (sem ?ui=)',
         viewportInicial,
         dpr,
         geradoEm: new Date().toISOString(),
@@ -3695,7 +4797,7 @@ try {
 
     const linhas = [
       `=== sonda-motion c0 — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
-      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${dpr} | pt-BR | q=performance`,
+      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${dpr} | ${ROTULO_DA_QUERY}`,
       `clipe mesa: ${mesa.clipe} (${quadrosMesa.length} quadros)`,
       `clipe toque: ${telefone.clipe} (${quadrosToque.length} quadros)`,
       `E1 folha solta (toque): presente aos ${e1UltimoPresente ? e1UltimoPresente.dtMs.toFixed(1) : '—'}ms, `
