@@ -315,68 +315,25 @@
   padding: var(--pad-painel);
   font-size: 0.72rem;
   font-weight: 300;
-  /* A ENTRADA NA MESA E NO TABLET (M2 do plano de motion) — O MESMO
-     MOVIMENTO DA FOLHA DO TELEFONE, no outro eixo. Até aqui o painel
-     simplesmente APARECIA; a primeira tentativa deu-lhe um empurrão de
-     8 px, e o dono viu o que era: *"nao me parece que o menu está saindo
-     da lateral e entrando na tela suavemente"*. Ele tinha razão — 8 px
-     não é entrar, é piscar deslocado.
-     Agora ele percorre a própria largura MAIS o afastamento da régua
-     (`--regua-largura`, a mesma variável que o posiciona em repouso, com
-     o `1rem` de sempre onde a régua não existe): assim a borda esquerda
-     dele começa exatamente NA BORDA DA JANELA, e a raiz do HUD
-     (`position: fixed; overflow: hidden`) o corta inteiro. Ele sai de
-     fora da tela, passando por trás da régua — que pinta acima dele
-     (`z-index` 47 contra 46).
-     SÓ A LARGURA NÃO BASTAVA, e a primeira gravação mostrou por quê: a
-     régua tem a altura dos quatro ícones e o painel é bem mais alto, então
-     sobrava uma tira de TEXTO do painel espiando na borda, abaixo dela.
-     Sem `opacity`: uma gaveta não desbota, ela chega.
-     MESMO TEMPO E MESMA CURVA DA FOLHA (`--t-folha`, `--curva-folha`),
-     porque é o mesmo gesto — só o eixo muda. O `@media` do telefone
-     (fatia 9) sobrescreve esta linha com `folhaSobe`, que é este
-     movimento em Y.
-     `animation` e não `transition`, pela mesma razão do telefone: as
-     gavetas DESMONTAM ao fechar, e sem quadro inicial no DOM não há de
-     onde uma transição partir.
-     QUEM ANIMA MEXE NA MEDIDA: `App.tsx` mede este nó para reservar céu
-     (`AREAS_RESERVADAS`), e a medição do primeiro quadro pega o painel
-     onde ele PARTE — fora da tela. Por isso o App refaz a conta quando
-     esta animação termina, pelo NOME dela e de nenhuma outra. No meio do
-     caminho a reserva fica adiantada, e não atrasada: o que ela deixa de
-     proteger é justamente o retângulo que o painel opaco está chegando
-     para cobrir. */
-  animation: entraPainel var(--t-folha) var(--curva-folha) both;
 }
-@keyframes entraPainel {
-  from {
-    transform: translateX(calc(100% + var(--regua-largura, 1rem)));
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-/* A SAÍDA NA MESA — o mesmo caminho de volta, e a metade que CSS nenhum
-   resolve sozinho: quando a gaveta fecha, o nó DESMONTA. Quem o segura
-   por mais um instante é o `useGavetas`, e o sinal de que ele está
-   segurando é o `inert` — que é, ao mesmo tempo, a coisa CERTA a pôr num
-   painel que sai: nada dentro dele recebe toque, nada recebe foco, e ele
-   some da árvore de quem ouve a tela apesar de continuar visível. Um
-   atributo, três garantias, e nenhuma classe inventada. É o MESMO
-   contrato do telefone (fatia 9).
-   Quem desmonta PERGUNTA a duração a este nó (`duracaoDaSaida`, em
-   `useGavetas.ts`) em vez de repetir o número em JavaScript. */
-.hud-dialogo[inert] {
-  animation: saiPainel var(--t-folha) var(--curva-folha) both;
-}
-@keyframes saiPainel {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(calc(100% + var(--regua-largura, 1rem)));
-  }
-}
+/* A ENTRADA E A SAÍDA NA MESA — e no telefone, fatia 9 — moraram AQUI,
+   em dois `@keyframes`, até o C1 do plano de motion
+   (`docs/PLANO-MOTION-UI.md`). Cada um só sabia partir do PRÓPRIO
+   repouso, cego ao que o ARRASTO (escrevendo `transform` à mão no
+   MESMO nó) estava fazendo ao mesmo tempo — a causa medida de três
+   defeitos (E1: saída cortada pelo arrasto; E3: troca de gaveta
+   recomeçando o percurso inteiro; E6: eixo antigo preso numa saída
+   quando o aparelho girava no meio do caminho).
+   Viraram UMA chamada WAAPI (`ir`, em `src/hooks/movimentoDaGaveta.ts`),
+   disparada por `useGavetas.ts`: ela lê o transform VISUAL do nó ANTES
+   de animar, então entrada, saída, arrasto e reabertura partem sempre
+   de onde a superfície REALMENTE está, nunca de um repouso presumido.
+   Os tokens (`--t-folha`, `--curva-folha`, na raiz) continuam os
+   mesmos — só quem os lê mudou de CSS para JavaScript. A borda
+   ESQUERDA do painel, fora da tela, ainda pousa exatamente na borda da
+   janela (a própria largura mais `--regua-largura`, ou o `1rem` de
+   sempre onde a régua não existe) — a mesma geometria, transcrita em
+   `foraDaTelaMesa`. */
 
 /* ---- O CABEÇALHO ÚNICO DOS PAINÉIS (Lote 2a, PLAN-UI.md §3.2/§11) ---
    `CabecalhoDoPainel.tsx` — PRESO no topo do `.hud-dialogo` rolável

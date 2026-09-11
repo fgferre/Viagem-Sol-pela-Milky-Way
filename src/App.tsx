@@ -152,6 +152,34 @@ const AREAS_RESERVADAS = [
 ].join(', ');
 
 /**
+ * A CAIXA DE REPOUSO DE UM NÓ — como `getBoundingClientRect`, mas SEM o
+ * transform que o movimento das gavetas escreve durante a entrada, a
+ * saída ou o arrasto (`useGavetas.ts`/`movimentoDaGaveta.ts`, C1 do
+ * plano de motion: a superfície virou uma animação WAAPI, e o
+ * transform dela muda a CADA quadro). `offsetLeft`/`offsetTop` são
+ * medidas de LAYOUT — um transform nunca as muda, só o que a tela
+ * pinta — e somá-las até a RAIZ DO HUD dá a mesma origem que
+ * `getBoundingClientRect` daria em repouso, porque `.hud-root` fica
+ * exatamente na origem da janela (`position: fixed; inset: 0`,
+ * `01-base.css`).
+ * `null` quando o nó não é descendente de `raiz` (ou está
+ * `display: none`, sem `offsetParent`) — a mesma guarda de "caixa
+ * vazia não reserva nada" que o filtro em `medir` já aplicava.
+ */
+const caixaDeRepouso = (no: HTMLElement, raiz: HTMLElement): DOMRect | null => {
+  let esquerda = 0;
+  let topo = 0;
+  let atual: HTMLElement | null = no;
+  while (atual && atual !== raiz) {
+    esquerda += atual.offsetLeft;
+    topo += atual.offsetTop;
+    atual = atual.offsetParent as HTMLElement | null;
+  }
+  if (!atual) return null;
+  return new DOMRect(esquerda, topo, no.offsetWidth, no.offsetHeight);
+};
+
+/**
  * A TELA É DE TOQUE? — `pointer: coarse`, lido num lugar só. Ele é
  * CAPACIDADE e não largura: quem decide GEOMETRIA é
  * `LARGURA_DO_CELULAR_PX` (o `useCelular`), e a casa reservou o `coarse`
@@ -427,12 +455,20 @@ export default function App() {
       } else root.style.removeProperty('--barra-fim');
       labelsRef.current?.reservar(
         [...root.querySelectorAll(AREAS_RESERVADAS)]
-          .map((e) => e.getBoundingClientRect())
+          // O DIÁLOGO MEDE PELA CAIXA DE REPOUSO (M2/C1 do plano de
+          // motion): é o único da lista que se DESLOCA por `transform`
+          // (a superfície das gavetas, `useGavetas.ts`) — os outros
+          // ficam de pé, e `getBoundingClientRect` já basta para eles.
+          .map((e) =>
+            e.matches('[data-dialogo]')
+              ? caixaDeRepouso(e as HTMLElement, root)
+              : e.getBoundingClientRect()
+          )
           // CAIXA VAZIA NÃO RESERVA NADA. Em `?shot=2` o HUD inteiro é
           // `display: none` e cada peça devolveria 0×0 na quina de cima
           // à esquerda — um punhado de retângulos degenerados apagando
           // os rótulos que nascessem ali.
-          .filter((b) => b.width > 0 && b.height > 0)
+          .filter((b): b is DOMRect => b !== null && b.width > 0 && b.height > 0)
           .map((b) => ({ left: b.left, right: b.right, top: b.top, bottom: b.bottom }))
       );
       // A RESERVA DA FICHA NA CÂMERA (Lote 3, PLAN-UI.md §6, item 225):
@@ -453,9 +489,20 @@ export default function App() {
       // `.bare-mode` (`?shot=2`, onde a ficha existe no DOM mas o CSS a
       // apaga) o retângulo medido é 0×0 — a MESMA guarda que já protege
       // os rótulos, duas linhas acima — e a reserva volta a zero.
+      // SEGUE `montada`, NÃO `gaveta` (E7 do reaudito, C1 do plano de
+      // motion): `gaveta` vira outra coisa no INSTANTE em que a ficha
+      // começa a sair, mas `montada` (`useGavetas.ts`) continua sendo
+      // 'ficha' enquanto o nó ainda está desenhado, saindo — soltar a
+      // reserva ali recuaria a câmera de volta bem no meio da saída. A
+      // troca para OUTRA gaveta já atualiza a composição no mesmo
+      // commit (não há saída entre trocas), sem esperar a ficha velha.
       const painelDaFicha =
-        gaveta === 'ficha' ? root.querySelector<HTMLElement>('[data-dialogo="ficha"]') : null;
-      const retFicha = painelDaFicha?.getBoundingClientRect() ?? null;
+        montada === 'ficha' ? root.querySelector<HTMLElement>('[data-dialogo="ficha"]') : null;
+      // A MESMA caixa de repouso dos rótulos: a ficha nasce FORA da tela
+      // (a entrada a desliza até o lugar), e o retângulo visual lido
+      // agora seria o de onde ela parte — sem o `animationend` que antes
+      // remedia no fim, a câmera ficaria sem reservar o lugar dela.
+      const retFicha = painelDaFicha ? caixaDeRepouso(painelDaFicha, root) : null;
       if (retFicha && retFicha.width > 0 && retFicha.height > 0) {
         if (celular) {
           const tetoPx = TETO_DA_FOLHA_COMPACTA_REM * 16 * escalaDaUi();
@@ -494,32 +541,19 @@ export default function App() {
     // refaz a medição quando ela chega.
     const chegadaDaFicha = new MutationObserver(medir);
     chegadaDaFicha.observe(root, { childList: true });
-    // O PAINEL QUE ENTRA É MEDIDO ONDE ELE COMEÇA (M2 do plano de
-    // motion). É a MESMA superfície entrando pela própria borda nos dois
-    // arranjos: na mesa o painel percorre a largura dele saindo de trás
-    // da régua (`entraPainel`, fatia 1), no telefone a folha percorre a
-    // altura dela (`folhaSobe`, fatia 9). Nos dois casos o
-    // `MutationObserver` acima mede no PRIMEIRO quadro, com o nó ainda
-    // FORA DA TELA — e nenhum dos dois observadores vê uma translação
-    // TERMINAR, porque uma translação não muda tamanho nem árvore. Sem
-    // esta linha a reserva do céu ficava presa onde o painel nasceu (o
-    // telefone já tinha o defeito antes desta rodada; é o mesmo
-    // conserto).
-    // PELO NOME DA ANIMAÇÃO, e não em qualquer `animationend`: o filete
-    // das abas e o reflexo da borda também terminam, e remedir a cada um
-    // deles seria forçar layout à toa.
-    const aoAssentar = (e: AnimationEvent) => {
-      if (e.animationName === 'entraPainel' || e.animationName === 'folhaSobe') medir();
-    };
-    root.addEventListener('animationend', aoAssentar);
+    // NENHUM `animationend` PARA REMEDIR (C1 do plano de motion): a
+    // caixa que `medir` lê para o `[data-dialogo]` já é a de REPOUSO
+    // (`caixaDeRepouso`, acima), a mesma do primeiro quadro ao último —
+    // a entrada/saída virou uma animação WAAPI que só desloca por
+    // `transform`, e layout nenhum "assenta" no fim dela para justificar
+    // uma segunda medição.
     window.addEventListener('resize', medir);
     return () => {
       observador.disconnect();
       chegadaDaFicha.disconnect();
-      root.removeEventListener('animationend', aoAssentar);
       window.removeEventListener('resize', medir);
     };
-  }, [phase, gaveta, celular]);
+  }, [phase, montada, celular]);
 
   // estado da camada de carregamento; `done` é o que dispara o merge.
   // O erro ganha do ?loader= fixo: uma captura de QA com asset quebrado

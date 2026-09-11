@@ -13,9 +13,19 @@
 // aqui. O que se pina em `useGavetas.test.ts` são as regras — que é onde
 // a decisão mora; o `useState` em volta delas é encanamento.
 // ============================================================
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrastoDePonteiro } from '../three/arrastoDePonteiro';
 import type { EstadoDaEscada, Phase } from '../three/director';
+import {
+  REPOUSO,
+  cancelar,
+  desvanecer,
+  emMilissegundos,
+  foraDaTelaCelular,
+  foraDaTelaMesa,
+  ir,
+  lerTokens,
+} from './movimentoDaGaveta';
 
 /**
  * A QUINTA É DO TELEFONE (item 62, 23/08): `tempo` é a MESMA
@@ -111,32 +121,21 @@ export const aoAbrirFicha = (
 ): boolean => (atual === 'ficha' && anterior !== 'ficha' ? false : expandida);
 
 /**
- * QUANTO DURA A SAÍDA DA FOLHA — o mesmo 260 ms da entrada (o
- * `@keyframes folhaSobe`, fatia 9), porque é o mesmo movimento ao
- * contrário. Mora aqui e não no CSS porque quem segura o nó desmontando
- * é JavaScript: uma folha que fechou já não tem elemento para animar.
+ * QUANTO ESPERAR ANTES DE DESMONTAR UM CONTEÚDO DOBRÁVEL — PERGUNTADO
+ * AO PRÓPRIO NÓ, e não escrito aqui. Hoje serve só `usePresenca.ts`
+ * (§5 do plano de motion, os acordeões: as seções da ficha, o
+ * "Avançado" dos Ajustes) — as CINCO GAVETAS pararam de precisar disto
+ * no C1: a saída delas virou uma animação WAAPI (`ir`, em
+ * `movimentoDaGaveta.ts`), que já SABE quando termina pelo próprio
+ * `finished`, em vez de perguntar ao CSS qual `@keyframes` venceu.
  *
- * PRIVADA, e com UM leitor só: o `soltar` do arrasto que segue a folha
- * (fix, 09/09: a MESMA curva/duração de `folhaDesce` termina o arrasto
- * fora da tela). O desmonte, que era o outro leitor, passou a PERGUNTAR
- * a duração ao nó (`duracaoDaSaida`, abaixo) em vez de repetir o número.
- * Ela nasceu exportada por hábito, e um `export` sem consumidor é
- * superfície pública que envelhece calada.
- */
-const SAIDA_DA_FOLHA_MS = 260;
-
-/**
- * QUANTO ESPERAR ANTES DE DESMONTAR — PERGUNTADO AO PRÓPRIO NÓ, e não
- * escrito aqui. São duas regras diferentes (`folhaDesce` no telefone,
- * `saiPainel` na mesa) e três situações que as zeram (movimento
- * reduzido, captura, e o dia em que alguém retimar o CSS) — uma cópia
- * em JavaScript de cada duração seria um segundo relógio para discordar
- * do primeiro, que é exatamente o que o plano de motion proíbe.
- *
- * `animationDuration` do nó JÁ marcado com `inert` devolve a duração
- * EFETIVA da regra que o navegador escolheu: `saiPainel` na mesa,
- * `folhaDesce` no telefone, `0s` onde o CSS declara `animation: none`.
- * Uma leitura por fechamento, nunca por quadro.
+ * Os acordeões continuam em `@keyframes` (`abreSanfona`/`fechaSanfona`,
+ * `01-base.css`): `animationDuration` do nó JÁ marcado com a classe de
+ * saída devolve a duração EFETIVA da regra que o navegador escolheu,
+ * `0s` onde a preferência reduzida ou a captura zeram os tokens. Uma
+ * leitura por fechamento, nunca por quadro — uma cópia em JavaScript
+ * dessa duração seria um segundo relógio para discordar do CSS, que é
+ * exatamente o que o plano de motion proíbe.
  */
 export const duracaoDaSaida = (no: Element | null): number => {
   if (!no) return 0;
@@ -144,13 +143,7 @@ export const duracaoDaSaida = (no: Element | null): number => {
     0,
     ...getComputedStyle(no)
       .animationDuration.split(',')
-      .map((cru) => {
-        const termo = cru.trim();
-        const n = Number.parseFloat(termo);
-        if (!Number.isFinite(n)) return 0;
-        // o navegador devolve segundos ("0.15s") ou milissegundos
-        return termo.endsWith('ms') ? n : n * 1000;
-      })
+      .map(emMilissegundos)
   );
 };
 
@@ -192,6 +185,38 @@ export const gavetaQueSai = (
   gaveta: Gaveta | null,
   imovel: boolean
 ): Gaveta | null => (!imovel && anterior !== null && gaveta === null ? anterior : null);
+
+/** as três formas de uma gaveta CHEGAR (o plano de motion, C1) — ver
+ *  `tipoDeEntrada`, abaixo, para o que cada uma significa. */
+export type TipoDeEntrada = 'abre' | 'troca' | 'reabre' | null;
+
+/**
+ * COMO UMA GAVETA CHEGOU — a MESMA pergunta de `gavetaQueSai`, virada
+ * para quem ENTRA: sem isto o movimento de entrada não sabe se desliza
+ * de fora da tela (`'abre'`, a primeira vez), retoma de onde a SAÍDA
+ * parou (`'reabre'`, o MESMO nó, ainda animando) ou não se move NADA
+ * (`'troca'`, o conteúdo troca no lugar — E3 do reaudito, medido: cada
+ * troca recomeçava o percurso inteiro porque nada media essa
+ * diferença, e o pedido de entrada lateral nunca pediu fechar/reabrir
+ * a ferramenta a cada troca).
+ *
+ * `saindoAntes` é o `saindo` de ANTES desta transição, não o atual —
+ * quem chama lê os dois no MESMO "ajuste durante o render" que já
+ * decide `saindo` (abaixo), antes de `setSaindo` sobrescrever o valor.
+ * Se a gaveta que está abrindo é a MESMA que estava saindo, o nó nunca
+ * desmontou: é reabertura, não abertura — e é por isso que o efeito de
+ * saída, mais abaixo, não cancela a própria animação ao limpar o
+ * `inert`: é `ir` quem lê o transform em curso antes de a suceder.
+ */
+export const tipoDeEntrada = (
+  anterior: Gaveta | null,
+  gaveta: Gaveta | null,
+  saindoAntes: Gaveta | null
+): TipoDeEntrada => {
+  if (gaveta === null) return null;
+  if (saindoAntes === gaveta) return 'reabre';
+  return anterior === null ? 'abre' : 'troca';
+};
 
 /**
  * QUANTO O DEDO DESCE PARA A FOLHA FECHAR — a QUARTA saída (item 62,
@@ -354,10 +379,10 @@ export function useGavetas(
    * promessa de UMA gaveta por vez literal: nunca há dois
    * `[data-dialogo]` no documento, nem por 260 ms.
    *
-   * E SÓ NO TELEFONE. Na mesa o diálogo não sobe de lugar nenhum, não há
-   * o que descer, e segurar o nó por 260 ms mudaria o que os juízes da
-   * casa medem — `julgarDialogo` cobra que o Esc feche o diálogo, e
-   * "fechou" lá quer dizer "saiu do DOM".
+   * DESDE O M2 DO PLANO DE MOTION isto vale nos DOIS arranjos, não só
+   * no telefone: a mesa também segura o nó por uma saída desenhada — o
+   * painel recuando para debaixo da régua, o mesmo mecanismo, só o
+   * eixo muda.
    *
    * DERIVADO DURANTE O RENDER, e não num efeito: um efeito roda DEPOIS
    * do commit, e no commit em que `gaveta` vira `null` o nó já foi
@@ -366,50 +391,163 @@ export function useGavetas(
    * para exatamente isto, e ele re-renderiza antes de tocar o DOM.
    */
   const [saindo, setSaindo] = useState<Gaveta | null>(null);
+  /** como esta abertura chegou (`tipoDeEntrada`, acima) — calculado no
+   *  MESMO ajuste que decide `saindo` logo abaixo, porque as duas
+   *  perguntas leem o MESMO par de valores "de antes desta transição". */
+  const [tipoDeAbertura, setTipoDeAbertura] = useState<TipoDeEntrada>(null);
   // o "anterior" é um SEGUNDO estado e não um `useRef`, e é o que a
   // regra dos refs cobra com razão: ref lido durante o render não faz o
   // componente re-renderizar, e é justamente do re-render antes do
   // commit que este ajuste depende
   const [anterior, setAnterior] = useState<Gaveta | null>(gaveta);
   if (anterior !== gaveta) {
+    setTipoDeAbertura(tipoDeEntrada(anterior, gaveta, saindo));
     setAnterior(gaveta);
     setSaindo(gavetaQueSai(anterior, gaveta, semMovimento()));
   }
 
   /**
+   * GIRAR O APARELHO (ou cruzar a fronteira mesa/celular, ou mudar de
+   * fase) NO MEIO DE UMA SAÍDA não pode deixar a trajetória antiga
+   * presa no eixo novo (E6 do reaudito, medido: fechar a 390×844 e
+   * girar para 844×390 deixava o painel `inert` correndo a saída
+   * LATERAL antiga numa tela agora vertical). `celular` mudar é cruzar
+   * a fronteira mesa/telefone — o EIXO da saída em curso
+   * (`foraDaTelaMesa`/`foraDaTelaCelular`, nos efeitos abaixo) fica
+   * errado para a tela nova. `phase` entra pela mesma porta por
+   * simetria (uma travessia é o outro jeito de a geometria mudar de
+   * baixo do painel) — e não colide com `aoTravessar` (que fecha
+   * busca/camadas/tempo pela FASE): `saindo` só é verdadeiro quando
+   * `gaveta` já é `null`, e `aoTravessar(null)` não faz nada.
+   *
+   * AJUSTE DURANTE O RENDER, e não um efeito: `saindo` vira `null` no
+   * MESMO commit desta mudança — `montada` também, porque `gaveta` já
+   * é `null` enquanto uma saída corre — e o nó desmonta ANTES de
+   * qualquer quadro pintar a trajetória velha no eixo novo. Não há
+   * animação para cancelar à mão aqui: um nó que sai da árvore não
+   * pinta o que ainda "corre" nele, e o cleanup do efeito de saída,
+   * abaixo, já sabe ficar quieto quando `isConnected` é falso.
+   *
+   * Um painel ABERTO (`!saindo`) não passa por aqui: ele só PARA na
+   * geometria nova, que o CSS resolve sozinho, sem transform nenhum
+   * por meio — por isso o `if` interno, e não uma condição na guarda de
+   * fora: os dois rastreadores têm de se atualizar de qualquer jeito,
+   * saindo ou não.
+   */
+  const [celularAnteriorParaSaida, setCelularAnteriorParaSaida] = useState(celular);
+  const [faseAnteriorParaSaida, setFaseAnteriorParaSaida] = useState(phase);
+  if (celularAnteriorParaSaida !== celular || faseAnteriorParaSaida !== phase) {
+    setCelularAnteriorParaSaida(celular);
+    setFaseAnteriorParaSaida(phase);
+    if (saindo) setSaindo(null);
+  }
+
+  /**
+   * `celular` TAMBÉM POR REF, para os dois efeitos abaixo que precisam
+   * do valor mais recente sem REAGIR a ele: reler `celular` de um
+   * painel já aberto reiniciaria o deslizar a cada rotação do aparelho
+   * — só a saída (ajuste acima) e a entrada (efeito abaixo) olham o
+   * eixo, nunca um painel apenas assentado.
+   *
+   * ESCRITO NUM EFEITO, nunca durante o render (a regra `react-hooks/
+   * refs` cobra isso, e com razão: um ref é encanamento de efeito, não
+   * de render). SEM lista de dependências — roda a CADA commit, antes
+   * dos efeitos de baixo (a mesma ordem de declaração, useLayoutEffect
+   * atrás de useLayoutEffect) — para nunca ficar um commit atrasado.
+   */
+  const celularRef = useRef(celular);
+  useLayoutEffect(() => {
+    celularRef.current = celular;
+  });
+
+  /**
    * `useLayoutEffect` e não `useEffect`: o `inert` tem de estar no nó
    * ANTES do primeiro paint em que ele já é a gaveta que sai. Um efeito
-   * comum roda depois do paint, e nesse quadro ela ainda receberia toque
-   * — e, pior, o CSS da saída (`.hud-dialogo[inert]`: `saiPainel` na
-   * fatia 1, `folhaDesce` na 9) só começaria um quadro atrasado, com o
-   * painel parado no lugar.
+   * comum roda depois do paint, e nesse quadro ela ainda receberia
+   * toque — e, pior, a saída (WAAPI, `ir` abaixo) só começaria um
+   * quadro atrasado, com o painel parado no lugar.
    */
   useLayoutEffect(() => {
     if (!saindo) return;
-    const no = document.querySelector(`[${'data-dialogo'}="${saindo}"]`);
-    // o `inert` ANTES da leitura: é ele que faz o navegador escolher a
-    // regra da saída, e é a duração DELA que se quer perguntar
+    const no = document.querySelector<HTMLElement>(`[${'data-dialogo'}="${saindo}"]`);
     no?.setAttribute('inert', '');
-    const id = window.setTimeout(() => setSaindo(null), duracaoDaSaida(no));
+    if (no) {
+      const raiz = no.closest('.hud-root') ?? no;
+      const { duracao, curva } = lerTokens(raiz, '--t-folha', '--curva-folha');
+      const paraFora = celularRef.current ? foraDaTelaCelular(no) : foraDaTelaMesa(no);
+      ir(
+        no,
+        'atual',
+        paraFora,
+        { duracao: semMovimento() ? 0 : duracao, curva, segurar: true },
+        () => setSaindo(null)
+      );
+      // O INLINE DO ARRASTO NÃO FICA PRA TRÁS: `ir` já leu o "atual" (a
+      // linha de cima, síncrona) antes desta limpeza, então ela não
+      // apaga nada que a animação precisasse — só o resto de um
+      // `folha.style.transform` que o gesto tivesse escrito à mão.
+      no.style.transform = '';
+    }
     return () => {
-      window.clearTimeout(id);
       /**
-       * REABRIR ANTES DE A FOLHA TERMINAR DE DESCER. O `inert` foi posto
-       * à mão, e o que é posto à mão tem de ser tirado à mão: o React não
-       * sabe dele, e na reabertura `montada` continua sendo a MESMA
-       * gaveta — o mesmo nó volta com o atributo grudado, sem toque, sem
-       * foco, fora da árvore de quem ouve a tela e, pelo
-       * `.hud-dialogo[inert]`, ainda saindo de cena. Uma gaveta viva e
-       * invisível, que só voltava a si depois de fechar de novo e
-       * esperar a saída inteira.
+       * REABRIR ANTES DE A FOLHA TERMINAR DE SAIR. O `inert` foi posto
+       * à mão, e o que é posto à mão tem de ser tirado à mão: o React
+       * não sabe dele, e na reabertura `montada` continua sendo a
+       * MESMA gaveta — o mesmo nó volta com o atributo grudado, sem
+       * toque, sem foco, fora da árvore de quem ouve a tela.
        *
-       * Uma limpeza cobre as DUAS saídas deste estado: a que o
-       * temporizador termina (o nó já foi, `isConnected` é falso, nada a
-       * fazer) e a que a reabertura cancela.
+       * A ANIMAÇÃO EM SI NÃO É CANCELADA AQUI, e é essa omissão que faz
+       * a reabertura reverter SEM PULAR (aceite do C1: "reabrir aos
+       * 80 ms de saída deixa só a última intenção ativa"): o efeito de
+       * entrada, logo abaixo, chama `ir(no, 'atual', ...)` quando
+       * `tipoDeAbertura` é `'reabre'`, e é o PRÓPRIO `ir` quem lê o
+       * transform em curso antes de cancelar esta animação — cancelar
+       * cedo demais, aqui, apagaria a posição que a reabertura precisa
+       * herdar.
+       *
+       * Uma limpeza cobre as DUAS saídas deste estado: a que `ir`
+       * termina (o nó já foi, `isConnected` é falso, nada a fazer) e a
+       * que a reabertura cancela.
        */
       if (no?.isConnected) no.removeAttribute('inert');
     };
   }, [saindo]);
+
+  /**
+   * A ENTRADA VEM DEPOIS DA SAÍDA, e não por acaso: a REABERTURA, logo
+   * abaixo, depende de a animação da saída AINDA existir quando `ir` a
+   * lê — é por isso que o cleanup da saída, acima, não cancela nada.
+   *
+   * TRÊS CHEGADAS, UMA SÓ CHAMADA (C1, E3 do reaudito): `tipoDeAbertura`
+   * diz qual das três é esta.
+   * - `'abre'` — a primeira, de fora da tela para o repouso;
+   * - `'reabre'` — o MESMO nó, ainda saindo: parte de onde a saída
+   *   estava, não de fora da tela — sem isso reabrir no meio do
+   *   caminho fazia o painel PULAR antes de voltar;
+   * - `'troca'` — outra ferramenta no MESMO lugar: a moldura não anda
+   *   NADA (o pedido de entrada lateral nunca pediu fechar/reabrir a
+   *   cada troca — E3, medido: cada troca recomeçava o percurso
+   *   inteiro), só o CONTEÚDO novo pisca de opacidade.
+   */
+  useLayoutEffect(() => {
+    if (!gaveta) return;
+    const no = document.querySelector<HTMLElement>(`[${'data-dialogo'}="${gaveta}"]`);
+    if (!no) return;
+    const raiz = no.closest('.hud-root') ?? no;
+    if (tipoDeAbertura === 'troca') {
+      const { duracao, curva } = lerTokens(raiz, '--t-rapido', '--curva');
+      desvanecer(no.children, semMovimento() ? 0 : duracao, curva);
+      return;
+    }
+    const de =
+      tipoDeAbertura === 'reabre'
+        ? 'atual'
+        : celularRef.current
+          ? foraDaTelaCelular(no)
+          : foraDaTelaMesa(no);
+    const { duracao, curva } = lerTokens(raiz, '--t-folha', '--curva-folha');
+    ir(no, de, REPOUSO, { duracao: semMovimento() ? 0 : duracao, curva, segurar: false });
+  }, [gaveta, tipoDeAbertura]);
 
   /**
    * A ALÇA ABERTA VEM PARA A TELA. A fileira não quebra linha (quebrar
@@ -492,19 +630,34 @@ export function useGavetas(
       clientY: t.clientY,
       pointerType: 'touch',
     });
+    /** VOLTAR AO REPOUSO sem fechar — o "de" é o PRÓPRIO `dy` acumulado,
+     *  não `'atual'`: quem escreveu o transform foi este arrasto, à
+     *  mão, então o número já está na mão, sem precisar perguntar ao
+     *  navegador. Limpa o inline ANTES de chamar `ir`: as duas linhas
+     *  são síncronas (não há paint entre elas), e é essa limpeza que
+     *  evita a folha "grudar" na posição arrastada quando a animação
+     *  termina e devolve o `transform` ao CSS (`fill: 'none'`). */
+    const voltar = () => {
+      const raiz = folha.closest('.hud-root') ?? folha;
+      const { duracao, curva } = lerTokens(raiz, '--t-folha', '--curva-folha');
+      const de = `translateY(${Math.max(0, dy)}px)`;
+      folha.style.transform = '';
+      ir(folha, de, REPOUSO, { duracao: semMovimento() ? 0 : duracao, curva, segurar: false });
+    };
     const comecar = (e: TouchEvent) => {
       const dedo = e.changedTouches[0];
       // um segundo dedo é PINÇA, e a pinça não fecha nada — a mesma
       // resposta que `director/gestos.ts` dá ao segundo dedo
       if (!dedo || e.touches.length > 1) {
         arrasto.esquecer();
-        // A PINÇA ABANDONA um arrasto que já tinha começado — sem isto
-        // a folha ficava presa a meio caminho, sem `soltar` nenhum para
-        // limpá-la (o segundo dedo nunca gera `touchend` do PRIMEIRO).
+        // A PINÇA ABORTA um arrasto que já tinha começado e DEVOLVE a
+        // folha ao lugar — nunca fecha (a mesma regra do `touchcancel`,
+        // `abortar` abaixo). Sem isto a folha ficava presa a meio
+        // caminho, sem `soltar` nenhum para limpá-la (o segundo dedo
+        // nunca gera `touchend` do PRIMEIRO).
         if (arrastando) {
           arrastando = false;
-          folha.style.transform = '';
-          folha.style.transition = '';
+          voltar();
         }
         return;
       }
@@ -526,14 +679,13 @@ export function useGavetas(
       dy += passo.dy;
       if (!arrastando) {
         arrastando = true;
-        // A ENTRADA (`@keyframes folhaSobe`, 09-celular.css) já rodou e
-        // continua "preenchendo" `transform` (`fill: both`) — sem
-        // desligá-la, o `transform` que este arrasto escreve abaixo
-        // seria IGNORADO: animação de CSS vence estilo em linha
-        // enquanto preenche. Ela já cumpriu o papel (a folha parada,
-        // aberta); desligar agora não move nada na tela.
-        folha.style.animation = 'none';
-        folha.style.transition = 'none';
+        // A ENTRADA (`ir`, mais acima neste arquivo) pode ainda estar
+        // correndo — parar SEM voltar ao repouso primeiro, senão o
+        // `cancel()` desfaria a posição visual antes de este bloco
+        // escrever a sua: uma animação WAAPI ativa vence estilo em
+        // linha, o mesmo motivo que a versão em CSS tinha para desligar
+        // `animation` antes de escrever `transform` aqui.
+        cancelar(folha);
       }
       // SÓ PARA BAIXO — o sentido que fecha (`dy` negativo é clampado a
       // zero: a mão voltando não "abre mais" a folha para cima). A
@@ -548,28 +700,8 @@ export function useGavetas(
       if (dedo) arrasto.cancelar(comoPonteiro(dedo));
       if (!arrastando) return;
       arrastando = false;
-      const reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const transicao = reduzido
-        ? 'none'
-        : `transform ${SAIDA_DA_FOLHA_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`;
-      // A FOLHA QUE FICA (não fechou, ou a ficha só vai RECOLHER — as
-      // duas continuam montadas) tem de voltar a zero e SER LIMPA
-      // depois: um `transform`/`transition` esquecidos atrapalhariam o
-      // próximo arrasto, ou a transição de altura da compacta.
-      const voltarAoLugar = () => {
-        folha.style.transition = transicao;
-        folha.style.transform = 'translateY(0)';
-        window.setTimeout(
-          () => {
-            folha.style.transform = '';
-            folha.style.transition = '';
-            folha.style.animation = '';
-          },
-          reduzido ? 0 : SAIDA_DA_FOLHA_MS
-        );
-      };
       if (!arrastoFecha(dx, dy)) {
-        voltarAoLugar();
+        voltar();
         return;
       }
       // A FICHA EXPANDIDA RECOLHE em vez de fechar (Lote 5, PLAN-UI.md
@@ -581,17 +713,28 @@ export function useGavetas(
       if (gaveta === 'ficha' && fichaExpandida) {
         setFichaExpandida(false);
         // RECOLHE NÃO DESMONTA — a ficha só encolhe (a transição de
-        // altura já existe, 09-celular.css), então o transform volta a
-        // ZERO, não para fora da tela.
-        voltarAoLugar();
+        // altura já existe, 09-celular.css), então o transform volta ao
+        // REPOUSO, não para fora da tela.
+        voltar();
         return;
       }
-      // FECHA DE VERDADE: a folha vai desmontar (`saindo`, mais abaixo)
-      // — o gesto termina fora da tela, no mesmo lugar de `folhaDesce`,
-      // e o desmonte que já vem a caminho não deixa resto para limpar.
-      folha.style.transition = transicao;
-      folha.style.transform = 'translateY(110%)';
+      // FECHA DE VERDADE: quem desliza a folha para fora agora é o
+      // efeito de saída (`saindo`, mais acima) — ele chama `ir` a
+      // partir do transform ATUAL, que é exatamente este `translateY`
+      // que o arrasto acabou de escrever. Nada a animar por aqui, só a
+      // intenção.
       setGaveta((atual) => aoFechar(atual, gaveta));
+    };
+    // `touchcancel` NUNCA FECHA, só RETORNA — a mesma regra do segundo
+    // dedo, acima, e pela mesma razão: o sistema pode cancelar um toque
+    // por trás (notificação, gesto do SO), e um gesto interrompido não
+    // é "solte e confirme".
+    const abortar = (e: TouchEvent) => {
+      const dedo = e.changedTouches[0];
+      if (dedo) arrasto.cancelar(comoPonteiro(dedo));
+      if (!arrastando) return;
+      arrastando = false;
+      voltar();
     };
     // PASSIVO, e de graça: `comecar` não chama `preventDefault` em
     // caminho nenhum — declarar isso deixa o navegador começar a rolagem
@@ -599,12 +742,12 @@ export function useGavetas(
     folha.addEventListener('touchstart', comecar, { passive: true });
     window.addEventListener('touchmove', mover);
     window.addEventListener('touchend', soltar);
-    window.addEventListener('touchcancel', soltar);
+    window.addEventListener('touchcancel', abortar);
     return () => {
       folha.removeEventListener('touchstart', comecar);
       window.removeEventListener('touchmove', mover);
       window.removeEventListener('touchend', soltar);
-      window.removeEventListener('touchcancel', soltar);
+      window.removeEventListener('touchcancel', abortar);
     };
   }, [celular, gaveta, fichaExpandida]);
 

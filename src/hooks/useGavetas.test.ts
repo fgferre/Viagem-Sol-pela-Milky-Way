@@ -262,20 +262,34 @@ describe('8. a folha segue o dedo — o arrasto desenha, o SOLTAR decide (fix, 0
     expect(HOOK).toContain('if (!arrastoFecha(dx, dy)) {');
   });
 
-  it('a entrada (`folhaSobe`) larga o transform só quando o arrasto de verdade começa', () => {
-    // ela preenche `transform` com `fill: both` depois de terminar — sem
-    // desligá-la, o transform do arrasto seria ignorado (animação de CSS
-    // vence estilo em linha enquanto preenche)
-    expect(HOOK).toContain("folha.style.animation = 'none';");
+  it('a animação em curso é PARADA só quando o arrasto de verdade começa', () => {
+    // uma animação WAAPI ativa (a entrada, ou uma saída revertendo) vence
+    // estilo em linha enquanto corre — o mesmo motivo que a versão em CSS
+    // tinha para desligar `animation` antes de escrever `transform` aqui;
+    // `cancelar` (movimentoDaGaveta.ts) é quem para essa animação agora
+    expect(HOOK).toContain('cancelar(folha);');
   });
 
-  it('a folha que não fecha (ou só recolhe a ficha) limpa o próprio rastro', () => {
+  it('a folha que não fecha (ou só recolhe a ficha) volta ao repouso por WAAPI', () => {
+    // limpa o inline que ela própria escreveu e anima do deslocamento
+    // atual até o repouso — nem `translateY(0)` cru, nem temporizador
     expect(HOOK).toContain("folha.style.transform = '';");
-    expect(HOOK).toContain("folha.style.transition = '';");
+    expect(HOOK).toMatch(/ir\(folha, de, REPOUSO,/);
   });
 
-  it('respeita prefers-reduced-motion na volta ao lugar', () => {
-    expect(HOOK).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
+  it('a volta ao lugar usa a MESMA leitura de preferência da saída — não um segundo relógio', () => {
+    // um único lugar lê a media query (`semMovimento`, mais acima neste
+    // arquivo): duplicar o `matchMedia` aqui seria o segundo relógio que
+    // o plano de motion proíbe
+    expect(HOOK.match(/prefers-reduced-motion: reduce/g)?.length).toBe(1);
+    expect(HOOK).toContain('semMovimento() ? 0 : duracao');
+  });
+
+  it('`touchcancel` e o segundo dedo RETORNAM, nunca fecham', () => {
+    // um gesto abortado (pelo sistema, ou pela pinça) não é "solte e
+    // confirme" — as duas saídas chamam `voltar()`, nunca `aoFechar`
+    expect(HOOK).toContain("window.addEventListener('touchcancel', abortar);");
+    expect(HOOK).not.toContain("window.addEventListener('touchcancel', soltar);");
   });
 });
 
@@ -294,13 +308,12 @@ describe('9. a saída da folha é INTERROMPÍVEL (plano de motion, M1)', () => {
     expect(gavetaQueSai('ficha', null, true)).toBe(null);
   });
 
-  it('a duração da saída é PERGUNTADA ao nó — nunca um segundo relógio', () => {
-    // são dois movimentos (a folha percorre a tela, o painel recua 8 px) e
-    // três situações que os zeram; copiar cada número para cá seria um
-    // relógio para discordar do CSS no dia em que alguém retimar um deles
-    expect(HOOK).toContain('getComputedStyle(no)');
-    expect(HOOK).toContain('.animationDuration');
-    expect(HOOK).toContain('duracaoDaSaida(no)');
+  it('a duração e a curva da saída são PERGUNTADAS aos tokens — nunca um segundo relógio', () => {
+    // a saída virou uma animação WAAPI (`ir`, movimentoDaGaveta.ts): a
+    // duração/curva vêm de `--t-folha`/`--curva-folha`, os MESMOS tokens
+    // que o CSS já declarava — copiar o número para cá seria o segundo
+    // relógio que o plano de motion proíbe
+    expect(HOOK).toContain("lerTokens(raiz, '--t-folha', '--curva-folha')");
   });
 
   it('as duas situações que zeram a saída são lidas na HORA da troca', () => {
@@ -314,10 +327,24 @@ describe('9. a saída da folha é INTERROMPÍVEL (plano de motion, M1)', () => {
     expect(HOOK).toContain("if (no?.isConnected) no.removeAttribute('inert');");
   });
 
-  it('o `inert` é posto ANTES da leitura — é ele que escolhe a regra da saída', () => {
+  it('a saída lê o transform ATUAL do nó, nunca um repouso presumido', () => {
+    // é isso que faz reabrir no meio do caminho reverter sem pular
+    // (aceite do C1): a próxima intenção parte de onde a saída estava
+    expect(HOOK).toMatch(/ir\(\s*no,\s*'atual',/);
+  });
+
+  it('o `inert` é posto ANTES de ler o transform em curso', () => {
     const efeito = HOOK.slice(HOOK.indexOf('if (!saindo) return;'));
-    expect(efeito.indexOf("setAttribute('inert'")).toBeLessThan(
-      efeito.indexOf('duracaoDaSaida(no)')
+    expect(efeito.indexOf("setAttribute('inert'")).toBeLessThan(efeito.indexOf('ir('));
+  });
+
+  it('o cleanup da saída NÃO cancela a própria animação — é `ir` quem a sucede', () => {
+    // cancelar aqui apagaria a posição que uma reabertura precisa herdar;
+    // só o `inert` é desfeito à mão nesta limpeza
+    const cleanup = HOOK.slice(
+      HOOK.indexOf('return () => {', HOOK.indexOf('if (!saindo) return;')),
+      HOOK.indexOf('[saindo]);')
     );
+    expect(cleanup).not.toContain('cancelar(no)');
   });
 });
