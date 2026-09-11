@@ -436,7 +436,8 @@ app: se o brilho do nome, o anel do "copiar link" e o aceno do tempo dão
 para perceber na velocidade normal, e se o recuo de 6 % só no desenho dos
 botões está bom. Não verificado: telefone de verdade. Prova nova proposta
 para a lista dele: a sonda (`scripts/visual/sonda-motion.mjs`, com e sem
-`--sequencia`). Servidor: `npm run dev`.
+`--sequencia`). Rodada encerrada por ordem dele: *"fecha a rodada"*. A
+próxima frente, quando ele pedir, é o C4 da seção 12. Servidor parado.
 
 
 
