@@ -487,6 +487,14 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
       const d = document.querySelector('[data-dialogo]');
       if (d) {
         const a = d.getAnimations()[0];
+        // A RECEITA É LIDA DA PRÓPRIA ANIMAÇÃO, enquanto ela existe: desde
+        // o C1 do plano de motion quem move a folha é a Web Animations API
+        // (useGavetas), e não um @keyframes — o estilo computado já não
+        // tem animation nenhuma, e depois de terminar ela sai da lista.
+        if (a && !window.__receita) {
+          const tempo = a.effect.getTiming();
+          window.__receita = { dur: tempo.duration, curva: tempo.easing };
+        }
         const r = d.getBoundingClientRect();
         window.__folha.push([a ? Math.round(Number(a.currentTime)) : null,
           Math.round(r.top), Math.round(r.height)]);
@@ -495,6 +503,7 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
       else window.__folhaFim = true;
     };
     window.__folhaFim = false;
+    window.__receita = null;
     document.querySelector('[data-abre-dialogo="camadas"]').click();
     requestAnimationFrame(passo);
     return true;
@@ -503,17 +512,11 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
   // era um dorme(1400) por cima de uma varredura de 900 ms
   await esperarPor(s, 'window.__folhaFim === true', 5000);
   const subida = (await s.js('window.__folha')).filter((a) => a[0] !== null);
-  const receita = await s.js(`(() => {
-    const d = document.querySelector('[data-dialogo]');
-    const cs = d ? getComputedStyle(d) : null;
-    return cs ? { dur: cs.animationDuration, curva: cs.animationTimingFunction,
-      nome: cs.animationName } : null;
-  })()`);
+  const receita = await s.js('window.__receita');
   conferir(
-    receita !== null && receita.dur === '0.26s'
+    receita !== null && receita.dur === 260
       && receita.curva === 'cubic-bezier(0.22, 1, 0.36, 1)',
-    `folha sobe: 260 ms com a curva da casa — ${receita?.nome} ${receita?.dur}`
-      + ` ${receita?.curva}`
+    `folha sobe: 260 ms com a curva da casa — ${receita?.dur} ms ${receita?.curva}`
   );
   /** a amostra cujo relógio DA ANIMAÇÃO está mais perto de `ms` */
   const em = (ms) => subida.reduce(
