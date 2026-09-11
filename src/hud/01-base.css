@@ -657,15 +657,29 @@
    início ao fim da animação e nenhum instante além disso: sem
    `forwards`, o repouso volta sozinho ao `visible` implícito do miolo,
    que é o que deixa o contorno de foco de qualquer coisa lá dentro
-   aparecer inteiro fora do movimento. */
-.sanfona.abrindo > .sanfona-miolo,
-.sanfona.saindo > .sanfona-miolo {
-  animation: sanfonaCorta var(--t-entrada) var(--curva);
+   aparecer inteiro fora do movimento.
+   UM NOME POR SENTIDO, e é isso que faz o corte RECOMEÇAR: o navegador
+   só inicia uma animação CSS nova quando o NOME muda. Com o mesmo nome
+   nos dois sentidos, fechar uma seção que já tinha aberto nesta vida do
+   nó (o `abrindo` é um trinco) mantinha a animação de corte da abertura,
+   já terminada — o miolo recolhia em `overflow: visible`, com o conteúdo
+   maior que a caixa vazando por cima do que vem embaixo (visto na
+   reauditoria de 11/09). Reabrir no meio da saída troca o nome de volta
+   e recomeça o corte do mesmo jeito. */
+.sanfona.abrindo > .sanfona-miolo {
+  animation: sanfonaCortaAbre var(--t-entrada) var(--curva);
 }
-@keyframes sanfonaCorta {
-  from {
+.sanfona.saindo > .sanfona-miolo {
+  animation: sanfonaCortaFecha var(--t-entrada) var(--curva);
+}
+@keyframes sanfonaCortaAbre {
+  from,
+  to {
     overflow: hidden;
   }
+}
+@keyframes sanfonaCortaFecha {
+  from,
   to {
     overflow: hidden;
   }

@@ -12,7 +12,10 @@
 // deixa REABRIR NO MEIO DA SAÍDA reiniciar a animação de entrada sem
 // o hook ter de desligar e religar classe nenhuma — as duas convivem
 // no `className` (`abrindo` e `saindo`), e é o CSS quem desempata
-// (`.saindo` vence `.abrindo`, `Sanfona.tsx`/`01-base.css`). Uma
+// (`.saindo` vence `.abrindo`, `Sanfona.tsx`/`01-base.css`) — o corte
+// do miolo inclusive, com UM NOME DE ANIMAÇÃO POR SENTIDO: o navegador
+// só recomeça uma animação CSS quando o nome muda, e com o mesmo nome
+// nos dois a saída herdava o corte já terminado da abertura. Uma
 // montagem NOVA começa esta conta do zero sozinha, porque é um `useState`
 // novo.
 //

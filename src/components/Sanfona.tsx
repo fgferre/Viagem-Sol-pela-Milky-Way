@@ -10,7 +10,9 @@
 // exatamente isso — o `.sanfona-miolo` com `min-height: 0` é o que deixa
 // a grade colapsar de verdade (`01-base.css`). O corte (`overflow:
 // hidden`) só existe ENQUANTO a animação corre, nunca em repouso, para
-// não cortar o contorno de foco de nada lá dentro.
+// não cortar o contorno de foco de nada lá dentro — e recomeça a cada
+// sentido (abrir, fechar, reabrir no meio), porque cada um tem o seu
+// nome de animação.
 // ============================================================
 import type { ReactNode } from 'react';
 import { usePresenca } from '../hooks/usePresenca';

@@ -229,3 +229,28 @@ describe('6. nenhum `transition` de transform escapa da preferência reduzida (E
     );
   });
 });
+
+describe('7. o corte da sanfona recomeça a cada sentido (reauditoria de 11/09)', () => {
+  // O navegador só inicia uma animação CSS nova quando o NOME muda: com o
+  // mesmo nome na abertura e na saída, fechar uma seção que já tinha
+  // aberto herdava o corte terminado da abertura e recolhia sem corte
+  // nenhum, com o conteúdo vazando da caixa.
+  const nomeDoCorte = (seletor: string) =>
+    /animation:\s*([\w-]+)/.exec(corpoDaRegra(seletor))?.[1] ?? '';
+  const abre = nomeDoCorte('.sanfona.abrindo > .sanfona-miolo');
+  const fecha = nomeDoCorte('.sanfona.saindo > .sanfona-miolo');
+
+  it('abrir e fechar cortam com animações de nomes diferentes', () => {
+    expect(abre).not.toBe('');
+    expect(fecha).not.toBe('');
+    expect(abre).not.toBe(fecha);
+  });
+
+  it('as duas cortam, e nenhuma segura o corte no repouso (o contorno de foco aparece)', () => {
+    for (const nome of [abre, fecha]) {
+      const quadros = new RegExp(`@keyframes ${nome} \\{([\\s\\S]*?)\\n\\}`).exec(BASE)?.[1] ?? '';
+      expect(quadros).toContain('overflow: hidden');
+      expect(BASE).not.toMatch(new RegExp(`animation:\\s*${nome}[^;]*(forwards|both)`));
+    }
+  });
+});
