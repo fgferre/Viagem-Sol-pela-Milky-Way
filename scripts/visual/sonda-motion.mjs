@@ -21,6 +21,7 @@
 // Uso:
 //   node scripts/visual/sonda-motion.mjs
 //   node scripts/visual/sonda-motion.mjs --app=http://localhost:58697
+//   node scripts/visual/sonda-motion.mjs --folha --app=http://localhost:58697
 //
 // Saída (nomes inéditos — nunca sobrescreve, ver `semSobrescrever`):
 //   capturas/motion-c0-<commit>.json       todas as amostras + metadados
@@ -64,6 +65,19 @@ const SEQUENCIA = process.argv.includes('--sequencia');
 // nunca o nominal) e imprime PASSA/FALHA a partir dos números — não
 // julga por fora, só mede. Opt-in: sem a flag, nada aqui muda.
 const INTERRUPCOES = process.argv.includes('--interrupcoes');
+// `--folha` troca a corrida de sempre por OITO cenários (F1–F8) da FOLHA
+// GUIADA PELA MÃO no telefone (C4 do plano de motion, `useGavetas.ts`,
+// `destinoDoArrasto`/`deslocamentoDaFolha`): a alça do cabeçalho
+// (`.hud-cabecalho-eyebrow`, fora de qualquer botão) expande a compacta
+// arrastando para cima e recolhe a expandida arrastando para baixo,
+// seguindo o dedo até a decisão no soltar. Cobre as quatro guardas que
+// não podem quebrar o gesto — um controle deslizante, um segundo dedo, a
+// rolagem já dentro da expandida, e a paisagem baixa da MESA (onde a
+// folha existe por `janelaBaixa`, não por `celular`, e o gesto não liga)
+// — e amostra com `jsAmostraFolha` (estado, topo, transform, WAAPI,
+// linha do tempo), como `rodarInterrupcoes`: PASSA/FALHA só a partir dos
+// números medidos. Opt-in: sem a flag, nada aqui muda.
+const FOLHA = process.argv.includes('--folha');
 
 const SEL_CAMADAS_GATILHO = '[data-abre-dialogo="camadas"]';
 const SEL_AJUSTES_GATILHO = '[data-abre-dialogo="ajustes"]';
@@ -73,6 +87,12 @@ const SEL_SEG_QUALIDADE = `${SEL_AJUSTES_PAINEL} .ajustes-seg[aria-label="Qualid
 const SEL_BUSCA_GATILHO = '[data-abre-dialogo="busca"]';
 const SEL_BUSCA_PAINEL = '[data-dialogo="busca"]';
 const SEL_FICHA_PAINEL = '[data-dialogo="ficha"]';
+// A ALÇA E O "DETALHES" DA FICHA (`--folha`) — a alça é o EYEBROW do
+// cabeçalho (só texto, nenhum botão dentro: `pontoDaAlca` confere em
+// tempo de execução antes de usar o ponto), "Detalhes" é o botão que
+// expande a compacta sem arrasto nenhum (F7/F8).
+const SEL_FICHA_EYEBROW = '.hud-cabecalho-eyebrow';
+const SEL_FICHA_DETALHES = '.atlas-ficha-detalhes';
 // A SANFONA "AVANÇADO" (I1) e A LINHA DO TEMPO (I2c, I4, I5) — únicos
 // alvos novos desta sonda que não são um `[data-dialogo]`.
 const SEL_AVANCADO_GATILHO = '[aria-controls="ajustes-avancado"]';
@@ -276,6 +296,30 @@ async function tocarSoltar(sessao) {
   return t0;
 }
 
+/** o CENTRO da alça (o eyebrow do cabeçalho da ficha,
+ *  `.hud-cabecalho-eyebrow`) — o ponto onde o dedo começa o arrasto
+ *  guiado (`--folha`, F1–F5 e F7). Confere por `elementFromPoint` que o
+ *  ponto não caiu dentro de um botão — o eyebrow é só texto (o "?" e os
+ *  botões são IRMÃOS dele, nunca filhos), mas a checagem é em tempo de
+ *  execução, não por confiança na leitura do código; se cair, usa a
+ *  borda esquerda do próprio cabeçalho, onde não há botão nenhum. */
+async function pontoDaAlca(sessao) {
+  const r = await retanguloDe(sessao, SEL_FICHA_EYEBROW);
+  if (!r) throw new Error(`pontoDaAlca: "${SEL_FICHA_EYEBROW}" não encontrado`);
+  let x = Math.round(r.x + r.width / 2);
+  let y = Math.round(r.y + r.height / 2);
+  const dentroDeBotao = await sessao.js(
+    `Boolean(document.elementFromPoint(${x}, ${y})?.closest('button'))`
+  );
+  if (dentroDeBotao) {
+    const cab = await retanguloDe(sessao, '.hud-cabecalho');
+    if (!cab) throw new Error('pontoDaAlca: ".hud-cabecalho" não encontrado');
+    x = Math.round(cab.x + 16);
+    y = Math.round(cab.y + cab.height / 2);
+  }
+  return { x, y };
+}
+
 async function limparEventos(sessao) { await sessao.js('window.__eventosMotion.length = 0'); }
 async function lerEventos(sessao) { return sessao.js('window.__eventosMotion'); }
 
@@ -318,6 +362,33 @@ function jsAmostraPainel(seletor) {
       })),
       linhaDoTempo,
       active: ativo,
+    };
+  })()`;
+}
+
+/** a leitura composta da FOLHA da ficha no celular (`--folha`): o mesmo
+ *  molde de `jsAmostraPainel` (transform computado, WAAPI, linha do
+ *  tempo), com o ESTADO (`data-ficha-estado`, compacta/expandida) e o
+ *  TOPO (`getBoundingClientRect().top`) a mais — os dois campos que só
+ *  esta folha tem e que o dedo persegue durante o arrasto guiado. */
+function jsAmostraFolha() {
+  return `(() => {
+    const el = document.querySelector(${JSON.stringify(SEL_FICHA_PAINEL)});
+    const linhaDoTempo = document.timeline.currentTime;
+    if (!el) return { existe: false, estado: null, top: null, transform: null, waapi: [], linhaDoTempo };
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return {
+      existe: true,
+      estado: el.getAttribute('data-ficha-estado'),
+      top: r.top,
+      transform: cs.transform,
+      waapi: el.getAnimations().map((a) => ({
+        playState: a.playState,
+        pending: a.pending,
+        currentTime: a.currentTime === null ? null : Math.round(Number(a.currentTime)),
+      })),
+      linhaDoTempo,
     };
   })()`;
 }
@@ -1247,6 +1318,381 @@ async function rodarInterrupcoes() {
   }
 }
 
+/**
+ * `--folha` — OITO cenários (F1–F8) da FOLHA GUIADA PELA MÃO no celular
+ * (C4 do plano de motion, `useGavetas.ts`): a alça do cabeçalho
+ * (`.hud-cabecalho-eyebrow`, fora de qualquer botão) expande a compacta
+ * arrastando para cima e recolhe a expandida arrastando para baixo,
+ * seguindo o dedo (`deslocamentoDaFolha`) até a decisão no soltar
+ * (`destinoDoArrasto`); quatro guardas — um controle deslizante, um
+ * segundo dedo, a rolagem já dentro da expandida, e a paisagem baixa da
+ * MESA (`compactavel` por `janelaBaixa`, nunca cruzando os 760px de
+ * `celular`) — não podem quebrar nem travar a folha. Cada cenário
+ * amostra com `jsAmostraFolha` e decide PASSA/FALHA pelos próprios
+ * números, como `rodarInterrupcoes` — nenhuma espera extra para o
+ * veredito bater.
+ */
+async function rodarFolha() {
+  mkdirSync(CAPTURAS, { recursive: true });
+  const pastaClipe = resolve(tmpdir(), `sonda-motion-folha-${process.pid}`);
+  let sessao = null;
+  try {
+    const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
+    const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
+    const num = (n) => (typeof n === 'number' ? n.toFixed(1) : String(n));
+
+    sessao = await abrirSonda({ janela: '1440x900', prefixo: 'sonda-motion-folha' });
+    // O TELEFONE DESDE O PRIMEIRO CARREGAMENTO, e não trocado depois (o
+    // padrão do modo default): o override de CDP vale para o alvo
+    // inteiro e sobrevive a `Page.navigate`, então marcar antes da
+    // primeira `ir()` já entrega a folha no layout que ela testa, sem
+    // uma passagem pela mesa no meio.
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 390, height: 844, deviceScaleFactor: 1, mobile: true,
+    });
+    await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+    const versaoChrome = await sessao.send('Browser.getVersion');
+    const dpr = await sessao.js('window.devicePixelRatio');
+
+    // `?foco=saturno` ABRE A FICHA DIRETO (`useEspelhoDaUrl.ts`,
+    // `chaveDoFoco`) — o mesmo atalho que `atlas-smoke.mjs` já usa, sem
+    // repetir o fluxo de busca+Enter da C3 (`--sequencia`).
+    const queryComFoco = `${QUERY}&foco=saturno`;
+
+    const carregarFichaDeSaturno = async () => {
+      let assentou = null;
+      let ultimoErro = null;
+      for (let tentativa = 1; tentativa <= 3 && !assentou; tentativa++) {
+        try {
+          assentou = await sessao.ir(queryComFoco);
+        } catch (e) {
+          ultimoErro = e;
+          process.stdout.write(`tentativa ${tentativa}/3 de carregar o app falhou: ${e.message}\n`);
+          await dorme(500);
+        }
+      }
+      if (!assentou) throw new Error(`o app não carregou em 3 tentativas (${ultimoErro?.message})`);
+      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_FICHA_PAINEL}'))`, 10000);
+      await pularTour(sessao);
+      await esperarPor(
+        { js: sessao.js },
+        `document.querySelector('${SEL_FICHA_PAINEL}')?.getAttribute('data-ficha-estado') === 'compacta'`,
+        5000
+      );
+      await dorme(300);
+    };
+
+    await carregarFichaDeSaturno();
+
+    // ---------------------------------------------------------------
+    // F1 + F2 — UM clipe só: expandir e recolher pela alça
+    // ---------------------------------------------------------------
+    const top0 = (await sessao.js(jsAmostraFolha())).top;
+
+    let f1Move6 = null;
+    let f1Move12 = null;
+    let f1PosSolta = [];
+    let f2Move6 = null;
+    let f2Move12 = null;
+    let f2PosSolta = [];
+
+    const quadrosClipe = await gravarClipe(
+      sessao,
+      { largura: 390, altura: 844, pastaQuadros: pastaClipe },
+      async () => {
+        // F1 — expandir: 12 `touchMove` para cima totalizando 140 px
+        const pontoF1 = await pontoDaAlca(sessao);
+        await sessao.send('Input.dispatchTouchEvent', {
+          type: 'touchStart', touchPoints: [{ x: pontoF1.x, y: pontoF1.y }],
+        });
+        for (let n = 1; n <= 12; n++) {
+          const y = pontoF1.y - Math.round((140 * n) / 12);
+          await sessao.send('Input.dispatchTouchEvent', {
+            type: 'touchMove', touchPoints: [{ x: pontoF1.x, y }],
+          });
+          if (n === 6) f1Move6 = { passo: n, ...(await sessao.js(jsAmostraFolha())) };
+          if (n === 12) f1Move12 = { passo: n, ...(await sessao.js(jsAmostraFolha())) };
+        }
+        const t0F1 = await tocarSoltar(sessao);
+        f1PosSolta = await amostrarSequencia(sessao, t0F1, [16, 120, 300, 600], jsAmostraFolha);
+
+        // F2 — recolher: a alça já está lá em cima (a ficha expandiu),
+        // por isso o ponto é medido DE NOVO — um dedo novo, 12
+        // `touchMove` para baixo totalizando 140 px
+        const pontoF2 = await pontoDaAlca(sessao);
+        await sessao.send('Input.dispatchTouchEvent', {
+          type: 'touchStart', touchPoints: [{ x: pontoF2.x, y: pontoF2.y }],
+        });
+        for (let n = 1; n <= 12; n++) {
+          const y = pontoF2.y + Math.round((140 * n) / 12);
+          await sessao.send('Input.dispatchTouchEvent', {
+            type: 'touchMove', touchPoints: [{ x: pontoF2.x, y }],
+          });
+          if (n === 6) f2Move6 = { passo: n, ...(await sessao.js(jsAmostraFolha())) };
+          if (n === 12) f2Move12 = { passo: n, ...(await sessao.js(jsAmostraFolha())) };
+        }
+        const t0F2 = await tocarSoltar(sessao);
+        f2PosSolta = await amostrarSequencia(sessao, t0F2, [16, 120, 300, 600], jsAmostraFolha);
+      }
+    );
+    const clipe = renderizarClipe(quadrosClipe, resolve(CAPTURAS, `motion-folha-${commit}.mp4`));
+    const duracaoClipe = quadrosClipe[quadrosClipe.length - 1].ts - quadrosClipe[0].ts;
+    const folhaContato = renderizarContato(clipe, duracaoClipe, resolve(CAPTURAS, `motion-folha-${commit}.png`));
+
+    // F1 PASSA: aos 12 movimentos a folha já segue o dedo (a zona morta
+    // de 16px é comida uma vez só), o repouso final é
+    // expandida/transform none/sem WAAPI correndo, e o topo subiu bem
+    // acima do repouso da compacta.
+    const esperadoTopoMove12 = top0 - (140 - 16);
+    const f1Segue =
+      f1Move12 && f1Move12.top !== null && Math.abs(f1Move12.top - esperadoTopoMove12) <= 8;
+    const f1Final = f1PosSolta[f1PosSolta.length - 1] ?? null;
+    const f1SemAnimando =
+      f1Final && ((f1Final.waapi ?? []).length === 0 || f1Final.waapi.every((w) => w.playState === 'finished'));
+    const f1EstadoFinalOk =
+      f1Final && f1Final.estado === 'expandida' && f1Final.transform === 'none' && f1SemAnimando;
+    const f1SubiuBem = f1Final && f1Final.top !== null && f1Final.top < top0 - 50;
+    const f1Passa = Boolean(f1Segue && f1EstadoFinalOk && f1SubiuBem);
+
+    // F2 PASSA: repouso final compacta/transform none, o topo volta a
+    // ~top0, e nenhuma amostra depois de soltar RECUA (o topo só pode
+    // crescer rumo a top0 — um recuo é o "flash" da folha inteira antes
+    // de assentar). SEM checar WAAPI vazia aqui, ao contrário do F1: a
+    // COMPACTA declara `height`/`max-height` própria (09-celular.css,
+    // ".atlas-ficha[data-ficha-estado]"), então virar compacta acende
+    // uma transição de CSS própria (a caixa encolhendo até 10rem) que
+    // ainda corre por até 260ms DEPOIS do transform já estar assentado —
+    // uma animação real, mas de ALTURA, não de POSIÇÃO; exigir "nenhuma"
+    // aqui reprovaria a folha por um comportamento que o próprio CSS
+    // pede (medido: currentTime ainda em ~250ms aos +600ms). A
+    // EXPANDIDA (F1) não declara `height` própria — só ela pode exigir
+    // WAAPI vazia com segurança.
+    const f2Final = f2PosSolta[f2PosSolta.length - 1] ?? null;
+    const f2EstadoFinalOk = f2Final && f2Final.estado === 'compacta' && f2Final.transform === 'none';
+    const f2VoltouAoTopo = f2Final && f2Final.top !== null && Math.abs(f2Final.top - top0) <= 4;
+    const toposF2 = f2PosSolta.map((a) => a.top).filter((t) => t !== null);
+    const f2SemSalto = toposF2.every((t, i) => i === 0 || t >= toposF2[i - 1] - 4);
+    const f2Passa = Boolean(f2EstadoFinalOk && f2VoltouAoTopo && f2SemSalto);
+
+    // ---------------------------------------------------------------
+    // F3 — arrasto curto (40 px para cima): volta para compacta
+    // ---------------------------------------------------------------
+    const pontoF3 = await pontoDaAlca(sessao);
+    await sessao.send('Input.dispatchTouchEvent', {
+      type: 'touchStart', touchPoints: [{ x: pontoF3.x, y: pontoF3.y }],
+    });
+    for (let n = 1; n <= 12; n++) {
+      const y = pontoF3.y - Math.round((40 * n) / 12);
+      await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: pontoF3.x, y }] });
+    }
+    const t0F3 = await tocarSoltar(sessao);
+    const f3Amostras = await amostrarSequencia(sessao, t0F3, [16, 120, 300, 600], jsAmostraFolha);
+    const f3Final = f3Amostras[f3Amostras.length - 1];
+    const f3Passa = Boolean(f3Final && f3Final.estado === 'compacta' && f3Final.transform === 'none');
+
+    // ---------------------------------------------------------------
+    // F4 — fechar pela alça (140 px para baixo, a partir da compacta)
+    // ---------------------------------------------------------------
+    const pontoF4 = await pontoDaAlca(sessao);
+    await sessao.send('Input.dispatchTouchEvent', {
+      type: 'touchStart', touchPoints: [{ x: pontoF4.x, y: pontoF4.y }],
+    });
+    for (let n = 1; n <= 12; n++) {
+      const y = pontoF4.y + Math.round((140 * n) / 12);
+      await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: pontoF4.x, y }] });
+    }
+    const t0F4 = await tocarSoltar(sessao);
+    const f4Amostras = await amostrarSequencia(sessao, t0F4, [16, 120, 300, 600], jsAmostraFolha);
+    const f4Final = f4Amostras[f4Amostras.length - 1];
+    const f4Passa = Boolean(f4Final && f4Final.existe === false);
+
+    // ---------------------------------------------------------------
+    // F5 — um segundo dedo no meio do arrasto: devolve ao começo
+    // ---------------------------------------------------------------
+    await carregarFichaDeSaturno(); // reabre a ficha (F4 acabou de fechá-la)
+    const pontoF5 = await pontoDaAlca(sessao);
+    await sessao.send('Input.dispatchTouchEvent', {
+      type: 'touchStart', touchPoints: [{ x: pontoF5.x, y: pontoF5.y }],
+    });
+    let yF5 = pontoF5.y;
+    for (let n = 1; n <= 12; n++) {
+      yF5 = pontoF5.y - Math.round((100 * n) / 12);
+      await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: pontoF5.x, y: yF5 }] });
+    }
+    const t0F5 = Date.now();
+    // O SEGUNDO DEDO É UM `touchStart` COM OS DOIS PONTOS (o protocolo
+    // pede a lista INTEIRA de toques ativos, não só o novo) — é isto que
+    // `comecar()` em `useGavetas.ts` lê como `e.touches.length > 1` e
+    // devolve a folha ao começo (`desfazer`), sem esperar o `touchEnd`.
+    await sessao.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: pontoF5.x, y: yF5 }, { x: pontoF5.x + 40, y: yF5 }],
+    });
+    await tocarSoltar(sessao);
+    const f5Amostras = await amostrarSequencia(sessao, t0F5, [16, 120, 300, 600], jsAmostraFolha);
+    const f5Final = f5Amostras[f5Amostras.length - 1];
+    const f5Passa = Boolean(f5Final && f5Final.estado === 'compacta' && f5Final.transform === 'none');
+
+    // ---------------------------------------------------------------
+    // F6 — um controle deslizante nunca começa o arrasto da folha
+    // ---------------------------------------------------------------
+    await sessao.js(`document.querySelector('${SEL_AJUSTES_GATILHO}').click()`);
+    await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_AJUSTES_PAINEL}'))`, 5000);
+    await dorme(400); // assenta a entrada (--t-folha) antes do toque
+    const seletorSlider = `${SEL_AJUSTES_PAINEL} input[type="range"]`;
+    const rSlider = await retanguloDe(sessao, seletorSlider);
+    if (!rSlider) throw new Error(`F6: "${seletorSlider}" não encontrado`);
+    const pontoSlider = {
+      x: Math.round(rSlider.x + rSlider.width / 2),
+      y: Math.round(rSlider.y + rSlider.height / 2),
+    };
+    const f6Durante = [];
+    await sessao.send('Input.dispatchTouchEvent', {
+      type: 'touchStart', touchPoints: [{ x: pontoSlider.x, y: pontoSlider.y }],
+    });
+    for (let n = 1; n <= 12; n++) {
+      const x = pontoSlider.x + Math.round((60 * n) / 12);
+      const y = pontoSlider.y + Math.round((60 * n) / 12);
+      await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] });
+      if (n === 6 || n === 12) {
+        f6Durante.push({ passo: n, ...(await sessao.js(jsAmostraPainel(SEL_AJUSTES_PAINEL))) });
+      }
+    }
+    const t0F6 = await tocarSoltar(sessao);
+    const f6PosSolta = await amostrarSequencia(
+      sessao, t0F6, [16, 120, 300, 600], () => jsAmostraPainel(SEL_AJUSTES_PAINEL)
+    );
+    const f6TudoNone = [...f6Durante, ...f6PosSolta].every((a) => a.transform === 'none');
+    const f6AjustesAberto = f6PosSolta[f6PosSolta.length - 1]?.existe === true;
+    const f6Passa = Boolean(f6TudoNone && f6AjustesAberto);
+
+    // ---------------------------------------------------------------
+    // F7 — expandida e rolada: a alça ainda fecha (a rolagem não entra
+    // na conta quando o gesto começa NELA, `useGavetas.ts`)
+    // ---------------------------------------------------------------
+    await carregarFichaDeSaturno(); // ficha compacta de novo (Ajustes fechou a da F6)
+    await sessao.js(`document.querySelector('${SEL_FICHA_DETALHES}')?.click()`);
+    await esperarPor(
+      { js: sessao.js },
+      `document.querySelector('${SEL_FICHA_PAINEL}')?.getAttribute('data-ficha-estado') === 'expandida'`,
+      5000
+    );
+    await dorme(400); // assenta a expansão antes de rolar
+    await sessao.js(`(() => {
+      const el = document.querySelector('${SEL_FICHA_PAINEL}');
+      if (el) el.scrollTop = 200;
+    })()`);
+    const scrollTopAntesDoArrasto = await sessao.js(
+      `document.querySelector('${SEL_FICHA_PAINEL}')?.scrollTop ?? null`
+    );
+    const pontoF7 = await pontoDaAlca(sessao);
+    await sessao.send('Input.dispatchTouchEvent', {
+      type: 'touchStart', touchPoints: [{ x: pontoF7.x, y: pontoF7.y }],
+    });
+    for (let n = 1; n <= 12; n++) {
+      const y = pontoF7.y + Math.round((140 * n) / 12);
+      await sessao.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: pontoF7.x, y }] });
+    }
+    const t0F7 = await tocarSoltar(sessao);
+    const f7Amostras = await amostrarSequencia(sessao, t0F7, [16, 120, 300, 600], jsAmostraFolha);
+    const f7Final = f7Amostras[f7Amostras.length - 1];
+    const f7Passa = Boolean(f7Final && f7Final.estado === 'compacta' && f7Final.transform === 'none');
+
+    // ---------------------------------------------------------------
+    // F8 — paisagem baixa da MESA (844×390): `compactavel` por
+    // `janelaBaixa`, não por `celular` (760px nunca é cruzado) — o
+    // gesto da alça não existe aqui (o efeito de `useGavetas.ts` só liga
+    // com `celular`); só confere que nada quebrou.
+    // ---------------------------------------------------------------
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 844, height: 390, deviceScaleFactor: 1, mobile: true,
+    });
+    await carregarFichaDeSaturno();
+    const f8Antes = await sessao.js(
+      `document.querySelector('${SEL_FICHA_PAINEL}')?.getAttribute('data-ficha-estado') ?? null`
+    );
+    await sessao.js(`document.querySelector('${SEL_FICHA_DETALHES}')?.click()`);
+    await dorme(400);
+    const f8Depois = await sessao.js(
+      `document.querySelector('${SEL_FICHA_PAINEL}')?.getAttribute('data-ficha-estado') ?? null`
+    );
+
+    // ---------------------------------------------------------------
+    // RELATÓRIO
+    // ---------------------------------------------------------------
+    const relatorio = {
+      meta: {
+        commit,
+        dirty,
+        // O SERVIDOR É DE OUTRA ÁRVORE (isolada, item obrigatório do
+        // enunciado): `commit`/`dirty` acima são desta sonda, não do app
+        // que ela mede — os dois podem divergir, e é por isso que o app
+        // ganha o campo dele, à parte.
+        appCommit: '793df4d (servidor isolado, árvore limpa)',
+        chrome: versaoChrome.product,
+        app: APP,
+        query: queryComFoco,
+        viewport: { width: 390, height: 844 },
+        dpr,
+        geradoEm: new Date().toISOString(),
+      },
+      f1: {
+        top0, move6: f1Move6, move12: f1Move12, posSolta: f1PosSolta, passa: f1Passa,
+      },
+      f2: {
+        move6: f2Move6, move12: f2Move12, posSolta: f2PosSolta, semSalto: f2SemSalto, passa: f2Passa,
+      },
+      f3: { amostras: f3Amostras, passa: f3Passa },
+      f4: { amostras: f4Amostras, passa: f4Passa },
+      f5: { amostras: f5Amostras, passa: f5Passa },
+      f6: {
+        durante: f6Durante,
+        posSolta: f6PosSolta,
+        tudoTransformNone: f6TudoNone,
+        ajustesAberto: f6AjustesAberto,
+        passa: f6Passa,
+      },
+      f7: { scrollTopAntesDoArrasto, amostras: f7Amostras, passa: f7Passa },
+      f8: { antes: f8Antes, depois: f8Depois },
+      clipe,
+      folhaContato,
+    };
+    const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-folha-${commit}.json`));
+    writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
+
+    const linhas = [
+      `=== sonda-motion folha — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app 793df4d (servidor isolado) ===`,
+      `Chrome ${versaoChrome.product} | celular 390x844 DPR${dpr} | pt-BR | q=performance | foco=saturno`,
+      `clipe F1+F2: ${clipe} (${quadrosClipe.length} quadros)`,
+      `folha de contato: ${folhaContato}`,
+      `F1 expandir: top0=${num(top0)} move12.top=${num(f1Move12?.top)} esperado≈${num(esperadoTopoMove12)} `
+        + `(${f1Segue ? 'segue o dedo' : 'NÃO segue'}) final estado=${f1Final?.estado} transform=${f1Final?.transform} `
+        + `top=${num(f1Final?.top)} — ${f1Passa ? 'PASSA' : 'FALHA'}`,
+      `F2 recolher: final estado=${f2Final?.estado} transform=${f2Final?.transform} top=${num(f2Final?.top)} `
+        + `(top0=${num(top0)}) topos pós-soltar=${toposF2.map((t) => t.toFixed(1)).join('/')} `
+        + `(${f2SemSalto ? 'sem recuo' : 'COM RECUO'}) — ${f2Passa ? 'PASSA' : 'FALHA'}`,
+      `F3 arrasto curto (40px): final estado=${f3Final?.estado} transform=${f3Final?.transform} — `
+        + `${f3Passa ? 'PASSA' : 'FALHA'}`,
+      `F4 fechar (140px): final existe=${f4Final?.existe} — ${f4Passa ? 'PASSA' : 'FALHA'}`,
+      `F5 segundo dedo: final estado=${f5Final?.estado} transform=${f5Final?.transform} — `
+        + `${f5Passa ? 'PASSA' : 'FALHA'}`,
+      `F6 controle deslizante: transform sempre none=${f6TudoNone}, Ajustes aberto ao fim=${f6AjustesAberto} — `
+        + `${f6Passa ? 'PASSA' : 'FALHA'}`,
+      `F7 expandida+rolada (scrollTop=${scrollTopAntesDoArrasto}): final estado=${f7Final?.estado} `
+        + `transform=${f7Final?.transform} — ${f7Passa ? 'PASSA' : 'FALHA'}`,
+      `F8 paisagem baixa 844x390: data-ficha-estado antes=${f8Antes} depois=${f8Depois}`,
+      `JSON: ${destinoJson}`,
+    ];
+    process.stdout.write(`${linhas.join('\n')}\n`);
+  } catch (erro) {
+    process.stdout.write(`BLOCKED: ${erro.stack || erro.message}\n`);
+    process.exitCode = 1;
+  } finally {
+    if (sessao) await sessao.fechar();
+    rmSync(pastaClipe, { recursive: true, force: true });
+  }
+}
+
 // ============================================================
 // A CORRIDA
 // ============================================================
@@ -1255,7 +1701,9 @@ async function rodarInterrupcoes() {
 // ~330 linhas por estética arriscava mais erro de transcrição do que
 // resolvia, e o enunciado pede o comportamento de sempre "exatamente
 // como está", não o arquivo mais bonito.
-if (INTERRUPCOES) {
+if (FOLHA) {
+  await rodarFolha();
+} else if (INTERRUPCOES) {
   await rodarInterrupcoes();
 } else if (!SEQUENCIA) {
 mkdirSync(CAPTURAS, { recursive: true });
