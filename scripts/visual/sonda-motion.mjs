@@ -22,6 +22,7 @@
 //   node scripts/visual/sonda-motion.mjs
 //   node scripts/visual/sonda-motion.mjs --app=http://localhost:58697
 //   node scripts/visual/sonda-motion.mjs --folha --app=http://localhost:58697
+//   node scripts/visual/sonda-motion.mjs --c5 --app=http://localhost:58697
 //
 // Saída (nomes inéditos — nunca sobrescreve, ver `semSobrescrever`):
 //   capturas/motion-c0-<commit>.json       todas as amostras + metadados
@@ -35,7 +36,7 @@ import { fileURLToPath } from 'node:url';
 import { execSync, spawnSync } from 'node:child_process';
 import {
   lancarChrome, GPU_FLAGS, dorme, ligarSocketCDP, portaDoPerfil,
-  comLinguaDoJuizNaUrl, esperarPor, esperarAssentar,
+  comLinguaDoJuizNaUrl, esperarPor, esperarAssentar, esperarCapaSair,
 } from './chrome.mjs';
 import { semSobrescrever } from './luz-ab.mjs';
 
@@ -46,6 +47,9 @@ const FFMPEG = process.env.FFMPEG || '/opt/homebrew/bin/ffmpeg';
 const argApp = process.argv.find((a) => a.startsWith('--app='));
 const APP = argApp ? argApp.slice('--app='.length) : 'http://localhost:58697';
 const QUERY = 'atlas=1&q=performance&lang=pt-BR';
+// `--c5` usa o FILME (sem `?atlas=1`) nas cenas V1–V6 — a mesma língua e
+// o mesmo preset "performance" do resto da sonda, só sem o Atlas.
+const QUERY_FILME = 'lang=pt-BR&q=performance';
 // `--sequencia` troca as seis provas E1–E6 (paralelas, sem história entre
 // si) por UM fluxo contínuo só (C3, docs/PLANO-MOTION-UI.md linha 511:
 // "mostrar uma sequência contínua Buscar Saturno → abrir seção → copiar
@@ -78,6 +82,15 @@ const INTERRUPCOES = process.argv.includes('--interrupcoes');
 // linha do tempo), como `rodarInterrupcoes`: PASSA/FALHA só a partir dos
 // números medidos. Opt-in: sem a flag, nada aqui muda.
 const FOLHA = process.argv.includes('--folha');
+// `--c5` troca a corrida de sempre por OITO cenas (V1–V8) do que o C5
+// já entregou (marcos do carregamento, aceno do CTA primário, o chrome
+// do filme sumindo sozinho, o grupo "Mais", os ícones do transporte, a
+// barra de progresso, a tela final, o acento de seleção no céu e a dica
+// de ajuda): um clipe em velocidade normal + folha de contato por cena,
+// como `--folha`/`--interrupcoes`, mais uma leva de checagens de DOM.
+// Não é um gate de PASSA/FALHA — roda uma vez e relata os números.
+// Opt-in: sem a flag, nada aqui muda.
+const C5 = process.argv.includes('--c5');
 
 const SEL_CAMADAS_GATILHO = '[data-abre-dialogo="camadas"]';
 const SEL_AJUSTES_GATILHO = '[data-abre-dialogo="ajustes"]';
@@ -155,6 +168,10 @@ async function abrirSonda({ janela, prefixo }) {
     if (!alvo) await dorme(200);
   }
   if (!alvo) throw new Error('CDP não respondeu');
+  // A NOSSA ABA — pelo id do próprio socket (`…/devtools/page/<targetId>`),
+  // do mesmo jeito que `abrirSessao` (chrome.mjs) já faz; o vigia abaixo
+  // usa este id para nunca fechar a própria aba por engano.
+  const idDaAba = alvo.split('/').pop();
 
   const ouvintes = new Set();
   let carregou = false;
@@ -170,6 +187,61 @@ async function abrirSonda({ janela, prefixo }) {
   await send('Page.enable');
   await send('Runtime.enable');
   await send('Page.addScriptToEvaluateOnNewDocument', { source: SCRIPT_INJETADO });
+
+  // GRAVANDO — aceso por `gravarClipe` durante a janela de
+  // `Page.startScreencast`; o vigia abaixo lê para NUNCA chamar
+  // `Target.closeTarget`/`activateTarget` no meio de uma gravação (achado
+  // ao rodar `--c5`: a reativação forçada no meio de um clipe corrompeu
+  // os quadros e quebrou o `ffmpeg` — "Error sending frames to
+  // consumers"). Adiar para a próxima varredura, 500ms depois, é mais
+  // barato que arriscar o clipe.
+  let gravando = false;
+  // O VIEWPORT QUE A CENA QUER — `null` até algum chamador registrar um
+  // com `marcarViewport` (opt-in: os modos de sempre nunca chamam, e o
+  // vigia abaixo fica exatamente como antes para eles). `--c5` registra
+  // 1440×900 uma vez, no início de `rodarC5`.
+  let ultimoOverride = null;
+
+  /**
+   * O VIGIA DA ABA DA FRENTE (mesmo achado de `abrirSessao`,
+   * chrome.mjs — comentário lá tem o histórico completo): sessões longas
+   * correm o risco do Chrome headless abrir sozinho uma aba
+   * `chrome://settings/help` e roubar o primeiro plano. Copiado aqui
+   * porque `abrirSonda` é uma sessão própria, sem herdar de
+   * `abrirSessao`; só chama `Target.activateTarget` quando FECHA uma
+   * intrusa de verdade — a reafirmação incondicional de `abrirSessao`
+   * (inócua lá) corrompeu um clipe aqui no meio de uma gravação.
+   *
+   * ACHADO NOVO, rodando `--c5` (o primeiro modo longo o bastante para
+   * bater nisto): a intrusa nasce como uma SEGUNDA ABA da MESMA janela,
+   * e isso é o bastante para o Chrome passar a reservar a faixa da
+   * barra de abas — a área útil encolhe (medido: 900 -> 813px de
+   * altura, os mesmos 87px "descontados pela barra" do achado de
+   * 17/08 em `capturarCDP`) e NÃO VOLTA sozinha ao fechar a intrusa. Um
+   * clipe gravado depois disso saía com 1440×813 — altura ÍMPAR, que o
+   * `libx264` do `renderizarClipe` recusa ("Could not open encoder").
+   * Por isso o vigia reaplica `ultimoOverride` (se alguém registrou um)
+   * depois de fechar a intrusa — `setDeviceMetricsOverride` FORÇA a área
+   * útil de volta ao tamanho pedido, ao contrário de só reativar a aba.
+   */
+  const vigiaDaFrente = setInterval(async () => {
+    if (gravando) return;
+    try {
+      const { targetInfos } = await send('Target.getTargets');
+      const intrusa = targetInfos.find(
+        (t) => t.type === 'page' && t.targetId !== idDaAba && t.url.startsWith('chrome://')
+      );
+      if (intrusa) {
+        process.stdout.write(
+          `  ·     vigia: aba intrusa ${intrusa.url} fechada — a frente volta ao app\n`
+        );
+        await send('Target.closeTarget', { targetId: intrusa.targetId });
+        await send('Target.activateTarget', { targetId: idDaAba });
+        if (ultimoOverride) await send('Emulation.setDeviceMetricsOverride', ultimoOverride);
+      }
+    } catch { /* sessão fechando, ou socket já morto */ }
+  }, 500);
+  vigiaDaFrente.unref?.();
 
   const js = async (expr) => {
     const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true });
@@ -196,7 +268,9 @@ async function abrirSonda({ janela, prefixo }) {
     js,
     ir,
     onEvento: (fn) => { ouvintes.add(fn); return () => ouvintes.delete(fn); },
-    fechar: () => { fecharSocket(); return encerrar(); },
+    marcarGravando: (v) => { gravando = v; },
+    marcarViewport: (o) => { ultimoOverride = o; },
+    fechar: () => { clearInterval(vigiaDaFrente); fecharSocket(); return encerrar(); },
   };
 }
 
@@ -241,12 +315,18 @@ async function pressionarEscape(sessao) {
 
 /** teclas nomeadas que a sonda padrão não precisava (Tab/Enter/Backspace
  *  do fluxo da C3, `--sequencia`) — mesmo par rawKeyDown/keyUp de
- *  `pressionarEscape`, acima; só o código nativo muda por tecla. */
-async function pressionarTecla(sessao, nome) {
+ *  `pressionarEscape`, acima; só o código nativo muda por tecla.
+ *  `shift` (C5, `--c5`) manda o modificador do CDP (8 = Shift) para o
+ *  Shift+Tab que devolve o foco ao gatilho do "Mais" — omitido, o
+ *  comportamento de sempre não muda em nada. */
+async function pressionarTecla(sessao, nome, { shift = false } = {}) {
   const TECLAS = { Tab: 9, Enter: 13, Backspace: 8 };
   const codigo = TECLAS[nome];
   if (!codigo) throw new Error(`pressionarTecla: tecla desconhecida "${nome}"`);
-  const base = { key: nome, code: nome, windowsVirtualKeyCode: codigo, nativeVirtualKeyCode: codigo };
+  const base = {
+    key: nome, code: nome, windowsVirtualKeyCode: codigo, nativeVirtualKeyCode: codigo,
+    modifiers: shift ? 8 : 0,
+  };
   await sessao.send('Input.dispatchKeyEvent', { ...base, type: 'rawKeyDown' });
   await sessao.send('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
 }
@@ -518,9 +598,11 @@ async function gravarClipe(sessao, { largura, altura, pastaQuadros }, executar) 
   await sessao.send('Page.startScreencast', {
     format: 'png', everyNthFrame: 1, maxWidth: largura, maxHeight: altura,
   });
+  sessao.marcarGravando?.(true); // o vigia da aba intrusa (C5) espera a gravação acabar
   try {
     await executar();
   } finally {
+    sessao.marcarGravando?.(false);
     await sessao.send('Page.stopScreencast');
     parar();
   }
@@ -1693,6 +1775,779 @@ async function rodarFolha() {
   }
 }
 
+/** repete `fn` até `tentativas` vezes — rede de segurança da corrida
+ *  `--c5`: o vigia da aba intrusa (`abrirSonda`) evita interferir no
+ *  MEIO de uma gravação, mas se a intrusa aparecer bem no INÍCIO de uma
+ *  cena (antes do vigia ter uma folga de 500ms para fechá-la), aquele
+ *  clipe pode nascer com poucos ou nenhum quadro. Repetir a cena do
+ *  zero é mais simples e mais honesto que adivinhar o instante exato. */
+async function comRetentativa(fn, { tentativas = 2, pausaMs = 1000 } = {}) {
+  let ultimoErro = null;
+  for (let i = 1; i <= tentativas; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      ultimoErro = e;
+      process.stdout.write(`  ·     tentativa ${i}/${tentativas} da cena falhou: ${e.message}\n`);
+      if (i < tentativas) await dorme(pausaMs);
+    }
+  }
+  throw ultimoErro;
+}
+
+/** pressiona Tab repetidamente até `document.activeElement` casar com
+ *  `seletor` (ou até `maxPresses`) — TECLA REAL, nunca `.focus()` por
+ *  script: só o Tab de verdade decide `:focus-visible` como um Tab de
+ *  verdade decidiria (mesma razão de `clicarReal`). Devolve quantos
+ *  Tabs foram precisos, ou -1 se não achou dentro do teto. */
+async function tabularAte(sessao, seletor, maxPresses = 30) {
+  for (let i = 1; i <= maxPresses; i++) {
+    await pressionarTecla(sessao, 'Tab');
+    const acertou = await sessao.js(
+      `Boolean(document.activeElement && document.activeElement.matches(${JSON.stringify(seletor)}))`
+    );
+    if (acertou) return i;
+  }
+  return -1;
+}
+
+// ============================================================
+// `--c5` — OITO CENAS (V1–V8) do que o C5 já entregou: os marcos do
+// carregamento piscando uma vez (`marcoReflexo`), o aceno do CTA
+// primário na abertura e na tela final (`reflexoDeAbertura`,
+// `--cta-atraso`), o chrome do filme sumindo sozinho por inatividade
+// (`useChromeDoFilme`), o grupo "Mais" (`usePresenca`), os ícones do
+// transporte (`assentaIcone`/`.realce-texto`), a barra de progresso
+// (U10: engrossa em hover/foco/arrasto, o ponto persegue o
+// preenchimento), a tela final e o botão "Ficar neste céu", o acento
+// âmbar de 200ms quando a seleção troca no céu (`acentoDaSelecao`,
+// `LabelCanvas.ts`) e a dica de ajuda ("?", `entraDica`). Cada cena
+// grava um clipe em velocidade normal + folha de contato (o mesmo
+// `gravarClipe` → `renderizarClipe` → `renderizarContato` das outras
+// leituras) e amostra o DOM pelo PRÓPRIO estado, nunca pelo relógio da
+// sonda — mas ao contrário de `--interrupcoes`/`--folha` isto não julga
+// PASSA/FALHA: roda uma vez e relata os números medidos.
+// ============================================================
+
+function jsMarcoAgora() {
+  return `(() => {
+    const el = document.querySelector('.cv-marco.agora');
+    if (!el) return { existe: false };
+    const cs = getComputedStyle(el);
+    return { existe: true, animationName: cs.animationName, className: el.className };
+  })()`;
+}
+
+function jsCtaPrimario() {
+  return `(() => {
+    const btn = document.querySelector('.veil-btn--primario');
+    if (!btn) return { existe: false };
+    const cs = getComputedStyle(btn, '::after');
+    return {
+      existe: true,
+      animationName: cs.animationName,
+      animationDelay: cs.animationDelay,
+      animationDuration: cs.animationDuration,
+    };
+  })()`;
+}
+
+/**
+ * V1 — A ABERTURA: da navegação (sem `?atlas=1`) pelas etapas do
+ * carregamento até o véu do título, com o aceno do CTA primário já
+ * passado. A gravação começa ANTES do `Page.navigate` — só assim os
+ * marcos do carregamento (`.cv-marco.agora`, cada um pisca uma vez só)
+ * entram no clipe — e por isso um segundo laço, concorrente com a
+ * navegação, amostra o marco "agora" a cada 40ms pelo mesmo socket CDP;
+ * erros de `Runtime.evaluate` no meio da troca de documento são
+ * esperados (o contexto antigo morre) e só descartam aquela amostra.
+ */
+async function cenaAberturaC5(sessao, commit, pasta) {
+  const marcos = [];
+  let coletando = true;
+  const coletor = (async () => {
+    while (coletando) {
+      try {
+        const m = await sessao.js(jsMarcoAgora());
+        if (m?.existe) marcos.push(m);
+      } catch { /* documento trocando — amostra descartada */ }
+      await dorme(40);
+    }
+  })();
+
+  let cta = null;
+  const quadros = await gravarClipe(
+    sessao,
+    { largura: 1440, altura: 900, pastaQuadros: pasta },
+    async () => {
+      await sessao.ir(QUERY_FILME);
+      await esperarCapaSair(sessao.send);
+      // --cta-atraso (0,8s) + --t-reflexo (0,36s) do aceno, com folga
+      await dorme(1400);
+      cta = await sessao.js(jsCtaPrimario());
+    }
+  );
+  coletando = false;
+  await coletor;
+
+  const clipe = renderizarClipe(quadros, resolve(CAPTURAS, `motion-c5-v1-abertura-${commit}.mp4`));
+  const duracao = quadros[quadros.length - 1].ts - quadros[0].ts;
+  const folha = renderizarContato(clipe, duracao, resolve(CAPTURAS, `motion-c5-v1-abertura-${commit}.png`));
+  const marcosComReflexo = marcos.filter((m) => m.animationName.includes('marcoReflexo')).length;
+
+  return {
+    clipe, folha, quadros: quadros.length, marcosAmostrados: marcos.length, marcosComReflexo, cta,
+  };
+}
+
+/** Navega para o filme (sem `?atlas=1`) e clica "Ver o filme" — o botão
+ *  SECUNDÁRIO do véu (`aria-describedby="porta-filme"`; o PRIMÁRIO leva
+ *  ao Atlas, não ao filme). Usada por V2–V6, que precisam da viagem
+ *  tocando. */
+async function iniciarFilmeC5(sessao) {
+  let assentou = null;
+  let ultimoErro = null;
+  for (let tentativa = 1; tentativa <= 3 && !assentou; tentativa++) {
+    try {
+      assentou = await sessao.ir(QUERY_FILME);
+    } catch (e) {
+      ultimoErro = e;
+      process.stdout.write(`tentativa ${tentativa}/3 de carregar o filme falhou: ${e.message}\n`);
+      await dorme(500);
+    }
+  }
+  if (!assentou) throw new Error(`o filme não carregou em 3 tentativas (${ultimoErro?.message})`);
+  await esperarCapaSair(sessao.send);
+  await clicarReal(sessao, '[aria-describedby="porta-filme"]');
+  await esperarPor(
+    { js: sessao.js },
+    "document.querySelector('.hud-root')?.getAttribute('data-fase') === 'journey'",
+    10000
+  );
+  await dorme(300);
+}
+
+/**
+ * ACORDA O CHROME DO FILME (`useChromeDoFilme`) antes de uma cena que
+ * precisa dele visível/clicável. Achado ao rodar `--c5`: `renderizarClipe`
+ * e `renderizarContato` usam `spawnSync` (ffmpeg BLOQUEANTE) entre uma
+ * cena e a próxima — o Node fica preso codificando por segundos de
+ * parede enquanto o filme continua tocando e o ponteiro não se mexe, e
+ * os 3s de inatividade (`ESPERA_DO_CHROME_MS`) vencem no meio disso. Sem
+ * acordar antes, um clique em V3/V4/V5 podia cair num botão
+ * `pointer-events: none` e atravessar até o céu por baixo — o clique
+ * vira NO-OP, sem erro nenhum para acusar. Fica FORA de `gravarClipe`
+ * de propósito: um gesto de despertar dentro do clipe poluiria a
+ * gravação com um movimento que ninguém pediu para ver.
+ */
+async function acordarChromeDoFilme(sessao) {
+  await moverMouse(sessao, 720, 450);
+  await esperarPor(
+    { js: sessao.js },
+    "document.querySelector('.controls-bar')?.className.includes('hud-sumido') === false",
+    2000
+  );
+  await dorme(150);
+}
+
+function jsBarraDoFilme() {
+  return `(() => {
+    const el = document.querySelector('.controls-bar');
+    if (!el) return { existe: false };
+    const cs = getComputedStyle(el);
+    return {
+      existe: true,
+      sumida: el.className.includes('hud-sumido'),
+      transitionDuration: cs.transitionDuration,
+      opacity: cs.opacity,
+    };
+  })()`;
+}
+
+/**
+ * V2 — O CHROME DO FILME SOME SOZINHO (`useChromeDoFilme`,
+ * `ESPERA_DO_CHROME_MS = 3000`): com a viagem tocando e o ponteiro
+ * parado, a barra de controles some por opacidade; o primeiro gesto a
+ * traz de volta. A câmera grava em tempo real — a espera de uns 3s é o
+ * PRÓPRIO comportamento sendo medido, não um `dorme` de conveniência
+ * (por isso o teto de `esperarPor` é bem maior que os 3s nominais).
+ */
+async function cenaChromeC5(sessao, commit, pasta) {
+  await sessao.js('window.__director.seek(20)');
+  await acordarChromeDoFilme(sessao);
+  const visivel = await sessao.js(jsBarraDoFilme());
+
+  let escondida = null;
+  let revelada = null;
+  let escondidaDeNovo = null;
+  const quadros = await gravarClipe(
+    sessao,
+    { largura: 1440, altura: 900, pastaQuadros: pasta },
+    async () => {
+      const escondeuAos = await esperarPor(
+        { js: sessao.js }, "document.querySelector('.controls-bar')?.className.includes('hud-sumido') === true", 6000
+      );
+      escondida = { ...(await sessao.js(jsBarraDoFilme())), escondeuAos };
+
+      await moverMouse(sessao, 720, 450); // revela — o primeiro gesto do ponteiro
+      const revelouAos = await esperarPor(
+        { js: sessao.js }, "document.querySelector('.controls-bar')?.className.includes('hud-sumido') === false", 2000
+      );
+      revelada = { ...(await sessao.js(jsBarraDoFilme())), revelouAos };
+
+      // sem NOVO gesto — é o silêncio que deve escondê-la de novo
+      const escondeuDeNovoAos = await esperarPor(
+        { js: sessao.js }, "document.querySelector('.controls-bar')?.className.includes('hud-sumido') === true", 6000
+      );
+      escondidaDeNovo = { ...(await sessao.js(jsBarraDoFilme())), escondeuDeNovoAos };
+    }
+  );
+
+  const clipe = renderizarClipe(quadros, resolve(CAPTURAS, `motion-c5-v2-chrome-${commit}.mp4`));
+  const duracao = quadros[quadros.length - 1].ts - quadros[0].ts;
+  const folha = renderizarContato(clipe, duracao, resolve(CAPTURAS, `motion-c5-v2-chrome-${commit}.png`));
+
+  return {
+    clipe, folha, quadros: quadros.length, visivel, escondida, revelada, escondidaDeNovo,
+  };
+}
+
+function jsMais() {
+  return `(() => {
+    const gatilho = document.querySelector('[aria-controls="barra-mais-ferramentas"]');
+    const painel = document.getElementById('barra-mais-ferramentas');
+    const ae = document.activeElement;
+    return {
+      gatilhoExpandido: gatilho ? gatilho.getAttribute('aria-expanded') : null,
+      painelExiste: Boolean(painel),
+      painelClasse: painel ? painel.className : null,
+      painelInert: painel ? painel.inert : null,
+      foco: ae ? {
+        tag: ae.tagName,
+        ehOGatilho: ae === gatilho,
+        dentroDoPainel: Boolean(painel && ae !== painel && painel.contains(ae)),
+      } : null,
+    };
+  })()`;
+}
+
+/**
+ * V3 — O GRUPO "MAIS" (`usePresenca`, `.filme-mais`): abre e fecha pelo
+ * mouse, depois abre de novo, entra nele com Tab e fecha pelo TECLADO
+ * de volta no próprio gatilho (Shift+Tab, Enter) — o mesmo contrato de
+ * presença da Sanfona de Ajustes (`inert` na saída, foco devolvido ao
+ * gatilho de quem abriu).
+ */
+async function cenaMaisC5(sessao, commit, pasta) {
+  await acordarChromeDoFilme(sessao);
+  const seletorGatilho = '[aria-controls="barra-mais-ferramentas"]';
+  let aposAbrirMouse = [];
+  let aposFecharMouse = [];
+  let focoAposTab = null;
+  let focoAposFechar = null;
+
+  const quadros = await gravarClipe(
+    sessao,
+    { largura: 1440, altura: 900, pastaQuadros: pasta },
+    async () => {
+      const t0Abrir = Date.now();
+      await clicarReal(sessao, seletorGatilho);
+      aposAbrirMouse = await amostrarSequencia(sessao, t0Abrir, [16, 120, 300], jsMais);
+      await dorme(400);
+
+      const t0Fechar = Date.now();
+      await clicarReal(sessao, seletorGatilho);
+      aposFecharMouse = await amostrarSequencia(sessao, t0Fechar, [16, 120, 300], jsMais);
+      await dorme(400);
+
+      await clicarReal(sessao, seletorGatilho); // abre de novo
+      await dorme(400);
+      await pressionarTecla(sessao, 'Tab'); // entra no painel
+      focoAposTab = await sessao.js(jsMais());
+      await pressionarTecla(sessao, 'Tab', { shift: true }); // volta ao gatilho
+      await pressionarTecla(sessao, 'Enter'); // fecha pelo teclado
+      await dorme(350);
+      focoAposFechar = await sessao.js(jsMais());
+    }
+  );
+
+  const clipe = renderizarClipe(quadros, resolve(CAPTURAS, `motion-c5-v3-mais-${commit}.mp4`));
+  const duracao = quadros[quadros.length - 1].ts - quadros[0].ts;
+  const folha = renderizarContato(clipe, duracao, resolve(CAPTURAS, `motion-c5-v3-mais-${commit}.png`));
+
+  return {
+    clipe, folha, quadros: quadros.length, aposAbrirMouse, aposFecharMouse, focoAposTab, focoAposFechar,
+  };
+}
+
+function jsTransporte() {
+  return `(() => {
+    const botoes = document.querySelectorAll('.filme-transporte button');
+    const pausaBtn = botoes[0] || null;
+    const taxaBtn = botoes[1] || null;
+    const iconeAssenta = document.querySelector('.filme-transporte-icone-assenta');
+    const rateSpan = taxaBtn ? taxaBtn.querySelector('span') : null;
+    return {
+      pausaAriaLabel: pausaBtn ? pausaBtn.getAttribute('aria-label') : null,
+      iconeAssentaExiste: Boolean(iconeAssenta),
+      iconeAnimationName: iconeAssenta ? getComputedStyle(iconeAssenta).animationName : null,
+      rateTexto: rateSpan ? rateSpan.textContent : null,
+      rateRealceTexto: rateSpan ? rateSpan.className.includes('realce-texto') : false,
+    };
+  })()`;
+}
+
+/**
+ * V4 — TRANSPORTE: pausar, retomar, mudar a velocidade. O ícone de
+ * pausa/retomar reassenta (`assentaIcone`, remontado por `key`) a cada
+ * troca, e o número da taxa ganha `.realce-texto` do mesmo jeito que o
+ * nome do alvo ganha na busca (C3). Termina devolvendo a taxa a 1× para
+ * não vazar velocidade alta para as cenas seguintes.
+ */
+async function cenaTransporteC5(sessao, commit, pasta) {
+  await acordarChromeDoFilme(sessao);
+  const seletorPausa = '.filme-transporte button:nth-child(1)';
+  const seletorTaxa = '.filme-transporte button:nth-child(2)';
+  let aposPausar = [];
+  let aposRetomar = [];
+  let aposTaxa = [];
+
+  const quadros = await gravarClipe(
+    sessao,
+    { largura: 1440, altura: 900, pastaQuadros: pasta },
+    async () => {
+      const t0p = Date.now();
+      await clicarReal(sessao, seletorPausa);
+      aposPausar = await amostrarSequencia(sessao, t0p, [16, 80, 200], jsTransporte);
+      await dorme(300);
+
+      const t0r = Date.now();
+      await clicarReal(sessao, seletorPausa);
+      aposRetomar = await amostrarSequencia(sessao, t0r, [16, 80, 200], jsTransporte);
+      await dorme(300);
+
+      const t0t = Date.now();
+      await clicarReal(sessao, seletorTaxa);
+      aposTaxa = await amostrarSequencia(sessao, t0t, [16, 80, 200], jsTransporte);
+
+      // devolve 2×→4×→1×, para a cena seguinte herdar velocidade normal
+      await dorme(300);
+      await clicarReal(sessao, seletorTaxa);
+      await dorme(300);
+      await clicarReal(sessao, seletorTaxa);
+      await dorme(300);
+    }
+  );
+
+  const clipe = renderizarClipe(quadros, resolve(CAPTURAS, `motion-c5-v4-transporte-${commit}.mp4`));
+  const duracao = quadros[quadros.length - 1].ts - quadros[0].ts;
+  const folha = renderizarContato(clipe, duracao, resolve(CAPTURAS, `motion-c5-v4-transporte-${commit}.png`));
+
+  return {
+    clipe, folha, quadros: quadros.length, aposPausar, aposRetomar, aposTaxa,
+  };
+}
+
+function jsProgresso() {
+  return `(() => {
+    const wrap = document.querySelector('.progress-wrap');
+    if (!wrap) return { existe: false };
+    const track = wrap.querySelector('.progress-track');
+    const ponto = wrap.querySelector('.progress-ponto');
+    const fill = wrap.querySelector('.progress-fill');
+    const csWrap = getComputedStyle(wrap);
+    const csTrack = getComputedStyle(track);
+    const csPontoBefore = getComputedStyle(ponto, '::before');
+    const rWrap = wrap.getBoundingClientRect();
+    const rFill = fill.getBoundingClientRect();
+    const fracao = Number.parseFloat(csWrap.getPropertyValue('--journey-progress')) || 0;
+    const pontoX = rWrap.left + fracao * rWrap.width;
+    return {
+      existe: true,
+      arrastando: wrap.getAttribute('data-arrastando') !== null,
+      focoAtual: document.activeElement === wrap,
+      trackTransform: csTrack.transform,
+      pontoOpacity: csPontoBefore.opacity,
+      distanciaPontoFillPx: Math.abs(rFill.right - pontoX),
+    };
+  })()`;
+}
+
+/**
+ * V5 — A BARRA DE PROGRESSO (U10, `.progress-wrap`): a camada visual
+ * engrossa (`scaleY(2.5)`) em hover real, foco por Tab e arrasto; o
+ * ponto do arrasto só aparece (opacidade 1) em foco por teclado ou
+ * arrasto; e o ponto persegue a ponta do preenchimento — lida a MESMA
+ * fração `--journey-progress` do computado dos dois (em vez de tentar
+ * medir o pseudo-elemento `::before` por `getBoundingClientRect`, que a
+ * API do DOM não permite).
+ */
+async function cenaProgressoC5(sessao, commit, pasta) {
+  await acordarChromeDoFilme(sessao);
+  let hover = null;
+  let tabsAteFoco = -1;
+  let foco = null;
+  let duranteArrasto = null;
+  let aposSoltarCedo = null;
+  let aposAssentar = null;
+
+  const quadros = await gravarClipe(
+    sessao,
+    { largura: 1440, altura: 900, pastaQuadros: pasta },
+    async () => {
+      // 1) HOVER — mouse real sobre a barra
+      const rBarra = await retanguloDe(sessao, '.progress-wrap');
+      if (!rBarra) throw new Error('v5: ".progress-wrap" não encontrado');
+      await moverMouse(sessao, rBarra.x + rBarra.width / 2, rBarra.y + rBarra.height / 2);
+      await dorme(250); // var(--t-assenta) = 180ms, com folga
+      hover = await sessao.js(jsProgresso());
+      await moverMouse(sessao, 10, 10);
+      await dorme(200);
+
+      // 2) FOCO POR TECLADO — só o Tab real decide `:focus-visible`
+      await sessao.js('document.activeElement && document.activeElement.blur()');
+      tabsAteFoco = await tabularAte(sessao, '.progress-wrap', 30);
+      await dorme(250);
+      foco = await sessao.js(jsProgresso());
+
+      // 3) ARRASTO — pressiona a ~20% da barra, arrasta até ~70%, solta
+      const rBarra2 = await retanguloDe(sessao, '.progress-wrap');
+      const y = rBarra2.y + rBarra2.height / 2;
+      const x0 = rBarra2.x + rBarra2.width * 0.2;
+      const x1 = rBarra2.x + rBarra2.width * 0.7;
+      const base = { button: 'left', pointerType: 'mouse' };
+      await sessao.send('Input.dispatchMouseEvent', {
+        ...base, x: x0, y, type: 'mousePressed', buttons: 1, clickCount: 1,
+      });
+      for (let n = 1; n <= 8; n++) {
+        const x = x0 + ((x1 - x0) * n) / 8;
+        await sessao.send('Input.dispatchMouseEvent', { ...base, x, y, type: 'mouseMoved', buttons: 1 });
+      }
+      duranteArrasto = await sessao.js(jsProgresso());
+      await sessao.send('Input.dispatchMouseEvent', { ...base, x: x1, y, type: 'mouseReleased', buttons: 0 });
+      aposSoltarCedo = await sessao.js(jsProgresso());
+      await dorme(300); // o deslize de 0,18s do preenchimento, com folga
+      aposAssentar = await sessao.js(jsProgresso());
+    }
+  );
+
+  const clipe = renderizarClipe(quadros, resolve(CAPTURAS, `motion-c5-v5-progresso-${commit}.mp4`));
+  const duracao = quadros[quadros.length - 1].ts - quadros[0].ts;
+  const folha = renderizarContato(clipe, duracao, resolve(CAPTURAS, `motion-c5-v5-progresso-${commit}.png`));
+
+  return {
+    clipe, folha, quadros: quadros.length, hover, tabsAteFoco, foco, duranteArrasto, aposSoltarCedo, aposAssentar,
+  };
+}
+
+function jsBotaoFicarNesteCeu() {
+  return `(() => {
+    const veu = document.querySelector('.veil-end');
+    const btn = veu ? veu.querySelector('.veil-btn--primario') : null;
+    const veuEscondido = veu ? veu.className.includes('hidden-veil') : null;
+    if (!btn) return { existe: false, veuEscondido };
+    const cs = getComputedStyle(btn);
+    const csAfter = getComputedStyle(btn, '::after');
+    const r = btn.getBoundingClientRect();
+    const noPonto = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    return {
+      existe: true,
+      veuEscondido,
+      disabled: btn.disabled,
+      pointerEvents: cs.pointerEvents,
+      clicavel: Boolean(noPonto && noPonto.closest('.veil-btn--primario') === btn),
+      animationName: csAfter.animationName,
+      animationDelay: csAfter.animationDelay,
+      animationDuration: csAfter.animationDuration,
+    };
+  })()`;
+}
+
+/**
+ * V6 — A TELA FINAL: salta para perto do fim (`window.__director.seek`,
+ * como `filme-smoke` faz) já com a viagem tocando — sem pausar, porque
+ * a esta altura da corrida o filme já está solto desde
+ * `iniciarFilmeC5`. Espera a fase virar 'end', o véu perder
+ * `hidden-veil`, e amostra o botão "Ficar neste céu" ao longo do aceno.
+ */
+async function cenaFimC5(sessao, commit, pasta) {
+  await sessao.js('window.__director.seek(192.8)');
+  await esperarAssentar({ send: sessao.send, cartografia: () => true, quadros: 700, teto: 20000 });
+
+  let chegouFimAos = null;
+  let veuVisivelAos = null;
+  let amostras = [];
+  const quadros = await gravarClipe(
+    sessao,
+    { largura: 1440, altura: 900, pastaQuadros: pasta },
+    async () => {
+      chegouFimAos = await esperarPor({ js: sessao.js }, "window.__director.captura.fase === 'end'", 15000);
+      veuVisivelAos = await esperarPor(
+        { js: sessao.js },
+        "document.querySelector('.veil-end')?.className.includes('hidden-veil') === false",
+        8000
+      );
+      const tVeu = Date.now();
+      amostras = await amostrarSequencia(sessao, tVeu, [0, 800, 1600, 2400, 3200, 4000], jsBotaoFicarNesteCeu);
+    }
+  );
+
+  const clipe = renderizarClipe(quadros, resolve(CAPTURAS, `motion-c5-v6-fim-${commit}.mp4`));
+  const duracao = quadros[quadros.length - 1].ts - quadros[0].ts;
+  const folha = renderizarContato(clipe, duracao, resolve(CAPTURAS, `motion-c5-v6-fim-${commit}.png`));
+  const sempreClicavel =
+    amostras.length > 0 && amostras.every((a) => a.existe && !a.disabled && a.pointerEvents !== 'none' && a.clicavel);
+
+  return {
+    clipe, folha, quadros: quadros.length, chegouFimAos, veuVisivelAos, amostras, sempreClicavel,
+  };
+}
+
+/** o mesmo carregamento do Atlas que `rodarSequencia`/`rodarFolha` já
+ *  usam — cópia local, porque a convenção deste arquivo é cada modo ter
+ *  a sua, não uma abstração nova compartilhada entre todos. */
+async function carregarAtlasC5(sessao) {
+  let assentou = null;
+  let ultimoErro = null;
+  for (let tentativa = 1; tentativa <= 3 && !assentou; tentativa++) {
+    try {
+      assentou = await sessao.ir(QUERY);
+    } catch (e) {
+      ultimoErro = e;
+      process.stdout.write(`tentativa ${tentativa}/3 de carregar o app falhou: ${e.message}\n`);
+      await dorme(500);
+    }
+  }
+  if (!assentou) throw new Error(`o app não carregou em 3 tentativas (${ultimoErro?.message})`);
+  await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_GATILHO}'))`, 10000);
+  await pularTour(sessao);
+  await dorme(300);
+}
+
+/**
+ * V7 — O ACENTO DO CÉU: seleciona Júpiter pela busca (o mesmo fluxo da
+ * C3) e grava ~1s ao redor da seleção — o bastante para os 200ms do
+ * acento âmbar (`acentoDaSelecao`, `LabelCanvas.ts`) e o reenquadramento
+ * da câmera. O acento é pintado num canvas 2D, sem nó de DOM por
+ * estrela — os 4 recortes abaixo são por isso uma APROXIMAÇÃO: um
+ * quadrado no centro da área útil (a largura antes do painel da ficha),
+ * não o pixel exato do marcador. Sem checagem de DOM (o enunciado não
+ * pede uma para esta cena).
+ */
+async function cenaAcentoC5(sessao, commit, pastaClipe) {
+  await clicarReal(sessao, SEL_BUSCA_GATILHO);
+  await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_BUSCA_PAINEL}'))`, 3000);
+  await digitarTexto(sessao, 'jupiter');
+  await esperarPor(
+    { js: sessao.js },
+    `document.querySelector('${SEL_BUSCA_PAINEL}')?.getAttribute('data-conteudo') === 'resultados'`,
+    2000
+  );
+  await dorme(300);
+
+  let tInicio = 0;
+  let tEnter = 0;
+  let tFim = 0;
+  const quadros = await gravarClipe(
+    sessao,
+    { largura: 1440, altura: 900, pastaQuadros: pastaClipe },
+    async () => {
+      tInicio = Date.now();
+      await dorme(150); // garante o screencast já armado antes da seleção
+      tEnter = Date.now();
+      await pressionarTecla(sessao, 'Enter');
+      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_FICHA_PAINEL}'))`, 3000);
+      await dorme(800); // a janela de ~1s pedida, cobrindo os 200ms do acento
+      tFim = Date.now();
+    }
+  );
+
+  const clipe = renderizarClipe(quadros, resolve(CAPTURAS, `motion-c5-v7-acento-${commit}.mp4`));
+  const duracao = quadros[quadros.length - 1].ts - quadros[0].ts;
+  const folha = renderizarContato(clipe, duracao, resolve(CAPTURAS, `motion-c5-v7-acento-${commit}.png`));
+
+  const rFicha = await retanguloDe(sessao, SEL_FICHA_PAINEL);
+  const larguraUtil = rFicha ? rFicha.x : 1440;
+  const lado = Math.max(200, Math.min(700, Math.round(larguraUtil - 40)));
+  const x0 = Math.max(0, Math.round(larguraUtil / 2 - lado / 2));
+  const y0 = Math.max(0, Math.round(450 - lado / 2));
+
+  const fracaoEnter = tFim > tInicio ? (tEnter - tInicio) / (tFim - tInicio) : 0;
+  const idxEnter = Math.min(quadros.length - 1, Math.max(0, Math.round(fracaoEnter * (quadros.length - 1))));
+  const passo = Math.max(1, Math.floor((quadros.length - 1 - idxEnter) / 3));
+  const indices = [0, 1, 2, 3].map((i) => Math.min(quadros.length - 1, idxEnter + i * passo));
+
+  const recortes = indices.map((idx, i) => {
+    const destino = semSobrescrever(resolve(CAPTURAS, `motion-c5-v7-recorte${i + 1}-${commit}.png`));
+    const r = spawnSync(FFMPEG, [
+      '-y', '-i', quadros[idx].arquivo,
+      '-vf', `crop=${lado}:${lado}:${x0}:${y0}`,
+      destino,
+    ], { stdio: 'pipe' });
+    if (r.status !== 0) {
+      throw new Error(`ffmpeg (recorte v7) falhou (${r.status}): ${(r.stderr || '').toString().slice(-800)}`);
+    }
+    return destino;
+  });
+
+  return {
+    clipe, folha, quadros: quadros.length, recortes, aproximacaoDoRecorte: { x: x0, y: y0, lado },
+  };
+}
+
+function jsDica(idDica) {
+  return `(() => {
+    const el = document.getElementById(${JSON.stringify(idDica)});
+    if (!el) return { existe: false };
+    const cs = getComputedStyle(el);
+    return { existe: true, hidden: el.hidden, animationName: cs.animationName, opacity: cs.opacity };
+  })()`;
+}
+
+/**
+ * V8 — A DICA DE AJUDA ("?", `Ajuda.tsx`): o hover mostra (`entraDica`,
+ * `--t-rapido` = 120ms) e a saída do mouse esconde de imediato — não há
+ * saída animada, o atributo `hidden` alterna direto. Usa um "?" do
+ * painel de Ajustes (o mesmo componente que a barra do tempo também
+ * usa).
+ */
+async function cenaDicaC5(sessao, commit, pasta) {
+  await pressionarEscape(sessao); // fecha a ficha do V7, se ainda aberta
+  await dorme(300);
+  await clicarReal(sessao, SEL_AJUSTES_GATILHO);
+  await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_AJUSTES_PAINEL}'))`, 3000);
+  await dorme(400); // assenta a entrada do painel antes de medir
+
+  const seletorAjuda = `${SEL_AJUSTES_PAINEL} .hud-ajuda`;
+  const rAjuda = await retanguloDe(sessao, seletorAjuda);
+  if (!rAjuda) throw new Error(`v8: "${seletorAjuda}" não encontrado`);
+  const idDica = await sessao.js(
+    `document.querySelector(${JSON.stringify(seletorAjuda)})?.getAttribute('aria-controls') ?? null`
+  );
+  if (!idDica) throw new Error('v8: o "?" não tem aria-controls');
+
+  let antes = null;
+  let durante = [];
+  let depois = [];
+  const quadros = await gravarClipe(
+    sessao,
+    { largura: 1440, altura: 900, pastaQuadros: pasta },
+    async () => {
+      antes = await sessao.js(jsDica(idDica));
+      const t0 = Date.now();
+      await moverMouse(sessao, rAjuda.x + rAjuda.width / 2, rAjuda.y + rAjuda.height / 2);
+      durante = await amostrarSequencia(sessao, t0, [16, 80, 200], () => jsDica(idDica));
+      const t1 = Date.now();
+      await moverMouse(sessao, 10, 10);
+      depois = await amostrarSequencia(sessao, t1, [16, 80, 200], () => jsDica(idDica));
+    }
+  );
+
+  const clipe = renderizarClipe(quadros, resolve(CAPTURAS, `motion-c5-v8-dica-${commit}.mp4`));
+  const duracao = quadros[quadros.length - 1].ts - quadros[0].ts;
+  const folha = renderizarContato(clipe, duracao, resolve(CAPTURAS, `motion-c5-v8-dica-${commit}.png`));
+
+  return {
+    clipe, folha, quadros: quadros.length, antes, durante, depois,
+  };
+}
+
+async function rodarC5() {
+  mkdirSync(CAPTURAS, { recursive: true });
+  const pastas = Object.fromEntries(
+    ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'].map(
+      (v) => [v, resolve(tmpdir(), `sonda-motion-c5-${v}-${process.pid}`)]
+    )
+  );
+  let sessao = null;
+  try {
+    const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
+    const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
+
+    sessao = await abrirSonda({ janela: '1440x900', prefixo: 'sonda-motion-c5' });
+    const viewport = {
+      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+    };
+    await sessao.send('Emulation.setDeviceMetricsOverride', viewport);
+    // registra o viewport para o vigia da aba intrusa reaplicar depois de
+    // fechar uma intrusa (ver o comentário em `abrirSonda`) — `--c5` não
+    // troca de viewport em nenhuma cena, então um registro só já basta
+    // para a corrida inteira.
+    sessao.marcarViewport(viewport);
+    const versaoChrome = await sessao.send('Browser.getVersion');
+
+    const v1 = await comRetentativa(() => cenaAberturaC5(sessao, commit, pastas.v1));
+
+    await iniciarFilmeC5(sessao);
+    const v2 = await comRetentativa(() => cenaChromeC5(sessao, commit, pastas.v2));
+    const v3 = await comRetentativa(() => cenaMaisC5(sessao, commit, pastas.v3));
+    const v4 = await comRetentativa(() => cenaTransporteC5(sessao, commit, pastas.v4));
+    const v5 = await comRetentativa(() => cenaProgressoC5(sessao, commit, pastas.v5));
+    const v6 = await comRetentativa(() => cenaFimC5(sessao, commit, pastas.v6));
+
+    await carregarAtlasC5(sessao);
+    const v7 = await comRetentativa(() => cenaAcentoC5(sessao, commit, pastas.v7));
+    const v8 = await comRetentativa(() => cenaDicaC5(sessao, commit, pastas.v8));
+
+    const dpr = await sessao.js('window.devicePixelRatio');
+    const relatorio = {
+      meta: {
+        commit,
+        dirty,
+        // O SERVIDOR É DE OUTRA ÁRVORE (isolada, item obrigatório do
+        // enunciado): `commit`/`dirty` acima são desta sonda, não do
+        // app que ela mede.
+        appCommit: 'a126e03 (servidor isolado, árvore limpa)',
+        chrome: versaoChrome.product,
+        app: APP,
+        viewport: { width: 1440, height: 900 },
+        dpr,
+        idioma: 'pt-BR',
+        preset: 'performance',
+        geradoEm: new Date().toISOString(),
+      },
+      v1, v2, v3, v4, v5, v6, v7, v8,
+    };
+    const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-c5-${commit}.json`));
+    writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
+
+    const linhas = [
+      `=== sonda-motion c5 — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app a126e03 (servidor isolado) ===`,
+      `Chrome ${versaoChrome.product} | mesa 1440x900 DPR${dpr} | pt-BR | q=performance`,
+      `V1 abertura: ${v1.clipe} (${v1.quadros}q) — marcos amostrados=${v1.marcosAmostrados}, com marcoReflexo=${v1.marcosComReflexo}; `
+        + `CTA ::after animation=${v1.cta?.animationName} delay=${v1.cta?.animationDelay} duration=${v1.cta?.animationDuration}`,
+      `V2 chrome do filme: ${v2.clipe} (${v2.quadros}q) — visível transitionDuration=${v2.visivel.transitionDuration}; `
+        + `escondeu aos ${v2.escondida?.escondeuAos}ms (transitionDuration=${v2.escondida?.transitionDuration}); `
+        + `revelou aos ${v2.revelada?.revelouAos}ms; escondeu de novo aos ${v2.escondidaDeNovo?.escondeuDeNovoAos}ms`,
+      `V3 "Mais": ${v3.clipe} (${v3.quadros}q) — abrir(mouse) classes=${v3.aposAbrirMouse.map((a) => a.painelClasse).join(' / ')}; `
+        + `fechar(mouse) classes=${v3.aposFecharMouse.map((a) => `${a.painelClasse}${a.painelInert ? '[inert]' : ''}`).join(' / ')}; `
+        + `Tab entrou no painel=${v3.focoAposTab?.foco?.dentroDoPainel}; fechar(teclado) foco voltou ao gatilho=${v3.focoAposFechar?.foco?.ehOGatilho}`,
+      `V4 transporte: ${v4.clipe} (${v4.quadros}q) — pausar animation=${v4.aposPausar.map((a) => a.iconeAnimationName).join('/')}; `
+        + `retomar animation=${v4.aposRetomar.map((a) => a.iconeAnimationName).join('/')}; `
+        + `taxa realce=${v4.aposTaxa.map((a) => a.rateRealceTexto).join('/')} texto=${v4.aposTaxa.map((a) => a.rateTexto).join('/')}`,
+      `V5 progresso: ${v5.clipe} (${v5.quadros}q) — hover transform=${v5.hover?.trackTransform}; `
+        + `foco após ${v5.tabsAteFoco} Tabs, transform=${v5.foco?.trackTransform} pontoOpacity=${v5.foco?.pontoOpacity}; `
+        + `durante o arrasto transform=${v5.duranteArrasto?.trackTransform} distância ponto↔fill=${v5.duranteArrasto?.distanciaPontoFillPx?.toFixed(2)}px; `
+        + `logo ao soltar=${v5.aposSoltarCedo?.distanciaPontoFillPx?.toFixed(2)}px, assentado=${v5.aposAssentar?.distanciaPontoFillPx?.toFixed(2)}px`,
+      `V6 tela final: ${v6.clipe} (${v6.quadros}q) — chegou a 'end' aos ${v6.chegouFimAos}ms, véu visível aos ${v6.veuVisivelAos}ms; `
+        + `"Ficar neste céu" clicável em todas as ${v6.amostras.length} amostras=${v6.sempreClicavel} `
+        + `(animation=${v6.amostras.map((a) => a.animationName).join('/')})`,
+      `V7 acento no céu: ${v7.clipe} (${v7.quadros}q), recortes=${v7.recortes.join(', ')} (aproximação ${JSON.stringify(v7.aproximacaoDoRecorte)})`,
+      `V8 dica de ajuda: ${v8.clipe} (${v8.quadros}q) — antes hidden=${v8.antes?.hidden}; `
+        + `durante o hover animation=${v8.durante.map((a) => a.animationName).join('/')} hidden=${v8.durante.map((a) => a.hidden).join('/')}; `
+        + `depois de sair hidden=${v8.depois.map((a) => a.hidden).join('/')}`,
+      `JSON: ${destinoJson}`,
+    ];
+    process.stdout.write(`${linhas.join('\n')}\n`);
+  } catch (erro) {
+    process.stdout.write(`BLOCKED: ${erro.stack || erro.message}\n`);
+    process.exitCode = 1;
+  } finally {
+    if (sessao) await sessao.fechar();
+    for (const p of Object.values(pastas)) rmSync(p, { recursive: true, force: true });
+  }
+}
+
 // ============================================================
 // A CORRIDA
 // ============================================================
@@ -1705,6 +2560,8 @@ if (FOLHA) {
   await rodarFolha();
 } else if (INTERRUPCOES) {
   await rodarInterrupcoes();
+} else if (C5) {
+  await rodarC5();
 } else if (!SEQUENCIA) {
 mkdirSync(CAPTURAS, { recursive: true });
 const pastaQuadrosMesa = resolve(tmpdir(), `sonda-motion-mesa-${process.pid}`);
