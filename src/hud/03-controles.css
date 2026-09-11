@@ -414,6 +414,10 @@
    é a linha que o visitante já lê para saber como voar. A dica inteira é
    `pointer-events: none` — só este botão recebe clique. */
 .free-hint-captura {
+  /* U12 (C5, PLANO-MOTION-UI.md §12.5) — âncora do `.realce-anel` que
+     confirma a captura ligando de verdade (App.tsx); mesma receita do
+     `.atlas-tempo-taxa-seg button` em 04-atlas.css. */
+  position: relative;
   margin-top: 0.3rem;
   padding: 0.18rem 0.6rem;
   pointer-events: auto;

@@ -43,6 +43,7 @@ import { useEspelhoDaUrl } from './hooks/useEspelhoDaUrl';
 import { useGavetas, semMovimento } from './hooks/useGavetas';
 import type { Gaveta } from './hooks/useGavetas';
 import { useCelular } from './hooks/useCelular';
+import { useRealce } from './hooks/useRealce';
 import { escalaDaUi } from './lib/uiScale';
 // C6 (protótipo B, docs/PLANO-MOTION-UI.md §7/§12.5) — só a função pura
 // de leitura do deslocamento inicial; o resto do módulo mora inteiro em
@@ -896,6 +897,27 @@ export default function App() {
    */
   const ofereceFicha = Boolean(hud.ficha && foco && (escada.corpoId || escada.degrau === 'estrela'));
 
+  /**
+   * U11 (C5, PLANO-MOTION-UI.md §12.5) — a linha de rumo só confirma a
+   * troca SEMÂNTICA de destino, nunca o tique da distância viva: `dest`
+   * chega pronta de `rotulos.ts` como "→ SATURNO · 1,2 UA", com a nota
+   * de distância (depois do "·") trocando sozinha a cada ~0,25 s. É só
+   * o pedaço ANTES dela — o nome do alvo, ou o vazio — que alimenta o
+   * `useRealce`; assim o realce não pisca a cada amostra de distância,
+   * só quando o alvo muda de verdade.
+   */
+  const destSemantico = dest.split(' · ')[0];
+  const realceDest = useRealce(destSemantico);
+  /**
+   * U12 — o mesmo mecanismo sobre o booleano REAL do `pointerlockchange`
+   * (`capturado`, acima): ele só muda quando o navegador confirma ou
+   * derruba a captura, então qualquer troca aqui é a captura acontecendo
+   * de verdade. O anel só acende quando `capturado` vira `true`
+   * (guarda no JSX); negada e perdida continuam mostrando o texto na
+   * hora, sem decoração nenhuma.
+   */
+  const realceCapturado = useRealce(capturado);
+
   // ?shot=1 — modo foto: sem transições, capturas determinísticas
   // ?shot=2 — só a cena: sem HUD, para medir o quadro contra a referência
   const shotParam = new URLSearchParams(window.location.search).get('shot');
@@ -984,6 +1006,13 @@ export default function App() {
                         ? 'dica.captura.capturado'
                         : 'dica.captura.pedir'
                   )}
+                  {/* U12 — o anel confirma só quando a captura LIGA de
+                      verdade (nunca ao negar/perder); `.realce-anel` é da
+                      casa (01-base.css), o botão ganhou `position: relative`
+                      em 03-controles.css para ancorá-lo. */}
+                  {capturado && realceCapturado > 0 && (
+                    <span className="realce-anel" aria-hidden="true" key={realceCapturado} />
+                  )}
                 </button>
               </>
             )}
@@ -997,8 +1026,17 @@ export default function App() {
         </div>
       )}
 
-      {/* linha de rumo: para onde estamos indo, com distância viva */}
-      {hud.rumo && dest && <div className="dest-line">{dest}</div>}
+      {/* linha de rumo: para onde estamos indo, com distância viva.
+          U11 — só o SPAN interno leva a chave do realce (nunca a
+          `.dest-line`): a distância continua viva a cada render, sem
+          remontar nada; só o trecho semântico troca de key. */}
+      {hud.rumo && dest && (
+        <div className="dest-line">
+          <span key={realceDest} className={realceDest > 0 ? 'realce-texto' : undefined}>
+            {dest}
+          </span>
+        </div>
+      )}
 
       {/* distância viva do Sol — a prova do afastamento (voo livre) */}
       {hud.sol && sol && <div className="sol-line">{sol}</div>}
