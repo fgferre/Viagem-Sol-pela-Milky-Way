@@ -1,4 +1,5 @@
 import { escalaDaUi } from '../lib/uiScale';
+import { semMovimento } from '../hooks/useGavetas';
 import { t } from '../lib/idioma';
 import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
 import { numeroDoIdioma } from '../three/tempoDoAtlas';
@@ -433,6 +434,37 @@ function escreveDetalhe(label: StarLabel): boolean {
 }
 
 /**
+ * O ACENTO DA SELEÇÃO (C5 do plano de motion · U29–U30) — 200 ms, dentro
+ * da janela de 180–220 ms que a entrega pede, e a mesma lei da regra 8
+ * do experimento óptico (`docs/PLANO-MOTION-UI.md`, §7): "um efeito de
+ * seleção pertence ao marcador da interface e termina rapidamente". Não
+ * é um pulso: `decorridoMs` fora de `[0, DURACAO)` devolve 0 — antes de
+ * nascer e depois de morrer o anel é o de sempre, pixel a pixel.
+ *
+ * A FORMA é a curva de saída cúbica da casa (`--curva`, 01-base.css)
+ * invertida — `(1 − k)³`, que é `1 − easeOut(k)` sem importar a tabela
+ * de easing do director 3D só para uma linha: o acento cai depressa e
+ * assenta devagar em zero, o mesmo "entra rápido, sai devagar" de sempre,
+ * aplicado ao brilho que SOME em vez de a uma posição que chega.
+ *
+ * PURA e exportada para o teste medir a curva sem montar um canvas.
+ */
+export const DURACAO_DO_ACENTO_MS = 200;
+export function acentoDaSelecao(decorridoMs: number): number {
+  if (decorridoMs < 0 || decorridoMs >= DURACAO_DO_ACENTO_MS) return 0;
+  return (1 - decorridoMs / DURACAO_DO_ACENTO_MS) ** 3;
+}
+
+/** o âmbar do acento — o `--acento` da casa (01-base.css, `#e2b872`): o
+ *  canvas não lê variável CSS, então o literal mora aqui, como o resto
+ *  da tabela de tinta deste arquivo. A tinta é FIXA; quem esvai é o
+ *  `globalAlpha`, com `acentoDaSelecao` — nunca uma cor interpolada. */
+const COR_DO_ACENTO = '#e2b872';
+/** quanto o raio cresce no PICO do acento, em px CSS — "uns px" (item da
+ *  entrega), não um ícone novo; encolhe para 0 junto com a curva acima. */
+const RAIO_EXTRA_DO_ACENTO = 3;
+
+/**
  * Desenha todos os rótulos em um único canvas.
  *
  * Evita criar/mover nós DOM a 10 Hz e resolve colisões antes do desenho,
@@ -681,10 +713,77 @@ export class LabelCanvas {
     this.arvore.remover(`${chave}-texto`);
   }
 
+  /**
+   * O ACENTO DA SELEÇÃO (U29–U30) — quatro variáveis, todas lidas e
+   * escritas só por `atualizarAcentoDaSelecao` e por `anel`.
+   *
+   * `chaveDoFocoAnterior` começa `undefined`: é o "ainda não observei
+   * nenhum quadro", o estado que faz a PRIMEIRA seleção não acender nada
+   * — nascer não é escolher. Depois do primeiro quadro real ela é sempre
+   * `string | null` (a chave em foco, ou nenhuma), nunca mais
+   * `undefined`.
+   */
+  private chaveDoFocoAnterior: string | null | undefined = undefined;
+  /** quem está exibindo o acento AGORA — `null` quando nenhum */
+  private chaveDoAcento: string | null = null;
+  /** `performance.now()` do instante em que o acento atual começou */
+  private inicioDoAcentoMs = 0;
+  /** `acentoDaSelecao` já calculada NESTE quadro — `anel` e a assinatura
+   *  leem o mesmo número, sem repetir a conta nem o relógio */
+  private intensidadeDoAcento = 0;
+
+  /**
+   * DETECTA A TROCA DE ALVO e conserva o relógio do acento — chamada UMA
+   * VEZ por quadro real, nunca dentro do laço de pintura. `semMovimento`
+   * só é lido AQUI, e só no exato quadro em que a seleção muda: nunca por
+   * quadro, como o contrato pede (§4 do plano de motion).
+   */
+  private atualizarAcentoDaSelecao(labels: readonly StarLabel[]): void {
+    // quem carrega PRIORIDADE_DO_ROTULO.foco (201) é o alvo escolhido —
+    // a mesma promoção que `director/rotulos.ts` já escreve; nenhuma
+    // identidade nova precisa viajar até aqui.
+    let chaveDoFoco: string | null = null;
+    for (const l of labels) {
+      if (l.prioridade === PRIORIDADE_DO_ROTULO.foco) {
+        chaveDoFoco = l.key;
+        break;
+      }
+    }
+    const anterior = this.chaveDoFocoAnterior;
+    if (
+      anterior !== undefined &&
+      chaveDoFoco !== null &&
+      chaveDoFoco !== anterior &&
+      !semMovimento()
+    ) {
+      this.chaveDoAcento = chaveDoFoco;
+      this.inicioDoAcentoMs = performance.now();
+    }
+    this.chaveDoFocoAnterior = chaveDoFoco;
+    this.intensidadeDoAcento =
+      this.chaveDoAcento === null
+        ? 0
+        : acentoDaSelecao(performance.now() - this.inicioDoAcentoMs);
+    // A JANELA FECHOU: o acento sai da conta sozinho, e é isso que
+    // devolve a assinatura (via `sufixoDoAcento`) ao estado de sempre —
+    // sem esta linha o quadro parado nunca mais voltaria a pular.
+    if (this.intensidadeDoAcento === 0) this.chaveDoAcento = null;
+  }
+
+  /** o termo do acento na assinatura (item 82, N1) — SÓ existe enquanto
+   *  ele está vivo, então o quadro parado volta a poder pular a
+   *  repintura assim que os ~200 ms passam (ver `draw`). */
+  private sufixoDoAcento(): string {
+    return this.chaveDoAcento === null
+      ? ''
+      : `|acento:${this.chaveDoAcento}:${this.intensidadeDoAcento.toFixed(3)}`;
+  }
+
   draw(labels: StarLabel[]): void {
     // vazio→vazio (60×/s fora da viagem): não limpar 3,7 M px à toa
     if (labels.length === 0 && !this.lastHadContent) return;
     this.resizeIfNeeded();
+    this.atualizarAcentoDaSelecao(labels);
     // A ESCALA DA UI (F6) alcança ESTES rótulos também. Eles são texto
     // do HUD como a legenda e o selo — só que pintados à mão, e por
     // isso fora do alcance do `font-size` da raiz. Escalam junto o
@@ -694,7 +793,13 @@ export class LabelCanvas {
     // Em `ui = 1` cada produto é exato (`x * 1 === x` em IEEE754) e o
     // desenho é o de sempre, pixel a pixel.
     const k = escalaDaUi();
-    const assinatura = this.planejar(labels, k);
+    // O ACENTO ENTRA NA ASSINATURA (U29–U30, o mesmo motivo da A8): sem
+    // este termo o atalho abaixo prenderia o anel no meio do acento — o
+    // quadro pareceria "igual ao anterior" por fora enquanto o relógio
+    // dele ainda corre por dentro. Ele SÓ existe enquanto o acento está
+    // vivo, então o quadro repinta durante os ~200 ms e volta a poder
+    // pular assim que `sufixoDoAcento` volta a ser vazio.
+    const assinatura = this.planejar(labels, k) + this.sufixoDoAcento();
     const parado = assinatura === this.assinatura;
     if (
       parado &&
@@ -1232,6 +1337,27 @@ export class LabelCanvas {
       : (label.corDoAnel ?? 'rgba(255, 211, 145, 0.72)');
     ctx.lineWidth = 1.5 * k;
     ctx.stroke();
+    // O ACENTO DA SELEÇÃO (U29–U30, regra 8 do §7: "pertence ao marcador
+    // da interface e termina rapidamente") — SOMA um segundo traço âmbar
+    // por cima do de sempre, maior, que encolhe e some em 200 ms. O anel
+    // de sempre já foi desenhado acima, intocado: "voltar ao normal" é
+    // literalmente não desenhar mais nada aqui, nunca uma cor a
+    // interpolar de volta.
+    if (label.key === this.chaveDoAcento && this.intensidadeDoAcento > 0) {
+      ctx.globalAlpha = label.opacity * (label.alfaDoIcone ?? 1) * this.intensidadeDoAcento;
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(
+        p.ancoraX,
+        p.ancoraY,
+        (p.peso.raioDoIcone * escala + RAIO_EXTRA_DO_ACENTO * this.intensidadeDoAcento) * k,
+        0,
+        Math.PI * 2
+      );
+      ctx.strokeStyle = COR_DO_ACENTO;
+      ctx.lineWidth = 1.5 * k;
+      ctx.stroke();
+    }
     ctx.shadowBlur = 0;
   }
 

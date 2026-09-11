@@ -52,6 +52,8 @@ const {
   JULGAMENTOS_POR_QUADRO,
   VALORES_POR_NO,
   PROFUNDIDADE_MAXIMA,
+  acentoDaSelecao,
+  DURACAO_DO_ACENTO_MS,
 } = await import('./LabelCanvas');
 
 /** o que o desenho escreveu: texto e onde ele pousou */
@@ -1312,5 +1314,48 @@ describe('F4 — o nome ocluído pinta sem ocupar', () => {
     const { rotulos, ctx } = bancada(1200, 900);
     rotulos.draw([atrasDoGlobo(rotulo('corpo:sun', 'Sol', 0.5, 0.95, 100))]);
     expect(ctx.pintadas).toHaveLength(0);
+  });
+});
+
+// ============================================================
+// O ACENTO DA SELEÇÃO (C5 do plano de motion · U29–U30) — 200 ms no
+// anel do corpo que ACABOU de virar o alvo, nunca no que já nasceu em
+// foco (a abertura do Atlas não é uma escolha do visitante).
+// ============================================================
+describe('o acento da seleção (U29–U30): sobe cheio e some em 200 ms', () => {
+  it('a curva pura: cheia ao nascer, ZERO antes de começar e depois da janela', () => {
+    expect(acentoDaSelecao(0)).toBeCloseTo(1, 6);
+    const meio = acentoDaSelecao(DURACAO_DO_ACENTO_MS / 2);
+    expect(meio).toBeGreaterThan(0);
+    expect(meio).toBeLessThan(1);
+    expect(acentoDaSelecao(DURACAO_DO_ACENTO_MS)).toBe(0);
+    expect(acentoDaSelecao(DURACAO_DO_ACENTO_MS + 50)).toBe(0);
+    expect(acentoDaSelecao(-1)).toBe(0);
+    // a janela que a entrega pede é 180–220 ms
+    expect(DURACAO_DO_ACENTO_MS).toBeGreaterThanOrEqual(180);
+    expect(DURACAO_DO_ACENTO_MS).toBeLessThanOrEqual(220);
+  });
+
+  it('o anel só ganha o acento quando o ALVO TROCA — nunca no primeiro quadro (nascer não é escolher)', () => {
+    const { ctx, rotulos } = bancada();
+    // 201 é `PRIORIDADE_DO_ROTULO.foco` (world/labels.ts) — o mesmo
+    // literal que os outros testes deste arquivo já usam para o foco
+    const terra = { ...rotulo('corpo:earth', 'Terra', 0.4, 0.4, 201), comAnel: true };
+    rotulos.draw([terra]);
+    // PRIMEIRA seleção observada: só o anel de sempre — nascer não é
+    // escolher
+    expect(ctx.aneis.length).toBe(1);
+
+    const marte = { ...rotulo('corpo:mars', 'Marte', 0.6, 0.6, 201), comAnel: true };
+    const semFoco = { ...terra, prioridade: 50 };
+    rotulos.draw([semFoco, marte]);
+    // Terra perdeu o foco: continua com um anel, sem acento
+    const deTerra = ctx.aneis.filter((a) => a.x === 480 && a.y === 480);
+    expect(deTerra.length).toBe(1);
+    // Marte ACABOU de virar o alvo: ganha um segundo traço âmbar por
+    // cima do anel de sempre, no mesmo ponto
+    const deMarte = ctx.aneis.filter((a) => a.x === 720 && a.y === 720);
+    expect(deMarte.length).toBe(2);
+    expect(deMarte[1].cor).toBe('#e2b872');
   });
 });
