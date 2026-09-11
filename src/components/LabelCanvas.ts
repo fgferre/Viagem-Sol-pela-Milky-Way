@@ -441,18 +441,19 @@ function escreveDetalhe(label: StarLabel): boolean {
  * é um pulso: `decorridoMs` fora de `[0, DURACAO)` devolve 0 — antes de
  * nascer e depois de morrer o anel é o de sempre, pixel a pixel.
  *
- * A FORMA é a curva de saída cúbica da casa (`--curva`, 01-base.css)
- * invertida — `(1 − k)³`, que é `1 − easeOut(k)` sem importar a tabela
- * de easing do director 3D só para uma linha: o acento cai depressa e
- * assenta devagar em zero, o mesmo "entra rápido, sai devagar" de sempre,
- * aplicado ao brilho que SOME em vez de a uma posição que chega.
+ * A FORMA SEGURA O BRILHO e apaga no fim — `1 − k²`: a primeira versão,
+ * `(1 − k)³`, caía para 20 % aos 80 ms, e no Chrome de verdade o anel
+ * mostrava dois ou três pixels âmbar (medido, reauditoria de 11/09) — um
+ * acento que ninguém vê não confirma nada. Com a curva nova ele ainda
+ * vale 84 % aos 80 ms e some inteiro aos 200.
  *
  * PURA e exportada para o teste medir a curva sem montar um canvas.
  */
 export const DURACAO_DO_ACENTO_MS = 200;
 export function acentoDaSelecao(decorridoMs: number): number {
   if (decorridoMs < 0 || decorridoMs >= DURACAO_DO_ACENTO_MS) return 0;
-  return (1 - decorridoMs / DURACAO_DO_ACENTO_MS) ** 3;
+  const k = decorridoMs / DURACAO_DO_ACENTO_MS;
+  return 1 - k * k;
 }
 
 /** o âmbar do acento — o `--acento` da casa (01-base.css, `#e2b872`): o
@@ -460,9 +461,11 @@ export function acentoDaSelecao(decorridoMs: number): number {
  *  da tabela de tinta deste arquivo. A tinta é FIXA; quem esvai é o
  *  `globalAlpha`, com `acentoDaSelecao` — nunca uma cor interpolada. */
 const COR_DO_ACENTO = '#e2b872';
-/** quanto o raio cresce no PICO do acento, em px CSS — "uns px" (item da
- *  entrega), não um ícone novo; encolhe para 0 junto com a curva acima. */
-const RAIO_EXTRA_DO_ACENTO = 3;
+/** quanto o anel do acento se AFASTA do anel de sempre ao longo dos
+ *  200 ms, em px CSS: nasce colado (2 px) e abre até 9 px enquanto
+ *  apaga — um pulso que sai do marcador, não um ícone novo nem um astro. */
+const RAIO_INICIAL_DO_ACENTO = 2;
+const RAIO_FINAL_DO_ACENTO = 9;
 
 /**
  * Desenha todos os rótulos em um único canvas.
@@ -1344,18 +1347,25 @@ export class LabelCanvas {
     // literalmente não desenhar mais nada aqui, nunca uma cor a
     // interpolar de volta.
     if (label.key === this.chaveDoAcento && this.intensidadeDoAcento > 0) {
+      // o quanto do tempo do acento já passou (0 → 1): com a curva
+      // `1 − t²`, é a raiz do que já apagou — o anel ABRE com o tempo
+      // enquanto apaga, um pulso saindo do marcador
+      const aberto = Math.sqrt(1 - this.intensidadeDoAcento);
+      const afastamento =
+        RAIO_INICIAL_DO_ACENTO + (RAIO_FINAL_DO_ACENTO - RAIO_INICIAL_DO_ACENTO) * aberto;
       ctx.globalAlpha = label.opacity * (label.alfaDoIcone ?? 1) * this.intensidadeDoAcento;
-      ctx.shadowBlur = 0;
+      ctx.shadowColor = COR_DO_ACENTO;
+      ctx.shadowBlur = 6 * k * this.intensidadeDoAcento;
       ctx.beginPath();
       ctx.arc(
         p.ancoraX,
         p.ancoraY,
-        (p.peso.raioDoIcone * escala + RAIO_EXTRA_DO_ACENTO * this.intensidadeDoAcento) * k,
+        (p.peso.raioDoIcone * escala + afastamento) * k,
         0,
         Math.PI * 2
       );
       ctx.strokeStyle = COR_DO_ACENTO;
-      ctx.lineWidth = 1.5 * k;
+      ctx.lineWidth = 2 * k;
       ctx.stroke();
     }
     ctx.shadowBlur = 0;
