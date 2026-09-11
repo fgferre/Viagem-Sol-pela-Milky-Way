@@ -202,7 +202,21 @@
   text-transform: none;
   letter-spacing: normal;
   white-space: normal;
-  transition: opacity var(--t-rapido) var(--curva);
+  /* O FADE DE ENTRADA (U47, C5 do plano de motion) — não é `transition`:
+     a caixa só troca de estado pelo atributo `hidden` (`display: none` ↔
+     o normal), e uma transição não anima essa borda. Uma `animation`
+     sim — o navegador a reinicia sozinha toda vez que o elemento volta a
+     ser desenhado, então cada abertura ganha o fade sem `Ajuda.tsx`
+     precisar saber disso. Ela corre DEPOIS de posicionada: `Ajuda.tsx`
+     escreve `top`/`left`/`width` num `useLayoutEffect` — antes do
+     primeiro quadro pintado —, e a correção de scroll/resize/flip troca
+     só esse estilo inline, nunca este atributo, então nunca anima. */
+  animation: entraDica var(--t-rapido) var(--curva) backwards;
+}
+@keyframes entraDica {
+  from {
+    opacity: 0;
+  }
 }
 .hud-dica p {
   margin: 0 0 0.4rem;
@@ -223,9 +237,17 @@
   font-weight: 500;
 }
 @media (prefers-reduced-motion: reduce) {
-  .hud-ajuda,
-  .hud-dica {
+  .hud-ajuda {
     transition: none;
+  }
+  /* sem fade: a caixa nasce direto na opacidade final — `animation: none`
+     sozinho já bastaria (o `opacity` estático, ausente daqui, vale 1 por
+     definição), mas o valor explícito é a mesma defesa que `.caption-wrap
+     .show` já usa (06-responsivo.css): não depender de ninguém lembrar
+     por que "nada declarado" também dá 1. */
+  .hud-dica {
+    animation: none;
+    opacity: 1;
   }
 }
 
