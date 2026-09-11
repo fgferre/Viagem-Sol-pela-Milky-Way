@@ -23,6 +23,7 @@
 //   node scripts/visual/sonda-motion.mjs --app=http://localhost:58697
 //   node scripts/visual/sonda-motion.mjs --folha --app=http://localhost:58697
 //   node scripts/visual/sonda-motion.mjs --c5 --app=http://localhost:58697
+//   node scripts/visual/sonda-motion.mjs --c5=v6,v7 --app=http://localhost:58697
 //   node scripts/visual/sonda-motion.mjs --contorno --app=http://localhost:5180
 //
 // Saída (nomes inéditos — nunca sobrescreve, ver `semSobrescrever`):
@@ -35,6 +36,7 @@ import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { execSync, spawnSync } from 'node:child_process';
+import sharp from 'sharp';
 import {
   lancarChrome, GPU_FLAGS, dorme, ligarSocketCDP, portaDoPerfil,
   comLinguaDoJuizNaUrl, esperarPor, esperarAssentar, esperarCapaSair,
@@ -91,7 +93,14 @@ const FOLHA = process.argv.includes('--folha');
 // como `--folha`/`--interrupcoes`, mais uma leva de checagens de DOM.
 // Não é um gate de PASSA/FALHA — roda uma vez e relata os números.
 // Opt-in: sem a flag, nada aqui muda.
-const C5 = process.argv.includes('--c5');
+// `--c5=v6,v7` (vírgula, sem espaço) roda só as cenas listadas — útil
+// para reverificar UM conserto pontual sem pagar as oito de novo; sem
+// valor, `--c5` sozinho continua rodando as OITO de sempre.
+const argC5 = process.argv.find((a) => a === '--c5' || a.startsWith('--c5='));
+const C5 = Boolean(argC5);
+const C5_QUAIS = argC5 && argC5.includes('=')
+  ? new Set(argC5.slice('--c5='.length).split(',').map((v) => v.trim()).filter(Boolean))
+  : null; // null = todas as oito
 // `--contorno` troca a corrida de sempre pelo A/B do C6 do plano de
 // motion (docs/PLANO-MOTION-UI.md §7 e §12.5): o reflexo CSS de sempre
 // (A) contra A + o protótipo de halo WebGL (B, `?contorno=webgl`,
@@ -292,20 +301,25 @@ async function retanguloDe(sessao, seletor) {
   })()`);
 }
 
-/** clique real de mouse (mousePressed+mouseReleased) no centro do alvo —
- *  o par que `Input.dispatchMouseEvent` gera é o que faz o Chrome
- *  decidir `:focus-visible` como um clique de verdade decidiria. */
-async function clicarReal(sessao, seletor) {
-  const r = await retanguloDe(sessao, seletor);
-  if (!r) throw new Error(`clicarReal: "${seletor}" não encontrado`);
-  const x = r.x + r.width / 2;
-  const y = r.y + r.height / 2;
+/** o par mousePressed+mouseReleased em coordenadas EXPLÍCITAS — o miolo
+ *  de `clicarReal`, que a V7 (`--c5`) também precisa: o ponto de clique
+ *  vem de um rótulo achado no céu, não de um seletor de DOM. */
+async function clicarEmPonto(sessao, x, y) {
   const base = {
     x, y, button: 'left', clickCount: 1, buttons: 1, pointerType: 'mouse',
   };
   await sessao.send('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
   await sessao.send('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased', buttons: 0 });
   return { x, y };
+}
+
+/** clique real de mouse (mousePressed+mouseReleased) no centro do alvo —
+ *  o par que `Input.dispatchMouseEvent` gera é o que faz o Chrome
+ *  decidir `:focus-visible` como um clique de verdade decidiria. */
+async function clicarReal(sessao, seletor) {
+  const r = await retanguloDe(sessao, seletor);
+  if (!r) throw new Error(`clicarReal: "${seletor}" não encontrado`);
+  return clicarEmPonto(sessao, r.x + r.width / 2, r.y + r.height / 2);
 }
 
 async function moverMouse(sessao, x, y) {
@@ -2268,36 +2282,76 @@ function jsBotaoFicarNesteCeu() {
       animationName: csAfter.animationName,
       animationDelay: csAfter.animationDelay,
       animationDuration: csAfter.animationDuration,
+      // O RETÂNGULO JUNTO (conserto da V6): o rodapé tem a PRÓPRIA
+      // entrada (a animação encerramento-entra, translateY(0.5rem)->0 no
+      // MESMO atraso do aceno), então o botão ainda se desloca uns px
+      // enquanto o aceno passa — um retângulo só do início recortaria
+      // torto perto do fim. Cada amostra traz o seu, no mesmo instante.
+      rect: { x: r.x, y: r.y, width: r.width, height: r.height },
     };
   })()`;
 }
 
 /**
- * V6 — A TELA FINAL: salta para perto do fim (`window.__director.seek`,
- * como `filme-smoke` faz) já com a viagem tocando — sem pausar, porque
- * a esta altura da corrida o filme já está solto desde
- * `iniciarFilmeC5`. Espera a fase virar 'end', o véu perder
- * `hidden-veil`, e amostra o botão "Ficar neste céu" ao longo do aceno.
+ * V6 — A TELA FINAL: o `seek` (o mesmo instante de `filme-smoke.mjs`,
+ * 192,8 — "os últimos 0,2s do corte") entra DENTRO da gravação, e não
+ * antes dela. A 1ª leva assentava (`esperarAssentar`) FORA do clipe: a
+ * fase tinha tempo de sobra para virar 'end', o véu de subir e até o
+ * aceno inteiro de acontecer — sem câmera nenhuma ligada —, e a
+ * amostragem, presa a só 4s depois do véu, terminava antes do rodapé
+ * sequer nascer (o `--cta-atraso` dele é ATRASO_DO_RODAPE,
+ * `encerramento.ts`, uns 8s). O clipe saía cortado no meio da citação,
+ * sem "Ficar neste céu" nem o aceno dele aparecerem nunca. Agora a fase
+ * 'end', o véu e o aceno INTEIRO do CTA (`::after`, `reflexoDeAbertura`)
+ * ficam dentro da janela gravada. A JANELA não é um número decorado: sai
+ * do PRÓPRIO computado do botão (`animationDelay`+`animationDuration`,
+ * que É `--cta-atraso`) lido depois que o véu sobe — só ali a regra
+ * `.veil:not(.hidden-veil) .veil-btn--primario::after` passa a valer e
+ * o computado deixa de ser "none"/"0s".
  */
 async function cenaFimC5(sessao, commit, pasta) {
-  await sessao.js('window.__director.seek(192.8)');
-  await esperarAssentar({ send: sessao.send, cartografia: () => true, quadros: 700, teto: 20000 });
-
   let chegouFimAos = null;
   let veuVisivelAos = null;
+  let delayMs = 0;
+  let duracaoMs = 0;
+  let janelaMs = 0;
   let amostras = [];
+  let tVeu = 0;
+
   const quadros = await gravarClipe(
     sessao,
     { largura: 1440, altura: 900, pastaQuadros: pasta },
     async () => {
+      await sessao.js('window.__director.seek(192.8)');
       chegouFimAos = await esperarPor({ js: sessao.js }, "window.__director.captura.fase === 'end'", 15000);
       veuVisivelAos = await esperarPor(
         { js: sessao.js },
         "document.querySelector('.veil-end')?.className.includes('hidden-veil') === false",
         8000
       );
-      const tVeu = Date.now();
-      amostras = await amostrarSequencia(sessao, tVeu, [0, 800, 1600, 2400, 3200, 4000], jsBotaoFicarNesteCeu);
+      tVeu = Date.now();
+      const cta = await sessao.js(jsBotaoFicarNesteCeu());
+      if (!cta.existe) throw new Error('v6: "Ficar neste céu" não existe depois do véu subir');
+      delayMs = Math.round((Number.parseFloat(cta.animationDelay) || 0) * 1000);
+      duracaoMs = Math.round((Number.parseFloat(cta.animationDuration) || 0) * 1000);
+      if (delayMs <= 0) {
+        throw new Error(`v6: animationDelay do CTA leu "${cta.animationDelay}" (esperava ~8s de ATRASO_DO_RODAPE)`);
+      }
+      // 900ms de folga: a viagem de ida e volta do CDP não pode cortar a
+      // última amostra antes do aceno de fato terminar.
+      janelaMs = delayMs + duracaoMs + 900;
+      amostras = await amostrarSequencia(
+        sessao, tVeu,
+        [
+          0,
+          Math.round(delayMs / 2),
+          delayMs,
+          delayMs + Math.round(duracaoMs / 2),
+          delayMs + duracaoMs,
+          janelaMs,
+        ],
+        jsBotaoFicarNesteCeu
+      );
     }
   );
 
@@ -2307,8 +2361,33 @@ async function cenaFimC5(sessao, commit, pasta) {
   const sempreClicavel =
     amostras.length > 0 && amostras.every((a) => a.existe && !a.disabled && a.pointerEvents !== 'none' && a.clicavel);
 
+  // A FAIXA DE RECORTES DO BOTÃO ao longo do aceno inteiro (pedido do
+  // enunciado): `quadroMaisProximoDoAlvo` (a mesma régua do `--contorno`,
+  // mais abaixo neste arquivo) acha o quadro cujo timestamp REAL do CDP
+  // mais bate com cada instante amostrado — sem supor quadros igualmente
+  // espaçados dentro da gravação.
+  const recortes = amostras.filter((a) => a.rect).map((a, i) => {
+    const quadro = quadroMaisProximoDoAlvo(quadros, tVeu, a.dtMs);
+    const pad = 16;
+    const x = Math.max(0, Math.round(a.rect.x) - pad);
+    const y = Math.max(0, Math.round(a.rect.y) - pad);
+    const largura = Math.round(a.rect.width) + pad * 2;
+    const altura = Math.round(a.rect.height) + pad * 2;
+    const destino = semSobrescrever(resolve(CAPTURAS, `motion-c5-v6-recorte${i + 1}-${commit}.png`));
+    const r = spawnSync(FFMPEG, [
+      '-y', '-i', quadro.arquivo,
+      '-vf', `crop=${largura}:${altura}:${x}:${y}`,
+      destino,
+    ], { stdio: 'pipe' });
+    if (r.status !== 0) {
+      throw new Error(`ffmpeg (recorte v6) falhou (${r.status}): ${(r.stderr || '').toString().slice(-800)}`);
+    }
+    return destino;
+  });
+
   return {
-    clipe, folha, quadros: quadros.length, chegouFimAos, veuVisivelAos, amostras, sempreClicavel,
+    clipe, folha, quadros: quadros.length, chegouFimAos, veuVisivelAos,
+    delayMs, duracaoMs, janelaMs, amostras, sempreClicavel, recortes,
   };
 }
 
@@ -2334,40 +2413,111 @@ async function carregarAtlasC5(sessao) {
 }
 
 /**
- * V7 — O ACENTO DO CÉU: seleciona Júpiter pela busca (o mesmo fluxo da
- * C3) e grava ~1s ao redor da seleção — o bastante para os 200ms do
- * acento âmbar (`acentoDaSelecao`, `LabelCanvas.ts`) e o reenquadramento
- * da câmera. O acento é pintado num canvas 2D, sem nó de DOM por
- * estrela — os 4 recortes abaixo são por isso uma APROXIMAÇÃO: um
- * quadrado no centro da área útil (a largura antes do painel da ficha),
- * não o pixel exato do marcador. Sem checagem de DOM (o enunciado não
- * pede uma para esta cena).
+ * UM CORPO com nome DESENHADO na tela (V7) — a mesma lista pública que
+ * `a11y.mjs`/`a11y-celular.mjs` já leem (`rotulos.alvos`, "a última
+ * projeção — a lista ÚNICA que o clique lê", `director/rotulos.ts`),
+ * com `x`/`y` em FRAÇÃO 0..1 — a MESMA conta que `gestos.ts:onPointerUp`
+ * faz de `clientX/innerWidth` antes de escolher, então multiplicar por
+ * `innerWidth`/`innerHeight` aqui não é aproximação, é a régua que o
+ * clique de verdade usa. Só candidatos com TEXTO (nunca um `icone`, que
+ * não escreve nome nenhum) e confirmados por DOIS testes independentes:
+ * `elementFromPoint` cai no canvas da cena (não numa gaveta por cima) e
+ * `escada.chaveApontada` (o mesmo hit-test do hover, `director.ts`)
+ * aponta para a MESMA chave. NUNCA o Sol (`corpo:sun`, peso 100 — o mais
+ * alto da tabela depois do foco, então costuma vir primeiro): medido, o
+ * clique nele reenquadra ~200px (não é um corpo qualquer, é a origem do
+ * sistema) e a cor dele é ambarina por natureza, o que contaminaria
+ * justamente a contagem de pixels âmbar que a V7 faz depois.
+ */
+async function acharCorpoDesenhado(sessao) {
+  return sessao.js(`(() => {
+    const alvos = window.__director?.rotulos?.alvos ?? [];
+    for (const l of alvos) {
+      if (!l.key || !l.key.startsWith('corpo:')) continue; // CHAVE_DE_CORPO, atlasConfig.ts
+      if (l.key === 'corpo:sun') continue;
+      if (l.desenhado !== true || (l.opacity ?? 0) < 0.15) continue;
+      if (l.icone || l.textoInvisivel) continue;
+      const x = Math.round(l.x * window.innerWidth);
+      const y = Math.round(l.y * window.innerHeight);
+      if (x <= 0 || y <= 0 || x >= window.innerWidth - 1 || y >= window.innerHeight - 1) continue;
+      const noPonto = document.elementFromPoint(x, y);
+      if (!noPonto || !noPonto.classList.contains('scene-canvas')) continue;
+      const chave = window.__director.escada.chaveApontada(x / window.innerWidth, y / window.innerHeight);
+      if (chave !== l.key) continue;
+      return { key: l.key, name: l.name, x, y };
+    }
+    return null;
+  })()`);
+}
+
+/** a cor do acento (`acentoDaSelecao`, `LabelCanvas.ts`) é #e2b872; a
+ *  tolerância absorve o anti-serrilhado contra o fundo escuro sem
+ *  confundir com o azul/violeta do céu ao redor. */
+const COR_DO_ACENTO = [0xe2, 0xb8, 0x72];
+const TOLERANCIA_DO_ACENTO = 55;
+
+/** conta pixels a até `TOLERANCIA_DO_ACENTO` (distância euclidiana em
+ *  RGB) de `COR_DO_ACENTO` num PNG — o recorte inteiro já É a "pequena
+ *  região ao redor do marcador" (160×160px centrados nele), então não
+ *  há um segundo raio para recortar por cima do recorte. */
+async function contarPixelsAmbar(caminhoDoPng) {
+  const { data, info } = await sharp(caminhoDoPng).raw().ensureAlpha().toBuffer({ resolveWithObject: true });
+  let n = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const dr = data[i] - COR_DO_ACENTO[0];
+    const dg = data[i + 1] - COR_DO_ACENTO[1];
+    const db = data[i + 2] - COR_DO_ACENTO[2];
+    if (Math.sqrt(dr * dr + dg * dg + db * db) <= TOLERANCIA_DO_ACENTO) n++;
+  }
+  return { n, dePixels: info.width * info.height };
+}
+
+/** a posição projetada (px de viewport) do MESMO corpo, lida de novo —
+ *  o acessório de depuração que a V7 usa para PERSEGUIR o marcador
+ *  quadro a quadro, e não só achá-lo uma vez. */
+function jsPosicaoDoRotulo(chave) {
+  return `(() => {
+    const l = (window.__director?.rotulos?.alvos ?? []).find((r) => r.key === ${JSON.stringify(chave)});
+    return l
+      ? { x: Math.round(l.x * window.innerWidth), y: Math.round(l.y * window.innerHeight) }
+      : { x: null, y: null };
+  })()`;
+}
+
+/**
+ * V7 — O ACENTO DO CÉU: acha um NOME DE VERDADE já desenhado na tela
+ * (`acharCorpoDesenhado`) e clica NELE — o mesmo ponto que
+ * `a11y.mjs`/`a11y-celular.mjs` já usam para achar um rótulo de verdade
+ * em vez de sortear um pixel. A 1ª gravação escolhia pela BUSCA (o
+ * fluxo da C3), que seleciona pelo NOME sem saber se o marcador está em
+ * quadro — Júpiter caiu fora, a câmera voou por segundos reenquadrando,
+ * e os 200ms do acento (`acentoDaSelecao`, `LabelCanvas.ts`) passaram
+ * inteiros fora da gravação. Clicando um nome que JÁ ESTÁ na tela
+ * (vista padrão do Atlas, tour pulado, nada selecionado) a câmera não
+ * VOA para lá — mas ainda REENQUADRA um pouco (a ficha que abre ao lado
+ * muda a área útil, medido: um corpo qualquer derivou umas dezenas de
+ * px em menos de 1s), o bastante para um recorte ESTÁTICO perder o
+ * marcador antes mesmo do acento acabar (medido: 1 pixel âmbar nos
+ * primeiros 160ms). Por isso a V7 PERSEGUE: `amostrarSequencia` relê a
+ * posição projetada do MESMO corpo (`jsPosicaoDoRotulo`) em cada alvo
+ * de ms, e cada recorte usa a posição DAQUELE instante, não a do clique.
  */
 async function cenaAcentoC5(sessao, commit, pastaClipe) {
-  await clicarReal(sessao, SEL_BUSCA_GATILHO);
-  await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_BUSCA_PAINEL}'))`, 3000);
-  await digitarTexto(sessao, 'jupiter');
-  await esperarPor(
-    { js: sessao.js },
-    `document.querySelector('${SEL_BUSCA_PAINEL}')?.getAttribute('data-conteudo') === 'resultados'`,
-    2000
-  );
-  await dorme(300);
+  const alvo = await acharCorpoDesenhado(sessao);
+  if (!alvo) throw new Error('v7: nenhum nome de corpo desenhado e clicável na vista padrão do Atlas');
 
-  let tInicio = 0;
-  let tEnter = 0;
-  let tFim = 0;
+  const alvosMs = [0, 80, 160, 250, 500];
+  let tClique = 0;
+  let rastro = [];
   const quadros = await gravarClipe(
     sessao,
     { largura: 1440, altura: 900, pastaQuadros: pastaClipe },
     async () => {
-      tInicio = Date.now();
-      await dorme(150); // garante o screencast já armado antes da seleção
-      tEnter = Date.now();
-      await pressionarTecla(sessao, 'Enter');
+      await dorme(150); // garante o screencast já armado antes do clique
+      tClique = Date.now();
+      await clicarEmPonto(sessao, alvo.x, alvo.y);
       await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_FICHA_PAINEL}'))`, 3000);
-      await dorme(800); // a janela de ~1s pedida, cobrindo os 200ms do acento
-      tFim = Date.now();
+      rastro = await amostrarSequencia(sessao, tClique, alvosMs, () => jsPosicaoDoRotulo(alvo.key));
     }
   );
 
@@ -2375,22 +2525,25 @@ async function cenaAcentoC5(sessao, commit, pastaClipe) {
   const duracao = quadros[quadros.length - 1].ts - quadros[0].ts;
   const folha = renderizarContato(clipe, duracao, resolve(CAPTURAS, `motion-c5-v7-acento-${commit}.png`));
 
-  const rFicha = await retanguloDe(sessao, SEL_FICHA_PAINEL);
-  const larguraUtil = rFicha ? rFicha.x : 1440;
-  const lado = Math.max(200, Math.min(700, Math.round(larguraUtil - 40)));
-  const x0 = Math.max(0, Math.round(larguraUtil / 2 - lado / 2));
-  const y0 = Math.max(0, Math.round(450 - lado / 2));
-
-  const fracaoEnter = tFim > tInicio ? (tEnter - tInicio) / (tFim - tInicio) : 0;
-  const idxEnter = Math.min(quadros.length - 1, Math.max(0, Math.round(fracaoEnter * (quadros.length - 1))));
-  const passo = Math.max(1, Math.floor((quadros.length - 1 - idxEnter) / 3));
-  const indices = [0, 1, 2, 3].map((i) => Math.min(quadros.length - 1, idxEnter + i * passo));
-
-  const recortes = indices.map((idx, i) => {
+  // RECORTES EM RESOLUÇÃO CHEIA (160×160, pedido do enunciado), UM POR
+  // AMOSTRA DO RASTRO — cada um centrado na posição TRACKED daquele
+  // instante (ou na do clique, se o corpo sumiu da lista). O quadro vem
+  // de `quadroMaisProximoDoAlvo` (a mesma régua do `--contorno`, mais
+  // abaixo neste arquivo): o quadro cujo timestamp REAL do CDP mais bate
+  // com o `dtMs` REAL da amostra (nunca o alvo nominal). Os alvos cobrem
+  // os ~200ms do acento (`DURACAO_DO_ACENTO_MS`, LabelCanvas.ts) e um
+  // instante bem depois, já apagado.
+  const LADO = 160;
+  const recortes = rastro.map((a, i) => {
+    const cx = a.x ?? alvo.x;
+    const cy = a.y ?? alvo.y;
+    const x0 = Math.max(0, Math.min(1440 - LADO, Math.round(cx - LADO / 2)));
+    const y0 = Math.max(0, Math.min(900 - LADO, Math.round(cy - LADO / 2)));
+    const quadro = quadroMaisProximoDoAlvo(quadros, tClique, a.dtMs);
     const destino = semSobrescrever(resolve(CAPTURAS, `motion-c5-v7-recorte${i + 1}-${commit}.png`));
     const r = spawnSync(FFMPEG, [
-      '-y', '-i', quadros[idx].arquivo,
-      '-vf', `crop=${lado}:${lado}:${x0}:${y0}`,
+      '-y', '-i', quadro.arquivo,
+      '-vf', `crop=${LADO}:${LADO}:${x0}:${y0}`,
       destino,
     ], { stdio: 'pipe' });
     if (r.status !== 0) {
@@ -2399,8 +2552,16 @@ async function cenaAcentoC5(sessao, commit, pastaClipe) {
     return destino;
   });
 
+  // A CONTAGEM DE PIXELS ÂMBAR em cada recorte — a medida que o
+  // enunciado pede, não "parece que sim".
+  const contagens = [];
+  for (const arq of recortes) contagens.push(await contarPixelsAmbar(arq));
+
+  const ultimoRastro = [...rastro].reverse().find((a) => a.x !== null) ?? null;
+  const derivaPx = ultimoRastro ? Math.round(Math.hypot(ultimoRastro.x - alvo.x, ultimoRastro.y - alvo.y)) : null;
+
   return {
-    clipe, folha, quadros: quadros.length, recortes, aproximacaoDoRecorte: { x: x0, y: y0, lado },
+    clipe, folha, quadros: quadros.length, recortes, contagens, alvo, alvosMs, rastro, derivaPx,
   };
 }
 
@@ -2461,7 +2622,8 @@ async function cenaDicaC5(sessao, commit, pasta) {
   };
 }
 
-async function rodarC5() {
+async function rodarC5(quais = null) {
+  const roda = (v) => !quais || quais.has(v);
   mkdirSync(CAPTURAS, { recursive: true });
   const pastas = Object.fromEntries(
     ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'].map(
@@ -2485,18 +2647,21 @@ async function rodarC5() {
     sessao.marcarViewport(viewport);
     const versaoChrome = await sessao.send('Browser.getVersion');
 
-    const v1 = await comRetentativa(() => cenaAberturaC5(sessao, commit, pastas.v1));
+    const v1 = roda('v1') ? await comRetentativa(() => cenaAberturaC5(sessao, commit, pastas.v1)) : null;
 
-    await iniciarFilmeC5(sessao);
-    const v2 = await comRetentativa(() => cenaChromeC5(sessao, commit, pastas.v2));
-    const v3 = await comRetentativa(() => cenaMaisC5(sessao, commit, pastas.v3));
-    const v4 = await comRetentativa(() => cenaTransporteC5(sessao, commit, pastas.v4));
-    const v5 = await comRetentativa(() => cenaProgressoC5(sessao, commit, pastas.v5));
-    const v6 = await comRetentativa(() => cenaFimC5(sessao, commit, pastas.v6));
+    // V2–V6 precisam do filme TOCANDO (`iniciarFilmeC5`); só paga a
+    // viagem até lá se alguma delas de fato vai rodar (`--c5=v7` sozinho
+    // nunca entra aqui).
+    if (roda('v2') || roda('v3') || roda('v4') || roda('v5') || roda('v6')) await iniciarFilmeC5(sessao);
+    const v2 = roda('v2') ? await comRetentativa(() => cenaChromeC5(sessao, commit, pastas.v2)) : null;
+    const v3 = roda('v3') ? await comRetentativa(() => cenaMaisC5(sessao, commit, pastas.v3)) : null;
+    const v4 = roda('v4') ? await comRetentativa(() => cenaTransporteC5(sessao, commit, pastas.v4)) : null;
+    const v5 = roda('v5') ? await comRetentativa(() => cenaProgressoC5(sessao, commit, pastas.v5)) : null;
+    const v6 = roda('v6') ? await comRetentativa(() => cenaFimC5(sessao, commit, pastas.v6)) : null;
 
-    await carregarAtlasC5(sessao);
-    const v7 = await comRetentativa(() => cenaAcentoC5(sessao, commit, pastas.v7));
-    const v8 = await comRetentativa(() => cenaDicaC5(sessao, commit, pastas.v8));
+    if (roda('v7') || roda('v8')) await carregarAtlasC5(sessao);
+    const v7 = roda('v7') ? await comRetentativa(() => cenaAcentoC5(sessao, commit, pastas.v7)) : null;
+    const v8 = roda('v8') ? await comRetentativa(() => cenaDicaC5(sessao, commit, pastas.v8)) : null;
 
     const dpr = await sessao.js('window.devicePixelRatio');
     const relatorio = {
@@ -2506,13 +2671,14 @@ async function rodarC5() {
         // O SERVIDOR É DE OUTRA ÁRVORE (isolada, item obrigatório do
         // enunciado): `commit`/`dirty` acima são desta sonda, não do
         // app que ela mede.
-        appCommit: 'a126e03 (servidor isolado, árvore limpa)',
+        appCommit: 'dcc08ea (servidor isolado, árvore limpa)',
         chrome: versaoChrome.product,
         app: APP,
         viewport: { width: 1440, height: 900 },
         dpr,
         idioma: 'pt-BR',
         preset: 'performance',
+        cenas: quais ? [...quais].join(',') : 'v1-v8',
         geradoEm: new Date().toISOString(),
       },
       v1, v2, v3, v4, v5, v6, v7, v8,
@@ -2521,32 +2687,68 @@ async function rodarC5() {
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
 
     const linhas = [
-      `=== sonda-motion c5 — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app a126e03 (servidor isolado) ===`,
+      `=== sonda-motion c5 — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app dcc08ea (servidor isolado) ===`,
       `Chrome ${versaoChrome.product} | mesa 1440x900 DPR${dpr} | pt-BR | q=performance`,
-      `V1 abertura: ${v1.clipe} (${v1.quadros}q) — marcos amostrados=${v1.marcosAmostrados}, com marcoReflexo=${v1.marcosComReflexo}; `
-        + `CTA ::after animation=${v1.cta?.animationName} delay=${v1.cta?.animationDelay} duration=${v1.cta?.animationDuration}`,
-      `V2 chrome do filme: ${v2.clipe} (${v2.quadros}q) — visível transitionDuration=${v2.visivel.transitionDuration}; `
-        + `escondeu aos ${v2.escondida?.escondeuAos}ms (transitionDuration=${v2.escondida?.transitionDuration}); `
-        + `revelou aos ${v2.revelada?.revelouAos}ms; escondeu de novo aos ${v2.escondidaDeNovo?.escondeuDeNovoAos}ms`,
-      `V3 "Mais": ${v3.clipe} (${v3.quadros}q) — abrir(mouse) classes=${v3.aposAbrirMouse.map((a) => a.painelClasse).join(' / ')}; `
-        + `fechar(mouse) classes=${v3.aposFecharMouse.map((a) => `${a.painelClasse}${a.painelInert ? '[inert]' : ''}`).join(' / ')}; `
-        + `Tab entrou no painel=${v3.focoAposTab?.foco?.dentroDoPainel}; fechar(teclado) foco voltou ao gatilho=${v3.focoAposFechar?.foco?.ehOGatilho}`,
-      `V4 transporte: ${v4.clipe} (${v4.quadros}q) — pausar animation=${v4.aposPausar.map((a) => a.iconeAnimationName).join('/')}; `
-        + `retomar animation=${v4.aposRetomar.map((a) => a.iconeAnimationName).join('/')}; `
-        + `taxa realce=${v4.aposTaxa.map((a) => a.rateRealceTexto).join('/')} texto=${v4.aposTaxa.map((a) => a.rateTexto).join('/')}`,
-      `V5 progresso: ${v5.clipe} (${v5.quadros}q) — hover transform=${v5.hover?.trackTransform}; `
-        + `foco após ${v5.tabsAteFoco} Tabs, transform=${v5.foco?.trackTransform} pontoOpacity=${v5.foco?.pontoOpacity}; `
-        + `durante o arrasto transform=${v5.duranteArrasto?.trackTransform} distância ponto↔fill=${v5.duranteArrasto?.distanciaPontoFillPx?.toFixed(2)}px; `
-        + `logo ao soltar=${v5.aposSoltarCedo?.distanciaPontoFillPx?.toFixed(2)}px, assentado=${v5.aposAssentar?.distanciaPontoFillPx?.toFixed(2)}px`,
-      `V6 tela final: ${v6.clipe} (${v6.quadros}q) — chegou a 'end' aos ${v6.chegouFimAos}ms, véu visível aos ${v6.veuVisivelAos}ms; `
-        + `"Ficar neste céu" clicável em todas as ${v6.amostras.length} amostras=${v6.sempreClicavel} `
-        + `(animation=${v6.amostras.map((a) => a.animationName).join('/')})`,
-      `V7 acento no céu: ${v7.clipe} (${v7.quadros}q), recortes=${v7.recortes.join(', ')} (aproximação ${JSON.stringify(v7.aproximacaoDoRecorte)})`,
-      `V8 dica de ajuda: ${v8.clipe} (${v8.quadros}q) — antes hidden=${v8.antes?.hidden}; `
-        + `durante o hover animation=${v8.durante.map((a) => a.animationName).join('/')} hidden=${v8.durante.map((a) => a.hidden).join('/')}; `
-        + `depois de sair hidden=${v8.depois.map((a) => a.hidden).join('/')}`,
-      `JSON: ${destinoJson}`,
     ];
+    if (v1) {
+      linhas.push(
+        `V1 abertura: ${v1.clipe} (${v1.quadros}q) — marcos amostrados=${v1.marcosAmostrados}, com marcoReflexo=${v1.marcosComReflexo}; `
+          + `CTA ::after animation=${v1.cta?.animationName} delay=${v1.cta?.animationDelay} duration=${v1.cta?.animationDuration}`
+      );
+    }
+    if (v2) {
+      linhas.push(
+        `V2 chrome do filme: ${v2.clipe} (${v2.quadros}q) — visível transitionDuration=${v2.visivel.transitionDuration}; `
+          + `escondeu aos ${v2.escondida?.escondeuAos}ms (transitionDuration=${v2.escondida?.transitionDuration}); `
+          + `revelou aos ${v2.revelada?.revelouAos}ms; escondeu de novo aos ${v2.escondidaDeNovo?.escondeuDeNovoAos}ms`
+      );
+    }
+    if (v3) {
+      linhas.push(
+        `V3 "Mais": ${v3.clipe} (${v3.quadros}q) — abrir(mouse) classes=${v3.aposAbrirMouse.map((a) => a.painelClasse).join(' / ')}; `
+          + `fechar(mouse) classes=${v3.aposFecharMouse.map((a) => `${a.painelClasse}${a.painelInert ? '[inert]' : ''}`).join(' / ')}; `
+          + `Tab entrou no painel=${v3.focoAposTab?.foco?.dentroDoPainel}; fechar(teclado) foco voltou ao gatilho=${v3.focoAposFechar?.foco?.ehOGatilho}`
+      );
+    }
+    if (v4) {
+      linhas.push(
+        `V4 transporte: ${v4.clipe} (${v4.quadros}q) — pausar animation=${v4.aposPausar.map((a) => a.iconeAnimationName).join('/')}; `
+          + `retomar animation=${v4.aposRetomar.map((a) => a.iconeAnimationName).join('/')}; `
+          + `taxa realce=${v4.aposTaxa.map((a) => a.rateRealceTexto).join('/')} texto=${v4.aposTaxa.map((a) => a.rateTexto).join('/')}`
+      );
+    }
+    if (v5) {
+      linhas.push(
+        `V5 progresso: ${v5.clipe} (${v5.quadros}q) — hover transform=${v5.hover?.trackTransform}; `
+          + `foco após ${v5.tabsAteFoco} Tabs, transform=${v5.foco?.trackTransform} pontoOpacity=${v5.foco?.pontoOpacity}; `
+          + `durante o arrasto transform=${v5.duranteArrasto?.trackTransform} distância ponto↔fill=${v5.duranteArrasto?.distanciaPontoFillPx?.toFixed(2)}px; `
+          + `logo ao soltar=${v5.aposSoltarCedo?.distanciaPontoFillPx?.toFixed(2)}px, assentado=${v5.aposAssentar?.distanciaPontoFillPx?.toFixed(2)}px`
+      );
+    }
+    if (v6) {
+      linhas.push(
+        `V6 tela final: ${v6.clipe} (${v6.quadros}q) — chegou a 'end' aos ${v6.chegouFimAos}ms, véu visível aos ${v6.veuVisivelAos}ms; `
+          + `aceno do CTA: delay=${v6.delayMs}ms duração=${v6.duracaoMs}ms (sweep ${v6.delayMs}→${v6.delayMs + v6.duracaoMs}ms depois do véu); `
+          + `"Ficar neste céu" clicável em todas as ${v6.amostras.length} amostras=${v6.sempreClicavel} `
+          + `(animation=${v6.amostras.map((a) => a.animationName).join('/')}); recortes=${v6.recortes.join(', ')}`
+      );
+    }
+    if (v7) {
+      linhas.push(
+        `V7 acento no céu: alvo="${v7.alvo?.name}" (${v7.alvo?.key}) em (${v7.alvo?.x},${v7.alvo?.y}); `
+          + `${v7.clipe} (${v7.quadros}q); deriva da câmera após o clique=${v7.derivaPx}px; `
+          + `recortes(ms=${v7.alvosMs.join('/')})=${v7.recortes.join(', ')}; `
+          + `pixels âmbar=${v7.contagens.map((c) => c.n).join('/')} de ${v7.contagens[0]?.dePixels ?? '?'} por recorte`
+      );
+    }
+    if (v8) {
+      linhas.push(
+        `V8 dica de ajuda: ${v8.clipe} (${v8.quadros}q) — antes hidden=${v8.antes?.hidden}; `
+          + `durante o hover animation=${v8.durante.map((a) => a.animationName).join('/')} hidden=${v8.durante.map((a) => a.hidden).join('/')}; `
+          + `depois de sair hidden=${v8.depois.map((a) => a.hidden).join('/')}`
+      );
+    }
+    linhas.push(`JSON: ${destinoJson}`);
     process.stdout.write(`${linhas.join('\n')}\n`);
   } catch (erro) {
     process.stdout.write(`BLOCKED: ${erro.stack || erro.message}\n`);
@@ -3086,7 +3288,7 @@ if (FOLHA) {
 } else if (INTERRUPCOES) {
   await rodarInterrupcoes();
 } else if (C5) {
-  await rodarC5();
+  await rodarC5(C5_QUAIS);
 } else if (CONTORNO) {
   await rodarContorno();
 } else if (!SEQUENCIA) {
