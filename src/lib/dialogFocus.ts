@@ -158,6 +158,9 @@ export function useDialogFocus(
   const modal = opcoes?.modal ?? true;
   const ref = useRef<HTMLDivElement>(null);
   const fechar = useRef(aoFechar);
+  /** o gatilho que a devolução ao fechar ainda precisa confirmar (ver o
+   *  fim do efeito principal e o efeito logo depois dele) */
+  const pendente = useRef<HTMLElement | null>(null);
   // efeito sem lista: roda depois de TODO render, e é a única forma
   // permitida de manter o ref em dia (escrever `fechar.current` no corpo
   // do componente é escrita durante o render — o lint barra, com razão)
@@ -261,9 +264,32 @@ export function useDialogFocus(
       const gatilho =
         document.querySelector<HTMLElement>(`[${ATRIBUTO_GATILHO}="${nome}"]`) ??
         focoAnterior;
-      if (gatilho?.isConnected) gatilho.focus();
+      if (!gatilho?.isConnected) return;
+      gatilho.focus();
+      // E DE NOVO NA FASE SEGUINTE (efeito de baixo). Esta limpeza corre
+      // na fase de MUTAÇÃO do commit, e logo depois dela o React devolve o
+      // foco a quem o tinha quando o commit começou — o controle de DENTRO
+      // da caixa —, desde que ele continue no documento. Desmontando, ele
+      // já saiu e a devolução acima vale; FECHANDO COM SAÍDA ANIMADA a
+      // caixa continua desenhada, o React desfazia esta linha, e a gaveta
+      // que sai, ao virar `inert`, largava o foco no `<body>` (medido
+      // 11/09: o gatilho recebia o foco e, 1 ms depois, o React o tirava).
+      pendente.current = gatilho;
     };
   }, [aberto, nome, focoInicial, modal]);
+
+  // A DEVOLUÇÃO QUE O REACT DESFAZ, refeita na fase de LAYOUT — depois
+  // da restauração de foco do commit e antes de `useGavetas` (no App, que
+  // é pai: o layout corre dos filhos para os pais) pôr o `inert` na
+  // gaveta que sai. Só se ninguém tomou o foco no mesmo commit: numa
+  // troca A → B, B já é o dono e já pôs o foco onde devia.
+  useLayoutEffect(() => {
+    const gatilho = pendente.current;
+    if (!gatilho) return;
+    pendente.current = null;
+    if (donoDoFoco !== null) return;
+    if (gatilho.isConnected && document.activeElement !== gatilho) gatilho.focus();
+  });
 
   return {
     ref,
