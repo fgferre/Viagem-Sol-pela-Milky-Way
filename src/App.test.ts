@@ -86,6 +86,9 @@ describe('a reserva dos rótulos cobre o HUD fixo (item 56)', () => {
   });
 
   it('caixa vazia não vira retângulo — em ?shot=2 todo o HUD é display:none', () => {
-    expect(FONTE).toContain('.filter((b) => b.width > 0 && b.height > 0)');
+    // desde o C1 do plano de motion o filtro também descarta a caixa de
+    // repouso NULA (painel fora da árvore do HUD) — a regra da caixa
+    // vazia continua a mesma
+    expect(FONTE).toContain('b.width > 0 && b.height > 0)');
   });
 });
