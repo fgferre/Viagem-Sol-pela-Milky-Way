@@ -24,6 +24,7 @@ import type { Gaveta } from '../hooks/useGavetas';
 import { gatilhoDoDialogo } from '../lib/dialogFocus';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
+import { useRealce } from '../hooks/useRealce';
 import { REGISTRO_ORBITAL } from '../lib/atlas/registroOrbital';
 import { BotaoDaGaveta, BotaoDoTempo } from './HudDoAtlas';
 import { BotaoDaBusca } from './PaletaDeBusca';
@@ -174,6 +175,12 @@ function ContextoDoAlvo({
    */
   abrirFicha?: () => void;
 }) {
+  // A CONFIRMAÇÃO DO ALVO (C3b, reaudit) — `foco` é o MESMO instante que
+  // `FichaDoObjeto.tsx` usa para o nome/classe (o Director publica os
+  // dois juntos, `App.tsx`): os dois `useRealce` são estados React
+  // separados, mas disparam no mesmo commit, então a migalha de pão e a
+  // ficha acendem juntas sem precisar compartilhar estado nenhum.
+  const vezesFoco = useRealce(foco);
   const todos = trechosDoContexto(escada, foco, focarNoSistema, focarNoCorpo, comViaLactea);
   const trechos = estreito ? todos.slice(-1) : todos;
   return (
@@ -199,7 +206,12 @@ function ContextoDoAlvo({
               aria-label={t('ficha.aria', { nome: trecho.texto })}
               onClick={abrirFicha}
             >
-              <span>{trecho.texto}</span>
+              {/* `<span>` (C2): a pressão afunda o filho, não o botão —
+                  e é ele que leva o `key`/`.realce-texto` da confirmação
+                  (C3b), nunca o botão (perderia foco/estado). */}
+              <span key={vezesFoco} className={vezesFoco > 0 ? 'realce-texto' : undefined}>
+                {trecho.texto}
+              </span>
             </button>
           ) : (
             <span aria-current={trecho.atual ? 'location' : undefined}>{trecho.texto}</span>

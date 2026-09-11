@@ -150,6 +150,21 @@
   outline: 2px solid var(--foco);
   outline-offset: 2px;
 }
+/* A CONFIRMAÇÃO DO ALVO (C3b, reaudit) — o `<span>` da pressão (acima)
+   também é onde `BarraOuAlcas.tsx` põe o `key`/`.realce-texto` de
+   `useRealce`: precisa ser transformável (`translate` do keyframe,
+   `01-base.css`) sem herdar o `display:flex` de ninguém aqui, porque
+   este botão não tem um. */
+.atlas-contexto-alvo > span {
+  display: inline-block;
+  /* a mesma razão do nome da ficha (abaixo): caixa atômica não recebe as
+     reticências do pai, então o trecho corta a si mesmo */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
 
 /* A RÉGUA DE ABAS (Lote 4½, PLAN-UI.md) — as quatro ferramentas do
    Atlas de mesa (Buscar, Camadas, Ficha, Ajustes), presas na borda
@@ -312,6 +327,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* A CONFIRMAÇÃO DO NOME E DA CLASSE (C3b, reaudit) — o `role="status"`/
+   `aria-live` fica no `.atlas-ficha-nome` (ESTÁVEL, nunca remonta); quem
+   troca é um `<span>` FILHO, com `key`/`.realce-texto` de `useRealce`
+   (`FichaDoObjeto.tsx`). `inline-block` é para ficar transformável (o
+   `translate` do keyframe, `01-base.css`). */
+.atlas-ficha-nome > span,
+.atlas-ficha-classe > span {
+  display: inline-block;
+  /* O CORTE DO NOME COMPRIDO MORA NO PRÓPRIO TRECHO (visto 11/09 com um
+     nome de teste longo): um `inline-block` é uma caixa ATÔMICA, e as
+     reticências do pai não entram nela — o nome saía cortado seco na
+     borda do painel, sem o "…". O trecho cabe no pai e corta a si mesmo;
+     o `translate` do realce move a caixa inteira, corte junto. */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
 /* OS DOIS GESTOS DA ESCADA (fix, 09/09): AÇÕES lado a lado, uma linha
    só — até aqui vestiam `.ajustes-seg` (redesenho de 06/09), a moldura
    do GRUPO DE ESCOLHA de Ajustes, com filete entre os dois e sublinhado
@@ -386,6 +420,22 @@
 .atlas-ficha-lermais:focus-visible {
   outline: 2px solid var(--foco);
   outline-offset: 2px;
+}
+
+/* O ASSENTAMENTO (C3b, reaudit) — a introdução e as três seções que só
+   existem depois de `corpos.json`/`texturas.json` chegarem (contexto,
+   curiosidades, imagem: `SECOES_DO_ASSENTAMENTO`, `FichaDoObjeto.tsx`)
+   esmaecem uma vez, só OPACIDADE. Agora/Físico/Órbita/Céu já mostram
+   dado real desde o primeiro quadro e não ganham esta classe; trocar
+   entre dois alvos já carregados também não — `FichaDoObjeto.tsx` só a
+   liga no quadro exato em que os dois arquivos terminam de chegar. */
+.atlas-ficha-assenta {
+  animation: fichaAssenta var(--t-assenta) var(--curva) backwards;
+}
+@keyframes fichaAssenta {
+  from {
+    opacity: 0;
+  }
 }
 
 /* A FICHA VAZIA (Lote 0/5, item 3) — o centro galáctico não inventa
@@ -474,9 +524,10 @@
 }
 /* O TÍTULO DE SEÇÃO ("Agora", "Físico"…) — Fraunces 400, 17 px, CAIXA
    NORMAL (Lote 2b, PLAN-UI.md item 3): serifado como o nome e o título
-   dos painéis, não mais eyebrow em caixa alta. O chevron troca de
-   sentido com o estado (`<Icone>`, direita fechado / baixo aberto),
-   nunca gira — a régua do componente. */
+   dos painéis, não mais eyebrow em caixa alta. O chevron É UM SVG SÓ
+   (`chevronDireita`) que GIRA 0→90° por CSS (C3c, reaudit) — até aqui
+   ele trocava de desenho com o estado; a decisão nova é a mesma seta
+   sempre, `.atlas-ficha-seta` abaixo. */
 .atlas-ficha-titulo button,
 .ajustes-titulo-secao button {
   display: flex;
@@ -519,6 +570,18 @@
   display: inline-flex;
   color: var(--texto-3);
   line-height: 1;
+  /* GIRA, NÃO TROCA DE DESENHO (C3c, reaudit) — `rotate` é a propriedade
+     INDIVIDUAL (não `transform`): compõe sem disputa com a escala da
+     pressão da casa (`transform: scale(...)`, 01-base.css) no dia em
+     que um destes botões entrar na lista dela. */
+  rotate: 0deg;
+  transition: rotate var(--t-assenta) var(--curva);
+}
+/* A MESMA RECEITA NOS DOIS COMPONENTES (C3c): a ficha e o "Avançado" de
+   Ajustes leem o `[aria-expanded]` do PRÓPRIO botão que envolve a seta. */
+.atlas-ficha-titulo button[aria-expanded='true'] .atlas-ficha-seta,
+.ajustes-titulo-secao button[aria-expanded='true'] .atlas-ficha-seta {
+  rotate: 90deg;
 }
 
 .atlas-ficha-linhas {

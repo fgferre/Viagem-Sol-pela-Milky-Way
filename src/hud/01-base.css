@@ -664,3 +664,52 @@
     overflow: hidden;
   }
 }
+
+/* ---- O REALCE: A CONFIRMAÇÃO DE UMA ESCOLHA (M3 do plano de motion,
+   C3) ----------------------------------------------------------------
+   Dois gestos, uma família, sempre DISPARADOS por uma mudança e nunca em
+   repouso: quem confirma usa `useRealce` e escreve `key={vezes}` no
+   trecho, o React remonta só aquele trecho e o `@keyframes` toca uma vez
+   — na primeira pintura não toca, porque nascer não é escolher.
+   NO TEXTO (o nome do alvo na ficha e na linha de contexto, o título da
+   seção que o "Ler mais" abriu): o trecho sobe 4 px para o lugar aceso
+   em âmbar e apaga para a cor de sempre. Ele precisa ser transformável
+   (`inline-block` ou bloco), e é quem usa que decide, porque cada lugar
+   tem a sua regra de quebra e de reticências.
+   NUM CONTROLE (o selo que mudou, o link copiado, o "ao vivo" que
+   ligou): um anel âmbar se desprende da borda e some. É um `<span>`
+   decorativo (`aria-hidden`, sem ponteiro) por cima do controle — o
+   controle nunca remonta, então foco e estado ficam intactos; o controle
+   precisa de `position: relative`.
+   O tempo é o da entrada da casa: zera com os outros no movimento
+   reduzido, onde a troca do texto já diz sozinha o que mudou. */
+.realce-texto {
+  animation: realceTexto var(--t-entrada) var(--curva) backwards;
+}
+@keyframes realceTexto {
+  0% {
+    opacity: 0;
+    translate: 0 4px;
+    color: var(--acento);
+  }
+  50% {
+    opacity: 1;
+    translate: 0 0;
+    color: var(--acento);
+  }
+}
+.realce-anel {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: realceAnel var(--t-entrada) ease-out forwards;
+}
+@keyframes realceAnel {
+  from {
+    box-shadow: 0 0 0 0 rgba(226, 184, 114, 0.6);
+  }
+  to {
+    box-shadow: 0 0 0 8px rgba(226, 184, 114, 0);
+  }
+}

@@ -454,8 +454,9 @@ export function Ajustes({
           RECOLHÍVEL, FECHADA POR PADRÃO (Lote 7) — mesma anatomia do
           título de seção da ficha (`FichaDoObjeto.tsx`): o `<h3>` só
           hospeda o botão, que carrega `aria-expanded`/`aria-controls` e
-          o chevron que troca de sentido. Abrir/recolher não chama
-          nenhum handler de valor; o `.efetivo` de cada segmento
+          o chevron que GIRA (C3c, reaudit: o mesmo SVG sempre, 0→90° por
+          CSS — `.atlas-ficha-seta`, 04-atlas.css). Abrir/recolher não
+          chama nenhum handler de valor; o `.efetivo` de cada segmento
           continua respondendo ao PRESET vivo, escondido ou não. */}
       <h3 className="ajustes-titulo-secao">
         <button
@@ -466,7 +467,7 @@ export function Ajustes({
         >
           <span>{t('ajustes.avancado')}</span>
           <span className="atlas-ficha-seta" aria-hidden="true">
-            <Icone nome={avancadoAberto ? 'chevronBaixo' : 'chevronDireita'} tamanho={16} />
+            <Icone nome="chevronDireita" tamanho={16} />
           </span>
         </button>
       </h3>

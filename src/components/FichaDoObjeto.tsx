@@ -42,6 +42,7 @@ import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
+import { useRealce } from '../hooks/useRealce';
 import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
@@ -58,6 +59,11 @@ import { PROCEDENCIA } from '../three/selo';
  *  14 caracteres e cabe; "definição" ou uma frase de contexto passam
  *  fácil dos 24. */
 const LIMIAR_DA_LINHA_LARGA = 24;
+
+/** As três seções que só existem depois que `corpos.json`/`texturas.json`
+ *  chegam (Agora/Físico/Órbita/Céu nascem com o resto e nunca assentam
+ *  — C3b do reaudit, `docs/PLANO-MOTION-UI.md` §12). */
+const SECOES_DO_ASSENTAMENTO = new Set<IdDeSecao>(['contexto', 'curiosidades', 'imagem']);
 
 /**
  * OS DOIS ARQUIVOS DA FICHA, cada um com a sua promessa única. Módulo e não
@@ -193,8 +199,22 @@ export function FichaDoObjeto({
     corpo: string | null;
     secoes: readonly IdDeSecao[];
   } | null>(null);
+  /** o título que "Ler mais" realçou por último, e QUANTAS vezes — por
+   *  CLIQUE, não por mudança de valor (`useRealce`): a seção pode já
+   *  estar aberta, e mesmo assim o clique confirma o destino de novo. */
+  const [realceLerMais, setRealceLerMais] = useState<{
+    secaoId: IdDeSecao;
+    vezes: number;
+  } | null>(null);
   const alvo = corpoId ?? estrelaEmFoco;
   const escolhidas = abertas && abertas.corpo === alvo ? abertas.secoes : null;
+  // A CONFIRMAÇÃO DA ESCOLHA (C3b, reaudit) — o ID ESTÁVEL do alvo, nunca
+  // o nome/classe traduzidos: trocar de idioma muda o TEXTO sem trocar de
+  // alvo, e não é escolha nenhuma para realçar. O MESMO número vai para o
+  // nome e para a classe (acendem juntos); `BarraOuAlcas.tsx` realça o
+  // `foco` que o Director publica no mesmo instante, para a migalha de
+  // pão confirmar no mesmo quadro sem compartilhar estado React nenhum.
+  const vezesAlvo = useRealce(alvo);
 
   // A CARGA COMEÇA NA PRIMEIRA ABERTURA. `aberta` na lista de dependências
   // e não `corpoId`: trocar de corpo com a ficha fechada não pede rede.
@@ -226,6 +246,20 @@ export function FichaDoObjeto({
       vivo = false;
     };
   }, [aberta, corpos, erroCorpos, texturas, erroTexturas]);
+
+  // O ASSENTAMENTO DOS DADOS (C3b, reaudit) — o esqueleto cobre só o que
+  // depende dos dois arquivos (introdução + `SECOES_DO_ASSENTAMENTO`); a
+  // conta é a MESMA do esqueleto lá embaixo. O `ref` guarda o valor do
+  // quadro anterior para achar a BORDA DE SUBIDA (false→true) — o único
+  // instante em que os dois arquivos ACABARAM de chegar. Sem o `ref`,
+  // trocar de alvo já carregado (`semEsqueleto` continua `true` o tempo
+  // todo) não teria borda nenhuma, e é exatamente esse o ponto: só a
+  // PRIMEIRA chegada assenta, nunca uma troca de alvo.
+  const semEsqueleto =
+    !corpoId || (Boolean(corpos || erroCorpos) && Boolean(texturas || erroTexturas));
+  const semEsqueletoAntes = useRef(semEsqueleto);
+  const dadosAcabaramDeChegar = semEsqueleto && !semEsqueletoAntes.current;
+  semEsqueletoAntes.current = semEsqueleto;
 
   const ficha = useMemo(
     () =>
@@ -397,12 +431,23 @@ export function FichaDoObjeto({
           os botões (fora do título) não são relidos a cada troca. As duas
           classes (`atlas-ficha-nome`/`atlas-ficha-classe`) SOBREVIVEM ao
           componente novo: `busca-smoke.mjs` e `a11y.mjs` leem o texto por
-          elas. */}
+          elas — por isso o `key`/`realce-texto` da confirmação (C3b,
+          reaudit) mora num `<span>` FILHO, nunca nestes dois: o `role=
+          "status"`/`aria-live` do nome precisa do elemento ESTÁVEL, e o
+          texto lido por `textContent` não muda com o filho a mais. */}
       <CabecalhoDoPainel
-        eyebrow={<span className="atlas-ficha-classe">{ficha.classe}</span>}
+        eyebrow={
+          <span className="atlas-ficha-classe">
+            <span key={vezesAlvo} className={vezesAlvo > 0 ? 'realce-texto' : undefined}>
+              {ficha.classe}
+            </span>
+          </span>
+        }
         titulo={
           <span className="atlas-ficha-nome" role="status" aria-live="polite">
-            {ficha.nome}
+            <span key={vezesAlvo} className={vezesAlvo > 0 ? 'realce-texto' : undefined}>
+              {ficha.nome}
+            </span>
           </span>
         }
         ajuda={
@@ -503,7 +548,12 @@ export function FichaDoObjeto({
               saía cortado sem elipse) — irmão depois do parágrafo, o
               clamp mede só o texto que existe para ser cortado. */}
           {introducao && (
-            <div className="atlas-ficha-intro-bloco">
+            <div
+              className={
+                'atlas-ficha-intro-bloco' +
+                (dadosAcabaramDeChegar ? ' atlas-ficha-assenta' : '')
+              }
+            >
               <p className="atlas-ficha-intro">{introducao.texto}</p>
               <button
                 type="button"
@@ -514,9 +564,29 @@ export function FichaDoObjeto({
                   if (!base.includes(secaoId)) {
                     setAbertas({ corpo: alvo, secoes: [...base, secaoId] });
                   }
-                  document
-                    .getElementById(`ficha-secao-${secaoId}`)
-                    ?.scrollIntoView({ block: 'nearest' });
+                  // O TÍTULO DE DESTINO CONFIRMA (C3b, reaudit) — por
+                  // CLIQUE, mesmo quando a seção já estava aberta.
+                  setRealceLerMais((anterior) => ({
+                    secaoId,
+                    vezes: anterior && anterior.secaoId === secaoId ? anterior.vezes + 1 : 1,
+                  }));
+                  const rolar = () =>
+                    document
+                      .getElementById(`ficha-secao-${secaoId}`)
+                      ?.scrollIntoView({ block: 'nearest' });
+                  rolar();
+                  // A SANFONA CRESCE (Sanfona.tsx/usePresenca.ts, ao longo
+                  // de `--t-entrada`) quando a seção estava fechada: a
+                  // primeira rolagem mede a caixa ainda colapsada. Espera
+                  // o `animationend` da PRÓPRIA sanfona (nenhuma duração
+                  // duplicada aqui, e ela já zera sob movimento reduzido)
+                  // e rola de novo — inofensivo quando a seção já estava
+                  // aberta, porque então nada anima e o evento não dispara.
+                  requestAnimationFrame(() => {
+                    document
+                      .getElementById(`ficha-${secaoId}`)
+                      ?.addEventListener('animationend', rolar, { once: true });
+                  });
                 }}
               >
                 {t('ficha.lerMais')}
@@ -568,8 +638,22 @@ export function FichaDoObjeto({
           {ficha.secoes.map((secao) => {
             const estaAberta =
               escolhidas === null ? secao.id === primeira : escolhidas.includes(secao.id);
+            // O TÍTULO DESTINO DO "LER MAIS" (C3b, reaudit) — só a seção
+            // que o botão abriu por último recebe o realce, e só enquanto
+            // `realceLerMais` continuar apontando para ela.
+            const realceDoTitulo =
+              realceLerMais && realceLerMais.secaoId === secao.id ? realceLerMais.vezes : 0;
             return (
-              <section key={secao.id} id={`ficha-secao-${secao.id}`} className="atlas-ficha-secao">
+              <section
+                key={secao.id}
+                id={`ficha-secao-${secao.id}`}
+                className={
+                  'atlas-ficha-secao' +
+                  (dadosAcabaramDeChegar && SECOES_DO_ASSENTAMENTO.has(secao.id)
+                    ? ' atlas-ficha-assenta'
+                    : '')
+                }
+              >
                 <h3 className="atlas-ficha-titulo">
                   <button
                     type="button"
@@ -585,9 +669,18 @@ export function FichaDoObjeto({
                       });
                     }}
                   >
-                    <span>{secao.titulo}</span>
+                    <span
+                      key={realceDoTitulo || 'estavel'}
+                      className={realceDoTitulo > 0 ? 'realce-texto' : undefined}
+                    >
+                      {secao.titulo}
+                    </span>
+                    {/* A SETA NÃO TROCA MAIS DE DESENHO (C3c, reaudit): o
+                        MESMO `chevronDireita` gira 0→90° por CSS
+                        (`.atlas-ficha-seta`, 04-atlas.css), lido do
+                        `aria-expanded` do próprio botão. */}
                     <span className="atlas-ficha-seta" aria-hidden="true">
-                      <Icone nome={estaAberta ? 'chevronBaixo' : 'chevronDireita'} tamanho={16} />
+                      <Icone nome="chevronDireita" tamanho={16} />
                     </span>
                   </button>
                 </h3>
