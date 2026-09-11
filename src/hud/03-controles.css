@@ -179,6 +179,37 @@
   background: var(--borda);
 }
 
+/* O "MAIS" (C5, U08) — Camadas, qualidade e Ajustes entram/saem JUNTOS:
+   fade + pequena subida, com a mesma receita de presença da Sanfona
+   (`usePresenca.ts`), mas SEM o corte de grade dela — aqui é uma fileira
+   horizontal, não um acordeão vertical, então quem desenha é esta
+   classe, não `.sanfona`. `--t-entrada` (200 ms) é o mesmo token da
+   Sanfona para o mesmo tipo de troca (um trecho de UI que aparece e some
+   junto) — zera sozinho sob `prefers-reduced-motion`/`?shot=`. */
+.filme-mais {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.filme-mais.abrindo {
+  animation: filmeMaisEntra var(--t-entrada) var(--curva) backwards;
+}
+.filme-mais.saindo {
+  animation: filmeMaisSai var(--t-entrada) var(--curva) forwards;
+}
+@keyframes filmeMaisEntra {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+@keyframes filmeMaisSai {
+  to {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+
 /* O CARTÃO DE TRANSPORTE (Lote 8, maquete M7) — Pausar/Retomar,
    velocidade e Ver a galáxia saem da fileira de cima e descem para um
    cartão preso à barra de capítulos: IRMÃO de `.controls-bar`, não
@@ -205,6 +236,16 @@
 }
 .filme-transporte .hud-btn.small {
   min-height: 2.75rem;
+}
+/* C5, U09 — O ÍCONE DE PAUSAR/RETOMAR ASSENTA UMA VEZ POR TROCA: o MESMO
+   `assentaIcone` que já assenta o ícone da régua/alças ao abrir
+   (01-base.css) — nunca um giro, que não faria sentido para um
+   triângulo de Play. `key`/classe vêm de `useRealce(paused)`
+   (`BarraOuAlcas.tsx`): o ícone é decoração (`aria-hidden`) dentro de um
+   botão com `aria-label` próprio, então remontá-lo não move foco nem
+   estado nenhum. */
+.filme-transporte-icone-assenta {
+  animation: assentaIcone var(--t-assenta) var(--curva) both;
 }
 
 /* ---- O CHROME QUE SOME SOZINHO (item 61, 22/08) ---------------------
@@ -235,6 +276,13 @@
 }
 .hud-sumido {
   opacity: 0;
+}
+/* U07 (C5) — VOLTAR é mais rápido que SUMIR: o gesto que traz a barra de
+   volta pede resposta imediata (`--t-rapido`); sumir sozinho continua no
+   tempo suave de sempre (0,45s, acima). Quem decide a duração de uma
+   transição é o estado de CHEGADA, então a regra mora na classe AUSENTE. */
+.controls-bar:not(.hud-sumido) {
+  transition-duration: var(--t-rapido);
 }
 
 /* A FAIXA DE CIMA DO ATLAS FICOU SÓ COM A BARRA (item 74, 22/08).

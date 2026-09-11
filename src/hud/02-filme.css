@@ -109,8 +109,9 @@
      que se volta a um momento preferido em vez de reiniciar do zero */
   z-index: 60;
   height: 2px;
-  background: rgba(255, 255, 255, 0.13);
-  /* clicável (scrub) com área de toque generosa via pseudo-elemento */
+  /* clicável (scrub) com área de toque generosa via pseudo-elemento — o
+     FUNDO mora na camada visual interna (`.progress-track`, abaixo): este
+     é só o alvo de clique/arrasto/teclado, do MESMO tamanho de sempre. */
   pointer-events: auto;
   cursor: pointer;
   /* ela é CHROME: some junto com a barra de controles quando o filme
@@ -125,18 +126,97 @@
   top: -12px;
   bottom: -12px;
 }
-.progress-wrap:hover {
-  background: rgba(255, 255, 255, 0.22);
+/* U07 (C5) — VOLTAR é mais rápido que SUMIR: o gesto que traz o chrome de
+   volta pede resposta imediata (`--t-rapido`); sumir sozinho continua no
+   tempo suave de sempre (0,45s, acima). Quem decide a duração de uma
+   transição é o estado de CHEGADA, então a regra mora na classe AUSENTE
+   — nunca uma terceira duração competindo com a de cima. */
+.progress-wrap:not(.hud-sumido) {
+  transition-duration: var(--t-rapido);
+}
+.progress-wrap:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+/* U10 (C5) — A CAMADA VISUAL INTERNA: separada do alvo de clique/arrasto
+   acima de propósito (transform num controle interativo move o próprio
+   hit-test junto). Engrossa por scaleY só onde hover é capacidade real,
+   em foco por teclado e durante o arrasto (`data-arrastando`, Hud.tsx);
+   `.progress-fill` mora dentro dela para as duas engrossarem JUNTAS. */
+.progress-track {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.13);
+  pointer-events: none;
+  transform-origin: center;
+  /* o DESLOCAMENTO (scaleY) cronometra com um token que ZERA sob
+     `prefers-reduced-motion` (E5, `movimento.test.ts`) — nunca
+     `--t-rapido`, que é de cor; a COR (background) continua no rápido,
+     como o resto da casa (`.atlas-destino`, 04-atlas.css). */
+  transition:
+    transform var(--t-assenta) var(--curva),
+    background var(--t-rapido) var(--curva);
+}
+@media (hover: hover) {
+  .progress-wrap:hover .progress-track {
+    background: rgba(255, 255, 255, 0.22);
+    transform: scaleY(2.5);
+  }
+}
+.progress-wrap:focus-visible .progress-track,
+.progress-wrap[data-arrastando] .progress-track {
+  transform: scaleY(2.5);
 }
 /* LOTE 8 (maquete M7): preenchido sólido em `--acento` — a pele B não
    usa o brilho gradiente azul/laranja da pele A. */
 .progress-fill {
+  position: relative;
   width: 100%;
   height: 100%;
   background: var(--acento);
   transform: scaleX(var(--journey-progress, 0));
   transform-origin: left center;
   transition: transform 0.18s linear;
+}
+/* U10 — O PONTO DO ARRASTO: onde o preenchimento termina, só em foco por
+   teclado ou arrasto (repouso invisível — a barra plana já basta
+   enquanto ninguém interage). IRMÃO da camada que engrossa e do
+   preenchimento que escala, nunca filho deles: dentro, ele esticaria
+   junto (o `scaleY` da camada o punha em pé, e desfazer o `scaleX` do
+   preenchimento pelo inverso da fração explode perto do início da
+   viagem). A caixa tem a largura do alvo, então `translate` em % é a
+   fração da barra inteira — conta de composição, sem layout por quadro.
+   Anda com o MESMO deslize do preenchimento (acima), para ficar colado na
+   ponta dele; durante o arrasto os dois deixam de deslizar e seguem o
+   dedo exatamente — suavizar o valor contra a mão é o que U10 proíbe. */
+.progress-ponto {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  translate: calc(var(--journey-progress, 0) * 100%) 0;
+  transition: translate 0.18s linear;
+}
+.progress-wrap[data-arrastando] .progress-fill,
+.progress-wrap[data-arrastando] .progress-ponto {
+  transition: none;
+}
+.progress-ponto::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--texto);
+  box-shadow: 0 0 0 2px rgba(6, 9, 18, 0.85);
+  opacity: 0;
+  transition: opacity var(--t-rapido) var(--curva);
+}
+.progress-wrap:focus-visible .progress-ponto::before,
+.progress-wrap[data-arrastando] .progress-ponto::before {
+  opacity: 1;
 }
 .progress-tick {
   position: absolute;
@@ -206,7 +286,11 @@
    começa a chegar, aquele já foi. Mesmo mecanismo do `veil-end` abaixo —
    nesta casa quem sequencia camadas é o `transition-delay`. */
 .veil.veil-intro {
-  transition-delay: 0.8s;
+  /* U04 (C5): o mesmo atraso alimenta o aceno do CTA primário (abaixo,
+     `.veil-btn--primario::after`) — "0,8s" mora só aqui, o botão herda
+     por custom property em vez de repetir o número numa segunda regra. */
+  --cta-atraso: 0.8s;
+  transition-delay: var(--cta-atraso);
   /* tela curta: a abertura rola em vez de cortar kicker ou botões —
      sem reduzir fonte (Lote 8, PLAN-UI.md §3.1) */
   overflow-y: auto;
@@ -446,6 +530,7 @@
   outline-offset: 2px;
 }
 .veil-btn--primario {
+  position: relative;
   height: 3.25rem;
   background: var(--acento);
   border: 1px solid var(--acento);
@@ -453,6 +538,37 @@
 }
 .veil-btn--primario:hover {
   filter: brightness(1.05);
+}
+/* U04 (C5) — O CTA PRIMÁRIO ACENA UMA VEZ ao ficar visível: a MESMA
+   textura do reflexo de abertura (`reflexoDeAbertura`, 01-base.css),
+   só que clara (o âmbar do reflexo sumiria contra o próprio fundo
+   âmbar do botão) — um `background-image` no `::after`, nunca
+   `overflow: hidden` no botão, que cortaria o próprio anel de foco
+   (`:focus-visible`) junto com a faixa. Repouso invisível (`opacity: 0`
+   estático, fora do `@keyframes`): é o que o `.shot-mode` (que zera toda
+   `animation`) acaba mostrando. Dispara quando o VÉU perde
+   `.hidden-veil` — o mesmo gatilho de `.encerramento-linha`, abaixo —
+   com o atraso de CADA botão em `--cta-atraso` (herdado de
+   `.veil-intro`, acima, ou passado pelo botão do fim via `style`,
+   `Hud.tsx`). Botão sempre clicável: `pointer-events: none` na faixa. */
+.veil-btn--primario::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+  background-size: 60% 100%;
+  background-repeat: no-repeat;
+}
+.veil:not(.hidden-veil) .veil-btn--primario::after {
+  animation: reflexoDeAbertura var(--t-reflexo) linear var(--cta-atraso, 0s) both;
 }
 .veil-btn--secundario {
   min-height: 2.75rem;

@@ -2,7 +2,7 @@
 // Componentes do HUD — telas de título, legendas e progresso.
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
-import type { RefObject } from 'react';
+import type { CSSProperties, RefObject } from 'react';
 import { LARGURA_DO_CELULAR_PX } from '../lib/uiScale';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
@@ -394,7 +394,14 @@ export function TitleVeil({
                 âmbar da abertura: a coda é o pouso, e as outras duas
                 saídas (reviver, voo livre) continuam secundárias. */}
             {onAtlas && (
-              <button className="veil-btn veil-btn--primario" onClick={onAtlas}>
+              <button
+                className="veil-btn veil-btn--primario"
+                onClick={onAtlas}
+                // U04 (C5): o mesmo atraso da linha/crédito/rodapé — o CTA
+                // só pisca quando ele de fato aparece na tela, sem repetir
+                // o número do roteiro numa conta nova aqui.
+                style={{ '--cta-atraso': `${ATRASO_DO_RODAPE}s` } as CSSProperties}
+              >
                 <span>{t('hud.fim.ficarAqui')}</span>
               </button>
             )}
@@ -467,6 +474,11 @@ export function ProgressBar({
   chromeVisivel?: boolean;
 }) {
   useIdioma();
+  // U10 (C5) — O ARRASTO EM CURSO, para o CSS engrossar a camada visual
+  // e mostrar o thumb (abaixo) enquanto o ponteiro está preso: a mesma
+  // captura de sempre, só com um sinal a mais. Hit-test, valor-segue-o-
+  // dedo e teclado continuam exatamente os de hoje.
+  const [arrastando, setArrastando] = useState(false);
   const scrubDoEvento = (
     event: React.PointerEvent<HTMLDivElement>
   ) => {
@@ -475,6 +487,10 @@ export function ProgressBar({
   };
   return (
     <div
+      // a FRAÇÃO (`--journey-progress`, escrita a 60 Hz por `useDirector`)
+      // mora no alvo, e não no preenchimento: assim o preenchimento e o
+      // ponto do arrasto (abaixo), irmãos, leem a mesma variável
+      ref={progressRef}
       className={`progress-wrap${chromeVisivel ? '' : ' hud-sumido'}`}
       role="slider"
       tabIndex={0}
@@ -495,10 +511,12 @@ export function ProgressBar({
             })
           : t('hud.capitulos', { total: ticks.length })
       }
+      data-arrastando={arrastando ? '' : undefined}
       onPointerDown={(event) => {
         // setPointerCapture: o arrasto continua valendo mesmo quando o
         // ponteiro sai da barra — sem ele o scrub era um clique só
         event.currentTarget.setPointerCapture(event.pointerId);
+        setArrastando(true);
         scrubDoEvento(event);
       }}
       onPointerMove={(event) => {
@@ -507,6 +525,8 @@ export function ProgressBar({
         // o arrasto sobreviver a sair da barra (que tem 2 px de altura)
         if (event.buttons > 0) scrubDoEvento(event);
       }}
+      onPointerUp={() => setArrastando(false)}
+      onPointerCancel={() => setArrastando(false)}
       onKeyDown={(event) => {
         if (event.key === 'ArrowRight') {
           event.preventDefault();
@@ -517,7 +537,17 @@ export function ProgressBar({
         }
       }}
     >
-      <div ref={progressRef} className="progress-fill" />
+      {/* A CAMADA VISUAL (U10), separada do alvo de clique/arrasto acima:
+          ela engrossa em hover/foco/arrasto (02-filme.css) — o alvo em si
+          nunca ganha transform, ou o hit-test mudaria de tamanho junto. */}
+      <div className="progress-track" aria-hidden="true">
+        <div className="progress-fill" />
+      </div>
+      {/* O PONTO DO ARRASTO (U10) — fora da camada que engrossa e fora do
+          preenchimento que escala: dentro de qualquer um dos dois ele
+          esticaria junto (um ponto de 8 px virava uma pílula de 20 px
+          em pé, e perto do início da viagem um fio achatado). */}
+      <div className="progress-ponto" aria-hidden="true" />
       {ticks.map((k, i) => (
         // o título do capítulo já existia (é a legenda daquele beat) e era
         // jogado fora; title= nativo basta — nada de componente de tooltip

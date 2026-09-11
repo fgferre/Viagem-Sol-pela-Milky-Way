@@ -25,6 +25,7 @@ import { gatilhoDoDialogo } from '../lib/dialogFocus';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useRealce } from '../hooks/useRealce';
+import { usePresenca } from '../hooks/usePresenca';
 import { REGISTRO_ORBITAL } from '../lib/atlas/registroOrbital';
 import { BotaoDaGaveta, BotaoDoTempo } from './HudDoAtlas';
 import { BotaoDaBusca } from './PaletaDeBusca';
@@ -298,6 +299,29 @@ export function BarraOuAlcas({
     setChromeSumidoAnterior(chromeSumido);
     if (chromeSumido) setMaisAberto(false);
   }
+  /**
+   * A PRESENÇA DO "MAIS" (C5, U08) — entrada e saída dos três controles
+   * JUNTOS, com o foco devolvido ao gatilho quando fecham no meio de uma
+   * navegação por teclado (`usePresenca`, a mesma máquina da Sanfona).
+   * `maisAberto` continua sendo o estado LÓGICO (o `aria-expanded` do
+   * botão lê ele, não a fase da animação); `montada` é que decide se o
+   * nó dos três controles ainda existe na árvore.
+   */
+  const {
+    montada: maisMontada,
+    abrindo: maisAbrindo,
+    saindo: maisSaindo,
+    ref: maisRef,
+  } = usePresenca<HTMLDivElement>(maisAberto);
+  /**
+   * O CARTÃO DE TRANSPORTE (C5, U09) — o ícone de pausar/retomar assenta
+   * uma vez por troca (o MESMO `assentaIcone` que já assenta o ícone da
+   * régua/alças ao abrir, nunca um giro no Play) e a taxa confirma pelo
+   * MESMO `.realce-texto` que a máquina do tempo já usa para a taxa
+   * (C3f, `HudDoAtlas.tsx`) — a mesma receita, sem uma segunda versão.
+   */
+  const vezesPausa = useRealce(paused);
+  const vezesRate = useRealce(rate);
   /**
    * O ⚙ AJUSTES é o único gatilho que não tem componente próprio, e ele
    * nasce aqui para caber nos DOIS lugares sem ser escrito duas vezes: na
@@ -591,16 +615,28 @@ export function BarraOuAlcas({
             style={{ order: 1 }}
             onClick={() => setMaisAberto((v) => !v)}
             aria-expanded={maisAberto}
+            aria-controls="barra-mais-ferramentas"
             aria-label={t('barra.maisAria')}
           >
             <span>{t('barra.mais')}</span>
           </button>
-          {maisAberto && (
-            <>
+          {maisMontada && (
+            <div
+              id="barra-mais-ferramentas"
+              ref={maisRef}
+              className={
+                'filme-mais' +
+                (maisAbrindo ? ' abrindo' : '') +
+                (maisSaindo ? ' saindo' : '')
+              }
+              // a saída já não recebe toque, foco nem leitor de tela — o
+              // mesmo contrato do `[inert]` da Sanfona (`usePresenca.ts`)
+              inert={maisSaindo}
+            >
               {portaDasCamadas}
               {seletorDeQualidade}
               {botaoDeAjustes}
-            </>
+            </div>
           )}
         </div>
       )}
@@ -636,7 +672,12 @@ export function BarraOuAlcas({
         onClick={togglePause}
         aria-label={t(paused ? 'barra.retomarAria' : 'barra.pausarAria')}
       >
-        <Icone nome={paused ? 'play' : 'pausa'} tamanho={16} />
+        <Icone
+          nome={paused ? 'play' : 'pausa'}
+          tamanho={16}
+          key={vezesPausa}
+          className={vezesPausa > 0 ? 'filme-transporte-icone-assenta' : undefined}
+        />
         <span>{t(paused ? 'barra.retomar' : 'barra.pausar')}</span>
       </button>
       <button
@@ -646,7 +687,9 @@ export function BarraOuAlcas({
         title={t('barra.velocidadeDica')}
       >
         <Icone nome="velocidade" tamanho={16} />
-        <span>{rate}×</span>
+        <span key={vezesRate} className={vezesRate > 0 ? 'realce-texto' : undefined}>
+          {rate}×
+        </span>
       </button>
       <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
         <Icone nome="galaxia" tamanho={16} />
