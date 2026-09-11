@@ -45,12 +45,26 @@ const FFMPEG = process.env.FFMPEG || '/opt/homebrew/bin/ffmpeg';
 const argApp = process.argv.find((a) => a.startsWith('--app='));
 const APP = argApp ? argApp.slice('--app='.length) : 'http://localhost:58697';
 const QUERY = 'atlas=1&q=performance&lang=pt-BR';
+// `--sequencia` troca as seis provas E1–E6 (paralelas, sem história entre
+// si) por UM fluxo contínuo só (C3, docs/PLANO-MOTION-UI.md linha 511:
+// "mostrar uma sequência contínua Buscar Saturno → abrir seção → copiar
+// link → mudar tempo"). Opt-in: sem a flag, o comportamento é o de
+// sempre, intocado — ver o `if (!SEQUENCIA)` no fim do arquivo.
+const SEQUENCIA = process.argv.includes('--sequencia');
 
 const SEL_CAMADAS_GATILHO = '[data-abre-dialogo="camadas"]';
 const SEL_AJUSTES_GATILHO = '[data-abre-dialogo="ajustes"]';
 const SEL_CAMADAS_PAINEL = '[data-dialogo="camadas"]';
 const SEL_AJUSTES_PAINEL = '[data-dialogo="ajustes"]';
 const SEL_SEG_QUALIDADE = `${SEL_AJUSTES_PAINEL} .ajustes-seg[aria-label="Qualidade"]`;
+const SEL_BUSCA_GATILHO = '[data-abre-dialogo="busca"]';
+const SEL_BUSCA_PAINEL = '[data-dialogo="busca"]';
+const SEL_FICHA_PAINEL = '[data-dialogo="ficha"]';
+// OS SEIS TOKENS DE DESLOCAMENTO (movimento.test.ts, `TOKENS_DE_MOVIMENTO`
+// + `--t-rapido`) que a gravação lenta da C3 multiplica por 6 — a mesma
+// lista, e não um subconjunto, porque a sequência inteira (busca, ficha,
+// sanfona, ajustes, tempo) usa as duas famílias de token.
+const TOKENS_LENTOS = ['--t-entrada', '--t-assenta', '--t-reflexo', '--t-folha', '--t-pressao', '--t-rapido'];
 
 // O CONTADOR DE QUADROS (para `esperarAssentar`) e O COLETOR DE EVENTOS
 // (para as tabelas `events`, replicando o que o auditor de 10/09 leu à
@@ -184,6 +198,34 @@ async function pressionarEscape(sessao) {
   };
   await sessao.send('Input.dispatchKeyEvent', { ...base, type: 'rawKeyDown' });
   await sessao.send('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+}
+
+/** teclas nomeadas que a sonda padrão não precisava (Tab/Enter/Backspace
+ *  do fluxo da C3, `--sequencia`) — mesmo par rawKeyDown/keyUp de
+ *  `pressionarEscape`, acima; só o código nativo muda por tecla. */
+async function pressionarTecla(sessao, nome) {
+  const TECLAS = { Tab: 9, Enter: 13, Backspace: 8 };
+  const codigo = TECLAS[nome];
+  if (!codigo) throw new Error(`pressionarTecla: tecla desconhecida "${nome}"`);
+  const base = { key: nome, code: nome, windowsVirtualKeyCode: codigo, nativeVirtualKeyCode: codigo };
+  await sessao.send('Input.dispatchKeyEvent', { ...base, type: 'rawKeyDown' });
+  await sessao.send('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+}
+
+/** digita tecla a tecla — mesmo molde de `abrirSessao().digitar`
+ *  (chrome.mjs): `text` é o que faz o Chrome inserir o caractere e
+ *  disparar o `input` que o React escuta. Esta sonda tem sessão própria
+ *  (comentário acima de `abrirSonda`) e por isso não herda o método. */
+async function digitarTexto(sessao, texto) {
+  for (const ch of texto) {
+    const vk = ch.toUpperCase().charCodeAt(0);
+    const base = {
+      key: ch, text: ch, unmodifiedText: ch,
+      windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk,
+    };
+    await sessao.send('Input.dispatchKeyEvent', { ...base, type: 'keyDown' });
+    await sessao.send('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+  }
 }
 
 /** dedo de verdade — mesmo molde de `arrastarNaFolha` em
@@ -363,9 +405,354 @@ function renderizarClipe(quadros, destinoFinal) {
   return destino;
 }
 
+/** UMA FOLHA DE CONTATO (grade de miniaturas) do clipe LENTO, para
+ *  inspeção humana sem abrir o vídeo — `fps` é CALCULADO, não fixo, para
+ *  que os 5×4 = 20 quadros do `tile` cubram o clipe INTEIRO: um `fps=4`
+ *  fixo (o exemplo do enunciado) só cobriria os primeiros 5 s de um
+ *  clipe de dezenas de segundos, que é exatamente o tamanho de uma
+ *  gravação ×6. A margem de +2 quadros evita que o `tile` fique um
+ *  quadro curto por arredondamento (ffmpeg não completa a grade sem
+ *  entrada suficiente). */
+function renderizarContato(clipe, duracaoSegundos, destinoFinal) {
+  const QUADROS_DA_GRADE = 20; // tile=5x4
+  const fps = (QUADROS_DA_GRADE + 2) / Math.max(duracaoSegundos, 1);
+  const destino = semSobrescrever(destinoFinal);
+  const r = spawnSync(FFMPEG, [
+    '-y', '-i', clipe,
+    '-vf', `fps=${fps.toFixed(4)},scale=480:-1,tile=5x4`,
+    '-frames:v', '1',
+    destino,
+  ], { stdio: 'pipe' });
+  if (r.status !== 0) {
+    throw new Error(`ffmpeg (folha de contato) falhou (${r.status}): ${(r.stderr || '').toString().slice(-800)}`);
+  }
+  return destino;
+}
+
+/**
+ * `--sequencia` (C3, docs/PLANO-MOTION-UI.md linha 511) — UM fluxo
+ * contínuo (busca → ficha → seção → copiar link → tempo) em vez das seis
+ * provas isoladas de sempre, gravado duas vezes: em velocidade normal (o
+ * clipe de aceite, e a corrida que registra as checagens de DOM) e em
+ * câmera lenta (os seis tokens de deslocamento ×6 em `.hud-root`, só
+ * para o olho humano inspecionar quadro a quadro — os mesmos gestos não
+ * mudam o que fica verdadeiro no DOM, só a velocidade da transição).
+ * O MESMO `executarFluxo` roda as duas vezes; só `fatorEspera` muda, para
+ * as esperas acompanharem as transições ×6 sem apressar a segunda
+ * gravação nem inventar um segundo fluxo para manter igual ao primeiro.
+ */
+async function rodarSequencia() {
+  mkdirSync(CAPTURAS, { recursive: true });
+  const pastaNormal = resolve(tmpdir(), `sonda-motion-seq-${process.pid}`);
+  const pastaLenta = resolve(tmpdir(), `sonda-motion-seq-lenta-${process.pid}`);
+  let sessao = null;
+  try {
+    const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
+    const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
+
+    sessao = await abrirSonda({ janela: '1440x900', prefixo: 'sonda-motion-seq' });
+    await sessao.send('Emulation.setDeviceMetricsOverride', {
+      width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+    });
+    // SEM ISTO o Chrome recusa `navigator.clipboard.writeText` em
+    // automação — "Copiar link deste instante" falharia sempre, e o anel
+    // de sucesso (`.realce-anel`) nunca acenderia para a sonda ver.
+    await sessao.send('Browser.grantPermissions', {
+      origin: APP,
+      permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'],
+    });
+    const versaoChrome = await sessao.send('Browser.getVersion');
+
+    const carregarApp = async () => {
+      let assentou = null;
+      let ultimoErro = null;
+      for (let tentativa = 1; tentativa <= 3 && !assentou; tentativa++) {
+        try {
+          assentou = await sessao.ir(QUERY);
+        } catch (e) {
+          ultimoErro = e;
+          process.stdout.write(`tentativa ${tentativa}/3 de carregar o app falhou: ${e.message}\n`);
+          await dorme(500);
+        }
+      }
+      if (!assentou) throw new Error(`o app não carregou em 3 tentativas (${ultimoErro?.message})`);
+      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_GATILHO}'))`, 10000);
+      await pularTour(sessao);
+      await dorme(300);
+    };
+
+    await carregarApp();
+
+    // OS SEIS TOKENS ×6 (só na segunda gravação) — lidos do COMPUTADO em
+    // `.hud-root` e escritos de volta por `style` (especificidade maior
+    // que a declaração de `:root`, então vence sem tocar no CSS). Nunca
+    // hardcoded: os valores-base acabaram de mudar de mão nesta mesma
+    // rodada (C3e, `--t-pressao` deixou de ser `transform` e virou
+    // `scale`, mas o NÚMERO do token não mudou — mesmo assim, ler é mais
+    // barato que confiar em memorizar).
+    const desacelerar = () => sessao.js(`(() => {
+      const raiz = document.querySelector('.hud-root') || document.documentElement;
+      const cs = getComputedStyle(raiz);
+      const tokens = ${JSON.stringify(TOKENS_LENTOS)};
+      for (const tok of tokens) {
+        const atual = cs.getPropertyValue(tok).trim();
+        const n = Number.parseFloat(atual);
+        if (Number.isNaN(n)) continue;
+        const unidade = atual.slice(String(n).length) || 'ms';
+        raiz.style.setProperty(tok, (n * 6) + unidade);
+      }
+      return true;
+    })()`);
+
+    const checagens = {};
+
+    /**
+     * O FLUXO ÚNICO (C3) — as seis paradas do enunciado, na ordem. Só as
+     * esperas escalam com `fatorEspera` (1× na gravação normal, 6× na
+     * lenta); os cliques e a digitação não precisam de régua própria
+     * porque `esperarPor` já espera o DOM confirmar — o que muda de
+     * velocidade é só quanto tempo aquele poll pode levar antes do teto.
+     * `registrar` grava em `checagens` só na corrida normal: a lenta
+     * repete os MESMOS gestos (é por isso que existe), então checar de
+     * novo só re-confirmaria o que a primeira já viu.
+     */
+    const executarFluxo = async ({ fatorEspera, registrar }) => {
+      const pausa = (ms) => dorme(ms * fatorEspera);
+      const teto = (ms) => ms * fatorEspera + 2000;
+      const guardar = (chave, valor) => { if (registrar) checagens[chave] = valor; };
+
+      // 1) BUSCAR SATURNO — "sat" mostra resultado de verdade, "zzqq"
+      // mostra o vazio (uma vez, per enunciado), "saturno" + Enter
+      // confirma e abre a ficha.
+      await clicarReal(sessao, SEL_BUSCA_GATILHO);
+      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_BUSCA_PAINEL}'))`, teto(3000));
+      await digitarTexto(sessao, 'sat');
+      await esperarPor(
+        { js: sessao.js },
+        `document.querySelector('${SEL_BUSCA_PAINEL}')?.getAttribute('data-conteudo') === 'resultados'`,
+        teto(2000)
+      );
+      for (let i = 0; i < 3; i++) await pressionarTecla(sessao, 'Backspace');
+      await esperarPor(
+        { js: sessao.js },
+        `document.querySelector('${SEL_BUSCA_PAINEL}')?.getAttribute('data-conteudo') === 'destinos'`,
+        teto(2000)
+      );
+      await digitarTexto(sessao, 'zzqq');
+      await esperarPor(
+        { js: sessao.js },
+        `document.querySelector('${SEL_BUSCA_PAINEL}')?.getAttribute('data-conteudo') === 'vazio'`,
+        teto(2000)
+      );
+      guardar('buscaSemResultado', true);
+      for (let i = 0; i < 4; i++) await pressionarTecla(sessao, 'Backspace');
+      await esperarPor(
+        { js: sessao.js },
+        `document.querySelector('${SEL_BUSCA_PAINEL}')?.getAttribute('data-conteudo') === 'destinos'`,
+        teto(2000)
+      );
+      await digitarTexto(sessao, 'saturno');
+      await esperarPor(
+        { js: sessao.js },
+        `document.querySelector('${SEL_BUSCA_PAINEL}')?.getAttribute('data-conteudo') === 'resultados'`,
+        teto(2000)
+      );
+      await pausa(300);
+      await pressionarTecla(sessao, 'Enter');
+      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_FICHA_PAINEL}'))`, teto(5000));
+      await pausa(300);
+
+      // 2) ESCOLHER JÚPITER DA MESMA FORMA — troca de verdade: é aqui que
+      // o nome e o trecho de contexto confirmam com `.realce-texto`
+      // (a primeira escolha, acima, nasce sem "de onde trocar").
+      await clicarReal(sessao, SEL_BUSCA_GATILHO);
+      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_BUSCA_PAINEL}'))`, teto(3000));
+      await digitarTexto(sessao, 'jupiter');
+      await esperarPor(
+        { js: sessao.js },
+        `document.querySelector('${SEL_BUSCA_PAINEL}')?.getAttribute('data-conteudo') === 'resultados'`,
+        teto(2000)
+      );
+      await pausa(300);
+      await pressionarTecla(sessao, 'Enter');
+      await esperarPor(
+        { js: sessao.js },
+        `document.querySelector('.atlas-ficha-nome > span')?.className.includes('realce-texto') === true`,
+        teto(5000)
+      );
+      guardar('nomeRealceTexto', await sessao.js(
+        `document.querySelector('.atlas-ficha-nome > span')?.className.includes('realce-texto') ?? null`
+      ));
+      guardar('contextoRealceTexto', await sessao.js(
+        `document.querySelector('.atlas-contexto-alvo > span')?.className.includes('realce-texto') ?? null`
+      ));
+
+      // 3) ABRIR UMA SEÇÃO FECHADA DA FICHA — a seta gira 0→90°; o Tab
+      // (6, "o teclado também funciona") entra aqui, sempre, mesmo se
+      // por acaso não houver seção fechada para abrir.
+      const idSecaoFechada = await sessao.js(
+        `document.querySelector('.atlas-ficha-titulo button[aria-expanded="false"]')?.getAttribute('aria-controls') ?? null`
+      );
+      if (idSecaoFechada) {
+        await clicarReal(sessao, '.atlas-ficha-titulo button[aria-expanded="false"]');
+      }
+      await pressionarTecla(sessao, 'Tab');
+      if (idSecaoFechada) {
+        await esperarPor(
+          { js: sessao.js },
+          `document.querySelector('.atlas-ficha-titulo button[aria-controls="${idSecaoFechada}"]')?.getAttribute('aria-expanded') === 'true'`,
+          teto(3000)
+        );
+        await pausa(200);
+        guardar('secaoAberta', await sessao.js(`(() => {
+          const b = document.querySelector('.atlas-ficha-titulo button[aria-controls="${idSecaoFechada}"]');
+          if (!b) return null;
+          const seta = b.querySelector('.atlas-ficha-seta');
+          return { expandida: b.getAttribute('aria-expanded'), rotate: seta ? getComputedStyle(seta).rotate : null };
+        })()`));
+      } else {
+        guardar('secaoAberta', null);
+      }
+
+      // 4) AJUSTES → "Copiar link deste instante" — sucesso acende o
+      // anel. `.ajustes-acoes > .ajustes-copiar` (filho DIRETO) e não só
+      // `.ajustes-copiar`: "Rever o convite" é a MESMA classe, mas mora
+      // um nível mais fundo (`.ajustes-item.ajustes-acao`), e no Atlas
+      // (`onReverConvite` também vive ali) o `querySelector` acharia ele
+      // primeiro.
+      await clicarReal(sessao, SEL_AJUSTES_GATILHO);
+      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_AJUSTES_PAINEL}'))`, teto(3000));
+      await pausa(200);
+      await clicarReal(sessao, '.ajustes-acoes > .ajustes-copiar');
+      await esperarPor(
+        { js: sessao.js },
+        `document.querySelector('.ajustes-copiar .realce-anel') !== null`,
+        teto(3000)
+      );
+      guardar('copiarAnel', await sessao.js(`document.querySelector('.ajustes-copiar .realce-anel') !== null`));
+      guardar('copiarEstado', await sessao.js(
+        `document.querySelector('.ajustes-copiar-estado')?.textContent ?? null`
+      ));
+
+      // 5) FECHAR COM ESC; PASSAR O MOUSE NA MÁQUINA DO TEMPO, AVANÇAR,
+      // TROCAR A VELOCIDADE E VOLTAR AO VIVO (se o botão existir).
+      const dataAntes = await sessao.js(
+        `document.querySelector('.atlas-tempo-data')?.getBoundingClientRect().top ?? null`
+      );
+      await pressionarEscape(sessao);
+      await esperarPor(
+        { js: sessao.js },
+        `document.querySelector('${SEL_AJUSTES_PAINEL}') === null`,
+        teto(3000)
+      );
+      const linhaDoTempo = await retanguloDe(sessao, '.atlas-tempo');
+      if (linhaDoTempo) {
+        await moverMouse(sessao, linhaDoTempo.x + linhaDoTempo.width / 2, linhaDoTempo.y + linhaDoTempo.height / 2);
+        await esperarPor(
+          { js: sessao.js },
+          `getComputedStyle(document.querySelector('.atlas-tempo-botoes')).opacity === '1'`,
+          teto(3000)
+        );
+      }
+      const dataDepois = await sessao.js(
+        `document.querySelector('.atlas-tempo-data')?.getBoundingClientRect().top ?? null`
+      );
+      guardar('linhaDaData', { antes: dataAntes, depois: dataDepois });
+
+      await clicarReal(sessao, '[aria-label="Avançar no tempo"]');
+      await esperarPor(
+        { js: sessao.js },
+        `document.querySelector('.atlas-tempo-nudge-futuro') !== null`,
+        teto(3000)
+      );
+      guardar('avancarNudge', await sessao.js(`document.querySelector('.atlas-tempo-nudge-futuro') !== null`));
+
+      await clicarReal(sessao, '.atlas-tempo-taxa');
+      await pausa(300);
+
+      const aoVivoExiste = await sessao.js(`document.querySelector('[aria-label="Seguir o tempo real"]') !== null`);
+      if (aoVivoExiste) {
+        await clicarReal(sessao, '[aria-label="Seguir o tempo real"]');
+        await pausa(300);
+      }
+    };
+
+    // (a) VELOCIDADE NORMAL — o clipe de aceite, e a corrida que registra
+    // as checagens de DOM.
+    const quadrosNormais = await gravarClipe(
+      sessao,
+      { largura: 1440, altura: 900, pastaQuadros: pastaNormal },
+      () => executarFluxo({ fatorEspera: 1, registrar: true })
+    );
+    const clipeNormal = renderizarClipe(quadrosNormais, resolve(CAPTURAS, `motion-c3-sequencia-${commit}.mp4`));
+
+    // (b) CÂMERA LENTA — reabre do zero (o estado de busca/ficha/ajustes
+    // do passo anterior não importa aqui) e só ENTÃO desacelera os seis
+    // tokens: desacelerar ANTES da carga trocaria também a entrada do
+    // painel inicial, que ninguém pediu para ver lenta.
+    await carregarApp();
+    await desacelerar();
+    const quadrosLentos = await gravarClipe(
+      sessao,
+      { largura: 1440, altura: 900, pastaQuadros: pastaLenta },
+      () => executarFluxo({ fatorEspera: 6, registrar: false })
+    );
+    const clipeLento = renderizarClipe(
+      quadrosLentos,
+      resolve(CAPTURAS, `motion-c3-sequencia-lenta-${commit}.mp4`)
+    );
+    const duracaoLenta = quadrosLentos[quadrosLentos.length - 1].ts - quadrosLentos[0].ts;
+    const folha = renderizarContato(
+      clipeLento,
+      duracaoLenta,
+      resolve(CAPTURAS, `motion-c3-folha-${commit}.png`)
+    );
+
+    const relatorio = {
+      meta: {
+        commit, dirty, chrome: versaoChrome.product, app: APP, query: QUERY,
+        geradoEm: new Date().toISOString(),
+      },
+      checagens,
+      clipeNormal, clipeLento, folha,
+    };
+    const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-c3-sequencia-${commit}.json`));
+    writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
+
+    const linhas = [
+      `=== sonda-motion c3 sequência — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} ===`,
+      `clipe normal: ${clipeNormal} (${quadrosNormais.length} quadros)`,
+      `clipe lento: ${clipeLento} (${quadrosLentos.length} quadros, ${duracaoLenta.toFixed(1)}s)`,
+      `folha de contato: ${folha}`,
+      `busca "zzqq" mostrou vazio: ${checagens.buscaSemResultado === true}`,
+      `nome (Saturno→Júpiter) ganhou .realce-texto: ${checagens.nomeRealceTexto === true}`,
+      `trecho de contexto ganhou .realce-texto: ${checagens.contextoRealceTexto === true}`,
+      `seção da ficha: aria-expanded=${checagens.secaoAberta?.expandida ?? '?'} rotate=${checagens.secaoAberta?.rotate ?? '?'}`,
+      `copiar link: anel=${checagens.copiarAnel === true} estado="${checagens.copiarEstado ?? ''}"`,
+      `"Avançar no tempo" ganhou a classe de nudge: ${checagens.avancarNudge === true}`,
+      `linha da data: topo ${checagens.linhaDaData?.antes ?? '?'} → ${checagens.linhaDaData?.depois ?? '?'}`,
+      `JSON: ${destinoJson}`,
+    ];
+    process.stdout.write(`${linhas.join('\n')}\n`);
+  } catch (erro) {
+    process.stdout.write(`BLOCKED: ${erro.stack || erro.message}\n`);
+    process.exitCode = 1;
+  } finally {
+    if (sessao) await sessao.fechar();
+    rmSync(pastaNormal, { recursive: true, force: true });
+    rmSync(pastaLenta, { recursive: true, force: true });
+  }
+}
+
 // ============================================================
 // A CORRIDA
 // ============================================================
+// SEM REINDENTAR o bloco padrão abaixo (C3, `--sequencia`): é a corrida
+// INTEIRA de sempre, só posta atrás de `if (!SEQUENCIA)` — reindentar
+// ~330 linhas por estética arriscava mais erro de transcrição do que
+// resolvia, e o enunciado pede o comportamento de sempre "exatamente
+// como está", não o arquivo mais bonito.
+if (!SEQUENCIA) {
 mkdirSync(CAPTURAS, { recursive: true });
 const pastaQuadrosMesa = resolve(tmpdir(), `sonda-motion-mesa-${process.pid}`);
 const pastaQuadrosToque = resolve(tmpdir(), `sonda-motion-toque-${process.pid}`);
@@ -697,4 +1084,7 @@ try {
 } finally {
   rmSync(pastaQuadrosMesa, { recursive: true, force: true });
   rmSync(pastaQuadrosToque, { recursive: true, force: true });
+}
+} else {
+  await rodarSequencia();
 }
