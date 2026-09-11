@@ -439,6 +439,31 @@ para a lista dele: a sonda (`scripts/visual/sonda-motion.mjs`, com e sem
 `--sequencia`). Rodada encerrada por ordem dele: *"fecha a rodada"*. A
 próxima frente, quando ele pedir, é o C4 da seção 12. Servidor parado.
 
+**11/09 (manhã, rodada das PENDÊNCIAS + C4 a C7 — registro completo em
+`docs/PLANO-MOTION-UI.md` §12.10).** Palavras dele para abrir: *"vamos
+continuar, analise o historifo do git para entender as ultimas
+implementacoes antes de continuar"*, com três pendências antes do C4.
+Feito e commitado (17 commits, `2375a27` a `7164947`, mais este registro): a sanfona volta a
+cortar enquanto recolhe; ligar "reduzir movimento" ou redimensionar no
+meio de um movimento assenta tudo na hora; a linha do Tempo não parte mais
+de um lugar velho depois de um resize; a "folha presa" da sonda não se
+repete (era um Chrome sem quadros — a sonda agora distingue); a folha do
+celular guiada pela alça (C4); o C5 inteiro (abertura, filme, céu, dicas,
+convites, qualidade, voo livre); o protótipo WebGL do C6 atrás de
+`?contorno=webgl`. Vídeos e fotos em `capturas/motion-*` (lista no §12.10).
+`npm run done` verde (102 arquivos, 3.022 testes, 1 ignorado). **Esperam
+por ele:** a decisão sobre o halo WebGL (foto lado a lado em
+`capturas/motion-c6-lado-a-lado-e433f23-v2.png`; custa ~2,5 ms de GPU por
+quadro enquanto dura) e o olho no app — ele avisou que tem retorno sobre a
+implementação. **Pendente para a próxima conversa:** o C7 ficou parcial —
+a matriz acusou falha no F1 da folha (expandir pela alça) em três tamanhos
+de tela, sem diagnóstico, e no I3c das interrupções a 1440×900, que parece
+artefato da amostra de +10 ms; faltam o Edge e os cinco juízes. Não
+verificado: telefone de verdade, Safari, Firefox. Continuam abertos 223,
+224 e 225. Rodada encerrada nas palavras dele: *"prepare para uma nova
+sessao. essa já está com o contexto quase zerado, adianto que terei
+feedbacks para dar sobre a sua implementacao"*. Servidores parados.
+
 
 
 
