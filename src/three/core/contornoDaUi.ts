@@ -1,40 +1,40 @@
-// Serve: chão — a posição, o deslocamento inicial e o envelope de tempo do halo são número puro; o passe em si só roda enquanto uma abertura está viva
+// Serve: chão — a posição, o deslocamento inicial e o envelope de tempo do halo são número puro; a chamada a `post` em si só roda enquanto uma abertura está viva
 // ============================================================
-// O HALO DE CONTORNO WEBGL (C6, protótipo B) — docs/PLANO-MOTION-UI.md
-// §7 e §12.5. Um brilho âmbar curto no contorno EXTERIOR do painel da
-// mesa ao abrir, desenhado pelo renderer que já existe (`Engine`/
-// `Post`), só sob `?contorno=webgl`. O lado A, sempre ativo nos dois
-// modos, é o reflexo CSS (`.hud-cabecalho::after`/`reflexoDeAbertura`,
-// `01-base.css`) — este módulo nunca o toca.
+// O HALO DE CONTORNO (C6, ADOTADO) — docs/PLANO-MOTION-UI.md §7 e
+// §12.5. Um brilho âmbar curto no contorno EXTERIOR do painel da mesa
+// ao abrir. O SHADER vive fundido no `FILM_SHADER` de `Post`
+// (`core/post.ts`, `acenderHalo`/`apagarHalo`) — zero passe extra; este
+// módulo só carrega a matemática pura (posição, envelope de tempo) e o
+// ciclo de vida de UMA abertura de cada vez. `?contorno=css` desliga
+// este lado B e força o lado A, sempre disponível: o reflexo CSS
+// (`.hud-cabecalho::after`/`reflexoDeAbertura`, `01-base.css`) — este
+// módulo nunca o toca.
 //
-// ISOLADO DE PROPÓSITO (aceite do C6: "se a diferença não for
-// perceptível, remover o protótipo descartado e manter CSS"): só este
-// arquivo, os métodos `Director.*Contorno`, `relogio` em
-// movimentoDaGaveta.ts e algumas linhas marcadas "C6" em App.tsx sabem
-// que ele existe. Descartar B é apagar os quatro.
+// ISOLADO DE PROPÓSITO: só este arquivo, os métodos `Director.*Contorno`,
+// `relogio` em movimentoDaGaveta.ts e algumas linhas marcadas "C6" em
+// App.tsx e post.ts sabem que ele existe.
 //
-// NADA RODA EM REPOUSO (regra 4 da seção 7): `desenhar` sai na
-// primeira linha sem um `acender` pendente, sem tocar o renderer. UMA
-// INTENÇÃO DE CADA VEZ (regra 3): `acender` sempre RETARGETA — a
-// próxima abertura substitui a anterior na hora, nunca enfileira.
+// NADA RODA EM REPOUSO (regra 4 da seção 7): sem um `acender` pendente,
+// `desenhar` avisa `post.apagarHalo()` UMA VEZ e nunca mais enquanto
+// seguir ocioso (a flag abaixo) — o caminho ocioso continua uma função
+// pura, sem escrever num uniform a cada quadro. UMA INTENÇÃO DE CADA VEZ
+// (regra 3): `acender` sempre RETARGETA — a próxima abertura substitui a
+// anterior na hora, nunca enfileira.
 // ============================================================
 import * as THREE from 'three';
+import type { ParametrosDoHalo } from './post';
 
 /** `--acento` (01-base.css), #e2b872, como float 0..1 — `THREE.Vector3`
  *  crua, e não `THREE.Color`: `Color.setHex` respeita o gerenciamento
  *  de cor do three (converte sRGB → linear de trabalho), e este valor
- *  é ESCRITO DIRETO no framebuffer final, depois do OutputPass da cena
- *  científica — sem tonemapping, sem passar pela cadeia de novo. O hex
- *  já É o valor de exibição; convertê-lo agora seria a dupla conversão
- *  que a régua do C6 proíbe. */
+ *  é ESCRITO DIRETO no framebuffer final, dentro do `FILM_SHADER` —
+ *  depois do OutputPass da cena científica, sem passar pela cadeia de
+ *  novo. O hex já É o valor de exibição; convertê-lo agora seria a
+ *  dupla conversão que a régua do C6 proíbe. */
 const COR_ACENTO = new THREE.Vector3(0xe2 / 0xff, 0xb8 / 0xff, 0x72 / 0xff);
 
 /** σ da gaussiana do brilho, em px de CSS (seção 7: "região pequena"). */
 const SIGMA_PX = 12;
-
-/** margem do quad ALÉM do retângulo do painel — só para cobrir a
- *  dispersão; 4σ já é <0,001 do pico, então nada visível fica de fora. */
-const MARGEM_DO_QUAD_PX = SIGMA_PX * 4;
 
 /** sobe em 60 ms e some por completo aos 400 ms — o teto que a seção 7
  *  pede ("duração máxima inicial de 400 ms"). */
@@ -114,113 +114,25 @@ export interface ParametrosDoContorno {
   relogio: Animation;
 }
 
-const VERTEX_SHADER = /* glsl */ `
-  void main() {
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
-
-const FRAGMENT_SHADER = /* glsl */ `
-  uniform vec4 uRetangulo; // x, y, largura, altura — px de CSS, origem no canto de cima à esquerda
-  uniform vec2 uResolucao; // px de CSS da janela
-  uniform float uPixelRatio;
-  uniform float uSigma;
-  uniform vec3 uCor;
-  uniform float uIntensidade;
-  uniform float uProgressoDoTempo; // 0..1 ao longo do efeito inteiro (400 ms)
-
-  // SDF de um retângulo alinhado aos eixos (Inigo Quilez) — negativo
-  // dentro, zero na borda, positivo fora.
-  float distanciaAoRetangulo(vec2 p, vec2 meio) {
-    vec2 d = abs(p) - meio;
-    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
-  }
-
-  void main() {
-    // gl_FragCoord é SEMPRE px de FRAMEBUFFER, origem embaixo à
-    // esquerda — ÷ pixelRatio volta a px de CSS, e o flip em Y devolve
-    // a origem de cima à esquerda, a mesma do DOMRect que alimenta
-    // uRetangulo (caixaDeRepouso, App.tsx).
-    vec2 px = gl_FragCoord.xy / uPixelRatio;
-    px.y = uResolucao.y - px.y;
-
-    vec2 meio = uRetangulo.zw * 0.5;
-    vec2 centro = uRetangulo.xy + meio;
-    float d = distanciaAoRetangulo(px - centro, meio);
-
-    // SÓ FORA (regra 5/item 2 da seção 7): o DOM opaco já cobre o
-    // interior, então a luz só existe onde a página não pintou nada —
-    // nunca por cima do texto.
-    float base = step(0.0, d) * exp(-pow(max(d, 0.0) / uSigma, 2.0));
-
-    // A BORDA DE CIMA inteira, esmaecendo mais depressa que o envelope
-    // geral — um lampejo que já não está lá quando o ponto quente
-    // ainda desce a borda esquerda.
-    float pesoDoTopo = exp(-pow((px.y - uRetangulo.y) / uSigma, 2.0));
-    float esmaecimentoDoTopo = exp(-uProgressoDoTempo * 6.0);
-
-    // O PONTO QUENTE na borda ESQUERDA — a de FRENTE, porque o painel
-    // entra da direita e é ela quem chega primeiro. Desce do topo à
-    // base ao longo do próprio efeito; largura ~25% da altura do
-    // painel.
-    float alturaDoQuente = mix(uRetangulo.y, uRetangulo.y + uRetangulo.w, uProgressoDoTempo);
-    float larguraDoQuente = max(uRetangulo.w * 0.25, 1.0);
-    float pesoDoQuente =
-      exp(-pow((px.x - uRetangulo.x) / uSigma, 2.0)) *
-      exp(-pow((px.y - alturaDoQuente) / larguraDoQuente, 2.0));
-
-    // OS REFORÇOS MULTIPLICAM A BASE, nunca somam soltos: presos à
-    // MESMA queda com a distância real ao retângulo — um termo aditivo
-    // que dependesse só de X ou só de Y vazaria reto ao longo do eixo
-    // todo, bem além de onde o painel de fato está.
-    float reforco = 1.0 + pesoDoTopo * esmaecimentoDoTopo + 1.6 * pesoDoQuente;
-
-    gl_FragColor = vec4(uCor * uIntensidade * base * reforco, 1.0);
-  }
-`;
+/** o contrato mínimo que `desenhar` precisa de `Post` — a mesma dupla
+ *  de métodos que `core/post.ts` expõe de verdade. */
+export interface AlvoDoHalo {
+  acenderHalo(p: ParametrosDoHalo): void;
+  apagarHalo(): void;
+}
 
 /**
- * O PASSE DECORATIVO — cena, câmera e quad PRÓPRIOS, fora da `Scene`
- * científica: é tinta 2D por cima do quadro já pronto, não um objeto
- * disputando luz/fog com o resto do mundo (regra 1 da seção 7 fala de
- * não abrir OUTRO CONTEXTO nem uma cena 3D por menu — isto reaproveita
- * o mesmo `WebGLRenderer`/loop, e é UM passe, não uma cena por painel).
+ * O CICLO DE VIDA DE UMA ABERTURA — sem cena, sem câmera, sem material
+ * própria: o desenho é o `FILM_SHADER` de `Post`, e este objeto só
+ * decide QUANDO e COM QUE VALORES chamá-lo (regra 1 da seção 7: não
+ * abrir outro contexto nem uma cena 3D por menu).
  */
 export class ContornoDaUi {
   private estado: ParametrosDoContorno | null = null;
-  private readonly cena = new THREE.Scene();
-  private readonly camera = new THREE.OrthographicCamera(0, 1, 0, 1, 0.1, 10);
-  private readonly geometria = new THREE.PlaneGeometry(1, 1);
-  private readonly material: THREE.ShaderMaterial;
-  private readonly malha: THREE.Mesh;
-
-  constructor() {
-    this.camera.position.z = 1;
-    this.material = new THREE.ShaderMaterial({
-      transparent: true,
-      // A câmera inverte o Y (topo 0, base = altura, como o CSS), e o
-      // quad chegaria à tela com a volta trocada — sem os dois lados, a
-      // face da frente seria descartada e o halo nunca apareceria.
-      side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
-      depthTest: false,
-      depthWrite: false,
-      toneMapped: false,
-      uniforms: {
-        uRetangulo: { value: new THREE.Vector4() },
-        uResolucao: { value: new THREE.Vector2(1, 1) },
-        uPixelRatio: { value: 1 },
-        uSigma: { value: SIGMA_PX },
-        uCor: { value: COR_ACENTO },
-        uIntensidade: { value: 0 },
-        uProgressoDoTempo: { value: 0 },
-      },
-      vertexShader: VERTEX_SHADER,
-      fragmentShader: FRAGMENT_SHADER,
-    });
-    this.malha = new THREE.Mesh(this.geometria, this.material);
-    this.cena.add(this.malha);
-  }
+  /** já avisamos `post.apagarHalo()` desde que a última abertura acabou?
+   *  É esta flag que mantém o caminho ocioso uma chamada só, não uma a
+   *  cada quadro. */
+  private jaApagado = true;
 
   /** LIGA/RETARGETA — uma nova abertura sempre substitui a anterior
    *  (regra 3 da seção 7: "não enfileirar rastros luminosos"). */
@@ -249,14 +161,17 @@ export class ContornoDaUi {
   /**
    * DESENHA, se houver o que desenhar — chamada todo quadro, sem
    * condição nenhuma do lado de fora (`Director.tick`, logo depois de
-   * `this.post.render(time)`, o composite científico já pronto). Sai
-   * na PRIMEIRA linha em repouso: nenhuma leitura de uniform, nenhum
-   * `renderer.render` — é isso que cumpre "fora do efeito, nenhum
-   * passe decorativo executado" (regra 4 da seção 7).
+   * `this.post.render(time)`, o composite científico já pronto). Fora
+   * de uma abertura viva, avisa `post.apagarHalo()` só na PRIMEIRA vez
+   * (a flag `jaApagado`) — é isso que cumpre "fora do efeito, nenhum
+   * uniform escrito por quadro" (regra 4 da seção 7).
    */
-  desenhar(renderer: THREE.WebGLRenderer): void {
+  desenhar(post: AlvoDoHalo): void {
     const estado = this.estado;
-    if (!estado) return;
+    if (!estado) {
+      this.sinalizarApagado(post);
+      return;
+    }
     // O EFEITO ACABOU: o relógio chegou aos 400 ms, ou foi terminado por
     // "reduzir movimento"/resize (`assentarTudo`) — `finished`, não mais
     // `running`. OU A INTENÇÃO MUDOU (§7, regra 3): a entrada que o halo
@@ -269,49 +184,32 @@ export class ContornoDaUi {
       estado.animacao.playState === 'idle'
     ) {
       this.apagar();
+      this.sinalizarApagado(post);
       return;
     }
     const progress = estado.animacao.effect?.getComputedTiming().progress ?? 1;
     const x = posicaoXDoHalo(estado.retangulo.x, estado.deslocamentoInicialPx, progress);
     const { y, width, height } = estado.retangulo;
 
-    const larguraCss = window.innerWidth;
-    const alturaCss = window.innerHeight;
-    const pixelRatio = renderer.getPixelRatio();
+    this.jaApagado = false;
+    post.acenderHalo({
+      retangulo: { x, y, largura: width, altura: height },
+      intensidade: PICO_DE_INTENSIDADE * envelopeDoTempo(decorridoMs),
+      progresso: Math.min(1, decorridoMs / DURACAO_DO_HALO_MS),
+      sigma: SIGMA_PX,
+      cor: COR_ACENTO,
+    });
+  }
 
-    // A CÂMERA EM PX DE CSS: left/top ficam em 0 (o quad já nasce na
-    // posição certa via `malha.position`); só a janela muda de quadro
-    // a quadro, então só right/bottom precisam de `updateProjectionMatrix`.
-    this.camera.right = larguraCss;
-    this.camera.bottom = alturaCss;
-    this.camera.updateProjectionMatrix();
-
-    this.malha.position.set(x + width / 2, y + height / 2, 0);
-    this.malha.scale.set(width + MARGEM_DO_QUAD_PX * 2, height + MARGEM_DO_QUAD_PX * 2, 1);
-
-    const u = this.material.uniforms;
-    (u.uRetangulo.value as THREE.Vector4).set(x, y, width, height);
-    (u.uResolucao.value as THREE.Vector2).set(larguraCss, alturaCss);
-    u.uPixelRatio.value = pixelRatio;
-    u.uIntensidade.value = PICO_DE_INTENSIDADE * envelopeDoTempo(decorridoMs);
-    u.uProgressoDoTempo.value = Math.min(1, decorridoMs / DURACAO_DO_HALO_MS);
-
-    // AUTOCLEAR FORA enquanto dura o passe: o quadro científico já está
-    // pronto no framebuffer (renderTarget null, o próprio composite do
-    // Post termina ali) e este é só tinta ADITIVA por cima. Restaurado
-    // na mesma função, síncrono — nada mais lê o renderer no meio.
-    const autoClearAntes = renderer.autoClear;
-    renderer.autoClear = false;
-    renderer.setRenderTarget(null);
-    renderer.render(this.cena, this.camera);
-    renderer.autoClear = autoClearAntes;
+  private sinalizarApagado(post: AlvoDoHalo): void {
+    if (this.jaApagado) return;
+    this.jaApagado = true;
+    post.apagarHalo();
   }
 
   /** descarte explícito (regra 4 da seção 7) — chamado por
    *  `Director.dispose()`, junto dos outros passes. */
   dispose(): void {
     this.apagar();
-    this.geometria.dispose();
-    this.material.dispose();
   }
 }

@@ -22,6 +22,7 @@ import { AMOSTRAS_DO_ALVO, AMOSTRAS_POR_TIER, MARGEM_DO_CAMPO, criarSomaComRecor
 
 const post = readFileSync(new URL('./post.ts', import.meta.url), 'utf8');
 const director = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+const dustShaders = readFileSync(new URL('../shaders/dustShaders.ts', import.meta.url), 'utf8');
 
 describe('a faixa de guarda do cobertor do campo (item 70)', () => {
   it('é MAIOR QUE ZERO — em zero o céu volta a apagar num passo de câmera', () => {
@@ -231,5 +232,19 @@ describe('a porta `?nobloom=1` (item 72)', () => {
     const corpo = setter.slice(0, setter.indexOf('\n  }'));
     expect(corpo).toMatch(/this\.bloom\.enabled = ligado/);
     expect(corpo).toMatch(/this\.claraoDoCampo\.enabled = ligado/);
+  });
+});
+
+describe('o halo de contorno fundido no FILM_SHADER (C6)', () => {
+  it('o branch por uniform existe — em repouso (uHalo == 0) o custo é zero', () => {
+    // A FUSÃO (zero passe extra) só vale o preço que promete se o
+    // shader sair pela porta de guarda ANTES de gastar uma amostra ou
+    // uma exponencial com o halo apagado.
+    expect(dustShaders).toMatch(/if \(uHalo > 0\.0\) \{/);
+  });
+
+  it('`Post` expõe acenderHalo/apagarHalo escrevendo nos uniforms do film', () => {
+    expect(post).toMatch(/acenderHalo\(p: ParametrosDoHalo\)/);
+    expect(post).toMatch(/apagarHalo\(\)/);
   });
 });

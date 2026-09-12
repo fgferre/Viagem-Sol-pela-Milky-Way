@@ -1,19 +1,16 @@
-// Serve: chão — a posição do halo, o N lido do transform e o envelope de tempo são número puro, e o runner (node) prova os três sem WebGL, mais a regra de parar pelo relógio
+// Serve: chão — a posição do halo, o N lido do transform e o envelope de tempo são número puro; a seção 4 prova o ciclo de vida sem GPU, com um `Post` de mentira
 // ============================================================
-// O HALO DE CONTORNO (C6, protótipo B) — SÓ A MATEMÁTICA PURA. A cena,
-// a câmera e o material do `ContornoDaUi` pedem `THREE.WebGLRenderer`
-// para valer alguma coisa (nem para CONSTRUIR: `THREE.Scene`/
-// `THREE.OrthographicCamera`/`THREE.ShaderMaterial` não tocam GPU
-// sozinhos), mas `desenhar()` só faz sentido com um renderer de
-// verdade — o mesmo corte de `post.test.ts` ("a varredura de texto é o
-// idioma da casa para o que não roda sem GPU"). O que fica isolado em
-// funções soltas — a posição X pelo progresso da animação, o N do
-// primeiro quadro-chave, o envelope de tempo — é exatamente o que este
-// arquivo prova. A seção 4 é a exceção que cabe sem GPU: PARAR é o
-// caminho de `desenhar` que sai antes de tocar o renderer.
+// O HALO DE CONTORNO (C6, ADOTADO) — SÓ A MATEMÁTICA PURA. O desenho de
+// verdade é o `FILM_SHADER` de `Post` (`core/post.ts`), fora do alcance
+// deste arquivo (pede `THREE.WebGLRenderer`, o mesmo corte de
+// `post.test.ts`). O que fica isolado em funções soltas — a posição X
+// pelo progresso da animação, o N do primeiro quadro-chave, o envelope
+// de tempo — e o CICLO DE VIDA de `desenhar(post)` (que chama
+// `acenderHalo`/`apagarHalo` sem nunca tocar GPU) é exatamente o que
+// este arquivo prova.
 // ============================================================
-import type * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import type { ParametrosDoHalo } from './post';
 import {
   ContornoDaUi,
   DURACAO_DO_HALO_MS,
@@ -22,6 +19,7 @@ import {
   envelopeDoTempo,
   posicaoXDoHalo,
 } from './contornoDaUi';
+import type { AlvoDoHalo } from './contornoDaUi';
 
 describe('1. posicaoXDoHalo — o painel entra da direita, o halo o acompanha', () => {
   it('progress 0: o halo está onde o painel PARTE (repouso + N)', () => {
@@ -83,30 +81,80 @@ describe('3. envelopeDoTempo — sobe em 60 ms, some aos 400 ms (seção 7: "dur
   });
 });
 
-describe('4. o relógio manda — "reduzir movimento" e o resize apagam o halo', () => {
-  const relogioFalso = (playState: AnimationPlayState) =>
-    ({ playState, currentTime: 100, cancel: vi.fn() }) as unknown as Animation;
-  const parametros = (relogio: Animation) => ({
-    retangulo: { x: 0, y: 0, width: 10, height: 10 },
-    animacao: { playState: 'finished' } as unknown as Animation,
+describe('4. desenhar(post) — o ciclo de vida com o halo fundido no FILM_SHADER', () => {
+  const relogioMutavelFalso = (playState: AnimationPlayState, currentTime = 100) => ({
+    playState,
+    currentTime,
+    cancel: vi.fn(),
+  });
+  const parametros = (relogio: unknown, progress = 1) => ({
+    retangulo: { x: 10, y: 20, width: 300, height: 150 },
+    animacao: {
+      playState: 'running',
+      effect: { getComputedTiming: () => ({ progress }) },
+    } as unknown as Animation,
     deslocamentoInicialPx: 0,
-    relogio,
+    relogio: relogio as Animation,
+  });
+  const postFalso = (): AlvoDoHalo & {
+    acenderHalo: ReturnType<typeof vi.fn>;
+    apagarHalo: ReturnType<typeof vi.fn>;
+  } => ({ acenderHalo: vi.fn(), apagarHalo: vi.fn() });
+
+  it('em repouso (nunca acendeu) desenhar não toca o post — a exceção que roda sem GPU', () => {
+    const contorno = new ContornoDaUi();
+    const post = postFalso();
+    contorno.desenhar(post);
+    contorno.desenhar(post);
+    expect(post.acenderHalo).not.toHaveBeenCalled();
+    expect(post.apagarHalo).not.toHaveBeenCalled();
   });
 
-  it('relógio terminado (`finished`) — também depois que a entrada assentou: nada desenha', () => {
+  it('aceso: desenhar chama acenderHalo com uHalo (intensidade) > 0 e o retângulo em curso', () => {
     const contorno = new ContornoDaUi();
-    contorno.acender(parametros(relogioFalso('finished')));
-    const renderer = { render: vi.fn() } as unknown as THREE.WebGLRenderer;
-    contorno.desenhar(renderer);
-    contorno.desenhar(renderer);
-    expect(renderer.render).not.toHaveBeenCalled();
+    contorno.acender(parametros(relogioMutavelFalso('running', 30), 0.5));
+    const post = postFalso();
+    contorno.desenhar(post);
+    expect(post.acenderHalo).toHaveBeenCalledTimes(1);
+    const chamada = post.acenderHalo.mock.calls[0][0] as ParametrosDoHalo;
+    expect(chamada.intensidade).toBeGreaterThan(0);
+    expect(chamada.retangulo).toMatchObject({ x: 10, y: 20, largura: 300, altura: 150 });
+    expect(post.apagarHalo).not.toHaveBeenCalled();
+  });
+
+  it('o relógio termina (`finished`) sozinho — apaga UMA vez, e os quadros ociosos depois não chamam nada', () => {
+    const contorno = new ContornoDaUi();
+    const relogio = relogioMutavelFalso('running', 30);
+    contorno.acender(parametros(relogio, 0.5));
+    const post = postFalso();
+    contorno.desenhar(post); // vivo
+    expect(post.acenderHalo).toHaveBeenCalledTimes(1);
+
+    relogio.playState = 'finished'; // chegou aos 400 ms (ou "reduzir movimento"/resize o encerrou)
+    contorno.desenhar(post); // acabou de terminar
+    contorno.desenhar(post); // ocioso — não chama apagarHalo de novo
+    expect(post.apagarHalo).toHaveBeenCalledTimes(1);
+    expect(post.acenderHalo).toHaveBeenCalledTimes(1); // não voltou a acender
     contorno.dispose();
+  });
+
+  it('apagar() explícito (troca/saída de gaveta) também apaga UMA vez, não a cada quadro', () => {
+    const contorno = new ContornoDaUi();
+    contorno.acender(parametros(relogioMutavelFalso('running', 30), 0.5));
+    const post = postFalso();
+    contorno.desenhar(post); // vivo
+    expect(post.acenderHalo).toHaveBeenCalledTimes(1);
+
+    contorno.apagar();
+    contorno.desenhar(post); // acabou de apagar
+    contorno.desenhar(post); // ocioso — não chama apagarHalo de novo
+    expect(post.apagarHalo).toHaveBeenCalledTimes(1);
   });
 
   it('apagar e uma abertura nova CANCELAM o relógio anterior — nenhum ouvinte fica de pé', () => {
     const contorno = new ContornoDaUi();
-    const a = relogioFalso('running');
-    const b = relogioFalso('running');
+    const a = relogioMutavelFalso('running');
+    const b = relogioMutavelFalso('running');
     contorno.acender(parametros(a));
     contorno.acender(parametros(b));
     expect(a.cancel).toHaveBeenCalledTimes(1);

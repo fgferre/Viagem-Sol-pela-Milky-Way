@@ -435,10 +435,10 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'escrita, o mesmo molde das plumas',
   },
   {
-    // C6 do plano de motion (docs/PLANO-MOTION-UI.md): o protótipo B da
-    // comparação CSS × WebGL2, só com `?contorno=webgl`
+    // C6 do plano de motion (docs/PLANO-MOTION-UI.md), adotado: o halo
+    // de contorno liga por padrão, `?contorno=css` desliga
     id: 'halo-do-contorno-da-ui',
-    nome: 'o halo âmbar em volta de um painel que abre (protótipo, quad aditivo)',
+    nome: 'o halo âmbar em volta de um painel que abre (fundido no passe de filme)',
     arquivos: ['src/three/core/contornoDaUi.ts'],
     consomeL1: false,
     leiVelhaApagada: false,
@@ -449,9 +449,9 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     razao:
       'não é astro nem luz da cena: é decoração da INTERFACE, desenhada depois da ' +
       'composição científica (tom e brilho já aplicados), numa faixa de px de CSS ' +
-      'rente à borda de fora de um painel HTML, por no máximo 400 ms e só quando ' +
-      'a URL pede; não passa por exposição, tonemapping nem bloom, e nunca ' +
-      'aparece em captura (`?shot=`) nem com movimento reduzido',
+      'rente à borda de fora de um painel HTML, por no máximo 400 ms, por padrão ' +
+      '(desligável por `?contorno=css`); não passa por exposição, tonemapping nem ' +
+      'bloom, e nunca aparece em captura (`?shot=`) nem com movimento reduzido',
   },
 ];
 

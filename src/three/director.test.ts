@@ -653,3 +653,15 @@ describe('a preferência de movimento é OUVIDA enquanto o Director vive (§4/§
     expect(rampa).toContain('this.shotMode || this.reducedMotion');
   });
 });
+
+describe('o halo de contorno (C6) escreve os uniforms ANTES do render do quadro', () => {
+  it('o tick chama `this.contorno.desenhar(this.post)` logo antes de `this.post.render(`', () => {
+    // o halo agora É o FILM_SHADER de `this.post` (zero passe extra) —
+    // escrever DEPOIS do render deixaria o halo para o quadro seguinte,
+    // um quadro atrasado em relação ao painel que ele acompanha.
+    const iRender = FONTE.indexOf('this.post.render(time);');
+    const iDesenhar = FONTE.indexOf('this.contorno.desenhar(this.post);');
+    expect(iDesenhar).toBeGreaterThan(-1);
+    expect(iRender).toBeGreaterThan(iDesenhar);
+  });
+});

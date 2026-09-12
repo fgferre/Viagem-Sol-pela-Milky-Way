@@ -2,6 +2,7 @@
 // Poeira interestelar próxima — partículas que envolvem a câmera
 // e se acendem dentro do gás, dando paralaxe e sensação de volume.
 // ============================================================
+import * as THREE from 'three';
 import { GLSL_NOISE, GLSL_GALAXY, GLSL_DENSITY_LOCAL } from './common';
 
 export const DUST_VERT = /* glsl */ `
@@ -75,6 +76,23 @@ export const FILM_SHADER = {
     uGrain: { value: 0.016 },
     uVignette: { value: 0.42 },
     uCA: { value: 0.00012 },
+    // O HALO DE CONTORNO (C6, adotado) — FUNDIDO aqui, zero passe extra
+    // (ver `Post.acenderHalo`/`apagarHalo`, `three/core/post.ts`, e a
+    // matemática pura em `three/core/contornoDaUi.ts`). uHalo é a
+    // intensidade JÁ multiplicada pelo envelope de tempo; 0 desliga, e o
+    // branch por uniform em `main()` custa zero em repouso.
+    uHalo: { value: 0 },
+    // x, y, largura, altura do painel — px de CSS, origem no canto de
+    // cima à esquerda, como o DOMRect que alimenta o efeito.
+    uHaloRetangulo: { value: new THREE.Vector4() },
+    uHaloProgresso: { value: 0 },
+    uHaloSigma: { value: 12 },
+    uHaloCor: { value: new THREE.Vector3() },
+    // px de CSS da janela e o pixelRatio — a mesma conta de conversão
+    // que a câmera ortográfica do protótipo fazia, agora feita à mão
+    // (ver `haloDaUi`, abaixo).
+    uResolution: { value: new THREE.Vector2(1, 1) },
+    uPixelRatio: { value: 1 },
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -90,6 +108,13 @@ export const FILM_SHADER = {
     uniform float uGrain;
     uniform float uVignette;
     uniform float uCA;
+    uniform float uHalo;
+    uniform vec4 uHaloRetangulo; // x, y, largura, altura — px de CSS, origem no canto de cima à esquerda
+    uniform float uHaloProgresso; // 0..1 ao longo do efeito inteiro (400 ms)
+    uniform float uHaloSigma; // px de CSS
+    uniform vec3 uHaloCor;
+    uniform vec2 uResolution; // px de CSS da janela
+    uniform float uPixelRatio;
     varying vec2 vUv;
 
     // hash de Hoskins por pixel: o fract(sin(dot)) anterior tinha
@@ -99,6 +124,50 @@ export const FILM_SHADER = {
       vec3 p3 = fract(vec3(p.xyx) * 0.1031);
       p3 += dot(p3, p3.yzx + 33.33);
       return fract((p3.x + p3.y) * p3.z);
+    }
+
+    // SDF de um retângulo alinhado aos eixos (Inigo Quilez) — negativo
+    // dentro, zero na borda, positivo fora. Portado de contornoDaUi.ts
+    // (C6) byte a byte — é a mesma matemática, só o endereço mudou.
+    float distanciaAoRetangulo(vec2 p, vec2 meio) {
+      vec2 d = abs(p) - meio;
+      return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+    }
+
+    // O HALO DE CONTORNO (C6) — px JÁ em CSS, origem de cima à esquerda
+    // (a mesma conversão de gl_FragCoord que a câmera ortográfica do
+    // protótipo fazia). Só é chamada quando uHalo > 0 (branch em main),
+    // então o custo em repouso é zero.
+    vec3 haloDaUi(vec2 pxCss) {
+      vec2 meio = uHaloRetangulo.zw * 0.5;
+      vec2 centro = uHaloRetangulo.xy + meio;
+      float d = distanciaAoRetangulo(pxCss - centro, meio);
+
+      // SÓ FORA: o DOM opaco já cobre o interior, então a luz só existe
+      // onde a página não pintou nada — nunca por cima do texto.
+      float base = step(0.0, d) * exp(-pow(max(d, 0.0) / uHaloSigma, 2.0));
+
+      // A BORDA DE CIMA inteira, esmaecendo mais depressa que o
+      // envelope geral — um lampejo que já não está lá quando o ponto
+      // quente ainda desce a borda esquerda.
+      float pesoDoTopo = exp(-pow((pxCss.y - uHaloRetangulo.y) / uHaloSigma, 2.0));
+      float esmaecimentoDoTopo = exp(-uHaloProgresso * 6.0);
+
+      // O PONTO QUENTE na borda ESQUERDA — a de FRENTE, porque o painel
+      // entra da direita e é ela quem chega primeiro. Desce do topo à
+      // base ao longo do próprio efeito; largura ~25% da altura do
+      // painel.
+      float alturaDoQuente = mix(uHaloRetangulo.y, uHaloRetangulo.y + uHaloRetangulo.w, uHaloProgresso);
+      float larguraDoQuente = max(uHaloRetangulo.w * 0.25, 1.0);
+      float pesoDoQuente =
+        exp(-pow((pxCss.x - uHaloRetangulo.x) / uHaloSigma, 2.0)) *
+        exp(-pow((pxCss.y - alturaDoQuente) / larguraDoQuente, 2.0));
+
+      // OS REFORÇOS MULTIPLICAM A BASE, nunca somam soltos: presos à
+      // MESMA queda com a distância real ao retângulo.
+      float reforco = 1.0 + pesoDoTopo * esmaecimentoDoTopo + 1.6 * pesoDoQuente;
+
+      return uHaloCor * uHalo * base * reforco;
     }
 
     void main() {
@@ -134,6 +203,16 @@ export const FILM_SHADER = {
       // grão animado — resolução REAL do framebuffer, não 1920×1080
       float g = hash(gl_FragCoord.xy + floor(fract(uTime) * 913.0)) - 0.5;
       col += g * uGrain * (0.35 + 0.65 * (1.0 - clamp(dot(col, vec3(0.333)), 0.0, 1.0)));
+
+      // O HALO DE CONTORNO (C6) — DEPOIS do grão, para reproduzir o
+      // protótipo (um passe aditivo à parte, por cima do quadro já
+      // pronto): o grão não deve comer o brilho da borda. Branch por
+      // uniform: em repouso (uHalo == 0) esta linha inteira não roda.
+      if (uHalo > 0.0) {
+        vec2 pxCss = gl_FragCoord.xy / uPixelRatio;
+        pxCss.y = uResolution.y - pxCss.y;
+        col += haloDaUi(pxCss);
+      }
 
       gl_FragColor = vec4(col, 1.0);
     }

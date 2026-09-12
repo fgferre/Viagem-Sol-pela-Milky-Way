@@ -46,10 +46,9 @@ import type { Gaveta } from './hooks/useGavetas';
 import { useCelular } from './hooks/useCelular';
 import { useRealce } from './hooks/useRealce';
 import { escalaDaUi } from './lib/uiScale';
-// C6 (protótipo B, docs/PLANO-MOTION-UI.md §7/§12.5) — só a função pura
-// de leitura do deslocamento inicial, a duração e o relógio que assenta
-// com as gavetas; o resto do módulo mora inteiro em
-// three/core/contornoDaUi.ts.
+// C6 (docs/PLANO-MOTION-UI.md §7/§12.5) — só a função pura de leitura
+// do deslocamento inicial, a duração e o relógio que assenta com as
+// gavetas; o resto do módulo mora inteiro em three/core/contornoDaUi.ts.
 import { DURACAO_DO_HALO_MS, deslocamentoInicialDoTransform } from './three/core/contornoDaUi';
 import { relogio } from './hooks/movimentoDaGaveta';
 // O HUD em 9 fatias contíguas — a ORDEM destes imports é a cascata do
@@ -375,12 +374,13 @@ export default function App() {
     alternarFichaExpandida,
   } = useGavetas(escada, foco, phase, celular);
 
-  // C6 (protótipo B, docs/PLANO-MOTION-UI.md §7/§12.5) — o halo de
-  // contorno WebGL só existe sob esta porta; o lado A (o reflexo CSS,
-  // `01-base.css`) continua rodando igual nos dois casos. Lida uma vez,
-  // como as outras portas de URL do boot (`cartografiaDesligada` acima).
-  const [contornoWebgl] = useState(
-    () => new URLSearchParams(window.location.search).get('contorno') === 'webgl'
+  // C6 (docs/PLANO-MOTION-UI.md §7/§12.5) — o halo de contorno está
+  // ADOTADO e liga por padrão; `?contorno=css` força o lado A, o
+  // reflexo CSS (`01-base.css`), que continua rodando igual nos dois
+  // casos. Lida uma vez, como as outras portas de URL do boot
+  // (`cartografiaDesligada` acima).
+  const [haloDeContorno] = useState(
+    () => new URLSearchParams(window.location.search).get('contorno') !== 'css'
   );
   /**
    * C6 — O GATILHO: só quando a gaveta nasce DO NADA, `montada` vindo
@@ -399,7 +399,7 @@ export default function App() {
     const root = rootRef.current;
     const anterior = montadaAnteriorRef.current;
     montadaAnteriorRef.current = montada;
-    if (!contornoWebgl) return;
+    if (!haloDeContorno) return;
     // A TROCA APAGA O HALO da gaveta anterior: o nó dela sai da página,
     // mas a animação de entrada que o halo acompanha continua correndo
     // fora dela — sem esta linha ele brilharia em volta da ferramenta
@@ -422,13 +422,13 @@ export default function App() {
       deslocamentoInicialPx: deslocamentoInicialDoTransform(transformBruto),
       relogio: relogio(DURACAO_DO_HALO_MS),
     });
-  }, [montada, contornoWebgl, celular]);
+  }, [montada, haloDeContorno, celular]);
   // C6 — FECHAR APAGA O HALO: a saída mantém `montada` até desmontar, mas a
   // intenção já é outra (§7, regra 3) — o halo não brilha em volta de um
   // painel que está indo embora.
   useEffect(() => {
-    if (contornoWebgl && gaveta === null) directorRef.current?.apagarContorno();
-  }, [contornoWebgl, gaveta]);
+    if (haloDeContorno && gaveta === null) directorRef.current?.apagarContorno();
+  }, [haloDeContorno, gaveta]);
 
   // O BOOT do Director e os atalhos do teclado moram em hooks próprios
   // (onda da arquitetura, corte 6) — os fios são os mesmos de sempre.
@@ -562,7 +562,7 @@ export default function App() {
       // medição rara; a troca de gaveta já o apagou, e o resize da janela
       // o encerra pelo relógio (`relogio`, movimentoDaGaveta.ts).
       const painelDoContorno =
-        contornoWebgl && montada ? root.querySelector<HTMLElement>(`[data-dialogo="${montada}"]`) : null;
+        haloDeContorno && montada ? root.querySelector<HTMLElement>(`[data-dialogo="${montada}"]`) : null;
       const retContorno = painelDoContorno ? caixaDeRepouso(painelDoContorno, root) : null;
       if (retContorno) directorRef.current?.atualizarContorno(retContorno);
       // A RESERVA DA FICHA NA CÂMERA (Lote 3, PLAN-UI.md §6, item 225):
@@ -647,7 +647,7 @@ export default function App() {
       chegadaDaFicha.disconnect();
       window.removeEventListener('resize', medir);
     };
-  }, [phase, montada, celular, contornoWebgl]);
+  }, [phase, montada, celular, haloDeContorno]);
 
   // estado da camada de carregamento; `done` é o que dispara o merge.
   // O erro ganha do ?loader= fixo: uma captura de QA com asset quebrado

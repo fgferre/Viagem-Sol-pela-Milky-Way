@@ -30,8 +30,9 @@ import type {
 import type { EstadoDaVista } from './selo';
 import type { MotorEfemerides } from '../lib/atlas/efemerides';
 import { CAMADA_DO_CAMPO, Post } from './core/post';
-// C6 (protótipo B, docs/PLANO-MOTION-UI.md §7/§12.5) — o halo de
-// contorno WebGL, isolado neste módulo único; ver `acenderContorno`.
+// C6 (docs/PLANO-MOTION-UI.md §7/§12.5) — o halo de contorno, adotado;
+// a matemática pura mora neste módulo, o desenho é o FILM_SHADER de
+// `Post` (ver `acenderContorno`).
 import { ContornoDaUi } from './core/contornoDaUi';
 import type { ParametrosDoContorno, RetanguloDoContorno } from './core/contornoDaUi';
 // (A PUPILA morreu INTEIRA no M2 da LEI-DA-ESTRELA — arquivo, teste e a
@@ -2450,7 +2451,7 @@ export class Director {
   }
 
   /**
-   * C6 (protótipo B) — LIGA o halo de contorno WebGL para UMA abertura.
+   * C6 — LIGA o halo de contorno para UMA abertura.
    * App.tsx já filtrou o gatilho (flag, mesa, gaveta nascendo do nada,
    * sem `semMovimento()`); a única régua que falta perguntar por fora
    * é esta: NUNCA em `shotMode` (`?shot=`). A captura determinística já
@@ -3300,11 +3301,13 @@ export class Director {
       this.engine.scene.background = this.nebula.texture;
       this.nebula.render(this.engine.renderer, cam);
     }
+    // C6 — o halo de contorno, fundido no FILM_SHADER de `this.post`
+    // (zero passe extra): escreve os uniforms ANTES do render, para o
+    // halo sair NESTE quadro e não no seguinte; o shader o soma por cima
+    // do composite científico. Sai sozinho na primeira linha quando não
+    // há abertura em curso (`ContornoDaUi.desenhar`); nada roda em repouso.
+    this.contorno.desenhar(this.post);
     this.post.render(time);
-    // C6 (protótipo B) — o passe decorativo do halo, sempre DEPOIS do
-    // composite científico. Sai sozinho na primeira linha quando não há
-    // abertura em curso (`ContornoDaUi.desenhar`); nada roda em repouso.
-    this.contorno.desenhar(this.engine.renderer);
     // DEPOIS do render, e é o único lugar que soma: o sinal de prontidão
     // conta quadros DESENHADOS, não quadros agendados (ver `captura`).
     this.quadrosEstaveis++;

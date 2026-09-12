@@ -853,6 +853,21 @@ class CenaResolvidaUmaVez extends Pass {
   }
 }
 
+/**
+ * O QUE UMA ABERTURA DO HALO DE CONTORNO ENTREGA (C6) — a matemática
+ * pura mora em `core/contornoDaUi.ts` (`ContornoDaUi.desenhar`), que
+ * chama `Post.acenderHalo`/`apagarHalo` com isto já calculado. `cor` é
+ * o `THREE.Vector3` cru — ver o porquê em `COR_ACENTO`, contornoDaUi.ts.
+ */
+export interface ParametrosDoHalo {
+  retangulo: { x: number; y: number; largura: number; altura: number };
+  /** 0..1, JÁ multiplicada pelo envelope de tempo — vira `uHalo` direto */
+  intensidade: number;
+  progresso: number;
+  sigma: number;
+  cor: THREE.Vector3;
+}
+
 export class Post {
   readonly composer: EffectComposer;
   readonly bloom: UnrealBloomPass;
@@ -990,6 +1005,15 @@ export class Post {
     this.composer.addPass(this.outputPass);
     this.film = new ShaderPass(FILM_SHADER as never);
     this.composer.addPass(this.film);
+    // O HALO DE CONTORNO (C6) mede px de CSS contra a janela — semeado
+    // aqui com o mesmo `css`/pixelRatio do construtor, e mantido por
+    // `setSize` daqui pra frente (ver lá embaixo).
+    (this.film.uniforms as Record<string, { value: THREE.Vector2 }>).uResolution.value.set(
+      css.x,
+      css.y
+    );
+    (this.film.uniforms as Record<string, { value: number }>).uPixelRatio.value =
+      renderer.getPixelRatio();
   }
 
   /**
@@ -1078,6 +1102,33 @@ export class Post {
     (this.film.uniforms as Record<string, { value: number }>).uGrain.value = v;
   }
 
+  /**
+   * O HALO DE CONTORNO (C6, adotado) — LIGA/RETARGETA para o quadro
+   * corrente. Escreve direto nos uniforms do `FILM_SHADER` (`uHalo` e
+   * companhia); `uHalo = intensidade` é o que o branch do shader lê
+   * para saber que há algo a desenhar. Chamado todo quadro que o halo
+   * está vivo por `ContornoDaUi.desenhar` — nunca de fora daquele
+   * módulo.
+   */
+  acenderHalo(p: ParametrosDoHalo): void {
+    const u = this.film.uniforms as Record<string, { value: unknown }>;
+    (u.uHalo as { value: number }).value = p.intensidade;
+    (u.uHaloRetangulo.value as THREE.Vector4).set(
+      p.retangulo.x,
+      p.retangulo.y,
+      p.retangulo.largura,
+      p.retangulo.altura
+    );
+    (u.uHaloProgresso as { value: number }).value = p.progresso;
+    (u.uHaloSigma as { value: number }).value = p.sigma;
+    (u.uHaloCor.value as THREE.Vector3).copy(p.cor);
+  }
+
+  /** DESLIGA o halo — `uHalo = 0` é o branch do shader saindo de vez, sem custo. */
+  apagarHalo(): void {
+    (this.film.uniforms as Record<string, { value: number }>).uHalo.value = 0;
+  }
+
   setSize(w: number, h: number) {
     this.composer.setPixelRatio(this.renderer.getPixelRatio());
     this.composer.setSize(w, h);
@@ -1097,6 +1148,11 @@ export class Post {
     // guarda do item 70 (o rascunho dele precisa também do pixelRatio —
     // ver `ClaraoDoCampo.redimensionar`)
     this.claraoDoCampo.redimensionar(w, h, this.renderer.getPixelRatio());
+    // o halo de contorno (C6) mede px de CSS contra a janela — a mesma
+    // fronteira do resto deste método
+    (this.film.uniforms as Record<string, { value: THREE.Vector2 }>).uResolution.value.set(w, h);
+    (this.film.uniforms as Record<string, { value: number }>).uPixelRatio.value =
+      this.renderer.getPixelRatio();
   }
 
   /**

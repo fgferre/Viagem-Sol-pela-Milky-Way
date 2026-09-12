@@ -153,11 +153,12 @@ const C5_QUAIS = argC5 && argC5.includes('=')
   : null; // null = todas as oito
 // `--contorno` troca a corrida de sempre pelo A/B do C6 do plano de
 // motion (docs/PLANO-MOTION-UI.md §7 e §12.5): o reflexo CSS de sempre
-// (A) contra A + o protótipo de halo WebGL (B, `?contorno=webgl`,
-// `three/core/contornoDaUi.ts`) na mesma abertura da aba Camadas —
-// clipes recortados na borda, prova por luminância e custo pareado de
-// GPU/quadro. Roda uma vez e relata os números, como `--c5`; não é
-// PASSA/FALHA. Opt-in: sem a flag, nada aqui muda.
+// (A, `?contorno=css`) contra o halo fundido no passe final, vivo por
+// padrão (B, sem a flag — `dustShaders.ts`, FILM_SHADER) na mesma
+// abertura da aba Camadas — clipes recortados na borda, prova por
+// luminância e custo pareado de GPU/quadro. Roda uma vez e relata os
+// números, como `--c5`; não é PASSA/FALHA. Opt-in: sem a flag, nada
+// aqui muda.
 // `--contorno=cancelamento` (vírgula não se aplica aqui — um valor só)
 // troca o A/B de sempre pelo sub-modo PASSA/FALHA do C6 (K0–K6): prova
 // que o halo CANCELA o desenho nos jeitos que o conserto promete
@@ -3688,8 +3689,9 @@ async function rodarC5(quais = null) {
 
 // ============================================================
 // `--contorno` — C6 do plano de motion (docs/PLANO-MOTION-UI.md §7 e
-// §12.5): o A/B do halo WebGL de borda (`three/core/contornoDaUi.ts`,
-// `?contorno=webgl`) contra o reflexo CSS de sempre
+// §12.5): o A/B do halo fundido no passe final (`dustShaders.ts`,
+// FILM_SHADER, vivo por padrão — sem flag) contra o reflexo CSS de
+// sempre isolado por `?contorno=css`
 // (`reflexoDeAbertura`, `01-base.css`, que roda nos dois lados — esta
 // sonda nunca o desliga). Quatro peças, na ordem do enunciado:
 //   1) dois clipes (A sem a flag, B com ela) recortados na FAIXA da
@@ -3723,9 +3725,10 @@ async function rodarC5(quais = null) {
  * `gpu-profile.mjs` (timer query por draw, rótulo pelo texto do
  * shader), reescrita aqui porque IMPORTAR aquele arquivo dispararia o
  * Chrome dele — o cabeçalho desta sonda pede exatamente o contrário.
- * Só um rótulo interessa — `distanciaAoRetangulo`, função só do
- * fragment shader do halo (`contornoDaUi.ts`) — o resto vira `outro` e
- * é descartado.
+ * Só um rótulo interessa — `distanciaAoRetangulo`, hoje dentro do
+ * passe final (`FILM_SHADER`, `dustShaders.ts`), que roda em TODO
+ * quadro — em A e em B, com `uHalo` zero ou vivo — o resto vira
+ * `outro` e é descartado.
  *
  * TRÊS COISAS SEMPRE ligadas, com ou sem `EXT_disjoint_timer_query*`
  * (só o tempo de GPU depende da extensão): o rótulo de todo programa
@@ -3748,7 +3751,7 @@ async function rodarC5(quais = null) {
  */
 const SCRIPT_GPU_HALO = `
 window.__contornoProf = {
-  ready: 0, ext: 0, err: null, halo: [], rafAbs: [], desenhosHalo: [], gpuPorQuadro: [],
+  ready: 0, ext: 0, err: null, passeFinal: [], rafAbs: [], desenhosHalo: [], gpuPorQuadro: [],
 };
 (() => {
   const G = window.__contornoProf;
@@ -3784,7 +3787,7 @@ window.__contornoProf = {
       let l = label.get(p);
       if (l) return l;
       const s = (shaders.get(p) || []).map((sh) => src.get(sh) || '').join('\\n');
-      l = s.includes('distanciaAoRetangulo') ? 'halo:contorno' : 'outro';
+      l = s.includes('distanciaAoRetangulo') ? 'passe-final' : 'outro';
       label.set(p, l);
       return l;
     };
@@ -3829,7 +3832,7 @@ window.__contornoProf = {
       const orig = gl[nome].bind(gl);
       gl[nome] = function (...a) {
         const rotulo = cur ? labelOf(cur) : 'semPrograma';
-        if (rotulo === 'halo:contorno') {
+        if (rotulo === 'passe-final') {
           G.desenhosHalo.push({ t: performance.now(), ret: ultimoRetPorPrograma.get(cur) ?? null });
         }
         if (!ext || active) return orig(...a);
@@ -3853,7 +3856,7 @@ window.__contornoProf = {
           const ns = gl.getQueryParameter(r.q, gl.QUERY_RESULT);
           free.push(r.q);
           if (dis) continue;
-          if (r.l === 'halo:contorno') G.halo.push({ ns, t: performance.now() });
+          if (r.l === 'passe-final') G.passeFinal.push({ ns, t: performance.now() });
           const quadro = G.gpuPorQuadro[r.frame];
           if (quadro) quadro.ns += ns;
         }
@@ -4190,37 +4193,38 @@ async function rodarContorno() {
     };
 
     process.stdout.write('  ·     A (CSS só)…\n');
-    await carregarNoContorno(sessao, QUERY);
+    await carregarNoContorno(sessao, `${QUERY}&contorno=css`);
     const capA = await capturarAbertura(pastaA);
 
     process.stdout.write('  ·     B (CSS + halo WebGL)…\n');
-    await carregarNoContorno(sessao, `${QUERY}&contorno=webgl`);
+    await carregarNoContorno(sessao, QUERY);
     const capB = await capturarAbertura(pastaB);
 
     if (!capA.painel || !capB.painel) {
       throw new Error('painel de Camadas não encontrado ao medir o retângulo de repouso');
     }
 
-    // A REFERÊNCIA de cada checagem é o MESMO modo (shot/reduzido) SEM a
-    // flag — não o repouso "ao vivo" de A: medido (11/09), `shot=1`
-    // sozinho já muda a cena determinística nesta faixa (27,5 contra
-    // ~22 "ao vivo"), sem `contorno=webgl` nenhum — comparar B contra o
-    // repouso ao vivo teria acusado um halo que não existe.
-    process.stdout.write('  ·     shot=1, sem a flag (referência)…\n');
+    // A REFERÊNCIA de cada checagem é o MESMO modo (shot/reduzido), com a
+    // MESMA flag do lado (a com `contorno=css`, b sem) — não o repouso
+    // "ao vivo" de A: medido (11/09), `shot=1` sozinho já muda a cena
+    // determinística nesta faixa (27,5 contra ~22 "ao vivo"), halo ou
+    // não — comparar B contra o repouso ao vivo teria acusado um halo
+    // que não existe.
+    process.stdout.write('  ·     shot=1, com contorno=css (referência)…\n');
     const luminanciaShotA = await medirSemHalo({
-      query: `${QUERY}&shot=1`, reduzido: false, arquivo: resolve(pastaA, 'still-shot.png'),
+      query: `${QUERY}&contorno=css&shot=1`, reduzido: false, arquivo: resolve(pastaA, 'still-shot.png'),
     });
     process.stdout.write('  ·     B com &shot=1…\n');
     const luminanciaShotB = await medirSemHalo({
-      query: `${QUERY}&contorno=webgl&shot=1`, reduzido: false, arquivo: resolve(pastaB, 'still-shot.png'),
+      query: `${QUERY}&shot=1`, reduzido: false, arquivo: resolve(pastaB, 'still-shot.png'),
     });
-    process.stdout.write('  ·     reduzir-movimento, sem a flag (referência)…\n');
+    process.stdout.write('  ·     reduzir-movimento, com contorno=css (referência)…\n');
     const luminanciaReduzidoA = await medirSemHalo({
-      query: QUERY, reduzido: true, arquivo: resolve(pastaA, 'still-reduzido.png'),
+      query: `${QUERY}&contorno=css`, reduzido: true, arquivo: resolve(pastaA, 'still-reduzido.png'),
     });
     process.stdout.write('  ·     B com reduzir-movimento…\n');
     const luminanciaReduzidoB = await medirSemHalo({
-      query: `${QUERY}&contorno=webgl`, reduzido: true, arquivo: resolve(pastaB, 'still-reduzido.png'),
+      query: QUERY, reduzido: true, arquivo: resolve(pastaB, 'still-reduzido.png'),
     });
 
     // ---- passo 1: clipes recortados + lado a lado ----
@@ -4257,20 +4261,20 @@ async function rodarContorno() {
     // longo da corrida) sem confundi-la com "A sempre roda primeiro,
     // frio" — a intercalação pesa os dois lados igualmente.
     process.stdout.write(`  ·     bloco A1 (custo, ${ABERTURAS_POR_BLOCO} aberturas)…\n`);
-    await carregarNoContorno(sessao, QUERY);
+    await carregarNoContorno(sessao, `${QUERY}&contorno=css`);
     const blocoA1 = await medirCustoBloco(ABERTURAS_POR_BLOCO);
     process.stdout.write(`  ·     bloco B1 (custo, ${ABERTURAS_POR_BLOCO} aberturas)…\n`);
-    await carregarNoContorno(sessao, `${QUERY}&contorno=webgl`);
+    await carregarNoContorno(sessao, QUERY);
     const blocoB1 = await medirCustoBloco(ABERTURAS_POR_BLOCO);
     process.stdout.write(`  ·     bloco B2 (custo, ${ABERTURAS_POR_BLOCO} aberturas)…\n`);
-    await carregarNoContorno(sessao, `${QUERY}&contorno=webgl`);
+    await carregarNoContorno(sessao, QUERY);
     const blocoB2 = await medirCustoBloco(ABERTURAS_POR_BLOCO);
     process.stdout.write(`  ·     bloco A2 (custo, ${ABERTURAS_POR_BLOCO} aberturas)…\n`);
-    await carregarNoContorno(sessao, QUERY);
+    await carregarNoContorno(sessao, `${QUERY}&contorno=css`);
     const blocoA2 = await medirCustoBloco(ABERTURAS_POR_BLOCO);
 
     const dentroDeAlgumaAbertura = (t, t0sPerf) => t0sPerf.some((t0) => t >= t0 && t <= t0 + 450);
-    const haloMsDoBloco = (bloco) => bloco.prof.halo
+    const passeFinalMsDoBloco = (bloco) => bloco.prof.passeFinal
       .filter((h) => dentroDeAlgumaAbertura(h.t, bloco.t0sPerf))
       .map((h) => h.ns / 1e6);
     const frameTimeMsDoBloco = (bloco) => {
@@ -4290,20 +4294,20 @@ async function rodarContorno() {
     const resumoDoBloco = (bloco) => ({
       extDisponivel: Boolean(bloco.prof.ext),
       canvas: bloco.canvas,
-      halo: resumoDeMs(haloMsDoBloco(bloco)), // esperado ~0 amostras nos blocos A
+      passeFinal: resumoDeMs(passeFinalMsDoBloco(bloco)), // uHalo=0 em A — o passe final sem o halo
       gpuPorQuadro: resumoDeMs(gpuQuadroMsDoBloco(bloco)),
       frameTime: resumoDeMs(frameTimeMsDoBloco(bloco)),
     });
     const poolar = (blocos, extrair) => blocos.flatMap(extrair);
     const pooledA = {
       canvas: blocoA1.canvas,
-      halo: resumoDeMs(poolar([blocoA1, blocoA2], haloMsDoBloco)), // esperado 0 — a flag nem existe em A
+      passeFinal: resumoDeMs(poolar([blocoA1, blocoA2], passeFinalMsDoBloco)), // uHalo=0 — o passe final sem o halo
       gpuPorQuadro: resumoDeMs(poolar([blocoA1, blocoA2], gpuQuadroMsDoBloco)),
       frameTime: resumoDeMs(poolar([blocoA1, blocoA2], frameTimeMsDoBloco)),
     };
     const pooledB = {
       canvas: blocoB1.canvas,
-      halo: resumoDeMs(poolar([blocoB1, blocoB2], haloMsDoBloco)),
+      passeFinal: resumoDeMs(poolar([blocoB1, blocoB2], passeFinalMsDoBloco)),
       gpuPorQuadro: resumoDeMs(poolar([blocoB1, blocoB2], gpuQuadroMsDoBloco)),
       frameTime: resumoDeMs(poolar([blocoB1, blocoB2], frameTimeMsDoBloco)),
     };
@@ -4336,9 +4340,10 @@ async function rodarContorno() {
         faixaPx: '4–20px fora da borda esquerda, largura 16px, altura do painel',
         a: luminanciaA,
         b: luminanciaB,
-        // referência = MESMO modo (shot/reduzido) sem `contorno=webgl` —
-        // não o repouso "ao vivo" de `a` acima (ver comentário no ponto
-        // de coleta, mais acima nesta função).
+        // referência = MESMO modo (shot/reduzido), cada lado com a SUA
+        // flag de sempre (a com `contorno=css`, b sem) — não o repouso
+        // "ao vivo" de `a` acima (ver comentário no ponto de coleta,
+        // mais acima nesta função).
         shot: { a: luminanciaShotA, b: luminanciaShotB },
         reduzido: { a: luminanciaReduzidoA, b: luminanciaReduzidoB },
       },
@@ -4358,9 +4363,9 @@ async function rodarContorno() {
     const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-c6-${commit}.json`));
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
 
-    // uma linha por lado (bloco OU pool) — halo, GPU/quadro e rAF, os
-    // três pelo mesmo `resumoDeMs`.
-    const linhaCusto = (r) => `halo p50=${fmt(r.halo.p50, 3)}ms p95=${fmt(r.halo.p95, 3)}ms (${r.halo.amostras} am.) | `
+    // uma linha por lado (bloco OU pool) — passe-final, GPU/quadro e
+    // rAF, os três pelo mesmo `resumoDeMs`.
+    const linhaCusto = (r) => `passe-final p50=${fmt(r.passeFinal.p50, 3)}ms p95=${fmt(r.passeFinal.p95, 3)}ms (${r.passeFinal.amostras} am.) | `
       + `GPU/quadro p50=${fmt(r.gpuPorQuadro.p50, 2)}ms p95=${fmt(r.gpuPorQuadro.p95, 2)}ms (${r.gpuPorQuadro.amostras} am.) | `
       + `rAF média=${fmt(r.frameTime.media, 2)} p50=${fmt(r.frameTime.p50, 2)} p95=${fmt(r.frameTime.p95, 2)} max=${fmt(r.frameTime.max, 2)} `
       + `(${r.frameTime.acimaDeUmEMeio}/${r.frameTime.amostras} > 1,5×mediana)`;
@@ -4442,7 +4447,7 @@ async function rodarCancelamento() {
     sessao.marcarViewport(viewport);
     const versaoChrome = await sessao.send('Browser.getVersion');
     await sessao.send('Page.addScriptToEvaluateOnNewDocument', { source: SCRIPT_GPU_HALO });
-    await carregarNoContorno(sessao, `${QUERY}&contorno=webgl`);
+    await carregarNoContorno(sessao, QUERY);
 
     const fecharPainel = async (seletorPainel) => {
       await sessao.js(`(() => {
