@@ -41,6 +41,36 @@ export const ESCRITOR_DE_CAMERA = {
 } satisfies Record<Phase, EscritorDeCamera>;
 
 /**
+ * A TRAVA DO DISCO É HISTÓRIA DO FILME, e só dele (12/09). O `Director`
+ * arma `leftDisk` quando a câmera sai do disco galáctico, e com ela
+ * armada o envelope local (`env`) é 0: nebulosa apagada, faixa interna
+ * zerada, nuvens CO e forjas na dose da vista externa. O filme PRECISA
+ * dessa história — a coda volta para casa com o cartão da galáxia atrás
+ * da Terra, e arrastar a barra até lá tem de mostrar o mesmo quadro que
+ * o play contínuo (`T_SAIDA_DO_DISCO`).
+ *
+ * Fora do filme ela era um defeito, não uma lei: de 23/08 (item 61, §6)
+ * a 12/09 a trava valia em toda fase que escreve câmera, e quem entrava
+ * no Atlas ou no voo livre depois de ver a galáxia de fora ficava sem
+ * gás, sem faixa e com as nuvens pela metade — com o painel de Camadas
+ * ligado e surdo, porque os fades zeram antes das chaves. O dono chamou
+ * pelo nome ("um defeito muito tosco") e decidiu: no Atlas e no voo
+ * livre a POSIÇÃO manda. O preço aceito é o que 23/08 evitava: entrar
+ * no Atlas exatamente na coda acende a nebulosa que o filme não
+ * mostrava. O portal segue guardando a história do filme para a volta
+ * (`retomada.leftDisk`/`volta.leftDisk`): "Assistir o filme" retoma a
+ * coda como ela é.
+ */
+export const TRAVA_DO_DISCO_VALE = {
+  loading: true,
+  intro: true,
+  journey: true,
+  end: true,
+  free: false,
+  atlas: false,
+} satisfies Record<Phase, boolean>;
+
+/**
  * ARRASTAR O CANVAS FAZ ALGUMA COISA nesta fase? É a pergunta que o
  * CURSOR responde: até 2026-08-13 o ponteiro sobre a cena era a seta de
  * sempre em TODAS as fases, e nada — nem o cursor, nem uma dica — dizia
@@ -365,14 +395,12 @@ export const HUD_POR_FASE = {
  * 10. `tick` — ramo do voo livre ....................... não.
  * 11. `tick` — ramo da intro ........................... não; o Atlas
  *     ganha ramo próprio, que escreve a câmera pelo AtlasRig.
- * 12. `tick` — latch `leftDisk` ........................ ARMA, como toda
- *     fase que escreve câmera (item 61, §6 — 23/08). Era o contrário: a
- *     trava caía num `else` que a apagava fora da viagem, e o preço era
- *     medido — entrar no Atlas na coda acendia a nebulosa e apagava o
- *     cartão da galáxia no mesmo lugar, só por trocar de modo. Hoje ela
- *     arma por POSIÇÃO onde `ESCRITOR_DE_CAMERA` não é 'nenhum',
- *     atravessa o portal nos dois sentidos e só é desarmada pelos dois
- *     gestos que pedem a casa (`escada.focarNoSistema` e `play()`).
+ * 12. `tick` — latch `leftDisk` ........................ NÃO VALE: no
+ *     Atlas a posição manda (`TRAVA_DO_DISCO_VALE`, 12/09). De 23/08 a
+ *     12/09 (item 61, §6) a trava valia aqui também, para entrar na coda
+ *     não trocar a cena — e quem entrava depois de ver a galáxia de fora
+ *     ficava sem gás e sem faixa, com as Camadas surdas. O portal segue
+ *     guardando a história do filme para a volta (`volta.leftDisk`).
  * 13. `tick` — rótulos em 'journey' ou 'free' .......... ganha 'atlas'.
  * 14. `tick` — ramo editorial de rótulos da viagem ..... não; o Atlas usa
  *     o ramo do voo livre (7 rótulos, sem filtro de centro).

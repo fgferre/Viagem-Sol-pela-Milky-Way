@@ -117,7 +117,7 @@ import {
   LUAS_DO_SISTEMA,
   HELIO_SEM_PONTO,
 } from './atlasConfig';
-import { ESCRITOR_DE_CAMERA } from './fases';
+import { ESCRITOR_DE_CAMERA, TRAVA_DO_DISCO_VALE } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import {
   REVEAL_T,
@@ -2910,32 +2910,21 @@ export class Director {
     // galáxia. Só camadas fisicamente solares continuam com dHome. A
     // conta mora em `baseGalactica` porque o roteiro também a lê.
     const inDisk = dentroDoDisco(cam.position);
-    // A TRAVA DO DISCO É LEI DOS DOIS MODOS (item 61, §6 — 23/08). Até
-    // aqui ela era só da viagem: `if (fase === 'journey') arma; else
-    // leftDisk = false`. O `else` era o defeito — ele apagava HISTÓRIA
-    // por troca de FASE, e o sintoma é medível: entrar no Atlas na coda
-    // (t=188, câmera em casa, disco já para trás) devolvia `env = 1`
-    // onde o filme mostrava `env = 0`. Nebulosa acendendo e cartão da
-    // galáxia apagando no MESMO lugar, só porque o modo mudou — é
-    // literalmente "os gráficos mudam de um modo para o outro".
-    //
-    // Agora a trava ARMA POR POSIÇÃO em toda fase que ESCREVE CÂMERA, e
-    // quem responde quais são é o mapa (`ESCRITOR_DE_CAMERA`), nunca uma
-    // cadeia de `if` — o idioma da casa desde a Onda 5. Em 'end' e
-    // 'loading' ninguém escreve câmera e ninguém arma: a trava fica como
-    // a última fase que escreveu a deixou, que é a verdade (a câmera
-    // também ficou).
-    //
-    // E ela não é apagada por troca de fase nenhuma. Só DOIS gestos a
-    // desarmam, e os dois PEDEM A CASA: `escada.focarNoSistema` (o Esc,
-    // o botão "sistema" e a linha ESCALA do selo) e `play()`. Assim
-    // `env` é função da POSIÇÃO mais uma HISTÓRIA que os dois modos
-    // compartilham, e o par nebulosa/galáxia deixa de saber que existe
-    // modo.
-    if (ESCRITOR_DE_CAMERA[this.phase] !== 'nenhum' && inDisk <= LIMIAR_FORA_DO_DISCO) {
+    // A TRAVA DO DISCO É HISTÓRIA DO FILME (`TRAVA_DO_DISCO_VALE`,
+    // fases.ts — a decisão de 12/09 e a de 23/08 que ela desfaz moram
+    // lá). Arma por POSIÇÃO só nas fases do filme que escrevem câmera, e
+    // só nelas zera o envelope; no Atlas e no voo livre `env` é a
+    // posição, e ponto. Desarmam a história do filme os gestos que pedem
+    // a casa (`escada.focarNoSistema` e `play()`) e o `seek`, que a
+    // rederiva do roteiro.
+    if (
+      TRAVA_DO_DISCO_VALE[this.phase] &&
+      ESCRITOR_DE_CAMERA[this.phase] !== 'nenhum' &&
+      inDisk <= LIMIAR_FORA_DO_DISCO
+    ) {
       this.leftDisk = true;
     }
-    const env = this.leftDisk ? 0 : inDisk;
+    const env = this.leftDisk && TRAVA_DO_DISCO_VALE[this.phase] ? 0 : inDisk;
 
     // camadas solares (HYG, poeira próxima, hero stars): dHome
     const localFade = 1 - THREE.MathUtils.smoothstep(dHome, 1100, 2300);
