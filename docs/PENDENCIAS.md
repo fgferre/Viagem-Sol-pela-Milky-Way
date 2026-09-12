@@ -543,6 +543,54 @@ Servidores parados.
 
 
 
+**12/09 (rodada DELIMITADA do plano de motion + C7).** Pedido dele, em
+duas mensagens: *"Continue o plano de motion a partir do código atual"*
+(a primeira vinha com quatro itens fechados: preferência de movimento ao
+vivo, sanfona, Ajuda e bússola; "não altere o arquivo do plano", "não
+adote o halo", "não publique"). **Feito e provado (commit `a2bc817`):**
+(1) "reduzir movimento" que MUDA com o app aberto passa a valer no
+Director (warp, travessias do Atlas, reserva da ficha — lia uma vez na
+construção) e na tela de carga (`App.tsx` lia uma vez na montagem);
+(2) a sanfona reabre e refecha DE ONDE ESTÁ — a linha da grade virou WAAPI
+em `dobrar` (movimentoDaGaveta.ts, o mesmo dono das gavetas), com o corte
+dentro da própria animação; antes reabrir aos 60 ms colapsava a zero
+(h=0 aos 75 ms) e fechar aos 60 ms saltava à altura cheia (h=407); o foco
+volta ao gatilho mesmo sem movimento (antes caía no body); (3) o "?"
+decide pelo PONTEIRO do clique (dedo/caneta prendem, mouse nunca, teclado
+segue a capacidade viva) — toque emulado depois de a capacidade mudar era
+surdo, mouse em aparelho sem hover prendia e não soltava; (4) a bússola
+acende em âmbar só enquanto o rig endireita (`estadoDaBussola`, três
+estados; a luz apaga quando a câmera acaba, nunca antes — foto enviada).
+Tudo reproduzido ANTES e DEPOIS em Chrome de verdade por CDP (toque e
+capacidade emulados; o "navegador que não foca ao clicar" emulado por
+preventDefault, porque o Chrome sempre foca). **C7 (commit `6bb07d6`):**
+os cinco juízes (a11y, busca, atlas, filme, voo) verdes no código de
+`a2bc817`; a matriz da folha a 390×844, 320×640 `ui=1.4` e 760×900 PASSA
+(o "F1 sem diagnóstico" do §12.10 era anterior a `31953e0` — o registro
+do plano está desatualizado nisso, não o app); I1–I5 a 1440×900 PASSA;
+EDGE 153 entra no lançador de verdade (`--disable-extensions
+--disable-sync` só quando o binário é o Edge, medido pelo /json/list) e
+com isso sonda, folha e atlas-smoke passam no Edge sem embrulho fora do
+repositório; a sonda espera a sanfona em REPOUSO por estado (no Edge a
+dobra começava tarde e a amostra de 400 ms caía a 3 px do fim, cortada).
+SAFARI DE IPHONE no simulador (iOS, toque de verdade): "?" prende e solta,
+"Avançado" abre e fecha, bússola endireita e esmaece (o instante âmbar
+não deu para fotografar: a captura demora mais que a rampa). `npm run
+done` verde nas duas rodadas (3.035 testes). Backup enviado; **site não
+publicado**; **plano não tocado** (o §12.10 NÃO registra estas duas
+rodadas — quem ler o plano deve dar precedência aos commits `a2bc817` e
+`6bb07d6` e ao backlog). **Achados no backlog:** uma travessia do véu do
+Atlas JÁ EM CURSO não assenta quando a preferência muda no meio dela (a
+próxima obedece); um `timeout` que mata o node de um juiz deixa o Chrome
+órfão e derruba o juiz seguinte (o atlas-smoke reprovou um md5 assim;
+sozinho, verde; o a11y leva ~9 min sem carga). **Espera por ele:** a
+DECISÃO DO HALO (C6) e o olho dele no app. Continuam abertos 223, 224 e
+225. **Sem validação declarada:** telefone físico, teclado virtual,
+"reduzir movimento" ligado no sistema de um aparelho real, Chrome Android,
+Firefox (não instalado) e Safari de mesa (pede liberar um ajuste de
+segurança). Rodada encerrada nas palavras dele: *"Pode encerrar essa
+conversa e preparar o bastão para uma nova sessão"*. Servidores parados.
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar
