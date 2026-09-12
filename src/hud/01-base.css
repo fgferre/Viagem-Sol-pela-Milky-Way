@@ -628,62 +628,23 @@
 .sanfona-miolo {
   min-height: 0;
 }
-.sanfona.abrindo {
-  animation: abreSanfona var(--t-entrada) var(--curva) backwards;
-}
-@keyframes abreSanfona {
-  from {
-    grid-template-rows: 0fr;
-    opacity: 0;
-  }
-}
-/* A SAÍDA VENCE A ENTRADA quando as duas classes convivem — `abrindo` é
-   um TRINCO (`usePresenca.ts`) que não desliga ao fechar, então reabrir
-   no meio do caminho deixa as duas no `className` ao mesmo tempo. Esta
-   regra vem DEPOIS, mesma especificidade da de cima: é ela que corre
-   enquanto a seção sai, e é ela que solta o lugar assim que a entrada
-   reaparecer sozinha. */
-.sanfona.saindo {
-  animation: fechaSanfona var(--t-entrada) var(--curva) forwards;
-}
-@keyframes fechaSanfona {
-  to {
-    grid-template-rows: 0fr;
-    opacity: 0;
-  }
-}
-/* O CORTE SÓ EXISTE ENQUANTO O MOVIMENTO CORRE. `overflow` não é número,
-   é discreto — declarado IGUAL em `from` e `to` ele vale `hidden` do
-   início ao fim da animação e nenhum instante além disso: sem
-   `forwards`, o repouso volta sozinho ao `visible` implícito do miolo,
-   que é o que deixa o contorno de foco de qualquer coisa lá dentro
-   aparecer inteiro fora do movimento.
-   UM NOME POR SENTIDO, e é isso que faz o corte RECOMEÇAR: o navegador
-   só inicia uma animação CSS nova quando o NOME muda. Com o mesmo nome
-   nos dois sentidos, fechar uma seção que já tinha aberto nesta vida do
-   nó (o `abrindo` é um trinco) mantinha a animação de corte da abertura,
-   já terminada — o miolo recolhia em `overflow: visible`, com o conteúdo
-   maior que a caixa vazando por cima do que vem embaixo (visto na
-   reauditoria de 11/09). Reabrir no meio da saída troca o nome de volta
-   e recomeça o corte do mesmo jeito. */
-.sanfona.abrindo > .sanfona-miolo {
-  animation: sanfonaCortaAbre var(--t-entrada) var(--curva);
-}
-.sanfona.saindo > .sanfona-miolo {
-  animation: sanfonaCortaFecha var(--t-entrada) var(--curva);
-}
-@keyframes sanfonaCortaAbre {
-  from,
-  to {
-    overflow: hidden;
-  }
-}
-@keyframes sanfonaCortaFecha {
-  from,
-  to {
-    overflow: hidden;
-  }
-}
+/* A LINHA DA GRADE E A OPACIDADE NÃO ANIMAM AQUI: quem as move é
+   `dobrar` (`movimentoDaGaveta.ts`, WAAPI), pedido por `usePresenca` —
+   os `@keyframes` de antes recomeçavam do zero a cada troca de sentido
+   (reabrir no meio da saída colapsava a zero e crescia de novo; fechar
+   no meio da entrada saltava à altura cheia). O que fica no CSS é o
+   repouso (`1fr`) e o CORTE do miolo, abaixo. A SAÍDA VENCE A ENTRADA
+   quando as duas classes convivem — `abrindo` é um TRINCO
+   (`usePresenca.ts`) que não desliga ao fechar, então a regra do corte
+   da saída vem DEPOIS, com a mesma especificidade da de abrir. */
+/* O CORTE SÓ EXISTE ENQUANTO O MOVIMENTO CORRE — e por isso ele mora na
+   PRÓPRIA animação (`dobrar`: `overflow: hidden` nos dois quadros, na
+   caixa `.sanfona`), não aqui: em repouso, aberta ou fechada, o
+   `overflow` volta sozinho ao `visible` implícito, e o contorno de foco
+   de qualquer coisa lá dentro aparece inteiro. Os `@keyframes` de corte
+   que viviam aqui (um nome por sentido, para recomeçar a cada troca)
+   duravam o token inteiro: numa reversão de 40 ms o miolo ficava
+   cortado 160 ms depois de parar (medido em 12/09). */
 
 /* ---- O REALCE: A CONFIRMAÇÃO DE UMA ESCOLHA (M3 do plano de motion,
    C3) ----------------------------------------------------------------

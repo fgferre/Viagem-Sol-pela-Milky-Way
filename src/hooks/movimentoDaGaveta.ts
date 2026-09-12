@@ -208,6 +208,24 @@ export function relogio(duracao: number): Animation {
   return anim;
 }
 
+/**
+ * ESPERA UMA SAÍDA QUE O CSS DESENHA (o detalhe do selo, o "mais" do
+ * filme — `usePresenca` sem dobra): a duração é a que o próprio nó
+ * declara (`duracaoDaSaida`), e ≤ 1 ms assenta NA HORA, como `ir` e
+ * `dobrar` — é o que devolve o foco e desmonta antes da pintura quando
+ * a preferência reduzida ou o `?shot=` zeram o movimento. Devolve o
+ * cancelamento, para a intenção nova limpar o relógio da anterior.
+ */
+export function esperar(duracao: number, aoAssentar: () => void): () => void {
+  if (duracao <= 1) {
+    aoAssentar();
+    return () => {};
+  }
+  // `setTimeout` global, e não `window.`: o runner da casa é `node`
+  const id = setTimeout(aoAssentar, duracao);
+  return () => clearTimeout(id);
+}
+
 /** um estado por nó, e não por gaveta: o `useGavetas` já garante que só
  *  existe UM `[data-dialogo]` de cada vez, mas o `WeakMap` não precisa
  *  saber disso — e não vaza nó nenhum quando o React o remove. */
@@ -297,6 +315,81 @@ export function cancelar(no: HTMLElement): void {
   estado.anim.cancel();
   estado.anim = null;
   estado.intencao += 1;
+}
+
+/**
+ * O TEMPO DE UMA DOBRA — encolhe na proporção do caminho que FALTA, a
+ * regra das transições CSS ao inverter: reabrir aos 30 % da saída leva
+ * 30 % do tempo cheio de volta ao aberto, e não os 200 ms inteiros.
+ */
+export const duracaoDaDobra = (de: number, para: 0 | 1, duracao: number): number =>
+  duracao * Math.abs(para - Math.min(1, Math.max(0, de)));
+
+/**
+ * DOBRA UM NÓ — a sanfona (`usePresenca.ts`/`Sanfona.tsx`): a linha da
+ * grade de `0fr` a `1fr` e a opacidade de 0 a 1, no MESMO dono de
+ * movimento das gavetas (§C1.3). É o que dá à sanfona o que os
+ * `@keyframes` não davam: REABRIR NO MEIO DA SAÍDA continua da altura de
+ * agora, em vez de colapsar a zero e crescer de novo, e FECHAR NO MEIO
+ * DA ENTRADA recolhe de onde está, em vez de saltar à altura cheia
+ * (medido em 12/09: h=0 aos 75 ms da reabertura, h=407 aos 75 ms do
+ * refechamento). `de` é a FRAÇÃO já aberta (0..1, medida por quem chama)
+ * e as duas pontas são `fr` porque `fr` só interpola com `fr` — um `px`
+ * no meio do caminho não interpolaria, e a grade saltaria.
+ *
+ * O CORTE VIVE NA MESMA ANIMAÇÃO: `overflow: hidden` nos dois quadros é
+ * discreto, vale do primeiro ao último instante da dobra e nenhum além
+ * — o repouso volta sozinho ao `visible` do CSS, que é o que deixa o
+ * contorno de foco de qualquer coisa lá dentro aparecer inteiro fora do
+ * movimento. Um corte em `@keyframes` do CSS, com a duração do token,
+ * sobrevivia 160 ms a uma reversão de 40 ms (medido em 12/09).
+ *
+ * `fill: 'forwards'` só ao fechar: o nó desmonta no PRÓXIMO commit, pelo
+ * `aoAssentar`, e até lá precisa continuar em `0fr`, cortado. Ao abrir,
+ * o repouso (`1fr`, opacidade 1, sem corte) já é o que o CSS mostra
+ * sozinho. Tempo ≤ 1 ms
+ * (preferência reduzida, `?shot=`, ou nada a percorrer) não anima e
+ * assenta na hora, como `ir`. O contador e a lista `vivas` são os
+ * mesmos de `ir`: a última intenção vence, e ligar "reduzir movimento"
+ * ou redimensionar a janela no meio termina a dobra junto com as
+ * gavetas (`assentarTudo`).
+ */
+export function dobrar(
+  no: HTMLElement,
+  para: 0 | 1,
+  de: number,
+  { duracao, curva }: { duracao: number; curva: string },
+  aoAssentar?: () => void
+): void {
+  const estado = estadoDe(no);
+  estado.anim?.cancel();
+  estado.anim = null;
+  estado.intencao += 1;
+  const minhaIntencao = estado.intencao;
+  const partida = Math.min(1, Math.max(0, de));
+  const tempo = duracaoDaDobra(partida, para, duracao);
+
+  if (tempo <= 1) {
+    aoAssentar?.();
+    return;
+  }
+
+  const anim = no.animate(
+    [
+      { gridTemplateRows: `${partida}fr`, opacity: partida, overflow: 'hidden' },
+      { gridTemplateRows: `${para}fr`, opacity: para, overflow: 'hidden' },
+    ],
+    { duration: tempo, easing: curva, fill: para === 0 ? 'forwards' : 'none' }
+  );
+  estado.anim = anim;
+  vigiar(anim);
+  anim.finished
+    .then(() => {
+      if (estado.intencao === minhaIntencao) aoAssentar?.();
+    })
+    .catch(() => {
+      // cancelado: a intenção de agora já assumiu, ou o nó já foi.
+    });
 }
 
 /**

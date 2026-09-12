@@ -6,6 +6,7 @@
 // linha, e este arquivo é GOVERNADO pelo selo (lê portas de URL).
 // ============================================================
 import { useEffect } from 'react';
+import type { EstadoDaBussola } from '../three/cinematic/atlasRig';
 import { Director } from '../three/director';
 import type { EstadoDaEscada, EstadoDaQualidade, LoadStage, Phase } from '../three/director';
 import type { NamedStar } from '../three/config';
@@ -105,7 +106,7 @@ export interface FiosDoDirector {
   /** o primeiro arrasto dentro do Atlas — apaga a dica dos gestos */
   girou: () => void;
   /** a bússola do Atlas acendeu ou apagou (item 102) — só na virada */
-  orientacao: (torta: boolean) => void;
+  orientacao: (estado: EstadoDaBussola) => void;
   /** o toque no céu com uma folha aberta — a terceira saída (item 62) */
   fecharGavetas: () => void;
 }

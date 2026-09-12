@@ -2,6 +2,7 @@
 // App — canvas WebGL + HUD cinematográfico sobre a simulação.
 // ============================================================
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { EstadoDaBussola } from './three/cinematic/atlasRig';
 import { Director, LOAD_STAGES } from './three/director';
 import type {
   EstadoDaEscada,
@@ -348,7 +349,7 @@ export default function App() {
    * quadro do arrasto, e um `setState` por quadro redesenharia o HUD
    * inteiro a 60 Hz.
    */
-  const [bussolaAcesa, setBussolaAcesa] = useState(false);
+  const [bussola, setBussola] = useState<EstadoDaBussola>('apagada');
 
   /**
    * A JANELA É DE CELULAR? (item 62) — `LARGURA_DO_CELULAR_PX`, lida por
@@ -454,7 +455,7 @@ export default function App() {
     setTempo,
     setEscada,
     girou: () => setGirouNoAtlas(true),
-    orientacao: setBussolaAcesa,
+    orientacao: setBussola,
     fecharGavetas: fecharTodas,
   });
 
@@ -469,10 +470,21 @@ export default function App() {
     if (!q.has('shot')) return null;
     return LOAD_STAGES.find((s) => s.id === q.get('loader')) ?? null;
   });
-  // prefers-reduced-motion: composição estática, crossfade simples
-  const [movimentoReduzido] = useState(
+  // prefers-reduced-motion: composição estática, crossfade simples — e a
+  // preferência vale também se MUDAR com o app aberto (§4/§5 do plano de
+  // motion): o ouvinte é o mesmo de `useCelular`, para a tela de carga
+  // parar na hora em vez de seguir a leitura da montagem (medido 12/09:
+  // o véu continuava animando depois de o sistema ligar "reduzir").
+  const [movimentoReduzido, setMovimentoReduzido] = useState(
     () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
   );
+  useEffect(() => {
+    const preferencia = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!preferencia) return undefined;
+    const aoMudar = () => setMovimentoReduzido(preferencia.matches);
+    preferencia.addEventListener('change', aoMudar);
+    return () => preferencia.removeEventListener('change', aoMudar);
+  }, []);
 
 
 
@@ -1166,7 +1178,7 @@ export default function App() {
           torna inerte para o teclado quando apagada é o componente. */}
       {phase === 'atlas' && (
         <Bussola
-          acesa={bussolaAcesa}
+          estado={bussola}
           onEndireitar={() => directorRef.current?.endireitarOrientacao()}
         />
       )}

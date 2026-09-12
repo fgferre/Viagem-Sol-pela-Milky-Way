@@ -105,6 +105,7 @@ import {
 import type { PostoNoPalco } from './director/palco';
 import type { GalacticAssets } from './cartography/galacticAssets';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
+import type { EstadoDaBussola } from './cinematic/atlasRig';
 import type { ReservaDaFicha } from './cinematic/retanguloDoAtlas';
 import { ORIGEM } from './cinematic/enquadramento';
 import { escalaDaUi, larguraDeCss } from '../lib/uiScale';
@@ -272,7 +273,7 @@ interface DirectorEvents {
    * quem decide o booleano (com histerese) é o rig, e este fio só
    * entrega a virada.
    */
-  onOrientacao: (torta: boolean) => void;
+  onOrientacao: (estado: EstadoDaBussola) => void;
   /**
    * O TOQUE NO CÉU FECHOU A GAVETA (item 62). Quem decide QUAL toque
    * fecha é `director/gestos.ts`; este fio só entrega o recado ao React,
@@ -457,7 +458,7 @@ export class Director {
   /** o visitante já arrastou dentro do Atlas? (item 73 — apaga a dica) */
   private jaGirouNoAtlas = false;
   /** o último veredito da bússola que o React já ouviu (item 102) */
-  private bussolaAcesa = false;
+  private bussola: EstadoDaBussola = 'apagada';
 
   // ---- A RESERVA DA FICHA (Lote 3, PLAN-UI.md §6, item 225) ---------
   // O App mede pixels (largura do painel na mesa, altura da folha no
@@ -581,6 +582,13 @@ export class Director {
   private shotMode = false;
   /** prefers-reduced-motion: sem shake, sem pulso de warp/CA */
   private reducedMotion = false;
+  /** a preferência de movimento do sistema, OUVIDA enquanto o Director
+   *  vive (`dispose` solta o ouvinte): `reducedMotion` é a leitura de
+   *  agora, nunca só a da construção */
+  private preferenciaDeMovimento: MediaQueryList | null = null;
+  private readonly aoMudarMovimento = (e: MediaQueryListEvent) => {
+    this.reducedMotion = e.matches;
+  };
   /** toggles de debug: ?nogal=1&nosun=1&nodust=1&noclarao=1&nocat=1 */
   private hide = new Set<string>();
   /** ?exp= na query desliga a auto-exposição (App.tsx aplica o valor fixo) */
@@ -828,9 +836,18 @@ export class Director {
     // (busca, decodificação, escrita dos dois atributos) num instante
     // em que o resultado tem de ser o retrato bit a bit.
     this.aplicarPortaJd();
-    this.reducedMotion =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // A PREFERÊNCIA VALE TAMBÉM SE MUDAR COM O APP ABERTO (§4/§5 do plano
+    // de motion): até 12/09 esta era UMA leitura, na construção, e ligar
+    // "reduzir movimento" com a cena viva deixava o warp e as travessias
+    // do Atlas correndo como antes (medido: o sistema mudava, `matchMedia`
+    // dizia `true`, e este campo seguia `false`). O ouvinte é o mesmo de
+    // `movimentoDaGaveta.ts`; aqui ele vive o que o Director vive.
+    this.preferenciaDeMovimento =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-reduced-motion: reduce)')
+        : null;
+    this.reducedMotion = this.preferenciaDeMovimento?.matches ?? false;
+    this.preferenciaDeMovimento?.addEventListener('change', this.aoMudarMovimento);
     // As flags de camada semeiam da URL DERIVADAS da tabela única
     // (`atlasConfig.CAMADAS`) — este laço era a quarta lista digitada à
     // mão, e foi por fora dela que quatro flags só-URL viveram sem nome
@@ -2734,9 +2751,10 @@ export class Director {
       this.atlas.apply(cam, escalaDaUi(), larguraDeCss(), dt, this.reservaFichaCorrente);
       // ...e a bússola do HUD, na BORDA: o rig recalculou o veredito
       // com histerese neste mesmo `apply`, e só a virada atravessa
-      if (this.atlas.horizonteTorto !== this.bussolaAcesa) {
-        this.bussolaAcesa = this.atlas.horizonteTorto;
-        this.events.onOrientacao(this.bussolaAcesa);
+      const bussola = this.atlas.estadoDaBussola;
+      if (bussola !== this.bussola) {
+        this.bussola = bussola;
+        this.events.onOrientacao(bussola);
       }
     } else {
       // intro/end: deriva lenta contemplativa
@@ -3313,6 +3331,7 @@ export class Director {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    this.preferenciaDeMovimento?.removeEventListener('change', this.aoMudarMovimento);
     // aborta JÁ (os fetches em voo não interessam mais); o resto pode
     // esperar
     this.abortController.abort();

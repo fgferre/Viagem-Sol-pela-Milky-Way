@@ -3112,6 +3112,37 @@ describe('a bússola — endireitar o horizonte sem mover a mira', () => {
     expect(Math.abs(rig.desvioDoHorizonte)).toBeGreaterThan(noMeio * 0.5);
   });
 
+  it('o estado da bússola diz "endireitando" EXATAMENTE enquanto a rampa corre — e é o rig, não um relógio da interface, quem a encerra (U25/C3e)', () => {
+    const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
+    const rig = new AtlasRig();
+    noSistemaInteiro(rig);
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, 0);
+    expect(rig.estadoDaBussola).toBe('apagada');
+    for (let i = 0; i < 40; i++) {
+      rig.addOrbitDelta(30, 30);
+      rig.apply(camera, 1, LARGURA_DE_MESA_PX, 0);
+    }
+    expect(rig.estadoDaBussola).toBe('acesa');
+    rig.endireitar();
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, ENDIREITAR_S / 3);
+    expect(rig.estadoDaBussola).toBe('endireitando');
+    // no último quadro da rampa o estado assenta junto com o horizonte
+    for (let i = 0; i < 12; i++) rig.apply(camera, 1, LARGURA_DE_MESA_PX, ENDIREITAR_S / 6);
+    expect(Math.abs(rig.desvioDoHorizonte) / GRAU).toBeLessThan(1e-6);
+    expect(rig.estadoDaBussola).toBe('apagada');
+    // e o dedo que cancela a rampa devolve "acesa" (ainda torto), nunca
+    // deixa "endireitando" pendurado prometendo o que não vai acontecer
+    for (let i = 0; i < 40; i++) {
+      rig.addOrbitDelta(30, 30);
+      rig.apply(camera, 1, LARGURA_DE_MESA_PX, 0);
+    }
+    rig.endireitar();
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, ENDIREITAR_S / 4);
+    rig.addOrbitDelta(0, 5);
+    rig.apply(camera, 1, LARGURA_DE_MESA_PX, ENDIREITAR_S / 4);
+    expect(rig.estadoDaBussola).toBe('acesa');
+  });
+
   it('focar zera o giro — alvo novo nasce de pé', () => {
     const camera = new THREE.PerspectiveCamera(35, 1.6, 1e-9, 1000);
     const rig = new AtlasRig();

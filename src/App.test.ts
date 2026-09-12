@@ -92,3 +92,13 @@ describe('a reserva dos rótulos cobre o HUD fixo (item 56)', () => {
     expect(FONTE).toContain('b.width > 0 && b.height > 0)');
   });
 });
+
+describe('a tela de carga obedece a "reduzir movimento" também quando ela MUDA com o app aberto (12/09)', () => {
+  it('`movimentoReduzido` é estado com ouvinte de `change`, o mesmo padrão de `useCelular` — não uma leitura única na montagem', () => {
+    expect(FONTE).toContain('const [movimentoReduzido, setMovimentoReduzido] = useState(');
+    const ouvinte = FONTE.slice(FONTE.indexOf("window.matchMedia?.('(prefers-reduced-motion: reduce)');"));
+    expect(ouvinte).toContain("preferencia.addEventListener('change', aoMudar);");
+    expect(ouvinte).toContain("preferencia.removeEventListener('change', aoMudar);");
+    expect(FONTE).toContain('still={movimentoReduzido || shotMode}');
+  });
+});

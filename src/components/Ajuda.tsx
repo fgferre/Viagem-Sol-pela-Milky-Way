@@ -69,10 +69,28 @@ export function Ajuda({
 }) {
   const botaoRef = useRef<HTMLButtonElement>(null);
   const dicaRef = useRef<HTMLDivElement>(null);
-  // O DISPOSITIVO TEM MOUSE? — detectado UMA VEZ por componente (não
-  // reage a plugar/tirar um mouse durante a sessão, o caso raro que este
-  // contrato não cobre). Só o CLIQUE, abaixo, olha para isto.
-  const [hoverCapaz] = useState(() => window.matchMedia?.('(hover: hover)').matches ?? true);
+  // O DISPOSITIVO TEM MOUSE? — lido com OUVINTE (o mesmo de `useCelular`):
+  // plugar um mouse num tablet, ou um híbrido trocar de modo, muda a
+  // resposta no meio da sessão (medido 12/09 com toque emulado ligado
+  // depois da montagem: o "?" ficava surdo ao dedo). Só o clique SEM
+  // ponteiro (Enter/Espaço) olha para isto; um clique de ponteiro
+  // decide pelo próprio ponteiro, abaixo.
+  const [hoverCapaz, setHoverCapaz] = useState(
+    () => window.matchMedia?.('(hover: hover)').matches ?? true
+  );
+  useEffect(() => {
+    const consulta = window.matchMedia?.('(hover: hover)');
+    if (!consulta) return undefined;
+    const aoMudar = () => setHoverCapaz(consulta.matches);
+    consulta.addEventListener('change', aoMudar);
+    return () => consulta.removeEventListener('change', aoMudar);
+  }, []);
+  // O PONTEIRO DO CLIQUE DE AGORA — `pointerdown` chega antes do `click`
+  // com o tipo de verdade (mouse, toque, caneta); o teclado não passa por
+  // aqui e deixa `null`. É a INTERAÇÃO EFETIVA, não a capacidade do
+  // aparelho: num híbrido o dedo prende e o mouse mostra pelo hover, no
+  // mesmo aparelho e na mesma sessão.
+  const ponteiroDoClique = useRef<string | null>(null);
   const [hover, setHover] = useState(false);
   const [foco, setFoco] = useState(false);
   // `presa` CAINDO solta hover/foco JUNTO (Esc, outro "?" tomando o
@@ -165,6 +183,9 @@ export function Ajuda({
         onPointerLeave={(evento) => {
           if (evento.pointerType === 'mouse') setHover(false);
         }}
+        onPointerDown={(evento) => {
+          ponteiroDoClique.current = evento.pointerType;
+        }}
         onFocus={() => setFoco(true)}
         onBlur={() => setFoco(false)}
         onClick={(evento) => {
@@ -175,8 +196,12 @@ export function Ajuda({
           // SÓ NO TOQUE o clique prende (design do dono, 09/09): em quem
           // tem mouse a caixa mostra pelo hover e pelo foco do TECLADO, e
           // prender por clique era o bug relatado (a dica presa por mouse
-          // nunca soltava sozinha).
-          if (!hoverCapaz) onAlternar();
+          // nunca soltava sozinha). "Toque" é o ponteiro DESTE clique
+          // (dedo ou caneta, nunca o mouse); sem ponteiro — o teclado —
+          // vale a capacidade do aparelho, viva.
+          const ponteiro = ponteiroDoClique.current;
+          ponteiroDoClique.current = null;
+          if (ponteiro ? ponteiro !== 'mouse' : !hoverCapaz) onAlternar();
           // EM QUALQUER APARELHO o clique solta o foco como motivo de
           // mostrar: na mesa o clique deixa o botão focado, e sem isto a
           // caixa seguiria aberta depois que o mouse saísse — a mesma

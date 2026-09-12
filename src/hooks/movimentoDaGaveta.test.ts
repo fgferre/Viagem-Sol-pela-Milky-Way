@@ -19,7 +19,10 @@ import {
   desvanecer,
   distanciaCelularPx,
   distanciaMesaPx,
+  dobrar,
+  duracaoDaDobra,
   emMilissegundos,
+  esperar,
   ir,
   resolverTokens,
 } from './movimentoDaGaveta';
@@ -299,5 +302,71 @@ describe('7. o que já corre assenta quando a preferência muda ou a janela muda
     const [, aoMudar] = preferencia.addEventListener.mock.calls[1] as [string, (e: unknown) => void];
     aoMudar({ matches: true });
     expect(segundo.anim.finish).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('8. `dobrar` — a sanfona continua de onde está (reabrir no meio da saída, 12/09)', () => {
+  it('o tempo encolhe na proporção do que FALTA — a regra das transições CSS ao inverter', () => {
+    expect(duracaoDaDobra(0, 1, 200)).toBe(200);
+    expect(duracaoDaDobra(0.6, 1, 200)).toBeCloseTo(80, 9);
+    expect(duracaoDaDobra(0.6, 0, 200)).toBeCloseTo(120, 9);
+    expect(duracaoDaDobra(1, 1, 200)).toBe(0);
+    // uma fração fora de 0..1 (medida num quadro estranho) não inventa tempo negativo
+    expect(duracaoDaDobra(1.4, 0, 200)).toBe(200);
+  });
+
+  it('as duas pontas são `fr` (só `fr` interpola com `fr`), o corte vai nos dois quadros, e `forwards` só ao FECHAR', () => {
+    const animate = vi.fn(() => animacaoFalsa().anim);
+    const no = noFalso(animate);
+    dobrar(no, 0, 0.6, { duracao: 200, curva: 'linear' });
+    dobrar(no, 1, 0.25, { duracao: 200, curva: 'linear' });
+    const [fecha, abre] = animate.mock.calls as unknown as [
+      [Keyframe[], KeyframeAnimationOptions],
+      [Keyframe[], KeyframeAnimationOptions],
+    ];
+    expect(fecha[0]).toEqual([
+      { gridTemplateRows: '0.6fr', opacity: 0.6, overflow: 'hidden' },
+      { gridTemplateRows: '0fr', opacity: 0, overflow: 'hidden' },
+    ]);
+    expect(fecha[1]).toMatchObject({ duration: 120, fill: 'forwards' });
+    expect(abre[0][0]).toEqual({ gridTemplateRows: '0.25fr', opacity: 0.25, overflow: 'hidden' });
+    expect(abre[0][1]).toEqual({ gridTemplateRows: '1fr', opacity: 1, overflow: 'hidden' });
+    expect(abre[1]).toMatchObject({ duration: 150, fill: 'none' });
+  });
+
+  it('`esperar` (a saída que o CSS desenha) assenta na hora abaixo de 1 ms e devolve o cancelamento do relógio', () => {
+    const assentou: string[] = [];
+    expect(typeof esperar(0.01, () => assentou.push('zero'))).toBe('function');
+    expect(assentou).toEqual(['zero']);
+    vi.useFakeTimers();
+    try {
+      const cancelar = esperar(200, () => assentou.push('tarde'));
+      cancelar();
+      vi.advanceTimersByTime(300);
+      expect(assentou).toEqual(['zero']);
+      esperar(200, () => assentou.push('no tempo'));
+      vi.advanceTimersByTime(300);
+      expect(assentou).toEqual(['zero', 'no tempo']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('tempo ≤ 1 ms não anima e assenta na hora; a última intenção vence, como em `ir`', async () => {
+    const assentou: string[] = [];
+    const semNada = noFalso(vi.fn());
+    dobrar(semNada, 0, 1, { duracao: 0, curva: 'linear' }, () => assentou.push('zero'));
+    expect(assentou).toEqual(['zero']);
+
+    const chamadas = [animacaoFalsa(), animacaoFalsa()];
+    let vez = 0;
+    const no = noFalso(() => chamadas[vez++].anim);
+    dobrar(no, 0, 1, { duracao: 200, curva: 'linear' }, () => assentou.push('fecha'));
+    dobrar(no, 1, 0.3, { duracao: 200, curva: 'linear' }, () => assentou.push('reabre'));
+    chamadas[0].resolver();
+    chamadas[1].resolver();
+    await proximoQuadro();
+    expect(chamadas[0].anim.cancel).toHaveBeenCalledTimes(1);
+    expect(assentou).toEqual(['zero', 'reabre']);
   });
 });

@@ -15,6 +15,7 @@
 // ============================================================
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
+import type { EstadoDaBussola } from '../three/cinematic/atlasRig';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { CAMADAS_POR_FAMILIA, familiaEmTexto } from '../three/atlasConfig';
 import type { Camada } from '../three/atlasConfig';
@@ -557,15 +558,20 @@ export function Selo({
  * `aria-label` diz a frase inteira para quem ouve a tela, no mesmo
  * padrão dos outros controles do Atlas.
  */
-export function Bussola({ acesa, onEndireitar }: {
-  acesa: boolean;
+export function Bussola({ estado, onEndireitar }: {
+  estado: EstadoDaBussola;
   onEndireitar: () => void;
 }) {
   useIdioma();
+  // ACESA nos dois estados vivos (a11y, juízes e o fade leem `.acesa`);
+  // ENDIREITANDO por cima só enquanto a câmera gira — é o rig quem liga
+  // e desliga (`estadoDaBussola`), e por isso a luz âmbar nunca promete
+  // um horizonte de pé antes da hora (U25/C3e, CSS 04).
+  const acesa = estado !== 'apagada';
   return (
     <button
       type="button"
-      className={`atlas-bussola${acesa ? ' acesa' : ''}`}
+      className={`atlas-bussola${acesa ? ' acesa' : ''}${estado === 'endireitando' ? ' endireitando' : ''}`}
       onClick={onEndireitar}
       // ela existe no DOM sempre (a transição de opacidade precisa dos
       // dois estados), mas para o teclado e para o leitor de tela ela só

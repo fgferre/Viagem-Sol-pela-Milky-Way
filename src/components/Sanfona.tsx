@@ -8,11 +8,14 @@
 //
 // GRID DE `0fr` A `1fr`, e não `max-height`: a régua do plano pede
 // exatamente isso — o `.sanfona-miolo` com `min-height: 0` é o que deixa
-// a grade colapsar de verdade (`01-base.css`). O corte (`overflow:
-// hidden`) só existe ENQUANTO a animação corre, nunca em repouso, para
-// não cortar o contorno de foco de nada lá dentro — e recomeça a cada
-// sentido (abrir, fechar, reabrir no meio), porque cada um tem o seu
-// nome de animação.
+// a grade colapsar de verdade (`01-base.css`). Quem MOVE a linha da grade
+// é `dobrar` (`movimentoDaGaveta.ts`, o dono único do movimento das
+// gavetas), pedido por `usePresenca(aberta, true)`: é assim que reabrir
+// no meio da saída continua da altura de agora. O corte (`overflow:
+// hidden`) vive na MESMA animação: existe enquanto a dobra corre e
+// nenhum instante além, para não cortar o contorno de foco de nada lá
+// dentro em repouso. As classes `abrindo`/`saindo` continuam: `saindo`
+// é o `inert` da saída, e as duas são o que a sonda do movimento lê.
 // ============================================================
 import type { ReactNode } from 'react';
 import { usePresenca } from '../hooks/usePresenca';
@@ -28,7 +31,7 @@ export function Sanfona({
   className?: string;
   children: ReactNode;
 }) {
-  const { montada, abrindo, saindo, ref } = usePresenca<HTMLDivElement>(aberta);
+  const { montada, abrindo, saindo, ref } = usePresenca<HTMLDivElement>(aberta, true);
   if (!montada) return null;
   return (
     <div

@@ -625,3 +625,21 @@ describe('o relógio do filme é do filme — a porta ?jd= não o cala (item 108
     expect(FONTE.match(/lerPortaJd\(/g)).toHaveLength(1);
   });
 });
+
+describe('a preferência de movimento é OUVIDA enquanto o Director vive (§4/§5 do plano de motion, 12/09)', () => {
+  it('a construção guarda a consulta e assina `change`; `dispose` a solta — o warp e as travessias do Atlas leem `reducedMotion` de agora, não o da montagem', () => {
+    expect(FONTE).toContain("window.matchMedia('(prefers-reduced-motion: reduce)')");
+    expect(FONTE).toContain('this.reducedMotion = this.preferenciaDeMovimento?.matches ?? false;');
+    expect(FONTE).toContain(
+      "this.preferenciaDeMovimento?.addEventListener('change', this.aoMudarMovimento);"
+    );
+    const dispose = FONTE.slice(FONTE.indexOf('  dispose() {'));
+    expect(dispose).toContain(
+      "this.preferenciaDeMovimento?.removeEventListener('change', this.aoMudarMovimento);"
+    );
+    // o ouvinte escreve o MESMO campo que todo caminho já lia — nenhuma
+    // segunda leitura da preferência nasceu no Director
+    expect(FONTE).toContain('this.reducedMotion = e.matches;');
+    expect(FONTE.match(/matchMedia\('\(prefers-reduced-motion/g) ?? []).toHaveLength(1);
+  });
+});

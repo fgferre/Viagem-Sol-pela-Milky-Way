@@ -716,7 +716,11 @@ function jsAmostraSanfona() {
     return {
       existe: true,
       className: el.className,
-      overflow: miolo ? getComputedStyle(miolo).overflow : null,
+      // 'hidden' se a CAIXA ou o MIOLO cortam: desde 12/09 o corte mora na
+      // própria dobra (WAAPI na .sanfona); antes vivia nos @keyframes do miolo
+      overflow: [el, miolo].filter(Boolean).some((n) => getComputedStyle(n).overflow === 'hidden')
+        ? 'hidden'
+        : (miolo ? getComputedStyle(miolo).overflow : null),
       sanfonaClientHeight: el.clientHeight,
       mioloScrollHeight: miolo ? miolo.scrollHeight : null,
       linhaDoTempo: document.timeline.currentTime,

@@ -230,27 +230,24 @@ describe('6. nenhum `transition` de transform escapa da preferência reduzida (E
   });
 });
 
-describe('7. o corte da sanfona recomeça a cada sentido (reauditoria de 11/09)', () => {
-  // O navegador só inicia uma animação CSS nova quando o NOME muda: com o
-  // mesmo nome na abertura e na saída, fechar uma seção que já tinha
-  // aberto herdava o corte terminado da abertura e recolhia sem corte
-  // nenhum, com o conteúdo vazando da caixa.
-  const nomeDoCorte = (seletor: string) =>
-    /animation:\s*([\w-]+)/.exec(corpoDaRegra(seletor))?.[1] ?? '';
-  const abre = nomeDoCorte('.sanfona.abrindo > .sanfona-miolo');
-  const fecha = nomeDoCorte('.sanfona.saindo > .sanfona-miolo');
+describe('7. o corte da sanfona vive na própria dobra (12/09)', () => {
+  // Até 12/09 o corte era um par de `@keyframes` do CSS no miolo, um nome
+  // por sentido: recomeçava a cada troca, mas durava o token inteiro, e
+  // numa reversão de 40 ms o miolo ficava cortado 160 ms depois de parar.
+  // Agora quem move a linha da grade (`dobrar`, WAAPI) leva o corte nos
+  // dois quadros: dura a dobra e nenhum instante além.
+  const DOBRAR = readFileSync(new URL('../hooks/movimentoDaGaveta.ts', HUD_DIR), 'utf8');
+  const quadros = DOBRAR.slice(DOBRAR.indexOf('export function dobrar('), DOBRAR.indexOf('vigiar(anim);', DOBRAR.indexOf('export function dobrar(')));
 
-  it('abrir e fechar cortam com animações de nomes diferentes', () => {
-    expect(abre).not.toBe('');
-    expect(fecha).not.toBe('');
-    expect(abre).not.toBe(fecha);
+  it('os dois quadros da dobra cortam — e é a mesma animação que move a altura', () => {
+    expect(quadros.match(/overflow: 'hidden'/g) ?? []).toHaveLength(2);
+    expect(quadros).toContain('gridTemplateRows: `${partida}fr`');
   });
 
-  it('as duas cortam, e nenhuma segura o corte no repouso (o contorno de foco aparece)', () => {
-    for (const nome of [abre, fecha]) {
-      const quadros = new RegExp(`@keyframes ${nome} \\{([\\s\\S]*?)\\n\\}`).exec(BASE)?.[1] ?? '';
-      expect(quadros).toContain('overflow: hidden');
-      expect(BASE).not.toMatch(new RegExp(`animation:\\s*${nome}[^;]*(forwards|both)`));
-    }
+  it('nenhuma regra do CSS segura um corte na sanfona em repouso (o contorno de foco aparece)', () => {
+    expect(corpoDaRegra('.sanfona')).not.toContain('overflow');
+    expect(corpoDaRegra('.sanfona-miolo')).not.toContain('overflow');
+    expect(BASE).not.toMatch(/sanfonaCorta/);
+    expect(BASE).not.toMatch(/@keyframes (abre|fecha)Sanfona/);
   });
 });

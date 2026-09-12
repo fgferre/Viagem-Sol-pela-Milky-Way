@@ -142,6 +142,9 @@ export const FREIO_MINIMO_DO_SOLO = 1 / 3;
  */
 export const ENDIREITAR_S = 0.5;
 
+/** o estado da bússola do HUD — ver `AtlasRig.estadoDaBussola` */
+export type EstadoDaBussola = 'apagada' | 'acesa' | 'endireitando';
+
 /**
  * ONDE A BÚSSOLA ACENDE, em graus de horizonte torto. 5° é o menor
  * desvio que se LÊ como torto numa foto — abaixo disso o olho aceita
@@ -1174,6 +1177,20 @@ export class AtlasRig {
   /** a bússola está acesa? — com histerese, ver `atualizarBussola` */
   get horizonteTorto(): boolean {
     return this.torto;
+  }
+
+  /**
+   * O QUE A BÚSSOLA DO HUD MOSTRA (U25/C3e do plano de motion) — três
+   * estados, e a diferença entre os dois acesos é o clique:
+   * `endireitando` dura EXATAMENTE a rampa (`consumirOEndireitar`), e é
+   * o rig quem diz quando ela acabou — nunca um relógio da interface,
+   * que terminaria antes ou depois da câmera. A luz âmbar do botão vive
+   * neste estado, e o assentamento dela (apagar, esmaecer) só vem
+   * quando o horizonte ficou de pé de verdade.
+   */
+  get estadoDaBussola(): EstadoDaBussola {
+    if (this.endireitando.total !== 0) return 'endireitando';
+    return this.torto ? 'acesa' : 'apagada';
   }
 
   /**

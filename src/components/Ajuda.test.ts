@@ -31,33 +31,33 @@ describe('a dica é um PORTAL — nunca filha da LINHA (Lote 9)', () => {
   });
 });
 
-describe('o clique só ALTERNA a dica NO TOQUE — em quem tem mouse é NO-OP (design do dono, 09/09)', () => {
-  it('o dispositivo é lido por matchMedia(hover: hover), uma vez por componente (useState sem ouvinte)', () => {
-    // SEM ouvinte de propósito: ao contrário de `useCelular` (que reage a
-    // `change` porque a LARGURA muda ao vivo no juiz de a11y), ter mouse
-    // ou não não muda durante a sessão — um `useState` com inicializador
-    // preguiçoso já é "uma vez por componente".
-    expect(FONTE).toContain(
-      "const [hoverCapaz] = useState(() => window.matchMedia?.('(hover: hover)').matches ?? true);"
-    );
+describe('o clique só ALTERNA a dica NO TOQUE — em quem tem mouse é NO-OP (design do dono, 09/09; interação efetiva, 12/09)', () => {
+  it('a capacidade do aparelho é lida por matchMedia(hover: hover) COM ouvinte — plugar um mouse ou virar de modo no meio da sessão muda a resposta', () => {
+    expect(FONTE).toContain("() => window.matchMedia?.('(hover: hover)').matches ?? true");
+    const ouvinte = FONTE.slice(FONTE.indexOf("window.matchMedia?.('(hover: hover)');"));
+    expect(ouvinte).toContain("consulta.addEventListener('change', aoMudar);");
+    expect(ouvinte).toContain("consulta.removeEventListener('change', aoMudar);");
   });
 
-  it('onAlternar() só corre DENTRO de `if (!hoverCapaz)` — mouse não prende nada', () => {
+  it('o clique decide pelo PONTEIRO que o fez (pointerdown): dedo ou caneta prendem, mouse nunca; sem ponteiro (teclado) vale a capacidade viva', () => {
+    expect(FONTE).toContain('ponteiroDoClique.current = evento.pointerType;');
     const onClick = FONTE.slice(
       FONTE.indexOf('onClick={(evento) => {'),
       FONTE.indexOf('      >\n        ?\n      </button>')
     );
-    const iGuarda = onClick.indexOf('if (!hoverCapaz) onAlternar();');
+    const iGuarda = onClick.indexOf("if (ponteiro ? ponteiro !== 'mouse' : !hoverCapaz) onAlternar();");
     const iAlternar = onClick.indexOf('onAlternar();');
     const iFecho = onClick.indexOf('setFoco(false);');
     expect(iGuarda).toBeGreaterThan(-1);
-    // onAlternar() mora DENTRO da guarda (só o toque prende); o
-    // setFoco(false) vem DEPOIS dela, FORA, em qualquer aparelho — na
-    // mesa o clique deixa o botão focado, e sem soltar o foco a caixa
-    // seguiria aberta depois que o mouse saísse (a "presa" por outra
-    // porta, 09/09)
+    // onAlternar() mora DENTRO da guarda; o setFoco(false) vem DEPOIS
+    // dela, FORA, em qualquer aparelho — na mesa o clique deixa o botão
+    // focado, e sem soltar o foco a caixa seguiria aberta depois que o
+    // mouse saísse (a "presa" por outra porta, 09/09)
     expect(iAlternar).toBeGreaterThanOrEqual(iGuarda);
     expect(iFecho).toBeGreaterThan(iAlternar);
+    // o ponteiro lido é CONSUMIDO: o clique seguinte, se vier do teclado,
+    // não herda o dedo de antes
+    expect(onClick.indexOf('ponteiroDoClique.current = null;')).toBeLessThan(iGuarda);
     // e o stopPropagation() do clique continua FORA da guarda — ele
     // segue valendo em qualquer dispositivo (o <label> da gaveta de
     // Camadas não pode alternar a caixa de seleção em nenhum dos dois)

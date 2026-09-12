@@ -2057,7 +2057,8 @@
     opacity 0.35s ease,
     visibility 0s linear 0.35s,
     border-color 0.35s ease,
-    background 0.35s ease;
+    background 0.35s ease,
+    box-shadow 0.35s ease;
 }
 /* ENTROU na lista de pressão da casa na C3e (reaudit, 01-base.css) — o
    ícone (`<Icone nome="bussola">`) já é elemento, então nenhum `<span>`
@@ -2077,7 +2078,26 @@
     opacity 0.35s ease,
     visibility 0s,
     border-color 0.35s ease,
-    background 0.35s ease;
+    background 0.35s ease,
+    box-shadow 0.35s ease;
+}
+/* ENDIREITANDO (U25/C3e): o clique acende a luz âmbar da casa NA HORA
+   (`--t-rapido`, cor — que segue suave em movimento reduzido) e ela fica
+   acesa exatamente enquanto a câmera gira: quem liga e desliga a classe é
+   o rig (`estadoDaBussola`), não um relógio do CSS. O assentamento é a
+   luz apagando e o botão esmaecendo (o fade de 0,35 s de cima) DEPOIS
+   que o horizonte ficou de pé — nunca antes. Sem giro do ícone: o
+   indicador fiel de inclinação é evolução à parte, e um ícone que
+   girasse por conta própria terminaria antes ou depois da câmera. */
+.atlas-bussola.endireitando {
+  background: rgba(255, 214, 150, 0.14);
+  border-color: rgba(255, 214, 150, 0.9);
+  color: #fff;
+  box-shadow: 0 0 24px rgba(255, 200, 120, 0.28);
+  transition:
+    border-color var(--t-rapido) var(--curva),
+    background var(--t-rapido) var(--curva),
+    box-shadow var(--t-rapido) var(--curva);
 }
 .atlas-bussola:hover {
   background: rgba(255, 214, 150, 0.14);
