@@ -1,5 +1,6 @@
 import { escalaDaUi } from '../lib/uiScale';
 import { semMovimento } from '../hooks/useGavetas';
+import { relogio } from '../hooks/movimentoDaGaveta';
 import { t } from '../lib/idioma';
 import { UA_POR_PC, notaDeDistancia } from '../lib/unidades';
 import { numeroDoIdioma } from '../three/tempoDoAtlas';
@@ -729,8 +730,17 @@ export class LabelCanvas {
   private chaveDoFocoAnterior: string | null | undefined = undefined;
   /** quem está exibindo o acento AGORA — `null` quando nenhum */
   private chaveDoAcento: string | null = null;
-  /** `performance.now()` do instante em que o acento atual começou */
-  private inicioDoAcentoMs = 0;
+  /**
+   * O RELÓGIO DO ACENTO — uma animação SEM ALVO (`relogio`,
+   * movimentoDaGaveta.ts), na MESMA lista que "reduzir movimento" e o
+   * resize já assentam, e não um `performance.now()` só deste arquivo.
+   * É o que faz a preferência LIGADA NO MEIO dos 200 ms valer aqui
+   * também (§4 do plano: "a preferência vale também se mudar com o app
+   * aberto"): antes ela só era lida no quadro da TROCA, e o anel seguia
+   * crescendo e apagando até o fim — reproduzido no Chrome visível,
+   * ligando a preferência ~30 ms depois de escolher Netuno.
+   */
+  private relogioDoAcento: Animation | null = null;
   /** `acentoDaSelecao` já calculada NESTE quadro — `anel` e a assinatura
    *  leem o mesmo número, sem repetir a conta nem o relógio */
   private intensidadeDoAcento = 0;
@@ -739,7 +749,9 @@ export class LabelCanvas {
    * DETECTA A TROCA DE ALVO e conserva o relógio do acento — chamada UMA
    * VEZ por quadro real, nunca dentro do laço de pintura. `semMovimento`
    * só é lido AQUI, e só no exato quadro em que a seleção muda: nunca por
-   * quadro, como o contrato pede (§4 do plano de motion).
+   * quadro, como o contrato pede (§4 do plano de motion) — quem cobre a
+   * preferência que muda DEPOIS, com o acento já correndo, é o relógio
+   * (`relogioDoAcento`), sem media query nenhuma por quadro.
    */
   private atualizarAcentoDaSelecao(labels: readonly StarLabel[]): void {
     // quem carrega PRIORIDADE_DO_ROTULO.foco (201) é o alvo escolhido —
@@ -759,18 +771,45 @@ export class LabelCanvas {
       chaveDoFoco !== anterior &&
       !semMovimento()
     ) {
+      this.relogioDoAcento?.cancel();
       this.chaveDoAcento = chaveDoFoco;
-      this.inicioDoAcentoMs = performance.now();
+      this.relogioDoAcento = relogio(DURACAO_DO_ACENTO_MS);
     }
+    // A SELEÇÃO É REGISTRADA SEMPRE, acenda ou não: é ela que impede a
+    // preferência DESLIGADA de repetir a escolha antiga — o alvo de
+    // agora já é o "anterior" do próximo quadro.
     this.chaveDoFocoAnterior = chaveDoFoco;
-    this.intensidadeDoAcento =
-      this.chaveDoAcento === null
-        ? 0
-        : acentoDaSelecao(performance.now() - this.inicioDoAcentoMs);
+    this.intensidadeDoAcento = this.intensidadeDoAcentoAgora();
     // A JANELA FECHOU: o acento sai da conta sozinho, e é isso que
     // devolve a assinatura (via `sufixoDoAcento`) ao estado de sempre —
     // sem esta linha o quadro parado nunca mais voltaria a pular.
-    if (this.intensidadeDoAcento === 0) this.chaveDoAcento = null;
+    if (this.intensidadeDoAcento === 0) this.esquecerAcento();
+  }
+
+  /**
+   * QUANTO O ACENTO VALE NESTE QUADRO — lido do RELÓGIO, e não de um
+   * cronômetro próprio. Terminado por `assentarTudo` (a preferência que
+   * liga, a janela que muda de tamanho), ele deixa de estar `running` e
+   * o acento acaba AQUI, no primeiro quadro depois do evento: a
+   * assinatura perde o sufixo, o quadro repinta sem a decoração e o
+   * marcador de sempre — posição, anel, colisão e alvo do clique —
+   * continua exatamente onde estava.
+   */
+  private intensidadeDoAcentoAgora(): number {
+    const relogioDoAcento = this.relogioDoAcento;
+    if (this.chaveDoAcento === null || relogioDoAcento === null) return 0;
+    const decorridoMs = relogioDoAcento.currentTime;
+    if (relogioDoAcento.playState !== 'running' || typeof decorridoMs !== 'number') return 0;
+    return acentoDaSelecao(decorridoMs);
+  }
+
+  /** O ACENTO SAI DE CENA — o relógio é CANCELADO, e não só esquecido:
+   *  é ele que mantém de pé os ouvintes da preferência e do resize
+   *  (`relogio`), e um app parado não pode ficar com ouvinte pendurado. */
+  private esquecerAcento(): void {
+    this.chaveDoAcento = null;
+    this.relogioDoAcento?.cancel();
+    this.relogioDoAcento = null;
   }
 
   /** o termo do acento na assinatura (item 82, N1) — SÓ existe enquanto
@@ -1371,7 +1410,12 @@ export class LabelCanvas {
     ctx.shadowBlur = 0;
   }
 
+  /** O FIM DA VIDA DESTE QUADRO (o `useDirector` desmontando, ou o véu
+   *  de erro assumindo): o acento vai junto, para que o relógio dele não
+   *  deixe os ouvintes da preferência e do resize pendurados num canvas
+   *  que já não desenha. */
   clear(): void {
+    this.esquecerAcento();
     this.draw([]);
   }
 

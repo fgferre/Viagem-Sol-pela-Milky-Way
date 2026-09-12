@@ -3026,12 +3026,14 @@ async function carregarAtlasC5(sessao) {
  * sistema) e a cor dele é ambarina por natureza, o que contaminaria
  * justamente a contagem de pixels âmbar que a V7 faz depois.
  */
-async function acharCorpoDesenhado(sessao) {
+async function acharCorpoDesenhado(sessao, excluir = []) {
   return sessao.js(`(() => {
+    const excluir = ${JSON.stringify(excluir)};
     const alvos = window.__director?.rotulos?.alvos ?? [];
     for (const l of alvos) {
       if (!l.key || !l.key.startsWith('corpo:')) continue; // CHAVE_DE_CORPO, atlasConfig.ts
       if (l.key === 'corpo:sun') continue;
+      if (excluir.includes(l.key)) continue; // v9: pula corpos já usados noutro passo da mesma cena
       if (l.desenhado !== true || (l.opacity ?? 0) < 0.15) continue;
       if (l.icone || l.textoInvisivel) continue;
       const x = Math.round(l.x * window.innerWidth);
@@ -3078,6 +3080,101 @@ function jsPosicaoDoRotulo(chave) {
     return l
       ? { x: Math.round(l.x * window.innerWidth), y: Math.round(l.y * window.innerHeight) }
       : { x: null, y: null };
+  })()`;
+}
+
+
+/** instala, em página, um laço de `requestAnimationFrame` que grava a
+ *  série `{t, ambar, reduz}` do acento de UM corpo por até `TETO_MS` —
+ *  o substituto do relógio de FORA (`amostrarSequencia`), que não
+ *  alcança os 200ms do acento: cada ida e volta por CDP custa
+ *  ~90-100ms (medido: `dtMs` reais 0/195/275/359 para alvos nominais
+ *  0/70/120/180 — a janela não sobrevive nem a duas idas). Gravando POR
+ *  QUADRO, DENTRO da página, uma única leitura no fim
+ *  (`window.__acentoRec.am`) recupera a série inteira sem nenhuma ida e
+ *  volta no meio do que importa. `rec` é uma variável LOCAL ao
+ *  fechamento do laço, nunca `window.__acentoRec` relido a cada
+ *  quadro — de propósito: se esta função for chamada de novo antes
+ *  deste laço chegar ao teto (o passo B lê aos ~400ms, bem antes do
+ *  teto de 900ms), o laço velho continua escrevendo no SEU PRÓPRIO
+ *  objeto órfão, nunca no do próximo passo. A contagem relê a posição
+ *  do rótulo A CADA QUADRO (o corpo se move enquanto a câmera
+ *  reenquadra) e conta pixels do MESMO `canvas.label-canvas` que
+ *  a leitura usa a mesma cor/tolerância/alfa mínimo da V7 —
+ *  duplicado aqui (em vez de chamado) para não mexer na leitura de piso
+ *  já testada em Chrome de verdade.
+ *
+ *  `cliqueEm` (opcional, `{x, y}` em px de viewport) resolve o resto do
+ *  problema: nem o clique nem o toggle da preferência cabem os DOIS de
+ *  FORA, por CDP, dentro dos 200ms do acento (~90-100ms de ida e volta
+ *  cada). Passando `cliqueEm`, o PRÓPRIO gravador agenda, com
+ *  `setTimeout(40)`, um clique sintético SINTETIZADO em página
+ *  (`pointerdown`+`pointerup`+`click` em `document.elementFromPoint` do
+ *  ponto, testado em Chrome de verdade: o app seleciona por esse
+ *  caminho) — só o toggle continua vindo por CDP, e chega ~90-130ms
+ *  depois da instalação, com o clique (40ms) já disparado e o acento já
+ *  aceso. O instante do disparo fica em `rec.tClique`, para quem lê a
+ *  série depois. Omitido, nenhum clique é agendado (o passo B não
+ *  clica em nada; o passo C clica por CDP, sem corrida com mais nada). */
+function jsInstalarGravadorDeAcento(chave, cliqueEm = null) {
+  const trechoClique = cliqueEm ? `
+    setTimeout(() => {
+      // O PONTO DO CLIQUE É O DE AGORA, não o de quando a sonda achou o
+      // corpo: entre uma coisa e outra a câmera reenquadra (a ficha do
+      // clique anterior mudou a área útil) e o ponto velho erra o
+      // marcador — medido em 12/09, com o ponto velho o acento não
+      // acendia e o passo A media só o fundo. O ponto achado fica de
+      // reserva, para o caso de o corpo ter saído da lista.
+      const vivoAgora = (window.__director?.rotulos?.alvos ?? []).find((r) => r.key === ${JSON.stringify(chave)});
+      const px = vivoAgora ? Math.round(vivoAgora.x * window.innerWidth) : ${cliqueEm.x};
+      const py = vivoAgora ? Math.round(vivoAgora.y * window.innerHeight) : ${cliqueEm.y};
+      rec.tClique = Math.round(performance.now() - rec.t0);
+      const alvoEl = document.elementFromPoint(px, py);
+      if (!alvoEl) return;
+      rec.ondeClicou = alvoEl.className || alvoEl.tagName;
+      const init = {
+        clientX: px, clientY: py, bubbles: true, cancelable: true,
+        pointerId: 1, isPrimary: true, button: 0,
+      };
+      alvoEl.dispatchEvent(new PointerEvent('pointerdown', init));
+      alvoEl.dispatchEvent(new PointerEvent('pointerup', init));
+      alvoEl.dispatchEvent(new MouseEvent('click', init));
+    }, 12);` : '';
+  return `(() => {
+    const TETO_MS = 900;
+    const cor = ${JSON.stringify(COR_DO_ACENTO)};
+    const tolerancia = ${TOLERANCIA_DO_ACENTO};
+    const contarAmbarPerto = (x, y) => {
+      const cv = document.querySelector('canvas.label-canvas');
+      if (!cv) return null;
+      const ctx = cv.getContext('2d', { willReadFrequently: true });
+      const escala = cv.width / cv.clientWidth;
+      const ladoBuffer = Math.round(120 * escala);
+      const x0 = Math.max(0, Math.min(cv.width - ladoBuffer, Math.round(x * escala - ladoBuffer / 2)));
+      const y0 = Math.max(0, Math.min(cv.height - ladoBuffer, Math.round(y * escala - ladoBuffer / 2)));
+      const dados = ctx.getImageData(x0, y0, ladoBuffer, ladoBuffer).data;
+      let ambar = 0;
+      for (let i = 0; i < dados.length; i += 4) {
+        if (dados[i + 3] < 20) continue;
+        const dr = dados[i] - cor[0];
+        const dg = dados[i + 1] - cor[1];
+        const db = dados[i + 2] - cor[2];
+        if (Math.sqrt(dr * dr + dg * dg + db * db) <= tolerancia) ambar++;
+      }
+      return ambar;
+    };
+    const rec = { t0: performance.now(), am: [], tClique: null };
+    window.__acentoRec = rec;
+    const passo = () => {
+      const t = Math.round(performance.now() - rec.t0);
+      const l = (window.__director?.rotulos?.alvos ?? []).find((r) => r.key === ${JSON.stringify(chave)});
+      const ambar = l
+        ? contarAmbarPerto(Math.round(l.x * window.innerWidth), Math.round(l.y * window.innerHeight))
+        : null;
+      rec.am.push({ t, ambar, reduz: matchMedia('(prefers-reduced-motion: reduce)').matches });
+      if (t < TETO_MS) requestAnimationFrame(passo);
+    };
+    requestAnimationFrame(passo);${trechoClique}
   })()`;
 }
 
@@ -3162,6 +3259,195 @@ async function cenaAcentoC5(sessao, commit, pastaClipe) {
   };
 }
 
+/**
+ * V9 — O ACENTO PARA COM "REDUZIR MOVIMENTO": o acento do céu
+ * (`acentoDaSelecao`, `LabelCanvas.ts`) dura só 200ms — curto demais
+ * para o relógio de FORA. Duas idas e voltas por CDP (clique + toggle
+ * da preferência, ~90-100ms cada, medido) não cabem as duas dentro da
+ * janela; e amostrar por CDP no meio (`amostrarSequencia`) tampouco
+ * alcança (medido: `dtMs` reais 0/195/275/359 para alvos nominais
+ * 0/70/120/180). A V9 resolve em DUAS partes:
+ *   - grava POR QUADRO DENTRO DA PÁGINA (`jsInstalarGravadorDeAcento`,
+ *     um laço de rAF que empurra `{t, ambar, reduz}` em
+ *     `window.__acentoRec`) e lê a série inteira numa única chamada,
+ *     depois do teto — nenhuma ida e volta no meio da janela que
+ *     importa. A contagem lê o `canvas.label-canvas` (2D, transparente,
+ *     sem o piso ambarino de anéis/órbitas do `scene-canvas` WebGL por
+ *     trás — medido: ~37 em Júpiter, ~70 em Saturno);
+ *   - no passo A, o CLIQUE que acende o acento a medir também sai de
+ *     DENTRO da página (agendado pelo próprio gravador via
+ *     `setTimeout(40)` — ver `cliqueEm` em `jsInstalarGravadorDeAcento`),
+ *     e só o toggle da preferência continua vindo por CDP, na linha
+ *     seguinte, sem `dorme` no meio: ele chega ~90-130ms depois da
+ *     instalação — o clique (40ms) já rodou e o acento já está aceso —
+ *     no MEIO da janela de 200ms, não perto do fim ou depois dela.
+ * Três passos, um clipe só (o clipe/folha de contato continuam como
+ * prova visual; quem julga é a série gravada):
+ *   A) clica um corpo (por CDP) só para abrir uma ficha e deixar o
+ *      acento DELE morrer sozinho (`dorme(500)`); mede o PISO do 2º
+ *      corpo (ainda sem acento), instala o gravador JÁ com o clique
+ *      nele agendado, e manda o toggle imediatamente depois;
+ *   B) com a preferência ainda ligada, desliga sem clicar em nada: se o
+ *      acento reaparecesse só por isso, seria a seleção ANTIGA (a de A)
+ *      vazando de volta pelo toggle, não uma escolha nova;
+ *   C) mede o PISO de um TERCEIRO corpo, instala o gravador e clica
+ *      nele por CDP (aqui não há corrida com mais nada): a PRÓXIMA
+ *      seleção de verdade tem de voltar a acender e apagar nos mesmos
+ *      ~200ms de sempre, provando que A/B não deixaram o mecanismo do
+ *      acento travado.
+ * "Vivo"/"apagado" são sempre relativos ao PISO de cada corpo
+ * (`piso + 25` / `piso + 12`), nunca um valor absoluto. Se, mesmo com o
+ * clique agendado, a preferência ainda chegar tarde demais perto do
+ * acento (`tPreferencia - tAcendeu > 150`), o passo A continua
+ * INCONCLUSIVO — é uma medida honesta, não um teste que se autoaprova.
+ */
+async function cenaAcentoReduzidoC5(sessao, commit, pastaClipe) {
+  await pressionarEscape(sessao); // garante nenhum painel aberto antes do 1º clique
+  await dorme(300);
+
+  const alvo1 = await acharCorpoDesenhado(sessao);
+  if (!alvo1) throw new Error('v9: nenhum corpo desenhado para abrir a 1ª ficha (passo A, partida)');
+
+  let alvo2 = null;
+  let alvo3 = null;
+  let pisoA = null;
+  let pisoC = null;
+  let tCliqueA = null;
+  let serieA = [];
+  let serieB = [];
+  let serieC = [];
+
+  const quadros = await gravarClipe(
+    sessao,
+    { largura: 1440, altura: 900, pastaQuadros: pastaClipe },
+    async () => {
+      await dorme(150); // garante o screencast já armado antes do 1º clique
+
+      // PASSO A, 1ª metade — o 1º corpo só abre uma ficha para deixar o
+      // acento DELE morrer sozinho; o acento a MEDIR é o da 2ª escolha.
+      await clicarEmPonto(sessao, alvo1.x, alvo1.y);
+      await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_FICHA_PAINEL}'))`, 3000);
+      await dorme(500);
+
+      alvo2 = await acharCorpoDesenhado(sessao, [alvo1.key]);
+      if (!alvo2) throw new Error('v9: nenhum 2º corpo desenhado, diferente do 1º, para medir no passo A');
+
+      // PASSO A, 2ª metade — nem o clique nem o toggle cabem os dois de
+      // FORA, por CDP, dentro dos 200ms (~90-100ms de ida e volta cada).
+      // O CLIQUE sai de DENTRO da página, agendado pelo próprio gravador
+      // (`setTimeout(12)` — 40ms deixava a preferência chegar ANTES do
+      // clique quando o CDP vinha rápido, e aí nem acento havia para
+      // interromper); o toggle continua por CDP, na linha
+      // seguinte, sem `dorme` no meio — chega ~90-130ms depois da
+      // instalação, com o acento já aceso havia umas dezenas de ms.
+      await sessao.js(jsInstalarGravadorDeAcento(alvo2.key, { x: alvo2.x, y: alvo2.y }));
+      // A ORDEM NÃO PODE SER SORTEADA: espera-se o clique ter ACONTECIDO
+      // de fato antes de mandar o toggle. Sem isso o comando de CDP às
+      // vezes chegava PRIMEIRO (medido em 12/09: preferência aos 15ms,
+      // clique aos 43) e aí não havia acento nenhum para interromper — a
+      // rodada saía inconclusiva por sorteio. A espera custa uma ida e
+      // volta, então a preferência pousa uns 45-135ms depois do clique:
+      // no meio dos 200ms, que é onde o defeito mora.
+      await esperarPor({ js: sessao.js }, 'window.__acentoRec?.tClique !== null', 2000);
+      await sessao.send('Emulation.setEmulatedMedia', {
+        features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+      });
+      await dorme(900);
+      const recA = await sessao.js('window.__acentoRec');
+      serieA = recA.am;
+      tCliqueA = recA.tClique;
+
+      // PASSO B — a preferência CONTINUA ligada por mais 300ms antes de
+      // desligar: se o acento reaparecesse só por desligar o toggle,
+      // seria a seleção ANTIGA (a do passo A) vazando de volta — por
+      // isso nada é clicado aqui, só mais um gravador do MESMO corpo.
+      await dorme(300);
+      await sessao.send('Emulation.setEmulatedMedia', { features: [] });
+      await sessao.js(jsInstalarGravadorDeAcento(alvo2.key));
+      await dorme(400);
+      serieB = (await sessao.js('window.__acentoRec')).am;
+
+      // PASSO C — a PRÓXIMA seleção de verdade, num 3º corpo: prova que
+      // A/B não deixaram o mecanismo do acento travado. Aqui não há
+      // corrida com mais nada, o clique continua vindo por CDP.
+      alvo3 = await acharCorpoDesenhado(sessao, [alvo1.key, alvo2.key]);
+      if (!alvo3) throw new Error('v9: nenhum 3º corpo desenhado, diferente dos dois anteriores, para o passo C');
+      await sessao.js(jsInstalarGravadorDeAcento(alvo3.key));
+      await clicarEmPonto(sessao, alvo3.x, alvo3.y);
+      await dorme(900);
+      serieC = (await sessao.js('window.__acentoRec')).am;
+    }
+  );
+
+  const clipe = renderizarClipe(quadros, resolve(CAPTURAS, `motion-c5-v9-acento-reduzido-${commit}.mp4`));
+  const duracao = quadros[quadros.length - 1].ts - quadros[0].ts;
+  const folha = renderizarContato(clipe, duracao, resolve(CAPTURAS, `motion-c5-v9-acento-reduzido-${commit}.png`));
+
+  // O PISO SAI DA PRÓPRIA SÉRIE — a mediana dos ÚLTIMOS cinco quadros,
+  // quando o acento já acabou de qualquer jeito. Medir o piso ANTES do
+  // clique (12/09) dava um número de outro lugar da tela: a câmera
+  // reenquadra, o recorte de 120px viaja com o marcador e o fundo
+  // debaixo dele muda — num caso o "piso" saiu 148 com a série inteira
+  // abaixo de 107, e nenhum quadro podia ser VIVO.
+  const pisoDaSerie = (serie) => {
+    const caudas = serie.slice(-5).map((a) => a.ambar ?? 0).sort((x, y) => x - y);
+    return caudas.length ? caudas[Math.floor(caudas.length / 2)] : 0;
+  };
+  // "VIVO"/"APAGADO" relativos ao PISO (nunca um valor absoluto). As
+  // margens são largas porque a separação medida é larga: o acento vale
+  // ~500 pixels âmbar contra um piso de 50-90, que oscila ±30 enquanto o
+  // marcador anda sobre o céu.
+  const vivo = (amostra, piso) => amostra.ambar >= piso + 150;
+  const apagado = (amostra, piso) => amostra.ambar <= piso + 60;
+  pisoA = pisoDaSerie(serieA);
+  pisoC = pisoDaSerie(serieC);
+  const primeiroT = (serie, teste) => serie.find(teste)?.t ?? null;
+
+  // PASSO A: `tAcendeu` é o `t` do 1º quadro VIVO; `tPreferencia`, o `t`
+  // do 1º quadro com `reduz === true`. Sem os dois, ou com a preferência
+  // chegando tarde demais perto do acento (>150ms depois de acender), a
+  // rodada é INCONCLUSIVA — faltou prova, não é um FALHA do app.
+  const tAcendeuA = primeiroT(serieA, (a) => vivo(a, pisoA));
+  const tPreferenciaA = primeiroT(serieA, (a) => a.reduz === true);
+  let vereditoA;
+  if (tAcendeuA === null || tPreferenciaA === null || tPreferenciaA - tAcendeuA > 150) {
+    vereditoA = 'INCONCLUSIVO';
+  } else {
+    const ultimoAntes = [...serieA].reverse().find((a) => a.t < tPreferenciaA);
+    const vivoAntesDaPreferencia = Boolean(ultimoAntes) && vivo(ultimoAntes, pisoA);
+    const apagadoDepoisDaPreferencia = serieA
+      .filter((a) => a.t >= tPreferenciaA + 50)
+      .every((a) => apagado(a, pisoA));
+    vereditoA = vivoAntesDaPreferencia && apagadoDepoisDaPreferencia ? 'PASSA' : 'FALHA';
+  }
+
+  // PASSO B: o piso é o MESMO do passo A (mesmo corpo) — desligar não
+  // pode reacender a seleção antiga.
+  const tAcendeuB = primeiroT(serieB, (a) => vivo(a, pisoA));
+  const tPreferenciaB = primeiroT(serieB, (a) => a.reduz === true);
+  const vereditoB = serieB.every((a) => apagado(a, pisoA)) ? 'PASSA' : 'FALHA';
+
+  // PASSO C: houve quadro vivo, e todo quadro 260ms depois dele (já fora
+  // dos 200ms do acento) está apagado.
+  const tAcendeuC = primeiroT(serieC, (a) => vivo(a, pisoC));
+  const tPreferenciaC = primeiroT(serieC, (a) => a.reduz === true);
+  const vereditoC = tAcendeuC !== null
+    && serieC.filter((a) => a.t >= tAcendeuC + 260).every((a) => apagado(a, pisoC))
+    ? 'PASSA' : 'FALHA';
+
+  const veredito = combinarVereditos([vereditoA, vereditoB, vereditoC]);
+
+  return {
+    clipe, folha, quadros: quadros.length, alvo1, alvo2, alvo3, veredito,
+    passoA: {
+      piso: pisoA, serie: serieA, tClique: tCliqueA, tAcendeu: tAcendeuA, tPreferencia: tPreferenciaA,
+      veredito: vereditoA,
+    },
+    passoB: { piso: pisoA, serie: serieB, tAcendeu: tAcendeuB, tPreferencia: tPreferenciaB, veredito: vereditoB },
+    passoC: { piso: pisoC, serie: serieC, tAcendeu: tAcendeuC, tPreferencia: tPreferenciaC, veredito: vereditoC },
+  };
+}
+
 function jsDica(idDica) {
   return `(() => {
     const el = document.getElementById(${JSON.stringify(idDica)});
@@ -3223,7 +3509,7 @@ async function rodarC5(quais = null) {
   const roda = (v) => !quais || quais.has(v);
   mkdirSync(CAPTURAS, { recursive: true });
   const pastas = Object.fromEntries(
-    ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8'].map(
+    ['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9'].map(
       (v) => [v, resolve(tmpdir(), `sonda-motion-c5-${v}-${process.pid}`)]
     )
   );
@@ -3256,9 +3542,10 @@ async function rodarC5(quais = null) {
     const v5 = roda('v5') ? await comRetentativa(() => cenaProgressoC5(sessao, commit, pastas.v5)) : null;
     const v6 = roda('v6') ? await comRetentativa(() => cenaFimC5(sessao, commit, pastas.v6)) : null;
 
-    if (roda('v7') || roda('v8')) await carregarAtlasC5(sessao);
+    if (roda('v7') || roda('v8') || roda('v9')) await carregarAtlasC5(sessao);
     const v7 = roda('v7') ? await comRetentativa(() => cenaAcentoC5(sessao, commit, pastas.v7)) : null;
     const v8 = roda('v8') ? await comRetentativa(() => cenaDicaC5(sessao, commit, pastas.v8)) : null;
+    const v9 = roda('v9') ? await comRetentativa(() => cenaAcentoReduzidoC5(sessao, commit, pastas.v9)) : null;
 
     const dpr = await sessao.js('window.devicePixelRatio');
     const relatorio = {
@@ -3276,10 +3563,10 @@ async function rodarC5(quais = null) {
         idioma: META_DA_QUERY.lang,
         preset: META_DA_QUERY.q,
         ui: META_DA_QUERY.ui,
-        cenas: quais ? [...quais].join(',') : 'v1-v8',
+        cenas: quais ? [...quais].join(',') : 'v1-v9',
         geradoEm: new Date().toISOString(),
       },
-      v1, v2, v3, v4, v5, v6, v7, v8,
+      v1, v2, v3, v4, v5, v6, v7, v8, v9,
     };
     const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-c5-${commit}.json`));
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
@@ -3344,6 +3631,25 @@ async function rodarC5(quais = null) {
         `V8 dica de ajuda: ${v8.clipe} (${v8.quadros}q) — antes hidden=${v8.antes?.hidden}; `
           + `durante o hover animation=${v8.durante.map((a) => a.animationName).join('/')} hidden=${v8.durante.map((a) => a.hidden).join('/')}; `
           + `depois de sair hidden=${v8.depois.map((a) => a.hidden).join('/')}`
+      );
+    }
+    if (v9) {
+      const notaA = v9.passoA.veredito === 'INCONCLUSIVO'
+        ? ' (sem quadro vivo, sem preferência, ou ela chegou tarde demais perto do acento — a rodada não provou nada)'
+        : '';
+      const resumoPasso = (p) => {
+        const maximo = Math.max(...p.serie.map((a) => a.ambar ?? 0));
+        const ultimo = p.serie[p.serie.length - 1]?.ambar;
+        return `piso=${p.piso} max=${maximo} tAcendeu=${p.tAcendeu} tPreferencia=${p.tPreferencia} `
+          + `último=${ultimo} veredito=${p.veredito}`;
+      };
+      linhas.push(
+        `V9 acento reduzido: A/B alvo="${v9.alvo2?.name}" (${v9.alvo2?.key}), C alvo="${v9.alvo3?.name}" (${v9.alvo3?.key}); `
+          + `${v9.clipe} (${v9.quadros}q); `
+          + `passo A (${resumoPasso(v9.passoA)})${notaA}; `
+          + `passo B (${resumoPasso(v9.passoB)}); `
+          + `passo C (${resumoPasso(v9.passoC)}); `
+          + `veredito geral=${v9.veredito}`
       );
     }
     linhas.push(`JSON: ${destinoJson}`);

@@ -42,7 +42,50 @@ import type { RotuloComVaga } from '../three/world/rotulos3d';
 (globalThis as { window?: unknown }).window = {
   devicePixelRatio: 1,
   location: { search: '' },
+  // o relógio do acento entra e sai da lista de `movimentoDaGaveta.ts`,
+  // que pendura nela os ouvintes da preferência e do resize
+  addEventListener: () => {},
+  removeEventListener: () => {},
 };
+
+/**
+ * O DUPLO DO RELÓGIO DO ACENTO — o acento da seleção mede o tempo numa
+ * animação SEM ALVO (`relogio`, movimentoDaGaveta.ts), a mesma lista que
+ * "reduzir movimento" e o resize assentam. O runner da casa é `node` e
+ * não tem WAAPI: este duplo entrega as quatro coisas que `LabelCanvas`
+ * lê dela — `currentTime`, `playState`, `cancel()` e `finished` — e
+ * nada mais. Ele fica PARADO em 0 ms, que é o pico do acento: o quadro
+ * seguinte à troca de alvo, que é o que estes testes julgam. `finish()`
+ * é o que `assentarTudo` faria ao ligar a preferência no meio.
+ */
+class RelogioFalso {
+  currentTime: number | null = 0;
+  playState = 'running';
+  private acabar: () => void = () => {};
+  finished = new Promise<void>((resolve) => {
+    this.acabar = resolve;
+  });
+  constructor() {
+    relogioEmCurso.atual = this;
+  }
+  play(): void {}
+  cancel(): void {
+    this.playState = 'idle';
+    this.acabar();
+  }
+  finish(): void {
+    this.playState = 'finished';
+    this.acabar();
+  }
+}
+/** o último relógio que o desenho pediu — por onde o teste liga a
+ *  preferência no meio dos 200 ms (uma caixa, e não uma variável solta:
+ *  o construtor guarda a si mesmo, e o linter da casa não deixa `this`
+ *  virar identificador) */
+const relogioEmCurso: { atual: RelogioFalso | null } = { atual: null };
+(globalThis as { Animation?: unknown }).Animation = RelogioFalso;
+(globalThis as { KeyframeEffect?: unknown }).KeyframeEffect = class {};
+(globalThis as { document?: unknown }).document = { timeline: {} };
 
 const {
   LabelCanvas,
@@ -1357,5 +1400,45 @@ describe('o acento da seleção (U29–U30): sobe cheio e some em 200 ms', () =>
     const deMarte = ctx.aneis.filter((a) => a.x === 720 && a.y === 720);
     expect(deMarte.length).toBe(2);
     expect(deMarte[1].cor).toBe('#e2b872');
+  });
+
+  it('"reduzir movimento" LIGADO no meio apaga o acento no quadro seguinte — e a próxima escolha volta a acender', () => {
+    const { ctx, rotulos } = bancada();
+    const terra = { ...rotulo('corpo:earth', 'Terra', 0.4, 0.4, 201), comAnel: true };
+    const marte = { ...rotulo('corpo:mars', 'Marte', 0.6, 0.6, 201), comAnel: true };
+    const netuno = { ...rotulo('corpo:neptune', 'Netuno', 0.3, 0.7, 201), comAnel: true };
+    rotulos.draw([terra]);
+    // Marte vira o alvo: o acento acende e o relógio dele começa
+    rotulos.draw([{ ...terra, prioridade: 50 }, marte]);
+    expect(ctx.aneis.filter((a) => a.x === 720 && a.y === 720).length).toBe(2);
+    const relogio = relogioEmCurso.atual;
+    expect(relogio?.playState).toBe('running');
+
+    // A PREFERÊNCIA LIGA NO MEIO: `assentarTudo` (movimentoDaGaveta.ts)
+    // termina toda animação viva, inclusive este relógio.
+    relogio?.finish();
+    ctx.aneis.length = 0;
+    rotulos.draw([{ ...terra, prioridade: 50 }, marte]);
+    // o quadro REPINTOU (a assinatura perdeu o sufixo do acento) e Marte
+    // ficou só com o anel de sempre — posição e alvo do clique intactos
+    const marteDepois = ctx.aneis.filter((a) => a.x === 720 && a.y === 720);
+    expect(marteDepois.length).toBe(1);
+    expect(marteDepois[0].cor).not.toBe('#e2b872');
+    expect(marte.desenhado).toBe(true);
+
+    // DESLIGAR a preferência não repete a escolha antiga: o mesmo alvo,
+    // mais um quadro, e nenhum acento nasce
+    ctx.aneis.length = 0;
+    rotulos.draw([{ ...terra, prioridade: 50 }, { ...marte }]);
+    expect(ctx.aneis.filter((a) => a.cor === '#e2b872').length).toBe(0);
+
+    // A PRÓXIMA ESCOLHA volta a animar normalmente
+    ctx.aneis.length = 0;
+    rotulos.draw([{ ...terra, prioridade: 50 }, { ...marte, prioridade: 50 }, netuno]);
+    const deNetuno = ctx.aneis.filter((a) => a.x === 360 && a.y === 840);
+    expect(deNetuno.length).toBe(2);
+    expect(deNetuno[1].cor).toBe('#e2b872');
+    expect(relogioEmCurso.atual).not.toBe(relogio);
+    expect(relogioEmCurso.atual?.playState).toBe('running');
   });
 });
