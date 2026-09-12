@@ -642,4 +642,14 @@ describe('a preferência de movimento é OUVIDA enquanto o Director vive (§4/§
     expect(FONTE).toContain('this.reducedMotion = e.matches;');
     expect(FONTE.match(/matchMedia\('\(prefers-reduced-motion/g) ?? []).toHaveLength(1);
   });
+
+  it('a rampa da reserva da ficha pousa no alvo no PRÓXIMO quadro se a preferência mudar NO MEIO dela (item 225) — mesmo contrato das gavetas', () => {
+    // a preferência que muda no meio da rampa precisa ser honrada já no
+    // quadro seguinte, não só quando `reservarParaAFicha` é chamada de novo
+    const rampa = FONTE.slice(
+      FONTE.indexOf('A RAMPA DA RESERVA DA FICHA'),
+      FONTE.indexOf('const t = this.reservaFichaRampaT')
+    );
+    expect(rampa).toContain('this.shotMode || this.reducedMotion');
+  });
 });

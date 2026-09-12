@@ -2663,7 +2663,7 @@ export class Director {
 
     // VÉU DO ATLAS, antes de tudo (o passo e a razão moram em
     // director/veu.ts — se ele fechar neste quadro, a fase vira AQUI)
-    this.veuDoAtlas.tique(dt);
+    this.veuDoAtlas.tique(dt, this.reducedMotion || this.shotMode);
 
     // O RELÓGIO DO CÉU, antes de tudo que lê posição: se o instante
     // mudar neste quadro, a camada de planetas já o vê escrito. Parado
@@ -2728,11 +2728,17 @@ export class Director {
       // fora do Atlas não há o que avançar (filme e voo livre não leem a
       // reserva). Mesmo smoothstep de toda rampa da casa.
       if (this.reservaFichaRampaT < 1) {
-        this.reservaFichaRampaT = Math.min(
-          1,
-          this.reservaFichaRampaT +
-            (Number.isFinite(dt) ? Math.max(dt, 0) : 0) / RESERVA_DA_FICHA_RAMPA_S
-        );
+        // a preferência que muda NO MEIO da rampa é honrada no próximo
+        // quadro — o mesmo contrato das gavetas: t vai a 1 e o smoothstep
+        // abaixo pousa `reservaFichaCorrente` exatamente no alvo.
+        this.reservaFichaRampaT =
+          this.shotMode || this.reducedMotion
+            ? 1
+            : Math.min(
+                1,
+                this.reservaFichaRampaT +
+                  (Number.isFinite(dt) ? Math.max(dt, 0) : 0) / RESERVA_DA_FICHA_RAMPA_S
+              );
         const t = this.reservaFichaRampaT;
         const k = t * t * (3 - 2 * t);
         this.reservaFichaCorrente = {

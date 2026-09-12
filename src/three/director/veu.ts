@@ -61,9 +61,20 @@ export class VeuDoAtlas {
    * O passo do véu, no topo do tick: se ele terminar de fechar neste
    * quadro, a troca de fase acontece AQUI e o resto do tick já roda na
    * fase nova. Fora da travessia o ramo inteiro é um teste falso — o
-   * filme não paga um ciclo por ele.
+   * filme não paga um ciclo por ele. `instantaneo` liga também no MEIO
+   * de um véu em curso: a preferência que muda ao vivo assenta o véu
+   * neste mesmo quadro, como o ramo instantâneo de `atravessar`.
    */
-  tique(dt: number) {
+  tique(dt: number, instantaneo: boolean) {
+    if (instantaneo && this.emCurso) {
+      this.k = 0;
+      this.alvo = 0;
+      const acao = this.pendente;
+      this.pendente = null;
+      this.fios.onVeu(0);
+      if (acao) acao();
+      return;
+    }
     if (this.k !== this.alvo || this.pendente) {
       const passo = dt / VEU_ATLAS_S;
       this.k = this.alvo > this.k ? Math.min(1, this.k + passo) : Math.max(0, this.k - passo);
