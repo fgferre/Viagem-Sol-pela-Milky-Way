@@ -364,7 +364,7 @@ async function abrirSonda({ janela, prefixo }) {
     try {
       const { targetInfos } = await send('Target.getTargets');
       const intrusa = targetInfos.find(
-        (t) => t.type === 'page' && t.targetId !== idDaAba && t.url.startsWith('chrome://')
+        (t) => t.type === 'page' && t.targetId !== idDaAba && /^(chrome|edge):\/\//.test(t.url)
       );
       if (intrusa) {
         process.stdout.write(
@@ -735,6 +735,19 @@ function jsAmostraSanfona() {
  *  da animação (medido: a reabertura só começou aos ~450 ms). */
 const sanfonaAnimando = (a) =>
   a.existe && (a.className.includes('saindo') || a.sanfonaClientHeight < a.mioloScrollHeight - 1);
+
+/** espera a sanfona "Avançado" chegar ao REPOUSO ABERTA — sem `saindo`,
+ *  sem animação viva na caixa (a dobra WAAPI de `dobrar`) e com a altura
+ *  cheia do miolo — em vez de dormir um número e torcer; `null` no
+ *  estouro reprova em quem chama, como toda espera da casa. */
+const esperarSanfonaEmRepouso = (sessao) =>
+  esperarPor({ js: sessao.js }, `(() => {
+    const el = document.querySelector(${JSON.stringify(SEL_AVANCADO_CORPO)});
+    const miolo = el && el.querySelector('.sanfona-miolo');
+    return !!el && !!miolo && !el.className.includes('saindo')
+      && el.getAnimations().length === 0
+      && el.clientHeight >= miolo.scrollHeight - 1;
+  })()`, 3000);
 
 /** o `transform` computado da linha do tempo MAIS a WAAPI dela (I2c,
  *  `--interrupcoes`) — não confundir com a leitura cheia de
@@ -1406,7 +1419,12 @@ async function rodarInterrupcoes() {
     await clicarReal(sessao, SEL_AJUSTES_GATILHO);
     await dorme(400);
     await clicarReal(sessao, SEL_AVANCADO_GATILHO); // abre
-    await dorme(400);
+    // O REPOUSO É UM ESTADO, NÃO UM INSTANTE (doutrina de `esperarPor`):
+    // no Edge (12/09) a dobra começou tarde e aos 400 ms a caixa ainda
+    // estava a 3 px do fim, cortada — e a sonda chamava aquilo de
+    // "repouso com corte". Espera a sanfona sem animação viva e na
+    // altura cheia; o estouro (3 s) reprova pelo próprio `esperarPor`.
+    await esperarSanfonaEmRepouso(sessao);
     const i1RepousoAberta = await sessao.js(jsAmostraSanfona());
 
     const t0Fechar1 = Date.now();
@@ -1445,6 +1463,7 @@ async function rodarInterrupcoes() {
     // O REPOUSO DEPOIS DA REABERTURA é lido quando a gravação já parou e o
     // clipe já foi montado — a animação (--t-entrada) acabou há muito; é
     // uma amostra de repouso, não uma espera para o veredito passar
+    await esperarSanfonaEmRepouso(sessao);
     const i1RepousoReaberta = await sessao.js(jsAmostraSanfona());
     // cada amostra é julgada pelo PRÓPRIO estado (`sanfonaAnimando`):
     // animando → corte ligado; em repouso → corte desligado

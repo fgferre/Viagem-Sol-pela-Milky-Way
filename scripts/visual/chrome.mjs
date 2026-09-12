@@ -55,6 +55,21 @@ const ANGLE = { darwin: 'metal', win32: 'd3d11', linux: 'gl' };
 export const CHROME = process.env.CHROME_BIN || (CAMINHOS[process.platform] ?? []).find((p) => existsSync(p));
 if (!CHROME) throw new Error(`Chrome não encontrado (${process.platform})`);
 
+/**
+ * AS FLAGS QUE O BINÁRIO PEDE. O Edge entra sozinho na conta e nas
+ * extensões do dono mesmo com perfil temporário (matriz do C7, 11/09):
+ * abria `edge://sync-confirmation-dialog/` como aba e roubava a frente,
+ * e as provas só ficaram limpas com um embrulho fora do repositório.
+ * Medido em 12/09 pelo `/json/list` do próprio CDP: `--disable-extensions
+ * --disable-sync` bastam para a aba não nascer (`--guest` não ajuda e
+ * duplica as extensões de sistema). Só quando o binário é o Edge — o
+ * Chrome não precisa e não muda um byte. Função pura pelo caminho, para
+ * a prova em `chrome.test.mjs` não depender de qual navegador está
+ * instalado.
+ */
+export const flagsDoBinario = (caminho) =>
+  /Microsoft Edge|msedge/i.test(caminho) ? ['--disable-extensions', '--disable-sync'] : [];
+
 /** Flags de GPU comuns a todos os harnesses, com o backend da plataforma. */
 export const GPU_FLAGS = [
   '--headless=new',
@@ -154,7 +169,7 @@ export function lancarChrome({ perfil, args, stdio = 'ignore' }) {
     throw new Error('lancarChrome é quem põe o --user-data-dir: passe `perfil`, não a flag');
   }
   armarVigia();
-  const processo = spawn(CHROME, [`--user-data-dir=${perfil}`, ...args], { stdio });
+  const processo = spawn(CHROME, [`--user-data-dir=${perfil}`, ...flagsDoBinario(CHROME), ...args], { stdio });
   const sessao = { processo, perfil };
   sessoesVivas.add(sessao);
   return {
@@ -584,7 +599,8 @@ export async function abrirSessao({
     try {
       const { targetInfos } = await send('Target.getTargets');
       const intrusa = targetInfos.find(
-        (t) => t.type === 'page' && t.targetId !== idDaAba && t.url.startsWith('chrome://')
+        // `edge://` é a mesma intrusa no Edge (o diálogo de sincronização)
+        (t) => t.type === 'page' && t.targetId !== idDaAba && /^(chrome|edge):\/\//.test(t.url)
       );
       if (intrusa) {
         process.stdout.write(

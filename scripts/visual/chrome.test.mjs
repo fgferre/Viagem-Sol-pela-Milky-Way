@@ -11,7 +11,7 @@
 // bundle; aqui ficam as combinações restantes, incluindo as parciais, que
 // nenhum arranjo de servidor encena de propósito.
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, lancarChrome } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome } from './chrome.mjs';
 
 const sinal = (n) => Array(n).fill('sinal');
 const quadros = (n) => Array(n).fill('quadros');
@@ -203,5 +203,17 @@ describe('lancarChrome', () => {
     expect(() => lancarChrome({
       perfil: '/tmp/qualquer', args: ['--headless=new', '--user-data-dir=/tmp/outro'],
     })).toThrow(/user-data-dir/);
+  });
+
+  it('o Edge (e só ele) entra sem extensões e sem sincronização — a aba de sincronização roubava a frente na matriz do C7', () => {
+    expect(flagsDoBinario('/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge')).toEqual([
+      '--disable-extensions',
+      '--disable-sync',
+    ]);
+    expect(flagsDoBinario('C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe')).toEqual([
+      '--disable-extensions',
+      '--disable-sync',
+    ]);
+    expect(flagsDoBinario('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')).toEqual([]);
   });
 });
