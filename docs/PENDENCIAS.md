@@ -464,6 +464,42 @@ verificado: telefone de verdade, Safari, Firefox. Continuam abertos 223,
 sessao. essa já está com o contexto quase zerado, adianto que terei
 feedbacks para dar sobre a sua implementacao"*. Servidores parados.
 
+**11/09 (tarde/noite, rodada da REAUDITORIA — os cinco pontos que ela
+listou).** Feito e commitado (5 commits, `eb6a916` a `8e00199`): a folha
+do celular ABANDONA o gesto quando a tela muda de tamanho com o dedo
+encostado (o `touchend` seguinte não confirma mais a intenção
+abandonada); o halo WebGL do C6 termina junto com o resto do movimento
+("reduzir movimento", resize, troca de ferramenta) e acompanha o painel
+que muda de tamanho sem resize; a sonda do movimento vira aceite de
+verdade (julga pelo evento e pelos quadros, mede o começo efetivo do
+arrasto, um toque por quadro, INCONCLUSIVO quando o toque emulado não
+chega à página) e ganha `--contorno=cancelamento`, `--visivel`,
+`--sem-timer` e `--aberturas`; o juiz do voo livre volta a ler o recorte
+do convite, que mudou no C5. **As falhas "sem diagnóstico" da rodada da
+manhã eram todas da sonda**, não do app: a conta fixa de 16 px, os toques
+disparados de uma vez, a folha que para no limite em tela baixa e o toque
+emulado que o Chrome deixa de entregar depois do deslizante. **Matriz do
+C7:** Chrome 153 e Edge 152 passam interrupções, folha, padrão e fluxo
+contínuo em mesa grande, mesa baixa, 761, celular, 320 com texto 140% e
+760, em pt e en, DPR 1 e 2; os cinco juízes verdes (o filme em inglês
+falha só nas frases pinadas em pt, por projeto, e as legendas cabem em
+todas as cenas); idioma e texto trocados com painel aberto, ok. **Safari
+de iPhone (simulador, iOS 26.5):** a folha expande, recolhe e fecha com
+toque de verdade, e com "Reduzir movimento" LIGADO NO SISTEMA o painel
+aparece sem deslizar (1 mudança de tela contra 10) — fecha metade do item
+do backlog de 10/09. **Custo do halo no preset de uso** (Cinema, Atlas,
+DPR 2, Chrome visível, 20 aberturas de cada lado): quadro médio 42,7 ms
+com o halo contra 42,5 ms sem — diferença menor que a variação entre
+blocos do mesmo lado; o tempo de GPU do halo sozinho não é medível em
+tela real sem distorcer. **Esperam por ele:** a decisão sobre o halo
+(foto e vídeo lado a lado em `capturas/motion-c6-*-06e05d4.*`) e o
+retorno dele sobre a implementação. Continuam abertos 223, 224 e 225.
+Não verificado: telefone físico, Firefox (não instalado), Safari de mesa
+(a automação pede liberar um ajuste de segurança), Chrome Android,
+teclado virtual. Rodada encerrada nas palavras dele: *"pode fechar essa
+sessao, o contexto já está quase no final"*. Servidores parados; nada
+publicado e nada enviado ao backup.
+
 
 
 
