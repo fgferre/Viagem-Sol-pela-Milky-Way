@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 226.**
 
-## O BASTÃO — onde a rodada parou (11/09)
+## O BASTÃO — onde a rodada parou (12/09)
 
 **07/09 (rodada da VARREDURA, encerrada por ordem dele: "encerrar
 rodada").** Abriu com a pergunta dele: "o que faltou? pode continuar.
@@ -499,6 +499,44 @@ Não verificado: telefone físico, Firefox (não instalado), Safari de mesa
 teclado virtual. Rodada encerrada nas palavras dele: *"pode fechar essa
 sessao, o contexto já está quase no final"*. Servidores parados; nada
 publicado e nada enviado ao backup.
+
+**12/09 (rodada do ACENTO e da DECISÃO DO C6).** Pedido dele: fechar a
+implementação de motion a partir de 081729e, sem reabrir o que já estava
+resolvido. **Feito e provado:** a última brecha do movimento reduzido — o
+acento da seleção no céu (`LabelCanvas.ts`) lia a preferência só no quadro
+da TROCA, então ligá-la 30 ms depois de escolher Netuno deixava o anel
+âmbar crescendo e apagando os 200 ms inteiros. O relógio dele passou a ser
+a mesma animação sem alvo (`relogio`, movimentoDaGaveta.ts) que
+`assentarTudo` já termina, como o halo do C6: a preferência ou o resize
+apagam o anel no quadro seguinte, o marcador/posição/colisão/clique ficam
+intactos, desligar a preferência não repete a escolha antiga e a próxima
+volta a animar. Prova nova e repetível `--c5=v9` (gravador POR QUADRO
+dentro da página, lendo o `canvas.label-canvas`; o clique é agendado pela
+própria página porque nem clique nem toggle por CDP cabem nos 200 ms):
+PASSA neste código (acende aos 120 ms, preferência aos 212, quadro
+seguinte limpo) e FALHA com o defeito reposto. `npm run done` verde (3.024
+testes). Commit `e92d68f`, backup enviado, **site não publicado**.
+**Achado:** o lado a lado A/B em Cinema/DPR 2 da rodada anterior
+(`motion-c6-a-b-velocidade-real-cinema-dpr2-06e05d4.mp4`, montado à mão e
+sem JSON) NÃO representa o app — medido, o lado B mantém o halo aceso até
+o fim do clipe, inclusive com o painel em repouso, e o app desenha 404 ms
+e apaga (conferido ao vivo). Não reusar; está no backlog. No lugar dele
+foi gravado um par novo nas mesmas condições, com tira quadro a quadro e
+lado a lado alinhados pela entrada realmente capturada
+(`capturas/motion-c6-a-b-*-cinema-dpr2-081729e.*` e
+`motion-c6-{a,b}-inteiro-081729e.mp4`). **Custo, dito sem enfeite:** 42,5
+ms/quadro sem halo contra 42,7 com, nesta máquina — diferença dentro da
+variação; isso não prova custo zero, e 42,5 ms/quadro são ~23 fps, não 60.
+O halo continua experimental atrás de `?contorno=webgl`, sem fusão no
+pós-processamento. **Checagem extra:** o relógio novo usa uma peça de
+WAAPI que nunca tinha rodado no Safari — no simulador de iPhone (iOS 26.5)
+escolher dois corpos seguidos funciona; simulador não é aparelho físico.
+**Espera por ele:** a DECISÃO DO HALO (olhar a tira e o lado a lado) e o
+olho dele no app. Continuam abertos 223, 224 e 225. **Sem validação
+declarada:** telefone físico, teclado virtual, Chrome Android, Firefox e
+Safari de mesa. Rodada encerrada nas palavras dele: *"pode encerrar essa
+conversa. contexto já cheio. vamso continuar numa janela nova"*.
+Servidores parados.
 
 
 
