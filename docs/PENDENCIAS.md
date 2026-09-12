@@ -591,6 +591,49 @@ Firefox (não instalado) e Safari de mesa (pede liberar um ajuste de
 segurança). Rodada encerrada nas palavras dele: *"Pode encerrar essa
 conversa e preparar o bastão para uma nova sessão"*. Servidores parados.
 
+**12/09 (rodada do VÉU AO VIVO e da ADOÇÃO DO HALO).** Pedido dele, em
+três mensagens: *"continue orquestrando"*; depois, ao ver a tira do C6 e
+testar as duas URLs no Chrome dele, *"gostei do halo e reflexo, pdoe
+deixar"*; e ao fim *"testei, ficou bom. pode encerrar e preparar o
+bastão"*. **Feito e provado (commit `cd7bf4c`):** a última brecha do
+"reduzir movimento" ao vivo — o véu do Atlas e a rampa da reserva da ficha
+JÁ EM CURSO assentam no quadro seguinte quando a preferência muda no meio
+deles (o passo do véu recebe a leitura viva, `tique(dt, instantaneo)`, e
+a rampa leva t a 1); provado em Chrome 153 por CDP, `b1b238a` contra a
+árvore, cada um servido de um build isolado: antes o véu ignora a mudança
+e só volta a zero 731 ms depois; depois está em zero no primeiro quadro
+após a mudança (+64 ms), nas duas rodadas
+(`capturas/motion-veu-ao-vivo-antes-depois-b1b238a.json`); teste de
+comportamento do véu (`director/veu.test.ts`) e lei da rampa no arquivo
+do Director. **HALO ADOTADO (commit `51100ca`):** fundido no FILM_SHADER
+atrás de `if (uHalo > 0.0)` — zero passe extra; `Post.acenderHalo`/
+`apagarHalo` escrevem os uniforms, `ContornoDaUi` ficou só com relógio,
+envelope e caixa, e os uniforms são escritos ANTES do render do quadro
+(a primeira versão escrevia depois: um quadro atrasado); ligado por padrão
+na mesa, `?contorno=css` força o reflexo puro (lado A), `?shot=` e
+movimento reduzido apagam. Provas: o uniform fica em ZERO em todos os
+quadros com `shot=1`, `shot=2` e `contorno=css`, e sobe a 0,44 por
+~400 ms no caso normal (`capturas/motion-c6-halo-em-shot-cd7bf4c.json`);
+fotos de `shot=1` dos dois lados com o mesmo md5 (a diferença de
+luminância que a sonda acusou era o quadro velho preso na aba, armadilha
+conhecida); tira alinhada pela entrada real do painel
+(`capturas/motion-c6-a-b-tira-antes-depois-da-fusao-cd7bf4c.png`) com a
+mesma faixa âmbar no pico do protótipo e do fundido (15,9 × 15,5 de R−B),
+conferida no zoom; custo do passe final igual com e sem halo dentro do
+ruído (p50 10,3 × 10,1 ms, timer query, headless, DPR 1; rAF idêntico) —
+custo NÃO MENSURÁVEL nesta régua, não custo zero. A sonda `--contorno` foi
+invertida junto (A = `contorno=css`, B = sem chave; `passeFinal` no lugar
+de `halo`). **Ele testou o halo no Chrome dele e aprovou.** `npm run done`
+verde nas duas rodadas (3.043 testes). Backup enviado; **site não
+publicado**; **plano não tocado** (o §12.10 segue desatualizado; commits e
+backlog têm precedência). **Backlog:** `--contorno=cancelamento` mede
+falso desde a fusão (conta o passe final como desenho do halo; medir por
+`uHalo`); a régua `--contorno` recorta a borda fora do instante também
+headless em DPR 1. **Continuam abertos 223, 224 e 225.** **Sem validação
+declarada:** telefone físico, Firefox, Safari de mesa, Chrome Android,
+"reduzir movimento" ligado no sistema de um aparelho real. Rodada
+encerrada nas palavras dele. Servidor parado.
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar
