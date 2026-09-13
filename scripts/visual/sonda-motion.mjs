@@ -25,6 +25,7 @@
 //   node scripts/visual/sonda-motion.mjs --c5 --app=http://localhost:58697
 //   node scripts/visual/sonda-motion.mjs --c5=v6,v7 --app=http://localhost:58697
 //   node scripts/visual/sonda-motion.mjs --contorno --app=http://localhost:5180
+//   node scripts/visual/sonda-motion.mjs --contorno=cancelamento --contraprovas --app=http://localhost:5180
 //
 // Saída (nomes inéditos — nunca sobrescreve, ver `semSobrescrever`):
 //   capturas/motion-c0-<commit>.json       todas as amostras + metadados
@@ -187,6 +188,12 @@ const SEM_TIMER = process.argv.includes('--sem-timer');
 // do §9 é aumentar a observação em vez de declarar.
 const argAberturas = process.argv.find((a) => a.startsWith('--aberturas='));
 const ABERTURAS_POR_BLOCO = argAberturas ? Number(argAberturas.slice('--aberturas='.length)) : 5;
+// `--contraprovas` (só com `--contorno=cancelamento`) — depois de
+// K0–K10, roda DOIS casos cujo veredito ESPERADO é INCONCLUSIVO (X1: o
+// procedimento de K7 sem o clique; X2: K1 com o comando entregue tarde
+// demais, depois do halo já ter apagado sozinho) para provar que a
+// própria régua reprova a ausência de teste — ver `rodarCancelamento`.
+const CONTRAPROVAS = process.argv.includes('--contraprovas');
 
 const SEL_CAMADAS_GATILHO = '[data-abre-dialogo="camadas"]';
 const SEL_AJUSTES_GATILHO = '[data-abre-dialogo="ajustes"]';
@@ -3859,6 +3866,13 @@ window.__contornoProf = {
       G.gpuPorQuadro[quadroAtual] = { t, ns: 0 };
       poll();
       G.rafAbs.push(t);
+      // AMOSTRA DEPOIS de \`cb(t)\` rodar: antes, a leitura do uniform
+      // corria ANTES do tick do app escrever o estado daquele quadro —
+      // toda amostra saía atrasada em um quadro (achado do revisor de
+      // 12/09). \`cb\` é o próprio código do app; se lançar, o \`oRAF\`
+      // externo já perdeu o quadro inteiro, então não há nada a
+      // preservar aqui.
+      const retornoDoCb = cb(t);
       const { uHalo, ret } = lerEstadoDoHalo();
       // MESMO \`t\`: mais de um chamador pediu \`requestAnimationFrame\`
       // para o MESMO paint (o próprio app e, por exemplo, um
@@ -3874,7 +3888,7 @@ window.__contornoProf = {
       } else {
         G.quadros.push({ t, uHalo, ret });
       }
-      return cb(t);
+      return retornoDoCb;
     });
   }
 })();
@@ -4442,6 +4456,16 @@ async function rodarContorno() {
  * — nessa ordem, para a restauração nunca disputar com a leitura, e
  * sempre incondicional (é NO-OP quando o caso não tocou aquele estado),
  * para nada vazar de um K para o seguinte.
+ *
+ * GARANTIAS de 12/09 (achados de um revisor contra o código anterior):
+ * a amostra do quadro sai DEPOIS do tick do app (`SCRIPT_GPU_HALO`,
+ * nunca mais um quadro atrasada); `avaliarCancelamento` rejeita
+ * (INCONCLUSIVO) um evento entregue depois que o halo já teria apagado
+ * sozinho (400ms, `DURACAO_DO_HALO_MS`); K7–K9 confirmam que o painel
+ * abriu de verdade antes de julgar "nunca acende"; K5 rejeita leitura
+ * de caixa inválida em vez de comparar lixo. `--contraprovas` roda dois
+ * casos que provam a própria régua (não o app): sem eles, as três
+ * primeiras garantias eram só afirmação.
  */
 async function rodarCancelamento() {
   mkdirSync(CAPTURAS, { recursive: true });
@@ -4457,7 +4481,13 @@ async function rodarCancelamento() {
     await sessao.send('Emulation.setDeviceMetricsOverride', viewport);
     sessao.marcarViewport(viewport);
     const versaoChrome = await sessao.send('Browser.getVersion');
-    await sessao.send('Page.addScriptToEvaluateOnNewDocument', { source: SCRIPT_GPU_HALO });
+    // SEM TIMER QUERIES sempre neste sub-modo (não só com `--sem-timer`):
+    // o veredito só lê o uniform por quadro, nunca o tempo de GPU, e a
+    // timer query custa quadros inteiros sob Chrome visível (achado de
+    // 11/09) — puro custo, nenhuma prova a mais.
+    await sessao.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `window.__contornoSemTimer = true;\n${SCRIPT_GPU_HALO}`,
+    });
     await carregarNoContorno(sessao, QUERY);
 
     const fecharPainel = async (seletorPainel) => {
@@ -4528,14 +4558,39 @@ async function rodarCancelamento() {
         ? Math.max(...acesosAntesDoComando.map((q) => q.t)) : null;
       const acesoAntes = ultimoAcesoAntesDoComando !== null;
       const haloJaApagado = acesoAntes && (tComando - ultimoAcesoAntesDoComando) > 60;
+      // DURACAO_DO_HALO_MS (`src/three/core/contornoDaUi.ts`) — quanto o
+      // halo vive sozinho, sem interrupção nenhuma; repetida aqui (não
+      // importada) pelo mesmo motivo de `SCRIPT_GPU_HALO` ser reescrita:
+      // importar aquele módulo dispararia código do app dentro do Node.
+      const DURACAO = 400;
+      const fimNaturalEstimado = primeiroAceso !== null ? primeiroAceso + DURACAO : null;
+      // PROVA REAL de cancelamento (achado do coordenador, 2ª rodada): a
+      // janela de +60ms sair zerada não basta — pode só estar medindo o
+      // halo apagando sozinho, no seu próprio prazo. `primeiroZeroDepoisDoEvento`
+      // é o primeiro quadro amostrado, a partir da ENTREGA (`tEvento`),
+      // com `uHalo === 0`: se ele não existe, ou só chega perto ou depois
+      // do fim natural (2 quadros de folga, 33ms), o zero não prova nada
+      // que o relógio sozinho não desse.
+      const zerosDepoisDoEvento = tEvento === null ? [] : quadros.filter((q) => q.t >= tEvento && q.uHalo === 0);
+      const primeiroZeroDepoisDoEvento = zerosDepoisDoEvento.length
+        ? Math.min(...zerosDepoisDoEvento.map((q) => q.t)) : null;
+      const eventoTardeDemais = tEvento !== null && fimNaturalEstimado !== null
+        && (primeiroZeroDepoisDoEvento === null || primeiroZeroDepoisDoEvento >= fimNaturalEstimado - 33);
       const faltantes = [];
       if (!acesoAntes) faltantes.push('sem quadro aceso antes da interrupção');
       if (!entregue) faltantes.push('interrupção não entregue');
       if (janela.length === 0) faltantes.push('sem quadro amostrado depois de interrupção+60ms');
       if (haloJaApagado) faltantes.push('halo já apagado antes do comando');
+      if (eventoTardeDemais) faltantes.push('evento tarde demais: o halo acabaria sozinho');
       if (faltantes.length) {
         return {
-          ...base, veredito: 'INCONCLUSIVO', motivo: faltantes.join('; '), primeiroAceso, ultimoAceso,
+          ...base,
+          veredito: 'INCONCLUSIVO',
+          motivo: faltantes.join('; '),
+          primeiroAceso,
+          ultimoAceso,
+          fimNaturalEstimado,
+          primeiroZeroDepoisDoEvento,
         };
       }
       const acesoNaJanela = janela.filter((q) => q.uHalo > 0);
@@ -4544,6 +4599,8 @@ async function rodarCancelamento() {
         veredito: acesoNaJanela.length === 0 ? 'PASSA' : 'FALHA',
         primeiroAceso,
         ultimoAceso,
+        fimNaturalEstimado,
+        primeiroZeroDepoisDoEvento,
         quadrosNaJanela: janela.length,
         acesosNaJanela: acesoNaJanela.length,
       };
@@ -4764,6 +4821,20 @@ async function rodarCancelamento() {
           quadrosVerificados: litDepoisDaMudanca.length,
         };
       }
+      // LEITURA INVÁLIDA da caixa (achado do revisor de 12/09): `ret`
+      // nulo/ausente ou com componente não finito não pode ENTRAR na
+      // comparação — silenciosamente viraria "não bate" (FALHA) ou, pior,
+      // um NaN que `dentroDeUmPx` nunca detecta como divergência.
+      const retInvalido = (r) => !r || r.some((v) => !Number.isFinite(v));
+      if (litDepoisDaMudanca.some((q) => retInvalido(q.ret))) {
+        return {
+          ...base,
+          veredito: 'INCONCLUSIVO',
+          motivo: 'leitura inválida da caixa',
+          quadrosAteConvergir: null,
+          quadrosVerificados: litDepoisDaMudanca.length,
+        };
+      }
       const indiceConvergencia = litDepoisDaMudanca.findIndex(bate);
       if (indiceConvergencia === -1 || indiceConvergencia >= 4) {
         return {
@@ -4845,16 +4916,35 @@ async function rodarCancelamento() {
     // (`carregarNoContorno`), sem o resto do estado de K0–K6 para
     // restaurar.
     // ---------------------------------------------------------------
-    const casoDeAusenciaTotal = async (sufixoQuery, comAmostras) => {
+    // `semClique` (só a contraprova X1 usa) — pula o clique para provar
+    // que a régua REPROVA a própria ausência de teste: sem clique nenhum
+    // painel abre, e o caso tem de virar INCONCLUSIVO, nunca PASSA.
+    const casoDeAusenciaTotal = async (sufixoQuery, comAmostras, semClique) => {
       await carregarNoContorno(sessao, `${QUERY}${sufixoQuery}`);
       const antes = await contarQuadros();
-      await sessao.js(`document.querySelector('${SEL_CAMADAS_GATILHO}')?.click()`);
+      if (!semClique) {
+        await sessao.js(`document.querySelector('${SEL_CAMADAS_GATILHO}')?.click()`);
+      }
+      // CONFIRMA que o clique abriu o painel de verdade (achado do
+      // revisor de 12/09: sem isso, K7–K9 "passavam" mesmo quando o
+      // `.click()` nunca alcançava nada). Existe no DOM mesmo com
+      // `shot=2` (HUD em `display:none`), então checar a EXISTÊNCIA
+      // basta — não precisa estar visível.
+      const painelApareceu = await esperarPor(
+        { js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_PAINEL}'))`, 500
+      );
+      const painelAbriu = painelApareceu !== null;
       await dorme(700);
       const quadros = await lerQuadrosDesde(antes);
       const amostras = comAmostras ? { amostras: quadros } : {};
       const base = {
-        quadrosAntes: antes, quadrosDepois: antes + quadros.length, tEvento: null, entregue: null,
+        quadrosAntes: antes, quadrosDepois: antes + quadros.length, tEvento: null, entregue: null, painelAbriu,
       };
+      if (!painelAbriu) {
+        return {
+          ...base, veredito: 'INCONCLUSIVO', motivo: 'painel não abriu', primeiroAceso: null, ultimoAceso: null, ...amostras,
+        };
+      }
       if (quadros.length < 10 || quadros.some((q) => q.uHalo === null)) {
         return {
           ...base,
@@ -4909,6 +4999,28 @@ async function rodarCancelamento() {
     process.stdout.write('  ·     K9 contorno=css, o halo nunca acende…\n');
     const k9 = await casoDeAusenciaTotal('&contorno=css');
 
+    // `--contraprovas` — dois casos cujo veredito ESPERADO é
+    // INCONCLUSIVO, repetíveis por qualquer IA para checar a régua em
+    // vez de só o app: X1 (sem clique, o painel nunca abre) e X2 (o
+    // comando de reduzir movimento entregue tarde demais, já depois do
+    // halo ter apagado sozinho). Ficam FORA de `combinarVereditos` —
+    // não são provas sobre o halo, são provas sobre a própria régua.
+    let contraprovas = null;
+    if (CONTRAPROVAS) {
+      process.stdout.write('  ·     X1 contraprova: K7 sem clique (esperado INCONCLUSIVO)…\n');
+      const x1 = await casoDeAusenciaTotal('&shot=1', true, true);
+      process.stdout.write('  ·     X2 contraprova: reduzir-movimento @450ms, tarde demais (esperado INCONCLUSIVO)…\n');
+      await carregarNoContorno(sessao, QUERY); // K7–K9 deixaram a página noutra query
+      const x2 = await rodarCasoDeSupressao({
+        evento: 'reduzido', delayMs: 450, comLacuna: false, agir: ligarReduzido, comAmostras: true,
+      });
+      contraprovas = {
+        x1: { ...x1, esperado: 'INCONCLUSIVO' },
+        x2: { ...x2, esperado: 'INCONCLUSIVO' },
+        veredito: (x1.veredito === 'INCONCLUSIVO' && x2.veredito === 'INCONCLUSIVO') ? 'PASSA' : 'FALHA',
+      };
+    }
+
     const veredito = combinarVereditos([k0, k1, k2, k3, k4, k5, k6, k10, k7, k8, k9].map((k) => k.veredito));
 
     const relatorio = {
@@ -4925,6 +5037,7 @@ async function rodarCancelamento() {
       },
       k0, k1, k2, k3, k4, k5, k6, k10, k7, k8, k9,
       veredito,
+      ...(contraprovas ? { contraprovas } : {}),
     };
     const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-c6-cancelamento-${commit}.json`));
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
@@ -4948,6 +5061,11 @@ async function rodarCancelamento() {
       `K8 shot=2 nunca acende: ${k8.veredito} (quadros=${k8.quadrosDepois - k8.quadrosAntes}, acesos=${k8.contagemAcesos ?? '-'}, motivo=${k8.motivo ?? '-'})`,
       `K9 contorno=css nunca acende: ${k9.veredito} (quadros=${k9.quadrosDepois - k9.quadrosAntes}, acesos=${k9.contagemAcesos ?? '-'}, motivo=${k9.motivo ?? '-'})`,
       `veredito geral: ${veredito}`,
+      ...(contraprovas ? [
+        `X1 sem clique (esperado INCONCLUSIVO): ${contraprovas.x1.veredito} (motivo=${contraprovas.x1.motivo ?? '-'})`,
+        `X2 reduzir-movimento @450ms tarde demais (esperado INCONCLUSIVO): ${contraprovas.x2.veredito} (motivo=${contraprovas.x2.motivo ?? '-'})`,
+        `contraprovas: ${contraprovas.veredito}`,
+      ] : []),
       `JSON: ${destinoJson}`,
     ];
     process.stdout.write(`${linhas.join('\n')}\n`);

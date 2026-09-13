@@ -274,20 +274,29 @@
   background: var(--borda);
 }
 /* JANELAS BAIXAS (celular deitado, 844×390 e afins) — a régua encolhe
-   para nunca disputar altura com o selo/máquina do tempo do canto
-   oposto; ela é chrome PERMANENTE e não pode empurrar a câmera ao
-   crescer, então quem cede é a própria aba.
+   para nunca disputar altura com o selo do canto oposto; ela é chrome
+   PERMANENTE e não pode empurrar a câmera ao crescer, então quem cede é
+   a própria aba.
 
-   3,25rem já não bastava com `?ui=1,4` (item C7, 12/09): a última aba
-   (Ajustes) terminava 32 px abaixo de 390 px de janela, cortada. 2,75rem
-   é o PISO de alvo de toque da casa (44 px a `ui=1`, o mesmo número de
-   `ALVO_DE_TOQUE_PX` no juiz de a11y-celular), e cresce com `?ui=` como
-   todo `rem` — nunca menor que o mínimo acessível. (O selo, que também
-   disputava esta altura, ganha reserva própria mais abaixo, junto da
-   declaração dele — `right: 3vw`.) */
+   O TETO É `100vh` menos o MESMO topo da régua (`--barra-fim + 1rem`)
+   menos `--selo-base` (fatia 1) — a reserva do selo, a mesma que ele
+   próprio lê para o `bottom`, aqui subtraída do outro lado. Uma altura
+   fixa em `rem` (2,75rem, item C7, 12/09) não seguia a altura
+   DISPONÍVEL: a `800×360` com `?ui=1,4` a última aba (Ajustes) ainda
+   vazava o pé da janela, e a `ui=0,85` a própria aba encolhia para
+   37,4 px, abaixo do alvo de toque. Agora o piso é `min-height: 44px`
+   EM PIXEL, não em `rem` — não encolhe com `?ui=` — e `flex-shrink`
+   leva cada aba dos 4rem de sempre (quando cabe) até esse piso conforme
+   a régua aperta; `overflow-y: auto` só entra quando nem o piso cabe
+   nas quatro. */
 @media (max-height: 520px) {
+  .atlas-regua {
+    max-height: calc(100vh - var(--barra-fim) - 1rem - var(--selo-base));
+    overflow-y: auto;
+  }
   .atlas-regua > .hud-btn {
-    height: 2.75rem;
+    min-height: 44px;
+    flex: 1 1 auto;
   }
 }
 /* O MECANISMO DA RESERVA (Lote 4½): `--regua-largura` só existe quando
