@@ -247,4 +247,11 @@ describe('o halo de contorno fundido no FILM_SHADER (C6)', () => {
     expect(post).toMatch(/acenderHalo\(p: ParametrosDoHalo\)/);
     expect(post).toMatch(/apagarHalo\(\)/);
   });
+
+  it('haloDaUi não usa pow() — base negativa em GLSL é comportamento indefinido (a mesma armadilha do NaN)', () => {
+    const inicio = dustShaders.indexOf('vec3 haloDaUi(');
+    const fim = dustShaders.indexOf('void main()', inicio);
+    const corpo = dustShaders.slice(inicio, fim);
+    expect(corpo).not.toMatch(/pow\(/);
+  });
 });

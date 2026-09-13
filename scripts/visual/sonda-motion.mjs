@@ -3734,14 +3734,22 @@ async function rodarC5(quais = null) {
  * (só o tempo de GPU depende da extensão): o rótulo de todo programa
  * (pelo texto dos shaders), o embrulho de TODO desenho (`drawArrays` e
  * primos) e o embrulho do `requestAnimationFrame` (o tempo de quadro
- * não depende da extensão nenhuma). Dois campos novos, para o
+ * não depende da extensão nenhuma). Dois campos novos, um deles para o
  * `--contorno=cancelamento` (`rodarCancelamento`) confirmar que o halo
  * CANCELA, não só que ele desenha:
- *   `desenhosHalo`  — um `{ t, ret }` por desenho do halo (`ret` é o
- *                     ÚLTIMO valor mandado para o uniform `uRetangulo`
- *                     — x, y, width, height em px CSS — do PROGRAMA do
- *                     halo; three.js só reenvia um uniform quando ele
- *                     MUDA, então "o último mandado" já é o corrente).
+ *   `quadros`       — um `{ t, uHalo, ret }` por quadro (rAF): `uHalo`
+ *                     é `window.__director.post.film.uniforms.uHalo.value`
+ *                     no instante (0 = apagado, >0 = aceso; `null` só
+ *                     quando `__director.post.film.uniforms` não é
+ *                     alcançável, nunca lança), `ret` é
+ *                     `uHaloRetangulo.value` (x, y, largura, altura em
+ *                     px CSS) como array, ou `null` junto com `uHalo`
+ *                     nulo. Desde a fusão do halo no passe final
+ *                     (`dustShaders.ts`, FILM_SHADER) é o ESTADO
+ *                     efetivo por quadro que prova aceso/apagado — o
+ *                     desenho por si só não prova mais nada, porque o
+ *                     passe final roda em TODO quadro, com o halo aceso
+ *                     ou não.
  *   `gpuPorQuadro`  — um `{ t, ns }` por quadro (rAF), com o tempo de
  *                     GPU de TODOS os desenhos daquele quadro somado
  *                     (não só o halo) — cada query pendente carrega o
@@ -3751,7 +3759,7 @@ async function rodarC5(quais = null) {
  */
 const SCRIPT_GPU_HALO = `
 window.__contornoProf = {
-  ready: 0, ext: 0, err: null, passeFinal: [], rafAbs: [], desenhosHalo: [], gpuPorQuadro: [],
+  ready: 0, ext: 0, err: null, passeFinal: [], rafAbs: [], quadros: [], gpuPorQuadro: [],
 };
 (() => {
   const G = window.__contornoProf;
@@ -3795,33 +3803,6 @@ window.__contornoProf = {
     const oUse = gl.useProgram.bind(gl);
     gl.useProgram = (p) => { cur = p; oUse(p); };
 
-    // O ÚLTIMO VALOR de \`uRetangulo\` POR PROGRAMA — \`getUniformLocation\`
-    // guarda de quem (programa, nome) é cada location devolvida,
-    // \`uniform4f\`/\`uniform4fv\` gravam o valor mandado por último nela.
-    const infoDaLocation = new WeakMap();
-    const ultimoRetPorPrograma = new WeakMap();
-    const oGetLoc = gl.getUniformLocation.bind(gl);
-    gl.getUniformLocation = (programa, nome) => {
-      const loc = oGetLoc(programa, nome);
-      if (loc) infoDaLocation.set(loc, { programa, nome });
-      return loc;
-    };
-    const registrarRetangulo = (location, valores) => {
-      const info = infoDaLocation.get(location);
-      if (!info || info.nome !== 'uRetangulo') return;
-      ultimoRetPorPrograma.set(info.programa, valores);
-    };
-    const oUniform4f = gl.uniform4f.bind(gl);
-    gl.uniform4f = (location, x, y, z, w) => {
-      registrarRetangulo(location, [x, y, z, w]);
-      return oUniform4f(location, x, y, z, w);
-    };
-    const oUniform4fv = gl.uniform4fv.bind(gl);
-    gl.uniform4fv = (location, valor) => {
-      registrarRetangulo(location, Array.from(valor).slice(0, 4));
-      return oUniform4fv(location, valor);
-    };
-
     const free = [];
     const pending = [];
     let active = null;
@@ -3832,9 +3813,6 @@ window.__contornoProf = {
       const orig = gl[nome].bind(gl);
       gl[nome] = function (...a) {
         const rotulo = cur ? labelOf(cur) : 'semPrograma';
-        if (rotulo === 'passe-final') {
-          G.desenhosHalo.push({ t: performance.now(), ret: ultimoRetPorPrograma.get(cur) ?? null });
-        }
         if (!ext || active) return orig(...a);
         const q = free.pop() || gl.createQuery();
         try { gl.beginQuery(TE, q); active = q; } catch (e) { return orig(...a); }
@@ -3862,12 +3840,40 @@ window.__contornoProf = {
         }
       };
     }
+    // ESTADO EFETIVO do halo no quadro — nunca lança: sem
+    // \`__director.post.film.uniforms\` alcançável (página ainda subindo,
+    // ou harness ausente) os dois campos ficam \`null\`, nunca um erro.
+    const lerEstadoDoHalo = () => {
+      const u = window.__director && window.__director.post && window.__director.post.film
+        ? window.__director.post.film.uniforms
+        : null;
+      if (!u) return { uHalo: null, ret: null };
+      const uHalo = u.uHalo && typeof u.uHalo.value === 'number' ? u.uHalo.value : null;
+      const r = u.uHaloRetangulo ? u.uHaloRetangulo.value : null;
+      const ret = r ? [r.x, r.y, r.z, r.w] : null;
+      return { uHalo, ret };
+    };
     const oRAF = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = (cb) => oRAF((t) => {
       quadroAtual += 1;
       G.gpuPorQuadro[quadroAtual] = { t, ns: 0 };
       poll();
       G.rafAbs.push(t);
+      const { uHalo, ret } = lerEstadoDoHalo();
+      // MESMO \`t\`: mais de um chamador pediu \`requestAnimationFrame\`
+      // para o MESMO paint (o próprio app e, por exemplo, um
+      // \`esperarQuadros\` da sonda) — o wrapper roda uma vez por
+      // CHAMADOR, não uma vez por paint. Sobrescreve em vez de
+      // empilhar, para o último valor ganhar (o estado como ele de fato
+      // vai à tela), nunca uma leitura defasada de um chamador que
+      // rodou primeiro naquele paint.
+      const ultimoQuadro = G.quadros[G.quadros.length - 1];
+      if (ultimoQuadro && ultimoQuadro.t === t) {
+        ultimoQuadro.uHalo = uHalo;
+        ultimoQuadro.ret = ret;
+      } else {
+        G.quadros.push({ t, uHalo, ret });
+      }
       return cb(t);
     });
   }
@@ -4415,22 +4421,27 @@ async function rodarContorno() {
 
 /**
  * `--contorno=cancelamento` — o sub-modo PASSA/FALHA do C6: prova que o
- * halo WebGL CANCELA o desenho nos seis jeitos que o conserto promete
- * (K1–K6), mais um controle sem ação nenhuma (K0) que só confirma que,
- * sem interrupção, o halo desenha "do nada" por ~400ms como sempre —
- * sem K0, um PASSA em K1–K6 não provaria cancelamento, só ausência.
- * Usa o MESMO `SCRIPT_GPU_HALO` de `--contorno` (`desenhosHalo`: um
- * `{ t, ret }` por desenho, `ret` o uniform `uRetangulo` no instante)
- * numa ÚNICA navegação para os sete casos — sem gravar clipe nenhum,
- * só números e veredito, como `--interrupcoes`.
+ * halo CANCELA (K1–K6 e K10, mais o controle K0) e que ele NUNCA acende
+ * em três cenários novos (K7 `shot=1`, K8 `shot=2`, K9 `contorno=css`).
+ * Desde a fusão no passe final (FILM_SHADER, `dustShaders.ts`) o
+ * DESENHO não prova mais nada — ele roda em TODO quadro — então o
+ * veredito lê o `uHalo` efetivo por quadro
+ * (`window.__contornoProf.quadros`, `SCRIPT_GPU_HALO`): aceso é
+ * `uHalo > 0`, cancelado é zero em todo quadro a partir da ENTREGA da
+ * interrupção +60ms (`tEvento`), o mesmo contrato de `--interrupcoes`
+ * — mas "já estava aceso" mede contra o COMANDO (`tComando`), nunca
+ * contra a entrega: um resize custa ~90ms de comando até chegar, e
+ * esse atraso não é o halo morrendo (`avaliarCancelamento`). K0–K6 e
+ * K10 rodam numa ÚNICA navegação; K7–K9 recarregam a própria query —
+ * sem gravar clipe nenhum, só números e veredito, como
+ * `--interrupcoes`.
  *
- * Todo caso: abre Camadas DO NADA (o único gatilho que o halo liga,
- * `App.tsx`), age num atraso fixo do relógio DA PÁGINA, mede os
- * desenhos do halo, fecha o painel e só DEPOIS restaura
- * mídia/viewport/`--ui` — nessa ordem, para a restauração nunca
- * disputar com a leitura, e sempre incondicional (é NO-OP quando o
- * caso não tocou aquele estado), para nada vazar de um K para o
- * seguinte.
+ * Todo caso K1–K6/K10: abre Camadas DO NADA (o único gatilho que o
+ * halo liga, `App.tsx`), age num atraso fixo do relógio DA PÁGINA, mede
+ * os quadros, fecha o painel e só DEPOIS restaura mídia/viewport/`--ui`
+ * — nessa ordem, para a restauração nunca disputar com a leitura, e
+ * sempre incondicional (é NO-OP quando o caso não tocou aquele estado),
+ * para nada vazar de um K para o seguinte.
  */
 async function rodarCancelamento() {
   mkdirSync(CAPTURAS, { recursive: true });
@@ -4480,8 +4491,63 @@ async function rodarCancelamento() {
       await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_PAINEL}'))`, 3000);
       return sessao.js('performance.now()'); // relógio DA PÁGINA, nunca o do Node
     };
-    const contarDesenhos = () => sessao.js('window.__contornoProf.desenhosHalo.length');
-    const lerDesenhosDesde = async (antes) => (await sessao.js('window.__contornoProf.desenhosHalo')).slice(antes);
+    const contarQuadros = () => sessao.js('window.__contornoProf.quadros.length');
+    const lerQuadrosDesde = async (antes) => (await sessao.js('window.__contornoProf.quadros')).slice(antes);
+    // O VEREDITO COMUM a K1–K4, K6 e K10 (K0 e K5 têm regra própria, e
+    // K7–K9 são "nunca acende"): PASSA só com as QUATRO provas de que a
+    // corrida foi válida — (a) aceso ANTES de `tComando` (senão a
+    // interrupção não provaria cancelar nada), (b) a interrupção
+    // ENTREGUE (`entregue`), (d) pelo menos um quadro amostrado na
+    // janela de `tEvento`+60ms depois, (e) o ÚLTIMO aceso antes de
+    // `tComando` não é mais velho que comando-60ms (senão o halo já
+    // tinha apagado SOZINHO antes mesmo de MANDAR a interrupção, e
+    // "zero depois" não prova nada) — e, com as quatro, (c) ZERO
+    // quadros acesos na janela. `tComando` (quando a página recebeu o
+    // pedido, ex.: o que `esperarAtePagina` devolve) e `tEvento` (quando
+    // a interrupção CHEGOU de fato — um resize custa ~90ms de comando
+    // até chegar, e esse atraso NÃO é o halo morrendo) são relógios
+    // DIFERENTES por propósito: (e) mede contra o comando, a janela de
+    // +60ms em (d)/(c) mede contra a entrega. Falta qualquer uma das
+    // quatro provas, ou algum quadro com `uHalo === null`, ou nenhum
+    // quadro amostrado: INCONCLUSIVO — nunca um PASSA por falta de
+    // prova.
+    const avaliarCancelamento = (quadros, tComando, tEvento, entregue) => {
+      const base = {
+        primeiroAceso: null, ultimoAceso: null, tComando, tEvento, entregue,
+      };
+      if (quadros.length === 0) return { ...base, veredito: 'INCONCLUSIVO', motivo: 'nenhum quadro amostrado' };
+      if (quadros.some((q) => q.uHalo === null)) {
+        return { ...base, veredito: 'INCONCLUSIVO', motivo: 'quadro com uHalo nulo' };
+      }
+      const acesos = quadros.filter((q) => q.uHalo > 0);
+      const primeiroAceso = acesos.length ? Math.min(...acesos.map((q) => q.t)) : null;
+      const ultimoAceso = acesos.length ? Math.max(...acesos.map((q) => q.t)) : null;
+      const janela = tEvento === null ? [] : quadros.filter((q) => q.t >= tEvento + 60);
+      const acesosAntesDoComando = tComando === null ? [] : acesos.filter((q) => q.t < tComando);
+      const ultimoAcesoAntesDoComando = acesosAntesDoComando.length
+        ? Math.max(...acesosAntesDoComando.map((q) => q.t)) : null;
+      const acesoAntes = ultimoAcesoAntesDoComando !== null;
+      const haloJaApagado = acesoAntes && (tComando - ultimoAcesoAntesDoComando) > 60;
+      const faltantes = [];
+      if (!acesoAntes) faltantes.push('sem quadro aceso antes da interrupção');
+      if (!entregue) faltantes.push('interrupção não entregue');
+      if (janela.length === 0) faltantes.push('sem quadro amostrado depois de interrupção+60ms');
+      if (haloJaApagado) faltantes.push('halo já apagado antes do comando');
+      if (faltantes.length) {
+        return {
+          ...base, veredito: 'INCONCLUSIVO', motivo: faltantes.join('; '), primeiroAceso, ultimoAceso,
+        };
+      }
+      const acesoNaJanela = janela.filter((q) => q.uHalo > 0);
+      return {
+        ...base,
+        veredito: acesoNaJanela.length === 0 ? 'PASSA' : 'FALHA',
+        primeiroAceso,
+        ultimoAceso,
+        quadrosNaJanela: janela.length,
+        acesosNaJanela: acesoNaJanela.length,
+      };
+    };
     // espera até a página relatar `alvoMs` desde `tPagina` (relógio DA
     // PÁGINA) — uma leitura, um `dorme`, sem laço: a mesma folga de
     // `esperarAte` (`--interrupcoes`), contra `performance.now()` em
@@ -4499,25 +4565,32 @@ async function rodarCancelamento() {
     // vive" (400ms) sobra uma janela estreita que um número fixo erra
     // para os dois lados (medido: +280ms agia com a entrada ainda viva,
     // +320ms fazia o evento chegar só aos ~380ms). Teto de 600ms.
-    const esperarFimDaEntrada = () => sessao.send('Runtime.evaluate', {
-      expression: `new Promise((r) => {
-        const t0 = performance.now();
-        const olhar = () => {
-          const el = document.querySelector('${SEL_CAMADAS_PAINEL}');
-          const acabou = !el || el.getAnimations().every((a) => a.playState === 'finished');
-          if (acabou || performance.now() - t0 > 600) r(performance.now());
-          else requestAnimationFrame(olhar);
-        };
-        olhar();
-      })`,
-      awaitPromise: true,
-      returnByValue: true,
-    });
+    // devolve o NÚMERO (`performance.now()` no instante detectado), não
+    // o envelope cru do CDP — igual a `sessao.js`, mas sem passar por
+    // ela porque só `sessao.send` aceita `awaitPromise` (a expressão é
+    // uma Promise de verdade).
+    const esperarFimDaEntrada = async () => {
+      const r = await sessao.send('Runtime.evaluate', {
+        expression: `new Promise((r) => {
+          const t0 = performance.now();
+          const olhar = () => {
+            const el = document.querySelector('${SEL_CAMADAS_PAINEL}');
+            const acabou = !el || el.getAnimations().every((a) => a.playState === 'finished');
+            if (acabou || performance.now() - t0 > 600) r(performance.now());
+            else requestAnimationFrame(olhar);
+          };
+          olhar();
+        })`,
+        awaitPromise: true,
+        returnByValue: true,
+      });
+      return r.result.value;
+    };
     // quando a entrada (WAAPI) do painel termina, pela amostra tirada
     // enquanto ela ainda RODAVA — `duration - currentTime` é quanto
     // falta, do relógio da PRÓPRIA página (`linhaDoTempo`,
     // `document.timeline.currentTime`, a mesma base de
-    // `performance.now()` que `desenhosHalo[].t`).
+    // `performance.now()` que `quadros[].t`).
     const tempoDeFimDeEntrada = (amostra) => {
       const emCurso = (amostra.waapi ?? []).find((w) => w.playState === 'running');
       return emCurso
@@ -4532,156 +4605,197 @@ async function rodarCancelamento() {
     });
 
     // ---------------------------------------------------------------
-    // K0 — CONTROLE, sem ação nenhuma: o halo tem de desenhar "do nada"
-    // por ~400ms quando NADA o interrompe.
+    // K0 — CONTROLE, sem ação nenhuma: o halo tem de ACENDER "do nada"
+    // por ~400ms quando NADA o interrompe (>=3 quadros com `uHalo > 0`,
+    // vão do primeiro ao último aceso entre 250 e 450ms).
     // ---------------------------------------------------------------
     const casoK0 = async () => {
       const tPagina = await abrirCamadasDoNada();
-      const antes = await contarDesenhos();
+      const antes = await contarQuadros();
       await dorme(600); // 450ms pedidos + folga além do teto do halo (400ms), igual ao resto da sonda
-      const desenhos = await lerDesenhosDesde(antes);
+      const quadros = await lerQuadrosDesde(antes);
       await fecharPainel(SEL_CAMADAS_PAINEL);
       await restaurarTudo();
-      const tempos = desenhos.map((d) => d.t);
-      const primeiro = tempos.length ? Math.min(...tempos) : null;
-      const ultimo = tempos.length ? Math.max(...tempos) : null;
-      const duracaoMs = primeiro !== null ? ultimo - primeiro : null;
-      const passa = desenhos.length >= 3 && duracaoMs !== null && duracaoMs >= 250 && duracaoMs <= 450;
+      const base = {
+        quadrosAntes: antes, quadrosDepois: antes + quadros.length, tEvento: null, entregue: null,
+      };
+      if (quadros.length === 0 || quadros.some((q) => q.uHalo === null)) {
+        return {
+          ...base, veredito: 'INCONCLUSIVO', motivo: 'sem quadros amostrados ou uHalo nulo',
+          primeiroAceso: null, ultimoAceso: null, amostras: quadros,
+        };
+      }
+      const acesos = quadros.filter((q) => q.uHalo > 0);
+      const primeiroAceso = acesos.length ? Math.min(...acesos.map((q) => q.t)) : null;
+      const ultimoAceso = acesos.length ? Math.max(...acesos.map((q) => q.t)) : null;
+      const duracaoMs = primeiroAceso !== null ? ultimoAceso - primeiroAceso : null;
+      const passa = acesos.length >= 3 && duracaoMs !== null && duracaoMs >= 250 && duracaoMs <= 450;
       return {
+        ...base,
         veredito: passa ? 'PASSA' : 'FALHA',
-        desenhosAntes: antes,
-        desenhosDepois: antes + desenhos.length,
-        contagem: desenhos.length,
+        primeiroAceso,
+        ultimoAceso,
+        contagemAcesos: acesos.length,
         duracaoMs,
-        msUltimoDesenhoAposAcao: ultimo !== null ? ultimo - tPagina : null,
+        msUltimoAcesoAposAcao: ultimoAceso !== null ? ultimoAceso - tPagina : null,
+        amostras: quadros,
       };
     };
 
     // ---------------------------------------------------------------
     // K1–K4 — SUPRESSÃO: reduzir movimento (K1/K2) ou redimensionar
     // (K3/K4) em dois instantes (+100ms, dentro da entrada de 260ms; e
-    // no quadro em que ela acaba, `esperarFimDaEntrada`). PASSA exige >=1 desenho ANTES do evento
-    // (o halo tinha mesmo começado) e NENHUM depois de evento+20ms.
-    // K2/K4 acrescentam a PROVA DE LACUNA: a entrada já tinha acabado
-    // quando o comando chegou ("at the command", a amostra que
-    // `observarAposEvento` tira ANTES de agir) E houve pelo menos um
-    // desenho do halo depois do fim da entrada (`tempoDeFimDeEntrada`,
-    // de uma amostra tirada logo na abertura, ainda com ela rodando) —
-    // sem os dois, K2/K4 não provam que o halo sobreviveu à entrada
-    // por conta própria, e saem INCONCLUSIVO.
+    // no quadro em que ela acaba, `esperarFimDaEntrada`) — o gatilho de
+    // cada um não muda. O veredito é `avaliarCancelamento`: aceso antes
+    // da interrupção, interrupção entregue (`observarAposEvento`,
+    // `chegou`), e zero quadros acesos a partir de interrupção+60ms.
+    // K2/K4 (`comLacuna`) acrescentam a PROVA DE LACUNA: sem ela, o caso
+    // degenera em silêncio para K1/K3 (o comando podia estar chegando
+    // ANTES do fim da entrada, sem provar nada sobre "no fim dela") —
+    // exige que a entrada JÁ tivesse acabado no instante do comando
+    // (`observarAposEvento` tira a amostra ANTES de agir) E que exista
+    // pelo menos um quadro ACESO no ou depois do fim da entrada
+    // (`tempoDeFimDeEntrada`, de uma amostra tirada na abertura, ainda
+    // com ela rodando).
     // ---------------------------------------------------------------
     const rodarCasoDeSupressao = async ({
-      evento, delayMs, comLacuna, agir,
+      evento, delayMs, comLacuna, agir, comAmostras,
     }) => {
       const tPagina = await abrirCamadasDoNada();
       const amostraAbertura = comLacuna ? await sessao.js(jsAmostraPainel(SEL_CAMADAS_PAINEL)) : null;
       const tFimEntrada = amostraAbertura ? tempoDeFimDeEntrada(amostraAbertura) : null;
-      const antes = await contarDesenhos();
-      if (comLacuna) await esperarFimDaEntrada();
-      else await esperarAtePagina(tPagina, delayMs);
+      const antes = await contarQuadros();
+      // `tComando` — o relógio DA PÁGINA no instante em que a sonda vai
+      // MANDAR a interrupção (o que `esperarAtePagina`/`esperarFimDaEntrada`
+      // devolvem), nunca o instante em que ela CHEGA (`tEvento`, abaixo):
+      // um resize custa ~90ms de comando até chegar, e isso não é o halo
+      // morrendo — ver `avaliarCancelamento`.
+      const tComando = comLacuna ? await esperarFimDaEntrada() : await esperarAtePagina(tPagina, delayMs);
       const obs = await observarAposEvento(
         sessao,
         { evento, construirAmostra: () => jsAmostraPainel(SEL_CAMADAS_PAINEL) },
         agir
       );
-      await dorme(500); // deixa o resto da janela do halo (até 400ms) terminar, se ainda estiver correndo
-      const desenhos = await lerDesenhosDesde(antes);
+      await dorme(500); // deixa a janela de +60ms (e folga) terminar de amostrar
+      const quadros = await lerQuadrosDesde(antes);
       await fecharPainel(SEL_CAMADAS_PAINEL);
       await restaurarTudo();
 
-      const base = { desenhosAntes: antes, desenhosDepois: antes + desenhos.length };
+      const base = { quadrosAntes: antes, quadrosDepois: antes + quadros.length };
       if (comLacuna) {
         const entradaAcabouNoComando = (obs.antesDoComando.waapi ?? []).length === 0
           || obs.antesDoComando.waapi.every((w) => w.playState === 'finished');
-        const desenhoDepoisDaEntrada = desenhos.some((d) => d.t > tFimEntrada);
-        if (!(entradaAcabouNoComando && desenhoDepoisDaEntrada)) {
+        const acesoDepoisDaEntrada = quadros.some((q) => q.t >= tFimEntrada && q.uHalo > 0);
+        if (!(entradaAcabouNoComando && acesoDepoisDaEntrada)) {
           return {
             ...base,
             veredito: 'INCONCLUSIVO',
             motivo: 'sem prova de que o halo sobreviveu ao fim da entrada',
             entradaAcabouNoComando,
-            desenhoDepoisDaEntrada,
+            acesoDepoisDaEntrada,
+            ...(comAmostras ? { amostras: quadros } : {}),
           };
         }
       }
-      if (!obs.chegou) return { ...base, veredito: 'INCONCLUSIVO', motivo: 'evento não chegou' };
-      const tEvento = obs.antesDoComando.tAntes + obs.msAntesAteEvento;
-      // O EVENTO TEM DE PEGAR O HALO VIVO: ele dura 400ms desde a abertura,
-      // e um evento que só chega depois disso (medido no build velho, K4:
-      // o resize de +320ms chegou à página aos ~400ms) acharia "nenhum
-      // desenho depois" porque o halo já tinha acabado SOZINHO — um
-      // PASSA vazio. Perto do fim natural, nada se prova.
-      if (tEvento - tPagina >= 380) {
-        return { ...base, veredito: 'INCONCLUSIVO', motivo: 'o evento chegou depois do fim natural do halo', tEventoMs: tEvento - tPagina };
-      }
-      const antesDoEvento = desenhos.filter((d) => d.t < tEvento).length;
-      const depoisDoLimite = desenhos.filter((d) => d.t > tEvento + 20).length;
-      const passa = antesDoEvento >= 1 && depoisDoLimite === 0;
-      const ultimo = desenhos.length ? Math.max(...desenhos.map((d) => d.t)) : null;
-      return {
-        ...base,
-        veredito: passa ? 'PASSA' : 'FALHA',
-        tEventoMs: tEvento - tPagina,
-        desenhosAntesDoEvento: antesDoEvento,
-        desenhosDepoisDoLimite: depoisDoLimite,
-        msUltimoDesenhoAposAcao: ultimo !== null ? ultimo - tEvento : null,
-      };
+      const tEvento = obs.chegou ? obs.antesDoComando.tAntes + obs.msAntesAteEvento : null;
+      const resultado = avaliarCancelamento(quadros, tComando, tEvento, obs.chegou);
+      return { ...base, ...resultado, ...(comAmostras ? { amostras: quadros } : {}) };
     };
 
     // ---------------------------------------------------------------
     // K5 — o painel muda de TAMANHO sozinho (`--ui`, sem resize de
-    // janela): o halo tem de seguir a caixa de REPOUSO nova
-    // (`jsCaixaDeRepouso`, a mesma conta de `contornoDaUi.ts`) a partir
-    // de 2 quadros depois da mudança — Y/largura/altura sempre; X só
-    // depois que a entrada (260ms) já tinha acabado, porque até lá o X
-    // do halo segue o deslizar da entrada, não o repouso.
+    // janela): por CONVERGÊNCIA, não por "2 quadros depois" (esse
+    // número fixo flapeava — o índice de `rafAbs` conta uma entrada por
+    // CHAMADOR de `requestAnimationFrame`, não uma por paint real, e
+    // podia cair bem em cima de um quadro ainda em transição). Entre os
+    // quadros ACESOS depois da mudança, o PRIMEIRO cuja caixa bate a de
+    // REPOUSO nova (`jsCaixaDeRepouso`, a mesma conta de
+    // `contornoDaUi.ts`) tem de aparecer nos 4 primeiros, e todo aceso
+    // DAÍ EM DIANTE também bate — Y/largura/altura sempre; X só depois
+    // que a entrada (260ms) já tinha acabado, porque até lá o X do halo
+    // segue o deslizar da entrada, não o repouso.
     // ---------------------------------------------------------------
     const casoK5 = async () => {
       const tPagina = await abrirCamadasDoNada();
       const amostraAbertura = await sessao.js(jsAmostraPainel(SEL_CAMADAS_PAINEL));
       const tFimEntrada = tempoDeFimDeEntrada(amostraAbertura);
-      const antes = await contarDesenhos();
+      const antes = await contarQuadros();
       await esperarAtePagina(tPagina, 150);
-      const quadrosAntes = await sessao.js('window.__contornoProf.rafAbs.length');
-      await sessao.js("document.documentElement.style.setProperty('--ui', '1.2')");
-      await esperarQuadros(sessao, 3);
+      const tMudanca = await sessao.js(`(() => {
+        document.documentElement.style.setProperty('--ui', '1.2');
+        return performance.now();
+      })()`);
+      await esperarQuadros(sessao, 3); // dá tempo do CSS/React reagirem antes de ler a caixa
       const caixa = await sessao.js(jsCaixaDeRepouso(SEL_CAMADAS_PAINEL));
-      // "2 quadros depois da mudança" — o 3º quadro novo desde
-      // `quadrosAntes` (os índices 0 e 1 ainda são transição de layout).
-      const limiarT = await sessao.js(`window.__contornoProf.rafAbs[${quadrosAntes + 2}] ?? performance.now()`);
       await dorme(250); // deixa o resto da janela de 400ms do halo passar
-      const desenhos = await lerDesenhosDesde(antes);
+      const quadros = await lerQuadrosDesde(antes);
       await fecharPainel(SEL_CAMADAS_PAINEL);
       await restaurarTudo();
 
-      const base = { desenhosAntes: antes, desenhosDepois: antes + desenhos.length, caixaDeRepouso: caixa };
+      const acesos = quadros.filter((q) => q.uHalo > 0);
+      const primeiroAceso = acesos.length ? Math.min(...acesos.map((q) => q.t)) : null;
+      const ultimoAceso = acesos.length ? Math.max(...acesos.map((q) => q.t)) : null;
+      const base = {
+        quadrosAntes: antes,
+        quadrosDepois: antes + quadros.length,
+        caixaDeRepouso: caixa,
+        tEvento: tMudanca,
+        entregue: Boolean(caixa),
+        primeiroAceso,
+        ultimoAceso,
+        tFimEntradaMs: tFimEntrada - tPagina,
+      };
       if (!caixa) return { ...base, veredito: 'INCONCLUSIVO', motivo: '.hud-root ou painel não encontrado' };
       const dentroDeUmPx = (a, b) => Math.abs(a - b) <= 1;
-      const relevantes = desenhos.filter((d) => d.t >= limiarT && d.ret);
-      const bate = (d) => dentroDeUmPx(d.ret[1], caixa.y)
-        && dentroDeUmPx(d.ret[2], caixa.width)
-        && dentroDeUmPx(d.ret[3], caixa.height)
-        && (d.t < tFimEntrada || dentroDeUmPx(d.ret[0], caixa.x));
-      const todasBatem = relevantes.length > 0 && relevantes.every(bate);
-      const ultimo = desenhos.length ? Math.max(...desenhos.map((d) => d.t)) : null;
+      const bate = (q) => q.ret
+        && dentroDeUmPx(q.ret[1], caixa.y)
+        && dentroDeUmPx(q.ret[2], caixa.width)
+        && dentroDeUmPx(q.ret[3], caixa.height)
+        && (q.t < tFimEntrada || dentroDeUmPx(q.ret[0], caixa.x));
+      const litDepoisDaMudanca = quadros.filter((q) => q.t >= tMudanca && q.uHalo > 0);
+      if (litDepoisDaMudanca.length < 3) {
+        return {
+          ...base,
+          veredito: 'INCONCLUSIVO',
+          motivo: litDepoisDaMudanca.length === 0
+            ? 'sem quadro aceso depois da mudança'
+            : 'menos de 3 quadros acesos depois da mudança para verificar convergência',
+          quadrosAteConvergir: null,
+          quadrosVerificados: litDepoisDaMudanca.length,
+        };
+      }
+      const indiceConvergencia = litDepoisDaMudanca.findIndex(bate);
+      if (indiceConvergencia === -1 || indiceConvergencia >= 4) {
+        return {
+          ...base,
+          veredito: 'FALHA',
+          motivo: 'nenhum quadro aceso bateu a caixa de repouso nos 4 primeiros depois da mudança',
+          quadrosAteConvergir: indiceConvergencia === -1 ? null : indiceConvergencia + 1,
+          quadrosVerificados: litDepoisDaMudanca.length,
+        };
+      }
+      const depoisDaConvergencia = litDepoisDaMudanca.slice(indiceConvergencia);
+      const todasBatem = depoisDaConvergencia.every(bate);
       return {
         ...base,
-        veredito: relevantes.length === 0 ? 'INCONCLUSIVO' : (todasBatem ? 'PASSA' : 'FALHA'),
-        tFimEntradaMs: tFimEntrada - tPagina,
-        desenhosVerificados: relevantes.length,
-        msUltimoDesenhoAposAcao: ultimo !== null ? ultimo - tPagina : null,
+        veredito: todasBatem ? 'PASSA' : 'FALHA',
+        motivo: todasBatem ? undefined : 'quadro aceso depois da convergência divergiu da caixa de repouso',
+        quadrosAteConvergir: indiceConvergencia + 1,
+        quadrosVerificados: litDepoisDaMudanca.length,
       };
     };
 
     // ---------------------------------------------------------------
     // K6 — TROCA DE FERRAMENTA: Ajustes substitui Camadas (nunca fecha
     // "vazio") — o halo, preso ao painel que morreu, não pode continuar
-    // desenhando depois do clique que troca.
+    // aceso depois do clique que troca. Mesmo veredito de K1–K4
+    // (`avaliarCancelamento`), com o clique como interrupção e o
+    // aparecimento de Ajustes como entrega.
     // ---------------------------------------------------------------
     const casoK6 = async () => {
       const tPagina = await abrirCamadasDoNada();
-      const antes = await contarDesenhos();
-      await esperarAtePagina(tPagina, 100);
+      const antes = await contarQuadros();
+      const tComando = await esperarAtePagina(tPagina, 100);
       const tAcao = await sessao.js(`(() => {
         document.querySelector('${SEL_AJUSTES_GATILHO}')?.click();
         return performance.now();
@@ -4690,20 +4804,77 @@ async function rodarCancelamento() {
         { js: sessao.js }, `Boolean(document.querySelector('${SEL_AJUSTES_PAINEL}'))`, 3000
       );
       await dorme(500);
-      const desenhos = await lerDesenhosDesde(antes);
+      const quadros = await lerQuadrosDesde(antes);
       await fecharPainel(SEL_AJUSTES_PAINEL);
       await restaurarTudo();
 
-      const base = { desenhosAntes: antes, desenhosDepois: antes + desenhos.length };
-      if (trocou === null) return { ...base, veredito: 'INCONCLUSIVO', motivo: 'Ajustes não abriu' };
-      const depoisDoLimite = desenhos.filter((d) => d.t > tAcao + 50).length;
-      const ultimo = desenhos.length ? Math.max(...desenhos.map((d) => d.t)) : null;
+      const base = { quadrosAntes: antes, quadrosDepois: antes + quadros.length, tAcaoMs: tAcao - tPagina };
+      const resultado = avaliarCancelamento(quadros, tComando, tAcao, trocou !== null);
+      return { ...base, ...resultado };
+    };
+
+    // ---------------------------------------------------------------
+    // K10 — FECHAR: o botão ✕ do próprio painel (`fecharPainel`) apaga
+    // o halo — mesmo veredito de K1–K4/K6 (`avaliarCancelamento`); um
+    // clique direto não tem "comando vs entrega" (não é um evento
+    // assíncrono do browser como resize/media query), então os dois
+    // relógios são o mesmo instante — o que `esperarAtePagina` devolve.
+    // ---------------------------------------------------------------
+    const casoK10 = async () => {
+      const tPagina = await abrirCamadasDoNada();
+      const antes = await contarQuadros();
+      const tFechar = await esperarAtePagina(tPagina, 100);
+      await fecharPainel(SEL_CAMADAS_PAINEL);
+      const fechou = await sessao.js(`document.querySelector('${SEL_CAMADAS_PAINEL}') === null`);
+      await dorme(500);
+      const quadros = await lerQuadrosDesde(antes);
+      await restaurarTudo();
+
+      const base = { quadrosAntes: antes, quadrosDepois: antes + quadros.length };
+      const resultado = avaliarCancelamento(quadros, tFechar, tFechar, fechou);
+      return { ...base, ...resultado };
+    };
+
+    // ---------------------------------------------------------------
+    // K7–K9 — O HALO NUNCA PODE ACENDER: abrir Camadas do nada com
+    // `shot=1` (still de prova, HUD visível), `shot=2` (a cena pelada —
+    // `.bare-mode`, HUD em `display:none`; o clique é DOM puro, não
+    // `clicarReal`, porque um elemento invisível não recebe evento de
+    // mesa real) e `contorno=css` (o reflexo antigo, sem o uniform
+    // nunca ligar) — cada um é a SUA PRÓPRIA navegação
+    // (`carregarNoContorno`), sem o resto do estado de K0–K6 para
+    // restaurar.
+    // ---------------------------------------------------------------
+    const casoDeAusenciaTotal = async (sufixoQuery, comAmostras) => {
+      await carregarNoContorno(sessao, `${QUERY}${sufixoQuery}`);
+      const antes = await contarQuadros();
+      await sessao.js(`document.querySelector('${SEL_CAMADAS_GATILHO}')?.click()`);
+      await dorme(700);
+      const quadros = await lerQuadrosDesde(antes);
+      const amostras = comAmostras ? { amostras: quadros } : {};
+      const base = {
+        quadrosAntes: antes, quadrosDepois: antes + quadros.length, tEvento: null, entregue: null,
+      };
+      if (quadros.length < 10 || quadros.some((q) => q.uHalo === null)) {
+        return {
+          ...base,
+          veredito: 'INCONCLUSIVO',
+          motivo: 'menos de 10 quadros amostrados ou uHalo nulo',
+          primeiroAceso: null,
+          ultimoAceso: null,
+          ...amostras,
+        };
+      }
+      const acesos = quadros.filter((q) => q.uHalo > 0);
+      const primeiroAceso = acesos.length ? Math.min(...acesos.map((q) => q.t)) : null;
+      const ultimoAceso = acesos.length ? Math.max(...acesos.map((q) => q.t)) : null;
       return {
         ...base,
-        veredito: depoisDoLimite === 0 ? 'PASSA' : 'FALHA',
-        tAcaoMs: tAcao - tPagina,
-        desenhosDepoisDoLimite: depoisDoLimite,
-        msUltimoDesenhoAposAcao: ultimo !== null ? ultimo - tAcao : null,
+        veredito: acesos.length === 0 ? 'PASSA' : 'FALHA',
+        primeiroAceso,
+        ultimoAceso,
+        contagemAcesos: acesos.length,
+        ...amostras,
       };
     };
 
@@ -4711,7 +4882,7 @@ async function rodarCancelamento() {
     const k0 = await casoK0();
     process.stdout.write('  ·     K1 reduzir-movimento @100ms…\n');
     const k1 = await rodarCasoDeSupressao({
-      evento: 'reduzido', delayMs: 100, comLacuna: false, agir: ligarReduzido,
+      evento: 'reduzido', delayMs: 100, comLacuna: false, agir: ligarReduzido, comAmostras: true,
     });
     process.stdout.write('  ·     K2 reduzir-movimento no fim da entrada (lacuna)…\n');
     const k2 = await rodarCasoDeSupressao({
@@ -4729,8 +4900,16 @@ async function rodarCancelamento() {
     const k5 = await casoK5();
     process.stdout.write('  ·     K6 troca de ferramenta…\n');
     const k6 = await casoK6();
+    process.stdout.write('  ·     K10 fechar…\n');
+    const k10 = await casoK10();
+    process.stdout.write('  ·     K7 shot=1, o halo nunca acende…\n');
+    const k7 = await casoDeAusenciaTotal('&shot=1', true);
+    process.stdout.write('  ·     K8 shot=2, o halo nunca acende…\n');
+    const k8 = await casoDeAusenciaTotal('&shot=2');
+    process.stdout.write('  ·     K9 contorno=css, o halo nunca acende…\n');
+    const k9 = await casoDeAusenciaTotal('&contorno=css');
 
-    const veredito = combinarVereditos([k0, k1, k2, k3, k4, k5, k6].map((k) => k.veredito));
+    const veredito = combinarVereditos([k0, k1, k2, k3, k4, k5, k6, k10, k7, k8, k9].map((k) => k.veredito));
 
     const relatorio = {
       meta: {
@@ -4744,28 +4923,30 @@ async function rodarCancelamento() {
         visivel: VISIVEL,
         geradoEm: new Date().toISOString(),
       },
-      k0, k1, k2, k3, k4, k5, k6,
+      k0, k1, k2, k3, k4, k5, k6, k10, k7, k8, k9,
       veredito,
     };
     const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-c6-cancelamento-${commit}.json`));
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
 
+    const linhaAceso = (nome, k) => `${nome}: ${k.veredito} `
+      + `(1º-aceso=${fmt(k.primeiroAceso, 0)}ms, último-aceso=${fmt(k.ultimoAceso, 0)}ms, `
+      + `comando=${fmt(k.tComando, 0)}ms, evento=${fmt(k.tEvento, 0)}ms, entregue=${k.entregue ?? '-'}, motivo=${k.motivo ?? '-'})`;
     const linhas = [
       `=== sonda-motion contorno cancelamento — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
       `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${DPR} | visível=${VISIVEL}`,
-      `K0 controle: ${k0.veredito} (desenhos=${k0.contagem}, duração=${fmt(k0.duracaoMs, 0)}ms)`,
-      `K1 reduzir-movimento @100ms: ${k1.veredito} `
-        + `(antes-do-evento=${k1.desenhosAntesDoEvento ?? '-'}, depois-do-limite=${k1.desenhosDepoisDoLimite ?? '-'}, motivo=${k1.motivo ?? '-'})`,
-      `K2 reduzir-movimento no fim da entrada (lacuna): ${k2.veredito} `
-        + `(antes-do-evento=${k2.desenhosAntesDoEvento ?? '-'}, depois-do-limite=${k2.desenhosDepoisDoLimite ?? '-'}, motivo=${k2.motivo ?? '-'})`,
-      `K3 resize @100ms: ${k3.veredito} `
-        + `(antes-do-evento=${k3.desenhosAntesDoEvento ?? '-'}, depois-do-limite=${k3.desenhosDepoisDoLimite ?? '-'}, motivo=${k3.motivo ?? '-'})`,
-      `K4 resize no fim da entrada (lacuna): ${k4.veredito} `
-        + `(antes-do-evento=${k4.desenhosAntesDoEvento ?? '-'}, depois-do-limite=${k4.desenhosDepoisDoLimite ?? '-'}, motivo=${k4.motivo ?? '-'})`,
+      linhaAceso('K0 controle', k0),
+      linhaAceso('K1 reduzir-movimento @100ms', k1),
+      linhaAceso('K2 reduzir-movimento no fim da entrada', k2),
+      linhaAceso('K3 resize @100ms', k3),
+      linhaAceso('K4 resize no fim da entrada', k4),
       `K5 painel muda de tamanho sozinho: ${k5.veredito} `
-        + `(desenhos-verificados=${k5.desenhosVerificados ?? '-'}, motivo=${k5.motivo ?? '-'})`,
-      `K6 troca de ferramenta: ${k6.veredito} `
-        + `(depois-do-limite=${k6.desenhosDepoisDoLimite ?? '-'}, motivo=${k6.motivo ?? '-'})`,
+        + `(quadros-até-convergir=${k5.quadrosAteConvergir ?? '-'}, quadros-verificados=${k5.quadrosVerificados ?? '-'}, motivo=${k5.motivo ?? '-'})`,
+      linhaAceso('K6 troca de ferramenta', k6),
+      linhaAceso('K10 fechar', k10),
+      `K7 shot=1 nunca acende: ${k7.veredito} (quadros=${k7.quadrosDepois - k7.quadrosAntes}, acesos=${k7.contagemAcesos ?? '-'}, motivo=${k7.motivo ?? '-'})`,
+      `K8 shot=2 nunca acende: ${k8.veredito} (quadros=${k8.quadrosDepois - k8.quadrosAntes}, acesos=${k8.contagemAcesos ?? '-'}, motivo=${k8.motivo ?? '-'})`,
+      `K9 contorno=css nunca acende: ${k9.veredito} (quadros=${k9.quadrosDepois - k9.quadrosAntes}, acesos=${k9.contagemAcesos ?? '-'}, motivo=${k9.motivo ?? '-'})`,
       `veredito geral: ${veredito}`,
       `JSON: ${destinoJson}`,
     ];

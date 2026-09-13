@@ -276,10 +276,18 @@
 /* JANELAS BAIXAS (celular deitado, 844×390 e afins) — a régua encolhe
    para nunca disputar altura com o selo/máquina do tempo do canto
    oposto; ela é chrome PERMANENTE e não pode empurrar a câmera ao
-   crescer, então quem cede é a própria aba. */
+   crescer, então quem cede é a própria aba.
+
+   3,25rem já não bastava com `?ui=1,4` (item C7, 12/09): a última aba
+   (Ajustes) terminava 32 px abaixo de 390 px de janela, cortada. 2,75rem
+   é o PISO de alvo de toque da casa (44 px a `ui=1`, o mesmo número de
+   `ALVO_DE_TOQUE_PX` no juiz de a11y-celular), e cresce com `?ui=` como
+   todo `rem` — nunca menor que o mínimo acessível. (O selo, que também
+   disputava esta altura, ganha reserva própria mais abaixo, junto da
+   declaração dele — `right: 3vw`.) */
 @media (max-height: 520px) {
   .atlas-regua > .hud-btn {
-    height: 3.25rem;
+    height: 2.75rem;
   }
 }
 /* O MECANISMO DA RESERVA (Lote 4½): `--regua-largura` só existe quando
@@ -745,6 +753,21 @@
   align-items: flex-end;
   text-align: right;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+}
+/* JANELA BAIXA COM RÉGUA (item C7, 12/09): a 844×390 com `?ui=1,4` a
+   régua de abas (acima, `@media (max-height: 520px)`) desce até perto
+   do pé da tela, e o selo mora na MESMA coluna direita — medido, o selo
+   ia de x=607,7 a x=818,7 contra a régua de x=765,6 a 844, 53 px de
+   sobreposição. A MESMA reserva que os quatro diálogos já leem
+   (`--regua-largura`, `01-base.css`) tira o selo de debaixo da régua; o
+   `3vw` de sempre continua sendo o valor de fallback (sem régua, nada
+   muda) e nesta altura o rodapé da mesa já não tem a segunda coluna com
+   quem disputar (`@media (max-width: 760px) and (min-height: 481px)`,
+   acima, não alcança 520px de altura). */
+@media (max-height: 520px) {
+  .atlas-selo {
+    right: var(--regua-largura, 3vw);
+  }
 }
 /* A LINHA FECHADA, CHIP DO SELO (Lote 2b, item 3): FILETE de 2 px à
    esquerda no lugar da bolinha — a cor do PIOR EIXO (`--acento` se

@@ -145,12 +145,14 @@ export const FILM_SHADER = {
 
       // SÓ FORA: o DOM opaco já cobre o interior, então a luz só existe
       // onde a página não pintou nada — nunca por cima do texto.
-      float base = step(0.0, d) * exp(-pow(max(d, 0.0) / uHaloSigma, 2.0));
+      float dBase = max(d, 0.0) / uHaloSigma;
+      float base = step(0.0, d) * exp(-dBase * dBase);
 
       // A BORDA DE CIMA inteira, esmaecendo mais depressa que o
       // envelope geral — um lampejo que já não está lá quando o ponto
       // quente ainda desce a borda esquerda.
-      float pesoDoTopo = exp(-pow((pxCss.y - uHaloRetangulo.y) / uHaloSigma, 2.0));
+      float dTopo = (pxCss.y - uHaloRetangulo.y) / uHaloSigma;
+      float pesoDoTopo = exp(-dTopo * dTopo);
       float esmaecimentoDoTopo = exp(-uHaloProgresso * 6.0);
 
       // O PONTO QUENTE na borda ESQUERDA — a de FRENTE, porque o painel
@@ -159,9 +161,9 @@ export const FILM_SHADER = {
       // painel.
       float alturaDoQuente = mix(uHaloRetangulo.y, uHaloRetangulo.y + uHaloRetangulo.w, uHaloProgresso);
       float larguraDoQuente = max(uHaloRetangulo.w * 0.25, 1.0);
-      float pesoDoQuente =
-        exp(-pow((pxCss.x - uHaloRetangulo.x) / uHaloSigma, 2.0)) *
-        exp(-pow((pxCss.y - alturaDoQuente) / larguraDoQuente, 2.0));
+      float dQuenteX = (pxCss.x - uHaloRetangulo.x) / uHaloSigma;
+      float dQuenteY = (pxCss.y - alturaDoQuente) / larguraDoQuente;
+      float pesoDoQuente = exp(-dQuenteX * dQuenteX) * exp(-dQuenteY * dQuenteY);
 
       // OS REFORÇOS MULTIPLICAM A BASE, nunca somam soltos: presos à
       // MESMA queda com a distância real ao retângulo.
