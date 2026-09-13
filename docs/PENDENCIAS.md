@@ -712,8 +712,26 @@ console. `npm run done` verde (3.053 testes). Backup enviado; **site não
 publicado**; plano de motion não tocado (o §12.10 segue dizendo "só a
 mesa"; commits têm precedência). **Sem validação em aparelho real:** o
 custo do halo no chip de um telefone continua não medido — ele confere
-no aparelho dele. **Continua aberto o 225.** Servidor: `npm run dev --
---host` ficou no ar (10.0.0.78:5173) para ele testar no telefone.
+no aparelho dele. **Continua aberto o 225.**
+
+**13/09 (mesma conversa, a FOLHA FLUTUANTE).** Palavras dele: *"vc nao
+acha que os menus nao precisariam ocupar de um lado ao outro da tela do
+celular? nao acha um pouco estranho?"* A folha ia de borda a borda desde
+23/08 (`3a166d2`), sem maquete própria para essa escolha. Duas fotos
+(Camadas e Ficha, de borda a borda × flutuante com 12 px de margem,
+cantos arredondados e a moldura dos painéis da mesa) e a decisão dele:
+*"Flutuante, como na foto"*. Feito e commitado (uma regra de CSS; um
+trabalhador Sonnet, fotos conferidas aqui): os cinco menus do celular
+flutuam com a mesma moldura da mesa nas quatro bordas. Fotos em
+`capturas/folha-flutuante-*` (seis estados a 390×844; ajustes e busca a
+320×568 com texto a 140 %, nada vazando; a de 844×390 cai acima do ponto
+de quebra e mostra o painel da mesa, não conta). `npm run done` verde
+(3.053 testes). Backup enviado; **site não publicado**. **Sem validação
+em aparelho real.** Juízes de imagem (a11y, atlas-smoke) NÃO rodados
+nesta rodada: as provas de md5 do atlas-smoke em celular vão mudar com
+a folha nova — refazer as referências na próxima rodada de juízes.
+**Continua aberto o 225.** Servidor: `npm run dev -- --host` ficou no
+ar (10.0.0.78:5173) para ele testar no telefone.
 
 ## O BASTÃO anterior (06/09, madrugada)
 
