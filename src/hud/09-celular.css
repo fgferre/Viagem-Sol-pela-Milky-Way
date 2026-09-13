@@ -453,14 +453,18 @@
 
   .hud-dialogo {
     top: auto;
-    left: 0;
-    right: 0;
+    /* A FOLHA FLUTUA — decisão do dono, 13/09/2026 ("Flutuante, como na
+       foto"): deixou de ir de borda a borda. 12px de margem lateral,
+       10px de folga acima do selo (`--selo-base`), e a MESMA moldura
+       dos painéis da mesa nas quatro bordas — raio (`--raio-painel`) e
+       borda lateral (`--borda`) que a versão de borda a borda apagava. */
+    left: 12px;
+    right: 12px;
     width: auto;
-    bottom: var(--selo-base);
-    /* de borda a borda a moldura lateral não emoldura nada: some, e a
-       folha vira uma faixa que sobe */
-    border-left: 0;
-    border-right: 0;
+    bottom: calc(var(--selo-base) + 10px);
+    border-radius: var(--raio-painel);
+    border-left: 1px solid var(--borda);
+    border-right: 1px solid var(--borda);
   }
 
   /* A ENTRADA E A SAÍDA DA FOLHA moraram AQUI, em `@keyframes
