@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 226.**
 
-## O BASTÃO — onde a rodada parou (12/09)
+## O BASTÃO — onde a rodada parou (13/09)
 
 **07/09 (rodada da VARREDURA, encerrada por ordem dele: "encerrar
 rodada").** Abriu com a pergunta dele: "o que faltou? pode continuar.
@@ -682,6 +682,38 @@ fechado. **Continuam abertos 223, 224 e 225.** Outras conversas dele
 seguem abertas na mesma pasta (a linha do backlog sobre a trava do disco
 e o commit `7168b1a` são delas). Rodada encerrada nas palavras dele:
 *"pode encerrar e preparar o bastão"*. Servidores parados.
+
+**13/09 (rodada do HALO NO CELULAR — abriu com *"continue de onde
+paramos"*).** Ele testou o roteiro dos três itens que esperavam o olho
+dele e devolveu, nas palavras dele: seletores de gás e de partículas com
+os padrões por preset — *"ok tudo"* (**223 FECHADO**: ficam Cinema Fino +
+Todas, Alta Macio + Metade, Performance Macio + Todas); os cinco painéis
+e as vinte frases das camadas — *"ok, mas nao vi o efeito de halo no
+layout de telas menores..."* (**224 FECHADO**); Terra e Lua no fim do
+filme — *"ok"* (o 225 não reproduziu para ele; segue na lista, sem
+causa). O halo (C6) era só da mesa por desenho do protótipo (`a48eda9`:
+"um painel da mesa"; o App desligava o efeito no layout de celular e a
+conta só seguia `translateX`). Decisão dele: *"Faz e adota direto"*.
+Feito e commitado (`67ea6cb`; dois trabalhadores Sonnet em paralelo,
+código e prova, revisão na sessão principal): o deslocamento inicial
+virou {x, y}, o halo acompanha a folha que sobe, o ponto quente ficou em
+JS (`pontoQuente`, contornoDaUi.ts) — borda esquerda na mesa, borda de
+CIMA no telefone, atravessando da esquerda à direita — e o shader recebe
+o ponto e o σ por eixo (`uHaloPontoQuente`, `uHaloLarguraDoQuente`; sem
+`pow`). Prova nova `--contorno=celular` (390×844, faixa de luminância
+4–20 px acima da borda de cima): A 22,8 em todos os instantes; B 22,8 /
+35,0 / 39,2 / 22,8 aos 100/200/300/600 ms; `shot=1` e reduzir-movimento
+iguais em A e B; custo GPU por quadro (headless) 15,6 → 16,1 ms com o
+halo. Mesa (`--contorno`, 1440×900) sem regressão: B 22,3 / 23,0 / 42,4
+/ 21,8, A≈B no custo. Quadros olhados aqui
+(`capturas/motion-c6-celular-*-aa48325.*` e `motion-c6-*-aa48325.*`).
+No navegador embutido a folha Camadas abriu a 375×812 sem erro de
+console. `npm run done` verde (3.053 testes). Backup enviado; **site não
+publicado**; plano de motion não tocado (o §12.10 segue dizendo "só a
+mesa"; commits têm precedência). **Sem validação em aparelho real:** o
+custo do halo no chip de um telefone continua não medido — ele confere
+no aparelho dele. **Continua aberto o 225.** Servidor: `npm run dev --
+--host` ficou no ar (10.0.0.78:5173) para ele testar no telefone.
 
 ## O BASTÃO anterior (06/09, madrugada)
 
