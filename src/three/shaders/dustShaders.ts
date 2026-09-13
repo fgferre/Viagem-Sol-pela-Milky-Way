@@ -88,6 +88,10 @@ export const FILM_SHADER = {
     uHaloProgresso: { value: 0 },
     uHaloSigma: { value: 12 },
     uHaloCor: { value: new THREE.Vector3() },
+    // o ponto quente e seu σ por eixo — a borda é decidida em JS
+    // (`pontoQuente`, contornoDaUi.ts): esquerda na mesa, topo no telefone.
+    uHaloPontoQuente: { value: new THREE.Vector2() },
+    uHaloLarguraDoQuente: { value: new THREE.Vector2() },
     // px de CSS da janela e o pixelRatio — a mesma conta de conversão
     // que a câmera ortográfica do protótipo fazia, agora feita à mão
     // (ver `haloDaUi`, abaixo).
@@ -113,6 +117,8 @@ export const FILM_SHADER = {
     uniform float uHaloProgresso; // 0..1 ao longo do efeito inteiro (400 ms)
     uniform float uHaloSigma; // px de CSS
     uniform vec3 uHaloCor;
+    uniform vec2 uHaloPontoQuente; // px de CSS — onde o ponto quente está AGORA
+    uniform vec2 uHaloLarguraDoQuente; // px de CSS — σ do ponto quente em cada eixo
     uniform vec2 uResolution; // px de CSS da janela
     uniform float uPixelRatio;
     varying vec2 vUv;
@@ -155,15 +161,14 @@ export const FILM_SHADER = {
       float pesoDoTopo = exp(-dTopo * dTopo);
       float esmaecimentoDoTopo = exp(-uHaloProgresso * 6.0);
 
-      // O PONTO QUENTE na borda ESQUERDA — a de FRENTE, porque o painel
-      // entra da direita e é ela quem chega primeiro. Desce do topo à
-      // base ao longo do próprio efeito; largura ~25% da altura do
-      // painel.
-      float alturaDoQuente = mix(uHaloRetangulo.y, uHaloRetangulo.y + uHaloRetangulo.w, uHaloProgresso);
-      float larguraDoQuente = max(uHaloRetangulo.w * 0.25, 1.0);
-      float dQuenteX = (pxCss.x - uHaloRetangulo.x) / uHaloSigma;
-      float dQuenteY = (pxCss.y - alturaDoQuente) / larguraDoQuente;
-      float pesoDoQuente = exp(-dQuenteX * dQuenteX) * exp(-dQuenteY * dQuenteY);
+      // O PONTO QUENTE — a borda de FRENTE, a que chega primeiro, é
+      // escolhida em JS (pontoQuente, contornoDaUi.ts): esquerda na
+      // mesa (o painel entra da direita) e topo no telefone (a folha
+      // sobe de baixo). uHaloPontoQuente já vem posicionado ao longo
+      // dessa borda pelo progresso do efeito, e uHaloLarguraDoQuente
+      // dá o σ em cada eixo.
+      vec2 dQuente = (pxCss - uHaloPontoQuente) / uHaloLarguraDoQuente;
+      float pesoDoQuente = exp(-dot(dQuente, dQuente));
 
       // OS REFORÇOS MULTIPLICAM A BASE, nunca somam soltos: presos à
       // MESMA queda com a distância real ao retângulo.

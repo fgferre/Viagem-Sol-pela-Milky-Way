@@ -405,8 +405,8 @@ export default function App() {
     // fora dela — sem esta linha ele brilharia em volta da ferramenta
     // que já foi, e a remedição de `medir` o poria em volta da nova.
     if (anterior !== null && anterior !== montada) directorRef.current?.apagarContorno();
-    if (!root || celular || semMovimento()) return;
-    // só a mesa, e só uma gaveta nascendo do nada (nunca troca/reabertura)
+    if (!root || semMovimento()) return;
+    // mesa e celular, e só uma gaveta nascendo do nada (nunca troca/reabertura)
     if (anterior !== null || montada === null) return;
     const no = root.querySelector<HTMLElement>(`[data-dialogo="${montada}"]`);
     const retangulo = no ? caixaDeRepouso(no, root) : null;
@@ -419,10 +419,10 @@ export default function App() {
     director.acenderContorno({
       retangulo,
       animacao,
-      deslocamentoInicialPx: deslocamentoInicialDoTransform(transformBruto),
+      deslocamentoInicial: deslocamentoInicialDoTransform(transformBruto),
       relogio: relogio(DURACAO_DO_HALO_MS),
     });
-  }, [montada, haloDeContorno, celular]);
+  }, [montada, haloDeContorno]);
   // C6 — FECHAR APAGA O HALO: a saída mantém `montada` até desmontar, mas a
   // intenção já é outra (§7, regra 3) — o halo não brilha em volta de um
   // painel que está indo embora.

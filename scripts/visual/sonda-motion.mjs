@@ -26,6 +26,7 @@
 //   node scripts/visual/sonda-motion.mjs --c5=v6,v7 --app=http://localhost:58697
 //   node scripts/visual/sonda-motion.mjs --contorno --app=http://localhost:5180
 //   node scripts/visual/sonda-motion.mjs --contorno=cancelamento --contraprovas --app=http://localhost:5180
+//   node scripts/visual/sonda-motion.mjs --contorno=celular --app=http://localhost:5180
 //
 // Saída (nomes inéditos — nunca sobrescreve, ver `semSobrescrever`):
 //   capturas/motion-c0-<commit>.json       todas as amostras + metadados
@@ -4000,6 +4001,37 @@ function faixaDeLuminancia(painel) {
   };
 }
 
+/** a faixa do RECORTE no CELULAR (`--contorno=celular`): a folha
+ *  (`.hud-dialogo` em 09-celular.css, sob `.hud-root:has(.atlas-alcas)`)
+ *  senta de borda a borda — `left`/`right` são a tela, não o painel — e
+ *  a ÚNICA borda de verdade é a de CIMA. A faixa vira uma tira
+ *  HORIZONTAL, largura inteira, com os MESMOS `FORA`/`DENTRO` de
+ *  `faixaDoRecorte` acima, só girados 90°: 60px fora (acima do topo) +
+ *  20px dentro (abaixo dele). */
+function faixaDoRecorteCelular(painel) {
+  const FORA = 60;
+  const DENTRO = 20;
+  const x = 0;
+  const y = Math.max(0, Math.round(painel.y - FORA));
+  const y1 = painel.y + DENTRO;
+  const largura = parPixel(TELEFONE_W);
+  const altura = Math.min(parPixel(y1 - y), TELEFONE_H - y);
+  return { x, y, largura, altura };
+}
+
+/** a faixa da PROVA por luminância no CELULAR: a mesma regra 5 de
+ *  `faixaDeLuminancia` (fora do DOM opaco do painel), girada — 16px de
+ *  ALTURA, 4–20px ACIMA da borda de CIMA de repouso, largura inteira
+ *  (em vez de 16px de largura, altura inteira, fora da borda esquerda). */
+function faixaDeLuminanciaCelular(painel) {
+  return {
+    x: 0,
+    y: Math.max(0, Math.round(painel.y - 20)),
+    largura: TELEFONE_W,
+    altura: 16,
+  };
+}
+
 /** recorta ESPACIALMENTE (a faixa da borda) e no TEMPO (janela relativa
  *  ao clique, calculada por quem chama) um clipe já bruto — o clipe
  *  final `-a-`/`-b-` do C6. */
@@ -4130,17 +4162,35 @@ async function rodarContorno() {
   try {
     const commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim();
     const dirty = execSync('git status --porcelain', { cwd: ROOT }).toString().trim().length > 0;
+    // `--contorno=celular` — a MESMA prova A/B, no viewport de TELEFONE
+    // (a folha `.hud-dialogo` de 09-celular.css: só a borda de CIMA é de
+    // verdade, ver `faixaDoRecorteCelular`/`faixaDeLuminanciaCelular`).
+    const CELULAR = CONTORNO_MODO === 'celular';
 
     sessao = await abrirSonda({ janela: JANELA, prefixo: 'sonda-motion-contorno' });
-    const viewport = {
-      width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
-    };
+    const viewport = CELULAR
+      ? { width: TELEFONE_W, height: TELEFONE_H, deviceScaleFactor: DPR, mobile: true }
+      : { width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false };
     await sessao.send('Emulation.setDeviceMetricsOverride', viewport);
+    if (CELULAR) await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
     sessao.marcarViewport(viewport);
     const versaoChrome = await sessao.send('Browser.getVersion');
     await sessao.send('Page.addScriptToEvaluateOnNewDocument', {
       source: `${SEM_TIMER ? 'window.__contornoSemTimer = true;\n' : ''}${SCRIPT_GPU_HALO}`,
     });
+    // no CELULAR o gatilho/fechar são clicados por `.click()` direto no
+    // DOM — o mesmo jeito que o bloco TELEFONE de `rodarC0` já usa (só
+    // abrir/fechar, nenhum gesto de arrasto entra nesta prova); na mesa,
+    // o clique REAL de sempre (`clicarReal`).
+    const abrirCamadas = () => (CELULAR
+      ? sessao.js(`document.querySelector('${SEL_CAMADAS_GATILHO}').click()`)
+      : clicarReal(sessao, SEL_CAMADAS_GATILHO));
+    const fecharCamadas = () => (CELULAR
+      ? sessao.js(`document.querySelector('${SEL_CAMADAS_PAINEL} .hud-fechar')?.click()`)
+      : clicarReal(sessao, `${SEL_CAMADAS_PAINEL} .hud-fechar`));
+    const recorte = CELULAR ? faixaDoRecorteCelular : faixaDoRecorte;
+    const luminanciaFaixa = CELULAR ? faixaDeLuminanciaCelular : faixaDeLuminancia;
+    const PREFIXO = CELULAR ? 'motion-c6-celular' : 'motion-c6';
 
     // UMA abertura GRAVADA (passo 1) — o painel some de novo antes de
     // devolver, para a página ficar limpa para as dez do passo 3, na
@@ -4149,17 +4199,17 @@ async function rodarContorno() {
       let t0Ms = 0;
       const quadros = await gravarClipe(
         sessao,
-        { largura: 1440, altura: 900, pastaQuadros: pasta },
+        { largura: CELULAR ? TELEFONE_W : 1440, altura: CELULAR ? TELEFONE_H : 900, pastaQuadros: pasta },
         async () => {
           await dorme(150); // quadros "de antes", para o recorte ter contexto
-          await clicarReal(sessao, SEL_CAMADAS_GATILHO);
+          await abrirCamadas();
           t0Ms = Date.now();
           await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_PAINEL}'))`, 3000);
           await dorme(600); // 450ms pedidos + folga além do teto do halo (400ms)
         }
       );
       const painel = await retanguloDe(sessao, SEL_CAMADAS_PAINEL);
-      await clicarReal(sessao, `${SEL_CAMADAS_PAINEL} .hud-fechar`);
+      await fecharCamadas();
       await esperarPor({ js: sessao.js }, `document.querySelector('${SEL_CAMADAS_PAINEL}') === null`, 3000);
       await dorme(200);
       return { quadros, t0Ms, painel };
@@ -4177,10 +4227,10 @@ async function rodarContorno() {
     const medirCustoBloco = async (n) => {
       const t0sPerf = [];
       for (let i = 0; i < n; i++) {
-        await clicarReal(sessao, SEL_CAMADAS_GATILHO);
+        await abrirCamadas();
         t0sPerf.push(await sessao.js('performance.now()'));
         await dorme(600);
-        await clicarReal(sessao, `${SEL_CAMADAS_PAINEL} .hud-fechar`);
+        await fecharCamadas();
         await esperarPor({ js: sessao.js }, `document.querySelector('${SEL_CAMADAS_PAINEL}') === null`, 3000);
         await dorme(150);
       }
@@ -4201,7 +4251,7 @@ async function rodarContorno() {
           features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
         });
       }
-      await clicarReal(sessao, SEL_CAMADAS_GATILHO);
+      await abrirCamadas();
       await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_CAMADAS_PAINEL}'))`, 3000);
       await dorme(200); // o pico do halo (60ms), se existisse, já teria passado
       const shot = await sessao.send('Page.captureScreenshot', { format: 'png' });
@@ -4209,7 +4259,7 @@ async function rodarContorno() {
       if (reduzido) await sessao.send('Emulation.setEmulatedMedia', { features: [] });
       if (!painel) throw new Error('painel de Camadas não encontrado (shot/reduzido)');
       writeFileSync(arquivo, Buffer.from(shot.data, 'base64'));
-      return luminanciaMediaPng(arquivo, faixaDeLuminancia(painel));
+      return luminanciaMediaPng(arquivo, luminanciaFaixa(painel));
     };
 
     process.stdout.write('  ·     A (CSS só)…\n');
@@ -4252,25 +4302,25 @@ async function rodarContorno() {
     // `capturas/` — `renderizarClipe` já passa `destinoFinal` por
     // `semSobrescrever` sozinho, então isto também é o clipe "inteiro"
     // pedido, sem precisar duplicar o arquivo.
-    const brutoA = renderizarClipe(capA.quadros, resolve(CAPTURAS, `motion-c6-a-inteiro-${commit}.mp4`));
-    const brutoB = renderizarClipe(capB.quadros, resolve(CAPTURAS, `motion-c6-b-inteiro-${commit}.mp4`));
+    const brutoA = renderizarClipe(capA.quadros, resolve(CAPTURAS, `${PREFIXO}-a-inteiro-${commit}.mp4`));
+    const brutoB = renderizarClipe(capB.quadros, resolve(CAPTURAS, `${PREFIXO}-b-inteiro-${commit}.mp4`));
     const janelaA = { inicioSeg: capA.t0Ms / 1000 - capA.quadros[0].ts, duracaoSeg: 0.45 };
     const janelaB = { inicioSeg: capB.t0Ms / 1000 - capB.quadros[0].ts, duracaoSeg: 0.45 };
     const clipeA = recortarClipeContorno(
-      brutoA, faixaDoRecorte(capA.painel), janelaA, resolve(CAPTURAS, `motion-c6-a-${commit}.mp4`)
+      brutoA, recorte(capA.painel), janelaA, resolve(CAPTURAS, `${PREFIXO}-a-${commit}.mp4`)
     );
     const clipeB = recortarClipeContorno(
-      brutoB, faixaDoRecorte(capB.painel), janelaB, resolve(CAPTURAS, `motion-c6-b-${commit}.mp4`)
+      brutoB, recorte(capB.painel), janelaB, resolve(CAPTURAS, `${PREFIXO}-b-${commit}.mp4`)
     );
     const ladoALado = ladoALadoContorno(
-      clipeA, clipeB, 0.45, resolve(CAPTURAS, `motion-c6-lado-a-lado-${commit}.png`)
+      clipeA, clipeB, 0.45, resolve(CAPTURAS, `${PREFIXO}-lado-a-lado-${commit}.png`)
     );
 
     // ---- passo 2: prova por luminância ----
     const ALVOS_MS = [100, 200, 300, 600];
     const luminanciaEm = (cap) => Object.fromEntries(ALVOS_MS.map((alvoMs) => {
       const q = quadroMaisProximoDoAlvo(cap.quadros, cap.t0Ms, alvoMs);
-      return [`t${alvoMs}`, q ? luminanciaMediaPng(q.arquivo, faixaDeLuminancia(cap.painel)) : null];
+      return [`t${alvoMs}`, q ? luminanciaMediaPng(q.arquivo, luminanciaFaixa(cap.painel)) : null];
     }));
     const luminanciaA = luminanciaEm(capA);
     const luminanciaB = luminanciaEm(capB);
@@ -4342,7 +4392,8 @@ async function rodarContorno() {
         appCommit: APP_COMMIT,
         chrome: versaoChrome.product,
         app: APP,
-        viewport: { width: JANELA_W, height: JANELA_H },
+        viewport: { width: viewport.width, height: viewport.height },
+        layout: CELULAR ? 'celular' : 'mesa',
         dpr: DPR,
         visivel: VISIVEL,
         semTimer: SEM_TIMER,
@@ -4354,10 +4405,12 @@ async function rodarContorno() {
       clipes: {
         a: clipeA, b: clipeB, aInteiro: brutoA, bInteiro: brutoB, ladoALado,
       },
-      recorte: { a: faixaDoRecorte(capA.painel), b: faixaDoRecorte(capB.painel) },
+      recorte: { a: recorte(capA.painel), b: recorte(capB.painel) },
       areaDoQuadPx: { a: areaDoQuadPx(capA.painel), b: areaDoQuadPx(capB.painel) },
       luminancia: {
-        faixaPx: '4–20px fora da borda esquerda, largura 16px, altura do painel',
+        faixaPx: CELULAR
+          ? '4–20px acima da borda de cima, largura inteira, altura 16px'
+          : '4–20px fora da borda esquerda, largura 16px, altura do painel',
         a: luminanciaA,
         b: luminanciaB,
         // referência = MESMO modo (shot/reduzido), cada lado com a SUA
@@ -4380,7 +4433,7 @@ async function rodarContorno() {
         pooled: { a: pooledA, b: pooledB },
       },
     };
-    const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-c6-${commit}.json`));
+    const destinoJson = semSobrescrever(resolve(CAPTURAS, `${PREFIXO}-${commit}.json`));
     writeFileSync(destinoJson, JSON.stringify(relatorio, null, 2));
 
     // uma linha por lado (bloco OU pool) — passe-final, GPU/quadro e
@@ -4390,8 +4443,8 @@ async function rodarContorno() {
       + `rAF média=${fmt(r.frameTime.media, 2)} p50=${fmt(r.frameTime.p50, 2)} p95=${fmt(r.frameTime.p95, 2)} max=${fmt(r.frameTime.max, 2)} `
       + `(${r.frameTime.acimaDeUmEMeio}/${r.frameTime.amostras} > 1,5×mediana)`;
     const linhas = [
-      `=== sonda-motion c6 (halo WebGL × CSS) — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
-      `Chrome ${versaoChrome.product} | mesa ${JANELA_W}x${JANELA_H} DPR${DPR} | visível=${VISIVEL} | `
+      `=== sonda-motion c6 (halo WebGL × CSS)${CELULAR ? ' — celular' : ''} — commit ${commit}${dirty ? ' (dirty)' : ' (limpo)'} · app ${APP_COMMIT} ===`,
+      `Chrome ${versaoChrome.product} | ${CELULAR ? 'celular' : 'mesa'} ${viewport.width}x${viewport.height} DPR${DPR} | visível=${VISIVEL} | `
         + `lang=${META_DA_QUERY.lang} q=${META_DA_QUERY.q}${META_DA_QUERY.ui ? ` ui=${META_DA_QUERY.ui}` : ''}`,
       `clipe A: ${clipeA} (inteiro: ${brutoA})`,
       `clipe B: ${clipeB} (inteiro: ${brutoB})`,

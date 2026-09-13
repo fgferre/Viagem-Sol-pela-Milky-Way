@@ -866,6 +866,12 @@ export interface ParametrosDoHalo {
   progresso: number;
   sigma: number;
   cor: THREE.Vector3;
+  /** onde o ponto quente está AGORA, px de CSS — a borda (esquerda na
+   *  mesa, topo no telefone) já decidida em `pontoQuente`,
+   *  `core/contornoDaUi.ts`. */
+  pontoQuente: { x: number; y: number };
+  /** σ do ponto quente em cada eixo, px de CSS — ver `pontoQuente`. */
+  larguraDoQuente: { x: number; y: number };
 }
 
 export class Post {
@@ -1122,6 +1128,11 @@ export class Post {
     (u.uHaloProgresso as { value: number }).value = p.progresso;
     (u.uHaloSigma as { value: number }).value = p.sigma;
     (u.uHaloCor.value as THREE.Vector3).copy(p.cor);
+    (u.uHaloPontoQuente.value as THREE.Vector2).set(p.pontoQuente.x, p.pontoQuente.y);
+    (u.uHaloLarguraDoQuente.value as THREE.Vector2).set(
+      p.larguraDoQuente.x,
+      p.larguraDoQuente.y
+    );
   }
 
   /** DESLIGA o halo — `uHalo = 0` é o branch do shader saindo de vez, sem custo. */

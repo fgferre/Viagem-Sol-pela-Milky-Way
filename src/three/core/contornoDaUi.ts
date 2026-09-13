@@ -1,8 +1,9 @@
 // Serve: chão — a posição, o deslocamento inicial e o envelope de tempo do halo são número puro; a chamada a `post` em si só roda enquanto uma abertura está viva
 // ============================================================
 // O HALO DE CONTORNO (C6, ADOTADO) — docs/PLANO-MOTION-UI.md §7 e
-// §12.5. Um brilho âmbar curto no contorno EXTERIOR do painel da mesa
-// ao abrir. O SHADER vive fundido no `FILM_SHADER` de `Post`
+// §12.5. Um brilho âmbar curto no contorno EXTERIOR do painel ao
+// abrir — na mesa e na folha do telefone. O SHADER vive fundido no
+// `FILM_SHADER` de `Post`
 // (`core/post.ts`, `acenderHalo`/`apagarHalo`) — zero passe extra; este
 // módulo só carrega a matemática pura (posição, envelope de tempo) e o
 // ciclo de vida de UMA abertura de cada vez. `?contorno=css` desliga
@@ -47,32 +48,45 @@ export const DURACAO_DO_HALO_MS = 400;
 const PICO_DE_INTENSIDADE = 0.45;
 
 /**
- * A POSIÇÃO X DO HALO — pura, sem DOM. O painel entra da direita
- * (`translateX(N) → translate(0,0)`, `movimentoDaGaveta.ts`): em
- * progress 0 ele está em `restX + N` (fora do lugar), em progress 1 em
- * `restX` (repouso). `progress` é o da PRÓPRIA animação
- * (`getComputedTiming().progress`), já passado pela curva de entrada —
- * o halo acompanha o mesmo amortecimento visual do painel, nunca uma
- * reta por cima dele.
+ * A POSIÇÃO DO HALO — pura, sem DOM. Na mesa o painel entra da direita
+ * (`translateX(N) → translate(0,0)`); no telefone a folha sobe de
+ * baixo (`translateY(N) → translate(0,0)`, ambos em
+ * `movimentoDaGaveta.ts`): em progress 0 ele está em `repouso +
+ * deslocamento` (fora do lugar), em progress 1 em `repouso` — em cada
+ * eixo. `progress` é o da PRÓPRIA animação (`getComputedTiming().progress`),
+ * já passado pela curva de entrada — o halo acompanha o mesmo
+ * amortecimento visual do painel, nunca uma reta por cima dele.
  */
-export const posicaoXDoHalo = (
-  restX: number,
-  deslocamentoInicialPx: number,
+export const posicaoDoHalo = (
+  repouso: { x: number; y: number },
+  deslocamento: { x: number; y: number },
   progress: number
-): number => restX + (1 - progress) * deslocamentoInicialPx;
+): { x: number; y: number } => ({
+  x: repouso.x + (1 - progress) * deslocamento.x,
+  y: repouso.y + (1 - progress) * deslocamento.y,
+});
 
 /**
- * O DESLOCAMENTO INICIAL (N), lido do primeiro quadro-chave da
- * animação de entrada — sempre `translateX(Npx)` (`foraDaTelaMesa`,
- * `movimentoDaGaveta.ts`). Regex, não um parser de CSS completo: o
- * único formato que este módulo precisa ler é o que a própria casa
- * escreve. Transform ausente, vazio ou sem número dá 0 — o halo nasce
- * no repouso, sem inventar um salto.
+ * O DESLOCAMENTO INICIAL ({x, y}), lido do primeiro quadro-chave da
+ * animação de entrada. Na mesa é `translateX(Npx)` (`foraDaTelaMesa`,
+ * `movimentoDaGaveta.ts`) → `{x: N, y: 0}`; no telefone é
+ * `translateY(Npx)` (`foraDaTelaCelular`) → `{x: 0, y: N}`;
+ * `translate(Apx, Bpx)` cobre os dois eixos de uma vez e
+ * `translate(Apx)` sozinho equivale a X. Regex, não um parser de CSS
+ * completo: o único formato que este módulo precisa ler é o que a
+ * própria casa escreve. Transform ausente, vazio ou sem número dá
+ * `{x: 0, y: 0}` — o halo nasce no repouso, sem inventar um salto.
  */
-export const deslocamentoInicialDoTransform = (transformBruto: string): number => {
-  const casado = /-?[\d.]+/.exec(transformBruto);
-  const n = casado ? Number.parseFloat(casado[0]) : NaN;
-  return Number.isFinite(n) ? n : 0;
+export const deslocamentoInicialDoTransform = (
+  transformBruto: string
+): { x: number; y: number } => {
+  const casado = /(translateX|translateY|translate)\(([^)]*)\)/.exec(transformBruto);
+  if (!casado) return { x: 0, y: 0 };
+  const [a, b] = (casado[2].match(/-?[\d.]+/g) ?? []).map(Number.parseFloat);
+  const numero = (v: number | undefined): number => (Number.isFinite(v) ? (v as number) : 0);
+  if (casado[1] === 'translateX') return { x: numero(a), y: 0 };
+  if (casado[1] === 'translateY') return { x: 0, y: numero(a) };
+  return { x: numero(a), y: numero(b) };
 };
 
 /**
@@ -97,10 +111,42 @@ export interface RetanguloDoContorno {
 }
 
 /**
+ * O PONTO QUENTE — a borda de FRENTE, a que chega primeiro. Na mesa o
+ * painel entra da direita: a de frente é a ESQUERDA, e o ponto desce
+ * dela do topo à base ao longo do efeito (`deslocamento.y` é 0, não
+ * vem de baixo). No telefone a folha sobe de baixo
+ * (`deslocamento.y > 0`): a de frente é o TOPO, e o ponto percorre essa
+ * borda da esquerda à direita. `retangulo` é o retângulo EM CURSO (já
+ * deslocado por `posicaoDoHalo`, não o de repouso), `progresso` é
+ * `decorridoMs / DURACAO_DO_HALO_MS` (o mesmo valor que vai para
+ * `ParametrosDoHalo.progresso`) e `sigma` é o σ da gaussiana em CSS.
+ * Largura ~25% da dimensão cruzada do painel, com piso de 1 px (painel
+ * minúsculo não pode zerar a gaussiana).
+ */
+export const pontoQuente = (
+  retangulo: RetanguloDoContorno,
+  deslocamento: { x: number; y: number },
+  progresso: number,
+  sigma: number
+): { ponto: { x: number; y: number }; largura: { x: number; y: number } } => {
+  if (deslocamento.y > 0) {
+    return {
+      ponto: { x: retangulo.x + progresso * retangulo.width, y: retangulo.y },
+      largura: { x: Math.max(retangulo.width * 0.25, 1), y: sigma },
+    };
+  }
+  return {
+    ponto: { x: retangulo.x, y: retangulo.y + progresso * retangulo.height },
+    largura: { x: sigma, y: Math.max(retangulo.height * 0.25, 1) },
+  };
+};
+
+/**
  * O QUE UMA ABERTURA ENTREGA (App.tsx, glue do C6): a caixa de repouso
  * do painel (`caixaDeRepouso` — SEM o transform da animação), a
- * animação de entrada em curso (`no.getAnimations()[0]`), N, já
- * resolvido por `deslocamentoInicialDoTransform`, e o RELÓGIO do efeito
+ * animação de entrada em curso (`no.getAnimations()[0]`), o
+ * deslocamento inicial {x, y}, já resolvido por
+ * `deslocamentoInicialDoTransform`, e o RELÓGIO do efeito
  * (`relogio(DURACAO_DO_HALO_MS)`, movimentoDaGaveta.ts) — o tempo
  * próprio do halo (item 7 da seção 7: nada de medir pelo relógio da
  * cena, que congela sob `?shot=`), que "reduzir movimento" e o resize
@@ -110,7 +156,7 @@ export interface RetanguloDoContorno {
 export interface ParametrosDoContorno {
   retangulo: RetanguloDoContorno;
   animacao: Animation;
-  deslocamentoInicialPx: number;
+  deslocamentoInicial: { x: number; y: number };
   relogio: Animation;
 }
 
@@ -188,16 +234,26 @@ export class ContornoDaUi {
       return;
     }
     const progress = estado.animacao.effect?.getComputedTiming().progress ?? 1;
-    const x = posicaoXDoHalo(estado.retangulo.x, estado.deslocamentoInicialPx, progress);
-    const { y, width, height } = estado.retangulo;
+    const { width, height } = estado.retangulo;
+    const posicao = posicaoDoHalo(estado.retangulo, estado.deslocamentoInicial, progress);
+    const retanguloEmCurso: RetanguloDoContorno = { ...posicao, width, height };
+    const progresso = Math.min(1, decorridoMs / DURACAO_DO_HALO_MS);
+    const { ponto, largura } = pontoQuente(
+      retanguloEmCurso,
+      estado.deslocamentoInicial,
+      progresso,
+      SIGMA_PX
+    );
 
     this.jaApagado = false;
     post.acenderHalo({
-      retangulo: { x, y, largura: width, altura: height },
+      retangulo: { x: posicao.x, y: posicao.y, largura: width, altura: height },
       intensidade: PICO_DE_INTENSIDADE * envelopeDoTempo(decorridoMs),
-      progresso: Math.min(1, decorridoMs / DURACAO_DO_HALO_MS),
+      progresso,
       sigma: SIGMA_PX,
       cor: COR_ACENTO,
+      pontoQuente: ponto,
+      larguraDoQuente: largura,
     });
   }
 
