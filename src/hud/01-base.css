@@ -229,6 +229,43 @@
   touch-action: none;
 }
 
+/* AS BARRAS DE ROLAGEM SÃO DA CASA (13/09/2026, pedido do dono: "cinza e
+   branca assim, gritante, destoa"). Vale para TODO rolo do HUD, em
+   qualquer tamanho de tela: diálogos, folhas, listas e gavetas. Fina,
+   trilho invisível e o polegar na cor da borda forte da
+   pele — nunca o âmbar, que é reservado ao que está ativo. Dois ramos
+   por motor (abaixo); os `scrollbar-width: none`/`display: none` da
+   barra de controles (06-responsivo.css, 09-celular.css) continuam
+   valendo, são mais específicos. */
+@supports selector(::-webkit-scrollbar) {
+  /* Chrome, Safari e Edge: a barra desenhada pela casa, 6 px. Aqui NÃO
+     se declara `scrollbar-color`/`scrollbar-width`: o Chrome (≥ 121)
+     ignora o `::-webkit-scrollbar` em qualquer elemento onde as
+     propriedades padrão tenham valor — e `scrollbar-color` HERDA. */
+  .hud-root ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .hud-root ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .hud-root ::-webkit-scrollbar-thumb {
+    background: var(--borda-forte);
+    border-radius: 3px;
+  }
+}
+@supports not selector(::-webkit-scrollbar) {
+  /* Firefox: as propriedades padrão. `scrollbar-width` NÃO herda, por
+     isso vai a todo elemento do HUD; `scrollbar-color` herda da raiz. */
+  .hud-root,
+  .hud-root * {
+    scrollbar-width: thin;
+  }
+  .hud-root {
+    scrollbar-color: var(--borda-forte) transparent;
+  }
+}
+
 /* O CURSOR É A ÚNICA DICA de que a cena se arrasta — e ela faltava:
    até 2026-08-13 o ponteiro sobre o canvas era a seta de sempre, em
    todas as fases, e quem não tentou arrastar nunca soube que podia.
