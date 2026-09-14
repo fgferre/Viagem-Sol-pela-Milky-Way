@@ -413,6 +413,11 @@ export function Ajustes({
           valor={qualidade.escolha}
           opcoes={QUALIDADES.map((q) => ({ valor: q.id, nome: q.nome }))}
           onEscolher={onQualidade}
+          // A GRADE 2×2 COM TEXTO GRANDE (auditoria celular, 13/09) — só
+          // a Qualidade tem quatro opções e nome de sobra ("Performance")
+          // para estourar a folha do celular; a classe é o gancho que
+          // `08-ajustes.css` lê (`.ajustes-seg--qualidade`).
+          classeExtra="ajustes-seg--qualidade"
         />
       </LinhaDeAjuste>
       {/* A MEDIÇÃO, DITA (Ajustes D). A frase é a mesma do título do

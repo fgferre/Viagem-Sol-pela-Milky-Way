@@ -30,15 +30,25 @@ export function Segmentado<T>({
   valor,
   opcoes,
   onEscolher,
+  classeExtra,
 }: {
   aria: string;
   valor: T;
   opcoes: Segmento<T>[];
   onEscolher: (v: T) => void;
+  /** modificador extra (auditoria celular, 13/09) — só a Qualidade usa,
+   *  para virar grade 2×2 com texto grande (`08-ajustes.css`); os outros
+   *  sete segmentados da casa continuam sem classe nenhuma aqui. */
+  classeExtra?: string;
 }) {
   const moldura = useFileteDoSegmentado();
   return (
-    <div className="ajustes-seg" role="group" aria-label={aria} ref={moldura}>
+    <div
+      className={classeExtra ? `ajustes-seg ${classeExtra}` : 'ajustes-seg'}
+      role="group"
+      aria-label={aria}
+      ref={moldura}
+    >
       {opcoes.map((o) => (
         <button
           type="button"

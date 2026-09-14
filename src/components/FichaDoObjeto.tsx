@@ -117,6 +117,7 @@ export function FichaDoObjeto({
   celular = false,
   fichaExpandida = false,
   onAlternarFichaExpandida,
+  textoGrande,
 }: {
   aberta: boolean;
   /** o FECHAMENTO LÓGICO (`gaveta === 'ficha'`), para o foco — distinto
@@ -156,6 +157,9 @@ export function FichaDoObjeto({
   fichaExpandida?: boolean;
   /** o toque em "Detalhes"/"Recolher" — `useGavetas().alternarFichaExpandida` */
   onAlternarFichaExpandida?: () => void;
+  /** o texto grande (`ehTextoGrande`/`uiScale.ts`) — só para decidir a
+   *  largura ESTREITA da ficha (abaixo), mesmo numa janela larga. */
+  textoGrande: boolean;
 }) {
   // NÃO MODAL PARA O TECLADO (dialogFocus.ts): a ficha é o painel da
   // SELEÇÃO, e o mouse já pode escolher outro corpo com ela aberta
@@ -362,6 +366,17 @@ export function FichaDoObjeto({
     consulta.addEventListener('change', ouvir);
     return () => consulta.removeEventListener('change', ouvir);
   }, []);
+  /**
+   * …OU TEXTO GRANDE (auditoria celular, 13/09): a 390 px o nome cabia
+   * com "Detalhes" por extenso em `ui = 1`, mas em `ui = 1,4` o botão
+   * (que não cedia — `flex: 0 0 auto` no cabeçalho compacto) sobrava
+   * inteiro e o nome caía para "E..". A largura sozinha não via o
+   * problema porque a JANELA não mudou, só o TEXTO — daí a segunda
+   * porta, `textoGrande` (a MESMA flag de `uiScale.ts`/`ehTextoGrande`,
+   * calculada uma vez em `App.tsx`); `larguraEstreita` continua valendo
+   * sozinha abaixo de 360 px em qualquer `ui`.
+   */
+  const estreita = larguraEstreita || textoGrande;
 
   /**
    * A JANELA BAIXA (B2, 09/09) — mesmo limiar que a paisagem baixa já usa
@@ -407,10 +422,11 @@ export function FichaDoObjeto({
       // sem regra a mais. Os juízes podem ler o atributo para saber qual
       // dos dois está na tela.
       data-ficha-estado={compactavel ? (fichaExpandida ? 'expandida' : 'compacta') : undefined}
-      // A LARGURA ESTREITA (comentário acima do `useState`) — só importa
-      // junto da compacta; presente sempre que ela vale, inofensiva fora
-      // do celular (o CSS só a lê dentro de `[data-ficha-estado]`).
-      data-ficha-largura={celular && larguraEstreita ? 'estreita' : undefined}
+      // A LARGURA ESTREITA (comentário acima do `useState`/`estreita`) —
+      // só importa junto da compacta; presente sempre que ela vale,
+      // inofensiva fora do celular (o CSS só a lê dentro de
+      // `[data-ficha-estado]`).
+      data-ficha-largura={celular && estreita ? 'estreita' : undefined}
       aria-label={t('ficha.aria', { nome: ficha.nome })}
       {...dialogo}
       onClick={() => {

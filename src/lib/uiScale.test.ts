@@ -19,11 +19,13 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   DEGRAUS_DA_UI,
+  ehTextoGrande,
   ESCALA_MAX,
   ESCALA_MIN,
   ESCALA_PADRAO,
   LARGURA_DO_CELULAR_PX,
   lerEscalaDaUi,
+  LIMIAR_DO_TEXTO_GRANDE,
   rotuloDaEscala,
 } from './uiScale';
 
@@ -66,6 +68,13 @@ describe('1. a porta ?ui=', () => {
     expect([...DEGRAUS_DA_UI]).toEqual([...DEGRAUS_DA_UI].sort((a, b) => a - b));
     expect(rotuloDaEscala(1)).toBe('100%');
     expect(rotuloDaEscala(0.85)).toBe('85%');
+  });
+
+  it('o limiar do texto grande é um dos degraus, e ehTextoGrande decide por ele', () => {
+    expect(DEGRAUS_DA_UI).toContain(LIMIAR_DO_TEXTO_GRANDE);
+    expect(ehTextoGrande(LIMIAR_DO_TEXTO_GRANDE)).toBe(true);
+    expect(ehTextoGrande(ESCALA_MAX)).toBe(true);
+    expect(ehTextoGrande(ESCALA_PADRAO)).toBe(false);
   });
 });
 

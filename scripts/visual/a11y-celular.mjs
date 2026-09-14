@@ -395,7 +395,8 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
   // ---- PARTE 2: A FOLHA DE BAIXO -----------------------------------
   // O `@media` converte as CINCO de uma vez, então as cinco são medidas —
   // a Ficha e o painel de Ajustes são as mais altas da casa, e o teto de
-  // 48vh existe para elas. As promessas: a folha vai de borda a borda,
+  // 48vh existe para elas. As promessas: a folha FLUTUA com 12 px de
+  // margem lateral (decisão do dono, 13/09/2026 — era de borda a borda),
   // para ACIMA do selo e ACIMA da alça que a abriu, cabe na janela e não
   // passa de metade da tela (o teto que `julgarAreaDaFicha` já cobra para
   // a ficha, aqui cobrado para as cinco).
@@ -433,8 +434,10 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
           `folha (${onde}): exatamente UMA aberta — ${m.dialogos.join(', ') || 'nenhuma'}`
         );
         conferir(
-          m.folha !== null && Math.abs(m.folha.w - m.W) < 1.5,
-          `folha (${onde}): de borda a borda — ${r(m.folha)} numa tela de ${m.W} px`
+          m.folha !== null
+            && Math.abs(m.folha.x - 12) < 1
+            && Math.abs(m.W - (m.folha.x + m.folha.w) - 12) < 1,
+          `folha (${onde}): flutuante — margem de 12 px — ${r(m.folha)} numa tela de ${m.W} px`
         );
         conferir(
           m.folha !== null && !m.folhaCobreSelo && !m.folhaCobreAlca,

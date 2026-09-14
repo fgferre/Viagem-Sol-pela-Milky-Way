@@ -52,6 +52,20 @@ export const DEGRAUS_DA_UI = [0.85, 1, 1.2, 1.4] as const;
 export const rotuloDaEscala = (f: number) => `${Math.round(f * 100)}%`;
 
 /**
+ * O DEGRAU DO TEXTO GRANDE (auditoria celular, 13/09) — a UMA flag
+ * compartilhada por quem precisa saber se o texto está grande, sem
+ * repetir o número: a ficha e a barra do Atlas no celular pediam o
+ * mesmo tratamento da largura ESTREITA quando só o TEXTO cresce (a
+ * janela pode continuar larga). 1,2 é o degrau em que os cabeçalhos já
+ * não sobram espaço para rótulo por extenso + os alvos de toque.
+ */
+export const LIMIAR_DO_TEXTO_GRANDE = 1.2;
+
+/** O texto está grande? A MESMA pergunta, num nome só — nunca um `>=`
+ *  solto em cada componente. */
+export const ehTextoGrande = (escala: number): boolean => escala >= LIMIAR_DO_TEXTO_GRANDE;
+
+/**
  * Lê o `?ui=` cru. Lixo (ausente, vazio, `abc`, `NaN`) devolve o
  * padrão; número fora da faixa é grampeado nela.
  */
@@ -71,6 +85,10 @@ let viva = ESCALA_PADRAO;
 export function aplicarEscalaDaUi(fator: number): void {
   viva = fator;
   document.documentElement.style.setProperty('--ui', String(fator));
+  // O ATRIBUTO DO TEXTO GRANDE (auditoria celular, 13/09) — no MESMO nó
+  // e no MESMO gesto que o `--ui`, para o CSS ler sem uma segunda porta
+  // (`data-texto-grande`, lido por `08-ajustes.css`/`09-celular.css`).
+  document.documentElement.toggleAttribute('data-texto-grande', ehTextoGrande(fator));
 }
 
 /**

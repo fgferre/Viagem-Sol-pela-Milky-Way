@@ -45,7 +45,7 @@ import { useGavetas, semMovimento } from './hooks/useGavetas';
 import type { Gaveta } from './hooks/useGavetas';
 import { useCelular } from './hooks/useCelular';
 import { useRealce } from './hooks/useRealce';
-import { escalaDaUi } from './lib/uiScale';
+import { ehTextoGrande, escalaDaUi } from './lib/uiScale';
 // C6 (docs/PLANO-MOTION-UI.md §7/§12.5) — só a função pura de leitura
 // do deslocamento inicial, a duração e o relógio que assenta com as
 // gavetas; o resto do módulo mora inteiro em three/core/contornoDaUi.ts.
@@ -867,6 +867,11 @@ export default function App() {
     alternarCamada,
   } = useEspelhoDaUrl({ directorRef, phase, foco, indice, quality });
 
+  // O TEXTO GRANDE (auditoria celular, 13/09) — UMA leitura só do limiar
+  // (`ehTextoGrande`/`uiScale.ts`): a ficha e a barra do Atlas no celular
+  // pedem o mesmo tratamento da largura ESTREITA quando só o TEXTO cresce.
+  const textoGrande = ehTextoGrande(escalaUi);
+
   const inJourney = phase === 'journey';
   /**
    * O CHROME DO FILME SOME SOZINHO (item 61, 22/08). Resposta do dono
@@ -1224,6 +1229,7 @@ export default function App() {
         // `escolherAlvo` chama para um corpo dentro do Atlas (a busca).
         focarNoSistema={() => directorRef.current?.focarNoSistema()}
         focarNoCorpo={(id) => directorRef.current?.focarNoCorpo(id, 'orbita')}
+        textoGrande={textoGrande}
       />
 
       {/* A GAVETA DE CAMADAS, e ela é a ÚNICA porta das camadas desde o
@@ -1287,6 +1293,7 @@ export default function App() {
         celular={celular}
         fichaExpandida={fichaExpandida}
         onAlternarFichaExpandida={alternarFichaExpandida}
+        textoGrande={textoGrande}
       />
 
       {/* A PALETA DE BUSCA (F3) — filha DIRETA de .hud-root, como todo

@@ -281,8 +281,35 @@
   .hud-root:has(.atlas-alcas) .controls-bar select.hud-btn {
     display: none;
   }
+  /* O GRUPO INTEIRO DA QUALIDADE some (auditoria celular, 13/09) — não
+     só o `<select>`, de cima. No Atlas em telefone este `.atlas-barra-
+     grupo` NUNCA hospeda outra coisa (o ⚙ Ajustes que às vezes mora ao
+     lado dele é excluído pela mesma condição `!alcas`, em
+     `BarraOuAlcas.tsx`), então ele ficava de pé só para reservar o vão
+     de 24 px + filete que `.atlas-barra-grupo + .atlas-barra-grupo`
+     desenha ENTRE grupos (03-controles.css) — espaço cobrado por um
+     grupo que a régua de cima já esvaziou. Apagando o grupo, esse vão
+     some com ele e volta para quem precisa: o breadcrumb, que é rebite
+     encolhível (`flex: 1 1 0%`, abaixo), e cada centímetro sobrando é
+     um pouco menos de "Epimeteu" cortado. */
+  .hud-root:has(.atlas-alcas) .controls-bar .atlas-barra-grupo:has(.chip-qualidade-envelope) {
+    display: none;
+  }
   .hud-root:has(.atlas-alcas) .controls-bar .hud-btn {
     min-height: 2.5rem;
+  }
+  /* OS BOTÕES DO GRUPO "MODOS" (▶ Filme/⇗ Explorar/↩ Retomar) VIRAM SÓ
+     ÍCONE quando falta espaço (auditoria celular, 13/09): `estreito`
+     (≤360 px) ou `textoGrande` (ui ≥ 1,2), o `data-so-icones` que
+     `BarraOuAlcas.tsx` escreve no grupo. O nome acessível não muda — os
+     três já levam `aria-label`. */
+  .hud-root:has(.atlas-alcas) .controls-bar [data-so-icones] .hud-btn > span {
+    display: none;
+  }
+  .hud-root:has(.atlas-alcas) .controls-bar [data-so-icones] .hud-btn {
+    min-width: 2.75rem;
+    padding-inline: 0;
+    justify-content: center;
   }
   /* O CONTEXTO OCUPA O QUE SOBRA à esquerda dos chips e NUNCA QUEBRA
      (item 6: "uma linha de 44 px") — os `.hud-btn` continuam de tamanho
@@ -306,21 +333,44 @@
      isso como DUAS linhas mesmo sem quebra visual nenhuma. Alinhando os
      dois ao TOPO da barra (fora e dentro do contexto) os dois `top`
      colapsam no mesmo valor. */
-  /* ITEM 2 (Lote 4, 07/09): `min-width: 0` deixava o contexto encolher
-     ATÉ ZERO quando os dois chips (Filme/Explorar) sozinhos já não cabem
-     a 320 px com `ui = 1,4` — o texto sumia INTEIRO, alvo pior que o
-     corte que este mesmo item veio consertar. Os trechos de dentro (a
-     regra `.atlas-contexto > span…`, 04-atlas.css) já garantem que só o
-     ÚLTIMO some por igual e nunca trunca; `min-content` aqui estende essa
-     garantia ao CONTÊINER — ele nunca fica menor que o último trecho
-     precisa, e quem cede é a BARRA (`overflow-x: auto`, abaixo), que já
-     rola por essa mesma razão. */
+  /* O CONTEXTO, NA BARRA DO CELULAR (auditoria celular, 13/09, terceira
+     passada) — o `ContextoDoAlvo` só entrega o NOME atual aqui agora
+     (`todos.slice(-1)`, sempre, `BarraOuAlcas.tsx`): não sobra segmento-
+     pai para truncar, e as regras de piso por trecho (`.atlas-contexto-
+     botao`, o `:first-child` que cedia primeiro) saíram com ele. Só
+     resta UM span, com o mesmo piso de 4ch de antes. */
   .hud-root:has(.atlas-alcas) .controls-bar .atlas-contexto {
+    /* `min-width: 0` (medido, segunda passada): a primeira ideia era
+       `min-content` — com piso em CH em CADA trecho (as regras abaixo),
+       o `min-content` do CONTÊINER deveria ser só a SOMA desses pisos.
+       Não é: `.atlas-contexto` é ele MESMO um `display: flex; flex-wrap:
+       nowrap` (para os trechos de dentro não quebrarem), e o `min-
+       content` de um flex container de UMA linha é o tamanho MÁXIMO dos
+       trechos por extenso, não a soma dos pisos — na prática travava o
+       encolhimento perto do tamanho cheio e "Voo livre" saía da tela
+       (medido a 375 px/`ui`1: só com `min-width: 0` aqui os DOIS botões
+       voltam a caber). O piso de verdade continua vindo do TRECHO que
+       resta (`.atlas-contexto-alvo`, abaixo, com `min-width` próprio) —
+       a barra só rola de lado (`overflow-x: auto`, mais abaixo) quando
+       nem ele cabe mais. */
     flex: 1 1 auto;
     flex-wrap: nowrap;
-    min-width: min-content;
+    min-width: 4ch;
+    overflow: hidden;
     align-self: flex-start;
     align-items: flex-start;
+  }
+  /* O NOME, único trecho que sobra (acima) — piso de 4ch antes da
+     reticência; `> span > span` alcança o span cru (o wrapper de cada
+     trecho é `display: contents`) quando não há `abrirFicha` no celular,
+     e `.atlas-contexto-alvo` cobre o dia em que houver. */
+  .hud-root:has(.atlas-alcas) .controls-bar .atlas-contexto > span > span,
+  .hud-root:has(.atlas-alcas) .controls-bar .atlas-contexto-alvo {
+    flex: 0 1 auto;
+    min-width: 4ch;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* ...E ELA ROLA EM VEZ DE QUEBRAR (item 61, 23/08). Com as duas
@@ -552,9 +602,30 @@
      (a promessa de `display: contents`) —, então o `role="status"` do
      nome (`FichaDoObjeto.tsx`) continua no MESMO elemento e o
      `aria-live` continua valendo: só o ancestral perdeu a caixa. */
-  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-corpo,
   .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-linha {
     display: contents;
+  }
+  /* `.hud-cabecalho-corpo` DEIXA DE SER `display: contents` só aqui
+     (auditoria celular, 13/09, segunda passada) — o `nowrap` que o resto
+     desta regra pede (comentário abaixo) não pode ir no `.hud-cabecalho`
+     de fora: `.hud-alca` (a alça de arrasto, próxima regra) só ganha a
+     PRÓPRIA linha porque `flex-wrap: wrap` + `flex-basis: 100%` empurram
+     tudo o mais para a linha seguinte — tirar o `wrap` de lá tira TAMBÉM
+     essa quebra, e a alça passa a disputar espaço com eyebrow/nome/…/✕
+     na MESMA linha (medido: o botão fechar saía da tela, a mais de
+     500 px de largura numa janela de 375 px). `.hud-cabecalho-corpo` é
+     quem sobra sozinho na SEGUNDA linha (depois da alça) — virar uma
+     grade flexível própria (`flex: 1 1 100%`, ocupa a linha toda) deixa
+     ela nowrap SEM mexer na alça: os filhos de `.hud-cabecalho-linha`
+     (ainda `display: contents`) e o nome (irmão dela aqui dentro)
+     continuam flattened, com o MESMO `order` de sempre. */
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-corpo {
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    align-items: center;
+    column-gap: 0.4rem;
+    min-width: 0;
   }
   .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho {
     display: flex;
@@ -585,9 +656,15 @@
        nada; medido a 320 px/`ui`1,4: "Detalhes"/"✕" caíam para uma
        TERCEIRA linha do cabeçalho mesmo com `min-width: 0` no nome, e a
        ficha estourava os 8,5rem. Com base zero o nome nasce "sem
-       tamanho" e só CRESCE com o que sobra — nunca força quebra. */
+       tamanho" e só CRESCE com o que sobra — nunca força quebra.
+       MIN-WIDTH 6CH (auditoria celular, 13/09; era 0) — o nome tem
+       PRIORIDADE sobre o rótulo do botão: quem cede primeiro é
+       "Detalhes" (`.atlas-ficha-detalhes`, abaixo, virou encolhível), e
+       o próprio rótulo dele já some antes disso (o `estreita` de
+       `FichaDoObjeto.tsx` também liga com `ui ≥ 1,2`, não só ≤360 px) —
+       o piso aqui é rede de segurança, não a primeira linha de defesa. */
     flex: 1 1 0%;
-    min-width: 0;
+    min-width: 6ch;
     margin: 0;
     /* Inter 500, não a serifada da mesa/expandida (§3.5: "eyebrow + nome
        em Inter 500" é a régua só da COMPACTA). */
@@ -609,9 +686,26 @@
     order: 3;
     flex: 0 0 auto;
   }
+  /* O RÓTULO DO BOTÃO CEDE PRIMEIRO (auditoria celular, 13/09; era
+     `flex: 0 0 auto`, que nunca cedia — com "Detalhes" por extenso e
+     `ui` grande, sobrava inteiro e o nome, sem piso, virava "E.."). O
+     `min-width: 2,75rem` do alvo de 44 px (06-responsivo.css) não muda:
+     só o que ele ENCOLHE ATÉ é maior, e é isso que garante o alvo de
+     toque mesmo sem o texto. */
   .atlas-ficha[data-ficha-estado='compacta'] .atlas-ficha-detalhes {
     order: 4;
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    overflow: hidden;
+  }
+  /* O TEXTO DE DENTRO ("Detalhes"/"Recolher") é quem realmente cede — o
+     ícone (`<Icone>`, irmão dele) não tem `min-width`/`flex-shrink`
+     declarados aqui, então continua no tamanho de sempre. */
+  .atlas-ficha[data-ficha-estado='compacta'] .atlas-ficha-detalhes-texto {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-fechar {
     order: 5;
@@ -687,6 +781,103 @@
     font-size: clamp(0.6875rem, calc(3.6vw * var(--ui)), 0.8125rem);
     padding: 0 0.25rem;
   }
+
+  /* AS LINHAS DE CAMADAS (auditoria celular, 13/09) — a 390 px com
+     `ui = 1,4` o interruptor caía para uma segunda linha, sob o rótulo
+     (`.atlas-gaveta-linha` herda `flex-wrap: wrap` de 04-atlas.css, a
+     mesma régua de `.ajustes-item`). Aqui a LINHA nunca quebra mais: o
+     interruptor fica preso na própria coluna, à direita
+     (`margin-left: auto`, 04-atlas.css, inalterado), e quem cede é o
+     RÓTULO — em fluxo de texto normal, não mais em itens de flex
+     separados. Só as linhas de CAMADAS (`.atlas-gaveta-linha`, a lista
+     de interruptores): o painel de Ajustes usa outra classe
+     (`.ajustes-item`) para as MESMAS linhas com controle SEGMENTADO
+     (Qualidade, Texto), que continuam quebrando como hoje — um
+     segmentado de verdade não cabe ao lado do rótulo, e não é este o
+     defeito que a auditoria achou. */
+  .atlas-gaveta-linha {
+    flex-wrap: nowrap;
+  }
+  /* DEIXA DE SER `display: contents` (04-atlas.css) só aqui: em vez de
+     promover nome/"?" a itens de flex da linha — cada um perdendo o
+     lugar do outro ao quebrar —, a caixa volta a existir e vira UM item
+     de flex só (`flex: 1 1 auto`, encolhe ao lado do interruptor). Por
+     ser flex ITEM, o navegador já a trata como bloco (a promessa de
+     `display: contents`/`inline` não muda isso); o que importa é que os
+     FILHOS dela — o nome e o "?" — voltam a ler como texto corrido: o
+     nome quebra sozinho (`.atlas-gaveta-nome`, abaixo) e o "?" só
+     continua a leitura de onde ela parou, grudado no fim do rótulo. */
+  .atlas-gaveta-rotulo-caixa {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .atlas-gaveta-nome {
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+  /* O "?" (`.hud-ajuda`, `display: grid` de fábrica em 08-ajustes.css)
+     precisa do lado INLINE do grid para render junto do texto — sem
+     isso ele é um bloco e quebra para a própria linha sozinho, longe do
+     rótulo que deveria seguir. */
+  .atlas-gaveta-rotulo-caixa .hud-ajuda {
+    display: inline-grid;
+    vertical-align: middle;
+    margin-left: 0.35rem;
+  }
+
+  /* SEM REDE GERAL DE `flex-wrap: wrap` AQUI (medido, segunda passada):
+     era a ideia inicial — "nenhum segmentado nunca corta" —, mas
+     `flex-wrap` decide quem quebra pelo tamanho POR EXTENSO de cada
+     botão (o mesmo efeito colateral do cabeçalho da ficha, acima), não
+     pelo que sobra depois de encolher; com QUALQUER `.ajustes-seg` de
+     quatro botões sob o mesmo seletor, o controle de Texto (85/100/120/
+     140%) — que HOJE já cabe numa linha só encolhendo cada número, sem
+     nenhum problema relatado — passava a quebrar 3+1 junto com a
+     Qualidade a 320/390 px com `ui = 1,4` (medido; ferria a régua "Texto
+     … ainda uma linha só"). A Qualidade é a ÚNICA com o problema
+     relatado (nomes longos, "Performance" cortado); o remédio abaixo é
+     só dela. Os outros `.ajustes-seg` da casa continuam com o encolhe +
+     reticências de sempre (`08-ajustes.css`), que nunca deixou nada
+     vazar da moldura — só deixa o RÓTULO cortar, o mesmo comportamento
+     de antes desta rodada. */
+  /* A QUALIDADE VIRA GRADE 2×2 COM TEXTO GRANDE (`data-texto-grande`,
+     `uiScale.ts`) — "Cinema"/"Alta"/"Performance"/"Auto" não cabem numa
+     linha só a 390 px com `ui = 1,4` ("Cinema | Alta | Performance |
+     A…"). `overflow: hidden` + `border-radius` do `.ajustes-seg` (regra
+     de sempre, 08-ajustes.css) já arredondam os quatro cantos de fora
+     sozinhos, grade ou fileira — não precisa de raio por botão. */
+  :root[data-texto-grande] .hud-root:has(.atlas-alcas) .ajustes-seg--qualidade {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  /* SÓ A SEGUNDA COLUNA perde a borda direita (a régua de sempre só tira
+     do ÚLTIMO botão) — sem isso "Alta"/"Auto" ficavam com um filete
+     sobrando contra a borda de fora da moldura. */
+  :root[data-texto-grande]
+    .hud-root:has(.atlas-alcas)
+    .ajustes-seg--qualidade
+    button:nth-child(2n) {
+    border-right: none;
+  }
+  /* A SEGUNDA LINHA ganha o filete que a primeira já tem por baixo dela
+     na fileira — a borda ENTRE as duas linhas que a grade não desenha
+     sozinha. */
+  :root[data-texto-grande]
+    .hud-root:has(.atlas-alcas)
+    .ajustes-seg--qualidade
+    button:nth-child(n + 3) {
+    border-top: 1px solid var(--borda);
+  }
+  /* O FILETE QUE ANDA (`::after`, 08-ajustes.css) mede X/largura de UMA
+     linha e cola no `bottom: 0` do contêiner inteiro — na grade ele
+     desenharia embaixo das DUAS linhas mesmo quando a escolha é da
+     primeira. Sem um seletor bom para "só a linha de cima", ele some
+     aqui: o texto em `--acento` (`.on`, 08-ajustes.css) já diz sozinho
+     qual opção está marcada. */
+  :root[data-texto-grande] .hud-root:has(.atlas-alcas) .ajustes-seg--qualidade::after {
+    display: none;
+  }
 }
 
 /* ≤360 px (§3.3, "Larguras estreitas"): o NOME tem prioridade — o botão
@@ -716,6 +907,30 @@
 .atlas-ficha[data-ficha-estado='compacta'][data-ficha-largura='estreita']
   .hud-cabecalho-eyebrow::after {
   content: '\00b7';
+}
+/* O NOME encolhe mais aqui (era 6ch, a régua de sempre): com o rótulo
+   "Detalhes" já sem texto (a regra logo abaixo) e o cabeçalho em
+   `flex-wrap: nowrap` (acima, dentro do `@media`), o nome ainda tinha
+   folga para ceder mais antes de a linha quebrar — medido a 320 px com
+   `ui = 1,4` (auditoria celular, 13/09). Especificidade maior que a
+   regra de 6ch (mais um atributo, `[data-ficha-largura='estreita']`)
+   vence sem depender de ordem. */
+.atlas-ficha[data-ficha-estado='compacta'][data-ficha-largura='estreita']
+  .hud-cabecalho-titulo--nome {
+  min-width: 4ch;
+}
+/* OS DOIS BOTÕES-ÍCONE DO CABEÇALHO (Detalhes, ✕) NÃO CRESCEM COM O
+   TEXTO (auditoria celular, 13/09): `2.75rem` chega a 62 px em `ui =
+   1,4` (a raiz também escala com `--ui`, `index.css`) — um alvo de
+   toque não precisa acompanhar o texto, só o NOME precisa da largura
+   que sobra. Fixo em px, à parte da escala da UI, só aqui. */
+.atlas-ficha[data-ficha-estado='compacta'][data-ficha-largura='estreita']
+  .atlas-ficha-detalhes,
+.atlas-ficha[data-ficha-estado='compacta'][data-ficha-largura='estreita']
+  .hud-fechar {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
 }
 .atlas-ficha[data-ficha-largura='estreita'] .atlas-ficha-detalhes-texto {
   display: none;

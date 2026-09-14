@@ -42,6 +42,10 @@ export interface BarraOuAlcasProps {
    * mesma pergunta de outro jeito ("somem sozinhos", item 61).
    */
   alcas: boolean;
+  /** o texto grande (`ehTextoGrande`/`uiScale.ts`) — a linha de contexto
+   *  do celular mostra só o nome atual, o mesmo tratamento do `estreito`
+   *  de abaixo de 360 px (auditoria celular, 13/09). */
+  textoGrande: boolean;
   /** o esmaecimento do chrome do filme (item 61) — classe, não estado */
   chromeSumido: string;
   gaveta: Gaveta | null;
@@ -150,6 +154,8 @@ function ContextoDoAlvo({
   focarNoSistema,
   focarNoCorpo,
   estreito = false,
+  textoGrande = false,
+  alcas = false,
   comViaLactea = true,
   abrirFicha,
 }: {
@@ -159,6 +165,14 @@ function ContextoDoAlvo({
   focarNoCorpo: (id: string) => void;
   /** ≤ 360 px (item 6/§3.3): só o último trecho, nunca os outros no DOM */
   estreito?: boolean;
+  /** texto grande (auditoria celular, 13/09): o MESMO corte do `estreito`
+   *  acima — com o texto grande a barra de uma linha do celular também
+   *  não sobra espaço para os degraus-pai por extenso. */
+  textoGrande?: boolean;
+  /** o CELULAR (auditoria celular, 13/09, terceira passada): a barra é
+   *  ~30% mais estreita que a mesa e os botões tomam quase tudo dela — a
+   *  trilha mora só na mesa; aqui sobem "Sistema" (a ficha) e a Busca. */
+  alcas?: boolean;
   /**
    * ≤ 760 px (achado das capturas do Lote 4, 07/09): "Via Láctea" some
    * da linha DE PROPÓSITO no telefone, antes de qualquer corte por
@@ -183,7 +197,7 @@ function ContextoDoAlvo({
   // ficha acendem juntas sem precisar compartilhar estado nenhum.
   const vezesFoco = useRealce(foco);
   const todos = trechosDoContexto(escada, foco, focarNoSistema, focarNoCorpo, comViaLactea);
-  const trechos = estreito ? todos.slice(-1) : todos;
+  const trechos = alcas || estreito || textoGrande ? todos.slice(-1) : todos;
   return (
     <p className="atlas-contexto">
       {trechos.map((trecho, i) => (
@@ -226,6 +240,7 @@ function ContextoDoAlvo({
 export function BarraOuAlcas({
   hud,
   alcas,
+  textoGrande,
   chromeSumido,
   gaveta,
   alternarGaveta,
@@ -490,6 +505,8 @@ export function BarraOuAlcas({
           focarNoSistema={focarNoSistema}
           focarNoCorpo={focarNoCorpo}
           estreito={larguraEstreita}
+          textoGrande={textoGrande}
+          alcas={alcas}
           comViaLactea={false}
         />
       )}
@@ -527,7 +544,13 @@ export function BarraOuAlcas({
           modo moram. (Era "tarja" até 24/08, quando ela saiu do
           telefone; a barra ficou.) */}
       {(hud.saidasDoAtlas || (hud.botaoPartir && temFilmeGuardado)) && (
-        <div className="atlas-barra-grupo">
+        <div
+          className="atlas-barra-grupo"
+          // SÓ ÍCONE quando falta espaço (auditoria celular, 13/09): o
+          // mesmo par de sinais do corte do nome, acima. O nome
+          // acessível não muda — os três botões já levam `aria-label`.
+          data-so-icones={larguraEstreita || textoGrande ? '' : undefined}
+        >
           {hud.saidasDoAtlas && (
             <>
               <button
@@ -536,7 +559,7 @@ export function BarraOuAlcas({
                 aria-label={t('barra.verOFilmeAria')}
               >
                 <Icone nome="play" tamanho={16} />
-                {alcas ? t('barra.verOFilmeCurto') : t('barra.verOFilme')}
+                <span>{alcas ? t('barra.verOFilmeCurto') : t('barra.verOFilme')}</span>
               </button>
               <button
                 className="hud-btn small"
@@ -544,7 +567,7 @@ export function BarraOuAlcas({
                 aria-label={t('barra.explorarAria')}
               >
                 <Icone nome="explorar" tamanho={16} />
-                {alcas ? t('barra.explorarCurto') : t('barra.explorarAtlas')}
+                <span>{alcas ? t('barra.explorarCurto') : t('barra.explorarAtlas')}</span>
               </button>
             </>
           )}
@@ -556,7 +579,7 @@ export function BarraOuAlcas({
               aria-label={t('barra.voltarAoFilme')}
             >
               <Icone nome="retomar" tamanho={16} />
-              {alcas ? t('barra.voltarAoFilmeCurto') : t('barra.voltarAoFilme')}
+              <span>{alcas ? t('barra.voltarAoFilmeCurto') : t('barra.voltarAoFilme')}</span>
             </button>
           )}
         </div>
