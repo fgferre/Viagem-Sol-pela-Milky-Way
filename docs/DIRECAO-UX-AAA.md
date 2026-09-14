@@ -1,98 +1,106 @@
-# Observatório vivo — direção e prompt de execução
+# Destinos para visitar ou assistir — direção e prompt de execução
 
-Decisão de direção: 13/09/2026. Base examinada: `e2ec52a`. Pedido do dono: decidir o caminho e entregar instruções executivas para reduzir interpretação e retrabalho dos próximos modelos. Esta entrega é direção de produto; o redesenho ainda não foi implementado ou aprovado em uso. “AAA” é a ambição de acabamento e experiência, não uma certificação nem promessa de resultado.
+Revisão de direção: 14/09/2026. Base examinada nesta revisão: `a9520d6`. O dono propôs usar os destinos já presentes na busca tanto para visitar objetos enquadrados quanto para abrir sequências cinematográficas de seus sistemas; o filme galáctico existente passa a integrar esse catálogo. Esta revisão substitui o piloto de convites/ficha da proposta de 13/09. É planejamento; nenhum filme novo ou mudança de navegação foi implementado. “AAA” designa a ambição de experiência, não uma certificação.
 
 ## 1. A decisão
 
-**Mar de Estrelas será um observatório cinematográfico que transforma curiosidade em observação.** A assinatura é a continuidade: convite específico → enquadramento que cumpre a promessa → informação ligada ao que aparece → manipulação de escala ou tempo → descoberta relacionada. Tudo acontece no universo existente, com liberdade para interromper e explorar.
+**Uma busca, um catálogo de destinos e duas ações claras: Visitar ou Ver filme.** O visitante escolhe o assunto e decide se assume a exploração imediatamente ou se começa por uma sequência dirigida no mesmo universo.
 
-Nome interno da direção: **Observatório vivo**. Não renomear o produto. A marca continua Mar de Estrelas.
+A aba Busca existente é a entrada comum. Manter seu nome por enquanto; não criar outra home, uma galeria concorrente, uma categoria separada de filmes ou novo onboarding. Manter Sistema Solar, Estrelas e Galáxia como categorias de assuntos. O filme é uma maneira de conhecer um destino, disponível apenas quando existe um roteiro pronto.
 
-Escolho esta direção porque aproveita o diferencial difícil de copiar — cena científica navegável, da vizinhança solar ao volume galáctico — e dá uma finalidade comum à interface e aos efeitos. O salto será feito por experiências completas. Uma troca geral de pele sem mudar o percurso do visitante não satisfaz esta direção.
+O Mar de Estrelas mantém identidade, Atlas, voo livre e um único motor cinematográfico. O conceito Observatório vivo passa a descrever essa integração. O primeiro trabalho deixa de ser redesenhar a ficha: passa a ser cumprir as duas intenções na busca e tornar o filme galáctico um item desse catálogo.
 
-Não vamos construir cockpit de nave, HUD cheio de telemetria decorativa, menu orbital, painel radial, chatbot, sistema de missões/pontos ou nova biblioteca de efeitos. Também não vamos reduzir o produto a uma galeria de cartões. A descoberta desemboca no céu manipulável.
+## 2. O que existe e o que precisa mudar
 
-## 2. Evidências e limites
+- `lib/destinosDaBusca.ts` já oferece dez destinos e três categorias, resolvidos pelo índice existente. Seus cartões chamam a mesma seleção usada pelos resultados digitados. Isso permite reutilizar a superfície e o cadastro.
+- No Atlas, `focarNoCorpo('saturn', 'orbita')` enquadra a órbita; `aproximarDoCorpo()` já permite chegar ao planeta. A busca deve passar a expressar uma intenção explícita de visita, com enquadramento adequado ao tipo de alvo. Não depender de clicar duas vezes no mesmo resultado, pois a escada interpreta repetição.
+- `lerSequencia`, `lerPlanoDeCamera` e `movimentos` já oferecem planos, trajetórias, legendas, lentes e ritmo. `JourneyRig` e `Director` já oferecem reprodução, pausa, progresso, velocidade e passagem ao Atlas/voo. Não construir outro player.
+- **Ainda não é só acrescentar um JSON:** `Journey` usa listas globais `SHOTS`, `STARTS`, duração e legendas da viagem galáctica; `JourneyRig` instancia esse filme fixo. `jdDoFilme`, pré-aquecimento, metadados e encerramento também carregam decisões galácticas. É necessário separar a definição do filme de sua reprodução.
+- A retomada atual guarda tempo, orientação e pausa, mas ainda não guarda identidade de filme. Isso terá de acompanhar o roteiro ativo.
+- O destino `sagittarius-a` é o centro galáctico/buraco negro, não a Via Láctea inteira. Criar a entrada correta para a galáxia; não mudar o significado de Sagittarius A*.
 
-Lidos: `README.md`, `PLAN.md`, `docs/NORTE.md`, primeira seção O BASTÃO de `docs/PENDENCIAS.md`, registros do plano de motion e código de composição, destinos, navegação e ficha. Inspeção direta no navegador embutido: abertura e busca na largura móvel de 454 px; Saturno selecionado e aproximado; desktop 1440×900 com ficha e Tempo; Camadas; passagem ao filme, pausa e voo livre. Inspeção de layout, não medição de fluidez, teste de aparelho físico ou pesquisa com visitantes.
+A revisão usou leitura do código e os achados da inspeção visual de 13/09. Não houve nova medição de desempenho ou validação em aparelho físico nesta revisão. Halo móvel, folha flutuante, barras de rolagem e interruptores compactos já foram implementados; preservar o estado atual. O plano antigo de motion continua tendo registros desatualizados.
 
-| Evidência | Leitura de produto | Decisão |
+## 3. A aparência acompanha o produto atual
+
+Preservar âmbar, grafite, Inter e Fraunces, a pele dos painéis, a folha móvel flutuante e o motion já aprovado. Nesta frente, a alteração visual necessária está nos cartões/resultados com duas ações e na identificação do filme ativo. Não iniciar uma rodada de tipografia, novos painéis, efeitos ou instrumentos.
+
+Filmes novos usam o céu real do aplicativo e a direção de fotografia para compor a experiência. Ler/pausar preserva contraste, foco e áreas úteis da câmera; no celular os controles precisam caber e manter seus alvos de toque. Qualidade cinematográfica será julgada pela sequência real, com legendas e gestos funcionando.
+
+## 4. Como a busca se organiza
+
+| Destino | Ação principal: Visitar | Ação secundária: Ver filme |
 | --- | --- | --- |
-| Cartão “Saturno — Os anéis, de perto” seleciona a órbita; aproximar é outra ação. | A promessa editorial e o destino visual estão separados. | Convites editoriais passam a incluir o enquadramento. A busca textual mantém sua semântica atual. |
-| Ficha de Saturno já traz texto, seções, dados vivos e procedência. | Há profundidade real para aproveitar. A falta não é de conteúdo. | Antepor uma leitura curta da cena; preservar o acervo completo abaixo. |
-| De perto, várias linhas de órbita e nomes atravessam o quadro de Saturno. | A composição precisa dirigir a atenção entre contexto e objeto. | Estudar prioridade contextual das marcações no piloto, sem mudar a luz ou apagar estrelas. |
-| Buscar/Camadas/Ajustes ocupam a régua no Atlas, outros lugares no filme/voo. | A câmera compartilha universo; os instrumentos ainda mudam de endereço. | Unificar os pontos de acesso no lote de continuidade, mantendo controles específicos de cada atividade. |
-| No trecho claro do gás, textos do filme/voo tiveram pouco contraste perceptível. | Legibilidade tem de sobreviver ao fundo brilhante. | Proteção local do texto e superfícies de instrumento opacas; nunca escurecer o universo inteiro. |
-| Motion, foco, folha móvel e halo já receberam correções extensas. | Refazer mecanismos maduros acrescentaria risco. | Reutilizar presença, gestos, foco e passe óptico existentes. |
+| Saturno | Planeta e anéis inteiros, enquadrados para observar | “O sistema de Saturno”, quando o roteiro estiver pronto |
+| Terra | Terra enquadrada de perto | Ausente até existir uma sequência pronta |
+| Sirius | Estrela enquadrada no contexto que o catálogo/renderer sustentam | Ausente até existir uma sequência pronta |
+| Via Láctea | Panorama exterior baseado no enquadramento galáctico já existente, em exploração livre | Filme atual “Do Sol à Via Láctea”, duração derivada do roteiro |
+| Sagittarius A* | O centro galáctico, com enquadramento específico e selo de escala existente | Ausente até existir uma sequência própria |
 
-A hipótese criativa ainda a validar é que convites com enquadramento e continuidade aumentarão o prazer de exploração. Não foi medida retenção, preferência estética ou redução de abandono. Não afirmar esses resultados.
+### Cartões e resultados digitados
 
-**Precedência histórica:** o §12.10 de `PLANO-MOTION-UI.md` ficou desatualizado. O halo foi adotado e chegou ao celular (`67ea6cb`); os menus móveis ganharam margem de 12 px (`0d5b3db`). O bastão mais recente registra isso. Não reabrir a escolha CSS × WebGL como se estivesse pendente. Não tratar C7 como integralmente validado em aparelhos reais.
+Manter foto, nome e descrição; acrescentar ações irmãs `Visitar` e `Ver filme · duração`. O nome/foto pode acionar Visitar, mas não envolver os dois botões em outro botão. Não usar hover para revelar a segunda ação. No celular, conservar miniaturas e botões acessíveis sem subir o teclado ao abrir a busca.
 
-## 3. Linguagem visual decidida
+Clicar em Visitar nunca inicia um filme automaticamente. Clicar em Ver filme nunca faz primeiro uma visita completa para depois reiniciar a câmera. A seleção feita com setas no campo só destaca o resultado; Enter ou clique confirma **Visitar**. Uma ação secundária de filme fica acessível por Tab ou toque quando o resultado corresponde a um destino com roteiro.
 
-- **Céu preto, instrumento de grafite, luz de âmbar e texto marfim.** Manter as fontes locais Inter e Fraunces: a segunda dá voz à marca e à descoberta, a primeira conduz ações e dados. Essa combinação já distingue o produto de um simulador militar genérico. A mudança está na hierarquia, escala tipográfica, composição e relação com o espaço.
-- Partir dos tokens existentes. Referência de composição: superfície `#0b1016`, texto `#f2efe7`, secundário `#aeb7bf`, acento `#dfbd79`. Valores são alvos de arte a verificar por contraste, não autorização para substituir tokens indiscriminadamente.
-- Em desktop, título do objeto 36–48 px, texto de leitura 16–18 px, controles 14–16 px. No celular: título 28–32 px, corpo 16 px e entradas pelo menos 16 px. Reutilizar a escala de texto de 85–140%; não criar um segundo sistema. Metadados secundários não devem sustentar informação essencial em letras minúsculas.
-- Painéis de leitura sólidos, borda fina e raio discreto de 12–16 px. O halo percorre a borda na ativação e termina. Não há brilho permanente em cada linha nem vidro translúcido sobre dados.
-- A profundidade vem da câmera real, da separação entre céu e instrumentos e das transições de presença. Não inclinar texto em perspectiva, inventar paralaxe de estrelas ou mover o céu em resposta ao mouse sobre um botão.
+Duração e disponibilidade vêm da definição real do filme. Nada de botões “em breve”, durações inventadas ou filme atribuído a toda estrela porque a câmera consegue apontar para ela. Filmes prontos podem ser descobertos tanto nos cartões quanto pelo nome digitado, sem duplicar o destino em duas listas.
 
-## 4. Composição e navegação
+### O que Visitar significa
 
-### Desktop
+- Planeta resolvido: corpo aproximado; Saturno inclui os anéis no retângulo útil.
+- Lua: lua enquadrada usando a navegação existente e sua referência ao pai.
+- Estrela: enquadramento honesto compatível com seu catálogo e representação atual; não prometer superfície detalhada ou sistema planetário inexistente.
+- Lugar: composição própria que mostre o assunto. A Via Láctea pede panorama exterior; seu centro pede outra vista. Não pousar cegamente na coordenada central de um volume de gás.
 
-Uma moldura estável: marca/endereço no alto à esquerda, filme/voo à direita, instrumentos na borda direita, Tempo embaixo. No piloto preservar os acessos existentes. No lote de continuidade, a mesma régua recebe Destinos, Camadas, Ficha e Ajustes também no filme pausado/voo; remover os acessos substituídos, sem duplicá-los.
+A visita é idempotente: repetir Visitar chega à mesma intenção de enquadramento, sem descer outro degrau acidentalmente. Pode usar a transição de câmera existente; “direto” significa sem uma etapa intermediária de seleção a cargo do visitante, não teletransporte obrigatório.
 
-“Destinos” será o nome visível do acesso à busca unificada, com campo “Buscar um destino…”. Não criar uma nova tela de catálogo ou mecanismo de busca. Na abertura manter “Explorar o Atlas” principal; filme e voo continuam acessíveis como secundários. Ao entrar no Atlas, um convite curto oferece “Saturno · Os anéis, de perto” e “Explorar por conta própria”. Reusar o convite existente, em vez de acrescentar outra sobreposição de onboarding.
+### Acesso fora da busca
 
-Quando uma descoberta estiver aberta, o painel ocupa inicialmente cerca de 340–400 px à direita. O corpo e seus anéis cabem no retângulo útil restante; a câmera usa a reserva existente. Não aplicar crop ou zoom 2D no canvas em produção. A referência inicial é Saturno completo, com folga nas extremidades dos anéis, sem um percentual universal de tamanho para todos os corpos.
+Preservar inicialmente os botões atuais da abertura e dos HUDs como atalhos para o mesmo filme registrado. Não tirar acesso por uma reforma de menus que não é necessária. Eles não ganham outro player nem outra definição de roteiro. O conteúdo pode estar centralizado mesmo quando tem atalhos em mais de um contexto.
 
-A Ficha continua sendo a única superfície de informação do alvo. No topo: nome, uma frase de observação, no máximo três dados pertinentes e uma ação de continuidade. Abaixo, as seções completas e sua procedência. O texto científico não desaparece nem vira um conjunto de números decorativos.
+## 5. Primeiro filme novo: O sistema de Saturno
 
-### Celular e toque
+Decisão editorial: aproximadamente **50 segundos, cinco planos**, dirigidos para conhecer o conjunto. Estes tempos são alvos de montagem, a confirmar ao assistir; a UI só publica a duração final calculada.
 
-Manter as cinco alças e a folha flutuante já aprovadas. O acesso Destinos substitui o rótulo Buscar; Tempo conserva sua gaveta. Nenhuma funcionalidade depende de hover, teclado ou precisão de mouse.
+| Plano | Intenção | Movimento/assunto |
+| --- | --- | --- |
+| 0–8 s | Reconhecer o sistema | Vista de conjunto de Saturno e contexto orbital de suas luas |
+| 8–20 s | Revelar o protagonista | Aproximação oblíqua com o disco e os anéis inteiros |
+| 20–30 s | Entender os anéis | Arco curto que revela sua geometria e a sombra já desenhada pelo renderer |
+| 30–42 s | Conhecer uma lua | Transição para Titã, mantendo a relação com Saturno compreensível |
+| 42–50 s | Devolver o universo ao visitante | Reenquadrar Saturno/anéis e assentar na vista final de exploração |
 
-Na chegada a Saturno, mostrar ficha compacta: título, uma frase e próxima ação. Expansão pela alça e pelo botão “Detalhes”; o céu é reenquadrado segundo a reserva real da folha. A ficha expandida prioriza leitura e rola. Evitar metas rígidas de altura que cortem texto ampliado; testar 320 px/140% e teclado virtual.
+Usar dados, texturas, posições e capacidades efetivamente existentes. Não inventar atmosfera, sonda Cassini, superfície de Titã, partículas individuais dos anéis ou fenômeno que o app não desenha. Legendas breves PT/EN, derivadas de fontes editoriais do projeto e associadas ao assunto visível.
 
-Não transpor a régua lateral de desktop para o telefone. Manter margens de 12 px, respeitar safe areas e os contratos de 44 px de alvo. Preservar o breakpoint centralizado existente; não acrescentar outro breakpoint de produto.
+Para o primeiro roteiro, usar uma época científica fixa baseada no retrato existente (`EPOCA_JD_TDB`), explicitada no filme, com posições de Saturno e Titã obtidas das mesmas efemérides usadas pelo mundo. Definir pontos do roteiro relativamente a essas posições/raios e resolver uma vez após os dados necessários estarem prontos. Não hardcodar coordenadas copiadas de uma screenshot ou animar a física por um relógio de câmera separado. Não introduzir aceleração temporal neste filme piloto.
 
-### Contemplação
+Se a efeméride necessária não estiver disponível, informar a indisponibilidade e manter Visitar acessível dentro das capacidades atuais. Não tocar o filme com Titã fora do lugar ou sem dados. O catálogo só oferece Ver filme depois que a sequência foi implementada e verificada.
 
-Uma ação explícita “Só observar” recolhe a ficha e o chrome secundário; deixa “Mostrar instrumentos” sempre encontrável. Não ocultar controles automaticamente enquanto alguém lê, usa teclado ou manipula um instrumento. Reutilizar a política de chrome existente onde aplicável. No filme em reprodução, manter a política de sumir/voltar já existente.
+## 6. Assistir, pausar e assumir a exploração
 
-## 5. O percurso que prova a direção
+O player existente permanece único: play/pausa, velocidade, progresso, capítulos e legendas. Arrastar o olhar durante a pausa conserva sua semântica atual. A pessoa escolhe explicitamente `Explorar aqui` para entrar no Atlas ou voo, conforme a escala e capacidade de navegação daquele destino.
 
-Primeiro minuto editorial, sem cronômetro obrigatório ou autoplay:
+Para o novo filme de Saturno, a passagem precisa manter enquadramento e época do ponto de saída; não saltar para a vista geral do Sistema Solar. Isso é um critério a implementar e provar, não uma garantia de que o portal atual já serve para qualquer plano planetário.
 
-1. **Entrar:** o universo já é visível. O convite oferece Saturno, com imagem do próprio aplicativo e a promessa “Os anéis, de perto”. Pode ser dispensado imediatamente.
-2. **Chegar:** um clique leva ao corpo aproximado com anéis inteiros. Uma transição existente, cancelável, mantém a orientação; a ficha compacta chega junto ao assentamento, sem atrasar o comando.
-3. **Compreender:** aparece “Um mundo de anéis” e a síntese, derivada da descrição já presente: “Os anéis são feitos sobretudo de partículas de gelo, com uma parcela menor de rocha e poeira.” O texto completo e suas fontes continuam na ficha. Não atribuir composição a uma cor inventada no shader.
-4. **Continuar:** “Visitar Titã” leva à lua real já catalogada. O endereço passa a Sistema Solar › Saturno › Titã. O visitante pode voltar a Saturno ou ao sistema pelos acessos existentes. Não prometer uma API pronta de “todas as luas”.
-5. **Manipular:** “Explorar o tempo” abre o instrumento existente. A pessoa escolhe sentido e taxa; data, rotação e efemérides continuam vindo do relógio único. Não rodar relógio sozinho como surpresa, não simular datas com animação de texto e não prometer um eclipse sem cálculo.
-6. **Ampliar contexto:** “Sistema Solar” afasta usando a escada e o reenquadramento reais. O endereço e as unidades dão orientação. “Ver o filme” continua sendo a viagem galáctica existente; não inventar um filme de Saturno ou dizer que o filme atual parte de qualquer posição.
+`Retomar filme` restaura **filme, ponto, orientação e pausa guardados**, sem tentar fazer o roteiro continuar a partir da nova pose manual. Um filme galáctico pausado não pode voltar como filme de Saturno. Ao escolher outro filme, substituir a sessão anterior explicitamente; não criar uma pilha de filmes suspensos.
 
-Esta sequência é um encadeamento editorial de ações existentes, não um novo modo, motor de tours ou grafo genérico de missões. Implementar primeiro apenas Saturno e Titã. Os próximos convites, após o piloto, serão Terra/Lua, Júpiter e a revelação da Via Láctea, cada um com seu enquadramento demonstrado.
+Ao terminar Saturno, assentar na vista final e oferecer `Explorar Saturno` e `Rever filme`. Remover textos/ações de encerramento da viagem galáctica desse contexto. O filme galáctico mantém seu encerramento atual na migração.
 
-## 6. Três assinaturas de interação
+Durante o filme o relógio científico é definido pelo roteiro. `Visitar` usa o instante atual do Atlas; `Explorar aqui` conserva o instante mostrado pelo filme e o exibe no instrumento de tempo. O tempo de reprodução não deve ser confundido com a data científica. A navegação não modifica silenciosamente brilho, qualidade ou escolha de camadas.
 
-**Chegada que cumpre a promessa.** O cartão editorial escolhe destino e intenção de enquadramento. A seleção comum do catálogo continua separada da aproximação. A animação da câmera não recebe uma duração universal: usar a rampa atual e ajustar só após observar a experiência. Seleção, carregamento ou aproximação podem ser interrompidos; o último comando vence.
+## 7. Reutilização do motor, com fronteiras pequenas
 
-**Instrumento que responde.** Preservar pressão interna, hitbox fixa, folha acompanhando o dedo e halo de abertura de aproximadamente 400 ms. Um realce curto confirma que nome/ficha pertencem ao alvo novo. Números científicos nunca contam valores fictícios para parecer vivos. Repouso visual termina o gesto; não combinar pulsações e reflexos contínuos.
+Manter WebGL2/Three.js, renderer, camera rigs e o Director existentes. DOM/React permanecem com texto, controles e acessibilidade; `useGavetas`, `movimentoDaGaveta` e as reservas da câmera continuam únicos.
 
-**Escala legível durante a travessia.** Dar mais hierarquia ao endereço e à distância real da câmera, com unidade e referente explícitos (“ao Sol”, “à câmera”). Reusar `lib/unidades` e os dados do Director. Não confundir afastamento da câmera com distância orbital. Não criar slider de escala com marcos arbitrários nesta rodada.
+Evoluir o cadastro de destinos existente para associar cada destino à sua intenção de visita e, opcionalmente, ao ID de um filme. O índice de busca continua único. Via Láctea é um lugar/região real na organização do produto, não uma falsa estrela acrescentada ao catálogo astronômico.
 
-Para movimento reduzido, suprimir ornamento e substituir deslocamentos decorativos por mudança imediata; navegação espacial deve continuar disponível com a política de acessibilidade existente, revista no piloto. A informação de confirmação também aparece por texto/estado. Nenhum comando espera o halo terminar.
+Extrair da viagem atual uma definição de filme com apenas o necessário para os dois casos concretos: identidade, planos/legendas, relógio científico, preparação dos corpos, metadados/assuntos e comportamento de finalização. Duração, capítulos e progresso são derivados dos planos. `Journey`/`JourneyRig` recebem a definição ativa e continuam executando as primitivas atuais.
 
-## 7. Ciência, marcações e tecnologia
+Regras particulares como `REVEAL_T`, a coda Terra/Lua, saída do disco, enquadramentos de prova e data galáctica pertencem à definição galáctica. Não espalhar `if filme === saturno` por todos os subsistemas nem criar um framework de roteiros para demandas futuras. Migrar o filme galáctico preservando seus quadros e comportamento antes de adicionar Saturno.
 
-Manter WebGL2/Three.js, renderer, câmera, luz, dados, física e efemérides existentes. React/DOM continuam responsáveis pelo texto, controles e acessibilidade. WAAPI/CSS existentes continuam com presença/gesto; o halo usa o passe final já integrado. Sem dependência nova, segundo canvas de UI, WebGPU, shader de vidro ou passe adicional nesta direção.
+Estender o espelho da URL, na mesma implementação existente, para identificar o filme ativo junto de `t`/pausa. Links antigos com `?t=` continuam se referindo à viagem galáctica. Retomada, seek e reinício precisam usar a mesma identidade; não manter segundos de um roteiro ao trocar para outro.
 
-**Prioridade das marcações:** começar usando a seleção e a colisão existentes. Se a vista aproximada ainda estiver poluída, o lote 2 adiciona uma política contextual à camada existente, com escolha explícita “Contextuais / Todas” dentro de Camadas. A opção só afeta rótulos e linhas de orientação; nunca apaga estrelas, planetas, gás ou poeira. Desligar uma camada continua tendo precedência. Não reativar camadas, persistir alterações ou trocar a escolha silenciosamente ao selecionar um cartão. A miniatura limpa da proposta não prova que essa política está implementada.
-
-Não é objetivo redesenhar Saturno, refazer texturas, mudar FOV/brilho por modo, reabrir a escala do buraco negro, regenerar `public/data` ou concluir o plano de gás. Os fatos usados nos convites devem ter chave PT/EN e derivar das fontes editoriais do projeto; dado novo exige fonte primária, unidade e indicação de proveniência.
-
-Sem novos efeitos de GPU no piloto. O investimento vai para o enquadramento, a reação dos instrumentos existentes e as transições entre estados. Só considerar efeito óptico adicional quando uma comparação real mostrar um ganho ainda não obtido com o renderer atual.
+Não alterar shaders de corpos, brilho, FOV por modo, presets, leis científicas ou regenerar `public/data`. Para filmar Saturno, reutilizar as lentes/curvas permitidas pelo motor e a direção de fotografia existente. Não refazer a pele ou adicionar efeitos ópticos nesta frente: o trabalho cinematográfico é câmera, enquadramento, montagem e conteúdo.
 
 ## 8. Referências e o que foi aproveitado
 
@@ -103,50 +111,47 @@ Sem novos efeitos de GPU no piloto. O investimento vai para o enquadramento, a r
 
 Fontes consultadas em 13/09/2026. As decisões de composição e a síntese “Observatório vivo” são julgamento de projeto, não conclusões atribuídas às referências.
 
-## 9. Ordem executiva e fronteiras
+## 9. Ordem de execução decidida
 
-Os lotes abaixo são trabalho futuro, ainda não executado. Cada nova tarefa recebe UM lote. Não mandar um modelo implementar o documento inteiro de uma vez.
+Os três lotes são futuros. Cada executor recebe um lote, com resultado utilizável e verificável.
 
-| Lote | Entrega fechada | Arquivos principais | Fora desse lote |
-| --- | --- | --- | --- |
-| 1 — Saturno/Titã | Convite com aproximação, topo editorial da ficha, próxima ação Titã e composição desktop/móvel | `App.tsx`, `PaletaDeBusca.tsx`, `FichaDoObjeto.tsx`, `passosDoConvite.ts`, `lib/destinosDaBusca.ts`, `lib/atlas/ficha.ts`, `lib/idioma/pt.ts`, `en.ts`, fatias CSS pertinentes | Outros destinos, novo motion, novo sistema de camadas, chrome global, renderer |
-| 2 — ler e observar | Estado Só observar, legibilidade no céu claro e prioridade contextual das marcações se a composição do piloto exigir | `LabelCanvas.ts`, `three/director/rotulos.ts`, `atlasConfig.ts`, `HudDoAtlas.tsx`, `useChromeDoFilme.ts`, CSS | Alteração de emissão, exposição, dados ou catálogo |
-| 3 — continuidade | Endereços estáveis dos instrumentos entre Atlas/filme/voo, rótulo Retomar filme quando existe retomada, Tempo e escala com hierarquia comum | `BarraOuAlcas.tsx`, `Hud.tsx`, `HudDoAtlas.tsx`, `App.tsx`, `tempoDoAtlas.ts`, `useDirector.ts` | Novo filme, transição universal entre poses, novo relógio |
-| 4 — ampliar repertório | Aplicar a mesma linguagem a Terra/Lua, Júpiter e revelação galáctica; fechamento integrado | cadastro de destinos, ficha/editorial e roteiro existente apenas se necessário para ponto já existente | Motor de tours, conteúdo em massa ou reforma geral |
+| Lote | Entrega | Limite |
+| --- | --- | --- |
+| 1 — Busca como entrada comum | Visitar enquadra todos os tipos suportados; Via Láctea entra corretamente no catálogo com panorama e acesso ao filme atual; atalhos chamam o mesmo filme | Sem filme de Saturno, redesign da ficha, novo onboarding ou refatoração ampla do player |
+| 2 — Dois filmes no mesmo motor | Separar definição e reprodução preservando a galáxia; implementar o filme de Saturno de cinco planos; então expor Ver filme no cartão/resultado Saturno | Sem outros filmes, novo renderer, motor de tours ou geração de conteúdo em massa |
+| 3 — Continuidade e fechamento | Explorar aqui, retomada identificada por filme, final de Saturno, URL, PT/EN, foco, toque e provas integradas | Não redesenhar os controles só para aparentar novidade |
 
-O piloto precisa provar a assinatura antes de espalhá-la. A revisão do dono ocorre sobre uma versão local utilizável, com comparação visível. Não exigir aprovação intermediária para cada ajuste reversível dentro do lote. Se o piloto não funcionar visualmente, corrigir o piloto; não compensar espalhando decoração.
+No lote 2, não expor ao visitante uma sequência que ainda falha ao pausar, encerrar ou sair. O lote 3 fecha a continuidade completa e as provas; não serve de justificativa para lançar controles quebrados no lote anterior.
 
-### Pontos de integração confirmados
+Principais arquivos: `lib/destinosDaBusca.ts`, `lib/buscaEstrelas.ts`, `PaletaDeBusca.tsx`, `App.tsx`, `three/director/escada.ts` para visita; `cinematic/journey.ts`, `cameraRig.ts`, `lerSequencia.ts`, `lerPlanoDeCamera.ts`, roteiros, `director.ts` e `director/preAquecimento.ts` para filmes; HUD, encerramento, `useEspelhoDaUrl.ts` e traduções para integração. Antes de criar algo, procurar a implementação existente.
 
-- Destino Saturno hoje passa por `escolherAlvo` e `Director.focarNoCorpo('saturn', 'orbita')`. A aproximação existe em `Director.aproximarDoCorpo()`. Compor a intenção editorial nessa fronteira, sem contornar `Escada` ou usar dois cliques artificiais/temporizadores. Preservar abertura de ficha e estado de seleção do fluxo do App. Confirmar o comportamento assíncrono ao integrar.
-- `Director.focarNoCorpo('titan')` encaminha a `Escada.focarNaLua`; a relação pai/filha já existe. Não inventar uma função de enquadramento de todas as luas.
-- `entrarNoAtlas()` guarda o ponto do filme; `partirDoAtlas()` restaura o tempo e a orientação guardados, inclusive pausa. A pose manipulada no Atlas NÃO vira nova pose do filme. “Retomar filme” usa esse contrato. “Ver filme desde o começo” continua ação distinta e explícita.
-- `useGavetas` é dono das cinco gavetas; `movimentoDaGaveta` é dono da presença e gesto. `AREAS_RESERVADAS`, `reservarParaAFicha` e o retângulo útil mantêm a câmera e os rótulos fora dos painéis. Não duplicar nenhum desses mecanismos.
-- `BarraDoTempo` atende desktop e gaveta móvel. `maquinaDoTempo` e o `jd` do Director continuam únicos. A lista de destinos estende o cadastro existente; não criar índice paralelo.
+## 10. Critérios de aceite
 
-## 10. Aceite do piloto
-
-1. Entrar por “Saturno — Os anéis, de perto” entrega Saturno aproximado sem precisar descobrir o botão Aproximar; pesquisa digitada mantém sua navegação atual.
-2. Saturno e anéis cabem no espaço reservado em 1440×900 e 390×844; abrir/fechar/expandir a ficha não corta o objeto ou produz salto de câmera. Em tela mínima, priorizar controles legíveis e reenquadramento em vez de encolher tudo.
-3. “Visitar Titã”, retorno ao pai e Sistema Solar funcionam por mouse, teclado e toque; não aparecem dados de Saturno sob o título Titã enquanto o carregamento termina.
-4. A ficha acrescenta a observação curta, preserva seções e fontes e suporta PT/EN. Dado ausente tem estado honesto; falha de dado não impede voltar ou explorar.
-5. A composição tem hierarquia em repouso; não depende de congelar o halo no quadro mais luminoso. Mostrar ao dono a sequência em velocidade real e fotos assentadas, com a mesma data/preset nas comparações.
-6. Conferir 320×568 com texto a 140%, 390×844, 760/761, 1440×900 e 844×390; verificar tabulação, foco ao fechar/trocar, Esc e movimento reduzido. Emulação não equivale a telefone físico; declarar precisamente quais superfícies foram verificadas.
-7. Verificar a cena clara do gás e a escura de Saturno para texto/controles legíveis. Como alvo de implementação, contraste mínimo 4,5:1 no texto normal, 3:1 no grande e nos limites/estados essenciais de controles; confirmar pelo estilo efetivo contra fundo protegido. Não declarar contraste do céu variável por amostragem única.
-8. Medir baseline e piloto no mesmo navegador, viewport, DPR e preset, com a receita de Chrome visível do projeto; comparar movimento de câmera e instrumento. Meta: sem trabalho de GPU novo em repouso e sem regressão sustentada acima de 5% no tempo de quadro em rodadas pareadas; se a variância impedir conclusão, dizer inconclusivo. A meta é de projeto, ainda não medida. Não prometer 60 fps universais.
-9. Rodar só testes pertinentes enquanto trabalha; acrescentar apenas cobertura necessária para os comportamentos novos. Executar `npm run done` uma vez ao final. Juízes afetados e comparação visual são complementares; teste de texto de CSS não prova qualidade de interação.
-10. Um commit do lote; nada publicado. Não atualizar referência visual reprovada só para fazer o teste passar. Não declarar “AAA alcançado” por passar a suíte.
+1. Clicar/Enter em um resultado Visitar entrega o assunto enquadrado sem exigir Aproximar. Repetir a ação não muda a intenção; seleção pelas setas não dispara viagens.
+2. Saturno inclui os anéis no espaço útil; Lua e Titã respeitam pai/efemérides; estrelas não ganham geografia inventada. Via Láctea e Sagittarius A* produzem vistas diferentes e adequadas aos nomes.
+3. Cartões/resultados com filme oferecem duas ações compreensíveis; os demais só Visitar. Mouse, teclado e toque têm acesso. Não há botão dentro de botão, dependência de hover ou filme iniciado por surpresa.
+4. O filme galáctico aberto pela busca é o mesmo que existia antes, com duração, legendas, câmera, relógio, coda e encerramento preservados. Links antigos e atalhos continuam funcionando.
+5. O filme de Saturno funciona ao iniciar, pausar, retomar, avançar/retroceder, mudar velocidade e terminar. O mesmo instante de reprodução resolve a mesma cena e legenda; dados atrasados não causam voo para coordenadas vazias.
+6. Explorar aqui mantém continuidade espacial e científica; Retomar filme restaura o roteiro correto e seu ponto. O encerramento do filme de Saturno não dispara uma volta à Terra ou instrução galáctica.
+7. Comparar desktop 1440×900 e celular 390×844; conferir 320×568 com texto a 140%, 760/761 e paisagem. Inspecionar foco, Esc, troca de intenção, movimento reduzido e PT/EN. Emulação não é prova de aparelho físico.
+8. Mostrar sequências reais em velocidade normal e quadros assentados, com data e preset declarados. O critério cinematográfico é o que cada plano revela: não basta a câmera estar se movendo. Preservar regras de olhar/ritmo aplicáveis, sem copiar automaticamente limiares galácticos para uma órbita planetária contemplativa.
+9. Medir baseline e mudança com a receita de Chrome visível existente, mesmo viewport/DPR/preset; não prometer 60 fps universais ou confundir teste de código com prova visual. Nenhum passe de GPU novo é necessário para esta organização.
+10. Durante a execução, usar testes pertinentes e cobertura necessária dos comportamentos novos; `npm run done` uma vez no fim de cada tarefa. Um commit por tarefa; nada publicado. A ampliação do catálogo cinematográfico vem depois de Saturno aprovado em uso.
 
 ## 11. Prompt pronto para o próximo executor
 
-> Execute somente o Lote 1 de `docs/DIRECAO-UX-AAA.md`: o piloto Saturno/Titã da direção Observatório vivo. A direção de produto já foi escolhida; não faça nova pesquisa estética, não ofereça estilos alternativos e não implemente os outros lotes. Leia as decisões e o aceite desse documento, `AGENTS.md`, `docs/NORTE.md` e apenas o bastão atual. Confira a base atual antes de editar: o halo já foi adotado no celular e a folha flutuante de 12 px já existe. Preserve os mecanismos atuais de câmera, foco, gavetas, gesto, ciência e renderer.
+> Execute somente o Lote 1 de `docs/DIRECAO-UX-AAA.md`, revisão de 14/09/2026: usar a busca e os destinos existentes como entrada comum para Visitar ou Ver filme. A direção está definida; não faça outro estudo estético, novo onboarding ou redesign da ficha. Leia `AGENTS.md`, este documento e o bastão atual, respeitando o código e as decisões mais recentes.
 >
-> Entregue um percurso local utilizável: convite “Saturno — Os anéis, de perto” que chega ao corpo aproximado, ficha com a leitura curta “Um mundo de anéis”, acesso às informações completas e ação “Visitar Titã”, com retorno ao pai e ao Sistema Solar. Use as APIs e os dados existentes; a busca digitada mantém seu comportamento. Faça desktop e celular como especificado. Não altere dados científicos, presets, exposição, filme, halo ou o plano de gás. Não crie motor de tours, catálogo paralelo, nova dependência ou componentes genéricos para necessidades futuras.
+> Faça Visitar entregar o destino enquadrado, sem a etapa manual de Aproximar: planeta/corpo, lua, estrela e lugar usam as capacidades e a navegação já existentes, com uma intenção idempotente por tipo. Teclas de seleção apenas destacam; Enter confirma Visitar. Reutilize o índice e o cadastro da busca, os caminhos do App/Director e as reservas da câmera.
 >
-> Primeiro confira a navegação real e faça uma comparação antes/depois reproduzível. Implemente e ajuste o próprio piloto até a composição funcionar em repouso e em movimento; não substitua a demonstração por uma imagem gerada ou um texto de intenção. Verifique os itens de aceite aplicáveis ao lote e relate os limites de aparelho/navegador e desempenho. Não invente aprovação, qualidade AAA ou funcionalidade que não demonstrou. Termine com versão local revisável, imagens e sequência em velocidade real, testes pertinentes e `npm run done`, um commit e nenhuma publicação. Se uma diferença no código impedir a solução especificada, explique a diferença concreta e resolva a integração mínima; não reabra silenciosamente a direção criativa.
+> Acrescente Via Láctea como destino distinto de Sagittarius A*. Sua ação Visitar deve entregar um panorama exterior baseado no enquadramento galáctico existente, em exploração livre. Sua ação Ver filme abre a viagem galáctica atual desde o início; duração vem do roteiro. Mantenha os atalhos existentes apontando para esse mesmo filme. Destinos sem filme pronto não mostram a ação. Cartões e resultados digitados oferecem as ações como controles irmãos, acessíveis por mouse, teclado e toque.
+>
+> Não implemente o filme de Saturno nem refatore amplamente o player neste lote. Não altere shaders, dados, brilho, presets, filme atual, halo ou plano de gás. Confira as APIs reais e resolva a integração mínima, sem criar um segundo sistema de navegação ou catálogo. Entregue a versão local utilizável, comparação antes/depois, provas dos critérios pertinentes, testes e `npm run done`; um commit, sem publicação. Registre claramente o que ficou para os lotes 2 e 3.
 
 ## 12. Estado desta entrega
 
-Investigação e decisão concluídas. Documento executivo entregue. O estudo visual apresentado na conversa usa uma captura real de Saturno com rótulos e órbitas desligados para estudar composição; sua leitura/ocultação de instrumentos é demonstrativa, sem simulação de câmera ou tempo. Os lotes 1–4 ainda não foram executados. Nenhum código de produto foi alterado nesta entrega.
+Direção revisada em 14/09 após a proposta do dono. A versão anterior priorizava convite, ficha e Saturno/Titã manual; esses trabalhos foram retirados do caminho executivo. A prioridade agora é a busca com visita direta e filmes associados aos destinos.
 
-Verificação da entrega: `npm run done` passou (typecheck, lint, 103 arquivos de teste, 3.053 testes aprovados e 1 ignorado). `git diff --check` passou. Na demonstração, alternância leitura/contemplação e abertura de informação funcionaram; composição desktop e 390 px inspecionadas no navegador embutido, sem erro de console. Essas verificações não são validação do piloto futuro nem de desempenho do produto redesenhado.
+Somente este documento foi alterado na revisão. Os lotes 1–3 e o filme de Saturno continuam não implementados. A demonstração visual da conversa anterior é um estudo de composição; não representa o fluxo de busca/filmes definido nesta revisão.
+
+Verificação desta revisão: `npm run done` passou (typecheck, lint, 103 arquivos de teste, 3.054 testes aprovados e 1 ignorado); `git diff --check` passou. Não foram adicionados testes nem alterado código de produto. Isso verifica a base documental/repositório, não a navegação e os filmes futuros.
