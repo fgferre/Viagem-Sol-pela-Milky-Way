@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 226.**
 
-## O BASTÃO — onde a rodada parou (13/09)
+## O BASTÃO — onde a rodada parou (14/09)
 
 **07/09 (rodada da VARREDURA, encerrada por ordem dele: "encerrar
 rodada").** Abriu com a pergunta dele: "o que faltou? pode continuar.
@@ -806,8 +806,9 @@ escuro) — se ele quiser mais presença, é trocar um token. Ele estranhou
 os efeitos luminosos sumidos na aba embutida: era a chave `shot=1` das
 fotos, que congela animações; sem ela o reflexo e a entrada voltam
 (conferido). `npm run done` verde (3.054 testes). Backup enviado; **site
-não publicado**. **Continua aberto o 225.** Servidor da aba embutida
-segue no ar enquanto ele olha.
+não publicado**. **Continua aberto o 225.** Rodada encerrada nas
+palavras dele (14/09): *"pode encerrar a rodada e preparar o bastão"*.
+Servidores parados.
 
 ## O BASTÃO anterior (06/09, madrugada)
 
