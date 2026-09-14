@@ -785,6 +785,30 @@ trabalhadores chegaram a 500k tokens — acima do teto de ~300k da regra
 de economia; parar e reportar antes. **Continua aberto o 225.**
 Servidores parados.
 
+**13/09 (mesma conversa, depois do bastão: BARRAS DE ROLAGEM E
+INTERRUPTORES).** Palavras dele, com a foto da folha Camadas no celular:
+*"será que tem como essas barras de rolagem do app (independente do modo
+de tela) ficarem mais compactas, finas e ao mesmo tempo dentro da paleta
+de cores adotada na UI? porque cinza e branca assim, gritante como
+destoa"*, e *"todos esses botões de toggle poderiam ser um pouco mais
+compactos também... eles ocupam mais área que o texto, na altura
+principalmente"*. Feito e commitado (`a4ef54d`, `c1c2dff`; edições
+diretas na sessão principal): todo rolo do HUD com barra de 6 px, trilho
+invisível e polegar na cor da borda forte da pele — dois ramos por
+motor, porque o Chrome ignora o `::-webkit-scrollbar` onde
+`scrollbar-color` está definido (e ela herda; a primeira versão deixou
+os 15 px de fábrica na mesa); interruptores de 44×24 para 36×20 com o
+alvo de toque de 44 px intacto. Medido no navegador embutido (375 e
+1440 de largura) e fotografado em Chrome headless com barras visíveis:
+`capturas/rolagem-e-interruptores-{celular-390x844,mesa-1440x900}.png`.
+O polegar sai cinza-morno discreto (o token da borda sobre o fundo
+escuro) — se ele quiser mais presença, é trocar um token. Ele estranhou
+os efeitos luminosos sumidos na aba embutida: era a chave `shot=1` das
+fotos, que congela animações; sem ela o reflexo e a entrada voltam
+(conferido). `npm run done` verde (3.054 testes). Backup enviado; **site
+não publicado**. **Continua aberto o 225.** Servidor da aba embutida
+segue no ar enquanto ele olha.
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar
