@@ -607,13 +607,20 @@
 }
 /* CADA LINHA VIRA DUAS COLUNAS (redesenho, 06/09): rótulo à esquerda,
    valor em evidência à direita — a régua de `.ajustes-item`/
-   `.atlas-tempo-linha` aplicada aqui. `grid-template-columns: 1fr auto`
-   deixa a coluna do valor do tamanho do CONTEÚDO (o "1fr" cede para o
-   rótulo), e é essa mesma regra que faz `.larga` empilhar sem marcação
-   extra: uma coluna só, e `dd` desce para a linha de baixo sozinho. */
+   `.atlas-tempo-linha` aplicada aqui. A coluna do valor é
+   `fit-content(60%)`: do tamanho do CONTEÚDO e nunca além de 60% da
+   linha (mais largo que isso, o valor quebra dentro dela); a do rótulo é
+   o resto, `minmax(0, 1fr)`, e quebra em duas linhas quando falta
+   espaço. Até 14/09 era `1fr auto` com `max-width: 60%` no `dd` — mas o
+   `%` de um item de grade se mede contra a PRÓPRIA célula, não contra a
+   linha: o `dd` ficava com 60% da coluna que o valor acabara de
+   dimensionar e o valor, alinhado ao fim, vazava 40% da sua largura por
+   cima do rótulo ("Distance to the Saturn" sob "1589 thousand km", a
+   820 px de janela), e nenhum valor chegava à borda direita. `.larga`
+   (abaixo) continua sendo uma coluna só. */
 .atlas-ficha-linha {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) fit-content(60%);
   column-gap: 0.8rem;
   align-items: baseline;
   min-height: 2.5rem;
@@ -636,10 +643,9 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 0.15rem;
-  /* VALOR LONGO QUEBRA DENTRO DA PRÓPRIA COLUNA até 24 caracteres — acima
-     disso o componente marca a linha `.larga` (abaixo) em vez de espremer
-     uma frase em 60% da largura. */
-  max-width: 60%;
+  /* o `dd` ESTICA na coluna — é o que encosta o valor na borda direita,
+     como na maquete; um valor mais largo que os 60% quebra aqui dentro
+     (acima de 24 caracteres o componente marca `.larga`, abaixo). */
   overflow-wrap: anywhere;
   text-align: right;
 }
@@ -709,7 +715,6 @@
   row-gap: 0.3rem;
 }
 .atlas-ficha-linha.larga dd {
-  max-width: 100%;
   align-items: flex-start;
   text-align: left;
 }

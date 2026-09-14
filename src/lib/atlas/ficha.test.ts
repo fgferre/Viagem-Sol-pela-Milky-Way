@@ -691,13 +691,13 @@ describe('as unidades e os selos que o visitante lê', () => {
 
   it('a lua fala em QUILÔMETROS do pai, e o planeta em UA do Sol', () => {
     const lua = ficha('moon')!.secoes.find((s) => s.id === 'agora')!;
-    // "Distância ao {pai}" (Lote 5, PLAN-UI.md §10, item 225) — a
-    // referência em palavras; o rótulo em si é aparte do que este teste
-    // mede (a UNIDADE), mas ele já provava o texto por acidente.
-    expect(lua.linhas[0]!.rotulo).toBe('Distância ao Terra');
+    // "Distância — {pai}" (maquetes m3/m13; o "ao {pai}" do Lote 5 errava
+    // a Terra) — o rótulo em si é aparte do que este teste mede (a
+    // UNIDADE), mas ele já provava o texto por acidente.
+    expect(lua.linhas[0]!.rotulo).toBe('Distância — Terra');
     expect(lua.linhas[0]!.valor).toMatch(/mil km$/);
     const marte = ficha('mars')!.secoes.find((s) => s.id === 'agora')!;
-    expect(marte.linhas[0]!.rotulo).toBe('Distância ao Sol');
+    expect(marte.linhas[0]!.rotulo).toBe('Distância — Sol');
     expect(marte.linhas[0]!.valor).toMatch(/ UA$/);
   });
 

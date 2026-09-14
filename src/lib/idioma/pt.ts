@@ -378,16 +378,12 @@ export const PT = {
   'ficha.secao.curiosidades': 'curiosidades',
   'ficha.secao.imagem': 'a imagem',
   'ficha.secao.estrela': 'a estrela',
-  // O TEXTO diz a REFERÊNCIA em palavras (item 225, PLAN-UI.md §10): "ao
-  // Sol" e "à Terra" são os dois casos testados por este lote (Saturno e
-  // Netuno, os dois orbitam o Sol direto; a Lua orbita a Terra) — e são,
-  // de longe, os dois `{pai}` mais comuns (todo planeta soma ao primeiro,
-  // a Lua é a única lua da Terra). SEM TOCAR EM `ficha.ts` não há como
-  // escolher "ao"/"à" por gênero: a chave usa "ao" sempre, que acerta
-  // Sol e as cinco luas-mãe (Marte, Júpiter, Saturno, Urano, Netuno —
-  // masculinos, "ao Marte" é aceitável) e erra SÓ a Terra ("ao Terra" em
-  // vez de "à Terra", 1 corpo: a Lua) — registrado no retorno do lote.
-  'ficha.campo.distanciaDe': 'Distância ao {pai}',
+  // A REFERÊNCIA vem depois de um travessão, como nas maquetes m3/m13
+  // ("Distância — Sol", "Distance — Sun"): sem preposição nem artigo, o
+  // mesmo rótulo serve a Sol, Terra e Saturno nas duas línguas. O "ao
+  // {pai}" de antes (Lote 5) acertava o Sol e errava a Terra ("ao
+  // Terra"); o inglês "to the {pai}" errava todo planeta ("to the Mars").
+  'ficha.campo.distanciaDe': 'Distância — {pai}',
   'ficha.campo.velocidadeOrbital': 'velocidade orbital',
   'ficha.campo.iluminadoDaqui': 'iluminado daqui',
   'ficha.campo.raio': 'raio (equador)',

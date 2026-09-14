@@ -358,13 +358,11 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.secao.curiosidades': 'trivia',
   'ficha.secao.imagem': 'the image',
   'ficha.secao.estrela': 'the star',
-  // "to the Sun"/"to Earth" (item 225, PLAN-UI.md §10) — same limit as
-  // the PT key beside it: without touching `ficha.ts` there is no way to
-  // pick the article by body, so this key always keeps "the", which is
-  // right for the Sun (the dominant, tested case: every planet's line)
-  // and wrong only for Earth and the five moon-parent planets ("to the
-  // Mars" reads odd) — registered in the lote's report.
-  'ficha.campo.distanciaDe': 'Distance to the {pai}',
+  // The reference follows an em dash, as in mockups m3/m13 ("Distance —
+  // Sun"): no preposition, no article, so one label fits Sun, Earth and
+  // Saturn in both languages. The old "to the {pai}" (Lote 5) was right
+  // for the Sun and wrong for every planet ("to the Mars").
+  'ficha.campo.distanciaDe': 'Distance — {pai}',
   'ficha.campo.velocidadeOrbital': 'orbital speed',
   'ficha.campo.iluminadoDaqui': 'lit from here',
   'ficha.campo.raio': 'radius (equator)',
