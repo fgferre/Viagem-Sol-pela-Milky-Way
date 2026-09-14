@@ -1624,8 +1624,11 @@
   flex: 0 0 auto;
   position: relative;
   margin: 0;
-  width: 2.75rem;
-  height: 1.5rem;
+  /* 36×20 px (era 44×24, 13/09/2026, pedido do dono: "ocupam mais área
+     que o texto, na altura principalmente"). O alvo de toque continua
+     44×44 pelo `::before` abaixo; só o desenho encolheu. */
+  width: 2.25rem;
+  height: 1.25rem;
   border-radius: 999px;
   border: 1px solid var(--borda-forte);
   background: transparent;
@@ -1644,10 +1647,10 @@
 .hud-interruptor::after {
   content: '';
   position: absolute;
-  top: 0.1875rem;
-  left: 0.1875rem;
-  width: 1.125rem;
-  height: 1.125rem;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 0.875rem;
+  height: 0.875rem;
   border-radius: 50%;
   background: var(--texto-3);
   /* E5 da auditoria: `--t-normal` não zera sob preferência reduzida (é
@@ -1664,7 +1667,7 @@
 }
 .hud-interruptor:checked::after {
   background: var(--acento);
-  transform: translateX(1.25rem);
+  transform: translateX(1rem);
 }
 .hud-interruptor:focus-visible {
   outline: 2px solid var(--foco);
