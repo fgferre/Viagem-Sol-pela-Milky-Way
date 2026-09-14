@@ -733,6 +733,58 @@ a folha nova — refazer as referências na próxima rodada de juízes.
 **Continua aberto o 225.** Servidor: `npm run dev -- --host` ficou no
 ar (10.0.0.78:5173) para ele testar no telefone.
 
+**13/09 (mesma conversa, a AUDITORIA DO CELULAR — encerrada nas
+palavras dele: "pode fechar a rodada e preparar o bastão").** Palavras
+dele: *"vc acha que o algoritmo está bom o suficiente para que nao
+ocorram problemas de layout? estava muito feio do jeito que estava antes
+ocupando o menu de um lado ao outro da tela, mas tb nao queremos que
+isso gere outros problemas de layout e design que deixe tudo pior. entao
+se precisar ajustar tamanhos de fontes para que fique visualmente mais
+equilibrado e interessante em telas pequenas, faça. precisa ser avaliado
+com olhos frescos de um cara focado em designs funcionais e leves e
+adaptativos. Vc acha que já estamos lá? preciso realmente da sua opiniao
+de especialista..."* Resposta dada a ele: a base está boa (cinco portas,
+folha flutuante com a moldura da mesa, linhas de 44 px, hierarquia, texto
+grande só faz rolar), mas "não estamos lá" por três defeitos objetivos,
+todos anteriores à folha flutuante. Matriz de 45 fotos (nove estados ×
+cinco telas: 320×568 com `ui=1,4`, 375×667, 390×844, 390×844 com
+`ui=1,4`, 430×932; `foco=epimetheus` para o caminho de três níveis) em
+`capturas/celular-auditoria-antes-S{0,1,5,7}-contato.png`. **Achados e
+consertos (`43342dd`):** (1) a barra de cima empurrava "Voo livre" para
+fora da tela em TODO celular com caminho de três níveis — medido no
+navegador embutido: os dois botões ocupam 201 px a texto normal e 267
+dos 359 px com texto grande; duas passadas de trabalhador Sonnet
+falharam numa "cadeia de encolhimento" antes da medição; regra final:
+no celular a barra mostra só o nome do corpo (o caminho completo fica
+na mesa; Busca e a ficha cobrem a subida) e, com texto grande (ui ≥ 1,2)
+ou tela ≤ 360 px, os botões viram só ícone com `aria-label`; (2) na
+ficha, com texto grande o nome virava "E.." enquanto "Detalhes" ficava
+por extenso — o corte estreito vale também com texto grande (bandeira
+única `ehTextoGrande`/`data-texto-grande`, uiScale.ts) e os botões de
+ícone do cabeçalho param de crescer com o texto (44 px); (3) nas Camadas
+o interruptor caía para a linha de baixo — a linha não quebra, o rótulo
+quebra. De quebra: o seletor de Qualidade (quatro opções) estourava a
+folha com texto grande e vira grade 2×2 nesse caso; o grupo vazio do
+chip de qualidade sumiu da barra do celular. Fotos de depois em
+`capturas/celular-auditoria-depois3-S{0,1}-contato.png` (barra e ficha),
+`-depois2-S7q-` (Qualidade 2×2) e `-depois-S5-` (Camadas). **Limite
+aceito:** a 320×568 com texto a 140 % o nome da ficha vira "Epi…".
+**Juízes:** o a11y exigia a folha de borda a borda (30 falhas) e passou a
+exigir a margem de 12 px — verde, 607 conferências; o atlas-smoke NÃO
+rodou: as referências de md5 em celular vão mudar (folha flutuante,
+barra só com o nome) e precisam ser refeitas na próxima rodada de
+juízes. `npm run done` verde (3.054 testes). Backup enviado; **site não
+publicado**. **Sem validação em aparelho real** (halo, folha flutuante,
+barra e botões só-ícone — tudo provado só em Chrome headless/embutido).
+**Decisões que ficaram para ele (BACKLOG):** a folha ocupa no máximo 48 %
+da altura (em telas curtas com texto grande sobra pouco conteúdo sem
+rolar); os onze "?" das Camadas pesam no celular; a 320×568 com texto
+grande o resumo da distância corta a unidade. **Processo:** o navegador
+embutido serviu para MEDIR o DOM (decisivo), não para fotos; os
+trabalhadores chegaram a 500k tokens — acima do teto de ~300k da regra
+de economia; parar e reportar antes. **Continua aberto o 225.**
+Servidores parados.
+
 ## O BASTÃO anterior (06/09, madrugada)
 
 **06/09 (rodada dos PAINÉIS, encerrada por ordem dele: "encerrar
