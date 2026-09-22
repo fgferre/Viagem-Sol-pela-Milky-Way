@@ -2,7 +2,7 @@
 
 Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
-Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 226.**
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 227.**
 
 ## O BASTÃO — onde a rodada parou (14/09)
 
@@ -1476,6 +1476,33 @@ esperam) — decisão do dono pendente; libera o dado, não a busca.
 
 **214. `arriveDist` com termo angular** (câmera, não luz) — hoje a câmera
 pousaria igual em Betelgeuse e em Proxima.
+
+**226. Hipérion com a forma medida e os poços da pintura: as melhorias que
+faltam, sem perder desempenho.** Palavras dele, 22/09, ao ver a quarta
+versão do piloto: *"ficou muito bom, não achou?"* e *"ok então, mas guarde
+essas melhorias no pipeline (quero fazê-las sem perder performance)"*. O
+piloto mora no ramo local `piloto-hiperion` (fora do main, nada publicado):
+`?piloto=hiperion-mundos` junta a forma medida pela Cassini (Thomas, Joseph
+& Ansty 2018, PDS, domínio público), 3.488 crateras postas onde a pintura
+por IA tem poço escuro, e a cor dessa pintura (feita no ChatGPT dele sobre
+a planta do relevo medido; 40 % menos saturada; polos desesticados). Levar
+ao Hipérion do app espera a palavra dele (mexe em `public/data`) e já deve
+nascer leve. Fotos: `capturas/piloto-hiperion-{vista1,vista2,perto-3-vs-4}.jpg`.
+- **Custo do piloto:** 808 mil triângulos e ~2,8 s de montagem na CPU,
+  contra 8.820 da escultura de hoje. Caminho sem perder desempenho: a malha
+  medida leve (a da versão 1) e os poços num mapa de altura e de normais
+  assado fora do app, lido na GPU como Mimas e Tétis já fazem.
+- **Sombra de parede dentro do poço**, que dá o aspecto de esponja funda
+  da foto PIA07740: a casa não projeta sombra de relevo. Caminho barato:
+  oclusão e horizonte assados num mapa fora do app, nada calculado por
+  quadro.
+- **A borda clara da bacia grande**, que domina a foto real, sai fraca:
+  reforçar na cor, fora do app.
+- **Detalhe colado na superfície:** a pintura tem limite de resolução e
+  borra de perto. Caminho: grão só no close, pelo portão de tamanho
+  aparente que a casa já usa.
+- **A mancha em estrela perto do topo** é defeito da pintura: repintar ou
+  apagar só ali.
 ---
 
 ## BAIXA — dívida interna, ninguém vê
