@@ -1,6 +1,6 @@
 // ============================================================
 // AS LUAS ESCULPIDAS (item 134/S3) — Pã, Dafnis, Atlas, Prometeu,
-// Pandora, Jano, Epimeteu, Hipérion e Febe.
+// Pandora, Jano, Epimeteu e Febe.
 //
 // PROVENIÊNCIA: o ESCULPIDOR é código do PROJETO SATURN DO AUTOR
 // (https://github.com/fgferre/Saturn, `src/scene/irregularMoonGeometry.ts`,
@@ -22,12 +22,11 @@
 // `luzDaVisita` e o mesmo chunk de bump por derivada de tela que a S2 ligou
 // em todo corpo sem atmosfera — a lei do dono de 02/09.
 //
-// POR QUE UMA GEOMETRIA E NÃO UM ELIPSOIDE. Estes nove não são esferas
-// achatadas: Hipérion é uma esponja com uma cratera de meio raio, os
-// pastores do anel têm crista equatorial de material acretado, Epimeteu tem
-// o polo sul rebaixado por um impacto antigo. Um elipsoide com textura
-// procedural mostraria a COR certa numa forma errada — e a forma é o fato
-// que uma foto da Cassini confere.
+// POR QUE UMA GEOMETRIA E NÃO UM ELIPSOIDE. Estes oito não são esferas
+// achatadas: os pastores do anel têm crista equatorial de material
+// acretado, Epimeteu tem o polo sul rebaixado por um impacto antigo. Um
+// elipsoide com textura procedural mostraria a COR certa numa forma
+// errada — e a forma é o fato que uma foto da Cassini confere.
 //
 // O QUE ESTA FORMA NÃO É: medida. As razões de eixo saem das dimensões
 // publicadas (Cassini/NASA) onde elas existem; o campo de crateras é
@@ -38,6 +37,10 @@
 // DETERMINISMO: `makeRng` é mulberry32 e o ruído é hash inteiro; a mesma
 // semente dá a mesma malha em qualquer máquina e em qualquer sessão. O
 // ab-identidade depende disso.
+//
+// HIPÉRION SAIU DAQUI EM 23/09/2026: a forma dele agora é MEDIDA (Cassini,
+// Thomas/Joseph/Ansty 2018) por mapa de altura, na família dos rochosos
+// com relevo (`rochoso.ts`, `RELEVO_DA_LUA`) — o mesmo caminho de Mimas.
 // ============================================================
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -128,10 +131,8 @@ export interface FormaEsculpida {
 }
 
 /**
- * As nove formas do projeto Saturn do autor, com as referências de
+ * As oito formas do projeto Saturn do autor, com as referências de
  * morfologia Cassini/NASA que ele anotou:
- *  - Hipérion (dimensões, crateras fundas, paredes de gelo claro e fundo
- *    escuro): https://science.nasa.gov/saturn/moons/hyperion/
  *  - Pã / Atlas / Dafnis (cristas equatoriais de acreção, manto liso):
  *    https://science.nasa.gov/missions/cassini/cassini-finds-saturns-rings-coat-tiny-moons/
  *  - Prometeu (irregular, menos craterizado que Pandora / Jano / Epimeteu):
@@ -149,16 +150,6 @@ export interface FormaEsculpida {
  * fonte é que é a régua.
  */
 export const FORMAS_ESCULPIDAS: Record<string, FormaEsculpida> = {
-  hyperion: {
-    detalhe: 20, semente: 701, eixos: [1.52, 0.96, 0.81],
-    escalaMacro: 1.45, forcaMacro: 0.16,
-    numeroDeCrateras: 34, raioDaCratera: [0.11, 0.36], funduraDaCratera: [0.035, 0.145],
-    bordaDaCratera: [0.004, 0.015], maciezDaCratera: 1.02, escuridaoDoFundo: [0.32, 1],
-    craterasCitadas: [
-      { centro: [0.68, 0.10, 0.72], raio: 0.52, fundura: 0.24, borda: 0.018, escuridao: 1 },
-      { centro: [-0.42, 0.52, 0.74], raio: 0.34, fundura: 0.14, borda: 0.014, escuridao: 0.72 },
-    ],
-  },
   pan: {
     detalhe: 18, semente: 101, eixos: [0.97, 0.74, 0.90],
     escalaMacro: 2.2, forcaMacro: 0.055,
@@ -222,10 +213,10 @@ export const FORMAS_ESCULPIDAS: Record<string, FormaEsculpida> = {
   },
 };
 
-/** Os nove ids na ordem em que a lista de luas os traz. */
+/** Os oito ids na ordem em que a lista de luas os traz. */
 export const IDS_ESCULPIDOS: readonly string[] = [
   'pan', 'daphnis', 'atlas', 'prometheus', 'pandora',
-  'janus', 'epimetheus', 'hyperion', 'phoebe',
+  'janus', 'epimetheus', 'phoebe',
 ];
 
 // ------------------------------------------------------------
@@ -418,18 +409,11 @@ export interface FamiliaDeRegolito {
 }
 
 /**
- * As nove famílias dele. Febe é a única quase preta (albedo ~0,08) e é por
+ * As oito famílias dele. Febe é a única quase preta (albedo ~0,08) e é por
  * isso que a base dela vale um oitavo das outras — é dado medido, não
  * gradação de gosto.
  */
 export const FAMILIAS_DE_REGOLITO: Record<string, FamiliaDeRegolito> = {
-  hyperion: {
-    semente: 7.01, base: [0.56, 0.50, 0.41], fundo: [0.105, 0.070, 0.045],
-    borda: [0.79, 0.73, 0.62], crista: [0.56, 0.50, 0.41],
-    escalaMacro: 3.0, escalaMicro: 13, contraste: 0.24,
-    misturaFundo: 0.94, misturaBorda: 0.78, misturaCrista: 0,
-    escurecerCavidade: 0.08, oclusao: 0.20, forcaBump: 0.025,
-  },
   pan: {
     semente: 1.01, base: [0.64, 0.62, 0.58], fundo: [0.43, 0.41, 0.38],
     borda: [0.76, 0.74, 0.69], crista: [0.72, 0.70, 0.66],

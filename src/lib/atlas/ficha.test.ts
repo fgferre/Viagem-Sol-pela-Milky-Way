@@ -459,14 +459,16 @@ describe('a imagem confessa — itens 19 e 20', () => {
     expect(defeito.fonte).toBe('bancada de texturas');
   });
 
-  it('os quatro elipsoides e as nove esculpidas confessam a forma, e ninguém mais (item 20)', () => {
+  it('os quatro elipsoides e as oito esculpidas confessam a forma, e ninguém mais (item 20)', () => {
     const COM_MALHA_PUBLICADA = ['vesta', 'pallas', 'hygiea', 'haumea'];
-    // item 134/S3: a malha das nove é ESCULPIDA por código (o roteiro é
+    // item 134/S3: a malha das oito é ESCULPIDA por código (o roteiro é
     // `IDS_ESCULPIDOS`, em `world/corpos/esculpido.ts`) — forma inventada
-    // confessa igual a elipsoide no lugar de malha medida.
+    // confessa igual a elipsoide no lugar de malha medida. Hipérion saiu
+    // em 23/09/2026: a forma dela agora é MEDIDA (mapa de altura), e
+    // `manifest.formas` não tem mais linha para ela.
     const ESCULPIDAS = [
       'pan', 'daphnis', 'atlas', 'prometheus', 'pandora',
-      'janus', 'epimetheus', 'hyperion', 'phoebe',
+      'janus', 'epimetheus', 'phoebe',
     ];
     for (const id of ALVOS.filter((i) => i !== 'sun')) {
       const forma = porRotulo(id, 'imagem').get('forma');
@@ -482,6 +484,13 @@ describe('a imagem confessa — itens 19 e 20', () => {
     // diz isso — a mesma palavra que o selo usa para a cruz de luz.
     const linhas = ficha('vesta')!.secoes.find((s) => s.id === 'imagem')!.linhas;
     expect(linhas.find((l) => l.rotulo === 'forma')!.procedencia).toBe('artistico');
+  });
+
+  it('Hipérion confessa a pintura por IA na cor e os poços na linha do relevo (23/09)', () => {
+    const imagem = porRotulo('hyperion', 'imagem');
+    expect(imagem.get('fonte')).toContain('IA');
+    expect(imagem.get('relevo')).toContain('Thomas');
+    expect(imagem.get('o relevo admite')).toContain('poços');
   });
 
   it('os seis sem foto confessam a ilustração por IA (item 151)', () => {

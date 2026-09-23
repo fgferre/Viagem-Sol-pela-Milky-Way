@@ -508,6 +508,37 @@ const ORIGENS = {
     proveniencia: 'derivado',
   },
 
+  // ---- HIPÉRION (23/09/2026, item 134/S3 → relevo medido): a forma
+  // inteira (Cassini — Thomas, Joseph & Ansty 2018) vira mapa de altura, a
+  // normal deriva dele, e a cor é uma pintura por IA do autor sobre o
+  // relevo medido — os poços dela viram as crateras do mapa de altura.
+  'hyperion/map': {
+    fonte:
+      'Pintura por IA generativa do autor sobre o relevo medido de Hipérion, com a foto Cassini PIA07740 só como referência — não existe mapa de cor medido de Hipérion',
+    url: 'https://science.nasa.gov/saturn/moons/hyperion/',
+    licenca: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    atribuicao: 'imagem do autor (Felipe Ferreira), gerada com IA',
+    proveniencia: 'derivado',
+  },
+  'hyperion/height': {
+    fonte:
+      'Modelo de forma de Hipérion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de ALTURA, com os poços tirados da pintura por IA',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
+    licenca: 'domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA',
+    atribuicao:
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.',
+    proveniencia: 'derivado',
+  },
+  'hyperion/normal': {
+    fonte:
+      'Modelo de forma de Hipérion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com os poços tirados da pintura por IA',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
+    licenca: 'domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA',
+    atribuicao:
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.',
+    proveniencia: 'derivado',
+  },
+
   // ---- ITEM 140 (2026-09-03): O RELEVO DA LUA, medido. Até aqui a Lua
   // tinha SÓ o mapa de cor, e o relevo dela era derivado dele (o bump do
   // albedo da S2) — invenção que afundava os mares e levantava os raios

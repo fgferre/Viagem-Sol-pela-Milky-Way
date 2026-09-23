@@ -161,6 +161,10 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   { id: 'dione', brdf: 'lambert' },
   { id: 'rhea', brdf: 'lambert' },
   { id: 'titan', brdf: 'lambert' },
+  // Hipérion saiu das esculpidas em 23/09/2026: a forma agora é MEDIDA
+  // (Cassini) por mapa de altura, o mesmo caminho de Mimas — ver
+  // RELEVO_DA_LUA abaixo.
+  { id: 'hyperion', brdf: 'lambert' },
   { id: 'iapetus', brdf: 'lambert' },
   { id: 'miranda', brdf: 'lambert' },
   { id: 'ariel', brdf: 'lambert' },
@@ -180,9 +184,9 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   { id: 'makemake', brdf: 'lambert' },
   { id: 'eris', brdf: 'lambert' },
   { id: 'quaoar', brdf: 'lambert' },
-  // S3 (item 134) — as nove esculpidas de Saturno. Todas `lambert` com o
+  // S3 (item 134) — as oito esculpidas de Saturno. Todas `lambert` com o
   // `terminadorSuave` da casa: o disco chato de Lommel-Seeliger é o fato
-  // que uma FOTO confere, e não há foto destes nove com que conferir —
+  // que uma FOTO confere, e não há foto destes oito com que conferir —
   // o que existe é a forma, e a forma está na malha.
   // A lista mora em `esculpido.ts` (`IDS_ESCULPIDOS`): uma fonte só.
   ...IDS_ESCULPIDOS.map((id) => ({ id, brdf: 'lambert', superficie: 'esculpido' }) as const),
@@ -194,13 +198,16 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * vira `1 + vies + altura·escala`: o viés é negativo para que a média
  * fique no raio nominal de `BODY_AXES` (a esfera não engorda).
  *
- * SÓ SEIS LUAS PORQUE SÓ SEIS TÊM MAPA. Quatro saem de modelo de forma
+ * SÓ SETE LUAS PORQUE SÓ SETE TÊM MAPA. Quatro saem de modelo de forma
  * MEDIDO (Mimas e Tétis por SPC de Gaskell, Encélado pelo DEM de Schenk &
  * McKinnon 2024, Dione pelo DTM de Weirich et al. 2025); Reia e Jápeto
  * NÃO TÊM DTM público e o relevo deles é SINTÉTICO, gerado por código no
  * projeto dele — entra por decisão do dono e é confessado onde o
  * visitante lê (ficha do objeto, seção "a imagem", linha "relevo"), com o
- * texto nascendo em `docs/reference/ASSETS.md`.
+ * texto nascendo em `docs/reference/ASSETS.md`. Hipérion é o sétimo caso
+ * (23/09/2026): o mapa de altura é a FORMA MEDIDA inteira (Cassini —
+ * Thomas, Joseph & Ansty 2018), não um relevo sobre elipsoide como as
+ * outras seis.
  *
  * Mimas puxa 10 % do raio: Herschel é um terço do diâmetro dela, e é essa
  * a foto que o limbo tinha de mostrar e a esfera lisa não mostrava.
@@ -216,6 +223,12 @@ export const RELEVO_DA_LUA: Readonly<Record<string, { escala: number; vies: numb
   // amplitudes são as do `relief.json` dele, sem corte.
   rhea: { escala: 0.02632461314614639, vies: -0.018329572914844723 },
   iapetus: { escala: 0.026878580907480177, vies: -0.017520709781114384 },
+  // Hipérion (23/09/2026): a forma MEDIDA inteira (Cassini — Thomas, Joseph
+  // & Ansty 2018) mora no mapa de altura, raio 0,689805 a 1,367691 de
+  // 135 km (`BODY_AXES.hyperion` continua a esfera — a razão fica no
+  // relevo, não no eixo); os poços saem da pintura por IA (confessado na
+  // ficha).
+  hyperion: { escala: 0.677886, vies: -0.310195 },
 };
 
 /**
@@ -988,6 +1001,18 @@ export class RochosoResolvido {
       : relevo
         ? new THREE.SphereGeometry(1, ...SEGMENTOS_COM_RELEVO)
         : new THREE.SphereGeometry(1, 128, 64);
+    // O VERTEX DO RELEVO desloca a superfície NA GPU — o atributo de
+    // posição da CPU continua a esfera unitária, e o boundingSphere
+    // AUTOMÁTICO (raio 1) cortaria o corpo do frustum com a ponta ainda em
+    // tela: Hipérion alcança 1,37 (RELEVO_DA_LUA.hyperion). Só este ramo
+    // precisa do valor à mão; o esculpido solda a malha já deslocada e
+    // `computeBoundingSphere()` nela mede o raio de verdade.
+    if (relevo) {
+      this.geometria.boundingSphere = new THREE.Sphere(
+        new THREE.Vector3(),
+        Math.max(1, 1 + relevo.vies + relevo.escala)
+      );
+    }
     const procedural = this.config.superficie === 'procedural';
     // sem ROCHOSOS `procedural` hoje (item 151), `uAlbedoBase` nunca é lido
     // por um fragmento vivo — o cinza neutro é só o padrão do uniform.

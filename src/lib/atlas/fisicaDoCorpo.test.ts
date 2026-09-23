@@ -205,6 +205,11 @@ describe('completude — todo alvo do Atlas tem física, ou a falta é nomeada',
    * pede. Enquanto ninguém regenerar o bloco com elas, a ficha simplesmente
    * não escreve massa, gravidade e escape — o mesmo silêncio de Makemake.
    * Digitar GM à mão aqui é o que o cabeçalho de `massas.ts` proíbe.
+   *
+   * HIPÉRION SAIU DA FAMÍLIA ESCULPIDA em 23/09/2026 (a forma dela agora é
+   * MEDIDA, mapa de altura em `rochoso.ts`) — mas continua SEM GM aqui: o
+   * emissor não a pede, e sair de `IDS_ESCULPIDOS` não é o mesmo que ganhar
+   * massa. A linha dela fica nesta lista até o bloco ser regenerado com ela.
    */
   const SEM_GM_DAS_ESCULPIDAS = [
     'pan', 'daphnis', 'atlas', 'prometheus', 'pandora',

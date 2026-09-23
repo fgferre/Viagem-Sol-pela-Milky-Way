@@ -53,6 +53,12 @@
 // `hyperion-pocos.json`, `{crateras: [[x,y,z,raio,fundura,borda,escuridao],
 // ...]}`) e pula a detecção quando dada, para reproduzir byte a byte um
 // relevo já conferido.
+//
+// A FONTE DOS POÇOS DESTA CASA é `fonte/hyperion-pocos.json` — os 3.488
+// aprovados no piloto (branch piloto-hiperion). A detecção embutida acima,
+// no limiar padrão (`--limiar 0.010`), acha 5.175 e NÃO reproduz essa
+// lista; rode com `--pocos fonte/hyperion-pocos.json` para repetir o
+// relevo já conferido.
 // ============================================================
 
 import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';

@@ -23,10 +23,6 @@
       "pt": "elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega",
       "en": "an ellipsoid, no mesh: the irregular shape from DAMIT is published, and this house does not load it yet"
     },
-    "hyperion": {
-      "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
-      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
-    },
     "janus": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
       "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
@@ -2812,6 +2808,280 @@
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
       }
+    },
+    {
+      "corpo": "hyperion",
+      "canal": "height",
+      "arquivo": "textures/atlas/hyperion/height.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 159468,
+      "sha256": "f55973244628767bbf717b9851e64784ab53ccb0b945dce696ea5345b02b881e",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Hipérion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de ALTURA, com os poços tirados da pintura por IA",
+          "en": "Shape model of Hyperion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HEIGHT map, with the pits taken from the AI painting"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "public domain (NASA PDS); the pits: the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked in this house (Felipe Ferreira), with the pits from the author's AI painting."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a forma é medida pela Cassini, mas os 3.488 poços cavados nela não são: saem das manchas escuras da pintura por IA",
+        "en": "the shape is measured by Cassini, but the 3,488 pits carved into it are not: they come from the dark spots of the AI painting"
+      }
+    },
+    {
+      "corpo": "hyperion",
+      "canal": "height",
+      "arquivo": "textures/atlas/hyperion/height.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 83510,
+      "sha256": "6df54215f540afe80a2aef25d14fd01f856d1b209dde7e1fc4e640db68d8c60c",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Hipérion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de ALTURA, com os poços tirados da pintura por IA",
+          "en": "Shape model of Hyperion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HEIGHT map, with the pits taken from the AI painting"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "public domain (NASA PDS); the pits: the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked in this house (Felipe Ferreira), with the pits from the author's AI painting."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a forma é medida pela Cassini, mas os 3.488 poços cavados nela não são: saem das manchas escuras da pintura por IA",
+        "en": "the shape is measured by Cassini, but the 3,488 pits carved into it are not: they come from the dark spots of the AI painting"
+      }
+    },
+    {
+      "corpo": "hyperion",
+      "canal": "map",
+      "arquivo": "textures/atlas/hyperion/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 193063,
+      "sha256": "f70dcd47bcbbb78f276b4d654b7ee5577bc7076b4307a84f29d8803d6d84ef13",
+      "origem": {
+        "fonte": {
+          "pt": "Pintura por IA generativa do autor sobre o relevo medido de Hipérion, com a foto Cassini PIA07740 só como referência — não existe mapa de cor medido de Hipérion",
+          "en": "The author's generative-AI painting over the measured relief of Hyperion, with the Cassini photo PIA07740 only as a reference — there is no measured color map of Hyperion"
+        },
+        "url": "https://science.nasa.gov/saturn/moons/hyperion/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido — nada na cor é medida",
+        "en": "there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief — nothing in the color is a measurement"
+      }
+    },
+    {
+      "corpo": "hyperion",
+      "canal": "map",
+      "arquivo": "textures/atlas/hyperion/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 183034,
+      "sha256": "d5d0bbdaae45218ea46fced5dd76d6102b684e7ae0c6ddb98b2e22652b9029ff",
+      "origem": {
+        "fonte": {
+          "pt": "Pintura por IA generativa do autor sobre o relevo medido de Hipérion, com a foto Cassini PIA07740 só como referência — não existe mapa de cor medido de Hipérion",
+          "en": "The author's generative-AI painting over the measured relief of Hyperion, with the Cassini photo PIA07740 only as a reference — there is no measured color map of Hyperion"
+        },
+        "url": "https://science.nasa.gov/saturn/moons/hyperion/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido — nada na cor é medida",
+        "en": "there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief — nothing in the color is a measurement"
+      }
+    },
+    {
+      "corpo": "hyperion",
+      "canal": "map",
+      "arquivo": "textures/atlas/hyperion/map.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 681863,
+      "sha256": "ee9896dfe8e0249b507c5ec16d53057bc6f7199d58d552afc5a499c85297a310",
+      "origem": {
+        "fonte": {
+          "pt": "Pintura por IA generativa do autor sobre o relevo medido de Hipérion, com a foto Cassini PIA07740 só como referência — não existe mapa de cor medido de Hipérion",
+          "en": "The author's generative-AI painting over the measured relief of Hyperion, with the Cassini photo PIA07740 only as a reference — there is no measured color map of Hyperion"
+        },
+        "url": "https://science.nasa.gov/saturn/moons/hyperion/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido — nada na cor é medida",
+        "en": "there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief — nothing in the color is a measurement"
+      }
+    },
+    {
+      "corpo": "hyperion",
+      "canal": "map",
+      "arquivo": "textures/atlas/hyperion/map.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 462124,
+      "sha256": "1fa1453d0f8c8e84bdc421bfbfd8d94d0dfe147f31a376ece5a868dae483e950",
+      "origem": {
+        "fonte": {
+          "pt": "Pintura por IA generativa do autor sobre o relevo medido de Hipérion, com a foto Cassini PIA07740 só como referência — não existe mapa de cor medido de Hipérion",
+          "en": "The author's generative-AI painting over the measured relief of Hyperion, with the Cassini photo PIA07740 only as a reference — there is no measured color map of Hyperion"
+        },
+        "url": "https://science.nasa.gov/saturn/moons/hyperion/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "the author's image (Felipe Ferreira), generated with AI"
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido — nada na cor é medida",
+        "en": "there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief — nothing in the color is a measurement"
+      }
+    },
+    {
+      "corpo": "hyperion",
+      "canal": "normal",
+      "arquivo": "textures/atlas/hyperion/normal_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 1156779,
+      "sha256": "5701ee585a8e4b7fb3f1e7a69e11aeffcc8c7619dc158a781fe1b2ddfcfff71d",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Hipérion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com os poços tirados da pintura por IA",
+          "en": "Shape model of Hyperion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the pits taken from the AI painting"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "public domain (NASA PDS); the pits: the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked in this house (Felipe Ferreira), with the pits from the author's AI painting."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "hyperion",
+      "canal": "normal",
+      "arquivo": "textures/atlas/hyperion/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 714108,
+      "sha256": "3abf6199058dd477693b4437114af6ee506af30d8099e7e7bb5ea8e96727534b",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Hipérion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com os poços tirados da pintura por IA",
+          "en": "Shape model of Hyperion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the pits taken from the AI painting"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "public domain (NASA PDS); the pits: the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked in this house (Felipe Ferreira), with the pits from the author's AI painting."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "hyperion",
+      "canal": "normal",
+      "arquivo": "textures/atlas/hyperion/normal.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 3561550,
+      "sha256": "0d07223f831e9cbbb51283a47a68a909ba14096eecafaa686501009d80442e9b",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Hipérion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com os poços tirados da pintura por IA",
+          "en": "Shape model of Hyperion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the pits taken from the AI painting"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "public domain (NASA PDS); the pits: the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked in this house (Felipe Ferreira), with the pits from the author's AI painting."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "hyperion",
+      "canal": "normal",
+      "arquivo": "textures/atlas/hyperion/normal.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1921582,
+      "sha256": "722b03dbcdd411dfd29051a53ec4308c0ba3360b8208a90a7a1f1558dc3f6fd2",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Hipérion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com os poços tirados da pintura por IA",
+          "en": "Shape model of Hyperion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the pits taken from the AI painting"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA",
+          "en": "public domain (NASA PDS); the pits: the author's image (Felipe Ferreira), generated with AI"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked in this house (Felipe Ferreira), with the pits from the author's AI painting."
+        }
+      },
+      "proveniencia": "derivado"
     },
     {
       "corpo": "iapetus",

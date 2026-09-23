@@ -985,26 +985,32 @@ export const IAU_ORIENTATIONS: Record<string, IauOrientation> = {
     spinRateDegPerDay: 626.0869565,
   },
   // ============================================================
-  // S3 (item 134): AS NOVE ESCULPIDAS — ORIENTAÇÃO MODELADA, NÃO MEDIDA.
+  // S3 (item 134): AS OITO ESCULPIDAS — ORIENTAÇÃO MODELADA, NÃO MEDIDA.
   // Nenhuma delas está no pck00011 desta casa, e o dono da régua manda
   // dizê-lo: o polo é o de SATURNO (`saturn` acima, α₀ = 40,589°,
-  // δ₀ = 83,537°) porque as sete internas e Hipérion orbitam no plano do
-  // equador dele e giram travadas por maré; o Ẇ é a taxa ORBITAL do corpo
+  // δ₀ = 83,537°) porque as sete internas orbitam no plano do equador
+  // dele e giram travadas por maré; o Ẇ é a taxa ORBITAL do corpo
   // (360°/período de `elementosOrbitais.ts`), que é o que rotação síncrona
   // significa. Mesmo padrão declarado de Hígia/Haumea/Makemake/Éris.
   //
   // W₀ = 0 EM TODAS, e aqui isso não é um número faltando: a superfície
-  // destes nove é ESCULPIDA POR CÓDIGO (campo de crateras procedural,
+  // destes oito é ESCULPIDA POR CÓDIGO (campo de crateras procedural,
   // `esculpido.ts`) — não existe feição medida para um meridiano-primo
   // ancorar. Ancorá-lo em qualquer valor seria precisão fingida.
   //
-  // DUAS EXCEÇÕES DECLARADAS. HIPÉRION não tem rotação síncrona: ela é
-  // CAÓTICA (a única lua conhecida sem período de spin fixo) e o próprio
-  // relatório da IAU a deixa sem solução — o síncrono aqui é a aproximação
-  // visível, e o caos fica por contar na ficha, não no shader. FEBE é
-  // capturada e gira em 9,27 h, independente da órbita: o Ẇ dela é
-  // 360/(9,27/24) e o polo dela é o de Saturno por falta de medida na
-  // casa, não por física.
+  // UMA EXCEÇÃO DECLARADA. FEBE é capturada e gira em 9,27 h,
+  // independente da órbita: o Ẇ dela é 360/(9,27/24) e o polo dela é o de
+  // Saturno por falta de medida na casa, não por física.
+  //
+  // HIPÉRION SAIU DA FAMÍLIA ESCULPIDA em 23/09/2026 (a forma dela agora é
+  // MEDIDA, mapa de altura em `rochoso.ts`/`RELEVO_DA_LUA`) — mas a linha
+  // dela continua aqui embaixo, sem mudar um número: a ORIENTAÇÃO é o
+  // MESMO modelo síncrono declarado com W₀ = 0 (a longitude 0 do mapa é a
+  // ponta +X do eixo longo da forma medida), porque ela não tem
+  // rotação síncrona de verdade: é CAÓTICA (a única lua conhecida sem
+  // período de spin fixo), e o próprio relatório da IAU a deixa sem
+  // solução. O síncrono aqui é a aproximação visível, e o caos fica por
+  // contar na ficha, não no shader.
   // ============================================================
   pan: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 626.0869565 },
   daphnis: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 606.0606061 },
@@ -1091,15 +1097,21 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   vesta: [289, 280, 229],
   pallas: [256, 256, 256],
   hygiea: [217, 217, 217],
-  // S3 (item 134): as nove esculpidas entram como ESFERAS do raio MÉDIO
+  // S3 (item 134): as oito esculpidas entram como ESFERAS do raio MÉDIO
   // publicado (`src/data/saturn.ts` do projeto Saturn do autor, transcrito
   // do JPL SSD) — e é escolha, não falta de dado. A figura irregular delas
   // não é um elipsoide: é malha, e mora em `PROCEDURAL_MOON_SHAPES`
   // (`three/world/corpos/esculpido.ts`), onde os eixos são RAZÕES sobre
   // este raio. Repetir a razão aqui aplicaria o mesmo alongamento duas
-  // vezes. O preço, declarado: o gate de tamanho aparente mede pelo raio
-  // médio, então Hipérion (eixo maior 1,52×) entra em quadro um pouco mais
-  // tarde do que a silhueta dele mereceria.
+  // vezes.
+  //
+  // HIPÉRION (23/09/2026) também fica ESFERA aqui — a forma toda mora no
+  // mapa de altura (`rochoso.ts`, `RELEVO_DA_LUA.hyperion`), raio 0,69 a
+  // 1,37 × 135 km: é o relevo de vértice que alonga o corpo, não este
+  // raio, e repeti-lo aqui contaria o mesmo alongamento duas vezes, como
+  // nas outras oito. O preço, declarado: o gate de tamanho aparente mede
+  // pelo raio médio, então Hipérion entra em quadro um pouco mais tarde do
+  // que a silhueta dela mereceria.
   pan: [14, 14, 14],
   daphnis: [3.8, 3.8, 3.8],
   atlas: [15, 15, 15],

@@ -496,6 +496,30 @@ const FONTES = [
     arquivoLocal: 'fonte/quaoar-ia.png',
     bake: 'ilustracao-ia',
   },
+  // ---- Hipérion sai das esculpidas em 23/09/2026 (item 134/S3 → relevo
+  // medido): a forma inteira (Cassini, Thomas/Joseph/Ansty 2018) vira mapa
+  // de ALTURA, com o mapa de NORMAIS derivado dela — as duas fontes LOCAIS
+  // já nascem na convenção da casa (sem giro). A cor é a pintura por IA do
+  // dono sobre o relevo medido, como as ilustradas de `ilustracao-ia`.
+  {
+    corpo: 'hyperion',
+    canal: 'map',
+    url: 'https://science.nasa.gov/saturn/moons/hyperion/',
+    arquivoLocal: 'fonte/hyperion-ia.png',
+    bake: 'ilustracao-ia',
+  },
+  {
+    corpo: 'hyperion',
+    canal: 'height',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/hyperion_30k_plt.tab',
+    arquivoLocal: 'fonte/hyperion-altura.png',
+  },
+  {
+    corpo: 'hyperion',
+    canal: 'normal',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/hyperion_30k_plt.tab',
+    arquivoLocal: 'fonte/hyperion-normal.png',
+  },
 ];
 
 const MAXIMO_DE_REDIRECTS = 5;
@@ -706,6 +730,9 @@ const ALBEDO_DA_ILUSTRACAO = {
   // grampeado em 0,9 para o mapa não estourar em branco puro (item 151).
   eris: 0.9,
   quaoar: 0.11,
+  // 0,30 medido, grampeado em 0,26 para o percentil 99 do mapa não estourar
+  // — o mesmo cuidado de Éris (23/09/2026).
+  hyperion: 0.26,
 };
 
 function srgbParaLinear(canal) {

@@ -191,6 +191,10 @@ elementos são MÉDIOS na época J2000 e a propagação é de dois corpos, entã
 uma lua de 0,575 dia acumula dezenas de graus de longitude em 26 anos. A
 órbita, o tamanho, a inclinação e o sentido, sim.
 
+**Hipérion saiu daqui em 23/09/2026:** a forma dela passou a ser MEDIDA
+(Cassini), por mapa de altura — ver "Hipérion — a forma medida e os poços
+da pintura (22–23/09)", abaixo.
+
 ## Fonte dos rótulos 3D (item 109)
 
 - `public/fonts/inter-400.woff` — **Inter** (regular, subconjunto
@@ -611,6 +615,42 @@ isso nas duas línguas (tabela abaixo); a origem no manifesto credita a
 imagem ao autor (Felipe Ferreira, gerada com IA), sem fingir fonte
 fotográfica.
 
+## Hipérion — a forma medida e os poços da pintura (22–23/09)
+
+Hipérion sai da família esculpida (seção acima) para a dos rochosos com
+relevo medido — o caminho de Mimas. Forma: Thomas, Joseph & Ansty (2018),
+*Saturn Small Moon Shape Models V1.0* (Cassini ISS), NASA PDS4, DOI
+10.26033/ewy3-jy61, domínio público — 14.636 vértices, 29.268 facetas.
+
+**A forma inteira é o mapa de ALTURA**, não relevo sobre elipsoide: raio
+0,689805 a 1,367691 de 135 km, `escala` 0,677886, `viés` −0,310195
+(`RELEVO_DA_LUA.hyperion`); `BODY_AXES.hyperion` continua esfera. As
+normais saem do mesmo gerador de DEM da Lua/Marte, `metros = R·ln(r/R)`,
+R = 135 km — a conta exata para um relevo que vai de −31 % a +37 % do
+raio médio.
+
+**A cor é pintura, não medida**: nenhum mapa de cor global de Hipérion foi
+publicado (a rotação caótica complica montá-lo). O dono pintou por IA em
+22/09 sobre o relevo medido, com a foto
+Cassini PIA07740 só como referência; graduada (polos desesticados, 40 %
+menos saturada) e nivelada pelo bake `ilustracao-ia` — albedo medido 0,30,
+grampeado em 0,26.
+
+**Os poços são da pintura**: as 3.488 manchas escuras dela (DoG em
+log-luminância sobre o contraste local) viram cratera nos mapas de ALTURA
+e NORMAIS, nunca na geometria — a malha da casa é a esfera de relevo de
+sempre (256×128), e os 808 mil triângulos do piloto não entram no app. A
+detecção embutida da receita acha 5.175 no limiar padrão, não os 3.488
+aprovados, e por isso roda com `--pocos fonte/hyperion-pocos.json`. Os
+poços ficam ligados por ora, sem interruptor.
+
+**O espelho**: a casa usa direção = (cos φ·cos λ, sin φ, −cos φ·sin λ),
+Greenwich no centro; o piloto usava lon = atan2(z, x) — o espelho de λ. A
+receita (`relevo-e-cor-de-hiperion.mjs`) nunca inverte coluna à mão: tudo
+sai avaliado POR DIREÇÃO. A orientação segue o síncrono declarado, W₀ = 0
+na ponta +X do eixo mais comprido — a rotação real é caótica, e o caos
+fica confessado aqui, não no shader.
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**
@@ -656,6 +696,8 @@ tocar num `.mjs`.
 | enceladus/height | DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul |
 | rhea/height | relevo SINTÉTICO: não existe DTM público de Reia — o campo de crateras foi gerado por código no projeto Saturn do autor, e não é medida |
 | iapetus/height | relevo SINTÉTICO: não existe DTM público de Jápeto — o campo de crateras foi gerado por código no projeto Saturn do autor (só a crista equatorial é feição real, modelada), e não é medida |
+| hyperion/map | não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido — nada na cor é medida |
+| hyperion/height | a forma é medida pela Cassini, mas os 3.488 poços cavados nela não são: saem das manchas escuras da pintura por IA |
 | moon/normal | topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela |
 | mercury/normal | topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem |
 | mars/normal | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |
@@ -679,7 +721,7 @@ tocar num `.mjs`.
 Duas famílias. Primeiro, os quatro corpos cujo modelo de forma IRREGULAR
 existe publicado e **não** é carregado: a casa não tem
 `GLTFLoader`/`OBJLoader` (pendência **P-F7-MESH**, acima) e desenha o
-elipsoide de `BODY_AXES`. Depois, as nove luas de Saturno da S3, que são o
+elipsoide de `BODY_AXES`. Depois, as oito luas de Saturno da S3, que são o
 caso oposto — têm malha, e a malha é INVENTADA a partir das dimensões
 publicadas (item 134/S3, seção acima).
 
@@ -696,5 +738,4 @@ publicadas (item 134/S3, seção acima).
 | pandora | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | janus | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | epimetheus | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| hyperion | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | phoebe | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |

@@ -48,6 +48,7 @@ import {
   GRADUACAO_DO_MOSAICO,
   LIMIAR_LUA_ROCHOSA_PX,
   NORMAL_MEDIDA,
+  RELEVO_DA_LUA,
   ROCHOSOS,
   ROCHOSO_LAMBERT_FRAG,
   ROCHOSO_LS_FRAG,
@@ -567,6 +568,7 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
       'dione',
       'rhea',
       'titan',
+      'hyperion',
       'iapetus',
       'miranda',
       'ariel',
@@ -591,7 +593,6 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
       'pandora',
       'janus',
       'epimetheus',
-      'hyperion',
       'phoebe',
     ]);
     expect(ROCHOSOS.filter((c) => c.brdf === 'ls').map((c) => c.id)).toEqual([
@@ -969,6 +970,115 @@ describe('8. o relevo dos quatro da NORMAL_MEDIDA, e o inventado que saiu (141)'
         ).toBeCloseTo(1, 5);
       }
       corpo.dispose();
+    }
+  });
+});
+
+// ------------------------------------------------------------
+// 9. HIPÉRION — SAI DA ESCULPIDA, ENTRA NO RELEVO MEDIDO (item 134/S3,
+//    23/09/2026): o mesmo caminho de Mimas, com a forma inteira no mapa
+//    de altura em vez de um relevo sobre elipsoide.
+// ------------------------------------------------------------
+
+describe('9. Hipérion — o relevo medido substitui a esculpida (23/09)', () => {
+  it('a casca do relevo tem boundingSphere no pico do deslocamento (1 + viés + escala)', async () => {
+    const relevo = RELEVO_DA_LUA.hyperion!;
+    // manifesto FALSO, só para este teste: prova a fórmula do
+    // boundingSphere sem depender do `public/data` real (que o dono ainda
+    // não regenerou para Hipérion).
+    const manifestFalso: ManifestDeTexturas = {
+      entradas: ['map', 'height', 'normal'].map((canal) => ({
+        corpo: 'hyperion',
+        canal,
+        arquivo: `textures/atlas/hyperion/${canal}.png`,
+        larguraPx: 1024,
+      })),
+    };
+    const corpo = new RochosoResolvido({
+      config: { id: 'hyperion', brdf: 'lambert' },
+      tier: () => 'cinema',
+      maxTextureSize: 16384,
+      base: '',
+      webp: true,
+      buscarManifest: async () => manifestFalso,
+      carregarTextura: async () => new THREE.Texture(),
+    });
+    corpo.atualizar(quadro('hyperion', 4));
+    await flush();
+    expect(corpo.atualizar(quadro('hyperion', 4)).emQuadro).toBe(true);
+    const geo = malhaDaSuperficie(corpo.group).geometry;
+    expect(geo.boundingSphere, 'sem boundingSphere próprio').toBeTruthy();
+    expect(geo.boundingSphere!.radius).toBeCloseTo(1 + relevo.vies + relevo.escala, 10);
+    corpo.dispose();
+  });
+
+  /**
+   * O ESPELHO NÃO GIROU. Três direções do GRID MEDIDO do piloto (branch
+   * `piloto-hiperion`, `pilotoHiperionForma.json` — não versionado aqui:
+   * os números abaixo são a TRAVESSIA, não o arquivo). `rPilot` é o raio
+   * medido na direção `d`; `rEspelho` é o raio na direção espelhada
+   * (z → −z). Se o mapa publicado tivesse saído invertido em longitude —
+   * o defeito que já custou meia volta ao item 138 —, a leitura bateria
+   * em `rEspelho`, nunca em `rPilot`: a diferença entre os dois (>0,06) é
+   * grande o bastante para o teste DISTINGUIR os dois casos, não só medir
+   * "parecido". As três direções ficam longe de todo poço aprovado
+   * (`fonte/hyperion-pocos.json`): o grid do piloto é liso, e o mapa tem
+   * cratera onde ele não tem.
+   */
+  const DIRECOES_DO_ESPELHO_DE_HIPERION = [
+    { d: [-0.823857, -0.463296, -0.326521], rPilot: 1.149428, rEspelho: 1.261048 },
+    { d: [-0.824276, 0.192008, -0.532636], rPilot: 1.12828, rEspelho: 1.036057 },
+    { d: [0.085716, -0.970758, -0.224234], rPilot: 1.03479, rEspelho: 0.947947 },
+  ] as const;
+
+  const TOLERANCIA_DO_RELEVO_DE_HIPERION = 0.02;
+
+  it('o mapa de altura PUBLICADO de Hipérion não está espelhado em longitude', async () => {
+    const { default: sharp } = await import('sharp');
+    const relevo = RELEVO_DA_LUA.hyperion!;
+    // a MAIOR variante de hyperion/height no manifesto real, o PNG antes
+    // do webp (o PNG é o dado canônico do canal).
+    const entrada = [...MANIFEST.entradas]
+      .filter((e) => e.corpo === 'hyperion' && e.canal === 'height')
+      .sort(
+        (a, b) => b.larguraPx - a.larguraPx || Number(b.arquivo.endsWith('.png')) - Number(a.arquivo.endsWith('.png'))
+      )[0];
+    expect(entrada, 'hyperion/height sem entrada no manifesto — faltam as texturas de Hipérion regeneradas').toBeTruthy();
+    const caminho = join(
+      fileURLToPath(new URL('../../../../public/', import.meta.url)),
+      entrada!.arquivo
+    );
+    // ATENÇÃO SHARP: sem `toColourspace('b-w')` o `.raw()` devolve 3 canais
+    // (RGB duplicado) mesmo com metadata.channels === 1 — o mesmo cuidado
+    // que `baixa-texturas.mjs` já tem do lado da ESCRITA.
+    const { data, info } = await sharp(caminho)
+      .toColourspace('b-w')
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    for (const { d, rPilot, rEspelho } of DIRECOES_DO_ESPELHO_DE_HIPERION) {
+      const [x, y, z] = d;
+      // convenção da casa (direcaoLocalDeLonLat, orientacaoNaCena.ts):
+      // direção = (cosφ·cosλ, sinφ, −cosφ·sinλ) ⇒ λ = atan2(−z, x), φ = asin(y);
+      // coluna = (λ+π)/(2π) (Greenwich no centro), linha 0 = norte.
+      const lambda = Math.atan2(-z, x);
+      const phi = Math.asin(Math.max(-1, Math.min(1, y)));
+      const col = Math.max(
+        0,
+        Math.min(info.width - 1, Math.round(((lambda + Math.PI) / (2 * Math.PI)) * info.width - 0.5))
+      );
+      const row = Math.max(
+        0,
+        Math.min(info.height - 1, Math.round(((Math.PI / 2 - phi) / Math.PI) * info.height - 0.5))
+      );
+      const cinza = data[row * info.width + col]!;
+      const rMapa = 1 + relevo.vies + relevo.escala * (cinza / 255);
+      expect(Math.abs(rMapa - rPilot), `direção (${x},${y},${z}): bate no piloto`).toBeLessThan(
+        TOLERANCIA_DO_RELEVO_DE_HIPERION
+      );
+      expect(
+        Math.abs(rMapa - rEspelho),
+        `direção (${x},${y},${z}): tem de DISCRIMINAR o espelho`
+      ).toBeGreaterThan(TOLERANCIA_DO_RELEVO_DE_HIPERION);
     }
   });
 });
