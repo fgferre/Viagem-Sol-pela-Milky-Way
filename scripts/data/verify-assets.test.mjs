@@ -96,7 +96,12 @@ function rodar(mudar = (corpos, texturas) => ({ corpos, texturas })) {
     const saida = execFileSync(
       process.execPath,
       [join(espelho, 'scripts/data/verify-assets.mjs')],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+      // 22/09/2026: no GitHub este arquivo ficou 6 h parado até o limite do
+      // job, sem uma linha de saída. A chamada é SÍNCRONA — o tempo-limite do
+      // vitest não dispara com o laço de eventos preso —, então o limite mora
+      // aqui: um gate que leva 2 s e não volta em 60 s reprova com o que já
+      // tinha escrito.
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60_000, killSignal: 'SIGKILL' }
     );
     return { ok: true, saida };
   } catch (erro) {

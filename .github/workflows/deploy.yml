@@ -29,6 +29,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # o build inteiro leva ~2 min; em 22/09/2026 um teste parado segurou a
+    # fila de publicação por 6 h (o limite do GitHub) sem dizer nada
+    timeout-minutes: 20
     steps:
       # majors atuais (v7/v5): as v4 declaravam Node 20, que o runner já força
       # para 24 com aviso de depreciação — funciona hoje, quebra quando
