@@ -55,6 +55,7 @@ import {
   CATALOG_TNOS,
   SATELLITES,
 } from './elementosOrbitais';
+import type { TextoBilingue } from '../../three/world/corpos/texturas';
 
 export interface JanelaAnos {
   anoInicio: number;
@@ -76,7 +77,7 @@ export interface RegistroCorpo {
   /** Para fonte 'tabela': a janela da TEORIA que gerou a tabela. */
   janelaTeoria?: JanelaAnos;
   /**
-   * Nota de acurácia MEDIDA, na língua da casa.
+   * Nota de acurácia MEDIDA, bilíngue na fonte (pt-BR e inglês, item 130).
    *
    * O NÚMERO É VERBATIM do doador e não se toca: `3.6°`, `5.2°`, `7.4°`,
    * `1885-2099` são a MEDIÇÃO, e reescrevê-los (nem que fosse só a vírgula
@@ -84,9 +85,9 @@ export interface RegistroCorpo {
    * deles passou para pt-BR em 22/08, quando a ficha do objeto começou a
    * imprimir esta nota inteira na tela ao lado do editorial traduzido — meia
    * língua num painel só era a coisa que o item 74 existe para não fazer.
-   * O inglês original mora no doador (`registry.ts`) e no git.
+   * `ficha.ts` escolhe a língua de agora com `noIdioma`.
    */
-  nota: string;
+  nota: TextoBilingue;
 }
 
 /** Adaptação 1: janela amostrada em efemerides.bin (regenerável). */
@@ -96,29 +97,58 @@ export const JANELA_TABELA: JanelaAnos = { anoInicio: 1950, anoFim: 2050 };
 // O PREFIXO REPETIDO das seis famílias de satélite e dos asteroides sai de
 // uma constante só: ele é a mesma frase seis vezes, e seis cópias de uma
 // frase é como um número acaba divergindo de si mesmo.
-const KEPLER_2025 = 'Kepler de dois corpos a partir dos elementos osculantes de 2025-01-01';
-const RESSONANTE =
-  'taxa publicada; lua ressonante de período curto não se sustenta em dois corpos por ±1 ano';
-const SEM_VALIDACAO = 'sem validação fora dessa faixa';
-const NOTA_VSOP87 =
-  'série VSOP87D truncada, nível de arcsegundo entre 2000 a.C. e 6000 d.C.';
-const NOTA_PLUTO = 'teoria de Plutão do Meeus (cap. 37), válida de 1885 a 2099';
-const NOTA_ELP =
-  'ELP/MPP02 truncada (nível de poucos arcsegundos ao longo de milênios)';
-const NOTA_MARTIAN =
-  `${KEPLER_2025}; pior caso 3.6° em ±1 ano da época, medido dos DOIS lados (Fobos, ${RESSONANTE}), ${SEM_VALIDACAO}`;
-const NOTA_GALILEAN =
-  `${KEPLER_2025}; pior caso 1.6° em ±1 ano da época, medido dos DOIS lados (Europa), ${SEM_VALIDACAO}`;
-const NOTA_SATURNIAN =
-  `${KEPLER_2025}; pior caso 5.2° em ±1 ano da época, medido dos DOIS lados (Mimas, ${RESSONANTE}), ${SEM_VALIDACAO}`;
-const NOTA_URANIAN =
-  `${KEPLER_2025}; pior caso 1.3° em ±1 ano da época, medido dos DOIS lados (Miranda), ${SEM_VALIDACAO}`;
-const NOTA_NEPTUNIAN =
-  `${KEPLER_2025}; pior caso 0.16° em +1 ano da época (um lado só — não há fixture antes da época), ${SEM_VALIDACAO}`;
-const NOTA_PLUTOSAT =
-  `${KEPLER_2025}; pior caso 0.01° em +1 ano da época (um lado só — não há fixture antes da época), ${SEM_VALIDACAO}`;
-const NOTA_ASTEROID =
-  `${KEPLER_2025}; ~0.01° perto da época, extrapolado a ~1° nas bordas de 2000/2050 (única conferência longe da época: 7.4° em 1890)`;
+const KEPLER_2025: TextoBilingue = {
+  pt: 'Kepler de dois corpos a partir dos elementos osculantes de 2025-01-01',
+  en: 'two-body Kepler from the osculating elements of 2025-01-01',
+};
+const RESSONANTE: TextoBilingue = {
+  pt: 'taxa publicada; lua ressonante de período curto não se sustenta em dois corpos por ±1 ano',
+  en: 'published rate; a short-period resonant moon does not hold up in two-body motion over ±1 year',
+};
+const SEM_VALIDACAO: TextoBilingue = {
+  pt: 'sem validação fora dessa faixa',
+  en: 'no validation outside this range',
+};
+const NOTA_VSOP87: TextoBilingue = {
+  pt: 'série VSOP87D truncada, nível de arcsegundo entre 2000 a.C. e 6000 d.C.',
+  en: 'truncated VSOP87D series, arcsecond level between 2000 BC and 6000 AD',
+};
+const NOTA_PLUTO: TextoBilingue = {
+  pt: 'teoria de Plutão do Meeus (cap. 37), válida de 1885 a 2099',
+  en: "Meeus's Pluto theory (ch. 37), valid from 1885 to 2099",
+};
+const NOTA_ELP: TextoBilingue = {
+  pt: 'ELP/MPP02 truncada (nível de poucos arcsegundos ao longo de milênios)',
+  en: 'truncated ELP/MPP02 (a few arcseconds over millennia)',
+};
+const NOTA_MARTIAN: TextoBilingue = {
+  pt: `${KEPLER_2025.pt}; pior caso 3.6° em ±1 ano da época, medido dos DOIS lados (Fobos, ${RESSONANTE.pt}), ${SEM_VALIDACAO.pt}`,
+  en: `${KEPLER_2025.en}; worst case 3.6° within ±1 year of the epoch, measured on BOTH sides (Phobos, ${RESSONANTE.en}), ${SEM_VALIDACAO.en}`,
+};
+const NOTA_GALILEAN: TextoBilingue = {
+  pt: `${KEPLER_2025.pt}; pior caso 1.6° em ±1 ano da época, medido dos DOIS lados (Europa), ${SEM_VALIDACAO.pt}`,
+  en: `${KEPLER_2025.en}; worst case 1.6° within ±1 year of the epoch, measured on BOTH sides (Europa), ${SEM_VALIDACAO.en}`,
+};
+const NOTA_SATURNIAN: TextoBilingue = {
+  pt: `${KEPLER_2025.pt}; pior caso 5.2° em ±1 ano da época, medido dos DOIS lados (Mimas, ${RESSONANTE.pt}), ${SEM_VALIDACAO.pt}`,
+  en: `${KEPLER_2025.en}; worst case 5.2° within ±1 year of the epoch, measured on BOTH sides (Mimas, ${RESSONANTE.en}), ${SEM_VALIDACAO.en}`,
+};
+const NOTA_URANIAN: TextoBilingue = {
+  pt: `${KEPLER_2025.pt}; pior caso 1.3° em ±1 ano da época, medido dos DOIS lados (Miranda), ${SEM_VALIDACAO.pt}`,
+  en: `${KEPLER_2025.en}; worst case 1.3° within ±1 year of the epoch, measured on BOTH sides (Miranda), ${SEM_VALIDACAO.en}`,
+};
+const NOTA_NEPTUNIAN: TextoBilingue = {
+  pt: `${KEPLER_2025.pt}; pior caso 0.16° em +1 ano da época (um lado só — não há fixture antes da época), ${SEM_VALIDACAO.pt}`,
+  en: `${KEPLER_2025.en}; worst case 0.16° at +1 year from the epoch (one side only — there is no fixture before the epoch), ${SEM_VALIDACAO.en}`,
+};
+const NOTA_PLUTOSAT: TextoBilingue = {
+  pt: `${KEPLER_2025.pt}; pior caso 0.01° em +1 ano da época (um lado só — não há fixture antes da época), ${SEM_VALIDACAO.pt}`,
+  en: `${KEPLER_2025.en}; worst case 0.01° at +1 year from the epoch (one side only — there is no fixture before the epoch), ${SEM_VALIDACAO.en}`,
+};
+const NOTA_ASTEROID: TextoBilingue = {
+  pt: `${KEPLER_2025.pt}; ~0.01° perto da época, extrapolado a ~1° nas bordas de 2000/2050 (única conferência longe da época: 7.4° em 1890)`,
+  en: `${KEPLER_2025.en}; ~0.01° near the epoch, extrapolated to ~1° at the 2000/2050 edges (the only check far from the epoch: 7.4° in 1890)`,
+};
 
 // Janelas por família, verbatim do doador.
 const JANELA_SATELITES: JanelaAnos = { anoInicio: 2020, anoFim: 2030 };
@@ -130,7 +160,7 @@ const JANELA_ELP: JanelaAnos = { anoInicio: -3000, anoFim: 3000 };
 // Família de cada satélite analítico deriva do pai (a relação é 1:1 no
 // nosso catálogo: todo satélite analítico de um mesmo primário pertence
 // à mesma família do doador).
-const FAMILIA_POR_PAI: Record<string, { modelo: string; nota: string }> = {
+const FAMILIA_POR_PAI: Record<string, { modelo: string; nota: TextoBilingue }> = {
   mars: { modelo: 'MartianSatOsculating2Body', nota: NOTA_MARTIAN },
   jupiter: { modelo: 'GalileanOsculating2Body', nota: NOTA_GALILEAN },
   saturn: { modelo: 'SaturnianOsculating2Body', nota: NOTA_SATURNIAN },
@@ -143,7 +173,7 @@ function registroTabela(
   modelo: string,
   centro: string,
   janelaTeoria: JanelaAnos,
-  nota: string
+  nota: TextoBilingue
 ): RegistroCorpo {
   return {
     modelo,
@@ -162,7 +192,10 @@ export const REGISTRO_ORBITAL: Record<string, RegistroCorpo> = {
     modelo: 'Solar System Barycenter',
     fonte: 'tabela',
     centro: 'sun',
-    nota: 'referência de origem do sistema solar',
+    nota: {
+      pt: 'referência de origem do sistema solar',
+      en: 'origin reference of the solar system',
+    },
   },
   mercury: registroTabela('VSOP87D', 'sun', JANELA_VSOP, NOTA_VSOP87),
   venus: registroTabela('VSOP87D', 'sun', JANELA_VSOP, NOTA_VSOP87),
@@ -224,9 +257,14 @@ export const REGISTRO_ORBITAL: Record<string, RegistroCorpo> = {
           modelo: 'Kepler',
           fonte: 'kepler',
           centro: parent,
-          nota:
-            'órbita de catálogo por Kepler; orientação do plano e fase FABRICADAS ' +
-            '(Ω/ω/M0 = 0) — desenha uma órbita plausível, nunca prevê uma posição',
+          nota: {
+            pt:
+              'órbita de catálogo por Kepler; orientação do plano e fase FABRICADAS ' +
+              '(Ω/ω/M0 = 0) — desenha uma órbita plausível, nunca prevê uma posição',
+            en:
+              'catalog orbit by Kepler; plane orientation and phase FABRICATED ' +
+              '(Ω/ω/M0 = 0) — draws a plausible orbit, never predicts a position',
+          },
         } satisfies RegistroCorpo,
       ]
     )

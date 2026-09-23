@@ -195,33 +195,33 @@ describe('notaDeValidade — contrato de honestidade nos dois braços', () => {
     const dentro = motor.notaDeValidade(
       'ceres',
       dateToTDB(new Date('2025-06-01T00:00:00Z'))
-    );
+    ).pt;
     expect(dentro).toContain('0.01°');
 
     const fora = motor.notaDeValidade(
       'ceres',
       dateToTDB(new Date('1890-01-01T00:00:00Z'))
-    );
+    ).pt;
     expect(fora).toContain('extrapolados');
     expect(fora).toContain('2025-01-01');
     expect(fora).not.toContain('0.01°');
   });
 
   it('satellite notes follow the same two arms (window 2020–2030)', () => {
-    const dentro = motor.notaDeValidade('phobos', JD);
+    const dentro = motor.notaDeValidade('phobos', JD).pt;
     expect(dentro).toContain('3.6°');
     expect(dentro).toContain('2020–2030');
 
     const fora = motor.notaDeValidade(
       'phobos',
       dateToTDB(new Date('2035-01-01T00:00:00Z'))
-    );
+    ).pt;
     expect(fora).toContain('extrapolados');
     expect(fora).not.toContain('3.6°');
   });
 
   it('table bodies cite theory accuracy plus the MEASURED interpolation error', () => {
-    const nota = motor.notaDeValidade('earth', JD);
+    const nota = motor.notaDeValidade('earth', JD).pt;
     expect(nota).toContain('VSOP87D');
     expect(nota).toContain('1950–2050');
     expect(nota).toContain('Hermite');
@@ -235,7 +235,7 @@ describe('notaDeValidade — contrato de honestidade nos dois braços', () => {
     const fora = motor.notaDeValidade(
       'mercury',
       dateToTDB(new Date('1900-01-01T00:00:00Z'))
-    );
+    ).pt;
     expect(fora).toContain('Fora de 1950–2050');
     expect(fora).not.toContain('arcsegundo');
   });
@@ -243,13 +243,13 @@ describe('notaDeValidade — contrato de honestidade nos dois braços', () => {
   it('does not collide a BCE start year with the range separator', () => {
     // The Moon's theory window starts at year -3000; a bare
     // `${start}-${end}` template renders the unreadable "-3000-3000".
-    const nota = motor.notaDeValidade('moon', JD);
+    const nota = motor.notaDeValidade('moon', JD).pt;
     expect(nota).toContain('3000 a.C.');
     expect(nota).not.toContain('-3000-');
   });
 
   it('catalog moons disclose the fabricated orientation and never quote accuracy', () => {
-    const nota = motor.notaDeValidade('vanth', JD);
+    const nota = motor.notaDeValidade('vanth', JD).pt;
     expect(nota).toContain('FABRICADAS');
     expect(nota).toContain('nunca prevê');
   });

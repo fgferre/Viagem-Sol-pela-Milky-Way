@@ -160,7 +160,7 @@ export interface FonteDaFicha {
   posicao(bodyId: string, jdTdb: number): PosicaoEcliptica;
   velocidade(bodyId: string, jdTdb: number): PosicaoEcliptica;
   posicaoHeliocentrica(bodyId: string, jdTdb: number): PosicaoEcliptica;
-  notaDeValidade(bodyId: string, jdTdb: number): string;
+  notaDeValidade(bodyId: string, jdTdb: number): TextoBilingue;
 }
 
 export interface EntradaDaFicha {
@@ -421,12 +421,12 @@ function secaoOrbita(entrada: EntradaDaFicha): LinhaDaFicha[] {
 
   // A JANELA DE VALIDADE é o outro braço do contrato de honestidade da
   // efeméride (`notaDeValidade`), e ela entra na ficha como entra em
-  // qualquer lugar: inteira, sem resumo. Ainda em inglês na origem — o
-  // texto dela é do `registroOrbital`, e traduzi-lo é obra própria.
+  // qualquer lugar: inteira, sem resumo. A nota já nasce bilíngue no
+  // `registroOrbital`; aqui só se escolhe a língua de agora.
   if (fonte && jd !== null && jd !== undefined && Number.isFinite(jd)) {
     try {
       linhas.push(
-        linha(t('ficha.campo.modeloEValidade'), fonte.notaDeValidade(id, jd), 'medido')
+        linha(t('ficha.campo.modeloEValidade'), noIdioma(fonte.notaDeValidade(id, jd)), 'medido')
       );
     } catch {
       // corpo fora do registro: sem nota, sem linha

@@ -876,4 +876,41 @@ describe('a ficha nas duas línguas', () => {
         .join('|');
     expect(prosa(comEn)).not.toBe(prosa(piso));
   });
+
+  // A NOTA DE VALIDADE (item 130) é `registroOrbital` + `notaDeValidade`
+  // falando das duas bocas — a única prosa da ficha que não vem de
+  // `corpos.json`. A prova aqui é a mesma dos testes acima, num campo a
+  // mais: em inglês, a linha "model and validity" não pode sobrar com
+  // nenhum fiapo do template ou dos fragmentos em pt-BR.
+  it('a linha "modelo e validade" da órbita sai em inglês, sem resíduo de pt-BR', () => {
+    definirIdioma('en');
+    const ROTULO = 'model and validity';
+    const RESIDUOS_PT = [
+      'válid',
+      'pior caso',
+      'órbita',
+      'série',
+      'teoria',
+      'Fora de',
+      'Tabela embarcada',
+      'medido dos',
+      'sem validação',
+      'a.C.',
+      'd.C.',
+    ];
+    for (const id of ALVOS) {
+      if (id === 'sun') continue;
+      const orbita = ficha(id)!.secoes.find((s) => s.id === 'orbita');
+      const linha = orbita?.linhas.find((l) => l.rotulo === ROTULO);
+      expect(linha, id).toBeDefined();
+      for (const residuo of RESIDUOS_PT) {
+        expect(linha!.valor, `${id}: "${residuo}"`).not.toContain(residuo);
+      }
+    }
+    const hiperion = ficha('hyperion')!
+      .secoes.find((s) => s.id === 'orbita')!
+      .linhas.find((l) => l.rotulo === ROTULO)!;
+    expect(hiperion.valor).toContain('valid');
+    expect(hiperion.valor).toContain('worst case');
+  });
 });

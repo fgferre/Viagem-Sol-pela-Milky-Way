@@ -53,11 +53,14 @@
 //      cita a acurácia medida. Janela formatada com en-dash e a.C./d.C.
 //      (a do doador imprimia "-3000-3000" — ilegível; e o BCE/CE que a
 //      casa herdou virou a.C./d.C. em 22/08, quando a ficha do objeto
-//      passou a imprimir esta nota inteira na tela, em português).
+//      passou a imprimir esta nota inteira na tela). Desde o item 130 a
+//      nota sai BILÍNGUE (`TextoBilingue`, a.C./d.C. ou BC/AD); quem
+//      escolhe a língua de agora é `noIdioma` em ficha.ts.
 // ============================================================
 
 import type { PosicaoEcliptica } from './kepler';
 import { IDS_KEPLER, posicaoKepler } from './kepler';
+import type { TextoBilingue } from '../../three/world/corpos/texturas';
 import type { RegistroCorpo } from './registroOrbital';
 import { REGISTRO_ORBITAL } from './registroOrbital';
 import { tdbToDate } from './time';
@@ -260,14 +263,20 @@ export interface EstatisticasCache {
   hitRate: number;
 }
 
-/** Formata janela de anos com en-dash e era explícita (adaptação d). */
-function formatarJanela(anoInicio: number, anoFim: number): string {
-  const inicio = anoInicio < 0 ? `${Math.abs(anoInicio)} a.C.` : `${anoInicio}`;
+/**
+ * Formata janela de anos com en-dash e era explícita (adaptação d).
+ * `ingles` troca a.C./d.C. por BC/AD — o resto do molde é o mesmo nas
+ * duas línguas.
+ */
+function formatarJanela(anoInicio: number, anoFim: number, ingles: boolean): string {
+  const AC = ingles ? 'BC' : 'a.C.';
+  const DC = ingles ? 'AD' : 'd.C.';
+  const inicio = anoInicio < 0 ? `${Math.abs(anoInicio)} ${AC}` : `${anoInicio}`;
   const fim =
     anoFim < 0
-      ? `${Math.abs(anoFim)} a.C.`
+      ? `${Math.abs(anoFim)} ${AC}`
       : anoInicio < 0
-        ? `${anoFim} d.C.`
+        ? `${anoFim} ${DC}`
         : `${anoFim}`;
   return `${inicio}–${fim}`;
 }
@@ -462,52 +471,88 @@ export class MotorEfemerides {
    * Contrato de honestidade (adaptação d): dentro da janela, acurácia
    * medida; fora, aviso de extrapolação SEM citar a acurácia medida.
    */
-  notaDeValidade(bodyId: string, jdTdb: number): string {
+  notaDeValidade(bodyId: string, jdTdb: number): TextoBilingue {
     const registro = this.registroDe(bodyId);
     if (bodyId === 'sun') return registro.nota;
 
     if (registro.fonte === 'tabela') {
       const tabela = this.tabelas.corpos.get(bodyId);
       const { jdInicio, jdFim } = this.tabelas.janela;
-      const janela = formatarJanela(
-        registro.janela!.anoInicio,
-        registro.janela!.anoFim
-      );
+      const janelaPt = formatarJanela(registro.janela!.anoInicio, registro.janela!.anoFim, false);
+      const janelaEn = formatarJanela(registro.janela!.anoInicio, registro.janela!.anoFim, true);
       if (!tabela || jdTdb < jdInicio || jdTdb > jdFim) {
-        return (
-          `Fora de ${janela}: sem tabela embarcada — posicao() lança aqui. ` +
-          `A teoria ${registro.modelo} cobriria ` +
-          `${formatarJanela(registro.janelaTeoria!.anoInicio, registro.janelaTeoria!.anoFim)}; ` +
-          `regenere a tabela para estender a janela.`
+        const teoriaPt = formatarJanela(
+          registro.janelaTeoria!.anoInicio,
+          registro.janelaTeoria!.anoFim,
+          false
         );
+        const teoriaEn = formatarJanela(
+          registro.janelaTeoria!.anoInicio,
+          registro.janelaTeoria!.anoFim,
+          true
+        );
+        return {
+          pt:
+            `Fora de ${janelaPt}: sem tabela embarcada — posicao() lança aqui. ` +
+            `A teoria ${registro.modelo} cobriria ${teoriaPt}; ` +
+            `regenere a tabela para estender a janela.`,
+          en:
+            `Outside ${janelaEn}: no embedded table — posicao() throws here. ` +
+            `The ${registro.modelo} theory would cover ${teoriaEn}; ` +
+            `regenerate the table to extend the window.`,
+        };
       }
-      return (
-        `${registro.modelo}: ${registro.nota}. Tabela embarcada ${janela} ` +
-        `(teoria válida ${formatarJanela(registro.janelaTeoria!.anoInicio, registro.janelaTeoria!.anoFim)}); ` +
-        `interpolação Hermite medida ≤ ${tabela.erroMedidoAu.toExponential(2)} UA (manifesto).`
+      const teoriaPt = formatarJanela(
+        registro.janelaTeoria!.anoInicio,
+        registro.janelaTeoria!.anoFim,
+        false
       );
+      const teoriaEn = formatarJanela(
+        registro.janelaTeoria!.anoInicio,
+        registro.janelaTeoria!.anoFim,
+        true
+      );
+      const erro = tabela.erroMedidoAu.toExponential(2);
+      return {
+        pt:
+          `${registro.modelo}: ${registro.nota.pt}. Tabela embarcada ${janelaPt} ` +
+          `(teoria válida ${teoriaPt}); ` +
+          `interpolação Hermite medida ≤ ${erro} UA (manifesto).`,
+        en:
+          `${registro.modelo}: ${registro.nota.en}. Embedded table ${janelaEn} ` +
+          `(theory valid ${teoriaEn}); ` +
+          `Hermite interpolation measured ≤ ${erro} AU (manifest).`,
+      };
     }
 
     // Kepler sem janela: luas de catálogo — nunca houve medição.
     if (!registro.janela) {
-      return `${registro.modelo}: ${registro.nota}.`;
+      return {
+        pt: `${registro.modelo}: ${registro.nota.pt}.`,
+        en: `${registro.modelo}: ${registro.nota.en}.`,
+      };
     }
 
     const ano = tdbToDate(jdTdb).getUTCFullYear();
-    const janela = formatarJanela(
-      registro.janela.anoInicio,
-      registro.janela.anoFim
-    );
+    const janelaPt = formatarJanela(registro.janela.anoInicio, registro.janela.anoFim, false);
+    const janelaEn = formatarJanela(registro.janela.anoInicio, registro.janela.anoFim, true);
     const dentro =
       ano >= registro.janela.anoInicio && ano <= registro.janela.anoFim;
     if (!dentro) {
       // NUNCA citar a acurácia medida aqui — ela descreve a janela.
-      return (
-        `Fora de ${janela}: elementos osculantes congelados em 2025-01-01 ` +
-        `extrapolados por Kepler de dois corpos — acurácia não caracterizada aqui.`
-      );
+      return {
+        pt:
+          `Fora de ${janelaPt}: elementos osculantes congelados em 2025-01-01 ` +
+          `extrapolados por Kepler de dois corpos — acurácia não caracterizada aqui.`,
+        en:
+          `Outside ${janelaEn}: osculating elements frozen at 2025-01-01, ` +
+          `extrapolated by two-body Kepler — accuracy not characterized here.`,
+      };
     }
-    return `${registro.modelo} (válido ${janela}): ${registro.nota}.`;
+    return {
+      pt: `${registro.modelo} (válido ${janelaPt}): ${registro.nota.pt}.`,
+      en: `${registro.modelo} (valid ${janelaEn}): ${registro.nota.en}.`,
+    };
   }
 
   /** Cicatrizes 3–4: O(1), só contadores; bypassed fora do denominador. */
