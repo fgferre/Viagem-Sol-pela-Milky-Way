@@ -4,7 +4,55 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 228.**
 
-## O BASTÃO — onde a rodada parou (14/09)
+## O BASTÃO — onde a rodada parou (24/09)
+
+**22–24/09 (rodada do HIPÉRION MEDIDO, encerrada nas palavras dele:
+*"pode encerrar a rodada e preparar o bastão"*).**
+
+- **Pesquisa (22/09, só leitura):** a forma medida dos corpos que não são
+  redondos e os corpos que faltam; a página privada "Formas reais e novos
+  corpos" tem as fontes (o link está nas notas do assistente). Achados NÃO
+  consertados, para outra rodada: Haumea sem o anel que o `ASSETS.md` diz
+  existir; Quaoar com uma faixa didática no lugar dos dois anéis finos
+  (2.520 e 4.057 km); a ficha de Fobos e Deimos não confessa a forma
+  simplificada; Sedna, Gonggong, Orco, Salácia, Vanth e Weywot têm órbita em
+  `corpos.json` e não são desenhados (a lua de Gonggong é Xiangliu). O
+  pacote Cassini com a forma medida de mais dez luas pequenas de Saturno
+  está na mesma página — a receita do Hipérion serve a elas.
+- **Hipérion (22–23/09):** piloto de quatro versões no ramo LOCAL
+  `piloto-hiperion` (fora do main; é a referência visual — não apagar sem
+  ele). Ele aprovou a quarta (*"ficou muito bom"*) e mandou levar ao app
+  (*"pode levar para o Hipérion do app"*). No app (`3fc49d2`): a forma medida
+  pela Cassini inteira no mapa de altura, pelo caminho de Mimas; os 3.488
+  poços da pintura por IA nos mapas de altura e de normais; a cor da
+  pintura; a ficha confessa cor e poços pintados. Fotos iguais ao piloto
+  aprovado, GPU igual à da escultura. As texturas quem regenerou foi ele: a
+  trava de `public/data` barra o assistente — ele perguntou por quê e
+  manteve a trava. Melhorias no **226**.
+- **Inglês (23/09):** ele viu português na Órbita do Hipérion em inglês
+  (*"será que temos esse problema em outras partes do app?"*). A varredura
+  do app inteiro achou um vazamento só — a linha "modelo e validade" da
+  Órbita, em 47 dos 48 corpos —, consertado na fonte e cobrado por teste
+  (`a65ce47`).
+- **O Sol através dos corpos (23–24/09):** *"o sol aparece através de
+  objetos"* e *"engraçado que sirius nao aparece"*. O clarão do Sol não
+  perguntava se havia corpo na frente; agora uma sonda de oclusão na camada
+  do clarão o apaga pela rampa de sempre (`0ae439f`), conferida pose a pose
+  contra a forma medida. Ele perguntou se não era recriar o que já existe: a
+  camada do Sol é a que a lei das estrelas destina a todas (M3), e a peça
+  mora nela. A vontade dele de gerar todas as estrelas com a tecnologia do
+  Sol virou o **227**.
+- **Publicação:** a de 22/09 ficou 6 h presa num teste (o do
+  `verify-assets`) e foi cancelada; o teste e o build ganharam tempo-limite
+  (`2cc866e`). Publicado em 24/09 (`0ae439f`) e conferido no ar. Depois
+  disso só entrou documentação (`7b57b0f` e este bastão), no backup.
+- **Aberto:** **225** (Terra e Lua sumindo no fim do filme), **226**,
+  **227**; o `PLAN.md` do gás, obra aberta desde 05/09; no `BACKLOG.md`, o
+  clarão de estrelas nas pontas do Hipérion (o passe dos ocultadores não
+  desloca o relevo). Servidores do assistente parados; o `npm run dev` que
+  ele abriu no terminal continua ligado.
+
+## O BASTÃO anterior (14/09)
 
 **07/09 (rodada da VARREDURA, encerrada por ordem dele: "encerrar
 rodada").** Abriu com a pergunta dele: "o que faltou? pode continuar.
