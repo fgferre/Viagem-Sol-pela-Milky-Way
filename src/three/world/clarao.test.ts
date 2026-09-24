@@ -242,13 +242,68 @@ describe('3. a camada de verdade, com o sidecar real', () => {
 
   it('nasce com o orçamento de billboards, aditivos e SEM teste de profundidade (§5.15)', () => {
     const c = new ClaraoDeAsas(META.named);
-    expect(c.group.children).toHaveLength(ORCAMENTO_DO_CLARAO);
-    for (const filho of c.group.children) {
+    // os ORCAMENTO_DO_CLARAO billboards são os PRIMEIROS filhos do grupo —
+    // a sonda de oclusão (teste dedicado abaixo) entra DEPOIS, e
+    // por isso não conta aqui: ela tem profundidade LIGADA de propósito.
+    const billboards = c.group.children.slice(0, ORCAMENTO_DO_CLARAO);
+    expect(billboards).toHaveLength(ORCAMENTO_DO_CLARAO);
+    for (const filho of billboards) {
       const mat = (filho as THREE.Mesh).material as THREE.ShaderMaterial;
       expect(mat.depthTest).toBe(false);
       expect(mat.depthWrite).toBe(false);
       expect(mat.blending).toBe(THREE.AdditiveBlending);
     }
+    c.dispose();
+  });
+
+  it('a sonda de oclusão do Sol mora no MESMO grupo, com profundidade LIGADA e sem pintar nada', () => {
+    // outro corpo (não o Sol) pode tapar o clarão — a §5.15 acima só
+    // proíbe o Sol ocluir a si mesmo. A sonda testa profundidade contra o
+    // resto da cena; por isso ela é o OPOSTO dos billboards de cima em
+    // todo campo relevante, e mora no mesmo `group` para desenhar no
+    // mesmo passe.
+    const c = new ClaraoDeAsas(META.named);
+    const sonda = c.group.children[c.group.children.length - 1] as THREE.Mesh;
+    const mat = sonda.material as THREE.ShaderMaterial;
+    expect(mat.depthTest).toBe(true);
+    expect(mat.depthWrite).toBe(false);
+    expect(mat.colorWrite).toBe(false);
+    expect(mat.transparent).toBe(true);
+    expect(sonda.renderOrder).toBe(-1);
+    expect(sonda.frustumCulled).toBe(false);
+    c.dispose();
+  });
+
+  it('outro corpo tapando o Sol apaga o clarão pela MESMA rampa do orçamento, e o traz de volta', () => {
+    // Não há GPU nesta suíte (`node`, sem WebGLRenderer): a consulta de
+    // oclusão de verdade só corre no navegador. O que se prova aqui é o
+    // contrato entre ela e o orçamento — `registrarOclusaoDoSol` é o
+    // MESMO método que o callback da sonda chamaria com um resultado de
+    // GPU; o cast alcança-o sem abrir a API pública da camada.
+    const c = new ClaraoDeAsas(META.named);
+    const registrar = (oculto: boolean) =>
+      (c as unknown as { registrarOclusaoDoSol(oculto: boolean): void }).registrarOclusaoDoSol(
+        oculto
+      );
+
+    for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
+    expect(c.ocupacao().find((o) => o.indice === 0)?.ganho).toBe(1);
+
+    // um corpo diferente do Sol tapa o centro dele: a sonda registra
+    // oculto, e o candidato 0 deixa de ser elegível — a MESMA rampa de
+    // 300 ms de "fonte oculta" apaga o slot, sem gatilho nem tempo novo
+    registrar(true);
+    c.atualizar(quadroEmCasa(true));
+    const saindo = c.ocupacao().find((o) => o.indice === 0);
+    if (saindo) expect(saindo.ganho).toBeLessThan(1);
+    for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
+    expect(c.ocupacao()).toHaveLength(0);
+
+    // o Sol reaparece: a sonda registra visível de novo, e o clarão sobe
+    // pela MESMA rampa de entrada
+    registrar(false);
+    for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
+    expect(c.ocupacao().find((o) => o.indice === 0)?.ganho).toBe(1);
     c.dispose();
   });
 

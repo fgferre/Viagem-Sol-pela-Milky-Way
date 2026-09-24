@@ -302,6 +302,68 @@ void main() {
 }
 `;
 
+// ─── A SONDA DE OCLUSÃO — outro corpo tapou o CENTRO do Sol? ─────────────
+// A §5.15 acima só promete que o clarão nunca é ocluído pelo SOL — nunca
+// disse nada sobre um corpo DIFERENTE (Hipérion, um planeta) na frente,
+// e por isso o clarão atravessava esses corpos. A pergunta pede um
+// desenhista PRÓPRIO: o `VERT`/`FRAG` acima é o texto que o oráculo de
+// conformidade tranca byte a byte, e a sonda não é a lei do clarão — é
+// um instrumento à parte, que mora no MESMO grupo só para desenhar no
+// MESMO passe (ver a mecânica da consulta, mais abaixo na classe).
+//
+// A sonda é um billboard de ~2 px, invisível (`colorWrite: false`), com
+// profundidade LIGADA (`depthTest: true`), e é a PRIMEIRA da fila
+// transparente (`renderOrder` −1): a fila OPACA do three roda antes, então
+// quando a sonda desenha o depth só tem as superfícies sólidas — os corpos
+// resolvidos. Brilho, poeira e o que mais vier depois não contam.
+//
+// ONDE ELA FICA (medido em 23/09, Hipérion a 9,5 UA do Sol). Com o near
+// da câmera em ~1 km, o Sol cai onde o depth de 24 bits já não distingue
+// nada do fundo (1 − 7,6e−10): uma sonda no centro dele empata com o
+// fundo e às vezes é descartada no arredondamento — o clarão sumia com o
+// Sol à vista. Por isso a sonda vai para a METADE do caminho (mesmo lugar
+// na tela: é a direção que conta) e nunca passa de 1 − 2,4e−7 no depth,
+// quatro degraus antes do fundo. Continua atrás de todo corpo capaz de
+// tapar o Sol inteiro — isso exige estar a menos de ~10 % do caminho (é o
+// caso de Júpiter, o maior) — e à frente da fotosfera, então o Sol nunca
+// tapa o próprio clarão (§5.15).
+const MEIA_PX_DA_SONDA = 1;
+
+/** Quantas consultas de oclusão ficam em voo ao mesmo tempo — o bastante
+ *  para NUNCA esperar a GPU (a leitura é sempre não-bloqueante), sabendo
+ *  que a sonda desenha UMA vez por quadro (ver a mecânica, mais abaixo:
+ *  o grupo do clarão só é desenhado no passe principal). */
+const TAMANHO_DA_PISCINA_DE_SONDAS = 3;
+
+const SONDA_VERT = /* glsl */ `
+uniform float uMeiaPx;
+uniform float uScreenH;
+
+void main() {
+  vec4 c = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+  // metade do caminho até o Sol, na mesma direção: mesmo pixel na tela
+  c.xyz *= 0.5;
+  float extent = uMeiaPx * 2.0 * max(-c.z, 1e-6) / (projectionMatrix[1][1] * uScreenH);
+  c.xy += position.xy * extent;
+  gl_Position = projectionMatrix * c;
+  // nunca no fundo do depth: z de NDC 1 − 4,8e−7 = depth 1 − 2,4e−7
+  gl_Position.z = min(gl_Position.z, gl_Position.w * (1.0 - 4.8e-7));
+}
+`;
+
+const SONDA_FRAG = /* glsl */ `
+precision lowp float;
+void main() {
+  gl_FragColor = vec4(1.0);
+}
+`;
+
+interface SondaDeOclusao {
+  query: WebGLQuery;
+  pendente: boolean;
+  id: number;
+}
+
 // ─── A CAMADA ─────────────────────────────────────────────────────────────
 
 /** O que a camada precisa saber do quadro — o instrumento vem de quem o
@@ -406,6 +468,21 @@ export class ClaraoDeAsas {
   private readonly meshes: THREE.Mesh[] = [];
   private readonly slots = criarSlots();
 
+  // ── a sonda de oclusão do Sol (candidato 0) — ver a seção dedicada,
+  // logo antes de `ocupacao()` — mesmo grupo, desenhista à parte
+  private readonly sondaMat: THREE.ShaderMaterial;
+  private readonly sondaMesh: THREE.Mesh;
+  private readonly sondas: SondaDeOclusao[] = [];
+  private proximoIdDaSonda = 1;
+  private idDoUltimoResultadoDeOclusao = 0;
+  /** true quando a ÚLTIMA consulta resolvida achou o Sol tapado por
+   *  OUTRO corpo — nunca pela §5.15 (o próprio Sol não conta aqui) */
+  private solOculto = false;
+  /** índice em `sondas` da consulta aberta NESTE draw, ou -1 */
+  private indiceDaSondaAtiva = -1;
+  private ultimoContextoGL: WebGL2RenderingContext | null = null;
+  private readonly vSonda = new THREE.Vector3();
+
   // o cadastro de candidatos: 0 = Sol (na origem), 1.. = as nomeadas.
   // mBase = m − 5·log10(d_casa): a MESMA lei de recálculo do campo,
   // m(d) = mBase + 5·log10(d) — para o Sol, mBase = M_V☉(campo) − 5,
@@ -471,6 +548,31 @@ export class ClaraoDeAsas {
       this.group.add(quad);
       this.meshes.push(quad);
     }
+
+    // a sonda entra DEPOIS dos ORCAMENTO_DO_CLARAO quads: quem lê
+    // `group.children[0..ORCAMENTO_DO_CLARAO-1]` continua vendo só os
+    // billboards do clarão (clarao.test.ts)
+    this.sondaMat = new THREE.ShaderMaterial({
+      vertexShader: SONDA_VERT,
+      fragmentShader: SONDA_FRAG,
+      uniforms: {
+        uMeiaPx: { value: MEIA_PX_DA_SONDA },
+        uScreenH: { value: 1080 },
+      },
+      colorWrite: false,
+      depthWrite: false,
+      depthTest: true,
+      transparent: true,
+    });
+    const sonda = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.sondaMat);
+    sonda.position.set(this.pos[0], this.pos[1], this.pos[2]);
+    sonda.visible = false;
+    sonda.frustumCulled = false;
+    sonda.renderOrder = -1; // a PRIMEIRA da fila transparente: só o depth dos sólidos
+    sonda.onBeforeRender = (renderer, _cena, camera) => this.iniciarConsultaDeOclusao(renderer, camera);
+    sonda.onAfterRender = (renderer) => this.encerrarConsultaDeOclusao(renderer);
+    this.group.add(sonda);
+    this.sondaMesh = sonda;
   }
 
   /**
@@ -506,6 +608,17 @@ export class ClaraoDeAsas {
       Number.isFinite(q.solturaDoSol) && q.solturaDoSol >= 0 && q.solturaDoSol <= 1
         ? q.solturaDoSol
         : 1;
+
+    // A SONDA DE OCLUSÃO corre sempre que o Sol PODERIA ter clarão — a
+    // MESMA condição de entrada do candidato 0, logo abaixo. `solOculto`
+    // (lido ali) só decide ELEGIBILIDADE; a sonda precisa continuar
+    // rodando mesmo tapada, senão nunca veria o Sol reaparecer.
+    const sondaDeveCorrer = q.solVisivel && solturaDoSol > 0;
+    this.sondaMesh.visible = sondaDeveCorrer;
+    if (sondaDeveCorrer) {
+      this.sondaMat.uniforms.uScreenH.value = q.screenH;
+    }
+
     // RESGATE (16/08, ordem do dono): as nomeadas voltaram às heroes de
     // autor (world/heroStars.ts) — esta camada fica SÓ com o Sol. A
     // unificação volta à mesa no M3, com o visto DELE na estética.
@@ -514,6 +627,9 @@ export class ClaraoDeAsas {
       if (i === 0 && !q.solVisivel) continue;
       // superfície é a dona: com a soltura em zero o clarão nem candidata
       if (i === 0 && !(solturaDoSol > 0)) continue;
+      // outro corpo tapa o CENTRO do Sol (a sonda acima): some pela MESMA
+      // rampa de saída do orçamento — nenhum gatilho ou tempo novo
+      if (i === 0 && this.solOculto) continue;
       const dx = this.pos[i * 3] - q.camPos.x;
       const dy = this.pos[i * 3 + 1] - q.camPos.y;
       const dz = this.pos[i * 3 + 2] - q.camPos.z;
@@ -585,6 +701,79 @@ export class ClaraoDeAsas {
     }
   }
 
+  // ─── A MECÂNICA DA SONDA — consulta de oclusão sem nunca bloquear ───────
+  //
+  // `onBeforeRender`/`onAfterRender` só disparam quando a sonda desenha de
+  // verdade — e ela desenha UMA vez por quadro, no passe principal
+  // (`CenaResolvidaUmaVez`, `core/post.ts`, o único que usa a câmera e a
+  // cena reais). O segundo passe de estrelas do campo (`ClaraoDoCampo`)
+  // roda com uma câmera à parte restrita às camadas 1/2
+  // (`CAMADA_DO_CAMPO`/`CAMADA_DOS_OCULTADORES`), e a sonda — como todo o
+  // resto do clarão — mora só na camada 0 (a padrão), então não a
+  // alcança. É esse único draw, com a profundidade dos corpos resolvidos
+  // já escrita pela fila opaca, que a consulta mede.
+  private iniciarConsultaDeOclusao(renderer: THREE.WebGLRenderer, camera: THREE.Camera): void {
+    this.indiceDaSondaAtiva = -1;
+    const gl = renderer.getContext() as WebGL2RenderingContext;
+    if (typeof gl.createQuery !== 'function') return; // sem WebGL2: solOculto fica como está
+    this.ultimoContextoGL = gl;
+    this.consumirResultadosDeOclusao(gl);
+    // CENTRO DO SOL FORA DA TELA (medido em 23/09: a 2 % acima da borda, a
+    // cruz ainda entrava no quadro): a sonda cairia fora da imagem e seria
+    // descartada — "tapado" sem corpo nenhum. Fora da tela a pergunta não
+    // tem resposta: o clarão segue como antes da sonda, e as consultas já
+    // em voo, feitas com o Sol ainda dentro, não valem mais.
+    const ndc = this.vSonda.setFromMatrixPosition(this.sondaMesh.matrixWorld).project(camera);
+    if (!(Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1 && ndc.z <= 1)) {
+      this.idDoUltimoResultadoDeOclusao = this.proximoIdDaSonda - 1;
+      this.registrarOclusaoDoSol(false);
+      return;
+    }
+    let vaga = this.sondas.find((s) => !s.pendente);
+    if (!vaga && this.sondas.length < TAMANHO_DA_PISCINA_DE_SONDAS) {
+      const query = gl.createQuery();
+      if (!query) return;
+      vaga = { query, pendente: false, id: 0 };
+      this.sondas.push(vaga);
+    }
+    if (!vaga) return; // piscina cheia de consultas em voo: pula este quadro, nunca bloqueia
+    vaga.pendente = true;
+    vaga.id = this.proximoIdDaSonda++;
+    this.indiceDaSondaAtiva = this.sondas.indexOf(vaga);
+    gl.beginQuery(gl.ANY_SAMPLES_PASSED_CONSERVATIVE, vaga.query);
+  }
+
+  private encerrarConsultaDeOclusao(renderer: THREE.WebGLRenderer): void {
+    if (this.indiceDaSondaAtiva < 0) return;
+    const gl = renderer.getContext() as WebGL2RenderingContext;
+    gl.endQuery(gl.ANY_SAMPLES_PASSED_CONSERVATIVE);
+    this.indiceDaSondaAtiva = -1;
+  }
+
+  /** nunca bloqueia: só lê consultas cujo `QUERY_RESULT_AVAILABLE` já é
+   *  verdadeiro. O resultado mais NOVO é quem decide — consultas podem
+   *  voltar fora de ordem, e uma resposta velha não pode sobrescrever
+   *  uma mais nova que já tenha chegado. */
+  private consumirResultadosDeOclusao(gl: WebGL2RenderingContext): void {
+    for (const s of this.sondas) {
+      if (!s.pendente || !gl.getQueryParameter(s.query, gl.QUERY_RESULT_AVAILABLE)) continue;
+      const passou = gl.getQueryParameter(s.query, gl.QUERY_RESULT);
+      s.pendente = false;
+      if (s.id > this.idDoUltimoResultadoDeOclusao) {
+        this.idDoUltimoResultadoDeOclusao = s.id;
+        this.registrarOclusaoDoSol(passou === 0);
+      }
+    }
+  }
+
+  /** O ÚNICO lugar que escreve `solOculto` — a consulta de oclusão chama
+   *  daqui de cima (com GPU de verdade); o teste de unidade chama esta
+   *  mesma função por um cast controlado, sem GPU nenhuma, para provar a
+   *  rampa sem depender de um `WebGLRenderer` de verdade. */
+  private registrarOclusaoDoSol(oculto: boolean): void {
+    this.solOculto = oculto;
+  }
+
   /** leitura para depuração/oráculos: quem ocupa os slots agora */
   ocupacao(): { indice: number; ganho: number }[] {
     return this.slots.filter((s) => s.indice >= 0).map((s) => ({ indice: s.indice, ganho: s.ganho }));
@@ -592,6 +781,10 @@ export class ClaraoDeAsas {
 
   dispose(): void {
     this.mats.forEach((m) => m.dispose());
+    this.sondaMat.dispose();
+    if (this.ultimoContextoGL) {
+      for (const s of this.sondas) this.ultimoContextoGL.deleteQuery(s.query);
+    }
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });
