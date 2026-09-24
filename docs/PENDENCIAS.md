@@ -2,7 +2,7 @@
 
 Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
-Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 227.**
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 228.**
 
 ## O BASTÃO — onde a rodada parou (14/09)
 
@@ -1485,9 +1485,13 @@ piloto mora no ramo local `piloto-hiperion` (fora do main, nada publicado):
 `?piloto=hiperion-mundos` junta a forma medida pela Cassini (Thomas, Joseph
 & Ansty 2018, PDS, domínio público), 3.488 crateras postas onde a pintura
 por IA tem poço escuro, e a cor dessa pintura (feita no ChatGPT dele sobre
-a planta do relevo medido; 40 % menos saturada; polos desesticados). Levar
-ao Hipérion do app espera a palavra dele (mexe em `public/data`) e já deve
-nascer leve. Fotos: `capturas/piloto-hiperion-{vista1,vista2,perto-3-vs-4}.jpg`.
+a planta do relevo medido; 40 % menos saturada; polos desesticados). **No
+app desde 23/09** (commit `3fc49d2`, no ar em 24/09): forma no mapa de
+altura e poços nos mapas de altura e de normais, sem custo a mais de GPU —
+o primeiro ponto abaixo está feito; faltam os outros e um interruptor dos
+poços (hoje sempre ligados, confessados na ficha). Fotos:
+`capturas/piloto-hiperion-{vista1,vista2,perto-3-vs-4}.jpg` e
+`capturas/hiperion-app-prancha-*.jpg`.
 - **Custo do piloto:** 808 mil triângulos e ~2,8 s de montagem na CPU,
   contra 8.820 da escultura de hoje. Caminho sem perder desempenho: a malha
   medida leve (a da versão 1) e os poços num mapa de altura e de normais
@@ -1503,6 +1507,30 @@ nascer leve. Fotos: `capturas/piloto-hiperion-{vista1,vista2,perto-3-vs-4}.jpg`.
   aparente que a casa já usa.
 - **A mancha em estrela perto do topo** é defeito da pintura: repintar ou
   apagar só ali.
+
+**227. Todas as estrelas com a tecnologia do Sol.** Vontade dele, 23/09,
+para uma rodada futura: *"o Sol quando aproxima vira uma estrela procedural
+(coisa que quero ainda fazer para todas as estrelas, transformar a mesma
+tecnologia do Sol para gerar todos os tipos de estrela possíveis... numa
+rodada no futuro)"*. Hoje só o Sol ganha corpo quando a câmera chega perto
+— granulação, manchas, coroa, flares e proeminências, tudo gerado por
+código (`world/stellarBody.ts` e `world/sol/`); as outras estrelas seguem
+ponto e brilho, por mais perto que se chegue.
+- **O que ele quer:** a mesma tecnologia gerando qualquer estrela a partir
+  dos dados dela — temperatura e cor (tipo espectral), raio, luminosidade —
+  e cobrindo todos os tipos: anãs vermelhas, estrelas como o Sol, azuis e
+  quentes (Rigel), gigantes e supergigantes vermelhas (Betelgeuse,
+  Antares), anãs brancas (Sírius B).
+- **O que o projeto já prevê, e esta rodada completa:** a lei das estrelas
+  (`docs/LEI-DA-ESTRELA.md`, M3) já diz que uma estrela qualquer ganha
+  corpo ao ser aproximada (o passo E3, sem uma malha por estrela; o canal
+  `aFocus` do item 38 apaga o ponto quando o corpo nasce) e que o brilho de
+  todas as estrelas fortes passa para a camada que hoje só desenha o do Sol
+  — a mesma que ganhou em 23/09 a pergunta "tem um corpo na frente?". O
+  que falta é esse corpo ser a estrela do Sol, ajustada ao tipo de cada uma.
+- **Para a rodada:** só a estrela visitada precisa do corpo completo; ponto
+  e corpo cedem um ao outro sem somar luz (a dupla-luz que o M3 fecha); a
+  cor sai da lei de cor do M3, não de paleta de autor (§5.16 da lei).
 ---
 
 ## BAIXA — dívida interna, ninguém vê
