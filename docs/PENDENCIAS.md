@@ -4,7 +4,29 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 228.**
 
-## O BASTÃO — onde a rodada parou (24/09, noite)
+## O BASTÃO — onde a rodada parou (25/09, madrugada)
+
+**24–25/09 (rodada da POEIRA DO GAIA). O `PLAN.md` virou um PEDIDO DE
+PLANO: o Fable escreve as etapas, em modo de planejamento; depois o GPT
+Astra revisa e a sessão principal confere contra o código.**
+
+- **O gás assado fechou:** a parte de desempenho está pronta e publicada
+  (texto em `git show 259ea55:PLAN.md`). A etapa que faltava — o mapa de
+  Rezaei em 3D — mudaria pouco: ele não tem medida a menos de ~1 kpc do Sol.
+- **O pedido dele:** *"acho que podemos pensar numa rodada mais inteligente
+  com os dados do gaia e pensar em como viabilizar isso para funcionar
+  tanto no desktop como em celulares"*. À proposta das camadas (o mapa
+  detalhado perto de casa, mapas menos detalhados mais longe, o gás
+  inventado no resto, com o medido ensinando o inventado): *"sim, mas peça
+  para ele pensar nisso em como poderia fazer"*.
+- **Feito:** a pesquisa (mapas, limites do celular, o app); o mapa de
+  Edenhofer 2024 baixado com o sim dele (3 GB, em `.cache/`, fora do git e
+  do site); as primeiras imagens em `capturas/gaia-poeira-*` (o Sol dentro
+  da Bolha Local, as nuvens conhecidas na parede dela). Tudo no `PLAN.md`.
+- **Aberto:** o plano da poeira (acima); **226**, **227**; no `BACKLOG.md`,
+  os três achados de 24/09 sem obra.
+
+## O BASTÃO anterior (24/09, noite)
 
 **24/09 (rodada do FIM DO FILME, item 225). Ele deixou a verificação para
 a rodada seguinte e, nela, aprovou: *"já assisti o filme. ficou ótimo"*.
@@ -29,10 +51,10 @@ O 225 saiu da lista.**
   no recuo e termina globo 3D, maior.
 - **Publicação:** ele publicou em 24/09 (`a10216f`); a publicação passou e
   o último quadro do filme foi conferido no ar (Terra e Lua em globo).
-- **Aberto:** **226**, **227**; o `PLAN.md` do gás; no `BACKLOG.md`, os três
-  achados de 24/09 sem obra (a lente mínima de 8° que limita o dolly; o
-  mesmo padrão de conta de profundidade nas estrelas; a Lua ainda cede o
-  ponto pela régua antiga).
+- **Aberto naquela noite:** **226**, **227**; o `PLAN.md` do gás; no
+  `BACKLOG.md`, os três achados de 24/09 sem obra (a lente mínima de 8° que
+  limita o dolly; o mesmo padrão de conta de profundidade nas estrelas; a
+  Lua ainda cede o ponto pela régua antiga).
 
 ## O BASTÃO anterior (24/09, tarde)
 
