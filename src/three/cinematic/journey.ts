@@ -46,14 +46,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { EPOCA_JD_TDB } from '../world/planetas/retrato2026';
-import {
-  GAL,
-  EX,
-  EY,
-  EZ,
-  LIMIAR_FORA_DO_DISCO,
-  dentroDoDisco,
-} from '../world/baseGalactica';
+import { GAL, EX, EY, EZ } from '../world/baseGalactica';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_SOL_PC } from '../escala';
 import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
 import { ORIGEM } from './enquadramento';
@@ -329,7 +322,9 @@ const ENTRADA_DE_CASA = LUA_PC.clone()
 const RASPAO_DA_LUA = 3.5e-10;
 /** raio da volta na Terra (do lado escuro ao claro) */
 const VOLTA_R0 = 2.6e-9; // 80.220 km (~12,6 raios terrestres), lado noite
-/** o raio do ÚLTIMO QUADRO — 60.171 km, o fim do dolly zoom abaixo */
+/** o raio do RETRATO de referência — 60.171 km: é nele que a lente de
+ *  20° e o deslocamento do retrato foram medidos (v2); a lei da lente
+ *  ancorada e a mira do retrato saem dele, qualquer que seja a força */
 const VOLTA_R1 = 1.95e-9;
 /**
  * O DOLLY ZOOM DO ARREMATE (item 108 v2, pedido do dono em 31/08: "no
@@ -339,8 +334,12 @@ const VOLTA_R1 = 1.95e-9;
  * últimos segundos a câmera RECUA e a lente FECHA na razão que mantém
  * `d · tan(fov/2)` CONSTANTE. Nessa razão a Terra não muda de tamanho
  * nem de lugar no quadro — e tudo que está atrás dela cresce, porque a
- * lente encolhe o quadro 1,9× enquanto a Lua, seis vezes mais longe,
- * quase não recua em ângulo. A perspectiva muda; não é zoom.
+ * lente encolhe o quadro `FORCA_DO_DOLLY` vezes enquanto a Lua, doze
+ * vezes mais longe, quase não recua em ângulo. A perspectiva muda; não
+ * é zoom. Em 24/09 o dono pediu o efeito "mais proeminente" e escolheu,
+ * em vídeo, a força 4 com a Lua mais perto da Terra: ela se esconde
+ * atrás do planeta no pouso, nasce da borda dele no meio do recuo e
+ * termina globo, 1,8× maior que na v2.
  *
  * A ÂNCORA É DUPLA, e a segunda é de graça: a mira do retrato é um
  * PONTO EM MUNDO medido no raio FINAL (`MIRA_DO_POUSO`, abaixo), então
@@ -360,15 +359,24 @@ const VOLTA_R1 = 1.95e-9;
  * 1,2% mesmo partindo o efeito em dois planos. Com a primitiva o
  * respiro é ZERO por construção — e o roteiro voltou a ser um plano só.
  */
-const FORCA_DO_DOLLY = 1.9;
-/** a lente do último quadro; a lei da lente ancorada sai dela */
-const LENTE_DO_FIM = 20;
-/** onde o arco pousa: o ponto MAIS PERTO do filme, antes do recuo */
-const RAIO_DO_POUSO = VOLTA_R1 / FORCA_DO_DOLLY;
+/** onde o arco pousa: o ponto MAIS PERTO do filme, antes do recuo — o
+ *  da v2 aprovada (31/08), 31.669 km. A força do dolly não o move. */
+const RAIO_DO_POUSO = VOLTA_R1 / 1.9;
+/** A FORÇA do dolly: o recuo vai do pouso até FORCA × o raio dele. É ela
+ *  que decide quanto a Lua cresce atrás da Terra; o pouso e a Terra no
+ *  quadro não mudam (pedido do dono, 24/09: "que esse efeito fosse um
+ *  pouco mais proeminente... evidenciasse melhor o tamanho da lua"). */
+const FORCA_DO_DOLLY = 4.0;
+/** o raio do ÚLTIMO QUADRO, o fim do recuo */
+const RAIO_DO_FIM = RAIO_DO_POUSO * FORCA_DO_DOLLY;
+/** a lente do retrato de referência; a lei da lente ancorada sai dela */
+const LENTE_DO_RETRATO = 20;
 /** a lente que segura a Terra do mesmo tamanho a cada raio */
 const lenteAncorada = (raio: number) => 2 * THREE.MathUtils.radToDeg(Math.atan(
-  Math.tan(THREE.MathUtils.degToRad(LENTE_DO_FIM / 2)) * (VOLTA_R1 / raio)
+  Math.tan(THREE.MathUtils.degToRad(LENTE_DO_RETRATO / 2)) * (VOLTA_R1 / raio)
 ));
+/** a lente do último quadro */
+const LENTE_DO_FIM = lenteAncorada(RAIO_DO_FIM);
 /**
  * As duas pontas da volta, como DIREÇÕES Terra→câmera. A chegada fica
  * 22° fora do eixo anti-Sol, do lado da Lua (é de lá que o raspão
@@ -385,15 +393,16 @@ const lenteAncorada = (raio: number) => 2 * THREE.MathUtils.radToDeg(Math.atan(
  * Agora ele é medido a partir da LINHA ANTI-LUA (Terra→câmera oposta à
  * Lua), a linha em que a Lua se esconde exatamente ATRÁS da Terra. O
  * pouso se afasta dessa linha por `AFASTAMENTO_DA_LUA`, e é esse
- * afastamento que MANDA na separação Terra–Lua no quadro: a 18° a Lua
- * fica a 16,4° do centro da Terra (metade de antes), a lente fecha para
- * 34° e a Lua dobra de tamanho na tela. O azimute do afastamento
- * (`AZIMUTE_DO_AFASTAMENTO`, 0° = norte equatorial, 90° = para o Sol)
- * é o que resta de composição: ele decide de que lado a Lua aparece e,
- * de quebra, a latitude subterrestre — 45° põe a Lua na diagonal de
- * cima à direita, deixa o disco a 16,7° do subsolar (dia cheio, as
- * Américas acesas) e o centro do disco a 14°S, entre o subsolar de
- * janeiro (23°S) e o equador.
+ * afastamento que MANDA na separação Terra–Lua no quadro. E como o
+ * dolly zoom aumenta a Lua E a distância dela até a Terra na tela na
+ * mesma razão, quanto mais forte o dolly menor tem de ser o afastamento,
+ * senão a Lua sai do quadro: a 6° (24/09, escolhido pelo dono em vídeo)
+ * ela fica escondida atrás da Terra no pouso e termina logo acima do
+ * ombro dela. O azimute do afastamento (`AZIMUTE_DO_AFASTAMENTO`, 0° =
+ * norte equatorial, 90° = para o Sol) é o que resta de composição: ele
+ * decide de que lado a Lua aparece e, de quebra, a latitude
+ * subterrestre — 45° põe a Lua na diagonal de cima à direita e as
+ * Américas no dia cheio.
  */
 const SOLWARD = ANTISSOL.clone().negate();
 const NORTE_EQ = new THREE.Vector3(0, 0, 1);
@@ -403,7 +412,7 @@ const DIR_CHEGADA = ANTISSOL.clone()
   .normalize();
 /** Terra→câmera na linha em que a Lua fica escondida atrás da Terra */
 const LINHA_ANTI_LUA = RUMO_DA_LUA.clone().negate();
-const AFASTAMENTO_DA_LUA = THREE.MathUtils.degToRad(14);
+const AFASTAMENTO_DA_LUA = THREE.MathUtils.degToRad(6);
 const AZIMUTE_DO_AFASTAMENTO = THREE.MathUtils.degToRad(45);
 const NORTE_DA_LINHA = NORTE_EQ.clone()
   .addScaledVector(LINHA_ANTI_LUA, -NORTE_EQ.dot(LINHA_ANTI_LUA)).normalize();
@@ -422,7 +431,7 @@ const DIR_POUSO = LINHA_ANTI_LUA.clone()
  *  as duas últimas na mesma linha Terra→câmera. */
 const INICIO_DA_VOLTA = TERRA_PC.clone().addScaledVector(DIR_CHEGADA, VOLTA_R0);
 const POUSO = TERRA_PC.clone().addScaledVector(DIR_POUSO, RAIO_DO_POUSO);
-const FIM_DO_DOLLY = TERRA_PC.clone().addScaledVector(DIR_POUSO, VOLTA_R1);
+const FIM_DO_DOLLY = TERRA_PC.clone().addScaledVector(DIR_POUSO, RAIO_DO_FIM);
 /**
  * A MIRA DO POUSO — o RETRATO DE FAMÍLIA (item 108). O arremate não
  * mira o centro da Terra: escorrega `DESLOCAMENTO_DO_RETRATO` NA
@@ -493,9 +502,10 @@ const DUR_DO_RASPAO = 4.8;
 /** fração do take único dedicada ao fly-by da Lua. */
 export const K_LUA_NO_TAKE = DUR_DO_RASPAO / DUR_DO_TAKE;
 /** no joelho, o olhar é o meio-ângulo Lua–Terra. O ponto de mira mora
- *  a ~1e-8 pc da câmera (a escala Lua–Terra) — NUNCA a 1 pc. O rig
- *  amortece a mira em 0,4 s; um alvo a 1 pc nunca alcançava a Terra
- *  no play contínuo, e a órbita das Américas acontecia fora de quadro. */
+ *  a ~1e-8 pc da câmera (a escala Lua–Terra) — NUNCA a 1 pc. Quando o
+ *  rig amortecia a mira (até 24/09), um alvo a 1 pc nunca alcançava a
+ *  Terra no play contínuo, e a órbita das Américas acontecia fora de
+ *  quadro. */
 const ALCANCE_DA_MIRA_PC = 8e-9;
 
 // ---- a lista de shots ----------------------------------------------------
@@ -581,7 +591,7 @@ const SHOTS: Shot[] = [
     distanciaDoRaspao: RASPAO_DA_LUA, joelhoDoRaspao: JOELHO_DO_RASPAO,
     fracaoDaLua: K_LUA_NO_TAKE, duracaoDoTake: DUR_DO_TAKE,
     raioInicialDaVolta: VOLTA_R0, raioDoPouso: RAIO_DO_POUSO,
-    raioFinalDaVolta: VOLTA_R1,
+    raioFinalDaVolta: RAIO_DO_FIM,
     alcanceDaMira: ALCANCE_DA_MIRA_PC, inclinacaoDosPolos: ROLL_DOS_POLOS,
     lenteDoFim: LENTE_DO_FIM,
     // a lente com que o TAKE entrega o filme ao dolly sai da mesma lei
@@ -751,6 +761,8 @@ interface JourneySample {
   fov: number;
   warp: number; // 0..1 para pós-processamento
   roll: number; // radianos
+  /** o índice do plano — a junta entre dois é o único lugar onde o rig amacia */
+  plano: number;
 }
 
 export interface JourneyMeta {
@@ -778,6 +790,11 @@ export class Journey {
     return { i, k: clamp01((t - STARTS[i]) / SHOTS[i].dur) };
   }
 
+  /** o instante em que o plano `i` começa — a junta com o anterior */
+  inicioDoPlano(i: number): number {
+    return STARTS[i];
+  }
+
   at(t: number): JourneySample {
     const { i, k } = this.shotAt(t);
     const s = SHOTS[i];
@@ -797,6 +814,7 @@ export class Journey {
       fov,
       warp: clamp01(s.warp ? s.warp(k) : 0),
       roll: s.roll ? s.roll(k) : 0,
+      plano: i,
     };
   }
 
@@ -829,42 +847,3 @@ export class Journey {
     }));
   }
 }
-
-/**
- * O SEGUNDO EM QUE A VIAGEM DEIXA O DISCO — 148,394 s no corte de hoje,
- * e DERIVADO, nunca digitado: a mesma conta de que o quadro vive
- * (`dentroDoDisco`, a fonte única do envelope) varrida sobre esta mesma
- * trajetória. Como o `REVEAL_T`, muda sozinho quando o corte muda; ao
- * contrário dele, não tem nome de plano porque a saída cai no MEIO da
- * subida, não numa junta.
- *
- * Existe porque o latch `leftDisk` do Director é HISTÓRIA — uma vez
- * fora, fica fora — e o `seek` não tem história. Arrastar a barra até a
- * coda nascia "dentro do disco" e ressuscitava a nebulosa atrás da
- * Terra, com o cartão da galáxia apagado: o oposto do que o play
- * contínuo mostra no mesmo instante. Medido no navegador em 21/08, o
- * play contínuo arma o latch em t=148,46 (amostragem de 16 ms a 8×) —
- * a varredura e o navegador concordam.
- *
- * O laço custa 1,4 ms nesta máquina e roda uma vez por sessão. A
- * bisseção existe porque o `seek` compara com `>=`: um degrau de 0,1 s
- * poria a fronteira até 100 ms cedo demais.
- */
-export const T_SAIDA_DO_DISCO = (() => {
-  const filme = new Journey();
-  const fora = (t: number) => dentroDoDisco(filme.at(t).pos) <= LIMIAR_FORA_DO_DISCO;
-  const passo = 0.1;
-  for (let t = 0; t <= filme.duration; t += passo) {
-    if (!fora(t)) continue;
-    let dentro = t - passo;
-    let saiu = t;
-    for (let i = 0; i < 30; i++) {
-      const meio = (dentro + saiu) / 2;
-      if (fora(meio)) saiu = meio;
-      else dentro = meio;
-    }
-    return saiu;
-  }
-  // roteiro que nunca sai do disco: o latch nunca nasce armado
-  return Number.POSITIVE_INFINITY;
-})();

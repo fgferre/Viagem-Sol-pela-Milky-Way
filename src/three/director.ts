@@ -49,7 +49,7 @@ import type { StarLabel } from './world/labels';
 // alimenta por quadro é o módulo do Sol (director/solNoQuadro.ts).
 import { ClaraoDeAsas } from './world/clarao';
 import { HeroStars } from './world/heroStars';
-import { Galaxy, GAL, LIMIAR_FORA_DO_DISCO, dentroDoDisco } from './world/galaxy';
+import { Galaxy, GAL, dentroDoDisco } from './world/galaxy';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
@@ -117,11 +117,10 @@ import {
   LUAS_DO_SISTEMA,
   HELIO_SEM_PONTO,
 } from './atlasConfig';
-import { ESCRITOR_DE_CAMERA, TRAVA_DO_DISCO_VALE } from './fases';
+import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import {
   REVEAL_T,
-  T_SAIDA_DO_DISCO,
   jdDoFilme,
 } from './cinematic/journey';
 import { BlackHolePass } from './world/blackHole';
@@ -479,17 +478,15 @@ export class Director {
   /**
    * O QUE O PORTAL GUARDA quando o visitante entra no Atlas — e devolve
    * inteiro quando ele parte. Não é só o `journeyT`: o `seek()` sozinho
-   * zera o olhar do pausar-e-olhar, e o tick zera o latch `leftDisk`
-   * fora da viagem. Faltando qualquer um dos cinco, "Partir" devolveria
-   * um quadro parecido — e o gate mede PIXEL. (A pausa teve dois donos
-   * até 21/08; hoje o `freezeJourney` é o dono único e escreve o
-   * `rig.paused` por dentro.)
+   * zera o olhar do pausar-e-olhar. Faltando qualquer um dos quatro,
+   * "Partir" devolveria um quadro parecido — e o gate mede PIXEL. (A
+   * pausa teve dois donos até 21/08; hoje o `freezeJourney` é o dono
+   * único e escreve o `rig.paused` por dentro.)
    */
   private retomada: {
     journeyT: number;
     lookYaw: number;
     lookPitch: number;
-    leftDisk: boolean;
     pausado: boolean;
   } | null = null;
 
@@ -540,19 +537,6 @@ export class Director {
 
   private phase: Phase = 'loading';
   private journeyT = 0;
-  /**
-   * A viagem ROTEIRIZADA sai do envelope do disco em `T_SAIDA_DO_DISCO`
-   * (148,394 s) e a CODA volta a entrar nele em t≈176,5, mergulhando
-   * para casa; uma vez fora, o ambiente fica desligado (latch) — o
-   * pull-back e a volta mostram o modelo da galáxia, não uma nebulosa
-   * ressuscitada. Free-roam/?pos= não usam o latch: lá o comportamento
-   * relocável instantâneo é o desejado.
-   *
-   * O TICK só o ARMA (câmera fora); quem SALTA no tempo o recebe do
-   * roteiro, no `seek` e na semente do portal — o latch é história, e o
-   * salto não tem história.
-   */
-  private leftDisk = false;
   private lastCaptionIdx = -1;
   /** a frase que está NO AR — o índice sozinho não vê a troca de idioma */
   private lastCaptionTexto = '';
@@ -662,11 +646,6 @@ export class Director {
     rotulos: this.rotulos,
     solRaioPc: this.solRaioPc,
     teletransportou: () => this.teletransportou(),
-    // o gesto que pede a casa desarma a trava do disco (item 61, §6) —
-    // a trava é campo do director, o gesto nasce na escada
-    pediuACasa: () => {
-      this.leftDisk = false;
-    },
     events: {
       onFoco: (nome) => this.events.onFoco(nome),
       onEscada: (estado) => this.events.onEscada(estado),
@@ -1471,7 +1450,6 @@ export class Director {
     this.lastCaptionTexto = '';
     this.freezeJourney = false;
     this.playbackRate = 1;
-    this.leftDisk = false;
     this.rig.reset();
     this.setPhase('journey');
   }
@@ -1484,17 +1462,9 @@ export class Director {
    * no navegador). Ele vaza para o link de retomada, que o HUD monta a
    * partir do `currentTime`, e faz `onProgress` depender de um `min` a
    * jusante para não passar de 1. Achado de auditoria externa.
-   *
-   * E O LATCH DO DISCO NASCE DO ROTEIRO, não zerado. Ele é HISTÓRIA — o
-   * tick só o arma com a câmera FORA —, e o salto não tem história: na
-   * coda a câmera está em casa, dentro do disco, e o latch zerado
-   * ressuscitava a nebulosa e apagava o cartão da galáxia atrás da
-   * Terra. Quem salta para depois de `T_SAIDA_DO_DISCO` chega com o
-   * mesmo latch de quem chegou voando.
    */
   seek(t: number) {
     this.journeyT = Math.min(t, this.rig.duration);
-    this.leftDisk = this.journeyT >= T_SAIDA_DO_DISCO;
     this.rig.reset(); // a mira suavizada também salta para o instante certo
     this.perturbar();
   }
@@ -1779,9 +1749,7 @@ export class Director {
    *
    * `momento` semeia a volta a partir da URL (`?atlas=1&t=…`): sem ele
    * e sem viagem em curso, o portal guarda NADA — e "Partir" devolve a
-   * tela de título, que é o candidato honesto (D3). O latch do disco
-   * dessa semente sai do roteiro pela MESMA lei do `seek`: um link para
-   * a coda tem de partir com o disco já para trás.
+   * tela de título, que é o candidato honesto (D3).
    */
   entrarNoAtlas(opcoes: EntradaNoAtlas = {}) {
     if (this.phase === 'atlas' || this.phase === 'loading') return;
@@ -1793,7 +1761,6 @@ export class Director {
             journeyT: opcoes.momento,
             lookYaw: 0,
             lookPitch: 0,
-            leftDisk: opcoes.momento >= T_SAIDA_DO_DISCO,
             pausado: true,
           }
         : daViagem
@@ -1801,7 +1768,6 @@ export class Director {
               journeyT: this.journeyT,
               lookYaw: olhar.yaw,
               lookPitch: olhar.pitch,
-              leftDisk: this.leftDisk,
               pausado: this.freezeJourney,
             }
           : null;
@@ -1839,13 +1805,6 @@ export class Director {
       } else {
         this.focarNoSistema();
       }
-      // A TRAVA DO DISCO ATRAVESSA O PORTAL NOS DOIS SENTIDOS (item 61,
-      // §6). O `partirDoAtlas` já a devolvia; a ENTRADA passa a aplicá-la.
-      // Vem DEPOIS do foco de propósito: `focarNoSistema` é o gesto "me
-      // leve para casa" e por isso DESARMA a trava — mas ali ele não é
-      // gesto nenhum, é só como a entrada põe a câmera. A história é do
-      // visitante, não da colocação.
-      if (this.retomada) this.leftDisk = this.retomada.leftDisk;
       this.setPhase('atlas');
       // O RELÓGIO DO CÉU ABRE ANDANDO (item 61, §3 — 23/08). O Atlas é o
       // relógio do VISITANTE, e nascia parado: o mostrador dizia uma data
@@ -1896,9 +1855,9 @@ export class Director {
   }
 
   /**
-   * PARTIR. Devolve os CINCO do portal de uma vez — o instante, os dois
-   * ângulos do olhar, o latch do disco e a pausa (um campo só desde
-   * 21/08: o `freezeJourney` escreve o `rig.paused`). O `reset()` antes do
+   * PARTIR. Devolve os QUATRO do portal de uma vez — o instante, os dois
+   * ângulos do olhar e a pausa (um campo só desde 21/08: o
+   * `freezeJourney` escreve o `rig.paused`). O `reset()` antes do
    * `restaurarOlhar` é de propósito: ele arma o salto do primeiro
    * quadro, que recompõe mira e fov exatamente a partir do instante.
    *
@@ -1930,7 +1889,6 @@ export class Director {
       }
       this.journeyT = volta.journeyT;
       this.rig.restaurarOlhar(volta.lookYaw, volta.lookPitch);
-      this.leftDisk = volta.leftDisk;
       this.freezeJourney = volta.pausado;
       this.setPhase('journey');
     });
@@ -2910,21 +2868,10 @@ export class Director {
     // galáxia. Só camadas fisicamente solares continuam com dHome. A
     // conta mora em `baseGalactica` porque o roteiro também a lê.
     const inDisk = dentroDoDisco(cam.position);
-    // A TRAVA DO DISCO É HISTÓRIA DO FILME (`TRAVA_DO_DISCO_VALE`,
-    // fases.ts — a decisão de 12/09 e a de 23/08 que ela desfaz moram
-    // lá). Arma por POSIÇÃO só nas fases do filme que escrevem câmera, e
-    // só nelas zera o envelope; no Atlas e no voo livre `env` é a
-    // posição, e ponto. Desarmam a história do filme os gestos que pedem
-    // a casa (`escada.focarNoSistema` e `play()`) e o `seek`, que a
-    // rederiva do roteiro.
-    if (
-      TRAVA_DO_DISCO_VALE[this.phase] &&
-      ESCRITOR_DE_CAMERA[this.phase] !== 'nenhum' &&
-      inDisk <= LIMIAR_FORA_DO_DISCO
-    ) {
-      this.leftDisk = true;
-    }
-    const env = this.leftDisk && TRAVA_DO_DISCO_VALE[this.phase] ? 0 : inDisk;
+    // O AMBIENTE SEGUE A POSIÇÃO em toda fase, sem exceção — o filme lê
+    // o disco do mesmo jeito que o Atlas e o voo livre sempre leram
+    // (relato do dono, 24/09: a galáxia sumia na volta para casa).
+    const env = inDisk;
 
     // camadas solares (HYG, poeira próxima, hero stars): dHome
     const localFade = 1 - THREE.MathUtils.smoothstep(dHome, 1100, 2300);

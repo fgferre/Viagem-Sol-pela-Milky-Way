@@ -11,9 +11,9 @@
 // mora em lib/atlas/frameGalactico.ts (contrato próprio).
 //
 // E o ENVELOPE DO DISCO (`dentroDoDisco`), que é a mesma base lida como
-// pergunta: "este ponto ainda está dentro da galáxia?". Subiu para cá
-// em 21/08, quando ganhou o segundo leitor — o roteiro, que precisa do
-// segundo em que a viagem sai (ver `T_SAIDA_DO_DISCO`).
+// pergunta: "este ponto ainda está dentro da galáxia?" — é com ela que
+// o quadro do director decide o ambiente local (nebulosa, faixa interna)
+// pela POSIÇÃO da câmera, em toda fase (24/09).
 // ============================================================
 import * as THREE from 'three';
 import { MEDIDAS_DA_GALAXIA } from '../cartography/medidasDaGalaxia';
@@ -49,10 +49,8 @@ export const EY = new THREE.Vector3().crossVectors(EZ, EX).normalize();
  * cartão da galáxia, e a Via Láctea não é um plano: a conta é em R e z
  * galactocêntricos, nunca na distância do Sol.
  *
- * Mora AQUI, e não no tick do director, porque tem dois leitores: o
- * quadro (que decide o que desenhar) e o roteiro (que precisa saber em
- * que segundo a viagem sai do disco — `T_SAIDA_DO_DISCO`, journey.ts).
- * Duas cópias da mesma conta divergiriam no primeiro ajuste de borda.
+ * Mora AQUI, e não no tick do director, porque é geometria da mesma
+ * base galactocêntrica (GAL/EX/EY/EZ) — não do quadro que a lê.
  */
 export function dentroDoDisco(pos: THREE.Vector3): number {
   const qx = pos.x - GAL.GC_POS.x;
@@ -65,9 +63,6 @@ export function dentroDoDisco(pos: THREE.Vector3): number {
     (1 - THREE.MathUtils.smoothstep(rg, 16800, 20500))
   );
 }
-
-/** abaixo disto a viagem conta como FORA do disco (arma o latch) */
-export const LIMIAR_FORA_DO_DISCO = 0.001;
 
 /** Converte coordenadas galactocêntricas do projeto (pc) para a cena. */
 export function galactocentricToScene(

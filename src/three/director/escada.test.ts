@@ -156,7 +156,6 @@ function bancada({ comEfemeride = false, comAnoes = false } = {}) {
     rotulos: {} as Rotulos,
     solRaioPc: 2.2546e-8,
     teletransportou: () => {},
-    pediuACasa: () => {},
     events: {
       onFoco: (nome: string | null) => {
         focos.push(nome);

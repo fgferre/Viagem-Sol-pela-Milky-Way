@@ -14,7 +14,6 @@ import {
   ESCRITOR_DE_CAMERA,
   HUD_POR_FASE,
   LINHAS_DE_ORBITA_POR_FASE,
-  TRAVA_DO_DISCO_VALE,
   arrastoFazAlgo,
 } from './fases';
 import type { Phase } from './fases';
@@ -42,12 +41,6 @@ describe('as fases e os dois mapas', () => {
     expect(por('voo')).toEqual(['free']);
     expect(por('atlas')).toEqual(['atlas']);
     expect(por('nenhum')).toEqual(['loading', 'end']);
-  });
-
-  it('a trava do disco é história do FILME: no Atlas e no voo livre a posição manda (12/09)', () => {
-    expect(Object.keys(TRAVA_DO_DISCO_VALE)).toEqual(FASES);
-    const vale = FASES.filter((f) => TRAVA_DO_DISCO_VALE[f]);
-    expect(vale).toEqual(['loading', 'intro', 'journey', 'end']);
   });
 
   it('toda peça do HUD tem resposta em toda fase', () => {

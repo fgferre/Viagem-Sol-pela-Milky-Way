@@ -1,13 +1,13 @@
 // ============================================================
 // Rig de câmera — documentário espacial: zero tremor, banking
-// vindo do roteiro, mira amortecida, pausar-e-olhar. E o voo
+// vindo do roteiro, mira do roteiro (amaciada só nas juntas entre
+// planos), pausar-e-olhar. E o voo
 // livre no REFERENCIAL GALÁCTICO (o mesmo "norte" da viagem —
 // era a diferença de norte que invertia o horizonte ao entrar).
 // ============================================================
 import * as THREE from 'three';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 import { ArrastoDePonteiro } from '../arrastoDePonteiro';
-import { slerpDir } from './movimentos';
 import { Journey } from './journey';
 
 // Manter o polo galáctico no alto faz o plano da Via Láctea ler como
@@ -30,6 +30,45 @@ const FRAME_B = new THREE.Vector3().crossVectors(GALACTIC_NORTH, FRAME_A).normal
 const _tmpV = new THREE.Vector3();
 const _tmpDir = new THREE.Vector3();
 const _tmpQ = new THREE.Quaternion();
+const _velMostrada = new THREE.Vector3();
+const _passo = new THREE.Vector3();
+const _eixo = new THREE.Vector3();
+
+/**
+ * O COMPASSO DA JUNTA: a constante de tempo da mola crítica que absorve,
+ * numa troca de plano, a diferença de mira e de lente (e das velocidades
+ * delas) entre o plano que acaba e o que começa. Crítica = sem
+ * sobressinal; a meia-vida de um salto parado é ~0,34 s.
+ */
+const TAU_DA_JUNTA_S = 0.2;
+/** o passo com que o rig lê a velocidade do plano novo no roteiro */
+const EPS_DO_ROTEIRO_S = 1e-3;
+
+/** a rotação que leva a direção `a` à `b`, como eixo × ângulo (rad) */
+function rotacaoEntre(a: THREE.Vector3, b: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 {
+  out.crossVectors(a, b);
+  const seno = out.length();
+  if (seno < 1e-12) return out.set(0, 0, 0);
+  return out.multiplyScalar(Math.atan2(seno, a.dot(b)) / seno);
+}
+
+/** `v` girado pelo vetor de rotação `r` (eixo × ângulo) */
+function girarPor(v: THREE.Vector3, r: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 {
+  const angulo = r.length();
+  if (angulo < 1e-12) return out.copy(v);
+  _tmpQ.setFromAxisAngle(_eixo.copy(r).multiplyScalar(1 / angulo), angulo);
+  return out.copy(v).applyQuaternion(_tmpQ);
+}
+
+/**
+ * Um passo exato da mola crítica x″ + 2x′/τ + x/τ² = 0 sobre `dt`:
+ * x(t) = (x₀ + (v₀ + x₀/τ)·t)·e^(−t/τ). Devolve [x, v] no fim do passo.
+ */
+function passoDaMola(x: number, v: number, dt: number): [number, number] {
+  const e = Math.exp(-dt / TAU_DA_JUNTA_S);
+  const c = v + x / TAU_DA_JUNTA_S;
+  return [(x + c * dt) * e, (v - (c * dt) / TAU_DA_JUNTA_S) * e];
+}
 
 /** up compartilhado viagem/voo: polo galáctico, cedendo ao eixo
  *  centro→Sol em visadas quase face-on (evita o flip do lookAt).
@@ -47,10 +86,24 @@ export function galacticUp(viewDir: THREE.Vector3, out: THREE.Vector3): THREE.Ve
 export class JourneyRig {
   private journey = new Journey();
   private lookSm = new THREE.Vector3();
-  /** direção suavizada da mira — NÃO um ponto em mundo. No mergulho a
-   *  câmera anda milhares de pc por quadro; um ponto velho fica para
+  /** a mira MOSTRADA — uma direção, NÃO um ponto em mundo. No mergulho
+   *  a câmera anda milhares de pc por quadro; um ponto velho fica para
    *  trás e o olhar vira 180°. */
   private lookDir = new THREE.Vector3();
+  /**
+   * O DESVIO DA JUNTA: quanto a mira mostrada ainda difere da do roteiro
+   * (eixo × ângulo) e a taxa com que isso muda. Nasce numa troca de
+   * plano e a mola crítica o leva a zero; longe de uma junta ele é zero
+   * e a câmera É o roteiro. A lente tem o seu par, em graus.
+   */
+  private desvio = new THREE.Vector3();
+  private desvioVel = new THREE.Vector3();
+  private desvioFov = 0;
+  private desvioFovVel = 0;
+  /** o quadro anterior do roteiro: plano, instante, mira e lente — é
+   *  dele que a junta lê como a câmera vinha se movendo */
+  private plano = -1;
+  private tAnterior = 0;
   private first = true;
   /** olhar-ao-redor durante a pausa (radianos, decai sozinho no play) */
   private lookYaw = 0;
@@ -66,6 +119,9 @@ export class JourneyRig {
    * "a realidade está nos olhos de quem vê".
    */
   private lenteFator = 1;
+  /** o fator que a câmera usa: segue `lenteFator` em 0,2 s, para a roda
+   *  fechar a lente num gesto contínuo e não aos degraus */
+  private lenteFatorMostrado = 1;
   paused = false;
 
   get duration() {
@@ -98,8 +154,8 @@ export class JourneyRig {
    * Devolve o olhar guardado. Vai SEMPRE depois de `reset()`: o salto do
    * primeiro quadro recompõe mira e fov EXATAMENTE a partir do instante
    * (é a mesma porta do `seek`), e o caminho amortecido não serviria —
-   * `kLook`/`kFov` dependem do `dt` do quadro, então repetir o estado
-   * por amortecimento não é reprodutível entre execuções.
+   * o desvio de uma junta depende do `dt` de cada quadro, então repetir
+   * o estado por ele não é reprodutível entre execuções.
    */
   restaurarOlhar(yaw: number, pitch: number) {
     this.lookYaw = yaw;
@@ -135,28 +191,66 @@ export class JourneyRig {
     dt: number
   ): { warp: number } {
     const s = this.journey.at(t);
-    // amortecimento exponencial por TEMPO (não por frame): a 144 Hz
-    // a câmera convergia 2,4× mais rápido que a 60 Hz
-    const kLook = 1 - Math.exp(-dt / 0.4);
-    const kFov = 1 - Math.exp(-dt / 0.2);
-
-    // suavização da DIREÇÃO da mira, não do ponto. O ponto em mundo
-    // falha na coda: a deriva mira a milhares de pc, a Lua a 1e-8 pc;
-    // o lerp exponencial de 0,4 s nunca alcança a Terra no play (o
-    // seek esconde o defeito porque `reset()` salta). Distância da
-    // mira acompanha o roteiro; o ângulo é que amortece.
+    // O OPERADOR SEGUE O ROTEIRO (item 225, 24/09). Até aqui mira e lente
+    // passavam por um amortecedor exponencial (0,4 s e 0,2 s) em TODO
+    // quadro, e o filme tocando chegava atrasado a todo movimento rápido
+    // — de QUALQUER roteiro, porque o atraso era do motor: medido, a
+    // passagem por Rigel saía quase uma tela fora do quadro planejado, a
+    // Terra do retrato escorregava ~140 px no dolly zoom e a lente
+    // ancorada, que é função da posição, deixava de segurar a Terra. O
+    // seek escondia tudo porque `reset()` salta. Agora o que se vê É o
+    // roteiro; o amortecimento mora só na JUNTA entre planos, onde o
+    // roteiro pode saltar de mira ou de lente (o corte da coda, 4,8°) ou
+    // trocar de velocidade (um giro que começa): ali nasce um desvio com
+    // mira, lente e as velocidades das duas contínuas, e a mola crítica o
+    // leva a zero sem sobressinal. A distância da mira é a do roteiro.
     const snap = this.first;
     _tmpDir.copy(s.look).sub(s.pos);
     const wantLen = _tmpDir.length();
     if (wantLen > 1e-20) _tmpDir.multiplyScalar(1 / wantLen);
+    else _tmpDir.copy(this.lookDir);
+    this.lenteFatorMostrado = snap
+      ? this.lenteFator
+      : this.lenteFatorMostrado +
+        (this.lenteFator - this.lenteFatorMostrado) * (1 - Math.exp(-dt / 0.2));
+    const alvoFov = this.lenteDoRoteiro(s);
+
     if (snap) {
-      this.lookDir.copy(_tmpDir);
       this.first = false;
-    } else if (wantLen > 1e-20 && this.lookDir.lengthSq() > 1e-20) {
-      slerpDir(this.lookDir, _tmpDir, kLook, this.lookDir);
-    } else if (wantLen > 1e-20) {
-      this.lookDir.copy(_tmpDir);
+      this.desvio.set(0, 0, 0);
+      this.desvioVel.set(0, 0, 0);
+      this.desvioFov = 0;
+      this.desvioFovVel = 0;
+    } else if (s.plano !== this.plano && dt > 0) {
+      // A JUNTA, resolvida NO INSTANTE dela e não no quadro anterior (um
+      // plano que termina freando forte daria a velocidade errada): o
+      // desvio velho anda até a junta; ali, a câmera mostrada é o fim do
+      // plano velho mais esse desvio, com a velocidade dos dois somada; o
+      // desvio novo é o que falta dela até o começo do plano novo — em
+      // ângulo e em velocidade — e anda da junta até agora.
+      const tJunta = this.journey.inicioDoPlano(s.plano);
+      this.andarDesvio(Math.max(0, tJunta - this.tAnterior));
+      const fim = this.journey.at(tJunta - 1e-9);
+      const fovVelMostrada =
+        this.velocidadeDoRoteiro(tJunta - 1e-9, fim.plano, _velMostrada) + this.desvioFovVel;
+      _velMostrada.add(this.desvioVel);
+      const fovMostrado = this.lenteDoRoteiro(fim) + this.desvioFov;
+      girarPor(fim.look.sub(fim.pos).normalize(), this.desvio, _tmpV);
+      const inicio = this.journey.at(tJunta);
+      const fovVelNova = this.velocidadeDoRoteiro(tJunta, inicio.plano, _passo);
+      rotacaoEntre(inicio.look.sub(inicio.pos).normalize(), _tmpV, this.desvio);
+      this.desvioVel.copy(_velMostrada).sub(_passo);
+      this.desvioFov = fovMostrado - this.lenteDoRoteiro(inicio);
+      this.desvioFovVel = fovVelMostrada - fovVelNova;
+      this.andarDesvio(Math.max(0, t - tJunta));
+    } else if (dt > 0) {
+      this.andarDesvio(dt);
     }
+    this.plano = s.plano;
+    this.tAnterior = t;
+
+    girarPor(_tmpDir, this.desvio, this.lookDir);
+    const fov = alvoFov + this.desvioFov;
     this.lookSm.copy(s.pos).addScaledVector(this.lookDir, Math.max(wantLen, 1e-12));
 
     camera.position.copy(s.pos);
@@ -180,24 +274,58 @@ export class JourneyRig {
       camera.rotateX(this.lookPitch);
     }
 
-    // FOV do roteiro, com pontapé sutil de velocidade (documentário) —
-    // e, na pausa, a lente do visitante por cima (item 100, fase 2). O
-    // clamp final é a parede da sanidade óptica nos shots extremos.
-    // No primeiro quadro pós-seek o fov SALTA como a mira: sem isso,
-    // capturas ?t= rendiam o fov ainda amortecendo (28° onde pedia 15°).
-    const targetFov = THREE.MathUtils.clamp(
-      (s.fov + s.warp * 3.5) * this.lenteFator,
-      8,
-      75
-    );
-    camera.fov = snap ? targetFov : camera.fov + (targetFov - camera.fov) * kFov;
+    camera.fov = fov;
     camera.updateProjectionMatrix();
 
     return { warp: s.warp };
   }
 
+  /** a mola crítica leva os dois desvios (mira e lente) adiante por `dt` */
+  private andarDesvio(dt: number) {
+    if (dt <= 0) return;
+    const [x, vx] = passoDaMola(this.desvio.x, this.desvioVel.x, dt);
+    const [y, vy] = passoDaMola(this.desvio.y, this.desvioVel.y, dt);
+    const [z, vz] = passoDaMola(this.desvio.z, this.desvioVel.z, dt);
+    this.desvio.set(x, y, z);
+    this.desvioVel.set(vx, vy, vz);
+    [this.desvioFov, this.desvioFovVel] = passoDaMola(this.desvioFov, this.desvioFovVel, dt);
+  }
+
+  /**
+   * FOV do roteiro, com pontapé sutil de velocidade (documentário) — e,
+   * na pausa, a lente do visitante por cima (item 100, fase 2). O clamp
+   * é a parede da sanidade óptica nos shots extremos.
+   */
+  private lenteDoRoteiro(s: { fov: number; warp: number }): number {
+    return THREE.MathUtils.clamp((s.fov + s.warp * 3.5) * this.lenteFatorMostrado, 8, 75);
+  }
+
+  /**
+   * A VELOCIDADE DO ROTEIRO no instante, lida no próprio plano (um passo
+   * à frente, ou atrás quando o passo cruzaria a junta seguinte): a da
+   * mira vai para `out` (eixo × rad/s) e a da lente volta em graus/s. As
+   * duas amostras são lidas aqui, com a MESMA lente do visitante — uma
+   * diferença dela entre quadros, dividida pelo passo de 1 ms, viraria
+   * velocidade que o roteiro não tem.
+   */
+  private velocidadeDoRoteiro(t: number, plano: number, out: THREE.Vector3): number {
+    let h = EPS_DO_ROTEIRO_S;
+    let s2 = this.journey.at(t + h);
+    if (s2.plano !== plano) {
+      h = -h;
+      s2 = this.journey.at(t + h);
+    }
+    const s1 = this.journey.at(t);
+    const dir1 = s1.look.sub(s1.pos);
+    const dir2 = s2.look.sub(s2.pos);
+    if (dir1.lengthSq() < 1e-40 || dir2.lengthSq() < 1e-40) out.set(0, 0, 0);
+    else rotacaoEntre(dir1.normalize(), dir2.normalize(), out).multiplyScalar(1 / h);
+    return (this.lenteDoRoteiro(s2) - this.lenteDoRoteiro(s1)) / h;
+  }
+
   reset() {
     this.first = true;
+    this.plano = -1;
     this.lookDir.set(0, 0, 0);
     this.lookYaw = 0;
     this.lookPitch = 0;

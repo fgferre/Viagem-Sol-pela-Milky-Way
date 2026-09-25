@@ -61,9 +61,8 @@ const {
   LUA_PC,
   auditarRoteiro,
   distanciaDaAbertura,
-  T_SAIDA_DO_DISCO,
 } = await import('./journey');
-const { GAL, LIMIAR_FORA_DO_DISCO, dentroDoDisco } = await import('../world/galaxy');
+const { GAL } = await import('../world/galaxy');
 
 /** A fórmula ANTIGA, verbatim da linha que vivia no `syncFromCamera`. */
 const velocidadeAntiga = (d: number) => THREE.MathUtils.clamp(d * 0.02, 2, 600);
@@ -271,30 +270,6 @@ describe('O ROTEIRO INTEIRO — onde o filme encosta no domínio profundo', () =
     expect(j.at(CAPTURE_T.edge).pos.length()).toBeCloseTo(15904.56497361685, 4);
     expect(j.at(CAPTURE_T.face).pos.length()).toBeCloseTo(32790.153293328774, 4);
   });
-
-  // O ENDEREÇO DO LATCH (21/08). O `seek` não tem história e o latch
-  // `leftDisk` é história: sem um instante derivado, arrastar a barra
-  // até a coda nascia DENTRO do disco e ressuscitava a nebulosa atrás
-  // da Terra. Aqui se cobra que o instante publicado seja mesmo a
-  // primeira saída da MESMA varredura — se o corte mudar e a constante
-  // não acompanhar, o juiz grita antes de a foto sair errada.
-  it('T_SAIDA_DO_DISCO é a PRIMEIRA saída do envelope, e a coda já nasce fora', () => {
-    const forasteiro = AMOSTRAS.find(
-      (a) => dentroDoDisco(j.at(a.t).pos) <= LIMIAR_FORA_DO_DISCO
-    );
-    expect(forasteiro).toBeDefined();
-    // a varredura anda de 0,01 s; a constante é bissectada
-    expect(T_SAIDA_DO_DISCO).toBeGreaterThan(forasteiro!.t - 0.01);
-    expect(T_SAIDA_DO_DISCO).toBeLessThanOrEqual(forasteiro!.t);
-    // e ninguém sai antes
-    for (const a of AMOSTRAS.filter((x) => x.t < T_SAIDA_DO_DISCO)) {
-      expect(dentroDoDisco(j.at(a.t).pos)).toBeGreaterThan(LIMIAR_FORA_DO_DISCO);
-    }
-    // a CODA volta a entrar no envelope (0 pc de casa) — é exatamente
-    // por isso que o latch importa lá: sem ele o ambiente reacende
-    expect(dentroDoDisco(j.at(188).pos)).toBeGreaterThan(LIMIAR_FORA_DO_DISCO);
-    expect(188).toBeGreaterThan(T_SAIDA_DO_DISCO);
-  });
 });
 
 describe('a auditoria editorial do filme', () => {
@@ -426,9 +401,9 @@ describe('a auditoria editorial do filme', () => {
       rig.apply(cam, t, dt);
       pior = Math.max(pior, erro(t));
     }
-    // a virada é ~148° (Sol → Sirius). O amortecedor de 0,4 s não cola
-    // a 25° num giro desses — e 90° era o borrão. 40° segue o farol.
-    expect(pior).toBeLessThan(40);
+    // a virada é ~148° (Sol → Sirius). O amortecedor de 0,4 s de antes
+    // colava a ~32° dela; o operador que segue o roteiro cola no farol.
+    expect(pior).toBeLessThan(1);
   });
 
   it('o play contínuo mantém Sagittarius A* no quadro na fuga — o clímax não some', () => {
@@ -454,28 +429,78 @@ describe('a auditoria editorial do filme', () => {
     expect(pior).toBeLessThan(25);
   });
 
-  it('o play contínuo segue o roteiro do começo ao fim — trecho sem juiz não esconde defeito', () => {
+  it('o play contínuo É o roteiro do começo ao fim — só a junta entre planos amacia', () => {
+    // O defeito do MOTOR que o dono viu no fim do filme (item 225, 24/09):
+    // um amortecedor em todo quadro deixava o play atrasado em todo
+    // movimento rápido — Rigel quase uma tela fora do quadro planejado, a
+    // Terra do retrato escorregando no dolly zoom. Longe de uma junta, a
+    // câmera tocando tem de ser a do roteiro, mira E lente; perto dela, o
+    // desvio é o do corte da coda (4,8°) ou o de um giro que começa.
     const rig = new JourneyRig();
     const cam = new THREE.PerspectiveCamera();
     const dt = 1 / 60;
     const dir = new THREE.Vector3();
     const want = new THREE.Vector3();
     const j = new Journey();
+    const JANELA_DA_JUNTA_S = 1.5;
     rig.reset();
     rig.apply(cam, 0, dt);
-    let pior = 0;
+    let piorLonge = 0;
+    let piorLente = 0;
+    let piorNaJunta = 0;
+    let inicioDoPlano = 0;
+    let plano = j.at(0).plano;
     for (let t = dt; t <= j.duration; t += dt) {
       rig.apply(cam, t, dt);
       const s = j.at(t);
+      if (s.plano !== plano) {
+        plano = s.plano;
+        inicioDoPlano = t;
+      }
       want.copy(s.look).sub(s.pos);
       if (want.lengthSq() < 1e-30) continue;
       want.normalize();
       cam.getWorldDirection(dir);
-      pior = Math.max(pior, THREE.MathUtils.radToDeg(dir.angleTo(want)));
+      const erro = THREE.MathUtils.radToDeg(dir.angleTo(want));
+      if (t - inicioDoPlano < JANELA_DA_JUNTA_S) piorNaJunta = Math.max(piorNaJunta, erro);
+      else {
+        piorLonge = Math.max(piorLonge, erro);
+        const lente = THREE.MathUtils.clamp(s.fov + s.warp * 3.5, 8, 75);
+        piorLente = Math.max(piorLente, Math.abs(cam.fov - lente));
+      }
     }
-    // Sirius pede ~148° de virada; o amortecedor de 0,4 s cola a ~32°.
-    // 90° era o borrão. 50° deixa folga e ainda grita chicote de ponto.
-    expect(pior).toBeLessThan(50);
+    expect(piorLonge, 'mira longe das juntas (°)').toBeLessThan(0.05);
+    expect(piorLente, 'lente longe das juntas (°)').toBeLessThan(0.02);
+    expect(piorNaJunta, 'mira na junta (°): o corte da coda é o maior').toBeLessThan(5);
+  });
+
+  it('a junta do corte da coda chega sem salto e sem tranco', () => {
+    // O único salto de mira do roteiro (t=176 s, deriva → volta para
+    // casa, 4,8°). O amortecedor antigo o transformava numa largada
+    // seca — 12°/s de um quadro para o outro. A mola crítica nasce
+    // parada: a mira muda de velocidade aos poucos, quadro a quadro.
+    const rig = new JourneyRig();
+    const cam = new THREE.PerspectiveCamera();
+    const dt = 1 / 60;
+    const antes = new THREE.Vector3();
+    const agora = new THREE.Vector3();
+    rig.reset();
+    rig.apply(cam, 174, dt);
+    cam.getWorldDirection(antes);
+    let velAnterior = 0;
+    let piorPasso = 0;
+    let piorTranco = 0;
+    for (let t = 174 + dt; t <= 179; t += dt) {
+      rig.apply(cam, t, dt);
+      cam.getWorldDirection(agora);
+      const vel = THREE.MathUtils.radToDeg(agora.angleTo(antes)) / dt;
+      if (t > 174 + 2 * dt) piorTranco = Math.max(piorTranco, Math.abs(vel - velAnterior));
+      piorPasso = Math.max(piorPasso, vel * dt);
+      velAnterior = vel;
+      antes.copy(agora);
+    }
+    expect(piorPasso, 'maior passo de mira num quadro (°)').toBeLessThan(0.5);
+    expect(piorTranco, 'maior troca de velocidade num quadro (°/s)').toBeLessThan(3);
   });
 
   it('nenhuma junta de plano salta posição, mira, lente ou roll', () => {

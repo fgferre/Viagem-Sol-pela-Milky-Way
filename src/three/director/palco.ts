@@ -192,6 +192,7 @@ export function passoDoPalco(
     if (posto.temPonto) {
       if (!posto.temRetrato) planetas?.escreverPontoDeCorpo(posto.id, e.centroPc);
       planetas?.escreverCessao(posto.id, e.cede ?? 0);
+      planetas?.escreverRaio(posto.id, e.raioPc);
     }
 
     posto.carregando = e.carregando;

@@ -311,6 +311,7 @@ attribute vec3 aCor;      // RGB linear da F1 (iluminante × razão de banda)
 attribute float aEhSol;   // 1 no vértice 0, 0 nos nove — ver o alpha
 attribute float aCede;    // cessão sob corpo resolvido (Onda 6, F2a) — ver o alpha
 attribute float aFase;    // Φ MH18 (D10) — CPU; o Sol escreve 1
+attribute float aRaio;    // raio do globo (pc), publicado pelo corpo resolvido; 0 sem globo
 
 uniform vec3 uCamPos;
 uniform float uScreenH;
@@ -363,7 +364,19 @@ void main() {
   vSigma = sigmaFrac;
   vPeak = peak * alpha * uPr2;
 
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(worldPos, 1.0);
+  // A POSIÇÃO NA TELA sai da diferença para a câmera, feita ANTES da
+  // vista — não de \`projectionMatrix * modelViewMatrix * vec4(worldPos,
+  // 1.0)\`: com câmera e corpo a ~1e-6 pc da origem, o produto das duas
+  // matrizes em float32 perdia a profundidade inteira (medido 24/09: a
+  // da Lua errava mais que o raio dela, e o teste contra o próprio globo
+  // virava cara ou coroa a cada quadro — a Lua piscando entre ponto e
+  // globo no fim do filme, item 225). E o ponto NUNCA se esconde atrás
+  // do PRÓPRIO globo (Lei §1: a óptica não é ocluída pelo corpo que a
+  // causa): mesma direção, puxado para a frente da face visível. Sobre o
+  // globo quem o apaga é a cessão; outro corpo à frente ainda o esconde.
+  float dObs = max(length(paraObs), 1e-30);
+  vec3 naFrente = -paraObs * (max(dObs - 1.5 * aRaio, 0.5 * dObs) / dObs);
+  gl_Position = projectionMatrix * vec4(mat3(viewMatrix) * naFrente, 1.0);
   gl_PointSize = size;
   prenderPontoNoClip(uScreenH);
 }
@@ -473,6 +486,8 @@ export class Planetas {
     const fase0 = new Float32Array(n);
     fase0.fill(1);
     geo.setAttribute('aFase', new THREE.BufferAttribute(fase0, 1));
+    // o raio do globo: 0 até o corpo resolvido publicá-lo (`escreverRaio`)
+    geo.setAttribute('aRaio', new THREE.BufferAttribute(new Float32Array(n), 1));
     // Plutão, o mais distante da tabela, está a 35,4 UA = 1,72e-4 pc.
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e-3);
 
@@ -752,10 +767,20 @@ export class Planetas {
   // sempre prometeu.)
 
   escreverCessao(id: string, cede: number): boolean {
+    return this.escreverAtributo('aCede', id, cede);
+  }
+
+  /** o raio do globo que o corpo resolvido desenha — é à frente dele que
+   *  o ponto é posto, para o próprio globo nunca o esconder */
+  escreverRaio(id: string, raioPc: number): boolean {
+    return this.escreverAtributo('aRaio', id, raioPc);
+  }
+
+  private escreverAtributo(nome: string, id: string, valor: number): boolean {
     const i = (IDS_DOS_PONTOS as readonly string[]).indexOf(id);
     if (i < 0) return false;
-    const attr = this.points.geometry.getAttribute('aCede') as THREE.BufferAttribute;
-    if (!this.gravar(attr.array as Float32Array, i, cede)) return false;
+    const attr = this.points.geometry.getAttribute(nome) as THREE.BufferAttribute;
+    if (!this.gravar(attr.array as Float32Array, i, valor)) return false;
     attr.needsUpdate = true;
     return true;
   }
