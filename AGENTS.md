@@ -19,7 +19,7 @@ How to work
 * Tests go where the task asks, or where this repo already keeps tests for that kind of change. One focused test per behavior, sized like the neighbors.
 * If you can delegate (main session only): keep judgment (plan, decide, hard bugs, review) and hand execution (search, reading many files, tests, mechanical edits) to workers on a cheaper model, so your own context stays small. Each worker gets one task, the files, and what not to do; workers return a summary and never ask.
 * When done, say plainly what changed and what you did not do. If something failed, show the output.
-* One commit per task; the message says why, not what. Push only to the backup branch: `git push origin main:backup`.
+* One commit per task; the message says why, not what. Never push `main` (it publishes): back up with `git push origin main:backup`, or push a work branch by its own name (`git push -u origin <branch>`); the hook enforces this.
 
 When to ask
 Go ahead on your own with anything local and easy to undo. Stop and ask only when:
@@ -32,7 +32,7 @@ Otherwise pick a sensible option, say what you assumed, and keep going. If nobod
 Traps (not obvious from the code, caused a mistake before; one line each, with the reason; max 5)
 
 * `base: './'` in vite.config.ts must stay relative — the site lives under a subpath on GitHub Pages, and `'/'` breaks the data loading only in production, never in dev.
-* Every push to `main` publishes the site (deploy.yml runs on it). Back up without publishing: `git push origin main:backup`.
+* Every push to `main` publishes the site (deploy.yml runs on it). Back up without publishing: `git push origin main:backup` or, on a work branch, `git push -u origin <branch>`.
 * One NaN pixel plus bloom turns the whole screen white — `pow` with a negative base and `smoothstep` with reversed edges are the usual sources; `?nobloom=1` shows the scene behind it.
 * `npm test` imports `scripts/visual/chrome.mjs`, which locates the Chrome binary at import time — without Chrome the suite fails for reasons unrelated to `src/`.
 * `capturas/` and `sky/` are ignored by git and hold the only copy of each proof image — never overwrite one; write a `-v2` beside it.
