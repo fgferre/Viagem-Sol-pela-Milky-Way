@@ -4,7 +4,39 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 228.**
 
-## O BASTÃO — onde a rodada parou (24/09)
+## O BASTÃO — onde a rodada parou (24/09, noite)
+
+**24/09 (rodada do FIM DO FILME, item 225). Ele fechou a conversa sem
+conferir: *"acabou o contexto dessa conversa. Vamos deixar a verificação
+para a próxima rodada."***
+
+- **O que ele viu:** *"a Terra aparecer numa posição no filme e de repente
+  ela mudar para outra posição, quando o texto do Pale Blue Dot vai
+  aparecer"*; *"a lua atrás fica oscilando entre o sprite luminoso e o
+  desenho 3D"*; e, na volta para casa, *"tem vários elementos que deixaram
+  de ser desenhados"*. Pediu o efeito de lente *"um pouco mais
+  proeminente"* e cobrou que o conserto fosse do motor de filmes, não deste
+  filme.
+- **Consertado e guardado (`4cda566`, só no backup, nada publicado):** o
+  operador de câmera do motor seguia o roteiro com atraso em todo filme
+  (Rigel e Sírius saíam do quadro planejado; a Terra do retrato escorregava
+  no dolly) — agora segue o roteiro e só amacia as juntas entre planos; o
+  ponto de luz da Lua fazia uma conta de profundidade imprecisa e piscava
+  contra o próprio globo; a trava do disco apagava gás, faixa e nuvens da
+  galáxia na volta — saiu, o filme segue a posição da câmera como o Atlas.
+- **As escolhas dele (em vídeo):** o dolly na força "C" com a Lua "mais
+  perto" da Terra: ela se esconde atrás do planeta no pouso, nasce da borda
+  no recuo e termina globo 3D, maior.
+- **A verificar com ele no começo da próxima rodada:** o filme no app, do
+  começo ao fim (Rigel, Sírius e a volta mudaram de jeito), ou os vídeos
+  em `capturas/item225-*` (antes à esquerda, depois à direita). Aprovado,
+  o item 225 sai da lista; publicar só com o sim dele.
+- **Aberto:** **225** (acima), **226**, **227**; o `PLAN.md` do gás; no
+  `BACKLOG.md`, os três achados de 24/09 sem obra (a lente mínima de 8° que
+  limita o dolly; o mesmo padrão de conta de profundidade nas estrelas; a
+  Lua ainda cede o ponto pela régua antiga).
+
+## O BASTÃO anterior (24/09, tarde)
 
 **22–24/09 (rodada do HIPÉRION MEDIDO, encerrada nas palavras dele:
 *"pode encerrar a rodada e preparar o bastão"*).**
@@ -1317,7 +1349,14 @@ video... alguns bugs tem acontecido de forma intermitente. as vezes no
 final do filme desaparece a terra e a lua e fica so o texto do pale
 blue dot". No mesmo dia, na vista de órbita de Netuno, os nomes e os
 anéis dos corpos não apareceram numa sessão e apareceram na seguinte
-("agora apareceu"). Ainda sem causa.
+("agora apareceu"). Palavras dele em 24/09: "eu percebo que esse problema
+foi parcialmente resolvido, mas acho que ainda não está perfeito... a
+Terra aparecer numa posição no filme e de repente ela mudar para outra
+posição, quando o texto do Pale Blue Dot vai aparecer. Também percebo que
+a lua atrás fica oscilando entre o sprite luminoso e o desenho 3D" e "no
+final do filme a gente volta para dentro e chega no planeta Terra e na
+Lua; nesse momento tem vários elementos que deixaram de ser desenhados".
+Consertado em `4cda566`; falta a verificação dele (ver O BASTÃO).
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
