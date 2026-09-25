@@ -27,8 +27,8 @@ O 225 saiu da lista.**
 - **As escolhas dele (em vídeo):** o dolly na força "C" com a Lua "mais
   perto" da Terra: ela se esconde atrás do planeta no pouso, nasce da borda
   no recuo e termina globo 3D, maior.
-- **Publicação:** espera o clique dele (`git push origin main`); depois,
-  acompanhar a publicação e conferir o filme no ar.
+- **Publicação:** ele publicou em 24/09 (`a10216f`); a publicação passou e
+  o último quadro do filme foi conferido no ar (Terra e Lua em globo).
 - **Aberto:** **226**, **227**; o `PLAN.md` do gás; no `BACKLOG.md`, os três
   achados de 24/09 sem obra (a lente mínima de 8° que limita o dolly; o
   mesmo padrão de conta de profundidade nas estrelas; a Lua ainda cede o
