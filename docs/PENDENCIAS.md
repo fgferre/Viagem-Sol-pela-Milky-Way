@@ -6,9 +6,9 @@ Número é identidade, não posição: item novo entra no fim da sua seção. **
 
 ## O BASTÃO — onde a rodada parou (24/09, noite)
 
-**24/09 (rodada do FIM DO FILME, item 225). Ele fechou a conversa sem
-conferir: *"acabou o contexto dessa conversa. Vamos deixar a verificação
-para a próxima rodada."***
+**24/09 (rodada do FIM DO FILME, item 225). Ele deixou a verificação para
+a rodada seguinte e, nela, aprovou: *"já assisti o filme. ficou ótimo"*.
+O 225 saiu da lista.**
 
 - **O que ele viu:** *"a Terra aparecer numa posição no filme e de repente
   ela mudar para outra posição, quando o texto do Pale Blue Dot vai
@@ -17,7 +17,7 @@ para a próxima rodada."***
   de ser desenhados"*. Pediu o efeito de lente *"um pouco mais
   proeminente"* e cobrou que o conserto fosse do motor de filmes, não deste
   filme.
-- **Consertado e guardado (`4cda566`, só no backup, nada publicado):** o
+- **Consertado (`4cda566`):** o
   operador de câmera do motor seguia o roteiro com atraso em todo filme
   (Rigel e Sírius saíam do quadro planejado; a Terra do retrato escorregava
   no dolly) — agora segue o roteiro e só amacia as juntas entre planos; o
@@ -27,14 +27,12 @@ para a próxima rodada."***
 - **As escolhas dele (em vídeo):** o dolly na força "C" com a Lua "mais
   perto" da Terra: ela se esconde atrás do planeta no pouso, nasce da borda
   no recuo e termina globo 3D, maior.
-- **A verificar com ele no começo da próxima rodada:** o filme no app, do
-  começo ao fim (Rigel, Sírius e a volta mudaram de jeito), ou os vídeos
-  em `capturas/item225-*` (antes à esquerda, depois à direita). Aprovado,
-  o item 225 sai da lista; publicar só com o sim dele.
-- **Aberto:** **225** (acima), **226**, **227**; o `PLAN.md` do gás; no
-  `BACKLOG.md`, os três achados de 24/09 sem obra (a lente mínima de 8° que
-  limita o dolly; o mesmo padrão de conta de profundidade nas estrelas; a
-  Lua ainda cede o ponto pela régua antiga).
+- **Publicação:** espera o clique dele (`git push origin main`); depois,
+  acompanhar a publicação e conferir o filme no ar.
+- **Aberto:** **226**, **227**; o `PLAN.md` do gás; no `BACKLOG.md`, os três
+  achados de 24/09 sem obra (a lente mínima de 8° que limita o dolly; o
+  mesmo padrão de conta de profundidade nas estrelas; a Lua ainda cede o
+  ponto pela régua antiga).
 
 ## O BASTÃO anterior (24/09, tarde)
 
@@ -1342,21 +1340,6 @@ declarativo do filme galáctico. Conclui com Terra/Lua, Júpiter/Io,
 Saturno/luas e o afastamento final, ciência e unidades revisadas, gate
 visual e exibição completa aprovada pelo dono. *(Era a fila ativa do
 plano do cinema, arquivado — `git show 923dc20:docs/PLANO-CINEMA.md`.)*
-
-**225. Bugs intermitentes — suspeita de memória de vídeo.** Palavra
-dele (06/09): "desconfio que estejamos tendo problemas de memoria de
-video... alguns bugs tem acontecido de forma intermitente. as vezes no
-final do filme desaparece a terra e a lua e fica so o texto do pale
-blue dot". No mesmo dia, na vista de órbita de Netuno, os nomes e os
-anéis dos corpos não apareceram numa sessão e apareceram na seguinte
-("agora apareceu"). Palavras dele em 24/09: "eu percebo que esse problema
-foi parcialmente resolvido, mas acho que ainda não está perfeito... a
-Terra aparecer numa posição no filme e de repente ela mudar para outra
-posição, quando o texto do Pale Blue Dot vai aparecer. Também percebo que
-a lua atrás fica oscilando entre o sprite luminoso e o desenho 3D" e "no
-final do filme a gente volta para dentro e chega no planeta Terra e na
-Lua; nesse momento tem vários elementos que deixaram de ser desenhados".
-Consertado em `4cda566`; falta a verificação dele (ver O BASTÃO).
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
