@@ -37,6 +37,9 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
+import { sha256 } from './lib/binary.mjs';
+import { paraFloat16 } from './lib/volume.mjs';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -146,4 +149,93 @@ describe('verify-assets — o cadeado do inglês', () => {
     expect(r.ok).toBe(false);
     expect(r.saida).toContain('sem o inglês (item 130/F4)');
   }, 180_000);
+});
+
+// ============================================================
+// O ramo `kind === 'volume'` (E1, item 3 do PLAN.md): volume float16
+// sintético minúsculo (2×2×1) + fixture minúscula, num espelho PRÓPRIO
+// (não o `espelho` compartilhado acima) porque aqui o `manifest.json`
+// também precisa ser mutável.
+// ============================================================
+describe('verify-assets — o volume de poeira (float16)', () => {
+  let espelhoVolume;
+
+  beforeAll(() => {
+    espelhoVolume = mkdtempSync(join(tmpdir(), 'verify-assets-volume-'));
+    espelhar(join(RAIZ, 'public'), join(espelhoVolume, 'public'), [
+      join(RAIZ, 'public/data/galaxy/manifest.json'),
+    ]);
+    cpSync(join(RAIZ, 'scripts'), join(espelhoVolume, 'scripts'), { recursive: true });
+    for (const nome of ['src', 'docs', 'package.json', 'node_modules']) {
+      symlinkSync(join(RAIZ, nome), join(espelhoVolume, nome));
+    }
+  }, 120_000);
+
+  afterAll(() => {
+    if (espelhoVolume) rmSync(espelhoVolume, { recursive: true, force: true });
+  });
+
+  // 1000 voxels (10×10×10), todos com a mesma densidade — grande e
+  // repetitivo de propósito, para o .gz sair MENOR que o .bin (o gate
+  // também cobra isso: `compress-assets.mjs` não compensa 4 voxels).
+  const DIMS = [10, 10, 10];
+  const ESCALA = 1000;
+  const VALORES = new Array(DIMS[0] * DIMS[1] * DIMS[2]).fill(0.01);
+
+  function rodarComFixture(fixture) {
+    const flutuante = paraFloat16(VALORES, ESCALA);
+    const buffer = Buffer.from(flutuante.buffer, flutuante.byteOffset, flutuante.byteLength);
+    const gz = gzipSync(buffer, { level: 9 });
+    const manifesto = JSON.parse(readFileSync(join(RAIZ, 'public/data/galaxy/manifest.json'), 'utf8'));
+    manifesto.assets.dustVolumeTeste = {
+      kind: 'volume',
+      file: 'data/galaxy/dust-teste.bin',
+      dims: DIMS,
+      count: VALORES.length,
+      voxelPc: 10,
+      originPc: [0, 0, 0],
+      unit: 'E_ZGR23 per pc',
+      scale: ESCALA,
+      type: 'float16',
+      byteLength: buffer.byteLength,
+      sha256: sha256(buffer),
+    };
+    writeFileSync(join(espelhoVolume, 'public/data/galaxy/dust-teste.bin'), buffer);
+    writeFileSync(join(espelhoVolume, 'public/data/galaxy/dust-teste.bin.gz'), gz);
+    writeFileSync(join(espelhoVolume, 'public/data/galaxy/manifest.json'), JSON.stringify(manifesto));
+    writeFileSync(
+      join(espelhoVolume, 'scripts/data/fixtures/edenhofer-referencia.json'),
+      JSON.stringify(fixture)
+    );
+    try {
+      const saida = execFileSync(
+        process.execPath,
+        [join(espelhoVolume, 'scripts/data/verify-assets.mjs')],
+        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60_000, killSignal: 'SIGKILL' }
+      );
+      return { ok: true, saida };
+    } catch (erro) {
+      return { ok: false, saida: `${erro.stdout ?? ''}${erro.stderr ?? ''}` };
+    }
+  }
+
+  it('passa com um volume float16 dentro da tolerância', () => {
+    const r = rodarComFixture({
+      cabecalho: { raiosPc: [1, 5] },
+      voxeis: [{ indice: [0, 0, 0], media: VALORES[0], nanFracao: 0 }],
+      colunas: [],
+    });
+    expect(r.ok, r.saida.slice(-800)).toBe(true);
+    expect(r.saida).toContain('dustVolumeTeste: fixture Edenhofer OK');
+  }, 60_000);
+
+  it('reprova um volume float16 fora da tolerância', () => {
+    const r = rodarComFixture({
+      cabecalho: { raiosPc: [1, 5] },
+      voxeis: [{ indice: [0, 0, 0], media: 5, nanFracao: 0 }],
+      colunas: [],
+    });
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('excede a tolerância');
+  }, 60_000);
 });

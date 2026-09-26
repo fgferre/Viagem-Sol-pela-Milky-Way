@@ -57,7 +57,8 @@ Drimmel” seria incorreto.
 
 ## Ativos já materializados
 
-Todos os binários usam Float32 little-endian. O schema campo a campo, hashes e
+Os catálogos usam Float32 little-endian; o bloco de poeira `dust-near-20pc.bin`
+(`kind: volume`) usa float16 little-endian. O schema campo a campo, hashes e
 dicionários categóricos ficam em `public/data/galaxy/manifest.json`.
 
 **O binário publicado carrega só as colunas que o renderer lê.** Ele é o ativo
@@ -82,6 +83,7 @@ RUWE, `parallax_over_error` e o erro relativo de distância.
 | `gaia-young-clusters.bin` | 988 | aglomerados Gaia DR3 com `log10(age/yr) < 8` | distância por inversão da paralaxe mediana; usar erro relativo |
 | `gaia-young-cepheids.bin` | 2.806 | Cefeidas Gaia jovens com menos de 200 Myr | distância por módulo de distância; usar `sigmaDistance` |
 | `gaia-ob-proxy-stars.bin` | 100.000 | seleção proxy de estrelas quentes Gaia DR3 com distância fotogeométrica | não chamar de amostra Drimmel; preservar a pegada local, o erro de distância e os filtros no manifesto; a cor sai de `effectiveTemperatureK`, nunca de `bp_rp` — o renderer já aplica a própria extinção |
+| `dust-near-20pc.bin` | 781.250 voxels | densidade de poeira 3D medida (Edenhofer et al. 2024) num bloco heliocêntrico de 20 pc perto do Sol | interior de 68,8 pc não reconstruído (zero declarado); float16 × 1000 (E/pc); aproxima o interpolador oficial por amostragem estratificada 8×8×8, não bilinear; residual conferido contra a fixture de referência em `data:verify` |
 
 Fontes dos dados:
 
@@ -152,7 +154,7 @@ proveniência.
 | 3 | 7.167 aglomerados abertos (Hunt & Reffert) | VizieR `J/A+A/686/A42` | ~300 KB | ~3 h |
 | 4 | 215 SNRs com distância (Green × Ranasinghe & Leahy) | VizieR | ~10 KB | ~4 h |
 | 5 | ~1.000 nebulosas planetárias (Chornay & Walton, reliability > 0,8) | VizieR | ~40 KB | ~2 h |
-| 7 | Poeira local Edenhofer 2024 | Zenodo 10658339 | 15–50 MB | 2–3 dias |
+| 7 | Poeira local Edenhofer 2024 — bloco de 20 pc FEITO na E1 (`dust-near-20pc.bin`, 1,56 MB); níveis de 10 e 5 pc pendentes (E3 do PLAN.md) | Zenodo 10658339 | 1,5–19 MB | E3 |
 
 Extras avaliados: Zucker 2020 (rótulos da Edenhofer); pulsares ATNF
 (descartados: distâncias por DM modelo-dependentes).
@@ -165,6 +167,9 @@ O mapa de Edenhofer et al. usado nas reconstruções de berçários estelares da
 Gaia cobre aproximadamente 69–1.250 pc com grande detalhe. Os produtos brutos
 chegam a dezenas ou centenas de gigabytes; devem ser reamostrados offline para
 um volume local esparso, não enviados diretamente ao browser.
+
+O bloco de 20 pc (`dust-near-20pc.bin`, tabela acima) foi materializado na E1
+do PLAN.md, sob a licença CC-BY-4.0 do Zenodo 10658339.
 
 - [ESA — mapa 3D dos berçários estelares](https://www.esa.int/Science_Exploration/Space_Science/Gaia/Fly_through_Gaia_s_3D_map_of_stellar_nurseries)
 - [Edenhofer et al. — dados no Zenodo](https://zenodo.org/records/10658339)

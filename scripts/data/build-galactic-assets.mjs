@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -15,6 +15,7 @@ import {
 } from './lib/galactic.mjs';
 import { fetchGaiaTapTable } from './lib/gaia-tap.mjs';
 import { fetchVizierTable, numeric } from './lib/vizier.mjs';
+import { preservarVolumes } from './lib/volume.mjs';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const outputDirectory = path.join(rootDirectory, 'public', 'data', 'galaxy');
@@ -631,8 +632,14 @@ const manifest = {
   ],
 };
 
-await writeFile(
-  path.join(outputDirectory, 'manifest.json'),
-  `${JSON.stringify(manifest, null, 2)}\n`
-);
+const manifestPath = path.join(outputDirectory, 'manifest.json');
+let manifestoAntigo = null;
+try {
+  manifestoAntigo = JSON.parse(await readFile(manifestPath, 'utf8'));
+} catch {
+  // primeira rodada: ainda não existe manifesto para preservar volumes.
+}
+preservarVolumes(manifest, manifestoAntigo);
+
+await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(`Ativos escritos em ${path.relative(rootDirectory, outputDirectory)}.`);

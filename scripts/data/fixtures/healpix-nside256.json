@@ -1,0 +1,2528 @@
+{
+ "nside": 256,
+ "ordering": "NEST",
+ "pontos": [
+  {
+   "theta": 0.8410686705679303,
+   "phi": 0.7853981633974483,
+   "pix": 27306,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 2.356194490192345,
+   "pix": 92842,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 3.926990816987241,
+   "pix": 169301,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 5.497787143782138,
+   "pix": 223914,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 0.0,
+   "pix": 311296,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 1.5707963267948966,
+   "pix": 354986,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 3.141592653589793,
+   "pix": 420522,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 4.71238898038469,
+   "pix": 486058,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 0.7853981633974483,
+   "pix": 540671,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 2.356194490192345,
+   "pix": 606207,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 3.926990816987241,
+   "pix": 693589,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 5.497787143782138,
+   "pix": 737279,
+   "categoria": "centroDeFace"
+  },
+  {
+   "theta": 0.0,
+   "phi": 0.0,
+   "pix": 65535,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.4111378623223478,
+   "phi": 0.0,
+   "pix": 49151,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 0.0,
+   "pix": 43690,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 0.39269908169872414,
+   "pix": 10922,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 0.7853981633974482,
+   "pix": 371370,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 1.1780972450961724,
+   "pix": 387754,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 1.5707963267948966,
+   "pix": 109226,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.4111378623223478,
+   "phi": 1.5707963267948966,
+   "pix": 114687,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.0,
+   "phi": 0.0,
+   "pix": 65535,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.4111378623223478,
+   "phi": 1.5707963267948966,
+   "pix": 114687,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 1.5707963267948966,
+   "pix": 109226,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407745,
+   "phi": 1.9634954084936207,
+   "pix": 76458,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 2.356194490192345,
+   "pix": 436906,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 2.748893571891069,
+   "pix": 453290,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 3.141592653589793,
+   "pix": 174762,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.4111378623223478,
+   "phi": 3.141592653589793,
+   "pix": 180223,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.0,
+   "phi": 0.0,
+   "pix": 65535,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.4111378623223478,
+   "phi": 3.141592653589793,
+   "pix": 180223,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 3.141592653589793,
+   "pix": 174762,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 3.5342917352885173,
+   "pix": 141994,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 3.926990816987241,
+   "pix": 415061,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 4.319689898685965,
+   "pix": 518826,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 4.71238898038469,
+   "pix": 240298,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.4111378623223478,
+   "phi": 4.71238898038469,
+   "pix": 245759,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.0,
+   "phi": 0.0,
+   "pix": 65535,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.4111378623223478,
+   "phi": 4.71238898038469,
+   "pix": 245759,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 4.71238898038469,
+   "pix": 240298,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 5.105088062083414,
+   "pix": 207530,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 5.497787143782138,
+   "pix": 305834,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 5.890486225480862,
+   "pix": 322218,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 0.0,
+   "pix": 43690,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.4111378623223478,
+   "phi": 6.283185307179586,
+   "pix": 49151,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 0.0,
+   "pix": 43690,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 5.890486225480862,
+   "pix": 322218,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 5.497787143782138,
+   "pix": 305834,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 5.890486225480862,
+   "pix": 273066,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 0.0,
+   "pix": 567978,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 0.39269908169872414,
+   "pix": 278528,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 0.7853981633974482,
+   "pix": 371370,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 0.39269908169872414,
+   "pix": 10922,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 1.5707963267948966,
+   "pix": 109226,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 1.1780972450961724,
+   "pix": 387754,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 0.7853981633974482,
+   "pix": 371370,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 1.1780972450961724,
+   "pix": 360448,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 1.5707963267948966,
+   "pix": 633514,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490186,
+   "phi": 1.9634954084936207,
+   "pix": 649898,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 2.356194490192345,
+   "pix": 436906,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407745,
+   "phi": 1.9634954084936207,
+   "pix": 76458,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 3.141592653589793,
+   "pix": 174762,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 2.748893571891069,
+   "pix": 453290,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 2.356194490192345,
+   "pix": 436906,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 2.748893571891069,
+   "pix": 404138,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 3.141592653589793,
+   "pix": 699050,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 3.5342917352885173,
+   "pix": 715434,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 3.926990816987241,
+   "pix": 415061,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 3.5342917352885173,
+   "pix": 141994,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 0.8410686705679303,
+   "phi": 4.71238898038469,
+   "pix": 240298,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 4.319689898685965,
+   "pix": 518826,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 3.926990816987241,
+   "pix": 415061,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 4.319689898685965,
+   "pix": 469674,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 4.71238898038469,
+   "pix": 764586,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 5.105088062083414,
+   "pix": 780970,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 5.497787143782138,
+   "pix": 305834,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.2309594173407747,
+   "phi": 5.105088062083414,
+   "pix": 207530,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 0.7853981633974482,
+   "pix": 371370,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 0.39269908169872414,
+   "pix": 278528,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 0.0,
+   "pix": 567978,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.7304547912674453,
+   "phi": 0.0,
+   "pix": 557056,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 3.141592653589793,
+   "phi": 0.0,
+   "pix": 524288,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.7304547912674453,
+   "phi": 1.5707963267948966,
+   "pix": 622592,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 1.5707963267948966,
+   "pix": 633514,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 1.1780972450961724,
+   "pix": 360448,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 2.356194490192345,
+   "pix": 436906,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490186,
+   "phi": 1.9634954084936207,
+   "pix": 649898,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 1.5707963267948966,
+   "pix": 633514,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.7304547912674453,
+   "phi": 1.5707963267948966,
+   "pix": 622592,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 3.141592653589793,
+   "phi": 0.0,
+   "pix": 524288,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.7304547912674453,
+   "phi": 3.141592653589793,
+   "pix": 688128,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 3.141592653589793,
+   "pix": 699050,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 2.748893571891069,
+   "pix": 404138,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 3.926990816987241,
+   "pix": 415061,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 3.5342917352885173,
+   "pix": 715434,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 3.141592653589793,
+   "pix": 699050,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.7304547912674453,
+   "phi": 3.141592653589793,
+   "pix": 688128,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 3.141592653589793,
+   "phi": 0.0,
+   "pix": 524288,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.7304547912674453,
+   "phi": 4.71238898038469,
+   "pix": 753664,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 4.71238898038469,
+   "pix": 764586,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 4.319689898685965,
+   "pix": 469674,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.5707963267948966,
+   "phi": 5.497787143782138,
+   "pix": 305834,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 5.105088062083414,
+   "pix": 780970,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 4.71238898038469,
+   "pix": 764586,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.7304547912674453,
+   "phi": 4.71238898038469,
+   "pix": 753664,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 3.141592653589793,
+   "phi": 0.0,
+   "pix": 524288,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.7304547912674453,
+   "phi": 6.283185307179586,
+   "pix": 557056,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 2.300523983021863,
+   "phi": 0.0,
+   "pix": 567978,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.9106332362490184,
+   "phi": 5.890486225480862,
+   "pix": 273066,
+   "categoria": "verticeOuAresta"
+  },
+  {
+   "theta": 1.1590297495645783,
+   "phi": 5.275063939120462,
+   "pix": 208450,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.6955091311353694,
+   "phi": 6.174352888566975,
+   "pix": 277398,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.9187786922061957,
+   "phi": 1.2886716226937043,
+   "pix": 22556,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.7851269356017695,
+   "phi": 3.6909226457047954,
+   "pix": 171184,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.3979276544043338,
+   "phi": 2.7338734514867835,
+   "pix": 440670,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.976126857303571,
+   "phi": 0.39324354388047356,
+   "pix": 573232,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.6403954213057808,
+   "phi": 2.4635751115490336,
+   "pix": 602442,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.0728258554345522,
+   "phi": 5.8339447339963515,
+   "pix": 215332,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.9364677251085913,
+   "phi": 1.4704103881134019,
+   "pix": 337102,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.20686415507337366,
+   "phi": 1.797429205092454,
+   "pix": 129640,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.9901475385088192,
+   "phi": 1.329299822541582,
+   "pix": 336582,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2080431269930032,
+   "phi": 3.9781528144407265,
+   "pix": 137946,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.097841273354391,
+   "phi": 3.2318864814110926,
+   "pix": 394836,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.734050908803004,
+   "phi": 5.675833875910158,
+   "pix": 783707,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5793054672870004,
+   "phi": 2.8189603570021373,
+   "pix": 432713,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.194635661007435,
+   "phi": 1.2937235828211902,
+   "pix": 548516,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.0087742933680406,
+   "phi": 1.2173570820543174,
+   "pix": 18170,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.7175093573245,
+   "phi": 0.5878325808131116,
+   "pix": 534281,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2597826437941828,
+   "phi": 1.666020780614114,
+   "pix": 383182,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.7759360326999859,
+   "phi": 4.836858640304079,
+   "pix": 240819,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.5436754182598014,
+   "phi": 0.5879217164157804,
+   "pix": 57620,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.844505319570051,
+   "phi": 6.264782488924764,
+   "pix": 725319,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.6332968404326142,
+   "phi": 2.4136627741939143,
+   "pix": 602514,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.4078631023469677,
+   "phi": 1.7210959795945244,
+   "pix": 378173,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.3470121760987215,
+   "phi": 4.115209471427112,
+   "pix": 135371,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.8253037701879825,
+   "phi": 0.38180885499824646,
+   "pix": 45065,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.9872686765616584,
+   "phi": 0.18838710971683037,
+   "pix": 41162,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.4411740147916383,
+   "phi": 3.093021589123055,
+   "pix": 610600,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.3225496118943036,
+   "phi": 2.739943152595686,
+   "pix": 610283,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.8630686846976253,
+   "phi": 4.703406271929962,
+   "pix": 524269,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.009813139805425,
+   "phi": 5.5664059025425034,
+   "pix": 773451,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.8814189713088137,
+   "phi": 5.266305397791769,
+   "pix": 234426,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.565094194433132,
+   "phi": 0.7526824445779309,
+   "pix": 537521,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.393418779091957,
+   "phi": 4.185958865656879,
+   "pix": 680416,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2218302350394241,
+   "phi": 0.43308464730377605,
+   "pix": 10954,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.5367510876638424,
+   "phi": 3.5792503375589697,
+   "pix": 188994,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.22788398148608,
+   "phi": 4.268752268580367,
+   "pix": 193765,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.4278160698190705,
+   "phi": 0.1439484866248982,
+   "pix": 565560,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2653908145481885,
+   "phi": 4.713751290147578,
+   "pix": 511939,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2203647320045516,
+   "phi": 3.946553099438214,
+   "pix": 137913,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5313992949691926,
+   "phi": 4.870257256775305,
+   "pix": 486563,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.089177242285808,
+   "phi": 0.24877441708444187,
+   "pix": 572097,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.6190852785570997,
+   "phi": 0.4185224084454562,
+   "pix": 536173,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.59793541600698,
+   "phi": 3.5384435532763123,
+   "pix": 667366,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.3302087871936696,
+   "phi": 5.021654793077002,
+   "pix": 491146,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5797434823297904,
+   "phi": 1.1152097897760205,
+   "pix": 370064,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.232997609559745,
+   "phi": 5.538821370830781,
+   "pix": 770314,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.250836002200762,
+   "phi": 2.3435207218906475,
+   "pix": 639123,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.767208173019287,
+   "phi": 2.4419627498473835,
+   "pix": 93111,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.021416184550357,
+   "phi": 1.9206275654242886,
+   "pix": 638491,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.9497073612712398,
+   "phi": 2.117161051338521,
+   "pix": 103016,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.299249653338174,
+   "phi": 3.967559743508412,
+   "pix": 682646,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.317335883544254,
+   "phi": 5.615342262151392,
+   "pix": 747912,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.7278084456946049,
+   "phi": 5.917012885109994,
+   "pix": 225893,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.2594544738273825,
+   "phi": 5.0053582353916735,
+   "pix": 763705,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.140248529483671,
+   "phi": 0.2058122957017316,
+   "pix": 569196,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.8067098545795894,
+   "phi": 3.21376559806784,
+   "pix": 174897,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.3842041292641907,
+   "phi": 2.932825564029499,
+   "pix": 450595,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2016028749419387,
+   "phi": 6.205821183109942,
+   "pix": 321346,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.808327920079913,
+   "phi": 0.7109425275047742,
+   "pix": 586428,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.401502802091132,
+   "phi": 4.996951095137855,
+   "pix": 490070,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5338258537886302,
+   "phi": 3.7353238575515917,
+   "pix": 416829,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.988839676601096,
+   "phi": 4.995381747110779,
+   "pix": 463882,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.9381934147448737,
+   "phi": 2.5528537873115584,
+   "pix": 90883,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5541828952991963,
+   "phi": 6.214562034038126,
+   "pix": 300520,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.2394106637157773,
+   "phi": 0.012511829277008068,
+   "pix": 262253,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.6927991092128702,
+   "phi": 4.410316162486626,
+   "pix": 493463,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.052902489044296,
+   "phi": 4.928779934391153,
+   "pix": 462926,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.9293303875491237,
+   "phi": 6.075614258440745,
+   "pix": 271340,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.3769179567263037,
+   "phi": 5.649339720150546,
+   "pix": 746221,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.8219583931620054,
+   "phi": 1.1764766530524637,
+   "pix": 361216,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.608728255598251,
+   "phi": 0.5456910693985939,
+   "pix": 536011,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.6140900015391675,
+   "phi": 2.285097625406309,
+   "pix": 349274,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.9462368164400866,
+   "phi": 4.762586903134346,
+   "pix": 523712,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.847862374302492,
+   "phi": 4.349702171349875,
+   "pix": 154253,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.4113221584220446,
+   "phi": 4.1781024379690885,
+   "pix": 680357,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.502964023306355,
+   "phi": 1.7391690962103523,
+   "pix": 625083,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.8714846626493018,
+   "phi": 3.5093501736166774,
+   "pix": 167871,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.8239554481330257,
+   "phi": 0.9733504250957093,
+   "pix": 27680,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.2956837216639787,
+   "phi": 1.6645687681038182,
+   "pix": 633431,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5830220066192766,
+   "phi": 0.21436067809556245,
+   "pix": 288392,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.1603163604535904,
+   "phi": 5.825867162004363,
+   "pix": 750318,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2272293507486196,
+   "phi": 3.460629927566225,
+   "pix": 447920,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.0543542322819976,
+   "phi": 0.3928040465285541,
+   "pix": 572476,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.9914026479623612,
+   "phi": 6.135522077535089,
+   "pix": 217347,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.5372187510453257,
+   "phi": 6.218392729546551,
+   "pix": 228673,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.3744039324445074,
+   "phi": 4.91417541056395,
+   "pix": 762356,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.7620248590840836,
+   "phi": 2.829065932355903,
+   "pix": 94499,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.6362714702315541,
+   "phi": 0.8003857667856137,
+   "pix": 50165,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.26514926640844,
+   "phi": 3.912453478367766,
+   "pix": 704558,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.4531654644564058,
+   "phi": 0.020891252962683158,
+   "pix": 312139,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5326920941357387,
+   "phi": 5.2502317583599005,
+   "pix": 481790,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.0463685313189095,
+   "phi": 4.106505655390278,
+   "pix": 144729,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.091745728516517,
+   "phi": 2.6996499436703636,
+   "pix": 620992,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.609088818507341,
+   "phi": 3.3434689859068025,
+   "pix": 418667,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5038888589421116,
+   "phi": 2.6011484913592184,
+   "pix": 437552,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.9026429416683429,
+   "phi": 3.1283427828294816,
+   "pix": 458642,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5912634092210078,
+   "phi": 6.196165895002468,
+   "pix": 300249,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.6146509656552023,
+   "phi": 5.815681351185028,
+   "pix": 227997,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.943776801856989,
+   "phi": 4.814191991318132,
+   "pix": 239617,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.974446041193054,
+   "phi": 0.1538336506815993,
+   "pix": 41496,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.4989103962114076,
+   "phi": 1.626224162451306,
+   "pix": 377140,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.9570402309579262,
+   "phi": 2.462550002774416,
+   "pix": 591488,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.9070647937315774,
+   "phi": 3.647126909975808,
+   "pix": 658199,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.142479381031344,
+   "phi": 3.1934035774102587,
+   "pix": 455018,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.439654990507692,
+   "phi": 3.153790749467152,
+   "pix": 696867,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.9382585312571492,
+   "phi": 3.9425705831104096,
+   "pix": 708561,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.8654810860691,
+   "phi": 1.0796381153771997,
+   "pix": 25840,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.0878440156914437,
+   "phi": 4.134816540216074,
+   "pix": 686766,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.3675217958601285,
+   "phi": 6.043206075958009,
+   "pix": 743520,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.7945690662879321,
+   "phi": 5.1201272011370875,
+   "pix": 241746,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.88141194224348,
+   "phi": 4.324214073663217,
+   "pix": 491572,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.11264243816828774,
+   "phi": 4.827650988504478,
+   "pix": 261111,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.9684423982270876,
+   "phi": 2.119327038607694,
+   "pix": 647925,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.530033442095285,
+   "phi": 0.2488166864785895,
+   "pix": 288682,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.37012972067744,
+   "phi": 2.744384522541131,
+   "pix": 441403,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.7161618034469968,
+   "phi": 0.6210819663267092,
+   "pix": 40391,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.225976413826955,
+   "phi": 1.155174430237209,
+   "pix": 5489,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.7361461107868226,
+   "phi": 1.9744019975533766,
+   "pix": 345772,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.941275179205612,
+   "phi": 3.239870596494554,
+   "pix": 174083,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5149489482629903,
+   "phi": 6.068408592703921,
+   "pix": 302263,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.7960361240325817,
+   "phi": 1.9318313278507984,
+   "pix": 344797,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.0474813859531387,
+   "phi": 5.723969603341221,
+   "pix": 774234,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.7083471927806773,
+   "phi": 5.433142004151441,
+   "pix": 785221,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2933298558881825,
+   "phi": 3.360801657102793,
+   "pix": 447296,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.6288874147635186,
+   "phi": 4.928759159241562,
+   "pix": 484162,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.4492433222053362,
+   "phi": 1.1748221053725751,
+   "pix": 373566,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.1639510851003543,
+   "phi": 2.913871906755254,
+   "pix": 614103,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.8650857924125417,
+   "phi": 0.7815026012463085,
+   "pix": 585877,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.5237533523387805,
+   "phi": 4.588465770853381,
+   "pix": 163213,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.8570586494230974,
+   "phi": 6.215145497780317,
+   "pix": 725275,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.170528730378126,
+   "phi": 0.9403219276794804,
+   "pix": 552664,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.3515178456399197,
+   "phi": 0.6291694277083018,
+   "pix": 562688,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.3720308864460611,
+   "phi": 3.4264094712297033,
+   "pix": 191625,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.4280135597685786,
+   "phi": 1.847878572006191,
+   "pix": 626228,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.40418763062807994,
+   "phi": 5.968201404382671,
+   "pix": 251550,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.7986565166571549,
+   "phi": 5.702673999932192,
+   "pix": 224313,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5904356478305808,
+   "phi": 5.9016850907487886,
+   "pix": 298972,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.482523411047395,
+   "phi": 4.921296092161007,
+   "pix": 756206,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.214484385576992,
+   "phi": 0.3396779889078174,
+   "pix": 569906,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.7142624267114355,
+   "phi": 3.170995515006644,
+   "pix": 407275,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.0327971917901286,
+   "phi": 5.692295608466802,
+   "pix": 221196,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.49878420028121984,
+   "phi": 2.630387388045039,
+   "pix": 119419,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.3447364709761183,
+   "phi": 1.6378305085821074,
+   "pix": 633028,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.4732996225083914,
+   "phi": 0.9930532463776568,
+   "pix": 372496,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.435764440590547,
+   "phi": 4.937326995048164,
+   "pix": 487286,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2125696431038562,
+   "phi": 4.733404105058129,
+   "pix": 514750,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.6275341364756112,
+   "phi": 0.15431754024605618,
+   "pix": 47521,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.4245518968646835,
+   "phi": 2.853141210794275,
+   "pix": 609669,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.4869087646693369,
+   "phi": 1.8977700344790238,
+   "pix": 357017,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.199285827773317,
+   "phi": 6.1969612044289555,
+   "pix": 262819,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.332044907269966,
+   "phi": 2.8614961560029077,
+   "pix": 612580,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.3626152219937513,
+   "phi": 1.720069502257496,
+   "pix": 381098,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.980564690764067,
+   "phi": 3.807469981082597,
+   "pix": 146365,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.0930359842810686,
+   "phi": 5.8484174782555,
+   "pix": 751979,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.8252049843673817,
+   "phi": 1.9915239423905673,
+   "pix": 344474,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.4273228691817831,
+   "phi": 0.04353309143655354,
+   "pix": 49140,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.3342067968775337,
+   "phi": 4.755956870030255,
+   "pix": 511282,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.4287250811740813,
+   "phi": 6.280933695159508,
+   "pix": 741700,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.1573659509832703,
+   "phi": 3.097461003334287,
+   "pix": 455217,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.7476645580506391,
+   "phi": 2.028740901035416,
+   "pix": 345674,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5353174503796445,
+   "phi": 0.2619480614311043,
+   "pix": 288673,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.6375415817552175,
+   "phi": 0.8306870510028372,
+   "pix": 50821,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.047922727832423,
+   "phi": 1.4991392484376682,
+   "pix": 330586,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.000940862633949,
+   "phi": 4.962367406800711,
+   "pix": 232360,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.1216756481815358,
+   "phi": 0.5882911494928981,
+   "pix": 12047,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.5226859495087103,
+   "phi": 5.551515416055091,
+   "pix": 249234,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.9919866926371579,
+   "phi": 4.5151890028695085,
+   "pix": 467715,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.8844599783569732,
+   "phi": 1.2347360583031768,
+   "pix": 23044,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.6937092373673894,
+   "phi": 1.0276057934192453,
+   "pix": 368725,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.6837732381598043,
+   "phi": 4.727398352338557,
+   "pix": 474234,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.3881989910210393,
+   "phi": 2.6206609563938406,
+   "pix": 440955,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.4104445214846533,
+   "phi": 4.629077304461247,
+   "pix": 676250,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.641209508582077,
+   "phi": 6.237741252357371,
+   "pix": 278215,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.06300280150422,
+   "phi": 0.11925518984754412,
+   "pix": 264002,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.9188055404409695,
+   "phi": 0.2026072458807258,
+   "pix": 41755,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.679103666727503,
+   "phi": 5.766303399625262,
+   "pix": 225103,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.8056968443552808,
+   "phi": 5.662526935269357,
+   "pix": 777940,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.1614565036745947,
+   "phi": 4.913475824134251,
+   "pix": 765745,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.6697655283540286,
+   "phi": 0.06545531076669692,
+   "pix": 44910,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.131441220594325,
+   "phi": 5.1795373669099485,
+   "pix": 767158,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.8309651613502864,
+   "phi": 0.019942138205649003,
+   "pix": 533163,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.5634468827179506,
+   "phi": 3.9892759354686045,
+   "pix": 669192,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 3.0783113079978475,
+   "phi": 6.089310030629581,
+   "pix": 721161,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.4325818584282059,
+   "phi": 0.4660962285002203,
+   "pix": 59009,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.672301627387604,
+   "phi": 4.590948075638219,
+   "pix": 161026,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.9495222292706239,
+   "phi": 1.4275243941764046,
+   "pix": 20842,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.8754291575566026,
+   "phi": 0.5200426061371737,
+   "pix": 39037,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5506072591498716,
+   "phi": 5.370001077084779,
+   "pix": 480981,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2951239312140164,
+   "phi": 0.3062989834228472,
+   "pix": 316444,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2145493549446797,
+   "phi": 1.127200635767361,
+   "pix": 5582,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.334852454163714,
+   "phi": 3.787018974358741,
+   "pix": 693779,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.1608916862308873,
+   "phi": 3.6091408804775336,
+   "pix": 164160,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.019449638120351,
+   "phi": 5.886947135233318,
+   "pix": 752882,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.6828253956930177,
+   "phi": 1.9014724471531326,
+   "pix": 347680,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.042743671442535,
+   "phi": 0.7279570399866926,
+   "pix": 576349,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.7989561043058117,
+   "phi": 4.626604069979121,
+   "pix": 153478,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.9851859516438963,
+   "phi": 1.6491746065941222,
+   "pix": 331127,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.129582042533519,
+   "phi": 3.8394810446997067,
+   "pix": 145413,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.907270031273142,
+   "phi": 5.77574108585374,
+   "pix": 722731,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.1486489773214164,
+   "phi": 4.897142932912095,
+   "pix": 765843,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.1992841060551485,
+   "phi": 3.3773914166428463,
+   "pix": 448250,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.4566941147459156,
+   "phi": 5.021507272643146,
+   "pix": 756931,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5851097820306397,
+   "phi": 2.4627898152458036,
+   "pix": 436446,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.3400443502505466,
+   "phi": 3.2119778646788184,
+   "pix": 698566,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.7088266738196047,
+   "phi": 3.4415085101261305,
+   "pix": 176765,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.9987828079060148,
+   "phi": 4.893400850653613,
+   "pix": 237721,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.130122825152266,
+   "phi": 4.678821034306977,
+   "pix": 459706,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.4852984304848027,
+   "phi": 3.0670826086295695,
+   "pix": 443056,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.7207677205248393,
+   "phi": 3.831869016089592,
+   "pix": 665027,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.209451054357849,
+   "phi": 5.659529862358954,
+   "pix": 749087,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.6716156174300191,
+   "phi": 0.4008450467581128,
+   "pix": 46238,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.5747438344884341,
+   "phi": 2.0148714170688113,
+   "pix": 123042,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.6740336928735527,
+   "phi": 0.10722860611686494,
+   "pix": 44886,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.9034034337399163,
+   "phi": 4.853152010672373,
+   "pix": 238331,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.8874648244246922,
+   "phi": 2.50474939782016,
+   "pix": 92419,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.9214610744258434,
+   "phi": 3.20669766717922,
+   "pix": 399946,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.9203511673402038,
+   "phi": 2.4913536376278578,
+   "pix": 645520,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.6519448368953724,
+   "phi": 1.4735878528275563,
+   "pix": 365568,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.5090888150807316,
+   "phi": 5.742034429461147,
+   "pix": 734559,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.0533713985809987,
+   "phi": 3.830664345381261,
+   "pix": 145661,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.3897654011280003,
+   "phi": 3.8404328449238183,
+   "pix": 133904,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.039948706324952,
+   "phi": 3.729705280143449,
+   "pix": 712899,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.9262552481486286,
+   "phi": 2.958906054322178,
+   "pix": 402397,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.7242039789927155,
+   "phi": 1.3922934922085972,
+   "pix": 342715,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.9033300101465145,
+   "phi": 1.3951805892571842,
+   "pix": 337586,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.1809437639370939,
+   "phi": 2.2736311934376165,
+   "pix": 75629,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.5705204445861556,
+   "phi": 2.866143149932447,
+   "pix": 607145,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.2615577150622113,
+   "phi": 1.3431145467680585,
+   "pix": 385979,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.7208888765297515,
+   "phi": 0.3760477847685915,
+   "pix": 45471,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.1363083666701117,
+   "phi": 3.5181779747907003,
+   "pix": 701342,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.7794418037573174,
+   "phi": 3.8264220116442957,
+   "pix": 718997,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.3991191927654363,
+   "phi": 4.134203522553937,
+   "pix": 680543,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.5983518187992949,
+   "phi": 2.7803232694304305,
+   "pix": 97043,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.2108536470534426,
+   "phi": 4.466069845314431,
+   "pix": 679475,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.7987629481314997,
+   "phi": 0.7570440441333306,
+   "pix": 586455,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.185966384638369,
+   "phi": 5.513920095665677,
+   "pix": 770477,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.174503872856683,
+   "phi": 2.680020592623021,
+   "pix": 619197,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.8435593692623246,
+   "phi": 4.010885461459191,
+   "pix": 158291,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.5975116226556105,
+   "phi": 0.03550678801972295,
+   "pix": 289314,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.4177462292179497,
+   "phi": 0.8416687897466404,
+   "pix": 1588,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.2993750858529283,
+   "phi": 5.067023883501779,
+   "pix": 763241,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.1687808039750975,
+   "phi": 3.702403176505325,
+   "pix": 195062,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 0.6211259782344162,
+   "phi": 5.445088788240913,
+   "pix": 248169,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.1841440321213486,
+   "phi": 0.8358692127526642,
+   "pix": 573891,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.6893503339724676,
+   "phi": 6.004665775864547,
+   "pix": 726917,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.7011288416092034,
+   "phi": 2.883476297754206,
+   "pix": 595756,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.796992181066755,
+   "phi": 2.26377462688756,
+   "pix": 593653,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 1.6097195849824775,
+   "phi": 3.378257510092054,
+   "pix": 418647,
+   "categoria": "aleatorio"
+  },
+  {
+   "theta": 2.721415242170864,
+   "phi": 3.4688250373142178,
+   "pix": 665967,
+   "categoria": "aleatorio"
+  }
+ ],
+ "pix2vec": [
+  {
+   "pix": 27306,
+   "x": 0.5254268411256079,
+   "y": 0.5286607515035713,
+   "z": 0.6666666666666666
+  },
+  {
+   "pix": 92842,
+   "x": -0.5286607515035711,
+   "y": 0.5254268411256081,
+   "z": 0.6666666666666666
+  },
+  {
+   "pix": 169301,
+   "x": -0.5286607515035715,
+   "y": -0.5254268411256077,
+   "z": 0.6666666666666666
+  },
+  {
+   "pix": 223914,
+   "x": 0.5286607515035708,
+   "y": -0.5254268411256083,
+   "z": 0.6666666666666666
+  },
+  {
+   "pix": 311296,
+   "x": 0.9999966091522372,
+   "y": 0.0,
+   "z": 0.0026041666666666665
+  },
+  {
+   "pix": 354986,
+   "x": -0.0030679567629657936,
+   "y": 0.9999952938095762,
+   "z": 0.0
+  },
+  {
+   "pix": 420522,
+   "x": -0.9999952938095762,
+   "y": -0.0030679567629652883,
+   "z": 0.0
+  },
+  {
+   "pix": 486058,
+   "x": 0.0030679567629652267,
+   "y": -0.9999952938095762,
+   "z": 0.0
+  },
+  {
+   "pix": 540671,
+   "x": 0.5253966881311761,
+   "y": 0.525396688131176,
+   "z": -0.6692657470703125
+  },
+  {
+   "pix": 606207,
+   "x": -0.525396688131176,
+   "y": 0.5253966881311761,
+   "z": -0.6692657470703125
+  },
+  {
+   "pix": 693589,
+   "x": -0.5286607515035715,
+   "y": -0.5254268411256077,
+   "z": -0.6666666666666666
+  },
+  {
+   "pix": 737279,
+   "x": 0.5253966881311759,
+   "y": -0.5253966881311761,
+   "z": -0.6692657470703125
+  },
+  {
+   "pix": 305591,
+   "x": 0.7920394267473351,
+   "y": -0.6103310612913768,
+   "z": 0.013020833333333332
+  },
+  {
+   "pix": 644654,
+   "x": -0.7963255052483733,
+   "y": 0.4940584695035045,
+   "z": -0.3489583333333333
+  },
+  {
+   "pix": 468446,
+   "x": -0.03794369114115131,
+   "y": -0.9508586161463791,
+   "z": -0.30729166666666663
+  },
+  {
+   "pix": 519887,
+   "x": -0.21879897909056248,
+   "y": -0.873494488189956,
+   "z": 0.4348958333333333
+  },
+  {
+   "pix": 348743,
+   "x": -0.5379230389871933,
+   "y": 0.8380520516010653,
+   "z": -0.09114583333333333
+  },
+  {
+   "pix": 221758,
+   "x": 0.6538814543140007,
+   "y": -0.4880681592556591,
+   "z": 0.578125
+  },
+  {
+   "pix": 417236,
+   "x": -0.7880107213271211,
+   "y": -0.6072266147553649,
+   "z": 0.1015625
+  },
+  {
+   "pix": 505132,
+   "x": -0.2520422045449146,
+   "y": -0.9562641035414272,
+   "z": 0.1484375
+  },
+  {
+   "pix": 156563,
+   "x": -0.44279978327296216,
+   "y": -0.6454082263054317,
+   "z": 0.6223958333333333
+  },
+  {
+   "pix": 637119,
+   "x": -0.2272563583137009,
+   "y": 0.8211989595705445,
+   "z": -0.5234375
+  },
+  {
+   "pix": 503556,
+   "x": -0.5481667222083249,
+   "y": -0.8313878046551763,
+   "z": 0.09114583333333333
+  },
+  {
+   "pix": 443856,
+   "x": -0.9712318464400063,
+   "y": -0.15627252735041475,
+   "z": 0.1796875
+  },
+  {
+   "pix": 194801,
+   "x": -0.2009612530031981,
+   "y": -0.09401495614223228,
+   "z": 0.9750773111979166
+  },
+  {
+   "pix": 15798,
+   "x": 0.5530479964920804,
+   "y": 0.584464584963106,
+   "z": 0.59375
+  },
+  {
+   "pix": 543397,
+   "x": 0.2769067892238551,
+   "y": 0.5129974464670711,
+   "z": -0.8125
+  },
+  {
+   "pix": 774817,
+   "x": 0.7095932973541628,
+   "y": -0.5643570117620996,
+   "z": -0.421875
+  },
+  {
+   "pix": 618173,
+   "x": -0.6505410405849652,
+   "y": 0.5044835009973264,
+   "z": -0.5677083333333333
+  },
+  {
+   "pix": 539030,
+   "x": 0.44297727503292783,
+   "y": 0.3789655443498813,
+   "z": -0.8125
+  },
+  {
+   "pix": 134309,
+   "x": -0.7104212974168965,
+   "y": -0.6722341871689624,
+   "z": 0.20833333333333331
+  },
+  {
+   "pix": 258130,
+   "x": 0.271232434200035,
+   "y": -0.23295012999041442,
+   "z": 0.93389892578125
+  },
+  {
+   "pix": 626938,
+   "x": -0.3413186798946401,
+   "y": 0.5614709471010562,
+   "z": -0.7538248697916667
+  },
+  {
+   "pix": 640814,
+   "x": -0.6720234788594093,
+   "y": 0.5689885254779626,
+   "z": -0.4739583333333333
+  },
+  {
+   "pix": 586483,
+   "x": 0.7225707100404903,
+   "y": 0.6548999174613532,
+   "z": -0.22135416666666666
+  },
+  {
+   "pix": 183439,
+   "x": -0.3963013016429347,
+   "y": -0.3691188291408933,
+   "z": 0.8406524658203125
+  },
+  {
+   "pix": 556742,
+   "x": 0.38814751824362775,
+   "y": 0.8272257500714739,
+   "z": -0.40625
+  },
+  {
+   "pix": 451718,
+   "x": -0.9527735441159169,
+   "y": 0.11454698220728149,
+   "z": 0.28125
+  },
+  {
+   "pix": 16592,
+   "x": 0.3422247154861861,
+   "y": 0.8557581883976949,
+   "z": 0.3880208333333333
+  },
+  {
+   "pix": 747654,
+   "x": 0.5323854026073809,
+   "y": -0.45042722233021537,
+   "z": -0.7167154947916667
+  },
+  {
+   "pix": 226593,
+   "x": 0.6060506296264507,
+   "y": -0.06862642842276714,
+   "z": 0.7924601236979167
+  },
+  {
+   "pix": 441223,
+   "x": -0.8553619289369125,
+   "y": 0.4776477425097179,
+   "z": 0.20052083333333331
+  },
+  {
+   "pix": 311339,
+   "x": 0.9995559324022624,
+   "y": -0.018401673651977712,
+   "z": 0.0234375
+  },
+  {
+   "pix": 412023,
+   "x": -0.9197150181809293,
+   "y": -0.36127170278304194,
+   "z": -0.15364583333333331
+  },
+  {
+   "pix": 97229,
+   "x": -0.4924983400464125,
+   "y": 0.172697554192005,
+   "z": 0.8530069986979167
+  },
+  {
+   "pix": 129314,
+   "x": -0.1249927614321104,
+   "y": 0.19825692252244165,
+   "z": 0.9721476236979166
+  },
+  {
+   "pix": 76161,
+   "x": -0.4698892779242963,
+   "y": 0.8235687472350678,
+   "z": 0.3177083333333333
+  },
+  {
+   "pix": 448460,
+   "x": -0.8819646368858647,
+   "y": -0.26754104765828074,
+   "z": 0.3880208333333333
+  },
+  {
+   "pix": 627080,
+   "x": -0.35725598950265774,
+   "y": 0.5484020905073598,
+   "z": -0.7560577392578125
+  },
+  {
+   "pix": 718131,
+   "x": -0.5860035494577893,
+   "y": -0.7901343191930232,
+   "z": -0.1796875
+  },
+  {
+   "pix": 49344,
+   "x": 0.49832507820536726,
+   "y": 0.4983250782053672,
+   "z": 0.7094675699869792
+  },
+  {
+   "pix": 87953,
+   "x": -0.7103975547126543,
+   "y": 0.04849181429613816,
+   "z": 0.7021280924479167
+  },
+  {
+   "pix": 781348,
+   "x": 0.5224160431428333,
+   "y": -0.7923325324737656,
+   "z": -0.31510416666666663
+  },
+  {
+   "pix": 758454,
+   "x": 0.31624272690544164,
+   "y": -0.5990738679190131,
+   "z": -0.735595703125
+  },
+  {
+   "pix": 266645,
+   "x": 0.8824894843433956,
+   "y": 0.21817698987798112,
+   "z": -0.41666666666666663
+  },
+  {
+   "pix": 182038,
+   "x": -0.3293740895737122,
+   "y": -0.4541593678532718,
+   "z": 0.8277994791666667
+  },
+  {
+   "pix": 638317,
+   "x": -0.4022783847152916,
+   "y": 0.8178472602640493,
+   "z": -0.4114583333333333
+  },
+  {
+   "pix": 100832,
+   "x": -0.2792385979753576,
+   "y": 0.8116867807022169,
+   "z": 0.5130208333333333
+  },
+  {
+   "pix": 729381,
+   "x": 0.09478606479142221,
+   "y": -0.2612283051333755,
+   "z": -0.9606119791666666
+  },
+  {
+   "pix": 610899,
+   "x": -0.6597066263155129,
+   "y": 0.0817356405914531,
+   "z": -0.7470652262369792
+  },
+  {
+   "pix": 351958,
+   "x": -0.5243310951449813,
+   "y": 0.8451190497318235,
+   "z": 0.10416666666666666
+  },
+  {
+   "pix": 153847,
+   "x": -0.213951453509212,
+   "y": -0.7212045220374508,
+   "z": 0.6588541666666666
+  }
+ ]
+}

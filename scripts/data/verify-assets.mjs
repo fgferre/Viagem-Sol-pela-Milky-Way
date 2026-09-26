@@ -10,10 +10,12 @@ import {
   decodeSpiralAnchors,
   evaluateSpiralModel,
 } from './lib/spiral-fit.mjs';
+import { compararComReferencia, deFloat16 } from './lib/volume.mjs';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const publicDirectory = path.join(rootDirectory, 'public');
 const manifestPath = path.join(publicDirectory, 'data', 'galaxy', 'manifest.json');
+const dustFixturePath = path.join(rootDirectory, 'scripts', 'data', 'fixtures', 'edenhofer-referencia.json');
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
 const spiralModel = JSON.parse(
   await readFile(
@@ -49,6 +51,57 @@ for (const { input, expected } of coordinateCases) {
 for (const [assetName, asset] of Object.entries(manifest.assets)) {
   const assetPath = path.join(publicDirectory, asset.file);
   const buffer = await readFile(assetPath);
+
+  if (asset.kind === 'volume') {
+    // Ativo float16 (o bloco de poeira de 20 pc, E1) — schema próprio,
+    // sem `strideFloat32`: byteLength = count × 2, dims multiplicam
+    // para count, todo valor finito e ≥ 0, e, se a fixture do
+    // interpolador oficial existir, o resíduo por voxel/coluna dentro
+    // da tolerância (Decisão 1 do PLAN.md).
+    const expectedBytes = asset.count * 2;
+    if (buffer.byteLength !== expectedBytes || asset.byteLength !== expectedBytes) {
+      throw new Error(
+        `${assetName}: ${buffer.byteLength} bytes; manifesto/schema exigem ${expectedBytes} (float16).`
+      );
+    }
+    if (asset.dims.reduce((a, b) => a * b, 1) !== asset.count) {
+      throw new Error(`${assetName}: dims ${asset.dims.join('×')} não multiplicam para count ${asset.count}.`);
+    }
+    if (sha256(buffer) !== asset.sha256) {
+      throw new Error(`${assetName}: SHA-256 diverge do manifesto.`);
+    }
+    const valores = deFloat16(buffer, asset.scale);
+    for (let i = 0; i < valores.length; i += 1) {
+      if (!Number.isFinite(valores[i]) || valores[i] < 0) {
+        throw new Error(`${assetName}: valor float16 inválido (${valores[i]}) no índice ${i}.`);
+      }
+    }
+    if (existsSync(dustFixturePath)) {
+      const fixture = JSON.parse(await readFile(dustFixturePath, 'utf8'));
+      const grade = {
+        nx: asset.dims[0],
+        ny: asset.dims[1],
+        nz: asset.dims[2],
+        voxelPc: asset.voxelPc,
+        origemPc: asset.originPc,
+      };
+      const resultado = compararComReferencia({ grade, valores }, fixture);
+      if (!resultado.voxel.aprovado || !resultado.coluna.aprovado) {
+        throw new Error(
+          `${assetName}: comparação com a fixture Edenhofer excede a tolerância ` +
+            `(voxel máximo relativo ${resultado.voxel.maximoRelativo.toFixed(3)}, ` +
+            `coluna máximo relativo ${resultado.coluna.maximoRelativo.toFixed(3)}).`
+        );
+      }
+      console.log(
+        `${assetName}: fixture Edenhofer OK (voxel máximo relativo ` +
+          `${resultado.voxel.maximoRelativo.toFixed(3)}, coluna máximo relativo ` +
+          `${resultado.coluna.maximoRelativo.toFixed(3)}).`
+      );
+    }
+    continue;
+  }
+
   const expectedBytes = asset.count * asset.strideFloat32 * Float32Array.BYTES_PER_ELEMENT;
   if (buffer.byteLength !== expectedBytes || asset.byteLength !== expectedBytes) {
     throw new Error(
