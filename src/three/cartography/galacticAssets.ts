@@ -38,15 +38,37 @@ import { fetchBinary } from '../config';
  * se prova que cada índice cravado ainda aponta para o campo certo.
  */
 interface ManifestAsset {
+  /** ausente nos catálogos Float32 — só os volumes (E1) declaram 'volume'. */
+  kind?: 'table';
   file: string;
   count: number;
   strideFloat32: number;
   byteLength: number;
 }
 
+/**
+ * Um descritor de VOLUME do manifesto (E1: `dust-near-20pc.bin` e o que
+ * vier depois) — `loadGalacticAssets` só lê este formato, nunca baixa os
+ * bytes; quem baixa é `carregarVolumeDePoeira`, chamado pelo director só
+ * quando a cartografia está ligada.
+ */
+export interface ManifestVolume {
+  kind: 'volume';
+  file: string;
+  dims: [number, number, number];
+  voxelPc: number;
+  originPc: [number, number, number];
+  scale: number;
+  type: string;
+  byteLength: number;
+  sha256: string;
+  innerRadiusPc: number;
+  outerRadiusPc: number;
+}
+
 interface GalaxyManifest {
   schemaVersion: number;
-  assets: Record<string, ManifestAsset>;
+  assets: Record<string, ManifestAsset | ManifestVolume>;
 }
 
 /** Um catálogo bruto: `count` registros de `stride` floats. */
@@ -133,12 +155,34 @@ export function cartografiaMedida(): boolean {
 }
 
 /**
+ * O bloco de poeira medida (E2) chegou? Estado à parte de `mapasChegaram`
+ * — a poeira é opcional e nunca derruba a cartografia — escrito pelo
+ * director quando a carga (real ou sintética) resolve, lido pelo selo.
+ */
+let blocoDePoeira: 'pendente' | 'chegou' | 'falhou' = 'pendente';
+
+export function registrarBlocoDePoeira(estado: 'chegou' | 'falhou'): void {
+  blocoDePoeira = estado;
+}
+
+export function estadoDoBlocoDePoeira(): 'pendente' | 'chegou' | 'falhou' {
+  return blocoDePoeira;
+}
+
+/**
  * Carrega todos os catálogos em paralelo. Retorna null se qualquer
  * parte faltar — o chamador decide seguir só com o procedural.
+ *
+ * `volumes` (E2) são só os DESCRITORES do manifesto (`kind === 'volume'`)
+ * — nunca os bytes: quem baixa um volume é `carregarVolumeDePoeira`,
+ * chamada pelo director depois que este resultado chega. Um manifesto
+ * sem nenhum volume (ou um schema mais velho) devolve `volumes: {}`, sem
+ * afetar `mapasChegaram` nem o restante da carga — a poeira medida é
+ * estritamente opcional em cima da cartografia já opcional.
  */
 export async function loadGalacticAssets(
   signal?: AbortSignal
-): Promise<GalacticAssets | null> {
+): Promise<(GalacticAssets & { volumes: Record<string, ManifestVolume> }) | null> {
   const base = import.meta.env.BASE_URL;
   try {
     const manifestResponse = await fetch(`${base}data/galaxy/manifest.json`, { signal });
@@ -150,19 +194,72 @@ export async function loadGalacticAssets(
       REQUIRED.map((name) => {
         const asset = manifest.assets[name];
         if (!asset) throw new Error(`manifesto sem o ativo "${name}".`);
-        return fetchTable(base, asset, signal);
+        // REQUIRED só lista catálogos — nunca um nome de volume (kind
+        // 'volume'); o cast cobre a união sem alargar a assinatura de
+        // fetchTable para um caso que ele nunca recebe.
+        return fetchTable(base, asset as ManifestAsset, signal);
       })
     );
     const result = {} as Record<keyof GalacticAssets, CatalogueTable>;
     REQUIRED.forEach((name, index) => {
       result[name] = tables[index];
     });
+    const volumes: Record<string, ManifestVolume> = {};
+    for (const [name, asset] of Object.entries(manifest.assets)) {
+      if (asset.kind === 'volume') volumes[name] = asset;
+    }
     mapasChegaram = true;
-    return result as GalacticAssets;
+    return { ...result, volumes } as GalacticAssets & { volumes: Record<string, ManifestVolume> };
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;
     mapasChegaram = false;
     console.warn('[cartografia] ativos observacionais indisponíveis — cena procedural.', error);
+    return null;
+  }
+}
+
+/** Um volume de poeira medida já em memória: bits crus de float16
+ *  little-endian (`dados[i]` é o half-float, não o valor decodificado —
+ *  ver `poeiraMedida`/`poeiraDensidadeApp` em shaders/common.ts), do
+ *  tamanho exato que `descritor.dims` exige. */
+export interface VolumeDePoeira {
+  descritor: ManifestVolume;
+  dados: Uint16Array;
+}
+
+/**
+ * Baixa e valida UM volume de poeira medida (E2: `dust-near-20pc.bin`,
+ * descrito em `loadGalacticAssets(...).volumes`). Falha graciosa como
+ * todo o resto deste módulo, mas SEM tocar em `mapasChegaram` — a
+ * poeira medida é um extra opcional sobre uma cartografia que já é
+ * opcional por si só, e um bloco ausente/corrompido nunca deve apagar
+ * o selo "medido" dos catálogos que chegaram direito. Nunca lança
+ * (nem AbortError): qualquer falha vira `console.warn` + `null`, e o
+ * chamador (director.ts) trata `null` como "poeira desligada".
+ */
+export async function carregarVolumeDePoeira(
+  base: string,
+  descritor: ManifestVolume,
+  signal?: AbortSignal
+): Promise<VolumeDePoeira | null> {
+  try {
+    if (descritor.type !== 'float16') {
+      throw new Error(`${descritor.file}: tipo "${descritor.type}" não é float16.`);
+    }
+    const [nx, ny, nz] = descritor.dims;
+    const esperado = nx * ny * nz * 2;
+    if (descritor.byteLength !== esperado) {
+      throw new Error(
+        `${descritor.file}: manifesto declara ${descritor.byteLength} bytes; dims exigem ${esperado}.`
+      );
+    }
+    const buffer = await fetchBinary(`${base}${descritor.file}`, signal);
+    if (buffer.byteLength !== esperado) {
+      throw new Error(`${descritor.file}: ${buffer.byteLength} bytes; esperado ${esperado}.`);
+    }
+    return { descritor, dados: new Uint16Array(buffer) };
+  } catch (error) {
+    console.warn('[poeira] volume indisponível — poeira medida desligada.', error);
     return null;
   }
 }

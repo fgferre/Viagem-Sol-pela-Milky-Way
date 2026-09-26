@@ -247,6 +247,7 @@ export function Selo({
   vista,
   cartografiaMedida,
   cartografiaDesligada,
+  poeira,
   onEscalaReal,
   onBrilhoReal,
 }: {
@@ -259,6 +260,12 @@ export function Selo({
   cartografiaMedida: boolean;
   /** …e quando não chegaram, foi porque o visitante pediu (`?cart=off`)? */
   cartografiaDesligada: boolean;
+  /**
+   * A poeira medida do Gaia perto de casa (E2): medida (bloco assado),
+   * desligada (o visitante não a pediu) ou ausente (pedida, mas o bloco
+   * não chegou). Sem valor, a legenda fica a de antes da E2.
+   */
+  poeira?: 'medida' | 'desligada' | 'ausente';
   onEscalaReal: () => void;
   onBrilhoReal: () => void;
 }) {
@@ -478,7 +485,7 @@ export function Selo({
           </button>
 
           <p className="atlas-selo-legenda">
-            {legendaDaProcedencia(cartografiaMedida, cartografiaDesligada)}
+            {legendaDaProcedencia(cartografiaMedida, cartografiaDesligada, poeira)}
           </p>
         </div>
       )}

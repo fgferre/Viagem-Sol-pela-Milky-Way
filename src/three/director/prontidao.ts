@@ -40,6 +40,15 @@ export interface TermosDaProntidao {
   solAssentado: boolean;
   corposAssentados: boolean;
   fonteAssentada: boolean;
+  /**
+   * A POEIRA MEDIDA (E2, PLAN.md): desligada (nada a esperar — `?poeira=`
+   * não pedida, cartografia fora, ou variante sem bake de poeira), ou o
+   * bloco já chegou e já foi assado pelo menos uma vez desde que chegou.
+   * Sem este termo a captura poderia saltar na frente do fetch
+   * assíncrono de `carregarVolumeDePoeira` — que, como a efeméride
+   * (`fonteAssentada`), não perturba `quadrosEstaveis` por si só.
+   */
+  poeiraAssentada: boolean;
   quadrosEstaveis: number;
   tier: QualityLevel;
   /**
@@ -110,6 +119,7 @@ export function julgarProntidao(t: TermosDaProntidao) {
       t.solAssentado &&
       t.corposAssentados &&
       t.fonteAssentada &&
+      t.poeiraAssentada &&
       t.quadrosEstaveis >= QUADROS_ESTAVEIS,
     quadros: t.quadrosEstaveis,
     fase: t.fase,
@@ -117,6 +127,7 @@ export function julgarProntidao(t: TermosDaProntidao) {
     sol: t.solAssentado,
     corpos: t.corposAssentados,
     fonte: t.fonteAssentada,
+    poeira: t.poeiraAssentada,
     tier: t.tier,
     tierDoMundo: t.tierDoMundo,
   };

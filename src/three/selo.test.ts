@@ -51,7 +51,7 @@ import {
 import { DRAMA_T1, doseDaDramaturgia } from './director/doseDoSol';
 import { LIMIAR_SISTEMA_SOLAR_PC } from './escala';
 import { TONE_MAPPINGS } from './core/engine';
-import { definirIdioma, iniciarIdioma } from '../lib/idioma';
+import { definirIdioma, iniciarIdioma, t } from '../lib/idioma';
 import type { ToneMapMode } from './core/engine';
 
 /** o estado de uma vista limpa: nada tocado, nada na URL */
@@ -766,6 +766,47 @@ describe('5. a copy do selo', () => {
     // medidos. A legenda que dissesse "medido: nada" seria a mentira
     // contrária à que este teste existe para impedir.
     expect(caida).toContain(`${PROCEDENCIA.medido.rotulo}: ${PROCEDENCIA.medido.oQue}`);
+  });
+
+  /**
+   * A QUARTA LINHA, quando pedida (Onda E2): o bloco de poeira do Gaia
+   * perto do Sol usa o mesmo canal do selo, como parâmetro OPCIONAL —
+   * sem ele o texto de hoje não perde nem ganha um byte. Quem liga isto
+   * ao estado real do bloco é o director, noutra frente; aqui só a
+   * conta pura, nos três estados possíveis.
+   */
+  it('a poeira do Gaia soma uma linha opcional, um estado por vez, sem mover o texto de hoje', () => {
+    const medida = legendaDaProcedencia(true);
+
+    // sem o parâmetro, byte a byte igual ao que já existia
+    expect(legendaDaProcedencia(true)).toBe(medida);
+    expect(medida).not.toContain('poeira');
+
+    expect(legendaDaProcedencia(true, false, 'medida')).toBe(
+      `${medida} · ${t('selo.poeiraMedida')}`
+    );
+    expect(legendaDaProcedencia(true, false, 'desligada')).toBe(
+      `${medida} · ${t('selo.poeiraDesligada')}`
+    );
+    expect(legendaDaProcedencia(true, false, 'ausente')).toBe(
+      `${medida} · ${t('selo.poeiraAusente')}`
+    );
+
+    // convive com a cartografia caída, na ordem tiers · cartografia · poeira
+    const caida = legendaDaProcedencia(false);
+    expect(legendaDaProcedencia(false, false, 'medida')).toBe(
+      `${caida} · ${t('selo.poeiraMedida')}`
+    );
+
+    // e fala inglês como o resto do selo
+    const poeiraMedidaPt = t('selo.poeiraMedida');
+    definirIdioma('en');
+    expect(legendaDaProcedencia(true, false, 'medida')).toBe(
+      `${legendaDaProcedencia(true)} · ${t('selo.poeiraMedida')}`
+    );
+    expect(t('selo.poeiraMedida')).not.toBe(poeiraMedidaPt);
+    expect(t('selo.poeiraMedida')).toContain('Gaia');
+    definirIdioma('pt-BR');
   });
 });
 

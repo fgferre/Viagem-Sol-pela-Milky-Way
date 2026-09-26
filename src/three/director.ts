@@ -65,6 +65,7 @@ import { exposicaoDoQuadro, stopsDaVisita } from '../lib/atlas/luzDaVisita';
 import { lerPortaLuz } from './selo';
 import type { VerDaEscada } from './selo';
 import { sondarGl } from '../lib/glProbe';
+import { montarContadorDeFps } from '../lib/contadorDeFps';
 import { EPOCA_JD_TDB } from './world/planetas/retrato2026';
 import { lerPortaJd } from './tempoDoAtlas';
 import type { EstadoDoTempo, SentidoDoTempo } from './tempoDoAtlas';
@@ -74,7 +75,11 @@ import { EXPO_M0, SIGMA_PX } from './luzDaCasa';
 // pura (`repartir`, estrela.ts) — quem a chama por quadro é o módulo
 // do Sol (director/solNoQuadro.ts), com a câmera e o instrumento que
 // o director lhe entrega no tick.
-import { loadGalacticAssets } from './cartography/galacticAssets';
+import {
+  loadGalacticAssets,
+  carregarVolumeDePoeira,
+  registrarBlocoDePoeira,
+} from './cartography/galacticAssets';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { NuvensSemente } from './director/nuvensSemente';
 import { VeuDoAtlas } from './director/veu';
@@ -104,7 +109,7 @@ import {
   efemeridesPrecisamPreCarga,
 } from './director/preAquecimento';
 import type { PostoNoPalco } from './director/palco';
-import type { GalacticAssets } from './cartography/galacticAssets';
+import type { GalacticAssets, VolumeDePoeira } from './cartography/galacticAssets';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
 import type { EstadoDaBussola } from './cinematic/atlasRig';
 import type { ReservaDaFicha } from './cinematic/retanguloDoAtlas';
@@ -578,6 +583,9 @@ export class Director {
   private hide = new Set<string>();
   /** ?exp= na query desliga a auto-exposição (App.tsx aplica o valor fixo) */
   private expOverride = false;
+  /** ?fps=1 (E2, PLAN.md): quadros/s e o bake mais recente da poeira, na
+   *  tela — `null` = porta desligada, `contadorDeFps.ts` nunca criado */
+  private contadorFps: ((agora: number, bakeMs?: number) => void) | null = null;
 
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
@@ -697,6 +705,34 @@ export class Director {
     void this.assets.catch(() => {});
     this.post = new Post(this.engine.renderer, this.engine.scene, this.engine.camera);
     this.nebula = new Nebula(0.5);
+    // POEIRA MEDIDA (E2): ?poeira=0|1|2|teste (2 e teste valem como 1 —
+    // o nível fino e a leitura direta são da E3) + ?poeiragain=/
+    // ?poeiragama=/?poeiralanes=, mesmo padrão de leitura de `cart=off`
+    // em startLoading() — mas AQUI, não lá: startLoading() já roda na
+    // linha acima (`this.assets = this.startLoading()`, "a rede
+    // primeiro"), antes desta Nebula existir. Ver Nebula.setPoeira e
+    // poeiraDensidadeApp em shaders/common.ts.
+    // Portas por LITERAL (não por uma função com `chave: string`
+    // genérica) de propósito: é assim que a varredura de completude do
+    // selo (selo.test.ts, `PADRAO_DE_PORTA`) as vê para cobrar o
+    // registro — uma função genérica escondia `poeiragain`/`poeiragama`/
+    // `poeiralanes` dela (achado ao rodar a suíte inteira nesta etapa).
+    const poeiraParam = this.debug.get('poeira');
+    const poeiraGanhoParam = parseFloat(this.debug.get('poeiragain') ?? '');
+    const poeiraGamaParam = parseFloat(this.debug.get('poeiragama') ?? '');
+    const poeiraLanesParam = parseFloat(this.debug.get('poeiralanes') ?? '');
+    this.nebula.setPoeira({
+      modo: poeiraParam === '1' || poeiraParam === '2' || poeiraParam === 'teste' ? 1 : 0,
+      ganho: Number.isFinite(poeiraGanhoParam) ? poeiraGanhoParam : 46.9,
+      gama: Number.isFinite(poeiraGamaParam) ? poeiraGamaParam : 1,
+      lanes: Number.isFinite(poeiraLanesParam) ? poeiraLanesParam : 0,
+    });
+    // CONTADOR DE FPS NA TELA (E2): ?fps=1, mesmo padrão de leitura do
+    // `poeira=` acima — só existe para medir custo sem abrir o DevTools
+    // (contadorDeFps.ts); alimentado a cada quadro, no fim de tick().
+    if (this.debug.get('fps') === '1') {
+      this.contadorFps = montarContadorDeFps();
+    }
     // Sol procedural transplantado (vivo: sim + bake + ciclo); o prime
     // do construtor compila os quads offscreen com RT amarrado. Desde a
     // Onda 3 o corpo é parametrizado e o Sol é a instância 1: quem
@@ -949,6 +985,62 @@ export class Director {
   }
 
   /**
+   * O volume SINTÉTICO de `?poeira=teste` (E2) — troca o fetch real por
+   * uma grade pequena em memória, mesma origem/voxel do bloco real numa
+   * escala menor (40×40×20 de 20 pc, ±400/±400/±200 pc): zerada, com três
+   * blocos de 3×3×3 voxels em heliocêntrico galáctico (ver `poeiraHelio`
+   * em shaders/common.ts) — 0,05 E/pc no centro galáctico (+300,0,0),
+   * 0,02 em l=90° (0,+300,0), 0,01 no norte (0,0,+150). É o volume da
+   * prova de orientação: do Sol para o centro galáctico tem de aparecer
+   * o bloco mais forte. Bits crus de half-float por `THREE.DataUtils`
+   * (não o `Float16Array` nativo do JS — mesmos bits, sem depender de um
+   * global recente demais para o Safari do iPhone confirmar a tempo).
+   */
+  private volumeSinteticoDePoeira(): VolumeDePoeira {
+    const dims: [number, number, number] = [40, 40, 20];
+    const voxelPc = 20;
+    const originPc: [number, number, number] = [-400, -400, -200];
+    const [nx, ny, nz] = dims;
+    const dados = new Uint16Array(nx * ny * nz);
+    const escreverBloco = (xh: number, yh: number, zh: number, densidadeEPorPc: number) => {
+      const cx = Math.round((xh - originPc[0]) / voxelPc);
+      const cy = Math.round((yh - originPc[1]) / voxelPc);
+      const cz = Math.round((zh - originPc[2]) / voxelPc);
+      const bits = THREE.DataUtils.toHalfFloat(densidadeEPorPc * 1000);
+      for (let dz = -1; dz <= 1; dz++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const ix = cx + dx;
+            const iy = cy + dy;
+            const iz = cz + dz;
+            if (ix < 0 || ix >= nx || iy < 0 || iy >= ny || iz < 0 || iz >= nz) continue;
+            dados[ix + nx * (iy + ny * iz)] = bits;
+          }
+        }
+      }
+    };
+    escreverBloco(300, 0, 0, 0.05); // direção do centro galáctico
+    escreverBloco(0, 300, 0, 0.02); // l = 90°
+    escreverBloco(0, 0, 150, 0.01); // norte
+    return {
+      descritor: {
+        kind: 'volume',
+        file: '(sintético — ?poeira=teste)',
+        dims,
+        voxelPc,
+        originPc,
+        scale: 1000,
+        type: 'float16',
+        byteLength: dados.byteLength,
+        sha256: '',
+        innerRadiusPc: 0,
+        outerRadiusPc: Math.min(nx, ny, nz) * voxelPc * 0.5,
+      },
+      dados,
+    };
+  }
+
+  /**
    * SÓ O RÓTULO, sem fôlego: é o que a carga em worker precisa. Os ~5 s
    * de CPU pesada (os dois bakes de mapa e a população) rodam fora da
    * thread desde os Ajustes B, e é o próprio worker quem avisa a etapa
@@ -1028,6 +1120,40 @@ export class Director {
     // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
     // o envelope de gás do raymarch mesmo sem APOGEE (R/G zerados).
     const cartOn = Boolean(galactic) && cartMode !== 'off';
+    // POEIRA MEDIDA (E2): dispara SEM bloquear a cena (só `.then`, nunca
+    // `await` aqui) — o `.then` entrega na Nebula quando chegar. Sem
+    // `cartOn` não há `volumes` (o manifesto nem foi buscado) e a poeira
+    // fica desligada o tempo todo — `get captura` trata isso adiante via
+    // `this.cartMode`. `?poeira=teste` troca o arquivo por um volume
+    // SINTÉTICO em memória (a prova de orientação: do Sol para o centro
+    // galáctico tem de aparecer o bloco mais forte).
+    if (cartOn && galactic) {
+      const base = import.meta.env.BASE_URL;
+      const promessa =
+        this.debug.get('poeira') === 'teste'
+          ? Promise.resolve<VolumeDePoeira | null>(this.volumeSinteticoDePoeira())
+          : galactic.volumes.dustVolumeNear20pc
+            ? carregarVolumeDePoeira(
+                base,
+                galactic.volumes.dustVolumeNear20pc,
+                this.abortController.signal
+              )
+            : Promise.resolve(null);
+      promessa.then((volume) => {
+        if (this.disposed) return;
+        const maiorDim = volume ? Math.max(...volume.descritor.dims) : 0;
+        const teto = sondarGl().max3DTextureSize;
+        if (volume && teto !== undefined && teto < maiorDim) {
+          console.warn(
+            `[poeira] Data3DTexture de ${maiorDim} excede o teto do aparelho (${teto}) — poeira desligada.`
+          );
+          registrarBlocoDePoeira('falhou');
+          return;
+        }
+        this.nebula.setPoeiraMedida(volume);
+        registrarBlocoDePoeira(volume ? 'chegou' : 'falhou');
+      });
+    }
     // O CHECK DEPOIS DE CADA `stage` — e não só depois dos três awaits que
     // já o tinham. Cada `stage` cede a thread por um `setTimeout(0)`, e um
     // `dispose()` que caia nessa janela (Fast Refresh em dev, unmount no
@@ -1415,12 +1541,20 @@ export class Director {
       this.maquinaDoTempo.faseDaEfemeride === 'indisponivel' &&
       this.quadrosTentandoFonte < QUADROS_TENTANDO_FONTE
     );
+    // A POEIRA MEDIDA (E2): sem cartografia o fetch nem é disparado (ver
+    // `init`) — `this.cartMode` só vira 'off' depois que `init` resolve
+    // se ligar ou não (linha do `this.cartMode = cartOn ? cartMode :
+    // 'off'`), então nada a esperar aqui cobre TANTO `?cart=off` quanto
+    // um `loadGalacticAssets` que falhou. Fora disso, quem decide é a
+    // própria Nebula (variante, modo pedido, bloco carregado e assado).
+    const poeiraAssentada = this.cartMode === 'off' || this.nebula.poeiraAssentada;
     return julgarProntidao({
       fase: this.phase,
       andando,
       solAssentado: this.sun.assentado,
       corposAssentados,
       fonteAssentada,
+      poeiraAssentada,
       quadrosEstaveis: this.quadrosEstaveis,
       tier: this.engine.quality,
       tierDoMundo: this.tierDoMundo,
@@ -3249,6 +3383,15 @@ export class Director {
     this.quadrosEstaveis++;
     // e o mesmo critério — DESENHADO — para "o modo já está na tela"
     this.quadrosDaFase++;
+    // CONTADOR DE FPS NA TELA (E2): só existe com ?fps=1 (ver
+    // constructor); `window.__poeira` vem do bake mais recente da
+    // Nebula (`Nebula.bake`, sempre medido). `performance.now()` e não
+    // `time`/`rawTime`: o contador mede o quadro REAL, mesmo congelado
+    // no modo foto (`shotMode`) ou com a viagem em pausa.
+    this.contadorFps?.(
+      performance.now(),
+      (window as unknown as { __poeira?: { ultimoMs?: number } }).__poeira?.ultimoMs
+    );
   }
 
 

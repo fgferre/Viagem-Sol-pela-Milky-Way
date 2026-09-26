@@ -36,6 +36,9 @@ export interface GlCapacidades {
    */
   webgl2?: boolean;
   maxTextureSize?: number;
+  /** MAX_3D_TEXTURE_SIZE (E2) — teto do `Data3DTexture` da poeira medida;
+   *  director.ts pula o bloco (com aviso) se alguma dimensão o exceder. */
+  max3DTextureSize?: number;
 }
 
 let cache: GlCapacidades | null = null;
@@ -60,9 +63,18 @@ export function sondarGl(): GlCapacidades {
     } catch {
       /* ilegível: fica de fora do veredito */
     }
+    // MAX_3D_TEXTURE_SIZE só existe no contexto WebGL2 — daí ler de `gl2`,
+    // nunca do `gl` que pode ter caído para o WebGL1 do fallback acima.
+    let max3DTex = 0;
+    try {
+      if (gl2) max3DTex = Number(gl2.getParameter(gl2.MAX_3D_TEXTURE_SIZE));
+    } catch {
+      /* ilegível: fica de fora do veredito */
+    }
     gl.getExtension('WEBGL_lose_context')?.loseContext();
     cache = { suportado: true, webgl2: gl2 !== null };
     if (Number.isFinite(maxTex) && maxTex > 0) cache.maxTextureSize = maxTex;
+    if (Number.isFinite(max3DTex) && max3DTex > 0) cache.max3DTextureSize = max3DTex;
   } catch {
     cache = { suportado: false };
   } finally {

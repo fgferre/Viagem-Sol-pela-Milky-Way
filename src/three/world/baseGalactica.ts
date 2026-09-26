@@ -64,6 +64,31 @@ export function dentroDoDisco(pos: THREE.Vector3): number {
   );
 }
 
+/**
+ * Converte heliocêntrico galáctico CONVENCIONAL (pc; xh → centro
+ * galáctico, yh → l=90°, zh → polo norte — a base do manifesto de
+ * `public/data/galaxy`, ex. `dustVolumeNear20pc`) para a cena. O Sol é a
+ * ORIGEM da cena (as posições de catálogo já nascem heliocêntricas nela),
+ * então o contrato não soma `GAL.GC_POS`: é só a base EX/EY/EZ lida ao
+ * contrário — `EX`/`EY` apontam do CENTRO para o Sol/para l=270°, e os
+ * eixos xh/yh apontam do Sol para o centro/para l=90°, exatamente opostos:
+ * `pCena = −xh·EX − yh·EY + zh·EZ`. Provado contra a rota independente
+ * `heliocentricGalacticToProject` + `galactocentricToScene` em
+ * `baseGalactica.test.ts` (diferença ~5e-7 pc, tolerância 1e-3).
+ */
+export function helioGalacticoParaCena(
+  xh: number,
+  yh: number,
+  zh: number,
+  alvo = new THREE.Vector3()
+): THREE.Vector3 {
+  return alvo.set(
+    -xh * EX.x - yh * EY.x + zh * EZ.x,
+    -xh * EX.y - yh * EY.y + zh * EZ.y,
+    -xh * EX.z - yh * EY.z + zh * EZ.z
+  );
+}
+
 /** Converte coordenadas galactocêntricas do projeto (pc) para a cena. */
 export function galactocentricToScene(
   lx: number,

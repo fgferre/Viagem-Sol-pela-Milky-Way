@@ -459,6 +459,9 @@ export const PT = {
   'selo.cartografiaProcedural': 'cartografia: procedural (os mapas não chegaram)',
   'selo.cartografiaDesligada':
     'cartografia: procedural (os mapas desligados por ?cart=off)',
+  'selo.poeiraMedida': 'poeira perto de casa: medida (Gaia, Edenhofer 2024, até 1,2 kpc)',
+  'selo.poeiraDesligada': 'poeira perto de casa: procedural (bloco medido desligado)',
+  'selo.poeiraAusente': 'poeira perto de casa: procedural (o bloco não chegou)',
   'selo.luzAssistida':
     'cada mundo visitado é exposto para a luz que ELE recebe — uma foto tirada ali, não com o ajuste da Terra. A ordem verdadeira de brilho continua no céu, no ponto de cada corpo.',
   'selo.lanterna':

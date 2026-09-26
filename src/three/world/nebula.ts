@@ -13,6 +13,7 @@ import {
 import { makeBlueNoiseTexture } from './blueNoise';
 import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
 import type { GasVolumetrico } from '../core/engine';
+import type { VolumeDePoeira } from '../cartography/galacticAssets';
 
 /** a variante de nascença — a mesma que o fragment do raymarch e do bake
  *  sempre foram antes do item 145b (macio: tudo assado, sem `?nebvol=`
@@ -164,6 +165,27 @@ export class Nebula {
     THREE.RGBAFormat,
     THREE.UnsignedByteType
   );
+  /**
+   * POEIRA MEDIDA (E2, PLAN.md) — ver GLSL_POEIRA_MEDIDA em
+   * shaders/common.ts. `fallbackPoeiraTex` (1×1×1, R16F zerada) é o
+   * sampler válido antes do bloco chegar (mesmo papel de
+   * `fallbackDustMap`, em 3D); `poeiraTexAtual` é a textura REAL do
+   * último bloco entregue por `setPoeiraMedida`, guardada só para o
+   * `dispose()` da troca/do fim de vida — nunca lida diretamente, os
+   * materiais sempre leem `uPoeiraTex`.
+   */
+  private fallbackPoeiraTex: THREE.Data3DTexture;
+  private poeiraTexAtual: THREE.Data3DTexture | null = null;
+  /** o bloco já chegou (setPoeiraMedida com um volume não-nulo)? entra em
+   *  `atualizarModoEfetivo` — ver o campo abaixo. */
+  private poeiraVolumeCarregado = false;
+  /**
+   * O modo PEDIDO (setPoeira; 0/1/2 — "teste" já chega como 1 do
+   * director). O modo EFETIVO que a GPU recebe (`uPoeiraModo`) só copia
+   * este valor quando a variante é 'macio' E o bloco já carregou —
+   * `atualizarModoEfetivo` escreve o efetivo nos dois materiais.
+   */
+  private poeiraModoPedido = 0;
 
   constructor(scale = 0.5) {
     this.scale = scale;
@@ -257,6 +279,17 @@ export class Nebula {
     this.sementesTex.magFilter = THREE.NearestFilter;
     this.sementesTex.generateMipmaps = false;
     this.sementesTex.needsUpdate = true;
+    // Poeira medida (E2): 1×1×1 R16F zerada — sampler válido até o
+    // primeiro `setPoeiraMedida` (mesmo papel de `fallbackDustMap`, em 3D).
+    this.fallbackPoeiraTex = new THREE.Data3DTexture(new Uint16Array([0]), 1, 1, 1);
+    this.fallbackPoeiraTex.format = THREE.RedFormat;
+    this.fallbackPoeiraTex.type = THREE.HalfFloatType;
+    this.fallbackPoeiraTex.minFilter = THREE.LinearFilter;
+    this.fallbackPoeiraTex.magFilter = THREE.LinearFilter;
+    this.fallbackPoeiraTex.wrapS = THREE.ClampToEdgeWrapping;
+    this.fallbackPoeiraTex.wrapT = THREE.ClampToEdgeWrapping;
+    this.fallbackPoeiraTex.wrapR = THREE.ClampToEdgeWrapping;
+    this.fallbackPoeiraTex.needsUpdate = true;
     this.volumeMaterial = new THREE.ShaderMaterial({
       vertexShader: NEBULA_VERT,
       fragmentShader: nebulaBakeFrag(VARIANTE_DE_NASCENCA),
@@ -267,6 +300,17 @@ export class Nebula {
         uSeedCloudCount: { value: 0 },
         uVolMin: { value: new THREE.Vector3() },
         uVolTamanho: { value: new THREE.Vector3(1, 1, 1).multiplyScalar(2 * Nebula.MEIA_ARESTA) },
+        // Poeira medida (E2) — ver GLSL_POEIRA_MEDIDA em shaders/common.ts
+        // e `atualizarModoEfetivo`/`setPoeira`/`setPoeiraMedida` abaixo.
+        uPoeiraTex: { value: this.fallbackPoeiraTex },
+        uPoeiraMin: { value: new THREE.Vector3() },
+        uPoeiraTamanho: { value: new THREE.Vector3(1, 1, 1) },
+        uPoeiraEscala: { value: 1 },
+        uPoeiraRaios: { value: new THREE.Vector2() },
+        uPoeiraModo: { value: 0 },
+        uPoeiraGanho: { value: 46.9 },
+        uPoeiraGama: { value: 1 },
+        uPoeiraLanes: { value: 0 },
       },
       depthWrite: false,
       depthTest: false,
@@ -313,6 +357,19 @@ export class Nebula {
         uVolume: { value: this.volumeRT.texture },
         uVolMin: { value: new THREE.Vector3() },
         uVolTamanho: { value: new THREE.Vector3(1, 1, 1).multiplyScalar(2 * Nebula.MEIA_ARESTA) },
+        // Poeira medida (E2) — mesmos uniforms de `this.volumeMaterial`
+        // acima, em objetos SEPARADOS (mesmo padrão de uVolMin/uVolTamanho
+        // nesta classe): o raymarch ainda não os lê nesta etapa, só os
+        // recebe para a E3 não precisar voltar aqui.
+        uPoeiraTex: { value: this.fallbackPoeiraTex },
+        uPoeiraMin: { value: new THREE.Vector3() },
+        uPoeiraTamanho: { value: new THREE.Vector3(1, 1, 1) },
+        uPoeiraEscala: { value: 1 },
+        uPoeiraRaios: { value: new THREE.Vector2() },
+        uPoeiraModo: { value: 0 },
+        uPoeiraGanho: { value: 46.9 },
+        uPoeiraGama: { value: 1 },
+        uPoeiraLanes: { value: 0 },
       },
       depthWrite: false,
       depthTest: false,
@@ -390,6 +447,145 @@ export class Nebula {
     // raymarch mesmo com a câmera parada, senão o céu da variante
     // anterior persistiria
     this.sujo = true;
+    // poeira medida (E2): só o macio a assa — trocar para fino/antigo
+    // tem de zerar `uPoeiraModo` (ver `atualizarModoEfetivo`), senão o
+    // material do macio ficaria com o modo ligado escondido no cache.
+    this.atualizarModoEfetivo();
+  }
+
+  /**
+   * O modo EFETIVO da poeira medida (`uPoeiraModo` que a GPU recebe): 0 a
+   * menos que a variante seja 'macio' E o bloco já tenha chegado — sem
+   * isso, `?poeira=1` pintaria cobertura sobre a caixa 1×1×1 zerada (ou
+   * sobre 'fino', que não a lê nesta etapa) enquanto o fetch assíncrono
+   * de `carregarVolumeDePoeira` ainda voa. Chamada por `setPoeira`,
+   * `setPoeiraMedida` e `setVariante` — as três coisas de que o efetivo
+   * depende.
+   */
+  private atualizarModoEfetivo() {
+    const efetivo =
+      this.variante === 'macio' && this.poeiraVolumeCarregado ? this.poeiraModoPedido : 0;
+    if (this.material.uniforms.uPoeiraModo.value === efetivo) return;
+    this.material.uniforms.uPoeiraModo.value = efetivo;
+    this.volumeMaterial.uniforms.uPoeiraModo.value = efetivo;
+    this.volumeSujo = true;
+    this.sujo = true;
+  }
+
+  /**
+   * `?poeira=`/`?poeiragain=`/`?poeiragama=`/`?poeiralanes=` (director.ts,
+   * mesmo padrão de leitura de `cart=off`) — ver `poeiraDensidadeApp` e
+   * `nebulaBake` em shaders/common.ts. `modo` é o PEDIDO (0/1/2, "teste"
+   * já chega como 1); o EFETIVO é recalculado no fim (ver
+   * `atualizarModoEfetivo`).
+   */
+  setPoeira({
+    modo,
+    ganho,
+    gama,
+    lanes,
+  }: {
+    modo: number;
+    ganho: number;
+    gama: number;
+    lanes: number;
+  }) {
+    // `poeiraModoPedido` é só o campo-fonte: quem decide se algo precisa
+    // reassar é `atualizarModoEfetivo` (compara o EFETIVO, não o pedido
+    // cru) — variante 'fino' pedindo modo 1 não pode sujar o volume, ou
+    // o quadro congelado (item 144) reassaria sem nenhum pixel mudar.
+    this.poeiraModoPedido = modo;
+    const u = this.material.uniforms;
+    const uv = this.volumeMaterial.uniforms;
+    if (u.uPoeiraGanho.value !== ganho) {
+      u.uPoeiraGanho.value = ganho;
+      uv.uPoeiraGanho.value = ganho;
+      this.volumeSujo = true;
+      this.sujo = true;
+    }
+    if (u.uPoeiraGama.value !== gama) {
+      u.uPoeiraGama.value = gama;
+      uv.uPoeiraGama.value = gama;
+      this.volumeSujo = true;
+      this.sujo = true;
+    }
+    if (u.uPoeiraLanes.value !== lanes) {
+      u.uPoeiraLanes.value = lanes;
+      uv.uPoeiraLanes.value = lanes;
+      this.volumeSujo = true;
+      this.sujo = true;
+    }
+    this.atualizarModoEfetivo();
+  }
+
+  /**
+   * O bloco de poeira medida chegou (E1: `dust-near-20pc.bin`, ou o
+   * volume sintético de `?poeira=teste`) — ou `null` se o fetch falhou,
+   * foi abortado, ou nunca foi disparado (`?cart=off`, manifesto sem
+   * `dustVolumeNear20pc`). Cria a `Data3DTexture` R16F (linear,
+   * ClampToEdge nos três eixos — `dados` já são os bits crus do
+   * half-float, little-endian), escreve os uniforms nos DOIS materiais e
+   * marca `volumeSujo`: reassa no próximo `render()`. `null` destrói a
+   * textura anterior e volta à 1×1×1 zerada — `atualizarModoEfetivo`
+   * zera `uPoeiraModo` junto.
+   */
+  setPoeiraMedida(volume: VolumeDePoeira | null) {
+    const texAnterior = this.poeiraTexAtual;
+    const u = this.material.uniforms;
+    const uv = this.volumeMaterial.uniforms;
+    if (!volume) {
+      this.poeiraVolumeCarregado = false;
+      u.uPoeiraTex.value = this.fallbackPoeiraTex;
+      uv.uPoeiraTex.value = this.fallbackPoeiraTex;
+      this.poeiraTexAtual = null;
+      texAnterior?.dispose();
+      this.volumeSujo = true;
+      this.sujo = true;
+      this.atualizarModoEfetivo();
+      return;
+    }
+    const { descritor, dados } = volume;
+    const [nx, ny, nz] = descritor.dims;
+    const tex = new THREE.Data3DTexture(dados, nx, ny, nz);
+    tex.format = THREE.RedFormat;
+    tex.type = THREE.HalfFloatType;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.wrapS = THREE.ClampToEdgeWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.wrapR = THREE.ClampToEdgeWrapping;
+    tex.needsUpdate = true;
+    this.poeiraTexAtual = tex;
+    this.poeiraVolumeCarregado = true;
+    const min = new THREE.Vector3(descritor.originPc[0], descritor.originPc[1], descritor.originPc[2]);
+    const tamanho = new THREE.Vector3(nx, ny, nz).multiplyScalar(descritor.voxelPc);
+    for (const uniforms of [u, uv]) {
+      uniforms.uPoeiraTex.value = tex;
+      (uniforms.uPoeiraMin.value as THREE.Vector3).copy(min);
+      (uniforms.uPoeiraTamanho.value as THREE.Vector3).copy(tamanho);
+      uniforms.uPoeiraEscala.value = 1 / descritor.scale;
+      (uniforms.uPoeiraRaios.value as THREE.Vector2).set(
+        descritor.innerRadiusPc,
+        descritor.outerRadiusPc
+      );
+    }
+    texAnterior?.dispose();
+    this.volumeSujo = true;
+    this.sujo = true;
+    this.atualizarModoEfetivo();
+  }
+
+  /**
+   * PRONTIDÃO DA CAPTURA (E2): desligada (nada a esperar) ou o bloco já
+   * chegou e já foi assado pelo menos uma vez desde que chegou —
+   * `director.ts` usa isto em `get captura` para a foto não saltar na
+   * frente do fetch assíncrono de `carregarVolumeDePoeira`, que não
+   * perturba `quadrosEstaveis` por si só. `director.ts` compõe isto com
+   * `this.cartMode === 'off'` (sem cartografia, o fetch nem é disparado).
+   */
+  get poeiraAssentada(): boolean {
+    if (this.poeiraModoPedido === 0 || this.variante !== 'macio') return true;
+    return this.poeiraVolumeCarregado && !this.volumeSujo;
   }
 
   private lastW = 960;
@@ -709,6 +905,7 @@ export class Nebula {
    * um passe fullscreen 2D assar um volume 3D, uma camada por vez.
    */
   private bake(renderer: THREE.WebGLRenderer) {
+    const t0 = performance.now();
     this.pedirSementes?.(this.centro);
     const prev = renderer.getRenderTarget();
     const uFatia = this.volumeMaterial.uniforms.uFatia;
@@ -722,6 +919,19 @@ export class Nebula {
     // o volume mudou: o quadro congelado (item 144) precisa refazer o
     // raymarch mesmo com a câmera parada, senão o céu antigo persistiria
     this.sujo = true;
+    // CUSTO DO BAKE (E2): sempre medido — custa nada e não depende de
+    // dev —, para `?fps=1` (director.ts/contadorDeFps.ts) mostrar na
+    // tela sem abrir o DevTools. `typeof window` porque este método
+    // roda inteiro sob `environment: node` em nebula.test.ts (mesma
+    // guarda de `stepsOverride`, acima).
+    if (typeof window !== 'undefined') {
+      const ms = performance.now() - t0;
+      const g = window as unknown as { __poeira?: { bakesMs: number[]; ultimoMs: number } };
+      if (!g.__poeira) g.__poeira = { bakesMs: [], ultimoMs: 0 };
+      g.__poeira.bakesMs.push(ms);
+      if (g.__poeira.bakesMs.length > 20) g.__poeira.bakesMs.shift();
+      g.__poeira.ultimoMs = ms;
+    }
   }
 
   render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) {
@@ -773,6 +983,8 @@ export class Nebula {
     this.lutMaterial.dispose();
     this.sementesTex.dispose();
     this.fallbackDustMap.dispose();
+    this.fallbackPoeiraTex.dispose();
+    this.poeiraTexAtual?.dispose();
     const bn = this.material.uniforms.uBlueNoise.value as THREE.Texture;
     bn.dispose();
     // as PlaneGeometry dos quads fullscreen também são GPU buffers

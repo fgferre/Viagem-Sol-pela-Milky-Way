@@ -436,6 +436,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.cartografiaProcedural': 'cartography: procedural (the maps did not arrive)',
   'selo.cartografiaDesligada':
     'cartography: procedural (maps turned off by ?cart=off)',
+  'selo.poeiraMedida': 'dust near home: measured (Gaia, Edenhofer 2024, to 1.2 kpc)',
+  'selo.poeiraDesligada': 'dust near home: procedural (measured block off)',
+  'selo.poeiraAusente': 'dust near home: procedural (the block did not arrive)',
   'selo.luzAssistida':
     'every world you visit is exposed for the light IT receives — a photograph taken there, not with the settings of Earth. The true order of brightness stays in the sky, at the point of each body.',
   'selo.lanterna':

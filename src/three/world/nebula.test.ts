@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
 import { Nebula } from './nebula';
+import type { VolumeDePoeira } from '../cartography/galacticAssets';
 
 function bancada() {
   const renderer = {
@@ -113,5 +114,98 @@ describe('o quadro congelado da nebulosa (item 144)', () => {
     nebula.setVariante('fino'); // já é a variante ativa: no-op
     nebula.render(renderer, camera);
     expect(desenhos()).toBe(261);
+  });
+});
+
+// item E2 (PLAN.md) — a poeira medida do Gaia entra no bake do macio.
+// `material`/`volumeMaterial` são privados: o acesso abaixo é o mesmo
+// molde de clarao.test.ts/orbitas.test.ts para conferir uniform escrito
+// sem GPU real (o `renderer` da bancada é um mock).
+function volumeFalso(): VolumeDePoeira {
+  return {
+    descritor: {
+      kind: 'volume',
+      file: 'dust-near-20pc.bin',
+      dims: [2, 2, 2],
+      voxelPc: 20,
+      originPc: [-20, -20, -20],
+      scale: 1000,
+      type: 'float16',
+      byteLength: 16,
+      sha256: '',
+      innerRadiusPc: 0,
+      outerRadiusPc: 40,
+    },
+    dados: new Uint16Array(8),
+  };
+}
+
+describe('poeira medida (E2) — Nebula.setPoeiraMedida/setPoeira', () => {
+  it('setPoeiraMedida cria a Data3DTexture certa, escreve os uniforms nos dois materiais e reassa (128 renders a mais)', () => {
+    const { renderer, camera, nebula, desenhos } = bancada();
+    nebula.render(renderer, camera); // bake (128) + LUT + raymarch + blur
+    expect(desenhos()).toBe(131);
+
+    nebula.setPoeiraMedida(volumeFalso());
+
+    const { material, volumeMaterial } = nebula as unknown as {
+      material: THREE.ShaderMaterial;
+      volumeMaterial: THREE.ShaderMaterial;
+    };
+    const tex = material.uniforms.uPoeiraTex.value as THREE.Data3DTexture;
+    expect(tex.isData3DTexture).toBe(true);
+    expect(tex.format).toBe(THREE.RedFormat);
+    expect(tex.type).toBe(THREE.HalfFloatType);
+    expect(tex.minFilter).toBe(THREE.LinearFilter);
+    expect(tex.magFilter).toBe(THREE.LinearFilter);
+    expect([tex.image.width, tex.image.height, tex.image.depth]).toEqual([2, 2, 2]);
+    // os DOIS materiais (raymarch e bake) recebem a MESMA textura e os
+    // mesmos números do descritor — nunca só um dos dois.
+    expect(volumeMaterial.uniforms.uPoeiraTex.value).toBe(tex);
+    expect((material.uniforms.uPoeiraMin.value as THREE.Vector3).toArray()).toEqual([-20, -20, -20]);
+    expect((volumeMaterial.uniforms.uPoeiraMin.value as THREE.Vector3).toArray()).toEqual([
+      -20, -20, -20,
+    ]);
+    expect((material.uniforms.uPoeiraTamanho.value as THREE.Vector3).toArray()).toEqual([
+      40, 40, 40,
+    ]);
+    expect(material.uniforms.uPoeiraEscala.value).toBeCloseTo(0.001, 9);
+    expect((material.uniforms.uPoeiraRaios.value as THREE.Vector2).toArray()).toEqual([0, 40]);
+
+    nebula.render(renderer, camera); // reassa (128) + raymarch + blur — LUT reusa (câmera parada)
+    expect(desenhos()).toBe(261);
+  });
+
+  it('setPoeira({modo:1}) com a variante fino mantém o modo efetivo em 0 — só o macio assa a poeira', () => {
+    const { renderer, camera, nebula, desenhos } = bancada();
+    nebula.setVariante('fino');
+    nebula.setPoeiraMedida(volumeFalso());
+    nebula.render(renderer, camera);
+    const antes = desenhos();
+
+    nebula.setPoeira({ modo: 1, ganho: 46.9, gama: 1, lanes: 0 });
+    const { material } = nebula as unknown as { material: THREE.ShaderMaterial };
+    expect(material.uniforms.uPoeiraModo.value).toBe(0);
+
+    // nada mudou de verdade (o efetivo continua 0 com a variante fino):
+    // o quadro congelado (item 144) não deve reassar por isto.
+    nebula.render(renderer, camera);
+    expect(desenhos()).toBe(antes);
+  });
+
+  it('setPoeiraMedida(null) volta ao modo efetivo 0 e destrói a textura anterior', () => {
+    const { nebula } = bancada();
+    nebula.setPoeiraMedida(volumeFalso());
+    nebula.setPoeira({ modo: 1, ganho: 46.9, gama: 1, lanes: 0 });
+    const { material } = nebula as unknown as { material: THREE.ShaderMaterial };
+    expect(material.uniforms.uPoeiraModo.value).toBe(1);
+    const texAntes = material.uniforms.uPoeiraTex.value as THREE.Data3DTexture;
+    const disposeSpy = vi.spyOn(texAntes, 'dispose');
+
+    nebula.setPoeiraMedida(null);
+
+    expect(disposeSpy).toHaveBeenCalledTimes(1);
+    expect(material.uniforms.uPoeiraModo.value).toBe(0);
+    expect(material.uniforms.uPoeiraTex.value).not.toBe(texAntes);
   });
 });

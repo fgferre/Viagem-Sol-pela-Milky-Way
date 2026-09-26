@@ -150,18 +150,31 @@ export const CARTOGRAFIA_DESLIGADA = PT['selo.cartografiaDesligada'];
  * (`cartografiaMedida()` de `cartography/galacticAssets.ts`), não uma
  * constante. `porEscolha` separa a falha do pedido: os dois dão a mesma
  * cena procedural e NÃO são a mesma notícia.
+ *
+ * `poeira` é opcional e por fora dos três tiers: sem ele, o texto de
+ * hoje sai byte a byte igual (compatibilidade com quem já chama esta
+ * função). Dado, acrescenta uma quarta linha sobre o bloco de poeira do
+ * Gaia perto do Sol — `'medida'` quando o bloco carregou, `'desligada'`
+ * quando o visitante pediu que ele fosse desligado, `'ausente'` quando
+ * devia ter chegado e não chegou.
  */
 export function legendaDaProcedencia(
   cartografiaMedida: boolean,
-  porEscolha = false
+  porEscolha = false,
+  poeira?: 'medida' | 'desligada' | 'ausente'
 ): string {
   const tiers = Object.values(PROCEDENCIA)
     .map((t) => `${t.rotulo}: ${t.oQue}`)
     .join(' · ');
-  if (cartografiaMedida) return tiers;
-  return `${tiers} · ${
-    porEscolha ? t('selo.cartografiaDesligada') : t('selo.cartografiaProcedural')
-  }`;
+  let legenda = cartografiaMedida
+    ? tiers
+    : `${tiers} · ${
+        porEscolha ? t('selo.cartografiaDesligada') : t('selo.cartografiaProcedural')
+      }`;
+  if (poeira === 'medida') legenda += ` · ${t('selo.poeiraMedida')}`;
+  else if (poeira === 'desligada') legenda += ` · ${t('selo.poeiraDesligada')}`;
+  else if (poeira === 'ausente') legenda += ` · ${t('selo.poeiraAusente')}`;
+  return legenda;
 }
 
 /**
@@ -710,6 +723,16 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('forgetau', 'extinção por coluna das forjas ligada'),
   porta('cart', 'modo de cartografia trocado'),
   porta('discoff', 'cartografia do disco desligada'),
+  // A POEIRA MEDIDA DO GAIA (E2 do PLAN.md): a chave de modo e três
+  // botões de aparência, todos de bancada até virarem ajuste na E4 —
+  // quem os tem na URL não está vendo o padrão da casa.
+  porta('poeira', 'poeira medida do Gaia trocada por URL'),
+  porta('poeiragain', 'ganho da poeira medida forçado'),
+  porta('poeiragama', 'gama da poeira medida forçada'),
+  porta('poeiralanes', 'lanes sobre a poeira medida forçadas'),
+  // ?fps=1 desenha o contador de quadros/s (contadorDeFps.ts) por cima
+  // da cena — bancada de diagnóstico, mas visível em qualquer captura.
+  porta('fps', 'contador de fps na tela'),
   // (?plan morreu no M4 — regra iv do §4 da Lei: a camada dos dez
   // corpos é o padrão desde 2026-08-11 e a porta de "forçar ligado"
   // não tinha mais lado A para proteger. `?noplan` fica, e é camada,

@@ -11,7 +11,7 @@ import type {
   Phase,
 } from './three/director';
 import type { NamedStar } from './three/config';
-import { cartografiaMedida } from './three/cartography/galacticAssets';
+import { cartografiaMedida, estadoDoBlocoDePoeira } from './three/cartography/galacticAssets';
 import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
 import { TIER_DE_PRODUTO } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
@@ -293,6 +293,15 @@ export default function App() {
   const [cartografiaDesligada] = useState(
     () => new URLSearchParams(window.location.search).get('cart') === 'off'
   );
+  /**
+   * A poeira medida do Gaia (E2) foi pedida por `?poeira=`? Porta de
+   * bancada até virar ajuste (E4); só o selo a consome, para dizer se a
+   * poeira perto de casa é medida, desligada ou não chegou.
+   */
+  const [poeiraPedida] = useState(() => {
+    const valor = new URLSearchParams(window.location.search).get('poeira');
+    return valor === '1' || valor === '2' || valor === 'teste';
+  });
   /**
    * AS 1.726 NOMEADAS, publicadas pelo Director quando o `init` termina
    * — a paleta da busca monta o índice sobre elas (F3). Estado e não
@@ -1160,6 +1169,15 @@ export default function App() {
               // …e se não chegaram, foi escolha dele? A frase da falha
               // acusava a rede de uma decisão do visitante.
               cartografiaDesligada={cartografiaDesligada}
+              // a poeira medida perto de casa (E2): pedida e assada, pedida
+              // e sem bloco, ou não pedida
+              poeira={
+                !poeiraPedida || cartografiaDesligada
+                  ? 'desligada'
+                  : estadoDoBlocoDePoeira() === 'chegou'
+                    ? 'medida'
+                    : 'ausente'
+              }
               onEscalaReal={() => directorRef.current?.focarNoSistema()}
               onBrilhoReal={voltarAoBrilhoReal}
             />
