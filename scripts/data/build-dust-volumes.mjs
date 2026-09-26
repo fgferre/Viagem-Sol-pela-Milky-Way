@@ -408,11 +408,13 @@ export async function main() {
     const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
     const volume = { grade: GRADE_20PC, valores: deFloat16(buffer, ESCALA) };
     const resultado = compararComReferencia(volume, fixture);
+    const colunaTexto = resultado.coluna.aprovado
+      ? `dentro da faixa do tubo (razão para a média ${resultado.coluna.pior ? resultado.coluna.pior.razaoMedia.toFixed(2) : '—'})`
+      : 'FORA DA FAIXA';
     console.log(
       `comparação com a fixture — voxel: máximo relativo ${resultado.voxel.maximoRelativo.toFixed(3)} ` +
         `(${resultado.voxel.aprovado ? 'dentro da tolerância' : 'FORA DA TOLERÂNCIA'}); ` +
-        `coluna: máximo relativo ${resultado.coluna.maximoRelativo.toFixed(3)} ` +
-        `(${resultado.coluna.aprovado ? 'dentro da tolerância' : 'FORA DA TOLERÂNCIA'}).`
+        `coluna: máximo relativo ${resultado.coluna.maximoRelativo.toFixed(3)} (${colunaTexto}).`
     );
   } else {
     console.log('fixture de referência não encontrada; pulei a comparação.');

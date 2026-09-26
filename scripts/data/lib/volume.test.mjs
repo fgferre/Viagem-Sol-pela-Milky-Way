@@ -1,8 +1,8 @@
 // ============================================================
 // Contrato do bloco de poeira (E1, item 1 do PLAN.md). Sem FITS de 3 GB
-// aqui: só a grade, a codificação float16 e a amostragem/integração em
-// grades sintéticas minúsculas — a comparação com a fixture real
-// (`compararComReferencia` de ponta a ponta) é julgada em
+// aqui: só a grade, a codificação float16 e a amostragem/integração/
+// comparação em grades e fixtures sintéticas minúsculas — a comparação
+// com a fixture REAL (de ponta a ponta) é julgada em
 // `verify-assets.test.mjs`, que roda o gate inteiro.
 // ============================================================
 import { describe, expect, it } from 'vitest';
@@ -10,6 +10,7 @@ import {
   GRADE_20PC,
   amostrar,
   centroDe,
+  compararComReferencia,
   deFloat16,
   indiceDe,
   indiceDoPonto,
@@ -92,6 +93,45 @@ describe('integrarColuna — campo constante', () => {
     const volume = { grade, valores: new Float64Array(20 * 20 * 20).fill(constante) };
     const integral = integrarColuna(volume, 0, 0, 5, 40, 5);
     expect(integral).toBeCloseTo(constante * (40 - 5), 6);
+  });
+});
+
+describe('compararComReferencia — coluna cai na faixa do tubo (ou não)', () => {
+  // Mesma grade/campo constante do teste de integrarColuna acima: a
+  // coluna l=0,b=0,rMin=5,rMax=40 vale sempre 0,02 × (40 − 5) = 0,7.
+  const grade = { nx: 20, ny: 20, nz: 20, voxelPc: 10, origemPc: [-100, -100, -100] };
+  const volume = { grade, valores: new Float64Array(20 * 20 * 20).fill(0.02) };
+
+  it('aprova e zera o relativo quando a coluna do bloco cai dentro da faixa', () => {
+    const fixture = {
+      voxeis: [],
+      colunas: [
+        { nome: 'dentro', l: 0, b: 0, rMin: 5, rMax: 40, tubo: { media: 0.7, min: 0.6, max: 0.8 } },
+      ],
+    };
+    const resultado = compararComReferencia(volume, fixture);
+    expect(resultado.coluna.aprovado).toBe(true);
+    expect(resultado.coluna.maximoRelativo).toBeCloseTo(0, 9);
+    expect(resultado.coluna.pior.nome).toBe('dentro');
+    expect(resultado.coluna.pior.esperadoFaixa).toEqual([0.6, 0.8]);
+    expect(resultado.coluna.pior.atual).toBeCloseTo(0.7, 9);
+    expect(resultado.coluna.pior.razaoMedia).toBeCloseTo(1, 9);
+  });
+
+  it('reprova quando a coluna do bloco cai fora da faixa', () => {
+    const fixture = {
+      voxeis: [],
+      colunas: [
+        { nome: 'fora', l: 0, b: 0, rMin: 5, rMax: 40, tubo: { media: 0.2, min: 0.1, max: 0.3 } },
+      ],
+    };
+    const resultado = compararComReferencia(volume, fixture);
+    expect(resultado.coluna.aprovado).toBe(false);
+    expect(resultado.coluna.maximoRelativo).toBeGreaterThan(1);
+    expect(resultado.coluna.pior.nome).toBe('fora');
+    expect(resultado.coluna.pior.esperadoFaixa).toEqual([0.1, 0.3]);
+    expect(resultado.coluna.pior.atual).toBeCloseTo(0.7, 9);
+    expect(resultado.coluna.pior.razaoMedia).toBeCloseTo(3.5, 9);
   });
 });
 

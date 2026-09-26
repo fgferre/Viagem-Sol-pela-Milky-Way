@@ -50,8 +50,12 @@ NUVENS = [
 ]
 
 CAIXA_MIN = (-1250.0, -1250.0, -500.0)
+CAIXA_MAX = tuple(-c for c in CAIXA_MIN)
 TAMANHO_VOXEL = 20.0
 NX, NY, NZ = 125, 125, 50
+# Deslocamentos (pc) dos 25 raios paralelos do tubo de cada coluna, no
+# plano perpendicular à direção (grade 5×5 em u,v).
+OFFSETS_TUBO_PC = (-10.0, -5.0, 0.0, 5.0, 10.0)
 
 
 def gerar_fixture_healpix():
@@ -111,6 +115,26 @@ def nuvem_para_xyz(l_graus, b_graus, d_pc):
     y = d_pc * np.cos(br) * np.sin(lr)
     z = d_pc * np.sin(br)
     return x, y, z
+
+
+def saida_da_caixa(dx, dy, dz):
+    """Distância (pc) da origem até a face da caixa de 20 pc (`CAIXA_MAX`)
+    ao longo do raio unitário (dx,dy,dz); eixo com componente ~0 não
+    limita (o raio nunca sai da caixa só por esse eixo)."""
+    eixos = ((dx, CAIXA_MAX[0]), (dy, CAIXA_MAX[1]), (dz, CAIXA_MAX[2]))
+    candidatos = [limite / abs(d) for d, limite in eixos if abs(d) > 1e-12]
+    return min(candidatos) if candidatos else float('inf')
+
+
+def base_perpendicular(dx, dy, dz):
+    """Base ortonormal (e1,e2) do plano perpendicular à direção (dx,dy,dz),
+    para deslocar os 25 raios do tubo (mesma receita do diagnóstico)."""
+    d = np.array([dx, dy, dz])
+    a = np.array([0.0, 0.0, 1.0]) if abs(dz) < 0.9 else np.array([1.0, 0.0, 0.0])
+    e1 = np.cross(d, a)
+    e1 = e1 / np.linalg.norm(e1)
+    e2 = np.cross(d, e1)
+    return e1, e2
 
 
 def indice_do_voxel(x, y, z):
@@ -267,27 +291,65 @@ def gerar_fixture_edenhofer():
         ('touro', 172.0, -14.0),
     ]
     r_min = float(esfera.radii[0])
-    r_max = float(esfera.radii[-1])
-    r_amostras = np.logspace(np.log10(r_min), np.log10(r_max), 4000)
-    # o interpolador oficial usa bins meio-abertos [r_i, r_i+1); o ida-e-volta
-    # log10/potência do logspace não devolve os extremos EXATOS (erro de
-    # ~1e-13), e um extremo um fio ABAIXO de r_min cai fora de todos os bins
-    # (vimos isso: a amostra 0 dava NaN). Fixa os dois extremos à mão.
-    r_amostras[0] = r_min
-    r_amostras[-1] *= 1 - 1e-9
+    r_shell_max = float(esfera.radii[-1])
+    n_raios_tubo = len(OFFSETS_TUBO_PC) ** 2
 
     t4 = time.time()
     colunas_fixture = []
     total_nan_colunas = 0
     for nome, l_graus, b_graus in direcoes:
+        dx, dy, dz = nuvem_para_xyz(l_graus, b_graus, 1.0)
+        # rMax é o menor entre o alcance dos dados (última casca) e a
+        # saída da caixa de 20 pc — sem isso a coluna do polo integrava
+        # até 1244,6 pc por um raio que o bloco nem representa (ele para
+        # em z=500, o teto da caixa).
+        r_max = float(min(r_shell_max, saida_da_caixa(dx, dy, dz)))
+        r_amostras = np.logspace(np.log10(r_min), np.log10(r_max), 4000)
+        # o interpolador oficial usa bins meio-abertos [r_i, r_i+1); o ida-e-volta
+        # log10/potência do logspace não devolve os extremos EXATOS (erro de
+        # ~1e-13), e um extremo um fio ABAIXO de r_min cai fora de todos os bins
+        # (vimos isso: a amostra 0 dava NaN). Fixa os dois extremos à mão.
+        r_amostras[0] = r_min
+        r_amostras[-1] *= 1 - 1e-9
+
         x, y, z = nuvem_para_xyz(l_graus, b_graus, r_amostras)
         v = ib.interp_hp2rg(np.stack([x, y, z]), esfera.radii, esfera.data, nest=esfera.nest, fill_value=np.nan)
-        nan_mask = np.isnan(v)
-        total_nan_colunas += int(nan_mask.sum())
-        integral = float(np.trapezoid(np.nan_to_num(v, nan=0.0), r_amostras))
-        colunas_fixture.append({'nome': nome, 'l': l_graus, 'b': b_graus, 'integral': integral})
+        total_nan_colunas += int(np.isnan(v).sum())
+        fino = float(np.trapezoid(np.nan_to_num(v, nan=0.0), r_amostras))
+
+        # tubo: 25 raios paralelos ao central, deslocados até 10 pc no
+        # plano perpendicular — mede a variação real que um bloco de
+        # 20 pc vê e que um raio fino não vê.
+        e1, e2 = base_perpendicular(dx, dy, dz)
+        desloc_u, desloc_v = np.meshgrid(OFFSETS_TUBO_PC, OFFSETS_TUBO_PC, indexing='ij')
+        deslocamentos = desloc_u.ravel()[:, None] * e1[None, :] + desloc_v.ravel()[:, None] * e2[None, :]
+        xt = x[None, :] + deslocamentos[:, 0:1]
+        yt = y[None, :] + deslocamentos[:, 1:2]
+        zt = z[None, :] + deslocamentos[:, 2:3]
+        vt = ib.interp_hp2rg(
+            np.stack([xt.ravel(), yt.ravel(), zt.ravel()]),
+            esfera.radii, esfera.data, nest=esfera.nest, fill_value=np.nan,
+        ).reshape(n_raios_tubo, r_amostras.size)
+        total_nan_colunas += int(np.isnan(vt).sum())
+        integrais_tubo = np.trapezoid(np.nan_to_num(vt, nan=0.0), r_amostras, axis=1)
+        tubo = {
+            'media': float(integrais_tubo.mean()),
+            'min': float(integrais_tubo.min()),
+            'max': float(integrais_tubo.max()),
+        }
+
+        colunas_fixture.append({
+            'nome': nome, 'l': l_graus, 'b': b_graus,
+            'rMin': r_min, 'rMax': r_max,
+            'fino': fino,
+            'tubo': tubo,
+        })
     t5 = time.time()
-    print(f'interp_hp2rg (colunas, 6×4000 pontos): {t5 - t4:.1f}s', flush=True)
+    print(
+        f'interp_hp2rg (colunas: 6 raios finos + 6×{n_raios_tubo} raios do tubo, 4000 pontos cada): '
+        f'{t5 - t4:.1f}s',
+        flush=True,
+    )
 
     md5_esperado = None
     with open(ESPERADO_TXT, encoding='utf8') as f:

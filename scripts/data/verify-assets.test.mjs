@@ -187,6 +187,12 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     const buffer = Buffer.from(flutuante.buffer, flutuante.byteOffset, flutuante.byteLength);
     const gz = gzipSync(buffer, { level: 9 });
     const manifesto = JSON.parse(readFileSync(join(RAIZ, 'public/data/galaxy/manifest.json'), 'utf8'));
+    // só o volume sintético encara a fixture minúscula: os volumes REAIS do
+    // manifesto (dust-near-20pc desde a E1) reprovariam contra ela por
+    // construção, e não são o que este teste cobre.
+    for (const [nome, asset] of Object.entries(manifesto.assets)) {
+      if (asset.kind === 'volume') delete manifesto.assets[nome];
+    }
     manifesto.assets.dustVolumeTeste = {
       kind: 'volume',
       file: 'data/galaxy/dust-teste.bin',
@@ -223,19 +229,29 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     const r = rodarComFixture({
       cabecalho: { raiosPc: [1, 5] },
       voxeis: [{ indice: [0, 0, 0], media: VALORES[0], nanFracao: 0 }],
-      colunas: [],
+      // coluna l=0,b=0,rMin=10,rMax=90: bloco uniforme (0,01) dá
+      // 0,01 × (90 − 10) = 0,8, dentro da faixa do tubo.
+      colunas: [
+        { nome: 'dentro', l: 0, b: 0, rMin: 10, rMax: 90, tubo: { media: 0.8, min: 0.7, max: 0.9 } },
+      ],
     });
     expect(r.ok, r.saida.slice(-800)).toBe(true);
     expect(r.saida).toContain('dustVolumeTeste: fixture Edenhofer OK');
+    expect(r.saida).toContain('dentro da faixa do tubo');
   }, 60_000);
 
   it('reprova um volume float16 fora da tolerância', () => {
     const r = rodarComFixture({
       cabecalho: { raiosPc: [1, 5] },
       voxeis: [{ indice: [0, 0, 0], media: 5, nanFracao: 0 }],
-      colunas: [],
+      // mesma coluna, mas com a faixa do tubo deslocada: 0,8 cai bem
+      // fora de [0,1; 0,3].
+      colunas: [
+        { nome: 'fora', l: 0, b: 0, rMin: 10, rMax: 90, tubo: { media: 0.2, min: 0.1, max: 0.3 } },
+      ],
     });
     expect(r.ok).toBe(false);
     expect(r.saida).toContain('excede a tolerância');
+    expect(r.saida).toContain('FORA DA FAIXA');
   }, 60_000);
 });

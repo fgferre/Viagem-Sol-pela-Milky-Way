@@ -126,18 +126,22 @@ export function integrarColuna(volume, l, b, rMin, rMax, passoPc) {
   return soma * h;
 }
 
-const TOLERANCIA_COLUNA = 0.15;
 const PASSO_COLUNA_PC = 5;
 
 /**
  * Compara `volume` com a fixture de referência do interpolador oficial
  * (`fixtures/edenhofer-referencia.json`): residual por voxel
  * (`fixture.voxeis`; `nanFracao === 1` tem que valer 0) e por coluna
- * (`fixture.colunas`, integral de `rMin` a `rMax` = `fixture.cabecalho.
- * raiosPc`). Os dois relativos devolvidos já vêm NORMALIZADOS pela
- * tolerância da Decisão 1/E1 do PLAN.md — voxel `|v−media| ≤
- * 0,15·media + 3e-5`, coluna relativo ≤ 0,15 —, então `aprovado` é
- * sempre `maximoRelativo ≤ 1`.
+ * (`fixture.colunas`, integral de `c.rMin` a `c.rMax` — já cortado no
+ * teto da caixa, ±1250/±1250/±500 pc). A régua da coluna NÃO compara
+ * com o raio fino (`c.fino`): pelo próprio interpolador oficial, a
+ * mesma coluna como raio infinitesimal e como tubo de 20 pc em volta
+ * dele diverge até 30%. O esperado é a faixa `[c.tubo.min, c.tubo.max]`
+ * dos 25 raios paralelos do tubo, com folga `0,02·(max−min)` tirada dos
+ * próprios dados (sem número mágico). O relativo do voxel segue
+ * NORMALIZADO pela tolerância da Decisão 1/E1 do PLAN.md — `|v−media| ≤
+ * 0,15·media + 3e-5` —, e o da coluna pela folga da faixa; os dois
+ * `aprovado` são sempre `maximoRelativo ≤ 1`.
  */
 export function compararComReferencia(volume, fixture) {
   let voxelRelativo = 0;
@@ -156,14 +160,15 @@ export function compararComReferencia(volume, fixture) {
 
   let colunaRelativo = 0;
   let colunaPior = null;
-  const [rMin, rMax] = fixture.cabecalho.raiosPc;
   for (const c of fixture.colunas) {
-    const atual = integrarColuna(volume, c.l, c.b, rMin, rMax, PASSO_COLUNA_PC);
-    const relativo =
-      Math.abs(atual - c.integral) / (TOLERANCIA_COLUNA * Math.max(Math.abs(c.integral), 1e-9));
-    if (relativo > colunaRelativo) {
+    const atual = integrarColuna(volume, c.l, c.b, c.rMin, c.rMax, PASSO_COLUNA_PC);
+    const folga = 0.02 * (c.tubo.max - c.tubo.min);
+    const distanciaFora = Math.max(0, c.tubo.min - atual, atual - c.tubo.max);
+    const relativo = distanciaFora / folga;
+    const razaoMedia = atual / c.tubo.media;
+    if (colunaPior === null || relativo >= colunaRelativo) {
       colunaRelativo = relativo;
-      colunaPior = { nome: c.nome, l: c.l, b: c.b, esperado: c.integral, atual };
+      colunaPior = { nome: c.nome, esperadoFaixa: [c.tubo.min, c.tubo.max], atual, razaoMedia };
     }
   }
 

@@ -161,6 +161,35 @@
         "effectiveTemperatureK",
         "astrometricConfidence"
       ]
+    },
+    "dustVolumeNear20pc": {
+      "kind": "volume",
+      "file": "data/galaxy/dust-near-20pc.bin",
+      "dims": [
+        125,
+        125,
+        50
+      ],
+      "count": 781250,
+      "voxelPc": 20,
+      "originPc": [
+        -1250,
+        -1250,
+        -500
+      ],
+      "frame": "heliocentric-galactic: x→GC (l=0,b=0), y→l=90°, z→NGP; index ix + nx*(iy + ny*iz)",
+      "unit": "E_ZGR23 per pc",
+      "scale": 1000,
+      "type": "float16",
+      "byteLength": 1562500,
+      "sha256": "365a5536c9d9b5b3cc70792fd227daa8a6a4b17eeae698b97b437eb2cfef6666",
+      "innerRadiusPc": 68.81187438964844,
+      "outerRadiusPc": 1244.5968017578125,
+      "method": "nearest HEALPix pixel + linear in r between shell centres; 8×8×8 stratified subsamples per voxel",
+      "nanSubsamples": 0,
+      "generated": "2026-09-26",
+      "source": "Edenhofer2024",
+      "license": "CC-BY-4.0"
     }
   },
   "dictionaries": {
@@ -288,6 +317,13 @@
       "archive": "https://gea.esac.esa.int/archive/",
       "paper": "https://doi.org/10.1051/0004-6361/202243797",
       "distancePaper": "https://doi.org/10.3847/1538-3881/abd806"
+    },
+    {
+      "id": "Edenhofer2024",
+      "role": "3D dust extinction density (mean map) within 1.25 kpc of the Sun",
+      "paper": "https://doi.org/10.1051/0004-6361/202347628",
+      "archive": "https://doi.org/10.5281/zenodo.10658339",
+      "license": "CC-BY-4.0"
     }
   ]
 }

@@ -86,17 +86,19 @@ for (const [assetName, asset] of Object.entries(manifest.assets)) {
         origemPc: asset.originPc,
       };
       const resultado = compararComReferencia({ grade, valores }, fixture);
+      const colunaTexto = resultado.coluna.aprovado
+        ? `dentro da faixa do tubo (razão para a média ${resultado.coluna.pior ? resultado.coluna.pior.razaoMedia.toFixed(2) : '—'})`
+        : 'FORA DA FAIXA';
       if (!resultado.voxel.aprovado || !resultado.coluna.aprovado) {
         throw new Error(
           `${assetName}: comparação com a fixture Edenhofer excede a tolerância ` +
             `(voxel máximo relativo ${resultado.voxel.maximoRelativo.toFixed(3)}, ` +
-            `coluna máximo relativo ${resultado.coluna.maximoRelativo.toFixed(3)}).`
+            `coluna ${colunaTexto}).`
         );
       }
       console.log(
         `${assetName}: fixture Edenhofer OK (voxel máximo relativo ` +
-          `${resultado.voxel.maximoRelativo.toFixed(3)}, coluna máximo relativo ` +
-          `${resultado.coluna.maximoRelativo.toFixed(3)}).`
+          `${resultado.voxel.maximoRelativo.toFixed(3)}, coluna ${colunaTexto}).`
       );
     }
     continue;
