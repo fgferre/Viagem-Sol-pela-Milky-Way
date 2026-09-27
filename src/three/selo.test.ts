@@ -18,7 +18,7 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CAMADAS } from './atlasConfig';
+import { CAMADAS, poeiraEmTexto } from './atlasConfig';
 import {
   ARQUIVOS_GOVERNADOS,
   BRILHO_ASSISTIDO,
@@ -75,6 +75,7 @@ const LIMPA: EstadoDaVista = {
   escala: null,
   gas: null,
   particulas: null,
+  poeira: null,
   // `real` na FIXTURE de propósito: é o estado DEPOIS do clique "voltar
   // ao real". O default vivo do Atlas é `assistida` — e tem os próprios
   // testes (bloco 2c), porque ele É desvio declarado.
@@ -281,6 +282,29 @@ describe('2. nenhum controle desmente o selo', () => {
     expect(estadoDoSelo(com({ portas: ['lang', 'lingua'] })).desvios.map((d) => d.rotulo)).toEqual([
       'porta não declarada: ?lingua',
     ]);
+  });
+
+  // ============================================================
+  // A POEIRA PERTO DE CASA (pedido do dono, 27/09) — o sexto controle
+  // da gaveta virou entrada VIVA, no molde do gás: a variante escolhida
+  // à mão é desvio, e `null` (o preset, 'hoje') é a vista limpa.
+  // ============================================================
+  it('a variante de poeira escolhida à mão vira desvio, com o rótulo dizendo qual', () => {
+    const v = estadoDoSelo(com({ poeira: 'forte' }));
+    expect(v.brilho).toBe('assistido');
+    const linha = v.desvios.find((d) => d.chave === 'poeira');
+    expect(linha, 'poeira sem entrada nos desvios').toBeDefined();
+    expect(linha!.rotulo).toContain(poeiraEmTexto('forte'));
+  });
+
+  it('poeira em `null` é o preset ("hoje") — a vista limpa continua real', () => {
+    expect(estadoDoSelo(com({ poeira: null })).brilho).toBe('real');
+  });
+
+  it('?poeira=teste é bancada, fora do menu (não vira estado), e AINDA ASSIM é desvio — a presença crua da porta continua contando', () => {
+    const v = estadoDoSelo(com({ poeira: null, portas: ['poeira'] }));
+    expect(v.brilho).toBe('assistido');
+    expect(v.desvios.map((d) => d.chave)).toContain('poeira');
   });
 });
 
@@ -769,43 +793,63 @@ describe('5. a copy do selo', () => {
   });
 
   /**
-   * A QUARTA LINHA, quando pedida (Onda E2): o bloco de poeira do Gaia
-   * perto do Sol usa o mesmo canal do selo, como parâmetro OPCIONAL —
-   * sem ele o texto de hoje não perde nem ganha um byte. Quem liga isto
-   * ao estado real do bloco é o director, noutra frente; aqui só a
-   * conta pura, nos três estados possíveis.
+   * A QUARTA LINHA, quando pedida (Onda E2/E3/E4): o bloco de poeira do
+   * Gaia perto do Sol usa o mesmo canal do selo, como parâmetro OPCIONAL
+   * (`EstadoDaPoeira`) — sem ele o texto de hoje não perde nem ganha um
+   * byte. Quem cruza o pedido, a carga e o que a Nebula de fato desenha
+   * é o Director (`estadoDaPoeira`), noutra frente; aqui só a conta
+   * pura, uma frase por `situacao` (e a de 'ativa' também por `fonte`).
    */
-  it('a poeira do Gaia soma uma linha opcional, um estado por vez, sem mover o texto de hoje', () => {
+  it('a poeira do Gaia soma uma linha opcional, uma frase por situação, sem mover o texto de hoje', () => {
     const medida = legendaDaProcedencia(true);
 
     // sem o parâmetro, byte a byte igual ao que já existia
     expect(legendaDaProcedencia(true)).toBe(medida);
     expect(medida).not.toContain('poeira');
 
-    expect(legendaDaProcedencia(true, false, 'medida')).toBe(
+    expect(legendaDaProcedencia(true, false, { situacao: 'ativa', fonte: 'gaia' })).toBe(
       `${medida} · ${t('selo.poeiraMedida')}`
     );
-    expect(legendaDaProcedencia(true, false, 'desligada')).toBe(
+    expect(legendaDaProcedencia(true, false, { situacao: 'ativa', fonte: 'sintetica' })).toBe(
+      `${medida} · ${t('selo.poeiraSintetica')}`
+    );
+    expect(legendaDaProcedencia(true, false, { situacao: 'desligada', fonte: null })).toBe(
       `${medida} · ${t('selo.poeiraDesligada')}`
     );
-    expect(legendaDaProcedencia(true, false, 'ausente')).toBe(
+    expect(legendaDaProcedencia(true, false, { situacao: 'indisponivel', fonte: null })).toBe(
       `${medida} · ${t('selo.poeiraAusente')}`
+    );
+    // 'inativa' chega com fonte conhecida (o volume existe, só a
+    // variante 'antigo' não o lê) — a frase não depende dela
+    expect(legendaDaProcedencia(true, false, { situacao: 'inativa', fonte: 'gaia' })).toBe(
+      `${medida} · ${t('selo.poeiraInativa')}`
+    );
+    expect(legendaDaProcedencia(true, false, { situacao: 'carregando', fonte: null })).toBe(
+      `${medida} · ${t('selo.poeiraCarregando')}`
     );
 
     // convive com a cartografia caída, na ordem tiers · cartografia · poeira
     const caida = legendaDaProcedencia(false);
-    expect(legendaDaProcedencia(false, false, 'medida')).toBe(
-      `${caida} · ${t('selo.poeiraMedida')}`
-    );
+    expect(
+      legendaDaProcedencia(false, false, { situacao: 'ativa', fonte: 'gaia' })
+    ).toBe(`${caida} · ${t('selo.poeiraMedida')}`);
 
-    // e fala inglês como o resto do selo
-    const poeiraMedidaPt = t('selo.poeiraMedida');
+    // e fala inglês como o resto do selo — as frases novas também
+    const ptMedida = t('selo.poeiraMedida');
+    const ptSintetica = t('selo.poeiraSintetica');
+    const ptInativa = t('selo.poeiraInativa');
+    const ptCarregando = t('selo.poeiraCarregando');
     definirIdioma('en');
-    expect(legendaDaProcedencia(true, false, 'medida')).toBe(
+    expect(legendaDaProcedencia(true, false, { situacao: 'ativa', fonte: 'gaia' })).toBe(
       `${legendaDaProcedencia(true)} · ${t('selo.poeiraMedida')}`
     );
-    expect(t('selo.poeiraMedida')).not.toBe(poeiraMedidaPt);
+    expect(t('selo.poeiraMedida')).not.toBe(ptMedida);
     expect(t('selo.poeiraMedida')).toContain('Gaia');
+    expect(t('selo.poeiraSintetica')).not.toBe(ptSintetica);
+    expect(t('selo.poeiraSintetica')).toContain('poeira=teste');
+    expect(t('selo.poeiraInativa')).not.toBe(ptInativa);
+    expect(t('selo.poeiraInativa')).toContain('antigo');
+    expect(t('selo.poeiraCarregando')).not.toBe(ptCarregando);
     definirIdioma('pt-BR');
   });
 });

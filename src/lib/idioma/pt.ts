@@ -186,6 +186,16 @@ export const PT = {
   'ajustes.gas.antigo': 'Original',
   'ajustes.gas.fino': 'Fino',
   'ajustes.gas.macio': 'Macio',
+  // A POEIRA PERTO DE CASA (pedido do dono, 27/09) — o sexto controle,
+  // ao lado do gás: comparar ao vivo o modelo procedural de hoje com o
+  // bloco medido pelo Gaia, em três brilhos.
+  'ajustes.poeira': 'Poeira perto de casa',
+  'ajustes.poeiraNota':
+    "O bloco medido pelo Gaia (Edenhofer 2024) até 1,2 kpc, em três brilhos; 'de hoje' é o gás inventado atual, para comparar",
+  'ajustes.poeira.hoje': 'de hoje',
+  'ajustes.poeira.suave': 'Gaia suave',
+  'ajustes.poeira.media': 'Gaia média',
+  'ajustes.poeira.forte': 'Gaia forte',
   // ROTULO CURTO (polimento 06/09): "da galáxia" é óbvio pela seção
   // (Avançado, ao lado do gás e da nebulosa) e pela dica.
   'ajustes.particulasControle': 'Partículas',
@@ -460,8 +470,12 @@ export const PT = {
   'selo.cartografiaDesligada':
     'cartografia: procedural (os mapas desligados por ?cart=off)',
   'selo.poeiraMedida': 'poeira perto de casa: medida (Gaia, Edenhofer 2024, até 1,2 kpc)',
+  'selo.poeiraSintetica':
+    'poeira perto de casa: volume SINTÉTICO de teste (?poeira=teste), não é o Gaia',
   'selo.poeiraDesligada': 'poeira perto de casa: procedural (bloco medido desligado)',
   'selo.poeiraAusente': 'poeira perto de casa: procedural (o bloco não chegou)',
+  'selo.poeiraInativa': 'poeira perto de casa: procedural (o gás \'antigo\' não lê o bloco)',
+  'selo.poeiraCarregando': 'poeira perto de casa: carregando o bloco medido',
   'selo.luzAssistida':
     'cada mundo visitado é exposto para a luz que ELE recebe — uma foto tirada ali, não com o ajuste da Terra. A ordem verdadeira de brilho continua no céu, no ponto de cada corpo.',
   'selo.lanterna':
@@ -484,6 +498,8 @@ export const PT = {
   'selo.desvio.gasCom': 'gás volumétrico escolhido à mão: {variante}',
   'selo.desvio.particulas': 'partículas da galáxia escolhidas à mão',
   'selo.desvio.particulasCom': 'partículas da galáxia escolhidas à mão: {nivel}',
+  'selo.desvio.poeira': 'poeira perto de casa escolhida à mão',
+  'selo.desvio.poeiraCom': 'poeira perto de casa escolhida à mão: {variante}',
 
   // ---- a acusação da escala (`three/escala.ts`) ---------------------
   'escala.acusacao': '{nome} está {fator} maior',

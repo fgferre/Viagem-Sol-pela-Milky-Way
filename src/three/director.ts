@@ -11,6 +11,7 @@ import {
   lerPortaGas,
   lerPortaNebulosa,
   lerPortaParticulas,
+  lerPortaPoeira,
   modoDoToneMapping,
 } from './core/engine';
 // `t` entra APELIDADO porque neste arquivo `t` já é o TEMPO (o segundo
@@ -26,8 +27,9 @@ import type {
   NivelDaNebulosa,
   ParticulasDaGalaxia,
   QualityLevel,
+  TipoDePoeira,
 } from './core/engine';
-import type { EstadoDaVista } from './selo';
+import type { EstadoDaPoeira, EstadoDaVista } from './selo';
 import type { MotorEfemerides } from '../lib/atlas/efemerides';
 import { CAMADA_DO_CAMPO, Post } from './core/post';
 // C6 (docs/PLANO-MOTION-UI.md §7/§12.5) — o halo de contorno, adotado;
@@ -78,7 +80,6 @@ import { EXPO_M0, SIGMA_PX } from './luzDaCasa';
 import {
   loadGalacticAssets,
   carregarVolumeDePoeira,
-  registrarBlocoDePoeira,
 } from './cartography/galacticAssets';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { NuvensSemente } from './director/nuvensSemente';
@@ -109,7 +110,7 @@ import {
   efemeridesPrecisamPreCarga,
 } from './director/preAquecimento';
 import type { PostoNoPalco } from './director/palco';
-import type { GalacticAssets, VolumeDePoeira } from './cartography/galacticAssets';
+import type { GalacticAssets, ManifestVolume, VolumeDePoeira } from './cartography/galacticAssets';
 import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
 import type { EstadoDaBussola } from './cinematic/atlasRig';
 import type { ReservaDaFicha } from './cinematic/retanguloDoAtlas';
@@ -121,6 +122,7 @@ import {
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
   HELIO_SEM_PONTO,
+  poeiraParaMotor,
 } from './atlasConfig';
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
@@ -221,6 +223,13 @@ interface DirectorEvents {
   onLabels: (labels: StarLabel[]) => void;
   onWarp: (k: number) => void;
   onQuality: (estado: EstadoDaQualidade) => void;
+  /**
+   * A PROCEDÊNCIA REAL da poeira medida perto do Sol (revisão
+   * independente, 27/09) — ver `EstadoDaPoeira` em `selo.ts` e o getter
+   * `estadoDaPoeira`. Sai junto de `onQuality` (a variante do gás muda
+   * com o preset) e de novo quando a carga assíncrona resolve.
+   */
+  onPoeira: (estado: EstadoDaPoeira) => void;
   /** linha de rumo ("→ DESTINO · distância viva"); vazio = esconder */
   onDest: (text: string) => void;
   /** distância viva do Sol ("SOL · 40,2 UA"); vazio = esconder */
@@ -445,6 +454,39 @@ export class Director {
   /** o modo de cartografia decidido no boot (`?cart=`) — o mundo novo
    *  nasce com o mesmo, senão a troca de tier viraria troca de mapa */
   private cartMode: CartographyMode = 'blend';
+  /**
+   * POEIRA MEDIDA (E2/E3, item C — carga preguiçosa, revisão
+   * independente): `cartOn` só fica sabido depois que `init()` resolve
+   * os ativos (`Boolean(galactic) && cartMode !== 'off'`) —
+   * `tentarCarregarPoeira` não dispara nada antes disso. `dustVolumeManifesto`
+   * é o que ela precisa do manifesto para o fetch real (`null` sem
+   * cartografia ou sem o volume declarado); guardado à parte de
+   * `this.catalogos` (tipado sem `.volumes`) só para isto.
+   */
+  private cartOn = false;
+  private dustVolumeManifesto: ManifestVolume | null = null;
+  /** o fetch (real ou o volume sintético de `?poeira=teste`) já foi
+   *  disparado — uma vez só: nem carga dupla enquanto o primeiro voa,
+   *  nem retentativa depois que ele resolveu (item D: uma falha do
+   *  fetch é definitiva, `Nebula.poeiraAssentada` não espera por ela). */
+  private poeiraFetchDisparada = false;
+  /** o PEDIDO guardado por `definirPoeira` (mesmo número que
+   *  `Nebula.poeiraModoPedido`) — `tentarCarregarPoeira` precisa dele
+   *  depois que `this.cartOn` for sabido, sem reler `this.debug`. */
+  private poeiraModoPedido = 0;
+  /**
+   * A CARGA DESTA INSTÂNCIA (revisão independente, 27/09) — substitui a
+   * flag global de `cartography/galacticAssets.ts`
+   * (`registrarBlocoDePoeira`/`estadoDoBlocoDePoeira`): aquela nunca
+   * voltava a 'pendente' entre boots e não notificava o React. Esta é o
+   * que `estadoDaPoeira` (abaixo) cruza com a `Nebula` para o veredito
+   * real; escrita por `tentarCarregarPoeira` e por `init()` (o caso
+   * "cartografia nunca ligou" — sem manifesto não há descritor a
+   * esperar). `poeiraFonte` só é não-nula quando um volume chegou a
+   * existir (real ou o sintético de `?poeira=teste`).
+   */
+  private poeiraCarga: 'pendente' | 'carregando' | 'chegou' | 'falhou' = 'pendente';
+  private poeiraFonte: 'gaia' | 'sintetica' | null = null;
   /** nuvens do catálogo em coords de cena: x,y,z,raio,amp por registro */
   /** as nuvens-semente do raymarch — corte 1 da Parte 1 da onda */
   private readonly nuvensSemente = new NuvensSemente();
@@ -583,9 +625,22 @@ export class Director {
   private hide = new Set<string>();
   /** ?exp= na query desliga a auto-exposição (App.tsx aplica o valor fixo) */
   private expOverride = false;
-  /** ?fps=1 (E2, PLAN.md): quadros/s e o bake mais recente da poeira, na
+  /** ?fps=1 (E2, PLAN.md): quadros/s e os custos de `window.__poeira` na
    *  tela — `null` = porta desligada, `contadorDeFps.ts` nunca criado */
-  private contadorFps: ((agora: number, bakeMs?: number) => void) | null = null;
+  private contadorFps: { atualizar: (agora: number) => void; descartar: () => void } | null =
+    null;
+  /**
+   * RELÓGIO DO QUADRO (item G, revisão independente, 27/09) — intervalo
+   * REAL entre quadros, por `performance.now()` (não por `dt`, que pode
+   * congelar: mesmo motivo do `contadorFps` acima). `intervalosDeQuadroMs`
+   * guarda os últimos ~300 ; o fim de `tick()` escreve
+   * `window.__poeira.quadroMaxMs`/`quadroP95Ms` — a régua de custo que
+   * sobrevive à variação quadro a quadro, para medir durante voo (no
+   * iPhone, sem abrir o DevTools). SEMPRE medido, como o bake CPU de
+   * `Nebula.bake` — custa um `sort` de ≤300 números por quadro.
+   */
+  private ultimoQuadroPerf = performance.now();
+  private readonly intervalosDeQuadroMs: number[] = [];
 
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
@@ -620,6 +675,25 @@ export class Director {
   private particulasForcadas: ParticulasDaGalaxia | null = lerPortaParticulas(
     this.debug.get('particulas')
   );
+  /**
+   * A POEIRA PERTO DE CASA ESCOLHIDA À MÃO (pedido do dono, 27/09) —
+   * `null` = a do preset ('hoje', por ora). Mesmo contrato de
+   * `gasForcado`: lida no CAMPO, e é a ÚNICA fonte do `?poeira=` numérico
+   * de antes (`0`/`1`/`2` continuam válidos como apelidos — ver
+   * `lerPortaPoeira`).
+   */
+  private poeiraForcada: TipoDePoeira | null = lerPortaPoeira(this.debug.get('poeira'));
+  /**
+   * `?poeira=teste` é BANCADA, fora da tabela de opções: liga com o
+   * volume SINTÉTICO de teste, nos números de sempre (ver
+   * `tentarCarregarPoeira`), e vence a variante escolhida enquanto
+   * ninguém tocar no controle. MUTÁVEL, e não uma releitura de
+   * `this.debug` (congelado desde o construtor): `forcarPoeira` a limpa,
+   * para o clique de "voltar ao brilho real" poder desarmar `teste` sem
+   * recarregar — sem isto o volume sintético continuaria no ar depois
+   * do clique, com a URL já limpa, e o selo mentiria por omissão.
+   */
+  private poeiraTeste = this.debug.get('poeira') === 'teste';
   /**
    * O RAIO COM QUE O SOL FOI CONSTRUÍDO, em pc. Desde a F3 é SEMPRE o
    * físico (`RAIO_DO_SOL_NA_CENA`) — a porta `?solreal=1` da F1 morreu
@@ -705,28 +779,19 @@ export class Director {
     void this.assets.catch(() => {});
     this.post = new Post(this.engine.renderer, this.engine.scene, this.engine.camera);
     this.nebula = new Nebula(0.5);
-    // POEIRA MEDIDA (E2): ?poeira=0|1|2|teste (2 e teste valem como 1 —
-    // o nível fino e a leitura direta são da E3) + ?poeiragain=/
-    // ?poeiragama=/?poeiralanes=, mesmo padrão de leitura de `cart=off`
-    // em startLoading() — mas AQUI, não lá: startLoading() já roda na
-    // linha acima (`this.assets = this.startLoading()`, "a rede
-    // primeiro"), antes desta Nebula existir. Ver Nebula.setPoeira e
-    // poeiraDensidadeApp em shaders/common.ts.
-    // Portas por LITERAL (não por uma função com `chave: string`
-    // genérica) de propósito: é assim que a varredura de completude do
-    // selo (selo.test.ts, `PADRAO_DE_PORTA`) as vê para cobrar o
-    // registro — uma função genérica escondia `poeiragain`/`poeiragama`/
-    // `poeiralanes` dela (achado ao rodar a suíte inteira nesta etapa).
-    const poeiraParam = this.debug.get('poeira');
-    const poeiraGanhoParam = parseFloat(this.debug.get('poeiragain') ?? '');
-    const poeiraGamaParam = parseFloat(this.debug.get('poeiragama') ?? '');
-    const poeiraLanesParam = parseFloat(this.debug.get('poeiralanes') ?? '');
-    this.nebula.setPoeira({
-      modo: poeiraParam === '1' || poeiraParam === '2' || poeiraParam === 'teste' ? 1 : 0,
-      ganho: Number.isFinite(poeiraGanhoParam) ? poeiraGanhoParam : 46.9,
-      gama: Number.isFinite(poeiraGamaParam) ? poeiraGamaParam : 1,
-      lanes: Number.isFinite(poeiraLanesParam) ? poeiraLanesParam : 0,
-    });
+    // POEIRA PERTO DE CASA (E2/E3 + pedido do dono, 27/09): a opção da
+    // gaveta Avançado (`poeiraForcada`/`poeiraTeste`, lidas no CAMPO,
+    // acima) decide modo/ganho/gama/lanes por `aplicarPoeira` — ver ali
+    // o mapeamento e as portas de bancada `?poeiragain=`/`?poeiragama=`/
+    // `?poeiralanes=`, que continuam vencendo por cima. `definirPoeira`
+    // guarda o pedido e só dispara o fetch depois que `init()` souber se
+    // a cartografia ligou (`this.cartOn`) — ver `definirPoeira`/
+    // `tentarCarregarPoeira` abaixo, Nebula.setPoeira e
+    // poeiraDensidadeApp em shaders/common.ts. O pedido nasce JÁ AQUI, e
+    // não no corpo mais tardio que semeia gás/nebulosa/partículas
+    // (linha ~910), porque é este `definirPoeira` que precisa correr
+    // antes de mais nada tocar `this.nebula`.
+    this.aplicarPoeira();
     // CONTADOR DE FPS NA TELA (E2): ?fps=1, mesmo padrão de leitura do
     // `poeira=` acima — só existe para medir custo sem abrir o DevTools
     // (contadorDeFps.ts); alimentado a cada quadro, no fim de tick().
@@ -781,6 +846,11 @@ export class Director {
       // a fração de partículas (item 149) troca de preset do mesmo jeito
       // — sem efeito ainda quando a galáxia não nasceu (init).
       this.aplicarParticulas();
+      // a poeira perto de casa (pedido do dono, 27/09) troca de preset
+      // do mesmo jeito — hoje sem efeito visível (os três presets
+      // apontam 'hoje'), mas pronta para o dia em que apontarem cada um
+      // a sua.
+      this.aplicarPoeira();
       // o preset de grão era config morta — nunca chegava ao shader
       this.post.setGrain(this.engine.preset.grain);
       // as amostras do alvo do composer (item 120, F1): o MSAA é do tier
@@ -989,12 +1059,27 @@ export class Director {
    * uma grade pequena em memória, mesma origem/voxel do bloco real numa
    * escala menor (40×40×20 de 20 pc, ±400/±400/±200 pc): zerada, com três
    * blocos de 3×3×3 voxels em heliocêntrico galáctico (ver `poeiraHelio`
-   * em shaders/common.ts) — 0,05 E/pc no centro galáctico (+300,0,0),
-   * 0,02 em l=90° (0,+300,0), 0,01 no norte (0,0,+150). É o volume da
-   * prova de orientação: do Sol para o centro galáctico tem de aparecer
-   * o bloco mais forte. Bits crus de half-float por `THREE.DataUtils`
-   * (não o `Float16Array` nativo do JS — mesmos bits, sem depender de um
-   * global recente demais para o Safari do iPhone confirmar a tempo).
+   * em shaders/common.ts) — 0,05 E/pc no centro galáctico (+310,+10,+10),
+   * 0,02 em l=90° (+10,+310,+10), 0,01 no norte (+10,+10,+170). É o
+   * volume da prova de orientação: do Sol para o centro galáctico tem de
+   * aparecer o bloco mais forte. Bits crus de half-float por
+   * `THREE.DataUtils` (não o `Float16Array` nativo do JS — mesmos bits,
+   * sem depender de um global recente demais para o Safari do iPhone
+   * confirmar a tempo).
+   *
+   * CENTROS REPRESENTÁVEIS (item F, revisão independente, 27/09): o
+   * centro do voxel `i` é `origem + (i + 0,5)·voxel` — o MESMO contrato
+   * de amostragem de `poeiraMedida`/`texture()` (o texel `i` cobre
+   * `[i, i+1)` em coordenada de textura, e o sampler lê o MEIO dele).
+   * `escreverBloco` inverte essa conta (`i = (coord − origem)/voxel −
+   * 0,5`); sem o `− 0,5` o índice caía meio voxel para dentro (o antigo
+   * "(300,0,0)" caía no voxel cujo centro É (310,10,10) — a inspeção
+   * pelo olho nunca notaria 10 pc em 800, mas o CONTRATO de coordenadas
+   * ficava errado). Os três centros acima são escolhidos para cair em
+   * `i` INTEIRO com a fórmula corrigida (nenhuma ambiguidade de
+   * arredondamento); o norte fica em 170, não mais alto, porque o topo
+   * da caixa em z é ±200 pc — a rampa de fronteira (1 voxel, 20 pc) já
+   * cortaria um centro mais perto do teto.
    */
   private volumeSinteticoDePoeira(): VolumeDePoeira {
     const dims: [number, number, number] = [40, 40, 20];
@@ -1003,9 +1088,9 @@ export class Director {
     const [nx, ny, nz] = dims;
     const dados = new Uint16Array(nx * ny * nz);
     const escreverBloco = (xh: number, yh: number, zh: number, densidadeEPorPc: number) => {
-      const cx = Math.round((xh - originPc[0]) / voxelPc);
-      const cy = Math.round((yh - originPc[1]) / voxelPc);
-      const cz = Math.round((zh - originPc[2]) / voxelPc);
+      const cx = Math.round((xh - originPc[0]) / voxelPc - 0.5);
+      const cy = Math.round((yh - originPc[1]) / voxelPc - 0.5);
+      const cz = Math.round((zh - originPc[2]) / voxelPc - 0.5);
       const bits = THREE.DataUtils.toHalfFloat(densidadeEPorPc * 1000);
       for (let dz = -1; dz <= 1; dz++) {
         for (let dy = -1; dy <= 1; dy++) {
@@ -1019,9 +1104,9 @@ export class Director {
         }
       }
     };
-    escreverBloco(300, 0, 0, 0.05); // direção do centro galáctico
-    escreverBloco(0, 300, 0, 0.02); // l = 90°
-    escreverBloco(0, 0, 150, 0.01); // norte
+    escreverBloco(310, 10, 10, 0.05); // direção do centro galáctico
+    escreverBloco(10, 310, 10, 0.02); // l = 90°
+    escreverBloco(10, 10, 170, 0.01); // norte
     return {
       descritor: {
         kind: 'volume',
@@ -1033,11 +1118,113 @@ export class Director {
         type: 'float16',
         byteLength: dados.byteLength,
         sha256: '',
+        // Coerentes com o que este bloco CONTÉM (zero por fora): sem
+        // buraco interno reconstruído, e o alcance externo é o maior
+        // semi-eixo real da caixa (400 pc, em x/y — z para em ±200). A
+        // cobertura ANALÍTICA (`poeiraCobertura` em shaders/common.ts)
+        // usa uma rampa 1100→1200 pc fixa NO DESENHO, pensada para o
+        // bloco REAL — não lê `uPoeiraRaios` (estes dois campos), então
+        // estes números são só documentação do descritor sintético, sem
+        // efeito no shader.
         innerRadiusPc: 0,
-        outerRadiusPc: Math.min(nx, ny, nz) * voxelPc * 0.5,
+        outerRadiusPc: 400,
       },
       dados,
     };
+  }
+
+  /**
+   * POEIRA MEDIDA (E2/E3): guarda o PEDIDO (mesmo formato de
+   * `Nebula.setPoeira`, que também recebe) e chama `tentarCarregarPoeira`
+   * — chamada pelo construtor (a URL ainda sem saber se a cartografia vai
+   * ligar: `tentarCarregarPoeira` não dispara nada até `init()` resolver
+   * `this.cartOn`) e, no futuro, por um menu ao vivo com a MESMA
+   * assinatura.
+   */
+  definirPoeira(config: { modo: number; ganho: number; gama: number; lanes: number }) {
+    this.poeiraModoPedido = config.modo;
+    this.nebula.setPoeira(config);
+    this.tentarCarregarPoeira();
+  }
+
+  /**
+   * CARGA PREGUIÇOSA (E3, item C — revisão independente, 27/09): antes o
+   * fetch do bloco de 20 pc disparava sempre que a cartografia estava
+   * ligada, mesmo com a poeira desligada ou a variante 'fino' (que não a
+   * assava — E2). Agora só dispara com os TRÊS: pedida
+   * (`poeiraModoPedido != 0`), cartografia ligada (`this.cartOn`, só
+   * sabido depois que `init()` resolve os ativos) e ainda não disparada —
+   * uma vez só: sem retentativa depois de uma falha (item D:
+   * `Nebula.poeiraAssentada` trata a falha como definitiva, sem prazo
+   * artificial). Chamada por `definirPoeira` e de novo no fim de `init()`
+   * quando `this.cartOn` é escrito. SEM bloquear a cena: só `.then`,
+   * nunca `await`. Escreve `poeiraCarga`/`poeiraFonte` (o estado desta
+   * instância que `estadoDaPoeira` lê) e publica — ver `publicarPoeira`.
+   */
+  private tentarCarregarPoeira() {
+    if (this.poeiraModoPedido === 0 || this.poeiraFetchDisparada || !this.cartOn) return;
+    this.poeiraFetchDisparada = true;
+    this.poeiraCarga = 'carregando';
+    this.publicarPoeira();
+    const base = import.meta.env.BASE_URL;
+    const ehTeste = this.debug.get('poeira') === 'teste';
+    const promessa = ehTeste
+      ? Promise.resolve<VolumeDePoeira | null>(this.volumeSinteticoDePoeira())
+      : this.dustVolumeManifesto
+        ? carregarVolumeDePoeira(base, this.dustVolumeManifesto, this.abortController.signal)
+        : Promise.resolve(null);
+    promessa.then((volume) => {
+      if (this.disposed) return;
+      const maiorDim = volume ? Math.max(...volume.descritor.dims) : 0;
+      const teto = sondarGl().max3DTextureSize;
+      if (volume && teto !== undefined && teto < maiorDim) {
+        console.warn(
+          `[poeira] Data3DTexture de ${maiorDim} excede o teto do aparelho (${teto}) — poeira desligada.`
+        );
+        this.poeiraCarga = 'falhou';
+        this.poeiraFonte = null;
+        this.publicarPoeira();
+        return;
+      }
+      this.nebula.setPoeiraMedida(volume);
+      this.poeiraCarga = volume ? 'chegou' : 'falhou';
+      this.poeiraFonte = volume ? (ehTeste ? 'sintetica' : 'gaia') : null;
+      this.publicarPoeira();
+    });
+  }
+
+  /**
+   * A PROCEDÊNCIA REAL da poeira medida perto do Sol (revisão
+   * independente, 27/09) — ver `EstadoDaPoeira` em `selo.ts`. Cruza o
+   * PEDIDO (`poeiraModoPedido`), a CARGA desta instância (`poeiraCarga`/
+   * `poeiraFonte`, escritos por `tentarCarregarPoeira`/`init`) e o que a
+   * `Nebula` DE FATO desenha (`poeiraModoEfetivo`, `poeiraAssentada`) —
+   * nenhuma das três contas decide por conta própria. Único produtor:
+   * antes disto o selo decidia por URL pedida + uma flag global de
+   * `galacticAssets.ts`, e o renderizador decidia por variante + bloco +
+   * modo — as duas contas divergiam.
+   */
+  get estadoDaPoeira(): EstadoDaPoeira {
+    if (this.poeiraModoPedido === 0) return { situacao: 'desligada', fonte: null };
+    if (this.poeiraCarga === 'pendente' || this.poeiraCarga === 'carregando') {
+      return { situacao: 'carregando', fonte: null };
+    }
+    if (this.poeiraCarga === 'falhou') return { situacao: 'indisponivel', fonte: null };
+    // 'chegou': o volume existe. A variante ativa não lendo ('antigo',
+    // modo efetivo 0) é 'inativa' mesmo antes de qualquer bake; senão,
+    // 'ativa' só quando a Nebula já assentou o bloco na tela — um
+    // efetivo ≥ 1 ainda não assentado é a última fatia do bake em voo,
+    // e "carregando" descreve isso melhor do que uma 'ativa' adiantada.
+    if (this.nebula.poeiraModoEfetivo === 0) {
+      return { situacao: 'inativa', fonte: this.poeiraFonte };
+    }
+    if (!this.nebula.poeiraAssentada) return { situacao: 'carregando', fonte: this.poeiraFonte };
+    return { situacao: 'ativa', fonte: this.poeiraFonte };
+  }
+
+  /** Publica `estadoDaPoeira` para o React — ver `DirectorEvents.onPoeira`. */
+  private publicarPoeira() {
+    this.events.onPoeira(this.estadoDaPoeira);
   }
 
   /**
@@ -1120,39 +1307,28 @@ export class Director {
     // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
     // o envelope de gás do raymarch mesmo sem APOGEE (R/G zerados).
     const cartOn = Boolean(galactic) && cartMode !== 'off';
-    // POEIRA MEDIDA (E2): dispara SEM bloquear a cena (só `.then`, nunca
-    // `await` aqui) — o `.then` entrega na Nebula quando chegar. Sem
-    // `cartOn` não há `volumes` (o manifesto nem foi buscado) e a poeira
-    // fica desligada o tempo todo — `get captura` trata isso adiante via
-    // `this.cartMode`. `?poeira=teste` troca o arquivo por um volume
-    // SINTÉTICO em memória (a prova de orientação: do Sol para o centro
-    // galáctico tem de aparecer o bloco mais forte).
-    if (cartOn && galactic) {
-      const base = import.meta.env.BASE_URL;
-      const promessa =
-        this.debug.get('poeira') === 'teste'
-          ? Promise.resolve<VolumeDePoeira | null>(this.volumeSinteticoDePoeira())
-          : galactic.volumes.dustVolumeNear20pc
-            ? carregarVolumeDePoeira(
-                base,
-                galactic.volumes.dustVolumeNear20pc,
-                this.abortController.signal
-              )
-            : Promise.resolve(null);
-      promessa.then((volume) => {
-        if (this.disposed) return;
-        const maiorDim = volume ? Math.max(...volume.descritor.dims) : 0;
-        const teto = sondarGl().max3DTextureSize;
-        if (volume && teto !== undefined && teto < maiorDim) {
-          console.warn(
-            `[poeira] Data3DTexture de ${maiorDim} excede o teto do aparelho (${teto}) — poeira desligada.`
-          );
-          registrarBlocoDePoeira('falhou');
-          return;
-        }
-        this.nebula.setPoeiraMedida(volume);
-        registrarBlocoDePoeira(volume ? 'chegou' : 'falhou');
-      });
+    // POEIRA MEDIDA (E2/E3) — CARGA PREGUIÇOSA (item C, revisão
+    // independente): só agora `cartOn` fica sabido, então só agora
+    // `tentarCarregarPoeira` pode disparar algo — ela mesma decide se HÁ
+    // carga a disparar (poeira pedida, ainda não disparada). Sem
+    // `cartOn` não há `volumes` (o manifesto nem foi buscado) e
+    // `dustVolumeManifesto` fica `null` — a poeira fica desligada o tempo
+    // todo, e `get captura` trata isso adiante via `this.cartMode`.
+    this.cartOn = cartOn;
+    this.dustVolumeManifesto =
+      cartOn && galactic ? galactic.volumes.dustVolumeNear20pc ?? null : null;
+    this.tentarCarregarPoeira();
+    // `this.cartOn` acabou de receber o valor DEFINITIVO da sessão (só
+    // muda aqui, uma vez). Se ele é falso — `?cart=off` ou o manifesto
+    // que falhou — e a poeira foi pedida, `tentarCarregarPoeira` nunca
+    // vai disparar nada (o guard `!this.cartOn` é permanente): sem isto
+    // `poeiraCarga` ficava em 'pendente' para sempre e `estadoDaPoeira`
+    // diria "carregando" eternamente por um fetch que nunca vai existir.
+    // Sem cartografia não há manifesto, e sem manifesto não há
+    // descritor — o mesmo "sem descritor" de `estadoDaPoeira`.
+    if (this.poeiraModoPedido !== 0 && !this.cartOn) {
+      this.poeiraCarga = 'falhou';
+      this.publicarPoeira();
     }
     // O CHECK DEPOIS DE CADA `stage` — e não só depois dos três awaits que
     // já o tinham. Cada `stage` cede a thread por um `setTimeout(0)`, e um
@@ -1547,7 +1723,10 @@ export class Director {
     // 'off'`), então nada a esperar aqui cobre TANTO `?cart=off` quanto
     // um `loadGalacticAssets` que falhou. Fora disso, quem decide é a
     // própria Nebula (variante, modo pedido, bloco carregado e assado).
-    const poeiraAssentada = this.cartMode === 'off' || this.nebula.poeiraAssentada;
+    // `noNebula` (?nonebula=1 ou aba escondida): o gás nem é desenhado,
+    // então um bake pendente da poeira não é motivo para esperar
+    const poeiraAssentada =
+      this.cartMode === 'off' || this.noNebula || this.nebula.poeiraAssentada;
     return julgarProntidao({
       fase: this.phase,
       andando,
@@ -2159,16 +2338,21 @@ export class Director {
       // segue rodando e o Auto segue ouvindo (`aoMedirOQuadro`): o que
       // para é o mostrador, não a régua.
       medicao: this.shotMode ? null : this.engine.medicao,
-      // os CINCO controles vivos da gaveta Avançado (item 145, +145b,
-      // +149), cada um lido da sua única casa: o MSAA mora no Post, o
-      // nível da nebulosa, o gás e as partículas aqui, a escala de
-      // resolução no Engine
+      // os SEIS controles vivos da gaveta Avançado (item 145, +145b,
+      // +149, +poeira 27/09), cada um lido da sua única casa: o MSAA
+      // mora no Post, o nível da nebulosa, o gás, as partículas e a
+      // poeira aqui, a escala de resolução no Engine
       amostras: this.post.amostras,
       nebulosa: this.nebulosaForcada,
       escala: this.engine.escala,
       gas: this.gasForcado,
       particulas: this.particulasForcadas,
+      poeira: this.poeiraForcada,
     });
+    // a variante do gás (um dos seis controles acima) decide o modo
+    // efetivo da poeira (`Nebula.poeiraModoEfetivo`) — toda troca de
+    // qualidade/preset é gatilho de `estadoDaPoeira` também.
+    this.publicarPoeira();
   }
 
   /**
@@ -2227,6 +2411,58 @@ export class Director {
     this.aplicarGas();
     // a imagem mudou (as três variantes desenham gás diferente, não a
     // mesma nuvem mais barata): a contagem de estabilidade recomeça
+    this.perturbar();
+    this.publicarQualidade();
+  }
+
+  /**
+   * A POEIRA PERTO DE CASA, num lugar só (pedido do dono, 27/09): a
+   * variante que o visitante escolheu na gaveta ou, na ausência dela, a
+   * do preset — mapeada para o motor por `poeiraParaMotor` (a tabela
+   * única, `atlasConfig.ts`). As portas de bancada `?poeiragain=`/
+   * `?poeiragama=`/`?poeiralanes=` continuam vencendo por cima,
+   * clampadas do jeito de sempre; `poeiraTeste` vence a variante
+   * inteira — liga com o volume SINTÉTICO nos números de sempre (ver
+   * `tentarCarregarPoeira`), porque `teste` não é palavra do menu e por
+   * isso não teria como virar variante.
+   */
+  private aplicarPoeira() {
+    const config = this.poeiraTeste
+      ? { modo: 1, ganho: 46.9, gama: 1, lanes: 0 }
+      : poeiraParaMotor(this.poeiraForcada ?? this.engine.preset.poeira);
+    const poeiraGanhoParam = parseFloat(this.debug.get('poeiragain') ?? '');
+    const poeiraGamaParam = parseFloat(this.debug.get('poeiragama') ?? '');
+    const poeiraLanesParam = parseFloat(this.debug.get('poeiralanes') ?? '');
+    this.definirPoeira({
+      modo: config.modo,
+      ganho: Number.isFinite(poeiraGanhoParam)
+        ? THREE.MathUtils.clamp(poeiraGanhoParam, 0, 500)
+        : config.ganho,
+      gama: Number.isFinite(poeiraGamaParam)
+        ? THREE.MathUtils.clamp(poeiraGamaParam, 0.2, 3)
+        : config.gama,
+      lanes: Number.isFinite(poeiraLanesParam)
+        ? THREE.MathUtils.clamp(poeiraLanesParam, 0, 1)
+        : config.lanes,
+    });
+  }
+
+  /**
+   * A POEIRA PERTO DE CASA, TROCADA AO VIVO (pedido do dono, 27/09) — a
+   * troca entre o modelo de hoje e as três leituras do bloco do Gaia é
+   * só reassar `definirPoeira` com o número certo, sem recarregar.
+   * `null` devolve a variante ao preset. Forçar uma variante (mesmo
+   * `null`) é um gesto explícito do visitante, e por isso desarma
+   * `poeiraTeste`: é o que faz o clique de "voltar ao brilho real"
+   * desligar de vez um `?poeira=teste` de bancada, em vez de deixar o
+   * volume sintético no ar com a URL já limpa.
+   */
+  forcarPoeira(variante: TipoDePoeira | null) {
+    this.poeiraForcada = variante;
+    this.poeiraTeste = false;
+    this.aplicarPoeira();
+    // a imagem mudou (as quatro variantes desenham poeira diferente, do
+    // desligado ao mais forte): a contagem de estabilidade recomeça
     this.perturbar();
     this.publicarQualidade();
   }
@@ -2620,14 +2856,16 @@ export class Director {
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),
       camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
       tier: this.engine.quality,
-      // os cinco controles da gaveta Avançado (item 145, +145b, +149) —
-      // estado VIVO, não as portas: o painel os troca sem recarregar, e
-      // um selo que lesse só a URL calaria a escolha feita na gaveta
+      // os seis controles da gaveta Avançado (item 145, +145b, +149,
+      // +poeira 27/09) — estado VIVO, não as portas: o painel os troca
+      // sem recarregar, e um selo que lesse só a URL calaria a escolha
+      // feita na gaveta
       amostras: this.post.amostras,
       nebulosa: this.nebulosaForcada,
       escala: this.engine.escala,
       gas: this.gasForcado,
       particulas: this.particulasForcadas,
+      poeira: this.poeiraForcada,
       luz: this.politicaDeLuz,
       stopsDoGloboEmFoco: this.stopsDoGloboEmFoco(),
       // a DOSE de ocupação do Sol (item 5): < 1 só no arranque do filme,
@@ -3384,14 +3622,30 @@ export class Director {
     // e o mesmo critério — DESENHADO — para "o modo já está na tela"
     this.quadrosDaFase++;
     // CONTADOR DE FPS NA TELA (E2): só existe com ?fps=1 (ver
-    // constructor); `window.__poeira` vem do bake mais recente da
-    // Nebula (`Nebula.bake`, sempre medido). `performance.now()` e não
-    // `time`/`rawTime`: o contador mede o quadro REAL, mesmo congelado
-    // no modo foto (`shotMode`) ou com a viagem em pausa.
-    this.contadorFps?.(
-      performance.now(),
-      (window as unknown as { __poeira?: { ultimoMs?: number } }).__poeira?.ultimoMs
-    );
+    // constructor); lê `window.__poeira` por conta própria (bake mais
+    // recente da Nebula + o relógio de quadro logo abaixo — ver
+    // `contadorDeFps.ts`). `performance.now()` e não `time`/`rawTime`: o
+    // contador mede o quadro REAL, mesmo congelado no modo foto
+    // (`shotMode`) ou com a viagem em pausa.
+    this.contadorFps?.atualizar(performance.now());
+    // RELÓGIO DO QUADRO (item G, revisão independente): intervalo REAL
+    // entre quadros — ver o campo `intervalosDeQuadroMs` acima.
+    // `typeof window` cobre `director.test.ts` (`environment: node`,
+    // sem `window`; mesma guarda de `Nebula.bake`).
+    if (typeof window !== 'undefined') {
+      const agora = performance.now();
+      const janela = this.intervalosDeQuadroMs;
+      janela.push(agora - this.ultimoQuadroPerf);
+      this.ultimoQuadroPerf = agora;
+      if (janela.length > 300) janela.shift();
+      const ordenado = [...janela].sort((a, b) => a - b);
+      const g = window as unknown as {
+        __poeira?: { quadroMaxMs?: number; quadroP95Ms?: number };
+      };
+      if (!g.__poeira) g.__poeira = {};
+      g.__poeira.quadroMaxMs = ordenado[ordenado.length - 1];
+      g.__poeira.quadroP95Ms = ordenado[Math.floor(0.95 * (ordenado.length - 1))];
+    }
   }
 
 
@@ -3448,6 +3702,10 @@ export class Director {
       this.passoBlindado('dispose', label, fn);
     step('roam', () => this.roam.dispose());
     step('listeners', () => this.gestos?.desligar());
+    // ?fps=1 (E2): o <div> do mostrador não é descartado com o resto —
+    // sem isto, um segundo Director (Fast Refresh em dev) herdava o
+    // mostrador órfão da sessão anterior na tela.
+    step('contadorFps', () => this.contadorFps?.descartar());
     step('blackHole', () => this.blackHole?.dispose());
     // recursos do mundo ANTES do renderer: material descartado depois
     // de renderer.dispose() não chama deleteProgram

@@ -75,22 +75,27 @@ const vec3 GAL_Y = vec3(-0.4941094, 0.4448296, -0.7469822);
 `;
 
 /**
- * A POEIRA MEDIDA do Gaia perto de casa (E2; PLAN.md — bloco de 20 pc,
- * Edenhofer 2024). Uniforms + funções puras; `nebulaBake` (macio, ver
- * `glslBakeDensity`) é quem soma isto à densidade nesta etapa — o
- * raymarch (`nebulaDensity`/`glslDensity`) só ganha os uniforms (para a
- * E3 não precisar voltar aqui), ainda não os lê.
+ * A POEIRA MEDIDA do Gaia perto de casa (E2/E3; PLAN.md — bloco de 20 pc,
+ * Edenhofer 2024). Uniforms + funções puras; três consumidores somam isto
+ * à densidade, cada um com o SEU `c` (a mesma `poeiraCobertura`, avaliada
+ * no `p` do próprio estágio): `nebulaBake` (macio, modo 1 — assa o termo
+ * medido no voxel, ver a ÁLGEBRA DA MISTURA no comentário do próprio
+ * bake) e, desde a E3 (antecipada nesta etapa), `glslBakeDensity`
+ * fino/`nebulaDensity` fino (modo 2 — leem o bloco AO VIVO por amostra do
+ * raymarch, ver `glslDensity`).
  *
  * `uPoeiraModo` é o modo EFETIVO que `Nebula.setPoeiraMedida`/`setPoeira`
- * escrevem (0 a menos que a variante seja 'macio' E o bloco já tenha
- * chegado — ver `atualizarModoEfetivo` em world/nebula.ts). Em
- * `nebulaBake`, a cobertura `c` só sai de 0 quando `uPoeiraModo == 1` (o
- * `?:` do GLSL avalia um só ramo, então `poeiraCobertura` nem roda com o
- * modo desligado) — e é essa MULTIPLICAÇÃO por `c`, não a ausência de
- * chamada, que zera o termo medido (`poeiraMedida`/`poeiraDensidadeApp`
- * continuam sendo chamadas, mas por `0.0 * finito = 0.0` o resultado é
- * bit a bit o de antes desta etapa — mesmo com a caixa 1×1×1 zerada do
- * fallback (`Nebula.fallbackPoeiraTex`) ainda amarrada no sampler).
+ * escrevem (0 a menos que o bloco já tenha chegado — ver
+ * `atualizarModoEfetivo` em world/nebula.ts — e então 1 se a variante é
+ * 'macio', 2 se é 'fino'; nunca os dois ao mesmo tempo). Em cada
+ * consumidor, a cobertura `c` só sai de 0 no modo que ELE lê (o `==`/`?:`
+ * do GLSL avalia só o ramo certo, então `poeiraCobertura` nem roda com o
+ * modo desligado) — e é esse GATE por `c` (multiplicação ou `if (c > 0.0)`,
+ * conforme o consumidor), não a ausência de chamada, que zera o termo
+ * medido com o modo desligado: `poeiraMedida`/`poeiraDensidadeApp` só são
+ * amostradas dentro dos ramos `c > 0`, então o CUSTO extra também é zero,
+ * não só o resultado — mesmo com a caixa 1×1×1 zerada do fallback
+ * (`Nebula.fallbackPoeiraTex`) ainda amarrada no sampler.
  */
 export const GLSL_POEIRA_MEDIDA = /* glsl */ `
 uniform highp sampler3D uPoeiraTex;
@@ -356,7 +361,10 @@ uniform vec3 uVolTamanho;
 // multiplicar. "fino" (?nebfino=1) mantém as DUAS frequências mais finas
 // (n2 e lanes) AO VIVO por amostra — o canal G do volume vira n1 puro em
 // vez do fator de clumps — para o dono comparar se o ganho de nitidez
-// compensa o custo; a perdedora some no fecho da etapa.
+// compensa o custo; a perdedora some no fecho da etapa. POEIRA MEDIDA
+// (E3, antecipada): "fino" também lê o bloco de 20 pc AO VIVO por
+// amostra (uPoeiraModo == 2) — só "macio" assa o termo medido no volume
+// (uPoeiraModo == 1, ver nebulaBake); ver GLSL_POEIRA_MEDIDA.
 float nebulaDensity(vec3 p, float t) {
   // Mesmo gate de antes, mesma exatidão bit a bit (ver nota do caminho
   // antigo abaixo): dentro de 25 pc com o portão fechado a densidade é
@@ -370,23 +378,33 @@ float nebulaDensity(vec3 p, float t) {
   gPaletteM = s.a;
 ${
   fino
-    ? `  // vácuo: mesma exatidão do caminho antigo — sem envelope e sem
-  // nenhuma semente por perto, a amostra é zero.
-  if (s.b < 0.004 && s.r == 0.0) return 0.0;
+    ? `  // POEIRA MEDIDA (E3, antecipada — PLAN.md): c é a cobertura do
+  // bloco no ponto, só com o bloco PEDIDO no modo fino (uPoeiraModo == 2
+  // — ver GLSL_POEIRA_MEDIDA); calculada ANTES da guarda de vácuo — um
+  // voxel sem envelope nem semente ainda pode estar dentro do bloco
+  // medido. A cobertura SUBSTITUI o procedural na proporção (1−c), a
+  // mesma regra do bake macio (nebulaBake) — nunca soma aos dois.
+  vec3 ph = poeiraHelio(p);
+  float c = uPoeiraModo == 2 ? poeiraCobertura(ph) : 0.0;
+  // vácuo: mesma exatidão do caminho antigo — sem envelope, sem semente
+  // por perto E sem cobertura medida, a amostra é zero.
+  if (c <= 0.0 && s.b < 0.004 && s.r == 0.0) return 0.0;
   // n2 (0,048) fica AO VIVO — clumps ganha detalhe fino que o voxel de
   // 15,6 pc não resolveria.
   float n2 = fbm(p * 0.048 + 17.3, 3);
   float clumps = smoothstep(0.50, 0.90, s.g * 0.70 + n2 * 0.30);
-  float d = s.b * clumps * 0.75 + s.r;
+  float d = (1.0 - c) * s.b * clumps * 0.75 + s.r;
   // núcleos do corredor: mesmo texto gerado que o caminho antigo usava
   // por amostra, aqui pago uma vez por passo do raymarch.
   int oct = 4;
 ${coresGLSL()}
-  if (d == 0.0) return 0.0;
-  // lanes (0,085) também AO VIVO — a segunda frequência fina.
+  // lanes (0,085) também AO VIVO — a segunda frequência fina. O medido
+  // usa a MESMA lane por mix(uPoeiraLanes) — 0 por padrão, sem
+  // modulação —, nunca soma outra: mesma regra do bake macio.
   float lanes = fbm(p * 0.085 + 41.0, 2);
-  d *= mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes));
-  d *= ${glslNumber(WORLD.gasDensity)};
+  float L = mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes));
+  d *= L * ${glslNumber(WORLD.gasDensity)};
+  if (c > 0.0) d += c * poeiraDensidadeApp(poeiraMedida(ph)) * ${glslNumber(WORLD.gasDensity)} * mix(1.0, L, uPoeiraLanes);
 `
     : `  float d = s.r;
   // núcleos do corredor: mesmo texto gerado que o caminho antigo usava
@@ -507,20 +525,32 @@ ${GLSL_POEIRA_MEDIDA}
 uniform sampler2D uSeedCloudTex;
 uniform int uSeedCloudCount;
 
-// Devolve as 4 saídas do bake num vec4 só. "macio" (fino=false): R =
-// campo estático + sementes, G = fator das lanes × gasDensity, B =
-// envelope, A = ruído da paleta — tudo pronto, o raymarch só multiplica.
-// "fino" (?nebfino=1): R = só a soma das sementes (o envelope×clumps some
-// daqui — clumps passa a viver no raymarch, ao vivo, com n2 fresco), G =
-// n1 puro (sem clumps), B = envelope, A = m — só os termos SUAVES são
-// assados; ver nebulaDensity acima para quem consome cada canal.
+// Devolve as 4 saídas do bake num vec4 só. "macio" (fino=false): R/G
+// saem da ÁLGEBRA DA MISTURA (ver comentário abaixo) — com a poeira
+// desligada, R = campo estático + sementes e G = fator das lanes ×
+// gasDensity, byte a byte o de sempre; com o bloco pedido (modo 1) os
+// dois passam a misturar o medido. B = envelope, A = ruído da paleta.
+// "fino" (?nebfino=1): R = só a soma das sementes, escalada por (1−c)
+// quando o bloco é pedido no modo fino (o envelope×clumps some daqui —
+// clumps passa a viver no raymarch, ao vivo, com n2 fresco, junto com o
+// medido: ver nebulaDensity), G = n1 puro (sem clumps), B = envelope,
+// A = m — ver nebulaDensity acima para quem consome cada canal.
 vec4 nebulaBake(vec3 p) {
   float envelope = min(diskGasEnvelope(p), 3.0);
   float r = 0.0;
 ${
   fino
-    ? `  // Vácuo: só a soma das sementes entra em R aqui — sem termo de
-  // envelope×clumps (ele agora é calculado ao vivo no raymarch).
+    ? `  // POEIRA MEDIDA (E3, antecipada — PLAN.md): c é a cobertura do
+  // bloco no ponto, só com o bloco PEDIDO no modo fino (uPoeiraModo == 2
+  // — ver GLSL_POEIRA_MEDIDA). Recalculada de novo em nebulaDensity: o p
+  // de cada estágio é outro (centro do voxel aqui, amostra do raio lá),
+  // então não há como compartilhar o valor entre os dois. R aqui é
+  // só a soma das sementes (procedural), escalada por (1−c) de UMA vez
+  // no fim — sem termo de envelope×clumps (ele é calculado ao vivo no
+  // raymarch, junto com o medido: ver nebulaDensity acima).
+  vec3 ph = poeiraHelio(p);
+  float c = uPoeiraModo == 2 ? poeiraCobertura(ph) : 0.0;
+  float sementes = 0.0;
   if (!(envelope < 0.004 && uSeedCloudCount == 0)) {
     for (int i = 0; i < ${seedSlots}; i++) {
       if (i >= uSeedCloudCount) break;
@@ -535,10 +565,11 @@ ${
         float phase = hash13(posRaio.xyz) * 118.3;
         float subst =
           0.35 + 1.35 * smoothstep(0.45, 0.85, fbm(p * 0.11 + phase, 2));
-        r += g * amp * subst;
+        sementes += g * amp * subst;
       }
     }
   }
+  r = (1.0 - c) * sementes;
   float n1 = fbm(p * 0.0135, 4);
   float aCanal = fbm(p * 0.035 + 7.7, 3);
   return vec4(r, n1, envelope, aCanal);
@@ -550,19 +581,33 @@ ${
   // resultado de R, só o custo — e G/B/A são escritos DE QUALQUER JEITO
   // logo abaixo, porque o bake assa o voxel inteiro de uma vez.
   //
-  // POEIRA MEDIDA (E2): c é a cobertura do bloco no ponto (0 com o modo
-  // desligado — ver GLSL_POEIRA_MEDIDA). Ela SUBSTITUI o procedural e as
-  // sementes na proporção (1−c)/c, nunca soma aos dois: dentro do bloco
-  // o procedural teria sido inventado por cima de uma medida real. O
-  // termo medido é somado FORA da guarda de vácuo acima — um voxel sem
-  // envelope nem semente ainda pode estar dentro do bloco medido.
-  float c = uPoeiraModo == 1 ? poeiraCobertura(poeiraHelio(p)) : 0.0;
+  // POEIRA MEDIDA (E2) — ÁLGEBRA DA MISTURA (revisão independente,
+  // 27/09): c é a cobertura do bloco no ponto (0 com o modo desligado —
+  // ver GLSL_POEIRA_MEDIDA). O raymarch faz d = R·G, então R e G não
+  // podem cada um ser uma mistura (1−c)/c do procedural/medido
+  // INDEPENDENTE um do outro — isso atenua o medido na transição (c=0,5,
+  // L=0,2, P=0, M=1 dava R·G=0,3 em vez dos 0,5 corretos). Com campoProc
+  // = P = envelope·clumps·0,75 + sementes (cheio, SEM (1−c) — o (1−c)
+  // agora mora só na mistura abaixo) e fatorLanes = L (as lanes
+  // inventadas), o medido usa fatorLanesMedido = mix(1, L, uPoeiraLanes)
+  // — uPoeiraLanes=0 por padrão → 1: o medido NÃO é modulado pela lane
+  // inventada. A mistura COMPARTILHADA por R e G é
+  // mistura = (1−c)·L + c·Lm (∈[0,12; 1], nunca zero — L e Lm nunca saem
+  // de [0,12; 1]); R = [(1−c)·P·L + c·M·Lm] / mistura e
+  // G = mistura·gasDensity dão R·G = gasDensity·[(1−c)·P·L + c·M·Lm]
+  // exatamente — linear no campo de densidade. Com c ≤ 0 (modo
+  // desligado) cai no ramo de hoje, texto idêntico: R=P, G=L·gasDensity
+  // — e M (poeiraMedida, um fetch de textura) só é amostrado dentro do
+  // ramo c > 0: custo zero com a poeira desligada.
+  vec3 ph = poeiraHelio(p);
+  float c = uPoeiraModo == 1 ? poeiraCobertura(ph) : 0.0;
+  float campoProc = 0.0;
   if (!(envelope < 0.004 && uSeedCloudCount == 0)) {
     float n1 = fbm(p * 0.0135, 4);
     float n2 = fbm(p * 0.048 + 17.3, 3);
     // grumos raros e compactos — gás molecular ocupa ≪1% do volume
     float clumps = smoothstep(0.50, 0.90, n1 * 0.70 + n2 * 0.30);
-    r = (1.0 - c) * envelope * clumps * 0.75;
+    campoProc = envelope * clumps * 0.75;
     // nuvens-semente reais: metaballs com subestrutura FBM — mesma conta
     // do caminho antigo, só que lendo a textura em vez do array.
     for (int i = 0; i < ${seedSlots}; i++) {
@@ -578,16 +623,23 @@ ${
         float phase = hash13(posRaio.xyz) * 118.3;
         float subst =
           0.35 + 1.35 * smoothstep(0.45, 0.85, fbm(p * 0.11 + phase, 2));
-        r += (1.0 - c) * g * amp * subst;
+        campoProc += g * amp * subst;
       }
     }
   }
-  r += c * poeiraDensidadeApp(poeiraMedida(poeiraHelio(p)));
   float lanes = fbm(p * 0.085 + 41.0, 2);
-  // lanes inventadas não modulam o medido (uPoeiraLanes = botão para
-  // comparar, 0 por padrão): fatorLanes só sobrevive por (1−c).
   float fatorLanes = mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes));
-  float gCanal = mix(fatorLanes, 1.0, c * (1.0 - uPoeiraLanes)) * ${glslNumber(WORLD.gasDensity)};
+  float gCanal = 0.0;
+  if (c <= 0.0) {
+    r = campoProc;
+    gCanal = fatorLanes * ${glslNumber(WORLD.gasDensity)};
+  } else {
+    float medido = poeiraDensidadeApp(poeiraMedida(ph));
+    float fatorLanesMedido = mix(1.0, fatorLanes, uPoeiraLanes);
+    float mistura = (1.0 - c) * fatorLanes + c * fatorLanesMedido;
+    r = ((1.0 - c) * campoProc * fatorLanes + c * medido * fatorLanesMedido) / mistura;
+    gCanal = mistura * ${glslNumber(WORLD.gasDensity)};
+  }
   float aCanal = fbm(p * 0.035 + 7.7, 3);
   return vec4(r, gCanal, envelope, aCanal);
 `

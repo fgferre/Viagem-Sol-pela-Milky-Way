@@ -1866,10 +1866,11 @@ try {
   await sessao.ir(`atlas=1&ajustes=1&${PIN}`);
 
   // A GAVETA "AVANÇADO" É RECOLHÍVEL E FECHADA POR PADRÃO (Lote 7) — os
-  // seis controles (curva de tom, MSAA/amostras, nebulosa, gás,
-  // partículas, escala, um `.ajustes-item` cada dentro de
-  // `#ajustes-avancado`) NÃO estão no DOM até o "?" abrir; um juiz que só
-  // olhasse `aria-expanded` não veria que a MONTAGEM também muda.
+  // sete controles (curva de tom, MSAA/amostras, nebulosa, gás, poeira
+  // perto de casa — pedido do dono, 27/09 —, partículas, escala, um
+  // `.ajustes-item` cada dentro de `#ajustes-avancado`) NÃO estão no DOM
+  // até o "?" abrir; um juiz que só olhasse `aria-expanded` não veria
+  // que a MONTAGEM também muda.
   const contarAvancado = () => sessao.js(
     "(() => { const alvo = document.getElementById('ajustes-avancado'); "
       + "return alvo ? alvo.querySelectorAll('.ajustes-item').length : 0; })()"
@@ -1889,10 +1890,10 @@ try {
   const fechadoDeNovo = await contarAvancado();
   conferir(
     expandidoAntes === 'false' && fechadoAntes === 0
-      && expandidoDepois === 'true' && abertoDepois === 6
+      && expandidoDepois === 'true' && abertoDepois === 7
       && fechadoDeNovo === 0,
     'ajustes · avançado: fechado por padrão (0 controles em #ajustes-avancado),'
-      + ` abre os 6 (achado ${abertoDepois}) e desmonta ao recolher (achado ${fechadoDeNovo})`
+      + ` abre os 7 (achado ${abertoDepois}) e desmonta ao recolher (achado ${fechadoDeNovo})`
   );
 
   // A MEDIDA DE QUALIDADE É `aria-live` DE VERDADE — muda sozinha quando

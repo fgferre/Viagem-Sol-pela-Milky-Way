@@ -155,21 +155,6 @@ export function cartografiaMedida(): boolean {
 }
 
 /**
- * O bloco de poeira medida (E2) chegou? Estado à parte de `mapasChegaram`
- * — a poeira é opcional e nunca derruba a cartografia — escrito pelo
- * director quando a carga (real ou sintética) resolve, lido pelo selo.
- */
-let blocoDePoeira: 'pendente' | 'chegou' | 'falhou' = 'pendente';
-
-export function registrarBlocoDePoeira(estado: 'chegou' | 'falhou'): void {
-  blocoDePoeira = estado;
-}
-
-export function estadoDoBlocoDePoeira(): 'pendente' | 'chegou' | 'falhou' {
-  return blocoDePoeira;
-}
-
-/**
  * Carrega todos os catálogos em paralelo. Retorna null se qualquer
  * parte faltar — o chamador decide seguir só com o procedural.
  *

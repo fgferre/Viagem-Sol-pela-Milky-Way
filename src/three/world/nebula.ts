@@ -177,13 +177,24 @@ export class Nebula {
   private fallbackPoeiraTex: THREE.Data3DTexture;
   private poeiraTexAtual: THREE.Data3DTexture | null = null;
   /** o bloco já chegou (setPoeiraMedida com um volume não-nulo)? entra em
-   *  `atualizarModoEfetivo` — ver o campo abaixo. */
+   *  `atualizarModoEfetivo`/`poeiraAssentada` — ver os campos abaixo. */
   private poeiraVolumeCarregado = false;
+  /**
+   * O PEDIDO (`setPoeiraMedida`, sucesso OU falha: fetch nulo, abortado,
+   * teto de textura) já ENCERROU pelo menos uma vez? Distinto de
+   * `poeiraVolumeCarregado` (que só diz se o bloco está disponível
+   * AGORA): uma falha encerra o pedido sem nunca deixar
+   * `poeiraVolumeCarregado` verdadeiro — sem este campo, `poeiraAssentada`
+   * esperaria para sempre por um fetch que já desistiu (item D, revisão
+   * independente — sem prazo artificial, como não há retentativa).
+   */
+  private poeiraPedidoEncerrado = false;
   /**
    * O modo PEDIDO (setPoeira; 0/1/2 — "teste" já chega como 1 do
    * director). O modo EFETIVO que a GPU recebe (`uPoeiraModo`) só copia
-   * este valor quando a variante é 'macio' E o bloco já carregou —
-   * `atualizarModoEfetivo` escreve o efetivo nos dois materiais.
+   * este valor quando ele bate com `modoEsperado` da variante ATIVA E o
+   * bloco já carregou — `atualizarModoEfetivo` escreve o efetivo nos
+   * dois materiais.
    */
   private poeiraModoPedido = 0;
 
@@ -454,17 +465,45 @@ export class Nebula {
   }
 
   /**
+   * O modo que ESTA variante consumiria se o pedido combinasse e o bloco
+   * já tivesse chegado — 0 para 'antigo' (nunca lê a poeira), 1 para
+   * 'macio' (assado, `nebulaBake`), 2 para 'fino' (direto, ao vivo em
+   * `nebulaDensity`/`glslBakeDensity`; ver GLSL_POEIRA_MEDIDA em
+   * shaders/common.ts). A MESMA régua decide o que a GPU recebe
+   * (`atualizarModoEfetivo`) e o que `poeiraAssentada` espera.
+   */
+  private get modoEsperado(): number {
+    return this.variante === 'macio' ? 1 : this.variante === 'fino' ? 2 : 0;
+  }
+
+  /**
+   * O modo EFETIVO que a GPU está recebendo agora (`uPoeiraModo` — ver
+   * `atualizarModoEfetivo` abaixo) — 0 quando a poeira não é lida (não
+   * pedida, bloco ainda não chegado, ou a variante ativa é 'antigo').
+   * Único consumidor: `Director.estadoDaPoeira` (revisão independente,
+   * 27/09), para dizer 'inativa' (volume disponível, variante não lê)
+   * sem duplicar a conta que já vive aqui.
+   */
+  get poeiraModoEfetivo(): number {
+    return this.material.uniforms.uPoeiraModo.value as number;
+  }
+
+  /**
    * O modo EFETIVO da poeira medida (`uPoeiraModo` que a GPU recebe): 0 a
-   * menos que a variante seja 'macio' E o bloco já tenha chegado — sem
-   * isso, `?poeira=1` pintaria cobertura sobre a caixa 1×1×1 zerada (ou
-   * sobre 'fino', que não a lê nesta etapa) enquanto o fetch assíncrono
-   * de `carregarVolumeDePoeira` ainda voa. Chamada por `setPoeira`,
-   * `setPoeiraMedida` e `setVariante` — as três coisas de que o efetivo
-   * depende.
+   * menos que a poeira esteja PEDIDA (qualquer pedido ≠ 0: o pedido é só
+   * "ligada"; a TÉCNICA — 1 assada no macio, 2 direta no fino — é da
+   * variante ativa, `modoEsperado`) E o bloco já tenha chegado — sem isso,
+   * `?poeira=1` pintaria cobertura sobre a caixa 1×1×1 zerada enquanto o
+   * fetch assíncrono de `carregarVolumeDePoeira` ainda voa. Chamada por
+   * `setPoeira`, `setPoeiraMedida` e `setVariante` — as três coisas de que
+   * o efetivo depende.
    */
   private atualizarModoEfetivo() {
+    const esperado = this.modoEsperado;
     const efetivo =
-      this.variante === 'macio' && this.poeiraVolumeCarregado ? this.poeiraModoPedido : 0;
+      esperado !== 0 && this.poeiraModoPedido !== 0 && this.poeiraVolumeCarregado
+        ? esperado
+        : 0;
     if (this.material.uniforms.uPoeiraModo.value === efetivo) return;
     this.material.uniforms.uPoeiraModo.value = efetivo;
     this.volumeMaterial.uniforms.uPoeiraModo.value = efetivo;
@@ -477,7 +516,10 @@ export class Nebula {
    * mesmo padrão de leitura de `cart=off`) — ver `poeiraDensidadeApp` e
    * `nebulaBake` em shaders/common.ts. `modo` é o PEDIDO (0/1/2, "teste"
    * já chega como 1); o EFETIVO é recalculado no fim (ver
-   * `atualizarModoEfetivo`).
+   * `atualizarModoEfetivo`). LIMITES (item E, revisão independente):
+   * `ganho`/`gama`/`lanes` fora da faixa (ou NaN) são clampados/trocados
+   * pelo padrão aqui — defesa de segunda linha; director.ts já clampa o
+   * que vem da URL.
    */
   setPoeira({
     modo,
@@ -495,23 +537,26 @@ export class Nebula {
     // cru) — variante 'fino' pedindo modo 1 não pode sujar o volume, ou
     // o quadro congelado (item 144) reassaria sem nenhum pixel mudar.
     this.poeiraModoPedido = modo;
+    const ganhoClamp = Number.isFinite(ganho) ? THREE.MathUtils.clamp(ganho, 0, 500) : 46.9;
+    const gamaClamp = Number.isFinite(gama) ? THREE.MathUtils.clamp(gama, 0.2, 3) : 1;
+    const lanesClamp = Number.isFinite(lanes) ? THREE.MathUtils.clamp(lanes, 0, 1) : 0;
     const u = this.material.uniforms;
     const uv = this.volumeMaterial.uniforms;
-    if (u.uPoeiraGanho.value !== ganho) {
-      u.uPoeiraGanho.value = ganho;
-      uv.uPoeiraGanho.value = ganho;
+    if (u.uPoeiraGanho.value !== ganhoClamp) {
+      u.uPoeiraGanho.value = ganhoClamp;
+      uv.uPoeiraGanho.value = ganhoClamp;
       this.volumeSujo = true;
       this.sujo = true;
     }
-    if (u.uPoeiraGama.value !== gama) {
-      u.uPoeiraGama.value = gama;
-      uv.uPoeiraGama.value = gama;
+    if (u.uPoeiraGama.value !== gamaClamp) {
+      u.uPoeiraGama.value = gamaClamp;
+      uv.uPoeiraGama.value = gamaClamp;
       this.volumeSujo = true;
       this.sujo = true;
     }
-    if (u.uPoeiraLanes.value !== lanes) {
-      u.uPoeiraLanes.value = lanes;
-      uv.uPoeiraLanes.value = lanes;
+    if (u.uPoeiraLanes.value !== lanesClamp) {
+      u.uPoeiraLanes.value = lanesClamp;
+      uv.uPoeiraLanes.value = lanesClamp;
       this.volumeSujo = true;
       this.sujo = true;
     }
@@ -521,26 +566,31 @@ export class Nebula {
   /**
    * O bloco de poeira medida chegou (E1: `dust-near-20pc.bin`, ou o
    * volume sintético de `?poeira=teste`) — ou `null` se o fetch falhou,
-   * foi abortado, ou nunca foi disparado (`?cart=off`, manifesto sem
-   * `dustVolumeNear20pc`). Cria a `Data3DTexture` R16F (linear,
+   * foi abortado, ou o teto de textura do aparelho o recusou (director.ts
+   * só chama isto depois de PEDIR a poeira — `?cart=off`/manifesto sem
+   * `dustVolumeNear20pc` nem chegam a disparar o fetch, ver
+   * `Director.definirPoeira`). Cria a `Data3DTexture` R16F (linear,
    * ClampToEdge nos três eixos — `dados` já são os bits crus do
-   * half-float, little-endian), escreve os uniforms nos DOIS materiais e
-   * marca `volumeSujo`: reassa no próximo `render()`. `null` destrói a
-   * textura anterior e volta à 1×1×1 zerada — `atualizarModoEfetivo`
-   * zera `uPoeiraModo` junto.
+   * half-float, little-endian) e escreve os uniforms nos DOIS materiais.
+   * `null` destrói a textura anterior e volta à 1×1×1 zerada. Em QUALQUER
+   * dos dois casos marca `poeiraPedidoEncerrado` (item D: uma falha não
+   * espera para sempre) e chama `atualizarModoEfetivo`, que é quem decide
+   * `volumeSujo`/`sujo` — CARGA PREGUIÇOSA (item C, revisão
+   * independente): o bloco pode chegar com o pedido em 0 (nenhuma
+   * variante o lendo ainda), e reassar as 128 fatias por nada seria
+   * exatamente o custo que a carga preguiçosa evita.
    */
   setPoeiraMedida(volume: VolumeDePoeira | null) {
     const texAnterior = this.poeiraTexAtual;
     const u = this.material.uniforms;
     const uv = this.volumeMaterial.uniforms;
+    this.poeiraPedidoEncerrado = true;
     if (!volume) {
       this.poeiraVolumeCarregado = false;
       u.uPoeiraTex.value = this.fallbackPoeiraTex;
       uv.uPoeiraTex.value = this.fallbackPoeiraTex;
       this.poeiraTexAtual = null;
       texAnterior?.dispose();
-      this.volumeSujo = true;
-      this.sujo = true;
       this.atualizarModoEfetivo();
       return;
     }
@@ -570,22 +620,32 @@ export class Nebula {
       );
     }
     texAnterior?.dispose();
-    this.volumeSujo = true;
-    this.sujo = true;
     this.atualizarModoEfetivo();
   }
 
   /**
-   * PRONTIDÃO DA CAPTURA (E2): desligada (nada a esperar) ou o bloco já
-   * chegou e já foi assado pelo menos uma vez desde que chegou —
+   * PRONTIDÃO DA CAPTURA (E2/E3, item D — revisão independente): separa
+   * "pedido ENCERRADO" (sucesso ou falha — `poeiraPedidoEncerrado`) de
+   * "volume DISPONÍVEL" (`poeiraVolumeCarregado`). `poeiraAssentada` é:
+   * não pedida (nada a esperar) OU pedido encerrado com FALHA (sem prazo
+   * artificial — não há retentativa, então uma falha é definitiva) OU
+   * (disponível E assada pelo menos uma vez desde que chegou).
    * `director.ts` usa isto em `get captura` para a foto não saltar na
    * frente do fetch assíncrono de `carregarVolumeDePoeira`, que não
    * perturba `quadrosEstaveis` por si só. `director.ts` compõe isto com
    * `this.cartMode === 'off'` (sem cartografia, o fetch nem é disparado).
    */
   get poeiraAssentada(): boolean {
-    if (this.poeiraModoPedido === 0 || this.variante !== 'macio') return true;
-    return this.poeiraVolumeCarregado && !this.volumeSujo;
+    const esperado = this.modoEsperado;
+    const pedida = esperado !== 0 && this.poeiraModoPedido !== 0;
+    if (!pedida) return true;
+    if (this.poeiraPedidoEncerrado && !this.poeiraVolumeCarregado) return true;
+    // gás apagado (director pula `render()` com fade ≤ 0,02: vistas de
+    // escala galáctica, fora do disco): o bake pendente nunca vai rodar
+    // e não aparece — nada a esperar (achado da revisão de 27/09: t=153/167
+    // com poeira ligada esperavam o teto de segurança da prontidão)
+    const apagada = (this.material.uniforms.uFade.value as number) <= 0.02;
+    return this.poeiraVolumeCarregado && (!this.volumeSujo || apagada);
   }
 
   private lastW = 960;
@@ -919,18 +979,22 @@ export class Nebula {
     // o volume mudou: o quadro congelado (item 144) precisa refazer o
     // raymarch mesmo com a câmera parada, senão o céu antigo persistiria
     this.sujo = true;
-    // CUSTO DO BAKE (E2): sempre medido — custa nada e não depende de
-    // dev —, para `?fps=1` (director.ts/contadorDeFps.ts) mostrar na
-    // tela sem abrir o DevTools. `typeof window` porque este método
+    // CUSTO DA SUBMISSÃO (CPU) DO BAKE (item G, revisão independente):
+    // sempre medido — custa nada e não depende de dev —, para `?fps=1`
+    // (director.ts/contadorDeFps.ts) mostrar na tela sem abrir o
+    // DevTools. RENOMEADO de "ultimoMs": as 128 chamadas de
+    // `renderer.render` daqui só devolvem depois de SUBMETER o desenho —
+    // não medem a conclusão na GPU, que pode terminar bem depois (daí
+    // `bakeCpuMs`, não `bakeMs`). `typeof window` porque este método
     // roda inteiro sob `environment: node` em nebula.test.ts (mesma
     // guarda de `stepsOverride`, acima).
     if (typeof window !== 'undefined') {
       const ms = performance.now() - t0;
-      const g = window as unknown as { __poeira?: { bakesMs: number[]; ultimoMs: number } };
-      if (!g.__poeira) g.__poeira = { bakesMs: [], ultimoMs: 0 };
+      const g = window as unknown as { __poeira?: { bakesMs: number[]; bakeCpuMs: number } };
+      if (!g.__poeira) g.__poeira = { bakesMs: [], bakeCpuMs: 0 };
       g.__poeira.bakesMs.push(ms);
       if (g.__poeira.bakesMs.length > 20) g.__poeira.bakesMs.shift();
-      g.__poeira.ultimoMs = ms;
+      g.__poeira.bakeCpuMs = ms;
     }
   }
 

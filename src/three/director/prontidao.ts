@@ -41,12 +41,16 @@ export interface TermosDaProntidao {
   corposAssentados: boolean;
   fonteAssentada: boolean;
   /**
-   * A POEIRA MEDIDA (E2, PLAN.md): desligada (nada a esperar — `?poeira=`
-   * não pedida, cartografia fora, ou variante sem bake de poeira), ou o
-   * bloco já chegou e já foi assado pelo menos uma vez desde que chegou.
-   * Sem este termo a captura poderia saltar na frente do fetch
-   * assíncrono de `carregarVolumeDePoeira` — que, como a efeméride
-   * (`fonteAssentada`), não perturba `quadrosEstaveis` por si só.
+   * A POEIRA MEDIDA (E2/E3, PLAN.md; item D, revisão independente):
+   * desligada (nada a esperar — `?poeira=` não pedida, cartografia fora,
+   * ou a variante ativa lê outro modo), OU o pedido já ENCERROU com
+   * FALHA (fetch nulo, abortado, teto de textura — sem retentativa, uma
+   * falha é definitiva, sem prazo artificial), OU o bloco já chegou e já
+   * foi assado pelo menos uma vez desde que chegou (`Nebula.poeiraAssentada`
+   * tem a régua exata). Sem este termo a captura poderia saltar na
+   * frente do fetch assíncrono de `carregarVolumeDePoeira` — que, como a
+   * efeméride (`fonteAssentada`), não perturba `quadrosEstaveis` por si
+   * só — ou esperar para sempre por um fetch que já desistiu.
    */
   poeiraAssentada: boolean;
   quadrosEstaveis: number;

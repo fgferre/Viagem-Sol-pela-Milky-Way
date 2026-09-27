@@ -140,12 +140,17 @@ function volumeFalso(): VolumeDePoeira {
   };
 }
 
-describe('poeira medida (E2) — Nebula.setPoeiraMedida/setPoeira', () => {
-  it('setPoeiraMedida cria a Data3DTexture certa, escreve os uniforms nos dois materiais e reassa (128 renders a mais)', () => {
+describe('poeira medida (E2/E3) — Nebula.setPoeiraMedida/setPoeira', () => {
+  it('setPoeiraMedida cria a Data3DTexture certa, escreve os uniforms nos dois materiais e reassa (128 renders a mais) quando a poeira foi pedida', () => {
     const { renderer, camera, nebula, desenhos } = bancada();
     nebula.render(renderer, camera); // bake (128) + LUT + raymarch + blur
     expect(desenhos()).toBe(131);
 
+    // pedida ANTES do bloco chegar (a mesma ordem do director: setPoeira
+    // no construtor, setPoeiraMedida quando o fetch resolve depois) —
+    // sem isto o efetivo não muda com a chegada (item C, carga
+    // preguiçosa) e o "128 a mais" abaixo não provaria nada.
+    nebula.setPoeira({ modo: 1, ganho: 46.9, gama: 1, lanes: 0 });
     nebula.setPoeiraMedida(volumeFalso());
 
     const { material, volumeMaterial } = nebula as unknown as {
@@ -176,21 +181,55 @@ describe('poeira medida (E2) — Nebula.setPoeiraMedida/setPoeira', () => {
     expect(desenhos()).toBe(261);
   });
 
-  it('setPoeira({modo:1}) com a variante fino mantém o modo efetivo em 0 — só o macio assa a poeira', () => {
+  // CARGA PREGUIÇOSA (item C, revisão independente, 27/09): o bloco pode
+  // chegar (director.ts o baixa quando a cartografia está ligada) mesmo
+  // com a poeira nunca pedida — reassar as 128 fatias por nada seria
+  // exatamente o custo que a carga preguiçosa evita.
+  it('chegada do bloco com modo pedido 0 não provoca bake extra', () => {
+    const { renderer, camera, nebula, desenhos } = bancada();
+    nebula.render(renderer, camera); // bake (128) + LUT + raymarch + blur
+    expect(desenhos()).toBe(131);
+
+    nebula.setPoeiraMedida(volumeFalso()); // pedido continua 0: o efetivo não muda
+
+    nebula.render(renderer, camera); // nada sujo, câmera parada: nada desenha
+    expect(desenhos()).toBe(131);
+  });
+
+  it('o pedido é só "ligada": setPoeira({modo:1}) no fino vira modo efetivo 2 (direto) e no antigo fica 0', () => {
     const { renderer, camera, nebula, desenhos } = bancada();
     nebula.setVariante('fino');
     nebula.setPoeiraMedida(volumeFalso());
     nebula.render(renderer, camera);
-    const antes = desenhos();
 
+    // o número do pedido não escolhe a técnica: a variante escolhe
     nebula.setPoeira({ modo: 1, ganho: 46.9, gama: 1, lanes: 0 });
     const { material } = nebula as unknown as { material: THREE.ShaderMaterial };
-    expect(material.uniforms.uPoeiraModo.value).toBe(0);
+    expect(material.uniforms.uPoeiraModo.value).toBe(2);
 
-    // nada mudou de verdade (o efetivo continua 0 com a variante fino):
-    // o quadro congelado (item 144) não deve reassar por isto.
+    // a variante antiga não lê poeira: efetivo 0, e pedir de novo não
+    // provoca as 128 fatias de um bake (o antigo nunca assa)
+    nebula.setVariante('antigo');
+    expect(material.uniforms.uPoeiraModo.value).toBe(0);
+    const antes = desenhos();
+    nebula.setPoeira({ modo: 2, ganho: 46.9, gama: 1, lanes: 0 });
     nebula.render(renderer, camera);
-    expect(desenhos()).toBe(antes);
+    expect(desenhos() - antes).toBeLessThan(128);
+  });
+
+  // E3 (antecipada — PLAN.md, item B): o fino lê o bloco DIRETO, no modo
+  // 2 — nunca no 1 (esse é do macio, ver o teste acima).
+  it('setPoeira({modo:2}) com a variante fino liga o modo efetivo 2 — o fino lê o bloco direto', () => {
+    const { nebula } = bancada();
+    nebula.setVariante('fino');
+    nebula.setPoeiraMedida(volumeFalso());
+    nebula.setPoeira({ modo: 2, ganho: 46.9, gama: 1, lanes: 0 });
+    const { material, volumeMaterial } = nebula as unknown as {
+      material: THREE.ShaderMaterial;
+      volumeMaterial: THREE.ShaderMaterial;
+    };
+    expect(material.uniforms.uPoeiraModo.value).toBe(2);
+    expect(volumeMaterial.uniforms.uPoeiraModo.value).toBe(2);
   });
 
   it('setPoeiraMedida(null) volta ao modo efetivo 0 e destrói a textura anterior', () => {
@@ -207,5 +246,46 @@ describe('poeira medida (E2) — Nebula.setPoeiraMedida/setPoeira', () => {
     expect(disposeSpy).toHaveBeenCalledTimes(1);
     expect(material.uniforms.uPoeiraModo.value).toBe(0);
     expect(material.uniforms.uPoeiraTex.value).not.toBe(texAntes);
+  });
+
+  // PRONTIDÃO DA CAPTURA (item D, revisão independente, 27/09): sem
+  // retentativa, uma falha do fetch é DEFINITIVA — esperar para sempre
+  // travaria `get captura` do director. `setPoeiraMedida(null)` é o
+  // mesmo desfecho de um fetch que falhou, foi abortado ou excedeu o
+  // teto de textura (ver director.ts).
+  it('poeiraAssentada fica verdadeira depois de setPoeiraMedida(null) com o pedido ligado (falha encerrada)', () => {
+    const { nebula } = bancada();
+    nebula.setPoeira({ modo: 1, ganho: 46.9, gama: 1, lanes: 0 });
+    expect(nebula.poeiraAssentada).toBe(false); // pedida, fetch ainda em voo
+
+    nebula.setPoeiraMedida(null); // o fetch resolveu sem bloco: falha encerrada
+
+    expect(nebula.poeiraAssentada).toBe(true);
+  });
+
+  // LIMITES (item E, revisão independente, 27/09): gama ∈ [0,2; 3],
+  // ganho ∈ [0; 500], lanes ∈ [0; 1] — clamp, e NaN cai no padrão.
+  it('setPoeira clampa ganho/gama/lanes fora da faixa (e NaN cai no padrão)', () => {
+    const { nebula } = bancada();
+    const { material, volumeMaterial } = nebula as unknown as {
+      material: THREE.ShaderMaterial;
+      volumeMaterial: THREE.ShaderMaterial;
+    };
+
+    nebula.setPoeira({ modo: 0, ganho: 999, gama: 10, lanes: 5 });
+    expect(material.uniforms.uPoeiraGanho.value).toBe(500);
+    expect(material.uniforms.uPoeiraGama.value).toBe(3);
+    expect(material.uniforms.uPoeiraLanes.value).toBe(1);
+
+    nebula.setPoeira({ modo: 0, ganho: -10, gama: -1, lanes: -1 });
+    expect(material.uniforms.uPoeiraGanho.value).toBe(0);
+    expect(material.uniforms.uPoeiraGama.value).toBeCloseTo(0.2, 9);
+    expect(material.uniforms.uPoeiraLanes.value).toBe(0);
+
+    nebula.setPoeira({ modo: 0, ganho: NaN, gama: NaN, lanes: NaN });
+    expect(material.uniforms.uPoeiraGanho.value).toBeCloseTo(46.9, 9);
+    expect(material.uniforms.uPoeiraGama.value).toBe(1);
+    expect(material.uniforms.uPoeiraLanes.value).toBe(0);
+    expect(volumeMaterial.uniforms.uPoeiraGanho.value).toBeCloseTo(46.9, 9);
   });
 });

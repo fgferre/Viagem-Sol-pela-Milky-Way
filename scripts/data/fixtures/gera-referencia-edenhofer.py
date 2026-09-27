@@ -156,12 +156,8 @@ def escolher_voxels():
     """40 voxels: os que contêm as 8 nuvens + sorteio (semente fixa) nas
     faixas de raio pedidas, garantindo >= 8 com |z| > 200 pc."""
     rng = np.random.default_rng(SEMENTE)
-    I, J, K = np.meshgrid(np.arange(NX), np.arange(NY), np.arange(NZ), indexing='ij')
-    X = CAIXA_MIN[0] + TAMANHO_VOXEL * (I + 0.5)
-    Y = CAIXA_MIN[1] + TAMANHO_VOXEL * (J + 0.5)
-    Z = CAIXA_MIN[2] + TAMANHO_VOXEL * (K + 0.5)
+    Iflat, Jflat, Kflat, X, Y, Z = grade_do_bloco()
     R = np.sqrt(X**2 + Y**2 + Z**2)
-    Iflat, Jflat, Kflat = I.ravel(), J.ravel(), K.ravel()
 
     nuvens_info = []
     escolhidos = {}
@@ -228,12 +224,40 @@ def escolher_voxels():
     return list(escolhidos.keys()), nuvens_info, z_alto_atual
 
 
-def subamostras_do_voxel(centro):
-    """8×8×8 subamostras, espaçamento 2,5 pc, cobrindo o voxel de 20 pc."""
-    offsets = -8.75 + 2.5 * np.arange(8)
+def subamostras_do_voxel(centro, divisoes=8):
+    """divisoes³ subamostras cobrindo o voxel de 20 pc (padrão 8×8×8,
+    espaçamento 2,5 pc); o ensaio de convergência chama com divisoes=16."""
+    passo = TAMANHO_VOXEL / divisoes
+    offsets = -(TAMANHO_VOXEL / 2) + passo / 2 + passo * np.arange(divisoes)
     dx, dy, dz = np.meshgrid(offsets, offsets, offsets, indexing='ij')
     cx, cy, cz = centro
     return (cx + dx).ravel(), (cy + dy).ravel(), (cz + dz).ravel()
+
+
+def grade_do_bloco():
+    """Meshgrid (i,j,k) achatado + centros (x,y,z), cheios, de TODA a
+    grade de 20 pc — reusado por `escolher_voxels` e pela seleção das
+    `celulas` de mesmo operador de cada coluna (E1, revisão item 3)."""
+    I, J, K = np.meshgrid(np.arange(NX), np.arange(NY), np.arange(NZ), indexing='ij')
+    X = CAIXA_MIN[0] + TAMANHO_VOXEL * (I + 0.5)
+    Y = CAIXA_MIN[1] + TAMANHO_VOXEL * (J + 0.5)
+    Z = CAIXA_MIN[2] + TAMANHO_VOXEL * (K + 0.5)
+    return I.ravel(), J.ravel(), K.ravel(), X, Y, Z
+
+
+def celulas_do_operador(Iflat, Jflat, Kflat, Xg, Yg, Zg, dx, dy, dz, r_min_c, r_max_c):
+    """Índices (i,j,k) cujo centro fica a <= 1,5 voxel (30 pc) do SEGMENTO
+    do raio central entre r_min_c e r_max_c — o conjunto de voxels que a
+    reconstrução trilinear do bloco (`amostrar`/`integrarColuna`) toca ao
+    integrar essa coluna; é a referência de MESMO OPERADOR que isola a
+    única diferença restante (pixel HEALPix mais próximo × vizinho
+    interpolado bilinearmente) do erro de largura do tubo."""
+    t = Xg * dx + Yg * dy + Zg * dz
+    t_clampado = np.clip(t, r_min_c, r_max_c)
+    px, py, pz = t_clampado * dx, t_clampado * dy, t_clampado * dz
+    dist = np.sqrt((Xg - px) ** 2 + (Yg - py) ** 2 + (Zg - pz) ** 2)
+    idxs = np.flatnonzero(dist.ravel() <= 1.5 * TAMANHO_VOXEL)
+    return Iflat[idxs], Jflat[idxs], Kflat[idxs], idxs
 
 
 def gerar_fixture_edenhofer():
@@ -281,6 +305,42 @@ def gerar_fixture_edenhofer():
             'media': float(np.nan_to_num(v, nan=0.0).mean()),
             'nanFracao': float(nan_mask.mean()),
         })
+    # Alguns destes voxels têm centro DENTRO do raio interno (68,8 pc,
+    # onde o mapa não é reconstruído); mesmo assim `media` pode sair
+    # levemente positiva — a média das 8×8×8 subamostras atravessa a
+    # superfície da esfera interna. É transição de RESOLUÇÃO (~1 voxel),
+    # não "medido vazio" (revisão E1, item 5): quem decide zerar o
+    # interior é o app (`coletar` em build-dust-volumes.mjs), não o dado.
+
+    t_conv0 = time.time()
+    todos_x16, todos_y16, todos_z16 = [], [], []
+    cortes16 = [0]
+    for centro in centros:
+        xs, ys, zs = subamostras_do_voxel(centro, divisoes=16)
+        todos_x16.append(xs)
+        todos_y16.append(ys)
+        todos_z16.append(zs)
+        cortes16.append(cortes16[-1] + xs.size)
+    pos16 = np.stack([np.concatenate(todos_x16), np.concatenate(todos_y16), np.concatenate(todos_z16)])
+    valores16 = ib.interp_hp2rg(pos16, esfera.radii, esfera.data, nest=esfera.nest, fill_value=np.nan)
+    relativos_convergencia = []
+    for n in range(len(indices)):
+        v16 = valores16[cortes16[n]:cortes16[n + 1]]
+        media16 = float(np.nan_to_num(v16, nan=0.0).mean())
+        media8 = voxeis_fixture[n]['media']
+        relativos_convergencia.append(abs(media16 - media8) / (abs(media8) + 3e-5))
+    convergencia = {
+        'subamostrasBase': 8,
+        'subamostrasFinas': 16,
+        'maxRelativo': float(np.max(relativos_convergencia)),
+        'medioRelativo': float(np.mean(relativos_convergencia)),
+    }
+    print(
+        f'convergência 8³→16³ (40 voxels): {time.time() - t_conv0:.1f}s | '
+        f'máximo relativo {convergencia["maxRelativo"]:.4f} | '
+        f'médio relativo {convergencia["medioRelativo"]:.4f}',
+        flush=True,
+    )
 
     direcoes = [
         ('centro', 0.0, 0.0),
@@ -294,9 +354,12 @@ def gerar_fixture_edenhofer():
     r_shell_max = float(esfera.radii[-1])
     n_raios_tubo = len(OFFSETS_TUBO_PC) ** 2
 
+    Iflat, Jflat, Kflat, Xg, Yg, Zg = grade_do_bloco()
+
     t4 = time.time()
     colunas_fixture = []
     total_nan_colunas = 0
+    total_celulas = 0
     for nome, l_graus, b_graus in direcoes:
         dx, dy, dz = nuvem_para_xyz(l_graus, b_graus, 1.0)
         # rMax é o menor entre o alcance dos dados (última casca) e a
@@ -338,16 +401,45 @@ def gerar_fixture_edenhofer():
             'max': float(integrais_tubo.max()),
         }
 
+        # celulas: referência de MESMO OPERADOR (8×8×8 estratificado, como
+        # o bloco) nos voxels que a reconstrução trilinear toca ao integrar
+        # esta coluna — isola o erro do bloco do erro de largura do tubo.
+        i_cel, j_cel, k_cel, idxs_cel = celulas_do_operador(
+            Iflat, Jflat, Kflat, Xg, Yg, Zg, dx, dy, dz, r_min, r_max
+        )
+        celulas_coluna = []
+        if idxs_cel.size:
+            centros_cel = [centro_do_voxel(int(i), int(j), int(k)) for i, j, k in zip(i_cel, j_cel, k_cel)]
+            todos_xc, todos_yc, todos_zc = [], [], []
+            cortes_cel = [0]
+            for centro_cel in centros_cel:
+                xs, ys, zs = subamostras_do_voxel(centro_cel)
+                todos_xc.append(xs)
+                todos_yc.append(ys)
+                todos_zc.append(zs)
+                cortes_cel.append(cortes_cel[-1] + xs.size)
+            pos_cel = np.stack([np.concatenate(todos_xc), np.concatenate(todos_yc), np.concatenate(todos_zc)])
+            valores_cel = ib.interp_hp2rg(pos_cel, esfera.radii, esfera.data, nest=esfera.nest, fill_value=np.nan)
+            total_nan_colunas += int(np.isnan(valores_cel).sum())
+            for n, (i, j, k) in enumerate(zip(i_cel, j_cel, k_cel)):
+                v = valores_cel[cortes_cel[n]:cortes_cel[n + 1]]
+                celulas_coluna.append({
+                    'indice': [int(i), int(j), int(k)],
+                    'media': float(np.nan_to_num(v, nan=0.0).mean()),
+                })
+        total_celulas += len(celulas_coluna)
+
         colunas_fixture.append({
             'nome': nome, 'l': l_graus, 'b': b_graus,
             'rMin': r_min, 'rMax': r_max,
             'fino': fino,
             'tubo': tubo,
+            'celulas': celulas_coluna,
         })
     t5 = time.time()
     print(
         f'interp_hp2rg (colunas: 6 raios finos + 6×{n_raios_tubo} raios do tubo, 4000 pontos cada): '
-        f'{t5 - t4:.1f}s',
+        f'{t5 - t4:.1f}s | {total_celulas} celulas de mesmo operador (6 colunas)',
         flush=True,
     )
 
@@ -366,7 +458,10 @@ def gerar_fixture_edenhofer():
                 'heliocêntrico galáctico convencional: x -> centro galáctico (l=0,b=0); '
                 'y -> l=90°; z -> polo norte galáctico'
             ),
-            'raiosPc': [r_min, r_max],
+            # os raios do MAPA (primeiro e último centro de casca), não os da
+            # última coluna do laço acima (que podem estar cortados pela caixa)
+            'raiosPc': [float(esfera.radii[0]), float(esfera.radii[-1])],
+            'grade': {'dims': [NX, NY, NZ], 'voxelPc': TAMANHO_VOXEL, 'origemPc': list(CAIXA_MIN)},
             'versoes': {
                 'python': sys.version.split()[0],
                 'numpy': np.__version__,
@@ -378,6 +473,7 @@ def gerar_fixture_edenhofer():
         'voxeis': voxeis_fixture,
         'colunas': colunas_fixture,
         'nuvens': nuvens_info,
+        'convergencia': convergencia,
     }
     caminho = os.path.join(AQUI, 'edenhofer-referencia.json')
     with open(caminho, 'w', encoding='utf8') as f:
@@ -386,7 +482,7 @@ def gerar_fixture_edenhofer():
     print(
         f'edenhofer-referencia.json: {len(voxeis_fixture)} voxels '
         f'({total_nan_voxels}/{total_amostras_voxels} subamostras NaN), '
-        f'{len(colunas_fixture)} colunas ({total_nan_colunas} amostras NaN), '
+        f'{len(colunas_fixture)} colunas ({total_nan_colunas} amostras NaN, {total_celulas} celulas), '
         f'{z_alto_total} voxels com |z|>200 pc',
         flush=True,
     )

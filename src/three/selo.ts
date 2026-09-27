@@ -35,6 +35,7 @@ import {
   gasVolumetricoEmTexto,
   nivelDaNebulosaEmTexto,
   particulasDaGalaxiaEmTexto,
+  poeiraEmTexto,
   rotuloDaEscalaDeResolucao,
 } from './atlasConfig';
 import { decimalDoIdioma, t } from '../lib/idioma';
@@ -44,6 +45,7 @@ import type {
   NivelDaNebulosa,
   ParticulasDaGalaxia,
   QualityLevel,
+  TipoDePoeira,
   ToneMapMode,
 } from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
@@ -139,6 +141,36 @@ export const CARTOGRAFIA_PROCEDURAL = PT['selo.cartografiaProcedural'];
 export const CARTOGRAFIA_DESLIGADA = PT['selo.cartografiaDesligada'];
 
 /**
+ * O ESTADO DA POEIRA MEDIDA perto do Sol (E2/E3/E4, revisão
+ * independente, 27/09) — a PROCEDÊNCIA (`situacao`) e a FONTE do
+ * bloco. Único produtor: o getter `Director.estadoDaPoeira`, que cruza
+ * o PEDIDO (`?poeira=`), a carga desta instância (pendente/carregando/
+ * chegou/falhou) e o que a `Nebula` de fato desenha (modo efetivo,
+ * `poeiraAssentada`) — antes disto o selo decidia por URL pedida + uma
+ * flag global, e o renderizador decidia por variante + bloco + modo, e
+ * as duas contas divergiam (`?poeira=teste` "media" o Gaia com cubos
+ * inventados; o Cinema no `fino`, antes desta rodada, diria "medida"
+ * com a poeira efetivamente desligada).
+ *
+ *  - `desligada`: a poeira não foi pedida.
+ *  - `carregando`: pedida, o bloco (ou o volume sintético) ainda está
+ *    chegando.
+ *  - `indisponivel`: pedida, a carga encerrou sem volume (falha, sem
+ *    descritor no manifesto, ou o teto de textura do aparelho recusou).
+ *  - `inativa`: o volume chegou, mas a variante do gás ATIVA não o lê
+ *    (`antigo` nunca lê poeira — modo efetivo 0).
+ *  - `ativa`: o modo efetivo é ≥ 1 e a `Nebula` já assentou o bloco.
+ *
+ * `fonte` é `'gaia'` (o bloco real, Edenhofer 2024) ou `'sintetica'`
+ * (`?poeira=teste`) só quando um volume chegou a existir (`ativa`/
+ * `inativa`); `null` nos outros três estados.
+ */
+export interface EstadoDaPoeira {
+  situacao: 'desligada' | 'carregando' | 'indisponivel' | 'inativa' | 'ativa';
+  fonte: 'gaia' | 'sintetica' | null;
+}
+
+/**
  * A LEGENDA DA PROCEDÊNCIA, montada aqui e não no JSX do componente —
  * pelo mesmo motivo do registro de caminhos: o `Selo` enumerava os três
  * tiers à mão e imprimia "medido: catálogo e efeméride" sem olhar dado
@@ -153,15 +185,15 @@ export const CARTOGRAFIA_DESLIGADA = PT['selo.cartografiaDesligada'];
  *
  * `poeira` é opcional e por fora dos três tiers: sem ele, o texto de
  * hoje sai byte a byte igual (compatibilidade com quem já chama esta
- * função). Dado, acrescenta uma quarta linha sobre o bloco de poeira do
- * Gaia perto do Sol — `'medida'` quando o bloco carregou, `'desligada'`
- * quando o visitante pediu que ele fosse desligado, `'ausente'` quando
- * devia ter chegado e não chegou.
+ * função). Dado (`EstadoDaPoeira`, abaixo), acrescenta uma quarta linha
+ * sobre o bloco de poeira do Gaia perto do Sol — uma frase por
+ * `situacao`, e a de `ativa` também depende da `fonte` (o bloco real ou
+ * o volume sintético de `?poeira=teste`).
  */
 export function legendaDaProcedencia(
   cartografiaMedida: boolean,
   porEscolha = false,
-  poeira?: 'medida' | 'desligada' | 'ausente'
+  poeira?: EstadoDaPoeira
 ): string {
   const tiers = Object.values(PROCEDENCIA)
     .map((t) => `${t.rotulo}: ${t.oQue}`)
@@ -171,9 +203,12 @@ export function legendaDaProcedencia(
     : `${tiers} · ${
         porEscolha ? t('selo.cartografiaDesligada') : t('selo.cartografiaProcedural')
       }`;
-  if (poeira === 'medida') legenda += ` · ${t('selo.poeiraMedida')}`;
-  else if (poeira === 'desligada') legenda += ` · ${t('selo.poeiraDesligada')}`;
-  else if (poeira === 'ausente') legenda += ` · ${t('selo.poeiraAusente')}`;
+  if (poeira?.situacao === 'ativa') {
+    legenda += ` · ${t(poeira.fonte === 'sintetica' ? 'selo.poeiraSintetica' : 'selo.poeiraMedida')}`;
+  } else if (poeira?.situacao === 'desligada') legenda += ` · ${t('selo.poeiraDesligada')}`;
+  else if (poeira?.situacao === 'indisponivel') legenda += ` · ${t('selo.poeiraAusente')}`;
+  else if (poeira?.situacao === 'inativa') legenda += ` · ${t('selo.poeiraInativa')}`;
+  else if (poeira?.situacao === 'carregando') legenda += ` · ${t('selo.poeiraCarregando')}`;
   return legenda;
 }
 
@@ -354,6 +389,12 @@ export interface EstadoDaVista {
    * Director, não a porta `?particulas=`.
    */
   particulas: ParticulasDaGalaxia | null;
+  /**
+   * A POEIRA PERTO DE CASA escolhida à mão (pedido do dono, 27/09) —
+   * `null` = a variante do preset. Mesmo contrato do `particulas`:
+   * estado vivo do Director, não a porta `?poeira=`.
+   */
+  poeira: TipoDePoeira | null;
   /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — o estado
    * VIVO do Director, não a porta: `?luz=` só o semeia no boot, e o
@@ -698,6 +739,33 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
         nivel: e.particulas === null ? '' : particulasDaGalaxiaEmTexto(e.particulas),
       }),
   },
+  /**
+   * O SEXTO CONTROLE DA GAVETA AVANÇADO (pedido do dono, 27/09), no
+   * mesmo molde dos cinco de cima: estado VIVO, `volta: 'vivo'`, porta
+   * de URL como espelho. Ela troca o CONTEÚDO da poeira perto do Sol —
+   * do modelo procedural de sempre ('hoje') para o bloco medido pelo
+   * Gaia em três brilhos —, não só o custo de desenhá-la; era `porta()`
+   * até aqui (bancada da E2/E3), e virou entrada viva junto com o
+   * controle da gaveta.
+   *
+   * A SEGUNDA CLÁUSULA do `desvia` existe por `?poeira=teste`: a
+   * bancada não é palavra do menu (`lerPortaPoeira` não a reconhece, e
+   * por isso ela não vira estado — `e.poeira` fica `null`), mas ela
+   * troca o bloco real por um volume SINTÉTICO — e isso é desvio por
+   * si. A presença crua da porta continua contando, exatamente como
+   * contava enquanto `poeira` era só `porta()`.
+   */
+  {
+    chave: 'poeira',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.poeira'); },
+    volta: 'vivo',
+    desvia: (e) => e.poeira !== null || e.portas.includes('poeira'),
+    rotuloVivo: (e) =>
+      t('selo.desvio.poeiraCom', {
+        variante: e.poeira === null ? '' : poeiraEmTexto(e.poeira),
+      }),
+  },
   porta('nobloom', 'bloom desligado'),
   porta('knee', 'joelho asinh forçado'),
   porta('kneemode', 'modo do joelho trocado'),
@@ -723,10 +791,9 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('forgetau', 'extinção por coluna das forjas ligada'),
   porta('cart', 'modo de cartografia trocado'),
   porta('discoff', 'cartografia do disco desligada'),
-  // A POEIRA MEDIDA DO GAIA (E2 do PLAN.md): a chave de modo e três
-  // botões de aparência, todos de bancada até virarem ajuste na E4 —
-  // quem os tem na URL não está vendo o padrão da casa.
-  porta('poeira', 'poeira medida do Gaia trocada por URL'),
+  // A POEIRA MEDIDA DO GAIA (E2 do PLAN.md): os três botões de
+  // aparência continuam de bancada — só o modo (`poeira`, acima) virou
+  // ajuste de verdade, entrada viva junto do controle da gaveta.
   porta('poeiragain', 'ganho da poeira medida forçado'),
   porta('poeiragama', 'gama da poeira medida forçada'),
   porta('poeiralanes', 'lanes sobre a poeira medida forçadas'),

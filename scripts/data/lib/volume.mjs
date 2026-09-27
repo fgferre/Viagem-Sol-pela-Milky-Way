@@ -128,22 +128,84 @@ export function integrarColuna(volume, l, b, rMin, rMax, passoPc) {
 
 const PASSO_COLUNA_PC = 5;
 
+/** `grade` do volume bate com `gradeFixture` (`cabecalho.grade` da fixture: `{dims,voxelPc,origemPc}`)? Sem `gradeFixture`, conta como diferente. */
+function gradeIgualAFixture(grade, gradeFixture) {
+  if (!gradeFixture || !Array.isArray(gradeFixture.dims) || !Array.isArray(gradeFixture.origemPc)) return false;
+  const [nx, ny, nz] = gradeFixture.dims;
+  return (
+    grade.nx === nx &&
+    grade.ny === ny &&
+    grade.nz === nz &&
+    grade.voxelPc === gradeFixture.voxelPc &&
+    grade.origemPc.length === gradeFixture.origemPc.length &&
+    grade.origemPc.every((v, i) => v === gradeFixture.origemPc[i])
+  );
+}
+
+/**
+ * Volume esparso na mesma `grade`, só com as `celulas` (`{indice,media}`)
+ * da referência preenchidas — o resto fica 0. Serve para reconstruir,
+ * com o MESMO `integrarColuna` do bloco, a integral que o interpolador
+ * oficial daria se só soubesse desses voxels: a referência de "mesmo
+ * operador" de `compararComReferencia`.
+ */
+function volumeDeCelulas(grade, celulas) {
+  const valores = new Float64Array(grade.nx * grade.ny * grade.nz);
+  for (const { indice, media } of celulas) {
+    const [i, j, k] = indice;
+    valores[indiceDe(grade, i, j, k)] = media;
+  }
+  return { grade, valores };
+}
+
+/** `desvio/tolerancia`; sem margem (`tolerancia === 0`), só é 0 se `desvio` também for — nunca `0×Infinity = NaN`. */
+function relativoComTolerancia(desvio, tolerancia) {
+  if (tolerancia > 0) return desvio / tolerancia;
+  return desvio === 0 ? 0 : Infinity;
+}
+
 /**
  * Compara `volume` com a fixture de referência do interpolador oficial
- * (`fixtures/edenhofer-referencia.json`): residual por voxel
- * (`fixture.voxeis`; `nanFracao === 1` tem que valer 0) e por coluna
- * (`fixture.colunas`, integral de `c.rMin` a `c.rMax` — já cortado no
- * teto da caixa, ±1250/±1250/±500 pc). A régua da coluna NÃO compara
- * com o raio fino (`c.fino`): pelo próprio interpolador oficial, a
- * mesma coluna como raio infinitesimal e como tubo de 20 pc em volta
- * dele diverge até 30%. O esperado é a faixa `[c.tubo.min, c.tubo.max]`
- * dos 25 raios paralelos do tubo, com folga `0,02·(max−min)` tirada dos
- * próprios dados (sem número mágico). O relativo do voxel segue
- * NORMALIZADO pela tolerância da Decisão 1/E1 do PLAN.md — `|v−media| ≤
- * 0,15·media + 3e-5` —, e o da coluna pela folga da faixa; os dois
- * `aprovado` são sempre `maximoRelativo ≤ 1`.
+ * (`fixtures/edenhofer-referencia.json`). A fixture é amostrada para UMA
+ * grade só (`fixture.cabecalho.grade`); se a grade de `volume` for outra
+ * — outra resolução, outra origem —, o mesmo índice `[i,j,k]` não aponta
+ * para o mesmo voxel nos dois lados, e a comparação não faz sentido:
+ * devolve `{ aplicavel: false, motivo }` sem olhar voxeis nem colunas.
+ *
+ * Voxel (`fixture.voxeis`): residual normalizado pela tolerância da
+ * Decisão 1/E1 do PLAN.md — `|atual−esperado| ≤ 0,15·esperado + 3e-5`,
+ * com `esperado = 0` quando `nanFracao === 1`. O interior de 68,8 pc não
+ * reconstruído é zero por ESCOLHA do app (`coletar`, build-dust-volumes.
+ * mjs), com transição de resolução de ~1 voxel na fronteira — a média
+ * das subamostras atravessa a superfície —, não porque o dado meça
+ * vazio; por isso o voxel de referência pode sair levemente > 0 mesmo
+ * com centro dentro do raio interno.
+ *
+ * Coluna (`fixture.colunas`): quem REPROVA não é mais a faixa do tubo
+ * (25 raios paralelos, `c.tubo`) — ela mede a variação real de um tubo
+ * de 20 pc, não o erro do bloco — e por isso virou só PLAUSIBILIDADE
+ * (`piorFaixa`, sempre reportado, nunca reprova). Quem reprova é
+ * `referenciaMesmoOperador`: a integral (mesmo `integrarColuna`, mesmo
+ * passo) de um volume esparso feito só das `c.celulas` que a fixture
+ * amostrou com o MESMO operador do bloco (8×8×8 estratificado nos
+ * voxels que a reconstrução trilinear toca) — a única diferença que
+ * resta entre os dois lados é pixel HEALPix mais próximo (bloco) ×
+ * vizinho angular interpolado bilinearmente (fixture). Aprovado quando
+ * `|atual − referenciaMesmoOperador| ≤ 0,05·referenciaMesmoOperador`
+ * (`piorDesvio`). Os três `aprovado`/`maximoRelativo ≤ 1` seguem a
+ * mesma convenção (voxel e coluna).
  */
 export function compararComReferencia(volume, fixture) {
+  const gradeFixture = fixture?.cabecalho?.grade;
+  if (!gradeIgualAFixture(volume.grade, gradeFixture)) {
+    const { nx, ny, nz, voxelPc } = volume.grade;
+    const motivo = gradeFixture
+      ? `grade do volume (${nx}×${ny}×${nz} @ ${voxelPc} pc) difere da grade da fixture ` +
+        `(${gradeFixture.dims.join('×')} @ ${gradeFixture.voxelPc} pc).`
+      : 'fixture sem cabecalho.grade — aplica-se só ao bloco (grade/resolução) que a gerou.';
+    return { aplicavel: false, motivo };
+  }
+
   let voxelRelativo = 0;
   let voxelPior = null;
   for (const v of fixture.voxeis) {
@@ -159,22 +221,41 @@ export function compararComReferencia(volume, fixture) {
   }
 
   let colunaRelativo = 0;
-  let colunaPior = null;
+  let colunaPiorDesvio = null;
+  let colunaFaixaRelativo = 0;
+  let colunaPiorFaixa = null;
   for (const c of fixture.colunas) {
     const atual = integrarColuna(volume, c.l, c.b, c.rMin, c.rMax, PASSO_COLUNA_PC);
+
+    const referencia = volumeDeCelulas(volume.grade, c.celulas ?? []);
+    const referenciaMesmoOperador = integrarColuna(referencia, c.l, c.b, c.rMin, c.rMax, PASSO_COLUNA_PC);
+    const desvioAbs = Math.abs(atual - referenciaMesmoOperador);
+    const toleranciaColuna = 0.05 * Math.abs(referenciaMesmoOperador);
+    const desvioRelativo = relativoComTolerancia(desvioAbs, toleranciaColuna);
+    if (colunaPiorDesvio === null || desvioRelativo >= colunaRelativo) {
+      colunaRelativo = desvioRelativo;
+      colunaPiorDesvio = { nome: c.nome, atual, referenciaMesmoOperador, desvioRelativo };
+    }
+
+    const razaoMedia = atual / c.tubo.media;
     const folga = 0.02 * (c.tubo.max - c.tubo.min);
     const distanciaFora = Math.max(0, c.tubo.min - atual, atual - c.tubo.max);
-    const relativo = distanciaFora / folga;
-    const razaoMedia = atual / c.tubo.media;
-    if (colunaPior === null || relativo >= colunaRelativo) {
-      colunaRelativo = relativo;
-      colunaPior = { nome: c.nome, esperadoFaixa: [c.tubo.min, c.tubo.max], atual, razaoMedia };
+    const relativoFaixa = relativoComTolerancia(distanciaFora, folga);
+    if (colunaPiorFaixa === null || relativoFaixa >= colunaFaixaRelativo) {
+      colunaFaixaRelativo = relativoFaixa;
+      colunaPiorFaixa = { nome: c.nome, esperadoFaixa: [c.tubo.min, c.tubo.max], atual, razaoMedia };
     }
   }
 
   return {
+    aplicavel: true,
     voxel: { maximoRelativo: voxelRelativo, aprovado: voxelRelativo <= 1, pior: voxelPior },
-    coluna: { maximoRelativo: colunaRelativo, aprovado: colunaRelativo <= 1, pior: colunaPior },
+    coluna: {
+      maximoRelativo: colunaRelativo,
+      aprovado: colunaRelativo <= 1,
+      piorDesvio: colunaPiorDesvio,
+      piorFaixa: colunaPiorFaixa,
+    },
   };
 }
 

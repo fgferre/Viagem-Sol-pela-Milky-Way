@@ -21,15 +21,19 @@ import {
   NOMES_DOS_CORPOS,
   nomeDoCorpo,
   QUALIDADES,
+  poeiraEmTexto,
+  poeiraParaMotor,
   rotuloDaQualidade,
   tituloDeCorpo,
 } from './atlasConfig';
 import {
   ESCALAS_DE_RESOLUCAO,
   NEBULOSA_POR_NIVEL,
+  PRESETS,
   TIER_DE_PRODUTO,
   lerPortaEscala,
   lerPortaNebulosa,
+  lerPortaPoeira,
   lerPortaQualidade,
   tierMedido,
 } from './core/engine';
@@ -370,10 +374,10 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
       expect(nomeAcessivel, lingua).not.toMatch(/\d/);
     }
     definirIdioma('pt-BR');
-    // os CINCO controles da gaveta Avançado em `null` de piso — a
-    // gaveta intocada (item 145, +145b, +149)
+    // os SEIS controles da gaveta Avançado em `null` de piso — a
+    // gaveta intocada (item 145, +145b, +149, +poeira 27/09)
     type Estado = Parameters<typeof rotuloDaQualidade>[0];
-    type Gaveta = 'amostras' | 'nebulosa' | 'escala' | 'gas' | 'particulas';
+    type Gaveta = 'amostras' | 'nebulosa' | 'escala' | 'gas' | 'particulas' | 'poeira';
     const estado = (m: Omit<Estado, Gaveta> & Partial<Pick<Estado, Gaveta>>) =>
       rotuloDaQualidade({
         amostras: null,
@@ -381,6 +385,7 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
         escala: null,
         gas: null,
         particulas: null,
+        poeira: null,
         ...m,
       });
     // manual, medida boa: nada a sugerir — o painel não inventa alarme
@@ -413,7 +418,7 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     expect(estado({ escolha: 'auto', tier: 'alta', medicao: null, amostras: 4 })).toContain(
       'Alta (Personalizado)'
     );
-    // e a marca é de QUALQUER um dos cinco, não só do MSAA: um controle
+    // e a marca é de QUALQUER um dos seis, não só do MSAA: um controle
     // novo na gaveta que esquecesse de entrar em `foraDoPreset` deixaria
     // o painel dizendo "Cinema" sobre uma cena que não é mais a do preset
     expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, nebulosa: 'baixa' }))
@@ -423,6 +428,8 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, gas: 'fino' }))
       .toContain('Cinema (Personalizado)');
     expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, particulas: 'metade' }))
+      .toContain('Cinema (Personalizado)');
+    expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, poeira: 'forte' }))
       .toContain('Cinema (Personalizado)');
   });
 
@@ -484,6 +491,49 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
       DIRECTOR.indexOf('private publicarQualidade(')
     );
     expect(aoMedir).not.toContain('shotMode');
+  });
+});
+
+describe('a poeira perto de casa — o sexto controle da gaveta (pedido do dono, 27/09)', () => {
+  it('a URL aceita as quatro palavras do menu e os apelidos legados — o resto cai no preset', () => {
+    for (const v of ['hoje', 'suave', 'media', 'forte'] as const) {
+      expect(lerPortaPoeira(v)).toBe(v);
+    }
+    // os apelidos da era de bancada (E2/E3): 0 desligava, 1 e 2 ligavam
+    // a mesma técnica — a diferença nunca esteve no número da poeira
+    expect(lerPortaPoeira('0')).toBe('hoje');
+    expect(lerPortaPoeira('1')).toBe('media');
+    expect(lerPortaPoeira('2')).toBe('media');
+    // `teste` é bancada e NÃO é opção do menu — não vira variante
+    expect(lerPortaPoeira('teste')).toBeNull();
+    expect(lerPortaPoeira('lixo')).toBeNull();
+    expect(lerPortaPoeira('')).toBeNull();
+    expect(lerPortaPoeira(null)).toBeNull();
+    expect(lerPortaPoeira(undefined)).toBeNull();
+  });
+
+  it('o mapeamento para o motor é a tabela do dono: hoje desliga, as outras três só mudam o ganho', () => {
+    expect(poeiraParaMotor('hoje')).toEqual({ modo: 0, ganho: 0, gama: 1, lanes: 0 });
+    expect(poeiraParaMotor('suave')).toEqual({ modo: 1, ganho: 15, gama: 1, lanes: 0 });
+    expect(poeiraParaMotor('media')).toEqual({ modo: 1, ganho: 46.9, gama: 1, lanes: 0 });
+    expect(poeiraParaMotor('forte')).toEqual({ modo: 1, ganho: 94, gama: 1, lanes: 0 });
+  });
+
+  it('os três presets começam em "hoje" — o objetivo desta rodada é comparar, não escolher padrão', () => {
+    expect(PRESETS.cinema.poeira).toBe('hoje');
+    expect(PRESETS.alta.poeira).toBe('hoje');
+    expect(PRESETS.performance.poeira).toBe('hoje');
+  });
+
+  it('o rótulo de cada variante sai do dicionário, nas duas línguas, sem repetir a chave crua', () => {
+    for (const lingua of ['pt-BR', 'en'] as const) {
+      definirIdioma(lingua);
+      for (const v of ['hoje', 'suave', 'media', 'forte'] as const) {
+        expect(poeiraEmTexto(v).length, `${lingua}/${v}`).toBeGreaterThan(0);
+        expect(poeiraEmTexto(v), `${lingua}/${v}`).not.toBe(v);
+      }
+    }
+    definirIdioma('pt-BR');
   });
 });
 

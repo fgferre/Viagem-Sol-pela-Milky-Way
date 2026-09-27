@@ -665,3 +665,75 @@ describe('o halo de contorno (C6) escreve os uniforms ANTES do render do quadro'
     expect(iRender).toBeGreaterThan(iDesenhar);
   });
 });
+
+// ============================================================
+// `estadoDaPoeira` (revisão independente, 27/09) — o getter que cruza o
+// pedido, a carga desta instância e o que a Nebula de fato desenha (ver
+// `EstadoDaPoeira` em `selo.ts`). SEM mock ao vivo de propósito: o
+// Director é DOM + WebGL de ponta a ponta (cabeçalho do arquivo) e não
+// há como instanciá-lo em `environment: node` sem um canvas/WebGL2 de
+// verdade — a régua desta suíte inteira é ler a FONTE, não rodar a
+// classe. A transição carregando → ativa é coberta aqui como o resto
+// do arquivo cobre tudo: pela fonte que a implementa.
+// ============================================================
+describe('estadoDaPoeira publica a procedência real da poeira perto do Sol', () => {
+  const INICIO_DO_GETTER = FONTE.indexOf('  get estadoDaPoeira()');
+  const GETTER = FONTE.slice(INICIO_DO_GETTER, FONTE.indexOf('  private publicarPoeira()'));
+
+  it('a varredura acha o getter — um padrão quebrado passaria calado', () => {
+    expect(INICIO_DO_GETTER).toBeGreaterThan(0);
+    expect(GETTER.length).toBeGreaterThan(100);
+  });
+
+  it('carregando → ativa exige os TRÊS: carga chegada, a variante ativa lendo (modo efetivo ≠ 0) e a Nebula ASSENTADA — nenhuma etapa antes disso promete a foto', () => {
+    // 'chegou' com o efetivo ainda 0 (variante 'antigo') é 'inativa', e
+    // NÃO 'ativa' — o defeito que a revisão achou no selo antigo era
+    // exatamente prometer "medida" sem olhar se a variante lê o bloco
+    expect(GETTER).toContain('this.nebula.poeiraModoEfetivo === 0');
+    expect(GETTER).toContain("situacao: 'inativa', fonte: this.poeiraFonte");
+    // efetivo ≠ 0 mas ainda não assentado (a última fatia do bake em
+    // voo) continua 'carregando' — uma 'ativa' adiantada seria a mesma
+    // mentira, só um quadro mais sutil
+    expect(GETTER).toContain('!this.nebula.poeiraAssentada');
+    expect(GETTER).toContain("return { situacao: 'carregando', fonte: this.poeiraFonte };");
+    // só depois das duas guardas acima é que sobra 'ativa'
+    const iInativa = GETTER.indexOf("situacao: 'inativa'");
+    const iAssentada = GETTER.indexOf('!this.nebula.poeiraAssentada');
+    const iAtiva = GETTER.indexOf("return { situacao: 'ativa', fonte: this.poeiraFonte };");
+    expect(iInativa).toBeGreaterThan(-1);
+    expect(iAssentada).toBeGreaterThan(iInativa);
+    expect(iAtiva).toBeGreaterThan(iAssentada);
+  });
+
+  it('a carga que resolve escreve o estado desta instância e publica — "carregando" não fica preso esperando o próximo quadro', () => {
+    const corpo = FONTE.slice(
+      FONTE.indexOf('  private tentarCarregarPoeira()'),
+      INICIO_DO_GETTER
+    );
+    // ao disparar o fetch (dispatch síncrono) e nos dois desfechos do
+    // `.then` (falha por teto de textura, e o normal chegou/falhou)
+    expect(corpo.match(/this\.publicarPoeira\(\);/g) ?? []).toHaveLength(3);
+    expect(corpo).toContain("this.poeiraCarga = 'carregando';");
+    expect(corpo).toContain("this.poeiraCarga = volume ? 'chegou' : 'falhou';");
+    expect(corpo).toContain(
+      "this.poeiraFonte = volume ? (ehTeste ? 'sintetica' : 'gaia') : null;"
+    );
+  });
+
+  it('cartografia que nunca liga com a poeira pedida termina em "indisponivel", não presa em "carregando" para sempre — sem manifesto não há descritor a esperar', () => {
+    const initCorpo = FONTE.slice(
+      FONTE.indexOf('  async init()'),
+      FONTE.indexOf("await this.stage('dust');")
+    );
+    expect(initCorpo).toContain('if (this.poeiraModoPedido !== 0 && !this.cartOn)');
+    expect(initCorpo).toContain("this.poeiraCarga = 'falhou';");
+  });
+
+  it('toda troca de qualidade/preset republica a poeira — a variante do gás decide o modo efetivo dela', () => {
+    const publicarQualidade = FONTE.slice(
+      FONTE.indexOf('  private publicarQualidade()'),
+      FONTE.indexOf('  forcarAmostras(')
+    );
+    expect(publicarQualidade).toContain('this.publicarPoeira();');
+  });
+});

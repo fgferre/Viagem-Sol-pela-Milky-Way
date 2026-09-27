@@ -83,7 +83,7 @@ RUWE, `parallax_over_error` e o erro relativo de distância.
 | `gaia-young-clusters.bin` | 988 | aglomerados Gaia DR3 com `log10(age/yr) < 8` | distância por inversão da paralaxe mediana; usar erro relativo |
 | `gaia-young-cepheids.bin` | 2.806 | Cefeidas Gaia jovens com menos de 200 Myr | distância por módulo de distância; usar `sigmaDistance` |
 | `gaia-ob-proxy-stars.bin` | 100.000 | seleção proxy de estrelas quentes Gaia DR3 com distância fotogeométrica | não chamar de amostra Drimmel; preservar a pegada local, o erro de distância e os filtros no manifesto; a cor sai de `effectiveTemperatureK`, nunca de `bp_rp` — o renderer já aplica a própria extinção |
-| `dust-near-20pc.bin` | 781.250 voxels | densidade de poeira 3D medida (Edenhofer et al. 2024) num bloco heliocêntrico de 20 pc perto do Sol | interior de 68,8 pc não reconstruído (zero declarado); float16 × 1000 (E/pc); aproxima o interpolador oficial por amostragem estratificada 8×8×8, não bilinear; residual conferido contra a fixture de referência em `data:verify` |
+| `dust-near-20pc.bin` | 781.250 voxels | densidade de poeira 3D medida (Edenhofer et al. 2024) num bloco heliocêntrico de 20 pc perto do Sol | interior de 68,8 pc zero por escolha do app, com transição de ~1 voxel na fronteira; float16 × 1000 (E/pc); 8×8×8 subamostras estratificadas, linear em r entre centros de casca, pixel HEALPix mais próximo; residual conferido contra a fixture de referência em `data:verify` |
 
 Fontes dos dados:
 

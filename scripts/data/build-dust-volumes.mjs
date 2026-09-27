@@ -29,7 +29,6 @@ const cacheDirectory = path.join(rootDirectory, '.cache', 'galaxy-data', 'edenho
 const caminhoFits = path.join(cacheDirectory, 'mean_and_std_healpix.fits');
 const esperadoPath = path.join(cacheDirectory, 'ESPERADO.txt');
 const outputDirectory = path.join(rootDirectory, 'public', 'data', 'galaxy');
-const destinoBin = path.join(outputDirectory, 'dust-near-20pc.bin');
 const manifestPath = path.join(outputDirectory, 'manifest.json');
 const fixturePath = path.join(rootDirectory, 'scripts', 'data', 'fixtures', 'edenhofer-referencia.json');
 const capturasDirectory = path.join(rootDirectory, 'capturas');
@@ -140,8 +139,11 @@ export function buscarCasca(radii, r) {
 /**
  * Coleta a média de cada voxel de `GRADE_20PC`: 8×8×8 subamostras
  * estratificadas, pixel HEALPix mais próximo + linear em r entre
- * centros de casca vizinhos; fora de [radii[0], radii.at(-1)) vale 0
- * (interior não reconstruído / exterior da cobertura).
+ * centros de casca vizinhos; fora de [radii[0], radii.at(-1)) vale 0.
+ * Dentro de radii[0] (interior de 68,8 pc): zero por escolha do app,
+ * com transição de resolução de ~1 voxel na fronteira (a média das
+ * subamostras atravessa a superfície) — não é "medido vazio". Fora de
+ * radii.at(-1): fora da cobertura do mapa, esse zero é ausência real.
  */
 export function coletar(imagem, radii, nPix) {
   const { nx, ny, nz, voxelPc, origemPc } = GRADE_20PC;
@@ -323,10 +325,23 @@ async function salvarProjecaoPng({ rgb, largura, altura }, larguraFinal, alturaF
   console.log(`  projeção: ${path.relative(rootDirectory, destino)}`);
 }
 
-export async function main() {
-  const t0 = Date.now();
-  await garantirMapa(caminhoFits, esperadoPath);
-  fase('verificação do FITS (tamanho + md5)');
+/**
+ * Núcleo testável do builder (E1, revisão item 1): calcula o bloco,
+ * codifica em float16 e COMPARA COM A FIXTURE EM MEMÓRIA antes de
+ * gravar qualquer coisa. Fixture ausente ou reprovação → lança e nada é
+ * gravado em `diretorioSaida`/`caminhoManifesto`; só depois de aprovar é
+ * que `.bin`/`.gz` são gravados e, por último, o manifesto (mesclado a
+ * partir do que já existir em `caminhoManifesto`). `main()` só resolve
+ * os caminhos reais (+ `garantirMapa`) e chama isto.
+ */
+export async function executar({ caminhoFits, caminhoFixture, diretorioSaida, caminhoManifesto }) {
+  // (a) a fixture é exigida ANTES de ler o FITS/coletar: sem ela, nada
+  // se compara, e o erro precisa ser claro e imediato — não um "pulei a
+  // comparação" silencioso (revisão E1, item 1).
+  if (!existsSync(caminhoFixture)) {
+    throw new Error(`executar: fixture de referência não encontrada em ${caminhoFixture}; nada foi gravado.`);
+  }
+  const fixture = JSON.parse(await readFile(caminhoFixture, 'utf8'));
 
   const hdus = abrirFits(caminhoFits);
   const hduMedia = acharHduMedia(hdus);
@@ -334,7 +349,7 @@ export async function main() {
   const radii = lerColunaTabela(tabelaCentros, 'radial pixel centers', { exigirFinito: true });
   const nPix = hduMedia.naxisn[0];
   if (radii.length !== hduMedia.naxisn[1]) {
-    throw new Error(`main: ${radii.length} centros de casca não batem com NAXIS2=${hduMedia.naxisn[1]}.`);
+    throw new Error(`executar: ${radii.length} centros de casca não batem com NAXIS2=${hduMedia.naxisn[1]}.`);
   }
   console.log(`raios: ${radii.length} cascas, ${radii[0].toFixed(4)}–${radii[radii.length - 1].toFixed(4)} pc`);
   fase('abrir FITS + tabela de raios');
@@ -347,16 +362,57 @@ export async function main() {
   console.log(`subamostras não finitas: ${nanSubsamples}`);
   fase('coleta (8×8×8 subamostras por voxel)');
 
+  // (b) codifica e compara EM MEMÓRIA — nenhuma escrita em disco até aqui.
   const codificado = paraFloat16(valoresGrid, ESCALA);
   const buffer = Buffer.from(codificado.buffer, codificado.byteOffset, codificado.byteLength);
-  await mkdir(outputDirectory, { recursive: true });
+  const hash = sha256(buffer);
+  fase('codificação float16');
+
+  const volume = { grade: GRADE_20PC, valores: deFloat16(buffer, ESCALA) };
+  const resultado = compararComReferencia(volume, fixture);
+  if (!resultado.aplicavel) {
+    throw new Error(`executar: fixture não se aplica à grade do bloco atual (${resultado.motivo}); nada foi gravado.`);
+  }
+  const piorFaixa = resultado.coluna.piorFaixa;
+  const piorDesvio = resultado.coluna.piorDesvio;
+  const faixaTexto = piorFaixa
+    ? `${piorFaixa.nome} razão p/ média do tubo ${piorFaixa.razaoMedia.toFixed(2)}` +
+      (piorFaixa.atual < piorFaixa.esperadoFaixa[0] || piorFaixa.atual > piorFaixa.esperadoFaixa[1]
+        ? ' — FORA DA FAIXA do tubo (plausibilidade, não reprova)'
+        : ' — dentro da faixa do tubo')
+    : '—';
+  const desvioTexto = piorDesvio ? `${piorDesvio.nome} desvio relativo ${piorDesvio.desvioRelativo.toFixed(3)}` : '—';
+  // (c) reprovação: lança com os números, sem tocar em disco.
+  if (!resultado.voxel.aprovado || !resultado.coluna.aprovado) {
+    throw new Error(
+      `executar: comparação com a fixture Edenhofer FORA DA TOLERÂNCIA — ` +
+        `voxel máximo relativo ${resultado.voxel.maximoRelativo.toFixed(3)}; ` +
+        `coluna máximo relativo ${resultado.coluna.maximoRelativo.toFixed(3)} (pior desvio: ${desvioTexto}; ` +
+        `faixa do tubo: ${faixaTexto}). Nada foi gravado.`
+    );
+  }
+  console.log(
+    `comparação com a fixture — voxel: máximo relativo ${resultado.voxel.maximoRelativo.toFixed(3)} ` +
+      `(dentro da tolerância); coluna: máximo relativo ${resultado.coluna.maximoRelativo.toFixed(3)} ` +
+      `(dentro da tolerância; pior desvio: ${desvioTexto}; faixa do tubo (plausibilidade): ${faixaTexto}).`
+  );
+  if (fixture.convergencia) {
+    console.log(
+      `convergência 8³→16³ (40 voxels): máximo relativo ${fixture.convergencia.maxRelativo.toFixed(3)}, ` +
+        `médio relativo ${fixture.convergencia.medioRelativo.toFixed(3)}.`
+    );
+  }
+  fase('comparação com a fixture');
+
+  // (d) só agora, aprovado, grava: .bin, .gz e por ÚLTIMO o manifesto.
+  await mkdir(diretorioSaida, { recursive: true });
+  const destinoBin = path.join(diretorioSaida, 'dust-near-20pc.bin');
   await writeFile(destinoBin, buffer);
   await writeFile(`${destinoBin}.gz`, gzipSync(buffer, { level: 9 }));
-  const hash = sha256(buffer);
-  console.log(`gravado: ${path.relative(rootDirectory, destinoBin)} (${(buffer.byteLength / 1e6).toFixed(2)} MB), sha256 ${hash}`);
-  fase('codificação float16 + escrita do .bin/.gz');
+  console.log(`gravado: ${destinoBin} (${(buffer.byteLength / 1e6).toFixed(2)} MB), sha256 ${hash}`);
+  fase('escrita do .bin/.gz');
 
-  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  const manifest = JSON.parse(await readFile(caminhoManifesto, 'utf8'));
   manifest.assets.dustVolumeNear20pc = {
     kind: 'volume',
     file: 'data/galaxy/dust-near-20pc.bin',
@@ -372,7 +428,10 @@ export async function main() {
     sha256: hash,
     innerRadiusPc: radii[0],
     outerRadiusPc: radii[radii.length - 1],
-    method: 'nearest HEALPix pixel + linear in r between shell centres; 8×8×8 stratified subsamples per voxel',
+    method:
+      'nearest HEALPix pixel + linear in r between shell centres; 8×8×8 stratified subsamples per voxel; ' +
+      'inner 68.8 pc left at zero by app choice, with a ~1-voxel resolution transition at the boundary ' +
+      '(the average straddles the surface), not a measured absence',
     nanSubsamples,
     generated: new Date().toISOString().slice(0, 10),
     source: 'Edenhofer2024',
@@ -387,8 +446,23 @@ export async function main() {
       license: 'CC-BY-4.0',
     });
   }
-  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  await writeFile(caminhoManifesto, `${JSON.stringify(manifest, null, 2)}\n`);
   fase('manifesto mesclado');
+
+  return { valoresGrid, nanSubsamples, buffer, hash, resultado };
+}
+
+export async function main() {
+  const t0 = Date.now();
+  await garantirMapa(caminhoFits, esperadoPath);
+  fase('verificação do FITS (tamanho + md5)');
+
+  const { valoresGrid } = await executar({
+    caminhoFits,
+    caminhoFixture: fixturePath,
+    diretorioSaida: outputDirectory,
+    caminhoManifesto: manifestPath,
+  });
 
   await salvarProjecaoPng(
     projecaoDeCima(valoresGrid),
@@ -403,23 +477,6 @@ export async function main() {
     path.join(capturasDirectory, 'poeira-bloco-20pc-de-lado.png')
   );
   fase('projeções PNG');
-
-  if (existsSync(fixturePath)) {
-    const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
-    const volume = { grade: GRADE_20PC, valores: deFloat16(buffer, ESCALA) };
-    const resultado = compararComReferencia(volume, fixture);
-    const colunaTexto = resultado.coluna.aprovado
-      ? `dentro da faixa do tubo (razão para a média ${resultado.coluna.pior ? resultado.coluna.pior.razaoMedia.toFixed(2) : '—'})`
-      : 'FORA DA FAIXA';
-    console.log(
-      `comparação com a fixture — voxel: máximo relativo ${resultado.voxel.maximoRelativo.toFixed(3)} ` +
-        `(${resultado.voxel.aprovado ? 'dentro da tolerância' : 'FORA DA TOLERÂNCIA'}); ` +
-        `coluna: máximo relativo ${resultado.coluna.maximoRelativo.toFixed(3)} (${colunaTexto}).`
-    );
-  } else {
-    console.log('fixture de referência não encontrada; pulei a comparação.');
-  }
-  fase('comparação com a fixture');
 
   console.log(`total: ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 }

@@ -31,7 +31,7 @@ import { useFileteDoSegmentado } from '../hooks/useFileteDoSegmentado';
 import { cancelar, ir, lerTokens, REPOUSO } from '../hooks/movimentoDaGaveta';
 import { semMovimento } from '../hooks/useGavetas';
 import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
-import type { EstadoDaVista } from '../three/selo';
+import type { EstadoDaPoeira, EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
 
 /**
@@ -261,11 +261,11 @@ export function Selo({
   /** …e quando não chegaram, foi porque o visitante pediu (`?cart=off`)? */
   cartografiaDesligada: boolean;
   /**
-   * A poeira medida do Gaia perto de casa (E2): medida (bloco assado),
-   * desligada (o visitante não a pediu) ou ausente (pedida, mas o bloco
-   * não chegou). Sem valor, a legenda fica a de antes da E2.
+   * A procedência real da poeira medida do Gaia perto de casa (E2/E3/E4)
+   * — publicada pelo Director (`Director.estadoDaPoeira`). Sem valor, a
+   * legenda fica a de antes da E2.
    */
-  poeira?: 'medida' | 'desligada' | 'ausente';
+  poeira?: EstadoDaPoeira;
   onEscalaReal: () => void;
   onBrilhoReal: () => void;
 }) {

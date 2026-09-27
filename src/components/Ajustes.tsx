@@ -65,6 +65,7 @@ import {
   gasVolumetricoEmTexto,
   nivelDaNebulosaEmTexto,
   particulasDaGalaxiaEmTexto,
+  poeiraEmTexto,
   rotuloDaEscalaDeResolucao,
   rotuloDaQualidade,
 } from '../three/atlasConfig';
@@ -75,6 +76,7 @@ import type {
   GasVolumetrico,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
+  TipoDePoeira,
   ToneMapMode,
 } from '../three/core/engine';
 import { AMOSTRAS_POR_TIER } from '../three/core/post';
@@ -158,6 +160,20 @@ const PARTICULAS: { valor: ParticulasDaGalaxia | null; nome: () => string }[] = 
 ];
 
 /**
+ * OS QUATRO ESTADOS DA POEIRA PERTO DE CASA (pedido do dono, 27/09) — o
+ * sexto controle da gaveta, no mesmo molde do gás: `null` é "do
+ * preset", e os valores são as chaves que vão à URL (`?poeira=`) e ao
+ * selo.
+ */
+const POEIRAS: { valor: TipoDePoeira | null; nome: () => string }[] = [
+  { valor: null, nome: () => t('ajustes.preset') },
+  ...(['hoje', 'suave', 'media', 'forte'] as const).map((p) => ({
+    valor: p,
+    nome: () => poeiraEmTexto(p),
+  })),
+];
+
+/**
  * UMA LINHA DO PAINEL — rótulo à esquerda (com o "?" de ajuda quando há
  * dica), controle à direita. É o átomo do redesenho: o que era um
  * `<h3>` mais um `<p className="ajustes-nota">` mais a fileira de
@@ -216,6 +232,7 @@ export function Ajustes({
   onEscala,
   onGas,
   onParticulas,
+  onPoeira,
   tom,
   onTom,
   exposicao,
@@ -247,6 +264,8 @@ export function Ajustes({
   onGas: (variante: GasVolumetrico | null) => void;
   /** a fração de partículas da galáxia escolhida à mão (item 149); `null` = do preset */
   onParticulas: (nivel: ParticulasDaGalaxia | null) => void;
+  /** a poeira perto de casa escolhida à mão (pedido do dono, 27/09); `null` = do preset */
+  onPoeira: (variante: TipoDePoeira | null) => void;
   tom: ToneMapMode;
   onTom: (t: ToneMapMode) => void;
   exposicao: number;
@@ -573,6 +592,26 @@ export function Ajustes({
               qualidade.gas === null && g.valor !== null && g.valor === presetVivo.gas,
           }))}
           onEscolher={onGas}
+        />
+      </LinhaDeAjuste>
+
+      <LinhaDeAjuste
+        id="poeira"
+        rotulo={t('ajustes.poeira')}
+        dica={t('ajustes.poeiraNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.poeira')}
+          valor={qualidade.poeira}
+          opcoes={POEIRAS.map((p) => ({
+            valor: p.valor,
+            nome: p.nome(),
+            efetivo:
+              qualidade.poeira === null && p.valor !== null && p.valor === presetVivo.poeira,
+          }))}
+          onEscolher={onPoeira}
         />
       </LinhaDeAjuste>
 

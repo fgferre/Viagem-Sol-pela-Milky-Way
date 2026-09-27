@@ -181,6 +181,20 @@ describe('verify-assets — o volume de poeira (float16)', () => {
   const DIMS = [10, 10, 10];
   const ESCALA = 1000;
   const VALORES = new Array(DIMS[0] * DIMS[1] * DIMS[2]).fill(0.01);
+  const GRADE_FIXTURE = { dims: DIMS, voxelPc: 10, origemPc: [0, 0, 0] };
+
+  /** `celulas` cobrindo TODA a grade de teste (10×10×10) com uma densidade uniforme — a fixture "conhece" exatamente o volume sintético. */
+  function celulasUniformes(media) {
+    const celulas = [];
+    for (let k = 0; k < DIMS[2]; k += 1) {
+      for (let j = 0; j < DIMS[1]; j += 1) {
+        for (let i = 0; i < DIMS[0]; i += 1) {
+          celulas.push({ indice: [i, j, k], media });
+        }
+      }
+    }
+    return celulas;
+  }
 
   function rodarComFixture(fixture) {
     const flutuante = paraFloat16(VALORES, ESCALA);
@@ -227,31 +241,61 @@ describe('verify-assets — o volume de poeira (float16)', () => {
 
   it('passa com um volume float16 dentro da tolerância', () => {
     const r = rodarComFixture({
-      cabecalho: { raiosPc: [1, 5] },
+      cabecalho: { grade: GRADE_FIXTURE },
       voxeis: [{ indice: [0, 0, 0], media: VALORES[0], nanFracao: 0 }],
       // coluna l=0,b=0,rMin=10,rMax=90: bloco uniforme (0,01) dá
-      // 0,01 × (90 − 10) = 0,8, dentro da faixa do tubo.
+      // 0,01 × (90 − 10) = 0,8. `celulas` cobre a grade toda com a MESMA
+      // densidade — a referência de mesmo operador bate exatamente —, e
+      // 0,8 também cai dentro da faixa do tubo (plausibilidade).
       colunas: [
-        { nome: 'dentro', l: 0, b: 0, rMin: 10, rMax: 90, tubo: { media: 0.8, min: 0.7, max: 0.9 } },
+        {
+          nome: 'dentro',
+          l: 0,
+          b: 0,
+          rMin: 10,
+          rMax: 90,
+          celulas: celulasUniformes(0.01),
+          tubo: { media: 0.8, min: 0.7, max: 0.9 },
+        },
       ],
     });
     expect(r.ok, r.saida.slice(-800)).toBe(true);
     expect(r.saida).toContain('dustVolumeTeste: fixture Edenhofer OK');
-    expect(r.saida).toContain('dentro da faixa do tubo');
+    expect(r.saida).toContain('faixa do tubo');
   }, 60_000);
 
-  it('reprova um volume float16 fora da tolerância', () => {
+  it('reprova um volume float16 fora da tolerância (voxel), mesmo com a coluna plausível no tubo', () => {
     const r = rodarComFixture({
-      cabecalho: { raiosPc: [1, 5] },
+      cabecalho: { grade: GRADE_FIXTURE },
       voxeis: [{ indice: [0, 0, 0], media: 5, nanFracao: 0 }],
-      // mesma coluna, mas com a faixa do tubo deslocada: 0,8 cai bem
-      // fora de [0,1; 0,3].
+      // a coluna bate com a referência de mesmo operador (mesma
+      // densidade 0,01 nas `celulas`) mas cai FORA da faixa do tubo
+      // [0,1; 0,3] — plausibilidade não reprova; quem reprova é o voxel.
       colunas: [
-        { nome: 'fora', l: 0, b: 0, rMin: 10, rMax: 90, tubo: { media: 0.2, min: 0.1, max: 0.3 } },
+        {
+          nome: 'fora',
+          l: 0,
+          b: 0,
+          rMin: 10,
+          rMax: 90,
+          celulas: celulasUniformes(0.01),
+          tubo: { media: 0.2, min: 0.1, max: 0.3 },
+        },
       ],
     });
     expect(r.ok).toBe(false);
     expect(r.saida).toContain('excede a tolerância');
     expect(r.saida).toContain('FORA DA FAIXA');
+  }, 60_000);
+
+  it('grade incompatível (outra resolução) → não falha, só avisa que não há referência', () => {
+    const r = rodarComFixture({
+      cabecalho: { grade: { dims: [5, 5, 5], voxelPc: 20, origemPc: [0, 0, 0] } },
+      // valores deliberadamente "errados": se a grade fosse comparada, reprovaria.
+      voxeis: [{ indice: [0, 0, 0], media: 999, nanFracao: 0 }],
+      colunas: [],
+    });
+    expect(r.ok, r.saida.slice(-800)).toBe(true);
+    expect(r.saida).toContain('sem referência para esta grade');
   }, 60_000);
 });

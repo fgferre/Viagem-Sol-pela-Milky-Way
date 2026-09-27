@@ -96,42 +96,111 @@ describe('integrarColuna — campo constante', () => {
   });
 });
 
-describe('compararComReferencia — coluna cai na faixa do tubo (ou não)', () => {
-  // Mesma grade/campo constante do teste de integrarColuna acima: a
-  // coluna l=0,b=0,rMin=5,rMax=40 vale sempre 0,02 × (40 − 5) = 0,7.
+describe('compararComReferencia — grade da fixture precisa bater com a do volume', () => {
+  // Mesma grade/campo constante usada nos testes de coluna abaixo.
   const grade = { nx: 20, ny: 20, nz: 20, voxelPc: 10, origemPc: [-100, -100, -100] };
   const volume = { grade, valores: new Float64Array(20 * 20 * 20).fill(0.02) };
 
-  it('aprova e zera o relativo quando a coluna do bloco cai dentro da faixa', () => {
+  it('grade diferente (outras dims/voxelPc/origemPc) → aplicavel:false, com motivo, sem comparar nada', () => {
     const fixture = {
-      voxeis: [],
-      colunas: [
-        { nome: 'dentro', l: 0, b: 0, rMin: 5, rMax: 40, tubo: { media: 0.7, min: 0.6, max: 0.8 } },
-      ],
+      cabecalho: { grade: { dims: [10, 10, 10], voxelPc: 5, origemPc: [0, 0, 0] } },
+      voxeis: [{ indice: [0, 0, 0], media: 999, nanFracao: 0 }],
+      colunas: [{ nome: 'x', l: 0, b: 0, rMin: 5, rMax: 40, celulas: [], tubo: { media: 1, min: 1, max: 1 } }],
     };
     const resultado = compararComReferencia(volume, fixture);
-    expect(resultado.coluna.aprovado).toBe(true);
-    expect(resultado.coluna.maximoRelativo).toBeCloseTo(0, 9);
-    expect(resultado.coluna.pior.nome).toBe('dentro');
-    expect(resultado.coluna.pior.esperadoFaixa).toEqual([0.6, 0.8]);
-    expect(resultado.coluna.pior.atual).toBeCloseTo(0.7, 9);
-    expect(resultado.coluna.pior.razaoMedia).toBeCloseTo(1, 9);
+    expect(resultado.aplicavel).toBe(false);
+    expect(resultado.motivo).toMatch(/grade/);
+    expect(resultado.voxel).toBeUndefined();
+    expect(resultado.coluna).toBeUndefined();
   });
 
-  it('reprova quando a coluna do bloco cai fora da faixa', () => {
+  it('fixture sem cabecalho.grade → também aplicavel:false (fixture antiga ou de outra resolução)', () => {
+    const resultado = compararComReferencia(volume, { voxeis: [], colunas: [] });
+    expect(resultado.aplicavel).toBe(false);
+    expect(typeof resultado.motivo).toBe('string');
+    expect(resultado.motivo.length).toBeGreaterThan(0);
+  });
+});
+
+describe('compararComReferencia — coluna: referência de mesmo operador reprova, faixa do tubo só avisa', () => {
+  // Mesma grade/campo constante do teste de integrarColuna: a coluna
+  // l=0,b=0,rMin=5,rMax=40 vale sempre 0,02 × (40 − 5) = 0,7. `celulas`
+  // cobre a grade toda (8000 voxels) — a fixture "conhece" exatamente o
+  // que o bloco tem, então a referência de mesmo operador é exata.
+  const grade = { nx: 20, ny: 20, nz: 20, voxelPc: 10, origemPc: [-100, -100, -100] };
+  const volume = { grade, valores: new Float64Array(20 * 20 * 20).fill(0.02) };
+  const gradeFixture = { dims: [grade.nx, grade.ny, grade.nz], voxelPc: grade.voxelPc, origemPc: grade.origemPc };
+
+  function todasAsCelulas(media) {
+    const celulas = [];
+    for (let k = 0; k < grade.nz; k += 1) {
+      for (let j = 0; j < grade.ny; j += 1) {
+        for (let i = 0; i < grade.nx; i += 1) {
+          celulas.push({ indice: [i, j, k], media });
+        }
+      }
+    }
+    return celulas;
+  }
+
+  it('aprova quando a coluna bate com a referência de mesmo operador (e reporta a razão do tubo)', () => {
     const fixture = {
+      cabecalho: { grade: gradeFixture },
       voxeis: [],
       colunas: [
-        { nome: 'fora', l: 0, b: 0, rMin: 5, rMax: 40, tubo: { media: 0.2, min: 0.1, max: 0.3 } },
+        {
+          nome: 'dentro',
+          l: 0,
+          b: 0,
+          rMin: 5,
+          rMax: 40,
+          celulas: todasAsCelulas(0.02),
+          tubo: { media: 0.7, min: 0.6, max: 0.8 },
+        },
       ],
     };
     const resultado = compararComReferencia(volume, fixture);
+    expect(resultado.aplicavel).toBe(true);
+    expect(resultado.coluna.aprovado).toBe(true);
+    expect(resultado.coluna.maximoRelativo).toBeCloseTo(0, 9);
+    expect(resultado.coluna.piorDesvio.nome).toBe('dentro');
+    expect(resultado.coluna.piorDesvio.atual).toBeCloseTo(0.7, 9);
+    expect(resultado.coluna.piorDesvio.referenciaMesmoOperador).toBeCloseTo(0.7, 9);
+    expect(resultado.coluna.piorFaixa.nome).toBe('dentro');
+    expect(resultado.coluna.piorFaixa.esperadoFaixa).toEqual([0.6, 0.8]);
+    expect(resultado.coluna.piorFaixa.atual).toBeCloseTo(0.7, 9);
+    expect(resultado.coluna.piorFaixa.razaoMedia).toBeCloseTo(1, 9);
+  });
+
+  it('reprova pela referência de mesmo operador MESMO com a coluna dentro da faixa do tubo (plausibilidade não reprova)', () => {
+    const fixture = {
+      cabecalho: { grade: gradeFixture },
+      voxeis: [],
+      colunas: [
+        {
+          nome: 'divergente',
+          l: 0,
+          b: 0,
+          rMin: 5,
+          rMax: 40,
+          // referência diz 0,05 (média × 35 = 1,75); o bloco tem 0,02
+          // (× 35 = 0,7) — bem fora dos 5% —, mas 0,7 ainda cai DENTRO
+          // da faixa do tubo [0,6; 0,8].
+          celulas: todasAsCelulas(0.05),
+          tubo: { media: 0.7, min: 0.6, max: 0.8 },
+        },
+      ],
+    };
+    const resultado = compararComReferencia(volume, fixture);
+    expect(resultado.aplicavel).toBe(true);
     expect(resultado.coluna.aprovado).toBe(false);
     expect(resultado.coluna.maximoRelativo).toBeGreaterThan(1);
-    expect(resultado.coluna.pior.nome).toBe('fora');
-    expect(resultado.coluna.pior.esperadoFaixa).toEqual([0.1, 0.3]);
-    expect(resultado.coluna.pior.atual).toBeCloseTo(0.7, 9);
-    expect(resultado.coluna.pior.razaoMedia).toBeCloseTo(3.5, 9);
+    expect(resultado.coluna.piorDesvio.nome).toBe('divergente');
+    expect(resultado.coluna.piorDesvio.atual).toBeCloseTo(0.7, 9);
+    expect(resultado.coluna.piorDesvio.referenciaMesmoOperador).toBeCloseTo(1.75, 9);
+    // a faixa do tubo continua só reportando: 0,7 está DENTRO de [0,6; 0,8].
+    expect(resultado.coluna.piorFaixa.esperadoFaixa).toEqual([0.6, 0.8]);
+    expect(resultado.coluna.piorFaixa.razaoMedia).toBeCloseTo(1, 9);
   });
 });
 

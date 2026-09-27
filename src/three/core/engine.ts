@@ -157,6 +157,41 @@ export function lerPortaParticulas(
 }
 
 /**
+ * A POEIRA PERTO DE CASA (pedido do dono, 27/09) — o sexto controle da
+ * gaveta Avançado. `hoje` é o modelo procedural de sempre (poeira
+ * desligada no Director); as outras três trocam para o bloco medido
+ * pelo Gaia (Edenhofer 2024), em três brilhos — o mapeamento de cada
+ * uma para `{modo, ganho, gama, lanes}` (o que `Director.definirPoeira`
+ * espera) mora em `poeiraParaMotor` (atlasConfig.ts), a tabela única.
+ */
+export type TipoDePoeira = 'hoje' | 'suave' | 'media' | 'forte';
+
+const TIPOS_DE_POEIRA: readonly TipoDePoeira[] = ['hoje', 'suave', 'media', 'forte'];
+
+/**
+ * OS APELIDOS LEGADOS de `?poeira=` (E2/E3, antes de virar opção do
+ * menu): `0` ligava nada, `1` e `2` ligavam a mesma técnica (a
+ * diferença entre "assada" e "direta" nunca esteve no número — segue a
+ * variante do GÁS, `Nebula.modoEsperado`). Um link antigo continua
+ * pousando no mesmo lugar.
+ */
+const APELIDOS_DE_POEIRA: Record<string, TipoDePoeira> = {
+  '0': 'hoje',
+  '1': 'media',
+  '2': 'media',
+};
+
+/**
+ * A lei da porta `?poeira=`, no mesmo contrato de `lerPortaGas` — mais
+ * os apelidos acima. `teste` NÃO é opção do menu (é bancada, lida direto
+ * pelo Director): esta função devolve `null` para ela, de propósito.
+ */
+export function lerPortaPoeira(bruto: string | null | undefined): TipoDePoeira | null {
+  if (bruto == null) return null;
+  return TIPOS_DE_POEIRA.find((v) => v === bruto) ?? APELIDOS_DE_POEIRA[bruto] ?? null;
+}
+
+/**
  * OS TRÊS DEGRAUS DA ESCALA DE RESOLUÇÃO (item 145) — o terceiro
  * controle da gaveta Avançado, em fração da densidade NATIVA da tela.
  * 100% é o `devicePixelRatio` do monitor (2,0 num Retina), 50% é metade
@@ -185,6 +220,11 @@ export interface QualityPreset {
   /** a fração de partículas da galáxia do preset (item 149) — mesma
    *  regra do gás: todo preset aponta uma, `null` é só da gaveta. */
   particulas: ParticulasDaGalaxia;
+  /** a poeira perto de casa do preset (pedido do dono, 27/09) — mesma
+   *  regra do gás: todo preset aponta uma, `null` é só da gaveta. Os
+   *  três apontam `hoje` por ora — o objetivo desta rodada é comparar,
+   *  não escolher um padrão por tier. */
+  poeira: TipoDePoeira;
 }
 
 // grain agora é DISPLAY-space (film pass pós-tonemap): 0.055 era
@@ -209,14 +249,29 @@ export interface QualityPreset {
 // quando o controle está em "do preset" — sem isso ele lê `null` e não
 // tem como dizer "média" quando o preset é `alta`.
 export const PRESETS: Record<QualityLevel, QualityPreset> = {
-  cinema: { pixelRatio: 2.0, nebulosa: 'alta', grain: 0.012, gas: 'fino', particulas: 'todas' },
-  alta: { pixelRatio: 1.5, nebulosa: 'media', grain: 0.01, gas: 'macio', particulas: 'metade' },
+  cinema: {
+    pixelRatio: 2.0,
+    nebulosa: 'alta',
+    grain: 0.012,
+    gas: 'fino',
+    particulas: 'todas',
+    poeira: 'hoje',
+  },
+  alta: {
+    pixelRatio: 1.5,
+    nebulosa: 'media',
+    grain: 0.01,
+    gas: 'macio',
+    particulas: 'metade',
+    poeira: 'hoje',
+  },
   performance: {
     pixelRatio: 1.0,
     nebulosa: 'baixa',
     grain: 0.008,
     gas: 'macio',
     particulas: 'todas',
+    poeira: 'hoje',
   },
 };
 
@@ -467,6 +522,14 @@ export interface EstadoDaQualidade {
    * troca o `drawRange` da `Galaxy` ao vivo.
    */
   particulas: ParticulasDaGalaxia | null;
+  /**
+   * A POEIRA PERTO DE CASA escolhida à mão (pedido do dono, 27/09) —
+   * `null` = a do preset ('hoje', por ora). Quem a publica é o
+   * Director, que é onde o override mora (`forcarPoeira`/
+   * `aplicarPoeira`, no mesmo molde de `forcarGas`): é ele que troca a
+   * configuração viva de `definirPoeira`.
+   */
+  poeira: TipoDePoeira | null;
 }
 
 /**

@@ -13,6 +13,7 @@ import type {
   GasVolumetrico,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
+  TipoDePoeira,
   ToneMapMode,
 } from '../three/core/engine';
 import { lerPortaExposicao, lerPortaTom } from '../three/core/engine';
@@ -311,6 +312,15 @@ export function useEspelhoDaUrl(dep: {
     window.history.replaceState(null, '', comParam('particulas', nivel));
   };
 
+  /**
+   * A POEIRA PERTO DE CASA, AO VIVO (pedido do dono, 27/09) — o sexto
+   * controle da gaveta Avançado, no mesmo molde exato dos cinco de cima.
+   */
+  const trocarPoeira = (variante: TipoDePoeira | null) => {
+    directorRef.current?.forcarPoeira(variante);
+    window.history.replaceState(null, '', comParam('poeira', variante));
+  };
+
   // ---- o gosto, escrito num lugar só (estado + Director + URL) -------
   const trocarTom = (t: ToneMapMode) => {
     setTom(t);
@@ -417,6 +427,11 @@ export function useEspelhoDaUrl(dep: {
         d.forcarGas(null);
       } else if (c.chave === 'particulas') {
         d.forcarParticulas(null);
+      } else if (c.chave === 'poeira') {
+        // desarma TAMBÉM `poeiraTeste` (dentro de `forcarPoeira`): sem
+        // isto um `?poeira=teste` de bancada continuaria no ar depois
+        // do clique, com a URL já limpa
+        d.forcarPoeira(null);
       } else if (c.chave === 'luz') {
         // volta ao 1/d² cru no próximo quadro (D2 — volta 'vivo'), e o
         // carimbo porque esta é a única linha sem espelho em React: sem
@@ -496,6 +511,7 @@ export function useEspelhoDaUrl(dep: {
     trocarEscala,
     trocarGas,
     trocarParticulas,
+    trocarPoeira,
     trocarTom,
     trocarExposicao,
     voltarAoBrilhoReal,

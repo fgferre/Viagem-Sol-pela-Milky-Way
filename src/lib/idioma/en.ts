@@ -184,6 +184,16 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.gas.antigo': 'Original',
   'ajustes.gas.fino': 'Fine',
   'ajustes.gas.macio': 'Soft',
+  // THE DUST NEAR HOME (owner's request, 09/27) — the sixth control,
+  // next to the gas: compare live the current procedural model with
+  // the Gaia-measured block, in three brightnesses.
+  'ajustes.poeira': 'Dust near home',
+  'ajustes.poeiraNota':
+    "The Gaia-measured block (Edenhofer 2024) to 1.2 kpc, in three brightnesses; 'today's' is the current invented gas, for comparison",
+  'ajustes.poeira.hoje': "today's",
+  'ajustes.poeira.suave': 'Gaia soft',
+  'ajustes.poeira.media': 'Gaia medium',
+  'ajustes.poeira.forte': 'Gaia strong',
   'ajustes.particulasControle': 'Galaxy particles',
   'ajustes.particulasNota':
     'How many of the loaded particles the scene draws, with total brightness compensated: fewer points, each stronger — same flux, different grain.',
@@ -437,8 +447,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.cartografiaDesligada':
     'cartography: procedural (maps turned off by ?cart=off)',
   'selo.poeiraMedida': 'dust near home: measured (Gaia, Edenhofer 2024, to 1.2 kpc)',
+  'selo.poeiraSintetica':
+    'dust near home: SYNTHETIC test volume (?poeira=teste), not Gaia',
   'selo.poeiraDesligada': 'dust near home: procedural (measured block off)',
   'selo.poeiraAusente': 'dust near home: procedural (the block did not arrive)',
+  'selo.poeiraInativa': 'dust near home: procedural (the \'antigo\' gas does not read the block)',
+  'selo.poeiraCarregando': 'dust near home: loading the measured block',
   'selo.luzAssistida':
     'every world you visit is exposed for the light IT receives — a photograph taken there, not with the settings of Earth. The true order of brightness stays in the sky, at the point of each body.',
   'selo.lanterna':
@@ -461,6 +475,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.gasCom': 'volumetric gas set by hand: {variante}',
   'selo.desvio.particulas': 'galaxy particles set by hand',
   'selo.desvio.particulasCom': 'galaxy particles set by hand: {nivel}',
+  'selo.desvio.poeira': 'dust near home set by hand',
+  'selo.desvio.poeiraCom': 'dust near home set by hand: {variante}',
 
   // ---- the scale accusation ----------------------------------------
   'escala.acusacao': '{nome} is {fator} larger',

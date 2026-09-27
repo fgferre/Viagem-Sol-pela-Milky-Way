@@ -43,6 +43,7 @@ import type {
   GasVolumetrico,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
+  TipoDePoeira,
 } from './core/engine';
 
 /**
@@ -263,6 +264,40 @@ export function particulasDaGalaxiaEmTexto(nivel: ParticulasDaGalaxia): string {
 }
 
 /**
+ * A POEIRA PERTO DE CASA COMO O VISITANTE A LÊ (pedido do dono, 27/09).
+ * Mesma doutrina do gás e das partículas: a variante é chave
+ * (`hoje`/`suave`/`media`/`forte`, a mesma que vai ao `?poeira=`), e a
+ * tradução mora no caminho da tela.
+ */
+export function poeiraEmTexto(variante: TipoDePoeira): string {
+  return t(`ajustes.poeira.${variante}` as ChaveDeTexto);
+}
+
+/**
+ * O MAPEAMENTO DE CADA VARIANTE PARA O MOTOR (pedido do dono, 27/09) —
+ * a tabela única que traduz a escolha da gaveta para o que
+ * `Director.definirPoeira` espera. `hoje` desliga (o modelo procedural
+ * de sempre); as outras três ligam com o mesmo gama/lanes (1 e 0) e só
+ * o GANHO muda entre elas — as três leituras do mesmo bloco medido pelo
+ * Gaia, cada vez mais forte. As portas de bancada `?poeiragain=`/
+ * `?poeiragama=`/`?poeiralanes=` continuam vencendo por cima disto,
+ * dentro do Director (`aplicarPoeira`).
+ */
+const POEIRA_PARA_MOTOR: Record<TipoDePoeira, { modo: number; ganho: number }> = {
+  hoje: { modo: 0, ganho: 0 },
+  suave: { modo: 1, ganho: 15 },
+  media: { modo: 1, ganho: 46.9 },
+  forte: { modo: 1, ganho: 94 },
+};
+
+export function poeiraParaMotor(
+  variante: TipoDePoeira
+): { modo: number; ganho: number; gama: number; lanes: number } {
+  const { modo, ganho } = POEIRA_PARA_MOTOR[variante];
+  return { modo, ganho, gama: 1, lanes: 0 };
+}
+
+/**
  * A ESCALA DE RESOLUÇÃO COMO O VISITANTE A LÊ: fração vira porcentagem
  * (0,5 → "50%"). Sem casa decimal porque os três degraus são inteiros
  * em porcento; o dia em que não forem, a régua é esta função.
@@ -272,17 +307,18 @@ export function rotuloDaEscalaDeResolucao(fator: number): string {
 }
 
 /**
- * MEXEU NA GAVETA AVANÇADO? (item 145, +145b, +149) — qualquer um dos
- * cinco controles fora do preset basta. É a régua do "Personalizado", e
- * mora numa função só para o rótulo e quem mais precisar dela não
- * divergirem.
+ * MEXEU NA GAVETA AVANÇADO? (item 145, +145b, +149, +poeira 27/09) —
+ * qualquer um dos seis controles fora do preset basta. É a régua do
+ * "Personalizado", e mora numa função só para o rótulo e quem mais
+ * precisar dela não divergirem.
  */
 export const foraDoPreset = (e: EstadoDaQualidade): boolean =>
   e.amostras !== null ||
   e.nebulosa !== null ||
   e.escala !== null ||
   e.gas !== null ||
-  e.particulas !== null;
+  e.particulas !== null ||
+  e.poeira !== null;
 
 export function rotuloDaQualidade(e: EstadoDaQualidade): string {
   // PERSONALIZADO (item 145, +145b, +149): mexeu num controle da gaveta

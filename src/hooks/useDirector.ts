@@ -25,7 +25,7 @@ import type { EntradaDaBusca, LugarBuscavel } from '../lib/buscaEstrelas';
 import { LUGARES_DO_FILME } from '../lib/lugaresDoFilme';
 import { GAL } from '../three/world/baseGalactica';
 import { lerPortaVer } from '../three/selo';
-import type { VerDaEscada } from '../three/selo';
+import type { EstadoDaPoeira, VerDaEscada } from '../three/selo';
 
 /**
  * OS LUGARES DO CÉU que a busca alcança (item 129/F5) — as palavras vêm
@@ -100,6 +100,7 @@ export interface FiosDoDirector {
   setLoadStage: (v: LoadStage) => void;
   setLoadError: (v: string) => void;
   setNomeadas: (v: readonly NamedStar[]) => void;
+  setEstadoDaPoeira: (v: EstadoDaPoeira) => void;
   setFoco: (v: string | null) => void;
   setTempo: (v: EstadoDoTempo | null) => void;
   setEscada: (v: EstadoDaEscada) => void;
@@ -131,6 +132,7 @@ export function useDirector(fios: FiosDoDirector) {
     setLoadStage,
     setLoadError,
     setNomeadas,
+    setEstadoDaPoeira,
     setFoco,
     setTempo,
     setEscada,
@@ -159,6 +161,7 @@ export function useDirector(fios: FiosDoDirector) {
         rootRef.current?.style.setProperty('--warp', `${warp}`);
       },
       onQuality: setQuality,
+      onPoeira: setEstadoDaPoeira,
       onDest: setDest,
       onSol: setSol,
       onLente: setLente,

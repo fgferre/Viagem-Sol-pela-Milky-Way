@@ -86,20 +86,45 @@ for (const [assetName, asset] of Object.entries(manifest.assets)) {
         origemPc: asset.originPc,
       };
       const resultado = compararComReferencia({ grade, valores }, fixture);
-      const colunaTexto = resultado.coluna.aprovado
-        ? `dentro da faixa do tubo (razão para a média ${resultado.coluna.pior ? resultado.coluna.pior.razaoMedia.toFixed(2) : '—'})`
-        : 'FORA DA FAIXA';
+      if (!resultado.aplicavel) {
+        // Fixture feita para OUTRA grade (outra resolução/origem, E1 item
+        // 3 da revisão): índice [i,j,k] não aponta para o mesmo voxel nos
+        // dois lados — não há o que comparar, mas isso não reprova o gate.
+        console.log(`${assetName}: sem referência para esta grade (${resultado.motivo}).`);
+        continue;
+      }
+      const piorFaixa = resultado.coluna.piorFaixa;
+      const piorDesvio = resultado.coluna.piorDesvio;
+      const faixaTexto = piorFaixa
+        ? `${piorFaixa.nome} razão p/ média do tubo ${piorFaixa.razaoMedia.toFixed(2)}` +
+          (piorFaixa.atual < piorFaixa.esperadoFaixa[0] || piorFaixa.atual > piorFaixa.esperadoFaixa[1]
+            ? ' — FORA DA FAIXA do tubo (plausibilidade, não reprova)'
+            : ' — dentro da faixa do tubo')
+        : '—';
+      const desvioTexto = piorDesvio
+        ? `${piorDesvio.nome} desvio relativo ${piorDesvio.desvioRelativo.toFixed(3)}`
+        : '—';
       if (!resultado.voxel.aprovado || !resultado.coluna.aprovado) {
         throw new Error(
           `${assetName}: comparação com a fixture Edenhofer excede a tolerância ` +
             `(voxel máximo relativo ${resultado.voxel.maximoRelativo.toFixed(3)}, ` +
-            `coluna ${colunaTexto}).`
+            `coluna máximo relativo ${resultado.coluna.maximoRelativo.toFixed(3)} — pior desvio: ${desvioTexto}; ` +
+            `faixa do tubo: ${faixaTexto}).`
         );
       }
       console.log(
         `${assetName}: fixture Edenhofer OK (voxel máximo relativo ` +
-          `${resultado.voxel.maximoRelativo.toFixed(3)}, coluna ${colunaTexto}).`
+          `${resultado.voxel.maximoRelativo.toFixed(3)}, coluna máximo relativo ` +
+          `${resultado.coluna.maximoRelativo.toFixed(3)}; pior desvio: ${desvioTexto}; ` +
+          `faixa do tubo (plausibilidade): ${faixaTexto}).`
       );
+      if (fixture.convergencia) {
+        console.log(
+          `${assetName}: convergência 8³→16³ (40 voxels) — máximo relativo ` +
+            `${fixture.convergencia.maxRelativo.toFixed(3)}, médio relativo ` +
+            `${fixture.convergencia.medioRelativo.toFixed(3)}.`
+        );
+      }
     }
     continue;
   }

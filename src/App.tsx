@@ -11,7 +11,8 @@ import type {
   Phase,
 } from './three/director';
 import type { NamedStar } from './three/config';
-import { cartografiaMedida, estadoDoBlocoDePoeira } from './three/cartography/galacticAssets';
+import { cartografiaMedida } from './three/cartography/galacticAssets';
+import type { EstadoDaPoeira } from './three/selo';
 import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
 import { TIER_DE_PRODUTO } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
@@ -262,6 +263,7 @@ export default function App() {
     escala: null,
     gas: null,
     particulas: null,
+    poeira: null,
   });
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
@@ -294,13 +296,15 @@ export default function App() {
     () => new URLSearchParams(window.location.search).get('cart') === 'off'
   );
   /**
-   * A poeira medida do Gaia (E2) foi pedida por `?poeira=`? Porta de
-   * bancada até virar ajuste (E4); só o selo a consome, para dizer se a
-   * poeira perto de casa é medida, desligada ou não chegou.
+   * A PROCEDÊNCIA REAL da poeira medida do Gaia perto do Sol (revisão
+   * independente, 27/09) — publicada pelo Director (`estadoDaPoeira`,
+   * mesmo mecanismo de `onQuality`), não lida da URL aqui: o pedido, a
+   * carga e o que a Nebula de fato desenha só o Director sabe cruzar.
+   * Só o selo a consome (`Selo`, via `legendaDaProcedencia`).
    */
-  const [poeiraPedida] = useState(() => {
-    const valor = new URLSearchParams(window.location.search).get('poeira');
-    return valor === '1' || valor === '2' || valor === 'teste';
+  const [estadoDaPoeira, setEstadoDaPoeira] = useState<EstadoDaPoeira>({
+    situacao: 'desligada',
+    fonte: null,
   });
   /**
    * AS 1.726 NOMEADAS, publicadas pelo Director quando o `init` termina
@@ -460,6 +464,7 @@ export default function App() {
     setLoadStage,
     setLoadError,
     setNomeadas,
+    setEstadoDaPoeira,
     setFoco,
     setTempo,
     setEscada,
@@ -867,6 +872,7 @@ export default function App() {
     trocarEscala,
     trocarGas,
     trocarParticulas,
+    trocarPoeira,
     trocarTom,
     trocarExposicao,
     voltarAoBrilhoReal,
@@ -1169,15 +1175,9 @@ export default function App() {
               // …e se não chegaram, foi escolha dele? A frase da falha
               // acusava a rede de uma decisão do visitante.
               cartografiaDesligada={cartografiaDesligada}
-              // a poeira medida perto de casa (E2): pedida e assada, pedida
-              // e sem bloco, ou não pedida
-              poeira={
-                !poeiraPedida || cartografiaDesligada
-                  ? 'desligada'
-                  : estadoDoBlocoDePoeira() === 'chegou'
-                    ? 'medida'
-                    : 'ausente'
-              }
+              // a procedência real da poeira medida perto de casa (E2/E3/E4)
+              // — publicada pelo Director, ver `estadoDaPoeira` acima.
+              poeira={estadoDaPoeira}
               onEscalaReal={() => directorRef.current?.focarNoSistema()}
               onBrilhoReal={voltarAoBrilhoReal}
             />
@@ -1342,6 +1342,7 @@ export default function App() {
         onEscala={trocarEscala}
         onGas={trocarGas}
         onParticulas={trocarParticulas}
+        onPoeira={trocarPoeira}
         tom={tom}
         onTom={trocarTom}
         exposicao={exposicao}
