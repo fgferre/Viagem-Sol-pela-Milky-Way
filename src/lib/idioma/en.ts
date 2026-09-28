@@ -449,7 +449,6 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.poeiraMedida': 'dust near home: measured (Gaia, Edenhofer 2024, to 1.2 kpc)',
   'selo.poeiraSintetica':
     'dust near home: SYNTHETIC test volume (?poeira=teste), not Gaia',
-  'selo.poeiraDesligada': 'dust near home: procedural (measured block off)',
   'selo.poeiraAusente': 'dust near home: procedural (the block did not arrive)',
   'selo.poeiraInativa': 'dust near home: procedural (the \'Original\' gas does not read the block)',
   'selo.poeiraCarregando': 'dust near home: loading the measured block',

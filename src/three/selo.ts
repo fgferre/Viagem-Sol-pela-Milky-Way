@@ -183,12 +183,13 @@ export interface EstadoDaPoeira {
  * constante. `porEscolha` separa a falha do pedido: os dois dão a mesma
  * cena procedural e NÃO são a mesma notícia.
  *
- * `poeira` é opcional e por fora dos três tiers: sem ele, o texto de
- * hoje sai byte a byte igual (compatibilidade com quem já chama esta
- * função). Dado (`EstadoDaPoeira`, abaixo), acrescenta uma quarta linha
- * sobre o bloco de poeira do Gaia perto do Sol — uma frase por
- * `situacao`, e a de `ativa` também depende da `fonte` (o bloco real ou
- * o volume sintético de `?poeira=teste`).
+ * `poeira` é opcional e por fora dos três tiers: sem ele, ou com a
+ * poeira `desligada` (ninguém pediu o Gaia — decisão do dono, 28/09: a
+ * frase só aparece com o Gaia ligado), o texto de hoje sai byte a byte
+ * igual. Com o Gaia pedido, acrescenta uma quarta linha sobre o bloco de
+ * poeira perto do Sol — uma frase por `situacao`, e a de `ativa` também
+ * depende da `fonte` (o bloco real ou o volume sintético de
+ * `?poeira=teste`).
  */
 export function legendaDaProcedencia(
   cartografiaMedida: boolean,
@@ -205,8 +206,7 @@ export function legendaDaProcedencia(
       }`;
   if (poeira?.situacao === 'ativa') {
     legenda += ` · ${t(poeira.fonte === 'sintetica' ? 'selo.poeiraSintetica' : 'selo.poeiraMedida')}`;
-  } else if (poeira?.situacao === 'desligada') legenda += ` · ${t('selo.poeiraDesligada')}`;
-  else if (poeira?.situacao === 'indisponivel') legenda += ` · ${t('selo.poeiraAusente')}`;
+  } else if (poeira?.situacao === 'indisponivel') legenda += ` · ${t('selo.poeiraAusente')}`;
   else if (poeira?.situacao === 'inativa') legenda += ` · ${t('selo.poeiraInativa')}`;
   else if (poeira?.situacao === 'carregando') legenda += ` · ${t('selo.poeiraCarregando')}`;
   return legenda;

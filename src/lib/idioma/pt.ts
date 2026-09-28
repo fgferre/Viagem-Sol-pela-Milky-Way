@@ -472,7 +472,6 @@ export const PT = {
   'selo.poeiraMedida': 'poeira perto de casa: medida (Gaia, Edenhofer 2024, até 1,2 kpc)',
   'selo.poeiraSintetica':
     'poeira perto de casa: volume SINTÉTICO de teste (?poeira=teste), não é o Gaia',
-  'selo.poeiraDesligada': 'poeira perto de casa: procedural (bloco medido desligado)',
   'selo.poeiraAusente': 'poeira perto de casa: procedural (o bloco não chegou)',
   'selo.poeiraInativa': 'poeira perto de casa: procedural (o gás \'Original\' não lê o bloco)',
   'selo.poeiraCarregando': 'poeira perto de casa: carregando o bloco medido',

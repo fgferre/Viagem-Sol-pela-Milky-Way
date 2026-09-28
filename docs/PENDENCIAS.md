@@ -24,9 +24,9 @@ no ramo `poeira-gaia`, com backup no GitHub; nada foi para o `main`.**
   para fora, e os botões da poeira viraram Hoje / Suave / Média / Forte.
   Sem poeira, a imagem é a mesma pixel a pixel (12 vistas) e o fps não
   mudou; `npm run done` verde (3.170 testes).
-- **Aberto — dele:** (1) a frase nova do selo para todo visitante
-  ("poeira perto de casa: procedural (bloco medido desligado)") fica
-  sempre ou só com o Gaia ligado; (2) a escolha por olho (Suave, Média,
+- **Decidido por ele (28/09):** *"a frase do selo só com o Gaia ligado"*
+  — feito: sem o Gaia, o selo de todo visitante é o de antes.
+- **Aberto — dele:** (2) a escolha por olho (Suave, Média,
   Forte, ou nenhuma ainda); (3) o teste no iPhone (`npm run build`,
   depois `npx vite preview --host --port 4173`, e no iPhone
   `http://192.168.1.141:4173/?fps=1`); (4) o merge no `main` depois da

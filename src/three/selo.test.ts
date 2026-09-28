@@ -832,9 +832,9 @@ describe('5. a copy do selo', () => {
     expect(legendaDaProcedencia(true, false, { situacao: 'ativa', fonte: 'sintetica' })).toBe(
       `${medida} · ${t('selo.poeiraSintetica')}`
     );
-    expect(legendaDaProcedencia(true, false, { situacao: 'desligada', fonte: null })).toBe(
-      `${medida} · ${t('selo.poeiraDesligada')}`
-    );
+    // sem o Gaia pedido, nenhuma frase: o selo de todo visitante fica o
+    // de hoje (decisão do dono, 28/09 — "só com o Gaia ligado")
+    expect(legendaDaProcedencia(true, false, { situacao: 'desligada', fonte: null })).toBe(medida);
     expect(legendaDaProcedencia(true, false, { situacao: 'indisponivel', fonte: null })).toBe(
       `${medida} · ${t('selo.poeiraAusente')}`
     );
