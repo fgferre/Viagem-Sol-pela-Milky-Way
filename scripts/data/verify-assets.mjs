@@ -17,16 +17,37 @@ const publicDirectory = path.join(rootDirectory, 'public');
 const manifestPath = path.join(publicDirectory, 'data', 'galaxy', 'manifest.json');
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
 
+// Teto físico do bloco: valor acima disso é voxel absurdo, não densidade
+// real. O máximo do mapa bruto de Edenhofer a 5 pc é 0,185 E/pc e o do
+// bloco de 20 pc (médias em voxels maiores) é 0,0162 E/pc; 1,0 deixa folga
+// para níveis mais finos e ainda reprova um voxel absurdo. Comparado ao
+// valor já convertido por `deFloat16` — que devolve E/pc, não E/pc×1000:
+// a escala do disco (`asset.scale`) só existe para a precisão do float16.
+const LIMITE_E_POR_PC = 1.0;
+
 // Ativos `kind: 'volume'` com fixture de referência científica OBRIGATÓRIA
 // (mesmo espírito de INDICES_DO_RUNTIME, mais abaixo): para eles, fixture
 // ausente, grade incompatível ou conteúdo inválido da fixture é ERRO — nunca
 // um "sem referência" que passa verde (trocar originPc/voxelPc no manifesto
 // não pode dispensar a comparação científica em silêncio). Ativo
-// `kind: 'volume'` que não aparece aqui ainda não tem validação científica
-// registrada: avisa e segue (revisão independente v2, item 3, 27/09/2026).
+// `kind: 'volume'` que não aparece aqui TAMBÉM é ERRO: todo volume de
+// poeira precisa de referência científica registrada, ou um nível
+// espelhado passaria em silêncio (revisão de 28/09/2026 — antes só
+// avisava e seguia).
 const REFERENCIAS_OBRIGATORIAS = {
   dustVolumeNear20pc: 'edenhofer-referencia.json',
 };
+
+// O bloco de 20 pc não pode sumir do manifesto em silêncio: sem esta
+// checagem, um `manifesto.assets` sem `dustVolumeNear20pc` simplesmente
+// não entraria no laço `kind === 'volume'` logo abaixo, e o gate passaria
+// verde sem o ativo que o app usa para a poeira perto de casa.
+if (manifest.assets.dustVolumeNear20pc?.kind !== 'volume') {
+  throw new Error(
+    'manifesto sem "dustVolumeNear20pc" (kind: "volume") — o bloco de ' +
+      'poeira de 20 pc desapareceria do app em silêncio.'
+  );
+}
 const spiralModel = JSON.parse(
   await readFile(
     path.join(
@@ -85,13 +106,22 @@ for (const [assetName, asset] of Object.entries(manifest.assets)) {
       if (!Number.isFinite(valores[i]) || valores[i] < 0) {
         throw new Error(`${assetName}: valor float16 inválido (${valores[i]}) no índice ${i}.`);
       }
+      if (valores[i] > LIMITE_E_POR_PC) {
+        throw new Error(
+          `${assetName}: valor float16 acima do teto físico (${valores[i]} E/pc > ` +
+            `${LIMITE_E_POR_PC} E/pc) no índice ${i}.`
+        );
+      }
     }
     const nomeFixtureObrigatoria = REFERENCIAS_OBRIGATORIAS[assetName];
     if (!nomeFixtureObrigatoria) {
-      // Sem entrada na tabela: ainda não há referência científica para
-      // cobrar deste ativo. Não reprova, mas também não passa em silêncio.
-      console.log(`AVISO: ${assetName}: validação científica pendente (sem referência registrada).`);
-      continue;
+      // Sem entrada na tabela: todo volume de poeira precisa de referência
+      // científica registrada — um nível espelhado (ex.: 10 pc) passaria
+      // verde em silêncio se isto só avisasse.
+      throw new Error(
+        `${assetName}: todo ativo de volume de poeira precisa de referência científica ` +
+          'registrada em REFERENCIAS_OBRIGATORIAS.'
+      );
     }
     const fixturePathDoAtivo = path.join(rootDirectory, 'scripts', 'data', 'fixtures', nomeFixtureObrigatoria);
     if (!existsSync(fixturePathDoAtivo)) {

@@ -1,3 +1,4 @@
+// Serve: chão — o portão dos dados reprova ativo corrompido, sem referência, fora do teto ou fora do manifesto
 // ============================================================
 // O GATE DOS DADOS, JULGADO COMO GATE (item 130, lista do §19).
 //
@@ -196,9 +197,19 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     return celulas;
   }
 
-  /** Escreve o ativo `kind: 'volume'` de teste (10×10×10) no manifesto do espelho, sob `nomeAtivo` — remove qualquer outro volume que o manifesto real copiado trouxesse. */
-  function escreverAtivoDeTeste(nomeAtivo) {
-    const flutuante = paraFloat16(VALORES, ESCALA);
+  /**
+   * Escreve o ativo `kind: 'volume'` de teste (10×10×10) no manifesto do
+   * espelho, sob `nomeAtivo` — remove qualquer outro volume que o
+   * manifesto real copiado trouxesse. `valoresPersonalizados` troca a
+   * densidade uniforme padrão (item do teto físico). Nome diferente de
+   * `dustVolumeNear20pc` também recebe uma CÓPIA sob essa chave: desde a
+   * revisão de 28/09/2026 o manifesto exige essa entrada, e isto isola o
+   * que cada teste realmente cobre (a cópia some da iteração antes de
+   * qualquer teste chegar nela, porque `nomeAtivo` é escrito primeiro).
+   */
+  function escreverAtivoDeTeste(nomeAtivo, valoresPersonalizados) {
+    const valores = valoresPersonalizados ?? VALORES;
+    const flutuante = paraFloat16(valores, ESCALA);
     const buffer = Buffer.from(flutuante.buffer, flutuante.byteOffset, flutuante.byteLength);
     const gz = gzipSync(buffer, { level: 9 });
     const manifesto = JSON.parse(readFileSync(join(RAIZ, 'public/data/galaxy/manifest.json'), 'utf8'));
@@ -208,11 +219,11 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     for (const [nome, asset] of Object.entries(manifesto.assets)) {
       if (asset.kind === 'volume') delete manifesto.assets[nome];
     }
-    manifesto.assets[nomeAtivo] = {
+    const definicaoAtivo = {
       kind: 'volume',
       file: 'data/galaxy/dust-teste.bin',
       dims: DIMS,
-      count: VALORES.length,
+      count: valores.length,
       voxelPc: 10,
       originPc: [0, 0, 0],
       unit: 'E_ZGR23 per pc',
@@ -221,6 +232,10 @@ describe('verify-assets — o volume de poeira (float16)', () => {
       byteLength: buffer.byteLength,
       sha256: sha256(buffer),
     };
+    manifesto.assets[nomeAtivo] = definicaoAtivo;
+    if (nomeAtivo !== 'dustVolumeNear20pc') {
+      manifesto.assets.dustVolumeNear20pc = definicaoAtivo;
+    }
     writeFileSync(join(espelhoVolume, 'public/data/galaxy/dust-teste.bin'), buffer);
     writeFileSync(join(espelhoVolume, 'public/data/galaxy/dust-teste.bin.gz'), gz);
     writeFileSync(join(espelhoVolume, 'public/data/galaxy/manifest.json'), JSON.stringify(manifesto));
@@ -307,10 +322,12 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     expect(r.saida).toContain('FORA DA FAIXA');
   }, 60_000);
 
-  // (a)/(b)/(c) da revisão independente v2 (item 3, 27/09/2026):
-  // REFERENCIAS_OBRIGATORIAS só lista `dustVolumeNear20pc` — para ele,
-  // fixture ausente ou grade incompatível é ERRO; ativo fora da tabela
-  // (desconhecido) nunca reprova por causa da fixture, só avisa.
+  // (a)/(b) da revisão independente v2 (item 3, 27/09/2026);
+  // (c)/(d)/(e) da revisão de 28/09/2026: REFERENCIAS_OBRIGATORIAS só
+  // lista `dustVolumeNear20pc` — para ele, fixture ausente ou grade
+  // incompatível é ERRO; ativo fora da tabela (desconhecido) TAMBÉM é
+  // ERRO agora (antes só avisava); valor acima do teto físico é ERRO; e
+  // o manifesto sem a entrada `dustVolumeNear20pc` é ERRO.
   it('(a) ativo conhecido (dustVolumeNear20pc) sem fixture → falha', () => {
     const r = rodarSemFixture('dustVolumeNear20pc');
     expect(r.ok).toBe(false);
@@ -331,9 +348,28 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     expect(r.saida).toContain('não se aplica');
   }, 60_000);
 
-  it('(c) ativo desconhecido sem fixture → não falha, só avisa que a validação está pendente', () => {
+  it('(c) ativo desconhecido (fora de REFERENCIAS_OBRIGATORIAS) → ERRO, nunca só um aviso', () => {
     const r = rodarSemFixture('dustVolumeTeste');
-    expect(r.ok, r.saida.slice(-800)).toBe(true);
-    expect(r.saida).toContain('AVISO: dustVolumeTeste: validação científica pendente');
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('dustVolumeTeste');
+    expect(r.saida).toContain('referência científica');
+  }, 60_000);
+
+  it('(d) valor float16 acima do teto físico (LIMITE_E_POR_PC) → falha', () => {
+    const valoresComPico = [...VALORES];
+    valoresComPico[0] = 1.5; // acima do teto físico (1,0 E/pc)
+    escreverAtivoDeTeste('dustVolumeNear20pc', valoresComPico);
+    const r = rodar();
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('acima do teto físico');
+  }, 60_000);
+
+  it('(e) manifesto sem a entrada "dustVolumeNear20pc" → falha antes de olhar qualquer ativo', () => {
+    const manifesto = JSON.parse(readFileSync(join(RAIZ, 'public/data/galaxy/manifest.json'), 'utf8'));
+    delete manifesto.assets.dustVolumeNear20pc;
+    writeFileSync(join(espelhoVolume, 'public/data/galaxy/manifest.json'), JSON.stringify(manifesto));
+    const r = rodar();
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('manifesto sem "dustVolumeNear20pc"');
   }, 60_000);
 });

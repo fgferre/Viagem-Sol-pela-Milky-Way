@@ -301,10 +301,29 @@ describe('2. nenhum controle desmente o selo', () => {
     expect(estadoDoSelo(com({ poeira: null })).brilho).toBe('real');
   });
 
-  it('?poeira=teste é bancada, fora do menu (não vira estado), e AINDA ASSIM é desvio — a presença crua da porta continua contando', () => {
+  it('?poeira=teste é bancada, fora do menu, e chega como o estado `teste` — desvio com NOME PRÓPRIO nas duas línguas', () => {
+    const linha = () =>
+      estadoDoSelo(com({ poeira: 'teste', portas: ['poeira'] })).desvios.find(
+        (d) => d.chave === 'poeira'
+      );
+    definirIdioma('pt-BR');
+    expect(linha(), 'a bancada não moveu o selo').toBeDefined();
+    // o defeito que isto pega: a variante VAZIA ("…escolhida à mão: ")
+    expect(linha()!.rotulo).toBe(
+      t('selo.desvio.poeiraCom', { variante: t('selo.desvio.poeiraTeste') })
+    );
+    expect(linha()!.rotulo).toContain('teste (volume sintético)');
+    definirIdioma('en');
+    expect(linha()!.rotulo).toContain('test (synthetic volume)');
+    definirIdioma('pt-BR');
+  });
+
+  it('um `?poeira=` que o app ignora (`xyz`) não acusa desvio — a presença crua da porta não conta, o estado vivo manda', () => {
+    // é o que o Director publica para `?poeira=xyz`: nem variante do
+    // menu (`lerPortaPoeira` → null) nem a bancada
     const v = estadoDoSelo(com({ poeira: null, portas: ['poeira'] }));
-    expect(v.brilho).toBe('assistido');
-    expect(v.desvios.map((d) => d.chave)).toContain('poeira');
+    expect(v.brilho).toBe('real');
+    expect(v.desvios).toEqual([]);
   });
 });
 
@@ -839,6 +858,10 @@ describe('5. a copy do selo', () => {
     const ptSintetica = t('selo.poeiraSintetica');
     const ptInativa = t('selo.poeiraInativa');
     const ptCarregando = t('selo.poeiraCarregando');
+    // a variante que não lê o bloco é dita pelo NOME DO MENU ("Original"),
+    // nunca pela chave interna `antigo` — nas duas línguas
+    expect(ptInativa).toContain(t('ajustes.gas.antigo'));
+    expect(ptInativa).not.toContain('antigo');
     definirIdioma('en');
     expect(legendaDaProcedencia(true, false, { situacao: 'ativa', fonte: 'gaia' })).toBe(
       `${legendaDaProcedencia(true)} · ${t('selo.poeiraMedida')}`
@@ -848,7 +871,8 @@ describe('5. a copy do selo', () => {
     expect(t('selo.poeiraSintetica')).not.toBe(ptSintetica);
     expect(t('selo.poeiraSintetica')).toContain('poeira=teste');
     expect(t('selo.poeiraInativa')).not.toBe(ptInativa);
-    expect(t('selo.poeiraInativa')).toContain('antigo');
+    expect(t('selo.poeiraInativa')).toContain(t('ajustes.gas.antigo'));
+    expect(t('selo.poeiraInativa')).not.toContain('antigo');
     expect(t('selo.poeiraCarregando')).not.toBe(ptCarregando);
     definirIdioma('pt-BR');
   });

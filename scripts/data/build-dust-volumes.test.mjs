@@ -1,3 +1,4 @@
+// Serve: chão — o gerador do bloco de poeira confere contra a referência antes de gravar e falha de verdade
 // ============================================================
 // `executar` — o núcleo testável do builder (E1, revisão item 1): a
 // fixture é exigida ANTES de calcular o bloco; reprovação lança com os

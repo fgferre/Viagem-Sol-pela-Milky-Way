@@ -636,8 +636,11 @@ const manifestPath = path.join(outputDirectory, 'manifest.json');
 let manifestoAntigo = null;
 try {
   manifestoAntigo = JSON.parse(await readFile(manifestPath, 'utf8'));
-} catch {
-  // primeira rodada: ainda não existe manifesto para preservar volumes.
+} catch (error) {
+  // primeira rodada (arquivo ausente) é o único caso mudo: manifesto
+  // corrompido (JSON inválido) sobe — engolir em silêncio apagaria os
+  // volumes preservados sem avisar.
+  if (error.code !== 'ENOENT') throw error;
 }
 preservarVolumes(manifest, manifestoAntigo);
 

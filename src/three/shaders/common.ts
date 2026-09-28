@@ -366,6 +366,8 @@ uniform vec3 uVolTamanho;
 // (E3, antecipada): "fino" também lê o bloco de 20 pc AO VIVO por
 // amostra (uPoeiraModo == 2) — só "macio" assa o termo medido no volume
 // (uPoeiraModo == 1, ver nebulaBake); ver GLSL_POEIRA_MEDIDA.
+// gPoeiraC: a cobertura da última amostra do fino, relida por poeiraDifusa.
+float gPoeiraC = 0.0;
 float nebulaDensity(vec3 p, float t) {
   // Mesmo gate de antes, mesma exatidão bit a bit (ver nota do caminho
   // antigo abaixo): dentro de 25 pc com o portão fechado a densidade é
@@ -387,6 +389,7 @@ ${
   // mesma regra do bake macio (nebulaBake) — nunca soma aos dois.
   vec3 ph = poeiraHelio(p);
   float c = uPoeiraModo == 2 ? poeiraCobertura(ph) : 0.0;
+  gPoeiraC = c;
   // vácuo: mesma exatidão do caminho antigo — sem envelope, sem semente
   // por perto E sem cobertura medida, a amostra é zero.
   if (c <= 0.0 && s.b < 0.004 && s.r == 0.0) return 0.0;
@@ -399,6 +402,12 @@ ${
   // por amostra, aqui pago uma vez por passo do raymarch.
   int oct = 4;
 ${coresGLSL()}
+  // Zero é zero (a guarda que o main sempre teve e a E3 perdeu — revisão
+  // de 28/09): sem cobertura medida, daqui para baixo só há MULTIPLICAÇÃO
+  // (lanes, gasDensity, Bolha Local, cavidade), então a amostra que chega
+  // aqui em 0 sai em 0 — e o fbm de 2 oitavas das lanes é o preço de
+  // redescobrir isso. Com c > 0 o termo medido ainda SOMA logo abaixo.
+  if (c <= 0.0 && d == 0.0) return 0.0;
   // lanes (0,085) também AO VIVO — a segunda frequência fina. O medido
   // usa a MESMA lane por mix(uPoeiraLanes) — 0 por padrão, sem
   // modulação —, nunca soma outra: mesma regra do bake macio.
@@ -407,13 +416,28 @@ ${coresGLSL()}
   d *= L * ${glslNumber(WORLD.gasDensity)};
   if (c > 0.0) d += c * poeiraDensidadeApp(poeiraMedida(ph)) * ${glslNumber(WORLD.gasDensity)} * mix(1.0, L, uPoeiraLanes);
 `
-    : `  float d = s.r;
-  // núcleos do corredor: mesmo texto gerado que o caminho antigo usava
+    : `  // núcleos do corredor: mesmo texto gerado que o caminho antigo usava
   // por amostra, aqui pago uma vez por passo do raymarch (não por voxel
   // do bake) — sempre com oct = 4, a mesma octave que todo chamador daqui
-  // sempre passou.
+  // sempre passou. Com a poeira ligada (modo 1) o canal G não carrega mais
+  // a lane dentro da cobertura (vira a constante gasDensity — ÁLGEBRA DA
+  // MISTURA em nebulaBake), então os núcleos somam primeiro sozinhos e
+  // ganham a lane AO VIVO, a mesma conta do fino, só onde algum núcleo
+  // contribuiu; o campo assado entra depois. Os sete moram inteiros em
+  // c = 1 (138–348 pc de casa; a rampa da cobertura começa a 1100 pc), onde
+  // G não traz lane: ela entra uma vez só (um ?corewall= que os empurrasse
+  // para c ≤ 0 os veria com duas — porta de bancada). Modo 0: a sequência
+  // de sempre, operação por operação — d parte de s.r e os núcleos somam.
+  float d = uPoeiraModo == 1 ? 0.0 : s.r;
   int oct = 4;
 ${coresGLSL()}
+  if (uPoeiraModo == 1) {
+    if (d > 0.0) {
+      float lanes = fbm(p * 0.085 + 41.0, 2);
+      d *= mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes));
+    }
+    d += s.r;
+  }
   d *= s.g;
 `
 }
@@ -425,6 +449,33 @@ ${coresGLSL()}
   float cav = length(cav0);
   d *= mix(1.0, smoothstep(25.0, 240.0, cav), uCavityGate);
   return d;
+}
+
+// POEIRA MEDIDA DIFUSA (revisão de 28/09). O laço do raymarch só integra
+// d > 0,003, e o meio difuso medido mora quase todo abaixo disso (medido
+// no bloco de 20 pc: ganho 15 → 87% dos voxels e 23% da coluna de E;
+// 46,9 → 74% e 10%; 94 → 61% e 6%) — descartado, as três forças do menu
+// não eram o mesmo campo e a régua d_lin = 46,9·E não valia no difuso.
+// Devolve o peso com que uma amostra ABAIXO do limiar ainda entra no
+// laço, só como extinção: a cobertura c no ponto, só com a poeira ligada
+// no modo que ESTA variante lê. Desligada, ou fora da cobertura com ela
+// ligada, é 0 e o laço descarta a amostra como sempre (pixel idêntico).
+// Peso c, e não um corte em c > 0: a costura na rampa da cobertura fica
+// contínua; no interior (c = 1) a amostra entra com a densidade que já
+// tem. No fino o c é o que nebulaDensity acabou de calcular para a MESMA
+// amostra (gPoeiraC: o laço só pergunta com d > 0, e todo retorno com
+// d > 0 passa por ele); no macio o raymarch não o tinha e ele sai aqui.
+//
+// SEM EMISSÃO, de propósito. A única versão coerente é sombrear o difuso
+// com a conta inteira de cima — a aproximação barata de primeira ordem
+// perde a tinta da HII hero, que não some com d —, e ela roda paleta,
+// Sol, supergigantes e HII em 60–87% das amostras dentro da cobertura,
+// inclusive no macio feito para o celular (no Mac o fps não mexeu,
+// medido em 28/09; no celular ninguém mediu). O que ela acrescenta em
+// t = 60 (média) é um véu azulado de +0,5 nível de 8 bits em média (máx.
+// 4): gosto, não régua. A régua volta com a extinção.
+float poeiraDifusa(vec3 p) {
+  return ${fino ? 'gPoeiraC' : 'uPoeiraModo == 1 ? poeiraCobertura(poeiraHelio(p)) : 0.0'};
 }
 ${
   antigo
@@ -601,11 +652,16 @@ ${
   // desligado OU fora da cobertura) cai no ramo de hoje, texto idêntico:
   // R=P, G=L·gasDensity — e M (poeiraMedida, um fetch de textura) só é
   // amostrado dentro do ramo c > 0: custo zero com a poeira desligada.
-  // CONSEQUÊNCIA aceita: com a poeira ligada, G deixa de carregar a lane
-  // que os núcleos do corredor usavam no raymarch (somados antes da
-  // multiplicação por G — ver nebulaDensity) — diferença artística
-  // minúscula (≤ 3 pc, a largura da rampa de poeiraCobertura), em troca
-  // do campo medido exato sob o filtro.
+  // CONSEQUÊNCIA: com a poeira ligada, G deixa de carregar a lane que os
+  // núcleos do corredor usavam no raymarch — por isso lá (nebulaDensity,
+  // modo 1) eles ganham a lane AO VIVO, a conta do fino. A diferença que
+  // sobra é de nitidez: no macio de hoje a lane dos núcleos vem do bake,
+  // borrada a 15,6 pc; com o Gaia, viva como no fino.
+  // COSTURA DAS DUAS FORMAS (declarada, 28/09): R/G mudam de forma com c
+  // (c ≤ 0: P e L·gasDensity; c > 0: a de cima), e a um voxel (15,6 pc) de
+  // c = 0 o trilinear mistura as duas — com a lane escura, até 2,6× a
+  // densidade ((1+L)²/4L, L = 0,12). De propósito: a forma pelo modo perde a
+  // identidade byte a byte fora da cobertura, e a faixa é a costura declarada.
   vec3 ph = poeiraHelio(p);
   float c = uPoeiraModo == 1 ? poeiraCobertura(ph) : 0.0;
   float campoProc = 0.0;

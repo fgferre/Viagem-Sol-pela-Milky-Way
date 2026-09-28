@@ -51,6 +51,12 @@ export interface TermosDaProntidao {
    * frente do fetch assíncrono de `carregarVolumeDePoeira` — que, como a
    * efeméride (`fonteAssentada`), não perturba `quadrosEstaveis` por si
    * só — ou esperar para sempre por um fetch que já desistiu.
+   *
+   * TROCA DE FONTE EM VOO (`?poeira=teste` → Gaia, ao vivo): com a
+   * poeira pedida, uma carga do Director ainda 'carregando' segura o
+   * termo mesmo com a Nebula se dizendo assentada — o volume velho já
+   * saiu dela (pedido encerrado, nada carregado), e o novo não chegou.
+   * A espera acaba com o volume novo assado OU com o veredito de falha.
    */
   poeiraAssentada: boolean;
   quadrosEstaveis: number;

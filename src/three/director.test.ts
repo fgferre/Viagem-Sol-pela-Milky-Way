@@ -15,7 +15,12 @@
 // aqui se lê a fonte, como em `App.test.ts` e na fiação de `terra.test.ts`.
 // ============================================================
 import { readFileSync } from 'node:fs';
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
+import { poeiraParaMotor } from './atlasConfig';
+import type { VolumeDePoeira } from './cartography/galacticAssets';
+import { QUADROS_TENTANDO_FONTE, julgarProntidao } from './director/prontidao';
+import { Nebula } from './world/nebula';
 import {
   escreverLuzDaVisita,
   exposicaoDoQuadro,
@@ -782,6 +787,233 @@ describe('tentarCarregarPoeira: carga preguiçosa + troca de fonte ao vivo (item
     const ramo = CORPO.slice(iTeto, iSucesso);
     expect(ramo).toContain('this.nebula.setPoeiraMedida(null);');
     expect(ramo).toContain("this.poeiraCarga = 'falhou';");
+  });
+});
+
+// ============================================================
+// A TROCA DE FONTE EM VOO (`?poeira=teste` → "Gaia média"): enquanto o
+// Gaia baixa, o volume SINTÉTICO não pode seguir na tela nem contar como
+// pronto — e, passando por "de hoje" antes, não pode voltar a ser assado
+// sob o pedido do Gaia.
+//
+// A BANCADA RODA O CÓDIGO REAL: os corpos de `forcarPoeira`,
+// `aplicarPoeira`, `definirPoeira`, `tentarCarregarPoeira` e dos getters
+// `fonteDesejada` e `captura` são arrancados do `director.ts` e rodados
+// com um `this` de mentira em volta de uma `Nebula` DE VERDADE (a bancada
+// sem GPU de `world/nebula.test.ts`) — o precedente é o fio `zoom` de
+// `zoomDaRoda.test.ts`. De mentira só a rede (o download do Gaia fica em
+// voo até o teste o resolver) e os termos da captura alheios à poeira,
+// todos assentados.
+//
+// O QUE MORDE, conferido contra o código de antes: a Nebula seguia com a
+// textura sintética durante o download e `captura.pronto` subia com ela;
+// e pela rota "de hoje" o quadro seguinte assava o sintético com o modo
+// ligado, com a URL já dizendo Gaia.
+// ============================================================
+describe('a troca de fonte da poeira em voo: a captura espera o volume novo', () => {
+  /** o corpo de um membro do Director, da assinatura ao `  }` que o fecha */
+  const corpoDe = (assinatura: string) => {
+    const cabeca = `\n  ${assinatura} {\n`;
+    const i = FONTE.indexOf(cabeca);
+    expect(i, `\`${assinatura}\` sumiu do director.ts`).toBeGreaterThan(0);
+    return FONTE.slice(i + cabeca.length, FONTE.indexOf('\n  }\n', i));
+  };
+  // as duas únicas sintaxes do corpo de `tentarCarregarPoeira` que o
+  // `new Function` não lê: um genérico de TS e o `import.meta` do Vite
+  const GENERICO = 'Promise.resolve<VolumeDePoeira | null>(';
+  const BASE = 'import.meta.env.BASE_URL';
+  const esperar = () => new Promise((r) => setTimeout(r, 0));
+
+  /** um bloco de `lado`³ voxels — o sintético tem 2, o "Gaia" tem 3 */
+  const bloco = (lado: number): VolumeDePoeira => ({
+    descritor: {
+      kind: 'volume',
+      file: 'x.bin',
+      dims: [lado, lado, lado],
+      voxelPc: 20,
+      originPc: [-20, -20, -20],
+      scale: 1000,
+      type: 'float16',
+      byteLength: 2 * lado ** 3,
+      sha256: '',
+      innerRadiusPc: 0,
+      outerRadiusPc: 40,
+    },
+    dados: new Uint16Array(lado ** 3),
+  });
+
+  interface Bancada {
+    cartOn: boolean;
+    cartResolvido: boolean;
+    forcarPoeira(variante: string | null): void;
+    aplicarPoeira(): void;
+    tentarCarregarPoeira(): void;
+    readonly captura: { pronto: boolean; poeira: boolean };
+  }
+
+  /** o boot de `?poeira=teste` (construtor + init) já assado na tela */
+  async function bootComTeste() {
+    const nebula = new Nebula(0.5);
+    const mats = nebula as unknown as {
+      material: THREE.ShaderMaterial;
+      volumeMaterial: THREE.ShaderMaterial;
+    };
+    const uniforme = (nome: string): unknown => mats.material.uniforms[nome].value;
+    // cada desenho anota o que o raymarch e o bake estavam lendo
+    const desenhos: { tex: unknown; modo: unknown }[] = [];
+    const renderer = {
+      getRenderTarget: () => null,
+      setRenderTarget: () => {},
+      render: () => {
+        for (const m of [mats.material, mats.volumeMaterial]) {
+          desenhos.push({ tex: m.uniforms.uPoeiraTex.value, modo: m.uniforms.uPoeiraModo.value });
+        }
+      },
+    } as unknown as THREE.WebGLRenderer;
+    const camera = new THREE.PerspectiveCamera(58, 16 / 9, 0.1, 100);
+    camera.position.set(10, 20, 30);
+    camera.updateMatrixWorld();
+    const quadro = () => nebula.render(renderer, camera);
+
+    let chegar: (v: VolumeDePoeira | null) => void = () => {};
+    const livres = {
+      THREE,
+      poeiraParaMotor,
+      julgarProntidao,
+      QUADROS_TENTANDO_FONTE,
+      BASE_URL: '/',
+      sondarGl: () => ({ max3DTextureSize: 2048 }),
+      carregarVolumeDePoeira: () =>
+        new Promise<VolumeDePoeira | null>((r) => {
+          chegar = r;
+        }),
+    };
+    const metodo = (params: string, corpo: string) =>
+      new Function(...Object.keys(livres), `return function (${params}) {\n${corpo}\n};`)(
+        ...Object.values(livres)
+      );
+    const tentar = corpoDe('private tentarCarregarPoeira()');
+    expect(tentar).toContain(GENERICO);
+    expect(tentar).toContain(BASE);
+
+    const alvo: Record<string, unknown> = {
+      nebula,
+      debug: new URLSearchParams('poeira=teste'),
+      engine: { quality: 'cinema', preset: { poeira: 'hoje' } },
+      poeiraForcada: null,
+      poeiraTeste: true,
+      poeiraModoPedido: 0,
+      cartOn: false,
+      cartResolvido: false,
+      cartMode: 'blend',
+      dustVolumeManifesto: bloco(3).descritor,
+      abortController: new AbortController(),
+      disposed: false,
+      poeiraPedidoId: 0,
+      poeiraFonteTentada: null,
+      poeiraCarga: 'pendente',
+      poeiraFonte: null,
+      volumeSinteticoDePoeira: () => bloco(2),
+      publicarPoeira: () => {},
+      perturbar: () => {},
+      publicarQualidade: () => {},
+      // os termos da captura alheios à poeira, todos assentados
+      phase: 'atlas',
+      freezeJourney: true,
+      roam: { animando: false },
+      veuDoAtlas: { emCurso: false },
+      maquinaDoTempo: { aoVivo: false, sentidoDoTempo: 0, faseDaEfemeride: 'pronta' },
+      noPalco: [],
+      atlas: { animando: false },
+      trocaPedida: null,
+      orbitas: null,
+      palco: { ligado: false },
+      quadrosTentandoFonte: 0,
+      sun: { assentado: true },
+      quadrosEstaveis: 99,
+      tierDoMundo: 'cinema',
+      noNebula: false,
+      forcarPoeira: metodo('variante', corpoDe('forcarPoeira(variante: TipoDePoeira | null)')),
+      aplicarPoeira: metodo('', corpoDe('private aplicarPoeira()')),
+      definirPoeira: metodo(
+        'config',
+        corpoDe('definirPoeira(config: { modo: number; ganho: number; gama: number; lanes: number })')
+      ),
+      tentarCarregarPoeira: metodo('', tentar.replace(GENERICO, 'Promise.resolve(').replace(BASE, 'BASE_URL')),
+    };
+    Object.defineProperty(alvo, 'fonteDesejada', {
+      get: metodo('', corpoDe("private get fonteDesejada(): 'gaia' | 'sintetica'")),
+    });
+    Object.defineProperty(alvo, 'captura', { get: metodo('', corpoDe('get captura()')) });
+    const d = alvo as unknown as Bancada;
+
+    // o construtor guarda o pedido (sem cartografia resolvida, nada
+    // dispara); o `init` a resolve e tenta — o sintético chega na hora
+    d.aplicarPoeira();
+    d.cartOn = true;
+    d.cartResolvido = true;
+    d.tentarCarregarPoeira();
+    await esperar();
+    quadro();
+    return { d, uniforme, desenhos, quadro, chegar: (v: VolumeDePoeira | null) => chegar(v) };
+  }
+
+  it('a bancada de partida é honesta: `?poeira=teste` assa o sintético e a captura solta', async () => {
+    const b = await bootComTeste();
+    expect((b.uniforme('uPoeiraTex') as THREE.Data3DTexture).image.width).toBe(2);
+    expect(b.uniforme('uPoeiraModo')).toBe(1);
+    expect(b.d.captura.pronto).toBe(true);
+  });
+
+  it('direto para "Gaia média": o sintético sai da tela NA HORA e a captura espera o Gaia chegar', async () => {
+    const b = await bootComTeste();
+    const sintetica = b.uniforme('uPoeiraTex');
+
+    b.d.forcarPoeira('media');
+    expect(b.uniforme('uPoeiraTex'), 'o volume sintético seguiu na tela').not.toBe(sintetica);
+    expect(b.uniforme('uPoeiraModo')).toBe(0);
+    for (let i = 0; i < 3; i++) b.quadro();
+    expect(b.d.captura.poeira, 'a captura soltou com o download em voo').toBe(false);
+    expect(b.d.captura.pronto).toBe(false);
+
+    b.chegar(bloco(3));
+    await esperar();
+    b.quadro();
+    expect((b.uniforme('uPoeiraTex') as THREE.Data3DTexture).image.width).toBe(3);
+    expect(b.uniforme('uPoeiraModo')).toBe(1);
+    expect(b.d.captura.pronto).toBe(true);
+  });
+
+  it('pela rota "de hoje": nenhum quadro assa o sintético sob o pedido do Gaia — e a falha do download também solta a captura', async () => {
+    const b = await bootComTeste();
+    const sintetica = b.uniforme('uPoeiraTex');
+    b.d.forcarPoeira('hoje');
+    b.quadro();
+
+    b.desenhos.length = 0;
+    b.d.forcarPoeira('media');
+    b.quadro();
+    expect(b.desenhos.length, 'o quadro não desenhou nada — a prova seria vazia').toBeGreaterThan(0);
+    expect(b.desenhos.filter((x) => x.tex === sintetica && x.modo !== 0)).toEqual([]);
+    expect(b.d.captura.pronto).toBe(false);
+
+    // o veredito de falha é definitivo (sem retentativa): nada a esperar
+    b.chegar(null);
+    await esperar();
+    b.quadro();
+    expect(b.uniforme('uPoeiraModo')).toBe(0);
+    expect(b.d.captura.pronto).toBe(true);
+  });
+
+  it('o selo recebe a bancada pelo estado VIVO: `teste` enquanto ela vale, a variante do menu depois que `forcarPoeira` a desarma', () => {
+    const linha = corpoDe('get selo(): EstadoDaVista').match(/\n\s*poeira: (.+),\n/);
+    expect(linha, 'o selo não recebe mais a poeira').not.toBeNull();
+    const poeiraNoSelo = (estado: { poeiraTeste: boolean; poeiraForcada: string | null }) =>
+      new Function(`return ${linha![1]};`).call(estado);
+    expect(poeiraNoSelo({ poeiraTeste: true, poeiraForcada: null })).toBe('teste');
+    expect(poeiraNoSelo({ poeiraTeste: false, poeiraForcada: 'media' })).toBe('media');
+    // `?poeira=xyz`: nem bancada nem variante — nada a declarar
+    expect(poeiraNoSelo({ poeiraTeste: false, poeiraForcada: null })).toBeNull();
   });
 });
 

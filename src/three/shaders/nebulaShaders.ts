@@ -683,6 +683,17 @@ ${
       float alpha = 1.0 - exp(-d * dt * 0.055);
       acc += T * sampleColor * alpha;
       T *= 1.0 - alpha;
+    }${
+      antigo
+        ? ''
+        : ` else if (d > 0.0) {
+      // POEIRA MEDIDA DIFUSA (poeiraDifusa, common.ts): abaixo do limiar a
+      // amostra medida deposita a EXTINÇÃO pela mesma lei de Beer–Lambert
+      // de cima, exp(−d·dt·0,055), pesada pela cobertura. Sem emissão: ver
+      // a decisão em poeiraDifusa.
+      float dDifusa = d * poeiraDifusa(p);
+      if (dDifusa > 0.0) T *= exp(-dDifusa * dt * 0.055);
+    }`
     }
   }
 

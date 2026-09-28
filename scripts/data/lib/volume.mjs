@@ -172,9 +172,12 @@ function relativoComTolerancia(desvio, tolerancia) {
  * para o mesmo voxel nos dois lados, e a comparação não faz sentido:
  * devolve `{ aplicavel: false, motivo }` sem olhar voxeis nem colunas.
  *
- * Voxel (`fixture.voxeis`): residual normalizado pela tolerância da
- * Decisão 1/E1 do PLAN.md — `|atual−esperado| ≤ 0,15·esperado + 3e-5`,
- * com `esperado = 0` quando `nanFracao === 1`. O interior de 68,8 pc não
+ * Voxel (`fixture.voxeis`): residual normalizado pela tolerância —
+ * `|atual−esperado| ≤ 0,05·esperado + 2e-6` (revisão de 28/09/2026: o
+ * piso antigo de 3e-5, um terço da densidade média, dominava 27 dos 40
+ * voxels da fixture real — a concordância medida é ≤ 0,6% e a
+ * convergência 8³→16³ do gerador é ≤ 1,7%) —, com `esperado = 0` quando
+ * `nanFracao === 1`. O interior de 68,8 pc não
  * reconstruído é zero por ESCOLHA do app (`coletar`, build-dust-volumes.
  * mjs), com transição de resolução de ~1 voxel na fronteira — a média
  * das subamostras atravessa a superfície —, não porque o dado meça
@@ -261,7 +264,7 @@ export function compararComReferencia(volume, fixture) {
     const [i, j, k] = v.indice;
     const esperado = v.nanFracao === 1 ? 0 : v.media;
     const atual = volume.valores[indiceDe(volume.grade, i, j, k)];
-    const tolerancia = 0.15 * Math.abs(esperado) + 3e-5;
+    const tolerancia = 0.05 * Math.abs(esperado) + 2e-6;
     const relativo = Math.abs(atual - esperado) / tolerancia;
     if (relativo > voxelRelativo) {
       voxelRelativo = relativo;

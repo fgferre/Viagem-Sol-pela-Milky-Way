@@ -198,6 +198,18 @@ function validarImagemFloat32(hdu, nomeFuncao) {
     throw new Error(`${nomeFuncao}: BITPIX -64 (float64) não implementado; o mapa usado é -32.`);
   }
   if (hdu.naxis !== 2) throw new Error(`${nomeFuncao}: espera NAXIS=2; HDU ${hdu.numero} tem NAXIS=${hdu.naxis}.`);
+  // BSCALE/BZERO reescalariam o valor bruto (físico = bruto×BSCALE+BZERO);
+  // este leitor devolve sempre o bruto. Sem cartão, ou com a identidade
+  // explícita (1/0), o bruto já É o físico — só reprova o que mudaria o
+  // valor em silêncio. O FITS real (Edenhofer) não traz esses cartões.
+  const bscale = hdu.cabecalho.BSCALE;
+  const bzero = hdu.cabecalho.BZERO;
+  if ((bscale !== undefined && bscale !== 1) || (bzero !== undefined && bzero !== 0)) {
+    throw new Error(
+      `${nomeFuncao}: HDU ${hdu.numero} tem BSCALE=${bscale ?? 1}/BZERO=${bzero ?? 0} — ` +
+        'escala/offset de imagem não suportados (o leitor devolve o valor bruto).'
+    );
+  }
 }
 
 function conferirFinito(array, contexto) {
@@ -264,6 +276,18 @@ function encontrarColuna(hdu, nomeOuIndice) {
 export function lerColunaTabela(hdu, nomeOuIndice, { exigirFinito = false } = {}) {
   if (hdu.tipo !== 'BINTABLE') throw new Error(`lerColunaTabela: HDU ${hdu.numero} não é BINTABLE (é ${hdu.tipo}).`);
   const coluna = encontrarColuna(hdu, nomeOuIndice);
+  // TSCALn/TZEROn (mesma ideia do BSCALE/BZERO de imagem, por coluna):
+  // sem cartão, ou com a identidade explícita (1/0), o bruto já é o
+  // físico. O FITS real (Edenhofer) não traz esses cartões.
+  const tscal = hdu.cabecalho[`TSCAL${coluna.indice}`];
+  const tzero = hdu.cabecalho[`TZERO${coluna.indice}`];
+  if ((tscal !== undefined && tscal !== 1) || (tzero !== undefined && tzero !== 0)) {
+    throw new Error(
+      `lerColunaTabela: coluna ${coluna.indice} (${coluna.nome ?? '?'}) do HDU ${hdu.numero} tem ` +
+        `TSCAL${coluna.indice}=${tscal ?? 1}/TZERO${coluna.indice}=${tzero ?? 0} — escala/offset de ` +
+        'coluna não suportados (o leitor devolve o valor bruto).'
+    );
+  }
   const bytesLinha = hdu.naxisn[0] ?? 0;
   const linhas = hdu.naxisn[1] ?? 0;
   const tamanhoTabela = bytesLinha * linhas;

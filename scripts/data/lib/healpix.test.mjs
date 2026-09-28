@@ -1,3 +1,4 @@
+// Serve: lei — a direção do céu cai no mesmo pixel HEALPix que o healpy oficial dá
 // ============================================================
 // HEALPix NEST (E1, item 3 do PLAN.md). O oráculo é a fixture gerada
 // pelo healpy oficial (fixtures/healpix-nside256.json, script em

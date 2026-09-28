@@ -1294,6 +1294,18 @@ export class Director {
     }
     const desejada = this.fonteDesejada;
     if (this.poeiraFonteTentada === desejada) return;
+    // TROCA DE FONTE: o volume da fonte velha sai da Nebula NA HORA, no
+    // mesmo gesto que pediu a nova — antes de qualquer quadro. Sem isto o
+    // sintético seguia desenhado (e assentado) durante o download do
+    // Gaia, e pela rota "de hoje" → Gaia o `setPoeira` que precede este
+    // disparo (em `definirPoeira`) o religava e o próximo bake o assava
+    // sob o pedido novo.
+    // Quem segura a captura até o volume novo chegar é `get captura`
+    // (a Nebula, sem volume e com o pedido encerrado, diria "assentada").
+    if (this.poeiraFonteTentada !== null) {
+      this.nebula.setPoeiraMedida(null);
+      this.poeiraFonte = null;
+    }
     this.poeiraFonteTentada = desejada;
     const meuPedido = ++this.poeiraPedidoId;
     this.poeiraCarga = 'carregando';
@@ -1859,9 +1871,14 @@ export class Director {
     // um `loadGalacticAssets` que falhou. Fora disso, quem decide é a
     // própria Nebula (variante, modo pedido, bloco carregado e assado).
     // `noNebula` (?nonebula=1 ou aba escondida): o gás nem é desenhado,
-    // então um bake pendente da poeira não é motivo para esperar
+    // então um bake pendente da poeira não é motivo para esperar.
+    // CARGA EM VOO com a poeira pedida (a troca de fonte, ver
+    // `tentarCarregarPoeira`): a Nebula já soltou o volume velho e, com o
+    // pedido encerrado, se diria assentada — quem sabe que um volume novo
+    // vem aí é esta instância, e a captura espera ele ou o veredito de falha.
+    const poeiraEmVoo = this.poeiraModoPedido !== 0 && this.poeiraCarga === 'carregando';
     const poeiraAssentada =
-      this.cartMode === 'off' || this.noNebula || this.nebula.poeiraAssentada;
+      this.cartMode === 'off' || this.noNebula || (this.nebula.poeiraAssentada && !poeiraEmVoo);
     return julgarProntidao({
       fase: this.phase,
       andando,
@@ -3000,7 +3017,9 @@ export class Director {
       escala: this.engine.escala,
       gas: this.gasForcado,
       particulas: this.particulasForcadas,
-      poeira: this.poeiraForcada,
+      // a bancada `?poeira=teste` vence a variante enquanto vale (ver
+      // `aplicarPoeira`), e o selo a nomeia — `forcarPoeira` a desarma
+      poeira: this.poeiraTeste ? 'teste' : this.poeiraForcada,
       luz: this.politicaDeLuz,
       stopsDoGloboEmFoco: this.stopsDoGloboEmFoco(),
       // a DOSE de ocupação do Sol (item 5): < 1 só no arranque do filme,

@@ -63,7 +63,14 @@ export const TETO_DA_RODADA_MIN = 15;
 // versão bootava de novo e visitava cinco corpos (5,4 min medidos); a que
 // ficou continua de onde o protocolo já parou e visita dois — 4,4 min
 // medidos na mesma máquina. O teto sobe os mesmos 2,3 — de 32,3 para 34,6.
-export const TETO_TOTAL_MIN = 34.6;
+// Re-pinado PARA CIMA na rodada da poeira do Gaia (28/09), o quarto desta
+// série: o `poeira-shaders.mjs` é o juiz do plano aprovado (E2–E4) — a
+// poeira medida compila e desenha nos dois gases, pinta só onde há
+// densidade, e as trocas ao vivo do menu não derrubam a cena —, 2,3 min
+// medidos. E a varredura achou o `main` já declarando 35,2 contra 34,6:
+// 0,6 herdados das rodadas de UI de setembro, sem re-pino na época. O
+// teto sobe os dois — de 34,6 para 37,5.
+export const TETO_TOTAL_MIN = 37.5;
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

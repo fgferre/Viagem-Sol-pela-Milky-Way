@@ -451,7 +451,7 @@ export const EN: Record<keyof typeof PT, string> = {
     'dust near home: SYNTHETIC test volume (?poeira=teste), not Gaia',
   'selo.poeiraDesligada': 'dust near home: procedural (measured block off)',
   'selo.poeiraAusente': 'dust near home: procedural (the block did not arrive)',
-  'selo.poeiraInativa': 'dust near home: procedural (the \'antigo\' gas does not read the block)',
+  'selo.poeiraInativa': 'dust near home: procedural (the \'Original\' gas does not read the block)',
   'selo.poeiraCarregando': 'dust near home: loading the measured block',
   'selo.luzAssistida':
     'every world you visit is exposed for the light IT receives — a photograph taken there, not with the settings of Earth. The true order of brightness stays in the sky, at the point of each body.',
@@ -477,6 +477,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.particulasCom': 'galaxy particles set by hand: {nivel}',
   'selo.desvio.poeira': 'dust near home set by hand',
   'selo.desvio.poeiraCom': 'dust near home set by hand: {variante}',
+  'selo.desvio.poeiraTeste': 'test (synthetic volume)',
 
   // ---- the scale accusation ----------------------------------------
   'escala.acusacao': '{nome} is {fator} larger',

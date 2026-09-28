@@ -1,3 +1,4 @@
+// Serve: lei — o bloco de poeira guarda a densidade medida no referencial e na unidade do contrato
 // ============================================================
 // Contrato do bloco de poeira (E1, item 1 do PLAN.md). Sem FITS de 3 GB
 // aqui: só a grade, a codificação float16 e a amostragem/integração/
@@ -261,6 +262,38 @@ describe('compararComReferencia — coluna: referência de mesmo operador reprov
     // a faixa do tubo continua só reportando: 0,7 está DENTRO de [0,6; 0,8].
     expect(resultado.coluna.piorFaixa.esperadoFaixa).toEqual([0.6, 0.8]);
     expect(resultado.coluna.piorFaixa.razaoMedia).toBeCloseTo(1, 9);
+  });
+});
+
+describe('compararComReferencia — tolerância do voxel mais apertada (revisão de 28/09/2026)', () => {
+  // grade/fixture minúsculas (1 voxel), só para isolar a fórmula da
+  // tolerância: `0.05·|esperado| + 2e-6` (antes, `0.15·|esperado| + 3e-5`).
+  const grade = { nx: 1, ny: 1, nz: 1, voxelPc: 10, origemPc: [0, 0, 0] };
+  const gradeFixture = { dims: [1, 1, 1], voxelPc: 10, origemPc: [0, 0, 0] };
+  const colunaValida = {
+    nome: 'x',
+    l: 0,
+    b: 0,
+    rMin: 5,
+    rMax: 15,
+    celulas: [{ indice: [0, 0, 0], media: 0.0011 }],
+    tubo: { media: 0.011, min: 0.001, max: 0.02 },
+  };
+
+  it('reprova um desvio que a tolerância antiga deixaria passar', () => {
+    // esperado 0,001, atual 0,0011: desvio 0,0001. Tolerância antiga
+    // 0,15·0,001+3e-5=1,8e-4 (relativo ≈0,56, aprovaria); tolerância nova
+    // 0,05·0,001+2e-6=5,2e-5 (relativo ≈1,92, reprova).
+    const volume = { grade, valores: new Float64Array([0.0011]) };
+    const fixture = {
+      cabecalho: { grade: gradeFixture },
+      voxeis: [{ indice: [0, 0, 0], media: 0.001, nanFracao: 0 }],
+      colunas: [colunaValida],
+    };
+    const resultado = compararComReferencia(volume, fixture);
+    expect(resultado.aplicavel).toBe(true);
+    expect(resultado.voxel.maximoRelativo).toBeGreaterThan(1);
+    expect(resultado.voxel.aprovado).toBe(false);
   });
 });
 

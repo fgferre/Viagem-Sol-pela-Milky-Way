@@ -1,3 +1,4 @@
+// Serve: chão — o leitor FITS lê byte a byte o que entende e recusa o resto com erro claro
 // ============================================================
 // Leitor FITS mínimo (E1, item 3 do PLAN.md). Monta um FITS SINTÉTICO
 // num diretório temporário (primário vazio + IMAGE 4×3 float32 BE com
@@ -169,6 +170,39 @@ describe('exigirFinito — validação de valor, só quando pedido', () => {
     expect(() => lerLinhaImagem(comNaN[1], 0, { exigirFinito: true })).toThrow(/não finito/);
     expect(() => lerImagemInteira(comNaN[1], { exigirFinito: true })).toThrow(/não finito/);
     comNaN.fechar();
+  });
+});
+
+describe('BSCALE/BZERO e TSCALn/TZEROn — ignorados em silêncio antes, erro claro agora', () => {
+  // O FITS real (Edenhofer) não traz esses cartões; isto cobre o mapa
+  // hipotético que trouxesse — sem o erro, o leitor devolveria o valor
+  // bruto calado, sem aplicar a escala/offset declarados.
+  it('rejeita imagem com BSCALE≠1 (mesmo com BZERO na identidade)', () => {
+    const primario = montarCabecalho([['SIMPLE', true], ['BITPIX', 8], ['NAXIS', 0]]);
+    const cabecalhoImagem = montarCabecalho([
+      ['XTENSION', 'IMAGE'], ['BITPIX', -32], ['NAXIS', 2],
+      ['NAXIS1', 4], ['NAXIS2', 3], ['PCOUNT', 0], ['GCOUNT', 1],
+      ['BSCALE', 2], ['BZERO', 0],
+    ]);
+    const caminho = join(dir, 'bscale.fits');
+    writeFileSync(caminho, Buffer.concat([primario, cabecalhoImagem, bufferFloatsBE(VALORES_IMAGEM)]));
+    const comEscala = abrirFits(caminho);
+    expect(() => lerLinhaImagem(comEscala[1], 0)).toThrow(/BSCALE/);
+    comEscala.fechar();
+  });
+
+  it('rejeita coluna de tabela com TZEROn≠0', () => {
+    const primario = montarCabecalho([['SIMPLE', true], ['BITPIX', 8], ['NAXIS', 0]]);
+    const cabecalhoTabela = montarCabecalho([
+      ['XTENSION', 'BINTABLE'], ['BITPIX', 8], ['NAXIS', 2],
+      ['NAXIS1', 4], ['NAXIS2', 3], ['PCOUNT', 0], ['GCOUNT', 1],
+      ['TFIELDS', 1], ['TTYPE1', 'x'], ['TFORM1', 'E'], ['TZERO1', 100],
+    ]);
+    const caminho = join(dir, 'tzero.fits');
+    writeFileSync(caminho, Buffer.concat([primario, cabecalhoTabela, bufferFloatsBE(RAIOS)]));
+    const comOffset = abrirFits(caminho);
+    expect(() => lerColunaTabela(comOffset[1], 'x')).toThrow(/TZERO1/);
+    comOffset.fechar();
   });
 });
 

@@ -474,7 +474,7 @@ export const PT = {
     'poeira perto de casa: volume SINTÉTICO de teste (?poeira=teste), não é o Gaia',
   'selo.poeiraDesligada': 'poeira perto de casa: procedural (bloco medido desligado)',
   'selo.poeiraAusente': 'poeira perto de casa: procedural (o bloco não chegou)',
-  'selo.poeiraInativa': 'poeira perto de casa: procedural (o gás \'antigo\' não lê o bloco)',
+  'selo.poeiraInativa': 'poeira perto de casa: procedural (o gás \'Original\' não lê o bloco)',
   'selo.poeiraCarregando': 'poeira perto de casa: carregando o bloco medido',
   'selo.luzAssistida':
     'cada mundo visitado é exposto para a luz que ELE recebe — uma foto tirada ali, não com o ajuste da Terra. A ordem verdadeira de brilho continua no céu, no ponto de cada corpo.',
@@ -500,6 +500,7 @@ export const PT = {
   'selo.desvio.particulasCom': 'partículas da galáxia escolhidas à mão: {nivel}',
   'selo.desvio.poeira': 'poeira perto de casa escolhida à mão',
   'selo.desvio.poeiraCom': 'poeira perto de casa escolhida à mão: {variante}',
+  'selo.desvio.poeiraTeste': 'teste (volume sintético)',
 
   // ---- a acusação da escala (`three/escala.ts`) ---------------------
   'escala.acusacao': '{nome} está {fator} maior',

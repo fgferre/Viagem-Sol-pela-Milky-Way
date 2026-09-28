@@ -392,9 +392,13 @@ export interface EstadoDaVista {
   /**
    * A POEIRA PERTO DE CASA escolhida à mão (pedido do dono, 27/09) —
    * `null` = a variante do preset. Mesmo contrato do `particulas`:
-   * estado vivo do Director, não a porta `?poeira=`.
+   * estado vivo do Director, não a porta `?poeira=`. `'teste'` é a
+   * bancada de `?poeira=teste` (o volume sintético), que não é palavra
+   * do menu mas vence a variante enquanto ninguém tocar no controle —
+   * o Director a publica enquanto ela vale, e só ele sabe quando ela
+   * desarma (`forcarPoeira`).
    */
-  poeira: TipoDePoeira | null;
+  poeira: TipoDePoeira | 'teste' | null;
   /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8) — o estado
    * VIVO do Director, não a porta: `?luz=` só o semeia no boot, e o
@@ -748,22 +752,28 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
    * até aqui (bancada da E2/E3), e virou entrada viva junto com o
    * controle da gaveta.
    *
-   * A SEGUNDA CLÁUSULA do `desvia` existe por `?poeira=teste`: a
-   * bancada não é palavra do menu (`lerPortaPoeira` não a reconhece, e
-   * por isso ela não vira estado — `e.poeira` fica `null`), mas ela
-   * troca o bloco real por um volume SINTÉTICO — e isso é desvio por
-   * si. A presença crua da porta continua contando, exatamente como
-   * contava enquanto `poeira` era só `porta()`.
+   * `?poeira=teste` (a bancada, fora do menu — `lerPortaPoeira` não a
+   * reconhece) chega como o estado `'teste'`, com nome próprio: ela
+   * troca o bloco real por um volume SINTÉTICO, e isso é desvio por si.
+   * A presença crua da porta NÃO conta mais (era a segunda cláusula do
+   * `desvia`): ela acusava um `?poeira=xyz` que o app ignora, e deixava
+   * a bancada com a variante vazia no rótulo. O estado vivo manda, como
+   * nos outros cinco controles.
    */
   {
     chave: 'poeira',
     eixo: 'brilho',
     get rotulo() { return t('selo.desvio.poeira'); },
     volta: 'vivo',
-    desvia: (e) => e.poeira !== null || e.portas.includes('poeira'),
+    desvia: (e) => e.poeira !== null,
     rotuloVivo: (e) =>
       t('selo.desvio.poeiraCom', {
-        variante: e.poeira === null ? '' : poeiraEmTexto(e.poeira),
+        variante:
+          e.poeira === null
+            ? ''
+            : e.poeira === 'teste'
+              ? t('selo.desvio.poeiraTeste')
+              : poeiraEmTexto(e.poeira),
       }),
   },
   porta('nobloom', 'bloom desligado'),
