@@ -4,7 +4,39 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 228.**
 
-## O BASTÃO — onde a rodada parou (27/09, tarde)
+## O BASTÃO — onde a rodada parou (28/09, manhã)
+
+**28/09 (rodada da POEIRA DO GAIA, fecho técnico antes do merge). Tudo
+no ramo `poeira-gaia`, com backup no GitHub; nada foi para o `main`.**
+
+- **Feito:** o juiz da poeira reforçado (o fino também, as quatro trocas
+  ao vivo, erros não tratados; cada prova nova conferida reprovando o
+  defeito que mira); a passada de revisão por Opus sobre o diff inteiro
+  (motor e dados) e os consertos: o gás fino voltou a pular as lanes onde
+  não há gás (todo visitante do Cinema pagava); com o Gaia no macio os
+  núcleos do corredor ganham as lanes como no fino; a poeira medida
+  abaixo do limiar passa a absorver (a coluna inteira; a opção média
+  perdia 10%; a emissão desse difuso ficou de fora, é gosto); a faixa da
+  costura declarada; trocar a fonte solta o volume velho e a captura
+  espera o novo; o selo nomeia a bancada; o conferidor dos dados reprova
+  teto, nível sem referência, escala escondida e manifesto corrompido. A
+  gaveta: a sanfona do "Avançado" não empurra mais todas as fileiras
+  para fora, e os botões da poeira viraram Hoje / Suave / Média / Forte.
+  Sem poeira, a imagem é a mesma pixel a pixel (12 vistas) e o fps não
+  mudou; `npm run done` verde (3.170 testes).
+- **Aberto — dele:** (1) a frase nova do selo para todo visitante
+  ("poeira perto de casa: procedural (bloco medido desligado)") fica
+  sempre ou só com o Gaia ligado; (2) a escolha por olho (Suave, Média,
+  Forte, ou nenhuma ainda); (3) o teste no iPhone (`npm run build`,
+  depois `npx vite preview --host --port 4173`, e no iPhone
+  `http://192.168.1.141:4173/?fps=1`); (4) o merge no `main` depois da
+  aprovação por foto.
+- **Aberto — técnico:** a gaveta estreita em tablet e a 320 px
+  (`BACKLOG.md`); E3b (10 e 5 pc), E5, E6, E7; **226**, **227**; o custo
+  no iPhone da extinção do difuso (não medido).
+- **Como retomar:** `PLAN.md` › Etapas (marcas) e esta seção.
+
+## O BASTÃO anterior (27/09, tarde)
 
 **25–27/09 (rodada da POEIRA DO GAIA: plano aprovado; E1 e E2 feitas;
 E3a e E4 antecipadas). Tudo no ramo `poeira-gaia` — decisão dele:
