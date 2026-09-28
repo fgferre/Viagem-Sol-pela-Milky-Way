@@ -252,7 +252,7 @@ void main() {
 }
 `;
 
-const nebulaFragHead = (antigo: boolean, fino: boolean): string => /* glsl */ `
+const nebulaFragHead = (antigo: boolean, fino: boolean, piramide: boolean): string => /* glsl */ `
 precision highp float;
 
 uniform vec3 uCamPos;
@@ -285,7 +285,7 @@ uniform sampler2D uBlueNoise;
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_CARTOGRAPHY}
-${glslDensity(32, antigo, fino)}
+${glslDensity(32, antigo, fino, piramide)}
 
 const vec3 GAS_COOL = vec3(${cool});
 const vec3 GAS_WARM = vec3(${warm});
@@ -490,7 +490,10 @@ void main() {
 // devolve. As sementes vêm de uSeedCloudTex (256×2, texelFetch): as
 // ≤256 nuvens do catálogo mais perto do CENTRO do volume, escolhidas por
 // nuvensSemente.sementesParaBake a cada pedido de reassar.
-export function nebulaBakeFrag(variante: Exclude<GasVolumetrico, 'antigo'>): string {
+export function nebulaBakeFrag(
+  variante: Exclude<GasVolumetrico, 'antigo'>,
+  piramide = false
+): string {
   const fino = variante === 'fino';
   return /* glsl */ `
 precision highp float;
@@ -503,7 +506,7 @@ uniform vec3 uVolTamanho;
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_CARTOGRAPHY}
-${glslBakeDensity(256, fino)}
+${glslBakeDensity(256, fino, piramide)}
 
 void main() {
   vec2 uv = gl_FragCoord.xy / 128.0;
@@ -724,9 +727,12 @@ ${
 `;
 
 /** O fragment do raymarch para uma variante (item 145b) — `Nebula` chama de
- * novo a cada `setVariante`, mantendo um material compilado por variante. */
-export function nebulaFrag(variante: GasVolumetrico): string {
+ * novo a cada `setVariante`, mantendo um material compilado por variante.
+ * `piramide` (E3c): a variante que lê a poeira pelos níveis — só com a
+ * pirâmide ativa; o antigo nunca lê a poeira e a ignora. Falso = o texto
+ * de hoje, byte a byte (ver `glslDensity`). */
+export function nebulaFrag(variante: GasVolumetrico, piramide = false): string {
   const antigo = variante === 'antigo';
   const fino = variante === 'fino';
-  return nebulaFragHead(antigo, fino) + nebulaMain(antigo);
+  return nebulaFragHead(antigo, fino, piramide && !antigo) + nebulaMain(antigo);
 }

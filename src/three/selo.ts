@@ -807,6 +807,10 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('poeiragain', 'ganho da poeira medida forçado'),
   porta('poeiragama', 'gama da poeira medida forçada'),
   porta('poeiralanes', 'lanes sobre a poeira medida forçadas'),
+  // ?poeiraniveis=teste (E3c): a pirâmide de níveis SINTÉTICA da bancada
+  // no lugar da medida — letras em posições conhecidas, para provar
+  // orientação e troca de nível; troca o conteúdo, então é desvio.
+  porta('poeiraniveis', 'pirâmide de níveis sintética de teste'),
   // ?fps=1 desenha o contador de quadros/s (contadorDeFps.ts) por cima
   // da cena — bancada de diagnóstico, mas visível em qualquer captura.
   porta('fps', 'contador de fps na tela'),

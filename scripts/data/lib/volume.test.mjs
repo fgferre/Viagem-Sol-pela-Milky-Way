@@ -6,18 +6,33 @@
 // com a fixture REAL (de ponta a ponta) é julgada em
 // `verify-assets.test.mjs`, que roda o gate inteiro.
 // ============================================================
+/* global Float16Array:readonly */
 import { describe, expect, it } from 'vitest';
 import {
   GRADE_20PC,
+  PIRAMIDE_POEIRA,
+  TOLERANCIA_NIVEL,
+  adicionarNivel,
   amostrar,
   centroDe,
+  coletarGrade,
   compararComReferencia,
+  compararNivelComReferencia,
+  criarCampo,
   deFloat16,
+  dimsEmTijolos,
+  gerarNivel,
+  gradeDoNivel,
   indiceDe,
   indiceDoPonto,
   integrarColuna,
+  interpolarClampado,
   paraFloat16,
   preservarVolumes,
+  tijoloExiste,
+  tijolosDoNivel,
+  validarPiramide,
+  valorNoCampo,
 } from './volume.mjs';
 
 describe('indiceDe / centroDe / indiceDoPonto — ida e volta', () => {
@@ -325,5 +340,294 @@ describe('preservarVolumes — manifestos mínimos', () => {
     const antigo = { assets: {}, sources: [{ id: 'A', role: 'velho' }, { id: 'B', role: 'poeira' }] };
     preservarVolumes(novo, antigo);
     expect(novo.sources).toEqual([{ id: 'A', role: 'novo' }, { id: 'B', role: 'poeira' }]);
+  });
+
+  it('carrega a pirâmide (dustPyramid) do antigo — `data:galaxy` não a apaga', () => {
+    const piramide = { kind: 'volume-pyramid', levels: [] };
+    const novo = { assets: {}, sources: [] };
+    preservarVolumes(novo, { assets: {}, sources: [], dustPyramid: piramide });
+    expect(novo.dustPyramid).toBe(piramide);
+  });
+});
+
+// ============================================================
+// A PIRÂMIDE (E3c do PLAN.md): coleta, geometria do contrato, aba,
+// esparsidade por resíduo, campo e referência por nível — tudo com
+// amostrador analítico e grades minúsculas (tijolo de 4 voxels); o
+// caminho do FITS até o disco é julgado em build-dust-volumes.test.mjs.
+// ============================================================
+describe('coletarGrade — o operador das subamostras estratificadas', () => {
+  const grade = { nx: 3, ny: 2, nz: 2, voxelPc: 4, origemPc: [-8, -8, -4] };
+
+  it('com 2³ subamostras, amostra centro ± voxel/4 — e num campo linear dá o valor do centro', () => {
+    const pontos = [];
+    const um = { nx: 1, ny: 1, nz: 1, voxelPc: 4, origemPc: [0, 0, 0] };
+    coletarGrade((x, y, z) => pontos.push([x, y, z]) && 0, um, 2);
+    const esperados = [];
+    for (const z of [1, 3]) for (const y of [1, 3]) for (const x of [1, 3]) esperados.push([x, y, z]);
+    expect(pontos).toEqual(esperados);
+
+    const linear = (x, y, z) => 1 + 2 * x - 3 * y + 0.5 * z;
+    const { valores, naoFinitas } = coletarGrade(linear, grade, 2);
+    expect(naoFinitas).toBe(0);
+    for (let k = 0; k < grade.nz; k += 1) {
+      for (let j = 0; j < grade.ny; j += 1) {
+        for (let i = 0; i < grade.nx; i += 1) {
+          expect(valores[indiceDe(grade, i, j, k)]).toBeCloseTo(linear(...centroDe(grade, i, j, k)), 5);
+        }
+      }
+    }
+  });
+
+  it('subamostra não finita conta como 0 e é contada', () => {
+    const um = { nx: 1, ny: 1, nz: 1, voxelPc: 4, origemPc: [0, 0, 0] };
+    const { valores, naoFinitas } = coletarGrade((x, y, z) => (x === 1 && y === 1 && z === 1 ? NaN : 8), um, 2);
+    expect(naoFinitas).toBe(1);
+    expect(valores[0]).toBe(7);
+  });
+});
+
+describe('interpolarClampado — o trilinear do n0 repete a borda fora da caixa', () => {
+  it('dentro da caixa é o `amostrar`; fora, a borda (onde `amostrar` dá 0)', () => {
+    const grade = { nx: 2, ny: 1, nz: 1, voxelPc: 10, origemPc: [0, 0, 0] };
+    const volume = { grade, valores: [1, 3] };
+    expect(interpolarClampado(volume, 10, 5, 5)).toBe(amostrar(volume, 10, 5, 5));
+    expect(interpolarClampado(volume, 10, 5, 5)).toBe(2);
+    expect(interpolarClampado(volume, 99, 5, 5)).toBe(3);
+    expect(amostrar(volume, 99, 5, 5)).toBe(0);
+  });
+});
+
+describe('PIRAMIDE_POEIRA — a geometria do contrato', () => {
+  it('cada nível divide o voxel do pai em 2×2×2 a partir da quina do bloco de 20 pc', () => {
+    expect(() => validarPiramide(PIRAMIDE_POEIRA, GRADE_20PC)).not.toThrow();
+    const torta = {
+      ...PIRAMIDE_POEIRA,
+      niveis: [{ nivel: 1, voxelPc: 10, dims: [250, 250, 101], raioPc: null }],
+    };
+    expect(() => validarPiramide(torta, GRADE_20PC)).toThrow(/2×2×2/);
+    expect(() => validarPiramide({ ...PIRAMIDE_POEIRA, origemPc: [-1240, -1250, -500] }, GRADE_20PC)).toThrow(
+      /origem/
+    );
+  });
+
+  it('tijolos por eixo e tijolos que existem (núcleo recortado à caixa toca r ≤ raio)', () => {
+    const contagens = PIRAMIDE_POEIRA.niveis.map((nivel) => {
+      const grade = gradeDoNivel(PIRAMIDE_POEIRA, nivel);
+      return [dimsEmTijolos(grade, 32), tijolosDoNivel(grade, 32, nivel.raioPc).length];
+    });
+    expect(contagens).toEqual([
+      [[8, 8, 4], 256],
+      [[16, 16, 7], 796],
+      [[32, 32, 13], 1073],
+    ]);
+    const n3 = gradeDoNivel(PIRAMIDE_POEIRA, PIRAMIDE_POEIRA.niveis[2]);
+    expect(tijoloExiste(n3, 32, 450, 15, 15, 6)).toBe(true); // o do Sol
+    expect(tijoloExiste(n3, 32, 450, 0, 0, 0)).toBe(false); // a quina, a ~1,8 kpc
+    expect(tijoloExiste(n3, 32, 450, 32, 15, 6)).toBe(false); // fora da grade de tijolos
+  });
+});
+
+// Pirâmide minúscula (tijolo de 4): n0 4×4×2 de 8 pc, constante 0,01;
+// n1 8×8×4 de 4 pc na caixa inteira (2×2×1 tijolos de 16 pc); n2
+// 16×16×8 de 2 pc com raio 10 (4×4×2 tijolos de 8 pc, as quinas longe
+// do Sol não existem). O campo "medido" é 0,01 com quatro marcas:
+// FORTE (+0,05) num cubo de 4 pc dentro do tijolo (1,1,0) do n1; FRACA
+// (+5e-4, abaixo do limiar) na camada do tijolo (0,1,0) do n1 que encosta
+// no (1,1,0); FINA (+0,04), uma lâmina de 2 pc que só o n2 resolve, no
+// tijolo (3,3,1) do n2 — que não existe (fora do raio); e +0,02 fora da
+// caixa, onde nenhum nível pode medir.
+const MINI = {
+  origemPc: [-16, -16, -8],
+  tijolo: 4,
+  limiarResiduo: 1e-3,
+  subamostras: 2,
+  niveis: [
+    { nivel: 1, voxelPc: 4, dims: [8, 8, 4], raioPc: null },
+    { nivel: 2, voxelPc: 2, dims: [16, 16, 8], raioPc: 10 },
+  ],
+};
+const MINI_N0 = { nx: 4, ny: 4, nz: 2, voxelPc: 8, origemPc: [-16, -16, -8] };
+const dentroDe = (v, lo, hi) => v >= lo && v < hi;
+function campoMarcado(x, y, z) {
+  if (!dentroDe(x, -16, 16) || !dentroDe(y, -16, 16) || !dentroDe(z, -8, 8)) return 0.03;
+  if (dentroDe(x, 0, 4) && dentroDe(y, 4, 8) && dentroDe(z, 0, 4)) return 0.06;
+  if (dentroDe(x, -4, 0) && dentroDe(y, 0, 16)) return 0.0105;
+  if (dentroDe(x, 8, 10) && dentroDe(y, 8, 16) && dentroDe(z, 0, 8)) return 0.05;
+  return 0.01;
+}
+const ESCALA = 1000;
+const LADO = MINI.tijolo + 2;
+const f16 = (v) => new Float16Array([v * ESCALA])[0] / ESCALA;
+
+function gerarMini() {
+  validarPiramide(MINI, MINI_N0);
+  const campo = criarCampo({ grade: MINI_N0, valores: new Float64Array(4 * 4 * 2).fill(0.01) });
+  const niveis = MINI.niveis.map((nivel) => {
+    const gerado = gerarNivel({ amostrador: campoMarcado, campo, piramide: MINI, nivel, escala: ESCALA });
+    adicionarNivel(campo, gerado.grade, MINI.tijolo, gerado.gravados);
+    return gerado;
+  });
+  return { campo, niveis };
+}
+/** Valor gravado no texel (sx,sy,sz) do tijolo (34³ no contrato, 6³ aqui). */
+const texel = (gravado, sx, sy, sz) => gravado.dados[sx + LADO * (sy + LADO * sz)];
+
+describe('gerarNivel — esparsidade por resíduo', () => {
+  it('grava só o tijolo cujo resíduo contra o pai passa do limiar; a marca fraca fica omitida', () => {
+    const { niveis } = gerarMini();
+    const [n1] = niveis;
+    expect(n1.tijolosExistentes).toBe(4);
+    expect(n1.gravados.map((g) => g.b)).toEqual([[1, 1, 0]]);
+    expect(n1.gravados[0].residuo).toBeGreaterThanOrEqual(1e-3);
+    // a marca fraca: resíduo de 5e-4 (em float16) — abaixo do limiar, omitida
+    expect(n1.maiorResiduoOmitido).toBeCloseTo(5e-4, 6);
+    expect(n1.gravados[0].bytes.byteLength).toBe(LADO ** 3 * 2);
+    // o núcleo guarda a marca forte medida: voxel (4,5,2) do n1 = texel (1,2,3)
+    expect(texel(n1.gravados[0], 1, 2, 3)).toBe(f16(0.06));
+  });
+
+  it('tijolo omitido mostra o pai no campo; o gravado, o próprio valor', () => {
+    const { campo } = gerarMini();
+    // dentro da marca fraca (tijolo (0,1,0), omitido): o pai, 0,01 — não 0,0105
+    expect(valorNoCampo(campo, 1, -2, 2, 2)).toBeCloseTo(0.01, 12);
+    // no centro da marca forte (tijolo (1,1,0), gravado)
+    expect(valorNoCampo(campo, 1, 2, 6, 2)).toBe(f16(0.06));
+  });
+
+  it('nível com raio: tijolo que não toca r ≤ raio não existe e nunca é gravado', () => {
+    const { niveis } = gerarMini();
+    const n2 = niveis[1];
+    const grade = gradeDoNivel(MINI, MINI.niveis[1]);
+    expect(n2.tijolosExistentes).toBe(tijolosDoNivel(grade, 4, 10).length);
+    expect(n2.tijolosExistentes).toBeLessThan(4 * 4 * 2);
+    expect(n2.gravados.length).toBeGreaterThan(0);
+    for (const { b } of n2.gravados) expect(tijoloExiste(grade, 4, 10, ...b)).toBe(true);
+  });
+});
+
+describe('gerarNivel — a aba de 1 voxel', () => {
+  it('dentro do nível copia o voxel MEDIDO do vizinho, mesmo omitido; fora da caixa, o pai', () => {
+    const { niveis } = gerarMini();
+    const tijolo = niveis[0].gravados[0]; // (1,1,0) do n1: voxels 4–7 em x e y, 0–3 em z
+    for (let s = 1; s <= 4; s += 1) {
+      // face −x (voxel 3, no tijolo (0,1,0), omitido): a marca fraca medida
+      expect(texel(tijolo, 0, s, s)).toBe(f16(0.0105));
+      // face +x (voxel 8, fora da caixa): o trilinear do pai (0,01), não o
+      // +0,02 que o amostrador daria lá fora
+      expect(texel(tijolo, LADO - 1, s, s)).toBe(f16(0.01));
+      // faces ±z (voxels −1 e 4, fora da caixa em z): o pai
+      expect(texel(tijolo, s, s, 0)).toBe(f16(0.01));
+      expect(texel(tijolo, s, s, LADO - 1)).toBe(f16(0.01));
+    }
+  });
+
+  it('aba num tijolo que não existe é o trilinear do pai, não o valor medido', () => {
+    const { campo, niveis } = gerarMini();
+    const grade = gradeDoNivel(MINI, MINI.niveis[1]);
+    let conferidas = 0;
+    let longeDoMedido = 0; // onde a regra importa: o medido (a lâmina FINA) difere do pai
+    for (const gravado of niveis[1].gravados) {
+      const [bi, bj, bk] = gravado.b;
+      for (let sz = 0; sz < LADO; sz += 1) {
+        for (let sy = 0; sy < LADO; sy += 1) {
+          for (let sx = 0; sx < LADO; sx += 1) {
+            const g = [4 * bi - 1 + sx, 4 * bj - 1 + sy, 4 * bk - 1 + sz];
+            const naCaixa = g.every((v, eixo) => v >= 0 && v < [16, 16, 8][eixo]);
+            const vizinho = g.map((v) => Math.floor(v / 4));
+            if (!naCaixa || tijoloExiste(grade, 4, 10, ...vizinho)) continue;
+            const centro = centroDe(grade, ...g);
+            expect(texel(gravado, sx, sy, sz)).toBe(f16(valorNoCampo(campo, 1, ...centro)));
+            const voxel = { nx: 1, ny: 1, nz: 1, voxelPc: 2, origemPc: centro.map((c) => c - 1) };
+            const medido = coletarGrade(campoMarcado, voxel, 2).valores[0];
+            if (Math.abs(texel(gravado, sx, sy, sz) - medido) > 0.01) longeDoMedido += 1;
+            conferidas += 1;
+          }
+        }
+      }
+    }
+    expect(conferidas).toBeGreaterThan(0);
+    expect(longeDoMedido).toBeGreaterThan(0);
+  });
+});
+
+describe('compararNivelComReferencia — a referência por nível', () => {
+  const { campo } = gerarMini();
+  const grade1 = gradeDoNivel(MINI, MINI.niveis[0]);
+  /** Células no núcleo do tijolo gravado (1,1,0) do n1, com o valor do campo (ou `mudar(valor)`). */
+  function celulasGravadas(mudar = (v) => v) {
+    const celulas = [];
+    for (let i = 4; i < 8; i += 1) {
+      for (let j = 4; j < 8; j += 1) {
+        const valor = valorNoCampo(campo, 1, ...centroDe(grade1, i, j, 1));
+        celulas.push({ indice: [i, j, 1], media: mudar(valor), nanFracao: 0 });
+      }
+    }
+    return celulas;
+  }
+  const referencia = (celulas, extra = {}) => ({
+    nivel: 1,
+    grade: { dims: [8, 8, 4], voxelPc: 4, origemPc: MINI.origemPc },
+    raioPc: null,
+    celulas,
+    ...extra,
+  });
+
+  it('aprova quando as células batem com o campo', () => {
+    const r = compararNivelComReferencia(campo, MINI, 1, referencia(celulasGravadas()));
+    expect(r.aplicavel).toBe(true);
+    expect(r.emTijoloGravado).toBe(16);
+    expect(r.maximoRelativo).toBe(0);
+    expect(r.aprovado).toBe(true);
+  });
+
+  it('é célula a célula na precisão do float16: meio ulp (0,05%) passa, 1% sistemático (unidade levemente errada) reprova', () => {
+    expect(TOLERANCIA_NIVEL.celulaRelativa).toBe(1e-3);
+    const meioUlp = compararNivelComReferencia(campo, MINI, 1, referencia(celulasGravadas((v) => v * (1 + 2 ** -11))));
+    expect(meioUlp.aprovado).toBe(true);
+    const umPorCento = compararNivelComReferencia(campo, MINI, 1, referencia(celulasGravadas((v) => v * 1.01)));
+    expect(umPorCento.maximoRelativo).toBeGreaterThan(9);
+    expect(umPorCento.aprovado).toBe(false);
+  });
+
+  it('reprova uma célula com erro grosseiro (fator 3)', () => {
+    const celulas = celulasGravadas();
+    celulas[0] = { ...celulas[0], media: celulas[0].media * 3 };
+    const r = compararNivelComReferencia(campo, MINI, 1, referencia(celulas));
+    expect(r.maximoRelativo).toBeGreaterThan(1);
+    expect(r.aprovado).toBe(false);
+  });
+
+  it('não se aplica sem células bastantes em tijolo gravado, com outra grade ou sem o nível', () => {
+    // 16 células no tijolo omitido (0,1,0): nenhuma prova o nível
+    const omitidas = celulasGravadas().map((c) => ({ ...c, indice: [c.indice[0] - 4, c.indice[1], 1] }));
+    expect(compararNivelComReferencia(campo, MINI, 1, referencia(omitidas)).aplicavel).toBe(false);
+    const outraGrade = referencia(celulasGravadas(), { grade: { dims: [8, 8, 4], voxelPc: 5, origemPc: MINI.origemPc } });
+    expect(compararNivelComReferencia(campo, MINI, 1, outraGrade).aplicavel).toBe(false);
+    expect(compararNivelComReferencia(campo, MINI, 1, undefined).aplicavel).toBe(false);
+  });
+
+  it('não se aplica com célula fora do nível (tijolo que não existe)', () => {
+    const grade2 = gradeDoNivel(MINI, MINI.niveis[1]);
+    expect(tijoloExiste(grade2, 4, 10, 0, 0, 0)).toBe(false);
+    const r = compararNivelComReferencia(campo, MINI, 2, {
+      nivel: 2,
+      grade: { dims: [16, 16, 8], voxelPc: 2, origemPc: MINI.origemPc },
+      raioPc: 10,
+      celulas: [{ indice: [0, 0, 0], media: 0.01, nanFracao: 0 }],
+    });
+    expect(r.aplicavel).toBe(false);
+    expect(r.motivo).toMatch(/fora do nível/);
+  });
+});
+
+describe('float16 do tijolo — ida e volta sem desalinhar', () => {
+  it('deFloat16 aceita Buffer que começa em byte ímpar (o de gunzipSync pode)', () => {
+    const f = paraFloat16([0.004, 0.25], 1000);
+    const comDeslocamento = Buffer.alloc(f.byteLength + 1);
+    Buffer.from(f.buffer).copy(comDeslocamento, 1);
+    const impar = comDeslocamento.subarray(1);
+    expect(impar.byteOffset % 2).toBe(1);
+    expect(Array.from(deFloat16(impar, 1000))).toEqual(Array.from(deFloat16(f, 1000)));
   });
 });

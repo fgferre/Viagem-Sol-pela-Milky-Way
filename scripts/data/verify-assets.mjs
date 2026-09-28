@@ -10,20 +10,35 @@ import {
   decodeSpiralAnchors,
   evaluateSpiralModel,
 } from './lib/spiral-fit.mjs';
-import { compararComReferencia, deFloat16 } from './lib/volume.mjs';
+import {
+  DIRETORIO_PIRAMIDE,
+  GRADE_20PC,
+  LIMITE_E_POR_PC,
+  PIRAMIDE_POEIRA,
+  TOLERANCIA_NIVEL,
+  adicionarNivel,
+  caminhoDoIndice,
+  caminhoDoTijolo,
+  compararComReferencia,
+  compararNivelComReferencia,
+  criarCampo,
+  deFloat16,
+  dimsEmTijolos,
+  gradeDoNivel,
+  tijoloExiste,
+} from './lib/volume.mjs';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const publicDirectory = path.join(rootDirectory, 'public');
 const manifestPath = path.join(publicDirectory, 'data', 'galaxy', 'manifest.json');
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+// Os tijolos da pirâmide são SÓ `.bin.gz` por contrato (E3c): quem os
+// cobra é o bloco da pirâmide, lá no fim, e não as varreduras de pares
+// `.bin`/`.bin.gz` — para elas, um `.bin.gz` sem `.bin` é órfão.
+const diretorioDaPiramide = path.join(publicDirectory, ...DIRETORIO_PIRAMIDE.split('/'));
 
-// Teto físico do bloco: valor acima disso é voxel absurdo, não densidade
-// real. O máximo do mapa bruto de Edenhofer a 5 pc é 0,185 E/pc e o do
-// bloco de 20 pc (médias em voxels maiores) é 0,0162 E/pc; 1,0 deixa folga
-// para níveis mais finos e ainda reprova um voxel absurdo. Comparado ao
-// valor já convertido por `deFloat16` — que devolve E/pc, não E/pc×1000:
-// a escala do disco (`asset.scale`) só existe para a precisão do float16.
-const LIMITE_E_POR_PC = 1.0;
+// O teto físico (`LIMITE_E_POR_PC`, 1,0 E/pc) mora em lib/volume.mjs,
+// com a justificativa: o gerador da pirâmide e este portão cobram o mesmo.
 
 // Ativos `kind: 'volume'` com fixture de referência científica OBRIGATÓRIA
 // (mesmo espírito de INDICES_DO_RUNTIME, mais abaixo): para eles, fixture
@@ -783,7 +798,8 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
 // A varredura é a MESMA do `compress-assets.mjs` (recursiva sobre
 // public/data, todo `.bin`), de propósito: gate e gerador têm de
 // enxergar exatamente o mesmo conjunto, ou um ativo novo nasce fora do
-// alcance do gate.
+// alcance do gate. A única pasta de fora é `dust-piramide/` (E3c): os
+// tijolos dela são só `.bin.gz` por contrato e têm bloco próprio no fim.
 // ============================================================
 {
   const paresConferidos = [];
@@ -791,7 +807,7 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
     for (const entrada of await readdir(dir, { withFileTypes: true })) {
       const alvo = path.join(dir, entrada.name);
       if (entrada.isDirectory()) {
-        await varrer(alvo);
+        if (alvo !== diretorioDaPiramide) await varrer(alvo);
         continue;
       }
       if (!entrada.name.endsWith('.bin')) continue;
@@ -823,8 +839,9 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
   const varrerOrfaos = async (dir) => {
     for (const entrada of await readdir(dir, { withFileTypes: true })) {
       const alvo = path.join(dir, entrada.name);
-      if (entrada.isDirectory()) await varrerOrfaos(alvo);
-      else if (entrada.name.endsWith('.bin.gz') && !existsSync(alvo.slice(0, -3))) {
+      if (entrada.isDirectory()) {
+        if (alvo !== diretorioDaPiramide) await varrerOrfaos(alvo);
+      } else if (entrada.name.endsWith('.bin.gz') && !existsSync(alvo.slice(0, -3))) {
         orfaos.push(path.relative(publicDirectory, alvo));
       }
     }
@@ -836,6 +853,203 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
   console.log(
     `${paresConferidos.length} pares .bin/.bin.gz bit-idênticos: ${paresConferidos.join(', ')}.`
   );
+}
+
+// ============================================================
+// A PIRÂMIDE DE POEIRA (E3c do PLAN.md): cobrada INTEIRA quando o
+// manifesto declara `dustPyramid`; sem a declaração, só se exige que
+// não haja pasta `dust-piramide/` órfã. Cobra, nível a nível: o índice
+// (bytes e sha256 do manifesto; cada campo do contrato; a corrente de
+// pais — o n1 aponta para o sha256 do bloco de 20 pc, cada nível
+// seguinte para o do índice anterior), cada tijolo (dentro da região do
+// nível, bytes e sha256 do `.bin.gz`, 34³ float16 ao descomprimir,
+// finito, ≥ 0 e ≤ LIMITE_E_POR_PC), nenhum arquivo fora dos índices e a
+// referência científica do nível (células do interpolador oficial em
+// `fixtures/edenhofer-referencia-niveis.json`, mesmo operador de 2³
+// subamostras, célula a célula na precisão do float16; tolerância em
+// `TOLERANCIA_NIVEL`, lib/volume.mjs).
+// ============================================================
+{
+  const piramide = manifest.dustPyramid;
+  if (!piramide) {
+    if (existsSync(diretorioDaPiramide)) {
+      throw new Error(
+        `${DIRETORIO_PIRAMIDE}/ existe mas o manifesto não declara "dustPyramid" — pirâmide órfã ` +
+          '(rode npm run data:poeira-niveis).'
+      );
+    }
+  } else {
+    const ativoN0 = manifest.assets.dustVolumeNear20pc;
+    if (piramide.kind !== 'volume-pyramid' || piramide.parent !== 'dustVolumeNear20pc') {
+      throw new Error('dustPyramid: kind/parent fora do contrato ("volume-pyramid" sobre "dustVolumeNear20pc").');
+    }
+    if (piramide.parentSha256 !== ativoN0.sha256) {
+      throw new Error(
+        'dustPyramid: gerada sobre outro bloco de 20 pc (parentSha256 ≠ SHA-256 de dustVolumeNear20pc) — ' +
+          'rode npm run data:poeira-niveis.'
+      );
+    }
+    const gradeN0 = {
+      nx: ativoN0.dims[0],
+      ny: ativoN0.dims[1],
+      nz: ativoN0.dims[2],
+      voxelPc: ativoN0.voxelPc,
+      origemPc: ativoN0.originPc,
+    };
+    if (JSON.stringify(gradeN0) !== JSON.stringify(GRADE_20PC)) {
+      throw new Error('dustPyramid: o pai (dustVolumeNear20pc) não tem a grade de 20 pc do contrato.');
+    }
+    const contrato = PIRAMIDE_POEIRA;
+    const campo = criarCampo({
+      grade: gradeN0,
+      valores: deFloat16(await readFile(path.join(publicDirectory, ativoN0.file)), ativoN0.scale),
+    });
+    if (!Array.isArray(piramide.levels) || piramide.levels.length !== contrato.niveis.length) {
+      throw new Error(`dustPyramid: ${piramide.levels?.length} níveis declarados; o contrato tem ${contrato.niveis.length}.`);
+    }
+    const nomeFixtureNiveis = 'edenhofer-referencia-niveis.json';
+    const caminhoFixtureNiveis = path.join(rootDirectory, 'scripts', 'data', 'fixtures', nomeFixtureNiveis);
+    if (!existsSync(caminhoFixtureNiveis)) {
+      throw new Error(
+        `dustPyramid: fixture de referência dos níveis ausente (${nomeFixtureNiveis}) — ` +
+          'rode scripts/data/fixtures/gera-referencia-edenhofer.py niveis.'
+      );
+    }
+    const fixtureNiveis = JSON.parse(await readFile(caminhoFixtureNiveis, 'utf8'));
+    const lado = contrato.tijolo + 2;
+    const esperados = new Set();
+    const resumos = [];
+    let paiEsperado = { level: 0, sha256: ativoN0.sha256 };
+    let totalTijolos = 0;
+    let totalBytes = 0;
+    for (const [posicao, nivel] of contrato.niveis.entries()) {
+      const k = nivel.nivel;
+      const declarado = piramide.levels[posicao];
+      const caminhoIndice = caminhoDoIndice(k);
+      if (declarado?.level !== k || declarado.index !== caminhoIndice) {
+        throw new Error(`dustPyramid: o ${posicao + 1}º nível declarado não é o n${k} em ${caminhoIndice}.`);
+      }
+      let bytesIndice;
+      try {
+        bytesIndice = await readFile(path.join(publicDirectory, caminhoIndice));
+      } catch {
+        throw new Error(`${caminhoIndice}: ausente (declarado em dustPyramid).`);
+      }
+      if (bytesIndice.byteLength !== declarado.bytes || sha256(bytesIndice) !== declarado.sha256) {
+        throw new Error(`${caminhoIndice}: bytes/SHA-256 divergem do manifesto (dustPyramid).`);
+      }
+      esperados.add(caminhoIndice);
+      const indice = JSON.parse(bytesIndice.toString('utf8'));
+      const grade = gradeDoNivel(contrato, nivel);
+      const exigir = (campoDoIndice, atual, esperado) => {
+        if (JSON.stringify(atual) !== JSON.stringify(esperado)) {
+          throw new Error(
+            `${caminhoIndice}: ${campoDoIndice} = ${JSON.stringify(atual)}; o contrato exige ${JSON.stringify(esperado)}.`
+          );
+        }
+      };
+      exigir('level', indice.level, k);
+      exigir('voxelPc', indice.voxelPc, nivel.voxelPc);
+      exigir('originPc', indice.originPc, contrato.origemPc);
+      exigir('dims', indice.dims, nivel.dims);
+      exigir('radiusPc', indice.radiusPc, nivel.raioPc);
+      exigir('brickCore', indice.brickCore, contrato.tijolo);
+      exigir('brickHalo', indice.brickHalo, 1);
+      exigir('brickDims', indice.brickDims, dimsEmTijolos(grade, contrato.tijolo));
+      exigir('scale', indice.scale, ativoN0.scale);
+      exigir('type', indice.type, 'float16');
+      exigir('residualThreshold', indice.residualThreshold, contrato.limiarResiduo);
+      exigir('subsamples', indice.subsamples, contrato.subamostras);
+      exigir('parent', { level: indice.parent?.level, sha256: indice.parent?.sha256 }, paiEsperado);
+      if (!Array.isArray(indice.bricks)) throw new Error(`${caminhoIndice}: sem a lista "bricks".`);
+      const vistos = new Set();
+      const gravados = [];
+      for (const tijolo of indice.bricks) {
+        const b = tijolo.b;
+        if (!Array.isArray(b) || b.length !== 3 || !tijoloExiste(grade, contrato.tijolo, nivel.raioPc, ...b)) {
+          throw new Error(
+            `${caminhoIndice}: tijolo ${JSON.stringify(b)} fora da grade ou da região do nível ` +
+              `(núcleo não toca ${nivel.raioPc === null ? 'a caixa' : `r ≤ ${nivel.raioPc} pc`}).`
+          );
+        }
+        const arquivo = caminhoDoTijolo(k, b);
+        if (vistos.has(arquivo)) throw new Error(`${caminhoIndice}: tijolo ${b.join('_')} repetido.`);
+        vistos.add(arquivo);
+        if (tijolo.file !== arquivo) {
+          throw new Error(`${caminhoIndice}: tijolo ${b.join('_')} aponta para ${tijolo.file}; o contrato é ${arquivo}.`);
+        }
+        let gz;
+        try {
+          gz = await readFile(path.join(publicDirectory, arquivo));
+        } catch {
+          throw new Error(`${arquivo}: ausente (listado em ${caminhoIndice}).`);
+        }
+        if (gz.byteLength !== tijolo.bytes || sha256(gz) !== tijolo.sha256) {
+          throw new Error(`${arquivo}: bytes/SHA-256 divergem do índice ${caminhoIndice}.`);
+        }
+        const cru = gunzipSync(gz);
+        if (cru.byteLength !== lado ** 3 * 2) {
+          throw new Error(
+            `${arquivo}: ${cru.byteLength} bytes ao descomprimir; o contrato é ${lado}³ float16 (${lado ** 3 * 2}).`
+          );
+        }
+        const dados = deFloat16(cru, indice.scale);
+        for (let i = 0; i < dados.length; i += 1) {
+          if (!Number.isFinite(dados[i]) || dados[i] < 0) {
+            throw new Error(`${arquivo}: valor float16 inválido (${dados[i]}) no índice ${i}.`);
+          }
+          if (dados[i] > LIMITE_E_POR_PC) {
+            throw new Error(
+              `${arquivo}: valor float16 acima do teto físico (${dados[i]} E/pc > ${LIMITE_E_POR_PC} E/pc) no índice ${i}.`
+            );
+          }
+        }
+        esperados.add(arquivo);
+        gravados.push({ b, dados });
+        totalBytes += gz.byteLength;
+      }
+      adicionarNivel(campo, grade, contrato.tijolo, gravados);
+      totalTijolos += gravados.length;
+      const referencia = Array.isArray(fixtureNiveis.niveis)
+        ? fixtureNiveis.niveis.find((n) => n.nivel === k)
+        : undefined;
+      const resultado = compararNivelComReferencia(campo, contrato, k, referencia);
+      if (!resultado.aplicavel) {
+        throw new Error(`dustPyramid n${k}: a referência "${nomeFixtureNiveis}" não se aplica (${resultado.motivo})`);
+      }
+      const texto =
+        `pior célula ${resultado.maximoRelativo.toFixed(2)} da folga ` +
+        `(${100 * TOLERANCIA_NIVEL.celulaRelativa}% + ${TOLERANCIA_NIVEL.celulaAbsoluta} E/pc; máx 1), ` +
+        `${resultado.emTijoloGravado}/${resultado.celulas} células em tijolo gravado`;
+      if (!resultado.aprovado) {
+        throw new Error(
+          `dustPyramid n${k}: comparação com a referência (interpolador oficial) excede a tolerância — ${texto}.`
+        );
+      }
+      resumos.push(`n${k}: ${gravados.length} tijolos, referência OK (${texto})`);
+      paiEsperado = { level: k, sha256: declarado.sha256 };
+    }
+    const orfaos = [];
+    const varrerPiramide = async (dir) => {
+      for (const entrada of await readdir(dir, { withFileTypes: true })) {
+        const alvo = path.join(dir, entrada.name);
+        if (entrada.isDirectory()) {
+          await varrerPiramide(alvo);
+          continue;
+        }
+        const relativo = path.relative(publicDirectory, alvo).split(path.sep).join('/');
+        if (!esperados.has(relativo)) orfaos.push(relativo);
+      }
+    };
+    await varrerPiramide(diretorioDaPiramide);
+    if (orfaos.length) {
+      throw new Error(`dustPyramid: arquivo fora dos índices (órfão): ${orfaos.join(', ')} — rode npm run data:poeira-niveis.`);
+    }
+    console.log(
+      `dustPyramid: ${resumos.join('; ')}; ${totalTijolos} tijolos, ${(totalBytes / 1048576).toFixed(1)} MB gz — ` +
+        'índices, SHA-256, faixa e referência conferidos.'
+    );
+  }
 }
 
 // ============================================================

@@ -1,14 +1,40 @@
-// Serve: chão — o céu da nebulosa congela quando nada que o alimenta mudou (item 144)
+// Serve: chão — o céu da nebulosa congela quando nada que o alimenta mudou (item 144); a pirâmide da poeira (E3c) só lê tijolo desejado, sobe o lote antes do desenho e, sem ela, o shader é o de hoje
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
-import { Nebula } from './nebula';
+import {
+  Nebula,
+  RAMPAS_DESLIGADAS,
+  TETO_DA_ESPERA_DA_PIRAMIDE_S,
+  cenaParaHelioGalactico,
+  empilharTabelas,
+  pesoDoNivel,
+  raiosDoNivel,
+  texelNaPilha,
+} from './nebula';
+import { GAL, helioGalacticoParaCena } from './baseGalactica';
 import type { VolumeDePoeira } from '../cartography/galacticAssets';
+import {
+  CODIGO_OMITIDO,
+  CONCORRENCIA_DE_BUSCA,
+  NUCLEO_DO_TIJOLO,
+  PRIMEIRO_CODIGO_DE_VAGA,
+  RAIO_DESEJADO_PC,
+  VOXELS_POR_TIJOLO,
+  montarOrcamento,
+} from '../cartography/piramideDePoeira';
+import type {
+  FonteDeTijolos,
+  NivelDaPiramide,
+  PiramideDePoeira,
+  Trio,
+} from '../cartography/piramideDePoeira';
 
 function bancada() {
   const renderer = {
     getRenderTarget: () => null,
     setRenderTarget: vi.fn(),
     render: vi.fn(),
+    copyTextureToTexture: vi.fn(),
   } as unknown as THREE.WebGLRenderer;
   const camera = new THREE.PerspectiveCamera(58, 16 / 9, 0.1, 100);
   camera.position.set(10, 20, 30);
@@ -355,5 +381,244 @@ describe('window.__poeira — o painel compartilhado com o Director não trava o
 
     expect(janela.__poeira.bakesMs?.length).toBe(1);
     expect(janela.__poeira.quadroMaxMs).toBe(1); // preservado, não apagado pelo bake
+  });
+});
+
+// ============================================================
+// A PIRÂMIDE DA POEIRA NA GPU (E3c). A geometria é a do contrato (n1 de
+// 10 pc na caixa inteira, n2 de 5 pc em r ≤ 900, n3 de 2,5 pc em r ≤ 450,
+// quina (−1250, −1250, −500)); o renderer é o mock da bancada, com
+// `copyTextureToTexture` espiado — é por ele que cada tijolo sobe.
+// ============================================================
+const ORIGEM_DO_CONTRATO: Trio = [-1250, -1250, -500];
+const GRADES_DO_CONTRATO = [
+  { nivel: 1, voxelPc: 10, dims: [250, 250, 100] as Trio, raioPc: Infinity },
+  { nivel: 2, voxelPc: 5, dims: [500, 500, 200] as Trio, raioPc: 900 },
+  { nivel: 3, voxelPc: 2.5, dims: [1000, 1000, 400] as Trio, raioPc: 450 },
+];
+
+/** o tijolo do nível que contém o ponto (pc, referencial do bloco) */
+function tijoloDe(g: (typeof GRADES_DO_CONTRATO)[number], p: Trio): Trio {
+  const lado = NUCLEO_DO_TIJOLO * g.voxelPc;
+  return [0, 1, 2].map((a) => Math.floor((p[a] - ORIGEM_DO_CONTRATO[a]) / lado)) as unknown as Trio;
+}
+
+/** o centro do núcleo do tijolo, cortado na borda da grade — a régua da residência */
+function centroDo(g: (typeof GRADES_DO_CONTRATO)[number], b: Trio): Trio {
+  return [0, 1, 2].map((a) => {
+    const lo = ORIGEM_DO_CONTRATO[a] + b[a] * NUCLEO_DO_TIJOLO * g.voxelPc;
+    const hi = ORIGEM_DO_CONTRATO[a] + Math.min((b[a] + 1) * NUCLEO_DO_TIJOLO, g.dims[a]) * g.voxelPc;
+    return (lo + hi) / 2;
+  }) as unknown as Trio;
+}
+
+/** pirâmide do contrato com os tijolos gravados em volta do Sol, e uma
+ *  fonte cujas promessas o teste resolve na mão */
+function piramideDeTeste() {
+  const niveis: NivelDaPiramide[] = GRADES_DO_CONTRATO.map((g) => {
+    const dimsEmTijolos = g.dims.map((d) => Math.ceil(d / NUCLEO_DO_TIJOLO)) as unknown as Trio;
+    const [bi, bj, bk] = tijoloDe(g, [0, 0, 0]);
+    const gravados = new Set<number>();
+    for (const di of [-1, 0]) gravados.add(bi + di + dimsEmTijolos[0] * (bj + dimsEmTijolos[1] * bk));
+    return {
+      nivel: g.nivel,
+      voxelPc: g.voxelPc,
+      origemPc: ORIGEM_DO_CONTRATO,
+      dims: g.dims,
+      dimsEmTijolos,
+      raioPc: g.raioPc,
+      escala: 1000,
+      gravados,
+      pasta: `teste/n${g.nivel}`,
+    };
+  });
+  const pedidos: { nivel: number; b: Trio; resolver: (d: Uint16Array) => void }[] = [];
+  const fonte: FonteDeTijolos = {
+    buscar: (nivel, bi, bj, bk) =>
+      new Promise<Uint16Array>((resolver) => pedidos.push({ nivel: nivel.nivel, b: [bi, bj, bk], resolver })),
+  };
+  const piramide: PiramideDePoeira = { niveis };
+  return { piramide, fonte, pedidos };
+}
+
+/** os campos privados que o teste confere (mesmo molde do resto do arquivo) */
+type Entranhas = {
+  material: THREE.ShaderMaterial;
+  volumeMaterial: THREE.ShaderMaterial;
+  piramide: { atlas: THREE.Data3DTexture; tabelas: THREE.Data3DTexture; dadosDasTabelas: Uint16Array } | null;
+};
+
+const microtarefas = () => new Promise((r) => setTimeout(r, 0));
+
+describe('a pirâmide da poeira na GPU (E3c) — as contas puras', () => {
+  it('a câmera vai ao referencial do bloco: a inversa exata de helioGalacticoParaCena, e o centro galáctico cai em +x', () => {
+    for (const h of [[1, 0, 0], [0, 1, 0], [0, 0, 1], [123.4, -56.7, 8.9]] as Trio[]) {
+      const cena = helioGalacticoParaCena(h[0], h[1], h[2]);
+      const volta = cenaParaHelioGalactico(cena.x, cena.y, cena.z);
+      volta.forEach((v, a) => expect(v).toBeCloseTo(h[a], 9));
+    }
+    // Sol → centro galáctico, dado na cena: +x no bloco, sem componente em
+    // l = 90° e com a latitude pequena de o Sol estar acima do plano
+    const [x, y, z] = cenaParaHelioGalactico(GAL.DIR_GC.x, GAL.DIR_GC.y, GAL.DIR_GC.z);
+    expect(x).toBeGreaterThan(0.99);
+    expect(Math.abs(y)).toBeLessThan(1e-9);
+    expect(Math.abs(z)).toBeLessThan(0.01);
+  });
+
+  it('o peso de um nível só passa de 0 onde a residência DESEJA o tijolo (centro no raio) e dentro da região do nível', () => {
+    // gerador fixo (LCG): a mesma nuvem de pontos a cada corrida
+    let semente = 12345;
+    const aleatorio = () => ((semente = (semente * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+    for (const g of GRADES_DO_CONTRATO) {
+      const raios = raiosDoNivel(g);
+      // bordas nunca invertidas (smoothstep com bordas trocadas é NaN na casa)
+      expect(raios[0]).toBeLessThan(raios[1]);
+      expect(raios[2]).toBeLessThan(raios[3]);
+      // colado na câmera, perto do Sol, o nível vale inteiro
+      expect(pesoDoNivel(raios, 0, 1)).toBe(1);
+      let comPeso = 0;
+      for (let n = 0; n < 20000; n++) {
+        const cam: Trio = [(aleatorio() - 0.5) * 1200, (aleatorio() - 0.5) * 1200, (aleatorio() - 0.5) * 600];
+        // direção uniforme e distância até um pouco além do fim da rampa
+        const u = aleatorio() * 2 - 1;
+        const fi = aleatorio() * 2 * Math.PI;
+        const s = Math.sqrt(1 - u * u);
+        const t = aleatorio() * (raios[1] + 10);
+        const p: Trio = [cam[0] + t * s * Math.cos(fi), cam[1] + t * s * Math.sin(fi), cam[2] + t * u];
+        if (p.some((v, a) => v < ORIGEM_DO_CONTRATO[a] || v >= ORIGEM_DO_CONTRATO[a] + g.dims[a] * g.voxelPc)) continue;
+        const r = Math.hypot(...p);
+        if (!(pesoDoNivel(raios, t, r) > 0)) continue;
+        comPeso += 1;
+        const centro = centroDo(g, tijoloDe(g, p));
+        expect(Math.hypot(...centro.map((c, a) => c - cam[a]))).toBeLessThanOrEqual(RAIO_DESEJADO_PC[g.nivel]);
+        expect(r).toBeLessThanOrEqual(g.raioPc);
+      }
+      // a prova não pode ser vazia
+      expect(comPeso).toBeGreaterThan(1000);
+    }
+    // um nível sem raio desejado (ou sem espaço para a rampa) sai desligado
+    expect(raiosDoNivel({ nivel: 4, voxelPc: 1.25, raioPc: 225 })).toEqual([...RAMPAS_DESLIGADAS]);
+    expect(pesoDoNivel(RAMPAS_DESLIGADAS, 0, 0)).toBe(0);
+  });
+
+  it('a pilha das tabelas dá a cada entrada de cada nível um texel só, na posição que o shader lê', () => {
+    const tijolos: Trio[] = [
+      [8, 8, 4],
+      [16, 16, 7],
+      [32, 32, 13],
+    ];
+    const pilha = empilharTabelas(tijolos);
+    expect(pilha).toEqual({ largura: 32, altura: 32, profundidade: 24, deslocamentoZ: [0, 4, 11] });
+    const vistos = new Set<number>();
+    tijolos.forEach(([nbx, nby, nbz], i) => {
+      for (let bk = 0; bk < nbz; bk++) {
+        for (let bj = 0; bj < nby; bj++) {
+          for (let bi = 0; bi < nbx; bi++) {
+            const texel = texelNaPilha(pilha, i, tijolos[i], bi + nbx * (bj + nby * bk));
+            // o shader: texelFetch(ivec3(b) + ivec3(0, 0, deslocamentoZ))
+            expect(texel).toBe(bi + pilha.largura * (bj + pilha.altura * (pilha.deslocamentoZ[i] + bk)));
+            expect(vistos.has(texel)).toBe(false);
+            vistos.add(texel);
+          }
+        }
+      }
+    });
+    expect(Math.max(...vistos)).toBeLessThan(pilha.largura * pilha.altura * pilha.profundidade);
+  });
+});
+
+describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
+  /** a bancada com o bloco de 20 pc já carregado e a poeira pedida */
+  function comPoeira(variante: 'macio' | 'fino') {
+    const b = bancada();
+    b.camera.position.set(0, 0, 0);
+    b.camera.lookAt(1, 0, 0);
+    b.camera.updateMatrixWorld();
+    b.nebula.setVariante(variante);
+    b.nebula.setPoeiraMedida(volumeFalso());
+    b.nebula.setPoeira({ modo: 1, ganho: 46.9, gama: 1, lanes: 1 });
+    return { ...b, entranhas: () => b.nebula as unknown as Entranhas };
+  }
+
+  it('ativa, troca os dois materiais do macio (o bake sem o medido) e sobe o lote antes do desenho; a captura espera assentar', async () => {
+    const { renderer, camera, nebula, entranhas } = comPoeira('macio');
+    const hoje = entranhas().material;
+    const bakeDeHoje = entranhas().volumeMaterial;
+    const { piramide, fonte, pedidos } = piramideDeTeste();
+    nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(16, 2 ** 22, 2048) });
+
+    expect(entranhas().material).not.toBe(hoje);
+    expect(entranhas().material.fragmentShader).toContain('poeiraMedidaNiveis(ph, t)');
+    expect(entranhas().volumeMaterial).not.toBe(bakeDeHoje);
+    expect(bakeDeHoje.fragmentShader).toContain('poeiraMedida(ph)');
+    expect(entranhas().volumeMaterial.fragmentShader).not.toContain('poeiraMedida(ph)');
+    // as tabelas sobem inteiras na chegada, com os omitidos já marcados
+    const { dadosDasTabelas, atlas } = entranhas().piramide!;
+    expect(dadosDasTabelas.includes(CODIGO_OMITIDO)).toBe(true);
+    // antes do primeiro quadro a residência ainda não pediu nada: não é "assentada"
+    expect(nebula.piramideAssentada).toBe(false);
+
+    nebula.atualizarPiramide(renderer, 0, camera);
+    expect(pedidos.length).toBe(CONCORRENCIA_DE_BUSCA);
+    expect(nebula.piramideAssentada).toBe(false);
+    // a rede entrega; cada quadro sobe o que chegou e pede o resto
+    let atendidos = 0;
+    for (let quadro = 1; quadro <= 4; quadro++) {
+      for (const p of pedidos.slice(atendidos)) p.resolver(new Uint16Array(VOXELS_POR_TIJOLO));
+      atendidos = pedidos.length;
+      await microtarefas();
+      nebula.atualizarPiramide(renderer, quadro * 0.1, camera);
+    }
+    expect(pedidos.length).toBe(6); // 2 gravados por nível, os três em volta do Sol
+
+    const copias = (renderer.copyTextureToTexture as ReturnType<typeof vi.fn>).mock.calls;
+    expect(copias.length).toBe(6);
+    for (const [origem, destino, regiao, posicao] of copias) {
+      expect(destino).toBe(atlas);
+      expect(regiao).toBeNull();
+      expect((origem as THREE.Data3DTexture).image.width).toBe(34);
+      expect((posicao as THREE.Vector3).toArray().every((v) => v % 34 === 0)).toBe(true);
+    }
+    // cada tijolo que subiu é uma vaga na tabela; o portador não segura os bytes
+    const vagas = [...dadosDasTabelas].filter((c) => c >= PRIMEIRO_CODIGO_DE_VAGA);
+    expect(new Set(vagas).size).toBe(6);
+    expect(entranhas().piramide!.tabelas.version).toBeGreaterThan(1);
+    expect(nebula.piramideAssentada).toBe(true);
+  });
+
+  it('sem a pirâmide, ou com o Gaia desligado, volta o MESMO material de hoje — e nada é buscado', () => {
+    const { renderer, camera, nebula, entranhas } = comPoeira('fino');
+    const hoje = entranhas().material;
+    const { piramide, fonte, pedidos } = piramideDeTeste();
+    nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(16, 2 ** 22, 2048) });
+    expect(entranhas().material.fragmentShader).toContain('poeiraMedidaNiveis(ph, t)');
+
+    // o Gaia desligado: o material de hoje, o mesmo objeto (o texto de hoje)
+    nebula.setPoeira({ modo: 0, ganho: 46.9, gama: 1, lanes: 1 });
+    expect(entranhas().material).toBe(hoje);
+    nebula.atualizarPiramide(renderer, 0, camera);
+    expect(pedidos.length).toBe(0);
+    expect(nebula.piramideAssentada).toBe(true);
+
+    // religado, a pirâmide volta; solta, o de hoje de novo, e o atlas é descartado
+    nebula.setPoeira({ modo: 1, ganho: 46.9, gama: 1, lanes: 1 });
+    expect(entranhas().material).not.toBe(hoje);
+    const atlas = entranhas().piramide!.atlas;
+    const descarte = vi.spyOn(atlas, 'dispose');
+    nebula.setPiramide(null);
+    expect(entranhas().material).toBe(hoje);
+    expect(descarte).toHaveBeenCalledTimes(1);
+    expect(nebula.piramideAssentada).toBe(true);
+  });
+
+  it('a rede que não responde segura a captura só até o teto', () => {
+    const { renderer, camera, nebula } = comPoeira('fino');
+    const { piramide, fonte } = piramideDeTeste();
+    nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(16, 2 ** 22, 2048) });
+    nebula.atualizarPiramide(renderer, 100, camera);
+    nebula.atualizarPiramide(renderer, 100 + TETO_DA_ESPERA_DA_PIRAMIDE_S - 0.5, camera);
+    expect(nebula.piramideAssentada).toBe(false);
+    nebula.atualizarPiramide(renderer, 100 + TETO_DA_ESPERA_DA_PIRAMIDE_S, camera);
+    expect(nebula.piramideAssentada).toBe(true);
   });
 });

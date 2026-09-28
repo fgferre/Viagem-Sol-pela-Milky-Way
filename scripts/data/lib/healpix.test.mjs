@@ -1,10 +1,11 @@
-// Serve: lei — a direção do céu cai no mesmo pixel HEALPix que o healpy oficial dá
+// Serve: lei — a direção do céu cai no mesmo pixel HEALPix e nos mesmos pesos de interpolação que o healpy oficial dá
 // ============================================================
 // HEALPix NEST (E1, item 3 do PLAN.md). O oráculo é a fixture gerada
 // pelo healpy oficial (fixtures/healpix-nside256.json, script em
 // fixtures/gera-referencia-edenhofer.py) — o algoritmo nunca é
 // reimplementado aqui, só comparado contra ele e contra si mesmo
-// (round-trip, cobertura).
+// (round-trip, cobertura). A interpolação bilinear (E3c) tem o seu:
+// fixtures/healpix-interp-nside256.json, de `healpy.get_interp_weights`.
 //
 // Nos vértices onde 3+ faces se encontram (a categoria "verticeOuAresta"
 // da fixture), `ang2pix_nest` de ponto flutuante pode legitimamente
@@ -19,13 +20,16 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ang2pixNest, pix2angNest, pix2vecNest, vec2pixNest } from './healpix.mjs';
+import { ang2pixNest, criarInterpolacaoNest, pix2angNest, pix2vecNest, vec2pixNest } from './healpix.mjs';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const fixture = JSON.parse(
   readFileSync(join(AQUI, '..', 'fixtures', 'healpix-nside256.json'), 'utf8')
 );
 const { nside } = fixture;
+const fixtureInterp = JSON.parse(
+  readFileSync(join(AQUI, '..', 'fixtures', 'healpix-interp-nside256.json'), 'utf8')
+);
 
 function tamanhoPixel(n) {
   return Math.sqrt(Math.PI / 3) / n;
@@ -134,11 +138,56 @@ describe('round-trip e cobertura (algoritmo puro, sem fixture)', () => {
   });
 });
 
+describe('criarInterpolacaoNest contra a fixture do healpy (get_interp_weights, nside 256, NEST)', () => {
+  it('os 4 pixels batem exatos, na mesma ordem, e os 4 pesos a 1e-12, em todas as categorias (polos, bordas de face, |z| = 2/3, costura φ = 0/2π, centros de anel)', () => {
+    const interpolar = criarInterpolacaoNest(fixtureInterp.nside);
+    const pixels = new Int32Array(4);
+    const pesos = new Float64Array(4);
+    const categorias = Object.keys(fixtureInterp.pontos);
+    expect(categorias).toEqual(['aleatorio', 'polo', 'bordaDeFace', 'transicao', 'costura', 'centroDeAnel']);
+    let total = 0;
+    for (const linhas of Object.values(fixtureInterp.pontos)) {
+      for (const [theta, phi, ...esperado] of linhas) {
+        interpolar(theta, phi, pixels, pesos);
+        expect(Array.from(pixels)).toEqual(esperado.slice(0, 4));
+        // a fixture guarda os pesos com 12 casas: medido, o maior desvio é 5,4e-13
+        for (let m = 0; m < 4; m += 1) expect(Math.abs(pesos[m] - esperado[4 + m])).toBeLessThan(1e-12);
+        total += 1;
+      }
+    }
+    expect(total).toBeGreaterThanOrEqual(500);
+  });
+
+  it('no centro de cada pixel (todos, nside 1 a 16), o peso todo cai nele mesmo — a tabela anel → NEST é a do ang2pix', () => {
+    const pixels = new Int32Array(4);
+    const pesos = new Float64Array(4);
+    for (const n of [1, 2, 4, 8, 16]) {
+      const interpolar = criarInterpolacaoNest(n);
+      for (let p = 0; p < 12 * n * n; p += 1) {
+        const { theta, phi } = pix2angNest(n, p);
+        interpolar(theta, phi, pixels, pesos);
+        let noProprio = 0;
+        for (let m = 0; m < 4; m += 1) if (pixels[m] === p) noProprio += pesos[m];
+        expect(noProprio).toBeGreaterThan(1 - 1e-9);
+      }
+    }
+  });
+});
+
 describe('validação', () => {
   it('nside precisa ser potência de 2', () => {
     expect(() => ang2pixNest(3, 1, 1)).toThrow(/potência de 2/);
     expect(() => vec2pixNest(0, 1, 0, 0)).toThrow(/potência de 2/);
     expect(() => pix2angNest(5, 0)).toThrow(/potência de 2/);
+    expect(() => criarInterpolacaoNest(6)).toThrow(/potência de 2/);
+  });
+
+  it('a interpolação rejeita theta fora de [0, π]', () => {
+    const interpolar = criarInterpolacaoNest(4);
+    const pixels = new Int32Array(4);
+    const pesos = new Float64Array(4);
+    expect(() => interpolar(-0.1, 0, pixels, pesos)).toThrow(/fora de \[0, π\]/);
+    expect(() => interpolar(NaN, 0, pixels, pesos)).toThrow(/fora de \[0, π\]/);
   });
 
   it('pix2angNest/pix2vecNest rejeitam índice fora do intervalo', () => {

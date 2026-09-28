@@ -10,13 +10,21 @@ nenhum `npm run data:*`. Gera, com o healpy/astropy oficiais:
     integrais de coluna tiradas de `edenhofer_interp.py` (o script
     oficial do Zenodo, em `.cache/galaxy-data/edenhofer2024/prova/`)
     aplicado ao mapa real de 3 GB — oráculo do leitor FITS/pipeline.
+  - fixtures/edenhofer-referencia-niveis.json (E3c do PLAN.md): por nível
+    da pirâmide (n1 10 pc, n2 5 pc, n3 2,5 pc), células sorteadas na
+    região do nível (as 8 nuvens, 40 entre os 10% mais densos, 32
+    uniformes), cada uma a média de 2×2×2 subamostras estratificadas
+    (centro ± voxel/4) do interpolador oficial — o MESMO operador do
+    gerador Node. Oráculo de `npm run data:poeira-niveis` e do verify.
 
-Como rodar (uma vez; grava as duas fixtures; nunca fora de `.cache/`):
+Como rodar (uma vez; nunca fora de `.cache/`):
   uv venv --python 3.12 .cache/galaxy-data/edenhofer2024/prova/.venv
   uv pip install --python .cache/galaxy-data/edenhofer2024/prova/.venv \
       numpy astropy healpy
   .cache/galaxy-data/edenhofer2024/prova/.venv/bin/python3 \
-      scripts/data/fixtures/gera-referencia-edenhofer.py
+      scripts/data/fixtures/gera-referencia-edenhofer.py          # as três
+  .cache/galaxy-data/edenhofer2024/prova/.venv/bin/python3 \
+      scripts/data/fixtures/gera-referencia-edenhofer.py niveis   # só a dos níveis
 """
 import datetime
 import json
@@ -56,6 +64,20 @@ NX, NY, NZ = 125, 125, 50
 # Deslocamentos (pc) dos 25 raios paralelos do tubo de cada coluna, no
 # plano perpendicular à direção (grade 5×5 em u,v).
 OFFSETS_TUBO_PC = (-10.0, -5.0, 0.0, 5.0, 10.0)
+
+# A pirâmide (E3c do PLAN.md, `PIRAMIDE_POEIRA` em scripts/data/lib/
+# volume.mjs): (nível, voxel em pc, dims, raio em pc ou None = caixa
+# inteira), todos com origem em CAIXA_MIN. Se o contrato mudar lá, muda
+# aqui junto.
+NIVEIS_PIRAMIDE = (
+    (1, 10.0, (250, 250, 100), None),
+    (2, 5.0, (500, 500, 200), 900.0),
+    (3, 2.5, (1000, 1000, 400), 450.0),
+)
+SUBAMOSTRAS_NIVEL = 2
+CANDIDATOS_POR_NIVEL = 20000
+CELULAS_DENSAS = 40
+CELULAS_UNIFORMES = 32
 
 
 def gerar_fixture_healpix():
@@ -224,11 +246,12 @@ def escolher_voxels():
     return list(escolhidos.keys()), nuvens_info, z_alto_atual
 
 
-def subamostras_do_voxel(centro, divisoes=8):
-    """divisoes³ subamostras cobrindo o voxel de 20 pc (padrão 8×8×8,
-    espaçamento 2,5 pc); o ensaio de convergência chama com divisoes=16."""
-    passo = TAMANHO_VOXEL / divisoes
-    offsets = -(TAMANHO_VOXEL / 2) + passo / 2 + passo * np.arange(divisoes)
+def subamostras_do_voxel(centro, divisoes=8, tamanho=TAMANHO_VOXEL):
+    """divisoes³ subamostras cobrindo o voxel de `tamanho` pc (padrão: o
+    de 20 pc em 8×8×8, espaçamento 2,5 pc); o ensaio de convergência chama
+    com divisoes=16 e a pirâmide com divisoes=2 e o voxel do nível."""
+    passo = tamanho / divisoes
+    offsets = -(tamanho / 2) + passo / 2 + passo * np.arange(divisoes)
     dx, dy, dz = np.meshgrid(offsets, offsets, offsets, indexing='ij')
     cx, cy, cz = centro
     return (cx + dx).ravel(), (cy + dy).ravel(), (cz + dz).ravel()
@@ -493,8 +516,148 @@ def gerar_fixture_edenhofer():
     print(f'tempo do gerador (edenhofer): {time.time() - t0:.1f}s', flush=True)
 
 
+def centro_no_nivel(indice, tamanho):
+    return tuple(CAIXA_MIN[eixo] + tamanho * (indice[eixo] + 0.5) for eixo in range(3))
+
+
+def medias_de_celulas(esfera, centros, tamanho):
+    """Média de 2³ subamostras estratificadas (centro ± tamanho/4) do
+    interpolador oficial em cada centro; NaN (fora do mapa: dentro de
+    68,8 pc ou além da última casca) conta como 0, como no gerador Node.
+    Devolve (médias, fração NaN) por centro."""
+    xs, ys, zs = [], [], []
+    for centro in centros:
+        x, y, z = subamostras_do_voxel(centro, divisoes=SUBAMOSTRAS_NIVEL, tamanho=tamanho)
+        xs.append(x)
+        ys.append(y)
+        zs.append(z)
+    pos = np.stack([np.concatenate(xs), np.concatenate(ys), np.concatenate(zs)])
+    valores = ib.interp_hp2rg(pos, esfera.radii, esfera.data, nest=esfera.nest, fill_value=np.nan)
+    por_celula = np.asarray(valores).reshape(len(centros), SUBAMOSTRAS_NIVEL ** 3)
+    return np.nan_to_num(por_celula, nan=0.0).mean(axis=1), np.isnan(por_celula).mean(axis=1)
+
+
+def celulas_do_nivel(esfera, nivel, tamanho, dims, raio):
+    """As células de referência de um nível: as nuvens de NUVENS dentro da
+    região, CELULAS_DENSAS sorteadas entre os 10% mais densos de
+    CANDIDATOS_POR_NIVEL voxels uniformes e CELULAS_UNIFORMES entre os
+    demais. Candidato é voxel com centro em [raio interno do mapa,
+    min(raio do nível, última casca)] — dentro da região, então o tijolo
+    dele existe. As densas são as que discriminam (espelho, deslocamento):
+    é nelas que o tijolo quase sempre foi gravado."""
+    rng = np.random.default_rng(SEMENTE + nivel)
+    r_min = float(esfera.radii[0])
+    r_teto = float(esfera.radii[-1]) if raio is None else min(raio, float(esfera.radii[-1]))
+    caixa_min = np.array(CAIXA_MIN)
+    candidatos = []
+    vistos = set()
+    while len(candidatos) < CANDIDATOS_POR_NIVEL:
+        ijk = rng.integers(0, np.array(dims), size=(CANDIDATOS_POR_NIVEL, 3))
+        r = np.linalg.norm(caixa_min + tamanho * (ijk + 0.5), axis=1)
+        for idx in np.flatnonzero((r >= r_min) & (r <= r_teto)):
+            chave = tuple(int(v) for v in ijk[idx])
+            if chave not in vistos and len(candidatos) < CANDIDATOS_POR_NIVEL:
+                vistos.add(chave)
+                candidatos.append(chave)
+    medias_candidatos, _ = medias_de_celulas(esfera, [centro_no_nivel(c, tamanho) for c in candidatos], tamanho)
+    ordem = np.argsort(medias_candidatos)[::-1]
+    densas = rng.choice(ordem[: len(ordem) // 10], CELULAS_DENSAS, replace=False)
+    uniformes = rng.choice(np.setdiff1d(np.arange(len(candidatos)), densas), CELULAS_UNIFORMES, replace=False)
+
+    origem_por_celula = {}
+    for nome, l_graus, b_graus, d_pc in NUVENS:
+        ponto = nuvem_para_xyz(l_graus, b_graus, d_pc)
+        if raio is not None and float(np.sqrt(sum(p * p for p in ponto))) > raio:
+            continue
+        chave = tuple(
+            int(np.clip(np.floor((ponto[eixo] - CAIXA_MIN[eixo]) / tamanho), 0, dims[eixo] - 1)) for eixo in range(3)
+        )
+        origem_por_celula.setdefault(chave, f'nuvem:{nome}')
+    for idx in densas:
+        origem_por_celula.setdefault(candidatos[int(idx)], 'densa')
+    for idx in uniformes:
+        origem_por_celula.setdefault(candidatos[int(idx)], 'uniforme')
+
+    chaves = list(origem_por_celula.keys())
+    centros = [centro_no_nivel(c, tamanho) for c in chaves]
+    medias, nan_fracoes = medias_de_celulas(esfera, centros, tamanho)
+    return [
+        {
+            'indice': list(chave),
+            'centro': [round(c, 4) for c in centro],
+            'media': float(media),
+            'nanFracao': float(nan_fracao),
+            'origem': origem_por_celula[chave],
+        }
+        for chave, centro, media, nan_fracao in zip(chaves, centros, medias, nan_fracoes)
+    ]
+
+
+def gerar_fixture_niveis():
+    t0 = time.time()
+    esfera = ib.get_sphere(MAPA_FITS)
+    print(f'get_sphere: {time.time() - t0:.1f}s', flush=True)
+    niveis = []
+    for nivel, tamanho, dims, raio in NIVEIS_PIRAMIDE:
+        t_nivel = time.time()
+        celulas = celulas_do_nivel(esfera, nivel, tamanho, dims, raio)
+        niveis.append({
+            'nivel': nivel,
+            'grade': {'dims': list(dims), 'voxelPc': tamanho, 'origemPc': list(CAIXA_MIN)},
+            'raioPc': raio,
+            'celulas': celulas,
+        })
+        print(
+            f'nível {nivel} ({tamanho} pc, raio {raio}): {len(celulas)} células, '
+            f'mediana {np.median([c["media"] for c in celulas]):.2e} E/pc — {time.time() - t_nivel:.1f}s',
+            flush=True,
+        )
+
+    md5_esperado = None
+    with open(ESPERADO_TXT, encoding='utf8') as f:
+        m = re.search(r'md5:([0-9a-f]+)', f.read())
+        if m:
+            md5_esperado = m.group(1)
+    fixture = {
+        'cabecalho': {
+            'fonte': 'Edenhofer et al. 2024 — mean_and_std_healpix.fits (Zenodo 10658339), HDU MEAN',
+            'md5': md5_esperado,
+            'unidade': 'E (ZGR23) por pc',
+            'referencial': (
+                'heliocêntrico galáctico convencional: x -> centro galáctico (l=0,b=0); '
+                'y -> l=90°; z -> polo norte galáctico'
+            ),
+            'raiosPc': [float(esfera.radii[0]), float(esfera.radii[-1])],
+            'operador': (
+                f'média de {SUBAMOSTRAS_NIVEL}×{SUBAMOSTRAS_NIVEL}×{SUBAMOSTRAS_NIVEL} subamostras '
+                'estratificadas (centro ± voxel/4) do interp_hp2rg oficial (bilinear HEALPix + linear em r); '
+                'NaN (fora do mapa) conta como 0'
+            ),
+            'semente': SEMENTE,
+            'versoes': {
+                'python': sys.version.split()[0],
+                'numpy': np.__version__,
+                'astropy': astropy.__version__,
+                'healpy': hp.__version__,
+            },
+            'data': datetime.date.today().isoformat(),
+        },
+        'niveis': niveis,
+    }
+    caminho = os.path.join(AQUI, 'edenhofer-referencia-niveis.json')
+    with open(caminho, 'w', encoding='utf8') as f:
+        json.dump(fixture, f, ensure_ascii=False, indent=1)
+    print(f'edenhofer-referencia-niveis.json: {len(niveis)} níveis — {time.time() - t0:.1f}s', flush=True)
+
+
 if __name__ == '__main__':
     inicio = time.time()
-    gerar_fixture_healpix()
-    gerar_fixture_edenhofer()
+    if sys.argv[1:] == ['niveis']:
+        gerar_fixture_niveis()
+    elif sys.argv[1:]:
+        sys.exit(f'argumento desconhecido: {" ".join(sys.argv[1:])} (sem argumento = as três fixtures; "niveis" = só a dos níveis)')
+    else:
+        gerar_fixture_healpix()
+        gerar_fixture_edenhofer()
+        gerar_fixture_niveis()
     print(f'tempo total do script: {time.time() - inicio:.1f}s')

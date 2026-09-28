@@ -8,21 +8,26 @@
 //
 // Roda como último passo do `data:all` — asset novo ganha o .gz junto,
 // e um .gz órfão (fonte sumiu) é apagado em vez de ficar mentindo.
+// A pasta `dust-piramide/` (E3c) fica de fora, como no `verify-assets`:
+// os tijolos dela são só `.bin.gz` por contrato, não órfãos.
 import { gzipSync } from 'node:zlib';
 import { readFileSync, writeFileSync, readdirSync, rmSync, statSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DIRETORIO_PIRAMIDE } from './lib/volume.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const DATA = resolve(ROOT, 'public/data');
+const PIRAMIDE = resolve(ROOT, 'public', DIRETORIO_PIRAMIDE);
 
 const bins = [];
 const orfaos = [];
 (function varre(dir) {
   for (const nome of readdirSync(dir)) {
     const p = join(dir, nome);
-    if (statSync(p).isDirectory()) varre(p);
-    else if (nome.endsWith('.bin')) bins.push(p);
+    if (statSync(p).isDirectory()) {
+      if (p !== PIRAMIDE) varre(p);
+    } else if (nome.endsWith('.bin')) bins.push(p);
     else if (nome.endsWith('.bin.gz') && !existsSync(p.slice(0, -3))) orfaos.push(p);
   }
 })(DATA);

@@ -69,6 +69,18 @@ export interface ManifestVolume {
 interface GalaxyManifest {
   schemaVersion: number;
   assets: Record<string, ManifestAsset | ManifestVolume>;
+  /** a pirâmide da poeira (E3c): os índices dos níveis finos, no topo do
+   *  manifesto e fora de `assets` — quem lê é `carregarPiramideDePoeira` */
+  dustPyramid?: unknown;
+}
+
+/** o que a carga devolve além dos catálogos: os DESCRITORES opcionais da
+ *  poeira medida — nunca os bytes */
+export interface ExtrasDaCarga {
+  volumes: Record<string, ManifestVolume>;
+  /** `manifest.dustPyramid` cru (ou `null`): quem valida e baixa os
+   *  índices é `carregarPiramideDePoeira`, só quando o Gaia é pedido */
+  piramide: unknown;
 }
 
 /** Um catálogo bruto: `count` registros de `stride` floats. */
@@ -163,11 +175,13 @@ export function cartografiaMedida(): boolean {
  * chamada pelo director depois que este resultado chega. Um manifesto
  * sem nenhum volume (ou um schema mais velho) devolve `volumes: {}`, sem
  * afetar `mapasChegaram` nem o restante da carga — a poeira medida é
- * estritamente opcional em cima da cartografia já opcional.
+ * estritamente opcional em cima da cartografia já opcional. `piramide`
+ * (E3c) é o mesmo contrato para os níveis finos: o descritor cru do
+ * manifesto, `null` sem ele.
  */
 export async function loadGalacticAssets(
   signal?: AbortSignal
-): Promise<(GalacticAssets & { volumes: Record<string, ManifestVolume> }) | null> {
+): Promise<(GalacticAssets & ExtrasDaCarga) | null> {
   const base = import.meta.env.BASE_URL;
   try {
     const manifestResponse = await fetch(`${base}data/galaxy/manifest.json`, { signal });
@@ -194,7 +208,7 @@ export async function loadGalacticAssets(
       if (asset.kind === 'volume') volumes[name] = asset;
     }
     mapasChegaram = true;
-    return { ...result, volumes } as GalacticAssets & { volumes: Record<string, ManifestVolume> };
+    return { ...result, volumes, piramide: manifest.dustPyramid ?? null } as GalacticAssets & ExtrasDaCarga;
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;
     mapasChegaram = false;

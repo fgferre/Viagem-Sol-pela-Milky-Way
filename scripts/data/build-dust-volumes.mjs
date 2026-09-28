@@ -8,29 +8,55 @@
 // projeções PNG de conferência e roda `compararComReferencia` contra a
 // fixture do interpolador oficial.
 //
-// NÃO faz parte da suíte: baixa 3 GB e roda ~400 M subamostras. O dono
-// roda com `npm run data:poeira`; aqui só `main()` é o ponto de entrada
-// direto — as outras funções são exportadas para uso futuro em teste.
+// `npm run data:poeira-niveis` (E3c do PLAN.md) roda o MESMO arquivo com
+// `--niveis`: a pirâmide n1/n2/n3 (10/5/2,5 pc) em tijolos 34³ sobre o
+// bloco de 20 pc já publicado (`executarNiveis`, mais abaixo).
+//
+// NÃO faz parte da suíte: baixa 3 GB e roda ~400 M subamostras (a
+// pirâmide, ~520 M). O dono roda com `npm run data:poeira` /
+// `npm run data:poeira-niveis`; aqui só `main()`/`mainNiveis()` são
+// pontos de entrada diretos — o resto é exportado para os testes.
 // ============================================================
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream, existsSync, statSync } from 'node:fs';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import sharp from 'sharp';
 import { abrirFits, lerColunaTabela, lerImagemInteira } from './lib/fits.mjs';
-import { ang2pixNest } from './lib/healpix.mjs';
+import { ang2pixNest, criarInterpolacaoNest } from './lib/healpix.mjs';
 import { sha256 } from './lib/binary.mjs';
-import { GRADE_20PC, compararComReferencia, deFloat16, indiceDe, paraFloat16 } from './lib/volume.mjs';
+import {
+  DIRETORIO_PIRAMIDE,
+  GRADE_20PC,
+  LIMITE_E_POR_PC,
+  PIRAMIDE_POEIRA,
+  TOLERANCIA_NIVEL,
+  adicionarNivel,
+  caminhoDoIndice,
+  caminhoDoTijolo,
+  coletarGrade,
+  compararComReferencia,
+  compararNivelComReferencia,
+  criarCampo,
+  deFloat16,
+  dimsEmTijolos,
+  gerarNivel,
+  indiceDe,
+  paraFloat16,
+  validarPiramide,
+} from './lib/volume.mjs';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const cacheDirectory = path.join(rootDirectory, '.cache', 'galaxy-data', 'edenhofer2024');
 const caminhoFits = path.join(cacheDirectory, 'mean_and_std_healpix.fits');
 const esperadoPath = path.join(cacheDirectory, 'ESPERADO.txt');
-const outputDirectory = path.join(rootDirectory, 'public', 'data', 'galaxy');
+const publicDirectory = path.join(rootDirectory, 'public');
+const outputDirectory = path.join(publicDirectory, 'data', 'galaxy');
 const manifestPath = path.join(outputDirectory, 'manifest.json');
 const fixturePath = path.join(rootDirectory, 'scripts', 'data', 'fixtures', 'edenhofer-referencia.json');
+const fixtureNiveisPath = path.join(rootDirectory, 'scripts', 'data', 'fixtures', 'edenhofer-referencia-niveis.json');
 const capturasDirectory = path.join(rootDirectory, 'capturas');
 
 const ESCALA = 1000;
@@ -137,73 +163,110 @@ export function buscarCasca(radii, r) {
 }
 
 /**
- * Coleta a média de cada voxel de `GRADE_20PC`: 8×8×8 subamostras
- * estratificadas, pixel HEALPix mais próximo + linear em r entre
- * centros de casca vizinhos; fora de [radii[0], radii.at(-1)) vale 0.
- * Dentro de radii[0] (interior de 68,8 pc): zero por escolha do app,
- * com transição de resolução de ~1 voxel na fronteira (a média das
- * subamostras atravessa a superfície) — não é "medido vazio". Fora de
- * radii.at(-1): fora da cobertura do mapa, esse zero é ausência real.
+ * A densidade do mapa num ponto (x,y,z) heliocêntrico, em pc: pixel
+ * HEALPix mais próximo + linear em r entre centros de casca vizinhos;
+ * fora de [radii[0], radii.at(-1)) vale 0. Dentro de radii[0] (interior
+ * de 68,8 pc): zero por escolha do app, com transição de resolução de
+ * ~1 voxel na fronteira (a média das subamostras atravessa a
+ * superfície) — não é "medido vazio". Fora de radii.at(-1): fora da
+ * cobertura do mapa, esse zero é ausência real. Valor não finito sai
+ * como está: quem coleta (`coletarGrade`) conta e zera. É o operador do
+ * bloco de 20 pc (n0), que não muda; os níveis da pirâmide usam
+ * `amostradorEdenhoferBilinear`.
  */
-export function coletar(imagem, radii, nPix) {
-  const { nx, ny, nz, voxelPc, origemPc } = GRADE_20PC;
+export function amostradorEdenhofer(imagem, radii, nPix) {
   const rMin = radii[0];
   const rMax = radii[radii.length - 1];
-  const passoSub = voxelPc / SUB;
-  const valoresGrid = new Float32Array(nx * ny * nz);
-  const totalVoxels = nx * ny * nz;
-  let nanSubsamples = 0;
-  let processados = 0;
-  let proximoMarco = Math.ceil(totalVoxels / 10);
-  const inicio = Date.now();
+  return (px, py, pz) => {
+    const r = Math.sqrt(px * px + py * py + pz * pz);
+    if (!(r >= rMin && r < rMax)) return 0;
+    const theta = Math.acos(pz / r);
+    let phi = Math.atan2(py, px);
+    if (phi < 0) phi += 2 * Math.PI;
+    const pix = ang2pixNest(NSIDE, theta, phi);
+    const casca = buscarCasca(radii, r);
+    const r0 = radii[casca];
+    const r1 = radii[casca + 1];
+    const v0 = imagem[casca * nPix + pix];
+    const v1 = imagem[(casca + 1) * nPix + pix];
+    return v0 + (v1 - v0) * ((r - r0) / (r1 - r0));
+  };
+}
 
-  for (let iz = 0; iz < nz; iz += 1) {
-    const cantoZ = origemPc[2] + iz * voxelPc;
-    for (let iy = 0; iy < ny; iy += 1) {
-      const cantoY = origemPc[1] + iy * voxelPc;
-      for (let ix = 0; ix < nx; ix += 1) {
-        const cantoX = origemPc[0] + ix * voxelPc;
-        let soma = 0;
-        for (let sz = 0; sz < SUB; sz += 1) {
-          const pz = cantoZ + (sz + 0.5) * passoSub;
-          for (let sy = 0; sy < SUB; sy += 1) {
-            const py = cantoY + (sy + 0.5) * passoSub;
-            for (let sx = 0; sx < SUB; sx += 1) {
-              const px = cantoX + (sx + 0.5) * passoSub;
-              const r = Math.sqrt(px * px + py * py + pz * pz);
-              let valor = 0;
-              if (r >= rMin && r < rMax) {
-                const theta = Math.acos(pz / r);
-                let phi = Math.atan2(py, px);
-                if (phi < 0) phi += 2 * Math.PI;
-                const pix = ang2pixNest(NSIDE, theta, phi);
-                const casca = buscarCasca(radii, r);
-                const r0 = radii[casca];
-                const r1 = radii[casca + 1];
-                const v0 = imagem[casca * nPix + pix];
-                const v1 = imagem[(casca + 1) * nPix + pix];
-                valor = v0 + (v1 - v0) * ((r - r0) / (r1 - r0));
-                if (!Number.isFinite(valor)) {
-                  valor = 0;
-                  nanSubsamples += 1;
-                }
-              }
-              soma += valor;
-            }
-          }
-        }
-        valoresGrid[indiceDe(GRADE_20PC, ix, iy, iz)] = soma / (SUB * SUB * SUB);
-        processados += 1;
+/**
+ * O operador do interpolador OFICIAL (`interp_hp2rg` de
+ * `edenhofer_interp.py`), o dos níveis da pirâmide: em cada uma das duas
+ * cascas vizinhas, a interpolação bilinear HEALPix NEST (os 4 pixels e
+ * pesos de `criarInterpolacaoNest`, os do healpy), e entre elas o linear
+ * em r na forma do oficial, `(1 − w)·v0 + w·v1`. Fora de
+ * [radii[0], radii.at(-1)) vale 0 — onde o oficial dá NaN, que a
+ * referência também conta como 0. Quatro leituras por casca em vez de
+ * uma: é o que faz cada célula bater com a referência na precisão do
+ * float16, e não só na média.
+ */
+export function amostradorEdenhoferBilinear(imagem, radii, nPix) {
+  const rMin = radii[0];
+  const rMax = radii[radii.length - 1];
+  const interpolar = criarInterpolacaoNest(NSIDE);
+  const pixels = new Int32Array(4);
+  const pesos = new Float64Array(4);
+  return (px, py, pz) => {
+    const r = Math.sqrt(px * px + py * py + pz * pz);
+    if (!(r >= rMin && r < rMax)) return 0;
+    let phi = Math.atan2(py, px);
+    if (phi < 0) phi += 2 * Math.PI;
+    interpolar(Math.acos(pz / r), phi, pixels, pesos);
+    const casca = buscarCasca(radii, r);
+    const base0 = casca * nPix;
+    const base1 = base0 + nPix;
+    let v0 = 0;
+    let v1 = 0;
+    for (let m = 0; m < 4; m += 1) {
+      v0 += imagem[base0 + pixels[m]] * pesos[m];
+      v1 += imagem[base1 + pixels[m]] * pesos[m];
+    }
+    const w = (r - radii[casca]) / (radii[casca + 1] - radii[casca]);
+    return (1 - w) * v0 + w * v1;
+  };
+}
+
+/**
+ * Coleta a média de cada voxel de `GRADE_20PC`: 8×8×8 subamostras
+ * estratificadas (`coletarGrade`) do `amostradorEdenhofer`.
+ */
+export function coletar(imagem, radii, nPix) {
+  const inicio = Date.now();
+  let proximoMarco = 0.1;
+  const { valores, naoFinitas } = coletarGrade(
+    amostradorEdenhofer(imagem, radii, nPix),
+    GRADE_20PC,
+    SUB,
+    (processados, total) => {
+      while (processados / total >= proximoMarco - 1e-9) {
+        const segundos = (Date.now() - inicio) / 1000;
+        console.log(`  coleta: ${Math.round(proximoMarco * 100)}% (${processados}/${total} voxels) em ${segundos.toFixed(1)}s`);
+        proximoMarco += 0.1;
       }
     }
-    while (processados >= proximoMarco && proximoMarco <= totalVoxels) {
-      const percentual = Math.round((proximoMarco / totalVoxels) * 100);
-      const segundos = (Date.now() - inicio) / 1000;
-      console.log(`  coleta: ${percentual}% (${proximoMarco}/${totalVoxels} voxels) em ${segundos.toFixed(1)}s`);
-      proximoMarco += Math.ceil(totalVoxels / 10);
-    }
+  );
+  return { valoresGrid: valores, nanSubsamples: naoFinitas };
+}
+
+/** Abre o FITS, lê os centros de casca e a média inteira (~1,6 GB) e fecha o arquivo. */
+export function lerMapaEdenhofer(caminhoFits) {
+  const hdus = abrirFits(caminhoFits);
+  const hduMedia = acharHduMedia(hdus);
+  const tabelaCentros = acharTabelaCentros(hdus);
+  const radii = lerColunaTabela(tabelaCentros, 'radial pixel centers', { exigirFinito: true });
+  const nPix = hduMedia.naxisn[0];
+  if (radii.length !== hduMedia.naxisn[1]) {
+    hdus.fechar();
+    throw new Error(`lerMapaEdenhofer: ${radii.length} centros de casca não batem com NAXIS2=${hduMedia.naxisn[1]}.`);
   }
-  return { valoresGrid, nanSubsamples };
+  console.log(`raios: ${radii.length} cascas, ${radii[0].toFixed(4)}–${radii[radii.length - 1].toFixed(4)} pc`);
+  const imagem = lerImagemInteira(hduMedia);
+  hdus.fechar();
+  return { imagem, radii, nPix };
 }
 
 /** Se `caminho` já existe, devolve `-v2`/`-v3`/… ao lado; nunca sobrescreve. */
@@ -343,22 +406,10 @@ export async function executar({ caminhoFits, caminhoFixture, diretorioSaida, ca
   }
   const fixture = JSON.parse(await readFile(caminhoFixture, 'utf8'));
 
-  const hdus = abrirFits(caminhoFits);
-  const hduMedia = acharHduMedia(hdus);
-  const tabelaCentros = acharTabelaCentros(hdus);
-  const radii = lerColunaTabela(tabelaCentros, 'radial pixel centers', { exigirFinito: true });
-  const nPix = hduMedia.naxisn[0];
-  if (radii.length !== hduMedia.naxisn[1]) {
-    throw new Error(`executar: ${radii.length} centros de casca não batem com NAXIS2=${hduMedia.naxisn[1]}.`);
-  }
-  console.log(`raios: ${radii.length} cascas, ${radii[0].toFixed(4)}–${radii[radii.length - 1].toFixed(4)} pc`);
-  fase('abrir FITS + tabela de raios');
-
-  const imagem = lerImagemInteira(hduMedia);
-  fase('leitura da imagem (~1,6 GB)');
+  const { imagem, radii, nPix } = lerMapaEdenhofer(caminhoFits);
+  fase('leitura do FITS (~1,6 GB)');
 
   const { valoresGrid, nanSubsamples } = coletar(imagem, radii, nPix);
-  hdus.fechar();
   console.log(`subamostras não finitas: ${nanSubsamples}`);
   fase('coleta (8×8×8 subamostras por voxel)');
 
@@ -481,8 +532,344 @@ export async function main() {
   console.log(`total: ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 }
 
+// ============================================================
+// A PIRÂMIDE (E3c do PLAN.md) — `npm run data:poeira-niveis`. O contrato
+// e as regras (aba, esparsidade por resíduo, fora do nível) estão em
+// `lib/volume.mjs` (`PIRAMIDE_POEIRA`, `gerarNivel`); aqui é o FITS, a
+// validação em memória, os arquivos e o manifesto.
+// ============================================================
+
+const DESCRICAO_REGIAO =
+  'bricks whose core, clipped to the box, touches r <= radiusPc around the Sun (the whole box when null); ' +
+  'every in-box voxel of an existing brick is measured, also beyond the radius';
+const DESCRICAO_FORA =
+  'voxel outside the box (core or halo) or halo in a brick that does not exist: parent trilinear, ' +
+  'the point first clamped to the box faces (CLAMP_TO_EDGE)';
+const DESCRICAO_ABA =
+  'inside the level the halo copies the neighbour measured voxel bit for bit, stored or omitted neighbour alike';
+const DESCRICAO_ESPARSIDADE =
+  'a brick is stored only if max |level - parent trilinear| over its core >= residualThreshold (level in float16, ' +
+  'parent decoded as on disk); an omitted brick renders as its parent';
+
+/**
+ * JSON do índice legível e estável: cabeçalho indentado, um tijolo por
+ * linha (a lista chega a centenas de entradas).
+ */
+function textoDoIndice(indice) {
+  const { bricks, ...cabecalho } = indice;
+  const linhas = bricks.map((t) => `    ${JSON.stringify(t)}`).join(',\n');
+  const esqueleto = JSON.stringify({ ...cabecalho, bricks: [] }, null, 2);
+  return `${esqueleto.replace('"bricks": []', () => `"bricks": [\n${linhas}\n  ]`)}\n`;
+}
+
+/**
+ * Os arquivos da pirâmide EM MEMÓRIA (gzip nível 9 de cada tijolo,
+ * sha256 e bytes do `.bin.gz`, um índice por nível) e a entrada
+ * `dustPyramid` do manifesto. `niveis` é a saída de `gerarNivel`, em
+ * ordem; `n0` é `{ file, sha256 }` do bloco de 20 pc sobre o qual a
+ * pirâmide foi gerada — o índice do n1 aponta para ele, o de cada nível
+ * seguinte para o sha256 do índice anterior, e o manifesto para os três.
+ */
+export function montarArtefatosDaPiramide(niveis, { piramide, escala, n0, gerado }) {
+  const arquivos = [];
+  const levels = [];
+  let pai = { level: 0, asset: 'dustVolumeNear20pc', file: n0.file, sha256: n0.sha256 };
+  for (const nivel of niveis) {
+    const k = nivel.nivel;
+    let bytesDosTijolos = 0;
+    const bricks = nivel.gravados.map(({ b, bytes }) => {
+      const gz = gzipSync(bytes, { level: 9 });
+      const file = caminhoDoTijolo(k, b);
+      arquivos.push({ relativo: file, conteudo: gz });
+      bytesDosTijolos += gz.byteLength;
+      return { b, file, bytes: gz.byteLength, sha256: sha256(gz) };
+    });
+    const lado = piramide.tijolo + 2;
+    const indice = {
+      level: k,
+      voxelPc: nivel.grade.voxelPc,
+      originPc: nivel.grade.origemPc,
+      dims: [nivel.grade.nx, nivel.grade.ny, nivel.grade.nz],
+      radiusPc: nivel.raioPc,
+      brickCore: piramide.tijolo,
+      brickHalo: 1,
+      brickDims: dimsEmTijolos(nivel.grade, piramide.tijolo),
+      scale: escala,
+      type: 'float16',
+      unit: 'E_ZGR23 per pc',
+      frame:
+        'heliocentric-galactic: x→GC (l=0,b=0), y→l=90°, z→NGP; voxel centres at originPc + (i + 0.5)·voxelPc',
+      brickLayout:
+        `gzip of ${lado}×${lado}×${lado} float16 LE (${lado ** 3 * 2} bytes), index sx + ${lado}·(sy + ${lado}·sz); ` +
+        `stored voxel s is level voxel ${piramide.tijolo}·b − 1 + s (s = 0 and ${lado - 1} are the halo)`,
+      parent: pai,
+      region: DESCRICAO_REGIAO,
+      outsideLevel: DESCRICAO_FORA,
+      halo: DESCRICAO_ABA,
+      sparsity: DESCRICAO_ESPARSIDADE,
+      residualThreshold: piramide.limiarResiduo,
+      subsamples: piramide.subamostras,
+      method:
+        `mean of ${piramide.subamostras}×${piramide.subamostras}×${piramide.subamostras} stratified subsamples ` +
+        'per voxel of the official interpolator (interp_hp2rg): bilinear HEALPix NEST (healpy get_interp_weights) ' +
+        'on the two neighbouring shells + linear in r between shell centres',
+      existingBricks: nivel.tijolosExistentes,
+      maxOmittedResidual: nivel.maiorResiduoOmitido,
+      nanSubsamples: nivel.naoFinitas,
+      generated: gerado,
+      source: 'Edenhofer2024',
+      license: 'CC-BY-4.0',
+      bricks,
+    };
+    const conteudo = Buffer.from(textoDoIndice(indice), 'utf8');
+    const arquivoIndice = caminhoDoIndice(k);
+    arquivos.push({ relativo: arquivoIndice, conteudo });
+    const shaIndice = sha256(conteudo);
+    levels.push({
+      level: k,
+      index: arquivoIndice,
+      bytes: conteudo.byteLength,
+      sha256: shaIndice,
+      voxelPc: nivel.grade.voxelPc,
+      radiusPc: nivel.raioPc,
+      existingBricks: nivel.tijolosExistentes,
+      storedBricks: bricks.length,
+      brickBytes: bytesDosTijolos,
+    });
+    pai = { level: k, index: arquivoIndice, sha256: shaIndice };
+  }
+  const entrada = {
+    kind: 'volume-pyramid',
+    parent: 'dustVolumeNear20pc',
+    parentSha256: n0.sha256,
+    directory: DIRETORIO_PIRAMIDE,
+    levels,
+    brickFiles:
+      'gzip only (.bin.gz): without DecompressionStream the fine levels are unavailable and dustVolumeNear20pc stays',
+    generated: gerado,
+    source: 'Edenhofer2024',
+    license: 'CC-BY-4.0',
+  };
+  return { arquivos, entrada };
+}
+
+/**
+ * Grava a pirâmide inteira numa pasta nova e troca de uma vez: a antiga
+ * (e com ela todo tijolo que deixou de ser gravado) só sai depois que a
+ * nova está completa no disco.
+ */
+async function gravarPiramide(diretorioPublico, arquivos) {
+  const destino = path.join(diretorioPublico, ...DIRETORIO_PIRAMIDE.split('/'));
+  const nova = `${destino}.nova`;
+  const velha = `${destino}.velha`;
+  await rm(nova, { recursive: true, force: true });
+  for (const { relativo, conteudo } of arquivos) {
+    const alvo = path.join(nova, ...path.posix.relative(DIRETORIO_PIRAMIDE, relativo).split('/'));
+    await mkdir(path.dirname(alvo), { recursive: true });
+    await writeFile(alvo, conteudo);
+  }
+  await rm(velha, { recursive: true, force: true });
+  if (existsSync(destino)) await rename(destino, velha);
+  await rename(nova, destino);
+  await rm(velha, { recursive: true, force: true });
+}
+
+/** Mesma grade (dims, voxel, origem) que a do contrato? */
+function gradeDoAtivoIgual(ativo, grade) {
+  return (
+    Array.isArray(ativo.dims) &&
+    ativo.dims.join(',') === [grade.nx, grade.ny, grade.nz].join(',') &&
+    ativo.voxelPc === grade.voxelPc &&
+    Array.isArray(ativo.originPc) &&
+    ativo.originPc.join(',') === grade.origemPc.join(',')
+  );
+}
+
+/**
+ * Núcleo testável da pirâmide. Na ordem: (a) o contrato e a fixture de
+ * referência dos níveis, ANTES de ler o FITS; (b) o n0 — o bloco de 20 pc
+ * do manifesto, conferido pelo sha256; (c) o mapa; (d) os níveis, em
+ * ordem, cada um sobre o campo do anterior; (e) a validação EM MEMÓRIA —
+ * faixa de cada tijolo gravado (finito, ≥ 0, ≤ `LIMITE_E_POR_PC`) e a
+ * referência de cada nível; reprovação lança com os números e NADA é
+ * gravado; (f) os arquivos em memória; (g) só então a pasta
+ * `dust-piramide/` (nova, trocada de uma vez) e, por ÚLTIMO, o
+ * manifesto. `piramide`/`gradeN0` são o contrato; os testes passam uma
+ * pirâmide minúscula.
+ */
+export async function executarNiveis({
+  caminhoFits,
+  caminhoFixtureNiveis,
+  diretorioPublico,
+  piramide = PIRAMIDE_POEIRA,
+  gradeN0 = GRADE_20PC,
+  dataGeracao = new Date().toISOString().slice(0, 10),
+}) {
+  validarPiramide(piramide, gradeN0);
+  if (!existsSync(caminhoFixtureNiveis)) {
+    throw new Error(
+      `executarNiveis: fixture de referência dos níveis não encontrada em ${caminhoFixtureNiveis} ` +
+        '(scripts/data/fixtures/gera-referencia-edenhofer.py niveis); nada foi gravado.'
+    );
+  }
+  const fixture = JSON.parse(await readFile(caminhoFixtureNiveis, 'utf8'));
+  const referenciaDe = (k) => (Array.isArray(fixture.niveis) ? fixture.niveis.find((n) => n.nivel === k) : undefined);
+  for (const nivel of piramide.niveis) {
+    const referencia = referenciaDe(nivel.nivel);
+    // a mesma conferência de grade que `compararNivelComReferencia` faz no
+    // fim, aqui antes do FITS: fixture de outro contrato falha em segundos
+    const grade = referencia?.grade;
+    const bate =
+      grade &&
+      JSON.stringify(grade.dims) === JSON.stringify(nivel.dims) &&
+      grade.voxelPc === nivel.voxelPc &&
+      JSON.stringify(grade.origemPc) === JSON.stringify(piramide.origemPc) &&
+      referencia.raioPc === nivel.raioPc;
+    if (!bate) {
+      throw new Error(
+        `executarNiveis: a fixture não tem o nível ${nivel.nivel} deste contrato ` +
+          `(${nivel.dims.join('×')} @ ${nivel.voxelPc} pc, raio ${nivel.raioPc}); nada foi gravado.`
+      );
+    }
+  }
+
+  const caminhoManifesto = path.join(diretorioPublico, 'data', 'galaxy', 'manifest.json');
+  const manifesto = JSON.parse(await readFile(caminhoManifesto, 'utf8'));
+  const ativoN0 = manifesto.assets?.dustVolumeNear20pc;
+  if (ativoN0?.kind !== 'volume' || !gradeDoAtivoIgual(ativoN0, gradeN0)) {
+    throw new Error(
+      'executarNiveis: o manifesto não tem o bloco de 20 pc do contrato (dustVolumeNear20pc) — ' +
+        'rode npm run data:poeira antes; nada foi gravado.'
+    );
+  }
+  const bytesN0 = await readFile(path.join(diretorioPublico, ativoN0.file));
+  if (sha256(bytesN0) !== ativoN0.sha256) {
+    throw new Error(
+      `executarNiveis: ${ativoN0.file} no disco não é o do manifesto (SHA-256 diverge) — ` +
+        'rode npm run data:verify; nada foi gravado.'
+    );
+  }
+  const escala = ativoN0.scale;
+  const campo = criarCampo({ grade: gradeN0, valores: deFloat16(bytesN0, escala) });
+  fase('contrato, fixture e bloco de 20 pc');
+
+  const { imagem, radii, nPix } = lerMapaEdenhofer(caminhoFits);
+  const amostrador = amostradorEdenhoferBilinear(imagem, radii, nPix);
+  fase('leitura do FITS (~1,6 GB)');
+
+  const niveis = [];
+  for (const nivel of piramide.niveis) {
+    const inicio = Date.now();
+    let proximoMarco = 0.1;
+    const resultadoNivel = gerarNivel({
+      amostrador,
+      campo,
+      piramide,
+      nivel,
+      escala,
+      aoProgredir: (feitos, total) => {
+        while (feitos / total >= proximoMarco - 1e-9) {
+          const segundos = ((Date.now() - inicio) / 1000).toFixed(1);
+          console.log(`  n${nivel.nivel}: ${Math.round(proximoMarco * 100)}% (${feitos}/${total} tijolos) em ${segundos}s`);
+          proximoMarco += 0.1;
+        }
+      },
+    });
+    adicionarNivel(campo, resultadoNivel.grade, piramide.tijolo, resultadoNivel.gravados);
+    niveis.push(resultadoNivel);
+    console.log(
+      `n${nivel.nivel} (${nivel.voxelPc} pc, raio ${nivel.raioPc ?? 'caixa inteira'}): ` +
+        `${resultadoNivel.tijolosExistentes} tijolos no nível, ${resultadoNivel.gravados.length} gravados; ` +
+        `maior resíduo omitido ${resultadoNivel.maiorResiduoOmitido.toExponential(2)} E/pc; ` +
+        `subamostras não finitas ${resultadoNivel.naoFinitas}`
+    );
+    fase(`nível ${nivel.nivel}`);
+  }
+
+  for (const nivel of niveis) {
+    for (const { b, dados } of nivel.gravados) {
+      for (let i = 0; i < dados.length; i += 1) {
+        const v = dados[i];
+        if (!Number.isFinite(v) || v < 0 || v > LIMITE_E_POR_PC) {
+          throw new Error(
+            `executarNiveis: n${nivel.nivel} tijolo ${b.join('_')} com valor fora da faixa ` +
+              `(${v} E/pc no índice ${i}; teto ${LIMITE_E_POR_PC}). Nada foi gravado.`
+          );
+        }
+      }
+    }
+    const resultado = compararNivelComReferencia(campo, piramide, nivel.nivel, referenciaDe(nivel.nivel));
+    if (!resultado.aplicavel) {
+      throw new Error(
+        `executarNiveis: a referência do nível ${nivel.nivel} não se aplica (${resultado.motivo}) Nada foi gravado.`
+      );
+    }
+    const texto =
+      `pior célula ${resultado.maximoRelativo.toFixed(2)} da folga ` +
+      `(${100 * TOLERANCIA_NIVEL.celulaRelativa}% + ${TOLERANCIA_NIVEL.celulaAbsoluta} E/pc; máx 1) ` +
+      `(${JSON.stringify(resultado.pior.indice)}: ${resultado.pior.atual.toExponential(3)} × ` +
+      `referência ${resultado.pior.esperado.toExponential(3)}), ` +
+      `${resultado.emTijoloGravado}/${resultado.celulas} células em tijolo gravado`;
+    if (!resultado.aprovado) {
+      throw new Error(
+        `executarNiveis: nível ${nivel.nivel} FORA DA TOLERÂNCIA contra o interpolador oficial — ${texto}. ` +
+          'Nada foi gravado.'
+      );
+    }
+    console.log(`referência do n${nivel.nivel}: ${texto}.`);
+  }
+  fase('validação em memória (faixa + referência)');
+
+  const { arquivos, entrada } = montarArtefatosDaPiramide(niveis, {
+    piramide,
+    escala,
+    n0: { file: ativoN0.file, sha256: ativoN0.sha256 },
+    gerado: dataGeracao,
+  });
+  fase('gzip + sha256 + índices');
+
+  await gravarPiramide(diretorioPublico, arquivos);
+  const manifestoFinal = JSON.parse(await readFile(caminhoManifesto, 'utf8'));
+  manifestoFinal.dustPyramid = entrada;
+  manifestoFinal.sources ??= [];
+  if (!manifestoFinal.sources.some((s) => s.id === 'Edenhofer2024')) {
+    manifestoFinal.sources.push({
+      id: 'Edenhofer2024',
+      role: '3D dust extinction density (mean map) within 1.25 kpc of the Sun',
+      paper: 'https://doi.org/10.1051/0004-6361/202347628',
+      archive: 'https://doi.org/10.5281/zenodo.10658339',
+      license: 'CC-BY-4.0',
+    });
+  }
+  await writeFile(caminhoManifesto, `${JSON.stringify(manifestoFinal, null, 2)}\n`);
+  for (const nivel of entrada.levels) {
+    console.log(
+      `gravado n${nivel.level}: ${nivel.storedBricks} tijolos, ${(nivel.brickBytes / 1048576).toFixed(1)} MB gz ` +
+        `(${nivel.index})`
+    );
+  }
+  fase('escrita da pirâmide + manifesto');
+  return { niveis, entrada };
+}
+
+export async function mainNiveis() {
+  const t0 = Date.now();
+  await garantirMapa(caminhoFits, esperadoPath);
+  fase('verificação do FITS (tamanho + md5)');
+  const { entrada } = await executarNiveis({
+    caminhoFits,
+    caminhoFixtureNiveis: fixtureNiveisPath,
+    diretorioPublico: publicDirectory,
+  });
+  const megabytes = entrada.levels.reduce((soma, n) => soma + n.brickBytes, 0) / 1048576;
+  console.log(
+    `total: ${((Date.now() - t0) / 1000).toFixed(1)}s; pirâmide ${megabytes.toFixed(1)} MB; ` +
+      `pico de memória ${(process.resourceUsage().maxRSS / 1048576).toFixed(2)} GB`
+  );
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((erro) => {
+  (process.argv.includes('--niveis') ? mainNiveis : main)().catch((erro) => {
     console.error(erro);
     process.exitCode = 1;
   });

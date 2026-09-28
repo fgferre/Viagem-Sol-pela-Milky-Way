@@ -12,9 +12,193 @@ import {
 } from '../shaders/nebulaShaders';
 import { makeBlueNoiseTexture } from './blueNoise';
 import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
+import { NIVEIS_DA_PIRAMIDE_NO_SHADER } from '../shaders/common';
 import { diagnosticoDaPoeira } from '../../lib/diagnosticoDaPoeira';
 import type { GasVolumetrico } from '../core/engine';
 import type { VolumeDePoeira } from '../cartography/galacticAssets';
+import {
+  LADO_DA_VAGA,
+  NUCLEO_DO_TIJOLO,
+  RAIO_DESEJADO_PC,
+  ResidenciaDaPiramide,
+} from '../cartography/piramideDePoeira';
+import type {
+  FonteDeTijolos,
+  LoteParaGpu,
+  NivelDaPiramide,
+  OrcamentoDaPiramide,
+  PiramideDePoeira,
+  ResumoDaResidencia,
+  Trio,
+} from '../cartography/piramideDePoeira';
+import { EX, EY, EZ } from './baseGalactica';
+
+// ---- A pirâmide da poeira: as contas puras do lado da GPU (E3c) ----------
+
+/**
+ * Cena → heliocêntrico galáctico CONVENCIONAL (pc; x → centro galáctico,
+ * y → l = 90°, z → polo norte), o referencial do bloco e da pirâmide. É a
+ * inversa de `helioGalacticoParaCena` (world/baseGalactica.ts): a base
+ * EX/EY/EZ é ortonormal e o Sol é a origem da cena, então basta projetar
+ * — a mesma conta de `poeiraHelio` no shader. Serve à POSIÇÃO e à
+ * DIREÇÃO da câmera (sem translação, as duas passam pela mesma rotação).
+ */
+export function cenaParaHelioGalactico(x: number, y: number, z: number): Trio {
+  return [
+    -(x * EX.x + y * EX.y + z * EX.z),
+    -(x * EY.x + y * EY.y + z * EY.z),
+    x * EZ.x + y * EZ.y + z * EZ.z,
+  ];
+}
+
+/** largura das rampas de um nível no shader, em voxels DELE (8 voxels:
+ *  20 pc no n3, 40 no n2, 80 no n1) */
+const BANDA_DA_RAMPA_EM_VOXELS = 8;
+/** as rampas de um nível que o shader nunca lê: as duas terminam antes
+ *  de 0, e t e |p| nunca são negativos — bordas em ordem, peso 0 */
+export const RAMPAS_DESLIGADAS: readonly [number, number, number, number] = [-2, -1, -2, -1];
+/** "sem região" (o n1 cobre a caixa inteira): uma rampa que |p| nunca
+ *  alcança, finita para o uniform */
+const SEM_REGIAO_PC = 1e9;
+
+/**
+ * As rampas do peso do nível no shader, `[aₖ, bₖ, Aₖ, Bₖ]` — ver
+ * `GLSL_POEIRA_NIVEIS` em shaders/common.ts:
+ *
+ *   wₖ = [1 − S(t; aₖ, bₖ)]·[1 − S(|p|; Aₖ, Bₖ)]
+ *
+ * bₖ = RAIO_DESEJADO_PC[k] − meia diagonal do tijolo: com peso > 0 o
+ * ponto está a menos de bₖ da câmera, o centro do tijolo dele a menos de
+ * bₖ + meia diagonal = o raio — e é esse o critério com que a residência
+ * DESEJA um tijolo. O shader só lê tijolo desejado; o que a carência
+ * segura fora do raio não entra, e a imagem não depende do caminho que a
+ * câmera fez. Bₖ = o raio da região do nível: todo tijolo que toca a
+ * região existe (gravado ou omitido), então dentro dela nunca falta nível.
+ * Um nível cujas rampas não caberiam (raio pequeno demais para o tijolo)
+ * sai desligado.
+ */
+export function raiosDoNivel(
+  n: Pick<NivelDaPiramide, 'nivel' | 'voxelPc' | 'raioPc'>
+): [number, number, number, number] {
+  const raio = RAIO_DESEJADO_PC[n.nivel] ?? 0;
+  const banda = BANDA_DA_RAMPA_EM_VOXELS * n.voxelPc;
+  const camFim = raio - (Math.sqrt(3) / 2) * NUCLEO_DO_TIJOLO * n.voxelPc;
+  const camIni = camFim - banda;
+  if (!(camIni > 0)) return [...RAMPAS_DESLIGADAS];
+  if (!Number.isFinite(n.raioPc)) return [camIni, camFim, SEM_REGIAO_PC, 2 * SEM_REGIAO_PC];
+  const regIni = n.raioPc - banda;
+  if (!(regIni > 0)) return [...RAMPAS_DESLIGADAS];
+  return [camIni, camFim, regIni, n.raioPc];
+}
+
+/** o peso do nível num ponto — o espelho em TS de `poeiraPesoDoNivel`
+ *  (t = distância à câmera, r = distância ao Sol), para os testes */
+export function pesoDoNivel(raios: readonly number[], t: number, r: number): number {
+  const [a, b, ra, rb] = raios;
+  return (
+    (1 - THREE.MathUtils.smoothstep(t, a, b)) * (1 - THREE.MathUtils.smoothstep(r, ra, rb))
+  );
+}
+
+/**
+ * As tabelas de páginas dos níveis EMPILHADAS em z numa textura só
+ * (R16UI): o nível i ocupa as camadas [deslocamentoZ[i], + nbz) — um
+ * sampler em vez de um por nível. Largura e altura são as do maior nível.
+ */
+export interface PilhaDeTabelas {
+  largura: number;
+  altura: number;
+  profundidade: number;
+  deslocamentoZ: number[];
+}
+
+export function empilharTabelas(tijolosPorNivel: readonly Trio[]): PilhaDeTabelas {
+  const deslocamentoZ: number[] = [];
+  let profundidade = 0;
+  let largura = 1;
+  let altura = 1;
+  for (const [nbx, nby, nbz] of tijolosPorNivel) {
+    deslocamentoZ.push(profundidade);
+    profundidade += nbz;
+    largura = Math.max(largura, nbx);
+    altura = Math.max(altura, nby);
+  }
+  return { largura, altura, profundidade: Math.max(profundidade, 1), deslocamentoZ };
+}
+
+/** o texel da pilha para a entrada `indice` (bi + nbx·(bj + nby·bk), a
+ *  numeração da residência) do nível `i` da pilha */
+export function texelNaPilha(pilha: PilhaDeTabelas, i: number, tijolos: Trio, indice: number): number {
+  const [nbx, nby] = tijolos;
+  const bi = indice % nbx;
+  const resto = Math.floor(indice / nbx);
+  const bj = resto % nby;
+  const bk = Math.floor(resto / nby);
+  return bi + pilha.largura * (bj + pilha.altura * (pilha.deslocamentoZ[i] + bk));
+}
+
+/**
+ * Quanto a captura espera a residência assentar (`carregando` falso)
+ * antes de soltar mesmo assim, em s de relógio do app. Um tijolo que dá
+ * erro só desiste em ~12 s (3 tentativas, esperas de 4 e 8 s — a regra
+ * das texturas), e até lá já aparece no nível de cima, a mesma imagem de
+ * depois da desistência; 8 s solta antes disso e antes da rede de
+ * segurança do harness (700 quadros, ~12 s a 60 Hz), e sobra folga para a
+ * carga normal (centenas de ms em rede local). O que ainda não chegou
+ * aparece no nível de cima — nunca um buraco.
+ */
+export const TETO_DA_ESPERA_DA_PIRAMIDE_S = 8;
+
+/** a pirâmide já na GPU — o que `setPiramide` monta e `dispose` solta */
+interface PiramideNaGpu {
+  residencia: ResidenciaDaPiramide;
+  niveis: readonly NivelDaPiramide[];
+  pilha: PilhaDeTabelas;
+  dadosDasTabelas: Uint16Array;
+  tabelas: THREE.Data3DTexture;
+  atlas: THREE.Data3DTexture;
+  vagas: number;
+  /** algum `atualizar` já rodou desde que ela chegou? antes disso a
+   *  residência diria "nada carregando" sem ter pedido nada */
+  atualizada: boolean;
+  /** desde quando (relógio do app) a residência está carregando */
+  carregandoDesdeS: number | null;
+  agoraS: number;
+}
+
+/**
+ * O atlas R16F (linear, ClampToEdge — a aba de cada vaga mantém o
+ * trilinear dentro dela). Com `dados` nulo a GPU só RESERVA a memória
+ * (`dataReady = false`: `texStorage3D` sem subida, zerada pelo WebGL) —
+ * os tijolos sobem vaga a vaga por `copyTextureToTexture`, e 20 MB de
+ * zeros na CPU só para a primeira subida seriam desperdício.
+ */
+function texturaDoAtlas(dados: Uint16Array | null, [x, y, z]: Trio): THREE.Data3DTexture {
+  const tex = new THREE.Data3DTexture(dados, x, y, z);
+  tex.format = THREE.RedFormat;
+  tex.type = THREE.HalfFloatType;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.wrapR = THREE.ClampToEdgeWrapping;
+  tex.source.dataReady = dados !== null;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+/** a pilha das tabelas: R16UI (inteiro sem sinal — lida por `texelFetch`
+ *  num `usampler3D`, sem filtro) */
+function texturaDasTabelas(dados: Uint16Array, [x, y, z]: Trio): THREE.Data3DTexture {
+  const tex = new THREE.Data3DTexture(dados, x, y, z);
+  tex.format = THREE.RedIntegerFormat;
+  tex.type = THREE.UnsignedShortType;
+  tex.internalFormat = 'R16UI';
+  tex.minFilter = THREE.NearestFilter;
+  tex.magFilter = THREE.NearestFilter;
+  tex.needsUpdate = true;
+  return tex;
+}
 
 /** a variante de nascença — a mesma que o fragment do raymarch e do bake
  *  sempre foram antes do item 145b (macio: tudo assado, sem `?nebvol=`
@@ -79,8 +263,8 @@ export class Nebula {
    * variante trocou.
    */
   private variante: GasVolumetrico = VARIANTE_DE_NASCENCA;
-  private materiaisRaymarch = new Map<GasVolumetrico, THREE.ShaderMaterial>();
-  private materiaisBake = new Map<GasVolumetrico, THREE.ShaderMaterial>();
+  private materiaisRaymarch = new Map<string, THREE.ShaderMaterial>();
+  private materiaisBake = new Map<string, THREE.ShaderMaterial>();
   private scale: number;
   /**
    * O QUADRO CONGELADO (item 144). O raymarch não tem uniform de tempo:
@@ -198,6 +382,27 @@ export class Nebula {
    * dois materiais.
    */
   private poeiraModoPedido = 0;
+  /**
+   * A PIRÂMIDE DA POEIRA (E3c) — o atlas de tijolos, as tabelas de páginas
+   * e a residência que decide quem mora no atlas (`setPiramide`); `null`
+   * = só o n0, o bloco de 20 pc de sempre. Só é LIDA com a poeira ativa
+   * numa variante que a lê (`piramideAtiva`): aí os materiais trocam para
+   * os da pirâmide (`aplicarMateriais`); sem ela, o texto de hoje.
+   */
+  private piramide: PiramideNaGpu | null = null;
+  /** os samplers da pirâmide antes dela chegar — tipos certos (R16F no
+   *  atlas, R16UI nas tabelas), nunca lidos: com as rampas desligadas o
+   *  shader nem pergunta */
+  private fallbackAtlas: THREE.Data3DTexture;
+  private fallbackTabelas: THREE.Data3DTexture;
+  /**
+   * O PORTADOR das subidas: uma Data3DTexture de 34³ que NUNCA sobe à GPU
+   * — só empresta `image.data` (os bits de um tijolo) a
+   * `renderer.copyTextureToTexture`, que, com uma origem que o renderer
+   * não conhece, faz um `texSubImage3D` direto da memória para a vaga.
+   */
+  private portador: THREE.Data3DTexture;
+  private posicaoDaSubida = new THREE.Vector3();
 
   constructor(scale = 0.5) {
     this.scale = scale;
@@ -302,6 +507,13 @@ export class Nebula {
     this.fallbackPoeiraTex.wrapT = THREE.ClampToEdgeWrapping;
     this.fallbackPoeiraTex.wrapR = THREE.ClampToEdgeWrapping;
     this.fallbackPoeiraTex.needsUpdate = true;
+    // A pirâmide (E3c): os dois samplers de reserva e o portador das
+    // subidas — ver os campos. Nada disto toca a GPU sem a pirâmide.
+    this.fallbackAtlas = texturaDoAtlas(new Uint16Array([0]), [1, 1, 1]);
+    this.fallbackTabelas = texturaDasTabelas(new Uint16Array([0]), [1, 1, 1]);
+    this.portador = new THREE.Data3DTexture(null, LADO_DA_VAGA, LADO_DA_VAGA, LADO_DA_VAGA);
+    this.portador.format = THREE.RedFormat;
+    this.portador.type = THREE.HalfFloatType;
     this.volumeMaterial = new THREE.ShaderMaterial({
       vertexShader: NEBULA_VERT,
       fragmentShader: nebulaBakeFrag(VARIANTE_DE_NASCENCA),
@@ -382,6 +594,25 @@ export class Nebula {
         uPoeiraGanho: { value: 46.9 },
         uPoeiraGama: { value: 1 },
         uPoeiraLanes: { value: 0 },
+        // A pirâmide (E3c) — só os fragments DELA declaram estes (ver
+        // GLSL_POEIRA_NIVEIS em shaders/common.ts); o texto de hoje não os
+        // lê, e o three ignora uniform que o programa não tem.
+        uPoeiraAtlas: { value: this.fallbackAtlas },
+        uPoeiraTabelas: { value: this.fallbackTabelas },
+        uPoeiraAtlasTexel: { value: new THREE.Vector3(1, 1, 1) },
+        uPoeiraVagas: { value: new THREE.Vector3(1, 1, 1) },
+        uPoeiraNivel: {
+          value: Array.from({ length: NIVEIS_DA_PIRAMIDE_NO_SHADER }, () => new THREE.Vector4(0, 0, 0, 1)),
+        },
+        uPoeiraNivelTijolos: {
+          value: Array.from({ length: NIVEIS_DA_PIRAMIDE_NO_SHADER }, () => new THREE.Vector4(1, 1, 1, 0)),
+        },
+        uPoeiraNivelRaios: {
+          value: Array.from({ length: NIVEIS_DA_PIRAMIDE_NO_SHADER }, () =>
+            new THREE.Vector4(...RAMPAS_DESLIGADAS)
+          ),
+        },
+        uPoeiraNivelEscala: { value: new Float32Array(NIVEIS_DA_PIRAMIDE_NO_SHADER) },
       },
       depthWrite: false,
       depthTest: false,
@@ -400,17 +631,21 @@ export class Nebula {
    * que lê os mesmos uniforms, então nenhum setter (`setFade`,
    * `setCavity`...) precisa saber que a variante mudou.
    */
-  private materialDoRaymarch(v: GasVolumetrico): THREE.ShaderMaterial {
-    let m = this.materiaisRaymarch.get(v);
+  private materialDoRaymarch(v: GasVolumetrico, piramide = false): THREE.ShaderMaterial {
+    // a pirâmide (E3c) é outra chave do cache só onde muda o texto: o
+    // antigo nunca lê a poeira
+    const comPiramide = piramide && v !== 'antigo';
+    const chave = comPiramide ? `${v}+piramide` : v;
+    let m = this.materiaisRaymarch.get(chave);
     if (!m) {
       m = new THREE.ShaderMaterial({
         vertexShader: NEBULA_VERT,
-        fragmentShader: nebulaFrag(v),
+        fragmentShader: nebulaFrag(v, comPiramide),
         uniforms: this.material.uniforms,
         depthWrite: false,
         depthTest: false,
       });
-      this.materiaisRaymarch.set(v, m);
+      this.materiaisRaymarch.set(chave, m);
     }
     return m;
   }
@@ -420,19 +655,59 @@ export class Nebula {
    * mas só fino/macio: o caminho antigo nunca assa (ver `render()`), e
    * quem chama aqui já garantiu isso.
    */
-  private materialDoBake(v: Exclude<GasVolumetrico, 'antigo'>): THREE.ShaderMaterial {
-    let m = this.materiaisBake.get(v);
+  private materialDoBake(
+    v: Exclude<GasVolumetrico, 'antigo'>,
+    piramide = false
+  ): THREE.ShaderMaterial {
+    // a pirâmide (E3c) só muda o bake do macio (o medido sai dele); o do
+    // fino não assa o medido nem hoje, e o texto é o mesmo
+    const comPiramide = piramide && v === 'macio';
+    const chave = comPiramide ? `${v}+piramide` : v;
+    let m = this.materiaisBake.get(chave);
     if (!m) {
       m = new THREE.ShaderMaterial({
         vertexShader: NEBULA_VERT,
-        fragmentShader: nebulaBakeFrag(v),
+        fragmentShader: nebulaBakeFrag(v, comPiramide),
         uniforms: this.volumeMaterial.uniforms,
         depthWrite: false,
         depthTest: false,
       });
-      this.materiaisBake.set(v, m);
+      this.materiaisBake.set(chave, m);
     }
     return m;
+  }
+
+  /**
+   * A PIRÂMIDE É LIDA AGORA? Presente E a poeira ativa (modo efetivo ≠ 0:
+   * pedida, n0 carregado e uma variante que a lê — ver
+   * `atualizarModoEfetivo`). Falso = os materiais de hoje, texto idêntico.
+   */
+  private get piramideAtiva(): boolean {
+    return this.piramide !== null && (this.material.uniforms.uPoeiraModo.value as number) !== 0;
+  }
+
+  /**
+   * OS MATERIAIS DA VEZ, num lugar só: os da variante, com ou sem a
+   * pirâmide (`piramideAtiva`). Chamada por `setVariante`,
+   * `atualizarModoEfetivo` e `setPiramide` — as três coisas de que a
+   * escolha depende. Trocar o bake (o do macio com a pirâmide guarda só
+   * o inventado) reassa; trocar o raymarch refaz a imagem.
+   */
+  private aplicarMateriais() {
+    const ativa = this.piramideAtiva;
+    const m = this.materialDoRaymarch(this.variante, ativa);
+    if (m !== this.material) {
+      this.material = m;
+      this.quad.material = m;
+      this.sujo = true;
+    }
+    if (this.variante === 'antigo') return;
+    const b = this.materialDoBake(this.variante, ativa);
+    if (b !== this.volumeMaterial) {
+      this.volumeMaterial = b;
+      this.volumeQuad.material = b;
+      this.volumeSujo = true;
+    }
   }
 
   /**
@@ -448,13 +723,8 @@ export class Nebula {
   setVariante(v: GasVolumetrico) {
     if (v === this.variante) return;
     this.variante = v;
-    this.material = this.materialDoRaymarch(v);
-    this.quad.material = this.material;
-    if (v !== 'antigo') {
-      this.volumeMaterial = this.materialDoBake(v);
-      this.volumeQuad.material = this.volumeMaterial;
-      this.volumeSujo = true;
-    }
+    this.aplicarMateriais();
+    if (v !== 'antigo') this.volumeSujo = true;
     // a imagem mudou: o quadro congelado (item 144) precisa refazer o
     // raymarch mesmo com a câmera parada, senão o céu da variante
     // anterior persistiria
@@ -510,6 +780,9 @@ export class Nebula {
     this.volumeMaterial.uniforms.uPoeiraModo.value = efetivo;
     this.volumeSujo = true;
     this.sujo = true;
+    // a pirâmide (E3c) só é lida com a poeira ativa: ligar/desligar o
+    // efetivo troca os materiais (com ela ↔ os de hoje)
+    this.aplicarMateriais();
   }
 
   /**
@@ -556,7 +829,9 @@ export class Nebula {
     const esperado = this.modoEsperado;
     const efetivo =
       esperado !== 0 && this.poeiraModoPedido !== 0 && this.poeiraVolumeCarregado ? esperado : 0;
-    const precisaRebake = efetivo === 1;
+    // com a pirâmide no macio (E3c) o bake guarda só o inventado — o
+    // medido, com ganho/gama/lanes, é lido por passo, como no fino
+    const precisaRebake = efetivo === 1 && this.piramide === null;
     if (u.uPoeiraGanho.value !== ganhoClamp) {
       u.uPoeiraGanho.value = ganhoClamp;
       uv.uPoeiraGanho.value = ganhoClamp;
@@ -676,6 +951,158 @@ export class Nebula {
     // com poeira ligada esperavam o teto de segurança da prontidão)
     const apagada = (this.material.uniforms.uFade.value as number) <= 0.02;
     return this.poeiraVolumeCarregado && (!this.volumeSujo || apagada);
+  }
+
+  /**
+   * A PIRÂMIDE DA POEIRA CHEGOU (E3c) — ou `null`: sem ela, ou ao trocar
+   * de fonte, de orçamento, ou na perda de contexto. Monta a GPU dela: o
+   * ATLAS (vagas de 34³, R16F, só reservado), a PILHA de tabelas de
+   * páginas (R16UI; a tabela inteira de cada nível sobe aqui, com os
+   * OMITIDOS já marcados) e a RESIDÊNCIA, que decide a cada quadro quem
+   * mora no atlas (`atualizarPiramide`). A velha é descartada inteira —
+   * buscas abortadas, texturas soltas — depois que os uniforms já não a
+   * apontam. Até `NIVEIS_DA_PIRAMIDE_NO_SHADER` níveis; um orçamento sem
+   * vaga é o mesmo que nenhuma pirâmide.
+   */
+  setPiramide(
+    entrada: { piramide: PiramideDePoeira; fonte: FonteDeTijolos; orcamento: OrcamentoDaPiramide } | null
+  ) {
+    const velha = this.piramide;
+    this.piramide = null;
+    velha?.residencia.descartar();
+    const u = this.material.uniforms;
+    const niveis = entrada ? entrada.piramide.niveis.slice(0, NIVEIS_DA_PIRAMIDE_NO_SHADER) : [];
+    const nivelDoShader = u.uPoeiraNivel.value as THREE.Vector4[];
+    const tijolosDoShader = u.uPoeiraNivelTijolos.value as THREE.Vector4[];
+    const raiosDoShader = u.uPoeiraNivelRaios.value as THREE.Vector4[];
+    const escalaDoShader = u.uPoeiraNivelEscala.value as Float32Array;
+    for (let i = 0; i < NIVEIS_DA_PIRAMIDE_NO_SHADER; i++) {
+      nivelDoShader[i].set(0, 0, 0, 1);
+      tijolosDoShader[i].set(1, 1, 1, 0);
+      raiosDoShader[i].set(...RAMPAS_DESLIGADAS);
+      escalaDoShader[i] = 0;
+    }
+    if (entrada && niveis.length > 0 && entrada.orcamento.vagas > 0) {
+      const residencia = new ResidenciaDaPiramide({ niveis }, entrada.orcamento, entrada.fonte);
+      const pilha = empilharTabelas(niveis.map((n) => n.dimsEmTijolos));
+      const dadosDasTabelas = new Uint16Array(pilha.largura * pilha.altura * pilha.profundidade);
+      niveis.forEach((n, i) => {
+        const tabela = residencia.tabela(n.nivel);
+        if (!tabela) return;
+        for (let indice = 0; indice < tabela.length; indice++) {
+          dadosDasTabelas[texelNaPilha(pilha, i, n.dimsEmTijolos, indice)] = tabela[indice];
+        }
+        const [ox, oy, oz] = n.origemPc;
+        nivelDoShader[i].set(ox, oy, oz, n.voxelPc);
+        tijolosDoShader[i].set(...n.dimsEmTijolos, pilha.deslocamentoZ[i]);
+        raiosDoShader[i].set(...raiosDoNivel(n));
+        escalaDoShader[i] = 1 / n.escala;
+      });
+      const tabelas = texturaDasTabelas(dadosDasTabelas, [pilha.largura, pilha.altura, pilha.profundidade]);
+      const { layout } = entrada.orcamento;
+      const atlas = texturaDoAtlas(null, layout.texels);
+      this.piramide = {
+        residencia,
+        niveis,
+        pilha,
+        dadosDasTabelas,
+        tabelas,
+        atlas,
+        vagas: entrada.orcamento.vagas,
+        atualizada: false,
+        carregandoDesdeS: null,
+        agoraS: 0,
+      };
+      u.uPoeiraAtlas.value = atlas;
+      u.uPoeiraTabelas.value = tabelas;
+      (u.uPoeiraAtlasTexel.value as THREE.Vector3).set(
+        1 / layout.texels[0],
+        1 / layout.texels[1],
+        1 / layout.texels[2]
+      );
+      (u.uPoeiraVagas.value as THREE.Vector3).set(...layout.vagasPorEixo);
+    } else {
+      u.uPoeiraAtlas.value = this.fallbackAtlas;
+      u.uPoeiraTabelas.value = this.fallbackTabelas;
+    }
+    this.aplicarMateriais();
+    this.sujo = true;
+    velha?.atlas.dispose();
+    velha?.tabelas.dispose();
+  }
+
+  /** as vagas da pirâmide no ar (0 = nenhuma) — o director compara com o
+   *  orçamento do tier para remontar quando ele muda */
+  get vagasDaPiramide(): number {
+    return this.piramide?.vagas ?? 0;
+  }
+
+  /** o resumo da residência (diagnóstico: `__director.nebula`) */
+  get resumoDaPiramide(): ResumoDaResidencia | null {
+    return this.piramide?.residencia.resumo() ?? null;
+  }
+
+  /**
+   * A CADA QUADRO, antes do desenho (E3c): a câmera vai à residência, no
+   * referencial do bloco, e o lote que ela devolve sobe INTEIRO — os
+   * tijolos direto nas vagas do atlas (`texSubImage3D` pelo portador), as
+   * mudanças na cópia da pilha de tabelas, que sobe no próximo desenho
+   * que a ler. É nessa fronteira que vale a garantia da residência:
+   * nenhuma entrada aponta para uma vaga com outro tijolo dentro. Sem a
+   * pirâmide ativa não faz nada — nem busca (o Gaia desligado, o gás
+   * antigo ou o n0 ainda em voo não pedem tijolo). `tS` é o relógio de
+   * parede do app (o do tick), o mesmo da carência das texturas.
+   */
+  atualizarPiramide(renderer: THREE.WebGLRenderer, tS: number, camera: THREE.Camera) {
+    const p = this.piramide;
+    if (!p || !this.piramideAtiva) return;
+    const pos = camera.position;
+    camera.getWorldDirection(this.scratchFwd);
+    const lote = p.residencia.atualizar(tS, {
+      posicaoPc: cenaParaHelioGalactico(pos.x, pos.y, pos.z),
+      frente: cenaParaHelioGalactico(this.scratchFwd.x, this.scratchFwd.y, this.scratchFwd.z),
+    });
+    this.aplicarLote(renderer, p, lote);
+    p.atualizada = true;
+    p.agoraS = tS;
+    if (!p.residencia.carregando) p.carregandoDesdeS = null;
+    else p.carregandoDesdeS ??= tS;
+  }
+
+  private aplicarLote(renderer: THREE.WebGLRenderer, p: PiramideNaGpu, lote: LoteParaGpu) {
+    if (lote.subidas.length === 0 && lote.mudancas.length === 0) return;
+    for (const subida of lote.subidas) {
+      this.portador.image.data = subida.dados;
+      this.posicaoDaSubida.set(...subida.origemTexel);
+      renderer.copyTextureToTexture(this.portador, p.atlas, null, this.posicaoDaSubida);
+    }
+    // o portador não segura bytes que a residência pode soltar
+    this.portador.image.data = null;
+    for (const mudanca of lote.mudancas) {
+      const i = p.niveis.findIndex((n) => n.nivel === mudanca.nivel);
+      if (i < 0) continue;
+      p.dadosDasTabelas[texelNaPilha(p.pilha, i, p.niveis[i].dimsEmTijolos, mudanca.indice)] =
+        mudanca.codigo;
+    }
+    if (lote.mudancas.length > 0) p.tabelas.needsUpdate = true;
+    // a imagem mudou: o quadro congelado (item 144) refaz o raymarch
+    this.sujo = true;
+  }
+
+  /**
+   * PRONTIDÃO DA CAPTURA para a pirâmide (E3c): nada a esperar sem ela,
+   * sem ela ativa ou com o gás apagado; com ela, espera a residência
+   * rodar pela primeira vez e assentar (`carregando` falso — todo tijolo
+   * do alvo numa vaga, nenhuma busca no ar), com o teto
+   * `TETO_DA_ESPERA_DA_PIRAMIDE_S` para a rede que não responde.
+   */
+  get piramideAssentada(): boolean {
+    const p = this.piramide;
+    if (!p || !this.piramideAtiva) return true;
+    if ((this.material.uniforms.uFade.value as number) <= 0.02) return true;
+    if (!p.atualizada) return false;
+    if (!p.residencia.carregando) return true;
+    return p.carregandoDesdeS !== null && p.agoraS - p.carregandoDesdeS >= TETO_DA_ESPERA_DA_PIRAMIDE_S;
   }
 
   private lastW = 960;
@@ -1067,6 +1494,10 @@ export class Nebula {
   }
 
   dispose() {
+    // a pirâmide (E3c) primeiro: buscas abortadas, atlas e tabelas soltos
+    // — e o material de hoje que ela devolve à tela entra no cache antes
+    // do laço que descarta todos, logo abaixo
+    this.setPiramide(null);
     this.rt.dispose();
     this.rtBlur.dispose();
     this.lutRT.dispose();
@@ -1082,6 +1513,9 @@ export class Nebula {
     this.fallbackDustMap.dispose();
     this.fallbackPoeiraTex.dispose();
     this.poeiraTexAtual?.dispose();
+    this.fallbackAtlas.dispose();
+    this.fallbackTabelas.dispose();
+    this.portador.dispose();
     const bn = this.material.uniforms.uBlueNoise.value as THREE.Texture;
     bn.dispose();
     // as PlaneGeometry dos quads fullscreen também são GPU buffers

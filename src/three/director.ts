@@ -82,6 +82,19 @@ import {
   loadGalacticAssets,
   carregarVolumeDePoeira,
 } from './cartography/galacticAssets';
+import {
+  LADO_DA_VAGA,
+  NUCLEO_DO_TIJOLO,
+  carregarPiramideDePoeira,
+  fonteDaRede,
+  orcamentoDaPiramide,
+} from './cartography/piramideDePoeira';
+import type {
+  FonteDeTijolos,
+  NivelDaPiramide,
+  PiramideDePoeira,
+  Trio,
+} from './cartography/piramideDePoeira';
 import { JourneyRig, FreeRoam } from './cinematic/cameraRig';
 import { NuvensSemente } from './director/nuvensSemente';
 import { VeuDoAtlas } from './director/veu';
@@ -318,6 +331,235 @@ export type { EstadoDaEscada } from './director/escada';
 type EntradaNoAtlas = { instantaneo?: boolean; momento?: number; aoChegar?: () => void };
 
 /**
+ * A BANCADA DA PIRÂMIDE (`?poeiraniveis=teste`, E3c) — formas de
+ * densidade conhecida em posições heliocêntricas conhecidas (x → centro
+ * galáctico, y → l = 90°, z → norte), cada uma NATIVA de um nível: com
+ * traço do tamanho do voxel dele, que o nível de cima só mostra borrado
+ * (a média) e o de baixo nem grava (omitido — cai no nativo). Caixas em
+ * pc, [x0, x1, y0, y1, z0, z1), alinhadas à grade do nível nativo, sem
+ * sobreposição. As letras são assimétricas e ficam DE FRENTE para o Sol
+ * (a leitura certa, vista dele, prova que nenhum eixo está espelhado):
+ *
+ *  - n3 (2,5 pc): um "F" a 100 pc do Sol na direção do centro galáctico
+ *    (x ∈ [95, 105)), 30 pc de altura, traço de 2,5 pc;
+ *  - n3: uma "régua" a 300 pc em l = 270° (y ≈ −300), de x −170 a +70,
+ *    com dentes de 2,5 pc a cada 5 pc; o tijolo x ∈ [30, 110) NUNCA chega
+ *    (a busca fica no ar) — a recaída do tijolo em voo, no n2, à vista;
+ *  - n2 (5 pc): um "L" a 300 pc em l = 90° (y ∈ [290, 310)), 60 pc de
+ *    altura, traço de 5 pc;
+ *  - n1 (10 pc): um "P" a 600 pc no anticentro (x ∈ [−620, −580)), 120 pc
+ *    de altura, traço de 10 pc.
+ */
+type CaixaDaBancada = readonly [number, number, number, number, number, number];
+const FORMAS_DA_BANCADA: readonly { nivel: number; e: number; caixas: readonly CaixaDaBancada[] }[] = [
+  {
+    nivel: 3,
+    e: 0.08,
+    caixas: [
+      // vista do Sol (olhando +x, norte para cima), a direita é −y
+      [95, 105, 7.5, 10, -15, 15], // haste
+      [95, 105, -10, 7.5, 12.5, 15], // barra de cima
+      [95, 105, -5, 7.5, 0, 2.5], // barra do meio
+    ],
+  },
+  {
+    nivel: 3,
+    e: 0.08,
+    caixas: [
+      [-170, 70, -302.5, -297.5, -2.5, 2.5],
+      ...Array.from({ length: 48 }, (_, i): CaixaDaBancada => [
+        -170 + 5 * i, -167.5 + 5 * i, -302.5, -297.5, 2.5, 7.5,
+      ]),
+    ],
+  },
+  {
+    nivel: 2,
+    e: 0.06,
+    caixas: [
+      // vista do Sol (olhando +y), a direita é +x
+      [-20, -15, 290, 310, -30, 30], // haste
+      [-15, 20, 290, 310, -30, -25], // pé
+    ],
+  },
+  {
+    nivel: 1,
+    e: 0.05,
+    caixas: [
+      // vista do Sol (olhando −x), a direita é +y
+      [-620, -580, -40, -30, -60, 60], // haste
+      [-620, -580, -30, 30, 50, 60], // topo
+      [-620, -580, 20, 30, 10, 50], // lado
+      [-620, -580, -30, 20, 10, 20], // meio
+    ],
+  },
+];
+/** o tijolo da régua que nunca chega: n3, x ∈ [30, 110), y ∈ [−370, −290), z ∈ [−20, 60) */
+const TIJOLO_PRESO_DA_BANCADA = { nivel: 3, b: [16, 11, 6] as const };
+/** a mesma grade do contrato (E3c): quina (−1250, −1250, −500), voxel do
+ *  pai dividido em 2×2×2 a cada nível, n2 até 900 pc e n3 até 450 pc */
+const GRADE_DA_BANCADA = [
+  { nivel: 0, voxelPc: 20, dims: [125, 125, 50] as const, raioPc: Infinity },
+  { nivel: 1, voxelPc: 10, dims: [250, 250, 100] as const, raioPc: Infinity },
+  { nivel: 2, voxelPc: 5, dims: [500, 500, 200] as const, raioPc: 900 },
+  { nivel: 3, voxelPc: 2.5, dims: [1000, 1000, 400] as const, raioPc: 450 },
+];
+const ORIGEM_DA_BANCADA: Trio = [-1250, -1250, -500];
+const ESCALA_DA_BANCADA = 1000;
+
+/**
+ * Soma em `dados` (grade de `n` voxels por eixo com quina `lo`, em
+ * voxels do nível `nivel`) a densidade das formas da bancada que o nível
+ * guarda: as NATIVAS dele e as de níveis mais finos, pela fração exata do
+ * voxel que cada caixa cobre (a média de caixa, a redução do contrato).
+ */
+function pintarBancada(
+  nivel: number,
+  lo: Trio,
+  n: Trio,
+  dados: Float32Array
+): void {
+  const voxel = GRADE_DA_BANCADA[nivel].voxelPc;
+  for (const forma of FORMAS_DA_BANCADA) {
+    if (forma.nivel < nivel) continue;
+    for (const c of forma.caixas) {
+      // a faixa de voxels que a caixa toca, por eixo
+      const faixa = [0, 1, 2].map((a) => {
+        const i0 = Math.max(lo[a], Math.floor((c[2 * a] - ORIGEM_DA_BANCADA[a]) / voxel));
+        const i1 = Math.min(lo[a] + n[a] - 1, Math.ceil((c[2 * a + 1] - ORIGEM_DA_BANCADA[a]) / voxel) - 1);
+        return [i0, i1];
+      });
+      const cobre = (a: number, i: number) => {
+        const v0 = ORIGEM_DA_BANCADA[a] + i * voxel;
+        return Math.max(0, Math.min(c[2 * a + 1], v0 + voxel) - Math.max(c[2 * a], v0)) / voxel;
+      };
+      for (let k = faixa[2][0]; k <= faixa[2][1]; k++) {
+        for (let j = faixa[1][0]; j <= faixa[1][1]; j++) {
+          for (let i = faixa[0][0]; i <= faixa[0][1]; i++) {
+            const f = cobre(0, i) * cobre(1, j) * cobre(2, k);
+            dados[i - lo[0] + n[0] * (j - lo[1] + n[1] * (k - lo[2]))] += forma.e * f;
+          }
+        }
+      }
+    }
+  }
+}
+
+/** os tijolos (índice bi + nbx·(bj + nby·bk)) que o nível GRAVA: os que
+ *  alguma forma nativa dele ou mais fina toca no núcleo */
+function tijolosDaBancada(nivel: number, tijolos: Trio): Set<number> {
+  const lado = NUCLEO_DO_TIJOLO * GRADE_DA_BANCADA[nivel].voxelPc;
+  const gravados = new Set<number>();
+  for (const forma of FORMAS_DA_BANCADA) {
+    if (forma.nivel < nivel) continue;
+    for (const c of forma.caixas) {
+      const faixa = [0, 1, 2].map((a) => [
+        Math.max(0, Math.floor((c[2 * a] - ORIGEM_DA_BANCADA[a]) / lado)),
+        Math.min(tijolos[a] - 1, Math.ceil((c[2 * a + 1] - ORIGEM_DA_BANCADA[a]) / lado) - 1),
+      ]);
+      for (let bk = faixa[2][0]; bk <= faixa[2][1]; bk++) {
+        for (let bj = faixa[1][0]; bj <= faixa[1][1]; bj++) {
+          for (let bi = faixa[0][0]; bi <= faixa[0][1]; bi++) {
+            gravados.add(bi + tijolos[0] * (bj + tijolos[1] * bk));
+          }
+        }
+      }
+    }
+  }
+  return gravados;
+}
+
+function meiosFloats(valores: Float32Array): Uint16Array {
+  const bits = new Uint16Array(valores.length);
+  for (let i = 0; i < valores.length; i++) {
+    bits[i] = valores[i] === 0 ? 0 : THREE.DataUtils.toHalfFloat(valores[i] * ESCALA_DA_BANCADA);
+  }
+  return bits;
+}
+
+/**
+ * A bancada inteira: o n0 (o bloco de 20 pc, na geometria real — a
+ * cobertura do shader é a do bloco) e a pirâmide n1–n3 com uma FONTE
+ * SINTÉTICA — os tijolos são pintados na hora do pedido e chegam depois
+ * de um atraso curto (a rede de mentira; a residência é a mesma de
+ * produção), exceto o `TIJOLO_PRESO_DA_BANCADA`, cuja busca só termina
+ * no aborto.
+ */
+export function bancadaDaPiramide(): {
+  n0: VolumeDePoeira;
+  piramide: PiramideDePoeira;
+  fonte: FonteDeTijolos;
+} {
+  const g0 = GRADE_DA_BANCADA[0];
+  const n0 = new Float32Array(g0.dims[0] * g0.dims[1] * g0.dims[2]);
+  pintarBancada(0, [0, 0, 0], g0.dims, n0);
+  const niveis: NivelDaPiramide[] = GRADE_DA_BANCADA.slice(1).map((g) => {
+    const dimsEmTijolos: Trio = [
+      Math.ceil(g.dims[0] / NUCLEO_DO_TIJOLO),
+      Math.ceil(g.dims[1] / NUCLEO_DO_TIJOLO),
+      Math.ceil(g.dims[2] / NUCLEO_DO_TIJOLO),
+    ];
+    return {
+      nivel: g.nivel,
+      voxelPc: g.voxelPc,
+      origemPc: ORIGEM_DA_BANCADA,
+      dims: g.dims,
+      dimsEmTijolos,
+      raioPc: g.raioPc,
+      escala: ESCALA_DA_BANCADA,
+      gravados: tijolosDaBancada(g.nivel, dimsEmTijolos),
+      pasta: `(bancada ?poeiraniveis=teste)/n${g.nivel}`,
+    };
+  });
+  const fonte: FonteDeTijolos = {
+    buscar(nivel, bi, bj, bk, sinal) {
+      return new Promise<Uint16Array>((resolve, reject) => {
+        const preso =
+          nivel.nivel === TIJOLO_PRESO_DA_BANCADA.nivel &&
+          bi === TIJOLO_PRESO_DA_BANCADA.b[0] &&
+          bj === TIJOLO_PRESO_DA_BANCADA.b[1] &&
+          bk === TIJOLO_PRESO_DA_BANCADA.b[2];
+        const relogio = preso
+          ? null
+          : setTimeout(() => {
+              const dados = new Float32Array(LADO_DA_VAGA ** 3);
+              const lo: Trio = [
+                NUCLEO_DO_TIJOLO * bi - 1,
+                NUCLEO_DO_TIJOLO * bj - 1,
+                NUCLEO_DO_TIJOLO * bk - 1,
+              ];
+              pintarBancada(nivel.nivel, lo, [LADO_DA_VAGA, LADO_DA_VAGA, LADO_DA_VAGA], dados);
+              resolve(meiosFloats(dados));
+            }, 20 + ((bi * 7 + bj * 13 + bk * 17) % 40));
+        sinal.addEventListener('abort', () => {
+          if (relogio !== null) clearTimeout(relogio);
+          reject(new DOMException('abortado', 'AbortError'));
+        });
+      });
+    },
+  };
+  return {
+    n0: {
+      descritor: {
+        kind: 'volume',
+        file: '(sintético — ?poeiraniveis=teste)',
+        dims: [...g0.dims],
+        voxelPc: g0.voxelPc,
+        originPc: [...ORIGEM_DA_BANCADA],
+        scale: ESCALA_DA_BANCADA,
+        type: 'float16',
+        byteLength: n0.length * 2,
+        sha256: '',
+        innerRadiusPc: 0,
+        outerRadiusPc: 1250,
+      },
+      dados: meiosFloats(n0),
+    },
+    piramide: { niveis },
+    fonte,
+  };
+}
+
+/**
  * A DERIVAÇÃO PURA de `Director.estadoDaPoeira` (item B, revisão
  * independente v2, 27/09) — extraída da classe para testar sem WebGL:
  * só lê os cinco valores que decidem o veredito, nunca `this`/`window`.
@@ -548,6 +790,23 @@ export class Director {
    */
   private poeiraCarga: 'pendente' | 'carregando' | 'chegou' | 'falhou' = 'pendente';
   private poeiraFonte: 'gaia' | 'sintetica' | null = null;
+  /**
+   * A PIRÂMIDE DA POEIRA (E3c) — os níveis finos por cima do bloco de 20
+   * pc. Carga preguiçosa como a do bloco: só com a poeira pedida, a
+   * cartografia ligada e o manifesto declarando `dustPyramid` (o
+   * descritor cru, guardado no `init`) — ou a bancada
+   * `?poeiraniveis=teste`. Quem decide é `garantirPiramide`, a cada
+   * quadro; a GPU e a residência moram na Nebula (`setPiramide`).
+   * `piramideTier` é o tier do orçamento com que ela foi montada.
+   */
+  private dustPyramidManifesto: unknown = null;
+  private piramideFonteTentada: 'gaia' | 'sintetica' | null = null;
+  private piramidePedidoId = 0;
+  private piramideCarga: 'nenhuma' | 'carregando' | 'chegou' | 'falhou' = 'nenhuma';
+  private piramideCarregada: { piramide: PiramideDePoeira; fonte: FonteDeTijolos } | null = null;
+  private piramideTier: QualityLevel | null = null;
+  /** a bancada `?poeiraniveis=teste`, montada uma vez só quando pedida */
+  private bancadaDosNiveis: ReturnType<typeof bancadaDaPiramide> | null = null;
   /** nuvens do catálogo em coords de cena: x,y,z,raio,amp por registro */
   /** as nuvens-semente do raymarch — corte 1 da Parte 1 da onda */
   private readonly nuvensSemente = new NuvensSemente();
@@ -769,7 +1028,16 @@ export class Director {
    * recarregar — sem isto o volume sintético continuaria no ar depois
    * do clique, com a URL já limpa, e o selo mentiria por omissão.
    */
-  private poeiraTeste = this.debug.get('poeira') === 'teste';
+  private poeiraTeste =
+    this.debug.get('poeira') === 'teste' || this.debug.get('poeiraniveis') === 'teste';
+  /**
+   * `?poeiraniveis=teste` é a BANCADA DA PIRÂMIDE (E3c): liga a poeira
+   * como `?poeira=teste` (é ela que arma `poeiraTeste`, acima), troca o
+   * bloco sintético pelo n0 da bancada e põe por cima a pirâmide
+   * sintética de `bancadaDaPiramide`. Some com `poeiraTeste` — o clique
+   * do menu (`forcarPoeira`) desarma as duas.
+   */
+  private poeiraNiveisTeste = this.debug.get('poeiraniveis') === 'teste';
   /**
    * A FONTE QUE O PEDIDO ATUAL QUER (item A, revisão independente v2,
    * 27/09) — `'sintetica'` enquanto `poeiraTeste` estiver ligado
@@ -1119,9 +1387,13 @@ export class Director {
     });
     // A PLACA DE VÍDEO DESISTIU (o listener e o porquê de não restaurar
     // moram no Engine, que é quem tem o canvas e o laço).
-    this.engine.onContextoPerdido(() =>
-      this.desistir(texto('hud.fatalContexto'))
-    );
+    this.engine.onContextoPerdido(() => {
+      // a pirâmide da poeira (E3c) cai no n0: buscas abortadas e nada
+      // mais sobe para uma GPU que já não existe
+      this.piramideCarregada = null;
+      this.nebula.setPiramide(null);
+      this.desistir(texto('hud.fatalContexto'));
+    });
     } catch (e) {
       this.engine.dispose();
       throw e;
@@ -1176,6 +1448,8 @@ export class Director {
    * cortaria um centro mais perto do teto.
    */
   private volumeSinteticoDePoeira(): VolumeDePoeira {
+    // a bancada da pirâmide (E3c) traz o próprio n0, na geometria real
+    if (this.poeiraNiveisTeste) return this.bancada.n0;
     const dims: [number, number, number] = [40, 40, 20];
     const voxelPc = 20;
     const originPc: [number, number, number] = [-400, -400, -200];
@@ -1338,6 +1612,75 @@ export class Director {
     });
   }
 
+  /** a bancada `?poeiraniveis=teste` (E3c), montada na primeira vez */
+  private get bancada(): ReturnType<typeof bancadaDaPiramide> {
+    return (this.bancadaDosNiveis ??= bancadaDaPiramide());
+  }
+
+  /**
+   * QUAL PIRÂMIDE O PEDIDO QUER AGORA (E3c): nenhuma sem a poeira pedida
+   * ou sem cartografia; a da bancada com `?poeiraniveis=teste`; nenhuma
+   * com o bloco sintético de `?poeira=teste` (outra geometria); a do
+   * Gaia quando o manifesto a declara.
+   */
+  private get piramideDesejada(): 'gaia' | 'sintetica' | null {
+    if (this.poeiraModoPedido === 0 || !this.cartResolvido || !this.cartOn) return null;
+    if (this.poeiraTeste) return this.poeiraNiveisTeste ? 'sintetica' : null;
+    return this.dustPyramidManifesto ? 'gaia' : null;
+  }
+
+  /**
+   * A PIRÂMIDE DA POEIRA (E3c), conferida a cada quadro: se a fonte que
+   * o pedido quer (`piramideDesejada`) mudou, solta a velha e busca a
+   * nova — o desenho de `tentarCarregarPoeira` (o último pedido vence,
+   * sem retentativa), só que no quadro em vez de nos gestos, para nenhum
+   * caminho do menu precisar lembrar dela. A chegada monta a GPU na hora
+   * (a captura nunca vê um intervalo sem ela); um tier novo remonta com
+   * o orçamento dele, sem baixar os índices de novo.
+   */
+  private garantirPiramide() {
+    const desejada = this.piramideDesejada;
+    if (desejada !== this.piramideFonteTentada) {
+      this.piramideFonteTentada = desejada;
+      const meuPedido = ++this.piramidePedidoId;
+      this.piramideCarregada = null;
+      this.piramideTier = null;
+      this.nebula.setPiramide(null);
+      if (desejada === null) {
+        this.piramideCarga = 'nenhuma';
+        return;
+      }
+      this.piramideCarga = 'carregando';
+      const base = import.meta.env.BASE_URL;
+      const promessa =
+        desejada === 'sintetica'
+          ? Promise.resolve({ piramide: this.bancada.piramide, fonte: this.bancada.fonte })
+          : carregarPiramideDePoeira(base, this.dustPyramidManifesto, this.abortController.signal).then(
+              (piramide) => (piramide ? { piramide, fonte: fonteDaRede(base) } : null)
+            );
+      void promessa.then((carregada) => {
+        if (this.disposed || meuPedido !== this.piramidePedidoId) return;
+        this.piramideCarregada = carregada;
+        this.piramideCarga = carregada ? 'chegou' : 'falhou';
+        this.montarPiramide();
+      });
+      return;
+    }
+    if (this.piramideCarregada && this.piramideTier !== this.engine.quality) this.montarPiramide();
+  }
+
+  /** a pirâmide baixada vai à Nebula com o orçamento do tier de agora —
+   *  o mesmo número de vagas de antes (cinema ↔ alta) mantém a que está no ar */
+  private montarPiramide() {
+    const carregada = this.piramideCarregada;
+    if (!carregada) return;
+    this.piramideTier = this.engine.quality;
+    const orcamento = orcamentoDaPiramide(this.engine.quality, sondarGl().max3DTextureSize);
+    const noAr = this.nebula.vagasDaPiramide;
+    if (noAr > 0 && noAr === orcamento.vagas) return;
+    this.nebula.setPiramide({ ...carregada, orcamento });
+  }
+
   /**
    * A PROCEDÊNCIA REAL da poeira medida perto do Sol (revisão
    * independente, 27/09) — ver `EstadoDaPoeira` em `selo.ts` e
@@ -1475,6 +1818,8 @@ export class Director {
     this.cartOn = cartOn;
     this.dustVolumeManifesto =
       cartOn && galactic ? galactic.volumes.dustVolumeNear20pc ?? null : null;
+    // a pirâmide (E3c): só o descritor; quem busca é `garantirPiramide`
+    this.dustPyramidManifesto = cartOn && galactic ? galactic.piramide ?? null : null;
     this.cartResolvido = true;
     this.tentarCarregarPoeira();
     // O CHECK DEPOIS DE CADA `stage` — e não só depois dos três awaits que
@@ -1877,8 +2222,13 @@ export class Director {
     // pedido encerrado, se diria assentada — quem sabe que um volume novo
     // vem aí é esta instância, e a captura espera ele ou o veredito de falha.
     const poeiraEmVoo = this.poeiraModoPedido !== 0 && this.poeiraCarga === 'carregando';
+    // A PIRÂMIDE (E3c): os índices em voo seguram; depois, a Nebula diz
+    // quando a residência assentou (ou o teto dela venceu)
+    const piramideAssentada = this.piramideCarga !== 'carregando' && this.nebula.piramideAssentada;
     const poeiraAssentada =
-      this.cartMode === 'off' || this.noNebula || (this.nebula.poeiraAssentada && !poeiraEmVoo);
+      this.cartMode === 'off' ||
+      this.noNebula ||
+      (this.nebula.poeiraAssentada && !poeiraEmVoo && piramideAssentada);
     return julgarProntidao({
       fase: this.phase,
       andando,
@@ -3754,6 +4104,12 @@ export class Director {
     );
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
+    // A PIRÂMIDE DA POEIRA (E3c): a fonte que o pedido quer agora e, com
+    // a câmera DESTE quadro, o lote da residência na GPU — antes do
+    // desenho, e mesmo com o gás apagado (longe de casa é assim que ela
+    // solta a memória). `rawTime`: o relógio de parede, o da carência.
+    this.garantirPiramide();
+    this.nebula.atualizarPiramide(this.engine.renderer, rawTime, cam);
     // gate 0.02: na casca externa do fade a contribuição é invisível
     // pós-ACES, mas o raymarch custaria integral
     if (this.noNebula || nebulaFade <= 0.02) {

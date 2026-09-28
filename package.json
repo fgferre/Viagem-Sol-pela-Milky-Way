@@ -18,6 +18,7 @@
     "data:stars": "node --max-old-space-size=4096 scripts/data/build-star-catalog.mjs",
     "data:galaxy": "node scripts/data/build-galactic-assets.mjs",
     "data:poeira": "node scripts/data/build-dust-volumes.mjs",
+    "data:poeira-niveis": "node scripts/data/build-dust-volumes.mjs --niveis",
     "data:fit": "node scripts/data/fit-spiral-model.mjs",
     "data:verify": "node scripts/data/verify-assets.mjs",
     "data:pack": "node scripts/data/compress-assets.mjs",

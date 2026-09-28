@@ -1,4 +1,4 @@
-// Serve: chão — o portão dos dados reprova ativo corrompido, sem referência, fora do teto ou fora do manifesto
+// Serve: chão — o portão dos dados reprova ativo ou tijolo corrompido, sem referência, fora do teto ou fora do manifesto
 // ============================================================
 // O GATE DOS DADOS, JULGADO COMO GATE (item 130, lista do §19).
 //
@@ -38,9 +38,10 @@ import {
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { gzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
+import { montarArtefatosDaPiramide } from './build-dust-volumes.mjs';
 import { sha256 } from './lib/binary.mjs';
-import { paraFloat16 } from './lib/volume.mjs';
+import { PIRAMIDE_POEIRA, gradeDoNivel, paraFloat16 } from './lib/volume.mjs';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -372,4 +373,180 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     expect(r.ok).toBe(false);
     expect(r.saida).toContain('manifesto sem "dustVolumeNear20pc"');
   }, 60_000);
+});
+
+// ============================================================
+// A pirâmide (E3c): cobrada inteira quando o manifesto declara
+// `dustPyramid`. Pirâmide SINTÉTICA na geometria do contrato (tijolos
+// 34³ de verdade, índices montados pelo MESMO `montarArtefatosDaPiramide`
+// do gerador) sobre o bloco de 20 pc REAL do espelho: um tijolo por
+// nível — o que contém o Sol —, cheio de um valor conhecido, e uma
+// fixture de níveis com 8 células dentro dele. O caso verde prova que o
+// que o gerador escreve o portão aceita; cada outro caso estraga UMA
+// coisa e exige a reprovação com o motivo.
+// ============================================================
+describe('verify-assets — a pirâmide de poeira (dustPyramid)', () => {
+  let espelhoPiramide;
+  const TIJOLO_DO_SOL = { 1: [3, 3, 1], 2: [7, 7, 3], 3: [15, 15, 6] };
+  const VALOR = { 1: 0.004, 2: 0.005, 3: 0.006 };
+  const LADO = PIRAMIDE_POEIRA.tijolo + 2;
+
+  beforeAll(() => {
+    espelhoPiramide = mkdtempSync(join(tmpdir(), 'verify-assets-piramide-'));
+    espelhar(join(RAIZ, 'public'), join(espelhoPiramide, 'public'), [
+      join(RAIZ, 'public/data/galaxy/manifest.json'),
+    ]);
+    cpSync(join(RAIZ, 'scripts'), join(espelhoPiramide, 'scripts'), { recursive: true });
+    for (const nome of ['src', 'docs', 'package.json', 'node_modules']) {
+      symlinkSync(join(RAIZ, nome), join(espelhoPiramide, nome));
+    }
+  }, 120_000);
+
+  afterAll(() => {
+    if (espelhoPiramide) rmSync(espelhoPiramide, { recursive: true, force: true });
+  });
+
+  /** Um nível com um só tijolo gravado (`b`), cheio de `valor`; `pico` troca o primeiro voxel. */
+  function nivelSintetico(nivel, { b = TIJOLO_DO_SOL[nivel.nivel], pico = null } = {}) {
+    const valores = new Float64Array(LADO ** 3).fill(VALOR[nivel.nivel]);
+    if (pico !== null) valores[0] = pico;
+    const f16 = paraFloat16(valores, 1000);
+    return {
+      nivel: nivel.nivel,
+      grade: gradeDoNivel(PIRAMIDE_POEIRA, nivel),
+      raioPc: nivel.raioPc,
+      tijolosExistentes: 1,
+      gravados: [{ b, bytes: Buffer.from(f16.buffer, f16.byteOffset, f16.byteLength) }],
+      naoFinitas: 0,
+      maiorResiduoOmitido: 0,
+    };
+  }
+
+  /** 8 células no núcleo do tijolo do Sol de cada nível, com o valor dele (ou `mudar(valor)`). */
+  function fixtureDosNiveis(mudar = (v) => v) {
+    return {
+      niveis: PIRAMIDE_POEIRA.niveis.map((nivel) => {
+        const b = TIJOLO_DO_SOL[nivel.nivel];
+        const celulas = Array.from({ length: 8 }, (_, m) => ({
+          indice: [32 * b[0] + 4 + m, 32 * b[1] + 4, 32 * b[2] + 4],
+          media: mudar(VALOR[nivel.nivel]),
+          nanFracao: 0,
+        }));
+        const grade = { dims: nivel.dims, voxelPc: nivel.voxelPc, origemPc: PIRAMIDE_POEIRA.origemPc };
+        return { nivel: nivel.nivel, grade, raioPc: nivel.raioPc, celulas };
+      }),
+    };
+  }
+
+  /**
+   * Monta a pirâmide no espelho e roda o portão. `niveis` troca os níveis
+   * sintéticos; `mudarEntrada` mexe na entrada do manifesto; `declarar:
+   * false` deixa a pasta sem entrada; `fixture: null` apaga a fixture;
+   * `depois(pasta)` estraga o disco depois de tudo escrito.
+   */
+  function rodarComPiramide({
+    niveis = PIRAMIDE_POEIRA.niveis.map((n) => nivelSintetico(n)),
+    mudarEntrada = (e) => e,
+    declarar = true,
+    fixture = fixtureDosNiveis(),
+    depois = () => {},
+  } = {}) {
+    const pasta = join(espelhoPiramide, 'public/data/galaxy/dust-piramide');
+    rmSync(pasta, { recursive: true, force: true });
+    const manifesto = JSON.parse(readFileSync(join(RAIZ, 'public/data/galaxy/manifest.json'), 'utf8'));
+    const n0 = manifesto.assets.dustVolumeNear20pc;
+    const { arquivos, entrada } = montarArtefatosDaPiramide(niveis, {
+      piramide: PIRAMIDE_POEIRA,
+      escala: n0.scale,
+      n0: { file: n0.file, sha256: n0.sha256 },
+      gerado: '2026-09-28',
+    });
+    for (const { relativo, conteudo } of arquivos) {
+      const alvo = join(espelhoPiramide, 'public', relativo);
+      mkdirSync(dirname(alvo), { recursive: true });
+      writeFileSync(alvo, conteudo);
+    }
+    if (declarar) manifesto.dustPyramid = mudarEntrada(entrada);
+    writeFileSync(join(espelhoPiramide, 'public/data/galaxy/manifest.json'), JSON.stringify(manifesto));
+    const caminhoFixture = join(espelhoPiramide, 'scripts/data/fixtures/edenhofer-referencia-niveis.json');
+    if (fixture) writeFileSync(caminhoFixture, JSON.stringify(fixture));
+    else rmSync(caminhoFixture, { force: true });
+    depois(pasta);
+    try {
+      const saida = execFileSync(
+        process.execPath,
+        [join(espelhoPiramide, 'scripts/data/verify-assets.mjs')],
+        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 60_000, killSignal: 'SIGKILL' }
+      );
+      return { ok: true, saida };
+    } catch (erro) {
+      return { ok: false, saida: `${erro.stdout ?? ''}${erro.stderr ?? ''}` };
+    }
+  }
+
+  it('passa VERDE com a pirâmide que o gerador escreve (índices, tijolos, faixa e referência)', () => {
+    const r = rodarComPiramide();
+    expect(r.ok, r.saida.slice(-800)).toBe(true);
+    expect(r.saida).toContain('dustPyramid: n1: 1 tijolos, referência OK');
+    expect(r.saida).toContain('3 tijolos');
+  }, 60_000);
+
+  it('reprova o TIJOLO trocado no disco (sha256 do .bin.gz diverge do índice)', () => {
+    const r = rodarComPiramide({
+      depois: (pasta) => {
+        const arquivo = join(pasta, 'n2', '7_7_3.bin.gz');
+        writeFileSync(arquivo, gzipSync(gunzipSync(readFileSync(arquivo)), { level: 1 }));
+      },
+    });
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('7_7_3.bin.gz: bytes/SHA-256 divergem do índice');
+  }, 60_000);
+
+  it('reprova o ÍNDICE editado depois de gravado (sha256 diverge do manifesto)', () => {
+    const r = rodarComPiramide({
+      depois: (pasta) => writeFileSync(join(pasta, 'n2.json'), `${readFileSync(join(pasta, 'n2.json'), 'utf8')} `),
+    });
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('n2.json: bytes/SHA-256 divergem do manifesto');
+  }, 60_000);
+
+  it('reprova valor acima do teto físico dentro de um tijolo', () => {
+    const niveis = PIRAMIDE_POEIRA.niveis.map((n) => nivelSintetico(n, n.nivel === 1 ? { pico: 1.5 } : {}));
+    const r = rodarComPiramide({ niveis });
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('acima do teto físico');
+  }, 60_000);
+
+  it('reprova o nível que não bate com a referência científica (e exige a fixture dos níveis)', () => {
+    const r = rodarComPiramide({ fixture: fixtureDosNiveis((v) => v * 1.5) });
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('dustPyramid n1: comparação com a referência (interpolador oficial) excede a tolerância');
+    const semFixture = rodarComPiramide({ fixture: null });
+    expect(semFixture.ok).toBe(false);
+    expect(semFixture.saida).toContain('fixture de referência dos níveis ausente');
+  }, 120_000);
+
+  it('reprova a pirâmide gerada sobre outro bloco de 20 pc', () => {
+    const r = rodarComPiramide({ mudarEntrada: (e) => ({ ...e, parentSha256: 'f'.repeat(64) }) });
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('gerada sobre outro bloco de 20 pc');
+  }, 60_000);
+
+  it('reprova tijolo fora da região do nível, arquivo órfão e pasta sem declaração', () => {
+    const niveis = PIRAMIDE_POEIRA.niveis.map((n) => nivelSintetico(n, n.nivel === 3 ? { b: [0, 0, 0] } : {}));
+    const fora = rodarComPiramide({ niveis });
+    expect(fora.ok).toBe(false);
+    expect(fora.saida).toContain('fora da grade ou da região do nível');
+
+    const orfao = rodarComPiramide({
+      depois: (pasta) => writeFileSync(join(pasta, 'n1', '0_0_0.bin.gz'), gzipSync(Buffer.alloc(8))),
+    });
+    expect(orfao.ok).toBe(false);
+    expect(orfao.saida).toContain('órfão');
+    expect(orfao.saida).toContain('n1/0_0_0.bin.gz');
+
+    const semDeclaracao = rodarComPiramide({ declarar: false });
+    expect(semDeclaracao.ok).toBe(false);
+    expect(semDeclaracao.saida).toContain('pirâmide órfã');
+  }, 180_000);
 });

@@ -84,6 +84,7 @@ RUWE, `parallax_over_error` e o erro relativo de distância.
 | `gaia-young-cepheids.bin` | 2.806 | Cefeidas Gaia jovens com menos de 200 Myr | distância por módulo de distância; usar `sigmaDistance` |
 | `gaia-ob-proxy-stars.bin` | 100.000 | seleção proxy de estrelas quentes Gaia DR3 com distância fotogeométrica | não chamar de amostra Drimmel; preservar a pegada local, o erro de distância e os filtros no manifesto; a cor sai de `effectiveTemperatureK`, nunca de `bp_rp` — o renderer já aplica a própria extinção |
 | `dust-near-20pc.bin` | 781.250 voxels | densidade de poeira 3D medida (Edenhofer et al. 2024) num bloco heliocêntrico de 20 pc perto do Sol | interior de 68,8 pc zero por escolha do app, com transição de ~1 voxel na fronteira; float16 × 1000 (E/pc); 8×8×8 subamostras estratificadas, linear em r entre centros de casca, pixel HEALPix mais próximo; residual conferido contra a fixture de referência em `data:verify` |
+| `dust-piramide/` | tijolos 34³ (n1, n2, n3) | a mesma poeira em 10, 5 e 2,5 pc, por níveis que o motor busca perto da câmera (E3c) | só `.bin.gz`; tijolo omitido = o nível de cima; ver "A pirâmide de poeira" abaixo |
 
 Fontes dos dados:
 
@@ -154,7 +155,7 @@ proveniência.
 | 3 | 7.167 aglomerados abertos (Hunt & Reffert) | VizieR `J/A+A/686/A42` | ~300 KB | ~3 h |
 | 4 | 215 SNRs com distância (Green × Ranasinghe & Leahy) | VizieR | ~10 KB | ~4 h |
 | 5 | ~1.000 nebulosas planetárias (Chornay & Walton, reliability > 0,8) | VizieR | ~40 KB | ~2 h |
-| 7 | Poeira local Edenhofer 2024 — bloco de 20 pc FEITO na E1 (`dust-near-20pc.bin`, 1,56 MB); níveis de 10 e 5 pc pendentes (E3 do PLAN.md) | Zenodo 10658339 | 1,5–19 MB | E3 |
+| 7 | Poeira local Edenhofer 2024 — bloco de 20 pc FEITO na E1 (`dust-near-20pc.bin`, 1,56 MB); pirâmide de 10/5/2,5 pc com gerador e portão prontos, à espera da primeira geração do dono (E3c do PLAN.md) | Zenodo 10658339 | ~30 MB (estimado) | E3c |
 
 Extras avaliados: Zucker 2020 (rótulos da Edenhofer); pulsares ATNF
 (descartados: distâncias por DM modelo-dependentes).
@@ -170,6 +171,91 @@ um volume local esparso, não enviados diretamente ao browser.
 
 O bloco de 20 pc (`dust-near-20pc.bin`, tabela acima) foi materializado na E1
 do PLAN.md, sob a licença CC-BY-4.0 do Zenodo 10658339.
+
+### A pirâmide de poeira (E3c do PLAN.md)
+
+Sobre o bloco de 20 pc (n0, intocado) vêm três níveis mais finos, com a
+mesma origem (a quina −1250, −1250, −500), o mesmo referencial e centros
+de voxel em `origem + (i + 0,5)·voxel`; cada voxel do pai se divide em
+2×2×2 do filho. O contrato mora em `PIRAMIDE_POEIRA`
+(`scripts/data/lib/volume.mjs`):
+
+| Nível | Voxel | Grade | Região | Tijolos que existem |
+|---|---:|---|---|---:|
+| n1 | 10 pc | 250×250×100 | a caixa inteira | 256 |
+| n2 | 5 pc | 500×500×200 | r ≤ 900 pc | 796 |
+| n3 | 2,5 pc | 1000×1000×400 | r ≤ 450 pc | 1.073 |
+
+- **Tijolo.** 32³ voxels de núcleo mais 1 de aba em cada face: 34³ float16
+  little-endian × 1000 (E/pc), 78.608 bytes, índice `sx + 34·(sy + 34·sz)`;
+  o texel `s` é o voxel `32·b − 1 + s` do nível. Arquivo:
+  `public/data/galaxy/dust-piramide/n<k>/<bi>_<bj>_<bk>.bin.gz` — só gzip
+  (sem `DecompressionStream`, os níveis finos ficam indisponíveis e o n0
+  segue).
+- **Voxel medido.** Média de 2×2×2 subamostras estratificadas (centro ±
+  voxel/4) do MESMO operador do interpolador oficial: interpolação
+  bilinear HEALPix NEST (os 4 pixels e pesos de
+  `healpy.get_interp_weights`, `criarInterpolacaoNest` em
+  `scripts/data/lib/healpix.mjs`, provados contra a fixture
+  `healpix-interp-nside256.json` do healpy: 520 direções, pixels iguais e
+  pesos a 1e-12) nas duas cascas vizinhas + linear em r. O bloco de 20 pc
+  segue com o pixel mais próximo (as 512 subamostras dele já apagam a
+  diferença).
+- **Quem existe.** O tijolo cujo núcleo, recortado à caixa, toca a região do
+  nível; todo voxel dele dentro da caixa é medido, mesmo além do raio.
+- **Fora do nível** (voxel fora da caixa, no núcleo ou na aba, e aba num
+  tijolo que não existe): o trilinear do pai, com o ponto levado antes à
+  face da caixa. O "pai" é sempre o campo que a GPU mostra: o tijolo gravado
+  do nível de cima, ou, se ele não foi gravado, o de cima dele, até o n0.
+- **Aba dentro do nível.** Copia bit a bit o voxel medido do vizinho, gravado
+  ou omitido — os bytes de um tijolo não dependem da escolha do vizinho.
+- **Esparsidade por resíduo.** O tijolo só é gravado se
+  `max |nível − trilinear do pai| ≥ 1e-3 E/pc` no núcleo (o nível já em
+  float16, o pai como está no disco); omitido, a GPU cai no pai.
+- **Índice** `dust-piramide/n<k>.json`: voxel, origem, dims em voxels e em
+  tijolos, raio, escala, o pai (o n1 aponta para o sha256 do bloco de 20 pc;
+  cada nível seguinte, para o sha256 do índice anterior), as regras por
+  extenso e a lista dos tijolos gravados com `b`, `file`, `bytes` e
+  `sha256` — ambos do `.bin.gz`.
+- **Manifesto.** `dustPyramid` (na raiz do `manifest.json`, fora de
+  `assets`): `kind: "volume-pyramid"`, `parentSha256`, e por nível o índice,
+  seus `bytes` e `sha256`. O `data:galaxy` preserva a entrada
+  (`preservarVolumes`).
+
+**Referência científica por nível.** `scripts/data/fixtures/
+gera-referencia-edenhofer.py niveis` (o dono roda) sorteia 80 células por
+nível — as 8 nuvens, 40 entre os 10% mais densos, 32 uniformes — e grava a
+média de 2³ subamostras do interpolador OFICIAL em
+`edenhofer-referencia-niveis.json`. Como a coleta dos níveis usa o mesmo
+operador, a comparação é CÉLULA A CÉLULA na precisão do float16:
+`|app − ref| ≤ 0,1%·max(app, ref) + 1e-9 E/pc` (o float16 erra no máximo
+meio ulp, 2⁻¹¹ ≈ 0,049%: o certo fica sempre abaixo de 0,49 da folga).
+Medido em dados sintéticos (céu HEALPix com nuvens de 2–6 pc a ~200 pc,
+pior célula em folgas): certo 0,47/0,48 (n1/n2) em tijolo gravado; um
+voxel de deslocamento ≥ 627, o espelho ≥ 900, a unidade ×1,01 ≥ 10 e
+×1000 ≥ 999; a coleta antiga (pixel mais próximo) 140–177 — com ela, no
+mapa real, a célula chegava a 20–36% de desvio. Célula em tijolo omitido
+ganha o limiar do resíduo de folga. Menos de 8 células em tijolo gravado →
+a referência não prova o nível e reprova.
+
+**Quem cobra o quê.** `npm run data:poeira-niveis` (o mesmo
+`build-dust-volumes.mjs`, com `--niveis`) exige a fixture antes de abrir o
+FITS e o bloco de 20 pc do manifesto (pelo sha256), gera tudo em memória,
+confere faixa (finito, ≥ 0, ≤ 1 E/pc) e referência, e só então grava a pasta
+nova inteira (a velha sai de uma vez) e, por último, o manifesto.
+`npm run data:verify` cobra a pirâmide inteira quando `dustPyramid` existe:
+bytes e sha256 de cada índice e tijolo, os campos do contrato, a corrente de
+pais, a região de cada tijolo, 34³ ao descomprimir, a faixa, nenhum arquivo
+fora dos índices e a referência de cada nível; sem `dustPyramid`, só reprova
+uma pasta `dust-piramide/` órfã.
+
+**Ordem do dono.** (1) a fixture dos níveis em Python; (2)
+`npm run data:poeira-niveis` (~521 milhões de subamostras; a coleta
+bilinear custa ~93 ns por subamostra contra ~75 do pixel mais próximo,
+~50 s em vez de ~40 s, medido num mapa sintético do tamanho do real;
+~2 GB de memória, o mapa inteiro em RAM); (3) `npm run data:verify`. O
+`data:pack` (e o `data:all`) pula a pasta `dust-piramide/`, como o
+`data:verify`: os tijolos são só `.bin.gz` por contrato.
 
 - [ESA — mapa 3D dos berçários estelares](https://www.esa.int/Science_Exploration/Space_Science/Gaia/Fly_through_Gaia_s_3D_map_of_stellar_nurseries)
 - [Edenhofer et al. — dados no Zenodo](https://zenodo.org/records/10658339)
