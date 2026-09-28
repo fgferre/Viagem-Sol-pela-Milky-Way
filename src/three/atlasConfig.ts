@@ -277,9 +277,11 @@ export function poeiraEmTexto(variante: TipoDePoeira): string {
  * O MAPEAMENTO DE CADA VARIANTE PARA O MOTOR (pedido do dono, 27/09) —
  * a tabela única que traduz a escolha da gaveta para o que
  * `Director.definirPoeira` espera. `hoje` desliga (o modelo procedural
- * de sempre); as outras três ligam com o mesmo gama/lanes (1 e 0) e só
- * o GANHO muda entre elas — as três leituras do mesmo bloco medido pelo
- * Gaia, cada vez mais forte. As portas de bancada `?poeiragain=`/
+ * de sempre); as outras três ligam com o mesmo gama 1 e a TEXTURA
+ * inventada por cima do medido (lanes 1 — os veios escuros do modelo de
+ * hoje; o dono comparou por foto em 28/09: "a textura ficou bem melhor"),
+ * e só o GANHO muda entre elas — as três leituras do mesmo bloco medido
+ * pelo Gaia, cada vez mais forte. As portas de bancada `?poeiragain=`/
  * `?poeiragama=`/`?poeiralanes=` continuam vencendo por cima disto,
  * dentro do Director (`aplicarPoeira`).
  */
@@ -294,7 +296,7 @@ export function poeiraParaMotor(
   variante: TipoDePoeira
 ): { modo: number; ganho: number; gama: number; lanes: number } {
   const { modo, ganho } = POEIRA_PARA_MOTOR[variante];
-  return { modo, ganho, gama: 1, lanes: 0 };
+  return { modo, ganho, gama: 1, lanes: modo === 0 ? 0 : 1 };
 }
 
 /**

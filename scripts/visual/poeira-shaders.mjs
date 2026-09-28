@@ -702,10 +702,14 @@ async function testeCartografiaIndisponivel(proximaPorta) {
  * pela troca já estaria contado. E o recorte central tem de mudar entre
  * suave e forte — a imagem parada do fino refeita com o ganho novo, e
  * não congelada. O contador tem de estar vivo na página (≥ 1 bake ao
- * abrir), senão "igual" passaria calado.
+ * abrir), senão "igual" passaria calado. `poeiralanes=0`: desde 28/09
+ * as três opções do Gaia levam a textura inventada, que escava o recorte
+ * central — com ela a diferença suave × forte ali caiu de 8,25 para
+ * 4,07/255 (medido 28/09), abaixo do limiar; a prova é sobre o ganho
+ * não reassar e mudar a imagem, e a porta de bancada vence a textura.
  */
 async function testeBrilhoNoFino(proximaPorta) {
-  const url = `${APP}/?q=cinema&gas=fino&poeira=media&shot=1&t=60`;
+  const url = `${APP}/?q=cinema&gas=fino&poeira=media&poeiralanes=0&shot=1&t=60`;
   const linhaUrl = `    url: ${comLinguaDoJuizNaUrl(url)}\n`;
   process.stdout.write("transição (d) no fino com o Gaia, 'suave' → 'forte' ao vivo: ");
   try {

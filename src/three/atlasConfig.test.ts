@@ -512,11 +512,11 @@ describe('a poeira perto de casa — o sexto controle da gaveta (pedido do dono,
     expect(lerPortaPoeira(undefined)).toBeNull();
   });
 
-  it('o mapeamento para o motor é a tabela do dono: hoje desliga, as outras três só mudam o ganho', () => {
+  it('o mapeamento para o motor é a tabela do dono: hoje desliga, as outras três levam a textura e só mudam o ganho', () => {
     expect(poeiraParaMotor('hoje')).toEqual({ modo: 0, ganho: 0, gama: 1, lanes: 0 });
-    expect(poeiraParaMotor('suave')).toEqual({ modo: 1, ganho: 15, gama: 1, lanes: 0 });
-    expect(poeiraParaMotor('media')).toEqual({ modo: 1, ganho: 46.9, gama: 1, lanes: 0 });
-    expect(poeiraParaMotor('forte')).toEqual({ modo: 1, ganho: 94, gama: 1, lanes: 0 });
+    expect(poeiraParaMotor('suave')).toEqual({ modo: 1, ganho: 15, gama: 1, lanes: 1 });
+    expect(poeiraParaMotor('media')).toEqual({ modo: 1, ganho: 46.9, gama: 1, lanes: 1 });
+    expect(poeiraParaMotor('forte')).toEqual({ modo: 1, ganho: 94, gama: 1, lanes: 1 });
   });
 
   it('os três presets começam em "hoje" — o objetivo desta rodada é comparar, não escolher padrão', () => {

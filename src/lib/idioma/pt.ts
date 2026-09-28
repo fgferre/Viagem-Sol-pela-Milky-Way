@@ -469,7 +469,7 @@ export const PT = {
   'selo.cartografiaProcedural': 'cartografia: procedural (os mapas não chegaram)',
   'selo.cartografiaDesligada':
     'cartografia: procedural (os mapas desligados por ?cart=off)',
-  'selo.poeiraMedida': 'poeira perto de casa: medida (Gaia, Edenhofer 2024, até 1,2 kpc)',
+  'selo.poeiraMedida': 'poeira perto de casa: medida (Gaia, Edenhofer 2024, até 1,2 kpc), com textura fina inventada',
   'selo.poeiraSintetica':
     'poeira perto de casa: volume SINTÉTICO de teste (?poeira=teste), não é o Gaia',
   'selo.poeiraAusente': 'poeira perto de casa: procedural (o bloco não chegou)',

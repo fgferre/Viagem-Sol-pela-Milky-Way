@@ -446,7 +446,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.cartografiaProcedural': 'cartography: procedural (the maps did not arrive)',
   'selo.cartografiaDesligada':
     'cartography: procedural (maps turned off by ?cart=off)',
-  'selo.poeiraMedida': 'dust near home: measured (Gaia, Edenhofer 2024, to 1.2 kpc)',
+  'selo.poeiraMedida': 'dust near home: measured (Gaia, Edenhofer 2024, to 1.2 kpc), with invented fine texture',
   'selo.poeiraSintetica':
     'dust near home: SYNTHETIC test volume (?poeira=teste), not Gaia',
   'selo.poeiraAusente': 'dust near home: procedural (the block did not arrive)',
