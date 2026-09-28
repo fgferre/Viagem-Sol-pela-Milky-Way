@@ -189,11 +189,11 @@ export const EN: Record<keyof typeof PT, string> = {
   // the Gaia-measured block, in three brightnesses.
   'ajustes.poeira': 'Dust near home',
   'ajustes.poeiraNota':
-    "The Gaia-measured block (Edenhofer 2024) to 1.2 kpc, in three brightnesses; 'today's' is the current invented gas, for comparison",
-  'ajustes.poeira.hoje': "today's",
-  'ajustes.poeira.suave': 'Gaia soft',
-  'ajustes.poeira.media': 'Gaia medium',
-  'ajustes.poeira.forte': 'Gaia strong',
+    "Soft, Medium and Strong: the Gaia-measured block (Edenhofer 2024) to 1.2 kpc, in three brightnesses; Today is the current invented gas, for comparison",
+  'ajustes.poeira.hoje': 'Today',
+  'ajustes.poeira.suave': 'Soft',
+  'ajustes.poeira.media': 'Medium',
+  'ajustes.poeira.forte': 'Strong',
   'ajustes.particulasControle': 'Galaxy particles',
   'ajustes.particulasNota':
     'How many of the loaded particles the scene draws, with total brightness compensated: fewer points, each stronger — same flux, different grain.',

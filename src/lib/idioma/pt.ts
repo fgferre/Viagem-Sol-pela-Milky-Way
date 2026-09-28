@@ -191,11 +191,11 @@ export const PT = {
   // bloco medido pelo Gaia, em três brilhos.
   'ajustes.poeira': 'Poeira perto de casa',
   'ajustes.poeiraNota':
-    "O bloco medido pelo Gaia (Edenhofer 2024) até 1,2 kpc, em três brilhos; 'de hoje' é o gás inventado atual, para comparar",
-  'ajustes.poeira.hoje': 'de hoje',
-  'ajustes.poeira.suave': 'Gaia suave',
-  'ajustes.poeira.media': 'Gaia média',
-  'ajustes.poeira.forte': 'Gaia forte',
+    "Suave, Média e Forte: o bloco medido pelo Gaia (Edenhofer 2024) até 1,2 kpc, em três brilhos; Hoje é o gás inventado atual, para comparar",
+  'ajustes.poeira.hoje': 'Hoje',
+  'ajustes.poeira.suave': 'Suave',
+  'ajustes.poeira.media': 'Média',
+  'ajustes.poeira.forte': 'Forte',
   // ROTULO CURTO (polimento 06/09): "da galáxia" é óbvio pela seção
   // (Avançado, ao lado do gás e da nebulosa) e pela dica.
   'ajustes.particulasControle': 'Partículas',

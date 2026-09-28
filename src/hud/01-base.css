@@ -657,10 +657,14 @@
    pede, e não `max-height`: anima de verdade sem precisar saber de
    antemão a altura final. O MIOLO com `min-height: 0` é o que deixa a
    fileira da grade colapsar — sem ele o conteúdo intrínseco trava a
-   fileira no próprio tamanho. */
+   fileira no próprio tamanho. A COLUNA `minmax(0, 1fr)` segura a
+   largura na da caixa: com a coluna implícita, a fileira mais larga do
+   "Avançado" (410 px a 1024 de tela, medido 28/09) alargava a grade e
+   empurrava TODAS as fileiras para fora da gaveta. */
 .sanfona {
   display: grid;
   grid-template-rows: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 .sanfona-miolo {
   min-height: 0;
