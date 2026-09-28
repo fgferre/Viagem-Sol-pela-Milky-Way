@@ -4,7 +4,44 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 228.**
 
-## O BASTÃO — onde a rodada parou (25/09, madrugada)
+## O BASTÃO — onde a rodada parou (27/09, tarde)
+
+**25–27/09 (rodada da POEIRA DO GAIA: plano aprovado; E1 e E2 feitas;
+E3a e E4 antecipadas). Tudo no ramo `poeira-gaia` — decisão dele:
+*"será que não deveríamos fazer isso num branch próprio para evitar dores
+de cabeça"*; nada foi para o `main` desde o commit do plano. A trava de
+push passa qualquer ramo que não seja a `main` (*"Não dá para ser assim.
+Revise essa trava"*).**
+
+- **Feito:** o plano (revisado pelo GPT Astra, 21 itens aceitos); E1 — o
+  bloco de 20 pc gerado por ele em 30 s, régua de colunas redesenhada com
+  referência de mesmo operador; E2 — a poeira no bake do gás macio,
+  byte a byte igual ao app de hoje com a chave desligada, orientação
+  provada até a GPU, fps sem queda; E3a — o gás fino lê o bloco direto;
+  E4 antecipada — opção "Poeira perto de casa" em Ajustes › Avançado (de
+  hoje / Gaia suave / média / forte), troca ao vivo, pedido dele: *"podemos
+  deixar um preset que podemos escolher todos os tipos incluindo o modelo
+  atual do jeito que é … para ter parâmetro de comparação mudando isso em
+  tempo real no menu"*; duas revisões do GPT Atlas (27/09, v1 e v2)
+  incorporadas; regra de delegação trocada por ele (*"rever isso de acordo
+  com o nível de complexidade da tarefa … quando delegamos muita
+  subjetividade"*): Opus para tarefas com julgamento (CLAUDE.md).
+- **Aberto:** (1) o juiz reforçado (prova localizada também no fino,
+  transições ao vivo, erros não tratados) — brief pronto, não executado;
+  (2) passada de revisão por Opus sobre o diff da rodada antes do merge no
+  `main`; (3) a escolha dele por olho (qual brilho, ou nenhum ainda) e o
+  teste no iPhone (`npx vite preview --host --port 4173` e
+  `http://192.168.1.141:4173/?fps=1`); (4) a linha dos cinco botões
+  transborda a gaveta em tela estreita (visto no navegador embutido; as
+  linhas do gás e da nebulosa já faziam o mesmo); (5) as etapas E3b (10 e
+  5 pc), E5 (névoa por vídeo, câmera a 600–1250 pc), E6 (ensino), E7
+  (Vergely, condicionada aos termos); **226**, **227**; `BACKLOG.md` cheio
+  (triagem antes de acrescentar: o coletor de exceções do harness, o
+  número de controles da gaveta no juiz de a11y).
+- **Como retomar:** ler `PLAN.md` › Etapas (marcas [x]/[~]) e as duas
+  revisões em `.cache/revisoes/`; o ramo tem backup no GitHub.
+
+## O BASTÃO anterior (25/09, madrugada)
 
 **24–25/09 (rodada da POEIRA DO GAIA). O `PLAN.md` virou um PEDIDO DE
 PLANO: o Fable escreve as etapas, em modo de planejamento; depois o GPT

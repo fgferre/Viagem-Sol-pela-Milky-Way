@@ -1,5 +1,5 @@
 // Serve: chão — o céu da nebulosa congela quando nada que o alimenta mudou (item 144)
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
 import { Nebula } from './nebula';
 import type { VolumeDePoeira } from '../cartography/galacticAssets';
@@ -181,6 +181,25 @@ describe('poeira medida (E2/E3) — Nebula.setPoeiraMedida/setPoeira', () => {
     expect(desenhos()).toBe(261);
   });
 
+  // TROCA DE FONTE AO VIVO (item A, revisão independente v2, 27/09): o
+  // director redispara `setPoeiraMedida` com uma textura NOVA (fonte
+  // trocada) enquanto o macio já está ativo e já leu um volume antes —
+  // o modo efetivo não muda (continua 1), e sem a invalidação extra
+  // `atualizarModoEfetivo` retornaria cedo, deixando o bake com a
+  // textura ANTIGA para sempre.
+  it('dois volumes diferentes em sequência no macio ativo: o segundo provoca novo bake', () => {
+    const { renderer, camera, nebula, desenhos } = bancada();
+    nebula.setPoeira({ modo: 1, ganho: 46.9, gama: 1, lanes: 0 });
+    nebula.setPoeiraMedida(volumeFalso());
+    nebula.render(renderer, camera); // bake (128) + LUT + raymarch + blur
+    const antes = desenhos();
+
+    nebula.setPoeiraMedida(volumeFalso()); // uma SEGUNDA textura, mesmo efetivo (1)
+    nebula.render(renderer, camera); // reassa (128) + raymarch + blur — LUT reusa (câmera parada)
+
+    expect(desenhos() - antes).toBe(130);
+  });
+
   // CARGA PREGUIÇOSA (item C, revisão independente, 27/09): o bloco pode
   // chegar (director.ts o baixa quando a cartografia está ligada) mesmo
   // com a poeira nunca pedida — reassar as 128 fatias por nada seria
@@ -287,5 +306,54 @@ describe('poeira medida (E2/E3) — Nebula.setPoeiraMedida/setPoeira', () => {
     expect(material.uniforms.uPoeiraGama.value).toBe(1);
     expect(material.uniforms.uPoeiraLanes.value).toBe(0);
     expect(volumeMaterial.uniforms.uPoeiraGanho.value).toBeCloseTo(46.9, 9);
+  });
+
+  // item 7 (revisão independente v2, 27/09): no modo efetivo 2 (fino) o
+  // ganho/gama/lanes são consumidos AO VIVO por amostra no raymarch
+  // (nebulaDensity) — reassar as 128 fatias do bake por uma mudança que
+  // o bake nem lê seria o mesmo desperdício que a carga preguiçosa
+  // (item C, acima) já evita para a chegada do bloco.
+  it('no fino ativo, mudar o ganho não reassa — só o raymarch, nunca as 128 fatias do bake', () => {
+    const { renderer, camera, nebula, desenhos } = bancada();
+    nebula.setVariante('fino');
+    nebula.setPoeiraMedida(volumeFalso());
+    nebula.setPoeira({ modo: 2, ganho: 46.9, gama: 1, lanes: 0 });
+    nebula.render(renderer, camera); // reassa (128) + raymarch + blur — dust liga sujo
+
+    const antes = desenhos();
+    nebula.setPoeira({ modo: 2, ganho: 100, gama: 1, lanes: 0 }); // só o ganho muda
+    nebula.render(renderer, camera); // sem o bake: só a imagem
+    expect(desenhos() - antes).toBeLessThan(128);
+  });
+});
+
+// item 1 (revisão independente v2, 27/09) — window.__poeira é um painel
+// COMPARTILHADO com o Director (frame diagnostics, ver diagnosticoDaPoeira.ts
+// em lib/): a sequência abaixo é a que derrubava a cena com `gas=antigo`
+// (nunca assa; `Director.tick` roda antes e cria `window.__poeira = {}`
+// só com as métricas de quadro) trocando para `fino` (o primeiro bake
+// via `g.__poeira.bakesMs.push`, ausente). `environment: node`
+// (vitest.config.ts): sem `window` de verdade, este bloco encena o
+// mínimo dele em `globalThis`, mesma régua de `lib/contadorDeFps.test.ts`.
+describe('window.__poeira — o painel compartilhado com o Director não trava o primeiro bake', () => {
+  afterEach(() => {
+    delete (globalThis as { window?: unknown }).window;
+  });
+
+  it('window.__poeira já existe SÓ com quadroMaxMs (o director rodou primeiro, sem nunca assar): o primeiro bake não lança e ganha bakesMs', () => {
+    // `location.search` vazio: só o suficiente para o construtor (lê
+    // `?nebsteps=` fora deste teste) não quebrar por um motivo alheio.
+    const janela = {
+      location: { search: '' },
+      __poeira: { quadroMaxMs: 1 } as { quadroMaxMs: number; bakesMs?: number[] },
+    };
+    (globalThis as { window?: unknown }).window = janela;
+    const { renderer, camera, nebula } = bancada();
+    nebula.setVariante('fino'); // marca volumeSujo — o próximo render() assa
+
+    expect(() => nebula.render(renderer, camera)).not.toThrow();
+
+    expect(janela.__poeira.bakesMs?.length).toBe(1);
+    expect(janela.__poeira.quadroMaxMs).toBe(1); // preservado, não apagado pelo bake
   });
 });

@@ -196,7 +196,8 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     return celulas;
   }
 
-  function rodarComFixture(fixture) {
+  /** Escreve o ativo `kind: 'volume'` de teste (10×10×10) no manifesto do espelho, sob `nomeAtivo` — remove qualquer outro volume que o manifesto real copiado trouxesse. */
+  function escreverAtivoDeTeste(nomeAtivo) {
     const flutuante = paraFloat16(VALORES, ESCALA);
     const buffer = Buffer.from(flutuante.buffer, flutuante.byteOffset, flutuante.byteLength);
     const gz = gzipSync(buffer, { level: 9 });
@@ -207,7 +208,7 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     for (const [nome, asset] of Object.entries(manifesto.assets)) {
       if (asset.kind === 'volume') delete manifesto.assets[nome];
     }
-    manifesto.assets.dustVolumeTeste = {
+    manifesto.assets[nomeAtivo] = {
       kind: 'volume',
       file: 'data/galaxy/dust-teste.bin',
       dims: DIMS,
@@ -223,10 +224,9 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     writeFileSync(join(espelhoVolume, 'public/data/galaxy/dust-teste.bin'), buffer);
     writeFileSync(join(espelhoVolume, 'public/data/galaxy/dust-teste.bin.gz'), gz);
     writeFileSync(join(espelhoVolume, 'public/data/galaxy/manifest.json'), JSON.stringify(manifesto));
-    writeFileSync(
-      join(espelhoVolume, 'scripts/data/fixtures/edenhofer-referencia.json'),
-      JSON.stringify(fixture)
-    );
+  }
+
+  function rodar() {
     try {
       const saida = execFileSync(
         process.execPath,
@@ -237,6 +237,25 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     } catch (erro) {
       return { ok: false, saida: `${erro.stdout ?? ''}${erro.stderr ?? ''}` };
     }
+  }
+
+  // `nomeAtivo` default é o ativo CONHECIDO (REFERENCIAS_OBRIGATORIAS, em
+  // verify-assets.mjs) — é ele que exercita a comparação de verdade.
+  // `dustVolumeTeste` (desconhecido) só recebe o AVISO, nunca compara.
+  function rodarComFixture(fixture, nomeAtivo = 'dustVolumeNear20pc') {
+    escreverAtivoDeTeste(nomeAtivo);
+    writeFileSync(
+      join(espelhoVolume, 'scripts/data/fixtures/edenhofer-referencia.json'),
+      JSON.stringify(fixture)
+    );
+    return rodar();
+  }
+
+  /** Mesmo ativo de teste, mas SEM fixture no disco — apaga a fixture real que o `cpSync` do `beforeAll` copiou. */
+  function rodarSemFixture(nomeAtivo) {
+    escreverAtivoDeTeste(nomeAtivo);
+    rmSync(join(espelhoVolume, 'scripts/data/fixtures/edenhofer-referencia.json'), { force: true });
+    return rodar();
   }
 
   it('passa com um volume float16 dentro da tolerância', () => {
@@ -260,7 +279,7 @@ describe('verify-assets — o volume de poeira (float16)', () => {
       ],
     });
     expect(r.ok, r.saida.slice(-800)).toBe(true);
-    expect(r.saida).toContain('dustVolumeTeste: fixture Edenhofer OK');
+    expect(r.saida).toContain('dustVolumeNear20pc: fixture Edenhofer OK');
     expect(r.saida).toContain('faixa do tubo');
   }, 60_000);
 
@@ -288,14 +307,33 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     expect(r.saida).toContain('FORA DA FAIXA');
   }, 60_000);
 
-  it('grade incompatível (outra resolução) → não falha, só avisa que não há referência', () => {
-    const r = rodarComFixture({
-      cabecalho: { grade: { dims: [5, 5, 5], voxelPc: 20, origemPc: [0, 0, 0] } },
-      // valores deliberadamente "errados": se a grade fosse comparada, reprovaria.
-      voxeis: [{ indice: [0, 0, 0], media: 999, nanFracao: 0 }],
-      colunas: [],
-    });
+  // (a)/(b)/(c) da revisão independente v2 (item 3, 27/09/2026):
+  // REFERENCIAS_OBRIGATORIAS só lista `dustVolumeNear20pc` — para ele,
+  // fixture ausente ou grade incompatível é ERRO; ativo fora da tabela
+  // (desconhecido) nunca reprova por causa da fixture, só avisa.
+  it('(a) ativo conhecido (dustVolumeNear20pc) sem fixture → falha', () => {
+    const r = rodarSemFixture('dustVolumeNear20pc');
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('fixture de referência obrigatória ausente');
+  }, 60_000);
+
+  it('(b) ativo conhecido (dustVolumeNear20pc) com grade incompatível na fixture → falha', () => {
+    const r = rodarComFixture(
+      {
+        cabecalho: { grade: { dims: [5, 5, 5], voxelPc: 20, origemPc: [0, 0, 0] } },
+        // valores deliberadamente "errados": se a grade fosse comparada, reprovaria.
+        voxeis: [{ indice: [0, 0, 0], media: 999, nanFracao: 0 }],
+        colunas: [],
+      },
+      'dustVolumeNear20pc'
+    );
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('não se aplica');
+  }, 60_000);
+
+  it('(c) ativo desconhecido sem fixture → não falha, só avisa que a validação está pendente', () => {
+    const r = rodarSemFixture('dustVolumeTeste');
     expect(r.ok, r.saida.slice(-800)).toBe(true);
-    expect(r.saida).toContain('sem referência para esta grade');
+    expect(r.saida).toContain('AVISO: dustVolumeTeste: validação científica pendente');
   }, 60_000);
 });

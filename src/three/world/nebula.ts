@@ -12,6 +12,7 @@ import {
 } from '../shaders/nebulaShaders';
 import { makeBlueNoiseTexture } from './blueNoise';
 import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
+import { diagnosticoDaPoeira } from '../../lib/diagnosticoDaPoeira';
 import type { GasVolumetrico } from '../core/engine';
 import type { VolumeDePoeira } from '../cartography/galacticAssets';
 
@@ -542,22 +543,36 @@ export class Nebula {
     const lanesClamp = Number.isFinite(lanes) ? THREE.MathUtils.clamp(lanes, 0, 1) : 0;
     const u = this.material.uniforms;
     const uv = this.volumeMaterial.uniforms;
+    // GANHO/GAMA/LANES NO FINO NÃO PEDEM REBAKE (item 7, revisão
+    // independente v2, 27/09): no modo efetivo 2 (fino) os três são
+    // consumidos AO VIVO por amostra no raymarch (nebulaDensity, ver
+    // GLSL_POEIRA_MEDIDA em shaders/common.ts) — só a IMAGEM precisa
+    // refazer (`sujo`), nunca as 128 fatias do bake (`volumeSujo`), que
+    // nem os lê. Só o modo 1 (macio) os assa dentro do voxel
+    // (`nebulaBake`), e por isso ainda pede os dois. Mesmo cálculo de
+    // `atualizarModoEfetivo` (chamada abaixo, que só reage a MUDANÇA de
+    // modo): `poeiraModoPedido` já está atualizado acima, então já
+    // reflete o efetivo que este `setPoeira` está pedindo.
+    const esperado = this.modoEsperado;
+    const efetivo =
+      esperado !== 0 && this.poeiraModoPedido !== 0 && this.poeiraVolumeCarregado ? esperado : 0;
+    const precisaRebake = efetivo === 1;
     if (u.uPoeiraGanho.value !== ganhoClamp) {
       u.uPoeiraGanho.value = ganhoClamp;
       uv.uPoeiraGanho.value = ganhoClamp;
-      this.volumeSujo = true;
+      if (precisaRebake) this.volumeSujo = true;
       this.sujo = true;
     }
     if (u.uPoeiraGama.value !== gamaClamp) {
       u.uPoeiraGama.value = gamaClamp;
       uv.uPoeiraGama.value = gamaClamp;
-      this.volumeSujo = true;
+      if (precisaRebake) this.volumeSujo = true;
       this.sujo = true;
     }
     if (u.uPoeiraLanes.value !== lanesClamp) {
       u.uPoeiraLanes.value = lanesClamp;
       uv.uPoeiraLanes.value = lanesClamp;
-      this.volumeSujo = true;
+      if (precisaRebake) this.volumeSujo = true;
       this.sujo = true;
     }
     this.atualizarModoEfetivo();
@@ -579,6 +594,17 @@ export class Nebula {
    * independente): o bloco pode chegar com o pedido em 0 (nenhuma
    * variante o lendo ainda), e reassar as 128 fatias por nada seria
    * exatamente o custo que a carga preguiçosa evita.
+   *
+   * TROCA DE FONTE AO VIVO (item A, revisão independente v2, 27/09):
+   * `atualizarModoEfetivo` só suja o volume/a imagem quando o modo
+   * EFETIVO troca de VALOR — trocar um volume JÁ carregado por outro
+   * (o director redisparando com uma fonte nova, mesma variante ativa)
+   * mantém o mesmo efetivo, e ela voltava sem marcar nada: o bloco
+   * assado continuava sendo o da textura ANTERIOR, mesmo com
+   * `uPoeiraTex` já apontando para a nova. Por isso, com uma textura
+   * NOVA (não o ramo `null` abaixo), o efetivo resultante ≥ 1 força a
+   * invalidação de novo — efetivo 0 (nada lê a poeira) continua sem
+   * reassar, não há nada que o bake precise refazer.
    */
   setPoeiraMedida(volume: VolumeDePoeira | null) {
     const texAnterior = this.poeiraTexAtual;
@@ -621,6 +647,10 @@ export class Nebula {
     }
     texAnterior?.dispose();
     this.atualizarModoEfetivo();
+    if ((this.material.uniforms.uPoeiraModo.value as number) >= 1) {
+      this.volumeSujo = true;
+      this.sujo = true;
+    }
   }
 
   /**
@@ -985,17 +1015,20 @@ export class Nebula {
     // DevTools. RENOMEADO de "ultimoMs": as 128 chamadas de
     // `renderer.render` daqui só devolvem depois de SUBMETER o desenho —
     // não medem a conclusão na GPU, que pode terminar bem depois (daí
-    // `bakeCpuMs`, não `bakeMs`). `typeof window` porque este método
-    // roda inteiro sob `environment: node` em nebula.test.ts (mesma
-    // guarda de `stepsOverride`, acima).
-    if (typeof window !== 'undefined') {
-      const ms = performance.now() - t0;
-      const g = window as unknown as { __poeira?: { bakesMs: number[]; bakeCpuMs: number } };
-      if (!g.__poeira) g.__poeira = { bakesMs: [], bakeCpuMs: 0 };
-      g.__poeira.bakesMs.push(ms);
-      if (g.__poeira.bakesMs.length > 20) g.__poeira.bakesMs.shift();
-      g.__poeira.bakeCpuMs = ms;
-    }
+    // `bakeCpuMs`, não `bakeMs`). `diagnosticoDaPoeira()` (lib/, item 1
+    // — revisão independente v2, 27/09) é o inicializador ÚNICO de
+    // `window.__poeira`, partilhado com `Director.tick`: sem ele, o
+    // objeto podia nascer PARCIAL (o outro lado escreve primeiro, só com
+    // os campos dele) e o `.push` abaixo explodia em `bakesMs` ausente —
+    // a mesma função devolve um objeto local sob `environment: node`
+    // (nebula.test.ts), então este método não precisa mais da sua
+    // própria guarda de `typeof window`.
+    const ms = performance.now() - t0;
+    const d = diagnosticoDaPoeira();
+    d.bakesMs.push(ms);
+    if (d.bakesMs.length > 20) d.bakesMs.shift();
+    d.bakeCpuMs = ms;
+    d.bakes += 1; // contagem desde a marca (`reiniciar()` zera)
   }
 
   render(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera) {

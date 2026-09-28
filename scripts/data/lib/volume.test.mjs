@@ -122,6 +122,62 @@ describe('compararComReferencia — grade da fixture precisa bater com a do volu
   });
 });
 
+describe('compararComReferencia — conteúdo mínimo da fixture (grade OK, mas fixture vazia/inválida)', () => {
+  const grade = { nx: 20, ny: 20, nz: 20, voxelPc: 10, origemPc: [-100, -100, -100] };
+  const volume = { grade, valores: new Float64Array(20 * 20 * 20).fill(0.02) };
+  const gradeFixture = { dims: [grade.nx, grade.ny, grade.nz], voxelPc: grade.voxelPc, origemPc: grade.origemPc };
+  const colunaValida = {
+    nome: 'x',
+    l: 0,
+    b: 0,
+    rMin: 5,
+    rMax: 40,
+    celulas: [{ indice: [0, 0, 0], media: 0.02 }],
+    tubo: { media: 0.7, min: 0.6, max: 0.8 },
+  };
+  const voxelValido = { indice: [0, 0, 0], media: 0.02, nanFracao: 0 };
+
+  it('voxeis vazio → aplicavel:false (lista vazia não aprova por vacuidade)', () => {
+    const resultado = compararComReferencia(volume, {
+      cabecalho: { grade: gradeFixture },
+      voxeis: [],
+      colunas: [colunaValida],
+    });
+    expect(resultado.aplicavel).toBe(false);
+    expect(resultado.motivo).toMatch(/voxeis/);
+  });
+
+  it('colunas vazio → aplicavel:false (lista vazia não aprova por vacuidade)', () => {
+    const resultado = compararComReferencia(volume, {
+      cabecalho: { grade: gradeFixture },
+      voxeis: [voxelValido],
+      colunas: [],
+    });
+    expect(resultado.aplicavel).toBe(false);
+    expect(resultado.motivo).toMatch(/colunas/);
+  });
+
+  it('índice de voxel fora da grade → aplicavel:false', () => {
+    const resultado = compararComReferencia(volume, {
+      cabecalho: { grade: gradeFixture },
+      voxeis: [{ indice: [20, 0, 0], media: 0.02, nanFracao: 0 }],
+      colunas: [colunaValida],
+    });
+    expect(resultado.aplicavel).toBe(false);
+    expect(resultado.motivo).toMatch(/índice/);
+  });
+
+  it('índice de célula (referência de mesmo operador) fora da grade → aplicavel:false', () => {
+    const resultado = compararComReferencia(volume, {
+      cabecalho: { grade: gradeFixture },
+      voxeis: [voxelValido],
+      colunas: [{ ...colunaValida, celulas: [{ indice: [0, 0, -1], media: 0.02 }] }],
+    });
+    expect(resultado.aplicavel).toBe(false);
+    expect(resultado.motivo).toMatch(/índice/);
+  });
+});
+
 describe('compararComReferencia — coluna: referência de mesmo operador reprova, faixa do tubo só avisa', () => {
   // Mesma grade/campo constante do teste de integrarColuna: a coluna
   // l=0,b=0,rMin=5,rMax=40 vale sempre 0,02 × (40 − 5) = 0,7. `celulas`
@@ -146,7 +202,9 @@ describe('compararComReferencia — coluna: referência de mesmo operador reprov
   it('aprova quando a coluna bate com a referência de mesmo operador (e reporta a razão do tubo)', () => {
     const fixture = {
       cabecalho: { grade: gradeFixture },
-      voxeis: [],
+      // um voxel qualquer, dentro da tolerância — o que este teste cobre é
+      // a COLUNA; o voxel só precisa existir (conteúdo mínimo da fixture).
+      voxeis: [{ indice: [0, 0, 0], media: 0.02, nanFracao: 0 }],
       colunas: [
         {
           nome: 'dentro',
@@ -175,7 +233,9 @@ describe('compararComReferencia — coluna: referência de mesmo operador reprov
   it('reprova pela referência de mesmo operador MESMO com a coluna dentro da faixa do tubo (plausibilidade não reprova)', () => {
     const fixture = {
       cabecalho: { grade: gradeFixture },
-      voxeis: [],
+      // idem: um voxel qualquer, só para satisfazer o conteúdo mínimo —
+      // este teste cobre a COLUNA.
+      voxeis: [{ indice: [0, 0, 0], media: 0.02, nanFracao: 0 }],
       colunas: [
         {
           nome: 'divergente',

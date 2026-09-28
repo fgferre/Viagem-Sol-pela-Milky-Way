@@ -70,6 +70,20 @@ function montarFitsMinusculo() {
 
 const GRADE_FIXTURE = { dims: [GRADE_20PC.nx, GRADE_20PC.ny, GRADE_20PC.nz], voxelPc: GRADE_20PC.voxelPc, origemPc: GRADE_20PC.origemPc };
 
+// Uma coluna mínima VÁLIDA (o conteúdo mínimo da fixture exige ≥ 1
+// coluna com célula de índice válido): o bloco destes testes sai todo
+// zero, então a referência de mesmo operador zero bate exatamente.
+const COLUNA_ZERO = {
+  nome: 'centro',
+  l: 0,
+  b: 0,
+  rMin: 68.8119,
+  rMax: 1244.5968,
+  fino: 0,
+  tubo: { media: 0, min: 0, max: 0 },
+  celulas: [{ indice: [62, 62, 25], media: 0 }],
+};
+
 let dir;
 let caminhoFits;
 
@@ -132,7 +146,7 @@ describe('executar — fixture que reprova: lança com os números, nada muda em
         // o bloco sai todo zero (ver raios minúsculos no cabeçalho do
         // FITS sintético); esta fixture espera 5 — reprova por certo.
         voxeis: [{ indice: [0, 0, 0], media: 5, nanFracao: 0 }],
-        colunas: [],
+        colunas: [COLUNA_ZERO],
       })
     );
 
@@ -162,7 +176,7 @@ describe('executar — fixture que aprova: grava .bin/.gz e o manifesto é o ÚL
         cabecalho: { grade: GRADE_FIXTURE },
         // o bloco sai todo zero; esta fixture espera exatamente 0.
         voxeis: [{ indice: [0, 0, 0], media: 0, nanFracao: 0 }],
-        colunas: [],
+        colunas: [COLUNA_ZERO],
       })
     );
 

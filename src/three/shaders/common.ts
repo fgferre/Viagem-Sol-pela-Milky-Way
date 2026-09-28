@@ -120,9 +120,10 @@ vec3 poeiraHelio(vec3 p) {
 // externo (1100→1200 pc — folga sobre o outerRadiusPc do manifesto,
 // nunca alcança a borda irregular real do suporte) e nas seis faces da
 // caixa (rampa de 1 voxel, 20 pc). Dentro do raio interno — o buraco de
-// 68,8 pc que o pipeline declara vazio, nunca reconstruído — a cobertura
-// também é 1: "medido vazio" é uma medida, não um buraco que volta a
-// ser procedural. (Escrita como 1.0 − smoothstep(baixo, alto, x), não
+// 68,8 pc — a cobertura também é 1: não reconstruído, zero por escolha
+// do app, com transição de resolução de ~1 voxel na fronteira (a média
+// atravessa a superfície) — não um buraco que volta a ser procedural.
+// (Escrita como 1.0 − smoothstep(baixo, alto, x), não
 // smoothstep(alto, baixo, x): arestas invertidas no smoothstep são fonte
 // conhecida de NaN/bloom nesta casa — AGENTS.md.)
 float poeiraCobertura(vec3 ph) {
@@ -581,24 +582,30 @@ ${
   // resultado de R, só o custo — e G/B/A são escritos DE QUALQUER JEITO
   // logo abaixo, porque o bake assa o voxel inteiro de uma vez.
   //
-  // POEIRA MEDIDA (E2) — ÁLGEBRA DA MISTURA (revisão independente,
-  // 27/09): c é a cobertura do bloco no ponto (0 com o modo desligado —
-  // ver GLSL_POEIRA_MEDIDA). O raymarch faz d = R·G, então R e G não
-  // podem cada um ser uma mistura (1−c)/c do procedural/medido
-  // INDEPENDENTE um do outro — isso atenua o medido na transição (c=0,5,
-  // L=0,2, P=0, M=1 dava R·G=0,3 em vez dos 0,5 corretos). Com campoProc
-  // = P = envelope·clumps·0,75 + sementes (cheio, SEM (1−c) — o (1−c)
-  // agora mora só na mistura abaixo) e fatorLanes = L (as lanes
-  // inventadas), o medido usa fatorLanesMedido = mix(1, L, uPoeiraLanes)
-  // — uPoeiraLanes=0 por padrão → 1: o medido NÃO é modulado pela lane
-  // inventada. A mistura COMPARTILHADA por R e G é
-  // mistura = (1−c)·L + c·Lm (∈[0,12; 1], nunca zero — L e Lm nunca saem
-  // de [0,12; 1]); R = [(1−c)·P·L + c·M·Lm] / mistura e
-  // G = mistura·gasDensity dão R·G = gasDensity·[(1−c)·P·L + c·M·Lm]
-  // exatamente — linear no campo de densidade. Com c ≤ 0 (modo
-  // desligado) cai no ramo de hoje, texto idêntico: R=P, G=L·gasDensity
-  // — e M (poeiraMedida, um fetch de textura) só é amostrado dentro do
-  // ramo c > 0: custo zero com a poeira desligada.
+  // POEIRA MEDIDA (E2) — REPRESENTAÇÃO EXATA SOB O FILTRO (item 6,
+  // revisão independente v2, 27/09): a versão anterior fatorava
+  // R = D/mistura, G = mistura·gasDensity (D = densidade final) — exata
+  // no CENTRO de cada voxel, mas a GPU interpola R e G SEPARADAMENTE (o
+  // volume 128³ é filtro linear) antes do raymarch multiplicar:
+  // interp(R)·interp(G) ≠ interp(R·G) quando os dois variam juntos
+  // (contraexemplo: voxel A c=0,P=0,L=0,2 → R=0,G=0,2; voxel B c=0,5,
+  // P=0,M=1,L=0,2 → R=5/6,G=0,6; no meio dá 1/6, a densidade correta
+  // seria 1/4). O conserto: gravar em R a densidade FINAL já modulada,
+  // sem dividir — R = (1−c)·P·L + c·M·Lm (P = envelope·clumps·0,75 +
+  // sementes; L = fatorLanes; M = poeiraDensidadeApp(poeiraMedida); Lm =
+  // mix(1, L, uPoeiraLanes), 1 por padrão — o medido NÃO é modulado pela
+  // lane inventada) — e G = gasDensity, uma CONSTANTE espacial (sem
+  // mistura, sem lanes): só R varia de voxel a voxel, então
+  // interp(R)·gasDensity = interp(R·gasDensity) — a interpolação
+  // distribui sobre uma constante, sem termo cruzado. Com c ≤ 0 (modo
+  // desligado OU fora da cobertura) cai no ramo de hoje, texto idêntico:
+  // R=P, G=L·gasDensity — e M (poeiraMedida, um fetch de textura) só é
+  // amostrado dentro do ramo c > 0: custo zero com a poeira desligada.
+  // CONSEQUÊNCIA aceita: com a poeira ligada, G deixa de carregar a lane
+  // que os núcleos do corredor usavam no raymarch (somados antes da
+  // multiplicação por G — ver nebulaDensity) — diferença artística
+  // minúscula (≤ 3 pc, a largura da rampa de poeiraCobertura), em troca
+  // do campo medido exato sob o filtro.
   vec3 ph = poeiraHelio(p);
   float c = uPoeiraModo == 1 ? poeiraCobertura(ph) : 0.0;
   float campoProc = 0.0;
@@ -636,9 +643,8 @@ ${
   } else {
     float medido = poeiraDensidadeApp(poeiraMedida(ph));
     float fatorLanesMedido = mix(1.0, fatorLanes, uPoeiraLanes);
-    float mistura = (1.0 - c) * fatorLanes + c * fatorLanesMedido;
-    r = ((1.0 - c) * campoProc * fatorLanes + c * medido * fatorLanesMedido) / mistura;
-    gCanal = mistura * ${glslNumber(WORLD.gasDensity)};
+    r = (1.0 - c) * campoProc * fatorLanes + c * medido * fatorLanesMedido;
+    gCanal = ${glslNumber(WORLD.gasDensity)};
   }
   float aCanal = fbm(p * 0.035 + 7.7, 3);
   return vec4(r, gCanal, envelope, aCanal);

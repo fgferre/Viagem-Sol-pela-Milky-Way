@@ -19,6 +19,7 @@ import {
 // seria sombreado pelo relógio no primeiro callback (item 130).
 import { t as texto } from '../lib/idioma';
 import type { ChaveDeTexto } from '../lib/idioma';
+import { diagnosticoDaPoeira, estatisticasDeQuadro } from '../lib/diagnosticoDaPoeira';
 import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
@@ -226,8 +227,11 @@ interface DirectorEvents {
   /**
    * A PROCEDÊNCIA REAL da poeira medida perto do Sol (revisão
    * independente, 27/09) — ver `EstadoDaPoeira` em `selo.ts` e o getter
-   * `estadoDaPoeira`. Sai junto de `onQuality` (a variante do gás muda
-   * com o preset) e de novo quando a carga assíncrona resolve.
+   * `estadoDaPoeira`. Sai a cada `tick()` em que `situacao`/`fonte`
+   * mudam (item B, revisão independente v2, 27/09 — `publicarPoeira`
+   * é a guarda), o que cobre o pedido, a carga assíncrona resolvendo E
+   * a `Nebula` assentando o bloco num quadro futuro, sem depender de
+   * mais nenhum evento.
    */
   onPoeira: (estado: EstadoDaPoeira) => void;
   /** linha de rumo ("→ DESTINO · distância viva"); vazio = esconder */
@@ -312,6 +316,46 @@ export type { EstadoDaEscada } from './director/escada';
 
 /** as opções da entrada no Atlas — `aoChegar` é o alvo na mão (item 129) */
 type EntradaNoAtlas = { instantaneo?: boolean; momento?: number; aoChegar?: () => void };
+
+/**
+ * A DERIVAÇÃO PURA de `Director.estadoDaPoeira` (item B, revisão
+ * independente v2, 27/09) — extraída da classe para testar sem WebGL:
+ * só lê os cinco valores que decidem o veredito, nunca `this`/`window`.
+ * O getter (na classe, abaixo) é o único chamador, com os cinco valores
+ * desta instância. Cruza o PEDIDO (`poeiraModoPedido`), a CARGA desta
+ * instância (`poeiraCarga`/`poeiraFonte`, escritos por
+ * `tentarCarregarPoeira`/`init`) e o que a `Nebula` DE FATO desenha
+ * (`poeiraModoEfetivo`, `poeiraAssentada`) — nenhuma das três decide
+ * por conta própria. Único produtor: antes disto o selo decidia por
+ * URL pedida + uma flag global de `galacticAssets.ts`, e o
+ * renderizador decidia por variante + bloco + modo — as duas contas
+ * divergiam.
+ */
+export function derivarEstadoDaPoeira(entrada: {
+  poeiraModoPedido: number;
+  poeiraCarga: 'pendente' | 'carregando' | 'chegou' | 'falhou';
+  poeiraFonte: 'gaia' | 'sintetica' | null;
+  poeiraModoEfetivo: number;
+  poeiraAssentada: boolean;
+}): EstadoDaPoeira {
+  if (entrada.poeiraModoPedido === 0) return { situacao: 'desligada', fonte: null };
+  if (entrada.poeiraCarga === 'pendente' || entrada.poeiraCarga === 'carregando') {
+    return { situacao: 'carregando', fonte: null };
+  }
+  if (entrada.poeiraCarga === 'falhou') return { situacao: 'indisponivel', fonte: null };
+  // 'chegou': o volume existe. A variante ativa não lendo ('antigo',
+  // modo efetivo 0) é 'inativa' mesmo antes de qualquer bake; senão,
+  // 'ativa' só quando a Nebula já assentou o bloco na tela — um
+  // efetivo ≥ 1 ainda não assentado é a última fatia do bake em voo,
+  // e "carregando" descreve isso melhor do que uma 'ativa' adiantada.
+  if (entrada.poeiraModoEfetivo === 0) {
+    return { situacao: 'inativa', fonte: entrada.poeiraFonte };
+  }
+  if (!entrada.poeiraAssentada) {
+    return { situacao: 'carregando', fonte: entrada.poeiraFonte };
+  }
+  return { situacao: 'ativa', fonte: entrada.poeiraFonte };
+}
 
 export class Director {
   /** o painel de ajustes mexe em tom e exposição ao vivo */
@@ -464,12 +508,29 @@ export class Director {
    * `this.catalogos` (tipado sem `.volumes`) só para isto.
    */
   private cartOn = false;
+  /** `this.cartOn` já recebeu o valor DEFINITIVO da sessão (item B,
+   *  revisão independente v2, 27/09) — só `init()` o escreve, uma vez.
+   *  Antes disto, `!this.cartOn` é só "ainda não sei" — não dá para
+   *  `tentarCarregarPoeira` distinguir de "a cartografia realmente não
+   *  vai ligar" sem este campo, e as duas liam falso do mesmo jeito. */
+  private cartResolvido = false;
   private dustVolumeManifesto: ManifestVolume | null = null;
-  /** o fetch (real ou o volume sintético de `?poeira=teste`) já foi
-   *  disparado — uma vez só: nem carga dupla enquanto o primeiro voa,
-   *  nem retentativa depois que ele resolveu (item D: uma falha do
-   *  fetch é definitiva, `Nebula.poeiraAssentada` não espera por ela). */
-  private poeiraFetchDisparada = false;
+  /** cada disparo de `tentarCarregarPoeira` leva o próximo número —
+   *  marca a resposta (`.then`) do fetch que ele abriu: se um disparo
+   *  mais novo (outra fonte) já mudou este contador quando a promise
+   *  resolve, a resposta é descartada (item A, revisão independente
+   *  v2, 27/09), sem tocar `nebula`/`poeiraCarga`/`poeiraFonte` — sem
+   *  isto duas respostas em voo corriam para escrever o estado por
+   *  último, e a mais VELHA podia vencer. */
+  private poeiraPedidoId = 0;
+  /** a FONTE (`fonteDesejada`) que `tentarCarregarPoeira` já tentou
+   *  buscar nesta instância — sucesso OU falha, sem retentativa (item
+   *  D). Distinto de `poeiraFonte` (abaixo): esse é só a fonte de um
+   *  volume que chegou a EXISTIR (`null` numa falha) — uma fonte
+   *  tentada e malsucedida não pode parecer "nada tentado ainda" e
+   *  reabrir o fetch a cada `definirPoeira` (cada troca de tier chama
+   *  `aplicarPoeira`/`definirPoeira` de novo, mesmo sem nada mudar). */
+  private poeiraFonteTentada: 'gaia' | 'sintetica' | null = null;
   /** o PEDIDO guardado por `definirPoeira` (mesmo número que
    *  `Nebula.poeiraModoPedido`) — `tentarCarregarPoeira` precisa dele
    *  depois que `this.cartOn` for sabido, sem reler `this.debug`. */
@@ -480,7 +541,7 @@ export class Director {
    * (`registrarBlocoDePoeira`/`estadoDoBlocoDePoeira`): aquela nunca
    * voltava a 'pendente' entre boots e não notificava o React. Esta é o
    * que `estadoDaPoeira` (abaixo) cruza com a `Nebula` para o veredito
-   * real; escrita por `tentarCarregarPoeira` e por `init()` (o caso
+   * real; escrita só por `tentarCarregarPoeira` (inclusive o caso
    * "cartografia nunca ligou" — sem manifesto não há descritor a
    * esperar). `poeiraFonte` só é não-nula quando um volume chegou a
    * existir (real ou o sintético de `?poeira=teste`).
@@ -641,6 +702,21 @@ export class Director {
    */
   private ultimoQuadroPerf = performance.now();
   private readonly intervalosDeQuadroMs: number[] = [];
+  /** true → o PRÓXIMO intervalo de quadro é descartado (não vira
+   *  amostra, só reancora `ultimoQuadroPerf`) — item C, revisão
+   *  independente v2, 27/09. Cobre dois vãos que não são custo de
+   *  quadro de verdade: o quadro 1 (`tick()` só corre depois que
+   *  `init()` chama `engine.start()`, então nasce `true`: sem isto o
+   *  primeiro intervalo mediria a carga inteira, ~5 s de CPU, como se
+   *  fosse um quadro) e o primeiro depois que a aba volta de escondida
+   *  (rAF pausa/throttla em segundo plano — ver `aoMudarVisibilidade`). */
+  private descartarProximoIntervaloDeQuadro = true;
+  /** religa `descartarProximoIntervaloDeQuadro` quando a aba volta de
+   *  escondida — registrado no construtor, removido no `dispose()`
+   *  (mesmo contrato de `aoMudarMovimento`, acima). */
+  private readonly aoMudarVisibilidade = () => {
+    if (!document.hidden) this.descartarProximoIntervaloDeQuadro = true;
+  };
 
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
@@ -694,6 +770,19 @@ export class Director {
    * do clique, com a URL já limpa, e o selo mentiria por omissão.
    */
   private poeiraTeste = this.debug.get('poeira') === 'teste';
+  /**
+   * A FONTE QUE O PEDIDO ATUAL QUER (item A, revisão independente v2,
+   * 27/09) — `'sintetica'` enquanto `poeiraTeste` estiver ligado
+   * (`?poeira=teste`, ou até `forcarPoeira` o desarmar), `'gaia'`
+   * depois. GETTER, e não um campo escrito à mão: `poeiraTeste` é
+   * MUTÁVEL (`forcarPoeira` o limpa), e um campo separado podia
+   * desincronizar do que ele vale AGORA — era exatamente esse o
+   * defeito (a fonte lida de `this.debug`, congelado, em vez do pedido
+   * atual). Único consumidor: `tentarCarregarPoeira`.
+   */
+  private get fonteDesejada(): 'gaia' | 'sintetica' {
+    return this.poeiraTeste ? 'sintetica' : 'gaia';
+  }
   /**
    * O RAIO COM QUE O SOL FOI CONSTRUÍDO, em pc. Desde a F3 é SEMPRE o
    * físico (`RAIO_DO_SOL_NA_CENA`) — a porta `?solreal=1` da F1 morreu
@@ -934,6 +1023,11 @@ export class Director {
         : null;
     this.reducedMotion = this.preferenciaDeMovimento?.matches ?? false;
     this.preferenciaDeMovimento?.addEventListener('change', this.aoMudarMovimento);
+    // RELÓGIO DO QUADRO (item C, revisão independente v2, 27/09): a aba
+    // escondida pausa/throttla o rAF — sem isto, um minuto em segundo
+    // plano virava o "pior quadro" da sessão inteira quando a aba
+    // voltasse (ver `aoMudarVisibilidade`/`descartarProximoIntervaloDeQuadro`).
+    document.addEventListener('visibilitychange', this.aoMudarVisibilidade);
     // As flags de camada semeiam da URL DERIVADAS da tabela única
     // (`atlasConfig.CAMADAS`) — este laço era a quarta lista digitada à
     // mão, e foi por fora dela que quatro flags só-URL viveram sem nome
@@ -1148,39 +1242,78 @@ export class Director {
   }
 
   /**
-   * CARGA PREGUIÇOSA (E3, item C — revisão independente, 27/09): antes o
-   * fetch do bloco de 20 pc disparava sempre que a cartografia estava
-   * ligada, mesmo com a poeira desligada ou a variante 'fino' (que não a
-   * assava — E2). Agora só dispara com os TRÊS: pedida
-   * (`poeiraModoPedido != 0`), cartografia ligada (`this.cartOn`, só
-   * sabido depois que `init()` resolve os ativos) e ainda não disparada —
-   * uma vez só: sem retentativa depois de uma falha (item D:
-   * `Nebula.poeiraAssentada` trata a falha como definitiva, sem prazo
-   * artificial). Chamada por `definirPoeira` e de novo no fim de `init()`
+   * CARGA PREGUIÇOSA (E3, item C) + TROCA DE FONTE AO VIVO (item A,
+   * revisão independente v2, 27/09): antes o fetch do bloco de 20 pc
+   * disparava sempre que a cartografia estava ligada, mesmo com a
+   * poeira desligada ou a variante 'fino' (que não a assava — E2); e,
+   * uma vez disparado, NUNCA disparava de novo — nem quando o pedido
+   * trocava de FONTE (sintética ↔ Gaia): "Gaia média" depois de
+   * `?poeira=teste` ficava com o volume de bancada no ar, porque a
+   * fonte era lida da URL CONGELADA (`this.debug`), não do pedido atual
+   * (`fonteDesejada`, que segue `poeiraTeste` — MUTÁVEL por
+   * `forcarPoeira`).
+   *
+   * Agora dispara com os DOIS: pedida (`poeiraModoPedido != 0`) e
+   * cartografia já RESOLVIDA (`this.cartResolvido`, só verdadeiro
+   * depois que `init()` decide `this.cartOn` — antes disso não há nada
+   * a decidir, e um pedido chegando agora só fica guardado). Cartografia
+   * resolvida em falso (`?cart=off`, ou o manifesto sem o volume) encerra
+   * o pedido IMEDIATAMENTE como falha (`nebula.setPoeiraMedida(null)` +
+   * `poeiraCarga = 'falhou'`) — sem descritor não há nada a esperar, e
+   * sem isto `poeiraCarga` ficava em 'pendente' para sempre, tanto na
+   * primeira chamada (dentro de `init()`) quanto num pedido que só
+   * chegasse depois (o menu religado com `cartOn` já resolvido em
+   * falso). Com cartografia ligada, dispara — ou REDISPARA — só quando
+   * a fonte pedida AGORA (`fonteDesejada`) ainda não foi tentada nesta
+   * instância (`poeiraFonteTentada`): a MESMA fonte já tentada (sucesso
+   * OU falha) não tenta de novo (item D: sem prazo artificial, sem
+   * retentativa), mas uma fonte NOVA sempre dispara — "trocar ao vivo" e
+   * "reabrir a URL resultante" chegam à mesma fonte.
+   *
+   * `poeiraPedidoId` marca cada disparo; a resposta (`.then`) só é
+   * aplicada se ainda for o pedido MAIS RECENTE — um disparo mais novo
+   * (outra fonte, chamado antes do primeiro resolver) descarta o mais
+   * velho sem tocar `nebula`/`poeiraCarga`/`poeiraFonte`.
+   *
+   * Chamada por `definirPoeira` (cobre `forcarPoeira`, que reassa
+   * `aplicarPoeira` → `definirPoeira`) e de novo no fim de `init()`,
    * quando `this.cartOn` é escrito. SEM bloquear a cena: só `.then`,
    * nunca `await`. Escreve `poeiraCarga`/`poeiraFonte` (o estado desta
    * instância que `estadoDaPoeira` lê) e publica — ver `publicarPoeira`.
    */
   private tentarCarregarPoeira() {
-    if (this.poeiraModoPedido === 0 || this.poeiraFetchDisparada || !this.cartOn) return;
-    this.poeiraFetchDisparada = true;
+    if (this.poeiraModoPedido === 0 || !this.cartResolvido) return;
+    if (!this.cartOn) {
+      if (this.poeiraCarga !== 'falhou') {
+        this.nebula.setPoeiraMedida(null);
+        this.poeiraCarga = 'falhou';
+        this.poeiraFonte = null;
+      }
+      this.publicarPoeira();
+      return;
+    }
+    const desejada = this.fonteDesejada;
+    if (this.poeiraFonteTentada === desejada) return;
+    this.poeiraFonteTentada = desejada;
+    const meuPedido = ++this.poeiraPedidoId;
     this.poeiraCarga = 'carregando';
     this.publicarPoeira();
     const base = import.meta.env.BASE_URL;
-    const ehTeste = this.debug.get('poeira') === 'teste';
+    const ehTeste = desejada === 'sintetica';
     const promessa = ehTeste
       ? Promise.resolve<VolumeDePoeira | null>(this.volumeSinteticoDePoeira())
       : this.dustVolumeManifesto
         ? carregarVolumeDePoeira(base, this.dustVolumeManifesto, this.abortController.signal)
         : Promise.resolve(null);
     promessa.then((volume) => {
-      if (this.disposed) return;
+      if (this.disposed || meuPedido !== this.poeiraPedidoId) return;
       const maiorDim = volume ? Math.max(...volume.descritor.dims) : 0;
       const teto = sondarGl().max3DTextureSize;
       if (volume && teto !== undefined && teto < maiorDim) {
         console.warn(
           `[poeira] Data3DTexture de ${maiorDim} excede o teto do aparelho (${teto}) — poeira desligada.`
         );
+        this.nebula.setPoeiraMedida(null);
         this.poeiraCarga = 'falhou';
         this.poeiraFonte = null;
         this.publicarPoeira();
@@ -1188,43 +1321,53 @@ export class Director {
       }
       this.nebula.setPoeiraMedida(volume);
       this.poeiraCarga = volume ? 'chegou' : 'falhou';
-      this.poeiraFonte = volume ? (ehTeste ? 'sintetica' : 'gaia') : null;
+      this.poeiraFonte = volume ? desejada : null;
       this.publicarPoeira();
     });
   }
 
   /**
    * A PROCEDÊNCIA REAL da poeira medida perto do Sol (revisão
-   * independente, 27/09) — ver `EstadoDaPoeira` em `selo.ts`. Cruza o
-   * PEDIDO (`poeiraModoPedido`), a CARGA desta instância (`poeiraCarga`/
+   * independente, 27/09) — ver `EstadoDaPoeira` em `selo.ts` e
+   * `derivarEstadoDaPoeira` (topo do arquivo, a derivação pura, testada
+   * sem WebGL). Este getter só empacota os cinco valores DESTA
+   * instância: o PEDIDO (`poeiraModoPedido`), a CARGA (`poeiraCarga`/
    * `poeiraFonte`, escritos por `tentarCarregarPoeira`/`init`) e o que a
-   * `Nebula` DE FATO desenha (`poeiraModoEfetivo`, `poeiraAssentada`) —
-   * nenhuma das três contas decide por conta própria. Único produtor:
-   * antes disto o selo decidia por URL pedida + uma flag global de
-   * `galacticAssets.ts`, e o renderizador decidia por variante + bloco +
-   * modo — as duas contas divergiam.
+   * `Nebula` DE FATO desenha (`poeiraModoEfetivo`, `poeiraAssentada`).
    */
   get estadoDaPoeira(): EstadoDaPoeira {
-    if (this.poeiraModoPedido === 0) return { situacao: 'desligada', fonte: null };
-    if (this.poeiraCarga === 'pendente' || this.poeiraCarga === 'carregando') {
-      return { situacao: 'carregando', fonte: null };
-    }
-    if (this.poeiraCarga === 'falhou') return { situacao: 'indisponivel', fonte: null };
-    // 'chegou': o volume existe. A variante ativa não lendo ('antigo',
-    // modo efetivo 0) é 'inativa' mesmo antes de qualquer bake; senão,
-    // 'ativa' só quando a Nebula já assentou o bloco na tela — um
-    // efetivo ≥ 1 ainda não assentado é a última fatia do bake em voo,
-    // e "carregando" descreve isso melhor do que uma 'ativa' adiantada.
-    if (this.nebula.poeiraModoEfetivo === 0) {
-      return { situacao: 'inativa', fonte: this.poeiraFonte };
-    }
-    if (!this.nebula.poeiraAssentada) return { situacao: 'carregando', fonte: this.poeiraFonte };
-    return { situacao: 'ativa', fonte: this.poeiraFonte };
+    return derivarEstadoDaPoeira({
+      poeiraModoPedido: this.poeiraModoPedido,
+      poeiraCarga: this.poeiraCarga,
+      poeiraFonte: this.poeiraFonte,
+      poeiraModoEfetivo: this.nebula.poeiraModoEfetivo,
+      poeiraAssentada: this.nebula.poeiraAssentada,
+    });
   }
 
-  /** Publica `estadoDaPoeira` para o React — ver `DirectorEvents.onPoeira`. */
+  /** o último veredito que `publicarPoeira` de fato mandou ao React —
+   *  `null` antes da primeira publicação. */
+  private ultimoEstadoDaPoeiraPublicado: EstadoDaPoeira | null = null;
+
+  /**
+   * Publica `estadoDaPoeira` para o React — ver `DirectorEvents.onPoeira`.
+   * SÓ dispara quando `situacao`/`fonte` de fato mudam (item B, revisão
+   * independente v2, 27/09): chamada a cada `tick()` agora (e não só
+   * nos pontos que mudam o pedido/a carga), para a transição que só a
+   * `Nebula` decide por conta própria — o bake que assenta o bloco, num
+   * quadro futuro, sem nenhum evento explícito — sair do "carregando"
+   * no primeiro quadro em que já é verdade, em vez de ficar presa até o
+   * próximo disparo de `tentarCarregarPoeira`/`publicarQualidade`. Sem a
+   * guarda, chamar isto por quadro republicaria o MESMO estado a 60 Hz.
+   */
   private publicarPoeira() {
-    this.events.onPoeira(this.estadoDaPoeira);
+    const atual = this.estadoDaPoeira;
+    const anterior = this.ultimoEstadoDaPoeiraPublicado;
+    if (anterior && anterior.situacao === atual.situacao && anterior.fonte === atual.fonte) {
+      return;
+    }
+    this.ultimoEstadoDaPoeiraPublicado = atual;
+    this.events.onPoeira(atual);
   }
 
   /**
@@ -1307,29 +1450,21 @@ export class Director {
     // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
     // o envelope de gás do raymarch mesmo sem APOGEE (R/G zerados).
     const cartOn = Boolean(galactic) && cartMode !== 'off';
-    // POEIRA MEDIDA (E2/E3) — CARGA PREGUIÇOSA (item C, revisão
-    // independente): só agora `cartOn` fica sabido, então só agora
-    // `tentarCarregarPoeira` pode disparar algo — ela mesma decide se HÁ
-    // carga a disparar (poeira pedida, ainda não disparada). Sem
-    // `cartOn` não há `volumes` (o manifesto nem foi buscado) e
-    // `dustVolumeManifesto` fica `null` — a poeira fica desligada o tempo
-    // todo, e `get captura` trata isso adiante via `this.cartMode`.
+    // POEIRA MEDIDA (E2/E3) — CARGA PREGUIÇOSA (item C) + item B da
+    // revisão independente v2 (27/09): só agora `cartOn` fica sabido
+    // (`cartResolvido` sobe JUNTO, na mesma linha em espírito — sem ele
+    // `tentarCarregarPoeira` não tem como saber se `!cartOn` é "ainda
+    // não sei" ou a decisão FINAL), então só agora `tentarCarregarPoeira`
+    // pode agir — ela mesma decide: sem cartografia, falha IMEDIATA
+    // (`poeiraCarga = 'falhou'`, sem ficar em 'pendente' esperando um
+    // fetch que nunca vai existir); com cartografia, dispara se a fonte
+    // pedida ainda não foi tentada. Sem `cartOn` não há `volumes` (o
+    // manifesto nem foi buscado) e `dustVolumeManifesto` fica `null`.
     this.cartOn = cartOn;
     this.dustVolumeManifesto =
       cartOn && galactic ? galactic.volumes.dustVolumeNear20pc ?? null : null;
+    this.cartResolvido = true;
     this.tentarCarregarPoeira();
-    // `this.cartOn` acabou de receber o valor DEFINITIVO da sessão (só
-    // muda aqui, uma vez). Se ele é falso — `?cart=off` ou o manifesto
-    // que falhou — e a poeira foi pedida, `tentarCarregarPoeira` nunca
-    // vai disparar nada (o guard `!this.cartOn` é permanente): sem isto
-    // `poeiraCarga` ficava em 'pendente' para sempre e `estadoDaPoeira`
-    // diria "carregando" eternamente por um fetch que nunca vai existir.
-    // Sem cartografia não há manifesto, e sem manifesto não há
-    // descritor — o mesmo "sem descritor" de `estadoDaPoeira`.
-    if (this.poeiraModoPedido !== 0 && !this.cartOn) {
-      this.poeiraCarga = 'falhou';
-      this.publicarPoeira();
-    }
     // O CHECK DEPOIS DE CADA `stage` — e não só depois dos três awaits que
     // já o tinham. Cada `stage` cede a thread por um `setTimeout(0)`, e um
     // `dispose()` que caia nessa janela (Fast Refresh em dev, unmount no
@@ -3628,24 +3763,44 @@ export class Director {
     // contador mede o quadro REAL, mesmo congelado no modo foto
     // (`shotMode`) ou com a viagem em pausa.
     this.contadorFps?.atualizar(performance.now());
-    // RELÓGIO DO QUADRO (item G, revisão independente): intervalo REAL
-    // entre quadros — ver o campo `intervalosDeQuadroMs` acima.
-    // `typeof window` cobre `director.test.ts` (`environment: node`,
-    // sem `window`; mesma guarda de `Nebula.bake`).
-    if (typeof window !== 'undefined') {
-      const agora = performance.now();
+    // RELÓGIO DO QUADRO (item G + item C, revisão independente v2,
+    // 27/09): intervalo REAL entre quadros — ver
+    // `intervalosDeQuadroMs`/`descartarProximoIntervaloDeQuadro` acima
+    // (o quadro 1 e o primeiro depois de a aba voltar de escondida não
+    // viram amostra: o vão não é custo de quadro de verdade).
+    // `diagnosticoDaPoeira()` (lib/, item 1) é o inicializador ÚNICO de
+    // `window.__poeira`, partilhado com `Nebula.bake`: sem ele, o
+    // objeto podia nascer PARCIAL (o outro lado escreve primeiro, só
+    // com os campos dele) — e devolve um objeto local sob
+    // `environment: node` (director.test.ts, sem `window` de verdade),
+    // então este trecho não precisa mais da própria guarda de `typeof
+    // window`. `estatisticasDeQuadro` (mesmo módulo) é o máximo/p95 da
+    // janela recente, extraída para testar sem WebGL;
+    // `quadroMaxDesdeMarcaMs` é o pior valor ACUMULADO desde a última
+    // marca — sobrevive ao esquecimento da janela de 300 quadros (um
+    // pico raro que ela já descartou); `window.__poeira.reiniciar()`
+    // zera as duas.
+    const agora = performance.now();
+    const d = diagnosticoDaPoeira();
+    if (this.descartarProximoIntervaloDeQuadro) {
+      this.descartarProximoIntervaloDeQuadro = false;
+    } else {
       const janela = this.intervalosDeQuadroMs;
       janela.push(agora - this.ultimoQuadroPerf);
-      this.ultimoQuadroPerf = agora;
       if (janela.length > 300) janela.shift();
-      const ordenado = [...janela].sort((a, b) => a - b);
-      const g = window as unknown as {
-        __poeira?: { quadroMaxMs?: number; quadroP95Ms?: number };
-      };
-      if (!g.__poeira) g.__poeira = {};
-      g.__poeira.quadroMaxMs = ordenado[ordenado.length - 1];
-      g.__poeira.quadroP95Ms = ordenado[Math.floor(0.95 * (ordenado.length - 1))];
+      const { maxMs, p95Ms } = estatisticasDeQuadro(janela);
+      d.quadroMaxMs = maxMs;
+      d.quadroP95Ms = p95Ms;
+      d.quadroMaxDesdeMarcaMs = Math.max(d.quadroMaxDesdeMarcaMs, maxMs);
     }
+    this.ultimoQuadroPerf = agora;
+    d.quadros++;
+    // ENCERRAMENTOS PUBLICADOS (item B, revisão independente v2, 27/09):
+    // recalcula e publica (com a guarda de mudança de `publicarPoeira`)
+    // A CADA quadro — é o único jeito de a transição carregando → ativa
+    // que só a `Nebula` decide (o bake que assenta o bloco) chegar ao
+    // React sem esperar o próximo `definirPoeira`/troca de qualidade.
+    this.publicarPoeira();
   }
 
 
@@ -3674,6 +3829,7 @@ export class Director {
     if (this.disposed) return;
     this.disposed = true;
     this.preferenciaDeMovimento?.removeEventListener('change', this.aoMudarMovimento);
+    document.removeEventListener('visibilitychange', this.aoMudarVisibilidade);
     // aborta JÁ (os fetches em voo não interessam mais); o resto pode
     // esperar
     this.abortController.abort();

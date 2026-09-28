@@ -28,9 +28,13 @@ function comDocumento() {
   return { el, appendChild, foiRemovido: () => removido };
 }
 
-/** `window.__poeira` mínimo — omitido, o contador mostra 0 ms nos dois
+/** `window.__poeira` mínimo — omitido, o contador mostra 0 ms nos três
  *  campos (a mesma guarda de `Nebula.bake`: nunca um número inventado). */
-function comPoeira(valores?: { bakeCpuMs?: number; quadroMaxMs?: number }) {
+function comPoeira(valores?: {
+  bakeCpuMs?: number;
+  quadroP95Ms?: number;
+  quadroMaxDesdeMarcaMs?: number;
+}) {
   (globalThis as { window?: unknown }).window = valores ? { __poeira: valores } : {};
 }
 
@@ -48,30 +52,30 @@ describe('montarContadorDeFps', () => {
     expect(el.textContent).toBe('');
   });
 
-  it('o texto só muda quando passam 500 ms, com fps e os dois custos de window.__poeira', () => {
+  it('o texto só muda quando passam 500 ms, com fps e os três custos de window.__poeira', () => {
     const { el } = comDocumento();
-    comPoeira({ bakeCpuMs: 16, quadroMaxMs: 24 });
+    comPoeira({ bakeCpuMs: 16, quadroP95Ms: 20, quadroMaxDesdeMarcaMs: 24 });
     const { atualizar } = montarContadorDeFps();
     atualizar(0);
     atualizar(200);
     expect(el.textContent).toBe(''); // ainda dentro do primeiro intervalo
     atualizar(500);
-    expect(el.textContent).toBe('fps 6 · quadro máx 24 ms · bake(CPU) 16 ms');
+    expect(el.textContent).toBe('fps 6 · p95 20 ms · máx 24 ms · bake(CPU) 16 ms');
     const textoDoPrimeiroIntervalo = el.textContent;
-    comPoeira({ bakeCpuMs: 8, quadroMaxMs: 12 });
+    comPoeira({ bakeCpuMs: 8, quadroP95Ms: 10, quadroMaxDesdeMarcaMs: 12 });
     atualizar(600);
     atualizar(1000);
     expect(el.textContent).not.toBe(textoDoPrimeiroIntervalo);
-    expect(el.textContent).toBe('fps 4 · quadro máx 12 ms · bake(CPU) 8 ms');
+    expect(el.textContent).toBe('fps 4 · p95 10 ms · máx 12 ms · bake(CPU) 8 ms');
   });
 
-  it('sem window.__poeira ainda, o texto não inventa um número — 0 ms nos dois', () => {
+  it('sem window.__poeira ainda, o texto não inventa um número — 0 ms nos três', () => {
     const { el } = comDocumento();
     comPoeira();
     const { atualizar } = montarContadorDeFps();
     atualizar(0);
     atualizar(500);
-    expect(el.textContent).toBe('fps 4 · quadro máx 0 ms · bake(CPU) 0 ms');
+    expect(el.textContent).toBe('fps 4 · p95 0 ms · máx 0 ms · bake(CPU) 0 ms');
   });
 
   it('descartar remove o <div> da tela', () => {

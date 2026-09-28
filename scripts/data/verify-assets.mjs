@@ -15,8 +15,18 @@ import { compararComReferencia, deFloat16 } from './lib/volume.mjs';
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const publicDirectory = path.join(rootDirectory, 'public');
 const manifestPath = path.join(publicDirectory, 'data', 'galaxy', 'manifest.json');
-const dustFixturePath = path.join(rootDirectory, 'scripts', 'data', 'fixtures', 'edenhofer-referencia.json');
 const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+
+// Ativos `kind: 'volume'` com fixture de referência científica OBRIGATÓRIA
+// (mesmo espírito de INDICES_DO_RUNTIME, mais abaixo): para eles, fixture
+// ausente, grade incompatível ou conteúdo inválido da fixture é ERRO — nunca
+// um "sem referência" que passa verde (trocar originPc/voxelPc no manifesto
+// não pode dispensar a comparação científica em silêncio). Ativo
+// `kind: 'volume'` que não aparece aqui ainda não tem validação científica
+// registrada: avisa e segue (revisão independente v2, item 3, 27/09/2026).
+const REFERENCIAS_OBRIGATORIAS = {
+  dustVolumeNear20pc: 'edenhofer-referencia.json',
+};
 const spiralModel = JSON.parse(
   await readFile(
     path.join(
@@ -76,55 +86,67 @@ for (const [assetName, asset] of Object.entries(manifest.assets)) {
         throw new Error(`${assetName}: valor float16 inválido (${valores[i]}) no índice ${i}.`);
       }
     }
-    if (existsSync(dustFixturePath)) {
-      const fixture = JSON.parse(await readFile(dustFixturePath, 'utf8'));
-      const grade = {
-        nx: asset.dims[0],
-        ny: asset.dims[1],
-        nz: asset.dims[2],
-        voxelPc: asset.voxelPc,
-        origemPc: asset.originPc,
-      };
-      const resultado = compararComReferencia({ grade, valores }, fixture);
-      if (!resultado.aplicavel) {
-        // Fixture feita para OUTRA grade (outra resolução/origem, E1 item
-        // 3 da revisão): índice [i,j,k] não aponta para o mesmo voxel nos
-        // dois lados — não há o que comparar, mas isso não reprova o gate.
-        console.log(`${assetName}: sem referência para esta grade (${resultado.motivo}).`);
-        continue;
-      }
-      const piorFaixa = resultado.coluna.piorFaixa;
-      const piorDesvio = resultado.coluna.piorDesvio;
-      const faixaTexto = piorFaixa
-        ? `${piorFaixa.nome} razão p/ média do tubo ${piorFaixa.razaoMedia.toFixed(2)}` +
-          (piorFaixa.atual < piorFaixa.esperadoFaixa[0] || piorFaixa.atual > piorFaixa.esperadoFaixa[1]
-            ? ' — FORA DA FAIXA do tubo (plausibilidade, não reprova)'
-            : ' — dentro da faixa do tubo')
-        : '—';
-      const desvioTexto = piorDesvio
-        ? `${piorDesvio.nome} desvio relativo ${piorDesvio.desvioRelativo.toFixed(3)}`
-        : '—';
-      if (!resultado.voxel.aprovado || !resultado.coluna.aprovado) {
-        throw new Error(
-          `${assetName}: comparação com a fixture Edenhofer excede a tolerância ` +
-            `(voxel máximo relativo ${resultado.voxel.maximoRelativo.toFixed(3)}, ` +
-            `coluna máximo relativo ${resultado.coluna.maximoRelativo.toFixed(3)} — pior desvio: ${desvioTexto}; ` +
-            `faixa do tubo: ${faixaTexto}).`
-        );
-      }
-      console.log(
-        `${assetName}: fixture Edenhofer OK (voxel máximo relativo ` +
-          `${resultado.voxel.maximoRelativo.toFixed(3)}, coluna máximo relativo ` +
-          `${resultado.coluna.maximoRelativo.toFixed(3)}; pior desvio: ${desvioTexto}; ` +
-          `faixa do tubo (plausibilidade): ${faixaTexto}).`
+    const nomeFixtureObrigatoria = REFERENCIAS_OBRIGATORIAS[assetName];
+    if (!nomeFixtureObrigatoria) {
+      // Sem entrada na tabela: ainda não há referência científica para
+      // cobrar deste ativo. Não reprova, mas também não passa em silêncio.
+      console.log(`AVISO: ${assetName}: validação científica pendente (sem referência registrada).`);
+      continue;
+    }
+    const fixturePathDoAtivo = path.join(rootDirectory, 'scripts', 'data', 'fixtures', nomeFixtureObrigatoria);
+    if (!existsSync(fixturePathDoAtivo)) {
+      throw new Error(
+        `${assetName}: fixture de referência obrigatória ausente (${nomeFixtureObrigatoria}) — ` +
+          'rode scripts/data/fixtures/gera-referencia-edenhofer.py.'
       );
-      if (fixture.convergencia) {
-        console.log(
-          `${assetName}: convergência 8³→16³ (40 voxels) — máximo relativo ` +
-            `${fixture.convergencia.maxRelativo.toFixed(3)}, médio relativo ` +
-            `${fixture.convergencia.medioRelativo.toFixed(3)}.`
-        );
-      }
+    }
+    const fixture = JSON.parse(await readFile(fixturePathDoAtivo, 'utf8'));
+    const grade = {
+      nx: asset.dims[0],
+      ny: asset.dims[1],
+      nz: asset.dims[2],
+      voxelPc: asset.voxelPc,
+      origemPc: asset.originPc,
+    };
+    const resultado = compararComReferencia({ grade, valores }, fixture);
+    if (!resultado.aplicavel) {
+      // Ativo COM referência obrigatória: grade incompatível ou conteúdo
+      // inválido da fixture não tem "sem referência, segue" — é erro.
+      throw new Error(
+        `${assetName}: fixture obrigatória "${nomeFixtureObrigatoria}" não se aplica (${resultado.motivo})`
+      );
+    }
+    const piorFaixa = resultado.coluna.piorFaixa;
+    const piorDesvio = resultado.coluna.piorDesvio;
+    const faixaTexto = piorFaixa
+      ? `${piorFaixa.nome} razão p/ média do tubo ${piorFaixa.razaoMedia.toFixed(2)}` +
+        (piorFaixa.atual < piorFaixa.esperadoFaixa[0] || piorFaixa.atual > piorFaixa.esperadoFaixa[1]
+          ? ' — FORA DA FAIXA do tubo (plausibilidade, não reprova)'
+          : ' — dentro da faixa do tubo')
+      : '—';
+    const desvioTexto = piorDesvio
+      ? `${piorDesvio.nome} desvio relativo ${piorDesvio.desvioRelativo.toFixed(3)}`
+      : '—';
+    if (!resultado.voxel.aprovado || !resultado.coluna.aprovado) {
+      throw new Error(
+        `${assetName}: comparação com a fixture Edenhofer excede a tolerância ` +
+          `(voxel máximo relativo ${resultado.voxel.maximoRelativo.toFixed(3)}, ` +
+          `coluna máximo relativo ${resultado.coluna.maximoRelativo.toFixed(3)} — pior desvio: ${desvioTexto}; ` +
+          `faixa do tubo: ${faixaTexto}).`
+      );
+    }
+    console.log(
+      `${assetName}: fixture Edenhofer OK (voxel máximo relativo ` +
+        `${resultado.voxel.maximoRelativo.toFixed(3)}, coluna máximo relativo ` +
+        `${resultado.coluna.maximoRelativo.toFixed(3)}; pior desvio: ${desvioTexto}; ` +
+        `faixa do tubo (plausibilidade): ${faixaTexto}).`
+    );
+    if (fixture.convergencia) {
+      console.log(
+        `${assetName}: convergência 8³→16³ (40 voxels) — máximo relativo ` +
+          `${fixture.convergencia.maxRelativo.toFixed(3)}, médio relativo ` +
+          `${fixture.convergencia.medioRelativo.toFixed(3)}.`
+      );
     }
     continue;
   }

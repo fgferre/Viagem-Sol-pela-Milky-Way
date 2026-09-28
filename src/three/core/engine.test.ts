@@ -25,6 +25,7 @@ import {
   TravaDoVaivem,
   farPlanePc,
   lerPortaExposicao,
+  lerPortaPoeira,
   lerPortaTom,
   medidaDeResizeValida,
   nearPlanePc,
@@ -385,6 +386,27 @@ describe('?exp= — só número finito e positivo atravessa', () => {
     for (const qualquer of ['abc', '1.02', '', '-3', null]) {
       const v = lerPortaExposicao(qualquer);
       expect(v === null || (Number.isFinite(v) && v > 0), String(qualquer)).toBe(true);
+    }
+  });
+});
+
+// ============================================================
+// `?poeira=` — item 5 (revisão independente v2, 27/09): os apelidos
+// legados (`0`/`1`/`2`) liam `APELIDOS_DE_POEIRA[bruto]` por acesso cru,
+// que sobe a cadeia de protótipos — `?poeira=constructor` devolvia a
+// função `Object`, encaminhada como se fosse uma variante (STARTUP
+// FAILURE). Mesmo achado/mesma régua de `lerPortaTom`, acima.
+// ============================================================
+describe('?poeira= — herdado do objeto não é apelido (item 5, revisão independente v2)', () => {
+  it('os apelidos legados continuam valendo', () => {
+    expect(lerPortaPoeira('0')).toBe('hoje');
+    expect(lerPortaPoeira('1')).toBe('media');
+    expect(lerPortaPoeira('2')).toBe('media');
+  });
+
+  it('`constructor`, `toString`, `hasOwnProperty` e `__proto__` não colam — STARTUP FAILURE do relatório', () => {
+    for (const herdado of ['constructor', 'toString', 'hasOwnProperty', '__proto__', 'valueOf']) {
+      expect(lerPortaPoeira(herdado), herdado).toBeNull();
     }
   });
 });

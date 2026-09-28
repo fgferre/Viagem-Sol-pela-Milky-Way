@@ -185,10 +185,18 @@ const APELIDOS_DE_POEIRA: Record<string, TipoDePoeira> = {
  * A lei da porta `?poeira=`, no mesmo contrato de `lerPortaGas` — mais
  * os apelidos acima. `teste` NÃO é opção do menu (é bancada, lida direto
  * pelo Director): esta função devolve `null` para ela, de propósito.
+ * `Object.hasOwn` no lugar do acesso cru (item 5, revisão independente
+ * v2, 27/09): `APELIDOS_DE_POEIRA[bruto]` sobe a cadeia de protótipos —
+ * `?poeira=constructor` devolvia a função `Object`, encaminhada como se
+ * fosse uma variante (STARTUP FAILURE; mesmo achado de `lerPortaTom`,
+ * acima).
  */
 export function lerPortaPoeira(bruto: string | null | undefined): TipoDePoeira | null {
   if (bruto == null) return null;
-  return TIPOS_DE_POEIRA.find((v) => v === bruto) ?? APELIDOS_DE_POEIRA[bruto] ?? null;
+  return (
+    TIPOS_DE_POEIRA.find((v) => v === bruto) ??
+    (Object.hasOwn(APELIDOS_DE_POEIRA, bruto) ? APELIDOS_DE_POEIRA[bruto] : null)
+  );
 }
 
 /**

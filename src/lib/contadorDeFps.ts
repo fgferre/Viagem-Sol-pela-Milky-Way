@@ -2,12 +2,14 @@
 // CONTADOR DE FPS NA TELA (E2, PLAN.md) — só existe com `?fps=1`
 // (director.ts lê a porta, mesmo padrão de `?poeira=`). Um `<div>`
 // fixo no canto, atualizado a cada meio segundo, com os quadros/s
-// medidos e os dois custos publicados em `window.__poeira` (revisão
-// independente, 27/09): `quadroMaxMs` (o relógio de quadro do
-// Director, escrito no fim de todo `tick()`) e `bakeCpuMs` (a
-// SUBMISSÃO na CPU do bake mais recente da poeira/nebulosa, escrito por
-// `Nebula.bake`). Existe para medir custo no Mac e no iPhone sem abrir
-// o DevTools.
+// medidos e os três custos publicados em `window.__poeira` (revisão
+// independente v2, 27/09): `quadroP95Ms` (o percentil 95 do relógio de
+// quadro do Director na janela recente), `quadroMaxDesdeMarcaMs` (o
+// pior quadro ACUMULADO desde a última marca — sobrevive ao
+// esquecimento da janela recente, que `quadroMaxMs` sozinho não
+// cobria) e `bakeCpuMs` (a SUBMISSÃO na CPU do bake mais recente da
+// poeira/nebulosa, escrito por `Nebula.bake`). Existe para medir custo
+// no Mac e no iPhone sem abrir o DevTools.
 //
 // Módulo pequeno de propósito, ao lado de `glProbe.ts`: quem monta
 // devolve `{ atualizar, descartar }` — `atualizar` é o que o laço de
@@ -24,11 +26,18 @@ const INTERVALO_MS = 500;
  *  primeiro quadro/bake medidos, ou sem `window` nenhum. `typeof window`
  *  cobre `contadorDeFps.test.ts` (`environment: node`, sem `window`;
  *  mesma guarda de `Nebula.bake`/`Director.tick`). */
-function lerPoeira(): { bakeCpuMs?: number; quadroMaxMs?: number } {
+function lerPoeira(): {
+  bakeCpuMs?: number;
+  quadroP95Ms?: number;
+  quadroMaxDesdeMarcaMs?: number;
+} {
   if (typeof window === 'undefined') return {};
   return (
-    (window as unknown as { __poeira?: { bakeCpuMs?: number; quadroMaxMs?: number } }).__poeira ??
-    {}
+    (
+      window as unknown as {
+        __poeira?: { bakeCpuMs?: number; quadroP95Ms?: number; quadroMaxDesdeMarcaMs?: number };
+      }
+    ).__poeira ?? {}
   );
 }
 
@@ -64,9 +73,10 @@ export function montarContadorDeFps(): {
       const passado = agora - inicioDoIntervalo;
       if (passado < INTERVALO_MS) return;
       const fps = Math.round((quadros * 1000) / passado);
-      const { bakeCpuMs, quadroMaxMs } = lerPoeira();
+      const { bakeCpuMs, quadroP95Ms, quadroMaxDesdeMarcaMs } = lerPoeira();
       el.textContent =
-        `fps ${fps} · quadro máx ${Math.round(quadroMaxMs ?? 0)} ms` +
+        `fps ${fps} · p95 ${Math.round(quadroP95Ms ?? 0)} ms` +
+        ` · máx ${Math.round(quadroMaxDesdeMarcaMs ?? 0)} ms` +
         ` · bake(CPU) ${Math.round(bakeCpuMs ?? 0)} ms`;
       quadros = 0;
       inicioDoIntervalo = agora;

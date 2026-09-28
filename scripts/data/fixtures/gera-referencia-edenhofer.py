@@ -246,17 +246,21 @@ def grade_do_bloco():
 
 
 def celulas_do_operador(Iflat, Jflat, Kflat, Xg, Yg, Zg, dx, dy, dz, r_min_c, r_max_c):
-    """Índices (i,j,k) cujo centro fica a <= 1,5 voxel (30 pc) do SEGMENTO
+    """Índices (i,j,k) cujo centro fica a <= 1,75 voxel (35 pc) do SEGMENTO
     do raio central entre r_min_c e r_max_c — o conjunto de voxels que a
     reconstrução trilinear do bloco (`amostrar`/`integrarColuna`) toca ao
     integrar essa coluna; é a referência de MESMO OPERADOR que isola a
     única diferença restante (pixel HEALPix mais próximo × vizinho
-    interpolado bilinearmente) do erro de largura do tubo."""
+    interpolado bilinearmente) do erro de largura do tubo. O corte é
+    >= 20·√3 ≈ 34,6 pc (a distância máxima do ponto amostrado ao centro
+    de um dos 8 vizinhos trilineares) — 1,5 voxel (30 pc) deixava de fora
+    vizinhos que a interpolação de fato toca perto das diagonais (revisão
+    independente v2, item 3, 27/09/2026)."""
     t = Xg * dx + Yg * dy + Zg * dz
     t_clampado = np.clip(t, r_min_c, r_max_c)
     px, py, pz = t_clampado * dx, t_clampado * dy, t_clampado * dz
     dist = np.sqrt((Xg - px) ** 2 + (Yg - py) ** 2 + (Zg - pz) ** 2)
-    idxs = np.flatnonzero(dist.ravel() <= 1.5 * TAMANHO_VOXEL)
+    idxs = np.flatnonzero(dist.ravel() <= 1.75 * TAMANHO_VOXEL)
     return Iflat[idxs], Jflat[idxs], Kflat[idxs], idxs
 
 

@@ -667,66 +667,136 @@ describe('o halo de contorno (C6) escreve os uniforms ANTES do render do quadro'
 });
 
 // ============================================================
-// `estadoDaPoeira` (revisão independente, 27/09) — o getter que cruza o
-// pedido, a carga desta instância e o que a Nebula de fato desenha (ver
-// `EstadoDaPoeira` em `selo.ts`). SEM mock ao vivo de propósito: o
-// Director é DOM + WebGL de ponta a ponta (cabeçalho do arquivo) e não
-// há como instanciá-lo em `environment: node` sem um canvas/WebGL2 de
-// verdade — a régua desta suíte inteira é ler a FONTE, não rodar a
-// classe. A transição carregando → ativa é coberta aqui como o resto
-// do arquivo cobre tudo: pela fonte que a implementa.
+// A POEIRA PERTO DE CASA — revisão independente v2 (27/09): item A
+// (fonte segue o pedido ATUAL, com troca ao vivo), item B (encerramentos
+// publicados: cart=off falha no ato, e o React ouve a Nebula assentar o
+// bloco sem depender de outro evento) e item C (o relógio do quadro).
+//
+// `derivarEstadoDaPoeira` é uma função pura (sem `this`/DOM) — mas
+// `director.ts` importa `world/galaxy.ts`, que lê `window` NO ESCOPO DO
+// MÓDULO (`geradorDaGalaxia.ts`): um `import { derivarEstadoDaPoeira }
+// from './director'` estoura em `environment: node` antes de qualquer
+// teste rodar, mesmo sem instanciar `Director`. A régua desta suíte
+// continua sendo ler a FONTE, como o resto do arquivo (cabeçalho acima).
 // ============================================================
-describe('estadoDaPoeira publica a procedência real da poeira perto do Sol', () => {
-  const INICIO_DO_GETTER = FONTE.indexOf('  get estadoDaPoeira()');
-  const GETTER = FONTE.slice(INICIO_DO_GETTER, FONTE.indexOf('  private publicarPoeira()'));
+describe('derivarEstadoDaPoeira — a derivação pura do estado (item B)', () => {
+  const INICIO_DA_FUNCAO = FONTE.indexOf('export function derivarEstadoDaPoeira(');
+  const FUNCAO = FONTE.slice(INICIO_DA_FUNCAO, FONTE.indexOf('export class Director {'));
 
-  it('a varredura acha o getter — um padrão quebrado passaria calado', () => {
-    expect(INICIO_DO_GETTER).toBeGreaterThan(0);
-    expect(GETTER.length).toBeGreaterThan(100);
+  it('a varredura acha a função — um padrão quebrado passaria calado', () => {
+    expect(INICIO_DA_FUNCAO).toBeGreaterThan(0);
+    expect(FUNCAO.length).toBeGreaterThan(100);
+  });
+
+  it('poeiraModoPedido 0 vence tudo: desligada, sem fonte', () => {
+    expect(FUNCAO).toContain(
+      "if (entrada.poeiraModoPedido === 0) return { situacao: 'desligada', fonte: null };"
+    );
+  });
+
+  it('poeiraCarga pendente/carregando: carregando, sem fonte', () => {
+    expect(FUNCAO).toContain(
+      "if (entrada.poeiraCarga === 'pendente' || entrada.poeiraCarga === 'carregando') {"
+    );
+    expect(FUNCAO).toContain("return { situacao: 'carregando', fonte: null };");
+  });
+
+  it('poeiraCarga falhou: indisponivel, sem fonte', () => {
+    expect(FUNCAO).toContain(
+      "if (entrada.poeiraCarga === 'falhou') return { situacao: 'indisponivel', fonte: null };"
+    );
   });
 
   it('carregando → ativa exige os TRÊS: carga chegada, a variante ativa lendo (modo efetivo ≠ 0) e a Nebula ASSENTADA — nenhuma etapa antes disso promete a foto', () => {
     // 'chegou' com o efetivo ainda 0 (variante 'antigo') é 'inativa', e
     // NÃO 'ativa' — o defeito que a revisão achou no selo antigo era
     // exatamente prometer "medida" sem olhar se a variante lê o bloco
-    expect(GETTER).toContain('this.nebula.poeiraModoEfetivo === 0');
-    expect(GETTER).toContain("situacao: 'inativa', fonte: this.poeiraFonte");
+    expect(FUNCAO).toContain('entrada.poeiraModoEfetivo === 0');
+    expect(FUNCAO).toContain("situacao: 'inativa', fonte: entrada.poeiraFonte");
     // efetivo ≠ 0 mas ainda não assentado (a última fatia do bake em
     // voo) continua 'carregando' — uma 'ativa' adiantada seria a mesma
     // mentira, só um quadro mais sutil
-    expect(GETTER).toContain('!this.nebula.poeiraAssentada');
-    expect(GETTER).toContain("return { situacao: 'carregando', fonte: this.poeiraFonte };");
+    expect(FUNCAO).toContain('!entrada.poeiraAssentada');
+    expect(FUNCAO).toContain("return { situacao: 'carregando', fonte: entrada.poeiraFonte };");
     // só depois das duas guardas acima é que sobra 'ativa'
-    const iInativa = GETTER.indexOf("situacao: 'inativa'");
-    const iAssentada = GETTER.indexOf('!this.nebula.poeiraAssentada');
-    const iAtiva = GETTER.indexOf("return { situacao: 'ativa', fonte: this.poeiraFonte };");
+    const iInativa = FUNCAO.indexOf("situacao: 'inativa'");
+    const iAssentada = FUNCAO.indexOf('!entrada.poeiraAssentada');
+    const iAtiva = FUNCAO.indexOf("return { situacao: 'ativa', fonte: entrada.poeiraFonte };");
     expect(iInativa).toBeGreaterThan(-1);
     expect(iAssentada).toBeGreaterThan(iInativa);
     expect(iAtiva).toBeGreaterThan(iAssentada);
   });
+});
 
-  it('a carga que resolve escreve o estado desta instância e publica — "carregando" não fica preso esperando o próximo quadro', () => {
-    const corpo = FONTE.slice(
-      FONTE.indexOf('  private tentarCarregarPoeira()'),
-      INICIO_DO_GETTER
-    );
-    // ao disparar o fetch (dispatch síncrono) e nos dois desfechos do
-    // `.then` (falha por teto de textura, e o normal chegou/falhou)
-    expect(corpo.match(/this\.publicarPoeira\(\);/g) ?? []).toHaveLength(3);
-    expect(corpo).toContain("this.poeiraCarga = 'carregando';");
-    expect(corpo).toContain("this.poeiraCarga = volume ? 'chegou' : 'falhou';");
-    expect(corpo).toContain(
-      "this.poeiraFonte = volume ? (ehTeste ? 'sintetica' : 'gaia') : null;"
+describe('tentarCarregarPoeira: carga preguiçosa + troca de fonte ao vivo (item A/B)', () => {
+  const INICIO_DE_TENTAR = FONTE.indexOf('  private tentarCarregarPoeira()');
+  const INICIO_DO_GETTER = FONTE.indexOf('  get estadoDaPoeira()');
+  const CORPO = FONTE.slice(INICIO_DE_TENTAR, INICIO_DO_GETTER);
+
+  it('a varredura acha o método — um padrão quebrado passaria calado', () => {
+    expect(INICIO_DE_TENTAR).toBeGreaterThan(0);
+    expect(CORPO.length).toBeGreaterThan(200);
+  });
+
+  it('cartografia AINDA não resolvida: nem falha nem dispara — só init() sabe se `cartOn` é final', () => {
+    expect(CORPO).toContain(
+      'if (this.poeiraModoPedido === 0 || !this.cartResolvido) return;'
     );
   });
 
-  it('cartografia que nunca liga com a poeira pedida termina em "indisponivel", não presa em "carregando" para sempre — sem manifesto não há descritor a esperar', () => {
+  it('cartografia resolvida em falso: falha IMEDIATA, encerrando o pedido na Nebula também — sem isto `poeiraCarga` ficava em \'pendente\' à espera de um fetch que nunca ia existir', () => {
+    const iCartOff = CORPO.indexOf('if (!this.cartOn)');
+    const iDesejada = CORPO.indexOf('const desejada = this.fonteDesejada;');
+    expect(iCartOff).toBeGreaterThan(-1);
+    expect(iDesejada).toBeGreaterThan(iCartOff);
+    const ramo = CORPO.slice(iCartOff, iDesejada);
+    expect(ramo).toContain('this.nebula.setPoeiraMedida(null);');
+    expect(ramo).toContain("this.poeiraCarga = 'falhou';");
+    expect(ramo).toContain('this.poeiraFonte = null;');
+    expect(ramo).toContain('this.publicarPoeira();');
+  });
+
+  it('só uma fonte NOVA dispara/redispara — a mesma fonte já tentada (sucesso ou falha) não tenta de novo', () => {
+    expect(CORPO).toContain('const desejada = this.fonteDesejada;');
+    expect(CORPO).toContain('if (this.poeiraFonteTentada === desejada) return;');
+    expect(CORPO).toContain('this.poeiraFonteTentada = desejada;');
+    // a fonte da carga É o pedido atual — não mais uma releitura de
+    // `this.debug` (a URL, congelada desde o construtor)
+    expect(CORPO).toContain("const ehTeste = desejada === 'sintetica';");
+    expect(CORPO).toContain('this.poeiraFonte = volume ? desejada : null;');
+    expect(CORPO).not.toContain("this.debug.get('poeira') === 'teste'");
+  });
+
+  it('a resposta só é aplicada se ainda for o pedido MAIS RECENTE — uma fonte mais nova descarta a resposta da mais velha', () => {
+    const iThen = CORPO.indexOf('promessa.then((volume) => {');
+    expect(iThen).toBeGreaterThan(-1);
+    expect(CORPO.slice(iThen)).toContain(
+      'if (this.disposed || meuPedido !== this.poeiraPedidoId) return;'
+    );
+  });
+
+  it('a rejeição pelo teto de textura 3D encerra o pedido na Nebula também, não só no estado desta instância', () => {
+    const iTeto = CORPO.indexOf('teto < maiorDim');
+    const iSucesso = CORPO.indexOf('this.nebula.setPoeiraMedida(volume);');
+    expect(iTeto).toBeGreaterThan(-1);
+    const ramo = CORPO.slice(iTeto, iSucesso);
+    expect(ramo).toContain('this.nebula.setPoeiraMedida(null);');
+    expect(ramo).toContain("this.poeiraCarga = 'falhou';");
+  });
+});
+
+describe('init() resolve cartOn/cartResolvido ANTES de tentar a carga', () => {
+  it('cartResolvido sobe junto com cartOn, e tentarCarregarPoeira só corre depois dos dois', () => {
     const initCorpo = FONTE.slice(
       FONTE.indexOf('  async init()'),
       FONTE.indexOf("await this.stage('dust');")
     );
-    expect(initCorpo).toContain('if (this.poeiraModoPedido !== 0 && !this.cartOn)');
-    expect(initCorpo).toContain("this.poeiraCarga = 'falhou';");
+    const iCartOn = initCorpo.indexOf('this.cartOn = cartOn;');
+    const iResolvido = initCorpo.indexOf('this.cartResolvido = true;');
+    const iTentar = initCorpo.indexOf('this.tentarCarregarPoeira();');
+    expect(iCartOn).toBeGreaterThan(-1);
+    expect(iResolvido).toBeGreaterThan(iCartOn);
+    expect(iTentar).toBeGreaterThan(iResolvido);
   });
 
   it('toda troca de qualidade/preset republica a poeira — a variante do gás decide o modo efetivo dela', () => {
@@ -735,5 +805,54 @@ describe('estadoDaPoeira publica a procedência real da poeira perto do Sol', ()
       FONTE.indexOf('  forcarAmostras(')
     );
     expect(publicarQualidade).toContain('this.publicarPoeira();');
+  });
+});
+
+describe('publicarPoeira: encerramentos publicados (item B) — só dispara onPoeira quando situacao/fonte mudam', () => {
+  const CORPO = FONTE.slice(
+    FONTE.indexOf('  private publicarPoeira()'),
+    FONTE.indexOf('  private rotular(id: LoadStageId)')
+  );
+
+  it('compara com o último veredito publicado antes de chamar events.onPoeira', () => {
+    expect(CORPO).toContain(
+      'if (anterior && anterior.situacao === atual.situacao && anterior.fonte === atual.fonte) {'
+    );
+    expect(CORPO).toContain('this.ultimoEstadoDaPoeiraPublicado = atual;');
+    expect(CORPO).toContain('this.events.onPoeira(atual);');
+  });
+
+  it('tick() chama publicarPoeira a cada quadro — é assim que a Nebula assentando o bloco, sem nenhum evento explícito, chega ao React', () => {
+    const tickCorpo = FONTE.slice(
+      FONTE.indexOf('  private tick(rawTime: number, dt: number) {'),
+      FONTE.indexOf('  private desistir(mensagem: string) {')
+    );
+    expect(tickCorpo).toContain('this.publicarPoeira();');
+  });
+});
+
+describe('o relógio do quadro (item C): sem o vão da carga, sem o vão da aba escondida', () => {
+  it('nasce descartando o primeiro intervalo — tick() só corre depois de engine.start(), no fim de init()', () => {
+    expect(FONTE).toContain('private descartarProximoIntervaloDeQuadro = true;');
+  });
+
+  it('a aba voltando de escondida rearma o descarte — visibilitychange registrado no construtor e removido no dispose', () => {
+    expect(FONTE).toContain(
+      "document.addEventListener('visibilitychange', this.aoMudarVisibilidade);"
+    );
+    expect(FONTE).toContain(
+      "document.removeEventListener('visibilitychange', this.aoMudarVisibilidade);"
+    );
+    expect(FONTE).toContain('if (!document.hidden) this.descartarProximoIntervaloDeQuadro = true;');
+  });
+
+  it('tick() incrementa `quadros` de verdade e acumula o máximo desde a marca — os dois ficavam sempre 0', () => {
+    const tickCorpo = FONTE.slice(
+      FONTE.indexOf('  private tick(rawTime: number, dt: number) {'),
+      FONTE.indexOf('  private desistir(mensagem: string) {')
+    );
+    expect(tickCorpo).toContain('d.quadros++;');
+    expect(tickCorpo).toContain('estatisticasDeQuadro(janela)');
+    expect(tickCorpo).toContain('d.quadroMaxDesdeMarcaMs = Math.max(d.quadroMaxDesdeMarcaMs, maxMs);');
   });
 });

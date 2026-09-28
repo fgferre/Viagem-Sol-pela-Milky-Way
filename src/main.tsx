@@ -3,6 +3,24 @@ import './index.css'
 import App from './App.tsx'
 import { assinarIdioma, idiomaAtual, iniciarIdioma, t } from './lib/idioma'
 
+// COLETOR DE ERROS PARA O JUIZ (revisão independente v2, 27/09): 'error'
+// e 'unhandledrejection' empurram {mensagem, origem} em
+// `window.__errosNaoTratados` (array, no máximo 50) — sem UI, sem porta
+// de URL. `scripts/visual/poeira-shaders.mjs` lê isto depois da prova ao
+// vivo, para o juiz notar o que travou por baixo do véu de falha.
+type ErroNaoTratado = { mensagem: string; origem: string }
+const errosNaoTratados: ErroNaoTratado[] = []
+const janelaComErros = window as unknown as { __errosNaoTratados: ErroNaoTratado[] }
+janelaComErros.__errosNaoTratados = errosNaoTratados
+const registrarErroNaoTratado = (mensagem: string, origem: string) => {
+  errosNaoTratados.push({ mensagem, origem })
+  if (errosNaoTratados.length > 50) errosNaoTratados.shift()
+}
+window.addEventListener('error', (e) => registrarErroNaoTratado(e.message, 'error'))
+window.addEventListener('unhandledrejection', (e) =>
+  registrarErroNaoTratado(String(e.reason), 'unhandledrejection'),
+)
+
 // A LÍNGUA SE RESOLVE AQUI, UMA VEZ (item 130). É o único ponto do
 // projeto que olha o storage e a porta de captura `?lang=`: fora do
 // navegador — a suíte, os scripts de dado — ninguém chama isto e a casa

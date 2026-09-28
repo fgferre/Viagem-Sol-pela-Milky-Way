@@ -194,6 +194,13 @@ function relativoComTolerancia(desvio, tolerancia) {
  * `|atual − referenciaMesmoOperador| ≤ 0,05·referenciaMesmoOperador`
  * (`piorDesvio`). Os três `aprovado`/`maximoRelativo ≤ 1` seguem a
  * mesma convenção (voxel e coluna).
+ *
+ * Antes de comparar, a fixture precisa ter conteúdo mínimo: `voxeis` e
+ * `colunas` não vazios, cada `indice` dentro da grade e cada `media`
+ * (voxel, tubo, célula) finita e ≥ 0 — sem isso os dois `aprovado`
+ * ficavam verdadeiros por vacuidade (nenhum voxel/coluna para reprovar).
+ * Falha aqui também é `{ aplicavel: false, motivo }`, nunca um "OK" por
+ * falta de dado (revisão independente v2, item 3, 27/09/2026).
  */
 export function compararComReferencia(volume, fixture) {
   const gradeFixture = fixture?.cabecalho?.grade;
@@ -204,6 +211,48 @@ export function compararComReferencia(volume, fixture) {
         `(${gradeFixture.dims.join('×')} @ ${gradeFixture.voxelPc} pc).`
       : 'fixture sem cabecalho.grade — aplica-se só ao bloco (grade/resolução) que a gerou.';
     return { aplicavel: false, motivo };
+  }
+
+  const { nx: gnx, ny: gny, nz: gnz } = volume.grade;
+  const dims = [gnx, gny, gnz];
+  const indiceValido = (indice) =>
+    Array.isArray(indice) &&
+    indice.length === 3 &&
+    indice.every((v, eixo) => Number.isInteger(v) && v >= 0 && v < dims[eixo]);
+  const finitoNaoNegativo = (v) => Number.isFinite(v) && v >= 0;
+
+  if (!Array.isArray(fixture.voxeis) || fixture.voxeis.length < 1) {
+    return { aplicavel: false, motivo: 'fixture sem voxeis (lista vazia) — nada para comparar.' };
+  }
+  if (!Array.isArray(fixture.colunas) || fixture.colunas.length < 1) {
+    return { aplicavel: false, motivo: 'fixture sem colunas (lista vazia) — nada para comparar.' };
+  }
+  for (const v of fixture.voxeis) {
+    if (!indiceValido(v.indice)) {
+      return { aplicavel: false, motivo: `voxel com índice fora da grade (${JSON.stringify(v.indice)}).` };
+    }
+    if (!finitoNaoNegativo(v.media)) {
+      return { aplicavel: false, motivo: `voxel ${JSON.stringify(v.indice)} com media inválida (${v.media}).` };
+    }
+  }
+  for (const c of fixture.colunas) {
+    if (!finitoNaoNegativo(c.tubo?.media)) {
+      return { aplicavel: false, motivo: `coluna "${c.nome}" com tubo.media inválido (${c.tubo?.media}).` };
+    }
+    for (const cel of c.celulas ?? []) {
+      if (!indiceValido(cel.indice)) {
+        return {
+          aplicavel: false,
+          motivo: `coluna "${c.nome}": célula com índice fora da grade (${JSON.stringify(cel.indice)}).`,
+        };
+      }
+      if (!finitoNaoNegativo(cel.media)) {
+        return {
+          aplicavel: false,
+          motivo: `coluna "${c.nome}": célula ${JSON.stringify(cel.indice)} com media inválida (${cel.media}).`,
+        };
+      }
+    }
   }
 
   let voxelRelativo = 0;
