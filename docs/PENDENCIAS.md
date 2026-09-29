@@ -4,7 +4,33 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 228.**
 
-## O BASTÃO — onde a rodada parou (28/09, manhã)
+## O BASTÃO — onde a rodada parou (28/09, noite)
+
+**28/09, tarde e noite (a VERSÃO DETALHADA da poeira do Gaia). Ele viu as
+folhas do bloco de 20 pc e achou *"muito sem detalhe"*; perguntou *"por
+que a gente já não gerou uma versão com detalhe, sabendo que esse é um
+app que a gente precisa do fator de surpresa e … qualidade triple A?"* e
+pediu o esquema das texturas (*"quando vc vai chegando perto aumenta os
+detalhes, quando vc afasta libera a memória"*). Tudo no ramo
+`poeira-gaia`, com backup; nada foi para o `main`.**
+
+- **Feito:** a textura inventada por cima do medido virou padrão das três
+  opções do Gaia (*"a textura ficou bem melhor"*); a pirâmide de níveis
+  (10, 5 e 2,5 pc só onde o mapa sustenta), gerada por ele, conferida
+  célula a célula contra o interpolador oficial e emenda a emenda entre
+  vizinhos; o app carrega os pedaços perto da câmera com memória fixa por
+  preset e solta os de trás; o detalhe real chega a ~200 pc da câmera no
+  Cinema e na Alta; a textura cede onde há detalhe medido. Aprovado por
+  foto: *"gaia com texturas gostei"*, *"a versão com níveis ficou boa"*
+  (a textura fica como está). Detalhes e custo em `PLAN.md` › E3c.
+- **Aberto — dele:** o teste no iPhone da opção Gaia com os níveis
+  (fps, memória, "recarregou?"); o merge no `main` e a publicação.
+- **Aberto — técnico:** o custo de 16–19% de fps no Cinema do Mac com os
+  níveis; a trava de ~0,1 s no clique; a gaveta estreita em tablet e a
+  320 px (`BACKLOG.md`); E5, E6, E7; **226**, **227**.
+- **Como retomar:** `PLAN.md` › E3c e esta seção.
+
+## O BASTÃO anterior (28/09, manhã)
 
 **28/09 (rodada da POEIRA DO GAIA, fecho técnico antes do merge). Tudo
 no ramo `poeira-gaia`, com backup no GitHub; nada foi para o `main`.**
