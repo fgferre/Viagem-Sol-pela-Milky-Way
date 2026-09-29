@@ -119,20 +119,23 @@ describe('round-trip e cobertura (algoritmo puro, sem fixture)', () => {
   });
 
   it('para nside 1, 2 e 4, uma grade densa de direções cobre todos os 12·nside² pixels e nada fora do intervalo', () => {
+    // Conta fora do laço e cobra uma vez só: dois `expect` por direção
+    // (188 mil) estouravam os 5 s do teste na máquina do GitHub (29/09).
     for (const n of [1, 2, 4]) {
       const npix = 12 * n * n;
       const vistos = new Set();
       const passos = 250;
+      let foraDoIntervalo = 0;
       for (let it = 0; it <= passos; it += 1) {
         const theta = Math.min(Math.max((Math.PI * it) / passos, 1e-9), Math.PI - 1e-9);
         for (let ip = 0; ip < passos; ip += 1) {
           const phi = (2 * Math.PI * ip) / passos;
           const pix = ang2pixNest(n, theta, phi);
-          expect(pix).toBeGreaterThanOrEqual(0);
-          expect(pix).toBeLessThan(npix);
+          if (!(pix >= 0 && pix < npix)) foraDoIntervalo += 1;
           vistos.add(pix);
         }
       }
+      expect(foraDoIntervalo).toBe(0);
       expect(vistos.size).toBe(npix);
     }
   });

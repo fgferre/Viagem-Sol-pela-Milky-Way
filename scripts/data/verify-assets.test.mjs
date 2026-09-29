@@ -23,7 +23,7 @@
 // da FICHA reescrito, o inglês da ficha APAGADO e o inglês do
 // MANIFESTO apagado.
 // ============================================================
-import { describe, expect, it, beforeAll, afterAll } from 'vitest';
+import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import {
   cpSync,
@@ -42,6 +42,11 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 import { montarArtefatosDaPiramide } from './build-dust-volumes.mjs';
 import { sha256 } from './lib/binary.mjs';
 import { PIRAMIDE_POEIRA, gradeDoNivel, paraFloat16 } from './lib/volume.mjs';
+
+// Cada caso roda o portão inteiro sobre o artefato de verdade (com os 747
+// tijolos da pirâmide): na máquina do GitHub o mais lento levou 3,2 s de
+// um limite de 5 s (29/09) — folga para não reprovar a publicação por tempo.
+vi.setConfig({ testTimeout: 30_000 });
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
