@@ -23,8 +23,16 @@ detalhes, quando vc afasta libera a memória"*). Tudo no ramo
   Cinema e na Alta; a textura cede onde há detalhe medido. Aprovado por
   foto: *"gaia com texturas gostei"*, *"a versão com níveis ficou boa"*
   (a textura fica como está). Detalhes e custo em `PLAN.md` › E3c.
-- **Aberto — dele:** o teste no iPhone da opção Gaia com os níveis
-  (fps, memória, "recarregou?"); o merge no `main` e a publicação.
+- **iPhone (29/09):** ele testou a opção Gaia com os níveis no celular:
+  *"Gostei. podemos deixar dessa forma."* O ramo `poeira-gaia` foi
+  juntado ao `main` (avanço direto).
+- **228 (29/09), consertado e aprovado:** o fim do filme pulava para o
+  outro lado da Terra quando o texto aparecia — o relógio AO VIVO do Atlas
+  entrava no filme aberto pelo "Ver o filme"; agora o filme pausa o
+  relógio ao começar (motor, vale para todo filme). Aprovado pelo vídeo
+  antes/depois (*"aprovado, pode juntar no main"*), juntado ao `main`.
+- **Aberto — dele:** publicar (`git push origin main`) e, depois,
+  conferir no ar.
 - **Aberto — técnico:** o custo de 16–19% de fps no Cinema do Mac com os
   níveis; a trava de ~0,1 s no clique; a gaveta estreita em tablet e a
   320 px (`BACKLOG.md`); E5, E6, E7; **226**, **227**.
@@ -1457,17 +1465,6 @@ declarativo do filme galáctico. Conclui com Terra/Lua, Júpiter/Io,
 Saturno/luas e o afastamento final, ciência e unidades revisadas, gate
 visual e exibição completa aprovada pelo dono. *(Era a fila ativa do
 plano do cinema, arquivado — `git show 923dc20:docs/PLANO-CINEMA.md`.)*
-
-**228. O fim do filme pula para o outro lado da Terra quando o texto
-aparece** (relato dele, 29/09: *"Detectei um bug no filme. Quando chega no
-enquadramento final da terra e termina com a america do sul enquadrada,
-logo que aparece o texto, muda de forma abrupta (sem animacao) para um
-outro lado da terra. Isso nao é esperado. era para terminar com a america
-do sul enquadrada. bug"*). Visto no iPhone, na versão do ramo
-`poeira-gaia`; nada do filme mudou nesse ramo, então deve estar também no
-ar. Parente do **225** (24/09: *"a Terra aparecer numa posição no filme e
-de repente ela mudar para outra posição, quando o texto do Pale Blue Dot
-vai aparecer"*), consertado no motor em `4cda566`.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
