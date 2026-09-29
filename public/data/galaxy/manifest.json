@@ -325,5 +325,50 @@
       "archive": "https://doi.org/10.5281/zenodo.10658339",
       "license": "CC-BY-4.0"
     }
-  ]
+  ],
+  "dustPyramid": {
+    "kind": "volume-pyramid",
+    "parent": "dustVolumeNear20pc",
+    "parentSha256": "365a5536c9d9b5b3cc70792fd227daa8a6a4b17eeae698b97b437eb2cfef6666",
+    "directory": "data/galaxy/dust-piramide",
+    "levels": [
+      {
+        "level": 1,
+        "index": "data/galaxy/dust-piramide/n1.json",
+        "bytes": 21608,
+        "sha256": "81ef73736f492ac6c69ac0a3fec75b278ea157bdd465a5ac410c78aa910ae2ac",
+        "voxelPc": 10,
+        "radiusPc": null,
+        "existingBricks": 256,
+        "storedBricks": 123,
+        "brickBytes": 6966444
+      },
+      {
+        "level": 2,
+        "index": "data/galaxy/dust-piramide/n2.json",
+        "bytes": 51702,
+        "sha256": "9ba5cc2a543da3404612f41449e7e00b289d7736f8095d6e046831138289952c",
+        "voxelPc": 5,
+        "radiusPc": 900,
+        "existingBricks": 796,
+        "storedBricks": 309,
+        "brickBytes": 20711009
+      },
+      {
+        "level": 3,
+        "index": "data/galaxy/dust-piramide/n3.json",
+        "bytes": 53570,
+        "sha256": "78a33cccd51fe201aadb0b2c25a53184ebcc22623a8304047d2230c0209fe877",
+        "voxelPc": 2.5,
+        "radiusPc": 450,
+        "existingBricks": 1073,
+        "storedBricks": 315,
+        "brickBytes": 20831099
+      }
+    ],
+    "brickFiles": "gzip only (.bin.gz): without DecompressionStream the fine levels are unavailable and dustVolumeNear20pc stays",
+    "generated": "2026-09-28",
+    "source": "Edenhofer2024",
+    "license": "CC-BY-4.0"
+  }
 }
