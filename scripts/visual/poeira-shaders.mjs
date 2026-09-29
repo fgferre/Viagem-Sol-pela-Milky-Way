@@ -597,8 +597,31 @@ async function testeTrocaDeFonte(proximaPorta) {
     if (md5(vivo.png) === md5(zero.png)) {
       linhas.push(`depois da troca × do zero: md5 igual (${md5(vivo.png).slice(0, 12)})`);
     } else {
-      falhou = true;
-      linhas.push(`depois da troca × do zero: ${await descreverDiferenca(vivo.png, zero.png)}`);
+      // A PIRÂMIDE (E3c) guarda cada tijolo numa vaga do atlas que depende
+      // do caminho: a página "do zero" carrega tijolos em t = 60 antes de a
+      // câmera ir para casa, e o mesmo tijolo cai noutra vaga; num atlas de
+      // lado que não é potência de 2 a coordenada normalizada arredonda
+      // diferente por vaga (medido 28/09: 2 px de 230.400, 1/255). Aceita-se
+      // esse arredondamento e só ele — no máximo 1/255 em no máximo 0,01%
+      // dos pixels; uma fonte errada muda o quadro inteiro.
+      const { data: a, info } = await cruaInteira(vivo.png);
+      const { data: b } = await cruaInteira(zero.png);
+      let diferentes = 0;
+      let maior = 0;
+      for (let i = 0; i < a.length; i += info.channels) {
+        let d = 0;
+        for (let c = 0; c < info.channels; c++) d = Math.max(d, Math.abs(a[i + c] - b[i + c]));
+        if (d > 0) {
+          diferentes++;
+          if (d > maior) maior = d;
+        }
+      }
+      const total = info.width * info.height;
+      if (!(maior <= 1 && diferentes <= total * 1e-4)) falhou = true;
+      linhas.push(
+        `depois da troca × do zero: ${diferentes} px de ${total} diferem, maior ${maior}/255 ` +
+          '(aceita só o arredondamento das vagas: ≤ 1/255 em ≤ 0,01% dos px)'
+      );
     }
     process.stdout.write(`${falhou ? 'FALHA' : 'ok'}\n    ${linhas.join('\n    ')}\n${urls}`);
     return falhou;

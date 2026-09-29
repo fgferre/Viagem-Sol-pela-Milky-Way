@@ -809,8 +809,10 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   porta('poeiralanes', 'lanes sobre a poeira medida forçadas'),
   // ?poeiraniveis=teste (E3c): a pirâmide de níveis SINTÉTICA da bancada
   // no lugar da medida — letras em posições conhecidas, para provar
-  // orientação e troca de nível; troca o conteúdo, então é desvio.
-  porta('poeiraniveis', 'pirâmide de níveis sintética de teste'),
+  // orientação e troca de nível; ?poeiraniveis=0: a pirâmide ignorada, o
+  // Gaia só no bloco de 20 pc (o lado A das fotos). As duas trocam o
+  // conteúdo, então é desvio.
+  porta('poeiraniveis', 'pirâmide de níveis trocada (sintética de teste, ou desligada)'),
   // ?fps=1 desenha o contador de quadros/s (contadorDeFps.ts) por cima
   // da cena — bancada de diagnóstico, mas visível em qualquer captura.
   porta('fps', 'contador de fps na tela'),

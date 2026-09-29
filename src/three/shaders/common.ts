@@ -170,7 +170,7 @@ export const NIVEIS_DA_PIRAMIDE_NO_SHADER = 3;
  * sem ela, `glslDensity(…, piramide = false)` devolve o texto de hoje,
  * byte a byte — nem um uniform a mais.
  *
- * `poeiraMedidaNiveis(ph, t)` DESCE do nível mais fino ao n0 (o bloco de
+ * `poeiraMedidaNiveis(ph, t, f)` DESCE do nível mais fino ao n0 (o bloco de
  * 20 pc de sempre, `poeiraMedida`) até o peso acabar:
  *
  *   M(p) = Σₖ wₖ·Πⱼ₍ⱼ₎ₖ₎(1 − wⱼ)·Dₖ(p) + Πₖ(1 − wₖ)·D₀(p)
@@ -190,7 +190,35 @@ export const NIVEIS_DA_PIRAMIDE_NO_SHADER = 3;
  * 15 s ainda segura fora do raio nunca é lido, e a imagem não depende da
  * história da câmera; Bₖ é o raio da região do nível (onde o mapa
  * sustenta aquela resolução), dentro do qual todo tijolo existe.
+ *
+ * A TEXTURA INVENTADA SOBRE O MEDIDO (a lane, `uPoeiraLanes` = s, ligada
+ * nas opções do Gaia) cede onde o nível lido já traz o detalhe real —
+ * voxel ≤ 5 pc, o n2 e o n3 —, plena no n0/n1:
+ *
+ *   f  = 1 − (W₂ + W₃) = Πⱼ(1 − wⱼ), j = os níveis residentes de voxel ≤ 5 pc
+ *   Lm = mix(1, mix(⟨L⟩, L, f), s)
+ *
+ * Wₖ = wₖ·Πⱼ₍ⱼ₎ₖ₎(1 − wⱼ) é o peso com que o nível k entra em M; os de 5 e
+ * 2,5 pc são os primeiros da descida, então 1 − W₂ − W₃ é o `resto`
+ * depois deles. Onde a lane cede, ela cai na MÉDIA espacial dela,
+ * ⟨L⟩ = `MEDIA_DA_LANE`, e não em 1: a lane escurece o medido, em média,
+ * a 35%, e soltá-la para 1 deixaria a poeira perto da câmera ~2,9× mais
+ * densa que a de longe — uma costura que anda com a câmera (as rampas
+ * seguem t). Assim só o DESENHO inventado sai; a densidade média fica a
+ * mesma dos dois lados da rampa.
  */
+/**
+ * ⟨L⟩, a média espacial da lane `L = mix(0,12; 1; S(0,28; 0,64;
+ * fbm(p·0,085 + 41, 2)))` (a de `glslDensity`) — medida em 28/09 com a
+ * réplica em JS de `GLSL_NOISE` em 2·10⁶ pontos de uma caixa de
+ * 2400×2400×1000 pc: 0,3504 em float64, 0,3501 imitando float32.
+ * Mudou a lane, meça de novo.
+ */
+export const MEDIA_DA_LANE = 0.35;
+/** o nível cujo voxel é deste tamanho ou menor já traz o detalhe real: a
+ *  lane cede nele (n2 = 5 pc, n3 = 2,5 pc) */
+export const VOXEL_DO_DETALHE_REAL_PC = 5;
+
 export const GLSL_POEIRA_NIVEIS = /* glsl */ `
 // A PIRÂMIDE (E3c): atlas R16F de vagas ${LADO_DA_VAGA}³ (núcleo ${NUCLEO_DO_TIJOLO}³ + aba de 1
 // voxel) e as tabelas de páginas R16UI dos níveis, empilhadas em z.
@@ -229,14 +257,16 @@ bool poeiraLerNivel(vec4 nivel, vec4 tijolos, float escala, vec3 ph, out float e
   return true;
 }
 
-// Densidade medida em E/pc pelos níveis, do mais fino ao n0 — ver a
-// equação no comentário de GLSL_POEIRA_NIVEIS (shaders/common.ts).
-float poeiraMedidaNiveis(vec3 ph, float t) {
+// Densidade medida em E/pc pelos níveis, do mais fino ao n0, e a força
+// f da lane no ponto (1 − o peso dos níveis de voxel ≤ ${glslNumber(VOXEL_DO_DETALHE_REAL_PC)} pc) — ver as
+// equações no comentário de GLSL_POEIRA_NIVEIS (shaders/common.ts).
+float poeiraMedidaNiveis(vec3 ph, float t, out float forcaDasLanes) {
   float r = length(ph);
   float e = 0.0;
   float w = 0.0;
   float valor = 0.0;
   float resto = 1.0;
+  forcaDasLanes = 1.0;
 ${Array.from({ length: NIVEIS_DA_PIRAMIDE_NO_SHADER }, (_, i) => NIVEIS_DA_PIRAMIDE_NO_SHADER - 1 - i)
   .map(
     (k) => `  if (resto > 0.0) {
@@ -244,12 +274,18 @@ ${Array.from({ length: NIVEIS_DA_PIRAMIDE_NO_SHADER }, (_, i) => NIVEIS_DA_PIRAM
     if (w > 0.0 && poeiraLerNivel(uPoeiraNivel[${k}], uPoeiraNivelTijolos[${k}], uPoeiraNivelEscala[${k}], ph, e)) {
       valor += resto * w * e;
       resto *= 1.0 - w;
+      if (uPoeiraNivel[${k}].w <= ${glslNumber(VOXEL_DO_DETALHE_REAL_PC)}) forcaDasLanes *= 1.0 - w;
     }
   }
 `
   )
   .join('')}  if (resto > 0.0) valor += resto * poeiraMedida(ph);
   return valor;
+}
+
+// A lane sobre o medido pelos níveis: Lm = mix(1, mix(⟨L⟩, L, f), s).
+float poeiraLanesDosNiveis(float L, float forcaDasLanes) {
+  return mix(1.0, mix(${glslNumber(MEDIA_DA_LANE)}, L, forcaDasLanes), uPoeiraLanes);
 }
 `;
 
@@ -396,20 +432,35 @@ float gPaletteM = 0.0;
  */
 const GLSL_MACIO_MEDIDO_POR_PASSO = /* glsl */ `  // A PIRÂMIDE NO MACIO (E3c): o bake guarda só a parte inventada
   // (R = (1−c)·P·L, G = gasDensity); o medido entra aqui, por passo, lido
-  // pelos níveis — + c·M·gasDensity·Lm, nunca nos dois lugares.
+  // pelos níveis — + c·M·gasDensity·Lm, nunca nos dois lugares. A lane
+  // cede onde o nível lido tem o detalhe real (f, GLSL_POEIRA_NIVEIS):
+  // com f = 0 ela é a média ⟨L⟩, e o fbm nem é sorteado.
   vec3 ph = poeiraHelio(p);
   float c = uPoeiraModo == 1 ? poeiraCobertura(ph) : 0.0;
   gPoeiraC = c;
   if (c > 0.0) {
-    float medido = poeiraDensidadeApp(poeiraMedidaNiveis(ph, t));
+    float forcaDasLanes;
+    float medido = poeiraDensidadeApp(poeiraMedidaNiveis(ph, t, forcaDasLanes));
     if (medido > 0.0) {
-      float lanesMedido = 1.0;
-      if (uPoeiraLanes > 0.0) {
+      float L = ${glslNumber(MEDIA_DA_LANE)};
+      if (uPoeiraLanes > 0.0 && forcaDasLanes > 0.0) {
         float lanes = fbm(p * 0.085 + 41.0, 2);
-        lanesMedido = mix(1.0, mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes)), uPoeiraLanes);
+        L = mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes));
       }
-      d += c * medido * ${glslNumber(WORLD.gasDensity)} * lanesMedido;
+      d += c * medido * ${glslNumber(WORLD.gasDensity)} * poeiraLanesDosNiveis(L, forcaDasLanes);
     }
+  }
+`;
+
+/**
+ * O MEDIDO NO FINO, com a pirâmide ativa (E3c): lido pelos níveis, com a
+ * lane que cede onde o nível lido tem o detalhe real (`Lm` pela força f —
+ * ver GLSL_POEIRA_NIVEIS). Sem a pirâmide, a linha de hoje, byte a byte.
+ */
+const GLSL_FINO_MEDIDO_PELOS_NIVEIS = /* glsl */ `  if (c > 0.0) {
+    float forcaDasLanes;
+    float medido = poeiraDensidadeApp(poeiraMedidaNiveis(ph, t, forcaDasLanes));
+    d += c * medido * ${glslNumber(WORLD.gasDensity)} * poeiraLanesDosNiveis(L, forcaDasLanes);
   }
 `;
 
@@ -550,8 +601,12 @@ ${coresGLSL()}
   float lanes = fbm(p * 0.085 + 41.0, 2);
   float L = mix(0.12, 1.0, smoothstep(0.28, 0.64, lanes));
   d *= L * ${glslNumber(WORLD.gasDensity)};
-  if (c > 0.0) d += c * poeiraDensidadeApp(${piramide ? 'poeiraMedidaNiveis(ph, t)' : 'poeiraMedida(ph)'}) * ${glslNumber(WORLD.gasDensity)} * mix(1.0, L, uPoeiraLanes);
+${
+        piramide
+          ? GLSL_FINO_MEDIDO_PELOS_NIVEIS
+          : `  if (c > 0.0) d += c * poeiraDensidadeApp(poeiraMedida(ph)) * ${glslNumber(WORLD.gasDensity)} * mix(1.0, L, uPoeiraLanes);
 `
+      }`
     : `  // núcleos do corredor: mesmo texto gerado que o caminho antigo usava
   // por amostra, aqui pago uma vez por passo do raymarch (não por voxel
   // do bake) — sempre com oct = 4, a mesma octave que todo chamador daqui

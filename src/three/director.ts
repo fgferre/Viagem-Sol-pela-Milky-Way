@@ -87,6 +87,7 @@ import {
   NUCLEO_DO_TIJOLO,
   carregarPiramideDePoeira,
   fonteDaRede,
+  mesmoOrcamento,
   orcamentoDaPiramide,
 } from './cartography/piramideDePoeira';
 import type {
@@ -1039,6 +1040,13 @@ export class Director {
    */
   private poeiraNiveisTeste = this.debug.get('poeiraniveis') === 'teste';
   /**
+   * `?poeiraniveis=0` é a BANCADA DO A/B (E3c): o app ignora a pirâmide —
+   * nem os índices descem — e o Gaia fica no bloco de 20 pc de antes dela,
+   * para as fotos lado a lado. Porta de URL (selo.ts), não do menu: o
+   * clique no controle da poeira não a desarma.
+   */
+  private readonly poeiraNiveisDesligada = this.debug.get('poeiraniveis') === '0';
+  /**
    * A FONTE QUE O PEDIDO ATUAL QUER (item A, revisão independente v2,
    * 27/09) — `'sintetica'` enquanto `poeiraTeste` estiver ligado
    * (`?poeira=teste`, ou até `forcarPoeira` o desarmar), `'gaia'`
@@ -1618,15 +1626,28 @@ export class Director {
   }
 
   /**
-   * QUAL PIRÂMIDE O PEDIDO QUER AGORA (E3c): nenhuma sem a poeira pedida
-   * ou sem cartografia; a da bancada com `?poeiraniveis=teste`; nenhuma
-   * com o bloco sintético de `?poeira=teste` (outra geometria); a do
-   * Gaia quando o manifesto a declara.
+   * QUAL PIRÂMIDE O PEDIDO QUER AGORA (E3c): nenhuma sem a poeira pedida,
+   * sem cartografia ou com `?poeiraniveis=0`; a da bancada com
+   * `?poeiraniveis=teste`; nenhuma com o bloco sintético de
+   * `?poeira=teste` (outra geometria); a do Gaia quando o manifesto a
+   * declara.
    */
   private get piramideDesejada(): 'gaia' | 'sintetica' | null {
     if (this.poeiraModoPedido === 0 || !this.cartResolvido || !this.cartOn) return null;
+    if (this.poeiraNiveisDesligada) return null;
     if (this.poeiraTeste) return this.poeiraNiveisTeste ? 'sintetica' : null;
     return this.dustPyramidManifesto ? 'gaia' : null;
+  }
+
+  /**
+   * ALGUÉM LERIA A PIRÂMIDE AGORA? (E3c) — o gás desenhado (sem
+   * `?nonebula=1` nem a aba escondida) e uma variante que lê a poeira
+   * (fino/macio; o antigo nunca lê). Sem isto nada da pirâmide é
+   * baixado: nem os índices (`garantirPiramide` adia a busca), nem
+   * tijolos (a residência fica parada), nem o aquecimento.
+   */
+  private get gasLeAPiramide(): boolean {
+    return !this.noNebula && this.nebula.lePoeira;
   }
 
   /**
@@ -1641,6 +1662,9 @@ export class Director {
   private garantirPiramide() {
     const desejada = this.piramideDesejada;
     if (desejada !== this.piramideFonteTentada) {
+      // uma fonte nova com o gás que não a lê (antigo, ou sem nebulosa)
+      // espera: nada é baixado até alguém ir lê-la (a que já chegou fica)
+      if (desejada !== null && !this.gasLeAPiramide) return;
       this.piramideFonteTentada = desejada;
       const meuPedido = ++this.piramidePedidoId;
       this.piramideCarregada = null;
@@ -1669,15 +1693,16 @@ export class Director {
     if (this.piramideCarregada && this.piramideTier !== this.engine.quality) this.montarPiramide();
   }
 
-  /** a pirâmide baixada vai à Nebula com o orçamento do tier de agora —
-   *  o mesmo número de vagas de antes (cinema ↔ alta) mantém a que está no ar */
+  /** a pirâmide baixada vai à Nebula com o orçamento do tier de agora
+   *  (vagas, cache e raios) — o mesmo de antes (cinema ↔ alta) mantém a
+   *  que está no ar */
   private montarPiramide() {
     const carregada = this.piramideCarregada;
     if (!carregada) return;
     this.piramideTier = this.engine.quality;
     const orcamento = orcamentoDaPiramide(this.engine.quality, sondarGl().max3DTextureSize);
-    const noAr = this.nebula.vagasDaPiramide;
-    if (noAr > 0 && noAr === orcamento.vagas) return;
+    const noAr = this.nebula.orcamentoDaPiramide;
+    if (noAr && mesmoOrcamento(noAr, orcamento)) return;
     this.nebula.setPiramide({ ...carregada, orcamento });
   }
 
@@ -4104,12 +4129,17 @@ export class Director {
     );
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
-    // A PIRÂMIDE DA POEIRA (E3c): a fonte que o pedido quer agora e, com
-    // a câmera DESTE quadro, o lote da residência na GPU — antes do
+    // A PIRÂMIDE DA POEIRA (E3c): a fonte que o pedido quer agora, o
+    // aquecimento dos materiais dela (desde o clique, antes da troca) e,
+    // com a câmera DESTE quadro, o lote da residência na GPU — antes do
     // desenho, e mesmo com o gás apagado (longe de casa é assim que ela
-    // solta a memória). `rawTime`: o relógio de parede, o da carência.
+    // solta a memória). Sem ninguém que a leia (`gasLeAPiramide`), nada
+    // disso roda. `rawTime`: o relógio de parede, o da carência.
     this.garantirPiramide();
-    this.nebula.atualizarPiramide(this.engine.renderer, rawTime, cam);
+    if (this.gasLeAPiramide) {
+      if (this.piramideDesejada !== null) this.nebula.aquecerPiramide(this.engine.renderer);
+      this.nebula.atualizarPiramide(this.engine.renderer, rawTime, cam);
+    }
     // gate 0.02: na casca externa do fade a contribuição é invisível
     // pós-ACES, mas o raymarch custaria integral
     if (this.noNebula || nebulaFade <= 0.02) {

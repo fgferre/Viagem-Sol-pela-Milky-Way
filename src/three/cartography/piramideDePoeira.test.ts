@@ -1,4 +1,4 @@
-// Serve: chão — a residência da pirâmide da poeira pede o perto e a frente primeiro, cabe nas vagas, cancela o velho, respeita a carência, marca o omitido e não martela o 404
+// Serve: chão — a residência da pirâmide da poeira pede o perto e a frente primeiro, nos raios do preset, cabe nas vagas, cancela o velho, respeita a carência, marca o omitido e não martela o 404
 // ============================================================
 // A PIRÂMIDE DA POEIRA SEM GPU E SEM REDE. Uma pirâmide sintética com a
 // geometria do contrato (n1 de 10 pc na caixa inteira, n2 de 5 pc em
@@ -17,13 +17,16 @@ import {
   ESPERA_APOS_FALHA_S,
   FATOR_ATRAS,
   PRIMEIRO_CODIGO_DE_VAGA,
+  RAIO_DESEJADO_NO_COMPUTADOR_PC,
   RAIO_DESEJADO_PC,
   ResidenciaDaPiramide,
   VOXELS_POR_TIJOLO,
   carregarPiramideDePoeira,
   fonteDaRede,
   lerIndiceDeNivel,
+  mesmoOrcamento,
   montarOrcamento,
+  orcamentoDaPiramide,
 } from './piramideDePoeira';
 import type {
   CameraDaPoeira,
@@ -113,7 +116,10 @@ function indiceDe(level: number, b: Trio): number {
 const gravado = (level: number, b: Trio) => PIRAMIDE.niveis[level - 1].gravados.has(indiceDe(level, b));
 
 /** o que a política manda desejar em q: gravado e com o centro no raio do nível */
-function desejadosEm(q: Trio): Array<{ nome: string; level: number; b: Tripla }> {
+function desejadosEm(
+  q: Trio,
+  raios: readonly number[] = RAIO_DESEJADO_PC
+): Array<{ nome: string; level: number; b: Tripla }> {
   const lista: Array<{ nome: string; level: number; b: Tripla }> = [];
   for (const n of PIRAMIDE.niveis) {
     const [nbx, nby, nbz] = n.dimsEmTijolos;
@@ -121,7 +127,7 @@ function desejadosEm(q: Trio): Array<{ nome: string; level: number; b: Tripla }>
       for (let bj = 0; bj < nby; bj++) {
         for (let bi = 0; bi < nbx; bi++) {
           const b: Tripla = [bi, bj, bk];
-          if (gravado(n.nivel, b) && aoCentro(n.nivel, b, q) <= RAIO_DESEJADO_PC[n.nivel]) {
+          if (gravado(n.nivel, b) && aoCentro(n.nivel, b, q) <= raios[n.nivel]) {
             lista.push({ nome: nomeDe(n.nivel, b), level: n.nivel, b });
           }
         }
@@ -224,6 +230,28 @@ describe('a residência da pirâmide da poeira', () => {
       expect(new Set(falsa.pedidos.map((p) => nomeDe(p.nivel, p.tijolo)))).toEqual(esperados);
       expect([...new Set([...esperados].map((n) => n.split(':')[0]))].sort()).toEqual(niveis);
     }
+  });
+
+  it('os raios vêm do orçamento do preset: o Cinema e o Alta desejam o n3 até 270 pc, o Performance até 150', async () => {
+    expect(orcamentoDaPiramide('cinema', 2048).raiosPc).toBe(RAIO_DESEJADO_NO_COMPUTADOR_PC);
+    expect(orcamentoDaPiramide('alta', 2048).raiosPc).toBe(RAIO_DESEJADO_NO_COMPUTADOR_PC);
+    expect(orcamentoDaPiramide('performance', 2048).raiosPc).toBe(RAIO_DESEJADO_PC);
+    // cinema ↔ alta não remonta; performance ↔ cinema sim
+    expect(mesmoOrcamento(orcamentoDaPiramide('cinema', 2048), orcamentoDaPiramide('alta', 2048))).toBe(true);
+    expect(mesmoOrcamento(orcamentoDaPiramide('cinema', 2048), orcamentoDaPiramide('performance', 2048))).toBe(false);
+    expect(
+      mesmoOrcamento(montarOrcamento(256, 1, 2048), montarOrcamento(256, 1, 2048, RAIO_DESEJADO_NO_COMPUTADOR_PC))
+    ).toBe(false);
+    // a residência pede exatamente o conjunto dos raios que recebeu
+    const q: Tripla = [30, -20, 5];
+    for (const raios of [RAIO_DESEJADO_PC, RAIO_DESEJADO_NO_COMPUTADOR_PC]) {
+      const falsa = fonteFalsa();
+      const res = new ResidenciaDaPiramide(PIRAMIDE, montarOrcamento(1024, 2 ** 30, 2048, raios), falsa.fonte);
+      await bombear(res, falsa, { posicaoPc: q, frente: [1, 0, 0] }, 0);
+      expect(residentes(res)).toEqual(new Set(desejadosEm(q, raios).map((d) => d.nome)));
+    }
+    const n3 = (raios: readonly number[]) => desejadosEm(q, raios).filter((d) => d.level === 3).length;
+    expect(n3(RAIO_DESEJADO_NO_COMPUTADOR_PC)).toBeGreaterThan(n3(RAIO_DESEJADO_PC));
   });
 
   it('nunca passa das vagas nem do cache, e quem fica é o mais útil', async () => {

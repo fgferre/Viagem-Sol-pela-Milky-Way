@@ -21,6 +21,7 @@ import {
   caminhoDoTijolo,
   compararComReferencia,
   compararNivelComReferencia,
+  conferirAbasVizinhas,
   criarCampo,
   deFloat16,
   dimsEmTijolos,
@@ -863,8 +864,12 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
 // pais — o n1 aponta para o sha256 do bloco de 20 pc, cada nível
 // seguinte para o do índice anterior), cada tijolo (dentro da região do
 // nível, bytes e sha256 do `.bin.gz`, 34³ float16 ao descomprimir,
-// finito, ≥ 0 e ≤ LIMITE_E_POR_PC), nenhum arquivo fora dos índices e a
-// referência científica do nível (células do interpolador oficial em
+// finito, ≥ 0 e ≤ LIMITE_E_POR_PC), a ABA contra o VIZINHO (cada par de
+// tijolos gravados que se encostam numa face concorda bit a bit: a aba de
+// um é a camada de núcleo do outro — sem isto, um tijolo gravado no lugar
+// errado só reprovaria se uma das ~80 células da referência caísse nele),
+// nenhum arquivo fora dos índices e a referência científica do nível
+// (células do interpolador oficial em
 // `fixtures/edenhofer-referencia-niveis.json`, mesmo operador de 2³
 // subamostras, célula a célula na precisão do float16; tolerância em
 // `TOLERANCIA_NIVEL`, lib/volume.mjs).
@@ -921,6 +926,7 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
     const resumos = [];
     let paiEsperado = { level: 0, sha256: ativoN0.sha256 };
     let totalTijolos = 0;
+    let totalPares = 0;
     let totalBytes = 0;
     for (const [posicao, nivel] of contrato.niveis.entries()) {
       const k = nivel.nivel;
@@ -1005,11 +1011,29 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
           }
         }
         esperados.add(arquivo);
-        gravados.push({ b, dados });
+        gravados.push({ b, dados, cru });
         totalBytes += gz.byteLength;
+      }
+      const abas = conferirAbasVizinhas(contrato.tijolo, gravados);
+      if (abas.divergencias.length) {
+        const camada = contrato.tijolo ** 2;
+        const primeiras = abas.divergencias
+          .slice(0, 4)
+          .map(
+            (d) =>
+              `a aba ${d.face} de ${d.b.join('_')} difere da camada de núcleo de ${d.vizinho.join('_')} que encosta nela ` +
+              `(${d.voxeis}/${camada} voxels; o primeiro em [${d.primeiro.join(', ')}])`
+          )
+          .join('; ');
+        const resto = abas.divergencias.length > 4 ? `; e mais ${abas.divergencias.length - 4}` : '';
+        throw new Error(
+          `dustPyramid n${k}: tijolo gravado no lugar errado — ${primeiras}${resto} ` +
+            '(dois tijolos gravados que se encostam têm de concordar bit a bit) — rode npm run data:poeira-niveis.'
+        );
       }
       adicionarNivel(campo, grade, contrato.tijolo, gravados);
       totalTijolos += gravados.length;
+      totalPares += abas.pares;
       const referencia = Array.isArray(fixtureNiveis.niveis)
         ? fixtureNiveis.niveis.find((n) => n.nivel === k)
         : undefined;
@@ -1026,7 +1050,9 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
           `dustPyramid n${k}: comparação com a referência (interpolador oficial) excede a tolerância — ${texto}.`
         );
       }
-      resumos.push(`n${k}: ${gravados.length} tijolos, referência OK (${texto})`);
+      resumos.push(
+        `n${k}: ${gravados.length} tijolos, referência OK (${texto}), ${abas.pares} pares de faces vizinhas com a aba igual ao núcleo`
+      );
       paiEsperado = { level: k, sha256: declarado.sha256 };
     }
     const orfaos = [];
@@ -1046,8 +1072,8 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
       throw new Error(`dustPyramid: arquivo fora dos índices (órfão): ${orfaos.join(', ')} — rode npm run data:poeira-niveis.`);
     }
     console.log(
-      `dustPyramid: ${resumos.join('; ')}; ${totalTijolos} tijolos, ${(totalBytes / 1048576).toFixed(1)} MB gz — ` +
-        'índices, SHA-256, faixa e referência conferidos.'
+      `dustPyramid: ${resumos.join('; ')}; ${totalTijolos} tijolos, ${totalPares} pares de faces, ` +
+        `${(totalBytes / 1048576).toFixed(1)} MB gz — índices, SHA-256, faixa, abas contra o vizinho e referência conferidos.`
     );
   }
 }

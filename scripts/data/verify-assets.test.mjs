@@ -164,9 +164,14 @@ describe('verify-assets — o volume de poeira (float16)', () => {
 
   beforeAll(() => {
     espelhoVolume = mkdtempSync(join(tmpdir(), 'verify-assets-volume-'));
-    espelhar(join(RAIZ, 'public'), join(espelhoVolume, 'public'), [
-      join(RAIZ, 'public/data/galaxy/manifest.json'),
-    ]);
+    // sem a pasta da pirâmide: ela foi gerada sobre o bloco de 20 pc de verdade
+    // e estes casos o trocam por um sintético
+    espelhar(
+      join(RAIZ, 'public'),
+      join(espelhoVolume, 'public'),
+      [join(RAIZ, 'public/data/galaxy/manifest.json')],
+      [join(RAIZ, 'public/data/galaxy/dust-piramide')]
+    );
     cpSync(join(RAIZ, 'scripts'), join(espelhoVolume, 'scripts'), { recursive: true });
     for (const nome of ['src', 'docs', 'package.json', 'node_modules']) {
       symlinkSync(join(RAIZ, nome), join(espelhoVolume, nome));
@@ -220,6 +225,7 @@ describe('verify-assets — o volume de poeira (float16)', () => {
     for (const [nome, asset] of Object.entries(manifesto.assets)) {
       if (asset.kind === 'volume') delete manifesto.assets[nome];
     }
+    delete manifesto.dustPyramid;
     const definicaoAtivo = {
       kind: 'volume',
       file: 'data/galaxy/dust-teste.bin',
@@ -381,9 +387,10 @@ describe('verify-assets — o volume de poeira (float16)', () => {
 // 34³ de verdade, índices montados pelo MESMO `montarArtefatosDaPiramide`
 // do gerador) sobre o bloco de 20 pc REAL do espelho: um tijolo por
 // nível — o que contém o Sol —, cheio de um valor conhecido, e uma
-// fixture de níveis com 8 células dentro dele. O caso verde prova que o
-// que o gerador escreve o portão aceita; cada outro caso estraga UMA
-// coisa e exige a reprovação com o motivo.
+// fixture de níveis com 8 células dentro dele (o caso da aba põe três
+// vizinhos do tijolo do Sol no n1). O caso verde prova que o que o
+// gerador escreve o portão aceita; cada outro caso estraga UMA coisa e
+// exige a reprovação com o motivo.
 // ============================================================
 describe('verify-assets — a pirâmide de poeira (dustPyramid)', () => {
   let espelhoPiramide;
@@ -466,7 +473,9 @@ describe('verify-assets — a pirâmide de poeira (dustPyramid)', () => {
       mkdirSync(dirname(alvo), { recursive: true });
       writeFileSync(alvo, conteudo);
     }
+    // o manifesto de verdade já declara a pirâmide real: "sem declaração" a tira do espelho
     if (declarar) manifesto.dustPyramid = mudarEntrada(entrada);
+    else delete manifesto.dustPyramid;
     writeFileSync(join(espelhoPiramide, 'public/data/galaxy/manifest.json'), JSON.stringify(manifesto));
     const caminhoFixture = join(espelhoPiramide, 'scripts/data/fixtures/edenhofer-referencia-niveis.json');
     if (fixture) writeFileSync(caminhoFixture, JSON.stringify(fixture));
@@ -501,6 +510,56 @@ describe('verify-assets — a pirâmide de poeira (dustPyramid)', () => {
     expect(r.ok).toBe(false);
     expect(r.saida).toContain('7_7_3.bin.gz: bytes/SHA-256 divergem do índice');
   }, 60_000);
+
+  it('reprova o tijolo gravado no lugar errado: a aba não é a camada de núcleo do vizinho (nível, tijolos e face)', () => {
+    // n1 com o tijolo do Sol e os três vizinhos dele (+x, +y, +z), cada um o
+    // recorte de 34³ — aba inclusa — do MESMO campo global. O campo varia de
+    // voxel a voxel (em campo uniforme, o tijolo trocado seria igual ao certo);
+    // ×1000 dá inteiro de 4 a 8, exato em float16.
+    const campo = (gx, gy, gz) => (4 + ((gx + 2 * gy + 3 * gz) % 5)) / 1000;
+    const T = PIRAMIDE_POEIRA.tijolo;
+    const recorte = ([bi, bj, bk]) => {
+      const valores = new Float64Array(LADO ** 3);
+      for (let sz = 0; sz < LADO; sz += 1) {
+        for (let sy = 0; sy < LADO; sy += 1) {
+          for (let sx = 0; sx < LADO; sx += 1) {
+            valores[sx + LADO * (sy + LADO * sz)] = campo(T * bi - 1 + sx, T * bj - 1 + sy, T * bk - 1 + sz);
+          }
+        }
+      }
+      const f16 = paraFloat16(valores, 1000);
+      return Buffer.from(f16.buffer, f16.byteOffset, f16.byteLength);
+    };
+    const [si, sj, sk] = TIJOLO_DO_SOL[1];
+    const bricks = [TIJOLO_DO_SOL[1], [si + 1, sj, sk], [si, sj + 1, sk], [si, sj, sk + 1]];
+    // `deOutroLugar`: o tijolo `b` gravado com o conteúdo de OUTRO lugar do campo
+    const niveisCom = (deOutroLugar = {}) =>
+      PIRAMIDE_POEIRA.niveis.map((n) =>
+        n.nivel !== 1
+          ? nivelSintetico(n)
+          : {
+              ...nivelSintetico(n),
+              tijolosExistentes: bricks.length,
+              gravados: bricks.map((b) => ({ b, bytes: recorte(deOutroLugar[b.join('_')] ?? b) })),
+            }
+      );
+    const fixture = fixtureDosNiveis();
+    for (const celula of fixture.niveis[0].celulas) celula.media = campo(...celula.indice);
+
+    const certo = rodarComPiramide({ niveis: niveisCom(), fixture });
+    expect(certo.ok, certo.saida.slice(-800)).toBe(true);
+    expect(certo.saida).toContain('3 pares de faces vizinhas');
+
+    // o vizinho +y (3_4_1) gravado com o recorte de dois tijolos adiante (3_6_1)
+    const errado = rodarComPiramide({ niveis: niveisCom({ [`${si}_${sj + 1}_${sk}`]: [si, sj + 3, sk] }), fixture });
+    expect(errado.ok).toBe(false);
+    expect(errado.saida).toContain('dustPyramid n1: tijolo gravado no lugar errado');
+    expect(errado.saida).toContain(`a aba +y de ${si}_${sj}_${sk} difere da camada de núcleo de ${si}_${sj + 1}_${sk}`);
+    expect(errado.saida).toContain(`a aba -y de ${si}_${sj + 1}_${sk} difere da camada de núcleo de ${si}_${sj}_${sk}`);
+    // só o par que falha é apontado: os vizinhos +x e +z seguem certos
+    expect(errado.saida).not.toContain(`${si + 1}_${sj}_${sk}`);
+    expect(errado.saida).not.toContain(`${si}_${sj}_${sk + 1}`);
+  }, 120_000);
 
   it('reprova o ÍNDICE editado depois de gravado (sha256 diverge do manifesto)', () => {
     const r = rodarComPiramide({

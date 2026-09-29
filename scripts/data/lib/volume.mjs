@@ -727,6 +727,91 @@ export function gerarNivel({ amostrador, campo, piramide, nivel, escala, aoProgr
 }
 
 /**
+ * Quantos voxels da camada de núcleo × núcleo (`tijolo`²) diferem, em
+ * float16, entre a camada `texelDaAba` de `dono` e a camada `texelDoNucleo`
+ * de `fonte` (ao longo de `eixo`; palavras `Uint16Array` de (tijolo+2)³,
+ * índice `sx + lado·(sy + lado·sz)`). `primeiro` é o voxel do nível (índices
+ * globais, pelo tijolo de `dono`) do primeiro que difere.
+ */
+function camadasDiferem(tijolo, eixo, dono, texelDaAba, fonte, texelDoNucleo) {
+  const lado = tijolo + 2;
+  const passo = [1, lado, lado * lado];
+  const u = (eixo + 1) % 3;
+  const v = (eixo + 2) % 3;
+  let voxeis = 0;
+  let primeiro = null;
+  for (let tv = 1; tv <= tijolo; tv += 1) {
+    for (let tu = 1; tu <= tijolo; tu += 1) {
+      const tangente = tu * passo[u] + tv * passo[v];
+      if (dono.palavras[texelDaAba * passo[eixo] + tangente] === fonte.palavras[texelDoNucleo * passo[eixo] + tangente]) {
+        continue;
+      }
+      voxeis += 1;
+      if (primeiro === null) {
+        const texel = [0, 0, 0];
+        texel[eixo] = texelDaAba;
+        texel[u] = tu;
+        texel[v] = tv;
+        primeiro = texel.map((s, e) => tijolo * dono.b[e] - 1 + s);
+      }
+    }
+  }
+  return { voxeis, primeiro };
+}
+
+/**
+ * A ABA CONTRA O VIZINHO: dois tijolos GRAVADOS que se encostam numa face
+ * concordam bit a bit (float16) nos voxels em que se sobrepõem — a aba de
+ * um na face é a primeira camada de núcleo do outro (o contrato: "a aba
+ * dentro do nível copia o voxel MEDIDO do vizinho"), e a aba do outro é a
+ * última camada de núcleo deste. Cada par é conferido nas duas direções.
+ * Aba sem vizinho gravado não tem com o que ser conferida (o omitido cai
+ * no pai) e fica de fora. Só se compara a camada de `tijolo`² voxels; o
+ * anel de 1 voxel em volta dela, na aba (a região diagonal), não entra.
+ * `gravados`: `{ b: [bi,bj,bk], cru }`, com `cru` os (tijolo+2)³ float16 do
+ * tijolo como saem do gunzip. Devolve `{ pares, divergencias }`: os pares
+ * de tijolos vizinhos conferidos e, por direção que falha, `{ b, face,
+ * vizinho, voxeis, primeiro }` — a aba de `b` na `face` (`+x`, `-x`, `+y`,
+ * `-y`, `+z`, `-z`) difere em `voxeis` da camada do núcleo de `vizinho`,
+ * o primeiro no voxel `primeiro` do nível.
+ */
+export function conferirAbasVizinhas(tijolo, gravados) {
+  const lado = tijolo + 2;
+  const porTijolo = new Map();
+  for (const { b, cru } of gravados) {
+    if (cru.byteLength !== lado ** 3 * 2) {
+      throw new Error(
+        `conferirAbasVizinhas: tijolo ${b.join('_')} com ${cru.byteLength} bytes; o contrato é ${lado}³ float16.`
+      );
+    }
+    // um Buffer (de `gunzipSync`) pode começar em byte ímpar: copia, como `deFloat16`
+    const bytes = cru.byteOffset % 2 === 0 ? cru : new Uint8Array(cru);
+    porTijolo.set(b.join('_'), { b, palavras: new Uint16Array(bytes.buffer, bytes.byteOffset, lado ** 3) });
+  }
+  const divergencias = [];
+  let pares = 0;
+  for (const um of porTijolo.values()) {
+    for (let eixo = 0; eixo < 3; eixo += 1) {
+      const outro = porTijolo.get(um.b.map((v, e) => (e === eixo ? v + 1 : v)).join('_'));
+      if (!outro) continue;
+      pares += 1;
+      const nome = 'xyz'[eixo];
+      // a aba +eixo de `um` (texel lado−1) × a 1ª camada de núcleo de `outro` (texel 1), e
+      // a aba −eixo de `outro` (texel 0) × a última camada de núcleo de `um` (texel `tijolo`)
+      const direcoes = [
+        [um, lado - 1, outro, 1, `+${nome}`],
+        [outro, 0, um, tijolo, `-${nome}`],
+      ];
+      for (const [dono, texelDaAba, fonte, texelDoNucleo, face] of direcoes) {
+        const { voxeis, primeiro } = camadasDiferem(tijolo, eixo, dono, texelDaAba, fonte, texelDoNucleo);
+        if (voxeis > 0) divergencias.push({ b: dono.b, face, vizinho: fonte.b, voxeis, primeiro });
+      }
+    }
+  }
+  return { pares, divergencias };
+}
+
+/**
  * Tolerância da referência por nível, CÉLULA A CÉLULA (revisão de 28/09):
  * os níveis coletam com o operador do interpolador oficial
  * (`amostradorEdenhoferBilinear`, os pesos do healpy provados pela

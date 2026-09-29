@@ -12,14 +12,17 @@ import {
 } from '../shaders/nebulaShaders';
 import { makeBlueNoiseTexture } from './blueNoise';
 import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
-import { NIVEIS_DA_PIRAMIDE_NO_SHADER } from '../shaders/common';
+import {
+  MEDIA_DA_LANE,
+  NIVEIS_DA_PIRAMIDE_NO_SHADER,
+  VOXEL_DO_DETALHE_REAL_PC,
+} from '../shaders/common';
 import { diagnosticoDaPoeira } from '../../lib/diagnosticoDaPoeira';
 import type { GasVolumetrico } from '../core/engine';
 import type { VolumeDePoeira } from '../cartography/galacticAssets';
 import {
   LADO_DA_VAGA,
   NUCLEO_DO_TIJOLO,
-  RAIO_DESEJADO_PC,
   ResidenciaDaPiramide,
 } from '../cartography/piramideDePoeira';
 import type {
@@ -67,20 +70,23 @@ const SEM_REGIAO_PC = 1e9;
  *
  *   wₖ = [1 − S(t; aₖ, bₖ)]·[1 − S(|p|; Aₖ, Bₖ)]
  *
- * bₖ = RAIO_DESEJADO_PC[k] − meia diagonal do tijolo: com peso > 0 o
- * ponto está a menos de bₖ da câmera, o centro do tijolo dele a menos de
- * bₖ + meia diagonal = o raio — e é esse o critério com que a residência
- * DESEJA um tijolo. O shader só lê tijolo desejado; o que a carência
- * segura fora do raio não entra, e a imagem não depende do caminho que a
- * câmera fez. Bₖ = o raio da região do nível: todo tijolo que toca a
- * região existe (gravado ou omitido), então dentro dela nunca falta nível.
- * Um nível cujas rampas não caberiam (raio pequeno demais para o tijolo)
- * sai desligado.
+ * bₖ = `raioDesejado` (o do orçamento do preset, o MESMO que a residência
+ * usa — `OrcamentoDaPiramide.raiosPc`) − meia diagonal do tijolo: com
+ * peso > 0 o ponto está a menos de bₖ da câmera, o centro do tijolo dele
+ * a menos de bₖ + meia diagonal = o raio — e é esse o critério com que a
+ * residência DESEJA um tijolo. O shader só lê tijolo desejado; o que a
+ * carência segura fora do raio não entra, e a imagem não depende do
+ * caminho que a câmera fez. Bₖ = o raio da região do nível: todo tijolo
+ * que toca a região existe (gravado ou omitido), então dentro dela nunca
+ * falta nível. Um nível cujas rampas não caberiam (raio pequeno demais
+ * para o tijolo) sai desligado. Vão em uniforms: trocar de preset não
+ * recompila.
  */
 export function raiosDoNivel(
-  n: Pick<NivelDaPiramide, 'nivel' | 'voxelPc' | 'raioPc'>
+  n: Pick<NivelDaPiramide, 'voxelPc' | 'raioPc'>,
+  raioDesejado: number
 ): [number, number, number, number] {
-  const raio = RAIO_DESEJADO_PC[n.nivel] ?? 0;
+  const raio = Number.isFinite(raioDesejado) ? raioDesejado : 0;
   const banda = BANDA_DA_RAMPA_EM_VOXELS * n.voxelPc;
   const camFim = raio - (Math.sqrt(3) / 2) * NUCLEO_DO_TIJOLO * n.voxelPc;
   const camIni = camFim - banda;
@@ -98,6 +104,35 @@ export function pesoDoNivel(raios: readonly number[], t: number, r: number): num
   return (
     (1 - THREE.MathUtils.smoothstep(t, a, b)) * (1 - THREE.MathUtils.smoothstep(r, ra, rb))
   );
+}
+
+/**
+ * O espelho em TS da descida de `poeiraMedidaNiveis` e da lane sobre ela
+ * (`poeiraLanesDosNiveis`, GLSL_POEIRA_NIVEIS em shaders/common.ts), para
+ * os testes. `leituras` vão do nível mais fino ao mais grosso — o peso wₖ
+ * no ponto, o voxel e o valor; `null` = tijolo não residente (cai no de
+ * cima) —, `d0` é o bloco de 20 pc. Devolve M, a força f da lane
+ * (1 − o peso dos níveis de voxel ≤ 5 pc) e Lm para a lane L e o
+ * `uPoeiraLanes` s dados.
+ */
+export function medidoPelosNiveis(
+  leituras: readonly ({ w: number; voxelPc: number; e: number } | null)[],
+  d0: number,
+  L: number,
+  s: number
+): { valor: number; forcaDasLanes: number; lanes: number } {
+  let valor = 0;
+  let resto = 1;
+  let forcaDasLanes = 1;
+  for (const l of leituras) {
+    if (!(resto > 0) || !l || !(l.w > 0)) continue;
+    valor += resto * l.w * l.e;
+    resto *= 1 - l.w;
+    if (l.voxelPc <= VOXEL_DO_DETALHE_REAL_PC) forcaDasLanes *= 1 - l.w;
+  }
+  if (resto > 0) valor += resto * d0;
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  return { valor, forcaDasLanes, lanes: lerp(1, lerp(MEDIA_DA_LANE, L, forcaDasLanes), s) };
 }
 
 /**
@@ -157,7 +192,8 @@ interface PiramideNaGpu {
   dadosDasTabelas: Uint16Array;
   tabelas: THREE.Data3DTexture;
   atlas: THREE.Data3DTexture;
-  vagas: number;
+  /** o orçamento com que ela foi montada (vagas, cache, raios) */
+  orcamento: OrcamentoDaPiramide;
   /** algum `atualizar` já rodou desde que ela chegou? antes disso a
    *  residência diria "nada carregando" sem ter pedido nada */
   atualizada: boolean;
@@ -386,8 +422,9 @@ export class Nebula {
    * A PIRÂMIDE DA POEIRA (E3c) — o atlas de tijolos, as tabelas de páginas
    * e a residência que decide quem mora no atlas (`setPiramide`); `null`
    * = só o n0, o bloco de 20 pc de sempre. Só é LIDA com a poeira ativa
-   * numa variante que a lê (`piramideAtiva`): aí os materiais trocam para
-   * os da pirâmide (`aplicarMateriais`); sem ela, o texto de hoje.
+   * numa variante que a lê (`piramideAtiva`): aí, já aquecidos
+   * (`aquecerPiramide`), os materiais trocam para os da pirâmide
+   * (`aplicarMateriais`); sem ela, o texto de hoje.
    */
   private piramide: PiramideNaGpu | null = null;
   /** os samplers da pirâmide antes dela chegar — tipos certos (R16F no
@@ -403,6 +440,13 @@ export class Nebula {
    */
   private portador: THREE.Data3DTexture;
   private posicaoDaSubida = new THREE.Vector3();
+  /**
+   * O AQUECIMENTO dos materiais "+pirâmide" (E3c) — ver `aquecerPiramide`.
+   * `aquecendo`: compilação já pedida ao driver, ainda não pronta;
+   * `aquecidos`: prontos — só estes vão à tela (`piramideNaTela`).
+   */
+  private aquecendo = new Set<THREE.ShaderMaterial>();
+  private aquecidos = new Set<THREE.ShaderMaterial>();
 
   constructor(scale = 0.5) {
     this.scale = scale;
@@ -678,23 +722,99 @@ export class Nebula {
   }
 
   /**
-   * A PIRÂMIDE É LIDA AGORA? Presente E a poeira ativa (modo efetivo ≠ 0:
+   * A PIRÂMIDE É PEDIDA AGORA? Presente E a poeira ativa (modo efetivo ≠ 0:
    * pedida, n0 carregado e uma variante que a lê — ver
-   * `atualizarModoEfetivo`). Falso = os materiais de hoje, texto idêntico.
+   * `atualizarModoEfetivo`). É o que move a residência e a espera da
+   * captura; a TELA ainda espera o aquecimento (`piramideNaTela`).
    */
   private get piramideAtiva(): boolean {
     return this.piramide !== null && (this.material.uniforms.uPoeiraModo.value as number) !== 0;
   }
 
+  /** os materiais "+pirâmide" da variante atual, cada um com a geometria
+   *  do quad que o desenha: o raymarch e, no macio, o bake */
+  private materiaisDaPiramide(): { material: THREE.ShaderMaterial; geometria: THREE.BufferGeometry }[] {
+    if (this.variante === 'antigo') return [];
+    const lista = [{ material: this.materialDoRaymarch(this.variante, true), geometria: this.quad.geometry }];
+    if (this.variante === 'macio') {
+      lista.push({ material: this.materialDoBake(this.variante, true), geometria: this.volumeQuad.geometry });
+    }
+    return lista;
+  }
+
+  /** a pirâmide vai À TELA: ativa e com os materiais da variante já
+   *  compilados (`aquecerPiramide`). Falso = os materiais de hoje. */
+  private get piramideNaTela(): boolean {
+    return this.piramideAtiva && this.materiaisDaPiramide().every((m) => this.aquecidos.has(m.material));
+  }
+
+  /**
+   * O GÁS ATUAL LÊ A POEIRA? (fino ou macio — o antigo nunca lê). O
+   * director só busca os índices da pirâmide com isto verdadeiro: com o
+   * gás antigo nada a leria.
+   */
+  get lePoeira(): boolean {
+    return this.modoEsperado !== 0;
+  }
+
+  /**
+   * AQUECE os materiais "+pirâmide" da variante atual ANTES da troca
+   * (E3c). Eles compilavam no primeiro desenho: medido em 28/09 (Cinema,
+   * DPR 2, t = 40, GPU livre), dois quadros de ~100–117 ms no clique do
+   * Gaia; aquecidos, sobra um só, de ~100–133 ms — o estado de pipeline
+   * que o driver (Metal) só monta no primeiro desenho de verdade, e que
+   * nenhuma compilação antecipa (um desenho de 1×1 só muda a trava de
+   * quadro). O director
+   * chama a cada quadro enquanto a pirâmide é desejada — desde o clique,
+   * em paralelo com a busca dos índices e do bloco. A primeira chamada
+   * manda o driver compilar (`renderer.compile`, o passo síncrono de
+   * `compileAsync`: com KHR_parallel_shader_compile o link corre nas
+   * threads do driver, sem travar esta) com o render target do raymarch
+   * amarrado — a chave de programa do three inclui o espaço de cor de
+   * saída e o tone mapping do alvo, e compilar sem ele geraria outra
+   * variante (o cuidado do aquecimento do `init`). As seguintes só
+   * perguntam se ficou pronto (`isReady`, a pergunta do polling do
+   * `compileAsync`), aqui no quadro em vez de num setTimeout que
+   * sobrevive ao `dispose` e estoura lendo o programa de um material já
+   * descartado. Pronto, `aplicarMateriais` troca; até lá fica o material
+   * de hoje (o bloco de 20 pc), e a residência já vai buscando tijolos.
+   */
+  aquecerPiramide(renderer: THREE.WebGLRenderer) {
+    const faltam = this.materiaisDaPiramide().filter((m) => !this.aquecidos.has(m.material));
+    if (faltam.length === 0) return;
+    const novos = faltam.filter((m) => !this.aquecendo.has(m.material));
+    if (novos.length > 0) {
+      const cena = new THREE.Scene();
+      for (const { material, geometria } of novos) {
+        cena.add(new THREE.Mesh(geometria, material));
+        this.aquecendo.add(material);
+      }
+      const antes = renderer.getRenderTarget();
+      renderer.setRenderTarget(this.rt);
+      renderer.compile(cena, this.camera);
+      renderer.setRenderTarget(antes);
+    }
+    let algumPronto = false;
+    for (const { material } of faltam) {
+      const programa = (renderer.properties.get(material) as { currentProgram?: { isReady(): boolean } })
+        .currentProgram;
+      if (programa && !programa.isReady()) continue;
+      this.aquecendo.delete(material);
+      this.aquecidos.add(material);
+      algumPronto = true;
+    }
+    if (algumPronto) this.aplicarMateriais();
+  }
+
   /**
    * OS MATERIAIS DA VEZ, num lugar só: os da variante, com ou sem a
-   * pirâmide (`piramideAtiva`). Chamada por `setVariante`,
-   * `atualizarModoEfetivo` e `setPiramide` — as três coisas de que a
-   * escolha depende. Trocar o bake (o do macio com a pirâmide guarda só
-   * o inventado) reassa; trocar o raymarch refaz a imagem.
+   * pirâmide (`piramideNaTela`). Chamada por `setVariante`,
+   * `atualizarModoEfetivo`, `setPiramide` e `aquecerPiramide` — as coisas
+   * de que a escolha depende. Trocar o bake (o do macio com a pirâmide
+   * guarda só o inventado) reassa; trocar o raymarch refaz a imagem.
    */
   private aplicarMateriais() {
-    const ativa = this.piramideAtiva;
+    const ativa = this.piramideNaTela;
     const m = this.materialDoRaymarch(this.variante, ativa);
     if (m !== this.material) {
       this.material = m;
@@ -995,7 +1115,7 @@ export class Nebula {
         const [ox, oy, oz] = n.origemPc;
         nivelDoShader[i].set(ox, oy, oz, n.voxelPc);
         tijolosDoShader[i].set(...n.dimsEmTijolos, pilha.deslocamentoZ[i]);
-        raiosDoShader[i].set(...raiosDoNivel(n));
+        raiosDoShader[i].set(...raiosDoNivel(n, entrada.orcamento.raiosPc[n.nivel] ?? 0));
         escalaDoShader[i] = 1 / n.escala;
       });
       const tabelas = texturaDasTabelas(dadosDasTabelas, [pilha.largura, pilha.altura, pilha.profundidade]);
@@ -1008,7 +1128,7 @@ export class Nebula {
         dadosDasTabelas,
         tabelas,
         atlas,
-        vagas: entrada.orcamento.vagas,
+        orcamento: entrada.orcamento,
         atualizada: false,
         carregandoDesdeS: null,
         agoraS: 0,
@@ -1031,10 +1151,10 @@ export class Nebula {
     velha?.tabelas.dispose();
   }
 
-  /** as vagas da pirâmide no ar (0 = nenhuma) — o director compara com o
-   *  orçamento do tier para remontar quando ele muda */
-  get vagasDaPiramide(): number {
-    return this.piramide?.vagas ?? 0;
+  /** o orçamento da pirâmide no ar (`null` = nenhuma) — o director
+   *  compara com o do tier para remontar quando ele muda */
+  get orcamentoDaPiramide(): OrcamentoDaPiramide | null {
+    return this.piramide?.orcamento ?? null;
   }
 
   /** o resumo da residência (diagnóstico: `__director.nebula`) */
@@ -1100,6 +1220,8 @@ export class Nebula {
     const p = this.piramide;
     if (!p || !this.piramideAtiva) return true;
     if ((this.material.uniforms.uFade.value as number) <= 0.02) return true;
+    // os materiais dela ainda compilando: a tela é a de antes da troca
+    if (!this.piramideNaTela) return false;
     if (!p.atualizada) return false;
     if (!p.residencia.carregando) return true;
     return p.carregandoDesdeS !== null && p.agoraS - p.carregandoDesdeS >= TETO_DA_ESPERA_DA_PIRAMIDE_S;
@@ -1507,6 +1629,8 @@ export class Nebula {
     // recompilar de novo), então o dono deles é o `dispose` final.
     for (const m of this.materiaisRaymarch.values()) m.dispose();
     for (const m of this.materiaisBake.values()) m.dispose();
+    this.aquecendo.clear();
+    this.aquecidos.clear();
     this.blurMaterial.dispose();
     this.lutMaterial.dispose();
     this.sementesTex.dispose();

@@ -60,11 +60,25 @@ export const PRIMEIRO_CODIGO_DE_VAGA = 2;
  * Até onde cada nível é DESEJADO: distância da câmera ao CENTRO do
  * tijolo, em pc, por número de nível [n0, n1, n2, n3]. O n0 é sempre
  * residente e fica fora daqui; o n1 vai a 700 porque o raymarch vai a
- * 650. O desenho deve usar os mesmos raios para escolher o nível por
- * ponto — residente não quer dizer desejado (a carência segura tijolos
- * fora do raio por 15 s).
+ * 650. O desenho usa os MESMOS raios para escolher o nível por ponto
+ * (`raiosDoNivel` em world/nebula.ts, uniforms — trocar de preset não
+ * recompila) — residente não quer dizer desejado (a carência segura
+ * tijolos fora do raio por 15 s). Estes são os do Performance e o
+ * padrão de `montarOrcamento`; o do computador vem abaixo.
  */
 export const RAIO_DESEJADO_PC: readonly number[] = [Infinity, 700, 400, 150];
+/**
+ * Os raios do Cinema e do Alta (E3c, 28/09: o máximo de detalhe no Mac
+ * primeiro). Com os de cima o n3 só era lido até ~81 pc da câmera — de
+ * casa, quase tudo dentro do furo de 68,8 pc e da Bolha Local. Estes
+ * põem o fim efetivo das rampas (raio − meia diagonal do tijolo) em
+ * ~200 / ~400 / ~620 pc. Contados nos índices reais, os desejados cabem
+ * nas 256 vagas: 252 em casa, 251 / 230 / 207 no corredor do filme
+ * (t = 40 / 60 / 75); o pior ponto da região fina (varredura de 50 em
+ * 50 pc até 400 pc do Sol) pede 263 — os 7 mais longes ficam no nível de
+ * cima, pela prioridade da residência, nunca um buraco.
+ */
+export const RAIO_DESEJADO_NO_COMPUTADOR_PC: readonly number[] = [Infinity, 900, 540, 270];
 /**
  * Um tijolo inteiro ATRÁS da câmera conta a distância vezes isto. Na
  * mesma distância a frente vem antes; o que está colado atrás ainda vence
@@ -80,15 +94,18 @@ export const SUBIDAS_POR_ATUALIZACAO = 8;
  *  falha, até `RECARGAS_ATE_DESISTIR` recargas (a regra das texturas) */
 export const ESPERA_APOS_FALHA_S = 4;
 /**
- * Vagas do atlas (R16F, 77 kB cada: 256 ≈ 20 MB) e teto do cache de
- * tijolos decodificados na CPU, por tier. O cache passa das vagas porque
- * guarda também quem perdeu a vaga e ainda está na carência — é ele que
- * poupa a rede quando a câmera volta.
+ * Vagas do atlas (R16F, 77 kB cada: 256 ≈ 20 MB), teto do cache de
+ * tijolos decodificados na CPU e raios desejados, por tier. O cache passa
+ * das vagas porque guarda também quem perdeu a vaga e ainda está na
+ * carência — é ele que poupa a rede quando a câmera volta.
  */
-export const ORCAMENTO_POR_TIER: Record<QualityLevel, { vagas: number; cacheMiB: number }> = {
-  cinema: { vagas: 256, cacheMiB: 32 },
-  alta: { vagas: 256, cacheMiB: 32 },
-  performance: { vagas: 128, cacheMiB: 16 },
+export const ORCAMENTO_POR_TIER: Record<
+  QualityLevel,
+  { vagas: number; cacheMiB: number; raiosPc: readonly number[] }
+> = {
+  cinema: { vagas: 256, cacheMiB: 32, raiosPc: RAIO_DESEJADO_NO_COMPUTADOR_PC },
+  alta: { vagas: 256, cacheMiB: 32, raiosPc: RAIO_DESEJADO_NO_COMPUTADOR_PC },
+  performance: { vagas: 128, cacheMiB: 16, raiosPc: RAIO_DESEJADO_PC },
 };
 /** MAX_3D_TEXTURE_SIZE mínimo do WebGL2 — o teto quando a sonda não leu */
 const TETO_3D_SEM_SONDA = 256;
@@ -106,6 +123,9 @@ export interface OrcamentoDaPiramide {
   vagas: number;
   cacheBytes: number;
   layout: LayoutDoAtlas;
+  /** até onde cada nível é desejado, por número de nível [n0, n1, n2, n3]
+   *  — a residência e as rampas do shader leem daqui */
+  raiosPc: readonly number[];
 }
 
 /** o orçamento de um tier, limitado pelo que a sonda leu do aparelho
@@ -114,8 +134,19 @@ export function orcamentoDaPiramide(
   tier: QualityLevel,
   max3DTextureSize?: number
 ): OrcamentoDaPiramide {
-  const { vagas, cacheMiB } = ORCAMENTO_POR_TIER[tier];
-  return montarOrcamento(vagas, cacheMiB * 2 ** 20, max3DTextureSize);
+  const { vagas, cacheMiB, raiosPc } = ORCAMENTO_POR_TIER[tier];
+  return montarOrcamento(vagas, cacheMiB * 2 ** 20, max3DTextureSize, raiosPc);
+}
+
+/** o mesmo orçamento no ar — vagas, cache e raios iguais: trocar de tier
+ *  entre dois assim (cinema ↔ alta) não remonta nada */
+export function mesmoOrcamento(a: OrcamentoDaPiramide, b: OrcamentoDaPiramide): boolean {
+  return (
+    a.vagas === b.vagas &&
+    a.cacheBytes === b.cacheBytes &&
+    a.raiosPc.length === b.raiosPc.length &&
+    a.raiosPc.every((r, i) => r === b.raiosPc[i])
+  );
 }
 
 /**
@@ -126,7 +157,8 @@ export function orcamentoDaPiramide(
 export function montarOrcamento(
   vagasPedidas: number,
   cacheBytes: number,
-  max3DTextureSize?: number
+  max3DTextureSize?: number,
+  raiosPc: readonly number[] = RAIO_DESEJADO_PC
 ): OrcamentoDaPiramide {
   const teto =
     typeof max3DTextureSize === 'number' && Number.isFinite(max3DTextureSize) && max3DTextureSize > 0
@@ -157,6 +189,7 @@ export function montarOrcamento(
       vagasPorEixo: melhor,
       texels: [melhor[0] * LADO_DA_VAGA, melhor[1] * LADO_DA_VAGA, melhor[2] * LADO_DA_VAGA],
     },
+    raiosPc,
   };
 }
 
@@ -498,6 +531,8 @@ export class ResidenciaDaPiramide {
   private readonly fonte: FonteDeTijolos;
   private readonly vagas: number;
   private readonly cacheBytes: number;
+  /** os raios desejados do orçamento, por número de nível */
+  private readonly raiosPc: readonly number[];
   private readonly tabelas = new Map<NivelDaPiramide, Uint16Array>();
   private readonly registros = new Map<number, Registro>();
   private readonly ocupante: (Registro | null)[];
@@ -515,6 +550,7 @@ export class ResidenciaDaPiramide {
     this.fonte = fonte;
     this.vagas = orcamento.vagas;
     this.cacheBytes = orcamento.cacheBytes;
+    this.raiosPc = orcamento.raiosPc;
     this.layout = orcamento.layout;
     this.ocupante = new Array<Registro | null>(this.vagas).fill(null);
     for (const n of piramide.niveis) this.tabelas.set(n, montarTabela(n));
@@ -634,7 +670,7 @@ export class ResidenciaDaPiramide {
   private listarDesejados(p: Trio, f: Trio): Candidato[] {
     const lista: Candidato[] = [];
     for (const n of this.piramide.niveis) {
-      const raio = RAIO_DESEJADO_PC[n.nivel] ?? 0;
+      const raio = this.raiosPc[n.nivel] ?? 0;
       if (!(raio > 0)) continue;
       const ladoPc = NUCLEO_DO_TIJOLO * n.voxelPc;
       const [nbx, nby, nbz] = n.dimsEmTijolos;
@@ -673,7 +709,7 @@ export class ResidenciaDaPiramide {
     return regs
       .map((reg) => {
         const m = medirTijolo(reg.nivel, reg.tijolo, p, f);
-        const raio = RAIO_DESEJADO_PC[reg.nivel.nivel] ?? 0;
+        const raio = this.raiosPc[reg.nivel.nivel] ?? 0;
         return m.dCentro <= raio
           ? { reg, classe: 0, chave: m.naFrente ? m.dCaixa : m.dCaixa * FATOR_ATRAS }
           : { reg, classe: 1, chave: raio > 0 ? m.dCentro / raio : Infinity };

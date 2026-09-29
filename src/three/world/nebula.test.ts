@@ -1,4 +1,4 @@
-// Serve: chão — o céu da nebulosa congela quando nada que o alimenta mudou (item 144); a pirâmide da poeira (E3c) só lê tijolo desejado, sobe o lote antes do desenho e, sem ela, o shader é o de hoje
+// Serve: chão — o céu da nebulosa congela quando nada que o alimenta mudou (item 144); a pirâmide da poeira (E3c) só lê tijolo desejado (nos raios do preset), sobe o lote antes do desenho, só troca de material aquecida, deixa a lane ceder onde o nível lido tem o detalhe real e, sem ela, o shader é o de hoje
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import * as THREE from 'three';
 import {
@@ -7,10 +7,12 @@ import {
   TETO_DA_ESPERA_DA_PIRAMIDE_S,
   cenaParaHelioGalactico,
   empilharTabelas,
+  medidoPelosNiveis,
   pesoDoNivel,
   raiosDoNivel,
   texelNaPilha,
 } from './nebula';
+import { MEDIA_DA_LANE } from '../shaders/common';
 import { GAL, helioGalacticoParaCena } from './baseGalactica';
 import type { VolumeDePoeira } from '../cartography/galacticAssets';
 import {
@@ -18,6 +20,7 @@ import {
   CONCORRENCIA_DE_BUSCA,
   NUCLEO_DO_TIJOLO,
   PRIMEIRO_CODIGO_DE_VAGA,
+  RAIO_DESEJADO_NO_COMPUTADOR_PC,
   RAIO_DESEJADO_PC,
   VOXELS_POR_TIJOLO,
   montarOrcamento,
@@ -30,17 +33,28 @@ import type {
 } from '../cartography/piramideDePoeira';
 
 function bancada() {
+  // `compile`/`properties`: o aquecimento da pirâmide (E3c) — o programa
+  // de cada material responde `isReady` pelo `programasProntos` do teste
+  const estado = { programasProntos: true };
   const renderer = {
     getRenderTarget: () => null,
     setRenderTarget: vi.fn(),
     render: vi.fn(),
     copyTextureToTexture: vi.fn(),
+    compile: vi.fn(),
+    properties: { get: () => ({ currentProgram: { isReady: () => estado.programasProntos } }) },
   } as unknown as THREE.WebGLRenderer;
   const camera = new THREE.PerspectiveCamera(58, 16 / 9, 0.1, 100);
   camera.position.set(10, 20, 30);
   camera.updateMatrixWorld();
   const nebula = new Nebula(0.5);
-  return { renderer, camera, nebula, desenhos: () => (renderer.render as ReturnType<typeof vi.fn>).mock.calls.length };
+  return {
+    renderer,
+    camera,
+    nebula,
+    estado,
+    desenhos: () => (renderer.render as ReturnType<typeof vi.fn>).mock.calls.length,
+  };
 }
 
 describe('o quadro congelado da nebulosa (item 144)', () => {
@@ -465,12 +479,14 @@ describe('a pirâmide da poeira na GPU (E3c) — as contas puras', () => {
     expect(Math.abs(z)).toBeLessThan(0.01);
   });
 
-  it('o peso de um nível só passa de 0 onde a residência DESEJA o tijolo (centro no raio) e dentro da região do nível', () => {
+  it('o peso de um nível só passa de 0 onde a residência DESEJA o tijolo (centro no raio do preset) e dentro da região do nível', () => {
     // gerador fixo (LCG): a mesma nuvem de pontos a cada corrida
     let semente = 12345;
     const aleatorio = () => ((semente = (semente * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
-    for (const g of GRADES_DO_CONTRATO) {
-      const raios = raiosDoNivel(g);
+    for (const [g, RAIOS] of GRADES_DO_CONTRATO.flatMap((g) =>
+      [RAIO_DESEJADO_PC, RAIO_DESEJADO_NO_COMPUTADOR_PC].map((r) => [g, r] as const)
+    )) {
+      const raios = raiosDoNivel(g, RAIOS[g.nivel]);
       // bordas nunca invertidas (smoothstep com bordas trocadas é NaN na casa)
       expect(raios[0]).toBeLessThan(raios[1]);
       expect(raios[2]).toBeLessThan(raios[3]);
@@ -490,15 +506,44 @@ describe('a pirâmide da poeira na GPU (E3c) — as contas puras', () => {
         if (!(pesoDoNivel(raios, t, r) > 0)) continue;
         comPeso += 1;
         const centro = centroDo(g, tijoloDe(g, p));
-        expect(Math.hypot(...centro.map((c, a) => c - cam[a]))).toBeLessThanOrEqual(RAIO_DESEJADO_PC[g.nivel]);
+        expect(Math.hypot(...centro.map((c, a) => c - cam[a]))).toBeLessThanOrEqual(RAIOS[g.nivel]);
         expect(r).toBeLessThanOrEqual(g.raioPc);
       }
       // a prova não pode ser vazia
       expect(comPeso).toBeGreaterThan(1000);
     }
     // um nível sem raio desejado (ou sem espaço para a rampa) sai desligado
-    expect(raiosDoNivel({ nivel: 4, voxelPc: 1.25, raioPc: 225 })).toEqual([...RAMPAS_DESLIGADAS]);
+    expect(raiosDoNivel({ voxelPc: 1.25, raioPc: 225 }, RAIO_DESEJADO_PC[4] ?? 0)).toEqual([...RAMPAS_DESLIGADAS]);
+    expect(raiosDoNivel({ voxelPc: 2.5, raioPc: 450 }, Infinity)).toEqual([...RAMPAS_DESLIGADAS]);
     expect(pesoDoNivel(RAMPAS_DESLIGADAS, 0, 0)).toBe(0);
+  });
+
+  it('os raios do computador levam o fim das rampas a ~200 / ~400 / ~620 pc da câmera; os do Performance ficam os de antes', () => {
+    const fim = (raios: readonly number[]) => GRADES_DO_CONTRATO.map((g) => raiosDoNivel(g, raios[g.nivel])[1]);
+    // bₖ = raio − meia diagonal do tijolo (√3/2 · 32 · voxel)
+    fim(RAIO_DESEJADO_NO_COMPUTADOR_PC).forEach((b, i) => expect(b).toBeCloseTo([622.9, 401.4, 200.7][i], 1));
+    fim(RAIO_DESEJADO_PC).forEach((b, i) => expect(b).toBeCloseTo([422.9, 261.4, 80.7][i], 1));
+  });
+
+  it('a lane cede onde o nível lido tem voxel ≤ 5 pc: f = 1 − (W₂ + W₃), e cai na média ⟨L⟩, plena no n0/n1', () => {
+    const n = (w: number, voxelPc: number, e = 1) => ({ w, voxelPc, e });
+    // só o n1 (10 pc) e o n0: a lane de hoje, inteira — Lm = mix(1, L, s)
+    const soGrosso = medidoPelosNiveis([n(0, 2.5), n(0, 5), n(1, 10)], 1, 0.2, 1);
+    expect(soGrosso.forcaDasLanes).toBe(1);
+    expect(soGrosso.lanes).toBeCloseTo(0.2, 12);
+    // a mistura: W₃ = 0,5, W₂ = 0,5·0,4 = 0,2 → f = 1 − 0,7 = 0,3
+    const meio = medidoPelosNiveis([n(0.5, 2.5, 3), n(0.4, 5, 2), n(1, 10, 1)], 0, 0.2, 1);
+    expect(meio.forcaDasLanes).toBeCloseTo(0.3, 12);
+    expect(meio.valor).toBeCloseTo(0.5 * 3 + 0.2 * 2 + 0.3 * 1, 12);
+    expect(meio.lanes).toBeCloseTo(MEDIA_DA_LANE + 0.3 * (0.2 - MEDIA_DA_LANE), 12);
+    // o n3 inteiro: nenhum desenho inventado, só a média — qualquer L dá o mesmo
+    for (const L of [0.12, 0.5, 1]) {
+      expect(medidoPelosNiveis([n(1, 2.5), n(1, 5), n(1, 10)], 0, L, 1).lanes).toBeCloseTo(MEDIA_DA_LANE, 12);
+    }
+    // tijolo fino não residente não tira força: o que se lê ali é o pai
+    expect(medidoPelosNiveis([null, null, n(1, 10)], 0, 0.2, 1).forcaDasLanes).toBe(1);
+    // s = 0 (sem textura): Lm = 1 em qualquer nível
+    expect(medidoPelosNiveis([n(0.5, 2.5), null, n(1, 10)], 0, 0.2, 0).lanes).toBe(1);
   });
 
   it('a pilha das tabelas dá a cada entrada de cada nível um texel só, na posição que o shader lê', () => {
@@ -546,9 +591,10 @@ describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
     const bakeDeHoje = entranhas().volumeMaterial;
     const { piramide, fonte, pedidos } = piramideDeTeste();
     nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(16, 2 ** 22, 2048) });
+    nebula.aquecerPiramide(renderer);
 
     expect(entranhas().material).not.toBe(hoje);
-    expect(entranhas().material.fragmentShader).toContain('poeiraMedidaNiveis(ph, t)');
+    expect(entranhas().material.fragmentShader).toContain('poeiraMedidaNiveis(ph, t, forcaDasLanes)');
     expect(entranhas().volumeMaterial).not.toBe(bakeDeHoje);
     expect(bakeDeHoje.fragmentShader).toContain('poeiraMedida(ph)');
     expect(entranhas().volumeMaterial.fragmentShader).not.toContain('poeiraMedida(ph)');
@@ -591,7 +637,8 @@ describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
     const hoje = entranhas().material;
     const { piramide, fonte, pedidos } = piramideDeTeste();
     nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(16, 2 ** 22, 2048) });
-    expect(entranhas().material.fragmentShader).toContain('poeiraMedidaNiveis(ph, t)');
+    nebula.aquecerPiramide(renderer);
+    expect(entranhas().material.fragmentShader).toContain('poeiraMedidaNiveis(ph, t, forcaDasLanes)');
 
     // o Gaia desligado: o material de hoje, o mesmo objeto (o texto de hoje)
     nebula.setPoeira({ modo: 0, ganho: 46.9, gama: 1, lanes: 1 });
@@ -611,10 +658,41 @@ describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
     expect(nebula.piramideAssentada).toBe(true);
   });
 
+  it('a troca espera o aquecimento: compilando, fica o material de hoje e a captura espera; pronto, troca', () => {
+    const { renderer, camera, nebula, entranhas, estado } = comPoeira('macio');
+    const hoje = entranhas().material;
+    const bakeDeHoje = entranhas().volumeMaterial;
+    const { piramide, fonte, pedidos } = piramideDeTeste();
+    estado.programasProntos = false;
+    nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(16, 2 ** 22, 2048) });
+    // sem aquecer, nada troca — mas a residência já busca os tijolos
+    expect(entranhas().material).toBe(hoje);
+    nebula.atualizarPiramide(renderer, 0, camera);
+    expect(pedidos.length).toBe(CONCORRENCIA_DE_BUSCA);
+    // o driver compila os dois do macio (raymarch e bake) uma vez só, com o
+    // render target do raymarch amarrado (a chave de programa do three)
+    nebula.aquecerPiramide(renderer);
+    nebula.aquecerPiramide(renderer);
+    expect(renderer.compile).toHaveBeenCalledTimes(1);
+    const [cena] = (renderer.compile as ReturnType<typeof vi.fn>).mock.calls[0] as [THREE.Scene];
+    expect(cena.children.length).toBe(2);
+    expect(renderer.setRenderTarget).toHaveBeenCalledWith((nebula as unknown as { rt: unknown }).rt);
+    expect(entranhas().material).toBe(hoje);
+    expect(entranhas().volumeMaterial).toBe(bakeDeHoje);
+    expect(nebula.piramideAssentada).toBe(false);
+    // pronto: troca os dois no quadro seguinte
+    estado.programasProntos = true;
+    nebula.aquecerPiramide(renderer);
+    expect(entranhas().material.fragmentShader).toContain('poeiraMedidaNiveis(ph, t, forcaDasLanes)');
+    expect(entranhas().volumeMaterial).not.toBe(bakeDeHoje);
+    expect(renderer.compile).toHaveBeenCalledTimes(1);
+  });
+
   it('a rede que não responde segura a captura só até o teto', () => {
     const { renderer, camera, nebula } = comPoeira('fino');
     const { piramide, fonte } = piramideDeTeste();
     nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(16, 2 ** 22, 2048) });
+    nebula.aquecerPiramide(renderer);
     nebula.atualizarPiramide(renderer, 100, camera);
     nebula.atualizarPiramide(renderer, 100 + TETO_DA_ESPERA_DA_PIRAMIDE_S - 0.5, camera);
     expect(nebula.piramideAssentada).toBe(false);
