@@ -2291,6 +2291,16 @@ export class Director {
     this.freezeJourney = false;
     this.playbackRate = 1;
     this.rig.reset();
+    // O FILME TOMA O RELÓGIO DO CÉU (item 228), pela mesma parada do
+    // `partirDoAtlas` — esta é a outra porta do filme. O Atlas abre AO
+    // VIVO por desenho, e o "Ver o filme" (de dentro dele, do voo livre
+    // ou o "Reviver" da tela final) deixava esse relógio andando por
+    // baixo do filme: na viagem o tick corrige o instante a cada quadro
+    // e ninguém via; na tela final o tick para de corrigir e, em menos
+    // de 1 s, o AO VIVO escrevia a data de agora — a Terra girava de
+    // repente da América do Sul para outro lado (medido em 29/09, nos
+    // três formatos: câmera, lente e tela idênticas, só o relógio mudou).
+    this.maquinaDoTempo.andarNoTempo(0);
     this.setPhase('journey');
   }
 
@@ -2707,7 +2717,9 @@ export class Director {
    * quem partisse com ⏵ ou AO VIVO ligado voltava ao filme com os dez
    * corpos andando, o HUD re-renderizando a 4 Hz e o sinal de prontidão
    * da captura travado em `andando` — e sem nenhum botão para desfazer,
-   * porque a barra do tempo ficou para trás.
+   * porque a barra do tempo ficou para trás. A parada é o ⏸ da própria
+   * barra (`andarNoTempo(0)`), a mesma que o `play()` aperta na outra
+   * porta do filme (item 228).
    *
    * O `jdPedido` FICA: o instante escolhido é dado medido, viaja no link
    * (`urlComMomento`) e é a data em que os planetas estão. O que para é
@@ -2716,10 +2728,7 @@ export class Director {
   partirDoAtlas() {
     if (this.phase !== 'atlas') return;
     const volta = this.retomada;
-    this.maquinaDoTempo.sentidoDoTempo = 0;
-    this.maquinaDoTempo.aoVivo = false;
-    this.maquinaDoTempo.naParede = false;
-    this.maquinaDoTempo.publicarTempo();
+    this.maquinaDoTempo.andarNoTempo(0);
     this.veuDoAtlas.atravessar(this.reducedMotion || this.shotMode, () => {
       this.rig.reset();
       this.teletransportou();

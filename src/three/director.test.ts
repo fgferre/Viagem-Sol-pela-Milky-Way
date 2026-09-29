@@ -19,6 +19,7 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { poeiraParaMotor } from './atlasConfig';
 import type { VolumeDePoeira } from './cartography/galacticAssets';
+import { MaquinaDoTempo } from './director/maquinaDoTempo';
 import { QUADROS_TENTANDO_FONTE, julgarProntidao } from './director/prontidao';
 import { Nebula } from './world/nebula';
 import {
@@ -628,6 +629,53 @@ describe('o relógio do filme é do filme — a porta ?jd= não o cala (item 108
     expect(portal).toMatch(/\n\s*this\.aplicarPortaJd\(\);/);
     // e a porta é LIDA num lugar só, do boot e do portal
     expect(FONTE.match(/lerPortaJd\(/g)).toHaveLength(1);
+  });
+
+  it('quem aperta "Ver o filme" com o relógio do Atlas andando termina na data do filme — a tela final não devolve o céu ao AO VIVO (item 228)', () => {
+    // o caminho do dono no iPhone: o Atlas abre AO VIVO, "Ver o filme"
+    // chama o `play()` REAL, a viagem corre até o fim com o bloco REAL
+    // do tick, e a tela final fica 2 s parada com o relógio batendo —
+    // na ordem do tick (o relógio no topo, a correção do filme depois)
+    const PLAY = FONTE.match(/\n {2}play\(\) \{\n([\s\S]*?)\n {2}\}\n/);
+    expect(PLAY, 'o `play()` sumiu do Director').not.toBeNull();
+    const ligarOs = {
+      'AO VIVO': (m: MaquinaDoTempo) => m.alternarAoVivo(),
+      '⏵': (m: MaquinaDoTempo) => m.andarNoTempo(1),
+    };
+    for (const [nome, ligar] of Object.entries(ligarOs)) {
+      const maquina = new MaquinaDoTempo({
+        onTempo: () => {},
+        perturbar: () => {},
+        aoChegarFonte: () => {},
+        signal: () => new AbortController().signal,
+        disposed: () => false,
+      });
+      // a fonte já chegou: nada aqui toca a rede
+      maquina.faseDaEfemeride = 'viva';
+      maquina.efemeride = {} as never;
+      ligar(maquina);
+      const alvo = {
+        phase: 'atlas',
+        journeyT: 0,
+        debug: new Map(),
+        rig: { reset: () => {} },
+        setPhase(p: string) {
+          this.phase = p;
+        },
+        maquinaDoTempo: maquina,
+      };
+      new Function(PLAY![1]).call(alvo);
+      const quadro = (dt: number) => {
+        maquina.andarORelogio(dt);
+        new Function('jdDoFilme', BLOCO![1]).call(alvo, jdDoFilme);
+      };
+      alvo.journeyT = 193;
+      quadro(1 / 30);
+      expect(maquina.jdVivo, `${nome}: o pouso`).toBe(JD_DO_FILME_TDB);
+      alvo.phase = 'end';
+      for (let i = 0; i < 60; i++) quadro(1 / 30);
+      expect(maquina.jdVivo, `${nome}: a tela final, 2 s depois`).toBe(JD_DO_FILME_TDB);
+    }
   });
 });
 
