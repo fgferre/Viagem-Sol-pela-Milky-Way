@@ -16,14 +16,18 @@
 // `height` entrou na S2 do item 134: o mapa de altura que desloca o
 // vértice da lua (`rochoso.ts`). É DADO, não cor — ver a exceção de
 // encode em `otimiza-texturas.mjs`.
-export const CANAIS = ['map', 'clouds', 'night', 'normal', 'roughness', 'height'];
+// `horizon` e `horizon2` entraram no item 226: o mapa de HORIZONTE (a
+// sombra de relevo assada, `gera-horizonte.mjs`), 3 azimutes em RGB cada.
+export const CANAIS = [
+  'map', 'clouds', 'night', 'normal', 'roughness', 'height', 'horizon', 'horizon2',
+];
 
 // Os canais que se LEEM em vez de se olhar: `height` desloca o vértice e
 // `normal` gira a luz, então um erro de 8/255 neles é relevo falso, não
 // tom. Quem adquire (`baixa-texturas.mjs`) e quem reamostra
 // (`otimiza-texturas.mjs`) têm de concordar sobre QUAIS são — por isso a
 // lista mora aqui, e não em cópia nos dois.
-export const CANAIS_DE_DADO = new Set(['height', 'normal']);
+export const CANAIS_DE_DADO = new Set(['height', 'normal', 'horizon', 'horizon2']);
 
 // Degraus da escada de reamostragem (D4 + emenda T-E7): o tier
 // performance consome ≤1k, alta ≤2k, cinema ≤4k; o 8k fica como
@@ -64,7 +68,8 @@ export function alturaProporcional(larguraFonte, alturaFonte, larguraAlvo) {
  * não tem lugar no manifest nem no runtime.
  */
 export function analisarNomeDeTextura(nomeArquivo) {
-  const casamento = /^([a-z]+)(?:_(\d+))?\.(jpg|jpeg|png|webp)$/.exec(nomeArquivo);
+  // o canal pode terminar em dígito (`horizon2`); o `_` separa a largura
+  const casamento = /^([a-z][a-z0-9]*)(?:_(\d+))?\.(jpg|jpeg|png|webp)$/.exec(nomeArquivo);
   if (!casamento) {
     throw new Error(
       `Nome de textura fora do vocabulário: "${nomeArquivo}" ` +

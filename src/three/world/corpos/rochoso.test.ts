@@ -42,7 +42,7 @@ import {
   S_DO_TERMINADOR,
   ganhoDoGlobo,
 } from '../../../lib/atlas/luzDaVisita';
-import { escalaDoBumpDoAlbedo } from './corpos';
+import { GLSL_NORMAL_DO_MAPA, GLSL_SOMBRA_DO_HORIZONTE, escalaDoBumpDoAlbedo } from './corpos';
 import {
   type ConfigDoRochoso,
   GRADUACAO_DO_MOSAICO,
@@ -987,7 +987,7 @@ describe('9. Hipérion — o relevo medido substitui a esculpida (23/09)', () =>
     // boundingSphere sem depender do `public/data` real (que o dono ainda
     // não regenerou para Hipérion).
     const manifestFalso: ManifestDeTexturas = {
-      entradas: ['map', 'height', 'normal'].map((canal) => ({
+      entradas: ['map', 'height', 'normal', 'horizon', 'horizon2'].map((canal) => ({
         corpo: 'hyperion',
         canal,
         arquivo: `textures/atlas/hyperion/${canal}.png`,
@@ -1080,5 +1080,116 @@ describe('9. Hipérion — o relevo medido substitui a esculpida (23/09)', () =>
         `direção (${x},${y},${z}): tem de DISCRIMINAR o espelho`
       ).toBeGreaterThan(TOLERANCIA_DO_RELEVO_DE_HIPERION);
     }
+  });
+});
+
+// ------------------------------------------------------------
+// 10. O HORIZONTE ASSADO (PLAN-HIPERION, etapa B): quem declara
+//     `horizonte` em RELEVO_DA_LUA pede os dois mapas e o Lambert
+//     escurece o Sol dentro dos poços; o resto fica como era.
+// ------------------------------------------------------------
+
+describe('10. o horizonte assado — só quem declara `horizonte`', () => {
+  /** a carga injetada com manifesto FALSO de cinco canais: a real ainda
+   *  não tem os mapas de horizonte, e o lote é atômico */
+  function hiperionComHorizonte() {
+    const chamadas: string[] = [];
+    const manifestFalso: ManifestDeTexturas = {
+      entradas: ['map', 'height', 'normal', 'horizon', 'horizon2'].map((canal) => ({
+        corpo: 'hyperion',
+        canal,
+        arquivo: `textures/atlas/hyperion/${canal}.png`,
+        larguraPx: 1024,
+      })),
+    };
+    const corpo = new RochosoResolvido({
+      config: { id: 'hyperion', brdf: 'lambert' },
+      tier: () => 'cinema',
+      maxTextureSize: 16384,
+      base: '',
+      webp: true,
+      buscarManifest: async () => manifestFalso,
+      carregarTextura: async (url) => {
+        chamadas.push(url);
+        return new THREE.Texture();
+      },
+    });
+    return { corpo, chamadas };
+  }
+
+  it('Hipérion pede cinco canais e os dois do horizonte chegam ao material; Mimas segue com três', async () => {
+    const { corpo, chamadas } = hiperionComHorizonte();
+    corpo.atualizar(quadro('hyperion', 4));
+    await flush();
+    expect(corpo.atualizar(quadro('hyperion', 4)).emQuadro).toBe(true);
+    expect(chamadas.map((c) => c.split('/').pop()).sort()).toEqual(
+      ['height.png', 'horizon.png', 'horizon2.png', 'map.png', 'normal.png']
+    );
+    const u = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
+    expect(u.uMapaHorizonte.value).not.toBeNull();
+    expect(u.uMapaHorizonte2.value).not.toBeNull();
+    corpo.dispose();
+
+    const mimas = rochosoDeTeste('mimas', brdfDe('mimas'));
+    mimas.corpo.atualizar(quadro('mimas', 4));
+    await flush();
+    mimas.corpo.atualizar(quadro('mimas', 4));
+    const texMimas = mimas.chamadas.filter((c) => c.startsWith('tex:'));
+    expect(texMimas).toHaveLength(3);
+    expect(texMimas.some((c) => c.includes('/horizon')), 'Mimas pediu horizonte').toBe(false);
+    mimas.corpo.dispose();
+  });
+
+  it('o portão `uHorizonte` é 1 em Hipérion e 0 em Mimas — e só Hipérion o declara', async () => {
+    expect(Object.keys(RELEVO_DA_LUA).filter((id) => RELEVO_DA_LUA[id]!.horizonte)).toEqual([
+      'hyperion',
+    ]);
+    const { corpo } = hiperionComHorizonte();
+    corpo.atualizar(quadro('hyperion', 4));
+    await flush();
+    corpo.atualizar(quadro('hyperion', 4));
+    const uH = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
+    expect(uH.uHorizonte.value).toBe(1);
+    corpo.dispose();
+
+    const { corpo: mimas } = rochosoDeTeste('mimas', brdfDe('mimas'));
+    mimas.atualizar(quadro('mimas', 4));
+    await flush();
+    mimas.atualizar(quadro('mimas', 4));
+    const uM = (malhaDaSuperficie(mimas.group).material as THREE.ShaderMaterial).uniforms;
+    expect(uM.uHorizonte.value).toBe(0);
+    expect(uM.uMapaHorizonte.value).toBeNull();
+    expect(uM.uMapaHorizonte2.value).toBeNull();
+    mimas.dispose();
+  });
+
+  it('o Lambert chama a sombra (na direta) e o céu (na lanterna); os Lommel-Seeliger não', () => {
+    const main = ROCHOSO_LAMBERT_FRAG.slice(ROCHOSO_LAMBERT_FRAG.indexOf('void main()'));
+    expect(main).toContain('vec3 nGeo = n;');
+    expect(main).toContain('float sombraRelevo = sombraDoHorizonte(nGeo, vUv, uDirSolLocal);');
+    expect(main).toContain('luzSol *= sombraRelevo;');
+    expect(main).toContain('fill *= visibilidadeDoCeu(vUv);');
+    // o nGeo é a normal RADIAL, tirada ANTES da normal do mapa
+    expect(main.indexOf('vec3 nGeo = n;')).toBeLessThan(main.indexOf('normalDoMapa(n, vUv)'));
+    for (const frag of [ROCHOSO_LS_FRAG, ROCHOSO_PROC_LS_FRAG]) {
+      expect(frag).not.toContain('sombraDoHorizonte(');
+      expect(frag).not.toContain('visibilidadeDoCeu(');
+    }
+    expect(GLSL_SOMBRA_DO_HORIZONTE).not.toMatch(/uAmbient|ambientLight|uPiso|fresnel/);
+    // sem alfa (o Safari do iPhone o pré-multiplica): toda leitura é `.rgb`
+    expect(GLSL_SOMBRA_DO_HORIZONTE.match(/texture2D\(/g)).toHaveLength(4);
+    expect(GLSL_SOMBRA_DO_HORIZONTE.match(/texture2D\([^)]*\)\.rgb;/g)).toHaveLength(4);
+  });
+
+  it('a normal do mapa e o horizonte leem o MESMO frame tangente — uma cópia só', () => {
+    const corposFonte = readFileSync(new URL('./corpos.ts', import.meta.url), 'utf8');
+    expect(corposFonte.split('cross(vec3(0.0, 1.0, 0.0), n)')).toHaveLength(2);
+    expect(GLSL_NORMAL_DO_MAPA).toContain('bool quadroTangente(vec3 n, out vec3 t, out vec3 b)');
+    expect(GLSL_NORMAL_DO_MAPA).toContain('if (!quadroTangente(n, t, b)) return n;');
+    expect(GLSL_SOMBRA_DO_HORIZONTE).toContain('if (!quadroTangente(nGeo, t, b)) return 1.0;');
+    // e o horizonte vem DEPOIS de quem define o frame
+    expect(ROCHOSO_LAMBERT_FRAG.indexOf('bool quadroTangente(')).toBeLessThan(
+      ROCHOSO_LAMBERT_FRAG.indexOf('float sombraDoHorizonte(')
+    );
   });
 });

@@ -15,7 +15,10 @@ import { fileURLToPath } from 'node:url';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import {
+  CANAL_HORIZONTE,
+  CANAL_HORIZONTE2,
   CANAL_MAP,
+  CANAL_NORMAL,
   CARENCIA_DA_DESCARGA_S,
   RECARGAS_ATE_DESISTIR,
   TexturasDoCorpo,
@@ -873,5 +876,20 @@ describe('o abort: pedido sem dono para de descer (peça 3)', () => {
     expect(c.sinais[0]!.aborted).toBe(false);
     c.casa.dispose();
     expect(c.sinais[0]!.aborted).toBe(true);
+  });
+});
+
+describe('os canais do horizonte são DADO de apoio, como a normal', () => {
+  it('lineares, repetem em U e recebem a mesma dose de VRAM do `normal` em todo tier', () => {
+    for (const pedido of [CANAL_HORIZONTE, CANAL_HORIZONTE2]) {
+      expect(pedido.cor, pedido.canal).toBe(false);
+      expect(pedido.repetirEmU, pedido.canal).toBe(true);
+      for (const tier of ['performance', 'alta', 'cinema'] as const) {
+        expect(alvoDePixels(tier, pedido.canal, 16384), `${pedido.canal} ${tier}`).toBe(
+          alvoDePixels(tier, CANAL_NORMAL.canal, 16384)
+        );
+      }
+    }
+    expect([CANAL_HORIZONTE.canal, CANAL_HORIZONTE2.canal]).toEqual(['horizon', 'horizon2']);
   });
 });

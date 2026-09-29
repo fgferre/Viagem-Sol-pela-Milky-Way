@@ -3,7 +3,9 @@
 // RELEVO E COR DE HIPÉRION — receita reprodutível das 3 imagens-FONTE
 // que dão a Hipérion o mesmo tratamento de Mimas: deslocamento de vértice
 // por mapa de ALTURA, luz por mapa de NORMAL, cor por mapa de COR — na
-// convenção de mapas da casa.
+// convenção de mapas da casa. Desde o item 226 também os dois mapas de
+// HORIZONTE (`hyperion-horizon.png`, `hyperion-horizon2.png`): a sombra de
+// relevo assada do mesmo raio (`gera-horizonte.mjs`).
 //
 // FONTES:
 //   1. FORMA MEDIDA — Thomas, P., Joseph, J. & Ansty, T. (2018), "Saturn
@@ -34,7 +36,7 @@
 // USO:
 //   node relevo-e-cor-de-hiperion.mjs [--tab <arquivo.tab>] [--cor <png>]
 //     [--saida <diretório>] [--alinhamento <jpg>] [--limiar <num>]
-//     [--pocos <json>]
+//     [--pocos <json>] [--dose <png>]
 //
 // Sem --tab, baixa da URL do PDS acima (cache em $TMPDIR). Sem --cor, usa
 // <saida>/hyperion-ia-original.png (a cópia que uma corrida anterior já
@@ -42,6 +44,7 @@
 // --saida, escreve em ./fonte ao lado deste script. --alinhamento é
 // opcional: se dado, escreve ali um JPEG de 1200px (hillshade da altura
 // sobre a cor) só para conferência visual — não é uma das 4 saídas.
+// --dose, do mesmo jeito, escreve a dose da borda clara em cinza 2048×1024.
 //
 // POÇOS (crateras): por padrão, `detectaPocos`, abaixo, roda sobre --cor a
 // cada chamada — a mesma detecção multi-escala usada no piloto (branch
@@ -79,6 +82,9 @@ const sharp = requireDoRepo('sharp');
 // módulo só roda quando ele é o arquivo executado diretamente).
 const { assaNormais } = await import(
   new URL('scripts/data/atlas/gera-normal-de-dem.mjs', RAIZ_DO_REPO).href
+);
+const { assaHorizonte } = await import(
+  new URL('scripts/data/atlas/gera-horizonte.mjs', RAIZ_DO_REPO).href
 );
 
 console.time('total');
@@ -919,11 +925,13 @@ const NRM_W = 2048,
   NRM_H = 1024;
 const R_M = 135000; // metros — mesmo raio médio, em metros
 const metros = new Float64Array(NRM_W * NRM_H);
+const raioFinal = new Float64Array(NRM_W * NRM_H); // o mesmo campo, para o horizonte (5b)
 for (let j = 0; j < NRM_H; j++) {
   const phi = 90 - (j + 0.5) * (180 / NRM_H);
   for (let i = 0; i < NRM_W; i++) {
     const lon = (i + 0.5) * (360 / NRM_W) - 180;
     const rNorm = raioEsculpidoNormalizado(direcaoLocalDeLonLat(lon, phi));
+    raioFinal[j * NRM_W + i] = rNorm;
     const rKm = rNorm * RAIO_MEDIO_KM;
     metros[j * NRM_W + i] = R_M * Math.log((rKm * 1000) / R_M);
   }
@@ -934,11 +942,53 @@ await sharp(normalRgb, { raw: { width: NRM_W, height: NRM_H, channels: 3 } }).pn
 console.log(`  declive rms=${rmsGraus.toFixed(2)}° máx=${maxGraus.toFixed(2)}°`);
 
 // ------------------------------------------------------------
+// 5b. hyperion-horizon.png + hyperion-horizon2.png — 2048×1024 RGB, o
+//     mapa de HORIZONTE (item 226, `gera-horizonte.mjs`): marchado sobre
+//     o raio FINAL (forma medida + poços) que a normal acabou de
+//     rasterizar, lido por bilinear — as crateras não se reavaliam por
+//     passo. `horizon` = azimutes 0/120/240° em RGB, `horizon2` =
+//     60/180/300°; sem alfa.
+// ------------------------------------------------------------
+console.log('gerando horizonte (2048×1024, 6 azimutes)...');
+console.time('horizonte');
+const { horizon, horizon2 } = assaHorizonte({ raio: raioFinal, W: NRM_W, H: NRM_H });
+console.timeEnd('horizonte');
+for (const [nome, buf] of [
+  ['hyperion-horizon.png', horizon],
+  ['hyperion-horizon2.png', horizon2],
+]) {
+  await sharp(Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength), {
+    raw: { width: NRM_W, height: NRM_H, channels: 3 },
+  })
+    .png()
+    .toFile(path.join(CAMINHO_SAIDA, nome));
+}
+
+// ------------------------------------------------------------
 // 6. hyperion-ia.png — a pintura da IA GRADUADA (porta de
 //    `gradua-cor.mjs`: desestica os polos, desatura 40% em luz linear)
 //    e reamostrada para a convenção da casa por DIREÇÃO (nunca por
 //    espelhar índice de coluna à mão).
+//    Dois retoques SÓ de cor (item 226, etapa C; invenção sobre a
+//    invenção, a cor já é pintura de IA), em luz linear no mapa de SAÍDA,
+//    depois da reamostragem e logo antes da volta a sRGB: (a) a flor de
+//    raios brancos em (900, 333) coberta pelo doador 280 texels a leste,
+//    na mesma latitude; (b) a cor clareia com o declive da forma MEDIDA em
+//    escala grande sobre o elipsoide ajustado a ela (gelo fresco nas
+//    encostas da bacia, foto PIA07740). A
+//    graduação é linear por texel e a reamostragem também, então isto dá
+//    o mesmo que retocar antes dela. Altura, normal e horizonte não mudam.
 // ------------------------------------------------------------
+const BRILHO_DA_ENCOSTA = 0.35; // cor × (1 + isto·dose): quanto clareia a encosta mais íngreme (o dono ajusta por foto)
+const DECLIVE_SEM_BRILHO_GRAUS = 12; // abaixo deste declive em escala grande a cor fica como está (dose 0)
+const DECLIVE_BRILHO_CHEIO_GRAUS = 30; // deste declive para cima a dose é cheia (1)
+const SIGMA_DA_FORMA_GRAUS = 4; // suavização da forma medida antes do declive: escala da bacia, não dos poços
+const MANCHA_X = 900; // centro da flor de raios brancos, texel do mapa 2048×1024 (achado no app, 29/09)
+const MANCHA_Y = 333;
+const DOADOR_DX = 280; // doador centrado em (1180, 333): mesma latitude, sem distorção equiretangular
+const MANCHA_RAIO_CHEIO = 30; // até aqui (texels) o doador cobre tudo; daí até MANCHA_RAIO, borda suave
+const MANCHA_RAIO = 40;
+const CAMINHO_DOSE = argValor('dose', null); // opcional, como --alinhamento: a dose em cinza, só para conferência
 console.log('gerando cor (2048×1024)...');
 function linParaSRGB(v) {
   v = Math.max(0, Math.min(1, v));
@@ -1003,10 +1053,140 @@ function amostraBilinearCor(L, Wsrc, Hsrc, u, v) {
   return out;
 }
 
+/**
+ * Declive da forma MEDIDA em escala grande, em graus, na grade 512×256 da
+ * malha (linha 0 = sul), medido contra o ELIPSOIDE TRIAXIAL que melhor se
+ * ajusta a ela (senão as pontas do corpo alongado contariam como encosta):
+ * 1/r² = A·dx² + B·dy² + C·dz² por mínimos quadrados lineares, pesados pela
+ * área da célula (cos lat), sobre a grade sem poços (a que
+ * `raioMedidoDoHiperion` lê); resíduo ρ = ln(r/r_elipsoide), suavizado por
+ * gaussiana de σ = SIGMA_DA_FORMA_GRAUS de arco (nas linhas, σ em células ∝
+ * 1/cos lat, travado em 80° como o passo leste da normal); declive =
+ * atan(|∇ρ| por radiano de arco), porque R·ρ é a altura sobre o elipsoide e
+ * R·dθ o arco.
+ */
+function declivesDaFormaEmGrande() {
+  const cosTrava = Math.cos(80 * DEG_PARA_RAD);
+  const latDaLinha = (j) => (-90 + (j + 0.5) * (180 / NY)) * DEG_PARA_RAD;
+  const raioDaCelula = (k) => rMinGrade + (qGrade[k] / 65535) * (rMaxGrade - rMinGrade);
+  const quadrados = (j, i) => {
+    const lat = latDaLinha(j);
+    const lon = (-180 + (i + 0.5) * (360 / NX)) * DEG_PARA_RAD;
+    const c = Math.cos(lat);
+    return [(c * Math.cos(lon)) ** 2, Math.sin(lat) ** 2, (c * Math.sin(lon)) ** 2];
+  };
+  const M = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+  ];
+  const vetor = [0, 0, 0];
+  for (let j = 0; j < NY; j++) {
+    const peso = Math.cos(latDaLinha(j));
+    for (let i = 0; i < NX; i++) {
+      const q = quadrados(j, i);
+      const alvo = 1 / raioDaCelula(j * NX + i) ** 2;
+      for (let a = 0; a < 3; a++) {
+        vetor[a] += peso * q[a] * alvo;
+        for (let b = 0; b < 3; b++) M[a][b] += peso * q[a] * q[b];
+      }
+    }
+  }
+  const det3 = (m) =>
+    m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+    m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+    m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+  const detM = det3(M);
+  const [A, B, C] = [0, 1, 2].map((col) => det3(M.map((linha, a) => linha.map((x, b) => (b === col ? vetor[a] : x)))) / detM);
+  const m = new Float64Array(NX * NY);
+  let somaRho2 = 0,
+    somaPeso = 0;
+  for (let j = 0; j < NY; j++) {
+    const peso = Math.cos(latDaLinha(j));
+    for (let i = 0; i < NX; i++) {
+      const [qx, qy, qz] = quadrados(j, i);
+      const rho = Math.log(raioDaCelula(j * NX + i) * Math.sqrt(A * qx + B * qy + C * qz));
+      m[j * NX + i] = rho;
+      somaRho2 += peso * rho * rho;
+      somaPeso += peso;
+    }
+  }
+  console.log(
+    `  elipsoide ajustado (unidades de 135 km): a=${(1 / Math.sqrt(A)).toFixed(4)} ` +
+      `b=${(1 / Math.sqrt(B)).toFixed(4)} c=${(1 / Math.sqrt(C)).toFixed(4)}; ` +
+      `rms de ρ=ln(r/r_elipsoide) = ${Math.sqrt(somaRho2 / somaPeso).toFixed(4)}`
+  );
+  const sigmaLat = SIGMA_DA_FORMA_GRAUS / (180 / NY);
+  const nucleo = (sigma, alcance) => {
+    const w = [];
+    let soma = 0;
+    for (let d = -alcance; d <= alcance; d++) {
+      w.push(Math.exp(-(d * d) / (2 * sigma * sigma)));
+      soma += w[w.length - 1];
+    }
+    return w.map((x) => x / soma);
+  };
+  const aoLongo = new Float64Array(NX * NY);
+  for (let j = 0; j < NY; j++) {
+    const sigma = sigmaLat / Math.max(Math.cos(latDaLinha(j)), cosTrava);
+    const alcance = Math.min(NX >> 1, Math.ceil(3 * sigma));
+    const w = nucleo(sigma, alcance);
+    for (let i = 0; i < NX; i++) {
+      let acc = 0;
+      for (let d = -alcance; d <= alcance; d++) acc += w[d + alcance] * m[j * NX + ((i + d + NX) % NX)];
+      aoLongo[j * NX + i] = acc;
+    }
+  }
+  const alcanceLat = Math.ceil(3 * sigmaLat);
+  const wLat = nucleo(sigmaLat, alcanceLat);
+  const suave = new Float64Array(NX * NY);
+  for (let j = 0; j < NY; j++) {
+    for (let i = 0; i < NX; i++) {
+      let acc = 0;
+      for (let d = -alcanceLat; d <= alcanceLat; d++) {
+        acc += wLat[d + alcanceLat] * aoLongo[Math.max(0, Math.min(NY - 1, j + d)) * NX + i];
+      }
+      suave[j * NX + i] = acc;
+    }
+  }
+  const dLon = (2 * Math.PI) / NX;
+  const passoNorte = Math.PI / NY;
+  const declive = new Float64Array(NX * NY);
+  for (let j = 0; j < NY; j++) {
+    const passoLeste = Math.max(Math.cos(latDaLinha(j)), cosTrava) * dLon;
+    const jSul = Math.max(0, j - 1);
+    const jNorte = Math.min(NY - 1, j + 1);
+    for (let i = 0; i < NX; i++) {
+      const gLeste = (suave[j * NX + ((i + 1) % NX)] - suave[j * NX + ((i - 1 + NX) % NX)]) / (2 * passoLeste);
+      const gNorte = (suave[jNorte * NX + i] - suave[jSul * NX + i]) / ((jNorte - jSul) * passoNorte);
+      declive[j * NX + i] = Math.atan(Math.hypot(gLeste, gNorte)) * GRAUS;
+    }
+  }
+  return declive;
+}
+/** bilinear na grade 512×256 da malha na direção `d` (o mesmo índice de `raioMedidoDoHiperion`). */
+function amostraGradeDaMalha(grade, d) {
+  const u = ((Math.atan2(d.z, d.x) * GRAUS + 180) / 360) * NX - 0.5;
+  const v = ((Math.asin(Math.max(-1, Math.min(1, d.y))) * GRAUS + 90) / 180) * NY - 0.5;
+  const i0 = Math.floor(u);
+  const j0Bruto = Math.floor(v);
+  const fu = u - i0;
+  const fv = v - j0Bruto;
+  const j0 = Math.max(0, Math.min(NY - 1, j0Bruto));
+  const j1 = Math.max(0, Math.min(NY - 1, j0Bruto + 1));
+  const i0c = ((i0 % NX) + NX) % NX;
+  const i1c = (i0c + 1) % NX;
+  const g0 = grade[j0 * NX + i0c] + (grade[j0 * NX + i1c] - grade[j0 * NX + i0c]) * fu;
+  const g1 = grade[j1 * NX + i0c] + (grade[j1 * NX + i1c] - grade[j1 * NX + i0c]) * fu;
+  return g0 + (g1 - g0) * fv;
+}
+
 const { L: corLinear, W: corW, H: corH } = await graduaCorEmLinear(CAMINHO_COR);
 const COR_W = 2048,
   COR_H = 1024;
-const corBuf = Buffer.alloc(COR_W * COR_H * 3);
+const declivesGrandes = declivesDaFormaEmGrande();
+const corSaida = [new Float64Array(COR_W * COR_H), new Float64Array(COR_W * COR_H), new Float64Array(COR_W * COR_H)];
+const dose = new Float64Array(COR_W * COR_H);
 for (let j = 0; j < COR_H; j++) {
   const phi = 90 - (j + 0.5) * (180 / COR_H);
   for (let i = 0; i < COR_W; i++) {
@@ -1016,16 +1196,57 @@ for (let j = 0; j < COR_H; j++) {
     const latGrade = Math.asin(Math.max(-1, Math.min(1, d.y))) * GRAUS;
     const u = ((lonGrade + 180) / 360) * corW - 0.5;
     const v = ((90 - latGrade) / 180) * corH - 0.5;
-    const [r, g, b] = amostraBilinearCor(corLinear, corW, corH, u, v);
-    const k = (j * COR_W + i) * 3;
-    corBuf[k] = linParaSRGB(r);
-    corBuf[k + 1] = linParaSRGB(g);
-    corBuf[k + 2] = linParaSRGB(b);
+    const rgb = amostraBilinearCor(corLinear, corW, corH, u, v);
+    const p = j * COR_W + i;
+    for (let k = 0; k < 3; k++) corSaida[k][p] = rgb[k];
+    dose[p] = trava01(
+      (amostraGradeDaMalha(declivesGrandes, d) - DECLIVE_SEM_BRILHO_GRAUS) /
+        (DECLIVE_BRILHO_CHEIO_GRAUS - DECLIVE_SEM_BRILHO_GRAUS)
+    );
   }
 }
+// (a) retoque da flor: o doador (x + DOADOR_DX, y) fica fora do disco, então
+// ler e escrever no mesmo mapa é seguro.
+for (let y = MANCHA_Y - MANCHA_RAIO; y <= MANCHA_Y + MANCHA_RAIO; y++) {
+  for (let x = MANCHA_X - MANCHA_RAIO; x <= MANCHA_X + MANCHA_RAIO; x++) {
+    const peso = suave01((MANCHA_RAIO - Math.hypot(x - MANCHA_X, y - MANCHA_Y)) / (MANCHA_RAIO - MANCHA_RAIO_CHEIO));
+    if (peso <= 0) continue;
+    const p = y * COR_W + (((x % COR_W) + COR_W) % COR_W);
+    const q = y * COR_W + ((((x + DOADOR_DX) % COR_W) + COR_W) % COR_W);
+    for (let k = 0; k < 3; k++) corSaida[k][p] += (corSaida[k][q] - corSaida[k][p]) * peso;
+  }
+}
+// os poços validados cujo centro cai no disco: o relevo os guarda, só a cor é clonada
+const pocosNoDisco = crateras.filter(({ centro: c }) => {
+  const tx = ((Math.atan2(-c.z, c.x) * GRAUS + 180) / 360) * COR_W - 0.5;
+  const ty = ((90 - Math.asin(Math.max(-1, Math.min(1, c.y))) * GRAUS) / 180) * COR_H - 0.5;
+  return Math.hypot(tx - MANCHA_X, ty - MANCHA_Y) < MANCHA_RAIO;
+}).length;
+// (b) borda clara + volta a sRGB
+const corBuf = Buffer.alloc(COR_W * COR_H * 3);
+let texelsComDose = 0,
+  somaDose = 0;
+for (let p = 0; p < COR_W * COR_H; p++) {
+  const ganho = 1 + BRILHO_DA_ENCOSTA * dose[p];
+  if (dose[p] > 0) texelsComDose++;
+  somaDose += dose[p];
+  for (let k = 0; k < 3; k++) corBuf[p * 3 + k] = linParaSRGB(corSaida[k][p] * ganho);
+}
+console.log(
+  `  retoque: ${pocosNoDisco} poços validados com centro no disco da flor; borda clara: ` +
+    `${((100 * texelsComDose) / (COR_W * COR_H)).toFixed(2)}% dos texels com dose>0, ` +
+    `dose média ${(somaDose / (COR_W * COR_H)).toFixed(4)}`
+);
 await sharp(corBuf, { raw: { width: COR_W, height: COR_H, channels: 3 } })
   .png()
   .toFile(path.join(CAMINHO_SAIDA, 'hyperion-ia.png'));
+if (CAMINHO_DOSE) {
+  const doseBuf = Buffer.from(Uint8Array.from(dose, (x) => Math.round(255 * x)));
+  await sharp(doseBuf, { raw: { width: COR_W, height: COR_H, channels: 1 } })
+    .toColourspace('b-w')
+    .png()
+    .toFile(CAMINHO_DOSE);
+}
 
 // ------------------------------------------------------------
 // 7. hyperion-ia-original.png (cópia) + hyperion-pocos.json

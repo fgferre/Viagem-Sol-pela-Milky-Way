@@ -634,7 +634,12 @@ publicado (a rotação caótica complica montá-lo). O dono pintou por IA em
 22/09 sobre o relevo medido, com a foto
 Cassini PIA07740 só como referência; graduada (polos desesticados, 40 %
 menos saturada) e nivelada pelo bake `ilustracao-ia` — albedo medido 0,30,
-grampeado em 0,26.
+grampeado em 0,26. Dois retoques de cor, invenção sobre a invenção (item
+226, 29/09): a flor de raios brancos no texel (900, 333) é coberta pelo
+trecho 280 texels a leste, na mesma latitude, e a cor clareia até 35 % com
+o declive da forma medida em escala grande sobre o elipsoide ajustado a
+ela (σ 4°, de 12° a 30°), o gelo
+fresco das encostas da bacia na PIA07740; os poços do relevo não mudam.
 
 **Os poços são da pintura**: as 3.488 manchas escuras dela (DoG em
 log-luminância sobre o contraste local) viram cratera nos mapas de ALTURA
@@ -650,6 +655,21 @@ receita (`relevo-e-cor-de-hiperion.mjs`) nunca inverte coluna à mão: tudo
 sai avaliado POR DIREÇÃO. A orientação segue o síncrono declarado, W₀ = 0
 na ponta +X do eixo mais comprido — a rotação real é caótica, e o caos
 fica confessado aqui, não no shader.
+
+**O mapa de HORIZONTE (item 226, 29/09)**: a sombra de parede dos poços e
+da bacia sai assada, não calculada por quadro. Dois RGB de 8 bits, SEM
+alfa, 2048×1024, sem perda (`horizon`, `horizon2`): cada canal é
+sen(elevação do horizonte)·255 num de seis azimutes de 60° — `horizon` =
+0°, 120°, 240° em R, G, B; `horizon2` = 60°, 180°, 300° (0° = leste, 90° =
+norte). O quadro é o de `normalDoMapa`: n radial, t = leste, b = norte, azimute de t
+para b. A elevação é o máximo, pelo círculo máximo de cada azimute até
+60°, do ângulo sobre o plano tangente em que o relevo tapa o céu, lido do
+MESMO raio final da altura e da normal (forma medida + poços), numa grade
+de 2048×1024 por bilinear. Sem alfa de propósito: o Safari do iPhone
+decodifica imagem com alfa pré-multiplicada e perderia o RGB onde o alfa é
+zero (42 % dos texels no primeiro ensaio, em RGBA) — dado nunca vai em
+alfa nesta casa. Receita:
+`gera-horizonte.mjs`, chamada por `relevo-e-cor-de-hiperion.mjs`.
 
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
@@ -696,8 +716,10 @@ tocar num `.mjs`.
 | enceladus/height | DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul |
 | rhea/height | relevo SINTÉTICO: não existe DTM público de Reia — o campo de crateras foi gerado por código no projeto Saturn do autor, e não é medida |
 | iapetus/height | relevo SINTÉTICO: não existe DTM público de Jápeto — o campo de crateras foi gerado por código no projeto Saturn do autor (só a crista equatorial é feição real, modelada), e não é medida |
-| hyperion/map | não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido — nada na cor é medida |
+| hyperion/map | não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido, com uma mancha em estrela apagada e as encostas íngremes clareadas nesta casa — nada na cor é medida |
 | hyperion/height | a forma é medida pela Cassini, mas os 3.488 poços cavados nela não são: saem das manchas escuras da pintura por IA |
+| hyperion/horizon | a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA |
+| hyperion/horizon2 | a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA |
 | moon/normal | topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela |
 | mercury/normal | topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem |
 | mars/normal | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |

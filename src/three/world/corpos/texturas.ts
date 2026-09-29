@@ -323,6 +323,16 @@ export const CANAL_ALTURA: CanalPedido = { canal: 'height', cor: false, repetirE
 export const CANAL_NORMAL: CanalPedido = { canal: 'normal', cor: false, repetirEmU: true };
 
 /**
+ * OS DOIS CANAIS DO HORIZONTE (PLAN-HIPERION, contrato do mapa de
+ * horizonte) — DADO como a altura e a normal: cada texel guarda
+ * sen(elevação do horizonte) em três azimutes por mapa (rgb, sem alfa),
+ * `horizon` em 0°, 120°, 240° e `horizon2` em 60°, 180°, 300°. Não são assunto do
+ * olho, então a dose de `alvoDePixels` os trata como os outros apoios.
+ */
+export const CANAL_HORIZONTE: CanalPedido = { canal: 'horizon', cor: false, repetirEmU: true };
+export const CANAL_HORIZONTE2: CanalPedido = { canal: 'horizon2', cor: false, repetirEmU: true };
+
+/**
  * QUEM SEGURA os texels de um corpo neste quadro (item 115, bloco A).
  *
  * Não é um flag de "pode descarregar": é a lista das razões REAIS pelas

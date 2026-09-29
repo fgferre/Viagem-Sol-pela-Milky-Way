@@ -4,7 +4,26 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 229.**
 
-## O BASTÃO — onde a rodada parou (28/09, noite)
+## O BASTÃO — onde a rodada parou (29/09, tarde)
+
+**29/09, tarde (item 226, HIPÉRION: as melhorias do piloto sem perder
+desempenho). Tudo no `main`, um commit; backup em `origin/backup`; nada
+publicado.**
+
+- **Feito:** a sombra de parede dentro dos poços por mapa de horizonte
+  assado (custo igual, 4,06 × 4,09 ms; Mimas idêntica); a borda clara da
+  bacia pelo declive sobre o elipsoide ajustado; a mancha em estrela do
+  alto coberta. Ele gerou os mapas duas vezes (quatro comandos cada);
+  `data:verify` e `npm run done` verdes (3.235 testes). Detalhes e o que
+  ficou aberto no **226**.
+- **Aberto — dele:** aprovar por foto (`capturas/hiperion-final-*.jpg`);
+  o interruptor dos poços; o grão de perto; o 0,35 da encosta; publicar
+  (push no `main`) quando quiser, e conferir no iPhone.
+- **Aberto — técnico:** o custo dos níveis do Gaia no Cinema do Mac
+  (16–19 % de fps) e a trava de ~0,1 s no clique; a gaveta estreita
+  (`BACKLOG.md`); E5, E6, E7 da poeira; **227**.
+
+## O BASTÃO anterior (28/09, noite)
 
 **28/09, tarde e noite (a VERSÃO DETALHADA da poeira do Gaia). Ele viu as
 folhas do bloco de 20 pc e achou *"muito sem detalhe"*; perguntou *"por
@@ -1681,32 +1700,34 @@ pousaria igual em Betelgeuse e em Proxima.
 faltam, sem perder desempenho.** Palavras dele, 22/09, ao ver a quarta
 versão do piloto: *"ficou muito bom, não achou?"* e *"ok então, mas guarde
 essas melhorias no pipeline (quero fazê-las sem perder performance)"*. O
-piloto mora no ramo local `piloto-hiperion` (fora do main, nada publicado):
-`?piloto=hiperion-mundos` junta a forma medida pela Cassini (Thomas, Joseph
-& Ansty 2018, PDS, domínio público), 3.488 crateras postas onde a pintura
-por IA tem poço escuro, e a cor dessa pintura (feita no ChatGPT dele sobre
-a planta do relevo medido; 40 % menos saturada; polos desesticados). **No
-app desde 23/09** (commit `3fc49d2`, no ar em 24/09): forma no mapa de
-altura e poços nos mapas de altura e de normais, sem custo a mais de GPU —
-o primeiro ponto abaixo está feito; faltam os outros e um interruptor dos
-poços (hoje sempre ligados, confessados na ficha). Fotos:
-`capturas/piloto-hiperion-{vista1,vista2,perto-3-vs-4}.jpg` e
-`capturas/hiperion-app-prancha-*.jpg`.
-- **Custo do piloto:** 808 mil triângulos e ~2,8 s de montagem na CPU,
-  contra 8.820 da escultura de hoje. Caminho sem perder desempenho: a malha
-  medida leve (a da versão 1) e os poços num mapa de altura e de normais
-  assado fora do app, lido na GPU como Mimas e Tétis já fazem.
-- **Sombra de parede dentro do poço**, que dá o aspecto de esponja funda
-  da foto PIA07740: a casa não projeta sombra de relevo. Caminho barato:
-  oclusão e horizonte assados num mapa fora do app, nada calculado por
-  quadro.
-- **A borda clara da bacia grande**, que domina a foto real, sai fraca:
-  reforçar na cor, fora do app.
-- **Detalhe colado na superfície:** a pintura tem limite de resolução e
-  borra de perto. Caminho: grão só no close, pelo portão de tamanho
-  aparente que a casa já usa.
-- **A mancha em estrela perto do topo** é defeito da pintura: repintar ou
-  apagar só ali.
+piloto mora no ramo local `piloto-hiperion`; no app desde 23/09 (`3fc49d2`):
+forma medida no mapa de altura, poços nos mapas de altura e de normais,
+cor da pintura. Fotos: `capturas/hiperion-app-prancha-*.jpg`.
+- **FEITO em 29/09 (custo igual, medido no mesmo minuto: 4,06 ms contra
+  4,09 ms por quadro no desenho do Hipérion):** (1) a sombra de parede
+  dentro dos poços e da bacia — um MAPA DE HORIZONTE assado fora do app
+  (`gera-horizonte.mjs`: seis azimutes em dois mapas RGB de 2048×1024,
+  sem alfa porque o Safari do iPhone estraga a cor onde o alfa é zero);
+  na GPU são duas leituras de textura: a luz direta apaga onde o relevo
+  tapa o Sol, e a lanterna de leitura enfraquece onde o céu é fechado. As
+  meias-luas acesas no lado escuro (bordas de poço iluminadas depois do
+  terminador) somem; Mimas e Tétis ficam byte a byte iguais. (2) A borda
+  clara da bacia: a cor clareia com o declive da forma medida sobre o
+  elipsoide ajustado a ela (até +35 %; a constante `BRILHO_DA_ENCOSTA` na
+  receita, ele ajusta por foto). (3) A mancha em estrela do alto (texel
+  900,333) coberta por um pedaço limpo da própria pintura, da mesma
+  latitude. Pranchas: `capturas/hiperion-horizonte-*.jpg` (antes | depois
+  do horizonte) e `capturas/hiperion-final-*.jpg` (antes | horizonte |
+  final). Sem relação: o passe que tapa o clarão das estrelas segue sem o
+  relevo (`BACKLOG.md`).
+- **Aberto — dele:** (a) o interruptor dos poços — custaria um segundo jogo
+  de mapas (altura, normais, horizonte, ~5 MB) e um lugar na gaveta; hoje
+  os poços ficam sempre ligados, confessados na ficha; (b) o detalhe
+  colado na superfície: o grão de perto da casa (±6 %) já está ligado no
+  Hipérion, mas de muito perto (d = 1,2) a pintura fica macia — se
+  incomodar, um grão mais forte só para ele, sob o mesmo portão; (c) o
+  quanto a encosta clareia (0,35) e se as outras "flores" de raios da
+  pintura, menores, também saem.
 
 **227. Todas as estrelas com a tecnologia do Sol.** Vontade dele, 23/09,
 para uma rodada futura: *"o Sol quando aproxima vira uma estrela procedural

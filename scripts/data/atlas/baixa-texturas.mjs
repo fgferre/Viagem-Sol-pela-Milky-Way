@@ -520,6 +520,20 @@ const FONTES = [
     url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/hyperion_30k_plt.tab',
     arquivoLocal: 'fonte/hyperion-normal.png',
   },
+  // item 226: o mapa de HORIZONTE (sombra de relevo assada da mesma forma
+  // + poços), dois RGB de 3 azimutes cada, sem alfa.
+  {
+    corpo: 'hyperion',
+    canal: 'horizon',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/hyperion_30k_plt.tab',
+    arquivoLocal: 'fonte/hyperion-horizon.png',
+  },
+  {
+    corpo: 'hyperion',
+    canal: 'horizon2',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/hyperion_30k_plt.tab',
+    arquivoLocal: 'fonte/hyperion-horizon2.png',
+  },
 ];
 
 const MAXIMO_DE_REDIRECTS = 5;

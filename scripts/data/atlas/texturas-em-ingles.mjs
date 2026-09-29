@@ -237,6 +237,10 @@ export const EM_INGLES = new Map([
     'Shape model of Hyperion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the pits taken from the AI painting',
   ],
   [
+    'Modelo de forma de Hipérion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com os poços tirados da pintura por IA',
+    'Shape model of Hyperion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the pits taken from the AI painting',
+  ],
+  [
     'domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA',
     "public domain (NASA PDS); the pits: the author's image (Felipe Ferreira), generated with AI",
   ],
@@ -474,12 +478,17 @@ export const EM_INGLES = new Map([
   ],
   // item 134/S3 → relevo medido de Hipérion (23/09/2026)
   [
-    'não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido — nada na cor é medida',
-    'there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief — nothing in the color is a measurement',
+    'não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido, com uma mancha em estrela apagada e as encostas íngremes clareadas nesta casa — nada na cor é medida',
+    'there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief, with one star-shaped blotch erased and the steep slopes brightened here — nothing in the color is a measurement',
   ],
   [
     'a forma é medida pela Cassini, mas os 3.488 poços cavados nela não são: saem das manchas escuras da pintura por IA',
     'the shape is measured by Cassini, but the 3,488 pits carved into it are not: they come from the dark spots of the AI painting',
+  ],
+  // item 226 — o horizonte de Hipérion (a mesma frase nos dois canais)
+  [
+    'a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA',
+    'the shadow, in six azimuths, is baked from the shape measured by Cassini, but that of the 3,488 pits is not measured: they come from the dark spots of the AI painting',
   ],
   [
     'topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela',

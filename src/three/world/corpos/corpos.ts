@@ -377,15 +377,78 @@ float alturaDoAlbedo(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 export const GLSL_NORMAL_DO_MAPA = /* glsl */ `
 uniform sampler2D uMapaNormal;
 uniform float uRelevoNormal;  // 0 desliga; a escala tangencial dele é 1,2
+// o frame tangente UM SÓ: a normal do mapa e o horizonte leem o mesmo
+// (false no polo, onde ŷ × n̂ degenera — quem chama devolve o neutro)
+bool quadroTangente(vec3 n, out vec3 t, out vec3 b) {
+  t = cross(vec3(0.0, 1.0, 0.0), n);
+  float lt = length(t);
+  if (lt < 1.0e-4) {
+    b = vec3(0.0);
+    return false;
+  }
+  t /= lt;
+  b = cross(n, t);
+  return true;
+}
 vec3 normalDoMapa(vec3 n, vec2 uv) {
   if (uRelevoNormal <= 0.0) return n;
-  vec3 t = cross(vec3(0.0, 1.0, 0.0), n);
-  float lt = length(t);
-  if (lt < 1.0e-4) return n;
-  t /= lt;
-  vec3 b = cross(n, t);
+  vec3 t;
+  vec3 b;
+  if (!quadroTangente(n, t, b)) return n;
   vec3 m = texture2D(uMapaNormal, uv).rgb * 2.0 - 1.0;
   return normalize(m.x * uRelevoNormal * t + m.y * uRelevoNormal * b + m.z * n);
+}
+`;
+
+/**
+ * A SOMBRA DO HORIZONTE (PLAN-HIPERION, contrato do mapa de horizonte):
+ * o relevo que TAPA o Sol dentro dos poços, lido de dois mapas assados
+ * no pipeline. Cada texel guarda sen(elevação do horizonte) em seis
+ * azimutes — `uMapaHorizonte` 0°/120°/240° (rgb), `uMapaHorizonte2`
+ * 60°/180°/300° (rgb) —, medidos no MESMO frame de `normalDoMapa`
+ * (`quadroTangente`, que este chunk exige incluído antes), de `t` para
+ * `b`, sobre a normal RADIAL.
+ *
+ * A INTERPOLAÇÃO É UM CHAPÉU: o peso de cada azimute k é
+ * max(1 − distância circular entre s e k, 0), com s = az/(π/3). Entre
+ * dois vizinhos isso é a reta entre eles, a volta dos 360° sai do `mod`
+ * e nenhum array é indexado por variável (GLSL ES 1.00).
+ *
+ * SEM ALFA: o Safari do iPhone pré-multiplica o alfa na decodificação e
+ * destrói o RGB onde o alfa é 0 — por isso três azimutes por mapa, e o
+ * `.a` nunca é lido.
+ *
+ * O PORTÃO: `uHorizonte` 0 devolve 1.0 exato nas duas funções — os
+ * corpos sem mapa multiplicam por 1 e a imagem é a de hoje, bit a bit.
+ * Sol no zênite (projeção tangente nula) usa az = 0 em vez de `atan(0,0)`,
+ * que o GLSL deixa indefinido (NaN + bloom = tela branca).
+ */
+export const GLSL_SOMBRA_DO_HORIZONTE = /* glsl */ `
+uniform sampler2D uMapaHorizonte;
+uniform sampler2D uMapaHorizonte2;
+uniform float uHorizonte;  // 0 desliga; 1 nos corpos com horizonte: true
+float sombraDoHorizonte(vec3 nGeo, vec2 uv, vec3 L) {
+  if (uHorizonte <= 0.0) return 1.0;
+  vec3 t;
+  vec3 b;
+  if (!quadroTangente(nGeo, t, b)) return 1.0;
+  float senElev = dot(L, nGeo);
+  float lx = dot(L, t);
+  float ly = dot(L, b);
+  float az = abs(lx) + abs(ly) > 1.0e-6 ? atan(ly, lx) : 0.0;
+  float s = az / 1.0471975511965976;
+  vec3 h1 = texture2D(uMapaHorizonte, uv).rgb;
+  vec3 h2 = texture2D(uMapaHorizonte2, uv).rgb;
+  vec3 w1 = max(1.0 - abs(mod(s - vec3(0.0, 2.0, 4.0) + 3.0, 6.0) - 3.0), 0.0);
+  vec3 w2 = max(1.0 - abs(mod(s - vec3(1.0, 3.0, 5.0) + 3.0, 6.0) - 3.0), 0.0);
+  float senH = dot(w1, h1) + dot(w2, h2);
+  return smoothstep(senH - 0.03, senH + 0.03, senElev);
+}
+float visibilidadeDoCeu(vec2 uv) {
+  if (uHorizonte <= 0.0) return 1.0;
+  vec3 h1 = texture2D(uMapaHorizonte, uv).rgb;
+  vec3 h2 = texture2D(uMapaHorizonte2, uv).rgb;
+  return 1.0 - (dot(h1, h1) + dot(h2, h2)) / 6.0;
 }
 `;
 

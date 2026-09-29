@@ -538,6 +538,26 @@ const ORIGENS = {
       'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.',
     proveniencia: 'derivado',
   },
+  // item 226: o horizonte, 3 azimutes por canal em RGB (0/120/240° e
+  // 60/180/300°), marchado sobre o mesmo raio da altura e da normal
+  'hyperion/horizon': {
+    fonte:
+      'Modelo de forma de Hipérion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com os poços tirados da pintura por IA',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
+    licenca: 'domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA',
+    atribuicao:
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.',
+    proveniencia: 'derivado',
+  },
+  'hyperion/horizon2': {
+    fonte:
+      'Modelo de forma de Hipérion (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com os poços tirados da pintura por IA',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
+    licenca: 'domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA',
+    atribuicao:
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.',
+    proveniencia: 'derivado',
+  },
 
   // ---- ITEM 140 (2026-09-03): O RELEVO DA LUA, medido. Até aqui a Lua
   // tinha SÓ o mapa de cor, e o relevo dela era derivado dele (o bump do

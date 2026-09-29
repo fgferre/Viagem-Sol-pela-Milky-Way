@@ -77,6 +77,7 @@ import {
   GLSL_GRAO_DO_CLOSE,
   GLSL_NORMAL_DO_MAPA,
   GLSL_RUIDO_DE_VALOR,
+  GLSL_SOMBRA_DO_HORIZONTE,
   diametroAparentePx,
   escalaDoBumpDoAlbedo,
 } from './corpos';
@@ -84,6 +85,8 @@ import { LS_NORMALIZACAO_GLSL } from './lua';
 import { LIMIAR_DO_GATE_PX, alvoDaCessaoDoCorpo, gateBinario } from './terra';
 import {
   CANAL_ALTURA,
+  CANAL_HORIZONTE,
+  CANAL_HORIZONTE2,
   CANAL_MAP,
   CANAL_NORMAL,
   type Seguradores,
@@ -212,7 +215,9 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * Mimas puxa 10 % do raio: Herschel é um terço do diâmetro dela, e é essa
  * a foto que o limbo tinha de mostrar e a esfera lisa não mostrava.
  */
-export const RELEVO_DA_LUA: Readonly<Record<string, { escala: number; vies: number }>> = {
+export const RELEVO_DA_LUA: Readonly<
+  Record<string, { escala: number; vies: number; horizonte?: true }>
+> = {
   mimas: { escala: 0.10200225260766879, vies: -0.04611062610562858 },
   enceladus: { escala: 0.009472107707579332, vies: -0.005141926965558401 },
   tethys: { escala: 0.03387224437534385, vies: -0.016188330361680364 },
@@ -227,8 +232,9 @@ export const RELEVO_DA_LUA: Readonly<Record<string, { escala: number; vies: numb
   // & Ansty 2018) mora no mapa de altura, raio 0,689805 a 1,367691 de
   // 135 km (`BODY_AXES.hyperion` continua a esfera — a razão fica no
   // relevo, não no eixo); os poços saem da pintura por IA (confessado na
-  // ficha).
-  hyperion: { escala: 0.677886, vies: -0.310195 },
+  // ficha). `horizonte`: pede também os dois mapas de horizonte e o
+  // Lambert escurece o Sol dentro dos poços (GLSL_SOMBRA_DO_HORIZONTE).
+  hyperion: { escala: 0.677886, vies: -0.310195, horizonte: true },
 };
 
 /**
@@ -428,11 +434,13 @@ ${GLSL_LUZ_DA_VISITA}
 ${GLSL_ALTURA_DO_ALBEDO}
 ${GLSL_BUMP_DO_ALBEDO}
 ${GLSL_NORMAL_DO_MAPA}
+${GLSL_SOMBRA_DO_HORIZONTE}
 ${GLSL_GRADUACAO_DO_MOSAICO}
 ${GLSL_RUIDO_DE_VALOR}
 ${GLSL_GRAO_DO_CLOSE}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
+  vec3 nGeo = n;
   vec3 pElip = vLocal * uEscalaLocal;
   vec3 albedo = graduarMosaico(texture2D(uMapaDia, vUv).rgb);
   // B2: com mapa de relevo, a normal vem MEDIDA e o bump do albedo
@@ -443,10 +451,15 @@ void main() {
     : normalComBumpDoAlbedo(n, pElip, alturaDoAlbedo(albedo));
   // E: o grão do close, DEPOIS da normal — o ruído não é relevo
   albedo *= graoDoClose(vUv, vLocal);
+  // o horizonte assado: o relevo tapa SÓ a direta; o céu visível SÓ a
+  // lanterna (1 exato sem o portão)
+  float sombraRelevo = sombraDoHorizonte(nGeo, vUv, uDirSolLocal);
   float ndotlGeo = dot(n, uDirSolLocal);
   vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
   vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
+  luzSol *= sombraRelevo;
   vec3 fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip), sombras);
+  fill *= visibilidadeDoCeu(vUv);
   gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);
 }
 `;
@@ -717,11 +730,13 @@ export class RochosoResolvido {
       canais:
         this.config.superficie !== undefined && this.config.superficie !== 'mapa'
           ? []
-          : this.config.id in RELEVO_DA_LUA
-            ? [CANAL_MAP, CANAL_ALTURA, CANAL_NORMAL]
-            : this.config.id in NORMAL_MEDIDA
-              ? [CANAL_MAP, CANAL_NORMAL]
-              : [CANAL_MAP],
+          : RELEVO_DA_LUA[this.config.id]?.horizonte
+            ? [CANAL_MAP, CANAL_ALTURA, CANAL_NORMAL, CANAL_HORIZONTE, CANAL_HORIZONTE2]
+            : this.config.id in RELEVO_DA_LUA
+              ? [CANAL_MAP, CANAL_ALTURA, CANAL_NORMAL]
+              : this.config.id in NORMAL_MEDIDA
+                ? [CANAL_MAP, CANAL_NORMAL]
+                : [CANAL_MAP],
       rede: opcoes,
       oQueNaoNasce: 'o corpo não nasce nesta sessão',
       publicar: (porCanal) => {
@@ -735,12 +750,16 @@ export class RochosoResolvido {
           (u.uTamanhoDoMapa.value as THREE.Vector2).set(img?.width ?? 0, img?.height ?? 0);
         }
         // o lote é ATÔMICO (texturas.ts): ou veio inteiro, ou nenhum —
-        // três canais com relevo de vértice, dois com normal medida
-        // (item 141), um no resto
+        // cinco com horizonte, três com relevo de vértice, dois com
+        // normal medida (item 141), um no resto
         const alt = porCanal.get('height');
         if (alt) u.uMapaAltura.value = alt;
         const nrm = porCanal.get('normal');
         if (nrm) u.uMapaNormal.value = nrm;
+        const hor = porCanal.get('horizon');
+        if (hor) u.uMapaHorizonte.value = hor;
+        const hor2 = porCanal.get('horizon2');
+        if (hor2) u.uMapaHorizonte2.value = hor2;
       },
       // o procedural nunca chega aqui (não há texel residente para
       // soltar), mas o uniform dele também não existe — a guarda serve
@@ -752,6 +771,8 @@ export class RochosoResolvido {
         (u.uTamanhoDoMapa.value as THREE.Vector2).set(0, 0);
         u.uMapaAltura.value = null;
         u.uMapaNormal.value = null;
+        u.uMapaHorizonte.value = null;
+        u.uMapaHorizonte2.value = null;
       },
     });
     this.estado = {
@@ -1045,6 +1066,11 @@ export class RochosoResolvido {
         // ficam neutros e nenhum sampler é lido.
         uMapaAltura: { value: null },
         uMapaNormal: { value: null },
+        // o horizonte assado: só quem declara `horizonte` liga o portão;
+        // em 0 o Lambert multiplica por 1 exato e os mapas nem são lidos
+        uMapaHorizonte: { value: null },
+        uMapaHorizonte2: { value: null },
+        uHorizonte: { value: relevo?.horizonte ? 1 : 0 },
         uRelevo: {
           value: new THREE.Vector2(relevo?.escala ?? 0, relevo?.vies ?? 0),
         },
