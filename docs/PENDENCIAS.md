@@ -31,8 +31,13 @@ detalhes, quando vc afasta libera a memória"*). Tudo no ramo
   entrava no filme aberto pelo "Ver o filme"; agora o filme pausa o
   relógio ao começar (motor, vale para todo filme). Aprovado pelo vídeo
   antes/depois (*"aprovado, pode juntar no main"*), juntado ao `main`.
-- **Aberto — dele:** publicar (`git push origin main`) e, depois,
-  conferir no ar.
+- **Publicado por ele em 29/09 e conferido no ar:** a primeira tentativa
+  caiu nos testes do GitHub por tempo (a cobertura HEALPix passava de 5 s
+  na máquina de lá; consertado em `a3ca248`); a segunda publicou. No ar, o
+  manifesto declara os três níveis, um tijolo baixado de lá é idêntico ao
+  gerado (sha256), e o filme aos 0:40 com o Gaia média mostra os níveis
+  (36% dos pixels diferem de `poeiraniveis=0`). O fim do filme pelo "Ver o
+  filme" do Atlas fica para ele conferir no iPhone.
 - **Aberto — técnico:** o custo de 16–19% de fps no Cinema do Mac com os
   níveis; a trava de ~0,1 s no clique; a gaveta estreita em tablet e a
   320 px (`BACKLOG.md`); E5, E6, E7; **226**, **227**.
