@@ -36,7 +36,7 @@
 // USO:
 //   node relevo-e-cor-de-hiperion.mjs [--tab <arquivo.tab>] [--cor <png>]
 //     [--saida <diretório>] [--alinhamento <jpg>] [--limiar <num>]
-//     [--pocos <json>] [--dose <png>]
+//     [--pocos <json>] [--dose <png>] [--cor-antes <png>]
 //
 // Sem --tab, baixa da URL do PDS acima (cache em $TMPDIR). Sem --cor, usa
 // <saida>/hyperion-ia-original.png (a cópia que uma corrida anterior já
@@ -45,6 +45,8 @@
 // opcional: se dado, escreve ali um JPEG de 1200px (hillshade da altura
 // sobre a cor) só para conferência visual — não é uma das 4 saídas.
 // --dose, do mesmo jeito, escreve a dose da borda clara em cinza 2048×1024.
+// --cor-antes escreve a cor graduada antes dos dois retoques da etapa C,
+// na mesma convenção e resolução da saída, para uma prova antes/depois.
 //
 // POÇOS (crateras): por padrão, `detectaPocos`, abaixo, roda sobre --cor a
 // cada chamada — a mesma detecção multi-escala usada no piloto (branch
@@ -989,6 +991,7 @@ const DOADOR_DX = 280; // doador centrado em (1180, 333): mesma latitude, sem di
 const MANCHA_RAIO_CHEIO = 30; // até aqui (texels) o doador cobre tudo; daí até MANCHA_RAIO, borda suave
 const MANCHA_RAIO = 40;
 const CAMINHO_DOSE = argValor('dose', null); // opcional, como --alinhamento: a dose em cinza, só para conferência
+const CAMINHO_COR_ANTES = argValor('cor-antes', null);
 console.log('gerando cor (2048×1024)...');
 function linParaSRGB(v) {
   v = Math.max(0, Math.min(1, v));
@@ -1204,6 +1207,15 @@ for (let j = 0; j < COR_H; j++) {
         (DECLIVE_BRILHO_CHEIO_GRAUS - DECLIVE_SEM_BRILHO_GRAUS)
     );
   }
+}
+if (CAMINHO_COR_ANTES) {
+  const antesBuf = Buffer.alloc(COR_W * COR_H * 3);
+  for (let p = 0; p < COR_W * COR_H; p++) {
+    for (let k = 0; k < 3; k++) antesBuf[p * 3 + k] = linParaSRGB(corSaida[k][p]);
+  }
+  await sharp(antesBuf, { raw: { width: COR_W, height: COR_H, channels: 3 } })
+    .png()
+    .toFile(CAMINHO_COR_ANTES);
 }
 // (a) retoque da flor: o doador (x + DOADOR_DX, y) fica fora do disco, então
 // ler e escrever no mesmo mapa é seguro.
