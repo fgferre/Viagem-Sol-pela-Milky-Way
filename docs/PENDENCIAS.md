@@ -7,8 +7,11 @@ Número é identidade, não posição: item novo entra no fim da sua seção. **
 ## O BASTÃO — onde a rodada parou (30/09)
 
 **30/09 (E3c, "deixar leve" o Gaia). Ele mandou publicar o Hipérion (226)
-e seguir para deixar o Gaia leve. Tudo no `main`, um commit; backup em
-`origin/backup`.**
+e seguir para deixar o Gaia leve. PUBLICADO por ele em 30/09 (`64f511f`,
+Hipérion + esta rodada; a corrida do GitHub passou). Conferido no ar: os
+mapas do Hipérion (`map.webp`, `horizon.webp`) e `texturas.json` idênticos
+ao repositório por sha256; o pacote no ar contém o aquecimento da
+pirâmide.**
 
 - **Feito:** (1) o custo dos níveis era fantasma: a régua `fps-real`
   contava chamadas de rAF, e um laço a mais (o mapa da cartografia) só
@@ -22,8 +25,8 @@ e seguir para deixar o Gaia leve. Tudo no `main`, um commit; backup em
   clique medido duas vezes sem nenhum quadro fora do ritmo normal.
   `npm run done` verde.
 - **Aberto — dele:** conferir no iPhone (fps e memória com a pirâmide:
-  Performance não prepara nada antes do clique, paga como antes); o
-  Hipérion no ar (publicação pedida em 30/09).
+  Performance não prepara nada antes do clique, paga como antes) e o
+  Hipérion no ar, no olho.
 - **Aberto — técnico:** E5, E6, E7 da poeira; a gaveta estreita
   (`BACKLOG.md`); **227**.
 
