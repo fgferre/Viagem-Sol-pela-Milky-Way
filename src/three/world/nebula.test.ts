@@ -41,6 +41,7 @@ function bancada() {
     setRenderTarget: vi.fn(),
     render: vi.fn(),
     copyTextureToTexture: vi.fn(),
+    initTexture: vi.fn(),
     compile: vi.fn(),
     properties: { get: () => ({ currentProgram: { isReady: () => estado.programasProntos } }) },
   } as unknown as THREE.WebGLRenderer;
@@ -584,6 +585,11 @@ describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
     b.nebula.setPoeira({ modo: 1, ganho: 46.9, gama: 1, lanes: 1 });
     return { ...b, entranhas: () => b.nebula as unknown as Entranhas };
   }
+  /** os quadros do aquecimento até a troca: um desenho a frio por quadro
+   *  (dois no macio) e a troca no seguinte */
+  function aquecer(nebula: Nebula, renderer: THREE.WebGLRenderer) {
+    for (let quadro = 0; quadro < 3; quadro++) nebula.aquecerPiramide(renderer);
+  }
 
   it('ativa, troca os dois materiais do macio (o bake sem o medido) e sobe o lote antes do desenho; a captura espera assentar', async () => {
     const { renderer, camera, nebula, entranhas } = comPoeira('macio');
@@ -591,7 +597,7 @@ describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
     const bakeDeHoje = entranhas().volumeMaterial;
     const { piramide, fonte, pedidos } = piramideDeTeste();
     nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(16, 2 ** 22, 2048) });
-    nebula.aquecerPiramide(renderer);
+    aquecer(nebula, renderer);
 
     expect(entranhas().material).not.toBe(hoje);
     expect(entranhas().material.fragmentShader).toContain('poeiraMedidaNiveis(ph, t, forcaDasLanes)');
@@ -637,7 +643,7 @@ describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
     const hoje = entranhas().material;
     const { piramide, fonte, pedidos } = piramideDeTeste();
     nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(16, 2 ** 22, 2048) });
-    nebula.aquecerPiramide(renderer);
+    aquecer(nebula, renderer);
     expect(entranhas().material.fragmentShader).toContain('poeiraMedidaNiveis(ph, t, forcaDasLanes)');
 
     // o Gaia desligado: o material de hoje, o mesmo objeto (o texto de hoje)
@@ -647,14 +653,11 @@ describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
     expect(pedidos.length).toBe(0);
     expect(nebula.piramideAssentada).toBe(true);
 
-    // religado, a pirâmide volta; solta, o de hoje de novo, e o atlas é descartado
+    // religado, a pirâmide volta; solta, o de hoje de novo
     nebula.setPoeira({ modo: 1, ganho: 46.9, gama: 1, lanes: 1 });
     expect(entranhas().material).not.toBe(hoje);
-    const atlas = entranhas().piramide!.atlas;
-    const descarte = vi.spyOn(atlas, 'dispose');
     nebula.setPiramide(null);
     expect(entranhas().material).toBe(hoje);
-    expect(descarte).toHaveBeenCalledTimes(1);
     expect(nebula.piramideAssentada).toBe(true);
   });
 
@@ -680,11 +683,146 @@ describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
     expect(entranhas().material).toBe(hoje);
     expect(entranhas().volumeMaterial).toBe(bakeDeHoje);
     expect(nebula.piramideAssentada).toBe(false);
-    // pronto: troca os dois no quadro seguinte
+    // pronto: um desenho a frio por quadro, e a troca dos dois depois
     estado.programasProntos = true;
-    nebula.aquecerPiramide(renderer);
+    aquecer(nebula, renderer);
     expect(entranhas().material.fragmentShader).toContain('poeiraMedidaNiveis(ph, t, forcaDasLanes)');
     expect(entranhas().volumeMaterial).not.toBe(bakeDeHoje);
+    expect(renderer.compile).toHaveBeenCalledTimes(1);
+  });
+
+  it('cada material pronto é desenhado uma vez a frio, num pixel do alvo do raymarch — um por quadro — e só no quadro seguinte troca', () => {
+    const { renderer, nebula, entranhas } = comPoeira('macio');
+    const hoje = entranhas().material;
+    const rt = (nebula as unknown as { rt: THREE.WebGLRenderTarget }).rt;
+    let alvo: unknown = null;
+    (renderer.setRenderTarget as ReturnType<typeof vi.fn>).mockImplementation((t: unknown) => {
+      alvo = t;
+    });
+    const desenhos: { material: unknown; alvo: unknown; viewport: number[]; tesoura: number[]; ligada: boolean }[] = [];
+    (renderer.render as ReturnType<typeof vi.fn>).mockImplementation((cena: THREE.Scene) => {
+      desenhos.push({
+        material: (cena.children[0] as THREE.Mesh).material,
+        alvo,
+        viewport: rt.viewport.toArray(),
+        tesoura: rt.scissor.toArray(),
+        ligada: rt.scissorTest,
+      });
+    });
+    const { piramide, fonte } = piramideDeTeste();
+    nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(16, 2 ** 22, 2048) });
+    const cheio = rt.viewport.toArray();
+
+    nebula.aquecerPiramide(renderer); // compila os dois; o raymarch, pronto, vai a frio
+    expect(desenhos).toHaveLength(1);
+    expect(desenhos[0]).toMatchObject({ alvo: rt, viewport: [0, 0, 1, 1], tesoura: [0, 0, 1, 1], ligada: true });
+    const raymarch = desenhos[0].material as THREE.ShaderMaterial;
+    expect(raymarch.fragmentShader).toContain('poeiraMedidaNiveis(ph, t, forcaDasLanes)');
+    expect(entranhas().material).toBe(hoje);
+    // tudo como estava: o alvo de antes, o viewport inteiro, sem tesoura
+    expect(alvo).toBeNull();
+    expect(rt.viewport.toArray()).toEqual(cheio);
+    expect(rt.scissor.toArray()).toEqual(cheio);
+    expect(rt.scissorTest).toBe(false);
+
+    nebula.aquecerPiramide(renderer); // o bake do macio, a frio; a troca ainda espera
+    expect(desenhos).toHaveLength(2);
+    expect(desenhos[1]).toMatchObject({ alvo: rt, viewport: [0, 0, 1, 1], ligada: true });
+    expect(entranhas().material).toBe(hoje);
+
+    nebula.aquecerPiramide(renderer); // a troca, sem desenho novo
+    expect(desenhos).toHaveLength(2);
+    expect(entranhas().material).toBe(raymarch);
+    expect(entranhas().volumeMaterial).toBe(desenhos[1].material);
+  });
+
+  it('o atlas nasce antes do clique, sobrevive à pirâmide solta e só sai por outra forma ou no dispose', () => {
+    const { renderer, nebula, entranhas } = comPoeira('fino');
+    const orcamento = montarOrcamento(16, 2 ** 22, 2048);
+    nebula.prepararPiramide(orcamento, renderer); // a reserva
+    expect(renderer.initTexture).toHaveBeenCalledTimes(1);
+    const [preparado] = (renderer.initTexture as ReturnType<typeof vi.fn>).mock.calls[0] as [THREE.Data3DTexture];
+    const copias = (renderer.copyTextureToTexture as ReturnType<typeof vi.fn>).mock.calls;
+    expect(copias).toHaveLength(0);
+    nebula.prepararPiramide(orcamento, renderer); // o toque, noutro quadro
+    expect(copias).toHaveLength(1);
+    const [origem, destino, regiao, posicao] = copias[0] as [
+      THREE.Data3DTexture,
+      THREE.Data3DTexture,
+      THREE.Box3,
+      THREE.Vector3,
+    ];
+    expect(destino).toBe(preparado);
+    expect(regiao.getSize(new THREE.Vector3()).toArray()).toEqual([1, 1, 1]);
+    expect(posicao.toArray()).toEqual([0, 0, 0]);
+    expect(origem.image.data).toBeNull();
+    // tocado: os quadros seguintes não sobem mais nada nem reservam de novo
+    nebula.prepararPiramide(orcamento, renderer);
+    expect(renderer.initTexture).toHaveBeenCalledTimes(1);
+    expect(copias).toHaveLength(1);
+
+    // o clique adota o preparado; solta ("Hoje") e religada, o mesmo, nunca solto
+    const { piramide, fonte } = piramideDeTeste();
+    const descarte = vi.spyOn(preparado, 'dispose');
+    nebula.setPiramide({ piramide, fonte, orcamento });
+    expect(entranhas().piramide!.atlas).toBe(preparado);
+    nebula.setPiramide(null);
+    nebula.prepararPiramide(orcamento, renderer);
+    expect(copias).toHaveLength(1); // nenhum zero por cima de tijolo antigo
+    nebula.setPiramide({ piramide, fonte, orcamento });
+    expect(entranhas().piramide!.atlas).toBe(preparado);
+    expect(descarte).not.toHaveBeenCalled();
+
+    // outra forma troca e solta o velho; o dispose solta o que ficou
+    nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(64, 2 ** 22, 2048) });
+    const outro = entranhas().piramide!.atlas;
+    expect(outro).not.toBe(preparado);
+    expect(descarte).toHaveBeenCalledTimes(1);
+    const descarteDoOutro = vi.spyOn(outro, 'dispose');
+    nebula.dispose();
+    expect(descarteDoOutro).toHaveBeenCalledTimes(1);
+  });
+
+  it('antes do clique a preparação compila e desenha a frio os materiais, com o atlas amarrado e fora de quadro de bake; o clique troca sem desenho novo', () => {
+    const { renderer, camera, nebula, entranhas } = comPoeira('macio');
+    const hoje = entranhas().material;
+    const bakeDeHoje = entranhas().volumeMaterial;
+    const orcamento = montarOrcamento(16, 2 ** 22, 2048);
+    const uniforms = hoje.uniforms;
+    const desenhos: { material: THREE.ShaderMaterial; atlas: unknown }[] = [];
+    nebula.prepararPiramide(orcamento, renderer); // a reserva
+    const [preparado] = (renderer.initTexture as ReturnType<typeof vi.fn>).mock.calls[0] as [THREE.Data3DTexture];
+    nebula.prepararPiramide(orcamento, renderer); // o toque
+    expect(renderer.copyTextureToTexture).toHaveBeenCalledTimes(1);
+    // o bloco acabou de chegar: o bake vem no render deste quadro, e a preparação espera
+    nebula.prepararPiramide(orcamento, renderer);
+    expect(renderer.compile).not.toHaveBeenCalled();
+    nebula.render(renderer, camera);
+    (renderer.render as ReturnType<typeof vi.fn>).mockImplementation((cena: THREE.Scene) => {
+      desenhos.push({
+        material: (cena.children[0] as THREE.Mesh).material as THREE.ShaderMaterial,
+        atlas: uniforms.uPoeiraAtlas.value,
+      });
+    });
+
+    for (let quadro = 0; quadro < 3; quadro++) nebula.prepararPiramide(orcamento, renderer);
+    expect(renderer.compile).toHaveBeenCalledTimes(1);
+    expect(desenhos).toHaveLength(2); // o raymarch e o bake, um por quadro
+    expect(desenhos[0].material.fragmentShader).toContain('poeiraMedidaNiveis(ph, t, forcaDasLanes)');
+    expect(desenhos[0].atlas).toBe(preparado);
+    // fora do passo o atlas volta à reserva, e a tela segue com os de hoje
+    expect(uniforms.uPoeiraAtlas.value).not.toBe(preparado);
+    expect(entranhas().material).toBe(hoje);
+    expect(entranhas().volumeMaterial).toBe(bakeDeHoje);
+
+    // o clique: a pirâmide chega e os dois trocam na hora, sem desenho a frio
+    const { piramide, fonte } = piramideDeTeste();
+    nebula.setPiramide({ piramide, fonte, orcamento });
+    nebula.aquecerPiramide(renderer);
+    expect(entranhas().material).toBe(desenhos[0].material);
+    expect(entranhas().volumeMaterial).toBe(desenhos[1].material);
+    expect(entranhas().piramide!.atlas).toBe(preparado);
+    expect(desenhos).toHaveLength(2);
     expect(renderer.compile).toHaveBeenCalledTimes(1);
   });
 
@@ -692,7 +830,7 @@ describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
     const { renderer, camera, nebula } = comPoeira('fino');
     const { piramide, fonte } = piramideDeTeste();
     nebula.setPiramide({ piramide, fonte, orcamento: montarOrcamento(16, 2 ** 22, 2048) });
-    nebula.aquecerPiramide(renderer);
+    aquecer(nebula, renderer);
     nebula.atualizarPiramide(renderer, 100, camera);
     nebula.atualizarPiramide(renderer, 100 + TETO_DA_ESPERA_DA_PIRAMIDE_S - 0.5, camera);
     expect(nebula.piramideAssentada).toBe(false);

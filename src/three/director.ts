@@ -93,6 +93,7 @@ import {
 import type {
   FonteDeTijolos,
   NivelDaPiramide,
+  OrcamentoDaPiramide,
   PiramideDePoeira,
   Trio,
 } from './cartography/piramideDePoeira';
@@ -806,6 +807,9 @@ export class Director {
   private piramideCarga: 'nenhuma' | 'carregando' | 'chegou' | 'falhou' = 'nenhuma';
   private piramideCarregada: { piramide: PiramideDePoeira; fonte: FonteDeTijolos } | null = null;
   private piramideTier: QualityLevel | null = null;
+  /** o orçamento do atlas preparado antes do clique (`prepararPiramide`),
+   *  recalculado só quando o tier muda */
+  private orcamentoPreparado: { tier: QualityLevel; orcamento: OrcamentoDaPiramide } | null = null;
   /** a bancada `?poeiraniveis=teste`, montada uma vez só quando pedida */
   private bancadaDosNiveis: ReturnType<typeof bancadaDaPiramide> | null = null;
   /** nuvens do catálogo em coords de cena: x,y,z,raio,amp por registro */
@@ -1704,6 +1708,37 @@ export class Director {
     const noAr = this.nebula.orcamentoDaPiramide;
     if (noAr && mesmoOrcamento(noAr, orcamento)) return;
     this.nebula.setPiramide({ ...carregada, orcamento });
+  }
+
+  /**
+   * A PIRÂMIDE PREPARADA ANTES DO CLIQUE (E3c): nos tiers de computador,
+   * com o manifesto que a declara e um navegador que abre os tijolos
+   * (`DecompressionStream`), a Nebula reserva o atlas do orçamento deste
+   * tier e aquece os materiais dela nos quadros de agora
+   * (`Nebula.prepararPiramide`) — o clique em Suave/Média/Forte não paga
+   * mais nem o atlas nem o pipeline. No Performance (celular) a memória
+   * não é gasta antes do clique: ele paga como antes. Só DEPOIS da
+   * primeira medição do Auto (os quadros do parto não entram nela; ver
+   * a nota abaixo sobre a sugestão). Com um clique pendente quem aquece
+   * é `aquecerPiramide`, no mesmo quadro — um desenho a frio por quadro.
+   */
+  private prepararPiramide() {
+    const tier = this.engine.quality;
+    if (!this.dustPyramidManifesto || typeof DecompressionStream !== 'function') return;
+    if (tier !== 'cinema' && tier !== 'alta') return;
+    if (this.piramideDesejada !== null) return;
+    // só depois da PRIMEIRA medição do Auto: os quadros do parto ficam de
+    // fora dela. A sugestão em si não importa (medido em 30/09: numa
+    // janela de 1280×720 a DPR 2 o Cinema mede ~26 fps e a medição
+    // sugere Alta o tempo todo — esperar que ela não sugira descer
+    // deixaria o clique pagando a trava justo nas máquinas de sempre);
+    // um quadro de ~180 ms numa média de vários segundos muda a média
+    // em ~1 %, longe de virar sugestão.
+    if (!this.engine.medicao) return;
+    if (this.orcamentoPreparado?.tier !== tier) {
+      this.orcamentoPreparado = { tier, orcamento: orcamentoDaPiramide(tier, sondarGl().max3DTextureSize) };
+    }
+    this.nebula.prepararPiramide(this.orcamentoPreparado.orcamento, this.engine.renderer);
   }
 
   /**
@@ -4145,6 +4180,7 @@ export class Director {
     // solta a memória). Sem ninguém que a leia (`gasLeAPiramide`), nada
     // disso roda. `rawTime`: o relógio de parede, o da carência.
     this.garantirPiramide();
+    this.prepararPiramide();
     if (this.gasLeAPiramide) {
       if (this.piramideDesejada !== null) this.nebula.aquecerPiramide(this.engine.renderer);
       this.nebula.atualizarPiramide(this.engine.renderer, rawTime, cam);

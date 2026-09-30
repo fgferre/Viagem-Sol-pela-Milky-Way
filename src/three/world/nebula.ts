@@ -191,6 +191,7 @@ interface PiramideNaGpu {
   pilha: PilhaDeTabelas;
   dadosDasTabelas: Uint16Array;
   tabelas: THREE.Data3DTexture;
+  /** emprestado de `Nebula.atlas` — sobrevive a ela */
   atlas: THREE.Data3DTexture;
   /** o orçamento com que ela foi montada (vagas, cache, raios) */
   orcamento: OrcamentoDaPiramide;
@@ -222,6 +223,13 @@ function texturaDoAtlas(dados: Uint16Array | null, [x, y, z]: Trio): THREE.Data3
   tex.needsUpdate = true;
   return tex;
 }
+
+/** o toque do pré-aquecimento do atlas (`prepararPiramide`): um voxel
+ *  zerado, lido pelo portador como a região 1×1×1 do canto dele — o
+ *  buffer tem uma linha inteira do portador, para nenhum navegador que
+ *  conte a linha pelo `UNPACK_ROW_LENGTH` achá-lo curto */
+const VOXEL_DO_TOQUE = new Uint16Array(LADO_DA_VAGA);
+const REGIAO_DO_TOQUE = new THREE.Box3(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 1, 1));
 
 /** a pilha das tabelas: R16UI (inteiro sem sinal — lida por `texelFetch`
  *  num `usampler3D`, sem filtro) */
@@ -441,11 +449,25 @@ export class Nebula {
   private portador: THREE.Data3DTexture;
   private posicaoDaSubida = new THREE.Vector3();
   /**
+   * O ATLAS da pirâmide, dono à parte dela (E3c): nasce antes do clique
+   * (`prepararPiramide`) ou na chegada (`setPiramide`), e SOBREVIVE à
+   * pirâmide solta — voltar a "Hoje" e ligar de novo não paga de novo a
+   * reserva de 20 MB. Só sai quando outra forma o substitui ou no
+   * `dispose`. `aquecimento` é o passo do pré-aquecimento: 'reservar'
+   * (a GPU ainda nem o conhece), 'tocar' (reservado, falta a primeira
+   * subida, onde o driver o inicializa de verdade) e 'pronto'.
+   */
+  private atlas: { textura: THREE.Data3DTexture; texels: Trio; aquecimento: 'reservar' | 'tocar' | 'pronto' } | null =
+    null;
+  /**
    * O AQUECIMENTO dos materiais "+pirâmide" (E3c) — ver `aquecerPiramide`.
    * `aquecendo`: compilação já pedida ao driver, ainda não pronta;
-   * `aquecidos`: prontos — só estes vão à tela (`piramideNaTela`).
+   * `desenhados`: prontos e já desenhados uma vez a frio neste quadro — a
+   * troca fica para o próximo; `aquecidos`: prontos e desenhados — só
+   * estes vão à tela (`piramideNaTela`).
    */
   private aquecendo = new Set<THREE.ShaderMaterial>();
+  private desenhados = new Set<THREE.ShaderMaterial>();
   private aquecidos = new Set<THREE.ShaderMaterial>();
 
   constructor(scale = 0.5) {
@@ -776,11 +798,26 @@ export class Nebula {
    * perguntam se ficou pronto (`isReady`, a pergunta do polling do
    * `compileAsync`), aqui no quadro em vez de num setTimeout que
    * sobrevive ao `dispose` e estoura lendo o programa de um material já
-   * descartado. Pronto, `aplicarMateriais` troca; até lá fica o material
-   * de hoje (o bloco de 20 pc), e a residência já vai buscando tijolos.
+   * descartado. Pronto, cada material é DESENHADO UMA VEZ A FRIO
+   * (`desenharAFrio`: um pixel do alvo do raymarch, um material por
+   * quadro) — o pipeline que o driver só monta no primeiro desenho
+   * (medido em 30/09: ~65 ms no clique, Cinema, DPR 2) sai num quadro
+   * próprio, antes da troca, em vez de somar ao quadro do primeiro
+   * desenho de tela cheia. A troca (`aplicarMateriais`) vem no quadro
+   * SEGUINTE ao último desenho a frio; até lá fica o material de hoje (o
+   * bloco de 20 pc), e a residência já vai buscando tijolos.
    */
   aquecerPiramide(renderer: THREE.WebGLRenderer) {
-    const faltam = this.materiaisDaPiramide().filter((m) => !this.aquecidos.has(m.material));
+    // os desenhados a frio no quadro anterior já pagaram o pipeline: agora
+    // podem ir à tela
+    if (this.desenhados.size > 0) {
+      for (const m of this.desenhados) this.aquecidos.add(m);
+      this.desenhados.clear();
+      this.aplicarMateriais();
+    }
+    const faltam = this.materiaisDaPiramide().filter(
+      (m) => !this.aquecidos.has(m.material) && !this.desenhados.has(m.material)
+    );
     if (faltam.length === 0) return;
     const novos = faltam.filter((m) => !this.aquecendo.has(m.material));
     if (novos.length > 0) {
@@ -794,16 +831,55 @@ export class Nebula {
       renderer.compile(cena, this.camera);
       renderer.setRenderTarget(antes);
     }
-    let algumPronto = false;
-    for (const { material } of faltam) {
+    // um desenho a frio por quadro, no máximo: dois pipelines no mesmo
+    // quadro voltariam a somar
+    for (const { material, geometria } of faltam) {
       const programa = (renderer.properties.get(material) as { currentProgram?: { isReady(): boolean } })
         .currentProgram;
       if (programa && !programa.isReady()) continue;
+      this.desenharAFrio(renderer, material, geometria);
       this.aquecendo.delete(material);
-      this.aquecidos.add(material);
-      algumPronto = true;
+      this.desenhados.add(material);
+      break;
     }
-    if (algumPronto) this.aplicarMateriais();
+  }
+
+  /**
+   * O DESENHO A FRIO de um material "+pirâmide" (ver `aquecerPiramide`):
+   * um desenho de verdade, com os uniforms de agora — sem a pirâmide
+   * chegada, os samplers de reserva (`fallbackAtlas`/`fallbackTabelas`)
+   * e as rampas desligadas; com ela, o atlas dela —, mas cortado a UM
+   * pixel do alvo do raymarch (`this.rt`, o mesmo formato RGBA16F do
+   * volume assado, então o mesmo pipeline serve ao bake). O viewport e a
+   * tesoura vão no PRÓPRIO alvo: com um alvo amarrado o three usa os
+   * dele, e `renderer.setViewport`/`setScissor` mexeriam no estado da
+   * tela (e multiplicariam pelo DPR). Tudo volta como estava. O pixel
+   * sujo nunca chega à tela: o blur só lê `this.rt` logo depois de um
+   * raymarch que o reescreve inteiro (`render`).
+   */
+  private desenharAFrio(renderer: THREE.WebGLRenderer, material: THREE.ShaderMaterial, geometria: THREE.BufferGeometry) {
+    const cena = new THREE.Scene();
+    const malha = new THREE.Mesh(geometria, material);
+    malha.frustumCulled = false;
+    cena.add(malha);
+    const rt = this.rt;
+    const viewport = rt.viewport.clone();
+    const tesoura = rt.scissor.clone();
+    const tesouraLigada = rt.scissorTest;
+    rt.viewport.set(0, 0, 1, 1);
+    rt.scissor.set(0, 0, 1, 1);
+    rt.scissorTest = true;
+    const antes = renderer.getRenderTarget();
+    renderer.setRenderTarget(rt);
+    renderer.render(cena, this.camera);
+    rt.viewport.copy(viewport);
+    rt.scissor.copy(tesoura);
+    rt.scissorTest = tesouraLigada;
+    renderer.setRenderTarget(antes);
+    // o pixel sujo não pode sobreviver a um quadro congelado (a câmera
+    // parada pula o raymarch e a tela segue lendo `this.rt`): o próximo
+    // `render` refaz o raymarch inteiro
+    this.sujo = true;
   }
 
   /**
@@ -1076,7 +1152,8 @@ export class Nebula {
   /**
    * A PIRÂMIDE DA POEIRA CHEGOU (E3c) — ou `null`: sem ela, ou ao trocar
    * de fonte, de orçamento, ou na perda de contexto. Monta a GPU dela: o
-   * ATLAS (vagas de 34³, R16F, só reservado), a PILHA de tabelas de
+   * ATLAS (vagas de 34³, R16F, só reservado — o de `prepararPiramide`
+   * quando a forma bate; ele fica depois do `null`), a PILHA de tabelas de
    * páginas (R16UI; a tabela inteira de cada nível sobe aqui, com os
    * OMITIDOS já marcados) e a RESIDÊNCIA, que decide a cada quadro quem
    * mora no atlas (`atualizarPiramide`). A velha é descartada inteira —
@@ -1090,6 +1167,7 @@ export class Nebula {
     const velha = this.piramide;
     this.piramide = null;
     velha?.residencia.descartar();
+    let atlasVelho: THREE.Data3DTexture | null = null;
     const u = this.material.uniforms;
     const niveis = entrada ? entrada.piramide.niveis.slice(0, NIVEIS_DA_PIRAMIDE_NO_SHADER) : [];
     const nivelDoShader = u.uPoeiraNivel.value as THREE.Vector4[];
@@ -1120,7 +1198,11 @@ export class Nebula {
       });
       const tabelas = texturaDasTabelas(dadosDasTabelas, [pilha.largura, pilha.altura, pilha.profundidade]);
       const { layout } = entrada.orcamento;
-      const atlas = texturaDoAtlas(null, layout.texels);
+      atlasVelho = this.atlasNaForma(layout.texels);
+      // adotado: o toque pendente não vem mais (escreveria um zero por
+      // cima de um tijolo) — as subidas de verdade fazem o resto
+      this.atlas!.aquecimento = 'pronto';
+      const atlas = this.atlas!.textura;
       this.piramide = {
         residencia,
         niveis,
@@ -1147,8 +1229,74 @@ export class Nebula {
     }
     this.aplicarMateriais();
     this.sujo = true;
-    velha?.atlas.dispose();
+    atlasVelho?.dispose();
     velha?.tabelas.dispose();
+  }
+
+  /**
+   * `this.atlas` na forma `texels`: o que já existe, se a forma bate, ou
+   * um novo, só reservado. Devolve o velho de outra forma para quem
+   * chamou soltar depois que nenhum uniform o aponta.
+   */
+  private atlasNaForma(texels: Trio): THREE.Data3DTexture | null {
+    const a = this.atlas;
+    if (a && a.texels.every((t, i) => t === texels[i])) return null;
+    // NASCE COM ZEROS, não só reservado (medido em 30/09, Cinema, DPR 2): o
+    // atlas reservado sem dados custa ~480 ms na primeira subida (o driver
+    // zerando os 20 MB por conta própria, preguiçoso); subir os zeros daqui
+    // custa 140–300 ms no `initTexture` — e o buffer é solto logo depois
+    const zeros = new Uint16Array(texels[0] * texels[1] * texels[2]);
+    this.atlas = { textura: texturaDoAtlas(zeros, texels), texels: [...texels], aquecimento: 'reservar' };
+    return a?.textura ?? null;
+  }
+
+  /**
+   * TUDO ANTES DO CLIQUE (E3c). Medido em 30/09 (Cinema, DPR 2), são
+   * DOIS custos de primeiro uso, cada um pago por um passo: o driver
+   * inicializa o atlas na PRIMEIRA SUBIDA (~116–128 ms no primeiro
+   * `copyTextureToTexture` do clique; sem a subida antecipada ele volta,
+   * com ela some) e monta o pipeline no PRIMEIRO DESENHO dos materiais
+   * novos (~65 ms no clique; ~118–183 ms no desenho a frio, que amarra
+   * também o atlas). O director chama a cada quadro nos tiers de
+   * computador com o manifesto que declara a pirâmide, depois da
+   * primeira medição do Auto e sem clique pendente; aqui, um passo por
+   * quadro: a reserva do atlas da forma do `orcamento` (`initTexture`);
+   * o TOQUE — um voxel zerado em (0, 0, 0) pelo portador, a primeira
+   * subida (zero sobre o zero de um atlas novo: nada muda no que é
+   * lido); e o mesmo aquecimento do clique (`aquecerPiramide`: compila
+   * os "+pirâmide" da variante atual e desenha cada um a frio) — com o
+   * atlas preparado amarrado no raymarch só durante o passo, as tabelas
+   * de reserva e as rampas desligadas: o desenho o amarra e nada o lê.
+   * O clique acha os materiais em `aquecidos` e troca na hora. Nunca
+   * num quadro de bake (`volumeSujo`: o bake vem no `render` deste
+   * quadro). Com a pirâmide no ar não faz nada: o atlas dela é dela, e
+   * um orçamento novo passa por `setPiramide`.
+   */
+  prepararPiramide(orcamento: OrcamentoDaPiramide, renderer: THREE.WebGLRenderer) {
+    if (this.piramide || orcamento.vagas <= 0) return;
+    // nenhum uniform aponta o velho sem a pirâmide: sai na hora
+    this.atlasNaForma(orcamento.layout.texels)?.dispose();
+    const a = this.atlas!;
+    if (a.aquecimento === 'reservar') {
+      renderer.initTexture(a.textura);
+      // os zeros já subiram: o buffer de 20 MB não fica preso na textura
+      a.textura.image.data = null;
+      a.aquecimento = 'tocar';
+      return;
+    }
+    if (a.aquecimento === 'tocar') {
+      this.portador.image.data = VOXEL_DO_TOQUE;
+      this.posicaoDaSubida.set(0, 0, 0);
+      renderer.copyTextureToTexture(this.portador, a.textura, REGIAO_DO_TOQUE, this.posicaoDaSubida);
+      this.portador.image.data = null;
+      a.aquecimento = 'pronto';
+      return;
+    }
+    if (this.volumeSujo) return;
+    const u = this.material.uniforms;
+    u.uPoeiraAtlas.value = a.textura;
+    this.aquecerPiramide(renderer);
+    u.uPoeiraAtlas.value = this.fallbackAtlas;
   }
 
   /** o orçamento da pirâmide no ar (`null` = nenhuma) — o director
@@ -1618,8 +1766,11 @@ export class Nebula {
   dispose() {
     // a pirâmide (E3c) primeiro: buscas abortadas, atlas e tabelas soltos
     // — e o material de hoje que ela devolve à tela entra no cache antes
-    // do laço que descarta todos, logo abaixo
+    // do laço que descarta todos, logo abaixo; o atlas, que sobrevive a
+    // ela, sai aqui
     this.setPiramide(null);
+    this.atlas?.textura.dispose();
+    this.atlas = null;
     this.rt.dispose();
     this.rtBlur.dispose();
     this.lutRT.dispose();
@@ -1630,6 +1781,7 @@ export class Nebula {
     for (const m of this.materiaisRaymarch.values()) m.dispose();
     for (const m of this.materiaisBake.values()) m.dispose();
     this.aquecendo.clear();
+    this.desenhados.clear();
     this.aquecidos.clear();
     this.blurMaterial.dispose();
     this.lutMaterial.dispose();

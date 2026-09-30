@@ -4,7 +4,30 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 229.**
 
-## O BASTÃO — onde a rodada parou (29/09, tarde)
+## O BASTÃO — onde a rodada parou (30/09)
+
+**30/09 (E3c, "deixar leve" o Gaia). Ele mandou publicar o Hipérion (226)
+e seguir para deixar o Gaia leve. Tudo no `main`, um commit; backup em
+`origin/backup`.**
+
+- **Feito:** (1) o custo dos níveis era fantasma: a régua `fps-real`
+  contava chamadas de rAF, e um laço a mais (o mapa da cartografia) só
+  roda com os níveis desligados — com o filme tocando e contando quadros
+  desenhados, os níveis não custam nada mensurável (16,8 × 15,7 fps,
+  ruído); a régua corrigida (`--tocar`). (2) A trava do clique do Gaia
+  (116 ms da primeira subida no atlas novo + 65 ms do primeiro desenho)
+  saiu do clique: em Cinema/Alta o atlas nasce com zeros e os materiais
+  da pirâmide compilam e desenham a frio logo depois da primeira medição
+  do Auto (~0,4 s de engasgo atrás da capa, ~2 s depois de abrir); o
+  clique medido duas vezes sem nenhum quadro fora do ritmo normal.
+  `npm run done` verde.
+- **Aberto — dele:** conferir no iPhone (fps e memória com a pirâmide:
+  Performance não prepara nada antes do clique, paga como antes); o
+  Hipérion no ar (publicação pedida em 30/09).
+- **Aberto — técnico:** E5, E6, E7 da poeira; a gaveta estreita
+  (`BACKLOG.md`); **227**.
+
+## O BASTÃO anterior (29/09, tarde)
 
 **29/09, tarde (item 226, HIPÉRION: as melhorias do piloto sem perder
 desempenho). Tudo no `main`, um commit; backup em `origin/backup`; nada

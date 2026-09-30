@@ -8,7 +8,17 @@
 // detecta janela ocultada por outra e o Chrome congela o rAF da aba — atrás
 // de outra janela a contagem sai zerada ou baixa demais.
 //
-//   node scripts/visual/fps-real.mjs 't=100' [--seg=6] [--dpr=2] [--janela=1280x720]
+// O QUE SE CONTA (30/09): quadros DESENHADOS pelo director
+// (`window.__poeira.quadros`, um por tick), não chamadas de rAF (`__f`): o
+// app tem outros laços de rAF (o mapa da cartografia, por exemplo) que
+// entram e saem conforme a vista, e contá-los inflou a régua — os "16–19 %
+// de custo dos níveis do Gaia" eram esse laço a mais com os níveis
+// desligados. Fora do dev server (`__poeira` ausente) cai no `__f` e avisa.
+// E `?t=` PARADO congela o raymarch da nebulosa (câmera parada = quadro
+// congelado): para medir o custo do gás, passe `--tocar` — o filme toca e
+// a câmera anda durante a janela.
+//
+//   node scripts/visual/fps-real.mjs 't=100' [--seg=6] [--dpr=2] [--janela=1280x720] [--tocar]
 import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
 
 const argv = process.argv.slice(2);
@@ -26,6 +36,7 @@ const flag = (nome, padrao) => {
 const SEG = Number(flag('seg', '6'));
 const DPR = Number(flag('dpr', '2'));
 const JANELA = flag('janela', '1280x720');
+const TOCAR = argv.includes('--tocar');
 const APP = process.env.APP_URL || APP_PADRAO;
 
 const sessao = await abrirSessao({
@@ -33,11 +44,18 @@ const sessao = await abrirSessao({
 });
 try {
   await sessao.ir(QUERY); // já espera captura.pronto
-  const f0 = await sessao.js('window.__f');
+  if (TOCAR) {
+    await sessao.js('window.__director.play(); true');
+    await dorme(1500); // o primeiro passo do filme assenta (bake, LUT)
+  }
+  const temDirector = await sessao.js('typeof window.__poeira?.quadros === "number"');
+  if (!temDirector) process.stderr.write('aviso: sem window.__poeira (fora do dev server?) — contando rAF, que inflam\n');
+  const contador = temDirector ? 'window.__poeira.quadros' : 'window.__f';
+  const f0 = await sessao.js(contador);
   await dorme(SEG * 1000);
-  const f1 = await sessao.js('window.__f');
+  const f1 = await sessao.js(contador);
   const fps = (f1 - f0) / SEG;
-  process.stdout.write(`${QUERY}  ${fps.toFixed(1)} fps\n`);
+  process.stdout.write(`${QUERY}${TOCAR ? ' (tocando)' : ''}  ${fps.toFixed(1)} fps\n`);
 } finally {
   await sessao.fechar();
 }
