@@ -4,7 +4,45 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 229.**
 
-## O BASTÃO — onde a rodada parou (01/10, madrugada)
+## O BASTÃO — onde a rodada parou (01/10, noite) — PASSADO a uma sessão nova
+
+**Estado:** tudo no `main`, PUBLICADO por ele em 01/10 à noite (`d323619`,
+corrida verde) e conferido no ar por sha256 (os mapas de normais de Plutão
+e Caronte e `texturas.json` idênticos ao repositório). Nada pendente de
+commit além deste registro. As provas da rodada estão em `capturas/`
+(`plutao-caronte-relevo-prancha.jpg`, `galaxia-poeira-compacta-prancha.jpg`,
+`poeira-niveis-custo-prancha-v2.png`, `anel-*`, `hiperion-fantasma-*`).
+
+**A PRÓXIMA OBRA, escolhida por ele (01/10: *"vamos de B e deixamos
+especificado"*): o relevo INVENTADO com base científica na metade sem
+dado de Plutão e Caronte** — e, pela mesma regra, Tritão e os demais do
+item **144** depois. Primeiro um PLANO (sessão em modo de planejamento,
+como foi o da poeira), depois a obra. O que já está decidido e onde
+estão as peças:
+- Decidido: relevo real onde há dado (feito); onde não há, campo de
+  crateras e terrenos GERADOS POR CÓDIGO, calibrados pelo lado medido
+  (inclinação RMS, distribuição de tamanhos e densidade de crateras,
+  espectro de rugosidade do lado medido), costurados na borda do dado
+  sem anel, e CONFESSADOS na ficha como invenção — a receita de Reia e
+  Jápeto (*"relevo SINTÉTICO gerado por código no projeto Saturn"*).
+- Peças: o gerador `gera-normal-de-dem.mjs` tem a máscara de vazio e, só
+  durante o bake, as alturas medidas em memória (o DEM não é guardado) —
+  a síntese tem de acontecer ali, no bake que ele roda, ou gravar um
+  `height` como fazem os corpos de `RELEVO_DA_LUA`; `esculpido.ts` tem
+  crateras procedurais para as luas pequenas de Saturno; o código de Reia
+  e Jápeto mora no projeto Saturn DELE, fora deste repo — perguntar onde.
+- A confissão muda: "só a metade medida tem dado; o resto é relevo
+  inventado por código, calibrado pelo lado medido" (pt + en, tabela "a
+  imagem" do ASSETS, `texturas-em-ingles.mjs`).
+- Defeitos conhecidos do dado real para o mesmo plano (ver `BACKLOG.md`):
+  grão de ruído estéreo na planície Sputnik; faixas junto do vazio.
+- Como retomar: ler esta seção e o item 144; medir e fotografar antes de
+  especificar; ele decide por foto; ele roda os scripts de dados.
+
+**Pistas de desempenho que sobram (BACKLOG.md):** o τRT RGBA de 8 MiB
+que só serve ao `?forgetau=1`; a gaveta a 320 px (só iPhone SE antigo).
+
+## O BASTÃO anterior (01/10, madrugada)
 
 **30/09–01/10 (rodada dos DEFEITOS VISÍVEIS). Palavras dele: *"quero
 resolver e focar nos problemas e defeitos, coordene pra tirar isso da
