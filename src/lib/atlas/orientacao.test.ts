@@ -306,4 +306,11 @@ describe('a base do corpo', () => {
     const decDeg = Math.asin(polo[2]) * RAD_PARA_DEG;
     expect(decDeg).toBeCloseTo(90, 3);
   });
+
+  it('aponta o polo de Haumea para o do anel medido (Ortiz et al. 2017: α 285,1°, δ −10,6°)', () => {
+    const { polo } = baseCorpoEquatorial(IAU_ORIENTATIONS.haumea, J2000_JD);
+    const ra = Math.atan2(polo[1], polo[0]) * RAD_PARA_DEG;
+    expect(ra < 0 ? ra + 360 : ra).toBeCloseTo(285.1, 6);
+    expect(Math.asin(polo[2]) * RAD_PARA_DEG).toBeCloseTo(-10.6, 6);
+  });
 });

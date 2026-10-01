@@ -941,13 +941,26 @@ export const IAU_ORIENTATIONS: Record<string, IauOrientation> = {
     primeMeridianDeg: 0,
     spinRateDegPerDay: 488.6877828,
   },
-  // F6: Haumea/Makemake/Éris sem kernel. Polo equatorial norte
-  // declarado (não há IAU no pck); W da rotação publicada do doador
-  // (3,9 h / 7,77 h / 25,9 h). Superfície procedural — o polo só
-  // orienta o −3 inventado.
+  // F6: Haumea/Makemake/Éris sem kernel. W da rotação publicada do doador
+  // (3,9 h / 7,77 h / 25,9 h); superfície procedural. Makemake e Éris
+  // seguem com o polo equatorial norte declarado (não há IAU no pck — o
+  // polo só orienta o −3 inventado); o de Haumea é MEDIDO, logo abaixo.
+  //
+  // HAUMEA (01/10/2026): o polo é o do ANEL, não mais o norte celeste.
+  // Ortiz et al. 2017, Nature 550, 219 ("The size, shape, density and
+  // ring of the dwarf planet Haumea from a stellar occultation"): o anel
+  // está no plano EQUATORIAL de Haumea, e o polo dele coincide com o eixo
+  // de spin e com o polo orbital de Hi'iaka — α = 285,1° ± 0,5°,
+  // δ = −10,6° ± 1,2°, J2000 equatorial, que é o frame desta tabela
+  // (nenhuma conversão eclíptica). Globo e anel leem ESTE registro
+  // (`posicionar` em `rochoso.ts`; o anel é `ANEIS_CITADOS.haumea`), então
+  // o plano do anel e o eixo de spin caem juntos, e o eixo longo `a` do
+  // elipsoide (o meridiano-primo, equatorial) fica no plano do anel. O
+  // Ẇ (3,9 h do doador; a publicada é 3,9155 h) e o W₀ = 0 ficam: só o
+  // eixo mudou — sem meridiano-primo medido, o W₀ continua sem âncora.
   haumea: {
-    poleRaDeg: 0,
-    poleDecDeg: 90,
+    poleRaDeg: 285.1,
+    poleDecDeg: -10.6,
     primeMeridianDeg: 0,
     spinRateDegPerDay: 2215.3846154,
   },
