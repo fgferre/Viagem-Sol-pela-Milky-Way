@@ -740,7 +740,7 @@ tocar num `.mjs`.
 
 ### a forma (item 20)
 
-Duas famílias. Primeiro, os quatro corpos cujo modelo de forma IRREGULAR
+Duas famílias. Primeiro, os seis corpos cujo modelo de forma IRREGULAR
 existe publicado e **não** é carregado: a casa não tem
 `GLTFLoader`/`OBJLoader` (pendência **P-F7-MESH**, acima) e desenha o
 elipsoide de `BODY_AXES`. Depois, as oito luas de Saturno da S3, que são o
@@ -753,6 +753,8 @@ publicadas (item 134/S3, seção acima).
 | pallas | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
 | hygiea | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
 | haumea | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega |
+| phobos | elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
+| deimos | elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
 | pan | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | daphnis | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | atlas | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |

@@ -460,7 +460,9 @@ describe('a imagem confessa — itens 19 e 20', () => {
   });
 
   it('os quatro elipsoides e as oito esculpidas confessam a forma, e ninguém mais (item 20)', () => {
-    const COM_MALHA_PUBLICADA = ['vesta', 'pallas', 'hygiea', 'haumea'];
+    // 01/10/2026: Fobos e Deimos entram — o elipsoide dos eixos medidos
+    // confessa que o modelo de forma Viking/MRO existe e não é carregado.
+    const COM_MALHA_PUBLICADA = ['vesta', 'pallas', 'hygiea', 'haumea', 'phobos', 'deimos'];
     // item 134/S3: a malha das oito é ESCULPIDA por código (o roteiro é
     // `IDS_ESCULPIDOS`, em `world/corpos/esculpido.ts`) — forma inventada
     // confessa igual a elipsoide no lugar de malha medida. Hipérion saiu

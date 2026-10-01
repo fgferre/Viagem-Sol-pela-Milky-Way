@@ -11,6 +11,10 @@
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
       "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
     },
+    "deimos": {
+      "pt": "elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega",
+      "en": "an ellipsoid, no mesh: only the three measured axes (15 × 12 × 11 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and this house does not load it yet"
+    },
     "epimetheus": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
       "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
@@ -38,6 +42,10 @@
     "pandora": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
       "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
+    },
+    "phobos": {
+      "pt": "elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega",
+      "en": "an ellipsoid, no mesh: only the three measured axes (27 × 22 × 18 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and this house does not load it yet"
     },
     "phoebe": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",

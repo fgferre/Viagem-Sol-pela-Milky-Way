@@ -528,6 +528,16 @@ export const EM_INGLES = new Map([
     'geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais',
     'geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural',
   ],
+  // 30/09/2026 — Fobos e Deimos confessam o elipsoide (erro achado na
+  // pesquisa de 22/09: o manifesto `formas` não os cobria)
+  [
+    'elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega',
+    'an ellipsoid, no mesh: only the three measured axes (27 × 22 × 18 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and this house does not load it yet',
+  ],
+  [
+    'elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega',
+    'an ellipsoid, no mesh: only the three measured axes (15 × 12 × 11 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and this house does not load it yet',
+  ],
 ]);
 
 /**
