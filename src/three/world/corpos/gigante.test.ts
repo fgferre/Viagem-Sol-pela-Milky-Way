@@ -402,6 +402,13 @@ describe('4. o anel de Saturno (D6 / W5-B)', () => {
     expect(ANEIS_CITADOS.quaoar.rInt).not.toBeCloseTo(2520 / 543, 3);
   });
 
+  it('Haumea: um só anel (Ortiz17) — 2 287 km de raio e 70 km de largura, sobre o equatorial da malha', () => {
+    const a = BODY_AXES.haumea[0];
+    expect(ANEIS_CITADOS.haumea.rInt).toBeCloseTo((2287 - 35) / a, 12);
+    expect(ANEIS_CITADOS.haumea.rExt).toBeCloseTo((2287 + 35) / a, 12);
+    expect((ANEIS_CITADOS.haumea.rExt - ANEIS_CITADOS.haumea.rInt) * a).toBeCloseTo(70, 9);
+  });
+
   it('Saturno NÃO é receptor de eclipse — o contrato CORPOS_COM_ANEL', () => {
     expect(CORPOS_COM_ANEL).toEqual(['saturn', 'uranus', 'neptune', 'quaoar']);
     expect(FONTE).toContain('CORPOS_COM_ANEL');

@@ -4,7 +4,43 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 229.**
 
-## O BASTÃO — onde a rodada parou (30/09)
+## O BASTÃO — onde a rodada parou (01/10, madrugada)
+
+**30/09–01/10 (rodada dos DEFEITOS VISÍVEIS). Palavras dele: *"quero
+resolver e focar nos problemas e defeitos, coordene pra tirar isso da
+frente. e veja se estamos consumindo os documentos e não gerando novo lixo
+que armazena"*. Tudo no `main`, um commit; backup em `origin/backup`; NÃO
+publicado.**
+
+- **Feito (cada um com prancha em `capturas/`):** (1) o passe que tapa o
+  clarão das estrelas atrás dos corpos agora desloca o relevo — a ponta
+  de Hipérion e a borda alta de Mimas tapam Arcturus; corpos sem relevo
+  idênticos pixel a pixel (`hiperion-fantasma-relevo-prancha.jpg`). (2)
+  Haumea ganhou o anel (Ortiz 2017) e Quaoar passou da faixa larga
+  "didática" aos DOIS anéis finos citados (Q2R e Q1R), com piso de 1,5 px
+  (`anel-*-antes/depois-d8.png`). (3) A gaveta de Ajustes não transborda
+  mais em 320/820/1024 px nas duas línguas: fileira que não cabe quebra em
+  duas linhas e o filete acompanha (`gaveta-estreita-*-depois.png`).
+  (4) A faixa preta de Saturno NÃO é defeito: é a sombra do planeta nos
+  anéis atrás dele, vista de cima; a câmera do Atlas fica sempre 30° acima
+  do Sol, por isso parece fixa (`saturno-faixa-prancha.jpg`); saiu do
+  BACKLOG. (5) Limpeza: `PLAN-HIPERION.md` (concluído) apagado; a linha do
+  arquivo de pendências de 567 KB saiu do BACKLOG (o arquivo já não
+  existe). A pasta de 3,4 GB do estudo do NASA Eyes FICA (decisão dele:
+  "está aí para estudo e já precisamos usar várias vezes").
+- **Aberto — dele:** (a) a quebra "3 + 1" da gaveta (o quarto botão
+  sozinho na segunda linha) ou "2 + 2" — gosto, por foto; (b) gerar o
+  manifesto das texturas (o comando `data:texturas`, depois `data:verify`)
+  para a ficha de Fobos e Deimos confessar o elipsoide — as frases já
+  estão em `ASSETS.md` e traduzidas; depois disso o teste da ficha ganha
+  os dois ids; (c) cortar da sua lista os onze bastões antigos (1.197
+  linhas) e as 61 linhas de itens fechados — proposto, sem resposta;
+  (d) o Hipérion e a poeira no ar, no olho (29–30/09).
+- **Aberto — técnico:** o anel de Haumea segue o polo provisório do app
+  (norte celeste), não o equador real; E5, E6, E7 da poeira; **227**; os
+  18 corpos com relevo inventado (**144**).
+
+## O BASTÃO anterior (30/09)
 
 **30/09 (E3c, "deixar leve" o Gaia). Ele mandou publicar o Hipérion (226)
 e seguir para deixar o Gaia leve. PUBLICADO por ele em 30/09 (`64f511f`,

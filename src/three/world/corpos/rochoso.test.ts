@@ -352,6 +352,28 @@ describe('1. o oráculo de orientação por corpo (D-E4)', () => {
     expect(dot(xGlobo1, xGlobo2)).not.toBeCloseTo(1, 2);
     corpo.dispose();
   });
+
+  it('Haumea e Quaoar nascem com o anel fino no plano equatorial, e a malha dá folga ao piso de pixels', async () => {
+    for (const id of ['haumea', 'quaoar'] as const) {
+      const { corpo } = rochosoDeTeste(id, id === 'haumea' ? 'ls' : 'lambert', 'procedural');
+      corpo.atualizar(quadro(id, 4));
+      await flush();
+      expect(corpo.atualizar(quadro(id, 4)).emQuadro, id).toBe(true);
+      const anel = [...corpo.group.children].find(
+        (ch) => ch instanceof THREE.Mesh && ch.geometry instanceof THREE.RingGeometry
+      ) as THREE.Mesh<THREE.RingGeometry>;
+      expect(anel, id).toBeTruthy();
+      // equatorial: a normal do anel é o polo do globo
+      const n = eixosDoMesh(anel).colunaZ;
+      const polo = eixosDoMesh(malhaDaSuperficie(corpo.group)).colunaY;
+      expect(Math.abs(n[0] * polo[0] + n[1] * polo[1] + n[2] * polo[2]), id).toBeCloseTo(1, 9);
+      // as faixas nascem NO raio citado (a borda da entrada): a malha passa dele dos dois lados
+      const { innerRadius, outerRadius } = anel.geometry.parameters;
+      expect(innerRadius, id).toBeLessThan(ANEIS_CITADOS[id].rInt);
+      expect(outerRadius, id).toBeGreaterThan(ANEIS_CITADOS[id].rExt);
+      corpo.dispose();
+    }
+  });
 });
 
 describe('4. a classe — gate, carga, retrato × sem-retrato, cessão', () => {

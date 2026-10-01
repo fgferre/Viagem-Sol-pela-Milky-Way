@@ -24,6 +24,12 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
  * MEDINDO. O hook escreve `--seg-x`/`--seg-w` na moldura e o CSS
  * transita esses dois números; nada é animado por JavaScript.
  *
+ * E EM QUE LINHA ELE FICA: a fileira da gaveta de Ajustes QUEBRA em duas
+ * linhas quando não cabe (`08-ajustes.css`), e o filete tem de seguir o
+ * botão marcado na linha em que ele cair. `--seg-y` é a borda de BAIXO
+ * do botão marcado, e o CSS cola o filete nela — numa fileira de uma
+ * linha só dá o mesmo lugar do antigo `bottom: 0`.
+ *
  * POR QUE UM HOOK, E NÃO DENTRO DO `Segmentado`: metade dos segmentados
  * da casa é desenhada CRUA (`.ajustes-seg` sem este componente) — os três
  * grupos da máquina do tempo misturam ação e alternância e não cabem no
@@ -75,6 +81,12 @@ export function useFileteDoSegmentado() {
       `${segmento.left - caixaRet.left - caixa.clientLeft}px`
     );
     caixa.style.setProperty('--seg-w', `${segmento.width}px`);
+    // o mesmo critério do `--seg-x` (retângulos, não `offsetTop`): a borda
+    // de baixo do botão, contada do topo do preenchimento da moldura
+    caixa.style.setProperty(
+      '--seg-y',
+      `${segmento.bottom - caixaRet.top - caixa.clientTop}px`
+    );
     caixa.style.setProperty('--seg-visivel', '1');
     alvoAnterior.current = alvo;
   }, [caixa]);

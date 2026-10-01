@@ -199,9 +199,11 @@ export const COR_B_DO_PERFIL = [0.9996, 0.9589, 0.9424] as const;
 export const ALBEDO_GEO_SATURNO = 0.499;
 
 /**
- * Anéis U/N/Q — raios CITADOS de DADOS-ANEIS-F6.md, em unidades do
+ * Anéis U/N/Q/H — raios CITADOS de DADOS-ANEIS-F6.md, em unidades do
  * raio equatorial BODY_AXES. Urano: anel 6 → ε (French24 / PDS-U).
- * Netuno: Le Verrier → Adams (dePater18). Quaoar: Q2R → Q1R (Pereira23).
+ * Netuno: Le Verrier → Adams (dePater18). Quaoar: Q2R → Q1R (Pereira23)
+ * — os DOIS anéis finos, cada um NO raio citado (rInt = Q2R, rExt = Q1R).
+ * Haumea: o ÚNICO anel, de borda a borda (Ortiz17).
  */
 export const ANEIS_CITADOS: Record<string, { rInt: number; rExt: number }> = {
   saturn: ANEL_SATURNO,
@@ -214,7 +216,38 @@ export const ANEIS_CITADOS: Record<string, { rInt: number; rExt: number }> = {
     rInt: 2520 / BODY_AXES.quaoar[0],
     rExt: 4057 / BODY_AXES.quaoar[0],
   },
+  // Haumea [Ortiz et al. 2017, Nature 550, 219]: UM anel a 2 287 km do
+  // centro (± 75 km), ~70 km de largura, no plano equatorial — o da
+  // rotação e o da órbita de Hi'iaka. Aqui, de borda a borda: 2 287 ± 35 km
+  // sobre o raio EQUATORIAL da malha (BODY_AXES.haumea[0]).
+  haumea: {
+    rInt: (2287 - 35) / BODY_AXES.haumea[0],
+    rExt: (2287 + 35) / BODY_AXES.haumea[0],
+  },
 };
+
+/**
+ * AS FAIXAS FINAS DE QUAOAR, em raios equatoriais da malha (km ÷
+ * `BODY_AXES.quaoar[0]`, a régua de {@link ANEIS_CITADOS}): Q2R ~10 km e
+ * Q1R, o NÚCLEO denso de ~5 km (Morgado23, Nature 614, 239; Pereira23,
+ * A&A 673, L4). A parte difusa de Q1R, de até ~300 km, não é desenhada: é a
+ * que o dado dá de menos certo, e uma faixa larga voltaria a inventar.
+ */
+const LARGURA_Q2R = 10 / BODY_AXES.quaoar[0];
+const LARGURA_Q1R = 5 / BODY_AXES.quaoar[0];
+
+/**
+ * A FOLGA DA MALHA em volta das faixas finas, em raios equatoriais. As
+ * faixas de Quaoar nascem NA borda da malha (Q2R em `rInt`, Q1R em `rExt`)
+ * e o piso de ~1,5 px do fragmento as alarga para os dois lados: sem folga
+ * a malha cortaria metade delas. De RASANTE o piso pesa mais: um pixel
+ * vale muitos raios na direção achatada do anel. 0,5 raio cobre o piso até
+ * d = 16 com o olhar a uns 4° do plano do anel (tela de 900 px; mais alta,
+ * menos); mais rasante que isso a faixa fica mais fina que o piso — de lado
+ * ela é uma linha de qualquer jeito. Custa pouco: fora da faixa o
+ * fragmento descarta logo, antes da luz.
+ */
+export const FOLGA_DAS_FAIXAS = 0.5;
 
 /** Raios do corpo em pc — BODY_AXES pelos conversores únicos. */
 export function raiosDoGigantePc(id: string): { a: number; c: number; b: number } {
@@ -1044,10 +1077,15 @@ void main() {
 `;
 
 /**
- * ANEL PROCEDURAL (F6) — Urano/Netuno/Quaoar. Sem placa de missão.
+ * ANEL PROCEDURAL (F6) — Urano/Netuno/Quaoar/Haumea. Sem placa de missão.
  * Dosagem honesta: partículas de carvão (albedo ~0,05); Urano ε
  * assimétrico (peri 19,7 → apo 96,4 km); Netuno só arcos
  * Fraternité+Égalité; o resto é traço/véu.
+ *
+ * Quaoar e Haumea não são véus, são FAIXAS FINAS: Quaoar tem DOIS anéis
+ * (Q2R e Q1R) e Haumea UM, de 5 a 70 km de largura — sub-pixel de longe.
+ * `faixaFina` dá a cada faixa o piso de ~1,5 px e anti-serrilha a
+ * borda, em vez de espalhar uma faixa larga que a fonte não tem.
  *
  * A CAMADA É A MESMA de Saturno — {@link GLSL_CAMADA_DO_ANEL}, uma
  * fonte de verdade. A chapa Lambert com piso 0,12 morava aqui também,
@@ -1062,17 +1100,33 @@ uniform float uLuzGanho;
 uniform float uKPolar;
 uniform float uSolAngRad;
 uniform vec2 uAnelRaios;
-uniform float uModo; // 0=Urano 1=Netuno 2=Quaoar
+uniform float uModo; // 0=Urano 1=Netuno 2=Quaoar 3=Haumea
 varying vec3 vPos;
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
 ${GLSL_CAMADA_DO_ANEL}
+// A FAIXA FINA: a cobertura anti-serrilhada (0–1) do pixel por uma faixa de
+// largura real larg centrada em centro. r, centro, larg e px estão todos em
+// raios do corpo; px é o tamanho de UM pixel nessa régua. A meia-largura é
+// contada em pixels e nunca cai abaixo de 0,75: o piso de ~1,5 px que
+// mantém visível uma faixa de 5–70 km, sub-pixel de longe.
+float faixaFina(float r, float centro, float larg, float px) {
+  float meia = max(0.5 * larg / px, 0.75);
+  return clamp(meia + 0.5 - abs(r - centro) / px, 0.0, 1.0);
+}
 void main() {
   float r = length(vPos.xy);
+  // UM pixel em raios do corpo. A derivada sai ANTES de qualquer discard:
+  // fora do fluxo uniforme ela é indefinida.
+  float px = max(length(vec2(dFdx(r), dFdy(r))), 1.0e-7);
   float u = (r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6);
-  if (u < 0.0 || u > 1.0) discard;
+  // Urano/Netuno: a malha é o anel inteiro. Quaoar/Haumea: a malha tem
+  // FOLGA em volta das faixas (FOLGA_DAS_FAIXAS) e só a faixa decide.
+  if (uModo < 1.5 && (u < 0.0 || u > 1.0)) discard;
   float lon = atan(vPos.y, vPos.x);
   float alpha = 0.04;
+  // a fração do pixel que a faixa cobre — só as faixas finas a diminuem
+  float cob = 1.0;
   if (uModo < 0.5) {
     // Urano: ε domina (u→1), largura cresce no apoapse (lon≈0)
     float eps = smoothstep(0.82, 0.92, u);
@@ -1086,16 +1140,27 @@ void main() {
     if (deg < 10.0) arco = 1.0;
     else if (deg > 10.5 && deg < 14.0) arco = 0.7;
     alpha = mix(0.02, 0.28, arco) * smoothstep(0.85, 1.0, u);
-  } else {
-    // Quaoar: Q1R (u→1) didático; um setor denso
+  } else if (uModo < 2.5) {
+    // Quaoar (Pereira23, Morgado23): DOIS anéis finos, cada um NO raio
+    // citado — Q2R em rInt (~10 km, tênue; a opacidade é escolha da casa,
+    // a fonte só diz "tênue") e Q1R em rExt (núcleo denso de ~5 km, denso
+    // só num setor). A opacidade é a da faixa; o piso de pixels só alarga
+    // a cobertura.
     float deg = degrees(lon);
     if (deg < 0.0) deg += 360.0;
     float setor = deg < 22.0 ? 1.0 : 0.0;
-    // didático a 42 UA: o τ real some; um anel fino + arco denso.
-    float faixa = smoothstep(0.72, 0.84, u) * (1.0 - smoothstep(0.96, 1.0, u));
-    alpha = mix(0.35, 0.9, setor) * faixa;
+    float cQ1 = faixaFina(r, uAnelRaios.y, ${LARGURA_Q1R}, px);
+    float cQ2 = faixaFina(r, uAnelRaios.x, ${LARGURA_Q2R}, px);
+    cob = max(cQ1, cQ2);
+    alpha = cQ1 >= cQ2 ? mix(0.35, 0.9, setor) : 0.2;
+  } else {
+    // Haumea (Ortiz17): UM anel, de rInt a rExt (~70 km). Opacidade 0,5: a
+    // fração da luz da estrela que ele bloqueou na ocultação — o α desta
+    // casa (α = 1 − e^{−τ}), então τ ≈ 0,69.
+    cob = faixaFina(r, 0.5 * (uAnelRaios.x + uAnelRaios.y), uAnelRaios.y - uAnelRaios.x, px);
+    alpha = 0.5;
   }
-  if (alpha < 0.004) discard;
+  if (alpha * cob < 0.004) discard;
   vec3 n = vec3(0.0, 0.0, 1.0);
   vec3 view = normSeguro(uCamLocal - vPos);
   float nDotL = dot(n, uDirSolLocal);
@@ -1107,11 +1172,13 @@ void main() {
   vec2 camada = camadaDeParticulas(
     tauDaOpacidade(alpha), mu0, mu, faseDoAnel(cosTheta), mesmoLado
   );
-  // carvão (Urano/Netuno) e o cinza avermelhado de Quaoar: é o I/F de
-  // retro DELES, e é só nisto que diferem do gelo de Saturno.
-  vec3 albedo = uModo > 1.5 ? vec3(0.42, 0.34, 0.26) : vec3(0.06, 0.055, 0.05);
+  // carvão (Urano/Netuno), o cinza avermelhado de Quaoar e o cinza neutro de
+  // Haumea (albedo não medido: a fonte só dá raio, largura e opacidade): é o
+  // I/F de retro DELES, e é só nisto que diferem do gelo de Saturno.
+  vec3 albedo = uModo > 2.5 ? vec3(0.4)
+    : (uModo > 1.5 ? vec3(0.42, 0.34, 0.26) : vec3(0.06, 0.055, 0.05));
   vec3 direta = albedo * (camada.x * uLuzGanho) * sombraDoPlaneta(vPos);
-  gl_FragColor = vec4(direta, clamp(camada.y, 0.0, 1.0));
+  gl_FragColor = vec4(direta, clamp(camada.y, 0.0, 1.0) * cob);
 }
 `;
 

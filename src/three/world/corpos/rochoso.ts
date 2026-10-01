@@ -45,7 +45,7 @@
 // sólido IAU (retrógrado, que o kernel já carrega).
 // ============================================================
 import * as THREE from 'three';
-import { CAMADA_DOS_OCULTADORES } from '../../core/post';
+import { CAMADA_DOS_OCULTADORES, relevoNoFantasma } from '../../core/post';
 import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import {
   AU_PARA_PC,
@@ -103,7 +103,7 @@ import {
   escreverSombraDeEclipse,
   uniformsDeEclipseNeutros,
 } from './eclipseNoMaterial';
-import { ANEIS_CITADOS, ANEL_PROC_FRAG, ANEL_VERT } from './gigante';
+import { ANEIS_CITADOS, ANEL_PROC_FRAG, ANEL_VERT, FOLGA_DAS_FAIXAS } from './gigante';
 import {
   ESCULPIDO_FRAG,
   ESCULPIDO_VERT,
@@ -904,12 +904,12 @@ export class RochosoResolvido {
 
     // frame local (CPU em float64): câmera em raios de a, Sol unitário
     // a exposição da visita (item 91, reescrita no 93): Sol = 1 em
-    // `assistida`, E(d) em `real`. O anel de Quaoar recebe o mesmo
+    // `assistida`, E(d) em `real`. Os anéis (Quaoar, Haumea) recebem o mesmo
     // `ganho` — e nenhuma lanterna. Ver `luzDaVisita.ts`.
     const ganho = ganhoDoGlobo(this.rUA, q.politica);
-    // ONDE ESTÁ O SOL, uma vez só por corpo: a ORIGEM da cena. O anel
-    // de Quaoar bebe DESTE vetor — tinha um segundo cálculo idêntico
-    // só para ele (item 91).
+    // ONDE ESTÁ O SOL, uma vez só por corpo: a ORIGEM da cena. Os anéis
+    // (Quaoar, Haumea) bebem DESTE vetor — Quaoar tinha um segundo cálculo
+    // idêntico só para ele (item 91).
     const dirSol = this.vSol.copy(this.centro).multiplyScalar(-1);
     const norma = Math.max(dirSol.length(), 1e-30);
     dirSol.multiplyScalar(1 / norma);
@@ -1112,6 +1112,9 @@ export class RochosoResolvido {
     // globo opaco = ocultador do rascunho do campo (item 47): estrela
     // atrás dele não deposita clarão. Anel/atmosfera/nuvens ficam fora.
     this.superficie.layers.enable(CAMADA_DOS_OCULTADORES);
+    // e com relevo o fantasma desse passe desloca a malha como este
+    // vertex: sem isso a ponta de Hipérion não tapava estrela atrás dela
+    if (relevo) relevoNoFantasma(this.superficie, this.matSuperficie);
     this.superficie.matrixAutoUpdate = false;
     this.group.add(this.superficie);
 
@@ -1130,9 +1133,19 @@ export class RochosoResolvido {
       this.group.add(this.plumas.pontos);
     }
 
-    if (this.config.id === 'quaoar') {
-      const anel = ANEIS_CITADOS.quaoar;
-      this.geoAnel = new THREE.RingGeometry(anel.rInt, anel.rExt, 192);
+    // Os anéis finos — Quaoar (dois) e Haumea (um): qualquer rochoso com
+    // entrada em `ANEIS_CITADOS`. A malha tem folga em volta das faixas: o
+    // piso de pixels do fragmento as alarga além do raio citado. O plano é
+    // o equatorial do corpo (`posicionar`, a pose inercial do polo); a sombra
+    // do globo usa o achatamento polar (`razaoC`), e o eixo `b` de Haumea
+    // (0,73) não entra — aproximação declarada.
+    const anel = ANEIS_CITADOS[this.config.id];
+    if (anel) {
+      this.geoAnel = new THREE.RingGeometry(
+        anel.rInt - FOLGA_DAS_FAIXAS,
+        anel.rExt + FOLGA_DAS_FAIXAS,
+        192
+      );
       this.matAnel = new THREE.ShaderMaterial({
         vertexShader: ANEL_VERT,
         fragmentShader: ANEL_PROC_FRAG,
@@ -1143,7 +1156,7 @@ export class RochosoResolvido {
           uKPolar: { value: this.razaoC },
           uSolAngRad: { value: 0 },
           uAnelRaios: { value: new THREE.Vector2(anel.rInt, anel.rExt) },
-          uModo: { value: 2 },
+          uModo: { value: this.config.id === 'haumea' ? 3 : 2 },
         },
         transparent: true,
         depthWrite: false,

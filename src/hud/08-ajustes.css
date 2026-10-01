@@ -321,7 +321,10 @@
    Onde ele começa e quanto ele mede vêm de `useFileteDoSegmentado`
    (`Segmentado.tsx`), que MEDE o segmento marcado — os segmentos têm
    larguras diferentes de propósito, e nenhuma conta de CSS as descobre.
-   O que este arquivo faz é só transitar os dois números.
+   O que este arquivo faz é só transitar os números (X, largura e, desde a
+   fileira que quebra da gaveta de Ajustes, a borda de baixo do botão
+   marcado: `--seg-y` — numa linha só é o mesmo lugar do antigo
+   `bottom: 0`, e é o que deixa o filete seguir o botão na segunda linha).
    `--seg-t` é 0 quando a medida veio de um relayout (outra língua, outro
    `?ui=`, outra janela): ali o filete NASCE no lugar certo, porque
    escorregar por causa de uma palavra mais larga seria movimento sem
@@ -333,15 +336,15 @@
 .ajustes-seg::after {
   content: '';
   position: absolute;
-  bottom: 0;
+  top: calc(var(--seg-y, 100%) - 2px);
   left: var(--seg-x, 0);
   width: var(--seg-w, 0);
   height: 2px;
   background: var(--acento);
   opacity: var(--seg-visivel, 0);
   pointer-events: none;
-  transition: left var(--seg-t, 0ms) var(--curva), width var(--seg-t, 0ms) var(--curva),
-    opacity var(--t-rapido) var(--curva);
+  transition: top var(--seg-t, 0ms) var(--curva), left var(--seg-t, 0ms) var(--curva),
+    width var(--seg-t, 0ms) var(--curva), opacity var(--t-rapido) var(--curva);
 }
 .ajustes-seg button {
   /* largura pelo CONTEÚDO mais a sobra em partes iguais (Lote 7): com
@@ -396,6 +399,36 @@
   padding: 0 0.75rem;
   font-size: 0.8125rem;
   letter-spacing: 0;
+}
+/* A FILEIRA QUE NÃO CABE QUEBRA EM DUAS LINHAS — SÓ NA GAVETA DE AJUSTES
+   (BACKLOG, "Gaveta de Ajustes estreita"). A gaveta mede `min(27.5rem,
+   34vw)` — 279 px a 820 — e uma fileira de 4–5 botões (a Qualidade, a
+   Poeira perto de casa) pede 283–303 px: vazava pela direita. Fonte e
+   respiro dos botões ficam como estão (encolher não fecha a conta); quem
+   cede é a fileira, que quebra. Os botões seguem com a largura do
+   conteúdo mais a parte igual da sobra (`flex: 1 1 auto`, acima), em
+   cada linha. A máquina do tempo do rodapé e a ficha usam o mesmo
+   `.ajustes-seg` e nem entram aqui.
+   O FILETE ENTRE OS BOTÕES continua sendo a `border-right` de cada um
+   — só mudou quem fecha a linha. Numa fileira que quebra não se sabe qual
+   botão é o último da linha, e a borda dele ficaria colada na moldura,
+   em linha dupla. O `margin-right: -1px` deixa essa borda 1 px além da
+   área que o `overflow: hidden` da moldura pinta, e ela some; o `gap:
+   1px` devolve o 1 px que a margem tirou, e os dois se anulam na conta
+   da largura (n−1 de cada). Por isso uma fileira que cabe numa linha só
+   tem as MESMAS caixas, bordas e pixels de antes.
+   O FILETE ENTRE AS LINHAS é a sombra de 1 px embaixo de cada botão, que
+   cai no vão de 1 px entre elas (o mesmo `gap`); a da última linha cai
+   fora da moldura e é cortada também. */
+.hud-dialogo.ajustes .ajustes-seg {
+  flex-wrap: wrap;
+  gap: 1px;
+}
+.hud-dialogo.ajustes .ajustes-seg button {
+  box-shadow: 0 1px 0 var(--borda);
+}
+.hud-dialogo.ajustes .ajustes-seg button:not(:last-child) {
+  margin-right: -1px;
 }
 .ajustes-seg button.on {
   background: transparent;

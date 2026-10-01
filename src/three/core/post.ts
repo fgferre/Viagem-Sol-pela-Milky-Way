@@ -232,6 +232,81 @@ export const CAMADA_DO_CAMPO = 1;
  * pelo dono NA TELA: "vejo estrelas através do sol".
  */
 export const CAMADA_DOS_OCULTADORES = 2;
+
+/**
+ * O FANTASMA COM RELEVO — o traje de profundidade da etapa 1a desloca o
+ * vértice do mesmo jeito que a superfície visível desloca. Era um
+ * `MeshBasicMaterial` sem cor: a esfera CRUA da malha. Nos corpos com mapa
+ * de altura (`RELEVO_DA_LUA`, `corpos/rochoso.ts`) a silhueta visível não
+ * é essa esfera — a ponta de Hipérion vai a 1,37 raio, a borda de Mimas
+ * sobe e desce 5 % — e o clarão de estrela ATRÁS da ponta vazava pelo
+ * rascunho do campo, que só via a esfera.
+ *
+ * UM material para todos os ocultadores: o relevo entra por uniforme, e
+ * quem o escreve é o próprio globo, a cada draw (`relevoNoFantasma`). Em
+ * repouso o relevo é (0, 0) e o mapa é um texel preto: o fator do raio dá
+ * 1 exato, e o vértice sai pela MESMA conta do `MeshBasicMaterial`
+ * (`begin_vertex` + `project_vertex`) — o depth dos corpos sem relevo não
+ * muda.
+ */
+const TEXEL_PRETO = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+TEXEL_PRETO.needsUpdate = true;
+const FANTASMAS = new WeakSet<THREE.Material>();
+
+function criarFantasma(): THREE.ShaderMaterial {
+  const fantasma = new THREE.ShaderMaterial({
+    // o deslocamento de `ROCHOSO_VERT_RELEVO` (rochoso.ts), letra por letra
+    vertexShader: /* glsl */ `
+uniform sampler2D uMapaAltura;
+uniform vec2 uRelevo;  // (escala, viés) do globo deste draw; (0,0) = a malha crua
+void main() {
+  #include <begin_vertex>
+  transformed *= 1.0 + uRelevo.y + texture2D(uMapaAltura, uv).r * uRelevo.x;
+  #include <project_vertex>
+}
+`,
+    fragmentShader: /* glsl */ `void main() {}`,
+    uniforms: {
+      uMapaAltura: { value: TEXEL_PRETO },
+      uRelevo: { value: new THREE.Vector2(0, 0) },
+    },
+    colorWrite: false,
+  });
+  FANTASMAS.add(fantasma);
+  return fantasma;
+}
+
+/**
+ * Liga um globo com relevo ao fantasma. O three chama `onBeforeRender` do
+ * objeto ANTES de subir os uniformes, e com `overrideMaterial` o `material`
+ * que chega é o próprio fantasma: só nesse caso o globo escreve nele o SEU
+ * mapa de altura e o SEU (escala, viés), e no `onAfterRender` devolve o
+ * repouso — o próximo ocultador nunca herda o relevo deste. O
+ * `uniformsNeedUpdate` é obrigatório: o fantasma é o MESMO material draw
+ * após draw, e o three só reenvia uniforme quando o material troca. Os
+ * ganchos que o globo já tinha continuam rodando antes.
+ */
+export function relevoNoFantasma(globo: THREE.Mesh, superficie: THREE.ShaderMaterial): void {
+  const antes = globo.onBeforeRender;
+  const depois = globo.onAfterRender;
+  globo.onBeforeRender = (renderer, cena, camera, geometria, material, grupo) => {
+    antes.call(globo, renderer, cena, camera, geometria, material, grupo);
+    if (!FANTASMAS.has(material)) return;
+    const f = material as THREE.ShaderMaterial;
+    f.uniforms.uMapaAltura.value = superficie.uniforms.uMapaAltura.value ?? TEXEL_PRETO;
+    (f.uniforms.uRelevo.value as THREE.Vector2).copy(superficie.uniforms.uRelevo.value);
+    f.uniformsNeedUpdate = true;
+  };
+  globo.onAfterRender = (renderer, cena, camera, geometria, material, grupo) => {
+    depois.call(globo, renderer, cena, camera, geometria, material, grupo);
+    if (!FANTASMAS.has(material)) return;
+    const f = material as THREE.ShaderMaterial;
+    f.uniforms.uMapaAltura.value = TEXEL_PRETO;
+    (f.uniforms.uRelevo.value as THREE.Vector2).set(0, 0);
+    f.uniformsNeedUpdate = true;
+  };
+}
+
 const FORMA_DO_FILME = [1.0, 0.8, 0.6, 0.4, 0.2];
 const FORCA_DO_FILME = 0.72;
 const RAIO_DO_FILME = 0.58;
@@ -396,8 +471,9 @@ class ClaraoDoCampo extends Pass {
   /** o quadro em px de CSS, para a conta da janela dentro do rascunho */
   private larguraCss = 1;
   private alturaCss = 1;
-  /** o traje dos ocultadores: geometria verdadeira, zero cor — só depth */
-  private readonly fantasma = new THREE.MeshBasicMaterial({ colorWrite: false });
+  /** o traje dos ocultadores: geometria verdadeira (com o relevo de quem
+   *  tem, `relevoNoFantasma`), zero cor — só depth */
+  private readonly fantasma = criarFantasma();
   /** a câmera de lente larga do rascunho — cópia, para a do app não ser
    *  tocada por este passe (ver a cicatriz em `render`) */
   private readonly cameraLarga = new THREE.PerspectiveCamera();
