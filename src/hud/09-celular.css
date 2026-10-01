@@ -850,14 +850,6 @@
   :root[data-texto-grande] .hud-root:has(.atlas-alcas) .ajustes-seg--qualidade {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    /* AS LINHAS DA GRADE SÃO AS BORDAS ABAIXO: o vão de 1 px da fileira que
-       quebra na gaveta de Ajustes (08-ajustes.css) não vale aqui */
-    gap: 0;
-  }
-  /* ...nem a margem negativa nem a sombra de baixo dos botões dela */
-  :root[data-texto-grande] .hud-root:has(.atlas-alcas) .ajustes-seg--qualidade button {
-    margin-right: 0;
-    box-shadow: none;
   }
   /* SÓ A SEGUNDA COLUNA perde a borda direita (a régua de sempre só tira
      do ÚLTIMO botão) — sem isso "Alta"/"Auto" ficavam com um filete
@@ -877,10 +869,12 @@
     button:nth-child(n + 3) {
     border-top: 1px solid var(--borda);
   }
-  /* O FILETE QUE ANDA (`::after`, 08-ajustes.css) já segue a linha do
-     botão marcado (`--seg-y`), mas a grade segue sem ele: o texto em
-     `--acento` (`.on`, 08-ajustes.css) já diz sozinho qual opção está
-     marcada, como desde 13/09. */
+  /* O FILETE QUE ANDA (`::after`, 08-ajustes.css) mede X/largura de UMA
+     linha e cola no `bottom: 0` do contêiner inteiro — na grade ele
+     desenharia embaixo das DUAS linhas mesmo quando a escolha é da
+     primeira. Sem um seletor bom para "só a linha de cima", ele some
+     aqui: o texto em `--acento` (`.on`, 08-ajustes.css) já diz sozinho
+     qual opção está marcada. */
   :root[data-texto-grande] .hud-root:has(.atlas-alcas) .ajustes-seg--qualidade::after {
     display: none;
   }
