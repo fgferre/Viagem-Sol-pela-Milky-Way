@@ -74,7 +74,7 @@ uniform vec3 uCamPos;
 uniform float uScreenH;
 uniform float uTanHalfFov;
 uniform float uFade;
-// canal A da lâmina central bakeada: τ⊥ da coluna de poeira
+// τ⊥ da coluna de poeira: canal R da cópia compacta do τRT (TAU_COMPACTO_FRAG)
 uniform sampler2D uTauMap;
 // base galactocêntrica da cena (EX/EY/EZ) e posição do centro galáctico
 uniform vec3 uEX;
@@ -168,7 +168,9 @@ void main() {
   // 20,0. O joelho é 16. O custo é latência de fetch (caminhos de meia
   // galáxia espalham as amostras pelo mapa — cache frio; em t=170 os
   // mesmos 16 fetches ficam no vsync); early-exit por saturação não
-  // paga (divergência de warp, medido). Candidata: textureLod mip 2–3.
+  // paga (divergência de warp, medido). O cache frio era o FORMATO do
+  // mapa: 1 canal lido de um RGBA16F de 8 MiB. O laço lê agora a cópia
+  // compacta (R16F, 2 MiB, o mesmo τ bit a bit) — ver TAU_COMPACTO_FRAG.
   vec3 toCam = uCamPos - position;
   float D = length(toCam);
   vec3 qv = position - uGC;
@@ -205,7 +207,7 @@ void main() {
     float zTil = dot(sp, uEZ) -
       galWarpHeight(rS, atan(sxy.y, sxy.x + 1e-7));
     float g = exp(-zTil * zTil / (2.0 * sigmaD * sigmaD));
-    float tp = texture2D(uTauMap, sxy / (2.0 * GAL_DISK_RADIUS) + 0.5).a;
+    float tp = texture2D(uTauMap, sxy / (2.0 * GAL_DISK_RADIUS) + 0.5).r;
     // PISO DIFUSO da poeira. A âncora do NORTE (A_V = 1,5 mag/kpc ⇒
     // τ⊥ = 0,2455 no Sol) é a coluna TOTAL; o mapa já carrega a parte
     // estruturada (filamentos/fendas), então o piso é só a fração
@@ -354,6 +356,30 @@ varying vec2 vUv;
 void main() {
   vUv = uv;
   gl_Position = vec4(position.xy, 0.0, 1.0);
+}
+`;
+
+// A CÓPIA COMPACTA do τ⊥ das partículas (01/10). Com a galáxia inteira no
+// quadro (t=150–160: ~4 M pontos, visadas espalhadas pelo disco) as 16
+// buscas por ponto de GALAXY_VERT esperavam a memória: o τRT é RGBA16F,
+// 8 MiB, quatro canais trazidos para usar um. Forçar as 16 no mesmo texel
+// poupava ~17 ms em t=150 — o custo era o mapa, não a conta. A cópia
+// guarda só o τ (A → R), no MESMO tamanho e na MESMA meia precisão: 2 MiB,
+// o mesmo valor bit a bit, o mesmo filtro. Medido tocando, DPR 2: t=150
+// ~61 → ~44 ms por quadro (p95 ~93 → ~63), t=160 ~91 → ~77 (p95 ~125 →
+// ~94); fotos A/B idênticas em t=30/80/140/150/160, 0 pixel diferente
+// (capturas/galaxia-poeira-compacta-*).
+// R8 (1 MiB) foi medido: não ganhou nada além disto e movia ~0,3 % dos
+// pixels em 1 nível, com uma escala presa ao teto do τ do bake.
+// texelFetch, não texture2D: cópia texel a texel, sem filtro no meio.
+// O τRT inteiro continua — as forjas (?forgetau=1) leem o A dele.
+export const TAU_COMPACTO_FRAG = /* glsl */ `
+precision highp float;
+
+uniform sampler2D uTau;
+
+void main() {
+  gl_FragColor = vec4(texelFetch(uTau, ivec2(gl_FragCoord.xy), 0).a, 0.0, 0.0, 1.0);
 }
 `;
 

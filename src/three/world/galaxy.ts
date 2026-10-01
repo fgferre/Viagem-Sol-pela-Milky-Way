@@ -15,6 +15,7 @@ import {
   DISC_FRAG,
   DISC_BAKE_VERT,
   DISC_BAKED_FRAG,
+  TAU_COMPACTO_FRAG,
 } from '../shaders/galaxyShaders';
 import { GAL, EX, EY, EZ } from './baseGalactica';
 import { SGR_DWARF_POS, tune } from './geradorDaGalaxia';
@@ -45,6 +46,8 @@ export class Galaxy {
   private discBaseAlphas: number[] = [];
   private discRTs: THREE.WebGLRenderTarget[] = [];
   private tauRT: THREE.WebGLRenderTarget | null = null;
+  /** a cópia compacta (R16F) do τ⊥ que o laço das partículas lê — ver TAU_COMPACTO_FRAG */
+  private tauParticulasRT: THREE.WebGLRenderTarget | null = null;
   private markerMesh!: THREE.Mesh;
   private dustMap: THREE.Texture;
   private structureMap: THREE.Texture;
@@ -217,9 +220,10 @@ export class Galaxy {
       uScreenH: { value: 1080 },
       uTanHalfFov: { value: 0.55 },
       uFade: { value: 0 },
-      // extinção por partícula: canal A da lâmina central bakeada. Nasce
-      // com a 1×1 A=0 (extinção nula) — o app funciona antes do bake, e
-      // é para ela que `?nogdust=1` (ou o clique no painel) volta.
+      // extinção por partícula: o τ⊥ da lâmina central bakeada, no canal
+      // R da cópia compacta. Nasce com a 1×1 zerada (extinção nula) — o
+      // app funciona antes do bake, e é para ela que `?nogdust=1` (ou o
+      // clique no painel) volta.
       uTauMap: { value: this.tauVazio },
       uEX: { value: EX.clone() },
       uEY: { value: EY.clone() },
@@ -410,6 +414,26 @@ export class Galaxy {
         renderer.render(bakeScene, bakeCam);
         analytic.uniforms.uTauExport.value = 0;
         this.tauRT = tauRt;
+        // a CÓPIA COMPACTA que o laço das partículas lê (ver
+        // TAU_COMPACTO_FRAG): só o τ, no mesmo tamanho e na mesma meia
+        // precisão — o τRT inteiro fica para as forjas
+        const tauParticulas = new THREE.WebGLRenderTarget(tauRt.width, tauRt.height, {
+          type: THREE.HalfFloatType,
+          format: THREE.RedFormat,
+          depthBuffer: false,
+          minFilter: THREE.LinearFilter,
+          magFilter: THREE.LinearFilter,
+        });
+        const copia = new THREE.ShaderMaterial({
+          vertexShader: DISC_BAKE_VERT,
+          fragmentShader: TAU_COMPACTO_FRAG,
+          uniforms: { uTau: { value: tauRt.texture } },
+        });
+        quad.material = copia;
+        renderer.setRenderTarget(tauParticulas);
+        renderer.render(bakeScene, bakeCam);
+        copia.dispose();
+        this.tauParticulasRT = tauParticulas;
       }
       bakeMat.dispose();
       analytic.uniforms.uFade.value = savedFade;
@@ -458,10 +482,10 @@ export class Galaxy {
     return true;
   }
 
-  /** o bind do τ⊥ num lugar só: o mapa assado ou a 1×1 de repouso. */
+  /** o bind do τ⊥ num lugar só: a cópia compacta assada ou a 1×1 de repouso. */
   private ligarTauMap() {
     this.brightMat.uniforms.uTauMap.value =
-      this.showGDust && this.tauRT ? this.tauRT.texture : this.tauVazio;
+      this.showGDust && this.tauParticulasRT ? this.tauParticulasRT.texture : this.tauVazio;
   }
 
   /**
@@ -490,7 +514,7 @@ export class Galaxy {
     return true;
   }
 
-  /** τ⊥ da coluna, para quem mais precisar da mesma extinção (forges). */
+  /** τ⊥ da coluna (o τRT inteiro, canal A), para quem mais precisar da mesma extinção (forges). */
   get tauMapTexture(): THREE.Texture | null {
     return this.showGDust && this.tauRT ? this.tauRT.texture : null;
   }
@@ -623,6 +647,7 @@ export class Galaxy {
     this.discMats.forEach((material) => material.dispose());
     this.discRTs.forEach((rt) => rt.dispose());
     this.tauRT?.dispose();
+    this.tauParticulasRT?.dispose();
     this.tauVazio.dispose();
     if (this.ownsDustMap) this.dustMap.dispose();
     this.group.traverse((o) => {
