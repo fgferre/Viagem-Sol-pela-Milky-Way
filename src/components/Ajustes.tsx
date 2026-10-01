@@ -300,6 +300,12 @@ export function Ajustes({
   // A FALHA DO CLIPBOARD (§9) — `null` é "sem falha"; enquanto houver uma
   // URL aqui, o campo somente-leitura fica visível logo abaixo dos botões.
   const [urlSemCopia, setUrlSemCopia] = useState<string | null>(null);
+  // O PEDIDO DE FOCO do campo — sobe a CADA falha, mesmo com a MESMA URL. O
+  // clique limpa `urlSemCopia` e a falha a repõe no mesmo lote do React (é
+  // síncrona quando não há `navigator.clipboard`), e `url → null → url`
+  // resolve para o valor de antes: um efeito que dependesse só da URL não
+  // rodaria na segunda falha, e o foco ficaria no botão. Por isso nunca zera.
+  const [falhasDeCopia, setFalhasDeCopia] = useState(0);
   const campoSemCopiaRef = useRef<HTMLInputElement>(null);
   const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
   const idioma = useIdioma();
@@ -321,15 +327,15 @@ export function Ajustes({
   const presetVivo = PRESETS[qualidade.tier];
   const amostrasEfetivas = AMOSTRAS_POR_TIER[qualidade.tier];
 
-  // AO APARECER, o campo da falha recebe foco com a URL selecionada — quem
-  // não conseguiu copiar automaticamente já sai com o texto pronto para
-  // Ctrl+C (§9).
+  // A CADA FALHA, o campo recebe foco com a URL selecionada — quem não
+  // conseguiu copiar automaticamente já sai com o texto pronto para Ctrl+C
+  // (§9), na primeira falha e nas seguintes (`falhasDeCopia`).
   useEffect(() => {
-    if (urlSemCopia != null) {
+    if (falhasDeCopia > 0) {
       campoSemCopiaRef.current?.focus();
       campoSemCopiaRef.current?.select();
     }
-  }, [urlSemCopia]);
+  }, [falhasDeCopia]);
 
   // COPIAR LINK (§9) — `urlParaCopiar` não muda; sucesso mostra "Copiado ✓"
   // por 1,5 s (o rótulo do botão não muda mais), falha (promessa rejeitada
@@ -338,7 +344,10 @@ export function Ajustes({
   function aoClicarCopiarLink() {
     setUrlSemCopia(null);
     const url = urlParaCopiar();
-    const falha = () => setUrlSemCopia(url);
+    const falha = () => {
+      setUrlSemCopia(url);
+      setFalhasDeCopia((n) => n + 1);
+    };
     if (!navigator.clipboard?.writeText) {
       falha();
       return;

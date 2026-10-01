@@ -40,9 +40,14 @@ publicado.**
   A poda da lista foi FEITA com o sim dele (01/10): doze bastões antigos
   e 67 itens fechados saíram (2.050 → ~650 linhas); a história está no
   git.
-- **Aberto — técnico:** o anel de Haumea segue o polo provisório do app
-  (norte celeste), não o equador real; E5, E6, E7 da poeira; **227**; os
-  18 corpos com relevo inventado (**144**).
+- **Feito na segunda leva (01/10):** (6) o anel de Haumea foi para o eixo
+  medido na ocultação (Ortiz 2017: AR 285,1°, Dec −10,6°); a parte comprida
+  do corpo está deitada no plano do anel (conferido na malha e na silhueta
+  da foto, `anel-haumea-polo-*-d8.png`; abertura do anel 13°, a da
+  ocultação ~14°). (7) "Copiar link": o foco volta ao campo a CADA falha,
+  não só na primeira (reproduzido no Chrome sem `navigator.clipboard`).
+- **Aberto — técnico:** E5, E6, E7 da poeira; **227**; os 18 corpos com
+  relevo inventado (**144**).
 
 ## ALTA — o dono vê e incomoda
 
