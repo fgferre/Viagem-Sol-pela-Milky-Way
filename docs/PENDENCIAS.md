@@ -9,8 +9,11 @@ Número é identidade, não posição: item novo entra no fim da sua seção. **
 **30/09–01/10 (rodada dos DEFEITOS VISÍVEIS). Palavras dele: *"quero
 resolver e focar nos problemas e defeitos, coordene pra tirar isso da
 frente. e veja se estamos consumindo os documentos e não gerando novo lixo
-que armazena"*. Tudo no `main`, um commit; backup em `origin/backup`; NÃO
-publicado.**
+que armazena"*. Tudo no `main`, oito commits; PUBLICADO por ele em 01/10
+(`a0cec6e`, corrida do GitHub verde) e conferido no ar: o pacote contém os
+anéis finos, o corte das partículas, o relevo no passe do clarão e o polo
+de Haumea; a folha de estilo traz a gaveta de 23,5 rem; `texturas.json`
+idêntico ao repositório por sha256.**
 
 - **Feito (cada um com prancha em `capturas/`):** (1) o passe que tapa o
   clarão das estrelas atrás dos corpos agora desloca o relevo — a ponta
