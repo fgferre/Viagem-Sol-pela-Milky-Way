@@ -1,12 +1,14 @@
 // ============================================================
 // O MAPA DE NORMAIS DE UM CORPO, assado do DEM público dele
-// (item 140 na Lua, item 141 em Mercúrio, Marte, Ceres e Vesta).
+// (item 140 na Lua, item 141 em Mercúrio, Marte, Ceres e Vesta; Plutão e
+// Caronte em 01/10/2026).
 //
 //   node scripts/data/atlas/gera-normal-de-dem.mjs moon
 //   node scripts/data/atlas/gera-normal-de-dem.mjs mercury
 //   node scripts/data/atlas/gera-normal-de-dem.mjs mars --manter
 //   node scripts/data/atlas/gera-normal-de-dem.mjs moon --dem /caminho/ldem.tif
 //   node scripts/data/atlas/gera-normal-de-dem.mjs vesta --varredura
+//   node scripts/data/atlas/gera-normal-de-dem.mjs pluto --varredura
 //
 // POR QUE ESTE SCRIPT EXISTE. Até o item 140 os corpos com mapa tinham
 // só a COR, e o relevo deles era INVENTADO a partir dela (o bump por
@@ -16,7 +18,7 @@
 // observamos". O conserto é DADO, não shader: onde existe topografia
 // medida e pública, a normal vem dela.
 //
-// UM SCRIPT, CINCO CORPOS (item 141). A tabela `CORPOS` é a única coisa
+// UM SCRIPT, SETE CORPOS (item 141 e 01/10). A tabela `CORPOS` é a única coisa
 // que muda de um para o outro: a fonte, o raio de referência, a
 // conversão que os metadados da fonte declaram e em que longitude a
 // borda esquerda do DEM cai. A conta da normal, a guarda de alinhamento
@@ -104,9 +106,10 @@
 // MB para um produto de alguns MB, e o script o apaga ao terminar
 // quando foi ele quem baixou (`--manter` segura, para quem reamostrar).
 //
-// A LEITURA POR FAIXAS (Mercúrio, Ceres, Vesta). O DEM da USGS de
-// Mercúrio tem 23040x11520 e 530 MB — acima do teto de download desta
-// casa; os da Dawn têm 466 MB (Ceres) e 597 MB (Vesta). Os três são
+// A LEITURA POR FAIXAS (Mercúrio, Ceres, Vesta, Plutão, Caronte). O DEM
+// da USGS de Mercúrio tem 23040x11520 e 530 MB — acima do teto de
+// download desta casa; os da Dawn têm 466 MB (Ceres) e 597 MB (Vesta), e
+// os da New Horizons 591 MiB (Plutão) e 154 MiB (Caronte). Todos são
 // GeoTIFF SEM COMPRESSÃO, uma tira por linha e tiras contíguas, então
 // dá para ler pela rede SÓ as linhas que a grade de saída usa: 2 linhas
 // de origem por linha de saída. Medido: Mercúrio 212 MiB em vez de 530
@@ -114,8 +117,30 @@
 // 5,6 linhas de origem que cabem em cada linha de saída, a média usa 2;
 // nas COLUNAS a média é completa (as 23040 entram). É borrão de
 // latitude, não deslocamento. O leitor aceita 16 bits com sinal
-// (Mercúrio, Ceres) e 32 bits em ponto flutuante (Vesta), que é o que
-// os cabeçalhos declaram.
+// (Mercúrio, Ceres, Plutão, Caronte) e 32 bits em ponto flutuante
+// (Vesta), que é o que os cabeçalhos declaram.
+//
+// O VAZIO SEM DADO (Plutão e Caronte, 01/10/2026). Os DEMs da New
+// Horizons são PARCIAIS: ~45 % do globo em Plutão (o hemisfério do
+// sobrevoo e a calota norte), ~44 % em Caronte (o hemisfério voltado para
+// Plutão). O tapa-buraco põe o vazio em 0 m, e o degrau entre o dado e
+// esse zero viraria uma PAREDE de normal em volta de tudo que foi medido.
+// Onde a tabela declara `vazioLiso`:
+//   - `mediaDeCaixa` marca o texel VAZIO: o que não teve amostra com
+//     dado E também o PARCIAL, que teve alguma sem dado — a média dele
+//     cobre só um pedaço da caixa, colado na borda do levantamento. O
+//     preço é um texel a mais de borda e um "+" liso em volta de cada
+//     furo interno;
+//   - a máscara gira com o DEM (`orientar`, a mesma conta);
+//   - `assaNormais` dá a normal LISA (128,128,255, a do terreno plano) a
+//     todo texel cuja diferença central toca o vazio — ele mesmo ou um
+//     dos quatro vizinhos —, então nenhuma normal sai do 0 m inventado; o
+//     RMS e a máxima impressos medem só os texels com dado.
+// Liso é a bola da casa sem relevo. A borda é seca, sem esfumado: se ela
+// aparecer na foto, quem decide é o dono. Os cinco corpos de antes não
+// declaram `vazioLiso` e assam como sempre, byte a byte. A GUARDA não usa
+// a máscara (ela vê o vazio como 0 m): num corpo assim, rode com
+// `--varredura` e confira que o pico cai em 0°.
 // ============================================================
 
 import { mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
@@ -148,6 +173,10 @@ const rootDirectory = path.resolve(
  * esfera a ponto de importar (ver o cabeçalho): `a` é a média dos dois
  * eixos equatoriais e `c` o polar, e o raio desse elipsoide é subtraído
  * do dado antes de derivar, para não contar a figura global duas vezes.
+ *
+ * `vazioLiso` só existe onde o DEM é PARCIAL (Plutão, Caronte): o vazio
+ * e a borda dele saem com a normal lisa, não com a parede do 0 m (ver o
+ * cabeçalho).
  */
 export const CORPOS = {
   moon: {
@@ -272,6 +301,56 @@ export const CORPOS = {
       linhasPorSaida: 2,
       // o GDALNoData do TIF é o menor float negativo
       semDado: -1e30,
+    },
+  },
+
+  // OS DOIS DA NEW HORIZONS (01/10/2026): DEMs de 300 m do sobrevoo de
+  // 2015, PARCIAIS — daí `vazioLiso` (ver o cabeçalho). Schenk et al.
+  // 2018: Plutão em Icarus 314, 400 (doi:10.1016/j.icarus.2018.06.008),
+  // Caronte em Icarus 315, 124 (doi:10.1016/j.icarus.2018.06.010).
+  pluto: {
+    nome: 'Plutão',
+    diretorio: 'pluto',
+    // a esfera de referência do DEM (a de BODY_AXES.pluto)
+    raioM: 1188300,
+    // sem escala nem deslocamento: o int16 já é a altura em metros sobre
+    // a esfera
+    offsetDoDado: 0,
+    metrosPorUnidade: 1,
+    // meridiano central 180°: borda esquerda em 0°, a mesma meia volta do
+    // mapa de cor (item 149)
+    longitudeDaBordaEsquerdaGraus: 0,
+    // dado em ~45 % do globo: de −50° a +89°, no equador só de 84° a 247°E,
+    // acima de +60° em toda longitude
+    vazioLiso: true,
+    fonte: {
+      tipo: 'tif-por-faixas',
+      nome: 'Pluto_NewHorizons_Global_DEM_300m_Jul2017_16bit.tif',
+      url: 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Pluto_NewHorizons_Global_DEM_300m_Jul2017_16bit.tif',
+      descricao: 'New Horizons LORRI–MVIC Global DEM 300 m de Plutão (USGS Astrogeology)',
+      linhasPorSaida: 2,
+      semDado: -32768,
+    },
+  },
+
+  charon: {
+    nome: 'Caronte',
+    diretorio: 'charon',
+    // a esfera de referência do DEM (a de BODY_AXES.charon)
+    raioM: 606000,
+    offsetDoDado: 0,
+    metrosPorUnidade: 1,
+    // meridiano central 0°, que já é a convenção da casa: giro 0
+    longitudeDaBordaEsquerdaGraus: 180,
+    // dado em ~44 % do globo: o hemisfério voltado para Plutão, de −42° a +89°
+    vazioLiso: true,
+    fonte: {
+      tipo: 'tif-por-faixas',
+      nome: 'Charon_NewHorizons_Global_DEM_300m_Jul2017_16bit.tif',
+      url: 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Charon_NewHorizons_Global_DEM_300m_Jul2017_16bit.tif',
+      descricao: 'New Horizons LORRI–MVIC Global DEM 300 m de Caronte (USGS Astrogeology)',
+      linhasPorSaida: 2,
+      semDado: -32768,
     },
   },
 };
@@ -418,12 +497,18 @@ async function conferirRotuloPds(corpo) {
  * `linhasPorSaida` limita quantas linhas de origem entram na média de
  * cada linha de saída — é o botão que a leitura remota usa para não
  * baixar o arquivo inteiro.
+ *
+ * `vazio` é a MÁSCARA do texel sem dado (1/0): a caixa sem amostra com
+ * dado e também a PARCIAL, com alguma amostra sem dado (ver o
+ * cabeçalho). `vazios` continua contando só a primeira — é o número que
+ * os corpos sem `vazioLiso` sempre imprimiram. A média não muda.
  */
-async function mediaDeCaixa(
+export async function mediaDeCaixa(
   daLinha, origem, largura, altura, linhasPorSaida, semDado, preencheComAMedia
 ) {
   // sai em VALOR BRUTO da fonte; a conversão para metros é do chamador
   const media = new Float32Array(largura * altura);
+  const vazio = new Uint8Array(largura * altura);
   let vazios = 0;
   for (let j = 0; j < altura; j += 1) {
     const j0 = Math.floor((j * origem.altura) / altura);
@@ -435,11 +520,14 @@ async function mediaDeCaixa(
     for (let l = 0; l < usadas; l += 1) {
       for (let i = 0; i < origem.largura; i += 1) {
         const v = linhas[l * origem.largura + i];
+        const ii = Math.floor((i * largura) / origem.largura);
         // `<=` porque o sem-dado do float de Vesta é o menor negativo
         // que existe e não sobrevive à ida e volta pelo decimal do
         // GDALNoData; no inteiro de 16 bits o `<=` é o próprio `===`
-        if (v <= semDado) continue;
-        const ii = Math.floor((i * largura) / origem.largura);
+        if (v <= semDado) {
+          vazio[j * largura + ii] = 1;
+          continue;
+        }
         soma[ii] += v;
         conta[ii] += 1;
       }
@@ -460,11 +548,14 @@ async function mediaDeCaixa(
     }
     const tapaBuraco = preencheComAMedia && contaDaLinha ? somaDaLinha / contaDaLinha : 0;
     for (let i = 0; i < largura; i += 1) {
-      if (conta[i] === 0) vazios += 1;
+      if (conta[i] === 0) {
+        vazios += 1;
+        vazio[j * largura + i] = 1;
+      }
       media[j * largura + i] = conta[i] ? soma[i] / conta[i] : tapaBuraco;
     }
   }
-  return { media, vazios };
+  return { media, vazios, vazio };
 }
 
 /**
@@ -480,6 +571,7 @@ async function lerAlturaEmMetros(corpo, contexto, largura) {
   const comRaio = Boolean(corpo.eixosDaCasaKm);
   let bruto;
   let vazios = 0;
+  let vazio = null;
 
   if (fonte.tipo === 'imagem') {
     const { data } = await sharp(contexto.caminho, { limitInputPixels: false })
@@ -504,7 +596,7 @@ async function lerAlturaEmMetros(corpo, contexto, largura) {
       }
       return fatia;
     };
-    ({ media: bruto, vazios } = await mediaDeCaixa(
+    ({ media: bruto, vazios, vazio } = await mediaDeCaixa(
       daLinha, origem, largura, altura, Number.POSITIVE_INFINITY, fonte.semDado, comRaio
     ));
   } else if (fonte.tipo === 'tif-por-faixas') {
@@ -525,20 +617,28 @@ async function lerAlturaEmMetros(corpo, contexto, largura) {
       }
       return fatia;
     };
-    ({ media: bruto, vazios } = await mediaDeCaixa(
+    ({ media: bruto, vazios, vazio } = await mediaDeCaixa(
       daLinha, origem, largura, altura, fonte.linhasPorSaida, fonte.semDado, comRaio
     ));
   } else {
     throw new Error(`fonte de tipo desconhecido: ${fonte.tipo}`);
   }
 
-  if (vazios) console.log(`  ${vazios} texels sem dado na grade de ${largura} — postos em 0.`);
+  if (corpo.vazioLiso) {
+    const n = vazio.reduce((soma, v) => soma + v, 0);
+    console.log(
+      `  ${n} texels sem dado na grade de ${largura} ` +
+        `(${((100 * n) / (largura * altura)).toFixed(1)} %) → relevo liso.`
+    );
+  } else if (vazios) {
+    console.log(`  ${vazios} texels sem dado na grade de ${largura} — postos em 0.`);
+  }
   const metros = new Float32Array(bruto.length);
   for (let k = 0; k < metros.length; k += 1) {
     metros[k] = bruto[k] * contexto.escala + contexto.offset;
   }
   if (corpo.eixosDaCasaKm) descontarElipsoideDaCasa(corpo, metros, largura, altura);
-  return { metros, largura, altura };
+  return { metros, largura, altura, vazio };
 }
 
 /**
@@ -563,13 +663,14 @@ function descontarElipsoideDaCasa(corpo, metros, largura, altura) {
 /**
  * A grade na convenção do mapa de cor. `defasagemExtraGraus` é o que a
  * guarda usa para experimentar outras posições (meia volta, ou as 72 da
- * varredura) sem reler a fonte, que é cara.
+ * varredura) sem reler a fonte, que é cara. `campo` troca o que gira: a
+ * máscara do vazio (`grade.vazio`) vai pelo MESMO giro que os metros.
  */
-function orientar(corpo, grade, defasagemExtraGraus = 0) {
+function orientar(corpo, grade, defasagemExtraGraus = 0, campo = grade.metros) {
   const giro =
     LONGITUDE_ESQUERDA_DA_CASA - corpo.longitudeDaBordaEsquerdaGraus + defasagemExtraGraus;
   // o DEM é um canal (metros por texel) — a mesma conta que gira imagem
-  return giraColunasDeImagem(grade.metros, grade.largura, grade.altura, 1, giro);
+  return giraColunasDeImagem(campo, grade.largura, grade.altura, 1, giro);
 }
 
 // ------------------------------------------------------------
@@ -704,7 +805,14 @@ function raioDoPassoM(corpo) {
   return ((2 * a + c) / 3) * 1000;
 }
 
-export function assaNormais(metros, largura, altura, raioM) {
+/**
+ * A NORMAL de cada texel por diferença central. `vazio` (opcional) é a
+ * máscara de `mediaDeCaixa`, na mesma grade e no mesmo giro de `metros`:
+ * o texel cuja conta toca um vazio — ele mesmo ou um dos quatro vizinhos
+ * — sai liso e fica fora do RMS e da máxima, e `lisos` os conta. Sem
+ * `vazio`, a conta e os bytes são os de sempre.
+ */
+export function assaNormais(metros, largura, altura, raioM, vazio) {
   const dLon = (2 * Math.PI) / largura;
   const dLat = Math.PI / altura;
   const passoNorte = raioM * dLat;
@@ -712,6 +820,7 @@ export function assaNormais(metros, largura, altura, raioM) {
   const rgb = Buffer.allocUnsafe(largura * altura * 3);
   let somaDeclive2 = 0;
   let maiorDeclive = 0;
+  let lisos = 0;
   for (let j = 0; j < altura; j += 1) {
     const lat = Math.PI / 2 - ((j + 0.5) / altura) * Math.PI;
     const passoLeste = Math.max(raioM * Math.cos(lat) * dLon, passoLesteMinimo);
@@ -722,6 +831,22 @@ export function assaNormais(metros, largura, altura, raioM) {
     for (let i = 0; i < largura; i += 1) {
       const iLeste = (i + 1) % largura; // longitude dá a volta
       const iOeste = (i - 1 + largura) % largura;
+      if (
+        vazio &&
+        (vazio[j * largura + i] ||
+          vazio[j * largura + iLeste] ||
+          vazio[j * largura + iOeste] ||
+          vazio[jNorte * largura + i] ||
+          vazio[jSul * largura + i])
+      ) {
+        // a normal do terreno plano, a mesma que a conta dá a declive zero
+        const k = (j * largura + i) * 3;
+        rgb[k] = 128;
+        rgb[k + 1] = 128;
+        rgb[k + 2] = 255;
+        lisos += 1;
+        continue;
+      }
       const dhLeste =
         (metros[j * largura + iLeste] - metros[j * largura + iOeste]) / (2 * passoLeste);
       const dhNorte = (metros[jNorte * largura + i] - metros[jSul * largura + i]) / vaoNorte;
@@ -737,11 +862,13 @@ export function assaNormais(metros, largura, altura, raioM) {
       rgb[k + 2] = Math.max(0, Math.min(255, Math.round((inv * 0.5 + 0.5) * 255)));
     }
   }
-  const rms = Math.sqrt(somaDeclive2 / (largura * altura));
+  const comDado = largura * altura - lisos;
+  const rms = comDado ? Math.sqrt(somaDeclive2 / comDado) : 0;
   return {
     rgb,
     rmsGraus: (Math.atan(rms) * 180) / Math.PI,
     maxGraus: (Math.atan(Math.sqrt(maiorDeclive)) * 180) / Math.PI,
+    lisos,
   };
 }
 
@@ -808,12 +935,18 @@ async function main() {
 
   const grade = await lerAlturaEmMetros(corpo, contexto, LARGURA_ALVO);
   const { largura, altura } = grade;
-  const { rgb, rmsGraus, maxGraus } = assaNormais(
-    orientar(corpo, grade), largura, altura, raioDoPassoM(corpo)
+  const { rgb, rmsGraus, maxGraus, lisos } = assaNormais(
+    orientar(corpo, grade), largura, altura, raioDoPassoM(corpo),
+    corpo.vazioLiso ? orientar(corpo, grade, 0, grade.vazio) : undefined
   );
   console.log(
     `inclinação: RMS ${rmsGraus.toFixed(2)}°, máxima ${maxGraus.toFixed(2)}° ` +
-      '(amplitude FÍSICA, ganho 1,0 — nenhum exagero entra aqui).'
+      '(amplitude FÍSICA, ganho 1,0 — nenhum exagero entra aqui)' +
+      (lisos
+        ? `, medida só onde há dado: ${lisos} texels ` +
+          `(${((100 * lisos) / (largura * altura)).toFixed(1)} %) saem lisos — ` +
+          'o vazio e o anel de um texel em volta dele.'
+        : '.')
   );
 
   await mkdir(destino, { recursive: true });

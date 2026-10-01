@@ -297,6 +297,12 @@ export const BUMP_DO_ALBEDO: Readonly<Record<string, number>> = {
   // diogenito escuro de Rheasilvia — e não buraco. Com o DTM HAMO de 93
   // m medido, a forma vem do dado.
   vesta: 0,
+  // Plutão e Caronte (01/10/2026): têm a NORMAL MEDIDA da New Horizons
+  // (`NORMAL_MEDIDA`, rochoso.ts), e o zero declara a aproximação
+  // aposentada neles também. Onde o DEM não alcança o chão é liso de
+  // propósito: o albedo não empresta relevo ao lado sem medida.
+  pluto: 0,
+  charon: 0,
   // ITEM 141 (decisão dele, 03/09, "pode zerar Europa e Io"): nas duas a
   // mancha do mapa é COR, não forma — as linhas de Europa são gelo tingido
   // sobre uma casca lisa, e Io é enxofre de todas as cores sobre planícies

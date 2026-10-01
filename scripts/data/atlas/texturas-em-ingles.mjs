@@ -349,6 +349,14 @@ export const EM_INGLES = new Map([
     'Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física',
     'Dawn HAMO global DTM 93 m (DLR, via USGS Astrogeology) — NORMAL map derived from the radius, at physical amplitude',
   ],
+  [
+    'New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física',
+    'New Horizons LORRI+MVIC — global DEM of Pluto at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude',
+  ],
+  [
+    'New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física',
+    'New Horizons LORRI+MVIC — global DEM of Charon at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude',
+  ],
 
   // ---- atribuições (o crédito redigido que a licença exige) --------
   [
@@ -426,6 +434,14 @@ export const EM_INGLES = new Map([
   [
     'Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
     'Topography: DLR Institute of Planetary Research, from the Framing Camera imaging (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distributed by USGS Astrogeology. Normal map baked in this house (gera-normal-de-dem.mjs).',
+  ],
+  [
+    'Topografia: Schenk et al. 2018, Icarus 314, 400, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
+    'Topography: Schenk et al. 2018, Icarus 314, 400, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs).',
+  ],
+  [
+    'Topografia: Schenk et al. 2018, Icarus 315, 124, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
+    'Topography: Schenk et al. 2018, Icarus 315, 124, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs).',
   ],
 
   // ---- "o defeito" e "o relevo admite" (tabela `a imagem` do ASSETS)
@@ -509,6 +525,15 @@ export const EM_INGLES = new Map([
   [
     'topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave',
     'real Dawn topography over an ellipsoid of revolution: Vesta has three different axes, and the 9 km between the two equatorial ones sit in the light as a gentle ramp',
+  ],
+  // 01/10/2026 — o relevo da New Horizons, que só cobre parte do globo
+  [
+    'topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa',
+    'real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball',
+  ],
+  [
+    'topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa',
+    'real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball',
   ],
 
   // ---- "a forma" (tabela `a forma` do ASSETS) ----------------------

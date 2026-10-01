@@ -283,7 +283,7 @@ const ESCALA_DA_NORMAL_DO_RELEVO = 1.2;
 /**
  * A NORMAL MEDIDA (item 141) — os corpos cujo relevo vem de DEM público
  * e entra SÓ NA LUZ. É o caminho que a Lua estreou no item 140, agora em
- * Mercúrio, Marte, Ceres e Vesta:
+ * Mercúrio, Marte, Ceres, Vesta, Plutão e Caronte:
  * `scripts/data/atlas/gera-normal-de-dem.mjs` assa o
  * mapa de normais em AMPLITUDE FÍSICA (a inclinação do texel é a
  * inclinação medida do terreno) e o shader o consome pelo frame
@@ -307,6 +307,14 @@ const ESCALA_DA_NORMAL_DO_RELEVO = 1.2;
  * e não a bola outra vez. Em Vesta a figura global valia ~8° de rampa,
  * que é mais do que todo o relevo dela.
  *
+ * OS DOIS DA NEW HORIZONS (Plutão e Caronte, 01/10/2026) têm uma
+ * diferença que os quatro de antes não têm: o DEM de 300 m é PARCIAL.
+ * Plutão tem relevo medido em ~45 % do globo (o hemisfério do sobrevoo e
+ * a calota norte) e Caronte em ~44 % (o hemisfério voltado para Plutão);
+ * no resto a normal é a do terreno plano (128,128,255) — o gerador não
+ * assa parede de normal onde falta dado, e a borda do dado é seca, sem
+ * esfumado. Fonte: Schenk et al. 2018 (Icarus 314, 400 e 315, 124).
+ *
  * O valor é a ESCALA TANGENCIAL, e é 1 — nenhum ganho. As luas de
  * Saturno usam 1,2 porque o número é o do projeto do dono; aqui a
  * amplitude já é a medida, e exagerá-la seria voltar a inventar.
@@ -316,6 +324,8 @@ export const NORMAL_MEDIDA: Readonly<Record<string, number>> = {
   mars: 1,
   ceres: 1,
   vesta: 1,
+  pluto: 1,
+  charon: 1,
 };
 
 /** Raios do corpo em pc — BODY_AXES (a fonte única) pelos
@@ -984,8 +994,8 @@ export class RochosoResolvido {
    *  (B1, `escalaDoBumpDoAlbedo` > 0) e NÃO há mapa de relevo. `null`
    *  onde não há o que ligar: esculpido (a forma é o dado), config já
    *  procedural (sem mapa), relevo medido (Mercúrio, Marte, Ceres, Vesta,
-   *  as seis de Saturno com o mosaico) e bump zerado (Europa, Io, Vênus,
-   *  Titã). Decisão dele, 04/09/2026. */
+   *  Plutão, Caronte, as seis de Saturno com o mosaico) e bump zerado
+   *  (Europa, Io, Vênus, Titã). Decisão dele, 04/09/2026. */
   get relevoDaCor(): boolean | null {
     if (this.config.superficie !== undefined && this.config.superficie !== 'mapa') return null;
     const id = this.config.id;

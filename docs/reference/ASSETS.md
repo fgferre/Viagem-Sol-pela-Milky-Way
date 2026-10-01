@@ -570,6 +570,24 @@ Em 2026 o Sol ilumina o **norte** do sistema de Plutão (a obliquidade é de
 fotografado: a calota lisa fica na noite, ao contrário do que aconteceu com
 as luas de Urano no item 147.
 
+**O RELEVO, só na metade medida (01/10/2026).** A normal dos dois vem dos
+DEMs de 300 m da New Horizons do USGS Astrogeology
+(<https://astrogeology.usgs.gov/search/map/pluto_new_horizons_lorri_mvic_global_dem_300m>
+e `…/charon_new_horizons_lorri_mvic_global_dem_300m`; Schenk et al. 2018,
+*Icarus* 314, 400 e 315, 124; domínio público, com citação dos autores),
+pelo `gera-normal-de-dem.mjs` de Mercúrio: inteiro de 16 bits com sinal,
+altura em metros sobre a esfera (1188,3 km; 606 km) sem escala nem
+deslocamento, sem-dado −32768, lido por faixas HTTP (24888×12444 em
+Plutão, 12693×6347 em Caronte). Os giros são os dos mapas de cor:
+meridiano central 180° em Plutão (meia volta), 0° em Caronte (giro 0).
+**Os dois DEMs são parciais**: Plutão tem dado em ~45 % do globo (de −50° a
++89°, mas no equador só de 84° a 247°E; acima de +60° em toda longitude),
+Caronte em ~44 % (o hemisfério voltado para Plutão, de −42° a +89°). O
+vazio não entra na luz como 0 m, porque o degrau desenharia uma parede em
+volta do hemisfério medido: o gerador põe a normal LISA no texel sem dado
+(também no parcial, que mistura dado e vazio) e nos quatro vizinhos dele,
+e o RMS impresso mede só onde há dado. A borda fica seca, sem esfumado.
+
 ## Os seis sem foto — ilustrações por IA (item 151)
 
 Hígia, Palas, Haumea, Makemake, Éris e Quaoar: nenhuma sonda os visitou.
@@ -725,6 +743,8 @@ tocar num `.mjs`.
 | mars/normal | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |
 | ceres/normal | topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem |
 | vesta/normal | topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave |
+| pluto/normal | topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa |
+| charon/normal | topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa |
 | miranda/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
 | ariel/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
 | umbriel/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |

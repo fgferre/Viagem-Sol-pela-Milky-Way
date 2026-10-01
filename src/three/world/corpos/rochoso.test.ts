@@ -898,12 +898,13 @@ describe('7. a meia volta dos mapas das seis luas de mosaico (item 138)', () => 
 /** o brdf REAL de cada corpo, tirado do registro — nada de segunda tabela. */
 const brdfDe = (id: string) => ROCHOSOS.find((r) => r.id === id)!.brdf;
 
-describe('8. o relevo dos quatro da NORMAL_MEDIDA, e o inventado que saiu (141)', () => {
+describe('8. o relevo dos seis da NORMAL_MEDIDA, e o inventado que saiu (141)', () => {
   it('todos os da tabela: normal medida ligada em 1 (ganho nenhum) e bump ZERADO', async () => {
     // A varredura é sobre a TABELA, não sobre uma lista de nomes: corpo
     // novo que entrar no relevo medido é cobrado aqui no mesmo dia. Os
-    // quatro do item 141 — tabela esvaziada aprovaria por vazio.
-    expect(Object.keys(NORMAL_MEDIDA)).toEqual(['mercury', 'mars', 'ceres', 'vesta']);
+    // quatro do item 141 e os dois da New Horizons (Plutão e Caronte,
+    // 01/10) — tabela esvaziada aprovaria por vazio.
+    expect(Object.keys(NORMAL_MEDIDA)).toEqual(['mercury', 'mars', 'ceres', 'vesta', 'pluto', 'charon']);
     for (const id of Object.keys(NORMAL_MEDIDA)) {
       const { corpo, chamadas } = rochosoDeTeste(id, brdfDe(id));
       corpo.atualizar(quadro(id, 4));
@@ -973,7 +974,7 @@ describe('8. o relevo dos quatro da NORMAL_MEDIDA, e o inventado que saiu (141)'
     }
   });
 
-  it('a normal medida não desloca vértice: a malha dos quatro segue a esfera lisa', async () => {
+  it('a normal medida não desloca vértice: a malha dos seis segue a esfera lisa', async () => {
     for (const id of Object.keys(NORMAL_MEDIDA)) {
       const { corpo } = rochosoDeTeste(id, brdfDe(id));
       corpo.atualizar(quadro(id, 4));

@@ -635,6 +635,36 @@ const ORIGENS = {
       'casa (gera-normal-de-dem.mjs).',
     proveniencia: 'derivado',
   },
+  // 01/10/2026: a mesma técnica em PLUTÃO e CARONTE, com os DEMs de 300 m
+  // da New Horizons (Schenk et al. 2018). Os dois são PARCIAIS — menos da
+  // metade do globo tem dado —, e o gerador põe a normal LISA no vazio e
+  // na borda dele; a ficha confessa isso (ASSETS.md).
+  'pluto/normal': {
+    fonte:
+      'New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS ' +
+      'Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física',
+    url: 'https://astrogeology.usgs.gov/search/map/pluto_new_horizons_lorri_mvic_global_dem_300m',
+    licenca: 'domínio público (NASA/USGS)',
+    atribuicao:
+      'Topografia: Schenk et al. 2018, Icarus 314, 400, a partir das imagens ' +
+      'LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), ' +
+      'distribuída pelo USGS Astrogeology Science Center. Mapa de normais ' +
+      'assado nesta casa (gera-normal-de-dem.mjs).',
+    proveniencia: 'derivado',
+  },
+  'charon/normal': {
+    fonte:
+      'New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS ' +
+      'Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física',
+    url: 'https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_dem_300m',
+    licenca: 'domínio público (NASA/USGS)',
+    atribuicao:
+      'Topografia: Schenk et al. 2018, Icarus 315, 124, a partir das imagens ' +
+      'LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), ' +
+      'distribuída pelo USGS Astrogeology Science Center. Mapa de normais ' +
+      'assado nesta casa (gera-normal-de-dem.mjs).',
+    proveniencia: 'derivado',
+  },
 };
 
 // A marca da política do dono: arquivo presente sem linha em ORIGENS

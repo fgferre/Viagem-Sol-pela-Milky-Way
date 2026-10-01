@@ -775,6 +775,180 @@
       }
     },
     {
+      "corpo": "charon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/charon/normal_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 417539,
+      "sha256": "61ff9a0e0bef84785dc3ce7bed70e1f0cf32f7808677d68a6ef220c5f119251e",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Charon at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 315, 124, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 315, 124, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+      }
+    },
+    {
+      "corpo": "charon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/charon/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 276204,
+      "sha256": "528924f773a896d6c2e7da6e8aa580b4d34c83f449627c61d21f4531c5fecd55",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Charon at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 315, 124, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 315, 124, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+      }
+    },
+    {
+      "corpo": "charon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/charon/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1567061,
+      "sha256": "84028b13053976e1a8a70e3881cbe1f2824fb6c56f90101918e3bb1f2fdaaad0",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Charon at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 315, 124, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 315, 124, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+      }
+    },
+    {
+      "corpo": "charon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/charon/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 897150,
+      "sha256": "0b326c2a78799eacd0f13d22f430ef48769d9bc247fdb474690ed08c632d666d",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Charon at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 315, 124, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 315, 124, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+      }
+    },
+    {
+      "corpo": "charon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/charon/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 5478250,
+      "sha256": "f81172b2d3f74398e7508adedd15862308a3433a28c6ac40de5a2f43c03c8684",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Charon at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 315, 124, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 315, 124, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+      }
+    },
+    {
+      "corpo": "charon",
+      "canal": "normal",
+      "arquivo": "textures/atlas/charon/normal.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 2291546,
+      "sha256": "f94fc2df32a4701294e14da009f27bcd0631d071ac8ad76607a5ee0b4ed8e278",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Charon at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 315, 124, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 315, 124, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+      }
+    },
+    {
       "corpo": "deimos",
       "canal": "map",
       "arquivo": "textures/atlas/deimos/map_1024.jpg",
@@ -5885,6 +6059,180 @@
       "nota": {
         "pt": "mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu",
         "en": "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "normal",
+      "arquivo": "textures/atlas/pluto/normal_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 413277,
+      "sha256": "902f73810243857b4bacb0791e5b7311c201b2d928b39d8c051e72bdce6ffc67",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Pluto at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/pluto_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 314, 400, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 314, 400, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "normal",
+      "arquivo": "textures/atlas/pluto/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 304992,
+      "sha256": "38ef9f011ecacd11a152eac82b23b071d71b184672d22a4f299aac2f182ac737",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Pluto at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/pluto_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 314, 400, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 314, 400, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "normal",
+      "arquivo": "textures/atlas/pluto/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1749867,
+      "sha256": "843bad1bb413e59dd945ee527281d722aedb2921b2866c0cc6cc7330aa2e0354",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Pluto at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/pluto_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 314, 400, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 314, 400, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "normal",
+      "arquivo": "textures/atlas/pluto/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1250168,
+      "sha256": "63e78e11fd64a35e0bec8c334922dbb6a7a32654c4f8083bf9b8623df95eb423",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Pluto at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/pluto_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 314, 400, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 314, 400, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "normal",
+      "arquivo": "textures/atlas/pluto/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 6661447,
+      "sha256": "a45c0eab4d1b8cfb3dcdb62526e3d3f2fe4ec06ed46df28a2d284fe7a04a3dfe",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Pluto at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/pluto_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 314, 400, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 314, 400, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
+      }
+    },
+    {
+      "corpo": "pluto",
+      "canal": "normal",
+      "arquivo": "textures/atlas/pluto/normal.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 4495492,
+      "sha256": "f0088b64ffdf9f5670661506ab947e9639cc614646c579e3c09db5f515b61036",
+      "origem": {
+        "fonte": {
+          "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
+          "en": "New Horizons LORRI+MVIC — global DEM of Pluto at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/pluto_new_horizons_lorri_mvic_global_dem_300m",
+        "licenca": {
+          "pt": "domínio público (NASA/USGS)",
+          "en": "public domain (NASA/USGS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk et al. 2018, Icarus 314, 400, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).",
+          "en": "Topography: Schenk et al. 2018, Icarus 314, 400, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
       }
     },
     {

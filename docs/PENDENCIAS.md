@@ -58,6 +58,13 @@ idêntico ao repositório por sha256.**
   do filme. Com a régua certa os níveis do Gaia custam 4–6 ms por quadro
   (8 % em t=60, 13 % em t=40); está no `BACKLOG.md` como pista, decisão
   dele.
+- **Feito na terceira leva (01/10, com o seu sim aos itens 5, 6 e 8):**
+  (10) o laço de extinção das partículas da galáxia lê um mapa compacto
+  (t=150 61 → 44 ms, t=160 90 → 77 ms, zero pixel diferente); (11) a vaga
+  do tijolo nos níveis do Gaia em ponto flutuante exato (custo dos níveis
+  de 5,7 para 2,9 ms em t=40; imagem idêntica por sha256); (12) Plutão e
+  Caronte com o relevo real da New Horizons na luz, na metade medida
+  (ver **144**); as pistas de desempenho que sobram estão no `BACKLOG.md`.
 - **Aberto — técnico:** E5, E6, E7 da poeira; **227**; os 18 corpos com
   relevo inventado (**144**); as pistas de desempenho do `BACKLOG.md`
   (mapa de poeira compacto para a galáxia, cache de tijolo nos níveis).
@@ -339,10 +346,30 @@ isso, mas nao nessa sessao... se tiver mapa de alturas aplicamos o relevo
 assim, senao deixamos sem o relevo."* Censo (mecanico, 03/09; tabela em
 scratchpad da sessão, resumo aqui): com o bump da cor LIGADO hoje — Fobos,
 Deimos, Ganimedes, Calisto, Miranda, Ariel, Umbriel, Titânia, Oberon, Tritão,
-Plutão, Caronte, Palas, Hígia, Haumea, Makemake, Éris, Quaoar (18).
+Plutão, Caronte, Palas, Hígia, Haumea, Makemake, Éris, Quaoar (18 — desde
+01/10, 16: Plutão e Caronte ganharam o relevo real, abaixo).
 - **Relevo real pronto (aplicar como no 141):** Plutão e Caronte — DEM da
-  New Horizons (Schenk et al. 2018, USGS Astropedia, 300 m/px, quase global,
-  sem o polo sul — a mesma lacuna da cor do 149).
+  New Horizons (Schenk et al. 2018, USGS Astropedia, 300 m/px). CORRIGIDO
+  em 01/10 lendo os arquivos de verdade: o dado cobre ~45 % de Plutão
+  (o hemisfério do sobrevoo e a calota norte) e ~44 % de Caronte (o lado
+  voltado para Plutão) — "quase global" estava errado; é o mesmo caso de
+  Tritão, abaixo. Ele aprovou a obra em 01/10 (*"8 vamos fazer"*) e, para
+  a metade sem dado, escolheu o relevo INVENTADO com base científica
+  (*"vamos de B e deixamos especificado"*): primeiro o relevo real na
+  metade medida (bola lisa no resto, confessada); depois, rodada à parte,
+  campo de crateras e terrenos gerados por código na metade sem dado,
+  calibrados pelo lado medido e confessados na ficha como invenção — a
+  receita de Reia e Jápeto. Vale como regra para Tritão e os demais.
+  FEITA a primeira metade em 01/10: ele assou os dois mapas (guarda 0,31
+  contra −0,006 e 0,31 contra 0,09 na meia-volta, pico em 0°; 53,6 % e
+  54,4 % de texels sem dado saem lisos; inclinação RMS 7,3° e 8,5°, máxima
+  57° e 61°, sem muro na borda), `data:verify` verde, relevo ligado nos
+  dois (`NORMAL_MEDIDA`, bump da cor zerado), Marte idêntico por md5;
+  prancha `capturas/plutao-caronte-relevo-prancha.jpg`. Visto na prova e
+  não consertado: a planície Sputnik tem grão fino de ruído estéreo do
+  DEM (RMS ~5° numa planície que é lisa) e faixas de baixa amplitude
+  junto do vazio, só visíveis no mapa de diferença ×8. A segunda metade
+  (o inventado científico na metade sem dado) é rodada à parte.
 - **Real por FORMA (malha, não normais):** Fobos (Gaskell/SPC, PDS) e Deimos
   (PDS) — caminho do esculpido com dado real, fase própria.
 - **Parcial, decisão dele:** Tritão tem DEM real (Schenk/LPI) em ~40 % da

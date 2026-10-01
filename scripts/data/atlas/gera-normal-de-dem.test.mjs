@@ -38,6 +38,7 @@ import {
   MARGEM_DA_BORDA,
   assaNormais,
   conferirAlinhamento,
+  mediaDeCaixa,
   medirAlinhamento,
 } from './gera-normal-de-dem.mjs';
 
@@ -245,9 +246,17 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     // Vesta: na 3ª fase do 141 a COR foi girada −150° para a IAU na
     // aquisição, e o relevo voltou ao rótulo do DEM (borda esquerda 180°)
     expect(CORPOS.vesta).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 180 });
+    // Plutão e Caronte (01/10): os DEMs da New Horizons não declaram escala
+    // nem deslocamento; Plutão nasce com meridiano central 180° (borda em
+    // 0°, a meia volta do mapa de cor), Caronte com 0° (borda em 180°)
+    expect(CORPOS.pluto).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 0 });
+    expect(CORPOS.charon).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 180 });
+    // e só os dois DEMs parciais ligam a máscara do vazio: os cinco de
+    // antes assam sem ela, byte a byte como antes
+    expect(Object.keys(CORPOS).filter((id) => CORPOS[id].vazioLiso)).toEqual(['pluto', 'charon']);
     // e NINGUÉM fica de fora do pino: corpo novo entra na tabela com as
     // três declarações ou reprova aqui, em vez de assar por padrão mudo
-    expect(Object.keys(CORPOS)).toEqual(['moon', 'mercury', 'mars', 'ceres', 'vesta']);
+    expect(Object.keys(CORPOS)).toEqual(['moon', 'mercury', 'mars', 'ceres', 'vesta', 'pluto', 'charon']);
     for (const [id, c] of Object.entries(CORPOS)) {
       expect(Number.isFinite(c.offsetDoDado), `${id} offset`).toBe(true);
       expect(Number.isFinite(c.metrosPorUnidade), `${id} escala`).toBe(true);
@@ -329,5 +338,64 @@ describe('5. o giro do DEM é a MESMA conta que gira imagem', () => {
     ]);
     const girado = giraColunasDeImagem(rgb, largura, 1, 3, 180);
     expect(Array.from(girado)).toEqual([7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]);
+  });
+});
+
+describe('6. o vazio sem dado vira relevo LISO (Plutão e Caronte, 01/10)', () => {
+  /**
+   * Os DEMs da New Horizons cobrem menos da metade do globo, e o
+   * tapa-buraco põe o vazio em 0 m: sem a máscara, o degrau entre o
+   * planalto medido e esse zero é uma PAREDE de normal. A ORIGEM aqui tem
+   * 16x8 amostras, e a média de caixa a reduz a 8x4 (2x2 por texel): dado
+   * nas colunas de saída 0–3 — um planalto de 3 km com rampa leste de
+   * 100 m por coluna —, vazio nas 4–7 e UMA amostra sem dado no texel
+   * (1,3), o parcial. O raio de 1 km dá inclinação de grau inteiro com
+   * alturas de int16.
+   */
+  it('o vazio e os vizinhos dele saem lisos, e a rampa medida ao lado sobrevive sem parede', async () => {
+    const SEM_DADO = -32768;
+    const fonte = new Int16Array(16 * 8);
+    for (let k = 0; k < fonte.length; k += 1) {
+      const coluna = (k % 16) >> 1; // a coluna de SAÍDA desta amostra
+      fonte[k] = coluna < 4 ? 3000 + 100 * coluna : SEM_DADO;
+    }
+    fonte[7 * 16 + 2] = SEM_DADO; // uma das quatro amostras do texel (1,3)
+    const { media, vazio } = await mediaDeCaixa(
+      async (j0, n) => fonte.subarray(j0 * 16, (j0 + n) * 16),
+      { largura: 16, altura: 8 }, 8, 4, 2, SEM_DADO, false
+    );
+    // o PARCIAL conta como vazio, igual à caixa toda sem dado
+    expect(Array.from(vazio)).toEqual(
+      Array.from(grade((i, j) => (i >= 4 || (i === 1 && j === 3) ? 1 : 0), 8, 4))
+    );
+
+    const R = 1000;
+    // sem a máscara, o degrau de 3 km para o 0 m é uma parede (~80°)
+    expect(assaNormais(media, 8, 4, R).maxGraus).toBeGreaterThan(70);
+    const com = assaNormais(media, 8, 4, R, vazio);
+    // com ela, só sai calculado quem tem a diferença central inteira no dado
+    const calculados = ['1,0', '2,0', '1,1', '2,1', '2,2'];
+    for (let j = 0; j < 4; j += 1) {
+      for (let i = 0; i < 8; i += 1) {
+        const k = (j * 8 + i) * 3;
+        const liso = [com.rgb[k], com.rgb[k + 1], com.rgb[k + 2]].join() === '128,128,255';
+        expect(liso, `(${i},${j})`).toBe(!calculados.includes(`${i},${j}`));
+      }
+    }
+    expect(com.lisos).toBe(32 - calculados.length);
+    // e a inclinação impressa é a da rampa, medida só onde há dado
+    const declive = (j) => 100 / ((R * Math.cos(latDe(j, 4)) * 2 * Math.PI) / 8);
+    const graus = (d) => (Math.atan(d) * 180) / Math.PI;
+    expect(com.maxGraus).toBeCloseTo(graus(declive(0)), 6);
+    expect(com.rmsGraus).toBeCloseTo(
+      graus(Math.sqrt((2 * declive(0) ** 2 + 3 * declive(1) ** 2) / 5)), 6
+    );
+
+    // a máscara gira COM o DEM (a meia volta de Plutão): assar girado é girar o assado
+    const meia = (campo, canais) => giraColunasDeImagem(campo, 8, 4, canais, 180);
+    expect(meia(vazio, 1)).toBeInstanceOf(Uint8Array);
+    expect(Array.from(assaNormais(meia(media, 1), 8, 4, R, meia(vazio, 1)).rgb)).toEqual(
+      Array.from(meia(com.rgb, 3))
+    );
   });
 });
