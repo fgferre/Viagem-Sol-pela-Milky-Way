@@ -228,6 +228,25 @@ void main() {
   // como estrelas individuais a esta distância sai da integrada.
   // Além de ~5 kpc unresolved ≡ 1,0 — a vista externa não move.
   vAlpha = aAlpha * uFade * fluxoDaTela * unresolved(dist);
+
+  // O CORTE DO QUE NÃO PINTA (01/10). Com a galáxia inteira no quadro
+  // (t=150–160 do filme: 99,3–99,99% dos 4 M pontos no frustum) o custo
+  // é a CONTAGEM de pontos, não o tamanho deles — pontos de 1 px custaram
+  // o mesmo que os de verdade —, e metade dele vem DEPOIS do vértice:
+  // primitiva, rastro e blend de 4 M pontos empilhados na faixa fina.
+  // Um ponto cujo pico por pixel (cor já extinta × alpha) fica abaixo de
+  // 1e-4 em unidade de cena não move a saída sozinho: vale ≤ 0,15 de um
+  // nível de 8 bits na parte mais íngreme da curva (ACES, exposição 1,05)
+  // e nada no preto (o pé do ACES zera abaixo de ~1,9e-3). Somados, os
+  // cortados mudaram no máximo 1 nível em t=140/150/160 (fotos A/B
+  // capturas/galaxia-disco-*). Ganho medido em t=150 tocando, DPR 2:
+  // ~79 → ~61 ms por quadro — de perfil, quase tudo está atrás da fenda.
+  // FORA do volume de recorte (x, y e z além de w) o ponto não gera nem
+  // primitiva; o discard no fragmento com o mesmo limiar não poupou nada
+  // (medido), e o corte antes da extinção só pegaria os fracos de
+  // nascença, poucos, somando divergência ao laço (medido: pior).
+  if (max(vColor.r, max(vColor.g, vColor.b)) * vAlpha < 1e-4)
+    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 }
 `;
 

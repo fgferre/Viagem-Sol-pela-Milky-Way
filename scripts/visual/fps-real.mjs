@@ -11,12 +11,13 @@
 // O QUE SE CONTA (30/09): quadros DESENHADOS pelo director
 // (`window.__poeira.quadros`, um por tick), não chamadas de rAF (`__f`): o
 // app tem outros laços de rAF (o mapa da cartografia, por exemplo) que
-// entram e saem conforme a vista, e contá-los inflou a régua — os "16–19 %
-// de custo dos níveis do Gaia" eram esse laço a mais com os níveis
-// desligados. Fora do dev server (`__poeira` ausente) cai no `__f` e avisa.
-// E `?t=` PARADO congela o raymarch da nebulosa (câmera parada = quadro
-// congelado): para medir o custo do gás, passe `--tocar` — o filme toca e
-// a câmera anda durante a janela.
+// entram e saem conforme a vista, e contá-los inflou a régua (os "25–31 %
+// de custo dos níveis do Gaia" de 30/09 eram esse laço a mais com os
+// níveis desligados). Fora do dev server (`__poeira` ausente) cai no `__f`
+// e avisa. E `?t=` PARADO congela o raymarch da nebulosa (câmera parada =
+// quadro congelado): para medir o custo do gás, passe `--tocar` — o filme
+// RETOMA de onde `?t=` o deixou e a câmera anda durante a janela; a saída
+// imprime o trecho coberto (t a → b), e é por ele que se confere a medida.
 //
 //   node scripts/visual/fps-real.mjs 't=100' [--seg=6] [--dpr=2] [--janela=1280x720] [--tocar]
 import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
@@ -45,17 +46,26 @@ const sessao = await abrirSessao({
 try {
   await sessao.ir(QUERY); // já espera captura.pronto
   if (TOCAR) {
-    await sessao.js('window.__director.play(); true');
+    // RETOMAR, não `play()`: `play()` zera o relógio do filme (`journeyT = 0`)
+    // e a janela mediria o começo do filme, não o instante pedido (achado
+    // em 01/10 pelo investigador do custo da galáxia). `freezeJourney =
+    // false` solta a viagem de onde `?t=` a deixou.
+    await sessao.js('window.__director.freezeJourney = false; true');
     await dorme(1500); // o primeiro passo do filme assenta (bake, LUT)
   }
   const temDirector = await sessao.js('typeof window.__poeira?.quadros === "number"');
   if (!temDirector) process.stderr.write('aviso: sem window.__poeira (fora do dev server?) — contando rAF, que inflam\n');
   const contador = temDirector ? 'window.__poeira.quadros' : 'window.__f';
   const f0 = await sessao.js(contador);
+  const t0 = TOCAR ? await sessao.js('window.__director.journeyT') : null;
   await dorme(SEG * 1000);
   const f1 = await sessao.js(contador);
+  const t1 = TOCAR ? await sessao.js('window.__director.journeyT') : null;
   const fps = (f1 - f0) / SEG;
-  process.stdout.write(`${QUERY}${TOCAR ? ' (tocando)' : ''}  ${fps.toFixed(1)} fps\n`);
+  // com `--tocar` imprime o trecho do filme que a janela cobriu, para a
+  // leitura nunca mais confundir o começo do filme com o instante pedido
+  const trecho = TOCAR ? ` (tocando, t ${Number(t0).toFixed(1)} → ${Number(t1).toFixed(1)} s)` : '';
+  process.stdout.write(`${QUERY}${trecho}  ${fps.toFixed(1)} fps\n`);
 } finally {
   await sessao.fechar();
 }

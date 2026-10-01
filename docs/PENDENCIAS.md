@@ -46,8 +46,18 @@ publicado.**
   da foto, `anel-haumea-polo-*-d8.png`; abertura do anel 13°, a da
   ocultação ~14°). (7) "Copiar link": o foco volta ao campo a CADA falha,
   não só na primeira (reproduzido no Chrome sem `navigator.clipboard`).
+  (8) Fim do filme mais leve: em t=150–160 quase os 4 M pontos da galáxia
+  estão em vista e o custo é a contagem; um corte no vértice dos pontos
+  que não pintam (brilho × alfa < 1e-4) leva t=150 de ~89 para ~62 ms por
+  quadro sem mudar nenhum pixel mais que 1/255 (`galaxia-disco-prancha-v2.jpg`).
+  (9) A régua de fps consertada de novo: o `--tocar` chamava `play()`, que
+  ZERA o filme — a leitura "os níveis custam zero" de 30/09 mediu o começo
+  do filme. Com a régua certa os níveis do Gaia custam 4–6 ms por quadro
+  (8 % em t=60, 13 % em t=40); está no `BACKLOG.md` como pista, decisão
+  dele.
 - **Aberto — técnico:** E5, E6, E7 da poeira; **227**; os 18 corpos com
-  relevo inventado (**144**).
+  relevo inventado (**144**); as pistas de desempenho do `BACKLOG.md`
+  (mapa de poeira compacto para a galáxia, cache de tijolo nos níveis).
 
 ## ALTA — o dono vê e incomoda
 
