@@ -24,9 +24,10 @@ pirâmide.**
   do Auto (~0,4 s de engasgo atrás da capa, ~2 s depois de abrir); o
   clique medido duas vezes sem nenhum quadro fora do ritmo normal.
   `npm run done` verde.
-- **Aberto — dele:** conferir no iPhone (fps e memória com a pirâmide:
-  Performance não prepara nada antes do clique, paga como antes) e o
-  Hipérion no ar, no olho.
+- **Aberto — dele:** o Hipérion no ar, no olho. (A poeira com níveis no
+  iPhone ele já aprovou em 29/09; a medição formal de fps e memória lá
+  ficou como leitura técnica, sem gate. No Performance nada é preparado
+  antes do clique do Gaia: ele paga como antes.)
 - **Aberto — técnico:** E5, E6, E7 da poeira; a gaveta estreita
   (`BACKLOG.md`); **227**.
 
