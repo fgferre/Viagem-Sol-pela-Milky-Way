@@ -240,18 +240,24 @@ float poeiraPesoDoNivel(vec4 raios, float t, float r) {
 // E/pc do nível no ponto, se o tijolo dele estiver residente. nivel =
 // origem (pc) + voxel (pc); tijolos = tijolos por eixo + deslocamento em z
 // na pilha de tabelas. g em voxels (centro do voxel i em i + ½); a vaga v
-// mora em (v % sx, (v / sx) % sy, v / (sx·sy))·${LADO_DA_VAGA} — conta INTEIRA,
-// porque a divisão em float erra o índice por 1 ulp.
+// mora em (v % sx, (v / sx) % sy, v / (sx·sy))·${LADO_DA_VAGA}. As divisões são em
+// FLOAT sobre v + ½: as quatro inteiras, que a GPU emula, custavam ~3 ms
+// por quadro (01/10, Cinema DPR 2, filme tocando: t=40 de 20,7 para 22,2
+// fps, a mesma imagem). O quociente exato de v + ½ fica a ≥ ½/s de um
+// inteiro, e o erro da divisão (≤ 2,5 ulp) é menor que isso para todo
+// v < 2¹⁶ (a tabela é R16UI): o floor dá o índice da conta inteira, bit a
+// bit. Sem o ½ o quociente cai em cima do inteiro e erra por 1 — conferido
+// na GPU para todo v e sx ≥ sy até 60: 132 erros em 120 M sem o ½, zero com.
 bool poeiraLerNivel(vec4 nivel, vec4 tijolos, float escala, vec3 ph, out float e) {
   e = 0.0;
   vec3 g = (ph - nivel.xyz) / nivel.w;
   vec3 b = clamp(floor(g * ${glslNumber(1 / NUCLEO_DO_TIJOLO)}), vec3(0.0), tijolos.xyz - 1.0);
   uint codigo = texelFetch(uPoeiraTabelas, ivec3(b) + ivec3(0, 0, int(tijolos.w)), 0).r;
   if (codigo < ${PRIMEIRO_CODIGO_DE_VAGA}u) return false;
-  uint v = codigo - ${PRIMEIRO_CODIGO_DE_VAGA}u;
-  uint sx = uint(uPoeiraVagas.x);
-  uint sy = uint(uPoeiraVagas.y);
-  vec3 origem = vec3(uvec3(v % sx, (v / sx) % sy, v / (sx * sy))) * ${glslNumber(LADO_DA_VAGA)};
+  float vMeio = float(codigo - ${PRIMEIRO_CODIGO_DE_VAGA}u) + 0.5;
+  float linha = floor(vMeio / uPoeiraVagas.x);
+  float camada = floor(vMeio / (uPoeiraVagas.x * uPoeiraVagas.y));
+  vec3 origem = vec3(vMeio - 0.5 - linha * uPoeiraVagas.x, linha - camada * uPoeiraVagas.y, camada) * ${glslNumber(LADO_DA_VAGA)};
   vec3 local = clamp(g - ${glslNumber(NUCLEO_DO_TIJOLO)} * b, 0.0, ${glslNumber(NUCLEO_DO_TIJOLO)}) + 1.0;
   e = texture(uPoeiraAtlas, (origem + local) * uPoeiraAtlasTexel).r * escala;
   return true;
