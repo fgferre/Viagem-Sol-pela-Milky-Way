@@ -10,7 +10,7 @@ Ramo `cor-inventada` (nasce do `relevo-inventado`, que fica intacto e mergeável
 ## O diagnóstico (medido nesta sessão)
 - A linha reta da foto 4 de Caronte NÃO está no relevo: a aspereza média e a altura média por faixa de latitude não dão salto; a vista renderizada só com o mapa de normais não tem linha.
 - Está no mapa de COR: o terço sul nunca fotografado (noite polar no sobrevoo) foi tapado em 03/09 (item 149) com o tom médio liso; a borda desse tapa-buraco é o terminador do dia da passagem, uma polilinha de segmentos retos. Com relevo dos dois lados, a borda ficou evidente.
-- A cor fotografada carrega a SOMBRA assada da sonda: no lado medido bem resolvido de Caronte, o passa-alta do brilho correlaciona r = 0,34 com n·L para um Sol a azimute ~330° (NNO) e elevação ~45° (grade de 10°/20°; o pior oposto dá −0,34). É a direção que a cor inventada tem de respeitar para a cor e o relevo não se desencontrarem.
+- A cor fotografada carrega a SOMBRA assada da sonda: no lado medido bem resolvido de Caronte, o passa-alta do brilho correlaciona r = 0,34 com n·L para um Sol a azimute ~330° (NNO) e elevação ~45° (grade de 10°/20°; o pior oposto dá −0,34). Em Plutão (110–170°E e 190–250°E, −25..+55°, luminância): r = 0,40 a azimute 320° (NO), elevação mal definida (0–50° dão o mesmo r; usar 30°). É a direção que a cor inventada tem de respeitar para a cor e o relevo não se desencontrarem. No espaço do próprio mapa de normais (n = rgb/127,5 − 1): Caronte L = (−0,354, 0,612, 0,707); Plutão L = (−0,557, 0,663, 0,500).
 
 ## A técnica (decisão desta sessão)
 Transferência de textura na esfera, à Efros & Freeman 2001 §3 ("Image Quilting for Texture Synthesis and Transfer"), o mesmo molde da colcha do relevo, agora para a cor e GUIADA pelo relevo:
