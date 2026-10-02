@@ -1,0 +1,329 @@
+{
+  "corpo": "charon",
+  "convencao": "Latitude planetocêntrica e longitude LESTE 0–360, em graus (convenção New Horizons; 0° é o ponto voltado para Plutão; o lado de trás é centrado em 180°E; o mapa da casa tem 180°E na coluna 0). Polígonos: listas de [lon, lat] fechadas implicitamente; entre vértices vizinhos o passo de longitude é sempre menor que 180°, então um salto perto de ±360 é a passagem pelo meridiano 0 — desenrole somando ±360. Um buraco (unidade dentro de outra) vem costurado ao contorno por uma ponte de largura zero: rasterize com a regra par–ímpar. Os polígonos cobrem só o vazio do DEM, com ≤3° de sobra para dentro do dado. 'exemplo': caixa [mín, máx] em lon e em lat, inteira no dado medido e sem atravessar 0°. Feições: centro (lat, lon); azimuteGraus = rumo do eixo longo a partir do norte, sentido horário, 0–180; 'trajeto' = polilinha [lon, lat] digitalizada. Tudo é aproximado: a imagem do lado de trás tem 2–40 km/px.",
+  "fontes": [
+    "Be21 — Beyer, Robbins, Beddingfield et al. 2021, 'Charon's Far Side Geomorphology', PSJ 2:141 (doi:10.3847/PSJ/ac09e9): Fig. 2b (mapa geomórfico, p. 5), Figs. 4–5 (p. 7), Fig. 8 (crateras, p. 9), §4.2–4.5 (pp. 8–11), Fig. 10 (p. 11).",
+    "Be17 — Beyer et al. 2017, 'Charon tectonics', Icarus 287:161 — não lido aqui; fatos via PLAN-RELEVO.md.",
+    "Sch18C — Schenk et al. 2018, Icarus 315:124 — DEM de Caronte (via PLAN-RELEVO.md).",
+    "Ro19 — Robbins et al. 2019: unidades Bl (blocos, Oz), Sm (lisa, Vulcan) e Rt (rugosa) do lado da frente, via Be21.",
+    "IAU/USGS Gazetteer of Planetary Nomenclature: Argo Chasma (27,8°N 80,4°E, 355 km), Mandjet Chasma (4,8°N 294,4°E, 385 km), Butler Mons, Clarke Montes, Kubrick Mons, Sadko."
+  ],
+  "metodo": "Be21 não traz mapa de unidades do lado de trás, só feições (escarpas, cristas, crateras e uma planície); as unidades são palpite guiado por elas. Feições lineares digitalizadas da Fig. 2b (0°E na coluna 8, 3,403 px/grau; 90°N na linha 598); diâmetros das crateras estimados no mapa de cor da casa (imagem de ~15–20 km/px). Grade de 0,5°, recorte ao vazio do DEM (normal.png, abertura 5×5, só os componentes grandes) dilatado 2°, Douglas–Peucker de 1°.",
+  "padraoGeral": "Vazio do DEM sem polígono: ao sul de padraoDoSul.abaixoDaLatitude vale o padrão do sul; ao norte, a unidade do polígono mais próximo (distância na esfera) — sobram só frestas da simplificação e ilhas pequenas de vazio dentro do DEM (norte, 110–170°E).",
+  "unidades": {
+    "terras-altas": {
+      "nome": "Terras altas em blocos, crateradas (tipo Oz Terra)",
+      "siglaNaFonte": "Bl (Ro19, via Be21)",
+      "papel": "planalto-aspero",
+      "poligonos": [
+        [[180.5,54.5],[148.5,53.0],[130.5,48.0],[121.0,50.0],[116.0,48.0],[117.5,42.5],[110.5,38.0],[174.5,25.0],[223.0,27.0],[240.5,24.0],[245.5,22.0],[258.5,12.0],[265.0,3.0],[259.5,17.0],[254.0,24.0],[237.5,38.5],[235.0,42.5],[230.0,44.0],[228.5,47.0],[221.5,49.0],[207.0,49.0],[192.0,55.0],[180.5,55.0]],
+        [[112.0,12.0],[109.5,5.5],[104.0,-0.5],[95.0,-4.0],[82.5,-1.5],[76.5,4.0],[74.5,8.5],[65.5,4.0],[64.5,2.0],[72.0,2.0],[72.0,-28.0],[250.5,-28.0],[246.0,-12.0],[241.5,-5.5],[233.0,1.0],[215.0,3.0],[172.5,1.0],[157.5,3.0],[142.5,7.5],[112.0,13.5]],
+        [[268.5,-4.0],[276.0,-21.5],[275.5,-28.0],[288.5,-28.0],[278.5,-19.5],[268.5,-2.5]]
+      ],
+      "exemplo": {
+        "nome": "Oz Terra, entre o cinturão e a cratera Dorothy",
+        "lon": [330,360],
+        "lat": [30,45]
+      },
+      "confianca": "palpite",
+      "fonte": "Be21 §3 (p. 6), §4.3 (p. 10), §4.5 e Conclusões (p. 11); Figs. 2b e 5",
+      "nota": "Todo o lado de trás fora do cinturão e das planícies lisas. Ao norte do cinturão continua Oz Terra; ao sul, Be21 veem escarpas grandes (então não é planície tipo Vulcan, e Caronte não tem dicotomia) e acham a faixa 255–300°E 'provavelmente mais da unidade Bl'. Há crateras >10 km, mas poucas foram vistas (15–40 km/px)."
+    },
+    "cinturao": {
+      "nome": "Cinturão de chasmata e escarpas (continuação de Serenity–Mandjet–Argo)",
+      "siglaNaFonte": "—",
+      "papel": "cinturao-tectonico",
+      "poligonos": [
+        [[110.0,37.5],[102.0,31.5],[105.5,30.0],[110.0,25.0],[112.5,13.0],[172.5,1.0],[221.0,3.0],[233.0,1.0],[242.0,-6.0],[246.0,-12.0],[250.5,-28.0],[276.0,-27.5],[276.0,-21.5],[268.0,-1.5],[258.5,12.0],[242.5,23.5],[223.0,27.0],[174.5,25.0],[110.0,38.0]]
+      ],
+      "exemplo": {
+        "nome": "Serenity Chasma e escarpas vizinhas",
+        "lon": [0,32],
+        "lat": [14,30]
+      },
+      "confianca": "palpite",
+      "fonte": "Be21 §4.3 (p. 10), Figs. 2b (p. 5) e 5 (p. 7), Conclusões (p. 11); Be17 via PLAN-RELEVO.md",
+      "nota": "Be21: a ruptura da crosta do lado da frente 'dá a volta' em Caronte; escarpas com mediana de 213 km, em grupos de 3–4 espaçadas 75–115 km; Mandjet (450 × 30 km, 5–7 km de fundo) é visível desde 36,5 km/px. O traçado é meu: faixa de ~250 km sobre a tendência das escarpas mapeadas (Argo → 125–145°E → 174°E/13°N → 200–240°E → a possível extensão de Mandjet em 249–264°E). A caixa-exemplo inclui a própria Serenity (40–50 km de largura, ≥5 km de relevo): se a E6 escavar as fossas como feições, medir o exemplo sem elas."
+    },
+    "planicie-lisa": {
+      "nome": "Planícies lisas (tipo Vulcan Planitia)",
+      "siglaNaFonte": "Sm (Ro19); 'Sm, uncertain' em Be21",
+      "papel": "planicie-lisa",
+      "poligonos": [
+        [[101.5,31.0],[89.0,17.5],[74.0,9.0],[76.5,4.0],[82.5,-1.5],[90.0,-4.0],[97.5,-3.5],[104.0,-0.5],[109.5,5.5],[112.0,12.0],[111.5,21.5],[109.0,26.5],[101.5,31.5]],
+        [[64.5,1.5],[42.5,-16.0],[37.0,-17.5],[35.5,-21.0],[24.5,-28.0],[72.0,-28.0],[72.0,2.0],[64.5,2.0]]
+      ],
+      "exemplo": {
+        "nome": "Vulcan Planitia, entre Sadko e Clarke Montes",
+        "lon": [335,358],
+        "lat": [-22,-6]
+      },
+      "confianca": "mapa",
+      "fonte": "Be21 §4.4 e Fig. 10 (pp. 10–11); §4.1 (pp. 6–8); Figs. 2b e 4",
+      "nota": "Dois polígonos: (1) o círculo liso de Argo (>400 km pela fonte, ~400 km medidos na Fig. 2b, centro ~15°N 92,5°E), sem escarpas grandes dentro e não deprimido; Argo Chasma é o seu quadrante NO; Be21 o marcam como incerto; (2) a continuação de Vulcan ao sul e a leste de Butler Mons (20–72°E), onde Be21 veem as planícies envolverem a montanha. O corte em 72°E (início das fossas N–S de 74–77°E) é palpite."
+    }
+  },
+  "padraoDoSul": {
+    "unidade": "planicie-lisa",
+    "abaixoDaLatitude": -28,
+    "confianca": "palpite",
+    "nota": "Sem DEM e sem imagem de dia (o sul estava no escuro; só luz de Plutão). Pelo plano (01/10), vale a unidade mais ao sul do lado medido: Vulcan Planitia, que passa do terminador (~36°S) sem borda sul conhecida (Be21 §4.1)."
+  },
+  "feicoes": [
+    {
+      "nome": "U (cratera candidata)",
+      "tipo": "cratera",
+      "lat": 36.5,
+      "lon": 105.5,
+      "diametroKm": 120,
+      "confianca": "candidata",
+      "fonte": "Be21 §4.2 (pp. 8–9), Figs. 8 e 2b",
+      "nota": "A maior candidata; reconhecida pelo sombreamento de uma depressão, não pelo albedo. Diâmetro aproximado: 100–150 km no mapa de cor da casa. Pico desconhecido. O centro cai ~3° dentro do DEM medido, na faixa lisa (sem detalhe) junto à borda: conferir antes de escavar."
+    },
+    {
+      "nome": "A (cratera candidata)",
+      "tipo": "cratera",
+      "lat": 1.7,
+      "lon": 93,
+      "diametroKm": 30,
+      "confianca": "candidata",
+      "fonte": "Be21 §4.2 (pp. 8–9), Fig. 8",
+      "nota": "Pequena, borda clara e centro escuro; 20–40 km no mapa da casa. Fica dentro do círculo liso de Argo."
+    },
+    {
+      "nome": "Arroway",
+      "tipo": "cratera",
+      "lat": 5,
+      "lon": 107,
+      "diametroKm": 60,
+      "confianca": "candidata",
+      "fonte": "Be21 §4.2 (pp. 8–9), Fig. 8; mapa de cor da casa",
+      "nota": "Nome informal. Borda clara, centro escuro de ~40 km e halo claro de ~100 km — provavelmente a 'de raios claros de ~100 km a leste de Argo' do plano (Be21: os raios podem ser efeito da deconvolução). Be21 dão 108°E; o mapa da casa põe o centro em ~106–107°E. Dentro do círculo liso de Argo."
+    },
+    {
+      "nome": "B (cratera candidata)",
+      "tipo": "cratera",
+      "lat": 36,
+      "lon": 152.5,
+      "diametroKm": 50,
+      "confianca": "candidata",
+      "fonte": "Be21 §4.2 (pp. 8–9), Figs. 8 e 2b",
+      "nota": "Borda clara e centro escuro; diâmetro muito incerto (40–100 km)."
+    },
+    {
+      "nome": "C (cratera candidata)",
+      "tipo": "cratera",
+      "lat": 55,
+      "lon": 158,
+      "diametroKm": 70,
+      "confianca": "candidata",
+      "fonte": "Be21 §4.2 (pp. 8–9), Figs. 8 e 2b",
+      "nota": "Anel claro de ~70 km no mapa da casa (Be21 dão ~156°E). Cai na borda norte do DEM, que ali é liso e sem detalhe: conferir antes de escavar."
+    },
+    {
+      "nome": "planície lisa de Argo",
+      "tipo": "planicie",
+      "lat": 15,
+      "lon": 92.5,
+      "diametroKm": 400,
+      "confianca": "mapa",
+      "fonte": "Be21 §4.4 e Fig. 10 (pp. 10–11), Fig. 2b",
+      "nota": "Unidade circular >400 km; sem escarpas grandes; não é deprimida (não é só uma bacia de impacto); talvez extensão de Vulcan ou outra efusão criovulcânica. Escarpas a SO parecem truncar na sua borda."
+    },
+    {
+      "nome": "escarpa norte (a)",
+      "tipo": "escarpa",
+      "lat": 45.9,
+      "lon": 133.5,
+      "comprimentoKm": 280,
+      "azimuteGraus": 51,
+      "trajeto": [[116.5,41.4],[125.0,43.6],[132.8,45.6],[139.7,48.3],[146.0,50.9],[150.5,53.0]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3 (p. 10)",
+      "nota": "Longa, rumo ENE; a ponta NE encosta na borda do DEM."
+    },
+    {
+      "nome": "escarpa norte (b)",
+      "tipo": "escarpa",
+      "lat": 40.7,
+      "lon": 141.5,
+      "comprimentoKm": 300,
+      "azimuteGraus": 61,
+      "trajeto": [[124.3,36.8],[131.4,37.7],[139.0,39.5],[146.3,42.7],[151.9,43.6],[159.9,45.3]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3 (p. 10)",
+      "nota": "Paralela à (a), ~5° ao sul."
+    },
+    {
+      "nome": "escarpa central NE",
+      "tipo": "escarpa",
+      "lat": 22.2,
+      "lon": 136.4,
+      "comprimentoKm": 215,
+      "azimuteGraus": 53,
+      "trajeto": [[127.2,17.3],[131.4,20.6],[136.9,22.4],[141.3,24.8],[145.2,28.3]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3 (p. 10)",
+      "nota": "Rumo NE; uma das escarpas a leste de Argo."
+    },
+    {
+      "nome": "escarpa de 174°E (norte)",
+      "tipo": "escarpa",
+      "lat": 16.7,
+      "lon": 172.2,
+      "comprimentoKm": 445,
+      "azimuteGraus": 70,
+      "trajeto": [[152.1,9.3],[159.4,11.7],[168.0,16.2],[176.0,17.0],[182.5,20.4],[186.0,23.0],[189.8,22.1],[191.6,20.1]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3 (p. 10)",
+      "nota": "Sinuosa; com a de baixo forma o par que o plano cita em 174°E/13°N."
+    },
+    {
+      "nome": "escarpa de 174°E (sul)",
+      "tipo": "escarpa",
+      "lat": 6.8,
+      "lon": 179.9,
+      "comprimentoKm": 300,
+      "azimuteGraus": 61,
+      "trajeto": [[166.5,3.6],[172.5,3.6],[176.6,4.8],[180.9,7.4],[185.1,11.2],[188.7,14.6],[190.9,15.9]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3 (p. 10)",
+      "nota": "Paralela à de cima, ~8–10° ao sul."
+    },
+    {
+      "nome": "escarpa de 200–241°E",
+      "tipo": "escarpa",
+      "lat": 17.9,
+      "lon": 221.0,
+      "comprimentoKm": 415,
+      "azimuteGraus": 79,
+      "trajeto": [[202.3,10.8],[208.1,14.8],[214.8,16.8],[223.6,18.3],[232.4,16.8],[241.3,15.4]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3 (p. 10)",
+      "nota": "A mais longa mapeada no leste do lado de trás (resolução já pior, ~25–30 km/px)."
+    },
+    {
+      "nome": "escarpa a leste de Arroway (a)",
+      "tipo": "escarpa",
+      "lat": -1.8,
+      "lon": 112.8,
+      "comprimentoKm": 255,
+      "azimuteGraus": 42,
+      "trajeto": [[105.0,-11.0],[109.0,-6.0],[113.0,-1.5],[117.0,2.5],[121.0,7.0]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3 (p. 10)",
+      "nota": "Grupo de escarpas e cristas paralelas a leste de Arroway, espaçadas 75–115 km (Be21)."
+    },
+    {
+      "nome": "escarpa a leste de Arroway (b)",
+      "tipo": "escarpa",
+      "lat": -10.1,
+      "lon": 122.1,
+      "comprimentoKm": 405,
+      "azimuteGraus": 44,
+      "trajeto": [[106.5,-19.0],[114.0,-17.0],[120.5,-15.0],[122.5,-9.0],[124.0,-3.0],[126.0,2.0],[130.0,7.0]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3 (p. 10)",
+      "nota": "Em J: trecho leste–oeste ao sul e depois rumo NNE."
+    },
+    {
+      "nome": "borda oeste de Argo",
+      "tipo": "escarpa",
+      "lat": 8.1,
+      "lon": 74.2,
+      "comprimentoKm": 120,
+      "azimuteGraus": 175,
+      "trajeto": [[74.3,2.4],[74.6,6.4],[73.8,10.1],[73.2,13.7]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3 (p. 10)",
+      "nota": "Escarpa na borda oeste do círculo liso; na beira do DEM."
+    },
+    {
+      "nome": "par de escarpas frente a frente a 249–264°E (possível extensão de Mandjet)",
+      "tipo": "fossa",
+      "lat": -11.9,
+      "lon": 256.0,
+      "comprimentoKm": 200,
+      "larguraKm": 60,
+      "azimuteGraus": 31,
+      "trajeto": [[252.2,-20.7],[254.6,-15.0],[257.1,-9.5],[261.7,-4.4]],
+      "confianca": "candidata",
+      "fonte": "Be21 §3 (p. 6), Fig. 5 (p. 7), Fig. 2b",
+      "nota": "Duas escarpas ~60 km uma da outra (Mandjet tem ~30 km de largura; à resolução daqui as duas bordas podem ser de fossas diferentes). Rumo NNE; Mandjet propriamente dita começa em 276°E, já no DEM."
+    },
+    {
+      "nome": "fossa N–S a 74–77°E",
+      "tipo": "fossa",
+      "lat": -4.0,
+      "lon": 75.5,
+      "comprimentoKm": 85,
+      "larguraKm": 35,
+      "azimuteGraus": 1,
+      "trajeto": [[75.6,-8.0],[75.5,-4.0],[75.7,0.0]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b; §4.4 (p. 10)",
+      "nota": "Par de escarpas que parece truncar no arco SO da planície de Argo (Be21)."
+    },
+    {
+      "nome": "fossa N–S a 86–89°E",
+      "tipo": "fossa",
+      "lat": -14.7,
+      "lon": 87.9,
+      "comprimentoKm": 100,
+      "larguraKm": 30,
+      "azimuteGraus": 1,
+      "trajeto": [[88.5,-19.3],[87.8,-15.2],[88.6,-10.0]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b; §4.4 (p. 10)",
+      "nota": "Outro par de escarpas a SO da planície de Argo; largura parecida com a de Mandjet."
+    },
+    {
+      "nome": "crista de 163–178°E",
+      "tipo": "crista",
+      "lat": 24.2,
+      "lon": 170.9,
+      "comprimentoKm": 145,
+      "azimuteGraus": 77,
+      "trajeto": [[163.7,23.0],[167.5,24.5],[170.9,24.2],[174.6,23.9],[178.1,25.4]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3",
+      "nota": "Crista (ou escarpa assimétrica: a imagem não distingue)."
+    },
+    {
+      "nome": "crista a leste de Arroway (a)",
+      "tipo": "crista",
+      "lat": -8.1,
+      "lon": 134.2,
+      "comprimentoKm": 250,
+      "azimuteGraus": 50,
+      "trajeto": [[127.0,-17.5],[131.0,-12.0],[135.0,-7.0],[139.0,-3.5],[144.0,-2.5]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3",
+      "nota": "Do grupo de escarpas e cristas paralelas a leste de Arroway."
+    },
+    {
+      "nome": "crista a leste de Arroway (b)",
+      "tipo": "crista",
+      "lat": -15.0,
+      "lon": 138.7,
+      "comprimentoKm": 170,
+      "azimuteGraus": 55,
+      "trajeto": [[133.0,-21.0],[137.0,-16.5],[141.0,-13.0],[146.0,-11.5]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3",
+      "nota": "Idem, ~100 km a SE da (a)."
+    },
+    {
+      "nome": "crista arqueada do sul",
+      "tipo": "crista",
+      "lat": -27.0,
+      "lon": 113.6,
+      "comprimentoKm": 205,
+      "azimuteGraus": 93,
+      "trajeto": [[103.0,-25.0],[110.0,-27.0],[117.0,-27.0],[124.0,-24.5]],
+      "confianca": "mapa",
+      "fonte": "Be21 Fig. 2b (p. 5), §4.3",
+      "nota": "Junto ao fim da imagem (~28°S)."
+    }
+  ]
+}

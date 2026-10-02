@@ -1,0 +1,357 @@
+{
+  "corpo": "pluto",
+  "convencao": "Latitude planetocêntrica e longitude LESTE 0–360, em graus (convenção New Horizons; o lado de trás é centrado em 0°E; o mapa da casa tem 180°E na coluna 0). Polígonos: listas de [lon, lat] fechadas implicitamente; entre vértices vizinhos o passo de longitude é sempre menor que 180°, então um salto perto de ±360 é a passagem pelo meridiano 0 — desenrole somando ±360. Um buraco (unidade dentro de outra) vem costurado ao contorno por uma ponte de largura zero: rasterize com a regra par–ímpar. Os polígonos cobrem só o vazio do DEM, com ≤3° de sobra para dentro do dado. 'exemplo': caixa [mín, máx] em lon e em lat, inteira no dado medido e sem atravessar 0°. Feições: centro (lat, lon); azimuteGraus = rumo do eixo longo a partir do norte, sentido horário, 0–180; 'trajeto' = polilinha [lon, lat] digitalizada. Tudo é aproximado: a imagem do lado de trás tem 2–40 km/px.",
+  "fontes": [
+    "St21 — Stern, White, McGovern et al. 2021, 'Pluto's far side', Icarus 356:113805; preprint arXiv:1910.08833 (.cache/relevo/fontes/st21-plutos-far-side-arxiv1910.08833.pdf). As páginas citadas são as do preprint; Fig. 5 (mapa geológico de 12 unidades) na p. 8.",
+    "Sch18P — Schenk et al. 2018, Icarus 314:400: DEM global e o sistema de cristas e vales norte–sul (RTS), via St21.",
+    "La21 — Lauer et al. 2021, 'The Dark Side of Pluto' (arXiv:2110.11976): o sul só com luz de Caronte (via PLAN-RELEVO.md)."
+  ],
+  "metodo": "Fig. 5 de St21 tirada do PDF na resolução original (2244×1021 px) e georreferenciada pela grade de 30° (210°E na coluna 243, 7,675 px/grau; 90°N na linha 44, 7,704 px/grau); unidades separadas pela cromaticidade (as cores multiplicam a imagem de fundo), moda 9×9, grade de 0,5°, recorte ao vazio do DEM (normal.png: (128,128,255) com abertura 5×5, só os componentes grandes) dilatado 2°, Douglas–Peucker de 1°; manchas < 1 grau² foram para a vizinha. As depressões escuras (dd) e Simonelli (ic) viraram feições e a área delas foi para a unidade vizinha. Contornos de St21 são 'aproximados' na própria fonte.",
+  "padraoGeral": "Vazio do DEM sem polígono: ao sul de padraoDoSul.abaixoDaLatitude vale o padrão do sul; ao norte, a unidade do polígono mais próximo (distância na esfera). Isso cobre (1) a faixa do lado da frente com imagem boa mas sem DEM, a leste do limite do mapa de St21 (de ~10°E a 50°N até ~100°E a 30°S): dá planícies crateradas ao sul e mantos ao norte, como St21 descrevem no texto (pp. 13 e 16) — ali as crateras reais estão no mapa de cor e no catálogo de Robbins; (2) a tira entre o fim do mapa (31–36°S) e 36°S; (3) frestas da simplificação e ilhas pequenas de vazio dentro do DEM.",
+  "unidades": {
+    "laminas": {
+      "nome": "Depósitos de terreno em lâminas",
+      "siglaNaFonte": "btd",
+      "papel": "laminas",
+      "poligonos": [
+        [[11.5,28.0],[9.0,25.5],[10.0,23.5],[14.0,26.5],[13.5,28.5],[11.5,28.5]],
+        [[24.5,28.0],[24.5,23.5],[19.5,21.5],[15.5,17.0],[7.0,20.0],[5.5,18.0],[6.0,12.0],[4.0,9.5],[1.0,9.0],[354.0,11.5],[351.5,6.5],[346.5,8.0],[348.0,11.0],[345.5,12.5],[345.0,17.0],[343.5,17.5],[342.5,12.5],[340.5,12.5],[338.0,13.0],[337.5,7.5],[336.0,8.5],[336.5,13.0],[338.0,13.0],[340.5,12.5],[339.5,18.5],[336.0,20.5],[334.0,20.0],[332.5,16.5],[329.0,18.0],[323.5,10.5],[323.0,7.0],[319.0,4.0],[326.5,-2.0],[327.0,-10.0],[324.5,-16.0],[322.0,-18.0],[314.5,-19.0],[314.0,-14.5],[311.0,-17.5],[307.0,-17.5],[303.0,-15.5],[303.5,-12.0],[299.0,-12.5],[299.0,-15.0],[302.5,-17.5],[302.5,-21.5],[316.5,-25.5],[322.5,-25.5],[326.0,-23.5],[334.0,-22.5],[335.0,-10.5],[337.0,-10.0],[340.0,-12.5],[341.0,-9.5],[341.0,-6.5],[337.5,-5.5],[337.0,2.0],[340.5,0.0],[347.5,0.0],[348.5,2.0],[355.0,4.0],[353.5,5.5],[354.5,7.5],[356.5,7.0],[355.5,4.0],[357.5,3.0],[357.0,0.0],[349.0,0.0],[347.5,-6.5],[343.0,-3.0],[340.5,-3.5],[341.5,-6.5],[344.5,-7.5],[344.0,-16.5],[346.0,-20.0],[348.0,-21.0],[350.0,-19.0],[351.5,-20.5],[353.0,-17.5],[351.5,-13.0],[350.0,-18.5],[347.0,-15.0],[347.0,-12.0],[348.5,-11.0],[348.5,-11.5],[351.5,-13.0],[353.0,-17.5],[355.0,-17.5],[358.5,-23.0],[0.0,-22.5],[0.0,-13.5],[357.0,-11.5],[355.0,-5.0],[356.0,-3.5],[1.0,-4.0],[4.5,-0.5],[5.5,-10.5],[3.5,-13.5],[4.0,-18.0],[9.5,-13.5],[12.0,-18.5],[14.5,-18.5],[16.0,-15.5],[16.0,-20.0],[20.0,-20.0],[18.0,-13.5],[19.0,-6.5],[15.0,2.5],[21.5,3.5],[24.5,0.5],[25.0,-3.0],[28.5,-2.0],[33.0,-5.0],[37.5,-4.5],[40.0,2.0],[39.5,5.5],[36.0,8.0],[35.0,12.5],[21.5,13.0],[22.0,16.0],[30.0,26.0],[28.5,28.0],[26.5,25.5],[24.5,28.5]],
+        [[15.0,25.0],[12.5,20.5],[16.0,19.0],[16.5,24.5],[15.0,25.5]],
+        [[273.0,23.0],[271.5,19.5],[268.5,20.5],[266.0,19.0],[264.5,15.5],[263.0,14.0],[262.5,13.0],[263.0,14.5],[263.0,14.0],[264.5,15.5],[269.0,15.0],[269.0,13.5],[267.0,11.5],[264.5,11.5],[265.0,15.0],[269.0,15.0],[264.5,15.5],[263.0,18.0],[258.0,19.0],[258.0,16.0],[253.0,10.0],[255.0,5.5],[251.5,7.0],[245.5,-1.0],[234.0,-9.5],[235.5,-11.5],[238.5,-9.0],[243.5,-10.5],[244.5,-8.5],[242.0,-4.5],[245.5,-5.0],[252.0,-1.0],[253.5,-1.5],[250.0,-7.0],[246.5,-7.5],[244.0,-12.5],[240.0,-13.5],[243.5,-15.5],[243.0,-20.5],[250.0,-18.0],[250.0,-16.0],[256.0,-11.0],[256.5,-7.5],[258.5,-7.0],[256.5,-4.5],[258.5,-2.5],[260.0,-2.5],[259.5,-4.5],[261.5,-5.5],[261.5,-1.5],[265.0,-2.0],[269.0,0.5],[270.5,-2.0],[274.0,-2.0],[279.0,2.0],[283.0,2.0],[282.5,4.5],[285.0,7.5],[282.5,10.5],[282.5,11.5],[279.5,10.0],[278.0,8.0],[278.0,5.5],[272.5,5.5],[272.5,2.5],[270.0,1.0],[269.5,3.5],[268.0,6.0],[266.5,3.5],[255.5,3.5],[258.0,6.5],[256.0,8.5],[257.5,14.0],[259.0,14.0],[258.5,8.0],[263.5,7.5],[264.0,10.0],[265.0,8.5],[267.5,9.0],[268.0,6.0],[269.5,3.5],[271.0,4.5],[271.0,4.0],[272.5,2.5],[272.5,5.5],[271.0,10.0],[272.0,10.0],[273.0,7.0],[275.0,7.0],[273.5,9.5],[276.0,10.0],[278.0,8.0],[279.5,10.0],[281.5,13.5],[281.5,13.0],[282.5,11.5],[282.5,10.5],[285.0,12.0],[284.0,14.5],[286.0,12.5],[284.5,9.0],[286.5,9.0],[288.0,6.5],[290.5,7.5],[289.0,11.5],[291.5,10.5],[293.0,12.0],[294.5,10.5],[294.5,8.5],[291.5,8.5],[293.0,4.5],[292.0,1.5],[297.0,-1.0],[300.5,-10.0],[310.5,-15.5],[310.5,-2.5],[307.0,-2.0],[307.0,-3.5],[304.0,-9.5],[301.0,-7.5],[302.5,-3.5],[301.0,-1.0],[302.0,2.0],[301.0,3.0],[301.0,1.5],[300.0,3.0],[301.0,3.0],[302.0,2.0],[304.0,2.0],[303.5,-2.5],[307.0,-2.0],[310.5,-2.5],[314.5,-1.5],[317.5,-3.0],[319.5,-1.0],[317.5,3.0],[315.0,2.5],[313.5,4.0],[314.5,12.0],[306.5,12.5],[299.0,16.5],[298.0,14.5],[300.0,14.0],[301.0,10.0],[299.0,9.5],[298.0,12.5],[293.5,16.0],[287.5,16.5],[289.0,23.5],[280.0,23.5],[277.5,20.5],[276.5,22.5],[273.0,23.5]],
+        [[263.5,6.0],[263.0,5.0],[265.0,5.0],[265.0,6.5],[263.5,6.5]],
+        [[47.0,5.0],[46.5,-4.5],[43.5,-4.5],[43.5,-6.5],[47.5,-7.0],[48.0,-9.5],[50.5,-10.0],[50.0,4.5],[47.0,5.5]],
+        [[68.0,4.0],[67.5,0.5],[71.5,-0.5],[68.0,4.5]],
+        [[20.0,-6.0],[21.5,-7.0],[22.5,-4.5],[20.0,-3.0]],
+        [[261.0,-10.5],[263.0,-11.0],[264.0,-8.5],[261.0,-7.0]],
+        [[229.5,-14.0],[228.5,-16.5],[230.5,-16.0],[229.5,-13.5]]
+      ],
+      "exemplo": {
+        "nome": "Tartarus Dorsa (a oeste da zona ondulada do DEM em 235–255°E)",
+        "lon": [221,236],
+        "lat": [14,22]
+      },
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5, p. 8; texto pp. 9–10; perfis de limbo Fig. 8, p. 23",
+      "nota": "Cinturão equatorial (±30°) por >220° de longitude, quase todo no lado de trás (falta entre 75° e 210°E). Inchaços 2–4 km acima do entorno nos perfis de limbo; lâminas de ~300 m espaçadas 3–7 km; quase sem crateras. A leste de 320°E vira blocos angulosos de centenas de km entre as máculas. Inclui os afloramentos sobre as planícies crateradas perto de 65–75°E ('4' na Fig. 6C)."
+    },
+    "planicies-claras": {
+      "nome": "Planícies claras (gelo volátil empoçado)",
+      "siglaNaFonte": "bp",
+      "papel": "planicie-volatil",
+      "poligonos": [
+        [[265.0,14.0],[264.5,11.5],[267.0,11.5],[269.0,13.5],[269.0,15.0],[265.0,15.0]],
+        [[262.5,14.0],[263.5,13.0],[262.5,14.5]],
+        [[284.0,13.0],[285.0,12.0],[282.5,10.5],[285.0,7.5],[282.5,4.0],[286.5,1.0],[288.5,4.0],[286.5,4.5],[287.5,8.0],[284.5,9.0],[286.0,12.5],[284.0,14.5]],
+        [[257.5,13.5],[256.0,8.5],[258.0,6.5],[255.5,3.5],[266.5,3.5],[268.0,6.0],[267.5,9.0],[265.0,8.5],[264.0,10.0],[263.5,7.5],[265.0,6.5],[265.0,5.0],[263.0,5.0],[263.5,6.5],[265.0,6.5],[263.5,7.5],[258.5,8.0],[258.0,11.5],[259.5,13.0],[257.5,14.0]],
+        [[281.0,13.0],[279.5,10.0],[282.5,11.5],[281.0,13.5]],
+        [[292.5,11.5],[289.0,11.5],[290.5,7.5],[288.5,6.5],[288.5,4.0],[292.5,5.0],[292.0,9.0],[294.5,8.5],[292.5,12.0]],
+        [[271.0,9.5],[272.5,5.5],[278.0,5.5],[278.0,8.0],[276.0,10.0],[273.5,9.5],[275.0,7.0],[273.0,7.0],[271.0,10.0]],
+        [[253.0,9.0],[252.0,7.0],[255.0,5.5],[253.5,7.0],[254.5,9.0],[253.0,9.5]],
+        [[270.5,4.0],[269.5,1.5],[271.0,1.0],[270.5,4.5]],
+        [[252.0,-1.5],[245.5,-5.0],[241.5,-5.0],[244.5,-8.5],[244.0,-12.0],[246.0,-10.5],[246.5,-7.5],[251.0,-6.0],[253.5,-2.5],[252.0,-1.0]],
+        [[261.5,-16.5],[258.0,-16.5],[258.0,-19.0],[264.0,-20.5],[264.0,-16.0],[261.5,-16.0]],
+        [[248.5,-19.0],[244.5,-21.0],[247.0,-21.5],[248.5,-18.5]]
+      ],
+      "exemplo": {
+        "nome": "poças de N2 entre as lâminas da Tartarus Dorsa",
+        "lon": [222.5,228.5],
+        "lat": [9.5,13.5]
+      },
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5, p. 8; texto pp. 10–11; Fig. 6A ('1')",
+      "nota": "Gelo de N2/CO empoçado em depressões entre as lâminas; manchas de dezenas de km, cada vez mais raras para leste, até ~290°E. Caixa-exemplo pequena (~120 × 85 km) porque, fora de Sputnik, as poças medidas são pequenas. O fundo claro de Simonelli está na feição, não aqui."
+    },
+    "maculas": {
+      "nome": "Terreno escuro manchado (máculas do lado de trás)",
+      "siglaNaFonte": "mdt",
+      "papel": "macula",
+      "poligonos": [
+        [[350.0,10.5],[351.5,9.0],[353.5,9.5],[352.5,11.5],[350.0,11.5]],
+        [[287.5,6.5],[286.5,4.5],[288.5,4.0],[287.5,7.0]],
+        [[291.5,4.5],[288.5,4.0],[286.5,1.0],[284.0,2.5],[279.0,2.0],[274.0,-2.0],[270.5,-2.0],[269.0,0.5],[265.0,-2.0],[261.5,-1.5],[261.5,-5.5],[259.5,-4.5],[260.0,-2.5],[258.5,-2.5],[256.5,-5.5],[258.5,-7.0],[256.5,-7.5],[256.0,-11.0],[250.0,-16.0],[250.0,-18.0],[253.0,-18.0],[255.5,-15.5],[258.5,-16.5],[261.0,-12.0],[265.5,-12.0],[264.0,-8.5],[263.0,-11.0],[261.0,-10.5],[261.0,-7.0],[262.5,-7.0],[264.0,-8.5],[265.5,-12.0],[270.0,-17.0],[279.0,-14.5],[288.0,-16.0],[289.5,-18.5],[291.5,-18.5],[293.5,-22.5],[295.0,-22.5],[297.0,-20.5],[302.5,-21.5],[302.5,-17.5],[299.0,-15.0],[299.0,-12.5],[303.5,-12.0],[303.0,-15.5],[307.0,-17.5],[311.0,-17.5],[314.0,-14.5],[314.5,-19.0],[322.0,-18.0],[324.5,-16.0],[327.0,-10.0],[327.0,-4.0],[325.5,-0.5],[323.5,-0.5],[320.5,3.0],[317.5,3.0],[319.5,-1.0],[317.5,-3.0],[314.5,-1.5],[310.5,-2.5],[311.0,-14.5],[309.0,-15.5],[300.0,-9.5],[297.0,-1.0],[292.0,1.5],[293.0,4.5],[291.5,5.0]],
+        [[354.5,3.5],[348.5,2.0],[347.5,0.0],[340.5,0.0],[337.0,2.0],[337.5,-5.5],[341.0,-6.5],[341.0,-9.5],[340.0,-12.5],[337.0,-10.0],[335.0,-10.5],[335.0,-17.0],[340.0,-19.5],[345.5,-19.0],[344.0,-16.5],[344.5,-7.5],[341.5,-6.5],[340.5,-3.5],[343.0,-3.0],[347.5,-6.5],[349.0,0.0],[357.5,0.5],[357.5,3.0],[354.5,4.0]],
+        [[300.0,2.0],[301.0,1.5],[300.0,3.0]],
+        [[302.0,0.5],[301.0,-7.5],[304.0,-9.5],[307.0,-2.0],[303.5,-2.5],[304.0,2.0],[302.0,2.0]],
+        [[3.5,-2.0],[1.0,-4.0],[356.0,-3.5],[355.0,-6.5],[357.0,-11.5],[0.0,-13.5],[0.5,-18.5],[6.0,-19.5],[10.5,-17.5],[11.0,-15.5],[8.5,-13.5],[4.0,-18.0],[3.5,-13.5],[5.5,-8.0],[4.0,-4.0],[5.5,-1.5],[3.5,-0.5]],
+        [[238.5,-10.0],[235.5,-11.5],[233.5,-10.0],[230.5,-13.0],[230.5,-15.0],[236.5,-13.5],[243.0,-17.5],[243.5,-15.5],[240.0,-13.5],[244.0,-12.5],[244.0,-11.0],[241.5,-9.0],[238.5,-9.0]],
+        [[348.0,-11.5],[347.0,-15.0],[350.0,-18.5],[351.5,-13.0],[348.0,-11.0]],
+        [[227.5,-16.0],[231.0,-20.5],[230.5,-16.0],[227.5,-15.5]],
+        [[15.5,-16.0],[14.5,-19.0],[16.0,-20.0],[17.0,-16.5],[15.5,-15.5]]
+      ],
+      "exemplo": {
+        "nome": "Krun Macula (planalto áspero com fossas)",
+        "lon": [196,216],
+        "lat": [-15,-3]
+      },
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5, p. 8; texto pp. 11–12; Fig. 6B; perfis C e D da Fig. 8",
+      "nota": "Faixa escura de ±13° de Krun (225°E) até ~15°E (Balrog, Vucub-Came, Hun-Came, Meng-p'o). St21 tomam Krun como representante: planalto com fossas e bacias de até 3 km de fundo e 20 km de largura, poucas crateras; a oeste de 15°E as máculas ficam mais altas que as do leste (perfil D). Alternativa de St21: afloramentos de lâminas sob o manto escuro. É o planalto áspero tipo Krun: o mapa não o separa das máculas."
+    },
+    "planicies-crateradas": {
+      "nome": "Planícies lisas crateradas (tipo Cthulhu)",
+      "siglaNaFonte": "sp",
+      "papel": "planicie-craterada",
+      "poligonos": [
+        [[56.5,17.5],[49.5,9.0],[50.5,-10.0],[48.5,-10.0],[47.5,-7.0],[43.5,-6.5],[43.5,-4.5],[46.5,-4.5],[47.0,5.5],[45.0,7.0],[43.0,7.0],[42.0,3.5],[40.0,3.0],[39.0,-2.5],[36.5,-5.0],[31.5,-4.5],[28.5,-2.0],[25.0,-3.0],[21.5,-3.0],[21.5,-7.0],[20.0,-6.0],[20.0,-3.0],[21.5,-3.0],[25.0,-3.0],[24.5,0.5],[21.5,3.5],[15.0,2.5],[19.0,-6.5],[18.0,-13.5],[20.0,-20.0],[25.0,-20.5],[28.5,-25.5],[34.5,-28.5],[35.5,-31.0],[40.5,-32.5],[52.0,-32.5],[60.0,-30.5],[74.0,-33.0],[88.0,-31.0],[88.0,-32.5],[90.0,-32.5],[88.0,-35.0],[90.5,-32.5],[93.0,-32.5],[93.5,-36.5],[95.5,-36.5],[96.0,-32.5],[103.5,-33.5],[104.0,-31.0],[88.5,-18.5],[84.5,-13.5],[84.0,-8.5],[79.0,-6.0],[76.0,-0.5],[67.5,0.5],[68.0,5.5],[56.5,18.0]],
+        [[271.0,2.5],[272.0,2.0],[271.0,3.5]]
+      ],
+      "exemplo": {
+        "nome": "oeste de Cthulhu Macula",
+        "lon": [95,125],
+        "lat": [-15,3]
+      },
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5, p. 8; texto pp. 13–14; Fig. 6C",
+      "nota": "As planícies mais antigas, no oeste do lado de trás (~20–100°E): lisas na escala de km, crateradas, cruzadas por sistemas tectônicos (Djanggawul, Virgil Fossae); escuras entre ~13°N e ~23°S (Cthulhu) e de albedo intermediário fora disso — St21 tratam tudo como uma unidade. São as máculas a leste de 15°E (mais baixas). Caixa abaixo de 3°N para não pegar Oort e Edgeworth."
+    },
+    "terreno-intermediario": {
+      "nome": "Terreno intermediário manchado (faixa sul)",
+      "siglaNaFonte": "mit",
+      "papel": "planalto-aspero",
+      "poligonos": [
+        [[261.0,-12.5],[258.5,-16.5],[264.0,-16.0],[264.0,-20.5],[258.0,-19.0],[258.0,-16.5],[255.5,-15.5],[245.0,-21.5],[240.0,-15.0],[236.5,-13.5],[232.5,-14.0],[230.5,-15.0],[231.0,-20.5],[226.5,-16.5],[198.5,-36.5],[242.5,-36.5],[269.0,-33.5],[272.5,-33.5],[275.5,-36.0],[275.5,-33.5],[305.0,-33.0],[308.0,-36.5],[311.0,-36.5],[308.0,-32.5],[315.5,-30.5],[316.5,-32.0],[323.5,-32.5],[341.0,-32.0],[342.5,-32.5],[342.5,-36.5],[351.5,-36.5],[351.5,-32.5],[356.0,-32.0],[1.5,-36.5],[357.0,-32.0],[359.0,-31.0],[6.5,-31.5],[7.0,-36.5],[9.0,-36.5],[9.0,-31.5],[14.0,-31.0],[17.0,-33.0],[19.0,-31.0],[20.0,-32.0],[15.5,-36.5],[32.5,-36.5],[31.5,-32.0],[35.5,-31.5],[35.5,-29.5],[28.5,-25.5],[25.0,-20.5],[15.5,-20.0],[11.0,-17.0],[6.0,-19.5],[0.5,-18.5],[0.0,-22.5],[358.5,-23.0],[355.0,-17.5],[353.0,-17.5],[351.5,-20.5],[349.0,-19.0],[347.5,-21.0],[346.0,-19.0],[340.0,-19.5],[335.0,-17.0],[335.0,-20.5],[333.0,-23.0],[316.5,-25.5],[300.5,-20.5],[293.5,-22.5],[291.5,-18.5],[283.0,-14.5],[270.0,-17.0],[266.5,-12.5],[261.0,-12.0]]
+      ],
+      "exemplo": {
+        "nome": "terreno nodoso ao sul de Krun Macula",
+        "lon": [186,200],
+        "lat": [-31,-19]
+      },
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5, p. 8; texto pp. 12–13; Fig. 6B (abaixo da linha preta)",
+      "nota": "Faixa ao sul das máculas, vista só no limbo (emissão >80°) e borrada. Ao sul de Krun tem textura nodosa de alguns km, sem crateras reconhecíveis, com cavi de dezenas de km; St21 não conseguem diferenciá-la entre 225°E e 30°E, e lâminas podem ir mais ao sul do que o mapa mostra. O limite sul (~31–36°S) é o fim da imagem, não um contato."
+    },
+    "manto-manchado": {
+      "nome": "Terreno manteado manchado",
+      "siglaNaFonte": "mmt",
+      "papel": "manto",
+      "poligonos": [
+        [[309.0,51.5],[302.0,50.0],[288.5,43.5],[284.0,43.5],[282.5,40.0],[278.0,37.0],[271.5,40.5],[269.0,36.0],[270.5,32.0],[266.5,30.0],[265.5,25.5],[272.0,25.0],[277.5,20.5],[280.0,23.5],[289.0,23.5],[287.5,16.5],[289.0,15.5],[291.5,19.5],[297.0,17.5],[297.0,21.5],[299.5,25.5],[304.0,26.0],[313.0,30.5],[314.0,35.0],[311.5,42.5],[312.5,44.0],[317.0,44.0],[318.0,47.5],[316.0,52.0],[309.0,52.0]]
+      ],
+      "exemplo": {
+        "nome": "manto manchado do lado medido, a leste de 260°E",
+        "lon": [258,272],
+        "lat": [42,56]
+      },
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5, p. 8; texto p. 15; Fig. 6E",
+      "nota": "Planaltos lobados de topo plano (manto claro) separados por depressões escuras mais baixas; segue para o lado de trás até 310–320°E. Exemplo na parte do DEM com detalhe: a área da Fig. 6E (57,5°N 282,5°E) cai na faixa lisa do DEM junto à borda."
+    },
+    "manto-intermediario": {
+      "nome": "Terreno manteado intermediário",
+      "siglaNaFonte": "imt",
+      "papel": "manto",
+      "poligonos": [
+        [[332.5,52.5],[316.0,52.0],[318.0,45.5],[311.5,42.5],[314.0,35.0],[313.0,30.5],[304.0,26.5],[305.5,24.5],[302.0,23.5],[301.5,18.0],[311.5,20.5],[317.0,24.5],[317.5,21.5],[321.0,20.0],[324.0,22.5],[326.5,21.5],[325.5,26.5],[320.0,24.5],[324.5,29.5],[329.5,27.5],[329.5,26.0],[335.0,26.0],[337.5,24.5],[345.5,34.5],[355.5,38.0],[6.0,37.5],[8.0,39.0],[13.0,37.0],[14.0,35.0],[5.0,36.0],[2.0,32.5],[357.5,30.5],[356.0,26.0],[351.5,21.5],[351.5,15.0],[355.5,18.0],[1.0,17.0],[10.5,28.0],[17.0,27.0],[19.0,29.5],[26.0,32.5],[27.0,36.0],[35.0,35.5],[34.5,34.0],[29.5,33.5],[30.0,29.5],[24.0,29.5],[26.5,25.5],[28.5,28.0],[30.0,26.0],[24.0,17.5],[26.5,18.0],[26.5,13.0],[28.5,13.0],[30.0,13.5],[29.0,16.5],[32.5,16.5],[37.0,19.5],[39.0,16.5],[35.5,10.5],[40.0,3.0],[42.0,3.5],[43.0,7.0],[49.0,5.5],[50.0,10.0],[54.5,15.5],[48.5,15.5],[47.5,17.0],[52.5,19.5],[52.5,22.5],[47.0,28.0],[32.0,25.5],[31.0,28.5],[35.5,28.5],[39.0,33.5],[35.5,37.0],[17.5,46.0],[358.5,51.5],[332.5,53.0]]
+      ],
+      "exemplo": {
+        "nome": "manto do norte logo ao norte da Fig. 6F (Lowell Regio)",
+        "lon": [5,35],
+        "lat": [70,80]
+      },
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5, p. 8; texto pp. 15–16; Fig. 6F",
+      "nota": "Manto mais contínuo, com poços escuros esparsos; St21 põem nele quase todo o norte do lado de trás (ao norte de ~15°N) porque a imagem (>15 km/px) não mostra contatos. A caixa-exemplo é palpite: a área da Fig. 6F (59°N 4,5°E) cai na faixa lisa do DEM; usei o manto logo ao norte, onde o DEM tem detalhe."
+    },
+    "material-claro": {
+      "nome": "Material de tom claro",
+      "siglaNaFonte": "ltm",
+      "papel": "manto",
+      "poligonos": [
+        [[7.5,38.5],[355.5,38.0],[345.5,34.5],[337.5,24.5],[335.0,26.0],[329.5,26.0],[329.5,27.5],[325.5,29.5],[323.0,29.0],[320.0,24.5],[325.5,26.5],[327.0,22.0],[324.0,22.5],[322.5,20.0],[317.5,21.5],[317.0,24.5],[311.5,20.5],[301.5,18.0],[302.0,23.5],[305.5,25.0],[299.5,25.5],[297.0,21.5],[297.5,18.0],[293.0,18.0],[291.5,19.5],[290.0,15.5],[293.5,16.0],[298.0,12.5],[299.0,9.5],[301.0,11.0],[300.0,14.0],[298.0,14.5],[299.0,16.5],[306.5,12.5],[314.0,12.5],[313.5,4.0],[315.0,2.5],[321.0,5.0],[327.5,16.5],[330.5,18.0],[332.5,16.5],[334.5,20.5],[339.5,18.5],[340.5,12.5],[342.5,12.5],[343.0,17.0],[345.0,17.0],[345.0,13.5],[348.0,11.0],[346.5,8.0],[349.0,6.5],[352.0,7.0],[350.0,11.5],[355.5,11.5],[3.0,9.0],[6.0,12.0],[5.5,18.0],[7.0,20.0],[15.5,17.0],[16.5,19.5],[14.0,19.0],[12.5,22.5],[15.0,25.5],[16.0,25.5],[16.5,19.5],[15.5,17.0],[19.5,21.5],[24.5,23.5],[24.0,29.5],[30.0,29.5],[30.0,34.0],[35.0,34.5],[27.0,36.0],[26.0,32.5],[19.0,29.5],[17.0,27.0],[13.0,26.5],[11.5,23.5],[8.5,25.0],[6.0,23.5],[1.0,17.0],[355.5,18.0],[351.5,15.0],[351.5,21.5],[356.0,26.0],[357.5,30.5],[2.0,32.5],[5.0,36.0],[14.0,35.0],[13.0,37.0],[7.5,39.0]],
+        [[38.5,33.0],[35.5,28.5],[31.0,28.5],[32.0,25.5],[37.5,26.0],[40.0,30.0],[40.0,33.0],[38.5,33.5]],
+        [[52.5,19.5],[47.5,17.0],[48.5,15.5],[55.0,15.5],[56.5,17.5],[52.5,22.0]],
+        [[35.5,19.0],[32.5,16.5],[29.0,16.5],[30.0,13.5],[36.0,12.0],[39.0,18.0],[35.5,19.5]],
+        [[25.0,17.5],[22.0,16.0],[22.5,12.0],[26.5,13.0],[26.5,18.0],[25.0,18.0]],
+        [[336.5,12.5],[336.0,8.5],[337.5,7.5],[338.5,12.0],[336.5,13.0]],
+        [[354.5,7.0],[353.5,5.5],[355.5,4.0],[356.5,7.0],[354.5,7.5]]
+      ],
+      "exemplo": {
+        "nome": "o mesmo do manto intermediário (véu sobre o manto)",
+        "lon": [5,35],
+        "lat": [70,80]
+      },
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5, p. 8; texto p. 17; perfil B da Fig. 8",
+      "nota": "A unidade mais incerta de St21: mais clara que as vizinhas, mais baixa que as lâminas (perfil B: 2–4 km abaixo delas) e mais alta que as depressões escuras. Talvez só um véu fino de CH4 sobre os mantos — daí o exemplo do manto."
+    },
+    "manto-escuro": {
+      "nome": "Terreno manteado escuro (Vega Terra)",
+      "siglaNaFonte": "dmt",
+      "papel": "manto",
+      "poligonos": [
+        [[40.0,30.0],[38.0,28.5],[38.5,26.5],[45.5,27.5],[45.0,30.0],[40.0,33.0]]
+      ],
+      "exemplo": {
+        "nome": "Vega Terra (manto em erosão, crateras de halo claro)",
+        "lon": [85,110],
+        "lat": [30,44]
+      },
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5, p. 8; texto pp. 16–17; Fig. 6G",
+      "nota": "Promontório escuro que entra menos de 150 km no lado de trás (~50°E, 30–36°N): manto claro sendo removido, textura manchada de poucos km. Pequeno no mapa; cresce pelo preenchimento da unidade mais próxima na faixa sem DEM (padraoGeral)."
+    },
+    "terreno-degradado": {
+      "nome": "Terreno escuro degradado",
+      "siglaNaFonte": "ddt",
+      "papel": "planalto-aspero",
+      "poligonos": [
+        [[266.0,29.0],[261.0,23.5],[256.5,23.0],[257.5,18.5],[259.5,19.5],[263.0,18.0],[264.0,15.5],[268.5,20.5],[271.5,19.5],[273.5,23.5],[272.0,25.0],[266.0,25.0],[266.0,29.5]]
+      ],
+      "exemplo": {
+        "nome": "perto das Mwindo Fossae",
+        "lon": [242,256],
+        "lat": [26,36]
+      },
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5, p. 8; texto p. 14; Fig. 6D",
+      "nota": "Planícies com morros denteados e degradados, de forma arqueada; talvez crosta antiga exposta pelo recuo das lâminas. Só uma mancha na borda oeste (~255–265°E, 18–30°N)."
+    }
+  },
+  "padraoDoSul": {
+    "unidade": "planicies-crateradas",
+    "abaixoDaLatitude": -36,
+    "confianca": "palpite",
+    "nota": "Sem DEM e quase sem imagem: ao sul de ~38°S o lado de trás só foi visto com luz de Caronte (La21) e o mapa de St21 acaba em ~36°S. Pelo plano (01/10), vale a unidade mais ao sul do lado medido: as planícies crateradas tipo Cthulhu."
+  },
+  "feicoes": [
+    {
+      "nome": "Simonelli",
+      "tipo": "cratera-complexa",
+      "lat": 12,
+      "lon": 315,
+      "diametroKm": 250,
+      "picoCentral": true,
+      "confianca": "mapa",
+      "fonte": "St21 p. 21 (unidade ic) e Fig. 7; pp. 30–31",
+      "nota": "A única cratera certa do lado de trás. Borda elevada e pico central vistos no terminador (9,3 km/px); fundo com anel claro de gelo volátil em volta do pico escuro, como Elliot (85 km). Cercada por lâminas ao sul: caiu nelas ou foi coberta por elas depois. Na Fig. 5 a unidade ic cobre ~270 km (inclui a borda)."
+    },
+    {
+      "nome": "crescente escuro (possível cratera soterrada)",
+      "tipo": "cratera-soterrada",
+      "lat": 38,
+      "lon": 357,
+      "diametroKm": 375,
+      "confianca": "candidata",
+      "fonte": "St21 p. 18; Fig. 5 (unidade dd); Fig. 4 (nome)",
+      "nota": "350–400 km (St21). Quase toda preenchida pelo manto intermediário; só uma margem estreita das paredes sul e leste aparece como depressão escura de ~50 km de largura: arco exposto do azimute ~10° ao ~200°, passando por leste. A borda sul é a 'Yutu Linea' (informal). Alternativa de St21: parte da zona revolvida antípoda."
+    },
+    {
+      "nome": "lineamento escuro de 330°E",
+      "tipo": "lineamento",
+      "lat": 24.5,
+      "lon": 329.5,
+      "comprimentoKm": 270,
+      "larguraKm": 55,
+      "azimuteGraus": 0,
+      "trajeto": [[329.5,31.0],[329.5,18.0]],
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5 (dd), pp. 17–18 e 26; Fig. 6H; perfil B da Fig. 8",
+      "nota": "Depressão (o perfil de limbo B mostra um entalhe de ~70 km). Está no meridiano de 330°E, onde se juntam os círculos máximos extrapolados do sistema de cristas e vales (RTS)."
+    },
+    {
+      "nome": "Chandrayaan Linea (informal)",
+      "tipo": "lineamento",
+      "lat": 19.5,
+      "lon": 353.0,
+      "comprimentoKm": 415,
+      "larguraKm": 60,
+      "azimuteGraus": 20,
+      "trajeto": [[356.5,29.0],[353.0,19.5],[349.5,10.0]],
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5 (dd), Fig. 4 (nome), pp. 26–27",
+      "nota": "Segmento NNE–SSO de depressão escura que sai da ponta sul do crescente; paralelo a uma fratura polar do RTS (linha vermelha da Fig. 10)."
+    },
+    {
+      "nome": "depressão escura, braço oeste do V",
+      "tipo": "lineamento",
+      "lat": 25.3,
+      "lon": 335.4,
+      "comprimentoKm": 245,
+      "larguraKm": 55,
+      "azimuteGraus": 14,
+      "trajeto": [[337.0,31.0],[334.0,19.5]],
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5 (dd), p. 26",
+      "nota": "Uma das depressões NNE–SSO entre 335° e 345°E; une-se ao braço leste perto de 19–20°N."
+    },
+    {
+      "nome": "depressão escura, braço leste do V",
+      "tipo": "lineamento",
+      "lat": 23.8,
+      "lon": 342.1,
+      "comprimentoKm": 215,
+      "larguraKm": 45,
+      "azimuteGraus": 36,
+      "trajeto": [[345.5,28.0],[339.0,19.5]],
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5 (dd), p. 26",
+      "nota": "Uma das depressões NNE–SSO entre 335° e 345°E."
+    },
+    {
+      "nome": "depressão escura leste–oeste a ~30°N",
+      "tipo": "lineamento",
+      "lat": 29.6,
+      "lon": 347.0,
+      "comprimentoKm": 395,
+      "larguraKm": 45,
+      "azimuteGraus": 85,
+      "trajeto": [[336.0,29.8],[347.0,29.6],[358.0,29.5]],
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5 (dd)",
+      "nota": "Liga o topo do V à ponta sul do crescente; só aparece no mapa, o texto não a descreve à parte."
+    },
+    {
+      "nome": "mancha escura isolada (norte)",
+      "tipo": "depressao",
+      "lat": 45.5,
+      "lon": 331,
+      "diametroKm": 55,
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5 (dd), p. 18",
+      "nota": "Versão maior dos poços escuros do norte (Fig. 6F, '7' e '8'): erosão do manto por sublimação."
+    },
+    {
+      "nome": "mancha escura isolada (norte)",
+      "tipo": "depressao",
+      "lat": 40,
+      "lon": 338.5,
+      "diametroKm": 60,
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5 (dd), p. 18",
+      "nota": "Idem."
+    },
+    {
+      "nome": "mancha escura isolada (norte)",
+      "tipo": "depressao",
+      "lat": 51.5,
+      "lon": 355,
+      "diametroKm": 55,
+      "confianca": "mapa",
+      "fonte": "St21 Fig. 5 (dd), p. 18",
+      "nota": "Idem; alongada (~70 × 40 km), junto à borda do DEM."
+    },
+    {
+      "nome": "zona revolvida antípoda de Sputnik",
+      "tipo": "zona-revolvida",
+      "lat": 17,
+      "lon": 3,
+      "diametroKm": 1000,
+      "confianca": "palpite",
+      "fonte": "St21 p. 30 e Fig. 10, p. 26",
+      "nota": "Mais de 1000 km em volta do antípoda do primeiro contato do impacto de Sputnik vindo do SSO (losango azul-claro da Fig. 10; centro lido por mim na projeção ortográfica de 330°E 30°N, ±3°). Inclui as depressões dd e as lâminas e máculas angulosas entre 340°E e 10°E. St21 não distinguem isto do RTS."
+    },
+    {
+      "nome": "continuação do sistema de cristas e vales (RTS)",
+      "tipo": "cristas-e-vales",
+      "lat": 9.0,
+      "lon": 330.0,
+      "comprimentoKm": 1825,
+      "larguraKm": 350,
+      "azimuteGraus": 0,
+      "trajeto": [[330.0,53.0],[330.0,9.0],[330.0,-35.0]],
+      "confianca": "palpite",
+      "fonte": "St21 pp. 24–27, Figs. 9–10; Sch18P",
+      "nota": "No lado da frente o RTS tem ≥3200 km × 300–400 km e cruza o equador em 150°E; os círculos máximos extrapolados se concentram no antípoda, 330°E. Do lado de trás seria menos linear: as depressões dd e os segmentos N–S de lâminas e máculas entre 340°E e 10°E. Trecho entre a borda do DEM (~53°N) e o fim da imagem (~35°S). St21 citam perfis de limbo 'anormalmente acidentados' em 320–340° a ~30°N (o texto diz °W, provavelmente °E)."
+    }
+  ]
+}

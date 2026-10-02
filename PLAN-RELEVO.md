@@ -47,7 +47,10 @@ encostar o inventado no medido sem degrau e sem faixa.
   o dado real traz ali.
 - **Foto 3 — a metade inventada pronta**, na qualidade final, ao lado da de
   hoje: as emendas com Sol rasante, o lado de trás inteiro, o sul, e um
-  mapinho de onde é medido e onde é inventado.
+  mapinho de onde é medido e onde é inventado. Junto, um A/B: nos trechos em
+  que o próprio dado medido é BORRADO (a sonda viu de longe), completar ou
+  não o detalhe fino inventado por cima da forma medida — o mesmo espírito
+  do seu "melhorar o que está borrado".
 - **Seus cliques:** dois comandos no começo (guardam as alturas medidas num
   arquivo local; o mapa do app sai idêntico ao de hoje) e alguns no fim
   (gerar os mapas finais, otimizar, manifesto, conferência). Publicar
@@ -221,6 +224,25 @@ Conferência: `normal.png` de Plutão e Caronte idêntico por md5 ao de hoje.
   vem das tabelas de Ro21 (medidas no DEM de 300 m).
 - Saída: `.cache/relevo/<id>-medidas.json` + resumo no `PLAN-RELEVO.md`; o
   main confere com a seção Ciência.
+- **E2a FEITA (01/10):** `fonte/pluto-lado-de-tras.json` (St21 Fig. 5,
+  digitalizada da imagem do PDF; 10 unidades — lâminas, planícies claras,
+  máculas, planícies crateradas tipo Cthulhu, terreno intermediário, quatro
+  mantos, terreno degradado; Simonelli, a crescente soterrada, 5 lineamentos,
+  3 fossas, a zona antípoda e o sistema de 330°E; sul abaixo de −36° =
+  planície craterada, palpite) e `fonte/charon-lado-de-tras.json` (Be21 não
+  tem mapa de unidades: polígonos são palpite guiado pelas escarpas da Fig.
+  2b de Be21; terras altas tipo Oz, cinturão tectônico dando a volta,
+  planície lisa tipo Vulcan + Argo; crateras U ~120 km, A ~30, Arroway ~60 —
+  é a "de raios a leste de Argo" —, B ~50, C ~70, diâmetros medidos no mapa
+  da casa; sul abaixo de −28° = planície lisa, palpite). Polígonos com
+  pontes de largura zero (regra par-ímpar) e leve sobreposição entre
+  vizinhos (normalizar os pesos). Pranchas de conferência no scratchpad
+  (`unidades/`), vistas pelo main.
+- **Achados da E2a que entram na E2b/E3:** (1) há DADO MEDIDO BORRADO junto
+  do vazio — Plutão: faixa de 10–15° na borda norte do lado de trás e
+  235–255°E 0–16°N; Caronte: 55–100°E ao sul de 30°N e a borda oeste em
+  250–300°E; os centros de U e C caem aí. (2) Em Plutão, a faixa ~10–100°E
+  tem FOTO NÍTIDA mas não tem DEM — o catálogo de crateras cobre essa faixa.
 
 **E3 — o núcleo da síntese (Opus).** No mesmo módulo, funções puras; UMA
 função exportada serve à prévia e ao gerador; semente fixa por corpo
@@ -249,11 +271,23 @@ função exportada serve à prévia e ao gerador; semente fixa por corpo
 5. **Crateras:** densidade e lei da unidade (lâminas e voláteis: zero); forma
    da E2; ejecta ∝ r⁻³ (além da borda); idade → desgaste; ordem de idade com
    herança; círculo máximo, meia-largura em longitude correta perto do polo,
-   volta. **Na emenda, sem exclusão seca:** as REAIS que o catálogo dá
-   cortadas pela borda do DEM são completadas no vazio com posição e
-   diâmetro do catálogo; as inventadas podem encostar e passam pela
-   costura; mede-se a lei de tamanhos × distância à emenda (nenhuma faixa
-   sem crateras), e a política fina sai da prova E4.
+   volta. **Crateras reais primeiro:** TODA cratera do catálogo v2
+   (confiança ≥3, acima do diâmetro de completude da região) que cai no
+   vazio — inclusive as cortadas pela borda do DEM e as da faixa de foto
+   nítida sem DEM (Plutão ~10–100°E) — entra na posição e no diâmetro reais,
+   com a forma da E2; as inventadas só completam a lei de tamanhos abaixo da
+   completude e onde nunca houve foto. **Na emenda, sem exclusão seca:** as
+   inventadas podem encostar e passam pela costura; mede-se a lei de
+   tamanhos × distância à emenda (nenhuma faixa sem crateras), e a política
+   fina sai da prova E4.
+5b. **Dado medido borrado (máscara por oitava):** a E2b mede, por oitava, onde
+   o DEM de fato resolve aquele tamanho (energia local da oitava contra a da
+   região-exemplo da unidade). Na costura (item 1), cada oitava usa como
+   "dado" só onde o DEM a resolve: nos trechos borrados, as oitavas grandes
+   são o medido e as finas são simuladas e condicionadas — sem faixa lisa na
+   emenda. Isso ACRESCENTA detalhe inventado sobre medido borrado: entra
+   como A/B na Foto 3, é confessado, e o miolo bem resolvido segue com o
+   RGB idêntico.
 6. **Calibração:** o ajuste por mínimos quadrados não negativos de
    S(d) ≈ Σ g_k²·S_k(d) + S_crateras(d) é só o PONTO DE PARTIDA; a conferência
    mede o campo FINAL (todas as camadas, filtro de caixa e costura) por
@@ -335,4 +369,4 @@ A lista vai ao Felipe no fim da rodada.
 - **Fim:** `npm run done` verde uma vez; `npm run data:verify` verde.
 
 ## Andamento
-- [ ] E1 cache · [ ] E2 medidas · [ ] E3 núcleo · [ ] E4 prova (Foto 1) · [ ] E5 Sputnik (Foto 2) · [ ] E6 feições (Foto 3) · [ ] E7 confissão · [ ] E8 mapas finais
+- [~] E1 cache (código feito e commitado; falta o Felipe rodar Plutão e Caronte) · [~] E2 medidas (E2a mapas de unidades FEITA; E2b medidas espera o cache) · [ ] E3 núcleo · [ ] E4 prova (Foto 1) · [ ] E5 Sputnik (Foto 2) · [ ] E6 feições (Foto 3) · [ ] E7 confissão · [ ] E8 mapas finais
