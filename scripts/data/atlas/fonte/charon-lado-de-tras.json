@@ -47,7 +47,8 @@
       },
       "fontes": [
         { "lon": [0,45], "lat": [12,34], "nota": "Serenity Chasma e a continuação dela para leste, rumo a Argo (Be21 §4.3: a ruptura dá a volta); contém a caixa-exemplo. Qualidade: mapa de qualidade da E2b (.cache/relevo/charon-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km)." },
-        { "lon": [315,360], "lat": [2,28], "nota": "As escarpas e fossas a oeste de Serenity, entre Oz Terra e Vulcan Planitia (o sistema Serenity–Mandjet). Qualidade: mapa de qualidade da E2b (.cache/relevo/charon-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km); 350–360°E 5–10°N tem trechos com 1 banda borrada, que saem pela máscara." }
+        { "lon": [315,360], "lat": [2,28], "nota": "As escarpas e fossas a oeste de Serenity, entre Oz Terra e Vulcan Planitia (o sistema Serenity–Mandjet). Qualidade: mapa de qualidade da E2b (.cache/relevo/charon-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km); 350–360°E 5–10°N tem trechos com 1 banda borrada, que saem pela máscara." },
+        { "lon": [290,325], "lat": [-8,25], "nota": "Mandjet Chasma e o leque de fossas e escarpas a leste dela (IAU/USGS: Mandjet 4,8°N 294,4°E, 385 km; Be21 §4.3, Fig. 5: ≥450 × ~30 km, paredes de 5–7 km) — a segunda forma do cinturão medido: fossas que se abrem em leque rumo NE (azimute medido ~61°, contra ~85° em Serenity), em vez das escarpas paralelas de Serenity; entra (02/10) para o lado de trás não sair com cópias paralelas de um só trecho. Só o pedaço resolvido serve: a máscara de qualidade da E2b e o afastamento de 30 km do vazio cortam a oeste de ~295°E, onde o dado é a membrana lisa; ~430 centros possíveis (~5900 km²), contra ~2400 de Serenity. RMS da inclinação do medido válido 11,9° (Serenity 11,5°)." }
       ],
       "confianca": "palpite",
       "fonte": "Be21 §4.3 (p. 10), Figs. 2b (p. 5) e 5 (p. 7), Conclusões (p. 11); Be17 via PLAN-RELEVO.md",
@@ -67,7 +68,7 @@
         "lat": [-22,-6]
       },
       "fontes": [
-        { "lon": [300,358], "lat": [-30,-3], "nota": "Vulcan Planitia a oeste de 0°: ao sul das escarpas do cinturão e acima da borda sul do DEM; para em 358°E, antes dos montes em fosso perto de 0–8°E (Kubrick); a leste de 0° a planície bem resolvida é estreita demais para um retalho de 140 km. Contém a caixa-exemplo. Qualidade: mapa de qualidade da E2b (.cache/relevo/charon-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km); ao sul de −25° ela vale só até ~345°E e a máscara corta o resto." }
+        { "lon": [300,358], "lat": [-38,-3], "nota": "Vulcan Planitia a oeste de 0°: ao sul das escarpas do cinturão e até a borda sul do DEM (a caixa desce a −38° desde 02/10, para dar mais origens à colcha do sul — a máscara de qualidade e o afastamento de 30 km do vazio cortam o que não serve); para em 358°E, antes dos montes em fosso perto de 0–8°E (Kubrick); a leste de 0° a planície bem resolvida é estreita demais para um retalho de 140 km. Contém a caixa-exemplo. Qualidade: mapa de qualidade da E2b (.cache/relevo/charon-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km); ao sul de −25° ela vale só até ~345°E e a máscara corta o resto." }
       ],
       "confianca": "mapa",
       "fonte": "Be21 §4.4 e Fig. 10 (pp. 10–11); §4.1 (pp. 6–8); Figs. 2b e 4",

@@ -2915,6 +2915,18 @@ const FRACAO_APAGADA = 0.85;
 /** As crateras sorteadas só deste diâmetro (km) para cima: as menores vêm nos pedaços medidos da colcha. */
 const DIAMETRO_MINIMO_SORTEADO_KM = 40;
 
+/** Fração das crateras de Caronte com pico central a partir de cada D (km) [Ro21]: 10–14, 14–20, 20–40, ≥ 40. */
+const FRACAO_COM_PICO = [
+  [10, 0.17],
+  [14, 0.4],
+  [20, 0.62],
+  [40, 1],
+];
+const fracaoComPico = (dKm) => FRACAO_COM_PICO.reduce((f, [d, x]) => (dKm >= d ? x : f), 0);
+
+/** O pico central: base de diâmetro 0,22 D (Hale & Grieve 1982); a altura é a do p75 das ≥ 40 km empilhadas no cache. */
+const RAIO_DO_PICO_RR = 0.22;
+
 /**
  * Conferência: ±10 % no RMS da inclinação (fora disso a colcha da unidade é
  * reescalada), só nos lags até 30 km — acima disso as escalas > R/5 no vazio
@@ -3196,11 +3208,14 @@ export function sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, ra
       const j = Math.min(altura - 1, Math.floor(((90 - lat) / 180) * altura));
       const i = ((Math.round(colunaDaLongitude(lon, largura)) % largura) + largura) % largura;
       if (sorteia() >= pesos[u][j * largura + i]) continue;
-      lista.push({ lat, lon, dKm: leis[u].diametro(sorteia(), dMinKm), quantil: sorteia(), idade: sorteia() });
+      const dKm = leis[u].diametro(sorteia(), dMinKm);
+      lista.push({ lat, lon, dKm, quantil: sorteia(), idade: sorteia(), pico: sorteia() < fracaoComPico(dKm) });
       feitas += 1;
     }
   });
-  for (const c of reais) lista.push({ lat: c.lat, lon: c.lon, dKm: c.dKm, quantil: 0.5, idade: sorteia(), id: c.id });
+  for (const c of reais) {
+    lista.push({ lat: c.lat, lon: c.lon, dKm: c.dKm, quantil: 0.5, idade: sorteia(), id: c.id, pico: sorteia() < fracaoComPico(c.dKm) });
+  }
   lista.sort((a, b) => a.idade - b.idade);
   return { crateras: lista, porUnidade };
 }
@@ -3210,10 +3225,13 @@ export function sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, ra
  * velha): distância de círculo máximo ao centro, linha a linha com a
  * meia-largura de longitude EXATA da calota (o polo e a volta inclusos). Cada
  * cratera, por HERANÇA, apaga até `FRACAO_APAGADA` do relevo das mais velhas
- * no miolo (em volta da média dele, sumindo até a crista) e soma o molde × D.
+ * no miolo (em volta da média dele, sumindo até a crista) e soma o molde × D;
+ * com `pico` (sorteado pela fração de Ro21), o pico central (cosseno de raio
+ * `RAIO_DO_PICO_RR` R, altura `picoD.p75` das ≥ 40 km do cache × D).
  */
 export function camadaDeCrateras({ crateras, morfometria, largura, altura, raioM, variante = 'cache' }) {
   const camada = new Float32Array(largura * altura);
+  const alturaDoPico = morfometria.bins?.find((b) => b.faixaKm === '≥40')?.picoD?.p75 ?? 0;
   const raioKm = raioM / 1000;
   const dLat = Math.PI / altura;
   const dLon = (2 * Math.PI) / largura;
@@ -3284,7 +3302,8 @@ export function camadaDeCrateras({ crateras, morfometria, largura, altura, raioM
     for (let p = 0; p < m; p += 1) {
       const x = rho[p] / PASSO_DO_MOLDE_RR;
       const s = Math.min(valores.length - 2, Math.floor(x));
-      const v = D * (valores[s] + (x - s) * (valores[s + 1] - valores[s]));
+      let v = D * (valores[s] + (x - s) * (valores[s + 1] - valores[s]));
+      if (c.pico && rho[p] < RAIO_DO_PICO_RR) v += D * alturaDoPico * 0.5 * (1 + Math.cos((Math.PI * rho[p]) / RAIO_DO_PICO_RR));
       const k = idx[p];
       if (rho[p] < rCrista) {
         const apaga = FRACAO_APAGADA * (1 - suave(0.6 * rCrista, rCrista, rho[p]));
@@ -3293,6 +3312,211 @@ export function camadaDeCrateras({ crateras, morfometria, largura, altura, raioM
     }
   }
   return camada;
+}
+
+// ------------------------------------------------------------
+// As feições do lado de trás (E6): crateras candidatas e tectônica traçada
+// ------------------------------------------------------------
+
+/**
+ * As CRATERAS DAS FEIÇÕES (`fonte.feicoes` de tipo 'cratera': posição e D
+ * estimados na foto da aproximação). Entram só as de centro no VAZIO de
+ * verdade (`vazio`) — no dado medido, mesmo borrado, o DEM já tem a forma
+ * dela em baixa resolução — e que o catálogo não pôs (uma de `reais` a menos
+ * de meio diâmetro, D na razão ½–2). `{ crateras, puladas: [{ nome, motivo }] }`.
+ */
+export function crateraDasFeicoes({ fonte, vazio, largura, altura, raioM, reais = [] }) {
+  const raioKm = raioM / 1000;
+  const crateras = [];
+  const puladas = [];
+  for (const f of fonte.feicoes ?? []) {
+    if (f.tipo !== 'cratera') continue;
+    const j = Math.min(altura - 1, Math.max(0, Math.round(linhaDaLatitude(f.lat, altura))));
+    const i = ((Math.round(colunaDaLongitude(f.lon, largura)) % largura) + largura) % largura;
+    const p = baseLocal(f.lat, f.lon).c;
+    const real = reais.find((c) => {
+      const q = baseLocal(c.lat, c.lon).c;
+      const d = raioKm * Math.acos(Math.min(1, p[0] * q[0] + p[1] * q[1] + p[2] * q[2]));
+      return d < f.diametroKm / 2 && c.dKm > f.diametroKm / 2 && c.dKm < 2 * f.diametroKm;
+    });
+    if (vazio[j * largura + i] !== 1) puladas.push({ nome: f.nome, motivo: 'centro no dado medido' });
+    else if (real) puladas.push({ nome: f.nome, motivo: `já no catálogo (${real.id}, ${real.dKm.toFixed(1)} km)` });
+    else crateras.push({ lat: f.lat, lon: f.lon, dKm: f.diametroKm, id: f.nome });
+  }
+  return { crateras, puladas };
+}
+
+/** O perfil das escarpas medidas: −40 a 40 km, passo 1 km; um perfil por célula de ~15 km; os 10 % de células mais íngremes. */
+const ALCANCE_DO_PERFIL_KM = 40;
+const CELULA_DO_PERFIL_KM = 15;
+const FRACAO_INGREME = 0.1;
+
+/** A feição ancorada: some nas pontas em 20 % do comprimento e junto do dado em 30 km. */
+const PONTA_DA_FEICAO = 0.2;
+const AFASTAMENTO_DA_FEICAO_KM = 30;
+
+const mediana = (valores) => quartis(valores).mediana;
+
+/**
+ * O PERFIL DAS ESCARPAS MEDIDAS no cinturão (`caixas`): em cada célula de
+ * ~15 km, o texel `valido` mais íngreme (diferença central de ±2 texels);
+ * das células, as 10 % mais íngremes; em cada uma, a altura ao longo do
+ * gradiente (morro acima), de −40 a 40 km, menos a do centro, lida só em
+ * `valido`; a mediana por distância. `{ uKm, perfil (m), alturaM (mediana
+ * em 15–35 km menos em −35..−15), larguraKm (de 10 a 90 % do degrau), n }`.
+ */
+export function perfilDasEscarpas({ metros, valido, caixas, largura, altura, raioM }) {
+  const raioKm = raioM / 1000;
+  const passoNorte = raioKm * (Math.PI / altura);
+  const celula = Math.max(1, Math.round(CELULA_DO_PERFIL_KM / passoNorte));
+  const porCelula = new Map();
+  for (const cx of caixas) {
+    const m = mascaraDaCaixa(cx, largura, altura);
+    for (let j = 2; j < altura - 2; j += 1) {
+      const passoLeste = raioKm * ((2 * Math.PI) / largura) * Math.cos(latitudeDaLinha(j, altura));
+      for (let i = 0; i < largura; i += 1) {
+        const k = j * largura + i;
+        if (!m[k] || !valido[k]) continue;
+        const gx = (metros[j * largura + ((i + 2) % largura)] - metros[j * largura + ((i - 2 + largura) % largura)]) / (4 * passoLeste);
+        const gy = (metros[k - 2 * largura] - metros[k + 2 * largura]) / (4 * passoNorte);
+        const g = Math.hypot(gx, gy);
+        const id = Math.floor(j / celula) * largura + Math.floor(i / celula);
+        if (!(porCelula.get(id)?.g >= g)) porCelula.set(id, { j, i, gx, gy, g });
+      }
+    }
+  }
+  const lista = [...porCelula.values()].sort((a, b) => b.g - a.g);
+  const uKm = Array.from({ length: 2 * ALCANCE_DO_PERFIL_KM + 1 }, (_, q) => q - ALCANCE_DO_PERFIL_KM);
+  const perfis = [];
+  for (const e of lista.slice(0, Math.max(1, Math.round(FRACAO_INGREME * lista.length)))) {
+    const base = planoTangente(latitudeDaLinha(e.j, altura) * GRAUS, longitudeDaColuna(e.i, largura), Math.atan2(e.gy, e.gx));
+    const h0 = metros[e.j * largura + e.i];
+    const p = uKm.map((u) => bilinearNoPonto(metros, largura, altura, ...pontoDoPlano(base, u, 0, raioKm), valido) - h0);
+    if (p.every(Number.isFinite)) perfis.push(p);
+  }
+  const perfil = uKm.map((_, q) => mediana(perfis.map((p) => p[q])));
+  const ponta = (a, b) => mediana(perfil.filter((_, q) => uKm[q] >= a && uKm[q] <= b));
+  const baixo = ponta(-35, -15);
+  const alto = ponta(15, 35);
+  const fracao = perfil.map((v) => (v - baixo) / (alto - baixo));
+  // a largura do degrau em volta do centro: o último ≤ 10 % antes dele e o primeiro ≥ 90 % depois
+  const u10 = uKm.findLast((u, q) => u <= 0 && fracao[q] <= 0.1) ?? uKm[0];
+  const u90 = uKm.find((u, q) => u >= 0 && fracao[q] >= 0.9) ?? uKm[uKm.length - 1];
+  return { uKm, perfil, alturaM: alto - baixo, larguraKm: u90 - u10, n: perfis.length };
+}
+
+/**
+ * A CAMADA TECTÔNICA (m): as feições de `feicoes` com `trajeto` (escarpa,
+ * crista, fossa) em volta da polilinha (círculos máximos entre os vértices),
+ * com o PERFIL MEDIDO das escarpas do cinturão (`perfilDasEscarpas`: a face
+ * íngreme com o fosso embaixo e o flanco alto em cima, voltando ao nível em
+ * ~40 km; a zero 20 km além): escarpa = o perfil (o lado alto sorteado — a
+ * foto não diz); fossa = duas faces de frente a `larguraKm` (o fundo entre
+ * elas, os flancos fora); crista = o flanco alto espelhado. A altura varia
+ * ao longo do traço (três ondas de 60–160 km, entre 0,35 e 1). Some nas pontas (`PONTA_DA_FEICAO` do comprimento) e
+ * junto do medido (`dado`, em `AFASTAMENTO_DA_FEICAO_KM`): só no vazio.
+ * `{ camada, feitas: [{ nome, tipo, maiorM }] }`.
+ */
+export function camadaTectonica({ feicoes, perfil, dado, largura, altura, raioM, semente }) {
+  const n = largura * altura;
+  const camada = new Float32Array(n);
+  const raioKm = raioM / 1000;
+  const sorteia = geradorDeSemente(sementeDaOitava(semente, 0x7ec7));
+  const f4 = largura % 4 === 0 && altura % 4 === 0 ? 4 : 1;
+  const L4 = largura / f4;
+  const dado4 = new Uint8Array(L4 * (altura / f4));
+  for (let k = 0; k < n; k += 1) if (dado[k]) dado4[Math.floor(k / largura / f4) * L4 + Math.floor((k % largura) / f4)] = 1;
+  const longeDoDado = distanciaAoVazioKm(dado4, L4, altura / f4, raioM);
+  // o perfil medido (h − h no meio da face, morro acima em +u), indo a zero nos 20 km além das pontas
+  const { uKm, perfil: P } = perfil;
+  const fim = uKm[uKm.length - 1];
+  const corte = (u) => {
+    const a = Math.abs(u);
+    if (a >= fim + 20) return 0;
+    if (a >= fim) return (u > 0 ? P[P.length - 1] : P[0]) * (1 - (a - fim) / 20);
+    const x = u - uKm[0];
+    const q = Math.min(P.length - 2, Math.floor(x));
+    return P[q] + (x - q) * (P[q + 1] - P[q]);
+  };
+  const uDoTopo = uKm.reduce((m, u, q) => (u > 0 && P[q] > P[uKm.indexOf(m)] ? u : m), 1);
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cruz = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const feitas = [];
+  for (const f of feicoes) {
+    if (!f.trajeto || !['escarpa', 'crista', 'fossa'].includes(f.tipo)) continue;
+    const pts = f.trajeto.map(([lon, lat]) => baseLocal(lat, lon).c);
+    const segmentos = [];
+    let total = 0;
+    for (let a = 0; a + 1 < pts.length; a += 1) {
+      const c = cruz(pts[a], pts[a + 1]);
+      const r = Math.hypot(...c);
+      const nrm = c.map((v) => v / r);
+      const ang = Math.atan2(r, dot(pts[a], pts[a + 1]));
+      segmentos.push({ a: pts[a], t: cruz(nrm, pts[a]), nrm, ang, inicio: total });
+      total += ang * raioKm;
+    }
+    const lado = sorteia() < 0.5 ? 1 : -1;
+    // a altura varia ao longo do traço (0,35–1): uma escarpa real não tem o mesmo rejeito por centenas de km
+    const ondas = [0, 1, 2].map(() => [60 + 100 * sorteia(), 2 * Math.PI * sorteia()]);
+    const rejeito = (t) => 0.675 + (0.325 / 3) * ondas.reduce((x, [l, fase]) => x + Math.sin((2 * Math.PI * t) / l + fase), 0);
+    const faixa = f.tipo === 'fossa' ? (f.larguraKm ?? 2 * ALCANCE_DO_PERFIL_KM) : 0;
+    const alcance = faixa / 2 + fim + 20;
+    const lats = f.trajeto.map(([, lat]) => lat);
+    const lons = desenrola(f.trajeto).map(([lon]) => lon);
+    const margem = (alcance / raioKm) * GRAUS;
+    const lat0 = Math.max(-90, Math.min(...lats) - margem);
+    const lat1 = Math.min(90, Math.max(...lats) + margem);
+    const cosMin = Math.max(0.05, Math.min(Math.cos(lat0 * RADIANOS), Math.cos(lat1 * RADIANOS)));
+    const lon0 = Math.min(...lons) - margem / cosMin;
+    const nI = Math.min(largura, Math.ceil(((Math.max(...lons) + margem / cosMin - lon0) / 360) * largura) + 2);
+    const i0 = Math.floor(colunaDaLongitude(lon0, largura));
+    let maior = 0;
+    for (let j = Math.max(0, Math.floor(linhaDaLatitude(lat1, altura))); j <= Math.min(altura - 1, Math.ceil(linhaDaLatitude(lat0, altura))); j += 1) {
+      const lat = latitudeDaLinha(j, altura) * GRAUS;
+      for (let w = 0; w < nI; w += 1) {
+        const i = (((i0 + w) % largura) + largura) % largura;
+        const k = j * largura + i;
+        const perto = suave(0, AFASTAMENTO_DA_FEICAO_KM, longeDoDado[Math.floor(j / f4) * L4 + Math.floor(i / f4)]);
+        if (perto <= 0) continue;
+        const p = baseLocal(lat, longitudeDaColuna(i, largura)).c;
+        // o ponto mais perto do traço: u (km, com sinal: + à esquerda de quem anda) e t (km ao longo)
+        let u = Infinity;
+        let t = 0;
+        segmentos.forEach((s, q) => {
+          const phi = Math.atan2(dot(p, s.t), dot(p, s.a));
+          const z = dot(p, s.nrm);
+          let d;
+          let ao;
+          if (phi < 0) {
+            d = Math.acos(Math.min(1, dot(p, s.a)));
+            ao = q === 0 ? s.inicio + phi * raioKm : s.inicio;
+          } else if (phi > s.ang) {
+            d = Math.acos(Math.min(1, dot(p, pts[q + 1])));
+            ao = q === segmentos.length - 1 ? s.inicio + phi * raioKm : s.inicio + s.ang * raioKm;
+          } else {
+            d = Math.asin(Math.min(1, Math.abs(z)));
+            ao = s.inicio + phi * raioKm;
+          }
+          if (d * raioKm < Math.abs(u)) {
+            u = Math.sign(z || 1) * d * raioKm;
+            t = ao;
+          }
+        });
+        if (Math.abs(u) >= alcance) continue;
+        const ponta = suave(0, PONTA_DA_FEICAO * total, t) * suave(0, PONTA_DA_FEICAO * total, total - t);
+        if (ponta <= 0) continue;
+        let h;
+        if (f.tipo === 'escarpa') h = corte(lado * u);
+        else if (f.tipo === 'fossa') h = corte(Math.abs(u) - faixa / 2);
+        else h = corte(Math.max(Math.abs(u), uDoTopo));
+        h *= perto * ponta * rejeito(t);
+        camada[k] += h;
+        maior = Math.max(maior, Math.abs(h));
+      }
+    }
+    feitas.push({ nome: f.nome, tipo: f.tipo, maiorM: Math.round(maior) });
+  }
+  return { camada, feitas };
 }
 
 // ------------------------------------------------------------
@@ -3375,9 +3599,26 @@ const MARGEM_DO_RETALHO = 2;
 /** A fonte fica a tanto do vazio: mais perto, o passa-alta já lê a membrana. */
 const AFASTAMENTO_DA_FONTE_KM = 30;
 
-/** Sem repetir: dois retalhos a menos de 3 larguras (no alvo) não saem de origens a menos de ¼ de largura. */
-const VIZINHANCA_SEM_REPETIR = 3;
+/**
+ * Sem repetir: dois retalhos VISÍVEIS a menos de 5 larguras (no alvo) não saem
+ * de origens a menos de ¼ de largura — a origem é o centro do pedaço, então a
+ * cópia girada ou espelhada conta. Quando todo candidato repete, o sorteio
+ * dobra, rodada a rodada, antes de aceitar o menos ruim (a repetição mais
+ * longe no alvo, contada como forçada). Na prova de 02/10 a regra era largada
+ * de vez (316 forçadas) e o mesmo grupo de crateras saiu lado a lado.
+ */
+const VIZINHANCA_SEM_REPETIR = 5;
 const RAIO_DE_REPETICAO = 0.25;
+const RODADAS_DE_SORTEIO = 7;
+
+/**
+ * O cinturão sem cópias paralelas demais (prova de 02/10): em volta da
+ * direção local, giro aleatório de até tantos graus e escala ATRAVÉS dele
+ * log-uniforme em [1/x, x], com as alturas vezes a escala (a inclinação
+ * através fica a medida) — o espaçamento das escarpas varia de retalho a retalho.
+ */
+const GIRO_DO_CINTURAO_GRAUS = 12;
+const ESCALA_DO_CINTURAO = 1.2;
 
 /**
  * A EMENDA: o corte procura a diferença FINA (velho − novo menos a média
@@ -3476,6 +3717,27 @@ export function amostraNoPonto(coef, largura, altura, x, y, z) {
     soma += PESOS_Y[b] * linha;
   }
   return soma;
+}
+
+/**
+ * A REGRA DE REPETIÇÃO da colcha: a menor distância (rad, no alvo) de `alvo` a
+ * um retalho de `postos` (`{ alvo, origem }`, vetores unitários) a menos de
+ * `vizinhancaRad` cuja origem está a menos de `repeticaoRad` de `origem`;
+ * Infinity se nenhum. A origem é o CENTRO do pedaço copiado — giro e espelho
+ * não a mudam: a cópia girada ou espelhada de uma origem usada é repetição.
+ */
+export function repeticaoMaisPerto(postos, alvo, origem, vizinhancaRad, repeticaoRad) {
+  const cosV = Math.cos(vizinhancaRad);
+  const cosR = Math.cos(repeticaoRad);
+  let menor = Infinity;
+  for (const q of postos) {
+    const da = q.alvo[0] * alvo[0] + q.alvo[1] * alvo[1] + q.alvo[2] * alvo[2];
+    if (da <= cosV) continue;
+    if (q.origem[0] * origem[0] + q.origem[1] * origem[1] + q.origem[2] * origem[2] > cosR) {
+      menor = Math.min(menor, Math.acos(Math.min(1, da)));
+    }
+  }
+  return menor;
 }
 
 /** Bilinear de `campo` no ponto (x, y, z) da esfera unitária; com `coberto`, NaN se um dos quatro não está. */
@@ -3686,9 +3948,14 @@ function distanciaNaGrade(semente, G, saida) {
  *    uma unidade — nada de duas texturas fundidas).
  *  - Candidatos: `candidatos` origens sorteadas nas fontes da unidade (área
  *    igual); giro e espelho ao acaso, menos no cinturão: lá o eixo das
- *    feições medidas cai sobre a direção local do cinturão (`direcoes`), só
- *    meia volta e espelho no próprio eixo. Fora o que repete origem (a menos
- *    de ¼ de largura de uma usada a menos de 3 larguras daqui).
+ *    feições medidas cai sobre a direção local do cinturão (`direcoes`), com
+ *    meia volta, espelho no próprio eixo, giro de até ±`GIRO_DO_CINTURAO_GRAUS`
+ *    e escala através (`ESCALA_DO_CINTURAO`). Fora o que repete origem
+ *    (`repeticaoMaisPerto`: a menos de ¼ de largura de uma usada a menos de 5
+ *    larguras daqui) — só entre retalhos que tocam `opcoes.importa` (o vazio
+ *    e o borrado; no medido bem resolvido a costura põe o dado); sem
+ *    candidato, o sorteio dobra até `RODADAS_DE_SORTEIO` rodadas antes da
+ *    repetição forçada (a mais longe no alvo).
  *  - Escolha: soma dos quadrados da diferença contra o já posto na
  *    sobreposição (bilinear, um ponto a cada 2 texels) dividida pela soma das
  *    energias dos dois lados — a soma crua prefere o retalho mais liso e a
@@ -3715,8 +3982,9 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
   const H = Math.ceil(meio) + MARGEM_DO_RETALHO;
   const G = 2 * H + 1;
   const passoRad = texelKm / raioKm;
-  const cosVizinhanca = Math.cos((VIZINHANCA_SEM_REPETIR * larguraKm) / raioKm);
-  const cosRepeticao = Math.cos((RAIO_DE_REPETICAO * larguraKm) / raioKm);
+  const vizinhancaRad = (VIZINHANCA_SEM_REPETIR * larguraKm) / raioKm;
+  const repeticaoRad = (RAIO_DE_REPETICAO * larguraKm) / raioKm;
+  const importa = opcoes.importa ?? null;
   const raioDaCalota = Math.atan(((meio + MARGEM_DO_RETALHO + 1) * Math.SQRT2 * texelKm) / raioKm);
 
   const campo = new Float32Array(n);
@@ -3851,8 +4119,11 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
   };
 
   const postos = [];
+  const visiveis = [];
   const porUnidade = fontes.map(() => 0);
   let repeticoesForcadas = 0;
+  let menorForcada = Infinity;
+  let rodadasExtras = 0;
   let somaDoErro = 0;
   let pontosDoErro = 0;
 
@@ -3874,12 +4145,23 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
       angulo: f.angulo ? f.angulo[lo] : null,
     };
   };
-  const repete = (alvoC, origemC) =>
-    postos.some(
-      (q) =>
-        q.alvo[0] * alvoC[0] + q.alvo[1] * alvoC[1] + q.alvo[2] * alvoC[2] > cosVizinhanca &&
-        q.origem[0] * origemC[0] + q.origem[1] * origemC[1] + q.origem[2] * origemC[2] > cosRepeticao
-    );
+  /** O valor da origem `base` no ponto (x, y) do plano do alvo (rad; `M` = a escala através, ou null): bilinear de `fina` ou, com `spline`, a spline. */
+  const amostraDaOrigem = (base, M, x, y, spline) => {
+    const xs = M ? M[0] * x + M[1] * y : x;
+    const ys = M ? M[2] * x + M[3] * y : y;
+    const s = 1 / Math.sqrt(1 + xs * xs + ys * ys);
+    const px = (base.c[0] + xs * base.e[0] + ys * base.n[0]) * s;
+    const py = (base.c[1] + xs * base.e[1] + ys * base.n[1]) * s;
+    const pz = (base.c[2] + xs * base.e[2] + ys * base.n[2]) * s;
+    return spline ? amostraNoPonto(coef, largura, altura, px, py, pz) : bilinearNoPonto(fina, largura, altura, px, py, pz);
+  };
+
+  /** O texel mais perto do ponto (x, y, z) da esfera unitária. */
+  const texelDoPonto = (x, y, z) => {
+    const i = Math.floor((Math.atan2(y, x) / (2 * Math.PI) + 0.5) * largura) % largura;
+    const j = Math.min(altura - 1, Math.floor((0.5 - Math.asin(Math.max(-1, Math.min(1, z))) / Math.PI) * altura));
+    return j * largura + i;
+  };
 
   /** Põe um retalho centrado em (lat, lon); false se ele não tinha nada a cobrir. */
   const poe = (latC, lonC, preenchimento) => {
@@ -3889,12 +4171,14 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
     const [nx, ny, nz] = alvo.n;
     let descobertos = 0;
     let nAmostras = 0;
+    let visivel = !importa;
     for (let g = 0; g < G * G; g += 1) {
       const s = INV[g];
       PX[g] = (cx + XL[g] * ex + YL[g] * nx) * s;
       PY[g] = (cy + XL[g] * ey + YL[g] * ny) * s;
       PZ[g] = (cz + XL[g] * ez + YL[g] * nz) * s;
       velho[g] = bilinearNoPonto(campo, largura, altura, PX[g], PY[g], PZ[g], coberto);
+      if (!visivel && importa[texelDoPonto(PX[g], PY[g], PZ[g])]) visivel = true;
       if (!dentro[g]) continue;
       if (Number.isNaN(velho[g])) descobertos += 1;
       else if ((g % G) % 2 === 0 && Math.floor(g / G) % 2 === 0) amostras[nAmostras++] = g;
@@ -3932,41 +4216,60 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
     let energiaVelha = 0;
     for (let q = 0; q < nAmostras; q += 1) energiaVelha += velho[amostras[q]] ** 2;
     const melhores = [];
-    const candidato = (ignoraRepeticao) => {
+    // forcado: a regra já não tem saída; vale a repetição mais longe no alvo, depois o erro
+    const candidato = (forcado) => {
       const o = sorteiaOrigem(f);
       const espelho = sorteia() < 0.5;
       let giro;
+      let escala = 1;
       if (o.angulo !== null && anguloAlvo !== null) {
         giro = (espelho ? o.angulo + anguloAlvo : o.angulo - anguloAlvo) + (sorteia() < 0.5 ? Math.PI : 0);
+        giro += (2 * sorteia() - 1) * GIRO_DO_CINTURAO_GRAUS * RADIANOS;
+        escala = ESCALA_DO_CINTURAO ** (2 * sorteia() - 1);
       } else giro = 2 * Math.PI * sorteia();
       const base = planoTangente(o.lat, o.lon, giro, espelho);
-      if (!ignoraRepeticao && repete(alvo.c, base.c)) return false;
+      const longe = visivel ? repeticaoMaisPerto(visiveis, alvo.c, base.c, vizinhancaRad, repeticaoRad) : Infinity;
+      if (!forcado && longe < Infinity) return false;
+      if (forcado && melhores.length === nMelhores && longe < melhores[nMelhores - 1].longe) return false;
+      // (x, y) do alvo → (x', y') da origem: a escala só através da direção local do cinturão
+      let M = null;
+      if (escala !== 1) {
+        const ca = Math.cos(anguloAlvo);
+        const sa = Math.sin(anguloAlvo);
+        const k = 1 / escala;
+        M = [ca * ca + k * sa * sa, (1 - k) * ca * sa, (1 - k) * ca * sa, sa * sa + k * ca * ca];
+      }
       let erro = 0;
       let energia = energiaVelha;
       for (let q = 0; q < nAmostras; q += 1) {
-        const g = amostras[q];
-        const s = INV[g];
-        const x = (base.c[0] + XL[g] * base.e[0] + YL[g] * base.n[0]) * s;
-        const y = (base.c[1] + XL[g] * base.e[1] + YL[g] * base.n[1]) * s;
-        const z = (base.c[2] + XL[g] * base.e[2] + YL[g] * base.n[2]) * s;
-        const v = bilinearNoPonto(fina, largura, altura, x, y, z);
-        const d = velho[g] - v;
+        const v = escala * amostraDaOrigem(base, M, XL[amostras[q]], YL[amostras[q]], false);
+        const d = velho[amostras[q]] - v;
         erro += d * d;
         energia += v * v;
       }
-      melhores.push({ nota: energia > 0 ? erro / energia : 0, erro, base, origem: o, giro, espelho });
-      melhores.sort((a, b) => a.nota - b.nota);
+      melhores.push({ nota: energia > 0 ? erro / energia : 0, longe, erro, base, M, escala, origem: o, giro, espelho });
+      melhores.sort((a, b) => b.longe - a.longe || a.nota - b.nota);
       if (melhores.length > nMelhores) melhores.pop();
       return true;
     };
     let tentou = 0;
-    for (let q = 0; q < nCandidatos && (nAmostras || melhores.length < nMelhores); q += 1) if (candidato(false)) tentou += 1;
+    const continua = () => nAmostras || melhores.length < nMelhores;
+    for (let q = 0; q < nCandidatos && continua(); q += 1) if (candidato(false)) tentou += 1;
+    for (let rodada = 1; rodada < RODADAS_DE_SORTEIO && !melhores.length; rodada += 1) {
+      rodadasExtras += 1;
+      for (let q = 0; q < nCandidatos * 2 ** rodada && continua(); q += 1) if (candidato(false)) tentou += 1;
+    }
     if (!melhores.length) {
       repeticoesForcadas += 1;
-      for (let q = 0; q < nCandidatos && (nAmostras || melhores.length < nMelhores); q += 1) candidato(true);
+      for (let q = 0; q < nCandidatos * 2 ** (RODADAS_DE_SORTEIO - 1); q += 1) candidato(true);
+      // entre os de repetição mais longe (±10 %), o de menor erro
+      const corte = melhores[0].longe * 0.9;
+      const longes = melhores.filter((m) => m.longe >= corte).sort((a, b) => a.nota - b.nota);
+      melhores.splice(0, melhores.length, ...longes);
+      menorForcada = Math.min(menorForcada, melhores[0].longe);
     }
     const escolhido = melhores[Math.floor(sorteia() * melhores.length)];
-    const { base } = escolhido;
+    const { base, M, escala } = escolhido;
     if (nAmostras) {
       somaDoErro += escolhido.erro;
       pontosDoErro += nAmostras;
@@ -3975,11 +4278,7 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
     // a diferença velho − novo na grade; o corte procura a parte FINA dela
     let temCorte = false;
     for (let g = 0; g < G * G; g += 1) {
-      const s = INV[g];
-      const x = (base.c[0] + XL[g] * base.e[0] + YL[g] * base.n[0]) * s;
-      const y = (base.c[1] + XL[g] * base.e[1] + YL[g] * base.n[1]) * s;
-      const z = (base.c[2] + XL[g] * base.e[2] + YL[g] * base.n[2]) * s;
-      novo[g] = bilinearNoPonto(fina, largura, altura, x, y, z);
+      novo[g] = escala * amostraDaOrigem(base, M, XL[g], YL[g], false);
       if (Number.isNaN(velho[g])) {
         dif[g] = 0;
         cob[g] = 0;
@@ -4076,9 +4375,6 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
     }
 
     // a escrita: cada texel da calota, pela rotação, com a rampa do corte
-    const q00 = base.c;
-    const qe = base.e;
-    const qn = base.n;
     const fatorPlano = raioKm / texelKm;
     const linhaC = linhaDaLatitude(latC, altura);
     const raioEmLinhas = (raioDaCalota / Math.PI) * altura;
@@ -4126,14 +4422,7 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
           w = Math.min(1, Math.max(0, 0.5 + (rc - 0.5 - r) / esfumado));
           if (w <= 0) continue;
         }
-        let v = amostraNoPonto(
-          coef,
-          largura,
-          altura,
-          d * q00[0] + pe * qe[0] + pn * qn[0],
-          d * q00[1] + pe * qe[1] + pn * qn[1],
-          d * q00[2] + pe * qe[2] + pn * qn[2]
-        );
+        let v = escala * amostraDaOrigem(base, M, pe / d, pn / d, true);
         if (temCorte) {
           const ga = Math.min(G - 2, Math.max(0, Math.floor(x + H)));
           const gb = Math.min(G - 2, Math.max(0, Math.floor(y + H)));
@@ -4160,10 +4449,13 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
       deOnde: [escolhido.origem.lat, normaliza360(escolhido.origem.lon)],
       giro: escolhido.giro,
       espelho: escolhido.espelho,
+      escala,
+      visivel,
       erroRmsM: nAmostras ? Math.sqrt(escolhido.erro / nAmostras) : null,
       preenchimento,
       tentativas: tentou,
     });
+    if (visivel) visiveis.push(postos[postos.length - 1]);
     porUnidade[u] += 1;
     return true;
   };
@@ -4200,7 +4492,10 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
       retalhos: emFaixas,
       preenchimento: preenchidos,
       porUnidade,
+      visiveis: visiveis.length,
+      rodadasExtras,
       repeticoesForcadas,
+      menorRepeticaoForcadaLarguras: Number.isFinite(menorForcada) ? (menorForcada * raioKm) / larguraKm : null,
       erroRmsNaSobreposicaoM: pontosDoErro ? Math.sqrt(somaDoErro / pontosDoErro) : null,
       descobertos,
     },
@@ -4253,15 +4548,20 @@ function energiaNaMascara(campo, mascara, largura, altura) {
  *      pode inventar um degrau de hemisfério. Presos na membrana no fundo da
  *      unidade (`restricoesDeNivel`);
  *   3. crateras ANTES da costura: as reais do vazio (`catalogo`, `guia`), de
- *      qualquer tamanho, e as sorteadas pela lei de cada unidade só de
- *      `DIAMETRO_MINIMO_SORTEADO_KM` para cima — as menores vêm nos pedaços;
+ *      qualquer tamanho, as candidatas das feições com centro no vazio e
+ *      fora do catálogo (`crateraDasFeicoes`) e as sorteadas pela lei de
+ *      cada unidade só de `DIAMETRO_MINIMO_SORTEADO_KM` para cima — as
+ *      menores vêm nos pedaços; pico central pela fração de Ro21;
  *   4. a textura FINA (bandas de σ ≤ `CORTE_DA_COLCHA_KM`) é a COLCHA de
  *      pedaços do medido da mesma unidade (`fontesDaColcha`, `colcha`): o
  *      medido preenchido pela membrana menos a gaussiana do corte, lido só em
  *      texel bem resolvido em toda banda e a `AFASTAMENTO_DA_FONTE_KM` do
  *      vazio. As bandas do corte até R/5 são ruído, um por banda, com a
  *      energia medida da banda na caixa-exemplo menos a das crateras
- *      sorteadas no núcleo da unidade, na média do vazio;
+ *      sorteadas no núcleo da unidade, na média do vazio; a repetição de
+ *      origem só conta entre retalhos que tocam o vazio ou o borrado;
+ *   4c. a tectônica traçada (`camadaTectonica`) com o degrau medido no
+ *      cinturão (`perfilDasEscarpas`), só no vazio;
  *   5. `dadoPorOitava` pelo mapa de qualidade (`qualidade`, item 5b);
  *   6. a costura; e a CONFERÊNCIA: no núcleo de cada unidade (vazio, peso ≥
  *      0,9), RMS da inclinação (±10 %) e S(d) nos lags até 30 km (média dos
@@ -4364,9 +4664,11 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
   // 3. as crateras: as reais do vazio de verdade e as sorteadas grandes
   const leis = ids.map((id) => leiDeCrateras(medidas.unidades[id].crateras));
   const reais = crateraReaisNoVazio(catalogo, guia, grade.vazio, largura, altura);
-  const { crateras, porUnidade } = sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, raioM, dMinKm: DIAMETRO_MINIMO_SORTEADO_KM, reais });
+  const dasFeicoes = crateraDasFeicoes({ fonte, vazio: grade.vazio, largura, altura, raioM, reais });
+  const fixas = [...reais, ...dasFeicoes.crateras];
+  const { crateras, porUnidade } = sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, raioM, dMinKm: DIAMETRO_MINIMO_SORTEADO_KM, reais: fixas });
   const camada = camadaDeCrateras({ crateras, morfometria: medidas.morfometria, largura, altura, raioM, variante: opcoes.variante });
-  anota(`crateras: ${reais.length} reais, ${crateras.length - reais.length} sorteadas (≥ ${DIAMETRO_MINIMO_SORTEADO_KM} km)`);
+  anota(`crateras: ${reais.length} reais, ${dasFeicoes.crateras.length} das feições, ${crateras.length - fixas.length} sorteadas (≥ ${DIAMETRO_MINIMO_SORTEADO_KM} km)`);
 
   // 4. a colcha: o fino do medido (membrana − a gaussiana do corte), as fontes e os retalhos
   const cheio = membranaDaCostura(metros, dado, sigmasKm, largura, altura, raioM, restricoes);
@@ -4388,8 +4690,19 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
   const fontes = fontesDaColcha({ metros, valido, fonte, largura, altura, raioM, larguraKm });
   const direcoes = ids.map((_, u) => (fontes[u]?.angulo ? direcaoDoCinturao(unidades.pesos[u], Lr, Ar, raioM) : null));
   anota(`a parte fina do medido e as fontes (${ids.map((id, u) => `${id} ${fontes[u]?.areaKm2 ?? 0} km²`).join(', ')})`);
-  const retalhos = colcha({ fina, coef: coeficientesDeSpline(fina, largura, altura), largura, altura, raioM, pesos, fontes, direcoes, semente, opcoes: opcoes.colcha });
-  anota(`a colcha: ${retalhos.resumo.retalhos} + ${retalhos.resumo.preenchimento} retalhos`);
+  const importa = Uint8Array.from(dadoPorOitava[0], (v) => (v ? 0 : 1));
+  const retalhos = colcha({
+    fina, coef: coeficientesDeSpline(fina, largura, altura), largura, altura, raioM, pesos, fontes, direcoes, semente,
+    opcoes: { ...opcoes.colcha, importa },
+  });
+  anota(`a colcha: ${retalhos.resumo.retalhos} + ${retalhos.resumo.preenchimento} retalhos, ${retalhos.resumo.repeticoesForcadas} repetições forçadas`);
+
+  // 4c. a tectônica traçada na foto, com o degrau medido no cinturão
+  const uC = ids.findIndex((id) => fonte.unidades[id].papel === 'cinturao-tectonico');
+  const perfil =
+    uC >= 0 ? perfilDasEscarpas({ metros, valido, caixas: fonte.unidades[ids[uC]].fontes ?? [fonte.unidades[ids[uC]].exemplo], largura, altura, raioM }) : null;
+  const tectonica = perfil?.n ? camadaTectonica({ feicoes: fonte.feicoes ?? [], perfil, dado, largura, altura, raioM, semente }) : null;
+  anota(`a tectônica: degrau medido ${perfil ? `${Math.round(perfil.alturaM)} m em ${perfil.larguraKm} km (${perfil.n} perfis)` : '—'}, ${tectonica?.feitas.length ?? 0} feições`);
 
   // 4b. o ruído das bandas do corte até R/5: energia medida − a das crateras sorteadas, no núcleo
   const bandasC = decompoeEmOitavas(camada, um, largura, altura, raioM, sigmasKm);
@@ -4425,7 +4738,7 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
         a = 0;
         for (let u = 0; u < ids.length; u += 1) a += pesos[u][q] * escalas[u];
       }
-      simulada[q] = a * retalhos.campo[q] + ruido[q] + camada[q];
+      simulada[q] = a * retalhos.campo[q] + ruido[q] + camada[q] + (tectonica ? tectonica.camada[q] : 0);
     }
     return costura({ medida: metros, dadoPorOitava, simulada, sigmasKm, largura, altura, raioM, restricoes, cheio, registra: anota });
   };
@@ -4507,7 +4820,13 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
           },
         ])
       ),
-      crateras: { reais: reais.map((c) => `${c.id} ${c.dKm} km`), sorteadas: porUnidade },
+      crateras: { reais: reais.map((c) => `${c.id} ${c.dKm} km`), sorteadas: porUnidade, comPico: crateras.filter((c) => c.pico).length },
+      feicoes: {
+        crateras: dasFeicoes.crateras.map((c) => `${c.id} ${c.dKm} km`),
+        puladas: dasFeicoes.puladas,
+        degrau: perfil && { alturaM: Math.round(perfil.alturaM), larguraKm: perfil.larguraKm, perfis: perfil.n },
+        tectonica: tectonica?.feitas ?? [],
+      },
       energiaDasCrateras: Object.fromEntries(ids.map((id, u) => [id, energiaDasCrateras[u].map(Math.round)])),
       ganhosDoRuido: Object.fromEntries(ids.map((id, u) => [id, ruidosas.map((k) => Math.round(Math.sqrt(g2[u][k])))])),
       colcha: {

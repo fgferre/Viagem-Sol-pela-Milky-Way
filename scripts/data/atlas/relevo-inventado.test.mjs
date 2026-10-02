@@ -68,6 +68,7 @@ import {
   camadaDeCrateras,
   coeficientesDeSpline,
   colcha,
+  crateraDasFeicoes,
   colunaDaLongitude,
   costura,
   crateraReaisNoVazio,
@@ -86,6 +87,7 @@ import {
   moldeDeCratera,
   pesosDasUnidades,
   planoTangente,
+  repeticaoMaisPerto,
   pontoDoPlano,
   ruidoDaOitava,
   sigmasDasOitavas,
@@ -581,6 +583,28 @@ describe('a síntese — unidades, níveis, crateras e o polo sul', () => {
     expect(Math.abs(Math.sqrt(areaFunda / Math.PI) - r0)).toBeLessThan(texelKm);
   });
 
+  it('não carimba a cratera de feição com centro no dado medido, nem a que o catálogo já pôs', () => {
+    const L = 360;
+    const A = 180;
+    const vazio = new Uint8Array(L * A);
+    // o vazio: 90–270°E (colunas 270–359 e 0–89, com a coluna 0 em 180°E)
+    for (let j = 0; j < A; j += 1) for (let i = 0; i < L; i += 1) if (i < 90 || i >= 270) vazio[j * L + i] = 1;
+    const fonte = {
+      feicoes: [
+        { nome: 'no vazio', tipo: 'cratera', lat: 20, lon: 150, diametroKm: 60 },
+        { nome: 'no medido', tipo: 'cratera', lat: 20, lon: 10, diametroKm: 60 },
+        { nome: 'no catálogo', tipo: 'cratera', lat: -10, lon: 200, diametroKm: 40 },
+        { nome: 'escarpa', tipo: 'escarpa', lat: 0, lon: 150 },
+      ],
+    };
+    const reais = [{ id: 'REAL-1', lat: -10.2, lon: 200.3, dKm: 44 }];
+    const { crateras, puladas } = crateraDasFeicoes({ fonte, vazio, largura: L, altura: A, raioM: 606e3, reais });
+    expect(crateras.map((c) => c.id)).toEqual(['no vazio']);
+    expect(crateras[0]).toMatchObject({ lat: 20, lon: 150, dKm: 60 });
+    expect(puladas.map((p) => p.nome)).toEqual(['no medido', 'no catálogo']);
+    expect(puladas[0].motivo).toBe('centro no dado medido');
+  });
+
   it('dá a mesma simulação (ruído das oitavas + crateras) com a mesma semente, byte a byte', () => {
     const { L, A, raioM } = PEQUENO;
     const { ids, pesos } = pesosDasUnidades(FONTE, L, A, raioM);
@@ -724,11 +748,11 @@ describe('a colcha — retalhos do medido copiados por rotação da esfera', () 
     expect(corte.p99 / outros.p99).toBeLessThanOrEqual(1.2);
   });
 
-  it('não repete origem: dois retalhos a menos de 3 larguras não saem de origens a menos de ¼ de largura', () => {
+  it('não repete origem: dois retalhos a menos de 5 larguras não saem de origens a menos de ¼ de largura', () => {
     const { raioM } = MUNDO_DA_COLCHA;
     const { r } = aColcha();
     const { larguraKm } = r.resumo;
-    const cosVizinhanca = Math.cos((3 * larguraKm) / (raioM / 1000));
+    const cosVizinhanca = Math.cos((5 * larguraKm) / (raioM / 1000));
     const cosRepeticao = Math.cos((0.25 * larguraKm) / (raioM / 1000));
     const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     // os pares de retalhos vizinhos no alvo e, entre eles, os de origem repetida (`origens[q]` é a do retalho q)
@@ -757,6 +781,21 @@ describe('a colcha — retalhos do medido copiados por rotação da esfera', () 
       [embaralhadas[q], embaralhadas[s]] = [embaralhadas[s], embaralhadas[q]];
     }
     expect(conta(embaralhadas).repetidos).toBeGreaterThan(10);
+  });
+
+  it('conta como repetição a cópia girada ou espelhada de uma origem usada — e não a origem longe dela', () => {
+    const raioKm = 606;
+    const larguraKm = 140;
+    const usado = { alvo: planoTangente(10, 100).c, origem: planoTangente(20, 330, 0.3, false).c };
+    const vizinhanca = (5 * larguraKm) / raioKm;
+    const repeticao = (0.25 * larguraKm) / raioKm;
+    const alvo = planoTangente(10, 120).c; // ~1,6 largura do usado
+    for (const [giro, espelho] of [[0.3, false], [2.1, false], [0.3, true], [4, true]]) {
+      expect(repeticaoMaisPerto([usado], alvo, planoTangente(20, 330, giro, espelho).c, vizinhanca, repeticao)).toBeLessThan(vizinhanca);
+    }
+    // outra origem (a 1 largura da usada) e o mesmo pedaço longe no alvo (> 5 larguras) passam
+    expect(repeticaoMaisPerto([usado], alvo, planoTangente(20, 345, 0.3, false).c, vizinhanca, repeticao)).toBe(Infinity);
+    expect(repeticaoMaisPerto([usado], planoTangente(-40, 250).c, usado.origem, vizinhanca, repeticao)).toBe(Infinity);
   });
 
   it('não vaza o recorte escondido (`ocultar`): nenhuma janela da saída repete o padrão dele, e a saída nem depende dele', () => {
