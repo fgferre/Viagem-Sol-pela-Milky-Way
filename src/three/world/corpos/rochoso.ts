@@ -311,9 +311,11 @@ const ESCALA_DA_NORMAL_DO_RELEVO = 1.2;
  * diferença que os quatro de antes não têm: o DEM de 300 m é PARCIAL.
  * Plutão tem relevo medido em ~45 % do globo (o hemisfério do sobrevoo e
  * a calota norte) e Caronte em ~44 % (o hemisfério voltado para Plutão);
- * no resto a normal é a do terreno plano (128,128,255) — o gerador não
- * assa parede de normal onde falta dado, e a borda do dado é seca, sem
- * esfumado. Fonte: Schenk et al. 2018 (Icarus 314, 400 e 315, 124).
+ * o resto é relevo INVENTADO por código (02/10/2026, `relevo-inventado.mjs`):
+ * uma colcha de pedaços do terreno medido do mesmo tipo, posta onde o mapa
+ * geológico das fotos da aproximação põe cada terreno e costurada ao medido
+ * sem parede nem linha; a ficha confessa (ASSETS.md). Fonte do medido:
+ * Schenk et al. 2018 (Icarus 314, 400 e 315, 124).
  *
  * O valor é a ESCALA TANGENCIAL, e é 1 — nenhum ganho. As luas de
  * Saturno usam 1,2 porque o número é o do projeto do dono; aqui a

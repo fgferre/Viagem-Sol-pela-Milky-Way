@@ -385,7 +385,11 @@ export const CORPOS = {
           sha256: '2b230e61c79c8ac2bc537534e4e365621f39c0ad51fb2872507618431318e3da',
         },
       },
-      sha256Aprovado: {},
+      // a palavra do dono (02/10/2026, Fotos 2 e 3): completar o borrado e
+      // alisar o grão de Sputnik — o candidato `pluto-final-c1-s1`
+      sha256Aprovado: {
+        'completa:1,sputnik:1': '80d48040db6f96533459a63b2815f98571a2d3f8b1c7cabca1b70d1cd3a31f41',
+      },
     },
     // o DEM (591 MiB) vem por faixas HTTP; o cache em `.cache/relevo/` serve a
     // rodada do relevo inventado — as prévias e o assamento final — e mantém
@@ -430,7 +434,11 @@ export const CORPOS = {
           sha256: 'fc18b7991b32ab3a62b7ce8fd1f4c8d92de8b79c614bf1ae57fe831efce22885',
         },
       },
-      sha256Aprovado: {},
+      // a palavra do dono (02/10/2026, Foto 3): completar o borrado — o
+      // candidato v9
+      sha256Aprovado: {
+        'completa:1': '53b50dc091592034081b63608aadd504001b7774ab4d5123398aaf6f6a78ba45',
+      },
     },
     // o DEM (154 MiB) vem por faixas HTTP; o mesmo cache de Plutão (ver acima)
     cacheDeAlturas: true,

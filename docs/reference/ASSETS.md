@@ -588,6 +588,32 @@ volta do hemisfério medido: o gerador põe a normal LISA no texel sem dado
 (também no parcial, que mistura dado e vazio) e nos quatro vizinhos dele,
 e o RMS impresso mede só onde há dado. A borda fica seca, sem esfumado.
 
+**O RELEVO INVENTADO na metade sem dado (02/10/2026; a rodada do
+`PLAN-RELEVO.md`).** O vazio dos dois DEMs deixou de sair liso.
+`inventaRelevoDoCorpo` (`relevo-inventado.mjs`), a MESMA função das
+prévias que ele aprovou por foto, monta ali uma colcha de retalhos do
+terreno MEDIDO do mesmo tipo (à Efros & Freeman), posta onde o mapa
+geológico das fotos da aproximação põe cada terreno — em Plutão o mapa de
+Stern et al. 2021 (*Icarus* 356, 113805, Fig. 5); em Caronte, que não tem
+mapa de unidades publicado, um mapa que é palpite guiado pelas escarpas e
+crateras de Beyer et al. 2021 (*PSJ* 2, 141) — e costurada ao medido por
+krigagem banda a banda, sem parede nem linha. As crateras reais do
+catálogo de Robbins v2 (Zenodo 8292107) com centro no vazio entram no
+lugar e no diâmetro delas (Simonelli com o perfil medido da bacia Burney),
+as menores são sorteadas pela lei de tamanhos do lado medido (Ro21,
+Zenodo 7753861), e as feições dos artigos (escarpas, fossas, cristas,
+lineamentos, crateras candidatas) são traçadas; o sul, quase sem imagem,
+leva a unidade mais ao sul do lado medido — palpite. No MEDIDO: o degrau
+entre as bordas do arquivo foi tirado, o detalhe fino do dado borrado ou
+ruim (preenchimento polar, emendas do mosaico, bordas vistas de lado) foi
+refeito sobre a forma medida e, em Plutão, o grão de ruído estéreo da
+planície Sputnik foi alisado (só a banda mais fina, só onde é plana). As
+escolhas dele (completar o borrado; alisar Sputnik) ficam em
+`fonte/<corpo>-lado-de-tras.json`, e o gerador só grava o mapa cujo RGB
+decodificado tem o sha256 aprovado (`vazioInventado.sha256Aprovado`): a
+prévia aprovada é o que vai para o app, byte a byte. Tudo isso a ficha
+confessa, na tabela abaixo.
+
 ## Os seis sem foto — ilustrações por IA (item 151)
 
 Hígia, Palas, Haumea, Makemake, Éris e Quaoar: nenhuma sonda os visitou.
@@ -743,8 +769,8 @@ tocar num `.mjs`.
 | mars/normal | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |
 | ceres/normal | topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem |
 | vesta/normal | topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave |
-| pluto/normal | topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa |
-| charon/normal | topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa |
+| pluto/normal | topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado |
+| charon/normal | topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida |
 | miranda/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
 | ariel/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
 | umbriel/map | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
