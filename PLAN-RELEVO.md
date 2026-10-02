@@ -454,5 +454,14 @@ A lista vai ao Felipe no fim da rodada.
   recusa o diferente); foto do app real igual à da prévia.
 - **Fim:** `npm run done` verde uma vez; `npm run data:verify` verde.
 
-## Andamento
-- [~] E1 cache (código feito e commitado; falta o Felipe rodar Plutão e Caronte) · [~] E2 medidas (E2a mapas de unidades FEITA; E2b medidas espera o cache) · [x] E3 núcleo em Caronte (costura, síntese por unidade, colcha; Plutão espera o cache) · [ ] E4 prova (Foto 1) · [ ] E5 Sputnik (Foto 2) · [ ] E6 feições (Foto 3) · [ ] E7 confissão · [ ] E8 mapas finais
+## Andamento (02/10, noite)
+- [x] E1 cache (Plutão e Caronte, mapas de hoje idênticos por md5)
+- [x] E2 medidas (Robbins v2, Ro21, mapa de qualidade) e mapas de unidades
+- [x] E3 núcleo: costura (krigagem por banda, pepita própria na banda 0), síntese por unidade, COLCHA de retalhos do terreno medido (costuras sem linha: commit 93d59e7), níveis de unidade, crateras reais do catálogo no vazio (Simonelli com o perfil medido da Burney), degrau da costura do arquivo do DEM tirado nos dois corpos, dado ruim refeito só no detalhe fino (calota polar de Caronte, limbo norte, borrão sul de Plutão, redemoinho do polo de Plutão)
+- [x] E4 prova do recorte escondido (Foto 1, `capturas/relevo-prova-recorte-prancha.jpg`) — ele aprovou seguir ("pode seguir com as melhorias e aplicar no lado de trás inteiro")
+- [~] E5 Sputnik: protótipo "só a banda 0" (grão 4,7° → 0,8°, células −6 %), Foto 2 `capturas/relevo-sputnik-grao-prancha-v2.jpg` enviada; ESPERA a palavra dele. Portado como `alisamentos` (ativo: false) no JSON de Plutão; conserto em curso: área alisada nunca é completada.
+- [~] E6 candidatos finais: Caronte v9, Plutão v7; Foto 3 enviada (`capturas/relevo-plutao-lado-de-tras-prancha.jpg`, `capturas/relevo-caronte-lado-de-tras-prancha-v2.jpg`); ESPERA a palavra dele sobre completar o borrado. Na coluna "sem completar" o lado de trás é sorteado de novo (a escolha muda a sequência aleatória) — só as emendas comparam.
+- [x] E8 preparo: `inventaRelevoDoCorpo` é o caminho único (prévia = gerador, byte a byte nas 4 combinações conferidas); tabelas do Zenodo com sha256 fixado; o gerador só grava o RGB com hash em `sha256Aprovado` (hoje vazio: recusa tudo). Hashes candidatos: charon completa:1 53b50dc0…ba45, completa:0 1cf9e0bb…9046; pluto completa:1,sputnik:0 2e1e1392…5034, completa:0,sputnik:0 8b359476…8f69.
+- [ ] E7 confissão (pt/en, ASSETS.md, texturas-em-ingles.mjs) — depois das duas palavras dele.
+- [ ] Fixar `sha256Aprovado` da combinação escolhida; comandos dele (gerador ×2, otimiza ×2, manifesto, data:verify); conferir tamanhos menores contra a escada da prévia; fotos do app real; `npm run done`; merge no main com a palavra dele.
+- Fora desta obra, anotado: a COR borrada/chapada do lado de trás (a ideia dele de melhorar a cor com IA, guiada pelo relevo) — próxima rodada.
