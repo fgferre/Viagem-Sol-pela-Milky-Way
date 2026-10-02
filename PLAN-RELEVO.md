@@ -243,6 +243,28 @@ Conferência: `normal.png` de Plutão e Caronte idêntico por md5 ao de hoje.
   235–255°E 0–16°N; Caronte: 55–100°E ao sul de 30°N e a borda oeste em
   250–300°E; os centros de U e C caem aí. (2) Em Plutão, a faixa ~10–100°E
   tem FOTO NÍTIDA mas não tem DEM — o catálogo de crateras cobre essa faixa.
+- **E2b FEITA para Caronte (01/10; Plutão espera o cache):** módulo
+  `relevo-inventado.mjs` (medidas puras, 5 testes) + runner no scratchpad
+  (`e2b/medir.mjs <corpo>`, 17 s). RMS por exemplo: Oz 8,86°, Serenity 12,84°,
+  Vulcan 8,39°, global 8,48° (= `assaNormais`); σ da altura global 2,50 km
+  (literatura 2,53). Vulcan N(≥8/11,3/16/32) = 226/176/100/0 contra Si21
+  349/206/83/15. **Crateras no cache são mais rasas e de borda fraca** que
+  em Ro21 (d/D 0,058/0,073/0,058/0,040 contra 0,108/0,108/0,093/0,071; borda
+  ~0,2–0,4 da publicada): as crateras de Ro21 remedidas no cache saem com
+  0,71–0,88 da profundidade — é a resolução efetiva do DEM. DECISÃO: os
+  moldes de cratera da E3 são os EMPILHADOS no cache (como a cratera aparece
+  nesta resolução — a prova da E4 compara igual com igual); a amplitude de
+  Ro21 fica guardada para uma variante "nítida", que vai junto do A/B do
+  dado borrado na Foto 3. **Crateras reais no vazio de Caronte:** 6 da
+  região 6 (26,9–92,6 km), entre elas a A (30,6 km, 1,8°N 92,9°E) e uma de
+  92,6 km certa em 23°S 44,7°E. **Dado borrado:** a 50 km do vazio, as
+  bandas 0–4 estão borradas em 90/70/60/51/29 % da área; a borda sudeste
+  (30–130°E, −40° a 50°N) perde 3–5 oitavas (até σ 15–30 km); 90–210°E em
+  30–60°N, 3–4; a borda oeste e a calota norte, ~1 (a calota acima de 60°N é
+  preenchimento liso). Prancha `scratchpad/e2b/charon-bandas-borradas.png`.
+  **Convenção do catálogo:** em Plutão a longitude leste = valor do catálogo
+  + 180° (Sputnik, Burney e Simonelli só caem no lugar assim); em Caronte o
+  catálogo já é 0–360.
 
 **E3 — o núcleo da síntese (Opus).** No mesmo módulo, funções puras; UMA
 função exportada serve à prévia e ao gerador; semente fixa por corpo
