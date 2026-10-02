@@ -99,6 +99,24 @@
       "lat": [33, 40],
       "sigmaMaximoKm": 15,
       "nota": "Extensão do mesmo defeito de limbo do DEM, vista na prévia v4 fora da primeira caixa."
+    },
+    {
+      "lon": [258, 282],
+      "lat": [34, 41],
+      "sigmaMaximoKm": 15,
+      "nota": "Extensão do mesmo defeito de limbo do DEM: bolhas borradas em 260–280°E, 36–41°N, vistas na prévia v6 entre a primeira caixa (ao norte de 40°N) e a de 280–306°E (P3, 02/10)."
+    },
+    {
+      "lon": [179.3, 180.7],
+      "lat": [50, 90],
+      "sigmaMaximoKm": 8,
+      "nota": "A borda do arquivo do DEM em 180°E (P3, 02/10): tirado o degrau (costuraDoArquivo), sobra junto da emenda um calombo de um lado só, ~6 colunas de largura — o lado oeste sobe 70–90 m em 52–70°N —, que ainda desenha uma linha fina; é detalhe medido ruim na borda do arquivo. Faixa de ±8 colunas: nas bandas de σ ≤ 8 km o medido deixa de ser dado e o fino é refeito com a forma medida mantida; sem completar, o medido fica como está."
+    },
+    {
+      "lon": [164.5, 167],
+      "lat": [50, 90],
+      "sigmaMaximoKm": 8,
+      "nota": "A segunda linha do norte, ~165°E (P3, 02/10): não é degrau de uma coluna; medido no cache (52–88°N, coluna a coluna), a mediana do salto entre colunas vira de +8 a −2 m em 164,6–165,7°E e a mediana de |salto| cai a 3–4 m (9–15 m em volta) — uma faixa alisada com uma quina ao longo do meridiano por 36° de latitude, a marca de uma emenda de mosaico esfumada do DEM. Mesmo tratamento da borda do arquivo: o fino (σ ≤ 8 km) é refeito sobre a forma medida."
     }
   ],
   "costuraDoArquivo": {

@@ -1546,6 +1546,19 @@ export function medeLadoMedido({ grade: gradeDoCache, unidades, crateras: catalo
 
 /** Pepita da krigagem, em fração de C(0): a diagonal é C(0)·(1 + pepita). */
 const PEPITA = 1e-4;
+/**
+ * ...e a da PRIMEIRA banda (h − G(σ₀)): ela vai até o Nyquist da grade, que o
+ * modelo de Legendre (grau ≤ as linhas do nível) não representa — a parte do
+ * texel é branca para ele, e com a pepita mínima o sistema sai quase singular
+ * (o Cholesky falhava em dezenas de blocos) e a estimativa junto da borda do
+ * dado explodia em texels pretos e brancos alternados (P3, 02/10: em Plutão,
+ * |estimativa| p99 2,4× o |T| p99 da banda, até 6,7 km; a faixa serrilhada do
+ * norte nas bordas do borrado). Validação cruzada no medido (anel de 2 texels
+ * tirado da borda e previsto): erro/sinal 1,3–4,4 com 1e-4, 0,51–0,96 com 3 %,
+ * o melhor de 1–30 % em Plutão; em Caronte (banda fina sem parte branca) muda
+ * pouco (0,27–0,82 → 0,25–0,82). No dado a banda segue igual ao medido.
+ */
+const PEPITA_DA_PRIMEIRA_BANDA = 0.03;
 
 /** O alcance da covariância nunca passa de tantos σ da oitava. */
 const ALCANCE_MAXIMO_EM_SIGMAS = 4;
@@ -2275,11 +2288,12 @@ function residuoNoNivel(residuo, dado, largura, altura, nivel) {
  * perto do polo, a célula junta colunas até ter ~a largura de uma linha). Os
  * alvos vão em BLOCOS de `LADO_DO_BLOCO`² células: a vizinhança do bloco é a
  * união das dos alvos (todo dado a até um alcance de algum deles), fatorada
- * UMA vez, e a krigagem é a dual — α = (K + pepita)⁻¹·r, estimativa = Σ α·C.
+ * UMA vez, e a krigagem é a dual — α = (K + pepita)⁻¹·r, estimativa = Σ α·C;
+ * `pepita` (fração de C(0), padrão `PEPITA`) sobe ×10 se o Cholesky falhar.
  * Quando o alcance cobre o corpo, um sistema só com todo o dado.
  * `covariancia` (de `covarianciaDaOitava`) é ajustada à `simulada` se faltar.
  */
-export function condicionaOitava({ simulada, medida, dadoK, largura, altura, raioM, sigmaKm, covariancia }) {
+export function condicionaOitava({ simulada, medida, dadoK, largura, altura, raioM, sigmaKm, covariancia, pepita: pepitaInicial = PEPITA }) {
   const n = largura * altura;
   const cv = covariancia ?? covarianciaDaOitava(simulada, largura, altura, raioM, sigmaKm);
   const nivel = nivelDaOitava(sigmaKm, largura, altura, raioM);
@@ -2396,13 +2410,13 @@ export function condicionaOitava({ simulada, medida, dadoK, largura, altura, rai
   let K = new Float64Array(0);
   let alfa = new Float64Array(0);
   let vizinhos = new Int32Array(1024);
-  const info = { nivel, Lc, Ac, alcanceKm, alvos: 0, blocos: 0, vizMedia: 0, vizMax: 0, falhas: 0, pepitaMax: PEPITA };
+  const info = { nivel, Lc, Ac, alcanceKm, alvos: 0, blocos: 0, vizMedia: 0, vizMax: 0, falhas: 0, pepitaMax: pepitaInicial };
   const krigaBloco = (alvos, nAlvos, N) => {
     if (K.length < N * N) {
       K = new Float64Array(N * N);
       alfa = new Float64Array(N);
     }
-    let pepita = PEPITA;
+    let pepita = pepitaInicial;
     let ok = false;
     while (!ok && pepita < 1) {
       for (let a = 0; a < N; a += 1) {
@@ -2850,6 +2864,7 @@ export function costura({ medida, dadoPorOitava, simulada, sigmasKm, largura, al
       altura,
       raioM,
       sigmaKm,
+      pepita: k === 0 ? PEPITA_DA_PRIMEIRA_BANDA : PEPITA,
     });
     anota(
       `oitava ${k}: nível ${nivel}, alcance ${info.alcanceKm.toFixed(1)} km, ${info.alvos} alvos em ` +
@@ -3170,12 +3185,21 @@ const D_DO_FUNDO_CHEIO_KM = 100;
 /** ...onde a textura simulada sai × (1 − isto) até `FUNDO_CHEIO_RR[0]` R e volta inteira em `[1]` R. */
 const AMORTECIMENTO_DO_FUNDO = 0.6;
 const FUNDO_CHEIO_RR = [0.55, 0.75];
+/**
+ * Na PAREDE e na BORDA (até `PAREDE_RR[0]` R) a textura sai × (1 − isto), de
+ * volta inteira em `[1]` R (P3, 02/10): com a textura inteira por cima, a
+ * borda de Simonelli (o molde medido de Burney) não se lia sob Sol de 12–20°,
+ * e na Burney medida a parede e a borda são lisas perto do entorno.
+ */
+const AMORTECIMENTO_DA_PAREDE = 0.5;
+const PAREDE_RR = [1.3, 1.5];
 
 /**
  * O FUNDO CHEIO das crateras reais grandes (`dKm` ≥ `D_DO_FUNDO_CHEIO_KM`):
  * o multiplicador (Float32, 1 fora; null sem nenhuma) da textura simulada (a
- * colcha e o ruído) — o fundo preenchido sai liso e a parede, a borda e o
- * pico (a camada das crateras) ficam inteiros: a cratera se lê sob Sol rasante.
+ * colcha e o ruído) — o fundo preenchido sai liso, a parede e a borda com
+ * metade da textura, e o relevo delas e o pico (a camada das crateras) ficam
+ * inteiros: a cratera se lê sob Sol rasante.
  */
 export function fundoCheio(crateras, largura, altura, raioM) {
   const grandes = crateras.filter((c) => c.dKm >= D_DO_FUNDO_CHEIO_KM);
@@ -3185,7 +3209,7 @@ export function fundoCheio(crateras, largura, altura, raioM) {
   for (const c of grandes) {
     const centro = baseLocal(c.lat, c.lon).c;
     const R = c.dKm / 2;
-    const alcance = (FUNDO_CHEIO_RR[1] * R) / raioKm;
+    const alcance = (PAREDE_RR[1] * R) / raioKm;
     const cosMax = Math.cos(alcance);
     const j0 = Math.max(0, Math.floor(linhaDaLatitude(Math.min(90, c.lat + alcance * GRAUS), altura)));
     const j1 = Math.min(altura - 1, Math.ceil(linhaDaLatitude(Math.max(-90, c.lat - alcance * GRAUS), altura)));
@@ -3196,7 +3220,8 @@ export function fundoCheio(crateras, largura, altura, raioM) {
         const cosA = Math.cos(f) * (Math.cos(l) * centro[0] + Math.sin(l) * centro[1]) + Math.sin(f) * centro[2];
         if (cosA < cosMax) continue;
         const rho = (Math.acos(Math.min(1, cosA)) * raioKm) / R;
-        liso[j * largura + i] *= 1 - AMORTECIMENTO_DO_FUNDO * (1 - suave(...FUNDO_CHEIO_RR, rho));
+        const fundo = AMORTECIMENTO_DO_FUNDO * (1 - suave(...FUNDO_CHEIO_RR, rho));
+        liso[j * largura + i] *= 1 - Math.max(fundo, AMORTECIMENTO_DA_PAREDE * (1 - suave(...PAREDE_RR, rho)));
       }
     }
   }
