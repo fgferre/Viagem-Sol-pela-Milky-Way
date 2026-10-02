@@ -780,8 +780,8 @@
       "arquivo": "textures/atlas/charon/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 417539,
-      "sha256": "61ff9a0e0bef84785dc3ce7bed70e1f0cf32f7808677d68a6ef220c5f119251e",
+      "bytes": 1026553,
+      "sha256": "be6063436e110a396fee354fce16aa504338d5a553be7d41b90808a1e7817500",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -799,8 +799,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
       }
     },
     {
@@ -809,8 +809,8 @@
       "arquivo": "textures/atlas/charon/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 276204,
-      "sha256": "528924f773a896d6c2e7da6e8aa580b4d34c83f449627c61d21f4531c5fecd55",
+      "bytes": 769762,
+      "sha256": "650bbfef1089a106af57b73f008947cf7c74c9767725448dadc58e9215909610",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -828,8 +828,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
       }
     },
     {
@@ -838,8 +838,8 @@
       "arquivo": "textures/atlas/charon/normal_2048.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 1567061,
-      "sha256": "84028b13053976e1a8a70e3881cbe1f2824fb6c56f90101918e3bb1f2fdaaad0",
+      "bytes": 4047527,
+      "sha256": "7f5253655d08bbe57c92c1ea117d38117be129514d879df98b874a53ec6d05e8",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -857,8 +857,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
       }
     },
     {
@@ -867,8 +867,8 @@
       "arquivo": "textures/atlas/charon/normal_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 897150,
-      "sha256": "0b326c2a78799eacd0f13d22f430ef48769d9bc247fdb474690ed08c632d666d",
+      "bytes": 2733378,
+      "sha256": "a0ade131b2e7995ebd9c5f7f994e89fd7837eb8dc9ed843e7ca3546755c9e9a6",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -886,8 +886,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
       }
     },
     {
@@ -896,8 +896,8 @@
       "arquivo": "textures/atlas/charon/normal.png",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 5478250,
-      "sha256": "f81172b2d3f74398e7508adedd15862308a3433a28c6ac40de5a2f43c03c8684",
+      "bytes": 14582974,
+      "sha256": "6f5b32c5e560574d35994cc668f849913cadb327ff80cee1cc4854511598687f",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -915,8 +915,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
       }
     },
     {
@@ -925,8 +925,8 @@
       "arquivo": "textures/atlas/charon/normal.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 2291546,
-      "sha256": "f94fc2df32a4701294e14da009f27bcd0631d071ac8ad76607a5ee0b4ed8e278",
+      "bytes": 7624020,
+      "sha256": "9b1ef8e45aff3d59ebe74709696f078e9dd1d9d8064669fee04251afa9aec81e",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Caronte a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -944,8 +944,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
       }
     },
     {
@@ -6067,8 +6067,8 @@
       "arquivo": "textures/atlas/pluto/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 413277,
-      "sha256": "902f73810243857b4bacb0791e5b7311c201b2d928b39d8c051e72bdce6ffc67",
+      "bytes": 967276,
+      "sha256": "4b00a253d3f81781ad68ba434da1f322febe4618ed117fa73a4626a1542121da",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -6086,8 +6086,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
       }
     },
     {
@@ -6096,8 +6096,8 @@
       "arquivo": "textures/atlas/pluto/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 304992,
-      "sha256": "38ef9f011ecacd11a152eac82b23b071d71b184672d22a4f299aac2f182ac737",
+      "bytes": 775434,
+      "sha256": "0259992e2b279a33df16dff8884c1b58bb0eec56c35c2d076d3d659b8f63f841",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -6115,8 +6115,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
       }
     },
     {
@@ -6125,8 +6125,8 @@
       "arquivo": "textures/atlas/pluto/normal_2048.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 1749867,
-      "sha256": "843bad1bb413e59dd945ee527281d722aedb2921b2866c0cc6cc7330aa2e0354",
+      "bytes": 4126145,
+      "sha256": "6304cd6cb4e421ca5dda577223bdd970454ccd661a685dd8a7fdf8ddd3cccf72",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -6144,8 +6144,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
       }
     },
     {
@@ -6154,8 +6154,8 @@
       "arquivo": "textures/atlas/pluto/normal_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 1250168,
-      "sha256": "63e78e11fd64a35e0bec8c334922dbb6a7a32654c4f8083bf9b8623df95eb423",
+      "bytes": 3129122,
+      "sha256": "9894090a4d54c9c20c8a23d9b7ab6cdc93749b38e38f2fda0715a71201873f30",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -6173,8 +6173,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
       }
     },
     {
@@ -6183,8 +6183,8 @@
       "arquivo": "textures/atlas/pluto/normal.png",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 6661447,
-      "sha256": "a45c0eab4d1b8cfb3dcdb62526e3d3f2fe4ec06ed46df28a2d284fe7a04a3dfe",
+      "bytes": 15537708,
+      "sha256": "c964aa2159c3c54d69e6ed8c683815b6e953f9b91508d0ae96d8a1229a960c4c",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -6202,8 +6202,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
       }
     },
     {
@@ -6212,8 +6212,8 @@
       "arquivo": "textures/atlas/pluto/normal.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 4495492,
-      "sha256": "f0088b64ffdf9f5670661506ab947e9639cc614646c579e3c09db5f515b61036",
+      "bytes": 10909896,
+      "sha256": "5891260a06e18811cf8de1b95248227073315a01cdd96dcd8d67ae9c456d9da6",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física",
@@ -6231,8 +6231,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm dado — menos da metade do globo; no resto a luz desenha uma bola lisa",
-        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have data — less than half the globe; everywhere else the light draws a smooth ball"
+        "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
+        "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
       }
     },
     {

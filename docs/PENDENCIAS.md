@@ -4,81 +4,30 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 230.**
 
-## O BASTÃO — onde a rodada parou (02/10, noite) — PASSADO a uma sessão nova
+## O BASTÃO — onde a rodada parou (02/10, noite, 2ª sessão) — RELEVO INVENTADO FECHADO NO RAMO
 
-**Estado:** o relevo inventado de Plutão e Caronte está no ramo
-`relevo-inventado` (backup em `origin/relevo-inventado`) — NÃO está no
-`main` e NÃO foi publicado. Plano e andamento: `PLAN-RELEVO.md` (raiz,
-seção Andamento). Tudo commitado; testes do módulo e do gerador verdes. Os
-candidatos finais dos dois corpos estão prontos e fotografados no app. O
-gerador oficial já assa o relevo inventado pelo MESMO caminho das prévias
-(`inventaRelevoDoCorpo`) e RECUSA gravar enquanto
-`CORPOS.<id>.vazioInventado.sha256Aprovado` estiver vazio — hoje está
-vazio nos dois, então nada muda no app até a aprovação.
+**Estado:** o relevo inventado de Plutão e Caronte está PRONTO e ASSADO no
+ramo `relevo-inventado` (backup em `origin/relevo-inventado`) — ainda NÃO
+está no `main` nem publicado. Nesta sessão: as duas palavras dele, por
+prancha (completar o borrado nos dois corpos; alisar o grão da Sputnik);
+o gerador travado por hash nos dois mapas aprovados e provado pela porta de
+entrada; os mapas assados (hash do RGB decodificado = o aprovado; as seis
+variantes de tamanho de cada corpo byte a byte iguais à escada da prévia);
+o manifesto regenerado com a confissão nas duas línguas; `npm run
+data:verify` e `npm run done` verdes; fotos do app de verdade nas mesmas 11
+vistas das pranchas (`capturas/relevo-final-app-prancha.jpg`). A cadeia de
+geração rodou no painel de terminal dele, a pedido dele (*"rode tudo por
+favor, nao quero ter que ficar fazendo essas tarefas mecanicas"*).
 
-**Esperando a palavra dele (duas decisões, por foto):**
-1. Completar o detalhe fino onde o dado MEDIDO é borrado — Foto 3:
-   `capturas/relevo-plutao-lado-de-tras-prancha-v2.jpg` e
-   `capturas/relevo-caronte-lado-de-tras-prancha-v2.jpg` (coluna do meio ×
-   direita). Recomendação dada: sim. Atenção: na coluna "sem completar" o
-   lado de trás foi sorteado de novo; só as emendas comparam.
-2. Alisar o grão de ruído da planície Sputnik — Foto 2:
-   `capturas/relevo-sputnik-grao-prancha-v2.jpg`. Recomendação dada: sim.
-A Foto 1 (prova do recorte escondido, `capturas/relevo-prova-recorte-prancha.jpg`)
-ele já aprovou: *"pode seguir com as melhorias e aplicar no lado de trás
-inteiro"*.
+**Falta (dele):** a palavra para o merge no `main`; a publicação (push da
+`main`); depois, conferir no ar por sha256 dos mapas. Fechamento já feito:
+item 144 (abaixo), `BACKLOG.md` (o grão de Sputnik saiu; a sombra da cor
+fica), `PLAN-RELEVO.md` apagado; as ferramentas e os candidatos da rodada
+seguem em `capturas/relevo-inventado/` (fora do git).
 
-**Depois das duas palavras, nesta ordem:**
-a) Ligar as chaves em `scripts/data/atlas/fonte/{pluto,charon}-lado-de-tras.json`
-   (`completaBorrado`; em Plutão, `alisamentos[sputnik].ativo`).
-b) Fixar o hash do RGB decodificado da combinação escolhida em
-   `sha256Aprovado` (`gera-normal-de-dem.mjs`). Caronte: `completa:1`
-   53b50dc091592034081b63608aadd504001b7774ab4d5123398aaf6f6a78ba45,
-   `completa:0` 1cf9e0bbf99e313f060e3050564ce282e78ccb297967f9bac5da5c6ae17c9046.
-   Plutão: `completa:1,sputnik:0` e7ab9e78164101dcfc274f8d8103b750a1322e2739cb978b7a3a044af6c96e59,
-   `completa:1,sputnik:1` 80d48040db6f96533459a63b2815f98571a2d3f8b1c7cabca1b70d1cd3a31f41,
-   `completa:0,sputnik:0` 487f5efc68ee82a69f0543c6def13c7cf24f8834876adf9ef4d84a8a84becf86,
-   `completa:0,sputnik:1` 55075b9bb0c5c8ccd3055ddef3c4501442b8f14074713b39a68e16bbaffd9482.
-   Os seis normais candidatos estão em `capturas/relevo-inventado/candidatos/`.
-c) E7, a confissão pt/en: `docs/reference/ASSETS.md` (linhas `pluto/normal`
-   e `charon/normal`), o arquivo de traduções das texturas e os testes que
-   pinam frases. Dizer: o lado sem mapa de altura é montado com pedaços do
-   terreno medido do mesmo tipo, onde o mapa geológico das fotos da
-   aproximação põe cada terreno; as crateras reais do catálogo estão no lugar
-   (Simonelli com o perfil medido da Burney); o sul, quase sem imagem, é
-   palpite; o degrau entre as bordas do arquivo do DEM foi tirado; o dado ruim
-   (preenchimento polar, limbo) foi refeito só no detalhe fino; e, se
-   aprovados, a completação do borrado e o grão de Sputnik.
-d) Comandos DELE, um por bloco, na ordem: o gerador de normais para pluto e
-   para charon (lê o cache, ~2,5 min cada; confere o hash e recusa se
-   diferir), o otimizador de texturas para pluto e para charon, o gerador do
-   manifesto, `npm run data:verify` (os comandos exatos estão no
-   `PLAN-RELEVO.md`, E8). Depois: conferir as variantes menores contra a
-   escada da prévia (`capturas/relevo-inventado/ferramentas/fotos/`, escada e
-   comparação), fotos do app real nas mesmas vistas, `npm run done`, commit,
-   merge no `main` com a palavra dele, `git push origin main:backup`;
-   publicar é dele; conferir no ar por sha256. Fechamento: item 144, este
-   bastão, `BACKLOG.md` (tirar só o resolvido), apagar `PLAN-RELEVO.md`.
-
-**Onde estão as peças (fora do git, no disco):**
-`capturas/relevo-inventado/ferramentas/` — copiadas do scratchpad com os
-caminhos já ajustados: fotos do app com o mapa candidato servido por CDP
-(`fotos/`, e `e4/foto-prova.mjs` para câmera mais perto), prévias
-sombreadas (`e3/sombreia.mjs`), os runners finais (`e6/sintese-final.mjs`,
-`p1/sintese-pluto-final.mjs`, `e8/porta-de-entrada.mjs`, que chamam o mesmo
-caminho do gerador), as pranchas (`prancha2/`, com jd e poses de cada vista)
-e o diagnóstico (`p4/`, `p6/`). `.cache/relevo/`: alturas medidas (cache
-conferido por sha256) e as tabelas do Zenodo.
-
-**Como retomar:** ler esta seção e o Andamento do `PLAN-RELEVO.md`. O hook
-barra todo comando de Bash (e todo heredoc) que cite um caminho de
-`scripts/data` — testes por nome (`npx vitest run relevo-inventado`),
-scripts das ferramentas por caminho absoluto, edição desses arquivos pela
-ferramenta de arquivo. Nesta rodada, trabalhadores Opus estouraram o
-orçamento em diagnóstico aberto; brief com a causa já decidida rende.
-
-**A obra seguinte:** a COR borrada e chapada do lado de trás (item 229,
-ideia dele), pintada por IA guiada pelo relevo já inventado.
+**A obra seguinte (proposta):** a COR borrada e chapada do lado de trás
+(item 229, ideia dele), pintada por IA guiada pelo relevo já inventado; e a
+mesma receita do relevo inventado para Tritão (DEM em ~40 %, item 144).
 
 ## O BASTÃO anterior (01/10, noite)
 
@@ -496,7 +445,19 @@ Plutão, Caronte, Palas, Hígia, Haumea, Makemake, Éris, Quaoar (18 — desde
   não consertado: a planície Sputnik tem grão fino de ruído estéreo do
   DEM (RMS ~5° numa planície que é lisa) e faixas de baixa amplitude
   junto do vazio, só visíveis no mapa de diferença ×8. A segunda metade
-  (o inventado científico na metade sem dado) é rodada à parte.
+  (o inventado científico na metade sem dado) é rodada à parte. FEITA a
+  segunda metade em 02/10 (ramo `relevo-inventado`, à espera do merge e da
+  publicação): a metade sem dado ganhou relevo inventado por código — colcha
+  de retalhos do terreno medido do mesmo tipo, posta onde o mapa geológico
+  das fotos da aproximação põe cada terreno (Plutão: Stern et al. 2021;
+  Caronte: palpite guiado por Beyer et al. 2021), as crateras reais do
+  catálogo de Robbins no lugar (Simonelli com o perfil medido da Burney), as
+  menores sorteadas, as feições dos artigos traçadas, o sul por palpite; no
+  medido, emendas e dado ruim refeitos só no detalhe fino. Ele escolheu por
+  prancha completar o borrado e alisar a Sputnik (o grão de ruído saiu). O
+  gerador só grava o mapa com o hash aprovado, e a ficha confessa tudo nas
+  duas línguas. Prancha do app: `capturas/relevo-final-app-prancha.jpg`. A
+  cor borrada do lado de trás é o item 229.
 - **Real por FORMA (malha, não normais):** Fobos (Gaskell/SPC, PDS) e Deimos
   (PDS) — caminho do esculpido com dado real, fase própria.
 - **Parcial, decisão dele:** Tritão tem DEM real (Schenk/LPI) em ~40 % da
