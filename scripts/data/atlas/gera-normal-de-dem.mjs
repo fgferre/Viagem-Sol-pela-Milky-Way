@@ -421,6 +421,28 @@ async function garantirArquivo(fonte, caminhoDado) {
 }
 
 /**
+ * UMA FAIXA DE BYTES do arquivo remoto, com até quatro tentativas e pausa
+ * crescente: um assamento faz milhares de pedidos, e um soluço da rede
+ * derrubava a leitura inteira (01/10/2026, Plutão: "fetch failed" no meio).
+ * Resposta de tamanho errado também é falha — a faixa curta viraria
+ * altura errada calada.
+ */
+async function lerFaixaRemota(url, ini, bytes, onde) {
+  for (let tentativa = 1; ; tentativa += 1) {
+    try {
+      const r = await fetch(url, { headers: { Range: `bytes=${ini}-${ini + bytes - 1}` } });
+      if (!r.ok && r.status !== 206) throw new Error(`HTTP ${r.status}`);
+      const b = Buffer.from(await r.arrayBuffer());
+      if (b.length !== bytes) throw new Error(`${b.length} B em vez de ${bytes}`);
+      return b;
+    } catch (erro) {
+      if (tentativa >= 4) throw new Error(`${erro.message} ${onde} (4 tentativas)`);
+      await new Promise((pronto) => setTimeout(pronto, 1000 * 2 ** (tentativa - 1)));
+    }
+  }
+}
+
+/**
  * O CABEÇALHO DO GeoTIFF, lido por faixas — só o que a leitura remota
  * precisa. Recusa tudo que não seja o caso simples que ela sabe ler:
  * TIFF clássico little-endian, SEM compressão, uma tira por linha,
@@ -429,11 +451,7 @@ async function garantirArquivo(fonte, caminhoDado) {
  * o GDALMetadata declara — é ele que manda na conversão, não a tabela.
  */
 async function cabecalhoDoTifRemoto(url) {
-  const faixa = async (ini, bytes) => {
-    const r = await fetch(url, { headers: { Range: `bytes=${ini}-${ini + bytes - 1}` } });
-    if (!r.ok && r.status !== 206) throw new Error(`HTTP ${r.status} ao ler o cabeçalho`);
-    return Buffer.from(await r.arrayBuffer());
-  };
+  const faixa = (ini, bytes) => lerFaixaRemota(url, ini, bytes, 'ao ler o cabeçalho');
   const cab = await faixa(0, 8);
   if (cab.toString('ascii', 0, 2) !== 'II' || cab.readUInt16LE(2) !== 42) {
     throw new Error('só sei ler TIFF clássico little-endian por faixas.');
@@ -631,11 +649,7 @@ async function lerAlturaEmMetros(corpo, contexto, largura) {
     const daLinha = async (j0, n) => {
       const ini = base + j0 * LO * bytesPorAmostra;
       const bytes = n * LO * bytesPorAmostra;
-      const r = await fetch(fonte.url, {
-        headers: { Range: `bytes=${ini}-${ini + bytes - 1}` },
-      });
-      if (!r.ok && r.status !== 206) throw new Error(`HTTP ${r.status} na linha ${j0}`);
-      const b = Buffer.from(await r.arrayBuffer());
+      const b = await lerFaixaRemota(fonte.url, ini, bytes, `na linha ${j0}`);
       contexto.lidos += b.length;
       const fatia = flutuante32 ? new Float32Array(n * LO) : new Int16Array(n * LO);
       for (let k = 0; k < n * LO; k += 1) {
