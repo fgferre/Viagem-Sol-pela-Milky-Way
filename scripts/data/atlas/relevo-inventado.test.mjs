@@ -323,7 +323,7 @@ const faixaDe = (d, bordas) => {
 const resumo = (lista) => {
   const v = Float64Array.from(lista).sort();
   const rms = Math.sqrt(v.reduce((s, x) => s + x * x, 0) / v.length);
-  return { rms, p99: v[Math.floor(0.99 * (v.length - 1))] };
+  return { rms, p99: v[Math.floor(0.99 * (v.length - 1))], p999: v[Math.floor(0.999 * (v.length - 1))] };
 };
 
 /**
@@ -701,27 +701,50 @@ const MUNDO_DA_COLCHA = { L: 512, A: 256, raioM: 606e3 }; // 7,5 km por texel: o
 const CAIXA_DAS_FONTES = { lon: [0, 150], lat: [-45, 45] };
 
 /**
+ * A entrada da colcha no mundo dela: a textura-fonte é o ruído das oitavas
+ * `ks` com os desvios `desvios` (m), só na caixa das fontes. Uma unidade só,
+ * de peso 1.
+ */
+function entradaDaColcha(ks, desvios) {
+  const { L, A, raioM } = MUNDO_DA_COLCHA;
+  const n = L * A;
+  const sigmas = sigmasDasOitavas(raioM, A);
+  const fina = somaDeOitavas(ks.map((k) => ruidoDaOitava(31, k, sigmas, L, A, raioM)), desvios, n);
+  const fonte = { unidades: { a: { fontes: [CAIXA_DAS_FONTES] } } };
+  const valido = mascaraDaCaixa(CAIXA_DAS_FONTES, L, A);
+  const fontes = fontesDaColcha({ metros: fina, valido, fonte, largura: L, altura: A, raioM });
+  return {
+    fina, coef: coeficientesDeSpline(fina, L, A), largura: L, altura: A, raioM,
+    pesos: [new Float32Array(n).fill(1)], fontes, semente: 4242,
+  };
+}
+
+/**
  * A colcha, calculada uma vez. A textura-fonte conhecida é a parte fina do
  * ruído das oitavas — as duas bandas de σ ≤ 30 km, 100 m de desvio cada —, um
  * campo estacionário: o que a colcha entrega no corte tem de ter a inclinação
- * da fonte em toda parte. Uma unidade só, de peso 1.
+ * da fonte em toda parte.
  */
 let colchada = null;
 function aColcha() {
   if (colchada) return colchada;
-  const { L, A, raioM } = MUNDO_DA_COLCHA;
-  const n = L * A;
-  const sigmas = sigmasDasOitavas(raioM, A);
-  const fina = somaDeOitavas([0, 1].map((k) => ruidoDaOitava(31, k, sigmas, L, A, raioM)), [100, 100], n);
-  const fonte = { unidades: { a: { fontes: [CAIXA_DAS_FONTES] } } };
-  const valido = mascaraDaCaixa(CAIXA_DAS_FONTES, L, A);
-  const fontes = fontesDaColcha({ metros: fina, valido, fonte, largura: L, altura: A, raioM });
-  const entrada = {
-    fina, coef: coeficientesDeSpline(fina, L, A), largura: L, altura: A, raioM,
-    pesos: [new Float32Array(n).fill(1)], fontes, semente: 4242,
-  };
+  const entrada = entradaDaColcha([0, 1], [100, 100]);
   colchada = { entrada, r: colcha(entrada) };
   return colchada;
+}
+
+/** A inclinação nos texels do corte e nos demais, até 80° (acima, `declive` prende o passo leste). */
+function inclinacaoNoCorte(r) {
+  const { L, A, raioM } = MUNDO_DA_COLCHA;
+  const g = declive(r.campo, L, A, raioM);
+  const noCorte = [];
+  const nosOutros = [];
+  for (let j = 0; j < A; j += 1) {
+    // acima de 80° a inclinação lida passa a depender da latitude, que não se distribui igual nos dois grupos
+    if (Math.abs(latitudeDaLinha(j, A)) > (80 * Math.PI) / 180) continue;
+    for (let i = 0; i < L; i += 1) (r.corte[j * L + i] ? noCorte : nosOutros).push(g[j * L + i]);
+  }
+  return { noCorte, nosOutros };
 }
 
 /**
@@ -773,17 +796,7 @@ describe('a colcha — retalhos do medido copiados por rotação da esfera', () 
   }, 60_000);
 
   it('não tem emenda visível: a inclinação nos texels do corte é a dos demais (RMS e p99 ±20 %)', () => {
-    const { L, A, raioM } = MUNDO_DA_COLCHA;
-    const { r } = aColcha();
-    const g = declive(r.campo, L, A, raioM);
-    const noCorte = [];
-    const nosOutros = [];
-    for (let j = 0; j < A; j += 1) {
-      // até 80°: acima, `declive` prende o passo leste e a inclinação lida passa a depender da latitude,
-      // que não se distribui igual nos dois grupos
-      if (Math.abs(latitudeDaLinha(j, A)) > (80 * Math.PI) / 180) continue;
-      for (let i = 0; i < L; i += 1) (r.corte[j * L + i] ? noCorte : nosOutros).push(g[j * L + i]);
-    }
+    const { noCorte, nosOutros } = inclinacaoNoCorte(aColcha().r);
     // sem texels de corte (ou quase) a razão não diria nada
     expect(noCorte.length).toBeGreaterThan(5000);
     expect(nosOutros.length).toBeGreaterThan(noCorte.length);
@@ -794,6 +807,16 @@ describe('a colcha — retalhos do medido copiados por rotação da esfera', () 
     expect(corte.p99 / outros.p99).toBeGreaterThanOrEqual(0.8);
     expect(corte.p99 / outros.p99).toBeLessThanOrEqual(1.2);
   });
+
+  it('não deixa degrau onde o retalho encosta no descoberto: com bandas largas fortes, o p99,9 da inclinação no corte não passa o dos demais', () => {
+    // o degrau é o da diferença LARGA que a correção leva à emenda: bandas de σ ≈ 60 e 119 km com 300 m, a
+    // fina com 10 m. Com a emenda também nos texels sem velho (a diferença lá entrava como 0), a razão
+    // ficava em 1,12–1,26 em seis sementes (1,16–1,60 antes das três regras da emenda); com ela, 0,83–0,89
+    const r = colcha(entradaDaColcha([0, 1, 2, 3], [10, 10, 300, 300]));
+    const { noCorte, nosOutros } = inclinacaoNoCorte(r);
+    expect(noCorte.length).toBeGreaterThan(5000);
+    expect(resumo(noCorte).p999 / resumo(nosOutros).p999).toBeLessThanOrEqual(1);
+  }, 60_000);
 
   it('não repete origem: dois retalhos a menos de 5 larguras não saem de origens a menos de ¼ de largura', () => {
     const { raioM } = MUNDO_DA_COLCHA;

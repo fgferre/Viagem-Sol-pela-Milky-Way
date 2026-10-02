@@ -258,6 +258,12 @@
       "lat": [-52, -34],
       "sigmaMaximoKm": 30,
       "nota": "Borrão listrado no DEM MEDIDO junto da borda sul do dado (visto no relevo sombreado da P1 v2: faixas diagonais de ~40 km que nenhum terreno bem resolvido de Plutão tem; a borda sul foi vista perto do limbo). No espectro (planos q da qualidade da E2b, medianas em 115–165°E, −50° a −36°, contra a referência das caixas-exemplo): bandas 1–3 (σ 3,6–29 km) 2,6–4,6×, banda 0 0,6× (borrado no mais fino, com o pico logo acima — a corcova do defeito de limbo de Caronte); logo ao norte (−35° a −25°) as bandas 0–2 voltam a ~1×. As bandas 4–7 (σ ≥ 29 km) ficam: a forma grossa medida. Princípio do Felipe: onde o detalhe é ruim, refazer mantendo a base."
+    },
+    {
+      "lon": [0, 360],
+      "lat": [84, 90],
+      "sigmaMaximoKm": 4,
+      "nota": "Preenchimento polar do DEM MEDIDO no polo norte (P6, 02/10), o mesmo defeito do boné de Caronte, mais contido: na vista ortográfica do polo (raios de 12°, 8°, 6° e 4°; Sol de 0° e de 135°), redemoinho no polo (~1°), listras de coluna radiais e arcos concêntricos até ~4° do polo — no medido e no produto v6, com e sem completar. Estão só na banda 0 (σ ≤ 3,6 km): no medido sem o degrau da emenda e sem a banda 0, somem; sem as bandas 1–2 nada mais muda. Por anel, contra o manto bem resolvido (150–240°E, 62–72°N: banda 0 com 196 m RMS e gx/gy 1,35), a banda 0 do boné tem a mesma energia (172–209 m) e gx/gy 1,2–1,4 até 89,5°N, mas 4,9 em 89,5–90°N (o redemoinho); por isso a qualidade não marca nada (q0 0,3–1,0, nenhuma banda borrada em 81–90°N) e o completar não o tocava. Aqui a banda 0 deixa de ser dado ao norte de 84°N (~2° de margem além do que se vê) e o fino é refeito sobre a forma medida; sem completar, o medido fica como está."
     }
   ],
   "costuraDoArquivo": {

@@ -4050,14 +4050,32 @@ const ESCALA_DO_CINTURAO = 1.2;
 /**
  * A EMENDA: o corte procura a diferença FINA (velho − novo menos a média
  * gaussiana de σ = isto, km), e a diferença larga ao longo do corte (a mesma
- * média) é tirada do retalho novo, sumindo em `ALCANCE_DA_CORRECAO_KM` para
- * dentro — o degrau das bandas largas (λ ~ 100 km, do tamanho do retalho) que
- * a rampa de 2 texels não esconde (Zhou et al. 2007 apagam a emenda de
- * terreno por Poisson; aqui, deslocamento liso com alcance curto, sem deriva,
- * e a parte fina por Laplace numa faixa estreita).
+ * média) é tirada do retalho novo, sumindo para dentro em
+ * `ALCANCE_DA_CORRECAO_KM` ou antes, no alcance da própria média — o degrau
+ * das bandas largas (λ ~ 100 km, do tamanho do retalho) que a rampa de 2
+ * texels não esconde (Zhou et al. 2007 apagam a emenda de terreno por
+ * Poisson; aqui, deslocamento liso com alcance curto, sem deriva, e a parte
+ * fina por Laplace numa faixa estreita).
+ *
+ * As linhas que a prova de 02/10 ainda mostrava nas emendas (Caronte em
+ * 14,2°N 233,8°E, o arco de 77,3°N) tinham três causas, uma regra para cada:
+ *  1. Texel de emenda sem velho (o retalho novo encostado no descoberto): lá
+ *     a diferença entrava como 0 e a correção não casava com o velho. A
+ *     emenda agora só existe onde há velho, e o corte paga
+ *     `PENA_DO_CORTE_SEM_VELHO` × o custo médio do retalho onde o texel logo
+ *     para dentro dele não tem velho.
+ *  2. A correção larga sumia em 30 km, mas a média que a dá (3 caixas de
+ *     meia largura h) só existe até 3h texels da emenda (~22 km): passado
+ *     isso caía a 0 de um texel para o outro, uma linha paralela à emenda. O
+ *     alcance agora é o menor dos dois.
+ *  3. O custo só via a diferença fina NO texel do corte: ao pé de uma parede
+ *     ela pode ser pequena ali e grande um texel ao lado, e a rampa mistura
+ *     os dois — o corte corria ao longo das paredes. O custo agora soma
+ *     |∇dif|² (m por texel): o corte atravessa onde a diferença é lisa.
  */
 const SIGMA_DA_EMENDA_KM = 8;
 const ALCANCE_DA_CORRECAO_KM = 30;
+const PENA_DO_CORTE_SEM_VELHO = 50;
 
 /**
  * O que sobra da diferença na emenda (a parte fina) também sai do retalho
@@ -4393,11 +4411,12 @@ function distanciaNaGrade(semente, G, saida) {
  *    sobreposição (bilinear, um ponto a cada 2 texels) dividida pela soma das
  *    energias dos dois lados — a soma crua prefere o retalho mais liso e a
  *    colcha sairia mais lisa que a fonte; sorteio entre os `melhores`.
- *  - Corte de erro mínimo da diferença FINA: curva fechada r(θ) em volta do
- *    centro, por programação dinâmica em ângulo com passos radiais livres
- *    (Dijkstra numa coluna), o descoberto sempre dentro; rampa de `esfumado`
- *    texels; a diferença LARGA ao longo do corte sai do retalho novo
- *    (`SIGMA_DA_EMENDA_KM`, `ALCANCE_DA_CORRECAO_KM`).
+ *  - Corte de erro mínimo da diferença FINA e do gradiente dela: curva
+ *    fechada r(θ) em volta do centro, por programação dinâmica em ângulo com
+ *    passos radiais livres (Dijkstra numa coluna), o descoberto sempre
+ *    dentro, a emenda só onde há velho (`PENA_DO_CORTE_SEM_VELHO`); rampa de
+ *    `esfumado` texels; a diferença LARGA ao longo do corte sai do retalho
+ *    novo (`SIGMA_DA_EMENDA_KM`, `ALCANCE_DA_CORRECAO_KM`).
  * Devolve `{ campo, coberto, corte (1 = texel da rampa), retalhos, resumo }`.
  */
 export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, direcoes = [], semente, opcoes = {} }) {
@@ -4456,11 +4475,13 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
   const distancia = new Float64Array(G * G);
   const correcao = new Float64Array(G * G);
   const fino = new Float64Array(G * G);
+  const custoDoTexel = new Float64Array(G * G);
   const alcanceFino = ALCANCE_FINO_KM / texelKm;
   const tmp = new Float64Array(G * G);
   const linha = new Float64Array(G + 1);
   const hEmenda = Math.max(1, Math.round((Math.sqrt(1 + 4 * (SIGMA_DA_EMENDA_KM / texelKm) ** 2) - 1) / 2));
-  const alcance = ALCANCE_DA_CORRECAO_KM / texelKm;
+  // a correção larga some antes de a média dela acabar (3 caixas: 3h texels da emenda)
+  const alcance = Math.min(ALCANCE_DA_CORRECAO_KM / texelKm, 3 * hEmenda);
   /** A média gaussiana (3 caixas) de `valor` onde `peso` > 0, na grade local, em `saida`. */
   const mediaLocal = (valor, peso, saida) => {
     for (let g = 0; g < G * G; g += 1) saida[g] = valor[g] * peso[g];
@@ -4730,17 +4751,39 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
     correcao.fill(0);
     if (temCorte) {
       mediaLocal(dif, cob, lisa);
+      // o custo de cortar em cada texel velho: a diferença fina e o quanto a diferença muda ali (por
+      // texel, só entre vizinhos com velho); o piso de 1e-6 deixa o 0 só para o lado de fora sem velho
+      let somaDoCusto = 0;
+      let nCusto = 0;
+      for (let b = 0; b < G; b += 1) {
+        for (let a = 0; a < G; a += 1) {
+          const g = b * G + a;
+          if (!cob[g]) continue;
+          const l = a + 1 < G && cob[g + 1];
+          const o = a > 0 && cob[g - 1];
+          const nn = b + 1 < G && cob[g + G];
+          const s = b > 0 && cob[g - G];
+          const gx = l && o ? (dif[g + 1] - dif[g - 1]) / 2 : l ? dif[g + 1] - dif[g] : o ? dif[g] - dif[g - 1] : 0;
+          const gy = nn && s ? (dif[g + G] - dif[g - G]) / 2 : nn ? dif[g + G] - dif[g] : s ? dif[g] - dif[g - G] : 0;
+          const c = (dif[g] - lisa[g]) ** 2 + (gx * gx + gy * gy);
+          custoDoTexel[g] = c + 1e-6;
+          somaDoCusto += c;
+          nCusto += 1;
+        }
+      }
+      // cortar com o texel logo para dentro sem velho (que seria emenda sem diferença) paga a pena
+      const pena = PENA_DO_CORTE_SEM_VELHO * (somaDoCusto / nCusto) + 1;
       let livre = -1;
       for (let t = 0; t < nTheta; t += 1) {
         const R = Rt[t];
         let todos = true;
         for (let r = S - 1; r > R + 1; r -= 1) custo[t * S + r] = INF;
         const gFora = indice[t * S + R + 1];
-        custo[t * S + R + 1] = cob[gFora] ? (dif[gFora] - lisa[gFora]) ** 2 : 0;
+        custo[t * S + R + 1] = cob[gFora] ? custoDoTexel[gFora] + (cob[indice[t * S + R]] ? 0 : pena) : 0;
         for (let r = R; r >= 0; r -= 1) {
           const g = indice[t * S + r];
           if (!cob[g]) todos = false;
-          custo[t * S + r] = todos ? (dif[g] - lisa[g]) ** 2 : INF;
+          custo[t * S + r] = todos ? custoDoTexel[g] + (r > 0 && !cob[indice[t * S + r - 1]] ? pena : 0) : INF;
         }
         if (livre < 0 && custo[t * S + R] >= INF && custo[t * S + R + 1] === 0) livre = t;
       }
@@ -4754,7 +4797,7 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
         volta(0, rMin);
         refaz(0, rMin);
       }
-      // o lado novo do corte, a emenda (novo com vizinho velho) e a correção larga
+      // o lado novo do corte, a emenda (novo com velho e com vizinho velho) e a correção larga
       for (let b = 0; b < G; b += 1) {
         for (let a = 0; a < G; a += 1) {
           const g = b * G + a;
@@ -4775,7 +4818,7 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
           const g = b * G + a;
           const velhoAo = (v) => cob[v] && !ehNovo[v];
           emenda[g] =
-            ehNovo[g] && ((a > 0 && velhoAo(g - 1)) || (a < G - 1 && velhoAo(g + 1)) || (b > 0 && velhoAo(g - G)) || (b < G - 1 && velhoAo(g + G)))
+            ehNovo[g] && cob[g] && ((a > 0 && velhoAo(g - 1)) || (a < G - 1 && velhoAo(g + 1)) || (b > 0 && velhoAo(g - G)) || (b < G - 1 && velhoAo(g + G)))
               ? 1
               : 0;
         }
