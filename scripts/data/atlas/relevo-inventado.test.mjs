@@ -62,10 +62,11 @@
 //
 // O DADO RUIM (E6): 22. Numa caixa `dadoRuim`, as bandas de σ até
 //     `sigmaMaximoKm` deixam de ser dado e as mais grossas continuam; fora
-//     dela, e com `completaBorrado: false`, todo medido é dado. 23. Numa
-//     caixa sem `sigmaMaximoKm` (todas as bandas, a emenda do arquivo) a
-//     costura refaz a faixa dos dois lados — o degrau some — e fora dela o
-//     campo é o medido byte a byte, também sem completar.
+//     dela, e com `completaBorrado: false`, todo medido é dado. 23. O degrau
+//     da emenda do arquivo (as duas bordas do DEM, também na volta da
+//     longitude) sai no próprio medido: o salto na emenda volta ao da
+//     verdade, dentro da rampa só se soma uma reta de cada lado (a textura
+//     fica) e a mais de N colunas o campo é o medido byte a byte.
 // ============================================================
 import { beforeAll, describe, expect, it } from 'vitest';
 import { assaNormais } from './gera-normal-de-dem.mjs';
@@ -103,6 +104,7 @@ import {
   sintetizaCorpo,
   somaDeOitavas,
   sorteiaCrateras,
+  tiraDegrauDaEmenda,
 } from './relevo-inventado.mjs';
 
 /** mulberry32 — o mesmo gerador de `geradorDeSemente` (esculpido.ts) */
@@ -1015,47 +1017,49 @@ describe('o dado ruim (E6)', () => {
     for (const m of semCompletar) for (let k = 0; k < largura * altura; k += 1) expect(m[k]).toBe(vazio[k] ? 0 : 1);
   });
 
-  it('numa caixa sem `sigmaMaximoKm` refaz TODAS as bandas dos dois lados: o degrau da emenda some e fora da faixa nada muda', () => {
-    const [largura, altura, raioM, degrau] = [128, 64, 606e3, 300];
+  it('tira o degrau da emenda do arquivo (`tiraDegrauDaEmenda`): o salto vira o dos vizinhos, a textura medida fica e a mais de N colunas nada muda', () => {
+    const [largura, altura, N] = [256, 128, 16];
     const n = largura * altura;
-    const sigmasKm = sigmasDasOitavas(raioM, altura);
-    const nBandas = sigmasKm.length + 1;
-    // o medido e a simulação: o mesmo modelo (duas oitavas finas de 60 m), sementes diferentes; e a
-    // emenda do arquivo em 0°E (colunas 63|64) no medido: o lado leste 300 m abaixo, de polo a polo
-    const ruido = (semente) => {
-      const r = Array.from({ length: nBandas }, (_, k) => (k < 2 ? ruidoDaOitava(semente, k, sigmasKm, largura, altura, raioM) : null));
-      return somaDeOitavas(r, r.map((x) => (x ? 60 : 0)), n);
-    };
-    const medida = ruido(11);
-    for (let k = 0; k < n; k += 1) {
-      const [j, i] = [Math.floor(k / largura), k % largura];
-      const lat = latitudeDaLinha(j, altura);
-      medida[k] += 400 * Math.sin(2 * lat) * Math.cos((longitudeDaColuna(i, largura) * Math.PI) / 180) - (i >= 64 ? degrau : 0);
-    }
-    const dadoRuim = [
-      { lon: [352, 360], lat: [20, 90] },
-      { lon: [0, 8], lat: [20, 90] },
-    ];
-    const vazio = new Uint8Array(n);
-    const dadoPorOitava = mascarasDoDado({ vazio, largura, altura, nBandas, dadoRuim, raioM });
-    const faixa = Uint8Array.from(dadoPorOitava[0], (v) => 1 - v);
-    expect(faixa.reduce((x, v) => x + v, 0)).toBeGreaterThan(6 * 20);
-    for (const m of mascarasDoDado({ vazio, largura, altura, nBandas, dadoRuim, raioM, completaBorrado: false })) {
-      for (let k = 0; k < n; k += 1) expect(m[k]).toBe(1 - faixa[k]);
-    }
-    const F = costura({ medida, dadoPorOitava, simulada: ruido(7), sigmasKm, largura, altura, raioM });
-    let mudados = 0;
-    for (let k = 0; k < n; k += 1) if (!faixa[k] && F[k] !== medida[k]) mudados += 1;
-    expect(mudados).toBe(0);
-    // entre colunas vizinhas, de 30° a 80°: na faixa (bordas inclusas) o salto não passa do maior do medido longe dela
-    let [naFaixa, noMedido] = [0, 0];
+    // a verdade, periódica na longitude: uma onda larga + textura (senos de ~±30 m); a emenda em 0°E (colunas 127|128) e
+    // em 180°E (255|0, a volta); ao norte de 40° o lado leste da emenda desce um degrau que muda devagar com a linha (150–250 m)
+    const w = (2 * Math.PI) / largura;
+    const verdade = new Float32Array(n);
     for (let j = 0; j < altura; j += 1) {
-      const lat = (latitudeDaLinha(j, altura) * 180) / Math.PI;
-      if (lat < 30 || lat > 80) continue;
-      for (let i = 60; i < 67; i += 1) naFaixa = Math.max(naFaixa, Math.abs(F[j * largura + i + 1] - F[j * largura + i]));
-      for (let i = 20; i < 50; i += 1) noMedido = Math.max(noMedido, Math.abs(medida[j * largura + i + 1] - medida[j * largura + i]));
+      for (let i = 0; i < largura; i += 1) {
+        verdade[j * largura + i] = 300 * Math.sin(w * i) + 25 * Math.sin(12 * w * i + 0.2 * j) + 8 * Math.sin(0.9 * j - 29 * w * i);
+      }
     }
-    expect(naFaixa).toBeLessThan(0.5 * degrau);
-    expect(naFaixa).toBeLessThan(1.25 * noMedido);
+    const degrauDa = (j) => -200 - 50 * Math.sin(j / 7);
+    const vazio = new Uint8Array(n);
+    for (let k = n - 20 * largura; k < n; k += 1) vazio[k] = 1; // um vazio no sul, longe da emenda
+    const norte = (j) => (latitudeDaLinha(j, altura) * 180) / Math.PI >= 40;
+    for (const lonGraus of [0, 180]) {
+      const leste = Math.round(colunaDaLongitude(lonGraus, largura) + 0.5) % largura;
+      const m = (i) => (((i - leste) % largura) + largura) % largura; // colunas a leste da emenda: 0, 1, ...; a oeste: largura − 1, ...
+      const medida = Float32Array.from(verdade, (v, k) => v + (norte(Math.floor(k / largura)) && m(k % largura) < largura / 2 ? degrauDa(Math.floor(k / largura)) : 0));
+      const { metros, degraus, linhas } = tiraDegrauDaEmenda({ metros: medida, vazio, largura, altura, costura: { lonGraus, latitudeMinima: 40 }, rampa: N });
+      let doNorte = 0;
+      for (let j = 0; j < altura; j += 1) {
+        const linha = j * largura;
+        for (let i = 0; i < largura; i += 1) {
+          if (!norte(j) || (m(i) >= N && m(i) < largura - N)) expect(metros[linha + i]).toBe(medida[linha + i]);
+        }
+        if (!norte(j)) continue;
+        doNorte += 1;
+        const col = (x) => (((leste + x) % largura) + largura) % largura;
+        const salto = (F, x) => F[linha + col(x)] - F[linha + col(x - 1)];
+        // o degrau medido é o posto, e o salto na emenda volta ao da verdade mais a rampa (s/2N, como nos vizinhos)
+        expect(Math.abs(degraus[j] - degrauDa(j))).toBeLessThan(15);
+        expect(Math.abs(salto(medida, 0) - salto(verdade, 0))).toBeGreaterThan(140);
+        expect(Math.abs(salto(metros, 0) - salto(verdade, 0) - degraus[j] / (2 * N))).toBeLessThan(15);
+        // a textura medida fica: o que muda é uma reta de cada lado (segunda diferença nula), com a mesma inclinação s/2N
+        const muda = (x) => metros[linha + col(x)] - medida[linha + col(x)];
+        for (const [x0, x1] of [[-N, -1], [0, N - 1]]) {
+          for (let x = x0 + 1; x < x1; x += 1) expect(Math.abs(muda(x + 1) - 2 * muda(x) + muda(x - 1))).toBeLessThan(0.01);
+          expect(muda(x0 + 1) - muda(x0)).toBeCloseTo(degraus[j] / (2 * N), 2);
+        }
+      }
+      expect(linhas).toBe(doNorte);
+    }
   });
 });

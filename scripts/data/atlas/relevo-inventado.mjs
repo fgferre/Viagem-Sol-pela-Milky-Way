@@ -3288,6 +3288,51 @@ export function moldeDeCratera(morfometria, dKm, quantil = 0.5, variante = 'cach
   return { valores, rCrista: rc };
 }
 
+/** O molde medido vai a zero entre estes r/R: além de ~2 R o perfil de Burney já desce com o terreno regional. */
+const FIM_DO_MOLDE_MEDIDO_RR = [1.7, 2];
+
+/**
+ * O MOLDE MEDIDO de uma cratera do lado medido (`modelo`, do catálogo), para
+ * uma cratera do vazio que não tem DEM (a feição com `moldeMedido`: Simonelli
+ * ← Burney): recentrada no DEM (`recentraCratera`, como no empilhamento), o
+ * perfil radial médio (`perfilRadial`, anéis de `PASSO_DO_MOLDE_RR`) menos o
+ * entorno (a média em 1,5–2 R, como em `formaDoPerfil`), afinando a zero em
+ * `FIM_DO_MOLDE_MEDIDO_RR`. Em r/R do modelo — o D do catálogo da outra o
+ * estica — e em METROS, sem escala: a profundidade satura acima de ~60 km
+ * (`profundidadeDasCrateras`). A borda e os anéis ficam como o modelo os tem.
+ * `{ valores (m, a cada PASSO_DO_MOLDE_RR), rCrista, centro, bordaM, fundoM }`,
+ * ou null se falta dado no perfil.
+ */
+export function moldeMedido(grade, modelo) {
+  const R = modelo.dKm / 2;
+  const centro = recentraCratera(grade, modelo.lat, modelo.lon, R) ?? { lat: modelo.lat, lon: modelo.lon, desvioKm: 0 };
+  const [a, b] = FIM_DO_MOLDE_MEDIDO_RR;
+  const perfil = perfilRadial(grade, centro.lat, centro.lon, R, { passoRR: PASSO_DO_MOLDE_RR, maxRR: b });
+  if (perfil.h.some((v) => Number.isNaN(v))) return null;
+  let soma = 0;
+  let quantos = 0;
+  perfil.rR.forEach((r, q) => {
+    if (r >= 1.5 && r <= 2) (soma += perfil.h[q]), (quantos += 1);
+  });
+  const entorno = soma / quantos;
+  const ultimo = perfil.rR.length - 1;
+  const valores = new Float64Array(Math.round(ALCANCE_DO_MOLDE_RR / PASSO_DO_MOLDE_RR) + 1);
+  let rCrista = 1;
+  let crista = -Infinity;
+  valores.forEach((_, s) => {
+    const r = s * PASSO_DO_MOLDE_RR;
+    if (r >= b) return;
+    // os anéis estão nos meios dos passos: interpolação linear entre eles
+    const x = Math.min(ultimo, Math.max(0, r / PASSO_DO_MOLDE_RR - 0.5));
+    const q = Math.min(ultimo - 1, Math.floor(x));
+    const h = perfil.h[q] + (x - q) * (perfil.h[q + 1] - perfil.h[q]);
+    valores[s] = (h - entorno) * (1 - suave(a, b, r));
+    if (r >= 0.75 && r <= 1.35 && valores[s] > crista) (crista = valores[s]), (rCrista = r);
+  });
+  const fundoM = valores.reduce((x, v) => Math.min(x, v), 0);
+  return { valores, rCrista, centro, bordaM: crista, fundoM };
+}
+
 /** As crateras do catálogo com centro no VAZIO: confiança ≥ 3 e D ≥ a completude da região (ou região sem completude). */
 export function crateraReaisNoVazio(catalogo, guia, vazio, largura, altura) {
   return catalogo.filter((c) => {
@@ -3343,7 +3388,7 @@ export function sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, ra
     const pico = sorteia() < fracaoComPico(c.dKm);
     // a soterrada é a mais velha (tudo o mais cai por cima) e o pico dela está enterrado
     if (c.soterrada) lista.push({ lat: c.lat, lon: c.lon, dKm: c.dKm, quantil: 0.5, idade: -1, id: c.id, pico: false, soterrada: c.soterrada });
-    else lista.push({ lat: c.lat, lon: c.lon, dKm: c.dKm, quantil: 0.5, idade, id: c.id, pico });
+    else lista.push({ lat: c.lat, lon: c.lon, dKm: c.dKm, quantil: 0.5, idade, id: c.id, pico, ...(c.molde && { molde: c.molde }) });
   }
   lista.sort((a, b) => a.idade - b.idade);
   return { crateras: lista, porUnidade };
@@ -3361,7 +3406,9 @@ export function sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, ra
  * vez de × D (Plutão, 02/10: as crateras medidas de 80–140 km têm 1–4 km de
  * fundo, mediana 1,7, e não os 3–5 km do molde ≥ 40 km esticado); o pico
  * segue × o D de verdade, limitado à profundidade do fundo (com o pico
- * saturado, o de Simonelli teria 0,4 km e não se leria). A cratera
+ * saturado, o de Simonelli teria 0,4 km e não se leria). A cratera com
+ * `molde` (`moldeMedido`: o perfil de uma cratera do lado medido, em metros)
+ * usa ele no lugar do do cache, sem escala nem saturação. A cratera
  * com `soterrada` = f (0–1, a feição `cratera-soterrada`) sai PREENCHIDA: o
  * fundo plano a (1 − f) da profundidade (máximo suave, sem quina) e a borda e
  * a ejecta × (1 − f).
@@ -3388,9 +3435,10 @@ export function camadaDeCrateras({ crateras, morfometria, largura, altura, raioM
   let idx = new Int32Array(1 << 16);
   let rho = new Float64Array(1 << 16);
   for (const c of crateras) {
-    const { valores, rCrista } = moldeDeCratera(morfometria, c.dKm, c.quantil, variante);
+    const { valores, rCrista } = c.molde ?? moldeDeCratera(morfometria, c.dKm, c.quantil, variante);
     const R = c.dKm / 2;
-    const D = Math.min(c.dKm, saturaKm) * 1000;
+    // o molde medido (`moldeMedido`) já vem em metros; o do cache, em altura/D
+    const D = c.molde ? 1 : Math.min(c.dKm, saturaKm) * 1000;
     // o pico não satura com a profundidade: × o D de verdade, até o fundo (o topo não passa do chão em volta)
     const pico = Math.min(c.dKm * 1000 * alturaDoPico, -D * valores.reduce((x, v) => Math.min(x, v), 0));
     const f = c.soterrada ?? 0;
@@ -3787,18 +3835,6 @@ export function camadaTectonica({ feicoes, perfil, dado, largura, altura, raioM,
 // O dado borrado (item 5b)
 // ------------------------------------------------------------
 
-/** Os texels (Uint8, ou null) das caixas `dadoRuim` sem `sigmaMaximoKm` — as de TODAS as bandas. */
-export function caixasDeTodasAsBandas(dadoRuim, largura, altura) {
-  const caixas = dadoRuim.filter((caixa) => caixa.sigmaMaximoKm === undefined);
-  if (!caixas.length) return null;
-  const todas = new Uint8Array(largura * altura);
-  for (const caixa of caixas) {
-    const m = mascaraDaCaixa(caixa, largura, altura);
-    for (let k = 0; k < m.length; k += 1) if (m[k]) todas[k] = 1;
-  }
-  return todas;
-}
-
 /**
  * `dadoPorOitava` (item 5b): a banda k é dado onde o texel é medido E o DEM
  * resolve a banda — `bandasBorradas` (a grade reduzida da qualidade, NaN sem
@@ -3807,18 +3843,12 @@ export function caixasDeTodasAsBandas(dadoRuim, largura, altura) {
  * JSON das unidades): caixas `{ lon, lat, sigmaMaximoKm }` onde o medido traz
  * um artefato nas bandas finas — nelas, toda banda de σ (o de cima) até
  * `sigmaMaximoKm` deixa de ser dado, como no borrado: a forma grossa medida
- * fica e o fino é reinventado (precisa de `raioM`). Caixa SEM `sigmaMaximoKm`
- * = TODAS as bandas (`caixasDeTodasAsBandas`: um defeito do arquivo, como a
- * emenda das duas bordas do DEM de Plutão em 0°E) — o texel deixa de ser dado
- * em toda banda e a costura o refaz dos dois lados; vale também sem completar.
- * `completaBorrado: false` é a variante "sem completar" do A/B: todo medido
- * (fora dessas caixas) é dado em toda banda.
+ * fica e o fino é reinventado (precisa de `raioM`). `completaBorrado: false`
+ * é a variante "sem completar" do A/B: todo medido é dado em toda banda.
  */
 export function mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, completaBorrado = true, dadoRuim = [], raioM }) {
   const n = largura * altura;
-  const medido = new Uint8Array(n);
-  const todas = caixasDeTodasAsBandas(dadoRuim, largura, altura);
-  for (let k = 0; k < n; k += 1) medido[k] = vazio[k] || (todas && todas[k]) ? 0 : 1;
+  const medido = Uint8Array.from(vazio, (v) => (v ? 0 : 1));
   const soFinas = dadoRuim.filter((caixa) => caixa.sigmaMaximoKm !== undefined);
   if (!completaBorrado || (!qualidade && !soFinas.length)) return Array(nBandas).fill(medido);
   const bb = new Float32Array(n);
@@ -3867,6 +3897,82 @@ export function mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, com
     for (let k = 0; k < n; k += 1) m[k] = medido[k] && bb[k] < b + 0.5 ? 1 : 0;
     return m;
   });
+}
+
+// ------------------------------------------------------------
+// A emenda do arquivo (P2, 02/10): o degrau entre as duas bordas do DEM
+// ------------------------------------------------------------
+
+/** A inclinação esperada na emenda: a mediana das diferenças de tantas colunas de cada lado... */
+const COLUNAS_DA_INCLINACAO = 4;
+/** ...o degrau é a mediana de tantas linhas (a do texel no meio) — sem listra de linha a linha... */
+const LINHAS_DA_MEDIANA = 5;
+/**
+ * ...e some em duas rampas lineares simétricas de tantas colunas de cada lado:
+ * a inclinação somada é s/2N por coluna (o maior degrau medido, ~0,4 km em
+ * Plutão a 72°N, dá ~0,8° a 32 colunas), e a faixa mexida fica em ±2,8° de
+ * longitude — estreita perto do polo, onde a coluna encolhe com o cos lat.
+ */
+const RAMPA_DA_EMENDA_COLUNAS = 32;
+
+/**
+ * TIRA O DEGRAU DA EMENDA DO ARQUIVO (`costura` = `fonte.costuraDoArquivo`,
+ * `{ lonGraus, latitudeMinima }`): onde as duas bordas do arquivo do DEM se
+ * encontram, a altura medida dá um degrau de uma coluna (Plutão em 0°E,
+ * Caronte em 180°E, no norte). Por linha de latitude ≥ `latitudeMinima` com as
+ * 2K + 2 colunas da emenda medidas: o degrau bruto = o salto na emenda − a
+ * inclinação esperada (a média das medianas das K diferenças de coluna de
+ * cada lado); o degrau da linha = a mediana dos brutos de `LINHAS_DA_MEDIANA`
+ * linhas; e ele sai em duas rampas lineares simétricas de `rampa` colunas —
+ * −s/2 junto da emenda do lado leste, +s/2 do oeste, zero a `rampa` colunas —,
+ * só nos texels medidos. A mais de `rampa` colunas da emenda nada muda (byte a
+ * byte); dentro, a textura medida fica inteira: só se soma a rampa. Pura:
+ * `{ metros (cópia), degraus (m por linha; 0 onde não mexe), linhas }`.
+ */
+export function tiraDegrauDaEmenda({ metros, vazio, largura, altura, costura, rampa = RAMPA_DA_EMENDA_COLUNAS }) {
+  const saida = metros.slice();
+  const degraus = new Float32Array(altura);
+  const K = COLUNAS_DA_INCLINACAO;
+  // a 1ª coluna a leste da emenda; a coluna `m` é contada dela (a oeste, m < 0), com a volta
+  const leste = Math.round(colunaDaLongitude(costura.lonGraus, largura) + 0.5) % largura;
+  const coluna = (m) => (((leste + m) % largura) + largura) % largura;
+  const mediana = (v) => {
+    const s = [...v].sort((a, b) => a - b);
+    const q = s.length >> 1;
+    return s.length % 2 ? s[q] : (s[q - 1] + s[q]) / 2;
+  };
+  const bruto = new Float64Array(altura).fill(NaN);
+  for (let j = 0; j < altura; j += 1) {
+    if (latitudeDaLinha(j, altura) * GRAUS < costura.latitudeMinima) continue;
+    const h = (m) => metros[j * largura + coluna(m)];
+    let medida = true;
+    for (let m = -K - 1; m <= K; m += 1) if (vazio[j * largura + coluna(m)]) medida = false;
+    if (!medida) continue;
+    const oeste = [];
+    const doLeste = [];
+    for (let m = 1; m <= K; m += 1) {
+      oeste.push(h(-m) - h(-m - 1));
+      doLeste.push(h(m) - h(m - 1));
+    }
+    bruto[j] = h(0) - h(-1) - (mediana(oeste) + mediana(doLeste)) / 2;
+  }
+  const meia = LINHAS_DA_MEDIANA >> 1;
+  let linhas = 0;
+  for (let j = 0; j < altura; j += 1) {
+    if (Number.isNaN(bruto[j])) continue;
+    const perto = [];
+    for (let q = Math.max(0, j - meia); q <= Math.min(altura - 1, j + meia); q += 1) if (!Number.isNaN(bruto[q])) perto.push(bruto[q]);
+    const s = mediana(perto);
+    degraus[j] = s;
+    linhas += 1;
+    for (let m = -rampa; m < rampa; m += 1) {
+      const k = j * largura + coluna(m);
+      if (vazio[k]) continue;
+      const x = m + 0.5;
+      saida[k] = metros[k] - Math.sign(x) * (s / 2) * (1 - Math.abs(x) / rampa);
+    }
+  }
+  return { metros: saida, degraus, linhas };
 }
 
 // ------------------------------------------------------------
@@ -4849,6 +4955,8 @@ function energiaNaMascara(campo, mascara, largura, altura) {
  * A SÍNTESE de um corpo (PLAN-RELEVO.md, E3): do cache das alturas (`grade` =
  * `{ metros, vazio, largura, altura, raioM }`) ao campo COMPLETO F (Float32, m)
  * — medido onde há dado, inventado no vazio.
+ *   0. o degrau da emenda do arquivo (`fonte.costuraDoArquivo`) sai do
+ *      medido (`tiraDegrauDaEmenda`); tudo daqui em diante lê o medido sem ele;
  *   1. pesos das unidades (`fonte`) na grade ÷4, ampliados pela spline;
  *   2. níveis RELATIVOS: a altura média da caixa-exemplo de cada unidade
  *      (`medidas`) menos a média global medida, menos ainda a média desses
@@ -4876,9 +4984,7 @@ function energiaNaMascara(campo, mascara, largura, altura) {
  *   4c. a tectônica traçada (`camadaTectonica`) com o degrau medido no
  *      cinturão (`perfilDasEscarpas`), só no vazio;
  *   5. `dadoPorOitava` pelo mapa de qualidade (`qualidade`, item 5b) e pelas
- *      caixas `dadoRuim` do JSON (artefato no fino do medido; a caixa sem
- *      `sigmaMaximoKm` vale para todas as bandas e vira VAZIO para a síntese
- *      inteira, como o `ocultar` — a costura a refaz dos dois lados);
+ *      caixas `dadoRuim` do JSON (artefato no fino do medido);
  *   6. a costura; e a CONFERÊNCIA: no núcleo de cada unidade (vazio, peso ≥
  *      0,9), RMS da inclinação (±10 %) e S(d) nos lags até 30 km (média dos
  *      dois eixos, ±15 %) contra o medido nas regiões-fonte da unidade. RMS
@@ -4899,12 +5005,15 @@ function energiaNaMascara(campo, mascara, largura, altura) {
  */
 export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, guia, semente, ocultar, opcoes = {} }) {
   const anota = opcoes.registra ?? (() => {});
-  const { metros, largura, altura, raioM } = grade;
+  const { largura, altura, raioM } = grade;
   const n = largura * altura;
-  // as caixas `dadoRuim` de todas as bandas são vazio para a síntese inteira, como o `ocultar`
-  const todas = caixasDeTodasAsBandas(fonte.dadoRuim ?? [], largura, altura);
+  // 0. o degrau da emenda do arquivo sai do medido ANTES de tudo: a costura devolve o dado já sem ele
+  const emenda = fonte.costuraDoArquivo
+    ? tiraDegrauDaEmenda({ metros: grade.metros, vazio: grade.vazio, largura, altura, costura: fonte.costuraDoArquivo })
+    : null;
+  const metros = emenda ? emenda.metros : grade.metros;
   const vazio = new Uint8Array(n);
-  for (let k = 0; k < n; k += 1) vazio[k] = grade.vazio[k] || (ocultar && ocultar[k]) || (todas && todas[k]) ? 1 : 0;
+  for (let k = 0; k < n; k += 1) vazio[k] = grade.vazio[k] || (ocultar && ocultar[k]) ? 1 : 0;
   const raioKm = raioM / 1000;
   const texelKm = raioKm * (Math.PI / altura);
   const sigmasKm = sigmasDasOitavas(raioM, altura);
@@ -4976,7 +5085,17 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
 
   // 3. as crateras: as reais do vazio de verdade e as sorteadas grandes
   const leis = ids.map((id) => leiDeCrateras(medidas.unidades[id].crateras));
-  const reais = crateraReaisNoVazio(catalogo, guia, grade.vazio, largura, altura);
+  // a feição com `moldeMedido` dá à cratera real dela (`catalogo`) o perfil MEDIDO de uma do lado medido
+  const moldes = [];
+  const reais = crateraReaisNoVazio(catalogo, guia, grade.vazio, largura, altura).map((c) => {
+    const f = (fonte.feicoes ?? []).find((x) => x.moldeMedido && x.catalogo === c.id);
+    const modelo = f && catalogo.find((x) => x.id === f.moldeMedido.catalogo);
+    const molde = modelo && moldeMedido({ metros, vazio: grade.vazio, largura, altura, raioM }, modelo);
+    if (!molde) return c;
+    const { lat, lon, desvioKm } = molde.centro;
+    moldes.push({ id: c.id, de: modelo.id, centro: [lat, lon].map((v) => +v.toFixed(2)), desvioKm: Math.round(desvioKm), rCrista: molde.rCrista, bordaM: Math.round(molde.bordaM), fundoM: Math.round(molde.fundoM) });
+    return { ...c, molde };
+  });
   const dasFeicoes = crateraDasFeicoes({ fonte, vazio: grade.vazio, largura, altura, raioM, reais });
   const fixas = [...reais, ...dasFeicoes.crateras];
   const { crateras, porUnidade } = sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, raioM, dMinKm: DIAMETRO_MINIMO_SORTEADO_KM, reais: fixas });
@@ -5167,7 +5286,11 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
           },
         ])
       ),
-      crateras: { reais: reais.map((c) => `${c.id} ${c.dKm} km`), sorteadas: porUnidade, comPico: crateras.filter((c) => c.pico).length },
+      crateras: { reais: reais.map((c) => `${c.id} ${c.dKm} km`), sorteadas: porUnidade, comPico: crateras.filter((c) => c.pico).length, moldesMedidos: moldes },
+      emendaDoArquivo: emenda && {
+        linhas: emenda.linhas,
+        degrauMaximoM: Math.round(emenda.degraus.reduce((x, v) => Math.max(x, Math.abs(v)), 0)),
+      },
       feicoes: {
         crateras: dasFeicoes.crateras.map((c) => `${c.id} ${c.dKm} km`),
         puladas: dasFeicoes.puladas,

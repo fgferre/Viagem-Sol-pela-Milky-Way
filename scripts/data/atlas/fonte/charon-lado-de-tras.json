@@ -101,6 +101,11 @@
       "nota": "Extensão do mesmo defeito de limbo do DEM, vista na prévia v4 fora da primeira caixa."
     }
   ],
+  "costuraDoArquivo": {
+    "lonGraus": 180,
+    "latitudeMinima": 50,
+    "nota": "Degrau entre as bordas do arquivo do DEM, visto no mapa de hoje (normal.png: uma linha vertical em 180°E, colunas 4095|0 da casa — a volta da longitude —, onde há dado ao norte de ~53°N). Medido no cache (P2, 02/10), por linha, o salto na emenda menos a inclinação esperada das 4 colunas de cada lado: −58 a −70 m em 53–68°N, de −25 a +55 m em 70–78°N, ±10 m em 78–86°N, ~−15 m perto do polo, liso de linha a linha; entre colunas vizinhas a altura muda 4–30 m. Sai no próprio medido antes de tudo (tiraDegrauDaEmenda): mediana de 5 linhas e rampas lineares de 32 colunas de cada lado — a textura medida fica e a mais de 32 colunas nada muda."
+  },
   "feicoes": [
     {
       "nome": "U (cratera candidata)",

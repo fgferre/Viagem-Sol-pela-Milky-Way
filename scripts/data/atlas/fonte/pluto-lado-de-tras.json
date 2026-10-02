@@ -131,7 +131,8 @@
         "lat": [-31,-19]
       },
       "fontes": [
-        {"lon": [185, 225], "lat": [-42, -17], "nota": "O terreno nodoso ao sul de Krun (St21 Fig. 6B): a caixa-exemplo e a faixa até a borda sul do DEM; começa em 185°E, a leste de Piccard Mons. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 46 % válido (a beira sul, vista no limbo, sai), 981 centros."}
+        {"lon": [185, 225], "lat": [-42, -17], "nota": "O terreno nodoso ao sul de Krun (St21 Fig. 6B): a caixa-exemplo e a faixa até a borda sul do DEM; começa em 185°E, a leste de Piccard Mons. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 46 % válido (a beira sul, vista no limbo, sai), 981 centros."},
+        {"lon": [185, 225], "lat": [-17, -5], "nota": "O mesmo grão nodoso continua para o norte até Krun Macula (relevo sombreado medido, P2, 02/10): a faixa de 17°S a 5°S entre 185 e 225°E, 93 % válida (mesma qualidade e mesmo afastamento do vazio da caixa de cima), tem a aspereza dela — RMS da inclinação 11,3° contra 11,8°; √S a 4/10/20/40 km 509/851/950/1019 m contra 511/885/981/1070 m — e o mesmo grão alinhado das máculas (orientacaoMedida). Entrou porque, só com a caixa de cima (46 % válida), a colcha repetia origem 25 vezes. Sobrepõe a fonte das máculas (200–232°E, 25°S–2°N)."}
       ],
       "confianca": "mapa",
       "orientacaoMedida": {"nota": "O terreno nodoso ao sul de Krun tem o mesmo grão alinhado das máculas: os retalhos não giram (só meia volta, sem espelho), sem salto de orientação entre eles (P1 v2)."},
@@ -257,18 +258,13 @@
       "lat": [-52, -34],
       "sigmaMaximoKm": 30,
       "nota": "Borrão listrado no DEM MEDIDO junto da borda sul do dado (visto no relevo sombreado da P1 v2: faixas diagonais de ~40 km que nenhum terreno bem resolvido de Plutão tem; a borda sul foi vista perto do limbo). No espectro (planos q da qualidade da E2b, medianas em 115–165°E, −50° a −36°, contra a referência das caixas-exemplo): bandas 1–3 (σ 3,6–29 km) 2,6–4,6×, banda 0 0,6× (borrado no mais fino, com o pico logo acima — a corcova do defeito de limbo de Caronte); logo ao norte (−35° a −25°) as bandas 0–2 voltam a ~1×. As bandas 4–7 (σ ≥ 29 km) ficam: a forma grossa medida. Princípio do Felipe: onde o detalhe é ruim, refazer mantendo a base."
-    },
-    {
-      "lon": [359.5, 360],
-      "lat": [52, 90],
-      "nota": "A EMENDA DO ARQUIVO do DEM: as duas bordas da fonte se encontram em 0°E (colunas 2047–2048 da casa) e, onde há dado ao norte de ~53°N, a altura dá um degrau de uma coluna — mediana 0,2–0,3 km em 70–80°N, sempre para baixo para leste, contra 0,01–0,03 km entre colunas vizinhas; no mapa de normais de hoje é uma linha vertical de 2 texels. Sem sigmaMaximoKm: TODAS as bandas deixam de ser dado numa faixa de ±0,5° de longitude do começo do dado no norte até o polo, e a costura a refaz contínua dos dois lados (vale também sem completar)."
-    },
-    {
-      "lon": [0, 0.5],
-      "lat": [52, 90],
-      "nota": "A outra metade da faixa da emenda do arquivo (a caixa não atravessa 0°)."
     }
   ],
+  "costuraDoArquivo": {
+    "lonGraus": 0,
+    "latitudeMinima": 50,
+    "nota": "Degrau entre as bordas do arquivo do DEM, visto no mapa de hoje (normal.png: uma linha vertical de 2 texels em 0°E, colunas 2047|2048 da casa, onde há dado ao norte de ~53°N). Medido no cache (P2, 02/10), por linha, o salto na emenda menos a inclinação esperada das 4 colunas de cada lado: −13 a −16 m em 55–68°N, −180 a −410 m em 70–78°N, de +110 a −200 m em 78–82°N, −125 a −390 m em 82–86°N, ~−30 m perto do polo, sempre liso de linha a linha; entre colunas vizinhas a altura muda 5–35 m. Sai no próprio medido antes de tudo (tiraDegrauDaEmenda): mediana de 5 linhas e rampas lineares de 32 colunas de cada lado — a textura medida fica e a mais de 32 colunas nada muda. Substitui a faixa de dadoRuim de todas as bandas (P1 v3), que a costura refazia mais áspera que o entorno liso."
+  },
   "feicoes": [
     {
       "nome": "Simonelli",
@@ -277,6 +273,8 @@
       "lon": 315,
       "diametroKm": 250,
       "picoCentral": true,
+      "catalogo": "PLUTO-002159",
+      "moldeMedido": {"nome": "Burney", "catalogo": "PLUTO-002120", "nota": "O molde de Simonelli é o perfil radial MEDIDO de Burney, a bacia de anéis do lado medido (Robbins v2 PLUTO-002120: 45,29°N 134,44°E com a convenção de +180°, D 244,7 km), recentrada no DEM como no empilhamento das crateras (45,11°N 133,35°E, a 16 km): fundo ~2,2 km abaixo do entorno (1,5–2 R) até 0,3 R, parede de 0,35 a 0,85 R, crista ~0,2 km acima do entorno em ~1,15 R e anéis fracos em ~0,85 e ~1,6 R; vai a zero entre 1,7 e 2 R (além disso o perfil desce com o terreno regional). Esticado em r/R ao D do catálogo de Simonelli (270 km) e em metros, sem escala (a profundidade satura: profundidadeDasCrateras). Somam-se o fundo cheio (o fundo claro de St21) e o pico central (St21, visto no terminador); Burney não tem pico."},
       "confianca": "mapa",
       "fonte": "St21 p. 21 (unidade ic) e Fig. 7; pp. 30–31",
       "nota": "A única cratera certa do lado de trás. Borda elevada e pico central vistos no terminador (9,3 km/px); fundo com anel claro de gelo volátil em volta do pico escuro, como Elliot (85 km). Cercada por lâminas ao sul: caiu nelas ou foi coberta por elas depois. Na Fig. 5 a unidade ic cobre ~270 km (inclui a borda)."
