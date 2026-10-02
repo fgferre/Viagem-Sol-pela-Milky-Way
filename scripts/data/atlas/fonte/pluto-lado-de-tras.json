@@ -30,6 +30,10 @@
         "lon": [221,236],
         "lat": [14,22]
       },
+      "fontes": [
+        {"lon": [214, 236], "lat": [2, 32], "nota": "Tartarus Dorsa (St21 tomam-na como o exemplo medido do terreno em lâminas): a caixa-exemplo e o entorno, até 236°E — a zona ondulada a leste (236–255°E, E2a) fica fora. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 100 % válido, 2846 centros. Giro livre: os depósitos do lado de trás são 'menos ordenados' que Tartarus (St21 p. 10)."}
+      ],
+      "nivel": {"acimaDoEntornoM": 3000, "fonte": "St21 pp. 9–10 e Fig. 8 (perfis de limbo)", "nota": "Os inchaços de lâminas do lado de trás ficam 2–4 km acima do entorno nos perfis de limbo; a caixa-exemplo de Tartarus Dorsa (1734 m) fica só 0,7–1,5 km acima dos exemplos medidos das máculas, dos mantos e do terreno intermediário. Vale o meio da faixa: 3 km acima do entorno, em vez da média do exemplo. Preso na membrana como as outras, o nível saía só ~1 km acima (P1 v1–v2: no fundo do vazio só a banda acima de R/5 carrega o nível, e a faixa é estreita e partida); por isso a unidade fica solta e o degrau é um campo liso somado depois da costura (elevacaoDeclarada): flancos de ~170 km centrados no contorno do mapa, vãos de até ~150 km entre os pedaços ficam altos, e a rampa vai de 0 no dado a cheia a 200 km dele."},
       "confianca": "mapa",
       "fonte": "St21 Fig. 5, p. 8; texto pp. 9–10; perfis de limbo Fig. 8, p. 23",
       "nota": "Cinturão equatorial (±30°) por >220° de longitude, quase todo no lado de trás (falta entre 75° e 210°E). Inchaços 2–4 km acima do entorno nos perfis de limbo; lâminas de ~300 m espaçadas 3–7 km; quase sem crateras. A leste de 320°E vira blocos angulosos de centenas de km entre as máculas. Inclui os afloramentos sobre as planícies crateradas perto de 65–75°E ('4' na Fig. 6C)."
@@ -57,6 +61,9 @@
         "lon": [222.5,228.5],
         "lat": [9.5,13.5]
       },
+      "fontes": [
+        {"lon": [214, 236], "lat": [2, 32], "nota": "As fontes das lâminas: a caixa-exemplo (~120 × 85 km) é menor que um retalho de 140 km, e as poças de St21 ficam ENTRE as lâminas — a própria caixa-exemplo está dentro de Tartarus Dorsa; num retalho de 140 km a mistura de lâminas e poças é o que o medido mostra. O nível e o ruído das bandas largas seguem a caixa-exemplo."}
+      ],
       "confianca": "mapa",
       "fonte": "St21 Fig. 5, p. 8; texto pp. 10–11; Fig. 6A ('1')",
       "nota": "Gelo de N2/CO empoçado em depressões entre as lâminas; manchas de dezenas de km, cada vez mais raras para leste, até ~290°E. Caixa-exemplo pequena (~120 × 85 km) porque, fora de Sputnik, as poças medidas são pequenas. O fundo claro de Simonelli está na feição, não aqui."
@@ -83,7 +90,11 @@
         "lon": [196,216],
         "lat": [-15,-3]
       },
+      "fontes": [
+        {"lon": [200, 232], "lat": [-25, 2], "nota": "Krun Macula e o planalto escuro em volta (St21 tomam Krun como representante das máculas); começa em 200°E, fora de Sputnik e dos montes de 170–180°E. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 85 % válido, 3092 centros. A textura nodosa alongada (NO–SE) é a do DEM ali."}
+      ],
       "confianca": "mapa",
+      "orientacaoMedida": {"nota": "O planalto de Krun tem grão alinhado (a textura nodosa alongada NO–SE do DEM): com giro ao acaso a borda de cada retalho aparecia como salto de orientação (P1 v2). Os retalhos não giram (só meia volta, sem espelho): o grão fica na direção medida."},
       "fonte": "St21 Fig. 5, p. 8; texto pp. 11–12; Fig. 6B; perfis C e D da Fig. 8",
       "nota": "Faixa escura de ±13° de Krun (225°E) até ~15°E (Balrog, Vucub-Came, Hun-Came, Meng-p'o). St21 tomam Krun como representante: planalto com fossas e bacias de até 3 km de fundo e 20 km de largura, poucas crateras; a oeste de 15°E as máculas ficam mais altas que as do leste (perfil D). Alternativa de St21: afloramentos de lâminas sob o manto escuro. É o planalto áspero tipo Krun: o mapa não o separa das máculas."
     },
@@ -100,6 +111,9 @@
         "lon": [95,125],
         "lat": [-15,3]
       },
+      "fontes": [
+        {"lon": [86, 145], "lat": [-28, 3], "nota": "Cthulhu Macula: a caixa-exemplo e a planície craterada em volta, até 145°E (antes dos montes da borda de Sputnik) e −28°; inclui trechos das fossas que cruzam a unidade (St21: Djanggawul, Virgil). Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 87 % válido, 7560 centros; a beira oeste junto do vazio sai pelo afastamento."}
+      ],
       "confianca": "mapa",
       "fonte": "St21 Fig. 5, p. 8; texto pp. 13–14; Fig. 6C",
       "nota": "As planícies mais antigas, no oeste do lado de trás (~20–100°E): lisas na escala de km, crateradas, cruzadas por sistemas tectônicos (Djanggawul, Virgil Fossae); escuras entre ~13°N e ~23°S (Cthulhu) e de albedo intermediário fora disso — St21 tratam tudo como uma unidade. São as máculas a leste de 15°E (mais baixas). Caixa abaixo de 3°N para não pegar Oort e Edgeworth."
@@ -116,7 +130,11 @@
         "lon": [186,200],
         "lat": [-31,-19]
       },
+      "fontes": [
+        {"lon": [185, 225], "lat": [-42, -17], "nota": "O terreno nodoso ao sul de Krun (St21 Fig. 6B): a caixa-exemplo e a faixa até a borda sul do DEM; começa em 185°E, a leste de Piccard Mons. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 46 % válido (a beira sul, vista no limbo, sai), 981 centros."}
+      ],
       "confianca": "mapa",
+      "orientacaoMedida": {"nota": "O terreno nodoso ao sul de Krun tem o mesmo grão alinhado das máculas: os retalhos não giram (só meia volta, sem espelho), sem salto de orientação entre eles (P1 v2)."},
       "fonte": "St21 Fig. 5, p. 8; texto pp. 12–13; Fig. 6B (abaixo da linha preta)",
       "nota": "Faixa ao sul das máculas, vista só no limbo (emissão >80°) e borrada. Ao sul de Krun tem textura nodosa de alguns km, sem crateras reconhecíveis, com cavi de dezenas de km; St21 não conseguem diferenciá-la entre 225°E e 30°E, e lâminas podem ir mais ao sul do que o mapa mostra. O limite sul (~31–36°S) é o fim da imagem, não um contato."
     },
@@ -132,6 +150,10 @@
         "lon": [258,272],
         "lat": [42,56]
       },
+      "fontes": [
+        {"lon": [60, 150], "lat": [60, 80], "nota": "As fontes do manto intermediário (a calota do norte): a caixa-exemplo desta unidade não tem centro de retalho bem resolvido. O nível e o ruído das bandas largas seguem a caixa-exemplo. Lowell Regio, o manto do norte medido em 60–150°E: a parte bem resolvida da calota de manto de que o manto do lado de trás é a continuação (St21 pp. 15–16). As caixas-exemplo dos mantos (258–272°E 42–56°N, 5–35°E 70–80°N, Vega Terra) não servem: a banda mais fina delas sai borrada no mapa de qualidade (59 %, 64 % e 14 % válidas) e nenhum retalho de 140 km cabe no que sobra. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 91 % válido, 5034 centros."},
+        {"lon": [150, 240], "lat": [62, 84], "nota": "As fontes do manto intermediário (a calota do norte): a caixa-exemplo desta unidade não tem centro de retalho bem resolvido. O nível e o ruído das bandas largas seguem a caixa-exemplo. A mesma calota de manto em 150–240°E, ao norte de Sputnik. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 97 % válido, 4729 centros."}
+      ],
       "confianca": "mapa",
       "fonte": "St21 Fig. 5, p. 8; texto p. 15; Fig. 6E",
       "nota": "Planaltos lobados de topo plano (manto claro) separados por depressões escuras mais baixas; segue para o lado de trás até 310–320°E. Exemplo na parte do DEM com detalhe: a área da Fig. 6E (57,5°N 282,5°E) cai na faixa lisa do DEM junto à borda."
@@ -148,6 +170,10 @@
         "lon": [5,35],
         "lat": [70,80]
       },
+      "fontes": [
+        {"lon": [60, 150], "lat": [60, 80], "nota": "Lowell Regio, o manto do norte medido em 60–150°E: a parte bem resolvida da calota de manto de que o manto do lado de trás é a continuação (St21 pp. 15–16). As caixas-exemplo dos mantos (258–272°E 42–56°N, 5–35°E 70–80°N, Vega Terra) não servem: a banda mais fina delas sai borrada no mapa de qualidade (59 %, 64 % e 14 % válidas) e nenhum retalho de 140 km cabe no que sobra. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 91 % válido, 5034 centros."},
+        {"lon": [150, 240], "lat": [62, 84], "nota": "A mesma calota de manto em 150–240°E, ao norte de Sputnik. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 97 % válido, 4729 centros."}
+      ],
       "confianca": "mapa",
       "fonte": "St21 Fig. 5, p. 8; texto pp. 15–16; Fig. 6F",
       "nota": "Manto mais contínuo, com poços escuros esparsos; St21 põem nele quase todo o norte do lado de trás (ao norte de ~15°N) porque a imagem (>15 km/px) não mostra contatos. A caixa-exemplo é palpite: a área da Fig. 6F (59°N 4,5°E) cai na faixa lisa do DEM; usei o manto logo ao norte, onde o DEM tem detalhe."
@@ -170,6 +196,10 @@
         "lon": [5,35],
         "lat": [70,80]
       },
+      "fontes": [
+        {"lon": [60, 150], "lat": [60, 80], "nota": "As fontes do manto intermediário (a calota do norte): a caixa-exemplo desta unidade não tem centro de retalho bem resolvido. O nível e o ruído das bandas largas seguem a caixa-exemplo. Lowell Regio, o manto do norte medido em 60–150°E: a parte bem resolvida da calota de manto de que o manto do lado de trás é a continuação (St21 pp. 15–16). As caixas-exemplo dos mantos (258–272°E 42–56°N, 5–35°E 70–80°N, Vega Terra) não servem: a banda mais fina delas sai borrada no mapa de qualidade (59 %, 64 % e 14 % válidas) e nenhum retalho de 140 km cabe no que sobra. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 91 % válido, 5034 centros."},
+        {"lon": [150, 240], "lat": [62, 84], "nota": "As fontes do manto intermediário (a calota do norte): a caixa-exemplo desta unidade não tem centro de retalho bem resolvido. O nível e o ruído das bandas largas seguem a caixa-exemplo. A mesma calota de manto em 150–240°E, ao norte de Sputnik. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 97 % válido, 4729 centros."}
+      ],
       "confianca": "mapa",
       "fonte": "St21 Fig. 5, p. 8; texto p. 17; perfil B da Fig. 8",
       "nota": "A unidade mais incerta de St21: mais clara que as vizinhas, mais baixa que as lâminas (perfil B: 2–4 km abaixo delas) e mais alta que as depressões escuras. Talvez só um véu fino de CH4 sobre os mantos — daí o exemplo do manto."
@@ -186,6 +216,10 @@
         "lon": [85,110],
         "lat": [30,44]
       },
+      "fontes": [
+        {"lon": [60, 150], "lat": [60, 80], "nota": "As fontes do manto intermediário (a calota do norte): a caixa-exemplo desta unidade não tem centro de retalho bem resolvido. O nível e o ruído das bandas largas seguem a caixa-exemplo. Lowell Regio, o manto do norte medido em 60–150°E: a parte bem resolvida da calota de manto de que o manto do lado de trás é a continuação (St21 pp. 15–16). As caixas-exemplo dos mantos (258–272°E 42–56°N, 5–35°E 70–80°N, Vega Terra) não servem: a banda mais fina delas sai borrada no mapa de qualidade (59 %, 64 % e 14 % válidas) e nenhum retalho de 140 km cabe no que sobra. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 91 % válido, 5034 centros."},
+        {"lon": [150, 240], "lat": [62, 84], "nota": "As fontes do manto intermediário (a calota do norte): a caixa-exemplo desta unidade não tem centro de retalho bem resolvido. O nível e o ruído das bandas largas seguem a caixa-exemplo. A mesma calota de manto em 150–240°E, ao norte de Sputnik. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 97 % válido, 4729 centros."}
+      ],
       "confianca": "mapa",
       "fonte": "St21 Fig. 5, p. 8; texto pp. 16–17; Fig. 6G",
       "nota": "Promontório escuro que entra menos de 150 km no lado de trás (~50°E, 30–36°N): manto claro sendo removido, textura manchada de poucos km. Pequeno no mapa; cresce pelo preenchimento da unidade mais próxima na faixa sem DEM (padraoGeral)."
@@ -202,6 +236,9 @@
         "lon": [242,256],
         "lat": [26,36]
       },
+      "fontes": [
+        {"lon": [242, 262], "lat": [22, 40], "nota": "Perto das Mwindo Fossae: a caixa-exemplo e o entorno. Qualidade: mapa de qualidade da E2b (.cache/relevo/pluto-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km) e 30 km de afastamento do vazio: 97 % válido, 1006 centros."}
+      ],
       "confianca": "mapa",
       "fonte": "St21 Fig. 5, p. 8; texto p. 14; Fig. 6D",
       "nota": "Planícies com morros denteados e degradados, de forma arqueada; talvez crosta antiga exposta pelo recuo das lâminas. Só uma mancha na borda oeste (~255–265°E, 18–30°N)."
@@ -213,6 +250,25 @@
     "confianca": "palpite",
     "nota": "Sem DEM e quase sem imagem: ao sul de ~38°S o lado de trás só foi visto com luz de Caronte (La21) e o mapa de St21 acaba em ~36°S. Pelo plano (01/10), vale a unidade mais ao sul do lado medido: as planícies crateradas tipo Cthulhu."
   },
+  "profundidadeDasCrateras": {"saturaAcimaDeKm": 60, "fonte": "medido no cache (P1, 02/10): as crateras do catálogo de ≥ 70 km com o perfil inteiro no DEM", "nota": "O molde das ≥ 40 km empilhadas no cache (d/D mediana 0,036; a ~60 km, ~2,2 km de fundo) esticado em D daria ~8 km de fundo a Simonelli (270 km). As medidas de 80–143 km têm 0–4 km (mediana 1,7 km: PLUTO-000492 85 km 4,0; -000702 80 km 2,5; -000633 115 km 1,6; -002184 111 km 1,2; -001443 101 km 1,75; -000612 139 km 1,0; -000872 143 km ~0): a profundidade SATURA. Acima de 60 km o molde vai × 60 km e não × D — vale para as reais, as das feições e as sorteadas. O pico central não satura (P1 v3): × o D de verdade (p75 das ≥ 40 km do cache, 0,0074), limitado à profundidade do fundo — o de Simonelli sai com ~2 km e se lê sob Sol rasante; saturado, teria 0,4 km."},
+  "dadoRuim": [
+    {
+      "lon": [112, 168],
+      "lat": [-52, -34],
+      "sigmaMaximoKm": 30,
+      "nota": "Borrão listrado no DEM MEDIDO junto da borda sul do dado (visto no relevo sombreado da P1 v2: faixas diagonais de ~40 km que nenhum terreno bem resolvido de Plutão tem; a borda sul foi vista perto do limbo). No espectro (planos q da qualidade da E2b, medianas em 115–165°E, −50° a −36°, contra a referência das caixas-exemplo): bandas 1–3 (σ 3,6–29 km) 2,6–4,6×, banda 0 0,6× (borrado no mais fino, com o pico logo acima — a corcova do defeito de limbo de Caronte); logo ao norte (−35° a −25°) as bandas 0–2 voltam a ~1×. As bandas 4–7 (σ ≥ 29 km) ficam: a forma grossa medida. Princípio do Felipe: onde o detalhe é ruim, refazer mantendo a base."
+    },
+    {
+      "lon": [359.5, 360],
+      "lat": [52, 90],
+      "nota": "A EMENDA DO ARQUIVO do DEM: as duas bordas da fonte se encontram em 0°E (colunas 2047–2048 da casa) e, onde há dado ao norte de ~53°N, a altura dá um degrau de uma coluna — mediana 0,2–0,3 km em 70–80°N, sempre para baixo para leste, contra 0,01–0,03 km entre colunas vizinhas; no mapa de normais de hoje é uma linha vertical de 2 texels. Sem sigmaMaximoKm: TODAS as bandas deixam de ser dado numa faixa de ±0,5° de longitude do começo do dado no norte até o polo, e a costura a refaz contínua dos dois lados (vale também sem completar)."
+    },
+    {
+      "lon": [0, 0.5],
+      "lat": [52, 90],
+      "nota": "A outra metade da faixa da emenda do arquivo (a caixa não atravessa 0°)."
+    }
+  ],
   "feicoes": [
     {
       "nome": "Simonelli",
@@ -231,9 +287,10 @@
       "lat": 38,
       "lon": 357,
       "diametroKm": 375,
+      "preenchimento": 0.6,
       "confianca": "candidata",
       "fonte": "St21 p. 18; Fig. 5 (unidade dd); Fig. 4 (nome)",
-      "nota": "350–400 km (St21). Quase toda preenchida pelo manto intermediário; só uma margem estreita das paredes sul e leste aparece como depressão escura de ~50 km de largura: arco exposto do azimute ~10° ao ~200°, passando por leste. A borda sul é a 'Yutu Linea' (informal). Alternativa de St21: parte da zona revolvida antípoda."
+      "nota": "350–400 km (St21). Quase toda preenchida pelo manto intermediário; só uma margem estreita das paredes sul e leste aparece como depressão escura de ~50 km de largura: arco exposto do azimute ~10° ao ~200°, passando por leste. A borda sul é a 'Yutu Linea' (informal). Alternativa de St21: parte da zona revolvida antípoda. Preenchimento 0,6 (P1, palpite): o fundo plano a 40 % da profundidade e a borda × 0,4 — a cratera subjugada e cheia, sem desenhar o arco escuro (que é cor)."
     },
     {
       "nome": "lineamento escuro de 330°E",

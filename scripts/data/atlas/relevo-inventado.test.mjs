@@ -62,7 +62,10 @@
 //
 // O DADO RUIM (E6): 22. Numa caixa `dadoRuim`, as bandas de σ até
 //     `sigmaMaximoKm` deixam de ser dado e as mais grossas continuam; fora
-//     dela, e com `completaBorrado: false`, todo medido é dado.
+//     dela, e com `completaBorrado: false`, todo medido é dado. 23. Numa
+//     caixa sem `sigmaMaximoKm` (todas as bandas, a emenda do arquivo) a
+//     costura refaz a faixa dos dois lados — o degrau some — e fora dela o
+//     campo é o medido byte a byte, também sem completar.
 // ============================================================
 import { beforeAll, describe, expect, it } from 'vitest';
 import { assaNormais } from './gera-normal-de-dem.mjs';
@@ -70,6 +73,7 @@ import {
   amostraNoPonto,
   areaDaCaixaKm2,
   camadaDeCrateras,
+  niveisDasUnidades,
   coeficientesDeSpline,
   colcha,
   crateraDasFeicoes,
@@ -610,6 +614,42 @@ describe('a síntese — unidades, níveis, crateras e o polo sul', () => {
     expect(puladas[0].motivo).toBe('centro no dado medido');
   });
 
+  it('satura a profundidade acima de `saturaKm` e enche a soterrada: fundo e borda × (1 − f)', () => {
+    const [L, A, raioM] = [1024, 512, 606e3];
+    const extremos = (c, saturaKm) => {
+      const camada = camadaDeCrateras({ crateras: [{ lat: 0, lon: 90, dKm: 200, quantil: 0.5, ...c }], morfometria: MORFOMETRIA, largura: L, altura: A, raioM, saturaKm });
+      return [camada.reduce((x, v) => Math.min(x, v), 0), camada.reduce((x, v) => Math.max(x, v), 0)];
+    };
+    const [fundo, borda] = extremos({});
+    const [fundoS, bordaS] = extremos({}, 50);
+    expect(fundoS / fundo).toBeCloseTo(0.25, 2);
+    expect(bordaS / borda).toBeCloseTo(0.25, 2);
+    const [fundoE, bordaE] = extremos({ soterrada: 0.6 });
+    expect(fundoE / fundo).toBeGreaterThan(0.37);
+    expect(fundoE / fundo).toBeLessThan(0.43);
+    expect(bordaE / borda).toBeCloseTo(0.4, 2);
+  });
+
+  it('põe a unidade de `nivel.acimaDoEntornoM` tanto acima da média dos vizinhos pesada pela sobreposição, e centra no vazio', () => {
+    const [L, A] = [4, 2];
+    const vazio = new Uint8Array(L * A).fill(1);
+    // a divide a transição com c em 2 texels, b em 1: o entorno de c pesa a 2:1
+    const pesos = [
+      Float32Array.from([0.5, 0.5, 1, 1, 0, 0, 0, 0]),
+      Float32Array.from([0, 0, 0, 0, 0.5, 1, 1, 1]),
+      Float32Array.from([0.5, 0.5, 0, 0, 0.5, 0, 0, 0]),
+    ];
+    const fonte = { unidades: { a: {}, b: {}, c: { nivel: { acimaDoEntornoM: 3000 } } } };
+    const medidas = { global: { alturaMedia: 400 }, unidades: { a: { alturaMedia: 700 }, b: { alturaMedia: 100 }, c: { alturaMedia: 0 } } };
+    const fracaoNoVazio = [0.375, 0.4375, 0.1875];
+    const n = niveisDasUnidades({ ids: ['a', 'b', 'c'], fonte, medidas, pesos, vazio, largura: L, altura: A, fracaoNoVazio });
+    const entorno = (2 * (n.a - 400) + (n.b - 400)) / 3;
+    expect(n.c - 400 - entorno).toBeCloseTo(3000, 6);
+    expect(n.a - n.b).toBeCloseTo(600, 6);
+    const media = ['a', 'b', 'c'].reduce((x, id, u) => x + fracaoNoVazio[u] * (n[id] - 400), 0);
+    expect(media).toBeCloseTo(0, 6);
+  });
+
   it('dá a mesma simulação (ruído das oitavas + crateras) com a mesma semente, byte a byte', () => {
     const { L, A, raioM } = PEQUENO;
     const { ids, pesos } = pesosDasUnidades(FONTE, L, A, raioM);
@@ -973,5 +1013,49 @@ describe('o dado ruim (E6)', () => {
     expect(sigmas.filter((sg) => sg <= 130)).toHaveLength(2);
     const semCompletar = mascarasDoDado({ vazio, largura, altura, nBandas, dadoRuim: [caixa], raioM, completaBorrado: false });
     for (const m of semCompletar) for (let k = 0; k < largura * altura; k += 1) expect(m[k]).toBe(vazio[k] ? 0 : 1);
+  });
+
+  it('numa caixa sem `sigmaMaximoKm` refaz TODAS as bandas dos dois lados: o degrau da emenda some e fora da faixa nada muda', () => {
+    const [largura, altura, raioM, degrau] = [128, 64, 606e3, 300];
+    const n = largura * altura;
+    const sigmasKm = sigmasDasOitavas(raioM, altura);
+    const nBandas = sigmasKm.length + 1;
+    // o medido e a simulação: o mesmo modelo (duas oitavas finas de 60 m), sementes diferentes; e a
+    // emenda do arquivo em 0°E (colunas 63|64) no medido: o lado leste 300 m abaixo, de polo a polo
+    const ruido = (semente) => {
+      const r = Array.from({ length: nBandas }, (_, k) => (k < 2 ? ruidoDaOitava(semente, k, sigmasKm, largura, altura, raioM) : null));
+      return somaDeOitavas(r, r.map((x) => (x ? 60 : 0)), n);
+    };
+    const medida = ruido(11);
+    for (let k = 0; k < n; k += 1) {
+      const [j, i] = [Math.floor(k / largura), k % largura];
+      const lat = latitudeDaLinha(j, altura);
+      medida[k] += 400 * Math.sin(2 * lat) * Math.cos((longitudeDaColuna(i, largura) * Math.PI) / 180) - (i >= 64 ? degrau : 0);
+    }
+    const dadoRuim = [
+      { lon: [352, 360], lat: [20, 90] },
+      { lon: [0, 8], lat: [20, 90] },
+    ];
+    const vazio = new Uint8Array(n);
+    const dadoPorOitava = mascarasDoDado({ vazio, largura, altura, nBandas, dadoRuim, raioM });
+    const faixa = Uint8Array.from(dadoPorOitava[0], (v) => 1 - v);
+    expect(faixa.reduce((x, v) => x + v, 0)).toBeGreaterThan(6 * 20);
+    for (const m of mascarasDoDado({ vazio, largura, altura, nBandas, dadoRuim, raioM, completaBorrado: false })) {
+      for (let k = 0; k < n; k += 1) expect(m[k]).toBe(1 - faixa[k]);
+    }
+    const F = costura({ medida, dadoPorOitava, simulada: ruido(7), sigmasKm, largura, altura, raioM });
+    let mudados = 0;
+    for (let k = 0; k < n; k += 1) if (!faixa[k] && F[k] !== medida[k]) mudados += 1;
+    expect(mudados).toBe(0);
+    // entre colunas vizinhas, de 30° a 80°: na faixa (bordas inclusas) o salto não passa do maior do medido longe dela
+    let [naFaixa, noMedido] = [0, 0];
+    for (let j = 0; j < altura; j += 1) {
+      const lat = (latitudeDaLinha(j, altura) * 180) / Math.PI;
+      if (lat < 30 || lat > 80) continue;
+      for (let i = 60; i < 67; i += 1) naFaixa = Math.max(naFaixa, Math.abs(F[j * largura + i + 1] - F[j * largura + i]));
+      for (let i = 20; i < 50; i += 1) noMedido = Math.max(noMedido, Math.abs(medida[j * largura + i + 1] - medida[j * largura + i]));
+    }
+    expect(naFaixa).toBeLessThan(0.5 * degrau);
+    expect(naFaixa).toBeLessThan(1.25 * noMedido);
   });
 });

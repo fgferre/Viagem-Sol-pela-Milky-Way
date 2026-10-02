@@ -3079,6 +3079,130 @@ export function restricoesDeNivel({ ids, pesos, niveis, dado, largura, altura, r
   return { mascara, valor };
 }
 
+/**
+ * Os NÍVEIS das unidades (m; null = livre): a altura média da caixa-exemplo
+ * (`medidas.unidades[id].alturaMedia`) menos a média global medida, centrados
+ * no vazio (a média deles pesada por `fracaoNoVazio` volta à média global).
+ * A unidade com `nivel.acimaDoEntornoM` no JSON (Plutão, as lâminas: o
+ * exemplo medido fica só ~0,7–1,5 km acima dos vizinhos e St21 medem 2–4 km
+ * nos perfis de limbo) fica tanto acima do ENTORNO — a média dos níveis das
+ * outras pesada pela sobreposição dos pesos suaves no vazio (Σ cos·wᵤ·wᵥ: quem
+ * divide a faixa de transição com ela) — antes de centrar.
+ */
+export function niveisDasUnidades({ ids, fonte, medidas, pesos, vazio, largura, altura, fracaoNoVazio }) {
+  const alturaMediaMedida = medidas.global.alturaMedia;
+  const relativos = ids.map((id) => {
+    const media = medidas.unidades[id]?.alturaMedia;
+    return media === null || media === undefined ? null : media - alturaMediaMedida;
+  });
+  const fixos = [...relativos];
+  ids.forEach((id, u) => {
+    const acima = fonte.unidades[id].nivel?.acimaDoEntornoM;
+    if (acima === undefined) return;
+    const sobre = ids.map(() => 0);
+    for (let k = 0; k < largura * altura; k += 1) {
+      if (!vazio[k] || !pesos[u][k]) continue;
+      const c = Math.cos(latitudeDaLinha(Math.floor(k / largura), altura)) * pesos[u][k];
+      for (let v = 0; v < ids.length; v += 1) if (v !== u) sobre[v] += c * pesos[v][k];
+    }
+    let soma = 0;
+    let peso = 0;
+    sobre.forEach((s, v) => {
+      if (fixos[v] === null) return;
+      soma += s * fixos[v];
+      peso += s;
+    });
+    relativos[u] = (peso ? soma / peso : 0) + acima;
+  });
+  let somaDosNiveis = 0;
+  let areaDosNiveis = 0;
+  relativos.forEach((r, u) => {
+    if (r === null) return;
+    somaDosNiveis += fracaoNoVazio[u] * r;
+    areaDosNiveis += fracaoNoVazio[u];
+  });
+  const mediaNoVazio = areaDosNiveis ? somaDosNiveis / areaDosNiveis : 0;
+  return Object.fromEntries(ids.map((id, u) => [id, relativos[u] === null ? null : alturaMediaMedida + relativos[u] - mediaNoVazio]));
+}
+
+/** σ (km) do desfoque A MAIS do peso da unidade de nível declarado: com os 50 km dos pesos, ~100 km. */
+const SIGMA_DA_ELEVACAO_KM = 87;
+/** A elevação vai de 0 a cheia entre estes valores do peso desfocado (0,5 = a borda do polígono): flancos de ~170 km. */
+const LIMIARES_DA_ELEVACAO = [0.25, 0.75];
+/** ...e de 0 no dado a cheia a tantos km dele: o medido fica como é. */
+const RAMPA_DA_ELEVACAO_KM = 200;
+
+/**
+ * A ELEVAÇÃO DECLARADA (m, Float32 na grade cheia; null sem unidade de nível
+ * declarado). A unidade com `nivel.acimaDoEntornoM` (Plutão, as lâminas: 2–4
+ * km acima do entorno nos perfis de limbo de St21) não é presa na membrana —
+ * no fundo do vazio só a banda acima de R/5 carrega o nível, e numa faixa
+ * estreita e partida isso dava ~1 km — e ganha, depois da costura, um campo
+ * LISO: o peso dela desfocado de mais `SIGMA_DA_ELEVACAO_KM` (flancos largos,
+ * sem contorno de albedo; vãos de até ~150 km entre os pedaços ficam altos),
+ * levado de 0 a 1 entre `LIMIARES_DA_ELEVACAO`, × a rampa de 0 no dado a 1 a
+ * `RAMPA_DA_ELEVACAO_KM` dele, × `acimaDoEntornoM`. As contas são na grade
+ * reduzida (`pesos` e `dado` dela, `largura` × `altura`), subida `nivel`
+ * níveis pela spline.
+ */
+export function elevacaoDeclarada({ ids, fonte, pesos, dado, largura, altura, raioM, nivel = 0 }) {
+  const um = new Uint8Array(largura * altura).fill(1);
+  let soma = null;
+  let longe = null;
+  ids.forEach((id, u) => {
+    const acima = fonte.unidades[id].nivel?.acimaDoEntornoM;
+    if (acima === undefined) return;
+    longe ??= distanciaAoVazioKm(dado, largura, altura, raioM);
+    soma ??= new Float32Array(largura * altura);
+    const borrado = desfocaComMascara(pesos[u], um, largura, altura, raioM, SIGMA_DA_ELEVACAO_KM).valor;
+    for (let c = 0; c < soma.length; c += 1) {
+      soma[c] += acima * suave(...LIMIARES_DA_ELEVACAO, borrado[c]) * suave(0, RAMPA_DA_ELEVACAO_KM, longe[c]);
+    }
+  });
+  if (!soma || !nivel) return soma;
+  const L = largura << nivel;
+  const A = altura << nivel;
+  return avaliaSpline(coeficientesDeSpline(soma, largura, altura), largura, altura, nivel, L, A, new Float32Array(L * A));
+}
+
+/** As crateras REAIS do vazio com pelo menos tantos km têm o fundo cheio (St21: Simonelli, fundo claro e pico central)... */
+const D_DO_FUNDO_CHEIO_KM = 100;
+/** ...onde a textura simulada sai × (1 − isto) até `FUNDO_CHEIO_RR[0]` R e volta inteira em `[1]` R. */
+const AMORTECIMENTO_DO_FUNDO = 0.6;
+const FUNDO_CHEIO_RR = [0.55, 0.75];
+
+/**
+ * O FUNDO CHEIO das crateras reais grandes (`dKm` ≥ `D_DO_FUNDO_CHEIO_KM`):
+ * o multiplicador (Float32, 1 fora; null sem nenhuma) da textura simulada (a
+ * colcha e o ruído) — o fundo preenchido sai liso e a parede, a borda e o
+ * pico (a camada das crateras) ficam inteiros: a cratera se lê sob Sol rasante.
+ */
+export function fundoCheio(crateras, largura, altura, raioM) {
+  const grandes = crateras.filter((c) => c.dKm >= D_DO_FUNDO_CHEIO_KM);
+  if (!grandes.length) return null;
+  const liso = new Float32Array(largura * altura).fill(1);
+  const raioKm = raioM / 1000;
+  for (const c of grandes) {
+    const centro = baseLocal(c.lat, c.lon).c;
+    const R = c.dKm / 2;
+    const alcance = (FUNDO_CHEIO_RR[1] * R) / raioKm;
+    const cosMax = Math.cos(alcance);
+    const j0 = Math.max(0, Math.floor(linhaDaLatitude(Math.min(90, c.lat + alcance * GRAUS), altura)));
+    const j1 = Math.min(altura - 1, Math.ceil(linhaDaLatitude(Math.max(-90, c.lat - alcance * GRAUS), altura)));
+    for (let j = j0; j <= j1; j += 1) {
+      const f = latitudeDaLinha(j, altura);
+      for (let i = 0; i < largura; i += 1) {
+        const l = longitudeDaColuna(i, largura) * RADIANOS;
+        const cosA = Math.cos(f) * (Math.cos(l) * centro[0] + Math.sin(l) * centro[1]) + Math.sin(f) * centro[2];
+        if (cosA < cosMax) continue;
+        const rho = (Math.acos(Math.min(1, cosA)) * raioKm) / R;
+        liso[j * largura + i] *= 1 - AMORTECIMENTO_DO_FUNDO * (1 - suave(...FUNDO_CHEIO_RR, rho));
+      }
+    }
+  }
+  return liso;
+}
+
 // ------------------------------------------------------------
 // As crateras: lei de tamanhos, molde, sorteio e a camada
 // ------------------------------------------------------------
@@ -3215,7 +3339,11 @@ export function sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, ra
     }
   });
   for (const c of reais) {
-    lista.push({ lat: c.lat, lon: c.lon, dKm: c.dKm, quantil: 0.5, idade: sorteia(), id: c.id, pico: sorteia() < fracaoComPico(c.dKm) });
+    const idade = sorteia();
+    const pico = sorteia() < fracaoComPico(c.dKm);
+    // a soterrada é a mais velha (tudo o mais cai por cima) e o pico dela está enterrado
+    if (c.soterrada) lista.push({ lat: c.lat, lon: c.lon, dKm: c.dKm, quantil: 0.5, idade: -1, id: c.id, pico: false, soterrada: c.soterrada });
+    else lista.push({ lat: c.lat, lon: c.lon, dKm: c.dKm, quantil: 0.5, idade, id: c.id, pico });
   }
   lista.sort((a, b) => a.idade - b.idade);
   return { crateras: lista, porUnidade };
@@ -3229,8 +3357,16 @@ export function sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, ra
  * no miolo (em volta da média dele, sumindo até a crista) e soma o molde × D;
  * com `pico` (sorteado pela fração de Ro21), o pico central (cosseno de raio
  * `RAIO_DO_PICO_RR` R, altura `picoD.p75` das ≥ 40 km do cache × D).
+ * `saturaKm`: acima deste D a profundidade SATURA — o molde vai × `saturaKm` em
+ * vez de × D (Plutão, 02/10: as crateras medidas de 80–140 km têm 1–4 km de
+ * fundo, mediana 1,7, e não os 3–5 km do molde ≥ 40 km esticado); o pico
+ * segue × o D de verdade, limitado à profundidade do fundo (com o pico
+ * saturado, o de Simonelli teria 0,4 km e não se leria). A cratera
+ * com `soterrada` = f (0–1, a feição `cratera-soterrada`) sai PREENCHIDA: o
+ * fundo plano a (1 − f) da profundidade (máximo suave, sem quina) e a borda e
+ * a ejecta × (1 − f).
  */
-export function camadaDeCrateras({ crateras, morfometria, largura, altura, raioM, variante = 'cache' }) {
+export function camadaDeCrateras({ crateras, morfometria, largura, altura, raioM, variante = 'cache', saturaKm = Infinity }) {
   const camada = new Float32Array(largura * altura);
   const alturaDoPico = morfometria.bins?.find((b) => b.faixaKm === '≥40')?.picoD?.p75 ?? 0;
   const raioKm = raioM / 1000;
@@ -3254,7 +3390,19 @@ export function camadaDeCrateras({ crateras, morfometria, largura, altura, raioM
   for (const c of crateras) {
     const { valores, rCrista } = moldeDeCratera(morfometria, c.dKm, c.quantil, variante);
     const R = c.dKm / 2;
-    const D = c.dKm * 1000;
+    const D = Math.min(c.dKm, saturaKm) * 1000;
+    // o pico não satura com a profundidade: × o D de verdade, até o fundo (o topo não passa do chão em volta)
+    const pico = Math.min(c.dKm * 1000 * alturaDoPico, -D * valores.reduce((x, v) => Math.min(x, v), 0));
+    const f = c.soterrada ?? 0;
+    let fundo = 0;
+    if (f) for (const x of valores) fundo = Math.min(fundo, (1 - f) * D * x);
+    const w2 = (0.15 * fundo) ** 2;
+    const maximoSuave = (v) => (v + fundo + Math.sqrt((v - fundo) ** 2 + w2)) / 2;
+    const noZero = maximoSuave(0);
+    const enche = (v) => {
+      if (!f) return v;
+      return v > 0 ? (1 - f) * v : maximoSuave(v) - noZero;
+    };
     const tetaMax = Math.min(Math.PI, (ALCANCE_DO_MOLDE_RR * R) / raioKm);
     const cosMax = Math.cos(tetaMax);
     const fc = c.lat * RADIANOS;
@@ -3303,8 +3451,8 @@ export function camadaDeCrateras({ crateras, morfometria, largura, altura, raioM
     for (let p = 0; p < m; p += 1) {
       const x = rho[p] / PASSO_DO_MOLDE_RR;
       const s = Math.min(valores.length - 2, Math.floor(x));
-      let v = D * (valores[s] + (x - s) * (valores[s + 1] - valores[s]));
-      if (c.pico && rho[p] < RAIO_DO_PICO_RR) v += D * alturaDoPico * 0.5 * (1 + Math.cos((Math.PI * rho[p]) / RAIO_DO_PICO_RR));
+      let v = enche(D * (valores[s] + (x - s) * (valores[s + 1] - valores[s])));
+      if (c.pico && rho[p] < RAIO_DO_PICO_RR) v += pico * 0.5 * (1 + Math.cos((Math.PI * rho[p]) / RAIO_DO_PICO_RR));
       const k = idx[p];
       if (rho[p] < rCrista) {
         const apaga = FRACAO_APAGADA * (1 - suave(0.6 * rCrista, rCrista, rho[p]));
@@ -3320,7 +3468,8 @@ export function camadaDeCrateras({ crateras, morfometria, largura, altura, raioM
 // ------------------------------------------------------------
 
 /**
- * As CRATERAS DAS FEIÇÕES (`fonte.feicoes` de tipo 'cratera': posição e D
+ * As CRATERAS DAS FEIÇÕES (`fonte.feicoes` de tipo 'cratera' — e
+ * 'cratera-soterrada', que leva o `preenchimento` como `soterrada`: posição e D
  * estimados na foto da aproximação). Entram só as de centro no VAZIO de
  * verdade (`vazio`) — no dado medido, mesmo borrado, o DEM já tem a forma
  * dela em baixa resolução — e que o catálogo não pôs (uma de `reais` a menos
@@ -3331,7 +3480,7 @@ export function crateraDasFeicoes({ fonte, vazio, largura, altura, raioM, reais 
   const crateras = [];
   const puladas = [];
   for (const f of fonte.feicoes ?? []) {
-    if (f.tipo !== 'cratera') continue;
+    if (f.tipo !== 'cratera' && f.tipo !== 'cratera-soterrada') continue;
     const j = Math.min(altura - 1, Math.max(0, Math.round(linhaDaLatitude(f.lat, altura))));
     const i = ((Math.round(colunaDaLongitude(f.lon, largura)) % largura) + largura) % largura;
     const p = baseLocal(f.lat, f.lon).c;
@@ -3342,7 +3491,7 @@ export function crateraDasFeicoes({ fonte, vazio, largura, altura, raioM, reais 
     });
     if (vazio[j * largura + i] !== 1) puladas.push({ nome: f.nome, motivo: 'centro no dado medido' });
     else if (real) puladas.push({ nome: f.nome, motivo: `já no catálogo (${real.id}, ${real.dKm.toFixed(1)} km)` });
-    else crateras.push({ lat: f.lat, lon: f.lon, dKm: f.diametroKm, id: f.nome });
+    else crateras.push({ lat: f.lat, lon: f.lon, dKm: f.diametroKm, id: f.nome, ...(f.tipo === 'cratera-soterrada' ? { soterrada: f.preenchimento } : {}) });
   }
   return { crateras, puladas };
 }
@@ -3638,6 +3787,18 @@ export function camadaTectonica({ feicoes, perfil, dado, largura, altura, raioM,
 // O dado borrado (item 5b)
 // ------------------------------------------------------------
 
+/** Os texels (Uint8, ou null) das caixas `dadoRuim` sem `sigmaMaximoKm` — as de TODAS as bandas. */
+export function caixasDeTodasAsBandas(dadoRuim, largura, altura) {
+  const caixas = dadoRuim.filter((caixa) => caixa.sigmaMaximoKm === undefined);
+  if (!caixas.length) return null;
+  const todas = new Uint8Array(largura * altura);
+  for (const caixa of caixas) {
+    const m = mascaraDaCaixa(caixa, largura, altura);
+    for (let k = 0; k < m.length; k += 1) if (m[k]) todas[k] = 1;
+  }
+  return todas;
+}
+
 /**
  * `dadoPorOitava` (item 5b): a banda k é dado onde o texel é medido E o DEM
  * resolve a banda — `bandasBorradas` (a grade reduzida da qualidade, NaN sem
@@ -3646,18 +3807,24 @@ export function camadaTectonica({ feicoes, perfil, dado, largura, altura, raioM,
  * JSON das unidades): caixas `{ lon, lat, sigmaMaximoKm }` onde o medido traz
  * um artefato nas bandas finas — nelas, toda banda de σ (o de cima) até
  * `sigmaMaximoKm` deixa de ser dado, como no borrado: a forma grossa medida
- * fica e o fino é reinventado (precisa de `raioM`). `completaBorrado: false`
- * é a variante "sem completar" do A/B: todo medido é dado em toda banda.
+ * fica e o fino é reinventado (precisa de `raioM`). Caixa SEM `sigmaMaximoKm`
+ * = TODAS as bandas (`caixasDeTodasAsBandas`: um defeito do arquivo, como a
+ * emenda das duas bordas do DEM de Plutão em 0°E) — o texel deixa de ser dado
+ * em toda banda e a costura o refaz dos dois lados; vale também sem completar.
+ * `completaBorrado: false` é a variante "sem completar" do A/B: todo medido
+ * (fora dessas caixas) é dado em toda banda.
  */
 export function mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, completaBorrado = true, dadoRuim = [], raioM }) {
   const n = largura * altura;
   const medido = new Uint8Array(n);
-  for (let k = 0; k < n; k += 1) medido[k] = vazio[k] ? 0 : 1;
-  if (!completaBorrado || (!qualidade && !dadoRuim.length)) return Array(nBandas).fill(medido);
+  const todas = caixasDeTodasAsBandas(dadoRuim, largura, altura);
+  for (let k = 0; k < n; k += 1) medido[k] = vazio[k] || (todas && todas[k]) ? 0 : 1;
+  const soFinas = dadoRuim.filter((caixa) => caixa.sigmaMaximoKm !== undefined);
+  if (!completaBorrado || (!qualidade && !soFinas.length)) return Array(nBandas).fill(medido);
   const bb = new Float32Array(n);
   let maior = 0;
-  const sigmas = dadoRuim.length ? sigmasDasOitavas(raioM, altura) : [];
-  for (const caixa of dadoRuim) {
+  const sigmas = soFinas.length ? sigmasDasOitavas(raioM, altura) : [];
+  for (const caixa of soFinas) {
     const finas = sigmas.filter((s) => s <= caixa.sigmaMaximoKm * (1 + 1e-9)).length;
     const m = mascaraDaCaixa(caixa, largura, altura);
     for (let k = 0; k < n; k += 1) if (m[k] && medido[k] && finas > bb[k]) bb[k] = finas;
@@ -3950,7 +4117,9 @@ export function direcaoDoCinturao(peso, largura, altura, raioM) {
  * papel 'cinturao-tectonico', cada caixa guarda a direção AO LONGO das
  * feições MEDIDAS (tensor do gradiente do medido na caixa, cos lat). Devolve
  * `{ celulas, acumulado (cos lat), largura, altura, papel, angulo (por célula, ou
- * null), caixas, areaKm2 }` por unidade, ou null sem centro possível.
+ * null), orientacaoMedida (a unidade tem `orientacaoMedida` no JSON: o grão
+ * das fontes é alinhado e o retalho não gira), caixas, areaKm2 }` por
+ * unidade, ou null sem centro possível.
  */
 export function fontesDaColcha({ metros, valido, fonte, largura, altura, raioM, larguraKm = LARGURA_DO_RETALHO_KM }) {
   const f = FATOR_DAS_FONTES;
@@ -4010,6 +4179,7 @@ export function fontesDaColcha({ metros, valido, fonte, largura, altura, raioM, 
       altura: Af,
       papel: unidade.papel,
       angulo: alinhada ? Float32Array.from(celulas, (c) => angulos[qual[c]]) : null,
+      orientacaoMedida: Boolean(unidade.orientacaoMedida),
       caixas: caixas.map((cx, q) => ({
         lon: cx.lon,
         lat: cx.lat,
@@ -4077,7 +4247,9 @@ function distanciaNaGrade(semente, G, saida) {
  *  - Unidade: sorteada pelos pesos no centro (na transição, retalho inteiro de
  *    uma unidade — nada de duas texturas fundidas).
  *  - Candidatos: `candidatos` origens sorteadas nas fontes da unidade (área
- *    igual); giro e espelho ao acaso, menos no cinturão: lá o eixo das
+ *    igual); giro e espelho ao acaso, menos na unidade de grão alinhado
+ *    (`orientacaoMedida`: só meia volta, sem espelho — a direção do grão é a
+ *    do medido, sem salto de orientação entre retalhos) e no cinturão: lá o eixo das
  *    feições medidas cai sobre a direção local do cinturão (`direcoes`), com
  *    meia volta, espelho no próprio eixo, giro de até ±`GIRO_DO_CINTURAO_GRAUS`
  *    e escala através (`ESCALA_DO_CINTURAO`). Fora o que repete origem
@@ -4351,14 +4523,16 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
     // forcado: a regra já não tem saída; vale a repetição mais longe no alvo, depois o erro
     const candidato = (forcado) => {
       const o = sorteiaOrigem(f);
-      const espelho = sorteia() < 0.5;
+      // o grão medido (`orientacaoMedida`): só meia volta, sem espelho — a direção do grão fica a do medido
+      const espelho = !f.orientacaoMedida && sorteia() < 0.5;
       let giro;
       let escala = 1;
       if (o.angulo !== null && anguloAlvo !== null) {
         giro = (espelho ? o.angulo + anguloAlvo : o.angulo - anguloAlvo) + (sorteia() < 0.5 ? Math.PI : 0);
         giro += (2 * sorteia() - 1) * GIRO_DO_CINTURAO_GRAUS * RADIANOS;
         escala = ESCALA_DO_CINTURAO ** (2 * sorteia() - 1);
-      } else giro = 2 * Math.PI * sorteia();
+      } else if (f.orientacaoMedida) giro = sorteia() < 0.5 ? 0 : Math.PI;
+      else giro = 2 * Math.PI * sorteia();
       const base = planoTangente(o.lat, o.lon, giro, espelho);
       const longe = visivel ? repeticaoMaisPerto(visiveis, alvo.c, base.c, vizinhancaRad[u], repeticaoRad) : Infinity;
       if (!forcado && longe < Infinity) return false;
@@ -4682,12 +4856,15 @@ function energiaNaMascara(campo, mascara, largura, altura) {
  *      volta à média global — o vazio tem em média a altura do medido e os
  *      contrastes entre as unidades ficam; o mapa de unidades é palpite e não
  *      pode inventar um degrau de hemisfério. Presos na membrana no fundo da
- *      unidade (`restricoesDeNivel`);
+ *      unidade (`restricoesDeNivel`), menos a de nível declarado
+ *      (`nivel.acimaDoEntornoM`): essa fica solta e ganha a
+ *      `elevacaoDeclarada`, lisa, somada depois da costura;
  *   3. crateras ANTES da costura: as reais do vazio (`catalogo`, `guia`), de
  *      qualquer tamanho, as candidatas das feições com centro no vazio e
  *      fora do catálogo (`crateraDasFeicoes`) e as sorteadas pela lei de
  *      cada unidade só de `DIAMETRO_MINIMO_SORTEADO_KM` para cima — as
- *      menores vêm nos pedaços; pico central pela fração de Ro21;
+ *      menores vêm nos pedaços; pico central pela fração de Ro21; as reais
+ *      grandes com o fundo cheio (`fundoCheio`: a textura amortecida no fundo);
  *   4. a textura FINA (bandas de σ ≤ `CORTE_DA_COLCHA_KM`) é a COLCHA de
  *      pedaços do medido da mesma unidade (`fontesDaColcha`, `colcha`): o
  *      medido preenchido pela membrana menos a gaussiana do corte, lido só em
@@ -4699,7 +4876,9 @@ function energiaNaMascara(campo, mascara, largura, altura) {
  *   4c. a tectônica traçada (`camadaTectonica`) com o degrau medido no
  *      cinturão (`perfilDasEscarpas`), só no vazio;
  *   5. `dadoPorOitava` pelo mapa de qualidade (`qualidade`, item 5b) e pelas
- *      caixas `dadoRuim` do JSON (artefato no fino do medido);
+ *      caixas `dadoRuim` do JSON (artefato no fino do medido; a caixa sem
+ *      `sigmaMaximoKm` vale para todas as bandas e vira VAZIO para a síntese
+ *      inteira, como o `ocultar` — a costura a refaz dos dois lados);
  *   6. a costura; e a CONFERÊNCIA: no núcleo de cada unidade (vazio, peso ≥
  *      0,9), RMS da inclinação (±10 %) e S(d) nos lags até 30 km (média dos
  *      dois eixos, ±15 %) contra o medido nas regiões-fonte da unidade. RMS
@@ -4722,8 +4901,10 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
   const anota = opcoes.registra ?? (() => {});
   const { metros, largura, altura, raioM } = grade;
   const n = largura * altura;
+  // as caixas `dadoRuim` de todas as bandas são vazio para a síntese inteira, como o `ocultar`
+  const todas = caixasDeTodasAsBandas(fonte.dadoRuim ?? [], largura, altura);
   const vazio = new Uint8Array(n);
-  for (let k = 0; k < n; k += 1) vazio[k] = grade.vazio[k] || (ocultar && ocultar[k]) ? 1 : 0;
+  for (let k = 0; k < n; k += 1) vazio[k] = grade.vazio[k] || (ocultar && ocultar[k]) || (todas && todas[k]) ? 1 : 0;
   const raioKm = raioM / 1000;
   const texelKm = raioKm * (Math.PI / altura);
   const sigmasKm = sigmasDasOitavas(raioM, altura);
@@ -4763,24 +4944,13 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
     return b ? a / b : 0;
   });
   const alturaMediaMedida = medidas.global.alturaMedia;
-  const relativos = ids.map((id) => {
-    const media = medidas.unidades[id]?.alturaMedia;
-    return media === null || media === undefined ? null : media - alturaMediaMedida;
-  });
-  let somaDosNiveis = 0;
-  let areaDosNiveis = 0;
-  relativos.forEach((r, u) => {
-    if (r === null) return;
-    somaDosNiveis += fracaoNoVazio[u] * r;
-    areaDosNiveis += fracaoNoVazio[u];
-  });
-  const mediaNoVazio = areaDosNiveis ? somaDosNiveis / areaDosNiveis : 0;
-  const niveis = Object.fromEntries(
-    ids.map((id, u) => [id, relativos[u] === null ? null : alturaMediaMedida + relativos[u] - mediaNoVazio])
-  );
+  const niveis = niveisDasUnidades({ ids, fonte, medidas, pesos, vazio, largura, altura, fracaoNoVazio });
   const dadoR = new Uint8Array(Lr * Ar);
   for (let k = 0; k < n; k += 1) if (dado[k]) dadoR[Math.floor(k / largura / s) * Lr + Math.floor((k % largura) / s)] = 1;
-  const restR = restricoesDeNivel({ ids, pesos: unidades.pesos, niveis, dado: dadoR, largura: Lr, altura: Ar, raioM });
+  const presos = Object.fromEntries(ids.map((id) => [id, fonte.unidades[id].nivel?.acimaDoEntornoM === undefined ? niveis[id] : null]));
+  const restR = restricoesDeNivel({ ids, pesos: unidades.pesos, niveis: presos, dado: dadoR, largura: Lr, altura: Ar, raioM });
+  const elevacao = elevacaoDeclarada({ ids, fonte, pesos: unidades.pesos, dado: dadoR, largura: Lr, altura: Ar, raioM, nivel: nivelU });
+  if (elevacao) for (let k = 0; k < n; k += 1) if (dado[k]) elevacao[k] = 0;
   const restricoes = { mascara: new Uint8Array(n), valor: new Float32Array(n) };
   for (let k = 0; k < n; k += 1) {
     const c = Math.floor(k / largura / s) * Lr + Math.floor((k % largura) / s);
@@ -4810,7 +4980,9 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
   const dasFeicoes = crateraDasFeicoes({ fonte, vazio: grade.vazio, largura, altura, raioM, reais });
   const fixas = [...reais, ...dasFeicoes.crateras];
   const { crateras, porUnidade } = sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, raioM, dMinKm: DIAMETRO_MINIMO_SORTEADO_KM, reais: fixas });
-  const camada = camadaDeCrateras({ crateras, morfometria: medidas.morfometria, largura, altura, raioM, variante: opcoes.variante });
+  const saturaKm = fonte.profundidadeDasCrateras?.saturaAcimaDeKm;
+  const camada = camadaDeCrateras({ crateras, morfometria: medidas.morfometria, largura, altura, raioM, variante: opcoes.variante, saturaKm });
+  const liso = fundoCheio(reais, largura, altura, raioM);
   anota(`crateras: ${reais.length} reais, ${dasFeicoes.crateras.length} das feições, ${crateras.length - fixas.length} sorteadas (≥ ${DIAMETRO_MINIMO_SORTEADO_KM} km)`);
 
   // 4. a colcha: o fino do medido (membrana − a gaussiana do corte), as fontes e os retalhos
@@ -4888,9 +5060,12 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
           b += pesos[u][q] * doMeio[u];
         }
       }
-      simulada[q] = a * (retalhos.campo[q] + (b - 1) * meio[q]) + ruido[q] + camada[q] + (tectonica ? tectonica.camada[q] : 0);
+      const textura = a * (retalhos.campo[q] + (b - 1) * meio[q]) + ruido[q];
+      simulada[q] = (liso ? liso[q] * textura : textura) + camada[q] + (tectonica ? tectonica.camada[q] : 0);
     }
-    return costura({ medida: metros, dadoPorOitava, simulada, sigmasKm, largura, altura, raioM, restricoes, cheio, registra: anota });
+    const F = costura({ medida: metros, dadoPorOitava, simulada, sigmasKm, largura, altura, raioM, restricoes, cheio, registra: anota });
+    if (elevacao) for (let q = 0; q < n; q += 1) F[q] += elevacao[q];
+    return F;
   };
 
   // a conferência: o campo no núcleo de cada unidade contra o medido nas regiões-fonte dela
