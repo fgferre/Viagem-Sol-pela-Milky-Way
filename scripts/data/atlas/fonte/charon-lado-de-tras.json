@@ -117,6 +117,30 @@
       "lat": [50, 90],
       "sigmaMaximoKm": 8,
       "nota": "A segunda linha do norte, ~165°E (P3, 02/10): não é degrau de uma coluna; medido no cache (52–88°N, coluna a coluna), a mediana do salto entre colunas vira de +8 a −2 m em 164,6–165,7°E e a mediana de |salto| cai a 3–4 m (9–15 m em volta) — uma faixa alisada com uma quina ao longo do meridiano por 36° de latitude, a marca de uma emenda de mosaico esfumada do DEM. Mesmo tratamento da borda do arquivo: o fino (σ ≤ 8 km) é refeito sobre a forma medida."
+    },
+    {
+      "lon": [0, 360],
+      "lat": [64, 90],
+      "sigmaMaximoKm": 4,
+      "nota": "Preenchimento polar do DEM com listras de coluna e redemoinho no polo (P5, 02/10). Nas bandas do medido (sem o degrau da emenda), o relevo sombreado da banda 0 (σ ≤ 1,9 km) mostra ao norte de um arco — ~73°N em 190°E, 79°N em 270°E, 64°N em 360°E, 71°N em 0°E — arcos concêntricos, uma grade de colunas e, no polo, o redemoinho; a banda 1 (σ 1,9–3,7 km) traz o redemoinho e arcos fracos; as bandas 2–3 parecem relevo. Medido por anel contra Oz Terra (330–360°E, 30–57°N, banda 0 com 116 m RMS e gx/gy 1,15–1,27): banda 0 com 30–110 m em 78–88°N e, em 88–90°N, 84–530 m com gx/gy 4–24 (o redemoinho). Como a energia do redemoinho é alta, a qualidade marcava a banda 0 só em retalhos (q0 0,2–0,4; nada em 86–90°N, onde q0 sobe a 5,8–10,9): o completar saía em remendos, com um anel em 86,4°N, o arco do preenchimento em 77°N e tiques nas bordas das faixas de 165°E e 180°E. Aqui as bandas de σ ≤ 4 km deixam de ser dado no boné todo, e o fino é refeito por igual sobre a forma medida."
+    },
+    {
+      "lon": [0, 360],
+      "lat": [84, 90],
+      "sigmaMaximoKm": 8,
+      "nota": "O mesmo redemoinho do preenchimento polar na banda 2 (σ 3,7–7,4 km): no medido sem as bandas 0–1, sobra uma cunha clara e escura a até ~4–5° do polo (vista ortográfica do polo, P5, 02/10); sem as bandas 0–2 ela some. Nos últimos 6° o fino até σ ≤ 8 km é refeito sobre a forma medida, como nas faixas de 165°E e 180°E."
+    },
+    {
+      "lon": [125, 192],
+      "lat": [50, 71],
+      "sigmaMaximoKm": 8,
+      "nota": "A faixa lisa do preenchimento do DEM ao sul do boné polar (P5, 02/10): em 125–192°E, da borda do dado (~52°N) até ~70°N, o medido quase não tem fino — RMS por banda em células de 10° × 1° (sem o degrau da emenda): banda 1 (σ 1,9–3,7 km) 5–15 m e banda 2 (σ 3,7–7,4 km) 18–57 m, contra 135 e 208 m em Oz Terra —, com um degrau de textura em 70–71°N contra o preenchimento de cima. A qualidade marcava 3 bandas só ao sul de ~65°N: a janela da energia mistura a borda rica, q2 fica em 0,4–1,5 em 66–69°N e a banda 2 lisa sobrava como dado — a faixa cinza e lisa vista em 150–180°E, 68–70°N. Aqui as bandas de σ ≤ 8 km deixam de ser dado na faixa toda, como a qualidade já fazia mais ao sul."
+    },
+    {
+      "lon": [266, 289],
+      "lat": [-40, -12],
+      "sigmaMaximoKm": 4,
+      "nota": "A borda sudoeste do medido (P5, 02/10), a da linha 4 da prancha do dono: em 266–289°E, da borda do dado até 12°S, o mosaico é borrado — banda 0 com 19–66 m RMS e banda 1 com 40–171 m (quase sempre 60–90), contra 70–200 e 85–320 m no trecho nítido logo a leste (290–310°E) e 92 e 100 m no interior de Vulcan Planitia (300–358°E, 38–3°S); q1 0,22–0,53. A qualidade só marcava a banda 0 (bandasBorradas 1–2), e a banda 1 lisa fazia a borda ler como medido liso junto do inventado mais áspero. Aqui as bandas de σ ≤ 4 km deixam de ser dado."
     }
   ],
   "costuraDoArquivo": {
