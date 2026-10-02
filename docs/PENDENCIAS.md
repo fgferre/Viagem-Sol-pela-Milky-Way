@@ -19,8 +19,16 @@ vistas das pranchas (`capturas/relevo-final-app-prancha.jpg`). A cadeia de
 geração rodou no painel de terminal dele, a pedido dele (*"rode tudo por
 favor, nao quero ter que ficar fazendo essas tarefas mecanicas"*).
 
-**Falta (dele):** a palavra para o merge no `main`; a publicação (push da
-`main`); depois, conferir no ar por sha256 dos mapas. Fechamento já feito:
+**Depois (02/10, mais tarde):** ao ver as fotos do app ele disse NÃO ao
+merge por causa da emenda reta na foto 4 de Caronte — medida: é a borda do
+tapa-buraco do sul no mapa de COR (item 149), não o relevo. Nasceu o ramo
+`cor-inventada` (do `relevo-inventado`, que fica intacto) com o plano em
+`PLAN-COR.md`: a cor do sul nunca fotografado e do lado de trás borrado
+por transferência de textura guiada pelo relevo (item 229). O merge dos
+dois ramos no `main` vem junto, com a palavra dele.
+
+**Falta (dele):** a palavra para o merge no `main` (depois da cor); a
+publicação (push da `main`); depois, conferir no ar por sha256 dos mapas. Fechamento já feito:
 item 144 (abaixo), `BACKLOG.md` (o grão de Sputnik saiu; a sombra da cor
 fica), `PLAN-RELEVO.md` apagado; as ferramentas e os candidatos da rodada
 seguem em `capturas/relevo-inventado/` (fora do git).
@@ -390,6 +398,17 @@ qualquer imagem), guiado pela foto borrada, pelo mapa geológico e pelo
 relevo inventado, para a cor e a sombra não se desencontrarem; cuidados já
 conhecidos: emenda com a metade fotografada, polos (a IA estica), tamanho
 (montar por pedaços), tom igual ao da metade real (regra do 151).
+- **02/10, noite, ao ver as fotos do app com o relevo assado:** *"foto 4 de
+  caronte ficou um emenda reta estranha, como podemos resolver isso?"*;
+  medido: a linha é a borda do tapa-buraco do sul nunca fotografado no mapa
+  de COR (item 149), não o relevo. Palavra dele: *"hyperion nao tem esse
+  problema... quero que resolva de forma que fique lindo, com embasamento
+  cientifico, sem esse defeito e com relevo. como vc vai fazer é contigo..."*
+  EM OBRA no ramo `cor-inventada` (plano em `PLAN-COR.md`): transferência de
+  textura na esfera guiada pelo relevo inventado e pelo Sol assado das fotos
+  (medido: NNO, ~45° de elevação), pedaços da cor real do mesmo terreno,
+  tom de grande escala continuado da borda fotografada; a pintura por IA
+  fica de reserva, se a textura não convencer por foto.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
