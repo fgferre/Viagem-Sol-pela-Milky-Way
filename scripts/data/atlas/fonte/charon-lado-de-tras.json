@@ -87,6 +87,18 @@
       "lat": [40, 80],
       "sigmaMaximoKm": 15,
       "nota": "Artefato de limbo no DEM MEDIDO (Sch18C): uma textura densa de covas e bolhas de ~10–25 km, alongadas leste–oeste, que nenhum terreno bem resolvido de Caronte tem — o norte a oeste de Oz Terra foi visto de lado, perto do limbo. Identificado (1) no relevo sombreado com Sol de norte e de oeste, ao escolher as fontes das terras altas (a caixa de Oz Terra para em 330°E por causa dele), e (2) no espectro (planos q da qualidade da E2b, medianas em faixas de 10°, contra Oz Terra 330–360°E 30–57°N, a mesma unidade): bandas 1–2 (σ 1,9–7,4 km) 1,3–3,5× em toda a caixa; banda 0 (σ < 1,9 km) 1,6–1,9× a 290–330°E e 0,75× a 255–290°E (borrado no mais fino, com o pico logo acima — o espectro com corcova que o terreno real, vermelho, não tem); banda 3 (σ 7,4–15 km) até 2,4× ao norte de 60°N em 255–290°E. As bandas 4–6 (σ 15–120 km) também saem 1,0–2,5× acima de Oz, mas sem a corcova: ficam medidas. Nas bandas de σ ≤ 15 km o medido deixa de ser dado (como o borrado, `mascarasDoDado`): a forma grossa medida fica e o fino é reinventado com pedaços das terras altas e costurado; entra no A/B `completaBorrado` (desligado = o medido como está)."
+    },
+    {
+      "lon": [330, 342],
+      "lat": [55, 70],
+      "sigmaMaximoKm": 15,
+      "nota": "Extensão do mesmo defeito de limbo do DEM, vista na prévia v4 fora da primeira caixa."
+    },
+    {
+      "lon": [280, 306],
+      "lat": [33, 40],
+      "sigmaMaximoKm": 15,
+      "nota": "Extensão do mesmo defeito de limbo do DEM, vista na prévia v4 fora da primeira caixa."
     }
   ],
   "feicoes": [
