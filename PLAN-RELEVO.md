@@ -265,6 +265,28 @@ Conferência: `normal.png` de Plutão e Caronte idêntico por md5 ao de hoje.
   **Convenção do catálogo:** em Plutão a longitude leste = valor do catálogo
   + 180° (Sputnik, Burney e Simonelli só caem no lugar assim); em Caronte o
   catálogo já é 0–360.
+- **E3.1 FEITA (02/10) — a costura com prova.** `costura` = simulação
+  condicional por correção de resíduos, banda a banda (krigagem simples;
+  covariância ajustada como bossas não negativas no espectro de Legendre,
+  positiva-definida na esfera; nível σ/2 da pirâmide; blocos que dividem a
+  fatoração; cascata de descida que repõe o resíduo nível a nível). Decisões
+  do main ao longo de quatro trabalhadores: (1) escalas acima de R/5 NÃO são
+  sorteadas nem krigadas — no vazio são a continuação harmônica (membrana,
+  exata no dado, limitada) do medido; no Caronte real carregam só 0,1–0,35 %
+  da inclinação; (2) o medido é PREENCHIDO pela membrana antes de ser
+  separado em bandas com o filtro simples (sem o viés do desfoque mascarado
+  na emenda); (3) os testes vigiam o que a imagem mostra — inclinação RMS
+  por faixa de distância em [0,90; 1,10], p99 em [0,80; 1,20], energia por
+  banda só nas bandas com ≥ 2 % da inclinação — num mundo de teste com o
+  espectro medido de Oz Terra. Resultado em tamanho real (vazio real de
+  Caronte, 10 bandas): 49 s, 1,36 GB; F = T byte a byte no dado; inclinação
+  RMS 0,96/0,97 a ±1 texel, 0,93 a 3–10 texels do lado do vazio; p99
+  0,92–1,09. LIMITAÇÃO CONHECIDA: as bandas 1–5 perdem energia logo dentro
+  do vazio (0,42–0,66 nos primeiros bins; vazamento entre bandas) — ~7 % a
+  menos de inclinação a 3–10 texels, invisível nas pranchas
+  (`scratchpad/e3/prova-v3-*.png`). Se a prova real (E4) mostrar anel, a
+  correção é somar ruído independente nessas bandas com a amplitude que falta
+  por distância (medida no conjunto sintético).
 
 **E3 — o núcleo da síntese (Opus).** No mesmo módulo, funções puras; UMA
 função exportada serve à prévia e ao gerador; semente fixa por corpo
@@ -391,4 +413,4 @@ A lista vai ao Felipe no fim da rodada.
 - **Fim:** `npm run done` verde uma vez; `npm run data:verify` verde.
 
 ## Andamento
-- [~] E1 cache (código feito e commitado; falta o Felipe rodar Plutão e Caronte) · [~] E2 medidas (E2a mapas de unidades FEITA; E2b medidas espera o cache) · [ ] E3 núcleo · [ ] E4 prova (Foto 1) · [ ] E5 Sputnik (Foto 2) · [ ] E6 feições (Foto 3) · [ ] E7 confissão · [ ] E8 mapas finais
+- [~] E1 cache (código feito e commitado; falta o Felipe rodar Plutão e Caronte) · [~] E2 medidas (E2a mapas de unidades FEITA; E2b medidas espera o cache) · [~] E3 núcleo (E3.1 costura FEITA; falta síntese por unidade, crateras, calibração e montagem) · [ ] E4 prova (Foto 1) · [ ] E5 Sputnik (Foto 2) · [ ] E6 feições (Foto 3) · [ ] E7 confissão · [ ] E8 mapas finais

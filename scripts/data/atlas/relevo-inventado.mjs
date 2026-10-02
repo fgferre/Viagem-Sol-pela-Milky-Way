@@ -1,7 +1,8 @@
 // ============================================================
-// O RELEVO INVENTADO DE PLUTÃO E CARONTE — por enquanto, as MEDIDAS do
-// lado medido (PLAN-RELEVO.md, etapa E2b, 01/10/2026). A síntese (E3)
-// entra depois neste mesmo módulo: o que se mede aqui é a régua dela.
+// O RELEVO INVENTADO DE PLUTÃO E CARONTE — as MEDIDAS do lado medido
+// (PLAN-RELEVO.md, etapa E2b, 01/10/2026) e, no fim do arquivo, a COSTURA
+// (E3, item 1). O resto da síntese (E3) entra depois neste mesmo módulo: o
+// que se mede aqui é a régua dela.
 //
 // POR QUE MEDIR ANTES. A metade sem DEM dos dois corpos vai ganhar relevo
 // sorteado com a ESTATÍSTICA da metade medida: a aspereza em cada escala,
@@ -1513,4 +1514,1290 @@ export function medeLadoMedido({ grade, unidades, crateras, guia, ro21, opcoes =
       alturaReduzida: reduzidoDoVazio.valor,
     },
   };
+}
+
+// ============================================================
+// A COSTURA (E3, item 1): a simulação condicional, oitava por oitava
+// ============================================================
+
+/** Pepita da krigagem, em fração de C(0): a diagonal é C(0)·(1 + pepita). */
+const PEPITA = 1e-4;
+
+/** O alcance da covariância nunca passa de tantos σ da oitava. */
+const ALCANCE_MAXIMO_EM_SIGMAS = 4;
+
+/** Lado (células do nível da oitava) do bloco cujos alvos dividem uma fatoração. */
+const LADO_DO_BLOCO = 8;
+
+/** Na cascata, a sobra estendida ao vazio pesa min(1, peso do filtro / isto). */
+const PESO_CHEIO_DA_EXTENSAO = 0.3;
+
+/** A oitava de σ acima desta fração do raio não é simulada nem krigada: o vazio dela é a membrana. */
+const FRACAO_DO_RAIO_DA_MEMBRANA = 1 / 5;
+
+/** Passadas de Gauss–Seidel simétrico da membrana em cada nível abaixo do resolvido exato. */
+const PASSADAS_DA_MEMBRANA = 8;
+
+/** Os pesos (−1, 9, 9, −1)/16 da cúbica que lê o resíduo no centro de uma célula. */
+const PESOS_DO_CENTRO = [-1 / 16, 9 / 16, 9 / 16, -1 / 16];
+
+/** O polo da spline B cúbica (o filtro recursivo que tira os coeficientes). */
+const POLO_DA_SPLINE = Math.sqrt(3) - 2;
+
+// ------------------------------------------------------------
+// O ruído de cada oitava
+// ------------------------------------------------------------
+
+/** mulberry32 — o mesmo gerador de `geradorDeSemente` (esculpido.ts). */
+function geradorDeSemente(semente) {
+  let a = semente >>> 0;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** A semente da oitava `k`: a do corpo misturada com k (um ruído independente por oitava). */
+function sementeDaOitava(semente, k) {
+  let h = (semente ^ Math.imul(k + 1, 0x9e3779b1)) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+function hashDoCanto(a, b, c, s) {
+  let h = Math.imul(a, 0x8da6b343) ^ Math.imul(b, 0xd8163841) ^ Math.imul(c, 0xcb1ab31f) ^ s;
+  h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+  h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+const suavizaQuintica = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+
+/**
+ * O RUÍDO DE GRADIENTE 3D (Perlin, suavização quíntica) da `semente` no centro
+ * de cada texel da grade: 256 gradientes unitários sorteados (cada canto da
+ * rede escolhe o seu por hash), a rede girada ao acaso (quatérnio uniforme de
+ * Shoemake) e deslocada, com passo `passoKm` na esfera de raio `raioM`. Vive
+ * no espaço 3D: não tem costura na longitude nem singularidade no polo.
+ */
+function ruidoNaGrade(semente, largura, altura, raioM, passoKm) {
+  const sorteia = geradorDeSemente(semente);
+  const gx = new Float64Array(256);
+  const gy = new Float64Array(256);
+  const gz = new Float64Array(256);
+  for (let q = 0; q < 256; q += 1) {
+    const z = 2 * sorteia() - 1;
+    const f = 2 * Math.PI * sorteia();
+    const r = Math.sqrt(1 - z * z);
+    gx[q] = r * Math.cos(f);
+    gy[q] = r * Math.sin(f);
+    gz[q] = z;
+  }
+  const s = Math.floor(sorteia() * 4294967296) >>> 0;
+  const u1 = sorteia();
+  const u2 = sorteia();
+  const u3 = sorteia();
+  const qa = Math.sqrt(1 - u1) * Math.sin(2 * Math.PI * u2);
+  const qb = Math.sqrt(1 - u1) * Math.cos(2 * Math.PI * u2);
+  const qc = Math.sqrt(u1) * Math.sin(2 * Math.PI * u3);
+  const qd = Math.sqrt(u1) * Math.cos(2 * Math.PI * u3);
+  const giro = [
+    1 - 2 * (qb * qb + qc * qc), 2 * (qa * qb - qc * qd), 2 * (qa * qc + qb * qd),
+    2 * (qa * qb + qc * qd), 1 - 2 * (qa * qa + qc * qc), 2 * (qb * qc - qa * qd),
+    2 * (qa * qc - qb * qd), 2 * (qb * qc + qa * qd), 1 - 2 * (qa * qa + qb * qb),
+  ];
+  const dx0 = sorteia() * 1000;
+  const dy0 = sorteia() * 1000;
+  const dz0 = sorteia() * 1000;
+  const escala = raioM / 1000 / passoKm;
+  const canto = (ix, iy, iz, dx, dy, dz) => {
+    const q = hashDoCanto(ix, iy, iz, s) & 255;
+    return gx[q] * dx + gy[q] * dy + gz[q] * dz;
+  };
+  const cosLon = new Float64Array(largura);
+  const sinLon = new Float64Array(largura);
+  for (let i = 0; i < largura; i += 1) {
+    const lon = longitudeDaColuna(i, largura) * RADIANOS;
+    cosLon[i] = Math.cos(lon);
+    sinLon[i] = Math.sin(lon);
+  }
+  const saida = new Float32Array(largura * altura);
+  for (let j = 0; j < altura; j += 1) {
+    const lat = latitudeDaLinha(j, altura);
+    const c = Math.cos(lat);
+    const pz = Math.sin(lat);
+    for (let i = 0; i < largura; i += 1) {
+      const px = c * cosLon[i];
+      const py = c * sinLon[i];
+      const X = (giro[0] * px + giro[1] * py + giro[2] * pz) * escala + dx0;
+      const Y = (giro[3] * px + giro[4] * py + giro[5] * pz) * escala + dy0;
+      const Z = (giro[6] * px + giro[7] * py + giro[8] * pz) * escala + dz0;
+      const xi = Math.floor(X);
+      const yi = Math.floor(Y);
+      const zi = Math.floor(Z);
+      const xf = X - xi;
+      const yf = Y - yi;
+      const zf = Z - zi;
+      const u = suavizaQuintica(xf);
+      const v = suavizaQuintica(yf);
+      const w = suavizaQuintica(zf);
+      const a000 = canto(xi, yi, zi, xf, yf, zf);
+      const a100 = canto(xi + 1, yi, zi, xf - 1, yf, zf);
+      const a010 = canto(xi, yi + 1, zi, xf, yf - 1, zf);
+      const a110 = canto(xi + 1, yi + 1, zi, xf - 1, yf - 1, zf);
+      const a001 = canto(xi, yi, zi + 1, xf, yf, zf - 1);
+      const a101 = canto(xi + 1, yi, zi + 1, xf - 1, yf, zf - 1);
+      const a011 = canto(xi, yi + 1, zi + 1, xf, yf - 1, zf - 1);
+      const a111 = canto(xi + 1, yi + 1, zi + 1, xf - 1, yf - 1, zf - 1);
+      const x00 = a000 + u * (a100 - a000);
+      const x10 = a010 + u * (a110 - a010);
+      const x01 = a001 + u * (a101 - a001);
+      const x11 = a011 + u * (a111 - a011);
+      const y0 = x00 + v * (x10 - x00);
+      const y1 = x01 + v * (x11 - x01);
+      saida[j * largura + i] = y0 + w * (y1 - y0);
+    }
+  }
+  return saida;
+}
+
+/**
+ * O NÍVEL DA PIRÂMIDE de uma oitava de desvio `sigmaKm`: o fator 2^nível em
+ * que σ vale ~2 células (h = σ/2), mas com pelo menos 8 linhas e a largura
+ * ainda par no nível.
+ */
+function nivelDaOitava(sigmaKm, largura, altura, raioM) {
+  const texelKm = (raioM / 1000) * (Math.PI / altura);
+  let nivel = Math.max(0, Math.floor(Math.log2(sigmaKm / (2 * texelKm)) + 1e-9));
+  while (nivel > 0 && ((altura >> nivel) < 8 || largura % 2 ** (nivel + 1) || altura % 2 ** nivel)) {
+    nivel -= 1;
+  }
+  return nivel;
+}
+
+/**
+ * O RUÍDO DA OITAVA `k`, média 0 e variância 1 (pesadas por cos lat): o ruído
+ * de gradiente de passo 2σₖ (a `semente` misturada com k) passado pela MESMA
+ * banda k de `decompoeEmOitavas` — h − G(σ₀) na primeira, G(σₖ₋₁) − G(σₖ) no
+ * meio, e na última (k = `sigmasKm.length`, passo 4σ) o resíduo G(σ último).
+ * A banda é tirada no nível da pirâmide em que σₖ₋₁ vale ~2 células — ali ela
+ * já está inteira — e volta à resolução cheia por spline B cúbica: a oitava
+ * grossa não paga duas gaussianas de 8 M texels.
+ */
+export function ruidoDaOitava(semente, k, sigmasKm, largura, altura, raioM) {
+  const ultima = sigmasKm.length;
+  const sigma = k < ultima ? sigmasKm[k] : 2 * sigmasKm[ultima - 1];
+  const nivel = k === 0 ? 0 : nivelDaOitava(sigmasKm[k - 1], largura, altura, raioM);
+  const L = largura >> nivel;
+  const A = altura >> nivel;
+  const bruto = ruidoNaGrade(sementeDaOitava(semente, k), L, A, raioM, 2 * sigma);
+  const um = new Uint8Array(L * A).fill(1);
+  const media = (s) => desfocaComMascara(bruto, um, L, A, raioM, s).valor;
+  const banda = k === 0 ? bruto : media(sigmasKm[k - 1]);
+  if (k < ultima) {
+    const baixo = media(sigmasKm[k]);
+    for (let q = 0; q < L * A; q += 1) banda[q] -= baixo[q];
+  }
+  const campo =
+    nivel === 0
+      ? banda
+      : avaliaSpline(coeficientesDeSpline(banda, L, A), L, A, nivel, largura, altura, new Float32Array(largura * altura));
+  let soma = 0;
+  let soma2 = 0;
+  let peso = 0;
+  for (let j = 0; j < altura; j += 1) {
+    const cosLat = Math.cos(latitudeDaLinha(j, altura));
+    let s1 = 0;
+    let s2 = 0;
+    for (let i = 0; i < largura; i += 1) {
+      const v = campo[j * largura + i];
+      s1 += v;
+      s2 += v * v;
+    }
+    soma += cosLat * s1;
+    soma2 += cosLat * s2;
+    peso += cosLat * largura;
+  }
+  const m = soma / peso;
+  const desvio = Math.sqrt(soma2 / peso - m * m);
+  for (let q = 0; q < largura * altura; q += 1) campo[q] = (campo[q] - m) / desvio;
+  return campo;
+}
+
+// ------------------------------------------------------------
+// A covariância de cada oitava
+// ------------------------------------------------------------
+
+/** Cholesky no lugar (triângulo de baixo de `K`, N×N em linhas); false se não é positiva. */
+function cholesky(K, N) {
+  for (let a = 0; a < N; a += 1) {
+    const la = a * N;
+    for (let b = 0; b <= a; b += 1) {
+      const lb = b * N;
+      let s = K[la + b];
+      for (let q = 0; q < b; q += 1) s -= K[la + q] * K[lb + q];
+      if (a === b) {
+        if (!(s > 0)) return false;
+        K[la + a] = Math.sqrt(s);
+      } else K[la + b] = s / K[lb + b];
+    }
+  }
+  return true;
+}
+
+/** Resolve L·Lᵀ·x = b no lugar de `b`, com o fator de `cholesky`. */
+function resolveCholesky(L, N, b) {
+  for (let a = 0; a < N; a += 1) {
+    let s = b[a];
+    for (let q = 0; q < a; q += 1) s -= L[a * N + q] * b[q];
+    b[a] = s / L[a * N + a];
+  }
+  for (let a = N - 1; a >= 0; a -= 1) {
+    let s = b[a];
+    for (let q = a + 1; q < N; q += 1) s -= L[q * N + a] * b[q];
+    b[a] = s / L[a * N + a];
+  }
+}
+
+/** Mínimos quadrados NÃO NEGATIVOS (Lawson–Hanson): min ‖A·x − b‖, x ≥ 0; `A` m×p em linhas. */
+function minimosQuadradosNaoNegativos(A, b, m, p) {
+  const x = new Float64Array(p);
+  const passivo = new Uint8Array(p);
+  const w = new Float64Array(p);
+  const res = new Float64Array(m);
+  const tolerancia = 1e-12;
+  const gradiente = () => {
+    for (let i = 0; i < m; i += 1) {
+      let s = b[i];
+      for (let j = 0; j < p; j += 1) s -= A[i * p + j] * x[j];
+      res[i] = s;
+    }
+    for (let j = 0; j < p; j += 1) {
+      let s = 0;
+      for (let i = 0; i < m; i += 1) s += A[i * p + j] * res[i];
+      w[j] = s;
+    }
+  };
+  // a solução sem restrição nas colunas passivas (equações normais)
+  const resolvePassivas = () => {
+    const idx = [];
+    for (let j = 0; j < p; j += 1) if (passivo[j]) idx.push(j);
+    const q = idx.length;
+    const M = new Float64Array(q * q);
+    const v = new Float64Array(q);
+    for (let a = 0; a < q; a += 1) {
+      for (let c = 0; c <= a; c += 1) {
+        let s = 0;
+        for (let i = 0; i < m; i += 1) s += A[i * p + idx[a]] * A[i * p + idx[c]];
+        M[a * q + c] = s;
+      }
+      let s = 0;
+      for (let i = 0; i < m; i += 1) s += A[i * p + idx[a]] * b[i];
+      v[a] = s;
+      M[a * q + a] *= 1 + 1e-12;
+    }
+    if (!cholesky(M, q)) return null;
+    resolveCholesky(M, q, v);
+    const z = new Float64Array(p);
+    idx.forEach((j, a) => {
+      z[j] = v[a];
+    });
+    return z;
+  };
+  for (let iter = 0; iter < 3 * p; iter += 1) {
+    gradiente();
+    let t = -1;
+    let maior = tolerancia;
+    for (let j = 0; j < p; j += 1) {
+      if (!passivo[j] && w[j] > maior) {
+        maior = w[j];
+        t = j;
+      }
+    }
+    if (t < 0) break;
+    passivo[t] = 1;
+    for (let interno = 0; interno < 3 * p; interno += 1) {
+      const z = resolvePassivas();
+      if (!z) {
+        passivo[t] = 0;
+        break;
+      }
+      let viavel = true;
+      for (let j = 0; j < p; j += 1) if (passivo[j] && z[j] <= 0) viavel = false;
+      if (viavel) {
+        x.set(z);
+        break;
+      }
+      let alfa = Infinity;
+      for (let j = 0; j < p; j += 1) if (passivo[j] && z[j] <= 0) alfa = Math.min(alfa, x[j] / (x[j] - z[j]));
+      for (let j = 0; j < p; j += 1) {
+        x[j] += alfa * (z[j] - x[j]);
+        if (passivo[j] && x[j] <= tolerancia) {
+          passivo[j] = 0;
+          x[j] = 0;
+        }
+      }
+    }
+  }
+  return x;
+}
+
+/**
+ * As BASES do ajuste da covariância em cada cos θ de `cossenos`: a constante
+ * (P₀) e lombadas gaussianas em log₂ ℓ de um quarto de oitava (centros em
+ * `centros`, cortadas a 4 desvios), cada uma Σ wℓ·Pℓ(cos θ) normalizada para
+ * valer 1 em θ = 0. Devolve a matriz pontos × (1 + centros), em linhas.
+ */
+function basesDeLegendre(cossenos, lMax, centros) {
+  const nc = centros.length;
+  const nb = nc + 1;
+  const peso = new Float64Array((lMax + 1) * nc);
+  const primeira = new Int32Array(lMax + 1).fill(nc);
+  const ultima = new Int32Array(lMax + 1).fill(-1);
+  const norma = new Float64Array(nc);
+  for (let j = 0; j < nc; j += 1) {
+    for (let l = 1; l <= lMax; l += 1) {
+      const u = (Math.log2(l + 0.5) - Math.log2(centros[j] + 0.5)) / 0.25;
+      if (Math.abs(u) >= 4) continue;
+      const w = Math.exp(-0.5 * u * u);
+      peso[l * nc + j] = w;
+      norma[j] += w;
+      primeira[l] = Math.min(primeira[l], j);
+      ultima[l] = Math.max(ultima[l], j);
+    }
+  }
+  const saida = new Float64Array(cossenos.length * nb);
+  const acc = new Float64Array(nc);
+  for (let q = 0; q < cossenos.length; q += 1) {
+    const x = cossenos[q];
+    acc.fill(0);
+    let p0 = 1;
+    let p1 = x;
+    for (let l = 1; l <= lMax; l += 1) {
+      const pl = l === 1 ? p1 : ((2 * l - 1) * x * p1 - (l - 1) * p0) / l;
+      if (l > 1) {
+        p0 = p1;
+        p1 = pl;
+      }
+      for (let j = primeira[l]; j <= ultima[l]; j += 1) acc[j] += peso[l * nc + j] * pl;
+    }
+    saida[q * nb] = 1;
+    for (let j = 0; j < nc; j += 1) saida[q * nb + j + 1] = acc[j] / norma[j];
+  }
+  return saida;
+}
+
+/**
+ * A COVARIÂNCIA DA OITAVA, ajustada a um campo sem máscara (a banda da
+ * simulação): C(d) = c0 − S(d)/2 com S de `funcaoDeEstrutura` nos dois eixos
+ * (lags de h/4, âncoras a cada h/2, h = a célula do nível da oitava). A tabela
+ * empírica NÃO é positiva-definida (a krigagem quebra nela), então o modelo é
+ * C(θ) = Σ bⱼ·Ψⱼ(θ) com bⱼ ≥ 0 nas bases de `basesDeLegendre` — positivo-
+ * definido na esfera (Schoenberg) —, por mínimos quadrados não negativos
+ * pesados por √pares. ALCANCE: o d depois do qual |C| < 2 % de c0 em todo
+ * ponto, preso entre 2σ e 4σ (e o diâmetro); o ajuste vai até 2·alcance.
+ * Devolve o modelo numa tabela uniforme em d² (km²) até a maior distância
+ * entre dois vizinhos de um bloco de `condicionaOitava` (2·alcance + o
+ * bloco): cortar o modelo antes disso tira a positividade, e o Cholesky do
+ * bloco falha.
+ */
+export function covarianciaDaOitava(campo, largura, altura, raioM, sigmaKm) {
+  const raioKm = raioM / 1000;
+  const dLat = Math.PI / altura;
+  const nivel = nivelDaOitava(sigmaKm, largura, altura, raioM);
+  const h = 2 ** nivel;
+  const alcanceMaximoKm = ALCANCE_MAXIMO_EM_SIGMAS * sigmaKm;
+  const dMaximoKm = Math.min(2 * alcanceMaximoKm, 2 * raioKm * 0.999);
+  const nMax = Math.min(altura - 1, Math.ceil((2 * Math.asin(dMaximoKm / (2 * raioKm))) / dLat) + 1);
+  const passoDoLag = Math.max(1, h >> 2);
+  const lags = [];
+  for (let q = passoDoLag; q <= nMax; q += passoDoLag) lags.push(q);
+  const passo = Math.max(1, h >> 1);
+  const valido = new Uint8Array(largura * altura).fill(1);
+  const { ns, ew } = funcaoDeEstrutura(campo, valido, largura, altura, raioM, {
+    lags,
+    passoLinhas: passo,
+    passoColunas: passo,
+    minimoDePares: 1,
+  });
+  let s1 = 0;
+  let s2 = 0;
+  let w = 0;
+  for (let j = 0; j < altura; j += passo) {
+    const cosLat = Math.cos(latitudeDaLinha(j, altura));
+    for (let i = 0; i < largura; i += passo) {
+      const v = campo[j * largura + i];
+      s1 += cosLat * v;
+      s2 += cosLat * v * v;
+      w += cosLat;
+    }
+  }
+  const c0 = s2 / w - (s1 / w) ** 2;
+  const pontos = [[0, c0, Infinity], ...[...ns, ...ew].map(([km, S, pares]) => [km, c0 - S / 2, pares])];
+  pontos.sort((a, b) => a[0] - b[0]);
+  let alcanceKm = pontos[pontos.length - 1][0];
+  for (let q = pontos.length - 1; q >= 0; q -= 1) {
+    if (Math.abs(pontos[q][1]) > 0.02 * c0) {
+      alcanceKm = pontos[Math.min(q + 1, pontos.length - 1)][0];
+      break;
+    }
+  }
+  alcanceKm = Math.min(Math.max(alcanceKm, 2 * sigmaKm), alcanceMaximoKm, 2 * raioKm);
+  const dAjusteKm = Math.min(2 * alcanceKm, 2 * raioKm);
+  const usados = pontos.filter(([d]) => d <= dAjusteKm * 1.02);
+  const lMax = Math.min(altura / h, 4096);
+  const centros = [];
+  for (let e = 0; 2 ** (e / 4) <= lMax; e += 1) centros.push(2 ** (e / 4));
+  const cosseno = (d) => Math.cos(2 * Math.asin(Math.min(1, d / (2 * raioKm))));
+  const m = usados.length;
+  const nb = centros.length + 1;
+  const bases = basesDeLegendre(usados.map(([d]) => cosseno(d)), lMax, centros);
+  const maxPares = Math.max(...usados.slice(1).map((u) => u[2]));
+  const Ap = new Float64Array(m * nb);
+  const bp = new Float64Array(m);
+  for (let q = 0; q < m; q += 1) {
+    const pq = q === 0 ? 3 : Math.sqrt(usados[q][2] / maxPares);
+    for (let j = 0; j < nb; j += 1) Ap[q * nb + j] = pq * bases[q * nb + j];
+    bp[q] = (pq * usados[q][1]) / c0;
+  }
+  const coef = minimosQuadradosNaoNegativos(Ap, bp, m, nb);
+  const U = 16384;
+  const celulaKm = h * raioKm * dLat;
+  const dTabelaKm = Math.min(2 * raioKm, 2 * alcanceKm + 1.5 * LADO_DO_BLOCO * celulaKm);
+  const d2Max = dTabelaKm * dTabelaKm;
+  const cossenosDaTabela = [];
+  for (let u = 0; u <= U + 1; u += 1) cossenosDaTabela.push(cosseno(Math.sqrt((u / U) * d2Max)));
+  const basesDaTabela = basesDeLegendre(cossenosDaTabela, lMax, centros);
+  const tabela = new Float64Array(U + 2);
+  for (let u = 0; u <= U + 1; u += 1) {
+    let v = 0;
+    for (let j = 0; j < nb; j += 1) v += coef[j] * basesDaTabela[u * nb + j];
+    tabela[u] = v * c0;
+  }
+  let erroMaximo = 0;
+  for (let q = 0; q < m; q += 1) {
+    let v = 0;
+    for (let j = 0; j < nb; j += 1) v += coef[j] * bases[q * nb + j];
+    erroMaximo = Math.max(erroMaximo, Math.abs(v - usados[q][1] / c0));
+  }
+  return { c0: tabela[0], alcanceKm, tabela, escala: U / d2Max, U, nivel, erroMaximo };
+}
+
+/**
+ * C(d) da tabela de `covarianciaDaOitava`, com d² em km² (linear em d²).
+ * PRESA na ponta, sem corte a zero: a grade tem cada texel E o antípoda dele,
+ * e um zero exatamente em d = 2R (a ponta da tabela que cobre o corpo)
+ * tirava a positividade do sistema global (autovalor −0,48·C(0) medido).
+ */
+function covDaTabela(cv, d2) {
+  const x = Math.min(d2 * cv.escala, cv.U);
+  const u = Math.floor(x);
+  return cv.tabela[u] + (x - u) * (cv.tabela[u + 1] - cv.tabela[u]);
+}
+
+// ------------------------------------------------------------
+// A spline B cúbica na grade (com a volta e os polos)
+// ------------------------------------------------------------
+
+/** Os coeficientes da spline B cúbica INTERPOLANTE num anel periódico de N amostras, no lugar. */
+function prefiltraAnel(x, N, causal) {
+  const z = POLO_DA_SPLINE;
+  let soma = 0;
+  let zk = 1;
+  for (let k = 0; k < N; k += 1) {
+    soma += zk * x[(N - k) % N];
+    zk *= z;
+  }
+  const zN = zk;
+  causal[0] = soma / (1 - zN);
+  for (let k = 1; k < N; k += 1) causal[k] = x[k] + z * causal[k - 1];
+  soma = 0;
+  zk = 1;
+  for (let k = 0; k < N; k += 1) {
+    soma += zk * causal[(N - 1 + k) % N];
+    zk *= z;
+  }
+  x[N - 1] = (-z * soma) / (1 - zN);
+  for (let k = N - 2; k >= 0; k -= 1) x[k] = z * (x[k + 1] - causal[k]);
+  for (let k = 0; k < N; k += 1) x[k] *= 6;
+}
+
+/**
+ * Os coeficientes da spline B cúbica que INTERPOLA `campo` (grade L×A): cada
+ * paralelo é um anel, e o meridiano I fecha com o I + L/2 num círculo máximo
+ * de 2A amostras — a spline atravessa o polo sem borda.
+ */
+function coeficientesDeSpline(campo, L, A) {
+  const c = Float64Array.from(campo);
+  const anel = new Float64Array(Math.max(L, 2 * A));
+  const causal = new Float64Array(Math.max(L, 2 * A));
+  for (let J = 0; J < A; J += 1) {
+    for (let I = 0; I < L; I += 1) anel[I] = c[J * L + I];
+    prefiltraAnel(anel, L, causal);
+    for (let I = 0; I < L; I += 1) c[J * L + I] = anel[I];
+  }
+  const meia = L / 2;
+  for (let I = 0; I < meia; I += 1) {
+    for (let t = 0; t < A; t += 1) {
+      anel[t] = c[t * L + I];
+      anel[2 * A - 1 - t] = c[t * L + I + meia];
+    }
+    prefiltraAnel(anel, 2 * A, causal);
+    for (let t = 0; t < A; t += 1) {
+      c[t * L + I] = anel[t];
+      c[t * L + I + meia] = anel[2 * A - 1 - t];
+    }
+  }
+  return c;
+}
+
+/** Os 4 pesos da spline B cúbica no deslocamento `t` ∈ [0, 1), a partir de `w[o]`. */
+function pesosDaSpline(t, w, o) {
+  const u = 1 - t;
+  w[o] = (u * u * u) / 6;
+  w[o + 1] = (3 * t * t * t - 6 * t * t + 4) / 6;
+  w[o + 2] = (-3 * t * t * t + 3 * t * t + 3 * t + 1) / 6;
+  w[o + 3] = (t * t * t) / 6;
+}
+
+/**
+ * A CALOTA DO POLO, linha `j` a ângulo `r` do polo, raio `r0` (a 1ª linha da
+ * grade grossa): a spline por índice leva até o polo, sem mudar, as ondas
+ * PARES em longitude (m = 2, 4, …: a reflexão com meia volta é simétrica para
+ * elas) — um "cata-vento" com inclinação infinita no ponto do polo. Aqui as
+ * ondas m ≥ 2 da linha somem como (r/r0)² (smoothstep); m = 0 e m = 1, que a
+ * reflexão já leva certo (constante e linear através do polo), ficam.
+ */
+function regularizaNoPolo(saida, linha, largura, r, r0, cosI, sinI) {
+  let m0 = 0;
+  let a1 = 0;
+  let b1 = 0;
+  for (let i = 0; i < largura; i += 1) {
+    const v = saida[linha + i];
+    m0 += v;
+    a1 += v * cosI[i];
+    b1 += v * sinI[i];
+  }
+  m0 /= largura;
+  a1 *= 2 / largura;
+  b1 *= 2 / largura;
+  const t = r / r0;
+  const peso = t * t * (3 - 2 * t);
+  for (let i = 0; i < largura; i += 1) {
+    const baixas = m0 + a1 * cosI[i] + b1 * sinI[i];
+    saida[linha + i] = baixas + peso * (saida[linha + i] - baixas);
+  }
+}
+
+/**
+ * A spline de coeficientes `c` (grade Lc×Ac do nível `nivel`) avaliada no
+ * centro de cada texel da grade `largura`×`altura` (o nível abaixo dela por
+ * 2^nível), em `saida`. Linha além do polo = a refletida, meia volta adiante;
+ * nas linhas mais perto do polo que a 1ª linha grossa, `regularizaNoPolo`.
+ */
+function avaliaSpline(c, Lc, Ac, nivel, largura, altura, saida) {
+  const s = 2 ** nivel;
+  const meia = Lc / 2;
+  const w = new Float64Array(4 * s);
+  for (let r = 0; r < s; r += 1) {
+    const x = (r + 0.5) / s - 0.5;
+    pesosDaSpline(x - Math.floor(x), w, 4 * r);
+  }
+  const colunas = new Int32Array(4 * largura);
+  const colunasDaMeiaVolta = new Int32Array(4 * largura);
+  for (let i = 0; i < largura; i += 1) {
+    const I0 = Math.floor((i + 0.5) / s - 0.5);
+    for (let b = 0; b < 4; b += 1) {
+      const I = I0 - 1 + b;
+      colunas[4 * i + b] = ((I % Lc) + Lc) % Lc;
+      colunasDaMeiaVolta[4 * i + b] = (((I + meia) % Lc) + Lc) % Lc;
+    }
+  }
+  const base = new Int32Array(4);
+  const viraMeia = new Uint8Array(4);
+  for (let j = 0; j < altura; j += 1) {
+    const J0 = Math.floor((j + 0.5) / s - 0.5);
+    const oy = 4 * (j % s);
+    for (let a = 0; a < 4; a += 1) {
+      let J = J0 - 1 + a;
+      viraMeia[a] = 0;
+      if (J < 0) {
+        J = -1 - J;
+        viraMeia[a] = 1;
+      } else if (J >= Ac) {
+        J = 2 * Ac - 1 - J;
+        viraMeia[a] = 1;
+      }
+      base[a] = J * Lc;
+    }
+    const linha = j * largura;
+    for (let i = 0; i < largura; i += 1) {
+      const ox = 4 * (i % s);
+      const o = 4 * i;
+      let v = 0;
+      for (let a = 0; a < 4; a += 1) {
+        const cols = viraMeia[a] ? colunasDaMeiaVolta : colunas;
+        const b0 = base[a];
+        v +=
+          w[oy + a] *
+          (w[ox] * c[b0 + cols[o]] +
+            w[ox + 1] * c[b0 + cols[o + 1]] +
+            w[ox + 2] * c[b0 + cols[o + 2]] +
+            w[ox + 3] * c[b0 + cols[o + 3]]);
+      }
+      saida[linha + i] = v;
+    }
+  }
+  if (s > 1) {
+    const cosI = new Float64Array(largura);
+    const sinI = new Float64Array(largura);
+    for (let i = 0; i < largura; i += 1) {
+      cosI[i] = Math.cos((2 * Math.PI * (i + 0.5)) / largura);
+      sinI[i] = Math.sin((2 * Math.PI * (i + 0.5)) / largura);
+    }
+    const r0 = (0.5 * Math.PI) / Ac;
+    for (let j = 0; j < s / 2; j += 1) {
+      const r = ((j + 0.5) * Math.PI) / altura;
+      regularizaNoPolo(saida, j * largura, largura, r, r0, cosI, sinI);
+      regularizaNoPolo(saida, (altura - 1 - j) * largura, largura, r, r0, cosI, sinI);
+    }
+  }
+  return saida;
+}
+
+// ------------------------------------------------------------
+// A krigagem do resíduo no nível da oitava
+// ------------------------------------------------------------
+
+/**
+ * Os NÓS DE DADO do nível `nivel` (grade largura/2^nível × altura/2^nível) e o
+ * resíduo neles: nó D é a célula cujo estêncil 4×4 de texels em volta do
+ * centro é TODO dado, e o valor é a cúbica (−1, 9, 9, −1)/16 do `residuo` ali
+ * (o resíduo no centro da célula). No nível 0, D = o dado e o valor = o resíduo.
+ */
+function residuoNoNivel(residuo, dado, largura, altura, nivel) {
+  if (nivel === 0) return { ehD: dado, valor: residuo };
+  const s = 2 ** nivel;
+  const L = largura >> nivel;
+  const A = altura >> nivel;
+  const ehD = new Uint8Array(L * A);
+  const valor = new Float64Array(L * A);
+  const linhas = new Int32Array(4);
+  const meiaVolta = new Int32Array(4);
+  for (let J = 0; J < A; J += 1) {
+    const j0 = J * s + s / 2 - 1;
+    for (let a = 0; a < 4; a += 1) {
+      let j = j0 - 1 + a;
+      meiaVolta[a] = 0;
+      if (j < 0) {
+        j = -1 - j;
+        meiaVolta[a] = largura / 2;
+      } else if (j >= altura) {
+        j = 2 * altura - 1 - j;
+        meiaVolta[a] = largura / 2;
+      }
+      linhas[a] = j * largura;
+    }
+    for (let I = 0; I < L; I += 1) {
+      const i0 = I * s + s / 2 - 1;
+      let todo = true;
+      let v = 0;
+      for (let a = 0; a < 4 && todo; a += 1) {
+        for (let b = 0; b < 4; b += 1) {
+          const k = linhas[a] + ((i0 - 1 + b + meiaVolta[a] + largura) % largura);
+          if (!dado[k]) {
+            todo = false;
+            break;
+          }
+          v += PESOS_DO_CENTRO[a] * PESOS_DO_CENTRO[b] * residuo[k];
+        }
+      }
+      if (todo) {
+        ehD[J * L + I] = 1;
+        valor[J * L + I] = v;
+      }
+    }
+  }
+  return { ehD, valor };
+}
+
+/**
+ * CONDICIONA A OITAVA no nível dela: a krigagem SIMPLES do resíduo T − S
+ * (`medida` − `simulada`, só onde `dadoK`) na grade do nível da oitava
+ * (`nivelDaOitava`). Nó D (estêncil todo dado) = o resíduo no centro da
+ * célula; nó sem dado a até um alcance de algum dado = a estimativa; o resto
+ * = 0. A cascata de `costura` leva isto à resolução cheia.
+ *
+ * O dado entra como UM texel por célula (o texel de dado mais perto do centro;
+ * perto do polo, a célula junta colunas até ter ~a largura de uma linha). Os
+ * alvos vão em BLOCOS de `LADO_DO_BLOCO`² células: a vizinhança do bloco é a
+ * união das dos alvos (todo dado a até um alcance de algum deles), fatorada
+ * UMA vez, e a krigagem é a dual — α = (K + pepita)⁻¹·r, estimativa = Σ α·C.
+ * Quando o alcance cobre o corpo, um sistema só com todo o dado.
+ * `covariancia` (de `covarianciaDaOitava`) é ajustada à `simulada` se faltar.
+ */
+export function condicionaOitava({ simulada, medida, dadoK, largura, altura, raioM, sigmaKm, covariancia }) {
+  const n = largura * altura;
+  const cv = covariancia ?? covarianciaDaOitava(simulada, largura, altura, raioM, sigmaKm);
+  const nivel = nivelDaOitava(sigmaKm, largura, altura, raioM);
+  const Lc = largura >> nivel;
+  const Ac = altura >> nivel;
+  const raioKm = raioM / 1000;
+  const r2 = raioKm * raioKm;
+
+  const residuo = new Float32Array(n);
+  for (let k = 0; k < n; k += 1) if (dadoK[k]) residuo[k] = medida[k] - simulada[k];
+  const { ehD, valor } = residuoNoNivel(residuo, dadoK, largura, altura, nivel);
+  const grosso = new Float64Array(Lc * Ac);
+  for (let c = 0; c < Lc * Ac; c += 1) if (ehD[c]) grosso[c] = valor[c];
+
+  // a geometria: vetores unitários por linha e coluna, fina e do nível
+  const cosLatF = new Float64Array(altura);
+  const sinLatF = new Float64Array(altura);
+  for (let j = 0; j < altura; j += 1) {
+    const f = latitudeDaLinha(j, altura);
+    cosLatF[j] = Math.cos(f);
+    sinLatF[j] = Math.sin(f);
+  }
+  const cosLonF = new Float64Array(largura);
+  const sinLonF = new Float64Array(largura);
+  for (let i = 0; i < largura; i += 1) {
+    const l = longitudeDaColuna(i, largura) * RADIANOS;
+    cosLonF[i] = Math.cos(l);
+    sinLonF[i] = Math.sin(l);
+  }
+  const cosLatC = new Float64Array(Ac);
+  const sinLatC = new Float64Array(Ac);
+  for (let J = 0; J < Ac; J += 1) {
+    const f = latitudeDaLinha(J, Ac);
+    cosLatC[J] = Math.cos(f);
+    sinLatC[J] = Math.sin(f);
+  }
+  const cosLonC = new Float64Array(Lc);
+  const sinLonC = new Float64Array(Lc);
+  for (let I = 0; I < Lc; I += 1) {
+    const l = longitudeDaColuna(I, Lc) * RADIANOS;
+    cosLonC[I] = Math.cos(l);
+    sinLonC[I] = Math.sin(l);
+  }
+
+  // as SUPER-CÉLULAS: 2^e colunas juntas onde o paralelo encolhe
+  let maiorPotencia = 1;
+  while (Lc % (maiorPotencia * 2) === 0 && maiorPotencia * 2 <= Lc) maiorPotencia *= 2;
+  const expoente = new Int32Array(Ac);
+  const inicioDaLinha = new Int32Array(Ac + 1);
+  for (let J = 0; J < Ac; J += 1) {
+    let e = 0;
+    while (2 ** (e + 1) <= maiorPotencia && 2 ** (e + 1) * cosLatC[J] <= 1) e += 1;
+    expoente[J] = e;
+    inicioDaLinha[J + 1] = inicioDaLinha[J] + (Lc >> e);
+  }
+  const nSuper = inicioDaLinha[Ac];
+  const lonDoCentro = [];
+  for (let e = 0; 2 ** e <= maiorPotencia; e += 1) {
+    const m = 2 ** e;
+    const cos = new Float64Array(Lc / m);
+    const sin = new Float64Array(Lc / m);
+    for (let q = 0; q < Lc / m; q += 1) {
+      const l = longitudeDaColuna(q * m + (m - 1) / 2, Lc) * RADIANOS;
+      cos[q] = Math.cos(l);
+      sin[q] = Math.sin(l);
+    }
+    lonDoCentro.push({ cos, sin });
+  }
+
+  // o REPRESENTANTE de cada super-célula: o texel de dado mais perto do centro
+  const melhorTexel = new Int32Array(nSuper).fill(-1);
+  const melhorCosseno = new Float64Array(nSuper).fill(-Infinity);
+  for (let j = 0; j < altura; j += 1) {
+    const J = j >> nivel;
+    const e = expoente[J];
+    const { cos, sin } = lonDoCentro[e];
+    const cc = cosLatF[j] * cosLatC[J];
+    const ss = sinLatF[j] * sinLatC[J];
+    const base = j * largura;
+    for (let i = 0; i < largura; i += 1) {
+      if (!dadoK[base + i]) continue;
+      const q = (i >> nivel) >> e;
+      const id = inicioDaLinha[J] + q;
+      const cosseno = cc * (cosLonF[i] * cos[q] + sinLonF[i] * sin[q]) + ss;
+      if (cosseno > melhorCosseno[id]) {
+        melhorCosseno[id] = cosseno;
+        melhorTexel[id] = base + i;
+      }
+    }
+  }
+  const repDaSuper = new Int32Array(nSuper).fill(-1);
+  let nRep = 0;
+  for (let id = 0; id < nSuper; id += 1) if (melhorTexel[id] >= 0) repDaSuper[id] = nRep++;
+  const rx = new Float64Array(nRep);
+  const ry = new Float64Array(nRep);
+  const rz = new Float64Array(nRep);
+  const rv = new Float64Array(nRep);
+  for (let id = 0; id < nSuper; id += 1) {
+    const p = repDaSuper[id];
+    if (p < 0) continue;
+    const k = melhorTexel[id];
+    const j = Math.floor(k / largura);
+    const i = k - j * largura;
+    rx[p] = cosLatF[j] * cosLonF[i];
+    ry[p] = cosLatF[j] * sinLonF[i];
+    rz[p] = sinLatF[j];
+    rv[p] = residuo[k];
+  }
+
+  // a krigagem de um bloco: os alvos dividem a vizinhança e a fatoração
+  const alcanceKm = cv.alcanceKm;
+  const alcanceAng = 2 * Math.asin(Math.min(1, alcanceKm / (2 * raioKm)));
+  const cosAlcance = Math.cos(alcanceAng);
+  let K = new Float64Array(0);
+  let alfa = new Float64Array(0);
+  let vizinhos = new Int32Array(1024);
+  const info = { nivel, Lc, Ac, alcanceKm, alvos: 0, blocos: 0, vizMedia: 0, vizMax: 0, falhas: 0, pepitaMax: PEPITA };
+  const krigaBloco = (alvos, nAlvos, N) => {
+    if (K.length < N * N) {
+      K = new Float64Array(N * N);
+      alfa = new Float64Array(N);
+    }
+    let pepita = PEPITA;
+    let ok = false;
+    while (!ok && pepita < 1) {
+      for (let a = 0; a < N; a += 1) {
+        const ia = vizinhos[a];
+        for (let b = 0; b < a; b += 1) {
+          const ib = vizinhos[b];
+          const dx = rx[ia] - rx[ib];
+          const dy = ry[ia] - ry[ib];
+          const dz = rz[ia] - rz[ib];
+          K[a * N + b] = covDaTabela(cv, (dx * dx + dy * dy + dz * dz) * r2);
+        }
+        K[a * N + a] = cv.c0 * (1 + pepita);
+      }
+      ok = cholesky(K, N);
+      if (!ok) {
+        pepita *= 10;
+        info.falhas += 1;
+      }
+    }
+    info.pepitaMax = Math.max(info.pepitaMax, pepita);
+    if (!ok) return;
+    for (let a = 0; a < N; a += 1) alfa[a] = rv[vizinhos[a]];
+    resolveCholesky(K, N, alfa);
+    for (let t = 0; t < nAlvos; t += 1) {
+      const c = alvos[t];
+      const J = Math.floor(c / Lc);
+      const I = c - J * Lc;
+      const px = cosLatC[J] * cosLonC[I];
+      const py = cosLatC[J] * sinLonC[I];
+      const pz = sinLatC[J];
+      let estimativa = 0;
+      for (let a = 0; a < N; a += 1) {
+        const ia = vizinhos[a];
+        const dx = px - rx[ia];
+        const dy = py - ry[ia];
+        const dz = pz - rz[ia];
+        estimativa += alfa[a] * covDaTabela(cv, (dx * dx + dy * dy + dz * dz) * r2);
+      }
+      grosso[c] = estimativa;
+    }
+    info.alvos += nAlvos;
+    info.blocos += 1;
+    info.vizMedia += N;
+    info.vizMax = Math.max(info.vizMax, N);
+  };
+
+  if (nRep && alcanceKm >= 2 * raioKm * 0.999) {
+    // o alcance cobre o corpo: um sistema só
+    const alvos = [];
+    for (let c = 0; c < Lc * Ac; c += 1) if (!ehD[c]) alvos.push(c);
+    vizinhos = new Int32Array(nRep);
+    for (let p = 0; p < nRep; p += 1) vizinhos[p] = p;
+    if (alvos.length) krigaBloco(alvos, alvos.length, nRep);
+  } else if (nRep) {
+    const dLatC = Math.PI / Ac;
+    const dLonC = (2 * Math.PI) / Lc;
+    const linhasDoAlcance = Math.ceil(alcanceAng / dLatC) + 2;
+    const B = LADO_DO_BLOCO;
+    const alvos = new Int32Array(B * B);
+    const ax = new Float64Array(B * B);
+    const ay = new Float64Array(B * B);
+    const az = new Float64Array(B * B);
+    for (let J0 = 0; J0 < Ac; J0 += B) {
+      const J1 = Math.min(Ac, J0 + B);
+      for (let I0 = 0; I0 < Lc; I0 += B) {
+        const I1 = Math.min(Lc, I0 + B);
+        let nAlvos = 0;
+        let sx = 0;
+        let sy = 0;
+        let sz = 0;
+        for (let J = J0; J < J1; J += 1) {
+          for (let I = I0; I < I1; I += 1) {
+            const c = J * Lc + I;
+            if (ehD[c]) continue;
+            alvos[nAlvos] = c;
+            ax[nAlvos] = cosLatC[J] * cosLonC[I];
+            ay[nAlvos] = cosLatC[J] * sinLonC[I];
+            az[nAlvos] = sinLatC[J];
+            sx += ax[nAlvos];
+            sy += ay[nAlvos];
+            sz += az[nAlvos];
+            nAlvos += 1;
+          }
+        }
+        if (!nAlvos) continue;
+        // o centro do bloco e o raio que cobre os alvos; a busca vai ao alcance
+        // além dele, mais uma célula (o representante não fica no centro)
+        const norma = Math.hypot(sx, sy, sz);
+        const ox = sx / norma;
+        const oy = sy / norma;
+        const oz = sz / norma;
+        let cosRaio = 1;
+        for (let t = 0; t < nAlvos; t += 1) cosRaio = Math.min(cosRaio, ax[t] * ox + ay[t] * oy + az[t] * oz);
+        const busca = alcanceAng + Math.acos(Math.max(-1, cosRaio)) + dLatC;
+        const cosBusca = busca >= Math.PI ? -1 : Math.cos(busca);
+        const latO = Math.asin(Math.max(-1, Math.min(1, oz)));
+        const colunaO = (Math.floor(colunaDaLongitude(Math.atan2(oy, ox) * GRAUS, Lc) + 0.5) + Lc) % Lc;
+        let N = 0;
+        const Jlo = Math.max(0, J0 - linhasDoAlcance);
+        const Jhi = Math.min(Ac - 1, J1 - 1 + linhasDoAlcance);
+        for (let Jq = Jlo; Jq <= Jhi; Jq += 1) {
+          const e = expoente[Jq];
+          const nq = Lc >> e;
+          const den = Math.cos(latO) * cosLatC[Jq];
+          let meiaJanela = nq;
+          if (den > 1e-12 && busca < Math.PI) {
+            const cosMin = (Math.cos(busca) - Math.sin(latO) * sinLatC[Jq]) / den;
+            if (cosMin > 1) continue;
+            if (cosMin > -1) meiaJanela = Math.ceil(Math.acos(cosMin) / (dLonC * 2 ** e)) + 1;
+          }
+          const total = Math.min(nq, 2 * meiaJanela + 1);
+          const q0 = total === nq ? 0 : (colunaO >> e) - meiaJanela;
+          for (let t = 0; t < total; t += 1) {
+            const p = repDaSuper[inicioDaLinha[Jq] + ((((q0 + t) % nq) + nq) % nq)];
+            if (p < 0) continue;
+            const x = rx[p];
+            const y = ry[p];
+            const z = rz[p];
+            if (x * ox + y * oy + z * oz < cosBusca) continue;
+            let perto = false;
+            for (let a = 0; a < nAlvos && !perto; a += 1) perto = x * ax[a] + y * ay[a] + z * az[a] >= cosAlcance;
+            if (!perto) continue;
+            if (N === vizinhos.length) {
+              const maior = new Int32Array(2 * N);
+              maior.set(vizinhos);
+              vizinhos = maior;
+            }
+            vizinhos[N] = p;
+            N += 1;
+          }
+        }
+        if (N) krigaBloco(alvos, nAlvos, N);
+      }
+    }
+  }
+  info.vizMedia = info.blocos ? info.vizMedia / info.blocos : 0;
+  return { nivel, grosso, info };
+}
+
+// ------------------------------------------------------------
+// A cascata e a costura
+// ------------------------------------------------------------
+
+/**
+ * UM DEGRAU DA CASCATA: o campo do nível `nivel` + 1 vai ao `nivel` pela
+ * spline B cúbica; nos nós D o resíduo medido é REIMPOSTO, e a sobra (resíduo
+ * − spline) é estendida ao vazio pelo desfoque com máscara de UMA célula,
+ * pesada por min(1, peso/0,3) — some a poucas células da emenda.
+ */
+function desceUmNivel(acima, residuo, dado, nivel, largura, altura, raioM) {
+  const La = largura >> (nivel + 1);
+  const Aa = altura >> (nivel + 1);
+  const L = largura >> nivel;
+  const A = altura >> nivel;
+  const campo = nivel === 0 ? new Float32Array(L * A) : new Float64Array(L * A);
+  avaliaSpline(coeficientesDeSpline(acima, La, Aa), La, Aa, 1, L, A, campo);
+  const { ehD, valor } = residuoNoNivel(residuo, dado, largura, altura, nivel);
+  const sobra = new Float32Array(L * A);
+  for (let c = 0; c < L * A; c += 1) if (ehD[c]) sobra[c] = valor[c] - campo[c];
+  const celulaKm = (raioM / 1000) * (Math.PI / A);
+  const { valor: estendida, peso } = desfocaComMascara(sobra, ehD, L, A, raioM, celulaKm);
+  for (let c = 0; c < L * A; c += 1) {
+    if (ehD[c]) campo[c] = valor[c];
+    else if (Number.isFinite(estendida[c])) {
+      campo[c] += estendida[c] * Math.min(1, peso[c] / PESO_CHEIO_DA_EXTENSAO);
+    }
+  }
+  return campo;
+}
+
+/**
+ * A CASCATA das oitavas que dividem a máscara `dado`: `entradas` = [{ nivel,
+ * grosso, medida, simulada }]. Desce do nível mais grosso ao 0; cada oitava
+ * entra no nível dela (o campo de `condicionaOitava` é somado, e o resíduo dela
+ * passa a ser reimposto dali para baixo). O degrau é LINEAR e só depende da
+ * máscara, então descer a soma é o mesmo que somar as descidas. Devolve a
+ * correção somada na resolução cheia (igual ao resíduo no dado).
+ */
+function desceACascata(entradas, dado, largura, altura, raioM) {
+  const ordem = [...entradas].sort((a, b) => b.nivel - a.nivel);
+  const n = largura * altura;
+  const residuo = new Float32Array(n);
+  let campo = null;
+  let p = 0;
+  for (let nivel = ordem[0].nivel; nivel >= 0; nivel -= 1) {
+    if (campo) campo = desceUmNivel(campo, residuo, dado, nivel, largura, altura, raioM);
+    for (; p < ordem.length && ordem[p].nivel === nivel; p += 1) {
+      const { grosso, medida, simulada } = ordem[p];
+      if (campo) for (let c = 0; c < grosso.length; c += 1) campo[c] += grosso[c];
+      else campo = Float64Array.from(grosso);
+      for (let k = 0; k < n; k += 1) if (dado[k]) residuo[k] += medida[k] - simulada[k];
+    }
+  }
+  return campo;
+}
+
+function mesmaMascara(a, b) {
+  if (a === b) return true;
+  for (let k = 0; k < a.length; k += 1) if (a[k] !== b[k]) return false;
+  return true;
+}
+
+// ------------------------------------------------------------
+// A membrana das oitavas grossas
+// ------------------------------------------------------------
+
+/**
+ * As CONDUTÂNCIAS da membrana na grade L×A (volumes finitos na esfera), por
+ * linha J: a leste–oeste Δφ/(cos φ·Δλ) e as das faces norte e sul,
+ * cos φ_face·Δλ/Δφ. A face do polo tem cos 0: nada atravessa o ponto do polo,
+ * e a calota fica presa pela volta (forte, as ondas m ≥ 2 somem ali) e pela
+ * linha de baixo.
+ */
+function condutanciasDaMembrana(L, A) {
+  const dPhi = Math.PI / A;
+  const dLam = (2 * Math.PI) / L;
+  const leste = new Float64Array(A);
+  const norte = new Float64Array(A);
+  const sul = new Float64Array(A);
+  for (let J = 0; J < A; J += 1) {
+    leste[J] = dPhi / (Math.cos(latitudeDaLinha(J, A)) * dLam);
+    norte[J] = J === 0 ? 0 : (Math.sin(J * dPhi) * dLam) / dPhi;
+    sul[J] = J === A - 1 ? 0 : (Math.sin((J + 1) * dPhi) * dLam) / dPhi;
+  }
+  return { leste, norte, sul };
+}
+
+/**
+ * A MEMBRANA EXATA no nível grosso: Laplace nas células sem dado de `u`
+ * (grade L×A), preso nas de `ehD`, por Cholesky em banda — a meia-largura L
+ * cobre a linha vizinha e a volta da longitude. No lugar, em `u`.
+ */
+function resolveMembrana(u, ehD, L, A) {
+  const { leste, norte, sul } = condutanciasDaMembrana(L, A);
+  const n = L * A;
+  const w = L + 1;
+  const M = new Float64Array(n * w); // M[i·w + (i − j)] = a matriz em (i, j), j ≤ i
+  const x = new Float64Array(n);
+  for (let J = 0; J < A; J += 1) {
+    for (let I = 0; I < L; I += 1) {
+      const i = J * L + I;
+      if (ehD[i]) {
+        M[i * w] = 1;
+        x[i] = u[i];
+        continue;
+      }
+      M[i * w] = 2 * leste[J] + norte[J] + sul[J];
+      const vizinhos = [
+        [J * L + ((I + L - 1) % L), leste[J]],
+        [J * L + ((I + 1) % L), leste[J]],
+        [i - L, norte[J]],
+        [i + L, sul[J]],
+      ];
+      for (const [k, g] of vizinhos) {
+        if (!g) continue;
+        if (ehD[k]) x[i] += g * u[k];
+        else if (k < i) M[i * w + i - k] = -g;
+      }
+    }
+  }
+  for (let i = 0; i < n; i += 1) {
+    const j0 = Math.max(0, i - L);
+    for (let j = j0; j <= i; j += 1) {
+      let s = M[i * w + i - j];
+      for (let k = j0; k < j; k += 1) s -= M[i * w + i - k] * M[j * w + j - k];
+      if (j < i) M[i * w + i - j] = s / M[j * w];
+      else if (s > 0) M[i * w] = Math.sqrt(s);
+      else throw new Error('costura: a membrana não tem célula de dado que a prenda.');
+    }
+  }
+  for (let i = 0; i < n; i += 1) {
+    let s = x[i];
+    for (let k = Math.max(0, i - L); k < i; k += 1) s -= M[i * w + i - k] * x[k];
+    x[i] = s / M[i * w];
+  }
+  for (let i = n - 1; i >= 0; i -= 1) {
+    let s = x[i];
+    for (let k = i + 1; k <= Math.min(n - 1, i + L); k += 1) s -= M[k * w + k - i] * x[k];
+    x[i] = s / M[i * w];
+  }
+  for (let i = 0; i < n; i += 1) if (!ehD[i]) u[i] = x[i];
+}
+
+/** `passadas` de Gauss–Seidel simétrico da membrana nas células sem dado de `u`, no lugar. */
+function relaxaMembrana(u, ehD, L, A, passadas) {
+  const { leste, norte, sul } = condutanciasDaMembrana(L, A);
+  const atualiza = (J, I) => {
+    const i = J * L + I;
+    if (ehD[i]) return;
+    const base = J * L;
+    let s = leste[J] * (u[base + (I === 0 ? L - 1 : I - 1)] + u[base + (I === L - 1 ? 0 : I + 1)]);
+    if (norte[J]) s += norte[J] * u[i - L];
+    if (sul[J]) s += sul[J] * u[i + L];
+    u[i] = s / (2 * leste[J] + norte[J] + sul[J]);
+  };
+  for (let p = 0; p < passadas; p += 1) {
+    for (let J = 0; J < A; J += 1) for (let I = 0; I < L; I += 1) atualiza(J, I);
+    for (let J = A - 1; J >= 0; J -= 1) for (let I = L - 1; I >= 0; I -= 1) atualiza(J, I);
+  }
+}
+
+/**
+ * A MEMBRANA HARMÔNICA de `campo` (lido só onde `dado`): Laplace no vazio, o
+ * campo preso no dado — limitada pelo dado (princípio do máximo: nada de
+ * pico). Resolvida exata no nível em que a célula é ~`sigmaKm`/8
+ * (`resolveMembrana`, com a volta e os polos), e trazida à resolução cheia
+ * nível a nível: a spline B cúbica sobe o campo, o dado do nível (o centro de
+ * cada célula de estêncil todo dado, como na cascata) é reimposto, e
+ * `PASSADAS_DA_MEMBRANA` de Gauss–Seidel refazem a membrana junto da borda
+ * que o nível acabou de ver — no nível 0 a borda é a emenda verdadeira, sem
+ * degrau.
+ */
+function membranaHarmonica(campo, dado, largura, altura, raioM, sigmaKm) {
+  const topo = nivelDaOitava(sigmaKm / 4, largura, altura, raioM);
+  let u = null;
+  for (let nivel = topo; nivel >= 0; nivel -= 1) {
+    const L = largura >> nivel;
+    const A = altura >> nivel;
+    const { ehD, valor } = residuoNoNivel(campo, dado, largura, altura, nivel);
+    const v = new Float64Array(L * A);
+    if (u) avaliaSpline(coeficientesDeSpline(u, L / 2, A / 2), L / 2, A / 2, 1, L, A, v);
+    for (let c = 0; c < L * A; c += 1) if (ehD[c]) v[c] = valor[c];
+    if (u) relaxaMembrana(v, ehD, L, A, PASSADAS_DA_MEMBRANA);
+    else if (ehD.includes(1)) resolveMembrana(v, ehD, L, A);
+    u = v;
+  }
+  return u;
+}
+
+/**
+ * A COSTURA — SIMULAÇÃO CONDICIONAL POR KRIGAGEM DE RESÍDUOS, banda a banda
+ * (PLAN-RELEVO.md, E3 item 1; Springer, cap. 1 §1.3, eq. 1.26): F = S + K(T − S),
+ * com S uma simulação sem condição, T o medido e K a krigagem simples do resíduo
+ * nos pontos medidos (`condicionaOitava`, levada à resolução cheia por
+ * `desceACascata`). Devolve o campo CONTÍNUO de alturas (Float32): nos texels que
+ * são dado em TODA banda é `medida`, byte a byte; onde só as bandas grossas são
+ * dado (o DEM borrado, item 5b do plano) as grossas são o medido e as finas,
+ * simuladas e condicionadas; no vazio, S + as correções. `dadoPorOitava` é uma
+ * máscara por banda (1 = a banda é dado ali; podem ser o mesmo array) e `ganhos`
+ * a amplitude de cada banda (S = Σ gₖ·`ruidoDaOitava`).
+ *
+ * HIPÓTESES: cada banda é estacionária, com a covariância ajustada à própria
+ * simulação por lóbulos de Legendre não negativos (positiva-definida na esfera,
+ * `covarianciaDaOitava`); e, perto da emenda, o medido é realização do mesmo
+ * modelo calibrado. Condiciona-se a banda k da simulação SOMADA, não gₖ·ruídoₖ:
+ * o ruído de uma oitava vaza nas vizinhas.
+ *
+ * O MEDIDO ENTRA PELA MEMBRANA: o vazio é preenchido pela membrana harmônica do
+ * dado (`membranaHarmonica`) e só então o campo é partido em bandas pelo filtro
+ * simples — sem o viés do desfoque com máscara na emenda. As bandas acima de R/5
+ * NÃO são simuladas: no vazio são a continuação lisa da membrana (não há dado
+ * ali; em Caronte real carregam < 0,5 % da inclinação).
+ *
+ * LIMITAÇÃO CONHECIDA, ACEITA POR ORA (decisão de 01/10): junto da emenda as
+ * bandas médias perdem parte da energia por vazamento das oitavas grossas
+ * (medido); quase não afeta a inclinação. As fotos do recorte escondido no dado
+ * real (E4) dizem se uma compensação de variância é necessária.
+ */
+export function costura({ medida, dadoPorOitava, semente, sigmasKm, ganhos, largura, altura, raioM, registra }) {
+  const anota = registra ?? (() => {});
+  const n = largura * altura;
+  const nb = sigmasKm.length + 1;
+  if (dadoPorOitava.length !== nb || ganhos.length !== nb) {
+    throw new Error(`costura: ${nb} bandas pedem ${nb} máscaras e ${nb} ganhos.`);
+  }
+  const medido = new Uint8Array(n);
+  const emTodas = new Uint8Array(n).fill(1);
+  for (const dado of dadoPorOitava) {
+    for (let k = 0; k < n; k += 1) {
+      if (dado[k]) medido[k] = 1;
+      else emTodas[k] = 0;
+    }
+  }
+  const sigmaDa = (k) => (k < nb - 1 ? sigmasKm[k] : 2 * sigmasKm[nb - 2]);
+  const naMembrana = (k) => sigmaDa(k) > (FRACAO_DO_RAIO_DA_MEMBRANA * raioM) / 1000;
+  const um = new Uint8Array(n).fill(1);
+  const primeiraGrossa = Array.from({ length: nb }, (_, k) => k).find(naMembrana) ?? nb - 1;
+  const cheio = membranaHarmonica(medida, medido, largura, altura, raioM, sigmaDa(primeiraGrossa));
+  anota('a membrana do medido');
+  const bandasT = decompoeEmOitavas(cheio, um, largura, altura, raioM, sigmasKm);
+  anota('as bandas do medido');
+  const simulada = new Float32Array(n);
+  for (let k = 0; k < nb; k += 1) {
+    const ruido = ruidoDaOitava(semente, k, sigmasKm, largura, altura, raioM);
+    for (let q = 0; q < n; q += 1) simulada[q] += ganhos[k] * ruido[q];
+  }
+  anota('a simulação');
+  const bandasS = decompoeEmOitavas(simulada, um, largura, altura, raioM, sigmasKm);
+  anota('as bandas da simulação');
+
+  const soma = new Float64Array(n);
+  const grupos = [];
+  for (let k = 0; k < nb; k += 1) {
+    if (naMembrana(k)) {
+      const T = bandasT[k];
+      for (let q = 0; q < n; q += 1) soma[q] += T[q];
+      continue;
+    }
+    const mascara = dadoPorOitava[k];
+    const sigmaKm = sigmaDa(k);
+    const { nivel, grosso, info } = condicionaOitava({
+      simulada: bandasS[k],
+      medida: bandasT[k],
+      dadoK: mascara,
+      largura,
+      altura,
+      raioM,
+      sigmaKm,
+    });
+    anota(
+      `oitava ${k}: nível ${nivel}, alcance ${info.alcanceKm.toFixed(1)} km, ${info.alvos} alvos em ` +
+        `${info.blocos} blocos, vizinhos ${info.vizMedia.toFixed(0)} (máx. ${info.vizMax})` +
+        (info.falhas ? `, pepita subiu a ${info.pepitaMax}` : '')
+    );
+    let grupo = grupos.find((g) => mesmaMascara(g.mascara, mascara));
+    if (!grupo) {
+      grupo = { mascara, entradas: [], oitavas: [] };
+      grupos.push(grupo);
+    }
+    grupo.entradas.push({ nivel, grosso, medida: bandasT[k], simulada: bandasS[k] });
+    grupo.oitavas.push(k);
+  }
+
+  for (const { mascara, entradas, oitavas } of grupos) {
+    const correcao = desceACascata(entradas, mascara, largura, altura, raioM);
+    for (const k of oitavas) {
+      const T = bandasT[k];
+      const S = bandasS[k];
+      for (let q = 0; q < n; q += 1) soma[q] += mascara[q] ? T[q] : S[q];
+    }
+    for (let q = 0; q < n; q += 1) if (!mascara[q]) soma[q] += correcao[q];
+    anota(`a cascata das oitavas ${oitavas.join(', ')}`);
+  }
+  const campo = new Float32Array(n);
+  for (let q = 0; q < n; q += 1) campo[q] = emTodas[q] ? medida[q] : soma[q];
+  return campo;
 }
