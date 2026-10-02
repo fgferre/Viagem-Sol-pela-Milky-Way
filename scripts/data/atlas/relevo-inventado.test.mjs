@@ -54,11 +54,17 @@
 // 20. O amostrador do plano tangente (`planoTangente` + `amostraNoPonto`) dá,
 //     nos dois polos, em qualquer giro e espelho, o valor de um campo
 //     analítico, com erro abaixo do da bilinear.
+//
+// AS MEDIDAS SEM O RECORTE (E4, a prova do recorte escondido):
+// 21. O que `medeLadoMedido` exclui não entra na medida: outro relevo e
+//     outras crateras no recorte dão as mesmas medidas e os mesmos planos de
+//     qualidade, e a área das crateras da caixa perde a parte excluída.
 // ============================================================
 import { beforeAll, describe, expect, it } from 'vitest';
 import { assaNormais } from './gera-normal-de-dem.mjs';
 import {
   amostraNoPonto,
+  areaDaCaixaKm2,
   camadaDeCrateras,
   coeficientesDeSpline,
   colcha,
@@ -75,6 +81,7 @@ import {
   linhaDaLatitude,
   longitudeDaColuna,
   mascaraDaCaixa,
+  medeLadoMedido,
   membranaHarmonica,
   moldeDeCratera,
   pesosDasUnidades,
@@ -852,4 +859,50 @@ describe('a colcha — retalhos do medido copiados por rotação da esfera', () 
     expect(pontos).toBe(2 * 4 * 2 * 13 * 13);
     expect(pior).toBeLessThan(tolerancia);
   });
+});
+
+describe('as medidas sem o recorte escondido (E4)', () => {
+  it('não leem o que se exclui (`excluir`): outro relevo e outras crateras no recorte dão as mesmas medidas', () => {
+    const { L, A, raioM } = MUNDO;
+    const n = L * A;
+    const fundo = somaDeOitavas(
+      Array.from({ length: SIGMAS.length + 1 }, (_, k) => ruidoDaOitava(11, k, SIGMAS, L, A, raioM)),
+      GANHOS,
+      n
+    );
+    const vazio = mascaraDaCaixa({ lon: [200, 300], lat: [-70, 70] }, L, A);
+    const caixa = { lon: [30, 150], lat: [-40, 50] };
+    const recorte = { lon: [60, 120], lat: [-15, 25] };
+    const excluir = mascaraDaCaixa(recorte, L, A);
+    const unidades = {
+      a: { papel: 'planalto-aspero', exemplo: caixa },
+      b: { papel: 'planicie-lisa', exemplo: { lon: [310, 360], lat: [-30, 30] } },
+    };
+    const guia = { 1: { completudeKm: 20 } };
+    const cratera = (id, lat, lon, dKm) => ({ id, lat, lon, dKm, confianca: 4, regiao: 1 });
+    const fora = [cratera('f1', 40, 45, 60), cratera('f2', -30, 140, 90), cratera('f3', 0, 330, 40), cratera('f4', 10, 250, 70)];
+    const mede = (metros, crateras) =>
+      medeLadoMedido({
+        grade: { metros, vazio, largura: L, altura: A, raioM },
+        unidades,
+        crateras,
+        guia,
+        ro21: [],
+        opcoes: { excluir, criadoEm: 'fixo' },
+      });
+    const a = mede(fundo, fora);
+    const outro = Float32Array.from(fundo);
+    const lixo = ruidoBranco(n, 9000, 77);
+    for (let k = 0; k < n; k += 1) if (excluir[k]) outro[k] = lixo[k];
+    const b = mede(outro, [...fora, cratera('d1', 5, 90, 150), cratera('d2', 20, 70, 45)]);
+
+    expect(JSON.stringify(b.medidas)).toBe(JSON.stringify(a.medidas));
+    a.qualidade.planos.forEach((p, q) => {
+      expect(Buffer.from(b.qualidade.planos[q].buffer).equals(Buffer.from(p.buffer))).toBe(true);
+    });
+    // e a exclusão morde: a área das crateras da caixa perde o recorte, e só as duas de fora contam
+    const area = (c) => areaDaCaixaKm2(c, raioM / 1000);
+    expect(a.medidas.unidades.a.crateras.areaKm2 / (area(caixa) - area(recorte))).toBeCloseTo(1, 1);
+    expect(a.medidas.unidades.a.crateras.contadas).toBe(2);
+  }, 60_000);
 });

@@ -748,9 +748,10 @@ export function inclinacaoDiferencial(diametros, a, b = Infinity) {
  * (os de Si21) e as inclinações diferenciais acima e abaixo de `dobraKm`. Contam só as de
  * `crateraConta`. A COMPLETUDE DA CAIXA é a pior das regiões presentes nela
  * (qualquer confiança): N(≥D) abaixo dela sai null, porque ali a contagem
- * perde crateras que existem.
+ * perde crateras que existem. `areaTiradaKm2` sai da área da caixa (o que
+ * `medeLadoMedido` exclui).
  */
-export function densidadeDeCrateras(crateras, caixa, raioKm, guia, dobraKm = 13) {
+export function densidadeDeCrateras(crateras, caixa, raioKm, guia, dobraKm = 13, areaTiradaKm2 = 0) {
   const dentro = crateras.filter((c) => naCaixa(c.lat, c.lon, caixa));
   let completude = 0;
   let semCompletude = false;
@@ -759,7 +760,7 @@ export function densidadeDeCrateras(crateras, caixa, raioKm, guia, dobraKm = 13)
     if (c === null) semCompletude = true;
     else completude = Math.max(completude, c);
   }
-  const areaKm2 = areaDaCaixaKm2(caixa, raioKm);
+  const areaKm2 = areaDaCaixaKm2(caixa, raioKm) - areaTiradaKm2;
   const contadas = dentro.filter((c) => crateraConta(c, guia)).map((c) => c.dKm);
   const N = (D) =>
     semCompletude || D < completude ? null : (contadas.filter((d) => d >= D).length / areaKm2) * 1e6;
@@ -1088,6 +1089,10 @@ function setoresBorrados(bandasBorradas, fracao, largura, altura, raioKm, nBanda
  * largura, altura, raioM }` (o cache, na grade da casa); `unidades` = o
  * `unidades` do mapa do lado de trás; `crateras` (já em leste 0–360), `guia`
  * e `ro21` = os catálogos lidos. `registra` (opcional) recebe o progresso.
+ * `excluir` (Uint8, opcional — a prova do recorte escondido, E4): texels
+ * medidos tirados de TODA medida, como vazio (o valor deles não é lido); as
+ * crateras com centro neles saem do catálogo, e a área de cada caixa-exemplo
+ * perde a parte excluída.
  *
  * Devolve `{ medidas, qualidade }`: `medidas` é o JSON de
  * `.cache/relevo/<corpo>-medidas.json` (sem os nomes de arquivo, que são de
@@ -1118,15 +1123,23 @@ function setoresBorrados(bandasBorradas, fracao, largura, altura, raioKm, nBanda
  *     entre a média azimutal no cache de 4096 e as medidas deles no DEM de
  *     300 m. `nitidas` = o subconjunto onde o DEM resolve a escala da cratera.
  */
-export function medeLadoMedido({ grade, unidades, crateras, guia, ro21, opcoes = {} }) {
+export function medeLadoMedido({ grade: gradeDoCache, unidades, crateras: catalogo, guia, ro21, opcoes = {} }) {
   const registra = opcoes.registra ?? (() => {});
   const fator = opcoes.fatorDaQualidade ?? 4;
+  const excluir = opcoes.excluir ?? null;
+  const grade = excluir
+    ? { ...gradeDoCache, vazio: gradeDoCache.vazio.map((v, k) => (v || excluir[k] ? 1 : 0)) }
+    : gradeDoCache;
   const { metros, vazio, largura, altura, raioM } = grade;
   const raioKm = raioM / 1000;
   const texelKm = raioKm * (Math.PI / altura);
   const n = largura * altura;
   const valido = new Uint8Array(n);
   for (let k = 0; k < n; k += 1) valido[k] = vazio[k] ? 0 : 1;
+  const texelDaCratera = (c) =>
+    Math.min(altura - 1, Math.max(0, Math.round(linhaDaLatitude(c.lat, altura)))) * largura +
+    (((Math.round(colunaDaLongitude(c.lon, largura)) % largura) + largura) % largura);
+  const crateras = excluir ? catalogo.filter((c) => !excluir[texelDaCratera(c)]) : catalogo;
 
   // ---- as caixas-exemplo
   const ids = Object.keys(unidades);
@@ -1136,6 +1149,17 @@ export function medeLadoMedido({ grade, unidades, crateras, guia, ro21, opcoes =
     for (let k = 0; k < n; k += 1) if (vazio[k]) m[k] = 0;
     return m;
   });
+  // a área (km²) dos texels excluídos com centro na caixa: sai da área das crateras
+  const areaExcluida = (caixa) => {
+    if (!excluir) return 0;
+    const m = mascaraDaCaixa(caixa, largura, altura);
+    const celula = raioKm * raioKm * ((2 * Math.PI) / largura) * (Math.PI / altura);
+    let area = 0;
+    for (let k = 0; k < n; k += 1) {
+      if (m[k] && excluir[k]) area += celula * Math.cos(latitudeDaLinha(Math.floor(k / largura), altura));
+    }
+    return area;
+  };
 
   // ---- as oitavas e a energia de cada banda na caixa
   const sigmas = sigmasDasOitavas(raioM, altura);
@@ -1190,7 +1214,7 @@ export function medeLadoMedido({ grade, unidades, crateras, guia, ro21, opcoes =
       alturaSigma: alt.sigma,
       S: funcaoDeEstrutura(metros, m, largura, altura, raioM),
       energiaPorBanda: energiaDasCaixas[u],
-      crateras: densidadeDeCrateras(crateras, caixas[u], raioKm, guia),
+      crateras: densidadeDeCrateras(crateras, caixas[u], raioKm, guia, undefined, areaExcluida(caixas[u])),
     };
     registra(`unidade ${ids[u]}: ${alt.texels} texels, RMS ${inclinacao.rmsGraus?.toFixed(2)}°`);
   }
