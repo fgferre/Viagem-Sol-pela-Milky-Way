@@ -2,9 +2,85 @@
 
 Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
-Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 229.**
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 230.**
 
-## O BASTÃO — onde a rodada parou (01/10, noite) — PASSADO a uma sessão nova
+## O BASTÃO — onde a rodada parou (02/10, noite) — PASSADO a uma sessão nova
+
+**Estado:** o relevo inventado de Plutão e Caronte está no ramo
+`relevo-inventado` (backup em `origin/relevo-inventado`) — NÃO está no
+`main` e NÃO foi publicado. Plano e andamento: `PLAN-RELEVO.md` (raiz,
+seção Andamento). Tudo commitado; testes do módulo e do gerador verdes. Os
+candidatos finais dos dois corpos estão prontos e fotografados no app. O
+gerador oficial já assa o relevo inventado pelo MESMO caminho das prévias
+(`inventaRelevoDoCorpo`) e RECUSA gravar enquanto
+`CORPOS.<id>.vazioInventado.sha256Aprovado` estiver vazio — hoje está
+vazio nos dois, então nada muda no app até a aprovação.
+
+**Esperando a palavra dele (duas decisões, por foto):**
+1. Completar o detalhe fino onde o dado MEDIDO é borrado — Foto 3:
+   `capturas/relevo-plutao-lado-de-tras-prancha-v2.jpg` e
+   `capturas/relevo-caronte-lado-de-tras-prancha-v2.jpg` (coluna do meio ×
+   direita). Recomendação dada: sim. Atenção: na coluna "sem completar" o
+   lado de trás foi sorteado de novo; só as emendas comparam.
+2. Alisar o grão de ruído da planície Sputnik — Foto 2:
+   `capturas/relevo-sputnik-grao-prancha-v2.jpg`. Recomendação dada: sim.
+A Foto 1 (prova do recorte escondido, `capturas/relevo-prova-recorte-prancha.jpg`)
+ele já aprovou: *"pode seguir com as melhorias e aplicar no lado de trás
+inteiro"*.
+
+**Depois das duas palavras, nesta ordem:**
+a) Ligar as chaves em `scripts/data/atlas/fonte/{pluto,charon}-lado-de-tras.json`
+   (`completaBorrado`; em Plutão, `alisamentos[sputnik].ativo`).
+b) Fixar o hash do RGB decodificado da combinação escolhida em
+   `sha256Aprovado` (`gera-normal-de-dem.mjs`). Caronte: `completa:1`
+   53b50dc091592034081b63608aadd504001b7774ab4d5123398aaf6f6a78ba45,
+   `completa:0` 1cf9e0bbf99e313f060e3050564ce282e78ccb297967f9bac5da5c6ae17c9046.
+   Plutão: `completa:1,sputnik:0` e7ab9e78164101dcfc274f8d8103b750a1322e2739cb978b7a3a044af6c96e59,
+   `completa:1,sputnik:1` 80d48040db6f96533459a63b2815f98571a2d3f8b1c7cabca1b70d1cd3a31f41,
+   `completa:0,sputnik:0` 487f5efc68ee82a69f0543c6def13c7cf24f8834876adf9ef4d84a8a84becf86,
+   `completa:0,sputnik:1` 55075b9bb0c5c8ccd3055ddef3c4501442b8f14074713b39a68e16bbaffd9482.
+   Os seis normais candidatos estão em `capturas/relevo-inventado/candidatos/`.
+c) E7, a confissão pt/en: `docs/reference/ASSETS.md` (linhas `pluto/normal`
+   e `charon/normal`), o arquivo de traduções das texturas e os testes que
+   pinam frases. Dizer: o lado sem mapa de altura é montado com pedaços do
+   terreno medido do mesmo tipo, onde o mapa geológico das fotos da
+   aproximação põe cada terreno; as crateras reais do catálogo estão no lugar
+   (Simonelli com o perfil medido da Burney); o sul, quase sem imagem, é
+   palpite; o degrau entre as bordas do arquivo do DEM foi tirado; o dado ruim
+   (preenchimento polar, limbo) foi refeito só no detalhe fino; e, se
+   aprovados, a completação do borrado e o grão de Sputnik.
+d) Comandos DELE, um por bloco, na ordem: o gerador de normais para pluto e
+   para charon (lê o cache, ~2,5 min cada; confere o hash e recusa se
+   diferir), o otimizador de texturas para pluto e para charon, o gerador do
+   manifesto, `npm run data:verify` (os comandos exatos estão no
+   `PLAN-RELEVO.md`, E8). Depois: conferir as variantes menores contra a
+   escada da prévia (`capturas/relevo-inventado/ferramentas/fotos/`, escada e
+   comparação), fotos do app real nas mesmas vistas, `npm run done`, commit,
+   merge no `main` com a palavra dele, `git push origin main:backup`;
+   publicar é dele; conferir no ar por sha256. Fechamento: item 144, este
+   bastão, `BACKLOG.md` (tirar só o resolvido), apagar `PLAN-RELEVO.md`.
+
+**Onde estão as peças (fora do git, no disco):**
+`capturas/relevo-inventado/ferramentas/` — copiadas do scratchpad com os
+caminhos já ajustados: fotos do app com o mapa candidato servido por CDP
+(`fotos/`, e `e4/foto-prova.mjs` para câmera mais perto), prévias
+sombreadas (`e3/sombreia.mjs`), os runners finais (`e6/sintese-final.mjs`,
+`p1/sintese-pluto-final.mjs`, `e8/porta-de-entrada.mjs`, que chamam o mesmo
+caminho do gerador), as pranchas (`prancha2/`, com jd e poses de cada vista)
+e o diagnóstico (`p4/`, `p6/`). `.cache/relevo/`: alturas medidas (cache
+conferido por sha256) e as tabelas do Zenodo.
+
+**Como retomar:** ler esta seção e o Andamento do `PLAN-RELEVO.md`. O hook
+barra todo comando de Bash (e todo heredoc) que cite um caminho de
+`scripts/data` — testes por nome (`npx vitest run relevo-inventado`),
+scripts das ferramentas por caminho absoluto, edição desses arquivos pela
+ferramenta de arquivo. Nesta rodada, trabalhadores Opus estouraram o
+orçamento em diagnóstico aberto; brief com a causa já decidida rende.
+
+**A obra seguinte:** a COR borrada e chapada do lado de trás (item 229,
+ideia dele), pintada por IA guiada pelo relevo já inventado.
+
+## O BASTÃO anterior (01/10, noite)
 
 **Estado:** tudo no `main`, PUBLICADO por ele em 01/10 à noite (`d323619`,
 corrida verde) e conferido no ar por sha256 (os mapas de normais de Plutão
@@ -352,6 +428,19 @@ declarativo do filme galáctico. Conclui com Terra/Lua, Júpiter/Io,
 Saturno/luas e o afastamento final, ciência e unidades revisadas, gate
 visual e exibição completa aprovada pelo dono. *(Era a fila ativa do
 plano do cinema, arquivado — `git show 923dc20:docs/PLANO-CINEMA.md`.)*
+
+**229. Melhorar com IA a cor borrada e de baixa resolução do lado de trás.**
+Palavras dele, 02/10: *"acho que podemos enhance com AI tudo que estiver
+borrado ou com baixa resolucao para criar uma uniformidade e falar que foi
+baseado em todos esses dados como subsidio para a Ai gerar os assets que
+vamos usar.... o que acha? será que esse agente conseguiria fazer isso com a
+ajuda do chatgpt que gera imagens muito boas?"* Combinado na conversa:
+primeiro o relevo (item 144, ramo `relevo-inventado`), depois a cor, numa
+rodada própria — o ChatGPT dele pelo Chrome (com o sim dele antes de mandar
+qualquer imagem), guiado pela foto borrada, pelo mapa geológico e pelo
+relevo inventado, para a cor e a sombra não se desencontrarem; cuidados já
+conhecidos: emenda com a metade fotografada, polos (a IA estica), tamanho
+(montar por pedaços), tom igual ao da metade real (regra do 151).
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
