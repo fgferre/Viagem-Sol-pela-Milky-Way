@@ -310,6 +310,25 @@ Conferência: `normal.png` de Plutão e Caronte idêntico por md5 ao de hoje.
   inclinação), a membrana acima de R/5, as crateras grandes por molde; a
   costura condiciona tudo como antes. A confissão passa a dizer "montado com
   pedaços do terreno medido do mesmo tipo".
+- **E3.4 FEITA em Caronte (02/10) — a colcha.** Retalhos de 140 km com 35 km
+  de sobreposição em 20 faixas de latitude (um por polo), cada um copiado por
+  uma rotação exata da esfera; 96 candidatos, um dos 5 melhores por SSD
+  normalizado pela energia; giro e espelho livres, menos no cinturão
+  (alinhado à direção local); sem repetir origem a menos de 3 larguras;
+  corte de erro mínimo fechado + correção da costura entre retalhos (o
+  descasamento largo sai suavizado em 8 km e o fino por Laplace numa faixa
+  de 8 km). Fontes por unidade em `fonte/charon-lado-de-tras.json`
+  (`fontes`, citadas). Bandas 0–4 da colcha, 5–6 ruído, acima de R/5
+  membrana; crateras: as 6 reais + 60 sorteadas ≥ 40 km. Conferência: RMS de
+  inclinação 1,016 / 1,057 / 1,030 das fontes; S(d) ≤ 30 km em 0,92–1,13;
+  80 s, 1,62 GB. Visto pelo main: o lado de trás agora tem escarpas, cristas
+  e planícies do mesmo tipo do medido, o cinturão continua dos dois lados,
+  sem grade de retalhos nem repetição evidente
+  (`scratchpad/e3/charon-*-v2.png`). Esquisito a decidir no A/B do borrado:
+  a calota norte (preenchimento liso no DEM) ganha uma textura de buracos
+  densa demais. 21 testes do módulo (colcha: determinismo, corte sem salto,
+  sem repetição, `ocultar` não vaza, plano tangente nos polos) + 20 do
+  gerador; `npm run done` verde (114 arquivos, 3266 testes).
 
 **E3 — o núcleo da síntese (Opus).** No mesmo módulo, funções puras; UMA
 função exportada serve à prévia e ao gerador; semente fixa por corpo
@@ -436,4 +455,4 @@ A lista vai ao Felipe no fim da rodada.
 - **Fim:** `npm run done` verde uma vez; `npm run data:verify` verde.
 
 ## Andamento
-- [~] E1 cache (código feito e commitado; falta o Felipe rodar Plutão e Caronte) · [~] E2 medidas (E2a mapas de unidades FEITA; E2b medidas espera o cache) · [~] E3 núcleo (E3.1 costura FEITA; falta síntese por unidade, crateras, calibração e montagem) · [ ] E4 prova (Foto 1) · [ ] E5 Sputnik (Foto 2) · [ ] E6 feições (Foto 3) · [ ] E7 confissão · [ ] E8 mapas finais
+- [~] E1 cache (código feito e commitado; falta o Felipe rodar Plutão e Caronte) · [~] E2 medidas (E2a mapas de unidades FEITA; E2b medidas espera o cache) · [x] E3 núcleo em Caronte (costura, síntese por unidade, colcha; Plutão espera o cache) · [ ] E4 prova (Foto 1) · [ ] E5 Sputnik (Foto 2) · [ ] E6 feições (Foto 3) · [ ] E7 confissão · [ ] E8 mapas finais

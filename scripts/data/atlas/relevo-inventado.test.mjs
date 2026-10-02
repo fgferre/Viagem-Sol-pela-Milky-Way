@@ -39,25 +39,50 @@
 // 14. A mesma semente dá a mesma simulação (ruído + crateras), byte a byte.
 // 15. Tirar a trava de 80° no sul (`assaNormais`, `travaNoSul: false`) não muda
 //     um byte do hemisfério norte nem das linhas onde a trava não age.
+//
+// A COLCHA (E3.3), com a textura-fonte conhecida (as bandas finas do ruído das
+// oitavas) e as origens numa caixa só:
+// 16. As mesmas entradas e a mesma semente dão os mesmos bytes.
+// 17. Sem emenda: a inclinação nos texels do corte (a rampa entre dois
+//     retalhos) é a dos demais texels, RMS e p99 ±20 %.
+// 18. Sem repetir: dois retalhos a menos de 3 larguras não saem de origens a
+//     menos de ¼ de largura — e a regra morde: com as origens embaralhadas ela
+//     seria violada dezenas de vezes.
+// 19. O recorte escondido (`ocultar`) não vaza: nenhuma janela da síntese
+//     repete o padrão que estava lá (a cópia direta passa do limiar; a saída,
+//     não) e, com outro conteúdo no recorte, a saída tem os mesmos bytes.
+// 20. O amostrador do plano tangente (`planoTangente` + `amostraNoPonto`) dá,
+//     nos dois polos, em qualquer giro e espelho, o valor de um campo
+//     analítico, com erro abaixo do da bilinear.
 // ============================================================
 import { beforeAll, describe, expect, it } from 'vitest';
 import { assaNormais } from './gera-normal-de-dem.mjs';
 import {
+  amostraNoPonto,
   camadaDeCrateras,
+  coeficientesDeSpline,
+  colcha,
+  colunaDaLongitude,
   costura,
   crateraReaisNoVazio,
   decompoeEmOitavas,
   distanciaAoVazioKm,
+  fontesDaColcha,
   funcaoDeEstrutura,
   latitudeDaLinha,
   leiDeCrateras,
   lerCatalogoDeCrateras,
+  linhaDaLatitude,
   longitudeDaColuna,
+  mascaraDaCaixa,
   membranaHarmonica,
   moldeDeCratera,
   pesosDasUnidades,
+  planoTangente,
+  pontoDoPlano,
   ruidoDaOitava,
   sigmasDasOitavas,
+  sintetizaCorpo,
   somaDeOitavas,
   sorteiaCrateras,
 } from './relevo-inventado.mjs';
@@ -274,6 +299,13 @@ const faixaDe = (d, bordas) => {
   return -1;
 };
 
+/** O RMS e o p99 de uma lista de números. */
+const resumo = (lista) => {
+  const v = Float64Array.from(lista).sort();
+  const rms = Math.sqrt(v.reduce((s, x) => s + x * x, 0) / v.length);
+  return { rms, p99: v[Math.floor(0.99 * (v.length - 1))] };
+};
+
 /**
  * O CONJUNTO, calculado uma vez: para cada par de sementes, a verdade, a
  * costura e as medidas por faixa de distância com sinal à emenda (negativa
@@ -335,11 +367,6 @@ function oConjunto() {
       }
     });
   }
-  const resumo = (lista) => {
-    const v = Float64Array.from(lista).sort();
-    const rms = Math.sqrt(v.reduce((s, x) => s + x * x, 0) / v.length);
-    return { rms, p99: v[Math.floor(0.99 * (v.length - 1))] };
-  };
   conjunto = {
     dado,
     corridas,
@@ -586,3 +613,243 @@ function linhaAoSulDe80(A) {
   while (latitudeDaLinha(j, A) > (-80 * Math.PI) / 180) j += 1;
   return j;
 }
+
+// ------------------------------------------------------------
+// A colcha na esfera (E3.3)
+// ------------------------------------------------------------
+
+const MUNDO_DA_COLCHA = { L: 512, A: 256, raioM: 606e3 }; // 7,5 km por texel: o retalho de 140 km tem 19 texels
+// as origens dos retalhos: só esta caixa é "medida"; o alvo é a esfera inteira
+const CAIXA_DAS_FONTES = { lon: [0, 150], lat: [-45, 45] };
+
+/**
+ * A colcha, calculada uma vez. A textura-fonte conhecida é a parte fina do
+ * ruído das oitavas — as duas bandas de σ ≤ 30 km, 100 m de desvio cada —, um
+ * campo estacionário: o que a colcha entrega no corte tem de ter a inclinação
+ * da fonte em toda parte. Uma unidade só, de peso 1.
+ */
+let colchada = null;
+function aColcha() {
+  if (colchada) return colchada;
+  const { L, A, raioM } = MUNDO_DA_COLCHA;
+  const n = L * A;
+  const sigmas = sigmasDasOitavas(raioM, A);
+  const fina = somaDeOitavas([0, 1].map((k) => ruidoDaOitava(31, k, sigmas, L, A, raioM)), [100, 100], n);
+  const fonte = { unidades: { a: { fontes: [CAIXA_DAS_FONTES] } } };
+  const valido = mascaraDaCaixa(CAIXA_DAS_FONTES, L, A);
+  const fontes = fontesDaColcha({ metros: fina, valido, fonte, largura: L, altura: A, raioM });
+  const entrada = {
+    fina, coef: coeficientesDeSpline(fina, L, A), largura: L, altura: A, raioM,
+    pesos: [new Float32Array(n).fill(1)], fontes, semente: 4242,
+  };
+  colchada = { entrada, r: colcha(entrada) };
+  return colchada;
+}
+
+/**
+ * A correlação cruzada normalizada MÁXIMA do `molde` (w×w, w ímpar) contra as
+ * janelas de `campo` (L×A, com a volta da longitude) cujo centro está em `onde`.
+ */
+function correlacaoMaxima(campo, L, A, molde, w, onde) {
+  const meia = (w - 1) / 2;
+  const media = molde.reduce((s, v) => s + v, 0) / molde.length;
+  const m = Float64Array.from(molde, (v) => v - media);
+  const normaM = Math.sqrt(m.reduce((s, v) => s + v * v, 0));
+  let maior = -1;
+  for (let j = 0; j + w <= A; j += 1) {
+    for (let i = 0; i < L; i += 1) {
+      if (!onde[(j + meia) * L + ((i + meia) % L)]) continue;
+      let soma = 0;
+      let soma2 = 0;
+      let cruzada = 0;
+      for (let b = 0; b < w; b += 1) {
+        for (let a = 0; a < w; a += 1) {
+          const v = campo[(j + b) * L + ((i + a) % L)];
+          soma += v;
+          soma2 += v * v;
+          cruzada += v * m[b * w + a];
+        }
+      }
+      const variancia = soma2 - (soma * soma) / (w * w);
+      if (variancia > 0) maior = Math.max(maior, cruzada / (normaM * Math.sqrt(variancia)));
+    }
+  }
+  return maior;
+}
+
+describe('a colcha — retalhos do medido copiados por rotação da esfera', () => {
+  // a colcha custa ~0,5 s aqui; na máquina do GitHub, mais: sai uma vez, fora do limite de 5 s de cada `it`
+  beforeAll(() => {
+    aColcha();
+  }, 120_000);
+
+  it('dá os mesmos bytes com as mesmas entradas e a mesma semente — e outros com outra semente', () => {
+    const { entrada, r } = aColcha();
+    const outra = colcha(entrada);
+    for (const nome of ['campo', 'coberto', 'corte']) {
+      expect(Buffer.from(outra[nome].buffer).equals(Buffer.from(r[nome].buffer))).toBe(true);
+    }
+    expect(outra.retalhos).toEqual(r.retalhos);
+    const diferente = colcha({ ...entrada, semente: entrada.semente + 1 });
+    expect(Buffer.from(diferente.campo.buffer).equals(Buffer.from(r.campo.buffer))).toBe(false);
+  }, 60_000);
+
+  it('não tem emenda visível: a inclinação nos texels do corte é a dos demais (RMS e p99 ±20 %)', () => {
+    const { L, A, raioM } = MUNDO_DA_COLCHA;
+    const { r } = aColcha();
+    const g = declive(r.campo, L, A, raioM);
+    const noCorte = [];
+    const nosOutros = [];
+    for (let j = 0; j < A; j += 1) {
+      // até 80°: acima, `declive` prende o passo leste e a inclinação lida passa a depender da latitude,
+      // que não se distribui igual nos dois grupos
+      if (Math.abs(latitudeDaLinha(j, A)) > (80 * Math.PI) / 180) continue;
+      for (let i = 0; i < L; i += 1) (r.corte[j * L + i] ? noCorte : nosOutros).push(g[j * L + i]);
+    }
+    // sem texels de corte (ou quase) a razão não diria nada
+    expect(noCorte.length).toBeGreaterThan(5000);
+    expect(nosOutros.length).toBeGreaterThan(noCorte.length);
+    const corte = resumo(noCorte);
+    const outros = resumo(nosOutros);
+    expect(corte.rms / outros.rms).toBeGreaterThanOrEqual(0.8);
+    expect(corte.rms / outros.rms).toBeLessThanOrEqual(1.2);
+    expect(corte.p99 / outros.p99).toBeGreaterThanOrEqual(0.8);
+    expect(corte.p99 / outros.p99).toBeLessThanOrEqual(1.2);
+  });
+
+  it('não repete origem: dois retalhos a menos de 3 larguras não saem de origens a menos de ¼ de largura', () => {
+    const { raioM } = MUNDO_DA_COLCHA;
+    const { r } = aColcha();
+    const { larguraKm } = r.resumo;
+    const cosVizinhanca = Math.cos((3 * larguraKm) / (raioM / 1000));
+    const cosRepeticao = Math.cos((0.25 * larguraKm) / (raioM / 1000));
+    const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    // os pares de retalhos vizinhos no alvo e, entre eles, os de origem repetida (`origens[q]` é a do retalho q)
+    const conta = (origens) => {
+      let vizinhos = 0;
+      let repetidos = 0;
+      r.retalhos.forEach((p, a) => {
+        for (let b = a + 1; b < r.retalhos.length; b += 1) {
+          if (dot(p.alvo, r.retalhos[b].alvo) <= cosVizinhanca) continue;
+          vizinhos += 1;
+          if (dot(origens[a], origens[b]) > cosRepeticao) repetidos += 1;
+        }
+      });
+      return { vizinhos, repetidos };
+    };
+    const origens = r.retalhos.map((p) => p.origem);
+    const { vizinhos, repetidos } = conta(origens);
+    expect(vizinhos).toBeGreaterThan(5000);
+    expect(repetidos).toBe(0);
+    expect(r.resumo.repeticoesForcadas).toBe(0);
+    // o controle: as mesmas origens trocadas de retalho ao acaso — sem a regra, é isto que sairia
+    const sorteia = gerador(7);
+    const embaralhadas = Array.from(origens);
+    for (let q = embaralhadas.length - 1; q > 0; q -= 1) {
+      const s = Math.floor(sorteia() * (q + 1));
+      [embaralhadas[q], embaralhadas[s]] = [embaralhadas[s], embaralhadas[q]];
+    }
+    expect(conta(embaralhadas).repetidos).toBeGreaterThan(10);
+  });
+
+  it('não vaza o recorte escondido (`ocultar`): nenhuma janela da saída repete o padrão dele, e a saída nem depende dele', () => {
+    const { L, A, raioM } = MUNDO;
+    const n = L * A;
+    // o medido: textura de espectro realista em toda parte; na caixa escondida, um padrão distinto
+    // (ruído branco de 5 km de desvio — nada na textura se parece com ele)
+    const fundo = somaDeOitavas(
+      Array.from({ length: SIGMAS.length + 1 }, (_, k) => ruidoDaOitava(11, k, SIGMAS, L, A, raioM)),
+      GANHOS,
+      n
+    );
+    const ocultar = mascaraDaCaixa({ lon: [45, 135], lat: [-20, 30] }, L, A);
+    const comRecorte = (padrao) => {
+      const metros = Float32Array.from(fundo);
+      for (let k = 0; k < n; k += 1) if (ocultar[k]) metros[k] = padrao[k];
+      return metros;
+    };
+    const padrao = ruidoBranco(n, 5000, 99);
+    const metros = comRecorte(padrao);
+    const fonte = {
+      unidades: { a: { poligonos: [], fontes: [{ lon: [0, 360], lat: [-90, 90] }] } },
+      padraoDoSul: { unidade: 'a', abaixoDaLatitude: -60 },
+    };
+    const medidas = {
+      global: { alturaMedia: 0 },
+      unidades: {
+        a: {
+          alturaMedia: null,
+          crateras: { contadas: 0, areaKm2: 4e4, completudeKm: 4, inclinacaoAbaixo: { valor: -2, n: 25 } }, // sem crateras
+          energiaPorBanda: GANHOS.map((g) => g * g),
+        },
+      },
+      morfometria: { perfis: {} },
+    };
+    const sintetiza = (m) =>
+      sintetizaCorpo({
+        grade: { metros: m, vazio: new Uint8Array(n), largura: L, altura: A, raioM },
+        fonte, medidas, qualidade: null, catalogo: [], guia: {}, semente: 5, ocultar,
+      });
+    const { campo, relatorio } = sintetiza(metros);
+    // o recorte tem mais de 2000 texels: a unidade ganha núcleo e a conferência com a calibração também roda
+    expect(relatorio.texelsOcultos).toBeGreaterThan(2000);
+    expect(relatorio.naoFinitos).toBe(0);
+
+    // o molde: a janela de 15×15 do padrão no centro do recorte; a cópia direta o reproduz (correlação 1),
+    // e a saída, em toda janela centrada no recorte, fica longe do limiar
+    const w = 15;
+    const j0 = Math.round(linhaDaLatitude(5, A)) - (w - 1) / 2;
+    const i0 = Math.round(colunaDaLongitude(90, L)) - (w - 1) / 2;
+    const molde = new Float32Array(w * w);
+    for (let b = 0; b < w; b += 1) for (let a = 0; a < w; a += 1) molde[b * w + a] = padrao[(j0 + b) * L + i0 + a];
+    const LIMIAR = 0.5;
+    expect(correlacaoMaxima(metros, L, A, molde, w, ocultar)).toBeGreaterThan(LIMIAR);
+    expect(correlacaoMaxima(campo, L, A, molde, w, ocultar)).toBeLessThan(LIMIAR);
+
+    // e nenhum byte da saída depende do que estava no recorte
+    const outro = sintetiza(comRecorte(ruidoBranco(n, 9000, 123))).campo;
+    expect(Buffer.from(outro.buffer).equals(Buffer.from(campo.buffer))).toBe(true);
+  }, 60_000);
+
+  it('amostra, no plano tangente de cada polo e em qualquer giro e espelho, o valor do campo analítico', () => {
+    const L = 128;
+    const A = 64;
+    const raioKm = 606;
+    // suave na esfera (polinômio em x, y, z), com ondas de m = 0, 1 e 2 em longitude: m = 1 pede a meia volta
+    // da reflexão no polo; m = 2 é a que um polo mal tratado vira cata-vento
+    const f = (x, y, z) => 500 * z + 300 * x - 200 * y + 400 * (x * x - y * y) + 250 * x * y;
+    const campo = new Float32Array(L * A);
+    for (let j = 0; j < A; j += 1) {
+      const lat = latitudeDaLinha(j, A);
+      for (let i = 0; i < L; i += 1) {
+        const lon = (longitudeDaColuna(i, L) * Math.PI) / 180;
+        campo[j * L + i] = f(Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat));
+      }
+    }
+    const coef = coeficientesDeSpline(campo, L, A);
+    // o erro da bilinear com passo h (rad) nos dois eixos: ≤ (h²/8)(|f_φφ| + |f_λλ|), e cada termo do campo tem as
+    // duas segundas derivadas somando no máximo 6 vezes o coeficiente (x² − y²: 2 + 4)
+    const h = Math.PI / A;
+    const tolerancia = ((h * h) / 8) * 6 * (500 + 300 + 200 + 400 + 250);
+    const passoKm = (raioKm * h) / 2;
+    let pior = 0;
+    let pontos = 0;
+    for (const lat of [90, -90]) {
+      for (const giro of [0, 0.7, 2.1, 4]) {
+        for (const espelho of [false, true]) {
+          const base = planoTangente(lat, 37, giro, espelho);
+          // 13×13 pontos em volta do polo (até 3 texels), com o próprio polo (0, 0) e a travessia dele
+          for (let b = -6; b <= 6; b += 1) {
+            for (let a = -6; a <= 6; a += 1) {
+              const p = pontoDoPlano(base, a * passoKm, b * passoKm, raioKm);
+              pior = Math.max(pior, Math.abs(amostraNoPonto(coef, L, A, p[0], p[1], p[2]) - f(p[0], p[1], p[2])));
+              pontos += 1;
+            }
+          }
+        }
+      }
+    }
+    expect(pontos).toBe(2 * 4 * 2 * 13 * 13);
+    expect(pior).toBeLessThan(tolerancia);
+  });
+});

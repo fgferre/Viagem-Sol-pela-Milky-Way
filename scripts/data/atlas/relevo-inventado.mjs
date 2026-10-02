@@ -2046,7 +2046,7 @@ function prefiltraAnel(x, N, causal) {
  * paralelo é um anel, e o meridiano I fecha com o I + L/2 num círculo máximo
  * de 2A amostras — a spline atravessa o polo sem borda.
  */
-function coeficientesDeSpline(campo, L, A) {
+export function coeficientesDeSpline(campo, L, A) {
   const c = Float64Array.from(campo);
   const anel = new Float64Array(Math.max(L, 2 * A));
   const causal = new Float64Array(Math.max(L, 2 * A));
@@ -2737,6 +2737,18 @@ export function membranaHarmonica(campo, dado, largura, altura, raioM, sigmaKm, 
 }
 
 /**
+ * O medido preenchido pela membrana como a `costura` o lê (`medido` = dado em
+ * alguma banda; σ = o da 1ª banda acima de R/5) — a síntese o calcula uma vez
+ * e o dá à colcha e à costura.
+ */
+export function membranaDaCostura(medida, medido, sigmasKm, largura, altura, raioM, restricoes) {
+  const nb = sigmasKm.length + 1;
+  const sigmaDa = (k) => (k < nb - 1 ? sigmasKm[k] : 2 * sigmasKm[nb - 2]);
+  const primeiraGrossa = Array.from({ length: nb }, (_, k) => k).find((k) => sigmaDa(k) > (FRACAO_DO_RAIO_DA_MEMBRANA * raioM) / 1000) ?? nb - 1;
+  return membranaHarmonica(medida, medido, largura, altura, raioM, sigmaDa(primeiraGrossa), restricoes);
+}
+
+/**
  * A COSTURA — SIMULAÇÃO CONDICIONAL POR KRIGAGEM DE RESÍDUOS, banda a banda
  * (PLAN-RELEVO.md, E3 item 1; Springer, cap. 1 §1.3, eq. 1.26): F = S + K(T − S),
  * com S uma simulação sem condição, T o medido e K a krigagem simples do resíduo
@@ -2748,7 +2760,11 @@ export function membranaHarmonica(campo, dado, largura, altura, raioM, sigmaKm, 
  * máscara por banda (1 = a banda é dado ali; podem ser o mesmo array) e
  * `simulada` a simulação S já pronta (ruído das oitavas, `somaDeOitavas`, + as
  * crateras). `restricoes` (opcional) prende a membrana em níveis escolhidos no
- * fundo do vazio (`membranaHarmonica`).
+ * fundo do vazio (`membranaHarmonica`). `cheio` (opcional) é a membrana do
+ * medido já calculada — `membranaDaCostura(medida, dado em alguma banda,
+ * sigmasKm, largura, altura, raioM, restricoes)`, a mesma conta que a costura
+ * faria: a síntese a calcula uma vez, tira dela a parte fina que a colcha copia
+ * e a passa aqui para não refazê-la; sem `cheio`, a costura a calcula.
  *
  * HIPÓTESES: cada banda é estacionária, com a covariância ajustada à própria
  * simulação por lóbulos de Legendre não negativos (positiva-definida na esfera,
@@ -2767,7 +2783,7 @@ export function membranaHarmonica(campo, dado, largura, altura, raioM, sigmaKm, 
  * (medido); quase não afeta a inclinação. As fotos do recorte escondido no dado
  * real (E4) dizem se uma compensação de variância é necessária.
  */
-export function costura({ medida, dadoPorOitava, simulada, sigmasKm, largura, altura, raioM, restricoes, registra }) {
+export function costura({ medida, dadoPorOitava, simulada, sigmasKm, largura, altura, raioM, restricoes, cheio: pronto, registra }) {
   const anota = registra ?? (() => {});
   const n = largura * altura;
   const nb = sigmasKm.length + 1;
@@ -2785,8 +2801,7 @@ export function costura({ medida, dadoPorOitava, simulada, sigmasKm, largura, al
   const sigmaDa = (k) => (k < nb - 1 ? sigmasKm[k] : 2 * sigmasKm[nb - 2]);
   const naMembrana = (k) => sigmaDa(k) > (FRACAO_DO_RAIO_DA_MEMBRANA * raioM) / 1000;
   const um = new Uint8Array(n).fill(1);
-  const primeiraGrossa = Array.from({ length: nb }, (_, k) => k).find(naMembrana) ?? nb - 1;
-  const cheio = membranaHarmonica(medida, medido, largura, altura, raioM, sigmaDa(primeiraGrossa), restricoes);
+  const cheio = pronto ?? membranaDaCostura(medida, medido, sigmasKm, largura, altura, raioM, restricoes);
   anota('a membrana do medido');
   const bandasT = decompoeEmOitavas(cheio, um, largura, altura, raioM, sigmasKm);
   anota('as bandas do medido');
@@ -2873,14 +2888,15 @@ const PASSO_DO_MOLDE_RR = 0.01;
 /** Herança: a fração do relevo das crateras mais velhas que a nova apaga no miolo (zero na crista). */
 const FRACAO_APAGADA = 0.85;
 
+/** As crateras sorteadas só deste diâmetro (km) para cima: as menores vêm nos pedaços medidos da colcha. */
+const DIAMETRO_MINIMO_SORTEADO_KM = 40;
+
 /**
- * Calibração: ±10 % no RMS da inclinação e ±15 % no S(d), só nos lags até 30
- * km — acima disso a caixa-exemplo tem escalas > R/5 que no vazio são, por
- * projeto, a membrana lisa, e o ajuste zerava as bandas largas para inflar as
- * finas. Pelo mesmo motivo só as bandas de σ ≤ 30 km são reajustadas.
+ * Conferência: ±10 % no RMS da inclinação (fora disso a colcha da unidade é
+ * reescalada), só nos lags até 30 km — acima disso as escalas > R/5 no vazio
+ * são, por projeto, a membrana lisa.
  */
 const TOLERANCIA_DO_RMS = 0.1;
-const TOLERANCIA_DO_S = 0.15;
 const LAG_MAXIMO_DA_CALIBRACAO_KM = 30;
 
 const suave = (a, b, x) => {
@@ -3312,6 +3328,862 @@ export function mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, com
 }
 
 // ------------------------------------------------------------
+// A COLCHA (E3.3, decisão de 02/10): a textura fina com pedaços do medido
+// ------------------------------------------------------------
+
+/** As bandas de σ até isto (km), ~97 % da inclinação, vêm de PEDAÇOS do medido; as de cima até R/5, do ruído. */
+const CORTE_DA_COLCHA_KM = 30;
+
+/** O retalho: quadrado de tantos km no plano tangente local, com tantos km de sobreposição. */
+const LARGURA_DO_RETALHO_KM = 140;
+const SOBREPOSICAO_KM = 35;
+
+/** Candidatos sorteados por retalho; o escolhido sai ao acaso entre os `MELHORES` de menor erro na sobreposição. */
+const CANDIDATOS = 96;
+const MELHORES = 5;
+
+/** A rampa (texels) que funde os dois lados do corte de erro mínimo. */
+const ESFUMADO_TEXELS = 2;
+
+/** Texels além do quadrado: o lado de fora do corte e da rampa. */
+const MARGEM_DO_RETALHO = 2;
+
+/** A fonte fica a tanto do vazio: mais perto, o passa-alta já lê a membrana. */
+const AFASTAMENTO_DA_FONTE_KM = 30;
+
+/** Sem repetir: dois retalhos a menos de 3 larguras (no alvo) não saem de origens a menos de ¼ de largura. */
+const VIZINHANCA_SEM_REPETIR = 3;
+const RAIO_DE_REPETICAO = 0.25;
+
+/**
+ * A EMENDA: o corte procura a diferença FINA (velho − novo menos a média
+ * gaussiana de σ = isto, km), e a diferença larga ao longo do corte (a mesma
+ * média) é tirada do retalho novo, sumindo em `ALCANCE_DA_CORRECAO_KM` para
+ * dentro — o degrau das bandas largas (λ ~ 100 km, do tamanho do retalho) que
+ * a rampa de 2 texels não esconde (Zhou et al. 2007 apagam a emenda de
+ * terreno por Poisson; aqui, deslocamento liso com alcance curto, sem deriva,
+ * e a parte fina por Laplace numa faixa estreita).
+ */
+const SIGMA_DA_EMENDA_KM = 8;
+const ALCANCE_DA_CORRECAO_KM = 30;
+
+/**
+ * O que sobra da diferença na emenda (a parte fina) também sai do retalho
+ * novo, por uma correção HARMÔNICA (Laplace, SOR) numa faixa de tanto km: a
+ * onda de comprimento λ some a ~λ/2π da emenda — o retalho casa com o velho
+ * na emenda em toda escala, sem rampa larga nem traço fino.
+ */
+const ALCANCE_FINO_KM = 8;
+const PASSADAS_DO_SOR = 30;
+const OMEGA_DO_SOR = 1.8;
+
+/** σ (km) do tensor de estrutura que dá a direção do cinturão no alvo. */
+const SIGMA_DA_DIRECAO_KM = 100;
+
+/** A grade das origens: a cheia ÷ isto. */
+const FATOR_DAS_FONTES = 4;
+
+/**
+ * O PLANO TANGENTE em (lat, lon) graus: o centro `c` e os eixos `e` (x) e `n`
+ * (y) — leste e norte girados de `giro` rad (de leste para norte) e, com
+ * `espelho`, o y de sinal trocado. Vetores da esfera unitária: vale no polo.
+ */
+export function planoTangente(latGraus, lonGraus, giro = 0, espelho = false) {
+  const b = baseLocal(latGraus, lonGraus);
+  const cg = Math.cos(giro);
+  const sg = Math.sin(giro);
+  const s = espelho ? -1 : 1;
+  return {
+    c: b.c,
+    e: [0, 1, 2].map((q) => cg * b.e[q] + sg * b.n[q]),
+    n: [0, 1, 2].map((q) => s * (cg * b.n[q] - sg * b.e[q])),
+  };
+}
+
+/** O ponto da esfera unitária em (x, y) km do plano tangente `base` (projeção gnomônica). */
+export function pontoDoPlano(base, xKm, yKm, raioKm) {
+  const a = xKm / raioKm;
+  const b = yKm / raioKm;
+  const p = [0, 1, 2].map((q) => base.c[q] + a * base.e[q] + b * base.n[q]);
+  const r = Math.hypot(p[0], p[1], p[2]);
+  return p.map((v) => v / r);
+}
+
+/** As coordenadas (km) do ponto `p` da esfera unitária no plano tangente `base`; null no hemisfério oposto. */
+export function noPlano(base, p, raioKm) {
+  const d = p[0] * base.c[0] + p[1] * base.c[1] + p[2] * base.c[2];
+  if (d <= 0) return null;
+  const x = p[0] * base.e[0] + p[1] * base.e[1] + p[2] * base.e[2];
+  const y = p[0] * base.n[0] + p[1] * base.n[1] + p[2] * base.n[2];
+  return [(raioKm * x) / d, (raioKm * y) / d];
+}
+
+const PESOS_X = new Float64Array(4);
+const PESOS_Y = new Float64Array(4);
+
+/**
+ * A spline B cúbica de coeficientes `coef` (`coeficientesDeSpline`, grade
+ * `largura`×`altura`) no ponto (x, y, z) da esfera unitária: as linhas além
+ * do polo são as refletidas meia volta adiante, como na pré-filtragem.
+ */
+export function amostraNoPonto(coef, largura, altura, x, y, z) {
+  const u = (Math.atan2(y, x) / (2 * Math.PI) + 0.5) * largura - 0.5;
+  const v = (0.5 - Math.asin(Math.max(-1, Math.min(1, z))) / Math.PI) * altura - 0.5;
+  const i0 = Math.floor(u);
+  const j0 = Math.floor(v);
+  pesosDaSpline(u - i0, PESOS_X, 0);
+  pesosDaSpline(v - j0, PESOS_Y, 0);
+  let soma = 0;
+  for (let b = 0; b < 4; b += 1) {
+    let j = j0 - 1 + b;
+    let meia = 0;
+    if (j < 0) {
+      j = -1 - j;
+      meia = largura / 2;
+    } else if (j >= altura) {
+      j = 2 * altura - 1 - j;
+      meia = largura / 2;
+    }
+    let linha = 0;
+    for (let a = 0; a < 4; a += 1) {
+      const i = (((i0 - 1 + a + meia) % largura) + largura) % largura;
+      linha += PESOS_X[a] * coef[j * largura + i];
+    }
+    soma += PESOS_Y[b] * linha;
+  }
+  return soma;
+}
+
+/** Bilinear de `campo` no ponto (x, y, z) da esfera unitária; com `coberto`, NaN se um dos quatro não está. */
+function bilinearNoPonto(campo, largura, altura, x, y, z, coberto) {
+  const u = (Math.atan2(y, x) / (2 * Math.PI) + 0.5) * largura - 0.5;
+  const v = (0.5 - Math.asin(Math.max(-1, Math.min(1, z))) / Math.PI) * altura - 0.5;
+  let i0 = Math.floor(u);
+  const fx = u - i0;
+  let j0 = Math.floor(v);
+  let fy = v - j0;
+  if (j0 < 0) {
+    j0 = 0;
+    fy = 0;
+  } else if (j0 > altura - 2) {
+    j0 = altura - 2;
+    fy = 1;
+  }
+  if (i0 < 0) i0 += largura;
+  const i1 = i0 + 1 < largura ? i0 + 1 : 0;
+  const a = j0 * largura;
+  const b = a + largura;
+  if (coberto && !(coberto[a + i0] && coberto[a + i1] && coberto[b + i0] && coberto[b + i1])) return NaN;
+  return (1 - fy) * ((1 - fx) * campo[a + i0] + fx * campo[a + i1]) + fy * ((1 - fx) * campo[b + i0] + fx * campo[b + i1]);
+}
+
+/**
+ * O TENSOR DE ESTRUTURA do gradiente (km⁻¹ em leste e norte locais, diferença
+ * central; o passo leste preso no de 80°): `xx`, `xy`, `yy` por texel, 0 onde
+ * um vizinho é NaN.
+ */
+function tensorDoGradiente(campo, largura, altura, raioM) {
+  const n = largura * altura;
+  const raioKm = raioM / 1000;
+  const passoNorte = raioKm * (Math.PI / altura);
+  const xx = new Float32Array(n);
+  const xy = new Float32Array(n);
+  const yy = new Float32Array(n);
+  for (let j = 1; j < altura - 1; j += 1) {
+    const passoLeste = raioKm * ((2 * Math.PI) / largura) * Math.max(Math.cos(LATITUDE_DO_CLAMP_RAD), Math.cos(latitudeDaLinha(j, altura)));
+    for (let i = 0; i < largura; i += 1) {
+      const k = j * largura + i;
+      const gx = (campo[j * largura + ((i + 1) % largura)] - campo[j * largura + ((i - 1 + largura) % largura)]) / (2 * passoLeste);
+      const gy = (campo[k - largura] - campo[k + largura]) / (2 * passoNorte);
+      if (!Number.isFinite(gx) || !Number.isFinite(gy)) continue;
+      xx[k] = gx * gx;
+      xy[k] = gx * gy;
+      yy[k] = gy * gy;
+    }
+  }
+  return { xx, xy, yy };
+}
+
+/** O ângulo (rad, de leste para norte) AO LONGO das feições: o autovetor maior do tensor (o através) + 90°. */
+const anguloAoLongo = (xx, xy, yy) => 0.5 * Math.atan2(2 * xy, xx - yy) + Math.PI / 2;
+
+/**
+ * A DIREÇÃO DO CINTURÃO no alvo: o tensor de estrutura dos pesos da unidade
+ * (as bordas do polígono desfocado), desfocado com σ = `SIGMA_DA_DIRECAO_KM`
+ * — no meio da faixa as duas bordas dão o mesmo eixo. `{ angulo, forca,
+ * largura, altura }`; força 0 = sem direção.
+ */
+export function direcaoDoCinturao(peso, largura, altura, raioM) {
+  const t = tensorDoGradiente(peso, largura, altura, raioM);
+  const um = new Uint8Array(largura * altura).fill(1);
+  const [xx, xy, yy] = [t.xx, t.xy, t.yy].map((c) => desfocaComMascara(c, um, largura, altura, raioM, SIGMA_DA_DIRECAO_KM).valor);
+  const angulo = new Float32Array(largura * altura);
+  const forca = new Float32Array(largura * altura);
+  for (let k = 0; k < angulo.length; k += 1) {
+    angulo[k] = anguloAoLongo(xx[k], xy[k], yy[k]);
+    forca[k] = xx[k] + yy[k];
+  }
+  return { angulo, forca, largura, altura };
+}
+
+/**
+ * AS FONTES DA COLCHA por unidade (a ordem de `fonte.unidades`), na grade
+ * ÷`FATOR_DAS_FONTES`: os centros de retalho possíveis — o disco da
+ * meia-diagonal inteiro em texel `valido` (medido, bem resolvido, longe do
+ * vazio, fora do que se esconde) e o círculo inscrito (meia largura) dentro
+ * das caixas `fontes` da unidade (sem elas, a caixa-exemplo). Na unidade de
+ * papel 'cinturao-tectonico', cada caixa guarda a direção AO LONGO das
+ * feições MEDIDAS (tensor do gradiente do medido na caixa, cos lat). Devolve
+ * `{ celulas, acumulado (cos lat), largura, altura, angulo (por célula, ou
+ * null), caixas, areaKm2 }` por unidade, ou null sem centro possível.
+ */
+export function fontesDaColcha({ metros, valido, fonte, largura, altura, raioM, larguraKm = LARGURA_DO_RETALHO_KM }) {
+  const f = FATOR_DAS_FONTES;
+  const Lf = largura / f;
+  const Af = altura / f;
+  const nf = Lf * Af;
+  const raioKm = raioM / 1000;
+  const texelKm = raioKm * (Math.PI / altura);
+  const conta = new Uint16Array(nf);
+  for (let k = 0; k < largura * altura; k += 1) {
+    if (valido[k]) conta[Math.floor(k / largura / f) * Lf + Math.floor((k % largura) / f)] += 1;
+  }
+  const invalido = new Uint8Array(nf);
+  for (let c = 0; c < nf; c += 1) invalido[c] = conta[c] === f * f ? 0 : 1;
+  const dValido = distanciaAoVazioKm(invalido, Lf, Af, raioM);
+  const meiaDiagonal = (larguraKm / 2) * Math.SQRT2 + f * texelKm;
+  const medio = reduzEmBlocos(metros, valido, largura, altura, f);
+  for (let c = 0; c < nf; c += 1) if (invalido[c]) medio.valor[c] = NaN;
+  const tensor = tensorDoGradiente(medio.valor, Lf, Af, raioM);
+  return Object.values(fonte.unidades).map((unidade) => {
+    const caixas = unidade.fontes ?? (unidade.exemplo ? [unidade.exemplo] : []);
+    if (!caixas.length) return null;
+    const fora = new Uint8Array(nf).fill(1);
+    const qual = new Int16Array(nf).fill(-1);
+    const somas = caixas.map(() => [0, 0, 0]);
+    for (let J = 0; J < Af; J += 1) {
+      const lat = latitudeDaLinha(J, Af) * GRAUS;
+      const c0 = Math.cos(lat * RADIANOS);
+      for (let I = 0; I < Lf; I += 1) {
+        const c = J * Lf + I;
+        const q = caixas.findIndex((cx) => naCaixa(lat, longitudeDaColuna(I, Lf), cx));
+        if (q < 0) continue;
+        fora[c] = 0;
+        qual[c] = q;
+        somas[q][0] += c0 * tensor.xx[c];
+        somas[q][1] += c0 * tensor.xy[c];
+        somas[q][2] += c0 * tensor.yy[c];
+      }
+    }
+    const dCaixa = distanciaAoVazioKm(fora, Lf, Af, raioM);
+    const celulas = [];
+    for (let c = 0; c < nf; c += 1) if (dValido[c] >= meiaDiagonal && dCaixa[c] >= larguraKm / 2) celulas.push(c);
+    if (!celulas.length) return null;
+    const acumulado = new Float64Array(celulas.length);
+    let soma = 0;
+    celulas.forEach((c, q) => {
+      soma += Math.cos(latitudeDaLinha(Math.floor(c / Lf), Af));
+      acumulado[q] = soma;
+    });
+    const alinhada = unidade.papel === 'cinturao-tectonico';
+    const angulos = somas.map(([xx, xy, yy]) => anguloAoLongo(xx, xy, yy));
+    const celulaKm2 = (2 * Math.PI * raioKm * raioKm) / Lf * (Math.PI / Af);
+    return {
+      celulas: Int32Array.from(celulas),
+      acumulado,
+      largura: Lf,
+      altura: Af,
+      angulo: alinhada ? Float32Array.from(celulas, (c) => angulos[qual[c]]) : null,
+      caixas: caixas.map((cx, q) => ({
+        lon: cx.lon,
+        lat: cx.lat,
+        centros: celulas.filter((c) => qual[c] === q).length,
+        ...(alinhada ? { azimuteAoLongoGraus: Math.round(normaliza360(90 - angulos[q] * GRAUS) % 180) } : {}),
+      })),
+      areaKm2: Math.round(soma * celulaKm2),
+    };
+  });
+}
+
+/** Soma em caixa de meia-largura `h` (3 passadas, sem volta, zero fora: só para razões) na grade G×G, no lugar. */
+function borraNaGrade(x, G, h, tmp, linha) {
+  for (let passada = 0; passada < 3; passada += 1) {
+    for (let b = 0; b < G; b += 1) {
+      for (let a = 0; a < G; a += 1) linha[a + 1] = linha[a] + x[b * G + a];
+      for (let a = 0; a < G; a += 1) tmp[b * G + a] = linha[Math.min(G, a + h + 1)] - linha[Math.max(0, a - h)];
+    }
+    for (let a = 0; a < G; a += 1) {
+      for (let b = 0; b < G; b += 1) linha[b + 1] = linha[b] + tmp[b * G + a];
+      for (let b = 0; b < G; b += 1) x[b * G + a] = linha[Math.min(G, b + h + 1)] - linha[Math.max(0, b - h)];
+    }
+  }
+}
+
+/** A distância (texels, chanfro 1–√2) de cada ponto da grade G×G ao conjunto `semente` (1 = está). */
+function distanciaNaGrade(semente, G, saida) {
+  for (let g = 0; g < G * G; g += 1) saida[g] = semente[g] ? 0 : Infinity;
+  const passo = (g, viz, custo) => {
+    if (saida[viz] + custo < saida[g]) saida[g] = saida[viz] + custo;
+  };
+  for (let b = 0; b < G; b += 1) {
+    for (let a = 0; a < G; a += 1) {
+      const g = b * G + a;
+      if (a > 0) passo(g, g - 1, 1);
+      if (b > 0) {
+        passo(g, g - G, 1);
+        if (a > 0) passo(g, g - G - 1, Math.SQRT2);
+        if (a < G - 1) passo(g, g - G + 1, Math.SQRT2);
+      }
+    }
+  }
+  for (let b = G - 1; b >= 0; b -= 1) {
+    for (let a = G - 1; a >= 0; a -= 1) {
+      const g = b * G + a;
+      if (a < G - 1) passo(g, g + 1, 1);
+      if (b < G - 1) {
+        passo(g, g + G, 1);
+        if (a < G - 1) passo(g, g + G + 1, Math.SQRT2);
+        if (a > 0) passo(g, g + G - 1, Math.SQRT2);
+      }
+    }
+  }
+}
+
+/**
+ * A COLCHA NA ESFERA, à Efros & Freeman (2001, "Image Quilting for Texture
+ * Synthesis and Transfer"): o campo inteiro coberto por retalhos de `fina` (a
+ * parte fina do medido; `coef` = a spline dela), cada um copiado por uma
+ * ROTAÇÃO da esfera — exata em qualquer latitude, polo incluso.
+ *  - Retalho: quadrado de `larguraKm` no plano tangente (gnomônico) do centro;
+ *    centros em faixas de latitude do norte ao sul (um em cada polo; em cada
+ *    faixa, ⌈perímetro/passo⌉, começo sorteado), passo = largura −
+ *    sobreposição; no fim, um retalho em cada texel que ficou descoberto.
+ *  - Unidade: sorteada pelos pesos no centro (na transição, retalho inteiro de
+ *    uma unidade — nada de duas texturas fundidas).
+ *  - Candidatos: `candidatos` origens sorteadas nas fontes da unidade (área
+ *    igual); giro e espelho ao acaso, menos no cinturão: lá o eixo das
+ *    feições medidas cai sobre a direção local do cinturão (`direcoes`), só
+ *    meia volta e espelho no próprio eixo. Fora o que repete origem (a menos
+ *    de ¼ de largura de uma usada a menos de 3 larguras daqui).
+ *  - Escolha: soma dos quadrados da diferença contra o já posto na
+ *    sobreposição (bilinear, um ponto a cada 2 texels) dividida pela soma das
+ *    energias dos dois lados — a soma crua prefere o retalho mais liso e a
+ *    colcha sairia mais lisa que a fonte; sorteio entre os `melhores`.
+ *  - Corte de erro mínimo da diferença FINA: curva fechada r(θ) em volta do
+ *    centro, por programação dinâmica em ângulo com passos radiais livres
+ *    (Dijkstra numa coluna), o descoberto sempre dentro; rampa de `esfumado`
+ *    texels; a diferença LARGA ao longo do corte sai do retalho novo
+ *    (`SIGMA_DA_EMENDA_KM`, `ALCANCE_DA_CORRECAO_KM`).
+ * Devolve `{ campo, coberto, corte (1 = texel da rampa), retalhos, resumo }`.
+ */
+export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, direcoes = [], semente, opcoes = {} }) {
+  const n = largura * altura;
+  const raioKm = raioM / 1000;
+  const texelKm = raioKm * (Math.PI / altura);
+  const larguraKm = opcoes.larguraKm ?? LARGURA_DO_RETALHO_KM;
+  const passoKm = larguraKm - (opcoes.sobreposicaoKm ?? SOBREPOSICAO_KM);
+  const nCandidatos = opcoes.candidatos ?? CANDIDATOS;
+  const nMelhores = opcoes.melhores ?? MELHORES;
+  const esfumado = opcoes.esfumado ?? ESFUMADO_TEXELS;
+  if (!fontes.some((f) => f)) throw new Error('colcha: nenhuma unidade tem fonte.');
+  const sorteia = geradorDeSemente(sementeDaOitava(semente, 0xc01c4a));
+  const meio = larguraKm / 2 / texelKm;
+  const H = Math.ceil(meio) + MARGEM_DO_RETALHO;
+  const G = 2 * H + 1;
+  const passoRad = texelKm / raioKm;
+  const cosVizinhanca = Math.cos((VIZINHANCA_SEM_REPETIR * larguraKm) / raioKm);
+  const cosRepeticao = Math.cos((RAIO_DE_REPETICAO * larguraKm) / raioKm);
+  const raioDaCalota = Math.atan(((meio + MARGEM_DO_RETALHO + 1) * Math.SQRT2 * texelKm) / raioKm);
+
+  const campo = new Float32Array(n);
+  const coberto = new Uint8Array(n);
+  const corte = new Uint8Array(n);
+  const senLat = Float64Array.from({ length: altura }, (_, j) => Math.sin(latitudeDaLinha(j, altura)));
+  const cosLat = Float64Array.from({ length: altura }, (_, j) => Math.cos(latitudeDaLinha(j, altura)));
+  const cosLon = Float64Array.from({ length: largura }, (_, i) => Math.cos(longitudeDaColuna(i, largura) * RADIANOS));
+  const senLon = Float64Array.from({ length: largura }, (_, i) => Math.sin(longitudeDaColuna(i, largura) * RADIANOS));
+
+  // a grade local: (x, y) do plano em rad, 1/|c + x e + y n| e o quadrado
+  const XL = new Float64Array(G * G);
+  const YL = new Float64Array(G * G);
+  const INV = new Float64Array(G * G);
+  const dentro = new Uint8Array(G * G);
+  for (let b = 0; b < G; b += 1) {
+    for (let a = 0; a < G; a += 1) {
+      const g = b * G + a;
+      XL[g] = (a - H) * passoRad;
+      YL[g] = (b - H) * passoRad;
+      INV[g] = 1 / Math.sqrt(1 + XL[g] * XL[g] + YL[g] * YL[g]);
+      dentro[g] = Math.max(Math.abs(a - H), Math.abs(b - H)) <= meio ? 1 : 0;
+    }
+  }
+  const PX = new Float64Array(G * G);
+  const PY = new Float64Array(G * G);
+  const PZ = new Float64Array(G * G);
+  const velho = new Float64Array(G * G);
+  const novo = new Float64Array(G * G);
+  const amostras = new Int32Array(G * G);
+  const dif = new Float64Array(G * G);
+  const cob = new Float64Array(G * G);
+  const lisa = new Float64Array(G * G);
+  const ehNovo = new Uint8Array(G * G);
+  const emenda = new Float64Array(G * G);
+  const distancia = new Float64Array(G * G);
+  const correcao = new Float64Array(G * G);
+  const fino = new Float64Array(G * G);
+  const alcanceFino = ALCANCE_FINO_KM / texelKm;
+  const tmp = new Float64Array(G * G);
+  const linha = new Float64Array(G + 1);
+  const hEmenda = Math.max(1, Math.round((Math.sqrt(1 + 4 * (SIGMA_DA_EMENDA_KM / texelKm) ** 2) - 1) / 2));
+  const alcance = ALCANCE_DA_CORRECAO_KM / texelKm;
+  /** A média gaussiana (3 caixas) de `valor` onde `peso` > 0, na grade local, em `saida`. */
+  const mediaLocal = (valor, peso, saida) => {
+    for (let g = 0; g < G * G; g += 1) saida[g] = valor[g] * peso[g];
+    borraNaGrade(saida, G, hEmenda, tmp, linha);
+    const den = Float64Array.from(peso);
+    borraNaGrade(den, G, hEmenda, tmp, linha);
+    for (let g = 0; g < G * G; g += 1) saida[g] = den[g] > 1e-9 ? saida[g] / den[g] : 0;
+  };
+
+  // os raios do corte: estado r = "texels a menos de r do centro são novos";
+  // r = R(θ) + 1 = o retalho inteiro (o 1º texel de fora fica velho)
+  const nTheta = Math.ceil(2 * Math.PI * (meio * Math.SQRT2 + 1));
+  const S = Math.floor(meio * Math.SQRT2) + 2;
+  const Rt = new Int32Array(nTheta);
+  const indice = new Int32Array(nTheta * S);
+  for (let t = 0; t < nTheta; t += 1) {
+    const th = (2 * Math.PI * t) / nTheta;
+    const ct = Math.cos(th);
+    const st = Math.sin(th);
+    Rt[t] = Math.floor(meio / Math.max(Math.abs(ct), Math.abs(st)));
+    for (let r = 0; r <= Rt[t] + 1; r += 1) indice[t * S + r] = (H + Math.round(r * st)) * G + H + Math.round(r * ct);
+  }
+  const INF = 1e30;
+  const custo = new Float64Array(nTheta * S);
+  const ponteiro = new Int8Array((nTheta + 1) * S);
+  let antes = new Float64Array(S);
+  let agora = new Float64Array(S);
+  const rCorte = new Float64Array(nTheta + 1);
+
+  /** A programação dinâmica em volta do centro, de t0 a t0 (uma volta); `inicio` < 0 = estado livre em t0. */
+  const volta = (t0, inicio) => {
+    for (let r = 0; r < S; r += 1) antes[r] = inicio < 0 || r === inicio ? custo[t0 * S + r] : INF;
+    for (let passo = 1; passo <= nTheta; passo += 1) {
+      const t = (t0 + passo) % nTheta;
+      const tAntes = (t0 + passo - 1) % nTheta;
+      const base = passo * S;
+      for (let r = 0; r < S; r += 1) {
+        let m = antes[r];
+        let cod = 0;
+        if (r > 0 && antes[r - 1] < m) {
+          m = antes[r - 1];
+          cod = 1;
+        }
+        if (r + 1 < S && antes[r + 1] < m) {
+          m = antes[r + 1];
+          cod = 2;
+        }
+        if (r === Rt[t] + 1 && antes[Rt[tAntes] + 1] < m) {
+          m = antes[Rt[tAntes] + 1];
+          cod = 5;
+        }
+        agora[r] = m + custo[t * S + r];
+        ponteiro[base + r] = cod;
+      }
+      for (let r = 1; r < S; r += 1) {
+        const v = agora[r - 1] + custo[t * S + r];
+        if (v < agora[r]) {
+          agora[r] = v;
+          ponteiro[base + r] = 3;
+        }
+      }
+      for (let r = S - 2; r >= 0; r -= 1) {
+        const v = agora[r + 1] + custo[t * S + r];
+        if (v < agora[r]) {
+          agora[r] = v;
+          ponteiro[base + r] = 4;
+        }
+      }
+      [antes, agora] = [agora, antes];
+    }
+    return antes;
+  };
+  const refaz = (t0, fim) => {
+    let r = fim;
+    for (let passo = nTheta; passo >= 1; passo -= 1) {
+      const t = (t0 + passo) % nTheta;
+      rCorte[t] = r;
+      let cod = ponteiro[passo * S + r];
+      while (cod === 3 || cod === 4) {
+        r += cod === 3 ? -1 : 1;
+        cod = ponteiro[passo * S + r];
+      }
+      const tAntes = (t0 + passo - 1) % nTheta;
+      if (cod === 1) r -= 1;
+      else if (cod === 2) r += 1;
+      else if (cod === 5) r = Rt[tAntes] + 1;
+    }
+    rCorte[nTheta] = rCorte[0];
+  };
+
+  const postos = [];
+  const porUnidade = fontes.map(() => 0);
+  let repeticoesForcadas = 0;
+  let somaDoErro = 0;
+  let pontosDoErro = 0;
+
+  const sorteiaOrigem = (f) => {
+    const alvo = sorteia() * f.acumulado[f.acumulado.length - 1];
+    let lo = 0;
+    let hi = f.acumulado.length - 1;
+    while (lo < hi) {
+      const m = (lo + hi) >> 1;
+      if (f.acumulado[m] < alvo) lo = m + 1;
+      else hi = m;
+    }
+    const c = f.celulas[lo];
+    const J = Math.floor(c / f.largura);
+    const I = c % f.largura;
+    return {
+      lat: 90 - ((J + sorteia()) * 180) / f.altura,
+      lon: 180 + ((I + sorteia()) * 360) / f.largura,
+      angulo: f.angulo ? f.angulo[lo] : null,
+    };
+  };
+  const repete = (alvoC, origemC) =>
+    postos.some(
+      (q) =>
+        q.alvo[0] * alvoC[0] + q.alvo[1] * alvoC[1] + q.alvo[2] * alvoC[2] > cosVizinhanca &&
+        q.origem[0] * origemC[0] + q.origem[1] * origemC[1] + q.origem[2] * origemC[2] > cosRepeticao
+    );
+
+  /** Põe um retalho centrado em (lat, lon); false se ele não tinha nada a cobrir. */
+  const poe = (latC, lonC, preenchimento) => {
+    const alvo = planoTangente(latC, lonC);
+    const [cx, cy, cz] = alvo.c;
+    const [ex, ey, ez] = alvo.e;
+    const [nx, ny, nz] = alvo.n;
+    let descobertos = 0;
+    let nAmostras = 0;
+    for (let g = 0; g < G * G; g += 1) {
+      const s = INV[g];
+      PX[g] = (cx + XL[g] * ex + YL[g] * nx) * s;
+      PY[g] = (cy + XL[g] * ey + YL[g] * ny) * s;
+      PZ[g] = (cz + XL[g] * ez + YL[g] * nz) * s;
+      velho[g] = bilinearNoPonto(campo, largura, altura, PX[g], PY[g], PZ[g], coberto);
+      if (!dentro[g]) continue;
+      if (Number.isNaN(velho[g])) descobertos += 1;
+      else if ((g % G) % 2 === 0 && Math.floor(g / G) % 2 === 0) amostras[nAmostras++] = g;
+    }
+    if (!descobertos) return false;
+
+    // a unidade do retalho, sorteada pelos pesos no centro
+    const jC = Math.min(altura - 1, Math.max(0, Math.round(linhaDaLatitude(latC, altura))));
+    const kC = jC * largura + ((Math.round(colunaDaLongitude(lonC, largura)) % largura) + largura) % largura;
+    let total = 0;
+    fontes.forEach((f, u) => (total += f ? pesos[u][kC] : 0));
+    let u = -1;
+    if (total > 0) {
+      let x = sorteia() * total;
+      for (u = 0; u < fontes.length; u += 1) {
+        if (!fontes[u]) continue;
+        x -= pesos[u][kC];
+        if (x <= 0) break;
+      }
+      if (u === fontes.length) u = fontes.findLastIndex((f) => f);
+    } else {
+      const com = fontes.flatMap((f, q) => (f ? [q] : []));
+      u = com[Math.floor(sorteia() * com.length)];
+    }
+    const f = fontes[u];
+    const dir = direcoes[u];
+    let anguloAlvo = null;
+    if (f.angulo && dir) {
+      const J = Math.min(dir.altura - 1, Math.max(0, Math.round(linhaDaLatitude(latC, dir.altura))));
+      const I = ((Math.round(colunaDaLongitude(lonC, dir.largura)) % dir.largura) + dir.largura) % dir.largura;
+      if (dir.forca[J * dir.largura + I] > 0) anguloAlvo = dir.angulo[J * dir.largura + I];
+    }
+
+    // os candidatos: origem, giro, espelho; o erro na sobreposição
+    let energiaVelha = 0;
+    for (let q = 0; q < nAmostras; q += 1) energiaVelha += velho[amostras[q]] ** 2;
+    const melhores = [];
+    const candidato = (ignoraRepeticao) => {
+      const o = sorteiaOrigem(f);
+      const espelho = sorteia() < 0.5;
+      let giro;
+      if (o.angulo !== null && anguloAlvo !== null) {
+        giro = (espelho ? o.angulo + anguloAlvo : o.angulo - anguloAlvo) + (sorteia() < 0.5 ? Math.PI : 0);
+      } else giro = 2 * Math.PI * sorteia();
+      const base = planoTangente(o.lat, o.lon, giro, espelho);
+      if (!ignoraRepeticao && repete(alvo.c, base.c)) return false;
+      let erro = 0;
+      let energia = energiaVelha;
+      for (let q = 0; q < nAmostras; q += 1) {
+        const g = amostras[q];
+        const s = INV[g];
+        const x = (base.c[0] + XL[g] * base.e[0] + YL[g] * base.n[0]) * s;
+        const y = (base.c[1] + XL[g] * base.e[1] + YL[g] * base.n[1]) * s;
+        const z = (base.c[2] + XL[g] * base.e[2] + YL[g] * base.n[2]) * s;
+        const v = bilinearNoPonto(fina, largura, altura, x, y, z);
+        const d = velho[g] - v;
+        erro += d * d;
+        energia += v * v;
+      }
+      melhores.push({ nota: energia > 0 ? erro / energia : 0, erro, base, origem: o, giro, espelho });
+      melhores.sort((a, b) => a.nota - b.nota);
+      if (melhores.length > nMelhores) melhores.pop();
+      return true;
+    };
+    let tentou = 0;
+    for (let q = 0; q < nCandidatos && (nAmostras || melhores.length < nMelhores); q += 1) if (candidato(false)) tentou += 1;
+    if (!melhores.length) {
+      repeticoesForcadas += 1;
+      for (let q = 0; q < nCandidatos && (nAmostras || melhores.length < nMelhores); q += 1) candidato(true);
+    }
+    const escolhido = melhores[Math.floor(sorteia() * melhores.length)];
+    const { base } = escolhido;
+    if (nAmostras) {
+      somaDoErro += escolhido.erro;
+      pontosDoErro += nAmostras;
+    }
+
+    // a diferença velho − novo na grade; o corte procura a parte FINA dela
+    let temCorte = false;
+    for (let g = 0; g < G * G; g += 1) {
+      const s = INV[g];
+      const x = (base.c[0] + XL[g] * base.e[0] + YL[g] * base.n[0]) * s;
+      const y = (base.c[1] + XL[g] * base.e[1] + YL[g] * base.n[1]) * s;
+      const z = (base.c[2] + XL[g] * base.e[2] + YL[g] * base.n[2]) * s;
+      novo[g] = bilinearNoPonto(fina, largura, altura, x, y, z);
+      if (Number.isNaN(velho[g])) {
+        dif[g] = 0;
+        cob[g] = 0;
+      } else {
+        dif[g] = velho[g] - novo[g];
+        cob[g] = 1;
+        temCorte = true;
+      }
+    }
+    correcao.fill(0);
+    if (temCorte) {
+      mediaLocal(dif, cob, lisa);
+      let livre = -1;
+      for (let t = 0; t < nTheta; t += 1) {
+        const R = Rt[t];
+        let todos = true;
+        for (let r = S - 1; r > R + 1; r -= 1) custo[t * S + r] = INF;
+        const gFora = indice[t * S + R + 1];
+        custo[t * S + R + 1] = cob[gFora] ? (dif[gFora] - lisa[gFora]) ** 2 : 0;
+        for (let r = R; r >= 0; r -= 1) {
+          const g = indice[t * S + r];
+          if (!cob[g]) todos = false;
+          custo[t * S + r] = todos ? (dif[g] - lisa[g]) ** 2 : INF;
+        }
+        if (livre < 0 && custo[t * S + R] >= INF && custo[t * S + R + 1] === 0) livre = t;
+      }
+      if (livre >= 0) {
+        volta(livre, Rt[livre] + 1);
+        refaz(livre, Rt[livre] + 1);
+      } else {
+        const fim = volta(0, -1);
+        let rMin = 0;
+        for (let r = 1; r < S; r += 1) if (fim[r] < fim[rMin]) rMin = r;
+        volta(0, rMin);
+        refaz(0, rMin);
+      }
+      // o lado novo do corte, a emenda (novo com vizinho velho) e a correção larga
+      for (let b = 0; b < G; b += 1) {
+        for (let a = 0; a < G; a += 1) {
+          const g = b * G + a;
+          if (!dentro[g]) {
+            ehNovo[g] = 0;
+            continue;
+          }
+          let th = Math.atan2(b - H, a - H);
+          if (th < 0) th += 2 * Math.PI;
+          const ft = (th / (2 * Math.PI)) * nTheta;
+          const t = Math.min(nTheta - 1, Math.floor(ft));
+          const rc = rCorte[t] + (ft - t) * (rCorte[t + 1] - rCorte[t]);
+          ehNovo[g] = !cob[g] || Math.hypot(a - H, b - H) < rc - 0.5 ? 1 : 0;
+        }
+      }
+      for (let b = 0; b < G; b += 1) {
+        for (let a = 0; a < G; a += 1) {
+          const g = b * G + a;
+          const velhoAo = (v) => cob[v] && !ehNovo[v];
+          emenda[g] =
+            ehNovo[g] && ((a > 0 && velhoAo(g - 1)) || (a < G - 1 && velhoAo(g + 1)) || (b > 0 && velhoAo(g - G)) || (b < G - 1 && velhoAo(g + G)))
+              ? 1
+              : 0;
+        }
+      }
+      mediaLocal(dif, emenda, lisa);
+      distanciaNaGrade(emenda, G, distancia);
+      for (let g = 0; g < G * G; g += 1) {
+        const t = distancia[g] / alcance;
+        if (t < 1) correcao[g] = lisa[g] * (1 - t * t * (3 - 2 * t));
+        fino[g] = emenda[g] ? dif[g] - lisa[g] : 0;
+      }
+      // a parte fina: harmônica na faixa nova junto da emenda (emenda = Dirichlet; o fim da faixa, zero;
+      // vizinho descoberto ou fora do quadrado, Neumann)
+      for (let passada = 0; passada < PASSADAS_DO_SOR; passada += 1) {
+        for (let b = 1; b < G - 1; b += 1) {
+          for (let a = 1; a < G - 1; a += 1) {
+            const g = b * G + a;
+            if (!ehNovo[g] || emenda[g] || distancia[g] >= alcanceFino) continue;
+            let soma = 0;
+            let quantos = 0;
+            for (const v of [g - 1, g + 1, g - G, g + G]) {
+              if (!ehNovo[v]) continue;
+              soma += distancia[v] >= alcanceFino ? 0 : fino[v];
+              quantos += 1;
+            }
+            if (quantos) fino[g] += OMEGA_DO_SOR * (soma / quantos - fino[g]);
+          }
+        }
+      }
+      for (let g = 0; g < G * G; g += 1) {
+        const t = distancia[g] / alcanceFino;
+        if (t < 1) correcao[g] += fino[g] * (1 - t * t * (3 - 2 * t));
+        // do lado velho, na rampa, o novo corrigido É o velho: a rampa não traz de volta a diferença
+        if (cob[g] && !ehNovo[g] && distancia[g] <= esfumado + 1) correcao[g] = dif[g];
+      }
+    }
+
+    // a escrita: cada texel da calota, pela rotação, com a rampa do corte
+    const q00 = base.c;
+    const qe = base.e;
+    const qn = base.n;
+    const fatorPlano = raioKm / texelKm;
+    const linhaC = linhaDaLatitude(latC, altura);
+    const raioEmLinhas = (raioDaCalota / Math.PI) * altura;
+    const j0 = Math.max(0, Math.floor(linhaC - raioEmLinhas));
+    const j1 = Math.min(altura - 1, Math.ceil(linhaC + raioEmLinhas));
+    const senC = Math.sin(latC * RADIANOS);
+    const cosC = Math.cos(latC * RADIANOS);
+    const cosR = Math.cos(raioDaCalota);
+    for (let j = j0; j <= j1; j += 1) {
+      let i0 = 0;
+      let nI = largura;
+      const den = cosLat[j] * cosC;
+      if (den > 1e-12) {
+        const q = (cosR - senLat[j] * senC) / den;
+        if (q >= 1) continue;
+        if (q > -1) {
+          const dLon = Math.acos(q) * GRAUS;
+          i0 = Math.floor(colunaDaLongitude(lonC - dLon, largura));
+          nI = Math.min(largura, Math.ceil((2 * dLon * largura) / 360) + 2);
+        }
+      }
+      for (let w0 = 0; w0 < nI; w0 += 1) {
+        const i = (((i0 + w0) % largura) + largura) % largura;
+        const px = cosLat[j] * cosLon[i];
+        const py = cosLat[j] * senLon[i];
+        const pz = senLat[j];
+        const d = px * cx + py * cy + pz * cz;
+        if (d <= 0) continue;
+        const pe = px * ex + py * ey + pz * ez;
+        const pn = px * nx + py * ny + pz * nz;
+        const x = (pe / d) * fatorPlano;
+        const y = (pn / d) * fatorPlano;
+        const lado = Math.max(Math.abs(x), Math.abs(y));
+        if (lado > meio + MARGEM_DO_RETALHO) continue;
+        const k = j * largura + i;
+        if (!coberto[k] && lado > meio) continue;
+        let w = 1;
+        if (coberto[k] && temCorte) {
+          const r = Math.hypot(x, y);
+          let th = Math.atan2(y, x);
+          if (th < 0) th += 2 * Math.PI;
+          const ft = (th / (2 * Math.PI)) * nTheta;
+          const t = Math.min(nTheta - 1, Math.floor(ft));
+          const rc = rCorte[t] + (ft - t) * (rCorte[t + 1] - rCorte[t]);
+          w = Math.min(1, Math.max(0, 0.5 + (rc - 0.5 - r) / esfumado));
+          if (w <= 0) continue;
+        }
+        let v = amostraNoPonto(
+          coef,
+          largura,
+          altura,
+          d * q00[0] + pe * qe[0] + pn * qn[0],
+          d * q00[1] + pe * qe[1] + pn * qn[1],
+          d * q00[2] + pe * qe[2] + pn * qn[2]
+        );
+        if (temCorte) {
+          const ga = Math.min(G - 2, Math.max(0, Math.floor(x + H)));
+          const gb = Math.min(G - 2, Math.max(0, Math.floor(y + H)));
+          const fa = x + H - ga;
+          const fb = y + H - gb;
+          const g = gb * G + ga;
+          v +=
+            (1 - fb) * ((1 - fa) * correcao[g] + fa * correcao[g + 1]) + fb * ((1 - fa) * correcao[g + G] + fa * correcao[g + G + 1]);
+        }
+        if (coberto[k]) {
+          campo[k] = w * v + (1 - w) * campo[k];
+          corte[k] = w < 1 ? 1 : 0;
+        } else {
+          campo[k] = v;
+          coberto[k] = 1;
+        }
+      }
+    }
+    postos.push({
+      u,
+      alvo: alvo.c,
+      origem: base.c,
+      centro: [latC, normaliza360(lonC)],
+      deOnde: [escolhido.origem.lat, normaliza360(escolhido.origem.lon)],
+      giro: escolhido.giro,
+      espelho: escolhido.espelho,
+      erroRmsM: nAmostras ? Math.sqrt(escolhido.erro / nAmostras) : null,
+      preenchimento,
+      tentativas: tentou,
+    });
+    porUnidade[u] += 1;
+    return true;
+  };
+
+  // as faixas de latitude, do polo norte ao sul
+  const nFaixas = Math.ceil((Math.PI * raioKm) / passoKm) + 1;
+  let emFaixas = 0;
+  for (let b = 0; b < nFaixas; b += 1) {
+    const lat = 90 - (180 * b) / (nFaixas - 1);
+    const perimetro = 2 * Math.PI * raioKm * Math.cos(lat * RADIANOS);
+    const quantos = b === 0 || b === nFaixas - 1 ? 1 : Math.max(1, Math.ceil(perimetro / passoKm));
+    const inicio = 360 * sorteia();
+    for (let q = 0; q < quantos; q += 1) if (poe(lat, inicio + (360 * q) / quantos, false)) emFaixas += 1;
+  }
+  // o que ficou descoberto
+  let preenchidos = 0;
+  for (let k = 0; k < n && preenchidos <= n / 1000; k += 1) {
+    if (coberto[k]) continue;
+    const j = Math.floor(k / largura);
+    if (poe(latitudeDaLinha(j, altura) * GRAUS, longitudeDaColuna(k % largura, largura), true)) preenchidos += 1;
+    else coberto[k] = 1;
+  }
+  let descobertos = 0;
+  for (let k = 0; k < n; k += 1) if (!coberto[k]) descobertos += 1;
+  return {
+    campo,
+    coberto,
+    corte,
+    retalhos: postos,
+    resumo: {
+      larguraKm,
+      sobreposicaoKm: larguraKm - passoKm,
+      faixas: nFaixas,
+      retalhos: emFaixas,
+      preenchimento: preenchidos,
+      porUnidade,
+      repeticoesForcadas,
+      erroRmsNaSobreposicaoM: pontosDoErro ? Math.sqrt(somaDoErro / pontosDoErro) : null,
+      descobertos,
+    },
+  };
+}
+
+// ------------------------------------------------------------
 // Tudo junto: a síntese de um corpo
 // ------------------------------------------------------------
 
@@ -3345,22 +4217,9 @@ function energiaNaMascara(campo, mascara, largura, altura) {
 }
 
 /**
- * A medida de uma unidade no relatório: as razões do S(d) por lag em texto
- * curto — contra o eixo da caixa e (iso) contra a média dos dois eixos dela.
- */
-function resumoDaMedida(m) {
-  if (m.semNucleo) return m;
-  const { id, rmsGraus, rmsAlvo, razaoRms, razaoSMin, razaoSMax, razaoSGeo, razaoIsoMin, razaoIsoMax } = m;
-  const porLag = m.razoes.map(
-    (r) => `${r.eixo} ${r.d.toFixed(1)} km: ${r.razao.toFixed(2)}${r.tMedio ? ` (iso ${(r.s / r.tMedio).toFixed(2)})` : ''}`
-  );
-  return { id, rmsGraus, rmsAlvo, razaoRms, razaoSMin, razaoSMax, razaoSGeo, razaoIsoMin, razaoIsoMax, porLag };
-}
-
-/**
  * A SÍNTESE de um corpo (PLAN-RELEVO.md, E3): do cache das alturas (`grade` =
  * `{ metros, vazio, largura, altura, raioM }`) ao campo COMPLETO F (Float32, m)
- * — medido onde há dado, inventado no vazio —, calibrado pelo lado medido.
+ * — medido onde há dado, inventado no vazio.
  *   1. pesos das unidades (`fonte`) na grade ÷4, ampliados pela spline;
  *   2. níveis RELATIVOS: a altura média da caixa-exemplo de cada unidade
  *      (`medidas`) menos a média global medida, menos ainda a média desses
@@ -3369,35 +4228,44 @@ function resumoDaMedida(m) {
  *      contrastes entre as unidades ficam; o mapa de unidades é palpite e não
  *      pode inventar um degrau de hemisfério. Presos na membrana no fundo da
  *      unidade (`restricoesDeNivel`);
- *   3. crateras ANTES da costura: as reais do vazio (`catalogo`, `guia`) e as
- *      sorteadas pela lei de cada unidade, de 2 texels para cima;
- *   4. aspereza: um ruído por banda simulada (σ ≤ R/5), amplitude por texel
- *      √(Σ wᵤ·gᵤₖ²) nas bandas finas (σ ≤ 50 km) e a média do vazio nas
- *      grossas; gᵤₖ² = energia medida da banda na caixa − a das crateras
- *      sorteadas no núcleo da unidade (≥ 0);
+ *   3. crateras ANTES da costura: as reais do vazio (`catalogo`, `guia`), de
+ *      qualquer tamanho, e as sorteadas pela lei de cada unidade só de
+ *      `DIAMETRO_MINIMO_SORTEADO_KM` para cima — as menores vêm nos pedaços;
+ *   4. a textura FINA (bandas de σ ≤ `CORTE_DA_COLCHA_KM`) é a COLCHA de
+ *      pedaços do medido da mesma unidade (`fontesDaColcha`, `colcha`): o
+ *      medido preenchido pela membrana menos a gaussiana do corte, lido só em
+ *      texel bem resolvido em toda banda e a `AFASTAMENTO_DA_FONTE_KM` do
+ *      vazio. As bandas do corte até R/5 são ruído, um por banda, com a
+ *      energia medida da banda na caixa-exemplo menos a das crateras
+ *      sorteadas no núcleo da unidade, na média do vazio;
  *   5. `dadoPorOitava` pelo mapa de qualidade (`qualidade`, item 5b);
- *   6. a costura; e a CALIBRAÇÃO: no núcleo de cada unidade (vazio, peso ≥
- *      0,9), RMS da inclinação (±10 %) e S(d) por eixo (±15 %) nos lags até
- *      30 km contra a caixa-exemplo; fora disso, UM reajuste dos gᵤₖ² das
- *      bandas de σ ≤ 30 km por mínimos quadrados não negativos — S_F(d) −
- *      Σ gₖ²·Sₖ(d) (crateras, níveis, costura, bandas largas) fica como está e
- *      os gₖ² novos fecham o alvo, Sₖ medido no próprio ruído; o ruído é
- *      isótropo, então o alvo de cada lag é a média dos dois eixos da caixa —
- *      e a costura de novo. As bandas de σ > 30 km ficam com o ganho da
- *      energia da caixa.
- * `opcoes`: `completaBorrado` (true), `variante` ('cache' | 'ro21'),
- * `calibra` (true), `registra`. Devolve `{ campo, relatorio }`.
+ *   6. a costura; e a CONFERÊNCIA: no núcleo de cada unidade (vazio, peso ≥
+ *      0,9), RMS da inclinação (±10 %) e S(d) nos lags até 30 km (média dos
+ *      dois eixos, ±15 %) contra o medido nas regiões-fonte da unidade. RMS
+ *      fora da faixa: a colcha é multiplicada por Σ wᵤ·aᵤ (aᵤ = alvo/obtido,
+ *      pesos suaves das unidades) e a costura refeita, uma vez.
+ * `ocultar` (Uint8, opcional — a prova do recorte escondido, E4): texels
+ * medidos tratados como VAZIO e tirados de toda fonte e de toda conta daqui;
+ * o valor deles não é lido. As crateras reais entram só no vazio de verdade;
+ * `medidas` (lei de crateras, energias, níveis) devem vir medidas SEM o
+ * recorte. `opcoes`: `completaBorrado` (true), `variante` ('cache' |
+ * 'ro21'), `calibra` (true), `colcha` (repassadas à `colcha`), `registra`.
+ * Devolve `{ campo, relatorio }`.
  */
-export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, guia, semente, opcoes = {} }) {
+export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, guia, semente, ocultar, opcoes = {} }) {
   const anota = opcoes.registra ?? (() => {});
-  const { metros, vazio, largura, altura, raioM } = grade;
+  const { metros, largura, altura, raioM } = grade;
   const n = largura * altura;
+  const vazio = new Uint8Array(n);
+  for (let k = 0; k < n; k += 1) vazio[k] = grade.vazio[k] || (ocultar && ocultar[k]) ? 1 : 0;
   const raioKm = raioM / 1000;
   const texelKm = raioKm * (Math.PI / altura);
   const sigmasKm = sigmasDasOitavas(raioM, altura);
   const nb = sigmasKm.length + 1;
   const sigmaDa = (k) => (k < nb - 1 ? sigmasKm[k] : 2 * sigmasKm[nb - 2]);
   const simuladas = Array.from({ length: nb }, (_, k) => k).filter((k) => sigmaDa(k) <= FRACAO_DO_RAIO_DA_MEMBRANA * raioKm);
+  const daColcha = simuladas.filter((k) => sigmaDa(k) <= CORTE_DA_COLCHA_KM);
+  const ruidosas = simuladas.filter((k) => sigmaDa(k) > CORTE_DA_COLCHA_KM);
   const um = new Uint8Array(n).fill(1);
   const semVazio = new Uint8Array(n);
   const dado = new Uint8Array(n);
@@ -3469,61 +4337,103 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
   // 5. o dado de cada banda
   const dadoPorOitava = mascarasDoDado({ vazio, largura, altura, nBandas: nb, qualidade, completaBorrado: opcoes.completaBorrado ?? true });
 
-  // 3. as crateras
+  // 3. as crateras: as reais do vazio de verdade e as sorteadas grandes
   const leis = ids.map((id) => leiDeCrateras(medidas.unidades[id].crateras));
-  const reais = crateraReaisNoVazio(catalogo, guia, vazio, largura, altura);
-  const { crateras, porUnidade } = sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, raioM, dMinKm: 2 * texelKm, reais });
+  const reais = crateraReaisNoVazio(catalogo, guia, grade.vazio, largura, altura);
+  const { crateras, porUnidade } = sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, raioM, dMinKm: DIAMETRO_MINIMO_SORTEADO_KM, reais });
   const camada = camadaDeCrateras({ crateras, morfometria: medidas.morfometria, largura, altura, raioM, variante: opcoes.variante });
-  anota(`crateras: ${reais.length} reais, ${crateras.length - reais.length} sorteadas`);
+  anota(`crateras: ${reais.length} reais, ${crateras.length - reais.length} sorteadas (≥ ${DIAMETRO_MINIMO_SORTEADO_KM} km)`);
 
-  // 4. os ganhos de partida: energia medida − a das crateras, por unidade e banda
+  // 4. a colcha: o fino do medido (membrana − a gaussiana do corte), as fontes e os retalhos
+  const cheio = membranaDaCostura(metros, dado, sigmasKm, largura, altura, raioM, restricoes);
+  const sigmaDoCorte = sigmaDa(Math.max(...daColcha));
+  const grosso = desfocaComMascara(cheio, um, largura, altura, raioM, sigmaDoCorte).valor;
+  const fina = new Float32Array(n);
+  for (let q = 0; q < n; q += 1) fina[q] = cheio[q] - grosso[q];
+  const resolvido = mascarasDoDado({ vazio, largura, altura, nBandas: nb, qualidade, completaBorrado: true })[0];
+  const f = FATOR_DAS_FONTES;
+  const Lf = largura / f;
+  const vazioF = new Uint8Array(Lf * (altura / f));
+  for (let k = 0; k < n; k += 1) if (vazio[k]) vazioF[Math.floor(k / largura / f) * Lf + Math.floor((k % largura) / f)] = 1;
+  const longe = distanciaAoVazioKm(vazioF, Lf, altura / f, raioM);
+  const valido = new Uint8Array(n);
+  for (let k = 0; k < n; k += 1) {
+    valido[k] = resolvido[k] && longe[Math.floor(k / largura / f) * Lf + Math.floor((k % largura) / f)] >= AFASTAMENTO_DA_FONTE_KM ? 1 : 0;
+  }
+  const larguraKm = opcoes.colcha?.larguraKm ?? LARGURA_DO_RETALHO_KM;
+  const fontes = fontesDaColcha({ metros, valido, fonte, largura, altura, raioM, larguraKm });
+  const direcoes = ids.map((_, u) => (fontes[u]?.angulo ? direcaoDoCinturao(unidades.pesos[u], Lr, Ar, raioM) : null));
+  anota(`a parte fina do medido e as fontes (${ids.map((id, u) => `${id} ${fontes[u]?.areaKm2 ?? 0} km²`).join(', ')})`);
+  const retalhos = colcha({ fina, coef: coeficientesDeSpline(fina, largura, altura), largura, altura, raioM, pesos, fontes, direcoes, semente, opcoes: opcoes.colcha });
+  anota(`a colcha: ${retalhos.resumo.retalhos} + ${retalhos.resumo.preenchimento} retalhos`);
+
+  // 4b. o ruído das bandas do corte até R/5: energia medida − a das crateras sorteadas, no núcleo
   const bandasC = decompoeEmOitavas(camada, um, largura, altura, raioM, sigmasKm);
-  const energiaDasCrateras = ids.map((_, u) => simuladas.map((k) => (nucleos[u] ? energiaNaMascara(bandasC[k], nucleos[u], largura, altura) : 0)));
+  const energiaDasCrateras = ids.map((_, u) => ruidosas.map((k) => (nucleos[u] ? energiaNaMascara(bandasC[k], nucleos[u], largura, altura) : 0)));
   bandasC.length = 0;
-  const g2Partida = ids.map((id, u) =>
+  const g2 = ids.map((id, u) =>
     Array.from({ length: nb }, (_, k) => {
-      const q = simuladas.indexOf(k);
+      const q = ruidosas.indexOf(k);
       return q < 0 ? 0 : Math.max(0, (medidas.unidades[id].energiaPorBanda[k] ?? 0) - energiaDasCrateras[u][q]);
     })
   );
-  const ruidos = Array.from({ length: nb }, (_, k) => (simuladas.includes(k) ? ruidoDaOitava(semente, k, sigmasKm, largura, altura, raioM) : null));
-  const baseS = ruidos.map((r) => (r ? funcaoDeEstrutura(r, um, largura, altura, raioM, { passoLinhas: 4, passoColunas: 4 }) : null));
-  anota('os ruídos das bandas');
+  const ruidos = Array.from({ length: nb }, (_, k) => (ruidosas.includes(k) ? ruidoDaOitava(semente, k, sigmasKm, largura, altura, raioM) : null));
+  const amplitudes = Array.from({ length: nb }, (_, k) => {
+    if (!ruidosas.includes(k)) return 0;
+    if (sigmaDa(k) > SIGMA_DOS_PESOS_KM) return Math.sqrt(ids.reduce((x, _, u) => x + fracaoNoVazio[u] * g2[u][k], 0));
+    const a = new Float32Array(n);
+    for (let q = 0; q < n; q += 1) {
+      let x = 0;
+      for (let u = 0; u < ids.length; u += 1) x += pesos[u][q] * g2[u][k];
+      a[q] = Math.sqrt(x);
+    }
+    return a;
+  });
+  const ruido = somaDeOitavas(ruidos, amplitudes, n);
+  ruidos.length = 0;
+  anota('o ruído das bandas largas');
 
-  const amplitudes = (g2) =>
-    Array.from({ length: nb }, (_, k) => {
-      if (!simuladas.includes(k)) return 0;
-      if (sigmaDa(k) > SIGMA_DOS_PESOS_KM) return Math.sqrt(ids.reduce((x, _, u) => x + fracaoNoVazio[u] * g2[u][k], 0));
-      const a = new Float32Array(n);
-      for (let q = 0; q < n; q += 1) {
-        let x = 0;
-        for (let u = 0; u < ids.length; u += 1) x += pesos[u][q] * g2[u][k];
-        a[q] = Math.sqrt(x);
+  const monta = (escalas) => {
+    const simulada = new Float32Array(n);
+    for (let q = 0; q < n; q += 1) {
+      let a = 1;
+      if (escalas) {
+        a = 0;
+        for (let u = 0; u < ids.length; u += 1) a += pesos[u][q] * escalas[u];
       }
-      return a;
-    });
-  const monta = (g2) => {
-    const simulada = somaDeOitavas(ruidos, amplitudes(g2), n);
-    for (let q = 0; q < n; q += 1) simulada[q] += camada[q];
-    return costura({ medida: metros, dadoPorOitava, simulada, sigmasKm, largura, altura, raioM, restricoes, registra: anota });
+      simulada[q] = a * retalhos.campo[q] + ruido[q] + camada[q];
+    }
+    return costura({ medida: metros, dadoPorOitava, simulada, sigmasKm, largura, altura, raioM, restricoes, cheio, registra: anota });
   };
+
+  // a conferência: o campo no núcleo de cada unidade contra o medido nas regiões-fonte dela
+  const alvos = ids.map((id, u) => {
+    if (!fontes[u]) return null;
+    const regiao = new Uint8Array(n);
+    for (const cx of fonte.unidades[id].fontes ?? [fonte.unidades[id].exemplo]) {
+      const m = mascaraDaCaixa(cx, largura, altura);
+      for (let k = 0; k < n; k += 1) if (m[k] && valido[k]) regiao[k] = 1;
+    }
+    return {
+      rmsGraus: inclinacaoRms(metros, vazio, largura, altura, raioM, regiao).rmsGraus,
+      S: funcaoDeEstrutura(metros, regiao, largura, altura, raioM, { passoLinhas: 2, passoColunas: 2 }),
+    };
+  });
   const mede = (F) =>
     ids.map((id, u) => {
-      if (!nucleos[u]) return { id, semNucleo: true };
-      const alvo = medidas.unidades[id];
+      if (!nucleos[u] || !alvos[u]) return { id, semNucleo: true };
+      const alvo = alvos[u];
       const rms = inclinacaoRms(F, semVazio, largura, altura, raioM, nucleos[u]).rmsGraus;
       const S = funcaoDeEstrutura(F, nucleos[u], largura, altura, raioM, { passoLinhas: 2, passoColunas: 2 });
       const razoes = [];
-      for (const eixo of ['ns', 'ew']) {
-        for (const [d, v] of S[eixo]) {
-          if (d > LAG_MAXIMO_DA_CALIBRACAO_KM) continue;
-          const t = interpolaS(alvo.S[eixo], d);
-          const outro = interpolaS(alvo.S[eixo === 'ns' ? 'ew' : 'ns'], d);
-          if (t) razoes.push({ eixo, d, s: v, t, tMedio: outro ? (t + outro) / 2 : null, razao: v / t });
-        }
+      for (const [d, ns] of S.ns) {
+        if (d > LAG_MAXIMO_DA_CALIBRACAO_KM) continue;
+        const ew = interpolaS(S.ew, d);
+        const tNs = interpolaS(alvo.S.ns, d);
+        const tEw = interpolaS(alvo.S.ew, d);
+        if (ew && tNs && tEw) razoes.push({ d, razao: (ns + ew) / (tNs + tEw) });
       }
       const r = razoes.map((x) => x.razao);
-      const iso = razoes.filter((x) => x.tMedio).map((x) => x.s / x.tMedio);
       return {
         id,
         rmsGraus: rms,
@@ -3532,79 +4442,58 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
         razaoSMin: Math.min(...r),
         razaoSMax: Math.max(...r),
         razaoSGeo: Math.exp(r.reduce((x, v) => x + Math.log(v), 0) / r.length),
-        razaoIsoMin: Math.min(...iso),
-        razaoIsoMax: Math.max(...iso),
-        razoes,
+        porLag: razoes.map((x) => `${x.d.toFixed(1)} km: ${x.razao.toFixed(2)}`),
       };
     });
-  const dentro = (m) =>
-    m.semNucleo ||
-    (Math.abs(m.razaoRms - 1) <= TOLERANCIA_DO_RMS && m.razaoSMin >= 1 - TOLERANCIA_DO_S && m.razaoSMax <= 1 + TOLERANCIA_DO_S);
+  const dentro = (m) => m.semNucleo || Math.abs(m.razaoRms - 1) <= TOLERANCIA_DO_RMS;
 
-  let campo = monta(g2Partida);
+  let campo = monta(null);
   const antes = mede(campo);
-  anota('a costura e a medida do campo');
-  let g2Final = g2Partida;
+  anota('a costura e a conferência');
+  let escalas = null;
   let depois = null;
   if ((opcoes.calibra ?? true) && antes.some((m) => !dentro(m))) {
-    // o ruído é isótropo: o alvo de cada lag é a média dos dois eixos da caixa
-    const reajustadas = simuladas.filter((k) => sigmaDa(k) <= LAG_MAXIMO_DA_CALIBRACAO_KM);
-    g2Final = ids.map((_, u) => {
-      const m = antes[u];
-      if (m.semNucleo || dentro(m)) return g2Partida[u];
-      const p = reajustadas.length;
-      const linhas = m.razoes
-        .filter((r) => r.tMedio)
-        .map((r) => {
-          const base = reajustadas.map((k) => interpolaS(baseS[k][r.eixo], r.d) ?? 0);
-          const modelo = base.reduce((x, b, q) => x + g2Partida[u][reajustadas[q]] * b, 0);
-          return { a: base.map((b) => b / r.tMedio), b: (r.tMedio - (r.s - modelo)) / r.tMedio };
-        });
-      const A = new Float64Array(linhas.length * p);
-      const b = new Float64Array(linhas.length);
-      linhas.forEach((l, i) => {
-        A.set(l.a, i * p);
-        b[i] = l.b;
-      });
-      const x = minimosQuadradosNaoNegativos(A, b, linhas.length, p);
-      const g2 = g2Partida[u].slice();
-      reajustadas.forEach((k, q) => (g2[k] = x[q]));
-      return g2;
-    });
-    campo = monta(g2Final);
+    escalas = antes.map((m) => (dentro(m) ? 1 : 1 / m.razaoRms));
+    campo = monta(escalas);
     depois = mede(campo);
-    anota('a calibração refeita');
+    anota('a colcha reescalada e a costura refeita');
   }
   let naoFinitos = 0;
   for (let q = 0; q < n; q += 1) if (!Number.isFinite(campo[q])) naoFinitos += 1;
-  const ganhos = (g2) => Object.fromEntries(ids.map((id, u) => [id, g2[u].map((v) => Math.round(Math.sqrt(v)))]));
   return {
     campo,
     relatorio: {
       unidades: ids,
-      bandasSimuladas: simuladas,
+      bandasDaColcha: daColcha,
+      bandasDeRuido: ruidosas,
       sigmasKm,
       fracaoNoVazio: Object.fromEntries(ids.map((id, u) => [id, fracaoNoVazio[u]])),
       alturaMediaMedida,
       niveis,
       alturaMediaDoVazio: estatisticaDeAltura(campo, vazio, largura, altura).media,
       texelsPresos: restricoes.mascara.reduce((x, v) => x + v, 0),
+      texelsOcultos: ocultar ? ocultar.reduce((x, v) => x + (v ? 1 : 0), 0) : 0,
       leis: Object.fromEntries(
         ids.map((id, u) => [
           id,
           {
             abaixo: leis[u].abaixo,
             inclinacaoMedida: leis[u].inclinacaoMedida,
-            N: Object.fromEntries([2 * texelKm, 8, 11.3, 16, 32].map((d) => [d.toFixed(1), leis[u].N(d) * 1e6])),
+            N: Object.fromEntries([2 * texelKm, 8, 11.3, 16, 32, DIAMETRO_MINIMO_SORTEADO_KM].map((d) => [d.toFixed(1), leis[u].N(d) * 1e6])),
           },
         ])
       ),
       crateras: { reais: reais.map((c) => `${c.id} ${c.dKm} km`), sorteadas: porUnidade },
       energiaDasCrateras: Object.fromEntries(ids.map((id, u) => [id, energiaDasCrateras[u].map(Math.round)])),
-      ganhosAntes: ganhos(g2Partida),
-      ganhosDepois: ganhos(g2Final),
-      antes: antes.map(resumoDaMedida),
-      depois: depois && depois.map(resumoDaMedida),
+      ganhosDoRuido: Object.fromEntries(ids.map((id, u) => [id, ruidosas.map((k) => Math.round(Math.sqrt(g2[u][k])))])),
+      colcha: {
+        ...retalhos.resumo,
+        porUnidade: Object.fromEntries(ids.map((id, u) => [id, retalhos.resumo.porUnidade[u]])),
+        fontes: Object.fromEntries(ids.map((id, u) => [id, fontes[u] && { areaKm2: fontes[u].areaKm2, caixas: fontes[u].caixas }])),
+      },
+      escalasDaColcha: escalas && Object.fromEntries(ids.map((id, u) => [id, escalas[u]])),
+      antes,
+      depois,
       bandasBorradasCompletadas: dadoPorOitava.filter((m) => m !== dadoPorOitava[nb - 1]).length,
       naoFinitos,
     },

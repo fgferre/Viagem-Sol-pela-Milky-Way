@@ -25,6 +25,10 @@
         "lon": [330,360],
         "lat": [30,45]
       },
+      "fontes": [
+        { "lon": [330,360], "lat": [30,57], "nota": "Oz Terra a oeste de 0°: chão liso com bordas de cratera e escarpas nítidas, ao norte do cinturão (ao sul de ~30°N) e abaixo da calota de preenchimento liso (acima de ~60°N, E2b); contém a caixa-exemplo. Para em 330°E: a oeste dali (e em 265–300°E) o DEM tem uma textura de bolhas alongadas leste–oeste, outro caráter, provável artefato perto do limbo — visto no relevo sombreado com Sol do norte. Qualidade: mapa de qualidade da E2b (.cache/relevo/charon-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km); a célula de 340–345°E 30–35°N tem 1 banda borrada e sai pela máscara." },
+        { "lon": [0,50], "lat": [35,57], "nota": "Oz Terra a leste de 0°, ao norte de Serenity Chasma; para em 50°E, antes da borda borrada (55–80°E perde 1–2 bandas). Qualidade: mapa de qualidade da E2b (.cache/relevo/charon-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km)." }
+      ],
       "confianca": "palpite",
       "fonte": "Be21 §3 (p. 6), §4.3 (p. 10), §4.5 e Conclusões (p. 11); Figs. 2b e 5",
       "nota": "Todo o lado de trás fora do cinturão e das planícies lisas. Ao norte do cinturão continua Oz Terra; ao sul, Be21 veem escarpas grandes (então não é planície tipo Vulcan, e Caronte não tem dicotomia) e acham a faixa 255–300°E 'provavelmente mais da unidade Bl'. Há crateras >10 km, mas poucas foram vistas (15–40 km/px)."
@@ -41,6 +45,10 @@
         "lon": [0,32],
         "lat": [14,30]
       },
+      "fontes": [
+        { "lon": [0,45], "lat": [12,34], "nota": "Serenity Chasma e a continuação dela para leste, rumo a Argo (Be21 §4.3: a ruptura dá a volta); contém a caixa-exemplo. Qualidade: mapa de qualidade da E2b (.cache/relevo/charon-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km)." },
+        { "lon": [315,360], "lat": [2,28], "nota": "As escarpas e fossas a oeste de Serenity, entre Oz Terra e Vulcan Planitia (o sistema Serenity–Mandjet). Qualidade: mapa de qualidade da E2b (.cache/relevo/charon-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km); 350–360°E 5–10°N tem trechos com 1 banda borrada, que saem pela máscara." }
+      ],
       "confianca": "palpite",
       "fonte": "Be21 §4.3 (p. 10), Figs. 2b (p. 5) e 5 (p. 7), Conclusões (p. 11); Be17 via PLAN-RELEVO.md",
       "nota": "Be21: a ruptura da crosta do lado da frente 'dá a volta' em Caronte; escarpas com mediana de 213 km, em grupos de 3–4 espaçadas 75–115 km; Mandjet (450 × 30 km, 5–7 km de fundo) é visível desde 36,5 km/px. O traçado é meu: faixa de ~250 km sobre a tendência das escarpas mapeadas (Argo → 125–145°E → 174°E/13°N → 200–240°E → a possível extensão de Mandjet em 249–264°E). A caixa-exemplo inclui a própria Serenity (40–50 km de largura, ≥5 km de relevo): se a E6 escavar as fossas como feições, medir o exemplo sem elas."
@@ -58,6 +66,9 @@
         "lon": [335,358],
         "lat": [-22,-6]
       },
+      "fontes": [
+        { "lon": [300,358], "lat": [-30,-3], "nota": "Vulcan Planitia a oeste de 0°: ao sul das escarpas do cinturão e acima da borda sul do DEM; para em 358°E, antes dos montes em fosso perto de 0–8°E (Kubrick); a leste de 0° a planície bem resolvida é estreita demais para um retalho de 140 km. Contém a caixa-exemplo. Qualidade: mapa de qualidade da E2b (.cache/relevo/charon-qualidade, bandasBorradas = 0 nas bandas de σ ≤ 30 km); ao sul de −25° ela vale só até ~345°E e a máscara corta o resto." }
+      ],
       "confianca": "mapa",
       "fonte": "Be21 §4.4 e Fig. 10 (pp. 10–11); §4.1 (pp. 6–8); Figs. 2b e 4",
       "nota": "Dois polígonos: (1) o círculo liso de Argo (>400 km pela fonte, ~400 km medidos na Fig. 2b, centro ~15°N 92,5°E), sem escarpas grandes dentro e não deprimido; Argo Chasma é o seu quadrante NO; Be21 o marcam como incerto; (2) a continuação de Vulcan ao sul e a leste de Butler Mons (20–72°E), onde Be21 veem as planícies envolverem a montanha. O corte em 72°E (início das fossas N–S de 74–77°E) é palpite."
