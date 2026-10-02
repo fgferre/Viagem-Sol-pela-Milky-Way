@@ -81,6 +81,7 @@
     "confianca": "palpite",
     "nota": "Sem DEM e sem imagem de dia (o sul estava no escuro; só luz de Plutão). Pelo plano (01/10), vale a unidade mais ao sul do lado medido: Vulcan Planitia, que passa do terminador (~36°S) sem borda sul conhecida (Be21 §4.1)."
   },
+  "completaBorrado": true,
   "dadoRuim": [
     {
       "lon": [255, 330],

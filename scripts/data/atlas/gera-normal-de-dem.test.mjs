@@ -22,6 +22,8 @@
 //     (`iauOrientation.ts`) e a lista de corpos contra `NORMAL_MEDIDA`
 //     (`rochoso.ts`) — quem assa e quem consome não podem divergir em
 //     silêncio.
+//  8. O PORTÃO DO RELEVO INVENTADO. Plutão e Caronte só gravam o RGB que o
+//     dono aprovou para as escolhas do JSON; o resto imprime o hash e recusa.
 //
 // Nada aqui toca rede ou o DEM (o único disco é a pasta temporária que a
 // seção 7 cria e apaga, para o cache das alturas): o script foi partido
@@ -43,11 +45,13 @@ import {
   MARGEM_DA_BORDA,
   assaNormais,
   conferirAlinhamento,
+  decideGravacao,
   gravarCacheDeAlturas,
   lerCacheDeAlturas,
   mediaDeCaixa,
   medirAlinhamento,
 } from './gera-normal-de-dem.mjs';
+import { chaveDasEscolhas } from './relevo-inventado.mjs';
 
 const L = 64;
 const A = 32;
@@ -258,9 +262,20 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     // 0°, a meia volta do mapa de cor), Caronte com 0° (borda em 180°)
     expect(CORPOS.pluto).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 0 });
     expect(CORPOS.charon).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 180 });
-    // e só os dois DEMs parciais ligam a máscara do vazio: os cinco de
-    // antes assam sem ela, byte a byte como antes
-    expect(Object.keys(CORPOS).filter((id) => CORPOS[id].vazioLiso)).toEqual(['pluto', 'charon']);
+    // e só os dois DEMs parciais ligam a máscara do vazio e o relevo
+    // inventado nela: os cinco de antes assam sem ela, byte a byte como antes
+    expect(Object.keys(CORPOS).filter((id) => CORPOS[id].vazioInventado)).toEqual(['pluto', 'charon']);
+    // semente fixa e as três tabelas pinadas nos dois registros do Zenodo, com sha256
+    for (const id of ['pluto', 'charon']) {
+      const { semente, tabelas, sha256Aprovado } = CORPOS[id].vazioInventado;
+      expect(Number.isInteger(semente), `${id} semente`).toBe(true);
+      expect(Object.keys(tabelas)).toEqual(['catalogo', 'guia', 'ro21']);
+      for (const [nome, { url, sha256 }] of Object.entries(tabelas)) {
+        expect(url, `${id} ${nome}`).toMatch(/^https:\/\/zenodo\.org\/records\/(8292107|7753861)\/files\//);
+        expect(sha256, `${id} ${nome}`).toMatch(/^[0-9a-f]{64}$/);
+      }
+      expect(typeof sha256Aprovado).toBe('object');
+    }
     // e só eles guardam as alturas em cache: os outros cinco leem a fonte como sempre
     expect(Object.keys(CORPOS).filter((id) => CORPOS[id].cacheDeAlturas)).toEqual(['pluto', 'charon']);
     // e NINGUÉM fica de fora do pino: corpo novo entra na tabela com as
@@ -464,6 +479,40 @@ describe('7. o cache das alturas (rodada do relevo inventado)', () => {
       await expect(lerCacheDeAlturas(dir, 'teste')).rejects.toThrow(/cache corrompido/);
     } finally {
       await rm(raiz, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('8. o portão do relevo inventado (Plutão e Caronte, E8)', () => {
+  /**
+   * O gerador só grava o normal.png cujo RGB decodificado o dono aprovou na
+   * prévia, para as escolhas que estão no JSON do corpo — a mesma escolha
+   * com outro RGB, ou uma escolha nova, imprime o hash e RECUSA.
+   */
+  it('grava só o hash aprovado da chave das escolhas; outro hash ou chave sem hash recusam', () => {
+    const fonte = { completaBorrado: true, alisamentos: [{ id: 'sputnik', ativo: false }] };
+    const chave = chaveDasEscolhas(fonte);
+    expect(chave).toBe('completa:1,sputnik:0');
+    expect(chaveDasEscolhas({})).toBe('completa:1');
+    expect(chaveDasEscolhas({ ...fonte, completaBorrado: false, alisamentos: [{ id: 'sputnik', ativo: true }] })).toBe('completa:0,sputnik:1');
+    const [a, b] = ['a'.repeat(64), 'b'.repeat(64)];
+    const aprovados = { [chave]: a };
+
+    expect(decideGravacao({ nome: 'Plutão', chave, sha256: a, aprovados })).toMatchObject({ grava: true });
+
+    const outro = decideGravacao({ nome: 'Plutão', chave, sha256: b, aprovados });
+    expect(outro.grava).toBe(false);
+    expect(outro.mensagem).toContain(b);
+    expect(outro.mensagem).toContain(a);
+    expect(outro.mensagem).toMatch(/NÃO foi gravado/);
+
+    for (const semEntrada of [
+      decideGravacao({ nome: 'Plutão', chave: 'completa:1,sputnik:1', sha256: a, aprovados }),
+      decideGravacao({ nome: 'Caronte', chave: 'completa:1', sha256: a, aprovados: {} }),
+    ]) {
+      expect(semEntrada.grava).toBe(false);
+      expect(semEntrada.mensagem).toMatch(/ainda não aprovado/);
+      expect(semEntrada.mensagem).toContain(a);
     }
   });
 });

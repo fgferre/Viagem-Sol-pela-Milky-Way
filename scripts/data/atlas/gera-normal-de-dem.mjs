@@ -126,22 +126,37 @@
 // sobrevoo e a calota norte), ~44 % em Caronte (o hemisfério voltado para
 // Plutão). O tapa-buraco põe o vazio em 0 m, e o degrau entre o dado e
 // esse zero viraria uma PAREDE de normal em volta de tudo que foi medido.
-// Onde a tabela declara `vazioLiso`:
+// Onde a tabela declara `vazioInventado`:
 //   - `mediaDeCaixa` marca o texel VAZIO: o que não teve amostra com
 //     dado E também o PARCIAL, que teve alguma sem dado — a média dele
 //     cobre só um pedaço da caixa, colado na borda do levantamento. O
 //     preço é um texel a mais de borda e um "+" liso em volta de cada
 //     furo interno;
 //   - a máscara gira com o DEM (`orientar`, a mesma conta);
-//   - `assaNormais` dá a normal LISA (128,128,255, a do terreno plano) a
-//     todo texel cuja diferença central toca o vazio — ele mesmo ou um
-//     dos quatro vizinhos —, então nenhuma normal sai do 0 m inventado; o
-//     RMS e a máxima impressos medem só os texels com dado.
-// Liso é a bola da casa sem relevo. A borda é seca, sem esfumado: se ela
-// aparecer na foto, quem decide é o dono. Os cinco corpos de antes não
-// declaram `vazioLiso` e assam como sempre, byte a byte. A GUARDA não usa
-// a máscara (ela vê o vazio como 0 m): num corpo assim, rode com
-// `--varredura` e confira que o pico cai em 0°.
+//   - o vazio ganha relevo INVENTADO (abaixo). Até 02/10 ele saía LISO:
+//     `assaNormais` com a máscara dá a normal do terreno plano
+//     (128,128,255) a todo texel cuja diferença central toca o vazio, e a
+//     opção continua lá.
+// Os cinco corpos de antes não declaram `vazioInventado` e assam como
+// sempre, byte a byte. A GUARDA não usa a máscara (ela vê o vazio como
+// 0 m): num corpo assim, rode com `--varredura` e confira que o pico cai
+// em 0°.
+//
+// O RELEVO INVENTADO (Plutão e Caronte, PLAN-RELEVO.md, 02/10/2026). O
+// mapa sai de `inventaRelevoDoCorpo` (`relevo-inventado.mjs`), a MESMA
+// função das prévias que o dono aprova: as operações declaradas no medido,
+// as medidas do lado medido, a síntese e as normais. As entradas: o cache
+// das alturas, `fonte/<corpo>-lado-de-tras.json` (as unidades e as
+// ESCOLHAS do dono: `completaBorrado` e os `alisamentos`, cada um com
+// `ativo`), a `semente` do corpo e três tabelas pinadas por url e sha256
+// (`vazioInventado.tabelas`, do Zenodo, guardadas em `.cache/relevo/fontes/`
+// e recusadas se o sha256 não bater). O PORTÃO: o sha256 do RGB
+// DECODIFICADO do normal.png tem de ser o de `vazioInventado.sha256Aprovado`
+// para a chave das escolhas (`chaveDasEscolhas`, ex. "completa:1,sputnik:0");
+// sem entrada, ou com outro hash, o script imprime o hash e NÃO grava. Ele
+// imprime também a calibração, as versões (node, V8, sharp, libvips) e os
+// sha256 do cache, do `map.jpg`, do JSON e das tabelas — o que é preciso
+// para refazer o mesmo mapa.
 //
 // O CACHE DAS ALTURAS (Plutão e Caronte, 01/10/2026). Os dois DEMs vêm por
 // faixas HTTP (591 e 154 MiB) e a rodada do relevo inventado assa várias
@@ -165,6 +180,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { giraColunasDeImagem } from './lib-texturas.mjs';
+import { inventaRelevoDoCorpo } from './relevo-inventado.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -189,9 +205,11 @@ const rootDirectory = path.resolve(
  * eixos equatoriais e `c` o polar, e o raio desse elipsoide é subtraído
  * do dado antes de derivar, para não contar a figura global duas vezes.
  *
- * `vazioLiso` só existe onde o DEM é PARCIAL (Plutão, Caronte): o vazio
- * e a borda dele saem com a normal lisa, não com a parede do 0 m (ver o
- * cabeçalho).
+ * `vazioInventado` só existe onde o DEM é PARCIAL (Plutão, Caronte): o
+ * vazio ganha relevo inventado com a `semente` fixa do corpo e as `tabelas`
+ * pinadas (`arquivo` em `.cache/relevo/fontes/`, `url`, `sha256`), e o mapa
+ * só é gravado se o sha256 do RGB decodificado for o de `sha256Aprovado`
+ * para a chave das escolhas do JSON do corpo (ver o cabeçalho).
  *
  * `cacheDeAlturas` só existe onde ler o DEM pela rede custa centenas de
  * MiB (Plutão, Caronte): as alturas lidas ficam em `.cache/relevo/` e as
@@ -325,9 +343,14 @@ export const CORPOS = {
   },
 
   // OS DOIS DA NEW HORIZONS (01/10/2026): DEMs de 300 m do sobrevoo de
-  // 2015, PARCIAIS — daí `vazioLiso` (ver o cabeçalho). Schenk et al.
+  // 2015, PARCIAIS — daí `vazioInventado` (ver o cabeçalho). Schenk et al.
   // 2018: Plutão em Icarus 314, 400 (doi:10.1016/j.icarus.2018.06.008),
-  // Caronte em Icarus 315, 124 (doi:10.1016/j.icarus.2018.06.010).
+  // Caronte em Icarus 315, 124 (doi:10.1016/j.icarus.2018.06.010). As
+  // tabelas do relevo inventado: o catálogo de crateras de Robbins v2 e o
+  // guia de regiões (Zenodo 8292107, 2023, doi:10.5281/zenodo.8292107) e as
+  // profundidades de Ro21 (Zenodo 7753861, v1.1, doi:10.5281/zenodo.7753861).
+  // `sha256Aprovado` sem a chave das escolhas = ainda não aprovado: o
+  // gerador imprime o hash e não grava.
   pluto: {
     nome: 'Plutão',
     diretorio: 'pluto',
@@ -342,7 +365,28 @@ export const CORPOS = {
     longitudeDaBordaEsquerdaGraus: 0,
     // dado em ~45 % do globo: de −50° a +89°, no equador só de 84° a 247°E,
     // acima de +60° em toda longitude
-    vazioLiso: true,
+    vazioInventado: {
+      // a semente das prévias de 02/10
+      semente: 20261002,
+      tabelas: {
+        catalogo: {
+          arquivo: 'robbins-v2 - Pluto Database.csv',
+          url: 'https://zenodo.org/records/8292107/files/Supplementary%20Material%20-%20Pluto%20Database.csv?download=1',
+          sha256: 'efa99337d53e346ef9fc11d5ab8ce9f67d0656b4cdbfb27b5e1cd6bd33ee02ca',
+        },
+        guia: {
+          arquivo: 'robbins-v2 - Pluto Region Guide.csv',
+          url: 'https://zenodo.org/records/8292107/files/Supplementary%20Material%20-%20Pluto%20Region%20Guide.csv?download=1',
+          sha256: '10a639cc8f309dca0df6f5664cec36a4ad73449b279b4d7c4ab964b983fc27f3',
+        },
+        ro21: {
+          arquivo: 'ro21 - Pluto Table, v1.1.csv',
+          url: 'https://zenodo.org/records/7753861/files/Supplemental%20Material,%20Pluto%20Table,%20v1.1.csv?download=1',
+          sha256: '2b230e61c79c8ac2bc537534e4e365621f39c0ad51fb2872507618431318e3da',
+        },
+      },
+      sha256Aprovado: {},
+    },
     // o DEM (591 MiB) vem por faixas HTTP; o cache em `.cache/relevo/` serve a
     // rodada do relevo inventado — as prévias e o assamento final — e mantém
     // a guarda sobre os mesmos números
@@ -367,7 +411,27 @@ export const CORPOS = {
     // meridiano central 0°, que já é a convenção da casa: giro 0
     longitudeDaBordaEsquerdaGraus: 180,
     // dado em ~44 % do globo: o hemisfério voltado para Plutão, de −42° a +89°
-    vazioLiso: true,
+    vazioInventado: {
+      semente: 20261002,
+      tabelas: {
+        catalogo: {
+          arquivo: 'robbins-v2 - Charon Database.csv',
+          url: 'https://zenodo.org/records/8292107/files/Supplementary%20Material%20-%20Charon%20Database.csv?download=1',
+          sha256: '89ab321ca61b5a02c22c2c23c867857cf8ea3bc05c0a3564ade6fc372695a622',
+        },
+        guia: {
+          arquivo: 'robbins-v2 - Charon Region Guide.csv',
+          url: 'https://zenodo.org/records/8292107/files/Supplementary%20Material%20-%20Charon%20Region%20Guide.csv?download=1',
+          sha256: '4095c47ecdf8550fed1995ef72cbde80d82d91ffa925659431bc8de3889c8bf9',
+        },
+        ro21: {
+          arquivo: 'ro21 - Charon Table, v1.1.csv',
+          url: 'https://zenodo.org/records/7753861/files/Supplemental%20Material,%20Charon%20Table,%20v1.1.csv?download=1',
+          sha256: 'fc18b7991b32ab3a62b7ce8fd1f4c8d92de8b79c614bf1ae57fe831efce22885',
+        },
+      },
+      sha256Aprovado: {},
+    },
     // o DEM (154 MiB) vem por faixas HTTP; o mesmo cache de Plutão (ver acima)
     cacheDeAlturas: true,
     fonte: {
@@ -545,7 +609,7 @@ async function conferirRotuloPds(corpo) {
  * `vazio` é a MÁSCARA do texel sem dado (1/0): a caixa sem amostra com
  * dado e também a PARCIAL, com alguma amostra sem dado (ver o
  * cabeçalho). `vazios` continua contando só a primeira — é o número que
- * os corpos sem `vazioLiso` sempre imprimiram. A média não muda.
+ * os corpos sem `vazioInventado` sempre imprimiram. A média não muda.
  */
 export async function mediaDeCaixa(
   daLinha, origem, largura, altura, linhasPorSaida, semDado, preencheComAMedia
@@ -664,11 +728,11 @@ async function lerAlturaEmMetros(corpo, contexto, largura) {
     throw new Error(`fonte de tipo desconhecido: ${fonte.tipo}`);
   }
 
-  if (corpo.vazioLiso) {
+  if (corpo.vazioInventado) {
     const n = vazio.reduce((soma, v) => soma + v, 0);
     console.log(
       `  ${n} texels sem dado na grade de ${largura} ` +
-        `(${((100 * n) / (largura * altura)).toFixed(1)} %) → relevo liso.`
+        `(${((100 * n) / (largura * altura)).toFixed(1)} %) → relevo inventado.`
     );
   } else if (vazios) {
     console.log(`  ${vazios} texels sem dado na grade de ${largura} — postos em 0.`);
@@ -719,6 +783,13 @@ function orientar(corpo, grade, defasagemExtraGraus = 0, campo = grade.metros) {
 
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
+/** Grava num temporário e renomeia: o arquivo ou está inteiro ou não existe. */
+async function gravarInteiro(arquivo, conteudo) {
+  const temporario = `${arquivo}.tmp-${process.pid}`;
+  await writeFile(temporario, conteudo);
+  await rename(temporario, arquivo);
+}
+
 /**
  * GRAVA AS ALTURAS LIDAS (ver o cabeçalho). `partes` é `{ nome: Float32Array
  * | Uint8Array }`: cada uma vira os BYTES CRUS de `<nome>.<parte>.bin`, e o
@@ -733,24 +804,19 @@ export async function gravarCacheDeAlturas(dir, nome, cabecalho, partes) {
     throw new Error('o cache das alturas é little-endian e esta máquina não é.');
   }
   await mkdir(dir, { recursive: true });
-  const gravar = async (arquivo, conteudo) => {
-    const temporario = `${arquivo}.tmp-${process.pid}`;
-    await writeFile(temporario, conteudo);
-    await rename(temporario, arquivo);
-  };
   const descricao = {};
   for (const [parte, dados] of Object.entries(partes)) {
     const tipo = dados instanceof Float32Array ? 'f32' : dados instanceof Uint8Array ? 'u8' : '';
     if (!tipo) throw new Error(`parte "${parte}": o cache só guarda Float32Array e Uint8Array.`);
     const bytes = Buffer.from(dados.buffer, dados.byteOffset, dados.byteLength);
     const arquivo = `${nome}.${parte}.bin`;
-    await gravar(path.join(dir, arquivo), bytes);
+    await gravarInteiro(path.join(dir, arquivo), bytes);
     descricao[parte] = {
       tipo, comprimento: dados.length, bytes: bytes.length, sha256: sha256(bytes), arquivo,
     };
   }
   const json = { versao: 1, endianness: 'LE', ...cabecalho, partes: descricao };
-  await gravar(path.join(dir, `${nome}.json`), `${JSON.stringify(json, null, 2)}\n`);
+  await gravarInteiro(path.join(dir, `${nome}.json`), `${JSON.stringify(json, null, 2)}\n`);
 }
 
 /**
@@ -989,6 +1055,151 @@ export function assaNormais(metros, largura, altura, raioM, vazio, { travaNoSul 
 }
 
 // ------------------------------------------------------------
+// O RELEVO INVENTADO (Plutão e Caronte)
+// ------------------------------------------------------------
+
+/**
+ * UMA TABELA PINADA do relevo inventado (`vazioInventado.tabelas`): lida de
+ * `<dir>/<arquivo>` ou, sem ela, baixada da `url` pinada e guardada lá. Nos
+ * dois caminhos o sha256 tem de ser o pinado, senão RECUSA — outra versão da
+ * tabela mudaria as crateras caladas. Devolve `{ texto, sha256 }`.
+ */
+async function garantirTabela(dir, { arquivo, url, sha256: pinado }) {
+  const caminho = path.join(dir, arquivo);
+  const guardada = existsSync(caminho);
+  let bytes;
+  if (guardada) {
+    bytes = await readFile(caminho);
+  } else {
+    console.log(`baixando ${url} …`);
+    const resposta = await fetch(url);
+    if (!resposta.ok) throw new Error(`${arquivo}: HTTP ${resposta.status} em ${url}`);
+    bytes = Buffer.from(await resposta.arrayBuffer());
+  }
+  const obtido = sha256(bytes);
+  if (obtido !== pinado) {
+    throw new Error(
+      `${guardada ? caminho : url}: sha256 ${obtido}, o pinado é ${pinado} — não asso com outra tabela.`
+    );
+  }
+  if (!guardada) {
+    await mkdir(dir, { recursive: true });
+    await gravarInteiro(caminho, bytes);
+  }
+  return { texto: bytes.toString('utf8'), sha256: obtido };
+}
+
+/**
+ * O PORTÃO DO RELEVO INVENTADO: o normal.png só é gravado se o sha256 do RGB
+ * DECODIFICADO (`sha256`) for o aprovado (`aprovados` =
+ * `vazioInventado.sha256Aprovado`) para a chave das escolhas do JSON do corpo
+ * (`chave`, de `chaveDasEscolhas`). Pura: `{ grava, mensagem }`.
+ */
+export function decideGravacao({ nome, chave, sha256: obtido, aprovados = {} }) {
+  const aprovado = aprovados[chave];
+  if (aprovado === obtido) {
+    return { grava: true, mensagem: `${nome}: RGB aprovado para "${chave}" (sha256 ${obtido}) — gravo o normal.png.` };
+  }
+  if (aprovado === undefined) {
+    return {
+      grava: false,
+      mensagem:
+        `${nome}: RGB ainda não aprovado para "${chave}" (sha256 ${obtido}) — o normal.png NÃO foi gravado. ` +
+        `Com o sim do dono, este hash entra em vazioInventado.sha256Aprovado["${chave}"].`,
+    };
+  }
+  return {
+    grava: false,
+    mensagem:
+      `${nome}: o RGB (sha256 ${obtido}) não é o aprovado para "${chave}" (${aprovado}) — ` +
+      'o normal.png NÃO foi gravado: o relevo mudou desde a aprovação.',
+  };
+}
+
+/**
+ * O MAPA DE UM CORPO COM `vazioInventado` (ver o cabeçalho): as tabelas
+ * pinadas, `inventaRelevoDoCorpo` com o JSON e a semente do corpo, a
+ * impressão do que refaz o mapa e o PORTÃO — o PNG é codificado e
+ * decodificado, e o sha256 do RGB decodificado passa por `decideGravacao`;
+ * recusado, o erro leva a mensagem e nada é gravado. Devolve o que
+ * `assaNormais` devolve e o `png` conferido, que é o que vai para o disco.
+ */
+async function assaOVazioInventado(id, corpo, grade, mapaDeCor) {
+  const v = corpo.vazioInventado;
+  const tabelas = {};
+  const entradas = [];
+  for (const [nome, pino] of Object.entries(v.tabelas)) {
+    const tabela = await garantirTabela(path.join(rootDirectory, '.cache', 'relevo', 'fontes'), pino);
+    tabelas[nome] = tabela.texto;
+    entradas.push([tabela.sha256, pino.arquivo]);
+  }
+  const arquivoDaFonte = path.join(rootDirectory, 'scripts', 'data', 'atlas', 'fonte', `${id}-lado-de-tras.json`);
+  const bytesDaFonte = await readFile(arquivoDaFonte);
+  const fonte = JSON.parse(bytesDaFonte.toString('utf8'));
+  const crus = (a) => Buffer.from(a.buffer, a.byteOffset, a.byteLength);
+  entradas.unshift(
+    [sha256(crus(grade.metros)), 'as alturas (o cache, metros)'],
+    [sha256(crus(grade.vazio)), 'a máscara do vazio (o cache, vazio)'],
+    [sha256(await readFile(mapaDeCor)), path.relative(rootDirectory, mapaDeCor)],
+    [sha256(bytesDaFonte), path.relative(rootDirectory, arquivoDaFonte)]
+  );
+  console.log(
+    `versões: node ${process.version}, V8 ${process.versions.v8}, ` +
+      `sharp ${sharp.versions.sharp}, libvips ${sharp.versions.vips}`
+  );
+  console.log('sha256 das entradas:');
+  for (const [hash, nome] of entradas) console.log(`  ${hash}  ${nome}`);
+
+  const t0 = Date.now();
+  const segundos = () => `${Math.round((Date.now() - t0) / 1000)} s`;
+  const { rgb, chave, relatorio } = inventaRelevoDoCorpo({
+    id,
+    grade,
+    fonte,
+    tabelas,
+    semente: v.semente,
+    opcoes: { registra: (m) => console.log(`  [${segundos()}] ${m}`) },
+  });
+  console.log(
+    `relevo inventado: escolhas "${chave}", semente ${v.semente}, ` +
+      `${relatorio.naoFinitos} valores não finitos, ${segundos()}.`
+  );
+  console.log('calibração (núcleo de cada unidade no vazio contra o medido nas regiões-fonte dela):');
+  for (const [quando, lista] of [['antes', relatorio.antes], ['depois', relatorio.depois]]) {
+    for (const m of lista ?? []) {
+      console.log(
+        `  ${quando} ${m.id}: ` +
+          (m.semNucleo
+            ? 'sem núcleo'
+            : `inclinação RMS ${m.rmsGraus.toFixed(2)}° / alvo ${m.rmsAlvo.toFixed(2)}° = ` +
+              `${m.razaoRms.toFixed(3)}; S(d) até 30 km ${m.razaoSMin.toFixed(2)}–${m.razaoSMax.toFixed(2)} do alvo`)
+      );
+    }
+  }
+  if (relatorio.escalasDaColcha) {
+    console.log(
+      `  colcha reescalada: ${JSON.stringify(relatorio.escalasDaColcha)}; ` +
+        `meio da colcha: ${JSON.stringify(relatorio.escalasDoMeioDaColcha)}`
+    );
+  }
+
+  const { largura, altura } = grade;
+  const png = await sharp(rgb, { raw: { width: largura, height: altura, channels: 3 } })
+    .png({ compressionLevel: 9, adaptiveFiltering: false })
+    .toBuffer();
+  const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
+  if (info.width !== largura || info.height !== altura || info.channels !== 3) {
+    throw new Error(`o PNG decodificado saiu ${info.width}x${info.height}x${info.channels} — não gravo.`);
+  }
+  const decisao = decideGravacao({
+    nome: corpo.nome, chave, sha256: sha256(data), aprovados: v.sha256Aprovado,
+  });
+  if (!decisao.grava) throw new Error(decisao.mensagem);
+  console.log(decisao.mensagem);
+  return { rgb, ...relatorio.normais, lisos: 0, png };
+}
+
+// ------------------------------------------------------------
 
 async function main() {
   const argv = process.argv.slice(2);
@@ -1096,7 +1307,7 @@ async function main() {
 
     const grade = await lerAlturaEmMetros(corpo, contexto, LARGURA_ALVO);
     metrosDaCasa = orientar(corpo, grade);
-    vazioDaCasa = corpo.vazioLiso ? orientar(corpo, grade, 0, grade.vazio) : undefined;
+    vazioDaCasa = corpo.vazioInventado ? orientar(corpo, grade, 0, grade.vazio) : undefined;
     if (corpo.cacheDeAlturas) {
       const { tif } = contexto;
       await gravarCacheDeAlturas(
@@ -1128,9 +1339,16 @@ async function main() {
       console.log(`cache gravado: ${caminhoDoCache}`);
     }
   }
-  const { rgb, rmsGraus, maxGraus, lisos } = assaNormais(
-    metrosDaCasa, largura, altura, raioDoPassoM(corpo), vazioDaCasa
-  );
+  // Plutão e Caronte: o vazio ganha o relevo inventado, e o mapa passa pelo portão
+  const assado = corpo.vazioInventado
+    ? await assaOVazioInventado(
+      id,
+      corpo,
+      { metros: metrosDaCasa, vazio: vazioDaCasa, largura, altura, raioM: raioDoPassoM(corpo) },
+      mapaDeCor
+    )
+    : assaNormais(metrosDaCasa, largura, altura, raioDoPassoM(corpo), vazioDaCasa);
+  const { rgb, rmsGraus, maxGraus, lisos } = assado;
   console.log(
     `inclinação: RMS ${rmsGraus.toFixed(2)}°, máxima ${maxGraus.toFixed(2)}° ` +
       '(amplitude FÍSICA, ganho 1,0 — nenhum exagero entra aqui)' +
@@ -1143,9 +1361,14 @@ async function main() {
 
   await mkdir(destino, { recursive: true });
   const saida = path.join(destino, 'normal.png');
-  await sharp(rgb, { raw: { width: largura, height: altura, channels: 3 } })
-    .png({ compressionLevel: 9, adaptiveFiltering: false })
-    .toFile(saida);
+  if (assado.png) {
+    // o PNG que passou pelo portão, byte a byte
+    await writeFile(saida, assado.png);
+  } else {
+    await sharp(rgb, { raw: { width: largura, height: altura, channels: 3 } })
+      .png({ compressionLevel: 9, adaptiveFiltering: false })
+      .toFile(saida);
+  }
   const { size } = await stat(saida);
   console.log(
     `assado: ${path.relative(rootDirectory, saida)} ${largura}x${altura} (${megabytes(size)}).`

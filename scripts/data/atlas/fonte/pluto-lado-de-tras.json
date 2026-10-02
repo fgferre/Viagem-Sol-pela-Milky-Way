@@ -252,6 +252,7 @@
     "nota": "Sem DEM e quase sem imagem: ao sul de ~38°S o lado de trás só foi visto com luz de Caronte (La21) e o mapa de St21 acaba em ~36°S. Pelo plano (01/10), vale a unidade mais ao sul do lado medido: as planícies crateradas tipo Cthulhu."
   },
   "profundidadeDasCrateras": {"saturaAcimaDeKm": 60, "fonte": "medido no cache (P1, 02/10): as crateras do catálogo de ≥ 70 km com o perfil inteiro no DEM", "nota": "O molde das ≥ 40 km empilhadas no cache (d/D mediana 0,036; a ~60 km, ~2,2 km de fundo) esticado em D daria ~8 km de fundo a Simonelli (270 km). As medidas de 80–143 km têm 0–4 km (mediana 1,7 km: PLUTO-000492 85 km 4,0; -000702 80 km 2,5; -000633 115 km 1,6; -002184 111 km 1,2; -001443 101 km 1,75; -000612 139 km 1,0; -000872 143 km ~0): a profundidade SATURA. Acima de 60 km o molde vai × 60 km e não × D — vale para as reais, as das feições e as sorteadas. O pico central não satura (P1 v3): × o D de verdade (p75 das ≥ 40 km do cache, 0,0074), limitado à profundidade do fundo — o de Simonelli sai com ~2 km e se lê sob Sol rasante; saturado, teria 0,4 km."},
+  "completaBorrado": true,
   "dadoRuim": [
     {
       "lon": [112, 168],
@@ -271,6 +272,16 @@
     "latitudeMinima": 50,
     "nota": "Degrau entre as bordas do arquivo do DEM, visto no mapa de hoje (normal.png: uma linha vertical de 2 texels em 0°E, colunas 2047|2048 da casa, onde há dado ao norte de ~53°N). Medido no cache (P2, 02/10), por linha, o salto na emenda menos a inclinação esperada das 4 colunas de cada lado: −13 a −16 m em 55–68°N, −180 a −410 m em 70–78°N, de +110 a −200 m em 78–82°N, −125 a −390 m em 82–86°N, ~−30 m perto do polo, sempre liso de linha a linha; entre colunas vizinhas a altura muda 5–35 m. Sai no próprio medido antes de tudo (tiraDegrauDaEmenda): mediana de 5 linhas e rampas lineares de 32 colunas de cada lado — a textura medida fica e a mais de 32 colunas nada muda. Substitui a faixa de dadoRuim de todas as bandas (P1 v3), que a costura refazia mais áspera que o entorno liso."
   },
+  "alisamentos": [
+    {
+      "id": "sputnik",
+      "ativo": false,
+      "bandas": [0],
+      "poligono": [[180.21409797668457,49.018266677856445],[170.75506401062012,48.61827278137207],[160.91093254089355,43.11724281311035],[163.0017490386963,40.961843490600586],[156.34158515930176,29.690462112426758],[160.47948265075684,25.828039169311523],[154.31529426574707,26.38498878479004],[153.74104118347168,18.560949325561523],[160.45973777770996,21.135175704956055],[162.4230136871338,17.53266716003418],[159.8610782623291,15.877470016479492],[164.4307346343994,8.849245071411133],[168.16350746154785,9.944295883178711],[171.92632865905762,1.8018169403076172],[175.7061252593994,1.8139591217041016],[173.10301780700684,-11.724903106689453],[178.1310977935791,-8.918384552001953],[184.567045211792,-22.18125343322754],[187.2497615814209,-18.200342178344727],[191.9059352874756,-18.706459045410156],[189.3569850921631,-4.871389389038086],[195.16524696350098,3.7677059173583984],[197.00530815124512,14.082662582397461],[195.88271522521973,34.44761085510254],[186.33255195617676,47.406267166137695]],
+      "fonte": "USGS Gazetteer of Planetary Nomenclature, Sputnik Planitia, Feature ID 15669 (https://planetarynames.wr.usgs.gov/Feature/15669; nome adotado pela IAU em 08/08/2017): o contorno publicado (MULTIPOLYGON de 347 vértices, lon leste 0–360, lat planetocêntrica) reduzido a 25 vértices por Douglas–Peucker em km, tolerância 38,5 km; os vértices são os do USGS, sem arredondar.",
+      "nota": "E5 (02/10): o DEM medido traz ruído estéreo na planície de gelo de Sputnik — um grão de poucos km que a luz rasante mostra como lixa. O alisamento tira só a banda 0 (σ ≤ 3,6 km) do medido, dentro do polígono (penugem de 20 km na borda) e só onde o terreno é plano (portão pelo declive da altura sem as bandas 0 e 1, a ~8 km: inteiro abaixo de 1,5°, nada acima de 3°), então as colinas e as bordas ficam. É a variante suave da Foto 2 (só a banda 0): onde alisa (231 mil texels), o declive RMS do grão cai de 4,7° para 0,8° e o das células (a escala de ~8 km) só 5,5 % (0,394° → 0,372°); 257 mil texels mudam ao todo. `ativo` é a escolha do dono; ligado, as medidas do lado medido saem do dado alisado."
+    }
+  ],
   "feicoes": [
     {
       "nome": "Simonelli",

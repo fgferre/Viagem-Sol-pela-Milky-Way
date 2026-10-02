@@ -67,11 +67,17 @@
 //     longitude) sai no próprio medido: o salto na emenda volta ao da
 //     verdade, dentro da rampa só se soma uma reta de cada lado (a textura
 //     fica) e a mais de N colunas o campo é o medido byte a byte.
+//
+// O ALISAMENTO DECLARADO (E5): 24. Desligado (`ativo: false`) não mexe em
+//     nada; ligado, só muda texel dentro do polígono e da penugem dele, e a
+//     mudança é uma fração (0 a 1) da banda 0, com o sinal trocado — no
+//     miolo plano, a banda 0 inteira.
 // ============================================================
 import { beforeAll, describe, expect, it } from 'vitest';
 import { assaNormais } from './gera-normal-de-dem.mjs';
 import {
   amostraNoPonto,
+  aplicaAlisamentos,
   areaDaCaixaKm2,
   camadaDeCrateras,
   niveisDasUnidades,
@@ -99,6 +105,7 @@ import {
   planoTangente,
   repeticaoMaisPerto,
   pontoDoPlano,
+  rasterizaPoligono,
   ruidoDaOitava,
   sigmasDasOitavas,
   sintetizaCorpo,
@@ -1084,5 +1091,62 @@ describe('o dado ruim (E6)', () => {
       }
       expect(linhas).toBe(doNorte);
     }
+  });
+});
+
+describe('o alisamento declarado (E5)', () => {
+  it('desligado não mexe em nada; ligado, só muda dentro do polígono e da penugem, e só tira a banda 0', () => {
+    const [largura, altura] = [256, 128];
+    const n = largura * altura;
+    const texelKm = 2; // banda 0 até σ 4 km; a penugem (σ 7,8 km) zera a ~24 km
+    const raioM = raioDoTexel(largura, texelKm);
+    // terreno plano (onda larga, ~0,1°) + grão branco de 10 m; o polígono atravessa a coluna 0 (180°E) e
+    // tem um furo sem dado perto da borda oeste
+    const ruido = ruidoBranco(n, 10, 2024);
+    const metros = Float32Array.from(ruido, (v, k) => v + 200 * Math.sin((2 * Math.PI * (k % largura)) / largura));
+    const vazio = new Uint8Array(n);
+    for (let j = 42; j < 48; j += 1) for (let i = 222; i < 228; i += 1) vazio[j * largura + i] = 1;
+    const poligono = [[120, -40], [240, -40], [240, 40], [120, 40]];
+    const declarado = { id: 'teste', ativo: false, bandas: [0], poligono };
+
+    const desligado = aplicaAlisamentos({ metros, vazio, largura, altura, raioM, alisamentos: [declarado] });
+    expect(desligado.metros).toBe(metros);
+    expect(desligado.relatorio).toEqual([]);
+
+    const { metros: alisado, relatorio } = aplicaAlisamentos({ metros, vazio, largura, altura, raioM, alisamentos: [{ ...declarado, ativo: true }] });
+    expect(relatorio[0].grao[1]).toBeLessThan(relatorio[0].grao[0] / 2);
+    const valido = Uint8Array.from(vazio, (v) => (v ? 0 : 1));
+    const banda0 = decompoeEmOitavas(metros, valido, largura, altura, raioM, sigmasDasOitavas(raioM, altura))[0];
+    const dentro = rasterizaPoligono(poligono, largura, altura);
+    // há texel de `alvo` a menos de `km` (caixa em km verdadeiros: a coluna encolhe com o cos lat)?
+    const perto = (k, km, alvo) => {
+      const [j, i] = [Math.floor(k / largura), k % largura];
+      const linhas = Math.ceil(km / texelKm);
+      const colunas = Math.ceil(km / (texelKm * Math.cos(latitudeDaLinha(j, altura))));
+      for (let jj = Math.max(0, j - linhas); jj <= Math.min(altura - 1, j + linhas); jj += 1) {
+        for (let di = -colunas; di <= colunas; di += 1) if (alvo(jj * largura + ((i + di + largura) % largura))) return true;
+      }
+      return false;
+    };
+    const erros = { noVazio: 0, longeDoPoligono: 0, naoEFracaoDaBanda0: 0, mioloSemABanda0Inteira: 0 };
+    let mudados = 0;
+    let miolo = 0;
+    for (let k = 0; k < n; k += 1) {
+      const delta = alisado[k] - metros[k];
+      if (delta === 0) continue;
+      mudados += 1;
+      if (vazio[k]) erros.noVazio += 1;
+      if (!dentro[k] && !perto(k, 28, (q) => dentro[q])) erros.longeDoPoligono += 1;
+      // uma fração (0 a 1) de −banda 0, com a folga do Float32
+      if (delta * banda0[k] > 1e-6 || Math.abs(delta) > Math.abs(banda0[k]) + 1e-3) erros.naoEFracaoDaBanda0 += 1;
+      // no miolo plano, longe da borda e do furo, a banda 0 inteira
+      if (dentro[k] && !perto(k, 36, (q) => !dentro[q] || vazio[q])) {
+        miolo += 1;
+        if (Math.abs(delta + banda0[k]) > 1e-3) erros.mioloSemABanda0Inteira += 1;
+      }
+    }
+    expect(erros).toEqual({ noVazio: 0, longeDoPoligono: 0, naoEFracaoDaBanda0: 0, mioloSemABanda0Inteira: 0 });
+    expect(miolo).toBeGreaterThan(500);
+    expect(mudados).toBe(relatorio[0].texelsMudados);
   });
 });

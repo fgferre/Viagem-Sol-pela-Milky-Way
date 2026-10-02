@@ -43,7 +43,14 @@
 // com +180°). `SOMA_DE_LONGITUDE_DO_CATALOGO` guarda a correção, e o executor
 // a confere no DEM (Caronte: d/D mediana 0,053 no centro do catálogo contra
 // 0,004 com meia volta).
+//
+// A PORTA DE ENTRADA (E8). `inventaRelevoDoCorpo`, no fim do arquivo, faz o
+// caminho inteiro — operações declaradas no medido, medidas, síntese,
+// normais — e é a ÚNICA função que a prévia e o gerador oficial chamam: o
+// mapa que o dono aprova na prévia é o que o gerador grava, byte a byte.
 // ============================================================
+
+import { assaNormais } from './gera-normal-de-dem.mjs';
 
 const GRAUS = 180 / Math.PI;
 const RADIANOS = Math.PI / 180;
@@ -4001,6 +4008,116 @@ export function tiraDegrauDaEmenda({ metros, vazio, largura, altura, costura, ra
 }
 
 // ------------------------------------------------------------
+// O alisamento declarado (E5, 02/10): o grão fino de uma planície medida
+// ------------------------------------------------------------
+
+/** O portão de planície: declive (graus) da altura sem as bandas 0 e 1; abaixo do 1º alisa inteiro, acima do 2º não mexe. */
+const PORTAO_DO_ALISAMENTO_GRAUS = [1.5, 3];
+/** A borda do polígono vai de 10 % a 90 % em tantos km: o polígono rasterizado, borrado com σ = isto / 2,563. */
+const PENUGEM_DO_ALISAMENTO_KM = 20;
+/** Penugem até isto conta como zero: o texel não muda nem um bit. */
+const PISO_DA_PENUGEM = 1e-3;
+
+/** O declive (graus) de cada texel com a conta de `inclinacaoRms` (passo leste preso a 80°); 90 onde o estêncil toca o vazio. */
+function decliveEmGraus(campo, vazio, largura, altura, raioM) {
+  const saida = new Float32Array(largura * altura);
+  const dLon = (2 * Math.PI) / largura;
+  const passoNorte = raioM * (Math.PI / altura);
+  const passoLesteMinimo = raioM * Math.cos(LATITUDE_DO_CLAMP_RAD) * dLon;
+  for (let j = 0; j < altura; j += 1) {
+    const passoLeste = Math.max(raioM * Math.cos(latitudeDaLinha(j, altura)) * dLon, passoLesteMinimo);
+    const jNorte = Math.max(0, j - 1);
+    const jSul = Math.min(altura - 1, j + 1);
+    const vaoNorte = (jSul - jNorte) * passoNorte;
+    for (let i = 0; i < largura; i += 1) {
+      const k = j * largura + i;
+      const leste = j * largura + ((i + 1) % largura);
+      const oeste = j * largura + ((i - 1 + largura) % largura);
+      const norte = jNorte * largura + i;
+      const sul = jSul * largura + i;
+      if (vazio[k] || vazio[leste] || vazio[oeste] || vazio[norte] || vazio[sul]) {
+        saida[k] = 90;
+        continue;
+      }
+      const dhLeste = (campo[leste] - campo[oeste]) / (2 * passoLeste);
+      const dhNorte = (campo[norte] - campo[sul]) / vaoNorte;
+      saida[k] = Math.atan(Math.hypot(dhLeste, dhNorte)) / RADIANOS;
+    }
+  }
+  return saida;
+}
+
+/**
+ * O ALISAMENTO DECLARADO (E5): tira o GRÃO FINO do medido dentro de um polígono
+ * onde o terreno é plano — a planície de gelo de Sputnik, cujo grão de poucos km
+ * é ruído do DEM e não relevo. `alisamentos` = a lista do JSON das unidades,
+ * `{ id, ativo, poligono ([lon, lat] leste), bandas, nota, fonte }`; só os de
+ * `ativo: true` agem, em ordem. Cada um: h' = h − m·Σ(bandas declaradas, as de
+ * `decompoeEmOitavas`), com m = penugem × portão — a penugem é o polígono
+ * rasterizado e borrado (a borda de 10 % a 90 % em `PENUGEM_DO_ALISAMENTO_KM`,
+ * zero abaixo de `PISO_DA_PENUGEM`), e o portão é 1 − suave entre os dois
+ * declives de `PORTAO_DO_ALISAMENTO_GRAUS`, medidos na altura sem as bandas 0
+ * e 1 (as colinas e as bordas da planície ficam). Só no medido; fora do
+ * polígono e da penugem nada muda, byte a byte. Pura: `{ metros (o MESMO
+ * array se nenhum age; senão uma cópia), relatorio: [por ativo: { id, bandas,
+ * texelsMudados, texelsAlisados (m ≥ ½), grao e celulas: [antes, depois] —
+ * o declive RMS por texel (graus) onde m ≥ ½, da altura e da altura sem as
+ * bandas 0 e 1 (a escala das células de Sputnik) }] }`.
+ */
+export function aplicaAlisamentos({ metros, vazio, largura, altura, raioM, alisamentos = [] }) {
+  const relatorio = [];
+  const ativos = alisamentos.filter((a) => a.ativo);
+  if (!ativos.length) return { metros, relatorio };
+  const n = largura * altura;
+  const valido = Uint8Array.from(vazio, (v) => (v ? 0 : 1));
+  const um = new Uint8Array(n).fill(1);
+  const sigmas = sigmasDasOitavas(raioM, altura);
+  let campo = metros;
+  for (const a of ativos) {
+    const bandas = decompoeEmOitavas(campo, valido, largura, altura, raioM, sigmas.slice(0, Math.max(1, ...a.bandas) + 1));
+    const fino = new Float32Array(n);
+    const semFino = new Float32Array(n).fill(NaN);
+    for (let k = 0; k < n; k += 1) {
+      if (!valido[k]) continue;
+      for (const b of a.bandas) fino[k] += bandas[b][k];
+      semFino[k] = campo[k] - bandas[0][k] - bandas[1][k];
+    }
+    bandas.length = 0;
+    const declive = decliveEmGraus(semFino, vazio, largura, altura, raioM);
+    const dentro = rasterizaPoligono(a.poligono, largura, altura);
+    const penugem = desfocaComMascara(dentro, um, largura, altura, raioM, PENUGEM_DO_ALISAMENTO_KM / 2.563).valor;
+    const novo = Float32Array.from(campo);
+    const alisados = new Uint8Array(n);
+    let texelsMudados = 0;
+    let texelsAlisados = 0;
+    for (let k = 0; k < n; k += 1) {
+      if (!valido[k] || !(penugem[k] > PISO_DA_PENUGEM)) continue;
+      const m = Math.fround(penugem[k] * (1 - suave(PORTAO_DO_ALISAMENTO_GRAUS[0], PORTAO_DO_ALISAMENTO_GRAUS[1], declive[k])));
+      if (m > 0) {
+        novo[k] = campo[k] - m * fino[k];
+        if (novo[k] !== campo[k]) texelsMudados += 1;
+      }
+      if (m >= 0.5) {
+        alisados[k] = 1;
+        texelsAlisados += 1;
+      }
+    }
+    const rms = (c) => inclinacaoRms(c, vazio, largura, altura, raioM, alisados).rmsGrausPorTexel;
+    const semFinoDepois = desfocaComMascara(novo, valido, largura, altura, raioM, sigmas[1]).valor;
+    relatorio.push({
+      id: a.id,
+      bandas: a.bandas,
+      texelsMudados,
+      texelsAlisados,
+      grao: [rms(campo), rms(novo)],
+      celulas: [rms(semFino), rms(semFinoDepois)],
+    });
+    campo = novo;
+  }
+  return { metros: campo, relatorio };
+}
+
+// ------------------------------------------------------------
 // A COLCHA (E3.3, decisão de 02/10): a textura fina com pedaços do medido
 // ------------------------------------------------------------
 
@@ -5380,4 +5497,71 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
       naoFinitos,
     },
   };
+}
+
+// ============================================================
+// A PORTA DE ENTRADA (E8): o corpo inteiro, do cache ao mapa de normais
+// ============================================================
+
+/**
+ * A CHAVE DAS ESCOLHAS DO DONO no JSON do corpo (`fonte`): `completa:1|0`
+ * (`completaBorrado`, true se ausente) e, por alisamento declarado,
+ * `<id>:1|0` (`ativo`) — Caronte "completa:1", Plutão "completa:1,sputnik:0".
+ * O gerador guarda um hash aprovado por chave (`vazioInventado.sha256Aprovado`).
+ */
+export function chaveDasEscolhas(fonte) {
+  const completa = `completa:${fonte.completaBorrado === false ? 0 : 1}`;
+  return [completa, ...(fonte.alisamentos ?? []).map((a) => `${a.id}:${a.ativo ? 1 : 0}`)].join(',');
+}
+
+/**
+ * O RELEVO INVENTADO DE UM CORPO, DE PONTA A PONTA — a ÚNICA função que a
+ * prévia e o gerador oficial (`gera-normal-de-dem.mjs`) chamam. Na ordem:
+ *   1. as operações declaradas no MEDIDO (`aplicaAlisamentos`, só as ativas);
+ *   2. as medidas do lado medido e o mapa de qualidade (`medeLadoMedido`),
+ *      sobre o medido já alisado e ainda COM o degrau da emenda do arquivo,
+ *      como as medidas que calibraram as prévias aprovadas;
+ *   3. a síntese (`sintetizaCorpo`: o degrau da emenda do arquivo sai
+ *      primeiro, depois as unidades, as crateras, a colcha, o ruído, a
+ *      costura e a calibração), com `completaBorrado` do JSON;
+ *   4. as normais do campo completo (`assaNormais`, sem máscara e sem a trava
+ *      de 80° no sul).
+ * `id` = 'pluto' | 'charon' (a convenção de longitude do catálogo); `grade` =
+ * `{ metros, vazio, largura, altura, raioM }` (o cache das alturas, na
+ * orientação da casa); `fonte` = `fonte/<id>-lado-de-tras.json` (as unidades,
+ * as feições e as escolhas do dono); `tabelas` = os TEXTOS do catálogo de
+ * Robbins v2 (`catalogo`), do guia de regiões (`guia`) e da tabela de Ro21
+ * (`ro21`); `semente` fixa por corpo. `opcoes.registra` recebe o andamento.
+ * Devolve `{ rgb, campo, chave, medidas, relatorio }` — `rgb` é o normal.png
+ * de `largura` × `altura`, `relatorio` o da síntese mais `normais` e
+ * `alisamentos`.
+ */
+export function inventaRelevoDoCorpo({ id, grade, fonte, tabelas, semente, opcoes = {} }) {
+  const registra = opcoes.registra ?? (() => {});
+  const { vazio, largura, altura, raioM } = grade;
+  const alisado = aplicaAlisamentos({ ...grade, alisamentos: fonte.alisamentos });
+  const graus = (par) => par.map((g) => (g === null ? '–' : `${g.toFixed(2)}°`)).join(' → ');
+  for (const a of alisado.relatorio) {
+    registra(`alisamento ${a.id} (bandas ${a.bandas.join(', ')}): ${a.texelsMudados} texels mudados; onde alisa, grão ${graus(a.grao)}, células ${graus(a.celulas)}`);
+  }
+  const medido = { metros: alisado.metros, vazio, largura, altura, raioM };
+  const catalogo = lerCatalogoDeCrateras(tabelas.catalogo, SOMA_DE_LONGITUDE_DO_CATALOGO[id]);
+  const guia = lerGuiaDeRegioes(tabelas.guia);
+  const ro21 = lerTabelaRo21(tabelas.ro21);
+  const { medidas, qualidade } = medeLadoMedido({ grade: medido, unidades: fonte.unidades, crateras: catalogo, guia, ro21, opcoes: { corpo: id, registra } });
+  const bandasBorradas = qualidade.planos[qualidade.nomesDosPlanos.indexOf('bandasBorradas')];
+  const { campo, relatorio } = sintetizaCorpo({
+    grade: medido,
+    fonte,
+    medidas,
+    qualidade: { bandasBorradas, largura: qualidade.largura, altura: qualidade.altura },
+    catalogo,
+    guia,
+    semente,
+    opcoes: { completaBorrado: fonte.completaBorrado ?? true, registra },
+  });
+  const { rgb, rmsGraus, maxGraus } = assaNormais(campo, largura, altura, raioM, undefined, { travaNoSul: false });
+  relatorio.normais = { rmsGraus, maxGraus };
+  relatorio.alisamentos = alisado.relatorio;
+  return { rgb, campo, chave: chaveDasEscolhas(fonte), medidas, relatorio };
 }
