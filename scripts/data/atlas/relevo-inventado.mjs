@@ -3877,19 +3877,26 @@ export function camadaTectonica({ feicoes, perfil, dado, largura, altura, raioM,
  * `sigmaMaximoKm` deixa de ser dado, como no borrado: a forma grossa medida
  * fica e o fino é reinventado (precisa de `raioM`). `completaBorrado: false`
  * é a variante "sem completar" do A/B: todo medido é dado em toda banda.
+ * `alisados` (Uint8, opcional: o de `aplicaAlisamentos`, os texels com m ≥ ½ de
+ * um alisamento ativo): área alisada de propósito não é completada — o liso
+ * ali é a decisão, não falta de dado. Esses texels são dado em toda banda,
+ * pelo que disserem o mapa de qualidade e as caixas `dadoRuim`; sem
+ * `alisados` (alisamento desligado) nada muda.
  */
-export function mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, completaBorrado = true, dadoRuim = [], raioM }) {
+export function mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, completaBorrado = true, dadoRuim = [], raioM, alisados }) {
   const n = largura * altura;
   const medido = Uint8Array.from(vazio, (v) => (v ? 0 : 1));
   const soFinas = dadoRuim.filter((caixa) => caixa.sigmaMaximoKm !== undefined);
   if (!completaBorrado || (!qualidade && !soFinas.length)) return Array(nBandas).fill(medido);
+  // só o medido que não foi alisado de propósito pode perder bandas; nos alisados `bb` fica 0 e toda banda é dado
+  const completavel = alisados ? Uint8Array.from(medido, (v, k) => (v && !alisados[k] ? 1 : 0)) : medido;
   const bb = new Float32Array(n);
   let maior = 0;
   const sigmas = soFinas.length ? sigmasDasOitavas(raioM, altura) : [];
   for (const caixa of soFinas) {
     const finas = sigmas.filter((s) => s <= caixa.sigmaMaximoKm * (1 + 1e-9)).length;
     const m = mascaraDaCaixa(caixa, largura, altura);
-    for (let k = 0; k < n; k += 1) if (m[k] && medido[k] && finas > bb[k]) bb[k] = finas;
+    for (let k = 0; k < n; k += 1) if (m[k] && completavel[k] && finas > bb[k]) bb[k] = finas;
     maior = Math.max(maior, finas);
   }
   if (!qualidade) return Array.from({ length: nBandas }, (_, b) => (b + 0.5 >= maior ? medido : Uint8Array.from(medido, (v, k) => (v && bb[k] < b + 0.5 ? 1 : 0))));
@@ -3901,7 +3908,7 @@ export function mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, com
     const fy = y - ya;
     for (let i = 0; i < largura; i += 1) {
       const k = j * largura + i;
-      if (!medido[k]) continue;
+      if (!completavel[k]) continue;
       const x = (i + 0.5) / fator - 0.5;
       const xa = Math.floor(x);
       const fx = x - xa;
@@ -4059,21 +4066,29 @@ function decliveEmGraus(campo, vazio, largura, altura, raioM) {
  * declives de `PORTAO_DO_ALISAMENTO_GRAUS`, medidos na altura sem as bandas 0
  * e 1 (as colinas e as bordas da planície ficam). Só no medido; fora do
  * polígono e da penugem nada muda, byte a byte. Pura: `{ metros (o MESMO
- * array se nenhum age; senão uma cópia), relatorio: [por ativo: { id, bandas,
- * texelsMudados, texelsAlisados (m ≥ ½), grao e celulas: [antes, depois] —
- * o declive RMS por texel (graus) onde m ≥ ½, da altura e da altura sem as
- * bandas 0 e 1 (a escala das células de Sputnik) }] }`.
+ * array se nenhum age; senão uma cópia), alisados (Uint8: os texels com m ≥ ½
+ * de algum ativo — a síntese não os completa, `mascarasDoDado`; null se
+ * nenhum age), declarados (Uint8: o polígono de TODO alisamento declarado,
+ * ligado ou não, e os texels que o alisamento dele muda (m > 0, a penugem
+ * incluída) — a planície alisada não é fonte de terreno da colcha,
+ * `validoDasFontes`; o mesmo m, medido no campo antes de o alisamento dele
+ * agir, então não depende da escolha do dono; null sem declarado),
+ * relatorio: [por ativo: { id, bandas, texelsMudados, texelsAlisados (m ≥ ½),
+ * grao e celulas: [antes, depois] — o declive RMS por texel (graus) onde
+ * m ≥ ½, da altura e da altura sem as bandas 0 e 1 (a escala das células de
+ * Sputnik) }] }`.
  */
 export function aplicaAlisamentos({ metros, vazio, largura, altura, raioM, alisamentos = [] }) {
   const relatorio = [];
-  const ativos = alisamentos.filter((a) => a.ativo);
-  if (!ativos.length) return { metros, relatorio };
+  if (!alisamentos.length) return { metros, relatorio, alisados: null, declarados: null };
   const n = largura * altura;
   const valido = Uint8Array.from(vazio, (v) => (v ? 0 : 1));
   const um = new Uint8Array(n).fill(1);
+  const deAtivos = new Uint8Array(n);
+  const declarados = new Uint8Array(n);
   const sigmas = sigmasDasOitavas(raioM, altura);
   let campo = metros;
-  for (const a of ativos) {
+  for (const a of alisamentos) {
     const bandas = decompoeEmOitavas(campo, valido, largura, altura, raioM, sigmas.slice(0, Math.max(1, ...a.bandas) + 1));
     const fino = new Float32Array(n);
     const semFino = new Float32Array(n).fill(NaN);
@@ -4086,22 +4101,27 @@ export function aplicaAlisamentos({ metros, vazio, largura, altura, raioM, alisa
     const declive = decliveEmGraus(semFino, vazio, largura, altura, raioM);
     const dentro = rasterizaPoligono(a.poligono, largura, altura);
     const penugem = desfocaComMascara(dentro, um, largura, altura, raioM, PENUGEM_DO_ALISAMENTO_KM / 2.563).valor;
-    const novo = Float32Array.from(campo);
+    const novo = a.ativo ? Float32Array.from(campo) : null;
     const alisados = new Uint8Array(n);
     let texelsMudados = 0;
     let texelsAlisados = 0;
     for (let k = 0; k < n; k += 1) {
+      if (dentro[k]) declarados[k] = 1;
       if (!valido[k] || !(penugem[k] > PISO_DA_PENUGEM)) continue;
       const m = Math.fround(penugem[k] * (1 - suave(PORTAO_DO_ALISAMENTO_GRAUS[0], PORTAO_DO_ALISAMENTO_GRAUS[1], declive[k])));
+      if (m > 0) declarados[k] = 1;
+      if (!a.ativo) continue;
       if (m > 0) {
         novo[k] = campo[k] - m * fino[k];
         if (novo[k] !== campo[k]) texelsMudados += 1;
       }
       if (m >= 0.5) {
         alisados[k] = 1;
+        deAtivos[k] = 1;
         texelsAlisados += 1;
       }
     }
+    if (!a.ativo) continue;
     const rms = (c) => inclinacaoRms(c, vazio, largura, altura, raioM, alisados).rmsGrausPorTexel;
     const semFinoDepois = desfocaComMascara(novo, valido, largura, altura, raioM, sigmas[1]).valor;
     relatorio.push({
@@ -4114,7 +4134,7 @@ export function aplicaAlisamentos({ metros, vazio, largura, altura, raioM, alisa
     });
     campo = novo;
   }
-  return { metros: campo, relatorio };
+  return { metros: campo, relatorio, alisados: relatorio.length ? deAtivos : null, declarados };
 }
 
 // ------------------------------------------------------------
@@ -5137,6 +5157,44 @@ function energiaNaMascara(campo, mascara, largura, altura) {
 }
 
 /**
+ * A margem (km) em volta do alisado declarado em que nenhuma fonte da colcha é
+ * lida: a parte fina do medido é a altura menos a gaussiana de σ ≈ 30 km (3
+ * caixas de ±16 texels por eixo: ≈ 93 km, ≈ 131 km na diagonal; mais a folga
+ * da grade ÷4), então um texel a menos que isto do alisado ainda lê o liso
+ * dele. Fora da margem a parte fina que a colcha copia é a mesma, ligado ou não.
+ */
+const MARGEM_DO_ALISADO_KM = 150;
+
+/**
+ * O `valido` das fontes da colcha — os texels de que uma fonte pode ler: bem
+ * resolvidos em toda banda (`resolvido`), a `AFASTAMENTO_DA_FONTE_KM` do vazio
+ * e a `MARGEM_DO_ALISADO_KM` de todo alisamento declarado (`declarados`, o de
+ * `aplicaAlisamentos`: tratado como vazio). A planície alisada não é fonte de
+ * terreno, ligada ou não: o liso da ligada não é terreno de unidade nenhuma, e
+ * o grão de ruído do DEM da desligada também não (a ponta sul de Sputnik cai
+ * na caixa de terreno intermediário). Com a mesma lista de fontes nos dois
+ * casos, o sorteio do lado de trás inteiro é o mesmo. Sem `declarados`, nada muda.
+ */
+export function validoDasFontes({ resolvido, vazio, declarados, largura, altura, raioM }) {
+  const n = largura * altura;
+  const f = FATOR_DAS_FONTES;
+  const Lf = largura / f;
+  const emCelulas = (mascara) => {
+    const celulas = new Uint8Array(Lf * (altura / f));
+    for (let k = 0; k < n; k += 1) if (mascara[k]) celulas[Math.floor(k / largura / f) * Lf + Math.floor((k % largura) / f)] = 1;
+    return celulas;
+  };
+  const longe = distanciaAoVazioKm(emCelulas(vazio), Lf, altura / f, raioM);
+  const longeDoAlisado = declarados ? distanciaAoVazioKm(emCelulas(declarados), Lf, altura / f, raioM) : null;
+  const valido = new Uint8Array(n);
+  for (let k = 0; k < n; k += 1) {
+    const c = Math.floor(k / largura / f) * Lf + Math.floor((k % largura) / f);
+    valido[k] = resolvido[k] && longe[c] >= AFASTAMENTO_DA_FONTE_KM && (!longeDoAlisado || longeDoAlisado[c] >= MARGEM_DO_ALISADO_KM) ? 1 : 0;
+  }
+  return valido;
+}
+
+/**
  * A SÍNTESE de um corpo (PLAN-RELEVO.md, E3): do cache das alturas (`grade` =
  * `{ metros, vazio, largura, altura, raioM }`) ao campo COMPLETO F (Float32, m)
  * — medido onde há dado, inventado no vazio.
@@ -5161,15 +5219,19 @@ function energiaNaMascara(campo, mascara, largura, altura) {
  *   4. a textura FINA (bandas de σ ≤ `CORTE_DA_COLCHA_KM`) é a COLCHA de
  *      pedaços do medido da mesma unidade (`fontesDaColcha`, `colcha`): o
  *      medido preenchido pela membrana menos a gaussiana do corte, lido só em
- *      texel bem resolvido em toda banda e a `AFASTAMENTO_DA_FONTE_KM` do
- *      vazio. As bandas do corte até R/5 são ruído, um por banda, com a
+ *      texel bem resolvido em toda banda, a `AFASTAMENTO_DA_FONTE_KM` do
+ *      vazio e fora de todo alisamento declarado, ligado ou não, e da margem
+ *      dele (`validoDasFontes`: a planície alisada não é fonte de terreno,
+ *      ligada ou não). As bandas do corte até R/5 são ruído, um por banda, com a
  *      energia medida da banda na caixa-exemplo menos a das crateras
  *      sorteadas no núcleo da unidade, na média do vazio; a repetição de
- *      origem só conta entre retalhos que tocam o vazio ou o borrado;
+ *      origem só conta entre retalhos que tocam o vazio ou o borrado (pelo
+ *      mapa de qualidade, sem a proteção do alisado);
  *   4c. a tectônica traçada (`camadaTectonica`) com o degrau medido no
  *      cinturão (`perfilDasEscarpas`), só no vazio;
  *   5. `dadoPorOitava` pelo mapa de qualidade (`qualidade`, item 5b) e pelas
- *      caixas `dadoRuim` do JSON (artefato no fino do medido);
+ *      caixas `dadoRuim` do JSON (artefato no fino do medido) — menos a área
+ *      alisada de propósito (`alisados`), que é dado em toda banda;
  *   6. a costura; e a CONFERÊNCIA: no núcleo de cada unidade (vazio, peso ≥
  *      0,9), RMS da inclinação (±10 %) e S(d) nos lags até 30 km (média dos
  *      dois eixos, ±15 %) contra o medido nas regiões-fonte da unidade. RMS
@@ -5184,11 +5246,16 @@ function energiaNaMascara(campo, mascara, largura, altura) {
  * medidos tratados como VAZIO e tirados de toda fonte e de toda conta daqui;
  * o valor deles não é lido. As crateras reais entram só no vazio de verdade;
  * `medidas` (lei de crateras, energias, níveis) devem vir medidas SEM o
- * recorte. `opcoes`: `completaBorrado` (true), `variante` ('cache' |
- * 'ro21'), `calibra` (true), `colcha` (repassadas à `colcha`), `registra`.
- * Devolve `{ campo, relatorio }`.
+ * recorte. `alisados` (Uint8, opcional — o de `aplicaAlisamentos`): os texels
+ * alisados de propósito; área alisada de propósito não é completada, então
+ * são dado em toda banda (`mascarasDoDado`). `declarados` (Uint8, opcional —
+ * o de `aplicaAlisamentos`): os texels de todo alisamento declarado, ligado ou
+ * não; nenhuma fonte da colcha os lê nem chega perto (`validoDasFontes`).
+ * `opcoes`: `completaBorrado` (true), `variante` ('cache' | 'ro21'), `calibra`
+ * (true), `colcha` (repassadas à `colcha`), `registra`. Devolve `{ campo,
+ * relatorio }`.
  */
-export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, guia, semente, ocultar, opcoes = {} }) {
+export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, guia, semente, ocultar, alisados, declarados, opcoes = {} }) {
   const anota = opcoes.registra ?? (() => {});
   const { largura, altura, raioM } = grade;
   const n = largura * altura;
@@ -5266,7 +5333,7 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
 
   // 5. o dado de cada banda
   const dadoRuim = fonte.dadoRuim ?? [];
-  const dadoPorOitava = mascarasDoDado({ vazio, largura, altura, nBandas: nb, qualidade, completaBorrado: opcoes.completaBorrado ?? true, dadoRuim, raioM });
+  const dadoPorOitava = mascarasDoDado({ vazio, largura, altura, nBandas: nb, qualidade, completaBorrado: opcoes.completaBorrado ?? true, dadoRuim, raioM, alisados });
 
   // 3. as crateras: as reais do vazio de verdade e as sorteadas grandes
   const leis = ids.map((id) => leiDeCrateras(medidas.unidades[id].crateras));
@@ -5296,20 +5363,16 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
   const fina = new Float32Array(n);
   for (let q = 0; q < n; q += 1) fina[q] = cheio[q] - grosso[q];
   const resolvido = mascarasDoDado({ vazio, largura, altura, nBandas: nb, qualidade, completaBorrado: true, dadoRuim, raioM })[0];
-  const f = FATOR_DAS_FONTES;
-  const Lf = largura / f;
-  const vazioF = new Uint8Array(Lf * (altura / f));
-  for (let k = 0; k < n; k += 1) if (vazio[k]) vazioF[Math.floor(k / largura / f) * Lf + Math.floor((k % largura) / f)] = 1;
-  const longe = distanciaAoVazioKm(vazioF, Lf, altura / f, raioM);
-  const valido = new Uint8Array(n);
-  for (let k = 0; k < n; k += 1) {
-    valido[k] = resolvido[k] && longe[Math.floor(k / largura / f) * Lf + Math.floor((k % largura) / f)] >= AFASTAMENTO_DA_FONTE_KM ? 1 : 0;
-  }
+  const valido = validoDasFontes({ resolvido, vazio, declarados, largura, altura, raioM });
   const larguraKm = opcoes.colcha?.larguraKm ?? LARGURA_DO_RETALHO_KM;
   const fontes = fontesDaColcha({ metros, valido, fonte, largura, altura, raioM, larguraKm });
   const direcoes = ids.map((_, u) => (fontes[u]?.angulo ? direcaoDoCinturao(unidades.pesos[u], Lr, Ar, raioM) : null));
   anota(`a parte fina do medido e as fontes (${ids.map((id, u) => `${id} ${fontes[u]?.areaKm2 ?? 0} km²`).join(', ')})`);
-  const importa = Uint8Array.from(dadoPorOitava[0], (v) => (v ? 0 : 1));
+  // onde a repetição conta (o vazio e o borrado): pelo mapa de qualidade SEM a proteção do alisado — ligar o alisamento não muda quais retalhos contam
+  const dadoDaBanda0 = alisados
+    ? mascarasDoDado({ vazio, largura, altura, nBandas: nb, qualidade, completaBorrado: opcoes.completaBorrado ?? true, dadoRuim, raioM })[0]
+    : dadoPorOitava[0];
+  const importa = Uint8Array.from(dadoDaBanda0, (v) => (v ? 0 : 1));
   const retalhos = colcha({
     fina, coef: coeficientesDeSpline(fina, largura, altura), largura, altura, raioM, pesos, fontes, direcoes, semente,
     opcoes: { ...opcoes.colcha, importa },
@@ -5517,13 +5580,17 @@ export function chaveDasEscolhas(fonte) {
 /**
  * O RELEVO INVENTADO DE UM CORPO, DE PONTA A PONTA — a ÚNICA função que a
  * prévia e o gerador oficial (`gera-normal-de-dem.mjs`) chamam. Na ordem:
- *   1. as operações declaradas no MEDIDO (`aplicaAlisamentos`, só as ativas);
+ *   1. as operações declaradas no MEDIDO (`aplicaAlisamentos`, só as ativas;
+ *      o polígono de toda declarada, ativa ou não, sai das fontes da colcha);
  *   2. as medidas do lado medido e o mapa de qualidade (`medeLadoMedido`),
- *      sobre o medido já alisado e ainda COM o degrau da emenda do arquivo,
- *      como as medidas que calibraram as prévias aprovadas;
+ *      sobre o medido SEM alisar e ainda COM o degrau da emenda do arquivo,
+ *      como as medidas que calibraram as prévias aprovadas: a escolha do dono
+ *      sobre o alisamento não mexe em nada que se mede (nível, energia,
+ *      crateras, borrado) fora da planície; a síntese lê o alisado;
  *   3. a síntese (`sintetizaCorpo`: o degrau da emenda do arquivo sai
  *      primeiro, depois as unidades, as crateras, a colcha, o ruído, a
- *      costura e a calibração), com `completaBorrado` do JSON;
+ *      costura e a calibração), com `completaBorrado` do JSON — menos a área
+ *      alisada no passo 1, que nunca é completada (o liso ali é a decisão);
  *   4. as normais do campo completo (`assaNormais`, sem máscara e sem a trava
  *      de 80° no sul).
  * `id` = 'pluto' | 'charon' (a convenção de longitude do catálogo); `grade` =
@@ -5548,7 +5615,7 @@ export function inventaRelevoDoCorpo({ id, grade, fonte, tabelas, semente, opcoe
   const catalogo = lerCatalogoDeCrateras(tabelas.catalogo, SOMA_DE_LONGITUDE_DO_CATALOGO[id]);
   const guia = lerGuiaDeRegioes(tabelas.guia);
   const ro21 = lerTabelaRo21(tabelas.ro21);
-  const { medidas, qualidade } = medeLadoMedido({ grade: medido, unidades: fonte.unidades, crateras: catalogo, guia, ro21, opcoes: { corpo: id, registra } });
+  const { medidas, qualidade } = medeLadoMedido({ grade, unidades: fonte.unidades, crateras: catalogo, guia, ro21, opcoes: { corpo: id, registra } });
   const bandasBorradas = qualidade.planos[qualidade.nomesDosPlanos.indexOf('bandasBorradas')];
   const { campo, relatorio } = sintetizaCorpo({
     grade: medido,
@@ -5558,6 +5625,8 @@ export function inventaRelevoDoCorpo({ id, grade, fonte, tabelas, semente, opcoe
     catalogo,
     guia,
     semente,
+    alisados: alisado.alisados,
+    declarados: alisado.declarados,
     opcoes: { completaBorrado: fonte.completaBorrado ?? true, registra },
   });
   const { rgb, rmsGraus, maxGraus } = assaNormais(campo, largura, altura, raioM, undefined, { travaNoSul: false });

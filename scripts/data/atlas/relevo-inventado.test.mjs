@@ -71,7 +71,13 @@
 // O ALISAMENTO DECLARADO (E5): 24. Desligado (`ativo: false`) não mexe em
 //     nada; ligado, só muda texel dentro do polígono e da penugem dele, e a
 //     mudança é uma fração (0 a 1) da banda 0, com o sinal trocado — no
-//     miolo plano, a banda 0 inteira.
+//     miolo plano, a banda 0 inteira. 25. A área alisada de propósito não é
+//     completada: sob o borrado do mapa de qualidade, o texel alisado (m ≥ ½)
+//     segue dado em toda banda e fora dele o borrado segue completado;
+//     desligado, as máscaras do dado não mudam. 26. A planície alisada não é
+//     fonte de terreno, ligada ou não: o polígono de todo alisamento declarado
+//     (também o desligado) e a margem dele saem do `valido` das fontes da
+//     colcha, e a mais que a margem nada muda; sem declarado, tudo como antes.
 // ============================================================
 import { beforeAll, describe, expect, it } from 'vitest';
 import { assaNormais } from './gera-normal-de-dem.mjs';
@@ -112,6 +118,7 @@ import {
   somaDeOitavas,
   sorteiaCrateras,
   tiraDegrauDaEmenda,
+  validoDasFontes,
 } from './relevo-inventado.mjs';
 
 /** mulberry32 — o mesmo gerador de `geradorDeSemente` (esculpido.ts) */
@@ -1148,5 +1155,98 @@ describe('o alisamento declarado (E5)', () => {
     expect(erros).toEqual({ noVazio: 0, longeDoPoligono: 0, naoEFracaoDaBanda0: 0, mioloSemABanda0Inteira: 0 });
     expect(miolo).toBeGreaterThan(500);
     expect(mudados).toBe(relatorio[0].texelsMudados);
+  });
+
+  it('a área alisada de propósito não é completada: sob o borrado o texel alisado segue dado em toda banda; desligado, as máscaras do dado não mudam', () => {
+    const [largura, altura] = [256, 128];
+    const n = largura * altura;
+    const raioM = raioDoTexel(largura, 2);
+    // o terreno e o polígono do teste acima; o mapa de qualidade (grade ÷4) vê um quadro maior que o polígono como
+    // borrado nas duas bandas finas (bandasBorradas = 2), e há um furo sem dado dentro dele
+    const ruido = ruidoBranco(n, 10, 2024);
+    const metros = Float32Array.from(ruido, (v, k) => v + 200 * Math.sin((2 * Math.PI * (k % largura)) / largura));
+    const vazio = new Uint8Array(n);
+    for (let j = 42; j < 48; j += 1) for (let i = 222; i < 228; i += 1) vazio[j * largura + i] = 1;
+    const declarado = { id: 'teste', ativo: false, bandas: [0], poligono: [[120, -40], [240, -40], [240, 40], [120, 40]] };
+    const [Lq, Aq] = [largura / 4, altura / 4];
+    const borrado = rasterizaPoligono([[100, -60], [260, -60], [260, 60], [100, 60]], Lq, Aq);
+    const qualidade = { bandasBorradas: Float32Array.from(borrado, (b) => (b ? 2 : 0)), largura: Lq, altura: Aq };
+    const nBandas = sigmasDasOitavas(raioM, altura).length + 1;
+    const pede = (alisados) => mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, raioM, alisados });
+    const semAlisar = pede(undefined);
+
+    // desligado: não há `alisados` e as máscaras são as de antes, byte a byte
+    const desligado = aplicaAlisamentos({ metros, vazio, largura, altura, raioM, alisamentos: [declarado] });
+    expect(desligado.alisados).toBeNull();
+    pede(desligado.alisados).forEach((m, b) => expect(m).toEqual(semAlisar[b]));
+
+    // ligado: o alisado é dado em toda banda; fora dele, nada muda (o borrado segue completado e o vazio segue sem dado)
+    const { alisados, relatorio } = aplicaAlisamentos({ metros, vazio, largura, altura, raioM, alisamentos: [{ ...declarado, ativo: true }] });
+    expect(alisados.reduce((x, v) => x + v, 0)).toBe(relatorio[0].texelsAlisados);
+    const protegida = pede(alisados);
+    const erros = { alisadoSemDado: 0, foraMudou: 0, vazioComDado: 0 };
+    let alisadoSobOBorrado = 0;
+    let foraSobOBorrado = 0;
+    for (let k = 0; k < n; k += 1) {
+      for (let b = 0; b < nBandas; b += 1) {
+        if (alisados[k] && !protegida[b][k]) erros.alisadoSemDado += 1;
+        if (!alisados[k] && protegida[b][k] !== semAlisar[b][k]) erros.foraMudou += 1;
+        if (vazio[k] && protegida[b][k]) erros.vazioComDado += 1;
+      }
+      if (alisados[k] && !semAlisar[0][k]) alisadoSobOBorrado += 1;
+      if (!alisados[k] && !vazio[k] && !semAlisar[0][k]) foraSobOBorrado += 1;
+    }
+    expect(erros).toEqual({ alisadoSemDado: 0, foraMudou: 0, vazioComDado: 0 });
+    // o teste morde: sem a regra, os alisados sob o borrado perderiam as duas bandas finas, como o resto do quadro
+    expect(alisadoSobOBorrado).toBeGreaterThan(500);
+    expect(foraSobOBorrado).toBeGreaterThan(500);
+  });
+
+  it('a planície alisada não é fonte de terreno, ligada ou não: o polígono declarado e a margem dele saem do `valido` das fontes; a mais que a margem e sem declarado nada muda', () => {
+    const { L: largura, A: altura, raioM } = MUNDO_DA_COLCHA; // 7,5 km por texel
+    const n = largura * altura;
+    const texelKm = (raioM / 1000) * (Math.PI / altura);
+    // terreno plano (onda larga + grão de 10 m) e um polígono de ~40° (o portão de planície deixa passar quase tudo)
+    const metros = Float32Array.from(ruidoBranco(n, 10, 7), (v, k) => v + 100 * Math.sin((2 * Math.PI * (k % largura)) / largura));
+    const vazio = new Uint8Array(n);
+    for (let j = 100; j < 110; j += 1) for (let i = 400; i < 410; i += 1) vazio[j * largura + i] = 1; // um furo longe do polígono
+    const declarado = { id: 'teste', ativo: false, bandas: [0], poligono: [[20, -20], [60, -20], [60, 20], [20, 20]] };
+    const pede = (ativo) => aplicaAlisamentos({ metros, vazio, largura, altura, raioM, alisamentos: [{ ...declarado, ativo }] });
+
+    // o desligado não alisa nada, mas declara o polígono — o mesmo que o ligado declara; sem declarado, nenhum
+    const desligado = pede(false);
+    expect(desligado.alisados).toBeNull();
+    const declarados = desligado.declarados;
+    expect(declarados.reduce((x, v) => x + v, 0)).toBeGreaterThan(1500);
+    expect(pede(true).declarados).toEqual(declarados);
+    expect(aplicaAlisamentos({ metros, vazio, largura, altura, raioM, alisamentos: [] }).declarados).toBeNull();
+
+    // o `valido` das fontes: sem declarado é a regra do vazio (30 km) e nada mais; com declarado, sai o alisado e a margem
+    const resolvido = new Uint8Array(n).fill(1);
+    const semDeclarado = validoDasFontes({ resolvido, vazio, largura, altura, raioM });
+    const comDeclarado = validoDasFontes({ resolvido, vazio, declarados, largura, altura, raioM });
+    const doAlisado = distanciaAoVazioKm(declarados, largura, altura, raioM);
+    const doVazio = distanciaAoVazioKm(vazio, largura, altura, raioM);
+    const folga = 4 * texelKm * Math.SQRT2; // a conta é na grade ÷4: a célula pode errar até uma diagonal dela
+    const erros = { vazioMenosDeTrinta: 0, alisadoLido: 0, margemLida: 0, longeTirado: 0, mudouOQueNaoDevia: 0 };
+    let dentroDaMargem = 0;
+    let alemDaMargem = 0;
+    for (let k = 0; k < n; k += 1) {
+      if (doVazio[k] < 30 - folga && semDeclarado[k]) erros.vazioMenosDeTrinta += 1;
+      if (declarados[k] && comDeclarado[k]) erros.alisadoLido += 1;
+      if (doAlisado[k] < 150 - folga) {
+        dentroDaMargem += 1;
+        if (comDeclarado[k]) erros.margemLida += 1;
+      } else if (doAlisado[k] > 150 + folga) {
+        alemDaMargem += 1;
+        if (comDeclarado[k] !== semDeclarado[k]) erros.longeTirado += 1;
+      }
+      if (comDeclarado[k] && !semDeclarado[k]) erros.mudouOQueNaoDevia += 1; // o declarado só tira, nunca põe
+    }
+    expect(erros).toEqual({ vazioMenosDeTrinta: 0, alisadoLido: 0, margemLida: 0, longeTirado: 0, mudouOQueNaoDevia: 0 });
+    // o teste morde: há bastante texel dentro da margem (que a regra tira) e além dela (que fica como estava)
+    expect(dentroDaMargem).toBeGreaterThan(5000);
+    expect(alemDaMargem).toBeGreaterThan(5000);
+    expect(semDeclarado.reduce((x, v) => x + v, 0) - comDeclarado.reduce((x, v) => x + v, 0)).toBeGreaterThan(dentroDaMargem / 2);
   });
 });
