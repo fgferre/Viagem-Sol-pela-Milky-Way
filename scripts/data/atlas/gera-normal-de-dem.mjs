@@ -9,6 +9,7 @@
 //   node scripts/data/atlas/gera-normal-de-dem.mjs moon --dem /caminho/ldem.tif
 //   node scripts/data/atlas/gera-normal-de-dem.mjs vesta --varredura
 //   node scripts/data/atlas/gera-normal-de-dem.mjs pluto --varredura
+//   node scripts/data/atlas/gera-normal-de-dem.mjs pluto --rede
 //
 // POR QUE ESTE SCRIPT EXISTE. Até o item 140 os corpos com mapa tinham
 // só a COR, e o relevo deles era INVENTADO a partir dela (o bump por
@@ -141,9 +142,23 @@
 // declaram `vazioLiso` e assam como sempre, byte a byte. A GUARDA não usa
 // a máscara (ela vê o vazio como 0 m): num corpo assim, rode com
 // `--varredura` e confira que o pico cai em 0°.
+//
+// O CACHE DAS ALTURAS (Plutão e Caronte, 01/10/2026). Os dois DEMs vêm por
+// faixas HTTP (591 e 154 MiB) e a rodada do relevo inventado assa várias
+// vezes: as prévias e a final. Onde a tabela declara `cacheDeAlturas`, a
+// leitura pela rede grava em `.cache/relevo/<corpo>-4096.*` o que o assamento
+// consome — as alturas e a máscara do vazio JÁ na orientação da casa
+// (`orientar`), em Float32 e Uint8 little-endian — e a grade de 720x360 da
+// guarda, na orientação da FONTE. O cabeçalho `.json` leva o sha256 de cada
+// parte e a fonte e o filtro de que ela saiu (linhas por saída, larguras,
+// giro); as rodadas seguintes leem de lá, sem rede, e RECUSAM o que não bater
+// (arquivo trocado ou cortado, outra fonte, outro filtro). A guarda reroda
+// sobre a MESMA grade de 720 guardada, e o normal.png sai byte a byte o mesmo
+// pelos dois caminhos. `--rede` força a leitura remota e regrava o cache.
 // ============================================================
 
-import { mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { mkdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -176,6 +191,11 @@ const rootDirectory = path.resolve(
  *
  * `vazioLiso` só existe onde o DEM é PARCIAL (Plutão, Caronte): o vazio
  * e a borda dele saem com a normal lisa, não com a parede do 0 m (ver o
+ * cabeçalho).
+ *
+ * `cacheDeAlturas` só existe onde ler o DEM pela rede custa centenas de
+ * MiB (Plutão, Caronte): as alturas lidas ficam em `.cache/relevo/` e as
+ * rodadas seguintes as releem de lá, conferidas por sha256 (ver o
  * cabeçalho).
  */
 export const CORPOS = {
@@ -323,6 +343,10 @@ export const CORPOS = {
     // dado em ~45 % do globo: de −50° a +89°, no equador só de 84° a 247°E,
     // acima de +60° em toda longitude
     vazioLiso: true,
+    // o DEM (591 MiB) vem por faixas HTTP; o cache em `.cache/relevo/` serve a
+    // rodada do relevo inventado — as prévias e o assamento final — e mantém
+    // a guarda sobre os mesmos números
+    cacheDeAlturas: true,
     fonte: {
       tipo: 'tif-por-faixas',
       nome: 'Pluto_NewHorizons_Global_DEM_300m_Jul2017_16bit.tif',
@@ -344,6 +368,8 @@ export const CORPOS = {
     longitudeDaBordaEsquerdaGraus: 180,
     // dado em ~44 % do globo: o hemisfério voltado para Plutão, de −42° a +89°
     vazioLiso: true,
+    // o DEM (154 MiB) vem por faixas HTTP; o mesmo cache de Plutão (ver acima)
+    cacheDeAlturas: true,
     fonte: {
       tipo: 'tif-por-faixas',
       nome: 'Charon_NewHorizons_Global_DEM_300m_Jul2017_16bit.tif',
@@ -674,6 +700,70 @@ function orientar(corpo, grade, defasagemExtraGraus = 0, campo = grade.metros) {
 }
 
 // ------------------------------------------------------------
+// O CACHE DAS ALTURAS
+// ------------------------------------------------------------
+
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+
+/**
+ * GRAVA AS ALTURAS LIDAS (ver o cabeçalho). `partes` é `{ nome: Float32Array
+ * | Uint8Array }`: cada uma vira os BYTES CRUS de `<nome>.<parte>.bin`, e o
+ * `<nome>.json` leva o `cabecalho` de quem chama e, por parte, o tipo, o
+ * tamanho e o sha256. Cada arquivo nasce num temporário e é renomeado, e o
+ * cabeçalho vai POR ÚLTIMO: cache com cabeçalho está inteiro, e uma gravação
+ * interrompida no meio não deixa cabeçalho nenhum. Não sabe de corpo.
+ */
+export async function gravarCacheDeAlturas(dir, nome, cabecalho, partes) {
+  // os bytes saem como a memória os guarda, e a leitura os entende como little-endian
+  if (os.endianness() !== 'LE') {
+    throw new Error('o cache das alturas é little-endian e esta máquina não é.');
+  }
+  await mkdir(dir, { recursive: true });
+  const gravar = async (arquivo, conteudo) => {
+    const temporario = `${arquivo}.tmp-${process.pid}`;
+    await writeFile(temporario, conteudo);
+    await rename(temporario, arquivo);
+  };
+  const descricao = {};
+  for (const [parte, dados] of Object.entries(partes)) {
+    const tipo = dados instanceof Float32Array ? 'f32' : dados instanceof Uint8Array ? 'u8' : '';
+    if (!tipo) throw new Error(`parte "${parte}": o cache só guarda Float32Array e Uint8Array.`);
+    const bytes = Buffer.from(dados.buffer, dados.byteOffset, dados.byteLength);
+    const arquivo = `${nome}.${parte}.bin`;
+    await gravar(path.join(dir, arquivo), bytes);
+    descricao[parte] = {
+      tipo, comprimento: dados.length, bytes: bytes.length, sha256: sha256(bytes), arquivo,
+    };
+  }
+  const json = { versao: 1, endianness: 'LE', ...cabecalho, partes: descricao };
+  await gravar(path.join(dir, `${nome}.json`), `${JSON.stringify(json, null, 2)}\n`);
+}
+
+/**
+ * LÊ O CACHE DAS ALTURAS: `null` se não há cabeçalho. Cada parte é conferida
+ * contra o tamanho e o sha256 do cabeçalho, e o que não bater (arquivo
+ * trocado ou cortado) RECUSA em vez de assar com altura errada. Os bytes são
+ * COPIADOS para um ArrayBuffer próprio: o Buffer do disco pode vir de um
+ * pool, fora do alinhamento de 4 bytes que o Float32Array exige.
+ */
+export async function lerCacheDeAlturas(dir, nome) {
+  const arquivoDoCabecalho = path.join(dir, `${nome}.json`);
+  if (!existsSync(arquivoDoCabecalho)) return null;
+  const cabecalho = JSON.parse(await readFile(arquivoDoCabecalho, 'utf8'));
+  const partes = {};
+  for (const [parte, meta] of Object.entries(cabecalho.partes)) {
+    const arquivo = path.join(dir, meta.arquivo);
+    const bytes = await readFile(arquivo);
+    if (bytes.length !== meta.bytes || sha256(bytes) !== meta.sha256) {
+      throw new Error(`cache corrompido em ${arquivo} — rode com --rede`);
+    }
+    const copia = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.length);
+    partes[parte] = meta.tipo === 'f32' ? new Float32Array(copia) : new Uint8Array(copia);
+  }
+  return { cabecalho, partes };
+}
+
+// ------------------------------------------------------------
 // A GUARDA DE ALINHAMENTO
 // ------------------------------------------------------------
 
@@ -744,12 +834,16 @@ export function conferirAlinhamento(corpo, medidas) {
   }
 }
 
-async function guardaDeAlinhamento(corpo, contexto, mapaDeCor, varredura) {
+/**
+ * `gradeDaGuarda` é `{ metros, largura, altura }` de 720x360, NA ORIENTAÇÃO
+ * DA FONTE: quem chama a lê da fonte ou do cache das alturas, e a guarda
+ * mede os mesmos números nos dois casos.
+ */
+async function guardaDeAlinhamento(corpo, gradeDaGuarda, mapaDeCor, varredura) {
   const L = LARGURA_DA_GUARDA;
   const A = L / 2;
-  const grade = await lerAlturaEmMetros(corpo, contexto, L);
-  const declarada = orientar(corpo, grade);
-  const outra = orientar(corpo, grade, 180);
+  const declarada = orientar(corpo, gradeDaGuarda);
+  const outra = orientar(corpo, gradeDaGuarda, 180);
   // O albedo é o MAPA ENTREGUE, que já está na convenção da casa: a
   // aquisição (`baixa-texturas.mjs`) é quem gira mapa de cor que nasce em
   // outro sistema de longitude, e o que chega aqui é o que a tela mostra.
@@ -774,7 +868,7 @@ async function guardaDeAlinhamento(corpo, contexto, mapaDeCor, varredura) {
     const linhas = [];
     let pico = { defasagem: 0, valor: -Infinity };
     for (let d = 0; d < 360; d += PASSO_DA_VARREDURA_GRAUS) {
-      const valor = pearson(energiaDeBorda(orientar(corpo, grade, d), L, A), bordaAlb);
+      const valor = pearson(energiaDeBorda(orientar(corpo, gradeDaGuarda, d), L, A), bordaAlb);
       if (valor > pico.valor) pico = { defasagem: d, valor };
       linhas.push(`${String(d).padStart(3)}° ${valor.toFixed(4)}`);
     }
@@ -878,6 +972,7 @@ async function main() {
   const argv = process.argv.slice(2);
   const manter = argv.includes('--manter');
   const varredura = argv.includes('--varredura');
+  const rede = argv.includes('--rede');
   const iDem = argv.indexOf('--dem');
   const caminhoDado = iDem >= 0 ? path.resolve(argv[iDem + 1]) : '';
   const id = argv.find((a, k) => !a.startsWith('--') && !(iDem >= 0 && k === iDem + 1));
@@ -895,6 +990,30 @@ async function main() {
     throw new Error(`sem o mapa de cor em ${destino} — a guarda de alinhamento precisa dele.`);
   }
 
+  // o cache das alturas (ver o cabeçalho): achado e conferido, dispensa a rede
+  const dirDoCache = path.join(rootDirectory, '.cache', 'relevo');
+  const nomeDoCache = `${corpo.diretorio}-${LARGURA_ALVO}`;
+  const caminhoDoCache = path.relative(rootDirectory, path.join(dirDoCache, nomeDoCache));
+  const giroGraus =
+    (((LONGITUDE_ESQUERDA_DA_CASA - corpo.longitudeDaBordaEsquerdaGraus) % 360) + 360) % 360;
+  const cache =
+    corpo.cacheDeAlturas && !rede ? await lerCacheDeAlturas(dirDoCache, nomeDoCache) : null;
+  if (cache) {
+    const c = cache.cabecalho;
+    if (
+      c.fonte?.url !== corpo.fonte.url ||
+      c.linhasPorSaida !== corpo.fonte.linhasPorSaida ||
+      c.larguraAlvo !== LARGURA_ALVO ||
+      c.larguraDaGuarda !== LARGURA_DA_GUARDA ||
+      c.giroGraus !== giroGraus ||
+      c.conversao?.offsetDoDado !== corpo.offsetDoDado ||
+      c.conversao?.metrosPorUnidade !== corpo.metrosPorUnidade ||
+      c.conversao?.semDado !== corpo.fonte.semDado
+    ) {
+      throw new Error('cache de outra fonte ou de outro filtro — rode com --rede');
+    }
+  }
+
   const contexto = {
     offset: corpo.offsetDoDado,
     escala: corpo.metrosPorUnidade,
@@ -902,7 +1021,9 @@ async function main() {
   };
   let baixado = false;
 
-  if (corpo.fonte.tipo === 'tif-por-faixas') {
+  if (cache) {
+    console.log(`alturas do cache: ${caminhoDoCache} (gravado em ${cache.cabecalho.criadoEm})`);
+  } else if (corpo.fonte.tipo === 'tif-por-faixas') {
     const tif = await cabecalhoDoTifRemoto(corpo.fonte.url);
     console.log(
       `${corpo.fonte.descricao}: ${tif.largura}x${tif.altura} por faixas — ` +
@@ -930,14 +1051,63 @@ async function main() {
     console.log(`${corpo.fonte.descricao}: ${contexto.caminho}.`);
   }
 
-  // ---- a guarda de alinhamento, ANTES de assar 8 milhões de pixels
-  await guardaDeAlinhamento(corpo, contexto, mapaDeCor, varredura);
+  const largura = LARGURA_ALVO;
+  const altura = LARGURA_ALVO / 2;
+  // o que `assaNormais` consome: alturas e máscara do vazio JÁ na orientação da casa
+  let metrosDaCasa;
+  let vazioDaCasa;
+  if (cache) {
+    // a guarda reroda sobre a MESMA grade de 720 que o cache guardou
+    const { metros, vazio, guarda } = cache.partes;
+    await guardaDeAlinhamento(
+      corpo,
+      { metros: guarda, largura: LARGURA_DA_GUARDA, altura: LARGURA_DA_GUARDA / 2 },
+      mapaDeCor,
+      varredura
+    );
+    metrosDaCasa = metros;
+    vazioDaCasa = vazio;
+  } else {
+    // ---- a guarda de alinhamento, ANTES de assar 8 milhões de pixels
+    const gradeDaGuarda = await lerAlturaEmMetros(corpo, contexto, LARGURA_DA_GUARDA);
+    await guardaDeAlinhamento(corpo, gradeDaGuarda, mapaDeCor, varredura);
 
-  const grade = await lerAlturaEmMetros(corpo, contexto, LARGURA_ALVO);
-  const { largura, altura } = grade;
+    const grade = await lerAlturaEmMetros(corpo, contexto, LARGURA_ALVO);
+    metrosDaCasa = orientar(corpo, grade);
+    vazioDaCasa = corpo.vazioLiso ? orientar(corpo, grade, 0, grade.vazio) : undefined;
+    if (corpo.cacheDeAlturas) {
+      const { tif } = contexto;
+      await gravarCacheDeAlturas(
+        dirDoCache,
+        nomeDoCache,
+        {
+          corpo: id,
+          fonte: { url: corpo.fonte.url, nome: corpo.fonte.nome },
+          origem: {
+            largura: tif.largura,
+            altura: tif.altura,
+            bytesPorAmostra: tif.bytesPorAmostra,
+          },
+          linhasPorSaida: corpo.fonte.linhasPorSaida,
+          conversao: {
+            offsetDoDado: corpo.offsetDoDado,
+            metrosPorUnidade: corpo.metrosPorUnidade,
+            semDado: corpo.fonte.semDado,
+          },
+          larguraAlvo: LARGURA_ALVO,
+          alturaAlvo: LARGURA_ALVO / 2,
+          larguraDaGuarda: LARGURA_DA_GUARDA,
+          giroGraus,
+          orientacao: { metros: 'casa', vazio: 'casa', guarda: 'fonte' },
+          criadoEm: new Date().toISOString(),
+        },
+        { metros: metrosDaCasa, vazio: vazioDaCasa, guarda: gradeDaGuarda.metros }
+      );
+      console.log(`cache gravado: ${caminhoDoCache}`);
+    }
+  }
   const { rgb, rmsGraus, maxGraus, lisos } = assaNormais(
-    orientar(corpo, grade), largura, altura, raioDoPassoM(corpo),
-    corpo.vazioLiso ? orientar(corpo, grade, 0, grade.vazio) : undefined
+    metrosDaCasa, largura, altura, raioDoPassoM(corpo), vazioDaCasa
   );
   console.log(
     `inclinação: RMS ${rmsGraus.toFixed(2)}°, máxima ${maxGraus.toFixed(2)}° ` +

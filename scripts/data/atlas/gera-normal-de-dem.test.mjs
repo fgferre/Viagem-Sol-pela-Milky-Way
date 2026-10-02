@@ -23,12 +23,17 @@
 //     (`rochoso.ts`) — quem assa e quem consome não podem divergir em
 //     silêncio.
 //
-// Nada aqui toca rede, disco ou o DEM: o script foi partido em funções
-// puras (`assaNormais`, `medirAlinhamento`, `conferirAlinhamento`) sem
-// mudar uma conta — os mapas já assados da Lua, de Mercúrio e de Marte
-// continuam byte a byte os mesmos. O giro do DEM é `giraColunasDeImagem`
-// (`lib-texturas.mjs`), a MESMA função que gira imagem na aquisição.
+// Nada aqui toca rede ou o DEM (o único disco é a pasta temporária que a
+// seção 7 cria e apaga, para o cache das alturas): o script foi partido
+// em funções puras (`assaNormais`, `medirAlinhamento`,
+// `conferirAlinhamento`) sem mudar uma conta — os mapas já assados da
+// Lua, de Mercúrio e de Marte continuam byte a byte os mesmos. O giro do
+// DEM é `giraColunasDeImagem` (`lib-texturas.mjs`), a MESMA função que
+// gira imagem na aquisição.
 // ============================================================
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BODY_AXES } from '../../../src/lib/atlas/iauOrientation.ts';
 import { NORMAL_MEDIDA } from '../../../src/three/world/corpos/rochoso.ts';
@@ -38,6 +43,8 @@ import {
   MARGEM_DA_BORDA,
   assaNormais,
   conferirAlinhamento,
+  gravarCacheDeAlturas,
+  lerCacheDeAlturas,
   mediaDeCaixa,
   medirAlinhamento,
 } from './gera-normal-de-dem.mjs';
@@ -254,6 +261,8 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     // e só os dois DEMs parciais ligam a máscara do vazio: os cinco de
     // antes assam sem ela, byte a byte como antes
     expect(Object.keys(CORPOS).filter((id) => CORPOS[id].vazioLiso)).toEqual(['pluto', 'charon']);
+    // e só eles guardam as alturas em cache: os outros cinco leem a fonte como sempre
+    expect(Object.keys(CORPOS).filter((id) => CORPOS[id].cacheDeAlturas)).toEqual(['pluto', 'charon']);
     // e NINGUÉM fica de fora do pino: corpo novo entra na tabela com as
     // três declarações ou reprova aqui, em vez de assar por padrão mudo
     expect(Object.keys(CORPOS)).toEqual(['moon', 'mercury', 'mars', 'ceres', 'vesta', 'pluto', 'charon']);
@@ -397,5 +406,64 @@ describe('6. o vazio sem dado vira relevo LISO (Plutão e Caronte, 01/10)', () =
     expect(Array.from(assaNormais(meia(media, 1), 8, 4, R, meia(vazio, 1)).rgb)).toEqual(
       Array.from(meia(com.rgb, 3))
     );
+  });
+});
+
+describe('7. o cache das alturas (rodada do relevo inventado)', () => {
+  /**
+   * Plutão e Caronte custam 745 MiB por faixas HTTP, e o cache poupa a
+   * segunda leitura. O que volta do disco tem de ser BYTE A BYTE o que
+   * entrou — senão o `normal.png` da prévia difere do da final sem que
+   * ninguém veja —, e o que alguém mexeu no disco tem de ser RECUSADO, não
+   * assado. A pasta é temporária e some no fim.
+   */
+  it('relê byte a byte, devolve null sem cache e recusa o arquivo mexido', async () => {
+    const raiz = await mkdtemp(path.join(os.tmpdir(), 'cache-relevo-'));
+    try {
+      // a pasta ainda não existe: a gravação a cria, como na primeira rodada
+      const dir = path.join(raiz, 'ainda', 'nao', 'existe');
+      const metros = new Float32Array([0.1, -1234.5, 3000, -0.001, 8848.86, 1e-7]);
+      const vazio = Uint8Array.from([0, 1, 1, 0, 1]); // tamanho ímpar de propósito
+      const guarda = new Float32Array([7, -7, 0.25]);
+      await gravarCacheDeAlturas(dir, 'teste', { corpo: 'x', giroGraus: 180 }, { metros, vazio, guarda });
+      // só os quatro arquivos: cada parte e o cabeçalho, sem temporário esquecido
+      expect((await readdir(dir)).sort()).toEqual(
+        ['teste.guarda.bin', 'teste.json', 'teste.metros.bin', 'teste.vazio.bin']
+      );
+
+      const lido = await lerCacheDeAlturas(dir, 'teste');
+      expect(lido.cabecalho).toMatchObject({ versao: 1, endianness: 'LE', corpo: 'x', giroGraus: 180 });
+      expect(lido.cabecalho.partes.metros).toMatchObject({
+        tipo: 'f32', comprimento: 6, bytes: 24, arquivo: 'teste.metros.bin',
+      });
+      expect(lido.cabecalho.partes.vazio).toMatchObject({ tipo: 'u8', comprimento: 5, bytes: 5 });
+      expect(lido.cabecalho.partes.metros.sha256).toMatch(/^[0-9a-f]{64}$/);
+      const bytes = (a) => Buffer.from(a.buffer, a.byteOffset, a.byteLength);
+      for (const [parte, tipo, original] of [
+        ['metros', Float32Array, metros], ['vazio', Uint8Array, vazio], ['guarda', Float32Array, guarda],
+      ]) {
+        expect(lido.partes[parte], parte).toBeInstanceOf(tipo);
+        // ArrayBuffer próprio, no começo dele: alinhado para o Float32Array
+        expect(lido.partes[parte].byteOffset, `${parte} byteOffset`).toBe(0);
+        expect(bytes(lido.partes[parte]).equals(bytes(original)), `${parte} bytes`).toBe(true);
+      }
+
+      // sem cabeçalho, sem cache: nome que não existe e pasta que não existe
+      expect(await lerCacheDeAlturas(dir, 'outro')).toBeNull();
+      expect(await lerCacheDeAlturas(path.join(raiz, 'sem-pasta'), 'teste')).toBeNull();
+
+      // um byte virado numa parte: o sha256 não bate e a leitura RECUSA
+      const arquivo = path.join(dir, 'teste.metros.bin');
+      const original = await readFile(arquivo);
+      const mexido = Buffer.from(original);
+      mexido[5] ^= 0xff;
+      await writeFile(arquivo, mexido);
+      await expect(lerCacheDeAlturas(dir, 'teste')).rejects.toThrow(/cache corrompido em .*teste\.metros\.bin/);
+      // e arquivo cortado também: o tamanho não bate
+      await writeFile(arquivo, original.subarray(0, original.length - 1));
+      await expect(lerCacheDeAlturas(dir, 'teste')).rejects.toThrow(/cache corrompido/);
+    } finally {
+      await rm(raiz, { recursive: true, force: true });
+    }
   });
 });
