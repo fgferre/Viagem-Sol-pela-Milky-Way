@@ -59,6 +59,10 @@
 // 21. O que `medeLadoMedido` exclui não entra na medida: outro relevo e
 //     outras crateras no recorte dão as mesmas medidas e os mesmos planos de
 //     qualidade, e a área das crateras da caixa perde a parte excluída.
+//
+// O DADO RUIM (E6): 22. Numa caixa `dadoRuim`, as bandas de σ até
+//     `sigmaMaximoKm` deixam de ser dado e as mais grossas continuam; fora
+//     dela, e com `completaBorrado: false`, todo medido é dado.
 // ============================================================
 import { beforeAll, describe, expect, it } from 'vitest';
 import { assaNormais } from './gera-normal-de-dem.mjs';
@@ -82,6 +86,7 @@ import {
   linhaDaLatitude,
   longitudeDaColuna,
   mascaraDaCaixa,
+  mascarasDoDado,
   medeLadoMedido,
   membranaHarmonica,
   moldeDeCratera,
@@ -944,4 +949,29 @@ describe('as medidas sem o recorte escondido (E4)', () => {
     expect(a.medidas.unidades.a.crateras.areaKm2 / (area(caixa) - area(recorte))).toBeCloseTo(1, 1);
     expect(a.medidas.unidades.a.crateras.contadas).toBe(2);
   }, 60_000);
+});
+
+describe('o dado ruim (E6)', () => {
+  it('numa caixa `dadoRuim` tira as bandas finas do dado e deixa as grossas; fora dela, e sem completar, tudo é dado', () => {
+    const largura = 128;
+    const altura = 64;
+    const raioM = 606e3;
+    const vazio = new Uint8Array(largura * altura);
+    for (let k = 0; k < largura * 8; k += 1) vazio[k] = 1; // uma calota norte sem dado
+    const sigmas = sigmasDasOitavas(raioM, altura); // 59,5; 119; 238; 476 km
+    const caixa = { lon: [150, 240], lat: [-20, 40], sigmaMaximoKm: 130 };
+    const nBandas = sigmas.length + 1;
+    const mascaras = mascarasDoDado({ vazio, largura, altura, nBandas, dadoRuim: [caixa], raioM });
+    const naCaixa = mascaraDaCaixa(caixa, largura, altura);
+    let dentro = 0;
+    for (let k = 0; k < largura * altura; k += 1) {
+      const ruim = naCaixa[k] && !vazio[k];
+      if (ruim) dentro += 1;
+      mascaras.forEach((m, b) => expect(m[k]).toBe(vazio[k] || (ruim && sigmas[b] <= 130) ? 0 : 1));
+    }
+    expect(dentro).toBeGreaterThan(300);
+    expect(sigmas.filter((sg) => sg <= 130)).toHaveLength(2);
+    const semCompletar = mascarasDoDado({ vazio, largura, altura, nBandas, dadoRuim: [caixa], raioM, completaBorrado: false });
+    for (const m of semCompletar) for (let k = 0; k < largura * altura; k += 1) expect(m[k]).toBe(vazio[k] ? 0 : 1);
+  });
 });

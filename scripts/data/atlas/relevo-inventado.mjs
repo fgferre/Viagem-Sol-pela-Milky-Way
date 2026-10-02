@@ -2933,6 +2933,7 @@ const RAIO_DO_PICO_RR = 0.22;
  * são, por projeto, a membrana lisa.
  */
 const TOLERANCIA_DO_RMS = 0.1;
+const TOLERANCIA_DO_S = 0.15;
 const LAG_MAXIMO_DA_CALIBRACAO_KM = 30;
 
 const suave = (a, b, x) => {
@@ -3406,16 +3407,68 @@ export function perfilDasEscarpas({ metros, valido, caixas, largura, altura, rai
 }
 
 /**
+ * O DESENHO DAS FALHAS (E6, 02/10: as 16 do Be21 saíam riscos finos, claros e
+ * retos sob Sol rasante; as medidas de Serenity e Mandjet tremem, se partem e
+ * mudam de largura). O eixo treme (`TREMOR_DO_TRACO`: [λ km, pico km]); o traço
+ * parte em segmentos de `SEGMENTO_KM` en échelon — cada um girado
+ * (`GIRO_DO_SEGMENTO_GRAUS`, o mesmo sentido na feição toda) em volta do próprio
+ * meio, que fica no traço mapeado, com rejeito próprio (`REJEITO_DO_SEGMENTO`),
+ * e o vizinho assume numa rampa de revezamento (`REVEZAMENTO` do menor dos
+ * dois); a face alarga e afina ao longo do traço (o perfil medido desfocado com
+ * σ em `SIGMA_DA_FACE_KM`, onda de `ONDA_DA_FACE_KM`) e nunca fica mais fina que
+ * o perfil medido desfocado de 1,2 km; e ganha esporões e ravinas (`ESPORAO`:
+ * tremor 2D da face de [λ ao longo, λ através, pico] km).
+ */
+const TREMOR_DO_TRACO = [
+  [60, 6],
+  [30, 3],
+  [15, 1.5],
+];
+const SEGMENTO_KM = [25, 70];
+const GIRO_DO_SEGMENTO_GRAUS = [5, 12];
+const REJEITO_DO_SEGMENTO = [0.7, 1.3];
+const REVEZAMENTO = 0.3;
+const SIGMA_DA_FACE_KM = [1.2, 6];
+const NIVEIS_DA_FACE = 5;
+const ONDA_DA_FACE_KM = 70;
+const ESPORAO = [6, 12, 1.5];
+/** O desvio lateral máximo das três coisas acima somadas, mais 3σ da face mais larga (km): o alcance da feição cresce disto. */
+const FOLGA_DA_FEICAO_KM = 40;
+/** O passo (km) da tabela do perfil. */
+const PASSO_DO_PERFIL_KM = 0.25;
+
+/** Ruído de valor 1D em [−1, 1), quíntico, nós nos inteiros. */
+function ruido1D(x, s) {
+  const i = Math.floor(x);
+  const a = hashDoCanto(i, 0, 0, s) / 2147483648 - 1;
+  return a + suavizaQuintica(x - i) * (hashDoCanto(i + 1, 0, 0, s) / 2147483648 - 1 - a);
+}
+
+/** Ruído de valor 2D em [−1, 1), quíntico, nós nos inteiros. */
+function ruido2D(x, y, s) {
+  const i = Math.floor(x);
+  const j = Math.floor(y);
+  const fx = suavizaQuintica(x - i);
+  const h = (a, b) => hashDoCanto(a, b, 1, s) / 2147483648 - 1;
+  const c0 = h(i, j) + fx * (h(i + 1, j) - h(i, j));
+  const c1 = h(i, j + 1) + fx * (h(i + 1, j + 1) - h(i, j + 1));
+  return c0 + suavizaQuintica(y - j) * (c1 - c0);
+}
+
+/**
  * A CAMADA TECTÔNICA (m): as feições de `feicoes` com `trajeto` (escarpa,
  * crista, fossa) em volta da polilinha (círculos máximos entre os vértices),
  * com o PERFIL MEDIDO das escarpas do cinturão (`perfilDasEscarpas`: a face
  * íngreme com o fosso embaixo e o flanco alto em cima, voltando ao nível em
  * ~40 km; a zero 20 km além): escarpa = o perfil (o lado alto sorteado — a
  * foto não diz); fossa = duas faces de frente a `larguraKm` (o fundo entre
- * elas, os flancos fora); crista = o flanco alto espelhado. A altura varia
- * ao longo do traço (três ondas de 60–160 km, entre 0,35 e 1). Some nas pontas (`PONTA_DA_FEICAO` do comprimento) e
- * junto do medido (`dado`, em `AFASTAMENTO_DA_FEICAO_KM`): só no vazio.
- * `{ camada, feitas: [{ nome, tipo, maiorM }] }`.
+ * elas, os flancos fora); crista = o flanco alto espelhado. Desenhadas como as
+ * medidas (`TREMOR_DO_TRACO` e seguintes): traço trêmulo, segmentos en échelon,
+ * face de largura variável, esporões. A altura varia ao longo do traço (três
+ * ondas de 60–160 km, entre 0,35 e 1, vezes o rejeito do segmento). Some nas
+ * pontas (`PONTA_DA_FEICAO` do comprimento) e junto do medido (`dado`, em
+ * `AFASTAMENTO_DA_FEICAO_KM`): só no vazio. `{ camada, feitas: [{ nome, tipo,
+ * maiorM, segmentos }] }`.
  */
 export function camadaTectonica({ feicoes, perfil, dado, largura, altura, raioM, semente }) {
   const n = largura * altura;
@@ -3439,6 +3492,38 @@ export function camadaTectonica({ feicoes, perfil, dado, largura, altura, raioM,
     return P[q] + (x - q) * (P[q + 1] - P[q]);
   };
   const uDoTopo = uKm.reduce((m, u, q) => (u > 0 && P[q] > P[uKm.indexOf(m)] ? u : m), 1);
+  // o perfil-base tabelado e desfocado com cada σ da face (níveis geométricos)
+  const sigmas = Array.from(
+    { length: NIVEIS_DA_FACE },
+    (_, l) => SIGMA_DA_FACE_KM[0] * (SIGMA_DA_FACE_KM[1] / SIGMA_DA_FACE_KM[0]) ** (l / (NIVEIS_DA_FACE - 1))
+  );
+  const razaoDosNiveis = Math.log(sigmas[1] / sigmas[0]);
+  const tabela = (base, meia) => {
+    const N = Math.ceil(meia / PASSO_DO_PERFIL_KM);
+    const cru = Float64Array.from({ length: 2 * N + 1 }, (_, q) => base((q - N) * PASSO_DO_PERFIL_KM));
+    const niveis = sigmas.map((sg) => {
+      const r = Math.ceil((3 * sg) / PASSO_DO_PERFIL_KM);
+      const nucleo = Float64Array.from({ length: 2 * r + 1 }, (_, q) => Math.exp(-0.5 * (((q - r) * PASSO_DO_PERFIL_KM) / sg) ** 2));
+      const soma = nucleo.reduce((x, v) => x + v, 0);
+      return Float64Array.from(cru, (_, q) => {
+        let v = 0;
+        for (let a = -r; a <= r; a += 1) v += nucleo[a + r] * cru[Math.min(2 * N, Math.max(0, q + a))];
+        return v / soma;
+      });
+    });
+    return { N, niveis };
+  };
+  const lePerfil = ({ N, niveis }, sigma, u) => {
+    const x = Math.log(sigma / sigmas[0]) / razaoDosNiveis;
+    const l = Math.min(NIVEIS_DA_FACE - 2, Math.max(0, Math.floor(x)));
+    const fl = Math.min(1, Math.max(0, x - l));
+    const y = Math.min(2 * N, Math.max(0, u / PASSO_DO_PERFIL_KM + N));
+    const q = Math.min(2 * N - 1, Math.floor(y));
+    const fq = y - q;
+    const a = niveis[l][q] + fq * (niveis[l][q + 1] - niveis[l][q]);
+    const b = niveis[l + 1][q] + fq * (niveis[l + 1][q + 1] - niveis[l + 1][q]);
+    return a + fl * (b - a);
+  };
   const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
   const cruz = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
   const feitas = [];
@@ -3460,7 +3545,27 @@ export function camadaTectonica({ feicoes, perfil, dado, largura, altura, raioM,
     const ondas = [0, 1, 2].map(() => [60 + 100 * sorteia(), 2 * Math.PI * sorteia()]);
     const rejeito = (t) => 0.675 + (0.325 / 3) * ondas.reduce((x, [l, fase]) => x + Math.sin((2 * Math.PI * t) / l + fase), 0);
     const faixa = f.tipo === 'fossa' ? (f.larguraKm ?? 2 * ALCANCE_DO_PERFIL_KM) : 0;
-    const alcance = faixa / 2 + fim + 20;
+    const alcance = faixa / 2 + fim + 20 + FOLGA_DA_FEICAO_KM;
+    let base;
+    if (f.tipo === 'escarpa') base = (u) => corte(lado * u);
+    else if (f.tipo === 'fossa') base = (u) => corte(Math.abs(u) - faixa / 2);
+    else base = (u) => corte(Math.max(Math.abs(u), uDoTopo));
+    const tab = tabela(base, alcance + 10);
+    // o desenho: semente do ruído, segmentos en échelon (o meio de cada um no traço mapeado), a onda da face
+    const sR = Math.floor(sorteia() * 4294967296) >>> 0;
+    const sentido = sorteia() < 0.5 ? 1 : -1;
+    const marcos = [-alcance];
+    while (marcos[marcos.length - 1] < total + alcance) marcos.push(marcos[marcos.length - 1] + SEGMENTO_KM[0] + (SEGMENTO_KM[1] - SEGMENTO_KM[0]) * sorteia());
+    const partes = marcos.slice(1).map((b, q) => ({
+      meio: (marcos[q] + b) / 2,
+      tg: sentido * Math.tan((GIRO_DO_SEGMENTO_GRAUS[0] + (GIRO_DO_SEGMENTO_GRAUS[1] - GIRO_DO_SEGMENTO_GRAUS[0]) * sorteia()) * RADIANOS),
+      rejeito: REJEITO_DO_SEGMENTO[0] + (REJEITO_DO_SEGMENTO[1] - REJEITO_DO_SEGMENTO[0]) * sorteia(),
+    }));
+    const revezamento = (q) => REVEZAMENTO * Math.min(marcos[q] - marcos[q - 1], marcos[q + 1] - marcos[q]);
+    const tremor = (t) => TREMOR_DO_TRACO.reduce((x, [l, pico], o) => x + pico * ruido1D(t / l, sR + o), 0);
+    const sigmaDaFace = (t) => SIGMA_DA_FACE_KM[0] * (SIGMA_DA_FACE_KM[1] / SIGMA_DA_FACE_KM[0]) ** (0.5 + 0.5 * ruido1D(t / ONDA_DA_FACE_KM, sR + 7));
+    const [lAo, lAtraves, picoDoEsporao] = ESPORAO;
+    const daParte = (q, u, t, sigma) => partes[q].rejeito * lePerfil(tab, sigma, u - partes[q].tg * (t - partes[q].meio));
     const lats = f.trajeto.map(([, lat]) => lat);
     const lons = desenrola(f.trajeto).map(([lon]) => lon);
     const margem = (alcance / raioKm) * GRAUS;
@@ -3505,16 +3610,26 @@ export function camadaTectonica({ feicoes, perfil, dado, largura, altura, raioM,
         if (Math.abs(u) >= alcance) continue;
         const ponta = suave(0, PONTA_DA_FEICAO * total, t) * suave(0, PONTA_DA_FEICAO * total, total - t);
         if (ponta <= 0) continue;
-        let h;
-        if (f.tipo === 'escarpa') h = corte(lado * u);
-        else if (f.tipo === 'fossa') h = corte(Math.abs(u) - faixa / 2);
-        else h = corte(Math.max(Math.abs(u), uDoTopo));
+        // o eixo trêmulo e a face com esporões; o segmento (e o vizinho, na rampa de revezamento)
+        const ue =
+          u - tremor(t) - (picoDoEsporao / 1.5) * (ruido2D(t / lAo, u / lAtraves, sR + 9) + 0.5 * ruido2D((2 * t) / lAo, (2 * u) / lAtraves, sR + 10));
+        const sigma = sigmaDaFace(t);
+        let q = 0;
+        while (q + 1 < partes.length && marcos[q + 1] <= t) q += 1;
+        let h = daParte(q, ue, t, sigma);
+        if (q > 0 && t < marcos[q] + revezamento(q) / 2) {
+          const a = suave(marcos[q] - revezamento(q) / 2, marcos[q] + revezamento(q) / 2, t);
+          h = a * h + (1 - a) * daParte(q - 1, ue, t, sigma);
+        } else if (q + 1 < partes.length && t > marcos[q + 1] - revezamento(q + 1) / 2) {
+          const a = suave(marcos[q + 1] - revezamento(q + 1) / 2, marcos[q + 1] + revezamento(q + 1) / 2, t);
+          h = (1 - a) * h + a * daParte(q + 1, ue, t, sigma);
+        }
         h *= perto * ponta * rejeito(t);
         camada[k] += h;
         maior = Math.max(maior, Math.abs(h));
       }
     }
-    feitas.push({ nome: f.nome, tipo: f.tipo, maiorM: Math.round(maior) });
+    feitas.push({ nome: f.nome, tipo: f.tipo, maiorM: Math.round(maior), segmentos: partes.length });
   }
   return { camada, feitas };
 }
@@ -3527,18 +3642,30 @@ export function camadaTectonica({ feicoes, perfil, dado, largura, altura, raioM,
  * `dadoPorOitava` (item 5b): a banda k é dado onde o texel é medido E o DEM
  * resolve a banda — `bandasBorradas` (a grade reduzida da qualidade, NaN sem
  * dado) lida bilinear nos centros e comparada com k + ½. Nos trechos borrados,
- * as bandas finas viram simuladas e condicionadas. `completaBorrado: false` é
- * a variante "sem completar" do A/B: todo medido é dado em toda banda.
+ * as bandas finas viram simuladas e condicionadas. `dadoRuim` (a lista do
+ * JSON das unidades): caixas `{ lon, lat, sigmaMaximoKm }` onde o medido traz
+ * um artefato nas bandas finas — nelas, toda banda de σ (o de cima) até
+ * `sigmaMaximoKm` deixa de ser dado, como no borrado: a forma grossa medida
+ * fica e o fino é reinventado (precisa de `raioM`). `completaBorrado: false`
+ * é a variante "sem completar" do A/B: todo medido é dado em toda banda.
  */
-export function mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, completaBorrado = true }) {
+export function mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, completaBorrado = true, dadoRuim = [], raioM }) {
   const n = largura * altura;
   const medido = new Uint8Array(n);
   for (let k = 0; k < n; k += 1) medido[k] = vazio[k] ? 0 : 1;
-  if (!completaBorrado || !qualidade) return Array(nBandas).fill(medido);
-  const { bandasBorradas, largura: Lq, altura: Aq } = qualidade;
-  const fator = largura / Lq;
+  if (!completaBorrado || (!qualidade && !dadoRuim.length)) return Array(nBandas).fill(medido);
   const bb = new Float32Array(n);
   let maior = 0;
+  const sigmas = dadoRuim.length ? sigmasDasOitavas(raioM, altura) : [];
+  for (const caixa of dadoRuim) {
+    const finas = sigmas.filter((s) => s <= caixa.sigmaMaximoKm * (1 + 1e-9)).length;
+    const m = mascaraDaCaixa(caixa, largura, altura);
+    for (let k = 0; k < n; k += 1) if (m[k] && medido[k] && finas > bb[k]) bb[k] = finas;
+    maior = Math.max(maior, finas);
+  }
+  if (!qualidade) return Array.from({ length: nBandas }, (_, b) => (b + 0.5 >= maior ? medido : Uint8Array.from(medido, (v, k) => (v && bb[k] < b + 0.5 ? 1 : 0))));
+  const { bandasBorradas, largura: Lq, altura: Aq } = qualidade;
+  const fator = largura / Lq;
   for (let j = 0; j < altura; j += 1) {
     const y = Math.min(Aq - 1, Math.max(0, (j + 0.5) / fator - 0.5));
     const ya = Math.min(Aq - 2, Math.floor(y));
@@ -3563,7 +3690,7 @@ export function mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, com
           peso += w;
         }
       }
-      bb[k] = peso ? soma / peso : 0;
+      bb[k] = Math.max(bb[k], peso ? soma / peso : 0);
       if (bb[k] > maior) maior = bb[k];
     }
   }
@@ -3600,14 +3727,16 @@ const MARGEM_DO_RETALHO = 2;
 const AFASTAMENTO_DA_FONTE_KM = 30;
 
 /**
- * Sem repetir: dois retalhos VISÍVEIS a menos de 5 larguras (no alvo) não saem
+ * Sem repetir: dois retalhos VISÍVEIS a menos de `VIZINHANCA_SEM_REPETIR`
+ * larguras (no alvo, pelo papel da unidade do retalho novo: 5 nas unidades de
+ * feições — planalto e cinturão —, 3 na planície lisa) não saem
  * de origens a menos de ¼ de largura — a origem é o centro do pedaço, então a
  * cópia girada ou espelhada conta. Quando todo candidato repete, o sorteio
  * dobra, rodada a rodada, antes de aceitar o menos ruim (a repetição mais
  * longe no alvo, contada como forçada). Na prova de 02/10 a regra era largada
  * de vez (316 forçadas) e o mesmo grupo de crateras saiu lado a lado.
  */
-const VIZINHANCA_SEM_REPETIR = 5;
+const VIZINHANCA_SEM_REPETIR = { 'planicie-lisa': 3, padrao: 5 };
 const RAIO_DE_REPETICAO = 0.25;
 const RODADAS_DE_SORTEIO = 7;
 
@@ -3820,7 +3949,7 @@ export function direcaoDoCinturao(peso, largura, altura, raioM) {
  * das caixas `fontes` da unidade (sem elas, a caixa-exemplo). Na unidade de
  * papel 'cinturao-tectonico', cada caixa guarda a direção AO LONGO das
  * feições MEDIDAS (tensor do gradiente do medido na caixa, cos lat). Devolve
- * `{ celulas, acumulado (cos lat), largura, altura, angulo (por célula, ou
+ * `{ celulas, acumulado (cos lat), largura, altura, papel, angulo (por célula, ou
  * null), caixas, areaKm2 }` por unidade, ou null sem centro possível.
  */
 export function fontesDaColcha({ metros, valido, fonte, largura, altura, raioM, larguraKm = LARGURA_DO_RETALHO_KM }) {
@@ -3879,6 +4008,7 @@ export function fontesDaColcha({ metros, valido, fonte, largura, altura, raioM, 
       acumulado,
       largura: Lf,
       altura: Af,
+      papel: unidade.papel,
       angulo: alinhada ? Float32Array.from(celulas, (c) => angulos[qual[c]]) : null,
       caixas: caixas.map((cx, q) => ({
         lon: cx.lon,
@@ -3952,7 +4082,7 @@ function distanciaNaGrade(semente, G, saida) {
  *    meia volta, espelho no próprio eixo, giro de até ±`GIRO_DO_CINTURAO_GRAUS`
  *    e escala através (`ESCALA_DO_CINTURAO`). Fora o que repete origem
  *    (`repeticaoMaisPerto`: a menos de ¼ de largura de uma usada a menos de 5
- *    larguras daqui) — só entre retalhos que tocam `opcoes.importa` (o vazio
+ *    larguras daqui, 3 na planície lisa) — só entre retalhos que tocam `opcoes.importa` (o vazio
  *    e o borrado; no medido bem resolvido a costura põe o dado); sem
  *    candidato, o sorteio dobra até `RODADAS_DE_SORTEIO` rodadas antes da
  *    repetição forçada (a mais longe no alvo).
@@ -3982,7 +4112,7 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
   const H = Math.ceil(meio) + MARGEM_DO_RETALHO;
   const G = 2 * H + 1;
   const passoRad = texelKm / raioKm;
-  const vizinhancaRad = (VIZINHANCA_SEM_REPETIR * larguraKm) / raioKm;
+  const vizinhancaRad = fontes.map((f) => f && ((VIZINHANCA_SEM_REPETIR[f.papel] ?? VIZINHANCA_SEM_REPETIR.padrao) * larguraKm) / raioKm);
   const repeticaoRad = (RAIO_DE_REPETICAO * larguraKm) / raioKm;
   const importa = opcoes.importa ?? null;
   const raioDaCalota = Math.atan(((meio + MARGEM_DO_RETALHO + 1) * Math.SQRT2 * texelKm) / raioKm);
@@ -4123,6 +4253,8 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
   const porUnidade = fontes.map(() => 0);
   let repeticoesForcadas = 0;
   let menorForcada = Infinity;
+  const forcadasPorUnidade = fontes.map(() => 0);
+  const menorForcadaPorUnidade = fontes.map(() => Infinity);
   let rodadasExtras = 0;
   let somaDoErro = 0;
   let pontosDoErro = 0;
@@ -4228,7 +4360,7 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
         escala = ESCALA_DO_CINTURAO ** (2 * sorteia() - 1);
       } else giro = 2 * Math.PI * sorteia();
       const base = planoTangente(o.lat, o.lon, giro, espelho);
-      const longe = visivel ? repeticaoMaisPerto(visiveis, alvo.c, base.c, vizinhancaRad, repeticaoRad) : Infinity;
+      const longe = visivel ? repeticaoMaisPerto(visiveis, alvo.c, base.c, vizinhancaRad[u], repeticaoRad) : Infinity;
       if (!forcado && longe < Infinity) return false;
       if (forcado && melhores.length === nMelhores && longe < melhores[nMelhores - 1].longe) return false;
       // (x, y) do alvo → (x', y') da origem: a escala só através da direção local do cinturão
@@ -4267,6 +4399,8 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
       const longes = melhores.filter((m) => m.longe >= corte).sort((a, b) => a.nota - b.nota);
       melhores.splice(0, melhores.length, ...longes);
       menorForcada = Math.min(menorForcada, melhores[0].longe);
+      forcadasPorUnidade[u] += 1;
+      menorForcadaPorUnidade[u] = Math.min(menorForcadaPorUnidade[u], melhores[0].longe);
     }
     const escolhido = melhores[Math.floor(sorteia() * melhores.length)];
     const { base, M, escala } = escolhido;
@@ -4496,6 +4630,8 @@ export function colcha({ fina, coef, largura, altura, raioM, pesos, fontes, dire
       rodadasExtras,
       repeticoesForcadas,
       menorRepeticaoForcadaLarguras: Number.isFinite(menorForcada) ? (menorForcada * raioKm) / larguraKm : null,
+      forcadasPorUnidade,
+      menorForcadaPorUnidadeLarguras: menorForcadaPorUnidade.map((m) => (Number.isFinite(m) ? (m * raioKm) / larguraKm : null)),
       erroRmsNaSobreposicaoM: pontosDoErro ? Math.sqrt(somaDoErro / pontosDoErro) : null,
       descobertos,
     },
@@ -4562,12 +4698,18 @@ function energiaNaMascara(campo, mascara, largura, altura) {
  *      origem só conta entre retalhos que tocam o vazio ou o borrado;
  *   4c. a tectônica traçada (`camadaTectonica`) com o degrau medido no
  *      cinturão (`perfilDasEscarpas`), só no vazio;
- *   5. `dadoPorOitava` pelo mapa de qualidade (`qualidade`, item 5b);
+ *   5. `dadoPorOitava` pelo mapa de qualidade (`qualidade`, item 5b) e pelas
+ *      caixas `dadoRuim` do JSON (artefato no fino do medido);
  *   6. a costura; e a CONFERÊNCIA: no núcleo de cada unidade (vazio, peso ≥
  *      0,9), RMS da inclinação (±10 %) e S(d) nos lags até 30 km (média dos
  *      dois eixos, ±15 %) contra o medido nas regiões-fonte da unidade. RMS
  *      fora da faixa: a colcha é multiplicada por Σ wᵤ·aᵤ (aᵤ = alvo/obtido,
- *      pesos suaves das unidades) e a costura refeita, uma vez.
+ *      pesos suaves das unidades); S(d) fora mesmo com aᵤ: a parte do MEIO da colcha (as
+ *      bandas acima da 1, as que o S de 5–30 km vê) ganha Σ wᵤ·bᵤ, com bᵤ
+ *      do S do meio, do fino e do resto medidos no núcleo (a planície,
+ *      02/10: os pedaços saem do miolo liso de Vulcan e a região-fonte tem a
+ *      borda norte, mais áspera em 15–60 km, então o S de 10–30 km ficava
+ *      0,73–0,88); a costura refeita, uma vez.
  * `ocultar` (Uint8, opcional — a prova do recorte escondido, E4): texels
  * medidos tratados como VAZIO e tirados de toda fonte e de toda conta daqui;
  * o valor deles não é lido. As crateras reais entram só no vazio de verdade;
@@ -4659,7 +4801,8 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
   anota(`unidades e níveis (${restricoes.mascara.reduce((x, v) => x + v, 0)} texels presos)`);
 
   // 5. o dado de cada banda
-  const dadoPorOitava = mascarasDoDado({ vazio, largura, altura, nBandas: nb, qualidade, completaBorrado: opcoes.completaBorrado ?? true });
+  const dadoRuim = fonte.dadoRuim ?? [];
+  const dadoPorOitava = mascarasDoDado({ vazio, largura, altura, nBandas: nb, qualidade, completaBorrado: opcoes.completaBorrado ?? true, dadoRuim, raioM });
 
   // 3. as crateras: as reais do vazio de verdade e as sorteadas grandes
   const leis = ids.map((id) => leiDeCrateras(medidas.unidades[id].crateras));
@@ -4676,7 +4819,7 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
   const grosso = desfocaComMascara(cheio, um, largura, altura, raioM, sigmaDoCorte).valor;
   const fina = new Float32Array(n);
   for (let q = 0; q < n; q += 1) fina[q] = cheio[q] - grosso[q];
-  const resolvido = mascarasDoDado({ vazio, largura, altura, nBandas: nb, qualidade, completaBorrado: true })[0];
+  const resolvido = mascarasDoDado({ vazio, largura, altura, nBandas: nb, qualidade, completaBorrado: true, dadoRuim, raioM })[0];
   const f = FATOR_DAS_FONTES;
   const Lf = largura / f;
   const vazioF = new Uint8Array(Lf * (altura / f));
@@ -4730,15 +4873,22 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
   ruidos.length = 0;
   anota('o ruído das bandas largas');
 
-  const monta = (escalas) => {
+  // a parte do meio da colcha (bandas acima da 1), para o ganho do S(d)
+  const meio = desfocaComMascara(retalhos.campo, um, largura, altura, raioM, sigmaDa(1)).valor;
+  const monta = (escalas, doMeio) => {
     const simulada = new Float32Array(n);
     for (let q = 0; q < n; q += 1) {
       let a = 1;
+      let b = 1;
       if (escalas) {
         a = 0;
-        for (let u = 0; u < ids.length; u += 1) a += pesos[u][q] * escalas[u];
+        b = 0;
+        for (let u = 0; u < ids.length; u += 1) {
+          a += pesos[u][q] * escalas[u];
+          b += pesos[u][q] * doMeio[u];
+        }
       }
-      simulada[q] = a * retalhos.campo[q] + ruido[q] + camada[q] + (tectonica ? tectonica.camada[q] : 0);
+      simulada[q] = a * (retalhos.campo[q] + (b - 1) * meio[q]) + ruido[q] + camada[q] + (tectonica ? tectonica.camada[q] : 0);
     }
     return costura({ medida: metros, dadoPorOitava, simulada, sigmasKm, largura, altura, raioM, restricoes, cheio, registra: anota });
   };
@@ -4783,15 +4933,37 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
       };
     });
   const dentro = (m) => m.semNucleo || Math.abs(m.razaoRms - 1) <= TOLERANCIA_DO_RMS;
+  const dentroDoS = (m) => m.semNucleo || (m.razaoSMin >= 1 - TOLERANCIA_DO_S && m.razaoSMax <= 1 + TOLERANCIA_DO_S);
+  /** bᵤ: S(d) ≈ a²·S_fino + a²b²·S_meio + S_resto no núcleo, igualado ao alvo nos lags em que o meio pesa (média geométrica). */
+  const ganhoDoMeio = (u, F, a) => {
+    const fino = new Float32Array(n);
+    for (let q = 0; q < n; q += 1) fino[q] = retalhos.campo[q] - meio[q];
+    const [St, Sf, Sm] = [F, fino, meio].map((c) => funcaoDeEstrutura(c, nucleos[u], largura, altura, raioM, { passoLinhas: 2, passoColunas: 2 }));
+    const soma = (S, d) => (interpolaS(S.ns, d) ?? NaN) + (interpolaS(S.ew, d) ?? NaN);
+    const logs = [];
+    let soComA = true;
+    for (const [d] of St.ns) {
+      const [alvo, total, f, m] = [alvos[u].S, St, Sf, Sm].map((S) => soma(S, d));
+      if (d > LAG_MAXIMO_DA_CALIBRACAO_KM || !Number.isFinite(alvo)) continue;
+      // o S previsto só com aᵤ: se já cabe na faixa, o meio fica como está
+      if (Math.abs((total + (a * a - 1) * (f + m)) / alvo - 1) > TOLERANCIA_DO_S) soComA = false;
+      if (!(m > 0.1 * total)) continue;
+      const b2 = (alvo - a * a * f - (total - f - m)) / (a * a * m);
+      logs.push(Math.log(Math.min(6.25, Math.max(0.25, b2))));
+    }
+    return soComA || !logs.length ? 1 : Math.exp(logs.reduce((x, v) => x + v, 0) / (2 * logs.length));
+  };
 
-  let campo = monta(null);
+  let campo = monta(null, null);
   const antes = mede(campo);
   anota('a costura e a conferência');
   let escalas = null;
+  let escalasDoMeio = null;
   let depois = null;
-  if ((opcoes.calibra ?? true) && antes.some((m) => !dentro(m))) {
+  if ((opcoes.calibra ?? true) && antes.some((m) => !dentro(m) || !dentroDoS(m))) {
     escalas = antes.map((m) => (dentro(m) ? 1 : 1 / m.razaoRms));
-    campo = monta(escalas);
+    escalasDoMeio = antes.map((m, u) => (dentroDoS(m) ? 1 : ganhoDoMeio(u, campo, escalas[u])));
+    campo = monta(escalas, escalasDoMeio);
     depois = mede(campo);
     anota('a colcha reescalada e a costura refeita');
   }
@@ -4835,6 +5007,7 @@ export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, gui
         fontes: Object.fromEntries(ids.map((id, u) => [id, fontes[u] && { areaKm2: fontes[u].areaKm2, caixas: fontes[u].caixas }])),
       },
       escalasDaColcha: escalas && Object.fromEntries(ids.map((id, u) => [id, escalas[u]])),
+      escalasDoMeioDaColcha: escalasDoMeio && Object.fromEntries(ids.map((id, u) => [id, escalasDoMeio[u]])),
       antes,
       depois,
       bandasBorradasCompletadas: dadoPorOitava.filter((m) => m !== dadoPorOitava[nb - 1]).length,
