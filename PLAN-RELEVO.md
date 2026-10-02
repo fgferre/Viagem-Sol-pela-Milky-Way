@@ -287,6 +287,29 @@ Conferência: `normal.png` de Plutão e Caronte idêntico por md5 ao de hoje.
   (`scratchpad/e3/prova-v3-*.png`). Se a prova real (E4) mostrar anel, a
   correção é somar ruído independente nessas bandas com a amplitude que falta
   por distância (medida no conjunto sintético).
+- **E3.2 FEITA em Caronte (02/10) — a síntese por unidade, e o que ela
+  ensinou.** `sintetizaCorpo`: pesos de unidade (polígonos, transição larga),
+  níveis de unidade RELATIVOS e centrados no vazio (restrições interiores da
+  membrana; TA +2121, C +1444, PL −2481 m), ruído por banda com amplitude
+  √(Σ w·g²), 6 crateras reais do catálogo no lugar + ~9 mil sorteadas por
+  unidade (moldes empilhados do cache), máscara do dado borrado (5b, chave
+  `completaBorrado`), calibração em lags ≤ 30 km (TA 1,005; C 1,009; PL 1,020
+  em RMS de inclinação; S(d) do cinturão não fecha por eixo porque o exemplo
+  é anisotrópico 2,2–2,85× — é trabalho da tectônica, E6), `assaNormais`
+  ganhou `{ travaNoSul }` (padrão inalterado). 36 testes verdes; Caronte em
+  128 s / 1,85 GB. **Visto pelo main nas pranchas: o ruído gaussiano, mesmo
+  calibrado, sai "papel amassado"** — o terreno real é planície lisa
+  pontuada por crateras e escarpas nítidas, e a emenda some como linha mas
+  aparece como mudança de caráter. DECISÃO (02/10): a textura fina (bandas
+  < ~40 km, ~97 % da inclinação) passa a ser montada com PEDAÇOS DO TERRENO
+  MEDIDO da mesma unidade — colcha à Efros–Freeman na esfera (retalhos no
+  plano tangente local, escolhidos por casar com os vizinhos na
+  sobreposição, corte de erro mínimo, giro aleatório só em unidade sem
+  direção, sem repetir a mesma origem por perto, unidade sorteada por
+  retalho na transição); o ruído fica só nas bandas 40 km–R/5 (pouca
+  inclinação), a membrana acima de R/5, as crateras grandes por molde; a
+  costura condiciona tudo como antes. A confissão passa a dizer "montado com
+  pedaços do terreno medido do mesmo tipo".
 
 **E3 — o núcleo da síntese (Opus).** No mesmo módulo, funções puras; UMA
 função exportada serve à prévia e ao gerador; semente fixa por corpo

@@ -30,17 +30,36 @@
 //     mundo de teste; o vale das demais é a limitação aceita de `costura`.
 //  9. A mesma semente dá os mesmos bytes (a prévia aprovada é o que vai ao app).
 // 10. A volta da longitude não tem degrau.
+//
+// A SÍNTESE (E3, itens 2–8):
+// 11. Os pesos das unidades somam 1 e passam de uma unidade à outra sem salto.
+// 12. A membrana com restrições no interior as cumpre e fica entre os extremos
+//     do dado e delas (princípio do máximo).
+// 13. A cratera real do catálogo cai no lugar e no diâmetro dela.
+// 14. A mesma semente dá a mesma simulação (ruído + crateras), byte a byte.
+// 15. Tirar a trava de 80° no sul (`assaNormais`, `travaNoSul: false`) não muda
+//     um byte do hemisfério norte nem das linhas onde a trava não age.
 // ============================================================
 import { beforeAll, describe, expect, it } from 'vitest';
+import { assaNormais } from './gera-normal-de-dem.mjs';
 import {
+  camadaDeCrateras,
   costura,
+  crateraReaisNoVazio,
   decompoeEmOitavas,
   distanciaAoVazioKm,
   funcaoDeEstrutura,
   latitudeDaLinha,
+  leiDeCrateras,
+  lerCatalogoDeCrateras,
   longitudeDaColuna,
+  membranaHarmonica,
+  moldeDeCratera,
+  pesosDasUnidades,
   ruidoDaOitava,
   sigmasDasOitavas,
+  somaDeOitavas,
+  sorteiaCrateras,
 } from './relevo-inventado.mjs';
 
 /** mulberry32 — o mesmo gerador de `geradorDeSemente` (esculpido.ts) */
@@ -291,8 +310,9 @@ function oConjunto() {
     }
     const medida = new Float32Array(n);
     for (let q = 0; q < n; q += 1) medida[q] = dado[q] ? T[q] : 0;
+    const ruidos = Array.from({ length: nb }, (_, k) => ruidoDaOitava(sb, k, SIGMAS, L, A, raioM));
     const entrada = {
-      medida, dadoPorOitava: Array(nb).fill(dado), semente: sb, sigmasKm: SIGMAS, ganhos: GANHOS,
+      medida, dadoPorOitava: Array(nb).fill(dado), simulada: somaDeOitavas(ruidos, GANHOS, n), sigmasKm: SIGMAS,
       largura: L, altura: A, raioM,
     };
     const F = costura(entrada);
@@ -400,3 +420,169 @@ describe('a costura — simulação condicional oitava por oitava', () => {
     }
   });
 });
+
+describe('a síntese — unidades, níveis, crateras e o polo sul', () => {
+  const PEQUENO = { L: 256, A: 128, raioM: 606e3 }; // 14,9 km por texel
+  const FONTE = {
+    unidades: {
+      a: { poligonos: [[[150, -30], [210, -30], [210, 30], [150, 30]]] },
+      b: { poligonos: [[[210, -30], [270, -30], [270, 30], [210, 30]]] },
+    },
+    padraoDoSul: { unidade: 'b', abaixoDaLatitude: -60 },
+  };
+  const PERFIL = (() => {
+    const rR = Array.from({ length: 50 }, (_, q) => (q + 0.5) * 0.05);
+    const h = rR.map((r) => (r < 1.1 ? -0.07 * (1 - (r / 1.1) ** 2) + 0.004 : 0.004 * (1.1 / r) ** 3));
+    return { rR, mediana: h, p25: h.map((v) => v * 1.2), p75: h.map((v) => v * 0.8) };
+  })();
+  const MORFOMETRIA = { perfis: Object.fromEntries(['9-14', '14-20', '20-40', '≥40'].map((f) => [f, PERFIL])) };
+
+  it('dá pesos de unidade que somam 1 e atravessam a borda do polígono sem salto', () => {
+    const { L, A, raioM } = PEQUENO;
+    const { ids, pesos } = pesosDasUnidades(FONTE, L, A, raioM);
+    expect(ids).toEqual(['a', 'b']);
+    let pior = 0;
+    for (let k = 0; k < L * A; k += 1) pior = Math.max(pior, Math.abs(pesos[0][k] + pesos[1][k] - 1));
+    expect(pior).toBeLessThan(1e-5);
+    const j = A / 2;
+    const wa = (lon) => pesos[0][j * L + Math.round(((lon - 180 + 360) % 360) / 360 * L - 0.5)];
+    expect(wa(180)).toBeGreaterThan(0.99);
+    expect(wa(240)).toBeLessThan(0.01);
+    let maiorSalto = 0;
+    for (let i = 0; i < L; i += 1) maiorSalto = Math.max(maiorSalto, Math.abs(pesos[0][j * L + ((i + 1) % L)] - pesos[0][j * L + i]));
+    // σ de 50 km = 3,4 texels: a maior derivada do degrau desfocado é 1/(σ√2π) ≈ 0,12 por texel
+    expect(maiorSalto).toBeLessThan(0.15);
+    expect(maiorSalto).toBeGreaterThan(0.05);
+  });
+
+  it('cumpre as restrições no interior da membrana e fica entre os extremos (princípio do máximo)', () => {
+    const L = 128;
+    const A = 64;
+    const raioM = 606e3;
+    const n = L * A;
+    const campo = new Float32Array(n);
+    const dado = new Uint8Array(n);
+    const restricoes = { mascara: new Uint8Array(n), valor: new Float32Array(n) };
+    for (let j = 0; j < A; j += 1) {
+      const lat = latitudeDaLinha(j, A);
+      for (let i = 0; i < L; i += 1) {
+        const lon = (longitudeDaColuna(i, L) * Math.PI) / 180;
+        const k = j * L + i;
+        if (Math.cos(lon) > 0.5) {
+          dado[k] = 1;
+          campo[k] = 1000 * Math.sin(lat) + 500 * Math.cos(3 * lon);
+        } else if (Math.cos(lat) * Math.cos(lon - Math.PI) > Math.cos((25 * Math.PI) / 180)) {
+          restricoes.mascara[k] = 1;
+          restricoes.valor[k] = 2500;
+        }
+      }
+    }
+    const u = membranaHarmonica(campo, dado, L, A, raioM, 238, restricoes);
+    let menor = Infinity;
+    let maior = -Infinity;
+    for (let k = 0; k < n; k += 1) {
+      if (dado[k]) expect(u[k]).toBe(campo[k]);
+      if (restricoes.mascara[k]) expect(u[k]).toBe(2500);
+      const fixo = dado[k] ? campo[k] : restricoes.mascara[k] ? 2500 : null;
+      if (fixo !== null) {
+        menor = Math.min(menor, fixo);
+        maior = Math.max(maior, fixo);
+      }
+    }
+    for (let k = 0; k < n; k += 1) {
+      expect(u[k]).toBeGreaterThanOrEqual(menor);
+      expect(u[k]).toBeLessThanOrEqual(maior);
+    }
+    // do dado (60°E) à calota presa (155°E), pelo equador, a membrana sobe em direção a ela
+    const noEquador = (lon) => u[(A / 2) * L + Math.round(((lon - 180 + 360) % 360) / 360 * L - 0.5)];
+    expect(noEquador(80)).toBeLessThan(noEquador(110));
+    expect(noEquador(110)).toBeLessThan(noEquador(140));
+    expect(noEquador(140)).toBeLessThan(2500);
+  });
+
+  it('põe a cratera real do catálogo no lugar e no diâmetro dela', () => {
+    const L = 1024;
+    const A = 512;
+    const raioM = 606e3;
+    const texelKm = (606 * Math.PI) / A;
+    const csv = [
+      'ID,LATITUDE,LONGITUDE,DIAMETER,CONFIDENCE,REGION',
+      'CHARON-001218,-23.174,44.67,92.61,4,6',
+      'FORA-DO-VAZIO,10,300,40,4,6',
+      'CONFIANCA-BAIXA,0,60,30,2,6',
+    ].join('\n');
+    const vazio = new Uint8Array(L * A);
+    for (let i = 0; i < L; i += 1) {
+      const lon = longitudeDaColuna(i, L);
+      if (lon > 20 && lon < 120) for (let j = 0; j < A; j += 1) vazio[j * L + i] = 1;
+    }
+    const reais = crateraReaisNoVazio(lerCatalogoDeCrateras(csv, 0), { 6: { completudeKm: null } }, vazio, L, A);
+    expect(reais.map((c) => c.id)).toEqual(['CHARON-001218']);
+    const c = reais[0];
+    const camada = camadaDeCrateras({ crateras: [{ ...c, quantil: 0.5 }], morfometria: MORFOMETRIA, largura: L, altura: A, raioM });
+    // o centro da depressão: a média 3D pesada pela profundidade × área
+    const v = [0, 0, 0];
+    let areaFunda = 0;
+    for (let j = 0; j < A; j += 1) {
+      const f = latitudeDaLinha(j, A);
+      for (let i = 0; i < L; i += 1) {
+        const h = camada[j * L + i];
+        if (!(h < 0)) continue;
+        const l = (longitudeDaColuna(i, L) * Math.PI) / 180;
+        const w = -h * Math.cos(f);
+        v[0] += w * Math.cos(f) * Math.cos(l);
+        v[1] += w * Math.cos(f) * Math.sin(l);
+        v[2] += w * Math.sin(f);
+        areaFunda += Math.cos(f) * texelKm * texelKm;
+      }
+    }
+    const f0 = (c.lat * Math.PI) / 180;
+    const l0 = (c.lon * Math.PI) / 180;
+    const norma = Math.hypot(...v);
+    const cosAng = (v[0] * Math.cos(f0) * Math.cos(l0) + v[1] * Math.cos(f0) * Math.sin(l0) + v[2] * Math.sin(f0)) / norma;
+    expect((Math.acos(Math.min(1, cosAng)) * 606) / texelKm).toBeLessThan(1);
+    // o diâmetro: a área funda é o disco até onde o molde cruza o zero
+    const { valores } = moldeDeCratera(MORFOMETRIA, c.dKm);
+    const r0 = valores.findIndex((x) => x >= 0) * 0.01 * (c.dKm / 2);
+    expect(Math.abs(Math.sqrt(areaFunda / Math.PI) - r0)).toBeLessThan(texelKm);
+  });
+
+  it('dá a mesma simulação (ruído das oitavas + crateras) com a mesma semente, byte a byte', () => {
+    const { L, A, raioM } = PEQUENO;
+    const { ids, pesos } = pesosDasUnidades(FONTE, L, A, raioM);
+    const lei = leiDeCrateras({ contadas: 30, areaKm2: 4e4, completudeKm: 4, inclinacaoAbaixo: { valor: -2, n: 25 } });
+    const sigmas = sigmasDasOitavas(raioM, A);
+    const simula = (semente) => {
+      const { crateras } = sorteiaCrateras({ semente, ids, pesos, leis: [lei, lei], largura: L, altura: A, raioM, dMinKm: 30 });
+      const camada = camadaDeCrateras({ crateras, morfometria: MORFOMETRIA, largura: L, altura: A, raioM });
+      const ruidos = [0, 1].map((k) => ruidoDaOitava(semente, k, sigmas, L, A, raioM));
+      const s = somaDeOitavas(ruidos, [300, pesos[0]], L * A);
+      for (let q = 0; q < L * A; q += 1) s[q] += camada[q];
+      return { s, quantas: crateras.length };
+    };
+    const a = simula(7);
+    expect(a.quantas).toBeGreaterThan(20);
+    expect(Buffer.from(simula(7).s.buffer).equals(Buffer.from(a.s.buffer))).toBe(true);
+    expect(Buffer.from(simula(8).s.buffer).equals(Buffer.from(a.s.buffer))).toBe(false);
+  });
+
+  it('tira a trava de 80° só no sul: o norte e as linhas onde ela não age saem byte a byte', () => {
+    const { L, A, raioM } = PEQUENO;
+    const campo = somaDeOitavas([ruidoDaOitava(3, 0, sigmasDasOitavas(raioM, A), L, A, raioM)], [400], L * A);
+    const { rgb } = assaNormais(campo, L, A, raioM);
+    const semTrava = assaNormais(campo, L, A, raioM, undefined, { travaNoSul: false });
+    const linha = (buf, j) => buf.subarray(j * L * 3, (j + 1) * L * 3);
+    const polo = linhaAoSulDe80(A);
+    for (let j = 0; j < polo; j += 1) expect(linha(semTrava.rgb, j).equals(linha(rgb, j))).toBe(true);
+    for (let j = polo; j < A; j += 1) expect(linha(semTrava.rgb, j).equals(linha(rgb, j))).toBe(false);
+    expect(Number.isFinite(semTrava.rmsGraus) && Number.isFinite(semTrava.maxGraus)).toBe(true);
+    expect(semTrava.maxGraus).toBeGreaterThan(0);
+  });
+});
+
+/** A primeira linha cujo centro fica ao sul de −80°. */
+function linhaAoSulDe80(A) {
+  let j = A / 2;
+  while (latitudeDaLinha(j, A) > (-80 * Math.PI) / 180) j += 1;
+  return j;
+}

@@ -1728,6 +1728,21 @@ export function ruidoDaOitava(semente, k, sigmasKm, largura, altura, raioM) {
   return campo;
 }
 
+/**
+ * S = Σ aₖ·`ruidos[k]` (`ruidoDaOitava`): `amplitudes[k]` é um número (m) ou um
+ * campo por texel; ruído nulo ou amplitude 0 não entram.
+ */
+export function somaDeOitavas(ruidos, amplitudes, n) {
+  const soma = new Float32Array(n);
+  ruidos.forEach((ruido, k) => {
+    const a = amplitudes[k];
+    if (!ruido || !a) return;
+    if (typeof a === 'number') for (let q = 0; q < n; q += 1) soma[q] += a * ruido[q];
+    else for (let q = 0; q < n; q += 1) soma[q] += a[q] * ruido[q];
+  });
+  return soma;
+}
+
 // ------------------------------------------------------------
 // A covariância de cada oitava
 // ------------------------------------------------------------
@@ -2674,15 +2689,40 @@ function relaxaMembrana(u, ehD, L, A, passadas) {
  * cada célula de estêncil todo dado, como na cascata) é reimposto, e
  * `PASSADAS_DA_MEMBRANA` de Gauss–Seidel refazem a membrana junto da borda
  * que o nível acabou de ver — no nível 0 a borda é a emenda verdadeira, sem
- * degrau.
+ * degrau. `restricoes` (opcional, `{ mascara, valor }`): texels do VAZIO presos
+ * no `valor` como se fossem dado (Dirichlet no interior) — os níveis das
+ * unidades fundo no lado de trás; a membrana segue exata no dado e nelas, e
+ * limitada pelos extremos dos dois.
  */
-function membranaHarmonica(campo, dado, largura, altura, raioM, sigmaKm) {
+export function membranaHarmonica(campo, dado, largura, altura, raioM, sigmaKm, restricoes) {
+  let fixo = dado;
+  let valores = campo;
+  if (restricoes) {
+    fixo = new Uint8Array(largura * altura);
+    valores = new Float32Array(largura * altura);
+    for (let k = 0; k < fixo.length; k += 1) {
+      if (dado[k]) {
+        fixo[k] = 1;
+        valores[k] = campo[k];
+      } else if (restricoes.mascara[k]) {
+        fixo[k] = 1;
+        valores[k] = restricoes.valor[k];
+      }
+    }
+  }
+  let menor = Infinity;
+  let maior = -Infinity;
+  for (let k = 0; k < fixo.length; k += 1) {
+    if (!fixo[k]) continue;
+    if (valores[k] < menor) menor = valores[k];
+    if (valores[k] > maior) maior = valores[k];
+  }
   const topo = nivelDaOitava(sigmaKm / 4, largura, altura, raioM);
   let u = null;
   for (let nivel = topo; nivel >= 0; nivel -= 1) {
     const L = largura >> nivel;
     const A = altura >> nivel;
-    const { ehD, valor } = residuoNoNivel(campo, dado, largura, altura, nivel);
+    const { ehD, valor } = residuoNoNivel(valores, fixo, largura, altura, nivel);
     const v = new Float64Array(L * A);
     if (u) avaliaSpline(coeficientesDeSpline(u, L / 2, A / 2), L / 2, A / 2, 1, L, A, v);
     for (let c = 0; c < L * A; c += 1) if (ehD[c]) v[c] = valor[c];
@@ -2690,6 +2730,9 @@ function membranaHarmonica(campo, dado, largura, altura, raioM, sigmaKm) {
     else if (ehD.includes(1)) resolveMembrana(v, ehD, L, A);
     u = v;
   }
+  // o princípio do máximo vale para a membrana exata; a spline que sobe de nível
+  // pode passar um fio dos extremos junto de um degrau — o corte só tira isso
+  for (let k = 0; k < u.length; k += 1) u[k] = Math.min(maior, Math.max(menor, u[k]));
   return u;
 }
 
@@ -2702,8 +2745,10 @@ function membranaHarmonica(campo, dado, largura, altura, raioM, sigmaKm) {
  * são dado em TODA banda é `medida`, byte a byte; onde só as bandas grossas são
  * dado (o DEM borrado, item 5b do plano) as grossas são o medido e as finas,
  * simuladas e condicionadas; no vazio, S + as correções. `dadoPorOitava` é uma
- * máscara por banda (1 = a banda é dado ali; podem ser o mesmo array) e `ganhos`
- * a amplitude de cada banda (S = Σ gₖ·`ruidoDaOitava`).
+ * máscara por banda (1 = a banda é dado ali; podem ser o mesmo array) e
+ * `simulada` a simulação S já pronta (ruído das oitavas, `somaDeOitavas`, + as
+ * crateras). `restricoes` (opcional) prende a membrana em níveis escolhidos no
+ * fundo do vazio (`membranaHarmonica`).
  *
  * HIPÓTESES: cada banda é estacionária, com a covariância ajustada à própria
  * simulação por lóbulos de Legendre não negativos (positiva-definida na esfera,
@@ -2722,12 +2767,12 @@ function membranaHarmonica(campo, dado, largura, altura, raioM, sigmaKm) {
  * (medido); quase não afeta a inclinação. As fotos do recorte escondido no dado
  * real (E4) dizem se uma compensação de variância é necessária.
  */
-export function costura({ medida, dadoPorOitava, semente, sigmasKm, ganhos, largura, altura, raioM, registra }) {
+export function costura({ medida, dadoPorOitava, simulada, sigmasKm, largura, altura, raioM, restricoes, registra }) {
   const anota = registra ?? (() => {});
   const n = largura * altura;
   const nb = sigmasKm.length + 1;
-  if (dadoPorOitava.length !== nb || ganhos.length !== nb) {
-    throw new Error(`costura: ${nb} bandas pedem ${nb} máscaras e ${nb} ganhos.`);
+  if (dadoPorOitava.length !== nb || simulada.length !== n) {
+    throw new Error(`costura: ${nb} bandas pedem ${nb} máscaras e uma simulação de ${n} texels.`);
   }
   const medido = new Uint8Array(n);
   const emTodas = new Uint8Array(n).fill(1);
@@ -2741,16 +2786,10 @@ export function costura({ medida, dadoPorOitava, semente, sigmasKm, ganhos, larg
   const naMembrana = (k) => sigmaDa(k) > (FRACAO_DO_RAIO_DA_MEMBRANA * raioM) / 1000;
   const um = new Uint8Array(n).fill(1);
   const primeiraGrossa = Array.from({ length: nb }, (_, k) => k).find(naMembrana) ?? nb - 1;
-  const cheio = membranaHarmonica(medida, medido, largura, altura, raioM, sigmaDa(primeiraGrossa));
+  const cheio = membranaHarmonica(medida, medido, largura, altura, raioM, sigmaDa(primeiraGrossa), restricoes);
   anota('a membrana do medido');
   const bandasT = decompoeEmOitavas(cheio, um, largura, altura, raioM, sigmasKm);
   anota('as bandas do medido');
-  const simulada = new Float32Array(n);
-  for (let k = 0; k < nb; k += 1) {
-    const ruido = ruidoDaOitava(semente, k, sigmasKm, largura, altura, raioM);
-    for (let q = 0; q < n; q += 1) simulada[q] += ganhos[k] * ruido[q];
-  }
-  anota('a simulação');
   const bandasS = decompoeEmOitavas(simulada, um, largura, altura, raioM, sigmasKm);
   anota('as bandas da simulação');
 
@@ -2800,4 +2839,774 @@ export function costura({ medida, dadoPorOitava, semente, sigmasKm, ganhos, larg
   const campo = new Float32Array(n);
   for (let q = 0; q < n; q += 1) campo[q] = emTodas[q] ? medida[q] : soma[q];
   return campo;
+}
+
+// ============================================================
+// A SÍNTESE (E3, itens 2–8): onde vai cada unidade, o nível dela, a aspereza,
+// as crateras, a máscara do dado borrado e a calibração (o polo sul das normais
+// é `assaNormais(..., { travaNoSul: false })`). `sintetizaCorpo` junta tudo e é
+// a ÚNICA porta da prévia e do gerador.
+// ============================================================
+
+/** σ (km) do desfoque dos pesos de unidade: a transição 10–90 % tem ~2,56σ ≈ 130 km. */
+const SIGMA_DOS_PESOS_KM = 50;
+
+/** O nível de cada unidade é preso a tantos km para dentro dela e longe do dado. */
+const EROSAO_DO_NIVEL_KM = 150;
+const AFASTAMENTO_DO_NIVEL_KM = 150;
+
+/** O núcleo de uma unidade (onde a calibração mede): no vazio, peso ≥ isto. */
+const PESO_DO_NUCLEO = 0.9;
+
+/** Lei de tamanhos (PLAN, Ciência): dobra, inclinação diferencial acima dela e a de Caronte VP abaixo [Si21]. */
+const DOBRA_KM = 13;
+const INCLINACAO_ACIMA = -3;
+const INCLINACAO_ABAIXO_DA_LITERATURA = -1.7;
+const MINIMO_PARA_USAR_A_INCLINACAO_MEDIDA = 20;
+const D_MAXIMO_KM = 250;
+
+/** O molde: ejecta ∝ r⁻³ além da crista, afinando a zero entre 2,5 e 3,5 R. */
+const INICIO_DO_AFINAMENTO_RR = 2.5;
+const ALCANCE_DO_MOLDE_RR = 3.5;
+const PASSO_DO_MOLDE_RR = 0.01;
+
+/** Herança: a fração do relevo das crateras mais velhas que a nova apaga no miolo (zero na crista). */
+const FRACAO_APAGADA = 0.85;
+
+/**
+ * Calibração: ±10 % no RMS da inclinação e ±15 % no S(d), só nos lags até 30
+ * km — acima disso a caixa-exemplo tem escalas > R/5 que no vazio são, por
+ * projeto, a membrana lisa, e o ajuste zerava as bandas largas para inflar as
+ * finas. Pelo mesmo motivo só as bandas de σ ≤ 30 km são reajustadas.
+ */
+const TOLERANCIA_DO_RMS = 0.1;
+const TOLERANCIA_DO_S = 0.15;
+const LAG_MAXIMO_DA_CALIBRACAO_KM = 30;
+
+const suave = (a, b, x) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+// ------------------------------------------------------------
+// As unidades: polígonos → pesos suaves
+// ------------------------------------------------------------
+
+/** Desenrola a longitude: passo entre vértices vizinhos sempre < 180° (o mapa de unidades). */
+function desenrola(poligono) {
+  const pontos = [];
+  for (const [lon, lat] of poligono) {
+    let l = lon;
+    if (pontos.length) {
+      const anterior = pontos[pontos.length - 1][0];
+      while (l - anterior > 180) l -= 360;
+      while (l - anterior < -180) l += 360;
+    }
+    pontos.push([l, lat]);
+  }
+  return pontos;
+}
+
+/**
+ * A máscara (1 = dentro) do polígono `[[lon, lat], ...]` (graus, leste) pela
+ * regra PAR–ÍMPAR nos centros dos texels — as pontes de largura zero do mapa
+ * de unidades viram buracos. Lado em lat/lon (o polígono foi digitalizado
+ * assim), com a volta da longitude. Soma (OU) em `saida` se vier.
+ */
+export function rasterizaPoligono(poligono, largura, altura, saida = new Uint8Array(largura * altura)) {
+  const p = desenrola(poligono);
+  const cruzamentos = [];
+  for (let j = 0; j < altura; j += 1) {
+    const lat = latitudeDaLinha(j, altura) * GRAUS;
+    cruzamentos.length = 0;
+    for (let a = 0; a < p.length; a += 1) {
+      const [la, fa] = p[a];
+      let [lb, fb] = p[(a + 1) % p.length];
+      while (lb - la > 180) lb -= 360;
+      while (lb - la < -180) lb += 360;
+      if ((fa <= lat && lat < fb) || (fb <= lat && lat < fa)) {
+        cruzamentos.push(la + ((lat - fa) / (fb - fa)) * (lb - la));
+      }
+    }
+    cruzamentos.sort((x, y) => x - y);
+    for (let c = 0; c + 1 < cruzamentos.length; c += 2) {
+      const f0 = colunaDaLongitude(cruzamentos[c], largura);
+      const primeira = Math.ceil(f0 - 1e-9);
+      const ultima = Math.ceil(f0 + ((cruzamentos[c + 1] - cruzamentos[c]) / 360) * largura - 1e-9) - 1;
+      for (let i = primeira; i <= ultima; i += 1) saida[j * largura + (((i % largura) + largura) % largura)] = 1;
+    }
+  }
+  return saida;
+}
+
+/**
+ * Os PESOS DAS UNIDADES (`fonte` = `fonte/<corpo>-lado-de-tras.json`) na grade:
+ * cada unidade é a união dos seus polígonos (par–ímpar); onde dois se sobrepõem
+ * o texel é dividido em partes iguais; sem polígono, ao sul de
+ * `padraoDoSul.abaixoDaLatitude` vale a unidade do sul e, ao norte, a do
+ * polígono mais perto (`padraoGeral`) — o lado medido também, para a simulação
+ * junto da emenda e sob o dado borrado. Depois, o desfoque gaussiano de
+ * `sigmaKm` (transição larga, sem contorno) e a soma 1 em todo texel.
+ * `{ ids, pesos: [Float32Array] }`.
+ */
+export function pesosDasUnidades(fonte, largura, altura, raioM, opcoes = {}) {
+  const sigmaKm = opcoes.sigmaKm ?? SIGMA_DOS_PESOS_KM;
+  const n = largura * altura;
+  const ids = Object.keys(fonte.unidades);
+  const cobre = ids.map((id) => {
+    const m = new Uint8Array(n);
+    for (const poligono of fonte.unidades[id].poligonos) rasterizaPoligono(poligono, largura, altura, m);
+    return m;
+  });
+  const sul = ids.indexOf(fonte.padraoDoSul.unidade);
+  const limiteSul = fonte.padraoDoSul.abaixoDaLatitude;
+  const distancias = cobre.map((m) => distanciaAoVazioKm(m, largura, altura, raioM));
+  const duros = ids.map(() => new Float32Array(n));
+  for (let k = 0; k < n; k += 1) {
+    let quantas = 0;
+    for (const m of cobre) quantas += m[k];
+    if (quantas) {
+      cobre.forEach((m, u) => {
+        if (m[k]) duros[u][k] = 1 / quantas;
+      });
+      continue;
+    }
+    let escolhida = sul;
+    if (latitudeDaLinha(Math.floor(k / largura), altura) * GRAUS >= limiteSul) {
+      for (let u = 0; u < ids.length; u += 1) if (distancias[u][k] < distancias[escolhida][k]) escolhida = u;
+    }
+    duros[escolhida][k] = 1;
+  }
+  const um = new Uint8Array(n).fill(1);
+  const pesos = duros.map((d) => desfocaComMascara(d, um, largura, altura, raioM, sigmaKm).valor);
+  normalizaPesos(pesos, n);
+  return { ids, pesos };
+}
+
+function normalizaPesos(pesos, n) {
+  for (let k = 0; k < n; k += 1) {
+    let soma = 0;
+    for (const p of pesos) {
+      if (p[k] < 0) p[k] = 0;
+      soma += p[k];
+    }
+    for (const p of pesos) p[k] = soma > 0 ? p[k] / soma : 1 / pesos.length;
+  }
+}
+
+/**
+ * As RESTRIÇÕES DE NÍVEL da membrana: no vazio, a pelo menos `erosaoKm` da
+ * borda da própria unidade (rótulo = o maior peso) e `afastamentoKm` do dado,
+ * o texel fica preso no nível da unidade (`niveis[id]`, m; null = livre).
+ * Transições largas e limitadas — nenhum contorno de albedo desenhado.
+ */
+export function restricoesDeNivel({ ids, pesos, niveis, dado, largura, altura, raioM, erosaoKm, afastamentoKm }) {
+  const n = largura * altura;
+  const rotulo = new Uint8Array(n);
+  for (let k = 0; k < n; k += 1) {
+    let u0 = 0;
+    for (let u = 1; u < ids.length; u += 1) if (pesos[u][k] > pesos[u0][k]) u0 = u;
+    rotulo[k] = u0;
+  }
+  const longeDoDado = distanciaAoVazioKm(dado, largura, altura, raioM);
+  const mascara = new Uint8Array(n);
+  const valor = new Float32Array(n);
+  ids.forEach((id, u) => {
+    if (niveis[id] === null || niveis[id] === undefined) return;
+    const fora = new Uint8Array(n);
+    for (let k = 0; k < n; k += 1) fora[k] = rotulo[k] === u ? 0 : 1;
+    const dentro = distanciaAoVazioKm(fora, largura, altura, raioM);
+    for (let k = 0; k < n; k += 1) {
+      if (dado[k] || rotulo[k] !== u) continue;
+      if (dentro[k] < (erosaoKm ?? EROSAO_DO_NIVEL_KM) || longeDoDado[k] < (afastamentoKm ?? AFASTAMENTO_DO_NIVEL_KM)) continue;
+      mascara[k] = 1;
+      valor[k] = niveis[id];
+    }
+  });
+  return { mascara, valor };
+}
+
+// ------------------------------------------------------------
+// As crateras: lei de tamanhos, molde, sorteio e a camada
+// ------------------------------------------------------------
+
+/**
+ * A LEI DE TAMANHOS de uma unidade, das crateras da caixa-exemplo
+ * (`medidas.unidades[id].crateras`): N(≥ completude) = contadas / área (a
+ * estatística inteira da caixa); inclinação diferencial abaixo da dobra de 13
+ * km = a medida se tiver ≥ 20 crateras (senão −1,7, Caronte VP [Si21]); acima,
+ * −3 [Ro17, Si19] — N16 e N32 medidos são finos demais (0–2 crateras). Truncada
+ * em 250 km. `N(D)` = crateras ≥ D por km².
+ */
+export function leiDeCrateras(crateras) {
+  const medida = crateras.inclinacaoAbaixo;
+  const usaMedida = medida?.valor !== null && medida?.valor !== undefined && medida.n >= MINIMO_PARA_USAR_A_INCLINACAO_MEDIDA;
+  const abaixo = usaMedida ? Math.min(medida.valor, -1.2) : INCLINACAO_ABAIXO_DA_LITERATURA;
+  const forma = (D) => Math.pow(D / DOBRA_KM, (D <= DOBRA_KM ? abaixo : INCLINACAO_ACIMA) + 1);
+  const topo = forma(D_MAXIMO_KM);
+  const escala = crateras.contadas / crateras.areaKm2 / (forma(crateras.completudeKm) - topo);
+  return {
+    abaixo,
+    acima: INCLINACAO_ACIMA,
+    inclinacaoMedida: usaMedida,
+    N: (D) => (D >= D_MAXIMO_KM ? 0 : escala * (forma(D) - topo)),
+    /** o diâmetro do quantil `v` (0–1) entre `dMinKm` e o topo */
+    diametro: (v, dMinKm) => {
+      const y = topo + v * (forma(dMinKm) - topo);
+      return DOBRA_KM * Math.pow(y, 1 / ((y >= 1 ? abaixo : INCLINACAO_ACIMA) + 1));
+    },
+  };
+}
+
+/**
+ * O MOLDE da cratera de diâmetro `dKm` (altura/D por r/R): o perfil EMPILHADO
+ * no cache (`morfometria.perfis` da faixa de D; abaixo de 9 km, o de 9–14
+ * escalado — autossemelhante) no `quantil` entre p25, mediana e p75 — a
+ * variação de cratera a cratera. Até a crista (o máximo em r/R 0,75–1,35) é o
+ * perfil; além, a ejecta (h da crista)·(r_c/r)³, afinando a zero de 2,5 a
+ * 3,5 R; tudo somado de `e` para que, como no empilhamento, a média em
+ * 1,5–2 R seja o entorno. `variante: 'ro21'` escala o molde pela razão de
+ * profundidade Ro21/cache da faixa (a cratera "nítida"; fora do padrão).
+ * `{ valores (Float64Array a cada 0,01 R), rCrista }`.
+ */
+export function moldeDeCratera(morfometria, dKm, quantil = 0.5, variante = 'cache') {
+  const faixa = FAIXAS_DA_FORMA.find(([, b]) => dKm < b) ?? FAIXAS_DA_FORMA[FAIXAS_DA_FORMA.length - 1];
+  const nome = nomeDaFaixa(faixa);
+  const { rR, mediana, p25, p75 } = morfometria.perfis[nome];
+  const P = rR.map((_, q) =>
+    quantil < 0.5 ? p25[q] + 2 * quantil * (mediana[q] - p25[q]) : mediana[q] + (2 * quantil - 1) * (p75[q] - mediana[q])
+  );
+  let iCrista = -1;
+  rR.forEach((r, q) => {
+    if (r >= 0.75 && r <= 1.35 && (iCrista < 0 || P[q] > P[iCrista])) iCrista = q;
+  });
+  const rc = rR[iCrista];
+  const afina = (r) => 1 - suave(INICIO_DO_AFINAMENTO_RR, ALCANCE_DO_MOLDE_RR, r);
+  let m3 = 0;
+  let nm = 0;
+  for (let r = 1.525; r < 2; r += 0.05) {
+    m3 += (rc / r) ** 3 * afina(r);
+    nm += 1;
+  }
+  m3 /= nm;
+  const e = (P[iCrista] * m3) / (1 - m3);
+  const fator =
+    variante === 'ro21'
+      ? morfometria.ro21[nome].profundidadeD.mediana / morfometria.bins.find((b) => b.faixaKm === nome).profundidadeD.mediana
+      : 1;
+  const passos = Math.round(ALCANCE_DO_MOLDE_RR / PASSO_DO_MOLDE_RR) + 1;
+  const valores = new Float64Array(passos);
+  for (let s = 0; s < passos; s += 1) {
+    const r = s * PASSO_DO_MOLDE_RR;
+    let v;
+    if (r > rc) v = (P[iCrista] + e) * (rc / r) ** 3 * afina(r);
+    else if (r <= rR[0]) v = P[0] + e;
+    else {
+      const x = (r - rR[0]) / (rR[1] - rR[0]);
+      const q = Math.min(rR.length - 2, Math.floor(x));
+      v = P[q] + (x - q) * (P[q + 1] - P[q]) + e;
+    }
+    valores[s] = fator * v;
+  }
+  return { valores, rCrista: rc };
+}
+
+/** As crateras do catálogo com centro no VAZIO: confiança ≥ 3 e D ≥ a completude da região (ou região sem completude). */
+export function crateraReaisNoVazio(catalogo, guia, vazio, largura, altura) {
+  return catalogo.filter((c) => {
+    if (!(c.confianca >= 3)) return false;
+    const completude = guia[c.regiao]?.completudeKm ?? null;
+    if (completude !== null && c.dKm < completude) return false;
+    const j = Math.min(altura - 1, Math.max(0, Math.round(linhaDaLatitude(c.lat, altura))));
+    const i = ((Math.round(colunaDaLongitude(c.lon, largura)) % largura) + largura) % largura;
+    return vazio[j * largura + i] === 1;
+  });
+}
+
+/**
+ * O SORTEIO das crateras inventadas: por unidade, N(≥ `dMinKm`) da lei vezes a
+ * área com o peso dela (a esfera inteira — o lado medido também, que a
+ * costura troca pelo dado); centro uniforme na esfera aceito com a
+ * probabilidade do peso; D pela lei; quantil do molde e idade uniformes. As
+ * `reais` (catálogo) entram no lugar e no D delas, molde mediano, idade
+ * sorteada. Devolve a lista em ordem de idade (a 1ª é a mais velha).
+ */
+export function sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, raioM, dMinKm, reais = [] }) {
+  const sorteia = geradorDeSemente(sementeDaOitava(semente, 0x5ee0));
+  const raioKm = raioM / 1000;
+  const dLon = (2 * Math.PI) / largura;
+  const areaDaLinha = (j) =>
+    raioKm * raioKm * dLon * (Math.sin(Math.PI / 2 - (j * Math.PI) / altura) - Math.sin(Math.PI / 2 - ((j + 1) * Math.PI) / altura));
+  const lista = [];
+  const porUnidade = {};
+  ids.forEach((id, u) => {
+    let area = 0;
+    for (let j = 0; j < altura; j += 1) {
+      let s = 0;
+      for (let i = 0; i < largura; i += 1) s += pesos[u][j * largura + i];
+      area += s * areaDaLinha(j);
+    }
+    const quantas = Math.round(area * leis[u].N(dMinKm));
+    porUnidade[id] = quantas;
+    let feitas = 0;
+    while (feitas < quantas) {
+      const z = 2 * sorteia() - 1;
+      const lon = 360 * sorteia();
+      const lat = Math.asin(z) * GRAUS;
+      const j = Math.min(altura - 1, Math.floor(((90 - lat) / 180) * altura));
+      const i = ((Math.round(colunaDaLongitude(lon, largura)) % largura) + largura) % largura;
+      if (sorteia() >= pesos[u][j * largura + i]) continue;
+      lista.push({ lat, lon, dKm: leis[u].diametro(sorteia(), dMinKm), quantil: sorteia(), idade: sorteia() });
+      feitas += 1;
+    }
+  });
+  for (const c of reais) lista.push({ lat: c.lat, lon: c.lon, dKm: c.dKm, quantil: 0.5, idade: sorteia(), id: c.id });
+  lista.sort((a, b) => a.idade - b.idade);
+  return { crateras: lista, porUnidade };
+}
+
+/**
+ * A CAMADA DE CRATERAS (m), na ordem de idade de `crateras` (a 1ª é a mais
+ * velha): distância de círculo máximo ao centro, linha a linha com a
+ * meia-largura de longitude EXATA da calota (o polo e a volta inclusos). Cada
+ * cratera, por HERANÇA, apaga até `FRACAO_APAGADA` do relevo das mais velhas
+ * no miolo (em volta da média dele, sumindo até a crista) e soma o molde × D.
+ */
+export function camadaDeCrateras({ crateras, morfometria, largura, altura, raioM, variante = 'cache' }) {
+  const camada = new Float32Array(largura * altura);
+  const raioKm = raioM / 1000;
+  const dLat = Math.PI / altura;
+  const dLon = (2 * Math.PI) / largura;
+  const senLat = new Float64Array(altura);
+  const cosLat = new Float64Array(altura);
+  for (let j = 0; j < altura; j += 1) {
+    senLat[j] = Math.sin(latitudeDaLinha(j, altura));
+    cosLat[j] = Math.cos(latitudeDaLinha(j, altura));
+  }
+  const cosLon = new Float64Array(largura);
+  const senLon = new Float64Array(largura);
+  for (let i = 0; i < largura; i += 1) {
+    const l = longitudeDaColuna(i, largura) * RADIANOS;
+    cosLon[i] = Math.cos(l);
+    senLon[i] = Math.sin(l);
+  }
+  let idx = new Int32Array(1 << 16);
+  let rho = new Float64Array(1 << 16);
+  for (const c of crateras) {
+    const { valores, rCrista } = moldeDeCratera(morfometria, c.dKm, c.quantil, variante);
+    const R = c.dKm / 2;
+    const D = c.dKm * 1000;
+    const tetaMax = Math.min(Math.PI, (ALCANCE_DO_MOLDE_RR * R) / raioKm);
+    const cosMax = Math.cos(tetaMax);
+    const fc = c.lat * RADIANOS;
+    const sfc = Math.sin(fc);
+    const cfc = Math.cos(fc);
+    const clc = Math.cos(c.lon * RADIANOS);
+    const slc = Math.sin(c.lon * RADIANOS);
+    const xc = colunaDaLongitude(c.lon, largura);
+    const j0 = Math.max(0, Math.ceil((Math.PI / 2 - fc - tetaMax) / dLat - 0.5));
+    const j1 = Math.min(altura - 1, Math.floor((Math.PI / 2 - fc + tetaMax) / dLat - 0.5));
+    let m = 0;
+    for (let j = j0; j <= j1; j += 1) {
+      const cosDl = (cosMax - senLat[j] * sfc) / (cosLat[j] * cfc);
+      if (cosDl > 1) continue;
+      const meia = cosDl <= -1 ? Math.PI : Math.acos(cosDl);
+      const ia = meia >= Math.PI ? 0 : Math.ceil(xc - meia / dLon - 1);
+      const ib = meia >= Math.PI ? largura - 1 : Math.floor(xc + meia / dLon + 1);
+      for (let i0 = ia; i0 <= ib; i0 += 1) {
+        const i = ((i0 % largura) + largura) % largura;
+        const cosDlon = cosLon[i] * clc + senLon[i] * slc;
+        const cosTeta = Math.min(1, Math.max(-1, senLat[j] * sfc + cosLat[j] * cfc * cosDlon));
+        const r = (Math.acos(cosTeta) * raioKm) / R;
+        if (r >= ALCANCE_DO_MOLDE_RR) continue;
+        if (m === idx.length) {
+          const novoIdx = new Int32Array(2 * m);
+          novoIdx.set(idx);
+          idx = novoIdx;
+          const novoRho = new Float64Array(2 * m);
+          novoRho.set(rho);
+          rho = novoRho;
+        }
+        idx[m] = j * largura + i;
+        rho[m] = r;
+        m += 1;
+      }
+    }
+    let soma = 0;
+    let peso = 0;
+    for (let p = 0; p < m; p += 1) {
+      if (rho[p] >= rCrista) continue;
+      const w = cosLat[Math.floor(idx[p] / largura)];
+      soma += w * camada[idx[p]];
+      peso += w;
+    }
+    const media = peso ? soma / peso : 0;
+    for (let p = 0; p < m; p += 1) {
+      const x = rho[p] / PASSO_DO_MOLDE_RR;
+      const s = Math.min(valores.length - 2, Math.floor(x));
+      const v = D * (valores[s] + (x - s) * (valores[s + 1] - valores[s]));
+      const k = idx[p];
+      if (rho[p] < rCrista) {
+        const apaga = FRACAO_APAGADA * (1 - suave(0.6 * rCrista, rCrista, rho[p]));
+        camada[k] = media + (camada[k] - media) * (1 - apaga) + v;
+      } else camada[k] += v;
+    }
+  }
+  return camada;
+}
+
+// ------------------------------------------------------------
+// O dado borrado (item 5b)
+// ------------------------------------------------------------
+
+/**
+ * `dadoPorOitava` (item 5b): a banda k é dado onde o texel é medido E o DEM
+ * resolve a banda — `bandasBorradas` (a grade reduzida da qualidade, NaN sem
+ * dado) lida bilinear nos centros e comparada com k + ½. Nos trechos borrados,
+ * as bandas finas viram simuladas e condicionadas. `completaBorrado: false` é
+ * a variante "sem completar" do A/B: todo medido é dado em toda banda.
+ */
+export function mascarasDoDado({ vazio, largura, altura, nBandas, qualidade, completaBorrado = true }) {
+  const n = largura * altura;
+  const medido = new Uint8Array(n);
+  for (let k = 0; k < n; k += 1) medido[k] = vazio[k] ? 0 : 1;
+  if (!completaBorrado || !qualidade) return Array(nBandas).fill(medido);
+  const { bandasBorradas, largura: Lq, altura: Aq } = qualidade;
+  const fator = largura / Lq;
+  const bb = new Float32Array(n);
+  let maior = 0;
+  for (let j = 0; j < altura; j += 1) {
+    const y = Math.min(Aq - 1, Math.max(0, (j + 0.5) / fator - 0.5));
+    const ya = Math.min(Aq - 2, Math.floor(y));
+    const fy = y - ya;
+    for (let i = 0; i < largura; i += 1) {
+      const k = j * largura + i;
+      if (!medido[k]) continue;
+      const x = (i + 0.5) / fator - 0.5;
+      const xa = Math.floor(x);
+      const fx = x - xa;
+      let soma = 0;
+      let peso = 0;
+      for (const [a, b, w] of [
+        [ya, xa, (1 - fy) * (1 - fx)],
+        [ya, xa + 1, (1 - fy) * fx],
+        [ya + 1, xa, fy * (1 - fx)],
+        [ya + 1, xa + 1, fy * fx],
+      ]) {
+        const v = bandasBorradas[a * Lq + (((b % Lq) + Lq) % Lq)];
+        if (Number.isFinite(v) && w > 0) {
+          soma += w * v;
+          peso += w;
+        }
+      }
+      bb[k] = peso ? soma / peso : 0;
+      if (bb[k] > maior) maior = bb[k];
+    }
+  }
+  return Array.from({ length: nBandas }, (_, b) => {
+    if (b + 0.5 >= maior) return medido;
+    const m = new Uint8Array(n);
+    for (let k = 0; k < n; k += 1) m[k] = medido[k] && bb[k] < b + 0.5 ? 1 : 0;
+    return m;
+  });
+}
+
+// ------------------------------------------------------------
+// Tudo junto: a síntese de um corpo
+// ------------------------------------------------------------
+
+/** S(d) de uma lista [km, m², pares] no km pedido, em log–log; null fora dela. */
+function interpolaS(lista, km) {
+  for (let q = 0; q + 1 < lista.length; q += 1) {
+    const [d0, s0] = lista[q];
+    const [d1, s1] = lista[q + 1];
+    if (km >= d0 && km <= d1 && s0 > 0 && s1 > 0) {
+      const t = Math.log(km / d0) / Math.log(d1 / d0);
+      return Math.exp(Math.log(s0) + t * Math.log(s1 / s0));
+    }
+  }
+  return null;
+}
+
+/** Média de v² (pesada por cos lat) onde `mascara`. */
+function energiaNaMascara(campo, mascara, largura, altura) {
+  let soma = 0;
+  let peso = 0;
+  for (let j = 0; j < altura; j += 1) {
+    const c = Math.cos(latitudeDaLinha(j, altura));
+    for (let i = 0; i < largura; i += 1) {
+      const k = j * largura + i;
+      if (!mascara[k]) continue;
+      soma += c * campo[k] * campo[k];
+      peso += c;
+    }
+  }
+  return peso ? soma / peso : null;
+}
+
+/**
+ * A medida de uma unidade no relatório: as razões do S(d) por lag em texto
+ * curto — contra o eixo da caixa e (iso) contra a média dos dois eixos dela.
+ */
+function resumoDaMedida(m) {
+  if (m.semNucleo) return m;
+  const { id, rmsGraus, rmsAlvo, razaoRms, razaoSMin, razaoSMax, razaoSGeo, razaoIsoMin, razaoIsoMax } = m;
+  const porLag = m.razoes.map(
+    (r) => `${r.eixo} ${r.d.toFixed(1)} km: ${r.razao.toFixed(2)}${r.tMedio ? ` (iso ${(r.s / r.tMedio).toFixed(2)})` : ''}`
+  );
+  return { id, rmsGraus, rmsAlvo, razaoRms, razaoSMin, razaoSMax, razaoSGeo, razaoIsoMin, razaoIsoMax, porLag };
+}
+
+/**
+ * A SÍNTESE de um corpo (PLAN-RELEVO.md, E3): do cache das alturas (`grade` =
+ * `{ metros, vazio, largura, altura, raioM }`) ao campo COMPLETO F (Float32, m)
+ * — medido onde há dado, inventado no vazio —, calibrado pelo lado medido.
+ *   1. pesos das unidades (`fonte`) na grade ÷4, ampliados pela spline;
+ *   2. níveis RELATIVOS: a altura média da caixa-exemplo de cada unidade
+ *      (`medidas`) menos a média global medida, menos ainda a média desses
+ *      níveis no vazio pesada pela área (fração cos lat dos pesos), somada de
+ *      volta à média global — o vazio tem em média a altura do medido e os
+ *      contrastes entre as unidades ficam; o mapa de unidades é palpite e não
+ *      pode inventar um degrau de hemisfério. Presos na membrana no fundo da
+ *      unidade (`restricoesDeNivel`);
+ *   3. crateras ANTES da costura: as reais do vazio (`catalogo`, `guia`) e as
+ *      sorteadas pela lei de cada unidade, de 2 texels para cima;
+ *   4. aspereza: um ruído por banda simulada (σ ≤ R/5), amplitude por texel
+ *      √(Σ wᵤ·gᵤₖ²) nas bandas finas (σ ≤ 50 km) e a média do vazio nas
+ *      grossas; gᵤₖ² = energia medida da banda na caixa − a das crateras
+ *      sorteadas no núcleo da unidade (≥ 0);
+ *   5. `dadoPorOitava` pelo mapa de qualidade (`qualidade`, item 5b);
+ *   6. a costura; e a CALIBRAÇÃO: no núcleo de cada unidade (vazio, peso ≥
+ *      0,9), RMS da inclinação (±10 %) e S(d) por eixo (±15 %) nos lags até
+ *      30 km contra a caixa-exemplo; fora disso, UM reajuste dos gᵤₖ² das
+ *      bandas de σ ≤ 30 km por mínimos quadrados não negativos — S_F(d) −
+ *      Σ gₖ²·Sₖ(d) (crateras, níveis, costura, bandas largas) fica como está e
+ *      os gₖ² novos fecham o alvo, Sₖ medido no próprio ruído; o ruído é
+ *      isótropo, então o alvo de cada lag é a média dos dois eixos da caixa —
+ *      e a costura de novo. As bandas de σ > 30 km ficam com o ganho da
+ *      energia da caixa.
+ * `opcoes`: `completaBorrado` (true), `variante` ('cache' | 'ro21'),
+ * `calibra` (true), `registra`. Devolve `{ campo, relatorio }`.
+ */
+export function sintetizaCorpo({ grade, fonte, medidas, qualidade, catalogo, guia, semente, opcoes = {} }) {
+  const anota = opcoes.registra ?? (() => {});
+  const { metros, vazio, largura, altura, raioM } = grade;
+  const n = largura * altura;
+  const raioKm = raioM / 1000;
+  const texelKm = raioKm * (Math.PI / altura);
+  const sigmasKm = sigmasDasOitavas(raioM, altura);
+  const nb = sigmasKm.length + 1;
+  const sigmaDa = (k) => (k < nb - 1 ? sigmasKm[k] : 2 * sigmasKm[nb - 2]);
+  const simuladas = Array.from({ length: nb }, (_, k) => k).filter((k) => sigmaDa(k) <= FRACAO_DO_RAIO_DA_MEMBRANA * raioKm);
+  const um = new Uint8Array(n).fill(1);
+  const semVazio = new Uint8Array(n);
+  const dado = new Uint8Array(n);
+  for (let k = 0; k < n; k += 1) dado[k] = vazio[k] ? 0 : 1;
+
+  // 1–2. as unidades e os níveis, na grade ÷4
+  const nivelU = largura % 8 === 0 && altura % 4 === 0 && altura >= 64 ? 2 : 0;
+  const s = 2 ** nivelU;
+  const Lr = largura / s;
+  const Ar = altura / s;
+  const unidades = pesosDasUnidades(fonte, Lr, Ar, raioM);
+  const { ids } = unidades;
+  let pesos = unidades.pesos;
+  if (nivelU) {
+    pesos = pesos.map((p) =>
+      avaliaSpline(coeficientesDeSpline(p, Lr, Ar), Lr, Ar, nivelU, largura, altura, new Float32Array(n))
+    );
+    normalizaPesos(pesos, n);
+  }
+  const fracaoNoVazio = ids.map((_, u) => {
+    let a = 0;
+    let b = 0;
+    for (let k = 0; k < n; k += 1) {
+      if (!vazio[k]) continue;
+      const c = Math.cos(latitudeDaLinha(Math.floor(k / largura), altura));
+      a += c * pesos[u][k];
+      b += c;
+    }
+    return b ? a / b : 0;
+  });
+  const alturaMediaMedida = medidas.global.alturaMedia;
+  const relativos = ids.map((id) => {
+    const media = medidas.unidades[id]?.alturaMedia;
+    return media === null || media === undefined ? null : media - alturaMediaMedida;
+  });
+  let somaDosNiveis = 0;
+  let areaDosNiveis = 0;
+  relativos.forEach((r, u) => {
+    if (r === null) return;
+    somaDosNiveis += fracaoNoVazio[u] * r;
+    areaDosNiveis += fracaoNoVazio[u];
+  });
+  const mediaNoVazio = areaDosNiveis ? somaDosNiveis / areaDosNiveis : 0;
+  const niveis = Object.fromEntries(
+    ids.map((id, u) => [id, relativos[u] === null ? null : alturaMediaMedida + relativos[u] - mediaNoVazio])
+  );
+  const dadoR = new Uint8Array(Lr * Ar);
+  for (let k = 0; k < n; k += 1) if (dado[k]) dadoR[Math.floor(k / largura / s) * Lr + Math.floor((k % largura) / s)] = 1;
+  const restR = restricoesDeNivel({ ids, pesos: unidades.pesos, niveis, dado: dadoR, largura: Lr, altura: Ar, raioM });
+  const restricoes = { mascara: new Uint8Array(n), valor: new Float32Array(n) };
+  for (let k = 0; k < n; k += 1) {
+    const c = Math.floor(k / largura / s) * Lr + Math.floor((k % largura) / s);
+    if (restR.mascara[c] && vazio[k]) {
+      restricoes.mascara[k] = 1;
+      restricoes.valor[k] = restR.valor[c];
+    }
+  }
+  const nucleos = ids.map((_, u) => {
+    for (const limiar of [PESO_DO_NUCLEO, 0.5]) {
+      const m = new Uint8Array(n);
+      let quantos = 0;
+      for (let k = 0; k < n; k += 1) if (vazio[k] && pesos[u][k] >= limiar) (m[k] = 1), (quantos += 1);
+      if (quantos >= 2000) return m;
+    }
+    return null;
+  });
+  anota(`unidades e níveis (${restricoes.mascara.reduce((x, v) => x + v, 0)} texels presos)`);
+
+  // 5. o dado de cada banda
+  const dadoPorOitava = mascarasDoDado({ vazio, largura, altura, nBandas: nb, qualidade, completaBorrado: opcoes.completaBorrado ?? true });
+
+  // 3. as crateras
+  const leis = ids.map((id) => leiDeCrateras(medidas.unidades[id].crateras));
+  const reais = crateraReaisNoVazio(catalogo, guia, vazio, largura, altura);
+  const { crateras, porUnidade } = sorteiaCrateras({ semente, ids, pesos, leis, largura, altura, raioM, dMinKm: 2 * texelKm, reais });
+  const camada = camadaDeCrateras({ crateras, morfometria: medidas.morfometria, largura, altura, raioM, variante: opcoes.variante });
+  anota(`crateras: ${reais.length} reais, ${crateras.length - reais.length} sorteadas`);
+
+  // 4. os ganhos de partida: energia medida − a das crateras, por unidade e banda
+  const bandasC = decompoeEmOitavas(camada, um, largura, altura, raioM, sigmasKm);
+  const energiaDasCrateras = ids.map((_, u) => simuladas.map((k) => (nucleos[u] ? energiaNaMascara(bandasC[k], nucleos[u], largura, altura) : 0)));
+  bandasC.length = 0;
+  const g2Partida = ids.map((id, u) =>
+    Array.from({ length: nb }, (_, k) => {
+      const q = simuladas.indexOf(k);
+      return q < 0 ? 0 : Math.max(0, (medidas.unidades[id].energiaPorBanda[k] ?? 0) - energiaDasCrateras[u][q]);
+    })
+  );
+  const ruidos = Array.from({ length: nb }, (_, k) => (simuladas.includes(k) ? ruidoDaOitava(semente, k, sigmasKm, largura, altura, raioM) : null));
+  const baseS = ruidos.map((r) => (r ? funcaoDeEstrutura(r, um, largura, altura, raioM, { passoLinhas: 4, passoColunas: 4 }) : null));
+  anota('os ruídos das bandas');
+
+  const amplitudes = (g2) =>
+    Array.from({ length: nb }, (_, k) => {
+      if (!simuladas.includes(k)) return 0;
+      if (sigmaDa(k) > SIGMA_DOS_PESOS_KM) return Math.sqrt(ids.reduce((x, _, u) => x + fracaoNoVazio[u] * g2[u][k], 0));
+      const a = new Float32Array(n);
+      for (let q = 0; q < n; q += 1) {
+        let x = 0;
+        for (let u = 0; u < ids.length; u += 1) x += pesos[u][q] * g2[u][k];
+        a[q] = Math.sqrt(x);
+      }
+      return a;
+    });
+  const monta = (g2) => {
+    const simulada = somaDeOitavas(ruidos, amplitudes(g2), n);
+    for (let q = 0; q < n; q += 1) simulada[q] += camada[q];
+    return costura({ medida: metros, dadoPorOitava, simulada, sigmasKm, largura, altura, raioM, restricoes, registra: anota });
+  };
+  const mede = (F) =>
+    ids.map((id, u) => {
+      if (!nucleos[u]) return { id, semNucleo: true };
+      const alvo = medidas.unidades[id];
+      const rms = inclinacaoRms(F, semVazio, largura, altura, raioM, nucleos[u]).rmsGraus;
+      const S = funcaoDeEstrutura(F, nucleos[u], largura, altura, raioM, { passoLinhas: 2, passoColunas: 2 });
+      const razoes = [];
+      for (const eixo of ['ns', 'ew']) {
+        for (const [d, v] of S[eixo]) {
+          if (d > LAG_MAXIMO_DA_CALIBRACAO_KM) continue;
+          const t = interpolaS(alvo.S[eixo], d);
+          const outro = interpolaS(alvo.S[eixo === 'ns' ? 'ew' : 'ns'], d);
+          if (t) razoes.push({ eixo, d, s: v, t, tMedio: outro ? (t + outro) / 2 : null, razao: v / t });
+        }
+      }
+      const r = razoes.map((x) => x.razao);
+      const iso = razoes.filter((x) => x.tMedio).map((x) => x.s / x.tMedio);
+      return {
+        id,
+        rmsGraus: rms,
+        rmsAlvo: alvo.rmsGraus,
+        razaoRms: rms / alvo.rmsGraus,
+        razaoSMin: Math.min(...r),
+        razaoSMax: Math.max(...r),
+        razaoSGeo: Math.exp(r.reduce((x, v) => x + Math.log(v), 0) / r.length),
+        razaoIsoMin: Math.min(...iso),
+        razaoIsoMax: Math.max(...iso),
+        razoes,
+      };
+    });
+  const dentro = (m) =>
+    m.semNucleo ||
+    (Math.abs(m.razaoRms - 1) <= TOLERANCIA_DO_RMS && m.razaoSMin >= 1 - TOLERANCIA_DO_S && m.razaoSMax <= 1 + TOLERANCIA_DO_S);
+
+  let campo = monta(g2Partida);
+  const antes = mede(campo);
+  anota('a costura e a medida do campo');
+  let g2Final = g2Partida;
+  let depois = null;
+  if ((opcoes.calibra ?? true) && antes.some((m) => !dentro(m))) {
+    // o ruído é isótropo: o alvo de cada lag é a média dos dois eixos da caixa
+    const reajustadas = simuladas.filter((k) => sigmaDa(k) <= LAG_MAXIMO_DA_CALIBRACAO_KM);
+    g2Final = ids.map((_, u) => {
+      const m = antes[u];
+      if (m.semNucleo || dentro(m)) return g2Partida[u];
+      const p = reajustadas.length;
+      const linhas = m.razoes
+        .filter((r) => r.tMedio)
+        .map((r) => {
+          const base = reajustadas.map((k) => interpolaS(baseS[k][r.eixo], r.d) ?? 0);
+          const modelo = base.reduce((x, b, q) => x + g2Partida[u][reajustadas[q]] * b, 0);
+          return { a: base.map((b) => b / r.tMedio), b: (r.tMedio - (r.s - modelo)) / r.tMedio };
+        });
+      const A = new Float64Array(linhas.length * p);
+      const b = new Float64Array(linhas.length);
+      linhas.forEach((l, i) => {
+        A.set(l.a, i * p);
+        b[i] = l.b;
+      });
+      const x = minimosQuadradosNaoNegativos(A, b, linhas.length, p);
+      const g2 = g2Partida[u].slice();
+      reajustadas.forEach((k, q) => (g2[k] = x[q]));
+      return g2;
+    });
+    campo = monta(g2Final);
+    depois = mede(campo);
+    anota('a calibração refeita');
+  }
+  let naoFinitos = 0;
+  for (let q = 0; q < n; q += 1) if (!Number.isFinite(campo[q])) naoFinitos += 1;
+  const ganhos = (g2) => Object.fromEntries(ids.map((id, u) => [id, g2[u].map((v) => Math.round(Math.sqrt(v)))]));
+  return {
+    campo,
+    relatorio: {
+      unidades: ids,
+      bandasSimuladas: simuladas,
+      sigmasKm,
+      fracaoNoVazio: Object.fromEntries(ids.map((id, u) => [id, fracaoNoVazio[u]])),
+      alturaMediaMedida,
+      niveis,
+      alturaMediaDoVazio: estatisticaDeAltura(campo, vazio, largura, altura).media,
+      texelsPresos: restricoes.mascara.reduce((x, v) => x + v, 0),
+      leis: Object.fromEntries(
+        ids.map((id, u) => [
+          id,
+          {
+            abaixo: leis[u].abaixo,
+            inclinacaoMedida: leis[u].inclinacaoMedida,
+            N: Object.fromEntries([2 * texelKm, 8, 11.3, 16, 32].map((d) => [d.toFixed(1), leis[u].N(d) * 1e6])),
+          },
+        ])
+      ),
+      crateras: { reais: reais.map((c) => `${c.id} ${c.dKm} km`), sorteadas: porUnidade },
+      energiaDasCrateras: Object.fromEntries(ids.map((id, u) => [id, energiaDasCrateras[u].map(Math.round)])),
+      ganhosAntes: ganhos(g2Partida),
+      ganhosDepois: ganhos(g2Final),
+      antes: antes.map(resumoDaMedida),
+      depois: depois && depois.map(resumoDaMedida),
+      bandasBorradasCompletadas: dadoPorOitava.filter((m) => m !== dadoPorOitava[nb - 1]).length,
+      naoFinitos,
+    },
+  };
 }

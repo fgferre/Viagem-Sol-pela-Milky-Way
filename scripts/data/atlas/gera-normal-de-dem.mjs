@@ -919,8 +919,13 @@ function raioDoPassoM(corpo) {
  * o texel cuja conta toca um vazio — ele mesmo ou um dos quatro vizinhos
  * — sai liso e fica fora do RMS e da máxima, e `lisos` os conta. Sem
  * `vazio`, a conta e os bytes são os de sempre.
+ *
+ * `travaNoSul: false` tira a trava de 80° do passo leste nas linhas do
+ * hemisfério SUL (passo verdadeiro R·cos φ·Δλ): é o polo sul INVENTADO do
+ * relevo de Caronte, contínuo em 3D, onde não há preenchimento a esconder.
+ * O norte, e todo o resto sem a opção, sai byte a byte como sempre.
  */
-export function assaNormais(metros, largura, altura, raioM, vazio) {
+export function assaNormais(metros, largura, altura, raioM, vazio, { travaNoSul = true } = {}) {
   const dLon = (2 * Math.PI) / largura;
   const dLat = Math.PI / altura;
   const passoNorte = raioM * dLat;
@@ -931,7 +936,10 @@ export function assaNormais(metros, largura, altura, raioM, vazio) {
   let lisos = 0;
   for (let j = 0; j < altura; j += 1) {
     const lat = Math.PI / 2 - ((j + 0.5) / altura) * Math.PI;
-    const passoLeste = Math.max(raioM * Math.cos(lat) * dLon, passoLesteMinimo);
+    const passoLeste =
+      travaNoSul || lat >= 0
+        ? Math.max(raioM * Math.cos(lat) * dLon, passoLesteMinimo)
+        : raioM * Math.cos(lat) * dLon;
     const jNorte = Math.max(0, j - 1); // a linha de cima é o NORTE
     const jSul = Math.min(altura - 1, j + 1);
     // nos polos a diferença atravessa só uma linha, não duas
