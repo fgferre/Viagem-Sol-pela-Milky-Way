@@ -167,6 +167,9 @@ const INICIO_DO_JOELHO = 0.85 * 255;
 /** O filtro de tom: tentativas de sorteio (× `CANDIDATOS`) em cada fator antes de alargar. */
 const TENTATIVAS_DO_TOM = 16;
 
+/** Os números da variante "calma" de Plutão (ver `POR_CORPO.pluto`); a "serena" herda deles. */
+const CALMA_DE_PLUTAO = { sigmaDoTomKm: 20, joelhoRelativo: { inicio: 1.6, folga: 0.4, escuros: { inicio: 0.65, folga: 0.15 } }, sombraNoAlvo: 0.57 };
+
 /**
  * O QUE MUDA DE UM CORPO PARA O OUTRO, cada número medido no mosaico dele:
  * `caixasNitidas` (a referência da régua do borrado) e `reguaRelativa` (a
@@ -185,8 +188,9 @@ const TENTATIVAS_DO_TOM = 16;
  * cor além das do JSON, por unidade); `joelhoRelativo` (a razão brilho ÷ tom acima de
  * `inicio` vai a `inicio + folga` por um joelho suave; com `escuros`, o espelho: abaixo de
  * `escuros.inicio` vai a `escuros.inicio − escuros.folga` — `razaoNoJoelho`); `sigmaDoTomKm` (o corte
- * tom/detalhe, se não o de `SIGMA_DO_TOM_KM`); `variantes` (conjuntos destes números que
- * `opcoes.variante` põe por cima dos do corpo).
+ * tom/detalhe, se não o de `SIGMA_DO_TOM_KM`); `amplitudeDoAlbedo` (a fração do resíduo de albedo dos
+ * retalhos que o alvo recebe; a sombra do relevo fica com `sombraNoAlvo` — `detalheNoAlvo`; sem ela, 1);
+ * `variantes` (conjuntos destes números que `opcoes.variante` põe por cima dos do corpo).
  */
 const POR_CORPO = {
   // Caronte: os números do cabeçalho. O halo é o do lanczos3 na redução (±3 texels em 12693 → 8192, com folga).
@@ -277,8 +281,13 @@ const POR_CORPO = {
     // alvo é a fração que devolve, com o corte novo, a correlação do lado medido com n·L (0,163, a régua de
     // mede-m1b.mjs): 0,6 deu 0,171 no vazio, e 0,57 sai de r = f·a ÷ √(b² + f²·a²), a sombra somada a um detalhe
     // que não a segue (mede-m1b-v5.mjs, em capturas/cor-inventada/ferramentas/m1b).
+    // A VARIANTE "SERENA" (02/10; `opcoes.variante: 'serena'`), a terceira escolha de gosto: a calma com o resíduo de
+    // albedo dos retalhos (a colcha menos o passa-baixa dela, já com o ganho) a meia amplitude (`amplitudeDoAlbedo`) — o
+    // mosqueado de albedo cai pela metade e as crateras seguem no sombreado do relevo. Com a sombra da calma (0,57), a
+    // correlação com n·L no vazio sobe a 0,224 (o lado medido tem 0,163; mede-m1b-v6.mjs); a mesma conta da calma dá 0,41.
     variantes: {
-      calma: { sigmaDoTomKm: 20, joelhoRelativo: { inicio: 1.6, folga: 0.4, escuros: { inicio: 0.65, folga: 0.15 } }, sombraNoAlvo: 0.57 },
+      calma: CALMA_DE_PLUTAO,
+      serena: { ...CALMA_DE_PLUTAO, amplitudeDoAlbedo: 0.5, sombraNoAlvo: 0.41 },
     },
   },
 };
@@ -1493,6 +1502,16 @@ export function ganhoDaLuminancia(tomDoAlvo, tomDaFonte) {
 }
 
 /**
+ * O DETALHE QUE O ALVO RECEBE num texel, somado ao tom: o resíduo de albedo da colcha (`colcha` − `novo` ×
+ * `escalaGrande`, o passa-baixa dela; no multiplicativo, já com o ganho) vezes `amplitudeDoAlbedo`, mais a sombra do
+ * relevo do alvo (`sombra`, em DN) vezes `sombraNoAlvo` — as duas frações só no que veio dos retalhos (`novo`, de 0 a
+ * 1); no que ficou do fotografado, o detalhe e a sombra dele voltam inteiros (o brilho original).
+ */
+export function detalheNoAlvo(colcha, escalaGrande, sombra, novo, sombraNoAlvo, amplitudeDoAlbedo) {
+  return (colcha - novo * escalaGrande) * (1 - novo * (1 - amplitudeDoAlbedo)) + sombra * (1 - novo * (1 - sombraNoAlvo));
+}
+
+/**
  * O JOELHO SUAVE: acima de `inicio` x se aproxima de `inicio + folga` sem passar —
  * x₀ + f·(1 − e^(−(x − x₀)/f)): monótono, contínuo e com a derivada contínua (1) no começo, sem clipe.
  */
@@ -1786,6 +1805,8 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
   // a sombra do relevo do alvo: o ganho medido vezes `sombraNoAlvo` no que veio dos retalhos (novo), e
   // o ganho medido no que ficou do fotografado (devolve o brilho original)
   const fatorDaSombra = corpo.sombraNoAlvo ?? 1;
+  // e o resíduo de albedo dos retalhos vezes `amplitudeDoAlbedo` (`detalheNoAlvo`)
+  const amplitudeDoAlbedo = corpo.amplitudeDoAlbedo ?? 1;
 
   // canal a canal: o tom no lugar da escala grande da colcha, o desfoque, a mistura e a costura
   const saida = Uint8Array.from(cor);
@@ -1800,7 +1821,7 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
     for (let q = 0; q < passaBaixaDaColcha.length; q += 1) if (!Number.isFinite(passaBaixaDaColcha[q])) passaBaixaDaColcha[q] = 0;
     const escalaGrande = sobeBilinear(passaBaixaDaColcha, r.largura, r.altura, L, A);
     const total = new Float32Array(n);
-    for (let k = 0; k < n; k += 1) total[k] = colcha[k] - novo[k] * escalaGrande[k] + sombraDoCanal(c, k) * (1 - novo[k] * (1 - fatorDaSombra));
+    for (let k = 0; k < n; k += 1) total[k] = detalheNoAlvo(colcha[k], escalaGrande[k], sombraDoCanal(c, k), novo[k], fatorDaSombra, amplitudeDoAlbedo);
     const niveis = niveisKm.map((s) => (s ? desfocaComMascara(total, um, L, A, raioM, s).valor : total));
     const resultado = Float32Array.from(canal[c]);
     for (let j = 0; j < A; j += 1) {
@@ -1954,6 +1975,7 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
       anelDosBuracosKm: corpo.anelDosBuracosKm ?? 0,
       buracosNoAlvo: { buracos: m.buracosNoAlvo, ateKm: corpo.buracosNoAlvoKm ?? 0 },
       sombraAssada: { ganho: +ganhoDaSombra.toFixed(multiplicativo ? 4 : 2), unidade: unidadeDoGanho, correlacaoNoBom: +correlacaoNoBom.toFixed(3), fracaoNoAlvo: fatorDaSombra },
+      amplitudeDoAlbedo,
       tom: { sigmaKm: sigmaDoTomKm, sigmaDaColchaKm: SIGMA_DA_COLCHA_KM },
       desfoqueJuntoDoBorrado: { sigmaKm: desfoqueKm, rampaKm: RAMPA_DO_DESFOQUE_KM, porcentoDoAlvo: +((100 * comDesfoque) / noAlvo).toFixed(1) },
       degrauNaBordaDoAlvoDN: degrausNaBorda,

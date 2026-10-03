@@ -1,4 +1,4 @@
-// Serve: lei — as peças puras da cor inventada (PLAN-COR.md, M1 e M1b): a máscara do vazio, o retalho no plano tangente, o corte de erro mínimo, o giro, as grades reduzidas, o detalhe multiplicativo, os joelhos, as fontes com tom e o tom preso no patamar
+// Serve: lei — as peças puras da cor inventada (PLAN-COR.md, M1 e M1b): a máscara do vazio, o retalho no plano tangente, o corte de erro mínimo, o giro, as grades reduzidas, o detalhe multiplicativo, os joelhos, as fontes com tom, o tom preso no patamar e a amplitude do albedo
 // ============================================================
 // Em miniatura, com resposta conhecida de fora do código:
 //  1. O VAZIO é o que `preencherVazioSemDado` tapa — a calota grande —, e o
@@ -25,10 +25,12 @@
 //     leva a caixa e o tom dela, e o filtro aceita o fator nos dois sentidos.
 //  9. O TOM PRESO NO PATAMAR: num campo sintético com uma rampa escura junto da
 //     borda, a membrana presa além da rampa sai plana por anel; presa na rampa, não.
+// 10. A AMPLITUDE DO ALBEDO (a variante serena) escala só o resíduo de albedo dos
+//     retalhos: a sombra do relevo e o que ficou do fotografado não mudam.
 // ============================================================
 import { describe, expect, it } from 'vitest';
 import {
-  corteDeErroMinimo, dentroDoTom, dilataMascara, fontesDaCor, ganhoDaLuminancia, geometriaDoCorte, gradeReduzida, joelhoDaCor,
+  corteDeErroMinimo, dentroDoTom, detalheNoAlvo, dilataMascara, fontesDaCor, ganhoDaLuminancia, geometriaDoCorte, gradeReduzida, joelhoDaCor,
   joelhoDoBranco, joelhoSuave, pontoDaOrigem, razaoNoJoelho, reduzMascara, tomDeGrandeEscala, vazioDoMosaico,
 } from './cor-inventada.mjs';
 import { giraColunasDeImagem } from './lib-texturas.mjs';
@@ -349,5 +351,16 @@ describe('o tom preso no patamar', () => {
     expect(Math.max(...noPatamar) - Math.min(...noPatamar)).toBeLessThan(2);
     for (const v of noPatamar) expect(Math.abs(v - 100)).toBeLessThan(2);
     expect(100 - naRampa[0]).toBeGreaterThan(5);
+  });
+});
+
+describe('a amplitude do albedo', () => {
+  it('escala só o resíduo de albedo dos retalhos, não a sombra nem o fotografado', () => {
+    // resíduo 30 − 10 = 20 DN, sombra 8 DN, a fração da sombra no alvo 0,57
+    const inteiro = detalheNoAlvo(30, 10, 8, 1, 0.57, 1);
+    expect(inteiro).toBe(30 - 1 * 10 + 8 * (1 - 1 * (1 - 0.57)));
+    expect(inteiro - detalheNoAlvo(30, 10, 8, 1, 0.57, 0.5)).toBeCloseTo(10, 12);
+    expect(detalheNoAlvo(10, 10, 8, 1, 0.57, 0.5)).toBe(detalheNoAlvo(10, 10, 8, 1, 0.57, 1));
+    expect(detalheNoAlvo(30, 10, 8, 0, 0.57, 0.5)).toBe(38);
   });
 });
