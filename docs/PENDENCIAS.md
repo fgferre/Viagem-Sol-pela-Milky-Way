@@ -12,15 +12,13 @@ FECHADAS e no `main` (merge em avanço simples em 03/10, com a palavra dele:
 *"pode seguir com as fotos finais e o merge"*); backup em `origin/backup`.
 Tudo assado, verificado (`npm run data:verify` e `npm run done` verdes) e
 fotografado no app de verdade nas 11 vistas das pranchas
-(`capturas/relevo-e-cor-final-app-prancha.jpg`). NÃO publicado: o push da
-`main` é dele.
+(`capturas/relevo-e-cor-final-app-prancha.jpg`). PUBLICADO por ele em
+03/10 (push da `main`, deploy verde) e CONFERIDO NO AR: os dois mapas de
+cor, os dois de relevo e o manifesto têm no site o mesmo sha256 dos locais.
 
-**Falta (dele):** publicar (`git push origin main`). Depois, a sessão
-seguinte confere no ar por sha256 dos mapas
-(`public/textures/atlas/{pluto,charon}/{normal,map}.*`) e abre o site em
-Plutão e Caronte, nas vistas das pranchas, no computador e no celular — os
-mapas de cor ficaram mais pesados (Caronte map.jpg 3,0 → 7 MB; Plutão 4,05
-→ 4,9 MB; os webp também).
+**Falta:** abrir o site em Plutão e Caronte, nas vistas das pranchas, no
+computador e no celular — os mapas de cor ficaram mais pesados (Caronte
+map.jpg 3,0 → 7 MB; Plutão 4,05 → 4,9 MB; os webp também).
 
 **Fechado:** item 144 (a parte de Plutão e Caronte: relevo real na metade
 medida, inventado no resto) e item 229 (sul e lado de trás; o que sobrou
