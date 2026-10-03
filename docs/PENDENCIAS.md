@@ -22,27 +22,20 @@ em `girarMapa`) tem o portão por hash fixado com a palavra dele (chave
 confissão pt/en (`ASSETS.md`, `texturas-em-ingles.mjs`), commit a41896a.
 Plano e andamento: `PLAN-COR.md`.
 
-**RODANDO no painel de terminal dele quando o bastão foi passado** (a
-pedido dele: *"rode tudo por favor, nao quero ter que ficar fazendo essas
-tarefas mecanicas"*), aba "assar cor": `baixa-texturas.mjs pluto` →
-`charon` → `otimiza-texturas.mjs pluto charon` → `gera-manifest-texturas.mjs`
-→ `npm run data:verify` → `echo RODADA-COR-OK`. Plutão já tinha passado o
-portão e sido gravado; Caronte estava na síntese (~5,5 min por corpo, ~3 GB).
-Fim esperado: `RODADA-COR-OK` na aba e a verificação verde. Se a aba mostrar
-"recusa" ou erro, o mapa NÃO foi gravado: a mensagem imprime o hash que saiu
-e o aprovado.
+**ASSADO (03/10, madrugada), no painel de terminal dele** (a pedido dele:
+*"rode tudo por favor, nao quero ter que ficar fazendo essas tarefas
+mecanicas"*): `baixa-texturas.mjs pluto` → `charon` →
+`otimiza-texturas.mjs pluto charon` → `gera-manifest-texturas.mjs` →
+`npm run data:verify` → `RODADA-COR-OK`. Os dois passaram o portão; o
+map.jpg gravado é byte a byte o candidato fotografado (sha256 iguais);
+as variantes de tamanho batem com a escada da prévia (duas webp de
+Caronte, 2048 e 1024, descartadas pela guarda por não ficarem menores que
+o jpg — esperado; o manifesto tem 289 variantes); confissão nas duas
+línguas no manifesto; verificação verde. Tudo COMMITADO no ramo
+`cor-inventada` (mapas, manifesto, bastão) e no backup.
 
-**Como conferir (a sessão seguinte, antes de qualquer foto):**
-1. `git status`: só `public/textures/atlas/{pluto,charon}/map*` e
-   `public/data/atlas/texturas.json` modificados.
-2. O map.jpg assado é byte a byte o candidato fotografado: sha256 de
-   `public/textures/atlas/<corpo>/map.jpg` = o de
-   `capturas/cor-inventada/ferramentas/m2/candidato-<corpo>/map.jpg`.
-3. As variantes menores contra a escada da prévia: sha256 de
-   `public/textures/atlas/<corpo>/map_{4096,2048,1024}.{jpg,webp}` contra
-   `capturas/cor-inventada/ferramentas/m2/escada-<corpo>/` (a escada replica
-   o otimizador; se algum diferir, comparar pixel a pixel).
-4. `npm run data:verify` verde (roda no fim da cadeia).
+**Como retomar (a sessão seguinte):**
+1. Conferências feitas (acima); `git status` limpo no ramo `cor-inventada`.
 5. Fotos do app de verdade nas 11 vistas das pranchas:
    `capturas/cor-inventada/ferramentas/sessao-02-10/fotos-final-cor.sh`
    (precisa de um dev server; `APP_URL`), prancha com
