@@ -27,10 +27,29 @@ ferramentas, candidatos, pranchas e medidas das duas rodadas seguem em
 `capturas/relevo-inventado/` e `capturas/cor-inventada/` (fora do git);
 mosaicos crus em `.cache/cor/`, alturas em `.cache/relevo/`.
 
-**A obra seguinte (proposta):** a correção fotométrica da sombra assada no
-lado FOTOGRAFADO (a sombra das fotos da sonda dobra com o relevo na luz do
-app; `BACKLOG.md`) e a mesma receita de relevo + cor inventados para Tritão
-(DEM em ~40 %, item 144).
+**A fila, nas palavras dele (03/10, manhã):** *"vamos tirar a sombra e
+tritao tb vamos fazer a receita"*; e *"Depois eu verifico tudo no celular e
+etc."* (a conferência no celular é dele, depois).
+1. **A sombra dobrada de Plutão e Caronte:** tirar a sombra assada das fotos
+   da sonda do lado FOTOGRAFADO — cor do chão = radiância ÷ iluminação
+   modelada com o relevo MEDIDO (o DEM, cache em `.cache/relevo/`) sob o Sol
+   assado já medido (Caronte az ~330°, el ~45°, r 0,34; Plutão az ~320°, el
+   ~30°, r 0,40; `capturas/cor-inventada/ferramentas/sessao-02-10/sol-assado*.mjs`);
+   só a parte que o relevo explica sai; onde não há DEM nada muda. Rodada
+   curta: medir, prévia por foto para ele (antes/depois sob a luz do app),
+   passo novo na cadeia da cor com portão por hash (o molde é
+   `inventaCorDoMapa` em `baixa-texturas.mjs`), confissão, assar no
+   terminal dele, conferir, fotos, done, merge com a palavra dele.
+2. **Tritão com a receita inteira** (item 144): relevo inventado na metade
+   sem DEM (Schenk/LPI, ~40 % — conferir cobertura e licença) e cor
+   inventada no resto, com os dois módulos prontos
+   (`relevo-inventado.mjs`, `cor-inventada.mjs`). Diferenças a planejar
+   ANTES de codar, num plano próprio (`PLAN-TRITAO.md`): não há mapa
+   geológico do lado nunca visto (unidades por palpite a partir do lado
+   visto — cantaloupe, planícies, calota —, confessado) e não há foto
+   borrada para guiar (só a etapa do sul, M1, não a M2); o mapa de cor atual
+   de Tritão tem ~60 % tapado com tom médio (item 147). Rodada longa, umas
+   duas sessões, com as palavras dele por prancha em cada marco.
 ## O BASTÃO anterior (01/10, noite)
 
 **Estado:** tudo no `main`, PUBLICADO por ele em 01/10 à noite (`d323619`,
