@@ -409,6 +409,11 @@ conhecidos: emenda com a metade fotografada, polos (a IA estica), tamanho
   (medido: NNO, ~45° de elevação), pedaços da cor real do mesmo terreno,
   tom de grande escala continuado da borda fotografada; a pintura por IA
   fica de reserva, se a textura não convencer por foto.
+- **02/10, noite, por prancha:** o sul de Caronte — *"Sim, aprovado"*; o sul
+  de Plutão, entre três opções de gosto (leopardo, calma, serena) — *"C —
+  serena"* (fundo uniforme, crateras pela sombra do relevo, mosqueado de
+  albedo pela metade), que vale também como o grau de mosqueado do lado de
+  trás borrado na etapa seguinte.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
