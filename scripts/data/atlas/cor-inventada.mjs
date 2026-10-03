@@ -109,6 +109,26 @@
 // buracos que entram no alvo. Uma VARIANTE (`opcoes.variante`) põe os números dela (`POR_CORPO.<corpo>.variantes`)
 // por cima desses — escolha de gosto dele, comparada por foto; sem ela, o resultado é o de sempre.
 //
+// A M2 — O LADO DE TRÁS BORRADO (`opcoes.borrado`, chave `sul:1,borrado:1`; 02/10/2026). O detalhe fino
+// do `borrado` é refeito sobre o albedo real, e a verdade fica:
+//  - O MAPA DE RESOLUÇÃO (`mapaDeResolucao`): para as bandas de 2, 4, 8, 16 e 32 km (diferença de
+//    gaussianas), a energia local (relativa ao brilho local nos dois corpos: o lado de trás de Caronte vai
+//    de 1 a 150 DN) contra a mediana do `bom`; a resolução σ_loc é a menor banda com metade da energia do
+//    nítido. O CONTRASTE LOCAL entra na régua: o limiar vai vezes a razão da banda mais forte, quando ela é
+//    menor que 1 — medido em 02/10, o norte de Plutão tem as cinco bandas a 0,13–0,20 do nítido com a forma
+//    do espectro dele: é terreno de pouco contraste, resolvido, e a régua sem isso o daria todo por inventar;
+//    o lado de trás de verdade cai (Plutão 0,03/0,08/0,23/0,56/1,11; Caronte 0,03/0,12/0,40/0,84/1,42). O
+//    detalhe inventado sai com a amplitude desse contraste e do brilho local (o sombreado e o albedo
+//    multiplicam).
+//  - A SÍNTESE: a mesma transferência (as passadas, as fontes `bom` da unidade sorteada e de tom parecido —
+//    o tom do alvo é o passa-baixa da própria foto —, a sombra do relevo do alvo, a amplitude da variante),
+//    com o sul já posto como vizinho fixo; o guia soma ao sombreado o passa-baixa da foto (E&F §3: a
+//    correspondência com a imagem alvo), para o detalhe inventado respeitar as manchas reais.
+//  - A MONTAGEM (`montagemDaFoto`): resultado = passa-baixa(foto) + passa-alta(síntese) no nível da
+//    resolução, a troca suave entre as gaussianas vizinhas; onde σ_loc = 2 km sai a foto.
+//  - A LIGAÇÃO COM O SUL: o desfoque junto do lado de trás sai (o vizinho fica nítido) e, na zona livre, a
+//    foto que passava ao inventado é a foto montada (a zona livre entra no alvo da M2).
+//
 // DETERMINÍSTICO por semente. A prévia e o gerador chamam a MESMA função,
 // `inventaCorDoCorpo`; ela não lê nem grava disco.
 // ============================================================
@@ -342,6 +362,19 @@ const SIGMA_DO_DEGRAU_KM = 10;
  */
 const RAMPA_DO_DESFOQUE_KM = 150;
 const TRANSICAO_DA_CLASSE_KM = 20;
+
+/**
+ * A M2 (ver o cabeçalho): as bandas da régua de resolução (a de σ = gaussiana de σ/2 − gaussiana de σ; a 1ª, a foto
+ * − a de 2 km), a média local da energia delas, o limiar (metade da ENERGIA do nítido: o RMS a √½ dele) e a
+ * suavização do nível e do contraste; abaixo de `NIVEL_MINIMO_DA_SINTESE` (σ_loc < 2,03 km) a síntese não entra; a
+ * zona livre das passadas da M2 (ver `inventaCorDoCorpo`).
+ */
+const BANDAS_DA_RESOLUCAO_KM = [2, 4, 8, 16, 32];
+const SIGMA_DA_ENERGIA_DA_BANDA_KM = 25;
+const LIMIAR_DA_RESOLUCAO = Math.SQRT1_2;
+const SIGMA_DA_RESOLUCAO_KM = 20;
+const NIVEL_MINIMO_DA_SINTESE = 0.02;
+const ZONA_LIVRE_DA_M2_KM = 90;
 
 const PESO_MINIMO = 1e-9;
 
@@ -1561,6 +1594,153 @@ export function joelhoDaCor(rgb) {
 }
 
 // ------------------------------------------------------------
+// A M2: A RESOLUÇÃO LOCAL E A MONTAGEM
+// ------------------------------------------------------------
+
+/**
+ * O MAPA DE RESOLUÇÃO LOCAL da foto `valor` (L×A, mascarada por `dado`): para cada banda de
+ * `BANDAS_DA_RESOLUCAO_KM`, a energia em média local de σ `SIGMA_DA_ENERGIA_DA_BANDA_KM` na `grade` reduzida (com
+ * `relativa`, ÷ o brilho local ao quadrado: o contraste) e a razão do RMS dela à mediana nas células com mais de
+ * metade de `nitido`. O CONTRASTE LOCAL é a razão da banda mais forte, até 1, e o limiar `LIMIAR_DA_RESOLUCAO` vai
+ * vezes ele: pouco contraste com a forma do espectro do nítido não é borrado (a banda mais forte, e não só a de 32
+ * km: a média de 25 km tem poucos ciclos de 16–32 km, e a razão dela sozinha oscila de 0,47 a 1,36 no nítido de um
+ * campo sintético). σ_loc é a menor banda cuja razão chega ao limiar, interpolada em log entre ela e a anterior, e o
+ * NÍVEL ℓ = log2(σ_loc) − 1 (0 = 2 km, a foto inteira; 5 = nenhuma banda chega); nível e contraste são suavizados
+ * por `SIGMA_DA_RESOLUCAO_KM`. Devolve `{ nivel (0 onde não há dado ao alcance), contraste (1 idem) — Float32 na
+ * grade —, rmsDoNitido (por banda) }`.
+ */
+export function mapaDeResolucao({ valor, dado, nitido, largura: L, altura: A, raioM, grade, relativa = false }) {
+  const n = L * A;
+  const { largura: l, altura: a } = grade;
+  const nc = l * a;
+  const energias = [];
+  let anterior = valor;
+  for (const s of BANDAS_DA_RESOLUCAO_KM) {
+    const g = desfocaComMascara(valor, dado, L, A, raioM, s).valor;
+    const quadrado = new Float32Array(n);
+    for (let k = 0; k < n; k += 1) {
+      if (!dado[k]) continue;
+      const b = anterior[k] - g[k];
+      quadrado[k] = b * b;
+    }
+    anterior = g;
+    const r = reduzEmBlocos(quadrado, dado, L, A, grade);
+    energias.push(desfocaComMascara(r.valor, r.fracao, l, a, raioM, SIGMA_DA_ENERGIA_DA_BANDA_KM).valor);
+  }
+  if (relativa) {
+    const r = reduzEmBlocos(valor, dado, L, A, grade);
+    const brilho = desfocaComMascara(r.valor, r.fracao, l, a, raioM, SIGMA_DA_ENERGIA_DA_BANDA_KM).valor;
+    for (const e of energias) for (let c = 0; c < nc; c += 1) e[c] /= Math.max(1, brilho[c]) ** 2;
+  }
+  const fracaoNitida = reduzEmBlocos(nitido, null, L, A, grade).valor;
+  const referencia = energias.map((e) => {
+    const v = [];
+    for (let c = 0; c < nc; c += 1) if (fracaoNitida[c] > 0.5 && Number.isFinite(e[c])) v.push(e[c]);
+    v.sort((x, y) => x - y);
+    return v[v.length >> 1];
+  });
+  const nb = BANDAS_DA_RESOLUCAO_KM.length;
+  const bruto = new Float32Array(nc);
+  const contrasteBruto = new Float32Array(nc);
+  const temDado = new Uint8Array(nc);
+  const razao = new Float64Array(nb);
+  for (let c = 0; c < nc; c += 1) {
+    if (!Number.isFinite(energias[nb - 1][c])) continue;
+    temDado[c] = 1;
+    for (let b = 0; b < nb; b += 1) razao[b] = Math.sqrt(Math.max(0, energias[b][c]) / referencia[b]);
+    const contraste = Math.min(1, Math.max(...razao));
+    contrasteBruto[c] = contraste;
+    let nivel = nb;
+    for (let b = 0; b < nb; b += 1) {
+      if (razao[b] < LIMIAR_DA_RESOLUCAO * contraste) continue;
+      nivel = b ? b - 1 + Math.min(1, Math.max(0, (LIMIAR_DA_RESOLUCAO * contraste - razao[b - 1]) / (razao[b] - razao[b - 1]))) : 0;
+      break;
+    }
+    bruto[c] = nivel;
+  }
+  const nivel = desfocaComMascara(bruto, temDado, l, a, raioM, SIGMA_DA_RESOLUCAO_KM).valor;
+  const contraste = desfocaComMascara(contrasteBruto, temDado, l, a, raioM, SIGMA_DA_RESOLUCAO_KM).valor;
+  for (let c = 0; c < nc; c += 1) {
+    if (!Number.isFinite(nivel[c])) nivel[c] = 0;
+    if (!Number.isFinite(contraste[c])) contraste[c] = 1;
+  }
+  return { nivel, contraste, largura: l, altura: a, rmsDoNitido: referencia.map((e) => Math.sqrt(e)) };
+}
+
+/**
+ * O PESO DO NÍVEL DE CORTE `q` (0 = a identidade; q ≥ 1 = a gaussiana de `BANDAS_DA_RESOLUCAO_KM[q − 1]`) no nível
+ * contínuo ℓ: a interpolação linear entre os dois níveis vizinhos — contínua em ℓ, soma 1.
+ */
+export function pesoDoNivel(nivel, q) {
+  const l = Math.min(BANDAS_DA_RESOLUCAO_KM.length, Math.max(0, nivel));
+  const q0 = Math.floor(l);
+  const t = l - q0;
+  if (q === q0) return 1 - t;
+  if (q === q0 + 1) return t;
+  return 0;
+}
+
+/**
+ * A MONTAGEM DA M2: resultado = passa-baixa_ℓ(foto) + passa-alta_ℓ(síntese) = síntese + passa-baixa_ℓ(foto −
+ * síntese), com o passa-baixa do nível ℓ de cada texel (`nivel`, L×A) = a soma das gaussianas pelos pesos de
+ * `pesoDoNivel` — onde ℓ = 0 sai a foto. As gaussianas são mascaradas por `peso` (onde há foto; a síntese só no
+ * `alvo`, 0 fora dele). Devolve Float32 com o resultado nos texels do `alvo` (0 no resto).
+ */
+export function montagemDaFoto({ foto, sintese, nivel, alvo, peso, largura: L, altura: A, raioM }) {
+  const n = L * A;
+  const diferenca = new Float32Array(n);
+  const saida = new Float32Array(n);
+  const usados = new Uint8Array(BANDAS_DA_RESOLUCAO_KM.length + 1);
+  for (let k = 0; k < n; k += 1) {
+    if (alvo[k]) {
+      diferenca[k] = foto[k] - sintese[k];
+      saida[k] = sintese[k];
+      const l = Math.min(BANDAS_DA_RESOLUCAO_KM.length, Math.max(0, nivel[k]));
+      const q0 = Math.floor(l);
+      usados[q0] = 1;
+      if (l > q0) usados[q0 + 1] = 1;
+    } else if (peso[k]) diferenca[k] = foto[k];
+  }
+  for (let q = 0; q < usados.length; q += 1) {
+    if (!usados[q]) continue;
+    const g = q ? desfocaComMascara(diferenca, peso, L, A, raioM, BANDAS_DA_RESOLUCAO_KM[q - 1]).valor : diferenca;
+    for (let k = 0; k < n; k += 1) {
+      if (!alvo[k]) continue;
+      const w = pesoDoNivel(nivel[k], q);
+      if (w) saida[k] += w * g[k];
+    }
+  }
+  return saida;
+}
+
+/**
+ * O JOELHO NA M2 (`rgb`, reescrito no lugar): o joelho relativo (`razaoNoJoelho`) na razão da luminância do resultado
+ * à da FOTO (`base`, os três canais) — a montagem guarda o passa-baixa dela, e só o inventado passa do joelho —, e o
+ * joelho do branco. Devolve 1 se o relativo mexeu.
+ */
+function joelhoNaM2(rgb, base, relativo) {
+  const yb = Math.max(1, LUMINANCIA[0] * base[0] + LUMINANCIA[1] * base[1] + LUMINANCIA[2] * base[2]);
+  let razao = (LUMINANCIA[0] * rgb[0] + LUMINANCIA[1] * rgb[1] + LUMINANCIA[2] * rgb[2]) / yb;
+  if (relativo.escuros && razao < relativo.escuros.inicio) {
+    for (let q = 0; q < 3; q += 1) rgb[q] = Math.max(0, rgb[q]);
+    razao = (LUMINANCIA[0] * rgb[0] + LUMINANCIA[1] * rgb[1] + LUMINANCIA[2] * rgb[2]) / yb;
+  }
+  const nova = razaoNoJoelho(razao, relativo);
+  let mexeu = 0;
+  if (nova !== razao && razao > relativo.inicio) {
+    for (let q = 0; q < 3; q += 1) rgb[q] *= nova / razao;
+    mexeu = 1;
+  } else if (nova !== razao) {
+    const fator = Math.min(GANHO_DO_DETALHE[1], nova / Math.max(razao, PESO_MINIMO));
+    const falta = nova - fator * razao;
+    for (let q = 0; q < 3; q += 1) rgb[q] = fator * rgb[q] + falta * base[q];
+    mexeu = 1;
+  }
+  joelhoDaCor(rgb);
+  return mexeu;
+}
+
+// ------------------------------------------------------------
 // A PORTA DE ENTRADA
 // ------------------------------------------------------------
 
@@ -1575,7 +1755,8 @@ export function joelhoDaCor(rgb) {
  * do corpo; `semente` fixa. `opcoes.registra` recebe o andamento; `opcoes.variante`
  * escolhe um conjunto de `POR_CORPO.<id>.variantes` (sem ela, os números do corpo). Devolve
  * `{ cor, mascaras, chave: 'sul:1', relatorio }` — `cor` no formato da
- * entrada, igual a ela byte a byte fora do alvo.
+ * entrada, igual a ela byte a byte fora do alvo. Com `opcoes.borrado` (a M2), também o lado de trás borrado:
+ * a chave é `sul:1,borrado:1`, `mascaras.alvoDaM2` é o alvo dela e `resolucao` o mapa de resolução (`mapaDeResolucao`).
  */
 export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, mascaras: dadas, cru, normais, fonte, semente, opcoes = {} }) {
   const registra = opcoes.registra ?? (() => {});
@@ -1759,7 +1940,8 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
   const ateDesfocado = distanciaAoVazioKm(ouEmBlocos(foraDesfocado, L, A, gm), l2, a2, raioM);
   const ateNitido = distanciaAoVazioKm(ouEmBlocos(foraNitido, L, A, gm), l2, a2, raioM);
   const alvo2 = ouEmBlocos(m.alvo, L, A, gm);
-  const desfoqueKm = corpo.desfoqueDoBorradoKm;
+  // com a M2 o vizinho do lado de trás fica nítido: sem o desfoque de ligação
+  const desfoqueKm = opcoes.borrado ? 0 : corpo.desfoqueDoBorradoKm;
   const niveisKm = [0, desfoqueKm / 4, desfoqueKm / 2, desfoqueKm];
   const desfoque = new Float32Array(l2 * a2);
   const mistura = new Float32Array(l2 * a2).fill(1);
@@ -1780,6 +1962,132 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
   const fora2 = new Uint8Array(l2 * a2).fill(1);
   for (let k = 0; k < n; k += 1) if (m.alvo[k]) fora2[naMeia(k)] = 0;
   registra(`desfoque junto do borrado: ${((100 * comDesfoque) / noAlvo).toFixed(1)} % do alvo (${tempo()})`);
+
+  // A M2 — O LADO DE TRÁS BORRADO (`opcoes.borrado`; ver o cabeçalho): a resolução local da foto, o alvo, o guia e a
+  // transferência de novo, com o sul já posto como vizinho fixo (a colcha dele fica nas `camadas`; a da M2 em outras)
+  let m2 = null;
+  if (opcoes.borrado) {
+    const dadoDaFoto = new Uint8Array(n);
+    for (let k = 0; k < n; k += 1) dadoDaFoto[k] = m.vazio[k] || m.semDado[k] ? 0 : 1;
+    const reso = mapaDeResolucao({ valor, dado: dadoDaFoto, nitido: m.bom, largura: L, altura: A, raioM, grade: gm, relativa: true });
+    const nivel = sobeBilinear(reso.nivel, l2, a2, L, A);
+    registra(`M2: mapa de resolução pronto, contraste do nítido por banda ${JSON.stringify(reso.rmsDoNitido.map((v) => +v.toFixed(4)))} (${tempo()})`);
+    // o alvo: o borrado fora do sul e do gelo liso (a região das passadas), e a zona livre do sul junto do lado de trás
+    // (lá a foto passava ao inventado; agora passa a foto montada, com o detalhe do próprio sul) — a região inteira,
+    // também o que a resolução não pede (onde σ_loc = 2 km a montagem devolve a foto): ilhas fixas no meio do alvo
+    // deixam raio sem corte possível (a 1ª prévia, com o alvo só onde σ_loc > 2 km, ficou com 1986 cortes sem curva e
+    // 2748 retalhos de preenchimento na 1ª passada). Os texels "sem dado" do borrado entram como foto: no lado de trás
+    // de Caronte eles são o miolo de manchas escuras de verdade (a 180°E, 15°N, o brilho desce liso de 24 a 1 DN e
+    // volta — fora do alvo, ficavam um borrão escuro liso no meio do detalhe, na 2ª prévia), e um buraco preto de
+    // verdade segue preto (o detalhe escala com o brilho local)
+    const alvoDaM2 = new Uint8Array(n);
+    const regiao = new Uint8Array(n);
+    const pesoDaMontagem = new Uint8Array(n);
+    for (let k = 0; k < n; k += 1) {
+      if (m.alvo[k]) {
+        if (!m.buraco[k] && !m.vazio[k] && mistura[naMeia(k)] < 1) alvoDaM2[k] = pesoDaMontagem[k] = 1;
+        continue;
+      }
+      if (dadoDaFoto[k]) pesoDaMontagem[k] = 1;
+      if (m.borrado[k] && !liso[k]) alvoDaM2[k] = regiao[k] = pesoDaMontagem[k] = 1;
+    }
+    // O GUIA: o sombreado do relevo e o passa-baixa do detalhe da FOTO (brilho − tom; ÷ tom no multiplicativo) — no
+    // alvo, a foto borrada no σ do lado de trás (`desfoqueDoBorradoKm`); nas fontes, a nítida no σ equivalente (√2 vezes,
+    // a foto do alvo já vem desfocada dele) —, cada parte ÷ o desvio dela no `bom`
+    const sigmaDoGuiaKm = corpo.desfoqueDoBorradoKm;
+    const guia2 = new Float32Array(n);
+    const desvios = {};
+    {
+      const daFoto = new Float32Array(n);
+      for (let k = 0; k < n; k += 1) if (dadoDaFoto[k]) daFoto[k] = multiplicativo ? (valor[k] - tom[k]) / Math.max(1, tom[k]) : valor[k] - tom[k];
+      const noAlvoDaM2 = desfocaComMascara(daFoto, dadoDaFoto, L, A, raioM, sigmaDoGuiaKm).valor;
+      const naFonte = desfocaComMascara(daFoto, dadoDaFoto, L, A, raioM, Math.SQRT2 * sigmaDoGuiaKm).valor;
+      const s = [0, 0, 0, 0, 0];
+      for (let k = 0; k < n; k += 7) {
+        if (!m.bom[k] || !Number.isFinite(naFonte[k])) continue;
+        s[0] += 1;
+        s[1] += guia[k];
+        s[2] += guia[k] * guia[k];
+        s[3] += naFonte[k];
+        s[4] += naFonte[k] * naFonte[k];
+      }
+      desvios.relevo = Math.sqrt(Math.max(PESO_MINIMO, s[2] / s[0] - (s[1] / s[0]) ** 2));
+      desvios.foto = Math.sqrt(Math.max(PESO_MINIMO, s[4] / s[0] - (s[3] / s[0]) ** 2));
+      for (let k = 0; k < n; k += 1) {
+        const f = alvoDaM2[k] ? noAlvoDaM2[k] : naFonte[k];
+        guia2[k] = guia[k] / desvios.relevo + (dadoDaFoto[k] && Number.isFinite(f) ? f / desvios.foto : 0);
+        dg[2 * k + 1] = guia2[k];
+      }
+    }
+    let texelsDoAlvo = 0;
+    let comSintese = 0;
+    for (let k = 0; k < n; k += 1) {
+      texelsDoAlvo += alvoDaM2[k];
+      if (alvoDaM2[k] && nivel[k] > NIVEL_MINIMO_DA_SINTESE) comSintese += 1;
+    }
+    registra(`M2: alvo ${((100 * texelsDoAlvo) / n).toFixed(2)} % dos texels, com síntese (σ_loc > 2 km) em ${((100 * comSintese) / n).toFixed(2)} %; guia pronto (${tempo()})`);
+    // as passadas: fora da região, o sul fica fixo com a colcha dele (os retalhos da M2 casam com ela na divisa), e a
+    // foto, com o detalhe dela, é uma ZONA LIVRE até `ZONA_LIVRE_DA_M2_KM` da região — coberta, mas não fixa: o corte
+    // passa por ela (a M2 não escreve lá, e a colcha dela é outra). Sem isso, a divisa recortada do bom deixava raio que
+    // sai da região e volta a ela, sem curva possível (a 2ª prévia: 407 cortes sem curva e 477 retalhos de
+    // preenchimento na 1ª passada; com 25 km, 97 e 171; com 90 km, nenhum)
+    const ateARegiao = distanciaAoVazioKm(ouEmBlocos(regiao, L, A, gm), l2, a2, raioM);
+    const fixo2 = new Uint8Array(n);
+    const livre2 = new Uint8Array(n);
+    for (let k = 0; k < n; k += 1) {
+      if (regiao[k]) continue;
+      if (!m.alvo[k] && ateARegiao[naMeia(k)] < ZONA_LIVRE_DA_M2_KM) livre2[k] = 1;
+      else fixo2[k] = 1;
+    }
+    const coberto2 = new Uint8Array(n);
+    const novo2 = new Float32Array(n);
+    const camadas2 = camadas.map((c) => ({ detalhe: c.detalhe, coef: c.coef, campo: new Float32Array(n) }));
+    let anterior2 = null;
+    const passadas2 = [];
+    for (const [q, p] of PASSADAS.entries()) {
+      for (let i = 0; i < camadas2.length; i += 1) {
+        const { campo, detalhe: d } = camadas2[i];
+        const doSul = camadas[i].campo;
+        for (let k = 0; k < n; k += 1) campo[k] = fixo2[k] || livre2[k] ? (m.alvo[k] ? doSul[k] : d[k]) : 0;
+      }
+      for (let k = 0; k < n; k += 1) coberto2[k] = fixo2[k] | livre2[k];
+      novo2.fill(0);
+      const ctx2 = { L, A, raioKm, texelKm, dg, camadas: camadas2, guia: guia2, fixo: fixo2, coberto: coberto2, novo: novo2, pesos, sorteia, registra, filtro, tomDoAlvo: tom };
+      passadas2.push(passadaDaTransferencia(ctx2, p, fontesPorPassada[q], anterior2));
+      anterior2 = Float32Array.from(camadas2[0].campo);
+      registra(`M2: passada ${q + 1} pronta (${tempo()})`);
+    }
+    // o resumo do nível no alvo: σ_loc mediano e a fração em cada oitava
+    const porOitava = new Array(BANDAS_DA_RESOLUCAO_KM.length + 1).fill(0);
+    const amostra = [];
+    for (let k = 0; k < n; k += 1) {
+      if (!alvoDaM2[k] || m.alvo[k]) continue;
+      porOitava[Math.min(BANDAS_DA_RESOLUCAO_KM.length, Math.floor(nivel[k]))] += 1;
+      if (k % 13 === 0) amostra.push(nivel[k]);
+    }
+    amostra.sort((x, y) => x - y);
+    const noBorrado = porOitava.reduce((x, y) => x + y, 0);
+    m2 = {
+      alvo: alvoDaM2,
+      pesoDaMontagem,
+      nivel,
+      nivelNaGrade: reso,
+      camadas: camadas2,
+      novo: novo2,
+      canais: null,
+      relatorio: {
+        alvoPorcento: +((100 * texelsDoAlvo) / n).toFixed(2),
+        comSintesePorcento: +((100 * comSintese) / n).toFixed(2),
+        bandasKm: BANDAS_DA_RESOLUCAO_KM,
+        limiar: LIMIAR_DA_RESOLUCAO,
+        contrasteDoNitidoPorBanda: reso.rmsDoNitido.map((v) => +v.toFixed(4)),
+        sigmaLocMedianoKm: +(2 ** (1 + (amostra[amostra.length >> 1] ?? 0))).toFixed(2),
+        porcentoDoBorradoPorSigmaLocKm: Object.fromEntries(['2-4', '4-8', '8-16', '16-32', '32-64', '64'].map((nome, q) => [nome, +((100 * porOitava[q]) / Math.max(1, noBorrado)).toFixed(1)])),
+        guia: { sigmaKm: sigmaDoGuiaKm, desvioDoRelevo: +desvios.relevo.toFixed(4), desvioDaFoto: +desvios.foto.toFixed(4) },
+        passadas: passadas2,
+      },
+    };
+  }
 
   // O GANHO DO DETALHE (multiplicativo): o tom da luminância no alvo ÷ o da fonte, que o retalho levou
   // (`ganhoDaLuminancia`); 1 no que ficou do fotografado
@@ -1808,6 +2116,30 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
   // e o resíduo de albedo dos retalhos vezes `amplitudeDoAlbedo` (`detalheNoAlvo`)
   const amplitudeDoAlbedo = corpo.amplitudeDoAlbedo ?? 1;
 
+  // A M2, o que vale para os canais: o ganho da luminância (multiplicativo) e a AMPLITUDE do detalhe inventado, que
+  // escala com o CONTRASTE LOCAL do mapa de resolução (o espectro do nítido na escala do da foto: o norte de Plutão,
+  // resolvido e de pouco contraste, não ganha o grão de Cthulhu) e com o BRILHO LOCAL (passa-baixa de σ
+  // `desfoqueDoBorradoKm` ÷ o tom, de 0 a `GANHO_DO_DETALHE[1]`) — o sombreado e o albedo multiplicam, e uma mancha
+  // escura menor que o tom não recebe o detalhe em DN do claro (na 2ª prévia de Caronte, o detalhe aditivo saturou
+  // 0,27 % do alvo no preto, contra 0,004 % no mapa de hoje). A montagem é canal a canal, abaixo.
+  let ganho2 = null;
+  let escalaLocal = null;
+  if (m2) {
+    const camadaDoTom2 = camadaDoTom ? m2.camadas[camadas.indexOf(camadaDoTom)] : null;
+    if (camadaDoTom2) {
+      ganho2 = new Float32Array(n).fill(1);
+      for (let k = 0; k < n; k += 1) if (m2.alvo[k] && m2.novo[k] > 0) ganho2[k] = ganhoDaLuminancia(tom[k], camadaDoTom2.campo[k]);
+    }
+    const brilhoLocal = desfocaComMascara(valor, m2.pesoDaMontagem, L, A, raioM, corpo.desfoqueDoBorradoKm).valor;
+    escalaLocal = new Float32Array(n);
+    for (let k = 0; k < n; k += 1) {
+      if (!m2.alvo[k]) continue;
+      const brilho = Math.min(GANHO_DO_DETALHE[1], Math.max(0, brilhoLocal[k] / Math.max(1, tom[k])));
+      escalaLocal[k] = brilho * m2.nivelNaGrade.contraste[naMeia(k)];
+    }
+    m2.canais = [];
+  }
+
   // canal a canal: o tom no lugar da escala grande da colcha, o desfoque, a mistura e a costura
   const saida = Uint8Array.from(cor);
   const degrausNaBorda = [];
@@ -1822,6 +2154,28 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
     const escalaGrande = sobeBilinear(passaBaixaDaColcha, r.largura, r.altura, L, A);
     const total = new Float32Array(n);
     for (let k = 0; k < n; k += 1) total[k] = detalheNoAlvo(colcha[k], escalaGrande[k], sombraDoCanal(c, k), novo[k], fatorDaSombra, amplitudeDoAlbedo);
+    // A MONTAGEM DA M2 deste canal (`montagemDaFoto`): a síntese é o detalhe da colcha da M2 (`detalheNoAlvo`, com o
+    // ganho no multiplicativo e a amplitude acima, sem a escala grande — a montagem tira tudo acima do corte) e, na
+    // zona livre do sul, o detalhe do próprio sul (`total`): a mistura com a foto montada só troca o passa-baixa, e o
+    // detalhe fino segue o mesmo (na 4ª prévia, com a colcha da M2 ali, a mistura de duas texturas baixava o RMS do
+    // passa-alta a 15 contra 17–20 em volta; e sem a escala grande do sul a foto montada saía ~2 DN mais escura na
+    // borda, e a costura levava o sul todo junto)
+    let montada = null;
+    if (m2) {
+      const campo2 = m2.camadas[camadas.indexOf(saem[c])].campo;
+      const sintese = new Float32Array(n);
+      for (let k = 0; k < n; k += 1) {
+        if (!m2.alvo[k]) continue;
+        sintese[k] = m.alvo[k] ? total[k] : escalaLocal[k] * detalheNoAlvo(ganho2 ? ganho2[k] * campo2[k] : campo2[k], 0, sombraDoCanal(c, k), m2.novo[k], fatorDaSombra, amplitudeDoAlbedo);
+      }
+      // sem a média local (o dobro da maior banda): o detalhe do sul e o da M2 não têm a mesma, e o passa-baixa da
+      // montagem, que junta os dois na divisa, punha a diferença na foto montada (na 7ª prévia, o sul de Caronte
+      // saiu 1,2 DN mais claro que o da M1, pela costura)
+      const media = desfocaComMascara(sintese, m2.alvo, L, A, raioM, 2 * BANDAS_DA_RESOLUCAO_KM[BANDAS_DA_RESOLUCAO_KM.length - 1]).valor;
+      for (let k = 0; k < n; k += 1) if (m2.alvo[k]) sintese[k] -= media[k];
+      montada = montagemDaFoto({ foto: canal[c], sintese, nivel: m2.nivel, alvo: m2.alvo, peso: m2.pesoDaMontagem, largura: L, altura: A, raioM });
+      m2.canais.push(montada);
+    }
     const niveis = niveisKm.map((s) => (s ? desfocaComMascara(total, um, L, A, raioM, s).valor : total));
     const resultado = Float32Array.from(canal[c]);
     for (let j = 0; j < A; j += 1) {
@@ -1842,7 +2196,8 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
         // na zona livre junto do desfocado, o fotografado de verdade passa ao inventado sem corte (no
         // buraco não há foto)
         const f = m.buraco[k] ? 1 : mistura[naMeiaGrade];
-        resultado[k] = f * (tons[c][k] + d) + (1 - f) * canal[c][k];
+        // (com a M2, a foto montada)
+        resultado[k] = f * (tons[c][k] + d) + (1 - f) * (montada && m2.alvo[k] ? montada[k] : canal[c][k]);
       }
     }
 
@@ -1891,6 +2246,15 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
       else saida[k * canais + c] = v;
     }
     if (multiplicativo) finais.push(resultado);
+    // a M2 fora do sul (a zona livre já entrou na mistura acima); no multiplicativo, depois dos joelhos
+    if (montada && !multiplicativo) {
+      for (let k = 0; k < n; k += 1) {
+        if (!m2.alvo[k] || m.alvo[k]) continue;
+        const v = Math.min(255, Math.max(0, Math.round(montada[k])));
+        if (cinza) for (let q = 0; q < canais; q += 1) saida[k * canais + q] = v;
+        else saida[k * canais + c] = v;
+      }
+    }
     registra(`canal ${cinza ? 'cinza' : 'RGB'[c]}: costura final, |foto − resultado| médio na borda do alvo ${degrausNaBorda[c].toFixed(2)} DN (${tempo()})`);
   }
 
@@ -1937,10 +2301,35 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
     }
     registra(`joelho do branco: ${JSON.stringify(joelho)} texels do alvo`);
   }
+  // a M2 fora do sul no multiplicativo: o joelho relativo à FOTO (`joelhoNaM2`; na zona livre valeu o do sul, acima)
+  if (m2 && multiplicativo) {
+    let noJoelho = 0;
+    const rgb = [0, 0, 0];
+    const base = [0, 0, 0];
+    for (let k = 0; k < n; k += 1) {
+      if (!m2.alvo[k] || m.alvo[k]) continue;
+      if (cinza) {
+        const v = Math.min(255, Math.max(0, Math.round(m2.nivel[k] > 0 ? joelhoDoBranco(m2.canais[0][k]) : m2.canais[0][k])));
+        for (let q = 0; q < canais; q += 1) saida[k * canais + q] = v;
+        continue;
+      }
+      for (let q = 0; q < 3; q += 1) {
+        rgb[q] = m2.canais[q][k];
+        base[q] = canal[q][k];
+      }
+      if (m2.nivel[k] > 0) {
+        if (corpo.joelhoRelativo) noJoelho += joelhoNaM2(rgb, base, corpo.joelhoRelativo);
+        else joelhoDaCor(rgb);
+      }
+      for (let q = 0; q < 3; q += 1) saida[k * canais + q] = Math.min(255, Math.max(0, Math.round(rgb[q])));
+    }
+    m2.relatorio.joelhoRelativoTexels = noJoelho;
+  }
+  if (m2) registra(`M2: montagem pronta${multiplicativo ? `, joelho relativo em ${m2.relatorio.joelhoRelativoTexels} texels` : ''} (${tempo()})`);
 
   let mudados = 0;
   for (let k = 0; k < n; k += 1) {
-    if (!m.alvo[k]) continue;
+    if (!m.alvo[k] && !m2?.alvo[k]) continue;
     for (let q = 0; q < canais; q += 1) {
       if (saida[k * canais + q] !== cor[k * canais + q]) {
         mudados += 1;
@@ -1949,10 +2338,12 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
     }
   }
   registra(`pronto: ${mudados} texels mudados, todos no alvo (${tempo()})`);
+  m.alvoDaM2 = m2?.alvo ?? null;
   return {
     cor: saida,
     mascaras: m,
-    chave: 'sul:1',
+    chave: m2 ? 'sul:1,borrado:1' : 'sul:1',
+    resolucao: m2 ? m2.nivelNaGrade : null,
     relatorio: {
       id,
       variante: opcoes.variante ?? null,
@@ -1981,6 +2372,7 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
       degrauNaBordaDoAlvoDN: degrausNaBorda,
       fontes: resumoDasFontes,
       passadas,
+      m2: m2?.relatorio ?? null,
       texelsMudados: mudados,
       tempoS: +((Date.now() - relogio) / 1000).toFixed(1),
     },

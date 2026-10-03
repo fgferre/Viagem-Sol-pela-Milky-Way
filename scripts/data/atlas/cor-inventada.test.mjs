@@ -27,14 +27,20 @@
 //     borda, a membrana presa além da rampa sai plana por anel; presa na rampa, não.
 // 10. A AMPLITUDE DO ALBEDO (a variante serena) escala só o resíduo de albedo dos
 //     retalhos: a sombra do relevo e o que ficou do fotografado não mudam.
+// 11. A M2: o mapa de resolução dá 2 km à metade nítida de um campo sintético e
+//     4–16 km à metade desfocada (σ 6 km), com contraste cheio e com 1/5 dele — pouco
+//     contraste não é borrado; a montagem devolve a foto onde σ_loc é mínima e, no
+//     corte, o passa-baixa da foto mais o passa-alta da síntese; a troca de σ é
+//     contínua (os pesos e o resultado, de um lado e do outro de cada oitava).
 // ============================================================
 import { describe, expect, it } from 'vitest';
 import {
   corteDeErroMinimo, dentroDoTom, detalheNoAlvo, dilataMascara, fontesDaCor, ganhoDaLuminancia, geometriaDoCorte, gradeReduzida, joelhoDaCor,
-  joelhoDoBranco, joelhoSuave, pontoDaOrigem, razaoNoJoelho, reduzMascara, tomDeGrandeEscala, vazioDoMosaico,
+  joelhoDoBranco, joelhoSuave, mapaDeResolucao, montagemDaFoto, pesoDoNivel, pontoDaOrigem, razaoNoJoelho, reduzMascara, tomDeGrandeEscala,
+  vazioDoMosaico,
 } from './cor-inventada.mjs';
 import { giraColunasDeImagem } from './lib-texturas.mjs';
-import { distanciaAoVazioKm, latitudeDaLinha, noPlano, planoTangente, pontoDoPlano } from './relevo-inventado.mjs';
+import { desfocaComMascara, distanciaAoVazioKm, latitudeDaLinha, noPlano, planoTangente, pontoDoPlano } from './relevo-inventado.mjs';
 
 const distancia = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
 const latLon = (p) => [Math.asin(p[2]) * (180 / Math.PI), ((Math.atan2(p[1], p[0]) * (180 / Math.PI)) + 360) % 360];
@@ -362,5 +368,108 @@ describe('a amplitude do albedo', () => {
     expect(inteiro - detalheNoAlvo(30, 10, 8, 1, 0.57, 0.5)).toBeCloseTo(10, 12);
     expect(detalheNoAlvo(10, 10, 8, 1, 0.57, 0.5)).toBe(detalheNoAlvo(10, 10, 8, 1, 0.57, 1));
     expect(detalheNoAlvo(30, 10, 8, 0, 0.57, 0.5)).toBe(38);
+  });
+});
+
+describe('a M2: a resolução local e a montagem', () => {
+  // a esfera de 512×256 com texel de 1 km (raio 81,5 km); ruído determinístico (mulberry32)
+  const L = 512;
+  const A = 256;
+  const n = L * A;
+  const raioM = (1000 * A) / Math.PI;
+  const ruido = (semente) => {
+    let a = semente >>> 0;
+    return Float32Array.from({ length: n }, () => {
+      a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296 - 0.5;
+    });
+  };
+  const um = new Uint8Array(n).fill(1);
+  const mediana = (v) => [...v].sort((x, y) => x - y)[v.length >> 1];
+
+  it('o mapa de resolução dá 2 km à metade nítida, 4–16 km à desfocada (σ 6 km), e pouco contraste não muda isso', () => {
+    // a esfera de 1024×512 com texel de 1 km; a textura com a mesma energia em cada oitava (o ruído e ele desfocado de 2
+    // a 16 km, cada um com RMS 1); a metade de oeste nítida, a de leste desfocada, e no meio de cada uma, uma faixa de
+    // 192 km com 1/5 do contraste
+    const Lg = 1024;
+    const Ag = 512;
+    const ng = Lg * Ag;
+    const raioG = (1000 * Ag) / Math.PI;
+    const umG = new Uint8Array(ng).fill(1);
+    const textura = new Float32Array(ng);
+    for (const [q, s] of [0, 2, 4, 8, 16].entries()) {
+      let a = (30 + q) >>> 0;
+      const r = Float32Array.from({ length: ng }, () => {
+        a = (a + 0x6d2b79f5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296 - 0.5;
+      });
+      const c = s ? desfocaComMascara(r, umG, Lg, Ag, raioG, s).valor : r;
+      const rms = Math.sqrt(c.reduce((x, v) => x + v * v, 0) / ng);
+      for (let k = 0; k < ng; k += 1) textura[k] += c[k] / rms;
+    }
+    const desfocada = desfocaComMascara(textura, umG, Lg, Ag, raioG, 6).valor;
+    const fraco = (i) => (i >= 160 && i < 352) || (i >= 672 && i < 864);
+    const valor = Float32Array.from(textura, (v, k) => {
+      const i = k % Lg;
+      return 100 + 10 * (fraco(i) ? 0.2 : 1) * (i < Lg / 2 ? v : desfocada[k]);
+    });
+    const nitido = Uint8Array.from({ length: ng }, (_, k) => (k % Lg < Lg / 2 && !fraco(k % Lg) ? 1 : 0));
+    const grade = gradeReduzida(Lg, Ag, 2);
+    const { nivel, largura: l } = mapaDeResolucao({ valor, dado: umG, nitido, largura: Lg, altura: Ag, raioM: raioG, grade });
+    // a mediana do nível em colunas a 60 km ou mais de qualquer divisa, entre ±34° de latitude
+    const naFaixa = (i0, i1) => {
+      const v = [];
+      for (let J = 80; J < 176; J += 1) for (let I = i0 / 2; I < i1 / 2; I += 1) v.push(nivel[J * l + I]);
+      return mediana(v);
+    };
+    expect(naFaixa(40, 100)).toBeLessThan(0.3); // nítida: σ_loc ≈ 2 km
+    expect(naFaixa(220, 292)).toBeLessThan(0.3); // nítida com 1/5 do contraste: segue nítida
+    for (const faixa of [[584, 640], [736, 800]]) {
+      // desfocada, com contraste cheio e com 1/5 dele: σ_loc da ordem do desfoque, entre 4 e 16 km
+      expect(naFaixa(...faixa)).toBeGreaterThan(1);
+      expect(naFaixa(...faixa)).toBeLessThan(3);
+    }
+  });
+
+  it('a montagem devolve a foto onde σ_loc é mínima, e a síntese abaixo do corte onde não é', () => {
+    const foto = Float32Array.from(ruido(11), (v) => 100 + 30 * v);
+    const sintese = Float32Array.from(ruido(12), (v) => 25 * v);
+    const nivel = Float32Array.from({ length: n }, (_, k) => (k % L < L / 2 ? 0 : 3));
+    const saida = montagemDaFoto({ foto, sintese, nivel, alvo: um, peso: um, largura: L, altura: A, raioM });
+    let maior = 0;
+    for (let k = 0; k < n; k += 1) if (k % L < L / 2) maior = Math.max(maior, Math.abs(saida[k] - foto[k]));
+    expect(maior).toBeLessThan(1e-4);
+    // no nível 3 (corte na gaussiana de 8 km): o passa-baixa da foto mais o passa-alta da síntese
+    const g8 = (x) => desfocaComMascara(x, um, L, A, raioM, 8).valor;
+    const pbFoto = g8(foto);
+    const pbSintese = g8(sintese);
+    let erro = 0;
+    for (let k = 0; k < n; k += 1) if (k % L >= L / 2) erro = Math.max(erro, Math.abs(saida[k] - (pbFoto[k] + sintese[k] - pbSintese[k])));
+    expect(erro).toBeLessThan(1e-3);
+  });
+
+  it('a troca de σ é contínua: os pesos e o resultado, de um lado e do outro de cada oitava', () => {
+    for (let l = 0; l <= 5; l += 0.001) {
+      let soma = 0;
+      for (let q = 0; q <= 5; q += 1) {
+        soma += pesoDoNivel(l, q);
+        expect(Math.abs(pesoDoNivel(l + 0.001, q) - pesoDoNivel(l, q))).toBeLessThan(0.0011);
+      }
+      expect(soma).toBeCloseTo(1, 12);
+    }
+    const foto = Float32Array.from(ruido(21), (v) => 100 + 30 * v);
+    const sintese = Float32Array.from(ruido(22), (v) => 25 * v);
+    const comNivel = (x) => montagemDaFoto({ foto, sintese, nivel: new Float32Array(n).fill(x), alvo: um, peso: um, largura: L, altura: A, raioM });
+    for (const q of [1, 2, 4]) {
+      const antes = comNivel(q - 1e-4);
+      const depois = comNivel(q + 1e-4);
+      let maior = 0;
+      for (let k = 0; k < n; k += 1) maior = Math.max(maior, Math.abs(antes[k] - depois[k]));
+      expect(maior).toBeLessThan(0.05);
+    }
   });
 });
