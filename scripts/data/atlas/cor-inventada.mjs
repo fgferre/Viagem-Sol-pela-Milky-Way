@@ -76,7 +76,8 @@
 //    LIVRE, onde o retalho pode ficar com a foto e o corte escolhe por onde
 //    passar — caírem no patamar do brilho.
 //  - `bom` = fotografado, sem buraco, nem borrado, nem faixa: a fonte, que
-//    não muda. Alvo = vazio ∪ faixa; fora dele o mapa sai byte a byte igual.
+//    não muda. Alvo = vazio ∪ faixa (em Plutão, também os buracos perto do
+//    vazio: `buracosNoAlvoKm`); fora dele o mapa sai byte a byte igual.
 //
 // AS FONTES de cada unidade geológica (`pesosDasUnidades` do JSON do relevo,
 // `fonte/<corpo>-lado-de-tras.json`) são as caixas `fontes` dela (Vulcan
@@ -84,11 +85,35 @@
 // Serenity e Mandjet para o cinturão), com o centro a meia largura da borda da
 // caixa e o retalho INTEIRO (meia diagonal) no `bom`.
 //
+// A M1b — PLUTÃO (02/10/2026). A mesma técnica; o que muda de um corpo para o
+// outro mora em `POR_CORPO` (os números de Caronte acima ficam lá), e três
+// generalizações que deixam Caronte igual (o RGB da prévia dele sai com o mesmo
+// sha256):
+//  - A COR EM TRÊS CANAIS. Cinza (Caronte: os três canais iguais) segue em um.
+//    Com canais diferentes, a escolha do retalho (sobreposição, guia e corte), a
+//    sombra assada e a régua do borrado medem-se na luminância (0,299 R + 0,587 G
+//    + 0,114 B); o tom (a membrana) é por canal; os retalhos copiam os três (e a
+//    luminância, que a escolha lê). A sombra assada é multiplicativa — o
+//    sombreado escala o albedo —: em cada canal ela vale o ganho medido na
+//    luminância vezes tom do canal ÷ tom da luminância.
+//  - O GIRO. O mosaico cru de Plutão tem a borda esquerda em 0°E e `girarMapa`
+//    gira 180° DEPOIS do tapa-buraco (que não dá a volta da longitude): as
+//    máscaras saem do cru como ele é e giram com `giraColunasDeImagem` (`cru.giroGraus`).
+//  - AS GRADES REDUZIDAS (a meia, a das fontes e a do tom) já não precisam
+//    dividir a cheia — 5926×2963 tem altura ímpar —: a largura é a fração
+//    arredondada para baixo a múltiplo de 64 (o desfoque pede largura par e a
+//    membrana desce níveis de 2), e cada texel vai à célula que contém o centro
+//    dele. Com a cheia divisível são os blocos de sempre.
+// E o que a medida pediu em Plutão, cada item num número de `POR_CORPO.pluto` — entre eles o detalhe
+// MULTIPLICATIVO (um ganho só, o da luminância, e o joelho do branco), a fração da sombra no alvo e os
+// buracos que entram no alvo. Uma VARIANTE (`opcoes.variante`) põe os números dela (`POR_CORPO.<corpo>.variantes`)
+// por cima desses — escolha de gosto dele, comparada por foto; sem ela, o resultado é o de sempre.
+//
 // DETERMINÍSTICO por semente. A prévia e o gerador chamam a MESMA função,
 // `inventaCorDoCorpo`; ela não lê nem grava disco.
 // ============================================================
 
-import { preencherVazioSemDado } from './lib-texturas.mjs';
+import { giraColunasDeImagem, preencherVazioSemDado } from './lib-texturas.mjs';
 import {
   amostraNoPonto,
   coeficientesDeSpline,
@@ -101,6 +126,7 @@ import {
   membranaHarmonica,
   pesosDasUnidades,
   planoTangente,
+  rasterizaPoligono,
   repeticaoMaisPerto,
 } from './relevo-inventado.mjs';
 
@@ -112,9 +138,6 @@ const INF = 1e30;
 const GRAUS_DA_JANELA_DO_VAZIO = 14;
 /** Abaixo disto em todo canal o texel do mosaico cru não tem dado (o padrão de `preencherVazioSemDado`). */
 const VAZIO_ATE = 12;
-/** Texels (no destino) que o vazio cresce: o halo do lanczos3 na redução, ±3 texels em 12693 → 8192, com folga. */
-const HALO_DO_VAZIO_TEXELS = 6;
-const HALO_DOS_BURACOS_TEXELS = 3;
 
 /** A régua do borrado (ver o cabeçalho): energia do passa-alta e coerência do tensor de estrutura dele (o riscado). */
 const SIGMA_DO_PASSA_ALTA_KM = 3;
@@ -123,13 +146,8 @@ const LIMIAR_DO_BORRADO = 0.5;
 const SIGMA_DA_COERENCIA_KM = 15;
 const LIMIAR_DA_COERENCIA = 0.7;
 const SIGMA_DO_BORRADO_KM = 20;
-const CAIXAS_NITIDAS = [
-  { lon: [330, 360], lat: [30, 57] },
-  { lon: [300, 358], lat: [-38, -3] },
-];
 
-/** A faixa rasante: largura (km) junto do vizinho nítido e do borrado; σ da fração de borrado do vizinho; a zona livre de fora. */
-const FAIXA_RASANTE_KM = { bom: 40, borrado: 75 };
+/** A faixa rasante: σ da fração de borrado do vizinho (as larguras são de `POR_CORPO`); a zona livre de fora. */
 const SIGMA_DA_CLASSE_DA_FAIXA_KM = 50;
 const ZONA_LIVRE_KM = 15;
 
@@ -140,6 +158,130 @@ const ZONA_LIVRE_KM = 15;
  * Plutão: az 320°, el 30°, r = 0,40).
  */
 export const SOL_ASSADO = { charon: [-0.354, 0.612, 0.707], pluto: [-0.557, 0.663, 0.5] };
+
+/** Os pesos da luminância (Rec. 601) em que a cor de três canais é medida e escolhida. */
+const LUMINANCIA = [0.299, 0.587, 0.114];
+/** O detalhe multiplicativo: os limites do ganho (tom do alvo ÷ tom da fonte) e onde começa o joelho do branco (DN). */
+const GANHO_DO_DETALHE = [0.5, 2];
+const INICIO_DO_JOELHO = 0.85 * 255;
+/** O filtro de tom: tentativas de sorteio (× `CANDIDATOS`) em cada fator antes de alargar. */
+const TENTATIVAS_DO_TOM = 16;
+
+/**
+ * O QUE MUDA DE UM CORPO PARA O OUTRO, cada número medido no mosaico dele:
+ * `caixasNitidas` (a referência da régua do borrado) e `reguaRelativa` (a
+ * energia dividida pelo brilho local ao quadrado — o contraste); `faixaRasanteKm`
+ * (a largura da faixa junto do vizinho nítido e do borrado); os halos (texels
+ * que o vazio e os buracos crescem no destino); `desfoqueDoBorradoKm` (o σ a
+ * que o lado nítido equivale ao de trás); `grades` (a meia, a das fontes e a do
+ * tom, em frações da cheia); `detalheMultiplicativo` (o detalhe dos retalhos
+ * escala com o brilho: um ganho só, o da luminância, tom do alvo ÷ tom da fonte,
+ * e o joelho do branco nos claros); `sombraNoAlvo` (a fração do ganho da sombra
+ * assada que o relevo do alvo recebe; sem ela, 1); `buracosNoAlvoKm` (os
+ * buracos sem dado a até essa distância do vazio entram no alvo) e `anelDosBuracosKm`
+ * (o fotografado em volta deles que entra como zona livre); `filtroDeTom` (só valem
+ * origens com o tom local, passa-baixa de `sigmaKm`, a um dos `fatores` do tom do
+ * alvo — alarga com menos de `minimo` candidatos); `fontesExtras` (caixas de fonte da
+ * cor além das do JSON, por unidade); `joelhoRelativo` (a razão brilho ÷ tom acima de
+ * `inicio` vai a `inicio + folga` por um joelho suave; com `escuros`, o espelho: abaixo de
+ * `escuros.inicio` vai a `escuros.inicio − escuros.folga` — `razaoNoJoelho`); `sigmaDoTomKm` (o corte
+ * tom/detalhe, se não o de `SIGMA_DO_TOM_KM`); `variantes` (conjuntos destes números que
+ * `opcoes.variante` põe por cima dos do corpo).
+ */
+const POR_CORPO = {
+  // Caronte: os números do cabeçalho. O halo é o do lanczos3 na redução (±3 texels em 12693 → 8192, com folga).
+  charon: {
+    raioM: 606000,
+    caixasNitidas: [
+      { lon: [330, 360], lat: [30, 57] },
+      { lon: [300, 358], lat: [-38, -3] },
+    ],
+    reguaRelativa: false,
+    faixaRasanteKm: { bom: 40, borrado: 75 },
+    haloDoVazioTexels: 6,
+    haloDosBuracosTexels: 3,
+    desfoqueDoBorradoKm: 10,
+    grades: { meia: 2, fontes: 4, tom: 8 },
+    detalheMultiplicativo: false,
+  },
+  // Plutão (PIA11707, 5926×2963, 1,26 km/texel; medido em 02/10 na luminância):
+  //  - A RÉGUA É RELATIVA: o albedo vai de ~26 DN (Cthulhu, escura e nítida: RMS do passa-alta 3,9 DN)
+  //    a ~160; em DN, Cthulhu empata com a calota do norte, de baixo contraste (3,7 DN). O contraste
+  //    (RMS ÷ brilho local) separa: mediana 0,14 em Cthulhu, 0,19 em Krun, 0,22 em Tartarus Dorsa,
+  //    contra 0,006–0,011 no lado de trás, 0,016 em Sputnik e 0,025 no norte. A referência são essas
+  //    três caixas nítidas (fora de Sputnik), e a metade dela (o limiar de Caronte) separa os grupos.
+  //  - O HALO: sem redução, mas a borda do mosaico tem um aro escuro — o 1º texel a 50–64 DN contra
+  //    80–108 logo depois (o borrão de antisserrilhado da montagem), e no lóbulo do sul (100–160°E)
+  //    uma subida de 3–4 texels (32 → 63 → 74 → 78 → 80); 4 texels (5 km) o cobrem.
+  //  - A FAIXA (v4): o brilho (passa-baixa σ 20 km, média de toda a borda) em anéis de 10 km da borda
+  //    do vazio: no lado de trás (205→360→100°E) sobe de 104,7 a 107,8 DN em 60 km e para no patamar a
+  //    50–80 km (além, cai com o albedo do cinturão escuro); junto do lóbulo (100–205°E), plano em ~77,
+  //    sem rampa. A faixa vai a 75 km junto do borrado — a zona livre (60–75 km) e a membrana do tom
+  //    no patamar — e fica em 20 km junto do nítido.
+  //  - O DESFOQUE: junto da borda do lado de trás (280–350°E, −28..−20°) o RMS relativo por banda de
+  //    0–3/3–6/6–12 km (0,71/1,22/3,17 %) é o do lado nítido desfocado por σ ≈ 7,3/8,5/7,5 km.
+  //  - A GRADE DO TOM ÷4 (5,1 km), e não ÷8: a ÷8 teria células de 10,6 km, mais largas que o σ de
+  //    10 km da borda do tom (em Caronte a ÷8 tem 3,7 km).
+  //  - O DETALHE MULTIPLICATIVO: a fonte do sul é Cthulhu (as planícies crateradas; 88 % dos
+  //    retalhos da 1ª prévia), de brilho ~27 DN, e o alvo fica em ~100. Com o detalhe em DN (o de
+  //    Caronte, onde fonte e alvo têm o mesmo brilho) a 1ª prévia saiu com contraste de 8,9 % no fundo
+  //    do vazio contra 19–20 % em Cthulhu e Krun, e o que sobrou era quase só a sombra do relevo:
+  //    correlação com n·L de 0,36 no vazio contra 0,16 no lado medido. O albedo e o sombreado
+  //    multiplicam: o detalhe do retalho escala pelo tom da luminância no alvo ÷ o da fonte (o retalho
+  //    leva os dois), e a sombra assada é medida como fração do brilho. UM ganho só para os três
+  //    canais: a 2ª prévia, com o detalhe relativo POR CANAL, ganhou ×3,7 no azul (~15 DN em Cthulhu)
+  //    e pôs pontos branco-ciano onde Cthulhu tem gelo claro; com o mesmo ganho, o matiz do retalho
+  //    fica. Os claros que passam do fundo de escala vão ao branco por um joelho suave (`joelhoDaCor`).
+  //  - A SOMBRA NO ALVO: com o detalhe multiplicativo, o ganho medido no `bom` (0,94 do brilho por
+  //    unidade de n·L) devolvido inteiro dá correlação de 0,30 com n·L no vazio, contra 0,16 no lado
+  //    medido (a régua de mede-m1b.mjs); sem sombra, 0,00 (os retalhos sozinhos não seguem o relevo).
+  //    Os retalhos não dependem dessa fração e o resultado é afim nela: 0,52 dá 0,16 (calibra-sombra.mjs,
+  //    em capturas/cor-inventada/ferramentas/m1b, sobre as prévias com 1 e com 0).
+  //  - OS BURACOS: a faixa preta de 127–147°E, −42..−37° (um buraco do mosaico que encosta no vazio e
+  //    vai a 309 km dele) ficava preta no app. Os buracos sem dado a até 150 km do vazio entram no alvo
+  //    — o buraco inteiro, se um texel dele está a essa distância (27 buracos, 16 mil texels); e um anel
+  //    de 15 km de fotografado em volta deles entra como zona livre, para o corte passar por dentro da
+  //    textura e não na borda reta do buraco (o traço de 127–147°E na v3).
+  //  - AS FONTES COM TOM PARECIDO (v4): 88 % dos retalhos da v3 vinham de Cthulhu (tom ~27 DN) e o
+  //    ganho ×3,7 levava o gelo claro dela ao branco. Cada candidato só vale se o tom local da origem
+  //    (passa-baixa σ 40 km da luminância) estiver a um fator 1,5 do tom do alvo no centro do retalho
+  //    (alarga a 2 e a 3 com menos de 16 candidatos); as planícies crateradas ganham os planaltos de
+  //    albedo intermediário que ladeiam Cthulhu (St21: a unidade só é escura entre 13°N e 23°S; tom
+  //    mediano 83 e 64 DN contra 27); o ganho para em 2; e os claros relativos ao tom passam por um
+  //    joelho (`joelhoSuave`) acima de 1,6 vezes o tom, até 2 — o gelo claro fica, sem virar branco.
+  pluto: {
+    raioM: 1188300,
+    caixasNitidas: [
+      { lon: [100, 140], lat: [-20, 5] },
+      { lon: [200, 232], lat: [-25, 2] },
+      { lon: [214, 245], lat: [2, 32] },
+    ],
+    reguaRelativa: true,
+    faixaRasanteKm: { bom: 20, borrado: 75 },
+    haloDoVazioTexels: 4,
+    haloDosBuracosTexels: 4,
+    desfoqueDoBorradoKm: 8,
+    grades: { meia: 2, fontes: 4, tom: 4 },
+    detalheMultiplicativo: true,
+    sombraNoAlvo: 0.52,
+    buracosNoAlvoKm: 150,
+    anelDosBuracosKm: 15,
+    filtroDeTom: { sigmaKm: 40, fatores: [1.5, 2, 3], minimo: 16 },
+    fontesExtras: { 'planicies-crateradas': [{ lon: [86, 145], lat: [13, 22] }, { lon: [86, 145], lat: [-30, -23] }] },
+    joelhoRelativo: { inicio: 1.6, folga: 0.4 },
+    // A VARIANTE "CALMA" (02/10; `opcoes.variante: 'calma'`), escolha de gosto dele contra a v4, a "leopardo": as
+    // manchas de albedo de 50–150 km dos retalhos (o vermelho-escuro sobre fundo claro que vem dos planaltos ao norte
+    // de Cthulhu) ficam no tom — o corte tom/detalhe desce de 40 a 20 km (o da sombra assada junto, a mesma banda) e
+    // a membrana manda nas escalas grandes; o detalhe fino, o grão e as crateras ficam. O joelho relativo ganha o
+    // espelho nos escuros (abaixo de 0,65 vezes o tom, até a metade dele, como o claro vai até o dobro), e a sombra no
+    // alvo é a fração que devolve, com o corte novo, a correlação do lado medido com n·L (0,163, a régua de
+    // mede-m1b.mjs): 0,6 deu 0,171 no vazio, e 0,57 sai de r = f·a ÷ √(b² + f²·a²), a sombra somada a um detalhe
+    // que não a segue (mede-m1b-v5.mjs, em capturas/cor-inventada/ferramentas/m1b).
+    variantes: {
+      calma: { sigmaDoTomKm: 20, joelhoRelativo: { inicio: 1.6, folga: 0.4, escuros: { inicio: 0.65, folga: 0.15 } }, sombraNoAlvo: 0.57 },
+    },
+  },
+};
 
 /** As passadas da transferência: largura do retalho (km), α e o passo (texels) dos pontos que medem o erro. */
 const PASSADAS = [
@@ -168,33 +310,29 @@ const MARGEM_DO_RETALHO = 3;
  * `SIGMA_DA_BORDA_DO_TOM_KM`, e passa ao de `SIGMA_DO_TOM_KM` até `BORDA_DO_TOM_KM[1]`: a membrana
  * sai do brilho LOCAL da borda. A colcha perde a escala grande pelo passa-baixa de
  * `SIGMA_DA_COLCHA_KM` (resultado = colcha − passa-baixa(colcha) + tom). `SIGMA_DA_MEMBRANA_KM` só
- * escolhe o nível em que `membranaHarmonica` resolve exato; tudo na grade ÷`FATOR_DO_TOM`.
+ * escolhe o nível em que `membranaHarmonica` resolve exato; tudo na grade do tom (`POR_CORPO`).
  */
 const SIGMA_DO_TOM_KM = 40;
 const SIGMA_DA_BORDA_DO_TOM_KM = 10;
 const BORDA_DO_TOM_KM = [20, 80];
 const SIGMA_DA_COLCHA_KM = 200;
 const SIGMA_DA_MEMBRANA_KM = 200;
-const FATOR_DO_TOM = 8;
 
+/** A costura final: σ (km) da média, ao longo da borda do alvo, do quanto o resultado se afasta da foto ali. */
+const SIGMA_DO_DEGRAU_KM = 10;
 /**
- * O DESFOQUE JUNTO DO BORRADO: o lado de trás equivale ao lado nítido desfocado por σ ≈ 10–12 km
- * (RMS por banda de 0–3, 3–6, 6–12, 12–24 km: 0,7/0,7/1,8/4,1 DN em 195–260°E contra 0,2/0,6/1,8/3,6
- * no nítido desfocado 12 km — medido em 02/10). Junto de vizinho borrado, o detalhe inventado começa
+ * O DESFOQUE JUNTO DO BORRADO (o σ é `desfoqueDoBorradoKm` de `POR_CORPO`): em Caronte o lado de
+ * trás equivale ao lado nítido desfocado por σ ≈ 10–12 km (RMS por banda de 0–3, 3–6, 6–12, 12–24
+ * km: 0,7/0,7/1,8/4,1 DN em 195–260°E contra 0,2/0,6/1,8/3,6 no nítido desfocado 12 km — medido em
+ * 02/10). Junto de vizinho borrado, o detalhe inventado começa
  * desfocado assim e fica nítido ao longo de `RAMPA_DO_DESFOQUE_KM` para dentro do alvo — sem o
  * degrau de nitidez que a 1ª prévia mostrou. O vizinho que conta é o MAIS PERTO fora do alvo (a
  * média larga da 2ª prévia desfocou o alvo colado em Vulcan, nítido, por causa da cunha riscada a 50
  * km): borrado se o texel borrado mais perto está mais perto que o nítido mais perto, com transição
- * de ±`TRANSICAO_DA_CLASSE_KM`. Os níveis de desfoque são interpolados.
+ * de ±`TRANSICAO_DA_CLASSE_KM`. Os níveis de desfoque (0, σ/4, σ/2, σ) são interpolados.
  */
-const DESFOQUE_DO_BORRADO_KM = 10;
-/** A costura final: σ (km) da média, ao longo da borda do alvo, do quanto o resultado se afasta da foto ali. */
-const SIGMA_DO_DEGRAU_KM = 10;
 const RAMPA_DO_DESFOQUE_KM = 150;
 const TRANSICAO_DA_CLASSE_KM = 20;
-const NIVEIS_DO_DESFOQUE_KM = [0, 2.5, 5, 10];
-/** A grade das origens: a cheia ÷ isto. */
-const FATOR_DAS_FONTES = 4;
 
 const PESO_MINIMO = 1e-9;
 
@@ -287,17 +425,32 @@ export function dilataMascara(mascara, L, A, raio) {
   return saida;
 }
 
-/** Reduz por blocos de `f`×`f`: a média de `campo` onde `peso` > 0 e a fração com peso; com `ou`, o OU da máscara. */
-function reduzEmBlocos(campo, peso, L, A, f) {
-  const l = L / f;
-  const a = A / f;
+/**
+ * A GRADE REDUZIDA ÷`fator` da grade L×A: a largura é L/`fator` se der par, senão a fração
+ * arredondada para baixo a múltiplo de 64 (Plutão, 5926×2963); a altura, a proporcional; cada texel
+ * vai à célula que contém o centro dele (`coluna`, `linha`), e `conta` é quantos texels cada célula
+ * junta. Com a cheia divisível são os blocos `fator`×`fator` de sempre.
+ */
+export function gradeReduzida(L, A, fator) {
+  const l = L % (2 * fator) === 0 ? L / fator : 64 * Math.floor(L / fator / 64);
+  const a = Math.round((A * l) / L);
+  const coluna = Int32Array.from({ length: L }, (_, i) => Math.floor(((i + 0.5) * l) / L));
+  const linha = Int32Array.from({ length: A }, (_, j) => Math.floor(((j + 0.5) * a) / A));
+  const conta = new Int32Array(l * a);
+  for (let j = 0; j < A; j += 1) for (let i = 0; i < L; i += 1) conta[linha[j] * l + coluna[i]] += 1;
+  return { largura: l, altura: a, coluna, linha, conta };
+}
+
+/** Reduz à grade `g` (`gradeReduzida`): a média de `campo` onde `peso` > 0 e a fração com peso. */
+function reduzEmBlocos(campo, peso, L, A, g) {
+  const { largura: l, altura: a, coluna, linha, conta } = g;
   const valor = new Float32Array(l * a);
   const fracao = new Float32Array(l * a);
   for (let j = 0; j < A; j += 1) {
-    const J = Math.floor(j / f);
+    const base = linha[j] * l;
     for (let i = 0; i < L; i += 1) {
       const k = j * L + i;
-      const c = J * l + Math.floor(i / f);
+      const c = base + coluna[i];
       const p = peso ? peso[k] : 1;
       if (p > 0) {
         valor[c] += p * campo[k];
@@ -307,17 +460,17 @@ function reduzEmBlocos(campo, peso, L, A, f) {
   }
   for (let c = 0; c < l * a; c += 1) {
     valor[c] = fracao[c] > 0 ? valor[c] / fracao[c] : 0;
-    fracao[c] /= f * f;
+    fracao[c] /= conta[c];
   }
   return { valor, fracao, largura: l, altura: a };
 }
 
-/** O OU de uma máscara em blocos de `f`×`f`. */
-function ouEmBlocos(mascara, L, A, f) {
-  const l = L / f;
-  const saida = new Uint8Array(l * (A / f));
+/** O OU de uma máscara na grade `g` (`gradeReduzida`). */
+function ouEmBlocos(mascara, L, A, g) {
+  const { largura: l, altura: a, coluna, linha } = g;
+  const saida = new Uint8Array(l * a);
   for (let j = 0; j < A; j += 1) {
-    for (let i = 0; i < L; i += 1) if (mascara[j * L + i]) saida[Math.floor(j / f) * l + Math.floor(i / f)] = 1;
+    for (let i = 0; i < L; i += 1) if (mascara[j * L + i]) saida[linha[j] * l + coluna[i]] = 1;
   }
   return saida;
 }
@@ -326,16 +479,20 @@ const naCaixa = (lat, lon, caixa) => lat >= caixa.lat[0] && lat <= caixa.lat[1] 
 
 /**
  * AS REGIÕES do mapa de cor na grade do destino (ver o cabeçalho), a partir
- * do brilho `valor` (Float32, L×A), do `vazio` e dos buracos `semDado` já no
- * destino. Devolve as máscaras (Uint8), a distância ao vazio na meia grade
- * (`distanciaAoVazio`, km) e a régua do borrado (`rmsDeReferencia`).
+ * do brilho `valor` (Float32, L×A — a luminância, na cor), do `vazio` e dos
+ * buracos `semDado` já no destino; `liso` (opcional) = o que o relevo alisa
+ * (gelo sem crateras: Sputnik), que não é fonte nem referência da régua;
+ * `corpo` = os números de `POR_CORPO`; `grade` = a meia grade
+ * (`gradeReduzida`). Devolve as máscaras (Uint8), a distância ao vazio na
+ * meia grade (`distanciaAoVazio`, km) e a régua do borrado (`rmsDeReferencia`:
+ * DN, ou o contraste com a régua relativa).
  */
-export function mascarasDaCor({ valor, vazio, semDado, largura: L, altura: A, raioM, registra = () => {} }) {
+export function mascarasDaCor({ valor, vazio, semDado, liso, largura: L, altura: A, raioM, corpo, grade, registra = () => {} }) {
   const n = L * A;
   const dado = new Uint8Array(n);
   for (let k = 0; k < n; k += 1) dado[k] = vazio[k] || semDado[k] ? 0 : 1;
 
-  // o borrado: energia do passa-alta contra o lado nítido
+  // o borrado: energia do passa-alta contra o lado nítido (em Plutão, relativa ao brilho local)
   const passaBaixa = desfocaComMascara(valor, dado, L, A, raioM, SIGMA_DO_PASSA_ALTA_KM).valor;
   const quadrado = new Float32Array(n);
   for (let k = 0; k < n; k += 1) {
@@ -344,20 +501,23 @@ export function mascarasDaCor({ valor, vazio, semDado, largura: L, altura: A, ra
     quadrado[k] = h * h;
   }
   const energia = desfocaComMascara(quadrado, dado, L, A, raioM, SIGMA_DA_ENERGIA_KM).valor;
+  if (corpo.reguaRelativa) {
+    const brilho = desfocaComMascara(valor, dado, L, A, raioM, SIGMA_DA_ENERGIA_KM).valor;
+    for (let k = 0; k < n; k += 1) energia[k] /= Math.max(1, brilho[k]) ** 2;
+  }
   const referencia = [];
   for (let j = 0; j < A; j += 2) {
     const lat = latitudeDaLinha(j, A) * GRAUS;
     for (let i = 0; i < L; i += 2) {
       const k = j * L + i;
-      if (dado[k] && CAIXAS_NITIDAS.some((c) => naCaixa(lat, longitudeDaColuna(i, L), c))) referencia.push(energia[k]);
+      if (dado[k] && !liso?.[k] && corpo.caixasNitidas.some((c) => naCaixa(lat, longitudeDaColuna(i, L), c))) referencia.push(energia[k]);
     }
   }
   referencia.sort((a, b) => a - b);
   const energiaDeReferencia = referencia[referencia.length >> 1];
   // o riscado: a coerência do tensor de estrutura do passa-alta (na meia grade) — a cunha de 275–300°E
   // junto do terminador tem 0,84 contra 0,55 em Vulcan, 0,44 em Serenity e 0,31 em Oz Terra
-  const l = L / 2;
-  const a = A / 2;
+  const { largura: l, altura: a, coluna, linha } = grade;
   const tensor = [new Float32Array(l * a), new Float32Array(l * a), new Float32Array(l * a)];
   const contaDoTensor = new Float32Array(l * a);
   const raioKm = raioM / 1000;
@@ -371,7 +531,7 @@ export function mascarasDaCor({ valor, vazio, semDado, largura: L, altura: A, ra
       if (!(dado[k] && dado[kl] && dado[ko] && dado[k - L] && dado[k + L])) continue;
       const gx = (valor[kl] - passaBaixa[kl] - valor[ko] + passaBaixa[ko]) / (2 * passoLeste);
       const gy = (valor[k - L] - passaBaixa[k - L] - valor[k + L] + passaBaixa[k + L]) / (2 * passoNorte);
-      const c = (j >> 1) * l + (i >> 1);
+      const c = linha[j] * l + coluna[i];
       tensor[0][c] += gx * gx;
       tensor[1][c] += gx * gy;
       tensor[2][c] += gy * gy;
@@ -390,7 +550,7 @@ export function mascarasDaCor({ valor, vazio, semDado, largura: L, altura: A, ra
     for (let i = 0; i < L; i += 1) {
       const k = j * L + i;
       if (!dado[k]) continue;
-      const c = (j >> 1) * l + (i >> 1);
+      const c = linha[j] * l + coluna[i];
       const traco = txx[c] + tyy[c];
       const coerencia = traco > 0 ? Math.sqrt((txx[c] - tyy[c]) ** 2 + 4 * txy[c] * txy[c]) / traco : 0;
       if (!(energia[k] >= LIMIAR_DO_BORRADO * LIMIAR_DO_BORRADO * energiaDeReferencia)) semEnergia[k] = 1;
@@ -405,32 +565,48 @@ export function mascarasDaCor({ valor, vazio, semDado, largura: L, altura: A, ra
   }
 
   // a faixa rasante, na meia grade: distância ao vazio e a fração de borrado do vizinho
-  const distancia = distanciaAoVazioKm(ouEmBlocos(vazio, L, A, 2), l, a, raioM);
+  const distancia = distanciaAoVazioKm(ouEmBlocos(vazio, L, A, grade), l, a, raioM);
   const foto = new Uint8Array(n);
   for (let k = 0; k < n; k += 1) foto[k] = vazio[k] ? 0 : 1;
-  const classe = reduzEmBlocos(borrado, foto, L, A, 2);
+  const classe = reduzEmBlocos(borrado, foto, L, A, grade);
   const beta = desfocaComMascara(classe.valor, classe.fracao, l, a, raioM, SIGMA_DA_CLASSE_DA_FAIXA_KM).valor;
+  const { bom: larguraJuntoDoBom, borrado: larguraJuntoDoBorrado } = corpo.faixaRasanteKm;
+  // os buracos sem dado perto do vazio entram no alvo inteiros (`buracosNoAlvoKm`; Plutão) e nunca
+  // ficam com a "foto" — o preto — na zona livre
+  const { buraco, componentes: buracosNoAlvo } = corpo.buracosNoAlvoKm
+    ? buracosPertoDoVazio(semDado, L, A, grade, distancia, corpo.buracosNoAlvoKm)
+    : { buraco: new Uint8Array(n), componentes: 0 };
   const faixa = new Uint8Array(n);
   const livre = new Uint8Array(n);
   for (let j = 0; j < A; j += 1) {
     for (let i = 0; i < L; i += 1) {
       const k = j * L + i;
       if (vazio[k]) continue;
-      const c = (j >> 1) * l + (i >> 1);
+      const c = linha[j] * l + coluna[i];
       const b = Number.isFinite(beta[c]) ? Math.min(1, Math.max(0, beta[c])) : 1;
-      const w = FAIXA_RASANTE_KM.bom + (FAIXA_RASANTE_KM.borrado - FAIXA_RASANTE_KM.bom) * b;
+      const w = larguraJuntoDoBom + (larguraJuntoDoBorrado - larguraJuntoDoBom) * b;
       if (distancia[c] < w) {
         faixa[k] = 1;
-        if (distancia[c] >= w - ZONA_LIVRE_KM) livre[k] = 1;
+        if (distancia[c] >= w - ZONA_LIVRE_KM && !buraco[k]) livre[k] = 1;
+      }
+    }
+  }
+  // o anel em volta dos buracos do alvo (`anelDosBuracosKm`): o fotografado entra como zona livre
+  if (corpo.anelDosBuracosKm && buracosNoAlvo) {
+    const ateOBuraco = distanciaAoVazioKm(ouEmBlocos(buraco, L, A, grade), l, a, raioM);
+    for (let j = 0; j < A; j += 1) {
+      for (let i = 0; i < L; i += 1) {
+        const k = j * L + i;
+        if (dado[k] && ateOBuraco[linha[j] * l + coluna[i]] < corpo.anelDosBuracosKm) faixa[k] = livre[k] = 1;
       }
     }
   }
   const bom = new Uint8Array(n);
   const alvo = new Uint8Array(n);
-  const conta = { vazio: 0, faixa: 0, livre: 0, borrado: 0, desfocado: 0, bom: 0, semDado: 0 };
+  const conta = { vazio: 0, faixa: 0, livre: 0, borrado: 0, desfocado: 0, bom: 0, semDado: 0, liso: 0, buraco: 0 };
   for (let k = 0; k < n; k += 1) {
-    bom[k] = dado[k] && !borrado[k] && !faixa[k] ? 1 : 0;
-    alvo[k] = vazio[k] || faixa[k] ? 1 : 0;
+    bom[k] = dado[k] && !borrado[k] && !faixa[k] && !liso?.[k] ? 1 : 0;
+    alvo[k] = vazio[k] || faixa[k] || buraco[k] ? 1 : 0;
     conta.vazio += vazio[k];
     conta.faixa += faixa[k];
     conta.livre += livre[k];
@@ -438,11 +614,57 @@ export function mascarasDaCor({ valor, vazio, semDado, largura: L, altura: A, ra
     conta.desfocado += desfocado[k];
     conta.bom += bom[k];
     conta.semDado += semDado[k];
+    conta.liso += liso?.[k] ?? 0;
+    conta.buraco += buraco[k];
   }
   const porcento = Object.fromEntries(Object.entries(conta).map(([nome, v]) => [nome, +((100 * v) / n).toFixed(2)]));
   const rmsDeReferencia = Math.sqrt(energiaDeReferencia);
-  registra(`máscaras (% dos texels): ${JSON.stringify(porcento)}; RMS do passa-alta no lado nítido ${rmsDeReferencia.toFixed(2)} DN`);
-  return { vazio, semDado, borrado, desfocado, faixa, livre, bom, alvo, distanciaAoVazio: { km: distancia, largura: l, altura: a }, rmsDeReferencia, porcento };
+  const regua = corpo.reguaRelativa ? `contraste do passa-alta no lado nítido ${(100 * rmsDeReferencia).toFixed(2)} %` : `RMS do passa-alta no lado nítido ${rmsDeReferencia.toFixed(2)} DN`;
+  const noAlvo = buracosNoAlvo ? `; ${buracosNoAlvo} buracos no alvo (${conta.buraco} texels)` : '';
+  registra(`máscaras (% dos texels): ${JSON.stringify(porcento)}; ${regua}${noAlvo}`);
+  return { vazio, semDado, borrado, desfocado, faixa, livre, bom, alvo, buraco, buracosNoAlvo, distanciaAoVazio: { km: distancia, largura: l, altura: a }, rmsDeReferencia, porcento };
+}
+
+/**
+ * OS BURACOS PERTO DO VAZIO: os de `semDado` (componentes de vizinhança 8, com a volta da longitude)
+ * com algum texel a até `ateKm` do vazio (`distancia`, km, na `grade`) — o buraco inteiro, para não
+ * sobrar preto do outro lado de um corte. Devolve a máscara e quantos são.
+ */
+function buracosPertoDoVazio(semDado, L, A, grade, distancia, ateKm) {
+  const n = L * A;
+  const buraco = new Uint8Array(n);
+  const visto = new Uint8Array(n);
+  const pilha = [];
+  const membros = [];
+  let componentes = 0;
+  for (let k0 = 0; k0 < n; k0 += 1) {
+    if (!semDado[k0] || visto[k0]) continue;
+    visto[k0] = 1;
+    pilha.push(k0);
+    membros.length = 0;
+    let perto = false;
+    while (pilha.length) {
+      const k = pilha.pop();
+      membros.push(k);
+      const j = Math.floor(k / L);
+      const i = k - j * L;
+      if (distancia[grade.linha[j] * grade.largura + grade.coluna[i]] <= ateKm) perto = true;
+      for (let jj = Math.max(0, j - 1); jj <= Math.min(A - 1, j + 1); jj += 1) {
+        for (let di = -1; di <= 1; di += 1) {
+          const kk = jj * L + ((i + di + L) % L);
+          if (semDado[kk] && !visto[kk]) {
+            visto[kk] = 1;
+            pilha.push(kk);
+          }
+        }
+      }
+    }
+    if (perto) {
+      componentes += 1;
+      for (const k of membros) buraco[k] = 1;
+    }
+  }
+  return { buraco, componentes };
 }
 
 // ------------------------------------------------------------
@@ -533,15 +755,15 @@ function sobeBilinear(campo, l, a, L, A) {
 
 /**
  * O TOM (L×A): o passa-baixa de `valor` (gaussiana normalizada pela máscara
- * `dadoDoTom`; σ `SIGMA_DA_BORDA_DO_TOM_KM` junto do alvo, `SIGMA_DO_TOM_KM`
- * longe dele) e, no `alvo`, a membrana harmônica dele presa no resto — tudo na
- * grade ÷`FATOR_DO_TOM` (~3,7 km em Caronte), que sobe por bilinear.
+ * `dadoDoTom`; σ `SIGMA_DA_BORDA_DO_TOM_KM` junto do alvo, `sigmaKm` — o de
+ * `SIGMA_DO_TOM_KM`, se não dado — longe dele) e, no `alvo`, a membrana harmônica dele presa no resto — tudo na
+ * `grade` do tom (`gradeReduzida`; ~3,7 km em Caronte, 5,1 km em Plutão), que
+ * sobe por bilinear.
  */
-export function tomDeGrandeEscala({ valor, dadoDoTom, alvo, largura: L, altura: A, raioM }) {
-  const f = FATOR_DO_TOM;
-  const r = reduzEmBlocos(valor, dadoDoTom, L, A, f);
-  const alvoR = ouEmBlocos(alvo, L, A, f);
-  const longe = desfocaComMascara(r.valor, r.fracao, r.largura, r.altura, raioM, SIGMA_DO_TOM_KM).valor;
+export function tomDeGrandeEscala({ valor, dadoDoTom, alvo, largura: L, altura: A, raioM, grade, sigmaKm = SIGMA_DO_TOM_KM }) {
+  const r = reduzEmBlocos(valor, dadoDoTom, L, A, grade);
+  const alvoR = ouEmBlocos(alvo, L, A, grade);
+  const longe = desfocaComMascara(r.valor, r.fracao, r.largura, r.altura, raioM, sigmaKm).valor;
   const perto = desfocaComMascara(r.valor, r.fracao, r.largura, r.altura, raioM, SIGMA_DA_BORDA_DO_TOM_KM).valor;
   const distancia = distanciaAoVazioKm(alvoR, r.largura, r.altura, raioM);
   const preso = new Uint8Array(r.largura * r.altura);
@@ -563,21 +785,24 @@ export function tomDeGrandeEscala({ valor, dadoDoTom, alvo, largura: L, altura: 
 
 /**
  * AS FONTES de cada unidade (a ordem de `fonte.unidades`) para retalhos de
- * `larguraKm`, na grade ÷`FATOR_DAS_FONTES` (`distanciaAoRuim` = a distância,
+ * `larguraKm`, na grade das fontes (`POR_CORPO`; `distanciaAoRuim` = a distância,
  * km, de cada célula ao não-`bom` nessa grade): células com o centro a meia
  * largura da borda de uma caixa `fontes` da unidade e a meia diagonal (mais
- * uma célula) longe do que não é `bom`. `{ celulas, acumulado (cos lat),
- * largura, altura, areaKm2 }` por unidade, ou null.
+ * uma célula) longe do que não é `bom`; `extras` = caixas a mais por id de unidade
+ * (`fontesExtras`). `{ celulas, caixa (a 1ª caixa que contém cada uma), tom (de
+ * `tomDasCelulas`, na mesma grade, ou null), acumulado (cos lat), largura, altura,
+ * areaKm2 }` por unidade, ou null.
  */
-export function fontesDaCor({ distanciaAoRuim, largura: l, altura: a, fonte, raioM, larguraKm }) {
+export function fontesDaCor({ distanciaAoRuim, largura: l, altura: a, fonte, raioM, larguraKm, extras = {}, tomDasCelulas = null }) {
   const raioKm = raioM / 1000;
   const kmPorGrau = raioKm * RADIANOS;
   const celulaKm = raioKm * (Math.PI / a);
   const meia = larguraKm / 2;
   const meiaDiagonal = meia * Math.SQRT2 + celulaKm;
-  return Object.values(fonte.unidades).map((unidade) => {
-    const caixas = unidade.fontes ?? (unidade.exemplo ? [unidade.exemplo] : []);
+  return Object.entries(fonte.unidades).map(([id, unidade]) => {
+    const caixas = [...(unidade.fontes ?? (unidade.exemplo ? [unidade.exemplo] : [])), ...(extras[id] ?? [])];
     const celulas = [];
+    const caixaDe = [];
     for (let J = 0; J < a; J += 1) {
       const lat = latitudeDaLinha(J, a) * GRAUS;
       const cosLat = Math.cos(lat * RADIANOS);
@@ -585,11 +810,14 @@ export function fontesDaCor({ distanciaAoRuim, largura: l, altura: a, fonte, rai
         const c = J * l + I;
         if (!(distanciaAoRuim[c] >= meiaDiagonal)) continue;
         const lon = longitudeDaColuna(I, l);
-        const dentro = caixas.some((cx) =>
+        const qual = caixas.findIndex((cx) =>
           naCaixa(lat, lon, cx) &&
           Math.min(lat - cx.lat[0], cx.lat[1] - lat) * kmPorGrau >= meia &&
           Math.min(lon - cx.lon[0], cx.lon[1] - lon) * kmPorGrau * cosLat >= meia);
-        if (dentro) celulas.push(c);
+        if (qual >= 0) {
+          celulas.push(c);
+          caixaDe.push(qual);
+        }
       }
     }
     if (!celulas.length) return null;
@@ -601,12 +829,19 @@ export function fontesDaCor({ distanciaAoRuim, largura: l, altura: a, fonte, rai
     });
     return {
       celulas: Int32Array.from(celulas),
+      caixa: Int8Array.from(caixaDe),
+      tom: tomDasCelulas ? Float32Array.from(celulas, (c) => tomDasCelulas[c]) : null,
       acumulado,
       largura: l,
       altura: a,
       areaKm2: Math.round(soma * celulaKm * celulaKm),
     };
   });
+}
+
+/** O FILTRO DE TOM: o tom da fonte está a menos de um fator `fator` do tom do alvo (|ln(fonte ÷ alvo)| ≤ ln fator). */
+export function dentroDoTom(tomDaFonte, tomDoAlvo, fator) {
+  return Math.abs(Math.log(Math.max(1, tomDaFonte) / Math.max(1, tomDoAlvo))) <= Math.log(fator);
 }
 
 // ------------------------------------------------------------
@@ -865,11 +1100,13 @@ function raioDoCorte(geo, x, y) {
  * com esta passada, o resto com a anterior —, dividida pela energia dos dois
  * lados) + (1 − α)·(o mesmo para o guia centrado, no retalho inteiro); sorteio
  * entre os `MELHORES`; corte de erro mínimo contra o já posto desta passada e
- * rampa de `ESFUMADO_TEXELS`. Escreve em `campo` (detalhe), `coberto` e
- * `novo` (a fração que veio dos retalhos).
+ * rampa de `ESFUMADO_TEXELS`. Escreve no `campo` de cada uma das `camadas`
+ * (o detalhe, copiado da spline `coef` dela; a 1ª é a que a escolha lê),
+ * `coberto` e `novo` (a fração que veio dos retalhos).
  */
 function passadaDaTransferencia(ctx, { larguraKm, alfa, passoDasAmostras }, fontes, anterior) {
-  const { L, A, raioKm, texelKm, dg, coef, guia, fixo, campo, coberto, novo, pesos, sorteia, registra } = ctx;
+  const { L, A, raioKm, texelKm, dg, camadas, guia, fixo, coberto, novo, pesos, sorteia, registra, filtro, tomDoAlvo } = ctx;
+  const { campo } = camadas[0];
   const meio = larguraKm / 2 / texelKm;
   const H = Math.ceil(meio) + MARGEM_DO_RETALHO;
   const G = 2 * H + 1;
@@ -912,6 +1149,9 @@ function passadaDaTransferencia(ctx, { larguraKm, alfa, passoDasAmostras }, font
 
   const postos = [];
   const porUnidade = fontes.map(() => 0);
+  const porCaixa = fontes.map(() => ({}));
+  const porFator = filtro ? new Array(filtro.fatores.length + 1).fill(0) : null;
+  let semTom = 0;
   let forcadas = 0;
   let semCurva = 0;
   let trocasDeUnidade = 0;
@@ -929,7 +1169,7 @@ function passadaDaTransferencia(ctx, { larguraKm, alfa, passoDasAmostras }, font
     const c = f.celulas[lo];
     const J = Math.floor(c / f.largura);
     const I = c % f.largura;
-    return { lat: 90 - ((J + sorteia()) * 180) / f.altura, lon: 180 + ((I + sorteia()) * 360) / f.largura };
+    return { lat: 90 - ((J + sorteia()) * 180) / f.altura, lon: 180 + ((I + sorteia()) * 360) / f.largura, q: lo };
   };
   const texelDoPonto = (x, y, z) => {
     const i = Math.floor((Math.atan2(y, x) / (2 * Math.PI) + 0.5) * L) % L;
@@ -1040,23 +1280,48 @@ function passadaDaTransferencia(ctx, { larguraKm, alfa, passoDasAmostras }, font
       return alfa * (erroT / (energiaT + PESO_MINIMO)) + (1 - alfa) * notaGuia;
     };
     const melhores = [];
+    // AS FONTES COM TOM PARECIDO (`filtroDeTom`): só vale a origem a menos de um fator `limite` do tom do alvo
+    const tomAqui = filtro ? Math.max(1, tomDoAlvo[texelDoPonto(cx, cy, cz)]) : 0;
+    let limite = Infinity;
+    let validos = 0;
     const candidato = (forcado) => {
       const o = sorteiaOrigem(f);
+      if (filtro && !dentroDoTom(f.tom[o.q], tomAqui, limite)) return;
       const base = planoTangente(o.lat, o.lon);
       const longe = repeticaoMaisPerto(postos, alvo.c, base.c, vizinhancaRad, repeticaoRad);
       if (!forcado && longe < Infinity) return;
+      validos += 1;
       melhores.push({ nota: avalia(base), longe, base, origem: o });
       if (forcado) melhores.sort((a, b) => b.longe - a.longe || a.nota - b.nota);
       else melhores.sort((a, b) => a.nota - b.nota);
       if (melhores.length > MELHORES) melhores.pop();
     };
-    for (let q = 0; q < CANDIDATOS; q += 1) candidato(false);
-    for (let rodada = 1; rodada < RODADAS_DE_SORTEIO && !melhores.length; rodada += 1) {
-      for (let q = 0; q < CANDIDATOS * 2 ** rodada; q += 1) candidato(false);
+    if (filtro) {
+      // até `CANDIDATOS` válidos em `TENTATIVAS_DO_TOM` × `CANDIDATOS` sorteios; com menos de `minimo`, o fator alarga
+      let nivel = 0;
+      while (nivel < filtro.fatores.length) {
+        limite = filtro.fatores[nivel];
+        for (let q = 0; q < CANDIDATOS * TENTATIVAS_DO_TOM && validos < CANDIDATOS; q += 1) candidato(false);
+        if (validos >= filtro.minimo) break;
+        nivel += 1;
+      }
+      porFator[nivel] += 1;
+      limite = filtro.fatores[filtro.fatores.length - 1];
+    } else {
+      for (let q = 0; q < CANDIDATOS; q += 1) candidato(false);
+      for (let rodada = 1; rodada < RODADAS_DE_SORTEIO && !melhores.length; rodada += 1) {
+        for (let q = 0; q < CANDIDATOS * 2 ** rodada; q += 1) candidato(false);
+      }
     }
     if (!melhores.length) {
       forcadas += 1;
       for (let q = 0; q < 2 * CANDIDATOS; q += 1) candidato(true);
+      if (!melhores.length) {
+        // nenhuma origem nem no maior fator: o tom sai do critério
+        semTom += 1;
+        limite = Infinity;
+        for (let q = 0; q < 2 * CANDIDATOS; q += 1) candidato(true);
+      }
       const corte = melhores[0].longe * 0.9;
       const longes = melhores.filter((m) => m.longe >= corte).sort((a, b) => a.nota - b.nota);
       melhores.splice(0, melhores.length, ...longes);
@@ -1129,12 +1394,15 @@ function passadaDaTransferencia(ctx, { larguraKm, alfa, passoDasAmostras }, font
           if (w <= 0) continue;
         }
         const s = 1 / Math.sqrt(1 + pe * pe + pn * pn);
-        const v = amostraNoPonto(coef, L, A, (bx + pe * bex + pn * bnx) * s, (by + pe * bey + pn * bny) * s, (bz + pe * bez + pn * bnz) * s);
-        if (coberto[k]) {
-          campo[k] = w * v + (1 - w) * campo[k];
-          novo[k] = w + (1 - w) * novo[k];
-        } else {
-          campo[k] = v;
+        const ox = (bx + pe * bex + pn * bnx) * s;
+        const oy = (by + pe * bey + pn * bny) * s;
+        const oz = (bz + pe * bez + pn * bnz) * s;
+        for (const camada of camadas) {
+          const v = amostraNoPonto(camada.coef, L, A, ox, oy, oz);
+          camada.campo[k] = coberto[k] ? w * v + (1 - w) * camada.campo[k] : v;
+        }
+        if (coberto[k]) novo[k] = w + (1 - w) * novo[k];
+        else {
           novo[k] = 1;
           coberto[k] = 1;
         }
@@ -1142,6 +1410,8 @@ function passadaDaTransferencia(ctx, { larguraKm, alfa, passoDasAmostras }, font
     }
     postos.push({ alvo: alvo.c, origem: base.c });
     porUnidade[u] += 1;
+    const caixa = f.caixa[escolhido.origem.q];
+    porCaixa[u][caixa] = (porCaixa[u][caixa] ?? 0) + 1;
     return true;
   };
 
@@ -1186,7 +1456,7 @@ function passadaDaTransferencia(ctx, { larguraKm, alfa, passoDasAmostras }, font
     preenchimento += 1;
     if (!coberto[k]) {
       // nem o retalho centrado nele o cobriu: fica só o tom
-      campo[k] = 0;
+      for (const camada of camadas) camada.campo[k] = 0;
       novo[k] = 1;
       coberto[k] = 1;
       largados += 1;
@@ -1198,6 +1468,8 @@ function passadaDaTransferencia(ctx, { larguraKm, alfa, passoDasAmostras }, font
     retalhos: emFaixas,
     preenchimento,
     porUnidade,
+    porCaixa,
+    ...(filtro ? { fatorDoTom: Object.fromEntries([...filtro.fatores, 'abaixoDoMinimo'].map((x, q) => [x, porFator[q]])), semTom } : {}),
     trocasDeUnidade,
     repeticoesForcadas: forcadas,
     cortesSemCurva: semCurva,
@@ -1209,72 +1481,158 @@ function passadaDaTransferencia(ctx, { larguraKm, alfa, passoDasAmostras }, font
 }
 
 // ------------------------------------------------------------
+// O DETALHE MULTIPLICATIVO E O JOELHO DO BRANCO
+// ------------------------------------------------------------
+
+/**
+ * O GANHO DO DETALHE MULTIPLICATIVO: o tom da luminância no alvo ÷ o da fonte (o que o retalho
+ * levou), nos limites de `GANHO_DO_DETALHE`. Um só para os três canais: o matiz do retalho fica.
+ */
+export function ganhoDaLuminancia(tomDoAlvo, tomDaFonte) {
+  return Math.min(GANHO_DO_DETALHE[1], Math.max(GANHO_DO_DETALHE[0], tomDoAlvo / Math.max(1, tomDaFonte)));
+}
+
+/**
+ * O JOELHO SUAVE: acima de `inicio` x se aproxima de `inicio + folga` sem passar —
+ * x₀ + f·(1 − e^(−(x − x₀)/f)): monótono, contínuo e com a derivada contínua (1) no começo, sem clipe.
+ */
+export function joelhoSuave(x, inicio, folga) {
+  return x <= inicio ? x : inicio + folga * (1 - Math.exp((inicio - x) / folga));
+}
+
+/**
+ * O JOELHO RELATIVO (`joelhoRelativo` de `POR_CORPO`): a razão brilho ÷ tom acima de `inicio` vai a
+ * `inicio + folga` por `joelhoSuave`; com `escuros`, o espelho dele — abaixo de `escuros.inicio` ela vai a
+ * `escuros.inicio − escuros.folga` sem passar. Devolve a razão nova (a mesma entre os dois joelhos).
+ */
+export function razaoNoJoelho(razao, { inicio, folga, escuros }) {
+  if (razao > inicio) return joelhoSuave(razao, inicio, folga);
+  if (escuros && razao < escuros.inicio) return -joelhoSuave(-razao, -escuros.inicio, escuros.folga);
+  return razao;
+}
+
+/** O JOELHO DO BRANCO: o joelho suave de `INICIO_DO_JOELHO` (0,85 do fundo de escala) a 255. */
+export function joelhoDoBranco(y) {
+  return joelhoSuave(y, INICIO_DO_JOELHO, 255 - INICIO_DO_JOELHO);
+}
+
+/**
+ * O JOELHO NA COR (`rgb`, reescrito no lugar): a luminância passa pelo joelho e os três canais
+ * escalam com ela (a cor fica); se um canal ainda passa de 255 (cor saturada), ela vai para o cinza
+ * de MESMA luminância só o necessário (o matiz fica, a saturação cede). Devolve 0 se nada mudou, 1
+ * se o joelho comprimiu, 2 se também foi ao cinza.
+ */
+export function joelhoDaCor(rgb) {
+  let y = LUMINANCIA[0] * rgb[0] + LUMINANCIA[1] * rgb[1] + LUMINANCIA[2] * rgb[2];
+  let feito = 0;
+  if (y > INICIO_DO_JOELHO) {
+    const comprimido = joelhoDoBranco(y);
+    for (let c = 0; c < 3; c += 1) rgb[c] *= comprimido / y;
+    y = comprimido;
+    feito = 1;
+  }
+  const maior = Math.max(rgb[0], rgb[1], rgb[2]);
+  if (maior > 255) {
+    const t = (255 - y) / (maior - y);
+    // o mínimo só tira o arredondamento do canal maior, que a conta leva a 255
+    for (let c = 0; c < 3; c += 1) rgb[c] = Math.min(255, y + t * (rgb[c] - y));
+    feito = 2;
+  }
+  return feito;
+}
+
+// ------------------------------------------------------------
 // A PORTA DE ENTRADA
 // ------------------------------------------------------------
 
 /**
  * A COR INVENTADA DE UM CORPO — a ÚNICA função que a prévia e o gerador
- * chamam. `cor` = o mapa de cor na grade do destino (Uint8Array, `canais` 1 ou
- * 3, `largura`×`altura` — a saída da redução, antes do jpg); `mascaras` =
- * `{ vazio, semDado }` no destino, ou `cru` = `{ pixels, largura, altura,
- * canais }` (o mosaico cru, antes do tapa-buraco) para montá-las; `normais` =
- * `{ pixels (RGB), largura, altura }` (o normal.png da casa); `fonte` = o JSON
- * do relevo do corpo; `semente` fixa. `opcoes.registra` recebe o andamento.
- * Devolve `{ cor, mascaras, chave: 'sul:1', relatorio }` — `cor` no formato
- * da entrada, igual a ela byte a byte fora do alvo.
+ * chamam. `cor` = o mapa de cor na grade da casa (Uint8Array, `canais` 1 ou
+ * 3, `largura`×`altura` — a saída da redução e do giro, antes do jpg);
+ * `mascaras` = `{ vazio, semDado }` no destino, ou `cru` = `{ pixels, largura,
+ * altura, canais, giroGraus }` (o mosaico cru, antes do tapa-buraco, e o giro
+ * que `girarMapa` aplica a ele depois) para montá-las; `normais` = `{ pixels
+ * (RGB), largura, altura }` (o normal.png da casa); `fonte` = o JSON do relevo
+ * do corpo; `semente` fixa. `opcoes.registra` recebe o andamento; `opcoes.variante`
+ * escolhe um conjunto de `POR_CORPO.<id>.variantes` (sem ela, os números do corpo). Devolve
+ * `{ cor, mascaras, chave: 'sul:1', relatorio }` — `cor` no formato da
+ * entrada, igual a ela byte a byte fora do alvo.
  */
 export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, mascaras: dadas, cru, normais, fonte, semente, opcoes = {} }) {
   const registra = opcoes.registra ?? (() => {});
   const relogio = Date.now();
   const tempo = () => `${((Date.now() - relogio) / 1000).toFixed(1)} s`;
-  const raioM = opcoes.raioM ?? fonte.raioM ?? { charon: 606000, pluto: 1188300 }[id];
-  if (!raioM) throw new Error(`inventaCorDoCorpo: sem raio para ${id}.`);
+  const doCorpo = POR_CORPO[id];
+  if (!doCorpo) throw new Error(`inventaCorDoCorpo: sem os números de ${id} (POR_CORPO).`);
+  // a VARIANTE: os números dela por cima dos do corpo
+  const variante = opcoes.variante ? doCorpo.variantes?.[opcoes.variante] : null;
+  if (opcoes.variante && !variante) throw new Error(`inventaCorDoCorpo: ${id} não tem a variante ${opcoes.variante} (POR_CORPO).`);
+  const corpo = { ...doCorpo, ...variante };
+  const sigmaDoTomKm = corpo.sigmaDoTomKm ?? SIGMA_DO_TOM_KM;
+  const raioM = opcoes.raioM ?? fonte.raioM ?? corpo.raioM;
   const sol = opcoes.sol ?? SOL_ASSADO[id];
   if (!sol) throw new Error(`inventaCorDoCorpo: sem o Sol assado de ${id}.`);
   const n = L * A;
   const raioKm = raioM / 1000;
   const texelKm = raioKm * (Math.PI / A);
+  const grades = Object.fromEntries(Object.entries(corpo.grades).map(([nome, fator]) => [nome, gradeReduzida(L, A, fator)]));
 
-  // o brilho (um canal: a M1 é Caronte, cinza em três canais iguais)
-  const valor = new Float32Array(n);
-  for (let k = 0; k < n; k += 1) {
-    const v = cor[k * canais];
-    for (let c = 1; c < canais; c += 1) {
-      if (cor[k * canais + c] !== v) throw new Error('inventaCorDoCorpo: cor com canais diferentes — a cor em três canais é a etapa M1b.');
-    }
-    valor[k] = v;
+  // os canais: cinza (os três iguais: Caronte) segue em um; a cor em três, e a escolha lê a luminância
+  let cinza = true;
+  for (let k = 0; k < n && cinza; k += 1) {
+    for (let c = 1; c < canais; c += 1) if (cor[k * canais + c] !== cor[k * canais]) cinza = false;
   }
+  if (!cinza && canais !== 3) throw new Error(`inventaCorDoCorpo: cor em ${canais} canais.`);
+  const canal = (cinza ? [0] : [0, 1, 2]).map((c) => {
+    const v = new Float32Array(n);
+    for (let k = 0; k < n; k += 1) v[k] = cor[k * canais + c];
+    return v;
+  });
+  const luminancia = ([r, g, b]) => {
+    const y = new Float32Array(n);
+    for (let k = 0; k < n; k += 1) y[k] = LUMINANCIA[0] * r[k] + LUMINANCIA[1] * g[k] + LUMINANCIA[2] * b[k];
+    return y;
+  };
+  const valor = cinza ? canal[0] : luminancia(canal);
 
-  // as máscaras
+  // as máscaras (o cru como ele é, reduzido ao destino pelo máximo e girado como `girarMapa` gira)
   let vazio;
   let semDado;
   if (dadas) ({ vazio, semDado } = dadas);
   else {
     const fonteCru = vazioDoMosaico(cru.pixels, cru.largura, cru.altura, cru.canais);
-    vazio = dilataMascara(reduzMascara(fonteCru.vazio, cru.largura, cru.altura, L, A), L, A, HALO_DO_VAZIO_TEXELS);
-    semDado = reduzMascara(fonteCru.semDado, cru.largura, cru.altura, L, A);
-    semDado = dilataMascara(semDado, L, A, HALO_DOS_BURACOS_TEXELS);
+    const noDestino = (mascara) => giraColunasDeImagem(reduzMascara(mascara, cru.largura, cru.altura, L, A), L, A, 1, cru.giroGraus ?? 0);
+    vazio = dilataMascara(noDestino(fonteCru.vazio), L, A, corpo.haloDoVazioTexels);
+    semDado = dilataMascara(noDestino(fonteCru.semDado), L, A, corpo.haloDosBuracosTexels);
     for (let k = 0; k < n; k += 1) if (vazio[k]) semDado[k] = 0;
   }
-  const m = mascarasDaCor({ valor, vazio, semDado, largura: L, altura: A, raioM, registra });
+  // o gelo liso que o relevo alisa (Sputnik) não é fonte
+  const liso = new Uint8Array(n);
+  for (const alisamento of fonte.alisamentos ?? []) rasterizaPoligono(alisamento.poligono, L, A, liso);
+  const m = mascarasDaCor({ valor, vazio, semDado, liso, largura: L, altura: A, raioM, corpo, grade: grades.meia, registra });
   registra(`máscaras prontas (${tempo()})`);
 
-  // o tom: passa-baixa do fotografado que não é faixa, membrana no alvo
+  // o tom (por canal): passa-baixa do fotografado que não é faixa, membrana no alvo
   const dadoDoTom = new Uint8Array(n);
   for (let k = 0; k < n; k += 1) dadoDoTom[k] = !m.vazio[k] && !m.semDado[k] && !m.faixa[k] ? 1 : 0;
-  const tom = tomDeGrandeEscala({ valor, dadoDoTom, alvo: m.alvo, largura: L, altura: A, raioM });
+  const tons = canal.map((v) => tomDeGrandeEscala({ valor: v, dadoDoTom, alvo: m.alvo, largura: L, altura: A, raioM, grade: grades.tom, sigmaKm: sigmaDoTomKm }));
+  const tom = cinza ? tons[0] : luminancia(tons);
   registra(`tom pronto (${tempo()})`);
 
-  // o detalhe (brilho − tom) e o guia; a SOMBRA ASSADA sai do detalhe: a parte que o sombreado do
-  // relevo explica (regressão no `bom`, na banda abaixo de σ do tom) — os retalhos levam o albedo, e
-  // o alvo recebe a sombra do PRÓPRIO relevo com o mesmo ganho (o lado medido correlaciona 0,34 com
-  // n·L; só a escolha do retalho pelo guia dá ~0,01 — medido na 1ª prévia)
+  // o detalhe (brilho − tom; no multiplicativo, ÷ tom: ver `detalheMultiplicativo`) e o guia; a
+  // SOMBRA ASSADA sai do detalhe: a parte que o sombreado do relevo explica (regressão no `bom`, na
+  // banda abaixo de σ do tom) — os retalhos levam o albedo, e o alvo recebe a sombra do PRÓPRIO relevo
+  // com o mesmo ganho (vezes `sombraNoAlvo`; o lado medido correlaciona 0,34 com n·L; só a escolha do
+  // retalho pelo guia dá ~0,01 — medido na 1ª prévia). Sem foto: o vazio e os buracos do alvo.
+  const multiplicativo = corpo.detalheMultiplicativo;
   const guia = guiaDoRelevo(normais.pixels, normais.largura, normais.altura, L, A, sol);
   const um = new Uint8Array(n).fill(1);
-  const passaBaixaDoGuia = desfocaComMascara(guia, um, L, A, raioM, SIGMA_DO_TOM_KM).valor;
+  const passaBaixaDoGuia = desfocaComMascara(guia, um, L, A, raioM, sigmaDoTomKm).valor;
   const sombra = Float32Array.from(guia, (g, k) => g - passaBaixaDoGuia[k]);
+  const semFoto = Uint8Array.from(m.vazio, (v, k) => v | m.buraco[k]);
   const detalhe = new Float32Array(n);
-  for (let k = 0; k < n; k += 1) detalhe[k] = m.vazio[k] ? 0 : valor[k] - tom[k];
+  for (let k = 0; k < n; k += 1) detalhe[k] = semFoto[k] ? 0 : valor[k] - tom[k];
+  if (multiplicativo) for (let k = 0; k < n; k += 1) detalhe[k] /= Math.max(1, tom[k]);
   let sxy = 0;
   let sxx = 0;
   let syy = 0;
@@ -1290,14 +1648,34 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
   }
   const ganhoDaSombra = opcoes.sombreia === false ? 0 : sxy / sxx;
   const correlacaoNoBom = sxy / Math.sqrt(sxx * syy);
-  for (let k = 0; k < n; k += 1) if (!m.vazio[k]) detalhe[k] -= ganhoDaSombra * sombra[k];
-  registra(`sombra assada: ganho ${ganhoDaSombra.toFixed(1)} DN por unidade de n·L, correlação no bom ${correlacaoNoBom.toFixed(3)}`);
+  for (let k = 0; k < n; k += 1) if (!semFoto[k]) detalhe[k] -= ganhoDaSombra * sombra[k];
+  const unidadeDoGanho = multiplicativo ? 'do brilho' : 'DN';
+  registra(`sombra assada: ganho ${ganhoDaSombra.toFixed(multiplicativo ? 3 : 1)} ${unidadeDoGanho} por unidade de n·L, correlação no bom ${correlacaoNoBom.toFixed(3)}`);
+  // a sombra de cada canal, em DN: no cinza, o ganho; na cor ela é multiplicativa — a fração do brilho
+  // (o ganho, no multiplicativo; na cor aditiva, o ganho ÷ tom da luminância) vezes o tom do canal
+  const sombraDoCanal = multiplicativo
+    ? (c, k) => ganhoDaSombra * sombra[k] * tons[c][k]
+    : cinza
+      ? (_, k) => ganhoDaSombra * sombra[k]
+      : (c, k) => (ganhoDaSombra * sombra[k] * tons[c][k]) / Math.max(1, tom[k]);
   const dg = new Float32Array(2 * n);
   for (let k = 0; k < n; k += 1) {
     dg[2 * k] = detalhe[k];
     dg[2 * k + 1] = guia[k];
   }
-  const coef = coeficientesDeSpline(detalhe, L, A);
+  // as camadas que os retalhos copiam: a do brilho (a escolha lê); na cor e no multiplicativo, uma em
+  // DN por canal (as que saem); no multiplicativo, também o tom da luminância da FONTE, que dá o ganho
+  const camadas = [{ detalhe, coef: coeficientesDeSpline(detalhe, L, A), campo: new Float32Array(n) }];
+  if (!cinza || multiplicativo) {
+    for (const [c, v] of canal.entries()) {
+      const d = new Float32Array(n);
+      for (let k = 0; k < n; k += 1) if (!semFoto[k]) d[k] = v[k] - tons[c][k] - sombraDoCanal(c, k);
+      camadas.push({ detalhe: d, coef: coeficientesDeSpline(d, L, A), campo: new Float32Array(n) });
+    }
+  }
+  const saem = camadas.length > 1 ? camadas.slice(1) : camadas;
+  const camadaDoTom = multiplicativo ? { detalhe: tom, coef: coeficientesDeSpline(tom, L, A), campo: new Float32Array(n) } : null;
+  if (camadaDoTom) camadas.push(camadaDoTom);
   registra(`guia e spline prontos (${tempo()})`);
 
   // as unidades (a 4096) e as fontes
@@ -1306,10 +1684,16 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
   const pesos = { ...pesosDasUnidades(fonte, lp, ap, raioM), largura: lp, altura: ap };
   const naoBom = new Uint8Array(n);
   for (let k = 0; k < n; k += 1) naoBom[k] = m.bom[k] ? 0 : 1;
-  const lq = L / FATOR_DAS_FONTES;
-  const aq = A / FATOR_DAS_FONTES;
-  const distanciaAoRuim = distanciaAoVazioKm(ouEmBlocos(naoBom, L, A, FATOR_DAS_FONTES), lq, aq, raioM);
-  const fontesPorPassada = PASSADAS.map((p) => fontesDaCor({ distanciaAoRuim, largura: lq, altura: aq, fonte, raioM, larguraKm: p.larguraKm }));
+  const gf = grades.fontes;
+  const distanciaAoRuim = distanciaAoVazioKm(ouEmBlocos(naoBom, L, A, gf), gf.largura, gf.altura, raioM);
+  // o tom local de cada célula das fontes (`filtroDeTom`): passa-baixa da luminância do fotografado que não é faixa
+  const filtro = corpo.filtroDeTom ?? null;
+  let tomDasCelulas = null;
+  if (filtro) {
+    const r = reduzEmBlocos(valor, dadoDoTom, L, A, gf);
+    tomDasCelulas = desfocaComMascara(r.valor, r.fracao, gf.largura, gf.altura, raioM, filtro.sigmaKm).valor;
+  }
+  const fontesPorPassada = PASSADAS.map((p) => fontesDaCor({ distanciaAoRuim, largura: gf.largura, altura: gf.altura, fonte, raioM, larguraKm: p.larguraKm, extras: corpo.fontesExtras, tomDasCelulas }));
   const resumoDasFontes = PASSADAS.map((p, q) => ({
     larguraKm: p.larguraKm,
     unidades: Object.fromEntries(pesos.ids.map((idU, u) => [idU, fontesPorPassada[q][u] ? { centros: fontesPorPassada[q][u].celulas.length, areaKm2: fontesPorPassada[q][u].areaKm2 } : null])),
@@ -1321,7 +1705,6 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
 
   // as passadas
   const sorteia = geradorDeSemente(semente);
-  const campo = new Float32Array(n);
   const coberto = new Uint8Array(n);
   const novo = new Float32Array(n);
   const fixo = new Uint8Array(n);
@@ -1331,31 +1714,22 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
   for (const [q, p] of PASSADAS.entries()) {
     for (let k = 0; k < n; k += 1) {
       const velhoAqui = fixo[k] || m.livre[k];
-      campo[k] = velhoAqui ? detalhe[k] : 0;
+      for (const camada of camadas) camada.campo[k] = velhoAqui ? camada.detalhe[k] : 0;
       coberto[k] = velhoAqui ? 1 : 0;
       novo[k] = 0;
     }
-    const ctx = { L, A, raioKm, texelKm, dg, coef, guia, fixo, campo, coberto, novo, pesos, sorteia, registra };
+    const ctx = { L, A, raioKm, texelKm, dg, camadas, guia, fixo, coberto, novo, pesos, sorteia, registra, filtro, tomDoAlvo: tom };
     passadas.push(passadaDaTransferencia(ctx, p, fontesPorPassada[q], anterior));
-    anterior = Float32Array.from(campo);
+    anterior = Float32Array.from(camadas[0].campo);
     registra(`passada ${q + 1} pronta (${tempo()})`);
   }
 
-  // o tom no lugar da escala grande da colcha: resultado = colcha − passa-baixa(colcha) + tom, com a
-  // sombra do relevo do alvo de volta (no que ficou do fotografado ela devolve o brilho original)
-  const f = FATOR_DO_TOM;
-  const r = reduzEmBlocos(campo, novo, L, A, f);
-  const passaBaixaDaColcha = desfocaComMascara(r.valor, r.fracao, r.largura, r.altura, raioM, SIGMA_DA_COLCHA_KM).valor;
-  for (let c = 0; c < passaBaixaDaColcha.length; c += 1) if (!Number.isFinite(passaBaixaDaColcha[c])) passaBaixaDaColcha[c] = 0;
-  const escalaGrande = sobeBilinear(passaBaixaDaColcha, r.largura, r.altura, L, A);
-  const total = new Float32Array(n);
-  for (let k = 0; k < n; k += 1) total[k] = campo[k] - novo[k] * escalaGrande[k] + ganhoDaSombra * sombra[k];
-
   // junto do vizinho DESFOCADO (sem energia; o riscado não conta), na meia grade: a distância de cada
   // texel do alvo ao de fora e a classe do de fora mais perto dão o desfoque (ver
-  // `DESFOQUE_DO_BORRADO_KM`) e a mistura com o fotografado na zona livre (ver `ZONA_LIVRE_KM`)
-  const l2 = L / 2;
-  const a2 = A / 2;
+  // `RAMPA_DO_DESFOQUE_KM`) e a mistura com o fotografado na zona livre (ver `ZONA_LIVRE_KM`)
+  const gm = grades.meia;
+  const { largura: l2, altura: a2 } = gm;
+  const naMeia = (k) => gm.linha[Math.floor(k / L)] * l2 + gm.coluna[k % L];
   const foraDesfocado = new Uint8Array(n);
   const foraNitido = new Uint8Array(n);
   for (let k = 0; k < n; k += 1) {
@@ -1363,9 +1737,11 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
     if (m.desfocado[k]) foraDesfocado[k] = 1;
     else foraNitido[k] = 1;
   }
-  const ateDesfocado = distanciaAoVazioKm(ouEmBlocos(foraDesfocado, L, A, 2), l2, a2, raioM);
-  const ateNitido = distanciaAoVazioKm(ouEmBlocos(foraNitido, L, A, 2), l2, a2, raioM);
-  const alvo2 = ouEmBlocos(m.alvo, L, A, 2);
+  const ateDesfocado = distanciaAoVazioKm(ouEmBlocos(foraDesfocado, L, A, gm), l2, a2, raioM);
+  const ateNitido = distanciaAoVazioKm(ouEmBlocos(foraNitido, L, A, gm), l2, a2, raioM);
+  const alvo2 = ouEmBlocos(m.alvo, L, A, gm);
+  const desfoqueKm = corpo.desfoqueDoBorradoKm;
+  const niveisKm = [0, desfoqueKm / 4, desfoqueKm / 2, desfoqueKm];
   const desfoque = new Float32Array(l2 * a2);
   const mistura = new Float32Array(l2 * a2).fill(1);
   let comDesfoque = 0;
@@ -1377,79 +1753,179 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
     const t = Math.min(1, dentro / RAMPA_DO_DESFOQUE_KM);
     const x = Math.min(1, Math.max(0, (ateNitido[c] - ateDesfocado[c] + TRANSICAO_DA_CLASSE_KM) / (2 * TRANSICAO_DA_CLASSE_KM)));
     const classe = x * x * (3 - 2 * x);
-    desfoque[c] = DESFOQUE_DO_BORRADO_KM * classe * (1 - t * t * (3 - 2 * t));
+    desfoque[c] = desfoqueKm * classe * (1 - t * t * (3 - 2 * t));
     const u = Math.min(1, dentro / ZONA_LIVRE_KM);
     mistura[c] = 1 - classe * (1 - u * u * (3 - 2 * u));
     if (desfoque[c] > 0.01) comDesfoque += 1;
   }
-  const niveis = NIVEIS_DO_DESFOQUE_KM.map((s) => (s ? desfocaComMascara(total, um, L, A, raioM, s).valor : total));
-  registra(`desfoque junto do borrado pronto: ${((100 * comDesfoque) / noAlvo).toFixed(1)} % do alvo (${tempo()})`);
-
-  const resultado = Float32Array.from(valor);
-  for (let j = 0; j < A; j += 1) {
-    for (let i = 0; i < L; i += 1) {
-      const k = j * L + i;
-      if (!m.alvo[k]) continue;
-      const s = desfoque[(j >> 1) * l2 + (i >> 1)];
-      let d = total[k];
-      if (s > 0.01) {
-        let q = 1;
-        while (q < NIVEIS_DO_DESFOQUE_KM.length - 1 && NIVEIS_DO_DESFOQUE_KM[q] < s) q += 1;
-        const s0 = NIVEIS_DO_DESFOQUE_KM[q - 1];
-        const s1 = NIVEIS_DO_DESFOQUE_KM[q];
-        const w = Math.min(1, (s - s0) / (s1 - s0));
-        d = (1 - w) * niveis[q - 1][k] + w * niveis[q][k];
-      }
-      // na zona livre junto do desfocado, o fotografado de verdade passa ao inventado sem corte
-      const f = mistura[(j >> 1) * l2 + (i >> 1)];
-      resultado[k] = f * (tom[k] + d) + (1 - f) * valor[k];
-    }
-  }
-
-  // A COSTURA FINAL (Pérez, Gangnet & Blake 2003, "Poisson Image Editing", só no degrau médio). A
-  // borda do alvo é a borda de fora da faixa, que tem foto: o degrau é o quanto o resultado se
-  // afasta do fotografado nos texels do alvo que encostam no de fora, em média ao longo da borda (σ
-  // `SIGMA_DO_DEGRAU_KM`, na meia grade) — sem o viés de gradiente das médias de um lado só (a 5ª
-  // prévia mediu assim e PÔS 12 DN no flanco de uma mancha escura a 57°E). Ele vira a condição de
-  // borda de uma membrana, somada ao alvo: o resultado casa com a foto na borda e a correção decai
-  // para dentro sem desenhar nada.
-  const somaDoDegrau = new Float32Array(l2 * a2);
-  const naBorda = new Float32Array(l2 * a2);
-  for (let j = 1; j < A - 1; j += 1) {
-    for (let i = 0; i < L; i += 1) {
-      const k = j * L + i;
-      if (!m.alvo[k] || m.semDado[k] || m.vazio[k]) continue;
-      const encosta = !m.alvo[k - L] || !m.alvo[k + L] || !m.alvo[j * L + ((i + 1) % L)] || !m.alvo[j * L + ((i - 1 + L) % L)];
-      if (!encosta) continue;
-      const c = (j >> 1) * l2 + (i >> 1);
-      somaDoDegrau[c] += valor[k] - resultado[k];
-      naBorda[c] += 1;
-    }
-  }
-  let degrauMedio = 0;
-  let celulasDaBorda = 0;
-  for (let c = 0; c < l2 * a2; c += 1) {
-    if (!naBorda[c]) continue;
-    somaDoDegrau[c] /= naBorda[c];
-    naBorda[c] = 1;
-    degrauMedio += Math.abs(somaDoDegrau[c]);
-    celulasDaBorda += 1;
-  }
-  const degrauSuave = desfocaComMascara(somaDoDegrau, naBorda, l2, a2, raioM, SIGMA_DO_DEGRAU_KM).valor;
   const fora2 = new Uint8Array(l2 * a2).fill(1);
-  for (let k = 0; k < n; k += 1) if (m.alvo[k]) fora2[(Math.floor(k / L) >> 1) * l2 + ((k % L) >> 1)] = 0;
-  const degrau = new Float32Array(l2 * a2);
-  for (let c = 0; c < l2 * a2; c += 1) if (fora2[c] && Number.isFinite(degrauSuave[c])) degrau[c] = degrauSuave[c];
-  const correcao = sobeBilinear(Float32Array.from(membranaHarmonica(degrau, fora2, l2, a2, raioM, SIGMA_DA_MEMBRANA_KM)), l2, a2, L, A);
-  registra(`costura final: |foto − resultado| médio na borda do alvo ${(degrauMedio / Math.max(1, celulasDaBorda)).toFixed(2)} DN (${tempo()})`);
+  for (let k = 0; k < n; k += 1) if (m.alvo[k]) fora2[naMeia(k)] = 0;
+  registra(`desfoque junto do borrado: ${((100 * comDesfoque) / noAlvo).toFixed(1)} % do alvo (${tempo()})`);
 
+  // O GANHO DO DETALHE (multiplicativo): o tom da luminância no alvo ÷ o da fonte, que o retalho levou
+  // (`ganhoDaLuminancia`); 1 no que ficou do fotografado
+  let ganhoDoDetalhe = null;
+  const ganhoNoVazio = { medio: 0, noLimite: 0 };
+  if (camadaDoTom) {
+    ganhoDoDetalhe = new Float32Array(n).fill(1);
+    let soma = 0;
+    let conta = 0;
+    for (let k = 0; k < n; k += 1) {
+      if (!m.alvo[k] || !(novo[k] > 0)) continue;
+      const g = ganhoDaLuminancia(tom[k], camadaDoTom.campo[k]);
+      ganhoDoDetalhe[k] = g;
+      if (!m.vazio[k]) continue;
+      soma += g;
+      conta += 1;
+      if (g === GANHO_DO_DETALHE[0] || g === GANHO_DO_DETALHE[1]) ganhoNoVazio.noLimite += 1;
+    }
+    ganhoNoVazio.medio = +(soma / Math.max(1, conta)).toFixed(3);
+    ganhoNoVazio.noLimite = +((100 * ganhoNoVazio.noLimite) / Math.max(1, conta)).toFixed(2);
+    registra(`ganho do detalhe no vazio: médio ${ganhoNoVazio.medio}, ${ganhoNoVazio.noLimite} % no limite ${JSON.stringify(GANHO_DO_DETALHE)}`);
+  }
+  // a sombra do relevo do alvo: o ganho medido vezes `sombraNoAlvo` no que veio dos retalhos (novo), e
+  // o ganho medido no que ficou do fotografado (devolve o brilho original)
+  const fatorDaSombra = corpo.sombraNoAlvo ?? 1;
+
+  // canal a canal: o tom no lugar da escala grande da colcha, o desfoque, a mistura e a costura
   const saida = Uint8Array.from(cor);
+  const degrausNaBorda = [];
+  const finais = [];
+  for (const [c, { campo }] of saem.entries()) {
+    // resultado = colcha − passa-baixa(colcha) + tom, com a sombra do relevo do alvo de volta (no que
+    // ficou do fotografado ela devolve o brilho original); no multiplicativo, a colcha já com o ganho
+    const colcha = ganhoDoDetalhe ? Float32Array.from(campo, (v, k) => ganhoDoDetalhe[k] * v) : campo;
+    const r = reduzEmBlocos(colcha, novo, L, A, grades.tom);
+    const passaBaixaDaColcha = desfocaComMascara(r.valor, r.fracao, r.largura, r.altura, raioM, SIGMA_DA_COLCHA_KM).valor;
+    for (let q = 0; q < passaBaixaDaColcha.length; q += 1) if (!Number.isFinite(passaBaixaDaColcha[q])) passaBaixaDaColcha[q] = 0;
+    const escalaGrande = sobeBilinear(passaBaixaDaColcha, r.largura, r.altura, L, A);
+    const total = new Float32Array(n);
+    for (let k = 0; k < n; k += 1) total[k] = colcha[k] - novo[k] * escalaGrande[k] + sombraDoCanal(c, k) * (1 - novo[k] * (1 - fatorDaSombra));
+    const niveis = niveisKm.map((s) => (s ? desfocaComMascara(total, um, L, A, raioM, s).valor : total));
+    const resultado = Float32Array.from(canal[c]);
+    for (let j = 0; j < A; j += 1) {
+      for (let i = 0; i < L; i += 1) {
+        const k = j * L + i;
+        if (!m.alvo[k]) continue;
+        const naMeiaGrade = gm.linha[j] * l2 + gm.coluna[i];
+        const s = desfoque[naMeiaGrade];
+        let d = total[k];
+        if (s > 0.01) {
+          let q = 1;
+          while (q < niveisKm.length - 1 && niveisKm[q] < s) q += 1;
+          const s0 = niveisKm[q - 1];
+          const s1 = niveisKm[q];
+          const w = Math.min(1, (s - s0) / (s1 - s0));
+          d = (1 - w) * niveis[q - 1][k] + w * niveis[q][k];
+        }
+        // na zona livre junto do desfocado, o fotografado de verdade passa ao inventado sem corte (no
+        // buraco não há foto)
+        const f = m.buraco[k] ? 1 : mistura[naMeiaGrade];
+        resultado[k] = f * (tons[c][k] + d) + (1 - f) * canal[c][k];
+      }
+    }
+
+    // A COSTURA FINAL (Pérez, Gangnet & Blake 2003, "Poisson Image Editing", só no degrau médio). A
+    // borda do alvo é a borda de fora da faixa, que tem foto: o degrau é o quanto o resultado se
+    // afasta do fotografado nos texels do alvo que encostam no de fora, em média ao longo da borda (σ
+    // `SIGMA_DO_DEGRAU_KM`, na meia grade) — sem o viés de gradiente das médias de um lado só (a 5ª
+    // prévia mediu assim e PÔS 12 DN no flanco de uma mancha escura a 57°E). Ele vira a condição de
+    // borda de uma membrana, somada ao alvo: o resultado casa com a foto na borda e a correção decai
+    // para dentro sem desenhar nada.
+    const somaDoDegrau = new Float32Array(l2 * a2);
+    const naBorda = new Float32Array(l2 * a2);
+    for (let j = 1; j < A - 1; j += 1) {
+      for (let i = 0; i < L; i += 1) {
+        const k = j * L + i;
+        if (!m.alvo[k] || m.semDado[k] || m.vazio[k]) continue;
+        const encosta = !m.alvo[k - L] || !m.alvo[k + L] || !m.alvo[j * L + ((i + 1) % L)] || !m.alvo[j * L + ((i - 1 + L) % L)];
+        if (!encosta) continue;
+        const q = gm.linha[j] * l2 + gm.coluna[i];
+        somaDoDegrau[q] += canal[c][k] - resultado[k];
+        naBorda[q] += 1;
+      }
+    }
+    let degrauMedio = 0;
+    let celulasDaBorda = 0;
+    for (let q = 0; q < l2 * a2; q += 1) {
+      if (!naBorda[q]) continue;
+      somaDoDegrau[q] /= naBorda[q];
+      naBorda[q] = 1;
+      degrauMedio += Math.abs(somaDoDegrau[q]);
+      celulasDaBorda += 1;
+    }
+    const degrauSuave = desfocaComMascara(somaDoDegrau, naBorda, l2, a2, raioM, SIGMA_DO_DEGRAU_KM).valor;
+    const degrau = new Float32Array(l2 * a2);
+    for (let q = 0; q < l2 * a2; q += 1) if (fora2[q] && Number.isFinite(degrauSuave[q])) degrau[q] = degrauSuave[q];
+    const correcao = sobeBilinear(Float32Array.from(membranaHarmonica(degrau, fora2, l2, a2, raioM, SIGMA_DA_MEMBRANA_KM)), l2, a2, L, A);
+    degrausNaBorda.push(+(degrauMedio / Math.max(1, celulasDaBorda)).toFixed(2));
+    for (let k = 0; k < n; k += 1) {
+      if (!m.alvo[k]) continue;
+      if (multiplicativo) {
+        resultado[k] += correcao[k];
+        continue;
+      }
+      const v = Math.min(255, Math.max(0, Math.round(resultado[k] + correcao[k])));
+      if (cinza) for (let q = 0; q < canais; q += 1) saida[k * canais + q] = v;
+      else saida[k * canais + c] = v;
+    }
+    if (multiplicativo) finais.push(resultado);
+    registra(`canal ${cinza ? 'cinza' : 'RGB'[c]}: costura final, |foto − resultado| médio na borda do alvo ${degrausNaBorda[c].toFixed(2)} DN (${tempo()})`);
+  }
+
+  // O JOELHO DO BRANCO (multiplicativo): o detalhe com ganho passa do fundo de escala no gelo claro
+  // das fontes escuras; a luminância vai ao branco pelo joelho, sem clipe, e a cor fica (`joelhoDaCor`)
+  const joelho = { comprimidos: 0, aoCinza: 0, abaixoDeZero: 0, relativos: 0, relativosEscuros: 0 };
+  const relativo = corpo.joelhoRelativo;
+  if (multiplicativo) {
+    const rgb = [0, 0, 0];
+    for (let k = 0; k < n; k += 1) {
+      if (!m.alvo[k]) continue;
+      if (cinza) {
+        const v = Math.min(255, Math.max(0, Math.round(joelhoDoBranco(finais[0][k]))));
+        for (let q = 0; q < canais; q += 1) saida[k * canais + q] = v;
+        continue;
+      }
+      for (let q = 0; q < 3; q += 1) rgb[q] = finais[q][k];
+      // O JOELHO RELATIVO (`joelhoRelativo`, `razaoNoJoelho`): o claro do que veio dos retalhos (novo) acima de
+      // `inicio` vezes o tom vai a `inicio + folga` vezes ele, os três canais escalados juntos (a cor fica). Com
+      // `escuros`, o escuro abaixo de `escuros.inicio` vai ao espelho: os canais abaixo de zero (que a saída
+      // cortaria) vão a zero, a razão é a do que sobra, e os três canais sobem juntos até o limite do ganho
+      // (`GANHO_DO_DETALHE`); o que ainda faltar vem na cor do tom — o quase preto não tem matiz que se escale.
+      let razao = (LUMINANCIA[0] * rgb[0] + LUMINANCIA[1] * rgb[1] + LUMINANCIA[2] * rgb[2]) / Math.max(1, tom[k]);
+      if (relativo?.escuros && razao < relativo.escuros.inicio && novo[k] > 0) {
+        for (let q = 0; q < 3; q += 1) rgb[q] = Math.max(0, rgb[q]);
+        razao = (LUMINANCIA[0] * rgb[0] + LUMINANCIA[1] * rgb[1] + LUMINANCIA[2] * rgb[2]) / Math.max(1, tom[k]);
+      }
+      const nova = relativo && novo[k] > 0 ? razaoNoJoelho(razao, relativo) : razao;
+      if (nova !== razao && razao > relativo.inicio) {
+        const escala = 1 + novo[k] * (nova / razao - 1);
+        for (let q = 0; q < 3; q += 1) rgb[q] *= escala;
+        joelho.relativos += 1;
+      } else if (nova !== razao) {
+        const fator = Math.min(GANHO_DO_DETALHE[1], nova / Math.max(razao, PESO_MINIMO));
+        const falta = nova - fator * razao;
+        for (let q = 0; q < 3; q += 1) rgb[q] += novo[k] * ((fator - 1) * rgb[q] + falta * tons[q][k]);
+        joelho.relativosEscuros += 1;
+      }
+      const feito = joelhoDaCor(rgb);
+      if (feito) joelho.comprimidos += 1;
+      if (feito === 2) joelho.aoCinza += 1;
+      if (Math.min(rgb[0], rgb[1], rgb[2]) < -0.5) joelho.abaixoDeZero += 1;
+      for (let q = 0; q < 3; q += 1) saida[k * canais + q] = Math.min(255, Math.max(0, Math.round(rgb[q])));
+    }
+    registra(`joelho do branco: ${JSON.stringify(joelho)} texels do alvo`);
+  }
+
   let mudados = 0;
   for (let k = 0; k < n; k += 1) {
     if (!m.alvo[k]) continue;
-    const v = Math.min(255, Math.max(0, Math.round(resultado[k] + correcao[k])));
-    if (v !== cor[k * canais]) mudados += 1;
-    for (let c = 0; c < canais; c += 1) saida[k * canais + c] = v;
+    for (let q = 0; q < canais; q += 1) {
+      if (saida[k * canais + q] !== cor[k * canais + q]) {
+        mudados += 1;
+        break;
+      }
+    }
   }
   registra(`pronto: ${mudados} texels mudados, todos no alvo (${tempo()})`);
   return {
@@ -1458,18 +1934,29 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
     chave: 'sul:1',
     relatorio: {
       id,
+      variante: opcoes.variante ?? null,
       semente,
       largura: L,
       altura: A,
+      canais: cinza ? 1 : 3,
       texelKm: +texelKm.toFixed(4),
+      grades: Object.fromEntries(Object.entries(grades).map(([nome, g]) => [nome, `${g.largura}x${g.altura}`])),
       mascaras: m.porcento,
-      rmsDoPassaAltaNitido: +m.rmsDeReferencia.toFixed(2),
-      faixaRasanteKm: FAIXA_RASANTE_KM,
+      reguaDoBorrado: corpo.reguaRelativa ? 'contraste (RMS ÷ brilho local)' : 'RMS em DN',
+      rmsDoPassaAltaNitido: +m.rmsDeReferencia.toFixed(corpo.reguaRelativa ? 4 : 2),
+      haloDoVazioTexels: corpo.haloDoVazioTexels,
+      faixaRasanteKm: corpo.faixaRasanteKm,
       zonaLivreKm: ZONA_LIVRE_KM,
       sol,
-      sombraAssada: { ganhoDN: +ganhoDaSombra.toFixed(2), correlacaoNoBom: +correlacaoNoBom.toFixed(3) },
-      tom: { sigmaKm: SIGMA_DO_TOM_KM, sigmaDaColchaKm: SIGMA_DA_COLCHA_KM },
-      desfoqueJuntoDoBorrado: { sigmaKm: DESFOQUE_DO_BORRADO_KM, rampaKm: RAMPA_DO_DESFOQUE_KM, porcentoDoAlvo: +((100 * comDesfoque) / noAlvo).toFixed(1) },
+      detalheMultiplicativo: multiplicativo,
+      ...(multiplicativo ? { ganhoDoDetalhe: { limites: GANHO_DO_DETALHE, ...ganhoNoVazio }, joelho: { inicioDN: INICIO_DO_JOELHO, relativo, ...joelho } } : {}),
+      ...(filtro ? { filtroDeTom: filtro, fontesExtras: corpo.fontesExtras ?? null } : {}),
+      anelDosBuracosKm: corpo.anelDosBuracosKm ?? 0,
+      buracosNoAlvo: { buracos: m.buracosNoAlvo, ateKm: corpo.buracosNoAlvoKm ?? 0 },
+      sombraAssada: { ganho: +ganhoDaSombra.toFixed(multiplicativo ? 4 : 2), unidade: unidadeDoGanho, correlacaoNoBom: +correlacaoNoBom.toFixed(3), fracaoNoAlvo: fatorDaSombra },
+      tom: { sigmaKm: sigmaDoTomKm, sigmaDaColchaKm: SIGMA_DA_COLCHA_KM },
+      desfoqueJuntoDoBorrado: { sigmaKm: desfoqueKm, rampaKm: RAMPA_DO_DESFOQUE_KM, porcentoDoAlvo: +((100 * comDesfoque) / noAlvo).toFixed(1) },
+      degrauNaBordaDoAlvoDN: degrausNaBorda,
       fontes: resumoDasFontes,
       passadas,
       texelsMudados: mudados,

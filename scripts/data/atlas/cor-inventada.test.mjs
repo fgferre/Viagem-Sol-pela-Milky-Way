@@ -1,4 +1,4 @@
-// Serve: lei — as peças puras da cor inventada (PLAN-COR.md, M1): a máscara do vazio, o retalho no plano tangente, o corte de erro mínimo
+// Serve: lei — as peças puras da cor inventada (PLAN-COR.md, M1 e M1b): a máscara do vazio, o retalho no plano tangente, o corte de erro mínimo, o giro, as grades reduzidas, o detalhe multiplicativo, os joelhos, as fontes com tom e o tom preso no patamar
 // ============================================================
 // Em miniatura, com resposta conhecida de fora do código:
 //  1. O VAZIO é o que `preencherVazioSemDado` tapa — a calota grande —, e o
@@ -9,10 +9,30 @@
 //     tangente são as mesmas, e o norte do alvo cai no meridiano da origem.
 //  3. O CORTE passa pelo anel de erro baixo, deixa o descoberto dentro e
 //     nunca põe novo além do primeiro texel fixo de um raio.
+//  4. O GIRO de 180° (Plutão): as máscaras tiradas do cru giram como a
+//     imagem gira, e girar de novo devolve o cru.
+//  5. AS GRADES REDUZIDAS em tamanho que não divide (5926×2963): cada texel
+//     vai à célula que contém o centro dele, nenhuma fica vazia; dividindo,
+//     são os blocos de sempre.
+//  6. A COR EM TRÊS CANAIS: o detalhe multiplicativo de uma fonte escura num
+//     alvo claro leva o contraste da luminância e o matiz do retalho (um
+//     ganho só), e o gelo claro vai ao branco quente, não ao ciano.
+//  7. O JOELHO não mexe abaixo de 0,85 do fundo de escala, é monótono, nunca
+//     passa de 255 e, na cor, guarda a luminância do joelho e a ordem dos canais;
+//     o joelho relativo (razão ao tom) é o mesmo joelho, de 1,6 a 2, e nos escuros
+//     (a variante calma) o espelho dele, de 0,65 a 0,5.
+//  8. AS FONTES COM TOM: a caixa extra entra nas fontes da unidade, cada célula
+//     leva a caixa e o tom dela, e o filtro aceita o fator nos dois sentidos.
+//  9. O TOM PRESO NO PATAMAR: num campo sintético com uma rampa escura junto da
+//     borda, a membrana presa além da rampa sai plana por anel; presa na rampa, não.
 // ============================================================
 import { describe, expect, it } from 'vitest';
-import { corteDeErroMinimo, dilataMascara, geometriaDoCorte, pontoDaOrigem, reduzMascara, vazioDoMosaico } from './cor-inventada.mjs';
-import { noPlano, planoTangente, pontoDoPlano } from './relevo-inventado.mjs';
+import {
+  corteDeErroMinimo, dentroDoTom, dilataMascara, fontesDaCor, ganhoDaLuminancia, geometriaDoCorte, gradeReduzida, joelhoDaCor,
+  joelhoDoBranco, joelhoSuave, pontoDaOrigem, razaoNoJoelho, reduzMascara, tomDeGrandeEscala, vazioDoMosaico,
+} from './cor-inventada.mjs';
+import { giraColunasDeImagem } from './lib-texturas.mjs';
+import { distanciaAoVazioKm, latitudeDaLinha, noPlano, planoTangente, pontoDoPlano } from './relevo-inventado.mjs';
 
 const distancia = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
 const latLon = (p) => [Math.asin(p[2]) * (180 / Math.PI), ((Math.atan2(p[1], p[0]) * (180 / Math.PI)) + 360) % 360];
@@ -113,5 +133,221 @@ describe('o corte de erro mínimo', () => {
     expect(geo.rCorte[0]).toBeGreaterThanOrEqual(3);
     expect(geo.rCorte[0]).toBeLessThanOrEqual(5);
     for (let t = 0; t < geo.nTheta; t += 1) expect(geo.rCorte[t]).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('o giro de 180°', () => {
+  it('as máscaras do cru giram como a imagem e voltam', () => {
+    const L = 360;
+    const A = 180;
+    // o cru com a borda esquerda em 0°E: o sul sem dado só na metade esquerda e um buraco pequeno na borda
+    const pixels = new Uint8Array(L * A * 3);
+    for (let j = 0; j < A; j += 1) {
+      for (let i = 0; i < L; i += 1) {
+        let v = j >= 140 && i < 180 ? 0 : 100 + ((i * 7 + j * 13) % 50);
+        if (j >= 60 && j <= 62 && i <= 2) v = 5;
+        pixels.fill(v, 3 * (j * L + i), 3 * (j * L + i) + 3);
+      }
+    }
+    const { vazio, semDado } = vazioDoMosaico(pixels, L, A, 3);
+    const imagem = giraColunasDeImagem(pixels, L, A, 3, 180);
+    const vazioGirado = giraColunasDeImagem(vazio, L, A, 1, 180);
+    const buracoGirado = giraColunasDeImagem(semDado, L, A, 1, 180);
+    // a coluna 0 do cru (0°E) vai ao meio do mapa, e a máscara vai junto com o texel da imagem
+    expect(buracoGirado[61 * L + 180]).toBe(1);
+    expect(buracoGirado[61 * L + 0]).toBe(0);
+    expect(vazioGirado[150 * L + 270]).toBe(1);
+    expect(vazioGirado[150 * L + 90]).toBe(0);
+    let desencontros = 0;
+    for (let k = 0; k < L * A; k += 1) {
+      if ((vazioGirado[k] || buracoGirado[k]) !== (imagem[3 * k] < 12 ? 1 : 0)) desencontros += 1;
+    }
+    expect(desencontros).toBe(0);
+    // ida e volta
+    expect(Array.from(giraColunasDeImagem(buracoGirado, L, A, 1, 180))).toEqual(Array.from(semDado));
+    expect(Array.from(giraColunasDeImagem(vazioGirado, L, A, 1, -180))).toEqual(Array.from(vazio));
+  });
+});
+
+describe('as grades reduzidas', () => {
+  it('em tamanho que não divide (Plutão), cada texel vai à célula que contém o centro dele', () => {
+    const L = 5926;
+    const A = 2963;
+    const g = gradeReduzida(L, A, 4);
+    expect([g.largura, g.altura]).toEqual([1472, 736]);
+    let fora = 0;
+    for (let i = 0; i < L; i += 1) {
+      const x = ((i + 0.5) * g.largura) / L;
+      if (!(g.coluna[i] <= x && x < g.coluna[i] + 1)) fora += 1;
+    }
+    for (let j = 0; j < A; j += 1) {
+      const y = ((j + 0.5) * g.altura) / A;
+      if (!(g.linha[j] <= y && y < g.linha[j] + 1)) fora += 1;
+    }
+    expect(fora).toBe(0);
+    expect(g.conta.reduce((m, c) => Math.min(m, c), Infinity)).toBeGreaterThan(0);
+    expect(g.conta.reduce((s, c) => s + c, 0)).toBe(L * A);
+  });
+
+  it('em tamanho que divide, são os blocos de sempre', () => {
+    const g = gradeReduzida(64, 32, 4);
+    expect([g.largura, g.altura]).toEqual([16, 8]);
+    expect(Array.from(g.coluna)).toEqual(Array.from({ length: 64 }, (_, i) => i >> 2));
+    expect(Array.from(g.linha)).toEqual(Array.from({ length: 32 }, (_, j) => j >> 2));
+    expect(g.conta.every((c) => c === 16)).toBe(true);
+  });
+});
+
+const luminancia = (c) => 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+
+describe('a cor em três canais', () => {
+  it('o detalhe multiplicativo leva o contraste e o matiz do retalho, com um ganho só', () => {
+    // um planalto de albedo intermediário e o gelo claro de um fundo de cratera; o alvo, o tom do sul
+    const tomDaFonte = [80, 60, 50];
+    const gelo = [190, 160, 140];
+    const tomDoAlvo = [113, 87, 78];
+    const g = ganhoDaLuminancia(luminancia(tomDoAlvo), luminancia(tomDaFonte));
+    expect(g).toBeCloseTo(luminancia(tomDoAlvo) / luminancia(tomDaFonte), 12);
+    const detalhe = gelo.map((v, c) => v - tomDaFonte[c]);
+    const rgb = tomDoAlvo.map((t, c) => t + g * detalhe[c]);
+    // o contraste da luminância é o da fonte, e os três canais sobem na proporção do retalho
+    const contraste = (c, t) => (luminancia(c) - luminancia(t)) / luminancia(t);
+    expect(contraste(rgb, tomDoAlvo)).toBeCloseTo(contraste(gelo, tomDaFonte), 12);
+    for (let c = 1; c < 3; c += 1) expect((rgb[c] - tomDoAlvo[c]) / (rgb[0] - tomDoAlvo[0])).toBeCloseTo(detalhe[c] / detalhe[0], 12);
+    // o claro passa do fundo de escala: o joelho o leva ao branco quente (R ≥ G ≥ B), e não ao ciano
+    expect(Math.max(...rgb)).toBeGreaterThan(255);
+    joelhoDaCor(rgb);
+    expect(Math.max(...rgb)).toBeLessThanOrEqual(255);
+    expect(rgb[0]).toBeGreaterThanOrEqual(rgb[1]);
+    expect(rgb[1]).toBeGreaterThanOrEqual(rgb[2]);
+    // o ganho fica nos limites
+    expect(ganhoDaLuminancia(100, 5)).toBe(2);
+    expect(ganhoDaLuminancia(10, 100)).toBe(0.5);
+  });
+});
+
+describe('o joelho do branco', () => {
+  it('não mexe abaixo de 0,85 do fundo de escala, é monótono e nunca passa de 255', () => {
+    expect(joelhoDoBranco(100)).toBe(100);
+    expect(joelhoDoBranco(216)).toBe(216);
+    let antes = -Infinity;
+    let quebras = 0;
+    for (let y = 0; y <= 5000; y += 0.25) {
+      const v = joelhoDoBranco(y);
+      if (v < antes || v > 255) quebras += 1;
+      antes = v;
+    }
+    expect(quebras).toBe(0);
+    expect(joelhoDoBranco(1e6)).toBeLessThanOrEqual(255);
+  });
+
+  it('na cor, nenhum canal passa de 255, a luminância é a do joelho e a ordem dos canais fica', () => {
+    let semente = 7;
+    const sorteia = () => {
+      semente = (semente * 1103515245 + 12345) % 2147483648;
+      return semente / 2147483648;
+    };
+    let quebras = 0;
+    for (let q = 0; q < 2000; q += 1) {
+      const entrada = [600 * sorteia(), 600 * sorteia(), 600 * sorteia()];
+      const rgb = [...entrada];
+      joelhoDaCor(rgb);
+      if (Math.max(...rgb) > 255) quebras += 1;
+      if (Math.abs(luminancia(rgb) - joelhoDoBranco(luminancia(entrada))) > 1e-9) quebras += 1;
+      for (const [a, b] of [[0, 1], [1, 2], [0, 2]]) if (Math.sign(entrada[a] - entrada[b]) !== Math.sign(rgb[a] - rgb[b])) quebras += 1;
+    }
+    expect(quebras).toBe(0);
+  });
+});
+
+describe('o joelho relativo', () => {
+  it('não mexe até 1,6, é monótono, contínuo no começo e nunca passa de 2', () => {
+    expect(joelhoSuave(1.6, 1.6, 0.4)).toBe(1.6);
+    expect(joelhoSuave(1.2, 1.6, 0.4)).toBe(1.2);
+    expect((joelhoSuave(1.6001, 1.6, 0.4) - 1.6) / 0.0001).toBeCloseTo(1, 3);
+    let antes = -Infinity;
+    let quebras = 0;
+    for (let x = 0; x <= 50; x += 0.01) {
+      const v = joelhoSuave(x, 1.6, 0.4);
+      if (v < antes || v > 2) quebras += 1;
+      antes = v;
+    }
+    expect(quebras).toBe(0);
+    expect(joelhoDoBranco(300)).toBe(joelhoSuave(300, 0.85 * 255, 255 - 0.85 * 255));
+  });
+
+  it('nos escuros é o espelho: não mexe de 0,65 a 1,6, é monótono, contínuo no começo e nunca desce de 0,5', () => {
+    const relativo = { inicio: 1.6, folga: 0.4, escuros: { inicio: 0.65, folga: 0.15 } };
+    expect(razaoNoJoelho(0.65, relativo)).toBe(0.65);
+    expect(razaoNoJoelho(1.2, relativo)).toBe(1.2);
+    expect((0.65 - razaoNoJoelho(0.6499, relativo)) / 0.0001).toBeCloseTo(1, 3);
+    let antes = -Infinity;
+    let quebras = 0;
+    for (let x = -5; x <= 50; x += 0.01) {
+      const v = razaoNoJoelho(x, relativo);
+      if (v < antes || v < 0.5 || v > 2) quebras += 1;
+      antes = v;
+    }
+    expect(quebras).toBe(0);
+    // o claro é o joelho de sempre; sem `escuros` (a v4), o escuro fica como está
+    expect(razaoNoJoelho(3, relativo)).toBe(joelhoSuave(3, 1.6, 0.4));
+    expect(razaoNoJoelho(0.3, { inicio: 1.6, folga: 0.4 })).toBe(0.3);
+  });
+});
+
+describe('as fontes com tom', () => {
+  it('a caixa extra entra na unidade, cada célula leva a caixa e o tom, e o filtro aceita o fator nos dois sentidos', () => {
+    const l = 360;
+    const a = 180;
+    const distanciaAoRuim = new Float32Array(l * a).fill(Infinity);
+    const tomDasCelulas = Float32Array.from({ length: l * a }, (_, c) => (latitudeDaLinha(Math.floor(c / l), a) > 0 ? 80 : 27));
+    const fonte = { unidades: { escura: { fontes: [{ lon: [100, 140], lat: [-20, 0] }] } } };
+    const base = { distanciaAoRuim, largura: l, altura: a, fonte, raioM: 1188300, larguraKm: 55 };
+    const [so] = fontesDaCor(base);
+    const [com] = fontesDaCor({ ...base, extras: { escura: [{ lon: [100, 140], lat: [13, 22] }] }, tomDasCelulas });
+    expect(so.tom).toBe(null);
+    expect(com.celulas.length).toBeGreaterThan(so.celulas.length);
+    expect(new Set(com.caixa)).toEqual(new Set([0, 1]));
+    for (let q = 0; q < com.celulas.length; q += 1) expect(com.tom[q]).toBe(com.caixa[q] === 1 ? 80 : 27);
+    // o filtro: o fator vale nos dois sentidos, e a fonte escura só entra no alvo claro a fator 3 ou mais
+    expect(dentroDoTom(100, 149, 1.5)).toBe(true);
+    expect(dentroDoTom(149, 100, 1.5)).toBe(true);
+    expect(dentroDoTom(100, 151, 1.5)).toBe(false);
+    expect(dentroDoTom(80, 105, 1.5)).toBe(true);
+    expect(dentroDoTom(27, 105, 3)).toBe(false);
+  });
+});
+
+describe('o tom preso no patamar', () => {
+  it('com a rampa escura dentro do alvo, a membrana sai plana por anel; presa na rampa, não', () => {
+    const L = 256;
+    const A = 128;
+    const raioM = 300000;
+    const n = L * A;
+    const vazio = Uint8Array.from({ length: n }, (_, k) => (latitudeDaLinha(Math.floor(k / L), A) < -0.5 ? 1 : 0));
+    const distancia = distanciaAoVazioKm(vazio, L, A, raioM);
+    const dentro = distanciaAoVazioKm(Uint8Array.from(vazio, (v) => 1 - v), L, A, raioM);
+    // o patamar em 100 DN; a rampa da luz rasante desce a 80 nos 60 km junto da borda
+    const valor = Float32Array.from(distancia, (d, k) => (vazio[k] ? 0 : 100 - 20 * Math.max(0, 1 - d / 60)));
+    const grade = gradeReduzida(L, A, 2);
+    const aneis = (faixaKm) => {
+      const alvo = Uint8Array.from(vazio, (v, k) => (v || distancia[k] < faixaKm ? 1 : 0));
+      const dadoDoTom = Uint8Array.from(alvo, (v) => 1 - v);
+      const tom = tomDeGrandeEscala({ valor, dadoDoTom, alvo, largura: L, altura: A, raioM, grade });
+      const soma = new Float64Array(10);
+      const conta = new Float64Array(10);
+      for (let k = 0; k < n; k += 1) {
+        if (!vazio[k] || !(dentro[k] < 250)) continue;
+        const b = Math.floor(dentro[k] / 25);
+        soma[b] += tom[k];
+        conta[b] += 1;
+      }
+      return Array.from(soma, (s, b) => s / conta[b]);
+    };
+    const noPatamar = aneis(75);
+    const naRampa = aneis(0);
+    expect(Math.max(...noPatamar) - Math.min(...noPatamar)).toBeLessThan(2);
+    for (const v of noPatamar) expect(Math.abs(v - 100)).toBeLessThan(2);
+    expect(100 - naRampa[0]).toBeGreaterThan(5);
   });
 });
