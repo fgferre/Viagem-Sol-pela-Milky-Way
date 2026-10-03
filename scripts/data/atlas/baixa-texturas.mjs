@@ -78,6 +78,13 @@
 // lê metadados): página de erro HTML salva como .jpg morre aqui,
 // não três meses depois no navegador.
 //
+// A COR INVENTADA DE PLUTÃO E CARONTE (PLAN-COR.md, 02/10/2026): nas
+// duas entradas com `corInventada`, o sul nunca fotografado e o lado de
+// trás borrado saem de `inventaCorDoCorpo` (`cor-inventada.mjs`), a MESMA
+// função das prévias que o dono escolhe por foto, e o map.jpg só é
+// gravado se o sha256 do RGB dela for o aprovado — o PORTÃO, como o do
+// relevo inventado em `gera-normal-de-dem.mjs` (ver `girarMapa`).
+//
 // ESCOPO OPCIONAL (o mesmo do otimiza-texturas): sem corpo nomeado, a
 // tabela inteira; com corpos, só eles.
 //
@@ -86,6 +93,7 @@
 //   node scripts/data/atlas/baixa-texturas.mjs --offline ~/Github/atlas-orbital ceres vesta
 // ============================================================
 
+import { createHash } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import { copyFile, mkdir, readFile, stat, unlink } from 'node:fs/promises';
 import https from 'node:https';
@@ -93,6 +101,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { inventaCorDoCorpo } from './cor-inventada.mjs';
+import { decideGravacao } from './gera-normal-de-dem.mjs';
 import {
   CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido, preencherVazioSemDado,
 } from './lib-texturas.mjs';
@@ -392,7 +402,11 @@ const FONTES = [
   // O SUL DOS DOIS NÃO FOI FOTOGRAFADO: no sobrevoo o polo sul do sistema
   // estava em noite polar, e os mosaicos deixam a calota em preto puro —
   // daí `preencherVazio` (a receita do item 147, tom médio liso, sem
-  // esticar o nível), confessado na ficha.
+  // esticar o nível), confessado na ficha. Desde a rodada da cor
+  // (PLAN-COR.md), o tapa-buraco é só o passo de antes: `corInventada`
+  // refaz o sul e o lado de trás borrado com a semente e a variante das
+  // prévias, e `sha256Aprovado` sem a chave das escolhas (`sul:1,borrado:1`)
+  // = ainda não aprovado: o gerador imprime o hash e não grava.
   {
     corpo: 'pluto',
     canal: 'map',
@@ -404,6 +418,17 @@ const FONTES = [
     url: 'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/pia11/pia11707/PIA11707.tif',
     giroDeLongitudeGraus: 180,
     preencherVazio: true,
+    // a palavra do dono (02/10/2026, prancha das três opções): a variante
+    // "serena", que vale também como o grau de mosqueado do lado de trás
+    // a palavra dele (02/10/2026, por prancha): o sul na variante "serena" e o
+    // lado de trás com o detalhe fino refeito — o candidato M1+M2 fotografado
+    corInventada: {
+      semente: 20261002,
+      variante: 'serena',
+      sha256Aprovado: {
+        'sul:1,borrado:1': '51ed5b2a916405f58745e693786a852051c7471dff29c7694f1e1d41ce12ea15',
+      },
+    },
   },
   {
     corpo: 'charon',
@@ -417,6 +442,16 @@ const FONTES = [
     giroDeLongitudeGraus: 0,
     larguraDoDestino: 8192,
     preencherVazio: true,
+    // a palavra do dono (02/10/2026, prancha da M1): o sul aprovado, sem
+    // variante — e a cor segue cinza: os retalhos vêm do próprio mosaico
+    // a palavra dele (02/10/2026, por prancha): o sul aprovado e o lado de
+    // trás com o detalhe fino refeito — o candidato M1+M2 fotografado
+    corInventada: {
+      semente: 20261002,
+      sha256Aprovado: {
+        'sul:1,borrado:1': '129601ed63ab16445acd78c15ca6d20812028e63835d82d876f2f6de18752212',
+      },
+    },
   },
   {
     corpo: 'ceres',
@@ -814,16 +849,27 @@ async function assarIlustracaoIA(origem, destino, corpo) {
  * terreno escuro do hemisfério anti-Plutão: pior que o buraco. Com a
  * janela em graus só o vazio grande na escala do GLOBO — a calota polar —
  * qualifica, e o buraco pequeno fica como o USGS o publicou.
+ *
+ * A COR INVENTADA (`corInventada`: Plutão e Caronte, PLAN-COR.md) entra
+ * DEPOIS do giro e ANTES do jpg (`inventaCorDoMapa`), e o jpg é o do RGB
+ * que o portão aprovou. Ela mede o vazio no mosaico CRU, antes do
+ * tapa-buraco e da redução: a cópia sai antes de `preencherVazioSemDado`,
+ * que escreve em cima. Exportada para a prova de que a cadeia reproduz a
+ * prévia, que a chama com o destino fora de `public/`.
  */
 const GRAUS_DA_JANELA_DO_VAZIO = 14;
-async function girarMapa(
+export async function girarMapa(
   origem, destino, canal,
-  { giroGraus = 0, larguraDoDestino, preencherVazio = false, rotulo = '' } = {}
+  { giroGraus = 0, larguraDoDestino, preencherVazio = false, rotulo = '', corpo, corInventada } = {}
 ) {
   let entrada = sharp(origem, { limitInputPixels: false }).removeAlpha();
+  let mosaicoCru = null;
   if (preencherVazio) {
     const cru = await entrada.raw().toBuffer({ resolveWithObject: true });
     const { width, height, channels } = cru.info;
+    if (corInventada) {
+      mosaicoCru = { pixels: Buffer.from(cru.data), largura: width, altura: height, canais: channels, giroGraus };
+    }
     const raio = Math.round((width * GRAUS_DA_JANELA_DO_VAZIO) / 360);
     const conta = preencherVazioSemDado(cru.data, width, height, channels, { raio });
     const texels = width * height;
@@ -844,13 +890,88 @@ async function girarMapa(
   const girado = giraColunasDeImagem(
     data, info.width, info.height, info.channels, giroGraus
   );
-  const saida = sharp(girado, {
+  const pixels = corInventada
+    ? await inventaCorDoMapa({ origem, rotulo, corpo, corInventada, cru: mosaicoCru, cor: girado, info })
+    : girado;
+  const saida = sharp(pixels, {
     raw: { width: info.width, height: info.height, channels: info.channels },
   });
   await (CANAIS_DE_DADO.has(canal)
     ? saida.png({ compressionLevel: 9, adaptiveFiltering: false })
     : saida.jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true })
   ).toFile(destino);
+}
+
+/**
+ * O PASSO DA COR INVENTADA de `girarMapa`: as entradas de
+ * `inventaCorDoCorpo` (`cor-inventada.mjs`) montadas como a prévia as monta
+ * (`capturas/cor-inventada/ferramentas/m2/previa-m2.mjs`, que esta cadeia
+ * reproduz byte a byte) — a cor na grade da casa (tapada, reduzida e
+ * girada); o mosaico CRU e o giro, de onde saem as máscaras do vazio; o
+ * `normal.png` da casa, o relevo inventado da rodada anterior (a função o
+ * reamostra); o JSON do relevo do corpo, com as unidades e os pesos delas;
+ * a semente e a variante da entrada; e o lado de trás borrado (`borrado`,
+ * a M2). Imprime o que refaz o mapa — versões, sha256 das entradas,
+ * semente e variante — e passa pelo PORTÃO (`portaoDaCor`): recusado, o
+ * erro leva a mensagem e o map.jpg NÃO é gravado. Devolve o RGB a codificar.
+ */
+async function inventaCorDoMapa({ origem, rotulo, corpo, corInventada, cru, cor, info }) {
+  const arquivoDaNormal = path.join(destinoRaiz, corpo, 'normal.png');
+  const arquivoDaFonte = path.join(
+    path.dirname(fileURLToPath(import.meta.url)), 'fonte', `${corpo}-lado-de-tras.json`
+  );
+  const bytesDaFonte = await readFile(arquivoDaFonte);
+  const normal = await sharp(arquivoDaNormal).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  console.log(
+    `${rotulo}: cor inventada, semente ${corInventada.semente}, ` +
+      `variante ${corInventada.variante ?? '(nenhuma)'}; versões: node ${process.version}, ` +
+      `V8 ${process.versions.v8}, sharp ${sharp.versions.sharp}, libvips ${sharp.versions.vips}`
+  );
+  console.log('sha256 das entradas:');
+  for (const [bytes, nome] of [
+    [await readFile(origem), 'o mosaico cru, como adquirido'],
+    [await readFile(arquivoDaNormal), path.relative(rootDirectory, arquivoDaNormal)],
+    [bytesDaFonte, path.relative(rootDirectory, arquivoDaFonte)],
+  ]) {
+    console.log(`  ${createHash('sha256').update(bytes).digest('hex')}  ${nome}`);
+  }
+  const { cor: rgb, chave } = inventaCorDoCorpo({
+    id: corpo,
+    cor: new Uint8Array(cor.buffer, cor.byteOffset, cor.length),
+    largura: info.width,
+    altura: info.height,
+    canais: info.channels,
+    cru,
+    normais: { pixels: normal.data, largura: normal.info.width, altura: normal.info.height },
+    fonte: JSON.parse(bytesDaFonte.toString('utf8')),
+    semente: corInventada.semente,
+    opcoes: { registra: (m) => console.log(`  ${m}`), variante: corInventada.variante, borrado: true },
+  });
+  const portao = portaoDaCor({ rotulo, chave, rgb, aprovados: corInventada.sha256Aprovado });
+  if (!portao.grava) throw new Error(portao.mensagem);
+  console.log(portao.mensagem);
+  return Buffer.from(rgb.buffer, rgb.byteOffset, rgb.length);
+}
+
+/**
+ * O PORTÃO DA COR INVENTADA: o map.jpg só é gravado se o sha256 do RGB que
+ * `inventaCorDoCorpo` devolve for o de `corInventada.sha256Aprovado` para a
+ * chave das escolhas (`chave`, `sul:1,borrado:1`) — o RGB da função, não o
+ * do jpg decodificado, que o codificador muda (o mozjpeg mexe ±1 DN até
+ * fora do alvo). A decisão é a do portão do relevo (`decideGravacao`), com
+ * a mensagem trazida ao map.jpg. Pura: `{ grava, mensagem, sha256 }`.
+ */
+export function portaoDaCor({ rotulo, chave, rgb, aprovados }) {
+  const sha256 = createHash('sha256').update(rgb).digest('hex');
+  const { grava, mensagem } = decideGravacao({ nome: rotulo, chave, sha256, aprovados });
+  return {
+    grava,
+    sha256,
+    mensagem: mensagem
+      .replace('o normal.png', 'o map.jpg')
+      .replace('vazioInventado.sha256Aprovado', 'corInventada.sha256Aprovado')
+      .replace('o relevo mudou', 'a cor mudou'),
+  };
 }
 
 async function main() {
@@ -937,6 +1058,8 @@ async function main() {
             larguraDoDestino: fonte.larguraDoDestino,
             preencherVazio: fonte.preencherVazio,
             rotulo: `${fonte.corpo}/${fonte.canal}`,
+            corpo: fonte.corpo,
+            corInventada: fonte.corInventada,
           });
         }
       } finally {
@@ -960,4 +1083,8 @@ async function main() {
   );
 }
 
-await main();
+// só a LINHA DE COMANDO adquire; importado (o portão da cor em
+// `cor-inventada.test.mjs`, a prova de reprodução) o arquivo não roda nada.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main();
+}

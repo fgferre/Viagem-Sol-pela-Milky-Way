@@ -143,14 +143,14 @@ export const EM_INGLES = new Map([
   ['NASA 3D Resources — Ganimedes', 'NASA 3D Resources — Ganymede'],
   ['NASA 3D Resources — Titânia', 'NASA 3D Resources — Titania'],
   ['NASA 3D Resources — Tritão', 'NASA 3D Resources — Triton'],
-  // ---- o defeito: Plutão e Caronte (item 149) -----------------------
+  // ---- o defeito: Plutão e Caronte (item 149; a cor inventada, PLAN-COR.md) ----
   [
-    'mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu',
-    "a real color map from New Horizons, but the south pole was in polar night during the 2015 flyby: 30% of the map was never photographed and came in flat, with the average tone of what the spacecraft did see",
+    'mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma',
+    'real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way',
   ],
   [
-    'mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu',
-    'a real New Horizons mosaic, and colorless: there is no global color map of Charon — and the south pole, in polar night during the flyby, is another third that came in flat, with the average tone of what the spacecraft did see',
+    'mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma',
+    'real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way',
   ],
 
   // ---- fontes: New Horizons (item 149) ------------------------------

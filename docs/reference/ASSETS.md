@@ -540,6 +540,22 @@ receita do item 147 (`preencherVazioSemDado`): tapou **30,3 %** do mapa de
 Plutão com o tom médio **135/112/104** e **34,0 %** do de Caronte com
 **118/118/118**.
 
+**A COR INVENTADA no sul e no lado de trás (02/10/2026; a rodada do
+`PLAN-COR.md`).** O tapa-buraco liso passa a ser só o passo de antes:
+`inventaCorDoCorpo` (`cor-inventada.mjs`) refaz a cor do vazio, da faixa
+rasante da borda e do lado de trás borrado por transferência de textura
+guiada pelo relevo (Efros & Freeman 2001, §3) — pedaços da cor real
+fotografada nítida, do mesmo terreno, escolhidos pelo relevo inventado e
+com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o
+da borda fotografada; no lado de trás, a foto fica na escala em que a sonda
+a resolveu e só o detalhe mais fino é inventado. O relevo que guia é o da
+rodada anterior (abaixo), sem mudança. As escolhas dele por foto em 02/10:
+Caronte aprovado; Plutão na variante "serena" (o mosqueado de albedo pela
+metade, o mesmo grau no lado de trás). O portão é o do relevo: o gerador
+(`corInventada` em `baixa-texturas.mjs`) só grava o `map.jpg` cujo RGB — o
+que a função devolve, antes do jpg — tem o sha256 aprovado para a chave
+`sul:1,borrado:1` (`corInventada.sha256Aprovado`).
+
 **A JANELA DO VAZIO MEDE-SE EM GRAUS, não em texels** — a única mudança de
 receita que o 149 trouxe, e ela nasceu de um erro visto na esfera. O padrão
 de `preencherVazioSemDado` (raio 7, janela de 15×15) nasceu em mapas de
@@ -752,8 +768,8 @@ tocar num `.mjs`.
 | corpo/canal | nota |
 | --- | --- |
 | ceres/map | mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha |
-| pluto/map | mapa em cor real da New Horizons, mas o polo sul estava em noite polar no sobrevoo de 2015: 30 % do mapa nunca foi fotografado e entrou liso, com o tom médio do que a sonda viu |
-| charon/map | mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte — e o polo sul, em noite polar no sobrevoo, é mais um terço que entrou liso, com o tom médio do que a sonda viu |
+| pluto/map | mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma |
+| charon/map | mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma |
 | titan/map | 720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou |
 | europa/map | mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou |
 | venus/map | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |

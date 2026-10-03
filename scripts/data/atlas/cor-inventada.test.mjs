@@ -32,8 +32,13 @@
 //     contraste não é borrado; a montagem devolve a foto onde σ_loc é mínima e, no
 //     corte, o passa-baixa da foto mais o passa-alta da síntese; a troca de σ é
 //     contínua (os pesos e o resultado, de um lado e do outro de cada oitava).
+// 12. O PORTÃO DO GERADOR (M3, `portaoDaCor` em `baixa-texturas.mjs`): grava só o
+//     RGB cujo sha256 é o aprovado para a chave; sem entrada (ou aprovado só para
+//     outra chave) ou com outro hash recusa, e a mensagem fala do map.jpg.
 // ============================================================
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
+import { portaoDaCor } from './baixa-texturas.mjs';
 import {
   corteDeErroMinimo, dentroDoTom, detalheNoAlvo, dilataMascara, fontesDaCor, ganhoDaLuminancia, geometriaDoCorte, gradeReduzida, joelhoDaCor,
   joelhoDoBranco, joelhoSuave, mapaDeResolucao, montagemDaFoto, pesoDoNivel, pontoDaOrigem, razaoNoJoelho, reduzMascara, tomDeGrandeEscala,
@@ -470,6 +475,35 @@ describe('a M2: a resolução local e a montagem', () => {
       let maior = 0;
       for (let k = 0; k < n; k += 1) maior = Math.max(maior, Math.abs(antes[k] - depois[k]));
       expect(maior).toBeLessThan(0.05);
+    }
+  });
+});
+
+describe('o portão do gerador (M3)', () => {
+  it('grava só o RGB aprovado para a chave; sem entrada ou com outro hash recusa, e a mensagem fala do map.jpg', () => {
+    const rgb = Uint8Array.from({ length: 4 * 2 * 3 }, (_, k) => (k * 37) % 256);
+    const certo = createHash('sha256').update(rgb).digest('hex');
+    const chave = 'sul:1,borrado:1';
+    const comAprovados = (aprovados) => portaoDaCor({ rotulo: 'pluto/map', chave, rgb, aprovados });
+
+    expect(comAprovados({ [chave]: certo })).toMatchObject({ grava: true, sha256: certo });
+
+    const semEntrada = comAprovados({});
+    expect(semEntrada).toMatchObject({ grava: false, sha256: certo });
+    expect(semEntrada.mensagem).toContain(certo);
+    expect(semEntrada.mensagem).toContain(`corInventada.sha256Aprovado["${chave}"]`);
+    // o aprovado da M1 sozinha não serve à chave da M1 com a M2
+    expect(comAprovados({ 'sul:1': certo }).grava).toBe(false);
+
+    const outro = 'f'.repeat(64);
+    const diferente = comAprovados({ [chave]: outro });
+    expect(diferente.grava).toBe(false);
+    expect(diferente.mensagem).toContain(certo);
+    expect(diferente.mensagem).toContain(outro);
+
+    for (const { mensagem } of [semEntrada, diferente]) {
+      expect(mensagem).toMatch(/o map\.jpg NÃO foi gravado/);
+      expect(mensagem).not.toMatch(/normal\.png/);
     }
   });
 });
