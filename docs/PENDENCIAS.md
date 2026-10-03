@@ -4,74 +4,35 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 230.**
 
-## O BASTÃO — onde a rodada parou (03/10, madrugada) — RELEVO PRONTO; COR INVENTADA ASSANDO NO TERMINAL DELE
+## O BASTÃO — onde a rodada parou (03/10, manhã) — RELEVO E COR INVENTADOS NO MAIN, À ESPERA DA PUBLICAÇÃO
 
-**Estado:** dois ramos, um sobre o outro. `relevo-inventado`: o relevo
-inventado de Plutão e Caronte, pronto, assado, verificado e fotografado
-(02/10); ele viu na foto 4 de Caronte uma "emenda reta" que era da COR (a
-borda do tapa-buraco do sul, item 149), e disse NÃO ao merge até a cor
-ficar pronta. `cor-inventada` (nasce do relevo; backup em
-`origin/cor-inventada`): a cor inventada do sul nunca fotografado (M1
-Caronte; M1b Plutão na variante "serena") e o detalhe fino do lado de trás
-borrado (M2), por transferência de textura na esfera guiada pelo relevo —
-os dois APROVADOS por prancha (02/10, noite): *"Sim, aprovado"* (sul de
-Caronte), *"C — serena"* (sul de Plutão), *"Sim, os dois aprovados"* (lado
-de trás). A cadeia oficial (`baixa-texturas.mjs`, passo `inventaCorDoMapa`
-em `girarMapa`) tem o portão por hash fixado com a palavra dele (chave
-`sul:1,borrado:1`: Caronte 129601ed…2212, Plutão 51ed5b2a…ea15) e a
-confissão pt/en (`ASSETS.md`, `texturas-em-ingles.mjs`), commit a41896a.
-Plano e andamento: `PLAN-COR.md`.
+**Estado:** as duas rodadas — o relevo inventado (ramo `relevo-inventado`)
+e a cor inventada (ramo `cor-inventada`) de Plutão e Caronte — estão
+FECHADAS e no `main` (merge em avanço simples em 03/10, com a palavra dele:
+*"pode seguir com as fotos finais e o merge"*); backup em `origin/backup`.
+Tudo assado, verificado (`npm run data:verify` e `npm run done` verdes) e
+fotografado no app de verdade nas 11 vistas das pranchas
+(`capturas/relevo-e-cor-final-app-prancha.jpg`). NÃO publicado: o push da
+`main` é dele.
 
-**ASSADO (03/10, madrugada), no painel de terminal dele** (a pedido dele:
-*"rode tudo por favor, nao quero ter que ficar fazendo essas tarefas
-mecanicas"*): `baixa-texturas.mjs pluto` → `charon` →
-`otimiza-texturas.mjs pluto charon` → `gera-manifest-texturas.mjs` →
-`npm run data:verify` → `RODADA-COR-OK`. Os dois passaram o portão; o
-map.jpg gravado é byte a byte o candidato fotografado (sha256 iguais);
-as variantes de tamanho batem com a escada da prévia (duas webp de
-Caronte, 2048 e 1024, descartadas pela guarda por não ficarem menores que
-o jpg — esperado; o manifesto tem 289 variantes); confissão nas duas
-línguas no manifesto; verificação verde. Tudo COMMITADO no ramo
-`cor-inventada` (mapas, manifesto, bastão) e no backup.
+**Falta (dele):** publicar (`git push origin main`). Depois, a sessão
+seguinte confere no ar por sha256 dos mapas
+(`public/textures/atlas/{pluto,charon}/{normal,map}.*`) e abre o site em
+Plutão e Caronte, nas vistas das pranchas, no computador e no celular — os
+mapas de cor ficaram mais pesados (Caronte map.jpg 3,0 → 7 MB; Plutão 4,05
+→ 4,9 MB; os webp também).
 
-**Como retomar (a sessão seguinte):**
-1. Conferências feitas (acima); `git status` limpo no ramo `cor-inventada`.
-5. Fotos do app de verdade nas 11 vistas das pranchas:
-   `capturas/cor-inventada/ferramentas/sessao-02-10/fotos-final-cor.sh`
-   (precisa de um dev server; `APP_URL`), prancha com
-   `prancha-final-cor.mjs` — OLHAR antes de mostrar; mandar a ele.
-6. `npm run done`; commit (mapas, manifesto, anotações); fechamento: item
-   229 e este bastão, `BACKLOG.md` (o "em aberto" abaixo), apagar
-   `PLAN-COR.md`; merge no `main` COM A PALAVRA DELE (`git merge --ff-only
-   cor-inventada` traz o relevo junto); `git push origin main:backup`;
-   publicar é dele; conferir no ar por sha256 dos mapas.
+**Fechado:** item 144 (a parte de Plutão e Caronte: relevo real na metade
+medida, inventado no resto) e item 229 (sul e lado de trás; o que sobrou
+está no `BACKLOG.md`); `PLAN-RELEVO.md` e `PLAN-COR.md` apagados. As
+ferramentas, candidatos, pranchas e medidas das duas rodadas seguem em
+`capturas/relevo-inventado/` e `capturas/cor-inventada/` (fora do git);
+mosaicos crus em `.cache/cor/`, alturas em `.cache/relevo/`.
 
-**Em aberto (para o BACKLOG ao fechar):** os jpg crescem (Caronte map.jpg
-3,0 → ~7 MB, Plutão 4,05 → ~4,9 MB, e os webp) — pesar no celular; o sul de
-Caronte ficou +1,2 DN mais claro que o aprovado da M1 depois da M2, e há uma
-queda de ~20 % do grão num anel de 10 km logo dentro do sul; 349 repetições
-forçadas de retalho na passada de 120 km de Caronte (fonte de Oz Terra
-pequena); o norte borrado de Plutão não tem fonte própria e usa as lâminas
-(amplitude baixa, de propósito); a sombra da variante serena (0,41) foi
-calibrada com uma régua que lia 3 canais como 1 (régua certa: lado nítido de
-Plutão 0,39); `portaoDaCor` troca o texto da mensagem de `decideGravacao`
-por `.replace`; a tabela inteira de texturas para no primeiro portão
-recusado; a sombra assada do lado FOTOGRAFADO continua (correção fotométrica
-é outra rodada).
-
-**Onde estão as peças (fora do git):** `capturas/cor-inventada/` — pranchas
-(`m1-charon-antes-depois.jpg`, `m1b-pluto-antes-depois-v2.jpg`,
-`m1b-pluto-tres-opcoes.jpg`, `m2-{charon,pluto}-antes-depois.jpg`),
-`fotos/`, `ferramentas/{m1,m1b,m2,fotos,sessao-02-10}/` (runners,
-candidatos com `relatorio.json` e `sha256RgbDaFuncao`, escadas, medidas;
-`sessao-02-10/` tem as ferramentas de diagnóstico desta sessão com caminhos
-ajustados, os renders e as provas da M3). Mosaicos crus em `.cache/cor/`. O
-relevo: `capturas/relevo-inventado/` e `capturas/relevo-final-app-prancha.jpg`.
-
-**Lições desta rodada:** trabalhadores Opus com diagnóstico aberto
-estouraram 300–500 mil tokens (M1b, M2); briefs com a causa já medida e
-decidida fecharam em 150–250 mil. A trava dos dados: ele pediu que a cadeia
-rode no painel de terminal dele, e assim foi (duas vezes).
+**A obra seguinte (proposta):** a correção fotométrica da sombra assada no
+lado FOTOGRAFADO (a sombra das fotos da sonda dobra com o relevo na luz do
+app; `BACKLOG.md`) e a mesma receita de relevo + cor inventados para Tritão
+(DEM em ~40 %, item 144).
 ## O BASTÃO anterior (01/10, noite)
 
 **Estado:** tudo no `main`, PUBLICADO por ele em 01/10 à noite (`d323619`,
@@ -449,6 +410,18 @@ conhecidos: emenda com a metade fotografada, polos (a IA estica), tamanho
   serena"* (fundo uniforme, crateras pela sombra do relevo, mosqueado de
   albedo pela metade), que vale também como o grau de mosqueado do lado de
   trás borrado na etapa seguinte.
+- **FEITO em 02–03/10 (ramo `cor-inventada`; no `main` em 03/10 com a
+  palavra dele, *"pode seguir com as fotos finais e o merge"*):** o sul
+  nunca fotografado dos dois corpos e o lado de trás borrado ganharam cor
+  inventada por transferência de textura na esfera, guiada pelo relevo
+  inventado e pelo Sol assado das fotos (medido), com pedaços da cor real
+  do mesmo terreno e de tom parecido, o tom de grande escala continuado da
+  borda fotografada e, no lado de trás, a foto mantida na escala em que a
+  sonda a resolveu (só o detalhe mais fino é inventado); lado de trás
+  aprovado por prancha (*"Sim, os dois aprovados"*); gerador travado por
+  hash com a palavra dele; confissão nas duas línguas na ficha; a pintura
+  por IA não foi precisa. Sobras no `BACKLOG.md`. Prancha final do app:
+  `capturas/relevo-e-cor-final-app-prancha.jpg`.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
