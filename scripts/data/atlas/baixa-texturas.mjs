@@ -102,7 +102,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { inventaCorDoCorpo } from './cor-inventada.mjs';
-import { decideGravacao } from './gera-normal-de-dem.mjs';
+import { decideGravacao, lerCacheDeAlturas } from './gera-normal-de-dem.mjs';
 import {
   CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido, preencherVazioSemDado,
 } from './lib-texturas.mjs';
@@ -914,6 +914,9 @@ export async function girarMapa(
  * a M2). Imprime o que refaz o mapa — versões, sha256 das entradas,
  * semente e variante — e passa pelo PORTÃO (`portaoDaCor`): recusado, o
  * erro leva a mensagem e o map.jpg NÃO é gravado. Devolve o RGB a codificar.
+ * Com `corInventada.semSombra` (PLAN-SOMBRA.md), a sombra assada sai: o vazio
+ * do DEM medido vem do cache das alturas do relevo (`.cache/relevo/<corpo>-4096`,
+ * o que `gera-normal-de-dem.mjs` grava; sem ele, erro) e a chave ganha `,sombra:1`.
  */
 async function inventaCorDoMapa({ origem, rotulo, corpo, corInventada, cru, cor, info }) {
   const arquivoDaNormal = path.join(destinoRaiz, corpo, 'normal.png');
@@ -935,6 +938,15 @@ async function inventaCorDoMapa({ origem, rotulo, corpo, corInventada, cru, cor,
   ]) {
     console.log(`  ${createHash('sha256').update(bytes).digest('hex')}  ${nome}`);
   }
+  let medido = null;
+  if (corInventada.semSombra) {
+    const cache = await lerCacheDeAlturas(path.join(rootDirectory, '.cache', 'relevo'), `${corpo}-4096`);
+    if (!cache) {
+      throw new Error(`${rotulo}: sem a sombra assada pede o cache das alturas do relevo (.cache/relevo/${corpo}-4096); rode antes o relevo (gera-normal-de-dem.mjs ${corpo}).`);
+    }
+    medido = { vazio: cache.partes.vazio, largura: cache.cabecalho.larguraAlvo, altura: cache.cabecalho.alturaAlvo };
+    console.log(`  ${cache.cabecalho.partes.vazio.sha256}  o vazio do DEM medido (cache .cache/relevo/${corpo}-4096)`);
+  }
   const { cor: rgb, chave } = inventaCorDoCorpo({
     id: corpo,
     cor: new Uint8Array(cor.buffer, cor.byteOffset, cor.length),
@@ -945,7 +957,12 @@ async function inventaCorDoMapa({ origem, rotulo, corpo, corInventada, cru, cor,
     normais: { pixels: normal.data, largura: normal.info.width, altura: normal.info.height },
     fonte: JSON.parse(bytesDaFonte.toString('utf8')),
     semente: corInventada.semente,
-    opcoes: { registra: (m) => console.log(`  ${m}`), variante: corInventada.variante, borrado: true },
+    opcoes: {
+      registra: (m) => console.log(`  ${m}`),
+      variante: corInventada.variante,
+      borrado: true,
+      ...(medido ? { semSombra: true, medido } : {}),
+    },
   });
   const portao = portaoDaCor({ rotulo, chave, rgb, aprovados: corInventada.sha256Aprovado });
   if (!portao.grava) throw new Error(portao.mensagem);

@@ -129,6 +129,12 @@
 //  - A LIGAÇÃO COM O SUL: o desfoque junto do lado de trás sai (o vizinho fica nítido) e, na zona livre, a
 //    foto que passava ao inventado é a foto montada (a zona livre entra no alvo da M2).
 //
+// SEM A SOMBRA ASSADA (`opcoes.semSombra`, chave `…,sombra:1`; PLAN-SOMBRA.md, 03/10/2026). O app acende o relevo
+// com o Sol dele, e a sombra que a cor traz dobra com a dele. Com a opção: (1) o inventado não recebe a sombra do
+// relevo do alvo (`sombraNoAlvo` vale 0; os retalhos não mudam — o resultado é afim nela); (2) no fotografado com DEM
+// MEDIDO (`opcoes.medido`, o vazio do DEM na grade das normais), fora do alvo da M1, sai a sombra das fotos que o
+// relevo medido explica (`estimaSombraAssada`, em `sombra-assada.mjs`, sobre o resultado já montado).
+//
 // DETERMINÍSTICO por semente. A prévia e o gerador chamam a MESMA função,
 // `inventaCorDoCorpo`; ela não lê nem grava disco.
 // ============================================================
@@ -149,6 +155,7 @@ import {
   rasterizaPoligono,
   repeticaoMaisPerto,
 } from './relevo-inventado.mjs';
+import { estimaSombraAssada, mediaNaGrade, tiraSombraAssada } from './sombra-assada.mjs';
 
 const GRAUS = 180 / Math.PI;
 const RADIANOS = Math.PI / 180;
@@ -1757,6 +1764,8 @@ function joelhoNaM2(rgb, base, relativo) {
  * `{ cor, mascaras, chave: 'sul:1', relatorio }` — `cor` no formato da
  * entrada, igual a ela byte a byte fora do alvo. Com `opcoes.borrado` (a M2), também o lado de trás borrado:
  * a chave é `sul:1,borrado:1`, `mascaras.alvoDaM2` é o alvo dela e `resolucao` o mapa de resolução (`mapaDeResolucao`).
+ * Com `opcoes.semSombra` (e `opcoes.medido` = `{ vazio, largura, altura }`, o vazio do DEM na grade das normais), a
+ * sombra assada sai (ver o cabeçalho), a chave ganha `,sombra:1` e a cor muda também no fotografado com DEM.
  */
 export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, mascaras: dadas, cru, normais, fonte, semente, opcoes = {} }) {
   const registra = opcoes.registra ?? (() => {});
@@ -2111,8 +2120,8 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
     registra(`ganho do detalhe no vazio: médio ${ganhoNoVazio.medio}, ${ganhoNoVazio.noLimite} % no limite ${JSON.stringify(GANHO_DO_DETALHE)}`);
   }
   // a sombra do relevo do alvo: o ganho medido vezes `sombraNoAlvo` no que veio dos retalhos (novo), e
-  // o ganho medido no que ficou do fotografado (devolve o brilho original)
-  const fatorDaSombra = corpo.sombraNoAlvo ?? 1;
+  // o ganho medido no que ficou do fotografado (devolve o brilho original); sem a sombra assada, zero
+  const fatorDaSombra = opcoes.semSombra ? 0 : corpo.sombraNoAlvo ?? 1;
   // e o resíduo de albedo dos retalhos vezes `amplitudeDoAlbedo` (`detalheNoAlvo`)
   const amplitudeDoAlbedo = corpo.amplitudeDoAlbedo ?? 1;
 
@@ -2338,11 +2347,37 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
     }
   }
   registra(`pronto: ${mudados} texels mudados, todos no alvo (${tempo()})`);
+
+  // SEM A SOMBRA ASSADA (`opcoes.semSombra`): no fotografado com DEM medido, fora do alvo da M1, sai a sombra das
+  // fotos que o relevo medido explica — na grade das normais, sobre o resultado já montado (ver o cabeçalho)
+  let semSombra = null;
+  if (opcoes.semSombra) {
+    const medido = opcoes.medido;
+    if (!medido || medido.largura !== normais.largura || medido.altura !== normais.altura) {
+      throw new Error('inventaCorDoCorpo: semSombra pede o vazio do DEM medido na grade das normais (opcoes.medido).');
+    }
+    const brilhoFino = new Float32Array(n);
+    for (let k = 0; k < n; k += 1) {
+      brilhoFino[k] = cinza
+        ? saida[k * canais]
+        : LUMINANCIA[0] * saida[k * canais] + LUMINANCIA[1] * saida[k * canais + 1] + LUMINANCIA[2] * saida[k * canais + 2];
+    }
+    const brilho = mediaNaGrade(brilhoFino, L, A, normais.largura, normais.altura);
+    const fora = mediaNaGrade(Float32Array.from(m.vazio, (v, k) => (v || m.semDado[k] || m.alvo[k] ? 1 : 0)), L, A, normais.largura, normais.altura);
+    const dominio = Uint8Array.from(brilho, (v, c) => (!medido.vazio[c] && fora[c] === 0 && v >= VAZIO_ATE ? 1 : 0));
+    const { sombra, porBanda } = estimaSombraAssada({ brilho, dominio, normais, raioM, dadoRuim: fonte.dadoRuim ?? [] });
+    const tirada = tiraSombraAssada({ cor: saida, largura: L, altura: A, canais, sombra, L: normais.largura, A: normais.altura });
+    saida.set(tirada.cor);
+    let noDominio = 0;
+    for (const v of dominio) noDominio += v;
+    semSombra = { porcentoDaGradeNoDominio: +((100 * noDominio) / dominio.length).toFixed(1), porBanda, texelsMudados: tirada.mudados };
+    registra(`sem a sombra assada: ${tirada.mudados} texels mudados no fotografado, ganho médio por banda ${porBanda.map((b) => b.ganhoMedio).join(' / ')} (${tempo()})`);
+  }
   m.alvoDaM2 = m2?.alvo ?? null;
   return {
     cor: saida,
     mascaras: m,
-    chave: m2 ? 'sul:1,borrado:1' : 'sul:1',
+    chave: (m2 ? 'sul:1,borrado:1' : 'sul:1') + (opcoes.semSombra ? ',sombra:1' : ''),
     resolucao: m2 ? m2.nivelNaGrade : null,
     relatorio: {
       id,
@@ -2373,6 +2408,7 @@ export function inventaCorDoCorpo({ id, cor, largura: L, altura: A, canais, masc
       fontes: resumoDasFontes,
       passadas,
       m2: m2?.relatorio ?? null,
+      semSombra,
       texelsMudados: mudados,
       tempoS: +((Date.now() - relogio) / 1000).toFixed(1),
     },
