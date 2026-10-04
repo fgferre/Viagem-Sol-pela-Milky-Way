@@ -44,6 +44,18 @@ ferramentas e candidatos em `capturas/tritao/` (fora do git).
    Plutão e Caronte; fora dele fica, confessada.
 6. Mosaico de cor: o de 2014 (sem perda) ou o de 2021 (JPEG, mesma rede do DEM) — decide a régua de alinhamento.
 
+## T0 — medido (04/10; ferramentas em `capturas/tritao/ferramentas/`)
+- Baixados com o sim dele para `.cache/tritao/` (sha256): GlobalFill `f20ed332…` (300 MB), cubo estéreo + sombreado
+  `da17d9b6…`, cubo só sombreado `e056ca42…`, mosaico 2021 ogb `10ed7850…` (14165×7083 RGB, cilíndrica −180..180 E).
+- Cubos (`le-cubo.mjs`): ISIS Real Lsb em ladrilhos 151×128, 6493×2636, cilíndrica simples, centro 0°, R 1352,6 km,
+  lon −70..95 E, lat −21..46, 600 m/px; os valores estão em KM; furos NaN nas marcas da câmera (reseau) e entre
+  quadros. Só sombreado: 50 % da janela válida (~13 % do globo), −1,4..1,5 km; estéreo + sombreado: 17 % (~4 %),
+  −1,2..1,2 km.
+- Alinhamento (`registro-tritao.mjs`, janela −30..60 E, −10..40): o mosaico de 2021 casa com o DEM em r 0,80 com
+  deslocamento ZERO, Sol das fotos a 210° (sul-sudoeste, o subsolar a 45°S); o GlobalFill de 2014 não casa (r 0,03;
+  0,11 no melhor de ±15 px) — rede de controle antiga. **Decisão: o mosaico de cor é o de 2021 (ogb).** O r tão alto
+  é porque o DEM de sombreado saiu destas fotos: onde há DEM, a sombra assada sai quase inteira.
+
 ## Etapas
 - T0. Dados e medidas: baixar com o sim dele (GlobalFill 300 MB, os dois cubos 67 MB cada, o ogb ~18 MB) para
   `.cache/`; ler os cubos (o cabeçalho ISIS traz a projeção); medir cobertura, alinhamento DEM × mosaicos e resolução
