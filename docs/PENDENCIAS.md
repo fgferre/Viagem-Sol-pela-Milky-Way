@@ -4,11 +4,12 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 230.**
 
-## O BASTÃO — onde a rodada parou (03/10, noite) — SOMBRA DOBRADA FEITA NO RAMO, À ESPERA DO MERGE
+## O BASTÃO — onde a rodada parou (03/10, noite) — SOMBRA DOBRADA NO MAIN, À ESPERA DA PUBLICAÇÃO; TRITÃO EM PLANO
 
 **Estado:** a sombra dobrada de Plutão e Caronte (item 1 da fila) está
-FEITA no ramo `sombra-dobrada` (backup em `origin/sombra-dobrada`), com a
-palavra dele por prancha (03/10, noite): *"aprovado, tira a sombra do sul
+FEITA e no `main` (merge em avanço simples em 03/10, com a palavra dele:
+*"pode juntar ao principal e seguir com tritão"*; backup em `origin/backup`;
+o ramo `sombra-dobrada` fica como estava), com a palavra dele por prancha (03/10, noite): *"aprovado, tira a sombra do sul
 também e roda no terminal"*. Saiu a sombra das fotos que o relevo MEDIDO
 explica (regressão local, porque o Sol muda de foto para foto:
 `scripts/data/atlas/sombra-assada.mjs`) e a que a rodada da cor tinha posto
@@ -22,14 +23,13 @@ prancha e as onze vistas das pranchas anteriores não têm defeito novo
 (`capturas/sombra-dobrada/fotos/onze-vistas-prancha.jpg`). Ferramentas,
 candidatos e pranchas em `capturas/sombra-dobrada/` (fora do git).
 
-**Falta:** a palavra dele para o merge no `main` (avanço simples) e, depois,
-a publicação, que é dele. A conferência no celular também é dele: *"Depois
+**Falta:** a publicação, que é dele. A conferência no celular também é dele: *"Depois
 eu verifico tudo no celular e etc."*.
 
 **A fila, nas palavras dele (03/10, manhã):** *"vamos tirar a sombra e
 tritao tb vamos fazer a receita"*.
 1. ~~A sombra dobrada de Plutão e Caronte~~ — feita (acima).
-2. **Tritão com a receita inteira** (item 144): relevo inventado na metade
+2. **Tritão com a receita inteira** (item 144) — EM PLANO (03/10, noite): relevo inventado na metade
    sem DEM (Schenk/LPI, ~40 % — conferir cobertura e licença) e cor
    inventada no resto, com os dois módulos prontos
    (`relevo-inventado.mjs`, `cor-inventada.mjs`). Diferenças a planejar
