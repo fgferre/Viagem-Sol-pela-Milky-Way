@@ -328,6 +328,9 @@ export const NORMAL_MEDIDA: Readonly<Record<string, number>> = {
   vesta: 1,
   pluto: 1,
   charon: 1,
+  // EXPERIMENTO (PLAN-TRITAO.md, 04/10, ramo `tritao`): o relevo de Tritão — o DEM de Schenk 2021 onde medido, o
+  // inventado no resto — para a comparação lado a lado com o mapa de hoje; só entra no main com a palavra dele
+  triton: 1,
 };
 
 /** Raios do corpo em pc — BODY_AXES (a fonte única) pelos

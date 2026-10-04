@@ -303,6 +303,8 @@ export const BUMP_DO_ALBEDO: Readonly<Record<string, number>> = {
   // propósito: o albedo não empresta relevo ao lado sem medida.
   pluto: 0,
   charon: 0,
+  // EXPERIMENTO (PLAN-TRITAO.md, 04/10, ramo `tritao`): com a normal de Tritão, o bump da cor sai
+  triton: 0,
   // ITEM 141 (decisão dele, 03/09, "pode zerar Europa e Io"): nas duas a
   // mancha do mapa é COR, não forma — as linhas de Europa são gelo tingido
   // sobre uma casca lisa, e Io é enxofre de todas as cores sobre planícies

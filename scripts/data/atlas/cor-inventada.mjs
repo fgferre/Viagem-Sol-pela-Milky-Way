@@ -184,7 +184,13 @@ const ZONA_LIVRE_KM = 15;
  * do brilho com n·L no lado medido (Caronte: az 330°, el 45°, r = 0,34;
  * Plutão: az 320°, el 30°, r = 0,40).
  */
-export const SOL_ASSADO = { charon: [-0.354, 0.612, 0.707], pluto: [-0.557, 0.663, 0.5] };
+export const SOL_ASSADO = {
+  charon: [-0.354, 0.612, 0.707],
+  pluto: [-0.557, 0.663, 0.5],
+  // Tritão (PLAN-TRITAO.md, 04/10): o mosaico de 2021 casa com o DEM de sombreado em r 0,80 para o Sol a 210°
+  // (sul-sudoeste; o subsolar estava a 45°S) e 30° de elevação (`capturas/tritao/ferramentas/registro-tritao.mjs`)
+  triton: [-0.433, -0.75, 0.5],
+};
 
 /** Os pesos da luminância (Rec. 601) em que a cor de três canais é medida e escolhida. */
 const LUMINANCIA = [0.299, 0.587, 0.114];
@@ -316,6 +322,28 @@ const POR_CORPO = {
       calma: CALMA_DE_PLUTAO,
       serena: { ...CALMA_DE_PLUTAO, amplitudeDoAlbedo: 0.5, sombraNoAlvo: 0.41 },
     },
+  },
+  // Tritão (PLAN-TRITAO.md, 04/10): a PRIMEIRA proposta, para a comparação lado a lado com o mapa de hoje — o mosaico
+  // de 3 cores de Schenk 2021 (14165×7083, 600 m/px) reduzido a 8192×4096 (1,04 km/texel), cor realçada em três
+  // canais como a de Plutão: régua relativa, detalhe multiplicativo, tom parecido nas fontes; as caixas nítidas são
+  // o cantaloupe, Cipango e o terreno macular do sul (o domo nítido de −75 a +90°E); o resto, os números de Plutão,
+  // a medir se a comparação valer a pena.
+  triton: {
+    raioM: 1352600,
+    caixasNitidas: [
+      { lon: [340, 360], lat: [10, 35] },
+      { lon: [15, 40], lat: [8, 30] },
+      { lon: [0, 30], lat: [-40, -15] },
+    ],
+    reguaRelativa: true,
+    faixaRasanteKm: { bom: 20, borrado: 75 },
+    haloDoVazioTexels: 6,
+    haloDosBuracosTexels: 4,
+    desfoqueDoBorradoKm: 10,
+    grades: { meia: 2, fontes: 4, tom: 4 },
+    detalheMultiplicativo: true,
+    filtroDeTom: { sigmaKm: 40, fatores: [1.5, 2, 3], minimo: 16 },
+    joelhoRelativo: { inicio: 1.6, folga: 0.4 },
   },
 };
 
