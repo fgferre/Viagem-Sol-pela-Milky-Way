@@ -406,7 +406,9 @@ const FONTES = [
   // (PLAN-COR.md), o tapa-buraco é só o passo de antes: `corInventada`
   // refaz o sul e o lado de trás borrado com a semente e a variante das
   // prévias, e `sha256Aprovado` sem a chave das escolhas (`sul:1,borrado:1`)
-  // = ainda não aprovado: o gerador imprime o hash e não grava.
+  // = ainda não aprovado: o gerador imprime o hash e não grava. Desde a
+  // rodada da sombra (PLAN-SOMBRA.md), `semSombra` tira a sombra assada das
+  // fotos e a do inventado, e a chave é `sul:1,borrado:1,sombra:1`.
   {
     corpo: 'pluto',
     canal: 'map',
@@ -422,11 +424,14 @@ const FONTES = [
     // "serena", que vale também como o grau de mosqueado do lado de trás
     // a palavra dele (02/10/2026, por prancha): o sul na variante "serena" e o
     // lado de trás com o detalhe fino refeito — o candidato M1+M2 fotografado
+    // a palavra dele (03/10/2026, por prancha, PLAN-SOMBRA.md): "aprovado, tira a
+    // sombra do sul também" — sem a sombra assada, o candidato v5 fotografado
     corInventada: {
       semente: 20261002,
       variante: 'serena',
+      semSombra: true,
       sha256Aprovado: {
-        'sul:1,borrado:1': '51ed5b2a916405f58745e693786a852051c7471dff29c7694f1e1d41ce12ea15',
+        'sul:1,borrado:1,sombra:1': '113d8a42654fb3b2641b131ee62e330269b3e15238e67caecc467ef057312494',
       },
     },
   },
@@ -446,10 +451,13 @@ const FONTES = [
     // variante — e a cor segue cinza: os retalhos vêm do próprio mosaico
     // a palavra dele (02/10/2026, por prancha): o sul aprovado e o lado de
     // trás com o detalhe fino refeito — o candidato M1+M2 fotografado
+    // a palavra dele (03/10/2026, por prancha, PLAN-SOMBRA.md): "aprovado, tira a
+    // sombra do sul também" — sem a sombra assada, o candidato v5 fotografado
     corInventada: {
       semente: 20261002,
+      semSombra: true,
       sha256Aprovado: {
-        'sul:1,borrado:1': '129601ed63ab16445acd78c15ca6d20812028e63835d82d876f2f6de18752212',
+        'sul:1,borrado:1,sombra:1': '4536b08a8e0530efe1ad8d639e2da641c4115eaab9ac797597318f9c9a65b77b',
       },
     },
   },

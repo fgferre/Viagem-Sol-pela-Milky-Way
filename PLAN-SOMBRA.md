@@ -34,11 +34,17 @@ Sol assado (`sombraNoAlvo`), para casar com o lado fotografado — dobram també
 
 ## Etapas
 1. [feito] Medir e prototipar (V1 → V3) com simulação de Lambert (`render-lambert.mjs`).
-2. [ ] V4 do protótipo: oitavas do relevo, `dadoRuim` por banda, rampa por banda; conferir polos e limbo.
-3. [ ] Fotos do app com o candidato (CDP), lado fotografado dos dois, Sol do norte (hoje) e do sul (1980), relevo
-   ligado e desligado; prancha antes | depois para ele.
-4. [ ] O inventado sem a sombra (opção em `inventaCorDoCorpo`), fotos do sul (T4, P5) antes | depois; palavra dele.
-5. [ ] Levar ao módulo com teste; portão; confissão pt/en na ficha.
+2. [feito] V4 (oitavas do relevo, `dadoRuim` por banda, rampa por banda) levada ao módulo `sombra-assada.mjs`
+   (teste em miniatura: direção 313° para 315°, erro relativo ao albedo a 0,30 do de antes) e ligada como
+   `opcoes.semSombra` em `inventaCorDoCorpo` (+ `corInventada.semSombra` em `baixa-texturas.mjs`, o DEM do cache).
+   Desligada, a cadeia reproduz os mapas aprovados por hash (`previa-sombra.mjs --com-sombra`, os dois IGUAIS).
+3. [feito] Candidatos v5 pela função da cadeia (`previa-sombra.mjs`, ~6,5 min cada): sha256 do RGB da função
+   Caronte `4536b08a8e0530efe1ad8d639e2da641c4115eaab9ac797597318f9c9a65b77b`, Plutão
+   `113d8a42654fb3b2641b131ee62e330269b3e15238e67caecc467ef057312494` (chave `sul:1,borrado:1,sombra:1`); fotos do app
+   (`fotos-v5.sh`: Sol do norte = hoje, do sul = 1950) e pranchas `capturas/sombra-dobrada/olhar/prancha-*-v5.jpg`.
+4. [ ] A palavra dele por prancha (o fotografado e o sul inventado sem a sombra).
+5. [ ] Com o sim: `semSombra: true` e o hash aprovado nas duas entradas; confissão pt/en na ficha (sai "com a
+   sombra que ele daria sob o Sol das fotos"; entra o que sai e o que fica).
 6. [ ] Assar (no terminal dele, com o sim dele), conferir hash e escada, `data:verify`, `done`, fotos finais, merge
    com a palavra dele.
 
