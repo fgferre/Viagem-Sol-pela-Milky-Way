@@ -548,8 +548,8 @@
       "arquivo": "textures/atlas/charon/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 140321,
-      "sha256": "b79f098146265416bc42ba69b420c39491a8d2a06ea320a39bdba703722c99bc",
+      "bytes": 135532,
+      "sha256": "f07a09fa7e2ad1a3a3a93baeba093d5c0030ff2bc8c8887449e8b1e62173bcd7",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
@@ -567,8 +567,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -577,8 +577,8 @@
       "arquivo": "textures/atlas/charon/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 541205,
-      "sha256": "846a354d1f272a4f61b50be7a147d383e61bf2b2643a0de265aa714ef2d64f7c",
+      "bytes": 529185,
+      "sha256": "9af31415583f72713adb1cdd5805621c4059cc3daf1ec4d157bac718fba3effb",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
@@ -596,8 +596,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -606,8 +606,8 @@
       "arquivo": "textures/atlas/charon/map_4096.jpg",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1890692,
-      "sha256": "999752023b05d79db518ccaf64bc7169d73492a505ad0449901b66d90e13a34c",
+      "bytes": 1872397,
+      "sha256": "695ff24264dab05344efdc7a78d010f74c671a3f47cf488f0cd0de66aa65a026",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
@@ -625,8 +625,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -635,8 +635,8 @@
       "arquivo": "textures/atlas/charon/map_4096.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1855640,
-      "sha256": "227b2bb3501a4a0afd83808674a03f9d87badef626283623c4f9045d441b1414",
+      "bytes": 1838788,
+      "sha256": "55385e01843567f1b1f18b9bab23c0ba465165aa14266ef7a6bb53c99555e6ad",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
@@ -654,8 +654,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -664,8 +664,8 @@
       "arquivo": "textures/atlas/charon/map.jpg",
       "larguraPx": 8192,
       "alturaPx": 4096,
-      "bytes": 7079178,
-      "sha256": "2d48e7b24762fd4fd0ea8c924f7e33bd5e56bc8dbeef5fd0679ec96a632fd0b9",
+      "bytes": 7052891,
+      "sha256": "f75967c2e3e2c573edd46aeb2e791010a1a9a09b6d80d9cd81de6a207247d34b",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
@@ -683,8 +683,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -693,8 +693,8 @@
       "arquivo": "textures/atlas/charon/map.webp",
       "larguraPx": 8192,
       "alturaPx": 4096,
-      "bytes": 6055162,
-      "sha256": "2bd25874cfbb9b07b2a9d9692d5fa3ace8cc0677eb831aa43d780d17016d90ad",
+      "bytes": 6031916,
+      "sha256": "f5ea369c3d0605ffb50d54a4c610fb2150e3ae7c2488be17e7f16d080159b105",
       "origem": {
         "fonte": {
           "pt": "New Horizons LORRI+MVIC — mosaico global de Caronte a 300 m (USGS Astrogeology, 12693×6347)",
@@ -712,8 +712,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -5777,8 +5777,8 @@
       "arquivo": "textures/atlas/pluto/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 113759,
-      "sha256": "782c8623c93bfab1b2302b3244c4c3ebde98a827ec35f45ab8f2ef3ade0975b7",
+      "bytes": 109379,
+      "sha256": "a8f712834ad14a9179bc23ee0f221f07c9e6cc2c0630306611e99cad0b36e834",
       "origem": {
         "fonte": {
           "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
@@ -5796,8 +5796,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -5806,8 +5806,8 @@
       "arquivo": "textures/atlas/pluto/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 83612,
-      "sha256": "bd751002696d0378e15e624c313af84f2c94fa576b6988c7102cab5eb9ebaf2a",
+      "bytes": 76956,
+      "sha256": "de810d1064a58fe2fdbb5f98f5c0fa0095ca395f95c4d682a0dfa2cc986ab87e",
       "origem": {
         "fonte": {
           "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
@@ -5825,8 +5825,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -5835,8 +5835,8 @@
       "arquivo": "textures/atlas/pluto/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 469729,
-      "sha256": "d579089dbbfb306dde82084121b2a7c558cbbf8be3776f59b4e676ee97e8fe85",
+      "bytes": 452471,
+      "sha256": "ffbc55c076cc290b0fac0370c3dafa8e1d01bceb329a4c5ccd4b96504ccabd71",
       "origem": {
         "fonte": {
           "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
@@ -5854,8 +5854,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -5864,8 +5864,8 @@
       "arquivo": "textures/atlas/pluto/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 368426,
-      "sha256": "1a39a7f952fcdb92a78e06c79ad02ddf6498f579a8c72b0a25d3235f9ed6fff1",
+      "bytes": 348342,
+      "sha256": "7e014396006f3a848afe0844de6fa611e747d1bba6a41004a197f894cb7f7156",
       "origem": {
         "fonte": {
           "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
@@ -5883,8 +5883,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -5893,8 +5893,8 @@
       "arquivo": "textures/atlas/pluto/map_4096.jpg",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1847339,
-      "sha256": "a328fa9d7ac431425aa9ef904996fc9ff0660b85f577fc776b0b016f661361ec",
+      "bytes": 1816523,
+      "sha256": "a41df2d9eed4335aa1d74ac580ff6124616835311bc1085ce930fe51ff48a7bc",
       "origem": {
         "fonte": {
           "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
@@ -5912,8 +5912,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -5922,8 +5922,8 @@
       "arquivo": "textures/atlas/pluto/map_4096.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1459534,
-      "sha256": "8ff548fdda655088bdc10a76f555915e3b06e5141276a671bffc590a274e9edb",
+      "bytes": 1431172,
+      "sha256": "e99538f515b34f6807e1cbbbe786a48a884e5d6dc1fb47412413439569a01cf2",
       "origem": {
         "fonte": {
           "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
@@ -5941,8 +5941,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -5951,8 +5951,8 @@
       "arquivo": "textures/atlas/pluto/map.jpg",
       "larguraPx": 5926,
       "alturaPx": 2963,
-      "bytes": 4899428,
-      "sha256": "e4876cb3c76cd5967bc54f585c014135fb1b7099e00c19817890cb92f2bc2f28",
+      "bytes": 4864141,
+      "sha256": "98891e6ac96bc0ab08032958a99a3c274b8d98b39ba7808089e309030da8359b",
       "origem": {
         "fonte": {
           "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
@@ -5970,8 +5970,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
@@ -5980,8 +5980,8 @@
       "arquivo": "textures/atlas/pluto/map.webp",
       "larguraPx": 5926,
       "alturaPx": 2963,
-      "bytes": 3195890,
-      "sha256": "1699d20e5bc88cf6737e3d4b470d48e6e873725b3904fcde30552146c1a3dd56",
+      "bytes": 3138432,
+      "sha256": "b1a0b379098b40c19862849d582ce66d80327242807f04d021c2e59174161172",
       "origem": {
         "fonte": {
           "pt": "New Horizons Ralph/MVIC — mapa global em cor de Plutão (PIA11707, 5926×2963)",
@@ -5999,8 +5999,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado e com a sombra que ele daria sob o Sol das fotos, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma",
-        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief and carrying the shading it would cast under the Sun of the images, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way"
+        "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
+        "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
       }
     },
     {
