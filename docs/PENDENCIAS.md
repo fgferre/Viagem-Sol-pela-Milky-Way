@@ -4,41 +4,33 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 230.**
 
-## O BASTÃO — onde a rodada parou (03/10, noite) — SOMBRA DOBRADA NO MAIN, À ESPERA DA PUBLICAÇÃO; TRITÃO EM PLANO
+## O BASTÃO — onde a rodada parou (04/10) — SOMBRA DOBRADA NO MAIN, À ESPERA DA PUBLICAÇÃO; TRITÃO PAUSADO
 
-**Estado:** a sombra dobrada de Plutão e Caronte (item 1 da fila) está
-FEITA e no `main` (merge em avanço simples em 03/10, com a palavra dele:
-*"pode juntar ao principal e seguir com tritão"*; backup em `origin/backup`;
-o ramo `sombra-dobrada` fica como estava), com a palavra dele por prancha (03/10, noite): *"aprovado, tira a sombra do sul
-também e roda no terminal"*. Saiu a sombra das fotos que o relevo MEDIDO
-explica (regressão local, porque o Sol muda de foto para foto:
-`scripts/data/atlas/sombra-assada.mjs`) e a que a rodada da cor tinha posto
-no sul e no lado de trás inventados; fica a mais fina, que o DEM não
-resolve (confessada na ficha nas duas línguas). A cadeia rodou no terminal
-dele a pedido dele (`RODADA-SOMBRA-OK`): os dois map.jpg são byte a byte os
-candidatos fotografados (portão por hash, chave `sul:1,borrado:1,sombra:1`),
-a escada bate com a da prévia, `npm run data:verify` e `npm run done`
-verdes, as fotos do app de verdade são idênticas pixel a pixel às da
-prancha e as onze vistas das pranchas anteriores não têm defeito novo
-(`capturas/sombra-dobrada/fotos/onze-vistas-prancha.jpg`). Ferramentas,
-candidatos e pranchas em `capturas/sombra-dobrada/` (fora do git).
+**Estado:** a sombra dobrada de Plutão e Caronte está FEITA e no `main`
+(03/10, com a palavra dele: *"pode juntar ao principal e seguir com
+tritão"*; backup em `origin/backup`): saiu a sombra das fotos que o relevo
+medido explica (`scripts/data/atlas/sombra-assada.mjs`) e a que a rodada da
+cor tinha posto no inventado; assada no terminal dele a pedido dele, byte a
+byte o candidato aprovado, `data:verify` e `npm run done` verdes, fotos do
+app idênticas às da prancha. Ferramentas em `capturas/sombra-dobrada/`.
 
-**Falta:** a publicação, que é dele. A conferência no celular também é dele: *"Depois
-eu verifico tudo no celular e etc."*.
+**Tritão: PAUSADO por decisão dele (04/10).** *"acho q tritao esta bom hj,
+vamos tomar cuidado para nao piorar"*; comparada lado a lado no app
+(`capturas/tritao/olhar/prancha-comparacao-v1.jpg`), a primeira versão da
+receita ganhou na face fotografada e PERDEU no lado oposto a Netuno (o que
+o Sol ilumina hoje: foto de aproximação borrada, com manchas de cor) — ele
+escolheu *deixar como está*. Fica o mapa de hoje (redesenho por IA). Nada
+foi ao `main` além deste bastão. O trabalho fica no ramo `tritao` (backup
+`origin/tritao`): o plano com fatos, medidas e a ideia da segunda tentativa
+(`PLAN-TRITAO.md` do ramo), o leitor de cubo ISIS com teste, Tritão na cor
+inventada e, como experimento só do ramo, a normal ligada; dados em
+`.cache/tritao/` (mosaico 2021 e os dois DEMs de Schenk, baixados com o sim
+dele), ferramentas em `capturas/tritao/ferramentas/`. Só retomar se ele
+pedir.
 
-**A fila, nas palavras dele (03/10, manhã):** *"vamos tirar a sombra e
-tritao tb vamos fazer a receita"*.
-1. ~~A sombra dobrada de Plutão e Caronte~~ — feita (acima).
-2. **Tritão com a receita inteira** (item 144) — EM PLANO (03/10, noite): relevo inventado na metade
-   sem DEM (Schenk/LPI, ~40 % — conferir cobertura e licença) e cor
-   inventada no resto, com os dois módulos prontos
-   (`relevo-inventado.mjs`, `cor-inventada.mjs`). Diferenças a planejar
-   ANTES de codar, num plano próprio (`PLAN-TRITAO.md`): não há mapa
-   geológico do lado nunca visto (unidades por palpite a partir do lado
-   visto — cantaloupe, planícies, calota —, confessado) e não há foto
-   borrada para guiar (só a etapa do sul, M1, não a M2); o mapa de cor atual
-   de Tritão tem ~60 % tapado com tom médio (item 147). Rodada longa, umas
-   duas sessões, com as palavras dele por prancha em cada marco.
+**Falta:** a publicação da sombra dobrada, que é dele, e a conferência no
+celular, também dele (*"Depois eu verifico tudo no celular e etc."*). A
+fila dele está vazia.
 
 ## O BASTÃO anterior (03/10, manhã) — relevo e cor inventados no main, publicados
 
