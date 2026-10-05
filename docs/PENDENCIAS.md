@@ -504,6 +504,8 @@ Vesta e Deimos (elipsoides sem forma), Tritão (metade reconstruída por IA
 sobre a Voyager 2), Ariel (norte inventado), Titã (só a névoa, 720×360),
 Vênus (só o topo das nuvens — correto visto de fora; a superfície é radar),
 Jápeto (altura sintética na crista; a crista real é o que o filme mostra).
+Acrescentada em 05/10, vista na prova do Ato II do filme solar: Europa (o
+mapa é monocromático — as rachaduras saem pretas, não avermelhadas).
 Obra a desenhar quando chegar a vez, pela receita das rodadas de Plutão,
 Caronte e Hipérion (fonte com licença, extrapolação confessada, prova por
 foto); o filme solar (roteiro em `docs/ROTEIRO-VIAGEM-SOLAR.md`) é quem
