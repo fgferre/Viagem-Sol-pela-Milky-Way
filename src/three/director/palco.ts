@@ -57,6 +57,7 @@ export function quadroDoPalcoVazio(): QuadroDoPalco {
     focoDoAtlas: false,
     pedidoDoRoteiro: false,
     politica: 'assistida',
+    luzDoRoteiro: 0,
     tS: 0,
     dtS: 0,
     psf: { expoM0: 0, sigmaPx: 0, beta: 0 },

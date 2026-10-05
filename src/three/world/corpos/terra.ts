@@ -314,6 +314,8 @@ export interface QuadroDaTerra {
   /** o roteiro do filme declarou este corpo — o segurador monotônico. */
   pedidoDoRoteiro: boolean;
   politica: PoliticaDeLuz;
+  /** a curva `camera.luz` do filme neste quadro (F2b, `kDaLuz`); ausente = 0 */
+  luzDoRoteiro?: number;
   /** o relógio de PAREDE do app em segundos (o `t` do tick) — só a
    *  carência da descarga o consome (`CARENCIA_DA_DESCARGA_S`). */
   tS: number;
@@ -616,7 +618,7 @@ export class TerraResolvida {
     // bit. A Terra deixou de ser bit-idêntica ao pré-91 — a âncora valia
     // ~1 e agora vale 1 exato, e a lanterna e a logística movem o resto.
     // É o preço declarado de copiar a receita. Ver `luzDaVisita.ts`.
-    const ganho = ganhoDoGlobo(this.rUA, q.politica);
+    const ganho = ganhoDoGlobo(this.rUA, q.politica, q.luzDoRoteiro);
 
     // direção Terra→Sol na cena: o Sol é a ORIGEM (−centro normalizado)
     const dirSol = this.vTmp.copy(this.centro).multiplyScalar(-1);
@@ -638,7 +640,7 @@ export class TerraResolvida {
     // a lanterna de leitura e o `s` do terminador (item 93) — SÓ na
     // superfície: as cidades, as nuvens e o Nishita ficam como estavam,
     // que é o que o contrato manda.
-    escreverLuzDaVisita(uS, q.politica, 0);
+    escreverLuzDaVisita(uS, q.politica, 0, q.luzDoRoteiro, ganho);
     // a sombra do eclipse (F2c) — resolvida no cache de jd; aqui só vira
     // uniform, no frame local pela mesma base do uDirSolLocal
     escreverSombraDeEclipse(uS, this.sombra, this.vX, this.vY, this.vZ, 0);

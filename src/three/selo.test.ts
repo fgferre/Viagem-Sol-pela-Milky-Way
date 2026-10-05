@@ -85,6 +85,8 @@ const LIMPA: EstadoDaVista = {
   // estado sem assistência nenhuma. O arranque do filme tem os seus
   // testes próprios (bloco da dose).
   doseDoSol: 1,
+  // sem travessia de luz do roteiro (F2b), pelo mesmo motivo da dose
+  luzDoRoteiro: 0,
   // (stopsDaPupila saiu da fixture no M2 — a pupila morreu inteira e o
   // estado da vista não tem mais adaptação por quadro a declarar.)
 };
@@ -487,6 +489,19 @@ describe('2c. a política de luz se declara (Onda 6, D2/D8; reescrita no item 91
         (d) => d.chave === 'dose-do-sol'
       )
     ).toBe(true);
+  });
+
+  it('a luz do roteiro (F2b) em travessia é desvio DECLARADO; em `real` não há travessia', () => {
+    const travessia = (luzDoRoteiro: number, luz: 'assistida' | 'real' = 'assistida') =>
+      estadoDoSelo(com({ luz, luzDoRoteiro })).desvios.find((d) => d.chave === 'luz-do-roteiro');
+    const linha = travessia(0.5)!;
+    expect(linha.rotulo).toContain('transição pelo roteiro');
+    // é do filme, não do visitante: clique nenhum a desfaz
+    expect(linha.volta).toBe('nenhuma');
+    // sem a curva não há o que declarar; e quem já está em `real` não é
+    // movido por ela (`kDaLuz`), então a linha também cala
+    expect(travessia(0)).toBeUndefined();
+    expect(travessia(0.5, 'real')).toBeUndefined();
   });
 
   it('clicar volta ao real: aoClicarEmBrilho escreve `real` e o selo limpa', () => {

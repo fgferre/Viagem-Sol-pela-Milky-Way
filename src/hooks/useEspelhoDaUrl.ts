@@ -471,6 +471,22 @@ export function useEspelhoDaUrl(dep: {
     );
   };
 
+  /**
+   * A ESCOLHA DO FILME VAI AO ENDEREÇO (capa, "Mais" e Atlas): o gesto de
+   * escolher escreve `?filme=`, e SÓ quando o filme não é o padrão — a URL
+   * espelha a escolha, nunca o padrão, e voltar ao galáctico apaga a chave.
+   * O resto da query fica como está (`comParam`).
+   */
+  const espelharFilme = () => {
+    const escolhido = directorRef.current?.filmeEscolhido;
+    if (escolhido === undefined) return;
+    window.history.replaceState(
+      null,
+      '',
+      comParam('filme', escolhido === FILME_PADRAO ? null : escolhido)
+    );
+  };
+
   const alternarCamada = (flag: string, ligar: boolean) => {
     const camada = CAMADAS.find((c) => c.flag === flag);
     if (!camada) return;
@@ -525,5 +541,6 @@ export function useEspelhoDaUrl(dep: {
     rotulos3d,
     trocarRotulos3d,
     alternarCamada,
+    espelharFilme,
   };
 }

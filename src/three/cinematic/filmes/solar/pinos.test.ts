@@ -1,8 +1,9 @@
 // Serve: dono — o filme solar encontra cada corpo onde ele está de verdade no instante do filme
 // Os pinos são a efeméride: recomputa cada um pela MESMA cadeia do app
 // (a de voltaParaCasa.test.ts), no relógio do seu ato, e cobra igualdade
-// bit a bit — e cobra a razão do segundo relógio: as luas que a câmera
-// visita estão acesas no céu dos atos II–IV.
+// bit a bit — e cobra a razão dos dois relógios: a Terra vista da Lua
+// meia-iluminada no céu do ato I (JD_A) e as luas que a câmera visita
+// acesas no céu dos atos de fora (JD2).
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -16,7 +17,7 @@ import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../../lib/atlas/frame
 (globalThis as unknown as { window: { location: { search: string } } }).window = {
   location: { search: '' },
 };
-const { PINOS_SOLAR, JD1_SOLAR_TDB, JD2_SOLAR_TDB, DELTA_JD2_HORAS } = await import('./pinos');
+const { PINOS_SOLAR, JD_A_SOLAR_TDB, JD2_SOLAR_TDB, DELTA_JD2_HORAS, CORPOS_DE_JD_A } = await import('./pinos');
 const { JD_DO_FILME_TDB } = await import('../../journey');
 
 const DATA_DIR = fileURLToPath(new URL('../../../../../public/data/atlas/', import.meta.url));
@@ -31,8 +32,8 @@ const motor = new MotorEfemerides(
   )
 );
 
-/** Terra e Lua vivem no céu do ato I; o resto, no dos atos II–IV */
-const jdDe = (id: string) => (id === 'earth' || id === 'moon' ? JD1_SOLAR_TDB : JD2_SOLAR_TDB);
+/** os corpos do prólogo e do ato I vivem em JD_A; o resto, em JD2 */
+const jdDe = (id: string) => (CORPOS_DE_JD_A.has(id) ? JD_A_SOLAR_TDB : JD2_SOLAR_TDB);
 
 const cadeiaPc = (id: string) => {
   const v = motor.posicaoHeliocentrica(id, jdDe(id));
@@ -49,16 +50,16 @@ const anguloSubsolar = (lua: string, planeta: string) => {
 };
 
 describe('os pinos do filme solar são a efeméride', () => {
-  it('o ato I é o instante da coda galáctica; os atos II–IV, 8 h antes', () => {
-    expect(JD1_SOLAR_TDB).toBe(JD_DO_FILME_TDB);
+  it('o ato I é o quarto minguante de 10/01; os atos de fora, 8 h antes da coda galáctica', () => {
+    expect(JD_A_SOLAR_TDB).toBe(2461051.16026012);
     expect(DELTA_JD2_HORAS).toBe(-8);
-    expect(JD2_SOLAR_TDB).toBe(JD1_SOLAR_TDB + DELTA_JD2_HORAS / 24);
+    expect(JD2_SOLAR_TDB).toBe(JD_DO_FILME_TDB + DELTA_JD2_HORAS / 24);
   });
 
-  it('traz todos os corpos que a câmera visita', () => {
+  it('traz todos os corpos que a câmera visita (Marte e Ceres prontos para o próximo trecho do ato I)', () => {
     expect([...PINOS_SOLAR.keys()].sort()).toEqual([
-      'callisto', 'earth', 'enceladus', 'europa', 'ganymede', 'hyperion',
-      'io', 'jupiter', 'mimas', 'moon', 'saturn', 'sun', 'titan',
+      'callisto', 'ceres', 'earth', 'enceladus', 'europa', 'ganymede', 'hyperion',
+      'io', 'jupiter', 'mars', 'mercury', 'mimas', 'moon', 'saturn', 'sun', 'titan', 'venus',
     ]);
   });
 
@@ -75,7 +76,18 @@ describe('os pinos do filme solar são a efeméride', () => {
     expect([s.x, s.y, s.z]).toEqual([0, 0, 0]);
   });
 
-  it('no céu dos atos II–IV, Io, Encélado, Mimas e Hipérion estão fora da sombra, do lado aceso', () => {
+  it('no céu do ato I a Terra vista da Lua está meia-iluminada: k = 0,50 ± 0,01 e elongação 90° ± 1°', () => {
+    const terra = PINOS_SOLAR.get('earth')!;
+    const lua = PINOS_SOLAR.get('moon')!;
+    // a fase da Terra vista da Lua: o ângulo, na Terra, entre o Sol e a Lua
+    const fase = terra.clone().negate().angleTo(lua.clone().sub(terra));
+    const k = (1 + Math.cos(fase)) / 2;
+    expect(Math.abs(k - 0.5)).toBeLessThanOrEqual(0.01);
+    // a elongação da Lua vista da Terra é o mesmo ângulo: 90° é o quarto
+    expect(Math.abs(THREE.MathUtils.radToDeg(fase) - 90)).toBeLessThanOrEqual(1);
+  });
+
+  it('no céu dos atos de fora, Io, Encélado, Mimas e Hipérion estão fora da sombra, do lado aceso', () => {
     const io = anguloSubsolar('io', 'jupiter'); // 109,6°
     expect(io).toBeGreaterThanOrEqual(60);
     expect(io).toBeLessThanOrEqual(110);

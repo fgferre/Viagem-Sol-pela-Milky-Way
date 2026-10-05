@@ -55,16 +55,29 @@ export const PT = {
   'hud.abertura.linha1': 'do Sol às supergigantes de Órion, ao coração da galáxia — e de volta',
   'hud.abertura.linha2':
     '328.749 estrelas de catálogo · Via Láctea volumétrica reconstruída em tempo real',
-  'hud.porta.filme': 'Ver o filme',
-  'hud.porta.filmeNota': 'um filme com roteiro e legendas — você assiste',
   'hud.porta.explorarNota': 'você pilota a câmera, sem roteiro nem relógio',
   'hud.porta.voo': 'Voo livre',
   'hud.porta.atlas': 'Explorar o Atlas',
   'hud.porta.atlasNota': 'o céu de hoje: visite os planetas e corra o tempo',
   'hud.duracaoCom': '{min} min {seg} s',
+  'hud.duracaoMin': '{min} min',
+  // OS FILMES DA ESCOLHA — o nome e a nota de cada um, lidos pela capa, pelo
+  // "Mais" e pelo Atlas (`Filme.titulo`/`nota`, `cinematic/filme.ts`).
+  // A nota do solar diz até onde o filme chega HOJE; muda com o roteiro novo.
+  'hud.filme.galactico.titulo': 'Viagem galáctica',
+  'hud.filme.galactico.nota': 'do Sol ao centro da Via Láctea — e de volta',
+  'hud.filme.solar.titulo': 'Viagem solar',
+  'hud.filme.solar.nota': 'do Sol a Saturno, até a Terra virar um ponto',
   'hud.fim.deVoltaACasa': 'de volta a casa',
+  // A TELA FINAL DE CADA FILME (`Filme.encerramento`, `cinematic/filme.ts`): o
+  // galáctico guarda a citação no roteiro do fim e só a nota do rodapé é chave
+  // (abaixo); o solar diz uma linha e um crédito próprios. PROVISÓRIOS — a linha
+  // da tese do filme e a procedência dos dados, até o roteiro novo fechar.
   'hud.fim.rodape':
     'estrelas nomeadas em posições reais · Via Láctea reconstruída a partir de dados científicos',
+  'hud.fim.solar.linha': 'Um fogo só. Cada mundo faz uma coisa diferente com ele.',
+  'hud.fim.solar.credito':
+    'posições reais de janeiro de 2026 · mapas das sondas, reconstruídos',
   'hud.fim.reviver': 'Reviver a viagem',
   'hud.fim.ficarAqui': 'Ficar neste céu',
   'hud.progressoDaViagem': 'Progresso da viagem',
@@ -95,22 +108,19 @@ export const PT = {
   // abertura e do "Entrar no Atlas" do pausar-e-olhar.
   'barra.atlas': 'Atlas',
   'barra.atlasAria': 'Voltar ao Atlas',
-  'barra.verOFilme': 'Ver o filme',
-  'barra.verOFilmeAria': 'Ver o filme desde o começo',
+  // OS FILMES DA ESCOLHA ("Mais" e Atlas): o nome vem do próprio filme
+  // (`hud.filme.*.titulo`); aqui só o que o botão diz ao leitor de tela.
+  'barra.filmeAria': '{nome} — ver desde o começo',
+  'barra.filmeTocandoAria': '{nome} — tocando agora',
   'barra.explorarAtlas': 'Voo livre',
   'barra.explorarAria': 'Sair para o voo livre',
   // "RETOMAR", não mais "Voltar ao filme" (item 2, mockup §3.2: "↩
   // Retomar"). A CHAVE fica — ela nomeia o DESTINO (o filme guardado),
-  // não o rótulo.
+  // não o rótulo. No celular os botões de modo (os filmes, o voo livre e
+  // este) são só ícone desde 05/10 — os nomes cortavam a 320 px dentro da
+  // linha de 44 px do item 6 —: o nome inteiro vai no `aria-label` e no
+  // `title`, e por isso não há chave CURTA.
   'barra.voltarAoFilme': 'Retomar',
-  // OS TRÊS CHIPS DO TOPO NO CELULAR (achado das capturas do Lote 4,
-  // 07/09): "Ver o filme" corta a 320 px dentro da linha de 44 px do
-  // item 6. As chaves CURTAS valem só ali; o `aria-label` do botão
-  // continua o rótulo LONGO acima — encurtar o texto visível não pode
-  // encurtar o nome que o leitor de tela anuncia.
-  'barra.verOFilmeCurto': 'Filme',
-  'barra.explorarCurto': 'Voo livre',
-  'barra.voltarAoFilmeCurto': 'Retomar',
   'barra.retomar': 'Retomar',
   'barra.pausar': 'Pausar',
   'barra.retomarAria': 'Retomar a viagem',
@@ -119,11 +129,11 @@ export const PT = {
   'barra.velocidadeDica': '← → pulam de capítulo',
   'barra.verAGalaxia': 'Ir à galáxia',
   'barra.explorar': 'Voo livre',
-  // O "MAIS" DO FILME (E1) — Camadas, qualidade e Ajustes se recolhem
-  // atrás de um gatilho só, fechado a cada carga; o rótulo é curto
-  // porque o `aria-label` abaixo já diz o que ele abre.
+  // O "MAIS" DO FILME (E1) — os filmes, Camadas, qualidade e Ajustes se
+  // recolhem atrás de um gatilho só, fechado a cada carga; o rótulo é
+  // curto porque o `aria-label` abaixo já diz o que ele abre.
   'barra.mais': 'Mais',
-  'barra.maisAria': 'Mostrar Camadas, qualidade e Ajustes',
+  'barra.maisAria': 'Mostrar os filmes, Camadas, qualidade e Ajustes',
   'barra.qualidadeAria': 'Qualidade gráfica',
   'barra.alcasAria': 'Controles do Atlas',
   'barra.reguaAria': 'Ferramentas do Atlas',
@@ -485,6 +495,7 @@ export const PT = {
   'selo.desvio.exp': 'exposição escolhida à mão',
   'selo.desvio.tone': 'curva de tom trocada',
   'selo.desvio.doseDoSol': 'o arranque mostra o Sol mais limpo do que a data pede',
+  'selo.desvio.luzDoRoteiro': 'a luz está em transição pelo roteiro, entre a assistida e a real',
   'selo.desvio.amostragem': 'amostragem abaixo de cinema',
   'selo.desvio.camada': 'camada desligada: {nome}',
   'selo.desvio.msaa': 'suavização de bordas escolhida à mão',

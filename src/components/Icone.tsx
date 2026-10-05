@@ -30,6 +30,7 @@ export type NomeDoIcone =
   | 'explorar'
   | 'retomar'
   | 'galaxia'
+  | 'sol'
   | 'ajustes'
   | 'fechar'
   | 'chevronCima'
@@ -99,6 +100,20 @@ const CAMINHOS: Record<NomeDoIcone, () => ReactElement> = {
       <circle cx="12" cy="12" r="3" />
       <circle cx="19" cy="5" r="2" />
       <circle cx="5" cy="19" r="2" />
+    </>
+  ),
+  // o Sol da viagem solar (05/10): o `sun` do Lucide, mesma grade e mesmo traço
+  sol: () => (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
     </>
   ),
   ajustes: () => (

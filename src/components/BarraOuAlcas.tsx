@@ -27,10 +27,22 @@ import { useIdioma } from '../hooks/useIdioma';
 import { useRealce } from '../hooks/useRealce';
 import { usePresenca } from '../hooks/usePresenca';
 import { REGISTRO_ORBITAL } from '../lib/atlas/registroOrbital';
+import { FILMES_EM_CARTAZ, filmeDe } from '../three/cinematic/filme';
 import { BotaoDaGaveta, BotaoDoTempo } from './HudDoAtlas';
 import { BotaoDaBusca } from './PaletaDeBusca';
 import { BotaoDaFicha } from './FichaDoObjeto';
 import { Icone } from './Icone';
+import type { NomeDoIcone } from './Icone';
+
+/**
+ * O ÍCONE DE CADA FILME onde só cabe o ícone (a barra do Atlas no celular).
+ * O play é o mesmo para todos e não distingue um filme do outro, então cada
+ * um ganha o seu desenho; um filme sem entrada aqui cai no play.
+ */
+const ICONE_DO_FILME: Readonly<Record<string, NomeDoIcone>> = {
+  galactico: 'galaxia',
+  solar: 'sol',
+};
 
 export interface BarraOuAlcasProps {
   /** as peças que a FASE hospeda */
@@ -73,7 +85,10 @@ export interface BarraOuAlcasProps {
   paused: boolean;
   rate: number;
   quality: EstadoDaQualidade;
-  play: () => void;
+  /** com id toca esse filme do começo; sem id, o que está em cartaz */
+  play: (id?: string) => void;
+  /** o id do filme em cartaz — no "Mais" a entrada dele fica apagada (já está tocando) */
+  filmeEmCartaz: string;
   entrarNoAtlas: () => void;
   partirDoAtlas: () => void;
   togglePause: () => void;
@@ -255,6 +270,7 @@ export function BarraOuAlcas({
   rate,
   quality,
   play,
+  filmeEmCartaz,
   entrarNoAtlas,
   partirDoAtlas,
   togglePause,
@@ -316,12 +332,12 @@ export function BarraOuAlcas({
     if (chromeSumido) setMaisAberto(false);
   }
   /**
-   * A PRESENÇA DO "MAIS" (C5, U08) — entrada e saída dos três controles
-   * JUNTOS, com o foco devolvido ao gatilho quando fecham no meio de uma
+   * A PRESENÇA DO "MAIS" (C5, U08) — entrada e saída dos controles
+   * JUNTOS (os filmes, Camadas, qualidade e Ajustes), com o foco devolvido ao gatilho quando fecham no meio de uma
    * navegação por teclado (`usePresenca`, a mesma máquina da Sanfona).
    * `maisAberto` continua sendo o estado LÓGICO (o `aria-expanded` do
    * botão lê ele, não a fase da animação); `montada` é que decide se o
-   * nó dos três controles ainda existe na árvore.
+   * nó dos controles ainda existe na árvore.
    */
   const {
     montada: maisMontada,
@@ -413,6 +429,38 @@ export function BarraOuAlcas({
       )}
     </span>
   );
+
+  /**
+   * OS FILMES DA ESCOLHA, escritos UMA vez — o "Mais" do filme e o grupo de
+   * modos do Atlas oferecem o MESMO par (`FILMES_EM_CARTAZ`, nunca os ids
+   * escritos aqui), e cada botão toca o filme dele desde o começo. No Atlas
+   * do celular (`soIcone`) o botão é só o ícone do filme — o texto some por
+   * CSS (`data-so-icones`, no grupo) e o nome inteiro fica no `aria-label` e
+   * no `title`; `emCartaz` apaga a entrada do filme que já está tocando —
+   * só o "Mais" a passa, porque no Atlas não há filme tocando.
+   */
+  const botoesDosFilmes = (soIcone: boolean, emCartaz: string | null) =>
+    FILMES_EM_CARTAZ.map((id) => {
+      const filme = filmeDe(id);
+      const nome = t(filme.titulo);
+      const tocando = id === emCartaz;
+      const rotulo = t(tocando ? 'barra.filmeTocandoAria' : 'barra.filmeAria', { nome });
+      return (
+        <button
+          key={id}
+          className="hud-btn small"
+          onClick={() => play(id)}
+          disabled={tocando}
+          aria-label={rotulo}
+          // a entrada apagada diz por que está apagada, e o botão sem texto
+          // diz o nome, no ponteiro também
+          title={tocando ? rotulo : soIcone ? nome : undefined}
+        >
+          <Icone nome={soIcone ? (ICONE_DO_FILME[id] ?? 'play') : 'play'} tamanho={16} />
+          <span>{nome}</span>
+        </button>
+      );
+    });
 
   /**
    * AS PORTAS COMPARTILHADAS, escritas UMA vez. A busca, as camadas, a
@@ -519,7 +567,7 @@ export function BarraOuAlcas({
           no Atlas" do pausar-e-olhar — um só código para os três. */}
       {hud.botaoReviver && (
         <div className="atlas-barra-grupo">
-          <button className="hud-btn small" onClick={play}>
+          <button className="hud-btn small" onClick={() => play()}>
             <span>{t('barra.reviver')}</span>
           </button>
           <button
@@ -532,8 +580,9 @@ export function BarraOuAlcas({
           </button>
         </div>
       )}
-      {/* GRUPO "MODOS" (Lote 4, item 2) — ▶ Ver o filme · ⇗ Voo livre ·
-          ↩ Retomar (quando há filme guardado). AS DUAS FERRAMENTAS DO
+      {/* GRUPO "MODOS" (Lote 4, item 2) — ▶ os filmes (um botão por
+          filme do cartaz) · ⇗ Voo livre · ↩ Retomar (quando há filme
+          guardado). AS DUAS FERRAMENTAS DO
           ATLAS (item 61, 23/08). Palavras do dono: *"a viagem na verdade
           para mim é só uma ferramenta do modo atlas"*. Elas ficam na
           BARRA e não na fileira de alças do telefone, e a escolha é de
@@ -547,28 +596,25 @@ export function BarraOuAlcas({
       {(hud.saidasDoAtlas || (hud.botaoPartir && temFilmeGuardado)) && (
         <div
           className="atlas-barra-grupo"
-          // SÓ ÍCONE quando falta espaço (auditoria celular, 13/09): o
-          // mesmo par de sinais do corte do nome, acima. O nome
-          // acessível não muda — os três botões já levam `aria-label`.
-          data-so-icones={larguraEstreita || textoGrande ? '' : undefined}
+          // SÓ ÍCONE no celular (auditoria celular, 13/09; desde 05/10 em
+          // QUALQUER largura dele, e não só em ≤360 px ou texto grande): com
+          // os dois filmes ao lado do voo livre e do Retomar os nomes não
+          // cabem, e o contexto ("Sistema Solar") saía cortado. O nome
+          // acessível não muda — os botões já levam `aria-label` — e o
+          // `title` diz o nome a quem passa o ponteiro.
+          data-so-icones={alcas ? '' : undefined}
         >
           {hud.saidasDoAtlas && (
             <>
-              <button
-                className="hud-btn small"
-                onClick={play}
-                aria-label={t('barra.verOFilmeAria')}
-              >
-                <Icone nome="play" tamanho={16} />
-                <span>{alcas ? t('barra.verOFilmeCurto') : t('barra.verOFilme')}</span>
-              </button>
+              {botoesDosFilmes(alcas, null)}
               <button
                 className="hud-btn small"
                 onClick={freeRoam}
                 aria-label={t('barra.explorarAria')}
+                title={alcas ? t('barra.explorarAtlas') : undefined}
               >
                 <Icone nome="explorar" tamanho={16} />
-                <span>{alcas ? t('barra.explorarCurto') : t('barra.explorarAtlas')}</span>
+                <span>{t('barra.explorarAtlas')}</span>
               </button>
             </>
           )}
@@ -578,9 +624,10 @@ export function BarraOuAlcas({
               className="hud-btn small"
               onClick={partirDoAtlas}
               aria-label={t('barra.voltarAoFilme')}
+              title={alcas ? t('barra.voltarAoFilme') : undefined}
             >
               <Icone nome="retomar" tamanho={16} />
-              <span>{alcas ? t('barra.voltarAoFilmeCurto') : t('barra.voltarAoFilme')}</span>
+              <span>{t('barra.voltarAoFilme')}</span>
             </button>
           )}
         </div>
@@ -602,7 +649,8 @@ export function BarraOuAlcas({
       )}
       {/* E1 — o topo do filme vira UM grupo só, à direita: as duas saídas
           (Portal + Voo livre) ficam discretas ao lado de "Mais", que
-          recolhe Camadas, qualidade e ⚙ Ajustes (fechado a cada carga).
+          recolhe os filmes, Camadas, qualidade e ⚙ Ajustes (fechado a
+          cada carga).
           Antes eram DOIS grupos (modos à esquerda, sistema à direita,
           Lote 8/M7) — o `margin-left: auto` que empurra este grupo único
           até a borda direita mora em 02-filme.css, escopado à fase
@@ -639,13 +687,14 @@ export function BarraOuAlcas({
           </button>
           {/* "MAIS" (E1) — um botão comum, sem o contrato de diálogo
               (`gatilhoDoDialogo`/`data-abre-dialogo`): não sobe uma
-              folha por cima da cena, só revela os três controles a
-              seguir NA MESMA barra. Nasce CEDO no documento, logo
-              depois das saídas — quem tabula alcança "Mais" antes de
-              Camadas/qualidade/Ajustes, que vêm DEPOIS dele no DOM
+              folha por cima da cena, só revela os controles a seguir
+              (os filmes, Camadas, qualidade, Ajustes) NA MESMA barra.
+              Nasce CEDO no documento, logo depois das saídas — quem
+              tabula alcança "Mais" antes dos filmes/Camadas/qualidade/
+              Ajustes, que vêm DEPOIS dele no DOM
               (Tab natural, do jeito que se espera de uma revelação).
               A ORDEM VISUAL é outra: o `order` inline empurra "Mais"
-              para o fim da fileira, então os três aparecem à ESQUERDA
+              para o fim da fileira, então eles aparecem à ESQUERDA
               dele quando abertos — quem enxerga lê da esquerda para a
               direita e vê o conteúdo antes do botão que o abriu. */}
           <button
@@ -671,6 +720,7 @@ export function BarraOuAlcas({
               // mesmo contrato do `[inert]` da Sanfona (`usePresenca.ts`)
               inert={maisSaindo}
             >
+              {botoesDosFilmes(false, filmeEmCartaz)}
               {portaDasCamadas}
               {seletorDeQualidade}
               {botaoDeAjustes}

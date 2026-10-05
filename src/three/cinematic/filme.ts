@@ -8,6 +8,7 @@
 // instância, com as MESMAS peças de antes — sai bit a bit igual.
 // ============================================================
 import type * as THREE from 'three';
+import type { ChaveDeTexto } from '../../lib/idioma';
 import { doseDaDramaturgia } from '../director/doseDoSol';
 import type { montarApoiosDoRoteiro } from './apoiosDoRoteiro';
 import { APOIOS_DO_FILME, Journey, LUA_PC, REVEAL_T, TERRA_PC, jdDoFilme } from './journey';
@@ -16,8 +17,29 @@ import { montarFilmeSolar } from './filmes/solar/montar';
 /** o que `montarApoiosDoRoteiro` devolve: os pedidos de carga e os marcos de QA */
 export type ApoiosDoRoteiro = ReturnType<typeof montarApoiosDoRoteiro>;
 
+/**
+ * A TELA FINAL do filme — o que o véu de encerramento diz quando ele acaba.
+ * O véu lê daqui, nunca de um texto fixo, e cada filme assina o seu: um filme
+ * novo que esquecesse o fim não compilaria, em vez de herdar calado a citação
+ * de outro.
+ */
+export type Encerramento =
+  /** a frase emprestada do roteiro do fim (`roteiros/encerramento.json`): várias
+   *  linhas que entram uma a uma, com a atribuição e a fonte dela — tudo vem do
+   *  roteiro; só a nota do rodapé é chave de idioma */
+  | { citacao: true; rodape: ChaveDeTexto }
+  /** a linha e o crédito do próprio filme, por chave de idioma; sem `rodape`,
+   *  o véu não mostra nota ao lado dos botões */
+  | { citacao?: false; linha: ChaveDeTexto; credito: ChaveDeTexto; rodape?: ChaveDeTexto };
+
 export interface Filme {
   id: string;
+  /** o nome do filme nos botões de escolha (capa, "Mais", Atlas) — chave de idioma */
+  titulo: ChaveDeTexto;
+  /** a linha que diz o que o filme é, sob o botão da capa — chave de idioma */
+  nota: ChaveDeTexto;
+  /** o que o véu de encerramento diz quando o filme acaba */
+  encerramento: Encerramento;
   /** os planos e as legendas, no relógio do filme */
   journey: Journey;
   /** o que pré-carregar e a partir de quando (corpos, efemérides) */
@@ -40,6 +62,9 @@ export const FILME_PADRAO = 'galactico';
 function montarGalactico(): Filme {
   return {
     id: FILME_PADRAO,
+    titulo: 'hud.filme.galactico.titulo',
+    nota: 'hud.filme.galactico.nota',
+    encerramento: { citacao: true, rodape: 'hud.fim.rodape' },
     journey: new Journey(),
     apoios: APOIOS_DO_FILME,
     jdDoFilme,
@@ -59,6 +84,9 @@ function montarSolar(): Filme {
   const m = montarFilmeSolar();
   return {
     id: 'solar',
+    titulo: 'hud.filme.solar.titulo',
+    nota: 'hud.filme.solar.nota',
+    encerramento: { linha: 'hud.fim.solar.linha', credito: 'hud.fim.solar.credito' },
     journey: new Journey(m.shots, m.starts),
     apoios: m.apoios,
     jdDoFilme: m.jdDoFilme,
@@ -74,6 +102,10 @@ export const FILMES: ReadonlyMap<string, () => Filme> = new Map([
   [FILME_PADRAO, montarGalactico],
   ['solar', montarSolar],
 ]);
+
+/** os filmes que o HUD oferece, na ordem do cartaz (capa, "Mais" e Atlas): o do
+ *  registro, nunca uma segunda lista de ids */
+export const FILMES_EM_CARTAZ: readonly string[] = [...FILMES.keys()];
 
 const montados = new Map<string, Filme>();
 

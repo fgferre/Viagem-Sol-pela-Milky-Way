@@ -1,7 +1,148 @@
 {
   "planos": [
     {
-      "preload": {"corpos": ["earth", "moon"], "efemerides": true},
+      "qa": {"chegadaAMercurio": 0.6},
+      "camera": {
+        "duracao": 6,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Mercurio",
+          "de": "meioDeMercurio",
+          "para": "inicioDoRaspaoDeMercurio",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Sol",
+          "assunto": "Mercurio",
+          "rumo": "Mercurio",
+          "entrada": 0.5,
+          "saida": 1
+        },
+        "lente": [58, 58],
+        "ritmo": "settle",
+        "efeitoDeVelocidade": {"tipo": "decaimento", "amplitude": 0.6, "ritmo": "glide", "ate": 0.85}
+      },
+      "fundoSilencioso": true
+    },
+    {
+      "qa": {"raspaoDeMercurio": 0.45},
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Mercurio",
+          "de": "inicioDoRaspaoDeMercurio",
+          "direcaoNoJoelho": "joelhoDeMercurio",
+          "para": "saidaDeMercurio",
+          "distanciaMinima": "raspaoDeMercurio",
+          "joelho": 0.45,
+          "sigma": 0.16,
+          "alongamento": 0.72,
+          "chao": 0.18,
+          "expoentes": [1.6, 1.45]
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Mercurio",
+          "assunto": "chaoDeMercurio",
+          "rumo": "Venus",
+          "entrada": 0.35,
+          "saida": 0.7
+        },
+        "lente": [58, 58]
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.05,
+          "texto": "Mercúrio — quase 5 vezes mais luz que na Terra",
+          "subtexto": "430 °C de dia, −180 °C de noite",
+          "en": {"texto": "Mercury — almost 5 times the light of Earth", "subtexto": "430 °C by day, −180 °C by night"},
+          "duracao": 6.5
+        }
+      ]
+    },
+    {
+      "preload": {"corpos": ["earth", "moon"]},
+      "camera": {
+        "duracao": 8,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Venus",
+          "de": "saidaDeMercurio",
+          "para": "chegadaAVenus",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {"tipo": "fixo", "ponto": "Venus"},
+        "lente": [58, 58],
+        "ritmo": "settle",
+        "efeitoDeVelocidade": {"tipo": "frenagem", "amplitude": 0.8}
+      },
+      "fundoSilencioso": true
+    },
+    {
+      "qa": {"passagemPorVenus": 0.5},
+      "camera": {
+        "duracao": 7,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Venus",
+          "de": "chegadaAVenus",
+          "direcaoNoJoelho": "joelhoDeVenus",
+          "para": "fimEmVenus",
+          "distanciaMinima": "raspaoDeVenus",
+          "joelho": 0.5,
+          "sigma": 0.16,
+          "alongamento": 0.5,
+          "chao": 0.18,
+          "expoentes": [1.6, 1.45]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Venus"},
+        "lente": [58, 58]
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.05,
+          "texto": "Vênus devolve três quartos da luz que recebe",
+          "subtexto": "por isso é a estrela mais brilhante do nosso céu; debaixo das nuvens, 460 °C",
+          "en": {
+            "texto": "Venus sends back three quarters of the light it receives",
+            "subtexto": "that's why it is the brightest star in our sky; under the clouds, 460 °C"
+          },
+          "duracao": 6.5
+        }
+      ]
+    },
+    {
+      "qa": {"chegadaATerra": 0.6},
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Terra",
+          "de": "meioDoCaminho",
+          "para": "inicioDoVoo",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Sol",
+          "assunto": "Terra",
+          "rumo": "adianteNoInicio",
+          "entrada": 0.56,
+          "saida": 0.9
+        },
+        "lente": [58, 58],
+        "ritmo": "settle",
+        "efeitoDeVelocidade": {"tipo": "decaimento", "amplitude": 0.6, "ritmo": "glide", "ate": 0.85}
+      },
+      "fundoSilencioso": true
+    },
+    {
       "qa": {"terraDeDia": 0.5},
       "camera": {
         "duracao": 12,
@@ -13,16 +154,15 @@
           "raio": ["raioDoVooDe", "raioDoVooPara"]
         },
         "mira": {"tipo": "pan", "de": "adianteNoInicio", "para": "adianteNoFim", "ritmo": "linear"},
-        "lente": [58, 58],
-        "ritmo": "linear"
+        "lente": [58, 58]
       },
       "fundoSilencioso": true,
       "legendas": [
         {
           "em": 0.1,
-          "texto": "Terra — casa",
-          "subtexto": "1º de janeiro de 2026",
-          "en": {"texto": "Earth — home", "subtexto": "January 1, 2026"},
+          "texto": "TERRA — 8 minutos-luz do Sol",
+          "subtexto": "aqui a luz vira azul, vento e vida",
+          "en": {"texto": "EARTH — 8 light-minutes from the Sun", "subtexto": "here the light becomes blue, wind and life"},
           "duracao": 9
         }
       ]
@@ -69,9 +209,9 @@
       "legendas": [
         {
           "em": 0.6,
-          "texto": "A Lua fica a 28 Terras de distância",
-          "subtexto": "1,2 segundo-luz",
-          "en": {"texto": "The Moon is 28 Earths away", "subtexto": "1.2 light-seconds"},
+          "texto": "A Lua fica a 31 Terras de distância",
+          "subtexto": "1,3 segundo-luz",
+          "en": {"texto": "The Moon is 31 Earths away", "subtexto": "1.3 light-seconds"},
           "duracao": 7.5,
           "ponte": true
         }
@@ -146,7 +286,7 @@
           "texto": "A Lua",
           "subtexto": "O único outro mundo onde já estivemos",
           "en": {"texto": "The Moon", "subtexto": "The only other world we have ever walked on"},
-          "duracao": 5.5
+          "duracao": 3.9
         }
       ]
     }

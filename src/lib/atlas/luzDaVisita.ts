@@ -313,6 +313,32 @@ export function espessuraDoVeu(id: string): number {
 }
 
 /**
+ * A LUZ DO ROTEIRO (F2b, a viagem solar — decisão 4 do dono, 05/10): em
+ * Plutão *"a exposição desliza da assistida para a real e volta"*, obra
+ * de motor, nunca um botão. `k` é quanto da `real` já entrou no quadro:
+ * 0 é a política do visitante, 1 é a `real` inteira.
+ *
+ *     k = max(roteiro, visitante em `real` ? 1 : 0)
+ *
+ * Quem escolheu `real` fica em 1 — o roteiro não tem para onde levá-lo —,
+ * e quem está na `assistida` recebe a curva `camera.luz` do plano
+ * (`lerPlanoDeCamera.ts`). Roteiro fora de [0, 1] (ou NaN) não empurra
+ * além das pontas.
+ *
+ * AS PONTAS SÃO AS DUAS LEIS, BIT A BIT: cada peça deste arquivo devolve,
+ * com `k = 0`, a conta da `assistida` e, com `k = 1`, a da `real` — pelo
+ * MESMO ramo de antes, sem uma operação nova no caminho. Só ENTRE elas
+ * existe a travessia: o Sol do globo e a chapa andam em PASSOS
+ * ({@link ganhoDoGlobo}, {@link exposicaoDoQuadro}), a lanterna cai em
+ * linha reta ({@link lanternaDaVisita}) e a forma do globo — terminador e
+ * tradução — mistura as duas receitas no chunk ({@link GLSL_LUZ_DA_VISITA}).
+ */
+export function kDaLuz(politica: PoliticaDeLuz, roteiro = 0): number {
+  if (politica === 'real') return 1;
+  return roteiro > 0 ? Math.min(roteiro, 1) : 0;
+}
+
+/**
  * O ESCALAR ÚNICO que o material de um corpo RESOLVIDO multiplica na sua
  * luz direta — `uLuzGanho` de gigante, rochoso, lua, Terra e anel.
  *
@@ -320,23 +346,38 @@ export function espessuraDoVeu(id: string): number {
  *   sem 1/d² e sem resíduo. O globo visitado é exposto para si.
  * - `real` → `ganhoFundido(dUA, 'real')` = E(d) EXATO, bit a bit, o
  *   mesmo double de sempre — a decisão 2 do dono, intacta.
+ * - NA TRAVESSIA do roteiro ({@link kDaLuz}) → **E(d)^k**, em passos: a
+ *   meio caminho, metade dos passos da distância. Em linha reta entre 1 e
+ *   E(d) o globo CLAREARIA no meio (a chapa já abriu +1,5 passos e o Sol
+ *   mal caiu à metade) para despencar no fim; em passos, Sol e chapa andam
+ *   juntos e o subsolar aceso cai por igual, (8·E)^k.
  *
  * Distância não-finita devolve **1**, o mesmo neutro que
  * `irradianciaRelativa` sempre entregou — lua sem efeméride não pinta de
  * preto nem estoura de luz; fica como estava.
  */
-export function ganhoDoGlobo(dUA: number, politica: PoliticaDeLuz): number {
+export function ganhoDoGlobo(dUA: number, politica: PoliticaDeLuz, roteiro = 0): number {
   if (!Number.isFinite(dUA)) return 1;
-  return politica === 'real' ? ganhoFundido(dUA, 'real') : 1;
+  const k = kDaLuz(politica, roteiro);
+  if (k <= 0) return 1;
+  const e = ganhoFundido(dUA, 'real');
+  return k >= 1 ? e : e ** k;
 }
 
 /**
  * A LANTERNA que a política liga: 0,15 em `assistida`, **0 exato** em
  * `real`. Zero não é "quase nada": com ele o termo de fill some por
  * identidade algébrica e o modo real fica com o Sol e nada mais.
+ *
+ * Na travessia ela cai em linha reta, 0,15·(1 − k) — na luz real não há
+ * lanterna. E cai MEDIDA CONTRA O SOL DO GLOBO: o chunk a soma na escala
+ * de Sol = 1 ({@link GLSL_LUZ_DA_VISITA}), então ela nunca passa a
+ * acender sozinha um globo cujo Sol já caiu vários passos.
  */
-export function lanternaDaVisita(politica: PoliticaDeLuz): number {
-  return politica === 'real' ? 0 : LANTERNA_DE_LEITURA;
+export function lanternaDaVisita(politica: PoliticaDeLuz, roteiro = 0): number {
+  const k = kDaLuz(politica, roteiro);
+  if (k >= 1) return 0;
+  return k <= 0 ? LANTERNA_DE_LEITURA : LANTERNA_DE_LEITURA * (1 - k);
 }
 
 /**
@@ -349,9 +390,13 @@ export function lanternaDaVisita(politica: PoliticaDeLuz): number {
  * `sharpness /= 1 + 700·density` —, e com o §4.4 pousado Saturno passa a
  * entrar por aqui com `densidade` 5e−5: o s dele vira 2,8986. Densidade 0
  * (todo o resto da casa) devolve `S/(1+0)`, isto é, 3 **exato**.
+ *
+ * Na travessia do roteiro o `s` fica o da `assistida`: quem leva o
+ * terminador ao Lambert cru é a mistura do chunk, e não um `s` caindo —
+ * a logística com `s → 0` acende o globo INTEIRO antes de virar Lambert.
  */
-export function sDoTerminador(politica: PoliticaDeLuz, densidade = 0): number {
-  if (politica === 'real') return 0;
+export function sDoTerminador(politica: PoliticaDeLuz, densidade = 0, roteiro = 0): number {
+  if (kDaLuz(politica, roteiro) >= 1) return 0;
   return S_DO_TERMINADOR / (1 + FATOR_DA_ATMOSFERA_NO_TERMINADOR * densidade);
 }
 
@@ -381,9 +426,14 @@ export function sDoTerminador(politica: PoliticaDeLuz, densidade = 0): number {
  * `assistida` devolve a rampa **pela identidade**, não por `× 1`: o mesmo
  * double que entrou, sem uma operação de ponto flutuante no caminho. É o
  * que faz as vistas do modo padrão não moverem um bit por construção.
+ *
+ * Na travessia do roteiro ({@link kDaLuz}) a chapa abre em PASSOS, não em
+ * fator: +3·k — a meio caminho, +1,5 passos.
  */
-export function exposicaoDoQuadro(rampa: number, politica: PoliticaDeLuz): number {
-  return politica === 'real' ? rampa * 2 ** PASSOS_DA_EXPOSICAO_REAL : rampa;
+export function exposicaoDoQuadro(rampa: number, politica: PoliticaDeLuz, roteiro = 0): number {
+  const k = kDaLuz(politica, roteiro);
+  if (k <= 0) return rampa;
+  return rampa * 2 ** (k >= 1 ? PASSOS_DA_EXPOSICAO_REAL : PASSOS_DA_EXPOSICAO_REAL * k);
 }
 
 /** O molde estrutural de um `uniforms` de `THREE.ShaderMaterial` — sem
@@ -401,11 +451,18 @@ type Uniformes = Record<string, { value: unknown }>;
  * C1, ela virou o PADRÃO, e chave de escolha sem escolha a fazer é peso
  * morto: a tradução passou a andar no MESMO interruptor das outras três
  * peças — ver {@link GLSL_LUZ_DA_VISITA}.
+ *
+ * E MAIS DOIS DESDE A F2b, só da TRAVESSIA do roteiro: o peso dela (0 fora
+ * da travessia — e é 0 nas duas pontas, onde manda o ramo de sempre) e o
+ * Sol do globo naquele quadro, que o chunk precisa para misturar as duas
+ * receitas na escala de Sol = 1.
  */
 export function uniformsDaLuzDaVisita(): Uniformes {
   return {
     uLanternaLeitura: { value: 0 },
     uTerminadorS: { value: 0 },
+    uTravessia: { value: 0 },
+    uSolNaTravessia: { value: 1 },
   };
 }
 
@@ -424,14 +481,25 @@ export function uniformsDaLuzDaVisita(): Uniformes {
  * ({@link GLSL_LUZ_DA_VISITA}). Um corpo que o escrevesse sem passar a
  * política acenderia a curva do Eyes dentro do `?luz=real` — a decisão 2
  * do dono desfeita por dentro. Há dente disso nas quatro famílias.
+ *
+ * A TRAVESSIA DO ROTEIRO (F2b) entra pelos dois últimos argumentos:
+ * `roteiro` é a curva `camera.luz` do quadro e `ganho` é o MESMO
+ * `uLuzGanho` que o corpo acabou de escrever — o chunk divide por ele para
+ * misturar as receitas na escala de Sol = 1, e só o lê com `uTravessia > 0`.
  */
 export function escreverLuzDaVisita(
   u: Uniformes,
   politica: PoliticaDeLuz,
-  densidade = 0
+  densidade = 0,
+  roteiro = 0,
+  ganho = 1
 ): void {
-  u.uLanternaLeitura!.value = lanternaDaVisita(politica);
-  u.uTerminadorS!.value = sDoTerminador(politica, densidade);
+  u.uLanternaLeitura!.value = lanternaDaVisita(politica, roteiro);
+  u.uTerminadorS!.value = sDoTerminador(politica, densidade, roteiro);
+  const k = kDaLuz(politica, roteiro);
+  const naTravessia = k > 0 && k < 1;
+  u.uTravessia!.value = naTravessia ? k : 0;
+  u.uSolNaTravessia!.value = naTravessia ? ganho : 1;
 }
 
 /**
@@ -503,6 +571,29 @@ export function uniformsDoVeu(id: string): Uniformes {
  * promete, e em `real` esta função é a IDENTIDADE bit a bit: a decisão 2
  * do dono não se toca.
  *
+ * ------------------------------------------------------------
+ * A TRAVESSIA DO ROTEIRO (F2b) — entre as duas receitas, sem degrau
+ * ------------------------------------------------------------
+ * Nas pontas nada mudou: `uTravessia` vale 0 nelas e cada peça sai pelo
+ * ramo de sempre, bit a bit. ENTRE elas (0 < k < 1, ver {@link kDaLuz})
+ * as receitas se misturam pelo peso `k`, e cada peça pela razão dela:
+ *
+ *  - `terminadorSuave` mistura a logística e o Lambert cru em linha reta.
+ *    Baixar o `s` até 0 não serviria: com `s → 0` a logística acende o
+ *    globo INTEIRO (o lado noturno sobe a 1) antes de virar Lambert.
+ *  - `luzDoGlobo` faz a soma com teto e a tradução na ESCALA DE SOL = 1 —
+ *    divide pelo Sol do globo (`uSolNaTravessia`, o mesmo `uLuzGanho`),
+ *    mistura a curva traduzida com a crua e multiplica de volta. Sem isso
+ *    a tradução, que é uma curva de TELA (expoente 2,4), amplificaria a
+ *    queda do Sol no começo da travessia e o teto 1 morderia a lanterna
+ *    de um jeito diferente a cada passo do Sol.
+ *  - a lanterna entra já com a dose 0,15·(1 − k) e, somada na escala de
+ *    Sol = 1, cai junto com o Sol do globo.
+ *  - o véu de Saturno acende pelo MESMO `luzDoGlobo`, sem lanterna — fora
+ *    da travessia isso é a mesma conta de antes (`max(a, min(a, 1)) = a`),
+ *    e dentro dela é o que impede a palha de saltar quando a tradução
+ *    apaga em k = 1.
+ *
  * A PORTA `?calib=` E AS SUAS DUAS CHAVES MORRERAM AQUI (26/08). Elas
  * existiram para uma escolha — qual das três candidatas vira o padrão —, e
  * a escolha foi feita: *"C1 — o Eyes ao pé da letra"*. Uma chave de
@@ -553,11 +644,15 @@ export function uniformsDoVeu(id: string): Uniformes {
 export const GLSL_LUZ_DA_VISITA = /* glsl */ `
 uniform float uLanternaLeitura; // a dose da lanterna; 0 em real
 uniform float uTerminadorS;     // 3 em assistida; 0 = Lambert cru (real)
+uniform float uTravessia;       // a luz do roteiro entre as duas; 0 fora da travessia
+uniform float uSolNaTravessia;  // o uLuzGanho do corpo, só lido na travessia
 
 float terminadorSuave(float x) {
   if (uTerminadorS <= 0.0) return max(x, 0.0);
   float s = uTerminadorS;
-  return clamp(2.0 * (1.0 + exp(-s)) / (1.0 + exp(-s * x)) - 1.0, 0.0, 1.0);
+  float suave = clamp(2.0 * (1.0 + exp(-s)) / (1.0 + exp(-s * x)) - 1.0, 0.0, 1.0);
+  if (uTravessia <= 0.0) return suave;
+  return mix(suave, max(x, 0.0), uTravessia);
 }
 
 vec3 lanternaDeLeitura(vec3 n, vec3 dirCam, vec3 eclipse) {
@@ -577,7 +672,10 @@ vec3 daTelaParaLinear(vec3 c) {
 
 vec3 luzDoGlobo(vec3 luzSol, vec3 fill) {
   vec3 teto = vec3(1.0);
-  return daTelaParaLinear(max(luzSol, min(luzSol + fill, teto)));
+  if (uTravessia <= 0.0) return daTelaParaLinear(max(luzSol, min(luzSol + fill, teto)));
+  vec3 sol = luzSol / uSolNaTravessia;
+  vec3 c = max(sol, min(sol + fill, teto));
+  return uSolNaTravessia * mix(daTelaParaLinear(c), c, uTravessia);
 }
 `;
 
@@ -679,7 +777,7 @@ float opacidadeDoVeu(float mu) {
 vec3 globoComVeu(vec3 albedo, vec3 luzSol, vec3 fill, float aVeu) {
   vec3 superficie = albedo * luzDoGlobo(luzSol, fill);
   if (aVeu <= 0.0) return superficie;
-  return mix(superficie, uVeuCor * daTelaParaLinear(luzSol), aVeu);
+  return mix(superficie, uVeuCor * luzDoGlobo(luzSol, vec3(0.0)), aVeu);
 }
 `;
 
@@ -697,11 +795,12 @@ vec3 globoComVeu(vec3 albedo, vec3 luzSol, vec3 fill, float aVeu) {
  *
  * Em `real` é **0 exato** por construção (o ganho É E(d)), e o selo tem
  * o direito de dizer que não há nada a declarar. Distância não-finita
- * devolve `null` — o selo nunca inventa um número que não mediu.
+ * devolve `null` — o selo nunca inventa um número que não mediu. Na
+ * travessia do roteiro o gasto anda junto com o Sol do globo: (1 − k)·2·log2(d).
  */
-export function stopsDaVisita(dUA: number, politica: PoliticaDeLuz): number | null {
+export function stopsDaVisita(dUA: number, politica: PoliticaDeLuz, roteiro = 0): number | null {
   if (!Number.isFinite(dUA)) return null;
-  const razao = ganhoDoGlobo(dUA, politica) / irradianciaRelativa(dUA);
+  const razao = ganhoDoGlobo(dUA, politica, roteiro) / irradianciaRelativa(dUA);
   if (!Number.isFinite(razao) || razao <= 0) return null;
   const stops = Math.log2(razao);
   return stops === 0 ? 0 : stops;

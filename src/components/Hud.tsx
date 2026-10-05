@@ -8,10 +8,11 @@ import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { LOAD_STAGES } from '../three/director';
 import type { LoadStage } from '../three/director';
+import { FILMES_EM_CARTAZ, filmeDe } from '../three/cinematic/filme';
 import { CartografiaCanvas } from './CartografiaCanvas';
 import { Icone } from './Icone';
 import {
-  linhasDoEncerramento, ATRIBUICAO, FONTE_DA_CITACAO,
+  textoDoEncerramento,
   ATRASO_DA_LINHA, ATRASO_DA_ATRIBUICAO, ATRASO_DO_RODAPE,
 } from './encerramento';
 
@@ -224,24 +225,36 @@ export function LoadingVeil({
   );
 }
 
+/** "3 min 13 s" — ou "6 min", quando o filme fecha o minuto redondo */
+function duracaoPorExtenso(duracao: number) {
+  const total = Math.round(duracao);
+  const min = Math.floor(total / 60);
+  const seg = total % 60;
+  return seg > 0 ? t('hud.duracaoCom', { min, seg }) : t('hud.duracaoMin', { min });
+}
+
 export function TitleVeil({
   visible,
   mode,
   onPlay,
   onExplore,
   onAtlas,
-  runtime,
+  filmeEmCartaz,
 }: {
   visible: boolean;
   mode: 'intro' | 'end';
-  onPlay: () => void;
+  /** com id toca esse filme; sem id (o "Reviver" do fim), o que está em cartaz */
+  onPlay: (id?: string) => void;
   onExplore?: () => void;
   onAtlas?: () => void;
-  runtime?: number;
+  /** o id do filme em cartaz — o fim diz o texto DELE (`Filme.encerramento`) */
+  filmeEmCartaz: string;
 }) {
   useIdioma();
-  const minutes = runtime ? Math.floor(runtime / 60) : 0;
-  const seconds = runtime ? Math.round(runtime % 60) : 0;
+  const fim = mode === 'end' ? textoDoEncerramento(filmeDe(filmeEmCartaz).encerramento) : null;
+  // os atrasos do crédito e do rodapé saem do tamanho da lista de linhas do filme
+  const atrasoDoCredito = fim ? ATRASO_DA_ATRIBUICAO(fim.linhas.length) : 0;
+  const atrasoDoRodape = fim ? ATRASO_DO_RODAPE(fim.linhas.length) : 0;
   return (
     <div
       className={`veil veil-${mode} ${visible ? '' : 'hidden-veil'}`}
@@ -282,29 +295,39 @@ export function TitleVeil({
               </span>
             </div>
           )}
+          {/* OS FILMES, LADO A LADO (escolha visível, item 210/F1; maquete
+              B de 05/10, aprovada por ele): um botão por filme do cartaz
+              (`FILMES_EM_CARTAZ`, nunca os ids escritos aqui), com o nome,
+              a duração DO FILME e a nota dele embaixo. O "Voo livre" desce
+              para uma segunda fileira, sozinho e na largura inteira — a
+              mesma `.abertura-portas`, sem regra nova: um botão só estica,
+              e no celular tudo empilha como antes. Em `<span>` (C2): a
+              pressão afunda o filho, não um nó de texto solto. */}
           <div className="abertura-portas">
-            <div className="abertura-porta">
-              <button
-                className="veil-btn veil-btn--secundario"
-                onClick={onPlay}
-                aria-describedby="porta-filme"
-              >
-                <Icone nome="play" tamanho={16} />
-                {/* "Ver o filme · 3 min 13 s" numa linha só (maquete M1): a
-                    duração vem do runtime como sempre; sem duração, só o
-                    rótulo. Em `<span>` (C2): a pressão afunda o filho, não
-                    um nó de texto solto. */}
-                <span>
-                  {minutes > 0
-                    ? `${t('hud.porta.filme')} · ${t('hud.duracaoCom', { min: minutes, seg: seconds })}`
-                    : t('hud.porta.filme')}
-                </span>
-              </button>
-              <span className="abertura-porta-nota abertura-porta-nota--secundaria" id="porta-filme">
-                {t('hud.porta.filmeNota')}
-              </span>
-            </div>
-            {onExplore && (
+            {FILMES_EM_CARTAZ.map((id) => {
+              const filme = filmeDe(id);
+              return (
+                <div className="abertura-porta" key={id}>
+                  <button
+                    className="veil-btn veil-btn--secundario"
+                    onClick={() => onPlay(id)}
+                    aria-describedby={`porta-filme-${id}`}
+                  >
+                    <Icone nome="play" tamanho={16} />
+                    <span>{`${t(filme.titulo)} · ${duracaoPorExtenso(filme.journey.duration)}`}</span>
+                  </button>
+                  <span
+                    className="abertura-porta-nota abertura-porta-nota--secundaria"
+                    id={`porta-filme-${id}`}
+                  >
+                    {t(filme.nota)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          {onExplore && (
+            <div className="abertura-portas">
               <div className="abertura-porta">
                 <button
                   className="veil-btn veil-btn--secundario"
@@ -318,20 +341,24 @@ export function TitleVeil({
                   {t('hud.porta.explorarNota')}
                 </span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
-      {mode === 'end' && (
+      {fim && (
         <>
           <div className="title-kicker">{t('hud.fim.deVoltaACasa')}</div>
           <div className="title-rule" />
-          {/* A FRASE DE ENCERRAMENTO É EMPRESTADA E ENCENADA (item 108,
-              pedidos do dono em 31/08: "podemos trocar a frase de
+          {/* O TEXTO É DO FILME EM CARTAZ (`Filme.encerramento`, lido por
+              `textoDoEncerramento`): o solar diz uma linha e um crédito
+              próprios, sem aspas, das tabelas de idioma; o galáctico diz a
+              citação abaixo.
+              A FRASE DE ENCERRAMENTO DO GALÁCTICO É EMPRESTADA E ENCENADA
+              (item 108, pedidos do dono em 31/08: "podemos trocar a frase de
               encerramento para aquela frase classica do carl sagan
               falando do pale blue dot" e "é um encerramento do filme com
               impacto e drama. cinema puro").
-              O TEXTO NÃO MORA AQUI: mora no roteiro do fim
+              O TEXTO DELA NÃO MORA AQUI: mora no roteiro do fim
               (`three/cinematic/roteiros/encerramento.json`, montado por
               `encerramento.ts`), como LISTA de linhas com os tempos —
               é lá que se acrescenta linha, e o resto
@@ -349,31 +376,33 @@ export function TitleVeil({
               (posições reais) é a promessa que o app cumpre — mas não
               divide a tela com a citação. */}
           <div className="encerramento">
-            {linhasDoEncerramento().map((linha, i, linhas) => (
+            {fim.linhas.map((linha, i) => (
               <div
                 key={linha}
                 className="encerramento-linha"
                 style={{ animationDelay: `${ATRASO_DA_LINHA(i)}s` }}
               >
-                {`${i === 0 ? '“' : ''}${linha}${i === linhas.length - 1 ? '”' : ''}`}
+                {linha}
               </div>
             ))}
             <div
               className="encerramento-credito"
-              style={{ animationDelay: `${ATRASO_DA_ATRIBUICAO}s` }}
+              style={{ animationDelay: `${atrasoDoCredito}s` }}
             >
-              {ATRIBUICAO}
-              <span className="encerramento-fonte">{FONTE_DA_CITACAO}</span>
+              {fim.credito}
+              {fim.fonte && <span className="encerramento-fonte">{fim.fonte}</span>}
             </div>
           </div>
-          <div
-            className="title-sub encerramento-rodape"
-            style={{ animationDelay: `${ATRASO_DO_RODAPE}s` }}
-          >
-            {t('hud.fim.rodape')}
-          </div>
+          {fim.rodape && (
+            <div
+              className="title-sub encerramento-rodape"
+              style={{ animationDelay: `${atrasoDoRodape}s` }}
+            >
+              {fim.rodape}
+            </div>
+          )}
           <div className="title-rule encerramento-rodape"
-            style={{ animationDelay: `${ATRASO_DO_RODAPE}s` }} />
+            style={{ animationDelay: `${atrasoDoRodape}s` }} />
           {/* A TERCEIRA SAÍDA DO FIM (item 61, 23/08): "Ficar neste céu"
               entra no Atlas NA POSE DA CODA. É a frase do dono virada em botão —
               *"a viagem na verdade para mim é só uma ferramenta do modo
@@ -384,9 +413,9 @@ export function TitleVeil({
               com o pouso (`Escada.pousarDoFilme`). */}
           <div
             className="encerramento-rodape"
-            style={{ display: 'flex', gap: '0.75rem', animationDelay: `${ATRASO_DO_RODAPE}s` }}
+            style={{ display: 'flex', gap: '0.75rem', animationDelay: `${atrasoDoRodape}s` }}
           >
-            <button className="veil-btn veil-btn--secundario" onClick={onPlay}>
+            <button className="veil-btn veil-btn--secundario" onClick={() => onPlay()}>
               {/* `<span>` (C2): a pressão afunda o filho, nunca o botão. */}
               <span>{t('hud.fim.reviver')}</span>
             </button>
@@ -400,7 +429,7 @@ export function TitleVeil({
                 // U04 (C5): o mesmo atraso da linha/crédito/rodapé — o CTA
                 // só pisca quando ele de fato aparece na tela, sem repetir
                 // o número do roteiro numa conta nova aqui.
-                style={{ '--cta-atraso': `${ATRASO_DO_RODAPE}s` } as CSSProperties}
+                style={{ '--cta-atraso': `${atrasoDoRodape}s` } as CSSProperties}
               >
                 <span>{t('hud.fim.ficarAqui')}</span>
               </button>

@@ -3,6 +3,7 @@
 // ============================================================
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { EstadoDaBussola } from './three/cinematic/atlasRig';
+import { FILME_PADRAO } from './three/cinematic/filme';
 import { Director, LOAD_STAGES } from './three/director';
 import type {
   EstadoDaEscada,
@@ -237,7 +238,9 @@ export default function App() {
     text: '',
   });
   const [ticks, setTicks] = useState<{ t: number; text: string }[]>([]);
-  const [runtime, setRuntime] = useState(0);
+  /** o filme em cartaz — o que o `play()` sem id toca; muda com a escolha da
+   *  capa, do "Mais" e do Atlas, e é o que o HUD relê quando ele troca */
+  const [filme, setFilme] = useState(FILME_PADRAO);
   const [dest, setDest] = useState('');
   const [sol, setSol] = useState('');
   /** o indicador de fotografia do filme ("LENTE 34° · SOL 412 UA",
@@ -455,7 +458,7 @@ export default function App() {
     setPhase,
     setCaption,
     setTicks,
-    setRuntime,
+    setFilme,
     setDest,
     setSol,
     setLente,
@@ -756,10 +759,17 @@ export default function App() {
     setPaused(directorRef.current?.togglePause() ?? false);
   };
 
-  const play = () => {
+  /** sem id toca o filme em cartaz; com id, o escolhido — e o HUD relê dele
+   *  o que leu no boot (as marcas da barra) e espelha a escolha no endereço */
+  const play = (id?: string) => {
     setPaused(false);
     setRate(1);
-    directorRef.current?.play();
+    const d = directorRef.current;
+    if (!d) return;
+    d.play(id);
+    setFilme(d.filmeEscolhido);
+    setTicks(d.progressTicks);
+    espelharFilme();
   };
   const scrub = (fraction: number) => directorRef.current?.seekFraction(fraction);
   const freeRoam = () => directorRef.current?.enterFreeRoam();
@@ -882,6 +892,7 @@ export default function App() {
     rotulos3d,
     trocarRotulos3d,
     alternarCamada,
+    espelharFilme,
   } = useEspelhoDaUrl({ directorRef, phase, foco, indice, quality });
 
   // O TEXTO GRANDE (auditoria celular, 13/09) — UMA leitura só do limiar
@@ -1236,6 +1247,7 @@ export default function App() {
         rate={rate}
         quality={quality}
         play={play}
+        filmeEmCartaz={filme}
         entrarNoAtlas={entrarNoAtlas}
         partirDoAtlas={partirDoAtlas}
         togglePause={togglePause}
@@ -1402,7 +1414,7 @@ export default function App() {
         onPlay={play}
         onExplore={freeRoam}
         onAtlas={entrarNoAtlas}
-        runtime={runtime}
+        filmeEmCartaz={filme}
       />
 
       {/* VÉU DO ATLAS — a entrada e a saída não são travessia física: o

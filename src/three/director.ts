@@ -692,6 +692,14 @@ export class Director {
    * neutro por construção: não há superfície resolvida no filme.
    */
   private politicaDeLuz: PoliticaDeLuz = 'assistida';
+  /**
+   * A LUZ DO ROTEIRO neste quadro (F2b): a curva `camera.luz` do plano,
+   * 0 fora do filme. Ela não troca a política do visitante — compõe com
+   * ela em `kDaLuz` (`luzDaVisita.ts`), e o selo a declara.
+   */
+  private luzDoRoteiro = 0;
+  /** DEPURAÇÃO, só em dev (via `window.__director`): não nulo, substitui a curva `camera.luz` do roteiro. */
+  luzDoRoteiroForcada: number | null = null;
   private observedClouds: ObservedClouds | null = null;
   private starForges: StarForges | null = null;
   private wrappedStars!: WrappedStars;
@@ -3465,6 +3473,9 @@ export class Director {
       // a DOSE de ocupação do Sol (item 5): < 1 só no arranque do filme,
       // e é aí que o selo tem o que declarar
       doseDoSol: this.phase === 'journey' ? this.filme.doseDoSol(this.journeyT) : 1,
+      // a LUZ DO ROTEIRO (F2b): > 0 só dentro do filme, num plano com
+      // `camera.luz` — e é aí que o selo declara a travessia
+      luzDoRoteiro: this.luzDoRoteiro,
       // (stopsDaPupila saiu do estado no M2: a pupila morreu inteira, e
       // a compressão fixa não é desvio por quadro — é a lei, declarada
       // nas linhas de luz do próprio selo.)
@@ -3498,7 +3509,7 @@ export class Director {
     if (!id || !this.planetas) return null;
     const stops = (dUA: number | undefined) =>
       dUA !== undefined && Number.isFinite(dUA)
-        ? stopsDaVisita(dUA, this.politicaDeLuz)
+        ? stopsDaVisita(dUA, this.politicaDeLuz, this.luzDoRoteiro)
         : null;
     // as luas (F2b/F3): o dUA é o da CADEIA heliocêntrica dela,
     // publicado pelo próprio mesh (NaN sem efeméride ⇒ o rótulo fica
@@ -3585,6 +3596,7 @@ export class Director {
     const time = this.shotMode ? 0 : rawTime;
     const cam = this.engine.camera;
     let warp = 0;
+    let luzDoRoteiro = 0;
 
     // VÉU DO ATLAS, antes de tudo (o passo e a razão moram em
     // director/veu.ts — se ele fechar neste quadro, a fase vira AQUI)
@@ -3614,6 +3626,8 @@ export class Director {
       const t = this.journeyT;
       const r = this.rig.apply(cam, t, dt);
       warp = r.warp;
+      luzDoRoteiro =
+        import.meta.env.DEV && this.luzDoRoteiroForcada !== null ? this.luzDoRoteiroForcada : r.luz;
       this.events.onProgress(Math.min(t / this.rig.duration, 1));
       this.events.onWarp(this.reducedMotion ? 0 : warp);
 
@@ -3694,6 +3708,7 @@ export class Director {
         warp = r.warp;
       }
     }
+    this.luzDoRoteiro = luzDoRoteiro;
 
     // a matriz da câmera precisa estar atual ANTES de projeções e
     // extrações de base — labels usavam a matriz do frame anterior
@@ -3780,6 +3795,7 @@ export class Director {
       q.fovDeg = cam.fov;
       q.ligado = this.palco.ligado;
       q.politica = this.politicaDeLuz;
+      q.luzDoRoteiro = this.luzDoRoteiro;
       // o relógio de PAREDE, que só a carência da descarga lê; o `dtS` é
       // grampeado e serviria mal a uma espera de 15 s
       q.tS = rawTime;
@@ -4059,8 +4075,12 @@ export class Director {
     // `perturbar()` acorda o laço — o quadro seguinte já sai com a chapa
     // nova, sem recarga. O latch `expOverride` continua vencendo os dois:
     // a mão do visitante é dona da exposição (ver `exposicaoDoQuadro`).
+    // A LUZ DO ROTEIRO (F2b) entra na MESMA conta: na travessia a chapa
+    // abre +3·k passos, pelo mesmo `kDaLuz` que move o globo.
     if (!this.expOverride) {
-      this.engine.setExposure(exposicaoDoQuadro(1.02 + 0.03 * galaxyFade, this.politicaDeLuz));
+      this.engine.setExposure(
+        exposicaoDoQuadro(1.02 + 0.03 * galaxyFade, this.politicaDeLuz, this.luzDoRoteiro)
+      );
     }
     // ?galstat=1 — quantos dos 4,02 M pontos da galáxia estão DENTRO do
     // frustum. Roda uma vez, no primeiro quadro, e guarda em window.__galstat.

@@ -771,6 +771,7 @@ interface JourneySample {
   fov: number;
   warp: number; // 0..1 para pós-processamento
   roll: number; // radianos
+  luz: number; // 0..1 — a luz do roteiro (`camera.luz`); 0 sem a curva
   /** o índice do plano — a junta entre dois é o único lugar onde o rig amacia */
   plano: number;
 }
@@ -835,6 +836,7 @@ export class Journey {
       fov,
       warp: clamp01(s.warp ? s.warp(k) : 0),
       roll: s.roll ? s.roll(k) : 0,
+      luz: s.luz ? s.luz(k) : 0,
       plano: i,
     };
   }

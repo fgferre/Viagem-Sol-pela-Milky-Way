@@ -298,11 +298,15 @@
   .hud-root:has(.atlas-alcas) .controls-bar .hud-btn {
     min-height: 2.5rem;
   }
-  /* OS BOTÕES DO GRUPO "MODOS" (▶ Filme/⇗ Explorar/↩ Retomar) VIRAM SÓ
-     ÍCONE quando falta espaço (auditoria celular, 13/09): `estreito`
-     (≤360 px) ou `textoGrande` (ui ≥ 1,2), o `data-so-icones` que
-     `BarraOuAlcas.tsx` escreve no grupo. O nome acessível não muda — os
-     três já levam `aria-label`. */
+  /* OS BOTÕES DO GRUPO "MODOS" (os dois filmes, ⇗ Voo livre, ↩ Retomar)
+     SÃO SÓ ÍCONE NO CELULAR: o `data-so-icones` que `BarraOuAlcas.tsx`
+     escreve no grupo. Nasceu em 13/09 (auditoria celular) para quando
+     falta espaço — `estreito` (≤360 px) ou `textoGrande` (ui ≥ 1,2) — e
+     desde 05/10 vale em qualquer largura do celular: com os dois filmes
+     ao lado do voo livre os nomes não cabiam e o "Sistema Solar" saía
+     cortado. O nome acessível não muda — os botões já levam `aria-label`
+     — e o `title` diz o nome. Cada filme tem o seu ícone (galáxia, Sol),
+     porque o play é o mesmo para os dois. */
   .hud-root:has(.atlas-alcas) .controls-bar [data-so-icones] .hud-btn > span {
     display: none;
   }

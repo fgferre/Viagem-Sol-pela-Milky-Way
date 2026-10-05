@@ -254,6 +254,8 @@ export interface QuadroDaLua {
   /** o roteiro do filme declarou este corpo — o segurador monotônico. */
   pedidoDoRoteiro: boolean;
   politica: PoliticaDeLuz;
+  /** a curva `camera.luz` do filme neste quadro (F2b, `kDaLuz`); ausente = 0 */
+  luzDoRoteiro?: number;
   /** o relógio de PAREDE do app em segundos — só a carência da descarga
    *  o consome (`CARENCIA_DA_DESCARGA_S`). */
   tS: number;
@@ -509,7 +511,7 @@ export class LuaResolvida {
     // frame local (CPU em float64): câmera em raios, Sol unitário
     // a exposição da visita (item 91, reescrita no 93): Sol = 1 em
     // `assistida`, E(d) em `real`. Ver `luzDaVisita.ts`.
-    const ganho = ganhoDoGlobo(this.rUA, q.politica);
+    const ganho = ganhoDoGlobo(this.rUA, q.politica, q.luzDoRoteiro);
     const dirSol = this.vTmp.copy(this.centro).multiplyScalar(-1);
     const norma = Math.max(dirSol.length(), 1e-30);
     dirSol.multiplyScalar(1 / norma);
@@ -527,7 +529,7 @@ export class LuaResolvida {
     (u.uCamLocal.value as THREE.Vector3).set(cLx, cLy, cLz);
     u.uLuzGanho.value = ganho;
     // a lanterna de leitura (item 93) — a Lua a recebe, a logística não
-    escreverLuzDaVisita(u, q.politica, 0);
+    escreverLuzDaVisita(u, q.politica, 0, q.luzDoRoteiro, ganho);
     // a sombra do eclipse (F2c) — o mesmo fio da Terra
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
   }

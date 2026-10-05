@@ -91,7 +91,8 @@ export interface FiosDoDirector {
   setPhase: (v: Phase) => void;
   setCaption: (v: { idx: number; text: string; sub?: string }) => void;
   setTicks: (v: { t: number; text: string }[]) => void;
-  setRuntime: (v: number) => void;
+  /** o filme em cartaz depois do boot (`?filme=`) — o HUD o relê quando ele troca */
+  setFilme: (v: string) => void;
   setDest: (v: string) => void;
   setSol: (v: string) => void;
   setLente: (v: string) => void;
@@ -123,7 +124,7 @@ export function useDirector(fios: FiosDoDirector) {
     setPhase,
     setCaption,
     setTicks,
-    setRuntime,
+    setFilme,
     setDest,
     setSol,
     setLente,
@@ -205,12 +206,13 @@ export function useDirector(fios: FiosDoDirector) {
       .then(() => {
         if (cancelled) return;
         const query = new URLSearchParams(window.location.search);
-        // ?filme= — QUAL FILME o play toca. Vem antes das marcas e da
-        // duração, que são do filme escolhido; ausente é o galáctico, e
-        // um id desconhecido avisa no console e também cai nele.
+        // ?filme= — QUAL FILME o play toca. Vem antes das marcas, que são
+        // do filme escolhido; ausente é o galáctico, e um id desconhecido
+        // avisa no console e também cai nele. A capa lê a duração de cada
+        // filme do próprio filme, então daqui só saem o filme e as marcas.
         d.escolherFilme(query.get('filme'));
+        setFilme(d.filmeEscolhido);
         setTicks(d.progressTicks);
-        setRuntime(d.journeyDuration);
         setNomeadas(d.nomeadas);
         // `?q=` — a lei da porta mora no engine (`lerPortaQualidade`), que
         // é quem a lê primeiro, no construtor. Aqui ela volta a passar

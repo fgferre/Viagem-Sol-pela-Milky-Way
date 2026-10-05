@@ -1,0 +1,86 @@
+{
+  "planos": [
+    {
+      "qa": {"superficieDoSol": 0.5},
+      "camera": {
+        "duracao": 12,
+        "movimento": {
+          "tipo": "arco",
+          "centro": "Sol",
+          "direcaoDe": "vooDoSolDe",
+          "direcaoPara": "vooDoSolPara",
+          "raio": ["raioDoVooDoSolDe", "raioDoVooDoSolPara"]
+        },
+        "mira": {"tipo": "pan", "de": "miraDoVooDoSolDe", "para": "miraDoVooDoSolPara", "ritmo": "launch"},
+        "lente": [26, 34],
+        "ritmoDaLente": "launch"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.1,
+          "texto": "O Sol",
+          "subtexto": "10 de janeiro de 2026 — perto do máximo: as manchas seguem o ciclo de 11 anos",
+          "en": {"texto": "The Sun", "subtexto": "January 10, 2026 — near maximum: the sunspots follow the 11-year cycle"},
+          "duracao": 9
+        }
+      ]
+    },
+    {
+      "qa": {"discoDoSol": 0.9},
+      "camera": {
+        "duracao": 12,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Sol",
+          "de": "fimDoVooDoSol",
+          "para": "discoDoSol",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {"tipo": "pan-direcao", "de": "miraDoVooDoSolPara", "para": "Sol", "ate": 0.4},
+        "lente": [34, 50]
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.15,
+          "texto": "Um milhão de Terras caberiam aqui dentro",
+          "subtexto": "109 Terras de ponta a ponta",
+          "en": {"texto": "A million Earths would fit inside", "subtexto": "109 Earths across"},
+          "duracao": 8.5
+        }
+      ]
+    },
+    {
+      "preload": {"corpos": ["mercury", "venus"], "efemerides": true},
+      "qa": {"partida": 0.3},
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Sol",
+          "de": "discoDoSol",
+          "para": "meioDeMercurio",
+          "ritmoDaDirecao": "easeOut"
+        },
+        "mira": {"tipo": "fixo", "ponto": "Sol"},
+        "lente": [50, 58],
+        "ritmo": "quadratic",
+        "ritmoDaLente": "glide",
+        "efeitoDeVelocidade": {"tipo": "rampa", "de": 0, "para": 0.6, "ritmo": "quadratic"}
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.1,
+          "texto": "A luz que sai daqui leva 8 minutos até casa",
+          "en": {"texto": "The light leaving here takes 8 minutes to reach home"},
+          "duracao": 7.5
+        }
+      ]
+    }
+  ]
+}

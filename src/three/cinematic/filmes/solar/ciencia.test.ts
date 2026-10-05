@@ -3,9 +3,9 @@
 // defensável). Cada número do texto é recomputado aqui — pelos pinos,
 // pela fonte única de raios (BODY_AXES) ou pela posição da câmera no
 // instante da legenda — e cobrado com o arredondamento que o texto usa,
-// nas duas línguas. Cada conta usa o céu do ato da legenda: a Lua, o de
-// JD1; de Júpiter em diante, o de JD2 — inclusive a Terra, que é
-// desenhada no pino de JD1 mas é recomputada pela cadeia em JD2.
+// nas duas línguas. Cada conta usa o céu do ato da legenda: do Sol à
+// Lua, o de JD_A; de Júpiter em diante, o de JD2 — inclusive a Terra,
+// que é desenhada no pino de JD_A mas é recomputada pela cadeia em JD2.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -17,6 +17,8 @@ import { AU_KM } from '../../../../lib/atlas/elementosOrbitais';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../../lib/atlas/frameGalactico';
 import { BODY_AXES } from '../../../../lib/atlas/iauOrientation';
 import { ANEL_SATURNO } from '../../../world/corpos/gigante';
+import { RAIO_SOL_KM } from '../../../escala';
+import { faseDoCiclo } from '../../../estrela';
 
 // journey puxa world/galaxy, que lê window.location.search no topo do módulo
 (globalThis as unknown as { window: { location: { search: string } } }).window = {
@@ -66,6 +68,7 @@ const motor = new MotorEfemerides(
   )
 );
 
+const MERCURIO = pino('mercury');
 const TERRA = pino('earth');
 const LUA = pino('moon');
 const JUPITER = pino('jupiter');
@@ -81,10 +84,81 @@ const minutosLuz = (ua: number) => (ua * AU_KM) / C_KM_S / 60;
 const maisFraco = (dUA: number) => (dUA / emUA(TERRA_EM_JD2)) ** 2;
 
 describe('os números das legendas batem com a conta', () => {
-  it('a Lua: 28 Terras e 1,2 segundo-luz (centro a centro, no instante)', () => {
+  it('o Sol: 109 Terras de ponta a ponta, e um milhão de Terras caberiam dentro', () => {
+    const terras = RAIO_SOL_KM / BODY_AXES.earth[0];
+    expect(Math.round(terras)).toBe(109); // 109,2 diâmetros equatoriais
+    const c = legenda('Um milhão de Terras');
+    expect(falaPt(c)).toContain(`${Math.round(terras)} Terras de ponta a ponta`);
+    expect(falaEn(c)).toContain(`${Math.round(terras)} Earths across`);
+    // em volume cabem 1,3 milhão; empacotadas como esferas (74 %), 0,96
+    // milhão — "um milhão" é o número redondo que as duas contas sustentam
+    expect(terras ** 3 / 1e6).toBeCloseTo(1.3, 1);
+    expect(falaEn(c)).toContain('A million Earths');
+  });
+
+  it('a luz do Sol leva 8 minutos até a Terra (8 min 10,7 s: a Terra está a 0,983 UA no instante)', () => {
+    const minutos = minutosLuz(emUA(TERRA));
+    expect(Math.floor(minutos)).toBe(8);
+    const c = legenda('A luz que sai daqui');
+    expect(falaPt(c)).toContain(`${Math.floor(minutos)} minutos`);
+    expect(falaEn(c)).toContain(`${Math.floor(minutos)} minutes`);
+  });
+
+  it('10 de janeiro de 2026 fica perto do máximo do ciclo que o Sol desenhado segue (a fase pela data)', () => {
+    // as manchas são do modelo, não as observadas no dia: a legenda diz
+    // que elas seguem o ciclo, e a atividade dele nesta data passa de
+    // 90 % da do máximo de outubro de 2024
+    expect(Math.sin(Math.PI * faseDoCiclo(filme.jdA).fase01)).toBeGreaterThan(0.9);
+    const c = legendas.find((x) => x.text === 'O Sol')!;
+    expect(falaPt(c)).toContain('10 de janeiro de 2026');
+    expect(falaPt(c)).toContain('perto do máximo');
+    expect(falaPt(c)).toContain('seguem o ciclo');
+    expect(falaEn(c)).toContain('January 10, 2026');
+    expect(falaEn(c)).toContain('near maximum');
+    expect(falaEn(c)).toContain('follow the 11-year cycle');
+  });
+
+  it('Mercúrio: quase 5 vezes mais luz que na Terra ((1 UA / r)² no instante), 430 °C de dia e −180 °C de noite', () => {
+    // em 10/01/2026 Mercúrio está a 0,464 UA, perto do afélio (0,467): a
+    // razão é 4,64 — o "quase 7" da média (0,387 UA) não vale nesta data.
+    // Contra a Terra do mesmo instante (0,983 UA), 4,49.
+    const razao = (1 / emUA(MERCURIO)) ** 2;
+    expect(Math.round(razao)).toBe(5);
+    expect(razao).toBeLessThan(5);
+    const c = legenda('Mercúrio');
+    expect(falaPt(c)).toContain('quase 5 vezes');
+    expect(falaEn(c)).toContain('almost 5 times');
+    // a superfície: até 430 °C no dia e −180 °C na noite (NASA, Mercury
+    // Fact Sheet) — sem atmosfera, o calor não fica
+    expect(falaPt(c)).toContain('430 °C de dia, −180 °C de noite');
+    expect(falaEn(c)).toContain('430 °C by day, −180 °C by night');
+  });
+
+  it('Vênus devolve três quartos da luz (albedo de Bond 0,76) e tem 460 °C sob as nuvens', () => {
+    // albedo de Bond 0,76 (Haus et al. 2016, Icarus 272, 178); a
+    // superfície, ~737 K = 464 °C (NASA, Venus Fact Sheet)
+    const ALBEDO_DE_BOND = 0.76;
+    expect(Math.abs(ALBEDO_DE_BOND - 3 / 4)).toBeLessThanOrEqual(0.02);
+    const c = legenda('Vênus devolve');
+    expect(falaPt(c)).toContain('três quartos da luz');
+    expect(falaEn(c)).toContain('three quarters of the light');
+    expect(Math.round((737 - 273.15) / 10) * 10).toBe(460);
+    expect(falaPt(c)).toContain('460 °C');
+    expect(falaEn(c)).toContain('460 °C');
+  });
+
+  it('a Terra fica a 8 minutos-luz do Sol (8 min 10,7 s no instante)', () => {
+    const minutos = minutosLuz(emUA(TERRA));
+    expect(Math.floor(minutos)).toBe(8);
+    const c = legenda('TERRA');
+    expect(falaPt(c)).toContain(`${Math.floor(minutos)} minutos-luz do Sol`);
+    expect(falaEn(c)).toContain(`${Math.floor(minutos)} light-minutes from the Sun`);
+  });
+
+  it('a Lua: 31 Terras e 1,3 segundo-luz (centro a centro, no instante)', () => {
     const km = (LUA.distanceTo(TERRA) / UA) * AU_KM;
     const terras = Math.round(km / (2 * BODY_AXES.earth[0]));
-    expect(terras).toBe(28); // medido 28,24 — a Lua está perto do perigeu
+    expect(terras).toBe(31); // medido 31,29 — 399 177 km, a Lua passa da distância média
     const c = legenda('Terras de distância');
     expect(falaPt(c)).toContain(`${terras} Terras`);
     expect(falaPt(c)).toContain(`${pt(km / C_KM_S, 1)} segundo-luz`);
@@ -92,8 +166,9 @@ describe('os números das legendas batem com a conta', () => {
     expect(falaEn(c)).toContain(`${en(km / C_KM_S, 1)} light-seconds`);
   });
 
-  it('Júpiter: 4,2 UA da Terra e 35 minutos-luz (as duas em JD2)', () => {
+  it('Júpiter: 4,2 UA da Terra e 35 minutos-luz (as duas em JD2; a Terra desenhada, de JD_A, dá o mesmo)', () => {
     const ua = emUA(JUPITER.clone().sub(TERRA_EM_JD2));
+    expect(pt(emUA(JUPITER.clone().sub(TERRA)), 1)).toBe(pt(ua, 1));
     const c = legenda('Júpiter: ');
     expect(falaPt(c)).toContain(`${pt(ua, 1)} UA`);
     expect(falaPt(c)).toContain(`${Math.round(minutosLuz(ua))} minutos`);

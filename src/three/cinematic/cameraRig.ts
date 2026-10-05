@@ -236,7 +236,7 @@ export class JourneyRig {
     camera: THREE.PerspectiveCamera,
     t: number,
     dt: number
-  ): { warp: number } {
+  ): { warp: number; luz: number } {
     const s = this.journey.at(t);
     // O OPERADOR SEGUE O ROTEIRO (item 225, 24/09). Até aqui mira e lente
     // passavam por um amortecedor exponencial (0,4 s e 0,2 s) em TODO
@@ -324,7 +324,7 @@ export class JourneyRig {
     camera.fov = fov;
     camera.updateProjectionMatrix();
 
-    return { warp: s.warp };
+    return { warp: s.warp, luz: s.luz };
   }
 
   /** a mola crítica leva os dois desvios (mira e lente) adiante por `dt` */

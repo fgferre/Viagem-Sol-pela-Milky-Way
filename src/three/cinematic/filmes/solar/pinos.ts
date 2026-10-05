@@ -6,33 +6,45 @@
 // igualdade bit a bit.
 //
 // DOIS RELÓGIOS, como no filme galáctico (atos num instante, coda em
-// outro). O ato I corre em JD1 = JD_DO_FILME_TDB, as 16:00 UTC de
-// 2026-01-01 que acendem as Américas: Terra e Lua são os pinos que já
-// existiam. Os atos II–IV correm em JD2 = JD1 − 8 h (08:00 UTC do mesmo
-// dia), porque em JD1 Io está a 177° do ponto subsolar de Júpiter e
+// outro). O prólogo e o ato I (Sol, Mercúrio, Vênus, Terra, Lua — e
+// Marte e Ceres, prontos para o próximo trecho) correm em JD_A, o
+// quarto minguante de 2026-01-10 15:49:37 UTC: a raiz exata de "Terra
+// meia-iluminada vista da Lua" (k = 0,5, elongação 90°), e a hora em
+// que o meio-dia está a 57°O — as Américas de frente para o Sol. Os
+// atos de fora correm em JD2 = 2026-01-01 08:00 UTC (16:00 − 8 h),
+// porque às 16:00 Io está a 177° do ponto subsolar de Júpiter e
 // Encélado a 176° do de Saturno — as duas protagonistas atrás do
 // planeta, no escuro. −8 h é o menor deslocamento, em horas inteiras até
 // ±14 h, que põe Io entre 60° e 110° do ponto subsolar (109,6°: fora da
 // sombra e longe do disco), Encélado entre 30° e 110° (91,9°) e Mimas e
 // Hipérion abaixo de 110° (83,2° e 4,3°). A troca de relógio cai na
-// travessia Terra→Júpiter, com Terra e Lua fora do quadro (`T_TROCA`,
-// em montar.ts).
+// travessia para Júpiter, com Terra e Lua fora do quadro (`tTroca`, em
+// montar.ts).
 import * as THREE from 'three';
-import { JD_DO_FILME_TDB, LUA_PC, TERRA_PC } from '../../journey';
+import { JD_DO_FILME_TDB } from '../../journey';
 
-/** o céu do ato I (Terra e Lua): o instante da coda galáctica */
-export const JD1_SOLAR_TDB = JD_DO_FILME_TDB;
-/** quanto o céu dos atos II–IV anda em relação ao do ato I, em horas */
+/** o céu do prólogo e do ato I: o quarto minguante de 2026-01-10, 15:49:37 UTC */
+export const JD_A_SOLAR_TDB = 2461051.16026012;
+/** quanto o céu dos atos de fora anda em relação às 16:00 UTC de 2026-01-01, em horas */
 export const DELTA_JD2_HORAS = -8;
-/** o céu dos atos II–IV (Júpiter, Saturno, afastamento) */
-export const JD2_SOLAR_TDB = JD1_SOLAR_TDB + DELTA_JD2_HORAS / 24;
+/** o céu dos atos de fora (Júpiter, Saturno, afastamento): 2026-01-01 08:00 UTC */
+export const JD2_SOLAR_TDB = JD_DO_FILME_TDB + DELTA_JD2_HORAS / 24;
+
+/** os corpos do céu de JD_A; os outros são de JD2 */
+export const CORPOS_DE_JD_A: ReadonlySet<string> = new Set([
+  'mercury', 'venus', 'earth', 'moon', 'mars', 'ceres',
+]);
 
 const pc = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
 export const PINOS_SOLAR: ReadonlyMap<string, THREE.Vector3> = new Map([
   ['sun', pc(0, 0, 0)],
-  ['earth', TERRA_PC],
-  ['moon', LUA_PC],
+  ['mercury', pc(-0.00000004323251790895513, -0.0000019866985529506867, -0.0000010568186206355426)],
+  ['venus', pc(0.00000133822905917851, -0.0000029455907989730347, -0.0000014100968433251503)],
+  ['earth', pc(-0.0000016346956313018727, 0.000004109430550141987, 0.0000017813840758880365)],
+  ['moon', pc(-0.0000016468277075468393, 0.000004105665006642374, 0.0000017789376564969062)],
+  ['mars', pc(0.0000023035318133954307, -0.000005868838909867969, -0.0000027540271927125264)],
+  ['ceres', pc(0.00001211866076902956, 0.000006898501375673769, 0.0000007865250620261008)],
   ['jupiter', pc(-0.0000082244996465630537, 0.000021887201394739877, 0.0000095816484062320831)],
   ['io', pc(-0.0000082138078697747536, 0.000021894848934840235, 0.0000095854590658307327)],
   ['europa', pc(-0.0000082103378041228336, 0.000021872397789158861, 0.0000095749933046069813)],

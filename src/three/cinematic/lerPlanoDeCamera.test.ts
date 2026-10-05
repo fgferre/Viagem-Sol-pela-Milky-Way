@@ -352,6 +352,26 @@ describe('lerPlanoDeCamera — item 75', () => {
     }
   });
 
+  it('lê a luz do roteiro (F2b) no vocabulário do efeito, entre 0 e 1, e sem ela o relógio entrega 0', async () => {
+    const semLuz = lerPlanoDeCamera(base);
+    expect(semLuz.luz).toBeUndefined();
+    const comLuz = lerPlanoDeCamera({ ...base, luz: { tipo: 'pulso', amplitude: 1 } });
+    for (const k of fases) expect(comLuz.luz?.(k)).toBe(Math.sin(Math.PI * k));
+    const recusas: [unknown, RegExp][] = [
+      [{ tipo: 'pulso', amplitude: 1.2 }, /Roteiro: luz\.amplitude/],
+      [{ tipo: 'fixo', valor: -0.1 }, /Roteiro: luz\.valor/],
+      // cada parcela cabe, a soma não: a curva inteira é conferida
+      [{ tipo: 'soma', curvas: [{ tipo: 'fixo', valor: 0.6 }, { tipo: 'pulso', amplitude: 0.6 }] },
+        /Roteiro: luz deve permanecer entre 0 e 1/],
+    ];
+    for (const [luz, erro] of recusas) expect(() => lerPlanoDeCamera({ ...base, luz })).toThrow(erro);
+    // o relógio só repassa: o plano sem a curva dá 0, o com ela dá a curva
+    const { Journey } = await import('./journey');
+    const filme = new Journey([semLuz, comLuz], [0, base.duracao]);
+    expect(filme.at(base.duracao / 2).luz).toBe(0);
+    expect(filme.at(base.duracao * 1.5).luz).toBe(1);
+  });
+
   it('recusa dados inválidos antes de entregá-los à câmera, com o campo no erro', () => {
     const casos: [unknown, RegExp][] = [
       [null, /plano/],

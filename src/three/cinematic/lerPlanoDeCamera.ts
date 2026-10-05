@@ -21,6 +21,13 @@ export interface CameraDoPlano {
   /** Pulso de velocidade entregue ao rig e ao pós-processamento existentes (0..1). */
   warp?: Ease;
   /**
+   * A LUZ DO ROTEIRO (F2b, viagem solar — decisão 4 do dono): 0 é a luz
+   * que o visitante escolheu, 1 é a `real` (o 1/d² no globo e +3 passos
+   * no quadro); entre as duas, a travessia contínua de `luzDaVisita.ts`.
+   * Mesmo vocabulário de curva do `warp`, na fração do relógio do plano.
+   */
+  luz?: Ease;
+  /**
    * EASE SÓ DO FOV (F3), quando ele precisa divergir do da trajetória.
    * Ausente, o fov usa o `ease` do plano, como sempre — e a expressão
    * que `at` avalia é EXATAMENTE a de antes, então nenhum plano herdado
@@ -462,5 +469,6 @@ export function lerPlanoDeCamera(
     fovEase: ritmo(p.ritmoDaLente, 'ritmoDaLente'),
     roll: curvaEscalar(p.inclinacao, 'inclinacao', false, lerNumero),
     warp: curvaEscalar(p.efeitoDeVelocidade, 'efeitoDeVelocidade', true, lerNumero),
+    luz: curvaEscalar(p.luz, 'luz', true, lerNumero),
   };
 }

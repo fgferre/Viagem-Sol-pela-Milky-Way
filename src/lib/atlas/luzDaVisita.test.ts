@@ -46,6 +46,7 @@ import {
   espessuraDoVeu,
   exposicaoDoQuadro,
   ganhoDoGlobo,
+  kDaLuz,
   lanternaDaVisita,
   sDoTerminador,
   stopsDaVisita,
@@ -124,6 +125,9 @@ const EMBUTIDOS = {
 const UNIFORMES = [
   'uTerminadorS',
   'uLanternaLeitura',
+  // a travessia do roteiro (F2b): ausentes valem 0, isto é, fora dela
+  'uTravessia',
+  'uSolNaTravessia',
   'uVeuColuna',
   'uVeuEspessura',
   'uVeuCor',
@@ -1162,17 +1166,23 @@ describe('9. a C1 é o padrão (item 93) — assistido traduz, real não', () =>
   });
 
   it('o escritor acende as duas chaves da política — e só elas', () => {
+    // as duas da travessia do roteiro (F2b) ficam NEUTRAS nas duas
+    // políticas: fora da travessia o chunk nem as lê
     const real = uniformsDaLuzDaVisita();
     escreverLuzDaVisita(real, 'real', densidadeDoVeu('saturn'));
     expect({ ...real }).toEqual({
       uLanternaLeitura: { value: 0 },
       uTerminadorS: { value: 0 },
+      uTravessia: { value: 0 },
+      uSolNaTravessia: { value: 1 },
     });
     const assistida = uniformsDaLuzDaVisita();
     escreverLuzDaVisita(assistida, 'assistida', 0);
     expect({ ...assistida }).toEqual({
       uLanternaLeitura: { value: LANTERNA_DE_LEITURA },
       uTerminadorS: { value: S_DO_TERMINADOR },
+      uTravessia: { value: 0 },
+      uSolNaTravessia: { value: 1 },
     });
     // e a divisão do véu do Eyes continua valendo por cima da política
     const comVeu = uniformsDaLuzDaVisita();
@@ -1604,5 +1614,151 @@ describe('10. a costura sombra → noite (item 104) — a lei do piso comum', ()
     expect(naSombra).toBeLessThan(noite / 8);
     // e o fragmento de VERDADE, no mesmo ponto, não tem degrau nenhum
     expect(Object.is(pixelDoGigante({ ndotl: -0.3, anel: SOMBRA_CHEIA }), noite)).toBe(true);
+  });
+});
+
+/**
+ * A TRAVESSIA DO ROTEIRO (F2b, a viagem solar) — a decisão 4 do dono: em
+ * Plutão *"a exposição desliza da assistida para a real e volta"*. O que
+ * se cobra: as PONTAS são as duas leis bit a bit; o MEIO fica entre elas
+ * em passos (a chapa +1,5, o Sol do globo na metade dos passos); e o pixel
+ * que o chunk EXECUTA anda sem degrau de ponta a ponta — inclusive nas
+ * duas costuras, onde os uniformes trocam de ramo.
+ */
+describe('11. a travessia do roteiro (F2b) — da `assistida` à `real` sem degrau', () => {
+  /** Plutão em 2026 (~34,6 UA): o lugar do beat */
+  const D_PLUTAO = 34.6;
+  const RAMPA = 1.02;
+
+  /** os uniformes que um corpo a `d` UA recebe com o roteiro em `k` */
+  const ligadosEm = (k: number, d: number, politica: PoliticaDeLuz, densidade: number) => {
+    const u = uniformsDaLuzDaVisita();
+    const ganho = ganhoDoGlobo(d, politica, k);
+    escreverLuzDaVisita(u, politica, densidade, k, ganho);
+    const ligados: Ligados = {
+      uTerminadorS: u.uTerminadorS!.value as number,
+      uLanternaLeitura: u.uLanternaLeitura!.value as number,
+      uTravessia: u.uTravessia!.value as number,
+      uSolNaTravessia: u.uSolNaTravessia!.value as number,
+    };
+    return { ganho, ligados };
+  };
+
+  /**
+   * O PIXEL ANTES DO TOM, executado pelo chunk como o `main` do Lambert o
+   * monta (`terminadorSuave × uLuzGanho`, a lanterna, `luzDoGlobo`) e vezes
+   * a chapa do quadro. Com `aVeu` > 0 o globo é Saturno e sai pelo véu.
+   */
+  const pixel = (
+    k: number,
+    ndotl: number,
+    ndotv: number,
+    { d = D_PLUTAO, politica = 'assistida' as PoliticaDeLuz, aVeu = 0 } = {}
+  ) => {
+    const { ganho, ligados } = ligadosEm(k, d, politica, aVeu > 0 ? densidadeDoVeu('saturn') : 0);
+    const luzSol = doChunk('terminadorSuave')([ndotl], ligados) * ganho;
+    const seno = Math.sqrt(Math.max(0, 1 - ndotv * ndotv));
+    const fill = doChunk('lanternaDeLeitura')([[ndotv, seno, 0], [1, 0, 0], 1], ligados);
+    const luz = aVeu > 0
+      ? doChunk('globoComVeu')([1, luzSol, fill, aVeu], {
+        ...ligados, ...veuDe('saturn'), uVeuCor: COR_DO_VEU[0]!,
+      })
+      : doChunk('luzDoGlobo')([luzSol, fill], ligados);
+    return luz * exposicaoDoQuadro(RAMPA, politica, k);
+  };
+
+  it('k é o máximo entre o roteiro e a escolha do visitante, preso às pontas', () => {
+    expect(kDaLuz('assistida')).toBe(0);
+    expect(kDaLuz('assistida', 0.3)).toBe(0.3);
+    expect(kDaLuz('real')).toBe(1);
+    expect(kDaLuz('real', 0.3)).toBe(1);
+    expect(kDaLuz('assistida', 1.7)).toBe(1);
+    expect(kDaLuz('assistida', -0.2)).toBe(0);
+    expect(kDaLuz('assistida', Number.NaN)).toBe(0);
+  });
+
+  it('k = 0 é a `assistida` BIT A BIT — os mesmos números e os mesmos uniformes', () => {
+    for (const d of [D_MERCURIO, D_TERRA, D_SATURNO, D_PLUTAO]) {
+      expect(Object.is(ganhoDoGlobo(d, 'assistida', 0), ganhoDoGlobo(d, 'assistida'))).toBe(true);
+    }
+    expect(Object.is(lanternaDaVisita('assistida', 0), LANTERNA_DE_LEITURA)).toBe(true);
+    const veu = densidadeDoVeu('saturn');
+    expect(Object.is(sDoTerminador('assistida', veu, 0), sDoTerminador('assistida', veu))).toBe(true);
+    expect(Object.is(exposicaoDoQuadro(RAMPA, 'assistida', 0), RAMPA)).toBe(true);
+    const antes = uniformsDaLuzDaVisita();
+    escreverLuzDaVisita(antes, 'assistida', veu);
+    expect(ligadosEm(0, D_SATURNO, 'assistida', veu).ligados).toEqual({
+      uTerminadorS: antes.uTerminadorS!.value,
+      uLanternaLeitura: antes.uLanternaLeitura!.value,
+      uTravessia: 0,
+      uSolNaTravessia: 1,
+    });
+  });
+
+  it('k = 1 é a `real` BIT A BIT — pelo roteiro ou pela escolha do visitante', () => {
+    for (const d of [D_MERCURIO, D_TERRA, D_SATURNO, D_PLUTAO]) {
+      expect(Object.is(ganhoDoGlobo(d, 'assistida', 1), ganhoDoGlobo(d, 'real'))).toBe(true);
+      // e quem já está em `real` não é movido pela curva
+      expect(Object.is(ganhoDoGlobo(d, 'real', 0.4), ganhoDoGlobo(d, 'real'))).toBe(true);
+    }
+    expect(Object.is(lanternaDaVisita('assistida', 1), 0)).toBe(true);
+    expect(Object.is(sDoTerminador('assistida', densidadeDoVeu('saturn'), 1), 0)).toBe(true);
+    expect(
+      Object.is(exposicaoDoQuadro(RAMPA, 'assistida', 1), exposicaoDoQuadro(RAMPA, 'real'))
+    ).toBe(true);
+    expect(ligadosEm(1, D_SATURNO, 'assistida', densidadeDoVeu('saturn')).ligados).toEqual(
+      ligadosEm(0, D_SATURNO, 'real', densidadeDoVeu('saturn')).ligados
+    );
+    // e o pixel executado é o mesmo double, com e sem o véu
+    for (const [ndotl, ndotv] of [[1, 1], [0.5, 0.6], [-0.3, 0.8]] as const) {
+      const real = { politica: 'real' as PoliticaDeLuz };
+      expect(Object.is(pixel(1, ndotl, ndotv), pixel(0, ndotl, ndotv, real))).toBe(true);
+      const veu = { d: D_SATURNO, aVeu: 0.2 };
+      expect(Object.is(pixel(1, ndotl, ndotv, veu), pixel(0, ndotl, ndotv, { ...veu, ...real })))
+        .toBe(true);
+    }
+  });
+
+  it('k = 0,5 fica ENTRE as duas em passos: a chapa +1,5 e o Sol do globo na metade', () => {
+    expect(Math.log2(exposicaoDoQuadro(RAMPA, 'assistida', 0.5) / RAMPA)).toBeCloseTo(1.5, 12);
+    const e = irradianciaRelativa(D_PLUTAO);
+    expect(Math.log2(ganhoDoGlobo(D_PLUTAO, 'assistida', 0.5))).toBeCloseTo(Math.log2(e) / 2, 12);
+    expect(lanternaDaVisita('assistida', 0.5)).toBeCloseTo(LANTERNA_DE_LEITURA / 2, 15);
+    // o selo declara metade do gasto
+    expect(stopsDaVisita(D_PLUTAO, 'assistida', 0.5)).toBeCloseTo(
+      stopsDaVisita(D_PLUTAO, 'assistida')! / 2,
+      12
+    );
+    // e o subsolar EXECUTADO cai por igual, em passos: (8·E)^k
+    const subsolar = (k: number) => pixel(k, 1, 1);
+    expect(Math.log2(subsolar(0.5) / subsolar(0))).toBeCloseTo(
+      Math.log2(subsolar(1) / subsolar(0)) / 2,
+      9
+    );
+  });
+
+  it('o pixel anda SEM DEGRAU de ponta a ponta — inclusive nas costuras dos ramos', () => {
+    const N = 2000;
+    const casos: [string, number, number, { d?: number; aVeu?: number }][] = [
+      ['subsolar', 1, 1, {}],
+      ['flanco', 0.5, 0.6, {}],
+      ['terminador', 0.05, 0.6, {}],
+      ['noite (só a lanterna)', -0.3, 0.8, {}],
+      // o limbo de Saturno, onde o véu pesa 20 %: a tradução apaga em k = 1
+      ['limbo de Saturno', 0.5, 0.2, { d: D_SATURNO, aVeu: 0.2 }],
+    ];
+    for (const [nome, ndotl, ndotv, onde] of casos) {
+      const p0 = pixel(0, ndotl, ndotv, onde);
+      let anterior = p0;
+      let pior = 0;
+      for (let i = 1; i <= N; i++) {
+        const p = pixel(i / N, ndotl, ndotv, onde);
+        pior = Math.max(pior, Math.abs(p - anterior) / p0);
+        anterior = p;
+      }
+      // um passo de 1/2000 de k nunca move o pixel mais de 1 % do que ele
+      // valia na `assistida` — um degrau de ramo moveria dezenas de %
+      expect(pior, nome).toBeLessThan(0.01);
+    }
   });
 });

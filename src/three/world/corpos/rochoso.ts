@@ -627,6 +627,8 @@ export interface QuadroDoRochoso {
   /** o roteiro do filme declarou este corpo — o segurador monotônico. */
   pedidoDoRoteiro: boolean;
   politica: PoliticaDeLuz;
+  /** a curva `camera.luz` do filme neste quadro (F2b, `kDaLuz`); ausente = 0 */
+  luzDoRoteiro?: number;
   /** o relógio de PAREDE do app em segundos — só a carência da descarga
    *  o consome (`CARENCIA_DA_DESCARGA_S`). */
   tS: number;
@@ -918,7 +920,7 @@ export class RochosoResolvido {
     // a exposição da visita (item 91, reescrita no 93): Sol = 1 em
     // `assistida`, E(d) em `real`. Os anéis (Quaoar, Haumea) recebem o mesmo
     // `ganho` — e nenhuma lanterna. Ver `luzDaVisita.ts`.
-    const ganho = ganhoDoGlobo(this.rUA, q.politica);
+    const ganho = ganhoDoGlobo(this.rUA, q.politica, q.luzDoRoteiro);
     // ONDE ESTÁ O SOL, uma vez só por corpo: a ORIGEM da cena. Os anéis
     // (Quaoar, Haumea) bebem DESTE vetor — Quaoar tinha um segundo cálculo
     // idêntico só para ele (item 91).
@@ -942,7 +944,7 @@ export class RochosoResolvido {
     // escritor da casa — as três famílias de BRDF desta classe recebem
     // os MESMOS dois uniformes; quem decide o que fazer com eles é o
     // fragmento (a LS ignora o `s`).
-    escreverLuzDaVisita(u, q.politica, 0);
+    escreverLuzDaVisita(u, q.politica, 0, q.luzDoRoteiro, ganho);
     // a sombra do eclipse — o mesmo fio das irmãs (sem deriva: casca única)
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
 

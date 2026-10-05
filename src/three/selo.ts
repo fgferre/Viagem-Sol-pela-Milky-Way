@@ -427,6 +427,14 @@ export interface EstadoDaVista {
    * visitante — é a dramaturgia. Quem a calcula é `director/doseDoSol.ts`.
    */
   doseDoSol: number;
+  /**
+   * A LUZ DO ROTEIRO (F2b, a viagem solar): a curva `camera.luz` do plano
+   * — quanto da luz `real` o filme está pondo no quadro por cima da
+   * escolha do visitante (`kDaLuz`, `luzDaVisita.ts`). 0 fora do filme e
+   * nos planos sem a curva. Mesmo contrato da `doseDoSol`: é dramaturgia,
+   * não gesto do visitante.
+   */
+  luzDoRoteiro: number;
   // (stopsDaPupila morreu no M2 com a pupila: não há mais adaptação por
   // quadro a declarar — a compressão fixa é a lei, igual em todo quadro.)
 }
@@ -587,6 +595,22 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     get rotulo() { return t('selo.desvio.doseDoSol'); },
     volta: 'nenhuma',
     desvia: (e) => e.doseDoSol < 1,
+  },
+  /**
+   * A LUZ DO ROTEIRO (F2b, decisão 4 do dono: *"a exposição desliza da
+   * assistida para a real e volta"*). Enquanto a curva `camera.luz` do
+   * plano anda, o globo e a chapa estão ENTRE as duas leis — nem a foto
+   * da visita, nem a luz física —, e o selo diz que quem os pôs ali foi o
+   * roteiro. Mesma forma da dose do Sol: `volta: 'nenhuma'`, porque é do
+   * filme e não do visitante. Quem já está em `real` não tem travessia:
+   * a curva não o move (`kDaLuz`), e a linha fica calada.
+   */
+  {
+    chave: 'luz-do-roteiro',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.luzDoRoteiro'); },
+    volta: 'nenhuma',
+    desvia: (e) => e.luz === 'assistida' && e.luzDoRoteiro > 0,
   },
   /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8; reescrita no

@@ -62,16 +62,27 @@ export const EN: Record<keyof typeof PT, string> = {
     'from the Sun to the supergiants of Orion, to the heart of the galaxy — and back',
   'hud.abertura.linha2':
     '328,749 cataloged stars · volumetric Milky Way rebuilt in real time',
-  'hud.porta.filme': 'Watch the film',
-  'hud.porta.filmeNota': 'a film with a script and captions — you watch',
   'hud.porta.explorarNota': 'you fly the camera, with no script and no clock',
   'hud.porta.voo': 'Free flight',
   'hud.porta.atlas': 'Explore the Atlas',
   'hud.porta.atlasNota': "today's sky: visit the planets and run the clock",
   'hud.duracaoCom': '{min} min {seg} s',
+  'hud.duracaoMin': '{min} min',
+  'hud.filme.galactico.titulo': 'Galactic journey',
+  'hud.filme.galactico.nota': 'from the Sun to the galactic center — and back',
+  'hud.filme.solar.titulo': 'Solar journey',
+  'hud.filme.solar.nota': 'from the Sun to Saturn, until Earth is a dot',
   'hud.fim.deVoltaACasa': 'back home',
+  // EACH FILM'S END SCREEN (`Filme.encerramento`, `cinematic/filme.ts`): the
+  // galactic one keeps its quotation in the closing script and only the
+  // footnote is a key (below); the solar one says its own line and credit.
+  // PROVISIONAL — the film's thesis line and the data provenance, until the
+  // new script is final.
   'hud.fim.rodape':
     'named stars in real positions · Milky Way rebuilt from scientific data',
+  'hud.fim.solar.linha': 'One fire. Each world does something different with it.',
+  'hud.fim.solar.credito':
+    'real positions for January 2026 · spacecraft maps, rebuilt',
   'hud.fim.reviver': 'Watch it again',
   'hud.fim.ficarAqui': 'Stay in this sky',
   'hud.progressoDaViagem': 'Journey progress',
@@ -101,21 +112,20 @@ export const EN: Record<keyof typeof PT, string> = {
   // door and the pause-and-look "Enter the Atlas".
   'barra.atlas': 'Atlas',
   'barra.atlasAria': 'Back to the Atlas',
-  'barra.verOFilme': 'Watch the film',
-  'barra.verOFilmeAria': 'Watch the film from the beginning',
+  // THE FILMS TO CHOOSE FROM ("More" and Atlas): the name comes from the
+  // film itself (`hud.filme.*.titulo`); only what the button tells a
+  // screen reader lives here.
+  'barra.filmeAria': '{nome} — watch from the beginning',
+  'barra.filmeTocandoAria': '{nome} — playing now',
   'barra.explorarAtlas': 'Free flight',
   'barra.explorarAria': 'Leave for free flight',
   // "RESUME", not "Back to the film" anymore (item 2, mockup §3.2: "↩
-  // Resume"). The KEY stays — it names the DESTINATION, not the label.
+  // Resume"). The KEY stays — it names the DESTINATION, not the label. On
+  // mobile the mode buttons (the films, free flight and this one) are
+  // icon-only since 10-05 — the names clipped at 320 px inside the 44 px row
+  // of item 6 —: the full name goes in the `aria-label` and the `title`, so
+  // there is no SHORT key.
   'barra.voltarAoFilme': 'Resume',
-  // THE THREE TOP CHIPS ON MOBILE (found in the Lote 4 screenshots,
-  // 09-07): "Watch the film" clips at 320 px inside the 44 px row of
-  // item 6. The SHORT keys apply only there; the button's `aria-label`
-  // stays the LONG label above — shortening the visible text can't
-  // shorten what a screen reader announces.
-  'barra.verOFilmeCurto': 'Film',
-  'barra.explorarCurto': 'Free flight',
-  'barra.voltarAoFilmeCurto': 'Resume',
   'barra.retomar': 'Resume',
   'barra.pausar': 'Pause',
   'barra.retomarAria': 'Resume the journey',
@@ -124,11 +134,11 @@ export const EN: Record<keyof typeof PT, string> = {
   'barra.velocidadeDica': '← → skip chapters',
   'barra.verAGalaxia': 'Go to the galaxy',
   'barra.explorar': 'Free flight',
-  // THE FILM'S "MORE" (E1) — Layers, quality and Settings collapse
-  // behind a single trigger, closed on every load; the label stays
-  // short because the `aria-label` below already says what it opens.
+  // THE FILM'S "MORE" (E1) — the films, Layers, quality and Settings
+  // collapse behind a single trigger, closed on every load; the label
+  // stays short because the `aria-label` below already says what it opens.
   'barra.mais': 'More',
-  'barra.maisAria': 'Show Layers, quality and Settings',
+  'barra.maisAria': 'Show the films, Layers, quality and Settings',
   'barra.qualidadeAria': 'Graphics quality',
   'barra.alcasAria': 'Atlas controls',
   'barra.reguaAria': 'Atlas tools',
@@ -462,6 +472,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.exp': 'exposure set by hand',
   'selo.desvio.tone': 'tone curve changed',
   'selo.desvio.doseDoSol': 'the opening shows the Sun cleaner than the date asks for',
+  'selo.desvio.luzDoRoteiro': 'the light is in a scripted transition, between assisted and real',
   'selo.desvio.amostragem': 'sampling below cinema',
   'selo.desvio.camada': 'layer turned off: {nome}',
   'selo.desvio.msaa': 'edge smoothing set by hand',

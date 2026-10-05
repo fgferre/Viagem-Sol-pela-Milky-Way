@@ -446,12 +446,14 @@ describe('a Q14 do dono — em `?luz=real` a LINHA do Director abre +3 passos', 
   const exposicaoDoTick = (
     politica: PoliticaDeLuz,
     galaxyFade: number,
-    expOverride = false
+    expOverride = false,
+    luzDoRoteiro = 0
   ): number | undefined => {
     let visto: number | undefined;
     const alvo = {
       expOverride,
       politicaDeLuz: politica,
+      luzDoRoteiro,
       engine: {
         setExposure: (v: number) => {
           visto = v;
@@ -496,6 +498,24 @@ describe('a Q14 do dono — em `?luz=real` a LINHA do Director abre +3 passos', 
     // URL histórica `?luz=real&exp=8.16` continua dando 8,16 e não 65.
     expect(exposicaoDoTick('real', 0, true)).toBeUndefined();
     expect(exposicaoDoTick('assistida', 0, true)).toBeUndefined();
+  });
+
+  it('a luz do roteiro (F2b) abre a MESMA linha em passos: +1,5 a meio caminho', () => {
+    expect(AUTO![1]).toContain('this.luzDoRoteiro');
+    for (const fade of [0, 1]) {
+      const assistida = exposicaoDoTick('assistida', fade)!;
+      expect(Math.log2(exposicaoDoTick('assistida', fade, false, 0.5)! / assistida)).toBeCloseTo(
+        1.5,
+        12
+      );
+      expect(exposicaoDoTick('assistida', fade, false, 1)! / assistida).toBe(
+        2 ** PASSOS_DA_EXPOSICAO_REAL
+      );
+      // quem já está em `real` não é movido pela curva
+      expect(exposicaoDoTick('real', fade, false, 0.5)).toBe(exposicaoDoTick('real', fade));
+    }
+    // e o gesto do visitante continua vencendo
+    expect(exposicaoDoTick('assistida', 0, true, 0.5)).toBeUndefined();
   });
 });
 

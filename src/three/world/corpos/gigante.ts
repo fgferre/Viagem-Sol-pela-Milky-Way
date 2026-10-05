@@ -1199,6 +1199,8 @@ export interface QuadroDoGigante {
   /** o roteiro do filme declarou este corpo — o segurador monotônico. */
   pedidoDoRoteiro: boolean;
   politica: PoliticaDeLuz;
+  /** a curva `camera.luz` do filme neste quadro (F2b, `kDaLuz`); ausente = 0 */
+  luzDoRoteiro?: number;
   /** o relógio de PAREDE do app em segundos — só a carência da descarga
    *  o consome (`CARENCIA_DA_DESCARGA_S`). */
   tS: number;
@@ -1451,7 +1453,7 @@ export class GiganteResolvido {
     // Sol do globo vale 1 literal, como no Eyes; em `real` é E(d). O
     // ANEL recebe o MESMO `ganho` lá embaixo — o anel de Saturno paga a
     // mesma conta do globo, e era o 0,21 dele que o apagava junto.
-    const ganho = ganhoDoGlobo(this.rUA, q.politica);
+    const ganho = ganhoDoGlobo(this.rUA, q.politica, q.luzDoRoteiro);
     // ONDE ESTÁ O SOL, uma vez só por corpo: na ORIGEM da cena. O anel
     // lá embaixo bebe DESTE vetor — tinha um segundo cálculo idêntico
     // só para ele, e dois cadastros da mesma verdade é como uma inversão
@@ -1477,7 +1479,7 @@ export class GiganteResolvido {
     // fora: o modelo dele é camada de partículas com função de fase.
     // A densidade do véu entra porque o Eyes amacia o terminador onde há
     // atmosfera: em Saturno o s cai a 2,8986; nos outros, 3 exato.
-    escreverLuzDaVisita(u, q.politica, densidadeDoVeu(this.idCorpo));
+    escreverLuzDaVisita(u, q.politica, densidadeDoVeu(this.idCorpo), q.luzDoRoteiro, ganho);
     escreverSombraDeEclipse(u, this.sombra, this.vX, this.vY, this.vZ, 0);
     // o Sol é um DISCO: o raio angular visto DESTE corpo é a meia-penumbra
     // das DUAS sombras — a do anel no globo e a do globo no anel

@@ -191,7 +191,7 @@
   background: var(--borda);
 }
 
-/* O "MAIS" (C5, U08) — Camadas, qualidade e Ajustes entram/saem JUNTOS:
+/* O "MAIS" (C5, U08) — os filmes, Camadas, qualidade e Ajustes entram/saem JUNTOS:
    fade + pequena subida, com a mesma receita de presença da Sanfona
    (`usePresenca.ts`), mas SEM o corte de grade dela — aqui é uma fileira
    horizontal, não um acordeão vertical, então quem desenha é esta
@@ -208,6 +208,18 @@
 }
 .filme-mais.saindo {
   animation: filmeMaisSai var(--t-entrada) var(--curva) forwards;
+}
+/* A ENTRADA DO FILME QUE JÁ ESTÁ TOCANDO fica apagada e não aceita clique —
+   a mesma tinta da aba Ficha sem alvo (`.atlas-regua > .hud-btn:disabled`,
+   04-atlas.css): é o jeito de dizer "este é o de agora" sem sair do molde
+   dos vizinhos. O hover não a acende. */
+.filme-mais .hud-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.filme-mais .hud-btn:disabled:hover {
+  background: transparent;
+  border-color: var(--borda);
 }
 @keyframes filmeMaisEntra {
   from {

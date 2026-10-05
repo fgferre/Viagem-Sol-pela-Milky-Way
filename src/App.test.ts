@@ -102,3 +102,17 @@ describe('a tela de carga obedece a "reduzir movimento" também quando ela MUDA 
     expect(FONTE).toContain('still={movimentoReduzido || shotMode}');
   });
 });
+
+describe('trocar de filme atualiza o HUD (a escolha visível, F1 da viagem solar)', () => {
+  it('`play(id)` toca o filme, relê as marcas e o filme em cartaz do Director e espelha ?filme= no endereço', () => {
+    // sem a releitura a barra de capítulos ficava com as marcas do filme do boot
+    const play = FONTE.slice(
+      FONTE.indexOf('const play = (id?: string) => {'),
+      FONTE.indexOf('const scrub =')
+    );
+    expect(play).toContain('d.play(id);');
+    expect(play).toContain('setFilme(d.filmeEscolhido);');
+    expect(play).toContain('setTicks(d.progressTicks);');
+    expect(play).toContain('espelharFilme();');
+  });
+});
