@@ -1,6 +1,7 @@
 {
   "planos": [
     {
+      "nome": "solSuperficie",
       "qa": {"superficieDoSol": 0.5},
       "camera": {
         "duracao": 12,
@@ -28,6 +29,7 @@
       ]
     },
     {
+      "nome": "solDisco",
       "qa": {"discoDoSol": 0.9},
       "camera": {
         "duracao": 12,
@@ -54,6 +56,7 @@
       ]
     },
     {
+      "nome": "solPartida",
       "preload": {"corpos": ["mercury", "venus"], "efemerides": true},
       "qa": {"partida": 0.3},
       "camera": {

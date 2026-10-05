@@ -24,6 +24,9 @@ interface ShotCaption {
 }
 
 export interface Shot extends CameraDoPlano, ApoiosDoPlano {
+  /** nome do plano, único no filme que o declara (o solar o dá a todos):
+   *  é por ele que os testes e as ferramentas o acham, em vez do índice */
+  nome?: string;
   captions?: ShotCaption[];
   /** assuntos declarados para a direção de etiquetas existente.
    *  'SOL' e 'SGR' são pseudo-alvos; um id de `CORPOS_DO_SISTEMA` ou de
@@ -86,6 +89,7 @@ export function lerSequencia(
     return {
       ...lerPlanoDeCamera(p.camera, pontos, numeros),
       ...lerApoiosDoPlano(p, campo),
+      nome: opcional(p.nome, `${campo}.nome`, texto),
       captions: opcional(p.legendas, `${campo}.legendas`, (v, c) =>
         Array.from(lista(v, c), (item, j) => legenda(item, `${c}[${j}]`))),
       target: opcional(p.assuntos, `${campo}.assuntos`, (v, c) =>

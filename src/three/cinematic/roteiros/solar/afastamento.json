@@ -1,6 +1,7 @@
 {
   "planos": [
     {
+      "nome": "saturnoSaida",
       "qa": {"saidaDeSaturno": 0.3},
       "camera": {
         "duracao": 15,
@@ -19,6 +20,7 @@
       "olhar": "assunto"
     },
     {
+      "nome": "afastamentoCruzeiro",
       "camera": {
         "duracao": 7,
         "movimento": {
@@ -45,6 +47,7 @@
       ]
     },
     {
+      "nome": "pontoAzulPalido",
       "qa": {"pontoAzulPalido": 0.6},
       "camera": {
         "duracao": 10,
@@ -68,6 +71,7 @@
       ]
     },
     {
+      "nome": "solFecho",
       "qa": {"fecho": 0.95},
       "camera": {
         "duracao": 21,

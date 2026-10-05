@@ -1,6 +1,7 @@
 {
   "planos": [
     {
+      "nome": "mercurioChegada",
       "qa": {
         "chegadaAMercurio": 0.6
       },
@@ -36,6 +37,7 @@
       "fundoSilencioso": true
     },
     {
+      "nome": "mercurioRaspao",
       "qa": {
         "raspaoDeMercurio": 0.45
       },
@@ -86,6 +88,7 @@
       ]
     },
     {
+      "nome": "venusChegada",
       "preload": {
         "corpos": [
           "earth",
@@ -118,6 +121,7 @@
       "fundoSilencioso": true
     },
     {
+      "nome": "venusRaspao",
       "qa": {
         "passagemPorVenus": 0.5
       },
@@ -164,6 +168,7 @@
       ]
     },
     {
+      "nome": "terraChegada",
       "qa": {
         "chegadaATerra": 0.6
       },
@@ -199,6 +204,7 @@
       "fundoSilencioso": true
     },
     {
+      "nome": "terraVoo",
       "qa": {
         "terraDeDia": 0.5
       },
@@ -240,6 +246,7 @@
       ]
     },
     {
+      "nome": "terraSubida",
       "camera": {
         "duracao": 9,
         "movimento": {
@@ -269,6 +276,7 @@
       "olhar": "assunto"
     },
     {
+      "nome": "luaChegada",
       "preload": {
         "corpos": [
           "mars",
@@ -307,6 +315,7 @@
       "fundoSilencioso": true
     },
     {
+      "nome": "luaRaspao",
       "camera": {
         "duracao": 6,
         "movimento": {
@@ -355,6 +364,7 @@
       ]
     },
     {
+      "nome": "luaNascerDaTerra",
       "qa": {
         "nascerDaTerra": 0.7
       },
@@ -418,6 +428,7 @@
       ]
     },
     {
+      "nome": "luaTerraNoHorizonte",
       "qa": {
         "terraSobreOHorizonte": 0.5
       },
@@ -461,6 +472,7 @@
       "olhar": "assunto"
     },
     {
+      "nome": "luaRumoDeMarte",
       "preload": {
         "corpos": [
           "jupiter",
@@ -514,6 +526,7 @@
       "fundoSilencioso": true
     },
     {
+      "nome": "marteChegada",
       "qa": {
         "chegadaAMarte": 0.6
       },
@@ -546,6 +559,7 @@
       "fundoSilencioso": true
     },
     {
+      "nome": "marteRaspao",
       "qa": {
         "raspaoDeMarte": 0.45
       },
@@ -599,6 +613,7 @@
       ]
     },
     {
+      "nome": "ceresChegada",
       "camera": {
         "duracao": 6,
         "movimento": {
@@ -641,6 +656,7 @@
       ]
     },
     {
+      "nome": "ceresPassagem",
       "qa": {
         "passagemPorCeres": 0.4
       },

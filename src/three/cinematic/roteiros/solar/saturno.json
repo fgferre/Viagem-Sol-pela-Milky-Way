@@ -1,6 +1,7 @@
 {
   "planos": [
     {
+      "nome": "saturnoChegada",
       "camera": {
         "duracao": 14,
         "movimento": {
@@ -28,6 +29,7 @@
       ]
     },
     {
+      "nome": "saturnoSobreOAnel",
       "camera": {
         "duracao": 8,
         "movimento": {
@@ -44,6 +46,7 @@
       "fundoSilencioso": true
     },
     {
+      "nome": "saturnoRasante",
       "qa": {"rasanteDosAneis": 0.5},
       "camera": {
         "duracao": 14,
@@ -67,6 +70,7 @@
       "olhar": "assunto"
     },
     {
+      "nome": "enceladoRaspao",
       "qa": {"encelado": 0.55},
       "camera": {
         "duracao": 14,
@@ -109,6 +113,7 @@
       ]
     },
     {
+      "nome": "enceladoPluma",
       "qa": {"pluma": 0.7},
       "camera": {
         "duracao": 4,
@@ -126,6 +131,7 @@
       "olhar": "tras"
     },
     {
+      "nome": "hiperionRaspao",
       "qa": {"hiperion": 0.55},
       "camera": {
         "duracao": 13,
@@ -165,6 +171,7 @@
       ]
     },
     {
+      "nome": "saturnoPostal",
       "qa": {"cartaoPostal": 0.5},
       "camera": {
         "duracao": 10,
