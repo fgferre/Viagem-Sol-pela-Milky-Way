@@ -206,15 +206,15 @@ Formato de cada cena: **o que se vê** (o que é nosso) · **câmera** · **lege
 
 ---
 
-## 4. As decisões que são suas
+## 4. As decisões — tomadas por ele em 05/10/2026 (à noite)
 
-1. **Duração:** 6 min com os 24 lugares, ou 4 min com 18? (Minha recomendação: 6 — é a vitrine do trabalho; o galáctico continua sendo o filme curto.)
-2. **Os opcionais:** quais ficam — Mercúrio, Vênus, Ceres, Europa, Titã, Urano? (Recomendo tirar só Urano, que tem o asset mais fraco.)
-3. **O dia do ato da Lua:** aceitar que este ato use um dia de quarto de Lua (10 ou 26 de janeiro de 2026), para a Terra meia-iluminada da Apollo 8? (Recomendo sim; o selo declara.)
-4. **A luz honesta como recurso dramático:** hoje o app ilumina Saturno e Plutão como se fossem a Terra. A prancha que te mandei mostra a diferença. Três caminhos: (a) tudo assistido, a luz fraca só nas legendas; (b) o filme inteiro com luz real (Saturno fosco, Plutão quase escuro, a Via Láctea viva atrás); (c) **um beat declarado** em Plutão: a exposição desliza da assistida para a real por 5 s e volta — "escala real da luz", animada, nunca um botão (como você pediu para a escala no filme galáctico). (Recomendo (c); é obra de motor.)
-5. **Som:** todas as referências vivem de música. O app não tem som. Entra na conversa agora ou depois?
-6. **A ponte para o filme galáctico** na última legenda: sim ou não?
-7. **Os botões dos filmes:** antes de qualquer nova entrega, a escolha visível ("Viagem galáctica" / "Viagem solar") na capa e no menu — trago a maquete junto com a próxima rodada, como combinado.
+1. **Duração: 6 minutos, 24 lugares.**
+2. **Os opcionais: todos ficam, Urano inclusive.** Palavras dele: *"vamos incluir todos, ainda vamos melhorar esse asset, se houver mais algum asset que precise ser melhorado também vamos colocar isso no pipeline"* → item 230 do `PENDENCIAS.md` (a fila de assets a melhorar).
+3. **O ato da Lua usa um dia de quarto de Lua** (10 ou 26 de janeiro de 2026), declarado no selo; o resto do filme segue em 1º de janeiro.
+4. **A luz honesta entra como um beat declarado em Plutão** (a exposição desliza da assistida para a real e volta) — obra de motor, nunca um botão.
+5. **Som: depois, como rodada própria**, com o filme já aprovado em imagem e legenda. O roteiro guarda as batidas.
+6. **A última legenda faz a ponte para o filme galáctico.**
+7. **Os botões dos filmes ficam na capa (os dois lado a lado) e no menu "Mais"**, com o galáctico como padrão de quem chega; a maquete vem antes da obra.
 
 ## 5. O que o motor precisa (e o que já está pronto)
 

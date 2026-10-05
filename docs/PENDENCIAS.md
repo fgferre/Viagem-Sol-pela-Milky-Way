@@ -2,7 +2,7 @@
 
 Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
-Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 230.**
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
 ## O BASTÃO — onde a rodada parou (04/10) — SOMBRA DOBRADA NO MAIN, À ESPERA DA PUBLICAÇÃO; TRITÃO PAUSADO
 
@@ -444,6 +444,22 @@ conhecidos: emenda com a metade fotografada, polos (a IA estica), tamanho
   hash com a palavra dele; confissão nas duas línguas na ficha; a pintura
   por IA não foi precisa. Sobras no `BACKLOG.md`. Prancha final do app:
   `capturas/relevo-e-cor-final-app-prancha.jpg`.
+
+**230. Os assets fracos do Sistema Solar vão para a fila de melhoria.**
+Palavras dele, 05/10, ao decidir o roteiro da viagem solar (seis minutos,
+todos os lugares, Urano inclusive): *"vamos incluir todos, ainda vamos
+melhorar esse asset, se houver mais algum asset que precise ser melhorado
+também vamos colocar isso no pipeline"*. O inventário de 05/10 (feito para
+o roteiro) aponta, do mais fraco ao menos: Urano (mapa derivado; anéis
+declarados em `CORPOS_COM_ANEL` mas não desenhados), Netuno (mapa derivado),
+Vesta e Deimos (elipsoides sem forma), Tritão (metade reconstruída por IA
+sobre a Voyager 2), Ariel (norte inventado), Titã (só a névoa, 720×360),
+Vênus (só o topo das nuvens — correto visto de fora; a superfície é radar),
+Jápeto (altura sintética na crista; a crista real é o que o filme mostra).
+Obra a desenhar quando chegar a vez, pela receita das rodadas de Plutão,
+Caronte e Hipérion (fonte com licença, extrapolação confessada, prova por
+foto); o filme solar (roteiro em `docs/ROTEIRO-VIAGEM-SOLAR.md`) é quem
+cobra a ordem.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
