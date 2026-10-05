@@ -1,6 +1,7 @@
 // Serve: dono — o filme solar monta com o prólogo no Sol, o ato I dos mundos de pedra (da Terra vista da Lua a Ceres) e os atos de fora, legendas nas duas línguas e a câmera perto dos corpos sem entrar neles
 // A montagem do filme solar: duração, legendas, apoios, a geometria das
-// aproximações e a troca de relógio, medidas nos próprios planos (o
+// aproximações e a troca de relógio do ato I para o II, medidas nos
+// próprios planos (o
 // relógio de Journey.at: ritmo do plano, glide quando ausente) — antes de
 // o filme ser registrado.
 import { readFileSync } from 'node:fs';
@@ -20,6 +21,7 @@ import { RELEVO_DA_LUA } from '../../../world/corpos/rochoso';
   location: { search: '' },
 };
 const { montarFilmeSolar, raioPc, RAIO_DOS_ANEIS } = await import('./montar');
+const { RELOGIOS_SOLAR } = await import('./pinos');
 const { RAIO_SOL_PC } = await import('../../../escala');
 const { glide } = await import('../../movimentos');
 const { auditarRoteiro, Journey } = await import('../../journey');
@@ -338,7 +340,7 @@ describe('o ponto azul pálido', () => {
   // a Terra no céu dos atos II–IV, pela cadeia dos pinos, vista da câmera
   // do roteiro, enquanto a legenda está no ar: a mira é o Sol (centro do
   // quadro), então a distância em px é a do ângulo, na lente do plano
-  const v = motor.posicaoHeliocentrica('earth', filme.jd2);
+  const v = motor.posicaoHeliocentrica('earth', RELOGIOS_SOLAR.fora);
   const terra = new THREE.Vector3(...eclipticaParaEquatorial([v.x, v.y, v.z])).multiplyScalar(AU_PARA_PC);
   const { i } = plano('pontoAzulPalido');
   const c = shots[i].captions!.find((x) => x.text === 'A Terra, daqui')!;
@@ -370,11 +372,12 @@ describe('o ponto azul pálido', () => {
   }
 });
 
-describe('os dois relógios: o prólogo e o ato I em JD_A, os atos de fora em JD2', () => {
+describe('os três relógios: o prólogo e o ato I em JD_A, Júpiter em JD_J, os atos de fora em JD2', () => {
   // o primeiro plano de jupiter.json: a travessia para Júpiter
   const { shot: planoDaTravessia, inicio: inicioDaTravessia } = plano('jupiterChegada');
   const fimDaTravessia = inicioDaTravessia + planoDaTravessia.dur;
-  const fimDaTroca = filme.tTroca + filme.duracaoDaTroca;
+  const [paraJupiter, paraFora] = filme.trocas;
+  const fimDaTroca = paraJupiter.t + paraJupiter.duracao;
   /** o menor ângulo entre a visada e as direções da câmera à Terra e à Lua */
   const foraDaVisada = (t: number) => {
     const { pos, look } = amostra(t);
@@ -390,24 +393,39 @@ describe('os dois relógios: o prólogo e o ato I em JD_A, os atos de fora em JD
     return new THREE.Vector3(...eclipticaParaEquatorial([v.x, v.y, v.z])).multiplyScalar(AU_PARA_PC);
   };
 
-  it('o calendário dá JD_A até a troca, JD2 depois da rampa e anda sem voltar no meio; o retrato (jd) é JD2', () => {
-    expect(filme.jdDoFilme(0)).toBe(filme.jdA);
-    expect(filme.jdDoFilme(filme.tTroca)).toBe(filme.jdA);
-    expect(filme.jdDoFilme(fimDaTroca)).toBe(filme.jd2);
-    expect(filme.jdDoFilme(duracao)).toBe(filme.jd2);
-    expect(filme.jd).toBe(filme.jd2);
-    let anterior = filme.jdDoFilme(filme.tTroca);
-    for (let t = filme.tTroca; t <= fimDaTroca; t += 0.01) {
-      const jd = filme.jdDoFilme(t);
-      expect(jd).toBeLessThanOrEqual(anterior); // JD2 é nove dias ANTES de JD_A
-      anterior = jd;
+  it('duas trocas, de JD_A a JD_J e de JD_J a JD2, de 1,5 s cada', () => {
+    expect(filme.trocas.map((x) => [x.de, x.para, x.duracao])).toEqual([
+      ['a', 'jupiter', 1.5], ['jupiter', 'fora', 1.5],
+    ]);
+  });
+
+  it('o calendário dá o relógio de cada ato fora das rampas e anda sem voltar dentro delas; o retrato (jd) é JD2', () => {
+    const { a, jupiter, fora } = RELOGIOS_SOLAR;
+    expect(filme.jdDoFilme(0)).toBe(a);
+    expect(filme.jdDoFilme(paraJupiter.t)).toBe(a);
+    expect(filme.jdDoFilme(fimDaTroca)).toBe(jupiter);
+    expect(filme.jdDoFilme(paraFora.t)).toBe(jupiter);
+    expect(filme.jdDoFilme(paraFora.t + paraFora.duracao)).toBe(fora);
+    expect(filme.jdDoFilme(duracao)).toBe(fora);
+    expect(filme.jd).toBe(fora);
+    for (const troca of filme.trocas) {
+      const de = RELOGIOS_SOLAR[troca.de];
+      const para = RELOGIOS_SOLAR[troca.para];
+      let anterior = de;
+      for (let t = troca.t; t <= troca.t + troca.duracao; t += 0.01) {
+        const jd = filme.jdDoFilme(t);
+        // sem passar do destino nem voltar para a origem
+        expect(Math.sign(para - de) * (jd - anterior)).toBeGreaterThanOrEqual(0);
+        expect(Math.sign(para - de) * (para - jd)).toBeGreaterThanOrEqual(0);
+        anterior = jd;
+      }
     }
   });
 
-  it('a rampa acaba onde a travessia para Júpiter começa, e Terra e Lua ficam fora do quadro dela até o fim da travessia', () => {
-    expect(fimDaTroca).toBe(inicioDaTravessia);
+  it('a rampa para JD_J acaba onde a travessia para Júpiter começa, e Terra e Lua ficam fora do quadro dela até o fim da travessia', () => {
+    expect(fimDaTroca).toBeCloseTo(inicioDaTravessia, 9);
     let menor = Infinity;
-    for (let t = filme.tTroca; t <= fimDaTravessia; t += 0.01) menor = Math.min(menor, foraDaVisada(t));
+    for (let t = paraJupiter.t; t <= fimDaTravessia; t += 0.01) menor = Math.min(menor, foraDaVisada(t));
     // de Ceres (a 2,7 UA delas) Terra e Lua são pontos, não discos que giram;
     // o canto do quadro de 16:9 com a lente de 58° está a 48,5° do centro
     expect(menor).toBeGreaterThanOrEqual(45); // medido 46,9°, no começo da travessia
@@ -416,27 +434,27 @@ describe('os dois relógios: o prólogo e o ato I em JD_A, os atos de fora em JD
   it('Júpiter, para onde o olhar vira durante a rampa, anda menos de 0,1° por quadro de 1/30 s', () => {
     const passo = 1 / 30;
     let maior = 0;
-    for (let t = filme.tTroca; t < fimDaTroca; t += passo) {
+    for (let t = paraJupiter.t; t < fimDaTroca; t += passo) {
       const { pos } = amostra(t + passo);
       maior = Math.max(maior, THREE.MathUtils.radToDeg(
         jupiterEm(t).sub(pos).angleTo(jupiterEm(t + passo).sub(pos))
       ));
     }
-    expect(maior).toBeLessThan(0.1); // medido 0,020°
-    // e o pulo que um degrau daria: os nove dias entre os dois céus
-    const { pos } = amostra(filme.tTroca);
+    expect(maior).toBeLessThan(0.1); // medido 0,021°
+    // e o pulo que um degrau daria: os nove dias e meio entre os dois céus
+    const { pos } = amostra(paraJupiter.t);
     const degrau = THREE.MathUtils.radToDeg(
-      jupiterEm(filme.tTroca).sub(pos).angleTo(jupiterEm(fimDaTroca).sub(pos))
+      jupiterEm(paraJupiter.t).sub(pos).angleTo(jupiterEm(fimDaTroca).sub(pos))
     );
-    expect(degrau).toBeGreaterThan(0.5); // medido 0,61°: por isso a rampa
+    expect(degrau).toBeGreaterThan(0.5); // medido 0,62°: por isso a rampa
   });
 
-  it('nenhuma legenda está aberta quando a troca começa', () => {
+  it('nenhuma legenda está aberta quando a troca para JD_J começa', () => {
     const abertas = shots.flatMap((s, i) => (s.captions ?? []).map((c) => ({
       texto: c.text,
       t0: starts[i] + c.at * s.dur,
       t1: starts[i] + c.at * s.dur + (c.dur ?? 8.6),
-    }))).filter((c) => c.t0 <= filme.tTroca && filme.tTroca < c.t1).map((c) => c.texto);
+    }))).filter((c) => c.t0 <= paraJupiter.t && paraJupiter.t < c.t1).map((c) => c.texto);
     expect(abertas).toEqual([]);
   });
 

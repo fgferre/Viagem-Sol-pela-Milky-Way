@@ -4,8 +4,9 @@
 // pela fonte única de raios (BODY_AXES) ou pela posição da câmera no
 // instante da legenda — e cobrado com o arredondamento que o texto usa,
 // nas duas línguas. Cada conta usa o céu do ato da legenda: do Sol à
-// Ceres, o de JD_A; de Júpiter em diante, o de JD2 — inclusive a Terra,
-// que é desenhada no pino de JD_A mas é recomputada pela cadeia em JD2.
+// Ceres, o de JD_A; em Júpiter, o de JD_J; de Saturno em diante, o de
+// JD2 — inclusive a Terra, que é desenhada no pino de JD_A mas é
+// recomputada pela cadeia no relógio do ato.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -25,7 +26,7 @@ import { faseDoCiclo } from '../../../estrela';
   location: { search: '' },
 };
 const { montarFilmeSolar } = await import('./montar');
-const { pino } = await import('./pinos');
+const { pino, RELOGIOS_SOLAR } = await import('./pinos');
 const { glide } = await import('../../movimentos');
 
 const C_KM_S = 299_792.458;
@@ -74,15 +75,18 @@ const LUA = pino('moon');
 const MARTE = pino('mars');
 const JUPITER = pino('jupiter');
 const SATURNO = pino('saturn');
-/** a Terra no céu dos atos II–IV, pela mesma cadeia dos pinos */
-const TERRA_EM_JD2 = (() => {
-  const v = motor.posicaoHeliocentrica('earth', filme.jd2);
+/** a Terra num relógio do filme, pela mesma cadeia dos pinos */
+const terraEm = (jd: number) => {
+  const v = motor.posicaoHeliocentrica('earth', jd);
   return new THREE.Vector3(...eclipticaParaEquatorial([v.x, v.y, v.z])).multiplyScalar(UA);
-})();
+};
+/** a Terra no céu do ato II (JD_J) e no dos atos de fora (JD2) */
+const TERRA_EM_JD_J = terraEm(RELOGIOS_SOLAR.jupiter);
+const TERRA_EM_JD2 = terraEm(RELOGIOS_SOLAR.fora);
 const emUA = (v: THREE.Vector3) => v.length() / UA;
 const minutosLuz = (ua: number) => (ua * AU_KM) / C_KM_S / 60;
-/** a luz do Sol num ponto, como fração da que a Terra recebe no céu dos atos II–IV (1/d²) */
-const maisFraco = (dUA: number) => (dUA / emUA(TERRA_EM_JD2)) ** 2;
+/** a luz do Sol num ponto, como fração da que a Terra recebe no mesmo céu (1/d²) */
+const maisFraco = (dUA: number, terra: THREE.Vector3) => (dUA / emUA(terra)) ** 2;
 
 describe('os números das legendas batem com a conta', () => {
   it('o Sol: 109 Terras de ponta a ponta, e um milhão de Terras caberiam dentro', () => {
@@ -109,7 +113,7 @@ describe('os números das legendas batem com a conta', () => {
     // as manchas são do modelo, não as observadas no dia: a legenda diz
     // que elas seguem o ciclo, e a atividade dele nesta data passa de
     // 90 % da do máximo de outubro de 2024
-    expect(Math.sin(Math.PI * faseDoCiclo(filme.jdA).fase01)).toBeGreaterThan(0.9);
+    expect(Math.sin(Math.PI * faseDoCiclo(RELOGIOS_SOLAR.a).fase01)).toBeGreaterThan(0.9);
     const c = legendas.find((x) => x.text === 'O Sol')!;
     expect(falaPt(c)).toContain('10 de janeiro de 2026');
     expect(falaPt(c)).toContain('perto do máximo');
@@ -193,16 +197,6 @@ describe('os números das legendas batem com a conta', () => {
     expect(falaEn(c)).toContain('the largest in the belt');
   });
 
-  it('Júpiter: 4,2 UA da Terra e 35 minutos-luz (as duas em JD2; a Terra desenhada, de JD_A, dá o mesmo)', () => {
-    const ua = emUA(JUPITER.clone().sub(TERRA_EM_JD2));
-    expect(pt(emUA(JUPITER.clone().sub(TERRA)), 1)).toBe(pt(ua, 1));
-    const c = legenda('Júpiter: ');
-    expect(falaPt(c)).toContain(`${pt(ua, 1)} UA`);
-    expect(falaPt(c)).toContain(`${Math.round(minutosLuz(ua))} minutos`);
-    expect(falaEn(c)).toContain(`${en(ua, 1)} AU`);
-    expect(falaEn(c)).toContain(`${Math.round(minutosLuz(ua))} minutes`);
-  });
-
   it('Júpiter: 11 Terras de largura (diâmetros equatoriais)', () => {
     const n = Math.round(BODY_AXES.jupiter[0] / BODY_AXES.earth[0]);
     const c = legenda('Terras de largura');
@@ -210,12 +204,24 @@ describe('os números das legendas batem com a conta', () => {
     expect(falaEn(c)).toContain(`${n} Earths`);
   });
 
-  it('em Júpiter o Sol é 28 vezes mais fraco que na Terra', () => {
-    const n = Math.round(maisFraco(emUA(JUPITER)));
+  it('em Júpiter o Sol é 28 vezes mais fraco que na Terra (na chegada)', () => {
+    const n = Math.round(maisFraco(emUA(JUPITER), TERRA_EM_JD_J));
     expect(n).toBe(28); // 1 UA daria 27; a Terra está a 0,983 UA no instante
-    const c = legenda('Daqui, o Sol');
-    expect(falaPt(c)).toContain(`${n} vezes`);
-    expect(falaEn(c)).toContain(`${n} times`);
+    const c = legenda('Terras de largura');
+    expect(falaPt(c)).toContain(`${n} vezes mais fraco`);
+    expect(falaEn(c)).toContain(`${n} times fainter`);
+  });
+
+  it('Io: mais de 400 vulcões, aquecida pela maré de Júpiter, e o primeiro vulcão fora da Terra visto pela Voyager 1 em 1979', () => {
+    // mais de 400 vulcões ativos: Lopes et al. 2004 (Icarus 169, 140) e a
+    // página de Io da NASA; o primeiro, a pluma de Pele, na imagem da
+    // Voyager 1 de 8 de março de 1979 (Morabito et al. 1979, Science 204, 972)
+    const c = legenda('Io —');
+    expect(falaPt(c)).toContain('não é o Sol que a aquece');
+    expect(falaPt(c)).toContain('é Júpiter, pela maré: mais de 400 vulcões');
+    expect(falaPt(c)).toContain('A Voyager 1 viu aqui o primeiro vulcão fora da Terra, em 1979');
+    expect(falaEn(c)).toContain('more than 400 volcanoes');
+    expect(falaEn(c)).toContain('Voyager 1 saw the first volcano beyond Earth here, in 1979');
   });
 
   it('Saturno: 9,5 UA do Sol e 79 minutos-luz', () => {
@@ -251,7 +257,7 @@ describe('os números das legendas batem com a conta', () => {
     const c = legenda('A 10 UA');
     const d = emUA(camera(c.t));
     expect(Math.round(d)).toBe(10);
-    expect(Math.round(maisFraco(d) / 10) * 10).toBe(100);
+    expect(Math.round(maisFraco(d, TERRA_EM_JD2) / 10) * 10).toBe(100);
     expect(falaEn(c)).toContain('10 AU');
     expect(falaEn(c)).toContain('100 times');
   });

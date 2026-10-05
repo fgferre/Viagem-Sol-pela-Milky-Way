@@ -3,11 +3,10 @@
 import * as THREE from 'three';
 import { AU_PARA_PC } from '../../../../../lib/atlas/frameGalactico';
 import { IAU_ORIENTATIONS } from '../../../../../lib/atlas/iauOrientation';
-import { baseCorpoEquatorial } from '../../../../../lib/atlas/orientacao';
 import { JD_A_SOLAR_TDB } from '../pinos';
 import {
   CERES, CIMA_DA_ECLIPTICA, JUPITER, LUA, MARTE, MERCURIO, R_CERES, R_LUA, R_MARTE, R_MERCURIO, R_TERRA,
-  R_VENUS, SOL, TERRA, VENUS, ate, girar, perpendicular, rad, versor,
+  R_VENUS, SOL, TERRA, VENUS, ate, girar, naSuperficie, perpendicular, rad, versor,
 } from './geometria';
 
 // ================= ATO I — OS MUNDOS DE PEDRA =================
@@ -105,16 +104,8 @@ const CORTE_DE_MARTE = MARTE.clone().addScaledVector(OLHAR_DO_CORTE_DE_MARTE, -0
 // 73° a oeste dele, de manhã, com o Sol a ~19°: a luz de lado mostra o
 // canion. O raspão desce do lado do Sol pelo paralelo do canion, para o
 // oeste, e o olhar segura o chão do canion adiante.
-const BASE_DE_MARTE = baseCorpoEquatorial(IAU_ORIENTATIONS.mars, JD_A_SOLAR_TDB);
-const POLO_DE_MARTE = new THREE.Vector3(...BASE_DE_MARTE.polo);
-const MERIDIANO_DE_MARTE = new THREE.Vector3(...BASE_DE_MARTE.nodoQ).multiplyScalar(Math.cos(rad(BASE_DE_MARTE.wDeg)))
-  .addScaledVector(new THREE.Vector3(...BASE_DE_MARTE.lesteDeQ), Math.sin(rad(BASE_DE_MARTE.wDeg)));
-const LESTE_DE_MARTE = new THREE.Vector3().crossVectors(POLO_DE_MARTE, MERIDIANO_DE_MARTE);
 /** a direção, do centro de Marte, da latitude e longitude (leste) dadas */
-const emMarte = (lat: number, lonLeste: number) => MERIDIANO_DE_MARTE.clone()
-  .multiplyScalar(Math.cos(rad(lat)) * Math.cos(rad(lonLeste)))
-  .addScaledVector(LESTE_DE_MARTE, Math.cos(rad(lat)) * Math.sin(rad(lonLeste)))
-  .addScaledVector(POLO_DE_MARTE, Math.sin(rad(lat)));
+const emMarte = naSuperficie(IAU_ORIENTATIONS.mars, JD_A_SOLAR_TDB);
 const RASPAO_DE_MARTE = { lat: -13.9, canion: 300.8, inicio: 10, raioDoInicio: 6, joelho: 4, raio: 1.35, saida: 20 };
 const SOL_EM_MARTE = ate(MARTE, SOL);
 const VALLES_MARINERIS = emMarte(RASPAO_DE_MARTE.lat, RASPAO_DE_MARTE.canion);

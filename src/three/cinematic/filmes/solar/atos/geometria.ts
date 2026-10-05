@@ -6,7 +6,8 @@
 import * as THREE from 'three';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../../../lib/atlas/frameGalactico';
 import { AU_KM } from '../../../../../lib/atlas/elementosOrbitais';
-import { BODY_AXES } from '../../../../../lib/atlas/iauOrientation';
+import { BODY_AXES, type IauOrientation } from '../../../../../lib/atlas/iauOrientation';
+import { baseCorpoEquatorial } from '../../../../../lib/atlas/orientacao';
 import { RAIO_SOL_PC } from '../../../../escala';
 import { pino } from '../pinos';
 
@@ -23,6 +24,21 @@ export const girar = (e: THREE.Vector3, f: THREE.Vector3, graus: number) =>
 export const perpendicular = (v: THREE.Vector3, eixo: THREE.Vector3) =>
   versor(v.clone().addScaledVector(eixo, -v.dot(eixo)));
 export const ate = (de: THREE.Vector3, para: THREE.Vector3) => versor(para.clone().sub(de));
+/** o mapa de um corpo no céu `jd`: devolve a direção, do centro dele, da
+ *  latitude e longitude (leste) dadas, em graus — a base IAU
+ *  (`baseCorpoEquatorial`) com o meridiano girado de W, a convenção dos
+ *  mapas do motor (conferida por foto no Valles Marineris) */
+export function naSuperficie(orientacao: IauOrientation, jd: number) {
+  const base = baseCorpoEquatorial(orientacao, jd);
+  const polo = new THREE.Vector3(...base.polo);
+  const meridiano = new THREE.Vector3(...base.nodoQ).multiplyScalar(Math.cos(rad(base.wDeg)))
+    .addScaledVector(new THREE.Vector3(...base.lesteDeQ), Math.sin(rad(base.wDeg)));
+  const leste = new THREE.Vector3().crossVectors(polo, meridiano);
+  return (lat: number, lonLeste: number) => meridiano.clone()
+    .multiplyScalar(Math.cos(rad(lat)) * Math.cos(rad(lonLeste)))
+    .addScaledVector(leste, Math.cos(rad(lat)) * Math.sin(rad(lonLeste)))
+    .addScaledVector(polo, Math.sin(rad(lat)));
+}
 
 export const SOL = pino('sun');
 export const MERCURIO = pino('mercury');

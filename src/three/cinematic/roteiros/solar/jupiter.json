@@ -3,50 +3,68 @@
     {
       "nome": "jupiterChegada",
       "camera": {
-        "duracao": 14,
+        "duracao": 9,
         "movimento": {
           "tipo": "aproximacao",
           "centro": "Jupiter",
           "de": "saidaDeCeres",
-          "para": "chegadaAJupiter",
-          "ritmoDaDirecao": "glide"
+          "para": "fimDaChegadaAJupiter",
+          "ritmoDaDirecao": "glide",
+          "intervalo": [0, 0.767]
         },
         "mira": {"tipo": "fixo", "ponto": "Jupiter"},
-        "lente": [58, 50],
-        "ritmo": "settle",
+        "lente": [58, 58],
+        "ritmo": "linear",
         "efeitoDeVelocidade": {"tipo": "frenagem", "amplitude": 0.8}
       },
       "assuntos": ["jupiter"],
       "fundoSilencioso": true,
       "legendas": [
         {
-          "em": 0.1,
-          "texto": "Da Terra a Júpiter: 4,2 UA",
-          "subtexto": "A luz leva 35 minutos",
-          "en": {"texto": "Earth to Jupiter: 4.2 AU", "subtexto": "Light takes 35 minutes"},
-          "duracao": 6
-        },
-        {
-          "em": 0.55,
+          "em": 0.85,
           "texto": "Júpiter — 11 Terras de largura",
-          "en": {"texto": "Jupiter — 11 Earths wide"},
-          "duracao": 6
+          "subtexto": "daqui o Sol é 28 vezes mais fraco",
+          "en": {
+            "texto": "Jupiter — 11 Earths wide",
+            "subtexto": "from here the Sun is 28 times fainter"
+          },
+          "duracao": 7.2,
+          "ponte": true
         }
       ]
     },
     {
-      "nome": "ioRaspao",
-      "qa": {"raspaoDeIo": 0.6},
+      "nome": "jupiterMancha",
+      "qa": {"manchaDeFrente": 0.95},
       "camera": {
-        "duracao": 20,
+        "duracao": 6,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Jupiter",
+          "de": "saidaDeCeres",
+          "para": "fimDaChegadaAJupiter",
+          "ritmoDaDirecao": "glide",
+          "intervalo": [0.767, 1]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Jupiter"},
+        "lente": [58, 58],
+        "ritmo": "settle"
+      },
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "ioRaspao",
+      "qa": {"raspaoDeIo": 0.51},
+      "camera": {
+        "duracao": 15,
         "movimento": {
           "tipo": "raspao",
           "centro": "Io",
-          "de": "chegadaAJupiter",
+          "de": "fimDaChegadaAJupiter",
           "direcaoNoJoelho": "joelhoDeIo",
-          "para": "inicioDoArco",
+          "para": "saidaDeIo",
           "distanciaMinima": "raspaoDeIo",
-          "joelho": 0.6,
+          "joelho": 0.55,
           "sigma": 0.16,
           "alongamento": 0.64,
           "chao": 0.18,
@@ -56,20 +74,93 @@
           "tipo": "passagem",
           "de": "Jupiter",
           "assunto": "miraDeIo",
-          "rumo": "entreOSolEJupiter",
+          "rumo": "Europa",
           "entrada": 0.35,
           "saida": 0.75
         },
-        "lente": [50, 62]
+        "lente": [58, 62]
       },
       "fundoSilencioso": true,
       "olhar": "assunto",
       "legendas": [
         {
-          "em": 0.4,
-          "texto": "Io",
-          "subtexto": "O mundo mais vulcânico do Sistema Solar",
-          "en": {"texto": "Io", "subtexto": "The most volcanic world in the Solar System"},
+          "em": 0.33,
+          "texto": "Io — não é o Sol que a aquece",
+          "subtexto": "é Júpiter, pela maré: mais de 400 vulcões. A Voyager 1 viu aqui o primeiro vulcão fora da Terra, em 1979",
+          "en": {
+            "texto": "Io — it is not the Sun that heats it",
+            "subtexto": "it is Jupiter, through tides: more than 400 volcanoes. Voyager 1 saw the first volcano beyond Earth here, in 1979"
+          },
+          "duracao": 8
+        }
+      ]
+    },
+    {
+      "nome": "europaChegada",
+      "camera": {
+        "duracao": 2.45,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Europa",
+          "de": "saidaDeIo",
+          "direcaoNoJoelho": "joelhoDeEuropa",
+          "para": "inicioDoArco",
+          "distanciaMinima": "raspaoDeEuropa",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0, 0.2]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Europa"},
+        "lente": [62, 62],
+        "ritmo": "launch"
+      },
+      "assuntos": ["europa"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "europaRaspao",
+      "qa": {"raspaoDeEuropa": 0.3},
+      "camera": {
+        "duracao": 8.5,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Europa",
+          "de": "saidaDeIo",
+          "direcaoNoJoelho": "joelhoDeEuropa",
+          "para": "inicioDoArco",
+          "distanciaMinima": "raspaoDeEuropa",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0.2, 1]
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Europa",
+          "assunto": "miraDeEuropa",
+          "rumo": "Jupiter",
+          "entrada": 0.2,
+          "saida": 0.6
+        },
+        "lente": [62, 62],
+        "ritmo": "settle"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.1,
+          "texto": "Europa — gelo por fora, um oceano por dentro",
+          "subtexto": "a melhor aposta de vida fora da Terra",
+          "en": {
+            "texto": "Europa — ice outside, an ocean inside",
+            "subtexto": "the best bet for life beyond Earth"
+          },
           "duracao": 7
         }
       ]
@@ -77,9 +168,9 @@
     {
       "nome": "jupiterArco",
       "preload": {"corpos": ["saturn", "enceladus", "hyperion", "mimas", "titan"]},
-      "qa": {"arcoDeJupiter": 0.85},
+      "qa": {"quaseSol": 0.98},
       "camera": {
-        "duracao": 27,
+        "duracao": 15,
         "movimento": {
           "tipo": "arco",
           "centro": "Jupiter",
@@ -89,29 +180,49 @@
         },
         "mira": {
           "tipo": "passagem",
-          "de": "entreOSolEJupiter",
-          "assunto": "Jupiter",
-          "rumo": "Saturno",
-          "entrada": 0.42,
-          "saida": 0.87
+          "de": "Jupiter",
+          "assunto": "miraDoQuaseSol",
+          "rumo": "miraDoQuaseSol",
+          "entrada": 1,
+          "saida": 1
         },
-        "lente": [62, 58]
+        "lente": [62, 65]
       },
-      "assuntos": ["saturn"],
       "fundoSilencioso": true,
       "olhar": "assunto",
       "legendas": [
         {
-          "em": 0.01,
-          "texto": "Daqui, o Sol já é 28 vezes mais fraco",
-          "subtexto": "que na Terra",
+          "em": 0.78,
+          "texto": "Júpiter quase foi uma segunda estrela",
+          "subtexto": "faltou massa: precisaria ser 80 vezes mais pesado",
           "en": {
-            "texto": "From here, the Sun is already 28 times fainter",
-            "subtexto": "than at Earth"
+            "texto": "Jupiter almost became a second star",
+            "subtexto": "it lacked mass: it would need to be 80 times heavier"
           },
-          "duracao": 7
+          "duracao": 8,
+          "ponte": true
         }
       ]
+    },
+    {
+      "nome": "jupiterRumoDeSaturno",
+      "camera": {
+        "duracao": 8,
+        "movimento": {"tipo": "fixo", "ponto": "fimDoArco"},
+        "mira": {
+          "tipo": "passagem",
+          "de": "miraDoQuaseSol",
+          "assunto": "miraDoQuaseSol",
+          "rumo": "Saturno",
+          "entrada": 0.01,
+          "saida": 0.55
+        },
+        "lente": [65, 58],
+        "ritmoDaLente": "launch"
+      },
+      "assuntos": ["saturn"],
+      "fundoSilencioso": true,
+      "olhar": "assunto"
     }
   ]
 }
