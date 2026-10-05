@@ -23,7 +23,6 @@ import { TerraResolvida } from '../world/corpos/terra';
 import { LuaResolvida } from '../world/corpos/lua';
 import { ROCHOSOS, RochosoResolvido } from '../world/corpos/rochoso';
 import { GIGANTES, GiganteResolvido } from '../world/corpos/gigante';
-import { LUA_PC, TERRA_PC } from '../cinematic/journey';
 import type { AtorDoPalco, PostoNoPalco } from './palco';
 import type { QualityLevel } from '../core/engine';
 
@@ -40,16 +39,20 @@ function corpoNoPalco<T extends AtorDoPalco>(
   corpo: T,
   id: string,
   tracos: {
-    pinoNoFilme?: THREE.Vector3;
     temPonto: boolean;
     temRetrato: boolean;
     rotuloDeLua: boolean;
-  }
+  },
+  pinos: () => ReadonlyMap<string, THREE.Vector3>
 ): PostoNoPalco<T> {
   return {
     corpo,
     id,
-    pinoNoFilme: tracos.pinoNoFilme ?? null,
+    // o pino é do FILME EM CARTAZ, lido a cada quadro: o filme pode
+    // trocar depois da montagem (`Director.escolherFilme`)
+    get pinoNoFilme() {
+      return pinos().get(id) ?? null;
+    },
     temPonto: tracos.temPonto,
     temRetrato: tracos.temRetrato,
     rotuloDeLua: tracos.rotuloDeLua,
@@ -229,27 +232,28 @@ export function montarCorposDoPalco(opts: {
   tier: () => QualityLevel;
   maxTextureSize: number | undefined;
   base: string;
+  /** os pinos do filme em cartaz (`Filme.pinos`), pelo id do corpo */
+  pinos: () => ReadonlyMap<string, THREE.Vector3>;
 }) {
-  const { tier, maxTextureSize, base } = opts;
-  // A TERRA e a LUA têm o PINO DAS 16:00 do filme (`TERRA_PC`/`LUA_PC`,
-  // journey.ts): sem ele a coda mira um globo a 1,7 milhão de km. A Lua
+  const { tier, maxTextureSize, base, pinos } = opts;
+  // OS PINOS SÃO DO FILME (E1 da viagem solar): no galáctico, a TERRA e
+  // a LUA no instante das 16:00 (`TERRA_PC`/`LUA_PC`, journey.ts) — sem
+  // eles a coda mira um globo a 1,7 milhão de km. A Lua
   // é a única do quarteto COM ponto fotométrico (item 108, 30/08) e SEM
   // retrato congelado — sem efeméride ela simplesmente não existe, e é
   // isso que o fallback frio precisa saber para não segurar a captura
   // para sempre. O par (temPonto true, temRetrato false) é também o que
   // manda o `palco.ts` publicar o centro DELA na camada de pontos.
   const terra = corpoNoPalco(new TerraResolvida({ tier, maxTextureSize, base }), 'earth', {
-    pinoNoFilme: TERRA_PC,
     temPonto: true,
     temRetrato: true,
     rotuloDeLua: false,
-  });
+  }, pinos);
   const lua = corpoNoPalco(new LuaResolvida({ tier, maxTextureSize, base }), 'moon', {
-    pinoNoFilme: LUA_PC,
     temPonto: true,
     temRetrato: false,
     rotuloDeLua: true,
-  });
+  }, pinos);
   const rochosos = ROCHOSOS.map((config) => {
     const corpo = new RochosoResolvido({ config, tier, maxTextureSize, base });
     return corpoNoPalco(corpo, corpo.id, {
@@ -258,14 +262,14 @@ export function montarCorposDoPalco(opts: {
       temPonto: corpo.planeta,
       temRetrato: corpo.planeta,
       rotuloDeLua: !corpo.planeta,
-    });
+    }, pinos);
   });
   const gigantes = GIGANTES.map(({ id }) =>
     corpoNoPalco(new GiganteResolvido({ id, tier, maxTextureSize, base }), id, {
       temPonto: true,
       temRetrato: true,
       rotuloDeLua: false,
-    })
+    }, pinos)
   );
   // A LISTA ÚNICA do tick, na ORDEM de sempre — Terra, Lua, rochosos,
   // gigantes. Os mesmos objetos das listas acima: uma lista, duas

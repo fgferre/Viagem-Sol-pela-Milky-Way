@@ -19,7 +19,7 @@ import {
   projectLabels,
   projectForced,
 } from '../world/labels';
-import type { OclusorDeRotulo, StarLabel } from '../world/labels';
+import type { CorpoRotulavel, OclusorDeRotulo, StarLabel } from '../world/labels';
 import { GAL } from '../world/galaxy';
 import { numeroDoIdioma } from '../tempoDoAtlas';
 import { t } from '../../lib/idioma';
@@ -119,6 +119,19 @@ function corDeAnelCss(id: string, paiId?: string): string | undefined {
   coresDeAnel.set(chave, css);
   return css;
 }
+
+/**
+ * OS CORPOS QUE O ROTEIRO PODE NOMEAR (viagem solar): `assuntos` aceita o
+ * id de qualquer entrada de `CORPOS_DO_SISTEMA` ou de `LUAS_DO_SISTEMA`
+ * ('earth', 'moon', 'io'…). O valor diz onde mora a posição viva do
+ * corpo — o mesmo índice que os oclusores e o Atlas leem. O id casa por
+ * igualdade exata e é minúsculo, então não se confunde com nome de
+ * estrela do HYG: 'atlas' é a lua, 'Atlas' continua sendo a estrela.
+ */
+const CORPO_DO_ROTEIRO = new Map<string, { corpo: CorpoRotulavel; i: number; lua: boolean }>([
+  ...CORPOS_DO_SISTEMA.map((corpo, i) => [corpo.id, { corpo, i, lua: false }] as const),
+  ...LUAS_DO_SISTEMA.map((corpo, i) => [corpo.id, { corpo, i, lua: true }] as const),
+]);
 
 export class Rotulos {
   /** última projeção de rótulos — alvo do clicar-para-visitar */
@@ -459,11 +472,12 @@ export class Rotulos {
   private forcadosDoBeat(
     cam: THREE.PerspectiveCamera,
     named: NamedStar[],
-    target: readonly string[] | undefined
+    target: readonly string[] | undefined,
+    planetas: Planetas | null
   ): StarLabel[] {
     const forced: StarLabel[] = [];
     for (const name of target ?? []) {
-      const l = this.resolveForcedLabel(cam, named, name);
+      const l = this.resolveForcedLabel(cam, named, name, planetas);
       if (l) {
         l.dirigido = true;
         forced.push(l);
@@ -472,11 +486,12 @@ export class Rotulos {
     return forced;
   }
 
-  /** etiqueta forçada do assunto do shot ('SOL' | 'SGR' | nome HYG) */
+  /** etiqueta forçada do assunto do shot ('SOL' | 'SGR' | id de corpo da casa | nome HYG) */
   private resolveForcedLabel(
     cam: THREE.PerspectiveCamera,
     named: NamedStar[],
-    name: string
+    name: string,
+    planetas: Planetas | null
   ): StarLabel | null {
     if (name === 'SOL') {
       return projectForced(cam, 'SOL', 'G2V', { x: 0, y: 0, z: 0 }, 'sol-home');
@@ -484,8 +499,44 @@ export class Rotulos {
     if (name === 'SGR') {
       return projectForced(cam, 'Sagittarius A✱', 'SMBH', GAL.GC_POS, 'sgr-a');
     }
+    const corpo = CORPO_DO_ROTEIRO.get(name);
+    if (corpo) return this.resolveCorpoDirigido(cam, corpo, planetas);
     const star = named.find((s) => s.n === name);
     return star ? projectForced(cam, star.n, star.s, star, star.n) : null;
+  }
+
+  /**
+   * A ETIQUETA DIRIGIDA DE UM CORPO DA CASA (viagem solar). A POSIÇÃO é a
+   * dos oclusores deste quadro, e as duas fontes são escritas no filme
+   * como no Atlas: `planetas.posicoes` (o instante do filme, pela máquina
+   * do tempo) para os dez do retrato e `luaPosParaRotulo` (o centro do
+   * corpo resolvido, com o pino, pelo passo do palco) para as luas. A
+   * PROJEÇÃO é a do Atlas — `projectCorpos` dá o nome na língua de agora,
+   * a classe e o globo que esconde —, e a etiqueta some fora do quadro ou
+   * atrás de outro corpo. O ASPECTO é o da estrela dirigida: sem
+   * `prioridade` (o `LabelCanvas` usa o peso do filme) e sem fade.
+   */
+  private resolveCorpoDirigido(
+    cam: THREE.PerspectiveCamera,
+    { corpo, i, lua }: { corpo: CorpoRotulavel; i: number; lua: boolean },
+    planetas: Planetas | null
+  ): StarLabel | null {
+    const posicoes = lua ? this.luaPosParaRotulo : planetas?.posicoes;
+    if (!posicoes) return null;
+    const [l] = projectCorpos(
+      cam, [corpo], posicoes.subarray(i * 3, i * 3 + 3), this.oclusoresDeRotulo
+    );
+    if (!l || l.causaDoSumico === 'oclusao') return null;
+    return {
+      name: l.name,
+      spect: '',
+      detalhe: l.detalhe,
+      distPc: l.distPc,
+      x: l.x,
+      y: l.y,
+      opacity: 0.95,
+      key: l.key,
+    };
   }
 
   /** "→ DESTINO · distância viva" — só emite quando o texto muda */
@@ -667,7 +718,7 @@ export class Rotulos {
           ? this.fios.beatDaViagem()
           : null;
       const falados = roteiro
-        ? this.forcadosDoBeat(cam, named as NamedStar[], roteiro.target)
+        ? this.forcadosDoBeat(cam, named as NamedStar[], roteiro.target, planetas)
         : [];
       // OS ÍCONES DOS CORPOS (item 89): com os NOMES desligados e a
       // camada de ícones LIGADA, cada corpo mantém um marcador discreto
@@ -735,7 +786,7 @@ export class Rotulos {
             );
         if (dHome < 1.5 && !meta.target) labels = [];
         if (meta.target) {
-          const forced = this.forcadosDoBeat(cam, named, meta.target);
+          const forced = this.forcadosDoBeat(cam, named, meta.target, planetas);
           const keys = new Set(forced.map((l) => l.key));
           // O ROTEIRO ASSUME A FRENTE: os assuntos ocupam primeiro; o
           // fundo preserva a régua existente e disputa só o que sobrou.

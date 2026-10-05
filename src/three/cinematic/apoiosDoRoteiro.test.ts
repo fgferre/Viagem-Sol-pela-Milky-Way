@@ -87,6 +87,7 @@ describe('apoios do roteiro — item 75', () => {
     try {
       const { Director } = await import('../director');
       const { CAPTURE_T, REVEAL_T, auditarRoteiro } = await import('./journey');
+      const { filmeDe } = await import('./filme');
       const audit = auditarRoteiro();
       const perfil = audit.shots[audit.captions.find((c) => c.text === 'Ela não é plana')!.shotIndex];
       const face = audit.shots[audit.captions.find((c) => c.text === 'Nossa galáxia')!.shotIndex];
@@ -99,7 +100,10 @@ describe('apoios do roteiro — item 75', () => {
         corpoNoRoteiro: (id: string) => boolean;
         palcoQuente: boolean;
       };
-      Object.assign(d, { phase: 'journey', journeyT: REVEAL_T - 0.001, escada: { focoCorpoId: null } });
+      // o filme em cartaz é o galáctico montado com o JSON mexido acima
+      Object.assign(d, {
+        phase: 'journey', journeyT: REVEAL_T - 0.001, escada: { focoCorpoId: null }, filme: filmeDe(),
+      });
       const segura = (id: string) => d.corpoNoFoco(id) || d.corpoNoRoteiro(id);
       expect(segura('mars')).toBe(false);
       d.journeyT = REVEAL_T;

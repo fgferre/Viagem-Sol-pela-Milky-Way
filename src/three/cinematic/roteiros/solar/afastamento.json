@@ -1,0 +1,97 @@
+{
+  "planos": [
+    {
+      "qa": {"saidaDeSaturno": 0.3},
+      "camera": {
+        "duracao": 15,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Saturno",
+          "de": "postal2",
+          "para": "saidaDeSaturno",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {"tipo": "fixo", "ponto": "Saturno"},
+        "lente": [50, 50],
+        "ritmo": "quadratic"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto"
+    },
+    {
+      "camera": {
+        "duracao": 7,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Saturno",
+          "de": "saidaDeSaturno",
+          "para": "afastamento",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {"tipo": "fixo", "ponto": "Saturno"},
+        "lente": [50, 58],
+        "ritmo": "linear"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.54,
+          "texto": "A 10 UA, o Sol é 100 vezes mais fraco que na Terra",
+          "en": {"texto": "At 10 AU, the Sun is 100 times fainter than at Earth"},
+          "duracao": 6.5,
+          "ponte": true
+        }
+      ]
+    },
+    {
+      "qa": {"pontoAzulPalido": 0.6},
+      "camera": {
+        "duracao": 10,
+        "movimento": {"tipo": "aproximacao", "centro": "Sol", "de": "afastamento", "para": "pontoAzul"},
+        "mira": {"tipo": "pan-direcao", "de": "Saturno", "para": "Sol", "ate": 0.3},
+        "lente": [58, 12],
+        "ritmo": "linear",
+        "ritmoDaLente": "easeOut"
+      },
+      "assuntos": ["SOL", "earth"],
+      "fundoSilencioso": true,
+      "olhar": "tras",
+      "legendas": [
+        {
+          "em": 0.55,
+          "texto": "A Terra, daqui",
+          "subtexto": "Um ponto azul pálido, a 40 UA",
+          "en": {"texto": "Earth, from here", "subtexto": "A pale blue dot, 40 AU away"},
+          "duracao": 4.4
+        }
+      ]
+    },
+    {
+      "qa": {"fecho": 0.95},
+      "camera": {
+        "duracao": 21,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Sol",
+          "de": "pontoAzul",
+          "para": "entreEstrelas",
+          "progresso": {"tipo": "pouso", "para": 1, "pousaEm": 0.9, "expoente": 2}
+        },
+        "mira": {"tipo": "fixo", "ponto": "Sol"},
+        "lente": [12, 58]
+      },
+      "assuntos": ["SOL"],
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.3,
+          "texto": "O Sol é uma estrela.",
+          "subtexto": "A viagem seguinte começa aqui.",
+          "en": {"texto": "The Sun is a star.", "subtexto": "The next journey begins here."},
+          "duracao": 9
+        }
+      ]
+    }
+  ]
+}

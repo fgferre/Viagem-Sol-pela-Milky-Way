@@ -70,21 +70,43 @@ function passoDaMola(x: number, v: number, dt: number): [number, number] {
   return [(x + c * dt) * e, (v - (c * dt) / TAU_DA_JUNTA_S) * e];
 }
 
+/** O "CIMA" DE UM FILME: o polo dele no alto, cedendo a `poloFaceOn`
+ *  (fixo, ⊥ ao polo) em visadas quase paralelas ao polo — evita o flip
+ *  do lookAt. Os dois unitários. */
+export function cimaDoFilme(
+  polo: THREE.Vector3,
+  poloFaceOn: THREE.Vector3,
+  viewDir: THREE.Vector3,
+  out: THREE.Vector3
+): THREE.Vector3 {
+  const faceOn = THREE.MathUtils.smoothstep(Math.abs(viewDir.dot(polo)), 0.86, 0.975);
+  return out.copy(polo).lerp(poloFaceOn, faceOn).normalize();
+}
+
 /** up compartilhado viagem/voo: polo galáctico, cedendo ao eixo
  *  centro→Sol em visadas quase face-on (evita o flip do lookAt).
  *  Exportado para o juiz da coda (voltaParaCasa.test) reconstruir a
  *  câmera do rig com a MESMA função, não uma reescrita. */
 export function galacticUp(viewDir: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 {
-  const faceOn = THREE.MathUtils.smoothstep(
-    Math.abs(viewDir.dot(GALACTIC_NORTH)),
-    0.86,
-    0.975
-  );
-  return out.copy(GALACTIC_NORTH).lerp(GALACTIC_FACE_ON_UP, faceOn).normalize();
+  return cimaDoFilme(GALACTIC_NORTH, GALACTIC_FACE_ON_UP, viewDir, out);
+}
+
+/** o `poloFaceOn` de um polo qualquer: o polo cruzado com o eixo da base
+ *  menos alinhado com ele (o cruzamento mais bem condicionado) */
+function perpendicularAoPolo(polo: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 {
+  const x = Math.abs(polo.x);
+  const y = Math.abs(polo.y);
+  const z = Math.abs(polo.z);
+  out.set(0, 0, 0).setComponent(x <= y && x <= z ? 0 : y <= z ? 1 : 2, 1);
+  return out.crossVectors(polo, out).normalize();
 }
 
 export class JourneyRig {
-  private journey = new Journey();
+  private journey: Journey;
+  /** o "cima" do filme em cartaz e o que ele cede nas visadas pelo polo
+   *  (`cimaDoFilme`); sem `cima` declarado, as constantes galácticas */
+  private polo = new THREE.Vector3();
+  private poloFaceOn = new THREE.Vector3();
   private lookSm = new THREE.Vector3();
   /** a mira MOSTRADA — uma direção, NÃO um ponto em mundo. No mergulho
    *  a câmera anda milhares de pc por quadro; um ponto velho fica para
@@ -123,6 +145,31 @@ export class JourneyRig {
    *  fechar a lente num gesto contínuo e não aos degraus */
   private lenteFatorMostrado = 1;
   paused = false;
+
+  /** o filme que o rig filma; sem argumento, o galáctico */
+  constructor(journey: Journey = new Journey(), cima?: THREE.Vector3) {
+    this.journey = journey;
+    this.orientar(cima);
+  }
+
+  /** troca o filme: a junta entre planos não atravessa filmes, então o
+   *  rig recomeça como num `seek` */
+  carregar(journey: Journey, cima?: THREE.Vector3) {
+    this.journey = journey;
+    this.orientar(cima);
+    this.reset();
+  }
+
+  /** o polo e o seu substituto ⊥, calculados uma vez por filme */
+  private orientar(cima?: THREE.Vector3) {
+    if (!cima) {
+      this.polo.copy(GALACTIC_NORTH);
+      this.poloFaceOn.copy(GALACTIC_FACE_ON_UP);
+      return;
+    }
+    this.polo.copy(cima).normalize();
+    perpendicularAoPolo(this.polo, this.poloFaceOn);
+  }
 
   get duration() {
     return this.journey.duration;
@@ -255,7 +302,7 @@ export class JourneyRig {
 
     camera.position.copy(s.pos);
     const viewDir = _tmpV.copy(this.lookSm).sub(s.pos).normalize();
-    galacticUp(viewDir, camera.up);
+    cimaDoFilme(this.polo, this.poloFaceOn, viewDir, camera.up);
     camera.lookAt(this.lookSm);
 
     // banking do roteiro (decisão por shot; zero nos holds por contrato)

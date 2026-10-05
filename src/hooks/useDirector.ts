@@ -1,6 +1,6 @@
 // ============================================================
 // O BOOT do Director — sonda de GL, LabelCanvas, os 13 fios de evento
-// e a leitura das portas de URL do init (?q, ?tone, ?exp, ?pos, ?look,
+// e a leitura das portas de URL do init (?filme, ?q, ?tone, ?exp, ?pos, ?look,
 // ?fov, ?atlas, ?foco, ?ver, ?d, ?t, ?play, ?freeze). Morava no App.tsx
 // (onda da arquitetura, corte 6) — a semântica é a mesma, linha a
 // linha, e este arquivo é GOVERNADO pelo selo (lê portas de URL).
@@ -204,10 +204,14 @@ export function useDirector(fios: FiosDoDirector) {
       .init()
       .then(() => {
         if (cancelled) return;
+        const query = new URLSearchParams(window.location.search);
+        // ?filme= — QUAL FILME o play toca. Vem antes das marcas e da
+        // duração, que são do filme escolhido; ausente é o galáctico, e
+        // um id desconhecido avisa no console e também cai nele.
+        d.escolherFilme(query.get('filme'));
         setTicks(d.progressTicks);
         setRuntime(d.journeyDuration);
         setNomeadas(d.nomeadas);
-        const query = new URLSearchParams(window.location.search);
         // `?q=` — a lei da porta mora no engine (`lerPortaQualidade`), que
         // é quem a lê primeiro, no construtor. Aqui ela volta a passar
         // porque o `auto` é POLÍTICA e o engine não a conhece: o boot com

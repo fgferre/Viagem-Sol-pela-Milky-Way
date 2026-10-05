@@ -14,10 +14,11 @@
 // precede o import dinâmico.
 // ============================================================
 import * as THREE from 'three';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { JourneyMeta } from '../cinematic/journey';
 import type { NamedStar } from '../config';
 import { CORPOS_DO_SISTEMA } from '../atlasConfig';
+import { definirIdioma } from '../../lib/idioma';
 import type { Planetas } from '../world/planetas/planetas';
 import { PRIORIDADE_DO_ROTULO } from '../world/labels';
 import type { StarLabel } from '../world/labels';
@@ -1102,5 +1103,112 @@ describe('A12 — o ponteiro no nome acende o alfa do texto, no mesmo quadro', (
     passo(1);
     rotulos.apontado = 'corpo:mars';
     expect(passo(0.25).alfaDoTexto).toBe(0.75);
+  });
+});
+
+// ============================================================
+// O CORPO DA CASA COMO ASSUNTO DO BEAT (viagem solar). O filme solar
+// passa pela Lua, por Io e por Encélado e termina com a Terra como um
+// ponto perto do Sol — sem nome, ninguém sabe qual ponto é ela. Os
+// `assuntos` do plano aceitam o id do corpo, e a etiqueta dirigida sai
+// onde ele está: a Lua pelo array que o passo do palco escreve, a Terra
+// pelo buffer da camada — as duas fontes dos oclusores e do Atlas.
+// ============================================================
+describe('o corpo da casa como assunto do beat (viagem solar)', () => {
+  afterEach(() => definirIdioma('pt-BR'));
+
+  const LUA = new THREE.Vector3(1, 0.5, 1);
+
+  /**
+   * Um quadro do filme com a câmera a 5 pc olhando a origem. A Terra
+   * (0,3 de raio: o globo que esconde) e Marte no buffer da camada; a Lua
+   * e Io no array do palco. Todos em quadro e com posição — quem ganha
+   * nome é só quem o beat pede.
+   */
+  function noFilme({
+    target,
+    quiet = true,
+    lua = LUA,
+    named = [] as NamedStar[],
+    nomesEscondidos = false,
+  }: {
+    target?: string[];
+    quiet?: boolean;
+    lua?: THREE.Vector3;
+    named?: NamedStar[];
+    nomesEscondidos?: boolean;
+  }) {
+    const publicadas: StarLabel[][] = [];
+    const rotulos = new Rotulos({
+      onLabels: (l) => publicadas.push(l),
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({ target, quiet }) as JourneyMeta,
+      raioFisicoDe: (id) => (id === 'earth' ? 0.3 : null),
+    });
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 0.001, 1000);
+    cam.position.set(0, 0, 5);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const indice = (id: string) => CORPOS_DO_SISTEMA.findIndex((c) => c.id === id) * 3;
+    posicoes.set([0, 0, 2], indice('earth'));
+    posicoes.set([-1, -0.5, 1], indice('mars'));
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    rotulos.escreverPosicaoDeLua('moon', lua);
+    rotulos.escreverPosicaoDeLua('io', new THREE.Vector3(0.5, -0.8, 0));
+    rotulos.escreverPosicaoDeLua('atlas', new THREE.Vector3(-1, 0.6, 0));
+    rotulos.projetar(cam, {
+      fase: 'journey', named, dHome: 5, planetas, foco: null,
+      nomesEscondidos, iconesEscondidos: false, texto3d: false,
+    });
+    return { lista: publicadas.at(-1)!, cam };
+  }
+
+  it('target ["moon", "earth"]: cada corpo pedido tem a etiqueta dirigida onde está, e só ele', () => {
+    const { lista, cam } = noFilme({ target: ['moon', 'earth'] });
+    // Marte e Io estão em quadro e com posição, e não ganham nome
+    expect(lista.map((l) => l.key)).toEqual(['corpo:moon', 'corpo:earth']);
+    const [lua, terra] = lista;
+    const p = LUA.clone().project(cam);
+    expect([lua.x, lua.y]).toEqual([(p.x + 1) / 2, (1 - p.y) / 2]);
+    expect([terra.x, terra.y]).toEqual([0.5, 0.5]);
+    expect([lua.name, terra.name]).toEqual(['Lua', 'Terra']);
+    // o ASPECTO da estrela dirigida: dirigido, 0,95 e SEM `prioridade` —
+    // é a ausência dela que dá ao nome o peso do filme no LabelCanvas
+    for (const l of lista) expect([l.dirigido, l.opacity, l.prioridade]).toEqual([true, 0.95, undefined]);
+    expect([lua.detalhe, terra.detalhe]).toEqual(['lua', 'planeta']);
+    // e a camada de nomes desligada não cala o roteiro, como nas estrelas
+    expect(noFilme({ target: ['moon', 'earth'], nomesEscondidos: true }).lista.map((l) => l.key))
+      .toEqual(['corpo:moon', 'corpo:earth']);
+  });
+
+  it('sem target, o filme não escreve corpo nenhum — só a régua de sempre', () => {
+    const { lista } = noFilme({ quiet: false });
+    expect(lista.map((l) => l.key)).toEqual(['sol-home']);
+  });
+
+  it('fora do quadro, atrás de outro globo ou sem posição, a etiqueta some', () => {
+    expect(noFilme({ target: ['moon'], lua: new THREE.Vector3(0, 0, 9) }).lista).toEqual([]);
+    // atrás da Terra, dentro do cone dela (e fora do cone do Sol)
+    expect(noFilme({ target: ['moon'], lua: new THREE.Vector3(0.05, 0, -1) }).lista).toEqual([]);
+    expect(noFilme({ target: ['moon'], lua: new THREE.Vector3(NaN, NaN, NaN) }).lista).toEqual([]);
+  });
+
+  it('o nome é o da língua de agora', () => {
+    definirIdioma('en');
+    const [lua] = noFilme({ target: ['moon'] }).lista;
+    expect([lua.name, lua.detalhe]).toEqual(['Moon', 'moon']);
+  });
+
+  it('o id não vira estrela: "atlas" é a lua de Saturno, "Atlas" a estrela das Plêiades', () => {
+    const atlas: NamedStar = { n: 'Atlas', x: -50, y: 20, z: -200, m: 3.6, s: 'B8III', d: 136, t: 0 };
+    const lista = noFilme({ target: ['atlas', 'Atlas'], named: [atlas] }).lista;
+    expect(lista.map((l) => [l.key, l.name, l.detalhe ?? l.spect])).toEqual([
+      ['corpo:atlas', 'Atlas', 'lua'],
+      ['Atlas', 'Atlas', 'B8III'],
+    ]);
   });
 });

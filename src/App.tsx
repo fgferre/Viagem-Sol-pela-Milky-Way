@@ -768,7 +768,9 @@ export default function App() {
     const d = directorRef.current;
     if (!d) return;
     d.play();
-    d.seek(d.revealTime);
+    // filme sem galáxia a revelar (`revealTime` nulo) toca do começo
+    const revelacao = d.revealTime;
+    if (revelacao !== null) d.seek(revelacao);
   };
 
 
@@ -1238,7 +1240,8 @@ export default function App() {
         partirDoAtlas={partirDoAtlas}
         togglePause={togglePause}
         ciclarVelocidade={() => setRate(directorRef.current?.cyclePlaybackRate() ?? 1)}
-        revealGalaxy={revealGalaxy}
+        // filme sem galáxia a revelar (a viagem solar): o botão não nasce
+        revealGalaxy={directorRef.current?.revealTime === null ? undefined : revealGalaxy}
         freeRoam={freeRoam}
         changeQuality={changeQuality}
         // A LINHA DE CONTEXTO (Lote 4, item 2) usa os MESMOS dois

@@ -106,7 +106,6 @@ import { ligarGestos } from './director/gestos';
 import { distanciaAposEstalos } from './zoomDaRoda';
 import { Rotulos } from './director/rotulos';
 import { SolNoQuadro } from './director/solNoQuadro';
-import { doseDaDramaturgia } from './director/doseDoSol';
 import { faseDoCiclo } from './estrela';
 import type { CalibracaoDaCasa } from './estrela';
 import { BETA_DA_EMISSAO } from './shaders/starShaders';
@@ -142,10 +141,7 @@ import {
 } from './atlasConfig';
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
-import {
-  REVEAL_T,
-  jdDoFilme,
-} from './cinematic/journey';
+import { filmeDe, type Filme } from './cinematic/filme';
 import { BlackHolePass } from './world/blackHole';
 import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
@@ -673,7 +669,7 @@ export class Director {
     return corpoNoFocoDoAtlas(this.phase, this.escada.focoCorpoId, id);
   }
   private corpoNoRoteiro(id: string): boolean {
-    return corpoPedidoPeloRoteiro(this.phase, this.journeyT, id);
+    return corpoPedidoPeloRoteiro(this.phase, this.journeyT, id, this.filme.apoios);
   }
   /** quadros já gastos segurando a captura com a efeméride pedida
    *  indisponível — ver QUADROS_TENTANDO_FONTE (auditoria item 5c). */
@@ -819,7 +815,11 @@ export class Director {
   private dust: Dust;
   private blackHole: BlackHolePass | null = null;
   private bgColor = new THREE.Color(0x000106);
-  private rig = new JourneyRig();
+  /** o filme em cartaz — o que o `play()` toca e o caminho do filme lê
+   *  (planos, carga, calendário, dose do Sol, pinos); sem `?filme=`, o
+   *  galáctico. Declarado ANTES do rig, que nasce filmando ele. */
+  private filme: Filme = filmeDe();
+  private rig = new JourneyRig(this.filme.journey, this.filme.cima);
   private roam: FreeRoam;
   private atlas = new AtlasRig();
   /** quem escreve a câmera AGORA — decidido pelo `setPhase` */
@@ -2044,6 +2044,7 @@ export class Director {
       tier: () => this.engine.quality,
       maxTextureSize: sondarGl().maxTextureSize,
       base: import.meta.env.BASE_URL,
+      pinos: () => this.filme.pinos,
     });
     this.lua = corpos.lua;
     this.rochosos = corpos.rochosos;
@@ -2319,7 +2320,26 @@ export class Director {
     this.events.onWarp(0);
   }
 
-  play() {
+  /**
+   * A ESCOLHA DO FILME (`?filme=`, E1 da viagem solar): troca o filme em
+   * cartaz sem tocá-lo — o `play()` sem argumento toca o escolhido. Id
+   * ausente é o galáctico; desconhecido avisa e também cai nele.
+   */
+  escolherFilme(id: string | null | undefined) {
+    const filme = filmeDe(id);
+    if (filme === this.filme) return;
+    this.filme = filme;
+    this.rig.carregar(filme.journey, filme.cima);
+  }
+
+  /** o id do filme em cartaz — o espelho da URL o escreve quando não é o padrão */
+  get filmeEscolhido(): string {
+    return this.filme.id;
+  }
+
+  play(id?: string) {
+    // o filme troca ANTES de o relógio e o rig recomeçarem
+    if (id !== undefined) this.escolherFilme(id);
     this.journeyT = 0;
     this.lastCaptionIdx = -1;
     this.lastCaptionTexto = '';
@@ -2360,7 +2380,7 @@ export class Director {
 
   /** A efeméride precisa estar viva antes da chegada declarada no roteiro. */
   private get palcoQuente(): boolean {
-    return efemeridesPrecisamPreCarga(this.phase, this.journeyT);
+    return efemeridesPrecisamPreCarga(this.phase, this.journeyT, this.filme.apoios);
   }
 
   /** instante atual da viagem — para gravar o momento num link */
@@ -2376,9 +2396,10 @@ export class Director {
     return this.freezeJourney;
   }
 
-  /** início do Ato IV — o botão "Ir à galáxia" salta para cá */
-  get revealTime() {
-    return REVEAL_T;
+  /** início do Ato IV — o botão "Ir à galáxia" salta para cá; `null`
+   *  quando o filme em cartaz não tem galáxia a revelar */
+  get revealTime(): number | null {
+    return this.filme.revealT;
   }
 
   /**
@@ -3443,7 +3464,7 @@ export class Director {
       stopsDoGloboEmFoco: this.stopsDoGloboEmFoco(),
       // a DOSE de ocupação do Sol (item 5): < 1 só no arranque do filme,
       // e é aí que o selo tem o que declarar
-      doseDoSol: this.phase === 'journey' ? doseDaDramaturgia(this.journeyT) : 1,
+      doseDoSol: this.phase === 'journey' ? this.filme.doseDoSol(this.journeyT) : 1,
       // (stopsDaPupila saiu do estado no M2: a pupila morreu inteira, e
       // a compressão fixa não é desvio por quadro — é a lei, declarada
       // nas linhas de luz do próprio selo.)
@@ -3710,7 +3731,7 @@ export class Director {
     }
 
     // O FILME CORRE NA DATA DELE, do primeiro segundo ao último — o
-    // calendário é do roteiro (`jdDoFilme`: o instante do retrato até
+    // calendário é do filme em cartaz (no galáctico, `jdDoFilme`: o instante do retrato até
     // REVEAL_T, as 16:00 UTC do mesmo dia na coda, para o pouso sobre as
     // Américas). Até 21/08 esta linha só corria a partir de REVEAL_T e
     // vivia dentro do `palcoQuente`, e o buraco era o portal: quem
@@ -3731,7 +3752,7 @@ export class Director {
     // visitante tira o relógio do filme. O `?jd=` segue mandando no
     // Atlas — `aplicarPortaJd` o reaplica quando o portal abre.
     if (this.phase === 'journey') {
-      this.maquinaDoTempo.jdPedido = jdDoFilme(this.journeyT);
+      this.maquinaDoTempo.jdPedido = this.filme.jdDoFilme(this.journeyT);
     }
 
     // ------------------------------------------------------------
@@ -3897,7 +3918,7 @@ export class Director {
     // com as manchas da data anterior.
     this.sun.escreverCiclo(faseDoCiclo(this.maquinaDoTempo.jdVivo));
     this.sun.escreverDose(
-      this.phase === 'journey' ? doseDaDramaturgia(this.journeyT) : 1
+      this.phase === 'journey' ? this.filme.doseDoSol(this.journeyT) : 1
     );
     // O SOLAVANCO (item 17): a taxa do relógio do ATLAS, e só dele. No
     // filme e na foto a máquina do tempo está parada, então `taxaViva` é

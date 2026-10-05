@@ -1,0 +1,185 @@
+{
+  "planos": [
+    {
+      "camera": {
+        "duracao": 14,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Saturno",
+          "de": "fimDoArco",
+          "para": "chegadaASaturno",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {"tipo": "fixo", "ponto": "Saturno"},
+        "lente": [58, 58],
+        "ritmo": "settle",
+        "efeitoDeVelocidade": {"tipo": "frenagem", "amplitude": 0.8}
+      },
+      "assuntos": ["saturn"],
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.03,
+          "texto": "Saturno: 9,5 UA do Sol",
+          "subtexto": "A luz leva 79 minutos",
+          "en": {"texto": "Saturn: 9.5 AU from the Sun", "subtexto": "Light takes 79 minutes"},
+          "duracao": 8
+        }
+      ]
+    },
+    {
+      "camera": {
+        "duracao": 8,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Saturno",
+          "de": "chegadaASaturno",
+          "para": "sobreOAnelA",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {"tipo": "fixo", "ponto": "Saturno"},
+        "lente": [58, 58],
+        "ritmo": "settle"
+      },
+      "fundoSilencioso": true
+    },
+    {
+      "qa": {"rasanteDosAneis": 0.5},
+      "camera": {
+        "duracao": 14,
+        "movimento": {
+          "tipo": "trajeto",
+          "pontos": ["sobreOAnelA", "rasante", "cruzamento", "alemDoCruzamento", "subida"]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Saturno"},
+        "lente": [58, 58]
+      },
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.04,
+          "texto": "280 mil km de ponta a ponta",
+          "subtexto": "e menos de 1 km de espessura",
+          "en": {"texto": "280,000 km from edge to edge", "subtexto": "and less than 1 km thick"},
+          "duracao": 7.5
+        }
+      ],
+      "olhar": "assunto"
+    },
+    {
+      "qa": {"encelado": 0.55},
+      "camera": {
+        "duracao": 14,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Encelado",
+          "de": "subida",
+          "direcaoNoJoelho": "joelhoDeEncelado",
+          "para": "depoisDeEncelado",
+          "distanciaMinima": "raspaoDeEncelado",
+          "joelho": 0.55,
+          "sigma": 0.16,
+          "alongamento": 0.64,
+          "chao": 0.18,
+          "expoentes": [1.6, 1.45]
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Saturno",
+          "assunto": "Encelado",
+          "rumo": "Encelado",
+          "entrada": 0.3,
+          "saida": 1
+        },
+        "lente": [58, 58]
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.36,
+          "texto": "Encélado",
+          "subtexto": "Gêiseres de água salgada, de um oceano sob o gelo",
+          "en": {
+            "texto": "Enceladus",
+            "subtexto": "Geysers of salty water, from an ocean beneath the ice"
+          },
+          "duracao": 7
+        }
+      ]
+    },
+    {
+      "qa": {"pluma": 0.7},
+      "camera": {
+        "duracao": 4,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Encelado",
+          "de": "depoisDeEncelado",
+          "para": "saidaDeEncelado",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {"tipo": "fixo", "ponto": "Encelado"},
+        "lente": [58, 58]
+      },
+      "fundoSilencioso": true,
+      "olhar": "tras"
+    },
+    {
+      "qa": {"hiperion": 0.55},
+      "camera": {
+        "duracao": 13,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Hiperion",
+          "de": "saidaDeEncelado",
+          "direcaoNoJoelho": "joelhoDeHiperion",
+          "para": "postal1",
+          "distanciaMinima": "raspaoDeHiperion",
+          "joelho": 0.55,
+          "sigma": 0.16,
+          "alongamento": 0.64,
+          "chao": 0.18,
+          "expoentes": [1.6, 1.45]
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Hiperion",
+          "assunto": "Hiperion",
+          "rumo": "Saturno",
+          "entrada": 0.1,
+          "saida": 0.72
+        },
+        "lente": [58, 58]
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.3,
+          "texto": "Hipérion",
+          "subtexto": "Uma esponja de gelo de 270 km",
+          "en": {"texto": "Hyperion", "subtexto": "A 270 km sponge of ice"},
+          "duracao": 6
+        }
+      ]
+    },
+    {
+      "qa": {"cartaoPostal": 0.5},
+      "camera": {
+        "duracao": 10,
+        "movimento": {
+          "tipo": "arco",
+          "centro": "Saturno",
+          "direcaoDe": "postalDe",
+          "direcaoPara": "postalPara",
+          "raio": ["raioDoPostalDe", "raioDoPostalPara"]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Saturno"},
+        "lente": [58, 50]
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto"
+    }
+  ]
+}

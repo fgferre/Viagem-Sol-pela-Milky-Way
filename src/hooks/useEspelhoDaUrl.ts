@@ -19,6 +19,7 @@ import type {
 import { lerPortaExposicao, lerPortaTom } from '../three/core/engine';
 import { chaveDoFoco, construirIndice } from '../lib/buscaEstrelas';
 import { CAMADAS } from '../three/atlasConfig';
+import { FILME_PADRAO } from '../three/cinematic/filme';
 import { estadoDoSelo } from '../three/selo';
 import { ESCALA_PADRAO, aplicarEscalaDaUi, lerEscalaDaUi } from '../lib/uiScale';
 
@@ -138,6 +139,11 @@ export function useEspelhoDaUrl(dep: {
     url.searchParams.delete('loader');
     const d = directorRef.current;
     if (!d) return url;
+    // O FILME ESCOLHIDO viaja junto, e só quando não é o padrão: a URL
+    // espelha a ESCOLHA, nunca o padrão (um `?filme=` desconhecido já
+    // caiu no galáctico e sai daqui)
+    if (d.filmeEscolhido !== FILME_PADRAO) url.searchParams.set('filme', d.filmeEscolhido);
+    else url.searchParams.delete('filme');
     // de dentro do Atlas o link volta PARA o Atlas, com o momento que o
     // portal guardou pendurado — quem abrir o link e clicar em "Partir"
     // cai no mesmo instante de quem o copiou

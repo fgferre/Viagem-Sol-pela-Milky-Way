@@ -32,6 +32,7 @@ import { describe, expect, it } from 'vitest';
 import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_SOL_PC } from '../escala';
 import { diametroAparentePx } from '../world/corpos/corpos';
 import { farPlanePc, nearPlanePc } from '../core/engine';
+import type { Shot } from './lerSequencia';
 
 // STUB MÍNIMO DE `window`: `journey.ts` importa `world/galaxy.ts`, que lê
 // `window.location.search` NO TOPO do módulo (os knobs de `?tune=`), e o
@@ -48,6 +49,8 @@ const {
   JourneyRig,
   RODA_MIN_PC_POR_S,
   VOO_MIN_PC_POR_S,
+  cimaDoFilme,
+  galacticUp,
   pisoDaRoda,
   velocidadeDeVoo,
 } = await import('./cameraRig');
@@ -63,6 +66,7 @@ const {
   distanciaDaAbertura,
 } = await import('./journey');
 const { GAL } = await import('../world/galaxy');
+const { still } = await import('./movimentos');
 
 /** A fórmula ANTIGA, verbatim da linha que vivia no `syncFromCamera`. */
 const velocidadeAntiga = (d: number) => THREE.MathUtils.clamp(d * 0.02, 2, 600);
@@ -819,5 +823,60 @@ describe('a lente do modo fotografia (item 100, fase 2 — a variante (a) dele)'
     rig.reset();
     rig.apply(cam, T_MARIAS, 0); // snap pós-reset: o fov do script, exato
     expect(cam.fov).toBe(doRoteiro);
+  });
+});
+
+describe('o "cima" do filme — cada filme pode declarar o seu polo (viagem solar)', () => {
+  /** o polo norte da eclíptica no referencial da cena (equatorial), arredondado */
+  const POLO_DA_ECLIPTICA = new THREE.Vector3(0, -0.3978, 0.9175);
+
+  it('cimaDoFilme: o polo na visada ⊥ a ele, o substituto na visada pelo polo', () => {
+    const polo = new THREE.Vector3(0.3, -0.8, 0.52).normalize();
+    const faceOn = new THREE.Vector3().crossVectors(polo, new THREE.Vector3(1, 0, 0)).normalize();
+    const deLado = new THREE.Vector3().crossVectors(polo, faceOn);
+    const up = new THREE.Vector3();
+    expect(cimaDoFilme(polo, faceOn, deLado, up).distanceTo(polo)).toBeLessThan(1e-12);
+    expect(cimaDoFilme(polo, faceOn, polo, up).distanceTo(faceOn)).toBeLessThan(1e-12);
+  });
+
+  it('galacticUp dá os MESMOS doubles de antes nas três faixas da mistura', () => {
+    // pinados em 04/10 com a função de ANTES da generalização: visada
+    // longe do polo, no meio do smoothstep (|cos| 0,914) e quase face-on
+    const casos: [THREE.Vector3, number[]][] = [
+      [new THREE.Vector3(1, 2, 3), [-0.8676661490098055, -0.19807637340223846, 0.45598377620515307]],
+      [new THREE.Vector3(-0.6, -0.5, 0.4), [-0.7018392657134266, -0.7111690597262665, 0.04074571868179844]],
+      [new THREE.Vector3(-0.86, -0.21, 0.46), [-0.05487556040301422, -0.873437090247977, -0.4838350155265766]],
+    ];
+    for (const [visada, esperado] of casos) {
+      expect(galacticUp(visada.normalize(), new THREE.Vector3()).toArray()).toEqual(esperado);
+    }
+  });
+
+  it('o rig com cima põe o alto da tela no polo do filme; recarregado sem cima, o galáctico', () => {
+    const polo = POLO_DA_ECLIPTICA.clone().normalize();
+    const origem = still(new THREE.Vector3());
+    // 0–10 s ao longo da eclíptica (o equinócio, +X: ⊥ ao polo); 10–20 s pelo polo
+    const planos: Shot[] = [
+      { dur: 10, pos: origem, look: still(new THREE.Vector3(1, 0, 0)), fov0: 50, fov1: 50 },
+      { dur: 10, pos: origem, look: still(polo), fov0: 50, fov1: 50 },
+    ];
+    const journey = new Journey(planos, [0, 10]);
+    const cam = new THREE.PerspectiveCamera();
+    const altoDaTela = () => new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion);
+
+    const rig = new JourneyRig(journey, POLO_DA_ECLIPTICA);
+    rig.apply(cam, 5, 1 / 60);
+    expect(cam.up.dot(polo)).toBeGreaterThan(0.99);
+    expect(altoDaTela().dot(polo)).toBeGreaterThan(0.99);
+    // pelo polo, o alto cede a um vetor fixo ⊥ a ele: sem flip do lookAt
+    rig.reset();
+    rig.apply(cam, 15, 1 / 60);
+    expect(Math.abs(altoDaTela().dot(polo))).toBeLessThan(1e-9);
+
+    rig.carregar(journey);
+    rig.apply(cam, 5, 1 / 60);
+    expect(cam.up.toArray()).toEqual(
+      galacticUp(new THREE.Vector3(1, 0, 0), new THREE.Vector3()).toArray()
+    );
   });
 });

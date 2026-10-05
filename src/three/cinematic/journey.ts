@@ -610,7 +610,9 @@ const STARTS: number[] = [];
     acc += s.dur;
   }
 }
-const JOURNEY_DURATION = STARTS[STARTS.length - 1] + SHOTS[SHOTS.length - 1].dur;
+/** a duração de um corte: o início do último plano mais a duração dele */
+const duracaoDoCorte = (planos: readonly Shot[], inicios: readonly number[]) =>
+  inicios[inicios.length - 1] + planos[planos.length - 1].dur;
 export const APOIOS_DO_FILME = montarApoiosDoRoteiro(SHOTS, STARTS);
 
 /**
@@ -629,18 +631,20 @@ export const T_DA_VOLTA = T_DO_TAKE + K_LUA_NO_TAKE * SHOTS[I_DO_TAKE].dur;
 export const T_DO_DOLLY = STARTS[I_DO_TAKE + 1];
 
 // legendas achatadas em janelas absolutas [t0, t0+dur)
-const CAPTION_WINDOWS = SHOTS.flatMap((s, i) =>
-  (s.captions ?? []).map((c) => ({
-    t0: STARTS[i] + c.at * s.dur,
-    t1: STARTS[i] + c.at * s.dur + (c.dur ?? 8.6),
-    shotIndex: i,
-    shotEnd: STARTS[i] + s.dur,
-    text: c.text,
-    sub: c.sub,
-    en: c.en,
-    bridge: c.bridge ?? false,
-  }))
-).sort((a, b) => a.t0 - b.t0);
+const janelasDeLegenda = (planos: readonly Shot[], inicios: readonly number[]) =>
+  planos.flatMap((s, i) =>
+    (s.captions ?? []).map((c) => ({
+      t0: inicios[i] + c.at * s.dur,
+      t1: inicios[i] + c.at * s.dur + (c.dur ?? 8.6),
+      shotIndex: i,
+      shotEnd: inicios[i] + s.dur,
+      text: c.text,
+      sub: c.sub,
+      en: c.en,
+      bridge: c.bridge ?? false,
+    }))
+  ).sort((a, b) => a.t0 - b.t0);
+type JanelaDeLegenda = ReturnType<typeof janelasDeLegenda>[number];
 
 /**
  * O TEXTO DA LEGENDA NA LÍNGUA VIVA (item 130/F3). O RITMO NÃO PASSA
@@ -653,7 +657,7 @@ const CAPTION_WINDOWS = SHOTS.flatMap((s, i) =>
  * que deveria estar), e é por isso que a troca de idioma aparece no
  * quadro seguinte sem ninguém avisar o filme.
  */
-function legendaNaLingua(w: (typeof CAPTION_WINDOWS)[number]): { text: string; sub?: string } {
+function legendaNaLingua(w: JanelaDeLegenda): { text: string; sub?: string } {
   return w.en && idiomaAtual() === 'en' ? w.en : { text: w.text, sub: w.sub };
 }
 
@@ -684,16 +688,22 @@ export interface JourneyScriptAudit {
 /**
  * Auditoria editorial do filme. Ela torna erro de roteiro verificável:
  * legendas não se atropelam nem vazam por um corte sem passe explícito.
+ * Sem argumentos audita o galáctico; qualquer outro corte passa os
+ * planos e os inícios dele.
  */
-export function auditarRoteiro(): JourneyScriptAudit {
-  const overlaps = CAPTION_WINDOWS.slice(1).flatMap((current, i) => {
-    const previous = CAPTION_WINDOWS[i];
+export function auditarRoteiro(
+  planos: readonly Shot[] = SHOTS,
+  inicios: readonly number[] = STARTS
+): JourneyScriptAudit {
+  const janelas = janelasDeLegenda(planos, inicios);
+  const overlaps = janelas.slice(1).flatMap((current, i) => {
+    const previous = janelas[i];
     return current.t0 < previous.t1
       ? [{ first: previous.text, second: current.text, at: current.t0 }]
       : [];
   });
-  const crossings = CAPTION_WINDOWS.filter(
-    (caption) => caption.shotIndex < SHOTS.length - 1 && caption.t1 > caption.shotEnd
+  const crossings = janelas.filter(
+    (caption) => caption.shotIndex < planos.length - 1 && caption.t1 > caption.shotEnd
   ).map(({ text, shotIndex, shotEnd, t1, bridge }) => ({
     text,
     shotIndex,
@@ -703,10 +713,10 @@ export function auditarRoteiro(): JourneyScriptAudit {
   }));
 
   return {
-    duration: JOURNEY_DURATION,
-    shotCount: SHOTS.length,
-    shots: SHOTS.map((s, i) => ({ t0: STARTS[i], dur: s.dur, lingua: s.lingua ?? 'frente' })),
-    captions: CAPTION_WINDOWS.map(({ t0, t1, shotIndex, text, sub, bridge }) => ({
+    duration: duracaoDoCorte(planos, inicios),
+    shotCount: planos.length,
+    shots: planos.map((s, i) => ({ t0: inicios[i], dur: s.dur, lingua: s.lingua ?? 'frente' })),
+    captions: janelas.map(({ t0, t1, shotIndex, text, sub, bridge }) => ({
       t0,
       t1,
       shotIndex,
@@ -766,7 +776,7 @@ interface JourneySample {
 }
 
 export interface JourneyMeta {
-  /** assunto(s) do shot — etiqueta forçada ('SOL' | 'SGR' | nome HYG) */
+  /** assunto(s) do shot — etiqueta forçada ('SOL' | 'SGR' | id de corpo da casa | nome HYG) */
   target?: string[];
   /** fundo mudo durante o beat */
   quiet: boolean;
@@ -775,29 +785,40 @@ export interface JourneyMeta {
 }
 
 export class Journey {
-  readonly duration = JOURNEY_DURATION;
+  readonly duration: number;
+  private readonly planos: readonly Shot[];
+  private readonly inicios: readonly number[];
+  private readonly janelas: readonly JanelaDeLegenda[];
+
+  /** um corte é a lista de planos e os inícios deles; sem argumentos, o galáctico */
+  constructor(planos: readonly Shot[] = SHOTS, inicios: readonly number[] = STARTS) {
+    this.planos = planos;
+    this.inicios = inicios;
+    this.duration = duracaoDoCorte(planos, inicios);
+    this.janelas = janelasDeLegenda(planos, inicios);
+  }
 
   private shotAt(t: number): { i: number; k: number } {
     if (t <= 0) return { i: 0, k: 0 };
-    if (t >= JOURNEY_DURATION) return { i: SHOTS.length - 1, k: 1 };
-    let i = SHOTS.length - 1;
-    for (let s = 0; s < SHOTS.length; s++) {
-      if (t < STARTS[s] + SHOTS[s].dur) {
+    if (t >= this.duration) return { i: this.planos.length - 1, k: 1 };
+    let i = this.planos.length - 1;
+    for (let s = 0; s < this.planos.length; s++) {
+      if (t < this.inicios[s] + this.planos[s].dur) {
         i = s;
         break;
       }
     }
-    return { i, k: clamp01((t - STARTS[i]) / SHOTS[i].dur) };
+    return { i, k: clamp01((t - this.inicios[i]) / this.planos[i].dur) };
   }
 
   /** o instante em que o plano `i` começa — a junta com o anterior */
   inicioDoPlano(i: number): number {
-    return STARTS[i];
+    return this.inicios[i];
   }
 
   at(t: number): JourneySample {
     const { i, k } = this.shotAt(t);
-    const s = SHOTS[i];
+    const s = this.planos[i];
     const ke = (s.ease ?? glide)(k);
     const pos = s.pos(ke, new THREE.Vector3());
     const look = s.look(ke, new THREE.Vector3());
@@ -823,8 +844,8 @@ export class Journey {
    * seek, scrub e 2× mostram exatamente o que o espectador deve ver.
    */
   captionAt(t: number): { index: number; key: { caption: string; sub?: string } } {
-    for (let i = CAPTION_WINDOWS.length - 1; i >= 0; i--) {
-      const w = CAPTION_WINDOWS[i];
+    for (let i = this.janelas.length - 1; i >= 0; i--) {
+      const w = this.janelas[i];
       if (t >= w.t0 && t < w.t1) {
         const fala = legendaNaLingua(w);
         return { index: i, key: { caption: fala.text, sub: fala.sub } };
@@ -834,15 +855,15 @@ export class Journey {
   }
 
   metaAt(t: number): JourneyMeta {
-    const s = SHOTS[this.shotAt(t).i];
+    const s = this.planos[this.shotAt(t).i];
     return { target: s.target, quiet: s.quiet ?? false, dest: s.dest };
   }
 
   /** cada marca da barra É uma legenda — leva o título junto, para o HUD
    *  poder nomear o capítulo em vez de mostrar um traço anônimo */
   get tickTimes(): { t: number; text: string }[] {
-    return CAPTION_WINDOWS.map((w) => ({
-      t: w.t0 / JOURNEY_DURATION,
+    return this.janelas.map((w) => ({
+      t: w.t0 / this.duration,
       text: legendaNaLingua(w).text,
     }));
   }

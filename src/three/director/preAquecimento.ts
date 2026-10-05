@@ -1,6 +1,6 @@
 // A dose antecipada é por corpo; o gate de tamanho continua dono do resto.
 import { LUAS_DO_SISTEMA } from '../atlasConfig';
-import { APOIOS_DO_FILME } from '../cinematic/journey';
+import type { ApoiosDoRoteiro } from '../cinematic/filme';
 import type { Phase } from '../fases';
 
 /**
@@ -31,11 +31,20 @@ export function corpoNoFocoDoAtlas(fase: Phase, foco: string | null, id: string)
  * último quadro do roteiro (ver `fases.ts`), então o segurador tem de
  * valer nas duas.
  */
-export function corpoPedidoPeloRoteiro(fase: Phase, t: number, id: string): boolean {
-  return (fase === 'journey' || fase === 'end') && APOIOS_DO_FILME.preAquecerCorpo(t, id);
+export function corpoPedidoPeloRoteiro(
+  fase: Phase,
+  t: number,
+  id: string,
+  apoios: ApoiosDoRoteiro
+): boolean {
+  return (fase === 'journey' || fase === 'end') && apoios.preAquecerCorpo(t, id);
 }
 
 /** Efemérides continuam idempotentes/abortáveis; isto só declara a intenção. */
-export function efemeridesPrecisamPreCarga(fase: Phase, t: number): boolean {
-  return fase === 'atlas' || (fase === 'journey' && APOIOS_DO_FILME.precisaEfemerides(t));
+export function efemeridesPrecisamPreCarga(
+  fase: Phase,
+  t: number,
+  apoios: ApoiosDoRoteiro
+): boolean {
+  return fase === 'atlas' || (fase === 'journey' && apoios.precisaEfemerides(t));
 }

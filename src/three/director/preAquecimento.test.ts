@@ -20,13 +20,13 @@ const T_BEM_DEPOIS_DO_FILME = 1e6;
 describe('o pedido do roteiro conta o fim do filme como filme', () => {
   it('em "end", um corpo que o roteiro pediu continua segurado — como em "journey"', () => {
     expect(APOIOS_DO_FILME.preAquecerCorpo(T_BEM_DEPOIS_DO_FILME, 'earth')).toBe(true);
-    expect(corpoPedidoPeloRoteiro('journey', T_BEM_DEPOIS_DO_FILME, 'earth')).toBe(true);
-    expect(corpoPedidoPeloRoteiro('end', T_BEM_DEPOIS_DO_FILME, 'earth')).toBe(true);
+    expect(corpoPedidoPeloRoteiro('journey', T_BEM_DEPOIS_DO_FILME, 'earth', APOIOS_DO_FILME)).toBe(true);
+    expect(corpoPedidoPeloRoteiro('end', T_BEM_DEPOIS_DO_FILME, 'earth', APOIOS_DO_FILME)).toBe(true);
   });
 
   it('fora do filme (carregando, Atlas, voo livre) o pedido nunca segura, mesmo tarde', () => {
     for (const fase of ['loading', 'intro', 'free', 'atlas'] as const) {
-      expect(corpoPedidoPeloRoteiro(fase, T_BEM_DEPOIS_DO_FILME, 'earth')).toBe(false);
+      expect(corpoPedidoPeloRoteiro(fase, T_BEM_DEPOIS_DO_FILME, 'earth', APOIOS_DO_FILME)).toBe(false);
     }
   });
 });

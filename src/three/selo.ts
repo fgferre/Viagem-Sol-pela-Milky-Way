@@ -929,6 +929,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
    */
   neutra('d', 'distância ao alvo, em raios dele'),
   neutra('t', 'instante da viagem'),
+  neutra('filme', 'qual filme toca (escolha, não ajuste de imagem)'),
   neutra('play', 'retomar a viagem andando'),
   neutra('freeze', 'congelar o relógio da viagem'),
   neutra('atlas', 'abrir no modo Atlas'),

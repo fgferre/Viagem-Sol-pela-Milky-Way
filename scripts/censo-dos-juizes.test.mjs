@@ -102,7 +102,10 @@ describe('o censo dos juízes', () => {
     const papeis = new Set(visuais.map((v) => v.papel));
     for (const p of papeis) expect(['juiz', 'harness', 'ferramenta']).toContain(p);
     const bancada = visuais.filter((v) => v.papel !== 'juiz').map((v) => v.arquivo.split('/').pop());
-    // fase-da-grade desceu a bancada no fechamento do 99 — a soleira dele vive na suíte
-    expect(bancada.sort()).toEqual(['chrome.mjs', 'diff-pixel.mjs', 'fase-da-grade.mjs', 'gpu-profile.mjs']);
+    // fase-da-grade desceu a bancada no fechamento do 99 — a soleira dele vive na suíte;
+    // filme-video grava o filme tocando sob demanda (viagem solar, 04/10) — nunca entra em rodada
+    expect(bancada.sort()).toEqual([
+      'chrome.mjs', 'diff-pixel.mjs', 'fase-da-grade.mjs', 'filme-video.mjs', 'gpu-profile.mjs',
+    ]);
   });
 });

@@ -78,7 +78,8 @@ export interface BarraOuAlcasProps {
   partirDoAtlas: () => void;
   togglePause: () => void;
   ciclarVelocidade: () => void;
-  revealGalaxy: () => void;
+  /** ausente quando o filme em cartaz não tem galáxia a revelar (`revealTime` nulo): o botão não nasce */
+  revealGalaxy?: () => void;
   freeRoam: () => void;
   changeQuality: (escolha: EscolhaDeQualidade) => void;
   /** "Sistema Solar" da linha de contexto — o MESMO `focarNoSistema` do
@@ -728,10 +729,12 @@ export function BarraOuAlcas({
           {rate}×
         </span>
       </button>
-      <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
-        <Icone nome="galaxia" tamanho={16} />
-        <span>{t('barra.verAGalaxia')}</span>
-      </button>
+      {revealGalaxy && (
+        <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
+          <Icone nome="galaxia" tamanho={16} />
+          <span>{t('barra.verAGalaxia')}</span>
+        </button>
+      )}
     </div>
   )}
 

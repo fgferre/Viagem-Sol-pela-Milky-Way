@@ -32,7 +32,8 @@ import {
 } from '../lib/atlas/luzDaVisita';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { lerPortaLuz } from './selo';
-import { JD_DO_FILME_TDB, jdDoFilme } from './cinematic/journey';
+import { JD_DO_FILME_TDB, LUA_PC } from './cinematic/journey';
+import { filmeDe } from './cinematic/filme';
 import { EPOCA_JD_TDB } from './world/planetas/retrato2026';
 
 const FONTE = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
@@ -185,7 +186,10 @@ describe('a fiação de um posto do palco no Director (a da Lua)', () => {
       CARREGAMENTO.indexOf("'moon'"),
       CARREGAMENTO.indexOf('const rochosos')
     );
-    expect(tracos).toContain('pinoNoFilme: LUA_PC');
+    // o pino é do FILME em cartaz desde o E1 da viagem solar, lido pelo
+    // id do posto — e o galáctico pina a Lua em `LUA_PC`
+    expect(CARREGAMENTO).toContain('return pinos().get(id) ?? null;');
+    expect(filmeDe().pinos.get('moon')).toBe(LUA_PC);
     expect(tracos).toContain('temPonto: true');
     expect(tracos).toContain('temRetrato: false');
     expect(tracos).toContain('rotuloDeLua: true');
@@ -573,7 +577,7 @@ describe('o relógio do filme é do filme — a porta ?jd= não o cala (item 108
   // unicidade da linha é cobrada no primeiro veredito abaixo.
   const DO_TICK = FONTE.slice(FONTE.indexOf('private tick('));
   const BLOCO = DO_TICK.match(
-    /\n {4}(if \([^\n]*\) \{\n {6}this\.maquinaDoTempo\.jdPedido = jdDoFilme\(this\.journeyT\);\n {4}\})/
+    /\n {4}(if \([^\n]*\) \{\n {6}this\.maquinaDoTempo\.jdPedido = this\.filme\.jdDoFilme\(this\.journeyT\);\n {4}\})/
   );
 
   /** roda o bloco REAL do tick com a fase, o t e as portas que se quiser */
@@ -582,17 +586,18 @@ describe('o relógio do filme é do filme — a porta ?jd= não o cala (item 108
       phase,
       journeyT,
       debug: new Map(portas),
+      filme: filmeDe(),
       maquinaDoTempo: { jdPedido: Number.NaN },
     };
-    new Function('jdDoFilme', BLOCO![1]).call(alvo, jdDoFilme);
+    new Function(BLOCO![1]).call(alvo);
     return alvo.maquinaDoTempo.jdPedido;
   };
 
   it('a varredura acha o bloco — um padrão quebrado passaria calado', () => {
-    expect(BLOCO, 'o tick não escreve mais `jdPedido = jdDoFilme(journeyT)`').not.toBeNull();
+    expect(BLOCO, 'o tick não escreve mais `jdPedido = this.filme.jdDoFilme(journeyT)`').not.toBeNull();
     // e a linha viva é ÚNICA no arquivo: uma cópia morta em outro canto
     // reprovaria AQUI, em vez de se oferecer à varredura no lugar dela
-    expect(FONTE.match(/jdPedido = jdDoFilme\(this\.journeyT\);/g)).toHaveLength(1);
+    expect(FONTE.match(/jdPedido = this\.filme\.jdDoFilme\(this\.journeyT\);/g)).toHaveLength(1);
   });
 
   it('COM ?jd= na URL o filme SEGUE corrigindo o relógio — os dois trechos', () => {
@@ -636,7 +641,7 @@ describe('o relógio do filme é do filme — a porta ?jd= não o cala (item 108
     // chama o `play()` REAL, a viagem corre até o fim com o bloco REAL
     // do tick, e a tela final fica 2 s parada com o relógio batendo —
     // na ordem do tick (o relógio no topo, a correção do filme depois)
-    const PLAY = FONTE.match(/\n {2}play\(\) \{\n([\s\S]*?)\n {2}\}\n/);
+    const PLAY = FONTE.match(/\n {2}play\(id\?: string\) \{\n([\s\S]*?)\n {2}\}\n/);
     expect(PLAY, 'o `play()` sumiu do Director').not.toBeNull();
     const ligarOs = {
       'AO VIVO': (m: MaquinaDoTempo) => m.alternarAoVivo(),
@@ -659,15 +664,16 @@ describe('o relógio do filme é do filme — a porta ?jd= não o cala (item 108
         journeyT: 0,
         debug: new Map(),
         rig: { reset: () => {} },
+        filme: filmeDe(),
         setPhase(p: string) {
           this.phase = p;
         },
         maquinaDoTempo: maquina,
       };
-      new Function(PLAY![1]).call(alvo);
+      new Function('id', PLAY![1]).call(alvo, undefined);
       const quadro = (dt: number) => {
         maquina.andarORelogio(dt);
-        new Function('jdDoFilme', BLOCO![1]).call(alvo, jdDoFilme);
+        new Function(BLOCO![1]).call(alvo);
       };
       alvo.journeyT = 193;
       quadro(1 / 30);

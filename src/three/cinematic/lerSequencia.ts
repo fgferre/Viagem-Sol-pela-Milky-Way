@@ -26,7 +26,10 @@ interface ShotCaption {
 export interface Shot extends CameraDoPlano, ApoiosDoPlano {
   captions?: ShotCaption[];
   /** assuntos declarados para a direção de etiquetas existente.
-   *  'SOL' e 'SGR' são pseudo-alvos; o resto é nome de estrela do HYG. */
+   *  'SOL' e 'SGR' são pseudo-alvos; um id de `CORPOS_DO_SISTEMA` ou de
+   *  `LUAS_DO_SISTEMA` ('earth', 'moon', 'io'…) nomeia o corpo da casa; o
+   *  resto é nome de estrela do HYG. Este leitor não confere nomes: o que
+   *  não resolve some calado no desenho (`director/rotulos.ts`). */
   target?: string[];
   /** silencia as etiquetas de fundo durante o beat */
   quiet?: boolean;

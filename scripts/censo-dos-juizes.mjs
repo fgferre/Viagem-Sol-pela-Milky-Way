@@ -84,7 +84,7 @@ export const CUSTO_RE = /^\/\/ Custo:\s*(~?)\s*(\d+(?:,\d+)?)\s*min\b/m;
 // fase-da-grade desceu de juiz a bancada no fechamento do 99: a soleira
 // dele já é cobrada DENTRO da suíte (estabilidade-temporal.test.mjs);
 // o standalone resta como impressor de tabela.
-const FERRAMENTAS = new Set(['diff-pixel.mjs', 'gpu-profile.mjs', 'fase-da-grade.mjs']);
+const FERRAMENTAS = new Set(['diff-pixel.mjs', 'gpu-profile.mjs', 'fase-da-grade.mjs', 'filme-video.mjs']);
 const HARNESS = new Set(['chrome.mjs']);
 
 export const CLASSES = ['dono', 'lei', 'chão'];
