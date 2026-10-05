@@ -41,6 +41,8 @@ const MERCURIO = pino('mercury');
 const VENUS = pino('venus');
 const TERRA = pino('earth');
 const LUA = pino('moon');
+const MARTE = pino('mars');
+const CERES = pino('ceres');
 const JUPITER = pino('jupiter');
 const IO = pino('io');
 const SATURNO = pino('saturn');
@@ -51,6 +53,8 @@ const R_MERCURIO = raioPc('mercury');
 const R_VENUS = raioPc('venus');
 const R_TERRA = raioPc('earth');
 const R_LUA = raioPc('moon');
+const R_MARTE = raioPc('mars');
+const R_CERES = raioPc('ceres');
 const R_JUPITER = raioPc('jupiter');
 const R_IO = raioPc('io');
 const R_SATURNO = raioPc('saturn');
@@ -117,65 +121,100 @@ const MEIO_DO_CAMINHO = TERRA.clone().addScaledVector(naTerra(CHEGADA.graus), CH
  *  (com a Lua no quarto, a 90°, os +100° de antes passavam do terminador
  *  e a Terra encolhia como um crescente) */
 const SUBIDA_DA_TERRA = { para: 45, raio: 8 * R_TERRA };
-/** onde a Lua está no plano, vista da Terra, contando do Sol (90°: o quarto de JD_A) */
-const LUA_NO_PLANO = THREE.MathUtils.radToDeg(SOL_NA_TERRA.angleTo(ate(TERRA, LUA)));
-/**
- * A VISTA LATERAL EM ESCALA: da subida, a câmera recua em arco de volta
- * para o lado do Sol até 90° da linha Terra–Lua, a 38 raios — a Terra
- * com ~3° e a Lua a ~59° dela, as duas no quadro de 58° (deitadas na
- * largura): a distância real entre elas de uma vez. Com a Lua no quarto,
- * esse ponto é a linha Sol–Terra: a Terra cheia e a Lua a ~59° de fase.
- * Mais longe a Terra encolhe abaixo de ~13 px de raio e o ponto
- * fotométrico dela (magnitude ~−17) engole o disco: vira uma estrela branca.
- */
-const LATERAL = { graus: LUA_NO_PLANO - 90, raio: 38 * R_TERRA };
-const FIM_DA_LATERAL = TERRA.clone().addScaledVector(naTerra(LATERAL.graus), LATERAL.raio);
-/** a mira do fim da lateral: o ponto da linha Terra–Lua que, visto de lá,
- *  cai perto do meio caminho angular entre as duas (a bissetriz divide a
- *  linha na razão dos lados, 38 : √(38² + 62,6²), a 34 % da Terra; os 36 %
- *  da geometria de 1º/01 deixam a mira ~1° fora dela) */
-const ENTRE_A_TERRA_E_A_LUA = TERRA.clone().lerp(LUA, 0.36);
-// Na Lua: θ conta a partir da direção da Terra, girando para o lado do
-// Sol. No quarto de JD_A o Sol está a 90° da Terra vista da Lua (a Terra
-// meia-acesa) e a face acesa vai de θ = 0° a 180°: a aproximação desce
-// da vista lateral até o começo do raspão, em θ = 104°, e o joelho fica
-// em θ = 110°, a 1,4 raio — sobre o lado aceso, mas com o Sol alto (~70°),
-// sem as sombras longas da geometria de 1º/01. O próximo trecho refaz
-// este ato (o nascer da Terra) para o instante novo.
+/** onde a subida pousa e a saída para a Lua começa */
+const FIM_DA_SUBIDA = TERRA.clone().addScaledVector(naTerra(SUBIDA_DA_TERRA.para), SUBIDA_DA_TERRA.raio);
+// A LUA — A TERRA VISTA DA LUA (cena 7). T aponta a Terra; S, o Sol (no
+// quarto de JD_A, a 90° de T: a Terra meia-acesa); NORTE é o norte da
+// eclíptica (o cima do filme). O voo corre no meio-plano que contém T,
+// inclinado 55° de S para o norte — pelo lado aceso —, e `naLua` conta
+// os graus a partir de T. A 1,4 raio o horizonte da Lua fica 44° abaixo
+// do plano local: a Terra só fica BAIXA sobre ele com a câmera além da
+// borda do disco (visto da Terra). No joelho, a 130° de T, o horizonte na
+// direção da Terra é o chão a ~86° de T — onde a Terra está ~4° acima do
+// horizonte local —, aceso com o Sol a ~35°. Dali a câmera sobe (130° →
+// 165°, 1,4 → 4 raios) e a Terra fica de 4° a 9° acima da borda, atrás
+// dela: o olhar volta para a Terra (o acento declarado, a foto da Apollo 8)
+// e depois entrega o rumo de Marte, que em JD_A está a 1° do Sol.
 const TERRA_NA_LUA = ate(LUA, TERRA);
-const LADO_DO_SOL_NA_LUA = perpendicular(ate(LUA, SOL), TERRA_NA_LUA);
-const naLua = (graus: number) => girar(TERRA_NA_LUA, LADO_DO_SOL_NA_LUA, graus);
-const NASCER_DA_TERRA = { nascer: 104, dNascer: 1.55, joelho: 110, dJoelho: 1.4, chao: 104, abaixo: 30 };
-/** onde a aproximação pousa e o raspão começa: contornando o limbo até
- *  1,55 raio, logo além dele visto da Terra, com o horizonte lunar por
- *  baixo do quadro */
-const NASCER = LUA.clone().addScaledVector(naLua(NASCER_DA_TERRA.nascer), NASCER_DA_TERRA.dNascer * R_LUA);
-const JOELHO_DA_LUA = naLua(NASCER_DA_TERRA.joelho);
-/** a mira do começo do raspão: a direção da Terra baixada 30° para o
- *  centro da Lua, vista dali — o limbo entra por baixo e a Terra (de lá,
- *  meia-acesa) fica acima do quadro; ponto distante, quase uma direção */
-const VISADA_DO_NASCER = girar(
-  ate(NASCER, TERRA), perpendicular(ate(NASCER, LUA), ate(NASCER, TERRA)), NASCER_DA_TERRA.abaixo
-);
-const MIRA_DO_NASCER = NASCER.clone().addScaledVector(VISADA_DO_NASCER, 1e4 * R_LUA);
-/** o chão que passa: para onde o olhar desce no joelho (aquém dele, aceso) */
-const CHAO_DA_LUA = LUA.clone().addScaledVector(naLua(NASCER_DA_TERRA.chao), R_LUA);
-/** o raspão da Lua entrega o voo na direção de Júpiter */
-const SAIDA_DA_LUA = LUA.clone().addScaledVector(ate(LUA, JUPITER), 60 * R_LUA);
+const SOL_NA_LUA = perpendicular(ate(LUA, SOL), TERRA_NA_LUA);
+const NORTE_NA_LUA = (() => {
+  const n = new THREE.Vector3().crossVectors(TERRA_NA_LUA, SOL_NA_LUA);
+  return n.dot(CIMA_DA_ECLIPTICA) > 0 ? n : n.negate();
+})();
+const VOO_NA_LUA = { norte: 55, de: 25, raioDe: 6, joelho: 130, raio: 1.4, para: 165, raioPara: 4, abaixo: 6 };
+const naLua = (graus: number) =>
+  girar(TERRA_NA_LUA, girar(SOL_NA_LUA, NORTE_NA_LUA, VOO_NA_LUA.norte), graus);
+/** onde a saída da Terra pousa e o raspão começa: a 6 raios, 25° do lado de quem vem da Terra */
+const INICIO_DO_RASPAO_DA_LUA = LUA.clone().addScaledVector(naLua(VOO_NA_LUA.de), VOO_NA_LUA.raioDe * R_LUA);
+const JOELHO_DA_LUA = naLua(VOO_NA_LUA.joelho);
+const NO_JOELHO_DA_LUA = LUA.clone().addScaledVector(JOELHO_DA_LUA, VOO_NA_LUA.raio * R_LUA);
+const FIM_DO_RASPAO_DA_LUA = LUA.clone().addScaledVector(naLua(VOO_NA_LUA.para), VOO_NA_LUA.raioPara * R_LUA);
+/** a mira do Nascer da Terra: 6° abaixo da Terra, para o horizonte, vista
+ *  do joelho — a Terra no terço de cima do quadro, o chão aceso embaixo */
+const MIRA_DA_TERRA = (() => {
+  const visada = ate(NO_JOELHO_DA_LUA, TERRA);
+  const paraALua = perpendicular(ate(NO_JOELHO_DA_LUA, LUA), visada);
+  return NO_JOELHO_DA_LUA.clone().addScaledVector(
+    girar(visada, paraALua, VOO_NA_LUA.abaixo), NO_JOELHO_DA_LUA.distanceTo(TERRA)
+  );
+})();
 /**
- * O ROLAMENTO DO NASCER DA TERRA: o cima do filme é o polo da eclíptica,
- * e a Lua passa pelo lado do Sol — no plano da eclíptica, ao LADO da
- * visada. Para o limbo entrar por BAIXO do quadro, a câmera rola até o
- * seu cima apontar para fora da Lua (o zênite local), medido no nascer.
- * Sinal do `camera.rotateZ` do rig: o cima novo é cima·cos r − direita·sin r,
- * com direita = visada × cima.
+ * O ROLAMENTO DO NASCER DA TERRA: o cima do filme é o polo da eclíptica e
+ * o voo corre 55° ao norte do Sol; para o horizonte ficar NIVELADO sob a
+ * Terra, a câmera rola até o seu cima apontar o zênite local, medido no
+ * joelho. Sinal do `camera.rotateZ` do rig: o cima novo é
+ * cima·cos r − direita·sin r, com direita = visada × cima.
  */
 const ROLAMENTO_DA_LUA = (() => {
-  const cima = perpendicular(CIMA_DA_ECLIPTICA, VISADA_DO_NASCER);
-  const direita = new THREE.Vector3().crossVectors(VISADA_DO_NASCER, cima);
-  const zenite = perpendicular(ate(LUA, NASCER), VISADA_DO_NASCER);
+  const visada = ate(NO_JOELHO_DA_LUA, MIRA_DA_TERRA);
+  const cima = perpendicular(CIMA_DA_ECLIPTICA, visada);
+  const direita = new THREE.Vector3().crossVectors(visada, cima);
+  const zenite = perpendicular(JOELHO_DA_LUA, visada);
   return Math.atan2(-zenite.dot(direita), zenite.dot(cima));
 })();
+/** O CORTE DA LUA PARA MARTE: Marte está a 1° do Sol (conjunção em 09/01) e
+ *  a reta passaria pelo Sol; a Lua acaba olhando Marte e a chegada começa
+ *  pela MESMA direção, 0,15 UA antes dele, do lado do Sol (Marte cheio) */
+const OLHAR_DO_CORTE_DE_MARTE = ate(FIM_DO_RASPAO_DA_LUA, MARTE);
+const CORTE_DE_MARTE = MARTE.clone().addScaledVector(OLHAR_DO_CORTE_DE_MARTE, -0.15 * AU_PARA_PC);
+
+// MARTE (cena 8). O mapa segue o meridiano IAU (leste positivo). Em JD_A o
+// ponto subsolar está a 10°S, 14°L e o Valles Marineris (14°S, 301°L) a
+// 73° a oeste dele, de manhã, com o Sol a ~19°: a luz de lado mostra o
+// canion. O raspão desce do lado do Sol pelo paralelo do canion, para o
+// oeste, e o olhar segura o chão do canion adiante.
+const BASE_DE_MARTE = baseCorpoEquatorial(IAU_ORIENTATIONS.mars, JD_A_SOLAR_TDB);
+const POLO_DE_MARTE = new THREE.Vector3(...BASE_DE_MARTE.polo);
+const MERIDIANO_DE_MARTE = new THREE.Vector3(...BASE_DE_MARTE.nodoQ).multiplyScalar(Math.cos(rad(BASE_DE_MARTE.wDeg)))
+  .addScaledVector(new THREE.Vector3(...BASE_DE_MARTE.lesteDeQ), Math.sin(rad(BASE_DE_MARTE.wDeg)));
+const LESTE_DE_MARTE = new THREE.Vector3().crossVectors(POLO_DE_MARTE, MERIDIANO_DE_MARTE);
+/** a direção, do centro de Marte, da latitude e longitude (leste) dadas */
+const emMarte = (lat: number, lonLeste: number) => MERIDIANO_DE_MARTE.clone()
+  .multiplyScalar(Math.cos(rad(lat)) * Math.cos(rad(lonLeste)))
+  .addScaledVector(LESTE_DE_MARTE, Math.cos(rad(lat)) * Math.sin(rad(lonLeste)))
+  .addScaledVector(POLO_DE_MARTE, Math.sin(rad(lat)));
+const RASPAO_DE_MARTE = { lat: -13.9, canion: 300.8, inicio: 10, raioDoInicio: 6, joelho: 4, raio: 1.35, saida: 20 };
+const SOL_EM_MARTE = ate(MARTE, SOL);
+const VALLES_MARINERIS = emMarte(RASPAO_DE_MARTE.lat, RASPAO_DE_MARTE.canion);
+/** onde a chegada pousa e o raspão começa: Marte cheio, a 6 raios, 10° do subsolar para o canion */
+const INICIO_DO_RASPAO_DE_MARTE = MARTE.clone().addScaledVector(
+  girar(SOL_EM_MARTE, perpendicular(VALLES_MARINERIS, SOL_EM_MARTE), RASPAO_DE_MARTE.inicio),
+  RASPAO_DE_MARTE.raioDoInicio * R_MARTE
+);
+/** o joelho: o mesmo paralelo, 18° a leste do canion (o olhar o segura adiante) */
+const JOELHO_DE_MARTE = emMarte(RASPAO_DE_MARTE.lat, RASPAO_DE_MARTE.canion + RASPAO_DE_MARTE.joelho);
+const CHAO_DE_MARTE = MARTE.clone().addScaledVector(VALLES_MARINERIS, R_MARTE);
+/** o raspão entrega o voo na direção de Ceres */
+const SAIDA_DE_MARTE = MARTE.clone().addScaledVector(ate(MARTE, CERES), RASPAO_DE_MARTE.saida * R_MARTE);
+
+// CERES (cena 9): a chegada vem de Marte (Ceres a 24° de fase: giboso), a
+// passagem a 2,5 raios dobra o rumo para Júpiter (93° adiante) pelo lado
+// do Sol, e o cinturão em volta é vazio.
+const DE_MARTE_EM_CERES = ate(CERES, SAIDA_DE_MARTE);
+const RUMO_DE_JUPITER_EM_CERES = ate(CERES, JUPITER);
+const CHEGADA_A_CERES = CERES.clone().addScaledVector(DE_MARTE_EM_CERES, 8 * R_CERES);
+const JOELHO_DE_CERES = versor(DE_MARTE_EM_CERES.clone().add(RUMO_DE_JUPITER_EM_CERES));
+const SAIDA_DE_CERES = CERES.clone().addScaledVector(RUMO_DE_JUPITER_EM_CERES, 40 * R_CERES);
 
 // Mercúrio e Vênus. Em JD_A os dois estão do OUTRO lado do Sol em
 // relação à Terra (Mercúrio a 158°, Vênus a 177°: a quatro dias da
@@ -388,11 +427,11 @@ const PONTOS: Readonly<Record<string, THREE.Vector3>> = {
   adianteNoInicio: noChao(VOO.de - ADIANTE), adianteNoFim: noChao(VOO.para - ADIANTE),
   fimDoVoo: FIM_DO_VOO,
   subidaDe: naTerra(VOO.para), subidaPara: naTerra(SUBIDA_DA_TERRA.para),
-  lateralPara: naTerra(LATERAL.graus), fimDaLateral: FIM_DA_LATERAL,
-  entreATerraEALua: ENTRE_A_TERRA_E_A_LUA,
-  joelhoDaLua: JOELHO_DA_LUA, chaoDaLua: CHAO_DA_LUA,
-  nascer: NASCER, miraDoNascer: MIRA_DO_NASCER,
-  saidaDaLua: SAIDA_DA_LUA,
+  fimDaSubida: FIM_DA_SUBIDA, inicioDoRaspaoDaLua: INICIO_DO_RASPAO_DA_LUA,
+  joelhoDaLua: JOELHO_DA_LUA, fimDoRaspaoDaLua: FIM_DO_RASPAO_DA_LUA, miraDaTerra: MIRA_DA_TERRA,
+  Marte: MARTE, corteDeMarte: CORTE_DE_MARTE, inicioDoRaspaoDeMarte: INICIO_DO_RASPAO_DE_MARTE,
+  joelhoDeMarte: JOELHO_DE_MARTE, chaoDeMarte: CHAO_DE_MARTE, saidaDeMarte: SAIDA_DE_MARTE,
+  Ceres: CERES, chegadaACeres: CHEGADA_A_CERES, joelhoDeCeres: JOELHO_DE_CERES, saidaDeCeres: SAIDA_DE_CERES,
   chegadaAJupiter: CHEGADA_A_JUPITER, joelhoDeIo: JOELHO_DE_IO, miraDeIo: MIRA_DE_IO,
   inicioDoArco: INICIO_DO_ARCO, fimDoArco: FIM_DO_ARCO,
   arcoDe: emJupiter(ARCO.de), arcoPara: emJupiter(ARCO.para),
@@ -414,8 +453,8 @@ const NUMEROS: Readonly<Record<string, number>> = {
   raspaoDeVenus: PASSAGEM_POR_VENUS.raio * R_VENUS,
   raioDoVooDe: VOO.raioDe, raioDoVooPara: VOO.raioPara,
   raioDaSubidaDe: VOO.raioPara, raioDaSubidaPara: SUBIDA_DA_TERRA.raio,
-  raioDaLateral: LATERAL.raio,
-  raspaoDaLua: NASCER_DA_TERRA.dJoelho * R_LUA, rolamentoDaLua: ROLAMENTO_DA_LUA,
+  raspaoDaLua: VOO_NA_LUA.raio * R_LUA, rolamentoDaLua: ROLAMENTO_DA_LUA,
+  raspaoDeMarte: RASPAO_DE_MARTE.raio * R_MARTE, raspaoDeCeres: 2.5 * R_CERES,
   raspaoDeIo: 2.6 * R_IO,
   raioDoArcoDe: ARCO.raioDe, raioDoArcoPara: ARCO.raioPara,
   raspaoDeEncelado: 3.5 * R_ENCELADO, raspaoDeHiperion: 3 * R_HIPERION,
@@ -461,16 +500,16 @@ export function montarFilmeSolar(): FilmeSolarMontado {
   }
   /**
    * A TROCA DE RELÓGIO (JD_A → JD2), em segundos do corte. Entre os dois
-   * céus há nove dias e Júpiter anda 0,068 UA: visto da Lua (4,23 UA)
-   * são 0,95° — num degrau, um pulo de ~11 px do ponto que a câmera
-   * mira; e dentro da travessia, que em 1 s já está a 1,6 UA de Júpiter,
+   * céus há nove dias e Júpiter anda 0,068 UA: visto da saída de Ceres
+   * (5,5 UA) são 0,61° — num degrau, um pulo de ~7 px do ponto que a câmera
+   * mira; e dentro da travessia, que em 1 s já está a 2 UA de Júpiter,
    * seriam vários graus. Por isso a troca é uma RAMPA (`glide`, a de todo
-   * gesto do filme) nos últimos `DURACAO_DA_TROCA` segundos do raspão da
-   * Lua, quando o olhar já virou para Júpiter e a câmera ainda está a
-   * 4,23 UA dele: Júpiter escorrega 0,95° a ~0,03° por quadro de 1/30 s,
-   * e a travessia começa inteira em JD2, com Júpiter no pino. Terra e
-   * Lua, que giram nove vezes na rampa, estão a 60° ou mais da visada,
-   * fora do quadro (montar.test.ts confere as três coisas).
+   * gesto do filme) nos últimos `DURACAO_DA_TROCA` segundos da passagem por
+   * Ceres, quando o olhar já virou para Júpiter: ele escorrega 0,61° a
+   * ~0,02° por quadro de 1/30 s, e a travessia começa inteira em JD2, com
+   * Júpiter no pino. Terra e Lua, que giram nove vezes na rampa, estão a
+   * 2,7 UA — pontos, a 47° ou mais da visada (montar.test.ts confere as
+   * três coisas).
    */
   const fimDaTroca = starts[atos[0].length + atos[1].length];
   const tTroca = fimDaTroca - DURACAO_DA_TROCA;

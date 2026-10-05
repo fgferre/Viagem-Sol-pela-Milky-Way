@@ -7,7 +7,7 @@
 //
 // DOIS RELÓGIOS, como no filme galáctico (atos num instante, coda em
 // outro). O prólogo e o ato I (Sol, Mercúrio, Vênus, Terra, Lua — e
-// Marte e Ceres, prontos para o próximo trecho) correm em JD_A, o
+// Marte e Ceres) correm em JD_A, o
 // quarto minguante de 2026-01-10 15:49:37 UTC: a raiz exata de "Terra
 // meia-iluminada vista da Lua" (k = 0,5, elongação 90°), e a hora em
 // que o meio-dia está a 57°O — as Américas de frente para o Sol. Os

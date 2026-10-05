@@ -1,4 +1,4 @@
-// Serve: dono — o filme solar monta com o prólogo no Sol, o ato I dos mundos de pedra e os atos de fora, legendas nas duas línguas e a câmera perto dos corpos sem entrar neles
+// Serve: dono — o filme solar monta com o prólogo no Sol, o ato I dos mundos de pedra (da Terra vista da Lua a Ceres) e os atos de fora, legendas nas duas línguas e a câmera perto dos corpos sem entrar neles
 // A montagem do filme solar: duração, legendas, apoios, a geometria das
 // aproximações e a troca de relógio, medidas nos próprios planos (o
 // relógio de Journey.at: ritmo do plano, glide quando ausente) — antes de
@@ -68,15 +68,19 @@ const ATO_I = {
   chegadaAMercurio: primeiroDoAto(1), raspaoDeMercurio: primeiroDoAto(1) + 1,
   travessiaAVenus: primeiroDoAto(1) + 2, passagemPorVenus: primeiroDoAto(1) + 3,
   chegadaATerra: primeiroDoAto(1) + 4, vooSobreATerra: primeiroDoAto(1) + 5,
-  aproximacaoDaLua: primeiroDoAto(1) + 8, raspaoDaLua: primeiroDoAto(1) + 9,
+  saidaParaALua: primeiroDoAto(1) + 7, mergulhoNaLua: primeiroDoAto(1) + 8,
+  nascerDaTerra: primeiroDoAto(1) + 9, terraSobreOHorizonte: primeiroDoAto(1) + 10,
+  rumoDeMarte: primeiroDoAto(1) + 11, chegadaAMarte: primeiroDoAto(1) + 12,
+  raspaoDeMarte: primeiroDoAto(1) + 13, travessiaACeres: primeiroDoAto(1) + 14,
+  passagemPorCeres: primeiroDoAto(1) + 15,
 };
 
 describe('o filme solar monta', () => {
-  it('dura o prólogo no Sol, o ato I com Mercúrio e Vênus e os atos de fora da v3 (305–320 s), em cinco atos', () => {
-    expect(duracao).toBeGreaterThanOrEqual(305);
-    expect(duracao).toBeLessThanOrEqual(320);
+  it('dura o prólogo no Sol, o ato I de Mercúrio a Ceres e os atos de fora da v3 (330–345 s), em cinco atos', () => {
+    expect(duracao).toBeGreaterThanOrEqual(330);
+    expect(duracao).toBeLessThanOrEqual(345);
     expect(filme.planosPorAto).toHaveLength(5);
-    expect(filme.planosPorAto[1]).toBe(10);
+    expect(filme.planosPorAto[1]).toBe(16);
   });
 
   it('toda legenda tem o par em inglês', () => {
@@ -110,6 +114,8 @@ describe('o filme solar monta', () => {
     expect(apoios.precisaEfemerides(partida)).toBe(true);
     const travessia = starts[ATO_I.travessiaAVenus];
     expect(['earth', 'moon'].filter((id) => !apoios.preAquecerCorpo(travessia, id))).toEqual([]);
+    // Marte e Ceres desde a saída para a Lua, antes do corte para Marte
+    expect(antesDe(starts[ATO_I.saidaParaALua] + 1e-6, ['mars', 'ceres'])).toEqual([]);
     expect(antesDe(inicioDoAto(2), ['jupiter', 'io', 'europa', 'ganymede', 'callisto'])).toEqual([]);
     expect(antesDe(inicioDoAto(3), ['saturn', 'enceladus', 'hyperion', 'mimas', 'titan'])).toEqual([]);
   });
@@ -136,7 +142,8 @@ describe('a geometria das aproximações', () => {
   const APROXIMACOES: [number, string][] = [
     [ATO_I.raspaoDeMercurio, 'mercury'], [ATO_I.passagemPorVenus, 'venus'],
     [ATO_I.chegadaATerra, 'earth'], [ATO_I.vooSobreATerra, 'earth'],
-    [ATO_I.aproximacaoDaLua, 'moon'], [ATO_I.raspaoDaLua, 'moon'],
+    [ATO_I.nascerDaTerra, 'moon'], [ATO_I.terraSobreOHorizonte, 'moon'],
+    [ATO_I.raspaoDeMarte, 'mars'], [ATO_I.passagemPorCeres, 'ceres'],
     [primeiroDoAto(2) + 1, 'io'], [primeiroDoAto(2) + 2, 'jupiter'],
     [primeiroDoAto(3) + 2, 'saturn'], [primeiroDoAto(3) + 3, 'enceladus'],
     [primeiroDoAto(3) + 5, 'hyperion'],
@@ -216,7 +223,12 @@ describe('as emendas do prólogo até o voo sobre a Terra', () => {
   const olhar = (i: number, k: number) =>
     shots[i].look(k, new THREE.Vector3()).sub(shots[i].pos(k, new THREE.Vector3())).normalize();
 
-  it.each([1, 2, 3, ATO_I.raspaoDeMercurio, ATO_I.passagemPorVenus, ATO_I.vooSobreATerra])('a junta que abre o plano %i não salta', (i) => {
+  it.each([
+    1, 2, 3, ATO_I.raspaoDeMercurio, ATO_I.passagemPorVenus, ATO_I.vooSobreATerra,
+    // o raspão da Lua é UMA curva cortada em quatro planos (a lente fecha,
+    // segura e reabre): passa de um para o outro com a mesma velocidade
+    ATO_I.nascerDaTerra, ATO_I.terraSobreOHorizonte, ATO_I.rumoDeMarte,
+  ])('a junta que abre o plano %i não salta', (i) => {
     const t = starts[i];
     const fim = shots[i - 1].pos(1, new THREE.Vector3());
     expect(fim.distanceTo(shots[i].pos(0, new THREE.Vector3()))).toBeLessThan(1e-9 * fim.length());
@@ -258,6 +270,23 @@ describe('as duas juntas declaradas do ato I', () => {
     const camera = shots[i - 1].pos(1, new THREE.Vector3());
     const fase = THREE.MathUtils.radToDeg(camera.clone().sub(venus).angleTo(venus.clone().negate()));
     expect(fase).toBeLessThan(5);
+  });
+
+  it('Lua → Marte é um corte: a posição salta mais de 2 UA, o olhar e a lente não mudam, e Marte está cheio', () => {
+    const i = ATO_I.chegadaAMarte;
+    const salto = shots[i - 1].pos(1, new THREE.Vector3()).distanceTo(shots[i].pos(0, new THREE.Vector3()));
+    expect(salto / AU_PARA_PC).toBeGreaterThan(2);
+    expect(olhar(i - 1, 1).angleTo(olhar(i, 0))).toBeLessThan(1e-6);
+    expect(Math.abs(j.at(starts[i] - 1e-9).fov - j.at(starts[i]).fov)).toBeLessThan(1e-3);
+    // a chegada vem do lado do Sol: Marte a menos de 2° de fase
+    const marte = pinos.get('mars')!;
+    const camera = shots[i].pos(0, new THREE.Vector3());
+    expect(THREE.MathUtils.radToDeg(camera.clone().sub(marte).angleTo(marte.clone().negate()))).toBeLessThan(2);
+    // e a reta da Lua a Marte (em conjunção, a 1° do Sol) passaria a menos de 5 raios do Sol
+    const lua = pinos.get('moon')!;
+    const d = marte.clone().sub(lua);
+    const u = THREE.MathUtils.clamp(-lua.dot(d) / d.lengthSq(), 0, 1);
+    expect(lua.clone().addScaledVector(d, u).length() / RAIO_SOL_PC).toBeLessThan(5);
   });
 
   it('a linha reta de Vênus à Terra passaria a menos de 6 raios do Sol — por isso o corte', () => {
@@ -343,8 +372,9 @@ describe('os dois relógios: o prólogo e o ato I em JD_A, os atos de fora em JD
     expect(fimDaTroca).toBe(starts[travessia]);
     let menor = Infinity;
     for (let t = filme.tTroca; t <= fimDaTravessia; t += 0.01) menor = Math.min(menor, foraDaVisada(t));
-    // o canto do quadro de 16:9 com a lente de 58° está a ~48° do centro
-    expect(menor).toBeGreaterThanOrEqual(60); // medido 76°
+    // de Ceres (a 2,7 UA delas) Terra e Lua são pontos, não discos que giram;
+    // o canto do quadro de 16:9 com a lente de 58° está a 48,5° do centro
+    expect(menor).toBeGreaterThanOrEqual(45); // medido 46,9°, no começo da travessia
   });
 
   it('Júpiter, para onde o olhar vira durante a rampa, anda menos de 0,1° por quadro de 1/30 s', () => {
@@ -356,13 +386,13 @@ describe('os dois relógios: o prólogo e o ato I em JD_A, os atos de fora em JD
         jupiterEm(t).sub(pos).angleTo(jupiterEm(t + passo).sub(pos))
       ));
     }
-    expect(maior).toBeLessThan(0.1); // medido ~0,03°
+    expect(maior).toBeLessThan(0.1); // medido 0,020°
     // e o pulo que um degrau daria: os nove dias entre os dois céus
     const { pos } = amostra(filme.tTroca);
     const degrau = THREE.MathUtils.radToDeg(
       jupiterEm(filme.tTroca).sub(pos).angleTo(jupiterEm(fimDaTroca).sub(pos))
     );
-    expect(degrau).toBeGreaterThan(0.5); // medido 0,95°: por isso a rampa
+    expect(degrau).toBeGreaterThan(0.5); // medido 0,61°: por isso a rampa
   });
 
   it('nenhuma legenda está aberta quando a troca começa', () => {

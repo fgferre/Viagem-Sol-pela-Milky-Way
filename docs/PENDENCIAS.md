@@ -4,7 +4,48 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (04/10) — SOMBRA DOBRADA NO MAIN, À ESPERA DA PUBLICAÇÃO; TRITÃO PAUSADO
+## O BASTÃO — onde a rodada parou (05/10, noite) — VIAGEM SOLAR NO RAMO `viagem-solar`, ATO I PRONTO; A CONVERSA FECHOU POR PESO DE CONTEXTO
+
+**Estado:** o segundo filme existe e toca de ponta a ponta no ramo
+`viagem-solar` (backup `origin/viagem-solar`; nada no `main`, nada
+publicado). Tudo o que manda está em `PLAN-VIAGEM-SOLAR.md` (raiz do
+ramo) e no roteiro aprovado `docs/ROTEIRO-VIAGEM-SOLAR.md` — a próxima
+conversa começa por eles. Feito e conferido pela sessão principal, com
+`npm run done` verde (120 arquivos, 3.404 testes): o motor toca o filme
+escolhido (`?filme=solar`; o galáctico bit a bit igual em quatro A/B); os
+botões dos dois filmes na capa, no "Mais" e no Atlas (escolha dele pela
+maquete B; celular só ícone, sem corte); tela final por filme; o beat de
+luz honesta (`camera.luz`); o gravador do filme tocando (`--hud=1`);
+nomes de corpos no filme; e o filme solar v4 até o fim do Ato I — o Sol
+na superfície, Mercúrio, Vênus, a Terra com as Américas, a Lua com a
+Terra meia-iluminada sobre o horizonte (o pedido dele, no quarto
+minguante de 10/01), Marte sobre o Valles Marineris, Ceres — seguido
+dos atos de Júpiter e Saturno da v3 (a refazer pelo roteiro). 336 s.
+
+**Palavras dele nesta rodada:** *"onde está o sol nesse filme?"*;
+*"temos tantos objetos interessantes... que a gente poderia estar
+mostrando"*; *"me traz um roteiro estudado em cima de outros roteiros de
+documentários"*; *"eu não pedi para você desaparecer com outro filme"*;
+e, ao fechar: *"o agente fable dessa janela de coordenação tem que
+tentar gastar mais inteligentemente o contexto para coordenar mais e
+fazer menos braçal"*. As sete decisões dele (6 min, 24 lugares, todos os
+opcionais, Lua no quarto, luz honesta em Plutão, som depois, ponte,
+botões) estão no roteiro §4; os assets fracos viraram o item 230.
+
+**Falta (na ordem do plano, "Como continuar"):** Ato II (Júpiter com a
+Grande Mancha de frente, Europa, quase-sol), Ato III (Titã, Jápeto,
+Cassini), Ato IV (Urano, Netuno/Tritão, Plutão/Caronte com o beat de
+luz), Epílogo (retrato de família, a mesma luz + ponte); depois a F4
+(legenda sobre fundo claro, o Sol virando ponto de repente, o Sol pelo
+relógio da tela, quadros pretos de NaN perto do joelho da Lua com
+`abaixo` baixo, halo/manchas da Terra pequena, juízes com `--filme=solar`
+e referências novas, celular), o vídeo inteiro com HUD para ele, e o
+merge com a palavra dele. Modo de trabalho combinado: coordenador de
+produção em Opus por onda, dois lugares por autor, foto por lugar; a
+janela principal olha cada folha, decide gosto com ele e fecha a rodada.
+Tritão segue pausado; a publicação da sombra dobrada segue sendo dele.
+
+## O BASTÃO anterior (04/10) — SOMBRA DOBRADA NO MAIN, À ESPERA DA PUBLICAÇÃO; TRITÃO PAUSADO
 
 **Estado:** a sombra dobrada de Plutão e Caronte está FEITA e no `main`
 (03/10, com a palavra dele: *"pode juntar ao principal e seguir com

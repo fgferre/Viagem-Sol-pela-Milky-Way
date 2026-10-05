@@ -56,7 +56,7 @@ describe('os pinos do filme solar são a efeméride', () => {
     expect(JD2_SOLAR_TDB).toBe(JD_DO_FILME_TDB + DELTA_JD2_HORAS / 24);
   });
 
-  it('traz todos os corpos que a câmera visita (Marte e Ceres prontos para o próximo trecho do ato I)', () => {
+  it('traz todos os corpos que a câmera visita', () => {
     expect([...PINOS_SOLAR.keys()].sort()).toEqual([
       'callisto', 'ceres', 'earth', 'enceladus', 'europa', 'ganymede', 'hyperion',
       'io', 'jupiter', 'mars', 'mercury', 'mimas', 'moon', 'saturn', 'sun', 'titan', 'venus',

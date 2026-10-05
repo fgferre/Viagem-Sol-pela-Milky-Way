@@ -4,7 +4,7 @@
 // pela fonte única de raios (BODY_AXES) ou pela posição da câmera no
 // instante da legenda — e cobrado com o arredondamento que o texto usa,
 // nas duas línguas. Cada conta usa o céu do ato da legenda: do Sol à
-// Lua, o de JD_A; de Júpiter em diante, o de JD2 — inclusive a Terra,
+// Ceres, o de JD_A; de Júpiter em diante, o de JD2 — inclusive a Terra,
 // que é desenhada no pino de JD_A mas é recomputada pela cadeia em JD2.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -71,6 +71,7 @@ const motor = new MotorEfemerides(
 const MERCURIO = pino('mercury');
 const TERRA = pino('earth');
 const LUA = pino('moon');
+const MARTE = pino('mars');
 const JUPITER = pino('jupiter');
 const SATURNO = pino('saturn');
 /** a Terra no céu dos atos II–IV, pela mesma cadeia dos pinos */
@@ -155,15 +156,41 @@ describe('os números das legendas batem com a conta', () => {
     expect(falaEn(c)).toContain(`${Math.floor(minutos)} light-minutes from the Sun`);
   });
 
-  it('a Lua: 31 Terras e 1,3 segundo-luz (centro a centro, no instante)', () => {
+  it('a Terra vista da Lua: 399 mil km, 31 Terras e 1,3 segundo-luz (centro a centro, no instante)', () => {
     const km = (LUA.distanceTo(TERRA) / UA) * AU_KM;
     const terras = Math.round(km / (2 * BODY_AXES.earth[0]));
     expect(terras).toBe(31); // medido 31,29 — 399 177 km, a Lua passa da distância média
-    const c = legenda('Terras de distância');
+    const c = legenda('A Terra, vista da Lua');
+    expect(falaPt(c)).toContain(`${Math.floor(km / 1000)} mil km`);
     expect(falaPt(c)).toContain(`${terras} Terras`);
     expect(falaPt(c)).toContain(`${pt(km / C_KM_S, 1)} segundo-luz`);
+    expect(falaEn(c)).toContain(`${Math.floor(km / 1000)},000 km`);
     expect(falaEn(c)).toContain(`${terras} Earths`);
     expect(falaEn(c)).toContain(`${en(km / C_KM_S, 1)} light-seconds`);
+    // o Nascer da Terra: Apollo 8, 24 de dezembro de 1968
+    expect(falaPt(c)).toContain('Apollo 8 fotografou o Nascer da Terra, em 1968');
+    expect(falaEn(c)).toContain('Apollo 8 photographed Earthrise, in 1968');
+  });
+
+  it('Marte: menos da metade da luz da Terra ((1 UA / r)² no instante)', () => {
+    // em 10/01/2026 Marte está a 1,419 UA (perto do periélio, 1,381): a
+    // razão é 0,497 — contra a Terra do mesmo instante (0,983 UA), 0,480
+    const r = emUA(MARTE);
+    expect((1 / r) ** 2).toBeLessThan(0.5);
+    expect((emUA(TERRA) / r) ** 2).toBeLessThan(0.5);
+    const c = legenda('Marte');
+    expect(falaPt(c)).toContain('menos da metade da luz da Terra');
+    expect(falaEn(c)).toContain('less than half the light of Earth');
+    // o ar que o vento do Sol leva: MAVEN (Jakosky et al. 2018, Icarus 315, 146)
+    expect(falaPt(c)).toContain('o vento do Sol ajudou a levar o ar embora');
+  });
+
+  it('Ceres é o maior do cinturão (diâmetro médio em BODY_AXES, contra Vesta, Palas e Hígia)', () => {
+    const diametro = (id: string) => (2 * (BODY_AXES[id][0] + BODY_AXES[id][1] + BODY_AXES[id][2])) / 3;
+    for (const id of ['vesta', 'pallas', 'hygiea']) expect(diametro('ceres')).toBeGreaterThan(diametro(id));
+    const c = legenda('Ceres');
+    expect(falaPt(c)).toContain('o maior do cinturão');
+    expect(falaEn(c)).toContain('the largest in the belt');
   });
 
   it('Júpiter: 4,2 UA da Terra e 35 minutos-luz (as duas em JD2; a Terra desenhada, de JD_A, dá o mesmo)', () => {

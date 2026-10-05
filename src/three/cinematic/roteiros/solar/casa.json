@@ -1,7 +1,9 @@
 {
   "planos": [
     {
-      "qa": {"chegadaAMercurio": 0.6},
+      "qa": {
+        "chegadaAMercurio": 0.6
+      },
       "camera": {
         "duracao": 6,
         "movimento": {
@@ -19,14 +21,24 @@
           "entrada": 0.5,
           "saida": 1
         },
-        "lente": [58, 58],
+        "lente": [
+          58,
+          58
+        ],
         "ritmo": "settle",
-        "efeitoDeVelocidade": {"tipo": "decaimento", "amplitude": 0.6, "ritmo": "glide", "ate": 0.85}
+        "efeitoDeVelocidade": {
+          "tipo": "decaimento",
+          "amplitude": 0.6,
+          "ritmo": "glide",
+          "ate": 0.85
+        }
       },
       "fundoSilencioso": true
     },
     {
-      "qa": {"raspaoDeMercurio": 0.45},
+      "qa": {
+        "raspaoDeMercurio": 0.45
+      },
       "camera": {
         "duracao": 9,
         "movimento": {
@@ -40,7 +52,10 @@
           "sigma": 0.16,
           "alongamento": 0.72,
           "chao": 0.18,
-          "expoentes": [1.6, 1.45]
+          "expoentes": [
+            1.6,
+            1.45
+          ]
         },
         "mira": {
           "tipo": "passagem",
@@ -50,7 +65,10 @@
           "entrada": 0.35,
           "saida": 0.7
         },
-        "lente": [58, 58]
+        "lente": [
+          58,
+          58
+        ]
       },
       "fundoSilencioso": true,
       "olhar": "assunto",
@@ -59,13 +77,21 @@
           "em": 0.05,
           "texto": "Mercúrio — quase 5 vezes mais luz que na Terra",
           "subtexto": "430 °C de dia, −180 °C de noite",
-          "en": {"texto": "Mercury — almost 5 times the light of Earth", "subtexto": "430 °C by day, −180 °C by night"},
+          "en": {
+            "texto": "Mercury — almost 5 times the light of Earth",
+            "subtexto": "430 °C by day, −180 °C by night"
+          },
           "duracao": 6.5
         }
       ]
     },
     {
-      "preload": {"corpos": ["earth", "moon"]},
+      "preload": {
+        "corpos": [
+          "earth",
+          "moon"
+        ]
+      },
       "camera": {
         "duracao": 8,
         "movimento": {
@@ -75,15 +101,26 @@
           "para": "chegadaAVenus",
           "ritmoDaDirecao": "glide"
         },
-        "mira": {"tipo": "fixo", "ponto": "Venus"},
-        "lente": [58, 58],
+        "mira": {
+          "tipo": "fixo",
+          "ponto": "Venus"
+        },
+        "lente": [
+          58,
+          58
+        ],
         "ritmo": "settle",
-        "efeitoDeVelocidade": {"tipo": "frenagem", "amplitude": 0.8}
+        "efeitoDeVelocidade": {
+          "tipo": "frenagem",
+          "amplitude": 0.8
+        }
       },
       "fundoSilencioso": true
     },
     {
-      "qa": {"passagemPorVenus": 0.5},
+      "qa": {
+        "passagemPorVenus": 0.5
+      },
       "camera": {
         "duracao": 7,
         "movimento": {
@@ -97,10 +134,19 @@
           "sigma": 0.16,
           "alongamento": 0.5,
           "chao": 0.18,
-          "expoentes": [1.6, 1.45]
+          "expoentes": [
+            1.6,
+            1.45
+          ]
         },
-        "mira": {"tipo": "fixo", "ponto": "Venus"},
-        "lente": [58, 58]
+        "mira": {
+          "tipo": "fixo",
+          "ponto": "Venus"
+        },
+        "lente": [
+          58,
+          58
+        ]
       },
       "fundoSilencioso": true,
       "olhar": "assunto",
@@ -118,7 +164,9 @@
       ]
     },
     {
-      "qa": {"chegadaATerra": 0.6},
+      "qa": {
+        "chegadaATerra": 0.6
+      },
       "camera": {
         "duracao": 9,
         "movimento": {
@@ -136,14 +184,24 @@
           "entrada": 0.56,
           "saida": 0.9
         },
-        "lente": [58, 58],
+        "lente": [
+          58,
+          58
+        ],
         "ritmo": "settle",
-        "efeitoDeVelocidade": {"tipo": "decaimento", "amplitude": 0.6, "ritmo": "glide", "ate": 0.85}
+        "efeitoDeVelocidade": {
+          "tipo": "decaimento",
+          "amplitude": 0.6,
+          "ritmo": "glide",
+          "ate": 0.85
+        }
       },
       "fundoSilencioso": true
     },
     {
-      "qa": {"terraDeDia": 0.5},
+      "qa": {
+        "terraDeDia": 0.5
+      },
       "camera": {
         "duracao": 12,
         "movimento": {
@@ -151,10 +209,21 @@
           "centro": "Terra",
           "direcaoDe": "vooDe",
           "direcaoPara": "vooPara",
-          "raio": ["raioDoVooDe", "raioDoVooPara"]
+          "raio": [
+            "raioDoVooDe",
+            "raioDoVooPara"
+          ]
         },
-        "mira": {"tipo": "pan", "de": "adianteNoInicio", "para": "adianteNoFim", "ritmo": "linear"},
-        "lente": [58, 58]
+        "mira": {
+          "tipo": "pan",
+          "de": "adianteNoInicio",
+          "para": "adianteNoFim",
+          "ritmo": "linear"
+        },
+        "lente": [
+          58,
+          58
+        ]
       },
       "fundoSilencioso": true,
       "legendas": [
@@ -162,7 +231,10 @@
           "em": 0.1,
           "texto": "TERRA — 8 minutos-luz do Sol",
           "subtexto": "aqui a luz vira azul, vento e vida",
-          "en": {"texto": "EARTH — 8 light-minutes from the Sun", "subtexto": "here the light becomes blue, wind and life"},
+          "en": {
+            "texto": "EARTH — 8 light-minutes from the Sun",
+            "subtexto": "here the light becomes blue, wind and life"
+          },
           "duracao": 9
         }
       ]
@@ -175,7 +247,10 @@
           "centro": "Terra",
           "direcaoDe": "subidaDe",
           "direcaoPara": "subidaPara",
-          "raio": ["raioDaSubidaDe", "raioDaSubidaPara"]
+          "raio": [
+            "raioDaSubidaDe",
+            "raioDaSubidaPara"
+          ]
         },
         "mira": {
           "tipo": "passagem",
@@ -185,110 +260,426 @@
           "entrada": 0.45,
           "saida": 1
         },
-        "lente": [58, 50]
+        "lente": [
+          58,
+          50
+        ]
       },
       "fundoSilencioso": true,
       "olhar": "assunto"
     },
     {
-      "camera": {
-        "duracao": 12.5,
-        "movimento": {
-          "tipo": "arco",
-          "centro": "Terra",
-          "direcaoDe": "subidaPara",
-          "direcaoPara": "lateralPara",
-          "raio": ["raioDaSubidaPara", "raioDaLateral"]
-        },
-        "mira": {"tipo": "pan", "de": "Terra", "para": "entreATerraEALua"},
-        "lente": [50, 58]
+      "preload": {
+        "corpos": [
+          "mars",
+          "ceres"
+        ]
       },
-      "assuntos": ["moon"],
+      "qa": {
+        "saidaParaALua": 0.5
+      },
+      "camera": {
+        "duracao": 6,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Lua",
+          "de": "fimDaSubida",
+          "para": "inicioDoRaspaoDaLua",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Terra",
+          "assunto": "Lua",
+          "rumo": "Lua",
+          "entrada": 0.45,
+          "saida": 1
+        },
+        "lente": [
+          50,
+          58
+        ],
+        "ritmo": "settle"
+      },
+      "assuntos": [
+        "moon"
+      ],
+      "fundoSilencioso": true
+    },
+    {
+      "camera": {
+        "duracao": 6,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Lua",
+          "de": "inicioDoRaspaoDaLua",
+          "direcaoNoJoelho": "joelhoDaLua",
+          "para": "fimDoRaspaoDaLua",
+          "distanciaMinima": "raspaoDaLua",
+          "joelho": 0.62,
+          "sigma": 0.16,
+          "alongamento": 0.6,
+          "chao": 0.18,
+          "expoentes": [
+            1.6,
+            1.45
+          ],
+          "intervalo": [
+            0,
+            0.231
+          ]
+        },
+        "mira": {
+          "tipo": "fixo",
+          "ponto": "Lua"
+        },
+        "lente": [
+          58,
+          58
+        ],
+        "ritmo": "quadratic"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.02,
+          "texto": "A Lua",
+          "subtexto": "O único outro mundo onde já estivemos",
+          "en": {
+            "texto": "The Moon",
+            "subtexto": "The only other world we have ever walked on"
+          },
+          "duracao": 3.9
+        }
+      ]
+    },
+    {
+      "qa": {
+        "nascerDaTerra": 0.7
+      },
+      "camera": {
+        "duracao": 3.5,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Lua",
+          "de": "inicioDoRaspaoDaLua",
+          "direcaoNoJoelho": "joelhoDaLua",
+          "para": "fimDoRaspaoDaLua",
+          "distanciaMinima": "raspaoDaLua",
+          "joelho": 0.62,
+          "sigma": 0.16,
+          "alongamento": 0.6,
+          "chao": 0.18,
+          "expoentes": [
+            1.6,
+            1.45
+          ],
+          "intervalo": [
+            0.231,
+            0.5
+          ]
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Lua",
+          "assunto": "miraDaTerra",
+          "rumo": "miraDaTerra",
+          "entrada": 0.9,
+          "saida": 1
+        },
+        "lente": [
+          58,
+          25
+        ],
+        "ritmo": "linear",
+        "ritmoDaLente": "easeOut",
+        "inclinacao": {
+          "tipo": "rampa",
+          "de": 0,
+          "para": "rolamentoDaLua",
+          "ritmo": "glide"
+        }
+      },
       "fundoSilencioso": true,
       "olhar": "assunto",
       "legendas": [
         {
           "em": 0.6,
-          "texto": "A Lua fica a 31 Terras de distância",
-          "subtexto": "1,3 segundo-luz",
-          "en": {"texto": "The Moon is 31 Earths away", "subtexto": "1.3 light-seconds"},
-          "duracao": 7.5,
+          "texto": "A Terra, vista da Lua",
+          "subtexto": "399 mil km — 31 Terras de distância, 1,3 segundo-luz. Foi daqui que a Apollo 8 fotografou o Nascer da Terra, em 1968",
+          "en": {
+            "texto": "Earth, seen from the Moon",
+            "subtexto": "399,000 km — 31 Earths away, 1.3 light-seconds. From here Apollo 8 photographed Earthrise, in 1968"
+          },
+          "duracao": 6.8,
           "ponte": true
         }
       ]
     },
     {
-      "qa": {"vistaLateral": 0},
+      "qa": {
+        "terraSobreOHorizonte": 0.5
+      },
       "camera": {
-        "duracao": 7,
+        "duracao": 4,
         "movimento": {
-          "tipo": "aproximacao",
+          "tipo": "raspao",
           "centro": "Lua",
-          "de": "fimDaLateral",
-          "para": "nascer",
-          "ritmoDaDirecao": "glide"
+          "de": "inicioDoRaspaoDaLua",
+          "direcaoNoJoelho": "joelhoDaLua",
+          "para": "fimDoRaspaoDaLua",
+          "distanciaMinima": "raspaoDaLua",
+          "joelho": 0.62,
+          "sigma": 0.16,
+          "alongamento": 0.6,
+          "chao": 0.18,
+          "expoentes": [
+            1.6,
+            1.45
+          ],
+          "intervalo": [
+            0.5,
+            0.808
+          ]
         },
         "mira": {
-          "tipo": "passagem",
-          "de": "entreATerraEALua",
-          "assunto": "Lua",
-          "rumo": "miraDoNascer",
-          "entrada": 0.3,
-          "saida": 0.8
+          "tipo": "fixo",
+          "ponto": "miraDaTerra"
         },
-        "lente": [58, 52],
-        "inclinacao": {"tipo": "rampa", "de": 0, "para": "rolamentoDaLua", "ritmo": "glide"}
+        "lente": [
+          25,
+          25
+        ],
+        "ritmo": "linear",
+        "inclinacao": {
+          "tipo": "fixo",
+          "valor": "rolamentoDaLua"
+        }
       },
       "fundoSilencioso": true,
       "olhar": "assunto"
     },
     {
-      "preload": {"corpos": ["jupiter", "io", "europa", "ganymede", "callisto"]},
-      "qa": {"raspaoDaLua": 0.45},
+      "preload": {
+        "corpos": [
+          "jupiter",
+          "io",
+          "europa",
+          "ganymede",
+          "callisto"
+        ]
+      },
       "camera": {
-        "duracao": 8.5,
+        "duracao": 2.5,
         "movimento": {
           "tipo": "raspao",
           "centro": "Lua",
-          "de": "nascer",
+          "de": "inicioDoRaspaoDaLua",
           "direcaoNoJoelho": "joelhoDaLua",
-          "para": "saidaDaLua",
+          "para": "fimDoRaspaoDaLua",
           "distanciaMinima": "raspaoDaLua",
-          "joelho": 0.33,
+          "joelho": 0.62,
           "sigma": 0.16,
-          "alongamento": 0.64,
+          "alongamento": 0.6,
           "chao": 0.18,
-          "expoentes": [1.6, 1.45]
+          "expoentes": [
+            1.6,
+            1.45
+          ],
+          "intervalo": [
+            0.808,
+            1
+          ]
+        },
+        "mira": {
+          "tipo": "pan-direcao",
+          "de": "miraDaTerra",
+          "para": "Marte",
+          "ate": 1
+        },
+        "lente": [
+          25,
+          58
+        ],
+        "ritmo": "linear",
+        "ritmoDaLente": "glide",
+        "inclinacao": {
+          "tipo": "rampa",
+          "de": "rolamentoDaLua",
+          "para": 0,
+          "ritmo": "glide"
+        }
+      },
+      "fundoSilencioso": true
+    },
+    {
+      "qa": {
+        "chegadaAMarte": 0.6
+      },
+      "camera": {
+        "duracao": 8,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Marte",
+          "de": "corteDeMarte",
+          "para": "inicioDoRaspaoDeMarte",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {
+          "tipo": "fixo",
+          "ponto": "Marte"
+        },
+        "lente": [
+          58,
+          58
+        ],
+        "ritmo": "settle",
+        "efeitoDeVelocidade": {
+          "tipo": "frenagem",
+          "amplitude": 0.8
+        }
+      },
+      "assuntos": [
+        "mars"
+      ],
+      "fundoSilencioso": true
+    },
+    {
+      "qa": {
+        "raspaoDeMarte": 0.45
+      },
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Marte",
+          "de": "inicioDoRaspaoDeMarte",
+          "direcaoNoJoelho": "joelhoDeMarte",
+          "para": "saidaDeMarte",
+          "distanciaMinima": "raspaoDeMarte",
+          "joelho": 0.45,
+          "sigma": 0.16,
+          "alongamento": 0.7,
+          "chao": 0.18,
+          "expoentes": [
+            1.6,
+            1.45
+          ]
         },
         "mira": {
           "tipo": "passagem",
-          "de": "miraDoNascer",
-          "assunto": "chaoDaLua",
-          "rumo": "Jupiter",
-          "entrada": 0.43,
-          "saida": 0.6
+          "de": "Marte",
+          "assunto": "chaoDeMarte",
+          "rumo": "Ceres",
+          "entrada": 0.35,
+          "saida": 0.72
         },
-        "lente": [52, 58],
-        "inclinacao": {
-          "tipo": "pouso",
-          "de": "rolamentoDaLua",
-          "para": 0,
-          "inicio": 0.56,
-          "pousaEm": 1,
-          "expoente": 2
-        }
+        "lente": [
+          58,
+          58
+        ]
       },
+      "assuntos": [
+        "ceres"
+      ],
       "fundoSilencioso": true,
       "olhar": "assunto",
       "legendas": [
         {
-          "em": 0.35,
-          "texto": "A Lua",
-          "subtexto": "O único outro mundo onde já estivemos",
-          "en": {"texto": "The Moon", "subtexto": "The only other world we have ever walked on"},
-          "duracao": 3.9
+          "em": 0.05,
+          "texto": "Marte — menos da metade da luz da Terra",
+          "subtexto": "já teve ar e água; o vento do Sol ajudou a levar o ar embora",
+          "en": {
+            "texto": "Mars — less than half the light of Earth",
+            "subtexto": "it once had air and water; the solar wind helped strip the air away"
+          },
+          "duracao": 7
         }
       ]
+    },
+    {
+      "camera": {
+        "duracao": 6,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Ceres",
+          "de": "saidaDeMarte",
+          "para": "chegadaACeres",
+          "ritmoDaDirecao": "glide"
+        },
+        "mira": {
+          "tipo": "fixo",
+          "ponto": "Ceres"
+        },
+        "lente": [
+          58,
+          58
+        ],
+        "ritmo": "settle",
+        "efeitoDeVelocidade": {
+          "tipo": "frenagem",
+          "amplitude": 0.8
+        }
+      },
+      "assuntos": [
+        "ceres"
+      ],
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.1,
+          "texto": "Ceres, o maior do cinturão",
+          "subtexto": "o cinturão é quase vazio: dá para atravessá-lo sem ver mais nada",
+          "en": {
+            "texto": "Ceres, the largest in the belt",
+            "subtexto": "the belt is almost empty: you can cross it without seeing anything else"
+          },
+          "duracao": 6.5,
+          "ponte": true
+        }
+      ]
+    },
+    {
+      "qa": {
+        "passagemPorCeres": 0.4
+      },
+      "camera": {
+        "duracao": 6,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Ceres",
+          "de": "chegadaACeres",
+          "direcaoNoJoelho": "joelhoDeCeres",
+          "para": "saidaDeCeres",
+          "distanciaMinima": "raspaoDeCeres",
+          "joelho": 0.4,
+          "sigma": 0.16,
+          "alongamento": 0.5,
+          "chao": 0.18,
+          "expoentes": [
+            1.6,
+            1.45
+          ]
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Ceres",
+          "assunto": "Ceres",
+          "rumo": "Jupiter",
+          "entrada": 0.1,
+          "saida": 0.45
+        },
+        "lente": [
+          58,
+          58
+        ]
+      },
+      "assuntos": [
+        "jupiter"
+      ],
+      "fundoSilencioso": true,
+      "olhar": "assunto"
     }
   ]
 }

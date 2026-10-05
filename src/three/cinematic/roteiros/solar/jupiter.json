@@ -6,7 +6,7 @@
         "movimento": {
           "tipo": "aproximacao",
           "centro": "Jupiter",
-          "de": "saidaDaLua",
+          "de": "saidaDeCeres",
           "para": "chegadaAJupiter",
           "ritmoDaDirecao": "glide"
         },
