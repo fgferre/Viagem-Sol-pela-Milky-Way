@@ -1,5 +1,14 @@
 # Tritão com a receita inteira — relevo medido e inventado, cor real e inventada (plano, 04/10/2026)
 
+**PAUSADO por decisão dele (04/10):** *"acho q tritao esta bom hj, vamos tomar cuidado para nao piorar"*; escolheu
+comparar primeiro e, vista a prancha da primeira versão (`capturas/tritao/olhar/prancha-comparacao-v1.jpg`), *deixar
+como está*. O resultado: na face fotografada a receita fica mais real; no lado oposto a Netuno e no ápice — o que o
+Sol ilumina hoje — fica PIOR, porque a foto real ali é das de aproximação (17–47 km/px), borrada e com manchas de cor,
+e a M2 só põe detalhe fino por cima dela. A ideia para uma segunda tentativa, se ele pedir: tratar o lado borrado
+como nunca visto (alvo da M1, inventado nítido como o norte) e guardar da foto só o tom de escala muito grande.
+Tudo deste ramo é experimento: a normal medida e o bump zero de Tritão (`rochoso.ts`, `corpos.ts`) quebram o manifesto
+publicado se forem ao main sem o canal `normal` assado.
+
 Palavras dele: *"vamos tirar a sombra e tritao tb vamos fazer a receita"* (03/10, manhã); *"pode juntar ao principal e
 seguir com tritão"* (03/10, noite). A receita é a de Plutão e Caronte: o real onde existe, o inventado por código no
 resto, ancorado no real e confessado na ficha. Ramo de trabalho `tritao` (backup `git push -u origin tritao`);
