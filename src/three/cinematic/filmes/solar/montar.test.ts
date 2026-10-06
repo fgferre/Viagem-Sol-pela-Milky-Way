@@ -76,9 +76,9 @@ const plano = (nome: string) => {
 };
 
 describe('o filme solar monta', () => {
-  it('dura o prólogo no Sol, o ato I de Mercúrio a Ceres e os atos de fora da v3 (330–345 s), em cinco atos', () => {
+  it('dura o prólogo no Sol, o ato I de Mercúrio a Ceres e os atos de fora da v3 (330–360 s), em cinco atos', () => {
     expect(duracao).toBeGreaterThanOrEqual(330);
-    expect(duracao).toBeLessThanOrEqual(345);
+    expect(duracao).toBeLessThanOrEqual(360);
     expect(filme.planosPorAto).toHaveLength(5);
     expect(filme.planosPorAto[1]).toBe(16);
   });

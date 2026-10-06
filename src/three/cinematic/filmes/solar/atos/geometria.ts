@@ -52,6 +52,8 @@ export const IO = pino('io');
 export const SATURNO = pino('saturn');
 export const ENCELADO = pino('enceladus');
 export const HIPERION = pino('hyperion');
+export const TITA = pino('titan');
+export const JAPETO = pino('iapetus');
 
 export const R_MERCURIO = raioPc('mercury');
 export const R_VENUS = raioPc('venus');
@@ -64,6 +66,8 @@ export const R_IO = raioPc('io');
 export const R_SATURNO = raioPc('saturn');
 export const R_ENCELADO = raioPc('enceladus');
 export const R_HIPERION = raioPc('hyperion');
+export const R_TITA = raioPc('titan');
+export const R_JAPETO = raioPc('iapetus');
 /** o polo norte da eclíptica na cena (equatorial J2000): o cima do filme */
 export const CIMA_DA_ECLIPTICA = new THREE.Vector3(...eclipticaParaEquatorial([0, 0, 1])).normalize();
 
@@ -78,4 +82,5 @@ export const UA = AU_PARA_PC;
 export const PONTOS_DOS_CORPOS: Readonly<Record<string, THREE.Vector3>> = {
   Sol: SOL, Mercurio: MERCURIO, Venus: VENUS, Terra: TERRA, Lua: LUA, Marte: MARTE, Ceres: CERES,
   Jupiter: JUPITER, Io: IO, Saturno: SATURNO, Encelado: ENCELADO, Hiperion: HIPERION,
+  Tita: TITA, Japeto: JAPETO,
 };

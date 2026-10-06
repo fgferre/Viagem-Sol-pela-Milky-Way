@@ -99,7 +99,7 @@ describe('os pinos do filme solar são a efeméride', () => {
 
   it('traz todos os corpos que a câmera visita', () => {
     expect([...PINOS_SOLAR.keys()].sort()).toEqual([
-      'callisto', 'ceres', 'earth', 'enceladus', 'europa', 'ganymede', 'hyperion',
+      'callisto', 'ceres', 'earth', 'enceladus', 'europa', 'ganymede', 'hyperion', 'iapetus',
       'io', 'jupiter', 'mars', 'mercury', 'mimas', 'moon', 'saturn', 'sun', 'titan', 'venus',
     ]);
   });
@@ -148,11 +148,12 @@ describe('os pinos do filme solar são a efeméride', () => {
     expect(anguloAGrm(lua('europa'))).toBeGreaterThanOrEqual(30); // 38,0°
   });
 
-  it('no céu dos atos de fora, Encélado, Mimas e Hipérion estão fora da sombra, do lado aceso', () => {
+  it('no céu dos atos de fora, Encélado, Mimas, Hipérion e Jápeto estão fora da sombra, do lado aceso', () => {
     const encelado = anguloSubsolar('enceladus', 'saturn'); // 91,9°
     expect(encelado).toBeGreaterThanOrEqual(30);
     expect(encelado).toBeLessThanOrEqual(110);
     expect(anguloSubsolar('mimas', 'saturn')).toBeLessThan(110); // 83,2°
     expect(anguloSubsolar('hyperion', 'saturn')).toBeLessThan(110); // 4,3°
+    expect(anguloSubsolar('iapetus', 'saturn')).toBeLessThanOrEqual(110); // 64,4°
   });
 });

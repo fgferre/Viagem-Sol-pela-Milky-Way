@@ -31,8 +31,10 @@
 // Saturno — atrás do planeta, no escuro. −8 h foi escolhido quando JD2
 // ainda levava Io (o menor deslocamento, em horas inteiras até ±14 h,
 // que também a punha entre 60° e 110°); para Saturno sozinho −7 h já
-// bastaria, e −8 h fica: Encélado entre 30° e 110° (91,9°), Mimas e
-// Hipérion abaixo de 110° (83,2° e 4,3°). As trocas de relógio são
+// bastaria, e −8 h fica: Encélado entre 30° e 110° (91,9°), Mimas,
+// Hipérion e Jápeto abaixo de 110° (83,2°, 4,3° e 64,4°); Titã, a 165,2°,
+// está atrás de Saturno para quem vem do Sol, mas fora da sombra, e a
+// câmera a visita vindo do lado do planeta (atos/saturno.ts). As trocas de relógio são
 // rampas fora do quadro: JD_A → JD_J no fim da passagem por Ceres, com
 // Terra e Lua fora dele; JD_J → JD2 dentro da chegada a Saturno, com
 // Júpiter e as galileanas atrás da câmera (`trocas`, em montar.ts).
@@ -58,7 +60,7 @@ export type RelogioSolar = keyof typeof RELOGIOS_SOLAR;
 export const RELOGIO_DO_CORPO: ReadonlyMap<string, RelogioSolar> = new Map<string, RelogioSolar>([
   ...['mercury', 'venus', 'earth', 'moon', 'mars', 'ceres'].map((id) => [id, 'a'] as const),
   ...['jupiter', 'io', 'europa', 'ganymede', 'callisto'].map((id) => [id, 'jupiter'] as const),
-  ...['saturn', 'enceladus', 'hyperion', 'mimas', 'titan'].map((id) => [id, 'fora'] as const),
+  ...['saturn', 'enceladus', 'hyperion', 'mimas', 'titan', 'iapetus'].map((id) => [id, 'fora'] as const),
 ]);
 
 /** a Grande Mancha Vermelha onde a textura de Júpiter a desenha: latitude
@@ -86,6 +88,7 @@ export const PINOS_SOLAR: ReadonlyMap<string, THREE.Vector3> = new Map([
   ['hyperion', pc(0.000046040125708046430, 0.0000018896478021109211, -0.0000011978636953681793)],
   ['mimas', pc(0.000046091694337218732, 0.0000018872068914552442, -0.0000012021493217877019)],
   ['titan', pc(0.000046129645125509543, 0.0000018851619799281664, -0.0000012055865662989665)],
+  ['iapetus', pc(0.00004603851511844557, 0.0000019921492523755735, -0.0000011738771274674208)],
 ]);
 
 /** o pino de um corpo; corpo sem pino é erro de montagem, não silêncio */

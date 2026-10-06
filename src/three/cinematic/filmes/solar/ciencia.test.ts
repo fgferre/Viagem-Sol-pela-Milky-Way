@@ -18,6 +18,7 @@ import { AU_KM } from '../../../../lib/atlas/elementosOrbitais';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../../lib/atlas/frameGalactico';
 import { BODY_AXES } from '../../../../lib/atlas/iauOrientation';
 import { ANEL_SATURNO } from '../../../world/corpos/gigante';
+import { RELEVO_DA_LUA } from '../../../world/corpos/rochoso';
 import { RAIO_SOL_KM } from '../../../escala';
 import { faseDoCiclo } from '../../../estrela';
 
@@ -224,26 +225,55 @@ describe('os números das legendas batem com a conta', () => {
     expect(falaEn(c)).toContain('Voyager 1 saw the first volcano beyond Earth here, in 1979');
   });
 
-  it('Saturno: 9,5 UA do Sol e 79 minutos-luz', () => {
-    const ua = emUA(SATURNO);
-    const c = legenda('Saturno: ');
+  it('Saturno: 9,5 UA do Sol, 79 minutos-luz e 1 % da luz da Terra (no céu de JD2)', () => {
+    const ua = emUA(SATURNO); // medido 9,518 UA: 79,2 minutos-luz
+    const c = legenda('Saturno —');
     expect(falaPt(c)).toContain(`${pt(ua, 1)} UA`);
+    // a legenda entra quando a câmera já chegou: o HUD também diz 9,5 UA
+    expect(pt(emUA(camera(c.t)), 1)).toBe(pt(ua, 1));
     expect(falaPt(c)).toContain(`${Math.round(minutosLuz(ua))} minutos`);
     expect(falaEn(c)).toContain(`${en(ua, 1)} AU`);
     expect(falaEn(c)).toContain(`${Math.round(minutosLuz(ua))} minutes`);
+    // 1/d²: 1,10 % do que o Sol dá a 1 UA e 1,07 % do que a Terra recebe no
+    // mesmo céu (0,983 UA) — "1 %" é o arredondamento ao inteiro das duas
+    const porCento = 100 / maisFraco(ua, TERRA_EM_JD2);
+    expect(Math.round(porCento)).toBe(1);
+    expect(Math.round(100 / ua ** 2)).toBe(1);
+    expect(falaPt(c)).toContain(`${Math.round(porCento)} % da luz da Terra`);
+    expect(falaEn(c)).toContain(`${Math.round(porCento)}% of Earth's light`);
   });
 
-  it('os anéis: 280 mil km de ponta a ponta (o anel desenhado, até o F) e menos de 1 km de espessura', () => {
+  it('os anéis: gelo, 280 mil km de ponta a ponta (o anel desenhado, até o F), dezenas de metros de espessura e talvez menos de 100 milhões de anos', () => {
     const milKm = Math.round((2 * ANEL_SATURNO.rExt * BODY_AXES.saturn[0]) / 1000);
     const c = legenda('de ponta a ponta');
-    expect(falaPt(c)).toContain(`${milKm} mil km`);
-    expect(falaEn(c)).toContain(`${milKm},000 km`);
-    // espessura vertical dos anéis principais: de ~10 m a ~1 km (Cassini;
+    // mais de 95 % gelo de água (Cuzzi et al. 2010, Science 327, 1470)
+    expect(c.text.startsWith('Gelo:')).toBe(true);
+    expect(c.en?.text.startsWith('Ice:')).toBe(true);
+    expect(falaPt(c)).toContain(`${milKm} mil km de ponta a ponta`);
+    expect(falaEn(c)).toContain(`${milKm},000 km end to end`);
+    // espessura vertical local dos anéis principais: de ~10 m a algumas
+    // dezenas de metros, até ~1 km só nas bordas e ondas (Cassini;
     // Tiscareno & Murray, Planetary Ring Systems, 2018). A laje do app tem
     // ±12 km — o texto fala do real, não da laje.
-    const ESPESSURA_REAL_MAXIMA_KM = 1;
-    expect(falaPt(c)).toContain(`menos de ${ESPESSURA_REAL_MAXIMA_KM} km`);
-    expect(falaEn(c)).toContain(`less than ${ESPESSURA_REAL_MAXIMA_KM} km`);
+    expect(falaPt(c)).toContain('dezenas de metros de espessura');
+    expect(falaEn(c)).toContain('tens of metres thick');
+    // a idade: pela massa medida no Grand Finale, de 10 a 100 milhões de
+    // anos (Iess et al. 2019, Science 364, eaat2965) — debatida, por isso
+    // "talvez" e "podem ter"
+    expect(falaPt(c)).toContain('talvez jovens — podem ter menos de 100 milhões de anos');
+    expect(falaEn(c)).toContain('perhaps young — they may be less than 100 million years old');
+  });
+
+  it('Encélado: gêiseres de um oceano salgado sob o gelo, e a Cassini voou dentro deles em 2015', () => {
+    // o sal nos grãos da pluma vem de água líquida (Postberg et al. 2011,
+    // Nature 474, 620) e o oceano é global (Thomas et al. 2016, Icarus
+    // 264, 37); o mergulho mais fundo da Cassini na pluma, a 49 km do polo
+    // sul, foi o sobrevoo E21, em 28 de outubro de 2015
+    const c = legenda('Encélado —');
+    expect(falaPt(c)).toContain('gêiseres de um oceano salgado sob o gelo');
+    expect(falaPt(c)).toContain('a Cassini voou dentro deles em 2015');
+    expect(falaEn(c)).toContain('geysers from a salty ocean under the ice');
+    expect(falaEn(c)).toContain('Cassini flew through them in 2015');
   });
 
   it('Hipérion: 270 km (diâmetro médio, a esfera de BODY_AXES)', () => {
@@ -251,6 +281,43 @@ describe('os números das legendas batem com a conta', () => {
     const c = legenda('Hipérion');
     expect(falaPt(c)).toContain(`${km} km`);
     expect(falaEn(c)).toContain(`${km} km`);
+  });
+
+  it('Titã: a única lua com ar denso, e a Huygens pousou nela em 2005', () => {
+    // 1,5 bar no chão, medido pela Huygens (Fulchignoni et al. 2005, Nature
+    // 438, 785) — nenhuma outra lua tem mais que traços de ar; o pouso foi
+    // em 14 de janeiro de 2005 (Lebreton et al. 2005, Nature 438, 758)
+    const c = legenda('Titã —');
+    expect(falaPt(c)).toContain('a única lua com ar denso');
+    expect(falaPt(c)).toContain('a Huygens pousou aqui em 2005');
+    expect(falaEn(c)).toContain('the only moon with a thick atmosphere');
+    expect(falaEn(c)).toContain('Huygens landed here in 2005');
+  });
+
+  it('Jápeto: uma cara preta e outra branca, e uma muralha de até 20 km no equador (o relevo desenhado vai até 20 km)', () => {
+    // a face da frente na órbita reflete poucos por cento da luz e a de
+    // trás mais da metade (Spencer & Denk 2010, Science 327, 432); a
+    // crista equatorial chega a 20 km de altura (Giese et al. 2008, Icarus
+    // 193, 359); o relevo desenhado (sintético, rochoso.ts) tem amplitude
+    // de escala × raio = 20,0 km
+    const km = Math.round(RELEVO_DA_LUA.iapetus.escala * BODY_AXES.iapetus[0]);
+    expect(km).toBe(20);
+    const c = legenda('Jápeto —');
+    expect(falaPt(c)).toContain('uma cara preta, outra branca');
+    expect(falaPt(c)).toContain(`no equador corre uma muralha de até ${km} km`);
+    expect(falaEn(c)).toContain('one face black, the other white');
+    expect(falaEn(c)).toContain(`a wall up to ${km} km high runs along its equator`);
+  });
+
+  it('a Cassini mergulhou em Saturno em 15 de setembro de 2017, de propósito', () => {
+    // o fim do Grand Finale: sem combustível, a Cassini foi lançada na
+    // atmosfera de Saturno para nunca cair numa lua que pode ter vida,
+    // como Encélado ou Titã (NASA/JPL, fim da missão Cassini)
+    const c = legenda('Cassini mergulhou');
+    expect(falaPt(c)).toContain('Em 15 de setembro de 2017');
+    expect(falaPt(c)).toContain('de propósito, para nunca contaminar as luas');
+    expect(falaEn(c)).toContain('On 15 September 2017');
+    expect(falaEn(c)).toContain('on purpose, so it could never contaminate the moons');
   });
 
   it('“a 10 UA, 100 vezes mais fraco” é onde a câmera está quando a legenda entra', () => {

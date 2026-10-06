@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (05/10, tarde da conversa nova) — VIAGEM SOLAR NO RAMO `viagem-solar`, ATOS I E II PRONTOS; O MODO COORDENADOR + AUTORES EM FILA FUNCIONOU
+## O BASTÃO — onde a rodada parou (05/10, tarde da conversa nova) — VIAGEM SOLAR NO RAMO `viagem-solar`, ATOS I, II E III PRONTOS; O MODO COORDENADOR + AUTORES EM FILA FUNCIONOU
 
 **Estado:** o segundo filme existe e toca de ponta a ponta no ramo
 `viagem-solar` (backup `origin/viagem-solar`; nada no `main`, nada
@@ -27,8 +27,13 @@ crescendo com a Grande Mancha de frente (relógio próprio do ato, 01/01
 lado, Europa com o gelo rachado, o quase-sol com o Sol espinhoso no quadro
 ao lado de Júpiter meia-lua, e a saída entregando Saturno. Antes da onda,
 a geometria do filme foi separada por ato e os planos ganharam nome
-(filme bit a bit igual). Ato II 64 s; filme 338 s; segue Saturno da v3
-(a refazer pelo roteiro). Folha: `capturas/viagem-solar/v4-ato2/`.
+(filme bit a bit igual). Ato II 64 s. E, em 05–06/10, o Ato III pelo roteiro: a chegada pelos
+anéis com a legenda honesta, o rasante, Encélado com a pluma em contraluz,
+Titã (bola laranja, pelo lado de Saturno), Jápeto (as duas caras; a crista
+foi para a fila de assets), Hipérion religado e o postal com a despedida
+da Cassini. Ato III 90 s; filme 351 s. Folhas: `capturas/viagem-solar/v4-ato2/`
+e `v4-ato3/`. A máquina caiu uma vez no meio (gravações pesadas); regra
+nova: uma gravação de cada vez, curta, servidor fechado entre elas.
 
 **Palavras dele nesta rodada:** *"onde está o sol nesse filme?"*;
 *"temos tantos objetos interessantes... que a gente poderia estar
@@ -40,8 +45,7 @@ fazer menos braçal"*. As sete decisões dele (6 min, 24 lugares, todos os
 opcionais, Lua no quarto, luz honesta em Plutão, som depois, ponte,
 botões) estão no roteiro §4; os assets fracos viraram o item 230.
 
-**Falta (na ordem do plano, "Como continuar"):** Ato III (Titã, Jápeto,
-Cassini), Ato IV (Urano, Netuno/Tritão, Plutão/Caronte com o beat de
+**Falta (na ordem do plano, "Como continuar"):** Ato IV (Urano, Netuno/Tritão, Plutão/Caronte com o beat de
 luz), Epílogo (retrato de família, a mesma luz + ponte); depois a F4
 (legenda sobre fundo claro, o Sol virando ponto de repente, o Sol pelo
 relógio da tela, quadros pretos de NaN perto do joelho da Lua com
@@ -506,6 +510,12 @@ Vênus (só o topo das nuvens — correto visto de fora; a superfície é radar)
 Jápeto (altura sintética na crista; a crista real é o que o filme mostra).
 Acrescentada em 05/10, vista na prova do Ato II do filme solar: Europa (o
 mapa é monocromático — as rachaduras saem pretas, não avermelhadas).
+Jápeto, visto no Ato III (05/10): o relevo sintético desenha a crista do
+equador de 332°L a 136°L, meia volta fora do lugar da crista real da foto
+(227–303°L); em 1º/01 a real estaria no lado do dia (ponto subsolar a
+9,2°S 244,7°L) e a desenhada cai na noite — o filme mostra as duas caras e
+deixa a crista como fato na legenda. Conserto provável: girar o mapa de
+altura 180° ou refazê-lo pela foto.
 Obra a desenhar quando chegar a vez, pela receita das rodadas de Plutão,
 Caronte e Hipérion (fonte com licença, extrapolação confessada, prova por
 foto); o filme solar (roteiro em `docs/ROTEIRO-VIAGEM-SOLAR.md`) é quem

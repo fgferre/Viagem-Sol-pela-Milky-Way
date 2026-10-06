@@ -20,10 +20,10 @@
       "fundoSilencioso": true,
       "legendas": [
         {
-          "em": 0.03,
-          "texto": "Saturno: 9,5 UA do Sol",
-          "subtexto": "A luz leva 79 minutos",
-          "en": {"texto": "Saturn: 9.5 AU from the Sun", "subtexto": "Light takes 79 minutes"},
+          "em": 0.42,
+          "texto": "Saturno — 9,5 UA",
+          "subtexto": "a luz leva 79 minutos; aqui o Sol dá 1 % da luz da Terra",
+          "en": {"texto": "Saturn — 9.5 AU", "subtexto": "light takes 79 minutes; here the Sun gives 1% of Earth's light"},
           "duracao": 8
         }
       ]
@@ -61,10 +61,13 @@
       "legendas": [
         {
           "em": 0.04,
-          "texto": "280 mil km de ponta a ponta",
-          "subtexto": "e menos de 1 km de espessura",
-          "en": {"texto": "280,000 km from edge to edge", "subtexto": "and less than 1 km thick"},
-          "duracao": 7.5
+          "texto": "Gelo: 280 mil km de ponta a ponta, dezenas de metros de espessura",
+          "subtexto": "e talvez jovens — podem ter menos de 100 milhões de anos",
+          "en": {
+            "texto": "Ice: 280,000 km end to end, tens of metres thick",
+            "subtexto": "and perhaps young — they may be less than 100 million years old"
+          },
+          "duracao": 9
         }
       ],
       "olhar": "assunto"
@@ -102,11 +105,11 @@
       "legendas": [
         {
           "em": 0.36,
-          "texto": "Encélado",
-          "subtexto": "Gêiseres de água salgada, de um oceano sob o gelo",
+          "texto": "Encélado — gêiseres de um oceano salgado sob o gelo",
+          "subtexto": "a Cassini voou dentro deles em 2015",
           "en": {
-            "texto": "Enceladus",
-            "subtexto": "Geysers of salty water, from an ocean beneath the ice"
+            "texto": "Enceladus — geysers from a salty ocean under the ice",
+            "subtexto": "Cassini flew through them in 2015"
           },
           "duracao": 7
         }
@@ -131,22 +134,189 @@
       "olhar": "tras"
     },
     {
-      "nome": "hiperionRaspao",
-      "qa": {"hiperion": 0.55},
+      "nome": "titaChegada",
       "camera": {
-        "duracao": 13,
+        "duracao": 2.2,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Tita",
+          "de": "saidaDeEncelado",
+          "direcaoNoJoelho": "joelhoDeTita",
+          "para": "saidaDeTita",
+          "distanciaMinima": "raspaoDeTita",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0, 0.2]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Tita"},
+        "lente": [58, 58],
+        "ritmo": "launch"
+      },
+      "preload": {"corpos": ["iapetus"]},
+      "assuntos": ["titan"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "titaRaspao",
+      "qa": {"tita": 0.45},
+      "camera": {
+        "duracao": 7.5,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Tita",
+          "de": "saidaDeEncelado",
+          "direcaoNoJoelho": "joelhoDeTita",
+          "para": "saidaDeTita",
+          "distanciaMinima": "raspaoDeTita",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0.2, 1]
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Tita",
+          "assunto": "Tita",
+          "rumo": "Japeto",
+          "entrada": 0.1,
+          "saida": 0.88
+        },
+        "lente": [58, 58],
+        "ritmo": "settle"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.08,
+          "texto": "Titã — a única lua com ar denso",
+          "subtexto": "mares de metano; a Huygens pousou aqui em 2005",
+          "en": {
+            "texto": "Titan — the only moon with a thick atmosphere",
+            "subtexto": "methane seas; Huygens landed here in 2005"
+          },
+          "duracao": 6.5
+        }
+      ]
+    },
+    {
+      "nome": "japetoChegada",
+      "camera": {
+        "duracao": 2.1,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Japeto",
+          "de": "saidaDeTita",
+          "direcaoNoJoelho": "joelhoDeJapeto",
+          "para": "saidaDeJapeto",
+          "distanciaMinima": "raspaoDeJapeto",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0, 0.2]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Japeto"},
+        "lente": [58, 58],
+        "ritmo": "launch"
+      },
+      "assuntos": ["iapetus"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "japetoRaspao",
+      "qa": {"japeto": 0.45},
+      "camera": {
+        "duracao": 7,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Japeto",
+          "de": "saidaDeTita",
+          "direcaoNoJoelho": "joelhoDeJapeto",
+          "para": "saidaDeJapeto",
+          "distanciaMinima": "raspaoDeJapeto",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0.2, 1]
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Japeto",
+          "assunto": "Japeto",
+          "rumo": "Hiperion",
+          "entrada": 0.1,
+          "saida": 0.9
+        },
+        "lente": [58, 58],
+        "ritmo": "settle"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.1,
+          "texto": "Jápeto — uma cara preta, outra branca",
+          "subtexto": "no equador corre uma muralha de até 20 km",
+          "en": {
+            "texto": "Iapetus — one face black, the other white",
+            "subtexto": "a wall up to 20 km high runs along its equator"
+          },
+          "duracao": 6
+        }
+      ]
+    },
+    {
+      "nome": "hiperionChegada",
+      "camera": {
+        "duracao": 1.7,
         "movimento": {
           "tipo": "raspao",
           "centro": "Hiperion",
-          "de": "saidaDeEncelado",
+          "de": "saidaDeJapeto",
           "direcaoNoJoelho": "joelhoDeHiperion",
           "para": "postal1",
           "distanciaMinima": "raspaoDeHiperion",
-          "joelho": 0.55,
-          "sigma": 0.16,
-          "alongamento": 0.64,
-          "chao": 0.18,
-          "expoentes": [1.6, 1.45]
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0, 0.2]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Hiperion"},
+        "lente": [58, 58],
+        "ritmo": "launch"
+      },
+      "assuntos": ["hyperion"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "hiperionRaspao",
+      "qa": {"hiperion": 0.36},
+      "camera": {
+        "duracao": 5.8,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Hiperion",
+          "de": "saidaDeJapeto",
+          "direcaoNoJoelho": "joelhoDeHiperion",
+          "para": "postal1",
+          "distanciaMinima": "raspaoDeHiperion",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0.2, 1]
         },
         "mira": {
           "tipo": "passagem",
@@ -154,19 +324,20 @@
           "assunto": "Hiperion",
           "rumo": "Saturno",
           "entrada": 0.1,
-          "saida": 0.72
+          "saida": 0.8
         },
-        "lente": [58, 58]
+        "lente": [58, 58],
+        "ritmo": "settle"
       },
       "fundoSilencioso": true,
       "olhar": "assunto",
       "legendas": [
         {
-          "em": 0.3,
+          "em": 0.07,
           "texto": "Hipérion",
           "subtexto": "Uma esponja de gelo de 270 km",
           "en": {"texto": "Hyperion", "subtexto": "A 270 km sponge of ice"},
-          "duracao": 6
+          "duracao": 3.3
         }
       ]
     },
@@ -186,7 +357,19 @@
         "lente": [58, 50]
       },
       "fundoSilencioso": true,
-      "olhar": "assunto"
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.1,
+          "texto": "Em 15 de setembro de 2017 a Cassini mergulhou aqui",
+          "subtexto": "de propósito, para nunca contaminar as luas",
+          "en": {
+            "texto": "On 15 September 2017 Cassini plunged in here",
+            "subtexto": "on purpose, so it could never contaminate the moons"
+          },
+          "duracao": 7.5
+        }
+      ]
     }
   ]
 }
