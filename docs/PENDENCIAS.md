@@ -4,7 +4,21 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (06/10) — VIAGEM SOLAR NO RAMO `viagem-solar`: FILME INTEIRO (395 s) + RODADA DE ACABAMENTO FEITA; FALTAM AS DECISÕES DELE PELO VÍDEO E O MERGE
+## O BASTÃO — onde a rodada parou (06/10, noite) — FILME SOLAR PUBLICADO NO AR; A PRÓXIMA SESSÃO COMEÇA EM MODO DE PLANEJAMENTO PELA RODADA DO PONTO DE LUZ
+
+**Publicado em 06/10 por ele** (`git push origin main`, avanço simples do ramo
+`viagem-solar`; publicação verde; conferido no ar na chegada a Júpiter). Ao
+olhar o site no ar apareceu um ponto branco sobre Júpiter (Europa em
+trânsito) — a mesma causa da Terra pequena estourada: o ponto de luz que não
+cede ao globo. Palavras dele: *"me parece um problema que deve estar
+atingindo alguns outros objetos que são iluminados pelo Sol [...] um sprite
+luminoso vira o objeto 3D dependendo da distância"* — certo; e, ao fechar:
+*"vamos fazer o handoff para montarmos um plano para isso na próxima sessão
+[...] entrar em modo de planejamento"*. Os fatos levantados e a regra
+combinada estão em `PLAN-VIAGEM-SOLAR.md` › "Como continuar" › PRÓXIMA
+SESSÃO. Nada foi mexido no código depois da publicação.
+
+## O BASTÃO anterior (06/10) — VIAGEM SOLAR NO RAMO `viagem-solar`: FILME INTEIRO (395 s) + RODADA DE ACABAMENTO FEITA; FALTAM AS DECISÕES DELE PELO VÍDEO E O MERGE
 
 **Estado:** o segundo filme existe e toca de ponta a ponta no ramo
 `viagem-solar` (backup `origin/viagem-solar`; nada no `main`, nada
