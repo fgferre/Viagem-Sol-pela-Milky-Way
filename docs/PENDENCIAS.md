@@ -18,6 +18,24 @@ luminoso vira o objeto 3D dependendo da distância"* — certo; e, ao fechar:
 combinada estão em `PLAN-VIAGEM-SOLAR.md` › "Como continuar" › PRÓXIMA
 SESSÃO. Nada foi mexido no código depois da publicação.
 
+**Decisões dele em 06/10, respondidas nesta conversa (oito perguntas):**
+(1) a legenda de Júpiter fica com "28 vezes" (o número honesto da data);
+(2) o quase-sol fica como está, com a lanterna da luz assistida; (3)
+Europa e Jápeto: *"Priorizar Europa e Jápeto"* — rodada de assets dos dois
+antes de outras rodadas (item 230: Europa em cor, a crista de Jápeto no
+lugar certo); (4) Hipérion: aceita a face nova; (5) o véu atrás da
+legenda: *"Tentar só sombra no texto"* — trocar o véu desfocado por sombra
+mais forte nas letras e provar sobre o Sol e sobre o chão da Lua; se não
+ler, voltar ao véu; (6) o fio azul no limbo da Terra: aceito; (7) duração:
+manter 6 min 35 s; (8) Caronte: deixar como está, no limite.
+
+**Ordem combinada para as próximas sessões:** a rodada do ponto de luz
+(plano em modo de planejamento), a sombra da legenda (pequena, junto), e
+em seguida a rodada de assets de Europa e Jápeto. Ficam depois: os nomes
+(E4c; o rótulo de Saturno cortado no celular), a linha da lente sobre o Sol
+e a dica de gestos sobre o limbo no celular, "More" cortado a 375 px em
+inglês, Netuno/Tritão sumindo num salto do roteiro.
+
 ## O BASTÃO anterior (06/10) — VIAGEM SOLAR NO RAMO `viagem-solar`: FILME INTEIRO (395 s) + RODADA DE ACABAMENTO FEITA; FALTAM AS DECISÕES DELE PELO VÍDEO E O MERGE
 
 **Estado:** o segundo filme existe e toca de ponta a ponta no ramo
@@ -548,7 +566,8 @@ equador de 332°L a 136°L, meia volta fora do lugar da crista real da foto
 (227–303°L); em 1º/01 a real estaria no lado do dia (ponto subsolar a
 9,2°S 244,7°L) e a desenhada cai na noite — o filme mostra as duas caras e
 deixa a crista como fato na legenda. Conserto provável: girar o mapa de
-altura 180° ou refazê-lo pela foto.
+altura 180° ou refazê-lo pela foto. **Decisão dele em 06/10: *"Priorizar
+Europa e Jápeto"* — os dois sobem para o topo desta fila.**
 Obra a desenhar quando chegar a vez, pela receita das rodadas de Plutão,
 Caronte e Hipérion (fonte com licença, extrapolação confessada, prova por
 foto); o filme solar (roteiro em `docs/ROTEIRO-VIAGEM-SOLAR.md`) é quem
