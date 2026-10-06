@@ -880,3 +880,39 @@ describe('o "cima" do filme — cada filme pode declarar o seu polo (viagem sola
     );
   });
 });
+
+describe('o corte seco (F4) — o plano que abre num corte não herda a junta', () => {
+  // dois planos parados no mesmo lugar: o primeiro gira a mira a ~20°/s
+  // e termina a 20° do eixo X; o segundo começa 90° ao lado, com outra lente
+  const origem = still(new THREE.Vector3());
+  const giro = (k: number, out: THREE.Vector3) => out.set(Math.cos(k * 0.35), Math.sin(k * 0.35), 0);
+  const filme = (corte?: boolean) => new Journey([
+    { dur: 1, pos: origem, look: giro, fov0: 40, fov1: 40 },
+    { dur: 2, pos: origem, look: still(new THREE.Vector3(0, 0, 1)), fov0: 60, fov1: 60, corte },
+  ] satisfies Shot[], [0, 1]);
+  /** o play a 30 fps até `t0 + n/30`; devolve o erro de mira (°) e as lentes do rig e do roteiro */
+  const tocar = (journey: InstanceType<typeof Journey>, n: number) => {
+    const rig = new JourneyRig(journey);
+    const cam = new THREE.PerspectiveCamera();
+    rig.reset();
+    for (let q = 0; q <= 30 + n; q++) rig.apply(cam, q / 30, 1 / 30);
+    const dir = cam.getWorldDirection(new THREE.Vector3());
+    const erro = THREE.MathUtils.radToDeg(dir.angleTo(new THREE.Vector3(0, 0, 1)));
+    return { erro, fov: cam.fov, fovDoRoteiro: journey.at((30 + n) / 30).fov };
+  };
+
+  it('com `corte`, o 1º quadro depois da junta já é o plano novo: mira e lente, sem resíduo', () => {
+    for (const n of [0, 1]) {
+      const { erro, fov, fovDoRoteiro } = tocar(filme(true), n);
+      expect(erro, `mira em t0 + ${n}/30 s (°)`).toBeLessThan(1e-9);
+      expect(fov, `lente em t0 + ${n}/30 s`).toBe(fovDoRoteiro);
+    }
+    // sem o campo, a mola de sempre: o mesmo quadro ainda carrega o plano velho
+    const { erro, fov } = tocar(filme(), 1);
+    expect(erro).toBeGreaterThan(45);
+    expect(fov).toBeLessThan(45);
+    // o filme galáctico não declara corte nenhum: a junta dele é a de antes
+    const galactico = new Journey();
+    expect(auditarRoteiro().shots.some((_, i) => galactico.abreNumCorte(i))).toBe(false);
+  });
+});

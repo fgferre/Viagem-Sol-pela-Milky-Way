@@ -194,6 +194,19 @@
     top: calc(6.5vh + 4.6rem);
     right: 5vw;
   }
+  /* o selo do filme (F4) segue a coluna para o alto, logo abaixo da
+     lente — e a gaveta passa a abrir PARA BAIXO, senão sairia da tela */
+  .hud-root[data-fase='journey'] .atlas-selo {
+    bottom: auto;
+    top: calc(6.5vh + 5.8rem);
+    right: 5vw;
+  }
+  .hud-root[data-fase='journey'] .atlas-selo-detalhe {
+    bottom: auto;
+    top: 100%;
+    margin: 0.3rem 0 0;
+    transform-origin: top right;
+  }
 
   /* LOTE 8 (M7): mesmo corte da mesa — Fraunces não leva o rastro
      largo da pele A. */

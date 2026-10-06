@@ -372,6 +372,20 @@ describe('lerPlanoDeCamera — item 75', () => {
     expect(filme.at(base.duracao * 1.5).luz).toBe(1);
   });
 
+  it('lê o corte seco (F4) como true ou false, recusa outro tipo, e o relógio diz qual plano abre num corte', async () => {
+    const semCorte = lerPlanoDeCamera(base);
+    expect(semCorte.corte).toBeUndefined();
+    const comCorte = lerPlanoDeCamera({ ...base, corte: true });
+    expect(comCorte.corte).toBe(true);
+    expect(lerPlanoDeCamera({ ...base, corte: false }).corte).toBe(false);
+    for (const corte of ['sim', 1, null]) {
+      expect(() => lerPlanoDeCamera({ ...base, corte })).toThrow(/Roteiro: corte deve ser true ou false/);
+    }
+    const { Journey } = await import('./journey');
+    const filme = new Journey([semCorte, comCorte], [0, base.duracao]);
+    expect([filme.abreNumCorte(0), filme.abreNumCorte(1)]).toEqual([false, true]);
+  });
+
   it('recusa dados inválidos antes de entregá-los à câmera, com o campo no erro', () => {
     const casos: [unknown, RegExp][] = [
       [null, /plano/],

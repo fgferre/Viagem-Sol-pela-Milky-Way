@@ -18,7 +18,9 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA, RAIO_SOL_PC } from '../escala';
+import { EPOCA_JD_TDB } from './planetas/retrato2026';
 import {
   RADIANCIA_DA_FOTOSFERA,
   comprimir,
@@ -28,11 +30,15 @@ import {
   SOL_PARAMS,
   SOL_ROT_PERIOD_DAYS,
   StellarBody,
+  anguloDoGiro,
+  cirurgiaDaCoroaOcultavel,
   cirurgiaDaFotosfera,
+  coroaOcultavel,
   epsilonDeSegmentoGlsl,
   literalGlsl,
   rotSpeedFromPeriod,
 } from './stellarBody';
+import { uvMeshVertex } from './sol/common.js';
 
 describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
   it('raio: é o FÍSICO, pela fonte única do cadastro (F3)', () => {
@@ -60,6 +66,25 @@ describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
   it('rotação: a âncora é a RELAÇÃO — meio período gira o dobro', () => {
     expect(rotSpeedFromPeriod(SOL_ROT_PERIOD_DAYS / 2)).toBeCloseTo(0.084, 12);
     expect(rotSpeedFromPeriod(SOL_ROT_PERIOD_DAYS * 4)).toBeCloseTo(0.0105, 12);
+  });
+
+  it('o giro com relógio de cena é a DATA: mesmo instante, mesma face, venha de onde vier', () => {
+    const P = SOL_ROT_PERIOD_DAYS;
+    const jd = EPOCA_JD_TDB + 9.3;
+    // o ângulo anterior e o tempo de tela não entram: duas sessões que
+    // chegam ao mesmo instante do filme por caminhos diferentes batem
+    const a = anguloDoGiro(0, 0.042, 0.016, jd, P);
+    expect(anguloDoGiro(5.7, 0.042, 0.1, jd, P)).toBe(a);
+    // ω·(JD − JD0)·86400 com ω = 2π/(P·86400), reduzido a uma volta
+    expect(a).toBeCloseTo((2 * Math.PI * 9.3) / P, 8);
+    expect(anguloDoGiro(0, 0.042, 0, jd + P, P)).toBeCloseTo(a, 9);
+    // na época da casa (a data da abertura do galáctico) é o de nascença
+    expect(anguloDoGiro(1.2, 0.042, 0.016, EPOCA_JD_TDB, P)).toBe(0);
+    // sem relógio (Atlas, voo livre) é o de sempre, bit a bit: soma o passo de tela
+    expect(anguloDoGiro(1.25, 0.042, 0.016, null, P)).toBe(1.25 + 0.042 * 0.016);
+    expect(anguloDoGiro(1.25, 0.042, 0.016, NaN, P)).toBe(1.25 + 0.042 * 0.016);
+    // período inválido não gira
+    expect(anguloDoGiro(0.5, 0, 0.016, jd, 0)).toBe(0.5);
   });
 
   it('rotação: período inválido não gira (0), nunca NaN', () => {
@@ -465,5 +490,100 @@ describe('F2 — o filtro solar: clamp, cache e no-op de porta fechada', () => {
     expect(s.ctx.sunUniforms.uFiltroSolar.value).toBe(0.6);
     escrever(s, Number.POSITIVE_INFINITY);
     expect(s.ctx.sunUniforms.uFiltroSolar.value).toBe(0.6);
+  });
+});
+
+// ============================================================
+// F4 — A COROA ATRÁS DE UM CORPO (o anel laranja pintado sobre a Terra
+// no último plano do filme solar). Mesma regra da F2: a cirurgia é de
+// texto sobre o vendorizado, e a agulha lê os arquivos REAIS.
+// ============================================================
+describe('F4 — a coroa testa profundidade contra os globos, na frente do próprio Sol', () => {
+  /** a escrita de posição dos dois raymarches, linha do array do vendorizado */
+  const ESCRITA_DO_RAYMARCH = "'  gl_Position = projectionMatrix * viewMatrix * w;',";
+  const vertexDoRaymarch = [
+    'varying vec3 vWorld;',
+    'void main(){',
+    '  vec4 w = modelMatrix * vec4(position, 1.0);',
+    '  vWorld = w.xyz;',
+    '  gl_Position = projectionMatrix * viewMatrix * w;',
+    '}',
+  ].join('\n');
+
+  it('AGULHA: os três planos têm UMA escrita de gl_Position no vertex, e a cirurgia a acha', () => {
+    // o plano de raias usa o vertex comum; volume e CME, o do raymarch
+    expect(() => cirurgiaDaCoroaOcultavel(uvMeshVertex, RAIO_SOL_PC)).not.toThrow();
+    for (const arquivo of ['./sol/coronaVolume.js', './sol/cme.js']) {
+      const js = readFileSync(new URL(arquivo, import.meta.url), 'utf8');
+      expect(js.split(ESCRITA_DO_RAYMARCH)).toHaveLength(2);
+    }
+    expect(() => cirurgiaDaCoroaOcultavel(vertexDoRaymarch, RAIO_SOL_PC)).not.toThrow();
+  });
+
+  it('só o z muda: a escrita original fica, x/y/w e varyings não são tocados', () => {
+    const novo = cirurgiaDaCoroaOcultavel(vertexDoRaymarch, RAIO_SOL_PC);
+    expect(novo.match(/gl_Position = projectionMatrix \* viewMatrix \* w;/g)).toHaveLength(1);
+    expect(novo).toContain('vWorld = w.xyz;');
+    expect(novo.match(/gl_Position\.z = /g)).toHaveLength(1);
+    expect(novo).not.toMatch(/gl_Position\.(x|y|w|xy|xyz|xyw)\s*=/);
+    // a metade do caminho, o plano tangente com folga de 5 % do raio (de
+    // perto) e o teto de quatro degraus antes do fundo — o da sonda do clarão
+    expect(novo).toContain('min(0.5 * zCoroaCentro, zCoroaCentro - ' + literalGlsl(RAIO_SOL_PC * 1.05) + ')');
+    expect(novo).toContain('min(zCoroaDepois, 1.0 - 4.8e-7)');
+    const clarao = readFileSync(new URL('./clarao.ts', import.meta.url), 'utf8');
+    expect(clarao).toContain('gl_Position.w * (1.0 - 4.8e-7)');
+    // nunca puxa para trás nem desfaz o recorte de near/far
+    expect(novo).toContain('clamp(zCoroaDepois, -1.0, zCoroaAntes)');
+    expect(novo).toContain('zCoroaAntes >= -1.0 && zCoroaAntes <= 1.0');
+  });
+
+  it('âncora ausente, repetida ou cirurgia dupla LANÇA — nunca no-op silencioso', () => {
+    expect(() => cirurgiaDaCoroaOcultavel('void main(){ }', RAIO_SOL_PC)).toThrow(/cirurgiaDaCoroaOcultavel/);
+    const duas = 'void main(){\n  gl_Position = vec4(0.0);\n  gl_Position = vec4(1.0);\n}';
+    expect(() => cirurgiaDaCoroaOcultavel(duas, RAIO_SOL_PC)).toThrow(/cirurgiaDaCoroaOcultavel/);
+    const uma = cirurgiaDaCoroaOcultavel(uvMeshVertex, RAIO_SOL_PC);
+    expect(() => cirurgiaDaCoroaOcultavel(uma, RAIO_SOL_PC)).toThrow(/cirurgiaDaCoroaOcultavel/);
+  });
+
+  it('o plano passa a testar profundidade e fica na fila transparente, na ordem do vendorizado', () => {
+    // o plano de raias como `sol/coronaRays.js` o cria
+    const material = new THREE.ShaderMaterial({
+      vertexShader: uvMeshVertex,
+      fragmentShader: 'void main(){ gl_FragColor = vec4(0.0); }',
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: false,
+    });
+    const plano = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
+    plano.renderOrder = -1;
+    coroaOcultavel(material, RAIO_SOL_PC);
+    expect(material.depthTest).toBe(true);
+    // o empate passa (o Sol longe empata com o fundo no depth de 24 bits)
+    expect(material.depthFunc).toBe(THREE.LessEqualDepth);
+    // e o resto como veio: aditivo, transparente (desenha DEPOIS da fila
+    // opaca, com o depth dos globos já escrito), sem escrever depth
+    expect(material.depthWrite).toBe(false);
+    expect(material.transparent).toBe(true);
+    expect(material.blending).toBe(THREE.AdditiveBlending);
+    expect(plano.renderOrder).toBe(-1);
+    expect(material.vertexShader).toContain('zCoroaFrente');
+    plano.geometry.dispose();
+    material.dispose();
+  });
+
+  it('o construtor opera os TRÊS planos, depois de criá-los, com o raio da instância', () => {
+    const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
+    const laco = 'for (const plano of [ctx.coronaRays, ctx.coronaVol, ctx.cmeMesh]) {';
+    expect(src.split(laco)).toHaveLength(2);
+    expect(src.indexOf(laco)).toBeGreaterThan(src.indexOf('createCME(ctx);'));
+    expect(src).toContain('if (plano) coroaOcultavel(plano.material as THREE.ShaderMaterial, params.radiusPc);');
+    // a ordem na fila transparente segue a do vendorizado: raias e volume
+    // primeiro (−1), a ejeção depois (−0,75)
+    const ordem = (arquivo: string, malha: string, valor: string) =>
+      readFileSync(new URL(arquivo, import.meta.url), 'utf8').includes(`${malha}.renderOrder = ${valor};`);
+    expect(ordem('./sol/coronaRays.js', 'coronaRays', '-1')).toBe(true);
+    expect(ordem('./sol/coronaVolume.js', 'coronaVol', '-1')).toBe(true);
+    expect(ordem('./sol/cme.js', 'cmeMesh', '-0.75')).toBe(true);
   });
 });

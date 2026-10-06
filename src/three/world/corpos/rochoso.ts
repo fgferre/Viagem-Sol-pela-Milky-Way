@@ -116,14 +116,35 @@ import type { QuadroDasPlumas } from './plumas';
 
 
 /**
- * Limiar aparente da LUA rochosa. O gate do planeta (4 px) nasceria
- * Io/Europa/Ganimedes (37/10/11 px) no retrato oficial de Júpiter e
- * Tétis/Titã no de Saturno — as 4 vistas da F4 deixariam de ser
- * bit-idênticas. 48 px é 12× o limiar: Caronte na vista
- * plutao-caronte (~63 px) entra; Io no retrato de Júpiter (37 px)
- * fica de fora.
+ * O LIMIAR DA MALHA DENSA do relevo (`SEGMENTOS_COM_RELEVO`), em px de
+ * diâmetro: 12× o gate. Nasceu em 13/08 (F5-2, 64 px; 48 desde a F6-2) como
+ * o gate das luas, só para Io/Europa/Ganimedes (37/10/11 px) não nascerem
+ * no retrato oficial de Júpiter e as vistas da F4 ficarem bit-idênticas —
+ * não por custo. Em 06/10 (F4 do filme solar) deixou de ser gate: a lua
+ * pipocava com 48 px e o nome ficava em céu vazio. Hoje toda lua entra no
+ * gate da casa (4 px) e este número só troca a esfera da casa pela malha
+ * densa — ver `portaoDoRochoso`.
  */
-export const LIMIAR_LUA_ROCHOSA_PX = 48;
+export const LIMIAR_DA_MALHA_DENSA_PX = 48;
+
+/** O que o rochoso desenha: 0 nada, 1 a esfera da casa, 2 a malha densa. */
+export type PortaoDoRochoso = 0 | 1 | 2;
+
+/**
+ * O PORTÃO DO ROCHOSO (06/10/2026) — dois `gateBinario` em cascata, cada
+ * um com a histerese da casa: o corpo entra aos 4 px (sai abaixo de 2) e,
+ * dentro dele, a malha densa entra aos 48 px (sai abaixo de 24). Acima de
+ * 48 px o desenho é o de antes, bit a bit; entre 4 e 48 a lua cresce de um
+ * ponto na esfera de 128×64 com o MESMO deslocamento (a forma de Hipérion
+ * mora no mapa de altura: uma esfera lisa estalaria em batata aos 48 px).
+ * Só quem tem relevo tem duas malhas; nos outros o 2 desenha o mesmo que o 1.
+ */
+export function portaoDoRochoso(antes: PortaoDoRochoso, diametroPx: number): PortaoDoRochoso {
+  if (!gateBinario(antes > 0, diametroPx)) return 0;
+  return gateBinario(antes === 2, diametroPx * (LIMIAR_DO_GATE_PX / LIMIAR_DA_MALHA_DENSA_PX))
+    ? 2
+    : 1;
+}
 
 /** Os dois BRDFs da fase — Lommel-Seeliger (regolito) ou Lambert. */
 export type BrdfDoRochoso = 'ls' | 'lambert';
@@ -267,13 +288,10 @@ export const GRADUACAO_DO_MOSAICO: Readonly<
  * aparecer NO LIMBO, que é o defeito que a S2 conserta. 256×128 iguala o
  * nível `ultra` dele e amostra o mapa de 1024 px a 4:1.
  *
- * NÃO HÁ LOD DE ESFERA, e é medição e não preguiça: o LOD dele existe
- * porque as luas dele são desenhadas SEMPRE, até com dois pixels. Aqui o
- * `LIMIAR_LUA_ROCHOSA_PX` já corta a lua fora do quadro abaixo de 48 px
- * de diâmetro — pela régua dele (razão distância/raio) a lua da casa
- * nunca passa de ~45, e os níveis médio e grosso dele NUNCA seriam
- * escolhidos. Um seletor com três níveis aqui seria código morto com
- * histerese. Ver o relatório da S2.
+ * DOIS NÍVEIS, NÃO OS TRÊS DELE: desde 06/10 a lua é desenhada a partir
+ * de 4 px, e abaixo de `LIMIAR_DA_MALHA_DENSA_PX` ela usa a esfera de
+ * 128×64 da casa (um quarto dos vértices), deslocada pelo mesmo mapa. A
+ * densa só nasce quando a lua passa dos 48 px (`portaoDoRochoso`).
  */
 const SEGMENTOS_COM_RELEVO: readonly [number, number] = [256, 128];
 
@@ -671,7 +689,7 @@ export class RochosoResolvido {
   private jdEscrito = Number.NaN;
   private fonteEscrita: FonteDeEfemerides | null = null;
   private rUA = Number.NaN;
-  private armado = false;
+  private portao: PortaoDoRochoso = 0;
 
   /** a sombra do eclipse (F3: Fobos/Deimos ← Marte), no cache de
    *  jd/fonte — scratch único (out-parameter), como nas irmãs */
@@ -684,6 +702,8 @@ export class RochosoResolvido {
   private disposto = false;
 
   private geometria: THREE.BufferGeometry | null = null;
+  /** a malha densa do relevo — só nasce na primeira vez que o portão dá 2 */
+  private geometriaDensa: THREE.BufferGeometry | null = null;
   private superficie: THREE.Mesh | null = null;
   /** o interruptor da ficha: o relevo FINGIDO da cor do mapa (B1),
    *  desligado por padrão (item 144: "desfazer o relevo inventado") */
@@ -852,28 +872,24 @@ export class RochosoResolvido {
     const diametroPx = diametroAparentePx(this.raioA, dPc, q.screenHPx, q.fovDeg);
     e.diametroPx = diametroPx;
 
-    this.armado = gateBinario(
-      this.armado,
-      this.ehPlaneta
-        ? diametroPx
-        : diametroPx * (LIMIAR_DO_GATE_PX / LIMIAR_LUA_ROCHOSA_PX)
-    );
+    this.portao = portaoDoRochoso(this.portao, diametroPx);
+    const armado = this.portao > 0;
 
     // OS MESMOS TRÊS SEGURADORES das irmãs (lei 4, item 115): tela, foco
     // do Atlas e roteiro do filme; o último a soltar abre a carência.
-    this.seguram.tela = this.armado;
+    this.seguram.tela = armado;
     this.seguram.foco = q.focoDoAtlas;
     this.seguram.filme = q.pedidoDoRoteiro;
     this.texturas.aoTick(this.seguram, q.tS);
 
     const emQuadro =
-      this.armado &&
+      armado &&
       q.ligado &&
       this.texturas.pronta &&
       Number.isFinite(this.centro.x);
     e.emQuadro = emQuadro;
     e.carregando = this.texturas.carregando;
-    e.gateArmado = this.armado;
+    e.gateArmado = armado;
     this.group.visible = emQuadro;
 
     // A CESSÃO SUAVE do ponto fotométrico (D5) — só PLANETA tem ponto
@@ -911,6 +927,7 @@ export class RochosoResolvido {
     // a figura (esfera ou triaxial) mora na escala da matriz — a
     // geometria é sempre a esfera unitária (a lição da Terra)
     const sup = this.superficie!;
+    this.malhaDoQuadro(sup);
     sup.matrix
       .makeBasis(this.vX, this.vY, this.vZ)
       .scale(this.vEscala.set(this.raioA, this.raioA * this.razaoC, this.raioA * this.razaoB))
@@ -952,7 +969,11 @@ export class RochosoResolvido {
     // escala do elipsoide: as fissuras ficam grudadas nas listras) e os
     // MESMOS dois vetores locais do globo; a pluma segue a exposição da
     // visita pelo `ganho`, como a superfície.
-    if (this.plumas && this.quadroDasPlumas) {
+    // Só com a malha densa: quanto menor a lua, mais grãos batem no piso de
+    // 1 px do `gl_PointSize` e a luz da pluma deixa de ser conservada — com
+    // Encélado de 10 px o grão rente ao chão sairia ~180× maior (bolha).
+    if (this.plumas) this.plumas.pontos.visible = this.portao === 2;
+    if (this.plumas && this.quadroDasPlumas && this.portao === 2) {
       this.plumas.pontos.matrix.copy(sup.matrix);
       const p = this.quadroDasPlumas;
       p.dirSolLocal.set(sLx, sLy, sLz);
@@ -1025,29 +1046,15 @@ export class RochosoResolvido {
   /** geometria + material + mesh, UMA vez, na primeira necessidade. */
   private garantirCasca() {
     if (this.geometria || this.disposto) return;
-    // A MALHA DENSA só nasce onde há relevo (SEGMENTOS_COM_RELEVO diz por
-    // que não há LOD); o resto da casa fica na esfera de sempre.
     const relevo = RELEVO_DA_LUA[this.config.id];
     // S3: o corpo ESCULPIDO troca a esfera pela malha própria — é o único
     // caminho desta classe em que a figura não mora na escala da matriz.
+    // Com relevo, a casca nasce na esfera da casa e a densa só quando o
+    // portão pede (`malhaDoQuadro`).
     const esculpido = this.config.superficie === 'esculpido';
     this.geometria = esculpido
       ? criaGeometriaEsculpida(this.config.id)
-      : relevo
-        ? new THREE.SphereGeometry(1, ...SEGMENTOS_COM_RELEVO)
-        : new THREE.SphereGeometry(1, 128, 64);
-    // O VERTEX DO RELEVO desloca a superfície NA GPU — o atributo de
-    // posição da CPU continua a esfera unitária, e o boundingSphere
-    // AUTOMÁTICO (raio 1) cortaria o corpo do frustum com a ponta ainda em
-    // tela: Hipérion alcança 1,37 (RELEVO_DA_LUA.hyperion). Só este ramo
-    // precisa do valor à mão; o esculpido solda a malha já deslocada e
-    // `computeBoundingSphere()` nela mede o raio de verdade.
-    if (relevo) {
-      this.geometria.boundingSphere = new THREE.Sphere(
-        new THREE.Vector3(),
-        Math.max(1, 1 + relevo.vies + relevo.escala)
-      );
-    }
+      : this.esferaDaCasca(128, 64);
     const procedural = this.config.superficie === 'procedural';
     // sem ROCHOSOS `procedural` hoje (item 151), `uAlbedoBase` nunca é lido
     // por um fragmento vivo — o cinza neutro é só o padrão do uniform.
@@ -1133,7 +1140,7 @@ export class RochosoResolvido {
     this.group.add(this.superficie);
 
     // S4 — os jatos nascem com a casca e morrem com ela; o gate deles é
-    // o do corpo (48 px), porque são filhos do mesmo grupo.
+    // o da malha densa (48 px, `posicionar`).
     if (this.config.id === 'enceladus') {
       this.plumas = new PlumasDeEncelado();
       this.quadroDasPlumas = {
@@ -1183,10 +1190,43 @@ export class RochosoResolvido {
     }
   }
 
+  /**
+   * A esfera unitária da casca. O VERTEX DO RELEVO desloca a superfície NA
+   * GPU — o atributo de posição da CPU continua a esfera unitária, e o
+   * boundingSphere AUTOMÁTICO (raio 1) cortaria o corpo do frustum com a
+   * ponta ainda em tela: Hipérion alcança 1,37 (RELEVO_DA_LUA.hyperion).
+   * Só o relevo precisa do valor à mão; o esculpido solda a malha já
+   * deslocada e `computeBoundingSphere()` nela mede o raio de verdade.
+   */
+  private esferaDaCasca(largura: number, altura: number): THREE.SphereGeometry {
+    const geo = new THREE.SphereGeometry(1, largura, altura);
+    const relevo = RELEVO_DA_LUA[this.config.id];
+    if (relevo) {
+      geo.boundingSphere = new THREE.Sphere(
+        new THREE.Vector3(),
+        Math.max(1, 1 + relevo.vies + relevo.escala)
+      );
+    }
+    return geo;
+  }
+
+  /** a malha que o portão pede neste quadro — troca de referência, sem
+   *  alocar; a densa nasce uma vez, na primeira passagem dos 48 px. */
+  private malhaDoQuadro(sup: THREE.Mesh) {
+    if (!(this.config.id in RELEVO_DA_LUA)) return;
+    if (this.portao === 2) {
+      this.geometriaDensa ??= this.esferaDaCasca(...SEGMENTOS_COM_RELEVO);
+      sup.geometry = this.geometriaDensa;
+    } else {
+      sup.geometry = this.geometria!;
+    }
+  }
+
   dispose() {
     this.disposto = true;
     this.group.clear();
     this.geometria?.dispose();
+    this.geometriaDensa?.dispose();
     this.matSuperficie?.dispose();
     this.geoAnel?.dispose();
     this.matAnel?.dispose();

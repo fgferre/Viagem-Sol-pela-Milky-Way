@@ -58,13 +58,35 @@ function amostra(t: number): { pos: THREE.Vector3; look: THREE.Vector3 } {
 }
 const camera = (t: number) => amostra(t).pos;
 
-/** a menor distância do plano `i` ao corpo, em raios (amostragem fina:
- *  o ritmo é monótono, então os pontos do plano são os de pos(k)) */
+/** a menor distância do plano `i` ao corpo, em raios: varredura de 1000
+ *  pontos de pos(k) (o ritmo é monótono, então os pontos do plano são os
+ *  de pos(k)) e, em cada mínimo local da varredura, o refino por seção
+ *  áurea nos dois intervalos vizinhos — acha o mínimo verdadeiro da curva
+ *  suave, não o do ponto de grade mais próximo */
 function menorDistancia(i: number, id: string, raio = raioPc(id)): number {
-  let menor = Infinity;
+  const N = 1000;
+  const pino = pinos.get(id)!;
   const p = new THREE.Vector3();
-  for (let j = 0; j <= 20000; j++) {
-    menor = Math.min(menor, shots[i].pos(j / 20000, p).distanceTo(pinos.get(id)!) / raio);
+  const dist = (k: number) => shots[i].pos(k, p).distanceTo(pino) / raio;
+  const grade = Array.from({ length: N + 1 }, (_, j) => dist(j / N));
+  let menor = Math.min(...grade);
+  const PHI = (Math.sqrt(5) - 1) / 2;
+  for (let j = 0; j <= N; j++) {
+    if (!(j === 0 || grade[j] < grade[j - 1]) || !(j === N || grade[j] <= grade[j + 1])) continue;
+    let a = Math.max(j - 1, 0) / N;
+    let b = Math.min(j + 1, N) / N;
+    let c = b - PHI * (b - a);
+    let d = a + PHI * (b - a);
+    let fc = dist(c);
+    let fd = dist(d);
+    for (let n = 0; n < 60; n++) {
+      if (fc < fd) {
+        b = d; d = c; fd = fc; c = b - PHI * (b - a); fc = dist(c);
+      } else {
+        a = c; c = d; fc = fd; d = a + PHI * (b - a); fd = dist(d);
+      }
+      menor = Math.min(menor, fc, fd);
+    }
   }
   return menor;
 }

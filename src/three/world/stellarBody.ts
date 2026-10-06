@@ -65,6 +65,7 @@ import { GLSL_COMPRESSAO } from '../shaders/common';
 // três materiais de ponto estelar bebem de lá. A malha é o quarto.
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import type { QualityLevel } from '../core/engine';
+import { EPOCA_JD_TDB } from './planetas/retrato2026';
 import { NOISE_GLSL } from './sol/common.js';
 import { createGranulation } from './sol/granulation.js';
 import { createPIL } from './sol/pil.js';
@@ -173,6 +174,39 @@ const SOL_ROT_SPEED = 0.042;
 export function rotSpeedFromPeriod(periodDays: number): number {
   if (!Number.isFinite(periodDays) || periodDays <= 0) return 0;
   return SOL_ROT_SPEED * (SOL_ROT_PERIOD_DAYS / periodDays);
+}
+
+/**
+ * O ÂNGULO DO GIRO (rad, em torno do eixo próprio) — UMA função para os
+ * dois regimes (F4 do filme solar).
+ *
+ * COM RELÓGIO DE CENA (`jdDaCena`, a data do filme em cartaz): o ângulo é
+ * o da DATA, ω·(JD − JD0)·86400 com ω = 2π/(P·86400) o giro sideral de
+ * verdade e JD0 a época do retrato da casa (`EPOCA_JD_TDB`, fase zero —
+ * o ângulo de nascença do corpo, que é a data da abertura do galáctico).
+ * Reproduzível por construção: o mesmo instante do filme mostra a mesma
+ * face, tenha a sessão começado quando for. Até a F4 o giro somava tempo
+ * de tela desde o carregamento, e as manchas do prólogo eram outras a
+ * cada sessão. A data de um ato é parada, então o Sol do filme também
+ * fica: em 33 s o Sol real gira 1,5e-5 rad.
+ *
+ * SEM RELÓGIO DE CENA (Atlas, voo livre, fim): o de sempre — o ângulo
+ * anterior mais o passo de tela, `rotSpeed·delta`, bit a bit.
+ *
+ * Guardas: data inválida cai no ramo sem relógio; período inválido não
+ * gira (o mesmo contrato de `rotSpeedFromPeriod`).
+ */
+export function anguloDoGiro(
+  anterior: number,
+  rotSpeed: number,
+  delta: number,
+  jdDaCena: number | null,
+  periodoDias: number
+): number {
+  if (jdDaCena === null || !Number.isFinite(jdDaCena)) return anterior + rotSpeed * delta;
+  if (!Number.isFinite(periodoDias) || periodoDias <= 0) return anterior;
+  const voltas = (jdDaCena - EPOCA_JD_TDB) / periodoDias;
+  return 2 * Math.PI * (voltas - Math.floor(voltas));
 }
 
 /** O que descreve UMA estrela procedural desta casa. */
@@ -438,6 +472,89 @@ export function cirurgiaDaFotosfera(
   );
 }
 
+// ============================================================
+// F4 — A COROA ATRÁS DE UM CORPO, por cirurgia de texto.
+//
+// Os três planos da coroa (`sol/coronaRays.js`, `sol/coronaVolume.js`,
+// `sol/cme.js`) são billboards aditivos PELO CENTRO do Sol, e por isso
+// nasceram com `depthTest: false`: com o teste ligado no centro, a
+// metade da frente da fotosfera apagaria o halo que eles pintam sobre a
+// borda do disco (e, de perto, sobre o disco). O preço era o oposto: sem
+// teste nenhum, a coroa passava por cima de QUALQUER corpo na frente —
+// no último plano do filme solar (`mesmaLuz`, o Sol nascendo atrás da
+// Terra) o anel laranja aparecia pintado sobre a Terra que tapava o Sol.
+//
+// O CONSERTO move só a PROFUNDIDADE: x, y e w do vértice ficam intocados
+// (mesmo pixel, mesmos varyings, bit a bit), e o z passa a ser o de um
+// ponto NA MESMA DIREÇÃO, mais perto da câmera — a receita da sonda de
+// oclusão do clarão (`world/clarao.ts`, medida em 23/09): a METADE do
+// caminho até o centro, e nunca a menos de quatro degraus do fundo do
+// depth de 24 bits. Longe do Sol, o depth já não distingue a fotosfera do
+// fundo, e um plano posto rente a ela empatava ou perdia por arredondamento
+// (medido: o anel do limbo sumia em 148 px a 1 UA). De perto (centro a
+// menos de 2,1 raios no eixo da vista) a metade cairia DENTRO do Sol: aí
+// vale o plano tangente à frente dele, `zCentro − 1,05·raio`, à frente de
+// todo ponto da fotosfera (o relevo do vertex dela sobe no máximo ~1,3 %
+// do raio). Com o teste ligado, a fotosfera nunca corta a coroa e um globo
+// entre a câmera e a metade do caminho, sim — a mesma promessa da sonda.
+// Plano de frente atrás do near (rente ao Sol, olhando de lado): o z vai à
+// frente de tudo, o mesmo que o teste desligado de antes. Vértice já fora
+// do near/far: fica onde estava, o recorte de antes não muda.
+// ============================================================
+
+/** a folga da frente, em raios do corpo — maior que o relevo da fotosfera
+ *  (`uDispScale` 0,4 % + modos p 0,9 %, `sol/sun.js`) */
+const FOLGA_DA_FRENTE_DA_COROA = 1.05;
+
+/** a marca da cirurgia — e o detector de aplicação dupla */
+const MARCA_DA_COROA_OCULTAVEL = 'zCoroaFrente';
+
+/**
+ * Reescreve o vertex de um plano da coroa para a profundidade da frente do
+ * corpo de raio `raioPc`. A âncora é o ÚNICO `gl_Position = …;` do texto;
+ * âncora ausente, repetida ou cirurgia já aplicada LANÇA (o mesmo contrato
+ * de `cirurgiaDaFotosfera`: nunca no-op silencioso).
+ */
+export function cirurgiaDaCoroaOcultavel(vertexShader: string, raioPc: number): string {
+  const escritas = vertexShader.match(/gl_Position\s*=[^;]*;/g) ?? [];
+  if (escritas.length !== 1 || vertexShader.includes(MARCA_DA_COROA_OCULTAVEL)) {
+    throw new Error(
+      'cirurgiaDaCoroaOcultavel: o vertex do plano da coroa não tem UMA escrita de ' +
+        '`gl_Position` (sol/coronaRays.js, sol/coronaVolume.js, sol/cme.js) — ou o ' +
+        'vendorizado mudou de forma, ou a cirurgia já foi aplicada neste material'
+    );
+  }
+  const raioDaFrente = literalGlsl(raioPc * FOLGA_DA_FRENTE_DA_COROA);
+  return vertexShader.replace(
+    escritas[0],
+    `${escritas[0]}
+  {
+    float zCoroaCentro = -(viewMatrix * vec4(modelMatrix[3].xyz, 1.0)).z;
+    float ${MARCA_DA_COROA_OCULTAVEL} = min(0.5 * zCoroaCentro, zCoroaCentro - ${raioDaFrente});
+    float zCoroaAntes = gl_Position.z / gl_Position.w;
+    if (gl_Position.w > 0.0 && zCoroaAntes >= -1.0 && zCoroaAntes <= 1.0) {
+      vec4 cCoroaFrente = projectionMatrix * vec4(0.0, 0.0, -${MARCA_DA_COROA_OCULTAVEL}, 1.0);
+      float zCoroaDepois = ${MARCA_DA_COROA_OCULTAVEL} > 0.0 ? cCoroaFrente.z / cCoroaFrente.w : -1.0;
+      zCoroaDepois = min(zCoroaDepois, 1.0 - 4.8e-7);
+      gl_Position.z = clamp(zCoroaDepois, -1.0, zCoroaAntes) * gl_Position.w;
+    }
+  }`
+  );
+}
+
+/**
+ * Liga a oclusão num plano da coroa: a cirurgia da profundidade e o
+ * `depthTest`. O resto do material fica como veio — aditivo, transparente
+ * (desenha DEPOIS da fila opaca, quando o depth dos globos já está escrito)
+ * e sem escrever depth (o plano não tapa nada). A ordem na fila
+ * transparente (`renderOrder`) é do vendorizado e não muda.
+ */
+export function coroaOcultavel(material: THREE.ShaderMaterial, raioPc: number): void {
+  material.vertexShader = cirurgiaDaCoroaOcultavel(material.vertexShader, raioPc);
+  material.depthTest = true;
+  material.needsUpdate = true;
+}
+
 /**
  * A instância 1. Todo campo aqui reproduz o literal que estava solto no
  * módulo antes da Onda 3: a promoção é de ENDEREÇO, não de valor, e o
@@ -539,6 +656,9 @@ export class StellarBody {
   private filtroSolarAnterior = 1;
   /** a fase do ciclo VIVA (a da data), escrita pelo director por quadro */
   private faseDoCicloViva: FaseDoCiclo;
+  /** a data do filme em cartaz (JD TDB) ou null — o relógio do giro
+   *  (`anguloDoGiro`); nasce null: sem director, o giro de sempre */
+  private jdDaCena: number | null = null;
   /** o T em que o retrato publicado foi assado — a régua do re-bake */
   private cicloAssado = 0;
   /**
@@ -759,6 +879,13 @@ export class StellarBody {
     createCoronaRays(ctx);
     createCoronaVolume(ctx);
     createCME(ctx);
+    // a coroa atrás de um corpo (F4): os três planos aditivos passam a
+    // testar profundidade contra os globos, na frente do próprio Sol —
+    // ver `cirurgiaDaCoroaOcultavel`. Volume e CME podem não existir
+    // (tier/knob): o que não nasceu não se opera.
+    for (const plano of [ctx.coronaRays, ctx.coronaVol, ctx.cmeMesh]) {
+      if (plano) coroaOcultavel(plano.material as THREE.ShaderMaterial, params.radiusPc);
+    }
     // partículas do CME: -mv.z em parsec de volta à régua do doador
     // meshes NASCE [null, null] (cme.js) e o tier low nunca as preenche
     // (cmen=0 desliga o subsistema inteiro) — sem o m?. o construtor
@@ -968,6 +1095,15 @@ export class StellarBody {
   }
 
   /**
+   * O RELÓGIO DO GIRO: a data do filme em cartaz, ou null fora dele.
+   * Mesma divisão de trabalho do ciclo — quem tem o relógio é o director;
+   * o corpo obedece (`anguloDoGiro`).
+   */
+  escreverRelogioDeCena(jd: number | null) {
+    this.jdDaCena = jd !== null && Number.isFinite(jd) ? jd : null;
+  }
+
+  /**
    * O LAPSO DO RELÓGIO (item 17). `taxa` é quantos segundos de céu andam
    * por segundo de relógio; ela vira `LAPSE_K` na unidade do núcleo
    * doador (0..1 ↔ multiplicador 1..40 de `sol/cycle.js`, invertendo
@@ -1157,7 +1293,13 @@ export class StellarBody {
     ctx.sunUniforms.uBakeMix.value = Math.min(1, (ctx.elapsed - ctx.bakeSwapT) / ctx.bakeCycleDt);
 
     // --- rotação + inversa compartilhada (tilt+spin) ---
-    ctx.sunMesh.rotation.y += this.rotSpeed * delta;
+    ctx.sunMesh.rotation.y = anguloDoGiro(
+      ctx.sunMesh.rotation.y,
+      this.rotSpeed,
+      delta,
+      this.jdDaCena,
+      this.params.rotPeriodDays
+    );
     ctx.prominenceGroup.rotation.y = ctx.sunMesh.rotation.y;
     ctx.spiculeMesh.rotation.y = ctx.sunMesh.rotation.y;
     ctx.loopGroup.rotation.y = ctx.sunMesh.rotation.y;

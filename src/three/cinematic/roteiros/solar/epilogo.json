@@ -5,6 +5,7 @@
       "qa": {"mesmaLuz": 0.5},
       "camera": {
         "duracao": 16,
+        "corte": true,
         "movimento": {
           "tipo": "arco",
           "centro": "Terra",

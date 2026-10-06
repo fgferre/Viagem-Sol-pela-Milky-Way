@@ -262,7 +262,11 @@ export class JourneyRig {
         (this.lenteFator - this.lenteFatorMostrado) * (1 - Math.exp(-dt / 0.2));
     const alvoFov = this.lenteDoRoteiro(s);
 
-    if (snap) {
+    // O CORTE SECO (F4): o plano que o roteiro abre num corte (`corte`)
+    // não herda nada do anterior — o desvio zera como no salto do seek, e
+    // o primeiro quadro depois da junta já é o plano novo, mira e lente.
+    const corte = s.plano !== this.plano && this.journey.abreNumCorte(s.plano);
+    if (snap || corte) {
       this.first = false;
       this.desvio.set(0, 0, 0);
       this.desvioVel.set(0, 0, 0);

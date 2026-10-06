@@ -9,7 +9,7 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { reemitirLegenda } from './legendaNoAr';
+import { reemitirLegenda, viradaDaLuzDoRoteiro } from './legendaNoAr';
 
 const FONTE = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
 
@@ -81,5 +81,25 @@ describe('a legenda segue a língua no meio do filme', () => {
       'if (reemitirLegenda(index, key.caption, this.lastCaptionIdx, this.lastCaptionTexto))'
     );
     expect(FONTE).not.toContain('index !== this.lastCaptionIdx');
+  });
+});
+
+describe('a luz do roteiro avisa o HUD só na virada (selo do filme, F4)', () => {
+  it('0 → >0 avisa uma vez, >0 → 0 avisa uma vez, e os quadros do meio calam', () => {
+    // o k de um beat de luz quadro a quadro: sobe, pousa, desce, some
+    const ks = [0, 0, 0.01, 0.4, 1, 1, 1, 0.6, 0.02, 0, 0];
+    let noAr = false;
+    const avisos: boolean[] = [];
+    for (const k of ks) {
+      const virada = viradaDaLuzDoRoteiro(k, noAr);
+      if (virada === null) continue;
+      noAr = virada;
+      avisos.push(virada);
+    }
+    expect(avisos).toEqual([true, false]);
+    // e o Director USA a regra no tick, logo depois de publicar o k
+    expect(FONTE).toMatch(
+      /this\.luzDoRoteiro = luzDoRoteiro;\s*const viradaDaLuz = viradaDaLuzDoRoteiro\(luzDoRoteiro, this\.luzDoRoteiroNoAr\);/
+    );
   });
 });

@@ -109,7 +109,7 @@ import { SolNoQuadro } from './director/solNoQuadro';
 import { faseDoCiclo } from './estrela';
 import type { CalibracaoDaCasa } from './estrela';
 import { BETA_DA_EMISSAO } from './shaders/starShaders';
-import { reemitirLegenda } from './director/legendaNoAr';
+import { reemitirLegenda, viradaDaLuzDoRoteiro } from './director/legendaNoAr';
 import { Escada } from './director/escada';
 import type { EstadoDaEscada } from './director/escada';
 import {
@@ -303,6 +303,13 @@ interface DirectorEvents {
    * entrega a virada.
    */
   onOrientacao: (estado: EstadoDaBussola) => void;
+  /**
+   * A LUZ DO ROTEIRO ENTROU OU SAIU DO AR (F4 do filme solar) — o k da
+   * curva `camera.luz` passou de 0 para cima ou voltou a 0. Sai NA BORDA
+   * (`viradaDaLuzDoRoteiro`), nunca por quadro: o selo do filme só
+   * existe enquanto ela está no ar.
+   */
+  onLuzDoRoteiro: (ativa: boolean) => void;
   /**
    * O TOQUE NO CÉU FECHOU A GAVETA (item 62). Quem decide QUAL toque
    * fecha é `director/gestos.ts`; este fio só entrega o recado ao React,
@@ -920,6 +927,8 @@ export class Director {
   private lastCaptionIdx = -1;
   /** a frase que está NO AR — o índice sozinho não vê a troca de idioma */
   private lastCaptionTexto = '';
+  /** a luz do roteiro está no ar (k > 0)? — o latch de `onLuzDoRoteiro` */
+  private luzDoRoteiroNoAr = false;
   private relogioParado = false;
   /**
    * CONGELA A VIAGEM — e é o DONO ÚNICO da pausa, que sempre teve dois
@@ -3709,6 +3718,11 @@ export class Director {
       }
     }
     this.luzDoRoteiro = luzDoRoteiro;
+    const viradaDaLuz = viradaDaLuzDoRoteiro(luzDoRoteiro, this.luzDoRoteiroNoAr);
+    if (viradaDaLuz !== null) {
+      this.luzDoRoteiroNoAr = viradaDaLuz;
+      this.events.onLuzDoRoteiro(viradaDaLuz);
+    }
 
     // a matriz da câmera precisa estar atual ANTES de projeções e
     // extrações de base — labels usavam a matriz do frame anterior
@@ -3907,7 +3921,11 @@ export class Director {
     // AS HEROES RESGATADAS: a mesma chave de isolamento da óptica das
     // fortes (?noclarao) esconde as duas camadas — heroes e clarão do Sol
     if (this.heroes) {
-      this.heroes.group.visible = !this.hide.has('noclarao');
+      // — e o filme em cartaz diz se o céu dele tem a arte delas (F4: o
+      // solar não tem; Atlas e voo livre seguem com elas)
+      const doFilme = this.phase === 'intro' || this.phase === 'journey' || this.phase === 'end';
+      this.heroes.group.visible =
+        !this.hide.has('noclarao') && (!doFilme || this.filme.heroes);
       this.heroes.update(
         time,
         cam.position,
@@ -3941,6 +3959,15 @@ export class Director {
     // 1 e o lapso é 0 — a fase da cena não muda um pixel.
     this.sun.escreverLapso(
       this.phase === 'atlas' ? this.maquinaDoTempo.taxaViva : 1
+    );
+    // O GIRO PELA DATA DO FILME (F4): no filme que o pede
+    // (`giroPeloRelogio`) o Sol gira pelo relógio dele, e o mesmo instante
+    // mostra as mesmas manchas em toda sessão; no galáctico, na capa e
+    // fora do filme (Atlas, voo livre, fim), pelo tempo de tela de sempre
+    this.sun.escreverRelogioDeCena(
+      this.phase === 'journey' && this.filme.giroPeloRelogio
+        ? this.filme.jdDoFilme(this.journeyT)
+        : null
     );
     this.sun.update(time, this.engine.camera);
     // O OCLUSOR DA NEBULOSA. A fotosfera está na ORIGEM (o grupo do Sol

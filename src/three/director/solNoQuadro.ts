@@ -21,6 +21,7 @@ import {
   gateBinario,
 } from '../world/corpos/corpos';
 import { repartir } from '../estrela';
+import type { Reparticao } from '../estrela';
 import { ClaraoDeAsas } from '../world/clarao';
 import type { StellarBody } from '../world/stellarBody';
 import type { Planetas } from '../world/planetas/planetas';
@@ -28,6 +29,26 @@ import type { StarField } from '../world/stars';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { ORIGEM } from '../cinematic/enquadramento';
+
+/**
+ * A CESSÃO DO SOL-PONTO na camada de planetas (`aCede`; a luz do ponto é
+ * `1 − aCede`): o PESO do ponto na repartição (wPonto) vezes a MESMA
+ * transmitância do filtro solar que o disco recebe naquele tamanho
+ * (`1/overrideFator`). F4 do filme solar: até aqui o ponto entrava com a
+ * luz PLENA enquanto o disco ainda estava filtrado — 26 magnitudes de
+ * diferença —, e 0,2 % de peso do ponto a 7,99 px já valia 10⁵ vezes o
+ * disco: o Sol "virava ponto branco de repente" no fim da rampa (8 px),
+ * em qualquer recuo. Com o filtro dos dois lados, disco e ponto têm o
+ * mesmo brilho em todo tamanho, a luz total segue o filtro (contínua) e a
+ * troca vira só troca de forma. Fora da rampa nada muda, bit a bit:
+ * abaixo de 4 px o filtro é 1 exato (`overrideFator` = 1) e acima de
+ * 8 px o peso do ponto é 0 exato. Fator inválido: o ponto sem filtro, a
+ * direção de sempre.
+ */
+export function cessaoDoSol(lei: Pick<Reparticao, 'wPonto' | 'overrideFator'>): number {
+  const transmitancia = lei.overrideFator > 1 ? 1 / lei.overrideFator : 1;
+  return 1 - lei.wPonto * transmitancia;
+}
 
 export class SolNoQuadro {
   /**
@@ -210,12 +231,13 @@ export class SolNoQuadro {
   }
 
   /**
-   * A CESSÃO DO SOL-PONTO É A REPARTIÇÃO (M1): aCede = wResolvido — o
-   * ponto cede na exata medida em que a fonte está RESOLVIDA na tela
-   * (rampa C¹ de 4 a 8 px de disco), e o corpo entra do zero com o
-   * mesmo peso pelo outro lado (`escreverPesoDaLei`, acima). A soma dos
-   * pesos é 1 por construção — nenhuma dupla-luz, nenhum passo para
-   * trás, nenhuma quina de `max`. Com o corpo ESCONDIDO (`?nosun`) o
+   * A CESSÃO DO SOL-PONTO É A REPARTIÇÃO (M1): o ponto cede na exata
+   * medida em que a fonte está RESOLVIDA na tela (rampa C¹ de 4 a 8 px de
+   * disco), e o corpo entra do zero com o mesmo peso pelo outro lado
+   * (`escreverPesoDaLei`, acima). A soma dos pesos é 1 por construção —
+   * nenhuma dupla-luz, nenhum passo para trás, nenhuma quina de `max` —,
+   * e desde a F4 o ponto passa pelo mesmo filtro do disco (`cessaoDoSol`,
+   * acima da classe). Com o corpo ESCONDIDO (`?nosun`) o
    * ponto fica inteiro: ceder a uma malha invisível cegaria o quadro, e
    * a direção segura da lei é o ponto (§8.5).
    */
@@ -223,7 +245,7 @@ export class SolNoQuadro {
     if (!this.leiDoSol) return;
     planetas.escreverCessao(
       'sun',
-      this.fios.sun().group.visible ? this.leiDoSol.wResolvido : 0
+      this.fios.sun().group.visible ? cessaoDoSol(this.leiDoSol) : 0
     );
   }
 }

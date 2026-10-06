@@ -246,6 +246,9 @@ export default function App() {
   /** o indicador de fotografia do filme ("LENTE 34° · SOL 412 UA",
    *  item 100); vazio = escondido */
   const [lente, setLente] = useState('');
+  /** a luz do roteiro está no ar (k > 0)? — chega só na virada, e é o
+   *  que monta o selo dentro do filme */
+  const [luzDoRoteiroNoAr, setLuzDoRoteiroNoAr] = useState(false);
   /**
    * ONDE A CÂMERA ESTÁ, em eclíptica heliocêntrica UA — só no Atlas, a
    * 4 Hz e só quando ela anda (item 74, parte B). A ficha do objeto a usa
@@ -457,6 +460,7 @@ export default function App() {
     labelsRef,
     setPhase,
     setCaption,
+    setLuzDoRoteiro: setLuzDoRoteiroNoAr,
     setTicks,
     setFilme,
     setDest,
@@ -987,6 +991,28 @@ export default function App() {
   const shotMode = shotParam !== null;
   const bareMode = shotParam === '2';
 
+  /**
+   * O SELO, UMA PEÇA PARA DUAS CASAS: o rodapé do Atlas (sempre) e o
+   * filme (só com a luz do roteiro no ar, `luzDoRoteiroNoAr`). As fases
+   * se excluem, então nunca há dois na tela.
+   */
+  const selo = (d: Director) => (
+    <Selo
+      vista={d.selo}
+      // os mapas da galáxia chegaram nesta sessão? sem isto a
+      // legenda jurava "medido" sobre uma cena 100% procedural
+      cartografiaMedida={cartografiaMedida()}
+      // …e se não chegaram, foi escolha dele? A frase da falha
+      // acusava a rede de uma decisão do visitante.
+      cartografiaDesligada={cartografiaDesligada}
+      // a procedência real da poeira medida perto de casa (E2/E3/E4)
+      // — publicada pelo Director, ver `estadoDaPoeira` acima.
+      poeira={estadoDaPoeira}
+      onEscalaReal={() => directorRef.current?.focarNoSistema()}
+      onBrilhoReal={voltarAoBrilhoReal}
+    />
+  );
+
   return (
     <div
       ref={rootRef}
@@ -1110,6 +1136,15 @@ export default function App() {
           nunca desenha */}
       {hud.lente && lente && <div className="lente-line">{lente}</div>}
 
+      {/* O SELO NO FILME (F4 da viagem solar, 06/10): o beat de luz
+          honesta mexe no brilho por cima da escolha do visitante, e o
+          selo é quem declara isso. Monta SÓ enquanto a curva `camera.luz`
+          está acima de 0 — o Director avisa na virada (`onLuzDoRoteiro`),
+          pelo mesmo latch da legenda; fora dela o filme fica como era.
+          O lugar é o canto de baixo à direita, acima da linha de rumo
+          (02-filme.css), não o rodapé do Atlas. */}
+      {inJourney && luzDoRoteiroNoAr && directorRef.current && selo(directorRef.current)}
+
       {/* progresso (arrastável — scrub). Fica de pé na tela final também:
           seekFraction já sabe retomar a partir da fase 'end', e sem a barra
           o único caminho de volta era "Reviver", que reinicia do zero */}
@@ -1179,22 +1214,7 @@ export default function App() {
               estreita ele fica no pé da coluna — onde a tarja de baixo
               estava antes de sair do telefone —, como no canto de mesa,
               e a leitura desce controle → gesto → selo. */}
-          {hud.selo && directorRef.current && (
-            <Selo
-              vista={directorRef.current.selo}
-              // os mapas da galáxia chegaram nesta sessão? sem isto a
-              // legenda jurava "medido" sobre uma cena 100% procedural
-              cartografiaMedida={cartografiaMedida()}
-              // …e se não chegaram, foi escolha dele? A frase da falha
-              // acusava a rede de uma decisão do visitante.
-              cartografiaDesligada={cartografiaDesligada}
-              // a procedência real da poeira medida perto de casa (E2/E3/E4)
-              // — publicada pelo Director, ver `estadoDaPoeira` acima.
-              poeira={estadoDaPoeira}
-              onEscalaReal={() => directorRef.current?.focarNoSistema()}
-              onBrilhoReal={voltarAoBrilhoReal}
-            />
-          )}
+          {hud.selo && directorRef.current && selo(directorRef.current)}
         </div>
       )}
 

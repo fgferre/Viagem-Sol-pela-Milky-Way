@@ -817,6 +817,11 @@ export class Journey {
     return this.inicios[i];
   }
 
+  /** o plano `i` abre num corte seco (`corte` no roteiro): o rig não amacia a junta dele */
+  abreNumCorte(i: number): boolean {
+    return this.planos[i].corte === true;
+  }
+
   at(t: number): JourneySample {
     const { i, k } = this.shotAt(t);
     const s = this.planos[i];

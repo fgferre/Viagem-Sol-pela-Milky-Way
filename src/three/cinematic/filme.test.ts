@@ -33,6 +33,13 @@ describe('o filme como objeto (E1 da viagem solar)', () => {
     ]);
   });
 
+  it('o giro do Sol pela data é do solar; o galáctico segue no giro de tela (F4)', () => {
+    // a abertura do galáctico e a capa ficam com o giro que o dono aprovou:
+    // o director só entrega a data ao Sol quando o filme pede
+    expect(filmeDe().giroPeloRelogio).toBe(false);
+    expect(filmeDe('solar').giroPeloRelogio).toBe(true);
+  });
+
   it('um id desconhecido avisa no console e toca o galáctico', () => {
     const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(filmeDe('nao-existe')).toBe(filmeDe());

@@ -116,3 +116,11 @@ describe('trocar de filme atualiza o HUD (a escolha visível, F1 da viagem solar
     expect(play).toContain('espelharFilme();');
   });
 });
+
+describe('o selo no filme (F4 da viagem solar)', () => {
+  it('monta no filme só com a luz do roteiro no ar, que chega pelo fio do Director', () => {
+    expect(FONTE).toContain('setLuzDoRoteiro: setLuzDoRoteiroNoAr,');
+    expect(FONTE).toContain('{inJourney && luzDoRoteiroNoAr && directorRef.current && selo(directorRef.current)}');
+    expect(FONTE).toContain('{hud.selo && directorRef.current && selo(directorRef.current)}');
+  });
+});

@@ -15,6 +15,7 @@ import { AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_ARTISTICO_DO_SOL_PC } from '../../escala';
 import { repartir } from '../../estrela';
+import { cessaoDoSol } from '../../director/solNoQuadro';
 import { PISO_DO_NEAR_EM_RAIOS, nearPlanePc } from '../../core/engine';
 import {
   passoDoPalco,
@@ -413,7 +414,7 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
     );
     expect(SOL_NO_QUADRO).toContain('planetas.escreverCessao(');
     expect(SOL_NO_QUADRO).toContain(
-      "this.fios.sun().group.visible ? this.leiDoSol.wResolvido : 0"
+      'this.fios.sun().group.visible ? cessaoDoSol(this.leiDoSol) : 0'
     );
     // o trocaPx do Sol é o gate de corpo texturizado do palco — o 4 px
     // deixou de ser uma segunda lei e virou PARÂMETRO da repartição (§3)
@@ -461,6 +462,27 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
     const r = repartirDoSol(disco);
     expect(r.wResolvido).toBe(1);
     expect(r.overrideExpoente).toBe(0);
+  });
+
+  it('a troca disco→ponto é contínua: o ponto passa pelo mesmo filtro do disco (F4)', () => {
+    // a luz do Sol (fração da plena) = disco filtrado + ponto: o disco
+    // vale wResolvido/overrideFator; o ponto, 1 − cessão
+    const luz = (px: number) => {
+      const r = repartirDoSol(px);
+      return r.wResolvido / r.overrideFator + (1 - cessaoDoSol(r));
+    };
+    // fora da rampa a cessão é a de antes, bit a bit
+    for (const px of [1, 3.9, 8.1, 14.4, 40]) {
+      expect(cessaoDoSol(repartirDoSol(px))).toBe(repartirDoSol(px).wResolvido);
+    }
+    // dentro, a luz total é a que o filtro admite — e nenhum passo de
+    // 0,01 px move mais de 0,05 década (antes: 3 décadas entre 8,00 e
+    // 7,99 px, o ponto pleno entrando sobre o disco filtrado)
+    for (let px = 3.9; px <= 10.1; px += 0.01) {
+      const r = repartirDoSol(px);
+      expect(luz(px) * r.overrideFator).toBeCloseTo(1, 6);
+      expect(Math.abs(Math.log10(luz(px + 0.01) / luz(px)))).toBeLessThan(0.05);
+    }
   });
 
   it('o override tem a largura própria da lei: 1 exato até 4 px, 0 exato de 10 px em diante', () => {

@@ -1,7 +1,7 @@
 // Item 75: dados do roteiro → peças já usadas pela câmera.
 // Lido uma vez, na montagem; não interpreta texto nem aloca por quadro.
 import * as THREE from 'three';
-import { erro, lista, numero, objeto } from './dadosDoRoteiro';
+import { booleano, erro, lista, numero, objeto, opcional } from './dadosDoRoteiro';
 import {
   aproximacaoExponencial, arcoAxial, bezier, easeOut, glide, helice, intervalo,
   launch, line, linear, lookEvento, lookPan, lookRaspao, orbit, panLook,
@@ -62,6 +62,15 @@ export interface CameraDoPlano {
    * sempre, e nenhum plano herdado muda um bit.
    */
   fovDe?: (pos: THREE.Vector3) => number;
+  /**
+   * O CORTE SECO (F4, viagem solar): o plano começa num corte, e a mola
+   * da junta (`JourneyRig`) não se aplica no início dele — no primeiro
+   * quadro a câmera já É a deste plano, mira e lente, sem resíduo do
+   * anterior. Sem ele, a junta amacia como sempre: é o certo quando o
+   * plano novo continua o gesto do velho, e é um chicote quando a
+   * câmera salta de lugar (o retrato de família → a Terra, 135° de mira).
+   */
+  corte?: boolean;
 }
 
 const RITMOS = { linear, quadratic, smooth, easeOut, glide, launch, settle, settleFreeze };
@@ -470,5 +479,6 @@ export function lerPlanoDeCamera(
     roll: curvaEscalar(p.inclinacao, 'inclinacao', false, lerNumero),
     warp: curvaEscalar(p.efeitoDeVelocidade, 'efeitoDeVelocidade', true, lerNumero),
     luz: curvaEscalar(p.luz, 'luz', true, lerNumero),
+    corte: opcional(p.corte, 'corte', booleano),
   };
 }

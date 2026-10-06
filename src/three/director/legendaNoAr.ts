@@ -33,3 +33,14 @@ export function reemitirLegenda(
 ): boolean {
   return index !== ultimoIndex || texto !== ultimoTexto;
 }
+
+/**
+ * A LUZ DO ROTEIRO ENTROU OU SAIU DO AR? (F4 do filme solar, 06/10) —
+ * o mesmo latch da legenda, para o selo do filme: o k da curva
+ * `camera.luz` anda por quadro, e do outro lado do fio há `setState`.
+ * Devolve o estado NOVO só na virada (`k > 0` mudou), `null` no resto.
+ */
+export function viradaDaLuzDoRoteiro(k: number, noAr: boolean): boolean | null {
+  const agora = k > 0;
+  return agora === noAr ? null : agora;
+}

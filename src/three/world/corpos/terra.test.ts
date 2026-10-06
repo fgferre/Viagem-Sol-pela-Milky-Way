@@ -68,7 +68,7 @@ import {
   pisoUmbralDoEclipsador,
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
-import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
+import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { cessaoPorDominancia } from '../lodStellar';
 
 const DATA_DIR = fileURLToPath(new URL('../../../../public/data/atlas/', import.meta.url));
@@ -1081,6 +1081,21 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(RAZAO_CASCA_NUVENS).toBe(1.0015);
     expect(DERIVA_DAS_NUVENS).toBe(1.03);
   });
+
+  it('o chão para o raio do ar: amostra dentro da Terra sólida encerra o laço (06/10, quadros pretos da Lua)', () => {
+    const guarda = /float altura = max\(length\(ponto\), 1\.0e-6\);[^]*?if \(altura < ([\d.]+)\) break;\s*float prof = exp/.exec(
+      ATMOSFERA_FRAG
+    );
+    expect(guarda).not.toBeNull();
+    const limiar = Number(guarda![1]);
+    // abaixo do raio POLAR: o raio que só raspa o elipsoide segue bit a bit
+    const [a, , c] = BODY_AXES.earth;
+    expect(limiar).toBeLessThan(c / a);
+    // e a densidade da amostra mais funda que ainda soma fica pequena —
+    // sem a guarda, exp(160·(1 − h)) estoura o meio-float (65504) dentro do globo
+    const escalaSobreProf = 1 / (RAZAO_CASCA_ATMOSFERA - 1) / ATMOSFERA.scaleDepth;
+    expect(Math.exp(escalaSobreProf * (1 - limiar))).toBeLessThan(10);
+  });
 });
 
 describe('8. o eclipse na tela (F2c/D3)', () => {
@@ -1129,6 +1144,34 @@ describe('8. o eclipse na tela (F2c/D3)', () => {
     );
     expect(ATMOSFERA_FRAG).toContain(
       'acumulada += (atenua * sombraDoAr) * (prof * passoEscalado);'
+    );
+  });
+
+  it('a sombra do PRÓPRIO globo no ar: amostra com o Sol atrás do planeta não espalha (06/10)', () => {
+    // o teste RODA o texto do shader: a condição sai de `solAlcancaAmostra`
+    // tal qual (a expressão GLSL é JS válido) — não há gêmea em TS
+    const corpo = /bool solAlcancaAmostra\(float angLuz, float altura\) \{\s*return ([^;]+);/.exec(
+      ATMOSFERA_FRAG
+    );
+    expect(corpo).not.toBeNull();
+    const alcanca = new Function('angLuz', 'altura', `return ${corpo![1]};`) as (
+      angLuz: number,
+      altura: number
+    ) => boolean;
+    const h = RAZAO_CASCA_ATMOSFERA;
+    expect(alcanca(1, 1)).toBe(true);
+    expect(alcanca(0, h)).toBe(true);
+    expect(alcanca(-1, h)).toBe(false);
+    // no topo da casca o horizonte desce acos(1/h): acima da curvatura é
+    // crepúsculo e soma; abaixo dela o raio até o Sol cruza o globo
+    const linha = -Math.sqrt(1 - 1 / (h * h));
+    expect(alcanca(linha + 1e-6, h)).toBe(true);
+    expect(alcanca(linha - 1e-6, h)).toBe(false);
+    // no chão a linha de sombra é o próprio terminador
+    expect(alcanca(-1e-6, 1)).toBe(false);
+    // e o laço só soma a parcela de quem vê o Sol — a mesma parcela de antes
+    expect(ATMOSFERA_FRAG).toMatch(
+      /if \(solAlcancaAmostra\(angLuz, altura\)\) \{\s*acumulada \+= \(atenua \* sombraDoAr\) \* \(prof \* passoEscalado\);/
     );
   });
 

@@ -90,6 +90,8 @@ export interface FiosDoDirector {
   labelsRef: React.MutableRefObject<LabelCanvas | null>;
   setPhase: (v: Phase) => void;
   setCaption: (v: { idx: number; text: string; sub?: string }) => void;
+  /** a luz do roteiro entrou (k > 0) ou saiu do ar — só na virada */
+  setLuzDoRoteiro: (v: boolean) => void;
   setTicks: (v: { t: number; text: string }[]) => void;
   /** o filme em cartaz depois do boot (`?filme=`) — o HUD o relê quando ele troca */
   setFilme: (v: string) => void;
@@ -123,6 +125,7 @@ export function useDirector(fios: FiosDoDirector) {
     labelsRef,
     setPhase,
     setCaption,
+    setLuzDoRoteiro,
     setTicks,
     setFilme,
     setDest,
@@ -178,6 +181,7 @@ export function useDirector(fios: FiosDoDirector) {
       onEscada: setEscada,
       onGirou: girou,
       onOrientacao: orientacao,
+      onLuzDoRoteiro: setLuzDoRoteiro,
       onFecharGavetas: fecharGavetas,
       // a falha DEPOIS do boot (contexto perdido, exceção em quadro) cai
       // no MESMO véu das três falhas de carga — o App decide a copy pela

@@ -212,6 +212,20 @@ void main() {
  * que sobrevive é a fração ILUMINADA do caminho, ponderada pela
  * densidade. O piso do ar (`PISO_CREPUSCULO_NO_AR`) segura o caso em
  * que o caminho INTEIRO cai na sombra. A derivação mora em `eclipse.ts`.
+ *
+ * A SOMBRA DO PRÓPRIO GLOBO (06/10, o halo branco da Terra vista da Lua).
+ * O O'Neil não a conhece: ele confia que `escalaOtica(angLuz)` cresça
+ * até apagar a amostra cujo Sol está atrás do planeta. Mas o polinômio
+ * só vale até um pouco além do horizonte, e no limbo NOTURNO o raio da
+ * câmera desce tão rasante quanto o do Sol — os dois termos explodem
+ * juntos, a diferença cai abaixo de zero, o `clamp` a põe em 0 e a
+ * amostra sai SEM extinção nenhuma: pontos brancos e vermelhos na borda
+ * escura, que o bloom abre num anel branco em volta do disco pequeno
+ * (25° de lente, ~52 px). A conta certa é geométrica e exata: a amostra
+ * só espalha luz do Sol se o raio dela até o Sol não cruza a esfera de
+ * raio 1 (`solAlcancaAmostra`). Amostra que vê o Sol soma a mesma
+ * parcela de antes, bit a bit; o crepúsculo (o ar acima da linha de
+ * sombra) fica.
  */
 export const ATMOSFERA_FRAG = /* glsl */ `
 uniform vec3 uCamLocal;
@@ -243,6 +257,13 @@ float escalaOtica(float fCos) {
   return PROF * exp(-0.00287 + x * (0.459 + x * (3.83 + x * (-6.80 + x * 5.25))));
 }
 
+// a amostra VÊ o Sol? Só se o raio dela até o Sol não atravessa o globo
+// (raio 1): o Sol acima do horizonte, ou abaixo dele mas por cima da
+// curvatura — a distância do centro ao raio, h²(1 − cos²), passa de 1
+bool solAlcancaAmostra(float angLuz, float altura) {
+  return angLuz >= 0.0 || altura * altura * (1.0 - angLuz * angLuz) > 1.0;
+}
+
 void main() {
   vec3 raio = vPosRaios - uCamLocal;
   float fim = length(raio);
@@ -268,6 +289,15 @@ void main() {
   vec3 acumulada = vec3(0.0);
   for (int i = 0; i < ${ATMOSFERA.amostras}; i++) {
     float altura = max(length(ponto), 1.0e-6);
+    // O CHÃO PARA O RAIO (06/10): abaixo de 0,99 raio (o polar é 0,99665)
+    // a amostra está DENTRO da Terra sólida — o raio cruzou o globo e o
+    // resto do caminho fica atrás dele. Sem isto, no fragmento que vaza
+    // pelo depth do disco (vista da Lua, near de 3 km: a frente do globo
+    // e a casca de trás ficam a poucos passos de depth), exp(160·(1 − h))
+    // passa de 65504, o alvo de meio-float grava infinito e o bloom o
+    // espalha em NaN — os quadros PRETOS da Lua a 3,5°. Raio que não
+    // toca o chão nunca entra aqui: o resto é bit a bit.
+    if (altura < 0.99) break;
     float prof = exp(ESCALA_SOBRE_PROF * (RAIO_INT - altura));
     float angLuz = dot(uDirSolLocal, ponto) / altura;
     float angCam = dot(raio, ponto) / altura;
@@ -295,7 +325,9 @@ void main() {
     // até ela existir esta é uma forma de custo conhecida, não um custo
     // quantificado.
     vec3 sombraDoAr = fatorDeEclipseNoAr(ponto, ponto / altura, angLuz);
-    acumulada += (atenua * sombraDoAr) * (prof * passoEscalado);
+    if (solAlcancaAmostra(angLuz, altura)) {
+      acumulada += (atenua * sombraDoAr) * (prof * passoEscalado);
+    }
     ponto += passoVec;
   }
 

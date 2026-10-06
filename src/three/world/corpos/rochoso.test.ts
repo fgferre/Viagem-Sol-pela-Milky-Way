@@ -46,7 +46,7 @@ import { GLSL_NORMAL_DO_MAPA, GLSL_SOMBRA_DO_HORIZONTE, escalaDoBumpDoAlbedo } f
 import {
   type ConfigDoRochoso,
   GRADUACAO_DO_MOSAICO,
-  LIMIAR_LUA_ROCHOSA_PX,
+  LIMIAR_DA_MALHA_DENSA_PX,
   NORMAL_MEDIDA,
   RELEVO_DA_LUA,
   ROCHOSOS,
@@ -55,6 +55,7 @@ import {
   ROCHOSO_PROC_FRAG,
   ROCHOSO_PROC_LS_FRAG,
   RochosoResolvido,
+  portaoDoRochoso,
   posicaoDoRochosoUA,
   raiosDoRochosoPc,
 } from './rochoso';
@@ -632,13 +633,16 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
     expect(ROCHOSOS.some((c) => c.id === 'vanth' || c.id === 'weywot')).toBe(false);
   });
 
-  it('lua só nasce como assunto: 48 px fica acima de Io no retrato de Júpiter', () => {
-    expect(LIMIAR_LUA_ROCHOSA_PX).toBe(48);
-    expect(LIMIAR_LUA_ROCHOSA_PX / LIMIAR_DO_GATE_PX).toBe(12);
-    // Io no retrato oficial de Júpiter (F4) mede 37 px — abaixo do limiar
-    expect(37).toBeLessThan(LIMIAR_LUA_ROCHOSA_PX);
-    // a vista titan/europa a 4 raios mede ~829 px — o assunto entra
-    expect(829).toBeGreaterThan(LIMIAR_LUA_ROCHOSA_PX);
+  it('a lua cresce de um ponto: entra aos 4 px na esfera da casa e só troca pela densa aos 48', () => {
+    expect(LIMIAR_DA_MALHA_DENSA_PX / LIMIAR_DO_GATE_PX).toBe(12);
+    // chegando: 3 px nada, 4 e 30 px a esfera, 48 e 100 px a densa
+    const subindo = [3, 4, 30, 48, 100].map((px) => portaoDoRochoso(0, px));
+    expect(subindo).toEqual([0, 1, 1, 2, 2]);
+    // indo embora, a histerese de cada degrau: a densa segura até 24, o corpo até 2
+    expect([30, 23, 3, 1.9].map((px) => portaoDoRochoso(2, px))).toEqual([2, 1, 1, 0]);
+    // diâmetro envenenado preserva o estado
+    expect(portaoDoRochoso(2, Number.NaN)).toBe(2);
+    expect(portaoDoRochoso(0, Number.NaN)).toBe(0);
   });
 
   it('o relevo fingido da cor nasce desligado e a ficha o liga ao vivo', async () => {
