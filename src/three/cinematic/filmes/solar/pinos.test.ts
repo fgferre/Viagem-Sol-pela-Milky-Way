@@ -1,11 +1,12 @@
 // Serve: dono — o filme solar encontra cada corpo onde ele está de verdade no instante do filme
 // Os pinos são a efeméride: recomputa cada um pela MESMA cadeia do app
 // (a de voltaParaCasa.test.ts), no relógio do seu ato, e cobra igualdade
-// bit a bit — e cobra a razão dos três relógios: a Terra vista da Lua
+// bit a bit — e cobra a razão dos quatro relógios: a Terra vista da Lua
 // meia-iluminada no céu do ato I (JD_A), a Grande Mancha acesa e de
 // frente para Ceres com Io e Europa acesas ao lado no céu do ato II
-// (JD_J), e as luas de Saturno que a câmera visita acesas no céu dos
-// atos de fora (JD2).
+// (JD_J), as luas de Saturno que a câmera visita acesas no céu do ato
+// III (JD2), e o coração de Plutão, Caronte e Tritão acesos no do ato IV
+// (JD_E).
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -24,9 +25,10 @@ import { baseCorpoEquatorial } from '../../../../lib/atlas/orientacao';
 };
 const {
   PINOS_SOLAR, JD_A_SOLAR_TDB, JD_J_SOLAR_TDB, DELTA_JDJ_MINUTOS, JD2_SOLAR_TDB, DELTA_JD2_HORAS,
-  RELOGIOS_SOLAR, RELOGIO_DO_CORPO, GRM_NA_TEXTURA,
+  JD_E_SOLAR_TDB, DELTA_JDE_HORAS, RELOGIOS_SOLAR, RELOGIO_DO_CORPO, GRM_NA_TEXTURA, CORACAO_NA_TEXTURA,
 } = await import('./pinos');
 const { JD_DO_FILME_TDB } = await import('../../journey');
+const { naSuperficie } = await import('./atos/geometria');
 
 const DATA_DIR = fileURLToPath(new URL('../../../../../public/data/atlas/', import.meta.url));
 const meta = JSON.parse(
@@ -43,8 +45,8 @@ const motor = new MotorEfemerides(
 /** o relógio do ato de cada corpo */
 const jdDe = (id: string) => RELOGIOS_SOLAR[RELOGIO_DO_CORPO.get(id)!];
 
-const cadeiaPc = (id: string) => {
-  const v = motor.posicaoHeliocentrica(id, jdDe(id));
+const cadeiaPc = (id: string, jd = jdDe(id)) => {
+  const v = motor.posicaoHeliocentrica(id, jd);
   const eq = eclipticaParaEquatorial([v.x, v.y, v.z]);
   return [eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC];
 };
@@ -83,13 +85,17 @@ const GRM_EM_JD_J = (() => {
 const anguloAGrm = (v: THREE.Vector3) => THREE.MathUtils.radToDeg(GRM_EM_JD_J.angleTo(v));
 
 describe('os pinos do filme solar são a efeméride', () => {
-  it('o ato I é o quarto minguante de 10/01; o ato II, 13 h 52 min antes da coda galáctica; os atos de fora, 8 h antes', () => {
+  it('o ato I é o quarto minguante de 10/01; o ato II, 13 h 52 min antes da coda galáctica; o ato III, 8 h antes; o ato IV, 15 h antes', () => {
     expect(JD_A_SOLAR_TDB).toBe(2461051.16026012);
     expect(DELTA_JDJ_MINUTOS).toBe(-832);
     expect(JD_J_SOLAR_TDB).toBe(JD_DO_FILME_TDB + DELTA_JDJ_MINUTOS / 1440);
     expect(DELTA_JD2_HORAS).toBe(-8);
     expect(JD2_SOLAR_TDB).toBe(JD_DO_FILME_TDB + DELTA_JD2_HORAS / 24);
-    expect(RELOGIOS_SOLAR).toEqual({ a: JD_A_SOLAR_TDB, jupiter: JD_J_SOLAR_TDB, fora: JD2_SOLAR_TDB });
+    expect(DELTA_JDE_HORAS).toBe(-15);
+    expect(JD_E_SOLAR_TDB).toBe(JD_DO_FILME_TDB + DELTA_JDE_HORAS / 24);
+    expect(RELOGIOS_SOLAR).toEqual({
+      a: JD_A_SOLAR_TDB, jupiter: JD_J_SOLAR_TDB, fora: JD2_SOLAR_TDB, escuro: JD_E_SOLAR_TDB,
+    });
   });
 
   it('todo corpo com pino, menos o Sol (a origem), tem relógio', () => {
@@ -99,8 +105,9 @@ describe('os pinos do filme solar são a efeméride', () => {
 
   it('traz todos os corpos que a câmera visita', () => {
     expect([...PINOS_SOLAR.keys()].sort()).toEqual([
-      'callisto', 'ceres', 'earth', 'enceladus', 'europa', 'ganymede', 'hyperion', 'iapetus',
-      'io', 'jupiter', 'mars', 'mercury', 'mimas', 'moon', 'saturn', 'sun', 'titan', 'venus',
+      'callisto', 'ceres', 'charon', 'earth', 'enceladus', 'europa', 'ganymede', 'hyperion', 'iapetus',
+      'io', 'jupiter', 'mars', 'mercury', 'mimas', 'moon', 'neptune', 'pluto', 'saturn', 'sun', 'titan',
+      'triton', 'uranus', 'venus',
     ]);
   });
 
@@ -148,12 +155,32 @@ describe('os pinos do filme solar são a efeméride', () => {
     expect(anguloAGrm(lua('europa'))).toBeGreaterThanOrEqual(30); // 38,0°
   });
 
-  it('no céu dos atos de fora, Encélado, Mimas, Hipérion e Jápeto estão fora da sombra, do lado aceso', () => {
+  it('no céu do ato III, Encélado, Mimas, Hipérion e Jápeto estão fora da sombra, do lado aceso', () => {
     const encelado = anguloSubsolar('enceladus', 'saturn'); // 91,9°
     expect(encelado).toBeGreaterThanOrEqual(30);
     expect(encelado).toBeLessThanOrEqual(110);
     expect(anguloSubsolar('mimas', 'saturn')).toBeLessThan(110); // 83,2°
     expect(anguloSubsolar('hyperion', 'saturn')).toBeLessThan(110); // 4,3°
     expect(anguloSubsolar('iapetus', 'saturn')).toBeLessThanOrEqual(110); // 64,4°
+  });
+
+  it('no céu do ato IV o coração de Plutão e Caronte estão acesos, e Tritão fora da sombra de Netuno, do lado aceso', () => {
+    const plutao = PINOS_SOLAR.get('pluto')!;
+    const sol = plutao.clone().negate();
+    const coracao = naSuperficie(IAU_ORIENTATIONS.pluto, JD_E_SOLAR_TDB)(CORACAO_NA_TEXTURA.lat, CORACAO_NA_TEXTURA.lonLeste);
+    expect(THREE.MathUtils.radToDeg(coracao.angleTo(sol))).toBeLessThanOrEqual(70); // 54,0°
+    expect(anguloSubsolar('charon', 'pluto')).toBeLessThanOrEqual(110); // 109,2°: no limite
+    const tritao = anguloSubsolar('triton', 'neptune'); // 36,4°
+    expect(tritao).toBeLessThanOrEqual(110);
+    const netuno = PINOS_SOLAR.get('neptune')!;
+    const rel = PINOS_SOLAR.get('triton')!.clone().sub(netuno);
+    const rNetuno = (BODY_AXES.neptune[0] / AU_KM) * AU_PARA_PC;
+    expect(rel.angleTo(netuno)).toBeGreaterThan(Math.asin(rNetuno / rel.length())); // 143,6° do eixo; a sombra tem 4,0°
+  });
+
+  it('em JD2 Caronte estaria atrás de Plutão para quem vem do Sol (115,1° do ponto subsolar): por isso o ato IV tem relógio próprio', () => {
+    const plutao = new THREE.Vector3(...cadeiaPc('pluto', JD2_SOLAR_TDB));
+    const caronte = new THREE.Vector3(...cadeiaPc('charon', JD2_SOLAR_TDB));
+    expect(THREE.MathUtils.radToDeg(caronte.sub(plutao).angleTo(plutao.clone().negate()))).toBeGreaterThan(110);
   });
 });

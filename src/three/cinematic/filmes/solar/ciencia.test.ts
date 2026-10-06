@@ -4,9 +4,10 @@
 // pela fonte única de raios (BODY_AXES) ou pela posição da câmera no
 // instante da legenda — e cobrado com o arredondamento que o texto usa,
 // nas duas línguas. Cada conta usa o céu do ato da legenda: do Sol à
-// Ceres, o de JD_A; em Júpiter, o de JD_J; de Saturno em diante, o de
-// JD2 — inclusive a Terra, que é desenhada no pino de JD_A mas é
-// recomputada pela cadeia no relógio do ato.
+// Ceres, o de JD_A; em Júpiter, o de JD_J; em Saturno, o de JD2; de Urano
+// ao retrato, o de JD_E — inclusive a Terra, que é desenhada no pino de
+// JD_A mas é recomputada pela cadeia no relógio do ato; no epílogo, de
+// volta à Terra, de novo o de JD_A.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -16,7 +17,8 @@ import type { MetaEfemerides } from '../../../../lib/atlas/efemerides';
 import { decodeEfemerides, MotorEfemerides } from '../../../../lib/atlas/efemerides';
 import { AU_KM } from '../../../../lib/atlas/elementosOrbitais';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../../lib/atlas/frameGalactico';
-import { BODY_AXES } from '../../../../lib/atlas/iauOrientation';
+import { BODY_AXES, IAU_ORIENTATIONS } from '../../../../lib/atlas/iauOrientation';
+import { baseCorpoEquatorial } from '../../../../lib/atlas/orientacao';
 import { ANEL_SATURNO } from '../../../world/corpos/gigante';
 import { RELEVO_DA_LUA } from '../../../world/corpos/rochoso';
 import { RAIO_SOL_KM } from '../../../escala';
@@ -76,14 +78,16 @@ const LUA = pino('moon');
 const MARTE = pino('mars');
 const JUPITER = pino('jupiter');
 const SATURNO = pino('saturn');
+const URANO = pino('uranus');
 /** a Terra num relógio do filme, pela mesma cadeia dos pinos */
 const terraEm = (jd: number) => {
   const v = motor.posicaoHeliocentrica('earth', jd);
   return new THREE.Vector3(...eclipticaParaEquatorial([v.x, v.y, v.z])).multiplyScalar(UA);
 };
-/** a Terra no céu do ato II (JD_J) e no dos atos de fora (JD2) */
+/** a Terra no céu do ato II (JD_J), no do ato III (JD2) e no do ato IV (JD_E) */
 const TERRA_EM_JD_J = terraEm(RELOGIOS_SOLAR.jupiter);
 const TERRA_EM_JD2 = terraEm(RELOGIOS_SOLAR.fora);
+const TERRA_EM_JD_E = terraEm(RELOGIOS_SOLAR.escuro);
 const emUA = (v: THREE.Vector3) => v.length() / UA;
 const minutosLuz = (ua: number) => (ua * AU_KM) / C_KM_S / 60;
 /** a luz do Sol num ponto, como fração da que a Terra recebe no mesmo céu (1/d²) */
@@ -320,20 +324,90 @@ describe('os números das legendas batem com a conta', () => {
     expect(falaEn(c)).toContain('on purpose, so it could never contaminate the moons');
   });
 
-  it('“a 10 UA, 100 vezes mais fraco” é onde a câmera está quando a legenda entra', () => {
-    const c = legenda('A 10 UA');
-    const d = emUA(camera(c.t));
-    expect(Math.round(d)).toBe(10);
-    expect(Math.round(maisFraco(d, TERRA_EM_JD2) / 10) * 10).toBe(100);
-    expect(falaEn(c)).toContain('10 AU');
-    expect(falaEn(c)).toContain('100 times');
+  it('em Urano a luz do Sol é cerca de 1/390 da nossa (no céu de JD_E, a Terra a 0,983 UA), também onde a câmera está quando a legenda entra', () => {
+    // 19,49 UA: 1/d² dá 1/380 do que o Sol dá a 1 UA e 1/393 do que a
+    // Terra recebe no mesmo céu — a convenção das legendas de Júpiter e
+    // Saturno, com dois algarismos significativos
+    const duasCasas = (n: number) => Number(n.toPrecision(2));
+    const n = duasCasas(maisFraco(emUA(URANO), TERRA_EM_JD_E));
+    expect(n).toBe(390);
+    const c = legenda('Urano —');
+    expect(duasCasas(maisFraco(emUA(camera(c.t)), TERRA_EM_JD_E))).toBe(n);
+    expect(falaPt(c)).toContain('gira deitado');
+    expect(falaPt(c)).toContain(`cerca de 1/${n} da nossa`);
+    expect(falaEn(c)).toContain('spins on its side');
+    expect(falaEn(c)).toContain(`about 1/${n} of ours`);
+    // "deitado": o polo norte IAU de Urano a 82,2° do polo da órbita, pela
+    // efeméride do app (a obliquidade de 97,8°, girando ao contrário) — o
+    // eixo a 8° do plano da órbita
+    const uranoEm = (jd: number) => {
+      const v = motor.posicaoHeliocentrica('uranus', jd);
+      return new THREE.Vector3(...eclipticaParaEquatorial([v.x, v.y, v.z]));
+    };
+    const poloDaOrbita = uranoEm(RELOGIOS_SOLAR.escuro).cross(uranoEm(RELOGIOS_SOLAR.escuro + 30));
+    const polo = new THREE.Vector3(...baseCorpoEquatorial(IAU_ORIENTATIONS.uranus, RELOGIOS_SOLAR.escuro).polo);
+    expect(THREE.MathUtils.radToDeg(polo.angleTo(poloDaOrbita))).toBeCloseTo(82.2, 0);
   });
 
-  it('“um ponto azul pálido, a 40 UA” é onde a câmera está quando a legenda entra', () => {
-    const c = legenda('A Terra, daqui');
-    const d = emUA(camera(c.t));
-    expect(Math.round(d)).toBe(40);
-    expect(falaPt(c)).toContain('40 UA');
-    expect(falaEn(c)).toContain('40 AU');
+  it('Tritão gira ao contrário (a órbita, pelos elementos do app, é retrógrada no equador de Netuno), gêiseres de nitrogênio a −235 °C, Voyager 2 em 1989', () => {
+    // a órbita: o polo dela a mais de 90° do polo de Netuno — o sinal de
+    // uma lua capturada (Agnor & Hamilton 2006, Nature 441, 192)
+    const tritaoEm = (jd: number) => {
+      const t = motor.posicaoHeliocentrica('triton', jd);
+      const n = motor.posicaoHeliocentrica('neptune', jd);
+      return new THREE.Vector3(...eclipticaParaEquatorial([t.x - n.x, t.y - n.y, t.z - n.z]));
+    };
+    const polo = new THREE.Vector3(...baseCorpoEquatorial(IAU_ORIENTATIONS.neptune, RELOGIOS_SOLAR.escuro).polo);
+    const poloDaOrbita = tritaoEm(RELOGIOS_SOLAR.escuro).cross(tritaoEm(RELOGIOS_SOLAR.escuro + 0.1));
+    expect(THREE.MathUtils.radToDeg(poloDaOrbita.angleTo(polo))).toBeGreaterThan(90);
+    // a superfície a 38 K, medida pela Voyager 2 (Conrath et al. 1989,
+    // Science 246, 1454); as plumas de nitrogênio, nas imagens dela
+    // (Soderblom et al. 1990, Science 250, 410); o sobrevoo, em 25/08/1989
+    expect(Math.round(38 - 273.15)).toBe(-235);
+    const c = legenda('Tritão');
+    expect(falaPt(c)).toContain('Tritão gira ao contrário: foi capturado');
+    expect(falaPt(c)).toContain('gêiseres de nitrogênio a −235 °C; a Voyager 2 passou em 1989');
+    expect(falaEn(c)).toContain('Triton orbits backwards: it was captured');
+    expect(falaEn(c)).toContain('nitrogen geysers at −235 °C; Voyager 2 flew past in 1989');
+  });
+
+  it('Plutão: ao meio-dia a luz é ~1/1300 da nossa (35,4 UA no céu de JD_E, a Terra a 0,983 UA) — a de um fim de tarde na Terra —, um coração de gelo de nitrogênio, New Horizons em 2015', () => {
+    // a "hora de Plutão" da NASA: a luz do meio-dia em Plutão é a que a
+    // Terra tem perto do pôr do Sol (~1/1000 a 1/1600 do dia aberto, entre
+    // 33 e 49 UA); em JD_E Plutão está a 35,4 UA, não às 39 UA da média
+    const PLUTAO = pino('pluto');
+    expect(emUA(PLUTAO)).toBeCloseTo(35.4, 1);
+    const n = Number(maisFraco(emUA(PLUTAO), TERRA_EM_JD_E).toPrecision(2));
+    expect(n).toBe(1300);
+    // o coração (Sputnik Planitia) é gelo de nitrogênio, com metano e
+    // monóxido de carbono (Grundy et al. 2016, Science 351, aad9189); o
+    // sobrevoo da New Horizons foi em 14/07/2015
+    const c = legenda('Plutão —');
+    expect(falaPt(c)).toContain('Plutão — ao meio-dia, a luz é a de um fim de tarde na Terra');
+    expect(falaPt(c)).toContain('um coração de gelo de nitrogênio; a New Horizons passou em 2015');
+    expect(falaEn(c)).toContain('Pluto — at noon, the light is like late afternoon on Earth');
+    expect(falaEn(c)).toContain('a heart of nitrogen ice; New Horizons flew past in 2015');
+  });
+
+  it('o retrato de família: a Voyager 1 a 40 UA em 14 de fevereiro de 1990, e a câmera a 40 UA quando a legenda entra', () => {
+    // o "Retrato de Família" e o "Pálido Ponto Azul": 14/02/1990, a ~6
+    // bilhões de km (40 UA) do Sol (NASA/JPL, PIA00451 e PIA00452)
+    const c = legenda('O retrato de família');
+    expect(Math.round(emUA(camera(c.t)))).toBe(40);
+    expect(falaPt(c)).toContain('a Voyager 1 nos viu em 14 de fevereiro de 1990: a Terra, um ponto azul pálido');
+    expect(falaEn(c)).toContain('Voyager 1 saw us on 14 February 1990: Earth, a pale blue dot');
+  });
+
+  it('a mesma luz, oito minutos depois: a luz do Sol chega à Terra em 8 min 10,7 s (a Terra a 0,983 UA em JD_A, o céu do epílogo)', () => {
+    const minutos = minutosLuz(emUA(TERRA));
+    expect(emUA(TERRA)).toBeCloseTo(0.983, 3);
+    expect(Math.floor(minutos)).toBe(8);
+    expect((minutos - 8) * 60).toBeCloseTo(10.7, 1);
+    // o número vai por extenso na legenda
+    const POR_EXTENSO: Record<number, [string, string]> = { 8: ['Oito', 'Eight'] };
+    const [oito, eight] = POR_EXTENSO[Math.floor(minutos)];
+    const c = legenda('A mesma luz');
+    expect(falaPt(c)).toContain(`A mesma luz. ${oito} minutos depois.`);
+    expect(falaEn(c)).toContain(`The same light. ${eight} minutes later.`);
   });
 });

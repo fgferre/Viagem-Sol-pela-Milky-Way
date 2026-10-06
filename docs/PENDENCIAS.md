@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (05/10, tarde da conversa nova) — VIAGEM SOLAR NO RAMO `viagem-solar`, ATOS I, II E III PRONTOS; O MODO COORDENADOR + AUTORES EM FILA FUNCIONOU
+## O BASTÃO — onde a rodada parou (05/10, tarde da conversa nova) — VIAGEM SOLAR NO RAMO `viagem-solar`, O FILME INTEIRO EXISTE PELO ROTEIRO (395 s); FALTA A F4 E AS DECISÕES DELE POR VÍDEO
 
 **Estado:** o segundo filme existe e toca de ponta a ponta no ramo
 `viagem-solar` (backup `origin/viagem-solar`; nada no `main`, nada
@@ -31,8 +31,12 @@ a geometria do filme foi separada por ato e os planos ganharam nome
 anéis com a legenda honesta, o rasante, Encélado com a pluma em contraluz,
 Titã (bola laranja, pelo lado de Saturno), Jápeto (as duas caras; a crista
 foi para a fila de assets), Hipérion religado e o postal com a despedida
-da Cassini. Ato III 90 s; filme 351 s. Folhas: `capturas/viagem-solar/v4-ato2/`
-e `v4-ato3/`. A máquina caiu uma vez no meio (gravações pesadas); regra
+da Cassini. Ato III 90 s. E, em 06/10, o Ato IV e o Epílogo: Urano deitado, Netuno
+com Tritão, Plutão com o coração de frente e Caronte, o beat de luz
+honesta (que deixa Plutão preto: decisão dele), o retrato de família a
+40 UA com os nomes, e a volta para casa com o Sol nascendo sobre a Terra
+e a ponte para o outro filme. Filme 395 s (35 s acima dos 6 min; a F4
+apara). Folhas: `capturas/viagem-solar/v4-ato2/`, `v4-ato3/`, `v4-ato4/`. A máquina caiu uma vez no meio (gravações pesadas); regra
 nova: uma gravação de cada vez, curta, servidor fechado entre elas.
 
 **Palavras dele nesta rodada:** *"onde está o sol nesse filme?"*;
@@ -45,8 +49,10 @@ fazer menos braçal"*. As sete decisões dele (6 min, 24 lugares, todos os
 opcionais, Lua no quarto, luz honesta em Plutão, som depois, ponte,
 botões) estão no roteiro §4; os assets fracos viraram o item 230.
 
-**Falta (na ordem do plano, "Como continuar"):** Ato IV (Urano, Netuno/Tritão, Plutão/Caronte com o beat de
-luz), Epílogo (retrato de família, a mesma luz + ponte); depois a F4
+**Falta (na ordem do plano, "Como continuar"):** as decisões dele por vídeo
+(a luz honesta em Plutão deixa Plutão PRETO como o motor faz hoje — ver
+`v4-ato4/2026-10-06-plutao-luz-k05-comparacao.jpg`; e os pontos de gosto
+dos atos II–IV listados no plano); depois a F4
 (legenda sobre fundo claro, o Sol virando ponto de repente, o Sol pelo
 relógio da tela, quadros pretos de NaN perto do joelho da Lua com
 `abaixo` baixo, halo/manchas da Terra pequena, juízes com `--filme=solar`
@@ -502,8 +508,8 @@ Palavras dele, 05/10, ao decidir o roteiro da viagem solar (seis minutos,
 todos os lugares, Urano inclusive): *"vamos incluir todos, ainda vamos
 melhorar esse asset, se houver mais algum asset que precise ser melhorado
 também vamos colocar isso no pipeline"*. O inventário de 05/10 (feito para
-o roteiro) aponta, do mais fraco ao menos: Urano (mapa derivado; anéis
-declarados em `CORPOS_COM_ANEL` mas não desenhados), Netuno (mapa derivado),
+o roteiro) aponta, do mais fraco ao menos: Urano (mapa derivado, sem feições; os anéis
+SÃO desenhados, tênues — visto no Ato IV em 06/10), Netuno (mapa derivado),
 Vesta e Deimos (elipsoides sem forma), Tritão (metade reconstruída por IA
 sobre a Voyager 2), Ariel (norte inventado), Titã (só a névoa, 720×360),
 Vênus (só o topo das nuvens — correto visto de fora; a superfície é radar),

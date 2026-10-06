@@ -31,6 +31,7 @@ const { NUMEROS_CASA, PONTOS_CASA } = await import('./atos/casa');
 const { NUMEROS_JUPITER, PONTOS_JUPITER } = await import('./atos/jupiter');
 const { NUMEROS_SATURNO, PONTOS_SATURNO } = await import('./atos/saturno');
 const { NUMEROS_AFASTAMENTO, PONTOS_AFASTAMENTO } = await import('./atos/afastamento');
+const { NUMEROS_EPILOGO, PONTOS_EPILOGO } = await import('./atos/epilogo');
 
 const filme = montarFilmeSolar();
 const { shots, starts, duracao, apoios, pinos } = filme;
@@ -76,10 +77,10 @@ const plano = (nome: string) => {
 };
 
 describe('o filme solar monta', () => {
-  it('dura o prólogo no Sol, o ato I de Mercúrio a Ceres e os atos de fora da v3 (330–360 s), em cinco atos', () => {
-    expect(duracao).toBeGreaterThanOrEqual(330);
-    expect(duracao).toBeLessThanOrEqual(360);
-    expect(filme.planosPorAto).toHaveLength(5);
+  it('dura o prólogo no Sol, o ato I de Mercúrio a Ceres, Júpiter, Saturno, o ato IV de Urano ao retrato de família e o epílogo de volta à Terra (390–400 s), em seis atos', () => {
+    expect(duracao).toBeGreaterThanOrEqual(390);
+    expect(duracao).toBeLessThanOrEqual(400); // 395,25 s: o retrato acaba em 379,25 s e o epílogo dura 16 s
+    expect(filme.planosPorAto).toHaveLength(6);
     expect(filme.planosPorAto[1]).toBe(16);
   });
 
@@ -160,17 +161,18 @@ describe('os pontos e números nomeados dos atos', () => {
     return achadas;
   };
 
-  it('os pontos dos corpos e dos cinco atos não repetem nome', () => {
+  it('os pontos dos corpos e dos seis atos não repetem nome', () => {
     expect(repetidas({
       corpos: PONTOS_DOS_CORPOS, prologo: PONTOS_PROLOGO, casa: PONTOS_CASA,
       jupiter: PONTOS_JUPITER, saturno: PONTOS_SATURNO, afastamento: PONTOS_AFASTAMENTO,
+      epilogo: PONTOS_EPILOGO,
     })).toEqual([]);
   });
 
-  it('os números dos cinco atos não repetem nome', () => {
+  it('os números dos seis atos não repetem nome', () => {
     expect(repetidas({
       prologo: NUMEROS_PROLOGO, casa: NUMEROS_CASA, jupiter: NUMEROS_JUPITER,
-      saturno: NUMEROS_SATURNO, afastamento: NUMEROS_AFASTAMENTO,
+      saturno: NUMEROS_SATURNO, afastamento: NUMEROS_AFASTAMENTO, epilogo: NUMEROS_EPILOGO,
     })).toEqual([]);
   });
 });
@@ -336,47 +338,75 @@ describe('as duas juntas declaradas do ato I', () => {
   });
 });
 
-describe('o ponto azul pálido', () => {
-  // a Terra no céu dos atos II–IV, pela cadeia dos pinos, vista da câmera
-  // do roteiro, enquanto a legenda está no ar: a mira é o Sol (centro do
-  // quadro), então a distância em px é a do ângulo, na lente do plano
-  const v = motor.posicaoHeliocentrica('earth', RELOGIOS_SOLAR.fora);
-  const terra = new THREE.Vector3(...eclipticaParaEquatorial([v.x, v.y, v.z])).multiplyScalar(AU_PARA_PC);
+describe('o retrato de família', () => {
+  // os planetas no céu do ato IV (JD_E), pela cadeia dos pinos — é onde o
+  // app os desenha no retrato —, vistos da câmera do roteiro: a mira é o
+  // Sol (centro do quadro), então a distância em px é a do ângulo, na
+  // lente do plano, num quadro de 1280×720
+  const planeta = (id: string) => {
+    const v = motor.posicaoHeliocentrica(id, RELOGIOS_SOLAR.escuro);
+    return new THREE.Vector3(...eclipticaParaEquatorial([v.x, v.y, v.z])).multiplyScalar(AU_PARA_PC);
+  };
+  const j = new Journey(shots, starts);
   const { i } = plano('pontoAzulPalido');
-  const c = shots[i].captions!.find((x) => x.text === 'A Terra, daqui')!;
+  /** o último instante do retrato (o epílogo começa no seguinte) */
+  const fimDoRetrato = starts[i] + shots[i].dur - 1e-9;
+  const c = shots[i].captions!.find((x) => x.text === 'O retrato de família')!;
   const t0 = starts[i] + c.at * shots[i].dur;
   const t1 = t0 + (c.dur ?? 8.6);
+  /** onde um ponto cai no quadro, em px do centro (x para a direita, y para cima) */
+  const px = (t: number, p: THREE.Vector3) => {
+    const { pos, look, fov } = j.at(t);
+    const frente = look.clone().sub(pos).normalize();
+    const cima = filme.cima.clone().addScaledVector(frente, -filme.cima.dot(frente)).normalize();
+    const direita = new THREE.Vector3().crossVectors(frente, cima);
+    const v = p.clone().sub(pos);
+    const f = 360 / Math.tan(THREE.MathUtils.degToRad(fov / 2));
+    return { x: (f * v.dot(direita)) / v.dot(frente), y: (f * v.dot(cima)) / v.dot(frente) };
+  };
 
-  it('a Terra fica a 60–150 px do Sol, num quadro de 1280×720, do começo ao fim da legenda', () => {
-    const s = shots[i];
-    const fora: string[] = [];
-    for (let t = t0; t <= t1; t += 0.05) {
-      const k = THREE.MathUtils.clamp((t - starts[i]) / s.dur, 0, 1);
-      const { pos, look } = amostra(t);
-      const fov = THREE.MathUtils.lerp(s.fov0, s.fov1, s.fovEase ? s.fovEase(k) : (s.ease ?? glide)(k));
-      const angulo = look.clone().sub(pos).angleTo(terra.clone().sub(pos));
-      const px = (360 / Math.tan(THREE.MathUtils.degToRad(fov / 2))) * Math.tan(angulo);
-      if (px < 60 || px > 150) fora.push(`t=${t.toFixed(2)}: ${px.toFixed(0)} px`);
+  it('a mira é o Sol, no centro do quadro, do começo ao fim da legenda', () => {
+    for (let t = t0; t <= t1; t += 0.5) {
+      const { pos, look } = j.at(t);
+      expect(look.clone().sub(pos).angleTo(pos.clone().negate())).toBeLessThan(1e-6);
     }
-    expect(look0EhOSol()).toBe(true);
-    expect(fora).toEqual([]);
   });
 
-  /** a mira do plano é o Sol em toda a janela da legenda */
-  function look0EhOSol() {
-    for (let t = t0; t <= t1; t += 0.5) {
-      const { pos, look } = amostra(t);
-      if (look.clone().sub(pos).angleTo(pos.clone().negate()) > 1e-6) return false;
+  it('a Terra fica fora do clarão e dentro do quadro: a 50–150 px do Sol do começo ao fim da legenda, a 60 px ou mais no fim', () => {
+    const terra = planeta('earth');
+    const fora: string[] = [];
+    for (let t = t0; t <= t1; t += 0.05) {
+      const { x, y } = px(t, terra);
+      const d = Math.hypot(x, y);
+      if (d < 50 || d > 150) fora.push(`t=${t.toFixed(2)}: ${d.toFixed(0)} px`);
     }
-    return true;
-  }
+    expect(fora).toEqual([]); // medido 57 px quando a legenda entra
+    const fim = px(fimDoRetrato, terra);
+    expect(Math.hypot(fim.x, fim.y)).toBeGreaterThanOrEqual(60); // medido 70 px
+  });
+
+  it('no fim, a lente de 12°: a Terra e Júpiter à direita do Sol, Vênus e Marte à esquerda, Saturno à direita e dentro do quadro', () => {
+    const lado = (id: string) => px(fimDoRetrato, planeta(id));
+    expect(j.at(fimDoRetrato).fov).toBeCloseTo(12, 6);
+    const [terra, venus, marte, jupiter, saturno] = ['earth', 'venus', 'mars', 'jupiter', 'saturn'].map(lado);
+    expect(terra.x).toBeGreaterThan(0);
+    expect(jupiter.x).toBeGreaterThan(terra.x);
+    expect(venus.x).toBeLessThan(0);
+    expect(marte.x).toBeLessThan(venus.x);
+    expect(Math.hypot(venus.x, venus.y)).toBeGreaterThan(40); // medido 55 px
+    // todos dentro do quadro de 1280×720, com folga para o nome
+    for (const p of [terra, venus, marte, jupiter, saturno]) {
+      expect(Math.abs(p.x)).toBeLessThan(560);
+      expect(Math.abs(p.y)).toBeLessThan(300);
+    }
+  });
 });
 
-describe('os três relógios: o prólogo e o ato I em JD_A, Júpiter em JD_J, os atos de fora em JD2', () => {
+describe('os quatro relógios: o prólogo e o ato I em JD_A, Júpiter em JD_J, Saturno em JD2, o ato IV em JD_E e o epílogo de volta em JD_A', () => {
   // o primeiro plano de jupiter.json: a travessia para Júpiter
   const { shot: planoDaTravessia, inicio: inicioDaTravessia } = plano('jupiterChegada');
   const fimDaTravessia = inicioDaTravessia + planoDaTravessia.dur;
-  const [paraJupiter, paraFora] = filme.trocas;
+  const [paraJupiter, paraFora, paraEscuro, paraCasa] = filme.trocas;
   const fimDaTroca = paraJupiter.t + paraJupiter.duracao;
   /** o menor ângulo entre a visada e as direções da câmera à Terra e à Lua */
   const foraDaVisada = (t: number) => {
@@ -393,20 +423,30 @@ describe('os três relógios: o prólogo e o ato I em JD_A, Júpiter em JD_J, os
     return new THREE.Vector3(...eclipticaParaEquatorial([v.x, v.y, v.z])).multiplyScalar(AU_PARA_PC);
   };
 
-  it('duas trocas, de JD_A a JD_J e de JD_J a JD2, de 1,5 s cada', () => {
+  it('quatro trocas: de JD_A a JD_J, de JD_J a JD2 e de JD2 a JD_E em rampas de 1,5 s, e de JD_E a JD_A num degrau no corte do epílogo', () => {
     expect(filme.trocas.map((x) => [x.de, x.para, x.duracao])).toEqual([
-      ['a', 'jupiter', 1.5], ['jupiter', 'fora', 1.5],
+      ['a', 'jupiter', 1.5], ['jupiter', 'fora', 1.5], ['fora', 'escuro', 1.5], ['escuro', 'a', 0],
     ]);
+    // o degrau cai EXATAMENTE no corte, e o corte salta: a câmera vem de 40 UA
+    const { i, inicio } = plano('mesmaLuz');
+    expect(paraCasa.t).toBe(inicio);
+    const salto = shots[i - 1].pos(1, new THREE.Vector3()).distanceTo(shots[i].pos(0, new THREE.Vector3()));
+    expect(salto / AU_PARA_PC).toBeGreaterThan(39); // medido 40,7 UA
   });
 
   it('o calendário dá o relógio de cada ato fora das rampas e anda sem voltar dentro delas; o retrato (jd) é JD2', () => {
-    const { a, jupiter, fora } = RELOGIOS_SOLAR;
+    const { a, jupiter, fora, escuro } = RELOGIOS_SOLAR;
     expect(filme.jdDoFilme(0)).toBe(a);
     expect(filme.jdDoFilme(paraJupiter.t)).toBe(a);
     expect(filme.jdDoFilme(fimDaTroca)).toBe(jupiter);
     expect(filme.jdDoFilme(paraFora.t)).toBe(jupiter);
     expect(filme.jdDoFilme(paraFora.t + paraFora.duracao)).toBe(fora);
-    expect(filme.jdDoFilme(duracao)).toBe(fora);
+    expect(filme.jdDoFilme(paraEscuro.t)).toBe(fora);
+    expect(filme.jdDoFilme(paraEscuro.t + paraEscuro.duracao)).toBe(escuro);
+    expect(filme.jdDoFilme(paraCasa.t - 1e-6)).toBe(escuro);
+    // no degrau, o instante do corte já é o céu novo
+    expect(filme.jdDoFilme(paraCasa.t)).toBe(a);
+    expect(filme.jdDoFilme(duracao)).toBe(a);
     expect(filme.jd).toBe(fora);
     for (const troca of filme.trocas) {
       const de = RELOGIOS_SOLAR[troca.de];

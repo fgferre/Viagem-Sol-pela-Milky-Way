@@ -3,97 +3,352 @@
     {
       "nome": "saturnoSaida",
       "qa": {"saidaDeSaturno": 0.3},
+      "preload": {"corpos": ["uranus", "neptune", "triton"]},
       "camera": {
-        "duracao": 15,
+        "duracao": 10,
         "movimento": {
           "tipo": "aproximacao",
           "centro": "Saturno",
           "de": "postal2",
           "para": "saidaDeSaturno",
-          "ritmoDaDirecao": "glide"
+          "ritmoDaDirecao": "quadratic"
         },
-        "mira": {"tipo": "fixo", "ponto": "Saturno"},
+        "mira": {"tipo": "pan-direcao", "de": "Saturno", "para": "Urano", "ate": 0.5},
+        "lente": [50, 50],
+        "ritmo": "glide"
+      },
+      "assuntos": ["uranus"],
+      "fundoSilencioso": true,
+      "olhar": "assunto"
+    },
+    {
+      "nome": "uranoChegada",
+      "camera": {
+        "duracao": 3.1,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Urano",
+          "de": "saidaDeSaturno",
+          "direcaoNoJoelho": "joelhoDeUrano",
+          "para": "saidaDeUrano",
+          "distanciaMinima": "raspaoDeUrano",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0, 0.33]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Urano"},
         "lente": [50, 50],
         "ritmo": "quadratic"
+      },
+      "assuntos": ["uranus"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "uranoPassagem",
+      "qa": {"urano": 0.3},
+      "camera": {
+        "duracao": 6.9,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Urano",
+          "de": "saidaDeSaturno",
+          "direcaoNoJoelho": "joelhoDeUrano",
+          "para": "saidaDeUrano",
+          "distanciaMinima": "raspaoDeUrano",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0.33, 1]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Urano"},
+        "lente": [50, 50],
+        "ritmo": "settle"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.12,
+          "texto": "Urano — gira deitado",
+          "subtexto": "a luz do Sol aqui é cerca de 1/390 da nossa",
+          "en": {"texto": "Uranus — it spins on its side", "subtexto": "the sunlight here is about 1/390 of ours"},
+          "duracao": 5.2
+        }
+      ]
+    },
+    {
+      "nome": "netunoChegada",
+      "camera": {
+        "duracao": 4.05,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Tritao",
+          "de": "saidaDeUrano",
+          "direcaoNoJoelho": "joelhoDeTritao",
+          "para": "saidaDeTritao",
+          "distanciaMinima": "raspaoDeTritao",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0, 0.27]
+        },
+        "mira": {"tipo": "pan-direcao", "de": "Urano", "para": "Netuno", "ate": 0.5},
+        "lente": [50, 50],
+        "ritmo": "quadratic"
+      },
+      "assuntos": ["neptune", "triton"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "tritaoChegada",
+      "camera": {
+        "duracao": 0.9,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Tritao",
+          "de": "saidaDeUrano",
+          "direcaoNoJoelho": "joelhoDeTritao",
+          "para": "saidaDeTritao",
+          "distanciaMinima": "raspaoDeTritao",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0.27, 0.39]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Netuno"},
+        "lente": [50, 50],
+        "ritmo": "linear"
+      },
+      "assuntos": ["triton"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "tritaoRaspao",
+      "qa": {"tritao": 0.27},
+      "camera": {
+        "duracao": 10.05,
+        "movimento": {
+          "tipo": "raspao",
+          "centro": "Tritao",
+          "de": "saidaDeUrano",
+          "direcaoNoJoelho": "joelhoDeTritao",
+          "para": "saidaDeTritao",
+          "distanciaMinima": "raspaoDeTritao",
+          "joelho": 0.8,
+          "sigma": 0.12,
+          "alongamento": 0.6,
+          "chao": 0.12,
+          "expoentes": [2.2, 2.0],
+          "intervalo": [0.39, 1]
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Netuno",
+          "assunto": "miraEmTritao",
+          "rumo": "miraEmTritao",
+          "entrada": 0.15,
+          "saida": 1
+        },
+        "lente": [50, 38],
+        "ritmo": "settle"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.1,
+          "texto": "Tritão gira ao contrário: foi capturado",
+          "subtexto": "gêiseres de nitrogênio a −235 °C; a Voyager 2 passou em 1989",
+          "en": {
+            "texto": "Triton orbits backwards: it was captured",
+            "subtexto": "nitrogen geysers at −235 °C; Voyager 2 flew past in 1989"
+          },
+          "duracao": 6.5
+        }
+      ]
+    },
+    {
+      "nome": "plutaoChegada",
+      "preload": {"corpos": ["pluto", "charon"]},
+      "camera": {
+        "duracao": 4.55,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Plutao",
+          "de": "saidaDeTritao",
+          "para": "noCoracao",
+          "ritmoDaDirecao": "easeOut",
+          "intervalo": [0, 0.6714]
+        },
+        "mira": {"tipo": "pan-direcao", "de": "miraEmTritao", "para": "miraNoCoracao", "ate": 0.3},
+        "lente": [38, 30],
+        "ritmo": "quadratic",
+        "ritmoDaLente": "glide"
+      },
+      "assuntos": ["pluto"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "plutaoCoracao",
+      "camera": {
+        "duracao": 2.45,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Plutao",
+          "de": "saidaDeTritao",
+          "para": "noCoracao",
+          "ritmoDaDirecao": "easeOut",
+          "intervalo": [0.6714, 1]
+        },
+        "mira": {"tipo": "fixo", "ponto": "miraNoCoracao"},
+        "lente": [30, 30],
+        "ritmo": "settle"
       },
       "fundoSilencioso": true,
       "olhar": "assunto"
     },
     {
-      "nome": "afastamentoCruzeiro",
+      "nome": "plutaoLuz",
+      "qa": {"plutao": 0.02},
       "camera": {
-        "duracao": 7,
-        "movimento": {
-          "tipo": "aproximacao",
-          "centro": "Saturno",
-          "de": "saidaDeSaturno",
-          "para": "afastamento",
-          "ritmoDaDirecao": "glide"
-        },
-        "mira": {"tipo": "fixo", "ponto": "Saturno"},
-        "lente": [50, 58],
-        "ritmo": "linear"
+        "duracao": 8.4,
+        "movimento": {"tipo": "fixo", "ponto": "noCoracao"},
+        "mira": {"tipo": "fixo", "ponto": "miraNoCoracao"},
+        "lente": [30, 30],
+        "ritmo": "linear",
+        "luz": {
+          "tipo": "soma",
+          "curvas": [
+            {"tipo": "pouso", "para": 3, "inicio": 0.05, "pousaEm": 0.17, "expoente": 2},
+            {"tipo": "pouso", "para": -2, "inicio": 0.05, "pousaEm": 0.17, "expoente": 3},
+            {"tipo": "pouso", "para": -3, "inicio": 0.84, "pousaEm": 0.75, "expoente": 2},
+            {"tipo": "pouso", "para": 2, "inicio": 0.84, "pousaEm": 0.75, "expoente": 3}
+          ]
+        }
       },
       "fundoSilencioso": true,
       "olhar": "assunto",
       "legendas": [
         {
-          "em": 0.54,
-          "texto": "A 10 UA, o Sol é 100 vezes mais fraco que na Terra",
-          "en": {"texto": "At 10 AU, the Sun is 100 times fainter than at Earth"},
-          "duracao": 6.5,
-          "ponte": true
+          "em": 0.018,
+          "texto": "Plutão — ao meio-dia, a luz é a de um fim de tarde na Terra",
+          "subtexto": "um coração de gelo de nitrogênio; a New Horizons passou em 2015",
+          "en": {
+            "texto": "Pluto — at noon, the light is like late afternoon on Earth",
+            "subtexto": "a heart of nitrogen ice; New Horizons flew past in 2015"
+          },
+          "duracao": 8.15
         }
       ]
+    },
+    {
+      "nome": "plutaoCaronte",
+      "camera": {
+        "duracao": 3.6,
+        "movimento": {
+          "tipo": "arco",
+          "centro": "Plutao",
+          "direcaoDe": "direcaoDoCoracao",
+          "direcaoPara": "direcaoDoPar",
+          "raio": ["raioNoCoracao", "raioNoPar"],
+          "intervalo": [0, 0.4286]
+        },
+        "mira": {"tipo": "pan-direcao", "de": "miraNoCoracao", "para": "Plutao", "ate": 0.5},
+        "lente": [30, 32],
+        "ritmo": "quadratic",
+        "ritmoDaLente": "glide"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto"
+    },
+    {
+      "nome": "plutaoPar",
+      "qa": {"caronte": 0.95},
+      "camera": {
+        "duracao": 6,
+        "movimento": {
+          "tipo": "arco",
+          "centro": "Plutao",
+          "direcaoDe": "direcaoDoCoracao",
+          "direcaoPara": "direcaoDoPar",
+          "raio": ["raioNoCoracao", "raioNoPar"],
+          "intervalo": [0.4286, 1]
+        },
+        "mira": {"tipo": "pan-direcao", "de": "Plutao", "para": "miraNoPar", "ate": 0.6},
+        "lente": [32, 35],
+        "ritmo": "settleFreeze",
+        "ritmoDaLente": "glide"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto"
+    },
+    {
+      "nome": "retratoRecuo",
+      "camera": {
+        "duracao": 8,
+        "movimento": {"tipo": "aproximacao", "centro": "Plutao", "de": "noPar", "para": "recuoDePlutao"},
+        "mira": {
+          "tipo": "passagem",
+          "de": "miraNoPar",
+          "assunto": "miraNoPar",
+          "rumo": "Sol",
+          "entrada": 0.25,
+          "saida": 0.25
+        },
+        "lente": [35, 24],
+        "ritmo": "glide",
+        "ritmoDaLente": "quadratic"
+      },
+      "assuntos": ["SOL"],
+      "fundoSilencioso": true,
+      "olhar": "tras"
     },
     {
       "nome": "pontoAzulPalido",
-      "qa": {"pontoAzulPalido": 0.6},
+      "qa": {"retrato": 0.95},
       "camera": {
-        "duracao": 10,
-        "movimento": {"tipo": "aproximacao", "centro": "Sol", "de": "afastamento", "para": "pontoAzul"},
-        "mira": {"tipo": "pan-direcao", "de": "Saturno", "para": "Sol", "ate": 0.3},
-        "lente": [58, 12],
-        "ritmo": "linear",
-        "ritmoDaLente": "easeOut"
-      },
-      "assuntos": ["SOL", "earth"],
-      "fundoSilencioso": true,
-      "olhar": "tras",
-      "legendas": [
-        {
-          "em": 0.55,
-          "texto": "A Terra, daqui",
-          "subtexto": "Um ponto azul pálido, a 40 UA",
-          "en": {"texto": "Earth, from here", "subtexto": "A pale blue dot, 40 AU away"},
-          "duracao": 4.4
-        }
-      ]
-    },
-    {
-      "nome": "solFecho",
-      "qa": {"fecho": 0.95},
-      "camera": {
-        "duracao": 21,
+        "duracao": 13,
         "movimento": {
           "tipo": "aproximacao",
           "centro": "Sol",
-          "de": "pontoAzul",
-          "para": "entreEstrelas",
-          "progresso": {"tipo": "pouso", "para": 1, "pousaEm": 0.9, "expoente": 2}
+          "de": "recuoDePlutao",
+          "para": "fimDoRetrato",
+          "ritmoDaDirecao": "linear",
+          "progresso": {
+            "tipo": "soma",
+            "curvas": [
+              {"tipo": "pouso", "para": 3, "pousaEm": 0.6, "expoente": 2},
+              {"tipo": "pouso", "para": -2, "pousaEm": 0.6, "expoente": 3}
+            ]
+          }
         },
         "mira": {"tipo": "fixo", "ponto": "Sol"},
-        "lente": [12, 58]
+        "lente": [24, 12],
+        "ritmo": "linear",
+        "ritmoDaLente": "settle"
       },
-      "assuntos": ["SOL"],
+      "assuntos": ["SOL", "earth", "venus", "mars", "jupiter", "saturn"],
+      "fundoSilencioso": true,
       "olhar": "assunto",
       "legendas": [
         {
-          "em": 0.3,
-          "texto": "O Sol é uma estrela.",
-          "subtexto": "A viagem seguinte começa aqui.",
-          "en": {"texto": "The Sun is a star.", "subtexto": "The next journey begins here."},
-          "duracao": 9
+          "em": 0.5,
+          "texto": "O retrato de família",
+          "subtexto": "foi assim que a Voyager 1 nos viu em 14 de fevereiro de 1990: a Terra, um ponto azul pálido",
+          "en": {
+            "texto": "The family portrait",
+            "subtexto": "this is how Voyager 1 saw us on 14 February 1990: Earth, a pale blue dot"
+          },
+          "duracao": 6.3
         }
       ]
     }

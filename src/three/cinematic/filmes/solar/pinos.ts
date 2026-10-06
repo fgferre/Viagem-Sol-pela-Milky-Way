@@ -5,7 +5,7 @@
 // AU_PARA_PC); `pinos.test.ts` recomputa cada um no SEU instante e cobra
 // igualdade bit a bit.
 //
-// TRÊS RELÓGIOS, como no filme galáctico (atos num instante, coda em
+// QUATRO RELÓGIOS, como no filme galáctico (atos num instante, coda em
 // outro). O prólogo e o ato I (Sol, Mercúrio, Vênus, Terra, Lua — e
 // Marte e Ceres) correm em JD_A, o
 // quarto minguante de 2026-01-10 15:49:37 UTC: a raiz exata de "Terra
@@ -34,10 +34,29 @@
 // bastaria, e −8 h fica: Encélado entre 30° e 110° (91,9°), Mimas,
 // Hipérion e Jápeto abaixo de 110° (83,2°, 4,3° e 64,4°); Titã, a 165,2°,
 // está atrás de Saturno para quem vem do Sol, mas fora da sombra, e a
-// câmera a visita vindo do lado do planeta (atos/saturno.ts). As trocas de relógio são
+// câmera a visita vindo do lado do planeta (atos/saturno.ts). O ato IV
+// (Urano, Netuno e Tritão, Plutão e Caronte) corre em JD_E = 2026-01-01
+// 01:00 UTC (16:00 − 15 h), porque em JD2 Caronte está a 115,1° do ponto
+// subsolar de Plutão — atrás dele para quem vem do Sol. O coração de
+// Plutão, onde a textura o desenha (`CORACAO_NA_TEXTURA`), fica do lado
+// oposto ao de Caronte (que paira sobre 0°L): o Sol só acende os dois
+// quando o ponto subsolar de Plutão (a 59,8°N) está entre ~227°L e
+// ~264°L, ~16 h a cada volta de 6,39 dias. JD_E é a hora inteira de
+// janeiro mais perto de JD2 que passa nos três critérios do ato — o
+// coração a até 70° do ponto subsolar (54,0°), Tritão fora da sombra de
+// Netuno e a até 110° do ponto subsolar dele (36,4°; a 143,6° do eixo da
+// sombra, que tem 4,0°), Caronte a até 110° do ponto subsolar de Plutão
+// (109,2°, no limite) —, numa busca de hora em hora de 01/01 00:00 a
+// 31/01 23:00 UTC (capturas/viagem-solar/v4-ato4/ferramentas/hora-do-escuro.ts
+// e a tabela ao lado). A janela seguinte, 06/01 20:00 a 07/01 11:00, dá
+// margens mais folgadas (07/01 04:00: 60,7°, 46,2° e 102,8°), mas está
+// a 5 dias e meio. As trocas de relógio são
 // rampas fora do quadro: JD_A → JD_J no fim da passagem por Ceres, com
 // Terra e Lua fora dele; JD_J → JD2 dentro da chegada a Saturno, com
-// Júpiter e as galileanas atrás da câmera (`trocas`, em montar.ts).
+// Júpiter e as galileanas atrás da câmera; JD2 → JD_E dentro da saída de
+// Saturno, com Saturno e as luas atrás da câmera. A volta a JD_A, no
+// epílogo, é um degrau no corte do retrato para a Terra: a câmera salta
+// 40 UA e nada no quadro atravessa o corte (`trocas`, em montar.ts).
 import * as THREE from 'three';
 import { JD_DO_FILME_TDB } from '../../journey';
 
@@ -49,11 +68,17 @@ export const DELTA_JDJ_MINUTOS = -832;
 export const JD_J_SOLAR_TDB = JD_DO_FILME_TDB + DELTA_JDJ_MINUTOS / 1440;
 /** quanto o céu dos atos de fora anda em relação às 16:00 UTC de 2026-01-01, em horas */
 export const DELTA_JD2_HORAS = -8;
-/** o céu dos atos de fora (Saturno, afastamento): 2026-01-01 08:00 UTC */
+/** o céu do ato III (Saturno): 2026-01-01 08:00 UTC */
 export const JD2_SOLAR_TDB = JD_DO_FILME_TDB + DELTA_JD2_HORAS / 24;
+/** quanto o céu do ato IV anda em relação às 16:00 UTC de 2026-01-01, em horas */
+export const DELTA_JDE_HORAS = -15;
+/** o céu do ato IV (Urano, Netuno e Tritão, Plutão e Caronte): 2026-01-01 01:00 UTC */
+export const JD_E_SOLAR_TDB = JD_DO_FILME_TDB + DELTA_JDE_HORAS / 24;
 
-/** os três relógios do filme, pelo nome (JD TDB) */
-export const RELOGIOS_SOLAR = { a: JD_A_SOLAR_TDB, jupiter: JD_J_SOLAR_TDB, fora: JD2_SOLAR_TDB } as const;
+/** os quatro relógios do filme, pelo nome (JD TDB) */
+export const RELOGIOS_SOLAR = {
+  a: JD_A_SOLAR_TDB, jupiter: JD_J_SOLAR_TDB, fora: JD2_SOLAR_TDB, escuro: JD_E_SOLAR_TDB,
+} as const;
 export type RelogioSolar = keyof typeof RELOGIOS_SOLAR;
 
 /** o relógio de cada corpo com pino (o Sol, na origem, não tem) */
@@ -61,12 +86,21 @@ export const RELOGIO_DO_CORPO: ReadonlyMap<string, RelogioSolar> = new Map<strin
   ...['mercury', 'venus', 'earth', 'moon', 'mars', 'ceres'].map((id) => [id, 'a'] as const),
   ...['jupiter', 'io', 'europa', 'ganymede', 'callisto'].map((id) => [id, 'jupiter'] as const),
   ...['saturn', 'enceladus', 'hyperion', 'mimas', 'titan', 'iapetus'].map((id) => [id, 'fora'] as const),
+  ...['uranus', 'neptune', 'triton', 'pluto', 'charon'].map((id) => [id, 'escuro'] as const),
 ]);
 
 /** a Grande Mancha Vermelha onde a textura de Júpiter a desenha: latitude
  *  planetocêntrica e longitude leste (Sistema III do motor), em graus —
  *  medida no mapa (capturas/viagem-solar/v4-ato2/ferramentas/hora-de-jupiter-tabela.md) */
 export const GRM_NA_TEXTURA = { lat: -20.3, lonLeste: 312.06 } as const;
+
+/** o coração de Plutão (Sputnik Planitia e Tombaugh Regio) onde a textura
+ *  o desenha: latitude e longitude leste, em graus — o centro da calota
+ *  de 15° de raio mais clara do mapa (luminância média 164 contra 106 do
+ *  mapa inteiro), entre 60°S e 60°N, de grau em grau; com calotas de 10°
+ *  e 20° o centro anda até 8° (18°N, 193°L e 18°N, 187°L) e a hora do
+ *  ato IV não muda (capturas/viagem-solar/v4-ato4/ferramentas/hora-do-escuro.ts) */
+export const CORACAO_NA_TEXTURA = { lat: 17, lonLeste: 185 } as const;
 
 const pc = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
@@ -89,6 +123,11 @@ export const PINOS_SOLAR: ReadonlyMap<string, THREE.Vector3> = new Map([
   ['mimas', pc(0.000046091694337218732, 0.0000018872068914552442, -0.0000012021493217877019)],
   ['titan', pc(0.000046129645125509543, 0.0000018851619799281664, -0.0000012055865662989665)],
   ['iapetus', pc(0.00004603851511844557, 0.0000019921492523755735, -0.0000011738771274674208)],
+  ['uranus', pc(0.00004790092937830598, 0.00007485474242639514, 0.00003210620671144374)],
+  ['neptune', pc(0.00014482380082638956, 0.00000365795363792679, -0.0000021080560468060054)],
+  ['triton', pc(0.00014481471920306865, 0.0000036546660212669448, -0.0000021018190497194993)],
+  ['pluto', pc(0.00009322017560144032, -0.00012729092614476787, -0.00006780377750097204)],
+  ['charon', pc(0.00009322049091506616, -0.00012729070773455467, -0.00006780428358235094)],
 ]);
 
 /** o pino de um corpo; corpo sem pino é erro de montagem, não silêncio */

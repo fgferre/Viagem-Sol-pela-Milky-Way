@@ -1,0 +1,38 @@
+{
+  "planos": [
+    {
+      "nome": "mesmaLuz",
+      "qa": {"mesmaLuz": 0.5},
+      "camera": {
+        "duracao": 16,
+        "movimento": {
+          "tipo": "arco",
+          "centro": "Terra",
+          "direcaoDe": "mesmaLuzDe",
+          "direcaoPara": "mesmaLuzPara",
+          "raio": ["raioDaMesmaLuz", "raioDaMesmaLuz"]
+        },
+        "mira": {"tipo": "pan", "de": "miraDaMesmaLuzDe", "para": "miraDaMesmaLuzPara", "ritmo": "linear"},
+        "lente": ["lenteDaMesmaLuz", "lenteDaMesmaLuz"],
+        "ritmo": "smooth"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.36,
+          "texto": "A mesma luz. Oito minutos depois.",
+          "subtexto": "Todos esses mundos. Um Sol.",
+          "en": {"texto": "The same light. Eight minutes later.", "subtexto": "All these worlds. One Sun."},
+          "duracao": 6
+        },
+        {
+          "em": 0.76,
+          "texto": "A viagem seguinte: o Sol entre as estrelas",
+          "en": {"texto": "The next journey: the Sun among the stars"},
+          "duracao": 3.8
+        }
+      ]
+    }
+  ]
+}

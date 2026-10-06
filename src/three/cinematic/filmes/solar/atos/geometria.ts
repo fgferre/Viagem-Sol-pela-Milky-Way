@@ -1,7 +1,7 @@
 // A GEOMETRIA COMUM DOS ATOS DO FILME SOLAR — o que mais de um ato usa: a
 // régua dos raios, os versores e giros, os pinos dos corpos, o "cima" da
 // eclíptica e as unidades. Cada ato (`prologo.ts`, `casa.ts`, `jupiter.ts`,
-// `saturno.ts`, `afastamento.ts`) deriva dos pinos os seus pontos e números
+// `saturno.ts`, `afastamento.ts`, `epilogo.ts`) deriva dos pinos os seus pontos e números
 // nomeados; `../montar.ts` os reúne para o leitor dos roteiros.
 import * as THREE from 'three';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../../../lib/atlas/frameGalactico';
