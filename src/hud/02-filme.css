@@ -53,16 +53,6 @@
 }
 
 /* --- legenda da fase --- */
-/* os donos do véu abaixo: `relative` o ancora na caixa, `isolate` o
-   prende atrás do texto mesmo sem `transform` (o `?shot=1` zera o
-   transform da legenda, 07-foto.css). A `.lente-line` não entra aqui:
-   ela já é `fixed` com `z-index` (03-controles.css), e isso já a faz
-   dona — repetir `position` aqui brigaria com o `fixed` dela. */
-.caption-wrap,
-.filme-rodape .free-hint {
-  position: relative;
-  isolation: isolate;
-}
 .caption-wrap {
   opacity: 0;
   transform: translateY(14px);
@@ -71,28 +61,28 @@
      o cartão fica ABAIXO da legenda (06-responsivo.css), não ao lado. */
   max-width: min(42rem, calc(44vw - 12rem));
 }
-/* O VÉU DA LEGENDA (F4 do filme solar, 06/10). Sobre o Sol do prólogo e
-   o chão da Lua o texto claro some: a sombra de 10px do título não
-   segura fundo claro, e o subtítulo nem sombra tem. Uma mancha escura
-   do tamanho da caixa, borrada até não ter borda (~0,55 no miolo → 0
-   fora dela), escurece o fundo atrás das duas linhas e entra e sai com
-   a legenda (é filha da caixa que anima a opacidade). Sobre céu preto é
-   preto sobre preto: não muda nada que se veja.
-   A MESMA MANCHA vale para as outras duas linhas claras do pé do filme,
-   que somem do mesmo jeito sobre o Sol: a dica do rodapé (pausar-e-olhar
-   no filme, os gestos no voo livre) e a linha da lente. Uma regra só —
-   a dica do Atlas (`.atlas-rodape`) fica de fora. */
-.caption-wrap::before,
-.filme-rodape .free-hint::before,
-.lente-line::before {
-  content: '';
-  position: absolute;
-  inset: -1rem -2rem;
-  z-index: -1;
-  background: rgba(0, 0, 0, 0.55);
-  border-radius: 3rem;
-  filter: blur(1.5rem);
-  pointer-events: none;
+/* A SOMBRA DA LEGENDA (E4 da rodada do ponto de luz, 06/10; no lugar
+   do véu desfocado da F4, decisão do dono). Sobre o Sol do prólogo e o
+   chão da Lua o texto claro sumia: a sombra de 10px do título não
+   segurava fundo claro, e o subtítulo nem sombra tinha. A sombra mora
+   nas próprias letras, do contorno preto de 1px a um halo de 16px — o
+   halo largo é o que dá fundo escuro às letras cinza do subtítulo e da
+   dica (provado sobre o Sol e o chão da Lua, folha
+   `capturas/ponto-de-luz/e4-legenda-sombra.jpg`). Uma regra só para as
+   três linhas claras do pé do filme: a legenda, a dica do rodapé
+   (pausar-e-olhar no filme, os gestos no voo livre) e a linha da lente;
+   a dica do Atlas (`.atlas-rodape`) fica de fora. A lente leva
+   `.hud-root` no seletor para vencer a sombra dela em 03-controles.css,
+   que vem depois na cascata. */
+.caption-title,
+.caption-sub,
+.filme-rodape .free-hint,
+.hud-root .lente-line {
+  text-shadow:
+    0 0 1px #000,
+    0 0 3px rgba(0, 0, 0, 0.95),
+    0 0 8px rgba(0, 0, 0, 0.9),
+    0 0 16px rgba(0, 0, 0, 0.8);
 }
 /* O SELO NO FILME (F4, 06/10) — a mesma peça do Atlas (`.atlas-selo`,
    04-atlas.css), montada só no beat de luz honesta. No filme ela sobe
@@ -113,17 +103,16 @@
   to { opacity: 1; transform: translateY(0); }
 }
 /* LOTE 8 (PLAN-UI.md §3.7, maquete M7): título em Fraunces 300, igual
-   à `.atlas-marca` (mesmo peso, mesmo `letter-spacing: 0`, mesmo
-   `text-shadow` de texto solto sobre a cena) — o rastro largo/caixa
-   alta era da pele A. O tamanho e o `--ui` na fórmula do `vw` não
-   mudam: já eram os do M7 (`uiScale.test.ts` cobra `vw` com `--ui`). */
+   à `.atlas-marca` (mesmo peso, mesmo `letter-spacing: 0`; a sombra é
+   a do pé do filme, acima) — o rastro largo/caixa alta era da pele A.
+   O tamanho e o `--ui` na fórmula do `vw` não mudam: já eram os do M7
+   (`uiScale.test.ts` cobra `vw` com `--ui`). */
 .caption-title {
   font-family: var(--fonte-display);
   color: var(--texto);
   font-size: clamp(1.5rem, calc(3.2vw * var(--ui)), 2.6rem);
   font-weight: 300;
   letter-spacing: 0;
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
   text-wrap: balance;
 }
 .caption-sub {
