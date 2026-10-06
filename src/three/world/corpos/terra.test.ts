@@ -69,7 +69,7 @@ import {
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
-import { cessaoPorDominancia } from '../lodStellar';
+import { cessaoPorDisco } from '../lodStellar';
 
 const DATA_DIR = fileURLToPath(new URL('../../../../public/data/atlas/', import.meta.url));
 const meta = JSON.parse(
@@ -342,9 +342,6 @@ function centroPc(jd: number): THREE.Vector3 {
 
 const JD = JDS[0];
 
-/** a PSF do campo, com os números REAIS do init do Director. */
-const PSF = { expoM0: 3.5, sigmaPx: 0.85, beta: 300 } as const;
-
 function quadro(camPosPc: THREE.Vector3, extra: Partial<Parameters<TerraResolvida['atualizar']>[0]> = {}) {
   return {
     jdTdb: JD,
@@ -363,7 +360,7 @@ function quadro(camPosPc: THREE.Vector3, extra: Partial<Parameters<TerraResolvid
     // (stepRampToward clampa em 0,1 s = 1/3 da travessia; três ticks
     // assentam) — os testes que julgam a RAMPA passam dtS próprio
     dtS: 10,
-    psf: PSF,
+    pr: 1,
     salto: false,
     ...extra,
   };
@@ -456,7 +453,7 @@ describe('5. o gatilho da carga preguiçosa (lei 4)', () => {
 });
 
 describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
-  it('mesh dominando ⇒ cessão TOTAL (pela rampa); porta desligada devolve o ponto', async () => {
+  it('globo grande ⇒ cessão TOTAL (pela rampa da presença); porta desligada devolve o ponto', async () => {
     const { terra } = terraDeTeste();
     const perto = centroPc(JD);
     perto.z += RAIO_EQ_TERRA_PC * 4;
@@ -466,27 +463,50 @@ describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
     expect(e.carregando).toBe(true);
     expect(e.cede).toBe(0);
     await flush();
-    // 2º tick: textura pronta, mesh em quadro — a 4 raios o globo domina
-    // (r >> 2,5, alvo = 1) e a cessão ANDA por rampa em vez de saltar
+    // 2º tick: textura pronta, mesh em quadro — a 4 raios o disco passa
+    // de 12 px (régua = 1) e a PRESENÇA do globo anda por rampa
     e = terra.atualizar(quadro(perto));
     expect(e.emQuadro).toBe(true);
     expect(e.carregando).toBe(false);
+    expect(e.alvoDeCessao).toBe(1);
     expect(e.cede).toBeGreaterThan(0);
+    expect(e.cede).toBeLessThan(1);
     expect(e.emRampa).toBe(true);
     expect(terra.group.visible).toBe(true);
     // a rampa ASSENTA em 1 EXATO — o estado das vistas terra/terranb
     for (let i = 0; i < 8 && e.emRampa; i++) e = terra.atualizar(quadro(perto));
     expect(e.cede).toBe(1);
     expect(e.emRampa).toBe(false);
-    // porta ?nocorpos: o mesh sai do quadro NO MESMO tick; o ponto volta
-    // pela mesma rampa (sem pop) até o 0 exato
+    // porta ?nocorpos: o mesh sai do quadro NO MESMO tick, e o ponto
+    // volta inteiro no mesmo tick (régua fora de quadro = 0) — sem buraco
     e = terra.atualizar(quadro(perto, { ligado: false }));
     expect(e.emQuadro).toBe(false);
     expect(terra.group.visible).toBe(false);
-    for (let i = 0; i < 8 && e.emRampa; i++) {
-      e = terra.atualizar(quadro(perto, { ligado: false }));
-    }
     expect(e.cede).toBe(0);
+    terra.dispose();
+  });
+
+  it('o TAMANHO muda a cessão no MESMO tick; só a presença anda no tempo', async () => {
+    const { terra } = terraDeTeste();
+    const c = centroPc(JD);
+    const em = (raios: number) => c.clone().setZ(c.z + RAIO_EQ_TERRA_PC * raios);
+    terra.atualizar(quadro(em(4)));
+    await flush();
+    // presença assentada com o globo grande: cede 1
+    let e = terra.atualizar(quadro(em(4), { salto: true }));
+    expect(e.cede).toBe(1);
+    // a 243 raios o disco tem ~8 px: a régua responde já, sem rampa
+    // (dtS ínfimo — uma rampa não andaria quase nada)
+    e = terra.atualizar(quadro(em(243), { dtS: 1e-4 }));
+    expect(e.emQuadro).toBe(true);
+    expect(e.cede).toBe(cessaoPorDisco(e.diametroPx, 1));
+    expect(e.cede).toBeGreaterThan(0.4);
+    expect(e.cede).toBeLessThan(0.6);
+    expect(e.emRampa).toBe(false);
+    // e o DPR 2 põe o mesmo disco abaixo da borda de 8 px físicos
+    e = terra.atualizar(quadro(em(243), { dtS: 1e-4, pr: 2 }));
+    expect(e.cede).toBe(cessaoPorDisco(e.diametroPx, 2));
+    expect(e.cede).toBeLessThan(0.01);
     terra.dispose();
   });
 
@@ -505,6 +525,38 @@ describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
     expect(e.cede).toBe(0);
     expect(e.emRampa).toBe(false);
     terra.dispose();
+  });
+
+  it('o salto com a textura ATRASADA fica guardado: o globo que chega depois estala, não rampa', async () => {
+    const perto = centroPc(JD);
+    perto.z += RAIO_EQ_TERRA_PC * 4;
+    const { terra } = terraDeTeste();
+    // o tick do salto: gate armado, textura ainda buscando — presença 0
+    let e = terra.atualizar(quadro(perto, { salto: true }));
+    expect(e.carregando).toBe(true);
+    expect(e.cede).toBe(0);
+    // o Director já consumiu o salto; a textura segue sem chegar
+    e = terra.atualizar(quadro(perto));
+    expect(e.emQuadro).toBe(false);
+    expect(e.cede).toBe(0);
+    await flush();
+    // a textura chega SEM salto no quadro: o guardado estala a presença
+    e = terra.atualizar(quadro(perto));
+    expect(e.emQuadro).toBe(true);
+    expect(e.cede).toBe(e.alvoDeCessao);
+    expect(e.cede).toBe(1);
+    expect(e.emRampa).toBe(false);
+    e = terra.atualizar(quadro(perto));
+    expect(e.emRampa).toBe(false);
+    terra.dispose();
+    // CONTROLE: a mesma chegada sem salto antes anda pela rampa
+    const controle = terraDeTeste().terra;
+    controle.atualizar(quadro(perto));
+    await flush();
+    e = controle.atualizar(quadro(perto));
+    expect(e.cede).toBeGreaterThan(0);
+    expect(e.cede).toBeLessThan(e.alvoDeCessao ?? 0);
+    controle.dispose();
   });
 
   it('a efeméride que chega TARDE recomputa a posição — mesmo jd, fonte nova', async () => {
@@ -713,26 +765,18 @@ describe('6. o quadro vivo: gate + cessão + o escalar único de luz', () => {
   });
 });
 
-describe('6b. a dominância suave (F2b/D5) — a lei e as cicatrizes', () => {
+describe('6b. a cessão pela régua do disco — a lei e as cicatrizes', () => {
   it('fora de quadro a cessão é 0 EXATO — é o que segura as vistas profundas', () => {
-    expect(cessaoAlvo(false, 500, 10)).toBe(0);
+    expect(cessaoAlvo(false, 500, 1)).toBe(0);
     expect(Object.is(cessaoAlvo(false, Number.NaN, Number.NaN), 0)).toBe(true);
   });
 
-  it('sob o halo (r ≤ 1) o ponto fica INTEIRO: o mesh nasce SOB o clarão', () => {
-    // aos 4 px do gate contra um halo típico de ~12 px, r ≈ 0,33
-    expect(cessaoAlvo(true, 4, 12)).toBe(0);
-    expect(cessaoAlvo(true, 12, 12)).toBe(0); // r = 1 é a borda, exclusive
-  });
-
-  it('dominando (r ≥ 2,5) a cessão é 1 EXATO — o estado de terra/terranb', () => {
-    expect(cessaoAlvo(true, 30, 12)).toBe(1);
-    expect(cessaoAlvo(true, 795, 15)).toBe(1);
-  });
-
-  it('halo inexistente (ponto invisível) não cede — precedente heroDominanceRatio', () => {
-    expect(cessaoAlvo(true, 40, 0)).toBe(0);
-    expect(cessaoAlvo(true, 40, Number.NaN)).toBe(0);
+  it('em quadro é a régua do disco, com o DPR — uma lei, quatro corpos', () => {
+    for (const pr of [1, 2, 3]) {
+      for (const d of [2, 4, 6, 9, 12, 20, 40]) {
+        expect(cessaoAlvo(true, d, pr), `${d}@${pr}`).toBe(cessaoPorDisco(d, pr));
+      }
+    }
   });
 
   it('PROPRIEDADE (a C1a do handoff): soma > 0 em TODA a faixa — nenhuma banda morta', () => {
@@ -747,26 +791,18 @@ describe('6b. a dominância suave (F2b/D5) — a lei e as cicatrizes', () => {
       const mesh = 2 * Math.atan(RAIO_EQ_TERRA_PC / dPc) * pxPorRad;
       armado = gateBinario(armado, mesh);
       const emQuadro = armado; // textura pronta e porta ligada, no pior caso
-      // halo plausível da faixa (medido ~11–14 px); o alvo é a LEI, e a
-      // propriedade tem de valer para qualquer halo positivo
-      for (const halo of [8, 12, 16]) {
-        const alvo = cessaoAlvo(emQuadro, mesh, halo);
-        cede = alvo; // o assentamento da rampa — o pior caso da soma
+      for (const pr of [1, 2, 3]) {
+        // presença assentada em 1 — o pior caso da soma
+        cede = cessaoAlvo(emQuadro, mesh, pr);
         const presenca = (1 - cede) + (emQuadro ? 1 : 0);
-        expect(presenca, `raios=${raios.toFixed(0)} halo=${halo}`).toBeGreaterThan(0);
+        expect(presenca, `raios=${raios.toFixed(0)} pr=${pr}`).toBeGreaterThan(0);
         // e a cessão só existe COM mesh em quadro
         if (!emQuadro) expect(cede).toBe(0);
       }
     }
-    // a descida terminou com o globo dominando e o gate armado
+    // a descida terminou com o globo cedido e o gate armado
     expect(armado).toBe(true);
     expect(cede).toBe(1);
-  });
-
-  it('a curva é a MESMA do par hero↔catálogo — uma lei, dois consumidores', () => {
-    for (const r of [1.2, 1.7, 2.2]) {
-      expect(cessaoAlvo(true, r * 10, 10)).toBeCloseTo(cessaoPorDominancia(r), 12);
-    }
   });
 });
 

@@ -1,4 +1,4 @@
-// Serve: lei — a rampa do LOD estelar e a cessão por dominância corpo↔ponto obedecem a lei contínua, sem degrau
+// Serve: lei — a rampa do LOD estelar e a cessão do ponto pela régua do disco obedecem a lei contínua, sem degrau
 // ============================================================
 // Oráculo do LOD estelar — o que sobrou dele depois do M2 da
 // LEI-DA-ESTRELA. Duas origens, declaradas:
@@ -7,20 +7,20 @@
 //    `hygMeshFadeRamp.test.ts` do doador (atlas-orbital) — mesmos
 //    valores, mesmas tolerâncias. Se um deles precisasse de adaptação,
 //    a transcrição do integrador estaria errada; nenhum precisou.
-// 2. O resto é da casa: os contratos C2/C3 do canal `aFocus`, a rampa
-//    de cessão por dominância CORPO↔PONTO (a única peça viva da velha
-//    política — consumidora: a Terra resolvida) e a cirurgia da
-//    constante do sistema solar.
+// 2. O resto é da casa: os contratos C2/C3 do canal `aFocus`, a cessão
+//    do PONTO ao globo pela régua do disco (consumidora: `cessaoAlvo`,
+//    os quatro corpos resolvidos) e a cirurgia da constante do sistema
+//    solar.
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 import {
-  DOMINANCIA_DO_CORPO,
+  CESSAO_DO_PONTO_PX_CSS,
   FOCUS_OFF,
   FOCUS_ON,
   RAMP_DURATION_MS,
-  cessaoPorDominancia,
+  cessaoPorDisco,
   clearFocus,
   needsAttributeWrite,
   resetRamp,
@@ -206,50 +206,60 @@ describe('D3 — o canal dormente nasce NEUTRO', () => {
   });
 });
 
-describe('g — a rampa de cessão por dominância CORPO↔PONTO', () => {
-  it('as bordas: 1 é a definição de dominância, 2,5 é DERIVADA da continuidade', () => {
-    expect(DOMINANCIA_DO_CORPO.entra).toBe(1);
-    expect(DOMINANCIA_DO_CORPO.plena).toBe(2.5);
-    // a derivada máxima do smoothstep é 1,5/(hi−1); a compensação
-    // disponível (dr/dr) é 1. Em 2,5 elas empatam — é a MENOR borda que
-    // ainda garante φ′ = 1 − g′ ≥ 0 (ver a prova no módulo).
-    expect(1.5 / (DOMINANCIA_DO_CORPO.plena - DOMINANCIA_DO_CORPO.entra)).toBe(1);
+describe('g — a cessão do PONTO pela régua do disco (06/10/2026)', () => {
+  it('as bordas em px CSS: 4 e 12', () => {
+    expect(CESSAO_DO_PONTO_PX_CSS.entra).toBe(4);
+    expect(CESSAO_DO_PONTO_PX_CSS.plena).toBe(12);
   });
 
-  it('r ≤ 1 devolve 0 EXATO — é o que mantém as vistas bit-idênticas', () => {
-    for (const r of [0, 0.1, 0.5, 0.9, 0.999999, 1]) expect(cessaoPorDominancia(r)).toBe(0);
+  it('disco ≤ 4·pr devolve 0 EXATO, inclusive o 4 — as vistas de longe ficam bit-idênticas', () => {
+    for (const pr of [1, 2, 3]) {
+      for (const d of [0, 1, 3.999999, 4 * pr]) expect(cessaoPorDisco(d, pr), `${d}@${pr}`).toBe(0);
+    }
   });
 
-  it('r ≥ 2,5 devolve 1: o ponto virou detalhe dentro do corpo', () => {
-    for (const r of [2.5, 3, 10, 1e6]) expect(cessaoPorDominancia(r)).toBe(1);
+  it('disco ≥ 12·pr devolve 1 EXATO: o ponto cedeu todo ao globo', () => {
+    for (const pr of [1, 2, 3]) {
+      for (const d of [12 * pr, 12 * pr + 1e-9, 100, 1e6]) {
+        expect(cessaoPorDisco(d, pr), `${d}@${pr}`).toBe(1);
+      }
+    }
+  });
+
+  it('o DPR escala as bordas: (12, 1) = 1, (12, 2) < 1, (24, 2) = 1, (12, 3) = 0', () => {
+    expect(cessaoPorDisco(12, 1)).toBe(1);
+    expect(cessaoPorDisco(12, 2)).toBeGreaterThan(0);
+    expect(cessaoPorDisco(12, 2)).toBeLessThan(1);
+    expect(cessaoPorDisco(24, 2)).toBe(1);
+    expect(cessaoPorDisco(12, 3)).toBe(0);
+    expect(cessaoPorDisco(36, 3)).toBe(1);
   });
 
   it('é monotônica e contínua — sem degrau em nenhum ponto da faixa', () => {
-    const passo = 1e-4;
-    let anterior = cessaoPorDominancia(0);
-    for (let r = 0; r <= 4; r += passo) {
-      const g = cessaoPorDominancia(r);
+    const passo = 1e-3;
+    let anterior = cessaoPorDisco(0, 1);
+    for (let d = 0; d <= 16; d += passo) {
+      const g = cessaoPorDisco(d, 1);
       expect(g).toBeGreaterThanOrEqual(anterior);
-      // continuidade: o salto por passo é limitado pela derivada máxima
-      expect(Math.abs(g - anterior)).toBeLessThanOrEqual(1.0 * passo + 1e-12);
+      // o salto por passo é limitado pela derivada máxima, 1,5/(12 − 4)
+      expect(Math.abs(g - anterior)).toBeLessThanOrEqual((1.5 / 8) * passo + 1e-12);
       anterior = g;
     }
   });
 
   it('a derivada zera nas DUAS bordas (C¹): a cessão entra e sai sem quina', () => {
     const h = 1e-6;
-    const d = (r: number) => (cessaoPorDominancia(r + h) - cessaoPorDominancia(r - h)) / (2 * h);
-    expect(d(1)).toBeCloseTo(0, 4);
-    expect(d(2.5)).toBeCloseTo(0, 4);
-    expect(d(1.75)).toBeCloseTo(1, 4); // o máximo, exatamente 1
-    // e nunca passa de 1 — a prova numérica da borda superior
-    for (let r = 1; r <= 2.5; r += 1e-3) expect(d(r)).toBeLessThanOrEqual(1 + 1e-6);
+    const d = (x: number) => (cessaoPorDisco(x + h, 1) - cessaoPorDisco(x - h, 1)) / (2 * h);
+    expect(d(4)).toBeCloseTo(0, 4);
+    expect(d(12)).toBeCloseTo(0, 4);
+    expect(d(8)).toBeCloseTo(1.5 / 8, 4); // o máximo, no meio
   });
 
-  it('entrada não-finita cede ZERO (direção segura: ponto inteiro)', () => {
-    expect(cessaoPorDominancia(NaN)).toBe(0);
-    expect(cessaoPorDominancia(Infinity)).toBe(0);
-    expect(cessaoPorDominancia(-Infinity)).toBe(0);
+  it('disco não-finito cede ZERO; pr não-finito ou ≤ 0 vale 1', () => {
+    for (const d of [NaN, Infinity, -Infinity]) expect(cessaoPorDisco(d, 1)).toBe(0);
+    for (const pr of [NaN, Infinity, 0, -2]) {
+      expect(cessaoPorDisco(8, pr), `pr=${pr}`).toBe(cessaoPorDisco(8, 1));
+    }
   });
 });
 

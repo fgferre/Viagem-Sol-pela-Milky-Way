@@ -30,26 +30,20 @@
 //     fase atlas — nunca no boot do filme. As 18 vistas oficiais não fazem
 //     um fetch (o teste pina o gatilho; as capturas provam de graça).
 //
-// O GATE + A DOMINÂNCIA SUAVE (F2b, decisão D5): o mesh entra quando o
-// diâmetro aparente cruza `LIMIAR_DO_GATE_PX`, sai abaixo de LIMIAR/2
-// (cushion 2×, desigualdades assimétricas, NaN preserva estado — os
-// contratos de histerese da Onda 3). O PONTO da camada `planetas` NÃO
-// apaga num degrau (o binário da F2a morreu aqui): ele cede por
-// DOMINÂNCIA, no molde que nasceu no par hero↔catálogo da Onda 3 —
-// razão r = diâmetro do MESH em px / halo PREVISTO do ponto em px
-// (`psfPointSizePx`, o espelho da PSF), cessão-alvo = g(r), a rampa
-// cúbica de 1 a 2,5 (`cessaoPorDominancia`, com a prova de
-// continuidade: a luz combinada nunca dá passo para trás na
-// aproximação; o par hero↔catálogo morreu no M2 e a curva ficou com
-// este consumidor). O mesh NASCE SOB o clarão (aos 4 px do gate, r ≈ 0,3 —
-// o ponto segue inteiro) e o ponto só cede quando o globo o domina.
-// As 4 cicatrizes do crossfade valem aqui: banda morta PROIBIDA
-// (soma > 0 em toda a faixa — teste de propriedade como o C1a),
-// reafirmação por quadro (a escrita idempotente de `escreverCessao`),
-// reset no salto de foco/data (snap, nunca lerp através de um
-// teletransporte) e clamp de dt (dentro de `stepRampToward`, o
-// integrador do doador que estava DORMENTE desde a Onda 3 — este é o
-// primeiro consumidor de runtime dele).
+// O GATE + A CESSÃO DO PONTO (F2b; régua do disco desde 06/10/2026): o
+// mesh entra quando o diâmetro aparente cruza `LIMIAR_DO_GATE_PX`, sai
+// abaixo de LIMIAR/2 (cushion 2×, desigualdades assimétricas, NaN
+// preserva estado — os contratos de histerese da Onda 3). O PONTO da
+// camada `planetas` cede pelo TAMANHO do disco na tela
+// (`cessaoPorDisco`, lodStellar.ts: 0 até 4 px CSS, 1 de 12 px CSS em
+// diante, × DPR), sem rampa no tempo — tamanho já é contínuo. A rampa
+// de 300 ms (`stepRampToward`, clamp de dt lá dentro) é só da PRESENÇA
+// do globo (a textura chegando), com snap no salto de câmera ou de data
+// (nunca lerp através de um teletransporte): cede = presença × régua.
+// O salto que cai antes de o globo poder aparecer fica GUARDADO até ele
+// aparecer (`saltoGuardado`): a textura atrasada não reabre a rampa.
+// Banda morta PROIBIDA (soma > 0 em toda a faixa — teste C1a) e
+// reafirmação por quadro (a escrita idempotente de `escreverCessao`).
 //
 // PRECISÃO: a cena mede em pc e a Terra tem raio 2,07e-10 pc. Nenhuma
 // posição de mundo é reconstruída na GPU: os shaders trabalham no FRAME
@@ -79,13 +73,9 @@ import {
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
 import { CALIBRACAO_ATLAS } from '../../config';
-import { RAMP_DURATION_MS, cessaoPorDominancia, stepRampToward } from '../lodStellar';
-import { psfPointSizePx } from '../../luzDaCasa';
+import { RAMP_DURATION_MS, cessaoPorDisco, stepRampToward } from '../lodStellar';
 import { RETRATO_2026 } from '../planetas/retrato2026';
-import { A_MAG_BASE_PC, DESLOCAMENTO_UA_PARA_PC, faseDoVertice, magDoVertice } from '../planetas/planetas';
 import type { FonteDeEfemerides } from '../planetas/planetas';
-import type { CalibracaoDaCasa } from '../../estrela';
-import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { CUSHION_DO_GATE, LIMIAR_DO_GATE_PX, diametroAparentePx, gateBinario } from './corpos';
 import {
   ATMOSFERA_FRAG,
@@ -213,66 +203,28 @@ export function orientacaoDaTerraNaCena(jdTdb: number): OrientacaoNaCena {
 
 
 /**
- * O ALVO DA CESSÃO SUAVE (F2b/D5), pura: quanto o PONTO fotométrico
- * cede a um mesh que mede `diametroMeshPx` contra um halo previsto de
- * `haloPontoPx`. A curva é `cessaoPorDominancia` IMPORTADA — a rampa
- * cúbica g(r) de 1 a 2,5 com a prova de continuidade escrita ao lado
- * dela em `lodStellar.ts` (hi = 2,5 é a MENOR borda em que a luz
- * combinada nunca dá passo para trás na aproximação; a régua é TAMANHO
- * na tela, a única comum às duas representações). Nasceu no par
- * hero↔catálogo da Onda 3; o par morreu no M2 e a curva ficou com o
- * consumidor legítimo — esta troca corpo↔ponto, que conserva fluxo.
- *
- * Mesh fora de quadro ⇒ 0 EXATO (o ponto fica inteiro — é o que mantém
- * as vistas profundas bit-idênticas). Halo inexistente (PSF ≤ 0, ponto
- * invisível) ⇒ razão 0 ⇒ cessão 0 ("ponto inexistente não domina nada"
- * — e um ponto invisível também não soma luz para haver o que ceder).
+ * O ALVO DA CESSÃO do ponto fotométrico a um globo resolvido, pura — a
+ * função ÚNICA dos quatro corpos (Terra, Lua, gigantes, rochosos
+ * planetas). Mesh fora de quadro ⇒ 0 EXATO (o ponto fica inteiro — é o
+ * que mantém as vistas profundas bit-idênticas); em quadro, a régua do
+ * disco (`cessaoPorDisco`) sobre o diâmetro em px FÍSICOS com o DPR `pr`.
  */
-export function cessaoAlvo(
-  emQuadro: boolean,
-  diametroMeshPx: number,
-  haloPontoPx: number
-): number {
-  if (!emQuadro) return 0;
-  if (!(haloPontoPx > 0) || !Number.isFinite(diametroMeshPx)) return 0;
-  return cessaoPorDominancia(diametroMeshPx / haloPontoPx);
+export function cessaoAlvo(emQuadro: boolean, diametroPx: number, pr: number): number {
+  return emQuadro ? cessaoPorDisco(diametroPx, pr) : 0;
 }
 
 /**
- * O ALVO DA CESSÃO DE UM CORPO RESOLVIDO, do começo ao fim — prever o
- * halo do ponto pelo espelho da PSF e medir o mesh contra ele.
- *
- * ESTE BLOCO ERA TRÊS CÓPIAS idênticas (Terra, rochoso, gigante) e o
- * ponto da Lua (item 108) ia fazer a quarta. É a mesma conta em todos:
- * a magnitude que a camada de planetas está desenhando AGORA — mesma
- * base, mesma fase Lambertiana (o espelho GEOMÉTRICO que a dominância
- * lê, não o Φ publicado que o ponto usa para brilhar), mesma exposição
- * do campo — vira tamanho de sprite, e a razão mesh/halo vira o alvo
- * por g(r). A `magBase1Pc` fica de FORA porque é a única linha que
- * difere entre os corpos: os do retrato caem nele sem efeméride, e a
- * Lua não tem retrato onde cair.
+ * O SALTO GUARDADO (R1 da rodada do ponto de luz, revisão externa de
+ * 06/10) — puro, o mesmo nos quatro corpos. O Director consome `q.salto`
+ * num tick só; num salto para uma cena cujo globo ainda não pode
+ * aparecer (textura carregando), sem guarda a presença estalaria para 0
+ * e, ticks depois, a textura chegaria pela RAMPA: um globo grande inteiro
+ * com o ponto branco em cima por ~9 quadros. O corpo guarda o salto
+ * enquanto `!emQuadro` e o gasta no primeiro tick em quadro (a presença
+ * estala). Devolve o `saltoPendente` do tick seguinte.
  */
-export function alvoDaCessaoDoCorpo(
-  magBase1Pc: number,
-  centroPc: THREE.Vector3,
-  camPosPc: THREE.Vector3,
-  dPc: number,
-  diametroPx: number,
-  emQuadro: boolean,
-  psf: CalibracaoDaCasa,
-  screenHPx: number
-): number {
-  const fase = faseDoVertice(
-    centroPc.x, centroPc.y, centroPc.z,
-    camPosPc.x, camPosPc.y, camPosPc.z
-  );
-  const halo = psfPointSizePx(
-    magDoVertice(magBase1Pc, dPc, fase),
-    psf.expoM0,
-    psf.sigmaPx,
-    screenHPx
-  );
-  return cessaoAlvo(emQuadro, diametroPx, halo);
+export function saltoGuardado(pendente: boolean, salto: boolean, emQuadro: boolean): boolean {
+  return !emQuadro && (pendente || salto);
 }
 
 // (`cessaoPeloGate` e `CESSAO_PELO_GATE_MULT` — a cessão do SOL-ponto
@@ -281,8 +233,7 @@ export function alvoDaCessaoDoCorpo(
 // sobre a MESMA régua de 4 px que aqui era multiplicador. A medição de
 // 15/08 que os autorizou (borrão 900→6 px a 1 UA com mult 1) está no
 // commit que os criou; a rampa da lei cobre o mesmo trecho com a mesma
-// forma C¹. A `cessaoAlvo` acima FICA: é a cessão dos corpos resolvidos
-// (Terra, Lua, gigantes), que migra no M4.)
+// forma C¹. A `cessaoAlvo` acima é a dos planetas e da Lua.)
 
 
 
@@ -319,14 +270,14 @@ export interface QuadroDaTerra {
   /** o relógio de PAREDE do app em segundos (o `t` do tick) — só a
    *  carência da descarga o consome (`CARENCIA_DA_DESCARGA_S`). */
   tS: number;
-  /** dt do quadro em segundos — só a rampa temporal da cessão o consome
-   *  (o clamp de picos mora em `stepRampToward`, nunca aqui). */
+  /** dt do quadro em segundos — só a rampa da presença do globo o
+   *  consome (o clamp de picos mora em `stepRampToward`, nunca aqui). */
   dtS: number;
-  /** o instrumento da CASA (M4): o halo do ponto sai dele. Era a PSF
-   *  do material do campo de catálogo — mesma conta, dono errado. */
-  psf: CalibracaoDaCasa;
+  /** px físicos por px CSS (`renderer.getPixelRatio()`) — as bordas da
+   *  cessão (`CESSAO_DO_PONTO_PX_CSS`) são CSS; o diâmetro é físico. */
+  pr: number;
   /** a câmera SALTOU neste quadro (portal, enquadramento, ?pos=): a
-   *  cessão faz snap para o alvo em vez de animar através do salto —
+   *  presença do globo faz snap em vez de animar através do salto —
    *  cicatriz "reset no salto de foco" do crossfade da Onda 3. */
   salto: boolean;
 }
@@ -346,22 +297,24 @@ export interface EstadoDaTerra {
    */
   gateArmado: boolean;
   /**
-   * A CESSÃO SUAVE do ponto da camada planetas (F2b/D5): 0 = ponto
-   * inteiro, 1 = ponto apagado, contínua no meio — g(razão de
-   * dominância) integrada no tempo por `stepRampToward`. 0 EXATO com o
-   * mesh fora de quadro (fator (1 − aCede) = 1 em IEEE754 — é o que
-   * mantém as vistas profundas bit-idênticas) e 1 EXATO com o globo
-   * dominando (r ≥ 2,5 — o estado das vistas `terra`/`terranb`).
+   * A CESSÃO do ponto da camada planetas: 0 = ponto inteiro, 1 = ponto
+   * apagado, contínua no meio — presença do globo (rampada) × régua do
+   * disco (`cessaoAlvo`, instantânea). 0 EXATO com o mesh fora de
+   * quadro (fator (1 − aCede) = 1 em IEEE754 — é o que mantém as vistas
+   * profundas bit-idênticas) e 1 EXATO com o globo assentado de 12 px
+   * CSS em diante (o estado das vistas `terra`/`terranb`).
    */
   cede: number;
-  /** a cessão ainda está ANDANDO rumo ao alvo — imagem mudando por
-   *  construção; o Director zera a contagem de estabilidade enquanto
-   *  isto for true. */
+  /** a PRESENÇA do globo ainda está ANDANDO rumo ao alvo — imagem
+   *  mudando por construção; o Director zera a contagem de estabilidade
+   *  enquanto isto for true. */
   emRampa: boolean;
   raioPc: number;
   /** centro em pc na cena — referência VIVA, só leitura. */
   centroPc: THREE.Vector3;
   diametroPx: number;
+  /** `?dbgplan`: a régua do disco, ANTES da presença — só o readout lê */
+  alvoDeCessao?: number;
 }
 
 /** Só o bloco comum de textura (`OpcoesDeTextura`) — a Terra não pede
@@ -381,6 +334,11 @@ export class TerraResolvida {
   private fonteEscrita: FonteDeEfemerides | null = null;
   private rUA = Number.NaN;
   private armado = false;
+  /** a PRESENÇA do globo (0..1), rampada rumo a `emQuadro` — a única
+   *  peça da cessão que anda no tempo. */
+  private presenca = 0;
+  /** um salto que caiu com o globo fora de quadro (`saltoGuardado`) */
+  private saltoPendente = false;
 
   /** a sombra do eclipse (F2c), resolvida no cache de jd/fonte —
    *  scratch único, preenchido por `resolveSombraNaCena` (out-parameter) */
@@ -550,25 +508,22 @@ export class TerraResolvida {
     e.gateArmado = this.armado;
     this.group.visible = emQuadro;
 
-    // A CESSÃO SUAVE (F2b/D5). O halo do ponto sai do ESPELHO da PSF com
-    // a magnitude que a camada de planetas está desenhando AGORA — mesma
-    // base (efeméride viva quando há fonte, retrato quando não há),
-    // mesma fase Lambertiana, mesma exposição do campo. A razão
-    // mesh/halo vira alvo por g(r) e o alvo vira estado por
-    // `stepRampToward` (clamp de dt lá dentro); salto de foco (portal,
-    // enquadramento, ?pos=) ou de data faz SNAP — animar um crossfade
-    // através de um teletransporte é mentir movimento que não houve.
-    const base = q.fonte
-      ? aMagBaseDe(FOTOMETRIA.earth.H, this.rUA) + DESLOCAMENTO_UA_PARA_PC
-      : A_MAG_BASE_PC.earth;
-    const alvo = alvoDaCessaoDoCorpo(
-      base, this.centro, q.camPosPc, dPc, diametroPx, emQuadro, q.psf, q.screenHPx
-    );
-    e.cede =
-      q.salto || saltoDeData
-        ? alvo
-        : stepRampToward(e.cede, alvo, q.dtS, RAMP_DURATION_MS);
-    e.emRampa = e.cede !== alvo;
+    // A CESSÃO DO PONTO: a régua do disco, instantânea, vezes a PRESENÇA
+    // do globo, rampada por `stepRampToward` (clamp de dt lá dentro);
+    // salto de foco (portal, enquadramento, ?pos=) ou de data faz SNAP —
+    // animar um crossfade através de um teletransporte é mentir
+    // movimento que não houve; o salto de câmera que caiu com o globo
+    // ainda fora de quadro estala no tick em que ele entra.
+    const alvo = cessaoAlvo(emQuadro, diametroPx, q.pr);
+    const alvoPresenca = emQuadro ? 1 : 0;
+    const estala = q.salto || saltoDeData || this.saltoPendente;
+    this.saltoPendente = saltoGuardado(this.saltoPendente, q.salto, emQuadro);
+    this.presenca = estala
+      ? alvoPresenca
+      : stepRampToward(this.presenca, alvoPresenca, q.dtS, RAMP_DURATION_MS);
+    e.alvoDeCessao = alvo;
+    e.cede = this.presenca * alvo;
+    e.emRampa = this.presenca !== alvoPresenca;
 
     if (emQuadro) this.posicionar(q);
     return e;

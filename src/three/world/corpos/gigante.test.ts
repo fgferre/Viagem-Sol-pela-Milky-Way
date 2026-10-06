@@ -505,8 +505,6 @@ function centroPc(id: string, jd: number): THREE.Vector3 {
   return new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
 }
 
-const PSF_FALSA = { expoM0: 0, sigmaPx: 2, beta: 300 };
-
 function quadro(id: string, distanciaRaios: number, extra: Record<string, unknown> = {}) {
   const jd = typeof extra.jdTdb === 'number' ? extra.jdTdb : JD;
   const c = centroPc(id, jd);
@@ -526,7 +524,7 @@ function quadro(id: string, distanciaRaios: number, extra: Record<string, unknow
     politica: 'assistida' as const,
     tS: 0,
     dtS: 0.016,
-    psf: PSF_FALSA,
+    pr: 1,
     salto: true,
     ...extra,
   };

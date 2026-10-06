@@ -265,8 +265,6 @@ function centroPc(id: string, jd: number): THREE.Vector3 {
   return new THREE.Vector3(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
 }
 
-const PSF_FALSA = { expoM0: 0, sigmaPx: 2, beta: 300 };
-
 function quadro(id: string, distanciaRaios: number, extra: Record<string, unknown> = {}) {
   const jd = typeof extra.jdTdb === 'number' ? extra.jdTdb : JD;
   const c = centroPc(id, jd);
@@ -286,7 +284,7 @@ function quadro(id: string, distanciaRaios: number, extra: Record<string, unknow
     politica: 'assistida' as const,
     tS: 0,
     dtS: 0.016,
-    psf: PSF_FALSA,
+    pr: 1,
     salto: true,
     ...extra,
   };
@@ -392,7 +390,7 @@ describe('4. a classe — gate, carga, retrato × sem-retrato, cessão', () => {
     expect(chamadas.some((c) => c.includes('mercury/map'))).toBe(true);
     expect(e2.emQuadro).toBe(true);
     expect(e2.gateArmado).toBe(true);
-    // a cessão de planeta: com o globo a 4 raios ele domina o halo
+    // a cessão de planeta: a 4 raios o disco passa dos 12 px
     expect(e2.cede).toBeGreaterThan(0);
     corpo.dispose();
   });

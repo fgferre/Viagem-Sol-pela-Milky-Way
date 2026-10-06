@@ -1074,10 +1074,11 @@ describe('7. o que o selo declara — os passos de luz', () => {
 /**
  * O HANDOFF PONTO↔GLOBO, e por que ele continua sem degrau no item 93.
  *
- * O medo é legítimo e está escrito na `cessaoAlvo`: a borda 2,5 da rampa
- * foi DERIVADA de "a luz combinada nunca dá passo para trás na
- * aproximação". O 91 multiplicou a radiância do globo de Saturno por
- * 4,85; o 93 a multiplica por mais 1,3 % e acrescenta a lanterna.
+ * O medo é legítimo: a cessão do ponto (`cessaoAlvo`, régua do disco
+ * de 4 a 12 px CSS, e `CESSAO_EM_MAG` no vertex) foi pinada por "a luz
+ * combinada nunca dá passo para trás na aproximação" (o modelo mora em
+ * `planetas.test.ts`). O 91 multiplicou a radiância do globo de Saturno
+ * por 4,85; o 93 a multiplica por mais 1,3 % e acrescenta a lanterna.
  *
  * O QUE ESTE BLOCO PROVA, e é o que fecha o argumento: a exposição da
  * visita não é função da câmera, e o globo nasce SOB o clarão. Então
@@ -1103,8 +1104,8 @@ describe('8. o handoff ponto↔globo — o degrau que não existe', () => {
   });
 
   it('o globo NASCE sob o clarão: aos 4 px do gate a cessão ainda é 0', () => {
-    for (const halo of [8, 12, 16]) {
-      expect(cessaoAlvo(true, LIMIAR_DO_GATE_PX, halo)).toBe(0);
+    for (const pr of [1, 2, 3]) {
+      expect(cessaoAlvo(true, LIMIAR_DO_GATE_PX, pr)).toBe(0);
     }
   });
 

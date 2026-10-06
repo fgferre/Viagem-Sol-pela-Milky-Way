@@ -238,12 +238,15 @@ export function catalogApparentMag(logLum: number, distPc: number): number {
 }
 
 // ------------------------------------------------------------
-// 5. A rampa de cessão por dominância CORPO↔PONTO — a única peça da
-//    velha política que tem consumidor legítimo, com o nome do que ela
-//    FAZ (a política hero↔catálogo morreu inteira no M2; esta curva
-//    sobrevive porque a cessão do globo da Terra sobre o ponto
-//    fotométrico é OUTRA troca — duas representações da MESMA fonte,
-//    fluxo conservado — e a prova de continuidade vale igual).
+// 5. A cessão do PONTO ao globo pela RÉGUA DO DISCO (06/10/2026) —
+//    planetas e Lua; o Sol segue a repartição da lei (estrela.ts).
+//
+// A régua é o tamanho do disco na tela, só. A antiga (disco ÷ halo do
+// ponto, "dominância") era circular, como a Lei da Estrela §1 diz: o
+// halo cresce com o brilho, então quanto mais aceso o corpo, maior o
+// globo tinha de ficar para o ponto ceder — a bolha branca sobre a
+// Terra pequena. Ponto enquanto não há disco; nascendo o disco, o
+// ponto some com o globo ainda pequeno, igual para todo corpo.
 // ------------------------------------------------------------
 
 /** `smoothstep(edge0, edge1, x)` do GLSL, transcrito (clamp + cúbica). */
@@ -252,36 +255,23 @@ function glslSmoothstep(edge0: number, edge1: number, x: number): number {
   return t * t * (3 - 2 * t);
 }
 
-/**
- * As bordas de `g`. A INFERIOR não é escolha: `r = 1` é a definição de
- * dominância (o corpo passa a ser maior que o halo do ponto).
- *
- * A SUPERIOR é DERIVADA da prova de continuidade, não de gosto. Com
- * `g = smoothstep(1, hi, r)`, a presença combinada na tela é
- *     P(d) = C(d)·(1 − g(r)) + H(d),  com H = r·C por definição de r,
- * e o máximo da derivada do smoothstep (`6t(1−t)`) é 1,5, logo
- *     max g′ = 1,5/(hi − 1) ≤ 1  ⟺  hi ≥ 2,5.
- * Na aproximação o corpo cresce com 1/d, mais rápido que o halo da PSF
- * (√log): **2,5 é a MENOR borda superior em que a luz combinada nunca
- * dá um passo para trás enquanto se chega perto**. Abaixo dela o ponto
- * cederia mais rápido do que o corpo cresce, e o par piscaria para
- * baixo no meio da aproximação.
- *
- * Bônus geométrico do mesmo número: em r = 2,5 o sprite INTEIRO do
- * ponto cabe dentro do RAIO do corpo com folga — o ponto virou, de
- * fato, um detalhe dentro do globo.
- */
-export const DOMINANCIA_DO_CORPO = { entra: 1, plena: 2.5 } as const;
+/** As bordas da cessão, em px CSS do DIÂMETRO do disco: até `entra` o
+ *  ponto fica inteiro; de `plena` em diante ele cedeu todo. */
+export const CESSAO_DO_PONTO_PX_CSS = { entra: 4, plena: 12 } as const;
 
 /**
- * `g(r)` — quanto o PONTO fotométrico cede a um corpo resolvido que
- * mede `r` vezes o halo dele na tela. Smoothstep cúbico, a mesma forma
- * de toda rampa da casa (C¹ nas duas bordas — sem degrau e sem quina).
- * `r ≤ 1` devolve 0 EXATO: enquanto o corpo não domina, o ponto fica
- * inteiro e as vistas de longe saem bit-idênticas.
- * Entrada não-finita devolve 0 — direção segura (ponto inteiro).
+ * Quanto o PONTO cede a um disco de `discoPxFisico` px físicos, com a
+ * tela a `pr` px físicos por px CSS (as bordas vêm em CSS × pr).
+ * Smoothstep cúbico (C¹): 0 EXATO até `entra`, 1 EXATO de `plena` em
+ * diante. Disco não-finito devolve 0 (direção segura: ponto inteiro);
+ * `pr` não-finito ou ≤ 0 vale 1.
  */
-export function cessaoPorDominancia(razao: number): number {
-  if (!Number.isFinite(razao)) return 0;
-  return glslSmoothstep(DOMINANCIA_DO_CORPO.entra, DOMINANCIA_DO_CORPO.plena, razao);
+export function cessaoPorDisco(discoPxFisico: number, pr: number): number {
+  if (!Number.isFinite(discoPxFisico)) return 0;
+  const k = Number.isFinite(pr) && pr > 0 ? pr : 1;
+  return glslSmoothstep(
+    CESSAO_DO_PONTO_PX_CSS.entra * k,
+    CESSAO_DO_PONTO_PX_CSS.plena * k,
+    discoPxFisico
+  );
 }

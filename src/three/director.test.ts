@@ -1162,3 +1162,51 @@ describe('o relógio do quadro (item C): sem o vão da carga, sem o vão da aba 
     expect(tickCorpo).toContain('d.quadroMaxDesdeMarcaMs = Math.max(d.quadroMaxDesdeMarcaMs, maxMs);');
   });
 });
+
+describe('o salto da câmera chega ao palco: o seek e o corte declarado estalam a cessão por UM tick (E0 do ponto de luz)', () => {
+  // O ponto branco sobre Júpiter aos 158 s do solar (06/10) era a cessão
+  // animando 300 ms a partir do instante ANTERIOR ao seek. O tick é DOM +
+  // WebGL: roda-se o `seek` REAL e as linhas REAIS do tick que tocam a
+  // bandeira, na ordem em que estão nele — armar, publicar, consumir.
+  const SEEK = FONTE.match(/\n {2}seek\(t: number\) \{\n([\s\S]*?)\n {2}\}\n/);
+  const INICIO_DO_TICK = FONTE.indexOf('  private tick(rawTime: number, dt: number) {');
+  const LINHAS = FONTE.slice(INICIO_DO_TICK, FONTE.indexOf('\n  }\n', INICIO_DO_TICK))
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => !l.startsWith('//') && l.includes('saltoDeCamera'));
+
+  /** um Director de mentira com o `seek` e as linhas do tick de verdade */
+  const bancada = () => {
+    const alvo = { journeyT: 0, saltoDeCamera: false, rig: { duration: 321, reset() {} }, perturbar() {} };
+    const q = { salto: false };
+    const tick = (corte = false) => {
+      new Function('q', 'r', LINHAS.join('\n')).call(alvo, q, { corte });
+      return q.salto;
+    };
+    const seek = (t: number) => new Function('t', SEEK![1]).call(alvo, t);
+    return { tick, seek };
+  };
+
+  it('a varredura acha o seek e as três linhas do tick, na ordem — um padrão quebrado passaria calado', () => {
+    expect(SEEK, 'o `seek(t: number)` sumiu do director.ts').not.toBeNull();
+    expect(LINHAS).toEqual([
+      'if (r.corte) this.saltoDeCamera = true;',
+      'q.salto = this.saltoDeCamera;',
+      'this.saltoDeCamera = false;',
+    ]);
+  });
+
+  it('seek ⇒ o quadro do palco do tick seguinte leva `salto`, e o seguinte a esse não', () => {
+    const { tick, seek } = bancada();
+    expect(tick()).toBe(false);
+    seek(158);
+    expect(tick()).toBe(true);
+    expect(tick()).toBe(false);
+  });
+
+  it('corte declarado ⇒ o quadro do palco do MESMO tick leva `salto`, e o seguinte não', () => {
+    const { tick } = bancada();
+    expect(tick(true)).toBe(true);
+    expect(tick()).toBe(false);
+  });
+});

@@ -232,11 +232,13 @@ export class JourneyRig {
     );
   }
 
+  /** `corte`: este quadro abriu um plano com corte declarado — a câmera
+   *  saltou, e o director avisa os corpos (a cessão estala, não anima) */
   apply(
     camera: THREE.PerspectiveCamera,
     t: number,
     dt: number
-  ): { warp: number; luz: number } {
+  ): { warp: number; luz: number; corte: boolean } {
     const s = this.journey.at(t);
     // O OPERADOR SEGUE O ROTEIRO (item 225, 24/09). Até aqui mira e lente
     // passavam por um amortecedor exponencial (0,4 s e 0,2 s) em TODO
@@ -328,7 +330,7 @@ export class JourneyRig {
     camera.fov = fov;
     camera.updateProjectionMatrix();
 
-    return { warp: s.warp, luz: s.luz };
+    return { warp: s.warp, luz: s.luz, corte };
   }
 
   /** a mola crítica leva os dois desvios (mira e lente) adiante por `dt` */

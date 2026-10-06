@@ -45,6 +45,7 @@ import { farPlanePc, nearPlanePc } from '../../core/engine';
 import { StarField } from '../stars';
 import {
   catalogApparentMag,
+  cessaoPorDisco,
 } from '../lodStellar';
 import { CAMADAS } from '../../atlasConfig';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../../escala';
@@ -64,6 +65,7 @@ import { EPOCA_JD_TDB, IDS_RETRATO, RETRATO_2026 } from './retrato2026';
 import type { FonteDeEfemerides } from './planetas';
 import {
   A_MAG_BASE_PC,
+  CESSAO_EM_MAG,
   DESLOCAMENTO_UA_PARA_PC,
   DIST_MIN_PC,
   FASE_MIN,
@@ -1514,6 +1516,28 @@ describe('a cessão sob corpo resolvido (aCede, F2a)', () => {
     // escrever — o gate do globo nos nove, a repartição da lei no Sol
     expect(FONTE).toContain('float alpha = 1.0 - aCede;');
     expect(FONTE).toContain("attribute float aCede;");
+  });
+
+  it('a cessão também é MAGNITUDE nos nove e na Lua, nunca no Sol, antes da PSF', () => {
+    const vert = camada().material.vertexShader;
+    const linha = `m += aCede * ${CESSAO_EM_MAG.toFixed(1)} * (1.0 - aEhSol);`;
+    expect(vert).toContain(linha);
+    // depois de calcular m, ANTES de a PSF ler m
+    expect(vert.indexOf(linha)).toBeGreaterThan(vert.indexOf('float m = aMagBase'));
+    expect(vert.indexOf(linha)).toBeLessThan(vert.indexOf('starPSF(m,'));
+  });
+
+  it('CESSAO_EM_MAG: a luz combinada nunca recua na janela de 4 a 12 px', () => {
+    // o modelo de engenharia (a foto decide; o teste guarda o modelo):
+    // globo ∝ D², ponto ∝ D²·10^(−0,4·k·g)·(1 − g), g = régua do disco
+    let anterior = -Infinity;
+    for (let i = 4000; i <= 12000; i++) {
+      const d = i / 1000;
+      const g = cessaoPorDisco(d, 1);
+      const f = d * d * 10 ** (-0.4 * CESSAO_EM_MAG * g) * (1 - g) + d * d;
+      expect(f, `D=${d}`).toBeGreaterThan(anterior);
+      anterior = f;
+    }
   });
 
   it('escreverCessao é idempotente e só sobe upload quando MUDA', () => {

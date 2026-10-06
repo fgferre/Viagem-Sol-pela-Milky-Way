@@ -77,9 +77,6 @@ import {
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
 import type { FonteDeEfemerides } from '../planetas/planetas';
-import type { CalibracaoDaCasa } from '../../estrela';
-import { A_MAG_BASE_PC, DESLOCAMENTO_UA_PARA_PC } from '../planetas/planetas';
-import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RETRATO_2026 } from '../planetas/retrato2026';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { GLSL_RUIDO_DE_VALOR, diametroAparentePx } from './corpos';
@@ -88,7 +85,7 @@ import type { QuadroDosAneisTenues } from './aneisTenues';
 import { LajotaDoAnel, VOLUME_DA_LAJOTA } from './lajotaDoAnel';
 import type { QuadroDaLajota } from './lajotaDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
-import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
+import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
 import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
 import type { OpcoesDeTextura } from './texturas';
 import {
@@ -1205,7 +1202,8 @@ export interface QuadroDoGigante {
    *  o consome (`CARENCIA_DA_DESCARGA_S`). */
   tS: number;
   dtS: number;
-  psf: CalibracaoDaCasa;
+  /** px físicos por px CSS — as bordas da cessão são CSS (`QuadroDaTerra.pr`). */
+  pr: number;
   salto: boolean;
 }
 
@@ -1218,6 +1216,8 @@ export interface EstadoDoGigante {
   raioPc: number;
   centroPc: THREE.Vector3;
   diametroPx: number;
+  /** `?dbgplan`: a régua do disco, ANTES da presença — só o readout lê */
+  alvoDeCessao?: number;
   rUA: number;
   /** item 139: o PLANO DO ANEL como superfície do palco — ver
    *  `EstadoNoPalco.superficieDoAnel`. `null` fora do anel. */
@@ -1252,6 +1252,10 @@ export class GiganteResolvido {
   private jdEscrito = Number.NaN;
   private fonteEscrita: FonteDeEfemerides | null = null;
   private rUA = Number.NaN;
+  /** a PRESENÇA do globo (0..1), rampada rumo a `emQuadro` (terra.ts). */
+  private presenca = 0;
+  /** um salto que caiu com o globo fora de quadro (`saltoGuardado`) */
+  private saltoPendente = false;
   private armado = false;
   private readonly sombra = criaSombraNaCena();
 
@@ -1415,17 +1419,17 @@ export class GiganteResolvido {
     e.gateArmado = this.armado;
     this.group.visible = emQuadro;
 
-    const base = q.fonte
-      ? aMagBaseDe(FOTOMETRIA[this.idCorpo].H, this.rUA) + DESLOCAMENTO_UA_PARA_PC
-      : A_MAG_BASE_PC[this.idCorpo];
-    const alvo = alvoDaCessaoDoCorpo(
-      base, this.centro, q.camPosPc, dPc, diametroPx, emQuadro, q.psf, q.screenHPx
-    );
-    e.cede =
-      q.salto || saltoDeData
-        ? alvo
-        : stepRampToward(e.cede, alvo, q.dtS, RAMP_DURATION_MS);
-    e.emRampa = e.cede !== alvo;
+    // a cessão do ponto: régua do disco × presença rampada (terra.ts)
+    const alvo = cessaoAlvo(emQuadro, diametroPx, q.pr);
+    const alvoPresenca = emQuadro ? 1 : 0;
+    const estala = q.salto || saltoDeData || this.saltoPendente;
+    this.saltoPendente = saltoGuardado(this.saltoPendente, q.salto, emQuadro);
+    this.presenca = estala
+      ? alvoPresenca
+      : stepRampToward(this.presenca, alvoPresenca, q.dtS, RAMP_DURATION_MS);
+    e.alvoDeCessao = alvo;
+    e.cede = this.presenca * alvo;
+    e.emRampa = this.presenca !== alvoPresenca;
 
     // o chão do anel (139) é do QUADRO, não do corpo: fora de quadro, ou
     // com a câmera longe do plano, o palco não o vê

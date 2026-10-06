@@ -39,9 +39,9 @@ import type { Rotulos } from './rotulos';
 
 /**
  * O QUADRO que os doze recebem. É o da Terra — o mais completo dos
- * quatro (`dtS`, `psf` e `salto` só a cessão suave consome, e a Lua não
- * tem cessão) —, montado UMA vez por tick e reusado pelos doze: doze
- * objetos por quadro era alocação que o M4 da casa não deixa passar.
+ * quatro (`dtS`, `pr` e `salto` só a cessão do ponto consome) —,
+ * montado UMA vez por tick e reusado pelos doze: doze objetos por
+ * quadro era alocação que o M4 da casa não deixa passar.
  */
 export type QuadroDoPalco = QuadroDaTerra;
 
@@ -60,7 +60,7 @@ export function quadroDoPalcoVazio(): QuadroDoPalco {
     luzDoRoteiro: 0,
     tS: 0,
     dtS: 0,
-    psf: { expoM0: 0, sigmaPx: 0, beta: 0 },
+    pr: 1,
     salto: false,
   };
 }
@@ -79,6 +79,9 @@ export interface EstadoNoPalco {
   centroPc: THREE.Vector3;
   cede?: number;
   emRampa?: boolean;
+  /** `?dbgplan` (só o readout lê): o diâmetro físico do globo e o alvo da cessão antes da rampa */
+  diametroPx?: number;
+  alvoDeCessao?: number;
   /**
    * UMA SEGUNDA SUPERFÍCIE do mesmo corpo (item 139). O anel de Saturno
    * é um CHÃO, não um globo: com a câmera rente ao plano a superfície
@@ -194,6 +197,9 @@ export function passoDoPalco(
       if (!posto.temRetrato) planetas?.escreverPontoDeCorpo(posto.id, e.centroPc);
       planetas?.escreverCessao(posto.id, e.cede ?? 0);
       planetas?.escreverRaio(posto.id, e.raioPc);
+      planetas?.escreverDepuracao(
+        posto.id, e.alvoDeCessao ?? NaN, e.cede ?? 0, e.diametroPx ?? NaN, e.emQuadro, e.carregando
+      );
     }
 
     posto.carregando = e.carregando;

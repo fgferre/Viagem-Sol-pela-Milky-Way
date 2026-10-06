@@ -259,7 +259,7 @@ function luaDeTeste() {
 }
 
 /** O INSTRUMENTO DA CASA, importado e não redigitado — é ele que o
- *  Director entrega ao quadro (`CALIBRACAO_DA_CASA`), e o halo do ponto
+ *  Director entrega ao `Planetas` (`CALIBRACAO_DA_CASA`), e o halo do ponto
  *  da Lua sai dele. */
 const PSF = { expoM0: EXPO_M0, sigmaPx: SIGMA_PX, beta: BETA_EMISSAO } as const;
 
@@ -284,7 +284,7 @@ function quadro(camPosPc: THREE.Vector3, extra: Partial<Parameters<LuaResolvida[
     tS: 0,
     // o instrumento e o relógio da cessão do ponto (item 108)
     dtS: 1 / 60,
-    psf: PSF,
+    pr: 1,
     salto: false,
     ...extra,
   };
@@ -637,8 +637,8 @@ describe('5. texto-fonte de lua.ts e do shader montado (as leis pinadas)', () =>
 
   it('o cabeçalho não promete mais o que já entregou (o ponto da Lua)', () => {
     expect(FONTE).not.toContain('SEM PONTO FOTOMÉTRICO');
-    expect(FONTE).toContain('alvoDaCessaoDoCorpo(');
-    expect(FONTE).toContain('FOTOMETRIA.moon.H');
+    // a cessão do ponto é a MESMA função das irmãs (régua do disco)
+    expect(FONTE).toContain('cessaoAlvo(emQuadro, diametroPx, q.pr)');
   });
 
   it('o needle do eclipse (F2c/D3): o chunk da lib, MONTADO, multiplica SÓ a direta', () => {
@@ -723,7 +723,6 @@ describe('6. a ordem fotométrica — o ponto da Lua no fim do filme', () => {
     q.screenHPx = screenHPx;
     q.fovDeg = FOV_T193;
     q.ligado = true;
-    q.psf = PSF;
     q.salto = true;
     q.tS = 0;
     passoDoPalco([posto], q, {
@@ -763,7 +762,8 @@ describe('6. a ordem fotométrica — o ponto da Lua no fim do filme', () => {
     expect(centro.y).toBe(Math.fround(LUA_PC.y));
     expect(centro.z).toBe(Math.fround(LUA_PC.z));
 
-    // 2. o ponto está ACESO: o disco de ~10 px ainda não domina o halo
+    // 2. o ponto está ACESO: neste tick único a textura não chegou, o
+    //    globo está fora de quadro e a régua do disco devolve 0
     expect(cede).toBe(0);
 
     // 3. e é a Lua GIBOSA do arremate, a 389 mil km: magnitude de −12
@@ -788,9 +788,9 @@ describe('6. a ordem fotométrica — o ponto da Lua no fim do filme', () => {
   });
 
   it('de perto o ponto SE APAGA: o globo carrega o fluxo sozinho', async () => {
-    // a câmera a 20 raios lunares — o disco domina o halo com folga. E
-    // o globo tem de estar EM QUADRO: mesh fora de quadro não domina
-    // nada e o ponto fica inteiro (é o `cessaoAlvo` de sempre), então a
+    // a câmera a 20 raios lunares — o disco passa dos 12 px com folga. E
+    // o globo tem de estar EM QUADRO: mesh fora de quadro não cede nada
+    // e o ponto fica inteiro (é o `cessaoAlvo` de sempre), então a
     // textura precisa ter chegado — a carga injetada faz isso.
     const perto = LUA_PC.clone().addScaledVector(
       CAM_T193.clone().sub(LUA_PC).normalize(), 20 * RAIO_LUA_PC

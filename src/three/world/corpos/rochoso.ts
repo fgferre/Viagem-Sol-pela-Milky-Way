@@ -29,8 +29,8 @@
 //     nascem com a efeméride viva (Kepler composto com Marte —
 //     a cadeia de posicaoHeliocentrica).
 //   - CESSÃO: os três planetas têm ponto fotométrico na camada
-//     (IDS_FOTOMETRIA) e cedem por dominância (D5), pelo MESMO
-//     bloco da Terra; Fobos e Deimos, como a Lua, nascem
+//     (IDS_FOTOMETRIA) e cedem pela régua do disco, pela MESMA
+//     `cessaoAlvo` da Terra; Fobos e Deimos, como a Lua, nascem
 //     mesh↔nada aos 4 px do gate (pendência MH18, Onda 7).
 //   - ECLIPSE: Fobos e Deimos ganharam o par na TABELA da lib
 //     (data-only, F3) — a sombra de Marte. Os três planetas não
@@ -66,9 +66,6 @@ import {
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
 import type { FonteDeEfemerides } from '../planetas/planetas';
-import type { CalibracaoDaCasa } from '../../estrela';
-import { A_MAG_BASE_PC, DESLOCAMENTO_UA_PARA_PC } from '../planetas/planetas';
-import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RETRATO_2026 } from '../planetas/retrato2026';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import {
@@ -82,7 +79,7 @@ import {
   escalaDoBumpDoAlbedo,
 } from './corpos';
 import { LS_NORMALIZACAO_GLSL } from './lua';
-import { LIMIAR_DO_GATE_PX, alvoDaCessaoDoCorpo, gateBinario } from './terra';
+import { LIMIAR_DO_GATE_PX, cessaoAlvo, gateBinario, saltoGuardado } from './terra';
 import {
   CANAL_ALTURA,
   CANAL_HORIZONTE,
@@ -652,7 +649,8 @@ export interface QuadroDoRochoso {
   tS: number;
   /** os três de PLANETA (a cessão suave, D5); luas ignoram. */
   dtS: number;
-  psf: CalibracaoDaCasa;
+  /** px físicos por px CSS — as bordas da cessão são CSS (`QuadroDaTerra.pr`). */
+  pr: number;
   salto: boolean;
 }
 
@@ -665,6 +663,8 @@ export interface EstadoDoRochoso {
   raioPc: number;
   centroPc: THREE.Vector3;
   diametroPx: number;
+  /** `?dbgplan`: a régua do disco, ANTES da presença — só o readout lê */
+  alvoDeCessao?: number;
   /** distância heliocêntrica da CADEIA, em UA; NaN sem posição. */
   rUA: number;
 }
@@ -689,6 +689,10 @@ export class RochosoResolvido {
   private jdEscrito = Number.NaN;
   private fonteEscrita: FonteDeEfemerides | null = null;
   private rUA = Number.NaN;
+  /** a PRESENÇA do globo (0..1), rampada rumo a `emQuadro` (terra.ts). */
+  private presenca = 0;
+  /** um salto que caiu com o globo fora de quadro (`saltoGuardado`) */
+  private saltoPendente = false;
   private portao: PortaoDoRochoso = 0;
 
   /** a sombra do eclipse (F3: Fobos/Deimos ← Marte), no cache de
@@ -892,22 +896,19 @@ export class RochosoResolvido {
     e.gateArmado = armado;
     this.group.visible = emQuadro;
 
-    // A CESSÃO SUAVE do ponto fotométrico (D5) — só PLANETA tem ponto
-    // na camada; a conta é a da Terra, palavra por palavra, com o H do
-    // corpo (FOTOMETRIA) e a MESMA base da camada (efeméride viva com
-    // fonte, retrato sem ela).
+    // A CESSÃO DO PONTO — só PLANETA tem ponto na camada; a conta é a
+    // da Terra, palavra por palavra: régua do disco × presença rampada.
     if (this.ehPlaneta) {
-      const base = q.fonte
-        ? aMagBaseDe(FOTOMETRIA[this.config.id].H, this.rUA) + DESLOCAMENTO_UA_PARA_PC
-        : A_MAG_BASE_PC[this.config.id];
-      const alvo = alvoDaCessaoDoCorpo(
-        base, this.centro, q.camPosPc, dPc, diametroPx, emQuadro, q.psf, q.screenHPx
-      );
-      e.cede =
-        q.salto || saltoDeData
-          ? alvo
-          : stepRampToward(e.cede, alvo, q.dtS, RAMP_DURATION_MS);
-      e.emRampa = e.cede !== alvo;
+      const alvo = cessaoAlvo(emQuadro, diametroPx, q.pr);
+      const alvoPresenca = emQuadro ? 1 : 0;
+      const estala = q.salto || saltoDeData || this.saltoPendente;
+      this.saltoPendente = saltoGuardado(this.saltoPendente, q.salto, emQuadro);
+      this.presenca = estala
+        ? alvoPresenca
+        : stepRampToward(this.presenca, alvoPresenca, q.dtS, RAMP_DURATION_MS);
+      e.alvoDeCessao = alvo;
+      e.cede = this.presenca * alvo;
+      e.emRampa = this.presenca !== alvoPresenca;
     }
 
     if (emQuadro) this.posicionar(q);

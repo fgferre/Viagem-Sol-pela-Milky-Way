@@ -70,8 +70,8 @@
 //
 // O PONTO FOTOMÉTRICO NASCEU EM 30/08 (item 108, a terceira perna) — e
 // a pendência que este cabeçalho carregava ("o ponto das luas é para a
-// F8/Onda 7") fechou como ela previa: a cessão suave da camada
-// (`alvoDaCessaoDoCorpo`, terra.ts) serviu de graça, e o que a Lua
+// F8/Onda 7") fechou como ela previa: a cessão da camada
+// (`cessaoAlvo`, terra.ts) serviu de graça, e o que a Lua
 // precisou trazer de próprio foi a LEI DE FASE dela ([ALLEN76], em
 // `planetas/fotometria.ts`) e o LUGAR do ponto.
 //
@@ -119,13 +119,10 @@ import {
   criaSombraNaCena,
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
-import type { CalibracaoDaCasa } from '../../estrela';
 import type { FonteDeEfemerides } from '../planetas/planetas';
-import { DESLOCAMENTO_UA_PARA_PC } from '../planetas/planetas';
-import { FOTOMETRIA, aMagBaseDe } from '../planetas/fotometria';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { GLSL_NORMAL_DO_MAPA, diametroAparentePx } from './corpos';
-import { alvoDaCessaoDoCorpo, gateBinario } from './terra';
+import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
 import { CANAL_MAP, CANAL_NORMAL, type Seguradores, TexturasDoCorpo } from './texturas';
 import type { OpcoesDeTextura } from './texturas';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
@@ -234,7 +231,7 @@ void main() {
 
 /** O que o Director entrega por tick — o MESMO quadro da Terra desde
  *  30/08: com o ponto fotométrico, a Lua passou a ter cessão, e a
- *  cessão consome `psf`, `dtS` e `salto` como as irmãs. */
+ *  cessão consome `dtS` e `salto` como as irmãs. */
 export interface QuadroDaLua {
   jdTdb: number;
   /** a efeméride viva, ou null — e null aqui significa SEM Lua, salvo
@@ -259,11 +256,11 @@ export interface QuadroDaLua {
   /** o relógio de PAREDE do app em segundos — só a carência da descarga
    *  o consome (`CARENCIA_DA_DESCARGA_S`). */
   tS: number;
-  /** dt do quadro em segundos — só a rampa temporal da cessão o consome. */
+  /** dt do quadro em segundos — só a rampa da presença do globo o consome. */
   dtS: number;
-  /** o instrumento da CASA: o halo do ponto sai dele. */
-  psf: CalibracaoDaCasa;
-  /** a câmera SALTOU neste quadro: a cessão faz snap em vez de animar. */
+  /** px físicos por px CSS — as bordas da cessão são CSS (`QuadroDaTerra.pr`). */
+  pr: number;
+  /** a câmera SALTOU neste quadro: a presença faz snap em vez de animar. */
   salto: boolean;
 }
 
@@ -278,6 +275,8 @@ export interface EstadoDaLua {
   /** centro em pc na cena — NaN enquanto não houver efeméride. */
   centroPc: THREE.Vector3;
   diametroPx: number;
+  /** `?dbgplan`: a régua do disco, ANTES da presença — só o readout lê */
+  alvoDeCessao?: number;
   /** distância heliocêntrica da CADEIA da Lua, em UA — o que o selo e
    *  a busca leem; NaN sem efeméride. */
   rUA: number;
@@ -289,8 +288,8 @@ export interface EstadoDaLua {
    * cessão é o interruptor que já existe para isso.
    */
   cede: number;
-  /** a cessão ainda está ANDANDO rumo ao alvo — o Director zera a
-   *  contagem de estabilidade enquanto isto for true. */
+  /** a PRESENÇA do globo ainda está ANDANDO rumo ao alvo — o Director
+   *  zera a contagem de estabilidade enquanto isto for true. */
   emRampa: boolean;
 }
 
@@ -306,6 +305,10 @@ export class LuaResolvida {
   private fonteEscrita: FonteDeEfemerides | null = null;
   private rUA = Number.NaN;
   private armado = false;
+  /** a PRESENÇA do globo (0..1), rampada rumo a `emQuadro` (terra.ts). */
+  private presenca = 0;
+  /** um salto que caiu com o globo fora de quadro (`saltoGuardado`) */
+  private saltoPendente = false;
 
   /** a sombra do eclipse (F2c), resolvida no cache de jd/fonte —
    *  scratch único, preenchido por `resolveSombraNaCena` (out-parameter) */
@@ -470,23 +473,22 @@ export class LuaResolvida {
     e.gateArmado = this.armado;
     this.group.visible = emQuadro;
 
-    // A CESSÃO SUAVE do ponto (item 108) — a conta das irmãs, com a
-    // base SEMPRE viva: a Lua não tem retrato congelado onde cair, e
-    // sem lugar ela não tem ponto nenhum (cessão 1, snap, sem rampa —
-    // animar um crossfade a partir de "não existe" seria mentir
-    // movimento). O mesh fora de quadro devolve 0 e o ponto fica
-    // inteiro: é ele quem mostra a Lua antes dos 4 px do gate.
-    const alvo = temLugar
-      ? alvoDaCessaoDoCorpo(
-          aMagBaseDe(FOTOMETRIA.moon.H, this.rUA) + DESLOCAMENTO_UA_PARA_PC,
-          this.centro, q.camPosPc, dPc, diametroPx, emQuadro, q.psf, q.screenHPx
-        )
-      : 1;
-    e.cede =
-      q.salto || saltoDeData || !temLugar
-        ? alvo
-        : stepRampToward(e.cede, alvo, q.dtS, RAMP_DURATION_MS);
-    e.emRampa = e.cede !== alvo;
+    // A CESSÃO DO PONTO (item 108) — a conta das irmãs (terra.ts):
+    // régua do disco × presença rampada. Sem lugar a Lua não tem ponto
+    // nenhum (cessão 1, snap, sem rampa — animar um crossfade a partir
+    // de "não existe" seria mentir movimento). O mesh fora de quadro
+    // devolve 0 e o ponto fica inteiro: é ele quem mostra a Lua antes
+    // dos 4 px do gate.
+    const alvo = temLugar ? cessaoAlvo(emQuadro, diametroPx, q.pr) : 1;
+    const alvoPresenca = emQuadro ? 1 : 0;
+    const estala = q.salto || saltoDeData || this.saltoPendente || !temLugar;
+    this.saltoPendente = saltoGuardado(this.saltoPendente, q.salto, emQuadro);
+    this.presenca = estala
+      ? alvoPresenca
+      : stepRampToward(this.presenca, alvoPresenca, q.dtS, RAMP_DURATION_MS);
+    e.alvoDeCessao = alvo;
+    e.cede = temLugar ? this.presenca * alvo : 1;
+    e.emRampa = this.presenca !== alvoPresenca;
 
     if (emQuadro) this.posicionar(q);
     return e;

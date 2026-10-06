@@ -530,6 +530,7 @@ escrever a próxima função — e é literalmente esse o mecanismo do frankenst
 - `cessaoAlvo` some porque a âncora dela era **circular** — media o disco contra o
   **halo do ponto**, e o clarão passa a ser derivado do fluxo. **O clarão é SAÍDA,
   nunca entrada;**
+  *(Desde 06/10/2026 a `cessaoAlvo` dos planetas e da Lua mede o disco em px CSS × DPR, 4→12 (`cessaoPorDisco`); o halo deixou de ser entrada.)*
 - `cessaoPeloGate` some porque o gate de 4 px é regra de corpo **texturizado** e
   vira o **parâmetro** `trocaPx`, não uma segunda lei. O `Math.max` some junto, e
   com ele a quina;

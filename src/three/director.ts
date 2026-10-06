@@ -689,7 +689,8 @@ export class Director {
    * A CÂMERA SALTOU neste quadro (portal, enquadramento, ?pos=) — os
    * corpos resolvidos fazem SNAP da cessão em vez de animar através do
    * teletransporte (cicatriz "reset no salto de foco", D5). Armado por
-   * `teletransportou()` e consumido por UM tick.
+   * `teletransportou()`, pelo `seek()` e pelo corte declarado do roteiro
+   * (o rig devolve `corte` no `apply` do quadro), e consumido por UM tick.
    */
   private saltoDeCamera = false;
   /**
@@ -2388,6 +2389,13 @@ export class Director {
   seek(t: number) {
     this.journeyT = Math.min(t, this.rig.duration);
     this.rig.reset(); // a mira suavizada também salta para o instante certo
+    // ...e a cessão dos corpos também: sem isto o ponto de luz animava
+    // 300 ms a partir do instante ANTERIOR (o ponto branco sobre Júpiter
+    // aos 158 s do solar, 06/10). Só o salto, não `teletransportou()`:
+    // o seek anda pelo trajeto do próprio filme, e derrubar a LUT do
+    // raymarch mudaria o céu de todo link `?t=` e custaria um recálculo
+    // a cada passo do scrub.
+    this.saltoDeCamera = true;
     this.perturbar();
   }
 
@@ -3634,6 +3642,9 @@ export class Director {
       if (!this.freezeJourney) this.journeyT += dt * this.playbackRate;
       const t = this.journeyT;
       const r = this.rig.apply(cam, t, dt);
+      // o CORTE SECO do roteiro salta a câmera neste quadro: a cessão
+      // estala junto, como no seek (só o salto, pela mesma razão)
+      if (r.corte) this.saltoDeCamera = true;
       warp = r.warp;
       luzDoRoteiro =
         import.meta.env.DEV && this.luzDoRoteiroForcada !== null ? this.luzDoRoteiroForcada : r.luz;
@@ -3814,7 +3825,7 @@ export class Director {
       // grampeado e serviria mal a uma espera de 15 s
       q.tS = rawTime;
       q.dtS = dt;
-      q.psf = CALIBRACAO_DA_CASA;
+      q.pr = prAtual;
       q.salto = this.saltoDeCamera;
       passoDoPalco(this.noPalco, q, {
         palco: this.palco,

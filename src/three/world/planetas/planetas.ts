@@ -254,6 +254,16 @@ const AL_POR_PC = 3.262;
 export const FASE_MIN = 1e-6;
 
 /**
+ * A cessão do ponto também é MAGNITUDE (06/10/2026): `m += aCede · k`
+ * nos nove e na Lua, nunca no Sol. O alpha (1 − aCede) sozinho não
+ * apaga ponto saturado (pico 10⁷ × 0,05 ainda é branco puro); somar
+ * magnitude encolhe o halo junto. k = 12 é pinado pelo teste de
+ * monotonicidade estrita em `planetas.test.ts` (com 14 a luz combinada
+ * já recua 0,47 % na janela de 4–12 px; com 20, 4,08 %).
+ */
+export const CESSAO_EM_MAG = 12;
+
+/**
  * `aMagBase` dos dez na convenção única (magnitude a 1 pc, fase zero).
  * O Sol pelo ponto-zero do campo; os nove pelo `A_MAG_BASE` da F1
  * (que já carrega a efeméride dentro, via `r_UA` do retrato) deslocado
@@ -340,6 +350,10 @@ void main() {
   // que a GPU faz no campo (STAR_VERT) — o espelho TS repete esta.
   float m = aMagBase + 5.0 * (log2(dPc) * ${LOG10_DE_2})
                      - 2.5 * (log2(fase) * ${LOG10_DE_2});
+  // A CESSÃO EM MAGNITUDE (CESSAO_EM_MAG): o halo encolhe com o ponto,
+  // que o alpha sozinho não apaga quando saturado. Nunca no Sol (fator
+  // 0); com aCede = 0 a soma é 0,0 exato.
+  m += aCede * ${CESSAO_EM_MAG.toFixed(1)} * (1.0 - aEhSol);
 
   // A PSF compartilhada da casa, sem uma vírgula de diferença.
   float size; float peak; float sigmaFrac;
@@ -347,7 +361,7 @@ void main() {
 
   // O alpha desta camada tem UM dono desde o M1 da Lei da Estrela: a
   // CESSÃO sob corpo resolvido (aCede). Para os nove, quem a escreve é o
-  // gate do globo (terra.ts/cessaoAlvo, SUAVE desde a F2b); para o SOL
+  // globo (terra.ts/cessaoAlvo, régua do disco); para o SOL
   // (vértice 0) é a REPARTIÇÃO da lei — aCede = wResolvido, escrito pelo
   // director por quadro. O uGain do crossfade reverso (deepPointGain)
   // morreu no M1 junto com a entrega {0,02; 0,05} pc: o Sol-ponto não
@@ -422,6 +436,8 @@ export class Planetas {
   private screenHAnterior = NaN;
   /** rascunho da projeção do `?dbgplan` (fora do caminho do quadro). */
   private readonly rascunho = new THREE.Vector3();
+  /** `?dbgplan`: alvo, cede, diâmetro px, emQuadro, carregando — 5 por ponto, NaN = o palco não escreveu */
+  private readonly depuracao = new Float64Array(IDS_DOS_PONTOS.length * 5).fill(Number.NaN);
   /**
    * O CACHE POR JD do caminho vivo. Nasce NaN e não na época, de
    * propósito: assim o primeiro `escreverInstante(EPOCA)` roda a
@@ -668,12 +684,12 @@ export class Planetas {
 
   /**
    * A CESSÃO SOB CORPO RESOLVIDO (Onda 6, F2a; SUAVE desde a F2b) —
-   * método IRMÃO do `update`, como `escreverInstante`: quem decide é a
-   * DOMINÂNCIA do corpo resolvido (o Director consulta o mesh e escreve
-   * aqui, reafirmando TODO quadro — cicatriz C2), nunca o quadro desta
-   * camada. Contínua em [0,1]: 1 apaga o ponto do corpo (cor E
-   * espinhos, pelos dois varyings do alpha), 0 devolve a fotometria, e
-   * o meio é o crossfade do handoff (terra.ts/cessaoAlvo).
+   * método IRMÃO do `update`, como `escreverInstante`: quem decide é o
+   * CORPO resolvido (régua do disco × presença do globo; o Director
+   * escreve aqui, reafirmando TODO quadro — cicatriz C2), nunca o quadro
+   * desta camada. Contínua em [0,1]: 1 apaga o ponto do corpo (alpha e
+   * `CESSAO_EM_MAG` no vertex), 0 devolve a fotometria, e o meio é o
+   * crossfade do handoff (terra.ts/cessaoAlvo).
    *
    * Escrita idempotente pela mesma lei do instante (`gravar`): reescrever
    * o mesmo valor a 60 Hz não sobe upload. Devolve se algo mudou.
@@ -776,6 +792,18 @@ export class Planetas {
     return this.escreverAtributo('aRaio', id, raioPc);
   }
 
+  /** `?dbgplan`: o estado da cessão que o corpo devolveu ao palco neste quadro — só o readout lê */
+  escreverDepuracao(id: string, alvo: number, cede: number, diamPx: number, emQuadro: boolean, carregando: boolean) {
+    const k = (IDS_DOS_PONTOS as readonly string[]).indexOf(id) * 5;
+    if (k < 0) return;
+    const d = this.depuracao;
+    d[k] = alvo;
+    d[k + 1] = cede;
+    d[k + 2] = diamPx;
+    d[k + 3] = emQuadro ? 1 : 0;
+    d[k + 4] = carregando ? 1 : 0;
+  }
+
   private escreverAtributo(nome: string, id: string, valor: number): boolean {
     const i = (IDS_DOS_PONTOS as readonly string[]).indexOf(id);
     if (i < 0) return false;
@@ -814,6 +842,7 @@ export class Planetas {
     const u = this.material.uniforms;
     const expoM0 = u.uExpoM0.value as number;
     const sigmaPx = u.uSigmaPx.value as number;
+    const pr2 = u.uPr2.value as number;
     const linhas = [
       `[dbgplan] época ${EPOCA_ISO} = JD ${EPOCA_JD_TDB} TDB · ` +
         // o instante VIVO, quando há um: é por ele que a régua sabe se
@@ -836,17 +865,30 @@ export class Planetas {
       const dObs = Math.hypot(c.x - x, c.y - y, c.z - z);
       const faseAttr = this.points.geometry.getAttribute('aFase') as THREE.BufferAttribute;
       const fase = i === 0 ? 1 : faseAttr.getX(i);
-      const m = magDoVertice(mag.getX(i), dObs, fase);
       // o alpha de TODO vértice é (1 − aCede) desde o M1 — para o Sol o
-      // aCede é o wResolvido da lei, para os nove é o gate do globo. O
-      // pico PUBLICADO já leva o alpha, senão a régua 3 leria "o Sol pode
-      // acender" numa distância em que ele está cedido ao corpo.
+      // aCede é o wResolvido da lei, para os nove e a Lua é a cessão ao
+      // globo. O pico PUBLICADO já leva o alpha, senão a régua 3 leria
+      // "o Sol pode acender" numa distância em que ele está cedido ao
+      // corpo; e o `m` leva a MESMA cessão em magnitude do vertex
+      // (`CESSAO_EM_MAG`, nunca no Sol), senão o pico sairia maior que
+      // o desenhado.
       const cedeAttr = this.points.geometry.getAttribute('aCede') as THREE.BufferAttribute;
-      const alpha = 1 - cedeAttr.getX(i);
+      const cede = cedeAttr.getX(i);
+      const alpha = 1 - cede;
+      const m =
+        magDoVertice(mag.getX(i), dObs, fase) + (i === 0 ? 0 : cede * CESSAO_EM_MAG);
       const psf = {
         E: fluxoDeMagnitude(m, expoM0),
         pico: picoDaPsf(m, expoM0, sigmaPx, alturaPx),
       };
+      // o estado da cessão (E1 do ponto de luz), NO FIM da linha: a régua
+      // `planeta-pixel` lê o começo dela e conta as linhas do bloco
+      const d = this.depuracao;
+      const k = i * 5;
+      const cessao = Number.isNaN(d[k + 1])
+        ? ''
+        : ` · alvo=${d[k].toFixed(6)} cede=${d[k + 1].toFixed(6)} diamPx=${d[k + 2].toFixed(3)} ` +
+          `emQuadro=${d[k + 3] === 1} carregando=${d[k + 4] === 1}`;
       // a coluna eclíptica é a do RETRATO; corpo sem retrato (a Lua) não
       // tem uma — a linha dele mostra `—` em vez de fingir um vetor
       const ua =
@@ -864,7 +906,11 @@ export class Planetas {
           `px=(${px.toFixed(6)}, ${py.toFixed(6)}) · ` +
           `dObs=${(dObs * UA_POR_PC).toFixed(6)} UA · fase=${fase.toFixed(9)} · ` +
           `m=${m.toFixed(6)} · E=${psf.E.toExponential(6)} · ` +
-          `pico=${(psf.pico * alpha).toExponential(6)}`
+          `pico=${(psf.pico * alpha).toExponential(6)}` +
+          cessao +
+          // o pico COMO DESENHADO (o vertex multiplica por uPr2 = DPR²):
+          // o `pico` acima é o da régua 3, por DPR 1
+          ` · picoTela=${(psf.pico * alpha * pr2).toExponential(6)}`
       );
     }
     return linhas.join('\n');

@@ -915,4 +915,18 @@ describe('o corte seco (F4) — o plano que abre num corte não herda a junta', 
     const galactico = new Journey();
     expect(auditarRoteiro().shots.some((_, i) => galactico.abreNumCorte(i))).toBe(false);
   });
+
+  it('o `apply` devolve `corte` no 1º quadro do plano novo, e só nele — é o aviso que o director passa aos corpos', () => {
+    /** os quadros de um play a 30 fps (junta em t = 1 s, o quadro 30) em que o rig avisou o corte */
+    const avisos = (journey: InstanceType<typeof Journey>) => {
+      const rig = new JourneyRig(journey);
+      const cam = new THREE.PerspectiveCamera();
+      const quadros: number[] = [];
+      for (let q = 0; q <= 40; q++) if (rig.apply(cam, q / 30, 1 / 30).corte) quadros.push(q);
+      return quadros;
+    };
+    expect(avisos(filme(true))).toEqual([30]);
+    // a junta sem o campo é mola, não salto: nenhum aviso
+    expect(avisos(filme())).toEqual([]);
+  });
 });
