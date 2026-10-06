@@ -4,7 +4,42 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (06/10, noite) — FILME SOLAR PUBLICADO NO AR; A PRÓXIMA SESSÃO COMEÇA EM MODO DE PLANEJAMENTO PELA RODADA DO PONTO DE LUZ
+## O BASTÃO — onde a rodada parou (06/10, noite) — RODADA DO PONTO DE LUZ FEITA NO RAMO `viagem-solar`, SEM PUBLICAR; ELE DECIDE POR IMAGEM
+
+**Feito em 06/10 (plano em modo de planejamento, revisto por duas análises
+externas, executado na mesma sessão; `PLAN-PONTO-DE-LUZ.md` › Resultado):**
+o ponto de luz cede ao globo pelo TAMANHO do disco (some entre 4 e 12 px
+visíveis, igual em qualquer densidade de tela e no celular), com o halo
+encolhendo junto; os saltos do filme (`?t=`, Retomar, corte) e a textura
+que chega atrasada estalam a cessão em vez de animar; o véu da legenda
+virou sombra no texto. Provas em `capturas/ponto-de-luz/` (folhas antes ×
+depois e dois vídeos lado a lado: `e3-jupiter-143-156-lado-a-lado.mp4`,
+`e3-galactico-fim-lado-a-lado.mp4`). `npm run done` verde.
+
+**O que o diagnóstico mostrou (corrige o bastão anterior):** o ponto
+branco sobre Júpiter aos 158 s era o ponto do PRÓPRIO Júpiter e só
+aparecia depois de um salto — tocando do começo não aparecia; luas não
+têm ponto de luz. A "Terra estourada" não está no filme aos 108 s (entra
+com ~50 px já cedida); estava na vista do Atlas da Terra vista da Lua
+(53 px), onde a lei velha chegava a 0,999 e nunca a 1. O defeito da lei
+aparecia em toda aproximação (Júpiter de 4 a 22 px) e no Atlas.
+
+**Decisões dele, por imagem:** (1) 12 px como fim da cessão ou 16 (a
+troca ponto→globo perde ~49 % de luz em 0,23 s em Júpiter — é o bloom da
+estrela dando lugar ao globo honesto; 16 só espalha a mesma queda);
+(2) o fim do filme galáctico mudou de propósito (a Lua de 9 px era uma
+bolha, virou ponto pequeno sobre o globo); (3) a sombra da legenda no
+lugar do véu (nenhum caso "não lê"; a dica de pausa, cinza, é a mais
+fraca nos dois lados); (4) publicar (`git push origin main` depois do
+merge do ramo — clique dele).
+
+**Ordem combinada que segue:** depois destas decisões, a rodada de assets
+de Europa (cor) e Jápeto (crista no lugar) — item 230. Ficam depois: os
+nomes (E4c; o rótulo de Saturno cortado no celular), a linha da lente
+sobre o Sol e a dica de gestos sobre o limbo no celular, "More" cortado a
+375 px em inglês, Netuno/Tritão sumindo num salto do roteiro.
+
+## O BASTÃO anterior (06/10, noite) — FILME SOLAR PUBLICADO NO AR; A PRÓXIMA SESSÃO COMEÇA EM MODO DE PLANEJAMENTO PELA RODADA DO PONTO DE LUZ
 
 **Publicado em 06/10 por ele** (`git push origin main`, avanço simples do ramo
 `viagem-solar`; publicação verde; conferido no ar na chegada a Júpiter). Ao
