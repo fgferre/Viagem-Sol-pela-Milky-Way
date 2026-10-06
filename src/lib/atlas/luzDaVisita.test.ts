@@ -34,6 +34,7 @@ import { ganhoFundido, irradianciaRelativa } from './luz';
 import type { PoliticaDeLuz } from './luz';
 import {
   COR_DO_VEU,
+  GAMA_DO_OLHO,
   GLSL_LUZ_DA_VISITA,
   GLSL_VEU_DE_SATURNO,
   LANTERNA_DE_LEITURA,
@@ -48,6 +49,7 @@ import {
   ganhoDoGlobo,
   kDaLuz,
   lanternaDaVisita,
+  passosDoAlvo,
   sDoTerminador,
   stopsDaVisita,
   uniformsDaLuzDaVisita,
@@ -1619,9 +1621,11 @@ describe('10. a costura sombra → noite (item 104) — a lei do piso comum', ()
 
 /**
  * A TRAVESSIA DO ROTEIRO (F2b, a viagem solar) — a decisão 4 do dono: em
- * Plutão *"a exposição desliza da assistida para a real e volta"*. O que
- * se cobra: as PONTAS são as duas leis bit a bit; o MEIO fica entre elas
- * em passos (a chapa +1,5, o Sol do globo na metade dos passos); e o pixel
+ * Plutão *"a exposição desliza da assistida para a real e volta"*, e em
+ * 06/10 a ponta do roteiro passou a ser exposta pelo OLHO ADAPTADO. O que
+ * se cobra: k = 0 é a `assistida` bit a bit; o visitante em `real` fica
+ * bit a bit; k = 1 do roteiro é a forma da `real` com o alvo do olho; o
+ * MEIO fica entre as pontas em passos; e o pixel
  * que o chunk EXECUTA anda sem degrau de ponta a ponta — inclusive nas
  * duas costuras, onde os uniformes trocam de ramo.
  */
@@ -1695,41 +1699,78 @@ describe('11. a travessia do roteiro (F2b) — da `assistida` à `real` sem degr
     });
   });
 
-  it('k = 1 é a `real` BIT A BIT — pelo roteiro ou pela escolha do visitante', () => {
+  it('o visitante em `real` fica BIT A BIT como antes — a curva não o move', () => {
     for (const d of [D_MERCURIO, D_TERRA, D_SATURNO, D_PLUTAO]) {
-      expect(Object.is(ganhoDoGlobo(d, 'assistida', 1), ganhoDoGlobo(d, 'real'))).toBe(true);
-      // e quem já está em `real` não é movido pela curva
+      expect(Object.is(ganhoDoGlobo(d, 'real'), irradianciaRelativa(d))).toBe(true);
       expect(Object.is(ganhoDoGlobo(d, 'real', 0.4), ganhoDoGlobo(d, 'real'))).toBe(true);
+      expect(Object.is(ganhoDoGlobo(d, 'real', 1), ganhoDoGlobo(d, 'real'))).toBe(true);
+      expect(passosDoAlvo('real', d)).toBe(PASSOS_DA_EXPOSICAO_REAL);
     }
+    expect(Object.is(exposicaoDoQuadro(RAMPA, 'real', 0.4), exposicaoDoQuadro(RAMPA, 'real')))
+      .toBe(true);
+    expect(exposicaoDoQuadro(RAMPA, 'real')).toBe(RAMPA * 2 ** PASSOS_DA_EXPOSICAO_REAL);
+  });
+
+  it('k = 1 do roteiro é a FORMA da `real` exposta pelo OLHO ADAPTADO', () => {
+    // a forma: Lambert cru, sem lanterna, sem tradução — os uniformes da `real`
     expect(Object.is(lanternaDaVisita('assistida', 1), 0)).toBe(true);
     expect(Object.is(sDoTerminador('assistida', densidadeDoVeu('saturn'), 1), 0)).toBe(true);
-    expect(
-      Object.is(exposicaoDoQuadro(RAMPA, 'assistida', 1), exposicaoDoQuadro(RAMPA, 'real'))
-    ).toBe(true);
     expect(ligadosEm(1, D_SATURNO, 'assistida', densidadeDoVeu('saturn')).ligados).toEqual(
       ligadosEm(0, D_SATURNO, 'real', densidadeDoVeu('saturn')).ligados
     );
-    // e o pixel executado é o mesmo double, com e sem o véu
+    // a chapa do quadro é a mesma (+3, do modo); o resto do alvo vai no globo
+    expect(
+      Object.is(exposicaoDoQuadro(RAMPA, 'assistida', 1), exposicaoDoQuadro(RAMPA, 'real'))
+    ).toBe(true);
+    for (const d of [D_TERRA, D_SATURNO, D_PLUTAO]) {
+      const extra = passosDoAlvo('assistida', d) - PASSOS_DA_EXPOSICAO_REAL;
+      expect(Math.log2(ganhoDoGlobo(d, 'assistida', 1) / ganhoDoGlobo(d, 'real')))
+        .toBeCloseTo(extra, 12);
+    }
+    // e o pixel executado é o da `real` vezes os passos a mais, com e sem o véu
     for (const [ndotl, ndotv] of [[1, 1], [0.5, 0.6], [-0.3, 0.8]] as const) {
       const real = { politica: 'real' as PoliticaDeLuz };
-      expect(Object.is(pixel(1, ndotl, ndotv), pixel(0, ndotl, ndotv, real))).toBe(true);
-      const veu = { d: D_SATURNO, aVeu: 0.2 };
-      expect(Object.is(pixel(1, ndotl, ndotv, veu), pixel(0, ndotl, ndotv, { ...veu, ...real })))
-        .toBe(true);
+      for (const onde of [{}, { d: D_SATURNO, aVeu: 0.2 }]) {
+        const d = onde.d ?? D_PLUTAO;
+        const extra = 2 ** (passosDoAlvo('assistida', d) - PASSOS_DA_EXPOSICAO_REAL);
+        const r = pixel(0, ndotl, ndotv, { ...onde, ...real });
+        if (r === 0) expect(pixel(1, ndotl, ndotv, onde)).toBe(0);
+        else expect(pixel(1, ndotl, ndotv, onde) / (r * extra)).toBeCloseTo(1, 12);
+      }
     }
   });
 
-  it('k = 0,5 fica ENTRE as duas em passos: a chapa +1,5 e o Sol do globo na metade', () => {
+  it('a LEI DO OLHO: o alvo abre (1 − γ)·log2(d²) passos e o globo sai a d^(−2γ) da `assistida`', () => {
+    // medido no filme: o coração de Plutão a 85–105 de 255 em k = 1 (0,3 dava 29; 0,25, 39)
+    expect(GAMA_DO_OLHO).toBe(0.11);
+    // o brilho do globo, globo vezes chapa, relativo à `assistida` (Sol 1, chapa RAMPA)
+    const relativo = (d: number) =>
+      (ganhoDoGlobo(d, 'assistida', 1) * exposicaoDoQuadro(RAMPA, 'assistida', 1)) /
+      (ganhoDoGlobo(d, 'assistida') * exposicaoDoQuadro(RAMPA, 'assistida'));
+    for (const d of [1, 1.52, 5.2, 9.5, 19.2, 30, 35.4]) {
+      expect(Math.abs(passosDoAlvo('assistida', d) - 0.89 * Math.log2(d * d)), `${d} UA`)
+        .toBeLessThan(1e-9);
+      expect(relativo(d) / d ** -0.22, `${d} UA`).toBeCloseTo(1, 12);
+    }
+    // Plutão: fim de tarde, ~1 passo abaixo do meio-dia — não noite
+    expect(relativo(35.4)).toBeCloseTo(0.456, 3);
+    // aquém de 1 UA o teto 1 manda: o alvo é a própria `assistida`
+    expect(relativo(D_MERCURIO)).toBeCloseTo(1, 12);
+  });
+
+  it('k = 0,5 fica ENTRE as pontas em passos: a chapa +1,5 e o globo na metade do alvo', () => {
     expect(Math.log2(exposicaoDoQuadro(RAMPA, 'assistida', 0.5) / RAMPA)).toBeCloseTo(1.5, 12);
     const e = irradianciaRelativa(D_PLUTAO);
-    expect(Math.log2(ganhoDoGlobo(D_PLUTAO, 'assistida', 0.5))).toBeCloseTo(Math.log2(e) / 2, 12);
+    const extra = passosDoAlvo('assistida', D_PLUTAO) - PASSOS_DA_EXPOSICAO_REAL;
+    expect(Math.log2(ganhoDoGlobo(D_PLUTAO, 'assistida', 0.5)))
+      .toBeCloseTo((Math.log2(e) + extra) / 2, 12);
     expect(lanternaDaVisita('assistida', 0.5)).toBeCloseTo(LANTERNA_DE_LEITURA / 2, 15);
-    // o selo declara metade do gasto
+    // o selo declara o gasto do globo: metade do da `assistida` mais metade do extra
     expect(stopsDaVisita(D_PLUTAO, 'assistida', 0.5)).toBeCloseTo(
-      stopsDaVisita(D_PLUTAO, 'assistida')! / 2,
+      (stopsDaVisita(D_PLUTAO, 'assistida')! + extra) / 2,
       12
     );
-    // e o subsolar EXECUTADO cai por igual, em passos: (8·E)^k
+    // e o subsolar EXECUTADO cai por igual, em passos: (E^γ)^k
     const subsolar = (k: number) => pixel(k, 1, 1);
     expect(Math.log2(subsolar(0.5) / subsolar(0))).toBeCloseTo(
       Math.log2(subsolar(1) / subsolar(0)) / 2,

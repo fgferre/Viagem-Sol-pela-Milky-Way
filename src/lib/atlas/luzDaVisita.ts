@@ -201,6 +201,52 @@ export const FATOR_DA_ATMOSFERA_NO_TERMINADOR = 700;
 export const PASSOS_DA_EXPOSICAO_REAL = 3;
 
 /**
+ * O EXPOENTE DO OLHO ADAPTADO — a ponta da LUZ DO ROTEIRO (decisão do
+ * dono, 06/10). Em Plutão a luz do beat saía pelos +3 fixos da `real`, e
+ * o globo ia a 1/157 da `assistida`: PRETO, enquanto a legenda dizia *"ao
+ * meio-dia, a luz é a de um fim de tarde na Terra"* — o que é verdade para
+ * um olho ADAPTADO (o meio-dia de Plutão tem ~80 lux). O pedido dele foi
+ * *"o do olho adaptado"*.
+ *
+ * A LEI: o brilho relativo à `assistida` cai como E(d)^γ, com teto 1. O
+ * OLHO SE ADAPTA QUASE INTEIRO, e o que sobra é a queda honesta de um
+ * passo, mais ou menos, e o Sol virado ponto — γ = 0,11: Marte 0,91;
+ * Júpiter 0,70; Saturno 0,61; Urano 0,52; Netuno 0,47; Plutão (35,4 UA)
+ * 0,46, uns 1,1 passo abaixo do meio-dia da Terra. Ver {@link passosDoAlvo}.
+ *
+ * O NÚMERO FOI MEDIDO NO FILME TOCANDO (06/10), não deduzido: o pé do
+ * tonemap come o escuro além da conta. O coração de Plutão, 166 de 255 na
+ * `assistida`, saía 29 com γ = 0,3 (o desenho, Stevens) e 39 com 0,25 —
+ * crepúsculo, não fim de tarde. A faixa decidida foi 85–105 de 255.
+ */
+export const GAMA_DO_OLHO = 0.11;
+
+/**
+ * OS PASSOS DO ALVO — quantos passos de exposição, SOBRE a queda física
+ * E(d), a ponta k = 1 da luz abre no globo de um corpo a `dUA`. É a ÚNICA
+ * conta desta lei; {@link ganhoDoGlobo} a consome, e por ele as quatro
+ * famílias de corpo, o anel, as plumas e o selo.
+ *
+ * QUEM ESCOLHEU A LUZ DECIDE A LEI:
+ *  - o visitante em `real` → os **+3 FIXOS** da Q14
+ *    ({@link PASSOS_DA_EXPOSICAO_REAL}), bit a bit como sempre. A escolha
+ *    dele vence a curva do roteiro (o modo de hoje fica como opção).
+ *  - a curva `camera.luz` do roteiro → o **OLHO ADAPTADO**
+ *    ({@link GAMA_DO_OLHO}): `log2(min(E^γ, 1) / E)`, isto é,
+ *    (1 − γ)·log2(1/E) além de 1 UA — Plutão abre 9,2 passos no lugar
+ *    dos 3. Aquém de 1 UA o teto 1 manda e o alvo é a própria `assistida`.
+ *
+ * Distância não-finita devolve os +3 de sempre: quem não sabe onde está
+ * não ganha uma lei nova.
+ */
+export function passosDoAlvo(politica: PoliticaDeLuz, dUA: number): number {
+  if (politica === 'real' || !Number.isFinite(dUA)) return PASSOS_DA_EXPOSICAO_REAL;
+  const e = irradianciaRelativa(dUA);
+  const passosDaQueda = -Math.log2(e);
+  return e < 1 ? (1 - GAMA_DO_OLHO) * passosDaQueda : passosDaQueda;
+}
+
+/**
  * O VÉU PALHA DE SATURNO — o `postCreateFunction` do Saturno no NASA
  * Eyes, §1.4 do contrato, lido no fonte deles em 24/08.
  *
@@ -325,13 +371,19 @@ export function espessuraDoVeu(id: string): number {
  * (`lerPlanoDeCamera.ts`). Roteiro fora de [0, 1] (ou NaN) não empurra
  * além das pontas.
  *
- * AS PONTAS SÃO AS DUAS LEIS, BIT A BIT: cada peça deste arquivo devolve,
- * com `k = 0`, a conta da `assistida` e, com `k = 1`, a da `real` — pelo
- * MESMO ramo de antes, sem uma operação nova no caminho. Só ENTRE elas
- * existe a travessia: o Sol do globo e a chapa andam em PASSOS
- * ({@link ganhoDoGlobo}, {@link exposicaoDoQuadro}), a lanterna cai em
- * linha reta ({@link lanternaDaVisita}) e a forma do globo — terminador e
- * tradução — mistura as duas receitas no chunk ({@link GLSL_LUZ_DA_VISITA}).
+ * AS PONTAS SÃO AS DUAS RECEITAS, BIT A BIT: cada peça deste arquivo
+ * devolve, com `k = 0`, a conta da `assistida` e, com `k = 1`, a FORMA da
+ * `real` (Lambert cru, sem lanterna, sem tradução) — pelo MESMO ramo de
+ * antes. Só ENTRE elas existe a travessia: o Sol do globo e a chapa andam
+ * em PASSOS ({@link ganhoDoGlobo}, {@link exposicaoDoQuadro}), a lanterna
+ * cai em linha reta ({@link lanternaDaVisita}) e a forma do globo —
+ * terminador e tradução — mistura as duas receitas no chunk
+ * ({@link GLSL_LUZ_DA_VISITA}).
+ *
+ * A EXPOSIÇÃO DA PONTA é que depende de QUEM pôs o k em 1 (06/10,
+ * {@link passosDoAlvo}): o visitante em `real` fica com os +3 fixos, bit a
+ * bit; a curva do roteiro expõe pelo OLHO ADAPTADO, e o globo em Plutão
+ * sai fim de tarde, não noite.
  */
 export function kDaLuz(politica: PoliticaDeLuz, roteiro = 0): number {
   if (politica === 'real') return 1;
@@ -346,11 +398,17 @@ export function kDaLuz(politica: PoliticaDeLuz, roteiro = 0): number {
  *   sem 1/d² e sem resíduo. O globo visitado é exposto para si.
  * - `real` → `ganhoFundido(dUA, 'real')` = E(d) EXATO, bit a bit, o
  *   mesmo double de sempre — a decisão 2 do dono, intacta.
- * - NA TRAVESSIA do roteiro ({@link kDaLuz}) → **E(d)^k**, em passos: a
- *   meio caminho, metade dos passos da distância. Em linha reta entre 1 e
- *   E(d) o globo CLAREARIA no meio (a chapa já abriu +1,5 passos e o Sol
- *   mal caiu à metade) para despencar no fim; em passos, Sol e chapa andam
- *   juntos e o subsolar aceso cai por igual, (8·E)^k.
+ * - NA LUZ DO ROTEIRO ({@link kDaLuz}) → **(E(d)·2^(alvo − 3))^k**, em
+ *   passos: a queda física E(d) mais o que o OLHO ADAPTADO
+ *   ({@link passosDoAlvo}) abre além dos +3 que a chapa do quadro já abre
+ *   ({@link exposicaoDoQuadro}). A chapa fica nos +3·k de sempre porque os
+ *   passos dela são do MODO, não da vista — ela não recebe distância, e o
+ *   céu e o Sol do quadro não se mexem com esta lei; o resto do alvo, que
+ *   depende da distância, mora aqui, no globo. Globo vezes chapa dá
+ *   (E·2^alvo)^k = E^(γk): em Plutão, 0,46 da `assistida` em k = 1.
+ *   Em passos, e não em linha reta: em linha reta o globo CLAREARIA no meio
+ *   (a chapa já abriu +1,5 passos e o Sol mal caiu à metade) para despencar
+ *   no fim; em passos, Sol e chapa andam juntos e o subsolar cai por igual.
  *
  * Distância não-finita devolve **1**, o mesmo neutro que
  * `irradianciaRelativa` sempre entregou — lua sem efeméride não pinta de
@@ -361,7 +419,8 @@ export function ganhoDoGlobo(dUA: number, politica: PoliticaDeLuz, roteiro = 0):
   const k = kDaLuz(politica, roteiro);
   if (k <= 0) return 1;
   const e = ganhoFundido(dUA, 'real');
-  return k >= 1 ? e : e ** k;
+  if (politica === 'real') return e;
+  return e ** k * 2 ** (k * (passosDoAlvo(politica, dUA) - PASSOS_DA_EXPOSICAO_REAL));
 }
 
 /**
@@ -428,7 +487,8 @@ export function sDoTerminador(politica: PoliticaDeLuz, densidade = 0, roteiro = 
  * que faz as vistas do modo padrão não moverem um bit por construção.
  *
  * Na travessia do roteiro ({@link kDaLuz}) a chapa abre em PASSOS, não em
- * fator: +3·k — a meio caminho, +1,5 passos.
+ * fator: +3·k — a meio caminho, +1,5 passos. O que o OLHO ADAPTADO pede
+ * além disso depende da distância e vai no globo ({@link ganhoDoGlobo}).
  */
 export function exposicaoDoQuadro(rampa: number, politica: PoliticaDeLuz, roteiro = 0): number {
   const k = kDaLuz(politica, roteiro);
@@ -796,7 +856,8 @@ vec3 globoComVeu(vec3 albedo, vec3 luzSol, vec3 fill, float aVeu) {
  * Em `real` é **0 exato** por construção (o ganho É E(d)), e o selo tem
  * o direito de dizer que não há nada a declarar. Distância não-finita
  * devolve `null` — o selo nunca inventa um número que não mediu. Na
- * travessia do roteiro o gasto anda junto com o Sol do globo: (1 − k)·2·log2(d).
+ * luz do roteiro o gasto anda junto com o Sol do globo:
+ * (1 − k)·2·log2(d) + k·(alvo − 3), o alvo de {@link passosDoAlvo}.
  */
 export function stopsDaVisita(dUA: number, politica: PoliticaDeLuz, roteiro = 0): number | null {
   if (!Number.isFinite(dUA)) return null;

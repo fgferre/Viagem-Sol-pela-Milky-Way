@@ -50,8 +50,8 @@ opcionais, Lua no quarto, luz honesta em Plutão, som depois, ponte,
 botões) estão no roteiro §4; os assets fracos viraram o item 230.
 
 **Falta (na ordem do plano, "Como continuar"):** as decisões dele por vídeo
-(a luz honesta em Plutão deixa Plutão PRETO como o motor faz hoje — ver
-`v4-ato4/2026-10-06-plutao-luz-k05-comparacao.jpg`; e os pontos de gosto
+(a luz honesta em Plutão: ele decidiu em 06/10 — *"faz o conserto do olho
+adaptado"* — FEITO no motor, Plutão a metade do brilho, visível; e os pontos de gosto
 dos atos II–IV listados no plano); depois a F4
 (legenda sobre fundo claro, o Sol virando ponto de repente, o Sol pelo
 relógio da tela, quadros pretos de NaN perto do joelho da Lua com
