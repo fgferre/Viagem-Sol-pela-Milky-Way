@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (05/10, tarde da conversa nova) — VIAGEM SOLAR NO RAMO `viagem-solar`, O FILME INTEIRO EXISTE PELO ROTEIRO (395 s); FALTA A F4 E AS DECISÕES DELE POR VÍDEO
+## O BASTÃO — onde a rodada parou (06/10) — VIAGEM SOLAR NO RAMO `viagem-solar`: FILME INTEIRO (395 s) + RODADA DE ACABAMENTO FEITA; FALTAM AS DECISÕES DELE PELO VÍDEO E O MERGE
 
 **Estado:** o segundo filme existe e toca de ponta a ponta no ramo
 `viagem-solar` (backup `origin/viagem-solar`; nada no `main`, nada
@@ -49,10 +49,23 @@ fazer menos braçal"*. As sete decisões dele (6 min, 24 lugares, todos os
 opcionais, Lua no quarto, luz honesta em Plutão, som depois, ponte,
 botões) estão no roteiro §4; os assets fracos viraram o item 230.
 
-**Falta (na ordem do plano, "Como continuar"):** as decisões dele por vídeo
-(a luz honesta em Plutão: ele decidiu em 06/10 — *"faz o conserto do olho
-adaptado"* — FEITO no motor, Plutão a metade do brilho, visível; e os pontos de gosto
-dos atos II–IV listados no plano); depois a F4
+**Rodada de acabamento (06/10, com a palavra dele: *"pode seguir para a
+rodada de acabamento"*):** consertos de motor e HUD provados com antes/depois
+(corte seco, luas sem pipoco, legenda legível, selo da luz honesta no beat,
+o Sol sem salto ao virar ponto, a atmosfera da Terra sem os dois erros que
+davam manchas e quadros pretos, a coroa do Sol cortada pela Terra); a luz
+honesta de Plutão pelo olho adaptado (*"faz o conserto do olho adaptado"*);
+juízes verdes (capa e botões com referência nova); celular conferido; vídeo
+inteiro com legendas em duas partes. Tudo em `capturas/viagem-solar/v4-f4/`.
+
+**Falta:** as decisões dele pelo vídeo (lista no plano, "Próximo bloco":
+o 28 vezes, a lanterna de Júpiter no quase-sol, Europa em preto e branco,
+Jápeto cinza e sem crista, a face nova de Hipérion, o véu da legenda, o fio
+azul no limbo da Terra, os 35 s acima dos 6 min, a linha da lente sobre o
+Sol no celular); depois o merge no `main` com a palavra dele; a publicação
+é dele. Rodadas próprias que ficaram: E4c (nomes: o rótulo de Saturno
+cortado no celular é dela), a Terra pequena estourada, a Netuno/Tritão que
+somem num salto do roteiro, o Ato IV acima do roteiro em duração. A F4 era
 (legenda sobre fundo claro, o Sol virando ponto de repente, o Sol pelo
 relógio da tela, quadros pretos de NaN perto do joelho da Lua com
 `abaixo` baixo, halo/manchas da Terra pequena, juízes com `--filme=solar`

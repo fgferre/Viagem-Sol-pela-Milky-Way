@@ -333,7 +333,7 @@ async function julgarAbertura(s) {
     });
   })()`);
   conferir(
-    Array.isArray(portas) && portas.length === 3,
+    Array.isArray(portas) && portas.length === 4,
     `abertura: ${portas ? portas.length : 0} porta(s) — ${(portas || []).map((p) => `"${p.botao}"`).join(' · ')}`
   );
   for (const p of portas || []) {
@@ -344,7 +344,8 @@ async function julgarAbertura(s) {
     );
   }
   // LOTE 8 (PLAN-UI.md §3.1, maquete M1 aprovada em 07/09): UMA porta é a
-  // principal — a do Atlas, na tinta do acento — e as duas secundárias
+  // principal — a do Atlas, na tinta do acento — e as secundárias (desde
+  // 05/10 os DOIS filmes lado a lado e o Voo livre sozinho, três portas)
   // vestem a MESMA tinta entre si. Até o Lote 8 a régua era "as três com a
   // mesma tinta"; a decisão do dono ("Explorar o Atlas é o botão principal")
   // inverteu a prova.
@@ -352,16 +353,16 @@ async function julgarAbertura(s) {
   const principal = (portas || []).find((p) => p.descrito === 'porta-atlas');
   const secundarias = (portas || []).filter((p) => p.descrito !== 'porta-atlas');
   conferir(
-    tintas.length === 2 && Boolean(principal) && secundarias.length === 2
-      && secundarias[0].tinta === secundarias[1].tinta && principal.tinta !== secundarias[0].tinta,
-    `abertura: só a porta do Atlas é destacada em cor e as duas secundárias têm a mesma tinta`
+    tintas.length === 2 && Boolean(principal) && secundarias.length === 3
+      && secundarias.every((p) => p.tinta === secundarias[0].tinta) && principal.tinta !== secundarias[0].tinta,
+    `abertura: só a porta do Atlas é destacada em cor e as três secundárias têm a mesma tinta`
       + ` — ${tintas.length} tintas: ${tintas.join(' vs ')}`
   );
 
-  // o Tab passa nas três, na ordem da tela
+  // o Tab passa nas quatro, na ordem da tela
   await s.js("document.querySelector('.veil-intro').focus?.(); document.body.focus?.()");
   const andados = [];
-  for (let i = 0; i < 8 && andados.length < 3; i++) {
+  for (let i = 0; i < 12 && andados.length < 4; i++) {
     await s.teclar('Tab');
     const foco = await s.js(
       "(document.activeElement && document.activeElement.tagName === 'BUTTON')"
@@ -372,7 +373,7 @@ async function julgarAbertura(s) {
   const esperada = (portas || []).map((p) => p.botao);
   conferir(
     JSON.stringify(andados) === JSON.stringify(esperada),
-    `abertura: o Tab passa nas três, na ordem da tela (${andados.join(' → ')})`
+    `abertura: o Tab passa nas quatro, na ordem da tela (${andados.join(' → ')})`
   );
 
   // o MESMO retângulo nas três, e nada sai da tela — nos dois degraus
@@ -394,21 +395,23 @@ async function julgarAbertura(s) {
       }
       return out;
     })()`);
-    // LOTE 8: as DUAS secundárias medem o mesmo retângulo entre si, e a
-    // principal (a primeira da coluna) é mais LARGA que cada uma — a
-    // coluna inteira contra metade dela (maquete M1).
+    // LOTE 8 (05/10: os dois filmes lado a lado, o Voo livre sozinho): os
+    // DOIS filmes medem o mesmo retângulo entre si, e a principal (a
+    // primeira da coluna) e o Voo livre (a última) são mais LARGOS que
+    // cada filme — a coluna inteira contra metade dela (maquete M1).
     const [principalCx, ...secundariasCx] = caixas;
     const larguraDe = (c) => Number(c.caixa.split('×')[0]);
     const alturaDe = (c) => Number(c.caixa.split('×')[1]);
     // "mesmo retângulo" a menos de meio pixel: o flex reparte a coluna em
     // duas e a metade pode cair em subpixel diferente (383,59 × 383,61 a
     // ui=1,4) — isso é aritmética do navegador, não desigualdade de desenho
-    const iguais = secundariasCx.length === 2
+    const iguais = secundariasCx.length === 3
       && Math.abs(larguraDe(secundariasCx[0]) - larguraDe(secundariasCx[1])) <= 0.5
       && Math.abs(alturaDe(secundariasCx[0]) - alturaDe(secundariasCx[1])) <= 0.5;
     conferir(
-      iguais && larguraDe(principalCx) > larguraDe(secundariasCx[0]),
-      `abertura com ui=${fator}: as duas secundárias medem o MESMO retângulo e a principal é mais larga`
+      iguais && larguraDe(principalCx) > larguraDe(secundariasCx[0])
+        && larguraDe(secundariasCx[2]) > larguraDe(secundariasCx[0]),
+      `abertura com ui=${fator}: os dois filmes medem o MESMO retângulo e a principal e o Voo livre são mais largos`
         + ` — ${caixas.map((c) => `"${c.nome}" ${c.caixa}`).join(' vs ')}`
     );
 
@@ -558,7 +561,7 @@ async function julgarPagina(s, query, onde, aposNavegar) {
  * `julgarPagina` e `julgarGavetaDeCamadas` esperam encontrar em seguida.
  */
 async function julgarMaisDoFilme(s) {
-  const MAIS = '[aria-label="Mostrar Camadas, qualidade e Ajustes"]';
+  const MAIS = '[aria-label="Mostrar os filmes, Camadas, qualidade e Ajustes"]';
   const MEDIR = `(() => {
     const mais = document.querySelector('${MAIS}');
     return {
@@ -1104,8 +1107,10 @@ async function julgarFerramentasDoAtlas(s) {
   // OS GLIFOS SAÍRAM (Lote 4, item 2): o desenho é `<Icone>` (SVG) e o
   // texto ficou puro — a mesma troca que Busca/Camadas/Tempo já tinham.
   conferir(
-    semFilme.includes('Ver o filme') && semFilme.includes('Voo livre'),
-    `atlas: as duas ferramentas estão na barra (${semFilme.join(' · ')})`
+    // desde 05/10 há UM botão por filme do cartaz, no lugar do "Ver o filme"
+    semFilme.some((t) => t.startsWith('Viagem galáctica'))
+      && semFilme.some((t) => t.startsWith('Viagem solar')) && semFilme.includes('Voo livre'),
+    `atlas: as ferramentas estão na barra — os dois filmes e o Voo livre (${semFilme.join(' · ')})`
   );
   conferir(
     !semFilme.some((t) => t.includes('Retomar')),

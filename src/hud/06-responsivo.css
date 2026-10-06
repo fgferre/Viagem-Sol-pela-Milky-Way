@@ -200,6 +200,10 @@
     bottom: auto;
     top: calc(6.5vh + 5.8rem);
     right: 5vw;
+    /* o teto de mesa (`.atlas-selo`, 04-atlas.css) desconta o rodapé que
+       aqui mora embaixo: sobravam ~94 px e o chip lia "ESCALA…". Aqui a
+       linha tem a largura da tela entre as margens (5vw de cada lado). */
+    max-width: 90vw;
   }
   .hud-root[data-fase='journey'] .atlas-selo-detalhe {
     bottom: auto;

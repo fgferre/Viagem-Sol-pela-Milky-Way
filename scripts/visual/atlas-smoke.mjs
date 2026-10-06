@@ -2507,8 +2507,9 @@ try {
 
   // ---- 23: A BARRA DO ATLAS TROCA DE MODO — filme e voo livre -------
   // Lista aprovada pelo dono em 08/09 (matriz de preservação, Lote 9):
-  // "Ver o filme" e "Voo livre" (`saidasDoAtlas`, fases.ts — só existem
-  // no Atlas) só tinham conferência de leitura. Cada um tem observável
+  // os filmes ("Ver o filme" até 05/10; hoje UM botão por filme do cartaz,
+  // o galáctico é o que se toca aqui) e "Voo livre" (`saidasDoAtlas`,
+  // fases.ts — só existem no Atlas) só tinham conferência de leitura. Cada um tem observável
   // próprio: o filme veste o `.filme-transporte` e apaga a régua de
   // abas do Atlas; o voo livre acende a `.free-hint` da dica de gestos.
   {
@@ -2521,7 +2522,7 @@ try {
     })()`);
 
     await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
-    const foiParaOFilme = await clicarPorAria('Ver o filme desde o começo');
+    const foiParaOFilme = await clicarPorAria('Viagem galáctica — ver desde o começo');
     await dorme(500);
     const noFilme = JSON.parse(await sessao.js(`JSON.stringify({
       fase: window.__director.captura.fase,
@@ -2530,7 +2531,7 @@ try {
     })`));
     conferir(
       foiParaOFilme && noFilme.fase === 'journey' && noFilme.transporte && !noFilme.regua,
-      `"Ver o filme" troca para o filme: fase='${noFilme.fase}', transporte=${noFilme.transporte},`
+      `"Viagem galáctica" troca para o filme: fase='${noFilme.fase}', transporte=${noFilme.transporte},`
         + ` régua do Atlas=${noFilme.regua}`
     );
 
