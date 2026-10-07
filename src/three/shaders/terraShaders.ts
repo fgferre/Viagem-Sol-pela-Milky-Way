@@ -7,6 +7,7 @@
 import { GLSL_SOMBRA_ECLIPSE } from '../../lib/atlas/eclipse';
 import { BODY_AXES } from '../../lib/atlas/iauOrientation';
 import { GLSL_LUZ_DA_VISITA } from '../../lib/atlas/luzDaVisita';
+import { GLSL_QUADRO_TANGENTE, GLSL_SOMBRA_DO_HORIZONTE } from '../world/corpos/corpos';
 
 /** Casca das nuvens: +0,15% do raio — alto o bastante para o depth
  *  separar (medido: ~800× o passo de depth nesta geometria de câmera),
@@ -254,12 +255,24 @@ float alfaDaNuvem(vec2 uv, vec2 ddx, vec2 ddy) {
  * LINEAR e só no Sol: a lanterna (fill de câmera) e as cidades (emissão)
  * não atravessam nuvem nenhuma, e o especular apaga junto com a difusa.
  * Céu limpo (T = 1) devolve a luz do `TERRA_FRAG`.
+ *
+ * AS MONTANHAS (07/10): a sombra do relevo medido (ETOPO 2022) sai dos
+ * dois mapas de horizonte pelo chunk da casa (`GLSL_SOMBRA_DO_HORIZONTE`,
+ * o de Hipérion, no frame de `GLSL_QUADRO_TANGENTE` — o leste/norte do
+ * `TERRA_FRAG`) e multiplica o MESMO T: é uma sombra do Sol, como a da
+ * nuvem. Usa a sombra SÓ do relevo (`sombraSoDoRelevo`), não o teste cru:
+ * o cru apagaria o chão plano na faixa que a logística da `assistida`
+ * acende além do terminador (a razão está no chunk). Sem os mapas
+ * (`uHorizonte` 0: a carga foi `classica` e a troca foi ao vivo) o fator
+ * é 1 exato até a próxima carga.
  */
 export const TERRA_PROFUNDIDADE_FRAG =
   SUPERFICIE_CABECALHO +
   /* glsl */ `uniform sampler2D uMapaNuvens;
 uniform float uDeslocU;     // fract(−θ/2π) da deriva das nuvens (CPU, float64)
 ${GLSL_ALFA_DA_NUVEM}
+${GLSL_QUADRO_TANGENTE}
+${GLSL_SOMBRA_DO_HORIZONTE}
 float transmissaoDasNuvens(vec3 local, vec2 uv) {
   vec3 p = normSeguro(local);
   vec3 ls = normSeguro(uDirSolLocal * uNormalEsc);
@@ -279,12 +292,14 @@ float transmissaoDasNuvens(vec3 local, vec2 uv) {
 }
 ` +
   SUPERFICIE_ATE_O_ESPECULAR +
-  /* glsl */ `  // A LUZ ANTES DO ALBEDO, com as NUVENS NO CAMINHO DO SOL: o termo
-  // do Sol passa pela transmissão T da casca; a lanterna fica de fora
-  // (a mesma do TERRA_FRAG), e o especular é do Sol, então apaga junto.
+  /* glsl */ `  // A LUZ ANTES DO ALBEDO, com as NUVENS e as MONTANHAS NO CAMINHO DO
+  // SOL: o termo do Sol passa pela transmissão T da casca vezes a sombra
+  // só do relevo (os mapas de horizonte, sobre a normal geométrica); a
+  // lanterna fica de fora (a mesma do TERRA_FRAG), e o especular é do
+  // Sol, então apaga junto.
   vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
   vec3 luzSol = vec3(uLuzGanho) * sombras;
-  float transmissao = transmissaoDasNuvens(vLocal, vUv);
+  float transmissao = transmissaoDasNuvens(vLocal, vUv) * sombraSoDoRelevo(n, vUv, uDirSolLocal);
   vec3 lanterna = lanternaDeLeitura(nRelevo, v, sombras);
   vec3 luz = mix(
     luzDoGlobo(vec3(0.0), lanterna),

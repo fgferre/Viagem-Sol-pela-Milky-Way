@@ -91,7 +91,7 @@ import {
 } from '../../shaders/terraShaders';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import type { OrientacaoNaCena } from './orientacaoNaCena';
-import { type Seguradores, TexturasDoCorpo } from './texturas';
+import { CANAL_HORIZONTE, CANAL_HORIZONTE2, type Seguradores, TexturasDoCorpo } from './texturas';
 import type { CanalPedido, OpcoesDeTextura } from './texturas';
 import {
   escreverSombraDeEclipse,
@@ -368,6 +368,9 @@ export class TerraResolvida {
   private variante: VarianteDaTerra = 'classica';
   /** o pedido das nuvens DESTA Terra — o `assunto` segue a variante */
   private readonly pedidoDasNuvens: CanalPedido;
+  /** o pedido inteiro DESTA Terra, o MESMO array que a carga lê a cada
+   *  vez — os dois mapas de horizonte entram e saem dele com a variante */
+  private readonly canais: CanalPedido[];
 
   // rascunhos reusados — zero alocação por quadro (M4 da casa)
   private readonly vX = new THREE.Vector3();
@@ -401,11 +404,18 @@ export class TerraResolvida {
    * construir a Terra, antes de qualquer textura) ou a troca de tier.
    * Trocar de variante com o globo carregado não recarrega nada: a
    * resolução das nuvens que já estão na tela fica até a próxima carga.
+   *
+   * OS MAPAS DE HORIZONTE (a sombra das montanhas, 07/10) seguem a mesma
+   * regra: só a `profundidade` os pede, e quem obedece é a próxima carga —
+   * a `classica` nunca paga a memória deles. Uma troca ao vivo para a
+   * `profundidade` sem eles desenha sem a sombra (`uHorizonte` 0) até lá.
    */
   definirVariante(v: VarianteDaTerra) {
     if (v === this.variante) return;
     this.variante = v;
     this.pedidoDasNuvens.assunto = v === 'profundidade';
+    this.canais.length = CANAIS_DA_TERRA.length;
+    if (v === 'profundidade') this.canais.push(CANAL_HORIZONTE, CANAL_HORIZONTE2);
     this.vestirVariante();
   }
 
@@ -430,6 +440,7 @@ export class TerraResolvida {
     }
     this.group.visible = false;
     const canais = PEDIDO_DA_TERRA.map((c) => ({ ...c }));
+    this.canais = canais;
     this.pedidoDasNuvens = canais.find((c) => c.canal === 'clouds')!;
     this.texturas = new TexturasDoCorpo({
       corpo: 'earth',
@@ -448,6 +459,12 @@ export class TerraResolvida {
         // superfície `profundidade` (a sombra lê a textura da casca —
         // nenhum byte a mais), então esta escrita vale para as três
         this.matNuvens!.uniforms.uMapaNuvens.value = porCanal.get('clouds');
+        // o horizonte é só da superfície funda, e só veio se a carga foi
+        // `profundidade`; sem ele o portão fecha e o fator é 1 exato
+        const uF = this.matSuperficieFunda!.uniforms;
+        uF.uMapaHorizonte.value = porCanal.get('horizon') ?? null;
+        uF.uMapaHorizonte2.value = porCanal.get('horizon2') ?? null;
+        uF.uHorizonte.value = uF.uMapaHorizonte.value && uF.uMapaHorizonte2.value ? 1 : 0;
       },
       soltar: () => {
         const uS = this.matSuperficie?.uniforms;
@@ -459,6 +476,12 @@ export class TerraResolvida {
         }
         // o objeto compartilhado das três (ver `publicar`)
         if (this.matNuvens) this.matNuvens.uniforms.uMapaNuvens.value = null;
+        const uF = this.matSuperficieFunda?.uniforms;
+        if (uF) {
+          uF.uMapaHorizonte.value = null;
+          uF.uMapaHorizonte2.value = null;
+          uF.uHorizonte.value = 0;
+        }
       },
     });
     this.estado = {
@@ -751,6 +774,10 @@ export class TerraResolvida {
         ...this.matSuperficie.uniforms,
         uMapaNuvens: this.matNuvens.uniforms.uMapaNuvens,
         uDeslocU: { value: 0 },
+        // a sombra das montanhas: fechada até uma carga `profundidade`
+        uMapaHorizonte: { value: null },
+        uMapaHorizonte2: { value: null },
+        uHorizonte: { value: 0 },
       },
       depthWrite: true,
       depthTest: true,

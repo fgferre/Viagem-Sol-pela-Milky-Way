@@ -358,6 +358,28 @@ float alturaDoAlbedo(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 `;
 
 /**
+ * O FRAME TANGENTE (leste, norte) da esfera equiretangular — o de
+ * `GLSL_NORMAL_DO_MAPA` logo abaixo (a razão do frame está lá), em chunk
+ * à parte desde a sombra das montanhas da Terra (07/10): a Terra declara
+ * o próprio `uMapaNormal` e não pode incluir o chunk da normal inteiro,
+ * mas o horizonte dela tem de ler ESTE frame. O texto montado da normal
+ * do mapa é o mesmo de antes, byte a byte.
+ */
+export const GLSL_QUADRO_TANGENTE = /* glsl */ `// o frame tangente UM SÓ: a normal do mapa e o horizonte leem o mesmo
+// (false no polo, onde ŷ × n̂ degenera — quem chama devolve o neutro)
+bool quadroTangente(vec3 n, out vec3 t, out vec3 b) {
+  t = cross(vec3(0.0, 1.0, 0.0), n);
+  float lt = length(t);
+  if (lt < 1.0e-4) {
+    b = vec3(0.0);
+    return false;
+  }
+  t /= lt;
+  b = cross(n, t);
+  return true;
+}`;
+
+/**
  * A NORMAL DO MAPA, em espaço tangente sobre a esfera equiretangular.
  *
  * MORAVA EM `rochoso.ts` (S2 do item 134) e veio para cá no item 140,
@@ -383,19 +405,7 @@ float alturaDoAlbedo(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 export const GLSL_NORMAL_DO_MAPA = /* glsl */ `
 uniform sampler2D uMapaNormal;
 uniform float uRelevoNormal;  // 0 desliga; a escala tangencial dele é 1,2
-// o frame tangente UM SÓ: a normal do mapa e o horizonte leem o mesmo
-// (false no polo, onde ŷ × n̂ degenera — quem chama devolve o neutro)
-bool quadroTangente(vec3 n, out vec3 t, out vec3 b) {
-  t = cross(vec3(0.0, 1.0, 0.0), n);
-  float lt = length(t);
-  if (lt < 1.0e-4) {
-    b = vec3(0.0);
-    return false;
-  }
-  t /= lt;
-  b = cross(n, t);
-  return true;
-}
+${GLSL_QUADRO_TANGENTE}
 vec3 normalDoMapa(vec3 n, vec2 uv) {
   if (uRelevoNormal <= 0.0) return n;
   vec3 t;
@@ -428,11 +438,27 @@ vec3 normalDoMapa(vec3 n, vec2 uv) {
  * corpos sem mapa multiplicam por 1 e a imagem é a de hoje, bit a bit.
  * Sol no zênite (projeção tangente nula) usa az = 0 em vez de `atan(0,0)`,
  * que o GLSL deixa indefinido (NaN + bloom = tela branca).
+ *
+ * A SOMBRA SÓ DO RELEVO (`sombraSoDoRelevo`, a das montanhas da Terra,
+ * 07/10): o mapa guarda o horizonte ≥ 0 — o chão plano tem horizonte 0 —,
+ * então `sombraDoHorizonte` também apaga o chão PLANO com o Sol abaixo do
+ * horizonte geométrico. Em `assistida` esse chão é aceso pela logística
+ * do terminador (`terminadorSuave`), que passa ~1,8° além dele: o teste
+ * cru cortaria essa faixa e riscaria uma linha no terminador. A sombra
+ * só do relevo é o que o relevo tapa ALÉM do que o plano já tapa:
+ * 1 − max(vis(0) − vis(H), 0). Com o Sol acima de H as duas valem 1;
+ * entre o plano e H é a sombra inteira (as compridas do fim de tarde
+ * ficam); com o Sol abaixo do horizonte geométrico o plano já tapa tudo
+ * e o relevo não acrescenta nada — a faixa do terminador fica com a luz
+ * de hoje. Chão plano, polo ou portão fechado devolvem 1 exato.
  */
 export const GLSL_SOMBRA_DO_HORIZONTE = /* glsl */ `
 uniform sampler2D uMapaHorizonte;
 uniform sampler2D uMapaHorizonte2;
 uniform float uHorizonte;  // 0 desliga; 1 nos corpos com horizonte: true
+float solAcimaDe(float senH, float senElev) {
+  return smoothstep(senH - 0.03, senH + 0.03, senElev);
+}
 float sombraDoHorizonte(vec3 nGeo, vec2 uv, vec3 L) {
   if (uHorizonte <= 0.0) return 1.0;
   vec3 t;
@@ -448,7 +474,10 @@ float sombraDoHorizonte(vec3 nGeo, vec2 uv, vec3 L) {
   vec3 w1 = max(1.0 - abs(mod(s - vec3(0.0, 2.0, 4.0) + 3.0, 6.0) - 3.0), 0.0);
   vec3 w2 = max(1.0 - abs(mod(s - vec3(1.0, 3.0, 5.0) + 3.0, 6.0) - 3.0), 0.0);
   float senH = dot(w1, h1) + dot(w2, h2);
-  return smoothstep(senH - 0.03, senH + 0.03, senElev);
+  return solAcimaDe(senH, senElev);
+}
+float sombraSoDoRelevo(vec3 nGeo, vec2 uv, vec3 L) {
+  return 1.0 - max(solAcimaDe(0.0, dot(L, nGeo)) - sombraDoHorizonte(nGeo, uv, L), 0.0);
 }
 float visibilidadeDoCeu(vec2 uv) {
   if (uHorizonte <= 0.0) return 1.0;

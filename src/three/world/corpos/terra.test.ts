@@ -330,7 +330,8 @@ function terraDeTeste() {
     },
     carregarTextura: async (url) => {
       chamadas.push(`tex:${url}`);
-      return new THREE.Texture();
+      // o nome é o arquivo: quem testa a fiação sabe qual canal foi aonde
+      return Object.assign(new THREE.Texture(), { name: url });
     },
   });
   return { terra, chamadas };
@@ -1470,5 +1471,36 @@ describe('9. a variante profundidade (rodada das nuvens, 07/10)', () => {
     expect(alvoDePixels('alta', 'clouds', 16384, true)).toBe(2048);
     expect(alvoDePixels('performance', 'clouds', 16384, true)).toBe(1024);
     expect(alvoDePixels('cinema', 'clouds', 16384)).toBe(ALVO_DE_APOIO_CINEMA);
+  });
+
+  it('os mapas de horizonte (a sombra das montanhas) são SÓ da carga profundidade', async () => {
+    const pedidosDeHorizonte = (chamadas: string[]) => chamadas.filter((c) => c.includes('/horizon'));
+    // a classica não os pede; a troca ao vivo desenha sem a sombra (portão fechado)
+    const viva = await terraNaTela('classica');
+    expect(pedidosDeHorizonte(viva.chamadas)).toEqual([]);
+    viva.terra.definirVariante('profundidade');
+    const uViva = (viva.sup.material as THREE.ShaderMaterial).uniforms;
+    expect([uViva.uHorizonte.value, uViva.uMapaHorizonte.value, uViva.uMapaHorizonte2.value]).toEqual([
+      0,
+      null,
+      null,
+    ]);
+    viva.terra.dispose();
+    // a profundidade os pede e liga cada um no seu uniform
+    const { terra, chamadas, sup } = await terraNaTela('profundidade');
+    expect(pedidosDeHorizonte(chamadas)).toEqual([
+      'tex:textures/atlas/earth/horizon.webp',
+      'tex:textures/atlas/earth/horizon2.webp',
+    ]);
+    const u = (sup.material as THREE.ShaderMaterial).uniforms;
+    expect(u.uHorizonte.value).toBe(1);
+    expect((u.uMapaHorizonte.value as THREE.Texture).name).toBe('textures/atlas/earth/horizon.webp');
+    expect((u.uMapaHorizonte2.value as THREE.Texture).name).toBe('textures/atlas/earth/horizon2.webp');
+    // a descarga solta os dois e fecha o portão
+    const longe = new THREE.Vector3(0, 0, 40);
+    terra.atualizar(quadro(longe));
+    terra.atualizar(quadro(longe, { tS: 15.1 }));
+    expect([u.uHorizonte.value, u.uMapaHorizonte.value, u.uMapaHorizonte2.value]).toEqual([0, null, null]);
+    terra.dispose();
   });
 });
