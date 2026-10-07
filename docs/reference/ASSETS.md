@@ -160,8 +160,8 @@ desloca o vértice) e `normal` (mapa de normais, que gira a luz) — em
 foi medido e reprovado para estes dois: no mapa de altura de Mimas erra até
 8/255 (= 0,64 km de relevo falso, ~1,6 px de faceta no limbo em close) e no
 de normais, 51/255. A regra vive em `scripts/data/atlas/otimiza-texturas.mjs`
-(`CANAIS_DE_DADO`) e vale só para fonte PNG — `earth/normal` continua q88
-porque a fonte dele já é jpg.
+(`CANAIS_DE_DADO`) e vale só para fonte PNG — desde 07/10/2026 também a
+normal da Terra, que nasce PNG do relevo medido (seção própria, abaixo).
 
 Todos vêm do **projeto Saturn do dono** (https://github.com/fgferre/Saturn,
 `public/textures/relief/`) — menos o de Jápeto desde o item 230 e o de Reia
@@ -815,6 +815,46 @@ zero (42 % dos texels no primeiro ensaio, em RGBA) — dado nunca vai em
 alfa nesta casa. Receita:
 `gera-horizonte.mjs`, chamada por `relevo-e-cor-de-hiperion.mjs`.
 
+## O relevo medido da Terra (07/10/2026)
+
+A normal da Terra era a `8k_earth_normal_map` do Solar System Scope: um
+mapa ARTÍSTICO, sem medida declarada, com declive RMS de 3,0° (|lat| ≤
+80°) — mais de três vezes o do relevo medido na mesma faixa (0,89°). Saiu por decisão
+DELE pela prancha `capturas/terra-nuvens/relevo/relevo-prancha.jpg`, junto
+com a sombra das montanhas (o horizonte, que só Hipérion tinha).
+
+**A fonte é medida**: ETOPO 2022 v1 da NOAA NCEI, a grade de 60″ da
+SUPERFÍCIE (no gelo da Antártida e da Groenlândia, o topo do gelo), 21600 ×
+10800 em metros sobre o geoide EGM2008, CC0 — citação: *NOAA National
+Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global
+Relief Model. https://doi.org/10.25921/fd45-gt74*. O GeoTIFF entra pelo
+cache (`.cache/terra/`, sha256 em `FONTES.json`), não pela árvore: são
+466 MB de matéria-prima.
+
+**A água é espelho**: do espaço, o que a luz desenha é a superfície, e o
+fundo do mar não se vê. Os cinco lagos que o ETOPO traz com o fundo —
+Baikal, Superior, Michigan–Huron, Erie e Ontário; os outros grandes lagos já
+vêm no nível da água (medido em 07/10 contra 40) — sobem até o nível médio
+publicado do espelho; depois, tudo abaixo de 0 m vai a 0 m: o oceano, o
+Cáspio (−28 m), o Mar Morto e as depressões secas (Qattara, Turpan,
+Danakil), ASSUMIDO — na grade do mapa a diferença não se vê.
+
+**A escala é a real, sem exagero**: as células de ~1,85 km da fonte são
+reduzidas por MÉDIA DE ÁREA (a mesma de Reia) a 8192 px para a normal (~4,9
+km por texel no equador) e a 4096 px para o horizonte (~9,8 km); a normal
+sai das derivadas em metros por metro sobre o raio equatorial de 6378,137
+km, ganho 1 — declive RMS de 0,83° no globo, máximo 29,3°. O horizonte é o de
+Hipérion (seis azimutes em dois RGB sem alfa, `gera-horizonte.mjs`) sobre o
+raio R + h, com a marcha até 3,1° (345 km): nenhum relevo da Terra aparece
+acima do plano do horizonte mais longe que ~336 km.
+
+Receita: `scripts/data/atlas/relevo-terra.mjs`, pela cadeia
+(`baixa-texturas.mjs`, `relevoTerra`). O portão da cadeia aprova o conjunto —
+o RGB da normal, os dois do horizonte e os números (o ETOPO, o raio, a
+marcha e o que cada lago virou) — por sha256, e os três canais são gravados
+juntos. O `parametros.json` dos candidatos em `capturas/terra-nuvens/relevo/`
+lista cada escolha.
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**
@@ -866,6 +906,9 @@ tocar num `.mjs`.
 | hyperion/height | a forma é medida pela Cassini, mas os 3.488 poços cavados nela não são: saem das manchas escuras da pintura por IA |
 | hyperion/horizon | a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA |
 | hyperion/horizon2 | a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA |
+| earth/normal | relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água |
+| earth/horizon | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
+| earth/horizon2 | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
 | moon/normal | topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela |
 | mercury/normal | topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem |
 | mars/normal | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |

@@ -152,11 +152,18 @@ const CANAIS_DE_ASSUNTO = new Set(['map']);
  *
  * Sem sonda legível o teto é 2k — errar para baixo é barato, estourar o
  * limite do driver é tela preta.
+ *
+ * `assunto` (07/10): o corpo pode declarar um canal de apoio como
+ * assunto do olho no PEDIDO (`CanalPedido.assunto`) — as nuvens da Terra
+ * na variante `profundidade`, que o relevo e a sombra põem em primeiro
+ * plano. Em cinema ele sobe ao 8k como o `map`; nos outros tiers nada
+ * muda.
  */
 export function alvoDePixels(
   tier: QualityLevel,
   canal: string,
-  maxTextureSize?: number
+  maxTextureSize?: number,
+  assunto = false
 ): number {
   const teto =
     typeof maxTextureSize === 'number' && Number.isFinite(maxTextureSize) && maxTextureSize > 0
@@ -164,7 +171,7 @@ export function alvoDePixels(
       : 2048;
   const alvo =
     tier === 'cinema'
-      ? CANAIS_DE_ASSUNTO.has(canal)
+      ? assunto || CANAIS_DE_ASSUNTO.has(canal)
         ? 8192
         : ALVO_DE_APOIO_CINEMA
       : tier === 'alta'
@@ -308,6 +315,12 @@ export interface CanalPedido {
    * radial — e prende nas bordas.
    */
   repetirEmU: boolean;
+  /**
+   * O canal é ASSUNTO do olho neste corpo e sobe ao 8k de cinema como o
+   * `map` (ver `alvoDePixels`). Lido a CADA carga, então o corpo pode
+   * mudá-lo e a próxima carga obedece; ausente = apoio.
+   */
+  assunto?: boolean;
 }
 
 /** O canal comum: superfície equiretangular em cor. */
@@ -526,7 +539,7 @@ export async function carregarCanaisDoCorpo(
   const lote = await Promise.allSettled(
     canais.map(async (pedido) => {
       // o alvo é POR CANAL — a dose de VRAM mora em `alvoDePixels`
-      const alvo = alvoDePixels(tier, pedido.canal, maxTextureSize);
+      const alvo = alvoDePixels(tier, pedido.canal, maxTextureSize, pedido.assunto);
       const variante = escolherVariante(manifest.entradas, corpo, pedido.canal, alvo, webpOk);
       if (!variante) {
         throw new Error(`${corpo} sem variante para '${pedido.canal}' ≤ ${alvo}px`);

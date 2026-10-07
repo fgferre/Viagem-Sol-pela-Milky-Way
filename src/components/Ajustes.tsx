@@ -68,6 +68,7 @@ import {
   poeiraEmTexto,
   rotuloDaEscalaDeResolucao,
   rotuloDaQualidade,
+  varianteDaTerraEmTexto,
 } from '../three/atlasConfig';
 import { PRESETS, ESCALAS_DE_RESOLUCAO } from '../three/core/engine';
 import type {
@@ -78,6 +79,7 @@ import type {
   ParticulasDaGalaxia,
   TipoDePoeira,
   ToneMapMode,
+  VarianteDaTerra,
 } from '../three/core/engine';
 import { AMOSTRAS_POR_TIER } from '../three/core/post';
 
@@ -143,6 +145,19 @@ const GASES: { valor: GasVolumetrico | null; nome: () => string }[] = [
   ...(['antigo', 'fino', 'macio'] as const).map((g) => ({
     valor: g,
     nome: () => gasVolumetricoEmTexto(g),
+  })),
+];
+
+/**
+ * OS TRÊS ESTADOS DA TERRA (rodada das nuvens, 07/10) — no mesmo molde
+ * do gás: `null` é "do preset", e os valores são as chaves que vão à
+ * URL (`?terra=`) e ao selo.
+ */
+const TERRAS: { valor: VarianteDaTerra | null; nome: () => string }[] = [
+  { valor: null, nome: () => t('ajustes.preset') },
+  ...(['classica', 'profundidade'] as const).map((v) => ({
+    valor: v,
+    nome: () => varianteDaTerraEmTexto(v),
   })),
 ];
 
@@ -231,6 +246,7 @@ export function Ajustes({
   onNebulosa,
   onEscala,
   onGas,
+  onTerra,
   onParticulas,
   onPoeira,
   tom,
@@ -262,6 +278,8 @@ export function Ajustes({
   onEscala: (fator: number | null) => void;
   /** o gás volumétrico escolhido à mão (item 145b); `null` = do preset */
   onGas: (variante: GasVolumetrico | null) => void;
+  /** a variante da Terra escolhida à mão (rodada das nuvens, 07/10); `null` = do preset */
+  onTerra: (variante: VarianteDaTerra | null) => void;
   /** a fração de partículas da galáxia escolhida à mão (item 149); `null` = do preset */
   onParticulas: (nivel: ParticulasDaGalaxia | null) => void;
   /** a poeira perto de casa escolhida à mão (pedido do dono, 27/09); `null` = do preset */
@@ -601,6 +619,26 @@ export function Ajustes({
               qualidade.gas === null && g.valor !== null && g.valor === presetVivo.gas,
           }))}
           onEscolher={onGas}
+        />
+      </LinhaDeAjuste>
+
+      <LinhaDeAjuste
+        id="terra"
+        rotulo={t('ajustes.terraControle')}
+        dica={t('ajustes.terraNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.terraControle')}
+          valor={qualidade.terra}
+          opcoes={TERRAS.map((v) => ({
+            valor: v.valor,
+            nome: v.nome(),
+            efetivo:
+              qualidade.terra === null && v.valor !== null && v.valor === presetVivo.terra,
+          }))}
+          onEscolher={onTerra}
         />
       </LinhaDeAjuste>
 

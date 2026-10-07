@@ -15,6 +15,7 @@ import type {
   ParticulasDaGalaxia,
   TipoDePoeira,
   ToneMapMode,
+  VarianteDaTerra,
 } from '../three/core/engine';
 import { lerPortaExposicao, lerPortaTom } from '../three/core/engine';
 import { chaveDoFoco, construirIndice } from '../lib/buscaEstrelas';
@@ -310,6 +311,15 @@ export function useEspelhoDaUrl(dep: {
   };
 
   /**
+   * A TERRA, AO VIVO (rodada das nuvens, 07/10) — a variante do globo,
+   * no mesmo molde exato do gás.
+   */
+  const trocarTerra = (variante: VarianteDaTerra | null) => {
+    directorRef.current?.forcarTerra(variante);
+    window.history.replaceState(null, '', comParam('terra', variante));
+  };
+
+  /**
    * AS PARTÍCULAS DA GALÁXIA, AO VIVO (item 149) — o quinto controle da
    * gaveta Avançado, no mesmo molde exato dos quatro de cima.
    */
@@ -431,6 +441,8 @@ export function useEspelhoDaUrl(dep: {
         d.forcarEscala(null);
       } else if (c.chave === 'gas') {
         d.forcarGas(null);
+      } else if (c.chave === 'terra') {
+        d.forcarTerra(null);
       } else if (c.chave === 'particulas') {
         d.forcarParticulas(null);
       } else if (c.chave === 'poeira') {
@@ -532,6 +544,7 @@ export function useEspelhoDaUrl(dep: {
     trocarNebulosa,
     trocarEscala,
     trocarGas,
+    trocarTerra,
     trocarParticulas,
     trocarPoeira,
     trocarTom,

@@ -200,6 +200,13 @@ export const PT = {
   'ajustes.gas.antigo': 'Original',
   'ajustes.gas.fino': 'Fino',
   'ajustes.gas.macio': 'Macio',
+  // A TERRA (rodada das nuvens, 07/10) — ao lado do gás: comparar ao vivo
+  // o globo de sempre com o que tem profundidade nas nuvens e no relevo.
+  'ajustes.terraControle': 'Terra',
+  'ajustes.terraNota':
+    'Como o globo da Terra é desenhado: clássica é o de sempre; com profundidade dá às nuvens sombra no chão, relevo pela luz e, em Cinema, o mapa de nuvens em 8k.',
+  'ajustes.terra.classica': 'Clássica',
+  'ajustes.terra.profundidade': 'Com profundidade',
   // A POEIRA PERTO DE CASA (pedido do dono, 27/09) — o sexto controle,
   // ao lado do gás: comparar ao vivo o modelo procedural de hoje com o
   // bloco medido pelo Gaia, em três brilhos.
@@ -510,6 +517,8 @@ export const PT = {
   'selo.desvio.escalaDeResolucaoCom': 'escala de resolução escolhida à mão: {fator}',
   'selo.desvio.gas': 'gás volumétrico escolhido à mão',
   'selo.desvio.gasCom': 'gás volumétrico escolhido à mão: {variante}',
+  'selo.desvio.terra': 'Terra escolhida à mão',
+  'selo.desvio.terraCom': 'Terra escolhida à mão: {variante}',
   'selo.desvio.particulas': 'partículas da galáxia escolhidas à mão',
   'selo.desvio.particulasCom': 'partículas da galáxia escolhidas à mão: {nivel}',
   'selo.desvio.poeira': 'poeira perto de casa escolhida à mão',

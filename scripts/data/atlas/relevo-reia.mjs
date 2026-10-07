@@ -29,6 +29,7 @@
 // erra ≤ 0,34 % do próprio relevo (r/a vai de 0,9966 a 1), ASSUMIDO.
 // ============================================================
 
+import { inflateSync } from 'node:zlib';
 import { latitudeDaLinha } from './relevo-inventado.mjs';
 import {
   completaCratera,
@@ -128,17 +129,22 @@ export const RAREAMENTO_POR_LATITUDE = Object.freeze({ referenciaAteGraus: 30, f
 // ------------------------------------------------------------
 
 /**
- * Lê o TIFF do DTM: clássico little-endian, sem compressão, por tiras, uma
- * amostra float32 — o que `rhea_radius_g.tif` é (outro formato recusa).
- * `{ largura, altura, raioM }`.
+ * Lê um TIFF de uma amostra float32: clássico little-endian, por tiras ou
+ * por ladrilhos, cru ou Deflate (8/32946), sem preditor ou com o de ponto
+ * flutuante (3: soma acumulada dos bytes ao longo da linha do bloco, e o
+ * byte k da amostra x — do mais significativo — em `linha[k·largura + x]`).
+ * É o que `rhea_radius_g.tif` é (tiras cruas) e o ETOPO 2022 da Terra
+ * (ladrilhos 256×256, Deflate, preditor 3); outro formato recusa. Só as tags
+ * inteiras são lidas. `{ largura, altura, valores }`.
  */
-export function leDtm(bytes) {
+export function leTiffFloat32(bytes) {
   const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  if (v.getUint16(0, true) !== 0x4949 || v.getUint16(2, true) !== 42) throw new Error('o DTM não é TIFF clássico little-endian');
+  if (v.getUint16(0, true) !== 0x4949 || v.getUint16(2, true) !== 42) throw new Error('o TIFF não é clássico little-endian');
   const ifd = v.getUint32(4, true);
   const tags = new Map();
   for (let n = 0, e = ifd + 2; n < v.getUint16(ifd, true); n += 1, e += 12) {
     const tipo = v.getUint16(e + 2, true);
+    if (tipo !== 3 && tipo !== 4) continue;
     const conta = v.getUint32(e + 4, true);
     const tam = tipo === 3 ? 2 : 4;
     const ini = conta * tam <= 4 ? e + 8 : v.getUint32(e + 8, true);
@@ -150,14 +156,40 @@ export function leDtm(bytes) {
   const um = (t, padrao) => tags.get(t)?.[0] ?? padrao;
   const largura = um(256);
   const altura = um(257);
-  if (um(258) !== 32 || um(339) !== 3 || um(277, 1) !== 1 || um(259, 1) !== 1) throw new Error('o DTM não é float32 sem compressão de uma amostra');
-  const raioM = new Float32Array(largura * altura);
+  const compressao = um(259, 1);
+  const preditor = um(317, 1);
+  if (um(258) !== 32 || um(339) !== 3 || um(277, 1) !== 1 || ![1, 8, 32946].includes(compressao) || ![1, 3].includes(preditor)) {
+    throw new Error('o TIFF não é float32 de uma amostra, cru ou Deflate, sem preditor ou com o de ponto flutuante');
+  }
+  const ladrilhos = tags.has(322);
+  const bw = ladrilhos ? um(322) : largura;
+  const porFileira = Math.ceil(largura / bw);
+  const valores = new Float32Array(largura * altura);
+  const linha = new Uint8Array(4 * bw);
+  const lv = new DataView(linha.buffer);
+  const amostra = new DataView(new ArrayBuffer(4));
   let k = 0;
-  tags.get(273).forEach((ini, s) => {
-    for (let b = 0; b < tags.get(279)[s]; b += 4) raioM[k++] = v.getFloat32(ini + b, true);
+  tags.get(ladrilhos ? 324 : 273).forEach((ini, b) => {
+    const cru = bytes.subarray(ini, ini + tags.get(ladrilhos ? 325 : 279)[b]);
+    const bloco = compressao === 1 ? cru : inflateSync(cru);
+    const x0 = ladrilhos ? (b % porFileira) * bw : 0;
+    const usadas = Math.min(bw, largura - x0);
+    for (let y = 0; y < bloco.length / (4 * bw); y += 1) {
+      const destino = ladrilhos ? (Math.floor(b / porFileira) * um(323) + y) * largura + x0 : k;
+      if (destino >= valores.length) break;
+      linha.set(bloco.subarray(4 * bw * y, 4 * bw * (y + 1)));
+      if (preditor === 3) for (let i = 1; i < linha.length; i += 1) linha[i] = (linha[i] + linha[i - 1]) & 255;
+      for (let x = 0; x < usadas; x += 1) {
+        if (preditor === 3) {
+          for (let c = 0; c < 4; c += 1) amostra.setUint8(c, linha[c * bw + x]);
+          valores[destino + x] = amostra.getFloat32(0, false);
+        } else valores[destino + x] = lv.getFloat32(4 * x, true);
+      }
+      k += usadas;
+    }
   });
-  if (k !== raioM.length) throw new Error(`o DTM tem ${k} amostras, esperava ${raioM.length}`);
-  return { largura, altura, raioM };
+  if (k !== valores.length) throw new Error(`o TIFF tem ${k} amostras, esperava ${valores.length}`);
+  return { largura, altura, valores };
 }
 
 /** O raio do elipsoide do app (km) em (lat, lonE) graus, latitude planetocêntrica. */
@@ -214,7 +246,7 @@ export function reamostraParaACasa(fonte, Wf, Hf, W, H, bordaEsquerdaLonE) {
  * pela média de área. `bytes`: o TIFF inteiro.
  */
 export function relevoDoDtm(bytes, largura, altura) {
-  const { largura: Wf, altura: Hf, raioM } = leDtm(bytes);
+  const { largura: Wf, altura: Hf, valores: raioM } = leTiffFloat32(bytes);
   if (Wf !== DTM.largura || Hf !== DTM.altura) throw new Error(`o DTM tem ${Wf}×${Hf}, esperava ${DTM.largura}×${DTM.altura}`);
   const km = new Float64Array(Wf * Hf);
   for (let j = 0; j < Hf; j += 1) {

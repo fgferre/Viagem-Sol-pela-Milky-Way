@@ -33,6 +33,7 @@ import { LIMIAR_SISTEMA_SOLAR_PC, acusacaoDaEscala } from './escala';
 import {
   CAMADAS,
   gasVolumetricoEmTexto,
+  varianteDaTerraEmTexto,
   nivelDaNebulosaEmTexto,
   particulasDaGalaxiaEmTexto,
   poeiraEmTexto,
@@ -42,6 +43,7 @@ import { decimalDoIdioma, t } from '../lib/idioma';
 import { PT } from '../lib/idioma/pt';
 import type {
   GasVolumetrico,
+  VarianteDaTerra,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
   QualityLevel,
@@ -383,6 +385,12 @@ export interface EstadoDaVista {
    * não a porta `?gas=`.
    */
   gas: GasVolumetrico | null;
+  /**
+   * A VARIANTE DA TERRA escolhida à mão (rodada das nuvens, 07/10) —
+   * `null` = a do preset. Mesmo contrato do `gas`: estado vivo do
+   * Director, não a porta `?terra=`.
+   */
+  terra: VarianteDaTerra | null;
   /**
    * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA escolhida à mão (item 149) —
    * `null` = a do preset. Mesmo contrato do `gas`: estado vivo do
@@ -747,6 +755,23 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     rotuloVivo: (e) =>
       t('selo.desvio.gasCom', {
         variante: e.gas === null ? '' : gasVolumetricoEmTexto(e.gas),
+      }),
+  },
+  /**
+   * A TERRA ESCOLHIDA À MÃO (rodada das nuvens, 07/10), no mesmo molde
+   * do gás: estado VIVO, `volta: 'vivo'`, porta de URL como espelho. Mexe
+   * na imagem de verdade — nuvens com sombra no chão, relevo pela luz e o
+   * 8k em cinema, contra o globo de sempre.
+   */
+  {
+    chave: 'terra',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.terra'); },
+    volta: 'vivo',
+    desvia: (e) => e.terra !== null,
+    rotuloVivo: (e) =>
+      t('selo.desvio.terraCom', {
+        variante: e.terra === null ? '' : varianteDaTerraEmTexto(e.terra),
       }),
   },
   /**

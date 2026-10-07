@@ -374,16 +374,17 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
       expect(nomeAcessivel, lingua).not.toMatch(/\d/);
     }
     definirIdioma('pt-BR');
-    // os SEIS controles da gaveta Avançado em `null` de piso — a
-    // gaveta intocada (item 145, +145b, +149, +poeira 27/09)
+    // os SETE controles da gaveta Avançado em `null` de piso — a
+    // gaveta intocada (item 145, +145b, +149, +poeira 27/09, +terra 07/10)
     type Estado = Parameters<typeof rotuloDaQualidade>[0];
-    type Gaveta = 'amostras' | 'nebulosa' | 'escala' | 'gas' | 'particulas' | 'poeira';
+    type Gaveta = 'amostras' | 'nebulosa' | 'escala' | 'gas' | 'terra' | 'particulas' | 'poeira';
     const estado = (m: Omit<Estado, Gaveta> & Partial<Pick<Estado, Gaveta>>) =>
       rotuloDaQualidade({
         amostras: null,
         nebulosa: null,
         escala: null,
         gas: null,
+        terra: null,
         particulas: null,
         poeira: null,
         ...m,
@@ -418,7 +419,7 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     expect(estado({ escolha: 'auto', tier: 'alta', medicao: null, amostras: 4 })).toContain(
       'Alta (Personalizado)'
     );
-    // e a marca é de QUALQUER um dos seis, não só do MSAA: um controle
+    // e a marca é de QUALQUER um dos sete, não só do MSAA: um controle
     // novo na gaveta que esquecesse de entrar em `foraDoPreset` deixaria
     // o painel dizendo "Cinema" sobre uma cena que não é mais a do preset
     expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, nebulosa: 'baixa' }))
@@ -426,6 +427,8 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, escala: 0.5 }))
       .toContain('Cinema (Personalizado)');
     expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, gas: 'fino' }))
+      .toContain('Cinema (Personalizado)');
+    expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, terra: 'classica' }))
       .toContain('Cinema (Personalizado)');
     expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, particulas: 'metade' }))
       .toContain('Cinema (Personalizado)');

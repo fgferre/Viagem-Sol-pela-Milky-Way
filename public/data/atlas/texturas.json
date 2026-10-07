@@ -1367,6 +1367,354 @@
     },
     {
       "corpo": "earth",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/earth/horizon_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 154437,
+      "sha256": "f18cb255e576af7cd5ee3099dd639727018539984ce20a84d428452a46d703a8",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/earth/horizon_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 118064,
+      "sha256": "ea948a8ca9017306b0a3354714d8ebf9ecee5ff3040b0017e1b3f546624e8192",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/earth/horizon_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 514558,
+      "sha256": "6f7e8d14069f6496194cb61004c81d2bc5479f22d0f517f33deb21be8947cfaf",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/earth/horizon_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 400510,
+      "sha256": "8236f18af8c9201dd2b73ff07611fe92838a6f89fc1021b3dcae38cb26ceaddb",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/earth/horizon.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1906224,
+      "sha256": "dec87e10784318cd64d7b13e0afb41c8f7376022b65ecf2c985f197978f28789",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/earth/horizon.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1499094,
+      "sha256": "d279d564af60277d1cf9f716782b318dfac43a61b9a6973432d1126ee0fc2031",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/earth/horizon2_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 153426,
+      "sha256": "229a24f3910fe624abb16816fd65c6e03d0049a4b891ead857fdaa485c512b18",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/earth/horizon2_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 117820,
+      "sha256": "9b5ff0e38e176ae5d9bccf56ae397a1afdc987af46e1df88757959de3f0eba8c",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/earth/horizon2_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 513783,
+      "sha256": "6febe233e8e600c75ab715ee9bbd9631c4a535fcd52c57e98b7e0607d164216f",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/earth/horizon2_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 399956,
+      "sha256": "c84c339c8a86901e9056459e07d21b01950d5c94d93835028473be2ac956f3fa",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/earth/horizon2.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1911968,
+      "sha256": "96396ec7e9954e794ac42304f047856491ee5d9660818bde9debb9c5177bf251",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/earth/horizon2.webp",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1497370,
+      "sha256": "5b566e506519f38f5c7122ffb1b07a43cc191179e59b2e9f845d9ed469e71bbe",
+      "origem": {
+        "fonte": {
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://doi.org/10.25921/fd45-gt74",
+        "licenca": {
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
+        },
+        "atribuicao": {
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+      }
+    },
+    {
+      "corpo": "earth",
       "canal": "map",
       "arquivo": "textures/atlas/earth/map_1024.jpg",
       "larguraPx": 1024,
@@ -1768,27 +2116,31 @@
     {
       "corpo": "earth",
       "canal": "normal",
-      "arquivo": "textures/atlas/earth/normal_1024.jpg",
+      "arquivo": "textures/atlas/earth/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 8739,
-      "sha256": "777841a51d2fd9728bf167a9a0e0f531ee02673febf80cf3edc89fab67ad7ee8",
+      "bytes": 97328,
+      "sha256": "ea1eb7770d43337582dfe8865c5550ec3518b00a678576a53c9d337c64dfa440",
       "origem": {
         "fonte": {
-          "pt": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
-          "en": "Solar System Scope — 8k_earth_normal_map.tif via the Wayback Machine, re-encoded to jpg (bake-earth-pbr, from the donor project)"
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — NORMAL map"
         },
-        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "url": "https://doi.org/10.25921/fd45-gt74",
         "licenca": {
-          "pt": "CC BY 4.0",
-          "en": "CC BY 4.0"
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
         },
         "atribuicao": {
-          "pt": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0.",
-          "en": "Textures: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+      }
     },
     {
       "corpo": "earth",
@@ -1796,49 +2148,57 @@
       "arquivo": "textures/atlas/earth/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 2326,
-      "sha256": "f87aa7bec0282ca385ab00ed39a89089401239f4aebc657953bd43bd3f94ab64",
+      "bytes": 67652,
+      "sha256": "02ead1770742ca103ac4d2e1831819791890470b6f7eeb55db85dc749f4933cb",
       "origem": {
         "fonte": {
-          "pt": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
-          "en": "Solar System Scope — 8k_earth_normal_map.tif via the Wayback Machine, re-encoded to jpg (bake-earth-pbr, from the donor project)"
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — NORMAL map"
         },
-        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "url": "https://doi.org/10.25921/fd45-gt74",
         "licenca": {
-          "pt": "CC BY 4.0",
-          "en": "CC BY 4.0"
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
         },
         "atribuicao": {
-          "pt": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0.",
-          "en": "Textures: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+      }
     },
     {
       "corpo": "earth",
       "canal": "normal",
-      "arquivo": "textures/atlas/earth/normal_2048.jpg",
+      "arquivo": "textures/atlas/earth/normal_2048.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 48941,
-      "sha256": "e02ec9b51e61889c838af727a424516b48f83a7eec8fb10f0ee174327fa22c3d",
+      "bytes": 435407,
+      "sha256": "00aa3d3a6074efec60ddb7861a0b1f4468d338ca23037a418632416b229ca01c",
       "origem": {
         "fonte": {
-          "pt": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
-          "en": "Solar System Scope — 8k_earth_normal_map.tif via the Wayback Machine, re-encoded to jpg (bake-earth-pbr, from the donor project)"
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — NORMAL map"
         },
-        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "url": "https://doi.org/10.25921/fd45-gt74",
         "licenca": {
-          "pt": "CC BY 4.0",
-          "en": "CC BY 4.0"
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
         },
         "atribuicao": {
-          "pt": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0.",
-          "en": "Textures: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+      }
     },
     {
       "corpo": "earth",
@@ -1846,49 +2206,57 @@
       "arquivo": "textures/atlas/earth/normal_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 16130,
-      "sha256": "5362276766465ae5c14ad3e13207343757cabe0a18c73bd0434520cd534f64a3",
+      "bytes": 302160,
+      "sha256": "672736c526ca1515ff94cc323ee35cbf2a8c3d35e7203843604dc48a45f26847",
       "origem": {
         "fonte": {
-          "pt": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
-          "en": "Solar System Scope — 8k_earth_normal_map.tif via the Wayback Machine, re-encoded to jpg (bake-earth-pbr, from the donor project)"
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — NORMAL map"
         },
-        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "url": "https://doi.org/10.25921/fd45-gt74",
         "licenca": {
-          "pt": "CC BY 4.0",
-          "en": "CC BY 4.0"
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
         },
         "atribuicao": {
-          "pt": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0.",
-          "en": "Textures: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+      }
     },
     {
       "corpo": "earth",
       "canal": "normal",
-      "arquivo": "textures/atlas/earth/normal_4096.jpg",
+      "arquivo": "textures/atlas/earth/normal_4096.png",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 323491,
-      "sha256": "b04ce96559a704cffecaa680ab2b48e74e3a14665a65660c34b3551c4f2160d3",
+      "bytes": 1990770,
+      "sha256": "d53dae1b29e5d523e602c750a9c36f2a0fef44520401cf3ff0c5f01b11d98689",
       "origem": {
         "fonte": {
-          "pt": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
-          "en": "Solar System Scope — 8k_earth_normal_map.tif via the Wayback Machine, re-encoded to jpg (bake-earth-pbr, from the donor project)"
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — NORMAL map"
         },
-        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "url": "https://doi.org/10.25921/fd45-gt74",
         "licenca": {
-          "pt": "CC BY 4.0",
-          "en": "CC BY 4.0"
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
         },
         "atribuicao": {
-          "pt": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0.",
-          "en": "Textures: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+      }
     },
     {
       "corpo": "earth",
@@ -1896,49 +2264,57 @@
       "arquivo": "textures/atlas/earth/normal_4096.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 142670,
-      "sha256": "5c55d8cdf12a01ded673f9dfcb382aa763e5b63213fc37dc7acb584424b1236d",
+      "bytes": 1379454,
+      "sha256": "c4900741eb0a7a49f629cb8ae36243361e6edeec1f1eb544ab3a8337f98adbb4",
       "origem": {
         "fonte": {
-          "pt": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
-          "en": "Solar System Scope — 8k_earth_normal_map.tif via the Wayback Machine, re-encoded to jpg (bake-earth-pbr, from the donor project)"
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — NORMAL map"
         },
-        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "url": "https://doi.org/10.25921/fd45-gt74",
         "licenca": {
-          "pt": "CC BY 4.0",
-          "en": "CC BY 4.0"
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
         },
         "atribuicao": {
-          "pt": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0.",
-          "en": "Textures: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+      }
     },
     {
       "corpo": "earth",
       "canal": "normal",
-      "arquivo": "textures/atlas/earth/normal.jpg",
+      "arquivo": "textures/atlas/earth/normal.png",
       "larguraPx": 8192,
       "alturaPx": 4096,
-      "bytes": 2565658,
-      "sha256": "5d190f29fc245814013e3e83a39f4f8d3015a23623feb3574f533cdbe665b458",
+      "bytes": 7507063,
+      "sha256": "ad82ae47e5db0eb51a6e98be47bd4485c23f1521a6d3d0cf6ad9936b6c7c409d",
       "origem": {
         "fonte": {
-          "pt": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
-          "en": "Solar System Scope — 8k_earth_normal_map.tif via the Wayback Machine, re-encoded to jpg (bake-earth-pbr, from the donor project)"
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — NORMAL map"
         },
-        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "url": "https://doi.org/10.25921/fd45-gt74",
         "licenca": {
-          "pt": "CC BY 4.0",
-          "en": "CC BY 4.0"
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
         },
         "atribuicao": {
-          "pt": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0.",
-          "en": "Textures: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+      }
     },
     {
       "corpo": "earth",
@@ -1946,24 +2322,28 @@
       "arquivo": "textures/atlas/earth/normal.webp",
       "larguraPx": 8192,
       "alturaPx": 4096,
-      "bytes": 983802,
-      "sha256": "9f288dd285730ec92f0eb010f8bc06f309fcefdf6b22f1923c61180e9eb32b02",
+      "bytes": 4877404,
+      "sha256": "6ec86a66167b3261a2168f82d8007153b0e15214b525fbe0951351b829fc3ef0",
       "origem": {
         "fonte": {
-          "pt": "Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)",
-          "en": "Solar System Scope — 8k_earth_normal_map.tif via the Wayback Machine, re-encoded to jpg (bake-earth-pbr, from the donor project)"
+          "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
+          "en": "ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — NORMAL map"
         },
-        "url": "https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif",
+        "url": "https://doi.org/10.25921/fd45-gt74",
         "licenca": {
-          "pt": "CC BY 4.0",
-          "en": "CC BY 4.0"
+          "pt": "CC0 1.0 (domínio público)",
+          "en": "CC0 1.0 (public domain)"
         },
         "atribuicao": {
-          "pt": "Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0.",
-          "en": "Textures: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0."
+          "pt": "Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).",
+          "en": "Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+      }
     },
     {
       "corpo": "earth",

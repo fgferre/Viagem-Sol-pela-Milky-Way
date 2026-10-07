@@ -266,6 +266,7 @@ export default function App() {
     nebulosa: null,
     escala: null,
     gas: null,
+    terra: null,
     particulas: null,
     poeira: null,
   });
@@ -887,6 +888,7 @@ export default function App() {
     trocarNebulosa,
     trocarEscala,
     trocarGas,
+    trocarTerra,
     trocarParticulas,
     trocarPoeira,
     trocarTom,
@@ -1429,6 +1431,7 @@ export default function App() {
         onNebulosa={trocarNebulosa}
         onEscala={trocarEscala}
         onGas={trocarGas}
+        onTerra={trocarTerra}
         onParticulas={trocarParticulas}
         onPoeira={trocarPoeira}
         tom={tom}

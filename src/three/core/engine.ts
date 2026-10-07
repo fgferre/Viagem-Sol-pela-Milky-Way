@@ -200,6 +200,23 @@ export function lerPortaPoeira(bruto: string | null | undefined): TipoDePoeira |
 }
 
 /**
+ * A TERRA DE PERTO (rodada das nuvens, 07/10) — duas formas de desenhar
+ * as nuvens da Terra: `classica` é a de sempre (a casca translúcida, sem
+ * sombra), `profundidade` dá às nuvens sombra no chão, relevo pela luz,
+ * caminho inclinado no limbo e o 8k em cinema (`terraShaders.ts`). Mesmo
+ * molde do gás: o preset aponta uma variante, a porta `?terra=` sobrepõe,
+ * e quem aplica ao vivo é `TerraResolvida.definirVariante`.
+ */
+export type VarianteDaTerra = 'classica' | 'profundidade';
+
+const VARIANTES_DA_TERRA: readonly VarianteDaTerra[] = ['classica', 'profundidade'];
+
+/** a lei da porta `?terra=`, no mesmo contrato de `lerPortaGas`. */
+export function lerPortaTerra(bruto: string | null | undefined): VarianteDaTerra | null {
+  return VARIANTES_DA_TERRA.find((v) => v === bruto) ?? null;
+}
+
+/**
  * OS TRÊS DEGRAUS DA ESCALA DE RESOLUÇÃO (item 145) — o terceiro
  * controle da gaveta Avançado, em fração da densidade NATIVA da tela.
  * 100% é o `devicePixelRatio` do monitor (2,0 num Retina), 50% é metade
@@ -233,6 +250,9 @@ export interface QualityPreset {
    *  três apontam `hoje` por ora — o objetivo desta rodada é comparar,
    *  não escolher um padrão por tier. */
   poeira: TipoDePoeira;
+  /** a variante da Terra de perto (rodada das nuvens, 07/10) — mesma
+   *  regra do gás: todo preset aponta uma, `null` é só da porta. */
+  terra: VarianteDaTerra;
 }
 
 // grain agora é DISPLAY-space (film pass pós-tonemap): 0.055 era
@@ -252,6 +272,9 @@ export interface QualityPreset {
 // campo e aponta `metade`. Medido em tela real, t=150 dentro do disco,
 // 2560×1266: 72 ms com todas as partículas, 14 ms escondendo-as
 // (`?nopts=1`) — a fração é a alavanca nova.
+// TERRA (rodada das nuvens, 07/10): cinema e alta apontam `profundidade`,
+// performance fica na `classica` — distribuição PROVISÓRIA, até a
+// medição de quadro e o olho do dono decidirem.
 // EXPORTADO (redesenho do painel de Ajustes): o painel precisa mostrar
 // qual valor da gaveta o preset RESOLVE, para marcar o segmento efetivo
 // quando o controle está em "do preset" — sem isso ele lê `null` e não
@@ -264,6 +287,7 @@ export const PRESETS: Record<QualityLevel, QualityPreset> = {
     gas: 'fino',
     particulas: 'todas',
     poeira: 'hoje',
+    terra: 'profundidade',
   },
   alta: {
     pixelRatio: 1.5,
@@ -272,6 +296,7 @@ export const PRESETS: Record<QualityLevel, QualityPreset> = {
     gas: 'macio',
     particulas: 'metade',
     poeira: 'hoje',
+    terra: 'profundidade',
   },
   performance: {
     pixelRatio: 1.0,
@@ -280,6 +305,7 @@ export const PRESETS: Record<QualityLevel, QualityPreset> = {
     gas: 'macio',
     particulas: 'todas',
     poeira: 'hoje',
+    terra: 'classica',
   },
 };
 
@@ -523,6 +549,13 @@ export interface EstadoDaQualidade {
    * que troca o material da `Nebula` ao vivo.
    */
   gas: GasVolumetrico | null;
+  /**
+   * A VARIANTE DA TERRA escolhida à mão (rodada das nuvens, 07/10) —
+   * `null` = a variante do preset. Quem a publica é o Director, que é
+   * onde o override mora (`forcarTerra`/`aplicarTerra`, no mesmo molde de
+   * `forcarGas`): é ele que troca o material da Terra ao vivo.
+   */
+  terra: VarianteDaTerra | null;
   /**
    * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA escolhida à mão (item 149) —
    * `null` = a do preset. Quem a publica é o Director, que é onde o

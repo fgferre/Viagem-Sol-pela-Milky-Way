@@ -71,6 +71,10 @@ const manifestPath = path.join(publicDirectory, 'data', 'atlas', 'texturas.json'
 // derivada dela (escada/webp) rebaixa para 'derivado' na emissão.
 const ATRIBUICAO_SSS =
   'Texturas: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0.';
+// A citação que a NOAA pede para o ETOPO 2022 (`.cache/terra/FONTES.json`).
+const ATRIBUICAO_ETOPO =
+  'Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. ' +
+  'https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).';
 const ORIGENS = {
   'earth/map': {
     fonte: 'Solar System Scope — 8k_earth_daymap',
@@ -93,14 +97,36 @@ const ORIGENS = {
     atribuicao: ATRIBUICAO_SSS,
     proveniencia: 'medido',
   },
+  // 07/10/2026: o relevo MEDIDO da Terra (ETOPO 2022 da NOAA) no lugar da
+  // normal artística do SSS, e a sombra das montanhas assada do mesmo
+  // relevo. 'derivado': o produto publicado é a grade de ALTURA; a normal e
+  // o horizonte são assados dela nesta casa (`relevo-terra.mjs`, pela
+  // cadeia). A confissão mora no ASSETS.md.
   'earth/normal': {
     fonte:
-      'Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, ' +
-      'reencodado jpg (bake-earth-pbr do doador)',
-    url: 'https://web.archive.org/web/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif',
-    licenca: 'CC BY 4.0',
-    atribuicao: ATRIBUICAO_SSS,
-    // derivado JÁ na fonte: TIFF→jpg é reencode nosso/do doador.
+      'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa ' +
+      '(relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS',
+    url: 'https://doi.org/10.25921/fd45-gt74',
+    licenca: 'CC0 1.0 (domínio público)',
+    atribuicao: ATRIBUICAO_ETOPO,
+    proveniencia: 'derivado',
+  },
+  'earth/horizon': {
+    fonte:
+      'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa ' +
+      '(relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    url: 'https://doi.org/10.25921/fd45-gt74',
+    licenca: 'CC0 1.0 (domínio público)',
+    atribuicao: ATRIBUICAO_ETOPO,
+    proveniencia: 'derivado',
+  },
+  'earth/horizon2': {
+    fonte:
+      'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa ' +
+      '(relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    url: 'https://doi.org/10.25921/fd45-gt74',
+    licenca: 'CC0 1.0 (domínio público)',
+    atribuicao: ATRIBUICAO_ETOPO,
     proveniencia: 'derivado',
   },
   'earth/roughness': {
