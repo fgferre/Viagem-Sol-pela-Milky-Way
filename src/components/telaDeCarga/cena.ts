@@ -9,6 +9,20 @@
 
 export type IdDaTela = 'nascer' | 'ceu' | 'bercario' | 'galaxia';
 
+/**
+ * ABAIXO DE QUE PROPORÇÃO (largura/altura) cada cena se compõe em retrato.
+ * O número mora no cabeçalho e nas contas de cada cena; daqui o leem o
+ * texto em HTML por cima (`data-retrato`, 05-loading.css) e o tamanho
+ * dos rótulos (`rotulos.ts`), para os três trocarem juntos. O nascer não
+ * tem degrau: mistura as duas composições pela proporção (0 = nunca).
+ */
+export const RETRATO_ABAIXO_DE: Readonly<Record<IdDaTela, number>> = {
+  nascer: 0,
+  ceu: 0.85,
+  bercario: 0.8,
+  galaxia: 0.9,
+};
+
 export interface EstadoDaCena {
   /** segundos desde a montagem da cena */
   t: number;
@@ -46,6 +60,9 @@ export interface DefinicaoDaCena {
  * thread principal, na língua de agora, e entrega o bitmap pronto; a cena
  * o desenha no próprio quadro, colado ao que ele nomeia, e não descola
  * quando a thread principal congela. Sem o bitmap, a cena segue sem ele.
+ * O mapa é VIVO: o hospedeiro troca um bitmap por outro (a fonte chegou
+ * depois do 1º quadro, a língua ou o tamanho mudou), e a cena relê o
+ * mapa a cada quadro.
  */
 export interface RotuloPronto {
   bitmap: ImageBitmap;

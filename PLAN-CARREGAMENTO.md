@@ -19,10 +19,10 @@ Ramo `carregamento-rodizio`, na cópia de trabalho `../Viagem-carregamento` (out
 ## Etapas
 
 1. [x] Cena `nascer` portada para TS sem DOM, igual ao protótipo pixel a pixel (fora o texto).
-2. [ ] A casa da tela: rodízio, worker com OffscreenCanvas e plano B na thread principal, texto e acessibilidade, falha, desfecho emendando na abertura, ganchos de teste; a tela velha apagada; juízes e testes que olhavam a velha atualizados. Fotos e vídeo na mesa e no celular, pt e en. → mostrar a ele.
-3. [ ] `ceu` (com os rótulos das constelações e o contador).
-4. [ ] `bercario`.
-5. [ ] `galaxia` + decisão do celular.
-6. [ ] `npm run done`, merge no `main`, publicação por ele, conferência no ar.
+2. [x] A casa da tela: rodízio, worker com OffscreenCanvas e plano B na thread principal, texto e acessibilidade, falha, desfecho emendando na abertura, ganchos de teste; a tela velha apagada; juízes e testes que olhavam a velha atualizados. Fotos e vídeo na mesa e no celular, pt e en. → mostrar a ele.
+3. [x] `ceu` (com os rótulos das constelações e o contador).
+4. [x] `bercario`.
+5. [x] `galaxia` no rodízio, também no celular (a palavra dele: "ver se roda no celular mesmo assim e deixa rolar"; com o celular emulado e a CPU 4× mais lenta, a carga sem folga acima de 18 ms). Falta ver num iPhone de verdade.
+6. [ ] Vídeo das quatro para ele; `npm run done` (verde em 07/10), merge no `main`, publicação por ele, conferência no ar.
 
 Fora do escopo: mudar a tela de abertura; uma tela estática antes do JavaScript chegar (vai para o BACKLOG se ele quiser).

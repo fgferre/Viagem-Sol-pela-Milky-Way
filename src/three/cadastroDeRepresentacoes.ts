@@ -329,6 +329,27 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     razao: 'bake é cena congelada; entra por último com o raymarch',
   },
   {
+    // as telas de carregamento do rodízio que desenham estrelas em pontos
+    // (o nascer não emite: não tem `gl_PointSize`)
+    id: 'telas-de-carregamento',
+    nome: 'as cenas das telas de carregamento (o céu, o berçário, a galáxia)',
+    arquivos: [
+      'src/components/telaDeCarga/cenas/ceu.ts',
+      'src/components/telaDeCarga/cenas/bercario.ts',
+      'src/components/telaDeCarga/cenas/galaxia.ts',
+    ],
+    consomeL1: false,
+    leiVelhaApagada: false,
+    fatorDeBrilho: null,
+    destino: 'fora-da-lei',
+    migracao: null,
+    emiteGlPointSize: true,
+    razao:
+      'ilustração da espera, num canvas próprio antes de a viagem existir (worker ' +
+      'com OffscreenCanvas): não é a cena do app nem mede estrela nenhuma na ' +
+      'unidade de tela dela — declarada fora, não esquecida fora',
+  },
+  {
     id: 'bloom-e-gradacao',
     nome: 'bloom + gradação',
     arquivos: ['src/three/core/post.ts', 'src/three/atlasConfig.ts'],

@@ -18,6 +18,9 @@ export const ORDEM_DAS_TELAS: readonly IdDaTela[] = ['nascer', 'ceu', 'bercario'
 
 const CARREGADORES: Partial<Record<IdDaTela, () => Promise<DefinicaoDaCena>>> = {
   nascer: () => import('./cenas/nascer').then((m) => m.nascer),
+  ceu: () => import('./cenas/ceu').then((m) => m.ceu),
+  bercario: () => import('./cenas/bercario').then((m) => m.bercario),
+  galaxia: () => import('./cenas/galaxia').then((m) => m.galaxia),
 };
 
 /** as telas que já existem, na ordem do rodízio */

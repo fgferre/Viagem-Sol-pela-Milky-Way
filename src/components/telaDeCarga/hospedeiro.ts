@@ -16,7 +16,7 @@
  * desfecho; no `worker`, quem diz que ele acabou é o próprio worker, que
  * é quem está desenhando, e o relógio daqui é só a rede de segurança.
  */
-import type { Cena, EstadoDaCena, IdDaTela, RecursosDaCena } from './cena';
+import type { Cena, EstadoDaCena, IdDaTela, RotuloPronto } from './cena';
 import { criarAndamento, type FatiaDaCarga } from './andamento';
 import { carregarCena } from './rodizio';
 import type { DoTrabalhador, ParaOTrabalhador } from './trabalhador';
@@ -31,17 +31,28 @@ export interface OpcoesDaTela {
   largura: number;
   altura: number;
   dpr: number;
-  /** rótulos rasterizados aqui para cenas que os desenham (`cena.ts`) */
-  recursos?: RecursosDaCena;
-  /** o estado de cada quadro, para o texto por cima */
-  aoQuadro: (e: EstadoDaCena) => void;
+  /**
+   * o estado de cada quadro, para o texto por cima, e quantos segundos
+   * faltam para o desfecho acabar (`Infinity` enquanto a carga não acaba)
+   */
+  aoQuadro: (e: EstadoDaCena, restante: number) => void;
   /** a primeira imagem da cena chegou ao canvas */
   aoPronto: () => void;
+  /**
+   * a cena saiu do worker para a thread principal (ele falhou): os
+   * rótulos que tinham ido para lá se perderam, e é preciso refazê-los
+   */
+  refazerRotulos: () => void;
   /** o desfecho chegou ao fim: a cena está no quadro final */
   aoAcabar: () => void;
 }
 
 export interface Hospedeiro {
+  /**
+   * rótulos rasterizados na thread principal (`rotulos.ts`) entram no
+   * mapa da cena, no lugar dos de mesmo id; os bitmaps passam a ser dela
+   */
+  rotulos(novos: ReadonlyMap<string, RotuloPronto>): void;
   etapa(fatia: FatiaDaCarga): void;
   terminou(): void;
   tamanho(largura: number, altura: number, dpr: number): void;
@@ -85,7 +96,10 @@ export function montarTela(palco: HTMLElement, o: OpcoesDaTela): Hospedeiro {
   let desenhou = false;
   let acabou = false;
   let pedidoDeQuadros: ((tempos: number[]) => void) | null = null;
+  let terminouEm: number | null = null;
   const tempos: number[] = [];
+  /** o mapa vivo da cena quando ela roda aqui (no worker, o dele) */
+  const rotulos = new Map<string, RotuloPronto>();
 
   const definicao = carregarCena(o.id);
   definicao.then(
@@ -132,7 +146,7 @@ export function montarTela(palco: HTMLElement, o: OpcoesDaTela): Hospedeiro {
         if (solto) return;
         try {
           const c = novoCanvas();
-          cena = d.criar(c, o.recursos);
+          cena = d.criar(c, { rotulos });
           cena.redimensionar(tamanho.largura, tamanho.altura, tamanho.dpr);
         } catch (err) {
           semCena(err);
@@ -162,6 +176,7 @@ export function montarTela(palco: HTMLElement, o: OpcoesDaTela): Hospedeiro {
       console.error(motivo);
       w.terminate();
       naThreadPrincipal();
+      o.refazerRotulos();
     };
     w.onmessage = (ev: MessageEvent<DoTrabalhador>) => {
       const m = ev.data;
@@ -180,8 +195,6 @@ export function montarTela(palco: HTMLElement, o: OpcoesDaTela): Hospedeiro {
     };
     worker = w;
     modo = 'worker';
-    const transferir: Transferable[] = [fora];
-    for (const r of o.recursos?.rotulos.values() ?? []) transferir.push(r.bitmap);
     enviar(
       {
         tipo: 'iniciar',
@@ -193,9 +206,8 @@ export function montarTela(palco: HTMLElement, o: OpcoesDaTela): Hospedeiro {
         reduzido: o.reduzido,
         foto: o.foto,
         medir,
-        recursos: o.recursos,
       },
-      transferir
+      [fora]
     );
     return true;
   }
@@ -212,7 +224,8 @@ export function montarTela(palco: HTMLElement, o: OpcoesDaTela): Hospedeiro {
   function passo(agora: number): void {
     raf = 0;
     if (solto) return;
-    const e = andamento.quadro(agora, duracaoFinal ?? DURACAO_FINAL_PADRAO);
+    const duracao = duracaoFinal ?? DURACAO_FINAL_PADRAO;
+    const e = andamento.quadro(agora, duracao);
     if (cena && !(congelado && desenhou)) {
       try {
         cena.quadro(e);
@@ -222,7 +235,7 @@ export function montarTela(palco: HTMLElement, o: OpcoesDaTela): Hospedeiro {
         semCena(err);
       }
     }
-    if (!congelado) o.aoQuadro(e);
+    if (!congelado) o.aoQuadro(e, terminouEm === null ? Infinity : (1 - e.fim) * duracao);
     if (e.fim >= 1) {
       // no worker o fim é dele; daqui só se ele sumiu ou atrasou demais
       if (modo !== 'worker') acabar();
@@ -251,13 +264,29 @@ export function montarTela(palco: HTMLElement, o: OpcoesDaTela): Hospedeiro {
   }
 
   return {
+    rotulos(novos) {
+      if (solto) {
+        for (const r of novos.values()) r.bitmap.close();
+        return;
+      }
+      if (worker) {
+        enviar({ tipo: 'rotulos', rotulos: new Map(novos) }, [...novos.values()].map((r) => r.bitmap));
+        return;
+      }
+      for (const [id, r] of novos) {
+        rotulos.get(id)?.bitmap.close();
+        rotulos.set(id, r);
+      }
+      if (o.foto) agendar();
+    },
     etapa(fatia) {
       andamento.etapa(fatia, performance.now());
       enviar({ tipo: 'etapa', fatia });
       if (o.foto) agendar();
     },
     terminou() {
-      andamento.terminou(performance.now());
+      terminouEm ??= performance.now();
+      andamento.terminou(terminouEm);
       enviar({ tipo: 'terminou' });
     },
     tamanho(largura, altura, dpr) {
@@ -294,6 +323,8 @@ export function montarTela(palco: HTMLElement, o: OpcoesDaTela): Hospedeiro {
         console.error(err);
       }
       cena = null;
+      for (const r of rotulos.values()) r.bitmap.close();
+      rotulos.clear();
       canvas?.remove();
       canvas = null;
     },

@@ -288,14 +288,15 @@ export default function App() {
   });
   const [loadStage, setLoadStage] = useState<LoadStage>(LOAD_STAGES[0]);
   /**
-   * A TELA DE CARGA: `no-ar` do boot até o fim do desfecho (a abertura
-   * fica escondida atrás dela), `saindo` enquanto a abertura entra por
-   * cima do quadro final, `revelando` com a abertura inteira e o motor do
-   * app voltando a desenhar por baixo enquanto a cena apaga, `fora`
+   * A TELA DE CARGA: `no-ar` do boot até perto do fim do desfecho (a
+   * abertura fica escondida atrás dela e o motor parado), `aquecendo` no
+   * último segundo do desfecho e na espera dele pintar (o motor volta a
+   * desenhar, por baixo da cena; a abertura segue escondida), `saindo`
+   * na fusão em que a cena apaga e a abertura entra junto, `fora`
    * desmontada. Quem anda os passos é ela (`aoSair`), porque é ela quem
-   * sabe quando o desfecho que está desenhando acabou.
+   * sabe onde está o desfecho que está desenhando (`TelaDeCarga.tsx`).
    */
-  const [carga, setCarga] = useState<'no-ar' | 'saindo' | 'revelando' | 'fora'>('no-ar');
+  const [carga, setCarga] = useState<'no-ar' | 'aquecendo' | 'saindo' | 'fora'>('no-ar');
   /**
    * `?cart=off` — a cartografia procedural POR ESCOLHA. Lida uma vez,
    * como o tier do boot: é porta de alocação e não troca ao vivo. Quem a
@@ -991,7 +992,7 @@ export default function App() {
   const bareMode = shotParam === '2';
   // a abertura não entra enquanto a tela de carga a cobre (em ?shot=2 ela
   // nem monta, e não cobre nada)
-  const cargaCobre = carga === 'no-ar' && !bareMode;
+  const cargaCobre = (carga === 'no-ar' || carga === 'aquecendo') && !bareMode;
 
   /**
    * O MOTOR ESPERA O DESFECHO DA TELA DE CARGA. O Director liga o motor
@@ -999,13 +1000,14 @@ export default function App() {
    * a tela inteira coberta: os dois disputando a GPU derrubavam a cena
    * de 60 para ~42 quadros/s justo no nascer do Sol, e a thread principal
    * para ~24 (medido em 07/10, `capturas/carregamento/app/fluidez/`).
-   * Parado enquanto ela cobre, o desfecho fica a 60 e a abertura entra
-   * com a thread livre; o motor volta com a abertura inteira, e a cena
-   * só apaga por baixo dela depois de ele pintar (`TelaDeCarga`). Na foto
-   * não há desfecho; na falha ele não volta (quem decide é o caminho da
-   * falha). No commit, antes de o motor pintar o 1º quadro da fase nova.
+   * Parado enquanto ela cobre, o desfecho fica a 60; o motor volta no
+   * último segundo dele (`aquecendo`), por baixo da cena, para já estar
+   * pintando o Sol quando a cena se dissolver nele (`TelaDeCarga`). Na
+   * foto não há desfecho; na falha ele não volta (quem decide é o caminho
+   * da falha). No commit, antes de o motor pintar o 1º quadro da fase
+   * nova — e antes da contagem da tela de carga, que é efeito passivo.
    */
-  const motorEspera = (carga === 'no-ar' || carga === 'saindo') && !bareMode;
+  const motorEspera = carga === 'no-ar' && !bareMode;
   const motorEsperando = useRef(false);
   useLayoutEffect(() => {
     const motor = directorRef.current?.engine;
@@ -1026,7 +1028,7 @@ export default function App() {
    * dela, posta na primeira pergunta, sinaliza quando tudo o que veio
    * antes acabou. A thread principal não vê isso sozinha: o 1º quadro do
    * motor leva 0,4–1 s NA GPU com ela livre (medido em 07/10), e a tela
-   * de carga espera esta resposta antes de apagar.
+   * de carga espera esta resposta antes de se dissolver no Sol.
    */
   const cercaDoMotor = useRef<WebGLSync | null>(null);
   const motorPronto = useCallback(() => {
@@ -1477,8 +1479,9 @@ export default function App() {
       )}
 
       {/* tela de título / fim — montada desde o primeiro frame; no boot
-          ela só aparece quando o desfecho da tela de carga acaba, e entra
-          POR CIMA do quadro final dela */}
+          ela só aparece quando o desfecho da tela de carga acaba e o motor
+          já pinta o Sol, e entra POR CIMA, na mesma fusão em que o quadro
+          final da carga se dissolve no Sol */}
       <TitleVeil
         visible={hud.veuDeTitulo && !cargaCobre}
         mode={phase === 'end' ? 'end' : 'intro'}

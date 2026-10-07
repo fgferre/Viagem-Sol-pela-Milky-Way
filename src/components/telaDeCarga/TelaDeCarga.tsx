@@ -1,20 +1,22 @@
 // ============================================================
 // A TELA DE CARREGAMENTO — uma cena do rodízio por visita, animando
 // fora da thread principal (`hospedeiro.ts`), com o título, a frase da
-// etapa e a porcentagem em HTML por cima. Quando a carga acaba a cena
-// toca o desfecho; no fim dele a tela de abertura entra POR CIMA do
-// quadro final (o App libera o véu de título em `aoSair('saindo')`), o
-// motor do app volta a desenhar por baixo dela (`'revelando'`), e só
-// então a cena apaga e a camada desmonta (`'fora'`).
+// etapa e o andamento (porcentagem, ou o contador de estrelas do céu) em
+// HTML por cima, cada tela no seu lugar (05-loading.css). Os rótulos que
+// a cena desenha no quadro saem daqui, rasterizados (`rotulos.ts`).
+// Quando a carga acaba a cena toca o desfecho, e o quadro final dela se
+// dissolve direto no Sol do app com a abertura chegando na mesma fusão
+// (a passagem, abaixo).
 // ============================================================
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { t } from '../../lib/idioma';
+import { assinarIdioma, idiomaAtual, t } from '../../lib/idioma';
 import { useIdioma } from '../../hooks/useIdioma';
 import { LOAD_STAGES } from '../../three/director';
 import type { LoadStage, LoadStageId } from '../../three/director';
-import type { EstadoDaCena, IdDaTela } from './cena';
+import { RETRATO_ABAIXO_DE, type EstadoDaCena, type IdDaTela } from './cena';
 import type { FatiaDaCarga } from './andamento';
 import { montarTela, type Hospedeiro } from './hospedeiro';
+import { chaveDosRotulos, rasterizarRotulos } from './rotulos';
 import { escolherTela } from './rodizio';
 
 /**
@@ -50,22 +52,71 @@ function fatiaDa(etapa: LoadStage): FatiaDaCarga {
 }
 
 /**
- * A CENA SÓ APAGA COM O MOTOR DO APP JÁ PINTANDO. Ele volta a desenhar
- * quando a abertura termina de entrar (App.tsx): o 1º quadro leva
- * 0,4–1 s na GPU (compila e sobe tudo) sem a thread principal perceber e
- * sai PRETO, e por ~1 s os quadros do retrato do Sol pesam (medido em
- * 07/10). Daí, em ordem: a GPU terminou os primeiros quadros
- * (`motorPronto`, do App) e depois uma sequência de quadros lisos da
- * página (os mesmos rAF do motor), com um teto para não prender a camada
- * num aparelho que nunca chegue lá.
+ * A PASSAGEM PARA A ABERTURA (pedido dele: o quadro final da cena se
+ * dissolve DIRETO no Sol de verdade, com a abertura chegando na mesma
+ * fusão — sem fundo morto entre os dois, sem o Sol pipocando depois).
+ * Em ordem:
+ *  1. a carga acaba e o desfecho toca com o motor do app PARADO (App.tsx,
+ *     `motorEspera`): os dois disputando a GPU derrubavam a cena a ~42
+ *     quadros/s;
+ *  2. a `AQUECER_ANTES_DO_FIM_S` do fim do desfecho o motor volta a
+ *     desenhar, escondido POR BAIXO da cena (`aoSair('aquecendo')`): o 1º
+ *     quadro dele leva 0,4–1 s na GPU e sai preto (medido em 07/10), e
+ *     isso acontece onde ninguém vê;
+ *  3. nos últimos `--tc-titulo-sai` do desfecho o texto da carga sai: o
+ *     título da abertura fica noutra altura, e os dois juntos liam como um
+ *     título escrito duas vezes;
+ *  4. no fim do desfecho a cena para no quadro final (`.tc-parada`, a 99 %
+ *     de opacidade — ver 05-loading.css) e espera o motor pintar DE
+ *     VERDADE: a cerca da GPU (`motorPronto`, do App) e uma sequência de
+ *     quadros sem tranco da página, alguns deles já com a cena parada, com
+ *     um teto para não prender a camada num aparelho que nunca chegue lá;
+ *  5. UMA fusão de `--tc-cruzar` (05-loading.css): a cena apaga enquanto a
+ *     abertura entra por cima (`aoSair('saindo')`), e no fim dela a camada
+ *     desmonta (`aoSair('fora')`).
+ * Do fim da carga à abertura inteira: 2,8 s de desfecho + a espera do
+ * motor (quase sempre nenhuma) + a fusão.
  */
-const QUADROS_LISOS_PARA_REVELAR = 10;
-const QUADRO_LISO_MS = 50;
+const AQUECER_ANTES_DO_FIM_S = 1;
+const QUADROS_LISOS_PARA_REVELAR = 6;
+/** dos quadros lisos, quantos com a cena já parada (o compositor desenhando o motor) */
+const QUADROS_LISOS_COM_A_CENA_PARADA = 4;
+/**
+ * um quadro "sem tranco": os do aquecimento travam a página por 0,3–0,9 s;
+ * o retrato do Sol com a GPU disputada anda a 20–30 quadros/s (até 50 ms),
+ * e isso não é tranco (medido em 07/10, `capturas/carregamento/app2/`)
+ */
+const QUADRO_LISO_MS = 70;
 const TETO_DO_MOTOR_MS = 3000;
 /** o teto do desmonte, se o `transitionend` não vier (aba de fundo, transição zerada) */
 const TETO_DA_SAIDA_MS = 2500;
 
 const dprAtual = () => Math.min(window.devicePixelRatio || 1, 2);
+
+/** as estrelas do catálogo HYG, que o contador do céu conta (`cenas/ceu.ts`, item 2) */
+const ESTRELAS_DO_CATALOGO = 328_749;
+const milhar = (n: number) => n.toLocaleString(idiomaAtual() === 'en' ? 'en-US' : 'pt-BR');
+
+/**
+ * O ANDAMENTO EM TEXTO, como o protótipo de cada tela o escrevia (o
+ * cabeçalho de cada cena): a porcentagem, ou no céu o contador de estrelas.
+ */
+function textoDoAndamento(tela: IdDaTela | null, suave: number): string {
+  const s = Math.min(1, Math.max(0, suave));
+  switch (tela) {
+    case 'ceu':
+      return t('hud.carga.contador', {
+        n: milhar(Math.round(ESTRELAS_DO_CATALOGO * Math.pow(s, 1.3))),
+        total: milhar(ESTRELAS_DO_CATALOGO),
+      });
+    case 'bercario':
+      return `${Math.floor(s * 100)} %`;
+    case 'galaxia':
+      return `${Math.min(100, Math.floor(s * 100 + 1e-6))}%`;
+    default:
+      return `${Math.round(s * 100)}%`;
+  }
+}
 
 export function TelaDeCarga({
   etapa,
@@ -96,10 +147,11 @@ export function TelaDeCarga({
   reduzido: boolean;
   onRetry: () => void;
   /**
-   * `saindo`: a abertura pode entrar por cima; `revelando`: ela entrou, e
-   * o motor do app pode voltar a desenhar; `fora`: pode desmontar
+   * `aquecendo`: o motor do app pode voltar a desenhar, por baixo da cena;
+   * `saindo`: a abertura entra por cima enquanto a cena apaga; `fora`:
+   * pode desmontar
    */
-  aoSair: (fase: 'saindo' | 'revelando' | 'fora') => void;
+  aoSair: (fase: 'aquecendo' | 'saindo' | 'fora') => void;
   /** a GPU do motor do app já terminou os primeiros quadros dele */
   motorPronto: () => boolean;
 }) {
@@ -119,9 +171,11 @@ export function TelaDeCarga({
   const hostRef = useRef<Hospedeiro | null>(null);
   const reduzidoRef = useRef(reduzido);
   const [pronta, setPronta] = useState(false);
+  const [aquecendo, setAquecendo] = useState(false);
+  const [fechando, setFechando] = useState(false);
   const [acabou, setAcabou] = useState(false);
-  const [revelando, setRevelando] = useState(false);
-  const saindo = acabou && estado === 'done';
+  const acabouRef = useRef(false);
+  const [saindo, setSaindo] = useState(false);
 
   // A FRASE DA ETAPA TROCA EM CRUZ: duas vagas no mesmo lugar, a nova
   // entra enquanto a velha sai (o CSS faz o fade pela classe)
@@ -142,19 +196,55 @@ export function TelaDeCarga({
   useLayoutEffect(() => {
     const palco = palcoRef.current;
     if (!comCena || !tela || !palco) return undefined;
-    let pct = -1;
+    const raiz = raizRef.current;
+    // a saída do texto, em s antes do fim do desfecho (o mesmo número do CSS)
+    const tituloSai = raiz ? parseFloat(getComputedStyle(raiz).getPropertyValue('--tc-titulo-sai')) || 0 : 0;
+    let andamento = '';
     let fim = '';
-    const aoQuadro = (e: EstadoDaCena) => {
-      const p = Math.round(e.suave * 100);
-      if (p !== pct && pctRef.current) {
-        pct = p;
-        pctRef.current.textContent = `${p}%`;
+    let aqueceu = false;
+    let fechou = false;
+    const aoQuadro = (e: EstadoDaCena, restante: number) => {
+      const texto = textoDoAndamento(tela, e.suave);
+      if (texto !== andamento && pctRef.current) {
+        andamento = texto;
+        pctRef.current.textContent = texto;
       }
       const f = e.fim.toFixed(3);
       if (f !== fim) {
         fim = f;
         raizRef.current?.style.setProperty('--tc-fim', f);
       }
+      if (!aqueceu && restante <= AQUECER_ANTES_DO_FIM_S) {
+        aqueceu = true;
+        setAquecendo(true);
+        aoSair('aquecendo');
+      }
+      if (!fechou && restante <= tituloSai) {
+        fechou = true;
+        setFechando(true);
+      }
+    };
+
+    // OS RÓTULOS DA CENA: rasterizados aqui, e de novo quando a língua, o
+    // `dpr` ou (no céu) o degrau do retrato mudam. A cena não espera por
+    // eles: eles só aparecem perto do meio da carga, e chegam antes.
+    let chave: string | null = null;
+    let pedido = 0;
+    const atualizarRotulos = (refazer = false) => {
+      const largura = window.innerWidth;
+      const altura = window.innerHeight;
+      const dpr = dprAtual();
+      const nova = chaveDosRotulos(tela, largura, altura, dpr);
+      if (nova === null || (nova === chave && !refazer)) return;
+      chave = nova;
+      const meu = ++pedido;
+      rasterizarRotulos(tela, largura, altura, dpr).then(
+        (feitos) => {
+          if (meu === pedido) host.rotulos(feitos);
+          else for (const r of feitos.values()) r.bitmap.close();
+        },
+        (err: unknown) => console.error(err)
+      );
     };
     const host = montarTela(palco, {
       id: tela,
@@ -165,14 +255,25 @@ export function TelaDeCarga({
       dpr: dprAtual(),
       aoQuadro,
       aoPronto: () => setPronta(true),
-      aoAcabar: () => setAcabou(true),
+      aoAcabar: () => {
+        acabouRef.current = true;
+        setAcabou(true);
+      },
+      refazerRotulos: () => atualizarRotulos(true),
     });
     hostRef.current = host;
+    atualizarRotulos();
+    const aoRedimensionar = () => atualizarRotulos();
+    window.addEventListener('resize', aoRedimensionar);
+    const largarIdioma = assinarIdioma(() => atualizarRotulos());
     return () => {
+      pedido++;
+      window.removeEventListener('resize', aoRedimensionar);
+      largarIdioma();
       host.soltar();
       hostRef.current = null;
     };
-  }, [comCena, tela, foto]);
+  }, [comCena, tela, foto, aoSair]);
 
   useLayoutEffect(() => {
     hostRef.current?.etapa(fatiaDa(etapa));
@@ -194,44 +295,45 @@ export function TelaDeCarga({
     hostRef.current?.terminou();
   }, [estado, comCena, foto, aoSair]);
 
-  // A SAÍDA, em tempos. A abertura entra por cima do quadro final
-  // (`--tc-abertura`, 05-loading.css) com a thread livre; inteira, ela
-  // libera o motor do app, que volta a desenhar por baixo — e a cena
-  // para no quadro dourado (sob a abertura ele já quase não se move) para
-  // deixar a GPU ao motor; com o motor pintando, a camada apaga, e o fim
-  // dessa transição é o sinal de desmontar.
+  // A PASSAGEM, passo 4: no fim do desfecho a cena para no quadro final
+  // (e deixa a GPU ao motor, que já desenha por baixo)
+  useLayoutEffect(() => {
+    if (acabou && estado === 'done') hostRef.current?.congelar();
+  }, [acabou, estado]);
+
+  // passos 4 e 5: com o desfecho no fim e o motor pintando de verdade, a
+  // fusão. A contagem nasce no efeito do `aquecendo`, que roda DEPOIS do
+  // `motor.start()` do App no mesmo commit: o 1º rAF dela vem depois do
+  // 1º quadro do motor, e a cerca posta ali cobre esse quadro.
   useEffect(() => {
-    const raiz = raizRef.current;
-    if (!saindo || !raiz) return undefined;
-    aoSair('saindo');
-    const abertura = (parseFloat(getComputedStyle(raiz).getPropertyValue('--tc-abertura')) || 0) * 1000;
+    if (!aquecendo || estado !== 'done') return undefined;
+    const desde = performance.now();
     let raf = 0;
     let gpu = false;
     let lisos = 0;
-    let inicio = 0;
-    let anterior = 0;
+    let lisosParada = 0;
+    let anterior = desde;
     const contar = (agora: number) => {
       gpu ||= motorPronto();
-      lisos = gpu && agora - anterior < QUADRO_LISO_MS ? lisos + 1 : 0;
+      const liso = gpu && agora - anterior < QUADRO_LISO_MS;
+      lisos = liso ? lisos + 1 : 0;
+      lisosParada = liso && acabouRef.current ? lisosParada + 1 : 0;
       anterior = agora;
-      if (lisos >= QUADROS_LISOS_PARA_REVELAR || agora - inicio > TETO_DO_MOTOR_MS) setRevelando(true);
-      else raf = requestAnimationFrame(contar);
+      const pintando =
+        (lisos >= QUADROS_LISOS_PARA_REVELAR && lisosParada >= QUADROS_LISOS_COM_A_CENA_PARADA) ||
+        agora - desde > TETO_DO_MOTOR_MS;
+      if (pintando && acabouRef.current) {
+        setSaindo(true);
+        aoSair('saindo');
+      } else raf = requestAnimationFrame(contar);
     };
-    const relogio = window.setTimeout(() => {
-      hostRef.current?.congelar();
-      aoSair('revelando');
-      inicio = anterior = performance.now();
-      raf = requestAnimationFrame(contar);
-    }, abertura);
-    return () => {
-      window.clearTimeout(relogio);
-      cancelAnimationFrame(raf);
-    };
-  }, [saindo, aoSair, motorPronto]);
+    raf = requestAnimationFrame(contar);
+    return () => cancelAnimationFrame(raf);
+  }, [aquecendo, estado, aoSair, motorPronto]);
 
   useEffect(() => {
     const raiz = raizRef.current;
-    if (!revelando || !raiz) return undefined;
+    if (!saindo || !raiz) return undefined;
     let saiu = false;
     const sair = () => {
       if (saiu) return;
@@ -247,21 +349,23 @@ export function TelaDeCarga({
       raiz.removeEventListener('transitionend', aoFimDaTransicao);
       window.clearTimeout(teto);
     };
-  }, [revelando, aoSair]);
+  }, [saindo, aoSair]);
 
   // a proporção da janela vai ao CSS (onde cada tela põe o texto) antes
-  // da primeira pintura; o tamanho, à cena
+  // da primeira pintura, com o degrau do retrato da cena; o tamanho, à cena
   useLayoutEffect(() => {
     const medir = () => {
       const largura = window.innerWidth;
       const altura = window.innerHeight;
-      raizRef.current?.style.setProperty('--tc-proporcao', (largura / altura).toFixed(4));
+      const raiz = raizRef.current;
+      raiz?.style.setProperty('--tc-proporcao', (largura / altura).toFixed(4));
+      raiz?.toggleAttribute('data-retrato', tela !== null && largura / altura < RETRATO_ABAIXO_DE[tela]);
       hostRef.current?.tamanho(largura, altura, dprAtual());
     };
     medir();
     window.addEventListener('resize', medir);
     return () => window.removeEventListener('resize', medir);
-  }, []);
+  }, [tela]);
 
   const anuncio = t('hud.etapaAnuncio', {
     i: etapa.index,
@@ -273,8 +377,9 @@ export function TelaDeCarga({
     falhou ? 'tc-falhou' : estado === 'done' ? 'tc-desfecho' : 'tc-carregando',
     emVoo ? 'tc-em-voo' : '',
     pronta ? 'tc-pronta' : '',
-    saindo ? 'tc-saindo' : '',
-    saindo && revelando ? 'tc-revelando' : '',
+    fechando && !falhou ? 'tc-fechando' : '',
+    acabou && estado === 'done' ? 'tc-parada' : '',
+    saindo && !falhou ? 'tc-saindo' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -302,8 +407,14 @@ export function TelaDeCarga({
               <span className={frases.ativa === 'a' ? 'tc-atual' : undefined}>{frases.a}</span>
               <span className={frases.ativa === 'b' ? 'tc-atual' : undefined}>{frases.b}</span>
             </div>
-            <div ref={pctRef} className="tc-pct">
-              0%
+            {tela === 'galaxia' && (
+              <span className="tc-sep" aria-hidden="true">
+                ·
+              </span>
+            )}
+            {/* o céu conta estrelas no lugar da porcentagem */}
+            <div ref={pctRef} className={tela === 'ceu' ? 'tc-contador' : 'tc-pct'}>
+              {textoDoAndamento(tela, 0)}
             </div>
           </div>
         </div>

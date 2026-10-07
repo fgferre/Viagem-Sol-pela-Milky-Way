@@ -9,7 +9,7 @@
 // (sem `/// <reference lib="webworker" />`, como `cargaEmWorker.ts`: o
 // tsconfig do app carrega a lib DOM para todo src/, e as assinaturas DOM
 // de `onmessage`/`postMessage` cobrem o que este arquivo usa.)
-import type { Cena, IdDaTela, RecursosDaCena } from './cena';
+import type { Cena, IdDaTela, RotuloPronto } from './cena';
 import { criarAndamento, type Andamento, type FatiaDaCarga } from './andamento';
 import { carregarCena } from './rodizio';
 
@@ -25,8 +25,9 @@ export type ParaOTrabalhador =
       foto: boolean;
       /** guardar o instante de cada quadro (só no servidor de dev, para a prova de fluidez) */
       medir: boolean;
-      recursos?: RecursosDaCena;
     }
+  /** rótulos novos (ou refeitos) para o mapa da cena; os bitmaps vêm transferidos */
+  | { tipo: 'rotulos'; rotulos: Map<string, RotuloPronto> }
   | { tipo: 'etapa'; fatia: FatiaDaCarga }
   | { tipo: 'terminou' }
   | { tipo: 'tamanho'; largura: number; altura: number; dpr: number }
@@ -62,6 +63,8 @@ let avisouFim = false;
 let pedido = false;
 let morto = false;
 const tempos: number[] = [];
+/** o mapa vivo que a cena lê a cada quadro (`cena.ts`, `RecursosDaCena`) */
+const rotulos = new Map<string, RotuloPronto>();
 
 function agendar(): void {
   if (pedido || morto) return;
@@ -115,7 +118,7 @@ async function iniciar(m: Extract<ParaOTrabalhador, { tipo: 'iniciar' }>): Promi
     const definicao = await carregarCena(m.id);
     if (morto) return;
     duracaoFinal = definicao.duracaoFinal;
-    cena = definicao.criar(m.canvas, m.recursos);
+    cena = definicao.criar(m.canvas, { rotulos });
     cena.redimensionar(tamanho.largura, tamanho.altura, tamanho.dpr);
   } catch (err) {
     falhar(err);
@@ -131,6 +134,12 @@ onmessage = (ev: MessageEvent<ParaOTrabalhador>) => {
     case 'iniciar':
       void iniciar(m);
       return;
+    case 'rotulos':
+      for (const [id, r] of m.rotulos) {
+        rotulos.get(id)?.bitmap.close();
+        rotulos.set(id, r);
+      }
+      break;
     case 'etapa':
       andamento?.etapa(m.fatia, agora);
       break;
@@ -154,6 +163,8 @@ onmessage = (ev: MessageEvent<ParaOTrabalhador>) => {
       morto = true;
       cena?.soltar();
       cena = null;
+      for (const r of rotulos.values()) r.bitmap.close();
+      rotulos.clear();
       close();
       return;
   }

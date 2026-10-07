@@ -33,6 +33,14 @@ export const PT = {
   'hud.kicker': 'HYG · VIA LÁCTEA · TEMPO REAL',
   'hud.etapaAnuncio': 'Etapa {i} de {total} — {rotulo}',
   'hud.progressoCarregamento': 'Progresso do carregamento',
+  // o que as cenas da tela de carga desenham (`components/telaDeCarga/`):
+  // os nomes das constelações do céu, a pílula do Sol na galáxia e o
+  // contador de estrelas do céu (os números chegam já no milhar da língua)
+  'hud.carga.cruzeiro': 'Cruzeiro do Sul',
+  'hud.carga.escorpiao': 'Escorpião',
+  'hud.carga.sagitario': 'Sagitário',
+  'hud.carga.voceEstaAqui': 'o Sol · você está aqui',
+  'hud.carga.contador': '{n} de {total} estrelas',
   'hud.falhaEmVoo': 'FALHA DURANTE A VIAGEM',
   'hud.falhaNoBoot': 'FALHA DE INICIALIZAÇÃO',
   'hud.falhaEmVooTitulo': 'A viagem parou',

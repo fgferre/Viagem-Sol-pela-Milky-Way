@@ -594,14 +594,14 @@ export const bercario: DefinicaoDaCena = {
     const vaoVazio = obter(gl.createVertexArray(), 'vao');
 
     // --- ruído 3D assado uma vez na GPU, com mipmaps (sem cintilação ao longe)
-    const ruido = obter(gl.createTexture(), 'textura do ruído');
+    const ruido = obter(gl.createTexture(), 'textura do ruido');
     gl.bindTexture(gl.TEXTURE_3D, ruido);
     gl.texStorage3D(gl.TEXTURE_3D, 7, gl.RGBA8, 64, 64, 64);
     for (const p of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R]) gl.texParameteri(gl.TEXTURE_3D, p, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
     gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     {
-      const fb = obter(gl.createFramebuffer(), 'framebuffer do ruído');
+      const fb = obter(gl.createFramebuffer(), 'framebuffer do ruido');
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
       gl.viewport(0, 0, 64, 64);
       gl.useProgram(pRuido.p);
@@ -649,7 +649,7 @@ export const bercario: DefinicaoDaCena = {
     // --- estrelas que nascem (quadros instanciados) + a estrela dourada do fim
     const astroVao = obter(gl.createVertexArray(), 'vao das estrelas');
     const quadBuf = obter(gl.createBuffer(), 'buffer do quadro');
-    const instBuf = obter(gl.createBuffer(), 'buffer das instâncias');
+    const instBuf = obter(gl.createBuffer(), 'buffer das instancias');
     const MAXI = NS + 1;
     const inst = new Float32Array(MAXI * 12);
     gl.bindVertexArray(astroVao);

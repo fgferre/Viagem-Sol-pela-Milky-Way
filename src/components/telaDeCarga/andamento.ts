@@ -20,6 +20,17 @@ export interface FatiaDaCarga {
 /** a mola do `suave`: segue o progresso cru sem degrau (a de moldura.html) */
 const MOLA_S = 0.35;
 /**
+ * O ÁPICE ANTES DO DESFECHO: numa carga rápida o `suave` ainda está em
+ * ~0,83 quando a carga acaba, e o desfecho começava ali — o Sol rompendo o
+ * limbo (95 %) e o "você está aqui" da galáxia (90–97,5 %) não chegavam a
+ * aparecer. Acabada a carga, o `suave` sobe de onde estava até 1 neste
+ * tempo, e só então o desfecho começa. Conta de RELÓGIO, não de quadros:
+ * o worker e a thread principal (que pode estar engasgada ou desacelerada)
+ * chegam ao mesmo início do desfecho, e a passagem para a abertura não
+ * espera por um `suave` que a thread principal ainda não integrou.
+ */
+const APICE_S = 0.5;
+/**
  * DENTRO DE UMA ETAPA o Director não diz quanto falta; o progresso anda
  * sozinho até 90 % da fatia, cada vez mais devagar, e nunca a fatia
  * inteira: quem fecha a etapa é a próxima, ou o fim da carga. Sem isso
@@ -31,7 +42,7 @@ const T_DA_FOTO_POR_PROGRESSO = 14;
 
 export interface Andamento {
   etapa(fatia: FatiaDaCarga, agora: number): void;
-  /** a carga acabou: o progresso vai a 100 % e o desfecho começa */
+  /** a carga acabou: o progresso vai a 100 %, e o desfecho começa `APICE_S` depois */
   terminou(agora: number): void;
   reduzir(sim: boolean): void;
   /** o estado do quadro em `agora` (ms); `duracaoFinal` é a da cena, em s */
@@ -49,6 +60,7 @@ export function criarAndamento(inicio: number, foto: boolean): Andamento {
   let terminouEm: number | null = null;
   let reduzido = false;
   let suave = 0;
+  let suaveNoFimDaCarga = 0;
   let anterior = inicio;
 
   return {
@@ -58,7 +70,9 @@ export function criarAndamento(inicio: number, foto: boolean): Andamento {
       desde = agora;
     },
     terminou(agora) {
-      terminouEm ??= agora;
+      if (terminouEm !== null) return;
+      terminouEm = agora;
+      suaveNoFimDaCarga = suave;
     },
     reduzir(sim) {
       reduzido = sim;
@@ -78,12 +92,15 @@ export function criarAndamento(inicio: number, foto: boolean): Andamento {
             (fatia.teto - fatia.piso) *
               ALCANCE_NA_ETAPA *
               (1 - Math.exp(-naEtapa / Math.max(0.05, fatia.segundos / 2)));
-      suave += (progresso - suave) * (1 - Math.exp(-dt / MOLA_S));
-      const fim =
-        terminouEm === null
-          ? 0
-          : Math.min(1, Math.max(0, (agora - terminouEm) / 1000 / duracaoFinal));
-      if (fim >= 1) suave = 1;
+      let fim = 0;
+      if (terminouEm === null) {
+        suave += (progresso - suave) * (1 - Math.exp(-dt / MOLA_S));
+      } else {
+        const desdeOFim = Math.max(0, agora - terminouEm) / 1000;
+        const k = Math.min(1, desdeOFim / APICE_S);
+        suave = suaveNoFimDaCarga + (1 - suaveNoFimDaCarga) * k * k * (3 - 2 * k);
+        fim = Math.min(1, Math.max(0, (desdeOFim - APICE_S) / duracaoFinal));
+      }
       return { t: (agora - inicio) / 1000, dt, progresso, suave, fim, reduzido };
     },
   };
