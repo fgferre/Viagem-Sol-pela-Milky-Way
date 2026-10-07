@@ -119,6 +119,19 @@ reia`); ferramentas e candidatos em `capturas/reia/`; fontes em `.cache/reia/` c
 - **Decisão dele (07/10, pela prancha `r2-prancha.jpg`):** *"vamos de A"* — o candidato de Reia é o A (1024×512,
   r2b: height e30720c3…, normal 7cf17052…, parâmetros 2dab3e57…).
 
+- **F (07/10, tarde; commits c81231a5 e 9054fdd7):** entradas `rhea/height`/`rhea/normal` pelo gerador (TIFF e mapa
+  de cor pinados por sha256; portão do conjunto com os números; os dois canais gravados na mesma corrida), prova
+  `ferramentas/prova-cadeia-reia.mjs` "TUDO BATE" (recusa com qualquer hash trocado); confissão pt/en (medido acima de
+  ~30 km; crateras menores onde a foto as mostra, com perfis estimados; escarpas finas só na cor), `ORIGENS` com o DOI,
+  a licença "código do autor" que só Reia usava saiu. A cadeia rodou no painel de terminal dele a pedido explícito
+  (*"faça por favor"*; o classificador do app recusou "próximo passo" como autorização): texto do terminal lido na
+  íntegra — gerou 4.934 detectadas, 1.879 completadas sobre o DTM, faixa −7..6, 0 saturados, hashes do conjunto
+  iguais ao A, "gravo (os dois canais juntos)"; escada de 66 fontes (cada cópia a partir do original), webp 135
+  mantidos/21 descartados, manifesto 291 variantes (34 defeitos confessados, agora com `rhea/height` e `rhea/normal`),
+  `data:verify` OK, `RODADA-REIA-OK`. Conferido aqui: altura e normal publicadas IGUAIS pixel a pixel ao candidato A;
+  no `public/` só mudaram os arquivos de Reia e o manifesto; `ficha`, `verify-assets`, `rochoso`, `ciencia`: 189/189.
+  Pendente: fotos finais sem interceptação, `npm run done`, bastão, merge em linha reta e envio com a palavra dele.
+
 ## Fora do escopo
 Cor de Reia (o mosaico de Schenk fica); as outras luas (Dione, Tétis, Mimas, Encélado já têm modelo medido no app);
 o tempo de luz do subsolar; publicar.
