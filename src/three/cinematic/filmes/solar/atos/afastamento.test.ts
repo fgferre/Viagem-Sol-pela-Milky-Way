@@ -10,6 +10,8 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { IAU_ORIENTATIONS } from '../../../../../lib/atlas/iauOrientation';
 import { baseCorpoEquatorial } from '../../../../../lib/atlas/orientacao';
+import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../../../lib/atlas/frameGalactico';
+import { posicaoKepler } from '../../../../../lib/atlas/kepler';
 
 // journey puxa world/galaxy, que lê window.location.search no topo do módulo
 (globalThis as unknown as { window: { location: { search: string } } }).window = {
@@ -70,6 +72,17 @@ const noQuadro = (a: Amostra, p: THREE.Vector3) => {
 /** o raio aparente de um corpo, em graus */
 const raioAparente = (id: string, pos: THREE.Vector3) =>
   graus(Math.asin(Math.min(1, raioPc(id) / pos.distanceTo(filme.pinos.get(id)!))));
+/** um disco de `raio` pc em `p` no quadro, por eixo, em graus: `perto` é
+ *  a borda dele mais perto do centro além da borda do quadro (> 0: fora
+ *  do quadro); `longe`, a mais longe (< 0: inteiro no quadro) */
+const bordas = (a: Amostra, p: THREE.Vector3, raio: number) => {
+  const { frente, cima, direita, meiaAltura } = quadro(a);
+  const ate = p.clone().sub(a.pos);
+  const r = graus(Math.asin(Math.min(1, raio / ate.length())));
+  const h = Math.abs(graus(Math.atan2(ate.dot(direita), ate.dot(frente)))) - graus(Math.atan(meiaAltura * 16 / 9));
+  const v = Math.abs(graus(Math.atan2(ate.dot(cima), ate.dot(frente)))) - graus(Math.atan(meiaAltura));
+  return { perto: Math.max(h, v) - r, longe: Math.max(h, v) + r };
+};
 /** o canto do quadro de 16:9, em graus do centro, para a lente (vertical) dada */
 const meiaDiagonal = (fov: number) =>
   graus(Math.atan(Math.tan(THREE.MathUtils.degToRad(fov / 2)) * Math.hypot(1, 16 / 9)));
@@ -169,6 +182,55 @@ describe('Urano (cena 20)', () => {
   });
 });
 
+describe('o salto de Urano a Netuno', () => {
+  // A chegada a Netuno sai de 30 raios de Urano e anda 2,5 milhões de km no
+  // primeiro quadro: olhando Urano, ele encolhia de 26 para 8 px num quadro e
+  // as estrelas giravam 123°. A receita do salto de Tritão: o fim da
+  // passagem vira o olhar para Netuno, o rumo da viagem, e a lente fecha de
+  // 50° para 40° (a 43° de Netuno, Urano ficaria no canto do quadro de 50°);
+  // o giro tira do quadro Urano, o anel ε e as cinco luas maiores antes da
+  // junta, e o olhar atravessa a junta sem salto.
+  const { i, inicio: junta, fim: fimDaChegada } = plano('netunoChegada');
+  const passagem = filme.shots[i - 1];
+  const c = passagem.captions!.find((x) => x.text.startsWith('Urano'))!;
+  const t0 = plano('uranoPassagem').inicio + c.at * passagem.dur;
+  const t1 = t0 + c.dur!;
+  const anel = ANEIS_CITADOS.uranus.rExt * raioPc('uranus');
+  /** as luas maiores de Urano no céu do ato (JD_E), onde a órbita de Kepler as põe */
+  const luas = ['miranda', 'ariel', 'umbriel', 'titania', 'oberon'].map((id) => {
+    const p = posicaoKepler(id, JD_E_SOLAR_TDB);
+    return URANO.clone().add(new THREE.Vector3(...eclipticaParaEquatorial([p.x, p.y, p.z])).multiplyScalar(AU_PARA_PC));
+  });
+  /** o que de Urano chega mais perto do quadro: o anel ε ou uma das luas */
+  const urano = (a: Amostra) => Math.min(bordas(a, URANO, anel).perto, ...luas.map((p) => bordas(a, p, 0).perto));
+
+  it('enquanto a legenda de Urano está no ar, ele fica perto do centro: o giro mal começou quando ela sai, longe do canto dela', () => {
+    // a legenda fica embaixo à esquerda, e o giro leva Urano para lá
+    let maior = 0;
+    for (let t = t0; t <= t1; t += 1 / 30) {
+      const a = journey.at(t);
+      maior = Math.max(maior, graus(a.look.clone().sub(a.pos).angleTo(URANO.clone().sub(a.pos))));
+    }
+    expect(maior).toBeLessThan(10); // medido 6,0°, quando ela sai
+  });
+
+  it('na junta, Urano, o anel e as luas já saíram do quadro pelo giro e pela lente e não voltam até o fim da chegada; o olhar não salta e quase não anda', () => {
+    expect(urano(journey.at(junta))).toBeGreaterThan(2); // medido 3,0° (o anel), na lente de 40°
+    let menor = Infinity;
+    for (let t = junta - 0.3; t <= fimDaChegada; t += 1 / 30) menor = Math.min(menor, urano(journey.at(t)));
+    expect(menor).toBeGreaterThan(1); // medido 1,6°, o anel 0,3 s antes da junta
+    // o olhar dos dois lados da junta: o mesmo, e quase parado — menos de 0,1°
+    // por quadro de 1/30 s nos 0,2 s de cada lado
+    const olhar = (t: number) => { const a = journey.at(t); return a.look.sub(a.pos); };
+    expect(graus(olhar(junta - 1e-6).angleTo(olhar(junta)))).toBeLessThan(1e-4);
+    let maior = 0;
+    for (let t = junta - 0.2; t < junta + 0.2; t += 1 / 30) {
+      maior = Math.max(maior, graus(olhar(t).angleTo(olhar(t + 1 / 30))));
+    }
+    expect(maior).toBeLessThan(0.1); // medido 0,053°, depois da junta
+  });
+});
+
 describe('Netuno e Tritão (cena 21)', () => {
   const k = joelho(TRITAO, ['netunoChegada', 'tritaoChegada', 'tritaoRaspao']);
   const r = raioPc('triton');
@@ -199,14 +261,17 @@ describe('Netuno e Tritão (cena 21)', () => {
     expect(Math.abs(filme.apoios.instanteDeQA('tritao') - k.t)).toBeLessThan(0.6);
   });
 
-  it('Netuno fica perto do eixo da vista em toda a passagem (até 16°): a lente retilínea não o estica em oval (menos de 5 %)', () => {
+  it('Netuno fica perto do eixo da vista em toda a passagem, até o olhar virar para Plutão (até 16°): a lente retilínea não o estica em oval (menos de 5 %)', () => {
     // um disco pequeno a θ do eixo sai esticado na direção radial por 1/cos θ:
-    // a 16°, +4,0 %; na versão com Tritão no centro Netuno ia a 29° (+14 %)
+    // a 16°, +4,0 %; na versão com Tritão no centro Netuno ia a 29° (+14 %).
+    // No giro para Plutão ele atravessa a borda em menos de meio segundo.
     const { inicio, fim } = plano('tritaoRaspao');
     let maior = 0;
     for (let t = inicio; t < fim; t += 1 / 30) {
       const a = journey.at(t);
-      maior = Math.max(maior, graus(a.look.clone().sub(a.pos).angleTo(NETUNO.clone().sub(a.pos))));
+      const olhar = a.look.clone().sub(a.pos);
+      if (t > k.t && graus(olhar.angleTo(OLHAR_EM_TRITAO)) > 0.01) break;
+      maior = Math.max(maior, graus(olhar.angleTo(NETUNO.clone().sub(a.pos))));
     }
     expect(maior).toBeLessThan(16); // medido 15,0°
     expect(1 / Math.cos(THREE.MathUtils.degToRad(maior)) - 1).toBeLessThan(0.05);
@@ -251,19 +316,63 @@ describe('Netuno e Tritão (cena 21)', () => {
     expect(filme.shots[plano('tritaoRaspao').i].target ?? []).toEqual([]);
   });
 
-  it('a passagem deixa a câmera parada na saída de Tritão, olhando na direção fixa da passagem, com Tritão e Netuno no quadro', () => {
+  it('a passagem deixa a câmera parada na saída de Tritão, já virada para Plutão', () => {
     const { i, fim } = plano('tritaoRaspao');
     const s = filme.shots[i];
     const pos = s.pos(1, new THREE.Vector3());
     expect(pos.distanceTo(SAIDA_DE_TRITAO)).toBeLessThan(1e-9 * pos.length());
-    const olhar = s.look(1, new THREE.Vector3()).sub(pos).normalize();
-    expect(graus(olhar.angleTo(OLHAR_EM_TRITAO))).toBeLessThan(1e-6);
-    for (const corpo of [NETUNO, TRITAO]) {
-      const { x, y } = noQuadro(journey.at(fim - 1e-6), corpo);
-      expect(Math.max(Math.abs(x), Math.abs(y))).toBeLessThan(0.9);
-    }
+    const olhar = s.look(1, new THREE.Vector3()).sub(pos);
+    expect(graus(olhar.angleTo(PLUTAO.clone().sub(pos)))).toBeLessThan(0.01);
     const v = journey.at(fim - 1e-5).pos.sub(journey.at(fim - 2e-5).pos).divideScalar(1e-5);
     expect(v.length()).toBeLessThan(0.01 * pos.distanceTo(s.pos(0, new THREE.Vector3())) / s.dur);
+  });
+});
+
+describe('o salto de Tritão a Plutão', () => {
+  // A chegada a Plutão atravessa 32 UA por razão constante: no primeiro
+  // quarto de segundo a câmera já anda quase 1 UA, e o que estivesse no
+  // quadro sumiria de um quadro para o outro. A receita é a da troca de
+  // relógio do ato I (montar.test.ts): o salto acontece só sobre
+  // estrelas. O fim da passagem vira o olhar para o rumo de Plutão, o
+  // giro tira Netuno e Tritão do quadro antes da junta, e o olhar
+  // atravessa a junta sem salto.
+  const { i, inicio: junta, fim: fimDaChegada } = plano('plutaoChegada');
+  const passagem = filme.shots[i - 1];
+  const c = passagem.captions!.find((x) => x.text.startsWith('Tritão'))!;
+  const t0 = plano('tritaoRaspao').inicio + c.at * passagem.dur;
+  const t1 = t0 + c.dur!;
+  it('o giro espera a legenda de Tritão sair: até lá o olhar fica na direção fixa da passagem e Tritão inteira no quadro', () => {
+    // o giro sobe e vai para a direita: Netuno desce pelo canto da legenda
+    // (embaixo à esquerda), e texto branco sobre ele não se lê
+    let desvio = 0;
+    let pior = -Infinity;
+    for (let t = t0; t <= t1; t += 1 / 30) {
+      const a = journey.at(t);
+      desvio = Math.max(desvio, graus(a.look.clone().sub(a.pos).angleTo(OLHAR_EM_TRITAO)));
+      pior = Math.max(pior, bordas(a, TRITAO, raioPc('triton')).longe);
+    }
+    expect(desvio).toBeLessThan(0.01);
+    expect(pior).toBeLessThan(0); // medido −5,0°, no joelho
+  });
+
+  it('na junta, Netuno e Tritão já saíram do quadro pelo giro da câmera e não voltam até o fim da chegada; o olhar não salta e quase não anda', () => {
+    const naJunta = Math.min(...['neptune', 'triton'].map((id) => bordas(journey.at(junta), filme.pinos.get(id)!, raioPc(id)).perto));
+    expect(naJunta).toBeGreaterThan(45); // medido 56,1° (Tritão) e 86,8° (Netuno), na lente de 38°
+    let menor = Infinity;
+    for (let t = junta - 1; t <= fimDaChegada; t += 1 / 30) {
+      for (const id of ['neptune', 'triton']) menor = Math.min(menor, bordas(journey.at(t), filme.pinos.get(id)!, raioPc(id)).perto);
+    }
+    expect(menor).toBeGreaterThan(45); // medido 49,3°, Tritão 1 s antes da junta
+    // o olhar dos dois lados da junta: o mesmo, e quase parado — menos de 0,1°
+    // por quadro de 1/30 s nos 0,2 s de cada lado (a câmera já anda 0,9 UA no
+    // primeiro quarto de segundo da chegada)
+    const olhar = (t: number) => { const a = journey.at(t); return a.look.sub(a.pos); };
+    expect(graus(olhar(junta - 1e-6).angleTo(olhar(junta)))).toBeLessThan(1e-4);
+    let maior = 0;
+    for (let t = junta - 0.2; t < junta + 0.2; t += 1 / 30) {
+      maior = Math.max(maior, graus(olhar(t).angleTo(olhar(t + 1 / 30))));
+    }
+    expect(maior).toBeLessThan(0.1); // medido 0,068°, depois da junta
   });
 });
 

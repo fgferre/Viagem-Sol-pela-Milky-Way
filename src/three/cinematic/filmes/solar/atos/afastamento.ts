@@ -37,7 +37,8 @@ const SAIDA_DE_SATURNO = SATURNO.clone().addScaledVector(ate(SATURNO, URANO), D_
 // "cima" do filme na eclíptica, a 3° da horizontal do quadro: deitado. A
 // câmera recua do joelho pela mesma direção, olhando Urano (a vista não
 // gira, o planeta encolhe), e para a 30 raios; dali Netuno está a 43° de
-// Urano, e a chegada a ele começa virando o olhar.
+// Urano. Quando a legenda sai, o olhar vira para Netuno e a lente fecha de
+// 50° para 40°: Urano sai do quadro antes do salto para Netuno.
 const POLO_DE_URANO = new THREE.Vector3(...baseCorpoEquatorial(IAU_ORIENTATIONS.uranus, JD_E_SOLAR_TDB).polo);
 const E_URANO = perpendicular(URANO.clone().negate(), POLO_DE_URANO);
 const F_URANO = new THREE.Vector3().crossVectors(POLO_DE_URANO, E_URANO);
@@ -84,9 +85,9 @@ export const OLHAR_EM_TRITAO = (() => {
 /** o ponto que a mira segue: a 1 pc de Tritão nessa direção — de qualquer
  *  lugar do sistema de Netuno (menos de 1e-7 pc dali), a mesma direção */
 const MIRA_EM_TRITAO = TRITAO.clone().add(OLHAR_EM_TRITAO);
-/** onde a passagem por Tritão deixa a câmera, parada, olhando na direção
- *  `OLHAR_EM_TRITAO` (Tritão e Netuno no quadro): o ponto de partida do
- *  resto do ato (Plutão) */
+/** onde a passagem por Tritão deixa a câmera, parada, já virada para o
+ *  coração de Plutão (o giro começa depois da legenda e tira Tritão e
+ *  Netuno do quadro antes do salto): o ponto de partida do resto do ato */
 export const SAIDA_DE_TRITAO = TRITAO.clone().addScaledVector(JOELHO_DE_TRITAO, RASPAO_DE_TRITAO.saida * R_TRITAO);
 
 // ================= PLUTÃO E CARONTE (cena 22) =================

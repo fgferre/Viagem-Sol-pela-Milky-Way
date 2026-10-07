@@ -65,9 +65,10 @@
           "expoentes": [2.2, 2.0],
           "intervalo": [0.33, 1]
         },
-        "mira": {"tipo": "fixo", "ponto": "Urano"},
-        "lente": [50, 50],
-        "ritmo": "settle"
+        "mira": {"tipo": "passagem", "de": "Urano", "assunto": "Urano", "rumo": "Netuno", "entrada": 0.985, "saida": 0.985},
+        "lente": [50, 40],
+        "ritmo": "settle",
+        "ritmoDaLente": "launch"
       },
       "fundoSilencioso": true,
       "olhar": "assunto",
@@ -99,9 +100,10 @@
           "expoentes": [2.2, 2.0],
           "intervalo": [0, 0.27]
         },
-        "mira": {"tipo": "pan-direcao", "de": "Urano", "para": "Netuno", "ate": 0.5},
-        "lente": [50, 50],
-        "ritmo": "quadratic"
+        "mira": {"tipo": "fixo", "ponto": "Netuno"},
+        "lente": [40, 50],
+        "ritmo": "quadratic",
+        "ritmoDaLente": "glide"
       },
       "assuntos": ["neptune", "triton"],
       "fundoSilencioso": true
@@ -154,9 +156,9 @@
           "tipo": "passagem",
           "de": "Netuno",
           "assunto": "miraEmTritao",
-          "rumo": "miraEmTritao",
+          "rumo": "miraNoCoracao",
           "entrada": 0.15,
-          "saida": 1
+          "saida": 0.952
         },
         "lente": [50, 38],
         "ritmo": "settle"
@@ -189,7 +191,7 @@
           "ritmoDaDirecao": "easeOut",
           "intervalo": [0, 0.6714]
         },
-        "mira": {"tipo": "pan-direcao", "de": "miraEmTritao", "para": "miraNoCoracao", "ate": 0.3},
+        "mira": {"tipo": "fixo", "ponto": "miraNoCoracao"},
         "lente": [38, 30],
         "ritmo": "quadratic",
         "ritmoDaLente": "glide"
