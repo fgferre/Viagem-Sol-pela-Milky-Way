@@ -14,6 +14,7 @@ import {
   PRIORIDADE_DO_ROTULO,
   RampasDeRotulo,
   aplicarReguaDeRelevancia,
+  alvoDoCanalDeTexto,
   prioridadeDeEstrela,
   projectCorpos,
   projectLabels,
@@ -429,6 +430,16 @@ export class Rotulos {
         for (const l of labels) if (l.key === this.apontado) l.apontado = true;
       }
       this.rampas.aplicar(labels, dt);
+    } else {
+      // OS TRÊS DEGRAUS DO FILME (E4c, combinado com o dono em 05/10): a
+      // MESMA tabela do Atlas, sem rampa — o assunto do beat no holofote,
+      // o fundo no repouso da classe dele. QUEM aparece não muda aqui; o
+      // silêncio por cena já foi decidido acima, no ramo do filme.
+      for (const l of labels) {
+        const alfa = alvoDoCanalDeTexto(l, false);
+        l.alfaDoTexto = alfa;
+        l.alfaDoIcone = alfa;
+      }
     }
     // O NOME OCLUÍDO SAI DA LISTA QUANDO A TINTA ACABA (item 125, F4).
     //
@@ -511,10 +522,12 @@ export class Rotulos {
    * como no Atlas: `planetas.posicoes` (o instante do filme, pela máquina
    * do tempo) para os dez do retrato e `luaPosParaRotulo` (o centro do
    * corpo resolvido, com o pino, pelo passo do palco) para as luas. A
-   * PROJEÇÃO é a do Atlas — `projectCorpos` dá o nome na língua de agora,
-   * a classe e o globo que esconde —, e a etiqueta some fora do quadro ou
-   * atrás de outro corpo. O ASPECTO é o da estrela dirigida: sem
-   * `prioridade` (o `LabelCanvas` usa o peso do filme) e sem fade.
+   * PROJEÇÃO é a do Atlas, e o rótulo passa INTEIRO por ela (E4c):
+   * `projectCorpos` dá o nome na língua de agora, a classe, a
+   * `prioridade`, o canal primário e o globo que esconde, e a etiqueta
+   * some fora do quadro ou atrás de outro corpo. O que faz dele assunto é
+   * o `dirigido` que `forcadosDoBeat` põe: peso do foco na disputa,
+   * holofote no alfa e o desenho do filme no `LabelCanvas`.
    */
   private resolveCorpoDirigido(
     cam: THREE.PerspectiveCamera,
@@ -527,16 +540,7 @@ export class Rotulos {
       cam, [corpo], posicoes.subarray(i * 3, i * 3 + 3), this.oclusoresDeRotulo
     );
     if (!l || l.causaDoSumico === 'oclusao') return null;
-    return {
-      name: l.name,
-      spect: '',
-      detalhe: l.detalhe,
-      distPc: l.distPc,
-      x: l.x,
-      y: l.y,
-      opacity: 0.95,
-      key: l.key,
-    };
+    return l;
   }
 
   /** "→ DESTINO · distância viva" — só emite quando o texto muda */

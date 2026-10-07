@@ -17,10 +17,15 @@ import * as THREE from 'three';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { JourneyMeta } from '../cinematic/journey';
 import type { NamedStar } from '../config';
-import { CORPOS_DO_SISTEMA } from '../atlasConfig';
+import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
 import { definirIdioma } from '../../lib/idioma';
 import type { Planetas } from '../world/planetas/planetas';
-import { PRIORIDADE_DO_ROTULO } from '../world/labels';
+import {
+  ALFA_DO_TEXTO_APONTADO,
+  ALFA_DO_TEXTO_SECUNDARIO,
+  PRIORIDADE_DO_ROTULO,
+  projectCorpos,
+} from '../world/labels';
 import type { StarLabel } from '../world/labels';
 import type { Rotulos as TipoRotulos, QuadroDeRotulos } from './rotulos';
 
@@ -1176,13 +1181,48 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
     expect([lua.x, lua.y]).toEqual([(p.x + 1) / 2, (1 - p.y) / 2]);
     expect([terra.x, terra.y]).toEqual([0.5, 0.5]);
     expect([lua.name, terra.name]).toEqual(['Lua', 'Terra']);
-    // o ASPECTO da estrela dirigida: dirigido, 0,95 e SEM `prioridade` —
-    // é a ausência dela que dá ao nome o peso do filme no LabelCanvas
-    for (const l of lista) expect([l.dirigido, l.opacity, l.prioridade]).toEqual([true, 0.95, undefined]);
     expect([lua.detalhe, terra.detalhe]).toEqual(['lua', 'planeta']);
     // e a camada de nomes desligada não cala o roteiro, como nas estrelas
     expect(noFilme({ target: ['moon', 'earth'], nomesEscondidos: true }).lista.map((l) => l.key))
       .toEqual(['corpo:moon', 'corpo:earth']);
+  });
+
+  it('E4c: o assunto passa INTEIRO pela projeção do Atlas e acende no holofote', () => {
+    // a Lua a ~0,005 pc da câmera: dentro do sistema, onde o fade de
+    // distância do Atlas não morde (a bancada mede em pc de brinquedo)
+    const perto = new THREE.Vector3(0.001, 0.0005, 4.995);
+    const { lista, cam } = noFilme({ target: ['moon', 'earth'], lua: perto });
+    const [lua, terra] = lista;
+    const [doAtlas] = projectCorpos(
+      cam, LUAS_DO_SISTEMA.filter((l) => l.id === 'moon'), Float32Array.of(perto.x, perto.y, perto.z)
+    );
+    // nada copiado à mão: o que o Atlas projeta, mais o que faz dele assunto
+    expect(lua).toEqual({
+      ...doAtlas,
+      dirigido: true,
+      alfaDoTexto: ALFA_DO_TEXTO_APONTADO,
+      alfaDoIcone: ALFA_DO_TEXTO_APONTADO,
+    });
+    expect(lua.opacity).toBe(0.95);
+    // classe, prioridade e canal ficam — lua no secundário, planeta no primário
+    expect([lua.prioridade, terra.prioridade]).toEqual([
+      PRIORIDADE_DO_ROTULO.lua, PRIORIDADE_DO_ROTULO.planeta,
+    ]);
+    expect([lua.canalPrimario, terra.canalPrimario]).toEqual([false, true]);
+    // e os dois no holofote: o alfa do ponteiro do Atlas, para lua e planeta
+    expect([lua.alfaDoTexto, terra.alfaDoTexto]).toEqual([1, 1]);
+  });
+
+  it('E4c: o nome AMBIENTE do filme segue a tabela do Atlas — a estrela apagada', () => {
+    const estrela: NamedStar = { n: 'Fundo', x: 2, y: 1, z: -5, m: 1, s: 'A0V', d: 10, t: 0 };
+    const { lista } = noFilme({
+      target: ['moon'], quiet: false, named: [estrela], lua: new THREE.Vector3(0.001, 0.0005, 4.995),
+    });
+    const fundo = lista.find((l) => l.key === 'Fundo')!;
+    // QUEM entra é o de sempre (o fundo não é dirigido); o COMO é o do Atlas
+    expect(fundo.dirigido).toBeUndefined();
+    expect(fundo.alfaDoTexto).toBe(ALFA_DO_TEXTO_SECUNDARIO);
+    expect(lista.find((l) => l.key === 'corpo:moon')!.alfaDoTexto).toBe(ALFA_DO_TEXTO_APONTADO);
   });
 
   it('sem target, o filme não escreve corpo nenhum — só a régua de sempre', () => {

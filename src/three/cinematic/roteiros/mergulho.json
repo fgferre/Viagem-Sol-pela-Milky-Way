@@ -100,6 +100,7 @@
         "inclinacao": { "tipo": "pulso", "amplitude": -0.12 }
       },
       "destino": "SGR",
+      "assuntos": ["SGR"],
       "legendas": [{
         "em": 0.18, "texto": "O último braço",
         "subtexto": "Scutum-Centaurus — o gás comprime e acende estrelas azuis",
@@ -124,7 +125,8 @@
         "ritmo": "settle",
         "efeitoDeVelocidade": { "tipo": "frenagem", "amplitude": 0.9 }
       },
-      "destino": "SGR"
+      "destino": "SGR",
+      "assuntos": ["SGR"]
     },
     {
       "camera": {

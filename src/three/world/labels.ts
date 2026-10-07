@@ -75,9 +75,10 @@ export interface StarLabel {
   /**
    * QUEM GANHA A VAGA quando dois nomes se atropelam (item 73, 22/08).
    * Número maior manda; `undefined` é "não entra na disputa por
-   * hierarquia" e vale o peso mínimo — é o caso do RAMO DO FILME, que
-   * não é tocado por esta obra e continua ordenando por tier e
-   * proximidade, como sempre ordenou.
+   * hierarquia" e vale o peso mínimo — é o caso das ESTRELAS do filme,
+   * que continuam ordenando por tier e proximidade, como sempre
+   * ordenaram. O corpo da casa dirigido pelo filme traz a dele, da
+   * projeção do Atlas (E4c), e quem decide o peso dele é o `dirigido`.
    *
    * O valor sai da tabela `PRIORIDADE_DO_ROTULO` — desde 01/09 com os
    * NÚMEROS DO EYES (item 125, F3 · P1). Continua sendo um número e não
@@ -210,10 +211,10 @@ export interface StarLabel {
   causaDoSumico?: 'tamanho' | 'oclusao' | 'disputa';
   /**
    * O ALFA DO CANAL DE TEXTO — a camada de DENTRO dos dois fades do
-   * Eyes (item 125, F2 · A8/A9). Quem escreve é `RampasDeRotulo`; quem
-   * o consome é o `LabelCanvas`, que pinta o texto com o PRODUTO
-   * `opacity × alfaDoTexto`. Ausente = 1 (o ramo do FILME, que não
-   * passa pelas rampas, continua pixel a pixel o de sempre).
+   * Eyes (item 125, F2 · A8/A9). Quem escreve é `RampasDeRotulo` no
+   * céu navegado e, desde a E4c, o produtor no FILME, com o mesmo alvo
+   * (`alvoDoCanalDeTexto`); quem o consome é o `LabelCanvas`, que pinta
+   * o texto com o PRODUTO `opacity × alfaDoTexto`. Ausente = 1.
    */
   alfaDoTexto?: number;
   /**
@@ -302,8 +303,8 @@ export const PRIORIDADE_DO_ROTULO = {
  * O SEGUNDO DEFAULT DELES (P2): rótulo que chega SEM classe nenhuma vale
  * zero na disputa — é o `getDefaultWeight` do `LabelManager`.
  *
- * Na casa quem chega assim é o RAMO DO FILME, que não escreve
- * `prioridade`. Ele não fica desprotegido: o assunto do beat é
+ * Na casa quem chega assim são as estrelas do RAMO DO FILME, que não
+ * escreve `prioridade` nelas. Ele não fica desprotegido: o assunto do beat é
  * `dirigido`, e `pesoDoRotulo` dá ao dirigido o peso do foco — que é o
  * que o Eyes faz com o alvo seguido (P11). O fundo do filme, esse sim,
  * vale zero, e é o que ele já valia na prática (entrava por último na
@@ -493,6 +494,24 @@ export const ALFA_DO_TEXTO_ESCONDIDO = 0.05;
 export const ALFA_DO_TEXTO_APONTADO = 1;
 
 /**
+ * O ALVO DA CAMADA DE DENTRO — a tabela acima lida numa ordem só, para o
+ * Atlas e para os filmes (E4c, combinado com o dono em 05/10). Escondido
+ * (`--*FadeOut` 0,05) vence; depois o holofote (`--hoverOpacity` 1), que
+ * é do nome APONTADO e do nome DIRIGIDO pelo roteiro; senão o repouso da
+ * variante (0,75 no canal primário, 0,35 no resto).
+ *
+ * O FILME LÊ A MESMA FUNÇÃO sem rampa: lá o assunto do beat é o
+ * holofote, e o fundo fica com o repouso da classe — planeta e Sol
+ * fortes, estrela e lua apagadas, como no Atlas. `dirigido` só existe no
+ * filme, então o céu navegado não muda.
+ */
+export function alvoDoCanalDeTexto(l: StarLabel, escondido: boolean): number {
+  if (escondido) return ALFA_DO_TEXTO_ESCONDIDO;
+  if (l.apontado || l.dirigido) return ALFA_DO_TEXTO_APONTADO;
+  return l.canalPrimario ? ALFA_DO_TEXTO_PRIMARIO : ALFA_DO_TEXTO_SECUNDARIO;
+}
+
+/**
  * A RÉGUA DE RELEVÂNCIA (item 82, N1) — hoje ela ORDENA, e só (item
  * 125, F3).
  *
@@ -653,14 +672,9 @@ export class RampasDeRotulo {
    * pintura. Quem faz a entrada do nome é a camada de FORA.
    */
   private andarPorDentro(l: StarLabel, escondido: boolean, dt: number): number {
-    const repouso = l.canalPrimario ? ALFA_DO_TEXTO_PRIMARIO : ALFA_DO_TEXTO_SECUNDARIO;
     // ESCONDIDO NÃO RECEBE PONTEIRO: no CSS deles o `.hidden` leva
     // `pointer-events: none`, então `:hover` não alcança quem já saiu.
-    const alvo = escondido
-      ? ALFA_DO_TEXTO_ESCONDIDO
-      : l.apontado
-        ? ALFA_DO_TEXTO_APONTADO
-        : repouso;
+    const alvo = alvoDoCanalDeTexto(l, escondido);
     let c = this.dentro.get(l.key);
     if (!c) {
       c = { alfa: alvo, origem: alvo, alvo, t: 0 };

@@ -537,6 +537,48 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     expect(ctx.pintadas.every((p) => p.x < ancora)).toBe(true);
   });
 
+  it('E4c: perto da borda o nome INTEIRO fica dentro da tela — vira de lado, e só em último caso é empurrado', () => {
+    // o defeito do celular: SATURNO, dirigido, a 70 % da largura de 375
+    // px — antes dos 72 % da regra do lado, e com texto que passava da
+    // borda direita
+    const { rotulos } = bancada(375, 812);
+    const saturno: StarLabel = {
+      ...rotulo('corpo:saturn', 'Saturno', 0.7, 0.45), detalhe: 'planeta', dirigido: true,
+    };
+    rotulos.draw([saturno]);
+    expect(saturno.desenhado).toBe(true);
+    expect((saturno as RotuloComVaga).ladoEsquerdo).toBe(true);
+    expect(saturno.caixaDaDisputa!.left).toBeGreaterThanOrEqual(0);
+    expect(saturno.caixaDaDisputa!.right).toBeLessThanOrEqual(375);
+
+    // NÃO CABE DE LADO NENHUM: o texto é empurrado para dentro, do lado
+    // que precisa do menor empurrão, e nenhum pixel dele sai da tela
+    const outro = bancada(375, 812);
+    const nome = 'Um nome comprido demais para caber em lado algum';
+    const longo: StarLabel = { ...rotulo('star:longo', nome, 0.5, 0.45), detalhe: '' };
+    outro.rotulos.draw([longo]);
+    const pintado = outro.ctx.pintadas.find((p) => p.texto === nome.toLocaleUpperCase('pt-BR'))!;
+    expect((longo as RotuloComVaga).ladoEsquerdo).toBe(false);
+    expect(pintado.x).toBeGreaterThanOrEqual(0);
+    expect(pintado.x + nome.length * 7).toBeLessThanOrEqual(375);
+  });
+
+  it('E4c: o detalhe cede antes do nome — no meio de um celular sai só o nome, sem empurrão sobre o corpo', () => {
+    // a folha de 07/10: SATURNO no meio dos 375 px, com o detalhe longo,
+    // não cabia de lado nenhum e o empurrão o escrevia em cima do planeta
+    const { rotulos, ctx } = bancada(375, 812);
+    const saturno: StarLabel = {
+      ...rotulo('corpo:saturn', 'Saturno', 0.5, 0.45),
+      detalhe: 'planeta gasoso de anéis largos',
+      dirigido: true,
+    };
+    rotulos.draw([saturno]);
+    const nome = ctx.pintadas.find((p) => p.texto === 'SATURNO')!;
+    expect(ctx.pintadas.some((p) => p.texto.includes('planeta'))).toBe(false);
+    expect(nome.x).toBeGreaterThan(0.5 * 375);
+    expect(saturno.caixaDaDisputa!.right).toBeLessThanOrEqual(375);
+  });
+
   it('o HUD ocupa PRIMEIRO, e não há segundo lugar para furá-lo', () => {
     const { rotulos } = bancada(1200, 900);
     // um painel no meio da tela: até 23/08 o nome procurava outra vaga
@@ -769,6 +811,21 @@ describe('os DOIS níveis tipográficos (item 125, F5 · T9/T10)', () => {
     expect(doFilme.corDoDetalhe).toBe('rgba(159, 176, 201, 0.88)');
   });
 
+  it('E4c: o assunto DIRIGIDO com classe continua no desenho do filme, no holofote', () => {
+    // o corpo da casa dirigido traz `prioridade` (passa inteiro pela
+    // projeção do Atlas), e mesmo assim é escrito como o filme escreve
+    // os assuntos: caixa alta, legenda, alfa do ponteiro
+    const { ctx, rotulos } = bancada();
+    const lua: StarLabel = {
+      ...rotulo('corpo:titan', 'Titã', 0.4, 0.4, 25), detalhe: 'lua', dirigido: true, alfaDoTexto: 1,
+    };
+    expect(pesoVisual(lua)).toBe(PESOS_DO_ROTULO.filme);
+    rotulos.draw([lua]);
+    const escritos = ctx.pintadas.filter((p) => p.texto !== '');
+    expect(escritos.map((p) => p.texto)).toEqual(['TITÃ', 'lua']);
+    expect(escritos[0].alfa).toBeCloseTo(0.95, 12);
+  });
+
   it('a CAIXA ALTA é do nível: planeta em maiúsculas, lua como veio', () => {
     const { ctx, rotulos } = bancada();
     const planeta: StarLabel = {
@@ -993,8 +1050,8 @@ describe('A8 — o texto pinta o produto das duas camadas', () => {
     const nome = ctx.pintadas.find((p) => p.texto === 'TERRA')!;
     expect(nome.alfa).toBeCloseTo(0.8 * 0.35, 12);
 
-    // O RAMO DO FILME não passa pelas rampas e não traz o campo: ele
-    // continua pintando com a opacidade de sempre, pixel a pixel.
+    // SEM O CAMPO vale 1: quem não passou pela tabela pinta com a
+    // opacidade de fora, pixel a pixel.
     const { ctx: ctx2, rotulos: r2 } = bancada();
     const semCanal = rotulo('corpo:earth', 'Terra', 0.5, 0.5);
     semCanal.opacity = 0.8;

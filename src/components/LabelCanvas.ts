@@ -401,9 +401,14 @@ type PesoDoRotulo = (typeof PESOS_DO_ROTULO)[keyof typeof PESOS_DO_ROTULO];
  * casa, que é o `.sun`. Estrela do céu de fundo não tem `canalPrimario`
  * e cai na base — que é o certo: no Eyes ela é `Star`, sem ícone e sem
  * caixa alta.
+ *
+ * O ASSUNTO DIRIGIDO PELO FILME fica no desenho do filme mesmo trazendo
+ * `prioridade` (E4c: o corpo da casa passa inteiro pela projeção do
+ * Atlas) — estrela, planeta ou lua, em caixa alta, como o filme sempre
+ * os escreveu. O que a E4c muda nele é o alfa, não a letra.
  */
 export function pesoVisual(label: StarLabel) {
-  if (label.prioridade === undefined) return PESOS_DO_ROTULO.filme;
+  if (label.dirigido || label.prioridade === undefined) return PESOS_DO_ROTULO.filme;
   if (label.detalhe === 'estrela') return PESOS_DO_ROTULO.sol;
   return label.canalPrimario ? PESOS_DO_ROTULO.primario : PESOS_DO_ROTULO.base;
 }
@@ -426,12 +431,16 @@ const ALTURA_DE_TELA_GRANDE = 600;
  * responde a uma pergunta viva** — o corpo que o visitante escolheu
  * seguir — e sai de todos os outros.
  *
- * O FILME NÃO É TOCADO (`prioridade === undefined`): a legenda do beat
- * é a identidade dele, e o item 82 já dizia que tirá-la exigia julgar
- * com o filme na tela.
+ * O FILME NÃO É TOCADO (`prioridade === undefined`, ou o assunto
+ * `dirigido`): a legenda do beat é a identidade dele, e o item 82 já
+ * dizia que tirá-la exigia julgar com o filme na tela.
  */
 function escreveDetalhe(label: StarLabel): boolean {
-  return label.prioridade === undefined || label.prioridade >= PRIORIDADE_DO_ROTULO.foco;
+  return (
+    label.dirigido === true ||
+    label.prioridade === undefined ||
+    label.prioridade >= PRIORIDADE_DO_ROTULO.foco
+  );
 }
 
 /**
@@ -1170,20 +1179,53 @@ export class LabelCanvas {
     // No céu geral, o lado continua sendo a ÚNICA liberdade. O roteiro
     // pode dirigir um assunto: aí, e só aí, ele procura as linhas
     // alternativas antigas e assume a frente dos nomes de fundo.
-    const ladoPreferido = ancoraX > this.width * 0.72;
+    const ladoNatural = ancoraX > this.width * 0.72;
     const fonteDoNome = this.fonteDoNome(peso, k);
     const tracking = this.trackingDoNome(peso, k);
     const fonteDoDetalhe = `400 ${peso.tamanhoDoDetalhe * k}px ${FAMILIA}`;
     const larguraDoNome = this.medir(this.nomes[i], fonteDoNome, tracking);
     const larguraDoDetalhe = this.medir(this.detalhes[i], fonteDoDetalhe);
+    // O DETALHE CEDE ANTES DO NOME (E4c, 07/10): num celular de 375 px
+    // Saturno perto do meio não cabe "SATURNO · planeta · 4370 mil km
+    // daqui" de lado nenhum, e empurrar o texto para dentro o escrevia
+    // em cima do planeta. Quando o texto inteiro não cabe nem à direita
+    // nem à esquerda da âncora, sai só o nome (a pintura lê o mesmo
+    // `detalhes[i]`); o empurrão abaixo fica para o nome que nem sozinho
+    // cabe.
+    const recuo = peso.recuoDoTexto * k;
+    const larguraCompleta = larguraDoNome + 9 * k + larguraDoDetalhe;
+    const comDetalhe =
+      larguraDoDetalhe > 0 &&
+      (ancoraX + recuo + larguraCompleta <= this.width || ancoraX - recuo - larguraCompleta >= 0);
+    if (!comDetalhe) this.detalhes[i] = '';
     // SEM DETALHE, SEM VÃO: desde a F5 o detalhe é vazio na maioria dos
     // nomes, e somar o vão de 9 px a uma string vazia daria a cada nome
     // uma caixa mais larga do que o que ele escreve.
-    const conteudo =
-      larguraDoDetalhe > 0 ? larguraDoNome + 9 * k + larguraDoDetalhe : larguraDoNome;
+    const conteudo = comDetalhe ? larguraCompleta : larguraDoNome;
+    // A BORDA DA TELA (E4c, 07/10): o nome inteiro fica DENTRO dela. A
+    // regra dos 72 % escolhe o lado pela âncora e não sabia o tamanho do
+    // texto — num celular de 375 px "SATURNO · planeta · …" a 260 px da
+    // esquerda ainda crescia para a direita e saía cortado. Agora o lado
+    // natural fica quando o texto cabe; senão vale o outro lado, se ali
+    // couber; e só quando nenhum dos dois cabe o texto é EMPURRADO para
+    // dentro (`desvioDe`), do lado que precisa do menor empurrão. Quem já
+    // cabia não muda de lugar. A conta é sobre o TEXTO, sem a folga da
+    // caixa: um nome que termina a 3 px da borda está inteiro na tela.
+    const inicioDoTexto = (esquerda: boolean) =>
+      esquerda
+        ? ancoraX - peso.recuoDoTexto * k - conteudo
+        : ancoraX + peso.recuoDoTexto * k;
+    const desvioDe = (esquerda: boolean) => {
+      const inicio = inicioDoTexto(esquerda);
+      return Math.min(Math.max(inicio, 0), Math.max(0, this.width - conteudo)) - inicio;
+    };
+    const ladoPreferido =
+      desvioDe(ladoNatural) !== 0 &&
+      Math.abs(desvioDe(!ladoNatural)) < Math.abs(desvioDe(ladoNatural))
+        ? !ladoNatural
+        : ladoNatural;
     const caixaEm = (esquerda: boolean, y: number): Rect => {
-      const x = ancoraX + (esquerda ? -1 : 1) * peso.recuoDoTexto * k;
-      const left = esquerda ? x - conteudo : x;
+      const left = inicioDoTexto(esquerda) + desvioDe(esquerda);
       return {
         left: left - 5 * k,
         right: left + conteudo + 5 * k,
@@ -1205,6 +1247,8 @@ export class LabelCanvas {
       // perdedor da disputa não reserva nada, e por isso não conta aqui.
       busca: for (let lado = 0; lado < 2; lado++) {
         const esq = lado === 0 ? ladoPreferido : !ladoPreferido;
+        // o outro lado só é vaga se o texto couber nele inteiro (a borda)
+        if (lado === 1 && desvioDe(esq) !== 0) continue;
         for (const passo of DESLOCAMENTOS_DIRIGIDOS) {
           const y = ancoraY + passo * k;
           const tentativa = caixaEm(esq, y);
@@ -1234,7 +1278,7 @@ export class LabelCanvas {
       caixaDoTexto,
       ancoraX,
       ancoraY,
-      textoX: ancoraX + direcao * peso.recuoDoTexto * k,
+      textoX: ancoraX + direcao * peso.recuoDoTexto * k + desvioDe(esquerda),
       textoY,
       esquerda,
       larguraDoNome,
