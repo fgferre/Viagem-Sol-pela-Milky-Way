@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (07/10, manhã) — EUROPA COM COR REAL E JÁPETO COM A CRISTA NO LUGAR (item 230) FEITOS NO RAMO `europa-japeto`, CHECAGEM COMPLETA VERDE, À ESPERA DO MERGE EM LINHA RETA E DO PUSH
+## O BASTÃO — onde a rodada parou (07/10, manhã) — EUROPA COM COR REAL E JÁPETO COM A CRISTA NO LUGAR (item 230) PUBLICADOS (`main` = `5c35a048`, merge em linha reta e push feitos no terminal dele a pedido dele — *"Faça o merge e o push, estou autorizando"*; publicação verde; no ar, altura e normal de Jápeto e o mapa de Europa com o mesmo sha256 dos locais)
 
 **Feito em 06–07/10 (plano em `PLAN-EUROPA-JAPETO.md`, revisto pelo GPT pelo
 Codex com a autorização dele — *"Você mesmo que usa o GPT. Você está
