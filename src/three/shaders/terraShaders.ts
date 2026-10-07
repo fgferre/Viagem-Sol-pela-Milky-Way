@@ -5,6 +5,7 @@
 // padrão da casa é *Shaders.ts em shaders/.
 // ============================================================
 import { GLSL_SOMBRA_ECLIPSE } from '../../lib/atlas/eclipse';
+import { BODY_AXES } from '../../lib/atlas/iauOrientation';
 import { GLSL_LUZ_DA_VISITA } from '../../lib/atlas/luzDaVisita';
 
 /** Casca das nuvens: +0,15% do raio — alto o bastante para o depth
@@ -84,8 +85,13 @@ void main() {
  * O ESPECULAR DO OCEANO segue o mesmo `ndotl` da difusa — é o mesmo
  * cosseno de incidência, e deixá-lo com o cru daria dois terminadores
  * na mesma superfície.
+ *
+ * EM QUATRO TRECHOS (07/10, rodada das nuvens): cabeçalho, o corpo até
+ * o especular, a luz direta e a emissão. A variante `profundidade`
+ * (`TERRA_PROFUNDIDADE_FRAG`, abaixo) reusa três deles e troca só a luz
+ * direta; o `TERRA_FRAG` montado é o mesmo texto de antes, byte a byte.
  */
-export const TERRA_FRAG = /* glsl */ `
+const SUPERFICIE_CABECALHO = /* glsl */ `
 uniform sampler2D uMapaDia;
 uniform sampler2D uMapaNoite;
 uniform sampler2D uMapaNormal;
@@ -101,7 +107,9 @@ varying vec2 vUv;
 ${GLSL_GUARDAS}
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
-void main() {
+`;
+
+const SUPERFICIE_ATE_O_ESPECULAR = /* glsl */ `void main() {
   vec3 n = normSeguro(vLocal * uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
 
@@ -136,7 +144,9 @@ void main() {
   float fresnel = 0.04 + 0.96 * pow(1.0 - vdoth, 5.0);
   float espec = dEspec * fresnel * ndotl;
 
-  // A LUZ ANTES DO ALBEDO (item 93): o Sol passa pelo ganho e pelo
+`;
+
+const SUPERFICIE_LUZ_DIRETA = /* glsl */ `  // A LUZ ANTES DO ALBEDO (item 93): o Sol passa pelo ganho e pelo
   // eclipse, e a LANTERNA soma-se depois, com a soma saturada em 1. A
   // lanterna leva a sombra do eclipse junto — sem isso a umbra sobre
   // Durango deixava de ser preta e a totalidade sumia do mapa (a
@@ -148,7 +158,9 @@ void main() {
   vec3 luz = luzDoGlobo(vec3(ndotl) * luzSol, lanternaDeLeitura(nRelevo, v, sombras));
   vec3 direta = albedo * luz + vec3(espec) * luzSol;
 
-  // luzes noturnas: EMISSÃO — só no lado escuro, pelo linstep do espec
+`;
+
+const SUPERFICIE_EMISSAO = /* glsl */ `  // luzes noturnas: EMISSÃO — só no lado escuro, pelo linstep do espec
   // (o smoothstep do doador vazava 16% no lado diurno), fora do ganho.
   float mascaraNoite = linstep(-0.1, 0.1, -ndotlGeo);
   vec3 luzes = texture2D(uMapaNoite, vUv).rgb * (mascaraNoite * uNoiteGanho);
@@ -157,6 +169,9 @@ void main() {
 }
 `;
 
+export const TERRA_FRAG =
+  SUPERFICIE_CABECALHO + SUPERFICIE_ATE_O_ESPECULAR + SUPERFICIE_LUZ_DIRETA + SUPERFICIE_EMISSAO;
+
 /**
  * AS NUVENS — casca própria a +0,15% do raio, translúcida, com o
  * terminador do espec do doador (linstep −0,25→0,12 e piso noturno 0,03,
@@ -164,8 +179,11 @@ void main() {
  * o MESMO da superfície (a casca está 0,15% acima — a geometria do cone
  * é idêntica dentro de sub-pixel): uma nuvem dentro da umbra escurece
  * junto com o oceano embaixo dela.
+ *
+ * O cabeçalho é um trecho à parte (07/10) para a variante
+ * `profundidade` reusá-lo; o `NUVENS_FRAG` montado é o mesmo texto.
  */
-export const NUVENS_FRAG = /* glsl */ `
+const NUVENS_CABECALHO = /* glsl */ `
 uniform sampler2D uMapaNuvens;
 uniform vec3 uDirSolLocal; // no frame DA CASCA (a deriva é da CPU)
 uniform float uLuzGanho;
@@ -173,7 +191,9 @@ varying vec3 vLocal;
 varying vec2 vUv;
 ${GLSL_GUARDAS}
 ${GLSL_SOMBRA_ECLIPSE}
-void main() {
+`;
+
+export const NUVENS_FRAG = NUVENS_CABECALHO + /* glsl */ `void main() {
   float cobertura = texture2D(uMapaNuvens, vUv).r;
   vec3 n = normSeguro(vLocal);
   float ndotl = dot(n, uDirSolLocal);
@@ -183,6 +203,249 @@ void main() {
   );
   vec3 sombra = fatorDeEclipse(vLocal * ${RAZAO_CASCA_NUVENS}, n, ndotl);
   gl_FragColor = vec4(vec3(dia * uLuzGanho) * sombra, cobertura);
+}
+`;
+
+// ------------------------------------------------------------
+// A VARIANTE `profundidade` (rodada das nuvens, 07/10): as nuvens
+// ganham sombra no chão, relevo pela luz e caminho inclinado. A
+// `classica` são os dois shaders acima, intocados; quem escolhe é
+// `TerraResolvida.definirVariante` (a porta `?terra=` e o preset).
+// ------------------------------------------------------------
+
+/**
+ * A OPACIDADE DE UM TEXEL DE NUVEM — a função ÚNICA que a casca
+ * `profundidade` desenha (na vertical, μ = 1) e que a sombra no chão
+ * mede: a nuvem que se vê e a que tapa o Sol são o mesmo número. O
+ * canal `clouds` é cor, então o texel chega decodificado de sRGB
+ * (≈ c^2,2) — é o MESMO valor que a casca clássica usa de alfa. Quem
+ * inclui declara `uMapaNuvens` antes; as derivadas vêm de fora porque
+ * as amostras deslocadas e as dos laços não podem pedir a derivada
+ * implícita.
+ */
+const GLSL_ALFA_DA_NUVEM = /* glsl */ `
+float alfaDaNuvem(vec2 uv, vec2 ddx, vec2 ddy) {
+  return clamp(textureGrad(uMapaNuvens, uv, ddx, ddy).r, 0.0, 1.0);
+}
+`;
+
+/**
+ * A SUPERFÍCIE COM AS NUVENS NO CAMINHO DO SOL — o `TERRA_FRAG` inteiro
+ * (os mesmos três trechos), menos a luz direta.
+ *
+ * A GEOMETRIA, no espaço da esfera unitária do mesh (onde o elipsoide é
+ * esfera e a casca das nuvens é a esfera de raio r = RAZAO_CASCA_NUVENS):
+ * o raio que sai do ponto p rumo ao Sol cruza a casca em
+ * q = p + (−b + √(b² + r² − 1))·Ls, com Ls o Sol levado a esse espaço
+ * (`uDirSolLocal * uNormalEsc`, normalizado) e b = max(p·Ls, 0). O
+ * radicando é ≥ r² − 1 > 0 (nunca NaN), e o grampo em b para o alcance
+ * da sombra em ~350 km além do terminador.
+ *
+ * O TEXEL de q sai por diferença de ângulos a partir do `vUv` do ponto
+ * (nunca por `acos`): Δu pelo ângulo assinado entre (−x, z) de p e de q
+ * — a convenção da SphereGeometry, u = atan(z, −x)/2π (pinada em
+ * terra.test.ts) — e Δv pela diferença de latitude, atan(y, |xz|)/π.
+ * A deriva das nuvens entra como `uDeslocU` = fract(−θ/2π), calculado na
+ * CPU em float64 (u_nuvem = u_chão − θ/2π); nem θ nem seno ou cosseno
+ * dele chegam à GPU.
+ *
+ * A TRANSMISSÃO é medida, não regulada: T = 1 − α(q), a opacidade
+ * VERTICAL que a casca desenha naquele texel (`alfaDaNuvem`). Ela entra
+ * LINEAR e só no Sol: a lanterna (fill de câmera) e as cidades (emissão)
+ * não atravessam nuvem nenhuma, e o especular apaga junto com a difusa.
+ * Céu limpo (T = 1) devolve a luz do `TERRA_FRAG`.
+ */
+export const TERRA_PROFUNDIDADE_FRAG =
+  SUPERFICIE_CABECALHO +
+  /* glsl */ `uniform sampler2D uMapaNuvens;
+uniform float uDeslocU;     // fract(−θ/2π) da deriva das nuvens (CPU, float64)
+${GLSL_ALFA_DA_NUVEM}
+float transmissaoDasNuvens(vec3 local, vec2 uv) {
+  vec3 p = normSeguro(local);
+  vec3 ls = normSeguro(uDirSolLocal * uNormalEsc);
+  float b = max(dot(p, ls), 0.0);
+  float r = ${RAZAO_CASCA_NUVENS};
+  vec3 q = p + (-b + sqrt(b * b + r * r - 1.0)) * ls;
+  vec2 a = vec2(-p.x, p.z);
+  vec2 c = vec2(-q.x, q.z);
+  float rp = length(a);
+  float rq = length(c);
+  // perto do polo o ângulo em u não existe: Δu = 0, e o atan nunca vê (0, 0)
+  float degenerado = step(rp * rq, 1.0e-8);
+  float du = (1.0 - degenerado) * atan(a.x * c.y - a.y * c.x, dot(a, c) + degenerado)
+    / 6.28318531;
+  float dv = (atan(q.y, rq) - atan(p.y, rp)) / 3.14159265;
+  return 1.0 - alfaDaNuvem(uv + vec2(du + uDeslocU, dv), dFdx(uv), dFdy(uv));
+}
+` +
+  SUPERFICIE_ATE_O_ESPECULAR +
+  /* glsl */ `  // A LUZ ANTES DO ALBEDO, com as NUVENS NO CAMINHO DO SOL: o termo
+  // do Sol passa pela transmissão T da casca; a lanterna fica de fora
+  // (a mesma do TERRA_FRAG), e o especular é do Sol, então apaga junto.
+  vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
+  vec3 luzSol = vec3(uLuzGanho) * sombras;
+  float transmissao = transmissaoDasNuvens(vLocal, vUv);
+  vec3 lanterna = lanternaDeLeitura(nRelevo, v, sombras);
+  vec3 luz = mix(
+    luzDoGlobo(vec3(0.0), lanterna),
+    luzDoGlobo(vec3(ndotl) * luzSol, lanterna),
+    transmissao
+  );
+  vec3 direta = albedo * luz + vec3(espec * transmissao) * luzSol;
+
+` +
+  SUPERFICIE_EMISSAO;
+
+/**
+ * AS NUVENS COM PROFUNDIDADE — a casca do `NUVENS_FRAG` (o mesmo
+ * cabeçalho, o mesmo terminador, o mesmo eclipse) com três coisas a mais.
+ *
+ * 1. CAMINHO INCLINADO (Beer–Lambert): a camada vista de lado é mais
+ *    espessa, α_vista = 1 − (1 − α)^(1/μ), μ o cosseno entre a normal da
+ *    casca e a direção da câmera (`uCamNuvens`, no frame DA CASCA — a
+ *    deriva desfeita na CPU como a do Sol), com μ ≥ 0,05 no limbo.
+ *
+ * 2. RELEVO PELA LUZ. A ALTURA DO TOPO É INFERIDA DA ESPESSURA ÓPTICA DO
+ *    MAPA REAL de nuvens — não há medida de altura nele: τ = −ln(1 − α)
+ *    (a mesma α que a casca desenha), grampeado em α 0,98, e a altura
+ *    vai linear em τ até 10 km. Os 10 km são a espessura de uma nuvem de
+ *    convecção funda (base a ~1–2 km, topo na tropopausa a ~11–12 km); as
+ *    camadas finas ficam com centenas de metros.
+ *    O CAMPO É PRÉ-FILTRADO na escala das células de nuvem: a altura é
+ *    lida com a pegada de `ESCALA_DO_RELEVO_KM` (dois texels do mapa de
+ *    8192, ≈ 9,8 km — o nível de mip 1 do 8k, o 0 do 4k; nunca menor que
+ *    a pegada do pixel), e a normal sai por diferenças centrais a ±essa
+ *    mesma distância: o relevo tem ~20 km de lado, o tamanho de uma
+ *    célula, e não o de um bloco de compressão (o 8k cru a ±1 texel saía
+ *    granulado, 07/10 v1). A escala é em km, então 4k e 8k desenham o
+ *    mesmo relevo. Referencial leste/norte do `TERRA_FRAG`; o relevo some
+ *    perto do polo (ρ < 0,05).
+ *    O relevo entra como RAZÃO de difusas envoltas D(nRelevo·L)/D(n·L),
+ *    grampeada em `RAZAO_TETO`, multiplicando a parte SOLAR do termo
+ *    `dia` (o piso noturno não é Sol e fica de fora): onde o mapa é plano
+ *    a razão é 1 e a nuvem sai com o brilho e a faixa dia/noite da
+ *    `classica`. A envolta é a do próprio terminador das nuvens
+ *    (−lo = 0,25), nunca um piso de ambiente.
+ *
+ * 3. SOMBRA PRÓPRIA com o Sol baixo: seis passos de 8 km rumo ao Sol no
+ *    MESMO campo filtrado (48 km de alcance), entrando abaixo de 20° de
+ *    elevação e inteira abaixo de 10°; o raio sobe tan(E) por km (E
+ *    grampeado em 0 — abaixo do horizonte vale o rasante). A pegada de
+ *    ~10 km cobre o vão de 8 km entre os passos (com a pegada do pixel um
+ *    topo mais estreito que o passo deixava cópias tracejadas da sombra),
+ *    e a penumbra cresce com a distância ao topo que tapa (1 km por
+ *    passo), então a borda não marca o espaçamento dos passos.
+ *
+ * 4. DUAS PARCELAS DE LUZ (07/10, v2): numa nuvem espessa a luz que volta
+ *    ao olho é sobretudo de espalhamento MÚLTIPLO — o fóton já andou
+ *    quilômetros dentro dela e sai difuso, sem lembrar a face por onde
+ *    entrou; o relevo de pequena escala não o sombreia. Num véu fino
+ *    quase todo fóton espalha uma vez só (a chance de um segundo
+ *    espalhamento cresce com τ ≈ α). Então a parte solar se divide: a
+ *    fração SIMPLES leva a razão do relevo e a sombra própria; a fração
+ *    MÚLTIPLA, `FRACAO_MULTIPLA_OPACA`·α (0,5 na nuvem opaca, → 0 no véu),
+ *    leva só o termo `dia` da esfera, como hoje. O lado à sombra fica
+ *    cinza, não preto — e sem termo de ambiente.
+ *
+ * Ordem de desenho e depth são os da casca clássica (o material é que
+ * decide: ordem 8, sem escrever depth).
+ */
+export const NUVENS_PROFUNDIDADE_FRAG =
+  NUVENS_CABECALHO +
+  /* glsl */ `uniform vec3 uCamNuvens; // câmera no frame DA CASCA, em raios equatoriais
+${GLSL_ALFA_DA_NUVEM}
+const float RAIO_KM = ${BODY_AXES.earth[0].toFixed(1)};
+const float ESPESSURA_KM = 10.0;
+const float ALFA_TETO = 0.98;
+const float TAU_TETO = ${(-Math.log(1 - 0.98)).toFixed(4)};
+const float ENVOLTA = ${(-NUVEM_TERMINADOR.lo).toFixed(2)};
+const float ESCALA_DO_RELEVO_KM = ${((2 * 2 * Math.PI * BODY_AXES.earth[0]) / 8192).toFixed(2)}; // 2 texels do 8192
+const float RAZAO_TETO = 2.0;
+const float FRACAO_MULTIPLA_OPACA = 0.5;
+const int PASSOS_DA_SOMBRA = 6;
+const float PASSO_KM = 8.0;
+const float SUAVIDADE_KM = 1.0;
+
+float alturaDeAlfa(float alfa) {
+  return ESPESSURA_KM * (-log(1.0 - min(alfa, ALFA_TETO)) / TAU_TETO);
+}
+float alturaKm(vec2 uv, vec2 ddx, vec2 ddy) {
+  return alturaDeAlfa(alfaDaNuvem(uv, ddx, ddy));
+}
+float difusaEnvolta(float x) {
+  return max(x + ENVOLTA, 0.0) / (1.0 + ENVOLTA);
+}
+
+void main() {
+  vec2 ddx = dFdx(vUv);
+  vec2 ddy = dFdy(vUv);
+  float alfa = alfaDaNuvem(vUv, ddx, ddy);
+  vec3 n = normSeguro(vLocal);
+  float ndotl = dot(n, uDirSolLocal);
+
+  // o referencial leste/norte do TERRA_FRAG; no polo (rho → 0) o relevo
+  // some em vez de dividir por ~0
+  vec3 leste = vec3(n.z, 0.0, -n.x);
+  float rho = length(leste);
+  leste /= max(rho, 1.0e-6);
+  vec3 norte = cross(n, leste);
+  float pesoPolo = linstep(0.0, 0.05, rho);
+  float kmPorU = 6.28318531 * RAIO_KM * max(rho, 0.05);
+  float kmPorV = 3.14159265 * RAIO_KM;
+
+  // o campo de altura FILTRADO na escala das células: pegada isotrópica
+  // em km (nunca menor que a do pixel), e as tomadas a ±essa distância
+  vec2 tomadaU = vec2(ESCALA_DO_RELEVO_KM / kmPorU, 0.0);
+  vec2 tomadaV = vec2(0.0, ESCALA_DO_RELEVO_KM / kmPorV);
+  vec2 pegadaU = vec2(max(tomadaU.x, abs(ddx.x) + abs(ddy.x)), 0.0);
+  vec2 pegadaV = vec2(0.0, max(tomadaV.y, abs(ddx.y) + abs(ddy.y)));
+  float hL = alturaKm(vUv + tomadaU, pegadaU, pegadaV);
+  float hO = alturaKm(vUv - tomadaU, pegadaU, pegadaV);
+  float hN = alturaKm(vUv + tomadaV, pegadaU, pegadaV);
+  float hS = alturaKm(vUv - tomadaV, pegadaU, pegadaV);
+  float gLeste = (hL - hO) / (2.0 * ESCALA_DO_RELEVO_KM);
+  float gNorte = (hN - hS) / (2.0 * ESCALA_DO_RELEVO_KM);
+  vec3 nRelevo = normSeguro(n - pesoPolo * (gLeste * leste + gNorte * norte));
+  float razao = clamp(
+    difusaEnvolta(dot(nRelevo, uDirSolLocal)) / max(difusaEnvolta(ndotl), 1.0e-4),
+    0.0, RAZAO_TETO
+  );
+
+  float pesoSombra = pesoPolo * (1.0 - linstep(
+    ${Math.sin((10 * Math.PI) / 180).toFixed(4)}, ${Math.sin((20 * Math.PI) / 180).toFixed(4)}, ndotl
+  ));
+  float sombraPropria = 1.0;
+  if (pesoSombra > 0.0) {
+    vec2 horizontal = vec2(dot(uDirSolLocal, leste), dot(uDirSolLocal, norte));
+    float cosE = length(horizontal);
+    vec2 rumo = horizontal / max(cosE, 1.0e-4);
+    vec2 passoUv = PASSO_KM * vec2(rumo.x / kmPorU, rumo.y / kmPorV);
+    float subida = PASSO_KM * max(ndotl, 0.0) / max(cosE, 1.0e-3);
+    // o MESMO campo filtrado do relevo, no ponto de partida também
+    float h0 = alturaKm(vUv, pegadaU, pegadaV);
+    float luz = 1.0;
+    for (int i = 1; i <= PASSOS_DA_SOMBRA; i++) {
+      float f = float(i);
+      float acima = alturaKm(vUv + passoUv * f, pegadaU, pegadaV) - h0 - subida * f;
+      // penumbra que cresce com a distância ao topo que tapa (1 km por
+      // passo): a borda da sombra não marca o espaçamento dos passos
+      luz = min(luz, 1.0 - clamp(acima / (SUAVIDADE_KM * f), 0.0, 1.0));
+    }
+    sombraPropria = mix(1.0, luz, pesoSombra);
+  }
+
+  // as duas parcelas: a simples leva relevo e sombra própria, a múltipla
+  // (FRACAO_MULTIPLA_OPACA·α) só o termo da esfera
+  float multipla = FRACAO_MULTIPLA_OPACA * alfa;
+  float dia = max(
+    linstep(${NUVEM_TERMINADOR.lo.toFixed(2)}, ${NUVEM_TERMINADOR.hi.toFixed(2)}, ndotl)
+      * mix(razao * sombraPropria, 1.0, multipla),
+    ${NUVEM_TERMINADOR.pisoNoturno.toFixed(2)}
+  );
+  vec3 sombra = fatorDeEclipse(vLocal * ${RAZAO_CASCA_NUVENS}, n, ndotl);
+  float mu = dot(n, normSeguro(uCamNuvens - vLocal * ${RAZAO_CASCA_NUVENS}));
+  float alfaVista = 1.0 - pow(max(1.0 - alfa, 0.0), 1.0 / max(mu, 0.05));
+  gl_FragColor = vec4(vec3(dia * uLuzGanho) * sombra, alfaVista);
 }
 `;
 

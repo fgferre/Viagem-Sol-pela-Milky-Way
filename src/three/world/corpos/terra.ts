@@ -54,6 +54,7 @@
 // revisão; precedente c098470/9aff400).
 // ============================================================
 import * as THREE from 'three';
+import type { VarianteDaTerra } from '../../core/engine';
 import { CAMADA_DOS_OCULTADORES } from '../../core/post';
 import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import {
@@ -81,9 +82,11 @@ import {
   ATMOSFERA_FRAG,
   ATMOSFERA_VERT,
   NUVENS_FRAG,
+  NUVENS_PROFUNDIDADE_FRAG,
   RAZAO_CASCA_ATMOSFERA,
   RAZAO_CASCA_NUVENS,
   TERRA_FRAG,
+  TERRA_PROFUNDIDADE_FRAG,
   TERRA_VERT,
 } from '../../shaders/terraShaders';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
@@ -164,7 +167,8 @@ export type CanalDaTerra = (typeof CANAIS_DA_TERRA)[number];
  * de COR decodificam de sRGB, `normal` e `roughness` são DADO e ficam
  * lineares — pôr um normal map em sRGB torceria a normal em silêncio.
  * Todos são equiretangulares, então todos repetem em U (a emenda 0/360
- * fecha sem risca de mipmap).
+ * fecha sem risca de mipmap). É o MOLDE: cada Terra copia o pedido no
+ * construtor, porque o `assunto` das nuvens muda com a variante.
  */
 const PEDIDO_DA_TERRA: readonly CanalPedido[] = CANAIS_DA_TERRA.map((canal) => ({
   canal,
@@ -357,6 +361,13 @@ export class TerraResolvida {
   private matSuperficie: THREE.ShaderMaterial | null = null;
   private matNuvens: THREE.ShaderMaterial | null = null;
   private matAtmosfera: THREE.ShaderMaterial | null = null;
+  /** o par da variante `profundidade` — nasce junto do par clássico em
+   *  `garantirCascas`; trocar de variante só troca o material das malhas */
+  private matSuperficieFunda: THREE.ShaderMaterial | null = null;
+  private matNuvensFunda: THREE.ShaderMaterial | null = null;
+  private variante: VarianteDaTerra = 'classica';
+  /** o pedido das nuvens DESTA Terra — o `assunto` segue a variante */
+  private readonly pedidoDasNuvens: CanalPedido;
 
   // rascunhos reusados — zero alocação por quadro (M4 da casa)
   private readonly vX = new THREE.Vector3();
@@ -373,6 +384,39 @@ export class TerraResolvida {
     return this.estado;
   }
 
+  /** a variante em uso — só leitura (a porta e o preset decidem no Director) */
+  get varianteViva(): VarianteDaTerra {
+    return this.variante;
+  }
+
+  /**
+   * A VARIANTE DA TERRA, TROCADA AO VIVO (rodada das nuvens, 07/10) —
+   * troca só o material da superfície e o das nuvens; os dois pares
+   * nascem juntos em `garantirCascas` e compartilham os objetos de
+   * uniform, então nenhum setter do tick precisa saber qual está no ar.
+   *
+   * O 8K DAS NUVENS SEGUE NA PRÓXIMA CARGA: a variante marca o canal
+   * `clouds` como assunto (`CanalPedido.assunto`), e quem o lê é a carga
+   * seguinte — a primeira (o Director aplica a variante logo depois de
+   * construir a Terra, antes de qualquer textura) ou a troca de tier.
+   * Trocar de variante com o globo carregado não recarrega nada: a
+   * resolução das nuvens que já estão na tela fica até a próxima carga.
+   */
+  definirVariante(v: VarianteDaTerra) {
+    if (v === this.variante) return;
+    this.variante = v;
+    this.pedidoDasNuvens.assunto = v === 'profundidade';
+    this.vestirVariante();
+  }
+
+  /** os materiais da variante nas malhas — no-op antes de as cascas existirem */
+  private vestirVariante() {
+    if (!this.superficie || !this.nuvens) return;
+    const funda = this.variante === 'profundidade';
+    this.superficie.material = funda ? this.matSuperficieFunda! : this.matSuperficie!;
+    this.nuvens.material = funda ? this.matNuvensFunda! : this.matNuvens!;
+  }
+
   constructor(opcoes: OpcoesDaTerra) {
     // O fluxo metalness da casa entra como o caso ESPECIALIZADO
     // metalness = 0 (F0 = 0,04 dielétrico): este material não tem ramo
@@ -385,9 +429,11 @@ export class TerraResolvida {
       );
     }
     this.group.visible = false;
+    const canais = PEDIDO_DA_TERRA.map((c) => ({ ...c }));
+    this.pedidoDasNuvens = canais.find((c) => c.canal === 'clouds')!;
     this.texturas = new TexturasDoCorpo({
       corpo: 'earth',
-      canais: PEDIDO_DA_TERRA,
+      canais,
       rede: opcoes,
       etiqueta: 'terra',
       oQueNaoNasce: 'o globo não nasce nesta sessão',
@@ -398,6 +444,9 @@ export class TerraResolvida {
         uS.uMapaNoite.value = porCanal.get('night');
         uS.uMapaNormal.value = porCanal.get('normal');
         uS.uMapaRugosidade.value = porCanal.get('roughness');
+        // as nuvens: UM objeto de uniform, o mesmo nas duas cascas e na
+        // superfície `profundidade` (a sombra lê a textura da casca —
+        // nenhum byte a mais), então esta escrita vale para as três
         this.matNuvens!.uniforms.uMapaNuvens.value = porCanal.get('clouds');
       },
       soltar: () => {
@@ -408,6 +457,7 @@ export class TerraResolvida {
           uS.uMapaNormal.value = null;
           uS.uMapaRugosidade.value = null;
         }
+        // o objeto compartilhado das três (ver `publicar`)
         if (this.matNuvens) this.matNuvens.uniforms.uMapaNuvens.value = null;
       },
     });
@@ -611,6 +661,17 @@ export class TerraResolvida {
     );
     uN.uLuzGanho.value = ganho;
     escreverSombraDeEclipse(uN, this.sombra, this.vX, this.vY, this.vZ, derivaRad);
+    // a variante `profundidade` (o resto ela lê dos objetos compartilhados):
+    // a câmera no frame da casca, pelo MESMO giro do Sol, e o deslocamento
+    // da deriva em u — fract(−θ/2π) em float64; θ (~1,8e3 rad) nunca vai à
+    // GPU, onde o float32 o arredondaria em ~1e-4 rad
+    (this.matNuvensFunda!.uniforms.uCamNuvens.value as THREE.Vector3).set(
+      cLx * cosD - cLz * sinD,
+      cLy,
+      cLx * sinD + cLz * cosD
+    );
+    const voltas = -derivaRad / (2 * Math.PI);
+    this.matSuperficieFunda!.uniforms.uDeslocU.value = voltas - Math.floor(voltas);
 
     const uA = this.matAtmosfera!.uniforms;
     (uA.uDirSolLocal.value as THREE.Vector3).set(sLx, sLy, sLz);
@@ -677,6 +738,36 @@ export class TerraResolvida {
     this.nuvens.matrixAutoUpdate = false;
     this.nuvens.renderOrder = 8;
 
+    // O PAR `profundidade` (rodada das nuvens, 07/10), no molde do
+    // `materialDoRaymarch` da nebulosa: os MESMOS objetos de uniform do
+    // par clássico (o espalhamento copia as referências), mais os poucos
+    // que só ele lê. A superfície funda recebe o uniform das nuvens da
+    // casca — o mesmo objeto, a mesma textura. Composição idêntica à do
+    // par clássico: opaca com depth; nuvens translúcidas sem depth.
+    this.matSuperficieFunda = new THREE.ShaderMaterial({
+      vertexShader: TERRA_VERT,
+      fragmentShader: TERRA_PROFUNDIDADE_FRAG,
+      uniforms: {
+        ...this.matSuperficie.uniforms,
+        uMapaNuvens: this.matNuvens.uniforms.uMapaNuvens,
+        uDeslocU: { value: 0 },
+      },
+      depthWrite: true,
+      depthTest: true,
+      transparent: false,
+    });
+    this.matNuvensFunda = new THREE.ShaderMaterial({
+      vertexShader: TERRA_VERT,
+      fragmentShader: NUVENS_PROFUNDIDADE_FRAG,
+      uniforms: {
+        ...this.matNuvens.uniforms,
+        uCamNuvens: { value: new THREE.Vector3(0, 0, 4) },
+      },
+      depthWrite: false,
+      depthTest: true,
+      transparent: true,
+    });
+
     this.matAtmosfera = new THREE.ShaderMaterial({
       vertexShader: ATMOSFERA_VERT,
       fragmentShader: ATMOSFERA_FRAG,
@@ -709,6 +800,7 @@ export class TerraResolvida {
     this.atmosfera.renderOrder = 9;
 
     this.group.add(this.superficie, this.nuvens, this.atmosfera);
+    this.vestirVariante();
   }
 
   dispose() {
@@ -718,6 +810,8 @@ export class TerraResolvida {
     this.matSuperficie?.dispose();
     this.matNuvens?.dispose();
     this.matAtmosfera?.dispose();
+    this.matSuperficieFunda?.dispose();
+    this.matNuvensFunda?.dispose();
     this.texturas.dispose();
   }
 }

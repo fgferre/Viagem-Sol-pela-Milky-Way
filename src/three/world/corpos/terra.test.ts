@@ -42,12 +42,15 @@ import {
   CUSHION_DO_GATE,
   DERIVA_DAS_NUVENS,
   LIMIAR_DO_GATE_PX,
+  NUVENS_FRAG,
+  NUVENS_PROFUNDIDADE_FRAG,
   RECARGAS_ATE_DESISTIR,
   RAIO_EQ_TERRA_PC,
   RAIO_POLAR_TERRA_PC,
   RAZAO_CASCA_ATMOSFERA,
   RAZAO_CASCA_NUVENS,
   TERRA_FRAG,
+  TERRA_PROFUNDIDADE_FRAG,
   TerraResolvida,
   alvoDePixels,
   cessaoAlvo,
@@ -1328,5 +1331,144 @@ describe('8. o eclipse na tela (F2c/D3)', () => {
     expect(u.uEclipseEixo.value).toEqual(eixo0);
     expect(u.uEclipseCone.value).toEqual(cone0);
     expect(u.uEclipsePisoEscalar.value).toBe(1);
+  });
+});
+
+// ------------------------------------------------------------
+// 9. A VARIANTE `profundidade` (rodada das nuvens, 07/10)
+// ------------------------------------------------------------
+
+/** diferença circular em u (voltas), em (−0,5, 0,5] */
+function difU(a: number, b: number): number {
+  return ((((a - b) % 1) + 1.5) % 1) - 0.5;
+}
+
+/** u de uma direção pela convenção da SphereGeometry (pinada no bloco 2) */
+function uDaDirecao(x: number, z: number): number {
+  return Math.atan2(z, -x) / (2 * Math.PI);
+}
+
+async function terraNaTela(variante: 'classica' | 'profundidade', jd = JD) {
+  const { terra, chamadas } = terraDeTeste();
+  terra.definirVariante(variante);
+  const perto = centroPc(jd);
+  perto.z += RAIO_EQ_TERRA_PC * 4;
+  const q = quadro(perto, { jdTdb: jd });
+  terra.atualizar(q);
+  await flush();
+  expect(terra.atualizar(q).emQuadro).toBe(true);
+  const [sup, nuv] = terra.group.children as THREE.Mesh[];
+  return { terra, chamadas, sup: sup!, nuv: nuv!, q };
+}
+
+describe('9. a variante profundidade (rodada das nuvens, 07/10)', () => {
+  /**
+   * O SINAL DA DERIVA, no estilo do oráculo do bloco 1: o ponto do chão
+   * que está SOB um texel de nuvem tem de amostrar ESSE texel. O juiz
+   * leva o ponto do chão (uv da superfície) ao mundo pela matriz da
+   * superfície e de volta à esfera da casca pela inversa da matriz das
+   * nuvens — o transform COMPLETO, com o giro da deriva —, e o u da casca
+   * tem de ser o `vUv.x + uDeslocU` que o shader usa. O controle negativo
+   * (o sinal trocado) tem de reprovar.
+   */
+  it.each(JDS)('o chão sob um texel de nuvem amostra ESSE texel — jd %f', async (jd) => {
+    const { terra, sup, nuv } = await terraNaTela('profundidade', jd);
+    const desloc = (sup.material as THREE.ShaderMaterial).uniforms.uDeslocU.value as number;
+    expect(desloc).toBeGreaterThanOrEqual(0);
+    expect(desloc).toBeLessThan(1);
+    const inversa = nuv.matrix.clone().invert();
+    for (const [u, v] of [[0.1, 0.5], [0.37, 0.8], [0.9, 0.2]] as const) {
+      const d = direcaoLocalDeLonLat((u - 0.5) * 360, (v - 0.5) * 180);
+      // a fórmula de u do juiz é a da convenção pinada
+      expect(difU(uDaDirecao(d[0], d[2]), u)).toBeCloseTo(0, 10);
+      const naCasca = new THREE.Vector3(d[0], d[1], d[2])
+        .applyMatrix4(sup.matrix)
+        .applyMatrix4(inversa);
+      const uNuvem = uDaDirecao(naCasca.x, naCasca.z);
+      expect(difU(u + desloc, uNuvem)).toBeCloseTo(0, 8);
+      // v não anda com a deriva (o giro é em torno do polo)
+      const latNuvem = Math.atan2(naCasca.y, Math.hypot(naCasca.x, naCasca.z));
+      expect(0.5 + latNuvem / Math.PI).toBeCloseTo(v, 8);
+      // controle negativo: o sinal trocado erra o texel
+      expect(Math.abs(difU(u - desloc, uNuvem))).toBeGreaterThan(1e-3);
+    }
+    terra.dispose();
+  });
+
+  /**
+   * O CONTRATO DO PAR NOVO, no molde do juiz do ar (bloco 8): cada
+   * material oferece exatamente o que o shader MONTADO declara; a
+   * superfície funda lê o MESMO uniform (e portanto a mesma textura) das
+   * nuvens, e a descarga o solta junto.
+   */
+  it('o par profundidade OFERECE o que os shaders montados DECLARAM, e lê a MESMA textura de nuvens', async () => {
+    const { terra, sup, nuv } = await terraNaTela('profundidade');
+    const mS = sup.material as THREE.ShaderMaterial;
+    const mN = nuv.material as THREE.ShaderMaterial;
+    expect(mS.fragmentShader).toBe(TERRA_PROFUNDIDADE_FRAG);
+    expect(mN.fragmentShader).toBe(NUVENS_PROFUNDIDADE_FRAG);
+    for (const m of [mS, mN]) {
+      const declarados = [...m.fragmentShader.matchAll(/^uniform\s+\w+\s+(\w+)\s*;/gm)].map(
+        (x) => x[1]!
+      );
+      expect(Object.keys(m.uniforms).sort()).toEqual([...new Set(declarados)].sort());
+    }
+    expect(mS.uniforms.uMapaNuvens).toBe(mN.uniforms.uMapaNuvens);
+    expect(mS.uniforms.uMapaNuvens.value).toBeInstanceOf(THREE.Texture);
+    // a descarga (longe, passada a carência) solta a textura nas três
+    const longe = new THREE.Vector3(0, 0, 40);
+    terra.atualizar(quadro(longe));
+    terra.atualizar(quadro(longe, { tS: 15.1 }));
+    expect(mS.uniforms.uMapaNuvens.value).toBeNull();
+    expect(mN.uniforms.uMapaNuvens.value).toBeNull();
+    terra.dispose();
+  });
+
+  it('trocar de variante ao vivo troca SÓ os materiais — sem fetch, a composição de sempre', async () => {
+    const { terra, chamadas, sup, nuv, q } = await terraNaTela('classica');
+    const classicos = [sup.material, nuv.material];
+    expect((classicos[0] as THREE.ShaderMaterial).fragmentShader).toBe(TERRA_FRAG);
+    expect((classicos[1] as THREE.ShaderMaterial).fragmentShader).toBe(NUVENS_FRAG);
+    const antes = chamadas.length;
+    terra.definirVariante('profundidade');
+    expect(terra.varianteViva).toBe('profundidade');
+    const mS = sup.material as THREE.ShaderMaterial;
+    const mN = nuv.material as THREE.ShaderMaterial;
+    expect(mS.fragmentShader).toBe(TERRA_PROFUNDIDADE_FRAG);
+    expect(mN.fragmentShader).toBe(NUVENS_PROFUNDIDADE_FRAG);
+    expect([mS.depthWrite, mS.transparent, mN.depthWrite, mN.transparent]).toEqual([
+      true,
+      false,
+      false,
+      true,
+    ]);
+    expect(nuv.renderOrder).toBe(8);
+    // o tick escreve nos objetos compartilhados: o ganho chega ao par novo
+    terra.atualizar(quadro(q.camPosPc, { politica: 'real' }));
+    expect(mN.uniforms.uLuzGanho.value).toBe(
+      (classicos[1] as THREE.ShaderMaterial).uniforms.uLuzGanho.value
+    );
+    expect((mN.uniforms.uCamNuvens.value as THREE.Vector3).length()).toBeCloseTo(4, 6);
+    await flush();
+    expect(chamadas).toHaveLength(antes);
+    terra.definirVariante('classica');
+    expect([sup.material, nuv.material]).toEqual(classicos);
+    expect(sup.material).toBe(classicos[0]);
+    terra.dispose();
+  });
+
+  it('o 8k das nuvens é SÓ da profundidade, SÓ em cinema — a classica segue no 4k', async () => {
+    const { terra, chamadas } = await terraNaTela('profundidade');
+    const texs = chamadas.filter((c) => c.startsWith('tex:'));
+    expect(texs).toContain('tex:textures/atlas/earth/clouds.webp');
+    expect(texs).not.toContain('tex:textures/atlas/earth/clouds_4096.jpg');
+    // o apoio que não é assunto continua na dose de VRAM
+    expect(texs).toContain('tex:textures/atlas/earth/night_4096.webp');
+    terra.dispose();
+    expect(alvoDePixels('cinema', 'clouds', 16384, true)).toBe(8192);
+    expect(alvoDePixels('cinema', 'clouds', 4096, true)).toBe(4096);
+    expect(alvoDePixels('alta', 'clouds', 16384, true)).toBe(2048);
+    expect(alvoDePixels('performance', 'clouds', 16384, true)).toBe(1024);
+    expect(alvoDePixels('cinema', 'clouds', 16384)).toBe(ALVO_DE_APOIO_CINEMA);
   });
 });

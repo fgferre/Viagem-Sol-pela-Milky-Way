@@ -12,6 +12,7 @@ import {
   lerPortaNebulosa,
   lerPortaParticulas,
   lerPortaPoeira,
+  lerPortaTerra,
   modoDoToneMapping,
 } from './core/engine';
 // `t` entra APELIDADO porque neste arquivo `t` já é o TEMPO (o segundo
@@ -29,6 +30,7 @@ import type {
   ParticulasDaGalaxia,
   QualityLevel,
   TipoDePoeira,
+  VarianteDaTerra,
 } from './core/engine';
 import type { EstadoDaPoeira, EstadoDaVista } from './selo';
 import type { MotorEfemerides } from '../lib/atlas/efemerides';
@@ -59,6 +61,7 @@ import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import { CORPOS_DEFAULT_ON, CorposResolvidos } from './world/corpos/corpos';
 import { LuaResolvida } from './world/corpos/lua';
+import type { TerraResolvida } from './world/corpos/terra';
 import { RochosoResolvido } from './world/corpos/rochoso';
 import { GiganteResolvido } from './world/corpos/gigante';
 import { Planetas, UA_POR_PC } from './world/planetas/planetas';
@@ -655,11 +658,14 @@ export class Director {
    * por `montarCorposDoPalco`; o laço mora em `director/palco.ts`.
    */
   private noPalco: readonly PostoNoPalco[] = [];
-  /** A LUA pelo nome — o único posto que alguém procura fora do laço
-   *  (o rUA da cadeia dela alimenta a linha BRILHO do selo). A Terra
-   *  não precisa de handle: quem a quer de fora (o juiz de z-fighting)
-   *  a acha em `noPalco` pelo id, que é o endereço único desde 22/08. */
+  /** A LUA pelo nome — um dos dois postos que alguém procura fora do
+   *  laço (o rUA da cadeia dela alimenta a linha BRILHO do selo). O juiz
+   *  de z-fighting acha a Terra em `noPalco` pelo id, que é o endereço
+   *  único desde 22/08. */
   private lua: PostoNoPalco<LuaResolvida> | null = null;
+  /** A TERRA pelo nome — o outro: a variante dela (`aplicarTerra`) é
+   *  trocada daqui, ao vivo, sem passar pelo laço. */
+  private terra: PostoNoPalco<TerraResolvida> | null = null;
   /** as duas fatias que a ESCADA percorre por tipo — os MESMOS objetos
    *  de `noPalco`: uma lista, duas leituras. */
   private rochosos: readonly PostoNoPalco<RochosoResolvido>[] = [];
@@ -1026,6 +1032,13 @@ export class Director {
    */
   private gasForcado: GasVolumetrico | null = lerPortaGas(this.debug.get('gas'));
   /**
+   * A VARIANTE DA TERRA ESCOLHIDA À MÃO (rodada das nuvens, 07/10) —
+   * `null` = a do preset. Mesmo contrato de `gasForcado`: lida no CAMPO,
+   * para valer já na Terra que o init monta, antes da primeira carga de
+   * textura (é ela que decide o 8k das nuvens).
+   */
+  private terraForcada: VarianteDaTerra | null = lerPortaTerra(this.debug.get('terra'));
+  /**
    * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA ESCOLHIDA À MÃO (item 149) —
    * `null` = a do preset. Mesmo contrato de `gasForcado`: lido no CAMPO,
    * para valer já na primeira galáxia que o init carrega.
@@ -1230,6 +1243,9 @@ export class Director {
       // a variante do gás (item 145b) troca de preset junto com os
       // passos/escala — mesmo motivo: quem muda o preset aplica os dois.
       this.aplicarGas();
+      // a variante da Terra (rodada das nuvens) também é do preset —
+      // sem efeito antes de a Terra nascer (o init a aplica no parto)
+      this.aplicarTerra();
       // a fração de partículas (item 149) troca de preset do mesmo jeito
       // — sem efeito ainda quando a galáxia não nasceu (init).
       this.aplicarParticulas();
@@ -2065,6 +2081,10 @@ export class Director {
       pinos: () => this.filme.pinos,
     });
     this.lua = corpos.lua;
+    this.terra = corpos.terra;
+    // a variante da Terra ANTES de qualquer tick: a primeira carga de
+    // textura já sai na resolução de nuvens da variante
+    this.aplicarTerra();
     this.rochosos = corpos.rochosos;
     this.gigantes = corpos.gigantes;
     this.noPalco = corpos.noPalco;
@@ -3028,6 +3048,30 @@ export class Director {
     this.aplicarGas();
     // a imagem mudou (as três variantes desenham gás diferente, não a
     // mesma nuvem mais barata): a contagem de estabilidade recomeça
+    this.perturbar();
+    this.publicarQualidade();
+  }
+
+  /**
+   * A VARIANTE DA TERRA, num lugar só (rodada das nuvens, 07/10): a que a
+   * porta `?terra=` pediu ou, na ausência dela, a do preset —
+   * `TerraResolvida.definirVariante` é no-op se nada muda. Antes de a
+   * Terra nascer não há o que vestir; o parto dela chama de novo.
+   */
+  private aplicarTerra() {
+    this.terra?.corpo.definirVariante(this.terraForcada ?? this.engine.preset.terra);
+  }
+
+  /**
+   * A TERRA, TROCADA AO VIVO (rodada das nuvens, 07/10) — troca de
+   * material na `TerraResolvida`, sem recarregar (o 8k das nuvens segue
+   * na próxima carga — ver `definirVariante`). `null` devolve a variante
+   * ao preset.
+   */
+  forcarTerra(variante: VarianteDaTerra | null) {
+    this.terraForcada = variante;
+    this.aplicarTerra();
+    // a imagem mudou: a contagem de estabilidade recomeça
     this.perturbar();
     this.publicarQualidade();
   }
