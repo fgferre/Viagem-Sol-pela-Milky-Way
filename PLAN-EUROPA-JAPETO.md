@@ -195,6 +195,15 @@ Jápeto
   b* (−2,63·sin² lat, do PIA00502); o sul preenchido sai acastanhado (a última faixa válida é mais escura). Entrada na
   cadeia ainda não feita (F).
 
+- **F, parte de Europa (07/10, commit c4a42a7):** entrada `europa/map` pelo cache (`.cache/europa/…500m.tif`, sha256
+  a323…; falta ou hash errado = falha com a URL), 4096, meia volta, sul por coluna, passo `corEuropa` com portão
+  (`receita:a,tom:meio` → 9d2b…1a0e); prova por runner (`ferramentas/prova-cadeia-europa.mjs`): hash igual ao
+  candidato, com hash trocado recusa e não grava. Confissão pt/en no ASSETS, `ORIGENS` e tradução. Comando dele:
+  `npm run data:texturas-fontes -- europa` (grava só `public/textures/atlas/europa/map.jpg`), depois
+  `npm run data:texturas` (escada, webp e manifesto). **No mesmo commit da regeneração:** `src/lib/atlas/ficha.test.ts:445`
+  (espera "68 linhas") muda para a confissão nova; `verify-assets.test.mjs` (4 testes) volta a passar sozinho; o
+  comentário de `lib-texturas.mjs:272` ("68 linhas de Europa") sai.
+
 ## Fora do escopo
 Os outros assets fracos do item 230 (Urano, Netuno, Vesta, Deimos, Tritão pausado, Ariel, Titã, Vênus); relevo de
 Europa (fica sem); altura em 16 bits no app (o carregador é `UnsignedByteType`, `texturas.ts:440`); a Cassini Regio
