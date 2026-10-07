@@ -79,10 +79,6 @@ export const EM_INGLES = new Map([
     'Solar System Scope — 2k_neptune (incumbent; SSS has no 8k)',
   ],
   [
-    'Solar System Scope — 8k_earth_normal_map.tif via Wayback Machine, reencodado jpg (bake-earth-pbr do doador)',
-    'Solar System Scope — 8k_earth_normal_map.tif via the Wayback Machine, re-encoded to jpg (bake-earth-pbr, from the donor project)',
-  ],
-  [
     'Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, INVERTIDO (negate) para roughness — o SSS pinta oceano claro (=reflexivo) e o roughnessMap espera 0=espelho (checklist item 14)',
     'Solar System Scope — 8k_earth_specular_map.tif via the Wayback Machine, INVERTED (negate) into roughness — SSS paints the ocean light (= reflective) and roughnessMap expects 0 = mirror (checklist item 14)',
   ],
@@ -265,6 +261,21 @@ export const EM_INGLES = new Map([
   [
     'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.',
     "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked in this house (Felipe Ferreira), with the pits from the author's AI painting.",
+  ],
+
+  // ---- o relevo medido da Terra (07/10/2026): ETOPO 2022 da NOAA -----
+  [
+    'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS',
+    'ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — NORMAL map',
+  ],
+  [
+    'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    'ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)',
+  ],
+  ['CC0 1.0 (domínio público)', 'CC0 1.0 (public domain)'],
+  [
+    'Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).',
+    'Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs).',
   ],
 
   // ---- fontes: os seis sem foto de superfície, ilustrados por IA
@@ -470,6 +481,15 @@ export const EM_INGLES = new Map([
 
   // ---- "o defeito" e "o relevo admite" (tabela `a imagem` do ASSETS)
   // A vírgula decimal do português vira PONTO aqui: "2,7 km" é "2.7 km".
+  // o relevo medido da Terra (07/10/2026)
+  [
+    'relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água',
+    "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level",
+  ],
+  [
+    'a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água',
+    "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level",
+  ],
   [
     'mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha',
     'a real Dawn mosaic, but shot through the clear filter: the color is a uniform tint applied in this house, and the south pole, which the spacecraft caught in polar night, was filled in with the average of the neighboring latitude band',

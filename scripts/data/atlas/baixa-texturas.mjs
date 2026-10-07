@@ -24,14 +24,18 @@
 //   - Solar System Scope — https://www.solarsystemscope.com/textures/
 //     (CC BY 4.0; daymap/clouds/nightmap/moon vêm de
 //     .../textures/download/<arquivo>).
-//   - PBR da Terra (normal + roughness) — via WAYBACK MACHINE
-//     (checklist item 14): o host canônico responde 403 a
-//     User-Agent não-browser; os TIFFs de normal/especular saem
-//     de web.archive.org e o bake converte para jpg. ATENÇÃO: o
-//     roughness é o ESPECULAR INVERTIDO (negate) — o SSS pinta
-//     oceano CLARO (=reflexivo) e o roughnessMap do three espera
-//     0=espelho; copiar sem inverter dá oceano fosco e continente
-//     espelhado, plausível e errado.
+//   - Roughness da Terra — via WAYBACK MACHINE (checklist item
+//     14): o host canônico responde 403 a User-Agent não-browser;
+//     o TIFF especular sai de web.archive.org e o bake converte
+//     para jpg. ATENÇÃO: o roughness é o ESPECULAR INVERTIDO
+//     (negate) — o SSS pinta oceano CLARO (=reflexivo) e o
+//     roughnessMap do three espera 0=espelho; copiar sem inverter
+//     dá oceano fosco e continente espelhado, plausível e errado.
+//     A normal do SSS saiu em 07/10/2026: a da Terra nasce nesta
+//     casa do relevo medido (ver `relevoTerra`, abaixo).
+//   - NOAA NCEI — o ETOPO 2022 (doi 10.25921/fd45-gt74, CC0), a
+//     grade de 60″ da superfície, que entra pelo CACHE conferida
+//     por sha256 (`.cache/terra/FONTES.json`).
 //   - NASA 3D resources — https://science.nasa.gov/3d-resources/
 //     (fases futuras: Deimos etc.; nenhuma entrada nesta rodada).
 //   - Projeto Saturn do dono — https://github.com/fgferre/Saturn
@@ -114,16 +118,26 @@
 // encontra (`gravaRelevoDeReia`): nunca a altura de uma versão com a normal
 // de outra.
 //
+// O RELEVO DA TERRA (07/10/2026, capturas/terra-nuvens/relevo/): as
+// entradas `earth/normal`, `earth/horizon` e `earth/horizon2` não adquirem
+// nada — saem do gerador `relevo-terra.mjs` pela MESMA sequência de
+// chamadas dos candidatos que ele aprovou pela prancha: o ETOPO 2022 do
+// cache (conferido por sha256), a água como espelho, a média de área, a
+// normal em 8192 e o horizonte em 4096. O mesmo portão do conjunto (os três
+// canais e os números) e os TRÊS gravados juntos pela primeira das entradas
+// que a corrida encontra (`gravaRelevoDaTerra`).
+//
 // ESCOPO OPCIONAL (o mesmo do otimiza-texturas): sem corpo nomeado, a
 // tabela inteira; com corpos, só eles; com `corpo/canal`, só aquele canal
-// (o relevo de Jápeto ou o de Reia sem refazer o map.jpg do Saturn, que pede
-// `--offline`).
+// (o relevo de Jápeto, o de Reia ou o da Terra sem refazer os mapas de cor;
+// os do Saturn pedem `--offline`).
 //
 //   node scripts/data/atlas/baixa-texturas.mjs --offline ~/Github/atlas-orbital
 //   node scripts/data/atlas/baixa-texturas.mjs            (rede, reprodutibilidade)
 //   node scripts/data/atlas/baixa-texturas.mjs --offline ~/Github/atlas-orbital ceres vesta
 //   node scripts/data/atlas/baixa-texturas.mjs iapetus/height iapetus/normal
 //   node scripts/data/atlas/baixa-texturas.mjs rhea/height rhea/normal
+//   node scripts/data/atlas/baixa-texturas.mjs earth/normal earth/horizon earth/horizon2
 // ============================================================
 
 import { createHash } from 'node:crypto';
@@ -147,6 +161,7 @@ import {
   escalaEVies, geraRelevo, normalDoCampo, quantiza,
 } from './relevo-japeto.mjs';
 import * as Reia from './relevo-reia.mjs';
+import * as Terra from './relevo-terra.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -218,12 +233,34 @@ const RELEVO_DE_REIA = {
   },
 };
 
+// O RELEVO APROVADO DA TERRA (07/10/2026, pela prancha
+// `capturas/terra-nuvens/relevo/relevo-prancha.jpg`), que `earth/normal`,
+// `earth/horizon` e `earth/horizon2` dividem. `candidato`: a pasta dos
+// candidatos, com o `parametros.json` que o portão confronta; `etopo`: o
+// ETOPO 2022 no cache (o sha256 de `.cache/terra/FONTES.json`), pinado;
+// as grades são as do gerador (`Terra.NORMAL`, `Terra.HORIZONTE`).
+// `sha256Aprovado`: o RGB de cada um dos três canais e o JSON canônico dos
+// números (`numerosDoRelevoDaTerra`).
+const RELEVO_DA_TERRA = {
+  candidato: 'capturas/terra-nuvens/relevo',
+  etopo: {
+    arquivo: '.cache/terra/ETOPO_2022_v1_60s_N90W180_surface.tif',
+    sha256: '9d27d4b8ea8e76977e2988bca667d7c8fa68b927355feffcddd6b4875a7fd08e',
+  },
+  sha256Aprovado: {
+    normal: '27a3fd5e2c0858a78f603b7a4a6e785eeed771030aabf2c603843709800b1adc',
+    horizon: 'a6121932b05c1bd6ab789da8a1d3297d3443bd6fd695f7de94151bec5e1dce0d',
+    horizon2: 'dd83966131f4a94d7aa7d8f4d9541c113ff8a1b3a93e40d2dc40e951d9f8394c',
+    parametros: '3fc74b6e147722378477fe34695bba539b6b34676e0073dd1f284ed136cdaf10',
+  },
+};
+
 // ---- A tabela de fontes desta rodada (F2a: Terra + Lua). As fases
 // seguintes fazem APPEND aqui — uma linha por arquivo, com a URL de
 // reprodutibilidade e o nome que o arquivo tem no doador local.
 // `bake` marca as entradas cujo caminho online baixa um TIFF e assa
-// (normal: reencode jpg; roughness: grayscale + NEGATE — a inversão
-// do item 14); no offline elas copiam o jpg já assado do doador.
+// (roughness: grayscale + NEGATE — a inversão do item 14); no offline
+// elas copiam o jpg já assado do doador.
 // Exportada para a prova de que a cadeia reproduz uma prévia aprovada.
 export const FONTES = [
   {
@@ -244,13 +281,17 @@ export const FONTES = [
     url: `${SSS}/8k_earth_nightmap.jpg`,
     nomeNoDoador: '8k_earth_nightmap.jpg',
   },
-  {
+  // O RELEVO MEDIDO DA TERRA (07/10/2026): a normal artística do SSS
+  // (`8k_earth_normal_map`) saiu; a normal e os dois mapas de horizonte
+  // saem do gerador `relevo-terra.mjs` (`relevoDaTerra`) a partir do ETOPO
+  // 2022 do cache, na grade e na convenção da casa, sem giro. A url é a
+  // do ETOPO, que entra pelo cache.
+  ...['normal', 'horizon', 'horizon2'].map((canal) => ({
     corpo: 'earth',
-    canal: 'normal',
-    url: `${WAYBACK}/2024/https://www.solarsystemscope.com/textures/download/8k_earth_normal_map.tif`,
-    nomeNoDoador: '8k_earth_normal_map.jpg',
-    bake: 'normal',
-  },
+    canal,
+    url: Terra.ETOPO.url,
+    relevoTerra: RELEVO_DA_TERRA,
+  })),
   {
     corpo: 'earth',
     canal: 'roughness',
@@ -832,23 +873,18 @@ export async function conferirArquivoDoCache({ corpo, canal, url, arquivoDoCache
   return caminho;
 }
 
-/** Bake do PBR da Terra (vendorizado de bake-earth-pbr.js, item 14). */
-async function assarPbr(tiffPath, destino, tipo) {
-  const fonte = sharp(await readFile(tiffPath));
-  if (tipo === 'roughness') {
-    // A INVERSÃO: especular do SSS (oceano claro = reflexivo) vira
-    // roughness (0 = espelho) por negate. Opções idênticas às do
-    // bake do doador para minimizar divergência entre os modos.
-    await fonte
-      .grayscale()
-      .negate({ alpha: false })
-      .jpeg({ quality: 85, mozjpeg: true })
-      .toFile(destino);
-  } else {
-    await fonte
-      .jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true })
-      .toFile(destino);
-  }
+/**
+ * Bake do roughness da Terra (vendorizado de bake-earth-pbr.js, item 14).
+ * A INVERSÃO: especular do SSS (oceano claro = reflexivo) vira roughness
+ * (0 = espelho) por negate. Opções idênticas às do bake do doador para
+ * minimizar divergência entre os modos.
+ */
+async function assarRoughness(tiffPath, destino) {
+  await sharp(await readFile(tiffPath))
+    .grayscale()
+    .negate({ alpha: false })
+    .jpeg({ quality: 85, mozjpeg: true })
+    .toFile(destino);
 }
 
 /**
@@ -1392,31 +1428,33 @@ export async function escalaEViesDoApp(corpo = 'iapetus') {
 }
 
 /**
- * O PORTÃO DO RELEVO (Jápeto, Reia): grava só se o CONJUNTO for o aprovado —
- * os números da cadeia iguais aos do `parametros.json` do candidato, a
- * escala e o viés de `rochoso.ts` iguais aos do candidato, e os três sha256
- * (altura, normal, números) iguais aos de `sha256Aprovado` da entrada.
- * Um só que falhe e nenhum dos dois canais é gravado: uma escala nova
- * mudaria a silhueta sem mudar um pixel. Pura: `{ grava, mensagem }`.
+ * O PORTÃO DO RELEVO (Jápeto, Reia, Terra): grava só se o CONJUNTO for o
+ * aprovado — os números da cadeia iguais aos do `parametros.json` do
+ * candidato, a escala e o viés de `rochoso.ts` iguais aos do candidato
+ * (`doApp`; a Terra não desloca vértice e não o passa), e os sha256 de cada
+ * um dos `canais` e dos números iguais aos de `sha256Aprovado` da entrada.
+ * Um só que falhe e nenhum dos canais é gravado: uma escala nova mudaria a
+ * silhueta sem mudar um pixel. Pura: `{ grava, mensagem }`.
  */
-export function portaoDoRelevo({ rotulo, candidato, obtidos, aprovados = {}, numeros, doCandidato, doApp }) {
+export function portaoDoRelevo({ rotulo, candidato, obtidos, aprovados = {}, numeros, doCandidato, doApp, canais = ['height', 'normal'] }) {
+  const chaves = [...canais, 'parametros'];
   const problemas = [
     ...diferencasDosNumeros(numeros, doCandidato).map((d) => `os números da cadeia diferem do parametros.json do candidato em ${d}`),
-    ...['escala', 'vies']
+    ...(doApp ? ['escala', 'vies'] : [])
       .filter((k) => doApp[k] !== doCandidato[k])
       .map((k) => `rochoso.ts traz ${k === 'vies' ? 'viés' : k} ${doApp[k]}, o candidato ${doCandidato[k]}`),
   ];
-  const faltam = ['height', 'normal', 'parametros'].filter((k) => !aprovados[k]);
-  const lista = ['height', 'normal', 'parametros'].map((k) => `${k} ${obtidos[k]}`).join(', ');
+  const faltam = chaves.filter((k) => !aprovados[k]);
+  const lista = chaves.map((k) => `${k} ${obtidos[k]}`).join(', ');
   if (!problemas.length && faltam.length) {
     return {
       grava: false,
       mensagem:
         `${rotulo}: o relevo ainda não aprovado (${faltam.join(', ')} sem hash; obtidos: ${lista}) — NADA foi gravado. ` +
-        'Com o sim do dono, os hashes entram no sha256Aprovado do relevo (RELEVO_DE_JAPETO, RELEVO_DE_REIA).',
+        'Com o sim do dono, os hashes entram no sha256Aprovado do relevo (RELEVO_DE_JAPETO, RELEVO_DE_REIA, RELEVO_DA_TERRA).',
     };
   }
-  for (const k of ['height', 'normal', 'parametros']) {
+  for (const k of chaves) {
     if (aprovados[k] && obtidos[k] !== aprovados[k]) problemas.push(`${k}: sha256 ${obtidos[k]}, o aprovado é ${aprovados[k]}`);
   }
   if (problemas.length) {
@@ -1678,13 +1716,36 @@ async function fazConjuntoDeReia(fonte) {
 
 const PARES_GRAVADOS = new Set();
 /**
+ * Os PNG de um conjunto aprovado (`png[canal]`) na pasta de `destino`, TODOS
+ * de uma vez: cada um vai a um temporário na mesma pasta e só então são
+ * renomeados por cima dos de antes. A segunda entrada da mesma corrida acha
+ * o conjunto gravado (pasta + hashes) e não regrava.
+ */
+async function gravaOsCanaisJuntos(rotulo, destino, { png, obtidos }, mensagem) {
+  const pasta = path.dirname(destino);
+  const par = `${pasta}|${jsonCanonico(obtidos)}`;
+  if (PARES_GRAVADOS.has(par)) {
+    console.log(`${rotulo}: já gravado junto com os outros canais nesta corrida.`);
+    return;
+  }
+  const canais = Object.keys(png);
+  console.log(`${mensagem} (${canais.join(', ')} juntos)`);
+  const temporario = (canal) => path.join(pasta, `.${canal}.png.${process.pid}.tmp`);
+  try {
+    for (const canal of canais) await writeFile(temporario(canal), png[canal]);
+    for (const canal of canais) await rename(temporario(canal), path.join(pasta, `${canal}.png`));
+  } finally {
+    for (const canal of canais) await unlink(temporario(canal)).catch(() => {});
+  }
+  PARES_GRAVADOS.add(par);
+}
+
+/**
  * O PASSO DO RELEVO DE REIA: o conjunto, o portão e, aprovado, os DOIS PNG
  * (`height.png` e `normal.png` na pasta de `destino`) de uma vez — pela
  * primeira das duas entradas que a corrida encontra, com qualquer escopo (a
  * revisão de 07/10: um canal por chamada deixava uma interrupção misturar
- * versões). Os dois vão a temporários na mesma pasta e só então são
- * renomeados por cima dos de antes; a segunda entrada da mesma corrida acha
- * o par gravado e não regrava. Recusado, o erro leva a mensagem e nada é
+ * versões; `gravaOsCanaisJuntos`). Recusado, o erro leva a mensagem e nada é
  * gravado. Exportada para a prova por hash, que a chama fora de `public/`.
  */
 export async function gravaRelevoDeReia(fonte, destino) {
@@ -1701,22 +1762,164 @@ export async function gravaRelevoDeReia(fonte, destino) {
     doApp: await escalaEViesDoApp('rhea'),
   });
   if (!portao.grava) throw new Error(portao.mensagem);
-  const pasta = path.dirname(destino);
-  const par = `${pasta}|${jsonCanonico(conjunto.obtidos)}`;
-  if (PARES_GRAVADOS.has(par)) {
-    console.log(`${rotulo}: já gravado junto com o outro canal nesta corrida.`);
-    return;
+  await gravaOsCanaisJuntos(rotulo, destino, conjunto, portao.mensagem);
+}
+
+// ---- O RELEVO DA TERRA (07/10/2026, capturas/terra-nuvens/relevo/) ------
+
+/** Os canais do conjunto da Terra, que o portão aprova e a cadeia grava juntos. */
+const CANAIS_DA_TERRA = ['normal', 'horizon', 'horizon2'];
+
+/**
+ * O RELEVO DA TERRA EM MEMÓRIA — a sequência de chamadas dos candidatos
+ * (`capturas/terra-nuvens/relevo/ferramentas/gera-candidatos.mjs`), que esta
+ * cadeia reproduz byte a byte (`prova-cadeia-terra.mjs`, ao lado dela): o
+ * ETOPO lido e levado à superfície (`leEtopo`: os lagos com fundo sobem ao
+ * espelho, o resto abaixo de 0 m vai a 0 m), a média de área nas duas grades
+ * (`relevoNaCasa`), a normal na grade de `Terra.NORMAL` e o horizonte na de
+ * `Terra.HORIZONTE`. `tif`: os bytes do TIFF; `etopoSha256`: o sha256
+ * conferido dele, que vai aos números. Pura; `{ rgb, grades, numeros,
+ * normal, superficie }` — `rgb[canal]` com W·H·3 bytes na `grades[canal]`.
+ */
+export function relevoDaTerra({ tif, etopoSha256 }) {
+  const { NORMAL, HORIZONTE } = Terra;
+  const etopo = Terra.leEtopo(tif);
+  const m8 = Terra.relevoNaCasa(etopo, NORMAL.largura, NORMAL.altura);
+  const m4 = Terra.relevoNaCasa(etopo, HORIZONTE.largura, HORIZONTE.altura);
+  const normal = Terra.normalDaTerra(m8, NORMAL.largura, NORMAL.altura);
+  const { horizon, horizon2 } = Terra.horizonteDaTerra(m4, HORIZONTE.largura, HORIZONTE.altura);
+  const grade = ({ largura, altura }) => ({ largura, altura });
+  return {
+    rgb: { normal: normal.rgb, horizon, horizon2 },
+    grades: { normal: grade(NORMAL), horizon: grade(HORIZONTE), horizon2: grade(HORIZONTE) },
+    numeros: numerosDoRelevoDaTerra({ etopoSha256, superficie: etopo.superficie }),
+    normal: { rmsGraus: normal.rmsGraus, maxGraus: normal.maxGraus },
+    superficie: etopo.superficie,
+  };
+}
+
+const lagosDaSuperficie = (lagos) => lagos.map(({ nome, nivelM, areaKm2, fundoM }) => ({ nome, nivelM, areaKm2, fundoM }));
+
+/**
+ * OS NÚMEROS QUE O PORTÃO APROVA junto dos pixels da Terra: os que refazem
+ * o campo e o pixel não carrega — o ETOPO (sha256, grade, borda esquerda, o
+ * valor sem dado), o raio, a marcha do horizonte (grade, alcance, passo,
+ * número de passos) — e o que a água virou nesta corrida (cada lago com
+ * fundo: nível, área enchida, fundo; quantas amostras abaixo do mar foram a
+ * 0 m), que muda se a semente, o nível ou a guarda de um lago mudar. O
+ * sha256 é o do `jsonCanonico` disto.
+ */
+export function numerosDoRelevoDaTerra({ etopoSha256, superficie }) {
+  const { largura, altura, bordaEsquerdaLonE, semDado } = Terra.ETOPO;
+  const { HORIZONTE } = Terra;
+  return {
+    fonte: { sha256: etopoSha256, largura, altura, bordaEsquerdaLonE, semDado },
+    raioKm: Terra.RAIO_KM,
+    superficie: { lagos: lagosDaSuperficie(superficie.lagos), abaixoDoMar: superficie.abaixoDoMar },
+    horizonte: {
+      grade: [HORIZONTE.largura, HORIZONTE.altura],
+      ateGraus: HORIZONTE.ateGraus,
+      passoEmTexels: HORIZONTE.passoEmTexels,
+      passos: Terra.angulosDoHorizonte(HORIZONTE.largura).length,
+    },
+  };
+}
+
+/** Os mesmos números da Terra, lidos do `parametros.json` que os candidatos gravaram. */
+export function numerosDoCandidatoDaTerra(p) {
+  const { sha256, largura, altura, bordaEsquerdaLonE, semDado } = p.fonte;
+  const { ateGraus, passoEmTexels, passos } = p.horizonte.marcha;
+  return {
+    fonte: { sha256, largura, altura, bordaEsquerdaLonE, semDado },
+    raioKm: p.raioKm,
+    superficie: { lagos: lagosDaSuperficie(p.superficie.lagos), abaixoDoMar: p.superficie.abaixoDoMar },
+    horizonte: { grade: p.horizonte.grade, ateGraus, passoEmTexels, passos },
+  };
+}
+
+/**
+ * Os PNG RGB de um relevo gerado (`rgb[canal]`, W·H·3 bytes na grade
+ * `grades[canal]`), codificados com as opções da casa e DECODIFICADOS de
+ * volta — o que vai ao disco é o que o portão aprovou —, e o sha256 do RGB
+ * de cada canal.
+ */
+async function pngsRgbDoRelevo(rotulo, rgb, grades) {
+  const sha = (b) => createHash('sha256').update(b).digest('hex');
+  const png = {};
+  const obtidos = {};
+  for (const [canal, bytes] of Object.entries(rgb)) {
+    const { largura, altura } = grades[canal];
+    const cru = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    png[canal] = await sharp(cru, { raw: { width: largura, height: altura, channels: 3 } })
+      .png({ compressionLevel: 9, adaptiveFiltering: false }).toBuffer();
+    const volta = await sharp(png[canal]).raw().toBuffer({ resolveWithObject: true });
+    obtidos[canal] = sha(cru);
+    if (volta.info.channels !== 3 || sha(volta.data) !== obtidos[canal]) throw new Error(`${rotulo}: o ${canal}.png decodificado não é o ${canal} do gerador.`);
   }
-  console.log(`${portao.mensagem} (os dois canais juntos)`);
-  const canais = ['height', 'normal'];
-  const temporario = (canal) => path.join(pasta, `.${canal}.png.${process.pid}.tmp`);
-  try {
-    for (const canal of canais) await writeFile(temporario(canal), conjunto.png[canal]);
-    for (const canal of canais) await rename(temporario(canal), path.join(pasta, `${canal}.png`));
-  } finally {
-    for (const canal of canais) await unlink(temporario(canal)).catch(() => {});
-  }
-  PARES_GRAVADOS.add(par);
+  return { png, obtidos };
+}
+
+/**
+ * O conjunto da Terra pronto para gravar (`fonte`: uma das três entradas) —
+ * o TIFF do ETOPO conferido (`conferirArquivoDoCache`), o relevo, os três
+ * PNG decodificados de volta e os sha256 (os três RGB e os números). Feito
+ * uma vez por processo para as três entradas (a leitura e o horizonte
+ * custam); o portão roda a cada chamada. Exportada para a prova por hash.
+ */
+export async function conjuntoDaTerra(fonte) {
+  const chave = jsonCanonico({ ...fonte.relevoTerra, sha256Aprovado: null });
+  if (!RELEVOS_FEITOS.has(chave)) RELEVOS_FEITOS.set(chave, fazConjuntoDaTerra(fonte));
+  return RELEVOS_FEITOS.get(chave);
+}
+
+async function fazConjuntoDaTerra(fonte) {
+  const rotulo = `${fonte.corpo}/${fonte.canal}`;
+  const config = fonte.relevoTerra;
+  const tif = await readFile(await conferirArquivoDoCache({ ...fonte, arquivoDoCache: config.etopo }));
+  const candidato = await parametrosDoCandidato(rotulo, config.candidato);
+  console.log(
+    `${rotulo}: relevo da Terra, ETOPO 2022 de 60″ → normal ${Terra.NORMAL.largura}×${Terra.NORMAL.altura} e horizonte ` +
+      `${Terra.HORIZONTE.largura}×${Terra.HORIZONTE.altura} (leva perto de um minuto); ` +
+      `versões: node ${process.version}, V8 ${process.versions.v8}, sharp ${sharp.versions.sharp}, libvips ${sharp.versions.vips}`
+  );
+  const r = relevoDaTerra({ tif, etopoSha256: config.etopo.sha256 });
+  console.log(
+    `  lagos ao espelho: ${r.superficie.lagos.map((l) => `${l.nome} ${l.areaKm2} km²`).join(', ')}; ` +
+      `${r.superficie.abaixoDoMar} amostras abaixo do mar a 0 m; normal: declive RMS ${r.normal.rmsGraus.toFixed(3)}°, máximo ${r.normal.maxGraus.toFixed(2)}°`
+  );
+  const { png, obtidos } = await pngsRgbDoRelevo(rotulo, r.rgb, r.grades);
+  return {
+    png,
+    obtidos: { ...obtidos, parametros: createHash('sha256').update(jsonCanonico(r.numeros)).digest('hex') },
+    numeros: r.numeros,
+    doCandidato: numerosDoCandidatoDaTerra(candidato),
+  };
+}
+
+/**
+ * O PASSO DO RELEVO DA TERRA: o conjunto, o portão (os três canais e os
+ * números; sem escala do app — o relevo da Terra só gira a luz e faz
+ * sombra, não desloca vértice) e, aprovado, os TRÊS PNG (`normal.png`,
+ * `horizon.png`, `horizon2.png` na pasta de `destino`) de uma vez, pela
+ * primeira das três entradas que a corrida encontra, com qualquer escopo
+ * (`gravaOsCanaisJuntos`). Recusado, o erro leva a mensagem e nada é
+ * gravado. Exportada para a prova por hash, que a chama fora de `public/`.
+ */
+export async function gravaRelevoDaTerra(fonte, destino) {
+  const rotulo = `${fonte.corpo}/${fonte.canal}`;
+  const config = fonte.relevoTerra;
+  const conjunto = await conjuntoDaTerra(fonte);
+  const portao = portaoDoRelevo({
+    rotulo,
+    candidato: config.candidato,
+    obtidos: conjunto.obtidos,
+    aprovados: config.sha256Aprovado,
+    numeros: conjunto.numeros,
+    doCandidato: conjunto.doCandidato,
+    canais: CANAIS_DA_TERRA,
+  });
+  if (!portao.grava) throw new Error(portao.mensagem);
+  await gravaOsCanaisJuntos(rotulo, destino, conjunto, portao.mensagem);
 }
 
 async function main() {
@@ -1754,7 +1957,7 @@ async function main() {
     // (`scripts/data/atlas/fonte/`) e só é reencodado no formato do canal.
     const passoDaCasa =
       fonte.bake || fonte.giroDeLongitudeGraus !== undefined || fonte.arquivoLocal
-      || fonte.preencherVazio || fonte.relevoJapeto || fonte.relevoReia;
+      || fonte.preencherVazio || fonte.relevoJapeto || fonte.relevoReia || fonte.relevoTerra;
     const extensao = passoDaCasa
       ? (CANAIS_DE_DADO.has(fonte.canal) ? 'png' : 'jpg')
       : path.extname(new URL(fonte.url).pathname).slice(1) ||
@@ -1777,9 +1980,10 @@ async function main() {
     // (item 149) — baixa da fonte mesmo aqui: o doador nunca as teve, e
     // fingir o contrário quebraria o modo. Entrada com `arquivoDoCache`
     // (item 230) não baixa nunca, nem copia do doador: confere e copia.
-    if (fonte.relevoJapeto || fonte.relevoReia) {
-      // nada a adquirir (item 230, PLAN-REIA.md): o gerador lê o map.jpg da
-      // casa e o Gazetteer ou o DTM do cache, conferidos por sha256 no passo
+    if (fonte.relevoJapeto || fonte.relevoReia || fonte.relevoTerra) {
+      // nada a adquirir (item 230, PLAN-REIA.md, relevo da Terra): o gerador
+      // lê o map.jpg da casa e o Gazetteer, o DTM ou o ETOPO do cache,
+      // conferidos por sha256 no passo
     } else if (fonte.arquivoDoCache) {
       await copyFile(await conferirArquivoDoCache(fonte), cru);
     } else if (fonte.arquivoLocal) {
@@ -1799,13 +2003,14 @@ async function main() {
       try {
         if (fonte.relevoJapeto) await gravaRelevoDeJapeto(fonte, destino);
         else if (fonte.relevoReia) await gravaRelevoDeReia(fonte, destino);
+        else if (fonte.relevoTerra) await gravaRelevoDaTerra(fonte, destino);
         else if (fonte.arquivoLocal && !fonte.bake) {
           await girarMapa(cru, destino, fonte.canal, {
             larguraDoDestino: fonte.larguraDoDestino,
           });
         } else if (fonte.bake === 'mosaico-ceres') await assarMosaicoDeCeres(cru, destino);
         else if (fonte.bake === 'ilustracao-ia') await assarIlustracaoIA(cru, destino, fonte.corpo);
-        else if (fonte.bake) await assarPbr(cru, destino, fonte.bake);
+        else if (fonte.bake === 'roughness') await assarRoughness(cru, destino);
         else await girarMapa(cru, destino, fonte.canal, opcoesDoMapa(fonte));
       } finally {
         await unlink(cru).catch(() => {});
@@ -1818,7 +2023,7 @@ async function main() {
     console.log(
       `${fonte.corpo}/${fonte.canal}: ${medido.largura}x${medido.altura} ` +
         `${medido.formato}, ${(medido.bytes / 1048576).toFixed(2)} MB ` +
-        `(${fonte.relevoJapeto || fonte.relevoReia ? 'gerado nesta casa' : fonte.arquivoDoCache ? 'cache local' : diretorioDoador && fonte.nomeNoDoador ? 'offline, doador' : 'rede'}).`
+        `(${fonte.relevoJapeto || fonte.relevoReia || fonte.relevoTerra ? 'gerado nesta casa' : fonte.arquivoDoCache ? 'cache local' : diretorioDoador && fonte.nomeNoDoador ? 'offline, doador' : 'rede'}).`
     );
   }
   console.log(
