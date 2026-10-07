@@ -84,6 +84,10 @@
     0 0 8px rgba(0, 0, 0, 0.9),
     0 0 16px rgba(0, 0, 0, 0.8);
 }
+/* a dica de pausa no tom do subtítulo: cinza, lia mal sobre o Sol e o chão da Lua (só no filme; voo livre e Atlas seguem cinza) */
+.hud-root[data-fase='journey'] .filme-rodape .free-hint {
+  color: var(--texto-2);
+}
 /* O SELO NO FILME (F4, 06/10) — a mesma peça do Atlas (`.atlas-selo`,
    04-atlas.css), montada só no beat de luz honesta. No filme ela sobe
    para a coluna da direita, ACIMA da linha de rumo (11,6vh + a altura

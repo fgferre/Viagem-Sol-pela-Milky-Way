@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (06/10, noite) — RODADA DO PONTO DE LUZ FEITA NO RAMO `viagem-solar`, SEM PUBLICAR; ELE DECIDE POR IMAGEM
+## O BASTÃO — onde a rodada parou (06/10, noite) — RODADA DO PONTO DE LUZ FEITA, DECIDIDA POR ELE E PRONTA PARA PUBLICAR (merge em linha reta de `viagem-solar` no `main`)
 
 **Feito em 06/10 (plano em modo de planejamento, revisto por duas análises
 externas, executado na mesma sessão; `PLAN-PONTO-DE-LUZ.md` › Resultado):**
@@ -24,14 +24,14 @@ com ~50 px já cedida); estava na vista do Atlas da Terra vista da Lua
 (53 px), onde a lei velha chegava a 0,999 e nunca a 1. O defeito da lei
 aparecia em toda aproximação (Júpiter de 4 a 22 px) e no Atlas.
 
-**Decisões dele, por imagem:** (1) 12 px como fim da cessão ou 16 (a
-troca ponto→globo perde ~49 % de luz em 0,23 s em Júpiter — é o bloom da
-estrela dando lugar ao globo honesto; 16 só espalha a mesma queda);
-(2) o fim do filme galáctico mudou de propósito (a Lua de 9 px era uma
-bolha, virou ponto pequeno sobre o globo); (3) a sombra da legenda no
-lugar do véu (nenhum caso "não lê"; a dica de pausa, cinza, é a mais
-fraca nos dois lados); (4) publicar (`git push origin main` depois do
-merge do ramo — clique dele).
+**Decisões dele (06/10, noite — *"concordo com seus feedbacks vamos fazer e
+dar o merge e commit e publicar"*):** 12 px fica como fim da cessão; o fim
+do galáctico fica como está agora (a Lua de 9 px como ponto pequeno sobre
+o globo); a sombra da legenda fica, e a dica de pausa do filme foi
+clareada para o tom do subtítulo (folha `capturas/ponto-de-luz/e4b-dica-cor.jpg`);
+publicar pelo merge em linha reta do ramo no `main` — o push do `main` é o
+clique dele, e depois conferir no ar a chegada a Júpiter TOCANDO do começo
+do ato, não por salto.
 
 **Ordem combinada que segue:** depois destas decisões, a rodada de assets
 de Europa (cor) e Jápeto (crista no lugar) — item 230. Ficam depois: os
