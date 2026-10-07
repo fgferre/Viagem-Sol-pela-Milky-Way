@@ -177,6 +177,11 @@ Jápeto
   simulada pela NASA detectável em 6 % da área iluminada (30–62°N × 117–163°E e 25–60°S × 132–166°E). O `map.jpg` de
   hoje tem contraste bem mais duro que o USGS (a NASA 3D esticou).
 
+- **Decisões dele (07/10, pelas pranchas `j1-prancha.jpg` e `e0-prancha.jpg`):** *"Jápeto com vinte quilômetros, Europa
+  no meio-termo"* — o candidato de Jápeto é o B (crista de 20 km no ponto mais alto); o tom de Europa é o meio-termo
+  entre o realista (PIA19048) e o natural (PIA00502), como na fileira de baixo da prancha do E0. A receita de Europa
+  (a ou b) fica com a comparação do E1; o campo de crateras de Jápeto fica com a passada J1b (pela foto).
+
 ## Fora do escopo
 Os outros assets fracos do item 230 (Urano, Netuno, Vesta, Deimos, Tritão pausado, Ariel, Titã, Vênus); relevo de
 Europa (fica sem); altura em 16 bits no app (o carregador é `UnsignedByteType`, `texturas.ts:440`); a Cassini Regio
