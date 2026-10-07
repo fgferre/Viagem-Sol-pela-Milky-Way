@@ -236,6 +236,20 @@ Jápeto
   recusaria o relevo.) Depois: `npm run test:tocados`, `npm run done`, fotos finais sem interceptação (Atlas d=3 e
   1,6 dos dois; Atos II e III), merge em linha reta no `main`, push dele, conferência no ar por sha256.
 
+- **F, assamento e fotos finais (07/10, manhã):** a cadeia rodou no painel de terminal dele a pedido dele (*"Rode vc
+  mesmo esses 3 comandos na sequência… Estou autorizando e solicitando"*): os quatro passos encadeados; `public/` com
+  Europa (map 4096 + escada 2048/1024 + webp) e Jápeto (height/normal + webp) e o manifesto novo (commit 6ef33b9d).
+  Conferido aqui: altura e normal publicadas IGUAIS pixel a pixel ao candidato `j1c/b-20km`; `map.jpg` de Europa contra
+  o candidato `a-meio`: RMS 2,98/255 (ruído do jpeg); `data:verify` 291 variantes OK, 0 origem sem resolver; manifesto
+  com as confissões novas e os PIA certos; `ficha`, `verify-assets`, `ciencia`, `texturas`, `lib-texturas`: 142/142.
+  Fotos finais sem interceptação (`capturas/europa-japeto/final-prancha.jpg`, `final/`): Europa com o gelo claro e as
+  linhas marrons no Atlas (d=3 e 1,6) e no Ato II sobre Júpiter, sem costura; Jápeto no terminador com a crista como
+  muralha sombreada e Malprimis sobre ela; limbo com crateras nítidas onde a foto as tem; frente e trás quase iguais
+  (luz de frente). **No Ato III (t≈276 s) a crista só se insinua perto do limbo, no escuro — o relevo está lá; é o
+  enquadramento e a luz do raspão do filme que não a mostram (escolha de filme, não do motor; fica para a rodada do
+  filme se ele quiser a muralha na tela).** Os retângulos de nitidez diferente no Ato III são do mosaico de cor de
+  Jápeto (desde o item 138), não das texturas novas. Pendente: `npm run done` inteiro, merge em linha reta, push.
+
 ## Fora do escopo
 Os outros assets fracos do item 230 (Urano, Netuno, Vesta, Deimos, Tritão pausado, Ariel, Titã, Vênus); relevo de
 Europa (fica sem); altura em 16 bits no app (o carregador é `UnsignedByteType`, `texturas.ts:440`); a Cassini Regio
