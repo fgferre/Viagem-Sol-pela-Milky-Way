@@ -177,6 +177,18 @@ Jápeto
   simulada pela NASA detectável em 6 % da área iluminada (30–62°N × 117–163°E e 25–60°S × 132–166°E). O `map.jpg` de
   hoje tem contraste bem mais duro que o USGS (a NASA 3D esticou).
 
+- **J1b (07/10; `capturas/europa-japeto/j1b-prancha.jpg`, folha de prova `j1b-deteccao.jpg`, candidatos em
+  `j1b/`):** o campo sorteado saiu; entram as crateras DETECTADAS no mosaico de cor por `crateras-pela-foto.mjs`
+  (voto de borda ao longo do gradiente em log-luminância normalizada, verificação por ajuste fundo + borda, testes de
+  cobertura/coerência/"sem risco reto"; determinístico; 2 testes): 1.673 aceitas (confiança ≥ 0,3; 9–15 km 573,
+  15–30 246, 30–60 86, 60–120 21, > 120 1; 746 abaixo de 9 km) contra 4.053 sorteadas; 902 cabem na grade; 3 cedem às
+  com nome. Profundidade 0,6–0,8 da lei acima de 30 km, bordas suavizadas (0,05·D), chão liso. Na folha de prova os
+  círculos caem nas crateras de fundo escuro, nas sombreadas e nos anéis da Cassini Regio; escapam anéis fracos no
+  escuro e bacias degradadas; alguns falsos em manchas, riscos e emendas. Só 3 das 48 com nome casam dentro de ±40 %
+  (as outras estão degradadas ou deslocadas no mosaico — ficam pela posição do catálogo). Na prancha: no limbo, menos
+  crateras, mais suaves e onde a cor as mostra; no terminador a muralha igual à de J1. **Sobras:** o detector infla a
+  densidade em |lat| 50–72° (1,9×, viés do método); as com nome ainda saem com anel perfeito (Malprimis "carimbo") —
+  as duas vão à passada J1c (bacias degradadas, rareamento por latitude), só no B.
 - **Decisões dele (07/10, pelas pranchas `j1-prancha.jpg` e `e0-prancha.jpg`):** *"Jápeto com vinte quilômetros, Europa
   no meio-termo"* — o candidato de Jápeto é o B (crista de 20 km no ponto mais alto); o tom de Europa é o meio-termo
   entre o realista (PIA19048) e o natural (PIA00502), como na fileira de baixo da prancha do E0. A receita de Europa
