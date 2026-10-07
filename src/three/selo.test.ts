@@ -74,6 +74,7 @@ const LIMPA: EstadoDaVista = {
   nebulosa: null,
   escala: null,
   gas: null,
+  terra: null,
   particulas: null,
   poeira: null,
   // `real` na FIXTURE de propósito: é o estado DEPOIS do clique "voltar

@@ -2983,10 +2983,11 @@ export class Director {
       nebulosa: this.nebulosaForcada,
       escala: this.engine.escala,
       gas: this.gasForcado,
+      terra: this.terraForcada,
       particulas: this.particulasForcadas,
       poeira: this.poeiraForcada,
     });
-    // a variante do gás (um dos seis controles acima) decide o modo
+    // a variante do gás (um dos sete controles acima) decide o modo
     // efetivo da poeira (`Nebula.poeiraModoEfetivo`) — toda troca de
     // qualidade/preset é gatilho de `estadoDaPoeira` também.
     this.publicarPoeira();
@@ -3517,14 +3518,15 @@ export class Director {
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),
       camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
       tier: this.engine.quality,
-      // os seis controles da gaveta Avançado (item 145, +145b, +149,
-      // +poeira 27/09) — estado VIVO, não as portas: o painel os troca
+      // os sete controles da gaveta Avançado (item 145, +145b, +149,
+      // +poeira 27/09, +Terra 07/10) — estado VIVO, não as portas: o painel os troca
       // sem recarregar, e um selo que lesse só a URL calaria a escolha
       // feita na gaveta
       amostras: this.post.amostras,
       nebulosa: this.nebulosaForcada,
       escala: this.engine.escala,
       gas: this.gasForcado,
+      terra: this.terraForcada,
       particulas: this.particulasForcadas,
       // a bancada `?poeira=teste` vence a variante enquanto vale (ver
       // `aplicarPoeira`), e o selo a nomeia — `forcarPoeira` a desarma

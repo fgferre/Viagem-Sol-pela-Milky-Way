@@ -194,6 +194,13 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.gas.antigo': 'Original',
   'ajustes.gas.fino': 'Fine',
   'ajustes.gas.macio': 'Soft',
+  // THE EARTH (clouds round, 10/07) — next to the gas: compare live the
+  // usual globe with the one that has depth in clouds and relief.
+  'ajustes.terraControle': 'Earth',
+  'ajustes.terraNota':
+    'How the Earth globe is drawn: classic is the usual one; with depth gives the clouds a shadow on the ground, relief from the light and, in Cinema, the cloud map at 8k.',
+  'ajustes.terra.classica': 'Classic',
+  'ajustes.terra.profundidade': 'With depth',
   // THE DUST NEAR HOME (owner's request, 09/27) — the sixth control,
   // next to the gas: compare live the current procedural model with
   // the Gaia-measured block, in three brightnesses.
@@ -483,6 +490,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.escalaDeResolucaoCom': 'resolution scale set by hand: {fator}',
   'selo.desvio.gas': 'volumetric gas set by hand',
   'selo.desvio.gasCom': 'volumetric gas set by hand: {variante}',
+  'selo.desvio.terra': 'Earth set by hand',
+  'selo.desvio.terraCom': 'Earth set by hand: {variante}',
   'selo.desvio.particulas': 'galaxy particles set by hand',
   'selo.desvio.particulasCom': 'galaxy particles set by hand: {nivel}',
   'selo.desvio.poeira': 'dust near home set by hand',

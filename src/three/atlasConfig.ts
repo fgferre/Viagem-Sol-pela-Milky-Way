@@ -41,6 +41,7 @@ import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
   GasVolumetrico,
+  VarianteDaTerra,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
   TipoDePoeira,
@@ -255,6 +256,15 @@ export function gasVolumetricoEmTexto(variante: GasVolumetrico): string {
 }
 
 /**
+ * A TERRA COMO O VISITANTE A LÊ (rodada das nuvens, 07/10). Mesma
+ * doutrina do gás: a variante é chave (`classica`/`profundidade`, a
+ * mesma que vai ao `?terra=`), e a tradução mora no caminho da tela.
+ */
+export function varianteDaTerraEmTexto(variante: VarianteDaTerra): string {
+  return t(`ajustes.terra.${variante}` as ChaveDeTexto);
+}
+
+/**
  * AS PARTÍCULAS DA GALÁXIA COMO O VISITANTE AS LÊ (item 149). Mesma
  * doutrina do gás: o nível é chave (`todas`/`metade`/`quarto`, a mesma
  * que vai ao `?particulas=`), e a tradução mora no caminho da tela.
@@ -319,6 +329,7 @@ export const foraDoPreset = (e: EstadoDaQualidade): boolean =>
   e.nebulosa !== null ||
   e.escala !== null ||
   e.gas !== null ||
+  e.terra !== null ||
   e.particulas !== null ||
   e.poeira !== null;
 

@@ -550,6 +550,13 @@ export interface EstadoDaQualidade {
    */
   gas: GasVolumetrico | null;
   /**
+   * A VARIANTE DA TERRA escolhida à mão (rodada das nuvens, 07/10) —
+   * `null` = a variante do preset. Quem a publica é o Director, que é
+   * onde o override mora (`forcarTerra`/`aplicarTerra`, no mesmo molde de
+   * `forcarGas`): é ele que troca o material da Terra ao vivo.
+   */
+  terra: VarianteDaTerra | null;
+  /**
    * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA escolhida à mão (item 149) —
    * `null` = a do preset. Quem a publica é o Director, que é onde o
    * override mora (`forcarParticulas`/`aplicarParticulas`): é ele que
