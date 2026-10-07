@@ -100,6 +100,22 @@ reia`); ferramentas e candidatos em `capturas/reia/`; fontes em `.cache/reia/` c
   os dois canais gravados num só comando em F. O caminho é a montagem `relevo-reia.mjs` sobre o miolo comum, na
   cadeia de Jápeto (`gera-normal-de-dem` não serve: lê outro formato e só grava normal).
 
+- **R2 + R2b (07/10; `capturas/reia/r2-prancha.jpg`, `r2b-prancha.jpg`, folha do detector `r2-deteccao.jpg`;
+  candidatos finais em `capturas/reia/r2b/`; commit 5d1f0d66):** `relevo-reia.mjs` (leitor do TIFF, relevo = raio −
+  elipsoide, média de área, filtro, montagem) + `completaCratera` no miolo comum (preserva a base; soma só o que falta).
+  Base reproduz o DTM de R1 (diferença máxima 6e-7 km). Detector em Reia sem mudar limiares: 4.934 aceitas; excluídas
+  422 com D ≥ 30, 65 duplicatas; controle pelo DTM: 87 % das detectadas de 20–30 km têm cavidade real (96–100 % com
+  confiança ≥ 0,6). Rareamento medido em Reia: o viés começa em 30° (fatores B 0,64/0,61/0,60; A 0,72/0,69/0,66).
+  Limiar de completar 10 km (o DTM já mostra ~22 % da lei em 10–15 km): B 1.810 inteiras × 1.554 completadas × 40 já
+  na lei; A 187 × 1.674 × 18. Faixa −7..+6 km (51 m por degrau), escala 0,016993 / viés −0,009150 em `rochoso.ts:249`,
+  nenhuma saturação. sha256 (r2b): A height e30720c3…, normal 7cf17052…, parâmetros 2dab3e57…; B height 59fe3610…,
+  normal 62402e53…, parâmetros 4a753643…; B→1024 pela escada height e148bf07…, normal 3e0e50d4…. Jápeto: "TUDO BATE".
+  Na prancha: a "batata" de hoje vira esfera; as crateras do relevo caem sobre as da cor; Inktomi nítida no centro;
+  Tirawa no lugar pela medida (pouco visível a olho nessa luz); o wispy vem da cor. A × B × B→1024 diferem pouco (B tem
+  mais crateras miúdas no terminador). **Recomendação ao dono: A** (custo de B 4× em memória por ganho pequeno).
+  Sobras: o bloco de documentação de `rochoso.ts` ~225 ainda diz que Reia não tem DTM (ajustar em F); há um segundo
+  leitor de TIFF na casa (o de `gera-normal-de-dem` lê pela rede e não é exportado) — BACKLOG se não unificar em F.
+
 ## Fora do escopo
 Cor de Reia (o mosaico de Schenk fica); as outras luas (Dione, Tétis, Mimas, Encélado já têm modelo medido no app);
 o tempo de luz do subsolar; publicar.
