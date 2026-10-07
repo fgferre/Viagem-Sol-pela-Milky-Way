@@ -39,9 +39,8 @@
 // Mimas, erro máximo de 8/255 (= 0,64 km de relevo falso, ~1,6 px de
 // faceta no limbo em close) e, num mapa de normal, 51/255. Por isso os
 // dois canais, QUANDO A FONTE É PNG, encodam em webp SEM PERDA: o
-// arquivo fica menor que o PNG e exato. `earth/normal` fica de fora por
-// construção — a fonte dele já é jpg (ORIGENS o declara reencodado), e
-// não há o que preservar num dado que já chegou com perda.
+// arquivo fica menor que o PNG e exato. `earth/normal` entra pela mesma
+// regra desde 07/10: a fonte dele virou o PNG assado do ETOPO 2022.
 //
 // ESCOPO OPCIONAL: sem argumento, varre a árvore inteira (o
 // comportamento de sempre, byte a byte). Com argumentos, varre só os
