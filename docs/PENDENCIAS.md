@@ -4,7 +4,40 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (07/10, 00:10 UTC) — RODADA DO PONTO DE LUZ PUBLICADA (`main` = `daf54e0`, publicação verde; conferido no ar: o salto para 158 s mostra Júpiter sem ponto; a lei nova e a sombra da legenda estão no bundle publicado)
+## O BASTÃO — onde a rodada parou (07/10, manhã) — EUROPA COM COR REAL E JÁPETO COM A CRISTA NO LUGAR (item 230) FEITOS NO RAMO `europa-japeto`, CHECAGEM COMPLETA VERDE, À ESPERA DO MERGE EM LINHA RETA E DO PUSH
+
+**Feito em 06–07/10 (plano em `PLAN-EUROPA-JAPETO.md`, revisto pelo GPT pelo
+Codex com a autorização dele — *"Você mesmo que usa o GPT. Você está
+aprovado"* — e conferido contra o código antes de mudar; receita de Plutão,
+Caronte e Hipérion):** Europa deixa o cinza de 1440 px e ganha 4096 px com a
+luminância do mosaico USGS de 500 m e a cor inferida dos dois componentes
+medidos na foto da Galileo (gelo claro quase neutro, material escuro
+avermelhado), no tom que ele escolheu (*"Europa no meio-termo"*); Jápeto
+ganha relevo gerado nesta casa — crista nas longitudes do catálogo da IAU e
+no caminho que a foto mostra, 20 km no ponto mais alto (*"Jápeto com vinte
+quilômetros"*), 55 crateras com nome no lugar, as demais onde a foto da
+Cassini as mostra. Diagnóstico corrigido pela revisão: a crista velha estava
+em 350→134°E (a textura começa em 180°E), girar meia volta era o certo,
+"espelhar" não; Jápeto já era elipsoide. A cadeia oficial rodou no painel
+de terminal dele a pedido dele (*"Rode vc mesmo… Estou autorizando e
+solicitando"*); publicado = candidato aprovado, conferido pixel a pixel;
+`data:verify` OK; `npm run done` verde (127 arquivos, 3.540 testes). Provas:
+`capturas/europa-japeto/final-prancha.jpg` (antes × depois no app de
+verdade) e as pranchas de cada etapa. De brinde: os números do Photojournal
+dos seis mosaicos de Schenk estavam trocados em quatro luas e foram acertados.
+
+**O que ele ainda decide:** publicar (merge em linha reta de `europa-japeto`
+no `main` e push); se a muralha de Jápeto deve aparecer no raspão do Ato III
+do filme (hoje ela só se insinua — é o enquadramento e a luz do filme, não o
+motor: rodada de filme); a Cassini Regio quase preta de frente no app (luz
+honesta sobre albedo 0,04; no BACKLOG); apagar ou guardar o plano da rodada.
+
+**Ordem combinada que segue (de 06/10):** os nomes (E4c; o rótulo de Saturno
+cortado no celular), a linha da lente sobre o Sol e a dica de gestos sobre o
+limbo no celular, "More" cortado a 375 px em inglês, Netuno/Tritão sumindo
+num salto do roteiro; e os outros assets do item 230 quando ele quiser.
+
+## O BASTÃO anterior (07/10, 00:10 UTC) — RODADA DO PONTO DE LUZ PUBLICADA (`main` = `daf54e0`, publicação verde; conferido no ar: o salto para 158 s mostra Júpiter sem ponto; a lei nova e a sombra da legenda estão no bundle publicado)
 
 **Feito em 06/10 (plano em modo de planejamento, revisto por duas análises
 externas, executado na mesma sessão; `PLAN-PONTO-DE-LUZ.md` › Resultado):**
@@ -606,7 +639,11 @@ Europa e Jápeto"* — os dois sobem para o topo desta fila.**
 Obra a desenhar quando chegar a vez, pela receita das rodadas de Plutão,
 Caronte e Hipérion (fonte com licença, extrapolação confessada, prova por
 foto); o filme solar (roteiro em `docs/ROTEIRO-VIAGEM-SOLAR.md`) é quem
-cobra a ordem.
+cobra a ordem. **FEITOS em 07/10 (ramo `europa-japeto`, `PLAN-EUROPA-JAPETO.md`):
+Europa (cor real inferida da Galileo sobre o mosaico USGS de 500 m, 4096 px,
+tom meio-termo dele) e Jápeto (relevo gerado: crista no lugar com 20 km,
+55 crateras com nome, as demais pela foto). Ficam na fila: Urano, Netuno,
+Vesta, Deimos, Tritão (pausado), Ariel, Titã, Vênus.**
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
