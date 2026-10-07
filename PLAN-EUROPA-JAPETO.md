@@ -224,6 +224,18 @@ Jápeto
   (espera "68 linhas") muda para a confissão nova; `verify-assets.test.mjs` (4 testes) volta a passar sozinho; o
   comentário de `lib-texturas.mjs:272` ("68 linhas de Europa") sai.
 
+- **F, parte de Jápeto (07/10, commit ca600d3a):** entradas `iapetus/height` e `iapetus/normal` pelo gerador (as cinco
+  outras luas seguem do Saturn), portão por hash do CONJUNTO (height f52c3753…, normal 86ae5803…, parâmetros
+  4cf4ccf3…; confere a escala/viés de `rochoso.ts` e os números contra o `parametros.json` do candidato), prova por
+  `ferramentas/prova-cadeia-japeto.mjs` (26/26; recusa com qualquer hash trocado). Confissão pt/en; PIA dos seis mosaicos
+  de Schenk acertados (Dione 18434, Encélado 18435, Jápeto 18436, Mimas 18437, Reia 18438, Tétis 18439 — conferidos nas
+  páginas da NASA); `ciencia.test.ts` amarra os "até 20 km" ao teto do mapa; `ficha.test.ts` espera a confissão nova.
+  Testes dos arquivos tocados: 282/283 (a falha é a esperada até regenerar). **Comandos dele, nesta ordem, na raiz:**
+  `npm run data:texturas-fontes -- europa` → `npm run data:texturas-fontes -- iapetus/height iapetus/normal` →
+  `npm run data:texturas` → `npm run data:verify`. (Nunca `-- iapetus` sozinho: refaria o `map.jpg` e o pino do mapa
+  recusaria o relevo.) Depois: `npm run test:tocados`, `npm run done`, fotos finais sem interceptação (Atlas d=3 e
+  1,6 dos dois; Atos II e III), merge em linha reta no `main`, push dele, conferência no ar por sha256.
+
 ## Fora do escopo
 Os outros assets fracos do item 230 (Urano, Netuno, Vesta, Deimos, Tritão pausado, Ariel, Titã, Vênus); relevo de
 Europa (fica sem); altura em 16 bits no app (o carregador é `UnsignedByteType`, `texturas.ts:440`); a Cassini Regio
