@@ -161,6 +161,22 @@ Jápeto
   cratera brilhando do lado noturno do terminador (shader, conferir em F sem realce); `saturno.ts:76` e o comentário
   de `rochoso.ts:243–246` citam a crista em 332°L — atualizar em F. Decisão dele pendente: crista de 15 ou 20 km.
 
+- **E0 (06–07/10; `capturas/europa-japeto/e0-prancha.jpg`, `e0/medidas.md`, `.cache/europa/registro.json`, ferramentas
+  em `ferramentas/europa/`; fontes em `.cache/europa/FONTES.json` com sha256 — USGS a323f0c9…, PIA19048 e84de2f1…,
+  PIA00502 6b28de13…):** o mosaico USGS tem 0°E na borda esquerda e o leste crescendo para a direita (provado por Pwyll,
+  Tyre e Callanish na cruz), vazio do sul com borda irregular de −77° a −84,3°. O PIA19048 é o hemisfério ANTI-JÚPITER
+  (lat0 +0,53°, lon0 194,08°E, norte à direita, 1,445 km/px; r 0,91, resíduo rms 1,2 px): a cor real cobre 19,9 % do
+  globo (119→205°E, ±75°), só 7,7 % bem iluminado; o PIA00502 natural também registra (lon0 66,9°E, r 0,76). Cores
+  (tom realista, no brilho do cinza): planície Lab 66,7/−1,7/−1,7 (quase neutra), escuro Lab 41,2/13,1/14,1
+  (marrom-avermelhado). A mistura linear guiada pelo cinza explica METADE da croma (RMS a*b* 5,85 contra 8,39 da cor
+  constante; nada guiado só pelo cinza passa de 5,66; tipo de terreno não ajuda). Gradiente: b* da planície ≈
+  +12,6·cos(lon − 90°E) (o amarelo no TRASEIRO, 90°E; o PIA00502 dá +12,1) — o contrário da lembrança da pesquisa;
+  vale a medida. Polos mais brancos. O lado dianteiro (205→352°E) não tem cor em foto nenhuma: extrapolação pura,
+  confessada. Lineae largas têm a cor do escuro; nas finas a foto não decide. Tom realista→natural: duas estimativas
+  discordam no amarelo (ganho 1,28 / giro −12,9° / +8,6 b* contra 1,10 / −8,6° / +2,9) — vão as três à prancha. Cor
+  simulada pela NASA detectável em 6 % da área iluminada (30–62°N × 117–163°E e 25–60°S × 132–166°E). O `map.jpg` de
+  hoje tem contraste bem mais duro que o USGS (a NASA 3D esticou).
+
 ## Fora do escopo
 Os outros assets fracos do item 230 (Urano, Netuno, Vesta, Deimos, Tritão pausado, Ariel, Titã, Vênus); relevo de
 Europa (fica sem); altura em 16 bits no app (o carregador é `UnsignedByteType`, `texturas.ts:440`); a Cassini Regio
