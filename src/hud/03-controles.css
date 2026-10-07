@@ -378,12 +378,15 @@
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
 }
 /* LOTE 8 (maquete M7): na pele B a lente vira eyebrow discreto — a
-   mesma régua 0,6875rem/0,12em/`--texto-3` de todo eyebrow da casa —
-   só no FILME; `sol-line`/`dest-line` do voo livre ficam como estão. */
+   mesma régua 0,6875rem/0,12em de todo eyebrow da casa — só no FILME;
+   `sol-line`/`dest-line` do voo livre ficam como estão. O tom é o da
+   dica de pausa (`--texto-2`), não o `--texto-3` dos eyebrows: no
+   `--texto-3` a lente lia mais escura que a borda do Sol aos 15 s
+   (escolha do dono pela prancha `capturas/ordem-06-10/`, 07/10). */
 .hud-root[data-fase='journey'] .lente-line {
   font-size: 0.6875rem;
   letter-spacing: 0.12em;
-  color: var(--texto-3);
+  color: var(--texto-2);
 }
 
 /* --- dica de voo livre ---

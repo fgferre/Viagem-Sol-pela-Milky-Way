@@ -84,6 +84,21 @@
     0 0 8px rgba(0, 0, 0, 0.9),
     0 0 16px rgba(0, 0, 0, 0.8);
 }
+/* As três linhas PEQUENAS (11 px no celular) ganham um contorno colado: o
+   halo largo, feito do borrão de um traço fino, fica ralo, e elas liam
+   lavadas sobre a borda do Sol (a lente aos 15 s) e o limbo da Terra (a
+   dica aos 390 s). Sobre o céu preto o contorno não aparece. */
+.caption-sub,
+.filme-rodape .free-hint,
+.hud-root .lente-line {
+  text-shadow:
+    0 0 1px #000,
+    0 0 1px #000,
+    0 0 2px #000,
+    0 0 3px rgba(0, 0, 0, 0.95),
+    0 0 8px rgba(0, 0, 0, 0.9),
+    0 0 16px rgba(0, 0, 0, 0.8);
+}
 /* a dica de pausa no tom do subtítulo: cinza, lia mal sobre o Sol e o chão da Lua (só no filme; voo livre e Atlas seguem cinza) */
 .hud-root[data-fase='journey'] .filme-rodape .free-hint {
   color: var(--texto-2);
