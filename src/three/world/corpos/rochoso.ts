@@ -222,8 +222,9 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * SÓ SETE LUAS PORQUE SÓ SETE TÊM MAPA. Quatro saem de modelo de forma
  * MEDIDO (Mimas e Tétis por SPC de Gaskell, Encélado pelo DEM de Schenk &
  * McKinnon 2024, Dione pelo DTM de Weirich et al. 2025); Reia e Jápeto
- * NÃO TÊM DTM público e o relevo deles é SINTÉTICO, gerado por código no
- * projeto dele — entra por decisão do dono e é confessado onde o
+ * NÃO TÊM DTM público e o relevo deles é gerado por código (o de Reia no
+ * projeto dele; o de Jápeto, desde o item 230, nesta casa, ancorado no
+ * catálogo da IAU e na foto) — entra por decisão do dono e é confessado onde o
  * visitante lê (ficha do objeto, seção "a imagem", linha "relevo"), com o
  * texto nascendo em `docs/reference/ASSETS.md`. Hipérion é o sétimo caso
  * (23/09/2026): o mapa de altura é a FORMA MEDIDA inteira (Cassini —
@@ -242,8 +243,9 @@ export const RELEVO_DA_LUA: Readonly<
   dione: { escala: 0.01065032313122289, vies: -0.005189992373296278 },
   // S2b — Reia e Jápeto entram por ORDEM DELE (02/09): "queremos o relevo
   // sobressaído, sabemos que Reia não é uma esfera, ela é acidentada". As
-  // duas são o caso SINTÉTICO (sem DTM público), confessado na ficha; as
-  // amplitudes são as do `relief.json` dele, sem corte.
+  // duas não têm DTM público, e o relevo é confessado na ficha; a amplitude de
+  // Reia é a do `relief.json` dele, sem corte.
+  // Jápeto (item 230): a faixa do byte de `relevo-japeto.mjs`, −14 a +22 km (`escalaEVies`).
   rhea: { escala: 0.02632461314614639, vies: -0.018329572914844723 },
   iapetus: { escala: 0.04827678691162666, vies: -0.018774306021188143 },
   // Hipérion (23/09/2026): a forma MEDIDA inteira (Cassini — Thomas, Joseph

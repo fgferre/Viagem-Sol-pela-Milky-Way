@@ -440,9 +440,9 @@ describe('a imagem confessa — itens 19 e 20', () => {
     expect(porRotulo('vesta', 'imagem').get('o relevo admite')).toContain('três eixos');
   });
 
-  it('Titã confessa as emendas, Europa as 68 linhas, Vênus a falta de luz visível', () => {
+  it('Titã confessa as emendas, Europa a cor inferida, Vênus a falta de luz visível', () => {
     expect(porRotulo('titan', 'imagem').get('o defeito')).toContain('emendas');
-    expect(porRotulo('europa', 'imagem').get('o defeito')).toContain('68 linhas');
+    expect(porRotulo('europa', 'imagem').get('o defeito')).toContain('INFERIDA');
     expect(porRotulo('venus', 'imagem').get('o defeito')).toContain('luz visível');
   });
 

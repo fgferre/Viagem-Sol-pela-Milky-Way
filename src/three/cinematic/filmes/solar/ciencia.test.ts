@@ -302,10 +302,12 @@ describe('os números das legendas batem com a conta', () => {
     // a face da frente na órbita reflete poucos por cento da luz e a de
     // trás mais da metade (Spencer & Denk 2010, Science 327, 432); a
     // crista equatorial chega a 20 km de altura (Giese et al. 2008, Icarus
-    // 193, 359); o relevo desenhado (sintético, rochoso.ts) tem amplitude
-    // de escala × raio = 20,0 km
-    const km = Math.round(RELEVO_DA_LUA.iapetus.escala * BODY_AXES.iapetus[0]);
-    expect(km).toBe(20);
+    // 193, 359); o relevo desenhado (relevo-japeto.mjs, candidato b-20km,
+    // escolha dele em 07/10) põe a crista a 20 km, e o mapa de altura tem de
+    // comportar isso: o teto é (escala + viés) × raio (rochoso.ts), hoje 22 km
+    const km = 20;
+    const teto = (RELEVO_DA_LUA.iapetus.escala + RELEVO_DA_LUA.iapetus.vies) * BODY_AXES.iapetus[0];
+    expect(teto).toBeGreaterThanOrEqual(km);
     const c = legenda('Jápeto —');
     expect(falaPt(c)).toContain('uma cara preta, outra branca');
     expect(falaPt(c)).toContain(`no equador corre uma muralha de até ${km} km`);

@@ -164,7 +164,8 @@ de normais, 51/255. A regra vive em `scripts/data/atlas/otimiza-texturas.mjs`
 porque a fonte dele já é jpg.
 
 Todos vêm do **projeto Saturn do dono** (https://github.com/fgferre/Saturn,
-`public/textures/relief/`), que os assou a partir dos modelos abaixo; as
+`public/textures/relief/`) — menos o de Jápeto desde o item 230, que nasce
+nesta casa (parágrafo no fim desta seção) —, que os assou a partir dos modelos abaixo; as
 escalas de deslocamento (`span`/`bias` como fração do raio) vêm do
 `relief.json` dele e moram em `RELEVO_DA_LUA` (`world/corpos/rochoso.ts`).
 Encélado veio em 2048 e foi reamostrado para 1024 (lanczos3).
@@ -176,12 +177,12 @@ Encélado veio em 2048 e foi reamostrado para 1024 (lanczos3).
 | Encélado | DEM global 200 m — Schenk & McKinnon 2024, USGS Astropedia | domínio público, **citação obrigatória**: *Icarus* 408, 115827 | 296 + 728 KB |
 | Dione | DTM SPC — Weirich et al. 2025, NASA PDS SBN | domínio público | 228 + 512 KB |
 | Reia | **relevo SINTÉTICO** — não existe DTM público de Reia; campo de crateras gerado por código no projeto Saturn | código do autor | 108 + 232 KB |
-| Jápeto | **relevo SINTÉTICO** — não existe DTM público de Jápeto; campo de crateras por código, com a crista equatorial real (~13 km) modelada | código do autor | 104 + 209 KB |
+| Jápeto | **relevo INVENTADO ancorado no medido** (item 230) — não existe DTM público de Jápeto; gerado nesta casa: crista e crateras no lugar medido, perfis e profundidades inventados (parágrafo abaixo) | código do autor; posições do Gazetteer da IAU e mosaico Cassini, domínio público | 55 + 135 KB |
 
-Total baixado pelo visitante: **3,55 MB** em webp (10,06 MB em disco com o
-`.png` de fallback). O `NOTICE` do projeto dele é a fonte destas linhas e
+Total baixado pelo visitante: **3,43 MB** em webp (7,90 MB em disco com o
+`.png` de fallback, medido no item 230). O `NOTICE` do projeto dele é a fonte destas linhas e
 declara os dois sintéticos com todas as letras: *"Rhea and Iapetus have no
-public DTM as of 2026; their relief is synthetic"*.
+public DTM as of 2026; their relief is synthetic"* — o de Jápeto saiu no item 230.
 
 **Reia e Jápeto entraram por decisão DELE (02/09, S2b):** *"queremos o
 relevo sobressaído, sabemos que Reia não é uma esfera, ela é acidentada"*.
@@ -189,6 +190,28 @@ O relevo das duas **não é medida** — é campo de crateras gerado por código
 no projeto Saturn dele —, e é isso que a ficha imprime na seção *a imagem*,
 na linha `relevo`. As amplitudes são as dele (`relief.json`: 2,6 % do raio
 nas duas), sem corte: o `span`/`bias` do projeto é o piso, não o teto.
+
+**Jápeto refeito nesta casa (item 230, 07/10/2026, PLAN-EUROPA-JAPETO.md).**
+O sintético do Saturn punha a crista no antípoda (350°E→134°E; a real vai de
+114 a 307°E) e só chegava a +7 km. O relevo agora sai de
+`scripts/data/atlas/relevo-japeto.mjs`, pela cadeia (`baixa-texturas.mjs`,
+`relevoJapeto`), e ainda **não é medida** — não existe DTM público. O que é
+MEDIDO: a crista nas longitudes do Gazetteer da IAU (Carcassone, Toledo e
+Tortelosa Montes e seis montes isolados) e no caminho em latitude que a linha
+clara do mosaico Cassini mostra, com a altura das sondas — até 20 km no ponto
+mais alto (Porco et al. 2005; Giese et al. 2008); as 55 crateras com nome
+que cabem na grade (das 58 do catálogo), no lugar e no diâmetro do
+Gazetteer; e as demais crateras onde o próprio mosaico Cassini as mostra
+(`crateras-pela-foto.mjs`, lugar e diâmetro pela imagem). O que é
+INVENTADO: o perfil da crista por trecho (sorteado com as frequências de
+Lopez Garcia et al. 2014), a altura ao longo dela, o abaulado embaixo, a
+profundidade e a forma de cada cratera (uma lei de profundidade pelo
+diâmetro, ancorada nos 10,5 km de Falsaron, White et al. 2013) e o chão liso
+entre elas. Altura em 8 bits de −14 a +22 km (141 m por degrau; escala
+0,0483 e viés −0,0188 em `RELEVO_DA_LUA`), normal do mesmo campo; o
+portão da cadeia aprova o conjunto — altura, normal e esses números — por
+sha256, e o `parametros.json` do candidato em
+`capturas/europa-japeto/j1c/b-20km/` lista cada escolha.
 
 ## As nove luas esculpidas de Saturno (item 134, S3)
 
@@ -803,7 +826,8 @@ tocar num `.mjs`.
 | venus/map | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |
 | enceladus/height | DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul |
 | rhea/height | relevo SINTÉTICO: não existe DTM público de Reia — o campo de crateras foi gerado por código no projeto Saturn do autor, e não é medida |
-| iapetus/height | relevo SINTÉTICO: não existe DTM público de Jápeto — o campo de crateras foi gerado por código no projeto Saturn do autor (só a crista equatorial é feição real, modelada), e não é medida |
+| iapetus/height | não existe mapa de altura medido de Jápeto: este relevo é INVENTADO por código nesta casa, ancorado no que foi medido — a crista do equador está nas longitudes do catálogo da IAU e no caminho que a foto da Cassini mostra, com até 20 km, a altura medida pelas sondas; as 55 crateras com nome estão no lugar e no tamanho do catálogo, e as outras onde a foto da Cassini as mostra; o perfil da crista, a profundidade de cada cratera (dada por uma regra pelo tamanho) e o chão liso entre elas são inventados |
+| iapetus/normal | não existe mapa de altura medido de Jápeto: este relevo é INVENTADO por código nesta casa, ancorado no que foi medido — a crista do equador está nas longitudes do catálogo da IAU e no caminho que a foto da Cassini mostra, com até 20 km, a altura medida pelas sondas; as 55 crateras com nome estão no lugar e no tamanho do catálogo, e as outras onde a foto da Cassini as mostra; o perfil da crista, a profundidade de cada cratera (dada por uma regra pelo tamanho) e o chão liso entre elas são inventados |
 | hyperion/map | não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido, com uma mancha em estrela apagada e as encostas íngremes clareadas nesta casa — nada na cor é medida |
 | hyperion/height | a forma é medida pela Cassini, mas os 3.488 poços cavados nela não são: saem das manchas escuras da pintura por IA |
 | hyperion/horizon | a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA |

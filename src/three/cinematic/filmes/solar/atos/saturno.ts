@@ -73,9 +73,9 @@ const SAIDA_DE_TITA = TITA.clone().addScaledVector(ate(TITA, JAPETO), RASPAO_DE_
  *  no meio da face escura (Cassini Regio, que no mapa do motor vai de
  *  127°L a 18°L passando por 250°L, entre ~45°S e ~55°N): a face clara
  *  acesa são as calotas e a borda leste. A crista do relevo desenhado
- *  (rochoso.ts, RELEVO_DA_LUA: até 20 km) corre no equador de 332°L a
- *  136°L, quase toda do lado da noite (o terminador a cruza em 334,7°L):
- *  não há como mostrá-la acesa neste céu. O joelho fica sobre 45°S,
+ *  (relevo-japeto.mjs, até 20 km) corre no equador de 114°L a 307°L,
+ *  quase toda do lado do dia (o terminador cruza o equador em 154,7°L e
+ *  334,7°L), mas com o Sol quase a pino. O joelho fica sobre 45°S,
  *  255°L, a fase 37°: a face escura acesa em cima e a calota clara do
  *  sul embaixo, com a fronteira entre elas (~67°S) no meio do disco */
 const RASPAO_DE_JAPETO = { lat: -45, lon: 255, raio: 2.2, saida: 40 };

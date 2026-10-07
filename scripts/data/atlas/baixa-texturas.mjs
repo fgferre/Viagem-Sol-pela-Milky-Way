@@ -38,8 +38,9 @@
 //     (item 138): os mosaicos globais Cassini de Paul Schenk
 //     (PIA18434–18439, NASA/JPL-Caltech/SSI/LPI, domínio público)
 //     graduados por ele, MAIS os mapas de altura/normal das mesmas
-//     seis (item 134/S2, `public/textures/relief/<lua>_<canal>.png`).
-//     São DEZOITO entradas, e o `--offline` delas quer o diretório do
+//     seis (item 134/S2, `public/textures/relief/<lua>_<canal>.png`) —
+//     menos os de Jápeto, que desde o item 230 nascem nesta casa (ver
+//     `relevoJapeto`, abaixo). São DEZESSEIS entradas, e o `--offline` delas quer o diretório do
 //     SATURN, não o do atlas-orbital: os mosaicos são
 //     `public/textures/<lua>.jpg`. Todas levam
 //     `giroDeLongitudeGraus: 180` — o layout Schenk põe o sub-Saturno
@@ -92,17 +93,29 @@
 // pela MESMA `corDeEuropa` (`cor-europa.mjs`) da prévia; o map.jpg só é
 // gravado se o sha256 do RGB for o aprovado (`portaoDaCor`).
 //
+// O RELEVO DE JÁPETO (PLAN-EUROPA-JAPETO.md, item 230): as entradas
+// `iapetus/height` e `iapetus/normal` não adquirem nada — o mapa de altura
+// e o de normais saem do gerador `relevo-japeto.mjs` (crista do Gazetteer
+// traçada na foto, crateras com nome e crateras detectadas no mapa de cor
+// por `crateras-pela-foto.mjs`), pela MESMA sequência de chamadas da
+// prévia, a partir do map.jpg da casa e do Gazetteer do cache, os dois
+// conferidos por sha256. O PORTÃO aprova o CONJUNTO (`portaoDoRelevo`):
+// altura, normal e os números (escala, viés, semente, leis), e a escala e o
+// viés de `rochoso.ts` têm de ser os do candidato — senão nada é gravado.
+//
 // ESCOPO OPCIONAL (o mesmo do otimiza-texturas): sem corpo nomeado, a
-// tabela inteira; com corpos, só eles.
+// tabela inteira; com corpos, só eles; com `corpo/canal`, só aquele canal
+// (o relevo de Jápeto sem refazer o map.jpg do Saturn, que pede `--offline`).
 //
 //   node scripts/data/atlas/baixa-texturas.mjs --offline ~/Github/atlas-orbital
 //   node scripts/data/atlas/baixa-texturas.mjs            (rede, reprodutibilidade)
 //   node scripts/data/atlas/baixa-texturas.mjs --offline ~/Github/atlas-orbital ceres vesta
+//   node scripts/data/atlas/baixa-texturas.mjs iapetus/height iapetus/normal
 // ============================================================
 
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { copyFile, mkdir, readFile, stat, unlink } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
@@ -110,10 +123,16 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { Y_MEDIO_ALVO, corDeEuropa, reduzPorMediaDeArea } from './cor-europa.mjs';
 import { inventaCorDoCorpo } from './cor-inventada.mjs';
+import { PARAMETROS_DA_DETECCAO, detectaCrateras, luminanciaDoRgb } from './crateras-pela-foto.mjs';
 import { decideGravacao, lerCacheDeAlturas } from './gera-normal-de-dem.mjs';
 import {
   CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido, preencherVazioSemDado,
 } from './lib-texturas.mjs';
+import {
+  CRISTA_DO_GAZETTEER, ESCOLHAS_DA_CRISTA, FAIXA_KM, FREQUENCIA_DOS_PERFIS, MONTES_DO_GAZETTEER,
+  MORFOLOGIA_DAS_COM_NOME, MORFOLOGIA_DAS_DETECTADAS, RAIO_KM, RAREAMENTO_POR_LATITUDE, caminhoDaCristaPeloMapa,
+  escalaEVies, geraRelevo, normalDoCampo, quantiza,
+} from './relevo-japeto.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -130,6 +149,32 @@ const WAYBACK = 'https://web.archive.org/web';
 // astrogeology.usgs.gov; os arquivos saem daqui) — o mesmo de onde
 // `gera-normal-de-dem.mjs` lê os DEMs.
 const USGS_BYTES = 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic';
+
+// O RELEVO APROVADO DE JÁPETO, que as duas entradas `iapetus/height` e
+// `iapetus/normal` dividem (um conjunto só: as duas gravam ou nenhuma).
+// `candidato` é a pasta da prévia que ele escolheu, com o `parametros.json`
+// que o portão confronta; `mapaDeCor` e `gazetteer` são as entradas do
+// gerador, pinadas por sha256 (outro map.jpg daria outra crista e outras
+// crateras); `sha256Aprovado`: os pixels decodificados da altura (1 canal),
+// o RGB da normal e o JSON canônico dos números (`numerosDoRelevoDeJapeto`).
+const RELEVO_DE_JAPETO = {
+  candidato: 'capturas/europa-japeto/j1c/b-20km',
+  semente: 230,
+  alturaMaximaKm: 20,
+  mapaDeCor: {
+    arquivo: 'public/textures/atlas/iapetus/map.jpg',
+    sha256: '104a1d8780e0d8dad58c2d617ed554680774cefdb65cce8f2149d1c7886468fb',
+  },
+  gazetteer: {
+    arquivo: '.cache/japeto/iapetus-gazetteer.json',
+    sha256: '425c9fc6eb806e81a42b49c8b7abf1548b6356066606d56a400ee3fb8433af1f',
+  },
+  sha256Aprovado: {
+    height: 'f52c3753fbec8431fedd7c2b338c3c03d6b4ae0d6daf2bd962bb03c17d528b2f',
+    normal: '86ae58035a9594e87c18a00c156a7b7338133cd43fc538f954fa47dd222f72b0',
+    parametros: '4cf4ccf3375e677cef80a9a3fe003b3741710dd10fc6b872505e8857d75ddf11',
+  },
+};
 
 // ---- A tabela de fontes desta rodada (F2a: Terra + Lua). As fases
 // seguintes fazem APPEND aqui — uma linha por arquivo, com a URL de
@@ -363,9 +408,10 @@ export const FONTES = [
   // 1024×512 — o mesmo `public/textures/relief/` do projeto Saturn, a
   // mesma meia volta. Encélado é o único que vem em 2048 e desce para a
   // largura da casa. A proveniência de cada modelo (Gaskell, Schenk &
-  // McKinnon, Weirich, e os dois SINTÉTICOS de Reia e Jápeto) mora em
-  // docs/reference/ASSETS.md e no manifest, não aqui.
-  ...['mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'iapetus'].flatMap((corpo) =>
+  // McKinnon, Weirich, e o SINTÉTICO de Reia) mora em
+  // docs/reference/ASSETS.md e no manifest, não aqui. Jápeto saiu desta
+  // lista no item 230: o relevo dele nasce nesta casa (logo abaixo).
+  ...['mimas', 'enceladus', 'tethys', 'dione', 'rhea'].flatMap((corpo) =>
     ['height', 'normal'].map((canal) => ({
       corpo,
       canal,
@@ -375,6 +421,21 @@ export const FONTES = [
       larguraDoDestino: 1024,
     }))
   ),
+  // O RELEVO DE JÁPETO (item 230, PLAN-EUROPA-JAPETO.md): não existe DTM
+  // público, e o sintético do Saturn punha a crista no antípoda. Os dois
+  // canais saem do gerador `relevo-japeto.mjs` (`relevoDeJapeto`), na
+  // grade e na convenção da casa — sem giro: a coluna i já cai em
+  // (180 + (i+½)·360/W) °E, e o mapa de cor de onde saem o caminho da crista
+  // e as crateras detectadas é o map.jpg da casa, já girado. A palavra dele
+  // (07/10/2026, prancha da J1): a crista de vinte quilômetros, candidato B —
+  // o da passada J1c (crateras da foto, com nome gastas, detectadas rareadas
+  // acima de 45°), em `RELEVO_DE_JAPETO`.
+  ...['height', 'normal'].map((canal) => ({
+    corpo: 'iapetus',
+    canal,
+    url: 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/IAPETUS_nomenclature_center_pts.zip',
+    relevoJapeto: RELEVO_DE_JAPETO,
+  })),
   // ---- As cinco de Urano e Tritão (itens 147/148): a Voyager 2 só viu o
   // hemisfério sul das cinco (1986) e ~40 % de Tritão (1989); a NASA 3D
   // deixa o resto PRETO, e em 2026 o Sol ilumina o norte de Urano — a lua
@@ -1132,6 +1193,285 @@ export function opcoesDoMapa(fonte) {
   };
 }
 
+// ---- O RELEVO DE JÁPETO (item 230) -----------------------------------
+
+/**
+ * O RELEVO DE JÁPETO EM MEMÓRIA — a sequência de chamadas da prévia
+ * (`capturas/europa-japeto/ferramentas/previa-japeto.mjs`), que esta cadeia
+ * reproduz byte a byte (`prova-cadeia-japeto.mjs`, ao lado dela): o caminho
+ * da crista na linha clara do mapa de cor, as crateras detectadas no mesmo
+ * mapa, as crateras com nome do Gazetteer, `geraRelevo` com a semente e a
+ * altura aprovadas, a altura em 8 bits (`quantiza`) e a normal do MESMO
+ * campo (`normalDoCampo`). `rgb`: o map.jpg decodificado (`{ data, info }`
+ * do sharp); `gazetteer`: as feições do JSON do cache. Antes, confere que a
+ * crista e os montes do módulo são os do Gazetteer (outra tabela, outra
+ * crista) e que o rareamento por latitude para onde o detector para.
+ * Pura; `{ height, normal, numeros, relevo, deteccao }`.
+ */
+export function relevoDeJapeto({ rgb, gazetteer, semente, alturaMaximaKm, largura = 1024, altura = 512 }) {
+  if (PARAMETROS_DA_DETECCAO.latMaxGraus !== RAREAMENTO_POR_LATITUDE.latMaxDaDeteccaoGraus) {
+    throw new Error('relevo de Jápeto: o detector para em outra latitude que o rareamento (latMaxGraus ≠ latMaxDaDeteccaoGraus).');
+  }
+  const feicao = (nome) => {
+    const f = gazetteer.find((x) => x.nome === nome);
+    if (!f) throw new Error(`relevo de Jápeto: ${nome} não está no Gazetteer.`);
+    return f;
+  };
+  const longe = (a, b, tolerancia) => Math.abs(a - b) > tolerancia;
+  for (const [chave, [a, b]] of Object.entries(CRISTA_DO_GAZETTEER)) {
+    const f = feicao(`${chave[0].toUpperCase()}${chave.slice(1)} Montes`);
+    if (longe(f.ext_lonE_min, a, 0.05) || longe(f.ext_lonE_max, b, 0.05)) {
+      throw new Error(`relevo de Jápeto: ${f.nome} vai de ${f.ext_lonE_min} a ${f.ext_lonE_max}°E no Gazetteer, o gerador diz ${a}–${b}.`);
+    }
+  }
+  for (const m of MONTES_DO_GAZETTEER) {
+    const f = feicao(m.nome);
+    if (longe(f.lonE, m.lonE, 0.05) || longe(f.diametro_km, m.diametroKm, 0.5)) {
+      throw new Error(`relevo de Jápeto: ${m.nome} está em ${f.lonE}°E com ${f.diametro_km} km no Gazetteer, o gerador diz ${m.lonE}°E e ${m.diametroKm} km.`);
+    }
+  }
+  const nomeadas = gazetteer
+    .filter((f) => f.tipo === 'crater')
+    .map((f) => ({ nome: f.nome, lat: f.lat, lonE: f.lonE, diametroKm: f.diametro_km }));
+  const { width: W, height: H, channels } = rgb.info;
+  const caminho = caminhoDaCristaPeloMapa({ rgb: rgb.data, largura: W, altura: H, canais: channels, larguraDaGrade: largura });
+  const deteccao = detectaCrateras(luminanciaDoRgb(rgb.data, W, H, channels), { W, H, raioKm: RAIO_KM });
+  const relevo = geraRelevo({ largura, altura, semente, alturaMaximaKm, caminho: caminho.lat, nomeadas, detectadas: deteccao.crateras });
+  return {
+    height: quantiza(relevo.km),
+    normal: normalDoCampo(relevo.km, largura, altura),
+    numeros: numerosDoRelevoDeJapeto({ semente, alturaMaximaKm, largura, altura, deteccao: deteccao.parametros }),
+    relevo,
+    deteccao,
+  };
+}
+
+/**
+ * OS NÚMEROS QUE O PORTÃO APROVA junto dos pixels: os que o pixel não
+ * carrega e mudam a silhueta (a escala e o viés do vértice, a faixa do byte,
+ * o raio) e os que refazem o campo (semente, alvo, grade, as escolhas da
+ * crista, as frequências dos perfis, a forma gasta das crateras com nome e
+ * das detectadas, o rareamento por latitude e os parâmetros do detector).
+ * O sha256 é o do `jsonCanonico` disto.
+ */
+export function numerosDoRelevoDeJapeto({ semente, alturaMaximaKm, largura, altura, deteccao }) {
+  const { escala, vies } = escalaEVies();
+  return {
+    escala,
+    vies,
+    semente,
+    alturaMaximaKm,
+    grade: { largura, altura, raioKm: RAIO_KM },
+    faixaKm: { min: FAIXA_KM.min, max: FAIXA_KM.max },
+    leis: {
+      crista: ESCOLHAS_DA_CRISTA,
+      perfis: FREQUENCIA_DOS_PERFIS,
+      comNome: MORFOLOGIA_DAS_COM_NOME,
+      detectadas: MORFOLOGIA_DAS_DETECTADAS,
+      rareamento: RAREAMENTO_POR_LATITUDE,
+      deteccao,
+    },
+  };
+}
+
+/**
+ * Os mesmos números, lidos do `parametros.json` que a prévia gravou (o
+ * rareamento, das faixas que ela registrou: a primeira começa no limite da
+ * referência, e a última acaba onde o detector para).
+ */
+export function numerosDoCandidato(p) {
+  const faixas = p.craterasDetectadas.rareamentoPorLatitude.faixas;
+  return {
+    escala: p.quantizacao.rochosoTs.escala,
+    vies: p.quantizacao.rochosoTs.vies,
+    semente: p.semente,
+    alturaMaximaKm: p.alvo.alturaDaCristaKm,
+    grade: { largura: p.grade.largura, altura: p.grade.altura, raioKm: p.grade.raioKm },
+    faixaKm: { min: p.quantizacao.hminKm, max: p.quantizacao.hmaxKm },
+    leis: {
+      crista: p.leis.crista.escolhas,
+      perfis: p.leis.crista.frequenciaDosPerfis,
+      comNome: p.leis.crateras.comNome.escolhas,
+      detectadas: p.leis.crateras.detectadas.escolhas,
+      rareamento: {
+        referenciaAteGraus: faixas[0].deGraus,
+        faixaGraus: faixas[0].ateGraus - faixas[0].deGraus,
+        latMaxDaDeteccaoGraus: faixas[faixas.length - 1].ateGraus,
+      },
+      deteccao: p.craterasDetectadas.parametros,
+    },
+  };
+}
+
+/** JSON com as chaves em ordem — o mesmo texto para os mesmos números. */
+export function jsonCanonico(valor) {
+  return JSON.stringify(valor, (_, v) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : v
+  );
+}
+
+/** As folhas que diferem entre dois objetos de números: `["leis.crista.vaoKm.0: 3 ≠ 4", …]`. */
+export function diferencasDosNumeros(obtidos, esperados) {
+  const folhas = (valor, prefixo, saida) => {
+    if (valor && typeof valor === 'object') {
+      for (const [k, v] of Object.entries(valor)) folhas(v, prefixo ? `${prefixo}.${k}` : k, saida);
+    } else saida.set(prefixo, valor);
+    return saida;
+  };
+  const a = folhas(obtidos, '', new Map());
+  const b = folhas(esperados, '', new Map());
+  return [...new Set([...a.keys(), ...b.keys()])]
+    .filter((k) => a.get(k) !== b.get(k))
+    .sort()
+    .map((k) => `${k}: ${a.get(k)} ≠ ${b.get(k)}`);
+}
+
+/** A escala e o viés de Jápeto em `RELEVO_DA_LUA` (`rochoso.ts`), lidos do texto. */
+export async function escalaEViesDoApp() {
+  const arquivo = path.join(rootDirectory, 'src', 'three', 'world', 'corpos', 'rochoso.ts');
+  const m = /\biapetus:\s*\{\s*escala:\s*([-+.\deE]+),\s*vies:\s*([-+.\deE]+)/.exec(await readFile(arquivo, 'utf8'));
+  if (!m) throw new Error(`relevo de Jápeto: não achei "iapetus: { escala, vies }" em ${path.relative(rootDirectory, arquivo)}.`);
+  return { escala: Number(m[1]), vies: Number(m[2]) };
+}
+
+/**
+ * O PORTÃO DO RELEVO DE JÁPETO: grava só se o CONJUNTO for o aprovado —
+ * os números da cadeia iguais aos do `parametros.json` do candidato, a
+ * escala e o viés de `rochoso.ts` iguais aos do candidato, e os três sha256
+ * (altura, normal, números) iguais aos de `relevoJapeto.sha256Aprovado`.
+ * Um só que falhe e nenhum dos dois canais é gravado: uma escala nova
+ * mudaria a silhueta sem mudar um pixel. Pura: `{ grava, mensagem }`.
+ */
+export function portaoDoRelevo({ rotulo, candidato, obtidos, aprovados = {}, numeros, doCandidato, doApp }) {
+  const problemas = [
+    ...diferencasDosNumeros(numeros, doCandidato).map((d) => `os números da cadeia diferem do parametros.json do candidato em ${d}`),
+    ...['escala', 'vies']
+      .filter((k) => doApp[k] !== doCandidato[k])
+      .map((k) => `rochoso.ts traz ${k === 'vies' ? 'viés' : k} ${doApp[k]}, o candidato ${doCandidato[k]}`),
+  ];
+  const faltam = ['height', 'normal', 'parametros'].filter((k) => !aprovados[k]);
+  const lista = ['height', 'normal', 'parametros'].map((k) => `${k} ${obtidos[k]}`).join(', ');
+  if (!problemas.length && faltam.length) {
+    return {
+      grava: false,
+      mensagem:
+        `${rotulo}: o relevo ainda não aprovado (${faltam.join(', ')} sem hash; obtidos: ${lista}) — NADA foi gravado. ` +
+        'Com o sim do dono, os hashes entram em relevoJapeto.sha256Aprovado.',
+    };
+  }
+  for (const k of ['height', 'normal', 'parametros']) {
+    if (aprovados[k] && obtidos[k] !== aprovados[k]) problemas.push(`${k}: sha256 ${obtidos[k]}, o aprovado é ${aprovados[k]}`);
+  }
+  if (problemas.length) {
+    return {
+      grava: false,
+      mensagem:
+        `${rotulo}: o relevo NÃO é o do candidato aprovado (${candidato}) — NADA foi gravado:\n  ` + problemas.join('\n  '),
+    };
+  }
+  return { grava: true, mensagem: `${rotulo}: o conjunto aprovado (${candidato}: ${lista}) — gravo.` };
+}
+
+const RELEVOS_FEITOS = new Map();
+/**
+ * O conjunto de Jápeto pronto para gravar — as entradas conferidas, o
+ * relevo, os dois PNG codificados e DECODIFICADOS de volta (o que vai ao
+ * disco é o que o portão aprovou) e os sha256. Feito uma vez por processo
+ * para as duas entradas (a detecção custa); o portão roda a cada chamada.
+ */
+async function conjuntoDeJapeto(config, rotulo) {
+  const chave = jsonCanonico({ ...config, sha256Aprovado: null });
+  if (!RELEVOS_FEITOS.has(chave)) RELEVOS_FEITOS.set(chave, fazConjuntoDeJapeto(config, rotulo));
+  return RELEVOS_FEITOS.get(chave);
+}
+
+async function fazConjuntoDeJapeto(config, rotulo) {
+  const bytesDoMapa = await conferePinado(rotulo, config.mapaDeCor, 'o caminho da crista e as crateras detectadas saem dele: outro mapa, outro relevo');
+  const bytesDoGazetteer = await conferePinado(
+    rotulo,
+    config.gazetteer,
+    'a tabela do Gazetteer da IAU (o shapefile IAPETUS_nomenclature_center_pts, lido para JSON; ver .cache/japeto/FONTES.json)'
+  );
+  const arquivoDoCandidato = path.join(rootDirectory, config.candidato, 'parametros.json');
+  let candidato;
+  try {
+    candidato = JSON.parse(await readFile(arquivoDoCandidato, 'utf8'));
+  } catch (erro) {
+    if (erro.code !== 'ENOENT') throw erro;
+    throw new Error(`${rotulo}: falta ${path.relative(rootDirectory, arquivoDoCandidato)}, o registro do candidato aprovado — o portão confronta os números com ele.`);
+  }
+  console.log(
+    `${rotulo}: relevo de Jápeto, semente ${config.semente}, crista de ${config.alturaMaximaKm} km; versões: node ${process.version}, ` +
+      `V8 ${process.versions.v8}, sharp ${sharp.versions.sharp}, libvips ${sharp.versions.vips}`
+  );
+  const rgb = await sharp(bytesDoMapa).raw().toBuffer({ resolveWithObject: true });
+  const r = relevoDeJapeto({ rgb, gazetteer: JSON.parse(bytesDoGazetteer.toString('utf8')), semente: config.semente, alturaMaximaKm: config.alturaMaximaKm });
+  const { largura: W, altura: H } = r.numeros.grade;
+  const ultima = r.relevo.passadas[r.relevo.passadas.length - 1];
+  console.log(
+    `  crista ${ultima.alturaDaCrista.km.toFixed(2)} km em ${ultima.alturaDaCrista.lonE.toFixed(2)}°E; ${r.deteccao.crateras.length} crateras detectadas ` +
+      `(${r.relevo.detectadas.length} entram), ${r.relevo.colocadas.length} com nome; ${r.height.abaixo + r.height.acima} texels saturados`
+  );
+  const pngDaAltura = await sharp(Buffer.from(r.height.bytes), { raw: { width: W, height: H, channels: 1 } })
+    .toColourspace('b-w').png({ compressionLevel: 9, adaptiveFiltering: false }).toBuffer();
+  const pngDaNormal = await sharp(r.normal.rgb, { raw: { width: W, height: H, channels: 3 } })
+    .png({ compressionLevel: 9, adaptiveFiltering: false }).toBuffer();
+  const sha = (b) => createHash('sha256').update(b).digest('hex');
+  const voltaDaAltura = await sharp(pngDaAltura).greyscale().raw().toBuffer({ resolveWithObject: true });
+  const voltaDaNormal = await sharp(pngDaNormal).raw().toBuffer({ resolveWithObject: true });
+  const obtidos = { height: sha(Buffer.from(r.height.bytes)), normal: sha(r.normal.rgb), parametros: sha(jsonCanonico(r.numeros)) };
+  if (voltaDaAltura.info.channels !== 1 || sha(voltaDaAltura.data) !== obtidos.height) throw new Error(`${rotulo}: o height.png decodificado não é a altura do gerador.`);
+  if (voltaDaNormal.info.channels !== 3 || sha(voltaDaNormal.data) !== obtidos.normal) throw new Error(`${rotulo}: o normal.png decodificado não é a normal do gerador.`);
+  return {
+    png: { height: pngDaAltura, normal: pngDaNormal },
+    obtidos,
+    numeros: r.numeros,
+    doCandidato: numerosDoCandidato(candidato),
+  };
+}
+
+/** sha256 de um arquivo da raiz, pinado; faltou ou não bate: erro dizendo o que ele é. */
+async function conferePinado(rotulo, { arquivo, sha256: pinado }, oQueE) {
+  let bytes;
+  try {
+    bytes = await readFile(path.resolve(rootDirectory, arquivo));
+  } catch (erro) {
+    if (erro.code !== 'ENOENT') throw erro;
+    throw new Error(`${rotulo}: falta ${arquivo} — ${oQueE}.`);
+  }
+  const obtido = createHash('sha256').update(bytes).digest('hex');
+  if (obtido !== pinado) {
+    throw new Error(`${rotulo}: ${arquivo} tem sha256 ${obtido}, o pinado é ${pinado} — ${oQueE}; não asso com outro arquivo.`);
+  }
+  return bytes;
+}
+
+/**
+ * O PASSO DO RELEVO DE JÁPETO de uma entrada (`height` ou `normal`): o
+ * conjunto, o portão e, aprovado, o PNG do canal em `destino`. Recusado, o
+ * erro leva a mensagem e nada é gravado. Exportada para a prova por hash,
+ * que a chama com o destino fora de `public/`.
+ */
+export async function gravaRelevoDeJapeto(fonte, destino) {
+  const rotulo = `${fonte.corpo}/${fonte.canal}`;
+  const config = fonte.relevoJapeto;
+  const conjunto = await conjuntoDeJapeto(config, rotulo);
+  const portao = portaoDoRelevo({
+    rotulo,
+    candidato: config.candidato,
+    obtidos: conjunto.obtidos,
+    aprovados: config.sha256Aprovado,
+    numeros: conjunto.numeros,
+    doCandidato: conjunto.doCandidato,
+    doApp: await escalaEViesDoApp(),
+  });
+  if (!portao.grava) throw new Error(portao.mensagem);
+  console.log(portao.mensagem);
+  await writeFile(destino, conjunto.png[fonte.canal]);
+}
+
 async function main() {
   const argumentos = process.argv.slice(2);
   const indiceOffline = argumentos.indexOf('--offline');
@@ -1143,7 +1483,8 @@ async function main() {
 
   // ESCOPO OPCIONAL, o mesmo do otimiza-texturas: sem corpo nomeado a
   // tabela inteira é adquirida; com corpos, só eles — é o que evita
-  // rebaixar 30 texturas para trocar uma.
+  // rebaixar 30 texturas para trocar uma; com `corpo/canal`, só aquele
+  // canal (o relevo de Jápeto sem o map.jpg, que pede o doador).
   const escopo = new Set(
     argumentos.filter(
       (a, k) => !a.startsWith('--') && !(indiceOffline >= 0 && k === indiceOffline + 1)
@@ -1153,7 +1494,7 @@ async function main() {
   let totalBytes = 0;
   let adquiridas = 0;
   for (const fonte of FONTES) {
-    if (escopo.size > 0 && !escopo.has(fonte.corpo)) continue;
+    if (escopo.size > 0 && !escopo.has(fonte.corpo) && !escopo.has(`${fonte.corpo}/${fonte.canal}`)) continue;
     const diretorioDestino = path.join(destinoRaiz, fonte.corpo);
     await mkdir(diretorioDestino, { recursive: true });
     // A extensão do destino é sempre a do artefato final — todo PASSO DA
@@ -1166,7 +1507,7 @@ async function main() {
     // (`scripts/data/atlas/fonte/`) e só é reencodado no formato do canal.
     const passoDaCasa =
       fonte.bake || fonte.giroDeLongitudeGraus !== undefined || fonte.arquivoLocal
-      || fonte.preencherVazio;
+      || fonte.preencherVazio || fonte.relevoJapeto;
     const extensao = passoDaCasa
       ? (CANAIS_DE_DADO.has(fonte.canal) ? 'png' : 'jpg')
       : path.extname(new URL(fonte.url).pathname).slice(1) ||
@@ -1189,7 +1530,10 @@ async function main() {
     // (item 149) — baixa da fonte mesmo aqui: o doador nunca as teve, e
     // fingir o contrário quebraria o modo. Entrada com `arquivoDoCache`
     // (item 230) não baixa nunca, nem copia do doador: confere e copia.
-    if (fonte.arquivoDoCache) {
+    if (fonte.relevoJapeto) {
+      // nada a adquirir (item 230): o gerador lê o map.jpg da casa e o
+      // Gazetteer do cache, os dois conferidos por sha256 no passo
+    } else if (fonte.arquivoDoCache) {
       await copyFile(await conferirArquivoDoCache(fonte), cru);
     } else if (fonte.arquivoLocal) {
       await copyFile(
@@ -1206,7 +1550,8 @@ async function main() {
     // ---- o passo da casa, quando existe
     if (passoDaCasa) {
       try {
-        if (fonte.arquivoLocal && !fonte.bake) {
+        if (fonte.relevoJapeto) await gravaRelevoDeJapeto(fonte, destino);
+        else if (fonte.arquivoLocal && !fonte.bake) {
           await girarMapa(cru, destino, fonte.canal, {
             larguraDoDestino: fonte.larguraDoDestino,
           });
@@ -1225,7 +1570,7 @@ async function main() {
     console.log(
       `${fonte.corpo}/${fonte.canal}: ${medido.largura}x${medido.altura} ` +
         `${medido.formato}, ${(medido.bytes / 1048576).toFixed(2)} MB ` +
-        `(${fonte.arquivoDoCache ? 'cache local' : diretorioDoador && fonte.nomeNoDoador ? 'offline, doador' : 'rede'}).`
+        `(${fonte.relevoJapeto ? 'gerado nesta casa' : fonte.arquivoDoCache ? 'cache local' : diretorioDoador && fonte.nomeNoDoador ? 'offline, doador' : 'rede'}).`
     );
   }
   console.log(

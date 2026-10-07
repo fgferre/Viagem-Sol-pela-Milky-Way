@@ -269,7 +269,7 @@ export function preencherVazioSemDado(
 
 // ---- A CONFISSÃO, LIDA DO DOCUMENTO --------------------------------
 // As frases que a ficha do objeto imprime na seção "a imagem" — Ceres
-// inventado pela fonte, as emendas de Titã, as 68 linhas de Europa,
+// inventado pela fonte, as emendas de Titã, a cor inferida de Europa,
 // Vênus sem foto em luz visível — e a forma dos corpos que são
 // elipsoide tendo malha publicada nascem em `docs/reference/ASSETS.md`,
 // onde os vereditos da bancada moram inteiros. Uma segunda cópia num

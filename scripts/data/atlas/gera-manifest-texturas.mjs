@@ -225,11 +225,11 @@ const ORIGENS = {
   },
   'mimas/map': {
     fonte:
-      'Mosaico global Cassini de Mimas (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
+      'Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
     url: 'https://github.com/fgferre/Saturn',
     licenca: 'domínio público (NASA/JPL-Caltech/SSI/LPI)',
     atribuicao:
-      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18434). Graduação de cor: projeto Saturn (Felipe Ferreira).',
+      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18437). Graduação de cor: projeto Saturn (Felipe Ferreira).',
     proveniencia: 'derivado',
   },
   'enceladus/map': {
@@ -243,20 +243,20 @@ const ORIGENS = {
   },
   'tethys/map': {
     fonte:
-      'Mosaico global Cassini de Tétis (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
+      'Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
     url: 'https://github.com/fgferre/Saturn',
     licenca: 'domínio público (NASA/JPL-Caltech/SSI/LPI)',
     atribuicao:
-      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18436). Graduação de cor: projeto Saturn (Felipe Ferreira).',
+      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18439). Graduação de cor: projeto Saturn (Felipe Ferreira).',
     proveniencia: 'derivado',
   },
   'dione/map': {
     fonte:
-      'Mosaico global Cassini de Dione (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
+      'Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
     url: 'https://github.com/fgferre/Saturn',
     licenca: 'domínio público (NASA/JPL-Caltech/SSI/LPI)',
     atribuicao:
-      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18437). Graduação de cor: projeto Saturn (Felipe Ferreira).',
+      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18434). Graduação de cor: projeto Saturn (Felipe Ferreira).',
     proveniencia: 'derivado',
   },
   'rhea/map': {
@@ -277,11 +277,11 @@ const ORIGENS = {
   },
   'iapetus/map': {
     fonte:
-      'Mosaico global Cassini de Jápeto (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
+      'Mosaico global Cassini de Jápeto (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn',
     url: 'https://github.com/fgferre/Saturn',
     licenca: 'domínio público (NASA/JPL-Caltech/SSI/LPI)',
     atribuicao:
-      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18439). Graduação de cor: projeto Saturn (Felipe Ferreira).',
+      'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18436). Graduação de cor: projeto Saturn (Felipe Ferreira).',
     proveniencia: 'derivado',
   },
   'miranda/map': {
@@ -496,18 +496,23 @@ const ORIGENS = {
     atribuicao: 'Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida.',
     proveniencia: 'derivado',
   },
+  // item 230 (07/10/2026): o relevo de Jápeto sai do projeto Saturn e passa
+  // a nascer nesta casa (`relevo-japeto.mjs`, pela cadeia), inventado mas
+  // ancorado no medido — a confissão do que é cada coisa mora no ASSETS.md.
   'iapetus/height': {
-    fonte: 'Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público), com a crista equatorial real modelada — mapa de ALTURA',
-    url: 'https://github.com/fgferre/Saturn',
-    licenca: 'código do autor (Felipe Ferreira)',
-    atribuicao: 'Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida.',
+    fonte: 'Relevo de Jápeto gerado nesta casa por relevo-japeto.mjs a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de ALTURA',
+    url: 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/IAPETUS_nomenclature_center_pts.zip',
+    licenca: 'código do autor (Felipe Ferreira); posições do Gazetteer da IAU e mosaico Cassini em domínio público',
+    atribuicao:
+      'Crista e crateras com nome: Gazetteer of Planetary Nomenclature (IAU/USGS). Altura da crista: Porco et al. 2005 e Giese et al. 2008; perfis: Lopez Garcia et al. 2014; profundidade das crateras ancorada em White et al. 2013. Caminho da crista e crateras sem nome: mosaico global Cassini de Paul Schenk (PIA18436, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute). Relevo gerado nesta casa (relevo-japeto.mjs, crateras-pela-foto.mjs) — não é medida.',
     proveniencia: 'derivado',
   },
   'iapetus/normal': {
-    fonte: 'Relevo SINTÉTICO de Jápeto — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura',
-    url: 'https://github.com/fgferre/Saturn',
-    licenca: 'código do autor (Felipe Ferreira)',
-    atribuicao: 'Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida.',
+    fonte: 'Relevo de Jápeto gerado nesta casa por relevo-japeto.mjs a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de NORMAIS derivado da altura',
+    url: 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/IAPETUS_nomenclature_center_pts.zip',
+    licenca: 'código do autor (Felipe Ferreira); posições do Gazetteer da IAU e mosaico Cassini em domínio público',
+    atribuicao:
+      'Crista e crateras com nome: Gazetteer of Planetary Nomenclature (IAU/USGS). Altura da crista: Porco et al. 2005 e Giese et al. 2008; perfis: Lopez Garcia et al. 2014; profundidade das crateras ancorada em White et al. 2013. Caminho da crista e crateras sem nome: mosaico global Cassini de Paul Schenk (PIA18436, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute). Relevo gerado nesta casa (relevo-japeto.mjs, crateras-pela-foto.mjs) — não é medida.',
     proveniencia: 'derivado',
   },
 
