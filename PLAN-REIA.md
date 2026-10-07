@@ -91,6 +91,15 @@ reia`); ferramentas e candidatos em `capturas/reia/`; fontes em `.cache/reia/` c
   e aos nomes. Faixa de quantização: −7..+7 km (55 m por degrau) — a conferir que nenhum texel sature fora do polo.
   Terreno wispy: os grábens largos ficam do DTM; escarpas finas não se inventam.
 
+- **Revisão externa (GPT pelo Codex, 07/10; `.cache/revisoes/plano-reia-gpt-2026-10-07.md`, conferida):** aceitos os
+  quatro bloqueadores — filtrar crateras antes do miolo (D desconhecido fora), operação de COMPLETAR que preserva a
+  base medida (nunca somar cavidade sobre cavidade), X pela medida do espectro e não pelo catálogo, confissão
+  "medido + completado com perfis estimados". Lei para < 30 km sem potência (d/D 0,11 até 12 km; 0,08 de 12 a 30);
+  faixa derivada do campo final; exceções cartográficas (360° exatos, residual/a com erro ≤ 0,34 %, planetocêntrica)
+  nos parâmetros; folha de prova do detector em Reia; candidatos A 1024, B 2048 e o 1024 derivado de B pela escada;
+  os dois canais gravados num só comando em F. O caminho é a montagem `relevo-reia.mjs` sobre o miolo comum, na
+  cadeia de Jápeto (`gera-normal-de-dem` não serve: lê outro formato e só grava normal).
+
 ## Fora do escopo
 Cor de Reia (o mosaico de Schenk fica); as outras luas (Dione, Tétis, Mimas, Encélado já têm modelo medido no app);
 o tempo de luz do subsolar; publicar.
