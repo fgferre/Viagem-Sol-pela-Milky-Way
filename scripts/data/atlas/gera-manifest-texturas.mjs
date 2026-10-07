@@ -421,8 +421,9 @@ const ORIGENS = {
   // desloca o vértice e a normal gira a luz —, e por isso os dois são
   // 'derivado' até na FONTE: nenhum deles é um produto publicado, e sim
   // um mapa equiretangular ASSADO a partir do modelo de forma (ou, em
-  // Reia e Jápeto, gerado por código). A confissão do sintético mora na
-  // nota (ASSETS.md) e a ficha a imprime na seção "a imagem".
+  // Jápeto, gerado por código; em Reia, o modelo medido completado por
+  // código). A confissão de cada um mora na nota (ASSETS.md) e a ficha a
+  // imprime na seção "a imagem".
   'mimas/height': {
     fonte: 'Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de ALTURA',
     url: 'https://sbn.psi.edu/pds/shape-models/',
@@ -479,21 +480,25 @@ const ORIGENS = {
     atribuicao: 'Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).',
     proveniencia: 'derivado',
   },
-  // S2b (2026-09-02): Reia e Jápeto voltam. Não há DTM público das duas, e
-  // o relevo delas é GERADO POR CÓDIGO no projeto Saturn — não é medida.
-  // A confissão sai daqui para a ficha pela nota do ASSETS.md.
+  // PLAN-REIA.md (07/10/2026): o relevo de Reia sai do sintético do projeto
+  // Saturn e passa a nascer nesta casa (`relevo-reia.mjs`, pela cadeia) —
+  // MEDIDO pelo modelo de forma da Cassini acima de ~30 km e completado com
+  // crateras menores de perfil ESTIMADO: híbrido, por isso 'derivado'. A
+  // confissão do que é cada coisa mora no ASSETS.md.
   'rhea/height': {
-    fonte: 'Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de ALTURA',
-    url: 'https://github.com/fgferre/Saturn',
-    licenca: 'código do autor (Felipe Ferreira)',
-    atribuicao: 'Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida.',
+    fonte: 'Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado nesta casa por relevo-reia.mjs com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de ALTURA',
+    url: 'https://doi.org/10.26033/tqxb-q714',
+    licenca: 'dado NASA PDS, com citação obrigatória; montagem: código do autor (Felipe Ferreira)',
+    atribuicao:
+      'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Rhea shape model and maps, Cassini ISS SPC, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714. Crateras menores que ~30 km: lugar e diâmetro pelo mosaico global Cassini de Paul Schenk (PIA18438, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute); profundidade ESTIMADA pela lei de Aponte-Hernández et al. 2021. Montagem nesta casa (relevo-reia.mjs, crateras-pela-foto.mjs).',
     proveniencia: 'derivado',
   },
   'rhea/normal': {
-    fonte: 'Relevo SINTÉTICO de Reia — gerado por código no projeto Saturn (não existe DTM público) — mapa de NORMAIS derivado da altura',
-    url: 'https://github.com/fgferre/Saturn',
-    licenca: 'código do autor (Felipe Ferreira)',
-    atribuicao: 'Relevo gerado por código no projeto Saturn (Felipe Ferreira) — não é medida.',
+    fonte: 'Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado nesta casa por relevo-reia.mjs com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de NORMAIS derivado da altura',
+    url: 'https://doi.org/10.26033/tqxb-q714',
+    licenca: 'dado NASA PDS, com citação obrigatória; montagem: código do autor (Felipe Ferreira)',
+    atribuicao:
+      'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Rhea shape model and maps, Cassini ISS SPC, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714. Crateras menores que ~30 km: lugar e diâmetro pelo mosaico global Cassini de Paul Schenk (PIA18438, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute); profundidade ESTIMADA pela lei de Aponte-Hernández et al. 2021. Montagem nesta casa (relevo-reia.mjs, crateras-pela-foto.mjs).',
     proveniencia: 'derivado',
   },
   // item 230 (07/10/2026): o relevo de Jápeto sai do projeto Saturn e passa

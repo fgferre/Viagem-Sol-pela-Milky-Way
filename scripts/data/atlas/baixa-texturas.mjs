@@ -39,8 +39,9 @@
 //     (PIA18434–18439, NASA/JPL-Caltech/SSI/LPI, domínio público)
 //     graduados por ele, MAIS os mapas de altura/normal das mesmas
 //     seis (item 134/S2, `public/textures/relief/<lua>_<canal>.png`) —
-//     menos os de Jápeto, que desde o item 230 nascem nesta casa (ver
-//     `relevoJapeto`, abaixo). São DEZESSEIS entradas, e o `--offline` delas quer o diretório do
+//     menos os de Jápeto (item 230) e os de Reia (PLAN-REIA.md), que
+//     nascem nesta casa (ver `relevoJapeto` e `relevoReia`, abaixo). São
+//     CATORZE entradas, e o `--offline` delas quer o diretório do
 //     SATURN, não o do atlas-orbital: os mosaicos são
 //     `public/textures/<lua>.jpg`. Todas levam
 //     `giroDeLongitudeGraus: 180` — o layout Schenk põe o sub-Saturno
@@ -103,19 +104,31 @@
 // altura, normal e os números (escala, viés, semente, leis), e a escala e o
 // viés de `rochoso.ts` têm de ser os do candidato — senão nada é gravado.
 //
+// O RELEVO DE REIA (PLAN-REIA.md, etapa F): as entradas `rhea/height` e
+// `rhea/normal` também não adquirem nada — saem do gerador `relevo-reia.mjs`
+// pela MESMA sequência de chamadas da prévia (`previa-reia.mjs`): a BASE é o
+// modelo de forma da Cassini (Weirich et al. 2025, o TIFF do cache conferido
+// por sha256) e, por cima, as crateras finas detectadas no map.jpg da casa
+// (pinado), completadas pela lei. O mesmo portão do conjunto, e os DOIS
+// canais são gravados juntos pela primeira das duas entradas que a corrida
+// encontra (`gravaRelevoDeReia`): nunca a altura de uma versão com a normal
+// de outra.
+//
 // ESCOPO OPCIONAL (o mesmo do otimiza-texturas): sem corpo nomeado, a
 // tabela inteira; com corpos, só eles; com `corpo/canal`, só aquele canal
-// (o relevo de Jápeto sem refazer o map.jpg do Saturn, que pede `--offline`).
+// (o relevo de Jápeto ou o de Reia sem refazer o map.jpg do Saturn, que pede
+// `--offline`).
 //
 //   node scripts/data/atlas/baixa-texturas.mjs --offline ~/Github/atlas-orbital
 //   node scripts/data/atlas/baixa-texturas.mjs            (rede, reprodutibilidade)
 //   node scripts/data/atlas/baixa-texturas.mjs --offline ~/Github/atlas-orbital ceres vesta
 //   node scripts/data/atlas/baixa-texturas.mjs iapetus/height iapetus/normal
+//   node scripts/data/atlas/baixa-texturas.mjs rhea/height rhea/normal
 // ============================================================
 
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { copyFile, mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
@@ -133,6 +146,7 @@ import {
   MORFOLOGIA_DAS_COM_NOME, MORFOLOGIA_DAS_DETECTADAS, RAIO_KM, RAREAMENTO_POR_LATITUDE, caminhoDaCristaPeloMapa,
   escalaEVies, geraRelevo, normalDoCampo, quantiza,
 } from './relevo-japeto.mjs';
+import * as Reia from './relevo-reia.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -173,6 +187,34 @@ const RELEVO_DE_JAPETO = {
     height: 'f52c3753fbec8431fedd7c2b338c3c03d6b4ae0d6daf2bd962bb03c17d528b2f',
     normal: '86ae58035a9594e87c18a00c156a7b7338133cd43fc538f954fa47dd222f72b0',
     parametros: '4cf4ccf3375e677cef80a9a3fe003b3741710dd10fc6b872505e8857d75ddf11',
+  },
+};
+
+// O RELEVO APROVADO DE REIA (PLAN-REIA.md, etapa F), que `rhea/height` e
+// `rhea/normal` dividem. `candidato`: a pasta da prévia (`previa-reia.mjs`,
+// passada R2b) com o `parametros.json` que o portão confronta — A, `…/a-1024`
+// (1024×512), ou B, `…/b-2048` (2048×1024); `largura`/`altura`: a grade dele (outra
+// grade, outros números: o portão recusa). `dtm`: o modelo de forma da
+// Cassini no cache (o sha256 de `.cache/reia/FONTES.json`); `mapaDeCor`: de
+// onde saem as crateras finas (outro mapa, outras crateras); os dois
+// pinados. `sha256Aprovado`: os pixels da altura (1 canal), o RGB da normal e
+// o JSON canônico dos números (`numerosDoRelevoDeReia`).
+const RELEVO_DE_REIA = {
+  candidato: 'capturas/reia/r2b/a-1024',
+  largura: 1024,
+  altura: 512,
+  dtm: {
+    arquivo: '.cache/reia/rhea_radius_g.tif',
+    sha256: 'a4d49eb12bfe5c0d97513d3d4692c78c7b5dd7179f8c2097203a37a4834bb51d',
+  },
+  mapaDeCor: {
+    arquivo: 'public/textures/atlas/rhea/map.jpg',
+    sha256: 'be6556d01ce5d02fca72895e72e45d591833b19345c9e96b554a52b82ebf0212',
+  },
+  sha256Aprovado: {
+    height: 'e30720c34adc452428fcfeee19ec2cd345637f0ee64be5e4d50ce83bf4d097e1',
+    normal: '7cf17052d9b4aa32fe420679ab68601bdc87b2eb76bfc4f15d6c43f152205d4e',
+    parametros: '92db84afa13152a98e6476bb1042ba3ee77ab854b34b8fb800918f3b4c1078cb',
   },
 };
 
@@ -408,10 +450,10 @@ export const FONTES = [
   // 1024×512 — o mesmo `public/textures/relief/` do projeto Saturn, a
   // mesma meia volta. Encélado é o único que vem em 2048 e desce para a
   // largura da casa. A proveniência de cada modelo (Gaskell, Schenk &
-  // McKinnon, Weirich, e o SINTÉTICO de Reia) mora em
-  // docs/reference/ASSETS.md e no manifest, não aqui. Jápeto saiu desta
-  // lista no item 230: o relevo dele nasce nesta casa (logo abaixo).
-  ...['mimas', 'enceladus', 'tethys', 'dione', 'rhea'].flatMap((corpo) =>
+  // McKinnon, Weirich) mora em docs/reference/ASSETS.md e no manifest, não
+  // aqui. Jápeto saiu desta lista no item 230 e Reia no PLAN-REIA.md: o
+  // relevo das duas nasce nesta casa (logo abaixo).
+  ...['mimas', 'enceladus', 'tethys', 'dione'].flatMap((corpo) =>
     ['height', 'normal'].map((canal) => ({
       corpo,
       canal,
@@ -435,6 +477,19 @@ export const FONTES = [
     canal,
     url: 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/IAPETUS_nomenclature_center_pts.zip',
     relevoJapeto: RELEVO_DE_JAPETO,
+  })),
+  // O RELEVO DE REIA (PLAN-REIA.md, etapa F): o sintético do Saturn não
+  // acertava nem Mamaldi nem Tirawa, e Reia TEM modelo de forma público. Os
+  // dois canais saem do gerador `relevo-reia.mjs` (`relevoDeReia`): o DTM da
+  // Cassini (Weirich et al. 2025) como base, medido, e as crateras finas que
+  // a foto mostra e ele não resolve, completadas pela lei; na grade e na
+  // convenção da casa, sem giro (a meia volta do DTM está no gerador). A url
+  // é a do DTM, que entra pelo cache.
+  ...['height', 'normal'].map((canal) => ({
+    corpo: 'rhea',
+    canal,
+    url: Reia.DTM.url,
+    relevoReia: RELEVO_DE_REIA,
   })),
   // ---- As cinco de Urano e Tritão (itens 147/148): a Voyager 2 só viu o
   // hemisfério sul das cinco (1986) e ~40 % de Tritão (1989); a NASA 3D
@@ -1328,19 +1383,19 @@ export function diferencasDosNumeros(obtidos, esperados) {
     .map((k) => `${k}: ${a.get(k)} ≠ ${b.get(k)}`);
 }
 
-/** A escala e o viés de Jápeto em `RELEVO_DA_LUA` (`rochoso.ts`), lidos do texto. */
-export async function escalaEViesDoApp() {
+/** A escala e o viés do `corpo` (Jápeto, Reia) em `RELEVO_DA_LUA` (`rochoso.ts`), lidos do texto. */
+export async function escalaEViesDoApp(corpo = 'iapetus') {
   const arquivo = path.join(rootDirectory, 'src', 'three', 'world', 'corpos', 'rochoso.ts');
-  const m = /\biapetus:\s*\{\s*escala:\s*([-+.\deE]+),\s*vies:\s*([-+.\deE]+)/.exec(await readFile(arquivo, 'utf8'));
-  if (!m) throw new Error(`relevo de Jápeto: não achei "iapetus: { escala, vies }" em ${path.relative(rootDirectory, arquivo)}.`);
+  const m = new RegExp(`\\b${corpo}:\\s*\\{\\s*escala:\\s*([-+.\\deE]+),\\s*vies:\\s*([-+.\\deE]+)`).exec(await readFile(arquivo, 'utf8'));
+  if (!m) throw new Error(`relevo: não achei "${corpo}: { escala, vies }" em ${path.relative(rootDirectory, arquivo)}.`);
   return { escala: Number(m[1]), vies: Number(m[2]) };
 }
 
 /**
- * O PORTÃO DO RELEVO DE JÁPETO: grava só se o CONJUNTO for o aprovado —
+ * O PORTÃO DO RELEVO (Jápeto, Reia): grava só se o CONJUNTO for o aprovado —
  * os números da cadeia iguais aos do `parametros.json` do candidato, a
  * escala e o viés de `rochoso.ts` iguais aos do candidato, e os três sha256
- * (altura, normal, números) iguais aos de `relevoJapeto.sha256Aprovado`.
+ * (altura, normal, números) iguais aos de `sha256Aprovado` da entrada.
  * Um só que falhe e nenhum dos dois canais é gravado: uma escala nova
  * mudaria a silhueta sem mudar um pixel. Pura: `{ grava, mensagem }`.
  */
@@ -1358,7 +1413,7 @@ export function portaoDoRelevo({ rotulo, candidato, obtidos, aprovados = {}, num
       grava: false,
       mensagem:
         `${rotulo}: o relevo ainda não aprovado (${faltam.join(', ')} sem hash; obtidos: ${lista}) — NADA foi gravado. ` +
-        'Com o sim do dono, os hashes entram em relevoJapeto.sha256Aprovado.',
+        'Com o sim do dono, os hashes entram no sha256Aprovado do relevo (RELEVO_DE_JAPETO, RELEVO_DE_REIA).',
     };
   }
   for (const k of ['height', 'normal', 'parametros']) {
@@ -1394,14 +1449,7 @@ async function fazConjuntoDeJapeto(config, rotulo) {
     config.gazetteer,
     'a tabela do Gazetteer da IAU (o shapefile IAPETUS_nomenclature_center_pts, lido para JSON; ver .cache/japeto/FONTES.json)'
   );
-  const arquivoDoCandidato = path.join(rootDirectory, config.candidato, 'parametros.json');
-  let candidato;
-  try {
-    candidato = JSON.parse(await readFile(arquivoDoCandidato, 'utf8'));
-  } catch (erro) {
-    if (erro.code !== 'ENOENT') throw erro;
-    throw new Error(`${rotulo}: falta ${path.relative(rootDirectory, arquivoDoCandidato)}, o registro do candidato aprovado — o portão confronta os números com ele.`);
-  }
+  const candidato = await parametrosDoCandidato(rotulo, config.candidato);
   console.log(
     `${rotulo}: relevo de Jápeto, semente ${config.semente}, crista de ${config.alturaMaximaKm} km; versões: node ${process.version}, ` +
       `V8 ${process.versions.v8}, sharp ${sharp.versions.sharp}, libvips ${sharp.versions.vips}`
@@ -1414,6 +1462,20 @@ async function fazConjuntoDeJapeto(config, rotulo) {
     `  crista ${ultima.alturaDaCrista.km.toFixed(2)} km em ${ultima.alturaDaCrista.lonE.toFixed(2)}°E; ${r.deteccao.crateras.length} crateras detectadas ` +
       `(${r.relevo.detectadas.length} entram), ${r.relevo.colocadas.length} com nome; ${r.height.abaixo + r.height.acima} texels saturados`
   );
+  return {
+    ...(await pngsDoRelevo(rotulo, r, W, H)),
+    numeros: r.numeros,
+    doCandidato: numerosDoCandidato(candidato),
+  };
+}
+
+/**
+ * Os dois PNG de um relevo gerado (`r`: `{ height: { bytes }, normal: { rgb
+ * }, numeros }`), codificados e DECODIFICADOS de volta — o que vai ao disco
+ * é o que o portão aprovou —, e os três sha256: os pixels da altura (1
+ * canal), o RGB da normal e o JSON canônico dos números.
+ */
+async function pngsDoRelevo(rotulo, r, W, H) {
   const pngDaAltura = await sharp(Buffer.from(r.height.bytes), { raw: { width: W, height: H, channels: 1 } })
     .toColourspace('b-w').png({ compressionLevel: 9, adaptiveFiltering: false }).toBuffer();
   const pngDaNormal = await sharp(r.normal.rgb, { raw: { width: W, height: H, channels: 3 } })
@@ -1424,12 +1486,18 @@ async function fazConjuntoDeJapeto(config, rotulo) {
   const obtidos = { height: sha(Buffer.from(r.height.bytes)), normal: sha(r.normal.rgb), parametros: sha(jsonCanonico(r.numeros)) };
   if (voltaDaAltura.info.channels !== 1 || sha(voltaDaAltura.data) !== obtidos.height) throw new Error(`${rotulo}: o height.png decodificado não é a altura do gerador.`);
   if (voltaDaNormal.info.channels !== 3 || sha(voltaDaNormal.data) !== obtidos.normal) throw new Error(`${rotulo}: o normal.png decodificado não é a normal do gerador.`);
-  return {
-    png: { height: pngDaAltura, normal: pngDaNormal },
-    obtidos,
-    numeros: r.numeros,
-    doCandidato: numerosDoCandidato(candidato),
-  };
+  return { png: { height: pngDaAltura, normal: pngDaNormal }, obtidos };
+}
+
+/** O `parametros.json` da pasta do candidato aprovado; faltou: erro dizendo o que ele é. */
+async function parametrosDoCandidato(rotulo, pasta) {
+  const arquivo = path.join(rootDirectory, pasta, 'parametros.json');
+  try {
+    return JSON.parse(await readFile(arquivo, 'utf8'));
+  } catch (erro) {
+    if (erro.code !== 'ENOENT') throw erro;
+    throw new Error(`${rotulo}: falta ${path.relative(rootDirectory, arquivo)}, o registro do candidato aprovado — o portão confronta os números com ele.`);
+  }
 }
 
 /** sha256 de um arquivo da raiz, pinado; faltou ou não bate: erro dizendo o que ele é. */
@@ -1472,6 +1540,185 @@ export async function gravaRelevoDeJapeto(fonte, destino) {
   await writeFile(destino, conjunto.png[fonte.canal]);
 }
 
+// ---- O RELEVO DE REIA (PLAN-REIA.md, etapa F) ------------------------
+
+/**
+ * As grades cuja UNIÃO dá a faixa do byte, como na prévia: A (1024) e B
+ * (2048) saem com a mesma faixa — a mesma escala e o mesmo viés em
+ * `rochoso.ts` —, e a de um depende do campo do outro. Na ordem da prévia.
+ */
+const GRADES_DA_FAIXA_DE_REIA = [[2048, 1024], [1024, 512]];
+
+/**
+ * O RELEVO DE REIA EM MEMÓRIA — a sequência de chamadas da prévia
+ * (`capturas/reia/ferramentas/previa-reia.mjs`), que esta cadeia reproduz
+ * byte a byte (`prova-cadeia-reia.mjs`, ao lado dela): as crateras
+ * detectadas no map.jpg (`detectaCrateras`, como `r2-detecta.mjs`), em cada
+ * grade de `GRADES_DA_FAIXA_DE_REIA` o relevo do DTM com as finas
+ * completadas (`geraRelevo`) e a faixa dele (`faixaDoCampo`); a faixa do
+ * byte é a união; na grade pedida, a altura em 8 bits (`quantiza`) e a
+ * normal do MESMO campo (`normalDoCampo`). `tif`: os bytes do TIFF do DTM;
+ * `rgb`: o map.jpg decodificado (`{ data, info }` do sharp); `dtmSha256`: o
+ * sha256 conferido do TIFF, que vai aos números. Pura; `{ height, normal,
+ * numeros, relevo, faixa, saturados, deteccao }`.
+ */
+export function relevoDeReia({ tif, rgb, dtmSha256, largura, altura }) {
+  const { width: W, height: H, channels } = rgb.info;
+  const deteccao = detectaCrateras(luminanciaDoRgb(rgb.data, W, H, channels), { W, H, raioKm: Reia.RAIO_KM });
+  const campos = GRADES_DA_FAIXA_DE_REIA.map(([w, h]) => {
+    const relevo = Reia.geraRelevo({ largura: w, altura: h, dtmKm: Reia.relevoDoDtm(tif, w, h), detectadas: deteccao.crateras });
+    return { relevo, faixa: Reia.faixaDoCampo(relevo.km, w, h) };
+  });
+  const escolhido = campos.find((c) => c.relevo.largura === largura && c.relevo.altura === altura);
+  if (!escolhido) {
+    throw new Error(`relevo de Reia: a grade ${largura}×${altura} não é uma das da faixa (${GRADES_DA_FAIXA_DE_REIA.map((g) => g.join('×')).join(', ')}).`);
+  }
+  const faixa = { min: Math.min(...campos.map((c) => c.faixa.min)), max: Math.max(...campos.map((c) => c.faixa.max)) };
+  const { km } = escolhido.relevo;
+  return {
+    height: Reia.quantiza(km, faixa),
+    normal: Reia.normalDoCampo(km, largura, altura, faixa),
+    numeros: numerosDoRelevoDeReia({ largura, altura, faixa, regraDaFaixa: escolhido.faixa.medida, dtmSha256, deteccao: deteccao.parametros }),
+    relevo: escolhido.relevo,
+    faixa,
+    saturados: Reia.saturacoes(km, largura, altura, faixa),
+    deteccao,
+  };
+}
+
+/**
+ * OS NÚMEROS QUE O PORTÃO APROVA junto dos pixels de Reia: os que o pixel
+ * não carrega e mudam a silhueta (a escala e o viés do vértice, a faixa do
+ * byte e a regra que a derivou, o raio e os eixos — o relevo em km ÷ a, a
+ * exceção ASSUMIDA) e os que refazem o campo: o DTM (sha256, grade, borda
+ * esquerda, os 360/2222 °/px que contrariam o rótulo, a latitude
+ * planetocêntrica — as exceções cartográficas), o X, a lei de forma, o
+ * desgaste, o completar, a duplicata, o rareamento e o detector. O sha256 é
+ * o do `jsonCanonico` disto.
+ */
+export function numerosDoRelevoDeReia({ largura, altura, faixa, regraDaFaixa, dtmSha256, deteccao }) {
+  const { escala, vies } = Reia.escalaEVies(faixa);
+  const { margemKm, passoKm, poloGraus } = regraDaFaixa;
+  const { bordaEsquerdaLonE, grausPorPixel, latitude } = Reia.DTM;
+  return {
+    escala,
+    vies,
+    grade: { largura, altura, raioKm: Reia.RAIO_KM, eixosKm: Reia.EIXOS_KM },
+    dtm: { sha256: dtmSha256, largura: Reia.DTM.largura, altura: Reia.DTM.altura, bordaEsquerdaLonE, grausPorPixel, latitude },
+    faixaKm: { min: faixa.min, max: faixa.max, margemKm, passoKm, poloGraus },
+    xKm: Reia.X_KM,
+    leis: {
+      forma: Reia.LEI_DE_FORMA,
+      desfoqueSigmaPorD: Reia.DESFOQUE_SIGMA_POR_D,
+      completar: Reia.COMPLETAR,
+      duplicata: Reia.DUPLICATA,
+      rareamento: Reia.RAREAMENTO_POR_LATITUDE,
+      deteccao,
+    },
+  };
+}
+
+/** Os mesmos números de Reia, lidos do `parametros.json` que a prévia gravou. */
+export function numerosDoCandidatoDeReia(p) {
+  const { margemKm, passoKm, poloGraus } = p.quantizacao.comoFoiDerivada.medidaA;
+  const { sha256Conferido, largura, altura, bordaEsquerdaLonE, grausPorPixel, latitude } = p.base.fonte;
+  return {
+    escala: p.quantizacao.rochosoTs.escala,
+    vies: p.quantizacao.rochosoTs.vies,
+    grade: { largura: p.grade.largura, altura: p.grade.altura, raioKm: p.grade.raioKm, eixosKm: p.grade.eixosKm },
+    dtm: { sha256: sha256Conferido, largura, altura, bordaEsquerdaLonE, grausPorPixel, latitude },
+    faixaKm: { min: p.quantizacao.hminKm, max: p.quantizacao.hmaxKm, margemKm, passoKm, poloGraus },
+    xKm: p.crateras.X_km,
+    leis: {
+      forma: p.leis.forma,
+      desfoqueSigmaPorD: p.leis.desfoque.sigmaPorD,
+      completar: Object.fromEntries(Object.entries(p.leis.completar).filter(([k]) => k !== 'o_que')),
+      duplicata: p.crateras.filtro.duplicata.regra,
+      rareamento: p.crateras.rareamento.regra,
+      deteccao: p.crateras.detector.parametros,
+    },
+  };
+}
+
+/**
+ * O conjunto de Reia pronto para gravar (`fonte`: uma das duas entradas) —
+ * o TIFF do DTM conferido (`conferirArquivoDoCache`) e o map.jpg pinado, o
+ * relevo, os dois PNG decodificados de volta e os sha256. Feito uma vez por
+ * processo para as duas entradas (a detecção custa minutos); o portão roda a
+ * cada chamada. Exportada para a prova por hash.
+ */
+export async function conjuntoDeReia(fonte) {
+  const chave = jsonCanonico({ ...fonte.relevoReia, sha256Aprovado: null });
+  if (!RELEVOS_FEITOS.has(chave)) RELEVOS_FEITOS.set(chave, fazConjuntoDeReia(fonte));
+  return RELEVOS_FEITOS.get(chave);
+}
+
+async function fazConjuntoDeReia(fonte) {
+  const rotulo = `${fonte.corpo}/${fonte.canal}`;
+  const config = fonte.relevoReia;
+  const tif = await readFile(await conferirArquivoDoCache({ ...fonte, arquivoDoCache: config.dtm }));
+  const bytesDoMapa = await conferePinado(rotulo, config.mapaDeCor, 'as crateras finas são detectadas nele: outro mapa, outras crateras');
+  const candidato = await parametrosDoCandidato(rotulo, config.candidato);
+  console.log(
+    `${rotulo}: relevo de Reia, DTM da Cassini + crateras finas pela foto, ${config.largura}×${config.altura} (a detecção leva minutos); ` +
+      `versões: node ${process.version}, V8 ${process.versions.v8}, sharp ${sharp.versions.sharp}, libvips ${sharp.versions.vips}`
+  );
+  const rgb = await sharp(bytesDoMapa).raw().toBuffer({ resolveWithObject: true });
+  const r = relevoDeReia({ tif, rgb, dtmSha256: config.dtm.sha256, largura: config.largura, altura: config.altura });
+  console.log(
+    `  ${r.deteccao.crateras.length} crateras detectadas, ${r.relevo.completadas.length} completadas sobre o DTM; faixa ${r.faixa.min}..${r.faixa.max} km; ` +
+      `${r.saturados.abaixo + r.saturados.acima} texels saturados (${r.saturados.foraDoPolo} fora do polo)`
+  );
+  return {
+    ...(await pngsDoRelevo(rotulo, r, config.largura, config.altura)),
+    numeros: r.numeros,
+    doCandidato: numerosDoCandidatoDeReia(candidato),
+  };
+}
+
+const PARES_GRAVADOS = new Set();
+/**
+ * O PASSO DO RELEVO DE REIA: o conjunto, o portão e, aprovado, os DOIS PNG
+ * (`height.png` e `normal.png` na pasta de `destino`) de uma vez — pela
+ * primeira das duas entradas que a corrida encontra, com qualquer escopo (a
+ * revisão de 07/10: um canal por chamada deixava uma interrupção misturar
+ * versões). Os dois vão a temporários na mesma pasta e só então são
+ * renomeados por cima dos de antes; a segunda entrada da mesma corrida acha
+ * o par gravado e não regrava. Recusado, o erro leva a mensagem e nada é
+ * gravado. Exportada para a prova por hash, que a chama fora de `public/`.
+ */
+export async function gravaRelevoDeReia(fonte, destino) {
+  const rotulo = `${fonte.corpo}/${fonte.canal}`;
+  const config = fonte.relevoReia;
+  const conjunto = await conjuntoDeReia(fonte);
+  const portao = portaoDoRelevo({
+    rotulo,
+    candidato: config.candidato,
+    obtidos: conjunto.obtidos,
+    aprovados: config.sha256Aprovado,
+    numeros: conjunto.numeros,
+    doCandidato: conjunto.doCandidato,
+    doApp: await escalaEViesDoApp('rhea'),
+  });
+  if (!portao.grava) throw new Error(portao.mensagem);
+  const pasta = path.dirname(destino);
+  const par = `${pasta}|${jsonCanonico(conjunto.obtidos)}`;
+  if (PARES_GRAVADOS.has(par)) {
+    console.log(`${rotulo}: já gravado junto com o outro canal nesta corrida.`);
+    return;
+  }
+  console.log(`${portao.mensagem} (os dois canais juntos)`);
+  const canais = ['height', 'normal'];
+  const temporario = (canal) => path.join(pasta, `.${canal}.png.${process.pid}.tmp`);
+  try {
+    for (const canal of canais) await writeFile(temporario(canal), conjunto.png[canal]);
+    for (const canal of canais) await rename(temporario(canal), path.join(pasta, `${canal}.png`));
+  } finally {
+    for (const canal of canais) await unlink(temporario(canal)).catch(() => {});
+  }
+  PARES_GRAVADOS.add(par);
+}
+
 async function main() {
   const argumentos = process.argv.slice(2);
   const indiceOffline = argumentos.indexOf('--offline');
@@ -1507,7 +1754,7 @@ async function main() {
     // (`scripts/data/atlas/fonte/`) e só é reencodado no formato do canal.
     const passoDaCasa =
       fonte.bake || fonte.giroDeLongitudeGraus !== undefined || fonte.arquivoLocal
-      || fonte.preencherVazio || fonte.relevoJapeto;
+      || fonte.preencherVazio || fonte.relevoJapeto || fonte.relevoReia;
     const extensao = passoDaCasa
       ? (CANAIS_DE_DADO.has(fonte.canal) ? 'png' : 'jpg')
       : path.extname(new URL(fonte.url).pathname).slice(1) ||
@@ -1530,9 +1777,9 @@ async function main() {
     // (item 149) — baixa da fonte mesmo aqui: o doador nunca as teve, e
     // fingir o contrário quebraria o modo. Entrada com `arquivoDoCache`
     // (item 230) não baixa nunca, nem copia do doador: confere e copia.
-    if (fonte.relevoJapeto) {
-      // nada a adquirir (item 230): o gerador lê o map.jpg da casa e o
-      // Gazetteer do cache, os dois conferidos por sha256 no passo
+    if (fonte.relevoJapeto || fonte.relevoReia) {
+      // nada a adquirir (item 230, PLAN-REIA.md): o gerador lê o map.jpg da
+      // casa e o Gazetteer ou o DTM do cache, conferidos por sha256 no passo
     } else if (fonte.arquivoDoCache) {
       await copyFile(await conferirArquivoDoCache(fonte), cru);
     } else if (fonte.arquivoLocal) {
@@ -1551,6 +1798,7 @@ async function main() {
     if (passoDaCasa) {
       try {
         if (fonte.relevoJapeto) await gravaRelevoDeJapeto(fonte, destino);
+        else if (fonte.relevoReia) await gravaRelevoDeReia(fonte, destino);
         else if (fonte.arquivoLocal && !fonte.bake) {
           await girarMapa(cru, destino, fonte.canal, {
             larguraDoDestino: fonte.larguraDoDestino,
@@ -1570,7 +1818,7 @@ async function main() {
     console.log(
       `${fonte.corpo}/${fonte.canal}: ${medido.largura}x${medido.altura} ` +
         `${medido.formato}, ${(medido.bytes / 1048576).toFixed(2)} MB ` +
-        `(${fonte.relevoJapeto ? 'gerado nesta casa' : fonte.arquivoDoCache ? 'cache local' : diretorioDoador && fonte.nomeNoDoador ? 'offline, doador' : 'rede'}).`
+        `(${fonte.relevoJapeto || fonte.relevoReia ? 'gerado nesta casa' : fonte.arquivoDoCache ? 'cache local' : diretorioDoador && fonte.nomeNoDoador ? 'offline, doador' : 'rede'}).`
     );
   }
   console.log(

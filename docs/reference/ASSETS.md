@@ -164,8 +164,9 @@ de normais, 51/255. A regra vive em `scripts/data/atlas/otimiza-texturas.mjs`
 porque a fonte dele já é jpg.
 
 Todos vêm do **projeto Saturn do dono** (https://github.com/fgferre/Saturn,
-`public/textures/relief/`) — menos o de Jápeto desde o item 230, que nasce
-nesta casa (parágrafo no fim desta seção) —, que os assou a partir dos modelos abaixo; as
+`public/textures/relief/`) — menos o de Jápeto desde o item 230 e o de Reia
+desde o PLAN-REIA.md, que nascem nesta casa (parágrafos no fim desta seção) —,
+que os assou a partir dos modelos abaixo; as
 escalas de deslocamento (`span`/`bias` como fração do raio) vêm do
 `relief.json` dele e moram em `RELEVO_DA_LUA` (`world/corpos/rochoso.ts`).
 Encélado veio em 2048 e foi reamostrado para 1024 (lanczos3).
@@ -176,20 +177,23 @@ Encélado veio em 2048 e foi reamostrado para 1024 (lanczos3).
 | Tétis | modelo de forma SPC V1.0 (R. Gaskell), NASA PDS | domínio público | 143 + 492 KB |
 | Encélado | DEM global 200 m — Schenk & McKinnon 2024, USGS Astropedia | domínio público, **citação obrigatória**: *Icarus* 408, 115827 | 296 + 728 KB |
 | Dione | DTM SPC — Weirich et al. 2025, NASA PDS SBN | domínio público | 228 + 512 KB |
-| Reia | **relevo SINTÉTICO** — não existe DTM público de Reia; campo de crateras gerado por código no projeto Saturn | código do autor | 108 + 232 KB |
+| Reia | **relevo MEDIDO, completado** (PLAN-REIA.md) — modelo de forma SPC da Cassini (Weirich, Gaskell, Palmer & Domingue 2025, NASA PDS SBN, doi 10.26033/tqxb-q714) acima de ~30 km; abaixo, crateras onde a foto as mostra, com perfis ESTIMADOS (parágrafo abaixo) | dado NASA PDS, **citação obrigatória**; montagem: código do autor | a medir ao regenerar (o sintético tinha 108 + 232 KB) |
 | Jápeto | **relevo INVENTADO ancorado no medido** (item 230) — não existe DTM público de Jápeto; gerado nesta casa: crista e crateras no lugar medido, perfis e profundidades inventados (parágrafo abaixo) | código do autor; posições do Gazetteer da IAU e mosaico Cassini, domínio público | 55 + 135 KB |
 
 Total baixado pelo visitante: **3,43 MB** em webp (7,90 MB em disco com o
 `.png` de fallback, medido no item 230). O `NOTICE` do projeto dele é a fonte destas linhas e
 declara os dois sintéticos com todas as letras: *"Rhea and Iapetus have no
-public DTM as of 2026; their relief is synthetic"* — o de Jápeto saiu no item 230.
+public DTM as of 2026; their relief is synthetic"* — o de Jápeto saiu no item 230,
+e o de Reia no PLAN-REIA.md (o DTM de Reia saiu no PDS em 2025: a frase dele
+já estava velha para ela).
 
 **Reia e Jápeto entraram por decisão DELE (02/09, S2b):** *"queremos o
 relevo sobressaído, sabemos que Reia não é uma esfera, ela é acidentada"*.
-O relevo das duas **não é medida** — é campo de crateras gerado por código
-no projeto Saturn dele —, e é isso que a ficha imprime na seção *a imagem*,
-na linha `relevo`. As amplitudes são as dele (`relief.json`: 2,6 % do raio
-nas duas), sem corte: o `span`/`bias` do projeto é o piso, não o teto.
+O relevo das duas **não era medida** — era campo de crateras gerado por código
+no projeto Saturn dele —, e era isso que a ficha imprimia na seção *a imagem*,
+na linha `relevo`. As amplitudes eram as dele (`relief.json`: 2,6 % do raio
+nas duas), sem corte: o `span`/`bias` do projeto era o piso, não o teto. Os
+dois foram refeitos nesta casa (parágrafos abaixo).
 
 **Jápeto refeito nesta casa (item 230, 07/10/2026, PLAN-EUROPA-JAPETO.md).**
 O sintético do Saturn punha a crista no antípoda (350°E→134°E; a real vai de
@@ -212,6 +216,35 @@ entre elas. Altura em 8 bits de −14 a +22 km (141 m por degrau; escala
 portão da cadeia aprova o conjunto — altura, normal e esses números — por
 sha256, e o `parametros.json` do candidato em
 `capturas/europa-japeto/j1c/b-20km/` lista cada escolha.
+
+**Reia refeita nesta casa (PLAN-REIA.md, 07/10/2026).** O sintético do
+Saturn não acertava nem Mamaldi nem Tirawa — nenhuma das crateras com nome
+estava no lugar —, e Reia TEM modelo de forma público. O relevo agora sai de
+`scripts/data/atlas/relevo-reia.mjs`, pela cadeia (`baixa-texturas.mjs`,
+`relevoReia`). O que é MEDIDO: a forma de Reia nas escalas acima de ~30 km,
+pelo modelo de forma SPC da Cassini (Weirich, Gaskell, Palmer & Domingue
+2025, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714 — dado PDS/NASA,
+citação obrigatória; 2,15 km por pixel, incerteza de 2 a 4 km) menos o
+elipsoide do app: as bacias (Tirawa, Mamaldi, Powehiwehi), as crateras com
+profundidade a partir de ~30 km e os vales largos do terreno claro (Avaiki,
+Galunlati); e o LUGAR e o DIÂMETRO das crateras menores, onde o mosaico
+Cassini de Schenk as mostra (`crateras-pela-foto.mjs`, a mesma detecção de
+Jápeto). O que é ESTIMADO: a profundidade dessas crateras menores — pela
+lei de Aponte-Hernández et al. 2021 (profundidade de 0,11 do diâmetro até
+12 km e de 0,08 de 12 a 30 km, médias de 509 crateras num modelo de Reia) —,
+a borda erguida e o desgaste, escolhidos como em Jápeto. Abaixo de 10 km a
+cratera entra inteira (o modelo medido não a vê); de 10 a 30 km entra só a
+parte da profundidade que o modelo ainda não mostra, nunca por cima do que
+ele já tem; nada de 30 km para cima é carimbado. As escarpas finas do
+terreno claro NÃO são inventadas: estão só na cor. Exceções cartográficas
+assumidas, registradas no `parametros.json`: o rótulo do DTM diz 359,15° de
+largura e os dados cobrem 360° exatos; a latitude planetocêntrica fica como
+vem (≤ 0,2° da planetográfica); e o relevo em km ÷ o raio equatorial erra
+até 0,34 % do próprio relevo. Altura em 8 bits de −7 a +6 km (51 m por
+degrau; escala 0,0170 e viés −0,0092 em `RELEVO_DA_LUA`), normal do mesmo
+campo; o portão da cadeia aprova o conjunto — altura, normal e esses números
+— por sha256, e os dois canais são gravados juntos. O `parametros.json` do
+candidato em `capturas/reia/r2b/a-1024/` lista cada escolha.
 
 ## As nove luas esculpidas de Saturno (item 134, S3)
 
@@ -825,7 +858,8 @@ tocar num `.mjs`.
 | europa/map | mosaico real da Voyager e da Galileo a 500 m, mas em cinza: o brilho é medido e a cor não — não existe mapa global em cor de Europa; a cor é INFERIDA do brilho nesta casa: o gelo claro quase neutro e o material escuro avermelhado das linhas, os dois medidos na foto em cor da Galileo de um hemisfério, misturados conforme o brilho de cada ponto, mais o amarelado do hemisfério que vem atrás na órbita; o hemisfério da frente nunca foi fotografado em cor, e a calota sul sem imagem (a partir de 77 a 84° sul) foi preenchida com o tom da faixa vizinha |
 | venus/map | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |
 | enceladus/height | DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul |
-| rhea/height | relevo SINTÉTICO: não existe DTM público de Reia — o campo de crateras foi gerado por código no projeto Saturn do autor, e não é medida |
+| rhea/height | relevo MEDIDO pelo modelo de forma da Cassini (Weirich, Gaskell, Palmer & Domingue 2025) nas escalas acima de ~30 km — as bacias, as crateras grandes e os vales largos do terreno claro; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho (Aponte-Hernández et al. 2021), não medidos; as escarpas finas do terreno claro não estão no relevo, só na cor |
+| rhea/normal | relevo MEDIDO pelo modelo de forma da Cassini (Weirich, Gaskell, Palmer & Domingue 2025) nas escalas acima de ~30 km — as bacias, as crateras grandes e os vales largos do terreno claro; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho (Aponte-Hernández et al. 2021), não medidos; as escarpas finas do terreno claro não estão no relevo, só na cor |
 | iapetus/height | não existe mapa de altura medido de Jápeto: este relevo é INVENTADO por código nesta casa, ancorado no que foi medido — a crista do equador está nas longitudes do catálogo da IAU e no caminho que a foto da Cassini mostra, com até 20 km, a altura medida pelas sondas; as 55 crateras com nome estão no lugar e no tamanho do catálogo, e as outras onde a foto da Cassini as mostra; o perfil da crista, a profundidade de cada cratera (dada por uma regra pelo tamanho) e o chão liso entre elas são inventados |
 | iapetus/normal | não existe mapa de altura medido de Jápeto: este relevo é INVENTADO por código nesta casa, ancorado no que foi medido — a crista do equador está nas longitudes do catálogo da IAU e no caminho que a foto da Cassini mostra, com até 20 km, a altura medida pelas sondas; as 55 crateras com nome estão no lugar e no tamanho do catálogo, e as outras onde a foto da Cassini as mostra; o perfil da crista, a profundidade de cada cratera (dada por uma regra pelo tamanho) e o chão liso entre elas são inventados |
 | hyperion/map | não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido, com uma mancha em estrela apagada e as encostas íngremes clareadas nesta casa — nada na cor é medida |
