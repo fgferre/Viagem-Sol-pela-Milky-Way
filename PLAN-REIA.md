@@ -70,6 +70,27 @@ reia`); ferramentas e candidatos em `capturas/reia/`; fontes em `.cache/reia/` c
   sha256 no cache), confissão, `data:verify`, cadeia no terminal dele a pedido dele, `npm run done`, fotos finais,
   merge em linha reta e envio com a palavra dele, conferência no ar por sha256.
 
+## Resultado
+- **R1 (07/10; `capturas/reia/dtm-prancha.jpg`, `dtm-medidas.md`; DTM e derivados em `.cache/reia/` com sha256 em
+  `FONTES.json`):** o TIFF é 2222×1111 float32 sem nodata, raio em metros (756,15–770,73 km), +leste com 0°E na borda
+  esquerda; os dados cobrem 360° exatos (o rótulo diz 2.153,874 m/px, que daria 359,15° — usar 360/2222 °/px, sem
+  degrau na costura). Relevo sobre o ELIPSOIDE do app (765,0 × 763,1 × 762,4): RMS 1,37 km (sobre a esfera 1,72 —
+  o elipsoide é o certo); p0,1/p99,9 = −4,95/+3,82 km, extremos −6,6/+6,1, desvio 1,31 km (o sintético de hoje tem
+  3,10). Bacias: Tirawa 399 km de borda a borda no DTM (centro 34,8°N 205,4°E, 33 km do Gazetteer), borda +1,4, vale
+  anelar −2,0, domo central +4,5, sem anel interno; Mamaldi degradada (anel ~1,8 km, alto central +2,9); Powehiwehi
+  vale −2,8, domo +5,8; Wakonda 4,9; Samni 5,0–6,6. Chasmata: Avaiki é um vale claro (~2,1 km, ~25 km de largura),
+  Galunlati 2–3,6 km entre 31 e 45°N; Yamsi/Vaupas/Pulag não se separam do fundo craterado. Resolução: crateras com
+  profundidade de verdade a partir de ~30 km; de 15 a 30 km saem rasas; abaixo de 15 km não existem. Piso de ruído
+  ~0,1 km. Registro com o mapa de cor: 0,08 px em 2048 (~0,01°) — as bordas coincidem; Inktomi no DTM com 3,2 km de
+  borda a fundo, exatamente na cratera do mapa (o Gazetteer erra 1–2° em parte do dianteiro, 185–295°E: Inktomi,
+  Chingaso, Imra, Fuxi, Pachacamac). Dúvidas: depressão de −3 km no último grau do polo norte (real?); Tirawa 399 km
+  contra ~360 da literatura.
+- **Decisões (Fable, 07/10, pela medida):** X = 30 km. O campo é o DTM; detectadas < 15 km entram com a lei; de 15 a
+  30 km COMPLETAM a profundidade que falta (lei − o que o DTM já tem no lugar), nunca somam; ≥ 30 km não entram.
+  Posições das crateras pela foto/DTM, não pelo Gazetteer (ele erra 1–2° no dianteiro); o Gazetteer serve à confissão
+  e aos nomes. Faixa de quantização: −7..+7 km (55 m por degrau) — a conferir que nenhum texel sature fora do polo.
+  Terreno wispy: os grábens largos ficam do DTM; escarpas finas não se inventam.
+
 ## Fora do escopo
 Cor de Reia (o mosaico de Schenk fica); as outras luas (Dione, Tétis, Mimas, Encélado já têm modelo medido no app);
 o tempo de luz do subsolar; publicar.
