@@ -116,6 +116,9 @@ reia`); ferramentas e candidatos em `capturas/reia/`; fontes em `.cache/reia/` c
   Sobras: o bloco de documentação de `rochoso.ts` ~225 ainda diz que Reia não tem DTM (ajustar em F); há um segundo
   leitor de TIFF na casa (o de `gera-normal-de-dem` lê pela rede e não é exportado) — BACKLOG se não unificar em F.
 
+- **Decisão dele (07/10, pela prancha `r2-prancha.jpg`):** *"vamos de A"* — o candidato de Reia é o A (1024×512,
+  r2b: height e30720c3…, normal 7cf17052…, parâmetros 2dab3e57…).
+
 ## Fora do escopo
 Cor de Reia (o mosaico de Schenk fica); as outras luas (Dione, Tétis, Mimas, Encélado já têm modelo medido no app);
 o tempo de luz do subsolar; publicar.

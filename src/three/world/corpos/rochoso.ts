@@ -219,12 +219,13 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * vira `1 + vies + altura·escala`: o viés é negativo para que a média
  * fique no raio nominal de `BODY_AXES` (a esfera não engorda).
  *
- * SÓ SETE LUAS PORQUE SÓ SETE TÊM MAPA. Quatro saem de modelo de forma
+ * SÓ SETE LUAS PORQUE SÓ SETE TÊM MAPA. Cinco saem de modelo de forma
  * MEDIDO (Mimas e Tétis por SPC de Gaskell, Encélado pelo DEM de Schenk &
- * McKinnon 2024, Dione pelo DTM de Weirich et al. 2025); Reia e Jápeto
- * NÃO TÊM DTM público e o relevo deles é gerado por código (o de Reia no
- * projeto dele; o de Jápeto, desde o item 230, nesta casa, ancorado no
- * catálogo da IAU e na foto) — entra por decisão do dono e é confessado onde o
+ * McKinnon 2024, Dione e Reia pelos DTMs de Weirich et al. 2025 — o de Reia
+ * completado nesta casa com as crateras finas que a foto mostra,
+ * `relevo-reia.mjs`); Jápeto NÃO TEM DTM público e o relevo dele é gerado por
+ * código nesta casa desde o item 230, ancorado no catálogo da IAU e na foto
+ * (`relevo-japeto.mjs`) — entra por decisão do dono e é confessado onde o
  * visitante lê (ficha do objeto, seção "a imagem", linha "relevo"), com o
  * texto nascendo em `docs/reference/ASSETS.md`. Hipérion é o sétimo caso
  * (23/09/2026): o mapa de altura é a FORMA MEDIDA inteira (Cassini —
