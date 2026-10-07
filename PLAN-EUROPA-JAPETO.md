@@ -189,6 +189,14 @@ Jápeto
   crateras, mais suaves e onde a cor as mostra; no terminador a muralha igual à de J1. **Sobras:** o detector infla a
   densidade em |lat| 50–72° (1,9×, viés do método); as com nome ainda saem com anel perfeito (Malprimis "carimbo") —
   as duas vão à passada J1c (bacias degradadas, rareamento por latitude), só no B.
+- **J1c (07/10; `capturas/europa-japeto/j1c-prancha.jpg`, candidato final de Jápeto em `j1c/b-20km/`):** as com nome
+  ganham o mesmo desfoque de borda das detectadas; acima de 150 km saem degradadas (profundidade 0,75 da lei, borda
+  pela metade, pico mais baixo e largo, sem terraços; Falsaron fica em 10,5 km medidos); rareamento por latitude das
+  detectadas de menor confiança (45–60°: fator 0,721; 60–72°: 0,530; 902 → 788 no relevo). Na prancha, o "carimbo" de
+  Malprimis e o da bacia do alto sumiram, a crista segue nítida, Falsaron no limbo ficou macia e os arcos brilhando do
+  lado noturno quase sumiram; Malprimis vira depressão leve (é uma bacia muito gasta — aceito). Saturação no fundo de
+  Falsaron: 181 texels (irrelevante). **sha256 do B-J1c: height f52c3753…8b2f, normal 86ae5803…f72b0; crista 20,0 km
+  em 226,6°E.** Olhado pelo Fable: é o candidato que vai à cadeia.
 - **Decisões dele (07/10, pelas pranchas `j1-prancha.jpg` e `e0-prancha.jpg`):** *"Jápeto com vinte quilômetros, Europa
   no meio-termo"* — o candidato de Jápeto é o B (crista de 20 km no ponto mais alto); o tom de Europa é o meio-termo
   entre o realista (PIA19048) e o natural (PIA00502), como na fileira de baixo da prancha do E0. A receita de Europa

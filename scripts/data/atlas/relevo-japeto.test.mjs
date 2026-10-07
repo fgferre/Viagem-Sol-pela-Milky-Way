@@ -2,7 +2,9 @@
 // ============================================================
 // Grade de 512×256 (o dobro do texel do app) para o juiz correr rápido; as
 // bacias com nome que mais mexem na faixa equatorial vão inline, com o
-// lugar e o diâmetro do Gazetteer (°E).
+// lugar e o diâmetro do Gazetteer (°E); as detectadas no mosaico vão como
+// a detecção as entrega (uma em cima de Malprimis, que cede a ela; uma
+// menor que 2 texels), longe da faixa da crista.
 // ============================================================
 import { describe, expect, it } from 'vitest';
 import {
@@ -27,7 +29,13 @@ const NOMEADAS = [
   { nome: 'Malprimis', lat: -15.2, lonE: 241.8, diametroKm: 377 },
   { nome: 'Corsablis', lat: 0.9, lonE: 245.8, diametroKm: 73 },
 ];
-const relevo = (alturaMaximaKm, semente = 230) => geraRelevo({ largura: W, altura: H, semente, alturaMaximaKm, nomeadas: NOMEADAS });
+const DETECTADAS = [
+  { lat: -15, lonE: 242, diametro_km: 400, confianca: 0.8 },
+  { lat: 40, lonE: 100, diametro_km: 60, confianca: 0.5 },
+  { lat: -30, lonE: 20, diametro_km: 25, confianca: 0.4 },
+  { lat: 30, lonE: 200, diametro_km: 12, confianca: 0.9 },
+];
+const relevo = (alturaMaximaKm, semente = 230) => geraRelevo({ largura: W, altura: H, semente, alturaMaximaKm, nomeadas: NOMEADAS, detectadas: DETECTADAS });
 const A = relevo(15);
 const B = relevo(20);
 
