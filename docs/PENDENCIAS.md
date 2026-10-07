@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (06/10, noite) — RODADA DO PONTO DE LUZ FEITA, DECIDIDA POR ELE E PRONTA PARA PUBLICAR (merge em linha reta de `viagem-solar` no `main`)
+## O BASTÃO — onde a rodada parou (07/10, 00:10 UTC) — RODADA DO PONTO DE LUZ PUBLICADA (`main` = `daf54e0`, publicação verde; conferido no ar: o salto para 158 s mostra Júpiter sem ponto; a lei nova e a sombra da legenda estão no bundle publicado)
 
 **Feito em 06/10 (plano em modo de planejamento, revisto por duas análises
 externas, executado na mesma sessão; `PLAN-PONTO-DE-LUZ.md` › Resultado):**
