@@ -182,6 +182,19 @@ Jápeto
   entre o realista (PIA19048) e o natural (PIA00502), como na fileira de baixo da prancha do E0. A receita de Europa
   (a ou b) fica com a comparação do E1; o campo de crateras de Jápeto fica com a passada J1b (pela foto).
 
+- **E1 (07/10; `capturas/europa-japeto/e1-prancha.jpg`, candidatos em `e1/<nome>/`, runner
+  `ferramentas/previa-europa.mjs`):** `cor-europa.mjs` + teste (4/4). Luminância: ganho 1,4161 em luz linear
+  (média por área 0,4446, igual ao `map.jpg` de hoje; 0,35 % saturam), contraste nativo do USGS (as linhas pretas de
+  hoje viram linhas finas marrons — o de hoje era esticado). Costura da receita (b): corte seco deixaria Δa*b* 4,54
+  (p95 10,0); a rampa de 10° deixa no máximo 0,23 por pixel. RMS contra o real no hemisfério: (a) 5,89, (b) 4,80; a olho
+  quase iguais em d=3 e 1,6 — a (b) só cobre ~5 % do globo e depende de produtos do E0 que a cadeia não tem.
+  **Decisão (Fable): receita (a), tom meio-termo = candidato `a-meio` (sha256 do RGB 9d2b9b09…1a0e)** — cor modelada
+  calibrada no hemisfério real, reproduzível na cadeia só com o USGS + parâmetros; confessar que a cor é inferida do
+  brilho pela mistura de dois componentes medidos na Galileo. Escolhas do trabalhador, confessadas no `parametros.json`:
+  cosseno do gradiente preso em 0 no lado dianteiro (o cosseno puro daria um azul que contradiz as fontes); polo só em
+  b* (−2,63·sin² lat, do PIA00502); o sul preenchido sai acastanhado (a última faixa válida é mais escura). Entrada na
+  cadeia ainda não feita (F).
+
 ## Fora do escopo
 Os outros assets fracos do item 230 (Urano, Netuno, Vesta, Deimos, Tritão pausado, Ariel, Titã, Vênus); relevo de
 Europa (fica sem); altura em 16 bits no app (o carregador é `UnsignedByteType`, `texturas.ts:440`); a Cassini Regio
