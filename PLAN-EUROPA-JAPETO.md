@@ -146,6 +146,21 @@ Jápeto
   relevo girado cai em cima dela. A pose da ferramenta de foto deixa o equador na vertical da tela (a linha "vertical"
   das fotos é a crista real do mapa de cor), a conferir antes de ler as próximas pranchas.
 
+- **J1, primeira passada (06/10, noite; `capturas/europa-japeto/j1-prancha.jpg`, candidatos em `j1/a-15km/` e
+  `j1/b-20km/`, runner `capturas/europa-japeto/ferramentas/previa-japeto.mjs`):** `relevo-japeto.mjs` + teste (5/5)
+  geram altura e normal do mesmo campo em km; crista traçada pela linha clara do mapa de cor (entre 210 e 250°E a linha
+  é fraca e o caminho ondula ±0,5°), 15,0/20,0 km lidos em 225,9°E depois das crateras (a ejecta de Malprimis e Abisme
+  soma ~1,3 km); 55 das 58 crateras com nome (Escremiz, Torleu e Basile < 2 texels); Falsaron sai com 11,4 km (medido
+  10,5); quantização −14..+22 km, só 113/100 texels saturam no fundo de Falsaron sobre Abisme; `rochoso.ts:248` com a
+  escala/viés novos (0,04828 / −0,01877); sha256 iguais em duas rodadas. Na prancha: no terminador a crista é uma
+  muralha nítida nos dois candidatos (hoje e girado quase não mostram); frente e trás mudam pouco (luz de frente);
+  Turgis e Engelier coincidem com a borda visível na cor. **Problema visto:** o campo sorteado (R = 0,1, 4.053
+  crateras de 9–120 km) põe crateras nítidas onde a foto não tem e não põe onde tem — no limbo o relevo e a cor
+  brigam. Próxima passada (J1b): campo pela FOTO, como no Hipérion — crateras detectadas no mosaico de cor (posição e
+  diâmetro pela imagem, profundidade pela lei, bordas degradadas), as com nome por cima. Pendências menores: bordas de
+  cratera brilhando do lado noturno do terminador (shader, conferir em F sem realce); `saturno.ts:76` e o comentário
+  de `rochoso.ts:243–246` citam a crista em 332°L — atualizar em F. Decisão dele pendente: crista de 15 ou 20 km.
+
 ## Fora do escopo
 Os outros assets fracos do item 230 (Urano, Netuno, Vesta, Deimos, Tritão pausado, Ariel, Titã, Vênus); relevo de
 Europa (fica sem); altura em 16 bits no app (o carregador é `UnsignedByteType`, `texturas.ts:440`); a Cassini Regio

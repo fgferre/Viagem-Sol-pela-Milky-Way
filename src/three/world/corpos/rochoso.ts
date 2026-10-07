@@ -245,7 +245,7 @@ export const RELEVO_DA_LUA: Readonly<
   // duas são o caso SINTÉTICO (sem DTM público), confessado na ficha; as
   // amplitudes são as do `relief.json` dele, sem corte.
   rhea: { escala: 0.02632461314614639, vies: -0.018329572914844723 },
-  iapetus: { escala: 0.026878580907480177, vies: -0.017520709781114384 },
+  iapetus: { escala: 0.04827678691162666, vies: -0.018774306021188143 },
   // Hipérion (23/09/2026): a forma MEDIDA inteira (Cassini — Thomas, Joseph
   // & Ansty 2018) mora no mapa de altura, raio 0,689805 a 1,367691 de
   // 135 km (`BODY_AXES.hyperion` continua a esfera — a razão fica no
