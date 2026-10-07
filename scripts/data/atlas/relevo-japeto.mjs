@@ -18,7 +18,7 @@
 //     Garcia 2014 (faces de 15–16°, flancos de 3–4°) são INVENTADOS,
 //     ancorados nesses números.
 //  3. AS CRATERAS COM NOME do Gazetteer no lugar e no diâmetro (MEDIDO),
-//     com a forma de uma lei de profundidade por diâmetro (`morfologia`,
+//     com a forma de uma lei de profundidade por diâmetro (`LEI_DE_FORMA`,
 //     ASSUMIDA e escrita) com a borda gasta e, acima de 150 km, a forma
 //     degradada (`MORFOLOGIA_DAS_COM_NOME`, ESCOLHIDA: Jápeto é velho;
 //     Falsaron na profundidade MEDIDA), aplicadas DEPOIS da crista: dentro
@@ -29,9 +29,12 @@
 //     Jápeto é velho) — a cratera fica onde a foto tem e não onde ela não
 //     tem; a que coincide com uma com nome cede o lugar a ela; acima de 45°
 //     de latitude as de menor confiança são rareadas até a densidade da
-//     faixa 0–45° (`rareiaPorLatitude`: o detector infla a densidade perto
-//     dos polos, viés do método). Sem campo sorteado: entre as crateras o
-//     chão é liso (só crista e abaulado).
+//     faixa 0–45° (`RAREAMENTO_POR_LATITUDE`: o detector infla a densidade
+//     perto dos polos, viés do método). Sem campo sorteado: entre as
+//     crateras o chão é liso (só crista e abaulado).
+// A colocação das crateras (3 e 4), o byte e a normal são o miolo comum
+// (`relevo-por-foto.mjs`); aqui ficam a crista, o abaulado, as leis e as
+// constantes de Jápeto e a montagem (`geraRelevo`).
 //
 // A CONVENÇÃO DA CASA (`orientacaoNaCena.ts`): grade equiretangular, linha 0
 // = +90°N, Greenwich no centro — a coluna i cai em (180 + (i+½)·360/W) mod
@@ -45,9 +48,16 @@
 // O achatamento (745,7 × 712,1 km) mora na matriz do app: o campo não o tem.
 // ============================================================
 
-import { createHash } from 'node:crypto';
-import { assaNormais } from './gera-normal-de-dem.mjs';
-import { colunaDaLongitude, latitudeDaLinha, linhaDaLatitude, longitudeDaColuna } from './relevo-inventado.mjs';
+import { colunaDaLongitude, latitudeDaLinha, longitudeDaColuna } from './relevo-inventado.mjs';
+import {
+  desquantizaNaFaixa,
+  escalaEViesDaFaixa,
+  geraRelevoPorFoto,
+  normalDoCampoNaFaixa,
+  paraCadaTexelDaCalota,
+  quantizaNaFaixa,
+  suave,
+} from './relevo-por-foto.mjs';
 
 /** O raio equatorial (km) — o passo horizontal da normal e a unidade do vértice. */
 export const RAIO_KM = 745.7;
@@ -59,15 +69,9 @@ const RADIANOS = Math.PI / 180;
 const KM_POR_GRAU = RAIO_KM * RADIANOS;
 
 const normaliza360 = (g) => ((g % 360) + 360) % 360;
-const suave = (a, b, x) => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
 
 /** O par (escala, viés) de `RELEVO_DA_LUA.iapetus`, em raios equatoriais. */
-export function escalaEVies() {
-  return { escala: (FAIXA_KM.max - FAIXA_KM.min) / RAIO_KM, vies: FAIXA_KM.min / RAIO_KM };
-}
+export const escalaEVies = () => escalaEViesDaFaixa(FAIXA_KM, RAIO_KM);
 
 // ------------------------------------------------------------
 // O sorteio
@@ -488,38 +492,6 @@ function sorteiaPicos(sorteia) {
   return picos;
 }
 
-/** Visita os texels da calota de raio `raioKm` (círculo máximo) em volta de (lat, lon). */
-function paraCadaTexelDaCalota(lat, lon, raioKm, largura, altura, visita) {
-  const dLat = Math.PI / altura;
-  const dLon = (2 * Math.PI) / largura;
-  const teta = Math.min(Math.PI, raioKm / RAIO_KM);
-  const cosMax = Math.cos(teta);
-  const fc = lat * RADIANOS;
-  const sfc = Math.sin(fc);
-  const cfc = Math.cos(fc);
-  const lc = lon * RADIANOS;
-  const xc = colunaDaLongitude(lon, largura);
-  const j0 = Math.max(0, Math.ceil((Math.PI / 2 - fc - teta) / dLat - 0.5));
-  const j1 = Math.min(altura - 1, Math.floor((Math.PI / 2 - fc + teta) / dLat - 0.5));
-  for (let j = j0; j <= j1; j += 1) {
-    const fj = latitudeDaLinha(j, altura);
-    const sj = Math.sin(fj);
-    const cj = Math.cos(fj);
-    const cosDl = (cosMax - sj * sfc) / (cj * cfc);
-    if (cosDl > 1) continue;
-    const meia = cosDl <= -1 ? Math.PI : Math.acos(cosDl);
-    const ia = meia >= Math.PI ? 0 : Math.ceil(xc - meia / dLon - 1);
-    const ib = meia >= Math.PI ? largura - 1 : Math.floor(xc + meia / dLon + 1);
-    for (let i0 = ia; i0 <= ib; i0 += 1) {
-      const i = ((i0 % largura) + largura) % largura;
-      const li = longitudeDaColuna(i, largura) * RADIANOS;
-      const cosTeta = Math.min(1, Math.max(-1, sj * sfc + cj * cfc * Math.cos(li - lc)));
-      const rKm = Math.acos(cosTeta) * RAIO_KM;
-      if (rKm < raioKm) visita(j * largura + i, rKm, j);
-    }
-  }
-}
-
 /**
  * A CRISTA INTEIRA no campo (km): abaulado + max(perfil da crista contínua,
  * picos). O perfil é a média de 4 amostras em latitude dentro do texel (o
@@ -577,7 +549,7 @@ export function camadaDaCrista({ largura, altura, semente, alturaMaximaKm, camin
     p.alturaAcimaDoAbauladoKm = Math.max(0, p.alturaKm - B);
     const R = p.diametroKm / 2;
     const passoKm = (180 / altura) * KM_POR_GRAU;
-    paraCadaTexelDaCalota(p.lat, p.lonE, R + passoKm, largura, altura, (k, rKm) => {
+    paraCadaTexelDaCalota(p.lat, p.lonE, R + passoKm, largura, altura, RAIO_KM, (k, rKm) => {
       // 2×2 sub-amostras radiais aproximadas: o raio ± ¼ de texel
       let h = 0;
       for (const a of sub2) for (const b of sub2) h += perfilDoPico(Math.hypot(rKm + a * passoKm, b * passoKm), p.alturaAcimaDoAbauladoKm, R);
@@ -602,119 +574,22 @@ export function camadaDaCrista({ largura, altura, semente, alturaMaximaKm, camin
  * White et al. 2013) e nas bacias "até 14 km" de Giese et al. 2008. Borda
  * erguida 0,2·d (4 % de D nas simples, a razão de Pike); fundo plano de
  * raio 0,2 + 0,2·log10(D/15) (até 0,55) nas complexas; pico central acima
- * de 30 km (0,3·d, raio 0,15 R); terraços sutis acima de 100 km. A
- * `degradacao` (0–1) multiplica profundidade, borda e pico.
+ * de 30 km (0,3·d, raio 0,15 R); terraços sutis (3 degraus) acima de
+ * 100 km. A conta é `morfologia` (`relevo-por-foto.mjs`).
  */
-export function morfologia(diametroKm, degradacao = 1) {
-  const D = diametroKm;
-  const simples = D <= 15;
-  const d = (simples ? 0.2 * D : 3 * (D / 15) ** 0.4) * degradacao;
-  return {
-    profundidadeKm: d,
-    bordaKm: 0.2 * d,
-    fundoRR: simples ? 0 : Math.min(0.55, 0.2 + 0.2 * Math.log10(D / 15)),
-    picoKm: D > 30 ? 0.3 * d : 0,
-    picoRR: 0.15,
-    terracos: D > 100 ? 3 : 0,
-  };
-}
-
-/** O alcance da ejecta (em R) e onde ela começa a sumir. */
-const EJECTA_RR = [1.5, 2.5];
-
-/** Quanto da parede vira escada nos terraços (sutis: 0,5 dava anéis concêntricos fortes no sombreado). */
-const PESO_DOS_TERRACOS = 0.25;
-
-/** Escada suave de n degraus em [0, 1] (os terraços). */
-const escada = (t, n) => {
-  const x = t * n;
-  const k = Math.min(n - 1, Math.floor(x));
-  return (k + suave(0.3, 0.7, x - k)) / n;
-};
-
-/** O perfil da cratera em `rho` = r/R, km relativos à referência (a média do terreno em volta). */
-export function perfilDaCratera(rho, m) {
-  const { profundidadeKm: d, bordaKm: hr, fundoRR: rf } = m;
-  if (rho >= 1) {
-    if (rho >= EJECTA_RR[1]) return 0;
-    return hr * rho ** -3 * (1 - suave(EJECTA_RR[0], EJECTA_RR[1], rho));
-  }
-  let h;
-  if (rho <= rf) h = hr - d;
-  else {
-    let t = (rho - rf) / (1 - rf);
-    if (m.terracos) t = (1 - PESO_DOS_TERRACOS) * t + PESO_DOS_TERRACOS * escada(t, m.terracos);
-    h = hr - d + d * t * t;
-  }
-  if (m.picoKm > 0 && rho < m.picoRR) h += m.picoKm * 0.5 * (1 + Math.cos((Math.PI * rho) / m.picoRR));
-  return h;
-}
-
-/**
- * O PERFIL GASTO: `perfilDaCratera` borrado em raio por uma gaussiana de
- * σ = `sigmaRR`·R (a borda arredondada de uma cratera velha; o borrão em
- * raio é o 2D longe do centro, e no centro o perfil é espelhado). Tabelado
- * de 0 a 2,5 R em passos de 0,005 R. Devolve ρ → km.
- */
-export function perfilGasto(m, sigmaRR) {
-  const passo = 0.005;
-  const n = Math.round(EJECTA_RR[1] / passo) + 1;
-  const bruto = (rho) => perfilDaCratera(Math.abs(rho), m);
-  const k = Math.ceil((3 * sigmaRR) / passo);
-  const pesos = Array.from({ length: 2 * k + 1 }, (_, i) => Math.exp(-0.5 * (((i - k) * passo) / sigmaRR) ** 2));
-  const soma = pesos.reduce((s, p) => s + p, 0);
-  const tabela = new Float64Array(n);
-  for (let i = 0; i < n; i += 1) {
-    let v = 0;
-    for (let q = -k; q <= k; q += 1) v += pesos[q + k] * bruto((i + q) * passo);
-    tabela[i] = v / soma;
-  }
-  return (rho) => {
-    if (rho >= EJECTA_RR[1]) return 0;
-    const x = rho / passo;
-    const i = Math.min(n - 2, Math.floor(x));
-    return tabela[i] + (tabela[i + 1] - tabela[i]) * (x - i);
-  };
-}
-
-/**
- * APLICA UMA CRATERA ao campo (km), no lugar: a referência é a média do
- * terreno em volta, no anel de 1 a 2 R (peso cos lat) — o "entorno" de onde
- * a profundidade se mede; com a média do disco, a bacia dentro de outra
- * bacia empilharia as duas profundidades (Falsaron dentro de Abisme ia a
- * −20 km). Dentro da cavidade o relevo antigo em volta dessa referência é
- * APAGADO (todo até 0,75 R, sumindo até a borda) — é assim que a cratera
- * corta a crista —, e soma-se o perfil; fora, soma-se a ejecta. `c.perfil`
- * (ρ → km), se vier, troca o perfil da lei (a cratera gasta). Devolve a
- * referência usada (km).
- */
-export function aplicaCratera(campo, largura, altura, c) {
-  const R = c.diametroKm / 2;
-  const m = c.morfologia ?? morfologia(c.diametroKm, c.degradacao ?? 1);
-  const perfil = c.perfil ?? ((rho) => perfilDaCratera(rho, m));
-  const cosLat = (j) => Math.cos(latitudeDaLinha(j, altura));
-  let soma = 0;
-  let peso = 0;
-  paraCadaTexelDaCalota(c.lat, c.lonE, 2 * R, largura, altura, (k, rKm, j) => {
-    if (rKm < R) return;
-    const w = cosLat(j);
-    soma += w * campo[k];
-    peso += w;
-  });
-  // anel sem centro de texel dentro (não acontece acima de 2 texels de D): o texel mais perto
-  const jP = Math.min(altura - 1, Math.max(0, Math.round(linhaDaLatitude(c.lat, altura))));
-  const iP = ((Math.round(colunaDaLongitude(c.lonE, largura)) % largura) + largura) % largura;
-  const ref = peso > 0 ? soma / peso : campo[jP * largura + iP];
-  paraCadaTexelDaCalota(c.lat, c.lonE, EJECTA_RR[1] * R, largura, altura, (k, rKm) => {
-    const rho = rKm / R;
-    const v = perfil(rho);
-    if (rho < 1) {
-      const apaga = 1 - suave(0.75, 1, rho);
-      campo[k] = ref + (campo[k] - ref) * (1 - apaga) + v;
-    } else campo[k] += v;
-  });
-  return ref;
-}
+export const LEI_DE_FORMA = Object.freeze({
+  simplesAteKm: 15,
+  simplesProfundidadePorD: 0.2,
+  complexaProfundidadeKm: 3,
+  complexaExpoente: 0.4,
+  bordaPorProfundidade: 0.2,
+  fundoRR: Object.freeze({ base: 0.2, porDecada: 0.2, max: 0.55 }),
+  picoAcimaDeKm: 30,
+  picoPorProfundidade: 0.3,
+  picoRR: 0.15,
+  terracosAcimaDeKm: 100,
+  terracos: 3,
+});
 
 /**
  * A FORMA DAS DETECTADAS (ESCOLHIDA; Jápeto é velho — Kirchoff & Schenk
@@ -733,16 +608,6 @@ export const MORFOLOGIA_DAS_DETECTADAS = Object.freeze({
   confiancaEm: Object.freeze([0.3, 1]),
   desfoqueSigmaPorD: 0.05,
 });
-
-/** O fator de profundidade (× a lei) de uma detectada de `diametroKm` e `confianca`. */
-export function fatorDaDetectada(diametroKm, confianca) {
-  const M = MORFOLOGIA_DAS_DETECTADAS;
-  const [c0, c1] = M.confiancaEm;
-  const [f0, f1] = M.fatorEmDesde;
-  const g = f0 + (f1 - f0) * Math.min(1, Math.max(0, (confianca - c0) / (c1 - c0)));
-  const t = Math.min(1, Math.max(0, Math.log(diametroKm / M.fatorAte) / Math.log(M.fatorDesde / M.fatorAte)));
-  return 1 - t * (1 - g);
-}
 
 /**
  * A FORMA DAS COM NOME (ESCOLHIDA; Jápeto é velho e a de anel perfeito com
@@ -764,63 +629,6 @@ export const MORFOLOGIA_DAS_COM_NOME = Object.freeze({
   profundidadeMedidaKm: Object.freeze({ Falsaron: 10.5 }),
 });
 
-/** A forma (`morfologia`) de uma cratera com nome de `diametroKm`. */
-export function morfologiaDaComNome(nome, diametroKm) {
-  const M = MORFOLOGIA_DAS_COM_NOME;
-  const lei = morfologia(diametroKm, 1);
-  if (diametroKm <= M.degradadaAcimaDeKm) return lei;
-  const medida = M.profundidadeMedidaKm[nome];
-  const forma = (d) => {
-    const r = d / lei.profundidadeKm;
-    return { ...lei, profundidadeKm: d, bordaKm: lei.bordaKm * r * M.bordaDaLei, picoKm: lei.picoKm * r * M.picoDaLei, picoRR: M.picoRR, terracos: 0 };
-  };
-  if (medida === undefined) return forma(M.profundidadeDaLei * lei.profundidadeKm);
-  // o perfil é linear na profundidade: uma prova com d = a medida dá a escala
-  const prova = profundidadeNoPerfil(perfilGasto(forma(medida), 2 * M.desfoqueSigmaPorD));
-  return forma((medida * medida) / prova);
-}
-
-/** Da borda ao fundo no perfil (ρ → km): o máximo em 0,7–1,5 R menos o mínimo dentro de R. */
-export function profundidadeNoPerfil(perfil) {
-  let borda = -Infinity;
-  let fundo = Infinity;
-  for (let i = 0; i <= 300; i += 1) {
-    const rho = i * 0.005;
-    const v = perfil(rho);
-    if (rho >= 0.7 && v > borda) borda = v;
-    if (rho <= 1 && v < fundo) fundo = v;
-  }
-  return borda - fundo;
-}
-
-/**
- * QUEM ENTRA: as detectadas (`{ lat, lonE, diametro_km, confianca }`) que
- * cabem na grade (≥ `dMinKm`) e não coincidem com uma com nome — centro a
- * menos de 0,5 R dela e diâmetro a ±40 % do dela: aí fica só a com nome.
- * `{ entram, descartadas: [{ ...detectada, nome }], foraDaGrade }`.
- */
-export function combinaCrateras({ detectadas, nomeadas, dMinKm }) {
-  const unit = (lat, lon) => [Math.cos(lat * RADIANOS) * Math.cos(lon * RADIANOS), Math.cos(lat * RADIANOS) * Math.sin(lon * RADIANOS), Math.sin(lat * RADIANOS)];
-  const vn = nomeadas.map((n) => ({ n, v: unit(n.lat, n.lonE) }));
-  const entram = [];
-  const descartadas = [];
-  let foraDaGrade = 0;
-  for (const d of detectadas) {
-    if (d.diametro_km < dMinKm) {
-      foraDaGrade += 1;
-      continue;
-    }
-    const v = unit(d.lat, d.lonE);
-    const igual = vn.find(({ n, v: w }) => {
-      const dist = Math.acos(Math.min(1, v[0] * w[0] + v[1] * w[1] + v[2] * w[2])) * RAIO_KM;
-      return dist < 0.25 * n.diametroKm && Math.abs(d.diametro_km / n.diametroKm - 1) <= 0.4;
-    });
-    if (igual) descartadas.push({ ...d, nome: igual.n.nome });
-    else entram.push(d);
-  }
-  return { entram, descartadas, foraDaGrade };
-}
-
 /**
  * O RAREAMENTO POR LATITUDE (ESCOLHIDO, corrige um viés MEDIDO do método):
  * numa textura sem cratera nenhuma o detector acha 1,9× mais por km² em
@@ -831,40 +639,13 @@ export function combinaCrateras({ detectadas, nomeadas, dMinKm }) {
  */
 export const RAREAMENTO_POR_LATITUDE = Object.freeze({ referenciaAteGraus: 45, faixaGraus: 15, latMaxDaDeteccaoGraus: 72 });
 
-/**
- * Rareia `detectadas` (`{ lat, lonE, diametro_km, confianca }`) acima de
- * `referenciaAteGraus` pela confiança (empate: lat, lonE, diâmetro — a
- * ordem não depende da entrada). `{ mantidas, densidadeDeReferencia
- * (por 10⁶ km²), faixas: [{ deGraus, ateGraus, antes, depois, fator,
- * razaoAntes, confiancaMinimaMantida }] }`.
- */
-export function rareiaPorLatitude(detectadas, regra = RAREAMENTO_POR_LATITUDE) {
-  const { referenciaAteGraus: ref, faixaGraus, latMaxDaDeteccaoGraus: latMax } = regra;
-  const areaKm2 = (a, b) => 4 * Math.PI * RAIO_KM * RAIO_KM * (Math.sin(b * RADIANOS) - Math.sin(a * RADIANOS));
-  const absLat = (d) => Math.abs(d.lat);
-  const densidadeRef = detectadas.filter((d) => absLat(d) < ref).length / areaKm2(0, ref);
-  const sai = new Set();
-  const faixas = [];
-  for (let a = ref; a < latMax; a += faixaGraus) {
-    const b = Math.min(latMax, a + faixaGraus);
-    const ultima = b >= latMax;
-    const na = detectadas.filter((d) => absLat(d) >= a && (ultima || absLat(d) < b));
-    const area = areaKm2(a, b);
-    const alvo = Math.min(na.length, Math.round(densidadeRef * area));
-    const ordem = na.slice().sort((x, y) => y.confianca - x.confianca || x.lat - y.lat || x.lonE - y.lonE || y.diametro_km - x.diametro_km);
-    for (const d of ordem.slice(alvo)) sai.add(d);
-    faixas.push({
-      deGraus: a,
-      ateGraus: b,
-      antes: na.length,
-      depois: alvo,
-      fator: na.length ? alvo / na.length : 1,
-      razaoAntes: na.length / area / densidadeRef,
-      confiancaMinimaMantida: alvo ? ordem[alvo - 1].confianca : null,
-    });
-  }
-  return { mantidas: detectadas.filter((d) => !sai.has(d)), densidadeDeReferencia: densidadeRef * 1e6, faixas };
-}
+/** As leis das crateras de Jápeto, como `geraRelevoPorFoto` as pede. */
+const LEIS_DAS_CRATERAS = Object.freeze({
+  forma: LEI_DE_FORMA,
+  comNome: MORFOLOGIA_DAS_COM_NOME,
+  detectadas: MORFOLOGIA_DAS_DETECTADAS,
+  rareamento: RAREAMENTO_POR_LATITUDE,
+});
 
 // ------------------------------------------------------------
 // O relevo inteiro, a quantização e a normal
@@ -909,26 +690,12 @@ export function alturaDaCrista(km, largura, altura, meiaGraus = FAIXA_DA_CRISTA_
   return melhor;
 }
 
-/** Crista + crateras para uma altura de construção (uma passada de `geraRelevo`). */
-function constroi({ largura, altura, semente, alturaKm, caminho, todas }) {
-  const crista = camadaDaCrista({ largura, altura, semente, alturaMaximaKm: alturaKm, caminho });
-  const campo = crista.campo.slice();
-  const colocadas = [];
-  for (const c of todas) {
-    const ref = aplicaCratera(campo, largura, altura, c);
-    if (c.nome) colocadas.push({ nome: c.nome, lat: c.lat, lonE: c.lonE, diametroKm: c.diametroKm, ...c.morfologia, degradada: c.degradada, profundidadeNoPerfilKm: c.profundidadeNoPerfilKm, referenciaKm: ref });
-  }
-  return { campo, crista, colocadas };
-}
-
 /**
- * O RELEVO DE JÁPETO em km (W×H, convenção da casa): crista, depois todas
- * as crateras (com nome e detectadas) da maior para a menor (a grande é a
- * velha: a pequena cai dentro dela, não o contrário). `nomeadas`: [{ nome,
- * lat, lonE, diametroKm }], com a forma de `morfologiaDaComNome` e o perfil
- * gasto; `detectadas`: [{ lat, lonE, diametro_km, confianca }] de
- * `crateras-pela-foto.mjs`: as menores que 2 texels ficam de fora, as
- * outras passam por `rareiaPorLatitude` e por `combinaCrateras`.
+ * O RELEVO DE JÁPETO em km (W×H, convenção da casa): a crista
+ * (`camadaDaCrista`) como a camada do corpo, e sobre ela as crateras com
+ * nome e as detectadas pelo miolo comum (`geraRelevoPorFoto`, com as leis
+ * de Jápeto). `nomeadas`: [{ nome, lat, lonE, diametroKm }]; `detectadas`:
+ * [{ lat, lonE, diametro_km, confianca }] de `crateras-pela-foto.mjs`.
  *
  * O ALVO `alturaMaximaKm` é a altura da crista DEPOIS das crateras
  * (`alturaDaCrista`): a ejecta das bacias vizinhas (Malprimis, Abisme) soma
@@ -937,36 +704,15 @@ function constroi({ largura, altura, semente, alturaKm, caminho, todas }) {
  * sorteio (só a crista) não depende da altura: só a escala dela muda.
  */
 export function geraRelevo({ largura = 1024, altura = 512, semente, alturaMaximaKm, caminho = null, nomeadas = [], detectadas = [] }) {
-  const texelKm = (2 * Math.PI * RAIO_KM) / largura;
-  const dMinKm = Math.max(4, 2 * texelKm);
-  const naGrade = nomeadas.filter((n) => n.diametroKm >= dMinKm);
-  const foraDaGrade = nomeadas.filter((n) => n.diametroKm < dMinKm).map((n) => n.nome);
-  const detectadasNaGrade = detectadas.filter((d) => d.diametro_km >= dMinKm);
-  const rareamento = rareiaPorLatitude(detectadasNaGrade);
-  const combinadas = combinaCrateras({ detectadas: rareamento.mantidas, nomeadas: naGrade, dMinKm });
-  const sigma = MORFOLOGIA_DAS_DETECTADAS.desfoqueSigmaPorD;
-  const comForma = combinadas.entram.map((d) => {
-    const fator = fatorDaDetectada(d.diametro_km, d.confianca);
-    const m = morfologia(d.diametro_km, fator);
-    // σ = 0,05·D = 0,1 R
-    return { lat: d.lat, lonE: d.lonE, diametroKm: d.diametro_km, confianca: d.confianca, fator, morfologia: m, perfil: perfilGasto(m, 2 * sigma) };
-  });
-  const sigmaNome = MORFOLOGIA_DAS_COM_NOME.desfoqueSigmaPorD;
-  const comNome = naGrade.map((n) => {
-    const m = morfologiaDaComNome(n.nome, n.diametroKm);
-    // σ = 0,05·D = 0,1 R
-    const perfil = perfilGasto(m, 2 * sigmaNome);
-    const degradada = n.diametroKm > MORFOLOGIA_DAS_COM_NOME.degradadaAcimaDeKm;
-    return { ...n, morfologia: m, perfil, degradada, profundidadeNoPerfilKm: profundidadeNoPerfil(perfil) };
-  });
-  const todas = [...comNome, ...comForma].sort((x, y) => y.diametroKm - x.diametroKm);
   const passadas = [];
   let alturaKm = alturaMaximaKm;
+  let crista;
   let feito;
   for (let n = 0; n < 4; n += 1) {
-    feito = constroi({ largura, altura, semente, alturaKm, caminho, todas });
-    const max = alturaDaCrista(feito.campo, largura, altura);
-    passadas.push({ alturaDeConstrucaoKm: alturaKm, alturaDaCrista: max, maximoDaFaixa: maximoDaFaixa(feito.campo, largura, altura) });
+    crista = camadaDaCrista({ largura, altura, semente, alturaMaximaKm: alturaKm, caminho });
+    feito = geraRelevoPorFoto({ largura, altura, raioKm: RAIO_KM, camadaKm: crista.campo, nomeadas, detectadas, leis: LEIS_DAS_CRATERAS });
+    const max = alturaDaCrista(feito.km, largura, altura);
+    passadas.push({ alturaDeConstrucaoKm: alturaKm, alturaDaCrista: max, maximoDaFaixa: maximoDaFaixa(feito.km, largura, altura) });
     if (Math.abs(max.km - alturaMaximaKm) <= 0.2) break;
     const anterior = passadas[passadas.length - 2];
     const inclinacao = anterior
@@ -974,51 +720,16 @@ export function geraRelevo({ largura = 1024, altura = 512, semente, alturaMaxima
       : 1;
     alturaKm += (alturaMaximaKm - max.km) / Math.max(0.3, inclinacao);
   }
-  return {
-    km: feito.campo,
-    largura,
-    altura,
-    texelKm,
-    dMinKm,
-    crista: feito.crista,
-    colocadas: feito.colocadas,
-    passadas,
-    foraDaGrade,
-    detectadas: comForma.map((d) => ({ lat: d.lat, lonE: d.lonE, diametroKm: d.diametroKm, confianca: d.confianca, fator: d.fator, morfologia: d.morfologia })),
-    detectadasDescartadas: combinadas.descartadas,
-    detectadasForaDaGrade: detectadas.length - detectadasNaGrade.length,
-    rareamento: { regra: RAREAMENTO_POR_LATITUDE, densidadeDeReferencia: rareamento.densidadeDeReferencia, faixas: rareamento.faixas },
-  };
+  return { ...feito, crista, passadas };
 }
+
+// A faixa e o raio de Jápeto amarrados às contas do miolo (a cadeia e a prévia chamam assim).
 
 /** km → byte em [FAIXA_KM.min, FAIXA_KM.max]; conta os texels que saturaram. */
-export function quantiza(km) {
-  const { min, max } = FAIXA_KM;
-  const bytes = new Uint8Array(km.length);
-  let abaixo = 0;
-  let acima = 0;
-  for (let k = 0; k < km.length; k += 1) {
-    const h = km[k];
-    if (h < min) abaixo += 1;
-    if (h > max) acima += 1;
-    bytes[k] = Math.round(((Math.min(max, Math.max(min, h)) - min) / (max - min)) * 255);
-  }
-  return { bytes, abaixo, acima };
-}
+export const quantiza = (km) => quantizaNaFaixa(km, FAIXA_KM);
 
 /** byte → km (o que o vértice do app desloca). */
-export const desquantiza = (b) => FAIXA_KM.min + (b / 255) * (FAIXA_KM.max - FAIXA_KM.min);
+export const desquantiza = (b) => desquantizaNaFaixa(b, FAIXA_KM);
 
-/**
- * A NORMAL do campo (km, já presa à faixa do byte, antes do arredondamento
- * — o degrau de 141 m não vira listra na luz): `assaNormais` com a altura
- * ÷ 1,2, para que o 1,2 tangencial do shader devolva a inclinação física.
- */
-export function normalDoCampo(km, largura, altura, ganhoDoShader = 1.2) {
-  const { min, max } = FAIXA_KM;
-  const preso = new Float64Array(km.length);
-  for (let k = 0; k < km.length; k += 1) preso[k] = Math.min(max, Math.max(min, km[k])) / ganhoDoShader;
-  return assaNormais(preso, largura, altura, RAIO_KM, null);
-}
-
-export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+/** A NORMAL do campo (o degrau de 141 m não vira listra na luz), com o ganho de 1,2 do shader descontado. */
+export const normalDoCampo = (km, largura, altura, ganhoDoShader) => normalDoCampoNaFaixa(km, largura, altura, FAIXA_KM, RAIO_KM, ganhoDoShader);

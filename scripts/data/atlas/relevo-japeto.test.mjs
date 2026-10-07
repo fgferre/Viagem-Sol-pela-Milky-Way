@@ -1,4 +1,4 @@
-// Serve: lei — o relevo de Jápeto (item 230, J1): a crista no lugar e na altura do alvo, a cratera que a corta, a semente que se repete e o byte que volta
+// Serve: lei — o relevo de Jápeto (item 230, J1): a crista no lugar e na altura do alvo, a cratera que a corta e a semente que se repete
 // ============================================================
 // Grade de 512×256 (o dobro do texel do app) para o juiz correr rápido; as
 // bacias com nome que mais mexem na faixa equatorial vão inline, com o
@@ -8,17 +8,16 @@
 // ============================================================
 import { describe, expect, it } from 'vitest';
 import {
-  FAIXA_KM,
+  LEI_DE_FORMA,
+  RAIO_KM,
   alturaDaCrista,
-  aplicaCratera,
   camadaDaCrista,
-  desquantiza,
   geraRelevo,
   maximoDaFaixa,
   normalDoCampo,
   quantiza,
-  sha256,
 } from './relevo-japeto.mjs';
+import { aplicaCratera, morfologia, sha256 } from './relevo-por-foto.mjs';
 
 const W = 512;
 const H = 256;
@@ -86,7 +85,7 @@ describe('relevo de Jápeto', () => {
   it('rebaixa a crista onde uma cratera grande cai sobre ela: dentro da cavidade o cume some', () => {
     const { campo } = camadaDaCrista({ largura: W, altura: H, semente: 230, alturaMaximaKm: 20, caminho: null });
     const antes = campo.slice();
-    aplicaCratera(campo, W, H, { lat: 0, lonE: 230, diametroKm: 150 });
+    aplicaCratera(campo, W, H, { lat: 0, lonE: 230, diametroKm: 150, morfologia: morfologia(150, 1, LEI_DE_FORMA) }, RAIO_KM);
     // no centro (com o pico central) e a meio raio, ao longo da crista
     const meioRaioGraus = (0.5 * 75 * 180) / (Math.PI * 745.7);
     for (const lon of [230, 230 + meioRaioGraus, 230 - meioRaioGraus]) {
@@ -95,15 +94,5 @@ describe('relevo de Jápeto', () => {
     }
     // longe da cratera a crista fica como estava
     expect(campo[k(0, 215)]).toBe(antes[k(0, 215)]);
-  });
-
-  it('quantiza em [−14, +22] km e volta a km em ±½ degrau; o que passa da faixa satura e é contado', () => {
-    const degrau = (FAIXA_KM.max - FAIXA_KM.min) / 255;
-    const km = Float64Array.from({ length: 1001 }, (_, i) => FAIXA_KM.min + (i * (FAIXA_KM.max - FAIXA_KM.min)) / 1000);
-    const { bytes, abaixo, acima } = quantiza(km);
-    expect(abaixo + acima).toBe(0);
-    km.forEach((v, i) => expect(Math.abs(desquantiza(bytes[i]) - v)).toBeLessThanOrEqual(degrau / 2 + 1e-9));
-    const fora = quantiza(Float64Array.from([-20, 30]));
-    expect([fora.abaixo, fora.acima, ...fora.bytes]).toEqual([1, 1, 0, 255]);
   });
 });
