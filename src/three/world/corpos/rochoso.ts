@@ -242,11 +242,11 @@ export const RELEVO_DA_LUA: Readonly<
   tethys: { escala: 0.03387224437534385, vies: -0.016188330361680364 },
   dione: { escala: 0.01065032313122289, vies: -0.005189992373296278 },
   // S2b — Reia e Jápeto entram por ORDEM DELE (02/09): "queremos o relevo
-  // sobressaído, sabemos que Reia não é uma esfera, ela é acidentada". As
-  // duas não têm DTM público, e o relevo é confessado na ficha; a amplitude de
-  // Reia é a do `relief.json` dele, sem corte.
+  // sobressaído, sabemos que Reia não é uma esfera, ela é acidentada".
+  // Reia (PLAN-REIA.md): o DTM medido da Cassini (Weirich et al. 2025) + as crateras finas pela foto
+  // (`relevo-reia.mjs`); a faixa do byte, −7 a +6 km, ÷ 765 km (`escalaEVies`).
   // Jápeto (item 230): a faixa do byte de `relevo-japeto.mjs`, −14 a +22 km (`escalaEVies`).
-  rhea: { escala: 0.02632461314614639, vies: -0.018329572914844723 },
+  rhea: { escala: 0.01699346405228758, vies: -0.009150326797385621 },
   iapetus: { escala: 0.04827678691162666, vies: -0.018774306021188143 },
   // Hipérion (23/09/2026): a forma MEDIDA inteira (Cassini — Thomas, Joseph
   // & Ansty 2018) mora no mapa de altura, raio 0,689805 a 1,367691 de

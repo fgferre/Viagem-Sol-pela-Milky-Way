@@ -1,14 +1,15 @@
 // ============================================================
-// O RELEVO POR FOTO — o miolo dos relevos que nascem nesta casa sem DEM (Jápeto; Reia a seguir), puro e sem constante de corpo.
+// O RELEVO POR FOTO — o miolo dos relevos cujas crateras finas vêm da foto (Jápeto, sem DEM; Reia, sobre o DTM), puro e sem constante de corpo.
 // ENTRA: a grade W×H na convenção do app, o raio equatorial, a camada própria do corpo em km (a crista de Jápeto; nula = chão
 //   liso), as crateras com nome (Gazetteer) e as detectadas na foto (`crateras-pela-foto.mjs`), e as leis do corpo (forma por D, desgaste, rareamento).
 // SAI: `geraRelevoPorFoto` — o campo em km (a camada + as crateras da maior para a menor) e a confissão do que entrou, saiu e onde;
+//   `completaCratera` — a cratera sobre uma base MEDIDA (Reia): soma só a profundidade que falta, sem apagar a base;
 //   `quantizaNaFaixa` (km → byte em [hmin, hmax]), `escalaEViesDaFaixa` (o par do vértice) e `normalDoCampoNaFaixa` (a normal do MESMO campo).
 // ============================================================
 
 import { createHash } from 'node:crypto';
 import { assaNormais } from './gera-normal-de-dem.mjs';
-import { colunaDaLongitude, latitudeDaLinha, linhaDaLatitude, longitudeDaColuna } from './relevo-inventado.mjs';
+import { amostraBilinear, colunaDaLongitude, latitudeDaLinha, linhaDaLatitude, longitudeDaColuna } from './relevo-inventado.mjs';
 
 const RADIANOS = Math.PI / 180;
 
@@ -181,6 +182,85 @@ export function aplicaCratera(campo, largura, altura, c, raioDoCorpoKm) {
   return ref;
 }
 
+/** O ponto a `distKm` no rumo `rumo` (rad, de N para L) de (lat, lonE) em graus, na esfera de `raioKm`: [lat em rad, lonE em graus]. */
+function destinoNaEsfera(lat, lonE, distKm, rumo, raioKm) {
+  const d = distKm / raioKm;
+  const f1 = lat * RADIANOS;
+  const f2 = Math.asin(Math.sin(f1) * Math.cos(d) + Math.cos(f1) * Math.sin(d) * Math.cos(rumo));
+  const dl = Math.atan2(Math.sin(rumo) * Math.sin(d) * Math.cos(f1), Math.cos(d) - Math.sin(f1) * Math.sin(f2));
+  return [f2, lonE + dl / RADIANOS];
+}
+
+/**
+ * A PROFUNDIDADE DA BORDA AO FUNDO por um só instrumento, no perfil da lei e
+ * no campo medido (a diferença das duas só vale se a conta for a mesma): a
+ * borda é a média, em `azimutes` rumos, do máximo em ρ ∈ `bordaRR`; o fundo
+ * é a média no disco ρ ≤ `fundoAteRR` (três anéis, pesados pela área). A
+ * média em volta cancela o declive: num plano inclinado sem cratera dá
+ * ≈ 0,16·R·inclinação, contra 2,2·R·inclinação do máximo − mínimo da janela.
+ * `alturaEm(ρ, rumo)` → km.
+ */
+export function profundidadeBordaFundo(alturaEm, instrumento) {
+  const { bordaRR, fundoAteRR, azimutes } = instrumento;
+  const passos = Math.round((bordaRR[1] - bordaRR[0]) / 0.05);
+  let borda = 0;
+  let fundo = 0;
+  let pesoDoFundo = 0;
+  for (let a = 0; a < azimutes; a += 1) {
+    const rumo = (2 * Math.PI * a) / azimutes;
+    let max = -Infinity;
+    for (let q = 0; q <= passos; q += 1) max = Math.max(max, alturaEm(bordaRR[0] + ((bordaRR[1] - bordaRR[0]) * q) / passos, rumo));
+    borda += max;
+    for (const t of [1 / 6, 1 / 2, 5 / 6]) {
+      fundo += t * alturaEm(t * fundoAteRR, rumo);
+      pesoDoFundo += t;
+    }
+  }
+  return borda / azimutes - fundo / pesoDoFundo;
+}
+
+const SEM_VAZIO = new Uint8Array(0);
+
+/**
+ * COMPLETA UMA CRATERA sobre uma base MEDIDA (o DTM de Reia), no lugar, sem
+ * apagar nada — o contrário de `aplicaCratera`, que apaga o relevo antigo
+ * dentro da cavidade: soma ao campo `fator`·perfil, e o declive, o gráben e
+ * a encosta de baixo continuam sob a tigela. O perfil é `c.perfil` (ρ → km
+ * relativos à superfície local) até a borda, e fora dela some em
+ * `regra.corteRR` (sem manto de ejecta além disso). Abaixo de
+ * `regra.completaDesdeKm` a base não resolve a cratera e o fator é 1 (a
+ * cavidade inteira da lei); de lá para cima, só a profundidade que FALTA:
+ * fator = (dLei − dCampo)/dLei, preso em [0, 1], com dLei e dCampo medidos
+ * pelo mesmo instrumento (`profundidadeBordaFundo`, `regra.instrumento`) no
+ * perfil e no campo — se o campo já tem a lei ou mais, nada muda.
+ * Devolve `{ leiKm, existenteKm (nulo abaixo do limite), fator }`.
+ */
+export function completaCratera(campo, largura, altura, c, raioDoCorpoKm, regra) {
+  const R = c.diametroKm / 2;
+  const [c0, c1] = regra.corteRR;
+  const perfil = (rho) => c.perfil(rho) * (1 - suave(c0, c1, rho));
+  const leiKm = profundidadeBordaFundo((rho) => perfil(rho), regra.instrumento);
+  let existenteKm = null;
+  let fator = 1;
+  if (c.diametroKm >= regra.completaDesdeKm) {
+    const grade = { metros: campo, vazio: SEM_VAZIO, largura, altura };
+    existenteKm = profundidadeBordaFundo((rho, rumo) => amostraBilinear(grade, ...destinoNaEsfera(c.lat, c.lonE, rho * R, rumo, raioDoCorpoKm)), regra.instrumento);
+    fator = Math.min(1, Math.max(0, (leiKm - existenteKm) / leiKm));
+  }
+  if (fator > 0) {
+    paraCadaTexelDaCalota(c.lat, c.lonE, c1 * R, largura, altura, raioDoCorpoKm, (k, rKm) => {
+      campo[k] += fator * perfil(rKm / R);
+    });
+  }
+  return { leiKm, existenteKm, fator };
+}
+
+/** O texel (km no equador) e o menor diâmetro que a grade desenha (2 texels, e nunca abaixo de 4 km). */
+export function texelEDiametroMinimo(largura, raioKm) {
+  const texelKm = (2 * Math.PI * raioKm) / largura;
+  return { texelKm, dMinKm: Math.max(4, 2 * texelKm) };
+}
+
 /**
  * O fator de profundidade (× a lei) de uma detectada de `diametroKm` e
  * `confianca`, pela forma das detectadas `M` do corpo: 1 até `fatorAte`
@@ -317,8 +397,7 @@ export function rareiaPorLatitude(detectadas, regra, raioKm) {
  * esfera e o texel).
  */
 export function geraRelevoPorFoto({ largura, altura, raioKm, camadaKm = null, nomeadas = [], detectadas = [], leis }) {
-  const texelKm = (2 * Math.PI * raioKm) / largura;
-  const dMinKm = Math.max(4, 2 * texelKm);
+  const { texelKm, dMinKm } = texelEDiametroMinimo(largura, raioKm);
   const naGrade = nomeadas.filter((n) => n.diametroKm >= dMinKm);
   const foraDaGrade = nomeadas.filter((n) => n.diametroKm < dMinKm).map((n) => n.nome);
   const detectadasNaGrade = detectadas.filter((d) => d.diametro_km >= dMinKm);
