@@ -1,230 +1,160 @@
 /* HUD, fatia 5/9 — a cascata é a ordem dos prefixos numéricos:
    App.tsx importa nessa ordem e os testes concatenam por sort(). */
-/* --- loading: Cartografia Viva ---------------------------------------
-   Camada persistente montada desde o primeiro frame. O desenho pesado
-   (grade, halo, espiral, poeira) vive no canvas 2D de CartografiaCanvas;
-   aqui fora só transform e opacity animam — inclusive na transição, em
-   que o núcleo desliza ao centro e expande sobre o Sol WebGL. */
-.cv-veil {
+/* --- a tela de carga em rodízio (PLAN-CARREGAMENTO.md) ---------------
+   A cena anima num canvas — num worker, quando o aparelho deixa
+   (`components/telaDeCarga/`) — e o texto é este HTML por cima. Cada
+   tela põe o texto no seu lugar pelo `data-tela`; o hospedeiro só
+   entrega duas variáveis: `--tc-proporcao` (largura/altura da janela) e
+   `--tc-fim` (0..1 do desfecho). */
+.tc-tela {
   position: fixed;
   inset: 0;
-  /* acima do véu de título (50): é a loading que cobre a intro e sai */
+  /* acima do véu de título (50) enquanto carrega e no desfecho */
   z-index: 52;
+  background: #020306;
   pointer-events: none;
+  --tc-fim: 0;
+}
+/* A SAÍDA: o título da carga sai (`--tc-titulo-sai`), a camada desce
+   para baixo do véu de título e ele entra por cima do quadro final —
+   tudo pronto em `--tc-abertura`. Depois disso o motor do app volta, e
+   com ele já pintando a camada apaga por baixo do véu e desmonta no fim
+   desta transição (`TelaDeCarga.tsx`, que lê o mesmo `--tc-abertura`).
+   Título e abertura em sequência, e não juntos: o da abertura fica em
+   outra altura, e os dois ao mesmo tempo liam como um título escrito
+   duas vezes. */
+.hud-root {
+  --tc-titulo-sai: 0.3s;
+  --tc-abertura: 0.9s;
+}
+.tc-tela.tc-saindo {
+  z-index: 49;
+}
+/* longo de propósito: sob a abertura a troca do dourado pelo Sol é
+   suave, e o motor recém-acordado ainda pinta aos trancos */
+.tc-tela.tc-revelando {
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+/* (o véu que sobe por cima: sem o atraso de 0,8 s de sempre; sob
+   movimento reduzido ele segue instantâneo, fatia 6) */
+@media (prefers-reduced-motion: no-preference) {
+  .hud-root:has(.tc-saindo) .veil.veil-intro {
+    transition-duration: calc(var(--tc-abertura) - var(--tc-titulo-sai));
+    transition-delay: var(--tc-titulo-sai);
+  }
 }
 
-/* O fundo preto viaja com o canvas: a cena WebGL nasce por baixo e é este
-   fade que a revela, sem o flash do primeiro quadro. A duração é a MESMA
-   do véu de título (1,6 s) de propósito — é o que mantém a soma das duas
-   camadas escuras constante durante a troca; com o preto saindo mais
-   rápido que o véu entrando, o Sol aparecia cru por meio segundo. */
-.cv-scene {
+.tc-palco {
   position: absolute;
   inset: 0;
-  background: #000;
-  opacity: 1;
-  transition: opacity 1.6s ease;
 }
-.cv-canvas {
+/* a cena entra quando o primeiro quadro está pronto, sem o preto cru do
+   canvas antes dele */
+.tc-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.6s ease;
 }
-.cv-error .cv-scene {
+.tc-pronta .tc-canvas {
+  opacity: 1;
+}
+/* falha no boot: a cena parada e escurecida sob o painel */
+.tc-falhou .tc-palco {
   opacity: 0.55;
 }
-.cv-done .cv-scene {
-  opacity: 0;
-}
 
-/* --- núcleo galáctico quente (50% x, 40% y — o centro da composição) --- */
-.cv-core {
-  position: absolute;
-  left: 50%;
-  top: 40%;
-  width: 0;
-  height: 0;
-  transform: translateY(0) scale(1);
-  opacity: 1;
-  transition:
-    transform 1.8s cubic-bezier(0.55, 0, 0.3, 1),
-    opacity 1.3s ease 0.5s;
-}
-.cv-done .cv-core {
-  /* 40% + 10vh = o centro da tela, onde o Sol da intro está */
-  transform: translateY(10vh) scale(17);
-  opacity: 0;
-}
-.cv-core-glow {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 46vmin;
-  height: 46vmin;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  /* a intensidade é a OPACIDADE do elemento (inline, por etapa): gradiente
-     não interpola de forma confiável entre navegadores */
-  background: radial-gradient(closest-side, rgb(255, 205, 140), rgba(255, 176, 96, 0) 70%);
-  transition: opacity 1s ease;
-}
-.cv-core-scale {
-  position: absolute;
-  left: 0;
-  top: 0;
-  transition: transform 0.9s ease;
-}
-.cv-core-body {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 6.5vmin;
-  height: 6.5vmin;
-  margin: -3.25vmin 0 0 -3.25vmin;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 42% 36%,
-    #fff2dc,
-    rgba(255, 205, 130, 0.98) 45%,
-    rgba(250, 170, 92, 0.95) 76%,
-    rgba(200, 110, 40, 0.85)
-  );
-  filter: blur(0.5px);
-  transition: box-shadow 1s ease;
-  animation: cvBreathe 5s ease-in-out infinite;
-}
-/* núcleo frio: a cartografia parou. Recua junto com a cena — ele fica no
-   meio do título da falha, e ali o assunto é a mensagem, não a galáxia */
-.cv-error .cv-core {
-  opacity: 0.45;
-}
-.cv-error .cv-core-body {
-  background: radial-gradient(circle at 42% 36%, #cfd8ea, #7e93bd 55%, #45536f);
-  animation: none;
-}
-@keyframes cvBreathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-/* --- HUD da loading --- */
-.cv-hud {
-  position: absolute;
-  inset: 0;
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.8s ease;
-}
-/* visibility junto: com opacity 0 sozinha o trilho continuava no leitor de
-   tela ("etapa 1 de 7") depois de a viagem já ter começado */
-.cv-done .cv-hud,
-.cv-error .cv-hud {
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.8s ease,
-    visibility 0s linear 0.8s;
-}
-
-.cv-telemetria {
-  position: absolute;
-  top: 3.4vh;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  color: var(--texto-3);
-  font-size: 0.6875rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.cv-telemetria.esquerda { left: 3vw; text-align: left; }
-.cv-telemetria.direita { right: 3vw; text-align: right; }
-
-.cv-titulo {
+.tc-texto {
   position: absolute;
   left: 0;
   right: 0;
-  top: 62%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.1rem;
-  padding: 0 6vw;
+  padding: 0 20px;
   text-align: center;
+  transition: opacity 0.6s ease;
 }
-/* o kicker já tem margem própria na intro; aqui o gap do flex resolve */
-.cv-titulo .title-kicker { margin-bottom: 0; }
-.cv-titulo .title-big { white-space: nowrap; }
-.cv-etapa-rotulo {
-  color: var(--texto-2);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+.tc-saindo .tc-texto {
+  opacity: 0;
+  transition-duration: var(--tc-titulo-sai);
+}
+.tc-titulo {
+  margin: 0;
+  font-family: var(--fonte-display);
   font-weight: 300;
-  font-size: 0.8125rem;
+  color: var(--texto);
+  letter-spacing: 0.01em;
+  text-wrap: balance;
 }
-
-/* trilho inferior: "etapa NN / 07" + um marco por etapa */
-.cv-trilho {
-  position: absolute;
-  left: 6vw;
-  right: 6vw;
-  bottom: 7.4vh;
+.tc-baixo {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1.4rem;
+  transition: opacity 0.6s ease;
 }
-.cv-trilho-conta {
-  color: var(--texto-3);
+/* duas vagas no mesmo lugar: a frase nova entra enquanto a velha sai */
+.tc-etapa {
+  display: grid;
+  min-height: 1.3em;
+  font-family: var(--fonte-ui);
+  font-size: 0.8125rem;
+  color: var(--texto-2);
+  letter-spacing: 0.02em;
+}
+.tc-etapa > span {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transition: opacity 1.1s ease;
+  text-shadow: 0 0 14px rgba(2, 3, 6, 0.8);
+}
+.tc-etapa > .tc-atual {
+  opacity: 1;
+}
+.tc-pct {
+  font-family: var(--fonte-ui);
   font-size: 0.6875rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  white-space: nowrap;
-}
-.cv-trilho-marcos {
-  display: flex;
-  flex: 1;
-  gap: 6px;
-}
-.cv-marco {
-  flex: 1;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.13);
-  transition: background 0.6s ease, box-shadow 0.6s ease;
-}
-/* concluídos e o atual: sólidos em var(--acento) — o anel do "agora" é
-   o mesmo de sempre, só a cor que passa a vir do token da pele */
-.cv-marco.feito {
-  background: var(--acento);
-}
-/* U01 (C5) — QUANDO UM MARCO VIRA "agora", um reflexo âmbar passa pelo
-   anel dele uma vez só: soma uma segunda camada de `box-shadow` que
-   nasce grande e apaga sobre o anel de repouso (que já é a camada de
-   baixo, sempre presente). Dispara pela PRÓPRIA troca de classe — nunca
-   em loop (`--t-reflexo`, sem `infinite`) — e nunca nos marcos já
-   `.feito`, que não têm animação nenhuma. */
-.cv-marco.agora {
-  background: var(--acento);
-  box-shadow: 0 0 0 2px rgba(226, 184, 114, 0.3);
-  animation: marcoReflexo var(--t-reflexo) ease-out;
-}
-@keyframes marcoReflexo {
-  from {
-    box-shadow: 0 0 0 2px rgba(226, 184, 114, 0.3), 0 0 0 0 rgba(226, 184, 114, 0.6);
-  }
-  to {
-    box-shadow: 0 0 0 2px rgba(226, 184, 114, 0.3), 0 0 0 10px rgba(226, 184, 114, 0);
-  }
-}
-.cv-error .cv-marco.agora {
-  background: rgba(255, 140, 110, 0.9);
-  box-shadow: none;
-  /* a etapa esfriou — sem reflexo âmbar por cima do estado de erro */
-  animation: none;
+  color: var(--texto-3);
+  font-variant-numeric: tabular-nums;
 }
 
-/* região viva só com a etapa: sem reler título e kicker a cada troca */
-.cv-anuncio {
+/* --- nascer: o bloco centrado no céu escuro acima do nascer -----------
+   As medidas do protótipo aprovado (`cenas/nascer.ts`, comentário do
+   topo): topo a 20 % da altura na paisagem (no mínimo 76 px), a 24 % no
+   retrato, misturados pelo smoothstep da proporção 0,6→1,3 — a mesma
+   mistura da câmera da cena. Frase e porcentagem somem com o desfecho de
+   0 a 0,45; a sombra do título, de 0 a 0,3. */
+.tc-tela[data-tela='nascer'] {
+  --tc-x: clamp(0, (var(--tc-proporcao, 1.6) - 0.6) / 0.7, 1);
+  --tc-k: calc(var(--tc-x) * var(--tc-x) * (3 - 2 * var(--tc-x)));
+  --tc-f1: clamp(0, var(--tc-fim) / 0.45, 1);
+  --tc-f2: clamp(0, var(--tc-fim) / 0.3, 1);
+}
+.tc-tela[data-tela='nascer'] .tc-texto {
+  top: max(76px, calc(24% - 4% * var(--tc-k)));
+}
+.tc-tela[data-tela='nascer'] .tc-titulo {
+  font-size: clamp(2.6rem, calc(5.4vw * var(--ui)), 5.4rem);
+  line-height: 1.02;
+  text-shadow: 0 0 30px
+    rgba(2, 3, 6, calc(0.6 * (1 - var(--tc-f2) * var(--tc-f2) * (3 - 2 * var(--tc-f2)))));
+}
+.tc-tela[data-tela='nascer'] .tc-baixo {
+  margin-top: 1.35rem;
+  opacity: calc(1 - var(--tc-f1) * var(--tc-f1) * (3 - 2 * var(--tc-f1)));
+}
+.tc-tela[data-tela='nascer'] .tc-pct {
+  margin-top: 0.55rem;
+}
+
+/* região viva só com a etapa: sem reler o título a cada troca */
+.tc-anuncio {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -232,38 +162,25 @@
   clip-path: inset(50%);
 }
 
-/* --- falha de inicialização --- */
-.cv-falha {
+/* --- falha ------------------------------------------------------------
+   No boot, sobre a cena parada e escurecida; com a viagem já andando
+   (`.tc-em-voo`), sobre o fundo escuro da camada, sem cena. O painel
+   recebe o clique (o resto da camada deixa o clique passar). */
+.tc-falha {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
   padding: 0 6vw;
+  text-align: center;
   background: radial-gradient(ellipse at center, rgba(2, 4, 10, 0.55), rgba(0, 0, 2, 0.92));
-}
-
-/* A CROMAGEM DO CARREGAMENTO SAI QUANDO FALHA. Título, telemetria e
-   trilho de etapas são centrados, e o bloco da falha também: as duas
-   camadas se somavam letra sobre letra ("MAR DE ESTRELAS" atravessado
-   por "A VIAGEM PAROU"). O que a etapa tinha a dizer o próprio bloco
-   diz, na linha da cartografia. */
-.cv-error .cv-hud {
-  display: none;
-}
-
-/* FALHA COM A VIAGEM JÁ ANDANDO: o fundo fica opaco. Os 0,55 acima
-   nasceram para um véu que só tinha preto atrás; montado por cima da
-   cena viva e do véu de título, ele deixava as duas telas se somarem. */
-.cv-em-voo .cv-scene {
-  opacity: 1;
+  pointer-events: auto;
 }
 /* a mensagem curta e legível (§3.8) — o texto TÉCNICO da falha (ex.:
-   "Failed to fetch") vai à parte, em `.cv-falha-tecnico` (um
-   `<details>`), para não competir com ela */
-.cv-falha-detalhe {
+   "Failed to fetch") vai à parte, num `<details>`, para não competir */
+.tc-falha-detalhe {
   margin-top: 1.1rem;
   max-width: 32rem;
   color: var(--texto-2);
@@ -272,23 +189,19 @@
   line-height: 1.6;
   text-align: center;
 }
-.cv-falha-tecnico {
+.tc-falha-tecnico {
   margin-top: 0.8rem;
   max-width: 60ch;
   color: var(--texto-3);
   font-size: 0.8125rem;
 }
-.cv-falha-tecnico summary {
+.tc-falha-tecnico summary {
   cursor: pointer;
 }
-.cv-falha-tecnico summary:focus-visible {
+.tc-falha-tecnico summary:focus-visible {
   outline: 2px solid var(--foco);
   outline-offset: 2px;
 }
-.cv-falha-regua {
+.tc-falha-regua {
   background: linear-gradient(90deg, transparent, rgba(255, 140, 110, 0.9), transparent);
 }
-/* o botão de novo tentar guarda a classe e o texto do `.hud-btn` de
-   sempre (§3.8) — agora a própria base já É essa pele (fix, 09/09),
-   nada para vestir aqui. */
-

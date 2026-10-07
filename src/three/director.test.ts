@@ -144,10 +144,10 @@ describe('a falha depois do boot chega à tela', () => {
     );
   });
 
-  it('o véu VOLTA a montar quando o erro chega depois do merge', () => {
-    // sem o segundo termo a camada some ~MERGE_MS depois do `done` e a
-    // falha em voo não tem onde aparecer
-    expect(APP).toContain("{(loadingMontada || loaderState === 'error') && !bareMode && (");
+  it('o véu VOLTA a montar quando o erro chega depois do desfecho', () => {
+    // sem o segundo termo a camada some no fim da saída da tela de carga
+    // e a falha em voo não tem onde aparecer
+    expect(APP).toContain("{(carga !== 'fora' || loaderState === 'error') && !bareMode && (");
     // e a copy muda: "não pôde começar" é mentira quando ela começou
     expect(APP).toContain("emVoo={phase !== 'loading'}");
   });

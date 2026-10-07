@@ -87,7 +87,7 @@
 //
 // SEM `?shot=`, E O HUD SAI POR CSS. `?shot=` congela o relógio (`const time =
 // this.shotMode ? 0 : rawTime`) e é exatamente o que MB1 não pode ter. Mas o
-// HUD contamina o retrato — e a capa de abertura (`cv-veil`) cobre a cena por
+// HUD contamina o retrato — e a tela de carga (`tc-tela`) cobre a cena por
 // alguns segundos depois de a prontidão fechar. O harness injeta a MESMA regra
 // do `.bare-mode` (`> *:not(.scene-canvas)`) que o `?shot=2` usa, e nada mais:
 // a cena desenha igual, o relógio anda.

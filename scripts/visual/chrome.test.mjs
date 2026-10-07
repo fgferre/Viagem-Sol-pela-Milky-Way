@@ -155,9 +155,9 @@ describe('ligarSocketCDP', () => {
 /**
  * O SEGUNDO TERMO DO OBTURADOR. O defeito que ele fecha foi medido no
  * navegador em 2026-08-23 (`?atlas=1`, 1200×900): a prontidão acendia
- * aos 5,2 s com a fase já em `atlas` e a `.cv-veil` do carregamento
- * ficava mais **2,13 s** por cima — a foto saía com a cartografia da
- * carga no lugar do app. Aqui prova-se a REGRA, com um `send` de
+ * aos 5,2 s com a fase já em `atlas` e a tela do carregamento ficava
+ * mais **2,13 s** por cima — a foto saía com a cartografia da carga no
+ * lugar do app (a camada de hoje é a `.tc-tela`, a do rodízio). Aqui prova-se a REGRA, com um `send` de
  * mentira: o navegador é o que a folha `capturas/captura-errada-antes-
  * depois.png` mostra.
  */
@@ -173,17 +173,17 @@ describe('esperarCapaSair', () => {
   });
 
   it('a capa que sai vira `saiu` — é o caso que a foto com HUD sofria', async () => {
-    const r = await esperarCapaSair(sendDeCapa(['cv-veil cv-done cv-em-voo', '']));
+    const r = await esperarCapaSair(sendDeCapa(['tc-tela tc-desfecho tc-em-voo tc-saindo', '']));
     expect(r.estado).toBe('saiu');
   });
 
   it('a capa de ERRO é a verdade do quadro: fotografa-se, não se espera', async () => {
-    const r = await esperarCapaSair(sendDeCapa(['cv-veil cv-error']));
+    const r = await esperarCapaSair(sendDeCapa(['tc-tela tc-falhou']));
     expect(r.estado).toBe('erro');
   });
 
   it('capa que nunca sai estoura o teto e DIZ que ficou, em vez de travar', async () => {
-    const r = await esperarCapaSair(sendDeCapa(['cv-veil cv-done']), 0);
+    const r = await esperarCapaSair(sendDeCapa(['tc-tela tc-desfecho']), 0);
     expect(r.estado).toBe('ficou');
   });
 });

@@ -138,7 +138,7 @@ const INTERRUPCOES = process.argv.includes('--interrupcoes');
 // números medidos. Opt-in: sem a flag, nada aqui muda.
 const FOLHA = process.argv.includes('--folha');
 // `--c5` troca a corrida de sempre por OITO cenas (V1–V8) do que o C5
-// já entregou (marcos do carregamento, aceno do CTA primário, o chrome
+// já entregou (a frase da etapa do carregamento, aceno do CTA primário, o chrome
 // do filme sumindo sozinho, o grupo "Mais", os ícones do transporte, a
 // barra de progresso, a tela final, o acento de seleção no céu e a dica
 // de ajuda): um clipe em velocidade normal + folha de contato por cena,
@@ -2464,8 +2464,8 @@ async function tabularAte(sessao, seletor, maxPresses = 30) {
 }
 
 // ============================================================
-// `--c5` — OITO CENAS (V1–V8) do que o C5 já entregou: os marcos do
-// carregamento piscando uma vez (`marcoReflexo`), o aceno do CTA
+// `--c5` — OITO CENAS (V1–V8) do que o C5 já entregou: a frase da etapa
+// do carregamento trocando em cruz a cada etapa (`.tc-etapa`), o aceno do CTA
 // primário na abertura e na tela final (`reflexoDeAbertura`,
 // `--cta-atraso`), o chrome do filme sumindo sozinho por inatividade
 // (`useChromeDoFilme`), o grupo "Mais" (`usePresenca`), os ícones do
@@ -2481,12 +2481,12 @@ async function tabularAte(sessao, seletor, maxPresses = 30) {
 // PASSA/FALHA: roda uma vez e relata os números medidos.
 // ============================================================
 
-function jsMarcoAgora() {
+function jsFraseDaEtapa() {
   return `(() => {
-    const el = document.querySelector('.cv-marco.agora');
+    const el = document.querySelector('.tc-etapa .tc-atual');
     if (!el) return { existe: false };
     const cs = getComputedStyle(el);
-    return { existe: true, animationName: cs.animationName, className: el.className };
+    return { existe: true, texto: el.textContent, transitionDuration: cs.transitionDuration };
   })()`;
 }
 
@@ -2507,21 +2507,21 @@ function jsCtaPrimario() {
 /**
  * V1 — A ABERTURA: da navegação (sem `?atlas=1`) pelas etapas do
  * carregamento até o véu do título, com o aceno do CTA primário já
- * passado. A gravação começa ANTES do `Page.navigate` — só assim os
- * marcos do carregamento (`.cv-marco.agora`, cada um pisca uma vez só)
+ * passado. A gravação começa ANTES do `Page.navigate` — só assim as
+ * trocas da frase da etapa (`.tc-etapa .tc-atual`, em cruz a cada etapa)
  * entram no clipe — e por isso um segundo laço, concorrente com a
- * navegação, amostra o marco "agora" a cada 40ms pelo mesmo socket CDP;
+ * navegação, amostra a frase atual a cada 40ms pelo mesmo socket CDP;
  * erros de `Runtime.evaluate` no meio da troca de documento são
  * esperados (o contexto antigo morre) e só descartam aquela amostra.
  */
 async function cenaAberturaC5(sessao, commit, pasta) {
-  const marcos = [];
+  const frases = [];
   let coletando = true;
   const coletor = (async () => {
     while (coletando) {
       try {
-        const m = await sessao.js(jsMarcoAgora());
-        if (m?.existe) marcos.push(m);
+        const m = await sessao.js(jsFraseDaEtapa());
+        if (m?.existe) frases.push(m);
       } catch { /* documento trocando — amostra descartada */ }
       await dorme(40);
     }
@@ -2545,10 +2545,11 @@ async function cenaAberturaC5(sessao, commit, pasta) {
   const clipe = renderizarClipe(quadros, resolve(CAPTURAS, `motion-c5-v1-abertura-${commit}.mp4`));
   const duracao = quadros[quadros.length - 1].ts - quadros[0].ts;
   const folha = renderizarContato(clipe, duracao, resolve(CAPTURAS, `motion-c5-v1-abertura-${commit}.png`));
-  const marcosComReflexo = marcos.filter((m) => m.animationName.includes('marcoReflexo')).length;
+  const frasesDistintas = new Set(frases.map((f) => f.texto)).size;
+  const transicao = frases[0]?.transitionDuration ?? null;
 
   return {
-    clipe, folha, quadros: quadros.length, marcosAmostrados: marcos.length, marcosComReflexo, cta,
+    clipe, folha, quadros: quadros.length, frasesAmostradas: frases.length, frasesDistintas, transicao, cta,
   };
 }
 
@@ -3609,7 +3610,7 @@ async function rodarC5(quais = null) {
     ];
     if (v1) {
       linhas.push(
-        `V1 abertura: ${v1.clipe} (${v1.quadros}q) — marcos amostrados=${v1.marcosAmostrados}, com marcoReflexo=${v1.marcosComReflexo}; `
+        `V1 abertura: ${v1.clipe} (${v1.quadros}q) — frases da etapa amostradas=${v1.frasesAmostradas}, distintas=${v1.frasesDistintas}, transição=${v1.transicao}; `
           + `CTA ::after animation=${v1.cta?.animationName} delay=${v1.cta?.animationDelay} duration=${v1.cta?.animationDuration}`
       );
     }

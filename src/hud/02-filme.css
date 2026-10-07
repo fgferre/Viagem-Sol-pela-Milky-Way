@@ -335,7 +335,10 @@
    o título aparecia DUAS VEZES, em duas alturas, por 0,8 s a cada
    arranque. O atraso aqui é exatamente a saída do outro: quando este
    começa a chegar, aquele já foi. Mesmo mecanismo do `veil-end` abaixo —
-   nesta casa quem sequencia camadas é o `transition-delay`. */
+   nesta casa quem sequencia camadas é o `transition-delay`. (Desde a
+   tela de carga em rodízio, 07/10, no BOOT o véu entra por cima do
+   quadro final da carga, sem este atraso — fatia 5; ele segue valendo
+   no aceno do CTA e nas outras chegadas à abertura.) */
 .veil.veil-intro {
   /* U04 (C5): o mesmo atraso alimenta o aceno do CTA primário (abaixo,
      `.veil-btn--primario::after`) — "0,8s" mora só aqui, o botão herda

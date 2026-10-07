@@ -31,10 +31,6 @@ export const PT = {
 
   // ---- a tela de carregamento e os véus (`components/Hud.tsx`) ------
   'hud.kicker': 'HYG · VIA LÁCTEA · TEMPO REAL',
-  'hud.telemetria.estrelas': 'HYG · 328.749 estrelas',
-  'hud.telemetria.poeira': 'poeira APOGEE · CO · H II',
-  'hud.telemetria.aglomerados': 'aglomerados · Cefeidas Gaia DR3',
-  'hud.etapaConta': 'etapa {i} / {total}',
   'hud.etapaAnuncio': 'Etapa {i} de {total} — {rotulo}',
   'hud.progressoCarregamento': 'Progresso do carregamento',
   'hud.falhaEmVoo': 'FALHA DURANTE A VIAGEM',

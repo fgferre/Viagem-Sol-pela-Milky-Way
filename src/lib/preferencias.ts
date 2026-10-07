@@ -3,7 +3,7 @@
 // A URL continua sendo a fonte de verdade (qualquer configuração
 // vira link e a captura headless enxerga o que a tela enxerga);
 // o storage só guarda o que a URL não carrega e o visitante não
-// escolheu: por ora, só que ele já viu o convite.
+// escolheu: que ele já viu os convites e qual tela de carregamento viu por último.
 // Tom, exposição e camadas NÃO se persistem — quebrariam a
 // honestidade dos gates.
 //
@@ -42,6 +42,13 @@ export interface Preferencias {
    * lido os gestos dele.
    */
   conviteAtlasVisto?: boolean;
+  /**
+   * A ÚLTIMA TELA DE CARREGAMENTO que este aparelho viu — é dela que o
+   * rodízio parte (`telaDeCarga/rodizio.ts`). Marca de visita, não gosto.
+   * Texto cru: quem confere se a tela existe é o rodízio, que tolera um
+   * nome que saiu da ordem.
+   */
+  ultimaTelaDeCarga?: string;
 }
 
 const CHAVE = 'viagem-prefs';
@@ -61,6 +68,7 @@ export function lerPreferencias(): Preferencias {
     const envelope: Preferencias = { v: 1 };
     if (p.conviteVisto === true) envelope.conviteVisto = true;
     if (p.conviteAtlasVisto === true) envelope.conviteAtlasVisto = true;
+    if (typeof p.ultimaTelaDeCarga === 'string') envelope.ultimaTelaDeCarga = p.ultimaTelaDeCarga;
     return envelope;
   } catch {
     return { v: 1 };

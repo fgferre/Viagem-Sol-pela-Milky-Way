@@ -37,10 +37,6 @@ export const EN: Record<keyof typeof PT, string> = {
 
   // ---- loading screen and veils ------------------------------------
   'hud.kicker': 'HYG · MILKY WAY · REAL TIME',
-  'hud.telemetria.estrelas': 'HYG · 328,749 stars',
-  'hud.telemetria.poeira': 'APOGEE dust · CO · H II',
-  'hud.telemetria.aglomerados': 'clusters · Gaia DR3 Cepheids',
-  'hud.etapaConta': 'stage {i} / {total}',
   'hud.etapaAnuncio': 'Stage {i} of {total} — {rotulo}',
   'hud.progressoCarregamento': 'Loading progress',
   'hud.falhaEmVoo': 'FAILURE IN FLIGHT',

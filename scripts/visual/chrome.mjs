@@ -378,13 +378,13 @@ export async function esperarAssentar({ send, cartografia, quadros = 700, teto =
  *
  * O QUE ACONTECIA, medido em 2026-08-23 com `?atlas=1` a 1200×900: o
  * sinal de prontidão acende aos 5,2 s e está CERTO — a fase já é
- * `atlas`, a cena já assentou. Mas a `LoadingVeil` (`.cv-veil`,
+ * `atlas`, a cena já assentou. Mas a tela de carga (`.tc-tela`,
  * `z-index: 52`, ver `hud/05-loading.css`) é camada PERSISTENTE: o App
- * só a desmonta `MERGE_MS` depois do `done`, para o crossfade do núcleo
- * sobre o Sol não piscar. Medido: ela sai **2,13 s DEPOIS** do sinal. O
- * obturador disparava no meio disso e a foto saía com a cartografia da
- * carga — a vinheta do boot (desde o item 34, com os quatro braços do
- * modelo da casa) — no lugar do app.
+ * só a desmonta depois do desfecho da cena e da saída por baixo da
+ * abertura (`TelaDeCarga.tsx`). Medido com a tela velha: ela saía
+ * **2,13 s DEPOIS** do sinal (a de rodízio, ~3,5–4 s). O obturador
+ * disparava no meio disso e a foto saía com a tela de carga no lugar do
+ * app.
  *
  * POR QUE NENHUM JUIZ ADOECEU COM ISSO, e é o que explica os meses de
  * silêncio: todo consumidor de `capturarCDP` pina `?shot=2`
@@ -414,14 +414,14 @@ export async function esperarCapaSair(send, teto = 8000) {
   let estava = false;
   for (;;) {
     const r = await send('Runtime.evaluate', {
-      expression: "((document.querySelector('.cv-veil')||{}).className)||''",
+      expression: "((document.querySelector('.tc-tela')||{}).className)||''",
       returnByValue: true,
     });
     const capa = String(r.result.value || '');
     const ms = Date.now() - t0;
     if (!capa) return { estado: estava ? 'saiu' : 'ausente', ms };
     estava = true;
-    if (capa.includes('cv-error')) return { estado: 'erro', ms };
+    if (capa.includes('tc-falhou')) return { estado: 'erro', ms };
     if (ms > teto) return { estado: 'ficou', ms };
     await dorme(100);
   }

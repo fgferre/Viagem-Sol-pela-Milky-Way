@@ -329,18 +329,6 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     razao: 'bake é cena congelada; entra por último com o raymarch',
   },
   {
-    id: 'campo-2d-do-carregamento',
-    nome: 'campo 2D do carregamento',
-    arquivos: ['src/components/CartografiaCanvas.ts'],
-    consomeL1: false,
-    leiVelhaApagada: false,
-    fatorDeBrilho: null,
-    destino: 'fora-da-lei',
-    migracao: null,
-    emiteGlPointSize: false,
-    razao: '2D, não é cena — declarado fora, não esquecido fora',
-  },
-  {
     id: 'bloom-e-gradacao',
     nome: 'bloom + gradação',
     arquivos: ['src/three/core/post.ts', 'src/three/atlasConfig.ts'],

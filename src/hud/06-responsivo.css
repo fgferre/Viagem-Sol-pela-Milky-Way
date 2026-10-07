@@ -241,17 +241,6 @@
     bottom: 6.4vh;
   }
 
-  .cv-trilho {
-    left: 5vw;
-    right: 5vw;
-    bottom: 6.4vh;
-    gap: 0.9rem;
-  }
-
-  .cv-titulo {
-    top: 58%;
-    gap: 0.8rem;
-  }
 }
 
 /* O RODAPÉ DO ATLAS VIRA UMA COLUNA SÓ, DE BORDA A BORDA (item 9).
@@ -353,29 +342,12 @@
   }
 }
 
-/* paisagem baixa (844×390): a composição sobe e o bloco de texto encolhe
-   para caber entre a galáxia e o trilho */
-@media (max-height: 480px) and (orientation: landscape) {
-  .cv-titulo {
-    top: 56%;
-    gap: 0.55rem;
-  }
-
-  .cv-titulo .title-big {
-    font-size: clamp(1rem, calc(3.4vw * var(--ui)), 1.6rem);
-  }
-
-  .cv-trilho {
-    bottom: 5vh;
-  }
-}
-
 /* A LINHA "RÓTULO · VALOR" DA COMPACTA E O BOTÃO "DETALHES"/"RECOLHER"
    (`atlas-ficha-resumo`/`atlas-ficha-detalhes`, `FichaDoObjeto.tsx`) —
    item B2, 09/09. A MESMA peça em dois lugares agora: a folha do
    celular (por LARGURA, `@media (max-width: 760px)`, 09-celular.css) e
-   a ficha da MESA numa janela BAIXA (por ALTURA — o mesmo limiar de
-   480px que a paisagem baixa acima já usa, sem a cláusula de
+   a ficha da MESA numa janela BAIXA (por ALTURA — o limiar de 480px
+   da paisagem baixa, sem a cláusula de
    orientação: qualquer janela mais larga que 760px e mais baixa que
    isto já É paisagem, por definição). As duas regras moravam só em
    09-celular.css; migraram para cá, com as duas condições reunidas num
@@ -436,22 +408,6 @@
     animation: none;
     opacity: 1;
     transform: none;
-  }
-
-  /* a loading vira crossfade simples: nada gira, pulsa ou expande — só
-     as opacidades atravessam (o canvas já fica estático pelo `still`) */
-  .cv-core-body {
-    animation: none;
-  }
-
-  .cv-core-scale {
-    transition: none;
-  }
-
-  .cv-core,
-  .cv-done .cv-core {
-    transform: none;
-    transition: opacity 0.8s ease;
   }
 
   /* o convite entra INSTANTÂNEO: a única transição dele é o fade de

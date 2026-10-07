@@ -99,7 +99,7 @@ describe('a tela de carga obedece a "reduzir movimento" também quando ela MUDA 
     const ouvinte = FONTE.slice(FONTE.indexOf("window.matchMedia?.('(prefers-reduced-motion: reduce)');"));
     expect(ouvinte).toContain("preferencia.addEventListener('change', aoMudar);");
     expect(ouvinte).toContain("preferencia.removeEventListener('change', aoMudar);");
-    expect(FONTE).toContain('still={movimentoReduzido || shotMode}');
+    expect(FONTE).toContain('reduzido={movimentoReduzido}');
   });
 });
 

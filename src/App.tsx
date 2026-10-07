@@ -1,7 +1,7 @@
 // ============================================================
 // App — canvas WebGL + HUD cinematográfico sobre a simulação.
 // ============================================================
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { EstadoDaBussola } from './three/cinematic/atlasRig';
 import { FILME_PADRAO } from './three/cinematic/filme';
 import { Director, LOAD_STAGES } from './three/director';
@@ -20,7 +20,8 @@ import { LabelCanvas } from './components/LabelCanvas';
 import { sondarGl } from './lib/glProbe';
 import { t } from './lib/idioma';
 import { useIdioma } from './hooks/useIdioma';
-import { TitleVeil, LoadingVeil, Caption, ProgressBar } from './components/Hud';
+import { TitleVeil, Caption, ProgressBar } from './components/Hud';
+import { TelaDeCarga } from './components/telaDeCarga/TelaDeCarga';
 import { BarraOuAlcas } from './components/BarraOuAlcas';
 import {
   Bussola,
@@ -65,9 +66,6 @@ import './hud/06-responsivo.css';
 import './hud/07-foto.css';
 import './hud/08-ajustes.css';
 import './hud/09-celular.css';
-
-/** tempo do merge (núcleo 1,8 s) + folga antes de desmontar a loading */
-const MERGE_MS = 2200;
 
 /**
  * O QUE OS RÓTULOS CONTORNAM — a lista de peças de HUD cujo retângulo o
@@ -289,8 +287,15 @@ export default function App() {
     return t(gl.suportado ? 'hud.semWebgl2' : 'hud.semWebgl');
   });
   const [loadStage, setLoadStage] = useState<LoadStage>(LOAD_STAGES[0]);
-  // a loading é camada persistente: só desmonta DEPOIS do merge terminar
-  const [loadingMontada, setLoadingMontada] = useState(true);
+  /**
+   * A TELA DE CARGA: `no-ar` do boot até o fim do desfecho (a abertura
+   * fica escondida atrás dela), `saindo` enquanto a abertura entra por
+   * cima do quadro final, `revelando` com a abertura inteira e o motor do
+   * app voltando a desenhar por baixo enquanto a cena apaga, `fora`
+   * desmontada. Quem anda os passos é ela (`aoSair`), porque é ela quem
+   * sabe quando o desfecho que está desenhando acabou.
+   */
+  const [carga, setCarga] = useState<'no-ar' | 'saindo' | 'revelando' | 'fora'>('no-ar');
   /**
    * `?cart=off` — a cartografia procedural POR ESCOLHA. Lida uma vez,
    * como o tier do boot: é porta de alocação e não troca ao vivo. Quem a
@@ -670,7 +675,7 @@ export default function App() {
     };
   }, [phase, montada, celular, haloDeContorno]);
 
-  // estado da camada de carregamento; `done` é o que dispara o merge.
+  // estado da camada de carregamento; `done` é o que dispara o desfecho.
   // O erro ganha do ?loader= fixo: uma captura de QA com asset quebrado
   // tem de MOSTRAR a falha, não a etapa congelada por cima dela.
   const loaderState: 'loading' | 'done' | 'error' = loadError
@@ -678,12 +683,6 @@ export default function App() {
     : loaderFixo || phase === 'loading'
       ? 'loading'
       : 'done';
-
-  useEffect(() => {
-    if (loaderState !== 'done') return;
-    const id = window.setTimeout(() => setLoadingMontada(false), MERGE_MS);
-    return () => window.clearTimeout(id);
-  }, [loaderState]);
 
   // O rótulo do botão de pausa é o SEGUNDO dono do estado de pausa (o
   // outro é o `freezeJourney` do Director, que desde 21/08 escreve o
@@ -990,6 +989,58 @@ export default function App() {
   const shotParam = new URLSearchParams(window.location.search).get('shot');
   const shotMode = shotParam !== null;
   const bareMode = shotParam === '2';
+  // a abertura não entra enquanto a tela de carga a cobre (em ?shot=2 ela
+  // nem monta, e não cobre nada)
+  const cargaCobre = carga === 'no-ar' && !bareMode;
+
+  /**
+   * O MOTOR ESPERA O DESFECHO DA TELA DE CARGA. O Director liga o motor
+   * na fase 'intro', e o desfecho da cena (2,8 s) roda por cima dele com
+   * a tela inteira coberta: os dois disputando a GPU derrubavam a cena
+   * de 60 para ~42 quadros/s justo no nascer do Sol, e a thread principal
+   * para ~24 (medido em 07/10, `capturas/carregamento/app/fluidez/`).
+   * Parado enquanto ela cobre, o desfecho fica a 60 e a abertura entra
+   * com a thread livre; o motor volta com a abertura inteira, e a cena
+   * só apaga por baixo dela depois de ele pintar (`TelaDeCarga`). Na foto
+   * não há desfecho; na falha ele não volta (quem decide é o caminho da
+   * falha). No commit, antes de o motor pintar o 1º quadro da fase nova.
+   */
+  const motorEspera = (carga === 'no-ar' || carga === 'saindo') && !bareMode;
+  const motorEsperando = useRef(false);
+  useLayoutEffect(() => {
+    const motor = directorRef.current?.engine;
+    if (!motor) return;
+    if (!motorEsperando.current) {
+      if (loaderState === 'done' && motorEspera && !shotMode) {
+        motorEsperando.current = true;
+        motor.parar();
+      }
+    } else if (!motorEspera && loaderState !== 'error') {
+      motorEsperando.current = false;
+      motor.start();
+    }
+  }, [loaderState, motorEspera, shotMode]);
+
+  /**
+   * A GPU DO MOTOR JÁ TERMINOU OS PRIMEIROS QUADROS? Uma cerca na fila
+   * dela, posta na primeira pergunta, sinaliza quando tudo o que veio
+   * antes acabou. A thread principal não vê isso sozinha: o 1º quadro do
+   * motor leva 0,4–1 s NA GPU com ela livre (medido em 07/10), e a tela
+   * de carga espera esta resposta antes de apagar.
+   */
+  const cercaDoMotor = useRef<WebGLSync | null>(null);
+  const motorPronto = useCallback(() => {
+    const gl = directorRef.current?.engine.renderer.getContext() as WebGL2RenderingContext | undefined;
+    if (!gl || gl.isContextLost()) return true;
+    if (!cercaDoMotor.current) {
+      cercaDoMotor.current = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+      return cercaDoMotor.current === null;
+    }
+    if (gl.getSyncParameter(cercaDoMotor.current, gl.SYNC_STATUS) !== gl.SIGNALED) return false;
+    gl.deleteSync(cercaDoMotor.current);
+    cercaDoMotor.current = null;
+    return true;
+  }, []);
 
   /**
    * O SELO, UMA PEÇA PARA DUAS CASAS: o rodapé do Atlas (sempre) e o
@@ -1425,11 +1476,11 @@ export default function App() {
         />
       )}
 
-      {/* tela de título / fim — montada desde o primeiro frame, por baixo
-          da loading: é o crossfade entre camadas persistentes que tira o
-          flash da troca */}
+      {/* tela de título / fim — montada desde o primeiro frame; no boot
+          ela só aparece quando o desfecho da tela de carga acaba, e entra
+          POR CIMA do quadro final dela */}
       <TitleVeil
-        visible={hud.veuDeTitulo}
+        visible={hud.veuDeTitulo && !cargaCobre}
         mode={phase === 'end' ? 'end' : 'intro'}
         onPlay={play}
         onExplore={freeRoam}
@@ -1444,23 +1495,25 @@ export default function App() {
           e a troca é instantânea. Fade, não pulso. */}
       <div className="atlas-veu" aria-hidden="true" />
 
-      {/* cartografia viva do carregamento (por cima: o núcleo dela expande
-          sobre o Sol WebGL quando a viagem começa). Em ?shot=2 ela nem
-          monta: esconder por CSS deixaria o laço do canvas disputando a
-          thread com a captura que a medição depende */}
-      {/* a camada volta A MONTAR quando a falha chega depois do boot: o
-          merge a desmonta ~MERGE_MS após o `done`, e sem o segundo termo
-          o contexto perdido e a exceção em quadro não tinham onde
-          aparecer (medido em 21/08: tela congelada, HUD inteiro no ar,
-          nada dito). `emVoo` é o que muda a copy — a viagem começou. */}
-      {(loadingMontada || loaderState === 'error') && !bareMode && (
-        <LoadingVeil
-          stage={loaderFixo ?? loadStage}
-          state={loaderState}
-          still={movimentoReduzido || shotMode}
-          error={loadError}
+      {/* a tela de carregamento do rodízio (por cima de tudo até o fim
+          do desfecho). Em ?shot=2 ela nem monta: esconder por CSS deixaria
+          a cena disputando a GPU com a captura que a medição depende */}
+      {/* a camada volta A MONTAR quando a falha chega depois do boot: ela
+          desmonta no fim da saída, e sem o segundo termo o contexto
+          perdido e a exceção em quadro não tinham onde aparecer (medido
+          em 21/08: tela congelada, HUD inteiro no ar, nada dito). `emVoo`
+          muda a copy e tira a cena — a viagem começou. */}
+      {(carga !== 'fora' || loaderState === 'error') && !bareMode && (
+        <TelaDeCarga
+          etapa={loaderFixo ?? loadStage}
+          estado={loaderState}
+          foto={shotMode}
+          reduzido={movimentoReduzido}
+          erro={loadError}
           emVoo={phase !== 'loading'}
           onRetry={() => window.location.reload()}
+          aoSair={setCarga}
+          motorPronto={motorPronto}
         />
       )}
     </div>

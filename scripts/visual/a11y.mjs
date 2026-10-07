@@ -134,7 +134,7 @@ const MEDIR_FONTES = `(() => {
 /** Os `clamp(rem, vw, rem)` do `hud.css`, onde cada um existe. */
 const MEDIR_CLAMPS = `(() => {
   const alvos = ['.caption-title', '.caption-sub', '.title-big', '.title-kicker',
-    '.error-title', '.title-sub', '.cv-etapa-rotulo'];
+    '.error-title', '.title-sub', '.tc-titulo'];
   const out = {};
   for (const sel of alvos) {
     const e = document.querySelector(sel);
@@ -2011,22 +2011,29 @@ try {
   // ---- CARREGAMENTO E FALHA (pedido do dono, 08/09/2026) -----------
   // `?loader=<etapa>` (App.tsx, `LOAD_STAGES`) fixa uma etapa da tela de
   // carga — só valia com `?shot=`, que o PIN já traz. `galaxy` é a
-  // quinta das sete: a etapa, a contagem e a telemetria só tinham
-  // conferência por LEITURA de código, nunca por corrida.
+  // quinta das sete: a frase da etapa, a contagem (no progressbar, desde
+  // a tela do rodízio, 07/10) e a porcentagem só tinham conferência por
+  // LEITURA de código, nunca por corrida.
   await sessao.ir(`loader=galaxy&${PIN}`);
-  const carga = await sessao.js(`(() => ({
-    etapa: (document.querySelector('.cv-etapa-rotulo') || {}).textContent || '',
-    contagem: (document.querySelector('.cv-trilho-conta') || {}).textContent || '',
-    telemetria: [...document.querySelectorAll('.cv-telemetria div')].map((d) => d.textContent.trim()),
-  }))()`);
+  await esperarPor(sessao, "/^\\d+%$/.test((document.querySelector('.tc-pct') || {}).textContent || '')");
+  const carga = await sessao.js(`(() => {
+    const barra = document.querySelector('.tc-tela [role="progressbar"]');
+    return {
+      etapa: (document.querySelector('.tc-etapa .tc-atual') || {}).textContent || '',
+      contagem: barra ? barra.getAttribute('aria-valuenow') + '/' + barra.getAttribute('aria-valuemax') : '',
+      texto: barra ? barra.getAttribute('aria-valuetext') : '',
+      pct: (document.querySelector('.tc-pct') || {}).textContent || '',
+    };
+  })()`);
   conferir(
-    carga.etapa.trim() === 'semeando o disco galáctico…' && carga.contagem.trim() === 'etapa 05 / 07',
-    `carregamento (?loader=galaxy): etapa "${carga.etapa.trim()}", contagem "${carga.contagem.trim()}"`
+    carga.etapa.trim() === 'semeando o disco galáctico…' && carga.contagem === '5/7'
+      && carga.texto.includes(carga.etapa.trim()),
+    `carregamento (?loader=galaxy): etapa "${carga.etapa.trim()}", contagem "${carga.contagem}"`
+      + ` (${carga.texto})`
   );
   conferir(
-    carga.telemetria.length === 4 && carga.telemetria.every((t) => t.length > 0),
-    `carregamento (?loader=galaxy): telemetria com ${carga.telemetria.length} linha(s)`
-      + ` — ${carga.telemetria.join(' · ')}`
+    /^\d+%$/.test(carga.pct.trim()),
+    `carregamento (?loader=galaxy): porcentagem "${carga.pct.trim()}"`
   );
 
   // A TELA DE FALHA: sem gancho de "forçar falha", o caminho
@@ -2046,16 +2053,16 @@ try {
   for (let i = 0; i < 60 && falhouNoBootEm === null; i++) {
     await dorme(300);
     try {
-      if (await sessao.js("!!document.querySelector('.cv-falha')")) falhouNoBootEm = (i + 1) * 300;
+      if (await sessao.js("!!document.querySelector('.tc-falha')")) falhouNoBootEm = (i + 1) * 300;
     } catch {
       // o documento ainda está trocando — tenta de novo
     }
   }
   const falha = await sessao.js(`(() => {
-    const f = document.querySelector('.cv-falha');
+    const f = document.querySelector('.tc-falha');
     if (!f) return null;
     return {
-      detalhes: !!f.querySelector('details.cv-falha-tecnico summary'),
+      detalhes: !!f.querySelector('details.tc-falha-tecnico summary'),
       tentar: !!f.querySelector('button'),
     };
   })()`);
@@ -2070,12 +2077,12 @@ try {
   // vivo (`window.__director`, só existe DEV — e o resto do juiz já
   // depende dele) e tolera o instante em que o documento troca.
   await sessao.bloquear([]);
-  await sessao.js("document.querySelector('.cv-falha button').click()");
+  await sessao.js("document.querySelector('.tc-falha button').click()");
   let recuperou = false;
   for (let i = 0; i < 60 && !recuperou; i++) {
     await dorme(300);
     try {
-      recuperou = await sessao.js("!document.querySelector('.cv-falha') && !!window.__director");
+      recuperou = await sessao.js("!document.querySelector('.tc-falha') && !!window.__director");
     } catch {
       // o documento está trocando no meio do reload — tenta de novo
     }
@@ -2595,7 +2602,7 @@ async function medirCobertura(s, quando, cobra = true, fatorUi = 1) {
 async function julgarEscalaDaUi(s) {
   const GRANDE = 1.4;
   // as três telas cobrem famílias diferentes de `font-size`: a
-  // cartografia do carregamento, o HUD do filme e o do Atlas
+  // tela do carregamento, o HUD do filme e o do Atlas
   const TELAS = [
     ['loader=galaxy', 'carregamento'],
     ['t=100', 'filme'],
@@ -2709,15 +2716,14 @@ async function julgarEscalaDaUi(s) {
     // foi ele que mostrou o conserto do item 9 na janela de 600 px, onde
     // a sobra saiu de −13,6% para 3,7%.
     await medirCobertura(s, `ui = ${GRANDE} com zoom ${zoom * 100}%`, false);
-    // OS DOIS `clamp` QUE SÓ EXISTEM NA QUEBRA ESTREITA do CSS — os
-    // últimos dos nove, e os únicos que nenhuma medição em tela de mesa
-    // alcança. A 600×450 as duas regras estão de pé (largura ≤ 760 e
-    // altura ≤ 480 em paisagem), e a tela do carregamento é onde o
-    // título delas existe.
+    // A TELA DO CARREGAMENTO NA QUEBRA ESTREITA (600×450, largura ≤ 760
+    // e paisagem baixa): o título dela é um `clamp(rem, vw, rem)` que ali
+    // fica no piso em rem, e a frase da etapa é rem puro — os dois têm de
+    // crescer junto com o texto, também nessa janela.
     if (zoom === 2) {
       const medir = `(() => {
-        const e = document.querySelector('.cv-titulo .title-big');
-        const r = document.querySelector('.cv-etapa-rotulo');
+        const e = document.querySelector('.tc-titulo');
+        const r = document.querySelector('.tc-etapa');
         return {
           largura: window.innerWidth,
           titulo: e ? parseFloat(getComputedStyle(e).fontSize) : null,
