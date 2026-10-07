@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (07/10, tarde) — REIA COM RELEVO MEDIDO E CRATERAS PELA FOTO FEITA NO RAMO `reia`, CHECAGEM COMPLETA VERDE, À ESPERA DO MERGE EM LINHA RETA E DO ENVIO
+## O BASTÃO — onde a rodada parou (07/10, tarde) — REIA COM RELEVO MEDIDO E CRATERAS PELA FOTO PUBLICADA (`main` = `b9f3c90c`, merge em linha reta e envio no terminal dele a pedido dele — *"ok, vamos merge commit etc"*; publicação verde; no ar, altura, normal, webp e manifesto com o mesmo sha256 dos locais). A PRÓXIMA CONVERSA COMEÇA LIMPA: ler só esta seção e, para a próxima obra, a "Fila de assets combinada" abaixo; os planos das duas rodadas (`PLAN-REIA.md`, `PLAN-EUROPA-JAPETO.md`) guardam a receita e os números
 
 **Feito em 07/10 (plano em `PLAN-REIA.md`, revisto pelo GPT pelo Codex e
 conferido contra o código; a palavra dele: *"Pode começar por Reia, com a
@@ -26,8 +26,7 @@ conferido pixel a pixel; `data:verify` OK; `npm run done` verde (129
 arquivos, 3.544 testes). Provas: `capturas/reia/final-prancha.jpg` (antes ×
 depois no app de verdade), `dtm-prancha.jpg`, `r2-prancha.jpg`.
 
-**O que ele ainda decide:** publicar (merge em linha reta de `reia` no
-`main` e envio); apagar ou guardar os planos das rodadas (`PLAN-REIA.md`,
+**O que ele ainda decide:** apagar ou guardar os planos das rodadas (`PLAN-REIA.md`,
 `PLAN-EUROPA-JAPETO.md`); o subsolar com 4,4° de atraso pelo tempo de luz
 (BACKLOG).
 
