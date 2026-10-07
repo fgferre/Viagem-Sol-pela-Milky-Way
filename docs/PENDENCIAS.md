@@ -4,7 +4,44 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (07/10, manhã) — EUROPA COM COR REAL E JÁPETO COM A CRISTA NO LUGAR (item 230) PUBLICADOS (`main` = `5c35a048`, merge em linha reta e push feitos no terminal dele a pedido dele — *"Faça o merge e o push, estou autorizando"*; publicação verde; no ar, altura e normal de Jápeto e o mapa de Europa com o mesmo sha256 dos locais)
+## O BASTÃO — onde a rodada parou (07/10, tarde) — REIA COM RELEVO MEDIDO E CRATERAS PELA FOTO FEITA NO RAMO `reia`, CHECAGEM COMPLETA VERDE, À ESPERA DO MERGE EM LINHA RETA E DO ENVIO
+
+**Feito em 07/10 (plano em `PLAN-REIA.md`, revisto pelo GPT pelo Codex e
+conferido contra o código; a palavra dele: *"Pode começar por Reia, com a
+mesma receita. coordene inteligentemente."*):** a pesquisa achou o que o
+bastão de setembro dizia não existir — Reia TEM modelo de forma público da
+Cassini (Weirich, Gaskell, Palmer & Domingue 2025, PDS) — e a receita virou
+a de Plutão: o relevo medido como base (bacias Tirawa e Mamaldi, Inktomi, os
+vales largos do terreno "wispy", tudo no lugar; registro com o mapa de cor a
+um centésimo de grau), completado abaixo de 30 km com as crateras que a foto
+mostra e perfis estimados por lei citada, nunca somando sobre o que já está
+medido. O relevo sintético de hoje era um campo aleatório (não acertava
+nem Mamaldi nem Tirawa) e deformava a esfera em "batata". Decisão dele por
+prancha: *"vamos de A"* (resolução de hoje; o dobro custava 4× em memória
+por ganho pequeno). O miolo do relevo pela foto saiu de Jápeto para um
+módulo comum sem mudar um byte do que está no ar. A cadeia rodou no painel
+de terminal dele a pedido explícito (*"faça por favor"*) e o texto do
+terminal foi lido na íntegra a pedido dele: publicado = candidato A,
+conferido pixel a pixel; `data:verify` OK; `npm run done` verde (129
+arquivos, 3.544 testes). Provas: `capturas/reia/final-prancha.jpg` (antes ×
+depois no app de verdade), `dtm-prancha.jpg`, `r2-prancha.jpg`.
+
+**O que ele ainda decide:** publicar (merge em linha reta de `reia` no
+`main` e envio); apagar ou guardar os planos das rodadas (`PLAN-REIA.md`,
+`PLAN-EUROPA-JAPETO.md`); o subsolar com 4,4° de atraso pelo tempo de luz
+(BACKLOG).
+
+**Fila de assets combinada (07/10):** depois de Reia, as luas pequenas de
+Saturno com forma medida pela Cassini (receita do Hipérion: Jano, Epimeteu,
+Pandora, Prometeu, Atlas, Pã, Dafnis, Calipso, Telesto, Helena; Febe; Fobos e
+Deimos; a silhueta de Vesta pela Dawn), depois os corpos com relevo falso da
+cor (item 144) pelo detector de crateras, depois as luas de Urano (receita de
+Plutão), e por fim Urano/Netuno/Titã/Vênus como decisões de produto. Tritão
+segue pausado. Antes de tudo isso, a ordem de 06/10 que ele deixou: os nomes
+(E4c), a linha da lente, a dica de gestos, "More" cortado, Netuno/Tritão
+sumindo num salto.
+
+## O BASTÃO anterior (07/10, manhã) — EUROPA COM COR REAL E JÁPETO COM A CRISTA NO LUGAR (item 230) PUBLICADOS (`main` = `5c35a048`, merge em linha reta e push feitos no terminal dele a pedido dele — *"Faça o merge e o push, estou autorizando"*; publicação verde; no ar, altura e normal de Jápeto e o mapa de Europa com o mesmo sha256 dos locais)
 
 **Feito em 06–07/10 (plano em `PLAN-EUROPA-JAPETO.md`, revisto pelo GPT pelo
 Codex com a autorização dele — *"Você mesmo que usa o GPT. Você está
