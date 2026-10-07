@@ -4,7 +4,44 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
 
-## O BASTÃO — onde a rodada parou (07/10, tarde) — REIA COM RELEVO MEDIDO E CRATERAS PELA FOTO PUBLICADA (`main` = `b9f3c90c`, merge em linha reta e envio no terminal dele a pedido dele — *"ok, vamos merge commit etc"*; publicação verde; no ar, altura, normal, webp e manifesto com o mesmo sha256 dos locais). A PRÓXIMA CONVERSA COMEÇA LIMPA: ler só esta seção e, para a próxima obra, a "Fila de assets combinada" abaixo; os planos das duas rodadas (`PLAN-REIA.md`, `PLAN-EUROPA-JAPETO.md`) guardam a receita e os números
+## O BASTÃO — onde a rodada parou (07/10, noite) — A ORDEM DE 06/10 FEITA NO `main`, À ESPERA DA PUBLICAÇÃO (commits `3b322fb6`, `b894ff2c`, `822c30f8`, `d319840c`; nada enviado; a publicação é dele)
+
+**Feito em 07/10 (a palavra dele: *"vamos continuar de onde paramos?"*):** os
+cinco consertos da ordem de 06/10. (1) "More" cortado a 375 px em inglês: a
+barra do filme cabe inteira — bordas do conteúdo na margem de 5vw da legenda
+e da lente, vão de 0,4rem (medido a 360–414 px nas duas línguas). (2) A linha
+da lente sobre o Sol e a dica de gestos sobre o limbo da Terra: contorno
+colado nas três linhas pequenas e a lente no tom da dica (escolha dele, opção
+B, `capturas/ordem-06-10/lente-e-dica-prancha.jpg`). (3) Netuno/Tritão sumindo
+em 333,25 s e, a pedido dele, Urano em 318,25 s: a câmera vira para o próximo
+destino depois da legenda e tira os corpos do quadro antes do salto, pela
+receita da troca de relógio (giro de Tritão aprovado em vídeo;
+`capturas/viagem-solar/netuno-salto/`). (4) E4c, os nomes do filme em três
+degraus pela tabela do Atlas; nenhum nome sai da tela (o detalhe cede antes do
+nome — vale no Atlas também); Sagittarius A✱ apontado em "O último braço" e na
+cena seguinte, pela palavra dele: *"Os elementos de label, eles fazem parte das
+ferramentas que o diretor da cena usa com o motor de filmes para trazer
+informações importantes para aquele quadro. Se for o caso, isso deverá
+aparecer."* Aprovado pela folha e pelo vídeo (`capturas/ordem-06-10/nomes/`).
+`npm run done` verde (131 arquivos, 3.576 testes).
+
+**O que ele ainda decide:** publicar (enviar o `main`); o giro de Urano é mais
+rápido que o de Tritão (101°/s × 86°/s — adiantar a legenda de Urano ~0,8 s o
+deixaria pela metade); apagar ou guardar os planos das rodadas fechadas
+(`PLAN-REIA.md`, `PLAN-EUROPA-JAPETO.md`, `PLAN-VIAGEM-SOLAR.md`,
+`PLAN-PONTO-DE-LUZ.md`); o subsolar de Reia (BACKLOG).
+
+**Visto e não feito (leitura só, 07/10):** no salto Júpiter→Saturno (207,95 s)
+Ganimedes (~2 px) some no quadro; aos 261,95 s a mira pula 166° entre a pluma
+de Encélado e Titã e o play vira um giro rápido; no celular a dica do filme
+diz "espaço — retomar a viagem", e celular não tem tecla de espaço.
+
+**Próxima obra:** a "Fila de assets combinada" do bastão anterior, logo abaixo
+(as luas pequenas de Saturno pela receita do Hipérion). Outra conversa dele
+trabalha nesta mesma pasta (item 231 e as telas de carregamento): gravar um
+de cada vez — conferir `pgrep -fl "headless=new"` antes de abrir um Chrome.
+
+## O BASTÃO anterior (07/10, tarde) — REIA COM RELEVO MEDIDO E CRATERAS PELA FOTO PUBLICADA (`main` = `b9f3c90c`, merge em linha reta e envio no terminal dele a pedido dele — *"ok, vamos merge commit etc"*; publicação verde; no ar, altura, normal, webp e manifesto com o mesmo sha256 dos locais). A PRÓXIMA CONVERSA COMEÇA LIMPA: ler só esta seção e, para a próxima obra, a "Fila de assets combinada" abaixo; os planos das duas rodadas (`PLAN-REIA.md`, `PLAN-EUROPA-JAPETO.md`) guardam a receita e os números
 
 **Feito em 07/10 (plano em `PLAN-REIA.md`, revisto pelo GPT pelo Codex e
 conferido contra o código; a palavra dele: *"Pode começar por Reia, com a
