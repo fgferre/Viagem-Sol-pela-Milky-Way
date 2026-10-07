@@ -133,6 +133,19 @@ Jápeto
   `verify-assets.mjs:1139`); `npm run done`; fotos finais nas vistas da prancha e nos Atos II e III; merge em linha
   reta com a palavra dele; o push do `main` é dele; conferir no ar por sha256.
 
+## Resultado
+- **J0 (06/10, feito; `capturas/europa-japeto/j0-prancha.jpg`, `j0b-prancha.jpg`, candidatos em `j0-girado/`,
+  ferramentas em `capturas/europa-japeto/ferramentas/`):** o relevo girado meia volta põe a crista do mapa de altura em
+  170–314°E (medido no arquivo: faixas 169,8–289,7, 293,9–305,9 e 310,4–314,3°E), sobre Toledo e Tortelosa — o
+  diagnóstico está provado pelo número. Na foto, a diferença hoje × girado é sutil: limbos e sombreado fino nas vistas
+  de frente; só com o terminador em 230°E (jd 2461025,15) o girado mostra um sulco com parede de sombra cruzando a
+  cara escura em 246–279°E, com 1–2 níveis de contraste. Motivo: a crista de hoje chega a +7 km e a luz de frente achata
+  o relevo. O conserto barato acerta o LUGAR; só o relevo novo (J1, com a altura real) vai fazer a crista aparecer.
+  Achado de brinde: o mapa de COR já traz a crista real como uma linha fina mais clara no equador, de 180 a 300°E, a
+  +0,2..+1,6° de latitude (ondula) — é a fonte para traçar o caminho da crista em J1 ("refazê-lo pela foto"), e o
+  relevo girado cai em cima dela. A pose da ferramenta de foto deixa o equador na vertical da tela (a linha "vertical"
+  das fotos é a crista real do mapa de cor), a conferir antes de ler as próximas pranchas.
+
 ## Fora do escopo
 Os outros assets fracos do item 230 (Urano, Netuno, Vesta, Deimos, Tritão pausado, Ariel, Titã, Vênus); relevo de
 Europa (fica sem); altura em 16 bits no app (o carregador é `UnsignedByteType`, `texturas.ts:440`); a Cassini Regio
