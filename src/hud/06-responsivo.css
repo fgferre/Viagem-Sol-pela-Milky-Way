@@ -160,11 +160,21 @@
      da barra do Atlas no telefone (`09-celular.css`). Antes quebrava em
      duas (Entrar no Atlas · Explorar / Camadas · Cinema · Ajustes), sem
      maquete que a justificasse; decisão do dono, 08/09/2026. */
+  /* As bordas do conteúdo caem na margem de 5vw da legenda e da lente: os
+     16px da sombra de rolagem (`09-celular.css`) ficam FORA dela, e o teto
+     de 94vw da barra sai daqui. Com o vão de 0,4rem, "Enter the Atlas · Free flight · More" (330 px) cabe
+     inteiro a 375 px; abaixo disso a fileira volta a rolar. */
   .hud-root[data-fase='journey'] .controls-bar {
+    left: calc(5vw - 16px);
+    right: calc(5vw - 16px);
+    max-width: none;
     flex-wrap: nowrap;
     justify-content: flex-start;
     overflow-x: auto;
     scrollbar-width: none;
+  }
+  .hud-root[data-fase='journey'] .controls-bar > .atlas-barra-grupo {
+    gap: 0.4rem;
   }
   .hud-root[data-fase='journey'] .controls-bar::-webkit-scrollbar {
     display: none;
