@@ -37,5 +37,23 @@ export interface DefinicaoDaCena {
   /** segundos do desfecho depois de 100 % */
   duracaoFinal: number;
   /** lança erro quando o aparelho não tem WebGL2 */
-  criar(canvas: HTMLCanvasElement | OffscreenCanvas): Cena;
+  criar(canvas: HTMLCanvasElement | OffscreenCanvas, recursos?: RecursosDaCena): Cena;
+}
+
+/**
+ * UM RÓTULO QUE ACOMPANHA A CENA (nome de constelação, "você está aqui"):
+ * o worker não tem as fontes do app, então o hospedeiro o rasteriza na
+ * thread principal, na língua de agora, e entrega o bitmap pronto; a cena
+ * o desenha no próprio quadro, colado ao que ele nomeia, e não descola
+ * quando a thread principal congela. Sem o bitmap, a cena segue sem ele.
+ */
+export interface RotuloPronto {
+  bitmap: ImageBitmap;
+  /** tamanho em px de CSS (o bitmap vem em px do dispositivo) */
+  largura: number;
+  altura: number;
+}
+
+export interface RecursosDaCena {
+  rotulos: ReadonlyMap<string, RotuloPronto>;
 }
