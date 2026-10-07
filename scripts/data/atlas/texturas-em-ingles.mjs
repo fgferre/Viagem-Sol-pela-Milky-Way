@@ -179,12 +179,23 @@ export const EM_INGLES = new Map([
     'NASA 3D Resources — 3D model of Deimos (texture)',
   ],
   [
-    'NASA 3D Resources — Europa (mapa global; mono declarado)',
-    'NASA 3D Resources — Europa (global map; monochrome, declared)',
-  ],
-  [
     'NASA 3D Resources — Titã (720×360, névoa; mosaico Cassini fica pendente da bancada)',
     'NASA 3D Resources — Titan (720×360, haze only; the Cassini mosaic is still pending on the bench)',
+  ],
+
+  // ---- Europa (item 230, PLAN-EUROPA-JAPETO.md): o mosaico USGS de 500 m
+  // e a cor inferida do brilho — fonte, atribuição e o defeito
+  [
+    'Voyager e Galileo SSI — mosaico global de Europa a 500 m (USGS Astrogeology, 19631×9816, em cinza), com a cor inferida nesta casa a partir da foto em cor da Galileo PIA19048',
+    'Voyager and Galileo SSI — global mosaic of Europa at 500 m (USGS Astrogeology, 19631×9816, grayscale), with the color inferred here from the Galileo color image PIA19048',
+  ],
+  [
+    'Imagens: Voyager e Galileo SSI (NASA/JPL-Caltech); mosaico do USGS Astrogeology Science Center. Cor de referência: PIA19048 (NASA/JPL-Caltech/SETI Institute) e PIA00502 (NASA/JPL/DLR). Redução para 4096 px, giro de longitude, preenchimento do sul sem dado e cor inferida do brilho nesta casa (baixa-texturas.mjs, cor-europa.mjs).',
+    'Images: Voyager and Galileo SSI (NASA/JPL-Caltech); mosaic by the USGS Astrogeology Science Center. Reference color: PIA19048 (NASA/JPL-Caltech/SETI Institute) and PIA00502 (NASA/JPL/DLR). Reduction to 4096 px, longitude rotation, filling of the south with no data, and color inferred from the brightness done here (baixa-texturas.mjs, cor-europa.mjs).',
+  ],
+  [
+    'mosaico real da Voyager e da Galileo a 500 m, mas em cinza: o brilho é medido e a cor não — não existe mapa global em cor de Europa; a cor é INFERIDA do brilho nesta casa: o gelo claro quase neutro e o material escuro avermelhado das linhas, os dois medidos na foto em cor da Galileo de um hemisfério, misturados conforme o brilho de cada ponto, mais o amarelado do hemisfério que vem atrás na órbita; o hemisfério da frente nunca foi fotografado em cor, e a calota sul sem imagem (a partir de 77 a 84° sul) foi preenchida com o tom da faixa vizinha',
+    'real Voyager and Galileo mosaic at 500 m, but in gray: the brightness is measured and the color is not — no global color map of Europa exists; the color is INFERRED from the brightness here: the nearly neutral bright ice and the reddish dark material of the lines, both measured in a Galileo color image of one hemisphere, blended according to the brightness of each point, plus the yellowish tint of the hemisphere that trails in its orbit; the leading hemisphere was never imaged in color, and the south cap with no images (from 77 to 84° south) was filled with the tone of the neighboring band',
   ],
 
   // ---- fontes: mosaicos Cassini graduados no projeto Saturn ---------
@@ -453,10 +464,6 @@ export const EM_INGLES = new Map([
   [
     '720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou',
     '720×360, the orange haze and nothing else: the higher-resolution Cassini mosaic shows longitude seams on the sphere and did not make it in',
-  ],
-  [
-    'mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou',
-    'a monochrome global map: the higher-resolution USGS mosaic carries 68 black lines of missing data over the south pole and did not make it in',
   ],
   // item 147 — as cinco de Urano (uma frase só) e Tritão
   [

@@ -13,13 +13,41 @@ WRAP) e é monocromático no produto USGS sem crédito redigido no
 momento do julgamento. A bancada não promoveu. Fica pendente: crédito
 USGS redigido + emendas tratadas.
 
-## Europa — 68 linhas de no-data
+## Europa — o mosaico USGS entrou, com a cor inferida (item 230)
 
-Incumbente: NASA 3D Resources, **1440×720**, 611 KB, mono declarado.
-O mosaico USGS/Voyager+Galileo traz **68 linhas pretas de no-data**
-sobre a calota sul. Sem máscara/preenchimento não entra: o WRAP faria
-um anel negro no polo. Pendente: as 68 linhas tratadas + crédito USGS
-redigido.
+Incumbente ATÉ o item 230: NASA 3D Resources, **1440×720**, 611 KB, mono
+declarado — era o próprio mosaico USGS em cinza, reduzido e com o contraste
+esticado (as linhas saíam pretas). O mosaico de mais resolução (USGS
+Astrogeology, Voyager–Galileo SSI, **19631×9816**, 500 m, domínio público)
+tinha ficado de fora pelas **68 linhas pretas de no-data** sobre a calota
+sul: sem preenchimento, o WRAP faria um anel negro no polo. Agora entra, a
+**4096×2048**, pela cadeia (`baixa-texturas.mjs`, fonte no cache
+`.cache/europa/` com sha256 pinado), e o que a casa faz com ele é:
+
+- redução por média de área só do que tem dado (o vazio não escurece a
+  borda) e meia volta (a borda esquerda do mosaico está em 0°E);
+- a calota sul sem imagem (borda irregular de −77° a −84°) preenchida
+  coluna a coluna com a média da última faixa de 1° com dado, indo à média
+  do anel no polo — inventada e confessada; sai acastanhada, porque a
+  última faixa é mais escura;
+- o brilho com um ganho só, em luz linear, que leva a média à do mapa
+  antigo (a exposição não muda; o contraste é o nativo do mosaico);
+- a **cor inferida do brilho** (`cor-europa.mjs`, receita (a), tom
+  meio-termo — a palavra do dono em 07/10/2026, pela prancha do E0): não
+  existe mapa global em cor de Europa com licença livre (busca de
+  06/10/2026). Dois componentes medidos na foto em cor da Galileo PIA19048
+  (hemisfério anti-Júpiter, ~20 % do globo) — a planície de gelo claro,
+  quase neutra, e o material escuro avermelhado de manchas, linhas e margens
+  de banda (Clark 1998: um componente só) — misturados pela fração que o
+  brilho de cada ponto dá; mais o amarelado do hemisfério traseiro (medido:
+  +12,6 em b* rumo a 90°E; o PIA00502 dá +12,1) e os polos mais brancos. O
+  hemisfério dianteiro (205→352°E) não tem cor em foto nenhuma: lá é
+  extrapolação pura. A mistura guiada pelo brilho explica cerca de metade da
+  cor real medida (RMS de a*b* 5,9 contra 8,4 da cor constante).
+
+O map.jpg só é gravado com o sha256 do RGB aprovado (`9d2b9b09…1a0e`, o
+candidato `a-meio` do E1); a prova por hash é
+`capturas/europa-japeto/ferramentas/prova-cadeia-europa.mjs`.
 
 ## Ceres — o inventado saiu (item 141, 3ª fase)
 
@@ -37,7 +65,7 @@ uniforme e preenchimento do polo sul. O mapa inventado não volta.
 O doador servia Júpiter canônico, Urano, Titã incumbente e Europa
 ativa **sem linha de licença**. A casa não os copiou. Júpiter/Urano
 cá são SSS CC BY 4.0 (o `8k_jupiter` mede **4096** px — o nome
-mente). Titã/Europa cá são NASA 3D (acima). O “candidato de Júpiter”
+mente). Titã cá é NASA 3D, e Europa o mosaico USGS (acima). O “candidato de Júpiter”
 do doador era um mapa **de Io** (NASA 3D Io B).
 
 ## GLB/OBJ — pipeline de malha irregular
@@ -771,7 +799,7 @@ tocar num `.mjs`.
 | pluto/map | mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto |
 | charon/map | mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto |
 | titan/map | 720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou |
-| europa/map | mapa global monocromático: o mosaico USGS de mais resolução traz 68 linhas pretas de vazio sobre o polo sul e não entrou |
+| europa/map | mosaico real da Voyager e da Galileo a 500 m, mas em cinza: o brilho é medido e a cor não — não existe mapa global em cor de Europa; a cor é INFERIDA do brilho nesta casa: o gelo claro quase neutro e o material escuro avermelhado das linhas, os dois medidos na foto em cor da Galileo de um hemisfério, misturados conforme o brilho de cada ponto, mais o amarelado do hemisfério que vem atrás na órbita; o hemisfério da frente nunca foi fotografado em cor, e a calota sul sem imagem (a partir de 77 a 84° sul) foi preenchida com o tom da faixa vizinha |
 | venus/map | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |
 | enceladus/height | DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul |
 | rhea/height | relevo SINTÉTICO: não existe DTM público de Reia — o campo de crateras foi gerado por código no projeto Saturn do autor, e não é medida |

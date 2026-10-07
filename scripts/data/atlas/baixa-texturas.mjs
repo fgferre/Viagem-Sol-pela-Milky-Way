@@ -55,9 +55,10 @@
 //     Dawn para CERES, que substitui o `2k_ceres_fictional` do SSS — a
 //     única textura da casa cuja própria fonte se declarava inventada.
 //     Voltou no item 149 com o mosaico global de 300 m de CARONTE
-//     (New Horizons, LORRI+MVIC, julho de 2017). Pendentes: mosaicos
-//     Titan/Europa da bancada; crédito redigido ANTES de qualquer
-//     promoção — docs/reference/ASSETS.md.
+//     (New Horizons, LORRI+MVIC, julho de 2017), e no item 230 com o de
+//     500 m de EUROPA (Voyager–Galileo), que entra pelo CACHE (ver
+//     `arquivoDoCache`). Pendente: o mosaico de Titã da bancada; crédito
+//     redigido ANTES de qualquer promoção — docs/reference/ASSETS.md.
 //   - NASA Photojournal — https://science.nasa.gov/photojournal/ (bytes
 //     em assets.science.nasa.gov). Entrou no item 149 com o PIA11707, o
 //     mapa global EM COR de PLUTÃO da Ralph/MVIC: é o único produto de
@@ -85,6 +86,12 @@
 // gravado se o sha256 do RGB dela for o aprovado — o PORTÃO, como o do
 // relevo inventado em `gera-normal-de-dem.mjs` (ver `girarMapa`).
 //
+// A COR DE EUROPA (PLAN-EUROPA-JAPETO.md, item 230): a entrada com
+// `corEuropa` lê o mosaico USGS de 500 m do cache (`arquivoDoCache`,
+// conferido por sha256), reduz por média de área, dá a meia volta e pinta
+// pela MESMA `corDeEuropa` (`cor-europa.mjs`) da prévia; o map.jpg só é
+// gravado se o sha256 do RGB for o aprovado (`portaoDaCor`).
+//
 // ESCOPO OPCIONAL (o mesmo do otimiza-texturas): sem corpo nomeado, a
 // tabela inteira; com corpos, só eles.
 //
@@ -94,13 +101,14 @@
 // ============================================================
 
 import { createHash } from 'node:crypto';
-import { createWriteStream } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { copyFile, mkdir, readFile, stat, unlink } from 'node:fs/promises';
 import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { Y_MEDIO_ALVO, corDeEuropa, reduzPorMediaDeArea } from './cor-europa.mjs';
 import { inventaCorDoCorpo } from './cor-inventada.mjs';
 import { decideGravacao, lerCacheDeAlturas } from './gera-normal-de-dem.mjs';
 import {
@@ -129,7 +137,8 @@ const USGS_BYTES = 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic';
 // `bake` marca as entradas cujo caminho online baixa um TIFF e assa
 // (normal: reencode jpg; roughness: grayscale + NEGATE — a inversão
 // do item 14); no offline elas copiam o jpg já assado do doador.
-const FONTES = [
+// Exportada para a prova de que a cadeia reproduz uma prévia aprovada.
+export const FONTES = [
   {
     corpo: 'earth',
     canal: 'map',
@@ -232,22 +241,44 @@ const FONTES = [
   },
   // ---- F5 (luas em lote). NASA 3D Resources, a mesma linha
   // Fobos/Deimos: crédito NASA/JPL-Caltech redigido. Os 2k_titan /
-  // 2k_europa do doador NÃO entram (licença não documentada). Os
-  // mosaicos USGS/Cassini ficam de fora nesta fase (bancada: Titã
-  // monocromático com costuras; Europa com 68 linhas pretas no polo
-  // sul — pendência nomeada, não promoção). Titã NASA 3D tem 49 KB
-  // (720×360): o piso de 50 KB da tabela cederia um falso-negativo.
+  // 2k_europa do doador NÃO entram (licença não documentada). O mosaico
+  // Cassini de Titã fica de fora (bancada: monocromático com costuras —
+  // pendência nomeada, não promoção). Titã NASA 3D tem 49 KB (720×360):
+  // o piso de 50 KB da tabela cederia um falso-negativo.
   {
     corpo: 'io',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/jupiter-io-b/',
     nomeNoDoador: 'io_nasa_3d_resource.jpg',
   },
+  // EUROPA (item 230, PLAN-EUROPA-JAPETO.md): o mosaico USGS Voyager–Galileo
+  // de 500 m (19631×9816, um canal, 0 = sem dado) no lugar do mapa NASA 3D,
+  // que era ele mesmo em cinza, reduzido e esticado. O host não está na
+  // allowlist do download, de propósito: a fonte entra pelo CACHE, conferida
+  // por sha256; a falta dele ou outro hash param a entrada, que diz de onde
+  // baixar.
+  // A borda esquerda do mosaico está em 0°E (provado por Pwyll, Tyre e
+  // Callanish na etapa E0): giro 180 − 0 = 180. A redução é a média de área
+  // só do que tem dado (`reduzPorMediaDeArea`, não o lanczos nem o
+  // tapa-buraco por valor), e o sul sem dado é preenchido por coluna dentro
+  // de `corDeEuropa`. A palavra dele (07/10/2026, prancha do E0): o tom
+  // meio-termo; a receita (a) é a do E1 (candidato `a-meio`).
   {
     corpo: 'europa',
     canal: 'map',
-    url: 'https://science.nasa.gov/3d-resources/',
-    nomeNoDoador: 'europa_nasa_3d_resource.jpg',
+    url: 'https://planetarymaps.usgs.gov/mosaic/Europa_Voyager_GalileoSSI_global_mosaic_500m.tif',
+    arquivoDoCache: {
+      arquivo: '.cache/europa/Europa_Voyager_GalileoSSI_global_mosaic_500m.tif',
+      sha256: 'a323f0c9ccb47d5af9902ea8297fe81f9a9708795645b80801f103c3f7c9a624',
+    },
+    giroDeLongitudeGraus: 180,
+    larguraDoDestino: 4096,
+    corEuropa: {
+      tom: 'meio',
+      sha256Aprovado: {
+        'receita:a,tom:meio': '9d2b9b096e366372fdc5ad3ea0235595e400b22a3fd950b89f75752066fb1a0e',
+      },
+    },
   },
   {
     corpo: 'ganymede',
@@ -658,6 +689,33 @@ async function validarImagem(caminho, minimo = MINIMO_DE_BYTES) {
   return { bytes: size, largura: meta.width, altura: meta.height, formato: meta.format };
 }
 
+/**
+ * A FONTE QUE ENTRA PELO CACHE (`arquivoDoCache`, item 230): o arquivo em
+ * `<raiz>/<arquivo>` tem de existir e ter o sha256 pinado — outro arquivo
+ * mudaria o mapa calado. Faltou ou não bate: ERRO dizendo de onde baixar
+ * (`url`; o host não está na allowlist de `baixar`, e é de propósito).
+ * Devolve o caminho absoluto.
+ */
+export async function conferirArquivoDoCache({ corpo, canal, url, arquivoDoCache }) {
+  const { arquivo, sha256: pinado } = arquivoDoCache;
+  const caminho = path.resolve(rootDirectory, arquivo);
+  const comoBaixar = `baixe ${url} para ${arquivo} (fora da allowlist do download: a fonte entra pelo cache)`;
+  const hash = createHash('sha256');
+  try {
+    for await (const pedaco of createReadStream(caminho)) hash.update(pedaco);
+  } catch (erro) {
+    if (erro.code !== 'ENOENT') throw erro;
+    throw new Error(`${corpo}/${canal}: falta ${arquivo} — ${comoBaixar}.`);
+  }
+  const obtido = hash.digest('hex');
+  if (obtido !== pinado) {
+    throw new Error(
+      `${corpo}/${canal}: ${arquivo} tem sha256 ${obtido}, o pinado é ${pinado} — não asso com outro arquivo; ${comoBaixar}.`
+    );
+  }
+  return caminho;
+}
+
 /** Bake do PBR da Terra (vendorizado de bake-earth-pbr.js, item 14). */
 async function assarPbr(tiffPath, destino, tipo) {
   const fonte = sharp(await readFile(tiffPath));
@@ -864,12 +922,32 @@ async function assarIlustracaoIA(origem, destino, corpo) {
  * tapa-buraco e da redução: a cópia sai antes de `preencherVazioSemDado`,
  * que escreve em cima. Exportada para a prova de que a cadeia reproduz a
  * prévia, que a chama com o destino fora de `public/`.
+ *
+ * A COR DE EUROPA (`corEuropa`, item 230) entra no mesmo ponto, por
+ * `pintaEuropa`, que tem a redução própria antes do giro.
  */
 const GRAUS_DA_JANELA_DO_VAZIO = 14;
-export async function girarMapa(
-  origem, destino, canal,
-  { giroGraus = 0, larguraDoDestino, preencherVazio = false, rotulo = '', corpo, corInventada } = {}
+export async function girarMapa(origem, destino, canal, opcoes = {}) {
+  const { pixels, info } = await pixelsDoMapa(origem, opcoes);
+  const saida = sharp(pixels, {
+    raw: { width: info.width, height: info.height, channels: info.channels },
+  });
+  await (CANAIS_DE_DADO.has(canal)
+    ? saida.png({ compressionLevel: 9, adaptiveFiltering: false })
+    : saida.jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true })
+  ).toFile(destino);
+}
+
+/**
+ * Os pixels que `girarMapa` codifica, em memória — `{ pixels, info }`, o RGB
+ * que o portão aprovou quando há portão. Exportada para a prova por hash, que
+ * não grava nada.
+ */
+export async function pixelsDoMapa(
+  origem,
+  { giroGraus = 0, larguraDoDestino, preencherVazio = false, rotulo = '', corpo, corInventada, corEuropa } = {}
 ) {
+  if (corEuropa) return pintaEuropa(origem, { giroGraus, larguraDoDestino, rotulo, corEuropa });
   let entrada = sharp(origem, { limitInputPixels: false }).removeAlpha();
   let mosaicoCru = null;
   if (preencherVazio) {
@@ -901,13 +979,51 @@ export async function girarMapa(
   const pixels = corInventada
     ? await inventaCorDoMapa({ origem, rotulo, corpo, corInventada, cru: mosaicoCru, cor: girado, info })
     : girado;
-  const saida = sharp(pixels, {
-    raw: { width: info.width, height: info.height, channels: info.channels },
-  });
-  await (CANAIS_DE_DADO.has(canal)
-    ? saida.png({ compressionLevel: 9, adaptiveFiltering: false })
-    : saida.jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true })
-  ).toFile(destino);
+  return { pixels, info };
+}
+
+/**
+ * O PASSO DA COR DE EUROPA de `pixelsDoMapa` (item 230): o mosaico de UM
+ * canal reduzido por `reduzPorMediaDeArea` (a média de área só do que tem
+ * dado — o lanczos misturaria o 0 do vazio na borda dele), girado como
+ * qualquer mapa da tabela e pintado por `corDeEuropa` com a receita (a), o
+ * tom da entrada e a exposição pinada (`Y_MEDIO_ALVO`): a MESMA função das
+ * prévias do E1, que esta cadeia reproduz byte a byte
+ * (`capturas/europa-japeto/ferramentas/prova-cadeia-europa.mjs`). O sul sem
+ * dado é preenchido por coluna lá dentro. Imprime versões e contas e passa
+ * pelo PORTÃO (`portaoDaCor`, chave `receita:a,tom:<tom>`): recusado, o erro
+ * leva a mensagem e o map.jpg NÃO é gravado.
+ */
+async function pintaEuropa(origem, { giroGraus, larguraDoDestino, rotulo, corEuropa }) {
+  if (!larguraDoDestino) throw new Error(`${rotulo}: a cor de Europa pede larguraDoDestino.`);
+  const { data, info } = await sharp(origem, { limitInputPixels: false })
+    .extractChannel(0)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  if (info.channels !== 1) throw new Error(`${rotulo}: esperava o mosaico de um canal (${info.channels}).`);
+  const largura = larguraDoDestino;
+  const altura = largura / 2;
+  const reduzido = reduzPorMediaDeArea(data, info.width, info.height, largura);
+  const cinza = giraColunasDeImagem(reduzido, largura, altura, 1, giroGraus);
+  const chave = `receita:a,tom:${corEuropa.tom}`;
+  console.log(
+    `${rotulo}: cor de Europa, ${chave}, mosaico ${info.width}×${info.height} → ${largura}×${altura}; ` +
+      `versões: node ${process.version}, V8 ${process.versions.v8}, sharp ${sharp.versions.sharp}, ` +
+      `libvips ${sharp.versions.vips}`
+  );
+  const r = corDeEuropa({ cinza, largura, altura, receita: 'a', tom: corEuropa.tom, yMedioAlvo: Y_MEDIO_ALVO });
+  const preenchidos = r.preenchido.reduce((s, v) => s + v, 0);
+  console.log(
+    `  ganho linear ${r.ganho.toFixed(4)}, ${r.saturados} texels saturados, ` +
+      `${preenchidos} preenchidos no sul, ${r.encolhidos} com a croma encolhida pela gama`
+  );
+  const portao = portaoDaCor({ rotulo, chave, rgb: r.rgb, aprovados: corEuropa.sha256Aprovado, campo: 'corEuropa' });
+  if (!portao.grava) throw new Error(portao.mensagem);
+  console.log(portao.mensagem);
+  return {
+    pixels: Buffer.from(r.rgb.buffer, r.rgb.byteOffset, r.rgb.length),
+    info: { width: largura, height: altura, channels: 3 },
+  };
 }
 
 /**
@@ -985,8 +1101,9 @@ async function inventaCorDoMapa({ origem, rotulo, corpo, corInventada, cru, cor,
  * do jpg decodificado, que o codificador muda (o mozjpeg mexe ±1 DN até
  * fora do alvo). A decisão é a do portão do relevo (`decideGravacao`), com
  * a mensagem trazida ao map.jpg. Pura: `{ grava, mensagem, sha256 }`.
+ * `campo` é o da entrada que guarda os aprovados (`corEuropa` em Europa).
  */
-export function portaoDaCor({ rotulo, chave, rgb, aprovados }) {
+export function portaoDaCor({ rotulo, chave, rgb, aprovados, campo = 'corInventada' }) {
   const sha256 = createHash('sha256').update(rgb).digest('hex');
   const { grava, mensagem } = decideGravacao({ nome: rotulo, chave, sha256, aprovados });
   return {
@@ -994,8 +1111,24 @@ export function portaoDaCor({ rotulo, chave, rgb, aprovados }) {
     sha256,
     mensagem: mensagem
       .replace('o normal.png', 'o map.jpg')
-      .replace('vazioInventado.sha256Aprovado', 'corInventada.sha256Aprovado')
+      .replace('vazioInventado.sha256Aprovado', `${campo}.sha256Aprovado`)
       .replace('o relevo mudou', 'a cor mudou'),
+  };
+}
+
+/**
+ * As opções de `girarMapa` que uma linha de FONTES pede — uma função só, para
+ * a prova por hash chamar a cadeia com exatamente o que a cadeia usa.
+ */
+export function opcoesDoMapa(fonte) {
+  return {
+    giroGraus: fonte.giroDeLongitudeGraus,
+    larguraDoDestino: fonte.larguraDoDestino,
+    preencherVazio: fonte.preencherVazio,
+    rotulo: `${fonte.corpo}/${fonte.canal}`,
+    corpo: fonte.corpo,
+    corInventada: fonte.corInventada,
+    corEuropa: fonte.corEuropa,
   };
 }
 
@@ -1054,8 +1187,11 @@ async function main() {
     // Offline: cópia ARQUIVO A ARQUIVO do doador (nunca a pasta). Entrada
     // SEM par no doador — o mosaico Dawn de Ceres e os dois da New Horizons
     // (item 149) — baixa da fonte mesmo aqui: o doador nunca as teve, e
-    // fingir o contrário quebraria o modo.
-    if (fonte.arquivoLocal) {
+    // fingir o contrário quebraria o modo. Entrada com `arquivoDoCache`
+    // (item 230) não baixa nunca, nem copia do doador: confere e copia.
+    if (fonte.arquivoDoCache) {
+      await copyFile(await conferirArquivoDoCache(fonte), cru);
+    } else if (fonte.arquivoLocal) {
       await copyFile(
         path.resolve(path.dirname(fileURLToPath(import.meta.url)), fonte.arquivoLocal), cru
       );
@@ -1077,16 +1213,7 @@ async function main() {
         } else if (fonte.bake === 'mosaico-ceres') await assarMosaicoDeCeres(cru, destino);
         else if (fonte.bake === 'ilustracao-ia') await assarIlustracaoIA(cru, destino, fonte.corpo);
         else if (fonte.bake) await assarPbr(cru, destino, fonte.bake);
-        else {
-          await girarMapa(cru, destino, fonte.canal, {
-            giroGraus: fonte.giroDeLongitudeGraus,
-            larguraDoDestino: fonte.larguraDoDestino,
-            preencherVazio: fonte.preencherVazio,
-            rotulo: `${fonte.corpo}/${fonte.canal}`,
-            corpo: fonte.corpo,
-            corInventada: fonte.corInventada,
-          });
-        }
+        else await girarMapa(cru, destino, fonte.canal, opcoesDoMapa(fonte));
       } finally {
         await unlink(cru).catch(() => {});
       }
@@ -1098,7 +1225,7 @@ async function main() {
     console.log(
       `${fonte.corpo}/${fonte.canal}: ${medido.largura}x${medido.altura} ` +
         `${medido.formato}, ${(medido.bytes / 1048576).toFixed(2)} MB ` +
-        `(${diretorioDoador && fonte.nomeNoDoador ? 'offline, doador' : 'rede'}).`
+        `(${fonte.arquivoDoCache ? 'cache local' : diretorioDoador && fonte.nomeNoDoador ? 'offline, doador' : 'rede'}).`
     );
   }
   console.log(

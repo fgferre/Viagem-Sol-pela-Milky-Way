@@ -8,13 +8,17 @@
 // chamam o mesmo `corDeEuropa`, e o sha256 do RGB é o portão.
 //
 // NESTA ORDEM:
+//  0. A REDUÇÃO (`reduzPorMediaDeArea`): o mosaico de 19631 px vai à
+//     largura da casa pela média de área SÓ do que tem dado (o 0 do vazio
+//     fica fora da média), na convenção do próprio mosaico; a meia volta é
+//     o giro de colunas da cadeia (`giroDeLongitudeGraus: 180`).
 //  1. O VAZIO DO SUL (o mosaico não cobre o sul de −77..−84°): preenchido
 //     POR COLUNA abaixo da última linha válida com a média da última faixa
 //     de 1°, suavizada ao longo da longitude, indo à média do anel no polo
 //     (sem cata-vento). INVENTADO, marcado em `preenchido`.
 //  2. OS NÍVEIS: um ganho só, em luz linear, que leva a média global (por
-//     área) ao mapa de hoje do app — a exposição não muda e o contraste é o
-//     nativo do mosaico (offset 0).
+//     área) à do mapa antigo do app (`Y_MEDIO_ALVO`, pinada) — a exposição
+//     não muda e o contraste é o nativo do mosaico (offset 0).
 //  3. A CROMA, receita (a) "mistura" (Clark 1998: manchas, lineae e margens
 //     de banda são UM componente escuro avermelhado misturado à planície
 //     clara): f = (Lp − L)/(Lp − Le) preso a [0, 1], pelo L* do cinza;
@@ -32,8 +36,9 @@
 //     croma encolhe (a luminância não).
 //
 // A CONVENÇÃO DA CASA: equiretangular, linha 0 = +90°N, a coluna i em
-// (180 + (i+½)·360/W) mod 360 °E (`longitudeDaColuna`). O cinza chega já
-// nela (o mosaico tem 0°E na borda esquerda: meia volta ao reduzir).
+// (180 + (i+½)·360/W) mod 360 °E (`longitudeDaColuna`). O cinza de
+// `corDeEuropa` chega já nela (o mosaico tem 0°E na borda esquerda: meia
+// volta depois de reduzir).
 // ============================================================
 
 import { createHash } from 'node:crypto';
@@ -87,6 +92,17 @@ export const TONS = Object.freeze({
   T3: Object.freeze({ nome: 'natural-suave', ganho: 1.1, giroGraus: -8.6, desloc: Object.freeze([-0.73, 2.94]) }),
   meio: Object.freeze({ nome: 'meio-termo', ganho: Math.sqrt(1.277), giroGraus: -12.9 / 2, desloc: Object.freeze([0.03 / 2, 8.55 / 2]) }),
 });
+
+/**
+ * A EXPOSIÇÃO: a média linear por área (peso cos lat, Y = 0,2126 R + 0,7152 G
+ * + 0,0722 B) do `map.jpg` NASA 3D que o app mostrava até o item 230 (1440×720,
+ * sha256 50d01ca5c01352d1c507bb17fefd1c46ba11260305656250062c6cdac89c8ebf),
+ * medida pela prévia do E1. PINADA, e não medida na cadeia: a cadeia grava em
+ * cima daquele arquivo, e o mapa aprovado tem de sair só do USGS e destes
+ * números (a prova `capturas/europa-japeto/ferramentas/prova-cadeia-europa.mjs`
+ * remede enquanto o arquivo antigo existir).
+ */
+export const Y_MEDIO_ALVO = 0.4445987364168945;
 
 /** A costura da receita (b): passa-baixa da diferença e largura da faixa. */
 export const COSTURA = Object.freeze({ sigmaDiferencaKm: 5, larguraGraus: 10 });
@@ -161,6 +177,69 @@ function escreveRgb(L, a, b, rgb, k) {
   return encolheu;
 }
 escreveRgb.tmp = new Float64Array(3);
+
+// ------------------------------------------------------------
+// 0. A REDUÇÃO
+// ------------------------------------------------------------
+
+/**
+ * O mosaico (1 canal, `larguraFonte`×`alturaFonte`, 0 = sem dado) reduzido a
+ * `largura`×`largura/2` pela média de área: cada texel de saída é a média,
+ * ponderada pela fração coberta de cada pixel de origem, SÓ dos pixels com
+ * dado — o vazio não escurece a borda. Texel sem dado nenhum sai 0; com dado,
+ * sai ≥ 1. Na convenção do mosaico (a borda esquerda dele fica na esquerda).
+ * As colunas somam por prefixo fracionário: tudo cabe em float64 sem
+ * arredondar, e por isso a meia volta depois da redução dá os mesmos bytes que
+ * a redução já girada da etapa E0.
+ */
+export function reduzPorMediaDeArea(dados, larguraFonte, alturaFonte, largura) {
+  const altura = largura / 2;
+  if (dados.length !== larguraFonte * alturaFonte) {
+    throw new Error(`reduzPorMediaDeArea: ${dados.length} bytes para ${larguraFonte}×${alturaFonte}.`);
+  }
+  const sx = larguraFonte / largura;
+  const sy = alturaFonte / altura;
+  const acS = new Float64Array(largura);
+  const acC = new Float64Array(largura);
+  const PS = new Float64Array(larguraFonte + 1);
+  const PC = new Float64Array(larguraFonte + 1);
+  const saida = new Uint8Array(largura * altura);
+  // a soma do prefixo até a posição fracionária u, com volta
+  const P = (pre, u) => {
+    const voltas = Math.floor(u / larguraFonte);
+    const r = u - voltas * larguraFonte;
+    const i = Math.floor(r);
+    const f = r - i;
+    const v = i < larguraFonte ? pre[i + 1] - pre[i] : 0;
+    return voltas * pre[larguraFonte] + pre[i] + f * v;
+  };
+  for (let y = 0; y < altura; y += 1) {
+    acS.fill(0);
+    acC.fill(0);
+    const v0 = y * sy;
+    const v1 = (y + 1) * sy;
+    for (let j = Math.floor(v0); j < Math.min(alturaFonte, Math.ceil(v1)); j += 1) {
+      const wj = Math.min(v1, j + 1) - Math.max(v0, j);
+      if (wj <= 0) continue;
+      const lin = j * larguraFonte;
+      for (let i = 0; i < larguraFonte; i += 1) {
+        const d = dados[lin + i];
+        PS[i + 1] = PS[i] + d;
+        PC[i + 1] = PC[i] + (d > 0 ? 1 : 0);
+      }
+      for (let x = 0; x < largura; x += 1) {
+        const u0 = x * sx;
+        const u1 = u0 + sx;
+        acS[x] += wj * (P(PS, u1) - P(PS, u0));
+        acC[x] += wj * (P(PC, u1) - P(PC, u0));
+      }
+    }
+    for (let x = 0; x < largura; x += 1) {
+      saida[y * largura + x] = acC[x] > 1e-6 ? Math.max(1, Math.min(255, Math.round(acS[x] / acC[x]))) : 0;
+    }
+  }
+  return saida;
+}
 
 // ------------------------------------------------------------
 // 1. O VAZIO DO SUL

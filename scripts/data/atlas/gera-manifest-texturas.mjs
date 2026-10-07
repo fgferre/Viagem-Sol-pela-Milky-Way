@@ -31,7 +31,7 @@
 // A CONFISSÃO SAI DO ASSETS.md (item 74 parte B, 2026-08-22, que
 // fecha os itens 19 e 20). A ficha do objeto imprime, na seção "a
 // imagem", o defeito MEDIDO de cada mapa — a cor de Ceres que não é
-// medida, as emendas de Titã, as 68 linhas de Europa, Vênus sem foto
+// medida, as emendas de Titã, a cor inferida de Europa, Vênus sem foto
 // em luz visível — e a forma dos quatro corpos que são elipsoide
 // tendo malha publicada. Esses vereditos já moram, inteiros, em
 // `docs/reference/ASSETS.md`; então é ELE que este gerador lê, numa
@@ -190,8 +190,9 @@ const ORIGENS = {
     proveniencia: 'medido',
   },
   // ---- F5 (luas). NASA 3D Resources, crédito redigido. 2k_titan /
-  // 2k_europa sem licença NÃO entram; mosaicos USGS/Cassini ficam
-  // pendentes da bancada (Titã: costuras; Europa: 68 linhas pretas).
+  // 2k_europa sem licença NÃO entram; o mosaico Cassini de Titã fica
+  // pendente da bancada (costuras). Europa: o mosaico USGS de 500 m
+  // desde o item 230, com a cor inferida do brilho nesta casa.
   'io/map': {
     fonte: 'NASA 3D Resources — Io (B)',
     url: 'https://science.nasa.gov/3d-resources/jupiter-io-b/',
@@ -200,11 +201,13 @@ const ORIGENS = {
     proveniencia: 'medido',
   },
   'europa/map': {
-    fonte: 'NASA 3D Resources — Europa (mapa global; mono declarado)',
-    url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Jupiter%20-%20Europa',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
-    proveniencia: 'medido',
+    fonte:
+      'Voyager e Galileo SSI — mosaico global de Europa a 500 m (USGS Astrogeology, 19631×9816, em cinza), com a cor inferida nesta casa a partir da foto em cor da Galileo PIA19048',
+    url: 'https://planetarymaps.usgs.gov/mosaic/Europa_Voyager_GalileoSSI_global_mosaic_500m.tif',
+    licenca: 'domínio público (NASA/USGS)',
+    atribuicao:
+      'Imagens: Voyager e Galileo SSI (NASA/JPL-Caltech); mosaico do USGS Astrogeology Science Center. Cor de referência: PIA19048 (NASA/JPL-Caltech/SETI Institute) e PIA00502 (NASA/JPL/DLR). Redução para 4096 px, giro de longitude, preenchimento do sul sem dado e cor inferida do brilho nesta casa (baixa-texturas.mjs, cor-europa.mjs).',
+    proveniencia: 'derivado',
   },
   'ganymede/map': {
     fonte: 'NASA 3D Resources — Ganimedes',

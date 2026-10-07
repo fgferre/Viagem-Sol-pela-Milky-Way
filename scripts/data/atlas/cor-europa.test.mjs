@@ -1,12 +1,19 @@
-// Serve: lei — a cor de Europa (item 230, E1): a fração escura presa e monotônica, a costura sem degrau, o sul sem linha vazia e o mesmo mapa para a mesma entrada
+// Serve: lei — a cor de Europa (item 230, E1 e F): a fração escura presa e monotônica, a costura sem degrau, o sul sem linha vazia, o mesmo mapa para a mesma entrada, a redução que ignora o vazio, e a entrada da cadeia presa ao cache pinado e ao portão por hash
 // ============================================================
 // Grades pequenas e sintéticas (o mosaico de 4096 é da prévia): um cinza
 // sorteado por LCG com borda sul irregular e buracos, e uma "foto" com
 // croma constante num disco — o passa-baixa dela é a própria constante,
-// então o que a costura acrescenta é só a rampa.
+// então o que a costura acrescenta é só a rampa. A prova de que a cadeia
+// reproduz o candidato aprovado byte a byte é por hash, fora daqui
+// (`capturas/europa-japeto/ferramentas/prova-cadeia-europa.mjs`).
 // ============================================================
+import { createHash } from 'node:crypto';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { MEDIDAS, corDeEuropa, costuraDoHemisferio, fracaoEscura, preencheSul, sha256 } from './cor-europa.mjs';
+import { FONTES, conferirArquivoDoCache, portaoDaCor } from './baixa-texturas.mjs';
+import { MEDIDAS, corDeEuropa, costuraDoHemisferio, fracaoEscura, preencheSul, reduzPorMediaDeArea, sha256 } from './cor-europa.mjs';
 
 function cinzaSintetico(W, H, semente = 7) {
   let s = semente;
@@ -96,5 +103,57 @@ describe('cor de Europa', () => {
     const um = sha256(mapa('meio').rgb);
     expect(sha256(mapa('meio').rgb)).toBe(um);
     expect(sha256(mapa('T1').rgb)).not.toBe(um);
+  });
+
+  it('a redução tira a média só do que tem dado: o vazio não escurece a borda, e o texel sem dado nenhum fica 0', () => {
+    // 8×4 → 4×2: cada texel de saída cobre 2×2 de origem
+    const fonte = Uint8Array.from([
+      100, 0, 50, 50, 0, 0, 200, 200,
+      100, 0, 50, 50, 0, 0, 200, 0,
+      0, 0, 10, 30, 7, 7, 0, 0,
+      0, 0, 10, 30, 7, 7, 0, 0,
+    ]);
+    expect(Array.from(reduzPorMediaDeArea(fonte, 8, 4, 4))).toEqual([100, 50, 0, 200, 0, 20, 7, 0]);
+  });
+});
+
+describe('a entrada de Europa na cadeia (item 230, F)', () => {
+  const europa = FONTES.find((f) => f.corpo === 'europa' && f.canal === 'map');
+
+  it('lê o mosaico USGS do cache pinado: faltando ou com outro hash, a entrada falha dizendo de onde baixar', async () => {
+    expect(europa.arquivoDoCache).toEqual({
+      arquivo: '.cache/europa/Europa_Voyager_GalileoSSI_global_mosaic_500m.tif',
+      sha256: 'a323f0c9ccb47d5af9902ea8297fe81f9a9708795645b80801f103c3f7c9a624',
+    });
+    expect(europa).toMatchObject({ giroDeLongitudeGraus: 180, larguraDoDestino: 4096, corEuropa: { tom: 'meio' } });
+    const dir = mkdtempSync(join(tmpdir(), 'cache-europa-'));
+    try {
+      const arquivo = join(dir, 'mosaico.tif');
+      const bytes = Buffer.from('um mosaico de mentira');
+      const certo = createHash('sha256').update(bytes).digest('hex');
+      const entrada = { ...europa, arquivoDoCache: { arquivo, sha256: certo } };
+      await expect(conferirArquivoDoCache(entrada)).rejects.toThrow(/falta .*baixe https:\/\/planetarymaps\.usgs\.gov\//);
+      writeFileSync(arquivo, bytes);
+      await expect(conferirArquivoDoCache(entrada)).resolves.toBe(arquivo);
+      await expect(conferirArquivoDoCache({ ...entrada, arquivoDoCache: { arquivo, sha256: 'f'.repeat(64) } }))
+        .rejects.toThrow(new RegExp(`sha256 ${certo}, o pinado é f{64} .*baixe https://planetarymaps`));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('o portão grava só o RGB aprovado para receita e tom; outro hash recusa, e a mensagem aponta corEuropa', () => {
+    const rgb = Uint8Array.from({ length: 4 * 2 * 3 }, (_, k) => (k * 53) % 256);
+    const certo = createHash('sha256').update(rgb).digest('hex');
+    const chave = 'receita:a,tom:meio';
+    expect(Object.keys(europa.corEuropa.sha256Aprovado)).toEqual([chave]);
+    const comAprovados = (aprovados) => portaoDaCor({ rotulo: 'europa/map', chave, rgb, aprovados, campo: 'corEuropa' });
+    expect(comAprovados({ [chave]: certo }).grava).toBe(true);
+    const diferente = comAprovados({ [chave]: 'f'.repeat(64) });
+    expect(diferente.grava).toBe(false);
+    expect(diferente.mensagem).toMatch(/o map\.jpg NÃO foi gravado/);
+    const semEntrada = comAprovados({ 'receita:a,tom:T1': certo });
+    expect(semEntrada.grava).toBe(false);
+    expect(semEntrada.mensagem).toContain(`corEuropa.sha256Aprovado["${chave}"]`);
   });
 });
