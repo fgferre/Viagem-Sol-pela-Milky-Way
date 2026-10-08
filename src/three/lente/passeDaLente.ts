@@ -1,28 +1,35 @@
 // ============================================================
-// O PASSE DA LENTE — os fantasmas da lente de cinema escolhida (Ajustes ·
+// O PASSE DA LENTE — os reflexos da lente de cinema escolhida (Ajustes ·
 // Lente), acesos pelo Sol, no HDR do quadro.
 //
 // Onde: no `Post`, logo depois do `ClaraoDoCampo` e antes do knee/ACES —
-// depois do bloom, para fantasma não florescer. Soma no readBuffer como o
+// depois do bloom, para reflexo não florescer. Soma no readBuffer como o
 // clarão (needsSwap falso). Com `nenhuma` o passe fica `enabled = false` e a
 // cadeia é a de sempre, byte a byte.
 //
-// Como: cada fantasma guardado por `optica.ts` é um quad instanciado, a
-// caixa que une os três canais (a mesma de `quadNoEcra`) mais a margem do
-// borrão, desenhado num alvo HDR de MEIA resolução. A caixa sai da CPU a
-// cada quadro, e só entram no desenho os fantasmas que somariam algo à tela
-// e cuja caixa toca o quadro (`escolherOsVivos`). O alvo entra no quadro
-// por upsample bilinear (fantasma é macio, e o celular paga a metade do
-// preenchimento). Por pixel e por canal: pixel → mm do sensor → altura de
-// entrada h = (s − Bs·t)/As por eixo → margem do disco frontal e margem da
-// íris (`margemDaIris` em Aa·h + Ba·t), as duas com borda macia → ganho do
-// canal × amplitude × cor do Sol.
+// O quê: os ELEMENTOS desenhados de `presets.ts`, cada tipo com a mesma
+// conta do renderizador de referência do look development aprovado em
+// 08/10/2026 (capturas/lente/look/ferramentas/render.mjs). Coordenadas em
+// frações da ALTURA do quadro, origem no centro, v para cima; L = o Sol.
 //
-// A borda macia mede max(1 px do quadro, o borrão do disco do Sol
-// |Bs|·α no sensor): fonte extensa espalha cada fantasma — é isso que
-// engrossa o risco da anamórfica e apaga as linhas em foco. Fantasma mais
-// fino que a borda num eixo cresce até ela, com o ganho dividido na mesma
-// razão (energia conservada).
+// Como, por quadro:
+//   1. MACIOS (fantasma, anel) num alvo HDR de MEIA resolução, cada um num
+//      quad do tamanho da sua caixa; o alvo entra no quadro por upsample
+//      bilinear.
+//   2. A LUZ DA SUJEIRA: o reflexo inteiro de novo num alvo de 128 linhas
+//      (linha fina alargada até 1 px dele, energia conservada), borrado por
+//      uma gaussiana separável de σ = borrao·altura.
+//   3. NO QUADRO, em resolução cheia, um quad de tela soma o alvo macio, a
+//      sujeira (textura assada) × a luz borrada e os FINOS (brilho, raios,
+//      risco), calculados ali mesmo.
+// Texturas procedurais (poeira dos fantasmas, sujeira) e a tabela dos raios
+// são assadas uma vez por receita, na CPU, com o MESMO hash do renderizador
+// de referência — nada de sin-hash na GPU, que difere de placa para placa.
+//
+// REGRA DO DISCO: nada da lente cobre o disco resolvido do Sol — brilho, raios,
+// risco, fantasmas, anéis e sujeira (máscara 0 dentro, subindo em ~5 px no
+// limbo; entre 1 e 3 px de raio o disco entra em rampa); o lóbulo justo do brilho
+// cai como s1/(s1+R) e os raios como k/(k+R). O clarão do Sol fica como é.
 // ============================================================
 
 import * as THREE from 'three';
@@ -31,37 +38,54 @@ import { ganhoDoGlobo } from '../../lib/atlas/luzDaVisita';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
 import type { ModoDaLente } from '../core/engine';
 import { RAIO_DO_SOL_NA_CENA } from '../escala';
-import { bvToColor } from '../shaders/common';
-import { SOL_BV } from '../world/clarao';
-import { escalaDoCampo, lente, type Lente, type NomeDaLente } from './optica';
+import {
+  presetDaLente,
+  type Anel,
+  type Brilho,
+  type Elemento,
+  type Fantasma,
+  type NomeDoPreset,
+  type Preset,
+  type Raios,
+  type Risco,
+  type Sujeira,
+} from './presets';
 
 /**
- * G — o brilho do Sol na entrada da lente, o MESMO para as duas lentes
- * (mesmo Sol, mesmo sensor; o que as distingue é vidro e revestimento).
- * Calibrado na foto P1 (perto da Terra, Sol a 1/3 da meia-largura): o
- * fantasma compacto mais forte da redonda em ~0,19 de valor de tela depois
- * do ACES, e o céu preto erguido em ≤ 0,02 no meio (mediana 0, p90 0,024).
- * Refeito com o limiar de desenho, que apaga o véu dos fantasmas largos
- * abaixo de 0,003 cada (era 50 sem ele).
+ * G — o brilho do Sol na entrada da lente, o MESMO para todas as lentes
+ * (mesmo Sol, mesmo sensor). Na luz assistida perto da Terra a amplitude
+ * vale G; os elementos foram desenhados para amplitude 1 ali, então o passe
+ * usa amplitude/G (× o fator de cada receita, abaixo).
  */
 export const G_DA_LENTE = 65;
 
 /** Até aqui (UA) a lente vê o Sol como na Terra; além, ele vira estrela: (50/d)². */
 export const UA_DO_FIM_DA_LENTE = 50;
 
-/** A fonte fora do quadro: cheia até 1,3× a meia-diagonal do quadro nativo (em t da lente), zero em 1,6×. */
-const DIAGONAL_CHEIA = 1.3;
-const DIAGONAL_ZERO = 1.6;
+/**
+ * O FATOR DE CADA RECEITA: o look development somou o reflexo DEPOIS do
+ * ACES (Narkowicz) em modo tela sobre a foto do app; aqui ele entra no HDR
+ * antes do ACES do OutputPass (three.js, exposição/0,6, com as matrizes de
+ * cor). Um número por receita, medido contra as pranchas aprovadas (P1,
+ * P2, P3 e perto do Sol, 1600×900): com 1 o reflexo do app somava 0,93
+ * (redonda), 0,94 (anamórfica) e 0,875 (hollywood) do look development em
+ * valor de tela, fora do disco; com estes, ≈ 1. O ACES do three.js puxa um
+ * pouco para o azul — isso nenhum fator único corrige.
+ */
+const FATOR_DA_RECEITA: Record<NomeDoPreset, number> = {
+  redonda: 1.1,
+  anamorfica: 1.1,
+  hollywood: 1.2,
+};
 
 /**
  * O LIMIAR DE DESENHO, em HDR na exposição 1 (divide-se pela exposição do
- * quadro). Fantasma cujo pico — o maior canal de ganho × amplitude × cor do
- * Sol, um teto do que o fragmento soma — fica abaixo disto somaria menos de
- * 0,003 de valor de tela num céu preto, e não é desenhado. Derivado uma vez
- * para o ACES do OutputPass (three.js): x·exposição/0,6 → RRTAndODTFit →
- * sRGB, com cinza (as matrizes de entrada e saída do ACES o preservam).
- * Tela 0,003 = linear 0,003/12,92 = 2,32e-4, que a curva alcança em
- * v = 4,955e-3; x = v·0,6 = 2,973e-3 (2,91e-3 na exposição 1,02 de sempre).
+ * quadro). Quando o pico do reflexo inteiro — a soma dos picos dos
+ * elementos, um teto do que um pixel soma — fica abaixo disto, ele somaria
+ * menos de 0,003 de valor de tela num céu preto, e o passe não desenha.
+ * Derivado para o ACES do OutputPass (three.js): x·exposição/0,6 →
+ * RRTAndODTFit → sRGB, com cinza. Tela 0,003 = linear 2,32e-4, que a curva
+ * alcança em v = 4,955e-3; x = v·0,6 = 2,973e-3.
  */
 const LIMIAR_NA_EXPOSICAO_1 = 2.973e-3;
 
@@ -84,124 +108,457 @@ export function amplitudeDaLente(
   return Number.isFinite(a) && a > 0 ? a : 0;
 }
 
-const VERTICE = /* glsl */ `
-  in vec4 aA0; in vec4 aB0;
-  in vec4 aA1; in vec4 aB1;
-  in vec4 aA2; in vec4 aB2;
-  in vec3 aGanho;
-  in vec4 aCaixa; // mm do sensor: lo.xy, hi.xy
-  uniform vec2 uSensorParaNdc;
-  out vec2 vS;
-  flat out vec4 vA0; flat out vec4 vB0;
-  flat out vec4 vA1; flat out vec4 vB1;
-  flat out vec4 vA2; flat out vec4 vB2;
-  flat out vec3 vGanho;
+/** Ladrilho da poeira de cada fantasma: lado em texels, e o alcance em a/tamanho (≥ croma máximo 1,12). */
+const LADO_DO_LADRILHO = 128;
+const COLUNAS_DE_LADRILHOS = 4;
+const ALCANCE_DA_POEIRA = 1.15;
+/** A sujeira cobre u ∈ [−1, 1] (quadros até 2:1) e v ∈ [−0,5; 0,5]; além, espelha. */
+const SUJEIRA_U_MAX = 1;
+const SUJEIRA_LARGURA = 2048;
+const SUJEIRA_ALTURA = 1024;
+/** Linhas do alvo da luz da sujeira (a largura segue o aspecto). */
+const LINHAS_DA_LUZ = 128;
+const MAX_RAIOS = 64;
+/** A linha fina mais estreita no quadro, em px: abaixo disto ela some entre os pixels. */
+const LARGURA_MINIMA_PX = 0.7;
 
-  void main() {
-    vA0 = aA0; vB0 = aB0; vA1 = aA1; vB1 = aB1; vA2 = aA2; vB2 = aB2; vGanho = aGanho;
-    vS = mix(aCaixa.xy, aCaixa.zw, position.xy);
-    gl_Position = vec4(vS * uSensorParaNdc, 0.0, 1.0);
-  }
-`;
-
-const FRAGMENTO = /* glsl */ `
-  precision highp float;
-  uniform vec2 uT;
-  uniform float uAlfa;
-  uniform vec2 uMmPorPx;
-  uniform vec2 uRaios;
-  uniform vec4 uIris; // laminas, rotacao, curvatura, —
-  uniform vec3 uCor;
-  in vec2 vS;
-  flat in vec4 vA0; flat in vec4 vB0;
-  flat in vec4 vA1; flat in vec4 vB1;
-  flat in vec4 vA2; flat in vec4 vB2;
-  flat in vec3 vGanho;
-  layout(location = 0) out highp vec4 corDoFantasma;
-
-  const float PI = 3.141592653589793;
-
-  // margemDaIris (optica.ts) e o gradiente dela em q, exato dentro do setor
-  float margemDaIris(vec2 q, out vec2 grad) {
-    float r = uRaios.y;
-    float setor = 2.0 * PI / uIris.x;
-    float qx = abs(q.x) < 1e-20 ? 1e-20 : q.x;
-    float fi = atan(q.y, qx) - uIris.y;
-    float angulo = uIris.y + setor * floor(fi / setor) + 0.5 * setor;
-    vec2 n = vec2(cos(angulo), sin(angulo));
-    float x = dot(q, n);
-    float a = r * cos(0.5 * setor);
-    float b = r * sin(0.5 * setor);
-    float k = uIris.z;
-    float D = sqrt(max(r * r - k * k * b * b, 1e-12));
-    float arco = (dot(q, q) - 2.0 * a * x + a * a - b * b) / (2.0 * D);
-    grad = -n - k * (q - a * n) / D;
-    return a - x - k * arco;
-  }
-
-  // borda macia de uma margem m cujo gradiente em px do quadro é g; a
-  // largura é a do borrão do Sol (elipse de semieixos e, em px) na direção
-  // da normal, nunca menos que 1 px
-  float borda(float m, vec2 g, vec2 e) {
-    float gl = length(g);
-    vec2 n = g / max(gl, 1e-12);
-    float w = max(1.0, length(e * n));
-    return smoothstep(-w, w, m / max(gl, 1e-12));
-  }
-
-  float canal(vec4 A, vec4 B) {
-    vec2 As = A.xy, Aa = A.zw, Bs = B.xy, Ba = B.zw;
-    vec2 as_ = sign(As) * max(abs(As), vec2(1e-9)) + step(abs(As), vec2(0.0)) * 1e-9;
-    vec2 aa = max(abs(Aa), vec2(1e-6));
-    vec2 w1 = abs(As) * uRaios.x;
-    vec2 w2 = abs(As) * uRaios.y / aa;
-    vec2 iris = vec2(1.0) - step(w1, w2);
-    vec2 centro = (Bs - iris * As * Ba * sign(Aa) / aa) * uT;
-    vec2 meiaPx = min(w1, w2) / uMmPorPx;
-    vec2 e = abs(Bs) * uAlfa / uMmPorPx;
-    vec2 w = max(vec2(1.0), e);
-    // eixo fino: cresce até a borda, ganho na razão inversa
-    vec2 fino = vec2(1.0) - step(w, meiaPx);
-    vec2 cresce = max(meiaPx, w);
-    vec2 energia = mix(vec2(1.0), meiaPx / cresce, fino);
-    vec2 dpx = abs(vS - centro) / uMmPorPx;
-    vec2 caixa = mix(vec2(1.0), smoothstep(-w, w, cresce - dpx), fino);
-    float cob = energia.x * energia.y * caixa.x * caixa.y;
-    // a altura de entrada; no eixo fino ela fica no centro da caixa
-    vec2 hc = -iris * Ba * sign(Aa) * uT / aa;
-    vec2 h = mix((vS - Bs * uT) / as_, hc, fino);
-    vec2 J = (vec2(1.0) - fino) * uMmPorPx / as_;
-    float hl = max(length(h), 1e-9);
-    cob *= borda(uRaios.x - hl, -(h / hl) * J, e);
-    vec2 gq;
-    float mI = margemDaIris(Aa * h + Ba * uT, gq);
-    cob *= borda(mI, gq * Aa * J, e);
-    return cob;
-  }
-
-  void main() {
-    vec3 c = vec3(canal(vA0, vB0), canal(vA1, vB1), canal(vA2, vB2)) * vGanho * uCor;
-    // teto de 1e3 por fantasma (já branco depois do ACES): a SOMA dos até
-    // 48 fantasmas fica abaixo do máximo do half-float (65504) e
-    // nunca vira Inf no alvo — com a luz real perto do Sol a amplitude cresce como 1/d²
-    corDoFantasma = vec4(min(max(c, vec3(0.0)), vec3(1.0e3)), 1.0);
-  }
-`;
-
-const SOMA = {
-  vertexShader: /* glsl */ `
-    varying vec2 vUv;
-    void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
-  `,
-  fragmentShader: /* glsl */ `
-    uniform sampler2D tLente;
-    varying vec2 vUv;
-    void main() {
-      vec3 c = texture2D(tLente, vUv).rgb;
-      gl_FragColor = vec4(min(max(c, vec3(0.0)), vec3(1.0e3)), 0.0);
-    }
-  `,
+// ---------- o hash e o ruído do renderizador de referência, na CPU ----------
+const fract = (x: number) => x - Math.floor(x);
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+const suave = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
 };
+const hash1 = (x: number) => fract(Math.sin(x * 127.1 + 11.3) * 43758.5453);
+const hash2 = (x: number, y: number) => fract(Math.sin(x * 127.1 + y * 311.7) * 43758.5453);
+function ruido(x: number, y: number) {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const sx = fx * fx * (3 - 2 * fx);
+  const sy = fy * fy * (3 - 2 * fy);
+  const a = hash2(ix, iy);
+  const b = hash2(ix + 1, iy);
+  const c = hash2(ix, iy + 1);
+  const d = hash2(ix + 1, iy + 1);
+  return mix(mix(a, b, sx), mix(c, d, sx), sy);
+}
+const fbm = (x: number, y: number) =>
+  (0.5 * ruido(x, y) + 0.25 * ruido(2.03 * x + 5.2, 2.03 * y + 1.3) + 0.125 * ruido(4.01 * x + 9.7, 4.01 * y + 3.1)) /
+  0.875;
+
+const texturaR8 = (dados: Uint8Array, largura: number, altura: number) => {
+  const t = new THREE.DataTexture(dados, largura, altura, THREE.RedFormat, THREE.UnsignedByteType);
+  t.minFilter = THREE.LinearFilter;
+  t.magFilter = THREE.LinearFilter;
+  t.needsUpdate = true;
+  return t;
+};
+
+/** A poeira de cada fantasma, fbm((a/tam)·3 + semente, (a/tam)·3 − semente), um ladrilho por fantasma. */
+function assarPoeira(fantasmas: readonly Fantasma[]) {
+  const T = LADO_DO_LADRILHO;
+  const linhas = Math.max(1, Math.ceil(fantasmas.length / COLUNAS_DE_LADRILHOS));
+  const largura = COLUNAS_DE_LADRILHOS * T;
+  const dados = new Uint8Array(largura * linhas * T);
+  fantasmas.forEach((f, n) => {
+    const x0 = (n % COLUNAS_DE_LADRILHOS) * T;
+    const y0 = Math.floor(n / COLUNAS_DE_LADRILHOS) * T;
+    for (let j = 0; j < T; j++) {
+      const sy = -ALCANCE_DA_POEIRA + (2 * ALCANCE_DA_POEIRA * j) / (T - 1);
+      for (let i = 0; i < T; i++) {
+        const sx = -ALCANCE_DA_POEIRA + (2 * ALCANCE_DA_POEIRA * i) / (T - 1);
+        const v = fbm(sx * 3 + f.semente, sy * 3 - f.semente);
+        dados[(y0 + j) * largura + x0 + i] = Math.round(255 * Math.min(1, Math.max(0, v)));
+      }
+    }
+  });
+  return texturaR8(dados, largura, linhas * T);
+}
+
+/** A sujeira em espaço de tela (t/2 em 8 bits): manchas de fbm, pó em bokeh por célula e arcos de limpeza. */
+function assarSujeira(e: Sujeira) {
+  const W = SUJEIRA_LARGURA;
+  const H = SUJEIRA_ALTURA;
+  const t = new Float32Array(W * H);
+  const uDe = (i: number) => -SUJEIRA_U_MAX + ((i + 0.5) * 2 * SUJEIRA_U_MAX) / W;
+  const vDe = (j: number) => -0.5 + (j + 0.5) / H;
+  const iDe = (u: number) => ((u + SUJEIRA_U_MAX) * W) / (2 * SUJEIRA_U_MAX) - 0.5;
+  const jDe = (v: number) => (v + 0.5) * H - 0.5;
+  const s = e.semente;
+  // manchas: o fbm é macio, então sai numa grade 4× mais rala e interpolado
+  if (e.manchas > 0) {
+    const wc = W / 4 + 1;
+    const hc = H / 4 + 1;
+    const grade = new Float32Array(wc * hc);
+    for (let j = 0; j < hc; j++) {
+      for (let i = 0; i < wc; i++) {
+        const u = -SUJEIRA_U_MAX + (i * 2 * SUJEIRA_U_MAX) / (wc - 1);
+        const v = -0.5 + j / (hc - 1);
+        grade[j * wc + i] = fbm(u * 3.1 + s, v * 3.1 - s);
+      }
+    }
+    for (let j = 0; j < H; j++) {
+      const fy = ((vDe(j) + 0.5) * (hc - 1));
+      const y0 = Math.min(hc - 2, Math.floor(fy));
+      const ty = fy - y0;
+      for (let i = 0; i < W; i++) {
+        const fx = ((uDe(i) + SUJEIRA_U_MAX) * (wc - 1)) / (2 * SUJEIRA_U_MAX);
+        const x0 = Math.min(wc - 2, Math.floor(fx));
+        const tx = fx - x0;
+        const a = mix(grade[y0 * wc + x0], grade[y0 * wc + x0 + 1], tx);
+        const b = mix(grade[(y0 + 1) * wc + x0], grade[(y0 + 1) * wc + x0 + 1], tx);
+        t[j * W + i] += e.manchas * suave(0.5, 0.85, mix(a, b, ty));
+      }
+    }
+  }
+  // pó: no máximo um disco por célula, recortado pela própria célula
+  for (const [cel, prob, rmin, rmax, amp] of e.camadasDePo) {
+    for (let iy = Math.floor(-0.5 / cel); iy <= Math.floor(0.5 / cel); iy++) {
+      for (let ix = Math.floor(-SUJEIRA_U_MAX / cel); ix <= Math.floor(SUJEIRA_U_MAX / cel); ix++) {
+        if (hash2(ix + s, iy) >= prob) continue;
+        const h1 = hash2(ix, iy + s);
+        const h2 = hash2(ix + 3.7, iy - s);
+        const h3 = hash2(ix - 7.1, iy + 2.9);
+        const ccx = (ix + 0.25 + 0.5 * h1) * cel;
+        const ccy = (iy + 0.25 + 0.5 * h2) * cel;
+        const rr = mix(rmin, rmax, h3) * cel;
+        const a = amp * (0.4 + 0.6 * h1);
+        const i0 = Math.max(0, Math.floor(iDe(ccx - rr)));
+        const i1 = Math.min(W - 1, Math.ceil(iDe(ccx + rr)));
+        const j0 = Math.max(0, Math.floor(jDe(ccy - rr)));
+        const j1 = Math.min(H - 1, Math.ceil(jDe(ccy + rr)));
+        for (let j = j0; j <= j1; j++) {
+          const v = vDe(j);
+          if (Math.floor(v / cel) !== iy) continue;
+          for (let i = i0; i <= i1; i++) {
+            const u = uDe(i);
+            if (Math.floor(u / cel) !== ix) continue;
+            const d = Math.hypot(u - ccx, v - ccy) / rr;
+            if (d >= 1) continue;
+            t[j * W + i] += a * (1 - suave(0.75, 1, d)) * (0.55 + 0.45 * suave(0.45, 0.95, d));
+          }
+        }
+      }
+    }
+  }
+  // arcos de limpeza: anel gaussiano fino aceso de um lado; só a faixa |d − R| < 4σ é percorrida
+  const SIGMA_ARCO = 0.0025;
+  const faixa = 4 * SIGMA_ARCO;
+  for (let k = 0; k < e.arcos; k++) {
+    const cx = (hash1(k + s) - 0.5) * 1.8;
+    const cy = (hash1(k + 5.5 + s) - 0.5) * 1.0;
+    const R = 0.15 + 0.35 * hash1(k + 9.1 + s);
+    const a0 = hash1(k + 13.7 + s) * 6.283;
+    const ca = Math.cos(a0);
+    const sa = Math.sin(a0);
+    const j0 = Math.max(0, Math.floor(jDe(cy - R - faixa)));
+    const j1 = Math.min(H - 1, Math.ceil(jDe(cy + R + faixa)));
+    for (let j = j0; j <= j1; j++) {
+      const qy = vDe(j) - cy;
+      const fora = (R + faixa) ** 2 - qy * qy;
+      if (fora <= 0) continue;
+      const dentro = Math.sqrt(Math.max(0, (R - faixa) ** 2 - qy * qy));
+      const ext = Math.sqrt(fora);
+      for (const [lo, hi] of [[-ext, -dentro], [dentro, ext]]) {
+        const i0 = Math.max(0, Math.floor(iDe(cx + lo)));
+        const i1 = Math.min(W - 1, Math.ceil(iDe(cx + hi)));
+        for (let i = i0; i <= i1; i++) {
+          const qx = uDe(i) - cx;
+          const d = Math.hypot(qx, qy);
+          if (Math.abs(d - R) >= faixa || d <= 0) continue;
+          const ang = (qx * ca + qy * sa) / d;
+          t[j * W + i] += e.intArcos * Math.exp(-(((d - R) / SIGMA_ARCO) ** 2)) * suave(0.3, 0.95, ang);
+        }
+      }
+    }
+  }
+  const dados = new Uint8Array(W * H);
+  for (let k = 0; k < W * H; k++) dados[k] = Math.round(255 * Math.min(1, Math.max(0, t[k] / 2)));
+  const tex = texturaR8(dados, W, H);
+  tex.wrapS = THREE.MirroredRepeatWrapping;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.generateMipmaps = true;
+  return tex;
+}
+
+// ---------- shaders ----------
+const NOQUADRO = /* glsl */ `gl_Position = vec4(vQ.x * 2.0 / uAspecto, vQ.y * 2.0, 0.0, 1.0);`;
+
+const VERTICE_FANTASMA = /* glsl */ `
+  in vec4 aForma;  // p, tamanho, aspecto, rotacao
+  in vec4 aIris;   // laminas, redondeza, poeira, ladrilho
+  in vec4 aPerfil; // miolo, larguraBorda, suaveFora, suaveDentro
+  in vec3 aCroma;
+  in vec3 aCor;    // cor × intensidade
+  in vec4 aCorte;  // p, raio (× tamanho), suave, ativo
+  uniform vec2 uL;
+  uniform float uKTam;
+  uniform float uAspecto;
+  out vec2 vQ;
+  flat out vec4 vForma; flat out vec4 vIris; flat out vec4 vPerfil;
+  flat out vec3 vCroma; flat out vec3 vCor; flat out vec4 vCorte;
+  void main() {
+    vForma = aForma; vIris = aIris; vPerfil = aPerfil; vCroma = aCroma; vCor = aCor; vCorte = aCorte;
+    float caixa = aForma.y * uKTam * max(max(aCroma.x, aCroma.y), aCroma.z) * max(1.0, aForma.z) * 1.05;
+    vQ = aForma.x * uL + (position.xy * 2.0 - 1.0) * caixa;
+    ${NOQUADRO}
+  }
+`;
+
+const FRAGMENTO_FANTASMA = /* glsl */ `
+  precision highp float;
+  uniform vec2 uL;
+  uniform float uKTam;
+  uniform float uG;
+  uniform sampler2D tPoeira;
+  uniform vec2 uLadrilhos; // colunas, linhas
+  in vec2 vQ;
+  flat in vec4 vForma; flat in vec4 vIris; flat in vec4 vPerfil;
+  flat in vec3 vCroma; flat in vec3 vCor; flat in vec4 vCorte;
+  layout(location = 0) out highp vec4 saida;
+  const float PI = 3.141592653589793;
+  const float ALCANCE = ${ALCANCE_DA_POEIRA.toFixed(4)};
+  const float LADO = ${LADO_DO_LADRILHO.toFixed(1)};
+
+  // polígono de n lâminas arredondado (n < 3 = círculo); 1 = borda quando |q| = tamanho
+  float raioDaForma(vec2 q) {
+    float r = length(q);
+    float n = vIris.x;
+    if (n < 3.0 || r < 1e-12) return r;
+    float setor = 2.0 * PI / n;
+    float th = atan(q.y, q.x);
+    float psi = th - setor * floor(th / setor) - 0.5 * setor;
+    return mix(r * cos(psi) / cos(PI / n), r, vIris.y);
+  }
+  // perfil rosca (Nuke Flare): borda 1, miolo, largura da borda, suavidades
+  float perfilRosca(float rho) {
+    if (rho > 1.0001) return 0.0;
+    float fora = 1.0 - smoothstep(1.0 - vPerfil.z, 1.0 + 1e-4, rho);
+    float borda = smoothstep(1.0 - vPerfil.y - max(vPerfil.w, 1e-3), 1.0 - vPerfil.y, rho);
+    return fora * mix(vPerfil.x, 1.0, borda);
+  }
+  float poeira(vec2 s) {
+    vec2 t = clamp(s / (2.0 * ALCANCE) + 0.5, 0.0, 1.0);
+    vec2 cel = vec2(mod(vIris.w, uLadrilhos.x), floor((vIris.w + 0.5) / uLadrilhos.x));
+    return texture(tPoeira, (cel * LADO + 0.5 + t * (LADO - 1.0)) / (uLadrilhos * LADO)).r;
+  }
+  void main() {
+    float tam = max(vForma.y * uKTam, 1e-6);
+    vec2 q = vec2((vQ.x - vForma.x * uL.x) / max(vForma.z, 1e-4), vQ.y - vForma.x * uL.y);
+    float cr = cos(-vForma.w);
+    float sr = sin(-vForma.w);
+    vec2 a = vec2(q.x * cr - q.y * sr, q.x * sr + q.y * cr);
+    float rho0 = raioDaForma(a);
+    float k = uG * (1.0 + vIris.z * (poeira(a / tam) - 0.5) * 2.0);
+    if (vCorte.w > 0.5) {
+      float cR = max(vCorte.y * tam, 1e-6);
+      k *= 1.0 - smoothstep(cR * (1.0 - max(vCorte.z, 1e-3)), cR, length(vQ - vCorte.x * uL));
+    }
+    vec3 rho = rho0 / (tam * vCroma);
+    vec3 perfil = vec3(perfilRosca(rho.r), perfilRosca(rho.g), perfilRosca(rho.b));
+    saida = vec4(clamp(max(k, 0.0) * perfil * vCor, 0.0, 1.0e3), 1.0);
+  }
+`;
+
+const VERTICE_ANEL = /* glsl */ `
+  uniform vec2 uL;
+  uniform float uAspecto;
+  uniform vec4 uAnel; // p, raio, espessura, no centro do quadro (1)
+  out vec2 vQ;
+  void main() {
+    vec2 c = uAnel.w > 0.5 ? vec2(0.0) : uAnel.x * uL;
+    vQ = c + (position.xy * 2.0 - 1.0) * (uAnel.y + 3.0 * uAnel.z);
+    ${NOQUADRO}
+  }
+`;
+
+const FRAGMENTO_ANEL = /* glsl */ `
+  precision highp float;
+  uniform vec2 uL;
+  uniform float uG;
+  uniform vec4 uAnel;
+  uniform vec2 uAnelArco; // expoente, saturacao
+  uniform vec3 uAnelCor;  // cor × intensidade
+  in vec2 vQ;
+  layout(location = 0) out highp vec4 saida;
+  float g2(float x) { return exp(-x * x); }
+  void main() {
+    vec2 c = uAnel.w > 0.5 ? vec2(0.0) : uAnel.x * uL;
+    vec2 l = uL - c;
+    float ll = max(length(l), 1e-4);
+    float temLuz = smoothstep(0.0, 0.05, length(l));
+    vec2 q = vQ - c;
+    float d = max(length(q), 1e-4);
+    float t = (d - uAnel.y) / max(uAnel.z, 1e-6);
+    if (abs(t) > 3.0) {
+      saida = vec4(0.0);
+      return;
+    }
+    float faixa = exp(-t * t * 1.5);
+    // 0 = lado de dentro (violeta), 1 = de fora (vermelho)
+    float s = clamp((t + 1.0) * 0.5, 0.0, 1.0);
+    vec3 arco = vec3(g2((s - 0.8) / 0.2), g2((s - 0.5) / 0.18), g2((s - 0.2) / 0.2));
+    float cosA = dot(q, l) / (d * ll);
+    float m = mix(1.0, pow(max((1.0 + cosA) * 0.5, 0.0), uAnelArco.x), temLuz);
+    saida = vec4(clamp(uG * faixa * m * mix(vec3(1.0), arco, uAnelArco.y) * uAnelCor, 0.0, 1.0e3), 1.0);
+  }
+`;
+
+const VERTICE_TELA = /* glsl */ `
+  out vec2 vUv;
+  void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
+`;
+
+/** Os finos (brilho, raios, risco) e, no quadro, a soma do alvo macio e da sujeira. Com LUZ: só os finos, alargados. */
+const FRAGMENTO_FINOS = /* glsl */ `
+  precision highp float;
+  uniform vec2 uL;
+  uniform float uKTam;
+  uniform float uG;
+  uniform float uRaioDisco;
+  uniform float uAspecto;
+  uniform float uInvAltura;
+  uniform float uLarguraMinima;
+  uniform bool uTemBrilho;
+  uniform vec4 uBrilho; // int1, raio1, int2, raio2
+  uniform vec3 uBrilhoCor1;
+  uniform vec3 uBrilhoCor2;
+  uniform float uBrilhoEsticar;
+  uniform bool uTemRaios;
+  uniform vec4 uRaiosForma; // numero, comprimento, largura, alargar
+  uniform vec4 uRaiosLuz;   // queda, intensidade, atenuacaoDisco, rotacao
+  uniform vec3 uRaiosCroma;
+  uniform vec3 uRaiosCor;
+  // por raio: jitterAngulo·(h1 − 0,5), 1 − jitterComprimento·h2, 1 − jitterBrilho·h3
+  uniform vec3 uRaiosTabela[${MAX_RAIOS}];
+  uniform bool uTemRisco;
+  uniform vec4 uRiscoForma; // comprimento, queda, larguraNucleo, larguraAsas
+  uniform vec3 uRiscoInt;   // nucleo, asas, paralelas
+  uniform vec3 uRiscoParalelas; // desvio 1, desvio 2, quantas
+  uniform vec3 uRiscoCorPerto;
+  uniform vec3 uRiscoCorLonge;
+#ifndef LUZ
+  uniform float uGLook;
+  uniform sampler2D tMacio;
+  uniform sampler2D tLuz;
+  uniform sampler2D tSujeira;
+  uniform bool uTemSujeira;
+  uniform vec3 uSujeiraCor; // cor × intensidade
+#endif
+  in vec2 vUv;
+  layout(location = 0) out highp vec4 saida;
+  const float PI = 3.141592653589793;
+  float g2(float x) { return exp(-x * x); }
+
+  float mascaraDisco(float d) {
+    return uRaioDisco > 0.0 ? smoothstep(uRaioDisco - uInvAltura, uRaioDisco + 4.0 * uInvAltura, d) : 1.0;
+  }
+
+  vec3 brilho(vec2 dv, float d) {
+    float s1 = max(uBrilho.y * uKTam, 1e-6);
+    float s2 = max(uBrilho.w * uKTam, 1e-6);
+    float esticar = max(uBrilhoEsticar, 1e-3);
+    float alc = min(2.5, uRaioDisco + s2 * 12.0);
+    if (abs(dv.x) > alc * esticar || abs(dv.y) > alc) return vec3(0.0);
+    // disco resolvido: o lóbulo justo cai com o tamanho do disco, senão vira um anel branco no limbo
+    float nucleo = uBrilho.x * s1 / (s1 + uRaioDisco);
+    float dd = max(d, 1e-6);
+    // distância a partir do LIMBO, esticada na horizontal só no trecho além do disco
+    float r = max(0.0, d - uRaioDisco) * length(vec2(dv.x / dd / esticar, dv.y / dd));
+    float a = nucleo * g2(r / s1);
+    float b = uBrilho.z / (1.0 + (r / s2) * (r / s2));
+    return uG * mascaraDisco(d) * (a * uBrilhoCor1 + b * uBrilhoCor2);
+  }
+
+  vec3 raios(vec2 dv, float d) {
+    float n = uRaiosForma.x;
+    float comp = uRaiosForma.y * uKTam;
+    float cMax = max(max(uRaiosCroma.r, uRaiosCroma.g), uRaiosCroma.b);
+    if (d >= uRaioDisco + comp * cMax || d < 1e-7) return vec3(0.0);
+    float setor = 2.0 * PI / n;
+    float kf = (atan(dv.y, dv.x) + uRaiosLuz.w) / setor;
+    float k = floor(kf + 0.5);
+    vec3 h = uRaiosTabela[int(clamp(mod(k, n), 0.0, n - 1.0) + 0.5)];
+    float perp = max(d, uRaioDisco) * abs((kf - k - h.x) * setor);
+    float lk = max(comp * h.y, 1e-6);
+    float largura = max(uRaiosForma.z, uLarguraMinima);
+    // disco resolvido: cada ponto do disco faz seu raio e eles se borram; os finos enfraquecem com o disco
+    float m = uG * uRaiosLuz.y * (uRaiosLuz.z / (uRaiosLuz.z + uRaioDisco)) * h.z * mascaraDisco(d)
+      * (uRaiosForma.z / largura);
+    vec3 ao = max(0.0, d - uRaioDisco) / (lk * uRaiosCroma);
+    vec3 w = largura * (1.0 + ao * uRaiosForma.w);
+    vec3 atravessa = exp(-(perp / w) * (perp / w));
+    return m * pow(max(1.0 - ao, 0.0), vec3(uRaiosLuz.x)) * atravessa * uRaiosCor * (1.0 - step(1.0, ao));
+  }
+
+  vec3 risco(vec2 dv, float d) {
+    float ao = abs(dv.x) / max(uRiscoForma.x, 1e-6);
+    float lN0 = uRiscoForma.z;
+    float lA0 = uRiscoForma.w;
+    float alcY = lA0 * 3.0;
+    if (uRiscoParalelas.z > 0.5) alcY = max(alcY, abs(uRiscoParalelas.x) + lN0 * 4.0);
+    if (uRiscoParalelas.z > 1.5) alcY = max(alcY, abs(uRiscoParalelas.y) + lN0 * 4.0);
+    if (ao >= 1.0 || abs(dv.y) > alcY) return vec3(0.0);
+    float queda = exp(-ao * uRiscoForma.y) * (1.0 - smoothstep(0.55, 1.0, ao));
+    float lN = max(lN0, uLarguraMinima);
+    float lA = max(lA0, uLarguraMinima);
+    float lP = max(lN0 * 1.5, uLarguraMinima);
+    float nucleo = (lN0 / lN) * g2(dv.y / (lN * (1.0 + ao)));
+    float asas = (lA0 / lA) * g2(dv.y / lA);
+    float par = 0.0;
+    if (uRiscoParalelas.z > 0.5) par += g2((dv.y - uRiscoParalelas.x) / lP);
+    if (uRiscoParalelas.z > 1.5) par += g2((dv.y - uRiscoParalelas.y) / lP);
+    par *= lN0 * 1.5 / lP;
+    float val = uG * queda * mascaraDisco(d)
+      * (uRiscoInt.x * nucleo + uRiscoInt.y * asas + uRiscoInt.z * par * exp(-ao * 1.5));
+    return val * mix(uRiscoCorPerto, uRiscoCorLonge, smoothstep(0.0, 0.6, ao));
+  }
+
+  void main() {
+    vec2 uv = vec2((vUv.x - 0.5) * uAspecto, vUv.y - 0.5);
+    vec2 dv = uv - uL;
+    float d = length(dv);
+    vec3 c = vec3(0.0);
+    if (uTemBrilho) c += min(brilho(dv, d), vec3(1.0e3));
+    if (uTemRaios) c += min(raios(dv, d), vec3(1.0e3));
+    if (uTemRisco) c += min(risco(dv, d), vec3(1.0e3));
+#ifndef LUZ
+    // a regra do disco vale também para os fantasmas, os anéis e a sujeira: com o Sol
+    // perto do centro eles se empilham em cima dele e lavavam a superfície (vídeo de 08/10)
+    float limpo = mascaraDisco(d);
+    c += texture(tMacio, vUv).rgb * limpo;
+    if (uTemSujeira) {
+      float t = 2.0 * texture(tSujeira, vec2(uv.x / ${(2 * SUJEIRA_U_MAX).toFixed(1)} + 0.5, uv.y + 0.5)).r;
+      c += min(uGLook * t * texture(tLuz, vUv).rgb * uSujeiraCor, vec3(1.0e3)) * limpo;
+    }
+#endif
+    saida = vec4(clamp(c, 0.0, 1.0e3), 0.0);
+  }
+`;
+
+/** Gaussiana separável, borda presa (como o renderizador de referência). */
+const FRAGMENTO_BORRAO = /* glsl */ `
+  precision highp float;
+  uniform sampler2D tFonte;
+  uniform vec2 uPasso;
+  uniform float uSigma;
+  in vec2 vUv;
+  layout(location = 0) out highp vec4 saida;
+  void main() {
+    int rad = int(ceil(uSigma * 3.0));
+    float inv = 1.0 / (2.0 * uSigma * uSigma);
+    vec3 acc = vec3(0.0);
+    float soma = 0.0;
+    for (int k = -rad; k <= rad; k++) {
+      float w = exp(-float(k * k) * inv);
+      acc += w * texture(tFonte, vUv + float(k) * uPasso).rgb;
+      soma += w;
+    }
+    saida = vec4(acc / soma, 1.0);
+  }
+`;
 
 const somaHdr = {
   blending: THREE.CustomBlending,
@@ -212,139 +569,197 @@ const somaHdr = {
   depthWrite: false,
 } as const;
 
-/**
- * Os fantasmas de uma lente na GPU, como atributos instanciados: por canal
- * (As.x, As.y, Aa.x, Aa.y) e (Bs.x, Bs.y, Ba.x, Ba.y), o ganho RGB e a caixa.
- * Só os VIVOS do quadro ocupam o começo dos buffers; `vivos[k]` é o índice
- * em `lente.fantasmas` da instância k.
- */
-interface FantasmasNaGpu {
-  readonly lente: Lente;
-  readonly geometria: THREE.InstancedBufferGeometry;
-  readonly vivos: Int32Array;
-  nVivos: number;
+type Uniformes = Record<string, THREE.IUniform>;
+
+const unico = <T extends Elemento['tipo']>(p: Preset, tipo: T) =>
+  p.elementos.find((e) => e.tipo === tipo) as Extract<Elemento, { tipo: T }> | undefined;
+
+const maxRgb = (c: readonly number[]) => Math.max(c[0], c[1], c[2]);
+
+/** O pico do reflexo por unidade de ganho: a soma dos picos dos elementos (a sujeira é acesa por eles). */
+function picoDoPreset(p: Preset): number {
+  let pico = 0;
+  for (const e of p.elementos) {
+    if (e.tipo === 'brilho') pico += (e.int1 + e.int2) * Math.max(maxRgb(e.cor1), maxRgb(e.cor2));
+    else if (e.tipo === 'raios') pico += e.intensidade * maxRgb(e.cor);
+    else if (e.tipo === 'risco')
+      pico += (e.intNucleo + e.intAsas + 2 * e.intParalelas) * Math.max(maxRgb(e.corPerto), maxRgb(e.corLonge));
+    else if (e.tipo === 'fantasma') pico += e.intensidade * (1 + e.poeira) * maxRgb(e.cor);
+    else if (e.tipo === 'anel') pico += e.intensidade * maxRgb(e.cor);
+  }
+  return pico;
 }
 
-function fantasmasNaGpu(l: Lente): FantasmasNaGpu {
+/** Os fantasmas de uma receita na GPU: atributos instanciados fixos e a poeira assada. */
+function fantasmasNaGpu(fantasmas: readonly Fantasma[]) {
   const g = new THREE.InstancedBufferGeometry();
-  g.setAttribute(
-    'position',
-    new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0], 3)
-  );
+  g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0], 3));
   g.setIndex([0, 1, 2, 0, 2, 3]);
-  const n = l.fantasmas.length;
-  const dinamico = (tamanho: number) =>
-    new THREE.InstancedBufferAttribute(new Float32Array(n * tamanho), tamanho).setUsage(
-      THREE.DynamicDrawUsage
-    );
-  for (let c = 0; c < 3; c++) {
-    g.setAttribute(`aA${c}`, dinamico(4));
-    g.setAttribute(`aB${c}`, dinamico(4));
-  }
-  g.setAttribute('aGanho', dinamico(3));
-  g.setAttribute('aCaixa', dinamico(4));
-  g.instanceCount = 0;
-  return { lente: l, geometria: g, vivos: new Int32Array(n), nVivos: 0 };
+  const n = fantasmas.length;
+  const atributo = (nome: string, tamanho: number, valores: (f: Fantasma, k: number) => number[]) => {
+    const dados = new Float32Array(n * tamanho);
+    fantasmas.forEach((f, k) => dados.set(valores(f, k), k * tamanho));
+    g.setAttribute(nome, new THREE.InstancedBufferAttribute(dados, tamanho));
+  };
+  atributo('aForma', 4, (f) => [f.p, f.tamanho, f.aspecto, f.rotacao]);
+  atributo('aIris', 4, (f, k) => [f.laminas, f.redondeza, f.poeira, k]);
+  atributo('aPerfil', 4, (f) => [f.miolo, f.larguraBorda, f.suaveFora, f.suaveDentro]);
+  atributo('aCroma', 3, (f) => [...f.croma]);
+  atributo('aCor', 3, (f) => f.cor.map((c) => c * f.intensidade));
+  atributo('aCorte', 4, (f) => (f.corte ? [f.corte.p, f.corte.raio, f.corte.suave, 1] : [0, 1, 0.06, 0]));
+  g.instanceCount = n;
+  return g;
 }
 
-/** Copia os fantasmas vivos para o começo dos buffers (só quando a lista muda). */
-function subirOsVivos(gpu: FantasmasNaGpu) {
-  const g = gpu.geometria;
-  for (let c = 0; c < 3; c++) {
-    const A = g.getAttribute(`aA${c}`) as THREE.InstancedBufferAttribute;
-    const B = g.getAttribute(`aB${c}`) as THREE.InstancedBufferAttribute;
-    for (let k = 0; k < gpu.nVivos; k++) {
-      const f = gpu.lente.fantasmas[gpu.vivos[k]];
-      A.setXYZW(k, f.As[c].x, f.As[c].y, f.Aa[c].x, f.Aa[c].y);
-      B.setXYZW(k, f.Bs[c].x, f.Bs[c].y, f.Ba[c].x, f.Ba[c].y);
-    }
-    A.needsUpdate = true;
-    B.needsUpdate = true;
-  }
-  const ganho = g.getAttribute('aGanho') as THREE.InstancedBufferAttribute;
-  for (let k = 0; k < gpu.nVivos; k++) {
-    const f = gpu.lente.fantasmas[gpu.vivos[k]];
-    ganho.setXYZ(k, f.ganho[0], f.ganho[1], f.ganho[2]);
-  }
-  ganho.needsUpdate = true;
+interface NaGpu {
+  readonly preset: Preset;
+  readonly fator: number;
+  readonly pico: number;
+  readonly fantasmas: THREE.InstancedBufferGeometry;
+  readonly ladrilhos: THREE.Vector2;
+  readonly poeira: THREE.DataTexture;
+  readonly sujeira: THREE.DataTexture | null;
 }
 
-/**
- * Por eixo, a caixa de um canal em mm do sensor, somada a [lo, hi]: a de
- * `quadNoEcra`, crescida até a borda macia (e px) e estendida pela própria
- * borda mais 2 px (o texel da meia resolução), em `estende` px.
- */
-function eixoDaCaixa(
-  as: number, bs: number, aa_: number, ba: number,
-  t: number, rF: number, rI: number, mmPorPx: number, e: number, estende: number,
-  loHi: number[], eixo: number
-) {
-  const aa = Math.max(Math.abs(aa_), 1e-6);
-  const w1 = Math.abs(as) * rF;
-  const w2 = (Math.abs(as) * rI) / aa;
-  const iris = w2 < w1 ? 1 : 0;
-  const centro = (bs - (iris * as * ba * Math.sign(aa_)) / aa) * t;
-  const ext = (Math.max(Math.min(w1, w2) / mmPorPx, 1, e) + estende) * mmPorPx;
-  loHi[eixo] = Math.min(loHi[eixo], centro - ext);
-  loHi[eixo + 2] = Math.max(loHi[eixo + 2], centro + ext);
+function naGpu(nome: NomeDoPreset): NaGpu {
+  const preset = presetDaLente(nome);
+  const fantasmas = preset.elementos.filter((e): e is Fantasma => e.tipo === 'fantasma');
+  const suj = unico(preset, 'sujeira');
+  return {
+    preset,
+    fator: FATOR_DA_RECEITA[nome],
+    pico: picoDoPreset(preset),
+    fantasmas: fantasmasNaGpu(fantasmas),
+    ladrilhos: new THREE.Vector2(COLUNAS_DE_LADRILHOS, Math.max(1, Math.ceil(fantasmas.length / COLUNAS_DE_LADRILHOS))),
+    poeira: assarPoeira(fantasmas),
+    sujeira: suj ? assarSujeira(suj) : null,
+  };
 }
 
-const COR_DO_SOL = bvToColor(SOL_BV);
+const alvoHdr = (nome: string) => {
+  const a = new THREE.WebGLRenderTarget(1, 1, {
+    type: THREE.HalfFloatType,
+    depthBuffer: false,
+    minFilter: THREE.LinearFilter,
+    magFilter: THREE.LinearFilter,
+  });
+  a.texture.name = nome;
+  return a;
+};
 
 export class PasseDaLente extends Pass {
   private readonly camera: THREE.Camera;
   private modo: ModoDaLente = 'nenhuma';
   private amplitude = 0;
-  private readonly naGpu = new Map<NomeDaLente, FantasmasNaGpu>();
-  private readonly loHi = [0, 0, 0, 0];
-  private readonly material: THREE.ShaderMaterial;
-  private readonly malha: THREE.Mesh;
-  private readonly cenaDosFantasmas = new THREE.Scene();
+  private readonly naGpu = new Map<NomeDoPreset, NaGpu>();
+  /** os uniformes de todos os materiais, compartilhados (um lugar só por quadro) */
+  private readonly u: Uniformes;
+  private readonly materiais: THREE.ShaderMaterial[] = [];
+  private readonly malhaDosFantasmas: THREE.Mesh;
+  private readonly malhaDoAnel: THREE.Mesh;
+  private readonly cenaMacia = new THREE.Scene();
   private readonly cameraNula = new THREE.Camera();
-  private readonly soma: THREE.ShaderMaterial;
-  private readonly quad: FullScreenQuad;
-  private readonly alvo: THREE.WebGLRenderTarget;
+  private readonly quadLuz: FullScreenQuad;
+  private readonly quadBorraoH: FullScreenQuad;
+  private readonly quadBorraoV: FullScreenQuad;
+  private readonly quadFinal: FullScreenQuad;
+  private readonly alvoMacio = alvoHdr('PasseDaLente.macio');
+  private readonly alvoLuz = alvoHdr('PasseDaLente.luz');
+  private readonly alvoLuz2 = alvoHdr('PasseDaLente.luz2');
   private readonly corDeLimpezaVelha = new THREE.Color();
   private readonly sol = new THREE.Vector3();
-  private alturaPx = 1;
+  private largura = 1;
+  private altura = 1;
 
   constructor(camera: THREE.Camera) {
     super();
     this.camera = camera;
     this.needsSwap = false;
     this.enabled = false;
-    this.material = new THREE.ShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      vertexShader: VERTICE,
-      fragmentShader: FRAGMENTO,
-      uniforms: {
-        uT: { value: new THREE.Vector2() },
-        uAlfa: { value: 0 },
-        uMmPorPx: { value: new THREE.Vector2(1, 1) },
-        uSensorParaNdc: { value: new THREE.Vector2(1, 1) },
-        uRaios: { value: new THREE.Vector2(1, 1) },
-        uIris: { value: new THREE.Vector4(6, 0, 0, 0) },
-        uCor: { value: new THREE.Vector3() },
-      },
-      ...somaHdr,
-    });
-    this.malha = new THREE.Mesh(new THREE.InstancedBufferGeometry(), this.material);
-    this.malha.frustumCulled = false;
-    this.cenaDosFantasmas.add(this.malha);
-    this.soma = new THREE.ShaderMaterial({
-      uniforms: { tLente: { value: null } },
-      ...SOMA,
-      ...somaHdr,
-    });
-    this.quad = new FullScreenQuad(this.soma);
-    this.alvo = new THREE.WebGLRenderTarget(1, 1, {
-      type: THREE.HalfFloatType,
-      depthBuffer: false,
-      minFilter: THREE.LinearFilter,
-      magFilter: THREE.LinearFilter,
-    });
-    this.alvo.texture.name = 'PasseDaLente.meiaResolucao';
-    this.soma.uniforms.tLente.value = this.alvo.texture;
+    const v2 = () => ({ value: new THREE.Vector2() });
+    const v3 = () => ({ value: new THREE.Vector3() });
+    const v4 = () => ({ value: new THREE.Vector4() });
+    this.u = {
+      uL: v2(),
+      uKTam: { value: 1 },
+      uG: { value: 0 },
+      uGLook: { value: 0 },
+      uRaioDisco: { value: 0 },
+      uAspecto: { value: 1 },
+      uInvAltura: { value: 1 },
+      tPoeira: { value: null },
+      uLadrilhos: v2(),
+      uAnel: v4(),
+      uAnelArco: v2(),
+      uAnelCor: v3(),
+      uTemBrilho: { value: false },
+      uBrilho: v4(),
+      uBrilhoCor1: v3(),
+      uBrilhoCor2: v3(),
+      uBrilhoEsticar: { value: 1 },
+      uTemRaios: { value: false },
+      uRaiosForma: v4(),
+      uRaiosLuz: v4(),
+      uRaiosCroma: v3(),
+      uRaiosCor: v3(),
+      uRaiosTabela: { value: Array.from({ length: MAX_RAIOS }, () => new THREE.Vector3()) },
+      uTemRisco: { value: false },
+      uRiscoForma: v4(),
+      uRiscoInt: v3(),
+      uRiscoParalelas: v3(),
+      uRiscoCorPerto: v3(),
+      uRiscoCorLonge: v3(),
+      uTemSujeira: { value: false },
+      uSujeiraCor: v3(),
+      tMacio: { value: this.alvoMacio.texture },
+      tLuz: { value: this.alvoLuz.texture },
+      tSujeira: { value: null },
+    };
+    const material = (
+      vertexShader: string,
+      fragmentShader: string,
+      extra: Uniformes = {},
+      outros: THREE.ShaderMaterialParameters = somaHdr
+    ) => {
+      const m = new THREE.ShaderMaterial({
+        glslVersion: THREE.GLSL3,
+        vertexShader,
+        fragmentShader,
+        uniforms: { ...this.u, ...extra },
+        ...outros,
+      });
+      this.materiais.push(m);
+      return m;
+    };
+    this.malhaDosFantasmas = new THREE.Mesh(
+      new THREE.InstancedBufferGeometry(),
+      material(VERTICE_FANTASMA, FRAGMENTO_FANTASMA)
+    );
+    const quad = new THREE.BufferGeometry();
+    quad.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0], 3));
+    quad.setIndex([0, 1, 2, 0, 2, 3]);
+    this.malhaDoAnel = new THREE.Mesh(quad, material(VERTICE_ANEL, FRAGMENTO_ANEL));
+    for (const m of [this.malhaDosFantasmas, this.malhaDoAnel]) {
+      m.frustumCulled = false;
+      this.cenaMacia.add(m);
+    }
+    const luz = material(VERTICE_TELA, FRAGMENTO_FINOS, { uLarguraMinima: { value: 1 / LINHAS_DA_LUZ } });
+    luz.defines = { LUZ: '' };
+    this.quadLuz = new FullScreenQuad(luz);
+    const borrao = (fonte: THREE.Texture) =>
+      new FullScreenQuad(
+        material(
+          VERTICE_TELA,
+          FRAGMENTO_BORRAO,
+          { tFonte: { value: fonte }, uPasso: v2(), uSigma: { value: 1 } },
+          { blending: THREE.NoBlending, depthTest: false, depthWrite: false }
+        )
+      );
+    this.quadBorraoH = borrao(this.alvoLuz.texture);
+    this.quadBorraoV = borrao(this.alvoLuz2.texture);
+    this.quadFinal = new FullScreenQuad(
+      material(VERTICE_TELA, FRAGMENTO_FINOS, { uLarguraMinima: { value: LARGURA_MINIMA_PX } })
+    );
   }
 
   definirLente(modo: ModoDaLente) {
@@ -355,14 +770,71 @@ export class PasseDaLente extends Pass {
     }
     let gpu = this.naGpu.get(modo);
     if (!gpu) {
-      gpu = fantasmasNaGpu(lente(modo));
+      gpu = naGpu(modo);
       this.naGpu.set(modo, gpu);
     }
-    this.malha.geometry = gpu.geometria;
-    const l = gpu.lente;
-    const u = this.material.uniforms;
-    (u.uRaios.value as THREE.Vector2).set(l.raioFrontal, l.raioDaIris);
-    (u.uIris.value as THREE.Vector4).set(l.laminas, l.rotacaoDaIris, l.curvaturaDaIris, 0);
+    this.malhaDosFantasmas.geometry = gpu.fantasmas;
+    this.uniformesDaReceita(gpu);
+  }
+
+  /** Os uniformes fixos de uma receita: um elemento de cada tipo, no máximo, além dos fantasmas. */
+  private uniformesDaReceita(gpu: NaGpu) {
+    const u = this.u;
+    const p = gpu.preset;
+    const v3 = (nome: string, c: readonly number[]) => (u[nome].value as THREE.Vector3).set(c[0], c[1], c[2]);
+    u.tPoeira.value = gpu.poeira;
+    (u.uLadrilhos.value as THREE.Vector2).copy(gpu.ladrilhos);
+    const anel: Anel | undefined = unico(p, 'anel');
+    this.malhaDoAnel.visible = !!anel;
+    if (anel) {
+      (u.uAnel.value as THREE.Vector4).set(anel.p, anel.raio, anel.espessura, anel.centro === 'quadro' ? 1 : 0);
+      (u.uAnelArco.value as THREE.Vector2).set(anel.expoente, anel.saturacao);
+      v3('uAnelCor', anel.cor.map((c) => c * anel.intensidade));
+    }
+    const b: Brilho | undefined = unico(p, 'brilho');
+    u.uTemBrilho.value = !!b;
+    if (b) {
+      (u.uBrilho.value as THREE.Vector4).set(b.int1, b.raio1, b.int2, b.raio2);
+      v3('uBrilhoCor1', b.cor1);
+      v3('uBrilhoCor2', b.cor2);
+      u.uBrilhoEsticar.value = b.esticar;
+    }
+    const r: Raios | undefined = unico(p, 'raios');
+    u.uTemRaios.value = !!r;
+    if (r) {
+      const n = Math.min(MAX_RAIOS, Math.max(1, Math.round(r.numero)));
+      (u.uRaiosForma.value as THREE.Vector4).set(n, r.comprimento, r.largura, r.alargar);
+      (u.uRaiosLuz.value as THREE.Vector4).set(r.queda, r.intensidade, r.atenuacaoDisco, r.rotacao);
+      v3('uRaiosCroma', r.croma);
+      v3('uRaiosCor', r.cor);
+      const tabela = u.uRaiosTabela.value as THREE.Vector3[];
+      for (let k = 0; k < n; k++) {
+        tabela[k].set(
+          r.jitterAngulo * (hash1(k + r.semente) - 0.5),
+          1 - r.jitterComprimento * hash1(k + 17.3 + r.semente),
+          1 - r.jitterBrilho * hash1(k + 41.9 + r.semente)
+        );
+      }
+    }
+    const s: Risco | undefined = unico(p, 'risco');
+    u.uTemRisco.value = !!s;
+    if (s) {
+      (u.uRiscoForma.value as THREE.Vector4).set(s.comprimento, s.queda, s.larguraNucleo, s.larguraAsas);
+      v3('uRiscoInt', [s.intNucleo, s.intAsas, s.intParalelas]);
+      const par = s.paralelas.slice(0, 2);
+      v3('uRiscoParalelas', [par[0] ?? 0, par[1] ?? 0, par.length]);
+      v3('uRiscoCorPerto', s.corPerto);
+      v3('uRiscoCorLonge', s.corLonge);
+    }
+    const sj: Sujeira | undefined = unico(p, 'sujeira');
+    u.uTemSujeira.value = !!sj && !!gpu.sujeira;
+    u.tSujeira.value = gpu.sujeira;
+    if (sj) {
+      v3('uSujeiraCor', sj.cor.map((c) => c * sj.intensidade));
+      for (const q of [this.quadBorraoH, this.quadBorraoV]) {
+        (q.material as THREE.ShaderMaterial).uniforms.uSigma.value = sj.borrao * LINHAS_DA_LUZ;
+      }
+    }
   }
 
   /** A luz deste quadro (o Director, ao lado de `setWarp`). */
@@ -375,89 +847,60 @@ export class PasseDaLente extends Pass {
     this.enabled = this.amplitude > 0;
   }
 
-  /** Recebe px de BUFFER do composer; o alvo é a metade. */
+  /** Recebe px de BUFFER do composer; o alvo macio é a metade, o da luz tem 128 linhas. */
   setSize(largura: number, altura: number) {
-    this.alturaPx = Math.max(1, altura);
-    this.alvo.setSize(Math.max(1, Math.ceil(largura / 2)), Math.max(1, Math.ceil(altura / 2)));
+    this.largura = Math.max(1, largura);
+    this.altura = Math.max(1, altura);
+    this.alvoMacio.setSize(Math.ceil(this.largura / 2), Math.ceil(this.altura / 2));
+    const wLuz = Math.max(1, Math.round((LINHAS_DA_LUZ * this.largura) / this.altura));
+    this.alvoLuz.setSize(wLuz, LINHAS_DA_LUZ);
+    this.alvoLuz2.setSize(wLuz, LINHAS_DA_LUZ);
+    const uH = (this.quadBorraoH.material as THREE.ShaderMaterial).uniforms;
+    const uV = (this.quadBorraoV.material as THREE.ShaderMaterial).uniforms;
+    (uH.uPasso.value as THREE.Vector2).set(1 / wLuz, 0);
+    (uV.uPasso.value as THREE.Vector2).set(0, 1 / LINHAS_DA_LUZ);
+    this.u.uAspecto.value = this.largura / this.altura;
+    this.u.uInvAltura.value = 1 / this.altura;
+    (this.quadFinal.material as THREE.ShaderMaterial).uniforms.uLarguraMinima.value =
+      LARGURA_MINIMA_PX / this.altura;
   }
 
   /**
-   * A geometria do Sol neste quadro, com a câmera do render: t da lente,
-   * raio angular α e o desvanecer fora do quadro. Devolve 0 quando o Sol
-   * está atrás, longe demais do quadro, ou a câmera não é perspectiva.
+   * O Sol neste quadro, com a câmera do render: L, o disco resolvido, o
+   * gatilho de borda e a saída (look development), e o ganho. Devolve falso
+   * quando o Sol está atrás, saiu da margem, a câmera não é perspectiva, ou
+   * o reflexo inteiro ficaria abaixo do limiar de desenho.
    */
-  private geometriaDoSol(l: Lente): number {
+  private prepararQuadro(gpu: NaGpu, exposicao: number): boolean {
     const cam = this.camera;
-    if (!(cam instanceof THREE.PerspectiveCamera)) return 0;
+    if (!(cam instanceof THREE.PerspectiveCamera)) return false;
     this.sol.set(0, 0, 0).applyMatrix4(cam.matrixWorldInverse);
     const dist = this.sol.length();
     const frente = -this.sol.z;
-    if (!(dist > 0) || !(frente > 1e-9 * dist)) return 0;
-    const k = escalaDoCampo(l, THREE.MathUtils.degToRad(cam.getEffectiveFOV()));
-    const tx = (k * this.sol.x) / frente;
-    const ty = (k * this.sol.y) / frente;
-    const meiaDiagonal = (l.meiaAlturaNativa / l.focal.y) * Math.hypot(cam.aspect, 1);
-    const r = Math.hypot(tx, ty) / meiaDiagonal;
-    const x = Math.min(1, Math.max(0, (r - DIAGONAL_CHEIA) / (DIAGONAL_ZERO - DIAGONAL_CHEIA)));
-    const campo = 1 - x * x * (3 - 2 * x);
-    if (!(campo > 0)) return 0;
-    const seno = Math.min(0.999, RAIO_DO_SOL_NA_CENA / dist);
-    const u = this.material.uniforms;
-    (u.uT.value as THREE.Vector2).set(tx, ty);
-    u.uAlfa.value = k * Math.tan(Math.asin(seno));
-    const h = l.meiaAlturaNativa;
-    (u.uMmPorPx.value as THREE.Vector2).set(
-      (2 * h) / (l.esmagamento * this.alturaPx),
-      (2 * h) / this.alturaPx
-    );
-    (u.uSensorParaNdc.value as THREE.Vector2).set(l.esmagamento / (cam.aspect * h), 1 / h);
-    const a = this.amplitude * campo;
-    (u.uCor.value as THREE.Vector3).set(a * COR_DO_SOL[0], a * COR_DO_SOL[1], a * COR_DO_SOL[2]);
-    return campo;
-  }
-
-  /**
-   * Escolhe os fantasmas deste quadro e escreve a caixa de cada um: fica de
-   * fora quem tem o pico abaixo do limiar de desenho (na exposição do
-   * quadro) e quem tem a caixa toda fora do quadro. Devolve quantos ficam.
-   */
-  private escolherOsVivos(gpu: FantasmasNaGpu, exposicao: number): number {
-    const u = this.material.uniforms;
-    const t = u.uT.value as THREE.Vector2;
-    const alfa = u.uAlfa.value as number;
-    const mm = u.uMmPorPx.value as THREE.Vector2;
-    const ndc = u.uSensorParaNdc.value as THREE.Vector2;
-    const cor = u.uCor.value as THREE.Vector3;
-    const { raioFrontal: rF, raioDaIris: rI } = gpu.lente;
-    const limiar = LIMIAR_NA_EXPOSICAO_1 / Math.max(exposicao, 1e-6);
-    const caixa = gpu.geometria.getAttribute('aCaixa') as THREE.InstancedBufferAttribute;
-    const loHi = this.loHi;
-    let n = 0;
-    let mudou = false;
-    gpu.lente.fantasmas.forEach((f, i) => {
-      const g = f.ganho;
-      if (Math.max(g[0] * cor.x, g[1] * cor.y, g[2] * cor.z) < limiar) return;
-      loHi.fill(Infinity, 0, 2).fill(-Infinity, 2, 4);
-      for (let c = 0; c < 3; c++) {
-        const As = f.As[c], Bs = f.Bs[c], Aa = f.Aa[c], Ba = f.Ba[c];
-        const ex = (Math.abs(Bs.x) * alfa) / mm.x;
-        const ey = (Math.abs(Bs.y) * alfa) / mm.y;
-        const estende = Math.max(1, ex, ey) + 2;
-        eixoDaCaixa(As.x, Bs.x, Aa.x, Ba.x, t.x, rF, rI, mm.x, ex, estende, loHi, 0);
-        eixoDaCaixa(As.y, Bs.y, Aa.y, Ba.y, t.y, rF, rI, mm.y, ey, estende, loHi, 1);
-      }
-      if (loHi[2] * ndc.x < -1 || loHi[0] * ndc.x > 1 || loHi[3] * ndc.y < -1 || loHi[1] * ndc.y > 1) return;
-      caixa.setXYZW(n, loHi[0], loHi[1], loHi[2], loHi[3]);
-      if (gpu.vivos[n] !== i) mudou = true;
-      gpu.vivos[n++] = i;
-    });
-    if (mudou || n !== gpu.nVivos) {
-      gpu.nVivos = n;
-      subirOsVivos(gpu);
-    }
-    caixa.needsUpdate = true;
-    gpu.geometria.instanceCount = n;
-    return n;
+    if (!(dist > 0) || !(frente > 1e-9 * dist)) return false;
+    const T = Math.tan(THREE.MathUtils.degToRad(cam.getEffectiveFOV()) / 2);
+    const aspecto = this.largura / this.altura;
+    const lx = ((this.sol.x / frente / (T * cam.aspect)) * aspecto) / 2;
+    const ly = this.sol.y / frente / (2 * T);
+    // gatilho de borda (Sapphire): perto da borda brilho × e tamanho ×; some depois da margem
+    const b = gpu.preset.borda;
+    const db = Math.min(aspecto / 2 - Math.abs(lx), 0.5 - Math.abs(ly));
+    const sai = suave(-b.margem, 0, db);
+    if (!(sai > 0)) return false;
+    const perto = 1 - suave(0, b.zona, db);
+    const gLook = (this.amplitude / G_DA_LENTE) * (1 + (b.ganhoBrilho - 1) * perto) * sai;
+    const g = gLook * gpu.fator;
+    if (!(g * gpu.pico >= LIMIAR_NA_EXPOSICAO_1 / Math.max(exposicao, 1e-6))) return false;
+    // o disco do Sol em frações da altura; abaixo de ~1 px ele é ponto (como no look development) e
+    // entre 1 e 3 px de raio o disco entra em rampa — um degrau aqui fazia o miolo saltar ~16 % (~3 UA)
+    const raio = Math.tan(Math.asin(Math.min(0.999, RAIO_DO_SOL_NA_CENA / dist))) / (2 * T);
+    const u = this.u;
+    (u.uL.value as THREE.Vector2).set(lx, ly);
+    u.uKTam.value = 1 + (b.ganhoTamanho - 1) * perto;
+    u.uG.value = g;
+    u.uGLook.value = gLook;
+    u.uRaioDisco.value = raio * suave(1, 3, raio * this.altura);
+    return true;
   }
 
   render(
@@ -467,27 +910,42 @@ export class PasseDaLente extends Pass {
   ) {
     if (this.modo === 'nenhuma') return;
     const gpu = this.naGpu.get(this.modo);
-    if (!gpu || this.geometriaDoSol(gpu.lente) <= 0) return;
-    if (this.escolherOsVivos(gpu, renderer.toneMappingExposure) === 0) return;
+    if (!gpu || !this.prepararQuadro(gpu, renderer.toneMappingExposure)) return;
     const limpavaSozinho = renderer.autoClear;
     renderer.autoClear = false;
     renderer.getClearColor(this.corDeLimpezaVelha);
     const alphaVelho = renderer.getClearAlpha();
     renderer.setClearColor(0x000000, 0);
-    renderer.setRenderTarget(this.alvo);
+    renderer.setRenderTarget(this.alvoMacio);
     renderer.clear(true, false, false);
-    renderer.render(this.cenaDosFantasmas, this.cameraNula);
+    renderer.render(this.cenaMacia, this.cameraNula);
+    if (this.u.uTemSujeira.value) {
+      renderer.setRenderTarget(this.alvoLuz);
+      renderer.clear(true, false, false);
+      renderer.render(this.cenaMacia, this.cameraNula);
+      this.quadLuz.render(renderer);
+      renderer.setRenderTarget(this.alvoLuz2);
+      this.quadBorraoH.render(renderer);
+      renderer.setRenderTarget(this.alvoLuz);
+      this.quadBorraoV.render(renderer);
+    }
     renderer.setRenderTarget(readBuffer);
-    this.quad.render(renderer);
+    this.quadFinal.render(renderer);
     renderer.setClearColor(this.corDeLimpezaVelha, alphaVelho);
     renderer.autoClear = limpavaSozinho;
   }
 
   dispose() {
-    for (const gpu of this.naGpu.values()) gpu.geometria.dispose();
-    this.material.dispose();
-    this.soma.dispose();
-    this.quad.dispose();
-    this.alvo.dispose();
+    for (const gpu of this.naGpu.values()) {
+      gpu.fantasmas.dispose();
+      gpu.poeira.dispose();
+      gpu.sujeira?.dispose();
+    }
+    this.malhaDoAnel.geometry.dispose();
+    for (const m of this.materiais) m.dispose();
+    for (const q of [this.quadLuz, this.quadBorraoH, this.quadBorraoV, this.quadFinal]) q.dispose();
+    this.alvoMacio.dispose();
+    this.alvoLuz.dispose();
+    this.alvoLuz2.dispose();
   }
 }

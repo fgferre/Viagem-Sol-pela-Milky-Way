@@ -7,7 +7,8 @@
 // enumeração dos fantasmas (duas reflexões) e camadas antirreflexo de
 // Hullin, Eisemann, Seidel & Lee 2011 ("Physically-Based Real-Time Lens
 // Flare Rendering", SIGGRAPH). Este módulo é puro: transforma a receita em
-// coeficientes lineares por fantasma; quem desenha é o passe de render.
+// coeficientes lineares por fantasma; `presets.ts` tira deles posição,
+// tamanho e forma dos fantasmas desenhados.
 //
 // CONVENÇÃO (vale para o arquivo inteiro). Eixo óptico = z global; a luz
 // entra em z = 0 (vértice da primeira superfície) andando para +z. Cada eixo
@@ -568,7 +569,7 @@ function eixoDoQuad(as: number, bs: number, aa: number, ba: number, t: number, r
  * cai exatamente onde o app a projeta. O render usa t_lente em As·h + Bs·t e
  * Aa·h + Ba·t.
  */
-export const escalaDoCampo = (lente: Lente, fovY: number): number =>
+const escalaDoCampo = (lente: Lente, fovY: number): number =>
   lente.meiaAlturaNativa / lente.focal.y / Math.tan(fovY / 2);
 
 /**

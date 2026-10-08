@@ -169,10 +169,11 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.exposicao': 'Exposure',
   'ajustes.lente': 'Lens',
   'ajustes.lenteNota':
-    'Cinema lens reflections when the camera looks at the Sun. Spherical: subtle round reflections. Anamorphic: the blue horizontal streak and oval reflections. None: the usual image.',
+    'Cinema lens reflections when the camera looks at the Sun. Spherical: subtle round reflections. Anamorphic: the blue horizontal streak and oval reflections. Hollywood: the movie flare, with golden rays, a rainbow halo and many reflections. None: the usual image.',
   'ajustes.lente.nenhuma': 'None',
   'ajustes.lente.redonda': 'Spherical',
   'ajustes.lente.anamorfica': 'Anamorphic',
+  'ajustes.lente.hollywood': 'Hollywood',
   'ajustes.qualidade': 'Quality',
   'ajustes.qualidadeNota':
     'Switches live, with no reload. The heavy part — the galaxy population and the Sun — is rebuilt in the background and swapped in at once; until then the scene stays as it is. Auto lets the measurement choose — and nobody chooses for you without that click.',

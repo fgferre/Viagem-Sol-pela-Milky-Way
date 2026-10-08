@@ -168,10 +168,11 @@ export const PT = {
   'ajustes.exposicao': 'Exposição',
   'ajustes.lente': 'Lente',
   'ajustes.lenteNota':
-    'Reflexos de uma lente de cinema quando a câmera olha para o Sol. Redonda: reflexos redondos e discretos. Anamórfica: o risco horizontal azul e reflexos ovais. Nenhuma: a imagem de sempre.',
+    'Reflexos de uma lente de cinema quando a câmera olha para o Sol. Redonda: reflexos redondos e discretos. Anamórfica: o risco horizontal azul e reflexos ovais. Hollywood: o reflexo de filme, com raios dourados, halo de arco-íris e muitos reflexos. Nenhuma: a imagem de sempre.',
   'ajustes.lente.nenhuma': 'Nenhuma',
   'ajustes.lente.redonda': 'Redonda',
   'ajustes.lente.anamorfica': 'Anamórfica',
+  'ajustes.lente.hollywood': 'Hollywood',
   'ajustes.qualidade': 'Qualidade',
   'ajustes.qualidadeNota':
     'Troca ao vivo, sem recarregar. A parte pesada — a população da galáxia e o Sol — é refeita em segundo plano e entra de uma vez; até lá a cena continua como está. O auto deixa a medição escolher — e ninguém escolhe por você sem esse clique.',

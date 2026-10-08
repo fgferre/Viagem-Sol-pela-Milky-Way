@@ -17,9 +17,9 @@ export type QualityLevel = 'cinema' | 'alta' | 'performance';
 export type ToneMapMode = 'aces' | 'agx' | 'neutral' | 'linear';
 
 /** A lente de cinema do pós-processo (Ajustes · Lente). `nenhuma` é a imagem de sempre. */
-export type ModoDaLente = 'nenhuma' | 'redonda' | 'anamorfica';
+export type ModoDaLente = 'nenhuma' | 'redonda' | 'anamorfica' | 'hollywood';
 
-export const MODOS_DA_LENTE: readonly ModoDaLente[] = ['nenhuma', 'redonda', 'anamorfica'];
+export const MODOS_DA_LENTE: readonly ModoDaLente[] = ['nenhuma', 'redonda', 'anamorfica', 'hollywood'];
 
 export const TONE_MAPPINGS: Record<ToneMapMode, THREE.ToneMapping> = {
   aces: THREE.ACESFilmicToneMapping,
@@ -65,7 +65,7 @@ export function lerPortaTom(bruto: string | null | undefined): ToneMapMode | nul
 }
 
 /**
- * A porta `?lente=`: só 'redonda' e 'anamorfica' passam; ausente ou
+ * A porta `?lente=`: só 'redonda', 'anamorfica' e 'hollywood' passam; ausente ou
  * qualquer outra coisa é 'nenhuma' (a imagem de sempre), então o painel
  * e o Director nunca recebem um modo que a lente não conhece.
  */

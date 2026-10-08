@@ -36,9 +36,9 @@ export function Segmentado<T>({
   valor: T;
   opcoes: Segmento<T>[];
   onEscolher: (v: T) => void;
-  /** modificador extra (auditoria celular, 13/09) — só a Qualidade usa,
-   *  para virar grade 2×2 com texto grande (`08-ajustes.css`); os outros
-   *  sete segmentados da casa continuam sem classe nenhuma aqui. */
+  /** modificador extra — a Qualidade (auditoria celular, 13/09: grade 2×2
+   *  com texto grande) e a Lente (grade 2×2 sempre no celular), ambas em
+   *  `09-celular.css`; os outros segmentados da casa não levam classe. */
   classeExtra?: string;
 }) {
   const moldura = useFileteDoSegmentado();

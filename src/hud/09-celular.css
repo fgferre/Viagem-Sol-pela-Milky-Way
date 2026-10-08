@@ -848,10 +848,14 @@
   /* A QUALIDADE VIRA GRADE 2×2 COM TEXTO GRANDE (`data-texto-grande`,
      `uiScale.ts`) — "Cinema"/"Alta"/"Performance"/"Auto" não cabem numa
      linha só a 390 px com `ui = 1,4` ("Cinema | Alta | Performance |
-     A…"). `overflow: hidden` + `border-radius` do `.ajustes-seg` (regra
+     A…"). A LENTE vira a mesma grade SEMPRE no celular: quatro nomes
+     compridos ("Anamórfica", "Hollywood") passavam de 350 px numa moldura
+     de ~300 a 360 px de janela (medido em 08/10); a grade dá quatro botões
+     iguais, nada cortado. `overflow: hidden` + `border-radius` do `.ajustes-seg` (regra
      de sempre, 08-ajustes.css) já arredondam os quatro cantos de fora
      sozinhos, grade ou fileira — não precisa de raio por botão. */
-  :root[data-texto-grande] .hud-root:has(.atlas-alcas) .ajustes-seg--qualidade {
+  :root[data-texto-grande] .hud-root:has(.atlas-alcas) .ajustes-seg--qualidade,
+  .ajustes-seg--lente {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
@@ -861,7 +865,8 @@
   :root[data-texto-grande]
     .hud-root:has(.atlas-alcas)
     .ajustes-seg--qualidade
-    button:nth-child(2n) {
+    button:nth-child(2n),
+  .ajustes-seg--lente button:nth-child(2n) {
     border-right: none;
   }
   /* A SEGUNDA LINHA ganha o filete que a primeira já tem por baixo dela
@@ -870,7 +875,8 @@
   :root[data-texto-grande]
     .hud-root:has(.atlas-alcas)
     .ajustes-seg--qualidade
-    button:nth-child(n + 3) {
+    button:nth-child(n + 3),
+  .ajustes-seg--lente button:nth-child(n + 3) {
     border-top: 1px solid var(--borda);
   }
   /* O FILETE QUE ANDA (`::after`, 08-ajustes.css) mede X/largura de UMA
@@ -879,7 +885,8 @@
      primeira. Sem um seletor bom para "só a linha de cima", ele some
      aqui: o texto em `--acento` (`.on`, 08-ajustes.css) já diz sozinho
      qual opção está marcada. */
-  :root[data-texto-grande] .hud-root:has(.atlas-alcas) .ajustes-seg--qualidade::after {
+  :root[data-texto-grande] .hud-root:has(.atlas-alcas) .ajustes-seg--qualidade::after,
+  .ajustes-seg--lente::after {
     display: none;
   }
 }

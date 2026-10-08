@@ -519,6 +519,9 @@ export function Ajustes({
           valor={lente}
           opcoes={MODOS_DA_LENTE.map((modo) => ({ valor: modo, nome: t(`ajustes.lente.${modo}`) }))}
           onEscolher={onLente}
+          // quatro lentes com nome comprido ("Anamórfica", "Hollywood") não cabem numa
+          // fileira no celular: lá viram a grade 2×2 de botões iguais (09-celular.css)
+          classeExtra="ajustes-seg--lente"
         />
       </LinhaDeAjuste>
 
