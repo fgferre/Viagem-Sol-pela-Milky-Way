@@ -552,8 +552,9 @@ describe('Director — o gesto do Atlas/pausar-e-olhar usa a MESMA máquina', ()
     // cliques é o MESMO limiar do clique curto, e ele tem um endereço só
     // — e desde 2026-08-23 esse endereço responde ao `pointerType`, para
     // que a régua de mão sobre botão (6 px) não seja aplicada ao dedo
-    expect(GESTOS).toContain(
-      "import { ArrastoDePonteiro, limiarDeClique } from '../arrastoDePonteiro'"
+    // (07/10: a mesma importação traz os dois botões do arrasto que inclina)
+    expect(GESTOS).toMatch(
+      /import \{[^}]*\bArrastoDePonteiro,[^}]*\blimiarDeClique,?\s*\} from '\.\.\/arrastoDePonteiro'/
     );
     expect(GESTOS).toContain('limiarDeClique(event.pointerType)');
     expect(GESTOS).not.toMatch(/const IMOVEL_PX\b/);

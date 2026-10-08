@@ -49,7 +49,11 @@ import type { CorpoBuscavel } from '../../lib/buscaEstrelas';
 import type { MaquinaDoTempo } from './maquinaDoTempo';
 import type { Rotulos } from './rotulos';
 import type { AtlasRig } from '../cinematic/atlasRig';
-import { orbitaMaisExterna, raioDeEnquadramentoEstelar } from '../cinematic/atlasRig';
+import {
+  K_PISO_DO_CORPO,
+  orbitaMaisExterna,
+  raioDeEnquadramentoEstelar,
+} from '../cinematic/atlasRig';
 import { GAL } from '../world/baseGalactica';
 import {
   CORPOS_DO_SISTEMA,
@@ -63,7 +67,7 @@ import { BODY_AXES, IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
 import { RAIO_EQ_TERRA_PC, posicaoDaTerraUA } from '../world/corpos/terra';
 import { RAIO_LUA_PC } from '../world/corpos/lua';
 import type { RochosoResolvido } from '../world/corpos/rochoso';
-import { posicaoDoRochosoUA, raiosDoRochosoPc } from '../world/corpos/rochoso';
+import { fatorDoRaioMaximo, posicaoDoRochosoUA, raiosDoRochosoPc } from '../world/corpos/rochoso';
 import type { GiganteResolvido } from '../world/corpos/gigante';
 import { posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
 import { RETRATO_2026 } from '../world/planetas/retrato2026';
@@ -91,6 +95,28 @@ function paraPc(p: { x: number; y: number; z: number }): THREE.Vector3 {
     eq[1] * AU_PARA_PC,
     eq[2] * AU_PARA_PC
   );
+}
+
+/**
+ * O SOLO DA CÂMERA de um corpo do sistema — o par que o rig do Atlas
+ * recebe em `focar`/`selecionar`/`pousar` e de que sai o piso do zoom
+ * (07/10, "câmera mais livre"):
+ *  · um CORPO desce a `K_PISO_DO_CORPO` (1,1) do raio MÁXIMO REAL dele —
+ *    o maior semieixo de `BODY_AXES` vezes o pico do relevo de vértice ou
+ *    da forma esculpida (`fatorDoRaioMaximo`), para a câmera nunca entrar
+ *    na malha que se vê;
+ *  · o SOL fica em 2 raios físicos (`K_MIN_RAIOS`, o padrão do rig): é o
+ *    regime de brilho que a `luz-do-quadro` julga;
+ *  · fora de `BODY_AXES`, nenhum solo — o rig cai no raio de
+ *    enquadramento, como sempre.
+ */
+export function soloDoCorpo(
+  id: string,
+  solRaioPc: number
+): { pisoRaio: number | null; kDoPiso?: number } {
+  if (id === 'sun') return { pisoRaio: solRaioPc };
+  if (!BODY_AXES[id]) return { pisoRaio: null };
+  return { pisoRaio: raiosDoRochosoPc(id).a * fatorDoRaioMaximo(id), kDoPiso: K_PISO_DO_CORPO };
 }
 
 /**
@@ -316,6 +342,7 @@ export class Escada {
     raio: number;
     eixoDe: THREE.Vector3;
     pisoRaio: number | null;
+    kDoPiso?: number;
     ver: VerDaEscada;
   } | null {
     if (id === 'sun') {
@@ -323,7 +350,7 @@ export class Escada {
         alvo: ORIGEM.clone(),
         raio: this.solRaioPc,
         eixoDe: this.casaViva()?.eixo ?? orbitaMaisExterna().posicao,
-        pisoRaio: this.solRaioPc,
+        ...this.soloDe('sun'),
         ver: 'corpo',
       };
     }
@@ -335,7 +362,7 @@ export class Escada {
       const pos = paraPc(ef.posicaoHeliocentrica(id, jd));
       // o raio é o de BODY_AXES, a MESMA fonte de `focarNaLua`
       const raio = id === 'moon' ? RAIO_LUA_PC : raiosDoRochosoPc(id).a;
-      return { alvo: pos, raio, eixoDe: pos, pisoRaio: raio, ver: 'corpo' };
+      return { alvo: pos, raio, eixoDe: pos, ...this.soloDe(id), ver: 'corpo' };
     }
     // planetas e anões: alvo = o corpo, esfera = a ÓRBITA dele — a
     // mesma lei de `focarNoCorpo`, e a posição sai da efeméride viva
@@ -346,7 +373,7 @@ export class Escada {
       alvo: pos,
       raio: pos.length(),
       eixoDe: pos,
-      pisoRaio: this.raioFisicoDe(id),
+      ...this.soloDe(id),
       ver: 'orbita',
     };
   }
@@ -364,6 +391,7 @@ export class Escada {
     }
     this.atlas.selecionar(r.alvo, r.raio, r.eixoDe, {
       pisoRaio: r.pisoRaio,
+      kDoPiso: r.kDoPiso,
       // a re-mira desliza (item 110) — mesma guarda das trocas de degrau
       rampa: this.rampaDaEscada(),
     });
@@ -790,7 +818,7 @@ export class Escada {
     this.atlas.focar(pos, pos.length(), pos, {
       rampa: this.rampaDaEscada(),
       // o PISO do zoom se mede no corpo, não na órbita dele (item 73)
-      pisoRaio: this.raioFisicoDe(id),
+      ...this.soloDe(id),
     });
     this.enquadrarAgora();
     // o selo lê o ΔEV DESTE corpo enquanto ele estiver em foco (D2)
@@ -816,9 +844,14 @@ export class Escada {
    * Corpo sem registro IAU devolve `null` e o chamador fica com a
    * eclíptica — que é o que o Atlas sempre fez.
    */
+  /** o solo da câmera deste corpo — ver `soloDoCorpo` */
+  private soloDe(id: string): { pisoRaio: number | null; kDoPiso?: number } {
+    return soloDoCorpo(id, this.solRaioPc);
+  }
+
   /**
-   * O RAIO FÍSICO de um corpo do sistema, em pc — a régua do PISO do
-   * zoom da roda (`K_MIN_RAIOS`, item 73). `null` para quem não tem.
+   * O RAIO FÍSICO de um corpo do sistema, em pc — o `a` de `BODY_AXES`
+   * (o piso do zoom mede o MÁXIMO real, `soloDe`). `null` para quem não tem.
    *
    * PÚBLICA desde 31/08 por um SEGUNDO leitor: o pintor da beta 3D
    * (`world/rotulos3d.ts`, item 109) adianta o nome sobre a casca do
@@ -891,6 +924,7 @@ export class Escada {
       rampa: this.rampaDaEscada(),
       // o eixo do PLANETA no alto da tela, não o da eclíptica (Onda 7)
       polo: this.poloDoCorpo(id),
+      ...this.soloDe(id),
     });
     this.enquadrarAgora();
     this.focoCorpoId = id;
@@ -995,6 +1029,7 @@ export class Escada {
     this.atlas.focar(lua, raioPc, lua, {
       rampa: this.rampaDaEscada(),
       pai,
+      ...this.soloDe(id),
       // O POLO É O DA LUA EM QUADRO, e não o da nossa Lua (item 88). O
       // literal era o terceiro e último da herança da Onda 7, de quando
       // a Terra e a Lua eram os únicos corpos com malha: as 21 luas
@@ -1408,7 +1443,7 @@ export class Escada {
     // `focarNoCorpo`, que é de onde este degrau é irmão
     this.atlas.focar(pos, pos.length(), pos, {
       rampa: this.rampaDaEscada(),
-      pisoRaio: this.raioFisicoDe(id),
+      ...this.soloDe(id),
     });
     this.enquadrarAgora();
     this.teletransportou();
@@ -1475,6 +1510,7 @@ export class Escada {
     this.atlas.pousar(posicao, p.alvo, p.raio, p.eixoDe, {
       polo: p.polo,
       pisoRaio: p.pisoRaio,
+      kDoPiso: p.kDoPiso,
     });
     this.enquadrarAgora();
     this.focoCorpoId = p.corpoId;
@@ -1495,6 +1531,7 @@ export class Escada {
     corpoId: string | null;
     polo: THREE.Vector3 | null;
     pisoRaio: number | null;
+    kDoPiso?: number;
   } {
     const distancia = posicao.length();
     // A FRONTEIRA: a esfera do sistema. Fora dela nem o corpo nem o
@@ -1564,6 +1601,7 @@ export class Escada {
     corpoId: string;
     polo: THREE.Vector3 | null;
     pisoRaio: number | null;
+    kDoPiso?: number;
   } | null {
     const aoSol = posicao.length();
     let melhor: { id: string; centro: THREE.Vector3; d: number } | null = null;
@@ -1585,7 +1623,7 @@ export class Escada {
       eixoDe: melhor.centro,
       corpoId: melhor.id,
       polo: this.poloDoCorpo(melhor.id)?.clone() ?? null,
-      pisoRaio: raioPc,
+      ...this.soloDe(melhor.id),
     };
   }
 

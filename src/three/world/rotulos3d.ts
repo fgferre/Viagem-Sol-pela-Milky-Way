@@ -90,12 +90,13 @@ const AVANCO_EM_RAIOS = 1.05;
 
 /**
  * A FOLGA ATÉ O PLANO NEAR, em nears — o único teto do avanço. Adiantar
- * o nome até a câmera o clipa: o piso da roda é 2 raios (`K_MIN_RAIOS`)
- * e ali o near vale meio raio (`nearPlanePc`), então o avanço cheio de
- * 1,05 raio ainda pousa a 0,95 raio da câmera, quase o dobro do near. O
- * teto só morde num corpo mais perto que o piso da roda — uma lua
- * raspada de passagem —, e ali ele prefere o nome ocluído ao nome
- * cortado pelo plano.
+ * o nome até a câmera o clipa: o piso da roda é 1,1 raio máximo do corpo
+ * (`K_PISO_DO_CORPO`) e ali o near vale um milésimo de raio
+ * (`nearPlanePc`: `max(dSuperfície·0,004; raio·1e-3)`), então o avanço
+ * cheio de 1,05 raio ainda pousa a 0,05 raio da câmera, cinquenta nears.
+ * O teto só morde num corpo mais perto que isso — uma lua raspada de
+ * passagem —, e ali ele prefere o nome ocluído ao nome cortado pelo
+ * plano.
  */
 const FOLGA_DO_NEAR = 1.2;
 
