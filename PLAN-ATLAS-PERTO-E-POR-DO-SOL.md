@@ -61,6 +61,46 @@ O relevo e as sombras funcionam. A prova são as fotos do app real em `capturas/
 - Exagerar o relevo.
 - Publicar sem a palavra dele.
 
-## Etapas
+## Etapas (07/10, noite — ele pediu para fazer nesta mesma conversa, coordenando trabalhadores)
 
-(a escrever por quem planejar)
+Ramo `atlas-perto`, na worktree `../Viagem-atlas-perto` (a pasta principal está em uso por outra conversa). O node_modules entra por link. As provas vão para `capturas/atlas-perto/` da pasta principal.
+
+Leituras de 07/10 (fatos com arquivo:linha; os relatórios ficaram com os trabalhadores):
+- **Câmera.** Não existe grau de liberdade de inclinação: a pose sai em `escreverPose`, `atlasRig.ts:1420-1459`, com `lookAt(alvo)` e depois `rotateY/X` dos deslocamentos do HUD.
+  - **Piso:** `pisoDeZoom = K_MIN_RAIOS × pisoRaio`, com `pisoRaio = BODY_AXES[id][0]` (`escada.ts:836-839`), que não conta o relevo. Hipérion chega a 1,368a; Jápeto a ~1,03a.
+  - **Plano próximo e justificativa:** o near é `max(dSup·0,004; R·1e-3)` (`engine.ts:645-658`). O comentário do piso de 2 R (`atlasRig.ts:66-73`, `rotulos3d.ts:93-95`) ainda cita near = 0,5 R, que é velho.
+  - **Gestos livres:** botão direito ou do meio, Shift/Alt + arrastar, e dois dedos movendo juntos (hoje a pinça só lê a distância; `gestos.ts:210-217`, `arrastoDePonteiro.ts:200`).
+  - **Testes que prendem piso e mira:** `atlasRig.test.ts:1131, 1225, 1298, 2866, 471, 1597, 3002`; `zoomDaRoda.test.ts:277`.
+- **Atmosfera.** A transmitância do Sol até um ponto de altura h sai do mesmo O'Neil, sem laço: `T_λ = exp(−4π(kR/λ⁴ + kM)·exp(160(1−h))·escalaOtica(c))`, com c = cosseno do Sol.
+  - Dá ~(0,95, 0,92, 0,85) com o Sol a pino, ~(0,70, 0,56, 0,31) a 6° e ~(0,47, 0,30, 0,09) no horizonte.
+  - A escala de altura do modelo é 40 km (a do ar real é ~8 km). Confessar como "a mesma atmosfera que desenha o limbo".
+  - O termo do Sol já é vec3 nos dois shaders `profundidade`.
+  - Testes que prendem a atmosfera: `terra.test.ts:1110, 1125, 1163, 1190, 747`. `ATMOSFERA_FRAG` não muda de texto.
+  - Filme: `luaNascerDaTerra` vai de 105 a 108,5 s.
+
+**A — câmera** (worker opus).
+1. Piso por corpo = **1,1 × o raio MÁXIMO real**, com o pico do relevo de vértice (`RELEVO_DA_LUA`, escala e viés em `rochoso.ts:~250`) e o maior semieixo. O Sol mantém 2 R, por causa do regime de brilho.
+2. Grau de liberdade novo, a inclinação θ:
+   - depois do `lookAt(alvo)`, a vista arfa θ rumo ao `up`;
+   - θ ∈ [0, asin(min(1, R/d)) + 10°], de modo que o horizonte chega ao centro da tela e sobra um pouco de céu;
+   - ao afastar, θ se grampeia sozinho;
+   - a órbita continua em volta do corpo com θ guardado.
+3. Gestos:
+   - celular: dois dedos movendo juntos na vertical, com zoom e inclinação simultâneos, como no Google Maps;
+   - computador: Shift + arrastar vertical, ou arrastar com o botão direito, mantendo o menu do botão direito bloqueado;
+   - a dica de gestos do Atlas, se existir, ganha uma linha nas duas línguas.
+4. A bússola continua endireitando só o giro. A rampa de seleção e a partida (`atlasRig.ts:529-537, 759, 769, 813-824`) zeram θ suavemente ao trocar de alvo.
+5. Corrigir os dois comentários velhos do near. Ajustar os testes do piso. Teste novo: o grampo de θ e a câmera nunca abaixo do piso real.
+
+**B — luz de pôr do sol** (worker opus, em paralelo; arquivos disjuntos de A).
+1. Um chunk GLSL `transmitanciaDoSol(h, c)` com as constantes do `ATMOSFERA`, sem mudar o texto montado de `ATMOSFERA_FRAG`.
+2. `TERRA_PROFUNDIDADE_FRAG`: `luzSol *= T(h = 1)`; o brilho do mar segue `luzSol`. `NUVENS_PROFUNDIDADE_FRAG`: a luz do Sol × T no topo da nuvem. Com o Sol abaixo do horizonte geométrico, que a faixa macia da política `assistida` ainda ilumina, c é grampeado no horizonte. Decidir por imagem.
+3. A `classica` fica bit a bit, o que se confere pelos sha256 das vistas do Atlas de `capturas/terra-nuvens/depois-v2/`.
+
+**Provas** (eu olho antes de mostrar a ele):
+- Atlas da Terra baixo e inclinado sobre os Andes e o Himalaia no fim da tarde, e de frente para o Sol no limbo;
+- a Lua, Marte, Hipérion (a câmera nunca dentro) e Saturno (anéis);
+- o nascer da Terra no filme, 105–108,5 s, antes e depois;
+- `?nobloom=1` no terminador;
+- `npm run done` no fim.
+- Ele experimenta os gestos no painel de navegador desta conversa, num servidor da worktree, antes de publicar.
