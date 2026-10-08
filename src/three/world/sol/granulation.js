@@ -144,6 +144,11 @@ export function createGranulation(ctx){
   // semeia os dois alvos com ruído em força total para não haver "pop-in".
   // Chamada DEPOIS de buildCharges (uChargesSim precisa estar preenchido).
   function seedSimulation(){
+    // A semente não lê o estado anterior, mas o amostrador continua ligado:
+    // se ele ainda apontasse para um dos dois alvos (re-semear depois de
+    // passos, como no re-bake), o desenho naquele alvo seria laço de
+    // realimentação, e o WebGL o recusa (INVALID_OPERATION) sem desenhar.
+    simUniforms.uPrevState.value = null;
     simUniforms.uSeed.value = 1.0;
     simUniforms.uTime.value = 0.0;
     renderer.setRenderTarget(simRTs[0]);
