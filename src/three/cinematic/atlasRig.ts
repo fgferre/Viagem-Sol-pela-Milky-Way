@@ -126,13 +126,13 @@ export const CEU_ALEM_DO_HORIZONTE_RAD = 10 * GRAU;
  * de céu de longe e jogava a câmera para o outro lado do planeta de
  * perto, que é metade da queixa do "péssimo".
  *
- * A CONTA é `u = clamp((raios − 1) / 3, 1/3, 1)`, e o `− 1` é o que a
- * torna ALTURA e não distância: a câmera a `k` raios do CENTRO vê a
- * superfície a `k − 1` raios. No piso do zoom (`K_MIN_RAIOS` = 2 raios,
- * um raio de altura) o giro anda a um terço; de 4 raios para cima — três
- * raios de altura — anda pleno.
+ * A CONTA é `u = clamp((raios − 1) / 3, FREIO_MINIMO_DO_SOLO, 1)`, e o
+ * `− 1` é o que a torna ALTURA e não distância: a câmera a `k` raios do
+ * CENTRO vê a superfície a `k − 1` raios. A 2 raios (um raio de altura,
+ * o piso antigo) o giro anda a um terço; no piso de 1,1 raio (08/10) a
+ * ~1/30; de 4 raios para cima — três raios de altura — anda pleno.
  *
- * A RÉGUA É A MESMA DO PISO, e é isso que faz "no piso, um terço" ser
+ * A RÉGUA É A MESMA DO PISO, e é isso que faz o freio do piso ser
  * verdade por construção: o raio FÍSICO do corpo quando quem focou o
  * conhece (`pisoRaio`), e o de enquadramento quando não. NÃO é a régua
  * da porta `?d=` (`distanciaEmRaios`, sempre em raios de
@@ -145,11 +145,13 @@ export const CEU_ALEM_DO_HORIZONTE_RAD = 10 * GRAU;
 export const FREIO_DO_SOLO_RAIOS = 3;
 
 /**
- * ...e o quanto o freio pode apertar, no máximo. Um terço é o número do
- * P3; abaixo dele o giro perto da superfície viraria melado, e com zero
- * a câmera ficaria presa no piso do zoom sem poder sair.
+ * ...e o quanto o freio pode apertar, no máximo. Com o piso em 1,1 raio
+ * (08/10) a fórmula chega a 0,033 no chão e o 0,03 só segura o resto: ali
+ * o solo anda a cerca de METADE da velocidade do dedo (`taxa·R/(d−R)`
+ * contra os rad/px da lente); acima de 2 raios nada muda, a fórmula já
+ * dá ≥ 1/3. Com zero a câmera ficaria presa no piso sem poder sair.
  */
-export const FREIO_MINIMO_DO_SOLO = 1 / 3;
+export const FREIO_MINIMO_DO_SOLO = 0.03;
 
 /**
  * QUANTO DEMORA O ENDIREITAR, em segundos — a rampa do botão de

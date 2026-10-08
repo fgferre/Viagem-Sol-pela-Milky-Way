@@ -1136,10 +1136,16 @@ describe('a inércia do giro — o filtro 20/80 com correção de delta-time', (
     // de céu de longe jogava a câmera para o outro lado do planeta de
     // perto. A régua é o ÂNGULO em torno do alvo, não a distância
     // percorrida (essa escala com o raio da órbita e não mediria nada).
-    const varreu = (raios: number) => {
+    const varreu = (raios: number, kDoPiso?: number) => {
       const cam = camera();
       const rig = new AtlasRig();
-      naAberturaDeProducao(rig); // alvo na origem, régua = raio FÍSICO do Sol
+      // alvo na origem, régua = raio FÍSICO do Sol
+      rig.focar(
+        new THREE.Vector3(),
+        orbitaMaisExterna().raio,
+        orbitaMaisExterna().posicao,
+        { pisoRaio: RAIO_DO_SOL_NA_CENA, ...(kDoPiso ? { kDoPiso } : {}) }
+      );
       rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
       rig.pinarDistancia(raios * RAIO_DO_SOL_NA_CENA);
       rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
@@ -1151,16 +1157,19 @@ describe('a inércia do giro — o filtro 20/80 com correção de delta-time', (
       for (let i = 0; i < 200; i++) quadro(rig, cam, 0, QUADRO);
       return cam.position.clone().sub(rig.alvo).normalize().angleTo(antes);
     };
-    const noPiso = varreu(K_MIN_RAIOS); // 2 raios: um raio de altura
     const longe = varreu(10);
     expect(longe).toBeGreaterThan(0);
-    // MEDIDO: 0,333338 — no piso o giro anda um TERÇO do que anda longe,
-    // que é o `FREIO_MINIMO_DO_SOLO` contra o freio solto de 10 raios.
-    // Os 4e-6 que sobram são a curvatura da parametrização (o ângulo
-    // varrido não é exatamente linear na volta), não o freio.
-    expect(noPiso / longe).toBeCloseTo(FREIO_MINIMO_DO_SOLO, 4);
-    // e de 4 raios para cima (3 de altura) o freio já saiu do caminho
+    // 2 raios (um de altura): a fórmula dá (2 − 1) / 3 = 1/3 — o mínimo
+    // de 0,03 não entra aqui, então o que valia continua valendo. Os 4e-6
+    // que sobram são a curvatura da parametrização, não o freio.
+    expect(varreu(K_MIN_RAIOS) / longe).toBeCloseTo(1 / 3, 4);
+    // de 4 raios para cima (3 de altura) o freio já saiu do caminho
     expect(varreu(4) / longe).toBeCloseTo(1, 6);
+    // 1,1 raio, o piso de um corpo: (1,1 − 1) / 3 = 0,0333 — o giro anda
+    // uma trinta avos do de longe, e o mínimo (0,03) fica ABAIXO disso:
+    // é só o chão do freio, não o que manda no piso
+    expect(varreu(K_PISO_DO_CORPO, K_PISO_DO_CORPO) / longe).toBeCloseTo(0.1 / 3, 3);
+    expect(FREIO_MINIMO_DO_SOLO).toBeLessThan(0.1 / 3);
   });
 
   it('o gesto NÃO ATRAVESSA a troca de alvo — a inércia morre com o foco', () => {
