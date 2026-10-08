@@ -1,5 +1,5 @@
 // ============================================================
-// PILOTO DE PÃ (E3 de PLAN-LUAS-PEQUENAS.md) — só com `?piloto=pa-medida`, `pa-pintada`, `pa-mundos`, `pa-foto` ou `pa-final`.
+// PILOTO DE PÃ (E3 de PLAN-LUAS-PEQUENAS.md) — só com `?piloto=pa-medida`, `pa-pintada`, `pa-mundos`, `pa-foto`, `pa-final` ou `pa-f`.
 //
 // Pã sai do ESCULPIDO (`esculpido.ts`) e entra pelo caminho do relevo
 // medido do Hipérion (`rochoso.ts`, `RELEVO_DA_LUA`): esfera deslocada pelo
@@ -27,10 +27,12 @@ import type { BuscadorDeManifest, EntradaDeTextura, ManifestDeTexturas } from '.
  * pintada + o detalhe fino das fotos da Cassini (sulcos, terraços, a crista da aba) como relevo fino e um toque de
  * albedo, onde as fotos veem (`capturas/luas-pequenas/pa/foto/gera-foto.mjs`); `pa-final` — a de foto + as
  * crateras pequenas que a Cassini registrou (nos lugares e tamanhos medidos; extrapoladas na mesma densidade onde não
- * há foto) e a cor natural medida nos quadros de filtro da Cassini (`capturas/luas-pequenas/pa/final/gera-final.mjs`).
+ * há foto) e a cor natural medida nos quadros de filtro da Cassini (`capturas/luas-pequenas/pa/final/gera-final.mjs`);
+ * `pa-f` — a final com o relevo fino de TODOS os quadros calibrados do sobrevoo, na força medida, e onde nenhuma foto
+ * vê um relevo fino inventado pela estatística do que elas veem (`capturas/luas-pequenas/pa/f/gera-f.mjs`).
  */
-export type VarianteDaPa = 'pa-medida' | 'pa-pintada' | 'pa-mundos' | 'pa-foto' | 'pa-final';
-const VARIANTES_DA_PA: readonly VarianteDaPa[] = ['pa-medida', 'pa-pintada', 'pa-mundos', 'pa-foto', 'pa-final'];
+export type VarianteDaPa = 'pa-medida' | 'pa-pintada' | 'pa-mundos' | 'pa-foto' | 'pa-final' | 'pa-f';
+const VARIANTES_DA_PA: readonly VarianteDaPa[] = ['pa-medida', 'pa-pintada', 'pa-mundos', 'pa-foto', 'pa-final', 'pa-f'];
 
 /** O interruptor — lido uma vez; `location` não existe no ambiente `node` do vitest. */
 export const PILOTO_DA_PA: VarianteDaPa | null = (() => {
@@ -83,9 +85,9 @@ export function orientacaoDoRochoso(id: string, piloto = PILOTO_PA_MEDIDA): IauO
 
 /**
  * As entradas de uma variante: 2048 e 1024 onde o tier pede (`alvoDePixels`), a altura só em 1024 como a do
- * Hipérion. A cor vem da pasta da variante; o relevo é o de `piloto/pa/`, menos em `pa-mundos`, `pa-foto` e
- * `pa-final`, que mudam a altura, a normal e o horizonte mas não a faixa do byte (escala/viés os mesmos:
- * `gera-pintura.mjs`, `gera-foto.mjs`, `gera-final.mjs`).
+ * Hipérion. A cor vem da pasta da variante; o relevo é o de `piloto/pa/`, menos em `pa-mundos`, `pa-foto`,
+ * `pa-final` e `pa-f`, que mudam a altura, a normal e o horizonte mas não a faixa do byte (escala/viés os mesmos:
+ * `gera-pintura.mjs`, `gera-foto.mjs`, `gera-final.mjs`, `gera-f.mjs`).
  */
 export function entradasDaPa(variante: VarianteDaPa): readonly EntradaDeTextura[] {
   const cor = variante === 'pa-medida' ? 'piloto/pa' : `piloto/${variante}`;
