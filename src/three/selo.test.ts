@@ -66,6 +66,7 @@ const LIMPA: EstadoDaVista = {
   portas: [],
   exposicaoManual: false,
   tom: 'aces',
+  lente: 'nenhuma',
   camadasEscondidas: [],
   tier: 'cinema',
   // gaveta Avançado intocada: nos cinco controles quem manda é o
@@ -211,6 +212,16 @@ describe('2. nenhum controle desmente o selo', () => {
     for (const tom of Object.keys(TONE_MAPPINGS) as ToneMapMode[]) {
       const v = estadoDoSelo(com({ tom }));
       expect(v.brilho, `tom ${tom}`).toBe(tom === 'aces' ? 'real' : 'assistido');
+    }
+  });
+
+  it('a lente de cinema ligada vira desvio com linha própria, e o clique a desliga', () => {
+    expect(estadoDoSelo(com({ lente: 'nenhuma' })).brilho).toBe('real');
+    for (const lente of ['redonda', 'anamorfica'] as const) {
+      const v = estadoDoSelo(com({ lente }));
+      expect(v.brilho, `lente ${lente}`).toBe('assistido');
+      expect(v.desvios.map((c) => c.chave)).toEqual(['lente']);
+      expect(aoClicarEmBrilho(com({ lente })).lente).toBe('nenhuma');
     }
   });
 

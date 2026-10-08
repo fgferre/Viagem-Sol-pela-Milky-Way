@@ -166,6 +166,12 @@ export const PT = {
   'ajustes.tom.neutral': 'meio-termo',
   'ajustes.tom.linear': 'sem curva — estoura, mostra o cru',
   'ajustes.exposicao': 'Exposição',
+  'ajustes.lente': 'Lente',
+  'ajustes.lenteNota':
+    'Reflexos de uma lente de cinema quando a câmera olha para o Sol. Redonda: reflexos redondos e discretos. Anamórfica: o risco horizontal azul e reflexos ovais. Nenhuma: a imagem de sempre.',
+  'ajustes.lente.nenhuma': 'Nenhuma',
+  'ajustes.lente.redonda': 'Redonda',
+  'ajustes.lente.anamorfica': 'Anamórfica',
   'ajustes.qualidade': 'Qualidade',
   'ajustes.qualidadeNota':
     'Troca ao vivo, sem recarregar. A parte pesada — a população da galáxia e o Sol — é refeita em segundo plano e entra de uma vez; até lá a cena continua como está. O auto deixa a medição escolher — e ninguém escolhe por você sem esse clique.',
@@ -505,6 +511,7 @@ export const PT = {
   'selo.esteGlobo': 'Este globo: {passos} passos de luz sobre a luz física.',
   'selo.desvio.exp': 'exposição escolhida à mão',
   'selo.desvio.tone': 'curva de tom trocada',
+  'selo.desvio.lente': 'lente de cinema ligada: reflexos da câmera, não do céu',
   'selo.desvio.doseDoSol': 'o arranque mostra o Sol mais limpo do que a data pede',
   'selo.desvio.luzDoRoteiro': 'a luz está em transição pelo roteiro, entre a assistida e a real',
   'selo.desvio.amostragem': 'amostragem abaixo de cinema',

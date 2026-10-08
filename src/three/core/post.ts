@@ -11,7 +11,9 @@ import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { FILM_SHADER } from '../shaders/dustShaders';
 import { GLSL_COMPRESSAO } from '../shaders/common';
 import { BETA_DA_ASA, FRACAO_DA_ASA } from '../estrela';
-import type { QualityLevel } from './engine';
+import type { ModoDaLente, QualityLevel } from './engine';
+import type { PoliticaDeLuz } from '../../lib/atlas/luz';
+import { PasseDaLente } from '../lente/passeDaLente';
 
 // KNEE pré-ACES (rodada 19): compressão asinh do compósito HDR — o tone
 // map de divulgação da referência (Lupton 2004; Filmic/AgX) comprime
@@ -955,6 +957,7 @@ export class Post {
   readonly bloom: UnrealBloomPass;
   private cena: CenaResolvidaUmaVez;
   private claraoDoCampo: ClaraoDoCampo;
+  private passeDaLente: PasseDaLente;
   private film: ShaderPass;
   private knee: ShaderPass;
   private kneeOn = false;
@@ -1053,6 +1056,10 @@ export class Post {
       renderer.getPixelRatio()
     );
     this.composer.addPass(this.claraoDoCampo);
+    // os fantasmas da lente de cinema: HDR, depois do bloom (fantasma não
+    // floresce) e antes do knee/ACES; desligado com `nenhuma`
+    this.passeDaLente = new PasseDaLente(camera);
+    this.composer.addPass(this.passeDaLente);
 
     // knee asinh no HDR composto (depois do bloom, antes do ACES).
     // Default LIGADO com β=0,45 (rodada 20: com chromsat=0,5 na extinção,
@@ -1261,6 +1268,19 @@ export class Post {
     this.claraoDoCampo.enabled = ligado;
   }
 
+  /** a lente de cinema escolhida em Ajustes; o passe da lente lê este campo */
+  lente: ModoDaLente = 'nenhuma';
+
+  definirLente(modo: ModoDaLente) {
+    this.lente = modo;
+    this.passeDaLente.definirLente(modo);
+  }
+
+  /** A luz do Sol que a lente recebe neste quadro (o Director, ao lado de `setWarp`). */
+  atualizarLente(dUA: number, politica: PoliticaDeLuz, roteiro: number, visibilidade: number) {
+    this.passeDaLente.atualizar(dUA, politica, roteiro, visibilidade);
+  }
+
   private galaxyMode = 0;
   private forcedAmt: number | null = null;
 
@@ -1378,6 +1398,7 @@ export class Post {
     // sozinho retém 11 render targets HDR na VRAM
     this.cena.dispose();
     this.claraoDoCampo.dispose();
+    this.passeDaLente.dispose();
     this.bloom.dispose();
     this.film.dispose();
     this.knee.dispose();

@@ -43,6 +43,7 @@ import { decimalDoIdioma, t } from '../lib/idioma';
 import { PT } from '../lib/idioma/pt';
 import type {
   GasVolumetrico,
+  ModoDaLente,
   VarianteDaTerra,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
@@ -357,6 +358,8 @@ export interface EstadoDaVista {
   exposicaoManual: boolean;
   /** curva de tom viva */
   tom: ToneMapMode;
+  /** lente de cinema viva (Ajustes · Lente) — efeito da câmera, não do céu */
+  lente: ModoDaLente;
   /** flags das camadas escondidas agora */
   camadasEscondidas: readonly string[];
   /** tier VIVO — no Auto ele anda sem clique, e isso conta (D1) */
@@ -585,6 +588,13 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     get rotulo() { return t('selo.desvio.tone'); },
     volta: 'vivo',
     desvia: (e) => e.tom !== 'aces',
+  },
+  {
+    chave: 'lente',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.lente'); },
+    volta: 'vivo',
+    desvia: (e) => e.lente !== 'nenhuma',
   },
   /**
    * A DOSE DO SOL NO ARRANQUE (item 5). A linha que faz da dramaturgia
@@ -1123,6 +1133,7 @@ export function aoClicarEmBrilho(e: EstadoDaVista): EstadoDaVista {
     portas: e.portas.filter((p) => !chaves.has(p)),
     exposicaoManual: chaves.has('exp') ? false : e.exposicaoManual,
     tom: chaves.has('tone') ? 'aces' : e.tom,
+    lente: chaves.has('lente') ? 'nenhuma' : e.lente,
     camadasEscondidas: e.camadasEscondidas.filter((f) => !chaves.has(f)),
     luz: chaves.has('luz') ? 'real' : e.luz,
   };

@@ -26,6 +26,7 @@ import type {
   EstadoDaQualidade,
   GasVolumetrico,
   MedicaoDoQuadro,
+  ModoDaLente,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
   QualityLevel,
@@ -53,6 +54,7 @@ import type { StarLabel } from './world/labels';
 // por orçamento de fluxo — no lugar das 16 heroes de autor. Quem o
 // alimenta por quadro é o módulo do Sol (director/solNoQuadro.ts).
 import { ClaraoDeAsas } from './world/clarao';
+import { SondaDaLente } from './lente/sondaDaLente';
 import { HeroStars } from './world/heroStars';
 import { Galaxy, GAL, dentroDoDisco } from './world/galaxy';
 import type { CartographyMode } from './world/galaxy';
@@ -626,6 +628,7 @@ export class Director {
    *  dominância morreram com as heroes de autor: o clarão soma óptica
    *  POR CIMA do ponto e não pede cessão a ninguém.) */
   private clarao!: ClaraoDeAsas;
+  private sondaDaLente!: SondaDaLente;
   private heroes!: HeroStars;
   private galaxy!: Galaxy;
   /** os 10 pontos fotométricos do domínio profundo (Onda 4, D3) —
@@ -712,6 +715,8 @@ export class Director {
    * ela em `kDaLuz` (`luzDaVisita.ts`), e o selo a declara.
    */
   private luzDoRoteiro = 0;
+  /** quanto do disco do Sol a lente vê (0–1): a sonda da lente (`lente/sondaDaLente.ts`), a cada quadro */
+  private visibilidadeDoSol = 1;
   /** DEPURAÇÃO, só em dev (via `window.__director`): não nulo, substitui a curva `camera.luz` do roteiro. */
   luzDoRoteiroForcada: number | null = null;
   private observedClouds: ObservedClouds | null = null;
@@ -1886,6 +1891,7 @@ export class Director {
     // raio do sprite para fora, e não pede cessão a ninguém. Quem
     // decide quem o tem é o fluxo, por quadro, com histerese (§5.21).
     this.clarao = new ClaraoDeAsas(this.meta.named);
+    this.sondaDaLente = new SondaDaLente();
     // (o `SunStar` morreu no M1 da Lei da Estrela: o Sol de longe é o
     // ponto fotométrico da camada dos dez, em toda distância — a mesma
     // PSF do campo, sem clarão de autor por cima.)
@@ -2032,6 +2038,7 @@ export class Director {
     this.engine.scene.add(this.sun.group);
     this.engine.scene.add(this.dust.points);
     this.engine.scene.add(this.clarao.group);
+    this.engine.scene.add(this.sondaDaLente.group);
     this.engine.scene.add(this.heroes.group);
     this.engine.scene.add(this.galaxy.group);
     // O COBERTOR DO CAMPO (R2 do item 44, "cada camada com seu cobertor"):
@@ -3004,6 +3011,11 @@ export class Director {
     this.publicarQualidade();
   }
 
+  /** a lente de cinema (Ajustes · Lente): o estado mora no Post, daqui só sai o pedido */
+  definirLente(modo: ModoDaLente) {
+    this.post.definirLente(modo);
+  }
+
   /**
    * OS DOIS INGREDIENTES DO NÍVEL DA NEBULOSA, num lugar só (item 145):
    * passos do raymarch e escala do alvo de meia resolução. O nível vem
@@ -3516,6 +3528,7 @@ export class Director {
       portas: [...new URLSearchParams(window.location.search).keys()],
       exposicaoManual: this.expOverride,
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),
+      lente: this.post.lente,
       camadasEscondidas: [...this.hide, ...(this.noNebula ? ['nonebula'] : [])],
       tier: this.engine.quality,
       // os sete controles da gaveta Avançado (item 145, +145b, +149,
@@ -4298,6 +4311,20 @@ export class Director {
     );
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
+    this.visibilidadeDoSol = this.sondaDaLente.atualizar({
+      ligada: this.post.lente !== 'nenhuma',
+      camera: cam,
+      larguraPx: this.engine.renderer.domElement.width,
+      alturaPx: hPx,
+      tanHalfFov,
+      dtS: dt,
+    });
+    this.post.atualizarLente(
+      cam.position.length() * UA_POR_PC,
+      this.politicaDeLuz,
+      this.luzDoRoteiro,
+      this.visibilidadeDoSol
+    );
     // A PIRÂMIDE DA POEIRA (E3c): a fonte que o pedido quer agora, o
     // aquecimento dos materiais dela (desde o clique, antes da troca) e,
     // com a câmera DESTE quadro, o lote da residência na GPU — antes do
@@ -4442,6 +4469,7 @@ export class Director {
     // de renderer.dispose() não chama deleteProgram
     step('stars', () => this.stars?.dispose());
     step('clarao', () => this.clarao?.dispose());
+    step('sondaDaLente', () => this.sondaDaLente?.dispose());
     // as heroes andam com o clarão (as duas camadas de asa) e faltavam
     // desta lista desde que nasceram: medido em 21/08, um `dispose()` do
     // Director deixava 16 geometrias e 16 materiais vivos, que são

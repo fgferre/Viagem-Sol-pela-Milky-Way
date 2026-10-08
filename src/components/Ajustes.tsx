@@ -75,12 +75,14 @@ import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
   GasVolumetrico,
+  ModoDaLente,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
   TipoDePoeira,
   ToneMapMode,
   VarianteDaTerra,
 } from '../three/core/engine';
+import { MODOS_DA_LENTE } from '../three/core/engine';
 import { AMOSTRAS_POR_TIER } from '../three/core/post';
 
 /**
@@ -251,6 +253,8 @@ export function Ajustes({
   onPoeira,
   tom,
   onTom,
+  lente,
+  onLente,
   exposicao,
   onExposicao,
   escalaUi,
@@ -286,6 +290,9 @@ export function Ajustes({
   onPoeira: (variante: TipoDePoeira | null) => void;
   tom: ToneMapMode;
   onTom: (t: ToneMapMode) => void;
+  /** a lente de cinema (`?lente=`) — só muda os reflexos, nunca o céu */
+  lente: ModoDaLente;
+  onLente: (m: ModoDaLente) => void;
   exposicao: number;
   onExposicao: (v: number) => void;
   /** fator do tamanho do texto do HUD (`?ui=`) — 1 é o de sempre */
@@ -498,6 +505,21 @@ export function Ajustes({
           onChange={(e) => onExposicao(Number(e.target.value))}
         />
         <span className="ajustes-valor">{exposicao.toFixed(2)}</span>
+      </LinhaDeAjuste>
+
+      <LinhaDeAjuste
+        id="lente"
+        rotulo={t('ajustes.lente')}
+        dica={t('ajustes.lenteNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.lente')}
+          valor={lente}
+          opcoes={MODOS_DA_LENTE.map((modo) => ({ valor: modo, nome: t(`ajustes.lente.${modo}`) }))}
+          onEscolher={onLente}
+        />
       </LinhaDeAjuste>
 
       {/* A GAVETA AVANÇADO (item 145) — os presets na frente, os

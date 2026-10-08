@@ -25,6 +25,7 @@ import {
   TravaDoVaivem,
   farPlanePc,
   lerPortaExposicao,
+  lerPortaLente,
   lerPortaPoeira,
   lerPortaTom,
   medidaDeResizeValida,
@@ -366,6 +367,16 @@ describe('?tone= — só um modo que existe de verdade atravessa', () => {
     expect(lerPortaTom('constructor')).toBeNull();
     expect(lerPortaTom('__proto__')).toBeNull();
     expect(lerPortaTom('hasOwnProperty')).toBeNull();
+  });
+});
+
+describe('?lente= — só redonda e anamorfica atravessam, o resto é nenhuma', () => {
+  it('os dois modos de lente passam; ausente ou lixo é nenhuma, até o herdado do objeto', () => {
+    expect(lerPortaLente('redonda')).toBe('redonda');
+    expect(lerPortaLente('anamorfica')).toBe('anamorfica');
+    for (const ruim of ['foo', 'Redonda', '', 'constructor', '__proto__', null, undefined]) {
+      expect(lerPortaLente(ruim), String(ruim)).toBe('nenhuma');
+    }
   });
 });
 

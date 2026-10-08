@@ -167,6 +167,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.tom.neutral': 'middle ground',
   'ajustes.tom.linear': 'no curve — clips, shows the raw frame',
   'ajustes.exposicao': 'Exposure',
+  'ajustes.lente': 'Lens',
+  'ajustes.lenteNota':
+    'Cinema lens reflections when the camera looks at the Sun. Spherical: subtle round reflections. Anamorphic: the blue horizontal streak and oval reflections. None: the usual image.',
+  'ajustes.lente.nenhuma': 'None',
+  'ajustes.lente.redonda': 'Spherical',
+  'ajustes.lente.anamorfica': 'Anamorphic',
   'ajustes.qualidade': 'Quality',
   'ajustes.qualidadeNota':
     'Switches live, with no reload. The heavy part — the galaxy population and the Sun — is rebuilt in the background and swapped in at once; until then the scene stays as it is. Auto lets the measurement choose — and nobody chooses for you without that click.',
@@ -479,6 +485,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.esteGlobo': 'This globe: {passos} stops of light above the physical light.',
   'selo.desvio.exp': 'exposure set by hand',
   'selo.desvio.tone': 'tone curve changed',
+  'selo.desvio.lente': 'cinema lens on: camera reflections, not the sky',
   'selo.desvio.doseDoSol': 'the opening shows the Sun cleaner than the date asks for',
   'selo.desvio.luzDoRoteiro': 'the light is in a scripted transition, between assisted and real',
   'selo.desvio.amostragem': 'sampling below cinema',

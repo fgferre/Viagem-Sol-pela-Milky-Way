@@ -61,6 +61,7 @@ import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { alcanceDoEspinhoPx, ganhoDeEntradaDoFlare, raioVisivelDaAsaPx } from '../estrela';
 import { M_V_SOL_DO_CAMPO, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS, stepRampToward } from './lodStellar';
+import { ndcNaTela, SondaDeOclusao } from './sondaDeOclusao';
 
 // ─── O ORÇAMENTO E A HISTERESE (puros, testados sem three) ───────────────
 
@@ -358,12 +359,6 @@ void main() {
 }
 `;
 
-interface SondaDeOclusao {
-  query: WebGLQuery;
-  pendente: boolean;
-  id: number;
-}
-
 // ─── A CAMADA ─────────────────────────────────────────────────────────────
 
 /** O que a camada precisa saber do quadro — o instrumento vem de quem o
@@ -472,15 +467,10 @@ export class ClaraoDeAsas {
   // logo antes de `ocupacao()` — mesmo grupo, desenhista à parte
   private readonly sondaMat: THREE.ShaderMaterial;
   private readonly sondaMesh: THREE.Mesh;
-  private readonly sondas: SondaDeOclusao[] = [];
-  private proximoIdDaSonda = 1;
-  private idDoUltimoResultadoDeOclusao = 0;
+  private readonly consultas: SondaDeOclusao;
   /** true quando a ÚLTIMA consulta resolvida achou o Sol tapado por
    *  OUTRO corpo — nunca pela §5.15 (o próprio Sol não conta aqui) */
   private solOculto = false;
-  /** índice em `sondas` da consulta aberta NESTE draw, ou -1 */
-  private indiceDaSondaAtiva = -1;
-  private ultimoContextoGL: WebGL2RenderingContext | null = null;
   private readonly vSonda = new THREE.Vector3();
 
   // o cadastro de candidatos: 0 = Sol (na origem), 1.. = as nomeadas.
@@ -569,8 +559,12 @@ export class ClaraoDeAsas {
     sonda.visible = false;
     sonda.frustumCulled = false;
     sonda.renderOrder = -1; // a PRIMEIRA da fila transparente: só o depth dos sólidos
-    sonda.onBeforeRender = (renderer, _cena, camera) => this.iniciarConsultaDeOclusao(renderer, camera);
-    sonda.onAfterRender = (renderer) => this.encerrarConsultaDeOclusao(renderer);
+    // a mecânica da consulta é a comum (`sondaDeOclusao.ts`); fora da
+    // tela (sem resposta) conta como à vista, ver a seção da mecânica
+    this.consultas = new SondaDeOclusao(TAMANHO_DA_PISCINA_DE_SONDAS, (visivel) =>
+      this.registrarOclusaoDoSol(visivel === false)
+    );
+    this.consultas.ligar(sonda, (camera) => this.centroNaTela(camera));
     this.group.add(sonda);
     this.sondaMesh = sonda;
   }
@@ -703,8 +697,9 @@ export class ClaraoDeAsas {
 
   // ─── A MECÂNICA DA SONDA — consulta de oclusão sem nunca bloquear ───────
   //
-  // `onBeforeRender`/`onAfterRender` só disparam quando a sonda desenha de
-  // verdade — e ela desenha UMA vez por quadro, no passe principal
+  // A consulta em si (piscina, nunca bloquear, o mais novo decide) é a
+  // comum, `sondaDeOclusao.ts`. Ela só dispara quando a sonda desenha de
+  // verdade — e a sonda desenha UMA vez por quadro, no passe principal
   // (`CenaResolvidaUmaVez`, `core/post.ts`, o único que usa a câmera e a
   // cena reais). O segundo passe de estrelas do campo (`ClaraoDoCampo`)
   // roda com uma câmera à parte restrita às camadas 1/2
@@ -712,58 +707,14 @@ export class ClaraoDeAsas {
   // resto do clarão — mora só na camada 0 (a padrão), então não a
   // alcança. É esse único draw, com a profundidade dos corpos resolvidos
   // já escrita pela fila opaca, que a consulta mede.
-  private iniciarConsultaDeOclusao(renderer: THREE.WebGLRenderer, camera: THREE.Camera): void {
-    this.indiceDaSondaAtiva = -1;
-    const gl = renderer.getContext() as WebGL2RenderingContext;
-    if (typeof gl.createQuery !== 'function') return; // sem WebGL2: solOculto fica como está
-    this.ultimoContextoGL = gl;
-    this.consumirResultadosDeOclusao(gl);
-    // CENTRO DO SOL FORA DA TELA (medido em 23/09: a 2 % acima da borda, a
-    // cruz ainda entrava no quadro): a sonda cairia fora da imagem e seria
-    // descartada — "tapado" sem corpo nenhum. Fora da tela a pergunta não
-    // tem resposta: o clarão segue como antes da sonda, e as consultas já
-    // em voo, feitas com o Sol ainda dentro, não valem mais.
-    const ndc = this.vSonda.setFromMatrixPosition(this.sondaMesh.matrixWorld).project(camera);
-    if (!(Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1 && ndc.z <= 1)) {
-      this.idDoUltimoResultadoDeOclusao = this.proximoIdDaSonda - 1;
-      this.registrarOclusaoDoSol(false);
-      return;
-    }
-    let vaga = this.sondas.find((s) => !s.pendente);
-    if (!vaga && this.sondas.length < TAMANHO_DA_PISCINA_DE_SONDAS) {
-      const query = gl.createQuery();
-      if (!query) return;
-      vaga = { query, pendente: false, id: 0 };
-      this.sondas.push(vaga);
-    }
-    if (!vaga) return; // piscina cheia de consultas em voo: pula este quadro, nunca bloqueia
-    vaga.pendente = true;
-    vaga.id = this.proximoIdDaSonda++;
-    this.indiceDaSondaAtiva = this.sondas.indexOf(vaga);
-    gl.beginQuery(gl.ANY_SAMPLES_PASSED_CONSERVATIVE, vaga.query);
-  }
-
-  private encerrarConsultaDeOclusao(renderer: THREE.WebGLRenderer): void {
-    if (this.indiceDaSondaAtiva < 0) return;
-    const gl = renderer.getContext() as WebGL2RenderingContext;
-    gl.endQuery(gl.ANY_SAMPLES_PASSED_CONSERVATIVE);
-    this.indiceDaSondaAtiva = -1;
-  }
-
-  /** nunca bloqueia: só lê consultas cujo `QUERY_RESULT_AVAILABLE` já é
-   *  verdadeiro. O resultado mais NOVO é quem decide — consultas podem
-   *  voltar fora de ordem, e uma resposta velha não pode sobrescrever
-   *  uma mais nova que já tenha chegado. */
-  private consumirResultadosDeOclusao(gl: WebGL2RenderingContext): void {
-    for (const s of this.sondas) {
-      if (!s.pendente || !gl.getQueryParameter(s.query, gl.QUERY_RESULT_AVAILABLE)) continue;
-      const passou = gl.getQueryParameter(s.query, gl.QUERY_RESULT);
-      s.pendente = false;
-      if (s.id > this.idDoUltimoResultadoDeOclusao) {
-        this.idDoUltimoResultadoDeOclusao = s.id;
-        this.registrarOclusaoDoSol(passou === 0);
-      }
-    }
+  //
+  // CENTRO DO SOL FORA DA TELA (medido em 23/09: a 2 % acima da borda, a
+  // cruz ainda entrava no quadro): a sonda cairia fora da imagem e seria
+  // descartada — "tapado" sem corpo nenhum. Fora da tela a pergunta não
+  // tem resposta: o clarão segue como antes da sonda (não oculto), e as
+  // consultas já em voo, feitas com o Sol ainda dentro, não valem mais.
+  private centroNaTela(camera: THREE.Camera): boolean {
+    return ndcNaTela(this.vSonda.setFromMatrixPosition(this.sondaMesh.matrixWorld).project(camera));
   }
 
   /** O ÚNICO lugar que escreve `solOculto` — a consulta de oclusão chama
@@ -782,9 +733,7 @@ export class ClaraoDeAsas {
   dispose(): void {
     this.mats.forEach((m) => m.dispose());
     this.sondaMat.dispose();
-    if (this.ultimoContextoGL) {
-      for (const s of this.sondas) this.ultimoContextoGL.deleteQuery(s.query);
-    }
+    this.consultas.dispose();
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });

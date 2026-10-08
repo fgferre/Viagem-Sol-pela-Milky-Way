@@ -879,6 +879,9 @@ export default function App() {
   // pelos handlers do hook — a semântica de sempre, noutro endereço.
   const {
     tom,
+    // (`lente` aqui é a LENTE DE CINEMA do painel; o `lente` do indicador
+    // de fotografia do filme, lá em cima, é outra coisa)
+    lente: modoDaLente,
     exposicao,
     escondidas,
     escalaUi,
@@ -892,6 +895,7 @@ export default function App() {
     trocarParticulas,
     trocarPoeira,
     trocarTom,
+    trocarLente,
     trocarExposicao,
     voltarAoBrilhoReal,
     trocarEscalaUi,
@@ -1436,6 +1440,8 @@ export default function App() {
         onPoeira={trocarPoeira}
         tom={tom}
         onTom={trocarTom}
+        lente={modoDaLente}
+        onLente={trocarLente}
         exposicao={exposicao}
         onExposicao={trocarExposicao}
         escalaUi={escalaUi}

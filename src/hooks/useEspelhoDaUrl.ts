@@ -14,10 +14,11 @@ import type {
   NivelDaNebulosa,
   ParticulasDaGalaxia,
   TipoDePoeira,
+  ModoDaLente,
   ToneMapMode,
   VarianteDaTerra,
 } from '../three/core/engine';
-import { lerPortaExposicao, lerPortaTom } from '../three/core/engine';
+import { lerPortaExposicao, lerPortaLente, lerPortaTom } from '../three/core/engine';
 import { chaveDoFoco, construirIndice } from '../lib/buscaEstrelas';
 import { CAMADAS } from '../three/atlasConfig';
 import { FILME_PADRAO } from '../three/cinematic/filme';
@@ -73,6 +74,9 @@ export function useEspelhoDaUrl(dep: {
 
   const [tom, setTom] = useState<ToneMapMode>(
     () => lerPortaTom(new URLSearchParams(window.location.search).get('tone')) ?? 'aces'
+  );
+  const [lente, setLente] = useState<ModoDaLente>(() =>
+    lerPortaLente(new URLSearchParams(window.location.search).get('lente'))
   );
   const [exposicao, setExposicao] = useState(
     () =>
@@ -344,6 +348,12 @@ export function useEspelhoDaUrl(dep: {
     window.history.replaceState(null, '', comParam('tone', t === 'aces' ? null : t));
   };
 
+  const trocarLente = (modo: ModoDaLente) => {
+    setLente(modo);
+    directorRef.current?.definirLente(modo);
+    window.history.replaceState(null, '', comParam('lente', modo === 'nenhuma' ? null : modo));
+  };
+
   /**
    * O SLIDER DE VOLTA AO PADRÃO DESARMA O LATCH. `setExposure` LIGA o
    * `expOverride` do Director (é o que faz o valor escolhido sobreviver
@@ -429,6 +439,9 @@ export function useEspelhoDaUrl(dep: {
       } else if (c.chave === 'tone') {
         d.engine.setToneMapping('aces');
         setTom('aces');
+      } else if (c.chave === 'lente') {
+        d.definirLente('nenhuma');
+        setLente('nenhuma');
       } else if (c.chave === 'msaa') {
         // a suavização escolhida à mão volta ao preset (item 145) — e
         // sem este ramo ela cairia no `setLayerHidden` lá embaixo, que
@@ -534,6 +547,7 @@ export function useEspelhoDaUrl(dep: {
 
   return {
     tom,
+    lente,
     exposicao,
     escondidas,
     escalaUi,
@@ -548,6 +562,7 @@ export function useEspelhoDaUrl(dep: {
     trocarParticulas,
     trocarPoeira,
     trocarTom,
+    trocarLente,
     trocarExposicao,
     voltarAoBrilhoReal,
     trocarEscalaUi,
