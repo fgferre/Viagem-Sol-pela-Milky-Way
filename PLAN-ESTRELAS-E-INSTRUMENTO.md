@@ -32,13 +32,39 @@ Mais os dois blooms (`core/post.ts`) e a lente nova (`src/three/lente/`).
 
 ## Assuntos abertos
 
+0. **PRIMEIRO: como o Sol brilha em cada distância — estudo para chegar a um consenso.**
+   Palavras dele (08/10): *"criamos um modo de visualização do sol 3d que é através de
+   filtros pois o sol mesmo na distância que observamos seria somente um grande borrão
+   branco... se fizermos esse borrão branco perdemos toda a maravilha linda que é hoje"*;
+   *"precisa estudar bem isso para chegar num consenso de qual o melhor caminho. esse
+   estudo que foi feito pode ser criticado, mas foi muito bem embasado"* — ou seja: reler a
+   `LEI-DA-ESTRELA` com olhar crítico, sem descartá-la, procurando o que não se viu.
+   O problema visto na rodada das lentes: o filtro (o que mostra a superfície) entra pelo
+   tamanho em pixels (4→10 px de disco, `estrela.ts` ~:561–576), então perto da Terra o
+   Sol já é "visto pelo filtro" — um pontinho laranja apagado onde ele deveria ser a luz
+   ofuscante da cena — e os reflexos da lente parecem não ter fonte. E os efeitos brigam:
+   perto, o Sol 3D tem raios de coroa (`world/sol/coronaRays.js`) e coroa em volume; longe,
+   o clarão (halo + cruz) e a cruz do próprio ponto; a lente somava brilho e raios por cima
+   (os raios da lente saíram em 08/10 por isso: *"os spikes que ficaram estranhos"*; o
+   brilho da lente ficou à espera deste estudo).
+   Proposta do assistente para pôr à prova (não decidida): o filtro entra quando o Sol vira
+   o ASSUNTO do quadro (por fração da tela, p. ex. a partir de ~1/10 da altura), não por
+   alguns pixels; abaixo disso o Sol é a luz branca e ofuscante da cena, com o brilho dele
+   (e aí o brilho da lente sai também — um dono por efeito em cada regime); de perto, tudo
+   como hoje. Referências já vistas: Celestia (halo recolhido sobre disco resolvido),
+   SpaceEngine (exposição que escurece a superfície na aproximação), NASA (SDO filtrado
+   quando o Sol é assunto; fotos da estação com o Sol estourado), cinema (assunto filtrado,
+   luz de cena estourada). Pesquisar melhor antes de propor; a prova é prancha em três
+   distâncias (perto da Terra, Júpiter, de perto do Sol) com a regra de hoje × a proposta,
+   e o "pontinho laranja" como caso de teste.
+
 1. **Unificar os desenhistas das estrelas (M3 da LEI).** O dono pediu "uma regra clara e
    única para cada estrela conforme o estado na tela". Crítica do assistente: unificar
    por dentro não muda nada que o usuário veja e arrisca um visual aprovado em muitas
    rodadas; fazer quando uma incoerência aparecer na tela ou junto do item 227 (toda
    estrela com corpo ao se aproximar). Falta ele decidir quando.
-2. **As estrelas seguem a lente escolhida?** Hoje a lente muda só o Sol (reflexos, brilho,
-   raios); Sirius e as outras continuam com a cruz. O coerente seria o instrumento valer
+2. **As estrelas seguem a lente escolhida?** Hoje a lente muda só o Sol (reflexos e brilho;
+   os raios dela saíram em 08/10); Sirius e as outras continuam com a cruz. O coerente seria o instrumento valer
    para todas (raios finos das lâminas no lugar da cruz). Falta ele decidir.
 3. **Quanto deixar ajustável no menu.** Ele quer "tudo customizável" (reflexos, raios,
    brilho, risco, sujeira). Crítica do assistente: controle demais piora para quem visita;
