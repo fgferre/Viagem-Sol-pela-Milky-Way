@@ -21,10 +21,15 @@ sistema..."* — levantamento e cinco partes em `PLAN-REGUA-UNICA.md` (nove cami
 **Publicar Pã é dele:** `git push origin main`; depois conferir no ar.
 
 **A próxima rodada — a ordem entre as frentes é decisão dele** (as três tocam a luz e a tela; ele quer
-evitar trabalho paralelo repetido): (1) as lentes de cinema (ramo `claude/hollywood-lens-effects-af79d8`)
-entram primeiro — estão mais perto do fim e foram calibradas contra o ACES; (2) a régua única, com UMA sessão
-cuidando de luz e tela, estrelas e Sol incluídos (`PLAN-ESTRELAS-E-INSTRUMENTO.md`, no ramo das lentes,
-unificação aberta); a R1 testa o tom único (o Neutral da Khronos deu B/G 0,766 contra o alvo 0,773 em Pã);
+evitar trabalho paralelo repetido): (1) as lentes de cinema — **NO `main` desde 08/10, noite, à espera da
+publicação (é dele)**: Ajustes › Lente com nenhuma (padrão, imagem idêntica), redonda, anamórfica e Hollywood;
+reflexos, anéis, risco e sujeira no estilo da indústria, aprovados por ele em montagem (*"Gostei dos
+efeitos"*) e conferidos no app (`capturas/lente/`: `app-vs-look-*`, `video-4-lentes-v2.mp4`); raios da lente só
+com o Sol como ponto, somem na soltura do clarão (*"de longe eu achei que estava até bom"*); nada da lente
+cobre o disco grande; a lente segue a transmitância do ar e foi calibrada contra o ACES (quem trocar o tom
+recalibra uma constante por lente); (2) a régua única, com UMA sessão
+cuidando de luz e tela, estrelas e Sol incluídos (`PLAN-ESTRELAS-E-INSTRUMENTO.md`, agora no `main`, começa
+pelo estudo de como o Sol brilha em cada distância; unificação dos desenhistas aberta); a R1 testa o tom único (o Neutral da Khronos deu B/G 0,766 contra o alvo 0,773 em Pã);
 (3) o item 232 (Terra tímida, bastão paralelo logo abaixo) cruza com a R1 — medir o que o ACES apaga antes de
 criar o modo realçado; (4) a fila de assets já sob a régua: as outras seis luas pequenas pela receita de Pã
 (lições em `PLAN-LUAS-PEQUENAS.md`), Febe, Calipso/Telesto/Helena, Fobos/Deimos, Vesta. Cautela dele noutra
