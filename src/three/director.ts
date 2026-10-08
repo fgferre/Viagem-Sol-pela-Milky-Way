@@ -1370,6 +1370,12 @@ export class Director {
           this.events.onGirou();
         }
       },
+      // a INCLINAÇÃO da vista rumo ao horizonte (07/10) — dois dedos
+      // juntos, Shift + arrastar, botão direito; só o vertical
+      inclinar: (dy) => {
+        this.atlas.addTiltDelta(dy);
+        this.perturbar();
+      },
       olhar: (dx, dy) => this.rig.addLookDelta(dx, dy),
       // a roda no filme pausado é a LENTE do modo fotografia (item 100,
       // fase 2) — o indicador LENTE·SOL acusa ao vivo pelo mesmo tick
