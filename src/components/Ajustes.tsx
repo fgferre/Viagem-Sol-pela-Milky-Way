@@ -70,7 +70,7 @@ import {
   rotuloDaQualidade,
   varianteDaTerraEmTexto,
 } from '../three/atlasConfig';
-import { PRESETS, ESCALAS_DE_RESOLUCAO } from '../three/core/engine';
+import { PRESETS, ESCALAS_DE_RESOLUCAO, FATOR_DO_RELEVO_REALCADO } from '../three/core/engine';
 import type {
   EscolhaDeQualidade,
   EstadoDaQualidade,
@@ -78,6 +78,7 @@ import type {
   ModoDaLente,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
+  RelevoDaTerra,
   TipoDePoeira,
   ToneMapMode,
   VarianteDaTerra,
@@ -161,6 +162,19 @@ const TERRAS: { valor: VarianteDaTerra | null; nome: () => string }[] = [
     valor: v,
     nome: () => varianteDaTerraEmTexto(v),
   })),
+];
+
+/**
+ * OS DOIS ESTADOS DO RELEVO DA TERRA (item 232) — sem "Preset": `real` é o
+ * padrão em todo tier, e o realçado é modo declarado. O número do rótulo
+ * sai do fator da casa, nunca redigitado no dicionário.
+ */
+const RELEVOS: { valor: RelevoDaTerra; nome: () => string }[] = [
+  { valor: 'real', nome: () => t('ajustes.relevo.real') },
+  {
+    valor: 'realcado',
+    nome: () => t('ajustes.relevo.realcado', { fator: FATOR_DO_RELEVO_REALCADO }),
+  },
 ];
 
 /**
@@ -249,6 +263,7 @@ export function Ajustes({
   onEscala,
   onGas,
   onTerra,
+  onRelevo,
   onParticulas,
   onPoeira,
   tom,
@@ -284,6 +299,8 @@ export function Ajustes({
   onGas: (variante: GasVolumetrico | null) => void;
   /** a variante da Terra escolhida à mão (rodada das nuvens, 07/10); `null` = do preset */
   onTerra: (variante: VarianteDaTerra | null) => void;
+  /** o relevo da Terra (item 232): real ou o realçado declarado */
+  onRelevo: (relevo: RelevoDaTerra) => void;
   /** a fração de partículas da galáxia escolhida à mão (item 149); `null` = do preset */
   onParticulas: (nivel: ParticulasDaGalaxia | null) => void;
   /** a poeira perto de casa escolhida à mão (pedido do dono, 27/09); `null` = do preset */
@@ -664,6 +681,26 @@ export function Ajustes({
               qualidade.terra === null && v.valor !== null && v.valor === presetVivo.terra,
           }))}
           onEscolher={onTerra}
+        />
+      </LinhaDeAjuste>
+
+      {/* O RELEVO DA TERRA (item 232) — colado na Terra, porque só a
+          variante com profundidade o desenha (na clássica ele não muda
+          nada, e a dica diz). Os dois botões em colunas IGUAIS
+          (`ajustes-seg--par`): "Real" é curto e "Realçado 3×" não. */}
+      <LinhaDeAjuste
+        id="relevo"
+        rotulo={t('ajustes.relevoControle')}
+        dica={t('ajustes.relevoNota', { fator: FATOR_DO_RELEVO_REALCADO })}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.relevoControle')}
+          valor={qualidade.relevo}
+          opcoes={RELEVOS.map((r) => ({ valor: r.valor, nome: r.nome() }))}
+          onEscolher={onRelevo}
+          classeExtra="ajustes-seg--par"
         />
       </LinhaDeAjuste>
 

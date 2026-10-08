@@ -267,6 +267,8 @@ export default function App() {
     escala: null,
     gas: null,
     terra: null,
+    // o relevo da Terra não é do preset: o medido é o padrão (item 232)
+    relevo: 'real',
     particulas: null,
     poeira: null,
   });
@@ -892,6 +894,7 @@ export default function App() {
     trocarEscala,
     trocarGas,
     trocarTerra,
+    trocarRelevo,
     trocarParticulas,
     trocarPoeira,
     trocarTom,
@@ -1396,6 +1399,9 @@ export default function App() {
         onAproximar={() => directorRef.current?.aproximarDoCorpo()}
         onSistema={() => directorRef.current?.focarNoSistema()}
         relevoDaCor={directorRef.current?.relevoDaCor(escada.corpoId) ?? null}
+        // o fator do relevo QUE A TELA DESENHA neste corpo (item 232): a
+        // ficha confessa o realçado; relido a cada troca de qualidade
+        realceDoRelevo={directorRef.current?.realceDoRelevo(escada.corpoId) ?? 1}
         onRelevoDaCor={(ligado) => {
           if (!escada.corpoId) return;
           directorRef.current?.definirRelevoDaCor(escada.corpoId, ligado);
@@ -1436,6 +1442,7 @@ export default function App() {
         onEscala={trocarEscala}
         onGas={trocarGas}
         onTerra={trocarTerra}
+        onRelevo={trocarRelevo}
         onParticulas={trocarParticulas}
         onPoeira={trocarPoeira}
         tom={tom}

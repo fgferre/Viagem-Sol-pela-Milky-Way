@@ -84,6 +84,7 @@ import {
   tauRayleighAoNivelDoMar,
 } from '../../../lib/atlas/arMedido';
 import { cessaoPorDisco } from '../lodStellar';
+import { FATOR_DO_RELEVO_REALCADO } from '../../core/engine';
 
 const DATA_DIR = fileURLToPath(new URL('../../../../public/data/atlas/', import.meta.url));
 const meta = JSON.parse(
@@ -1541,6 +1542,33 @@ describe('9. a variante profundidade (rodada das nuvens, 07/10)', () => {
     terra.atualizar(quadro(longe));
     terra.atualizar(quadro(longe, { tS: 15.1 }));
     expect([u.uHorizonte.value, u.uMapaHorizonte.value, u.uMapaHorizonte2.value]).toEqual([0, null, null]);
+    terra.dispose();
+  });
+
+  /**
+   * O RELEVO REALÇADO (item 232): a troca é SÓ o fator do uniform da
+   * superfície funda — o mesmo material, o mesmo programa, nenhum fetch —,
+   * e só a `profundidade` define o realce: na clássica o preprocessador o
+   * tira, e ela não tem o uniform.
+   */
+  it('o relevo realçado é o fator do uniform da superfície funda: 3 no realcado, 1 no real, ao vivo', async () => {
+    const { terra, chamadas, sup } = await terraNaTela('profundidade');
+    const mS = sup.material as THREE.ShaderMaterial;
+    const versao = mS.version;
+    const antes = chamadas.length;
+    expect(mS.uniforms.uRealceDoRelevo.value).toBe(1);
+    terra.definirRelevo('realcado');
+    expect(FATOR_DO_RELEVO_REALCADO).toBe(3);
+    expect(mS.uniforms.uRealceDoRelevo.value).toBe(FATOR_DO_RELEVO_REALCADO);
+    terra.definirRelevo('real');
+    expect(mS.uniforms.uRealceDoRelevo.value).toBe(1);
+    expect([sup.material, mS.version, mS.fragmentShader]).toEqual([mS, versao, TERRA_PROFUNDIDADE_FRAG]);
+    await flush();
+    expect(chamadas).toHaveLength(antes);
+    expect(TERRA_PROFUNDIDADE_FRAG).toContain('#define REALCE_DO_RELEVO');
+    expect(TERRA_FRAG).not.toContain('#define REALCE_DO_RELEVO');
+    terra.definirVariante('classica');
+    expect((sup.material as THREE.ShaderMaterial).uniforms.uRealceDoRelevo).toBeUndefined();
     terra.dispose();
   });
 

@@ -453,6 +453,12 @@ vec3 normalDoMapa(vec3 n, vec2 uv) {
  * ficam); com o Sol abaixo do horizonte geométrico o plano já tapa tudo
  * e o relevo não acrescenta nada — a faixa do terminador fica com a luz
  * de hoje. Chão plano, polo ou portão fechado devolvem 1 exato.
+ *
+ * O RELEVO REALÇADO (só a Terra, item 232): quem define
+ * `REALCE_DO_RELEVO` (e declara `uniform float uRealceDoRelevo`) tem os
+ * senos lidos em `senoDoHorizonte` com a tangente multiplicada pelo
+ * fator — as alturas ×k. Hipérion e Pã não definem, e o preprocessador
+ * tira o trecho: o shader deles é o de antes.
  */
 export const GLSL_SOMBRA_DO_HORIZONTE = /* glsl */ `
 uniform sampler2D uMapaHorizonte;
@@ -468,6 +474,16 @@ float senoDoHorizonte(vec3 t, vec3 b, vec2 uv, vec3 L) {
   float s = az / 1.0471975511965976;
   vec3 h1 = texture2D(uMapaHorizonte, uv).rgb;
   vec3 h2 = texture2D(uMapaHorizonte2, uv).rgb;
+#ifdef REALCE_DO_RELEVO
+  // o relevo realçado da Terra (item 232, declarado): alturas ×k →
+  // tan(h) ×k em cada azimute, antes da interpolação
+  if (uRealceDoRelevo != 1.0) {
+    vec3 t1 = h1 * inversesqrt(max(1.0 - h1 * h1, 1.0e-6));
+    vec3 t2 = h2 * inversesqrt(max(1.0 - h2 * h2, 1.0e-6));
+    h1 = uRealceDoRelevo * t1 * inversesqrt(1.0 + uRealceDoRelevo * uRealceDoRelevo * t1 * t1);
+    h2 = uRealceDoRelevo * t2 * inversesqrt(1.0 + uRealceDoRelevo * uRealceDoRelevo * t2 * t2);
+  }
+#endif
   vec3 w1 = max(1.0 - abs(mod(s - vec3(0.0, 2.0, 4.0) + 3.0, 6.0) - 3.0), 0.0);
   vec3 w2 = max(1.0 - abs(mod(s - vec3(1.0, 3.0, 5.0) + 3.0, 6.0) - 3.0), 0.0);
   return dot(w1, h1) + dot(w2, h2);

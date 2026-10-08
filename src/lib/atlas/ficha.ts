@@ -47,7 +47,7 @@ import {
   UA_POR_PC,
 } from '../unidades';
 import { NOMES_DOS_CORPOS, classeEmTexto, nomeDoCorpo } from '../../three/atlasConfig';
-import { idiomaAtual, t } from '../idioma';
+import { decimalDoIdioma, idiomaAtual, t } from '../idioma';
 import type { Procedencia } from '../../three/selo';
 import { numeroDoIdioma } from '../../three/tempoDoAtlas';
 import { AU_KM } from './elementosOrbitais';
@@ -176,6 +176,9 @@ export interface EntradaDaFicha {
   /** onde a CÂMERA está, em eclíptica heliocêntrica UA; `null` fora do
    *  Atlas — é o "daqui" da linha de iluminação */
   camaraUa?: readonly [number, number, number] | null;
+  /** o fator das alturas que a TELA desenha (item 232) — 1 (ou ausente)
+   *  é o relevo medido; acima disso a seção da imagem confessa o realce */
+  realceDoRelevo?: number;
 }
 
 // ------------------------------------------------------------ formatação
@@ -596,7 +599,8 @@ function noIdioma(texto: TextoBilingue | null | undefined): string | null {
 
 function secaoImagem(
   id: string,
-  manifest: ManifestDeTexturas | null | undefined
+  manifest: ManifestDeTexturas | null | undefined,
+  realceDoRelevo = 1
 ): LinhaDaFicha[] {
   if (!manifest || id === 'sun') return [];
   const linhas: (LinhaDaFicha | null)[] = [];
@@ -645,6 +649,20 @@ function secaoImagem(
     fonteDoCanal(manifest.entradas, id, 'normal');
   if (relevo?.origem) {
     const tier = TIER_DA_IMAGEM[relevo.proveniencia ?? 'nao-resolvida'];
+    // O RELEVO REALÇADO (item 232) CONFESSA-SE PRIMEIRO: as alturas na tela
+    // não são as do mapa, e a nota da bancada logo abaixo ("sem exagero")
+    // descreve o mapa — a linha diz as duas coisas, e o tier é o artístico,
+    // o de "não tome isto por observação".
+    if (realceDoRelevo !== 1) {
+      linhas.push(
+        linha(
+          t('ficha.campo.relevoRealcado'),
+          t('ficha.relevoRealcado', { fator: decimalDoIdioma(String(realceDoRelevo)) }),
+          'artistico',
+          t('ficha.fonte.modoDeclarado')
+        )
+      );
+    }
     linhas.push(
       linha(
         t('ficha.campo.relevo'),
@@ -779,7 +797,7 @@ export function montarFicha(entrada: EntradaDaFicha): Ficha | null {
     { id: 'ceu', titulo: TITULO('ceu'), linhas: secaoCeu(entrada) },
     { id: 'contexto', titulo: TITULO('contexto'), linhas: secaoContexto(pt) },
     { id: 'curiosidades', titulo: TITULO('curiosidades'), linhas: secaoCuriosidades(pt) },
-    { id: 'imagem', titulo: TITULO('imagem'), linhas: secaoImagem(entrada.id, entrada.texturas) },
+    { id: 'imagem', titulo: TITULO('imagem'), linhas: secaoImagem(entrada.id, entrada.texturas, entrada.realceDoRelevo) },
   ];
 
   return {

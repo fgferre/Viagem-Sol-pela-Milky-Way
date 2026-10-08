@@ -425,6 +425,15 @@
   color: var(--texto);
   border-bottom: 2px dotted var(--acento);
 }
+/* O PAR DE COLUNAS IGUAIS (o relevo da Terra, item 232) — dois nomes de
+   tamanhos muito diferentes ("Real" | "Realçado 3×"): pelo conteúdo, o
+   primeiro saía com metade da largura do segundo, e a régua do dono é
+   fileira de botões IGUAIS (01/10). A grade dá a cada um a largura do
+   maior; a moldura cresce, nunca corta nem quebra. */
+.ajustes-seg--par {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
 
 /* Botões que ainda não são segmentado (rever convite, copiar link) —
    mesma anatomia dos controles da pele B: borda fria, sem preenchimento,

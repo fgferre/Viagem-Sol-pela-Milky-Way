@@ -54,7 +54,8 @@
 // revisão; precedente c098470/9aff400).
 // ============================================================
 import * as THREE from 'three';
-import type { VarianteDaTerra } from '../../core/engine';
+import { fatorDoRelevo } from '../../core/engine';
+import type { RelevoDaTerra, VarianteDaTerra } from '../../core/engine';
 import { CAMADA_DOS_OCULTADORES } from '../../core/post';
 import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import {
@@ -398,6 +399,9 @@ export class TerraResolvida {
    *  objeto de uniform; a textura nasce na primeira `profundidade` */
   private readonly uEspalhamentoMultiplo: THREE.IUniform<THREE.DataTexture | null> = { value: null };
   private variante: VarianteDaTerra = 'classica';
+  /** o fator das alturas desenhadas (item 232): 1 no `real`; só a
+   *  superfície funda o lê — a clássica não tem o uniform */
+  private readonly uRealceDoRelevo: THREE.IUniform<number> = { value: 1 };
   /** os pedidos das nuvens e da normal DESTA Terra — o `assunto` dos
    *  dois segue a variante */
   private readonly pedidoDasNuvens: CanalPedido;
@@ -456,6 +460,16 @@ export class TerraResolvida {
     this.canais.length = CANAIS_DA_TERRA.length;
     if (v === 'profundidade') this.canais.push(CANAL_HORIZONTE, CANAL_HORIZONTE2);
     this.vestirVariante();
+  }
+
+  /**
+   * O RELEVO DA TERRA, TROCADO AO VIVO (item 232) — só o fator do
+   * uniform da superfície funda: sem recompilar, sem recarregar. Vale
+   * antes de as cascas nascerem (o material lê o mesmo objeto) e não faz
+   * nada na `classica`, que não o lê.
+   */
+  definirRelevo(relevo: RelevoDaTerra) {
+    this.uRealceDoRelevo.value = fatorDoRelevo(relevo);
   }
 
   /** os materiais da variante nas malhas — no-op antes de as cascas existirem */
@@ -824,6 +838,7 @@ export class TerraResolvida {
         uMapaHorizonte: { value: null },
         uMapaHorizonte2: { value: null },
         uHorizonte: { value: 0 },
+        uRealceDoRelevo: this.uRealceDoRelevo,
         uEspalhamentoMultiplo: this.uEspalhamentoMultiplo,
       },
       depthWrite: true,

@@ -109,7 +109,9 @@ void main() {
  * EM QUATRO TRECHOS (07/10, rodada das nuvens): cabeçalho, o corpo até
  * o especular, a luz direta e a emissão. A variante `profundidade`
  * (`TERRA_PROFUNDIDADE_FRAG`, abaixo) reusa três deles e troca só a luz
- * direta; o `TERRA_FRAG` montado é o mesmo texto de antes, byte a byte.
+ * direta; o `TERRA_FRAG` montado é o mesmo texto de antes, byte a byte,
+ * mais o realce do relevo (item 232) atrás de `#ifdef REALCE_DO_RELEVO`,
+ * que só a `profundidade` define — o preprocessador o tira da clássica.
  */
 const SUPERFICIE_CABECALHO = /* glsl */ `
 uniform sampler2D uMapaDia;
@@ -143,6 +145,15 @@ const SUPERFICIE_ATE_O_ESPECULAR = /* glsl */ `void main() {
     vec3 norte = cross(n, leste);
     vec3 tn = texture2D(uMapaNormal, vUv).xyz * 2.0 - 1.0;
     nRelevo = normSeguro(leste * tn.x + norte * tn.y + n * tn.z);
+#ifdef REALCE_DO_RELEVO
+    // o relevo realçado (item 232, declarado): alturas ×k → inclinação
+    // ×k; o zero do mapa é 128/255 (o mar), que fica onde está. Em k = 1
+    // o ramo não corre e a normal é a medida, bit a bit.
+    if (uRealceDoRelevo != 1.0) {
+      vec2 inclinacao = 1.0 / 255.0 + uRealceDoRelevo * (tn.xy - 1.0 / 255.0);
+      nRelevo = normSeguro(leste * inclinacao.x + norte * inclinacao.y + n * tn.z);
+    }
+#endif
   }
 
   float ndotlGeo = dot(n, uDirSolLocal);          // terminador geométrico
@@ -709,6 +720,14 @@ vec3 arAtePonto(vec3 camera, vec3 ponto, float raioDoFim, vec3 solLocal, out vec
  * 9,8 km inteira. Sem os mapas (`uHorizonte` 0: a carga foi `classica` e
  * a troca foi ao vivo) o fator é 1 exato até a próxima carga.
  *
+ * O RELEVO REALÇADO (item 232, decisão do dono 08/10): `uRealceDoRelevo`
+ * = k multiplica as alturas — a inclinação da normal (o mar, o zero do
+ * mapa, fica plano) e a tangente de cada seno do horizonte, antes da
+ * interpolação e da lei gama (`senoDoHorizonte`, que lê o mesmo
+ * `REALCE_DO_RELEVO`). É modo declarado (`?relevo=realcado`, k = 3):
+ * a ficha e o selo dizem. Uniform e não define — a troca é ao vivo, sem
+ * recompilar; em k = 1 os dois ramos não correm.
+ *
  * O CÉU NA SOMBRA (item 232, 08/10): o Sol normalizado no zênite já traz
  * o céu dentro; a luz que chega se divide em DIRETO + CÉU pela Rayleigh do
  * SPCTRAL2 (Bird & Riordan 1986): direto = Tr, céu = 0,5·(1 − Tr^0,95),
@@ -751,6 +770,8 @@ export const TERRA_PROFUNDIDADE_FRAG =
   SUPERFICIE_CABECALHO +
   /* glsl */ `uniform sampler2D uMapaNuvens;
 uniform float uDeslocU;     // fract(−θ/2π) da deriva das nuvens (CPU, float64)
+#define REALCE_DO_RELEVO
+uniform float uRealceDoRelevo; // 1 = as alturas medidas; o realçado declarado (Ajustes) as multiplica
 ${GLSL_ALFA_DA_NUVEM}
 ${GLSL_TRANSMITANCIA_DO_SOL}
 ${GLSL_AR_NO_CAMINHO}

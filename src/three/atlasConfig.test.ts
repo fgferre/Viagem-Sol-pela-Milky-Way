@@ -377,7 +377,15 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     // os SETE controles da gaveta Avançado em `null` de piso — a
     // gaveta intocada (item 145, +145b, +149, +poeira 27/09, +terra 07/10)
     type Estado = Parameters<typeof rotuloDaQualidade>[0];
-    type Gaveta = 'amostras' | 'nebulosa' | 'escala' | 'gas' | 'terra' | 'particulas' | 'poeira';
+    type Gaveta =
+      | 'amostras'
+      | 'nebulosa'
+      | 'escala'
+      | 'gas'
+      | 'terra'
+      | 'relevo'
+      | 'particulas'
+      | 'poeira';
     const estado = (m: Omit<Estado, Gaveta> & Partial<Pick<Estado, Gaveta>>) =>
       rotuloDaQualidade({
         amostras: null,
@@ -385,6 +393,7 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
         escala: null,
         gas: null,
         terra: null,
+        relevo: 'real',
         particulas: null,
         poeira: null,
         ...m,

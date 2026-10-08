@@ -27,6 +27,7 @@ import {
   lerPortaExposicao,
   lerPortaLente,
   lerPortaPoeira,
+  lerPortaRelevo,
   lerPortaTom,
   medidaDeResizeValida,
   nearPlanePc,
@@ -377,6 +378,16 @@ describe('?lente= — só redonda, anamorfica e hollywood atravessam, o resto é
     expect(lerPortaLente('hollywood')).toBe('hollywood');
     for (const ruim of ['foo', 'Redonda', 'Hollywood', '', 'constructor', '__proto__', null, undefined]) {
       expect(lerPortaLente(ruim), String(ruim)).toBe('nenhuma');
+    }
+  });
+});
+
+describe('?relevo= — só realcado atravessa, o resto é o relevo medido', () => {
+  it('real e realcado passam; ausente ou lixo é real, até o herdado do objeto', () => {
+    expect(lerPortaRelevo('realcado')).toBe('realcado');
+    expect(lerPortaRelevo('real')).toBe('real');
+    for (const ruim of ['realçado', 'Realcado', '3', '', 'constructor', '__proto__', null, undefined]) {
+      expect(lerPortaRelevo(ruim), String(ruim)).toBe('real');
     }
   });
 });

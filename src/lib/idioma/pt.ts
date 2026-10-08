@@ -214,6 +214,13 @@ export const PT = {
     'Como o globo da Terra é desenhado: clássica é o de sempre; com profundidade dá às nuvens sombra no chão, relevo pela luz e, em Cinema, o mapa de nuvens em 8k.',
   'ajustes.terra.classica': 'Clássica',
   'ajustes.terra.profundidade': 'Com profundidade',
+  // O RELEVO DA TERRA (item 232, decisão do dono 08/10) — logo abaixo da
+  // Terra: o realçado é modo DECLARADO, e o número sai do fator da casa.
+  'ajustes.relevoControle': 'Relevo da Terra',
+  'ajustes.relevoNota':
+    'Real desenha as montanhas com as alturas medidas. Realçado multiplica as alturas por {fator}, para o relevo aparecer de longe — é um modo declarado: o selo e a ficha da Terra dizem que está ligado. Só vale na Terra com profundidade.',
+  'ajustes.relevo.real': 'Real',
+  'ajustes.relevo.realcado': 'Realçado {fator}×',
   // A POEIRA PERTO DE CASA (pedido do dono, 27/09) — o sexto controle,
   // ao lado do gás: comparar ao vivo o modelo procedural de hoje com o
   // bloco medido pelo Gaia, em três brilhos.
@@ -454,6 +461,9 @@ export const PT = {
   'ficha.campo.superficie': 'superfície',
   'ficha.campo.relevo': 'relevo',
   'ficha.campo.oRelevoAdmite': 'o relevo admite',
+  'ficha.campo.relevoRealcado': 'relevo realçado',
+  'ficha.relevoRealcado':
+    'as alturas aparecem {fator}× maiores que as medidas — nas encostas que pegam luz e na sombra das montanhas; o mar fica plano. O mapa descrito abaixo continua o medido, sem exagero: o realce é só do desenho, e desliga em Ajustes.',
   'ficha.campo.forma': 'forma',
   'ficha.campo.designacao': 'designação',
   'ficha.campo.distancia': 'distância',
@@ -472,6 +482,7 @@ export const PT = {
   'ficha.fonte.geometrico': 'geométrico, de centro a centro',
   'ficha.fonte.editorial': 'texto editorial, sem fonte citada',
   'ficha.fonte.bancada': 'bancada de texturas',
+  'ficha.fonte.modoDeclarado': 'modo declarado, em Ajustes',
   'ficha.fonte.semLicenca': 'não há textura com licença fechada',
   'ficha.fonte.larguraPx': '{px} px de largura',
   'ficha.fonte.catalogoHyg': 'catálogo HYG/AT-HYG',
@@ -529,6 +540,8 @@ export const PT = {
   'selo.desvio.gasCom': 'gás volumétrico escolhido à mão: {variante}',
   'selo.desvio.terra': 'Terra escolhida à mão',
   'selo.desvio.terraCom': 'Terra escolhida à mão: {variante}',
+  'selo.desvio.relevo': 'relevo da Terra realçado',
+  'selo.desvio.relevoCom': 'relevo da Terra realçado {fator}×',
   'selo.desvio.particulas': 'partículas da galáxia escolhidas à mão',
   'selo.desvio.particulasCom': 'partículas da galáxia escolhidas à mão: {nivel}',
   'selo.desvio.poeira': 'poeira perto de casa escolhida à mão',

@@ -452,6 +452,22 @@ describe('a imagem confessa — itens 19 e 20', () => {
     expect(imagem.get('fonte')).toContain('Solar System Scope');
   });
 
+  it('o relevo realçado da Terra (item 232) se confessa SÓ quando ligado, antes da nota «sem exagero»', () => {
+    const imagem = (realceDoRelevo?: number) =>
+      montarFicha({ id: 'earth', jd: JD, fonte: motor, editorial: porId.get('earth'), texturas, realceDoRelevo })!
+        .secoes.find((s) => s.id === 'imagem')!.linhas;
+    for (const real of [imagem(), imagem(1)]) {
+      expect(real.some((l) => l.rotulo === 'relevo realçado')).toBe(false);
+    }
+    const realcado = imagem(3);
+    const i = realcado.findIndex((l) => l.rotulo === 'relevo realçado');
+    expect(realcado[i]!.valor).toContain('3× maiores que as medidas');
+    expect(realcado[i]!.procedencia).toBe('artistico');
+    // a nota da bancada vem depois, e continua descrevendo o MAPA
+    expect(realcado.findIndex((l) => l.rotulo === 'o relevo admite')).toBeGreaterThan(i);
+    expect(realcado).toHaveLength(imagem().length + 1);
+  });
+
   it('o defeito leva o selo de MEDIDO: quem o mediu foi a bancada', () => {
     const linhas = ficha('ceres')!.secoes.find((s) => s.id === 'imagem')!.linhas;
     const defeito = linhas.find((l) => l.rotulo === 'o defeito')!;
