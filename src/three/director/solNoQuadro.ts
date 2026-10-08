@@ -21,7 +21,7 @@ import {
   gateBinario,
 } from '../world/corpos/corpos';
 import { repartir } from '../estrela';
-import type { Reparticao } from '../estrela';
+import type { JanelaDoQuadro, Reparticao } from '../estrela';
 import { ClaraoDeAsas } from '../world/clarao';
 import type { StellarBody } from '../world/stellarBody';
 import type { Planetas } from '../world/planetas/planetas';
@@ -98,6 +98,8 @@ export class SolNoQuadro {
     jdTdb: () => number;
     /** `?nosun`/`?noclarao`/`?noplan` — os toggles de debug do director */
     escondido: (flag: string) => boolean;
+    /** `?solquadro=a,b` (protótipo), lida uma vez pelo director; null = a lei de sempre */
+    janelaDoQuadro: JanelaDoQuadro | null;
   };
 
   constructor(fios: SolNoQuadro['fios']) {
@@ -216,12 +218,15 @@ export class SolNoQuadro {
         // esfera analítica (§1) nasce no M3/E3, onde é obrigatória;
         // a dívida está nomeada no cadastro de representações.
         requisitoGeometrico: 1,
+        janelaDoQuadro: this.fios.janelaDoQuadro,
       }
     );
     this.leiDoSol = leiDoSol;
     // o corpo troca a radiância verdadeira pela paleta autorada com a
     // régua da lei (mesma `discoPx`, largura própria — §5.7)...
-    sun.escreverFiltroSolar(leiDoSol.overrideExpoente);
+    // (sob `?solquadro=` o disco recebe a altura viva, a mesma régua do ponto)
+    if (this.fios.janelaDoQuadro) sun.escreverFiltroSolar(leiDoSol.overrideExpoente, q.hPx / q.prAtual);
+    else sun.escreverFiltroSolar(leiDoSol.overrideExpoente);
     // ...e ENTRA DO ZERO com o peso da representação resolvida: no armar
     // binário do gate do palco o peso ainda é 0, então o liga/desliga de
     // custo fica invisível em pixel, nos dois sentidos da histerese.

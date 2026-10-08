@@ -853,6 +853,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   // pedindo o lado A ou um valor de bancada —, e o selo declara isso sem
   // precisar saber qual dos dois.
   porta('bemis', 'compressão na emissão do ponto alterada por URL'),
+  porta('solquadro', 'filtro solar pela fração do quadro (protótipo)'),
   // (?bbloom e ?bombro morreram no M2 — regra iv do §4: o bloom passou a
   // ser governado pela lei (ombro fixo + pirâmide derivada da asa), e o
   // lado A vive nas capturas versionadas. ?dom/?nodom morreram com a

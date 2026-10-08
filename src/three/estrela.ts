@@ -133,6 +133,27 @@ export interface Instrumento {
    *  Proximidade da superfície, displacement projetado, horizonte curvo:
    *  quem mede é quem olha; a lei só reparte. */
   requisitoGeometrico?: number;
+  /** PROTÓTIPO `?solquadro=a,b` (estudo do Sol, 08/10): com a janela, o
+   *  filtro solar e a soltura do clarão deixam a régua de px e passam a
+   *  ler a FRAÇÃO DO QUADRO que o disco ocupa (`filtroPeloQuadro`).
+   *  Ausente ou null: a lei de sempre, bit a bit. */
+  janelaDoQuadro?: JanelaDoQuadro | null;
+}
+
+/** `[a, b]` com a > b > 0: o filtro começa com o disco em 1/a da altura
+ *  do quadro e completa em 1/b. */
+export type JanelaDoQuadro = readonly [number, number];
+
+/** A porta `?solquadro=a,b`, no contrato de `lerPortaJd`: `null` para
+ *  ausente ou ilegível. Só passa a > b > 0 finitos — bordas iguais ou
+ *  invertidas dariam um smoothstep em NaN, e um pixel NaN com bloom
+ *  pinta a tela de branco. */
+export function lerPortaSolQuadro(bruto: string | null | undefined): JanelaDoQuadro | null {
+  if (bruto === null || bruto === undefined) return null;
+  const partes = bruto.split(',').map((x) => Number(x.trim()));
+  if (partes.length !== 2) return null;
+  const [a, b] = partes;
+  return Number.isFinite(a) && Number.isFinite(b) && a > b && b > 0 ? [a, b] : null;
 }
 
 /**
@@ -310,6 +331,17 @@ export function solturaDoClarao(discoPx: number): number {
     1 -
     smoothstep(Math.log(SOLTURA_PLENA_PX), Math.log(SOLTURA_FIM_PX), Math.log(discoPx))
   );
+}
+
+/** O PROTÓTIPO `?solquadro=a,b`: a mesma forma da soltura (smoothstep em
+ *  LOG), na régua da fração do quadro φ = disco / altura — 1 com φ ≤ 1/a,
+ *  0 com φ ≥ 1/b. Serve ao filtro E à soltura: os dois saem juntos. */
+export function filtroPeloQuadro(
+  discoPx: number,
+  alturaPx: number,
+  janela: JanelaDoQuadro
+): number {
+  return 1 - smoothstep(-Math.log(janela[0]), -Math.log(janela[1]), Math.log(discoPx / alturaPx));
 }
 
 /** A lei que limita a singularidade da pegada no limbo (μ = cosseno do
@@ -568,8 +600,10 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
 
   // ── o OVERRIDE (o filtro solar como seção da lei) — calculado ANTES do
   // clarão, porque o clarão o CONSOME (a lição do dono, 16/08) ──
-  const overrideExpoente =
-    1 - smoothstep(LIMIAR_DO_OVERRIDE_PX, LIMIAR_DO_OVERRIDE_PX * LARGURA_DO_OVERRIDE, discoPx);
+  const janela = i.janelaDoQuadro ?? null;
+  const overrideExpoente = janela
+    ? filtroPeloQuadro(discoPx, i.alturaPx, janela)
+    : 1 - smoothstep(LIMIAR_DO_OVERRIDE_PX, LIMIAR_DO_OVERRIDE_PX * LARGURA_DO_OVERRIDE, discoPx);
   const overrideFator = Math.pow(
     radianciaDeTela(1, e.raioPc, i.alturaPx),
     1 - overrideExpoente
@@ -603,7 +637,8 @@ export function repartir(e: EstadoDaEstrela, o: Observacao, i: Instrumento): Rep
   const fluxoPleno =
     depositoDoDisco(radianciaDeTela(radiancia, e.raioPc, i.alturaPx), discoPx) *
     Math.exp(-tau);
-  const soltura = solturaDoClarao(discoPx);
+  // sob `?solquadro=` a soltura é o próprio filtro: o clarão sai na mesma janela
+  const soltura = janela ? overrideExpoente : solturaDoClarao(discoPx);
   const m = magnitudeDeFluxo(fluxoPleno, i.expoM0);
   const sigma = sigmaDaPsfPx(i.sigmaPx, i.alturaPx);
   // núcleo: o tamanho gaussiano de hoje (√ln E) — correto no SPRITE que

@@ -1051,13 +1051,23 @@ export class StellarBody {
    * fica parado em 1 na viagem inteira, e só acorda no último trecho da
    * aproximação — escrever mesmo assim sujaria o uniform 60×/s por nada.
    */
-  escreverFiltroSolar(g: number) {
+  escreverFiltroSolar(g: number, alturaPx?: number) {
     if (!this.filtroSolarLigado) return;
     // valor envenenado NÃO é escrito: `pow(2,7e10, NaN)` pinta o disco de
     // preto (ou de lixo), e o último valor são é melhor que qualquer
     // fallback inventado aqui.
     if (!Number.isFinite(g)) return;
-    const v = g <= 0 ? 0 : g >= 1 ? 1 : g;
+    let v = g <= 0 ? 0 : g >= 1 ? 1 : g;
+    // PROTÓTIPO `?solquadro=`: o fator da cirurgia foi assado na altura de
+    // referência (900 px); com a altura VIVA (px de CSS, a do ponto) o
+    // expoente reescala para o disco emitir o vão DELA — fator^(g·k) =
+    // vãoVivo^g. Em 900 px, k = 1 exato.
+    if (alturaPx !== undefined) {
+      const k =
+        Math.log(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, this.params.radiusPc, alturaPx)) /
+        Math.log(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, this.params.radiusPc));
+      if (k > 0 && Number.isFinite(k)) v *= k;
+    }
     if (v === this.filtroSolarAnterior) return;
     this.filtroSolarAnterior = v;
     this.ctx.sunUniforms.uFiltroSolar.value = v;

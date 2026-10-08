@@ -111,7 +111,7 @@ import { ligarGestos } from './director/gestos';
 import { distanciaAposEstalos } from './zoomDaRoda';
 import { Rotulos } from './director/rotulos';
 import { SolNoQuadro } from './director/solNoQuadro';
-import { faseDoCiclo } from './estrela';
+import { faseDoCiclo, lerPortaSolQuadro } from './estrela';
 import type { CalibracaoDaCasa } from './estrela';
 import { BETA_DA_EMISSAO } from './shaders/starShaders';
 import { reemitirLegenda, viradaDaLuzDoRoteiro } from './director/legendaNoAr';
@@ -1123,6 +1123,7 @@ export class Director {
     terra: () => this.terra?.corpo.estadoVivo ?? null,
     jdTdb: () => this.maquinaDoTempo.jdVivo,
     escondido: (flag) => this.hide.has(flag),
+    janelaDoQuadro: lerPortaSolQuadro(this.debug.get('solquadro')),
   });
   /** a escada do Atlas — corte 9 da Parte 1 (director/escada.ts): o
    *  clique, a busca, os degraus, o religador do relógio e o trio do
