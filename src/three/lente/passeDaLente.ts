@@ -114,8 +114,8 @@ const COLUNAS_DE_LADRILHOS = 4;
 const ALCANCE_DA_POEIRA = 1.15;
 /** A sujeira cobre u ∈ [−1, 1] (quadros até 2:1) e v ∈ [−0,5; 0,5]; além, espelha. */
 const SUJEIRA_U_MAX = 1;
-const SUJEIRA_LARGURA = 2048;
-const SUJEIRA_ALTURA = 1024;
+const SUJEIRA_LARGURA = 1024;
+const SUJEIRA_ALTURA = 512;
 /** Linhas do alvo da luz da sujeira (a largura segue o aspecto). */
 const LINHAS_DA_LUZ = 128;
 const MAX_RAIOS = 64;
@@ -418,6 +418,9 @@ const FRAGMENTO_FINOS = /* glsl */ `
   uniform float uKTam;
   uniform float uG;
   uniform float uRaioDisco;
+  uniform float uAlfaDisco;     // o raio angular do Sol, rad
+  uniform float uForcaDisco;    // a rampa do disco: 0 até 1 px de raio, 1 a partir de 3 px
+  uniform vec2 uTanPorUnidade;  // tan do ângulo por unidade de uv (frações da altura), em x e y
   uniform float uAspecto;
   uniform float uInvAltura;
   uniform float uLarguraMinima;
@@ -440,7 +443,7 @@ const FRAGMENTO_FINOS = /* glsl */ `
   uniform vec3 uRiscoCorPerto;
   uniform vec3 uRiscoCorLonge;
 #ifndef LUZ
-  uniform float uGLook;
+  uniform float uBorda; // o gatilho de borda sozinho, sem a amplitude (que já vem em tLuz)
   uniform sampler2D tMacio;
   uniform sampler2D tLuz;
   uniform sampler2D tSujeira;
@@ -452,11 +455,23 @@ const FRAGMENTO_FINOS = /* glsl */ `
   const float PI = 3.141592653589793;
   float g2(float x) { return exp(-x * x); }
 
-  float mascaraDisco(float d) {
-    return uRaioDisco > 0.0 ? smoothstep(uRaioDisco - uInvAltura, uRaioDisco + 4.0 * uInvAltura, d) : 1.0;
+  // o disco é um disco no CÉU: fora do eixo ele vira na tela uma elipse até ~2× mais longa rumo ao
+  // centro do quadro, então o teste é o ângulo entre o raio do pixel e o do centro do Sol; a faixa
+  // macia (−1 a +4 px) usa o tamanho angular do pixel ali, na direção que atravessa o limbo
+  float mascaraDisco(vec2 uv) {
+    if (uForcaDisco <= 0.0) return 1.0;
+    vec3 p = vec3(uv * uTanPorUnidade, -1.0);
+    float lp = length(p);
+    vec3 n = p / lp;
+    vec3 s = normalize(vec3(uL * uTanPorUnidade, -1.0));
+    // o ângulo pela corda: 1 − cos perderia os dígitos de um disco pequeno
+    float th = 2.0 * asin(min(1.0, 0.5 * length(n - s)));
+    vec3 t = (n * cos(th) - s) / max(sin(th), 1e-6);
+    float px = max(uInvAltura * length(t.xy * uTanPorUnidade) / lp, 1e-9);
+    return mix(1.0, smoothstep(-1.0, 4.0, (th - uAlfaDisco) / px), uForcaDisco);
   }
 
-  vec3 brilho(vec2 dv, float d) {
+  vec3 brilho(vec2 dv, float d, float limpo) {
     float s1 = max(uBrilho.y * uKTam, 1e-6);
     float s2 = max(uBrilho.w * uKTam, 1e-6);
     float esticar = max(uBrilhoEsticar, 1e-3);
@@ -469,10 +484,12 @@ const FRAGMENTO_FINOS = /* glsl */ `
     float r = max(0.0, d - uRaioDisco) * length(vec2(dv.x / dd / esticar, dv.y / dd));
     float a = nucleo * g2(r / s1);
     float b = uBrilho.z / (1.0 + (r / s2) * (r / s2));
-    return uG * mascaraDisco(d) * (a * uBrilhoCor1 + b * uBrilhoCor2);
+    // o lóbulo largo chega a zero antes do recorte retangular, que na luz real aparecia como uma reta
+    float fim = 1.0 - smoothstep(0.6 * alc, alc, length(vec2(dv.x / esticar, dv.y)));
+    return uG * limpo * fim * (a * uBrilhoCor1 + b * uBrilhoCor2);
   }
 
-  vec3 raios(vec2 dv, float d) {
+  vec3 raios(vec2 dv, float d, float limpo) {
     float n = uRaiosForma.x;
     float comp = uRaiosForma.y * uKTam;
     float cMax = max(max(uRaiosCroma.r, uRaiosCroma.g), uRaiosCroma.b);
@@ -485,7 +502,7 @@ const FRAGMENTO_FINOS = /* glsl */ `
     float lk = max(comp * h.y, 1e-6);
     float largura = max(uRaiosForma.z, uLarguraMinima);
     // disco resolvido: cada ponto do disco faz seu raio e eles se borram; os finos enfraquecem com o disco
-    float m = uG * uRaiosLuz.y * (uRaiosLuz.z / (uRaiosLuz.z + uRaioDisco)) * h.z * mascaraDisco(d)
+    float m = uG * uRaiosLuz.y * (uRaiosLuz.z / (uRaiosLuz.z + uRaioDisco)) * h.z * limpo
       * (uRaiosForma.z / largura);
     vec3 ao = max(0.0, d - uRaioDisco) / (lk * uRaiosCroma);
     vec3 w = largura * (1.0 + ao * uRaiosForma.w);
@@ -493,7 +510,7 @@ const FRAGMENTO_FINOS = /* glsl */ `
     return m * pow(max(1.0 - ao, 0.0), vec3(uRaiosLuz.x)) * atravessa * uRaiosCor * (1.0 - step(1.0, ao));
   }
 
-  vec3 risco(vec2 dv, float d) {
+  vec3 risco(vec2 dv, float limpo) {
     float ao = abs(dv.x) / max(uRiscoForma.x, 1e-6);
     float lN0 = uRiscoForma.z;
     float lA0 = uRiscoForma.w;
@@ -511,7 +528,7 @@ const FRAGMENTO_FINOS = /* glsl */ `
     if (uRiscoParalelas.z > 0.5) par += g2((dv.y - uRiscoParalelas.x) / lP);
     if (uRiscoParalelas.z > 1.5) par += g2((dv.y - uRiscoParalelas.y) / lP);
     par *= lN0 * 1.5 / lP;
-    float val = uG * queda * mascaraDisco(d)
+    float val = uG * queda * limpo
       * (uRiscoInt.x * nucleo + uRiscoInt.y * asas + uRiscoInt.z * par * exp(-ao * 1.5));
     return val * mix(uRiscoCorPerto, uRiscoCorLonge, smoothstep(0.0, 0.6, ao));
   }
@@ -520,18 +537,18 @@ const FRAGMENTO_FINOS = /* glsl */ `
     vec2 uv = vec2((vUv.x - 0.5) * uAspecto, vUv.y - 0.5);
     vec2 dv = uv - uL;
     float d = length(dv);
+    float limpo = mascaraDisco(uv);
     vec3 c = vec3(0.0);
-    if (uTemBrilho) c += min(brilho(dv, d), vec3(1.0e3));
-    if (uTemRaios) c += min(raios(dv, d), vec3(1.0e3));
-    if (uTemRisco) c += min(risco(dv, d), vec3(1.0e3));
+    if (uTemBrilho) c += min(brilho(dv, d, limpo), vec3(1.0e3));
+    if (uTemRaios) c += min(raios(dv, d, limpo), vec3(1.0e3));
+    if (uTemRisco) c += min(risco(dv, limpo), vec3(1.0e3));
 #ifndef LUZ
     // a regra do disco vale também para os fantasmas, os anéis e a sujeira: com o Sol
     // perto do centro eles se empilham em cima dele e lavavam a superfície (vídeo de 08/10)
-    float limpo = mascaraDisco(d);
     c += texture(tMacio, vUv).rgb * limpo;
     if (uTemSujeira) {
       float t = 2.0 * texture(tSujeira, vec2(uv.x / ${(2 * SUJEIRA_U_MAX).toFixed(1)} + 0.5, uv.y + 0.5)).r;
-      c += min(uGLook * t * texture(tLuz, vUv).rgb * uSujeiraCor, vec3(1.0e3)) * limpo;
+      c += min(uBorda * t * texture(tLuz, vUv).rgb * uSujeiraCor, vec3(1.0e3)) * limpo;
     }
 #endif
     saida = vec4(clamp(c, 0.0, 1.0e3), 0.0);
@@ -683,8 +700,11 @@ export class PasseDaLente extends Pass {
       uL: v2(),
       uKTam: { value: 1 },
       uG: { value: 0 },
-      uGLook: { value: 0 },
+      uBorda: { value: 0 },
       uRaioDisco: { value: 0 },
+      uAlfaDisco: { value: 0 },
+      uForcaDisco: { value: 0 },
+      uTanPorUnidade: v2(),
       uAspecto: { value: 1 },
       uInvAltura: { value: 1 },
       tPoeira: { value: null },
@@ -888,18 +908,24 @@ export class PasseDaLente extends Pass {
     const sai = suave(-b.margem, 0, db);
     if (!(sai > 0)) return false;
     const perto = 1 - suave(0, b.zona, db);
-    const gLook = (this.amplitude / G_DA_LENTE) * (1 + (b.ganhoBrilho - 1) * perto) * sai;
-    const g = gLook * gpu.fator;
+    const borda = (1 + (b.ganhoBrilho - 1) * perto) * sai;
+    const g = (this.amplitude / G_DA_LENTE) * borda * gpu.fator;
     if (!(g * gpu.pico >= LIMIAR_NA_EXPOSICAO_1 / Math.max(exposicao, 1e-6))) return false;
-    // o disco do Sol em frações da altura; abaixo de ~1 px ele é ponto (como no look development) e
-    // entre 1 e 3 px de raio o disco entra em rampa — um degrau aqui fazia o miolo saltar ~16 % (~3 UA)
-    const raio = Math.tan(Math.asin(Math.min(0.999, RAIO_DO_SOL_NA_CENA / dist))) / (2 * T);
+    // o disco do Sol: o raio angular e, para as formas, o raio no eixo em frações da altura; abaixo
+    // de ~1 px ele é ponto (como no look development) e entre 1 e 3 px de raio o disco entra em
+    // rampa — um degrau aqui fazia o miolo saltar ~16 % (~3 UA)
+    const alfa = Math.asin(Math.min(0.999, RAIO_DO_SOL_NA_CENA / dist));
+    const raio = Math.tan(alfa) / (2 * T);
+    const forca = suave(1, 3, raio * this.altura);
     const u = this.u;
     (u.uL.value as THREE.Vector2).set(lx, ly);
+    (u.uTanPorUnidade.value as THREE.Vector2).set((2 * T * cam.aspect) / aspecto, 2 * T);
     u.uKTam.value = 1 + (b.ganhoTamanho - 1) * perto;
     u.uG.value = g;
-    u.uGLook.value = gLook;
-    u.uRaioDisco.value = raio * suave(1, 3, raio * this.altura);
+    u.uBorda.value = borda;
+    u.uAlfaDisco.value = alfa;
+    u.uForcaDisco.value = forca;
+    u.uRaioDisco.value = raio * forca;
     return true;
   }
 
