@@ -40,8 +40,9 @@ celular a dica fala em "tecla de espaço". O protótipo de cor por corpo (`?tom=
 `capturas/luas-pequenas/cor-na-tela/` — a régua o substitui por um tom único.
 
 **Decisões dele em aberto:** o giro de Urano (101°/s × 86°/s do de Tritão; adiantar a legenda ~0,8 s o
-acalma); apagar ou guardar os planos fechados (`PLAN-REIA.md`, `PLAN-EUROPA-JAPETO.md`,
-`PLAN-VIAGEM-SOLAR.md`, `PLAN-PONTO-DE-LUZ.md`). O worktree `../Viagem-luas-pequenas` foi apagado a pedido dele
+acalma). Os quatro planos fechados foram apagados a pedido dele (08/10); a receita e os números de cada rodada
+voltam pelo git: `git show 19881bf9:PLAN-REIA.md`, `git show d8325291:PLAN-EUROPA-JAPETO.md`,
+`git show 50729ed6:PLAN-VIAGEM-SOLAR.md`, `git show daf54e07:PLAN-PONTO-DE-LUZ.md`. O worktree `../Viagem-luas-pequenas` foi apagado a pedido dele
 (08/10; o ramo `luas-pequenas` fica no histórico, inteiro no `main`).
 
 ## O BASTÃO paralelo (08/10) — CÂMERA MAIS LIVRE NO ATLAS E AR MEDIDO DA TERRA ENVIADOS AO AR A PEDIDO DELE (*"ok"*, 08/10, no terminal dele; a conversa das luas pequenas confirmou que os commits dela no `main` podiam ir junto — só planos e o miolo `relevo-medido.mjs`, nada do site; o ramo `luas-pequenas` fica fora); A PRÓXIMA RODADA É O ITEM 232, OS EFEITOS TÍMIDOS
