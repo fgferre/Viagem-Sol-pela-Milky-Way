@@ -1619,7 +1619,7 @@ export class GiganteResolvido {
 
   private garantirCasca() {
     if (this.geometria || this.disposto) return;
-    this.geometria = new THREE.SphereGeometry(1, 128, 64);
+    this.geometria = new THREE.SphereGeometry(1, 256, 128);
     if (!this.dummyAnel) {
       this.dummyAnel = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
       this.dummyAnel.needsUpdate = true;

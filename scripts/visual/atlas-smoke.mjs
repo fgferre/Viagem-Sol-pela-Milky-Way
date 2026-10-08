@@ -1165,17 +1165,17 @@ try {
     'e a CÂMERA está onde a distância publicada diz que ela está'
   );
 
-  // O PISO: `K_MIN_RAIOS` raios FÍSICOS do alvo (o piso publicado já é
-  // `2 × raio físico`), e nem oitenta estalos passam dele. Para Saturno
-  // são 120.536 km de centro — 2 raios equatoriais, o topo das nuvens.
+  // O PISO: `K_PISO_DO_CORPO` raios FÍSICOS do alvo (o piso publicado já é
+  // `1,1 × raio físico` desde 08/10; era 2), e nem oitenta estalos passam
+  // dele. Para Saturno são 66.295 km de centro — 1,1 raio equatorial.
   let noPiso = paraDentro[5];
   for (let i = 0; i < 80; i++) await rodar(-100);
   await assentarZoom('os 80 estalos até o piso');
   noPiso = await doZoom();
   conferir(
     Math.abs(noPiso.dist / noPiso.piso - 1) < 1e-9 && noPiso.foco === zoomInicio.foco,
-    `o PISO segura em ${(noPiso.dist / (noPiso.piso / 2)).toFixed(4)} raios físicos do alvo`
-      + ` (K_MIN = 2,0; ${(noPiso.dist / 4.84813681e-6 * 1.495978707e8).toFixed(0)} km)`
+    `o PISO segura em ${(noPiso.dist / (noPiso.piso / 1.1)).toFixed(4)} raios físicos do alvo`
+      + ` (K_PISO = 1,1; ${(noPiso.dist / 4.84813681e-6 * 1.495978707e8).toFixed(0)} km)`
   );
 
   // O TETO: o sistema em quadro, centrado no alvo
@@ -1198,7 +1198,8 @@ try {
     // RECALIBRADO EM 08/09: 5,32 → 5,26 — as tarjas de cinema saíram do
     // Atlas (Lote 4, 07/09) e o retângulo útil ficou menor; é geometria
     // pura, não depende de jd.
-    Math.abs(Math.log10(noTeto.teto / noPiso.piso) - 5.26) < 0.05,
+    // piso 1,1a desde 08/10 (era 2a)
+    Math.abs(Math.log10(noTeto.teto / noPiso.piso) - 5.52) < 0.05,
     `a faixa inteira do alvo tem ${Math.log10(noTeto.teto / noPiso.piso).toFixed(2)} décadas`
       + ` — as ~48 estaladas de ponta a ponta que o passo em log promete`
   );
