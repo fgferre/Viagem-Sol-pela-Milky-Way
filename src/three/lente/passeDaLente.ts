@@ -30,6 +30,12 @@
 // risco, fantasmas, anéis e sujeira (máscara 0 dentro, subindo em ~5 px no
 // limbo; entre 1 e 3 px de raio o disco entra em rampa); o lóbulo justo do brilho
 // cai como s1/(s1+R) e os raios como k/(k+R). O clarão do Sol fica como é.
+//
+// OS RAIOS SÃO DO SOL-PONTO: a força deles é a soltura do clarão (`solturaDoClarao`,
+// estrela.ts) — plenos com o disco ≤ 2 px, zero com ≥ 10 px; com o Sol resolvido os
+// efeitos do próprio Sol 3D são os donos. E A LUZ INTEIRA DA LENTE atravessa o ar da
+// Terra como o disco: × a transmitância do Sol visto (`transmitanciaDoSolVisto`,
+// lib/atlas/arMedido.ts), (1, 1, 1) exato longe da Terra.
 // ============================================================
 
 import * as THREE from 'three';
@@ -436,6 +442,7 @@ const FRAGMENTO_FINOS = /* glsl */ `
   uniform vec3 uRaiosCor;
   // por raio: jitterAngulo·(h1 − 0,5), 1 − jitterComprimento·h2, 1 − jitterBrilho·h3
   uniform vec3 uRaiosTabela[${MAX_RAIOS}];
+  uniform float uSolturaDosRaios; // a soltura do clarão do Sol: 1 ponto, 0 resolvido
   uniform bool uTemRisco;
   uniform vec4 uRiscoForma; // comprimento, queda, larguraNucleo, larguraAsas
   uniform vec3 uRiscoInt;   // nucleo, asas, paralelas
@@ -449,6 +456,7 @@ const FRAGMENTO_FINOS = /* glsl */ `
   uniform sampler2D tSujeira;
   uniform bool uTemSujeira;
   uniform vec3 uSujeiraCor; // cor × intensidade
+  uniform vec3 uTransmitancia; // a luz do Sol através do ar da Terra, por canal
 #endif
   in vec2 vUv;
   layout(location = 0) out highp vec4 saida;
@@ -503,7 +511,7 @@ const FRAGMENTO_FINOS = /* glsl */ `
     float largura = max(uRaiosForma.z, uLarguraMinima);
     // disco resolvido: cada ponto do disco faz seu raio e eles se borram; os finos enfraquecem com o disco
     float m = uG * uRaiosLuz.y * (uRaiosLuz.z / (uRaiosLuz.z + uRaioDisco)) * h.z * limpo
-      * (uRaiosForma.z / largura);
+      * (uRaiosForma.z / largura) * uSolturaDosRaios;
     vec3 ao = max(0.0, d - uRaioDisco) / (lk * uRaiosCroma);
     vec3 w = largura * (1.0 + ao * uRaiosForma.w);
     vec3 atravessa = exp(-(perp / w) * (perp / w));
@@ -540,7 +548,7 @@ const FRAGMENTO_FINOS = /* glsl */ `
     float limpo = mascaraDisco(uv);
     vec3 c = vec3(0.0);
     if (uTemBrilho) c += min(brilho(dv, d, limpo), vec3(1.0e3));
-    if (uTemRaios) c += min(raios(dv, d, limpo), vec3(1.0e3));
+    if (uTemRaios && uSolturaDosRaios > 0.0) c += min(raios(dv, d, limpo), vec3(1.0e3));
     if (uTemRisco) c += min(risco(dv, limpo), vec3(1.0e3));
 #ifndef LUZ
     // a regra do disco vale também para os fantasmas, os anéis e a sujeira: com o Sol
@@ -550,6 +558,8 @@ const FRAGMENTO_FINOS = /* glsl */ `
       float t = 2.0 * texture(tSujeira, vec2(uv.x / ${(2 * SUJEIRA_U_MAX).toFixed(1)} + 0.5, uv.y + 0.5)).r;
       c += min(uBorda * t * texture(tLuz, vUv).rgb * uSujeiraCor, vec3(1.0e3)) * limpo;
     }
+    // só aqui: a luz da sujeira (tLuz) já entra nesta soma, e passaria duas vezes pelo ar
+    c *= uTransmitancia;
 #endif
     saida = vec4(clamp(c, 0.0, 1.0e3), 0.0);
   }
@@ -723,6 +733,7 @@ export class PasseDaLente extends Pass {
       uRaiosCroma: v3(),
       uRaiosCor: v3(),
       uRaiosTabela: { value: Array.from({ length: MAX_RAIOS }, () => new THREE.Vector3()) },
+      uSolturaDosRaios: { value: 1 },
       uTemRisco: { value: false },
       uRiscoForma: v4(),
       uRiscoInt: v3(),
@@ -731,6 +742,7 @@ export class PasseDaLente extends Pass {
       uRiscoCorLonge: v3(),
       uTemSujeira: { value: false },
       uSujeiraCor: v3(),
+      uTransmitancia: { value: new THREE.Vector3(1, 1, 1) },
       tMacio: { value: this.alvoMacio.texture },
       tLuz: { value: this.alvoLuz.texture },
       tSujeira: { value: null },
@@ -857,9 +869,22 @@ export class PasseDaLente extends Pass {
     }
   }
 
-  /** A luz deste quadro (o Director, ao lado de `setWarp`). */
-  atualizar(dUA: number, politica: PoliticaDeLuz, roteiro: number, visibilidade: number) {
+  /**
+   * A luz deste quadro (o Director, ao lado de `setWarp`). `soltura` e
+   * `transmitancia` são as do Sol deste quadro, calculadas uma vez para o
+   * disco, o ponto e o clarão (director/solNoQuadro.ts) — aqui só consumidas.
+   */
+  atualizar(
+    dUA: number,
+    politica: PoliticaDeLuz,
+    roteiro: number,
+    visibilidade: number,
+    soltura: number,
+    transmitancia: readonly [number, number, number]
+  ) {
     this.amplitude = amplitudeDaLente(dUA, politica, roteiro, visibilidade);
+    this.u.uSolturaDosRaios.value = soltura;
+    (this.u.uTransmitancia.value as THREE.Vector3).set(transmitancia[0], transmitancia[1], transmitancia[2]);
     if (this.modo === 'nenhuma') {
       this.enabled = false;
       return;
@@ -910,7 +935,9 @@ export class PasseDaLente extends Pass {
     const perto = 1 - suave(0, b.zona, db);
     const borda = (1 + (b.ganhoBrilho - 1) * perto) * sai;
     const g = (this.amplitude / G_DA_LENTE) * borda * gpu.fator;
-    if (!(g * gpu.pico >= LIMIAR_NA_EXPOSICAO_1 / Math.max(exposicao, 1e-6))) return false;
+    const t = this.u.uTransmitancia.value as THREE.Vector3;
+    const ar = Math.max(t.x, t.y, t.z);
+    if (!(g * gpu.pico * ar >= LIMIAR_NA_EXPOSICAO_1 / Math.max(exposicao, 1e-6))) return false;
     // o disco do Sol: o raio angular e, para as formas, o raio no eixo em frações da altura; abaixo
     // de ~1 px ele é ponto (como no look development) e entre 1 e 3 px de raio o disco entra em
     // rampa — um degrau aqui fazia o miolo saltar ~16 % (~3 UA)

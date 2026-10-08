@@ -17,10 +17,10 @@ describe('o passe da lente', () => {
   it('com "nenhuma" o passe fica desligado, com a luz cheia', () => {
     const passe = new PasseDaLente(new THREE.PerspectiveCamera(50, 16 / 9));
     passe.definirLente('redonda');
-    passe.atualizar(1, 'assistida', 0, 1);
+    passe.atualizar(1, 'assistida', 0, 1, 1, [1, 1, 1]);
     expect(passe.enabled).toBe(true);
     passe.definirLente('nenhuma');
-    passe.atualizar(1, 'assistida', 0, 1);
+    passe.atualizar(1, 'assistida', 0, 1, 1, [1, 1, 1]);
     expect(passe.enabled).toBe(false);
     passe.dispose();
   });

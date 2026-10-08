@@ -4331,7 +4331,9 @@ export class Director {
       cam.position.length() * UA_POR_PC,
       this.politicaDeLuz,
       this.luzDoRoteiro,
-      this.visibilidadeDoSol
+      this.visibilidadeDoSol,
+      this.solNoQuadro.solturaDoSol,
+      this.solNoQuadro.transmitanciaDoSolVisto
     );
     // A PIRÂMIDE DA POEIRA (E3c): a fonte que o pedido quer agora, o
     // aquecimento dos materiais dela (desde o clique, antes da troca) e,

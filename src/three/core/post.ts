@@ -1277,8 +1277,15 @@ export class Post {
   }
 
   /** A luz do Sol que a lente recebe neste quadro (o Director, ao lado de `setWarp`). */
-  atualizarLente(dUA: number, politica: PoliticaDeLuz, roteiro: number, visibilidade: number) {
-    this.passeDaLente.atualizar(dUA, politica, roteiro, visibilidade);
+  atualizarLente(
+    dUA: number,
+    politica: PoliticaDeLuz,
+    roteiro: number,
+    visibilidade: number,
+    soltura: number,
+    transmitancia: readonly [number, number, number]
+  ) {
+    this.passeDaLente.atualizar(dUA, politica, roteiro, visibilidade, soltura, transmitancia);
   }
 
   private galaxyMode = 0;

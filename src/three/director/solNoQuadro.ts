@@ -75,6 +75,11 @@ export class SolNoQuadro {
    * clarão — a luz do bloom sai delas. (1, 1, 1) EXATO longe da Terra.
    */
   readonly transmitanciaDoSolVisto: [number, number, number] = [1, 1, 1];
+  /** a soltura do clarão do Sol DESTE quadro (a da repartição, a mesma que
+   *  o clarão consome); os raios da lente seguem ela. 1 antes do 1º quadro. */
+  get solturaDoSol(): number {
+    return this.leiDoSol?.solturaDoClarao ?? 1;
+  }
   private readonly vKm: [number, number, number] = [0, 0, 0];
   private readonly sSol: [number, number, number] = [0, 0, 0];
 
