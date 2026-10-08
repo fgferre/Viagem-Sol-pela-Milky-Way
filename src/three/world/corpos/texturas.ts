@@ -156,8 +156,11 @@ const CANAIS_DE_ASSUNTO = new Set(['map']);
  * `assunto` (07/10): o corpo pode declarar um canal de apoio como
  * assunto do olho no PEDIDO (`CanalPedido.assunto`) — as nuvens da Terra
  * na variante `profundidade`, que o relevo e a sombra põem em primeiro
- * plano. Em cinema ele sobe ao 8k como o `map`; nos outros tiers nada
- * muda.
+ * plano, e (item 232, 08/10) a normal dela, o relevo medido de 8192. Em
+ * cinema ele sobe ao 8k como o `map`; nos outros tiers nada muda. A dose
+ * dessa Terra em cinema: três canais de 8k (map, clouds, normal) = 537 MB
+ * e quatro de 4k (night, roughness, os dois horizontes) = 179 MB, ~0,72 GB
+ * com mip; a `classica` fica nos 0,36 GB de cima.
  */
 export function alvoDePixels(
   tier: QualityLevel,

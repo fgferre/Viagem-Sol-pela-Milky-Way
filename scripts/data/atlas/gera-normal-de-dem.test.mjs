@@ -44,6 +44,7 @@ import {
   CORPOS,
   MARGEM_DA_BORDA,
   assaNormais,
+  assaNormaisPorMediaDeArea,
   conferirAlinhamento,
   decideGravacao,
   gravarCacheDeAlturas,
@@ -200,6 +201,42 @@ describe('2. a amplitude é FÍSICA — a inclinação medida sai como inclinaç
     }
     expect(rmsGraus).toBe(0);
     expect(maxGraus).toBe(0);
+  });
+
+  it('a média de área (a Terra): da grade fina 2,8× mais densa, as rampas saem com o gradiente MÉDIO exato da célula', () => {
+    // h = a·λ + b·φ na grade FINA; a média do gradiente na célula grossa
+    // é a de referência, integrada aqui ponto a ponto na área da célula
+    const [Wf, Hf] = [180, 90];
+    const a = Math.tan((10 * Math.PI) / 180) * RAIO_M;
+    const b = Math.tan((5 * Math.PI) / 180) * RAIO_M;
+    const fina = grade(
+      (i, j) => a * (((i + 0.5) / Wf) * 2 * Math.PI - Math.PI) + b * (Math.PI / 2 - ((j + 0.5) / Hf) * Math.PI),
+      Wf,
+      Hf
+    );
+    const { rgb } = assaNormaisPorMediaDeArea(fina, Wf, Hf, L, A, RAIO_M);
+    const lesteMedio = (j) => {
+      const [fiN, fiS] = [Math.PI / 2 - (j * Math.PI) / A, Math.PI / 2 - ((j + 1) * Math.PI) / A];
+      let [soma, area] = [0, 0];
+      for (let k = 0; k < 2000; k += 1) {
+        const fi = fiN + ((k + 0.5) / 2000) * (fiS - fiN);
+        soma += (a / (RAIO_M * Math.cos(fi))) * Math.cos(fi);
+        area += Math.cos(fi);
+      }
+      return soma / area;
+    };
+    // longe da emenda (o λ linear dá um degrau lá) e aquém da trava de 80°
+    for (const j of [4, 10, 16, 22, 27]) {
+      for (const i of [5, 23, 40, 58]) {
+        const n = normalEm(rgb, i, j);
+        expect(Math.abs(-n.x / n.z - lesteMedio(j)), `leste em (${i},${j})`).toBeLessThan(0.01);
+        expect(Math.abs(-n.y / n.z - b / RAIO_M), `norte em (${i},${j})`).toBeLessThan(0.01);
+      }
+    }
+    // e o terreno plano é a normal geométrica exata
+    const plano = assaNormaisPorMediaDeArea(grade(() => 1234, Wf, Hf), Wf, Hf, L, A, RAIO_M);
+    expect(plano.rgb.every((v, k) => v === (k % 3 === 2 ? 255 : 128))).toBe(true);
+    expect(plano.maxGraus).toBe(0);
   });
 });
 

@@ -1367,8 +1367,8 @@
       "arquivo": "textures/atlas/earth/horizon_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 154437,
-      "sha256": "f18cb255e576af7cd5ee3099dd639727018539984ce20a84d428452a46d703a8",
+      "bytes": 221332,
+      "sha256": "208846034e4dff5b576cb33b1ffcdeb4f6c001a985fae7de0caa30cfa5251c0d",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1386,8 +1386,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -1396,8 +1396,8 @@
       "arquivo": "textures/atlas/earth/horizon_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 118064,
-      "sha256": "ea948a8ca9017306b0a3354714d8ebf9ecee5ff3040b0017e1b3f546624e8192",
+      "bytes": 167498,
+      "sha256": "edc32ad819674aecbd0ce7fc3129e66f2d3846eee5fc20f7eee734ef2c5b4e91",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1415,8 +1415,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -1425,8 +1425,8 @@
       "arquivo": "textures/atlas/earth/horizon_2048.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 514558,
-      "sha256": "6f7e8d14069f6496194cb61004c81d2bc5479f22d0f517f33deb21be8947cfaf",
+      "bytes": 810986,
+      "sha256": "7f4b147cc8bf03aae87170147dc28c065345ffdc6c648a39d06642754144c4e5",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1444,8 +1444,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -1454,8 +1454,8 @@
       "arquivo": "textures/atlas/earth/horizon_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 400510,
-      "sha256": "8236f18af8c9201dd2b73ff07611fe92838a6f89fc1021b3dcae38cb26ceaddb",
+      "bytes": 615722,
+      "sha256": "4e0003e37ada2becbddf9f524058d5f583a5f2fa2fb89633b90254336c6cca3c",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1473,8 +1473,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -1483,8 +1483,8 @@
       "arquivo": "textures/atlas/earth/horizon.png",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1906224,
-      "sha256": "dec87e10784318cd64d7b13e0afb41c8f7376022b65ecf2c985f197978f28789",
+      "bytes": 3151845,
+      "sha256": "749f02b8e5187974d357e560d8e36e7c6ea6080e048828657b07e716712f5daf",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1502,8 +1502,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -1512,8 +1512,8 @@
       "arquivo": "textures/atlas/earth/horizon.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1499094,
-      "sha256": "d279d564af60277d1cf9f716782b318dfac43a61b9a6973432d1126ee0fc2031",
+      "bytes": 2407788,
+      "sha256": "fd73349ee1bf215f3b3551378b6e8759d4d0763642a38a046d70ec79876343ef",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1531,8 +1531,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -1541,8 +1541,8 @@
       "arquivo": "textures/atlas/earth/horizon2_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 153426,
-      "sha256": "229a24f3910fe624abb16816fd65c6e03d0049a4b891ead857fdaa485c512b18",
+      "bytes": 219350,
+      "sha256": "88121511c469191d6bdda11bcc101fec49ccf88c16726b7e5f9e625066b6f3ef",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1560,8 +1560,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -1570,8 +1570,8 @@
       "arquivo": "textures/atlas/earth/horizon2_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 117820,
-      "sha256": "9b5ff0e38e176ae5d9bccf56ae397a1afdc987af46e1df88757959de3f0eba8c",
+      "bytes": 166792,
+      "sha256": "e14179fdebdf29d725e129d7119f5f882019a16a4a7fb2d045be65d904091083",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1589,8 +1589,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -1599,8 +1599,8 @@
       "arquivo": "textures/atlas/earth/horizon2_2048.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 513783,
-      "sha256": "6febe233e8e600c75ab715ee9bbd9631c4a535fcd52c57e98b7e0607d164216f",
+      "bytes": 804871,
+      "sha256": "d4823da2c370494240e266154cb1c189fa435d342adc14b2277e854484c9beb6",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1618,8 +1618,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -1628,8 +1628,8 @@
       "arquivo": "textures/atlas/earth/horizon2_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 399956,
-      "sha256": "c84c339c8a86901e9056459e07d21b01950d5c94d93835028473be2ac956f3fa",
+      "bytes": 614846,
+      "sha256": "191ca765d805db7ecc957ee4e7ecdcec7fe73b7cf0b7ff50de3f0b6dff9f13ed",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1647,8 +1647,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -1657,8 +1657,8 @@
       "arquivo": "textures/atlas/earth/horizon2.png",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1911968,
-      "sha256": "96396ec7e9954e794ac42304f047856491ee5d9660818bde9debb9c5177bf251",
+      "bytes": 3138333,
+      "sha256": "750e77cc3d2cc54f59fbf0b73a8bcb331fc79a7d5bae62a191aa29d526240423",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1676,8 +1676,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -1686,8 +1686,8 @@
       "arquivo": "textures/atlas/earth/horizon2.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1497370,
-      "sha256": "5b566e506519f38f5c7122ffb1b07a43cc191179e59b2e9f845d9ed469e71bbe",
+      "bytes": 2397294,
+      "sha256": "f0127665590397046d80981006fe7487c11a7be428b0b038013b38669222f951",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1705,8 +1705,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
-        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the source's ~1.85 km cells averaged down to 4096 px, ~9.8 km per texel: a valley narrower than that casts no shadow of its own; the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
+        "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
+        "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
       }
     },
     {
@@ -2115,8 +2115,8 @@
       "arquivo": "textures/atlas/earth/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 97328,
-      "sha256": "ea1eb7770d43337582dfe8865c5550ec3518b00a678576a53c9d337c64dfa440",
+      "bytes": 98848,
+      "sha256": "dd247c570f14cfec01e967b452860f4a8790839fea3d5affc6ee5c3b05de21dd",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
@@ -2134,8 +2134,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
-        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
       }
     },
     {
@@ -2144,8 +2144,8 @@
       "arquivo": "textures/atlas/earth/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 67652,
-      "sha256": "02ead1770742ca103ac4d2e1831819791890470b6f7eeb55db85dc749f4933cb",
+      "bytes": 69314,
+      "sha256": "281ea965c312fc03c1a4ef9770074437a0a6ca49ea5215ecff8b3d5144c29269",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
@@ -2163,8 +2163,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
-        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
       }
     },
     {
@@ -2173,8 +2173,8 @@
       "arquivo": "textures/atlas/earth/normal_2048.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 435407,
-      "sha256": "00aa3d3a6074efec60ddb7861a0b1f4468d338ca23037a418632416b229ca01c",
+      "bytes": 442261,
+      "sha256": "39ed9c8c211af80f41834a585f768b5c5faf49eaec1edcbd0946595a023beb0c",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
@@ -2192,8 +2192,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
-        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
       }
     },
     {
@@ -2202,8 +2202,8 @@
       "arquivo": "textures/atlas/earth/normal_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 302160,
-      "sha256": "672736c526ca1515ff94cc323ee35cbf2a8c3d35e7203843604dc48a45f26847",
+      "bytes": 308966,
+      "sha256": "742f8140194a5b774824810a240bcf6727602885e7d790786f15189317fb3548",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
@@ -2221,8 +2221,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
-        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
       }
     },
     {
@@ -2231,8 +2231,8 @@
       "arquivo": "textures/atlas/earth/normal_4096.png",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1990770,
-      "sha256": "d53dae1b29e5d523e602c750a9c36f2a0fef44520401cf3ff0c5f01b11d98689",
+      "bytes": 2140045,
+      "sha256": "93f6ff311fc314ed1ee1eca7355eb08d24ccce10a229e6656d27c6fd62857681",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
@@ -2250,8 +2250,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
-        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
       }
     },
     {
@@ -2260,8 +2260,8 @@
       "arquivo": "textures/atlas/earth/normal_4096.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1379454,
-      "sha256": "c4900741eb0a7a49f629cb8ae36243361e6edeec1f1eb544ab3a8337f98adbb4",
+      "bytes": 1483920,
+      "sha256": "08c14dffd1bfec77ed0d175dc5925511857ee13cbaf4db6c60025fd88f94b7a1",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
@@ -2279,8 +2279,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
-        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
       }
     },
     {
@@ -2289,8 +2289,8 @@
       "arquivo": "textures/atlas/earth/normal.png",
       "larguraPx": 8192,
       "alturaPx": 4096,
-      "bytes": 7507063,
-      "sha256": "ad82ae47e5db0eb51a6e98be47bd4485c23f1521a6d3d0cf6ad9936b6c7c409d",
+      "bytes": 9087963,
+      "sha256": "88220c43341b4fe0abeb02b6d6941e8c0c4897134a231ed665333618093ede00",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
@@ -2308,8 +2308,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
-        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
       }
     },
     {
@@ -2318,8 +2318,8 @@
       "arquivo": "textures/atlas/earth/normal.webp",
       "larguraPx": 8192,
       "alturaPx": 4096,
-      "bytes": 4877404,
-      "sha256": "6ec86a66167b3261a2168f82d8007153b0e15214b525fbe0951351b829fc3ef0",
+      "bytes": 6365004,
+      "sha256": "b6bd86bb759a2636cee28d5be32fe3666e7f6b2d73249ff7d7a18b75178ab61d",
       "origem": {
         "fonte": {
           "pt": "ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS",
@@ -2337,8 +2337,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
-        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, with the source's ~1.85 km cells averaged down to the 8192 px map, ~4.9 km per texel at the equator; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
+        "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
+        "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
       }
     },
     {

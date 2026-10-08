@@ -840,20 +840,25 @@ publicado do espelho; depois, tudo abaixo de 0 m vai a 0 m: o oceano, o
 Cáspio (−28 m), o Mar Morto e as depressões secas (Qattara, Turpan,
 Danakil), ASSUMIDO — na grade do mapa a diferença não se vê.
 
-**A escala é a real, sem exagero**: as células de ~1,85 km da fonte são
-reduzidas por MÉDIA DE ÁREA (a mesma de Reia) a 8192 px para a normal (~4,9
-km por texel no equador) e a 4096 px para o horizonte (~9,8 km); a normal
-sai das derivadas em metros por metro sobre o raio equatorial de 6378,137
-km, ganho 1 — declive RMS de 0,83° no globo, máximo 29,3°. O horizonte é o de
-Hipérion (seis azimutes em dois RGB sem alfa, `gera-horizonte.mjs`) sobre o
-raio R + h, com a marcha até 3,1° (345 km): nenhum relevo da Terra aparece
-acima do plano do horizonte mais longe que ~336 km.
+**A escala é a real, sem exagero**: cada texel da normal de 8192 px (~4,9
+km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células
+de ~1,85 km da fonte (item 232, 08/10: a receita antiga reduzia a altura e
+depois tirava a diferença central sobre dois texels, o que alisava as
+encostas pela metade); as derivadas são em metros por metro sobre o raio
+equatorial de 6378,137 km, ganho 1. O horizonte é o de Hipérion (seis
+azimutes em dois RGB sem alfa, `gera-horizonte.mjs`) sobre o raio R + h,
+com a marcha até 3,1° (345 km) feita sobre as células FINAS, cada uma da
+sua própria altura, e guardada como a média dos senos em cada texel de 4096
+px (~9,8 km). No app a sombra é PARCIAL (`GLSL_SOMBRA_PARCIAL_DO_RELEVO`,
+só a Terra): a dispersão dos horizontes finos dentro da célula cresce com a
+média (σ/μ ≈ 0,7, medido), e a fração na sombra sai de uma gama de forma 2.
+Medidas e pranchas: `capturas/efeitos-timidos/relevo/`.
 
 Receita: `scripts/data/atlas/relevo-terra.mjs`, pela cadeia
 (`baixa-texturas.mjs`, `relevoTerra`). O portão da cadeia aprova o conjunto —
 o RGB da normal, os dois do horizonte e os números (o ETOPO, o raio, a
 marcha e o que cada lago virou) — por sha256, e os três canais são gravados
-juntos. O `parametros.json` dos candidatos em `capturas/terra-nuvens/relevo/`
+juntos. O `parametros.json` dos candidatos em `capturas/efeitos-timidos/relevo/`
 lista cada escolha.
 
 ## Pã — a forma medida e o relevo das fotos (08/10)
@@ -943,9 +948,9 @@ tocar num `.mjs`.
 | pan/normal | a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê |
 | pan/horizon | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
 | pan/horizon2 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
-| earth/normal | relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água |
-| earth/horizon | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
-| earth/horizon2 | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
+| earth/normal | relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água |
+| earth/horizon | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
+| earth/horizon2 | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
 | moon/normal | topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela |
 | mercury/normal | topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem |
 | mars/normal | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |

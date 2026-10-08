@@ -118,14 +118,17 @@
 // encontra (`gravaRelevoDeReia`): nunca a altura de uma versão com a normal
 // de outra.
 //
-// O RELEVO DA TERRA (07/10/2026, capturas/terra-nuvens/relevo/): as
-// entradas `earth/normal`, `earth/horizon` e `earth/horizon2` não adquirem
-// nada — saem do gerador `relevo-terra.mjs` pela MESMA sequência de
-// chamadas dos candidatos que ele aprovou pela prancha: o ETOPO 2022 do
-// cache (conferido por sha256), a água como espelho, a média de área, a
-// normal em 8192 e o horizonte em 4096. O mesmo portão do conjunto (os três
-// canais e os números) e os TRÊS gravados juntos pela primeira das entradas
-// que a corrida encontra (`gravaRelevoDaTerra`).
+// O RELEVO DA TERRA (07/10/2026; refeito no item 232, 08/10/2026,
+// capturas/efeitos-timidos/relevo/): as entradas `earth/normal`,
+// `earth/horizon` e `earth/horizon2` não adquirem nada — saem do gerador
+// `relevo-terra.mjs` pela MESMA conta dos candidatos que ele aprovou pelas
+// fotos: o ETOPO 2022 do cache (conferido por sha256), a água como
+// espelho, e da grade FINA da fonte a normal em 8192 (a média de área do
+// gradiente de cada célula) e o horizonte em 4096 (a marcha em cada
+// amostra fina, a média do seno por célula; perto de dez minutos em oito
+// fios). O mesmo portão do conjunto (os três canais e os números) e os TRÊS
+// gravados juntos pela primeira das entradas que a corrida encontra
+// (`gravaRelevoDaTerra`).
 //
 // ESCOPO OPCIONAL (o mesmo do otimiza-texturas): sem corpo nomeado, a
 // tabela inteira; com corpos, só eles; com `corpo/canal`, só aquele canal
@@ -233,25 +236,26 @@ const RELEVO_DE_REIA = {
   },
 };
 
-// O RELEVO APROVADO DA TERRA (07/10/2026, pela prancha
-// `capturas/terra-nuvens/relevo/relevo-prancha.jpg`), que `earth/normal`,
-// `earth/horizon` e `earth/horizon2` dividem. `candidato`: a pasta dos
-// candidatos, com o `parametros.json` que o portão confronta; `etopo`: o
-// ETOPO 2022 no cache (o sha256 de `.cache/terra/FONTES.json`), pinado;
-// as grades são as do gerador (`Terra.NORMAL`, `Terra.HORIZONTE`).
-// `sha256Aprovado`: o RGB de cada um dos três canais e o JSON canônico dos
-// números (`numerosDoRelevoDaTerra`).
+// O RELEVO APROVADO DA TERRA (item 232, 08/10/2026, pelas fotos "hoje ×
+// depois" de `capturas/efeitos-timidos/juntos/`: a normal N2 e o horizonte
+// H1), que `earth/normal`, `earth/horizon` e `earth/horizon2` dividem.
+// `candidato`: a pasta dos candidatos, com o `parametros.json` que o portão
+// confronta; `etopo`: o ETOPO 2022 no cache (o sha256 de
+// `.cache/terra/FONTES.json`), pinado; as grades são as do gerador
+// (`Terra.NORMAL`, `Terra.HORIZONTE`). `sha256Aprovado`: o RGB de cada um
+// dos três canais e o JSON canônico dos números (`numerosDoRelevoDaTerra`).
+// O conjunto de 07/10 (capturas/terra-nuvens/relevo/) volta pelo git.
 const RELEVO_DA_TERRA = {
-  candidato: 'capturas/terra-nuvens/relevo',
+  candidato: 'capturas/efeitos-timidos/relevo',
   etopo: {
     arquivo: '.cache/terra/ETOPO_2022_v1_60s_N90W180_surface.tif',
     sha256: '9d27d4b8ea8e76977e2988bca667d7c8fa68b927355feffcddd6b4875a7fd08e',
   },
   sha256Aprovado: {
-    normal: '27a3fd5e2c0858a78f603b7a4a6e785eeed771030aabf2c603843709800b1adc',
-    horizon: 'a6121932b05c1bd6ab789da8a1d3297d3443bd6fd695f7de94151bec5e1dce0d',
-    horizon2: 'dd83966131f4a94d7aa7d8f4d9541c113ff8a1b3a93e40d2dc40e951d9f8394c',
-    parametros: '3fc74b6e147722378477fe34695bba539b6b34676e0073dd1f284ed136cdaf10',
+    normal: 'b664651ad295d2000e5b0e7186b67d0e21ab629435ece41ee748500a6e29d441',
+    horizon: 'd2a6697620f525a15bc1c34f8d374d5cbeb5322f4937fb6f212a58bc4cb14753',
+    horizon2: 'eba55c85dc54e3635ca8fb1687e18b56a303b5a0dd75b43e9032e2e2b98a8969',
+    parametros: 'a80b463f1edbeedabe939e8522516b07fd0b5887f43d286263abcae2280344a7',
   },
 };
 
@@ -281,11 +285,11 @@ export const FONTES = [
     url: `${SSS}/8k_earth_nightmap.jpg`,
     nomeNoDoador: '8k_earth_nightmap.jpg',
   },
-  // O RELEVO MEDIDO DA TERRA (07/10/2026): a normal artística do SSS
-  // (`8k_earth_normal_map`) saiu; a normal e os dois mapas de horizonte
-  // saem do gerador `relevo-terra.mjs` (`relevoDaTerra`) a partir do ETOPO
-  // 2022 do cache, na grade e na convenção da casa, sem giro. A url é a
-  // do ETOPO, que entra pelo cache.
+  // O RELEVO MEDIDO DA TERRA (07/10/2026; da grade fina desde o item 232):
+  // a normal artística do SSS (`8k_earth_normal_map`) saiu; a normal e os
+  // dois mapas de horizonte saem do gerador `relevo-terra.mjs`
+  // (`relevoDaTerra`) a partir do ETOPO 2022 do cache, na grade e na
+  // convenção da casa, sem giro. A url é a do ETOPO, que entra pelo cache.
   ...['normal', 'horizon', 'horizon2'].map((canal) => ({
     corpo: 'earth',
     canal,
@@ -1802,29 +1806,29 @@ export async function gravaRelevoDeReia(fonte, destino) {
   await gravaOsCanaisJuntos(rotulo, destino, conjunto, portao.mensagem);
 }
 
-// ---- O RELEVO DA TERRA (07/10/2026, capturas/terra-nuvens/relevo/) ------
+// ---- O RELEVO DA TERRA (07/10/2026; item 232, 08/10/2026) ---------------
 
 /** Os canais do conjunto da Terra, que o portão aprova e a cadeia grava juntos. */
 const CANAIS_DA_TERRA = ['normal', 'horizon', 'horizon2'];
 
 /**
- * O RELEVO DA TERRA EM MEMÓRIA — a sequência de chamadas dos candidatos
- * (`capturas/terra-nuvens/relevo/ferramentas/gera-candidatos.mjs`), que esta
- * cadeia reproduz byte a byte (`prova-cadeia-terra.mjs`, ao lado dela): o
- * ETOPO lido e levado à superfície (`leEtopo`: os lagos com fundo sobem ao
- * espelho, o resto abaixo de 0 m vai a 0 m), a média de área nas duas grades
- * (`relevoNaCasa`), a normal na grade de `Terra.NORMAL` e o horizonte na de
- * `Terra.HORIZONTE`. `tif`: os bytes do TIFF; `etopoSha256`: o sha256
- * conferido dele, que vai aos números. Pura; `{ rgb, grades, numeros,
- * normal, superficie }` — `rgb[canal]` com W·H·3 bytes na `grades[canal]`.
+ * O RELEVO DA TERRA EM MEMÓRIA — a conta dos candidatos do item 232
+ * (`capturas/efeitos-timidos/relevo/ferramentas/assa.mjs`, modos
+ * `superficie`, `normais` e `horizonte`), que esta cadeia reproduz byte a
+ * byte: o ETOPO lido e levado à superfície (`leEtopo`: os lagos com fundo
+ * sobem ao espelho, o resto abaixo de 0 m vai a 0 m) e, da grade FINA dele,
+ * a normal na grade de `Terra.NORMAL` e o horizonte na de `Terra.HORIZONTE`
+ * (em fios; perto de dez minutos em oito). `tif`: os bytes do TIFF;
+ * `etopoSha256`: o sha256 conferido dele, que vai aos números. Sem E/S;
+ * `{ rgb, grades, numeros, normal, superficie }` — `rgb[canal]` com W·H·3
+ * bytes na `grades[canal]`.
  */
-export function relevoDaTerra({ tif, etopoSha256 }) {
+export async function relevoDaTerra({ tif, etopoSha256 }) {
   const { NORMAL, HORIZONTE } = Terra;
   const etopo = Terra.leEtopo(tif);
-  const m8 = Terra.relevoNaCasa(etopo, NORMAL.largura, NORMAL.altura);
-  const m4 = Terra.relevoNaCasa(etopo, HORIZONTE.largura, HORIZONTE.altura);
-  const normal = Terra.normalDaTerra(m8, NORMAL.largura, NORMAL.altura);
-  const { horizon, horizon2 } = Terra.horizonteDaTerra(m4, HORIZONTE.largura, HORIZONTE.altura);
+  const fina = [etopo.metros, etopo.largura, etopo.altura];
+  const normal = Terra.normalDaTerra(...fina, NORMAL.largura, NORMAL.altura);
+  const { horizon, horizon2 } = await Terra.horizonteDaTerra(...fina, HORIZONTE.largura, HORIZONTE.altura);
   const grade = ({ largura, altura }) => ({ largura, altura });
   return {
     rgb: { normal: normal.rgb, horizon, horizon2 },
@@ -1840,11 +1844,12 @@ const lagosDaSuperficie = (lagos) => lagos.map(({ nome, nivelM, areaKm2, fundoM 
 /**
  * OS NÚMEROS QUE O PORTÃO APROVA junto dos pixels da Terra: os que refazem
  * o campo e o pixel não carrega — o ETOPO (sha256, grade, borda esquerda, o
- * valor sem dado), o raio, a marcha do horizonte (grade, alcance, passo,
- * número de passos) — e o que a água virou nesta corrida (cada lago com
- * fundo: nível, área enchida, fundo; quantas amostras abaixo do mar foram a
- * 0 m), que muda se a semente, o nível ou a guarda de um lago mudar. O
- * sha256 é o do `jsonCanonico` disto.
+ * valor sem dado), o raio, a marcha do horizonte (grade de saída, as faixas
+ * de passo em texels da FONTE, onde ela anda, e o número de passos) — e o
+ * que a água virou nesta corrida (cada lago com fundo: nível, área enchida,
+ * fundo; quantas amostras abaixo do mar foram a 0 m), que muda se a
+ * semente, o nível ou a guarda de um lago mudar. O sha256 é o do
+ * `jsonCanonico` disto.
  */
 export function numerosDoRelevoDaTerra({ etopoSha256, superficie }) {
   const { largura, altura, bordaEsquerdaLonE, semDado } = Terra.ETOPO;
@@ -1855,9 +1860,8 @@ export function numerosDoRelevoDaTerra({ etopoSha256, superficie }) {
     superficie: { lagos: lagosDaSuperficie(superficie.lagos), abaixoDoMar: superficie.abaixoDoMar },
     horizonte: {
       grade: [HORIZONTE.largura, HORIZONTE.altura],
-      ateGraus: HORIZONTE.ateGraus,
-      passoEmTexels: HORIZONTE.passoEmTexels,
-      passos: Terra.angulosDoHorizonte(HORIZONTE.largura).length,
+      faixas: HORIZONTE.faixas.map((f) => [...f]),
+      passos: Terra.angulosDoHorizonte(largura).length,
     },
   };
 }
@@ -1865,12 +1869,12 @@ export function numerosDoRelevoDaTerra({ etopoSha256, superficie }) {
 /** Os mesmos números da Terra, lidos do `parametros.json` que os candidatos gravaram. */
 export function numerosDoCandidatoDaTerra(p) {
   const { sha256, largura, altura, bordaEsquerdaLonE, semDado } = p.fonte;
-  const { ateGraus, passoEmTexels, passos } = p.horizonte.marcha;
+  const { faixas, passos } = p.horizonte.marcha;
   return {
     fonte: { sha256, largura, altura, bordaEsquerdaLonE, semDado },
     raioKm: p.raioKm,
     superficie: { lagos: lagosDaSuperficie(p.superficie.lagos), abaixoDoMar: p.superficie.abaixoDoMar },
-    horizonte: { grade: p.horizonte.grade, ateGraus, passoEmTexels, passos },
+    horizonte: { grade: p.horizonte.grade, faixas, passos },
   };
 }
 
@@ -1916,10 +1920,11 @@ async function fazConjuntoDaTerra(fonte) {
   const candidato = await parametrosDoCandidato(rotulo, config.candidato);
   console.log(
     `${rotulo}: relevo da Terra, ETOPO 2022 de 60″ → normal ${Terra.NORMAL.largura}×${Terra.NORMAL.altura} e horizonte ` +
-      `${Terra.HORIZONTE.largura}×${Terra.HORIZONTE.altura} (leva perto de um minuto); ` +
+      `${Terra.HORIZONTE.largura}×${Terra.HORIZONTE.altura} da grade fina (leva perto de dez minutos em oito fios; ` +
+      `${os.availableParallelism()} aqui); ` +
       `versões: node ${process.version}, V8 ${process.versions.v8}, sharp ${sharp.versions.sharp}, libvips ${sharp.versions.vips}`
   );
-  const r = relevoDaTerra({ tif, etopoSha256: config.etopo.sha256 });
+  const r = await relevoDaTerra({ tif, etopoSha256: config.etopo.sha256 });
   console.log(
     `  lagos ao espelho: ${r.superficie.lagos.map((l) => `${l.nome} ${l.areaKm2} km²`).join(', ')}; ` +
       `${r.superficie.abaixoDoMar} amostras abaixo do mar a 0 m; normal: declive RMS ${r.normal.rmsGraus.toFixed(3)}°, máximo ${r.normal.maxGraus.toFixed(2)}°`

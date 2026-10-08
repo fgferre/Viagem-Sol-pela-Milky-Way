@@ -171,7 +171,7 @@ export type CanalDaTerra = (typeof CANAIS_DA_TERRA)[number];
  * lineares — pôr um normal map em sRGB torceria a normal em silêncio.
  * Todos são equiretangulares, então todos repetem em U (a emenda 0/360
  * fecha sem risca de mipmap). É o MOLDE: cada Terra copia o pedido no
- * construtor, porque o `assunto` das nuvens muda com a variante.
+ * construtor, porque o `assunto` das nuvens e da normal muda com a variante.
  */
 const PEDIDO_DA_TERRA: readonly CanalPedido[] = CANAIS_DA_TERRA.map((canal) => ({
   canal,
@@ -398,8 +398,10 @@ export class TerraResolvida {
    *  objeto de uniform; a textura nasce na primeira `profundidade` */
   private readonly uEspalhamentoMultiplo: THREE.IUniform<THREE.DataTexture | null> = { value: null };
   private variante: VarianteDaTerra = 'classica';
-  /** o pedido das nuvens DESTA Terra — o `assunto` segue a variante */
+  /** os pedidos das nuvens e da normal DESTA Terra — o `assunto` dos
+   *  dois segue a variante */
   private readonly pedidoDasNuvens: CanalPedido;
+  private readonly pedidoDaNormal: CanalPedido;
   /** o pedido inteiro DESTA Terra, o MESMO array que a carga lê a cada
    *  vez — os dois mapas de horizonte entram e saem dele com a variante */
   private readonly canais: CanalPedido[];
@@ -431,12 +433,15 @@ export class TerraResolvida {
    * compartilham os objetos de uniform, então nenhum setter do tick
    * precisa saber qual está no ar.
    *
-   * O 8K DAS NUVENS SEGUE NA PRÓXIMA CARGA: a variante marca o canal
-   * `clouds` como assunto (`CanalPedido.assunto`), e quem o lê é a carga
-   * seguinte — a primeira (o Director aplica a variante logo depois de
-   * construir a Terra, antes de qualquer textura) ou a troca de tier.
-   * Trocar de variante com o globo carregado não recarrega nada: a
-   * resolução das nuvens que já estão na tela fica até a próxima carga.
+   * O 8K DAS NUVENS E DA NORMAL SEGUE NA PRÓXIMA CARGA: a variante marca
+   * os canais `clouds` e (item 232, 08/10) `normal` como assunto
+   * (`CanalPedido.assunto`), e quem o lê é a carga seguinte — a primeira
+   * (o Director aplica a variante logo depois de construir a Terra, antes
+   * de qualquer textura) ou a troca de tier. A normal sobe porque o
+   * relevo medido de 8192 é a média de área do gradiente de cada célula
+   * (`relevo-terra.mjs`), e o degrau de 4096 a alisaria; a `classica`
+   * segue no 4k. Trocar de variante com o globo carregado não recarrega
+   * nada: a resolução que já está na tela fica até a próxima carga.
    *
    * OS MAPAS DE HORIZONTE (a sombra das montanhas, 07/10) seguem a mesma
    * regra: só a `profundidade` os pede, e quem obedece é a próxima carga —
@@ -447,6 +452,7 @@ export class TerraResolvida {
     if (v === this.variante) return;
     this.variante = v;
     this.pedidoDasNuvens.assunto = v === 'profundidade';
+    this.pedidoDaNormal.assunto = v === 'profundidade';
     this.canais.length = CANAIS_DA_TERRA.length;
     if (v === 'profundidade') this.canais.push(CANAL_HORIZONTE, CANAL_HORIZONTE2);
     this.vestirVariante();
@@ -481,6 +487,7 @@ export class TerraResolvida {
     const canais = PEDIDO_DA_TERRA.map((c) => ({ ...c }));
     this.canais = canais;
     this.pedidoDasNuvens = canais.find((c) => c.canal === 'clouds')!;
+    this.pedidoDaNormal = canais.find((c) => c.canal === 'normal')!;
     this.texturas = new TexturasDoCorpo({
       corpo: 'earth',
       canais,
