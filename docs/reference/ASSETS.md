@@ -277,7 +277,8 @@ uma lua de 0,575 dia acumula dezenas de graus de longitude em 26 anos. A
 
 **Hipérion saiu daqui em 23/09/2026:** a forma dela passou a ser MEDIDA
 (Cassini), por mapa de altura — ver "Hipérion — a forma medida e os poços
-da pintura (22–23/09)", abaixo.
+da pintura (22–23/09)", abaixo. **Pã saiu em 08/10/2026**, pelo mesmo
+caminho — ver "Pã — a forma medida e o relevo das fotos (08/10)", abaixo.
 
 ## Fonte dos rótulos 3D (item 109)
 
@@ -855,6 +856,37 @@ marcha e o que cada lago virou) — por sha256, e os três canais são gravados
 juntos. O `parametros.json` dos candidatos em `capturas/terra-nuvens/relevo/`
 lista cada escolha.
 
+## Pã — a forma medida e o relevo das fotos (08/10)
+
+Pã sai da família esculpida para a dos rochosos com relevo medido, pelo
+caminho do Hipérion (`PLAN-LUAS-PEQUENAS.md`; a versão F do piloto, aprovada
+pelo dono em 08/10). Forma: o mesmo pacote de Thomas, Joseph & Ansty (2018),
+DOI 10.26033/ewy3-jy61, `pan_30k_plt.tab`, no referencial da IAU (longitude
+0 = ponto sub-Saturno). A forma inteira é o mapa de ALTURA, raio 0,740482 a
+1,450393 de 14 km (`RELEVO_DA_LUA.pan`), da grade radial 512×256 suavizada
+a 1° de arco; `BODY_AXES.pan` continua esfera. O meridiano-primo é W₀ = 180°
+sobre a órbita da casa (`iauOrientation.ts`): a ponta comprida aponta para
+Saturno.
+
+**O relevo fino é das fotos onde elas veem**: 28 quadros calibrados da
+Cassini (PDS Ring-Moon Systems Node, COISS_2111; I/F do CISSCAL) projetados
+na forma medida, nas escalas abaixo de ~8°, que o modelo resolve pouco ou
+nada, na força medida contra as fotos. Cobrem 40,5 % da superfície: no sobrevoo de 2017 o
+resto estava de noite. **Ali o relevo fino é INVENTADO**: retalhos de ~9° do
+relevo visto, do mesmo terreno e com a mesma direção de sulcos. Das 14
+crateras, 4 são as que as fotos mostram, no lugar e no tamanho medidos; 10
+foram postas pela densidade medida onde nenhuma foto vê.
+
+**A cor é pintura, não medida**: nenhum mapa de cor de Pã foi publicado. A
+pintura por IA do dono sobre o relevo medido foi calibrada pelo espectro
+medido em 4 filtros da Cassini e por Buratti et al. 2019, com o albedo fino
+dos mesmos 28 quadros onde há foto. Os horizontes são assados do mesmo raio
+final; o shader só deixa o relevo tapar o Sol acima do plano radial
+(`horizonte: 'soDoRelevo'`), porque as encostas da aba chegam a 65° dele.
+Receita e números: `capturas/luas-pequenas/pa/f/notas.md` e `gera-f.mjs`; os
+mapas entram pela cadeia como fonte local (`fonte/pan-*.png`), sem giro e
+sem bake.
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**
@@ -906,6 +938,11 @@ tocar num `.mjs`.
 | hyperion/height | a forma é medida pela Cassini, mas os 3.488 poços cavados nela não são: saem das manchas escuras da pintura por IA |
 | hyperion/horizon | a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA |
 | hyperion/horizon2 | a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA |
+| pan/map | não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa sobre o relevo medido, calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019; o detalhe claro e escuro vem de 28 fotos da Cassini só nos 40,5 % da superfície que elas veem — no resto, é o da pintura |
+| pan/height | a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê |
+| pan/normal | a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê |
+| pan/horizon | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
+| pan/horizon2 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
 | earth/normal | relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, com as células de ~1,85 km da fonte reduzidas por média ao mapa de 8192 px, ~4,9 km por texel no equador; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água |
 | earth/horizon | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
 | earth/horizon2 | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com as células de ~1,85 km da fonte reduzidas por média a 4096 px, ~9,8 km por texel: um vale mais estreito que isso não faz sombra própria; a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
@@ -934,9 +971,10 @@ tocar num `.mjs`.
 Duas famílias. Primeiro, os seis corpos cujo modelo de forma IRREGULAR
 existe publicado e **não** é carregado: a casa não tem
 `GLTFLoader`/`OBJLoader` (pendência **P-F7-MESH**, acima) e desenha o
-elipsoide de `BODY_AXES`. Depois, as oito luas de Saturno da S3, que são o
-caso oposto — têm malha, e a malha é INVENTADA a partir das dimensões
-publicadas (item 134/S3, seção acima).
+elipsoide de `BODY_AXES`. Depois, as sete luas de Saturno da S3 que seguem
+esculpidas, o caso oposto — têm malha, e a malha é INVENTADA a partir das
+dimensões publicadas (item 134/S3, seção acima); Hipérion e Pã saíram (forma
+medida, tabela de cima).
 
 | corpo | nota |
 | --- | --- |
@@ -946,7 +984,6 @@ publicadas (item 134/S3, seção acima).
 | haumea | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega |
 | phobos | elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
 | deimos | elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
-| pan | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | daphnis | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | atlas | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | prometheus | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |

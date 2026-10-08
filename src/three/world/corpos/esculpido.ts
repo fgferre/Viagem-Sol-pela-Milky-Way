@@ -1,6 +1,6 @@
 // ============================================================
-// AS LUAS ESCULPIDAS (item 134/S3) — Pã, Dafnis, Atlas, Prometeu,
-// Pandora, Jano, Epimeteu e Febe.
+// AS LUAS ESCULPIDAS (item 134/S3) — Dafnis, Atlas, Prometeu, Pandora,
+// Jano, Epimeteu e Febe.
 //
 // PROVENIÊNCIA: o ESCULPIDOR é código do PROJETO SATURN DO AUTOR
 // (https://github.com/fgferre/Saturn, `src/scene/irregularMoonGeometry.ts`,
@@ -22,7 +22,7 @@
 // `luzDaVisita` e o mesmo chunk de bump por derivada de tela que a S2 ligou
 // em todo corpo sem atmosfera — a lei do dono de 02/09.
 //
-// POR QUE UMA GEOMETRIA E NÃO UM ELIPSOIDE. Estes oito não são esferas
+// POR QUE UMA GEOMETRIA E NÃO UM ELIPSOIDE. Estes sete não são esferas
 // achatadas: os pastores do anel têm crista equatorial de material
 // acretado, Epimeteu tem o polo sul rebaixado por um impacto antigo. Um
 // elipsoide com textura procedural mostraria a COR certa numa forma
@@ -41,6 +41,8 @@
 // HIPÉRION SAIU DAQUI EM 23/09/2026: a forma dele agora é MEDIDA (Cassini,
 // Thomas/Joseph/Ansty 2018) por mapa de altura, na família dos rochosos
 // com relevo (`rochoso.ts`, `RELEVO_DA_LUA`) — o mesmo caminho de Mimas.
+// PÃ SAIU DAQUI EM 08/10/2026 pelo mesmo caminho (PLAN-LUAS-PEQUENAS.md):
+// a forma medida pela Cassini, com o relevo fino das fotos.
 // ============================================================
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -131,9 +133,9 @@ export interface FormaEsculpida {
 }
 
 /**
- * As oito formas do projeto Saturn do autor, com as referências de
+ * As sete formas do projeto Saturn do autor, com as referências de
  * morfologia Cassini/NASA que ele anotou:
- *  - Pã / Atlas / Dafnis (cristas equatoriais de acreção, manto liso):
+ *  - Atlas / Dafnis (cristas equatoriais de acreção, manto liso):
  *    https://science.nasa.gov/missions/cassini/cassini-finds-saturns-rings-coat-tiny-moons/
  *  - Prometeu (irregular, menos craterizado que Pandora / Jano / Epimeteu):
  *    https://science.nasa.gov/saturn/moons/prometheus/
@@ -150,13 +152,6 @@ export interface FormaEsculpida {
  * fonte é que é a régua.
  */
 export const FORMAS_ESCULPIDAS: Record<string, FormaEsculpida> = {
-  pan: {
-    detalhe: 18, semente: 101, eixos: [0.97, 0.74, 0.90],
-    escalaMacro: 2.2, forcaMacro: 0.055,
-    numeroDeCrateras: 4, raioDaCratera: [0.14, 0.25], funduraDaCratera: [0.012, 0.036],
-    bordaDaCratera: [0.001, 0.004], maciezDaCratera: 1.55, escuridaoDoFundo: [0.18, 0.38],
-    crista: { altura: 0.26, potencia: 12 },
-  },
   daphnis: {
     detalhe: 18, semente: 211, eixos: [0.94, 0.72, 0.88],
     escalaMacro: 2.4, forcaMacro: 0.045,
@@ -213,9 +208,9 @@ export const FORMAS_ESCULPIDAS: Record<string, FormaEsculpida> = {
   },
 };
 
-/** Os oito ids na ordem em que a lista de luas os traz. */
+/** Os sete ids na ordem em que a lista de luas os traz. */
 export const IDS_ESCULPIDOS: readonly string[] = [
-  'pan', 'daphnis', 'atlas', 'prometheus', 'pandora',
+  'daphnis', 'atlas', 'prometheus', 'pandora',
   'janus', 'epimetheus', 'phoebe',
 ];
 
@@ -409,18 +404,11 @@ export interface FamiliaDeRegolito {
 }
 
 /**
- * As oito famílias dele. Febe é a única quase preta (albedo ~0,08) e é por
+ * As sete famílias dele. Febe é a única quase preta (albedo ~0,08) e é por
  * isso que a base dela vale um oitavo das outras — é dado medido, não
  * gradação de gosto.
  */
 export const FAMILIAS_DE_REGOLITO: Record<string, FamiliaDeRegolito> = {
-  pan: {
-    semente: 1.01, base: [0.64, 0.62, 0.58], fundo: [0.43, 0.41, 0.38],
-    borda: [0.76, 0.74, 0.69], crista: [0.72, 0.70, 0.66],
-    escalaMacro: 4.0, escalaMicro: 10, contraste: 0.12,
-    misturaFundo: 0.38, misturaBorda: 0.30, misturaCrista: 0.36,
-    escurecerCavidade: 0.025, oclusao: 0.06, forcaBump: 0.004,
-  },
   daphnis: {
     semente: 2.11, base: [0.67, 0.66, 0.62], fundo: [0.48, 0.47, 0.43],
     borda: [0.79, 0.78, 0.73], crista: [0.75, 0.74, 0.70],

@@ -108,12 +108,6 @@ import {
   uniformsDoEsculpido,
   IDS_ESCULPIDOS,
 } from './esculpido';
-import {
-  PILOTO_PA_MEDIDA,
-  RELEVO_DA_PA_MEDIDA,
-  comAPaMedida,
-  orientacaoDoRochoso,
-} from './pilotoPaMedida';
 import { PlumasDeEncelado, atividadeDasMares } from './plumas';
 import type { QuadroDasPlumas } from './plumas';
 
@@ -211,18 +205,16 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   { id: 'makemake', brdf: 'lambert' },
   { id: 'eris', brdf: 'lambert' },
   { id: 'quaoar', brdf: 'lambert' },
-  // S3 (item 134) — as oito esculpidas de Saturno. Todas `lambert` com o
+  // Pã saiu das esculpidas em 08/10/2026 (PLAN-LUAS-PEQUENAS.md): a forma
+  // agora é MEDIDA (Cassini) por mapa de altura, como a do Hipérion — ver
+  // RELEVO_DA_LUA abaixo. Fica no lugar em que estava na lista.
+  { id: 'pan', brdf: 'lambert' },
+  // S3 (item 134) — as sete esculpidas de Saturno. Todas `lambert` com o
   // `terminadorSuave` da casa: o disco chato de Lommel-Seeliger é o fato
-  // que uma FOTO confere, e não há foto destes oito com que conferir —
+  // que uma FOTO confere, e não há foto destas sete com que conferir —
   // o que existe é a forma, e a forma está na malha.
   // A lista mora em `esculpido.ts` (`IDS_ESCULPIDOS`): uma fonte só.
-  // PILOTO (`?piloto=pa-medida`, `pilotoPaMedida.ts`): Pã sai daqui para o
-  // caminho do relevo medido, como o Hipérion; sem o parâmetro, as oito.
-  ...IDS_ESCULPIDOS.map((id) =>
-    PILOTO_PA_MEDIDA && id === 'pan'
-      ? ({ id, brdf: 'lambert' } as const)
-      : ({ id, brdf: 'lambert', superficie: 'esculpido' } as const)
-  ),
+  ...IDS_ESCULPIDOS.map((id) => ({ id, brdf: 'lambert', superficie: 'esculpido' }) as const),
 ];
 
 /**
@@ -231,7 +223,7 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * vira `1 + vies + altura·escala`: o viés é negativo para que a média
  * fique no raio nominal de `BODY_AXES` (a esfera não engorda).
  *
- * SÓ SETE LUAS PORQUE SÓ SETE TÊM MAPA. Cinco saem de modelo de forma
+ * SÓ OITO LUAS PORQUE SÓ OITO TÊM MAPA. Cinco saem de modelo de forma
  * MEDIDO (Mimas e Tétis por SPC de Gaskell, Encélado pelo DEM de Schenk &
  * McKinnon 2024, Dione e Reia pelos DTMs de Weirich et al. 2025 — o de Reia
  * completado nesta casa com as crateras finas que a foto mostra,
@@ -242,7 +234,7 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * texto nascendo em `docs/reference/ASSETS.md`. Hipérion é o sétimo caso
  * (23/09/2026): o mapa de altura é a FORMA MEDIDA inteira (Cassini —
  * Thomas, Joseph & Ansty 2018), não um relevo sobre elipsoide como as
- * outras seis.
+ * outras seis; Pã é o oitavo (08/10/2026), pelo mesmo caminho.
  *
  * Mimas puxa 10 % do raio: Herschel é um terço do diâmetro dela, e é essa
  * a foto que o limbo tinha de mostrar e a esfera lisa não mostrava.
@@ -268,9 +260,22 @@ export const RELEVO_DA_LUA: Readonly<
   // ficha). `horizonte`: pede também os dois mapas de horizonte e o
   // Lambert escurece o Sol dentro dos poços (GLSL_SOMBRA_DO_HORIZONTE).
   hyperion: { escala: 0.677886, vies: -0.310195, horizonte: true },
-  // PILOTO (`?piloto=pa-medida`): a forma medida de Pã, só com o parâmetro;
-  // `horizonte: 'soDoRelevo'` é o portão 2 (`uHorizonte`), ver `RELEVO_DA_PA_MEDIDA`.
-  ...(PILOTO_PA_MEDIDA ? { pan: RELEVO_DA_PA_MEDIDA } : {}),
+  // Pã (08/10/2026, PLAN-LUAS-PEQUENAS.md, a versão F aprovada por ele): a
+  // forma MEDIDA inteira (Cassini — Thomas, Joseph & Ansty 2018) no mapa de
+  // altura, raio 0,740482 a 1,450393 de 14 km (`BODY_AXES.pan`) — a grade
+  // radial 512×256 suavizada a 1° de arco —, mais o relevo fino das fotos
+  // da Cassini e as crateras (confessados na ficha). `horizonte`: os dois
+  // mapas, como o Hipérion — a crista é uma aba que faz sombra no núcleo,
+  // e sem eles o núcleo abaixo dela acende. Mas SÓ DO RELEVO ('soDoRelevo',
+  // o portão 2 de `uHorizonte`, `sombraSoDoRelevo`): o mapa mede o
+  // horizonte sobre o plano RADIAL e o grampeia em ≥ 0, e em Pã a
+  // superfície chega a 65° desse plano (as encostas da aba). Com o teste
+  // cru, todo ponto com o Sol abaixo do plano radial apagava — e a encosta
+  // inclinada para o Sol estava acesa: 12 % dos pixels acesos na pose norte
+  // da Cassini (N1867604669) e 16 % na rasante saíam pretos, uma lua escura
+  // na borda que a foto não tem. Só Pã usa este modo; o Hipérion segue com
+  // o teste cru.
+  pan: { escala: 0.709911, vies: -0.259518, horizonte: 'soDoRelevo' },
 };
 
 /**
@@ -500,7 +505,7 @@ void main() {
   // lanterna (1 exato sem o portão)
   float sombraRelevo = sombraDoHorizonte(nGeo, vUv, uDirSolLocal);
   // portão 2 (horizonte: 'soDoRelevo'): o relevo só tapa o Sol ACIMA do
-  // plano radial — abaixo dele quem decide é a normal (ver RELEVO_DA_PA_MEDIDA)
+  // plano radial — abaixo dele quem decide é a normal (ver RELEVO_DA_LUA.pan)
   if (uHorizonte > 1.5) sombraRelevo = sombraSoDoRelevo(nGeo, vUv, uDirSolLocal);
   float ndotlGeo = dot(n, uDirSolLocal);
   vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
@@ -796,11 +801,7 @@ export class RochosoResolvido {
               : this.config.id in NORMAL_MEDIDA
                 ? [CANAL_MAP, CANAL_NORMAL]
                 : [CANAL_MAP],
-      // PILOTO (`?piloto=pa-medida`): os mapas de Pã vêm de `public/piloto/pa/`
-      rede:
-        PILOTO_PA_MEDIDA && this.config.id === 'pan'
-          ? { ...opcoes, buscarManifest: comAPaMedida(opcoes.buscarManifest) }
-          : opcoes,
+      rede: opcoes,
       oQueNaoNasce: 'o corpo não nasce nesta sessão',
       publicar: (porCanal) => {
         this.garantirCasca();
@@ -943,7 +944,7 @@ export class RochosoResolvido {
   /** matriz + uniforms do quadro — só roda com o mesh em quadro. */
   private posicionar(q: QuadroDoRochoso) {
     const { colunaX, colunaY, colunaZ } = orientacaoDoCorpoNaCena(
-      orientacaoDoRochoso(this.config.id),
+      IAU_ORIENTATIONS[this.config.id],
       this.jdEscrito
     );
     this.vX.set(colunaX[0], colunaX[1], colunaX[2]);

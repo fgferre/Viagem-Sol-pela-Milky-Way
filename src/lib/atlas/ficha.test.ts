@@ -459,17 +459,17 @@ describe('a imagem confessa — itens 19 e 20', () => {
     expect(defeito.fonte).toBe('bancada de texturas');
   });
 
-  it('os quatro elipsoides e as oito esculpidas confessam a forma, e ninguém mais (item 20)', () => {
+  it('os quatro elipsoides e as sete esculpidas confessam a forma, e ninguém mais (item 20)', () => {
     // 01/10/2026: Fobos e Deimos entram — o elipsoide dos eixos medidos
     // confessa que o modelo de forma Viking/MRO existe e não é carregado.
     const COM_MALHA_PUBLICADA = ['vesta', 'pallas', 'hygiea', 'haumea', 'phobos', 'deimos'];
-    // item 134/S3: a malha das oito é ESCULPIDA por código (o roteiro é
+    // item 134/S3: a malha das sete é ESCULPIDA por código (o roteiro é
     // `IDS_ESCULPIDOS`, em `world/corpos/esculpido.ts`) — forma inventada
     // confessa igual a elipsoide no lugar de malha medida. Hipérion saiu
-    // em 23/09/2026: a forma dela agora é MEDIDA (mapa de altura), e
-    // `manifest.formas` não tem mais linha para ela.
+    // em 23/09/2026 e Pã em 08/10/2026: a forma delas agora é MEDIDA (mapa
+    // de altura), e `manifest.formas` não tem mais linha para elas.
     const ESCULPIDAS = [
-      'pan', 'daphnis', 'atlas', 'prometheus', 'pandora',
+      'daphnis', 'atlas', 'prometheus', 'pandora',
       'janus', 'epimetheus', 'phoebe',
     ];
     for (const id of ALVOS.filter((i) => i !== 'sun')) {
@@ -493,6 +493,15 @@ describe('a imagem confessa — itens 19 e 20', () => {
     expect(imagem.get('fonte')).toContain('IA');
     expect(imagem.get('relevo')).toContain('Thomas');
     expect(imagem.get('o relevo admite')).toContain('poços');
+  });
+
+  it('Pã confessa a pintura na cor e o relevo fino inventado onde nenhuma foto vê (08/10)', () => {
+    const imagem = porRotulo('pan', 'imagem');
+    expect(imagem.get('fonte')).toContain('IA');
+    expect(imagem.get('o defeito')).toContain('espectro medido');
+    expect(imagem.get('relevo')).toContain('Thomas');
+    expect(imagem.get('o relevo admite')).toContain('INVENTADO');
+    expect(imagem.get('forma')).toBeUndefined();
   });
 
   it('os seis sem foto confessam a ilustração por IA (item 151)', () => {

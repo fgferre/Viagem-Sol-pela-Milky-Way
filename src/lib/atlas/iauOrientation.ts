@@ -1024,8 +1024,27 @@ export const IAU_ORIENTATIONS: Record<string, IauOrientation> = {
   // período de spin fixo), e o próprio relatório da IAU a deixa sem
   // solução. O síncrono aqui é a aproximação visível, e o caos fica por
   // contar na ficha, não no shader.
+  //
+  // PÃ SAIU DA FAMÍLIA ESCULPIDA em 08/10/2026 (forma MEDIDA, mapa de
+  // altura em `rochoso.ts`/`RELEVO_DA_LUA`) e é a ÚNICA linha deste bloco
+  // com W₀ ancorado: agora há feição medida. Pã gira em sincronia, e o
+  // modelo de forma (Thomas, Joseph & Ansty 2018) vem no referencial da
+  // IAU — longitude 0 = ponto sub-Saturno, onde fica a ponta mais comprida
+  // dele (20,3 km, a −0,6°E/+1,3°N). A IAU (Archinal et al. 2018, WGCCRE
+  // 2015) dá W = 48,8° + 626,0440000°·d — a taxa da órbita DE VERDADE, e o
+  // W₀ casa com a fase DE VERDADE. A órbita desta casa NÃO é efeméride
+  // (`elementosOrbitais.ts`: M₀ = 0 em J2000 e n = 360/0,575 d =
+  // 626,0869565°/d), então o W da IAU, aqui, erraria Saturno em 131° em
+  // J2000 e escorregaria 0,043°/dia. O que vale é a REGRA da IAU — W anda
+  // com a órbita e põe a longitude 0 de frente para Saturno — aplicada à
+  // órbita desta casa: a taxa é a do registro (= a da órbita) e W₀ = 180°,
+  // porque com W₀ = 0 o ponto sub-Saturno cai em 180°E (o meridiano-primo
+  // aponta para FORA de Saturno). Prova: `rochoso.test.ts`, o diâmetro mais
+  // comprido do mapa publicado na reta de Saturno e a longitude 0 de frente
+  // para ele, a menos de 5° em três datas. As outras seis ficam com W₀ = 0
+  // até ganharem a forma medida.
   // ============================================================
-  pan: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 626.0869565 },
+  pan: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 180, spinRateDegPerDay: 626.0869565 },
   daphnis: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 606.0606061 },
   atlas: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 598.3048031 },
   prometheus: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 587.2756933 },
@@ -1124,7 +1143,8 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   // raio, e repeti-lo aqui contaria o mesmo alongamento duas vezes, como
   // nas outras oito. O preço, declarado: o gate de tamanho aparente mede
   // pelo raio médio, então Hipérion entra em quadro um pouco mais tarde do
-  // que a silhueta dela mereceria.
+  // que a silhueta dela mereceria. Pã (08/10/2026) idem: esfera de 14 km,
+  // a forma (0,74 a 1,45 raio) no mapa de altura (`RELEVO_DA_LUA.pan`).
   pan: [14, 14, 14],
   daphnis: [3.8, 3.8, 3.8],
   atlas: [15, 15, 15],

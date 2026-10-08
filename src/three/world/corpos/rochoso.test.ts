@@ -27,6 +27,7 @@ import type { MetaEfemerides } from '../../../lib/atlas/efemerides';
 import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides';
 import { PARES_DE_ECLIPSE } from '../../../lib/atlas/eclipse';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
+import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { ANOES_DO_SISTEMA, ASTEROIDES_DO_SISTEMA, LUAS_DO_SISTEMA } from '../../atlasConfig';
@@ -43,6 +44,7 @@ import {
   ganhoDoGlobo,
 } from '../../../lib/atlas/luzDaVisita';
 import { GLSL_NORMAL_DO_MAPA, GLSL_SOMBRA_DO_HORIZONTE, escalaDoBumpDoAlbedo } from './corpos';
+import { direcaoLocalDeLonLat, orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import {
   type ConfigDoRochoso,
   GRADUACAO_DO_MOSAICO,
@@ -1117,18 +1119,18 @@ describe('9. Hipérion — o relevo medido substitui a esculpida (23/09)', () =>
 describe('10. o horizonte assado — só quem declara `horizonte`', () => {
   /** a carga injetada com manifesto FALSO de cinco canais: a real ainda
    *  não tem os mapas de horizonte, e o lote é atômico */
-  function hiperionComHorizonte() {
+  function hiperionComHorizonte(id = 'hyperion') {
     const chamadas: string[] = [];
     const manifestFalso: ManifestDeTexturas = {
       entradas: ['map', 'height', 'normal', 'horizon', 'horizon2'].map((canal) => ({
-        corpo: 'hyperion',
+        corpo: id,
         canal,
-        arquivo: `textures/atlas/hyperion/${canal}.png`,
+        arquivo: `textures/atlas/${id}/${canal}.png`,
         larguraPx: 1024,
       })),
     };
     const corpo = new RochosoResolvido({
-      config: { id: 'hyperion', brdf: 'lambert' },
+      config: { id, brdf: 'lambert' },
       tier: () => 'cinema',
       maxTextureSize: 16384,
       base: '',
@@ -1165,17 +1167,24 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
     mimas.corpo.dispose();
   });
 
-  it('o portão `uHorizonte` é 1 em Hipérion e 0 em Mimas — e só Hipérion o declara', async () => {
+  it('o portão `uHorizonte` é 1 em Hipérion, 2 em Pã (só do relevo) e 0 em Mimas — e só os dois o declaram', async () => {
     expect(Object.keys(RELEVO_DA_LUA).filter((id) => RELEVO_DA_LUA[id]!.horizonte)).toEqual([
       'hyperion',
+      'pan',
     ]);
-    const { corpo } = hiperionComHorizonte();
-    corpo.atualizar(quadro('hyperion', 4));
-    await flush();
-    corpo.atualizar(quadro('hyperion', 4));
-    const uH = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
-    expect(uH.uHorizonte.value).toBe(1);
-    corpo.dispose();
+    // a sombra só do relevo é opção da tabela, e só Pã a usa (as encostas da aba a 65° do plano radial)
+    expect(Object.keys(RELEVO_DA_LUA).filter((id) => RELEVO_DA_LUA[id]!.horizonte === 'soDoRelevo')).toEqual([
+      'pan',
+    ]);
+    for (const [id, portao] of [['hyperion', 1], ['pan', 2]] as const) {
+      const { corpo } = hiperionComHorizonte(id);
+      corpo.atualizar(quadro(id, 4));
+      await flush();
+      corpo.atualizar(quadro(id, 4));
+      const uH = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
+      expect(uH.uHorizonte.value, id).toBe(portao);
+      corpo.dispose();
+    }
 
     const { corpo: mimas } = rochosoDeTeste('mimas', brdfDe('mimas'));
     mimas.atualizar(quadro('mimas', 4));
@@ -1193,6 +1202,9 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
     expect(main).toContain('vec3 nGeo = n;');
     expect(main).toContain('float sombraRelevo = sombraDoHorizonte(nGeo, vUv, uDirSolLocal);');
     expect(main).toContain('luzSol *= sombraRelevo;');
+    // o portão 2 troca a sombra pela só do relevo, antes de ela tocar a luz
+    expect(main).toContain('if (uHorizonte > 1.5) sombraRelevo = sombraSoDoRelevo(nGeo, vUv, uDirSolLocal);');
+    expect(main.indexOf('sombraSoDoRelevo(')).toBeLessThan(main.indexOf('luzSol *= sombraRelevo;'));
     expect(main).toContain('fill *= visibilidadeDoCeu(vUv);');
     // o nGeo é a normal RADIAL, tirada ANTES da normal do mapa
     expect(main.indexOf('vec3 nGeo = n;')).toBeLessThan(main.indexOf('normalDoMapa(n, vUv)'));
@@ -1216,5 +1228,65 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
     expect(ROCHOSO_LAMBERT_FRAG.indexOf('bool quadroTangente(')).toBeLessThan(
       ROCHOSO_LAMBERT_FRAG.indexOf('float sombraDoHorizonte(')
     );
+  });
+});
+
+// ------------------------------------------------------------
+// 11. PÃ — SAI DA ESCULPIDA, ENTRA NO RELEVO MEDIDO (08/10/2026,
+//     PLAN-LUAS-PEQUENAS.md): o caminho do Hipérion, com a ponta comprida
+//     virada para Saturno pelo W₀ = 180° de `IAU_ORIENTATIONS.pan`.
+// ------------------------------------------------------------
+
+describe('11. Pã — a forma medida virada para Saturno (08/10)', () => {
+  /**
+   * O EIXO, NÃO A PONTA. As duas pontas de Pã têm quase o mesmo raio (no
+   * modelo da Cassini, a do lado de Saturno ganha por ~0,2 km), e o relevo
+   * fino da versão F leva o texel de byte máximo para a ponta de TRÁS — o
+   * "raio máximo" do piloto apontaria 178° fora com a orientação certa. O
+   * juiz é em dois passos: o DIÂMETRO mais comprido do mapa publicado
+   * (r(d) + r(−d), sem sinal) fica na reta de Saturno, e a longitude 0 do
+   * mapa — o ponto sub-Saturno do referencial da IAU, de onde o modelo vem —
+   * fica de frente para ele (W₀ = 180°; com W₀ = 0 este passo dá 180°).
+   */
+  it('o diâmetro mais comprido do mapa de altura PUBLICADO fica na reta de Saturno e a longitude 0 de frente para ele (< 5°) em três datas', async () => {
+    const { default: sharp } = await import('sharp');
+    const entrada = [...MANIFEST.entradas]
+      .filter((e) => e.corpo === 'pan' && e.canal === 'height')
+      .sort(
+        (a, b) => b.larguraPx - a.larguraPx || Number(b.arquivo.endsWith('.png')) - Number(a.arquivo.endsWith('.png'))
+      )[0];
+    expect(entrada, 'pan/height sem entrada no manifesto — faltam as texturas de Pã regeneradas').toBeTruthy();
+    const caminho = join(fileURLToPath(new URL('../../../../public/', import.meta.url)), entrada!.arquivo);
+    const { data, info } = await sharp(caminho).toColourspace('b-w').raw().toBuffer({ resolveWithObject: true });
+    const { width: W, height: H, channels } = info;
+    // convenção da casa (`direcaoLocalDeLonLat`): coluna 0 = 180°E, linha 0 = norte; o
+    // antípoda do texel (i, j) é (i + W/2, H − 1 − j)
+    let maior = -1;
+    let eixo: readonly number[] = [0, 0, 0];
+    for (let j = 0; j < H; j++) {
+      for (let i = 0; i < W; i++) {
+        const diametro = data[(j * W + i) * channels]! + data[((H - 1 - j) * W + ((i + W / 2) % W)) * channels]!;
+        if (diametro <= maior) continue;
+        maior = diametro;
+        eixo = direcaoLocalDeLonLat(((i + 0.5) * 360) / W - 180, 90 - ((j + 0.5) * 180) / H);
+      }
+    }
+    const meridiano0 = direcaoLocalDeLonLat(0, 0);
+
+    // J2000, o sobrevoo da Cassini (07/03/2017) e 08/10/2026
+    for (const jd of [2451545.0, 2457819.5, 2461321.5]) {
+      const { colunaX, colunaY, colunaZ } = orientacaoDoCorpoNaCena(IAU_ORIENTATIONS.pan!, jd);
+      const naCena = (l: readonly number[]) => [0, 1, 2].map((k) => l[0]! * colunaX[k]! + l[1]! * colunaY[k]! + l[2]! * colunaZ[k]!);
+      const p = posicaoKepler('pan', jd);
+      const doPai = eclipticaParaEquatorial([p.x, p.y, p.z]);
+      const n = Math.hypot(...doPai);
+      const paraSaturno = (l: readonly number[]) => {
+        const c = naCena(l);
+        return -(c[0]! * doPai[0] + c[1]! * doPai[1] + c[2]! * doPai[2]) / n;
+      };
+      const graus = (cos: number) => Math.acos(Math.min(1, cos)) / (Math.PI / 180);
+      expect(graus(Math.abs(paraSaturno(eixo))), `JD ${jd}: o eixo comprido`).toBeLessThan(5);
+      expect(graus(paraSaturno(meridiano0)), `JD ${jd}: a longitude 0`).toBeLessThan(5);
+    }
   });
 });
