@@ -231,6 +231,74 @@ float alfaDaNuvem(vec2 uv, vec2 ddx, vec2 ddy) {
 `;
 
 /**
+ * A LUZ DO PÔR DO SOL (08/10, v2: o ar medido) — a cor do Sol que CHEGA
+ * a um ponto da Terra depois de atravessar o ar LIMPO. A `altura` h em
+ * km, o Sol a χ do zênite:
+ *
+ *     T(λ) = exp(−τ(λ) · e^(−h/H) · Ch(x, χ)),  x = (R + h)/H.
+ *
+ * - τ é o Rayleigh MEDIDO ao nível do mar, τ_R = 0,008569·λ⁻⁴·(1 +
+ *   0,0113·λ⁻² + 0,00013·λ⁻⁴), λ em µm — a forma de Hansen & Travis
+ *   (1974), conferida por Bucholtz (1995, Appl. Opt. 34, 2765) —, nos
+ *   três λ do limbo: ≈ (0,0493; 0,0841; 0,1772). O aerossol tem nome e
+ *   vale zero: ar limpo — sem poeira nem fumaça.
+ * - H = 8 km, a altura de escala do Rayleigh; R, o raio equatorial.
+ * - Ch é a massa de ar da atmosfera exponencial esférica: a forma
+ *   assintótica clássica de Chapman (1931) para χ ≤ 90°,
+ *   Ch ≈ √(πx/2)·e^(y²)·erfc(y), y = √(x/2)·cos χ (ver Smith & Smith
+ *   1972, JGR 77, 3592). Contra a integral numérica em x ≈ 797 ela erra
+ *   menos de 0,15% de 0° a 90° (35,4 no horizonte). O produto e^(y²)·
+ *   erfc(y) sai sem exponencial nenhuma (Abramowitz & Stegun 7.1.26 até
+ *   y = 3, a série assintótica 7.1.23 dali em diante; 0,07% na emenda),
+ *   então nada estoura no zênite (y ≈ 20) nem dá NaN no horizonte.
+ *
+ * NORMALIZADA PELO ZÊNITE na mesma altura: entra T(χ)/T(0) =
+ * exp(−τ·e^(−h/H)·(Ch(χ) − Ch(0))). O mapa do dia já é o planeta
+ * fotografado com o Sol alto e não existe termo de perspectiva aérea —
+ * então o Sol a pino fica exatamente como hoje (o fator é 1) e só o Sol
+ * baixo avermelha: no chão, a 30° de altura ≈ (0,95; 0,92; 0,84), a 10°
+ * (0,80; 0,68; 0,45), no horizonte (0,18; 0,055; 0,002) — vermelho fundo.
+ *
+ * ABAIXO DO HORIZONTE o ponto não vê o Sol, mas a política `assistida`
+ * acende o chão numa faixa logística além do terminador: χ é grampeado em
+ * 90°, e a faixa aprovada guarda a forma com a cor do Sol posto em vez de
+ * sair preta. As nuvens usam o mesmo grampo até o horizonte DELAS, e além
+ * dele apagam a parte solar (ver `NUVENS_PROFUNDIDADE_FRAG`).
+ *
+ * Não é o ar do limbo (o O'Neil da `ATMOSFERA_FRAG`, de altura de escala
+ * ~40 km, que pintava este Sol de âmbar até o meio-dia): este é o ar
+ * medido, e só para a luz que chega.
+ */
+const tauRayleighAoNivelDoMar = (lambdaUm: number) =>
+  0.008569 * lambdaUm ** -4 * (1 + 0.0113 * lambdaUm ** -2 + 0.00013 * lambdaUm ** -4);
+const GLSL_TRANSMITANCIA_DO_SOL = /* glsl */ `
+const vec3 TAU_RAYLEIGH = vec3(${ATMOSFERA.comprimentosDeOnda.map((l) => tauRayleighAoNivelDoMar(l).toFixed(5)).join(', ')});
+const vec3 TAU_AEROSSOL = vec3(0.0); // ar limpo — sem poeira nem fumaça
+const float ALTURA_DE_ESCALA_KM = 8.0;
+const float RAIO_DO_AR_KM = ${BODY_AXES.earth[0].toFixed(4)};
+
+// e^(y²)·erfc(y) para y >= 0, sem exponencial: A&S 7.1.26 até 3, a
+// série assintótica 7.1.23 dali em diante
+float erfcEscalada(float y) {
+  if (y < 3.0) {
+    float t = 1.0 / (1.0 + 0.3275911 * y);
+    return t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
+  }
+  float q = 1.0 / (y * y);
+  return 0.5641895835 / y * (1.0 - q * (0.5 - q * (0.75 - q * 1.875)));
+}
+// a massa de ar de Chapman, x = (R + h)/H, mu = cos χ em [0, 1]
+float massaDeArDeChapman(float x, float mu) {
+  return sqrt(1.5707963 * x) * erfcEscalada(sqrt(0.5 * x) * mu);
+}
+vec3 transmitanciaDoSol(float alturaKm, float cosZenite) {
+  float x = (RAIO_DO_AR_KM + alturaKm) / ALTURA_DE_ESCALA_KM;
+  float excesso = massaDeArDeChapman(x, clamp(cosZenite, 0.0, 1.0)) - massaDeArDeChapman(x, 1.0);
+  return exp(-(TAU_RAYLEIGH + TAU_AEROSSOL) * exp(-alturaKm / ALTURA_DE_ESCALA_KM) * excesso);
+}
+`;
+
+/**
  * A SUPERFÍCIE COM AS NUVENS NO CAMINHO DO SOL — o `TERRA_FRAG` inteiro
  * (os mesmos três trechos), menos a luz direta.
  *
@@ -265,12 +333,21 @@ float alfaDaNuvem(vec2 uv, vec2 ddx, vec2 ddy) {
  * acende além do terminador (a razão está no chunk). Sem os mapas
  * (`uHorizonte` 0: a carga foi `classica` e a troca foi ao vivo) o fator
  * é 1 exato até a próxima carga.
+ *
+ * A LUZ DO PÔR DO SOL (08/10): o Sol que chega ao chão (h = 0 km, cosseno
+ * do zênite = `ndotlGeo`) passa por `transmitanciaDoSol`, no `luzSol`,
+ * como o eclipse — então a difusa, o brilho do mar e a faixa macia da
+ * `assistida` avermelham com o Sol baixo, e a lanterna não. Em
+ * `assistida` o fator passa pela tradução de tela do `luzDoGlobo`, junto
+ * com o cosseno e o eclipse: o chão tinge mais que as nuvens, que somam
+ * linear como sempre.
  */
 export const TERRA_PROFUNDIDADE_FRAG =
   SUPERFICIE_CABECALHO +
   /* glsl */ `uniform sampler2D uMapaNuvens;
 uniform float uDeslocU;     // fract(−θ/2π) da deriva das nuvens (CPU, float64)
 ${GLSL_ALFA_DA_NUVEM}
+${GLSL_TRANSMITANCIA_DO_SOL}
 ${GLSL_QUADRO_TANGENTE}
 ${GLSL_SOMBRA_DO_HORIZONTE}
 float transmissaoDasNuvens(vec3 local, vec2 uv) {
@@ -296,9 +373,10 @@ float transmissaoDasNuvens(vec3 local, vec2 uv) {
   // SOL: o termo do Sol passa pela transmissão T da casca vezes a sombra
   // só do relevo (os mapas de horizonte, sobre a normal geométrica); a
   // lanterna fica de fora (a mesma do TERRA_FRAG), e o especular é do
-  // Sol, então apaga junto.
+  // Sol, então apaga junto. O Sol chega pelo ar (a luz do pôr do sol):
+  // a cor dele no chão, como o eclipse, é fator do Sol e só dele.
   vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
-  vec3 luzSol = vec3(uLuzGanho) * sombras;
+  vec3 luzSol = vec3(uLuzGanho) * sombras * transmitanciaDoSol(0.0, ndotlGeo);
   float transmissao = transmissaoDasNuvens(vLocal, vUv) * sombraSoDoRelevo(n, vUv, uDirSolLocal);
   vec3 lanterna = lanternaDeLeitura(nRelevo, v, sombras);
   vec3 luz = mix(
@@ -362,6 +440,16 @@ float transmissaoDasNuvens(vec3 local, vec2 uv) {
  *    leva só o termo `dia` da esfera, como hoje. O lado à sombra fica
  *    cinza, não preto — e sem termo de ambiente.
  *
+ * 5. A LUZ DO PÔR DO SOL (08/10): a parte solar passa por
+ *    `transmitanciaDoSol` na altura do topo inferido (em km), e só existe
+ *    com o Sol acima do horizonte DA NUVEM: um topo a h km o vê até
+ *    cos χ = −√(2h/R) (≈ −0,056, 3,2° além do terminador, a 10 km). A
+ *    borda é o próprio disco do Sol, 0,53°, sumindo atrás desse horizonte
+ *    (`linstep`, sem smoothstep): as nuvens altas ficam vermelhas depois
+ *    das baixas, e além disso a nuvem fica só com o piso noturno. A faixa
+ *    até −0,25 do `NUVEM_TERMINADOR` guarda a forma onde ainda há Sol; o
+ *    piso noturno não é Sol e fica branco.
+ *
  * Ordem de desenho e depth são os da casca clássica (o material é que
  * decide: ordem 8, sem escrever depth).
  */
@@ -369,6 +457,7 @@ export const NUVENS_PROFUNDIDADE_FRAG =
   NUVENS_CABECALHO +
   /* glsl */ `uniform vec3 uCamNuvens; // câmera no frame DA CASCA, em raios equatoriais
 ${GLSL_ALFA_DA_NUVEM}
+${GLSL_TRANSMITANCIA_DO_SOL}
 const float RAIO_KM = ${BODY_AXES.earth[0].toFixed(1)};
 const float ESPESSURA_KM = 10.0;
 const float ALFA_TETO = 0.98;
@@ -380,6 +469,7 @@ const float FRACAO_MULTIPLA_OPACA = 0.5;
 const int PASSOS_DA_SOMBRA = 6;
 const float PASSO_KM = 8.0;
 const float SUAVIDADE_KM = 1.0;
+const float DISCO_DO_SOL = ${Math.sin((0.53 * Math.PI) / 180).toFixed(5)}; // 0,53°, em cosseno no horizonte
 
 float alturaDeAlfa(float alfa) {
   return ESPESSURA_KM * (-log(1.0 - min(alfa, ALFA_TETO)) / TAU_TETO);
@@ -450,17 +540,24 @@ void main() {
   }
 
   // as duas parcelas: a simples leva relevo e sombra própria, a múltipla
-  // (FRACAO_MULTIPLA_OPACA·α) só o termo da esfera
+  // (FRACAO_MULTIPLA_OPACA·α) só o termo da esfera; o Sol chega ao topo
+  // pelo ar (a luz do pôr do sol), e o piso noturno, que não é Sol, não.
+  // O Sol só existe acima do horizonte DESTA nuvem: o topo a h km o vê até
+  // cos = −√(2h/R) (≈ −0,056 a 10 km), e some ao longo do próprio disco
   float multipla = FRACAO_MULTIPLA_OPACA * alfa;
-  float dia = max(
+  float topoKm = alturaDeAlfa(alfa);
+  float cosDoPorDoSol = -sqrt(2.0 * topoKm / RAIO_KM);
+  float solAcimaDoHorizonte = linstep(cosDoPorDoSol - DISCO_DO_SOL, cosDoPorDoSol, ndotl);
+  vec3 dia = max(
     linstep(${NUVEM_TERMINADOR.lo.toFixed(2)}, ${NUVEM_TERMINADOR.hi.toFixed(2)}, ndotl)
-      * mix(razao * sombraPropria, 1.0, multipla),
-    ${NUVEM_TERMINADOR.pisoNoturno.toFixed(2)}
+      * mix(razao * sombraPropria, 1.0, multipla)
+      * transmitanciaDoSol(topoKm, ndotl) * solAcimaDoHorizonte,
+    vec3(${NUVEM_TERMINADOR.pisoNoturno.toFixed(2)})
   );
   vec3 sombra = fatorDeEclipse(vLocal * ${RAZAO_CASCA_NUVENS}, n, ndotl);
   float mu = dot(n, normSeguro(uCamNuvens - vLocal * ${RAZAO_CASCA_NUVENS}));
   float alfaVista = 1.0 - pow(max(1.0 - alfa, 0.0), 1.0 / max(mu, 0.05));
-  gl_FragColor = vec4(vec3(dia * uLuzGanho) * sombra, alfaVista);
+  gl_FragColor = vec4(dia * uLuzGanho * sombra, alfaVista);
 }
 `;
 

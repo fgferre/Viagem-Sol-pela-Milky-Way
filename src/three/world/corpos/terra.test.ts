@@ -1503,4 +1503,86 @@ describe('9. a variante profundidade (rodada das nuvens, 07/10)', () => {
     expect([u.uHorizonte.value, u.uMapaHorizonte.value, u.uMapaHorizonte2.value]).toEqual([0, null, null]);
     terra.dispose();
   });
+
+  it('a luz do pôr do sol é o ar LIMPO medido, normalizada pelo zênite: vermelho no horizonte, grampeada abaixo dele (08/10)', () => {
+    const trecho = /const vec3 TAU_RAYLEIGH[^]*?\nvec3 transmitanciaDoSol\(float alturaKm, float cosZenite\) \{[^}]*\}\n/.exec(
+      TERRA_PROFUNDIDADE_FRAG
+    )![0];
+    expect(NUVENS_PROFUNDIDADE_FRAG).toContain(trecho);
+    // as constantes montadas: o Rayleigh de Hansen & Travis / Bucholtz nos três λ, H, o raio, aerossol zero
+    const tau = /const vec3 TAU_RAYLEIGH = vec3\(([\d.]+), ([\d.]+), ([\d.]+)\);/.exec(trecho)!.slice(1).map(Number);
+    ATMOSFERA.comprimentosDeOnda.forEach((l, i) =>
+      expect(tau[i]).toBeCloseTo(0.008569 * l ** -4 * (1 + 0.0113 * l ** -2 + 0.00013 * l ** -4), 5)
+    );
+    expect(trecho).toContain('const vec3 TAU_AEROSSOL = vec3(0.0); // ar limpo — sem poeira nem fumaça');
+    expect(trecho).toContain('const float ALTURA_DE_ESCALA_KM = 8.0;');
+    expect(trecho).toContain(`const float RAIO_DO_AR_KM = ${BODY_AXES.earth[0]};`);
+    expect(trecho).toContain('float x = (RAIO_DO_AR_KM + alturaKm) / ALTURA_DE_ESCALA_KM;');
+    expect(trecho).toContain(
+      'float excesso = massaDeArDeChapman(x, clamp(cosZenite, 0.0, 1.0)) - massaDeArDeChapman(x, 1.0);'
+    );
+    expect(trecho).toContain(
+      'return exp(-(TAU_RAYLEIGH + TAU_AEROSSOL) * exp(-alturaKm / ALTURA_DE_ESCALA_KM) * excesso);'
+    );
+    // a conta do shader roda em JS, com as expressões dele tais quais
+    const expr = (re: RegExp) => re.exec(trecho)![1]!;
+    const limiar = Number(expr(/if \(y < ([\d.]+)\)/));
+    const racional = new Function('y', `const t = ${expr(/float t = ([^;]+);/)}; return ${expr(/\{\s*float t = [^;]+;\s*return ([^;]+);/)};`);
+    const assintotica = new Function('y', `const q = ${expr(/float q = ([^;]+);/)}; return ${expr(/float q = [^;]+;\s*return ([^;]+);/)};`);
+    const erfcEscalada = (y: number) => (y < limiar ? racional(y) : assintotica(y)) as number;
+    const chapman = new Function(
+      'x', 'mu', 'sqrt', 'erfcEscalada',
+      `return ${expr(/float massaDeArDeChapman\(float x, float mu\) \{\s*return ([^;]+);/)};`
+    ) as (x: number, mu: number, sqrt: (v: number) => number, e: (y: number) => number) => number;
+    const R = BODY_AXES.earth[0];
+    const H = 8;
+    const transmitancia = (cosZenite: number) => {
+      const mu = Math.min(Math.max(cosZenite, 0), 1);
+      const excesso = chapman(R / H, mu, Math.sqrt, erfcEscalada) - chapman(R / H, 1, Math.sqrt, erfcEscalada);
+      return tau.map((t) => Math.exp(-t * excesso));
+    };
+    const T = (chi: number) => transmitancia(Math.cos((chi * Math.PI) / 180));
+    // a referência: a massa de ar integrada passo a passo na esfera exponencial
+    const massaIntegrada = (chi: number) => {
+      const mu = Math.cos((chi * Math.PI) / 180);
+      const ds = 0.05;
+      let soma = 0;
+      for (let s = ds / 2; s < 3000; s += ds) soma += Math.exp(-(Math.sqrt(R * R + s * s + 2 * R * s * mu) - R) / H);
+      return (soma * ds) / H;
+    };
+    const zenite = massaIntegrada(0);
+    for (const chi of [0, 60, 84, 90]) {
+      const ref = tau.map((t) => Math.exp(-t * (massaIntegrada(chi) - zenite)));
+      T(chi).forEach((v, i) => expect(Math.abs(v / ref[i]! - 1)).toBeLessThan(0.01));
+    }
+    // o meio-dia fica como hoje, o horizonte vermelho fundo, e abaixo dele o grampo
+    expect(T(0)).toEqual([1, 1, 1]);
+    const horizonte = transmitancia(0);
+    expect(horizonte[0]! / horizonte[2]!).toBeGreaterThan(50);
+    expect(transmitancia(-0.2)).toEqual(horizonte);
+    // a face entra no Sol e só nele; a classica e o ar do limbo ficam sem
+    expect(TERRA_PROFUNDIDADE_FRAG).toContain(
+      'vec3 luzSol = vec3(uLuzGanho) * sombras * transmitanciaDoSol(0.0, ndotlGeo);'
+    );
+    expect(NUVENS_PROFUNDIDADE_FRAG).toContain('* transmitanciaDoSol(topoKm, ndotl) * solAcimaDoHorizonte,');
+    // a nuvem só vê o Sol acima do horizonte DELA: a 10 km, Sol zero em cos −0,07 e a faixa inteira em 0
+    const nuvem = NUVENS_PROFUNDIDADE_FRAG;
+    expect(nuvem).toContain(
+      'float solAcimaDoHorizonte = linstep(cosDoPorDoSol - DISCO_DO_SOL, cosDoPorDoSol, ndotl);'
+    );
+    const raioKm = Number(/const float RAIO_KM = ([\d.]+);/.exec(nuvem)![1]);
+    const disco = Number(/const float DISCO_DO_SOL = ([\d.]+);/.exec(nuvem)![1]);
+    const cosDoPorDoSol = new Function(
+      'topoKm', 'RAIO_KM', 'sqrt',
+      `return ${/float cosDoPorDoSol = ([^;]+);/.exec(nuvem)![1]};`
+    ) as (h: number, r: number, sqrt: (v: number) => number) => number;
+    const solDaNuvem = (topoKm: number, cosZenite: number) => {
+      const c0 = cosDoPorDoSol(topoKm, raioKm, Math.sqrt);
+      return Math.min(Math.max((cosZenite - (c0 - disco)) / disco, 0), 1);
+    };
+    expect(cosDoPorDoSol(10, raioKm, Math.sqrt)).toBeCloseTo(-0.056, 3);
+    expect(solDaNuvem(10, -0.07)).toBe(0);
+    expect(solDaNuvem(10, 0)).toBe(1);
+    for (const s of [TERRA_FRAG, NUVENS_FRAG, ATMOSFERA_FRAG]) expect(s).not.toContain('transmitanciaDoSol');
+  });
 });
