@@ -35,10 +35,6 @@
       "pt": "elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega",
       "en": "an ellipsoid, no mesh: the irregular shape from DAMIT is published, and this house does not load it yet"
     },
-    "pan": {
-      "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
-      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
-    },
     "pandora": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
       "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
@@ -6115,6 +6111,528 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "height",
+      "arquivo": "textures/atlas/pan/height.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 84533,
+      "sha256": "380fdf116e53c207ce695a4a9a9f987fa86e4a25fc8f445aeb6c08010afef7ee",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HEIGHT map, with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
+        "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "height",
+      "arquivo": "textures/atlas/pan/height.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 49480,
+      "sha256": "7e050776af1f90f3518818f605ca4dbf03a41d01490a03b73380d0c3d97f70c0",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HEIGHT map, with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
+        "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/pan/horizon_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 713077,
+      "sha256": "569c4b449dcd2294f8885f8364de76bbaf6baf0e1ffd31c6295826ea85d38326",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/pan/horizon_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 280856,
+      "sha256": "a60b2be64602ccf26fab3e76e35aa39448ae550512771dcae6efcf96f37329ba",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/pan/horizon.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2147980,
+      "sha256": "1a617365e791c1b985c7da952b816fd3de9c83c4f3a2d353115b3abcab097253",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/pan/horizon.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 696588,
+      "sha256": "5001ea71c7058b32b02aecc859c1f35ca3dc3da9310026d3f503f530421b57f0",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/pan/horizon2_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 735706,
+      "sha256": "2f3a6a1ea269e47e6618b632d4e46456b606142dfbd55d64b1c0e74adf407c8b",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/pan/horizon2_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 296548,
+      "sha256": "02398903627377fd1add0278ec7d55dba21a2e4c218ee55052be355e61ae7ed2",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/pan/horizon2.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2219525,
+      "sha256": "53a0da68a342a2bb101b03fa27fd9654730babd8bc0ec13ffc65c7ecb900fefb",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/pan/horizon2.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 699250,
+      "sha256": "a804e1e5eb9574159a1458ae124158759c220d365d18db6a8c2c2a8d29910d08",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "map",
+      "arquivo": "textures/atlas/pan/map_1024.jpg",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 56450,
+      "sha256": "8cbff593ad5f7b50c44c48abc9ca09857b877cb13b8c9f7e15fb495dee409dda",
+      "origem": {
+        "fonte": {
+          "pt": "Pintura por IA generativa do autor sobre o relevo medido de Pã, com o albedo fino de 28 fotos calibradas da Cassini onde elas veem e a cor calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019 — não existe mapa de cor medido de Pã",
+          "en": "The author's generative-AI painting over the measured relief of Pan, with the fine albedo of 28 calibrated Cassini images where they see and the color calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019 — there is no measured color map of Pan"
+        },
+        "url": "https://science.nasa.gov/saturn/moons/pan/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA; fotos da Cassini em domínio público (NASA)",
+          "en": "the author's image (Felipe Ferreira), generated with AI; Cassini images in the public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Albedo fino e cor: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) e Buratti et al. 2019 (Science). Montagem nesta casa.",
+          "en": "Painting: the author's image (Felipe Ferreira), generated with AI. Fine albedo and color: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) and Buratti et al. 2019 (Science). Assembled in this house."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa sobre o relevo medido, calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019; o detalhe claro e escuro vem de 28 fotos da Cassini só nos 40,5 % da superfície que elas veem — no resto, é o da pintura",
+        "en": "there is no published color map of Pan: the color is a generative-AI painting over the measured relief, calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019; the light and dark detail comes from 28 Cassini images only on the 40.5% of the surface they see — elsewhere, it is the painting's"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "map",
+      "arquivo": "textures/atlas/pan/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 29596,
+      "sha256": "cc994f19dd5fe48976c2572d98926ba08a67c6537929a656b490429de3842e57",
+      "origem": {
+        "fonte": {
+          "pt": "Pintura por IA generativa do autor sobre o relevo medido de Pã, com o albedo fino de 28 fotos calibradas da Cassini onde elas veem e a cor calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019 — não existe mapa de cor medido de Pã",
+          "en": "The author's generative-AI painting over the measured relief of Pan, with the fine albedo of 28 calibrated Cassini images where they see and the color calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019 — there is no measured color map of Pan"
+        },
+        "url": "https://science.nasa.gov/saturn/moons/pan/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA; fotos da Cassini em domínio público (NASA)",
+          "en": "the author's image (Felipe Ferreira), generated with AI; Cassini images in the public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Albedo fino e cor: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) e Buratti et al. 2019 (Science). Montagem nesta casa.",
+          "en": "Painting: the author's image (Felipe Ferreira), generated with AI. Fine albedo and color: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) and Buratti et al. 2019 (Science). Assembled in this house."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa sobre o relevo medido, calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019; o detalhe claro e escuro vem de 28 fotos da Cassini só nos 40,5 % da superfície que elas veem — no resto, é o da pintura",
+        "en": "there is no published color map of Pan: the color is a generative-AI painting over the measured relief, calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019; the light and dark detail comes from 28 Cassini images only on the 40.5% of the surface they see — elsewhere, it is the painting's"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "map",
+      "arquivo": "textures/atlas/pan/map.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 232742,
+      "sha256": "e4f78efcda74d7fc28bd28bf9c57f398a7efc4f42c61c4550d7d8e79f6c02763",
+      "origem": {
+        "fonte": {
+          "pt": "Pintura por IA generativa do autor sobre o relevo medido de Pã, com o albedo fino de 28 fotos calibradas da Cassini onde elas veem e a cor calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019 — não existe mapa de cor medido de Pã",
+          "en": "The author's generative-AI painting over the measured relief of Pan, with the fine albedo of 28 calibrated Cassini images where they see and the color calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019 — there is no measured color map of Pan"
+        },
+        "url": "https://science.nasa.gov/saturn/moons/pan/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA; fotos da Cassini em domínio público (NASA)",
+          "en": "the author's image (Felipe Ferreira), generated with AI; Cassini images in the public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Albedo fino e cor: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) e Buratti et al. 2019 (Science). Montagem nesta casa.",
+          "en": "Painting: the author's image (Felipe Ferreira), generated with AI. Fine albedo and color: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) and Buratti et al. 2019 (Science). Assembled in this house."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa sobre o relevo medido, calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019; o detalhe claro e escuro vem de 28 fotos da Cassini só nos 40,5 % da superfície que elas veem — no resto, é o da pintura",
+        "en": "there is no published color map of Pan: the color is a generative-AI painting over the measured relief, calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019; the light and dark detail comes from 28 Cassini images only on the 40.5% of the surface they see — elsewhere, it is the painting's"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "map",
+      "arquivo": "textures/atlas/pan/map.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 90478,
+      "sha256": "dcb68b8796cd10938a0a6a6acee5800e78bca5692238f8da9ad6215e583143d5",
+      "origem": {
+        "fonte": {
+          "pt": "Pintura por IA generativa do autor sobre o relevo medido de Pã, com o albedo fino de 28 fotos calibradas da Cassini onde elas veem e a cor calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019 — não existe mapa de cor medido de Pã",
+          "en": "The author's generative-AI painting over the measured relief of Pan, with the fine albedo of 28 calibrated Cassini images where they see and the color calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019 — there is no measured color map of Pan"
+        },
+        "url": "https://science.nasa.gov/saturn/moons/pan/",
+        "licenca": {
+          "pt": "imagem do autor (Felipe Ferreira), gerada com IA; fotos da Cassini em domínio público (NASA)",
+          "en": "the author's image (Felipe Ferreira), generated with AI; Cassini images in the public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Albedo fino e cor: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) e Buratti et al. 2019 (Science). Montagem nesta casa.",
+          "en": "Painting: the author's image (Felipe Ferreira), generated with AI. Fine albedo and color: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) and Buratti et al. 2019 (Science). Assembled in this house."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa sobre o relevo medido, calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019; o detalhe claro e escuro vem de 28 fotos da Cassini só nos 40,5 % da superfície que elas veem — no resto, é o da pintura",
+        "en": "there is no published color map of Pan: the color is a generative-AI painting over the measured relief, calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019; the light and dark detail comes from 28 Cassini images only on the 40.5% of the surface they see — elsewhere, it is the painting's"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "normal",
+      "arquivo": "textures/atlas/pan/normal_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 798698,
+      "sha256": "369b16d14007962604a43c4945c66afcf416340631c981f1b84df9a0bcb3529c",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
+        "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "normal",
+      "arquivo": "textures/atlas/pan/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 347414,
+      "sha256": "947e531226836654a44fa3ba93980be702f89d9039e0e05c1cbe0e4bebd92898",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
+        "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "normal",
+      "arquivo": "textures/atlas/pan/normal.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2292473,
+      "sha256": "b49e91ce2045e00a2b33f878d0482cb83a0bbb14f8a6282d5e786fb6fa1ad45b",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
+        "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
+      }
+    },
+    {
+      "corpo": "pan",
+      "canal": "normal",
+      "arquivo": "textures/atlas/pan/normal.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 821316,
+      "sha256": "efae6ac4d71111244ae4ccf6a920a6f9c255e86cd8d89364289ae7b33f263230",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram",
+          "en": "Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 28 calibrated Cassini images and the 4 craters they show"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
+        "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
       }
     },
     {
