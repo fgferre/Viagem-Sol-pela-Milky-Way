@@ -2,9 +2,68 @@
 
 Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
-Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 232.**
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 233.**
 
-## O BASTÃO — onde a rodada parou (07/10, noite) — A ORDEM DE 06/10 FEITA NO `main`, À ESPERA DA PUBLICAÇÃO (commits `3b322fb6`, `b894ff2c`, `822c30f8`, `d319840c`; nada enviado; a publicação é dele)
+## O BASTÃO — onde a rodada parou (08/10, noite) — PÃ COM A FORMA MEDIDA NO `main` (`15e2f27b`, NÃO PUBLICADA); A RÉGUA ÚNICA PLANEJADA (`PLAN-REGUA-UNICA.md`); TRÊS FRENTES PARALELAS QUE MEXEM NA LUZ E NA TELA — COMBINAR A ORDEM COM ELE
+
+**Feito em 07–08/10 (conversa das luas pequenas):** a ordem de 06/10 inteira, já no ar. Pã, a primeira das
+luas pequenas pela receita do Hipérion, no `main` e não publicada: forma medida (Thomas, Joseph & Ansty 2018)
+virada para Saturno (o W do app estava meia volta fora nas sete luas síncronas — só Pã consertada); relevo
+fino de 28 fotos calibradas da Cassini em 40,5 % da superfície e inventado no resto (confessado); 4 crateras
+reais das fotos + 10 pela densidade medida; cor pintada pelo ChatGPT dele e calibrada pelo espectro medido em
+4 filtros; sombra "só do relevo". Palavras dele: *"eu aprovo o modelo que a gente criou agora"*. A cadeia
+rodou no terminal dele a pedido dele (*"Está autorizado"*); publicado = aprovado pixel a pixel; `npm run done`
+verde (133 arquivos, 3.600 testes). Provas: `capturas/luas-pequenas/pa/` (`prancha-f.jpg`,
+`oficial/prancha-oficial.jpg`). A régua única: *"precisamos ter uma regra única que trate todos os objetos do
+sistema..."* — levantamento e cinco partes em `PLAN-REGUA-UNICA.md` (nove caminhos de cor; um ACES que come
+~60 % da cor das superfícies claras; oito jeitos de relevo; quatro formatos de confissão).
+
+**Publicar Pã é dele:** `git push origin main`; depois conferir no ar.
+
+**A próxima rodada — a ordem entre as frentes é decisão dele** (as três tocam a luz e a tela; ele quer
+evitar trabalho paralelo repetido): (1) as lentes de cinema (ramo `claude/hollywood-lens-effects-af79d8`)
+entram primeiro — estão mais perto do fim e foram calibradas contra o ACES; (2) a régua única, com UMA sessão
+cuidando de luz e tela, estrelas e Sol incluídos (`PLAN-ESTRELAS-E-INSTRUMENTO.md`, no ramo das lentes,
+unificação aberta); a R1 testa o tom único (o Neutral da Khronos deu B/G 0,766 contra o alvo 0,773 em Pã);
+(3) o item 232 (Terra tímida, bastão paralelo logo abaixo) cruza com a R1 — medir o que o ACES apaga antes de
+criar o modo realçado; (4) a fila de assets já sob a régua: as outras seis luas pequenas pela receita de Pã
+(lições em `PLAN-LUAS-PEQUENAS.md`), Febe, Calipso/Telesto/Helena, Fobos/Deimos, Vesta. Cautela dele noutra
+conversa: *"O modelo de linguagem tem a mania de transformar coisas que eu falo em regras."* — a régua só vira
+regra com ganho visível em prancha.
+
+**Achados e não consertados:** o Hipérion (no ar) provavelmente apaga encostas íngremes viradas ao Sol pelo
+mapa de horizonte (o de Pã foi consertado com a sombra "só do relevo"); as outras seis luas síncronas viram
+para Saturno o lado errado; a ficha mostra o selo "medido" sob texto "inventado" (Jápeto, Plutão, Caronte, os
+poços do Hipérion) e Mimas/Tétis/Dione não confessam o relevo; Pã sai mais clara que Encélado (resolve na R2
+da régua); no filme solar, Ganimedes (~2 px) some no salto de 207,95 s, a mira gira 166° aos 261,95 s, e no
+celular a dica fala em "tecla de espaço". O protótipo de cor por corpo (`?tom=matiz`) foi guardado à parte em
+`capturas/luas-pequenas/cor-na-tela/` — a régua o substitui por um tom único.
+
+**Decisões dele em aberto:** o giro de Urano (101°/s × 86°/s do de Tritão; adiantar a legenda ~0,8 s o
+acalma); apagar ou guardar os planos fechados (`PLAN-REIA.md`, `PLAN-EUROPA-JAPETO.md`,
+`PLAN-VIAGEM-SOLAR.md`, `PLAN-PONTO-DE-LUZ.md`). O worktree `../Viagem-luas-pequenas` foi apagado a pedido dele
+(08/10; o ramo `luas-pequenas` fica no histórico, inteiro no `main`).
+
+## O BASTÃO paralelo (08/10) — CÂMERA MAIS LIVRE NO ATLAS E AR MEDIDO DA TERRA ENVIADOS AO AR A PEDIDO DELE (*"ok"*, 08/10, no terminal dele; a conversa das luas pequenas confirmou que os commits dela no `main` podiam ir junto — só planos e o miolo `relevo-medido.mjs`, nada do site; o ramo `luas-pequenas` fica fora); A PRÓXIMA RODADA É O ITEM 232, OS EFEITOS TÍMIDOS
+
+**Feito em 07–08/10, nesta ordem, a pedido dele:**
+1. A Terra com nuvens com sombra e relevo, relevo medido ETOPO e sombra das montanhas. Isso foi PUBLICADO em 07/10 (`f943a20b`) e levou junto os consertos do filme da ordem de 06/10, com o sim dele.
+2. Depois ele não conseguiu ver o relevo no Atlas (*"o angulo da camera e a falta de pan e zoom nao permitem"*). Isso trouxe a câmera que desce a 1,1 raio e inclina para o horizonte.
+3. Ele pediu a atmosfera avermelhada contra o Sol. Isso trouxe a luz do pôr do sol pelo ar medido e o Sol avermelhando ao atravessar o ar.
+4. Ele comparou com a vista da estação espacial (*"a atmosfera parece muito mais grossa"*). Isso trouxe o limbo e o véu sobre o planeta pelo ar medido, conferidos contra a imagem dele.
+
+**A PRÓXIMA CONVERSA COMEÇA POR `PLAN-ATLAS-PERTO-E-POR-DO-SOL.md`**, seções "Resultado (08/10)" e "A PRÓXIMA RODADA". Ali estão os defeitos, em ordem:
+- o brilho do Sol no mar grande e borrado;
+- o Sol branco até sumir na tela de 720;
+- as nuvens borradas na altura da estação;
+- o "visual de cinema", que é decisão dele;
+- os aerossóis;
+- o custo de ~9 ms;
+- os pequenos.
+
+Depois de testar no painel e no iPhone, ele achou os efeitos tímidos (**item 232**). Decidiu: *"Os dois, nessa ordem"* — primeiro tirar as perdas, depois o modo realçado. Mandou publicar o que existe (*"Publicar já"*), mas, ao saber que o envio levaria junto o trabalho da outra conversa (os planos das luas pequenas e o miolo `relevo-medido.mjs`), preferiu *"Esperar"*; a conversa das luas pequenas confirmou e ele disse *"ok"*. A próxima rodada começa pelo item 232 e depois segue a lista do plano.
+
+## O BASTÃO anterior (07/10, noite) — A ORDEM DE 06/10 FEITA NO `main`, À ESPERA DA PUBLICAÇÃO (commits `3b322fb6`, `b894ff2c`, `822c30f8`, `d319840c`; nada enviado; a publicação é dele)
 
 **Feito em 07/10 (a palavra dele: *"vamos continuar de onde paramos?"*):** os
 cinco consertos da ordem de 06/10. (1) "More" cortado a 375 px em inglês: a
@@ -717,6 +776,20 @@ Europa (cor real inferida da Galileo sobre o mosaico USGS de 500 m, 4096 px,
 tom meio-termo dele) e Jápeto (relevo gerado: crista no lugar com 20 km,
 55 crateras com nome, as demais pela foto). Ficam na fila: Urano, Netuno,
 Vesta, Deimos, Tritão (pausado), Ariel, Titã, Vênus.**
+
+**232. Os efeitos da Terra ainda estão tímidos: o ar, o relevo e a sombra das nuvens.**
+Palavras dele, 08/10, testando o ramo `atlas-perto` com a câmera nova: *"Continuo achando os efeitos tímidos atmosfera tímida o relevo também me parece tímido não consigo perceber bem a sombra das nuvens nem o relevo da terra"*. **Decisão dele: *"Os dois, nessa ordem"*:**
+1. primeiro achar e tirar o que está apagando os efeitos, sem exagerar, com antes e depois;
+2. se ainda ficar tímido, um modo "realçado" nos Ajustes, com o exagero declarado.
+
+Suspeitas já levantadas, todas a medir:
+- o relevo da Terra carregado a 4096 em cinema, embora o de 8192 exista;
+- a média por célula de ~10 km apaga as encostas íngremes que dão o contraste com o Sol baixo;
+- a faixa macia do terminador da política `assistida` achata o contraste justamente onde o relevo e as sombras aparecem;
+- a exposição e a curva de tom comprimem o claro e o escuro;
+- a sombra das nuvens é forte só com o Sol baixo.
+
+Plano e estado em `PLAN-ATLAS-PERTO-E-POR-DO-SOL.md`.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 

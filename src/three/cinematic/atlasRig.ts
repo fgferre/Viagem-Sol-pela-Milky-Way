@@ -61,27 +61,28 @@ const RAMPA_POR_RADIANO_S = 0.9;
 const RAMPA_POR_DECADA_S = 0.1;
 
 /**
- * O PISO DO ZOOM, em RAIOS do alvo — e ele é derivado, não escolhido.
+ * O PISO DO ZOOM, em RAIOS do alvo — o de quem NÃO é um corpo com solo
+ * conhecido: o SOL e os alvos sem corpo (estrela, centro galáctico,
+ * sistema sem `pisoRaio`). Os corpos descem mais, a `K_PISO_DO_CORPO`.
  *
- * A conta sai de `nearPlanePc` (`core/engine.ts`): com corpo em quadro
- * ele devolve `near = min(semCorpo, max(dSuperfície·0,004; raio·0,5))`,
- * ou seja o near nunca fica abaixo de MEIO raio do corpo. A câmera a
- * `k` raios do centro vê a superfície a `k − 1` raios, e o corpo começa
- * a ser cortado pelo near quando `k − 1 ≤ 0,5` — isto é, em 1,5 raios a
- * superfície cai EXATAMENTE sobre o plano near e o corpo desaparece.
- * 2,0 é o mesmo número com fator 2 de margem: a superfície fica a 1,0
- * raio e o near a 0,5, com uma folga de um raio inteiro.
+ * O NEAR NÃO É MAIS O LIMITE. Este número nasceu da conta do
+ * `nearPlanePc` de quando o near nunca ficava abaixo de meio raio; desde
+ * o item 135 (`core/engine.ts`) ele é `max(dSuperfície·0,004;
+ * raio·1e-3)`, que acompanha a superfície até um milésimo de raio — a
+ * 1,1 raio do centro (um décimo de raio de altura) o near vale 1e-3
+ * raio, cem vezes mais perto que o chão.
  *
- * Chegar mais perto que isto NÃO é mexer neste número: é baixar o piso
- * do `nearPlanePc`, que é obra própria e declarada (o `?dbg` do near, o
- * z-fighting e a fronteira de promoção da Lei dependem dele).
+ * O SOL FICA EM 2 POR CAUSA DO BRILHO, não do near: 2 raios solares é
+ * o regime que a `luz-do-quadro` já julga (ver abaixo), e descer mais
+ * abriria um regime de exposição que ninguém conferiu.
  *
  * QUAL RAIO, e a resposta tem duas metades porque o alvo tem dois tipos:
  *
  *  · ALVO = UM CORPO (os degraus "órbita", "corpo" e "lua"): o raio
- *    FÍSICO dele, que é o que a conta acima descreve. Quem o conhece é a
- *    escada (`BODY_AXES`, a mesma tabela que dá raio às malhas), e ela o
- *    entrega em `focar({ pisoRaio })`. Sem ele o piso do degrau "órbita"
+ *    MÁXIMO REAL dele (`soloDoCorpo`, `escada.ts`). Quem o conhece é a
+ *    escada (`BODY_AXES`, a mesma tabela que dá raio às malhas, mais o
+ *    relevo de vértice), e ela o entrega em `focar({ pisoRaio, kDoPiso })`
+ *    com `K_PISO_DO_CORPO`. Sem ele o piso do degrau "órbita"
  *    seria 2 ÓRBITAS — de Saturno, 19 UA —, e a roda "para dentro"
  *    acabaria no vazio a 19 UA do planeta em vez de chegar perto dele.
  *    MEDIDO: com o raio físico, Saturno tem 5,55 décadas entre o piso e
@@ -101,6 +102,23 @@ const RAMPA_POR_DECADA_S = 0.1;
 export const K_MIN_RAIOS = 2.0;
 
 /**
+ * O PISO DE UM CORPO, em raios MÁXIMOS REAIS dele (07/10, "câmera mais
+ * livre"): 1,1 — um décimo do raio de altura acima do ponto mais alto da
+ * malha desenhada (o maior semieixo, e o pico do relevo de vértice onde
+ * há: Hipérion vai a 1,368a, e o piso dele fica em 1,1 × 1,368a). A
+ * câmera nunca entra no corpo, e o near (ver `K_MIN_RAIOS`) fica cem
+ * vezes mais perto que o chão.
+ */
+export const K_PISO_DO_CORPO = 1.1;
+
+/**
+ * O CÉU ALÉM DO HORIZONTE na inclinação máxima — ver `tetoDaInclinacao`.
+ * Com `asin(R/d)` o limbo chega ao centro do quadro; os 10° a mais deixam
+ * uma faixa de céu acima dele.
+ */
+export const CEU_ALEM_DO_HORIZONTE_RAD = 10 * GRAU;
+
+/**
  * O FREIO PERTO DO SOLO, em raios do alvo — de quantos raios de ALTURA
  * o giro precisa para andar pleno. Item 102, P3: no NASA Eyes o giro
  * desacelera ao raspar a superfície (fator altura/raio), e aqui o ganho
@@ -108,13 +126,13 @@ export const K_MIN_RAIOS = 2.0;
  * de céu de longe e jogava a câmera para o outro lado do planeta de
  * perto, que é metade da queixa do "péssimo".
  *
- * A CONTA é `u = clamp((raios − 1) / 3, 1/3, 1)`, e o `− 1` é o que a
- * torna ALTURA e não distância: a câmera a `k` raios do CENTRO vê a
- * superfície a `k − 1` raios. No piso do zoom (`K_MIN_RAIOS` = 2 raios,
- * um raio de altura) o giro anda a um terço; de 4 raios para cima — três
- * raios de altura — anda pleno.
+ * A CONTA é `u = clamp((raios − 1) / 3, FREIO_MINIMO_DO_SOLO, 1)`, e o
+ * `− 1` é o que a torna ALTURA e não distância: a câmera a `k` raios do
+ * CENTRO vê a superfície a `k − 1` raios. A 2 raios (um raio de altura,
+ * o piso antigo) o giro anda a um terço; no piso de 1,1 raio (08/10) a
+ * ~1/30; de 4 raios para cima — três raios de altura — anda pleno.
  *
- * A RÉGUA É A MESMA DO PISO, e é isso que faz "no piso, um terço" ser
+ * A RÉGUA É A MESMA DO PISO, e é isso que faz o freio do piso ser
  * verdade por construção: o raio FÍSICO do corpo quando quem focou o
  * conhece (`pisoRaio`), e o de enquadramento quando não. NÃO é a régua
  * da porta `?d=` (`distanciaEmRaios`, sempre em raios de
@@ -127,11 +145,13 @@ export const K_MIN_RAIOS = 2.0;
 export const FREIO_DO_SOLO_RAIOS = 3;
 
 /**
- * ...e o quanto o freio pode apertar, no máximo. Um terço é o número do
- * P3; abaixo dele o giro perto da superfície viraria melado, e com zero
- * a câmera ficaria presa no piso do zoom sem poder sair.
+ * ...e o quanto o freio pode apertar, no máximo. Com o piso em 1,1 raio
+ * (08/10) a fórmula chega a 0,033 no chão e o 0,03 só segura o resto: ali
+ * o solo anda a cerca de METADE da velocidade do dedo (`taxa·R/(d−R)`
+ * contra os rad/px da lente); acima de 2 raios nada muda, a fórmula já
+ * dá ≥ 1/3. Com zero a câmera ficaria presa no piso sem poder sair.
  */
-export const FREIO_MINIMO_DO_SOLO = 1 / 3;
+export const FREIO_MINIMO_DO_SOLO = 0.03;
 
 /**
  * QUANTO DEMORA O ENDIREITAR, em segundos — a rampa do botão de
@@ -186,6 +206,30 @@ const _miraNaTela = new THREE.Vector3();
 const _baseDaPose = new THREE.Matrix4();
 /** o eixo `z` do frame de repouso — a mira, e o eixo do roll */
 const _EIXO_DA_MIRA = new THREE.Vector3(0, 0, 1);
+/** o eixo `x` da câmera — o da inclinação (`rotateX`) */
+const _EIXO_DA_INCLINACAO = new THREE.Vector3(1, 0, 0);
+const _quatDaIncl = new THREE.Quaternion();
+const _frenteDaIncl = new THREE.Vector3();
+const _direitaDaIncl = new THREE.Vector3();
+
+/**
+ * A MIRA DE UMA POSE INCLINADA — a direção câmera→alvo arfada `incl`
+ * rumo ao alto da tela, a MESMA rotação do `rotateX(incl)` de
+ * `escreverPose` (em torno da direita da câmera, `frente × up`).
+ * Escreve em `mira`, comprimento preservado; `incl = 0` não toca nela.
+ */
+function inclinarMira(mira: THREE.Vector3, up: THREE.Vector3, incl: number): THREE.Vector3 {
+  if (incl === 0) return mira;
+  _frenteDaIncl.copy(mira).normalize();
+  _direitaDaIncl.crossVectors(_frenteDaIncl, up);
+  if (_direitaDaIncl.lengthSq() < 1e-24) return mira;
+  return mira.applyQuaternion(_quatDaIncl.setFromAxisAngle(_direitaDaIncl.normalize(), incl));
+}
+
+/** ...e a mesma inclinação sobre a orientação de um `lookAt` (eixo `x` local) */
+function inclinarQuat(q: THREE.Quaternion, incl: number): THREE.Quaternion {
+  return incl === 0 ? q : q.multiply(_quatDaIncl.setFromAxisAngle(_EIXO_DA_INCLINACAO, incl));
+}
 
 /**
  * O rig. Estado mínimo: um alvo, um raio de enquadramento e o giro
@@ -225,6 +269,18 @@ export class AtlasRig {
    * MORRER MACIO ao soltar em vez de parar seco (item 102, P1).
    */
   private readonly suav = { altura: 0, volta: 0 };
+  /**
+   * A INCLINAÇÃO θ (07/10, "câmera mais livre"), em radianos: depois do
+   * `lookAt(alvo)` a vista arfa θ rumo ao alto da tela — o olhar sai do
+   * centro do corpo e sobe para o horizonte, como no Google Earth. Zero é
+   * a lei de sempre (a mira no alvo), bit a bit. Mora FORA do giro: o
+   * giro diz ONDE a câmera está em volta do alvo, θ diz para onde ela
+   * olha dali — e por isso a órbita guarda θ. Grampeada a cada quadro em
+   * `[0, tetoDaInclinacao]`; trocar de alvo a devolve a zero pela rampa.
+   */
+  private incl = 0;
+  /** a caixa de entrada e o filtro da inércia de θ — a lei do giro */
+  private readonly entradaDaIncl = { caixa: 0, suav: 0 };
   /**
    * O ENDIREITAR EM CURSO — a bússola do HUD (item 102). `total` é o
    * roll que o clique mandou desfazer, `t` o quanto da rampa já correu
@@ -287,12 +343,14 @@ export class AtlasRig {
   // na roda cai no mesmo caminho de código de antes.
   private distanciaPinada: number | null = null;
   /**
-   * O RAIO que mede o PISO do zoom, em pc — o FÍSICO do corpo alvo,
-   * quando quem focou o conhece. `null` cai no raio de enquadramento
-   * (ver `K_MIN_RAIOS`). Não anda com o relógio: é propriedade do corpo,
-   * não do instante, então `recompor` não o toca.
+   * O RAIO que mede o PISO do zoom, em pc — o MÁXIMO REAL do corpo alvo
+   * (o Sol: o físico), quando quem focou o conhece. `null` cai no raio de
+   * enquadramento (ver `K_MIN_RAIOS`). Não anda com o relógio: é
+   * propriedade do corpo, não do instante, então `recompor` não o toca.
    */
   private pisoRaio: number | null = null;
+  /** quantos `pisoRaio` dá o piso — `K_PISO_DO_CORPO` num corpo, `K_MIN_RAIOS` no resto */
+  private kDoPiso = K_MIN_RAIOS;
   /** a distância PURA do enquadramento, do último quadro escrito (pc) */
   private distanciaEnquadrada = 0;
   /**
@@ -326,6 +384,8 @@ export class AtlasRig {
     polo: POLO_ECLIPTICO.clone(),
     /** o pino de distância que a câmera MOSTRAVA no quadro da troca */
     distancia: null as number | null,
+    /** a inclinação que a câmera MOSTRAVA — a rampa a leva ao θ do destino */
+    incl: 0,
   };
 
   /**
@@ -352,10 +412,12 @@ export class AtlasRig {
       /** o polo que fica no alto; ausente = o da eclíptica (ver `polo`) */
       polo?: THREE.Vector3 | null;
       /**
-       * o raio FÍSICO do corpo alvo, em pc — a régua do piso do zoom
-       * (`K_MIN_RAIOS`). Ausente = o raio de enquadramento.
+       * o raio MÁXIMO REAL do corpo alvo (o Sol: o físico), em pc — a
+       * régua do piso do zoom. Ausente = o raio de enquadramento.
        */
       pisoRaio?: number | null;
+      /** quantos `pisoRaio` dá o piso; ausente = `K_MIN_RAIOS` */
+      kDoPiso?: number;
     } = {}
   ) {
     const pai = opcoes.pai ?? null;
@@ -365,11 +427,13 @@ export class AtlasRig {
       // na tela» — e com uma DISTÂNCIA PINADA ela não está. Sem a
       // terceira linha, o duplo clique num corpo que o visitante acabou
       // de SELECIONAR era no-op: a seleção é o alvo com a câmera parada,
-      // e o mergulho é o mesmo alvo no enquadramento dele (item 73).
+      // e o mergulho é o mesmo alvo no enquadramento dele (item 73). A
+      // vista INCLINADA também não é a do foco: o duplo clique a endireita.
       const mesmoAlvo =
         this.alvo.distanceToSquared(alvo) === 0 &&
         this.raio === raio &&
         this.distanciaPinada === null &&
+        this.incl === 0 &&
         (pai === null) === (this.pai === null) &&
         this.polo.distanceToSquared(polo) === 0;
       if (mesmoAlvo) return;
@@ -392,10 +456,11 @@ export class AtlasRig {
         this.partida.giro.copy(this.giro);
         this.partida.polo.copy(this.polo);
         this.partida.distancia = this.distanciaPinada;
+        this.partida.incl = this.incl;
         this.repousoDe(this.eixoDe, this.alvo, this.pai, this.polo, _dirAgora);
         poseDoVisitante(_dirAgora, this.polo, this.giro, _dirAgora, _upAgora);
         _posPartida.copy(this.alvo).addScaledVector(_dirAgora, this.distancia);
-        _miraNaTela.copy(this.alvo).sub(_posPartida);
+        inclinarMira(_miraNaTela.copy(this.alvo).sub(_posPartida), _upAgora, this.incl);
         dAgora = this.distancia;
       }
       // A DURAÇÃO É A DA TRAVESSIA (item 110) — medida ANTES de o
@@ -436,11 +501,11 @@ export class AtlasRig {
       this.pai = null;
     }
     this.polo.copy(polo);
-    this.pisoRaio =
-      opcoes.pisoRaio !== undefined && opcoes.pisoRaio !== null && opcoes.pisoRaio > 0
-        ? opcoes.pisoRaio
-        : null;
+    this.guardarSolo(opcoes);
     this.giro.identity();
+    // alvo novo nasce olhando o alvo: a rampa (se houver) leva a
+    // inclinação da partida a zero, junto com o resto da pose
+    this.incl = 0;
     // ...e a inércia do gesto anterior não atravessa a troca de alvo: o
     // resto de um giro em Marte não tem o que fazer chegando em Saturno
     this.esquecerOGiro();
@@ -500,6 +565,7 @@ export class AtlasRig {
     opcoes: {
       polo?: THREE.Vector3 | null;
       pisoRaio?: number | null;
+      kDoPiso?: number;
       rampa?: boolean;
     } = {}
   ) {
@@ -526,8 +592,9 @@ export class AtlasRig {
       this.partida.giro.copy(this.giro);
       this.partida.polo.copy(this.polo);
       this.partida.distancia = this.distanciaPinada;
-      // assentada, a mira da tela é o próprio alvo
-      _miraNaTela.copy(this.alvo).sub(_posPartida);
+      this.partida.incl = this.incl;
+      // assentada, a mira da tela é o próprio alvo — arfada pela inclinação
+      inclinarMira(_miraNaTela.copy(this.alvo).sub(_posPartida), _upAgora, this.incl);
     }
     // o PAN da re-mira: o ângulo entre a mira de agora e o alvo novo
     // vistos da câmera parada — é exatamente o quanto a vista vai girar
@@ -545,10 +612,10 @@ export class AtlasRig {
     this.eixoDe.copy(eixoDe);
     this.pai = null;
     this.polo.copy(polo);
-    this.pisoRaio =
-      opcoes.pisoRaio !== undefined && opcoes.pisoRaio !== null && opcoes.pisoRaio > 0
-        ? opcoes.pisoRaio
-        : null;
+    this.guardarSolo(opcoes);
+    // a câmera não sai do LUGAR, mas volta a olhar o alvo: a inclinação
+    // da partida desliza a zero pela mesma rampa da re-mira
+    this.incl = 0;
     // 3. a MESMA pose, escrita no referencial novo
     _dirB.copy(_posPartida).sub(this.alvo);
     const distancia = _dirB.length();
@@ -636,7 +703,7 @@ export class AtlasRig {
     alvo: THREE.Vector3,
     raio: number,
     eixoDe: THREE.Vector3,
-    opcoes: { polo?: THREE.Vector3 | null; pisoRaio?: number | null } = {}
+    opcoes: { polo?: THREE.Vector3 | null; pisoRaio?: number | null; kDoPiso?: number } = {}
   ) {
     // 2. o referencial novo (o passo 1 do `selecionar` é o argumento) —
     //    a câmera vem do FILME, e nada do Atlas anterior a acompanha
@@ -647,10 +714,8 @@ export class AtlasRig {
     this.eixoDe.copy(eixoDe);
     this.pai = null;
     this.polo.copy(polo);
-    this.pisoRaio =
-      opcoes.pisoRaio !== undefined && opcoes.pisoRaio !== null && opcoes.pisoRaio > 0
-        ? opcoes.pisoRaio
-        : null;
+    this.guardarSolo(opcoes);
+    this.incl = 0;
     this.rampaT = 1;
     // 3. a MESMA pose, escrita no referencial novo
     _dirB.copy(posicao).sub(this.alvo);
@@ -746,6 +811,9 @@ export class AtlasRig {
    * recentragem do HUD (são da LENTE, iguais nas duas pontas, e o slerp
    * comuta com eles — reaplicá-los aqui os dobraria) e a caixa de
    * entrada do dedo (o que ainda não foi consumido não está na tela).
+   * A INCLINAÇÃO ENTRA, e é por isso que `escreverPose` a aplica ANTES
+   * dos giros do HUD: ela difere nas duas pontas (a partida inclinada,
+   * o destino em zero), e só à esquerda deles o slerp continua comutando.
    */
   private poseNaTela(
     outPos: THREE.Vector3,
@@ -757,7 +825,7 @@ export class AtlasRig {
     const dDestino = this.distanciaPinada ?? this.distanciaEnquadrada;
     _posDestino.copy(this.alvo).addScaledVector(_dir, dDestino);
     _baseDaPose.lookAt(_posDestino, this.alvo, _up);
-    _quatDestino.setFromRotationMatrix(_baseDaPose);
+    inclinarQuat(_quatDestino.setFromRotationMatrix(_baseDaPose), this.incl);
     const p = this.partida;
     this.repousoDe(p.eixoDe, p.alvo, p.temPai ? p.pai : null, p.polo, _dir);
     poseDoVisitante(_dir, p.polo, p.giro, _dir, _up);
@@ -767,7 +835,7 @@ export class AtlasRig {
     const dPartida = p.distancia ?? this.fatorDeEnquadramento * p.raio;
     _posPartida.copy(p.alvo).addScaledVector(_dir, dPartida);
     _baseDaPose.lookAt(_posPartida, p.alvo, _up);
-    _quatPartida.setFromRotationMatrix(_baseDaPose);
+    inclinarQuat(_quatPartida.setFromRotationMatrix(_baseDaPose), p.incl);
     const t = this.rampaT;
     const k = t * t * (3 - 2 * t);
     _dirA.copy(_posPartida).sub(this.alvo);
@@ -801,7 +869,8 @@ export class AtlasRig {
    * interpolada) vira o "alvo" da partida, com pino, raio pela lei
    * linear e giro recomposto por `giroQueProduz`. Alimentada de volta
    * no `escreverPose`, esta partida reproduz a pose da tela exata —
-   * e `recompor` a translada como qualquer outra.
+   * e `recompor` a translada como qualquer outra. A inclinação da tela
+   * já está na mira (`poseNaTela`), então a da partida sintética é zero.
    */
   private partirDaTela(
     outPos: THREE.Vector3,
@@ -819,6 +888,7 @@ export class AtlasRig {
         ? aoLonge / this.fatorDeEnquadramento
         : this.raio;
     p.distancia = aoLonge;
+    p.incl = 0;
     this.repousoDe(p.eixoDe, p.alvo, null, p.polo, _repouso);
     _dir.copy(outMira).negate();
     giroQueProduz(_dir, outUp, _repouso, p.polo, p.giro);
@@ -873,18 +943,49 @@ export class AtlasRig {
   }
 
   /**
-   * A RÉGUA DO SOLO, em pc — o raio FÍSICO do corpo alvo quando quem
-   * focou o conhece, e o de enquadramento quando não (ver `pisoRaio`).
-   * É dela que saem o PISO do zoom e o freio do giro, e é por isso que
-   * ela tem um lugar só: as duas leis medem a mesma altura.
+   * A RÉGUA DO SOLO, em pc — o raio MÁXIMO REAL do corpo alvo quando
+   * quem focou o conhece, e o de enquadramento quando não (ver
+   * `pisoRaio`). É dela que saem o PISO do zoom, o freio do giro e o teto
+   * da inclinação, e é por isso que ela tem um lugar só: as três leis
+   * medem a mesma altura.
    */
   private get reguaDoSolo(): number {
     return this.pisoRaio !== null && this.pisoRaio > 0 ? this.pisoRaio : this.raio;
   }
 
-  /** PISO do zoom: `K_MIN_RAIOS` raios do alvo. Ver a constante. */
+  /** guarda a régua do solo de um foco novo — o par `pisoRaio`/`kDoPiso` */
+  private guardarSolo(opcoes: { pisoRaio?: number | null; kDoPiso?: number }) {
+    this.pisoRaio =
+      opcoes.pisoRaio !== undefined && opcoes.pisoRaio !== null && opcoes.pisoRaio > 0
+        ? opcoes.pisoRaio
+        : null;
+    this.kDoPiso = opcoes.kDoPiso !== undefined && opcoes.kDoPiso > 0 ? opcoes.kDoPiso : K_MIN_RAIOS;
+  }
+
+  /** PISO do zoom: `kDoPiso` réguas do solo. Ver `K_MIN_RAIOS` e `K_PISO_DO_CORPO`. */
   get pisoDeZoom(): number {
-    return K_MIN_RAIOS * this.reguaDoSolo;
+    return this.kDoPiso * this.reguaDoSolo;
+  }
+
+  /** a inclinação da vista, em radianos (0 = olhando o alvo) — ver `incl` */
+  get inclinacao(): number {
+    return this.incl;
+  }
+
+  /**
+   * O TETO DA INCLINAÇÃO, em radianos: `asin(R/d) + 10°`. `asin(R/d)` é o
+   * ângulo entre o centro do corpo e o limbo visto da câmera — arfar isso
+   * põe o horizonte no centro do quadro; os 10° a mais
+   * (`CEU_ALEM_DO_HORIZONTE_RAD`) deixam céu acima dele. Anda com a
+   * distância: ao afastar ele desce CONTÍNUO, e o grampo do quadro
+   * (`consumirAInclinacao`) leva θ junto, sem salto. De longe sobram só
+   * os 10°.
+   */
+  get tetoDaInclinacao(): number {
+    const regua = this.reguaDoSolo;
+    const d = this.distancia;
+    const limbo = regua > 0 && d > 0 ? Math.asin(Math.min(1, regua / d)) : 0;
+    return limbo + CEU_ALEM_DO_HORIZONTE_RAD;
   }
 
   /**
@@ -1029,6 +1130,48 @@ export class AtlasRig {
   }
 
   /**
+   * O GESTO DA INCLINAÇÃO (07/10): o deslocamento VERTICAL, em px de tela,
+   * de Shift + arrastar, do botão direito ou dos dois dedos juntos.
+   * ARRASTAR PARA CIMA levanta a vista rumo ao horizonte (`dy < 0`
+   * aumenta θ) — o chão foge do dedo, como no Google Maps. A mesma
+   * sensibilidade e a mesma caixa de entrada filtrada do giro.
+   */
+  addTiltDelta(dy: number) {
+    if (Number.isFinite(dy)) this.entradaDaIncl.caixa -= dy * ARRASTO_RAD_POR_PX;
+  }
+
+  /**
+   * O QUADRO DA INCLINAÇÃO — a caixa pelo filtro da inércia (a conta de
+   * `consumirOGiro`, sem o freio do solo: arfar não varre chão), e o
+   * GRAMPO em `[0, tetoDaInclinacao]` a cada quadro. É o grampo de todo
+   * quadro, e não só do gesto, que faz o afastar da roda baixar θ sozinho
+   * e contínuo (o teto desce com a distância). Com θ = 0 e caixa vazia
+   * nada se escreve — a pose de sempre, bit a bit.
+   */
+  private consumirAInclinacao(dt: number) {
+    const e = this.entradaDaIncl;
+    const entrada = e.caixa;
+    e.caixa = 0;
+    let passo: number;
+    if (dt > 0) {
+      const quadros = dt * 60;
+      const k = SUAVIZACAO_DO_GIRO ** quadros;
+      passo = entrada * (1 - k) + e.suav * k;
+      if (Math.abs(passo) < GIRO_MORTO_RAD * quadros) passo = 0;
+      e.suav = passo;
+    } else {
+      passo = entrada + e.suav;
+      e.suav = 0;
+    }
+    if (passo === 0 && this.incl === 0) return;
+    const teto = this.tetoDaInclinacao;
+    this.incl = THREE.MathUtils.clamp(this.incl + passo, 0, teto);
+    // na parede a inércia morre — senão a primeira volta do dedo seria
+    // gasta desfazendo embalo contra o grampo
+    if (this.incl === 0 || this.incl === teto) e.suav = 0;
+  }
+
+  /**
    * O GIRO DO QUADRO — a caixa de entrada passada pelo filtro da inércia
    * e somada na órbita. Roda no `apply`, que é quem tem `dt`, ANTES de a
    * pose ser escrita.
@@ -1127,6 +1270,8 @@ export class AtlasRig {
     this.entrada.volta = 0;
     this.suav.altura = 0;
     this.suav.volta = 0;
+    this.entradaDaIncl.caixa = 0;
+    this.entradaDaIncl.suav = 0;
     this.endireitando.total = 0;
   }
 
@@ -1332,6 +1477,9 @@ export class AtlasRig {
     // inversa deixaria o pedaço deste quadro passar antes do cancelamento
     this.consumirOEndireitar(dt);
     this.atualizarBussola();
+    // a inclinação depois da distância do quadro já pinada (a roda chega
+    // antes do `apply`): o teto dela é medido na distância de agora
+    this.consumirAInclinacao(dt);
     if (this.rampaT >= 1) {
       // o caminho de SEMPRE, intocado bit a bit quando não há pino — é o
       // que as provas de idempotência (?foco) e os md5 do atlas-smoke
@@ -1340,7 +1488,7 @@ export class AtlasRig {
         this.escreverPose(
           camera, fatorUi, larguraPx,
           this.alvo, this.raio, this.eixoDe, this.pai, this.giro, this.polo,
-          this.distanciaPinada, extra
+          this.distanciaPinada, extra, this.incl
         )
       );
       return;
@@ -1359,7 +1507,7 @@ export class AtlasRig {
       this.escreverPose(
         camera, fatorUi, larguraPx,
         this.alvo, this.raio, this.eixoDe, this.pai, this.giro, this.polo,
-        this.distanciaPinada, extra
+        this.distanciaPinada, extra, this.incl
       )
     );
     _posDestino.copy(camera.position);
@@ -1368,7 +1516,7 @@ export class AtlasRig {
       camera, fatorUi, larguraPx,
       this.partida.alvo, this.partida.raio, this.partida.eixoDe,
       this.partida.temPai ? this.partida.pai : null, this.partida.giro,
-      this.partida.polo, this.partida.distancia, extra
+      this.partida.polo, this.partida.distancia, extra, this.partida.incl
     );
     _posPartida.copy(camera.position);
     _quatPartida.copy(camera.quaternion);
@@ -1416,6 +1564,9 @@ export class AtlasRig {
    * direção, o `up` e os dois giros de recentragem do HUD continuam os
    * do enquadramento. Zoom é dolly puro sobre o mesmo eixo — é isso que
    * mantém o alvo no mesmo ponto da tela enquanto a roda anda.
+   *
+   * `incl` é a inclinação θ (ver `incl`): a câmera não sai do lugar, só
+   * o olhar arfa rumo ao alto da tela.
    */
   private escreverPose(
     camera: THREE.PerspectiveCamera,
@@ -1428,7 +1579,8 @@ export class AtlasRig {
     giro: THREE.Quaternion,
     polo: THREE.Vector3,
     pinada: number | null = null,
-    extra?: ReservaDaFicha
+    extra?: ReservaDaFicha,
+    incl = 0
   ): number {
     const { distancia, giroY, giroX } = enquadrar({
       rAlvo: raio,
@@ -1451,6 +1603,9 @@ export class AtlasRig {
     camera.position.copy(alvo).addScaledVector(_dir, escrita);
     camera.up.copy(_up);
     camera.lookAt(alvo);
+    // a INCLINAÇÃO arfa a vista rumo ao alto da tela, e ANTES dos giros
+    // do HUD: ela é do olhar, eles são da lente (ver `poseNaTela`)
+    if (incl !== 0) camera.rotateX(incl);
     if (giroY !== 0) camera.rotateY(giroY);
     if (giroX !== 0) camera.rotateX(giroX);
     camera.fov = ATLAS_FOV_GRAUS;

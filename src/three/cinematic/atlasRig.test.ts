@@ -15,6 +15,8 @@ import {
   ENDIREITAR_S,
   FREIO_MINIMO_DO_SOLO,
   K_MIN_RAIOS,
+  K_PISO_DO_CORPO,
+  CEU_ALEM_DO_HORIZONTE_RAD,
   AtlasRig,
   LARGURA_DE_MESA_PX,
   LARGURA_UTIL_MINIMA_PX,
@@ -1134,10 +1136,16 @@ describe('a inércia do giro — o filtro 20/80 com correção de delta-time', (
     // de céu de longe jogava a câmera para o outro lado do planeta de
     // perto. A régua é o ÂNGULO em torno do alvo, não a distância
     // percorrida (essa escala com o raio da órbita e não mediria nada).
-    const varreu = (raios: number) => {
+    const varreu = (raios: number, kDoPiso?: number) => {
       const cam = camera();
       const rig = new AtlasRig();
-      naAberturaDeProducao(rig); // alvo na origem, régua = raio FÍSICO do Sol
+      // alvo na origem, régua = raio FÍSICO do Sol
+      rig.focar(
+        new THREE.Vector3(),
+        orbitaMaisExterna().raio,
+        orbitaMaisExterna().posicao,
+        { pisoRaio: RAIO_DO_SOL_NA_CENA, ...(kDoPiso ? { kDoPiso } : {}) }
+      );
       rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
       rig.pinarDistancia(raios * RAIO_DO_SOL_NA_CENA);
       rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
@@ -1149,16 +1157,19 @@ describe('a inércia do giro — o filtro 20/80 com correção de delta-time', (
       for (let i = 0; i < 200; i++) quadro(rig, cam, 0, QUADRO);
       return cam.position.clone().sub(rig.alvo).normalize().angleTo(antes);
     };
-    const noPiso = varreu(K_MIN_RAIOS); // 2 raios: um raio de altura
     const longe = varreu(10);
     expect(longe).toBeGreaterThan(0);
-    // MEDIDO: 0,333338 — no piso o giro anda um TERÇO do que anda longe,
-    // que é o `FREIO_MINIMO_DO_SOLO` contra o freio solto de 10 raios.
-    // Os 4e-6 que sobram são a curvatura da parametrização (o ângulo
-    // varrido não é exatamente linear na volta), não o freio.
-    expect(noPiso / longe).toBeCloseTo(FREIO_MINIMO_DO_SOLO, 4);
-    // e de 4 raios para cima (3 de altura) o freio já saiu do caminho
+    // 2 raios (um de altura): a fórmula dá (2 − 1) / 3 = 1/3 — o mínimo
+    // de 0,03 não entra aqui, então o que valia continua valendo. Os 4e-6
+    // que sobram são a curvatura da parametrização, não o freio.
+    expect(varreu(K_MIN_RAIOS) / longe).toBeCloseTo(1 / 3, 4);
+    // de 4 raios para cima (3 de altura) o freio já saiu do caminho
     expect(varreu(4) / longe).toBeCloseTo(1, 6);
+    // 1,1 raio, o piso de um corpo: (1,1 − 1) / 3 = 0,0333 — o giro anda
+    // uma trinta avos do de longe, e o mínimo (0,03) fica ABAIXO disso:
+    // é só o chão do freio, não o que manda no piso
+    expect(varreu(K_PISO_DO_CORPO, K_PISO_DO_CORPO) / longe).toBeCloseTo(0.1 / 3, 3);
+    expect(FREIO_MINIMO_DO_SOLO).toBeLessThan(0.1 / 3);
   });
 
   it('o gesto NÃO ATRAVESSA a troca de alvo — a inércia morre com o foco', () => {
@@ -3156,5 +3167,129 @@ describe('a bússola — endireitar o horizonte sem mover a mira', () => {
     rig.apply(camera, 1, LARGURA_DE_MESA_PX, 0);
     expect(rig.desvioDoHorizonte).toBe(0);
     expect(rig.horizonteTorto).toBe(false);
+  });
+});
+
+describe('a inclinação θ (07/10) — o olhar sai do centro do corpo e sobe ao horizonte', () => {
+  const QUADRO = 1 / 60;
+  const R = 2e-10; // ~ o raio da Terra, em pc
+  const alvo = new THREE.Vector3(4.8e-6, 2e-7, 1e-7);
+  const camera = () => new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 16 / 9, 1e-14, 1);
+  const noCorpo = (rig: AtlasRig) =>
+    rig.focar(alvo, R, alvo, { pisoRaio: R, kDoPiso: K_PISO_DO_CORPO });
+  const tetoEm = (d: number) => Math.asin(Math.min(1, R / d)) + CEU_ALEM_DO_HORIZONTE_RAD;
+  /** o ângulo da rotação que leva `a` a `b`, por atan2 (ver `anguloDoGiro`) */
+  const angulo = (a: THREE.Quaternion, b: THREE.Quaternion) => {
+    const q = a.clone().invert().multiply(b);
+    return 2 * Math.atan2(Math.hypot(q.x, q.y, q.z), Math.abs(q.w));
+  };
+  /** o rig no piso, inclinado até o teto por um arrasto enorme para cima */
+  const inclinadoNoPiso = () => {
+    const cam = camera();
+    const rig = new AtlasRig();
+    noCorpo(rig);
+    rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+    // pedir METADE do piso: o grampo para a câmera nele
+    rig.pinarDistancia(0.5 * rig.pisoDeZoom);
+    rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+    const pos = cam.position.clone();
+    const reto = cam.quaternion.clone();
+    rig.addTiltDelta(-1e6);
+    rig.apply(cam, 1, LARGURA_DE_MESA_PX, 0);
+    return { cam, rig, pos, reto };
+  };
+
+  it('o piso de um corpo é 1,1 régua do solo — a roda e a câmera param nele', () => {
+    const { cam, rig } = inclinadoNoPiso();
+    expect(rig.pisoDeZoom).toBeCloseTo(K_PISO_DO_CORPO * R, 20);
+    expect(rig.distancia).toBe(rig.pisoDeZoom);
+    expect(Math.abs(cam.position.distanceTo(alvo) / R - K_PISO_DO_CORPO)).toBeLessThan(1e-9);
+  });
+
+  it('no piso θ vai até o limbo + 10°, e inclinar NÃO move a câmera', () => {
+    const { cam, rig, pos, reto } = inclinadoNoPiso();
+    const teto = tetoEm(K_PISO_DO_CORPO * R);
+    // asin(1/1,1) = 65,4°: o horizonte, mais o céu
+    expect(rig.tetoDaInclinacao).toBeCloseTo(teto, 12);
+    expect(rig.inclinacao).toBeCloseTo(teto, 12);
+    expect(cam.position.equals(pos)).toBe(true);
+    // a orientação girou EXATAMENTE θ (os giros do HUD conjugam, não somam)
+    expect(angulo(reto, cam.quaternion)).toBeCloseTo(teto, 9);
+    // ...e para o ALTO da tela: a mira subiu rumo ao `up` da pose reta
+    const frente = new THREE.Vector3(0, 0, -1);
+    const upReto = new THREE.Vector3(0, 1, 0).applyQuaternion(reto);
+    const miraReta = frente.clone().applyQuaternion(reto);
+    const miraInclinada = frente.clone().applyQuaternion(cam.quaternion);
+    expect(miraInclinada.dot(upReto)).toBeGreaterThan(miraReta.dot(upReto) + 0.5);
+  });
+
+  it('arrastar para baixo devolve θ a zero e para ali — nunca abaixo do centro', () => {
+    const { cam, rig, reto } = inclinadoNoPiso();
+    rig.addTiltDelta(1e6);
+    rig.apply(cam, 1, LARGURA_DE_MESA_PX, 0);
+    expect(rig.inclinacao).toBe(0);
+    expect(angulo(reto, cam.quaternion)).toBeLessThan(1e-9);
+  });
+
+  it('afastar baixa θ sozinho e contínuo; aproximar de novo não o levanta', () => {
+    const { cam, rig } = inclinadoNoPiso();
+    let antes = rig.inclinacao;
+    let tetoAntes = rig.tetoDaInclinacao;
+    for (let i = 0; i < 120; i++) {
+      const d = distanciaAposEstalos(rig.distancia, rig.pisoDeZoom, rig.tetoDeZoom, 0.25);
+      rig.pinarDistancia(d);
+      rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+      const teto = tetoEm(rig.distancia);
+      expect(rig.inclinacao).toBeLessThanOrEqual(teto + 1e-12);
+      // sem salto: θ anda no máximo o que o teto andou
+      expect(Math.abs(rig.inclinacao - antes)).toBeLessThanOrEqual(
+        Math.abs(teto - tetoAntes) + 1e-12
+      );
+      antes = rig.inclinacao;
+      tetoAntes = teto;
+    }
+    // de longe sobra o céu de 10° e um fio do limbo
+    expect(rig.inclinacao).toBeLessThan(CEU_ALEM_DO_HORIZONTE_RAD + 0.05);
+    const longe = rig.inclinacao;
+    rig.pinarDistancia(rig.pisoDeZoom);
+    rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+    expect(rig.inclinacao).toBe(longe);
+  });
+
+  it('a órbita guarda θ — girar em volta não endireita a vista', () => {
+    const { cam, rig } = inclinadoNoPiso();
+    const theta = rig.inclinacao;
+    const pos = cam.position.clone();
+    for (let i = 0; i < 30; i++) {
+      rig.addOrbitDelta(20, 5);
+      rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+    }
+    expect(cam.position.distanceTo(pos)).toBeGreaterThan(0.01 * R);
+    expect(rig.inclinacao).toBe(theta);
+  });
+
+  it('trocar de alvo leva θ a zero PELA RAMPA — sem salto no primeiro quadro', () => {
+    for (const troca of ['focar', 'selecionar'] as const) {
+      const { cam, rig } = inclinadoNoPiso();
+      const outro = alvo.clone().add(new THREE.Vector3(3 * R, 0, 0));
+      if (troca === 'focar') {
+        rig.focar(outro, R, outro, { rampa: true, pisoRaio: R, kDoPiso: K_PISO_DO_CORPO });
+      } else {
+        rig.selecionar(outro, R, outro, { rampa: true, pisoRaio: R, kDoPiso: K_PISO_DO_CORPO });
+      }
+      expect(rig.inclinacao).toBe(0);
+      let q = cam.quaternion.clone();
+      let maiorPasso = 0;
+      for (let i = 0; i < 400 && rig.animando; i++) {
+        rig.apply(cam, 1, LARGURA_DE_MESA_PX, QUADRO);
+        maiorPasso = Math.max(maiorPasso, angulo(q, cam.quaternion));
+        q = cam.quaternion.clone();
+      }
+      expect(rig.animando, troca).toBe(false);
+      // a rampa mais longa é 2,2 s (132 quadros) e a volta é < 180°: um
+      // quadro com mais de 0,1 rad seria o salto que a partida inclinada evita
+      expect(maiorPasso, troca).toBeLessThan(0.1);
+      expect(rig.inclinacao, troca).toBe(0);
+    }
   });
 });

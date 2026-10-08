@@ -210,6 +210,8 @@ describe('completude — todo alvo do Atlas tem física, ou a falta é nomeada',
    * MEDIDA, mapa de altura em `rochoso.ts`) — mas continua SEM GM aqui: o
    * emissor não a pede, e sair de `IDS_ESCULPIDOS` não é o mesmo que ganhar
    * massa. A linha dela fica nesta lista até o bloco ser regenerado com ela.
+   * Pã saiu da família esculpida em 08/10/2026 pelo mesmo caminho, e fica
+   * aqui pelo mesmo motivo.
    */
   const SEM_GM_DAS_ESCULPIDAS = [
     'pan', 'daphnis', 'atlas', 'prometheus', 'pandora',

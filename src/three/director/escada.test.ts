@@ -40,14 +40,15 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalact
 import { EPOCA_JD_TDB } from '../world/planetas/retrato2026';
 import { RAIO_EQ_TERRA_PC, posicaoDaTerraUA } from '../world/corpos/terra';
 import { posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
-import { AtlasRig } from '../cinematic/atlasRig';
+import { AtlasRig, K_MIN_RAIOS, K_PISO_DO_CORPO } from '../cinematic/atlasRig';
+import { IDS_ESCULPIDOS, criaGeometriaEsculpida } from '../world/corpos/esculpido';
 
 // O runner da casa é `node` (vitest.config.ts) e o enquadramento pergunta
 // a largura da janela (`larguraDeCss`) a cada `apply`. Uma linha de
 // `window` mínimo resolve, como em `world/labels.test.ts` — trocar o
 // ambiente de TODOS os testes por jsdom para ler um número seria caro.
 (globalThis as { window?: unknown }).window = { innerWidth: 1200, location: { search: '' } };
-const { Escada } = await import('./escada');
+const { Escada, soloDoCorpo } = await import('./escada');
 
 /** posição da efeméride/retrato (eclíptica, UA) → frame da cena (pc) */
 function paraPc(p: { x: number; y: number; z: number }): THREE.Vector3 {
@@ -454,5 +455,43 @@ describe('anões e asteroides: o degrau do globo (item 92)', () => {
     aplicar();
     expect(escada.escadaViva).toMatchObject({ degrau: 'orbita', corpoId: 'eris' });
     expect(noQuadro(camera, ERIS, RAIO_ERIS).raios).toBeGreaterThan(1e6);
+  });
+});
+
+describe('o piso da câmera é o SOLO REAL de cada corpo (07/10, "câmera mais livre")', () => {
+  const pisoDe = (id: string) => {
+    const s = soloDoCorpo(id, 2.2546e-8);
+    return (s.kDoPiso ?? K_MIN_RAIOS) * s.pisoRaio!;
+  };
+
+  it('a Terra e Júpiter no degrau corpo descem a 1,1 raio; o Sol fica em 2', () => {
+    const { escada, atlas } = bancada();
+    escada.focarNoCorpo('earth', 'corpo');
+    expect(atlas.pisoDeZoom / RAIO_EQ_TERRA_PC).toBeCloseTo(K_PISO_DO_CORPO, 12);
+    escada.focarNoCorpo('jupiter', 'corpo');
+    expect(atlas.pisoDeZoom / RAIO_JUPITER).toBeCloseTo(K_PISO_DO_CORPO, 12);
+    // o Sol: regime de brilho conferido, 2 raios como sempre
+    expect(pisoDe('sun') / 2.2546e-8).toBeCloseTo(2, 12);
+  });
+
+  it('Hipérion: o piso fica ACIMA do pico da forma medida (1,368a)', () => {
+    const a = raiosDoRochosoPc('hyperion').a;
+    // 1,367691 é o raio máximo da forma da Cassini (Thomas, Joseph & Ansty
+    // 2018) em raios de 135 km — o número da linha de RELEVO_DA_LUA
+    expect(pisoDe('hyperion') / a).toBeGreaterThan(1.367691);
+    expect(pisoDe('hyperion') / a).toBeCloseTo(K_PISO_DO_CORPO * 1.367691, 5);
+  });
+
+  it('as luas esculpidas: o piso fica acima do vértice mais alto da malha', () => {
+    for (const id of IDS_ESCULPIDOS) {
+      const geo = criaGeometriaEsculpida(id);
+      const pos = geo.getAttribute('position');
+      let pico = 0;
+      for (let i = 0; i < pos.count; i++) {
+        pico = Math.max(pico, Math.hypot(pos.getX(i), pos.getY(i), pos.getZ(i)));
+      }
+      geo.dispose();
+      expect(pisoDe(id) / raiosDoRochosoPc(id).a, id).toBeGreaterThan(pico);
+    }
   });
 });

@@ -395,7 +395,7 @@ const ESCRITA_FINAL_DO_SOL = 'gl_FragColor = vec4(color * uWorldFade, 1.0);';
  * não um literal, porque este é o único número da cirurgia que muda por
  * QUADRO — e o director é quem o escreve (ver `escreverFiltroSolar`).
  */
-const UNIFORME_DO_FILTRO = 'uniform float uFiltroSolar;\n';
+const UNIFORME_DO_FILTRO = 'uniform float uFiltroSolar;\nuniform vec3 uTransmitancia;\n';
 
 /**
  * O fragment do Sol reescrito para emitir a radiância VERDADEIRA da
@@ -466,7 +466,7 @@ export function cirurgiaDaFotosfera(
     GLSL_COMPRESSAO +
     fragmentShader.replace(
       ESCRITA_FINAL_DO_SOL,
-      `gl_FragColor = vec4(comprimir3(color * pow(${literalGlsl(fator)}, uFiltroSolar), ` +
+      `gl_FragColor = vec4(comprimir3(color * pow(${literalGlsl(fator)}, uFiltroSolar) * uTransmitancia, ` +
         `${literalGlsl(beta)}) * uWorldFade, 1.0);`
     )
   );
@@ -872,6 +872,10 @@ export class StellarBody {
       // monta a lista de uniforms na COMPILAÇÃO do programa, e uma chave
       // que aparecesse depois nunca chegaria à GPU.
       ctx.sunUniforms.uFiltroSolar = { value: 1 };
+      // o AR DA TERRA no raio câmera→Sol (`escreverTransmitancia`): nasce
+      // (1, 1, 1), e multiplicar por 1,0 é exato — longe da Terra o disco
+      // sai bit a bit o de antes
+      ctx.sunUniforms.uTransmitancia = { value: new THREE.Vector3(1, 1, 1) };
       this.filtroSolarLigado = true;
       mat.needsUpdate = true;
     }
@@ -1057,6 +1061,22 @@ export class StellarBody {
     if (v === this.filtroSolarAnterior) return;
     this.filtroSolarAnterior = v;
     this.ctx.sunUniforms.uFiltroSolar.value = v;
+  }
+
+  /**
+   * O DISCO ATRAVÉS DO AR DA TERRA: a transmitância do raio câmera→Sol
+   * (`SolNoQuadro`, por quadro). Entra na RADIÂNCIA, antes da compressão
+   * da emissão — o mesmo lugar onde o ponto e o clarão a recebem, para a
+   * troca disco↔ponto continuar conservando a luz. A coroa, as espículas e
+   * a CME não a recebem: a 1 UA, o único lugar onde o raio pode rasar a
+   * Terra, a contribuição delas em volta do Sol é < 0,1/255 (medido em
+   * 08/10, escondendo-as); proeminências e laços nem desenham ali
+   * (`limboFade`). Sem a cirurgia (`?bemis=0`) é no-op, como o filtro.
+   */
+  escreverTransmitancia(t: readonly number[]) {
+    if (!this.filtroSolarLigado) return;
+    if (!(t[0] >= 0 && t[1] >= 0 && t[2] >= 0)) return;
+    (this.ctx.sunUniforms.uTransmitancia.value as THREE.Vector3).set(t[0], t[1], t[2]);
   }
 
   /**

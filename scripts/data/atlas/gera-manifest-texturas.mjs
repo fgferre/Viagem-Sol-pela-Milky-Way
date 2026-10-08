@@ -598,6 +598,58 @@ const ORIGENS = {
     proveniencia: 'derivado',
   },
 
+  // ---- PÃ (08/10/2026, PLAN-LUAS-PEQUENAS.md → relevo medido, a versão F
+  // aprovada por ele): a forma inteira (Cassini — Thomas, Joseph & Ansty
+  // 2018) vira mapa de altura, com o relevo fino de 28 fotos calibradas da
+  // Cassini onde elas veem e INVENTADO no resto; a cor é uma pintura por IA
+  // do autor sobre o relevo medido, calibrada pelo espectro medido. Híbrido:
+  // 'derivado'. A confissão do que é cada coisa mora no ASSETS.md.
+  'pan/map': {
+    fonte:
+      'Pintura por IA generativa do autor sobre o relevo medido de Pã, com o albedo fino de 28 fotos calibradas da Cassini onde elas veem e a cor calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019 — não existe mapa de cor medido de Pã',
+    url: 'https://science.nasa.gov/saturn/moons/pan/',
+    licenca: 'imagem do autor (Felipe Ferreira), gerada com IA; fotos da Cassini em domínio público (NASA)',
+    atribuicao:
+      'Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Albedo fino e cor: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) e Buratti et al. 2019 (Science). Montagem nesta casa.',
+    proveniencia: 'derivado',
+  },
+  'pan/height': {
+    fonte:
+      'Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
+    proveniencia: 'derivado',
+  },
+  'pan/normal': {
+    fonte:
+      'Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
+    proveniencia: 'derivado',
+  },
+  'pan/horizon': {
+    fonte:
+      'Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
+    proveniencia: 'derivado',
+  },
+  'pan/horizon2': {
+    fonte:
+      'Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
+    proveniencia: 'derivado',
+  },
+
   // ---- ITEM 140 (2026-09-03): O RELEVO DA LUA, medido. Até aqui a Lua
   // tinha SÓ o mapa de cor, e o relevo dela era derivado dele (o bump do
   // albedo da S2) — invenção que afundava os mares e levantava os raios

@@ -368,6 +368,8 @@ export const PT = {
   'convite.girar': 'arraste para girar em volta do que está em quadro',
   'convite.roda': 'a roda aproxima e afasta do objeto escolhido',
   'convite.pinca': 'a pinça de dois dedos aproxima e afasta',
+  'convite.inclinarMouse': 'shift + arrastar para cima (ou o botão direito) inclina a vista rumo ao horizonte',
+  'convite.inclinarToque': 'dois dedos juntos para cima inclinam a vista rumo ao horizonte',
   'convite.escolherMouse': 'clique num nome para escolher o objeto',
   'convite.escolherToque': 'toque num nome para escolher o objeto',
   'convite.irMouse': 'dois cliques para ir até ele',

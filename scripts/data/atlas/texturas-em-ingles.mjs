@@ -263,6 +263,36 @@ export const EM_INGLES = new Map([
     "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked in this house (Felipe Ferreira), with the pits from the author's AI painting.",
   ],
 
+  // ---- fontes: Pã (08/10/2026, PLAN-LUAS-PEQUENAS.md → relevo medido) ---
+  [
+    'Pintura por IA generativa do autor sobre o relevo medido de Pã, com o albedo fino de 28 fotos calibradas da Cassini onde elas veem e a cor calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019 — não existe mapa de cor medido de Pã',
+    "The author's generative-AI painting over the measured relief of Pan, with the fine albedo of 28 calibrated Cassini images where they see and the color calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019 — there is no measured color map of Pan",
+  ],
+  [
+    'imagem do autor (Felipe Ferreira), gerada com IA; fotos da Cassini em domínio público (NASA)',
+    "the author's image (Felipe Ferreira), generated with AI; Cassini images in the public domain (NASA)",
+  ],
+  [
+    'Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Albedo fino e cor: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) e Buratti et al. 2019 (Science). Montagem nesta casa.',
+    "Painting: the author's image (Felipe Ferreira), generated with AI. Fine albedo and color: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) and Buratti et al. 2019 (Science). Assembled in this house.",
+  ],
+  [
+    'Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram',
+    'Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HEIGHT map, with the fine relief of 28 calibrated Cassini images and the 4 craters they show',
+  ],
+  [
+    'Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram',
+    'Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 28 calibrated Cassini images and the 4 craters they show',
+  ],
+  [
+    'Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram',
+    'Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 28 calibrated Cassini images and the 4 craters they show',
+  ],
+  [
+    'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
+    'Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code.',
+  ],
+
   // ---- o relevo medido da Terra (07/10/2026): ETOPO 2022 da NOAA -----
   [
     'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS',
@@ -545,6 +575,20 @@ export const EM_INGLES = new Map([
   [
     'a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA',
     'the shadow, in six azimuths, is baked from the shape measured by Cassini, but that of the 3,488 pits is not measured: they come from the dark spots of the AI painting',
+  ],
+  // 08/10/2026 — Pã: forma medida, relevo fino das fotos onde elas veem e
+  // inventado no resto (a mesma frase na altura e na normal)
+  [
+    'não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa sobre o relevo medido, calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019; o detalhe claro e escuro vem de 28 fotos da Cassini só nos 40,5 % da superfície que elas veem — no resto, é o da pintura',
+    'there is no published color map of Pan: the color is a generative-AI painting over the measured relief, calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019; the light and dark detail comes from 28 Cassini images only on the 40.5% of the surface they see — elsewhere, it is the painting\'s',
+  ],
+  [
+    'a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê',
+    'the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees',
+  ],
+  [
+    'a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida',
+    'the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density',
   ],
   [
     'topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela',

@@ -205,9 +205,13 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   { id: 'makemake', brdf: 'lambert' },
   { id: 'eris', brdf: 'lambert' },
   { id: 'quaoar', brdf: 'lambert' },
-  // S3 (item 134) — as oito esculpidas de Saturno. Todas `lambert` com o
+  // Pã saiu das esculpidas em 08/10/2026 (PLAN-LUAS-PEQUENAS.md): a forma
+  // agora é MEDIDA (Cassini) por mapa de altura, como a do Hipérion — ver
+  // RELEVO_DA_LUA abaixo. Fica no lugar em que estava na lista.
+  { id: 'pan', brdf: 'lambert' },
+  // S3 (item 134) — as sete esculpidas de Saturno. Todas `lambert` com o
   // `terminadorSuave` da casa: o disco chato de Lommel-Seeliger é o fato
-  // que uma FOTO confere, e não há foto destes oito com que conferir —
+  // que uma FOTO confere, e não há foto destas sete com que conferir —
   // o que existe é a forma, e a forma está na malha.
   // A lista mora em `esculpido.ts` (`IDS_ESCULPIDOS`): uma fonte só.
   ...IDS_ESCULPIDOS.map((id) => ({ id, brdf: 'lambert', superficie: 'esculpido' }) as const),
@@ -219,7 +223,7 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * vira `1 + vies + altura·escala`: o viés é negativo para que a média
  * fique no raio nominal de `BODY_AXES` (a esfera não engorda).
  *
- * SÓ SETE LUAS PORQUE SÓ SETE TÊM MAPA. Cinco saem de modelo de forma
+ * SÓ OITO LUAS PORQUE SÓ OITO TÊM MAPA. Cinco saem de modelo de forma
  * MEDIDO (Mimas e Tétis por SPC de Gaskell, Encélado pelo DEM de Schenk &
  * McKinnon 2024, Dione e Reia pelos DTMs de Weirich et al. 2025 — o de Reia
  * completado nesta casa com as crateras finas que a foto mostra,
@@ -230,13 +234,13 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * texto nascendo em `docs/reference/ASSETS.md`. Hipérion é o sétimo caso
  * (23/09/2026): o mapa de altura é a FORMA MEDIDA inteira (Cassini —
  * Thomas, Joseph & Ansty 2018), não um relevo sobre elipsoide como as
- * outras seis.
+ * outras seis; Pã é o oitavo (08/10/2026), pelo mesmo caminho.
  *
  * Mimas puxa 10 % do raio: Herschel é um terço do diâmetro dela, e é essa
  * a foto que o limbo tinha de mostrar e a esfera lisa não mostrava.
  */
 export const RELEVO_DA_LUA: Readonly<
-  Record<string, { escala: number; vies: number; horizonte?: true }>
+  Record<string, { escala: number; vies: number; horizonte?: true | 'soDoRelevo' }>
 > = {
   mimas: { escala: 0.10200225260766879, vies: -0.04611062610562858 },
   enceladus: { escala: 0.009472107707579332, vies: -0.005141926965558401 },
@@ -256,6 +260,22 @@ export const RELEVO_DA_LUA: Readonly<
   // ficha). `horizonte`: pede também os dois mapas de horizonte e o
   // Lambert escurece o Sol dentro dos poços (GLSL_SOMBRA_DO_HORIZONTE).
   hyperion: { escala: 0.677886, vies: -0.310195, horizonte: true },
+  // Pã (08/10/2026, PLAN-LUAS-PEQUENAS.md, a versão F aprovada por ele): a
+  // forma MEDIDA inteira (Cassini — Thomas, Joseph & Ansty 2018) no mapa de
+  // altura, raio 0,740482 a 1,450393 de 14 km (`BODY_AXES.pan`) — a grade
+  // radial 512×256 suavizada a 1° de arco —, mais o relevo fino das fotos
+  // da Cassini e as crateras (confessados na ficha). `horizonte`: os dois
+  // mapas, como o Hipérion — a crista é uma aba que faz sombra no núcleo,
+  // e sem eles o núcleo abaixo dela acende. Mas SÓ DO RELEVO ('soDoRelevo',
+  // o portão 2 de `uHorizonte`, `sombraSoDoRelevo`): o mapa mede o
+  // horizonte sobre o plano RADIAL e o grampeia em ≥ 0, e em Pã a
+  // superfície chega a 65° desse plano (as encostas da aba). Com o teste
+  // cru, todo ponto com o Sol abaixo do plano radial apagava — e a encosta
+  // inclinada para o Sol estava acesa: 12 % dos pixels acesos na pose norte
+  // da Cassini (N1867604669) e 16 % na rasante saíam pretos, uma lua escura
+  // na borda que a foto não tem. Só Pã usa este modo; o Hipérion segue com
+  // o teste cru.
+  pan: { escala: 0.709911, vies: -0.259518, horizonte: 'soDoRelevo' },
 };
 
 /**
@@ -347,6 +367,41 @@ export const NORMAL_MEDIDA: Readonly<Record<string, number>> = {
   pluto: 1,
   charon: 1,
 };
+
+/** o maior raio de cada malha esculpida, em `a` — medido uma vez por id */
+const picoEsculpido = new Map<string, number>();
+
+/**
+ * O RAIO MÁXIMO DA MALHA DESENHADA, em unidades de `a` (`BODY_AXES[id][0]`)
+ * — o solo de verdade, que é a régua do piso da câmera do Atlas
+ * (`K_PISO_DO_CORPO`, `atlasRig.ts`). Três figuras:
+ *  · elipsoide (o caso comum): o maior semieixo sobre `a`;
+ *  · relevo de vértice (`RELEVO_DA_LUA`): o vértice anda até
+ *    `1 + viés + escala` (o byte mais alto do mapa, `ROCHOSO_VERT_RELEVO`)
+ *    — Hipérion chega a 1,368a, Jápeto a 1,030a;
+ *  · esculpida (`esculpido.ts`): a figura mora na geometria, e o pico é
+ *    o vértice mais longe do centro, medido na própria malha.
+ * Corpo fora de `BODY_AXES` devolve 1.
+ */
+export function fatorDoRaioMaximo(id: string): number {
+  const eixos = BODY_AXES[id];
+  const maiorEixo = eixos ? Math.max(...eixos) / eixos[0] : 1;
+  const relevo = RELEVO_DA_LUA[id];
+  if (relevo) return maiorEixo * (1 + relevo.vies + relevo.escala);
+  if (!IDS_ESCULPIDOS.includes(id)) return maiorEixo;
+  let pico = picoEsculpido.get(id);
+  if (pico === undefined) {
+    const geo = criaGeometriaEsculpida(id);
+    const pos = geo.getAttribute('position');
+    pico = 0;
+    for (let i = 0; i < pos.count; i++) {
+      pico = Math.max(pico, Math.hypot(pos.getX(i), pos.getY(i), pos.getZ(i)));
+    }
+    geo.dispose();
+    picoEsculpido.set(id, pico);
+  }
+  return maiorEixo * pico;
+}
 
 /** Raios do corpo em pc — BODY_AXES (a fonte única) pelos
  *  conversores únicos; nenhum literal novo de comprimento. */
@@ -484,6 +539,9 @@ void main() {
   // o horizonte assado: o relevo tapa SÓ a direta; o céu visível SÓ a
   // lanterna (1 exato sem o portão)
   float sombraRelevo = sombraDoHorizonte(nGeo, vUv, uDirSolLocal);
+  // portão 2 (horizonte: 'soDoRelevo'): o relevo só tapa o Sol ACIMA do
+  // plano radial — abaixo dele quem decide é a normal (ver RELEVO_DA_LUA.pan)
+  if (uHorizonte > 1.5) sombraRelevo = sombraSoDoRelevo(nGeo, vUv, uDirSolLocal);
   float ndotlGeo = dot(n, uDirSolLocal);
   vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
   vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
@@ -1095,7 +1153,7 @@ export class RochosoResolvido {
         // em 0 o Lambert multiplica por 1 exato e os mapas nem são lidos
         uMapaHorizonte: { value: null },
         uMapaHorizonte2: { value: null },
-        uHorizonte: { value: relevo?.horizonte ? 1 : 0 },
+        uHorizonte: { value: relevo?.horizonte === 'soDoRelevo' ? 2 : relevo?.horizonte ? 1 : 0 },
         uRelevo: {
           value: new THREE.Vector2(relevo?.escala ?? 0, relevo?.vies ?? 0),
         },

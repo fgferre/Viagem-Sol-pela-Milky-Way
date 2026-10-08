@@ -271,6 +271,7 @@ uniform float uMeiaPx;   // meia-extensão do billboard em px
 uniform float uNucleoPx; // MEIO-tamanho do sprite do ponto, em px (máscara)
 uniform float uGanho;    // presença: rampa do orçamento × entrada × filtro
 uniform float uBeta;     // compressão na emissão — o MESMO β do campo
+uniform vec3 uTransmitancia; // o ar da Terra no raio até a fonte (1 longe dela)
 
 varying vec2 vUv;
 
@@ -296,7 +297,7 @@ void main() {
   float rPx = r * uMeiaPx;
   float mascara = smoothstep(0.6 * uNucleoPx, uNucleoPx, rPx);
 
-  vec3 col = (${GLSL_BRANCO_DO_NUCLEO} * core + uCor * (glow + spikes)) * mascara * uGanho;
+  vec3 col = (${GLSL_BRANCO_DO_NUCLEO} * core + uCor * (glow + spikes)) * mascara * uGanho * uTransmitancia;
   float a = clamp(core + glow + spikes, 0.0, 1.0) * mascara * uGanho;
   vec3 comprimida = comprimir3(col, uBeta);
   gl_FragColor = vec4(comprimida, a);
@@ -392,6 +393,10 @@ export interface QuadroDoClarao {
    *  convertidos para o buffer; sem isso o clarão desarma/encolhe
    *  exatamente no modo cinema (pico cai com pr²). 1 = referência. */
   pr?: number;
+  /** o ar da Terra no raio câmera→Sol (`SolNoQuadro`), multiplicado na
+   *  emissão do clarão do Sol, antes da compressão — como no disco e no
+   *  ponto. Ausente = (1, 1, 1). */
+  transmitanciaDoSol?: readonly number[];
 }
 
 /** Teto de sanidade do billboard, em px: além da diagonal de qualquer
@@ -522,6 +527,7 @@ export class ClaraoDeAsas {
           uGanho: { value: 0 },
           uScreenH: { value: 1080 },
           uBeta: { value: BETA_DA_EMISSAO },
+          uTransmitancia: { value: new THREE.Vector3(1, 1, 1) },
         },
         blending: THREE.AdditiveBlending,
         // §5.15: o clarão NUNCA é ocluído pelo corpo que o causa — estado
@@ -689,6 +695,8 @@ export class ClaraoDeAsas {
       // forma é FIXO como nas heroes — é o desenho superior que o dono
       // apontou; a lei manda só em presença e tamanho
       u.uGanho.value = s.ganho * entrada;
+      const t = i === 0 ? q.transmitanciaDoSol : undefined;
+      (u.uTransmitancia.value as THREE.Vector3).set(t ? t[0] : 1, t ? t[1] : 1, t ? t[2] : 1);
       u.uMeiaPx.value = meiaPx;
       u.uNucleoPx.value = 0.5 * nucleoPx * pr;
       u.uScreenH.value = q.screenH;

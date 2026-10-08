@@ -765,6 +765,43 @@ export const FONTES = [
     url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/hyperion_30k_plt.tab',
     arquivoLocal: 'fonte/hyperion-horizon2.png',
   },
+  // ---- Pã sai das esculpidas em 08/10/2026 (PLAN-LUAS-PEQUENAS.md, a versão
+  // F aprovada por ele): a forma medida (Cassini, Thomas/Joseph/Ansty 2018)
+  // como mapa de ALTURA, com o relevo fino das fotos calibradas da Cassini,
+  // a NORMAL e os dois HORIZONTES dela — as fontes LOCAIS são os bytes
+  // aprovados (`capturas/luas-pequenas/pa/f/gera-f.mjs`), já na convenção da
+  // casa (sem giro). A COR já vem nivelada e calibrada pelo espectro medido:
+  // entra SEM bake (o `ilustracao-ia` a nivelaria de novo), só reencodada.
+  {
+    corpo: 'pan',
+    canal: 'map',
+    url: 'https://science.nasa.gov/saturn/moons/pan/',
+    arquivoLocal: 'fonte/pan-cor.png',
+  },
+  {
+    corpo: 'pan',
+    canal: 'height',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/pan_30k_plt.tab',
+    arquivoLocal: 'fonte/pan-altura.png',
+  },
+  {
+    corpo: 'pan',
+    canal: 'normal',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/pan_30k_plt.tab',
+    arquivoLocal: 'fonte/pan-normal.png',
+  },
+  {
+    corpo: 'pan',
+    canal: 'horizon',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/pan_30k_plt.tab',
+    arquivoLocal: 'fonte/pan-horizon.png',
+  },
+  {
+    corpo: 'pan',
+    canal: 'horizon2',
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/pan_30k_plt.tab',
+    arquivoLocal: 'fonte/pan-horizon2.png',
+  },
 ];
 
 const MAXIMO_DE_REDIRECTS = 5;
