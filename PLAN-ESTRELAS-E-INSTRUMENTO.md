@@ -57,6 +57,12 @@ Mais os dois blooms (`core/post.ts`) e a lente nova (`src/three/lente/`).
    luz de cena estourada). Pesquisar melhor antes de propor; a prova é prancha em três
    distâncias (perto da Terra, Júpiter, de perto do Sol) com a regra de hoje × a proposta,
    e o "pontinho laranja" como caso de teste.
+   Já valendo desde 08/10 (pedido dele): os raios da lente aparecem só com o Sol como
+   ponto e somem na mesma soltura do clarão (disco 2→10 px), para o Sol 3D assumir. Dois
+   casos para o estudo: (a) um vão perto da Terra, onde os raios da lente já sumiram e a
+   coroa do Sol 3D ainda não aparece (o Sol sem raio nenhum); (b) de longe, com lente, a
+   cruz do clarão e a estrela da lente juntas no mesmo ponto (ele gostou; é a questão do
+   "um instrumento só", item 2).
 
 1. **Unificar os desenhistas das estrelas (M3 da LEI).** O dono pediu "uma regra clara e
    única para cada estrela conforme o estado na tela". Crítica do assistente: unificar
