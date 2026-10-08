@@ -786,6 +786,21 @@ export class Planetas {
     return this.escreverAtributo('aCede', id, cede);
   }
 
+  /**
+   * O SOL-PONTO ATRAVÉS DO AR DA TERRA: a cor do vértice do Sol vezes a
+   * transmitância do raio câmera→Sol (`SolNoQuadro`). Com T = (1, 1, 1) o
+   * valor gravado é o do construtor, bit a bit — longe da Terra nada muda.
+   */
+  escreverTransmitanciaDoSol(t: readonly number[]) {
+    const i = (IDS_DOS_PONTOS as readonly string[]).indexOf('sun');
+    const attr = this.points.geometry.getAttribute('aCor') as THREE.BufferAttribute;
+    const arr = attr.array as Float32Array;
+    const c = FOTOMETRIA.sun.corLinear;
+    let mudou = false;
+    for (let k = 0; k < 3; k++) if (this.gravar(arr, i * 3 + k, c[k] * t[k])) mudou = true;
+    if (mudou) attr.needsUpdate = true;
+  }
+
   /** o raio do globo que o corpo resolvido desenha — é à frente dele que
    *  o ponto é posto, para o próprio globo nunca o esconder */
   escreverRaio(id: string, raioPc: number): boolean {
