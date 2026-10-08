@@ -2,7 +2,7 @@
 
 Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
-Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 231.**
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 232.**
 
 ## O BASTÃO — onde a rodada parou (07/10, noite) — A ORDEM DE 06/10 FEITA NO `main`, À ESPERA DA PUBLICAÇÃO (commits `3b322fb6`, `b894ff2c`, `822c30f8`, `d319840c`; nada enviado; a publicação é dele)
 
@@ -944,6 +944,25 @@ ponto e brilho, por mais perto que se chegue.
 - **Para a rodada:** só a estrela visitada precisa do corpo completo; ponto
   e corpo cedem um ao outro sem somar luz (a dupla-luz que o M3 fecha); a
   cor sai da lei de cor do M3, não de paleta de autor (§5.16 da lei).
+
+**231. O motor dos filmes mostra o tempo correndo e acende as linhas de
+órbita, com propósito.** Palavras dele, 07/10, vendo o filme solar novo
+(um planeta que some no fim de um ato): *"seria melhor que houvesse uma
+transição entre essa época e a outra, de forma que o movimento do astro
+fosse mais suave para ele não desaparecer simplesmente... o tempo vá
+acelerar ou vá retroceder, de forma gradual, começando do ponto A chegando
+no ponto B"*; e sobre as órbitas: *"as linhas de órbita seriam um recurso
+que o motor de filmes poderia usar de acordo com sua necessidade... fazer
+aparecer suavemente para demonstrar uma órbita, entender que a Lua está
+capturada pela Terra... Sem exagero. Indo e voltando, suavemente. De acordo
+com a necessidade."* Hoje o filme solar troca de relógio quatro vezes em
+rampas fora do quadro (e um degrau no corte do epílogo), e as linhas estão
+fora do filme desde a decisão 3 do item 77 (25/08) — que esta palavra
+substitui: a linha volta ao filme quando o roteiro pede. O sumiço que ele
+viu é provavelmente o salto de Netuno a Plutão (velocidade, não relógio),
+em conserto noutra conversa. Combinado: um teste em Júpiter (tempo correndo
+com relógio na tela e as órbitas das luas acendendo e apagando), em vídeo
+ao lado do filme de hoje.
 ---
 
 ## BAIXA — dívida interna, ninguém vê
