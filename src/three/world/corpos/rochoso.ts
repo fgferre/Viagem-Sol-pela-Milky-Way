@@ -108,6 +108,12 @@ import {
   uniformsDoEsculpido,
   IDS_ESCULPIDOS,
 } from './esculpido';
+import {
+  PILOTO_PA_MEDIDA,
+  RELEVO_DA_PA_MEDIDA,
+  comAPaMedida,
+  orientacaoDoRochoso,
+} from './pilotoPaMedida';
 import { PlumasDeEncelado, atividadeDasMares } from './plumas';
 import type { QuadroDasPlumas } from './plumas';
 
@@ -210,7 +216,13 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   // que uma FOTO confere, e não há foto destes oito com que conferir —
   // o que existe é a forma, e a forma está na malha.
   // A lista mora em `esculpido.ts` (`IDS_ESCULPIDOS`): uma fonte só.
-  ...IDS_ESCULPIDOS.map((id) => ({ id, brdf: 'lambert', superficie: 'esculpido' }) as const),
+  // PILOTO (`?piloto=pa-medida`, `pilotoPaMedida.ts`): Pã sai daqui para o
+  // caminho do relevo medido, como o Hipérion; sem o parâmetro, as oito.
+  ...IDS_ESCULPIDOS.map((id) =>
+    PILOTO_PA_MEDIDA && id === 'pan'
+      ? ({ id, brdf: 'lambert' } as const)
+      : ({ id, brdf: 'lambert', superficie: 'esculpido' } as const)
+  ),
 ];
 
 /**
@@ -236,7 +248,7 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * a foto que o limbo tinha de mostrar e a esfera lisa não mostrava.
  */
 export const RELEVO_DA_LUA: Readonly<
-  Record<string, { escala: number; vies: number; horizonte?: true }>
+  Record<string, { escala: number; vies: number; horizonte?: true | 'soDoRelevo' }>
 > = {
   mimas: { escala: 0.10200225260766879, vies: -0.04611062610562858 },
   enceladus: { escala: 0.009472107707579332, vies: -0.005141926965558401 },
@@ -256,6 +268,9 @@ export const RELEVO_DA_LUA: Readonly<
   // ficha). `horizonte`: pede também os dois mapas de horizonte e o
   // Lambert escurece o Sol dentro dos poços (GLSL_SOMBRA_DO_HORIZONTE).
   hyperion: { escala: 0.677886, vies: -0.310195, horizonte: true },
+  // PILOTO (`?piloto=pa-medida`): a forma medida de Pã, só com o parâmetro;
+  // `horizonte: 'soDoRelevo'` é o portão 2 (`uHorizonte`), ver `RELEVO_DA_PA_MEDIDA`.
+  ...(PILOTO_PA_MEDIDA ? { pan: RELEVO_DA_PA_MEDIDA } : {}),
 };
 
 /**
@@ -484,6 +499,9 @@ void main() {
   // o horizonte assado: o relevo tapa SÓ a direta; o céu visível SÓ a
   // lanterna (1 exato sem o portão)
   float sombraRelevo = sombraDoHorizonte(nGeo, vUv, uDirSolLocal);
+  // portão 2 (horizonte: 'soDoRelevo'): o relevo só tapa o Sol ACIMA do
+  // plano radial — abaixo dele quem decide é a normal (ver RELEVO_DA_PA_MEDIDA)
+  if (uHorizonte > 1.5) sombraRelevo = sombraSoDoRelevo(nGeo, vUv, uDirSolLocal);
   float ndotlGeo = dot(n, uDirSolLocal);
   vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
   vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
@@ -778,7 +796,11 @@ export class RochosoResolvido {
               : this.config.id in NORMAL_MEDIDA
                 ? [CANAL_MAP, CANAL_NORMAL]
                 : [CANAL_MAP],
-      rede: opcoes,
+      // PILOTO (`?piloto=pa-medida`): os mapas de Pã vêm de `public/piloto/pa/`
+      rede:
+        PILOTO_PA_MEDIDA && this.config.id === 'pan'
+          ? { ...opcoes, buscarManifest: comAPaMedida(opcoes.buscarManifest) }
+          : opcoes,
       oQueNaoNasce: 'o corpo não nasce nesta sessão',
       publicar: (porCanal) => {
         this.garantirCasca();
@@ -921,7 +943,7 @@ export class RochosoResolvido {
   /** matriz + uniforms do quadro — só roda com o mesh em quadro. */
   private posicionar(q: QuadroDoRochoso) {
     const { colunaX, colunaY, colunaZ } = orientacaoDoCorpoNaCena(
-      IAU_ORIENTATIONS[this.config.id],
+      orientacaoDoRochoso(this.config.id),
       this.jdEscrito
     );
     this.vX.set(colunaX[0], colunaX[1], colunaX[2]);
@@ -1095,7 +1117,7 @@ export class RochosoResolvido {
         // em 0 o Lambert multiplica por 1 exato e os mapas nem são lidos
         uMapaHorizonte: { value: null },
         uMapaHorizonte2: { value: null },
-        uHorizonte: { value: relevo?.horizonte ? 1 : 0 },
+        uHorizonte: { value: relevo?.horizonte === 'soDoRelevo' ? 2 : relevo?.horizonte ? 1 : 0 },
         uRelevo: {
           value: new THREE.Vector2(relevo?.escala ?? 0, relevo?.vies ?? 0),
         },
