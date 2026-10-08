@@ -4,7 +4,26 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 232.**
 
-## O BASTÃO — onde a rodada parou (07/10, noite) — A ORDEM DE 06/10 FEITA NO `main`, À ESPERA DA PUBLICAÇÃO (commits `3b322fb6`, `b894ff2c`, `822c30f8`, `d319840c`; nada enviado; a publicação é dele)
+## O BASTÃO — onde a rodada parou (08/10) — CÂMERA MAIS LIVRE NO ATLAS E AR MEDIDO DA TERRA FEITOS NO RAMO `atlas-perto`, NÃO PUBLICADOS (worktree `../Viagem-atlas-perto`, backup `origin/atlas-perto`, `npm run done` verde)
+
+**Feito em 07–08/10, nesta ordem, a pedido dele:**
+1. A Terra com nuvens com sombra e relevo, relevo medido ETOPO e sombra das montanhas. Isso foi PUBLICADO em 07/10 (`f943a20b`) e levou junto os consertos do filme da ordem de 06/10, com o sim dele.
+2. Depois ele não conseguiu ver o relevo no Atlas (*"o angulo da camera e a falta de pan e zoom nao permitem"*). Isso trouxe a câmera que desce a 1,1 raio e inclina para o horizonte.
+3. Ele pediu a atmosfera avermelhada contra o Sol. Isso trouxe a luz do pôr do sol pelo ar medido e o Sol avermelhando ao atravessar o ar.
+4. Ele comparou com a vista da estação espacial (*"a atmosfera parece muito mais grossa"*). Isso trouxe o limbo e o véu sobre o planeta pelo ar medido, conferidos contra a imagem dele.
+
+**A PRÓXIMA CONVERSA COMEÇA POR `PLAN-ATLAS-PERTO-E-POR-DO-SOL.md`**, seções "Resultado (08/10)" e "A PRÓXIMA RODADA". Ali estão os defeitos, em ordem:
+- o brilho do Sol no mar grande e borrado;
+- o Sol branco até sumir na tela de 720;
+- as nuvens borradas na altura da estação;
+- o "visual de cinema", que é decisão dele;
+- os aerossóis;
+- o custo de ~9 ms;
+- os pequenos.
+
+Publicar o ramo é decisão dele: antes, trazer o ramo para cima do main, em linha reta.
+
+## O BASTÃO anterior (07/10, noite) — A ORDEM DE 06/10 FEITA NO `main`, À ESPERA DA PUBLICAÇÃO (commits `3b322fb6`, `b894ff2c`, `822c30f8`, `d319840c`; nada enviado; a publicação é dele)
 
 **Feito em 07/10 (a palavra dele: *"vamos continuar de onde paramos?"*):** os
 cinco consertos da ordem de 06/10. (1) "More" cortado a 375 px em inglês: a
