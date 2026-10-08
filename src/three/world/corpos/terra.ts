@@ -80,7 +80,9 @@ import type { FonteDeEfemerides } from '../planetas/planetas';
 import { CUSHION_DO_GATE, LIMIAR_DO_GATE_PX, diametroAparentePx, gateBinario } from './corpos';
 import {
   ATMOSFERA_FRAG,
+  ATMOSFERA_PROFUNDIDADE_FRAG,
   ATMOSFERA_VERT,
+  ESPALHAMENTO_MULTIPLO,
   NUVENS_FRAG,
   NUVENS_PROFUNDIDADE_FRAG,
   RAZAO_CASCA_ATMOSFERA,
@@ -88,6 +90,7 @@ import {
   TERRA_FRAG,
   TERRA_PROFUNDIDADE_FRAG,
   TERRA_VERT,
+  tabelaDoEspalhamentoMultiplo,
 } from '../../shaders/terraShaders';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import type { OrientacaoNaCena } from './orientacaoNaCena';
@@ -175,6 +178,31 @@ const PEDIDO_DA_TERRA: readonly CanalPedido[] = CANAIS_DA_TERRA.map((canal) => (
   cor: canal === 'map' || canal === 'night' || canal === 'clouds',
   repetirEmU: true,
 }));
+
+/**
+ * A TABELA DO ESPALHAMENTO MÚLTIPLO (08/10), feita UMA vez por página e
+ * só quando a `profundidade` entra em cena: o ar não muda, e a `classica`
+ * nunca paga a conta. Cada Terra embrulha os números numa textura própria
+ * (meio-float, filtrável em todo WebGL2, inclusive no Safari do iPhone),
+ * que morre com ela.
+ */
+let numerosDoMultiplo: Uint16Array | null = null;
+function texturaDoEspalhamentoMultiplo(): THREE.DataTexture {
+  numerosDoMultiplo ??= Uint16Array.from(tabelaDoEspalhamentoMultiplo(), (x) => THREE.DataUtils.toHalfFloat(x));
+  const t = new THREE.DataTexture(
+    numerosDoMultiplo,
+    ESPALHAMENTO_MULTIPLO.colunas,
+    ESPALHAMENTO_MULTIPLO.linhas,
+    THREE.RGBAFormat,
+    THREE.HalfFloatType
+  );
+  t.minFilter = THREE.LinearFilter;
+  t.magFilter = THREE.LinearFilter;
+  t.wrapS = THREE.ClampToEdgeWrapping;
+  t.wrapT = THREE.ClampToEdgeWrapping;
+  t.needsUpdate = true;
+  return t;
+}
 
 
 // ------------------------------------------------------------
@@ -365,6 +393,10 @@ export class TerraResolvida {
    *  `garantirCascas`; trocar de variante só troca o material das malhas */
   private matSuperficieFunda: THREE.ShaderMaterial | null = null;
   private matNuvensFunda: THREE.ShaderMaterial | null = null;
+  private matAtmosferaFunda: THREE.ShaderMaterial | null = null;
+  /** o espalhamento múltiplo que os três materiais fundos leem — o MESMO
+   *  objeto de uniform; a textura nasce na primeira `profundidade` */
+  private readonly uEspalhamentoMultiplo: THREE.IUniform<THREE.DataTexture | null> = { value: null };
   private variante: VarianteDaTerra = 'classica';
   /** o pedido das nuvens DESTA Terra — o `assunto` segue a variante */
   private readonly pedidoDasNuvens: CanalPedido;
@@ -394,9 +426,10 @@ export class TerraResolvida {
 
   /**
    * A VARIANTE DA TERRA, TROCADA AO VIVO (rodada das nuvens, 07/10) —
-   * troca só o material da superfície e o das nuvens; os dois pares
-   * nascem juntos em `garantirCascas` e compartilham os objetos de
-   * uniform, então nenhum setter do tick precisa saber qual está no ar.
+   * troca só o material da superfície, o das nuvens e (08/10) o do ar
+   * do limbo; os dois trios nascem juntos em `garantirCascas` e
+   * compartilham os objetos de uniform, então nenhum setter do tick
+   * precisa saber qual está no ar.
    *
    * O 8K DAS NUVENS SEGUE NA PRÓXIMA CARGA: a variante marca o canal
    * `clouds` como assunto (`CanalPedido.assunto`), e quem o lê é a carga
@@ -421,10 +454,16 @@ export class TerraResolvida {
 
   /** os materiais da variante nas malhas — no-op antes de as cascas existirem */
   private vestirVariante() {
-    if (!this.superficie || !this.nuvens) return;
+    if (!this.superficie || !this.nuvens || !this.atmosfera) return;
     const funda = this.variante === 'profundidade';
     this.superficie.material = funda ? this.matSuperficieFunda! : this.matSuperficie!;
     this.nuvens.material = funda ? this.matNuvensFunda! : this.matNuvens!;
+    this.atmosfera.material = funda ? this.matAtmosferaFunda! : this.matAtmosfera!;
+    // o limbo do ar medido desenha ANTES das nuvens (8): a nuvem na borda
+    // tapa o ar que fica atrás dela, e o ar na frente ela já leva no véu
+    // dela — no O'Neil (9) a ordem de sempre
+    this.atmosfera.renderOrder = funda ? 7.5 : 9;
+    if (funda) this.uEspalhamentoMultiplo.value ??= texturaDoEspalhamentoMultiplo();
   }
 
   constructor(opcoes: OpcoesDaTerra) {
@@ -778,6 +817,7 @@ export class TerraResolvida {
         uMapaHorizonte: { value: null },
         uMapaHorizonte2: { value: null },
         uHorizonte: { value: 0 },
+        uEspalhamentoMultiplo: this.uEspalhamentoMultiplo,
       },
       depthWrite: true,
       depthTest: true,
@@ -789,6 +829,7 @@ export class TerraResolvida {
       uniforms: {
         ...this.matNuvens.uniforms,
         uCamNuvens: { value: new THREE.Vector3(0, 0, 4) },
+        uEspalhamentoMultiplo: this.uEspalhamentoMultiplo,
       },
       depthWrite: false,
       depthTest: true,
@@ -822,6 +863,20 @@ export class TerraResolvida {
       transparent: true,
       side: THREE.BackSide,
     });
+    // o limbo do ar MEDIDO (08/10): os MESMOS objetos de uniform do
+    // O'Neil (o cabeçalho é o mesmo) mais a tabela do espalhamento
+    // múltiplo, e a MESMA composição — as duas variantes do ar diferem no
+    // shader e na ordem (`vestirVariante`)
+    this.matAtmosferaFunda = new THREE.ShaderMaterial({
+      vertexShader: ATMOSFERA_VERT,
+      fragmentShader: ATMOSFERA_PROFUNDIDADE_FRAG,
+      uniforms: { ...this.matAtmosfera.uniforms, uEspalhamentoMultiplo: this.uEspalhamentoMultiplo },
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: true,
+      transparent: true,
+      side: THREE.BackSide,
+    });
     this.atmosfera = new THREE.Mesh(this.geometria, this.matAtmosfera);
     this.atmosfera.matrixAutoUpdate = false;
     this.atmosfera.renderOrder = 9;
@@ -839,6 +894,8 @@ export class TerraResolvida {
     this.matAtmosfera?.dispose();
     this.matSuperficieFunda?.dispose();
     this.matNuvensFunda?.dispose();
+    this.matAtmosferaFunda?.dispose();
+    this.uEspalhamentoMultiplo.value?.dispose();
     this.texturas.dispose();
   }
 }

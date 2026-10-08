@@ -38,9 +38,11 @@ import {
   ALVO_DE_APOIO_CINEMA,
   ATMOSFERA,
   ATMOSFERA_FRAG,
+  ATMOSFERA_PROFUNDIDADE_FRAG,
   CANAIS_DA_TERRA,
   CUSHION_DO_GATE,
   DERIVA_DAS_NUVENS,
+  ESPALHAMENTO_MULTIPLO,
   LIMIAR_DO_GATE_PX,
   NUVENS_FRAG,
   NUVENS_PROFUNDIDADE_FRAG,
@@ -53,6 +55,7 @@ import {
   TERRA_PROFUNDIDADE_FRAG,
   TerraResolvida,
   alvoDePixels,
+  caminhoDoSolNoAr,
   cessaoAlvo,
   direcaoLocalDeLonLat,
   escolherVariante,
@@ -62,6 +65,7 @@ import {
   orientacaoDaTerraNaCena,
   orientacaoDoCorpoNaCena,
   posicaoDaTerraUA,
+  tabelaDoEspalhamentoMultiplo,
   uniformsDaAtmosfera,
   uniformsDeEclipseNeutros,
 } from './terra';
@@ -72,6 +76,13 @@ import {
   resolveSombraNaCena,
 } from '../../../lib/atlas/eclipse';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
+import {
+  ALTURA_DE_ESCALA_KM,
+  COMPRIMENTOS_DE_ONDA_UM,
+  RAIO_DO_AR_KM,
+  massaDeArDeChapman,
+  tauRayleighAoNivelDoMar,
+} from '../../../lib/atlas/arMedido';
 import { cessaoPorDisco } from '../lodStellar';
 
 const DATA_DIR = fileURLToPath(new URL('../../../../public/data/atlas/', import.meta.url));
@@ -1406,9 +1417,11 @@ describe('9. a variante profundidade (rodada das nuvens, 07/10)', () => {
     const { terra, sup, nuv } = await terraNaTela('profundidade');
     const mS = sup.material as THREE.ShaderMaterial;
     const mN = nuv.material as THREE.ShaderMaterial;
+    const mA = (terra.group.children[2] as THREE.Mesh).material as THREE.ShaderMaterial;
     expect(mS.fragmentShader).toBe(TERRA_PROFUNDIDADE_FRAG);
     expect(mN.fragmentShader).toBe(NUVENS_PROFUNDIDADE_FRAG);
-    for (const m of [mS, mN]) {
+    expect(mA.fragmentShader).toBe(ATMOSFERA_PROFUNDIDADE_FRAG);
+    for (const m of [mS, mN, mA]) {
       const declarados = [...m.fragmentShader.matchAll(/^uniform\s+\w+\s+(\w+)\s*;/gm)].map(
         (x) => x[1]!
       );
@@ -1427,6 +1440,8 @@ describe('9. a variante profundidade (rodada das nuvens, 07/10)', () => {
 
   it('trocar de variante ao vivo troca SÓ os materiais — sem fetch, a composição de sempre', async () => {
     const { terra, chamadas, sup, nuv, q } = await terraNaTela('classica');
+    const atm = terra.group.children[2] as THREE.Mesh;
+    const arClassico = atm.material as THREE.ShaderMaterial;
     const classicos = [sup.material, nuv.material];
     expect((classicos[0] as THREE.ShaderMaterial).fragmentShader).toBe(TERRA_FRAG);
     expect((classicos[1] as THREE.ShaderMaterial).fragmentShader).toBe(NUVENS_FRAG);
@@ -1444,6 +1459,22 @@ describe('9. a variante profundidade (rodada das nuvens, 07/10)', () => {
       true,
     ]);
     expect(nuv.renderOrder).toBe(8);
+    // o ar do limbo troca de shader e de ordem (antes das nuvens: a nuvem
+    // na borda tapa o ar de trás); a composição e os objetos de uniform
+    // são os do O'Neil
+    expect(atm.renderOrder).toBe(7.5);
+    const mA = atm.material as THREE.ShaderMaterial;
+    expect(mA.fragmentShader).toBe(ATMOSFERA_PROFUNDIDADE_FRAG);
+    expect([mA.blending, mA.side, mA.depthWrite, mA.depthTest, mA.transparent]).toEqual([
+      arClassico.blending,
+      arClassico.side,
+      arClassico.depthWrite,
+      arClassico.depthTest,
+      arClassico.transparent,
+    ]);
+    for (const nome of Object.keys(arClassico.uniforms)) {
+      expect(mA.uniforms[nome]).toBe(arClassico.uniforms[nome]);
+    }
     // o tick escreve nos objetos compartilhados: o ganho chega ao par novo
     terra.atualizar(quadro(q.camPosPc, { politica: 'real' }));
     expect(mN.uniforms.uLuzGanho.value).toBe(
@@ -1454,6 +1485,7 @@ describe('9. a variante profundidade (rodada das nuvens, 07/10)', () => {
     expect(chamadas).toHaveLength(antes);
     terra.definirVariante('classica');
     expect([sup.material, nuv.material]).toEqual(classicos);
+    expect(atm.material).toBe(arClassico);
     expect(sup.material).toBe(classicos[0]);
     terra.dispose();
   });
@@ -1584,5 +1616,157 @@ describe('9. a variante profundidade (rodada das nuvens, 07/10)', () => {
     expect(solDaNuvem(10, -0.07)).toBe(0);
     expect(solDaNuvem(10, 0)).toBe(1);
     for (const s of [TERRA_FRAG, NUVENS_FRAG, ATMOSFERA_FRAG]) expect(s).not.toContain('transmitanciaDoSol');
+  });
+
+  it('o limbo do ar medido (08/10): com o Sol logo abaixo do horizonte, a camada baixa sai vermelha e a alta azul', () => {
+    const ar = ATMOSFERA_PROFUNDIDADE_FRAG;
+    // os MESMOS números da luz do pôr do sol: o trecho inteiro, tal qual
+    const trecho = /const vec3 TAU_RAYLEIGH[^]*?\nvec3 transmitanciaDoSol\(float alturaKm, float cosZenite\) \{[^}]*\}\n/.exec(
+      TERRA_PROFUNDIDADE_FRAG
+    )![0];
+    expect(ar).toContain(trecho);
+    // o caminho do Sol e o teste do globo rodam em JS com o texto do shader
+    const funcao = (assinatura: string) =>
+      new Function(
+        'alturaKm', 'cosZenite', 'exp', 'sqrt', 'max', 'min', 'massaDeArDeChapman',
+        'RAIO_DO_AR_KM', 'ALTURA_DE_ESCALA_KM',
+        new RegExp(`${assinatura} \\{([^]*?)\\n\\}`).exec(ar)![1]!.replace(/\bfloat\s+/g, 'let ')
+      ) as (...a: unknown[]) => number | boolean;
+    const comoNoShader = (f: (...a: unknown[]) => number | boolean) => (h: number, mu: number) =>
+      f(h, mu, Math.exp, Math.sqrt, Math.max, Math.min, massaDeArDeChapman, RAIO_DO_AR_KM, ALTURA_DE_ESCALA_KM);
+    const caminho = comoNoShader(funcao('float caminhoDoSol\\(float alturaKm, float cosZenite\\)')) as (h: number, mu: number) => number;
+    const alcanca = comoNoShader(funcao('bool solAlcancaOAr\\(float alturaKm, float cosZenite\\)')) as (h: number, mu: number) => boolean;
+    const R = RAIO_DO_AR_KM;
+    const H = ALTURA_DE_ESCALA_KM;
+    const cos = (graus: number) => Math.cos((graus * Math.PI) / 180);
+    // a referência: a massa de ar integrada passo a passo ao longo do raio do Sol
+    const integrada = (h: number, chi: number) => {
+      const [sx, sy] = [Math.sin((chi * Math.PI) / 180), cos(chi)];
+      const ds = 0.05;
+      let soma = 0;
+      for (let t = ds / 2; t < 4000; t += ds) soma += Math.exp(-(Math.hypot(t * sx, R + h + t * sy) - R) / H);
+      return (soma * ds) / H;
+    };
+    // a identidade de Chapman abaixo do horizonte (e o ramo de cima) contra a integral
+    for (const [h, chi] of [[5, 92], [30, 92], [20, 94], [10, 60]] as const) {
+      expect(alcanca(h, cos(chi))).toBe(true);
+      expect(Math.abs(caminho(h, cos(chi)) / integrada(h, chi) - 1)).toBeLessThan(0.01);
+    }
+    // o raio que bate no globo não leva luz
+    expect(alcanca(5, cos(95))).toBe(false);
+    // o espalhamento de cada amostra, β(λ, h)·T_sol, a χ = 92°: vermelho embaixo, azul em cima
+    const tau = COMPRIMENTOS_DE_ONDA_UM.map(tauRayleighAoNivelDoMar);
+    const cor = (h: number) => tau.map((t) => t * Math.exp(-h / H) * Math.exp(-t * caminho(h, cos(92))));
+    const [r5, , b5] = cor(5);
+    const [r30, , b30] = cor(30);
+    expect(r5! / b5!).toBeGreaterThan(5);
+    expect(r30! / b30!).toBeLessThan(0.6);
+    // a fonte de cada amostra: o simples (P/4·T_sol, só com o Sol na
+    // amostra) mais o múltiplo da tabela, os dois pelo eclipse, somados
+    // pela forma que conserva energia
+    expect(ar).toContain('vec3 sombraDoAr = fatorDeEclipseNoAr(ponto, normSeguro(ponto), cosZenite);');
+    expect(ar).toContain('float quartoDaFase = 0.1875 * (1.0 + cosFase * cosFase);');
+    expect(ar).toContain(
+      'if (solAlcancaOAr(hKm, cosZenite)) fonte += quartoDaFase * exp(-TAU_RAYLEIGH * caminhoDoSol(hKm, cosZenite));'
+    );
+    expect(ar).toContain('luz += fonte * sombraDoAr * vista * (1.0 - atravessa);');
+    // nas unidades do chão (π·L/E), sem ganho inventado
+    expect(ar).toContain('gl_FragColor = vec4(ar * uLuzGanho, 1.0);');
+    expect(ar).not.toMatch(/\b(E_SUN|KR|KM)\b/);
+    // o MESMO trecho é o véu do chão e das nuvens (a perspectiva aérea):
+    // o chão chega atravessado e o ar acende por cima, com o ganho do Sol
+    const marcha = /\nvec3 arNoCaminho\([^]*?\n\}\n/.exec(ar)![0];
+    for (const s of [TERRA_PROFUNDIDADE_FRAG, NUVENS_PROFUNDIDADE_FRAG]) expect(s).toContain(marcha);
+    expect(TERRA_PROFUNDIDADE_FRAG).toContain(
+      'gl_FragColor = vec4((direta + luzes) * vista + veu * uLuzGanho, 1.0);'
+    );
+    expect(NUVENS_PROFUNDIDADE_FRAG).toContain(
+      'gl_FragColor = vec4(dia * uLuzGanho * sombra * vista + veu * uLuzGanho, alfaVista);'
+    );
+  });
+
+  /**
+   * O ESPALHAMENTO MÚLTIPLO (Hillaire 2020), contra o limite do ar
+   * CONSERVATIVO. Sobre chão preto, toda luz que o ar tira do feixe do Sol
+   * numa coluna sai pelo topo ou cai no chão, depois de quantas voltas
+   * for: no ponto subsolar, F↑(topo) + F↓(chão, difusa) = μ₀·(1 − e^(−τ/μ₀)),
+   * com igualdade só se nada vazar de lado — na esfera os vizinhos têm o
+   * Sol mais baixo, então o que chega de lado é menos do que o que sai, e a
+   * soma fica ABAIXO da perda. Os dois fluxos saem do simples (com a fase
+   * de Rayleigh) mais o múltiplo da tabela, marchados com 400 passos e
+   * integrados no hemisfério; o juiz é a desigualdade, e o piso de 90%
+   * mostra que a série não ficou curta.
+   */
+  it('o espalhamento múltiplo: finito, ≥ 0, e o ar não devolve mais luz do que tira do Sol', () => {
+    const preto = tabelaDoEspalhamentoMultiplo(0);
+    const claro = tabelaDoEspalhamentoMultiplo();
+    for (let o = 0; o < preto.length; o++) {
+      expect(Number.isFinite(preto[o]!) && Number.isFinite(claro[o]!)).toBe(true);
+      expect(preto[o]!).toBeGreaterThanOrEqual(0);
+      // o chão claro só acrescenta; e a série converge (f < 1)
+      if (o % 4 !== 3) expect(claro[o]!).toBeGreaterThanOrEqual(preto[o]! - 1e-7);
+      else expect(preto[o]!).toBeLessThan(1);
+    }
+    const { colunas, linhas, topoKm } = ESPALHAMENTO_MULTIPLO;
+    // o filtro linear da GPU, com os centros dos texels nas pontas da grade
+    const psi = (tab: Float32Array, h: number, mu: number, c: number) => {
+      const x = (0.5 * Math.min(Math.max(mu, -1), 1) + 0.5) * (colunas - 1);
+      const y = Math.sqrt(Math.min(Math.max(h / topoKm, 0), 1)) * (linhas - 1);
+      const [i, j] = [Math.min(Math.floor(x), colunas - 2), Math.min(Math.floor(y), linhas - 2)];
+      const [fx, fy] = [x - i, y - j];
+      const v = (a: number, b: number) => tab[4 * ((j + b) * colunas + i + a) + c]!;
+      return (1 - fy) * ((1 - fx) * v(0, 0) + fx * v(1, 0)) + fy * ((1 - fx) * v(0, 1) + fx * v(1, 1));
+    };
+    const R = RAIO_DO_AR_KM;
+    const H = ALTURA_DE_ESCALA_KM;
+    const tau = COMPRIMENTOS_DE_ONDA_UM.map(tauRayleighAoNivelDoMar);
+    // a luz (π·L/E) que chega a `p0` vinda da direção −d: o ar ao longo de p0 + t·d
+    const luzDoRaio = (p0: number[], d: number[], c: number) => {
+      const b = p0[0]! * d[0]! + p0[1]! * d[1]! + p0[2]! * d[2]!;
+      const r2 = b * b - (p0[0]! ** 2 + p0[1]! ** 2 + p0[2]! ** 2);
+      const chao = r2 + R * R;
+      const tMax = b < 0 && chao >= 0 ? -b - Math.sqrt(chao) : -b + Math.sqrt(Math.max(r2 + (R + topoKm) ** 2, 0));
+      const passos = 400;
+      const dt = Math.max(tMax, 0) / passos;
+      const quartoDaFase = 0.1875 * (1 + d[1]! * d[1]!); // o Sol no zênite (eixo y)
+      let vista = 1;
+      let luz = 0;
+      for (let k = 0; k < passos; k++) {
+        const t = (k + 0.5) * dt;
+        const p = [p0[0]! + t * d[0]!, p0[1]! + t * d[1]!, p0[2]! + t * d[2]!];
+        const r = Math.hypot(p[0]!, p[1]!, p[2]!);
+        const h = Math.max(r - R, 0);
+        const cosZ = p[1]! / r;
+        const atravessa = Math.exp(-tau[c]! * Math.exp(-h / H) * (dt / H));
+        const alcanca = cosZ >= 0 || r * r * (1 - cosZ * cosZ) >= R * R;
+        const simples = alcanca ? quartoDaFase * Math.exp(-tau[c]! * caminhoDoSolNoAr(h, cosZ)) : 0;
+        luz += (simples + psi(preto, h, cosZ, c)) * vista * (1 - atravessa);
+        vista *= atravessa;
+      }
+      return luz;
+    };
+    // o fluxo (em unidades de E) que atravessa `p0` no sentido de `sentido`
+    // (+1 para cima, −1 para baixo): ∫ L·μ dω / π, olhando para o outro lado
+    const fluxo = (p0: number[], sentido: number, c: number) => {
+      const [nMu, nPhi] = [48, 12];
+      let soma = 0;
+      for (let a = 0; a < nMu; a++) {
+        const mu = (a + 0.5) / nMu;
+        const seno = Math.sqrt(1 - mu * mu);
+        for (let k = 0; k < nPhi; k++) {
+          const phi = (2 * Math.PI * (k + 0.5)) / nPhi;
+          const olhar = [seno * Math.cos(phi), -sentido * mu, seno * Math.sin(phi)];
+          soma += luzDoRaio(p0, olhar, c) * mu;
+        }
+      }
+      return (soma * (1 / nMu) * ((2 * Math.PI) / nPhi)) / Math.PI;
+    };
+    for (let c = 0; c < 3; c++) {
+      const sobe = fluxo([0, R + topoKm, 0], 1, c);
+      const desce = fluxo([0, R, 0], -1, c);
+      const perda = 1 - Math.exp(-tau[c]! * caminhoDoSolNoAr(0, 1));
+      expect((sobe + desce) / perda).toBeLessThanOrEqual(1);
+      expect((sobe + desce) / perda).toBeGreaterThan(0.9);
+    }
   });
 });
