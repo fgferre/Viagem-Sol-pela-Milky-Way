@@ -30,8 +30,8 @@ cobre o disco grande; a lente segue a transmitância do ar e foi calibrada contr
 recalibra uma constante por lente); (2) a régua única, com UMA sessão
 cuidando de luz e tela, estrelas e Sol incluídos (`PLAN-ESTRELAS-E-INSTRUMENTO.md`, agora no `main`, começa
 pelo estudo de como o Sol brilha em cada distância; unificação dos desenhistas aberta); a R1 testa o tom único (o Neutral da Khronos deu B/G 0,766 contra o alvo 0,773 em Pã);
-(3) o item 232 (Terra tímida, bastão paralelo logo abaixo) cruza com a R1 — medir o que o ACES apaga antes de
-criar o modo realçado; (4) a fila de assets já sob a régua: as outras seis luas pequenas pela receita de Pã
+(3) o item 232 (Terra tímida) está FEITO no ramo, à espera dele (bastão paralelo logo abaixo): o ACES não apaga
+a Terra, e o modo realçado foi calibrado sobre ele; (4) a fila de assets já sob a régua: as outras seis luas pequenas pela receita de Pã
 (lições em `PLAN-LUAS-PEQUENAS.md`), Febe, Calipso/Telesto/Helena, Fobos/Deimos, Vesta. Cautela dele noutra
 conversa: *"O modelo de linguagem tem a mania de transformar coisas que eu falo em regras."* — a régua só vira
 regra com ganho visível em prancha.
@@ -50,24 +50,27 @@ voltam pelo git: `git show 19881bf9:PLAN-REIA.md`, `git show d8325291:PLAN-EUROP
 `git show 50729ed6:PLAN-VIAGEM-SOLAR.md`, `git show daf54e07:PLAN-PONTO-DE-LUZ.md`. O worktree `../Viagem-luas-pequenas` foi apagado a pedido dele
 (08/10; o ramo `luas-pequenas` fica no histórico, inteiro no `main`).
 
-## O BASTÃO paralelo (08/10) — CÂMERA MAIS LIVRE NO ATLAS E AR MEDIDO DA TERRA ENVIADOS AO AR A PEDIDO DELE (*"ok"*, 08/10, no terminal dele; a conversa das luas pequenas confirmou que os commits dela no `main` podiam ir junto — só planos e o miolo `relevo-medido.mjs`, nada do site; o ramo `luas-pequenas` fica fora); A PRÓXIMA RODADA É O ITEM 232, OS EFEITOS TÍMIDOS
+## O BASTÃO paralelo (08/10, noite) — ITEM 232 FEITO NO RAMO `claude/efeitos-timidos-item-232-622e70` (DOIS COMMITS SOBRE O `main` `e7e409c9`); NÃO JUNTADO, NÃO PUBLICADO
 
-**Feito em 07–08/10, nesta ordem, a pedido dele:**
-1. A Terra com nuvens com sombra e relevo, relevo medido ETOPO e sombra das montanhas. Isso foi PUBLICADO em 07/10 (`f943a20b`) e levou junto os consertos do filme da ordem de 06/10, com o sim dele.
-2. Depois ele não conseguiu ver o relevo no Atlas (*"o angulo da camera e a falta de pan e zoom nao permitem"*). Isso trouxe a câmera que desce a 1,1 raio e inclina para o horizonte.
-3. Ele pediu a atmosfera avermelhada contra o Sol. Isso trouxe a luz do pôr do sol pelo ar medido e o Sol avermelhando ao atravessar o ar.
-4. Ele comparou com a vista da estação espacial (*"a atmosfera parece muito mais grossa"*). Isso trouxe o limbo e o véu sobre o planeta pelo ar medido, conferidos contra a imagem dele.
+**Feito, na ordem dele** (*"Os dois, nessa ordem"*):
+1. `e9d9a85d` — o que apagava saiu, só com física (*"a gente não quer roubar, a gente quer os efeitos físicos"*). A medição tirou uma suspeita por vez em cinco vistas: exposição, curva de cor, knee, bloom e lei de luz NÃO apagam (o ACES até ajuda; o ar de verdade tira ~40 % do contraste do relevo e fica). O que apagava:
+   - a receita do relevo alisava as encostas pela metade — agora a normal guarda a inclinação média de cada célula na grade fina do ETOPO, em 8k no cinema;
+   - o horizonte vinha da grade grossa — agora é marchado na fina, com sombra PARCIAL por uma lei medida nos dados, só na Terra;
+   - a sombra das nuvens lia o mapa do jeito mais brando — agora é um campo de nuvens em pedaços (Rc 0,633);
+   - não havia luz do céu na sombra — agora há.
 
-**A PRÓXIMA CONVERSA COMEÇA POR `PLAN-ATLAS-PERTO-E-POR-DO-SOL.md`**, seções "Resultado (08/10)" e "A PRÓXIMA RODADA". Ali estão os defeitos, em ordem:
-- o brilho do Sol no mar grande e borrado;
-- o Sol branco até sumir na tela de 720;
-- as nuvens borradas na altura da estação;
-- o "visual de cinema", que é decisão dele;
-- os aerossóis;
-- o custo de ~9 ms;
-- os pequenos.
+   A cadeia rodou no terminal dele; as oito vistas do app saem byte a byte iguais às aprovadas (`capturas/efeitos-timidos/juntos/`). *"Aprovo, ainda tímido"*.
+2. `8c8fb17b` — "Relevo da Terra: Real | Realçado 3×" em Ajustes, declarado na ficha e no selo junto da lanterna (*"3 vezes"*, *"Só a Terra"*). `npm run done` verde (138 arquivos, 3.621 testes).
 
-Depois de testar no painel e no iPhone, ele achou os efeitos tímidos (**item 232**). Decidiu: *"Os dois, nessa ordem"* — primeiro tirar as perdas, depois o modo realçado. Mandou publicar o que existe (*"Publicar já"*), mas, ao saber que o envio levaria junto o trabalho da outra conversa (os planos das luas pequenas e o miolo `relevo-medido.mjs`), preferiu *"Esperar"*; a conversa das luas pequenas confirmou e ele disse *"ok"*. A próxima rodada começa pelo item 232 e depois segue a lista do plano.
+**Falta, dele:** testar no iPhone (a Terra em cinema passou a ~0,72 GB de textura com mip, +128 MiB) e dizer se junta e publica. Antes de juntar no `main`, avisar a conversa "Coordenação de trabalhos em fila": a R1 da régua (troca do tom) espera o 232 e terá de recalibrar o realçado.
+
+**Achados e não feitos:**
+- O Atlas abre a Terra com o Sol alto (60°): ali relevo e sombra de nuvem não aparecem em modo nenhum. Abrir com a linha do dia e da noite à vista é decisão dele, e valeria para todos os corpos.
+- O realçado só se lê de perto, não na distância em que o Atlas abre.
+- A sombra das nuvens segue presa ao mapa de ~5 km por ponto, e o relevo aos ~1,85 km do ETOPO; ir além só com mosaico em ladrilhos (item 142).
+- A luz do céu usa só a inclinação, não os vales.
+- A lista "A PRÓXIMA RODADA" de `PLAN-ATLAS-PERTO-E-POR-DO-SOL.md` segue aberta.
+- As cópias `../Viagem-232-relevo` e `../Viagem-232-nuvens` são protótipos desta rodada; apagar quando ele quiser.
 
 ## O BASTÃO anterior (07/10, noite) — A ORDEM DE 06/10 FEITA NO `main`, À ESPERA DA PUBLICAÇÃO (commits `3b322fb6`, `b894ff2c`, `822c30f8`, `d319840c`; nada enviado; a publicação é dele)
 
@@ -782,20 +785,6 @@ Europa (cor real inferida da Galileo sobre o mosaico USGS de 500 m, 4096 px,
 tom meio-termo dele) e Jápeto (relevo gerado: crista no lugar com 20 km,
 55 crateras com nome, as demais pela foto). Ficam na fila: Urano, Netuno,
 Vesta, Deimos, Tritão (pausado), Ariel, Titã, Vênus.**
-
-**232. Os efeitos da Terra ainda estão tímidos: o ar, o relevo e a sombra das nuvens.**
-Palavras dele, 08/10, testando o ramo `atlas-perto` com a câmera nova: *"Continuo achando os efeitos tímidos atmosfera tímida o relevo também me parece tímido não consigo perceber bem a sombra das nuvens nem o relevo da terra"*. **Decisão dele: *"Os dois, nessa ordem"*:**
-1. primeiro achar e tirar o que está apagando os efeitos, sem exagerar, com antes e depois;
-2. se ainda ficar tímido, um modo "realçado" nos Ajustes, com o exagero declarado.
-
-Suspeitas já levantadas, todas a medir:
-- o relevo da Terra carregado a 4096 em cinema, embora o de 8192 exista;
-- a média por célula de ~10 km apaga as encostas íngremes que dão o contraste com o Sol baixo;
-- a faixa macia do terminador da política `assistida` achata o contraste justamente onde o relevo e as sombras aparecem;
-- a exposição e a curva de tom comprimem o claro e o escuro;
-- a sombra das nuvens é forte só com o Sol baixo.
-
-Plano e estado em `PLAN-ATLAS-PERTO-E-POR-DO-SOL.md`.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
