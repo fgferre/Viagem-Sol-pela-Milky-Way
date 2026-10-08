@@ -1,5 +1,5 @@
 // ============================================================
-// PILOTO DE PÃ (E3 de PLAN-LUAS-PEQUENAS.md) — só com `?piloto=pa-medida`.
+// PILOTO DE PÃ (E3 de PLAN-LUAS-PEQUENAS.md) — só com `?piloto=pa-medida`, `pa-pintada`, `pa-mundos` ou `pa-foto`.
 //
 // Pã sai do ESCULPIDO (`esculpido.ts`) e entra pelo caminho do relevo
 // medido do Hipérion (`rochoso.ts`, `RELEVO_DA_LUA`): esfera deslocada pelo
@@ -19,10 +19,25 @@
 import { IAU_ORIENTATIONS, type IauOrientation } from '../../../lib/atlas/iauOrientation';
 import type { BuscadorDeManifest, EntradaDeTextura, ManifestDeTexturas } from './texturas';
 
+/**
+ * As variantes do piloto (E3, a escolha dele por prancha), todas com a forma medida:
+ * `pa-medida` — a cor de HOJE assada; `pa-pintada` — a pintura do ChatGPT dele registrada à crista medida e
+ * tratada como o Hipérion "mundos" (`capturas/luas-pequenas/pa/pintura/gera-pintura.mjs`); `pa-mundos` — a
+ * pintada + as crateras finas dos poços escuros da pintura na altura, na normal e no horizonte; `pa-foto` — a
+ * pintada + o detalhe fino das fotos da Cassini (sulcos, terraços, a crista da aba) como relevo fino e um toque de
+ * albedo, onde as fotos veem (`capturas/luas-pequenas/pa/foto/gera-foto.mjs`).
+ */
+export type VarianteDaPa = 'pa-medida' | 'pa-pintada' | 'pa-mundos' | 'pa-foto';
+const VARIANTES_DA_PA: readonly VarianteDaPa[] = ['pa-medida', 'pa-pintada', 'pa-mundos', 'pa-foto'];
+
 /** O interruptor — lido uma vez; `location` não existe no ambiente `node` do vitest. */
-export const PILOTO_PA_MEDIDA =
-  typeof location !== 'undefined' &&
-  new URLSearchParams(location.search).get('piloto') === 'pa-medida';
+export const PILOTO_DA_PA: VarianteDaPa | null = (() => {
+  if (typeof location === 'undefined') return null;
+  const v = new URLSearchParams(location.search).get('piloto');
+  return VARIANTES_DA_PA.find((x) => x === v) ?? null;
+})();
+/** Qualquer variante do piloto: a forma medida de Pã (o resto de `rochoso.ts` só quer saber disto). */
+export const PILOTO_PA_MEDIDA = PILOTO_DA_PA !== null;
 
 /**
  * A faixa do byte de `height.png` em unidades do raio do app (14 km,
@@ -64,18 +79,28 @@ export function orientacaoDoRochoso(id: string, piloto = PILOTO_PA_MEDIDA): IauO
   return piloto && id === 'pan' ? ORIENTACAO_DA_PA_MEDIDA : IAU_ORIENTATIONS[id];
 }
 
-/** As variantes do piloto: 2048 e 1024 onde o tier pede (`alvoDePixels`), a altura só em 1024 como a do Hipérion. */
-export const ENTRADAS_DA_PA_MEDIDA: readonly EntradaDeTextura[] = [
-  { corpo: 'pan', canal: 'map', arquivo: 'piloto/pa/map.jpg', larguraPx: 2048 },
-  { corpo: 'pan', canal: 'map', arquivo: 'piloto/pa/map_1024.jpg', larguraPx: 1024 },
-  { corpo: 'pan', canal: 'height', arquivo: 'piloto/pa/height.png', larguraPx: 1024 },
-  { corpo: 'pan', canal: 'normal', arquivo: 'piloto/pa/normal.png', larguraPx: 2048 },
-  { corpo: 'pan', canal: 'normal', arquivo: 'piloto/pa/normal_1024.png', larguraPx: 1024 },
-  { corpo: 'pan', canal: 'horizon', arquivo: 'piloto/pa/horizon.png', larguraPx: 2048 },
-  { corpo: 'pan', canal: 'horizon', arquivo: 'piloto/pa/horizon_1024.png', larguraPx: 1024 },
-  { corpo: 'pan', canal: 'horizon2', arquivo: 'piloto/pa/horizon2.png', larguraPx: 2048 },
-  { corpo: 'pan', canal: 'horizon2', arquivo: 'piloto/pa/horizon2_1024.png', larguraPx: 1024 },
-];
+/**
+ * As entradas de uma variante: 2048 e 1024 onde o tier pede (`alvoDePixels`), a altura só em 1024 como a do
+ * Hipérion. A cor vem da pasta da variante; o relevo é o de `piloto/pa/`, menos em `pa-mundos` e `pa-foto`, que
+ * mudam a altura, a normal e o horizonte mas não a faixa do byte (escala/viés os mesmos: `gera-pintura.mjs`,
+ * `gera-foto.mjs`).
+ */
+export function entradasDaPa(variante: VarianteDaPa): readonly EntradaDeTextura[] {
+  const cor = variante === 'pa-medida' ? 'piloto/pa' : `piloto/${variante}`;
+  const relevo = variante === 'pa-mundos' || variante === 'pa-foto' ? `piloto/${variante}` : 'piloto/pa';
+  return [
+    { corpo: 'pan', canal: 'map', arquivo: `${cor}/map.jpg`, larguraPx: 2048 },
+    { corpo: 'pan', canal: 'map', arquivo: `${cor}/map_1024.jpg`, larguraPx: 1024 },
+    { corpo: 'pan', canal: 'height', arquivo: `${relevo}/height.png`, larguraPx: 1024 },
+    { corpo: 'pan', canal: 'normal', arquivo: `${relevo}/normal.png`, larguraPx: 2048 },
+    { corpo: 'pan', canal: 'normal', arquivo: `${relevo}/normal_1024.png`, larguraPx: 1024 },
+    { corpo: 'pan', canal: 'horizon', arquivo: `${relevo}/horizon.png`, larguraPx: 2048 },
+    { corpo: 'pan', canal: 'horizon', arquivo: `${relevo}/horizon_1024.png`, larguraPx: 1024 },
+    { corpo: 'pan', canal: 'horizon2', arquivo: `${relevo}/horizon2.png`, larguraPx: 2048 },
+    { corpo: 'pan', canal: 'horizon2', arquivo: `${relevo}/horizon2_1024.png`, larguraPx: 1024 },
+  ];
+}
+export const ENTRADAS_DA_PA_MEDIDA = entradasDaPa('pa-medida');
 
 /** O buscador do manifesto com as entradas do piloto juntadas às de sempre. */
 export function comAPaMedida(buscar?: BuscadorDeManifest): BuscadorDeManifest {
@@ -88,6 +113,6 @@ export function comAPaMedida(buscar?: BuscadorDeManifest): BuscadorDeManifest {
       if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
       manifest = (await r.json()) as ManifestDeTexturas;
     }
-    return { ...manifest, entradas: [...manifest.entradas, ...ENTRADAS_DA_PA_MEDIDA] };
+    return { ...manifest, entradas: [...manifest.entradas, ...entradasDaPa(PILOTO_DA_PA ?? 'pa-medida')] };
   };
 }
