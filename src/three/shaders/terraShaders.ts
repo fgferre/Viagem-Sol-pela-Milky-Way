@@ -4,6 +4,12 @@
 // ciclo avaliado no load). Moravam em terra.ts (GLSL inline); o
 // padrão da casa é *Shaders.ts em shaders/.
 // ============================================================
+import {
+  ALTURA_DE_ESCALA_KM,
+  COMPRIMENTOS_DE_ONDA_UM,
+  RAIO_DO_AR_KM,
+  tauRayleighAoNivelDoMar,
+} from '../../lib/atlas/arMedido';
 import { GLSL_SOMBRA_ECLIPSE } from '../../lib/atlas/eclipse';
 import { BODY_AXES } from '../../lib/atlas/iauOrientation';
 import { GLSL_LUZ_DA_VISITA } from '../../lib/atlas/luzDaVisita';
@@ -33,7 +39,7 @@ export const ATMOSFERA = {
   g: 0.76,
   amostras: 23,
   scaleDepth: 0.25,
-  comprimentosDeOnda: [0.65, 0.57, 0.475],
+  comprimentosDeOnda: COMPRIMENTOS_DE_ONDA_UM,
 } as const;
 
 // ------------------------------------------------------------
@@ -269,13 +275,11 @@ float alfaDaNuvem(vec2 uv, vec2 ddx, vec2 ddy) {
  * ~40 km, que pintava este Sol de âmbar até o meio-dia): este é o ar
  * medido, e só para a luz que chega.
  */
-const tauRayleighAoNivelDoMar = (lambdaUm: number) =>
-  0.008569 * lambdaUm ** -4 * (1 + 0.0113 * lambdaUm ** -2 + 0.00013 * lambdaUm ** -4);
 const GLSL_TRANSMITANCIA_DO_SOL = /* glsl */ `
-const vec3 TAU_RAYLEIGH = vec3(${ATMOSFERA.comprimentosDeOnda.map((l) => tauRayleighAoNivelDoMar(l).toFixed(5)).join(', ')});
+const vec3 TAU_RAYLEIGH = vec3(${COMPRIMENTOS_DE_ONDA_UM.map((l) => tauRayleighAoNivelDoMar(l).toFixed(5)).join(', ')});
 const vec3 TAU_AEROSSOL = vec3(0.0); // ar limpo — sem poeira nem fumaça
-const float ALTURA_DE_ESCALA_KM = 8.0;
-const float RAIO_DO_AR_KM = ${BODY_AXES.earth[0].toFixed(4)};
+const float ALTURA_DE_ESCALA_KM = ${ALTURA_DE_ESCALA_KM.toFixed(1)};
+const float RAIO_DO_AR_KM = ${RAIO_DO_AR_KM.toFixed(4)};
 
 // e^(y²)·erfc(y) para y >= 0, sem exponencial: A&S 7.1.26 até 3, a
 // série assintótica 7.1.23 dali em diante
