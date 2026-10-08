@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 233.**
 
-## O BASTÃO — onde a rodada parou (08/10) — CÂMERA MAIS LIVRE NO ATLAS E AR MEDIDO DA TERRA PUBLICADOS A PEDIDO DELE (*"Publicar já"*, ramo `atlas-perto` em linha reta sobre o main); A PRÓXIMA RODADA É O ITEM 232, OS EFEITOS TÍMIDOS
+## O BASTÃO — onde a rodada parou (08/10) — CÂMERA MAIS LIVRE NO ATLAS E AR MEDIDO DA TERRA NO `main` LOCAL, ENVIO SEGURADO POR ELE (em linha reta, `npm run done` verde; o envio levaria junto os commits das luas pequenas de outra conversa, e ele quer conferir com ela antes); A PRÓXIMA RODADA É O ITEM 232, OS EFEITOS TÍMIDOS
 
 **Feito em 07–08/10, nesta ordem, a pedido dele:**
 1. A Terra com nuvens com sombra e relevo, relevo medido ETOPO e sombra das montanhas. Isso foi PUBLICADO em 07/10 (`f943a20b`) e levou junto os consertos do filme da ordem de 06/10, com o sim dele.
@@ -21,7 +21,7 @@ Número é identidade, não posição: item novo entra no fim da sua seção. **
 - o custo de ~9 ms;
 - os pequenos.
 
-Depois de testar no painel e no iPhone, ele achou os efeitos tímidos (**item 232**). Decidiu: *"Os dois, nessa ordem"* — primeiro tirar as perdas, depois o modo realçado. Mandou publicar o que existe (*"Publicar já"*). A próxima rodada começa pelo item 232 e depois segue a lista do plano.
+Depois de testar no painel e no iPhone, ele achou os efeitos tímidos (**item 232**). Decidiu: *"Os dois, nessa ordem"* — primeiro tirar as perdas, depois o modo realçado. Mandou publicar o que existe (*"Publicar já"*), mas, ao saber que o envio levaria junto o trabalho da outra conversa (os planos das luas pequenas e o miolo `relevo-medido.mjs`), preferiu *"Esperar"*. O envio do `main` fica com ele. A próxima rodada começa pelo item 232 e depois segue a lista do plano.
 
 ## O BASTÃO anterior (07/10, noite) — A ORDEM DE 06/10 FEITA NO `main`, À ESPERA DA PUBLICAÇÃO (commits `3b322fb6`, `b894ff2c`, `822c30f8`, `d319840c`; nada enviado; a publicação é dele)
 
