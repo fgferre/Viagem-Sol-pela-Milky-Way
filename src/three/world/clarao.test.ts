@@ -587,8 +587,12 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     //     nome que o próximo invente. Campo novo aqui é decisão de
     //     desenho: passa por quem decide, não por um diff distraído.
     const CLARAO = readFileSync(new URL('./clarao.ts', import.meta.url), 'utf8');
+    //     (08/10: `transmitanciaDoSol` entrou por decisão — o ar da Terra
+    //     no raio até o Sol multiplica a EMISSÃO, não o tamanho; teto
+    //     nenhum passa por ela.)
     expect(camposDaInterface(CLARAO, 'QuadroDoClarao')).toEqual([
       'camPos', 'screenH', 'dtS', 'solVisivel', 'solturaDoSol', 'expoM0', 'sigmaPx', 'pr',
+      'transmitanciaDoSol',
     ]);
     //     ...e o módulo do Sol no quadro não recebe MODO nenhum para
     //     repassar: o `fase: Phase` que sobrava no parâmetro (sem leitor,

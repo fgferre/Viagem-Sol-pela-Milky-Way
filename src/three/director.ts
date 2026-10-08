@@ -1115,6 +1115,8 @@ export class Director {
     clarao: () => this.clarao,
     planetas: () => this.planetas,
     stars: () => this.stars,
+    terra: () => this.terra?.corpo.estadoVivo ?? null,
+    jdTdb: () => this.maquinaDoTempo.jdVivo,
     escondido: (flag) => this.hide.has(flag),
   });
   /** a escada do Atlas — corte 9 da Parte 1 (director/escada.ts): o
