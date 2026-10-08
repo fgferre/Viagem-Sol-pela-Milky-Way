@@ -338,6 +338,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'convite.girar': 'drag to orbit whatever is in frame',
   'convite.roda': 'the wheel moves closer to and away from the chosen object',
   'convite.pinca': 'a two-finger pinch moves closer and away',
+  'convite.inclinarMouse': 'shift + drag up (or the right button) tilts the view toward the horizon',
+  'convite.inclinarToque': 'two fingers moving up together tilt the view toward the horizon',
   'convite.escolherMouse': 'click a name to choose the object',
   'convite.escolherToque': 'tap a name to choose the object',
   'convite.irMouse': 'double-click to travel to it',

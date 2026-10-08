@@ -49,6 +49,8 @@
  * usa esses listeners.
  */
 export const BOTAO_PRINCIPAL = 0;
+/** o botão DIREITO do mouse — no Atlas, arrastar com ele inclina a vista */
+export const BOTAO_SECUNDARIO = 2;
 
 /**
  * CLIQUE CURTO — os dois limiares de sempre, verbatim dos dois trios
@@ -193,11 +195,13 @@ export class ArrastoDePonteiro {
    * Tenta abrir um gesto. Devolve `false` — e NÃO toca em estado nenhum
    * — quando o ponteiro não é o botão principal (defeito 3) ou quando
    * já existe um dono (defeito 1: o segundo dedo não rearma o relógio
-   * do clique curto nem sequestra o gesto do primeiro).
+   * do clique curto nem sequestra o gesto do primeiro). `botao` só existe
+   * para o arrasto que INCLINA o Atlas (`gestos.ts`), que aceita também o
+   * botão direito; todo outro gesto fica no principal.
    */
-  comecar(evento: ToqueDePonteiro, agora: number): boolean {
+  comecar(evento: ToqueDePonteiro, agora: number, botao = BOTAO_PRINCIPAL): boolean {
     if (this.dono !== null) return false;
-    if (evento.button !== BOTAO_PRINCIPAL) return false;
+    if (evento.button !== botao) return false;
     this.dono = evento.pointerId;
     this.tipoDoDono = evento.pointerType;
     this.andou = 0;

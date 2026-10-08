@@ -2,9 +2,28 @@
 
 Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
-Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 232.**
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 233.**
 
-## O BASTÃO — onde a rodada parou (07/10, noite) — A ORDEM DE 06/10 FEITA NO `main`, À ESPERA DA PUBLICAÇÃO (commits `3b322fb6`, `b894ff2c`, `822c30f8`, `d319840c`; nada enviado; a publicação é dele)
+## O BASTÃO — onde a rodada parou (08/10) — CÂMERA MAIS LIVRE NO ATLAS E AR MEDIDO DA TERRA ENVIADOS AO AR A PEDIDO DELE (*"ok"*, 08/10, no terminal dele; a conversa das luas pequenas confirmou que os commits dela no `main` podiam ir junto — só planos e o miolo `relevo-medido.mjs`, nada do site; o ramo `luas-pequenas` fica fora); A PRÓXIMA RODADA É O ITEM 232, OS EFEITOS TÍMIDOS
+
+**Feito em 07–08/10, nesta ordem, a pedido dele:**
+1. A Terra com nuvens com sombra e relevo, relevo medido ETOPO e sombra das montanhas. Isso foi PUBLICADO em 07/10 (`f943a20b`) e levou junto os consertos do filme da ordem de 06/10, com o sim dele.
+2. Depois ele não conseguiu ver o relevo no Atlas (*"o angulo da camera e a falta de pan e zoom nao permitem"*). Isso trouxe a câmera que desce a 1,1 raio e inclina para o horizonte.
+3. Ele pediu a atmosfera avermelhada contra o Sol. Isso trouxe a luz do pôr do sol pelo ar medido e o Sol avermelhando ao atravessar o ar.
+4. Ele comparou com a vista da estação espacial (*"a atmosfera parece muito mais grossa"*). Isso trouxe o limbo e o véu sobre o planeta pelo ar medido, conferidos contra a imagem dele.
+
+**A PRÓXIMA CONVERSA COMEÇA POR `PLAN-ATLAS-PERTO-E-POR-DO-SOL.md`**, seções "Resultado (08/10)" e "A PRÓXIMA RODADA". Ali estão os defeitos, em ordem:
+- o brilho do Sol no mar grande e borrado;
+- o Sol branco até sumir na tela de 720;
+- as nuvens borradas na altura da estação;
+- o "visual de cinema", que é decisão dele;
+- os aerossóis;
+- o custo de ~9 ms;
+- os pequenos.
+
+Depois de testar no painel e no iPhone, ele achou os efeitos tímidos (**item 232**). Decidiu: *"Os dois, nessa ordem"* — primeiro tirar as perdas, depois o modo realçado. Mandou publicar o que existe (*"Publicar já"*), mas, ao saber que o envio levaria junto o trabalho da outra conversa (os planos das luas pequenas e o miolo `relevo-medido.mjs`), preferiu *"Esperar"*; a conversa das luas pequenas confirmou e ele disse *"ok"*. A próxima rodada começa pelo item 232 e depois segue a lista do plano.
+
+## O BASTÃO anterior (07/10, noite) — A ORDEM DE 06/10 FEITA NO `main`, À ESPERA DA PUBLICAÇÃO (commits `3b322fb6`, `b894ff2c`, `822c30f8`, `d319840c`; nada enviado; a publicação é dele)
 
 **Feito em 07/10 (a palavra dele: *"vamos continuar de onde paramos?"*):** os
 cinco consertos da ordem de 06/10. (1) "More" cortado a 375 px em inglês: a
@@ -717,6 +736,20 @@ Europa (cor real inferida da Galileo sobre o mosaico USGS de 500 m, 4096 px,
 tom meio-termo dele) e Jápeto (relevo gerado: crista no lugar com 20 km,
 55 crateras com nome, as demais pela foto). Ficam na fila: Urano, Netuno,
 Vesta, Deimos, Tritão (pausado), Ariel, Titã, Vênus.**
+
+**232. Os efeitos da Terra ainda estão tímidos: o ar, o relevo e a sombra das nuvens.**
+Palavras dele, 08/10, testando o ramo `atlas-perto` com a câmera nova: *"Continuo achando os efeitos tímidos atmosfera tímida o relevo também me parece tímido não consigo perceber bem a sombra das nuvens nem o relevo da terra"*. **Decisão dele: *"Os dois, nessa ordem"*:**
+1. primeiro achar e tirar o que está apagando os efeitos, sem exagerar, com antes e depois;
+2. se ainda ficar tímido, um modo "realçado" nos Ajustes, com o exagero declarado.
+
+Suspeitas já levantadas, todas a medir:
+- o relevo da Terra carregado a 4096 em cinema, embora o de 8192 exista;
+- a média por célula de ~10 km apaga as encostas íngremes que dão o contraste com o Sol baixo;
+- a faixa macia do terminador da política `assistida` achata o contraste justamente onde o relevo e as sombras aparecem;
+- a exposição e a curva de tom comprimem o claro e o escuro;
+- a sombra das nuvens é forte só com o Sol baixo.
+
+Plano e estado em `PLAN-ATLAS-PERTO-E-POR-DO-SOL.md`.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 

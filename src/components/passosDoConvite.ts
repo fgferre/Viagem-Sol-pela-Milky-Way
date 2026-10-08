@@ -15,25 +15,26 @@ export const PASSOS_DO_CONVITE: readonly PassoDoConvite[] = [
 ];
 
 /**
- * OS QUATRO GESTOS DO ATLAS (item 73, 22/08), na ordem em que se
- * aprendem: girar em volta do que está em quadro, aproximar com a roda,
- * escolher outro objeto, ir até ele. SEM ALVO (item A1.3, relatório de
- * UI de 09/09): os quatro apontavam pedaços da dica do rodapé do Atlas
+ * OS GESTOS DO ATLAS (item 73, 22/08), na ordem em que se aprendem:
+ * girar em volta do que está em quadro, aproximar com a roda, inclinar a
+ * vista rumo ao horizonte (07/10), escolher outro objeto, ir até ele.
+ * SEM ALVO (item A1.3, relatório de UI de 09/09): os quatro apontavam pedaços da dica do rodapé do Atlas
  * (`.free-hint`, `data-spot` no `App`), que saiu do modo — o Spotlight
  * já tolera `alvo: null` (sem recorte, só o véu e o cartão), e é o que
- * os quatro passos usam agora. O QUARTO repete o texto do terceiro de
+ * os passos usam agora. O ÚLTIMO repete o texto do penúltimo de
  * propósito: escolher e ir são o mesmo botão do mouse, e a dica tinha
  * uma linha só para os dois.
  */
 export const PASSOS_DO_CONVITE_DO_ATLAS: readonly PassoDoConvite[] = [
   { alvo: null, texto: 'convite.girar' },
   { alvo: null, texto: 'convite.roda' },
+  { alvo: null, texto: 'convite.inclinarMouse' },
   { alvo: null, texto: 'convite.escolherMouse' },
   { alvo: null, texto: 'convite.irMouse' },
 ];
 
 /**
- * OS MESMOS QUATRO GESTOS, NA LÍNGUA DO DEDO (item 62, etapa 2). Até
+ * OS MESMOS GESTOS, NA LÍNGUA DO DEDO (item 62, etapa 2). Até
  * 2026-08-23 o convite do Atlas era PULADO em tela de toque, e a razão
  * escrita era verdadeira: "o gesto do meio é a RODA, que não existe em
  * tela de toque". Com a PINÇA existindo, ela deixou de ser — e um modo
@@ -48,6 +49,7 @@ export const PASSOS_DO_CONVITE_DO_ATLAS: readonly PassoDoConvite[] = [
 export const PASSOS_DO_CONVITE_DO_ATLAS_TOQUE: readonly PassoDoConvite[] = [
   { alvo: null, texto: 'convite.girar' },
   { alvo: null, texto: 'convite.pinca' },
+  { alvo: null, texto: 'convite.inclinarToque' },
   { alvo: null, texto: 'convite.escolherToque' },
   { alvo: null, texto: 'convite.irToque' },
 ];

@@ -368,6 +368,41 @@ export const NORMAL_MEDIDA: Readonly<Record<string, number>> = {
   charon: 1,
 };
 
+/** o maior raio de cada malha esculpida, em `a` — medido uma vez por id */
+const picoEsculpido = new Map<string, number>();
+
+/**
+ * O RAIO MÁXIMO DA MALHA DESENHADA, em unidades de `a` (`BODY_AXES[id][0]`)
+ * — o solo de verdade, que é a régua do piso da câmera do Atlas
+ * (`K_PISO_DO_CORPO`, `atlasRig.ts`). Três figuras:
+ *  · elipsoide (o caso comum): o maior semieixo sobre `a`;
+ *  · relevo de vértice (`RELEVO_DA_LUA`): o vértice anda até
+ *    `1 + viés + escala` (o byte mais alto do mapa, `ROCHOSO_VERT_RELEVO`)
+ *    — Hipérion chega a 1,368a, Jápeto a 1,030a;
+ *  · esculpida (`esculpido.ts`): a figura mora na geometria, e o pico é
+ *    o vértice mais longe do centro, medido na própria malha.
+ * Corpo fora de `BODY_AXES` devolve 1.
+ */
+export function fatorDoRaioMaximo(id: string): number {
+  const eixos = BODY_AXES[id];
+  const maiorEixo = eixos ? Math.max(...eixos) / eixos[0] : 1;
+  const relevo = RELEVO_DA_LUA[id];
+  if (relevo) return maiorEixo * (1 + relevo.vies + relevo.escala);
+  if (!IDS_ESCULPIDOS.includes(id)) return maiorEixo;
+  let pico = picoEsculpido.get(id);
+  if (pico === undefined) {
+    const geo = criaGeometriaEsculpida(id);
+    const pos = geo.getAttribute('position');
+    pico = 0;
+    for (let i = 0; i < pos.count; i++) {
+      pico = Math.max(pico, Math.hypot(pos.getX(i), pos.getY(i), pos.getZ(i)));
+    }
+    geo.dispose();
+    picoEsculpido.set(id, pico);
+  }
+  return maiorEixo * pico;
+}
+
 /** Raios do corpo em pc — BODY_AXES (a fonte única) pelos
  *  conversores únicos; nenhum literal novo de comprimento. */
 export function raiosDoRochosoPc(id: string): { a: number; c: number; b: number } {

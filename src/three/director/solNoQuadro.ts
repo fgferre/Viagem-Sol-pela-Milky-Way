@@ -29,6 +29,13 @@ import type { StarField } from '../world/stars';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { ORIGEM } from '../cinematic/enquadramento';
+import { transmitanciaDoSolVisto } from '../../lib/atlas/arMedido';
+import { AU_KM } from '../../lib/atlas/elementosOrbitais';
+import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
+import { IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
+import { baseCorpoEquatorial } from '../../lib/atlas/orientacao';
+
+const KM_POR_PC = AU_KM / AU_PARA_PC;
 
 /**
  * A CESSÃO DO SOL-PONTO na camada de planetas (`aCede`; a luz do ponto é
@@ -61,6 +68,15 @@ export class SolNoQuadro {
   /** a repartição DESTE quadro — `atualizarCorpoEClarao` escreve, a
    *  cessão do ponto lê no mesmo tick */
   private leiDoSol: ReturnType<typeof repartir> | null = null;
+  /**
+   * O SOL ATRAVÉS DO AR DA TERRA, deste quadro: a transmitância medida da
+   * luz do disco que passa por cima da Terra (`transmitanciaDoSolVisto`,
+   * lib/atlas/arMedido.ts), multiplicada na radiância do disco, na cor do Sol-ponto e na emissão do
+   * clarão — a luz do bloom sai delas. (1, 1, 1) EXATO longe da Terra.
+   */
+  readonly transmitanciaDoSolVisto: [number, number, number] = [1, 1, 1];
+  private readonly vKm: [number, number, number] = [0, 0, 0];
+  private readonly sSol: [number, number, number] = [0, 0, 0];
 
   private readonly fios: {
     /** o raio com que o Sol foi construído, em pc — a fonte única é o
@@ -71,6 +87,10 @@ export class SolNoQuadro {
     clarao: () => ClaraoDeAsas | undefined;
     planetas: () => Planetas | null;
     stars: () => StarField | undefined;
+    /** o estado vivo da Terra (centro e raio equatorial em pc), ou null */
+    terra: () => Readonly<{ centroPc: THREE.Vector3; raioPc: number }> | null;
+    /** o instante do quadro — o polo da Terra sai dele */
+    jdTdb: () => number;
     /** `?nosun`/`?noclarao`/`?noplan` — os toggles de debug do director */
     escondido: (flag: string) => boolean;
   };
@@ -152,6 +172,8 @@ export class SolNoQuadro {
     const sun = this.fios.sun();
     const stars = this.fios.stars();
     sun.group.visible = !this.fios.escondido('nosun') && this.solArmado;
+    this.medirOArDaTerra(q.camPos, q.dHome);
+    sun.escreverTransmitancia(this.transmitanciaDoSolVisto);
     // ── A REPARTIÇÃO DA LEI (M1 da LEI-DA-ESTRELA) ─────────────────────
     // UMA função pura decide, por quadro, como o Sol é desenhado — no
     // lugar das quatro rampas de antes (`cessaoAlvo` sobre disco/halo,
@@ -226,8 +248,51 @@ export class SolNoQuadro {
         expoM0: stars?.expoM0 ?? EXPO_M0,
         sigmaPx: stars?.sigmaPx ?? SIGMA_PX,
         pr: q.prAtual,
+        transmitanciaDoSol: this.transmitanciaDoSolVisto,
       });
     }
+  }
+
+  /**
+   * O AR DA TERRA NO RAIO ATÉ O SOL, uma vez por quadro, em float64 na CPU:
+   * câmera e centro da Terra em pc → km, o Sol na origem da cena. Só vale
+   * quando a Terra pode COBRIR o Sol (raio angular maior que o dele): uma
+   * Terra menor que o disco solar na frente dele é trânsito — tapa uma
+   * fatia, não apaga nem avermelha o Sol inteiro —, e aí fica (1, 1, 1),
+   * deixando a profundidade do globo esconder o que ele cobre. Toda vista
+   * em que o raio se afasta da Terra também sai (1, 1, 1) exato.
+   */
+  private medirOArDaTerra(camPos: THREE.Vector3, dHome: number) {
+    const t = this.transmitanciaDoSolVisto;
+    t[0] = 1;
+    t[1] = 1;
+    t[2] = 1;
+    const terra = this.fios.terra();
+    if (!terra || !(dHome > 0)) return;
+    const v = this.vKm;
+    v[0] = (camPos.x - terra.centroPc.x) * KM_POR_PC;
+    v[1] = (camPos.y - terra.centroPc.y) * KM_POR_PC;
+    v[2] = (camPos.z - terra.centroPc.z) * KM_POR_PC;
+    const s = this.sSol;
+    s[0] = -camPos.x / dHome;
+    s[1] = -camPos.y / dHome;
+    s[2] = -camPos.z / dHome;
+    // o raio se afasta da Terra: nada a medir (o caso de quase todo quadro)
+    if (!(v[0] * s[0] + v[1] * s[1] + v[2] * s[2] < 0)) return;
+    const dTerraKm = Math.hypot(v[0], v[1], v[2]);
+    const raioDaTerraKm = terra.raioPc * KM_POR_PC;
+    const raioAngularDoSol = this.fios.solRaioPc / dHome;
+    if (!(raioDaTerraKm / dTerraKm > raioAngularDoSol)) return;
+    // sem instante válido, o polo de J2000 — a diferença é de 0,2°
+    const jdTdb = this.fios.jdTdb();
+    const jd = Number.isFinite(jdTdb) ? jdTdb : 2451545;
+    const { polo } = baseCorpoEquatorial(IAU_ORIENTATIONS.earth, jd);
+    const novo = transmitanciaDoSolVisto(v, s, polo, raioAngularDoSol);
+    // um NaN aqui pintaria o Sol de NaN, e com o bloom a tela inteira de branco
+    if (!(novo[0] >= 0 && novo[1] >= 0 && novo[2] >= 0)) return;
+    t[0] = novo[0];
+    t[1] = novo[1];
+    t[2] = novo[2];
   }
 
   /**
@@ -242,6 +307,7 @@ export class SolNoQuadro {
    * a direção segura da lei é o ponto (§8.5).
    */
   cederPonto(planetas: Planetas) {
+    planetas.escreverTransmitanciaDoSol(this.transmitanciaDoSolVisto);
     if (!this.leiDoSol) return;
     planetas.escreverCessao(
       'sun',

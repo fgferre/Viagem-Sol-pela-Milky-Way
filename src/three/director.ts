@@ -1115,6 +1115,8 @@ export class Director {
     clarao: () => this.clarao,
     planetas: () => this.planetas,
     stars: () => this.stars,
+    terra: () => this.terra?.corpo.estadoVivo ?? null,
+    jdTdb: () => this.maquinaDoTempo.jdVivo,
     escondido: (flag) => this.hide.has(flag),
   });
   /** a escada do Atlas — corte 9 da Parte 1 (director/escada.ts): o
@@ -1369,6 +1371,12 @@ export class Director {
           this.jaGirouNoAtlas = true;
           this.events.onGirou();
         }
+      },
+      // a INCLINAÇÃO da vista rumo ao horizonte (07/10) — dois dedos
+      // juntos, Shift + arrastar, botão direito; só o vertical
+      inclinar: (dy) => {
+        this.atlas.addTiltDelta(dy);
+        this.perturbar();
       },
       olhar: (dx, dy) => this.rig.addLookDelta(dx, dy),
       // a roda no filme pausado é a LENTE do modo fotografia (item 100,

@@ -13,8 +13,17 @@
 // novo mede a razão entre as distâncias dos dedos e a converte em
 // pixels de roda (`pixelsDaPinca`), que somam no MESMO impulso: um dono
 // do empurrão, uma inércia, um `esquecer`.
+//
+// A INCLINAÇÃO entra em 2026-10-07 ("câmera mais livre"): no Atlas, os
+// dois dedos andando juntos na vertical, Shift + arrastar e arrastar com
+// o botão direito arfam a vista rumo ao horizonte (`AtlasRig.addTiltDelta`).
 // ============================================================
-import { ArrastoDePonteiro, limiarDeClique } from '../arrastoDePonteiro';
+import {
+  ArrastoDePonteiro,
+  BOTAO_PRINCIPAL,
+  BOTAO_SECUNDARIO,
+  limiarDeClique,
+} from '../arrastoDePonteiro';
 import { ZoomDaRoda, pixelsDaPinca } from '../zoomDaRoda';
 
 export interface FiosDosGestos {
@@ -24,6 +33,11 @@ export interface FiosDosGestos {
   noAtlas: () => boolean;
   /** atlas.addOrbitDelta + perturbar (a captura recomeça) */
   orbitar: (dx: number, dy: number) => void;
+  /**
+   * atlas.addTiltDelta + perturbar — o deslocamento VERTICAL (px) do
+   * gesto que inclina: dois dedos juntos, Shift + arrastar, botão direito
+   */
+  inclinar: (dy: number) => void;
   /** rig.addLookDelta do pausar-e-olhar */
   olhar: (dx: number, dy: number) => void;
   /**
@@ -109,6 +123,9 @@ const gavetaQueOToqueFecha = (): boolean => {
  */
 export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
   const arrasto = new ArrastoDePonteiro();
+  /** o arrasto que INCLINA (botão direito, ou Shift + o principal) — outra
+   *  máquina, para o clique curto dele nunca virar escolha */
+  const inclinando = new ArrastoDePonteiro();
   const roda = new ZoomDaRoda();
 
   /** este gesto começou fechando uma folha? então ele não escolhe nada */
@@ -141,6 +158,32 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
   };
 
   /**
+   * A DESCIDA DE CADA DEDO desde a última inclinação entregue, em px — a
+   * memória da INCLINAÇÃO de dois dedos. O navegador entrega um dedo por
+   * evento; o que inclina é só o que os DOIS andaram JUNTOS na vertical:
+   * com sinais iguais sai a parte comum (o menor dos dois) e com sinais
+   * opostos — a pinça na vertical — as duas contas zeram, porque pinça é
+   * zoom e não inclinação. A distância entre os dedos segue com a pinça,
+   * então zoom e inclinação andam ao mesmo tempo.
+   */
+  const descidaDosDedos = new Map<number, number>();
+  const inclinacaoDosDedos = (id: number, dy: number): number => {
+    descidaDosDedos.set(id, (descidaDosDedos.get(id) ?? 0) + dy);
+    if (descidaDosDedos.size !== 2) return 0;
+    const [[idA, a], [idB, b]] = [...descidaDosDedos];
+    if (a * b < 0) {
+      descidaDosDedos.set(idA, 0);
+      descidaDosDedos.set(idB, 0);
+      return 0;
+    }
+    if (a * b === 0) return 0;
+    const comum = Math.sign(a) * Math.min(Math.abs(a), Math.abs(b));
+    descidaDosDedos.set(idA, a - comum);
+    descidaDosDedos.set(idB, b - comum);
+    return comum;
+  };
+
+  /**
    * Os MESMOS listeners servem o Atlas — arrastar orbita o alvo, clique
    * curto escolhe o nome mais próximo. Registrar um segundo conjunto para
    * a fase nova compraria dois donos do mesmo gesto no mesmo canvas; o
@@ -163,7 +206,18 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
     // que é a frase escrita no próprio método.
     if (dedos.size === 2) {
       arrasto.esquecer();
+      inclinando.esquecer();
       pincaAnterior = distanciaDosDedos();
+      descidaDosDedos.clear();
+      return;
+    }
+    // INCLINAR, no Atlas: o botão direito ou Shift + o principal não giram
+    // a câmera — arfam a vista rumo ao horizonte
+    if (
+      fios.noAtlas() &&
+      (event.button === BOTAO_SECUNDARIO || (event.shiftKey && event.button === BOTAO_PRINCIPAL))
+    ) {
+      inclinando.comecar(event, performance.now(), event.button);
       return;
     }
     arrasto.comecar(event, performance.now());
@@ -207,14 +261,24 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
     // A PINÇA vem ANTES do arrasto, e não depois: com dois dedos o
     // arrasto já não tem dono (o `esquecer` acima), então `mover`
     // devolveria `null` e o gesto morreria no `return` de baixo.
-    if (dedos.has(event.pointerId)) {
+    const dedoAntes = dedos.get(event.pointerId);
+    if (dedoAntes) {
       dedos.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (dedos.size === 2 && fios.noAtlas()) {
         const agora = distanciaDosDedos();
         if (pincaAnterior > 0 && agora > 0) roda.empurrar(pixelsDaPinca(agora / pincaAnterior));
         pincaAnterior = agora;
+        // ...e o que os dois andaram juntos na vertical INCLINA
+        const dy = inclinacaoDosDedos(event.pointerId, event.clientY - dedoAntes.y);
+        if (dy !== 0) fios.inclinar(dy);
         return;
       }
+    }
+    // o arrasto que inclina (botão direito, Shift) — só o vertical conta
+    const passoQueInclina = inclinando.mover(event, performance.now());
+    if (passoQueInclina) {
+      if (fios.noAtlas()) fios.inclinar(passoQueInclina.dy);
+      return;
     }
     // o passo vem `null` em dois casos, e os dois querem dizer "não mexa
     // na cena": ponteiro que não é o dono do gesto — é ISSO que impede o
@@ -273,7 +337,10 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
     // de outro gesto — um salto de câmera no primeiro quadro.
     dedos.delete(event.pointerId);
     if (dedos.size < 2) pincaAnterior = 0;
+    if (dedos.size < 2) descidaDosDedos.clear();
     const agora = performance.now();
+    // o arrasto que inclina acaba aqui, e o clique curto dele não escolhe
+    inclinando.soltar(event, agora);
     const curto = arrasto.soltar(event, agora);
     if (!curto || !fios.noAtlas()) return;
     // o gesto já fez a coisa dele lá no `pointerdown`
@@ -328,6 +395,8 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
     gestoFechouGaveta = false;
     dedos.delete(event.pointerId);
     if (dedos.size < 2) pincaAnterior = 0;
+    if (dedos.size < 2) descidaDosDedos.clear();
+    inclinando.cancelar(event);
     arrasto.cancelar(event);
   };
 
@@ -433,7 +502,9 @@ export function ligarGestos(canvas: HTMLCanvasElement, fios: FiosDosGestos) {
       canvas.removeEventListener('dblclick', onDuploClique);
       canvas.removeEventListener('wheel', onRoda);
       arrasto.esquecer();
+      inclinando.esquecer();
       dedos.clear();
+      descidaDosDedos.clear();
       pincaAnterior = 0;
     },
   };

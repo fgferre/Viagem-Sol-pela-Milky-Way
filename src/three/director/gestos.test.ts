@@ -72,6 +72,7 @@ function fiosMock(overrides: Partial<FiosDosGestos> = {}): FiosDosGestos {
     pauseLookAtivo: () => false,
     noAtlas: () => true,
     orbitar: () => {},
+    inclinar: () => {},
     olhar: () => {},
     selecionar: () => {},
     apontavel: () => true,
@@ -212,5 +213,100 @@ describe('o cursor não promete o que a gaveta impede', () => {
     const b = bancada({ apontavel: () => false });
     b.move(500, 400);
     expect(b.canvas.classList.contains('apontavel')).toBe(false);
+  });
+});
+
+describe('a inclinação (07/10) — dois dedos juntos, Shift e o botão direito', () => {
+  function gesto() {
+    const canvas = Object.assign(new Barramento(), { classList: new ClasseFake() });
+    const feito = { inclinar: [] as number[], orbitar: 0, selecionar: 0 };
+    const punho = ligarGestos(
+      canvas as unknown as HTMLCanvasElement,
+      fiosMock({
+        inclinar: (dy) => feito.inclinar.push(dy),
+        orbitar: () => {
+          feito.orbitar++;
+        },
+        selecionar: () => {
+          feito.selecionar++;
+        },
+      })
+    );
+    punhos.push(punho);
+    const evento = (pointerId: number, x: number, y: number, extra: object = {}) => ({
+      clientX: x,
+      clientY: y,
+      button: 0,
+      buttons: 1,
+      pointerId,
+      pointerType: 'touch',
+      target: canvas,
+      ...extra,
+    });
+    return {
+      feito,
+      punho,
+      down: (id: number, x: number, y: number, extra?: object) =>
+        canvas.emitir('pointerdown', evento(id, x, y, extra)),
+      move: (id: number, x: number, y: number, extra?: object) =>
+        janela.emitir('pointermove', evento(id, x, y, extra)),
+      up: (id: number, x: number, y: number, extra?: object) =>
+        janela.emitir('pointerup', evento(id, x, y, { buttons: 0, ...extra })),
+    };
+  }
+  const soma = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+
+  it('os dois dedos SUBINDO juntos inclinam, e afastando ao mesmo tempo dão zoom', () => {
+    const g = gesto();
+    g.down(1, 400, 500);
+    g.down(2, 600, 500);
+    // 10 passos: cada dedo sobe 12 px e se afasta 5 px do outro
+    for (let i = 1; i <= 10; i++) {
+      g.move(1, 400 - 5 * i, 500 - 12 * i);
+      g.move(2, 600 + 5 * i, 500 - 12 * i);
+    }
+    // a parte COMUM da subida, inteira: 120 px para cima (dy negativo)
+    expect(soma(g.feito.inclinar)).toBeCloseTo(-120, 9);
+    // ...e a distância entre os dedos cresceu: a pinça empurrou a roda
+    expect(g.punho.embalandoZoom).toBe(true);
+    // dois dedos não orbitam
+    expect(g.feito.orbitar).toBe(0);
+  });
+
+  it('a pinça na VERTICAL (um sobe, o outro desce) é zoom, não inclinação', () => {
+    const g = gesto();
+    g.down(1, 500, 400);
+    g.down(2, 500, 600);
+    for (let i = 1; i <= 10; i++) {
+      g.move(1, 500, 400 - 8 * i);
+      g.move(2, 500, 600 + 8 * i);
+    }
+    expect(soma(g.feito.inclinar)).toBe(0);
+    expect(g.punho.embalandoZoom).toBe(true);
+  });
+
+  it('Shift + arrastar inclina pelo vertical e não orbita', () => {
+    const g = gesto();
+    const mouse = { pointerType: 'mouse', shiftKey: true };
+    g.down(1, 500, 600, mouse);
+    for (let i = 1; i <= 10; i++) g.move(1, 500 + i, 600 - 20 * i, mouse);
+    g.up(1, 510, 400, mouse);
+    // o primeiro passo cai na janela do clique curto (6 px), o resto chega
+    expect(soma(g.feito.inclinar)).toBeLessThan(-150);
+    expect(g.feito.orbitar).toBe(0);
+    expect(g.feito.selecionar).toBe(0);
+  });
+
+  it('o botão direito arrastado inclina; o clique curto dele não escolhe', () => {
+    const g = gesto();
+    const direito = { pointerType: 'mouse', button: 2, buttons: 2 };
+    g.down(1, 500, 600, direito);
+    for (let i = 1; i <= 10; i++) g.move(1, 500, 600 - 20 * i, direito);
+    g.up(1, 500, 400, direito);
+    expect(soma(g.feito.inclinar)).toBeLessThan(-150);
+    expect(g.feito.orbitar).toBe(0);
+    g.down(1, 500, 500, direito);
+    g.up(1, 500, 500, direito);
+    expect(g.feito.selecionar).toBe(0);
   });
 });
