@@ -30,8 +30,8 @@ cobre o disco grande; a lente segue a transmitância do ar e foi calibrada contr
 recalibra uma constante por lente); (2) a régua única, com UMA sessão
 cuidando de luz e tela, estrelas e Sol incluídos (`PLAN-ESTRELAS-E-INSTRUMENTO.md`, agora no `main`, começa
 pelo estudo de como o Sol brilha em cada distância; unificação dos desenhistas aberta); a R1 testa o tom único (o Neutral da Khronos deu B/G 0,766 contra o alvo 0,773 em Pã);
-(3) o item 232 (Terra tímida) está FEITO no ramo, à espera dele (bastão paralelo logo abaixo): o ACES não apaga
-a Terra, e o modo realçado foi calibrado sobre ele; (4) a fila de assets já sob a régua: as outras seis luas pequenas pela receita de Pã
+(3) o item 232 (Terra tímida) está FEITO e PUBLICADO (bastão paralelo logo abaixo): o ACES não apaga a Terra, e o
+modo realçado foi calibrado sobre ele; (4) a fila de assets já sob a régua: as outras seis luas pequenas pela receita de Pã
 (lições em `PLAN-LUAS-PEQUENAS.md`), Febe, Calipso/Telesto/Helena, Fobos/Deimos, Vesta. Cautela dele noutra
 conversa: *"O modelo de linguagem tem a mania de transformar coisas que eu falo em regras."* — a régua só vira
 regra com ganho visível em prancha.
@@ -50,7 +50,7 @@ voltam pelo git: `git show 19881bf9:PLAN-REIA.md`, `git show d8325291:PLAN-EUROP
 `git show 50729ed6:PLAN-VIAGEM-SOLAR.md`, `git show daf54e07:PLAN-PONTO-DE-LUZ.md`. O worktree `../Viagem-luas-pequenas` foi apagado a pedido dele
 (08/10; o ramo `luas-pequenas` fica no histórico, inteiro no `main`).
 
-## O BASTÃO paralelo (08/10, noite) — ITEM 232 FEITO NO RAMO `claude/efeitos-timidos-item-232-622e70` (DOIS COMMITS SOBRE O `main` `e7e409c9`); NÃO JUNTADO, NÃO PUBLICADO
+## O BASTÃO paralelo (09/10) — ITEM 232 FEITO E PUBLICADO (`main` `96be350f`, testado por ele no iPhone: *"testei no iPhone, funcionou, pode juntar e publicar"*)
 
 **Feito, na ordem dele** (*"Os dois, nessa ordem"*):
 1. `e9d9a85d` — o que apagava saiu, só com física (*"a gente não quer roubar, a gente quer os efeitos físicos"*). A medição tirou uma suspeita por vez em cinco vistas: exposição, curva de cor, knee, bloom e lei de luz NÃO apagam (o ACES até ajuda; o ar de verdade tira ~40 % do contraste do relevo e fica). O que apagava:
@@ -62,7 +62,7 @@ voltam pelo git: `git show 19881bf9:PLAN-REIA.md`, `git show d8325291:PLAN-EUROP
    A cadeia rodou no terminal dele; as oito vistas do app saem byte a byte iguais às aprovadas (`capturas/efeitos-timidos/juntos/`). *"Aprovo, ainda tímido"*.
 2. `8c8fb17b` — "Relevo da Terra: Real | Realçado 3×" em Ajustes, declarado na ficha e no selo junto da lanterna (*"3 vezes"*, *"Só a Terra"*). `npm run done` verde (138 arquivos, 3.621 testes).
 
-**Falta, dele:** testar no iPhone (a Terra em cinema passou a ~0,72 GB de textura com mip, +128 MiB) e dizer se junta e publica. Antes de juntar no `main`, avisar a conversa "Coordenação de trabalhos em fila": a R1 da régua (troca do tom) espera o 232 e terá de recalibrar o realçado.
+**Publicado em 09/10:** a Terra em cinema passou a ~0,72 GB de textura com mip (+128 MiB) e aguentou no iPhone dele. No ar, normal, horizontes e manifesto têm o mesmo sha256 dos locais. A conversa "Coordenação de trabalhos em fila" foi avisada: a R1 da régua (troca do tom) terá de recalibrar o realçado, que foi ajustado sobre o ACES.
 
 **Achados e não feitos:**
 - O Atlas abre a Terra com o Sol alto (60°): ali relevo e sombra de nuvem não aparecem em modo nenhum. Abrir com a linha do dia e da noite à vista é decisão dele, e valeria para todos os corpos.
