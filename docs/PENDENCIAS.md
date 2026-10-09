@@ -32,8 +32,8 @@ anel fino em volta do Sol perto da Terra é o ícone do Atlas (`&noicones=1` o t
 pesquisa) pode começar já; a R1 (o tom único) muda tudo de uma vez e tem de recalibrar o realçado da Terra
 (ajustado sobre o ACES) e uma constante por lente; (2) os assuntos 1–6 de `PLAN-ESTRELAS-E-INSTRUMENTO.md`;
 (3) a fila de assets sob a régua (as seis luas pequenas pela receita de Pã, Febe, Calipso/Telesto/Helena,
-Fobos/Deimos, Vesta). A cópia `../Viagem-sol-estudo` (ramo `sol-estudo`, inteiro no `main`) e as da 232 podem
-ser apagadas quando ele quiser.
+Fobos/Deimos, Vesta). A cópia `../Viagem-sol-estudo` (ramo `sol-estudo`, inteiro no `main`) pode ser apagada
+quando ele quiser.
 
 ## O BASTÃO anterior (08/10, noite) — PÃ E AS LENTES DE CINEMA PUBLICADAS EM 08/10 (`main` `e7e409c9` no ar); A RÉGUA ÚNICA PLANEJADA (`PLAN-REGUA-UNICA.md`)
 
