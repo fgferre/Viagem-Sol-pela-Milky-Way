@@ -168,7 +168,7 @@ export const PT = {
   'ajustes.exposicao': 'Exposição',
   'ajustes.lente': 'Lente',
   'ajustes.lenteNota':
-    'Reflexos de uma lente de cinema quando a câmera olha para o Sol. Redonda: reflexos redondos e discretos. Anamórfica: o risco horizontal azul e reflexos ovais. Hollywood: o reflexo de filme, com raios dourados, halo de arco-íris e muitos reflexos. Nenhuma: a imagem de sempre.',
+    'Reflexos de uma lente de cinema quando a câmera olha para o Sol. Redonda: reflexos redondos e discretos. Anamórfica: o risco horizontal azul e reflexos ovais. Hollywood: o reflexo de filme, com raios dourados, halo de arco-íris e muitos reflexos. Nenhuma: a imagem de sempre. Nos filmes, cada cena usa a lente do diretor.',
   'ajustes.lente.nenhuma': 'Nenhuma',
   'ajustes.lente.redonda': 'Redonda',
   'ajustes.lente.anamorfica': 'Anamórfica',

@@ -783,6 +783,8 @@ export interface JourneyMeta {
   quiet: boolean;
   /** destino da linha de rumo ('SGR' | nome HYG) */
   dest?: string;
+  /** a lente de cinema que o diretor escolheu para o shot (ausente: nenhuma) */
+  lenteDeCinema?: Shot['lenteDeCinema'];
 }
 
 export class Journey {
@@ -863,7 +865,7 @@ export class Journey {
 
   metaAt(t: number): JourneyMeta {
     const s = this.planos[this.shotAt(t).i];
-    return { target: s.target, quiet: s.quiet ?? false, dest: s.dest };
+    return { target: s.target, quiet: s.quiet ?? false, dest: s.dest, lenteDeCinema: s.lenteDeCinema };
   }
 
   /** cada marca da barra É uma legenda — leva o título junto, para o HUD

@@ -62,6 +62,16 @@ describe('lerSequencia — item 75', () => {
     for (const [dado, campo] of casos) expect(() => lerSequencia(dado, pontos)).toThrow(campo);
   });
 
+  it('lê a lente de cinema da cena (decisão de 09/10) e recusa a que não existe', () => {
+    const [a, b] = lerSequencia({ planos: [{ ...plano, lenteDeCinema: 'anamorfica' }, plano] }, pontos);
+    expect([a.lenteDeCinema, b.lenteDeCinema]).toEqual(['anamorfica', undefined]);
+    for (const errada of ['Anamorfica', 'cinema', '', 2, null]) {
+      expect(() => lerSequencia({ planos: [{ ...plano, lenteDeCinema: errada }] }, pontos)).toThrow(
+        /planos\[0\]\.lenteDeCinema/
+      );
+    }
+  });
+
   it('mudar a sequência muda ordem, duração, legendas, capítulos e direção no filme real', async () => {
     const { auditarRoteiro: original } = await import('./journey');
     const quantidadeOriginal = original().shotCount;

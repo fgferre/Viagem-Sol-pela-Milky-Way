@@ -1,5 +1,6 @@
 // Item 75: sequência JSON → planos usados pelo relógio único de Journey.
 import type { Vector3 } from 'three';
+import { MODOS_DA_LENTE, type ModoDaLente } from '../core/engine';
 import { booleano, erro, lista, numero, objeto, opcional, texto } from './dadosDoRoteiro';
 import { lerApoiosDoPlano, type ApoiosDoPlano } from './apoiosDoRoteiro';
 import { lerPlanoDeCamera, type CameraDoPlano } from './lerPlanoDeCamera';
@@ -47,6 +48,15 @@ export interface Shot extends CameraDoPlano, ApoiosDoPlano {
    * frente de quem não declarou e o limite de duração de quem declarou.
    */
   lingua?: 'frente' | 'assunto' | 'tras';
+  /**
+   * A LENTE DE CINEMA DA CENA (decisão do dono, 09/10: "o diretor
+   * escolhe, cena por cena; o Atlas segue limpo"). Durante o filme é ela
+   * que vale, e não a escolha do visitante em Ajustes; ausente, a cena
+   * vai sem lente ('nenhuma'). Não confundir com `lente` da câmera, que
+   * é o campo de visão (`lerPlanoDeCamera`). Quem aplica é o Director
+   * (`director/lenteDoFilme.ts`).
+   */
+  lenteDeCinema?: ModoDaLente;
 }
 
 function legenda(valor: unknown, campo: string): ShotCaption {
@@ -97,6 +107,8 @@ export function lerSequencia(
       quiet: opcional(p.fundoSilencioso, `${campo}.fundoSilencioso`, booleano),
       dest: opcional(p.destino, `${campo}.destino`, texto),
       lingua,
+      lenteDeCinema: opcional(p.lenteDeCinema, `${campo}.lenteDeCinema`, (v, c) =>
+        MODOS_DA_LENTE.find((m) => m === v) ?? erro(c, 'deve ser nenhuma, redonda, anamorfica ou hollywood')),
     };
   });
 }

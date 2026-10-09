@@ -118,6 +118,7 @@ import { faseDoCiclo, lerPortaSolQuadro } from './estrela';
 import type { CalibracaoDaCasa } from './estrela';
 import { BETA_DA_EMISSAO } from './shaders/starShaders';
 import { reemitirLegenda, viradaDaLuzDoRoteiro } from './director/legendaNoAr';
+import { lenteEfetiva } from './director/lenteDoFilme';
 import { Escada } from './director/escada';
 import type { EstadoDaEscada } from './director/escada';
 import {
@@ -982,6 +983,9 @@ export class Director {
   private hide = new Set<string>();
   /** ?exp= na query desliga a auto-exposição (App.tsx aplica o valor fixo) */
   private expOverride = false;
+  /** a lente de cinema que o VISITANTE escolheu (Ajustes · Lente, ?lente=):
+   *  vale fora do filme; no filme manda a da cena (`aplicarLente`) */
+  private lenteDoVisitante: ModoDaLente = 'nenhuma';
   /** ?fps=1 (E2, PLAN.md): quadros/s e os custos de `window.__poeira` na
    *  tela — `null` = porta desligada, `contadorDeFps.ts` nunca criado */
   private contadorFps: { atualizar: (agora: number) => void; descartar: () => void } | null =
@@ -3031,9 +3035,26 @@ export class Director {
     this.publicarQualidade();
   }
 
-  /** a lente de cinema (Ajustes · Lente): o estado mora no Post, daqui só sai o pedido */
+  /**
+   * a lente de cinema escolhida em Ajustes · Lente. Ela é do VISITANTE e
+   * fica guardada aqui; a que a tela mostra (`post.lente`, que o selo
+   * lê) é a efetiva — no filme, a do roteiro (`aplicarLente`)
+   */
   definirLente(modo: ModoDaLente) {
-    this.post.definirLente(modo);
+    this.lenteDoVisitante = modo;
+    this.aplicarLente();
+  }
+
+  /**
+   * A LENTE NO AR (decisão do dono, 09/10): no filme, a da cena; fora
+   * dele, a do visitante — a regra é `lenteEfetiva`, pura. Roda a cada
+   * quadro, depois do ramo da fase, e só fala com o Post quando a lente
+   * efetiva MUDA: o corte do plano, o fim do filme, a saída dele.
+   */
+  private aplicarLente() {
+    const daCena = this.phase === 'journey' ? this.rig.metaAt(this.journeyT).lenteDeCinema : undefined;
+    const modo = lenteEfetiva(this.phase, daCena, this.lenteDoVisitante);
+    if (modo !== this.post.lente) this.post.definirLente(modo);
   }
 
   /** a força da lente de cinema (Ajustes · Lente), em %: mora no passe, daqui só sai o pedido */
@@ -4361,6 +4382,7 @@ export class Director {
     );
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
+    this.aplicarLente();
     this.visibilidadeDoSol = this.sondaDaLente.atualizar({
       ligada: this.post.lente !== 'nenhuma',
       camera: cam,
