@@ -19,6 +19,25 @@ Palavras dele (08/10): *"precisamos ter uma regra única que trate todos os obje
 ## Etapas (cada uma com prancha antes × depois; ele decide)
 - **R0 — Tabela de medidas — FEITA em 09/10** (pedido dele: *"Pode começar a pesquisa da régua única"*): `docs/reference/MEDIDAS-DOS-CORPOS.md`, os 47 corpos com albedo e cor medidos, fonte, confiança e o app ao lado. Para a R2: o albedo geométrico p inclui o pico de oposição (passa de 1 nas luas de gelo) e não serve de média de textura — a R2 precisa de uma regra única p → refletância média (o "equigonal" da VIMS e Lane & Irvine são as âncoras sem pico); maiores desvios do app: a Terra (0,434 × 0,226 medido), o V−R da Lua (cópia do de Vênus), a cor de Plutão, Éris, Haumea, as luas esculpidas e as de Urano sem nível.
 - **R1 — Tela** (opus): o ajuste de tom único atrás de uma chave; prancha do app inteiro (galáxia, Sol, Terra, gigantes, luas claras e escuras, um trecho de cada filme) ACES × o novo. Muda tudo de uma vez — por isso primeiro e por imagem.
+  **Prancha feita e decidida em 09/10** (`capturas/regua-r1/`: `prancha-corpos.jpg`, `prancha-cenas.jpg`, `prancha-terra.jpg`,
+  `numeros.md`; ferramentas em `ferramentas/`): o Neutral da Khronos com a exposição casada no cinza médio (1,4076 × a
+  exposição do ACES, porque o ACES do three divide por 0,6) guarda a cor das superfícies claras (Pã B/G 0,864 → 0,772,
+  alvo 0,773; Saturno, Io, Júpiter) e deixa a Terra um pouco mais rica (contraste do relevo +3–5 %); as escuras não
+  mudam; perde no que foi calibrado a olho sobre o ACES (o Sol de perto ganha um halo laranja, a superfície do filme
+  solar fica laranja forte, a galáxia ganha halo lilás). Palavra dele: *"Adotar o tom novo"* — recalibrar o que foi
+  ajustado sobre o ACES até voltar ao visual aprovado, com foto de cada um antes de virar o padrão.
+  **Execução (cópia `../Viagem-tom-unico`, ramo `tom-unico`, porta 5280; `?tone=aces` fica como caminho de volta):**
+  - R1a — o padrão vira o Neutral com a exposição casada no cinza médio para CADA exposição (o modo "real", +3 stops,
+    não casa com fator constante: 8,16 pediria 5,13); testes que fixam o ACES; a prancha recapturada sai igual à
+    coluna "tom neutro" (sha256), menos o modo real.
+  - R1b — recalibrar, cada um contra a sua foto de hoje no ACES (alvo: a mesma imagem), em cópias separadas e arquivos
+    disjuntos, uma gravação de Chrome por vez: (1) o Sol (`sun.js` níveis HDR, doses da coroa em `stellarBody.ts`);
+    (2) a galáxia e a gradação do filme (`galaxyShaders.ts` chromsat/corte/cor do disco, joelhos de `post.ts` da
+    rodada 20, `dustShaders.ts` lift e grão); (3) a lente e o eclipse (`passeDaLente.ts` fatores 1,1/1,1/1,2 e o
+    limiar tirado da fórmula do ACES; `eclipse.ts`; a σ da luz em `luz.ts`).
+  - R1c — conferir o realçado 3× da Terra, rodar os juízes visuais (podem ter limiares do ACES), `npm run done`,
+    prancha final hoje × novo do app inteiro e vídeo dos dois filmes; ele aprova; juntar e publicar é dele.
+  - Fora da R1: os ganhos à mão das luas (`rochoso.ts`) — saem na R2.
 - **R2 — Cor dos mapas** (opus + a cadeia no terminal dele): a função única; "retrato de família" de todos os corpos na mesma luz e na mesma escala, com os números ao lado (Encélado o mais claro, a Lua e Febe escuras, Pã abaixo de Encélado). Os que ele já aprovou (Europa, Reia, Hipérion) voltam para ele se mudarem.
 - **R3 — Confissão** (sonnet, mecânico): um formato, o selo certo na ficha, as lacunas preenchidas.
 - **R4 — Relevo** (opus, corpo a corpo, a fila de assets): a ordem única de fontes; o relevo falso da cor sai; a rodada das luas pequenas volta aqui (Pã primeiro, pela versão F).
