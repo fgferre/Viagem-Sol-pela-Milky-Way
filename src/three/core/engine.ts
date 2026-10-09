@@ -231,6 +231,31 @@ export function lerPortaTerra(bruto: string | null | undefined): VarianteDaTerra
 }
 
 /**
+ * O RELEVO DA TERRA (item 232, decisão do dono 08/10) — `real` desenha as
+ * alturas medidas; `realcado` as multiplica por {@link FATOR_DO_RELEVO_REALCADO}
+ * na luz das encostas e na sombra das montanhas, só na Terra e só na
+ * variante `profundidade`. É MODO DECLARADO, como a luz assistida: a ficha
+ * da Terra e o selo dizem que está ligado. Não é do preset — `real` é o
+ * padrão em todo tier, e a porta `?relevo=` (ou a gaveta) o troca ao vivo.
+ */
+export type RelevoDaTerra = 'real' | 'realcado';
+
+/** o fator do realçado — o número que o shader, a ficha e o selo leem */
+export const FATOR_DO_RELEVO_REALCADO = 3;
+
+const RELEVOS_DA_TERRA: readonly RelevoDaTerra[] = ['real', 'realcado'];
+
+/** a lei da porta `?relevo=`, no contrato de `lerPortaLente`: o inválido cai no `real` */
+export function lerPortaRelevo(bruto: string | null | undefined): RelevoDaTerra {
+  return RELEVOS_DA_TERRA.find((v) => v === bruto) ?? 'real';
+}
+
+/** o fator das alturas desenhadas: 1 no `real` */
+export function fatorDoRelevo(relevo: RelevoDaTerra): number {
+  return relevo === 'realcado' ? FATOR_DO_RELEVO_REALCADO : 1;
+}
+
+/**
  * OS TRÊS DEGRAUS DA ESCALA DE RESOLUÇÃO (item 145) — o terceiro
  * controle da gaveta Avançado, em fração da densidade NATIVA da tela.
  * 100% é o `devicePixelRatio` do monitor (2,0 num Retina), 50% é metade
@@ -570,6 +595,12 @@ export interface EstadoDaQualidade {
    * `forcarGas`): é ele que troca o material da Terra ao vivo.
    */
   terra: VarianteDaTerra | null;
+  /**
+   * O RELEVO DA TERRA escolhido na gaveta (item 232) — sem preset: `real`
+   * é o padrão. Quem o publica é o Director (`definirRelevo`), que o
+   * entrega à Terra ao vivo.
+   */
+  relevo: RelevoDaTerra;
   /**
    * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA escolhida à mão (item 149) —
    * `null` = a do preset. Quem a publica é o Director, que é onde o

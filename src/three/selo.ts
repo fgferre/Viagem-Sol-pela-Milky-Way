@@ -395,6 +395,13 @@ export interface EstadoDaVista {
    */
   terra: VarianteDaTerra | null;
   /**
+   * O FATOR DAS ALTURAS que a tela desenha na Terra (item 232) — 1 é o
+   * relevo medido; o realçado declarado (`?relevo=realcado`, Ajustes) o
+   * multiplica. É o que SE VÊ, não o que foi pedido: na `classica` o
+   * realce não existe e o Director publica 1 (`realceDoRelevo`).
+   */
+  realceDoRelevo: number;
+  /**
    * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA escolhida à mão (item 149) —
    * `null` = a do preset. Mesmo contrato do `gas`: estado vivo do
    * Director, não a porta `?particulas=`.
@@ -785,6 +792,21 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
       }),
   },
   /**
+   * O RELEVO DA TERRA REALÇADO (item 232, decisão do dono 08/10): modo
+   * DECLARADO, como a luz assistida — as alturas da Terra desenhadas k×
+   * maiores que as medidas. Estado VIVO (o fator que a tela desenha),
+   * `volta: 'vivo'`, porta de URL como espelho; a ficha da Terra diz o
+   * mesmo na seção da imagem.
+   */
+  {
+    chave: 'relevo',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.relevo'); },
+    volta: 'vivo',
+    desvia: (e) => e.realceDoRelevo !== 1,
+    rotuloVivo: (e) => t('selo.desvio.relevoCom', { fator: decimalDoIdioma(String(e.realceDoRelevo)) }),
+  },
+  /**
    * O QUINTO CONTROLE DA GAVETA AVANÇADO (item 149), no mesmo molde dos
    * quatro de cima: estado VIVO, `volta: 'vivo'`, porta de URL como
    * espelho. Mexe na imagem de verdade — menos pontos desenhados, mesmo
@@ -1135,6 +1157,7 @@ export function aoClicarEmBrilho(e: EstadoDaVista): EstadoDaVista {
     exposicaoManual: chaves.has('exp') ? false : e.exposicaoManual,
     tom: chaves.has('tone') ? 'aces' : e.tom,
     lente: chaves.has('lente') ? 'nenhuma' : e.lente,
+    realceDoRelevo: chaves.has('relevo') ? 1 : e.realceDoRelevo,
     camadasEscondidas: e.camadasEscondidas.filter((f) => !chaves.has(f)),
     luz: chaves.has('luz') ? 'real' : e.luz,
   };

@@ -8,10 +8,12 @@ import {
   FRACAO_DE_PARTICULAS,
   GRAMPO_DO_PASSO_S,
   NEBULOSA_POR_NIVEL,
+  fatorDoRelevo,
   lerPortaGas,
   lerPortaNebulosa,
   lerPortaParticulas,
   lerPortaPoeira,
+  lerPortaRelevo,
   lerPortaTerra,
   modoDoToneMapping,
 } from './core/engine';
@@ -30,6 +32,7 @@ import type {
   NivelDaNebulosa,
   ParticulasDaGalaxia,
   QualityLevel,
+  RelevoDaTerra,
   TipoDePoeira,
   VarianteDaTerra,
 } from './core/engine';
@@ -1043,6 +1046,12 @@ export class Director {
    * textura (é ela que decide o 8k das nuvens).
    */
   private terraForcada: VarianteDaTerra | null = lerPortaTerra(this.debug.get('terra'));
+  /**
+   * O RELEVO DA TERRA (item 232) — `real` ou o realçado declarado. Sem
+   * preset: lido no CAMPO, como `terraForcada`, para a Terra que o init
+   * monta já nascer com ele.
+   */
+  private relevoDaTerra: RelevoDaTerra = lerPortaRelevo(this.debug.get('relevo'));
   /**
    * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA ESCOLHIDA À MÃO (item 149) —
    * `null` = a do preset. Mesmo contrato de `gasForcado`: lido no CAMPO,
@@ -2101,6 +2110,7 @@ export class Director {
     // a variante da Terra ANTES de qualquer tick: a primeira carga de
     // textura já sai na resolução de nuvens da variante
     this.aplicarTerra();
+    this.terra?.corpo.definirRelevo(this.relevoDaTerra);
     this.rochosos = corpos.rochosos;
     this.gigantes = corpos.gigantes;
     this.noPalco = corpos.noPalco;
@@ -3000,6 +3010,7 @@ export class Director {
       escala: this.engine.escala,
       gas: this.gasForcado,
       terra: this.terraForcada,
+      relevo: this.relevoDaTerra,
       particulas: this.particulasForcadas,
       poeira: this.poeiraForcada,
     });
@@ -3096,6 +3107,29 @@ export class Director {
     // a imagem mudou: a contagem de estabilidade recomeça
     this.perturbar();
     this.publicarQualidade();
+  }
+
+  /**
+   * O RELEVO DA TERRA, TROCADO AO VIVO (item 232) — um uniform na
+   * superfície funda, sem recompilar nem recarregar.
+   */
+  definirRelevo(relevo: RelevoDaTerra) {
+    this.relevoDaTerra = relevo;
+    this.terra?.corpo.definirRelevo(relevo);
+    this.perturbar();
+    this.publicarQualidade();
+  }
+
+  /**
+   * O FATOR DAS ALTURAS QUE A TELA DESENHA no corpo `id` — 1 em todo
+   * corpo menos a Terra realçada, e na Terra só na variante
+   * `profundidade` (a `classica` não tem o realce). É o que a ficha e o
+   * selo declaram: nunca o que foi pedido, sempre o que se vê.
+   */
+  realceDoRelevo(id: string | null): number {
+    if (id !== 'earth') return 1;
+    const variante = this.terra?.corpo.varianteViva ?? this.terraForcada ?? this.engine.preset.terra;
+    return variante === 'profundidade' ? fatorDoRelevo(this.relevoDaTerra) : 1;
   }
 
   /**
@@ -3549,6 +3583,8 @@ export class Director {
       escala: this.engine.escala,
       gas: this.gasForcado,
       terra: this.terraForcada,
+      // o relevo que a TELA desenha: o realçado só existe na `profundidade`
+      realceDoRelevo: this.realceDoRelevo('earth'),
       particulas: this.particulasForcadas,
       // a bancada `?poeira=teste` vence a variante enquanto vale (ver
       // `aplicarPoeira`), e o selo a nomeia — `forcarPoeira` a desarma

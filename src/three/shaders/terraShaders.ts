@@ -14,12 +14,24 @@ import {
 import { GLSL_SOMBRA_ECLIPSE } from '../../lib/atlas/eclipse';
 import { BODY_AXES } from '../../lib/atlas/iauOrientation';
 import { GLSL_LUZ_DA_VISITA } from '../../lib/atlas/luzDaVisita';
-import { GLSL_QUADRO_TANGENTE, GLSL_SOMBRA_DO_HORIZONTE } from '../world/corpos/corpos';
+import {
+  GLSL_QUADRO_TANGENTE,
+  GLSL_SOMBRA_DO_HORIZONTE,
+  GLSL_SOMBRA_PARCIAL_DO_RELEVO,
+} from '../world/corpos/corpos';
 
 /** Casca das nuvens: +0,15% do raio — alto o bastante para o depth
  *  separar (medido: ~800× o passo de depth nesta geometria de câmera),
  *  baixo o bastante para não parecer uma segunda superfície. */
 export const RAZAO_CASCA_NUVENS = 1.0015;
+/**
+ * A NUVEM QUEBRADA da sombra no chão (item 232, 08/10; as contas em
+ * `TERRA_PROFUNDIDADE_FRAG`): `refletanciaGrossa` é o Rc da nuvem grossa
+ * (τc = 23, o limite do ISCCP, pela refletância de Bohren 1987), `g` a
+ * assimetria da gota que a mesma Bohren e a escala delta usam, `alfaTeto`
+ * o α mais alto que a sombra lê (o τ de α = 1 é infinito).
+ */
+const NUVEM_QUEBRADA = { refletanciaGrossa: 0.633, g: 0.85, alfaTeto: 0.98 } as const;
 /** Casca da atmosfera: 1,025 — o `outerRadiusRatio` do espec Nishita, e
  *  o único valor para o qual o polinômio de O'Neil abaixo é válido. */
 export const RAZAO_CASCA_ATMOSFERA = 1.025;
@@ -97,7 +109,9 @@ void main() {
  * EM QUATRO TRECHOS (07/10, rodada das nuvens): cabeçalho, o corpo até
  * o especular, a luz direta e a emissão. A variante `profundidade`
  * (`TERRA_PROFUNDIDADE_FRAG`, abaixo) reusa três deles e troca só a luz
- * direta; o `TERRA_FRAG` montado é o mesmo texto de antes, byte a byte.
+ * direta; o `TERRA_FRAG` montado é o mesmo texto de antes, byte a byte,
+ * mais o realce do relevo (item 232) atrás de `#ifdef REALCE_DO_RELEVO`,
+ * que só a `profundidade` define — o preprocessador o tira da clássica.
  */
 const SUPERFICIE_CABECALHO = /* glsl */ `
 uniform sampler2D uMapaDia;
@@ -131,6 +145,15 @@ const SUPERFICIE_ATE_O_ESPECULAR = /* glsl */ `void main() {
     vec3 norte = cross(n, leste);
     vec3 tn = texture2D(uMapaNormal, vUv).xyz * 2.0 - 1.0;
     nRelevo = normSeguro(leste * tn.x + norte * tn.y + n * tn.z);
+#ifdef REALCE_DO_RELEVO
+    // o relevo realçado (item 232, declarado): alturas ×k → inclinação
+    // ×k; o zero do mapa é 128/255 (o mar), que fica onde está. Em k = 1
+    // o ramo não corre e a normal é a medida, bit a bit.
+    if (uRealceDoRelevo != 1.0) {
+      vec2 inclinacao = 1.0 / 255.0 + uRealceDoRelevo * (tn.xy - 1.0 / 255.0);
+      nRelevo = normSeguro(leste * inclinacao.x + norte * inclinacao.y + n * tn.z);
+    }
+#endif
   }
 
   float ndotlGeo = dot(n, uDirSolLocal);          // terminador geométrico
@@ -658,21 +681,65 @@ vec3 arAtePonto(vec3 camera, vec3 ponto, float raioDoFim, vec3 solLocal, out vec
  * CPU em float64 (u_nuvem = u_chão − θ/2π); nem θ nem seno ou cosseno
  * dele chegam à GPU.
  *
- * A TRANSMISSÃO é medida, não regulada: T = 1 − α(q), a opacidade
- * VERTICAL que a casca desenha naquele texel (`alfaDaNuvem`). Ela entra
- * LINEAR e só no Sol: a lanterna (fill de câmera) e as cidades (emissão)
- * não atravessam nuvem nenhuma, e o especular apaga junto com a difusa.
- * Céu limpo (T = 1) devolve a luz do `TERRA_FRAG`.
+ * A NUVEM NO CAMINHO (item 232, 08/10: o campo QUEBRADO). O α que a casca
+ * desenha (`alfaDaNuvem`, a opacidade vertical) é lido como a REFLETÂNCIA
+ * da nuvem; sem absorção, o que não volta passa — com o Sol a pino, direto
+ * + difuso = 1 − α. O texel é um campo quebrado: a fração f = min(α/Rc, 1)
+ * dele coberta de nuvem GROSSA, Rc = 0,633 (τc = 23, o limite de nuvem
+ * grossa do ISCCP — Rossow & Schiffer 1999 —, pela refletância de duas
+ * correntes sem absorção de Bohren 1987, R = (1−g)τ/(2 + (1−g)τ), g =
+ * 0,85). Duas parcelas (`nuvemQuebrada`):
+ *  - D, o FEIXE DIRETO, lido no texel q do raio do Sol: o que passa pelos
+ *    buracos mais o que atravessa a nuvem grossa pela escala delta
+ *    (Joseph, Wiscombe & Weinman 1976: o pico de difração, f = g², cai a
+ *    centenas de metros do raio, dentro do texel, e conta como direto),
+ *    D = 1 − f·(1 − e^(−(1−g²)τ/μ0)), μ0 o cosseno do zênite do Sol NA
+ *    casca (≥ 0,055 no terminador);
+ *  - F, a DIFUSA que a nuvem transmite e sai pela base, F = f·(1 −
+ *    max(α, Rc)), lida no texel logo ACIMA do ponto e espalhada como chega
+ *    ao chão: pelo fator de forma h²/(h² + ρ²)², metade dentro de ρ = h, o
+ *    α de F é lido com a pegada de 2h (h a altura da casca; nunca menor
+ *    que a do pixel) — sem isso F ficava no texel de baixo e acendia uma
+ *    franja creme na borda das nuvens.
+ * D passa pelas montanhas e leva o especular; F não (vem da base da
+ * nuvem, que está acima delas). As duas são só do Sol: a lanterna (fill
+ * de câmera) e as cidades (emissão) não atravessam nuvem nenhuma. Céu
+ * limpo (α = 0): D = 1, F = 0 — a luz do `TERRA_FRAG`. As medidas e as
+ * contas: `capturas/efeitos-timidos/nuvens/medidas-v2.md`. Vieses
+ * declarados: F não segue a encosta; o total não depende de μ0 (Bohren),
+ * então com o Sol baixo F sai um pouco alto.
  *
- * AS MONTANHAS (07/10): a sombra do relevo medido (ETOPO 2022) sai dos
- * dois mapas de horizonte pelo chunk da casa (`GLSL_SOMBRA_DO_HORIZONTE`,
- * o de Hipérion, no frame de `GLSL_QUADRO_TANGENTE` — o leste/norte do
- * `TERRA_FRAG`) e multiplica o MESMO T: é uma sombra do Sol, como a da
- * nuvem. Usa a sombra SÓ do relevo (`sombraSoDoRelevo`), não o teste cru:
- * o cru apagaria o chão plano na faixa que a logística da `assistida`
- * acende além do terminador (a razão está no chunk). Sem os mapas
- * (`uHorizonte` 0: a carga foi `classica` e a troca foi ao vivo) o fator
- * é 1 exato até a próxima carga.
+ * AS MONTANHAS (07/10; parcial no item 232, 08/10): a sombra do relevo
+ * medido (ETOPO 2022) sai dos dois mapas de horizonte pelo chunk da casa
+ * (`GLSL_SOMBRA_DO_HORIZONTE`, o de Hipérion, no frame de
+ * `GLSL_QUADRO_TANGENTE` — o leste/norte do `TERRA_FRAG`) e multiplica o
+ * feixe D: é uma sombra do Sol, como a da nuvem. É a sombra SÓ do relevo
+ * e PARCIAL (`sombraParcialDoRelevo`, a lei gama da célula): o teste cru
+ * apagaria o chão plano na faixa que a logística da `assistida` acende
+ * além do terminador, e o degrau no seno médio apagava a célula de
+ * 9,8 km inteira. Sem os mapas (`uHorizonte` 0: a carga foi `classica` e
+ * a troca foi ao vivo) o fator é 1 exato até a próxima carga.
+ *
+ * O RELEVO REALÇADO (item 232, decisão do dono 08/10): `uRealceDoRelevo`
+ * = k multiplica as alturas — a inclinação da normal (o mar, o zero do
+ * mapa, fica plano) e a tangente de cada seno do horizonte, antes da
+ * interpolação e da lei gama (`senoDoHorizonte`, que lê o mesmo
+ * `REALCE_DO_RELEVO`). É modo declarado (`?relevo=realcado`, k = 3):
+ * a ficha e o selo dizem. Uniform e não define — a troca é ao vivo, sem
+ * recompilar; em k = 1 os dois ramos não correm.
+ *
+ * O CÉU NA SOMBRA (item 232, 08/10): o Sol normalizado no zênite já traz
+ * o céu dentro; a luz que chega se divide em DIRETO + CÉU pela Rayleigh do
+ * SPCTRAL2 (Bird & Riordan 1986): direto = Tr, céu = 0,5·(1 − Tr^0,95),
+ * Tr = e^(−τ·m), com τ e a massa m de Chapman do próprio ar do app, e
+ * s = céu/(direto + céu) por canal (`fracaoDoCeu`: 9/16/32 % em R/G/B com
+ * o Sol a 15°, 4/7/14 % a 40°). Nuvens e montanhas barram só o direto; o
+ * céu ilumina como o chão PLANO (sem a encosta ao Sol), vezes a fração do
+ * céu que a faceta vê, V = (1 + n_relevo·n)/2 (céu isotrópico, Liu &
+ * Jordan 1963). Chão plano aceso e limpo: a soma volta ao termo de hoje.
+ * Medidas e erros declarados (sem a reflexão chão–céu do SPCTRAL2, +1–3 %;
+ * o céu acima da casca de nuvens não é barrado por ela; aerossol 0):
+ * `capturas/efeitos-timidos/nuvens/medidas-ceu.md`.
  *
  * A LUZ DO PÔR DO SOL (08/10): o Sol que chega ao chão (h = 0 km, cosseno
  * do zênite = `ndotlGeo`) passa por `transmitanciaDoSol`, no `luzSol`,
@@ -703,17 +770,34 @@ export const TERRA_PROFUNDIDADE_FRAG =
   SUPERFICIE_CABECALHO +
   /* glsl */ `uniform sampler2D uMapaNuvens;
 uniform float uDeslocU;     // fract(−θ/2π) da deriva das nuvens (CPU, float64)
+#define REALCE_DO_RELEVO
+uniform float uRealceDoRelevo; // 1 = as alturas medidas; o realçado declarado (Ajustes) as multiplica
 ${GLSL_ALFA_DA_NUVEM}
 ${GLSL_TRANSMITANCIA_DO_SOL}
 ${GLSL_AR_NO_CAMINHO}
 ${GLSL_QUADRO_TANGENTE}
 ${GLSL_SOMBRA_DO_HORIZONTE}
-float transmissaoDasNuvens(vec3 local, vec2 uv) {
+${GLSL_SOMBRA_PARCIAL_DO_RELEVO}
+const float REFLETANCIA_DA_NUVEM_GROSSA = ${NUVEM_QUEBRADA.refletanciaGrossa}; // Rc: τc = 23, o limite do ISCCP
+const float UM_MENOS_G = ${(1 - NUVEM_QUEBRADA.g).toFixed(2)};   // g = ${NUVEM_QUEBRADA.g}, a assimetria da gota
+const float UM_MENOS_G2 = ${(1 - NUVEM_QUEBRADA.g ** 2).toFixed(4)}; // a escala delta: o pico de difração f = g² conta como direto
+const float ALFA_TETO_DA_SOMBRA = ${NUVEM_QUEBRADA.alfaTeto};
+// o campo quebrado: vec2(D, F) a partir do α no raio do Sol (aq), do α
+// sobre o ponto com a pegada da difusa (ap) e do cosseno do Sol na casca
+vec2 nuvemQuebrada(float aq, float ap, float mu0) {
+  float fq = min(aq / REFLETANCIA_DA_NUVEM_GROSSA, 1.0);
+  float fp = min(ap / REFLETANCIA_DA_NUVEM_GROSSA, 1.0);
+  float ac = max(aq, REFLETANCIA_DA_NUVEM_GROSSA);
+  float tc = UM_MENOS_G2 * 2.0 * ac / (UM_MENOS_G * (1.0 - ac));
+  return vec2(1.0 - fq * (1.0 - exp(-tc / mu0)), fp * (1.0 - max(ap, REFLETANCIA_DA_NUVEM_GROSSA)));
+}
+vec2 sombraDasNuvens(vec3 local, vec2 uv) {
   vec3 p = normSeguro(local);
   vec3 ls = normSeguro(uDirSolLocal * uNormalEsc);
   float b = max(dot(p, ls), 0.0);
   float r = ${RAZAO_CASCA_NUVENS};
-  vec3 q = p + (-b + sqrt(b * b + r * r - 1.0)) * ls;
+  float t = -b + sqrt(b * b + r * r - 1.0);
+  vec3 q = p + t * ls;
   vec2 a = vec2(-p.x, p.z);
   vec2 c = vec2(-q.x, q.z);
   float rp = length(a);
@@ -723,24 +807,54 @@ float transmissaoDasNuvens(vec3 local, vec2 uv) {
   float du = (1.0 - degenerado) * atan(a.x * c.y - a.y * c.x, dot(a, c) + degenerado)
     / 6.28318531;
   float dv = (atan(q.y, rq) - atan(p.y, rp)) / 3.14159265;
-  return 1.0 - alfaDaNuvem(uv + vec2(du + uDeslocU, dv), dFdx(uv), dFdy(uv));
+  // o cosseno do zênite do Sol NA casca (≥ 0,055 no terminador)
+  float mu0 = (b + t) / r;
+  float aq = min(alfaDaNuvem(uv + vec2(du + uDeslocU, dv), dFdx(uv), dFdy(uv)), ALFA_TETO_DA_SOMBRA);
+  // a difusa sai da base, a h km, logo acima do ponto: o α dela com a
+  // pegada de 2h em u e em v, nunca menor que a do pixel
+  float hKm = (r - 1.0) * RAIO_DO_AR_KM;
+  float rho = max(length(vec2(p.x, p.z)), 0.05);
+  vec2 gx = dFdx(uv);
+  vec2 gy = dFdy(uv);
+  vec2 pegadaU = vec2(max(2.0 * hKm / (6.28318531 * RAIO_DO_AR_KM * rho), abs(gx.x) + abs(gy.x)), 0.0);
+  vec2 pegadaV = vec2(0.0, max(2.0 * hKm / (3.14159265 * RAIO_DO_AR_KM), abs(gx.y) + abs(gy.y)));
+  float ap = min(alfaDaNuvem(uv + vec2(uDeslocU, 0.0), pegadaU, pegadaV), ALFA_TETO_DA_SOMBRA);
+  return nuvemQuebrada(aq, ap, mu0);
+}
+// a fração s da luz do Sol que chega ao chão como CÉU, por canal
+vec3 fracaoDoCeu(float cosZenite) {
+  float m = massaDeArDeChapman(RAIO_DO_AR_KM / ALTURA_DE_ESCALA_KM, clamp(cosZenite, 0.0, 1.0));
+  vec3 direto = exp(-(TAU_RAYLEIGH + TAU_AEROSSOL) * m);
+  vec3 ceu = 0.5 * (1.0 - exp(-0.95 * (TAU_RAYLEIGH + TAU_AEROSSOL) * m));
+  return ceu / (direto + ceu);
+}
+// o direto (aceso pela encosta) passa por tDireto; o céu acende como o
+// chão plano, na fração vistaDoCeu que a faceta vê
+vec3 luzDoSolEDoCeu(vec3 escuro, vec3 aceso, vec3 plano, float tDireto, float vistaDoCeu, vec3 s) {
+  return escuro + (1.0 - s) * tDireto * (aceso - escuro) + s * vistaDoCeu * (plano - escuro);
 }
 ` +
   SUPERFICIE_ATE_O_ESPECULAR +
   /* glsl */ `  // A LUZ ANTES DO ALBEDO, com as NUVENS e as MONTANHAS NO CAMINHO DO
-  // SOL: o termo do Sol passa pela transmissão T da casca vezes a sombra
-  // só do relevo (os mapas de horizonte, sobre a normal geométrica); a
-  // lanterna fica de fora (a mesma do TERRA_FRAG), e o especular é do
-  // Sol, então apaga junto. O Sol chega pelo ar (a luz do pôr do sol):
-  // a cor dele no chão, como o eclipse, é fator do Sol e só dele.
+  // SOL: o feixe direto D da nuvem vezes a sombra parcial do relevo (os
+  // mapas de horizonte, sobre a normal geométrica) mais a difusa F que a
+  // nuvem deixa passar, e o céu por fora dos dois; a lanterna fica de fora
+  // (a mesma do TERRA_FRAG), e o especular é do feixe, então apaga junto.
+  // O Sol chega pelo ar (a luz do pôr do sol): a cor dele no chão, como o
+  // eclipse, é fator do Sol e só dele.
   vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
   vec3 luzSol = vec3(uLuzGanho) * sombras * transmitanciaDoSol(0.0, ndotlGeo);
-  float transmissao = transmissaoDasNuvens(vLocal, vUv) * sombraSoDoRelevo(n, vUv, uDirSolLocal);
+  vec2 nuvens = sombraDasNuvens(vLocal, vUv);
+  float transmissao = nuvens.x * sombraParcialDoRelevo(n, vUv, uDirSolLocal);
   vec3 lanterna = lanternaDeLeitura(nRelevo, v, sombras);
-  vec3 luz = mix(
-    luzDoGlobo(vec3(0.0), lanterna),
+  vec3 escuro = luzDoGlobo(vec3(0.0), lanterna);
+  vec3 luz = luzDoSolEDoCeu(
+    escuro,
     luzDoGlobo(vec3(ndotl) * luzSol, lanterna),
-    transmissao
+    luzDoGlobo(vec3(terminadorSuave(ndotlGeo)) * luzSol, lanterna),
+    transmissao + nuvens.y,
+    0.5 * (1.0 + dot(nRelevo, n)),
+    fracaoDoCeu(ndotlGeo)
   );
   vec3 direta = albedo * luz + vec3(espec * transmissao) * luzSol;
 

@@ -72,6 +72,13 @@
 // equiretangular (e o próprio shader devolve a normal geométrica no
 // polo, onde o frame degenera).
 //
+// A MÉDIA DE ÁREA (a Terra, item 232, 08/10). `assaNormaisPorMediaDeArea`
+// é a outra conta, para quem tem a grade FINA na mão (o ETOPO de 60″,
+// `relevo-terra.mjs`): a normal de cada texel é a média do gradiente na
+// célula, pelo fluxo da altura nas bordas, e não a diferença central numa
+// grade já reduzida. Mesma convenção, mesmo clamp, mesma codificação; os
+// corpos da tabela abaixo seguem com `assaNormais`, byte a byte.
+//
 // A GUARDA DE ALINHAMENTO. O mapa de cor e o DEM têm de estar na MESMA
 // convenção de longitude, senão o relevo cai fora — o defeito que o
 // item 138 achou nas luas de Saturno, e o risco real de Vesta, cujos
@@ -179,6 +186,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { pesosDaCaixa } from './gera-horizonte.mjs';
 import { giraColunasDeImagem } from './lib-texturas.mjs';
 import { inventaRelevoDoCorpo } from './relevo-inventado.mjs';
 
@@ -1059,6 +1067,103 @@ export function assaNormais(metros, largura, altura, raioM, vazio, { travaNoSul 
     rmsGraus: (Math.atan(rms) * 180) / Math.PI,
     maxGraus: (Math.atan(Math.sqrt(maiorDeclive)) * 180) / Math.PI,
     lisos,
+  };
+}
+
+/**
+ * A NORMAL PELA MÉDIA DE ÁREA DO GRADIENTE (a Terra, item 232, 08/10) —
+ * a normal de cada texel W×H sai da grade FINA de alturas (`alturaM`,
+ * Wf·Hf metros, a mesma convenção, sem giro), e não de uma grade já
+ * reduzida. Pelo teorema da divergência, a média do gradiente na célula é
+ * o fluxo da altura pelas bordas: o leste é ∫dφ[h(λ1) − h(λ0)] / (R·Δλ·
+ * (sen φN − sen φS)) e o norte (h na borda norte − h na borda sul)/(R·Δφ).
+ * A altura numa borda sai da interpolação linear entre os centros finos
+ * que a cercam (ao longo da derivada) e da média de caixa ao longo dela
+ * (`pesosDaCaixa`); a média em φ da borda leste/oeste é pesada pela
+ * sobreposição das linhas finas. O denominador leste é preso no valor de
+ * 80° como em `assaNormais`, e a codificação é a mesma, ganho físico 1,0.
+ * Com a diferença central numa grade reduzida, a encosta de uma célula se
+ * apoiava nas médias das vizinhas e saía alisada; aqui ela é a da célula
+ * (no ETOPO, declive RMS da terra 1,99° contra 1,43° do 8192 reduzido —
+ * `capturas/efeitos-timidos/relevo/numeros.md`). `{ rgb, rmsGraus, maxGraus }`.
+ */
+export function assaNormaisPorMediaDeArea(alturaM, Wf, Hf, W, H, raioM) {
+  const h = alturaM;
+  const rx = Wf / W;
+  const ry = Hf / H;
+  const dLon = (2 * Math.PI) / W;
+  const dLat = Math.PI / H;
+  const cosTrava = Math.cos(LATITUDE_DO_CLAMP_RAD);
+  // a borda OESTE da coluna e, em coordenada de centro fino (o centro k em k + 0,5)
+  const k0 = new Int32Array(W);
+  const k1 = new Int32Array(W);
+  const fk = new Float64Array(W);
+  for (let e = 0; e < W; e += 1) {
+    const t = e * rx - 0.5;
+    const f0 = Math.floor(t);
+    fk[e] = t - f0;
+    k0[e] = ((f0 % Wf) + Wf) % Wf;
+    k1[e] = (k0[e] + 1) % Wf;
+  }
+  const P = pesosDaCaixa(W, Wf);
+  // a borda horizontal b (latitude 90° − b·Δφ): a interpolação entre as duas
+  // linhas finas que a cercam, em média de caixa sobre cada coluna de saída
+  const bordaHorizontal = (b) => {
+    const y = b * ry - 0.5;
+    const r0f = Math.floor(y);
+    const f = y - r0f;
+    const r0 = Math.max(0, Math.min(Hf - 1, r0f)) * Wf;
+    const r1 = Math.max(0, Math.min(Hf - 1, r0f + 1)) * Wf;
+    const borda = new Float64Array(W);
+    for (let I = 0; I < W; I += 1) {
+      let s = 0;
+      for (let p = P.ini[I]; p < P.ini[I + 1]; p += 1) {
+        const k = P.col[p];
+        s += P.w[p] * (h[r0 + k] * (1 - f) + h[r1 + k] * f);
+      }
+      borda[I] = s;
+    }
+    return borda;
+  };
+  const rgb = Buffer.alloc(W * H * 3);
+  const oeste = new Float64Array(W);
+  let norte = bordaHorizontal(0);
+  let somaDeclive2 = 0;
+  let maiorDeclive = 0;
+  for (let j = 0; j < H; j += 1) {
+    oeste.fill(0);
+    const v0 = j * ry;
+    const v1 = v0 + ry;
+    for (let r = Math.floor(v0); r < Math.ceil(v1); r += 1) {
+      const w = (Math.min(v1, r + 1) - Math.max(v0, r)) / ry;
+      if (w <= 1e-9) continue;
+      const base = Math.min(Hf - 1, r) * Wf;
+      for (let e = 0; e < W; e += 1) oeste[e] += w * (h[base + k0[e]] * (1 - fk[e]) + h[base + k1[e]] * fk[e]);
+    }
+    const sul = bordaHorizontal(j + 1);
+    const fiN = Math.PI / 2 - j * dLat;
+    const cj = Math.max((Math.sin(fiN) - Math.sin(fiN - dLat)) / dLat, cosTrava);
+    const passoLeste = raioM * dLon * cj;
+    const passoNorte = raioM * dLat;
+    for (let i = 0; i < W; i += 1) {
+      // a borda leste da coluna i é a oeste da seguinte, com a volta
+      const x = -(oeste[(i + 1) % W] - oeste[i]) / passoLeste;
+      const y = -(norte[i] - sul[i]) / passoNorte;
+      const declive2 = x * x + y * y;
+      somaDeclive2 += declive2;
+      if (declive2 > maiorDeclive) maiorDeclive = declive2;
+      const inv = 1 / Math.sqrt(declive2 + 1);
+      const k = (j * W + i) * 3;
+      rgb[k] = Math.max(0, Math.min(255, Math.round((x * inv * 0.5 + 0.5) * 255)));
+      rgb[k + 1] = Math.max(0, Math.min(255, Math.round((y * inv * 0.5 + 0.5) * 255)));
+      rgb[k + 2] = Math.max(0, Math.min(255, Math.round((inv * 0.5 + 0.5) * 255)));
+    }
+    norte = sul;
+  }
+  return {
+    rgb,
+    rmsGraus: (Math.atan(Math.sqrt(somaDeclive2 / (W * H))) * 180) / Math.PI,
+    maxGraus: (Math.atan(Math.sqrt(maiorDeclive)) * 180) / Math.PI,
   };
 }
 

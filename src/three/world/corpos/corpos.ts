@@ -428,7 +428,9 @@ vec3 normalDoMapa(vec3 n, vec2 uv) {
  * A INTERPOLAÇÃO É UM CHAPÉU: o peso de cada azimute k é
  * max(1 − distância circular entre s e k, 0), com s = az/(π/3). Entre
  * dois vizinhos isso é a reta entre eles, a volta dos 360° sai do `mod`
- * e nenhum array é indexado por variável (GLSL ES 1.00).
+ * e nenhum array é indexado por variável (GLSL ES 1.00). A leitura mora
+ * em `senoDoHorizonte` (o seno no rumo do Sol), que a sombra parcial da
+ * Terra (`GLSL_SOMBRA_PARCIAL_DO_RELEVO`) também usa.
  *
  * SEM ALFA: o Safari do iPhone pré-multiplica o alfa na decodificação e
  * destrói o RGB onde o alfa é 0 — por isso três azimutes por mapa, e o
@@ -451,6 +453,12 @@ vec3 normalDoMapa(vec3 n, vec2 uv) {
  * ficam); com o Sol abaixo do horizonte geométrico o plano já tapa tudo
  * e o relevo não acrescenta nada — a faixa do terminador fica com a luz
  * de hoje. Chão plano, polo ou portão fechado devolvem 1 exato.
+ *
+ * O RELEVO REALÇADO (só a Terra, item 232): quem define
+ * `REALCE_DO_RELEVO` (e declara `uniform float uRealceDoRelevo`) tem os
+ * senos lidos em `senoDoHorizonte` com a tangente multiplicada pelo
+ * fator — as alturas ×k. Hipérion e Pã não definem, e o preprocessador
+ * tira o trecho: o shader deles é o de antes.
  */
 export const GLSL_SOMBRA_DO_HORIZONTE = /* glsl */ `
 uniform sampler2D uMapaHorizonte;
@@ -459,22 +467,34 @@ uniform float uHorizonte;  // 0 desliga; 1 nos corpos com horizonte: true
 float solAcimaDe(float senH, float senElev) {
   return smoothstep(senH - 0.03, senH + 0.03, senElev);
 }
-float sombraDoHorizonte(vec3 nGeo, vec2 uv, vec3 L) {
-  if (uHorizonte <= 0.0) return 1.0;
-  vec3 t;
-  vec3 b;
-  if (!quadroTangente(nGeo, t, b)) return 1.0;
-  float senElev = dot(L, nGeo);
+float senoDoHorizonte(vec3 t, vec3 b, vec2 uv, vec3 L) {
   float lx = dot(L, t);
   float ly = dot(L, b);
   float az = abs(lx) + abs(ly) > 1.0e-6 ? atan(ly, lx) : 0.0;
   float s = az / 1.0471975511965976;
   vec3 h1 = texture2D(uMapaHorizonte, uv).rgb;
   vec3 h2 = texture2D(uMapaHorizonte2, uv).rgb;
+#ifdef REALCE_DO_RELEVO
+  // o relevo realçado da Terra (item 232, declarado): alturas ×k →
+  // tan(h) ×k em cada azimute, antes da interpolação
+  if (uRealceDoRelevo != 1.0) {
+    vec3 t1 = h1 * inversesqrt(max(1.0 - h1 * h1, 1.0e-6));
+    vec3 t2 = h2 * inversesqrt(max(1.0 - h2 * h2, 1.0e-6));
+    h1 = uRealceDoRelevo * t1 * inversesqrt(1.0 + uRealceDoRelevo * uRealceDoRelevo * t1 * t1);
+    h2 = uRealceDoRelevo * t2 * inversesqrt(1.0 + uRealceDoRelevo * uRealceDoRelevo * t2 * t2);
+  }
+#endif
   vec3 w1 = max(1.0 - abs(mod(s - vec3(0.0, 2.0, 4.0) + 3.0, 6.0) - 3.0), 0.0);
   vec3 w2 = max(1.0 - abs(mod(s - vec3(1.0, 3.0, 5.0) + 3.0, 6.0) - 3.0), 0.0);
-  float senH = dot(w1, h1) + dot(w2, h2);
-  return solAcimaDe(senH, senElev);
+  return dot(w1, h1) + dot(w2, h2);
+}
+float sombraDoHorizonte(vec3 nGeo, vec2 uv, vec3 L) {
+  if (uHorizonte <= 0.0) return 1.0;
+  vec3 t;
+  vec3 b;
+  if (!quadroTangente(nGeo, t, b)) return 1.0;
+  float senElev = dot(L, nGeo);
+  return solAcimaDe(senoDoHorizonte(t, b, uv, L), senElev);
 }
 float sombraSoDoRelevo(vec3 nGeo, vec2 uv, vec3 L) {
   return 1.0 - max(solAcimaDe(0.0, dot(L, nGeo)) - sombraDoHorizonte(nGeo, uv, L), 0.0);
@@ -484,6 +504,49 @@ float visibilidadeDoCeu(vec2 uv) {
   vec3 h1 = texture2D(uMapaHorizonte, uv).rgb;
   vec3 h2 = texture2D(uMapaHorizonte2, uv).rgb;
   return 1.0 - (dot(h1, h1) + dot(h2, h2)) / 6.0;
+}
+`;
+
+/**
+ * A SOMBRA PARCIAL DO RELEVO (só a Terra, item 232, 08/10) — no lugar do
+ * degrau de `sombraSoDoRelevo`, a FRAÇÃO da célula que o relevo põe na
+ * sombra. O texel de horizonte da Terra (4096, ~9,8 km) guarda a MÉDIA do
+ * seno do horizonte das amostras de ~1,85 km do ETOPO dentro dele
+ * (`relevo-terra.mjs`); dentro da célula esse seno se espalha, e o degrau
+ * no seno médio apagava a célula inteira de uma vez.
+ *
+ * A LEI: o seno do horizonte de uma amostra da célula é uma gama de forma
+ * 2 com a média μ do texel — σ/μ = 1/√2, e o medido no horizonte fino do
+ * ETOPO é 0,64–0,70 de μ = 0,5° a 8°; contra a fração acesa medida na
+ * montanha, erra 0,055 em média, contra 0,082 do degrau e 0,060 da normal
+ * (`capturas/efeitos-timidos/relevo/lei-do-espalhamento-v2.md`, 704.812
+ * células de terra × 6 azimutes). A fração com o horizonte acima de t é
+ * P(t) = e^(−2t/μ)·(1 + 2t/μ), e a sombra é essa fração vista pela MESMA
+ * rampa de meia-largura 0,03 de `solAcimaDe`:
+ *
+ *     [D(s + 0,03) − D(s − 0,03)] / 0,06,
+ *     D(T) = ∫₀^T P(t) dt = (μ/2)·(2 − e^(−x)·(2 + x)),  x = 2T/μ, T ≥ 0.
+ *
+ * É sombra SÓ do relevo, como a de `sombraSoDoRelevo`: com o Sol abaixo da
+ * rampa o plano já tapa tudo e ela é 0 (a faixa do terminador fica com a
+ * luz de hoje). Chão plano (μ no piso de 1e−5): no máximo 1,7e−4 dentro da
+ * rampa e 0 fora dela; o exp de argumento grande dá 0, nunca NaN. Portão
+ * fechado ou polo: 1 exato. Quem inclui traz `GLSL_SOMBRA_DO_HORIZONTE`
+ * antes (o quadro, o portão e `senoDoHorizonte`); Hipérion e Pã seguem
+ * com o degrau.
+ */
+export const GLSL_SOMBRA_PARCIAL_DO_RELEVO = /* glsl */ `
+float sombraParcialDoRelevo(vec3 nGeo, vec2 uv, vec3 L) {
+  if (uHorizonte <= 0.0) return 1.0;
+  vec3 t;
+  vec3 b;
+  if (!quadroTangente(nGeo, t, b)) return 1.0;
+  float senElev = dot(L, nGeo);
+  float mu = max(senoDoHorizonte(t, b, uv, L), 1.0e-5);
+  float xa = 2.0 * max(senElev + 0.03, 0.0) / mu;
+  float xb = 2.0 * max(senElev - 0.03, 0.0) / mu;
+  float tapada = 0.5 * mu * (exp(-xb) * (2.0 + xb) - exp(-xa) * (2.0 + xa)) / 0.06;
+  return 1.0 - clamp(tapada, 0.0, 1.0);
 }
 `;
 

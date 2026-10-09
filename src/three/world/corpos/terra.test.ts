@@ -84,6 +84,7 @@ import {
   tauRayleighAoNivelDoMar,
 } from '../../../lib/atlas/arMedido';
 import { cessaoPorDisco } from '../lodStellar';
+import { FATOR_DO_RELEVO_REALCADO } from '../../core/engine';
 
 const DATA_DIR = fileURLToPath(new URL('../../../../public/data/atlas/', import.meta.url));
 const meta = JSON.parse(
@@ -1490,14 +1491,22 @@ describe('9. a variante profundidade (rodada das nuvens, 07/10)', () => {
     terra.dispose();
   });
 
-  it('o 8k das nuvens é SÓ da profundidade, SÓ em cinema — a classica segue no 4k', async () => {
+  it('o 8k das nuvens e da normal é SÓ da profundidade, SÓ em cinema — a classica segue no 4k', async () => {
     const { terra, chamadas } = await terraNaTela('profundidade');
     const texs = chamadas.filter((c) => c.startsWith('tex:'));
     expect(texs).toContain('tex:textures/atlas/earth/clouds.webp');
     expect(texs).not.toContain('tex:textures/atlas/earth/clouds_4096.jpg');
+    // a normal (item 232): o relevo medido de 8192 sobe junto
+    expect(texs).toContain('tex:textures/atlas/earth/normal.webp');
+    expect(texs).not.toContain('tex:textures/atlas/earth/normal_4096.webp');
     // o apoio que não é assunto continua na dose de VRAM
     expect(texs).toContain('tex:textures/atlas/earth/night_4096.webp');
     terra.dispose();
+    const classica = await terraNaTela('classica');
+    const texsClassica = classica.chamadas.filter((c) => c.startsWith('tex:'));
+    expect(texsClassica).toContain('tex:textures/atlas/earth/normal_4096.webp');
+    expect(texsClassica).not.toContain('tex:textures/atlas/earth/normal.webp');
+    classica.terra.dispose();
     expect(alvoDePixels('cinema', 'clouds', 16384, true)).toBe(8192);
     expect(alvoDePixels('cinema', 'clouds', 4096, true)).toBe(4096);
     expect(alvoDePixels('alta', 'clouds', 16384, true)).toBe(2048);
@@ -1534,6 +1543,170 @@ describe('9. a variante profundidade (rodada das nuvens, 07/10)', () => {
     terra.atualizar(quadro(longe, { tS: 15.1 }));
     expect([u.uHorizonte.value, u.uMapaHorizonte.value, u.uMapaHorizonte2.value]).toEqual([0, null, null]);
     terra.dispose();
+  });
+
+  /**
+   * O RELEVO REALÇADO (item 232): a troca é SÓ o fator do uniform da
+   * superfície funda — o mesmo material, o mesmo programa, nenhum fetch —,
+   * e só a `profundidade` define o realce: na clássica o preprocessador o
+   * tira, e ela não tem o uniform.
+   */
+  it('o relevo realçado é o fator do uniform da superfície funda: 3 no realcado, 1 no real, ao vivo', async () => {
+    const { terra, chamadas, sup } = await terraNaTela('profundidade');
+    const mS = sup.material as THREE.ShaderMaterial;
+    const versao = mS.version;
+    const antes = chamadas.length;
+    expect(mS.uniforms.uRealceDoRelevo.value).toBe(1);
+    terra.definirRelevo('realcado');
+    expect(FATOR_DO_RELEVO_REALCADO).toBe(3);
+    expect(mS.uniforms.uRealceDoRelevo.value).toBe(FATOR_DO_RELEVO_REALCADO);
+    terra.definirRelevo('real');
+    expect(mS.uniforms.uRealceDoRelevo.value).toBe(1);
+    expect([sup.material, mS.version, mS.fragmentShader]).toEqual([mS, versao, TERRA_PROFUNDIDADE_FRAG]);
+    await flush();
+    expect(chamadas).toHaveLength(antes);
+    expect(TERRA_PROFUNDIDADE_FRAG).toContain('#define REALCE_DO_RELEVO');
+    expect(TERRA_FRAG).not.toContain('#define REALCE_DO_RELEVO');
+    terra.definirVariante('classica');
+    expect((sup.material as THREE.ShaderMaterial).uniforms.uRealceDoRelevo).toBeUndefined();
+    terra.dispose();
+  });
+
+  /**
+   * A SOMBRA PARCIAL DAS MONTANHAS (item 232): a lei gama da célula, com as
+   * expressões do shader montado tais quais, rodando em JS. É sombra SÓ do
+   * relevo: abaixo da rampa do plano é 1 exato, e acima dela a luz só
+   * cresce com o Sol.
+   */
+  it('a sombra das montanhas é a fração da célula: chão plano aceso, crescente com o Sol, sem NaN no zero', () => {
+    const corpo = /float sombraParcialDoRelevo\(vec3 nGeo, vec2 uv, vec3 L\) \{([^]*?)\n\}/.exec(
+      TERRA_PROFUNDIDADE_FRAG
+    )![1]!;
+    const expr = (re: RegExp) => re.exec(corpo)![1]!;
+    const piso = expr(/float mu = max\(senoDoHorizonte\(t, b, uv, L\), ([\d.e-]+)\);/);
+    const lei = new Function(
+      'senH', 'senElev', 'max', 'exp', 'clamp',
+      `const mu = max(senH, ${piso}); const xa = ${expr(/float xa = ([^;]+);/)}; ` +
+        `const xb = ${expr(/float xb = ([^;]+);/)}; const tapada = ${expr(/float tapada = ([^;]+);/)}; ` +
+        `return ${expr(/return (1\.0 - clamp\([^;]+\));/)};`
+    ) as (...a: unknown[]) => number;
+    const clamp = (x: number, a: number, b: number) => Math.min(Math.max(x, a), b);
+    const parcial = (senH: number, senElev: number) => lei(senH, senElev, Math.max, Math.exp, clamp);
+    // chão plano: no máximo o piso de μ dentro da rampa, nada fora dela
+    for (const s of [-0.2, -0.03, -0.01, 0, 0.01, 0.03, 0.1, 1]) expect(parcial(0, s)).toBeGreaterThan(1 - 2e-4);
+    // abaixo da rampa do plano o relevo não acrescenta nada; no Sol a 0°, número finito
+    for (const mu of [0, 0.01, 0.05, 0.2]) {
+      expect(parcial(mu, -0.031)).toBe(1);
+      expect(Number.isFinite(parcial(mu, 0))).toBe(true);
+    }
+    // acima da rampa a fração acesa só cresce com o Sol, em qualquer montanha
+    for (const mu of [0.005, 0.02, 0.05, 0.1]) {
+      let antes = -Infinity;
+      for (let s = 0.03; s <= 1; s += 0.001) {
+        const v = parcial(mu, s);
+        expect(v).toBeGreaterThanOrEqual(antes - 1e-12);
+        antes = v;
+      }
+      expect(parcial(mu, 1)).toBeGreaterThan(0.999);
+    }
+    // com o Sol na média do horizonte a célula fica PARCIAL, não acesa nem apagada
+    expect(parcial(0.05, 0.05)).toBeGreaterThan(0.2);
+    expect(parcial(0.05, 0.05)).toBeLessThan(0.8);
+    // e a Terra usa esta lei no lugar do degrau (Hipérion e Pã seguem com ele)
+    expect(TERRA_PROFUNDIDADE_FRAG).toContain(
+      'float transmissao = nuvens.x * sombraParcialDoRelevo(n, vUv, uDirSolLocal);'
+    );
+    expect(TERRA_PROFUNDIDADE_FRAG).not.toContain('sombraSoDoRelevo(n,');
+  });
+
+  /**
+   * A NUVEM QUEBRADA (item 232): o α do texel é a refletância; a fração
+   * coberta de nuvem grossa (Rc = 0,633, Bohren com τ = 23) deixa passar
+   * o feixe direto D pelos buracos e a difusa F pela base — e, sem
+   * absorção, com o Sol a pino D + F = 1 − α.
+   */
+  it('a nuvem quebrada: céu limpo passa inteiro, a grossa deixa só a difusa, e direto + difusa = 1 − α com o Sol a pino', () => {
+    const corpo = /vec2 nuvemQuebrada\(float aq, float ap, float mu0\) \{([^]*?)\n\}/.exec(
+      TERRA_PROFUNDIDADE_FRAG
+    )![1]!;
+    const consts = Object.fromEntries(
+      [...TERRA_PROFUNDIDADE_FRAG.matchAll(/const float (REFLETANCIA_DA_NUVEM_GROSSA|UM_MENOS_G2?) = ([\d.]+);/g)].map(
+        (m) => [m[1]!, Number(m[2])]
+      )
+    );
+    const js = corpo.replace(/\bfloat /g, 'const ').replace(/return vec2\(([^;]+)\);/, 'return [$1];');
+    const lei = new Function('aq', 'ap', 'mu0', 'min', 'max', 'exp', ...Object.keys(consts), js) as (
+      ...a: unknown[]
+    ) => [number, number];
+    const nuvem = (aq: number, ap: number, mu0: number) =>
+      lei(aq, ap, mu0, Math.min, Math.max, Math.exp, ...Object.values(consts));
+    // os números: g = 0,85 (1 − g e 1 − g²) e o Rc da refletância de Bohren com τ = 23
+    expect([consts.UM_MENOS_G, consts.UM_MENOS_G2]).toEqual([0.15, 0.2775]);
+    expect((0.15 * 23) / (2 + 0.15 * 23)).toBeCloseTo(consts.REFLETANCIA_DA_NUVEM_GROSSA!, 3);
+    // céu limpo: o Sol inteiro no feixe, nenhuma difusa — a luz de hoje
+    expect(nuvem(0, 0, 1)).toEqual([1, 0]);
+    expect(nuvem(0, 0, 0.055)).toEqual([1, 0]);
+    for (const a of [0.1, 0.3, 0.633, 0.8, 0.98]) {
+      const [d, f] = nuvem(a, a, 1);
+      expect(Math.abs(d + f - (1 - a))).toBeLessThan(0.002);
+      expect(d).toBeLessThanOrEqual(1);
+      expect(f).toBeGreaterThanOrEqual(0);
+    }
+    // a nuvem grossa no raio do Sol: o feixe some, e mais com o Sol baixo
+    expect(nuvem(0.98, 0, 1)[0]).toBeLessThan(1e-6);
+    expect(nuvem(0.633, 0, 0.1)[0]).toBeLessThan(nuvem(0.633, 0, 1)[0]);
+    // D passa pela montanha e leva o especular; F entra só na luz
+    expect(TERRA_PROFUNDIDADE_FRAG).toContain('    transmissao + nuvens.y,');
+    expect(TERRA_PROFUNDIDADE_FRAG).toContain('vec3 direta = albedo * luz + vec3(espec * transmissao) * luzSol;');
+  });
+
+  /**
+   * O CÉU NA SOMBRA (item 232): o Sol normalizado no zênite vira direto +
+   * céu pela Rayleigh do SPCTRAL2; nuvem e montanha barram só o direto, e o
+   * céu acende como o chão plano. Com as expressões do shader em JS.
+   */
+  it('o céu na sombra: o chão plano aceso e limpo fica como hoje, e a sombra recebe o céu azul', () => {
+    const tau = /const vec3 TAU_RAYLEIGH = vec3\(([\d.]+), ([\d.]+), ([\d.]+)\);/
+      .exec(TERRA_PROFUNDIDADE_FRAG)!
+      .slice(1)
+      .map(Number);
+    const fracaoGlsl = /vec3 fracaoDoCeu\(float cosZenite\) \{([^]*?)\n\}/.exec(TERRA_PROFUNDIDADE_FRAG)![1]!;
+    const fracao = new Function(
+      'cosZenite', 'tau', 'massaDeArDeChapman', 'RAIO_DO_AR_KM', 'ALTURA_DE_ESCALA_KM', 'clamp', 'exp',
+      fracaoGlsl.replace(/\b(float|vec3) /g, 'const ').replace(/\(TAU_RAYLEIGH \+ TAU_AEROSSOL\)/g, 'tau')
+    ) as (...a: unknown[]) => number;
+    const clamp = (x: number, a: number, b: number) => Math.min(Math.max(x, a), b);
+    const s = (graus: number) =>
+      tau.map((t) =>
+        fracao(Math.sin((graus * Math.PI) / 180), t, massaDeArDeChapman, RAIO_DO_AR_KM, ALTURA_DE_ESCALA_KM, clamp, Math.exp)
+      );
+    // os números de capturas/efeitos-timidos/nuvens/medidas-ceu.md: 9/16/32 % a 15°, 4/7/14 % a 40°
+    s(15).forEach((v, i) => expect(Math.abs(v - [0.09, 0.16, 0.32][i]!)).toBeLessThan(0.01));
+    s(40).forEach((v, i) => expect(Math.abs(v - [0.04, 0.07, 0.14][i]!)).toBeLessThan(0.01));
+    const luzGlsl = /vec3 luzDoSolEDoCeu\([^)]*\) \{\s*return ([^;]+);/.exec(TERRA_PROFUNDIDADE_FRAG)![1]!;
+    const luz = new Function('escuro', 'aceso', 'plano', 'tDireto', 'vistaDoCeu', 's', `return ${luzGlsl};`) as (
+      ...a: number[]
+    ) => number;
+    // chão plano (a encosta é o plano, a faceta vê o céu inteiro), aceso e limpo: a luz de hoje
+    for (const si of [...s(2), ...s(15), ...s(60)]) {
+      for (const [escuro, aceso] of [[0, 0.7], [0.05, 0.3], [0.1, 1]] as const) {
+        expect(luz(escuro, aceso, aceso, 1, 1, si)).toBeCloseTo(aceso, 12);
+      }
+    }
+    // na sombra (direto barrado) o céu acende o chão, mais no azul; a faceta virada ao chão vê menos céu
+    const sombra = s(15).map((si) => luz(0, 0.8, 0.8, 0, 1, si));
+    expect(sombra[0]!).toBeGreaterThan(0);
+    expect(sombra[2]!).toBeGreaterThan(sombra[1]!);
+    expect(sombra[1]!).toBeGreaterThan(sombra[0]!);
+    expect(luz(0, 0.8, 0.8, 0, 0.6, s(15)[2]!)).toBeLessThan(sombra[2]!);
+    // no shader: o plano pelo terminador geométrico, a vista pela faceta, a fração pelo Sol no chão
+    for (const trecho of [
+      'luzDoGlobo(vec3(terminadorSuave(ndotlGeo)) * luzSol, lanterna),',
+      '0.5 * (1.0 + dot(nRelevo, n)),',
+      'fracaoDoCeu(ndotlGeo)',
+    ]) {
+      expect(TERRA_PROFUNDIDADE_FRAG).toContain(trecho);
+    }
   });
 
   it('a luz do pôr do sol é o ar LIMPO medido, normalizada pelo zênite: vermelho no horizonte, grampeada abaixo dele (08/10)', () => {

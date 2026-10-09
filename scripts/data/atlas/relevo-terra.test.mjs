@@ -1,13 +1,14 @@
-// Serve: lei — o relevo medido da Terra (ETOPO 2022): o leitor lê o TIFF em ladrilhos Deflate com preditor 3, a água fica espelho, a normal e o horizonte saem com o sinal que o TERRA_FRAG lê, e a cadeia só grava o conjunto aprovado
+// Serve: lei — o relevo medido da Terra (ETOPO 2022): o leitor lê o TIFF em ladrilhos Deflate com preditor 3, a água fica espelho, a normal e o horizonte saem da grade fina com o sinal que o TERRA_FRAG lê, e a cadeia só grava o conjunto aprovado
 // ============================================================
 // Tudo sintético e pequeno: um TIFF montado aqui no formato do ETOPO, grades
-// de 720 a 1024 colunas na convenção da casa. O ETOPO real é medido pelas
-// ferramentas da rodada (capturas/terra-nuvens/relevo/), e a reprodução dos
-// candidatos pela cadeia, por `ferramentas/prova-cadeia-terra.mjs` de lá.
+// de 384 a 1024 colunas na convenção da casa. O ETOPO real é medido pelas
+// ferramentas da rodada (capturas/efeitos-timidos/relevo/), e a reprodução
+// dos candidatos pela cadeia é o portão dela (os sha256 aprovados).
 // ============================================================
 import { deflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { FONTES, numerosDoCandidatoDaTerra, numerosDoRelevoDaTerra, portaoDoRelevo } from './baixa-texturas.mjs';
+import { horizonteFinoNasLinhas } from './gera-horizonte.mjs';
 import { leTiffFloat32 } from './relevo-reia.mjs';
 import { ETOPO, HORIZONTE, RAIO_KM, angulosDoHorizonte, horizonteDaTerra, normalDaTerra, superficieDaTerra } from './relevo-terra.mjs';
 
@@ -124,8 +125,8 @@ describe('relevo da Terra', () => {
     // uma serra norte–sul (gaussiana em longitude) e uma leste–oeste (em latitude), 4 km de altura, σ 3 texels
     const serraNS = Float64Array.from({ length: W * H }, (_, k) => 4000 * Math.exp(-(((k % W) - i0) ** 2) / 18));
     const serraLO = Float64Array.from({ length: W * H }, (_, k) => 4000 * Math.exp(-((Math.floor(k / W) - j0) ** 2) / 18));
-    const ns = normalDaTerra(serraNS, W, H).rgb;
-    const lo = normalDaTerra(serraLO, W, H).rgb;
+    const ns = normalDaTerra(serraNS, W, H, W, H).rgb;
+    const lo = normalDaTerra(serraLO, W, H, W, H).rgb;
     const plano = Math.sin(10 * RAD);
     // Sol do LESTE a 10°: a encosta leste (descendo para leste, i0 + 3) acesa, a oeste (i0 − 3) apagada
     expect(nDotL(ns, i0 + 3, j0, W, H, 0, 10)).toBeGreaterThan(plano * 1.05);
@@ -139,25 +140,33 @@ describe('relevo da Terra', () => {
     expect([0, 1, 2].reduce((s, c) => s + (prox[c] - n[c]) * leste[c], 0)).toBeGreaterThan(0);
   });
 
-  it('o horizonte: o mar liso não tapa nada, a montanha a leste tapa o rumo leste e não o oeste, e a marcha passa dos 336 km', () => {
-    const [W, H] = [1024, 512];
-    const j0 = H / 2;
-    const i0 = W / 2;
-    const passo = 360 / W;
-    const lonM = Math.round(1.2 / passo); // a ~134 km a leste
-    const metros = Float64Array.from({ length: W * H }, (_, k) => 8000 * Math.exp(-(((k % W) - i0 - lonM) ** 2 + (Math.floor(k / W) - j0) ** 2) / 2));
-    const { senos } = horizonteDaTerra(metros, W, H);
+  it('o horizonte fino: o mar liso não tapa nada, a montanha a leste tapa o rumo leste e não o oeste, em fios ou não, e a marcha passa dos 336 km', async () => {
+    // a grade fina 1024×512 levada à de 384×192 (2,67 colunas finas por célula)
+    const [Wf, Hf, W, H] = [1024, 512, 384, 192];
+    const j0 = Hf / 2;
+    const i0 = Wf / 2;
+    const lonM = Math.round(1.2 / (360 / Wf)); // a ~134 km a leste
+    const metros = Float64Array.from({ length: Wf * Hf }, (_, k) => 8000 * Math.exp(-(((k % Wf) - i0 - lonM) ** 2 + (Math.floor(k / Wf) - j0) ** 2) / 2));
+    const { senos, horizon } = await horizonteDaTerra(metros, Wf, Hf, W, H, { fios: 2 });
     const N = W * H;
-    expect(senos[0 * N + j0 * W + i0]).toBeGreaterThan(Math.sin(1 * RAD));
-    expect(senos[3 * N + j0 * W + i0]).toBe(0);
-    expect(horizonteDaTerra(new Float64Array(N), W, H).senos.every((s) => s === 0)).toBe(true);
-    const ultimo = angulosDoHorizonte(HORIZONTE.largura).at(-1);
+    const celula = Math.floor((j0 * H) / Hf) * W + Math.floor((i0 * W) / Wf);
+    expect(senos[0 * N + celula]).toBeGreaterThan(Math.sin(1 * RAD));
+    expect(senos[3 * N + celula]).toBe(0);
+    expect(horizon.length).toBe(N * 3);
+    // as faixas em dois fios dão o mesmo mapa que a marcha inteira de uma vez
+    const raioM = RAIO_KM * 1000;
+    const deUmaVez = horizonteFinoNasLinhas({ alturaM: Float32Array.from(metros), Wf, Hf, W, H, raioM, angulos: angulosDoHorizonte(Wf), J0: 0, J1: H });
+    expect(senos).toEqual(deUmaVez);
+    const liso = await horizonteDaTerra(new Float64Array(Wf * Hf), Wf, Hf, W, H, { fios: 2 });
+    expect(liso.senos.every((s) => s === 0)).toBe(true);
+    // a marcha anda na grade da FONTE e passa do alcance da montanha mais alta
+    const ultimo = angulosDoHorizonte(ETOPO.largura).at(-1);
     expect(ultimo * RAIO_KM).toBeGreaterThan(Math.sqrt(2 * RAIO_KM * 8.85));
   });
 
   it('a cadeia lê do parametros.json dos candidatos os mesmos números que o gerador dá, e as três entradas dividem um só relevo', () => {
     const superficie = { lagos: [{ nome: 'Baikal', nivelM: 456, areaKm2: 32005, fundoM: -1184 }], abaixoDoMar: 7 };
-    // o registro como `gera-candidatos.mjs` o grava
+    // o registro do candidato (capturas/efeitos-timidos/relevo/parametros.json)
     const p = {
       fonte: { ...ETOPO },
       raioKm: RAIO_KM,
@@ -165,7 +174,7 @@ describe('relevo da Terra', () => {
       normal: { ganho: 1 },
       horizonte: {
         grade: [HORIZONTE.largura, HORIZONTE.altura],
-        marcha: { ateGraus: HORIZONTE.ateGraus, ateKm: 345, passoEmTexels: HORIZONTE.passoEmTexels, passos: angulosDoHorizonte(HORIZONTE.largura).length },
+        marcha: { faixas: [[0.5, 1], [1, 3.1]], passos: angulosDoHorizonte(ETOPO.largura).length, gradeDaMarcha: [ETOPO.largura, ETOPO.altura] },
       },
     };
     expect(numerosDoCandidatoDaTerra(p)).toEqual(numerosDoRelevoDaTerra({ etopoSha256: ETOPO.sha256, superficie }));

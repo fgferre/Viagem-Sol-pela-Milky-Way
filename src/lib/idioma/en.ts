@@ -209,6 +209,14 @@ export const EN: Record<keyof typeof PT, string> = {
     'How the Earth globe is drawn: classic is the usual one; with depth gives the clouds a shadow on the ground, relief from the light and, in Cinema, the cloud map at 8k.',
   'ajustes.terra.classica': 'Classic',
   'ajustes.terra.profundidade': 'With depth',
+  // THE EARTH'S RELIEF (item 232, owner's decision 10/08) — right below
+  // the Earth: enhanced is a DECLARED mode, and the number comes from the
+  // house factor.
+  'ajustes.relevoControle': 'Earth relief',
+  'ajustes.relevoNota':
+    'Real draws the mountains at their measured heights. Enhanced multiplies the heights by {fator} so the relief shows from afar — a declared mode: the seal and the Earth\'s card say it is on. Only applies to the Earth with depth.',
+  'ajustes.relevo.real': 'Real',
+  'ajustes.relevo.realcado': 'Enhanced {fator}×',
   // THE DUST NEAR HOME (owner's request, 09/27) — the sixth control,
   // next to the gas: compare live the current procedural model with
   // the Gaia-measured block, in three brightnesses.
@@ -428,6 +436,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.superficie': 'surface',
   'ficha.campo.relevo': 'relief',
   'ficha.campo.oRelevoAdmite': 'the relief admits',
+  'ficha.campo.relevoRealcado': 'enhanced relief',
+  'ficha.relevoRealcado':
+    'heights are drawn {fator}× taller than measured — on sunlit slopes and in the mountains\' shadows; the sea stays flat. The map described below is still the measured one, with no exaggeration: the enhancement is in the drawing only, and turns off in Settings.',
   'ficha.campo.forma': 'shape',
   'ficha.campo.designacao': 'designation',
   'ficha.campo.distancia': 'distance',
@@ -446,6 +457,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.fonte.geometrico': 'geometric, center to center',
   'ficha.fonte.editorial': 'editorial text, no source cited',
   'ficha.fonte.bancada': 'texture workbench',
+  'ficha.fonte.modoDeclarado': 'declared mode, in Settings',
   'ficha.fonte.semLicenca': 'no texture with a settled license',
   'ficha.fonte.larguraPx': '{px} px wide',
   'ficha.fonte.catalogoHyg': 'HYG/AT-HYG catalog',
@@ -503,6 +515,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.gasCom': 'volumetric gas set by hand: {variante}',
   'selo.desvio.terra': 'Earth set by hand',
   'selo.desvio.terraCom': 'Earth set by hand: {variante}',
+  'selo.desvio.relevo': 'Earth relief enhanced',
+  'selo.desvio.relevoCom': 'Earth relief enhanced {fator}×',
   'selo.desvio.particulas': 'galaxy particles set by hand',
   'selo.desvio.particulasCom': 'galaxy particles set by hand: {nivel}',
   'selo.desvio.poeira': 'dust near home set by hand',

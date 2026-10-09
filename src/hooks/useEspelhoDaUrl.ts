@@ -13,6 +13,7 @@ import type {
   GasVolumetrico,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
+  RelevoDaTerra,
   TipoDePoeira,
   ModoDaLente,
   ToneMapMode,
@@ -324,6 +325,15 @@ export function useEspelhoDaUrl(dep: {
   };
 
   /**
+   * O RELEVO DA TERRA, AO VIVO (item 232) — no molde da Terra, com o
+   * `real` (o padrão) como AUSÊNCIA da chave: a URL espelha o desvio.
+   */
+  const trocarRelevo = (relevo: RelevoDaTerra) => {
+    directorRef.current?.definirRelevo(relevo);
+    window.history.replaceState(null, '', comParam('relevo', relevo === 'real' ? null : relevo));
+  };
+
+  /**
    * AS PARTÍCULAS DA GALÁXIA, AO VIVO (item 149) — o quinto controle da
    * gaveta Avançado, no mesmo molde exato dos quatro de cima.
    */
@@ -456,6 +466,8 @@ export function useEspelhoDaUrl(dep: {
         d.forcarGas(null);
       } else if (c.chave === 'terra') {
         d.forcarTerra(null);
+      } else if (c.chave === 'relevo') {
+        d.definirRelevo('real');
       } else if (c.chave === 'particulas') {
         d.forcarParticulas(null);
       } else if (c.chave === 'poeira') {
@@ -559,6 +571,7 @@ export function useEspelhoDaUrl(dep: {
     trocarEscala,
     trocarGas,
     trocarTerra,
+    trocarRelevo,
     trocarParticulas,
     trocarPoeira,
     trocarTom,

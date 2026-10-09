@@ -38,7 +38,8 @@ export function Segmentado<T>({
   onEscolher: (v: T) => void;
   /** modificador extra — a Qualidade (auditoria celular, 13/09: grade 2×2
    *  com texto grande) e a Lente (grade 2×2 sempre no celular), ambas em
-   *  `09-celular.css`; os outros segmentados da casa não levam classe. */
+   *  `09-celular.css`, e o par de colunas iguais do relevo da Terra
+   *  (`08-ajustes.css`); os outros segmentados da casa não levam classe. */
   classeExtra?: string;
 }) {
   const moldura = useFileteDoSegmentado();

@@ -114,6 +114,7 @@ export function FichaDoObjeto({
   onSistema,
   relevoDaCor,
   onRelevoDaCor,
+  realceDoRelevo,
   celular = false,
   fichaExpandida = false,
   onAlternarFichaExpandida,
@@ -149,6 +150,9 @@ export function FichaDoObjeto({
    *  de relevo); `null` onde ele não existe — e o botão nem aparece */
   relevoDaCor: boolean | null;
   onRelevoDaCor: (ligado: boolean) => void;
+  /** o fator das alturas que a tela desenha neste corpo (item 232) — 1 é
+   *  o relevo medido; o realçado da Terra a ficha confessa */
+  realceDoRelevo: number;
   /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
   celular?: boolean;
   /** compacta (`false`) ou expandida (`true`) — no celular sempre, e na
@@ -275,6 +279,7 @@ export function FichaDoObjeto({
             editorial: corpos?.get(corpoId) ?? null,
             texturas,
             camaraUa,
+            realceDoRelevo,
           })
         : estrelaEmFoco
           ? montarFichaDeEstrela(estrelaEmFoco, estrela)
@@ -284,7 +289,7 @@ export function FichaDoObjeto({
     // memo devolveria a ficha da língua anterior (item 130). O lint não
     // vê a dependência porque ela chega pelo dicionário, não pelo nome.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [corpoId, estrelaEmFoco, estrela, jd, fonte, corpos, texturas, camaraUa, idioma]
+    [corpoId, estrelaEmFoco, estrela, jd, fonte, corpos, texturas, camaraUa, realceDoRelevo, idioma]
   );
 
   /**

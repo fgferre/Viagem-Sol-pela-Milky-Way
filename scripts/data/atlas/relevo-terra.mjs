@@ -1,8 +1,10 @@
 // ============================================================
-// O RELEVO MEDIDO DA TERRA (candidato; capturas/terra-nuvens/relevo/) — a
-// normal e os dois mapas de horizonte tirados do ETOPO 2022 da NOAA, no
-// lugar do `8k_earth_normal_map` do Solar System Scope (artístico, sem
-// medida). Puro e sem E/S: quem chama lê os bytes do TIFF e grava.
+// O RELEVO MEDIDO DA TERRA — a normal e os dois mapas de horizonte tirados
+// do ETOPO 2022 da NOAA, no lugar do `8k_earth_normal_map` do Solar System
+// Scope (artístico, sem medida). Puro e sem E/S: quem chama lê os bytes do
+// TIFF e grava. O conjunto de 07/10 (capturas/terra-nuvens/relevo/) saía de
+// grades já reduzidas; o de hoje (item 232, 08/10, aprovado pelas fotos de
+// capturas/efeitos-timidos/juntos/) sai da grade FINA da fonte.
 //
 //  1. A FONTE é o ETOPO 2022 v1 de 60″, SUPERFÍCIE (o topo do gelo na
 //     Antártida e na Groenlândia), CC0: 21600×10800 float32 em metros sobre
@@ -14,21 +16,30 @@
 //     tudo abaixo de 0 m vai a 0 m — o oceano, o Cáspio (−28 m) e, com eles,
 //     as depressões secas (Mar Morto, Qattara, Turpan, Danakil), ASSUMIDO: na
 //     grade de 4,9 km a diferença não se vê.
-//  3. A MÉDIA DE ÁREA (`reamostraParaACasa`, a de Reia) leva a fonte a cada
-//     grade; nunca amostragem por salto.
-//  4. A NORMAL é `assaNormais` no raio equatorial (6378,137 km), ganho
-//     físico 1,0 — o TERRA_FRAG não multiplica nada: lê `tex·2 − 1` como
-//     (leste, norte, para fora), linear (`PEDIDO_DA_TERRA`: `normal` é dado).
-//  5. O HORIZONTE é `assaHorizonte` sobre o raio esférico R + h: a elevação
-//     sai em relação ao plano do nível do mar local, que é o que a normal do
-//     elipsoide desenha. A marcha vai a `HORIZONTE.ateGraus`: nenhum relevo
-//     da Terra aparece acima do plano tangente mais longe que √(2·R·Δh) ≈
-//     336 km (Δh = 8,85 km).
+//  3. A NORMAL (8192) é `assaNormaisPorMediaDeArea` sobre a grade fina, no
+//     raio equatorial (6378,137 km), ganho físico 1,0: a média de área do
+//     gradiente de cada célula, pelo fluxo da altura nas bordas — não a
+//     diferença central numa grade reduzida, que apoiava a encosta da célula
+//     nas vizinhas e a alisava. O TERRA_FRAG não multiplica nada: lê
+//     `tex·2 − 1` como (leste, norte, para fora), linear (`PEDIDO_DA_TERRA`:
+//     `normal` é dado).
+//  4. O HORIZONTE (4096) é `assaHorizonteFino`: a marcha da casa em CADA
+//     amostra fina, sobre o raio esférico R + h e com a referência na altura
+//     da própria amostra, e o texel guarda a média de área do seno delas. A
+//     elevação sai em relação ao plano do nível do mar local, que é o que a
+//     normal do elipsoide desenha. A marcha (`HORIZONTE.faixas`, em texels
+//     da FONTE): meio texel (0,0083°, 0,93 km) até 1°, um texel até 3,1° —
+//     nenhum relevo da Terra aparece acima do plano tangente mais longe que
+//     √(2·R·Δh) ≈ 336 km (Δh = 8,85 km). Com uma referência só por célula
+//     (a média dela), a amostra vizinha da mesma célula tapava o céu de
+//     qualquer crista; e o shader abre a média pela lei gama da célula
+//     (`GLSL_SOMBRA_PARCIAL_DO_RELEVO`). Leva perto de dez minutos em oito
+//     fios (o cabeçalho de `gera-horizonte.mjs`).
 // ============================================================
 
-import { assaNormais } from './gera-normal-de-dem.mjs';
-import { angulosDaMarcha, assaHorizonte } from './gera-horizonte.mjs';
-import { leTiffFloat32, reamostraParaACasa } from './relevo-reia.mjs';
+import { angulosDaMarcha, assaHorizonteFino } from './gera-horizonte.mjs';
+import { assaNormaisPorMediaDeArea } from './gera-normal-de-dem.mjs';
+import { leTiffFloat32 } from './relevo-reia.mjs';
 
 /** O raio equatorial WGS84 (km): o passo horizontal da normal e a base do raio do horizonte. */
 export const RAIO_KM = 6378.137;
@@ -62,14 +73,19 @@ export const LAGOS_COM_FUNDO = Object.freeze([
   Object.freeze({ nome: 'Ontário', lat: 43.6, lon: -77.8, nivelM: 75, areaKm2: 18960 }),
 ]);
 
-/** As grades dos candidatos: a normal em 8192 (a fonte da escada) e o horizonte em 4096. */
+/** A grade da normal: 8192 (a fonte da escada; ~4,9 km por texel no equador). */
 export const NORMAL = Object.freeze({ largura: 8192, altura: 4096 });
 
 /**
- * O horizonte: 4096×2048 (texel de 9,8 km) e a marcha da casa em passos de
- * meio texel até `ateGraus` = 3,1° (345 km, acima dos 336 km do limite).
+ * O horizonte: 4096×2048 (texel de 9,8 km) e a marcha fina, em faixas
+ * [passo em texels da FONTE, até graus]: meio texel até 1°, um até 3,1°
+ * (345 km, acima dos 336 km do limite).
  */
-export const HORIZONTE = Object.freeze({ largura: 4096, altura: 2048, ateGraus: 3.1, passoEmTexels: 0.5 });
+export const HORIZONTE = Object.freeze({
+  largura: 4096,
+  altura: 2048,
+  faixas: Object.freeze([Object.freeze([0.5, 1]), Object.freeze([1, 3.1])]),
+});
 
 /**
  * A SUPERFÍCIE na grade da fonte, NO LUGAR (`valores` é mudado): os lagos
@@ -120,17 +136,22 @@ export function leEtopo(bytes) {
   return { largura, altura, metros: valores, superficie: superficieDaTerra(valores, largura, altura) };
 }
 
-/** A superfície em metros na grade da casa `largura`×`altura`, pela média de área. */
-export const relevoNaCasa = (etopo, largura, altura) => reamostraParaACasa(etopo.metros, etopo.largura, etopo.altura, largura, altura, ETOPO.bordaEsquerdaLonE);
+/**
+ * A NORMAL (RGB linear, W·H·3) de `largura`×`altura` a partir da grade fina
+ * `metros` (Wf×Hf): `assaNormaisPorMediaDeArea` no raio equatorial, ganho 1,0.
+ */
+export const normalDaTerra = (metros, Wf, Hf, largura, altura) =>
+  assaNormaisPorMediaDeArea(metros, Wf, Hf, largura, altura, RAIO_KM * 1000);
 
-/** A NORMAL (RGB linear, W·H·3): `assaNormais` no raio equatorial, ganho 1,0. */
-export const normalDaTerra = (metros, largura, altura) => assaNormais(metros, largura, altura, RAIO_KM * 1000, null);
+/** Os ângulos da marcha do horizonte sobre uma grade FINA de largura `larguraDaFonte`. */
+export const angulosDoHorizonte = (larguraDaFonte) => angulosDaMarcha(larguraDaFonte, { faixas: HORIZONTE.faixas });
 
-/** Os ângulos da marcha do horizonte numa grade de largura `largura`. */
-export const angulosDoHorizonte = (largura) => angulosDaMarcha(largura, { faixas: [[HORIZONTE.passoEmTexels, HORIZONTE.ateGraus]] });
-
-/** O HORIZONTE (`{ senos, horizon, horizon2 }`) sobre o raio R + h, em km. */
-export function horizonteDaTerra(metros, largura, altura) {
-  const raio = Float64Array.from(metros, (m) => RAIO_KM + m / 1000);
-  return assaHorizonte({ raio, W: largura, H: altura, angulos: angulosDoHorizonte(largura) });
-}
+/**
+ * O HORIZONTE (`{ senos, horizon, horizon2 }`) de `largura`×`altura` a partir
+ * da grade fina `metros` (Wf×Hf), sobre o raio R + h; `fios`: quantas threads
+ * marcham (padrão: as do aparelho) — o mapa é o mesmo com qualquer número.
+ */
+export const horizonteDaTerra = (metros, Wf, Hf, largura, altura, { fios } = {}) =>
+  assaHorizonteFino({
+    alturaM: metros, Wf, Hf, W: largura, H: altura, raioM: RAIO_KM * 1000, angulos: angulosDoHorizonte(Wf), fios,
+  });
