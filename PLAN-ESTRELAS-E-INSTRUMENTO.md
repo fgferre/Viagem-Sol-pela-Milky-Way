@@ -64,7 +64,8 @@ Mais os dois blooms (`core/post.ts`) e a lente nova (`src/three/lente/`).
    cena nos roteiros (`src/three/cinematic/roteiros/*.json`; hoje `lente` é o campo de
    ângulo de visão, então o nome precisa ser outro), com o Atlas limpo por padrão. Falta
    ele decidir.
-5. **Incoerências achadas no mapa (limpeza, sem mudança de imagem):** `clarao.ts:1-3` diz
+5. **FEITO em 09/10 (ramo `limpeza-estrelas`, 54/54 vistas bit-idênticas; brancos, os dois β e `?noplan` ficaram como estão).**
+   **Incoerências achadas no mapa (limpeza, sem mudança de imagem):** `clarao.ts:1-3` diz
    que "substitui as 16 heroes" (elas voltaram em 16/08); `uCore` das heroes nunca é
    escrito; "dez" × "onze" vértices nos comentários; a descrição do `filtroSolarAlvo`
    (morto) ainda em `stellarBody.ts` e `solNoQuadro.ts`; o piso 0,85 do espinho em

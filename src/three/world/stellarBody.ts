@@ -353,23 +353,16 @@ export function epsilonDeSegmentoGlsl(raioPc: number): string {
 // Este arquivo é onde esse override deixa de ser frase.
 //
 // COMO: a emissão exibida desce EM STOPS da radiância verdadeira (g=1)
-// para a paleta autorada (g=0), e quem manda no g é a DOMINÂNCIA do
-// disco sobre o próprio clarão — a MESMA razão `discoPx/haloPx` que
-// decide a cessão do Sol-ponto no director. Longe, o disco mede menos de
-// 0,4 do clarão: g = 1, e a estrela é a verdadeira. Perto, o disco domina
-// por 2,5×: g = 0, e o que se vê é a superfície autorada, com granulação,
-// manchas e proeminências — que é o que a aproximação existe para
-// mostrar. As duas trocas leem o MESMO número e terminam no MESMO
-// ponto (2,5): no quadro em que o ponto acaba de ceder ao corpo, o corpo
-// já está inteiro na paleta que sabe se desenhar de perto.
-//
-// A RAMPA DELE É MAIS LARGA QUE A DA CESSÃO, e isso é conserto de 15/08,
-// não desalinho: a cessão arbitra dupla-luz e tem as bordas provadas pela
-// Onda 3 (1 → 2,5); o filtro atravessa 26,09 magnitudes, e em 2,57× de
-// distância o voo de ida e volta mediu 60% da troca acontecendo entre
-// dois degraus vizinhos. `filtroSolarAlvo` estica a travessia
-// simetricamente em log (0,4 → 2,5) sem inventar número — a derivação
-// inteira mora ao lado da função, em `world/lodStellar.ts`.
+// para a paleta autorada (g=0), e quem manda no g é a lei: o
+// `overrideExpoente` de `repartir` (`estrela.ts`), que lê a FRAÇÃO DO
+// QUADRO que o disco ocupa (`filtroPeloQuadro`, smoothstep em log na
+// janela `JANELA_DO_QUADRO`: disco de 1/20 a 1/10 da altura). Longe, o
+// disco é pequeno no quadro: g = 1, e a estrela é a verdadeira. Perto,
+// g = 0, e o que se vê é a superfície autorada, com granulação, manchas
+// e proeminências — que é o que a aproximação existe para mostrar. A
+// soltura do clarão é a MESMA rampa: o clarão sai de cima do disco na
+// janela em que o filtro completa. `?solquadro=hoje` volta à régua de px
+// de antes (filtro de 4 a 10 px de disco).
 //
 // ISTO NÃO É PUPILA, e a distinção é a que separa assistência declarada
 // de teto de brilho (o que o NORTE proíbe). Uma pupila mede o QUADRO e
@@ -1032,14 +1025,13 @@ export class StellarBody {
    * Entre as duas pontas a descida é em STOPS (o `pow` do fragment) — o
    * porquê está escrito no cabeçalho da seção F2, junto com a conta.
    *
-   * QUEM DECIDE O g É O DIRECTOR, e a régua dele é a MESMA da cessão do
-   * Sol-ponto — a razão `discoPx / haloPx` —, com a rampa PRÓPRIA que a
-   * travessia de 26 magnitudes exige: `filtroSolarAlvo(discoPx/haloPx)`,
-   * esticada simetricamente em log de 0,4 a 2,5 (`world/lodStellar.ts`,
-   * onde está escrito por que ela não é a curva da cessão). Este método
-   * não a reproduz nem a adivinha — se a régua morasse aqui, a casa teria
-   * duas cópias de uma lei que precisa andar em passo com a cessão, e a
-   * primeira a mudar deixaria a outra para trás em silêncio.
+   * QUEM DECIDE O g É A LEI, e o director só o entrega: é o
+   * `overrideExpoente` de `repartir` (`estrela.ts`), na fração do quadro
+   * que o disco ocupa (`filtroPeloQuadro`) — ou, com `?solquadro=hoje`,
+   * na régua de px de antes (4 a 10 px de disco). Este método não a
+   * reproduz nem a adivinha — se a régua morasse aqui, a casa teria
+   * duas cópias de uma lei que precisa andar em passo com a soltura do
+   * clarão, e a primeira a mudar deixaria a outra para trás em silêncio.
    *
    * SEM A CIRURGIA É NO-OP SILENCIOSO, e é o contrato certo: com
    * `?bfoto=0` (ou `?bemis=0`) a cirurgia não rodou, `uFiltroSolar` não

@@ -333,16 +333,16 @@ describe('3. a camada de verdade, com o sidecar real', () => {
   float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
   float spikes = (ax + ay) * 0.8;`
     );
-    // nas heroes o núcleo e os braços levam `uCore` (1,0 nelas): é a
-    // ÚNICA diferença entre os dois, e é o parâmetro da receita
+    // nas heroes os mesmos números; o `uCore` que multiplicava núcleo e
+    // braços nunca foi escrito (valia 1,0) e saiu em 09/10/2026
     expect(fragDasHeroes).toContain(
-      `  float core = exp(-r * r * 90.0) * 3.0 * uCore;
+      `  float core = exp(-r * r * 90.0) * 3.0;
   float glow = exp(-r * 4.5) * 0.9;
 
   // spikes de difração
   float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
   float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
-  float spikes = (ax + ay) * 0.8 * uCore;`
+  float spikes = (ax + ay) * 0.8;`
     );
     for (const frag of [fragDoSol, fragDasHeroes]) {
       expect(frag).toContain('vec3(1.0, 0.98, 0.95)');

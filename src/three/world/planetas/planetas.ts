@@ -121,7 +121,7 @@
 //
 //     aMagBase = a magnitude do corpo visto de 1 pc, em fase zero.
 //
-// Com ela o vertex tem UMA linha para os dez:
+// Com ela o vertex tem UMA linha para os onze:
 //     m = aMagBase + 5·log10(d_pc) − 2,5·log10(Φ)
 // (o Sol entra com Φ = 1, ver abaixo). A conversão dos nove é exata e
 // derivada do conversor ÚNICO, nunca de um literal novo:
@@ -318,7 +318,7 @@ export function magDoVertice(aMagBasePc: number, dPc: number, fase: number): num
 const PLANETAS_VERT = /* glsl */ `
 attribute float aMagBase; // magnitude a 1 pc, fase zero (convenção única)
 attribute vec3 aCor;      // RGB linear da F1 (iluminante × razão de banda)
-attribute float aEhSol;   // 1 no vértice 0, 0 nos nove — ver o alpha
+attribute float aEhSol;   // 1 no vértice 0, 0 nos outros dez — ver o alpha
 attribute float aCede;    // cessão sob corpo resolvido (Onda 6, F2a) — ver o alpha
 attribute float aFase;    // Φ MH18 (D10) — CPU; o Sol escreve 1
 attribute float aRaio;    // raio do globo (pc), publicado pelo corpo resolvido; 0 sem globo
@@ -533,7 +533,7 @@ export class Planetas {
       // depthTest TRUE desde a Onda 6 (F0, inventário de D1). O motivo
       // do false era a esfera do Sol: o disco artístico de 2.269 UA
       // engolfa o sistema inteiro e, se ELE escrevesse depth, furaria
-      // os dez pontos — mas ele NÃO escreve (nada escrevia). Contra o
+      // os onze pontos — mas ele NÃO escreve (nada escrevia). Contra o
       // buffer novo, que só o grupo dos corpos resolvidos escreve, o
       // teste é o comportamento correto: ponto atrás de corpo resolvido
       // some, como no céu de verdade. Com nada escrevendo depth ainda,
@@ -582,7 +582,7 @@ export class Planetas {
    * m 9,85 (invisível a olho nu), no núcleo galáctico m 19,4; Júpiter
    * já era invisível a 0,05 pc (m ≈ 14,2, pico de PSF ~1e-6 — quatro
    * ordens abaixo de um passo de 8 bits, pinado por teste). O custo de
-   * submeter 10 vértices sempre é nada — e é o preço de não ter um
+   * submeter 11 vértices sempre é nada — e é o preço de não ter um
    * segundo mecanismo de LOD onde a magnitude já decide.
    */
   update(screenH: number, camPos: THREE.Vector3, pr2 = 1) {
@@ -612,12 +612,12 @@ export class Planetas {
    * cabeçalho). Mover o corpo sem recalcular a magnitude deixaria
    * Marte no periélio com o brilho do afélio — o defeito silencioso
    * que a decisão D2 nomeia. A aritmética do SHADER não muda uma
-   * vírgula: o que a GPU recebe continuam sendo dez floats por
+   * vírgula: o que a GPU recebe continuam sendo onze floats por
    * atributo, e é por isso que os md5 das três vistas profundas podem
    * ser exigidos bit a bit.
    *
    * AS TRÊS OBRIGAÇÕES DA ESCRITA INSTANCIADA (NORTE, Onda 3), com o
-   * que cada uma vira num buffer de dez vértices:
+   * que cada uma vira num buffer de onze vértices:
    *  (i) `Math.fround` ANTES de decidir — INTEGRAL, e é a que carrega
    *      o peso: o buffer é float32 e a conta é float64. Sem ela, a
    *      efeméride avaliada na época daria "mudou" em todo corpo e o

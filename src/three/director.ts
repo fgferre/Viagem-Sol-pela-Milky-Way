@@ -634,7 +634,7 @@ export class Director {
   private sondaDaLente!: SondaDaLente;
   private heroes!: HeroStars;
   private galaxy!: Galaxy;
-  /** os 10 pontos fotométricos do domínio profundo (Onda 4, D3) —
+  /** os 11 pontos fotométricos do domínio profundo (Onda 4, D3) —
    *  camada IRMÃ do `sun.group`, nunca filha dele */
   private planetas: Planetas | null = null;
   /** AS LINHAS DE ÓRBITA (item 77) — o QUARTO irmão do `sun.group`, pela
@@ -2068,7 +2068,7 @@ export class Director {
     this.stars.pontosNaFrente.layers.enable(CAMADA_DO_CAMPO);
     this.wrappedStars.points.layers.enable(CAMADA_DO_CAMPO);
     this.heroes.group.traverse((o) => o.layers.enable(CAMADA_DO_CAMPO));
-    // Os 10 pontos fotométricos (Onda 4, D3). Grupo PRÓPRIO na cena,
+    // Os 11 pontos fotométricos (Onda 4, D3). Grupo PRÓPRIO na cena,
     // NUNCA dentro de `sun.group` — de lá herdaria a escala 0,005 do
     // doador e o `return` antecipado quando o disco apaga.
     //

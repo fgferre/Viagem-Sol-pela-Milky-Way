@@ -78,8 +78,9 @@ const KNEE_SHADER = {
  * curvas comprimem a mesma faixa de HDR, e usar dois joelhos diferentes para
  * isso seria a casa discordando de si mesma sem ter medido nada a mais.
  *
- * O CAMINHO DE VOLTA é `?bbloom=0`, que devolve o passa-alta de addons
- * intacto, byte a byte — o lado A do A/B.
+ * SEM PORTA desde o M2 (regra iv do §4): `?bbloom=`, que era o caminho de
+ * volta, morreu. O lado A do A/B — o passa-alta de addons intacto — vive nas
+ * capturas versionadas (ver `domarPassaAlta`).
  */
 export const BETA_DO_BLOOM = 0.45;
 
@@ -149,8 +150,8 @@ export const PESO_DA_PIRAMIDE = FRACAO_DA_ASA / SOMA_DAS_RAZOES;
  * muda — e ali mudar É o mecanismo funcionando: a vista está a 0,6 pc de
  * Betelgeuse, que é um mini-Sol com a mesma doença.
  *
- * `?bombro=T` varre o ombro sem mexer no β; `?bombro=0` reproduz a primeira
- * rodada, a que reprovou.
+ * A porta `?bombro=`, que varria o ombro sem mexer no β (`?bombro=0` era a
+ * primeira rodada, a que reprovou), morreu no M2 junto com `?bbloom=`.
  */
 export const OMBRO_DO_BLOOM = 40;
 
@@ -999,7 +1000,8 @@ export class Post {
       })
     );
     this.composer.setPixelRatio(renderer.getPixelRatio());
-    // O CAMINHO DE VOLTA E O LADO A DA BANCADA, no molde de `?bbloom=0`:
+    // O CAMINHO DE VOLTA E O LADO A DA BANCADA, no molde da `?bbloom=0`
+    // (morta no M2):
     // `?msaa=0` devolve o alvo sem amostras — o quadro anterior a esta
     // obra —, `?msaa=N` varre e vence a escada de tiers. Ausente, quem
     // manda é o tier (`aplicarAmostras`). Desde o item 145 esta leitura
@@ -1108,9 +1110,10 @@ export class Post {
   /**
    * A COMPRESSÃO DENTRO DO BLOOM, no filtro de passa-alta — PADRÃO desde
    * 15/08, com `BETA_DO_BLOOM` e `OMBRO_DO_BLOOM`. As portas `?bbloom=β` e
-   * `?bombro=T` viraram o caminho de volta e a bancada de comparação:
-   * ausentes ⇒ o pacote; `?bbloom=0` ⇒ o passa-alta de addons intacto,
-   * sem uma linha de cirurgia, que é o lado A do A/B.
+   * `?bombro=T`, que foram o caminho de volta e a bancada de comparação,
+   * morreram no M2 (regra iv do §4): o lado A do A/B — o passa-alta de
+   * addons intacto — vive nas capturas versionadas, nunca num ramo de
+   * runtime.
    *
    * POR QUE AQUI E NÃO ANTES DO BLOOM. Medido em 15/08: um joelho aplicado ao
    * quadro inteiro antes do bloom conserta a tela branca e RE-GRADUA O FILME —
@@ -1127,7 +1130,7 @@ export class Post {
    * diferença entre domar o brilho espalhado e re-graduar o filme.
    *
    * A restrição do dono, palavra dele: "eu nao quero que as estrelas de fundo
-   * diminuam ou morram". É contra isso que esta porta é medida — não basta o
+   * diminuam ou morram". É contra isso que esta curva é medida — não basta o
    * Sol encolher.
    *
    * A cirurgia é de texto, no molde de `ctx.tuneLic` (`world/stellarBody.ts`):

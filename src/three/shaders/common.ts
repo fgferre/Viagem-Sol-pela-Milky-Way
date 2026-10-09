@@ -1046,10 +1046,10 @@ vec3 comprimir3(vec3 x, float b) {
 // cobrava a igualdade lendo os dois FONTES; agora ela é fato de
 // construção, e o oráculo cobra o texto MONTADO dos dois shaders.
 //
-// O PARÂMETRO É UM SUFIXO DE TEXTO, e é o mínimo que reproduz os dois
-// chamadores byte a byte: as heroes multiplicam núcleo e braços por
-// `uCore` (que vale 1,0 nelas — a espinha do disco resolvido) e o Sol
-// não multiplica nada. Sufixo vazio = a forma do Sol.
+// SEM PARÂMETRO desde 09/10/2026: as heroes multiplicavam núcleo e
+// braços por `uCore`, um uniform que nunca foi escrito (valia 1,0, a
+// espinha do disco resolvido). Saiu, e os dois chamadores montam o
+// mesmo texto.
 //
 // A INDENTAÇÃO DE 2 ESPAÇOS das linhas de continuação faz parte do
 // contrato: o chamador escreve `  ${...}` no corpo do `main`, e é assim
@@ -1057,13 +1057,13 @@ vec3 comprimir3(vec3 x, float b) {
 // ============================================================
 
 /** Núcleo apertado + halo radial. */
-export const glslNucleoEHalo = (fator = ''): string => /* glsl */ `float core = exp(-r * r * 90.0) * 3.0${fator};
+export const glslNucleoEHalo = (): string => /* glsl */ `float core = exp(-r * r * 90.0) * 3.0;
   float glow = exp(-r * 4.5) * 0.9;`;
 
 /** Os dois braços de difração cruzados — o "spike" fino do filme. */
-export const glslBracosDeDifracao = (fator = ''): string => /* glsl */ `float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
+export const glslBracosDeDifracao = (): string => /* glsl */ `float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
   float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
-  float spikes = (ax + ay) * 0.8${fator};`;
+  float spikes = (ax + ay) * 0.8;`;
 
 /** O branco levemente quente do núcleo — a oitava constante da receita. */
 export const GLSL_BRANCO_DO_NUCLEO = /* glsl */ `vec3(1.0, 0.98, 0.95)`;

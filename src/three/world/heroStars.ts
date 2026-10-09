@@ -60,12 +60,6 @@ uniform float uTime;
 uniform float uSeed;
 uniform float uCamDist;
 uniform float uSize;
-// núcleo pontual + espinhos SÓ quando a estrela é um ponto. Com o disco
-// resolvido na tela (só o Sol chega lá) o núcleo apertado imprime um
-// PONTO BRANCO no meio do disco — lê como retículo de mira, não como
-// estrela. Aí fica só o halo largo, que é o que uma fonte brilhante
-// resolvida faz de verdade. 1,0 nos heróis (sempre pontos).
-uniform float uCore;
 // intensidade do clarão. O tamanho angular NÃO é atenuado na entrada:
 // um clarão pequeno sobre um disco grande vira ponto de mira; um
 // clarão do tamanho certo, subindo em BRILHO, lê como o disco
@@ -87,10 +81,10 @@ void main() {
   float farFade = 1.0 - smoothstep(320.0, 900.0, uCamDist);
 
   // núcleo estelar + brilho radial
-  ${glslNucleoEHalo(' * uCore')}
+  ${glslNucleoEHalo()}
 
   // spikes de difração
-  ${glslBracosDeDifracao(' * uCore')}
+  ${glslBracosDeDifracao()}
 
   // cintilação sutil de plasma
   float tw = 0.92 + 0.08 * vnoise(vec3(uSeed * 10.0, uTime * 0.5, uSeed));
@@ -159,7 +153,6 @@ export class HeroStars {
           uSize: { value: size },
           uZoom: { value: 1 },
           uCamDist: { value: 100 },
-          uCore: { value: 1 },
           uGain: { value: 1 },
         },
         blending: THREE.AdditiveBlending,

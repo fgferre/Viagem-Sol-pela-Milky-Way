@@ -149,9 +149,9 @@ export const VISTAS = [
   // (lodStellar.ts): 0,10 pc = disco pleno (uWorldFade 1, uGain 0); 0,25 =
   // meio da rampa do disco (uWorldFade 0,5, uGain 0,77); 0,32 = o estouro,
   // logo antes do corte duro de custo `world > 0.02` que cai em 0,3249 pc
-  // (uWorldFade 0,034, uGain 1, uCore 0,07 — é a vista que denuncia se
+  // (uWorldFade 0,034, uGain 1 — é a vista que denuncia se
   // alguém mover uma casa decimal); 0,50 = estrela pura (grupo do disco
-  // apagado, uGain e uCore em 1).
+  // apagado, uGain em 1).
   ['soldisco', '?pos=0,0,0.1&look=0,0,0&shot=2'],
   // solrampa → cortada (113 i): as pontas soldisco/solestouro/solestrela seguram o crossfade.
   ['solestouro', '?pos=0,0,0.32&look=0,0,0&shot=2'],

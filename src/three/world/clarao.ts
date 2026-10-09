@@ -1,6 +1,7 @@
 // ============================================================
 // O CLARÃO DE ASAS — a camada única da óptica das fontes fortes
-// (M2 da LEI-DA-ESTRELA). Substitui as 16 heroes de autor.
+// (M2 da LEI-DA-ESTRELA). Nasceu para substituir as 16 heroes de autor,
+// que voltaram em 16/08 (`heroStars.ts`, o resgate).
 //
 // O QUE ELA É. O clarão é a LENTE (halo + espinhos), não a estrela — a
 // Lei §1 numa frase. Desde o item 44 (16/08) a camada desenha SÓ o Sol,

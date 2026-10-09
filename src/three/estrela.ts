@@ -275,17 +275,25 @@ export const BETA_DO_ESPINHO = 1.5 * BETA_DA_ASA;
  *  Abaixo dele a asa afunda no céu e estrela fraca continua um ponto. */
 export const LIMIAR_DO_CLARAO = 1 / 255;
 
-/** A fração do pico que os ESPINHOS de difração carregam — a lei que matou
- *  o clamp `sat` (§5.4, M2). O gatilho antigo saturava em pico 4: Vênus,
- *  Júpiter e Sirius ganhavam a MESMA cruz (item 43) e o Sol a 1 UA, 25
- *  magnitudes acima, idem — "dois brilhos diferentes viram o mesmo pixel",
- *  proibido pelo NORTE. Agora a amplitude é fração do fluxo, comprimida
- *  junto com o resto na emissão: a cruz vem NA DOSE do brilho, como numa
- *  câmera real. Calibrada por CONTINUIDADE em Sirius, não por gosto: o
- *  desenho velho dava amplitude 0,85 no pico 30,57 de Sirius (900 px), e
- *  0,85/30,57 = 0,0278 — a estrela-exemplar sai igual, e todo o resto
- *  passa a escalar. (A dependência de resolução do pico é a dívida §5.6,
- *  a mesma do β da emissão — declarada, não nova.) */
+/** A fração do pico que os ESPINHOS de difração carregam (§5.4, M2). O
+ *  gatilho antigo, o clamp `sat`, saturava em pico 4: Vênus, Júpiter e
+ *  Sirius ganhavam a MESMA cruz (item 43) e o Sol a 1 UA, 25 magnitudes
+ *  acima, idem — "dois brilhos diferentes viram o mesmo pixel", proibido
+ *  pelo NORTE. Com a fração a amplitude vem NA DOSE do fluxo, comprimida
+ *  junto com o resto na emissão, como numa câmera real. Calibrada por
+ *  CONTINUIDADE em Sirius, não por gosto: o desenho velho dava amplitude
+ *  0,85 no pico 30,57 de Sirius (900 px), e 0,85/30,57 = 0,0278. (A
+ *  dependência de resolução do pico é a dívida §5.6, a mesma do β da
+ *  emissão — declarada, não nova.)
+ *
+ *  O QUE O `STAR_FRAG` FAZ, e a fração sozinha não é tudo: a amplitude é
+ *  `max(fração × pico, 0,85 · sat · uArteDaCruz)`, com sat = 0,5·log₂(pico)
+ *  saturando em pico 4 — o gatilho antigo, resgatado em 16/08 como a arte
+ *  do filme. No campo estelar e nas cascas (`uArteDaCruz = 1`) esse piso
+ *  manda de pouco acima do pico 1 até o pico 30,57, e só acima dele a cruz
+ *  escala com o fluxo. A fração vale sozinha nos pontos do sistema
+ *  (`planetas.ts`, `uArteDaCruz = 0`), onde o conserto do item 43 segue de
+ *  pé. */
 export const FRACAO_DOS_ESPINHOS = 0.0278;
 
 /** O pico em que o BRANQUEAMENTO do núcleo (saturação de sensor) atinge
