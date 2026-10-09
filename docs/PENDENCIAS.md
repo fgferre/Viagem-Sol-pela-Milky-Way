@@ -28,8 +28,8 @@ de longe, com lente, três cruzes no mesmo ponto (clarão, raios da lente, a cru
 o brilho da lente não segue a soltura nem o filtro (nunca cobre o disco); os raios da coroa 3D ignoram o filtro; o
 anel fino em volta do Sol perto da Terra é o ícone do Atlas (`&noicones=1` o tira), não defeito.
 
-**A próxima rodada — a ordem é dele:** (1) a régua única (`PLAN-REGUA-UNICA.md`): a R0 (tabela de medidas, só
-pesquisa) pode começar já; a R1 (o tom único) muda tudo de uma vez e tem de recalibrar o realçado da Terra
+**A próxima rodada — a ordem é dele:** (1) a régua única (`PLAN-REGUA-UNICA.md`): a R0 está FEITA (09/10,
+`docs/reference/MEDIDAS-DOS-CORPOS.md`; o que ela ensina à R2 está na linha da R0 do plano); a R1 (o tom único) muda tudo de uma vez e tem de recalibrar o realçado da Terra
 (ajustado sobre o ACES) e uma constante por lente; (2) os assuntos 1–6 de `PLAN-ESTRELAS-E-INSTRUMENTO.md`;
 (3) a fila de assets sob a régua (as seis luas pequenas pela receita de Pã, Febe, Calipso/Telesto/Helena,
 Fobos/Deimos, Vesta). A cópia `../Viagem-sol-estudo` (ramo `sol-estudo`, inteiro no `main`) pode ser apagada
