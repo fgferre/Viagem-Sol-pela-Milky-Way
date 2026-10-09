@@ -108,9 +108,15 @@ densa mediu o clarão EXPLODINDO no recuo, 10 → 417 px de borrão entre 0,8 e
 carregando uma exceção escrita só para absolvê-lo. A lei, corrigida de novo:
 **o clarão é a conta PLENA do ponto (fluxo sem filtro, com o teto de
 ocupação do dono) vestida por UMA soltura C¹ no domínio do TAMANHO**
-(`solturaDoClarao`: 0 com disco ≥ 10 px, 1 com disco ≤ 2 px, smoothstep em
-log do disco no meio — passo constante por oitava, a régua da continuidade
-do §5.10). Recuando, o clarão desabrocha DO teto estacionado pela janela
+(0 com o disco enchendo 1/10 da altura do quadro, 1 com ele em 1/20,
+smoothstep em log da fração no meio — passo constante por oitava, a régua
+da continuidade do §5.10). **Desde 09/10/2026 a soltura É o filtro (§5.7):
+os dois entram juntos na mesma janela 1/20 → 1/10 da altura**, e por ser
+fração do quadro o regime não depende do tamanho da janela. A janela de px
+de antes (soltura 2 → 10 px, filtro 4 → 10 px) deixava o Sol entre ~0,2 e
+~1 UA um pontinho laranja sem brilho; o dono escolheu a nova olhando as
+pranchas de `capturas/sol-estudo/proposta/`, e a de px segue em
+`?solquadro=hoje`, para comparar. Recuando, o clarão desabrocha DO teto estacionado pela janela
 declarada — o espelho do brief do dono: *"ela sempre chega no máximo que
 vai ocupar rapidamente e estaciona"* — e dali só encolhe com a asa. O
 filtro solar segue dono da SUPERFÍCIE (§5.7); do clarão, não é mais. As
@@ -155,6 +161,8 @@ conserva fluxo:
 1. `ponto ↔ disco`, **fluxo conservado** — o invariante abaixo;
 2. `radiância verdadeira ↔ superfície autorada` (o filtro solar), **fluxo NÃO
    conservado**: 26,09 magnitudes, desvio declarado no cadastro e no selo.
+   Entra com o disco enchendo 1/20 → 1/10 da altura do quadro, junto com a
+   soltura do clarão (desde 09/10/2026; a primeira troca segue em px).
    Não é remendo: é uma **escolha de instrumento** e tem seção própria (§5.7).
 
 **O clarão tem ASAS.** `√ln fluxo` é a assinatura exclusiva de um perfil gaussiano —
@@ -758,19 +766,28 @@ reafia sozinha ao trocar de monitor; o que esta cláusula pede segue aberto.)
 `pow(fator, uFiltroSolar)`, 26,09 magnitudes entre a radiância verdadeira (g=1) e a
 paleta autorada (g=0). Como `overrideExpoente`/`overrideFator`, ele é: uma escolha
 de **instrumento** (transmitância), com **régua compartilhada** com `wResolvido` (a mesma
-`discoPx`, largura própria), **custo no cadastro** e no selo, e **default seguro** —
+`discoPx`, janela própria: desde 09/10/2026 lida como FRAÇÃO DO QUADRO — o filtro
+entra com o disco em 1/20 da altura e completa em 1/10, `JANELA_DO_QUADRO`, e o disco
+emite o vão da altura viva, a régua do ponto; antes era 4 → 10 px, que segue em
+`?solquadro=hoje` para comparar; `?solquadro=a,b` muda a janela, de bancada),
+**custo no cadastro** e no selo, e **default seguro** —
 hoje `uFiltroSolar` nasce em 1 (radiância verdadeira, o quadro cego) e só é escrito
 dentro de `if (this.planetas)`. Quem desenha o corpo escreve a emissão do corpo.
 **Desde a R2 do item 44 (17/08), o filtro é dono da SUPERFÍCIE e de nada mais:
 o clarão não divide pela transmitância — a entrega ponto↔resolvido dele é a
-`solturaDoClarao` (§1, segunda correção), medida na sonda densa antes de
+soltura (§1, segunda correção), medida na sonda densa antes de
 escrita. `fluxoDeTela`/`claraoGanho` seguem sendo o fluxo que o instrumento
-admite (cadastro e selo); do TAMANHO do clarão, o filtro saiu.**
+admite (cadastro e selo); do TAMANHO do clarão, o filtro saiu.** Desde 09/10/2026
+a soltura usa a MESMA rampa do filtro: o clarão e os raios da lente se soltam
+onde o filtro entra — escolha do dono olhando as pranchas de
+`capturas/sol-estudo/proposta/` (o Sol branco e ofuscante como luz da cena,
+filtrado só quando enche o quadro).
 
 **5.8 O `fatorDeBrilho` do Sol volta a declarar o valor VIVO.** O cadastro diz
 `fatorDeBrilho: 1` com a razão "agora a fotosfera emite a radiância verdadeira". Mas
-o filtro desce em stops: o fator vivo é `2,7e10^(1−g)` — ~11× a 1 UA (g = 0,901) e
-~2,7e10× abaixo de ~0,22 UA. **A coluna nasceu exatamente para que a próxima mentira
+o filtro desce em stops: o fator vivo é `vão^(1−g)` (vão = 2,7e10 a 900 px) — 1×
+(g = 1) com o disco abaixo de 1/20 do quadro (≳ 0,17 UA na lente de 58°, a 1 UA
+inclusive) e o vão inteiro com ele acima de 1/10 (≲ 0,084 UA). **A coluna nasceu exatamente para que a próxima mentira
 de brilho não nascesse calada, e ela nasceu calada no mesmo commit que criou a
 coluna.** Isto fica escrito aqui como LIÇÃO: uma coluna de honestidade só honesta
 quem a preenche depois. A entrada do Sol declara faixa + rampa (ou ganha entrada

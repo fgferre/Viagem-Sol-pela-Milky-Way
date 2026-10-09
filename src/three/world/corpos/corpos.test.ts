@@ -325,7 +325,7 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
    * oráculos de valor EXATO usam pontos claramente dentro de cada lado
    * da rampa, nunca a fronteira em cima do float.
    */
-  const repartirDoSol = (discoPx: number) => {
+  const repartirDoSol = (discoPx: number, janelaDoQuadro?: 'hoje') => {
     const dPc = (RAIO_SOL_FISICO_PC * H_HARNESS) / (TAN_HALF * discoPx);
     return repartir(
       {
@@ -348,6 +348,7 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
         beta: 300,
         trocaPx: LIMIAR_DO_GATE_PX,
         requisitoGeometrico: 1,
+        janelaDoQuadro,
       }
     );
   };
@@ -408,7 +409,14 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
     // texto cobra a fiação, enquanto a conta é cobrada em números logo
     // abaixo, direto na lei.
     expect(SOL_NO_QUADRO).toContain('const leiDoSol = repartir(');
-    expect(SOL_NO_QUADRO).toContain('sun.escreverFiltroSolar(leiDoSol.overrideExpoente);');
+    // o filtro no disco recebe a altura VIVA (a régua do ponto) — só
+    // `?solquadro=hoje` volta à altura de referência de antes
+    expect(SOL_NO_QUADRO).toContain(
+      "const alturaDoDisco = this.fios.janelaDoQuadro === 'hoje' ? undefined : q.hPx / q.prAtual;"
+    );
+    expect(SOL_NO_QUADRO).toContain(
+      'sun.escreverFiltroSolar(leiDoSol.overrideExpoente, alturaDoDisco);'
+    );
     expect(SOL_NO_QUADRO).toContain(
       'sun.escreverPesoDaLei(leiDoSol.wResolvido * leiDoSol.wMalha);'
     );
@@ -448,27 +456,28 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
     }
   });
 
-  it('a 1 UA (tela do harness) o disco tem 14,4 px: ponto cedido, paleta autorada', () => {
+  it('a 1 UA (tela do harness) o disco tem 14,4 px: ponto cedido, radiância verdadeira', () => {
     // ANTES do M1: cessão por max(dominância, gate) = 1 e filtro 0,9006 —
     // a fotosfera a ~2,6 mag do topo, com a costura medida em 5,2× no voo.
-    // AGORA: as duas saem da MESMA régua (disco em px contra 4 px), então
-    // a 14,4 px o ponto cedeu (wResolvido = 1) E o filtro já devolveu a
-    // paleta autorada (override = 0, disco ≥ 10 px) — não existe mais o
-    // trecho em que uma rampa entrega e a outra ainda não pegou, que era
-    // exatamente a costura do item 3.
+    // No M1 as duas saíram da MESMA régua de px (`?solquadro=hoje`): a
+    // 14,4 px o ponto cedia E o filtro já devolvia a paleta autorada.
+    // DESDE 09/10 o filtro lê a fração do quadro: a 14,4 de 1713 px
+    // (0,8 %) o ponto cedeu (wResolvido = 1) e a lei manda a radiância
+    // verdadeira (override = 1) — o filtro só entra com o disco em 1/20.
     const dPc = 4.8481e-6; // 1 UA
     const disco = diametroAparentePx(RAIO_SOL_FISICO_PC, dPc, H_HARNESS, FOV_DEG);
     expect(disco).toBeCloseTo(14.4, 1);
     const r = repartirDoSol(disco);
     expect(r.wResolvido).toBe(1);
-    expect(r.overrideExpoente).toBe(0);
+    expect(r.overrideExpoente).toBe(1);
+    expect(repartirDoSol(disco, 'hoje').overrideExpoente).toBe(0);
   });
 
   it('a troca disco→ponto é contínua: o ponto passa pelo mesmo filtro do disco (F4)', () => {
     // a luz do Sol (fração da plena) = disco filtrado + ponto: o disco
     // vale wResolvido/overrideFator; o ponto, 1 − cessão
-    const luz = (px: number) => {
-      const r = repartirDoSol(px);
+    const luz = (px: number, regra?: 'hoje') => {
+      const r = repartirDoSol(px, regra);
       return r.wResolvido / r.overrideFator + (1 - cessaoDoSol(r));
     };
     // fora da rampa a cessão é a de antes, bit a bit
@@ -477,28 +486,45 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
     }
     // dentro, a luz total é a que o filtro admite — e nenhum passo de
     // 0,01 px move mais de 0,05 década (antes: 3 décadas entre 8,00 e
-    // 7,99 px, o ponto pleno entrando sobre o disco filtrado)
-    for (let px = 3.9; px <= 10.1; px += 0.01) {
-      const r = repartirDoSol(px);
-      expect(luz(px) * r.overrideFator).toBeCloseTo(1, 6);
-      expect(Math.abs(Math.log10(luz(px + 0.01) / luz(px)))).toBeLessThan(0.05);
+    // 7,99 px, o ponto pleno entrando sobre o disco filtrado). A lei varre
+    // a troca E o filtro inteiro (até 1/10 da altura); `hoje`, as duas
+    // rampas de px que se sobrepunham
+    for (const [regra, ate] of [
+      [undefined, H_HARNESS / 10 + 0.1],
+      ['hoje', 10.1],
+    ] as const) {
+      for (let px = 3.9; px <= ate; px += 0.01) {
+        const r = repartirDoSol(px, regra);
+        expect(luz(px, regra) * r.overrideFator).toBeCloseTo(1, 6);
+        expect(Math.abs(Math.log10(luz(px + 0.01, regra) / luz(px, regra)))).toBeLessThan(0.05);
+      }
     }
   });
 
-  it('o override tem a largura própria da lei: 1 exato até 4 px, 0 exato de 10 px em diante', () => {
-    // §5.7: mesma régua do eixo óptico (discoPx), largura própria (2,5).
-    // Longe (disco < 4 px) a malha nem existe (palco desarmado) e a lei
-    // manda radiância verdadeira; perto, a paleta autorada em stops.
-    expect(repartirDoSol(1).overrideExpoente).toBe(1);
-    expect(repartirDoSol(3.9).overrideExpoente).toBe(1);
-    expect(repartirDoSol(10.1).overrideExpoente).toBe(0);
-    expect(repartirDoSol(40).overrideExpoente).toBe(0);
-    // monotônico e C¹ no meio (smoothstep)
-    let anterior = 1;
-    for (let px = 3.9; px <= 10.1; px += 0.05) {
-      const g = repartirDoSol(px).overrideExpoente;
-      expect(g).toBeLessThanOrEqual(anterior);
-      anterior = g;
+  it('o override tem a janela própria da lei: 1 exato até 1/20 do quadro, 0 exato de 1/10 em diante', () => {
+    // §5.7: a mesma discoPx do eixo óptico, lida como FRAÇÃO DO QUADRO
+    // (09/10). Longe a lei manda radiância verdadeira; perto, a paleta
+    // autorada em stops. `?solquadro=hoje` guarda a régua de px de antes
+    // (1 exato até 4 px, 0 exato de 10 px em diante).
+    const inicio = H_HARNESS / 20;
+    const fim = H_HARNESS / 10;
+    for (const [regra, a, b] of [
+      [undefined, inicio, fim],
+      ['hoje', 4, 10],
+    ] as const) {
+      // folgas relativas: a inversa de ângulo pequeno do `repartirDoSol`
+      // erra ~0,1 % a 1/10 do quadro, e o oráculo exato fica fora da borda
+      expect(repartirDoSol(1, regra).overrideExpoente).toBe(1);
+      expect(repartirDoSol(a * 0.975, regra).overrideExpoente).toBe(1);
+      expect(repartirDoSol(b * 1.01, regra).overrideExpoente).toBe(0);
+      expect(repartirDoSol(4 * b, regra).overrideExpoente).toBe(0);
+      // monotônico e C¹ no meio (smoothstep)
+      let anterior = 1;
+      for (let px = a * 0.975; px <= b * 1.01; px += 0.05) {
+        const g = repartirDoSol(px, regra).overrideExpoente;
+        expect(g).toBeLessThanOrEqual(anterior);
+        anterior = g;
+      }
     }
   });
 });

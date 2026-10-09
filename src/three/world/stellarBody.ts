@@ -1058,10 +1058,10 @@ export class StellarBody {
     // fallback inventado aqui.
     if (!Number.isFinite(g)) return;
     let v = g <= 0 ? 0 : g >= 1 ? 1 : g;
-    // PROTÓTIPO `?solquadro=`: o fator da cirurgia foi assado na altura de
-    // referência (900 px); com a altura VIVA (px de CSS, a do ponto) o
-    // expoente reescala para o disco emitir o vão DELA — fator^(g·k) =
-    // vãoVivo^g. Em 900 px, k = 1 exato.
+    // o fator da cirurgia foi assado na altura de referência (900 px); com
+    // a altura VIVA (px de CSS, a do ponto) o expoente reescala para o
+    // disco emitir o vão DELA — fator^(g·k) = vãoVivo^g. Em 900 px, k = 1
+    // exato. Sem altura (`?solquadro=hoje`), a régua de referência de antes.
     if (alturaPx !== undefined) {
       const k =
         Math.log(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, this.params.radiusPc, alturaPx)) /

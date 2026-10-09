@@ -48,9 +48,9 @@ const KM_POR_PC = AU_KM / AU_PARA_PC;
  * em qualquer recuo. Com o filtro dos dois lados, disco e ponto têm o
  * mesmo brilho em todo tamanho, a luz total segue o filtro (contínua) e a
  * troca vira só troca de forma. Fora da rampa nada muda, bit a bit:
- * abaixo de 4 px o filtro é 1 exato (`overrideFator` = 1) e acima de
- * 8 px o peso do ponto é 0 exato. Fator inválido: o ponto sem filtro, a
- * direção de sempre.
+ * abaixo da entrada do filtro (1/20 do quadro; 4 px em `?solquadro=hoje`)
+ * ele é 1 exato (`overrideFator` = 1) e acima de 8 px o peso do ponto é
+ * 0 exato. Fator inválido: o ponto sem filtro, a direção de sempre.
  */
 export function cessaoDoSol(lei: Pick<Reparticao, 'wPonto' | 'overrideFator'>): number {
   const transmitancia = lei.overrideFator > 1 ? 1 / lei.overrideFator : 1;
@@ -98,8 +98,9 @@ export class SolNoQuadro {
     jdTdb: () => number;
     /** `?nosun`/`?noclarao`/`?noplan` — os toggles de debug do director */
     escondido: (flag: string) => boolean;
-    /** `?solquadro=a,b` (protótipo), lida uma vez pelo director; null = a lei de sempre */
-    janelaDoQuadro: JanelaDoQuadro | null;
+    /** `?solquadro=`, lida uma vez pelo director: a janela da lei (ou a
+     *  da bancada `a,b`), ou `'hoje'` = a régua de px de antes */
+    janelaDoQuadro: JanelaDoQuadro | 'hoje';
   };
 
   constructor(fios: SolNoQuadro['fios']) {
@@ -223,10 +224,10 @@ export class SolNoQuadro {
     );
     this.leiDoSol = leiDoSol;
     // o corpo troca a radiância verdadeira pela paleta autorada com a
-    // régua da lei (mesma `discoPx`, largura própria — §5.7)...
-    // (sob `?solquadro=` o disco recebe a altura viva, a mesma régua do ponto)
-    if (this.fios.janelaDoQuadro) sun.escreverFiltroSolar(leiDoSol.overrideExpoente, q.hPx / q.prAtual);
-    else sun.escreverFiltroSolar(leiDoSol.overrideExpoente);
+    // régua da lei (a fração do quadro — §5.7), na altura viva, a mesma
+    // régua do ponto; `?solquadro=hoje` volta à altura de referência...
+    const alturaDoDisco = this.fios.janelaDoQuadro === 'hoje' ? undefined : q.hPx / q.prAtual;
+    sun.escreverFiltroSolar(leiDoSol.overrideExpoente, alturaDoDisco);
     // ...e ENTRA DO ZERO com o peso da representação resolvida: no armar
     // binário do gate do palco o peso ainda é 0, então o liga/desliga de
     // custo fica invisível em pixel, nos dois sentidos da histerese.

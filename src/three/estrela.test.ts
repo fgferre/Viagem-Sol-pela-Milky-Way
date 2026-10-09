@@ -20,6 +20,7 @@ import { describe, it, expect } from 'vitest';
 import {
   BETA_DA_ASA,
   FRACAO_DA_ASA,
+  JANELA_DO_QUADRO,
   LARGURA_DA_TROCA,
   LARGURA_DO_OVERRIDE,
   LIMIAR_DO_CLARAO,
@@ -38,6 +39,7 @@ import {
   TETO_DE_TELA_PX,
   leiDeTela,
   leiDeTelaNaRegua,
+  lerPortaSolQuadro,
   repartir,
   type EstadoDaEstrela,
   type Instrumento,
@@ -203,20 +205,32 @@ describe('2. as duas faces batem — conformidade numérica, molde do F0', () =>
   });
 
   it('a soltura é a rampa única: 0 com a superfície dona, 1 no ponto, C¹ em log no meio', () => {
-    // disco ≥ 10 px (o filtro completo) ⇒ soltura 0 — clarão nenhum por
-    // cima da fotosfera (a lição do círculo branco, paga por construção)
-    expect(repartir(sol(), verDe(0.5 * UA_EM_PC), instrumento()).solturaDoClarao).toBe(0);
-    // disco ≤ 2 px ⇒ ponto pleno
-    expect(repartir(sol(), verDe(4 * UA_EM_PC), instrumento()).solturaDoClarao).toBe(1);
-    // no meio: estritamente crescente com a distância (recuando, o
-    // clarão só desabrocha — nunca pisca nem volta)
-    let anterior = 0;
-    for (const ua of [0.8, 1, 1.26, 1.58, 2, 2.5, 3.16]) {
-      const s = repartir(sol(), verDe(ua * UA_EM_PC), instrumento()).solturaDoClarao;
-      expect(s, `${ua} UA`).toBeGreaterThanOrEqual(anterior);
-      expect(s).toBeGreaterThanOrEqual(0);
-      expect(s).toBeLessThanOrEqual(1);
-      anterior = s;
+    // a lei (09/10): a soltura É o filtro, na fração do quadro — disco ≥
+    // 1/10 da altura (o filtro completo) ⇒ 0, clarão nenhum por cima da
+    // fotosfera (a lição do círculo branco, paga por construção); disco ≤
+    // 1/20 ⇒ ponto pleno. `?solquadro=hoje` guarda a rampa de px de antes:
+    // ≥ 10 px ⇒ 0, ≤ 2 px ⇒ 1. (900 px, 58°: 0,084–0,17 UA × 0,76–3,8 UA)
+    const casos = [
+      { regra: undefined, superficieUa: 0.05, pontoUa: 0.5, meio: [0.085, 0.1, 0.12, 0.14, 0.16] },
+      { regra: 'hoje', superficieUa: 0.5, pontoUa: 4, meio: [0.8, 1, 1.26, 1.58, 2, 2.5, 3.16] },
+    ] as const;
+    for (const { regra, superficieUa, pontoUa, meio } of casos) {
+      const ver = (ua: number) =>
+        repartir(sol(), verDe(ua * UA_EM_PC), instrumento({ janelaDoQuadro: regra }));
+      expect(ver(superficieUa).solturaDoClarao, `${regra}`).toBe(0);
+      expect(ver(pontoUa).solturaDoClarao, `${regra}`).toBe(1);
+      // no meio: estritamente crescente com a distância (recuando, o
+      // clarão só desabrocha — nunca pisca nem volta)
+      let anterior = 0;
+      for (const ua of meio) {
+        const r = ver(ua);
+        const s = r.solturaDoClarao;
+        expect(s, `${regra} ${ua} UA`).toBeGreaterThan(anterior);
+        expect(s).toBeLessThan(1);
+        // na lei, filtro e soltura saem JUNTOS — a mesma rampa
+        if (regra === undefined) expect(s).toBe(r.overrideExpoente);
+        anterior = s;
+      }
     }
   });
 
@@ -421,8 +435,8 @@ describe('3. o clarão deriva do FLUXO — nunca do peso do ponto (§1)', () => 
   });
 
   it('mais perto ⇒ MAIS clarão NO REGIME DE PONTO; com o corpo resolvido, o filtro corta', () => {
-    // no regime de ponto (disco < 4 px, filtro fora) a câmera que chega
-    // ganha clarão — a frase do §1, intacta onde ela vale
+    // no regime de ponto (disco < 1/20 do quadro, filtro fora) a câmera
+    // que chega ganha clarão — a frase do §1, intacta onde ela vale
     const perto = repartir(sol(), verDe(3.6 * UA_EM_PC), instrumento());
     const longe = repartir(sol(), verDe(10 * UA_EM_PC), instrumento());
     expect(perto.claraoGanho).toBeGreaterThan(longe.claraoGanho);
@@ -431,16 +445,17 @@ describe('3. o clarão deriva do FLUXO — nunca do peso do ponto (§1)', () => 
     // rampa da lei e corta a asa — é o que deixa o filme mostrar a
     // superfície de perto (correção do M2, palavras do dono: o Sol
     // procedural escondido atrás da tela branca)
-    const colado = repartir(sol(), verDe(0.1 * UA_EM_PC), instrumento());
+    const colado = repartir(sol(), verDe(0.05 * UA_EM_PC), instrumento());
     expect(colado.overrideExpoente).toBe(0); // paleta autorada = filtro pleno
     expect(colado.claraoPx).toBeLessThan(perto.claraoPx);
   });
 
   it('o clarão ENCOLHE monotônico com a distância no regime de ponto — item 42', () => {
-    // a partir de onde a SOLTURA completa (disco ≤ 2 px ⇔ d ≳ 3,2 UA
-    // para o Sol) a forma do item 42 vale inteira; a janela da soltura
-    // (0,63–3,16 UA) é a rampa DECLARADA da entrega, não quebra de
-    // monotonia — e o teste dela mora no bloco da soltura, acima
+    // a partir de onde a SOLTURA completa (disco ≤ 1/20 do quadro ⇔ d ≳
+    // 0,17 UA para o Sol na lente de 58°) a forma do item 42 vale
+    // inteira; a janela da soltura (0,084–0,17 UA) é a rampa DECLARADA da
+    // entrega, não quebra de monotonia — e o teste dela mora no bloco da
+    // soltura, acima
     let anterior = Infinity;
     for (const ua of [3.6, 7.2, 20, 40, 150, 500, 2000, 4000, 15800]) {
       const r = repartir(sol(), verDe(ua * UA_EM_PC), instrumento());
@@ -511,29 +526,49 @@ describe('4. a radiância vive na banda de render (§5.5) — decisão explícit
 
 // ------------------------------------------------------------
 describe('5. o override é SEÇÃO da lei (§5.7) — mesma régua, largura própria', () => {
-  it('longe: a lei manda (expoente 1) e o custo declarado é 1 EXATO', () => {
-    const r = repartir(sol(), verDe(1), instrumento());
-    expect(r.discoPx).toBeLessThan(LIMIAR_DO_OVERRIDE_PX);
-    expect(r.overrideExpoente).toBe(1);
-    expect(r.overrideFator).toBe(1);
-  });
+  // a lei (09/10): a janela é a FRAÇÃO DO QUADRO, 1/20 → 1/10 da altura;
+  // `?solquadro=hoje` guarda a régua de px de antes, 4 → 10 px
+  const regras = [
+    ['a lei', undefined, 900 / JANELA_DO_QUADRO[0], 900 / JANELA_DO_QUADRO[1]],
+    ['hoje', 'hoje', LIMIAR_DO_OVERRIDE_PX, LIMIAR_DO_OVERRIDE_PX * LARGURA_DO_OVERRIDE],
+  ] as const;
+  for (const [nome, regra, inicioPx, fimPx] of regras) {
+    const inst = () => instrumento({ janelaDoQuadro: regra });
 
-  it('perto: a paleta autorada assume (expoente 0) e o custo é o vão inteiro', () => {
-    const r = repartir(sol(), verDe(0.05 * UA_EM_PC), instrumento());
-    expect(r.discoPx).toBeGreaterThan(LIMIAR_DO_OVERRIDE_PX * LARGURA_DO_OVERRIDE);
-    expect(r.overrideExpoente).toBe(0);
-    expect(r.overrideFator).toBe(vaoRadiometricoNaTroca(RAIO_SOL_PC, 900));
-  });
+    it(`${nome} — longe: a lei manda (expoente 1) e o custo declarado é 1 EXATO`, () => {
+      const r = repartir(sol(), verDe(1), inst());
+      expect(r.discoPx).toBeLessThan(inicioPx);
+      expect(r.overrideExpoente).toBe(1);
+      expect(r.overrideFator).toBe(1);
+    });
 
-  it('no meio a rampa é contínua — nem degrau, nem booleano', () => {
-    // acha uma distância com 0 < g < 1 e confere vizinhança contínua
-    const alvoPx = LIMIAR_DO_OVERRIDE_PX * 1.5;
-    const dist = RAIO_SOL_PC / Math.tan((alvoPx * TAN_HALF_FOV) / 900);
-    const g = repartir(sol(), verDe(dist), instrumento()).overrideExpoente;
-    expect(g).toBeGreaterThan(0);
-    expect(g).toBeLessThan(1);
-    const gPerto = repartir(sol(), verDe(dist * 0.999), instrumento()).overrideExpoente;
-    expect(Math.abs(g - gPerto)).toBeLessThan(0.01);
+    it(`${nome} — perto: a paleta autorada assume (expoente 0) e o custo é o vão inteiro`, () => {
+      const r = repartir(sol(), verDe(0.05 * UA_EM_PC), inst());
+      expect(r.discoPx).toBeGreaterThan(fimPx);
+      expect(r.overrideExpoente).toBe(0);
+      expect(r.overrideFator).toBe(vaoRadiometricoNaTroca(RAIO_SOL_PC, 900));
+    });
+
+    it(`${nome} — no meio a rampa é contínua — nem degrau, nem booleano`, () => {
+      // acha uma distância com 0 < g < 1 e confere vizinhança contínua
+      const alvoPx = inicioPx * 1.5;
+      const dist = RAIO_SOL_PC / Math.tan((alvoPx * TAN_HALF_FOV) / 900);
+      const g = repartir(sol(), verDe(dist), inst()).overrideExpoente;
+      expect(g).toBeGreaterThan(0);
+      expect(g).toBeLessThan(1);
+      const gPerto = repartir(sol(), verDe(dist * 0.999), inst()).overrideExpoente;
+      expect(Math.abs(g - gPerto)).toBeLessThan(0.01);
+    });
+  }
+
+  it('a porta ?solquadro= é o CAMINHO DE VOLTA — ausente é a lei, hoje é a régua de antes', () => {
+    // o idioma de ?bemis=: ausente ou ilegível cai na lei, nunca num
+    // caminho terceiro; `hoje` é o lado A; `a,b` válido obedece (bancada)
+    expect(lerPortaSolQuadro(null)).toBe(JANELA_DO_QUADRO);
+    expect(lerPortaSolQuadro('abacaxi')).toBe(JANELA_DO_QUADRO);
+    expect(lerPortaSolQuadro('10,20')).toBe(JANELA_DO_QUADRO);
+    expect(lerPortaSolQuadro('hoje')).toBe('hoje');
+    expect(lerPortaSolQuadro('40,20')).toEqual([40, 20]);
   });
 });
 
