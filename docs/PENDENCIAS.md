@@ -98,7 +98,7 @@ voltam pelo git: `git show 19881bf9:PLAN-REIA.md`, `git show d8325291:PLAN-EUROP
 - A sombra das nuvens segue presa ao mapa de ~5 km por ponto, e o relevo aos ~1,85 km do ETOPO; ir além só com mosaico em ladrilhos (item 142).
 - A luz do céu usa só a inclinação, não os vales.
 - A lista "A PRÓXIMA RODADA" de `PLAN-ATLAS-PERTO-E-POR-DO-SOL.md` segue aberta.
-- As cópias `../Viagem-232-relevo` e `../Viagem-232-nuvens` são protótipos desta rodada; apagar quando ele quiser.
+- As cópias de protótipo `../Viagem-232-relevo` e `../Viagem-232-nuvens` foram apagadas a pedido dele (09/10); as mudanças delas ficam como patch em `capturas/efeitos-timidos/ferramentas/`.
 
 ## O BASTÃO anterior (07/10, noite) — A ORDEM DE 06/10 FEITA NO `main`, À ESPERA DA PUBLICAÇÃO (commits `3b322fb6`, `b894ff2c`, `822c30f8`, `d319840c`; nada enviado; a publicação é dele)
 
