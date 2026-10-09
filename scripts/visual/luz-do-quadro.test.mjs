@@ -19,6 +19,8 @@ import {
   vaoDoFiltro,
   ESCADA_UA,
   ATLAS_FOV_GRAUS,
+  JANELA_DO_QUADRO as JANELA_DA_REGUA,
+  OCUPACAO_MAXIMA_DA_TELA as OCUPACAO_DA_REGUA,
   RAIO_SOL_PC as RAIO_SOL_DA_REGUA,
 } from './luz-do-quadro.mjs';
 // a lei da casa, no endereço único do F0 — o vitest transpila o TS; a régua
@@ -30,7 +32,8 @@ import {
   psfPointSizePx,
   radianciaDeTela,
 } from '../../src/three/luzDaCasa';
-import { repartir } from '../../src/three/estrela';
+import { JANELA_DO_QUADRO, repartir } from '../../src/three/estrela';
+import { OCUPACAO_MAXIMA_DA_TELA } from '../../src/three/world/clarao';
 import { ATLAS_FOV_GRAUS as ATLAS_FOV_DA_FONTE } from '../../src/three/cinematic/enquadramento';
 import { RAIO_SOL_PC } from '../../src/three/escala';
 
@@ -257,14 +260,14 @@ describe('julgarEscada — o veredito que a régua não tinha', () => {
     // no tamanho da tela e quadro inteiro acima de meia luz.
     //
     // COM O TETO DA LEI (§5.10, asas em vez de √ln) o veredito mudou de
-    // FORMA, e depois da correção do M2 mudou DE NOVO, na direção que o
-    // dono cobrou: a 1 UA o disco já mede 7,6 px e o FILTRO SOLAR está
-    // engatado (§5.7) — o clarão da lei ali é pequeno, e o quadro branco
-    // do desenho velho é condenado TAMBÉM a 1 UA. A âncora do quadro
-    // claro honesto vive na SAÍDA do filtro (~2 UA, disco < 4 px), não
-    // dentro dele. Os degraus 3,6–20 seguem absolvidos pelo teto (o
-    // clarão pleno da lei ali é da ordem do quadro) e o crime continua
-    // sendo o rabo: o mesmo branco a 40–2.000 UA.
+    // FORMA, e mudou DE NOVO em 09/10/2026: com o filtro na fração do
+    // quadro (§5.7) a 1 UA o filtro está FORA e o clarão pleno da lei
+    // passa de 1.200 px. Mas o direito de espalhar que o juiz cobra é o
+    // que o app DESENHA — a lei grampeada pelo teto de ocupação do dono
+    // (0,07 da altura de meia-largura, clarao.ts): 126 px a 900 px. Um
+    // quadro branco de 900 px é condenado em TODOS os degraus, de 1 UA
+    // (onde a régua de px de antes o condenava pelo filtro) ao rabo de
+    // 40–2.000 UA, onde o crime sempre morou.
     const hoje = [1, 3.6, 7.2, 20, 40, 150, 500, 2000].map((ua) => ({
       ua,
       luzMedia: 0.946,
@@ -276,7 +279,7 @@ describe('julgarEscada — o veredito que a régua não tinha', () => {
     const j = julgarEscada({ linhas: hoje, alturaPx: 900, comBloom: true });
     expect(j.erro).toBe(true);
     const reprovadas = j.linhas.filter((l) => l.veredito === 'REPROVA').map((l) => l.ua);
-    expect(reprovadas).toEqual([1, 40, 150, 500, 2000]);
+    expect(reprovadas).toEqual([1, 3.6, 7.2, 20, 40, 150, 500, 2000]);
     expect(j.resumo).toContain('REPROVA');
   });
 
@@ -415,20 +418,30 @@ describe('claraoDaLeiPx — o teto derivado da LEI (§5.10)', () => {
       }
       expect(Math.abs(claraoDaLeiPx(ua, 900) / r.claraoPx - 1), `${ua} UA`).toBeLessThan(1e-3);
     }
+    // nenhum degrau da escada cai DENTRO da janela da soltura (0,084–0,17
+    // UA): a janela redigitada é cobrada contra a fonte, por valor
+    expect(JANELA_DA_REGUA).toEqual(JANELA_DO_QUADRO);
+    // e o teto de ocupação que grampeia o clarão DESENHADO (o que os tetos
+    // julgam) é o do cartaz do app, por valor
+    expect(OCUPACAO_DA_REGUA).toBe(OCUPACAO_MAXIMA_DA_TELA);
   });
 
   it('a asa ENCOLHE com a luz: da soltura plena (4 UA) a 15.800 UA cai mais de 30×', () => {
     // o √ln caía 1,5× no mesmo trecho — era o juiz exigindo halo constante.
-    // A ponta de perto é a SOLTURA PLENA (~3,2 UA, disco ≤ 2 px): dali
-    // para fora o clarão é a asa pura, e ela encolhe com a luz (R2).
+    // A ponta de perto está na SOLTURA PLENA (desde ~0,17 UA, disco ≤ 1/20
+    // do quadro): dali para fora o clarão é a asa pura, e ela encolhe com
+    // a luz (R2).
     expect(claraoDaLeiPx(4, 900) / claraoDaLeiPx(15800, 900)).toBeGreaterThan(30);
   });
 
   it('nunca cresce com a distância NO REGIME DE PONTO (filtro fora)', () => {
-    // dentro do filtro (disco ≥ 4 px ⇔ d ≲ 1,9 UA) o clarão é cortado e
-    // REENTRA na saída — degrau de instrumento declarado, com o juiz da
-    // escada ciente (a monotonia só cobra onde a lei não cresce)
-    const regimeDePonto = ESCADA_UA.filter((ua) => ua >= 3.6);
+    // dentro do filtro (disco ≥ 1/20 do quadro ⇔ d ≲ 0,17 UA) o clarão é
+    // cortado e REENTRA na saída — degrau de instrumento declarado, com o
+    // juiz da escada ciente (a monotonia só cobra onde a lei não cresce)
+    const regimeDePonto = ESCADA_UA.filter(
+      (ua) => discoRealPx(ua, 900) / 900 <= 1 / JANELA_DO_QUADRO[0]
+    );
+    expect(regimeDePonto[0]).toBe(1);
     for (let i = 1; i < regimeDePonto.length; i++) {
       expect(claraoDaLeiPx(regimeDePonto[i], 900)).toBeLessThan(
         claraoDaLeiPx(regimeDePonto[i - 1], 900)
@@ -437,10 +450,10 @@ describe('claraoDaLeiPx — o teto derivado da LEI (§5.10)', () => {
     // e DENTRO do filtro o clarão é de fato pequeno — é o que deixa o
     // filme mostrar o Sol procedural (palavras do dono, 16/08)
     expect(claraoDaLeiPx(0.067, 900)).toBeLessThan(claraoDaLeiPx(3.6, 900));
-    expect(claraoDaLeiPx(1, 900)).toBeLessThan(claraoDaLeiPx(2, 900));
+    expect(claraoDaLeiPx(0.1, 900)).toBeLessThan(claraoDaLeiPx(0.2, 900));
   });
 
-  it('a âncora do dono vive na SAÍDA do filtro: R ≈ 450 px a ~2 UA', () => {
+  it('a âncora do dono vive com o filtro FORA: R ≈ 450 px a ~2 UA', () => {
     const raio = claraoDaLeiPx(2, 900) / 2;
     expect(raio).toBeGreaterThan(300);
     expect(raio).toBeLessThan(900);
@@ -472,19 +485,20 @@ describe('a perna do ATLAS — a lente entra na conta (item 61, 23/08)', () => {
     // lente mudar de novo, é esta viagem do fov por `discoRealPx`,
     // `solturaDaLei`, `claraoDaLeiPx`, `tetoDeLavagem` e `julgarEscada`
     // que mantém o juiz honesto. A hipótese aqui é a lente ANTIGA de
-    // 35°, como matemática: a 1 UA e 900 px o disco vai de 8,2 px (58°)
-    // a 13,6 px (35°), cruza os 10 px em que a soltura zera (§5.7) e o
-    // clarão dá lugar à fotosfera.
+    // 35°, como matemática: a 0,14 UA e 900 px o disco vai de 54 px (58°,
+    // 6 % da altura, soltura ainda viva) a 95 px (35°, 10,5 %), cruza o
+    // 1/10 do quadro em que a soltura zera (§5.7) e o clarão dá lugar à
+    // fotosfera.
     const LENTE_ANTIGA = 35;
-    const dLivre = discoRealPx(1, 900);
-    const dTele = discoRealPx(1, 900, LENTE_ANTIGA);
+    const dLivre = discoRealPx(0.14, 900);
+    const dTele = discoRealPx(0.14, 900, LENTE_ANTIGA);
     expect(dTele).toBeGreaterThan(dLivre);
     expect(dTele / dLivre).toBeCloseTo(
       Math.tan((58 * Math.PI) / 360) / Math.tan((LENTE_ANTIGA * Math.PI) / 360),
       6
     );
-    expect(claraoDaLeiPx(1, 900, EXPO_M0, SIGMA_PX, LENTE_ANTIGA)).toBe(0);
-    expect(claraoDaLeiPx(1, 900)).toBeGreaterThan(0);
+    expect(claraoDaLeiPx(0.14, 900, EXPO_M0, SIGMA_PX, LENTE_ANTIGA)).toBe(0);
+    expect(claraoDaLeiPx(0.14, 900)).toBeGreaterThan(0);
   });
 
   it('sem o fov, tudo continua na lente de sempre — bit a bit', () => {

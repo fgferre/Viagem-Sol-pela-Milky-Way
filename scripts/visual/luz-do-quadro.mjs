@@ -227,29 +227,30 @@ const BETA_DA_ASA = 2.4;
 
 // ── a SOLTURA do clarão (R2 do item 44 — substituiu o filtro na asa) ─────
 // O clarão da lei é a óptica PLENA do ponto vestida por UMA rampa C¹ no
-// domínio do TAMANHO: zero com disco ≥ 10 px (a superfície é a dona — o
-// filtro solar segue lá, cuidando DELA), um com disco ≤ 2 px (ponto
-// pleno), smoothstep em LOG do disco no meio. A forma anterior (dividir o
-// fluxo pelo filtro e tirar raiz) explodia o clarão no recuo — 10→417 px
-// entre 0,8 e 2 UA, as "2 violações" da sonda densa de 17/08.
-/** limiar e largura da rampa do override — `LIMIAR_DO_OVERRIDE_PX`,
- *  `LARGURA_DO_OVERRIDE` de estrela.ts */
-const LIMIAR_DO_OVERRIDE_PX = 4;
-const LARGURA_DO_OVERRIDE = 2.5;
-/** o disco em que a soltura completa — `SOLTURA_PLENA_PX` de estrela.ts */
-const SOLTURA_PLENA_PX = 2;
+// domínio do TAMANHO. A forma anterior (dividir o fluxo pelo filtro e
+// tirar raiz) explodia o clarão no recuo — 10→417 px entre 0,8 e 2 UA, as
+// "2 violações" da sonda densa de 17/08. DESDE 09/10/2026 (escolha do
+// dono) a soltura É o filtro solar, na FRAÇÃO DO QUADRO: zero com o disco
+// enchendo 1/10 da altura (a superfície é a dona), um com ele em 1/20
+// (ponto pleno), smoothstep em LOG da fração no meio. A rampa de px de
+// antes (2 → 10 px) vive só no `?solquadro=hoje` do app; esta régua julga
+// a lei.
+/** a janela da lei — `JANELA_DO_QUADRO` de estrela.ts (acordo cobrado
+ *  no teste) */
+export const JANELA_DO_QUADRO = [20, 10];
 
-/** espelho de `solturaDoClarao` (estrela.ts) — cobrado por conformidade
- *  numérica no teste, como toda a família */
+/** espelho da soltura de `repartir` (`filtroPeloQuadro`, estrela.ts),
+ *  na MESMA altura que a lei recebe — cobrado por conformidade numérica
+ *  no teste, como toda a família */
 export function solturaDaLei(distanciaUa, alturaPx = JH, fovGraus = FOV_GRAUS) {
   const disco = discoRealPx(distanciaUa, alturaPx, fovGraus);
   if (!(disco > 0)) return 1;
   return (
     1 -
     suave(
-      Math.log(SOLTURA_PLENA_PX),
-      Math.log(LIMIAR_DO_OVERRIDE_PX * LARGURA_DO_OVERRIDE),
-      Math.log(disco)
+      -Math.log(JANELA_DO_QUADRO[0]),
+      -Math.log(JANELA_DO_QUADRO[1]),
+      Math.log(disco / alturaPx)
     )
   );
 }
@@ -293,6 +294,30 @@ export function claraoDaLeiPx(
       ? NUCLEO_DA_ASA_EM_SIGMAS * sigma * Math.sqrt(Math.pow(excesso, 1 / BETA_DA_ASA) - 1)
       : 0;
   return Math.max(nucleo, 2 * raioDaAsa) * solturaDaLei(distanciaUa, alturaPx, fovGraus);
+}
+
+/** o teto de ocupação do clarão — `OCUPACAO_MAXIMA_DA_TELA` de
+ *  `src/three/world/clarao.ts` (acordo cobrado no teste): a meia-largura
+ *  do cartaz do Sol nunca passa desta fração da altura da tela */
+export const OCUPACAO_MAXIMA_DA_TELA = 0.07;
+
+/**
+ * O clarão que o app DESENHA: o da lei, grampeado pelo teto de ocupação
+ * do dono — o cartaz tem meia-largura ≤ 0,07 da altura, e a soltura veste
+ * por fora (`meiaDaLei` × soltura, clarao.ts). É ESTE o direito de
+ * espalhar que os tetos julgam: a lei pura passa de mil px a 1 UA, e um
+ * juiz que a usasse absolveria um quadro branco que o app nunca pinta.
+ */
+export function claraoDesenhadoPx(
+  distanciaUa,
+  alturaPx = JH,
+  expoM0 = EXPO_M0,
+  sigmaPx = SIGMA_PX,
+  fovGraus = FOV_GRAUS
+) {
+  const teto =
+    2 * OCUPACAO_MAXIMA_DA_TELA * alturaPx * solturaDaLei(distanciaUa, alturaPx, fovGraus);
+  return Math.min(claraoDaLeiPx(distanciaUa, alturaPx, expoM0, sigmaPx, fovGraus), teto);
 }
 
 /**
@@ -524,7 +549,7 @@ export function tetoDeLavagem(
 ) {
   const folga = comBloom ? FOLGA_COM_BLOOM : FOLGA_SEM_BLOOM;
   const disco = discoRealPx(ua, alturaPx, fovGraus);
-  const clarao = claraoDaLeiPx(ua, alturaPx, EXPO_M0, SIGMA_PX, fovGraus);
+  const clarao = claraoDesenhadoPx(ua, alturaPx, EXPO_M0, SIGMA_PX, fovGraus);
   const teto = folga * Math.max(disco, clarao);
   const orcamento = (Math.PI * 0.25 * teto * teto) / (larguraPx * alturaPx);
   const pisoAcima = comBloom ? PISO_ACIMA_DE_MEIA_COM_BLOOM : PISO_ACIMA_DE_MEIA_SEM_BLOOM;
@@ -575,19 +600,20 @@ export function julgarEscada({
 
   // 1. monotonia, degrau a degrau, do perto para o longe — ONDE A LEI NÃO
   // CRESCE. O filtro solar (§5.7) desengata quando o disco cai abaixo de
-  // 4 px (~0,8 a 1,9 UA para o Sol), e ali o clarão da LEI legitimamente
-  // ENTRA — câmera que tira o filtro ganha flare. Cobrar monotonia
+  // 1/20 do quadro (~0,084 a 0,17 UA para o Sol na lente de 58°), e ali
+  // o clarão da LEI legitimamente ENTRA — câmera que tira o filtro ganha
+  // flare. Cobrar monotonia
   // absoluta nesse degrau seria reprovar o instrumento declarado; fora
   // dele a régua continua a de sempre: borrão nunca cresce.
   for (let i = 1; i < ordenadas.length; i++) {
     const ant = ordenadas[i - 1];
     const cur = ordenadas[i];
     const leiAnt = Math.max(
-      claraoDaLeiPx(ant.ua, alturaPx, EXPO_M0, SIGMA_PX, fovGraus),
+      claraoDesenhadoPx(ant.ua, alturaPx, EXPO_M0, SIGMA_PX, fovGraus),
       discoRealPx(ant.ua, alturaPx, fovGraus)
     );
     const leiCur = Math.max(
-      claraoDaLeiPx(cur.ua, alturaPx, EXPO_M0, SIGMA_PX, fovGraus),
+      claraoDesenhadoPx(cur.ua, alturaPx, EXPO_M0, SIGMA_PX, fovGraus),
       discoRealPx(cur.ua, alturaPx, fovGraus)
     );
     const leiCresce = leiCur > leiAnt * 1.001;
@@ -795,9 +821,9 @@ async function principal() {
       // tetos moram, e é ela que a invariância promete igual nas duas pernas
       borrao: m.borrao / DPR,
       disco: discoRealPx(ua, JH, FOV_DA_PERNA),
-      // o DIREITO da lei (núcleo + asa) e o núcleo sozinho, lado a lado —
-      // a diferença entre os dois é exatamente o que o M2 vai construir
-      clarao: claraoDaLeiPx(ua, JH, EXPO_M0, SIGMA_PX, FOV_DA_PERNA),
+      // o DIREITO da lei (núcleo + asa, grampeado pelo teto de ocupação —
+      // o que os tetos julgam) e o núcleo sozinho, lado a lado
+      clarao: claraoDesenhadoPx(ua, JH, EXPO_M0, SIGMA_PX, FOV_DA_PERNA),
       claraoNucleo: claraoPsfPx(ua),
     });
   }
