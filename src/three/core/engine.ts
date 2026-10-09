@@ -29,6 +29,35 @@ export const TONE_MAPPINGS: Record<ToneMapMode, THREE.ToneMapping> = {
 };
 
 /**
+ * A CURVA DO APP (R1 da régua única; o dono, 09/10: *"Adotar o tom novo"*):
+ * o Neutral da Khronos guarda a cor dos altos que o ACES dessatura.
+ * `?tone=aces` é o caminho de volta — a imagem de antes, bit a bit.
+ */
+export const TOM_PADRAO: ToneMapMode = 'neutral';
+
+/**
+ * A EXPOSIÇÃO QUE O RENDERER RECEBE para a curva viva. O app fala uma
+ * língua só, a do ACES — o 1,02 da casa, o 1,05 da vista externa, os 8,16
+ * da luz real e o `?exp=` (um link antigo dá o mesmo brilho) — e a troca
+ * de curva passa só por aqui. ACES, AgX e Linear recebem o número como
+ * está. O Neutral recebe o e' que põe o cinza médio da cena (0,18) no MESMO
+ * nível de tela que o ACES lhe dá: o ACES do three multiplica por e/0,6
+ * dentro da curva e o Neutral não, e o fator não é constante (×1,4076 a
+ * 1,02; ×0,629 nos 8,16 da luz real, onde o ombro do ACES já comprime).
+ * Forma fechada: o `RRTAndODTFit` do three no cinza (as matrizes do ACES
+ * somam 1 por linha) e o Neutral invertido por trecho — pé, reta, ombro.
+ */
+export function exposicaoNoRenderer(tom: ToneMapMode, exposicao: number): number {
+  if (tom !== 'neutral') return exposicao;
+  const v = (0.18 * exposicao) / 0.6;
+  const tela = (v * (v + 0.0245786) - 0.000090537) / (v * (0.983729 * v + 0.432951) + 0.238081);
+  // abaixo de e ≈ 0,0117 o ACES já põe o cinza no preto; acima de e ≈ 85, no branco
+  const y = Math.min(Math.max(tela, 0), 0.9999);
+  const x = y < 0.04 ? 0.4 * Math.sqrt(y) : y < 0.76 ? y + 0.04 : 0.0576 / (1 - y) + 0.56;
+  return x / 0.18;
+}
+
+/**
  * O inverso do mapa acima: qual curva está viva no renderer. Existe
  * para o selo de honestidade poder LER o estado do instrumento em vez
  * de guardar uma segunda cópia dele — o dia em que as duas divergissem,
@@ -767,6 +796,10 @@ export class Engine {
    * sobre o que entrou.
    */
   private medicaoAtual: MedicaoDoQuadro | null = null;
+  /** a curva viva e a exposição pedida, na língua do ACES (ver `exposicaoNoRenderer`):
+   *  o 1,02 da casa até o Director falar */
+  private tom: ToneMapMode = TOM_PADRAO;
+  private exposicaoPedida = 1.02;
   /** teto de refresh observado (proxy do monitor) — sob vsync a 60 Hz
    *  "avg > 72" nunca acontece; os limiares de subida são relativos */
   private peakAvg = 0;
@@ -802,8 +835,7 @@ export class Engine {
       // época: ~22,9 MB de VRAM devolvidos numa tela retina.
       depth: false,
     });
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.02;
+    this.setToneMapping(TOM_PADRAO);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.autoClear = true;
 
@@ -892,11 +924,15 @@ export class Engine {
    * é o hitch de compilação que o warm-up do director existe para evitar.
    */
   setToneMapping(mode: ToneMapMode) {
+    this.tom = mode;
     this.renderer.toneMapping = TONE_MAPPINGS[mode];
+    this.renderer.toneMappingExposure = exposicaoNoRenderer(mode, this.exposicaoPedida);
   }
 
+  /** `v` na língua do ACES; o renderer recebe o casado da curva viva (`exposicaoNoRenderer`) */
   setExposure(v: number) {
-    this.renderer.toneMappingExposure = v;
+    this.exposicaoPedida = v;
+    this.renderer.toneMappingExposure = exposicaoNoRenderer(this.tom, v);
   }
 
   /**

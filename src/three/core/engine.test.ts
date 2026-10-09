@@ -25,6 +25,7 @@ import {
   TravaDoVaivem,
   farPlanePc,
   escreverPortaForcaDaLente,
+  exposicaoNoRenderer,
   lerPortaExposicao,
   lerPortaForcaDaLente,
   lerPortaLente,
@@ -429,6 +430,24 @@ describe('?exp= — só número finito e positivo atravessa', () => {
     for (const qualquer of ['abc', '1.02', '', '-3', null]) {
       const v = lerPortaExposicao(qualquer);
       expect(v === null || (Number.isFinite(v) && v > 0), String(qualquer)).toBe(true);
+    }
+  });
+});
+
+// A exposição casada (R1a da régua única): os números são os da prancha que
+// ele julgou (capturas/regua-r1/, `capt-r1.mjs`), não desta conta.
+describe('a exposição casada — o app fala ACES, o Neutral recebe o cinza médio igual', () => {
+  it('1,02 → 1,4358 e os 8,16 da luz real → 5,13; sobe sempre; ACES, AgX e Linear passam como estão', () => {
+    expect(Math.abs(exposicaoNoRenderer('neutral', 1.02) - 1.4358)).toBeLessThan(0.001);
+    expect(Math.abs(exposicaoNoRenderer('neutral', 8.16) - 5.13)).toBeLessThan(0.01);
+    let antes = 0;
+    for (let e = 0.02; e <= 40; e *= 1.05) {
+      const agora = exposicaoNoRenderer('neutral', e);
+      expect(agora, `e ${e}`).toBeGreaterThan(antes);
+      antes = agora;
+    }
+    for (const tom of ['aces', 'agx', 'linear'] as const) {
+      for (const e of [0.4, 1.02, 1.05, 8.16]) expect(exposicaoNoRenderer(tom, e), tom).toBe(e);
     }
   });
 });

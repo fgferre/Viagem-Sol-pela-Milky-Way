@@ -51,6 +51,7 @@ import type {
   TipoDePoeira,
   ToneMapMode,
 } from './core/engine';
+import { TOM_PADRAO } from './core/engine';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { LANTERNA_DE_LEITURA, PASSOS_DA_EXPOSICAO_REAL } from '../lib/atlas/luzDaVisita';
 
@@ -594,7 +595,7 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     eixo: 'brilho',
     get rotulo() { return t('selo.desvio.tone'); },
     volta: 'vivo',
-    desvia: (e) => e.tom !== 'aces',
+    desvia: (e) => e.tom !== TOM_PADRAO,
   },
   {
     chave: 'lente',
@@ -1164,7 +1165,7 @@ export function aoClicarEmBrilho(e: EstadoDaVista): EstadoDaVista {
     ...e,
     portas: e.portas.filter((p) => !chaves.has(p)),
     exposicaoManual: chaves.has('exp') ? false : e.exposicaoManual,
-    tom: chaves.has('tone') ? 'aces' : e.tom,
+    tom: chaves.has('tone') ? TOM_PADRAO : e.tom,
     lente: chaves.has('lente') ? 'nenhuma' : e.lente,
     realceDoRelevo: chaves.has('relevo') ? 1 : e.realceDoRelevo,
     camadasEscondidas: e.camadasEscondidas.filter((f) => !chaves.has(f)),

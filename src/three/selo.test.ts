@@ -50,7 +50,7 @@ import {
 } from '../lib/atlas/luzDaVisita';
 import { DRAMA_T1, doseDaDramaturgia } from './director/doseDoSol';
 import { LIMIAR_SISTEMA_SOLAR_PC } from './escala';
-import { TONE_MAPPINGS } from './core/engine';
+import { TOM_PADRAO, TONE_MAPPINGS } from './core/engine';
 import { definirIdioma, iniciarIdioma, t } from '../lib/idioma';
 import type { ToneMapMode } from './core/engine';
 
@@ -65,7 +65,7 @@ const LIMPA: EstadoDaVista = {
   distanciaPc: 0.0007,
   portas: [],
   exposicaoManual: false,
-  tom: 'aces',
+  tom: TOM_PADRAO,
   lente: 'nenhuma',
   camadasEscondidas: [],
   tier: 'cinema',
@@ -213,7 +213,7 @@ describe('2. nenhum controle desmente o selo', () => {
   it('QUALQUER curva de tom fora do padrão vira desvio', () => {
     for (const tom of Object.keys(TONE_MAPPINGS) as ToneMapMode[]) {
       const v = estadoDoSelo(com({ tom }));
-      expect(v.brilho, `tom ${tom}`).toBe(tom === 'aces' ? 'real' : 'assistido');
+      expect(v.brilho, `tom ${tom}`).toBe(tom === TOM_PADRAO ? 'real' : 'assistido');
     }
   });
 

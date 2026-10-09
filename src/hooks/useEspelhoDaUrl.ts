@@ -25,6 +25,7 @@ import {
   lerPortaForcaDaLente,
   lerPortaLente,
   lerPortaTom,
+  TOM_PADRAO,
 } from '../three/core/engine';
 import { chaveDoFoco, construirIndice } from '../lib/buscaEstrelas';
 import { CAMADAS } from '../three/atlasConfig';
@@ -80,7 +81,7 @@ export function useEspelhoDaUrl(dep: {
   };
 
   const [tom, setTom] = useState<ToneMapMode>(
-    () => lerPortaTom(new URLSearchParams(window.location.search).get('tone')) ?? 'aces'
+    () => lerPortaTom(new URLSearchParams(window.location.search).get('tone')) ?? TOM_PADRAO
   );
   const [lente, setLente] = useState<ModoDaLente>(() =>
     lerPortaLente(new URLSearchParams(window.location.search).get('lente'))
@@ -364,7 +365,7 @@ export function useEspelhoDaUrl(dep: {
   const trocarTom = (t: ToneMapMode) => {
     setTom(t);
     directorRef.current?.engine.setToneMapping(t);
-    window.history.replaceState(null, '', comParam('tone', t === 'aces' ? null : t));
+    window.history.replaceState(null, '', comParam('tone', t === TOM_PADRAO ? null : t));
   };
 
   const trocarLente = (modo: ModoDaLente) => {
@@ -463,8 +464,8 @@ export function useEspelhoDaUrl(dep: {
         d.limparExposicaoManual();
         setExposicao(EXPOSICAO_PADRAO);
       } else if (c.chave === 'tone') {
-        d.engine.setToneMapping('aces');
-        setTom('aces');
+        d.engine.setToneMapping(TOM_PADRAO);
+        setTom(TOM_PADRAO);
       } else if (c.chave === 'lente') {
         d.definirLente('nenhuma');
         setLente('nenhuma');
