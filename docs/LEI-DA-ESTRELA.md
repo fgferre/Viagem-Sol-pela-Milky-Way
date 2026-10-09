@@ -248,6 +248,7 @@ em menos de 24 h e o documento sofria a doença que denunciava.
 | a repartição do Sol | `repartir` (`estrela.ts`) → `aCede`/`uFiltroSolar`/`uWorldFade`, fiada pelo director | **M1 FECHADO 16/08**: cessão = `wResolvido`, filtro = `overrideExpoente`, malha entra do zero com o peso da lei | é a lei — fica |
 | segunda coluna do cadastro | `fatorDeBrilho` em `EscalaDeclarada` (`escala.ts`) | declara mentira de BRILHO | fica — e passa a declarar o valor VIVO |
 | as portas | `?bemis=` registrada em `selo.ts` (`?bfoto`/`?bcede` MORRERAM no M1; `?bbloom`/`?bombro`/`?knee2` no M2 — regra iv) | caminho de volta | **morre no commit que migrar a emissão** |
+| a janela do filtro do Sol | `?solquadro=` registrada em `selo.ts` (`hoje` = a régua de px de antes; `a,b` = outra fração do quadro; 09/10) | caminho de volta, a pedido do dono de poder voltar | fica até ele dizer que não precisa |
 
 **Provas vivas (re-medidas em 16/08, depois do M2).** O invariante
 disco↔ponto está verde (a dívida F2 foi paga: `fatorDeBrilho: 1` no Sol,

@@ -4,10 +4,41 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 233.**
 
-## O BASTÃO — onde a rodada parou (08/10, noite) — PÃ COM A FORMA MEDIDA NO `main` (`15e2f27b`, NÃO PUBLICADA); A RÉGUA ÚNICA PLANEJADA (`PLAN-REGUA-UNICA.md`); TRÊS FRENTES PARALELAS QUE MEXEM NA LUZ E NA TELA — COMBINAR A ORDEM COM ELE
+## O BASTÃO — onde a rodada parou (09/10) — O SOL EM CADA DISTÂNCIA: A REGRA NOVA NO `main`, NÃO PUBLICADA (publicar é dele)
+
+**Feito em 09/10 (conversa "Coordenação de trabalhos em fila"), o assunto 0 de `PLAN-ESTRELAS-E-INSTRUMENTO.md`:**
+entre ~0,2 e ~1 UA o Sol era um pontinho laranja sem brilho, mais fraco que visto de Júpiter — o filtro entrava a
+4→10 px de disco, apagava também o brilho em volta, e o regime mudava com o tamanho da janela. A pesquisa (sondas,
+astronautas, apps, filmes) achou o mesmo padrão: filtrado só quando o Sol é o assunto e enche o quadro; branco e
+ofuscante quando é a luz da cena. Agora o filtro e a soltura do clarão e dos raios da lente entram juntos com o
+disco enchendo 1/20 → 1/10 da ALTURA do quadro (`JANELA_DO_QUADRO`, `estrela.ts`). Ele escolheu entre hoje, A e B
+pelas pranchas (*"Proposta A"*), viu os filmes antes×depois, abriu o app (*"Quero ver no app primeiro"*) e
+aprovou: *"Aprovo, pode juntar na versão principal"*. De perto (≤ ~18 R☉) o Sol é o de sempre; a ~27 R☉ e na
+partida do filme solar ("A luz que sai daqui...") ele vira um disco branco — visto e escolhido assim.
+`?solquadro=hoje` traz a régua de antes (caminho de volta, registrado no selo e na tabela §2 da LEI);
+`?solquadro=a,b` testa outra janela. A régua da luz (`scripts/visual/luz-do-quadro.mjs`) espelha a janela e
+ganhou o teto de ocupação 0,07 que o app desenha (sem ele o juiz aceitava um quadro branco a 1 UA). `npm run done`
+verde (138 arquivos, 3.624 testes). Provas: `capturas/sol-estudo/` (`hoje/prancha-hoje-v2.jpg`,
+`proposta/ab-*.jpg`, `filme/seg*-lado-a-lado.mp4`, `regra-a/`).
+
+**Publicar é dele:** `git push origin main`; depois conferir no ar por imagem e sha256 (lá não há `__director`).
+
+**Não feito e achados:** não olhado num iPhone de verdade (a regra é fração da altura; o retrato segue a do Mac);
+de longe, com lente, três cruzes no mesmo ponto (clarão, raios da lente, a cruz do sprite) — assunto 2 do plano;
+o brilho da lente não segue a soltura nem o filtro (nunca cobre o disco); os raios da coroa 3D ignoram o filtro; o
+anel fino em volta do Sol perto da Terra é o ícone do Atlas (`&noicones=1` o tira), não defeito.
+
+**A próxima rodada — a ordem é dele:** (1) a régua única (`PLAN-REGUA-UNICA.md`): a R0 (tabela de medidas, só
+pesquisa) pode começar já; a R1 (o tom único) muda tudo de uma vez e tem de recalibrar o realçado da Terra
+(ajustado sobre o ACES) e uma constante por lente; (2) os assuntos 1–6 de `PLAN-ESTRELAS-E-INSTRUMENTO.md`;
+(3) a fila de assets sob a régua (as seis luas pequenas pela receita de Pã, Febe, Calipso/Telesto/Helena,
+Fobos/Deimos, Vesta). A cópia `../Viagem-sol-estudo` (ramo `sol-estudo`, inteiro no `main`) e as da 232 podem
+ser apagadas quando ele quiser.
+
+## O BASTÃO anterior (08/10, noite) — PÃ E AS LENTES DE CINEMA PUBLICADAS EM 08/10 (`main` `e7e409c9` no ar); A RÉGUA ÚNICA PLANEJADA (`PLAN-REGUA-UNICA.md`)
 
 **Feito em 07–08/10 (conversa das luas pequenas):** a ordem de 06/10 inteira, já no ar. Pã, a primeira das
-luas pequenas pela receita do Hipérion, no `main` e não publicada: forma medida (Thomas, Joseph & Ansty 2018)
+luas pequenas pela receita do Hipérion, PUBLICADA em 08/10: forma medida (Thomas, Joseph & Ansty 2018)
 virada para Saturno (o W do app estava meia volta fora nas sete luas síncronas — só Pã consertada); relevo
 fino de 28 fotos calibradas da Cassini em 40,5 % da superfície e inventado no resto (confessado); 4 crateras
 reais das fotos + 10 pela densidade medida; cor pintada pelo ChatGPT dele e calibrada pelo espectro medido em
@@ -18,11 +49,8 @@ verde (133 arquivos, 3.600 testes). Provas: `capturas/luas-pequenas/pa/` (`pranc
 sistema..."* — levantamento e cinco partes em `PLAN-REGUA-UNICA.md` (nove caminhos de cor; um ACES que come
 ~60 % da cor das superfícies claras; oito jeitos de relevo; quatro formatos de confissão).
 
-**Publicar Pã é dele:** `git push origin main`; depois conferir no ar.
-
 **A próxima rodada — a ordem entre as frentes é decisão dele** (as três tocam a luz e a tela; ele quer
-evitar trabalho paralelo repetido): (1) as lentes de cinema — **NO `main` desde 08/10, noite, à espera da
-publicação (é dele)**: Ajustes › Lente com nenhuma (padrão, imagem idêntica), redonda, anamórfica e Hollywood;
+evitar trabalho paralelo repetido): (1) as lentes de cinema — **PUBLICADAS em 08/10**: Ajustes › Lente com nenhuma (padrão, imagem idêntica), redonda, anamórfica e Hollywood;
 reflexos, anéis, risco e sujeira no estilo da indústria, aprovados por ele em montagem (*"Gostei dos
 efeitos"*) e conferidos no app (`capturas/lente/`: `app-vs-look-*`, `video-4-lentes-v2.mp4`); raios da lente só
 com o Sol como ponto, somem na soltura do clarão (*"de longe eu achei que estava até bom"*); nada da lente

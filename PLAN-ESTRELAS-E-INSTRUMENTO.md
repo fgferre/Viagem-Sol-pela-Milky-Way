@@ -32,37 +32,17 @@ Mais os dois blooms (`core/post.ts`) e a lente nova (`src/three/lente/`).
 
 ## Assuntos abertos
 
-0. **PRIMEIRO: como o Sol brilha em cada distância — estudo para chegar a um consenso.**
-   Palavras dele (08/10): *"criamos um modo de visualização do sol 3d que é através de
-   filtros pois o sol mesmo na distância que observamos seria somente um grande borrão
-   branco... se fizermos esse borrão branco perdemos toda a maravilha linda que é hoje"*;
-   *"precisa estudar bem isso para chegar num consenso de qual o melhor caminho. esse
-   estudo que foi feito pode ser criticado, mas foi muito bem embasado"* — ou seja: reler a
-   `LEI-DA-ESTRELA` com olhar crítico, sem descartá-la, procurando o que não se viu.
-   O problema visto na rodada das lentes: o filtro (o que mostra a superfície) entra pelo
-   tamanho em pixels (4→10 px de disco, `estrela.ts` ~:561–576), então perto da Terra o
-   Sol já é "visto pelo filtro" — um pontinho laranja apagado onde ele deveria ser a luz
-   ofuscante da cena — e os reflexos da lente parecem não ter fonte. E os efeitos brigam:
-   perto, o Sol 3D tem raios de coroa (`world/sol/coronaRays.js`) e coroa em volume; longe,
-   o clarão (halo + cruz) e a cruz do próprio ponto; a lente somava brilho e raios por cima
-   (os raios da lente saíram em 08/10 por isso: *"os spikes que ficaram estranhos"*; o
-   brilho da lente ficou à espera deste estudo).
-   Proposta do assistente para pôr à prova (não decidida): o filtro entra quando o Sol vira
-   o ASSUNTO do quadro (por fração da tela, p. ex. a partir de ~1/10 da altura), não por
-   alguns pixels; abaixo disso o Sol é a luz branca e ofuscante da cena, com o brilho dele
-   (e aí o brilho da lente sai também — um dono por efeito em cada regime); de perto, tudo
-   como hoje. Referências já vistas: Celestia (halo recolhido sobre disco resolvido),
-   SpaceEngine (exposição que escurece a superfície na aproximação), NASA (SDO filtrado
-   quando o Sol é assunto; fotos da estação com o Sol estourado), cinema (assunto filtrado,
-   luz de cena estourada). Pesquisar melhor antes de propor; a prova é prancha em três
-   distâncias (perto da Terra, Júpiter, de perto do Sol) com a regra de hoje × a proposta,
-   e o "pontinho laranja" como caso de teste.
-   Já valendo desde 08/10 (pedido dele): os raios da lente aparecem só com o Sol como
-   ponto e somem na mesma soltura do clarão (disco 2→10 px), para o Sol 3D assumir. Dois
-   casos para o estudo: (a) um vão perto da Terra, onde os raios da lente já sumiram e a
-   coroa do Sol 3D ainda não aparece (o Sol sem raio nenhum); (b) de longe, com lente, a
-   cruz do clarão e a estrela da lente juntas no mesmo ponto (ele gostou; é a questão do
-   "um instrumento só", item 2).
+0. **FEITO em 09/10 — como o Sol brilha em cada distância.** O filtro e a soltura do clarão
+   e dos raios da lente entram juntos com o disco enchendo 1/20 → 1/10 da altura do quadro
+   (fração, não px; `JANELA_DO_QUADRO` em `estrela.ts`). Ele escolheu entre hoje, A (1/20→1/10)
+   e B (1/40→1/20) olhando as pranchas (*"Proposta A"*), viu os filmes antes×depois e o app, e
+   aprovou (*"Aprovo, pode juntar na versão principal"*). Entre Mercúrio e a Terra o Sol deixou
+   de ser o pontinho laranja e virou a luz branca da cena; o vão (a) sumiu, porque o clarão e os
+   raios da lente ficam até o filtro entrar. `?solquadro=hoje` traz a régua de antes. Provas,
+   pesquisa e leitura crítica da LEI: `capturas/sol-estudo/` e o commit da rodada. Sobra para o
+   item 2: (b) de longe, com lente, três cruzes no mesmo ponto (clarão, raios da lente, a cruz
+   do sprite); o brilho da lente não segue a soltura nem o filtro; os raios da coroa 3D ignoram
+   o filtro.
 
 1. **Unificar os desenhistas das estrelas (M3 da LEI).** O dono pediu "uma regra clara e
    única para cada estrela conforme o estado na tela". Crítica do assistente: unificar
