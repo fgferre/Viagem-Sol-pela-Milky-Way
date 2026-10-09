@@ -51,19 +51,24 @@ Mais os dois blooms (`core/post.ts`) e a lente nova (`src/three/lente/`).
    estrela com corpo ao se aproximar). Falta ele decidir quando.
 2. **As estrelas seguem a lente escolhida?** Hoje a lente muda só o Sol (reflexos e brilho;
    os raios dela saíram em 08/10); Sirius e as outras continuam com a cruz. O coerente seria o instrumento valer
-   para todas (raios finos das lâminas no lugar da cruz). Falta ele decidir.
+   para todas (raios finos das lâminas no lugar da cruz). **Decidido 09/10:** ele quer ver
+   antes ("Sim, me mostra a foto"): prancha de Sirius e do céu com cada lente, hoje × seguindo
+   a lente; ele escolhe pela prancha.
 3. **Quanto deixar ajustável no menu.** Ele quer "tudo customizável" (reflexos, raios,
    brilho, risco, sujeira). Crítica do assistente: controle demais piora para quem visita;
    recomendou os estilos prontos e no máximo um controle de intensidade, com uma gaveta
    avançada só se ele insistir (o molde já existe: Qualidade + Avançado + "Personalizado").
-   Falta ele decidir.
+   **Decidido 09/10:** os quatro estilos + uma barra só de força (fraca → forte; 100 % = hoje),
+   sem gaveta avançada. Em obra no ramo `lente-forca`.
 4. **A lente como ferramenta do diretor nos filmes.** Em 23/08 ele proibiu diferença
    entre Atlas e filme para o clarão. Crítica do assistente: o filme é a experiência de
    cinema e quem dirige escolhe a lente de cada cena, como já faz com os nomes ("os
    elementos de label... ferramentas que o diretor da cena usa"). Proposta: uma chave por
    cena nos roteiros (`src/three/cinematic/roteiros/*.json`; hoje `lente` é o campo de
-   ângulo de visão, então o nome precisa ser outro), com o Atlas limpo por padrão. Falta
-   ele decidir.
+   ângulo de visão, então o nome precisa ser outro), com o Atlas limpo por padrão.
+   **Decidido 09/10:** o diretor escolhe, cena por cena; o Atlas segue limpo. Primeiro o motor
+   (a chave no plano do roteiro, lida como `assuntos`), depois a escolha de cada cena dos dois
+   filmes, mostrada a ele em vídeo.
 5. **FEITO em 09/10 (ramo `limpeza-estrelas`, 54/54 vistas bit-idênticas; brancos, os dois β e `?noplan` ficaram como estão).**
    **Incoerências achadas no mapa (limpeza, sem mudança de imagem):** `clarao.ts:1-3` diz
    que "substitui as 16 heroes" (elas voltaram em 16/08); `uCore` das heroes nunca é
