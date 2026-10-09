@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 233.**
 
-## O BASTÃO — onde a rodada parou (09/10) — O SOL EM CADA DISTÂNCIA: A REGRA NOVA NO `main`, NÃO PUBLICADA (publicar é dele)
+## O BASTÃO — onde a rodada parou (09/10) — O SOL EM CADA DISTÂNCIA: A REGRA NOVA PUBLICADA (`main` `d89e684c`, enviada por ele no terminal)
 
 **Feito em 09/10 (conversa "Coordenação de trabalhos em fila"), o assunto 0 de `PLAN-ESTRELAS-E-INSTRUMENTO.md`:**
 entre ~0,2 e ~1 UA o Sol era um pontinho laranja sem brilho, mais fraco que visto de Júpiter — o filtro entrava a
@@ -21,7 +21,7 @@ ganhou o teto de ocupação 0,07 que o app desenha (sem ele o juiz aceitava um q
 verde (138 arquivos, 3.624 testes). Provas: `capturas/sol-estudo/` (`hoje/prancha-hoje-v2.jpg`,
 `proposta/ab-*.jpg`, `filme/seg*-lado-a-lado.mp4`, `regra-a/`).
 
-**Publicar é dele:** `git push origin main`; depois conferir no ar por imagem e sha256 (lá não há `__director`).
+**Conferido no ar (09/10):** as quatro distâncias de `capturas/sol-estudo/regra-a/` saem do site com o mesmo sha256 (`capturas/sol-estudo/no-ar/`), sem erro de GL.
 
 **Não feito e achados:** não olhado num iPhone de verdade (a regra é fração da altura; o retrato segue a do Mac);
 de longe, com lente, três cruzes no mesmo ponto (clarão, raios da lente, a cruz do sprite) — assunto 2 do plano;
