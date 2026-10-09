@@ -173,6 +173,7 @@ export const PT = {
   'ajustes.lente.redonda': 'Redonda',
   'ajustes.lente.anamorfica': 'Anamórfica',
   'ajustes.lente.hollywood': 'Hollywood',
+  'ajustes.forcaDaLente': 'Força da lente',
   'ajustes.qualidade': 'Qualidade',
   'ajustes.qualidadeNota':
     'Troca ao vivo, sem recarregar. A parte pesada — a população da galáxia e o Sol — é refeita em segundo plano e entra de uma vez; até lá a cena continua como está. O auto deixa a medição escolher — e ninguém escolhe por você sem esse clique.',

@@ -74,6 +74,30 @@ export function lerPortaLente(bruto: string | null | undefined): ModoDaLente {
 }
 
 /**
+ * A FORÇA DA LENTE DE CINEMA (Ajustes · Lente; o dono, 09/10: "os estilos
+ * mais uma barra de força"), em % inteiro: 100 é a receita aprovada, a barra
+ * vai de 25 a 200 em passos de 5. Um número só — o passe da lente o aplica
+ * ao reflexo inteiro do estilo escolhido (`multiplicadorDaForca`).
+ */
+export const FORCA_DA_LENTE = { padrao: 100, minima: 25, maxima: 200, passo: 5 } as const;
+
+/**
+ * A porta `?forcadalente=`: % no passo da barra, preso à faixa; ausente,
+ * vazia ou lixo é 100 (a lente aprovada).
+ */
+export function lerPortaForcaDaLente(bruto: string | null | undefined): number {
+  const v = bruto == null || bruto.trim() === '' ? NaN : Number(bruto);
+  if (!Number.isFinite(v)) return FORCA_DA_LENTE.padrao;
+  const { minima, maxima, passo } = FORCA_DA_LENTE;
+  return Math.min(maxima, Math.max(minima, Math.round(v / passo) * passo));
+}
+
+/** O espelho de `?forcadalente=`: escrito só fora de 100, como `?lente=` só fora de `nenhuma`. */
+export function escreverPortaForcaDaLente(forca: number): string | null {
+  return forca === FORCA_DA_LENTE.padrao ? null : String(forca);
+}
+
+/**
  * Exposição em multiplicador do tempo de exposição. Só positivo finito
  * passa: 0 apagaria a tela e negativo não tem significado físico. Sem
  * teto de propósito — quem escreve `?exp=8` está estourando o quadro a

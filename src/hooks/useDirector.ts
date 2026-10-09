@@ -13,6 +13,7 @@ import type { NamedStar } from '../three/config';
 import { lerPortaRotulos3d } from '../lib/beta';
 import {
   lerPortaExposicao,
+  lerPortaForcaDaLente,
   lerPortaLente,
   lerPortaQualidade,
   lerPortaTom,
@@ -236,6 +237,7 @@ export function useDirector(fios: FiosDoDirector) {
         const exposure = lerPortaExposicao(query.get('exp'));
         if (exposure !== null) d.setExposure(exposure);
         d.definirLente(lerPortaLente(query.get('lente')));
+        d.definirForcaDaLente(lerPortaForcaDaLente(query.get('forcadalente')));
 
         // ?r3d=1 — a beta dos rótulos 3D (item 109; porta catalogada em
         // lib/beta.ts, fora do selo por doutrina dele)

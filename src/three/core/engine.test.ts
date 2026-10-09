@@ -24,7 +24,9 @@ import {
   TONE_MAPPINGS,
   TravaDoVaivem,
   farPlanePc,
+  escreverPortaForcaDaLente,
   lerPortaExposicao,
+  lerPortaForcaDaLente,
   lerPortaLente,
   lerPortaPoeira,
   lerPortaRelevo,
@@ -378,6 +380,24 @@ describe('?lente= — só redonda, anamorfica e hollywood atravessam, o resto é
     expect(lerPortaLente('hollywood')).toBe('hollywood');
     for (const ruim of ['foo', 'Redonda', 'Hollywood', '', 'constructor', '__proto__', null, undefined]) {
       expect(lerPortaLente(ruim), String(ruim)).toBe('nenhuma');
+    }
+  });
+});
+
+describe('?forcadalente= — % no passo de 5, de 25 a 200, escrito só fora de 100', () => {
+  it('lê o que a barra escreve, prende e arredonda o resto, e o padrão não vai à URL', () => {
+    for (const f of [25, 30, 95, 105, 150, 200]) {
+      expect(escreverPortaForcaDaLente(f)).toBe(String(f));
+      expect(lerPortaForcaDaLente(escreverPortaForcaDaLente(f))).toBe(f);
+    }
+    expect(escreverPortaForcaDaLente(100)).toBeNull();
+    expect(lerPortaForcaDaLente(escreverPortaForcaDaLente(100))).toBe(100);
+    expect(lerPortaForcaDaLente('37')).toBe(35);
+    expect(lerPortaForcaDaLente('0')).toBe(25);
+    expect(lerPortaForcaDaLente('-50')).toBe(25);
+    expect(lerPortaForcaDaLente('1e6')).toBe(200);
+    for (const ruim of ['', ' ', 'abc', 'NaN', 'Infinity', null, undefined]) {
+      expect(lerPortaForcaDaLente(ruim), String(ruim)).toBe(100);
     }
   });
 });

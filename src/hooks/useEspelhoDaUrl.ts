@@ -19,7 +19,13 @@ import type {
   ToneMapMode,
   VarianteDaTerra,
 } from '../three/core/engine';
-import { lerPortaExposicao, lerPortaLente, lerPortaTom } from '../three/core/engine';
+import {
+  escreverPortaForcaDaLente,
+  lerPortaExposicao,
+  lerPortaForcaDaLente,
+  lerPortaLente,
+  lerPortaTom,
+} from '../three/core/engine';
 import { chaveDoFoco, construirIndice } from '../lib/buscaEstrelas';
 import { CAMADAS } from '../three/atlasConfig';
 import { FILME_PADRAO } from '../three/cinematic/filme';
@@ -78,6 +84,9 @@ export function useEspelhoDaUrl(dep: {
   );
   const [lente, setLente] = useState<ModoDaLente>(() =>
     lerPortaLente(new URLSearchParams(window.location.search).get('lente'))
+  );
+  const [forcaDaLente, setForcaDaLente] = useState(() =>
+    lerPortaForcaDaLente(new URLSearchParams(window.location.search).get('forcadalente'))
   );
   const [exposicao, setExposicao] = useState(
     () =>
@@ -364,6 +373,13 @@ export function useEspelhoDaUrl(dep: {
     window.history.replaceState(null, '', comParam('lente', modo === 'nenhuma' ? null : modo));
   };
 
+  /** a força da lente (decisão do dono, 09/10): no molde da lente, a URL espelha só fora de 100 */
+  const trocarForcaDaLente = (forca: number) => {
+    setForcaDaLente(forca);
+    directorRef.current?.definirForcaDaLente(forca);
+    window.history.replaceState(null, '', comParam('forcadalente', escreverPortaForcaDaLente(forca)));
+  };
+
   /**
    * O SLIDER DE VOLTA AO PADRÃO DESARMA O LATCH. `setExposure` LIGA o
    * `expOverride` do Director (é o que faz o valor escolhido sobreviver
@@ -560,6 +576,7 @@ export function useEspelhoDaUrl(dep: {
   return {
     tom,
     lente,
+    forcaDaLente,
     exposicao,
     escondidas,
     escalaUi,
@@ -576,6 +593,7 @@ export function useEspelhoDaUrl(dep: {
     trocarPoeira,
     trocarTom,
     trocarLente,
+    trocarForcaDaLente,
     trocarExposicao,
     voltarAoBrilhoReal,
     trocarEscalaUi,

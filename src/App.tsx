@@ -884,6 +884,7 @@ export default function App() {
     // (`lente` aqui é a LENTE DE CINEMA do painel; o `lente` do indicador
     // de fotografia do filme, lá em cima, é outra coisa)
     lente: modoDaLente,
+    forcaDaLente,
     exposicao,
     escondidas,
     escalaUi,
@@ -899,6 +900,7 @@ export default function App() {
     trocarPoeira,
     trocarTom,
     trocarLente,
+    trocarForcaDaLente,
     trocarExposicao,
     voltarAoBrilhoReal,
     trocarEscalaUi,
@@ -1449,6 +1451,8 @@ export default function App() {
         onTom={trocarTom}
         lente={modoDaLente}
         onLente={trocarLente}
+        forcaDaLente={forcaDaLente}
+        onForcaDaLente={trocarForcaDaLente}
         exposicao={exposicao}
         onExposicao={trocarExposicao}
         escalaUi={escalaUi}

@@ -83,7 +83,7 @@ import type {
   ToneMapMode,
   VarianteDaTerra,
 } from '../three/core/engine';
-import { MODOS_DA_LENTE } from '../three/core/engine';
+import { FORCA_DA_LENTE, MODOS_DA_LENTE } from '../three/core/engine';
 import { AMOSTRAS_POR_TIER } from '../three/core/post';
 
 /**
@@ -270,6 +270,8 @@ export function Ajustes({
   onTom,
   lente,
   onLente,
+  forcaDaLente,
+  onForcaDaLente,
   exposicao,
   onExposicao,
   escalaUi,
@@ -310,6 +312,9 @@ export function Ajustes({
   /** a lente de cinema (`?lente=`) — só muda os reflexos, nunca o céu */
   lente: ModoDaLente;
   onLente: (m: ModoDaLente) => void;
+  /** a força da lente (`?forcadalente=`), em % — 100 é a lente aprovada */
+  forcaDaLente: number;
+  onForcaDaLente: (v: number) => void;
   exposicao: number;
   onExposicao: (v: number) => void;
   /** fator do tamanho do texto do HUD (`?ui=`) — 1 é o de sempre */
@@ -541,6 +546,28 @@ export function Ajustes({
           classeExtra="ajustes-seg--lente"
         />
       </LinhaDeAjuste>
+      {/* A FORÇA DA LENTE (o dono, 09/10: "os estilos mais uma barra de força"):
+          com "Nenhuma" não há reflexo a fortalecer, e o painel não tem controle
+          desabilitado em lugar nenhum — então a linha some, e o valor fica guardado */}
+      {lente !== 'nenhuma' && (
+        <LinhaDeAjuste
+          id="forcaDaLente"
+          rotulo={t('ajustes.forcaDaLente')}
+          dicaPresa={dicaPresa}
+          onAlternarDica={alternarDica}
+        >
+          <input
+            type="range"
+            min={FORCA_DA_LENTE.minima}
+            max={FORCA_DA_LENTE.maxima}
+            step={FORCA_DA_LENTE.passo}
+            value={forcaDaLente}
+            aria-label={t('ajustes.forcaDaLente')}
+            onChange={(e) => onForcaDaLente(Number(e.target.value))}
+          />
+          <span className="ajustes-valor">{forcaDaLente}%</span>
+        </LinhaDeAjuste>
+      )}
 
       {/* A GAVETA AVANÇADO (item 145) — os presets na frente, os
           controles individuais atrás. Ela mora COLADA na seção da

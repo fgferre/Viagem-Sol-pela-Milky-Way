@@ -603,6 +603,10 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     volta: 'vivo',
     desvia: (e) => e.lente !== 'nenhuma',
   },
+  // `?forcadalente=` — a força da lente (09/10) não é desvio por si: com a
+  // lente ligada a linha `lente` acima já declara o reflexo, e com `nenhuma`
+  // ela não desenha nada. O clique em BRILHO desliga a lente e a força fica.
+  neutra('forcadalente', 'força da lente de cinema (só vale com a lente ligada)'),
   /**
    * A DOSE DO SOL NO ARRANQUE (item 5). A linha que faz da dramaturgia
    * uma ASSISTÊNCIA DECLARADA em vez de um segundo universo: o filme não

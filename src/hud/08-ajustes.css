@@ -265,22 +265,23 @@
   }
 }
 
-/* ---- O SLIDER DE EXPOSIÇÃO -------------------------------------------
-   Único controle que não é segmentado: 15rem fixos (Lote 7 — os demais
+/* ---- OS SLIDERS (exposição; força da lente desde 09/10) ---------------
+   Os únicos controles não segmentados: 15rem fixos (Lote 7 — os demais
    controles passaram a largura natural, mas a faixa de arrastar precisa
    de espaço), o número fica parado do lado direito, tabular para não
    empurrar o traço a cada dígito. `flex-basis` some de propósito: com
    ela ausente, `width` decide o tamanho também na tela estreita, onde
-   `.ajustes-controle input[type='range']` (abaixo) o leva a 100%. */
+   `.ajustes-controle input[type='range']` (abaixo) o estica até o número. */
 .ajustes-item input[type='range'] {
   flex: 0 0 auto;
   width: 15rem;
   accent-color: var(--acento);
   cursor: pointer;
 }
-/* A LARGURA RESERVADA (fix, 09/09): "0.40" a "2.20" — sempre um
-   dígito, o ponto, duas casas (`exposicao.toFixed(2)`, Ajustes.tsx),
-   4 caracteres exatos, sem sinal nem unidade. Sem isto o número não
+/* A LARGURA RESERVADA (fix, 09/09; 5ch desde 09/10): "0.40" a "2.20"
+   na exposição e "25%" a "200%" na força da lente — o "100%" pede
+   ~41 px, mais que 4ch; a MESMA caixa nas duas faz as duas barras
+   começarem no mesmo x no computador. Sem isto o número não
    tinha caixa própria e podia estourar a 320–390 px, onde o slider
    mobile (`.ajustes-controle input[type='range']`, abaixo) cresce e
    disputa a mesma linha. `flex-shrink: 0` é o que faz a reserva valer
@@ -291,7 +292,7 @@
   font-size: 0.875rem;
   color: var(--texto);
   white-space: nowrap;
-  width: 4ch;
+  width: 5ch;
   flex-shrink: 0;
   text-align: right;
 }
@@ -516,11 +517,13 @@
     justify-content: stretch;
   }
   .ajustes-controle input[type='range'] {
-    /* SOBRA A LARGURA RESERVADA DO NÚMERO (4ch, `.ajustes-valor` acima)
-       mais o gap de 0,5rem entre os dois — sem descontar, o slider a
-       100% e o número reservado ao lado somavam mais que a linha, e o
-       número estourava a 320–390 px. */
-    width: calc(100% - 4ch - 0.5rem);
+    /* O SLIDER FICA COM O QUE SOBRA ao lado do número reservado. Até
+       09/10 era `calc(100% - 4ch - 0.5rem)`, mas o `ch` ali é o da fonte
+       do slider, menor que a do número: o número passava ~10 px da
+       linha a 375 px (medido nas duas barras). */
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
   }
 }
 

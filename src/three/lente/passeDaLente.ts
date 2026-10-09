@@ -42,7 +42,7 @@ import * as THREE from 'three';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { ganhoDoGlobo } from '../../lib/atlas/luzDaVisita';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
-import type { ModoDaLente } from '../core/engine';
+import { FORCA_DA_LENTE, type ModoDaLente } from '../core/engine';
 import { RAIO_DO_SOL_NA_CENA } from '../escala';
 import {
   presetDaLente,
@@ -112,6 +112,19 @@ export function amplitudeDaLente(
   const vis = Math.min(1, Math.max(0, Number.isFinite(visibilidade) ? visibilidade : 0));
   const a = G_DA_LENTE * vis * ganhoDoGlobo(dUA, politica, roteiro) * fadeLonge;
   return Number.isFinite(a) && a > 0 ? a : 0;
+}
+
+/**
+ * A FORÇA DA LENTE (Ajustes · Lente), de % para o multiplicador ÚNICO do
+ * reflexo: ele entra em `g`, que acende brilho, raios, risco, fantasmas e
+ * anel e, pela luz borrada, a sujeira — o estilo inteiro anda junto, na
+ * mesma proporção, sem mexer em tamanho, cor nem posição. 100 % é ×1 exato
+ * (a lente aprovada, bit a bit); fora da faixa da barra, preso a ela; não
+ * finito, ×1.
+ */
+export function multiplicadorDaForca(forca: number): number {
+  if (!Number.isFinite(forca)) return 1;
+  return Math.min(FORCA_DA_LENTE.maxima, Math.max(FORCA_DA_LENTE.minima, forca)) / 100;
 }
 
 /** Ladrilho da poeira de cada fantasma: lado em texels, e o alcance em a/tamanho (≥ croma máximo 1,12). */
@@ -678,6 +691,8 @@ export class PasseDaLente extends Pass {
   private readonly camera: THREE.Camera;
   private modo: ModoDaLente = 'nenhuma';
   private amplitude = 0;
+  /** a força da lente, já em multiplicador (`multiplicadorDaForca`) */
+  private multiplicador = 1;
   private readonly naGpu = new Map<NomeDoPreset, NaGpu>();
   /** os uniformes de todos os materiais, compartilhados (um lugar só por quadro) */
   private readonly u: Uniformes;
@@ -809,6 +824,11 @@ export class PasseDaLente extends Pass {
     this.uniformesDaReceita(gpu);
   }
 
+  /** A força da lente (Ajustes · Lente), em %: vale para qualquer estilo, e fica guardada com `nenhuma`. */
+  definirForca(forca: number) {
+    this.multiplicador = multiplicadorDaForca(forca);
+  }
+
   /** Os uniformes fixos de uma receita: um elemento de cada tipo, no máximo, além dos fantasmas. */
   private uniformesDaReceita(gpu: NaGpu) {
     const u = this.u;
@@ -934,7 +954,7 @@ export class PasseDaLente extends Pass {
     if (!(sai > 0)) return false;
     const perto = 1 - suave(0, b.zona, db);
     const borda = (1 + (b.ganhoBrilho - 1) * perto) * sai;
-    const g = (this.amplitude / G_DA_LENTE) * borda * gpu.fator;
+    const g = (this.amplitude / G_DA_LENTE) * borda * gpu.fator * this.multiplicador;
     const t = this.u.uTransmitancia.value as THREE.Vector3;
     const ar = Math.max(t.x, t.y, t.z);
     if (!(g * gpu.pico * ar >= LIMIAR_NA_EXPOSICAO_1 / Math.max(exposicao, 1e-6))) return false;

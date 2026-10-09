@@ -3036,6 +3036,11 @@ export class Director {
     this.post.definirLente(modo);
   }
 
+  /** a força da lente de cinema (Ajustes · Lente), em %: mora no passe, daqui só sai o pedido */
+  definirForcaDaLente(forca: number) {
+    this.post.definirForcaDaLente(forca);
+  }
+
   /**
    * OS DOIS INGREDIENTES DO NÍVEL DA NEBULOSA, num lugar só (item 145):
    * passos do raymarch e escala do alvo de meia resolução. O nível vem

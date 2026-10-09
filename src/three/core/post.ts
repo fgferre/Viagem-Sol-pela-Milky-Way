@@ -1279,6 +1279,11 @@ export class Post {
     this.passeDaLente.definirLente(modo);
   }
 
+  /** a força da lente escolhida em Ajustes, em % (o passe a multiplica no reflexo inteiro) */
+  definirForcaDaLente(forca: number) {
+    this.passeDaLente.definirForca(forca);
+  }
+
   /** A luz do Sol que a lente recebe neste quadro (o Director, ao lado de `setWarp`). */
   atualizarLente(
     dUA: number,
