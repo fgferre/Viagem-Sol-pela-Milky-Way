@@ -91,6 +91,35 @@ const PASSOS_DA_EXPOSICAO_REAL = Number(
 );
 const FATOR_DA_EXPOSICAO_REAL = 2 ** PASSOS_DA_EXPOSICAO_REAL;
 
+/**
+ * A EXPOSIÇÃO NA LÍNGUA DO APP (R1 da régua única, 09/10/2026). O app fala
+ * uma exposição só, a do ACES — o 1,02 da casa, o 1,05 da vista externa, os
+ * +3 passos da luz real —, e a curva viva recebe o casado dela
+ * (`exposicaoNoRenderer`, `engine.ts`): no Neutral o renderer guarda 1,4358
+ * para o 1,02, e a razão real/assistida no renderer deixa de ser 8 porque o
+ * ombro do ACES comprime. As provas 13 e 20 leem então a PEDIDA, que o
+ * `setExposure` guarda no mesmo gesto em que escreve o renderer, e cobram o
+ * RENDERER, que segue sendo o consumidor final: ele tem de ter recebido
+ * exatamente o casado da curva viva para aquela pedida (`casada`). A conta
+ * vem do próprio módulo do app, aberto no navegador (`abrirACurva`), e não
+ * redigitada aqui. Sem o módulo (o documento trocou), `casada` é `null`.
+ */
+const EXPOSICAO_VIVA = `(() => {
+  const e = window.__director.engine, r = e.renderer, m = window.__curvaDoApp;
+  const tom = m ? m.modoDoToneMapping(r.toneMapping) : null;
+  return { pedida: e.exposicaoPedida, renderer: r.toneMappingExposure, tom,
+    casada: m ? r.toneMappingExposure === m.exposicaoNoRenderer(tom, e.exposicaoPedida) : null };
+})()`;
+const abrirACurva = async (sessao) => {
+  await sessao.js(
+    "window.__curvaDoApp || void import('/src/three/core/engine.ts').then((m) => { window.__curvaDoApp = m; })"
+  );
+  return esperarPor(sessao, '!!window.__curvaDoApp', 10000);
+};
+const textoDaExposicao = (x) =>
+  `${x?.pedida?.toFixed(4)} na língua do ACES; renderer ${x?.renderer?.toFixed(4)}`
+  + ` no ${x?.tom}, ${x?.casada ? 'o casado' : 'NÃO o casado'} da curva`;
+
 /** a conta SAI da tabela única — pino decorado de "17/18/19" era a deriva do item 99. */
 const N_CAMADAS = (() => {
   const bloco = readFileSync(new URL('../../src/three/atlasConfig.ts', import.meta.url), 'utf8')
@@ -812,7 +841,8 @@ try {
   // `?exp=` — recarregava na auto-exposição 1,02+0,03·galaxyFade, que na
   // vista externa é 1,05. Duas telas para uma URL só. As provas: o número
   // vivo do renderer, o latch do selo, a URL, e o PIXEL da recarga.
-  const EXPOSICAO = 'window.__director.engine.renderer.toneMappingExposure';
+  // O número é lido na língua do app e o renderer, conferido contra a
+  // curva viva — ver `EXPOSICAO_VIVA` (R1 da régua única).
   const mexerNoSlider = (valor) => sessao.js(`(() => {
     const el = document.querySelector('[data-dialogo="ajustes"] input[type=range]');
     const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
@@ -823,28 +853,32 @@ try {
 
   await sessao.ir('t=167&ajustes=1&q=cinema&shot=1');
   await sessao.assentar();
-  const autoAntes = Number(await sessao.js(EXPOSICAO));
   conferir(
-    Math.abs(autoAntes - 1.05) < 1e-6,
-    `a vista externa nasce na auto-exposição (${autoAntes.toFixed(4)})`
+    (await abrirACurva(sessao)) !== null,
+    'a curva do app abriu no navegador (para conferir o que o renderer recebe)'
+  );
+  const autoAntes = JSON.parse(await sessao.js(`JSON.stringify(${EXPOSICAO_VIVA})`));
+  conferir(
+    Math.abs(autoAntes.pedida - 1.05) < 1e-6 && autoAntes.casada === true,
+    `a vista externa nasce na auto-exposição (${textoDaExposicao(autoAntes)})`
   );
   await mexerNoSlider('1.4');
   await sessao.assentar();
   const manual = JSON.parse(await sessao.js(`JSON.stringify({
-    exp: ${EXPOSICAO}, latch: window.__director.selo.exposicaoManual, url: location.search })`));
+    exp: ${EXPOSICAO_VIVA}, latch: window.__director.selo.exposicaoManual, url: location.search })`));
   conferir(
-    Math.abs(manual.exp - 1.4) < 1e-6 && manual.latch === true
-      && manual.url.includes('exp=1.4'),
-    `1,40 no slider: tela em ${manual.exp.toFixed(4)}, latch ligado, url '${manual.url}'`
+    Math.abs(manual.exp.pedida - 1.4) < 1e-6 && manual.exp.casada === true
+      && manual.latch === true && manual.url.includes('exp=1.4'),
+    `1,40 no slider: tela em ${textoDaExposicao(manual.exp)}, latch ligado, url '${manual.url}'`
   );
   await mexerNoSlider('1.02');
   await sessao.assentar();
   const devolta = JSON.parse(await sessao.js(`JSON.stringify({
-    exp: ${EXPOSICAO}, latch: window.__director.selo.exposicaoManual, url: location.search })`));
+    exp: ${EXPOSICAO_VIVA}, latch: window.__director.selo.exposicaoManual, url: location.search })`));
   conferir(
-    Math.abs(devolta.exp - 1.05) < 1e-6 && devolta.latch === false
-      && !devolta.url.includes('exp='),
-    `de volta a 1,02: a AUTO-exposição volta (${devolta.exp.toFixed(4)}), latch desligado,`
+    Math.abs(devolta.exp.pedida - 1.05) < 1e-6 && devolta.exp.casada === true
+      && devolta.latch === false && !devolta.url.includes('exp='),
+    `de volta a 1,02: a AUTO-exposição volta (${textoDaExposicao(devolta.exp)}), latch desligado,`
       + ` url '${devolta.url}'`
   );
   // A CENA, não o painel (item 132, 04/09): depois da ida e volta do
@@ -2004,12 +2038,14 @@ try {
    *
    * LIDA DO RENDERER, que é o consumidor final — não do Director, não da
    * constante. Um `exposicaoDoQuadro` que ninguém chamasse continuaria
-   * dando 8 numa prova de unidade e deixaria a tela escura aqui.
+   * dando 8 numa prova de unidade e deixaria a tela escura aqui. Desde a
+   * R1 da régua única o número é a PEDIDA, na língua do ACES, e o renderer
+   * tem de ter recebido o casado dela (`EXPOSICAO_VIVA`).
    */
   const luzViva = () =>
     sessao.js(
       "JSON.stringify({luz: window.__director.selo.luz,"
-      + " exp: window.__director.engine.renderer.toneMappingExposure,"
+      + ` exp: ${EXPOSICAO_VIVA},`
       + " url: new URLSearchParams(location.search).get('luz'),"
       + " zzz: new URLSearchParams(location.search).has('zzz')})"
     );
@@ -2040,6 +2076,10 @@ try {
   };
 
   await sessao.ir('atlas=1&foco=saturn&ver=corpo&q=alta&jd=EPOCA');
+  conferir(
+    (await abrirACurva(sessao)) !== null,
+    'a curva do app abriu no navegador (para conferir o que o renderer recebe)'
+  );
   const resumoDoSelo = JSON.parse(await sessao.js(SELO('.atlas-selo-resumo')));
   conferir(resumoDoSelo !== null, 'o selo está na tela para receber o gesto (sem ?shot=2)');
   if (resumoDoSelo) {
@@ -2106,19 +2146,22 @@ try {
       `os passos da Q14 saíram da FONTE e não deste arquivo`
         + ` (${PASSOS_DA_EXPOSICAO_REAL}) — sem isto a razão abaixo compara com NaN`
     );
-    const razao = passos[1]?.depois.exp
-      ? passos[0]?.depois.exp / passos[1]?.depois.exp
-      : NaN;
+    const real = passos[0]?.depois.exp;
+    const assistido = passos[1]?.depois.exp;
+    const razao = assistido?.pedida ? real?.pedida / assistido.pedida : NaN;
     conferir(
-      Math.abs(razao - FATOR_DA_EXPOSICAO_REAL) < 1e-9,
-      `a chapa vira NO MESMO GESTO: real ${passos[0]?.depois.exp?.toFixed(4)}`
-        + ` × assistido ${passos[1]?.depois.exp?.toFixed(4)} = ${razao?.toFixed(6)}`
-        + ` (os +${PASSOS_DA_EXPOSICAO_REAL} passos da Q14, sem recarga)`
+      Math.abs(razao - FATOR_DA_EXPOSICAO_REAL) < 1e-9
+        && real?.casada === true && assistido?.casada === true,
+      `a chapa vira NO MESMO GESTO: real ${real?.pedida?.toFixed(4)}`
+        + ` × assistido ${assistido?.pedida?.toFixed(4)} = ${razao?.toFixed(6)}`
+        + ` (os +${PASSOS_DA_EXPOSICAO_REAL} passos da Q14, sem recarga, na língua do ACES;`
+        + ` renderer ${real?.renderer?.toFixed(4)} × ${assistido?.renderer?.toFixed(4)},`
+        + ` ${real?.casada && assistido?.casada ? 'os casados' : 'NÃO os casados'} do ${real?.tom})`
     );
     conferir(
-      Math.abs(passos[1]?.depois.exp - 1.02) < 1e-6,
+      Math.abs(assistido?.pedida - 1.02) < 1e-6,
       `e o assistido continua na exposição de referência da casa`
-        + ` (${passos[1]?.depois.exp?.toFixed(4)}, o 1,02 da vista interna) — a Q14`
+        + ` (${assistido?.pedida?.toFixed(4)}, o 1,02 da vista interna) — a Q14`
         + ' mexeu na chapa do modo real e em mais nada'
     );
     // ...E O SELO DECLARA, que é a outra metade da Q14 (*"declarados no
