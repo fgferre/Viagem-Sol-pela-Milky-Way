@@ -174,8 +174,10 @@ describe('2. o needle dos GLSL montados', () => {
     for (const frag of semLogistica) expect(main(frag)).not.toContain('terminadorSuave(');
     for (const frag of [...comLogistica, ...semLogistica]) {
       expect(main(frag)).toContain('lanternaDeLeitura(');
-      expect(main(frag)).toContain('luzDoGlobo(');
     }
+    // R2: o Sol do LS já é linear e fica fora da tradução — soma própria
+    for (const frag of comLogistica) expect(main(frag)).toContain('luzDoGlobo(');
+    for (const frag of semLogistica) expect(main(frag)).toContain('luzDoRegolito(');
   });
 
   it('o C de Lommel-Seeliger é o LITERAL da Lua — uma fonte só, nunca redigitado', () => {

@@ -26,6 +26,7 @@
 // ============================================================
 import { describe, expect, it } from 'vitest';
 import { ROCHOSOS } from '../../three/world/corpos/rochoso';
+import { LS_NORMALIZACAO } from '../../three/world/corpos/lua';
 import { GIGANTE_LAMBERT_FRAG, GIGANTES } from '../../three/world/corpos/gigante';
 import { LIMIAR_DO_GATE_PX, cessaoAlvo } from '../../three/world/corpos/terra';
 import { diametroAparentePx } from '../../three/world/corpos/corpos';
@@ -563,10 +564,10 @@ describe('3b. o instrumento — o tradutor que executa o chunk', () => {
    * cobre a que SOME — peça apagada ou renomeada sem que ninguém aqui
    * soubesse deixaria o laço de cima passeando por quatro nomes e verde.
    */
-  it('o censo fecha: as SEIS peças da receita, nem uma a mais nem a menos', () => {
+  it('o censo fecha: as SETE peças da receita, nem uma a mais nem a menos', () => {
     expect(nomesDoChunk()).toEqual([
       'terminadorSuave', 'lanternaDeLeitura', 'daTelaParaLinear', 'luzDoGlobo',
-      'opacidadeDoVeu', 'globoComVeu',
+      'luzDoRegolito', 'opacidadeDoVeu', 'globoComVeu',
     ]);
   });
 
@@ -1802,5 +1803,78 @@ describe('11. a travessia do roteiro (F2b) — da `assistida` à `real` sem degr
       // valia na `assistida` — um degrau de ramo moveria dezenas de %
       expect(pior, nome).toBeLessThan(0.01);
     }
+  });
+});
+
+/**
+ * O REGOLITO NA `assistida` (R2, 10/10). Na `real` o Lommel-Seeliger e o
+ * Lambert empatam no brilho do disco — é o que define o C = 4/3 — e na
+ * `assistida` o LS saía 1,41× mais escuro: a tradução decodificava o disco
+ * chato de 2/3 como se fosse byte de tela. Este bloco INTEGRA o disco,
+ * executando as peças do chunk como os `main` as montam, e cobra que a
+ * razão LS/Lambert da `assistida` fique a 6 % da razão da `real`. O Sol
+ * sozinho fica a 1,5 %; o resto (+4 a +5 %) é a lanterna, que acha mais
+ * folga sob o teto no disco chato do que no Lambert.
+ */
+describe('12. o regolito na `assistida` — o brilho de disco do Lambert, como na `real`', () => {
+  const ligadosDa = (politica: PoliticaDeLuz): Ligados => {
+    const u = uniformsDaLuzDaVisita();
+    escreverLuzDaVisita(u, politica);
+    return {
+      uTerminadorS: u.uTerminadorS!.value as number,
+      uLanternaLeitura: u.uLanternaLeitura!.value as number,
+      uTravessia: u.uTravessia!.value as number,
+      uSolNaTravessia: u.uSolNaTravessia!.value as number,
+    };
+  };
+
+  /** o brilho médio do disco por unidade de albedo (2/3 no Lambert cheio),
+   *  numa grade sobre a imagem; a câmera olha por +z e o Sol abre `fase` */
+  const disco = (fase: number, pixel: (ndotl: number, n: number[], mu: number) => number) => {
+    const N = 120;
+    const [sen, cos] = [Math.sin((fase * Math.PI) / 180), Math.cos((fase * Math.PI) / 180)];
+    let soma = 0;
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        const [x, y] = [-1 + (2 * i + 1) / N, -1 + (2 * j + 1) / N];
+        if (x * x + y * y >= 1) continue;
+        const z = Math.sqrt(1 - x * x - y * y);
+        soma += pixel(x * sen + z * cos, [x, y, z], z);
+      }
+    }
+    return (soma * 4) / (N * N * Math.PI);
+  };
+
+  /** os `main` executados: o Lambert (logística) e o LS (C = 4/3, sem
+   *  ela) pela soma nova e pela de antes */
+  const brilho = (politica: PoliticaDeLuz, fase: number, comLanterna = true) => {
+    const u = ligadosDa(politica);
+    const ganho = ganhoDoGlobo(D_TERRA, politica);
+    const fill = (n: number[]) =>
+      comLanterna ? doChunk('lanternaDeLeitura')([n, [0, 0, 1], 1], u) : 0;
+    const regolito = (soma: string) => disco(fase, (ndotl, n, mu) => {
+      const mu0 = Math.min(Math.max(ndotl, 0), 1);
+      const luzSol = ((LS_NORMALIZACAO * mu0) / Math.max(mu0 + mu, 1e-4)) * ganho;
+      return doChunk(soma)([luzSol, fill(n)], u);
+    });
+    return {
+      lambert: disco(fase, (ndotl, n) =>
+        doChunk('luzDoGlobo')([doChunk('terminadorSuave')([ndotl], u) * ganho, fill(n)], u)),
+      regolito: regolito('luzDoRegolito'),
+      antes: regolito('luzDoGlobo'),
+    };
+  };
+
+  it.each([0, 30])('a %i° de fase, LS/Lambert da `assistida` fica a 6 %% da `real`', (fase) => {
+    const real = brilho('real', fase);
+    const razaoReal = real.regolito / real.lambert;
+    const assistida = brilho('assistida', fase);
+    expect(Math.abs(assistida.regolito / assistida.lambert / razaoReal - 1)).toBeLessThan(0.06);
+    const soSol = brilho('assistida', fase, false);
+    expect(Math.abs(soSol.regolito / soSol.lambert / razaoReal - 1)).toBeLessThan(0.015);
+    // MORDIDA: a soma de antes deixava o regolito ~30 % abaixo
+    expect(assistida.antes / assistida.lambert / razaoReal).toBeLessThan(0.75);
+    // e em `real` a soma nova É a de antes, bit a bit
+    expect(Object.is(real.regolito, real.antes)).toBe(true);
   });
 });

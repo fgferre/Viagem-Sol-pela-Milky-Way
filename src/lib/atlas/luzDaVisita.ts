@@ -631,6 +631,16 @@ export function uniformsDoVeu(id: string): Uniformes {
  * promete, e em `real` esta função é a IDENTIDADE bit a bit: a decisão 2
  * do dono não se toca.
  *
+ * `luzDoRegolito` — a soma dos corpos de Lommel-Seeliger (R2, 10/10). A
+ * tradução é dos bytes do Phong do Eyes; o LS não é termo do Eyes, é a lei
+ * da casa, e já sai em luz LINEAR. Traduzido, o disco chato de 2/3 virava
+ * 0,40 e o regolito saía 1,41× mais escuro que o Lambert na `assistida` —
+ * na `real` os dois empatam por construção (o C = 4/3). Aqui o Sol do
+ * regolito volta ao que era antes da tradução, e só o que a LANTERNA
+ * acrescenta passa por ela, na mesma soma com teto. Em `real` é o
+ * `luzDoGlobo` de antes, bit a bit; na travessia a parcela devolvida
+ * apaga junto com a tradução, sem degrau.
+ *
  * ------------------------------------------------------------
  * A TRAVESSIA DO ROTEIRO (F2b) — entre as duas receitas, sem degrau
  * ------------------------------------------------------------
@@ -736,6 +746,12 @@ vec3 luzDoGlobo(vec3 luzSol, vec3 fill) {
   vec3 sol = luzSol / uSolNaTravessia;
   vec3 c = max(sol, min(sol + fill, teto));
   return uSolNaTravessia * mix(daTelaParaLinear(c), c, uTravessia);
+}
+
+vec3 luzDoRegolito(vec3 luzSol, vec3 fill) {
+  vec3 comLanterna = luzDoGlobo(luzSol, fill);
+  if (uTerminadorS <= 0.0) return comLanterna;
+  return comLanterna + (luzSol - luzDoGlobo(luzSol, vec3(0.0)));
 }
 `;
 
