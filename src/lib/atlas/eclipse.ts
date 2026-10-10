@@ -298,11 +298,24 @@ export const PISO_REFRACAO_LUNAR = 4e-4;
  * [0,0,0] e 0 × ganho = 0 exato (as vistas do eclipse SOLAR não movem).
  * Calibrado por captura na vista `eclipse-lunar` pinada: a Lua lê cobre
  * com o albedo visível, sem estourar.
+ *
+ * [no ACES, nas outras curvas] (`porCurva`, R1b da régua única): o +10 foi
+ * ajustado a olho sobre o ACES, que esmaga o pé das cores; no tom neutro o
+ * mesmo ganho deixava a Lua clara e laranja (ΔE 12,5). O segundo número foi
+ * medido no neutro contra o primeiro no ACES, no disco da Lua eclipsada da
+ * mesma vista (capturas/regua-r1/r1b-eclipse/): com +8,75 o vermelho médio
+ * e o R/B voltam aos do ACES e o ΔE cai para 1,8; o resto é o matiz um
+ * pouco mais amarelo que o neutro guarda, e nenhum ganho corrige. O uniform
+ * é escrito na hora do desenho, com a curva do próprio renderer
+ * (`ligarGanhoDoObservador`).
  */
-export const EV_OBSERVADOR_ECLIPSE_LUNAR = 10;
+export const EV_OBSERVADOR_ECLIPSE_LUNAR: readonly [number, number] = [10, 8.75];
 
-/** O ganho linear do EV acima — derivado, nunca redigitado. */
-export const GANHO_OBSERVADOR_ECLIPSE_LUNAR = 2 ** EV_OBSERVADOR_ECLIPSE_LUNAR;
+/** O ganho linear dos EV acima — derivado, nunca redigitado. */
+export const GANHO_OBSERVADOR_ECLIPSE_LUNAR: readonly [number, number] = [
+  2 ** EV_OBSERVADOR_ECLIPSE_LUNAR[0],
+  2 ** EV_OBSERVADOR_ECLIPSE_LUNAR[1],
+];
 
 // ------------------------------------------------------------
 // O PISO DO AR (item 95) — o irmão solar do piso umbral acima
@@ -678,6 +691,7 @@ uniform vec3 uEclipseEclipsador;   // centro do eclipsador, frame local, em raio
 uniform vec3 uEclipseCone;         // (raio do eclipsador em raios, inclinação da umbra, da penumbra)
 uniform vec3 uEclipsePisoCor;      // piso umbral RGB — o cobre de Danjon, só com eclipsador Terra
 uniform float uEclipsePisoEscalar; // minSombra: o piso anular neutro (o clamp do raio não o toca)
+uniform float uEclipseGanhoObservador; // GANHO_OBSERVADOR_ECLIPSE_LUNAR da curva viva
 
 vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo) {
   if (uEclipseAtivo < 0.5) return vec3(1.0);
@@ -694,7 +708,7 @@ vec3 fatorDeEclipse(vec3 p, vec3 n, float ndotlGeo) {
   // (EV_OBSERVADOR_ECLIPSE_LUNAR — não é dado físico, ver o doc da
   // constante); só o eclipsador Terra tem piso não-zero, então o ganho
   // existe só no ramo do eclipse lunar. O piso ANULAR escalar fica fora.
-  vec3 piso = uEclipsePisoCor * ${GANHO_OBSERVADOR_ECLIPSE_LUNAR.toFixed(1)}
+  vec3 piso = uEclipsePisoCor * uEclipseGanhoObservador
     + vec3(uEclipsePisoEscalar);
   vec3 sombra = mix(piso, vec3(1.0), t);
   // a sombra esvai através do terminador do receptor — a borda nunca

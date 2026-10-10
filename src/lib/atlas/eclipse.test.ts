@@ -736,15 +736,14 @@ describe("o needle do chunk GLSL (a lição do chunk renomeado, D3)", () => {
   });
 
   it("a exposição do observador (decisão do dono, opção A): só o cobre, nunca o anular nem o solar", () => {
-    // o ganho vem da LIB interpolado — nunca um literal redigitado
-    expect(GLSL_SOMBRA_ECLIPSE).toContain(
-      `uEclipsePisoCor * ${GANHO_OBSERVADOR_ECLIPSE_LUNAR.toFixed(1)}`
-    );
+    // o ganho é um uniform (a curva viva escolhe o par da lib) — nunca um literal
+    expect(GLSL_SOMBRA_ECLIPSE).toContain("uEclipsePisoCor * uEclipseGanhoObservador");
     // o piso ANULAR (escalar) fica FORA do ganho — soma-se depois
     expect(GLSL_SOMBRA_ECLIPSE).toContain("+ vec3(uEclipsePisoEscalar)");
-    // o valor é o calibrado por captura na vista eclipse-lunar
-    expect(EV_OBSERVADOR_ECLIPSE_LUNAR).toBe(10);
-    expect(GANHO_OBSERVADOR_ECLIPSE_LUNAR).toBe(1024);
+    // os valores calibrados por captura na vista eclipse-lunar: o ACES guarda
+    // o +10 de antes; o neutro foi medido contra ele (R1b)
+    expect(EV_OBSERVADOR_ECLIPSE_LUNAR).toEqual([10, 8.75]);
+    expect(GANHO_OBSERVADOR_ECLIPSE_LUNAR).toEqual([1024, 2 ** 8.75]);
     // o dado FÍSICO não mudou: o piso da lib continua COR × PISO exato
     // (o oráculo acima o pina componente a componente)
     const piso = pisoUmbralDoEclipsador("earth");
@@ -1107,6 +1106,7 @@ function uniformesDaSombra(s: ReturnType<typeof criaSombraNaCena>): Ligados {
     uEclipseCone: [s.raioEclipsadorRaios, s.inclinacaoUmbra, s.inclinacaoPenumbra],
     uEclipsePisoCor: [...s.pisoUmbral] as [number, number, number],
     uEclipsePisoEscalar: s.minSombra,
+    uEclipseGanhoObservador: GANHO_OBSERVADOR_ECLIPSE_LUNAR[0],
   };
 }
 
