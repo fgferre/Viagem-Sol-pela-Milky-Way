@@ -314,7 +314,10 @@ export function createCoronaVolume(ctx){
       // cargas VIVAS (o mesmo array de Vector4 do disco/coronaRays; o
       // three re-flatten por frame) — o gate de buraco coronal das
       // plumas reavalia a unipolaridade no pé da linha radial do pixel
-      uCharges: { value: charges }
+      uCharges: { value: charges },
+      // R1b da régua única: o ganho por canal da paleta, pela curva viva
+      // (`stellarBody.ts`, `porCurva`); 1,1,1 no ACES
+      uPaleta: ctx.paletaDaCoroa
     };
     var cvolMat = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
@@ -342,6 +345,7 @@ export function createCoronaVolume(ctx){
         'uniform sampler3D uVol;',
         'uniform mat3 uInvRot;',
         'uniform float uCvol;',
+        'uniform vec3 uPaleta;',
         'uniform float uActivity;',
         'uniform float uTime;',
         'uniform float uFil;',
@@ -466,6 +470,7 @@ export function createCoronaVolume(ctx){
         '      }',
         '    }',
         '  }',
+        '  rgb *= uPaleta;',
         '  fragColor = vec4(rgb, 1.0);',
         '}'
       ].join('\n'),

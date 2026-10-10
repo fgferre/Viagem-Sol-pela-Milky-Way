@@ -437,8 +437,8 @@ export function createProminences(ctx){
     absGeo.setAttribute('aPTime',     new THREE.InstancedBufferAttribute(new Float32Array(absCount), 1));
     absGeo.setAttribute('aAbsorb',    new THREE.InstancedBufferAttribute(new Float32Array(absCount), 1));
   })();
-  var absMat = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uSR: { value: SUN_RADIUS } },
+  var absParams = {
+    uniforms: { uTime: { value: 0 }, uSR: { value: SUN_RADIUS }, uTinta: ctx.tintaDaAbsorcao },
     vertexShader: PROM_ABSORB_VERTEX,
     fragmentShader: promAbsorbFragment,
     transparent: true,
@@ -447,7 +447,15 @@ export function createProminences(ctx){
     blendDst: THREE.OneMinusSrcColorFactor,
     depthWrite: false,
     side: THREE.DoubleSide
-  });
+  };
+  var absMat = new THREE.ShaderMaterial(absParams);
+  // R1b da régua única: o gêmeo TINGIDO (mesmos uniforms, absorção por
+  // canal) que a curva viva escolhe fora do ACES (`stellarBody.ts`,
+  // `porCurva`); o ACES segue com o material de sempre, bit a bit
+  absParams.fragmentShader = 'uniform vec3 uTinta;\n' +
+    promAbsorbFragment.replace('gl_FragColor = vec4(vec3(ab), 1.0);', 'gl_FragColor = vec4(vec3(ab) * uTinta, 1.0);');
+  absParams.uniforms = absMat.uniforms;
+  var absMatTingido = new THREE.ShaderMaterial(absParams);
   var absMesh = new THREE.InstancedMesh(absGeo, absMat, absCount);
   absMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   absMesh.frustumCulled = false;
@@ -618,6 +626,7 @@ export function createProminences(ctx){
     }
   }
 
+  ctx.absMesh = absMesh; ctx.absMat = absMat; ctx.absMatTingido = absMatTingido;
   ctx.prominenceGroup = prominenceGroup; ctx.prominenceMeshes = prominenceMeshes;
   ctx.promStates = promStates; ctx.sampleProminenceAnchor = sampleProminenceAnchor;
   ctx.placeProminence = placeProminence;

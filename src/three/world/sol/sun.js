@@ -385,6 +385,14 @@ export function createSunUniforms(ctx){
     uFlarePerp: { value: new THREE.Vector4(0, 0, 1, 0.06) },
     uFlareRib: { value: new THREE.Vector4(0, 0.010, 0, 1) },
     uPlageEm: { value: knob('plageglow') },
+    // R1b da régua única: o ganho por canal da paleta inteira, escrito por
+    // quadro pela curva viva (`stellarBody.ts`, `porCurva`); 1,1,1 no ACES
+    uPaleta: ctx.paleta,
+    // as duas pontas da rampa H-alfa e a cromosfera no limbo, também pela
+    // curva viva (os valores do ACES moram em `stellarBody.ts`)
+    uCorFria: ctx.corFria,
+    uCorQuente: ctx.corQuente,
+    uCorDoLimbo: ctx.corDoLimbo,
     // Oscilações p-mode (heliosismologia): o Sol "toca" em modos acústicos
     // de ~5 minutos (harmônicos esféricos de baixo grau, Leighton 1962).
     // Aqui: 3 modos (l=2 m=0, l=2 m=2, l=3 m=1) com períodos comprimidos
@@ -479,6 +487,10 @@ export function createSunMesh(ctx){
     'uniform float uGranFreq;',
     'uniform float uCamDist;',
     'uniform float uPlageEm;',
+    'uniform vec3 uPaleta;',
+    'uniform vec3 uCorFria;',
+    'uniform vec3 uCorQuente;',
+    'uniform vec3 uCorDoLimbo;',
     'uniform float uMaxK;',
     'uniform float uWorldFade;', // transplante: ver gl_FragColor
     'uniform vec4 uFlare;',
@@ -794,7 +806,9 @@ export function createSunMesh(ctx){
     // falsa-cor laranja, como em astrofotografia real. Não é corpo negro:
     // a matiz é quase constante; heat modula LUMINÂNCIA e desloca a matiz
     // só um pouco para o amarelo nas áreas quentes (plage).
-    '  vec3 color = mix(vec3(1.0, 0.34, 0.06), vec3(1.0, 0.62, 0.24), smoothstep(0.15, 1.05, heat));',
+    // (as duas pontas são uniforms pela curva viva — R1b, `stellarBody.ts`;
+    // no ACES, (1,0; 0,34; 0,06) e (1,0; 0,62; 0,24))
+    '  vec3 color = mix(uCorFria, uCorQuente, smoothstep(0.15, 1.05, heat));',
     // plage quase branca (refs 01/03, sweep T2.2): desvio de matiz para
     // creme SÓ onde plage E heat são altos — mosqueado preservado, 0% clip
     '  color = mix(color, vec3(1.0, 0.86, 0.62), 0.55 * smoothstep(0.55, 1.0, clamp(plage, 0.0, 1.0)) * smoothstep(0.72, 1.12, heat));',
@@ -825,7 +839,7 @@ export function createSunMesh(ctx){
     // limbo; 1.30 já começava a ler como anel em monitor claro
     // no máximo solar o limbo arde forte (fonte HDR p/ o bloom do
     // glow); 1.15 + 0.85*0.0 = 1.15 exato com o ciclo desligado
-    '  color += vec3(1.0, 0.30, 0.10) * pow(1.0-mu, 3.5) * (1.15 + 0.85*uMaxK) * spic;',
+    '  color += uCorDoLimbo * pow(1.0-mu, 3.5) * (1.15 + 0.85*uMaxK) * spic;',
     // plage como fonte HDR (>1.0): é o que faz o bloom finalmente ler
     // como bloom (glow suave em volta das regiões ativas, ref-03) sem
     // tocar na luminância mediana do disco
@@ -837,6 +851,9 @@ export function createSunMesh(ctx){
     // ARTÍSTICA (0,011 pc ≈ 5e5× o real): a partir de ~0,2 pc ele seria
     // um disco de graus onde a física manda um ponto. O wrapper baixa
     // uWorldFade e a PSF estelar assume. 1,0 = comportamento original.
+    // R1b: a paleta calibrada sobre o ACES, recalibrada para a curva viva
+    // (1,1,1 no ACES: multiplicar por 1,0 é exato)
+    '  color *= uPaleta;',
     '  gl_FragColor = vec4(color * uWorldFade, 1.0);',
     '}'
   ].join('\n');
