@@ -19,6 +19,7 @@ import {
 } from '../shaders/galaxyShaders';
 import { GAL, EX, EY, EZ } from './baseGalactica';
 import { SGR_DWARF_POS, tune } from './geradorDaGalaxia';
+import { porCurva } from '../core/engine';
 import type { GalaxyBuffers } from './geradorDaGalaxia';
 
 // A FACHADA da onda da arquitetura (corte 5): a base e o gerador
@@ -186,6 +187,17 @@ export class Galaxy {
     halo.position.copy(GAL.GC_POS);
     halo.frustumCulled = false;
     halo.renderOrder = 3;
+    // O TAMANHO É POR CURVA (R1b da régua única): o pé do ACES apagava as
+    // asas do halo, e o tom neutro as mostrava como um clarão laranja em
+    // volta do bojo de perfil. 4000 pc fora do ACES guarda o miolo (o
+    // brilho central do perfil não depende do tamanho) e devolve as asas
+    // ao aprovado (t=150: ΔE2000 em volta do bojo 4,4 → 0,8). `?halosize=`
+    // vence as duas curvas.
+    const tamanhoNoAces = tune('halosize', 6000);
+    const tamanhoFora = tune('halosize', 4000);
+    halo.onBeforeRender = (renderer) => {
+      this.haloMat.uniforms.uSize.value = porCurva(renderer.toneMapping, tamanhoNoAces, tamanhoFora);
+    };
     this.group.add(halo);
     this.haloMesh = halo;
 

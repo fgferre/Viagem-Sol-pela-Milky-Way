@@ -16,6 +16,7 @@ import {
   lerPortaRelevo,
   lerPortaTerra,
   modoDoToneMapping,
+  porCurva,
 } from './core/engine';
 // `t` entra APELIDADO porque neste arquivo `t` já é o TEMPO (o segundo
 // argumento de todo tick e de toda curva). Um `t` de texto aqui dentro
@@ -968,6 +969,11 @@ export class Director {
   playbackRate = 1;
   private noNebula = false;
   private deepBg = new THREE.Color(0x010208);
+  /** o céu de longe fora do ACES (R1b da régua única): o pé do ACES zerava
+   *  o `bgColor` e o `deepBg` — o aprovado é preto —, e o tom neutro os
+   *  mostrava como um azul-marinho no quadro inteiro (o "halo lilás" da
+   *  galáxia vista de fora, t=150/168) */
+  private readonly ceuForaDoAces = new THREE.Color(0x000000);
   /** ?shot=1 congela o tempo visual — capturas determinísticas */
   private shotMode = false;
   /** prefers-reduced-motion: sem shake, sem pulso de warp/CA */
@@ -4415,7 +4421,11 @@ export class Director {
     // pós-ACES, mas o raymarch custaria integral
     if (this.noNebula || nebulaFade <= 0.02) {
       // longe de casa o céu é o preto profundo — a galáxia é a luz
-      this.engine.scene.background = this.noNebula ? this.deepBg : this.bgColor;
+      this.engine.scene.background = porCurva(
+        this.engine.renderer.toneMapping,
+        this.noNebula ? this.deepBg : this.bgColor,
+        this.ceuForaDoAces
+      );
     } else {
       this.engine.scene.background = this.nebula.texture;
       this.nebula.render(this.engine.renderer, cam);

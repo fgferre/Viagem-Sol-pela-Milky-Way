@@ -12,7 +12,7 @@ import { FILM_SHADER } from '../shaders/dustShaders';
 import { GLSL_COMPRESSAO } from '../shaders/common';
 import { definirLenteDasEstrelas } from '../shaders/estrelasDaLente';
 import { BETA_DA_ASA, FRACAO_DA_ASA } from '../estrela';
-import type { ModoDaLente, QualityLevel } from './engine';
+import { porCurva, type ModoDaLente, type QualityLevel } from './engine';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
 import { PasseDaLente } from '../lente/passeDaLente';
 
@@ -1067,10 +1067,12 @@ export class Post {
     // knee asinh no HDR composto (depois do bloom, antes do ACES).
     // Default LIGADO com β=0,45 (rodada 20: com chromsat=0,5 na extinção,
     // knee 0,45 + exp 1,05 venceu os DOIS gates — edge 0,8275, face
-    // 0,0517). ?knee=0 desliga; ?knee=β varre; ?kneemode=lum|rgb.
+    // 0,0517). ?knee=0 desliga; ?knee=β varre (nas duas curvas);
+    // ?kneemode=lum|rgb. O β padrão é POR CURVA — ver `betaDoJoelho`.
     this.knee = new ShaderPass(KNEE_SHADER as never);
     const raw = q.get('knee');
-    const beta = raw === null ? 0.45 : parseFloat(raw);
+    this.betaDaPorta = raw === null ? null : parseFloat(raw);
+    const beta = this.betaDoJoelho();
     this.kneeOn = Number.isFinite(beta) && beta > 0;
     if (this.kneeOn) {
       (this.knee.uniforms as Record<string, { value: number }>).uBeta.value = beta;
@@ -1300,6 +1302,18 @@ export class Post {
 
   private galaxyMode = 0;
   private forcedAmt: number | null = null;
+  private betaDaPorta: number | null = null;
+
+  /**
+   * O β DO JOELHO DA VISTA EXTERNA, pela curva viva (R1b da régua única).
+   * O 0,45 venceu os gates da rodada 20 sobre o ACES e fica nele. O tom
+   * neutro não tem o ombro do ACES e abria o bojo: 0,27 o devolve ao
+   * aprovado (L* do bojo, t=168: 80,4 → 76,7 contra 76,8 no ACES;
+   * t=150: 47,2 → 45,9 contra 46,2). `?knee=` vence as duas curvas.
+   */
+  private betaDoJoelho(): number {
+    return this.betaDaPorta ?? porCurva(this.renderer.toneMapping, 0.45, 0.27);
+  }
 
   // (`setGradacao` — a gradação por contexto do Atlas, F6 — morreu no M1
   // da LEI-DA-ESTRELA junto com `claraoDoAtlas`: o bloom deixou de ter um
@@ -1316,6 +1330,8 @@ export class Post {
     if (this.kneeOn) {
       const amt = this.forcedAmt ?? k;
       (this.knee.uniforms as Record<string, { value: number }>).uAmt.value = amt;
+      // a curva pode trocar em Ajustes sem recarga: o β segue a viva
+      (this.knee.uniforms as Record<string, { value: number }>).uBeta.value = this.betaDoJoelho();
       // Dentro do disco (galaxyFade = 0) o passe só copia o buffer HDR.
       // Desligá-lo é bit-exato: mix(x, knee, 0) === x, e o knee é finito
       // para qualquer half-float. Limiar EXATAMENTE 0, não 1e-3 — a rampa
