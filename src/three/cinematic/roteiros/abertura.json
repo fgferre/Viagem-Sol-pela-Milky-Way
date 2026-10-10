@@ -7,6 +7,7 @@
         "mira": { "tipo": "fixo", "ponto": "Sol" },
         "lente": [26, 26]
       },
+      "lenteDeCinema": "hollywood",
       "fundoSilencioso": true,
       "legendas": [{
         "em": 0.3, "texto": "Sol",
@@ -33,6 +34,7 @@
         "lente": [26, 56], "ritmo": "linear", "ritmoDaLente": "glide"
       },
       "assuntos": ["SOL"],
+      "lenteDeCinema": "hollywood",
       "fundoSilencioso": true,
       "legendas": [{
         "em": 0.64, "texto": "A Via Láctea, de dentro",

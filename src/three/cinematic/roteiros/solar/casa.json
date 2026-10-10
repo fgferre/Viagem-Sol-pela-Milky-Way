@@ -2,6 +2,7 @@
   "planos": [
     {
       "nome": "mercurioChegada",
+      "lenteDeCinema": "hollywood",
       "qa": {
         "chegadaAMercurio": 0.6
       },

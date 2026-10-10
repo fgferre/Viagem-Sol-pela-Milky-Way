@@ -18,6 +18,7 @@
           "tipo": "pulso-limitado", "amplitude": 0.9, "velocidade": 1.35
         }
       },
+      "lenteDeCinema": "hollywood",
       "fundoSilencioso": true,
       "legendas": [{
         "em": 0.12,
@@ -89,6 +90,7 @@
           "pousaEm": 0.9, "expoente": 1.55
         }
       },
+      "lenteDeCinema": "hollywood",
       "fundoSilencioso": true,
       "olhar": "assunto",
       "legendas": [

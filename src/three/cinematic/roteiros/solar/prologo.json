@@ -2,6 +2,7 @@
   "planos": [
     {
       "nome": "solSuperficie",
+      "lenteDeCinema": "hollywood",
       "qa": {"superficieDoSol": 0.5},
       "camera": {
         "duracao": 12,
@@ -30,6 +31,7 @@
     },
     {
       "nome": "solDisco",
+      "lenteDeCinema": "hollywood",
       "qa": {"discoDoSol": 0.9},
       "camera": {
         "duracao": 12,
@@ -57,6 +59,7 @@
     },
     {
       "nome": "solPartida",
+      "lenteDeCinema": "hollywood",
       "preload": {"corpos": ["mercury", "venus"], "efemerides": true},
       "qa": {"partida": 0.3},
       "camera": {
