@@ -17,6 +17,11 @@ dele: *"Adotar o tom novo"*, *"Aprovo, pode juntar"*. `npm run done` verde (140 
 
 **Publicar é dele:** `git push origin main`; depois conferir no ar por imagem e sha256.
 
+**AgX e Linear (10/10, a pedido dele):** com a R1 essas duas opções de Ajustes recebem a calibração do tom novo no Sol, na
+galáxia, na lente e no eclipse; a prancha antes × agora (`capturas/regua-r1/agx-linear/prancha-agx-linear.jpg`) mostra
+só diferença, nada quebrado: no AgX o halo do Sol de perto fica cinza-claro em vez de laranja; no Linear o Sol e o bojo
+da galáxia deixam de estourar; os corpos e a Terra saem iguais.
+
 **Restos pequenos, vistos por ele:** as manchas do Sol um pouco mais marrons; o bojo da galáxia um pouco mais amarelo;
 um âmbar leve dentro do anel da Hollywood; o cobre do eclipse um pouco mais amarelo; as nuvens fracas do gás local no céu
 do Atlas (ele não quis regra nova). **Achados, não feitos:** os juízes `a11y` e `voo` esperam 4 passos no tutorial do
