@@ -285,10 +285,15 @@ export function preencherVazioSemDado(
 /** O título que abre a seção legível por máquina. */
 export const TITULO_DA_CONFISSAO = '## A CONFISSÃO NA TELA';
 
+/** O selo do que a nota da imagem confessa — o tier mais fraco dela. */
+const SELOS_DA_NOTA = ['medido', 'derivado', 'inventado'];
+
 /**
  * As duas tabelas da seção de confissão, lidas com rigor: o título tem de
- * existir, a seção tem de ir até o fim do arquivo, cada linha tem de ser
- * `| chave | frase |`, e o resultado é um par de Maps. Sem tolerância a
+ * existir, a seção tem de ir até o fim do arquivo, cada linha da forma tem
+ * de ser `| chave | frase |` e cada linha da imagem `| chave | selo | frase |`,
+ * com o selo dentro de `SELOS_DA_NOTA`; o resultado é um par de Maps (a
+ * imagem dá `{ selo, nota }`, a forma dá a frase). Sem tolerância a
  * "quase" — nota que sumir por causa de um pipe a menos some da TELA, e
  * ninguém repara na falta de uma frase.
  *
@@ -305,6 +310,7 @@ export function lerTabelasDaConfissao(markdown, onde = 'docs/reference/ASSETS.md
   const secao = markdown.slice(inicio);
   const tabelas = new Map();
   let atual = null;
+  let comSelo = false;
   for (const linha of secao.split('\n')) {
     // A SEÇÃO É A ÚLTIMA DO ARQUIVO, e isto é o que torna a regra
     // verdadeira em vez de esperançosa: a leitura vai daqui até o fim,
@@ -319,20 +325,32 @@ export function lerTabelasDaConfissao(markdown, onde = 'docs/reference/ASSETS.md
     if (sub) {
       atual = new Map();
       tabelas.set(sub[1], atual);
+      comSelo = sub[1].startsWith('a imagem');
       continue;
     }
     if (!atual || !linha.startsWith('|')) continue;
     const celulas = linha.split('|').slice(1, -1).map((c) => c.trim());
-    if (celulas.length !== 2) {
+    if (celulas.length !== (comSelo ? 3 : 2)) {
       throw new Error(`${onde}: linha de tabela malformada — "${linha}".`);
     }
-    const [chave, nota] = celulas;
+    const chave = celulas[0];
+    const nota = celulas.at(-1);
     if (/^-+$/.test(chave) || chave === 'corpo/canal' || chave === 'corpo') continue;
     if (!nota) throw new Error(`${onde}: "${chave}" sem nota.`);
     if (atual.has(chave)) {
       throw new Error(`${onde}: "${chave}" aparece duas vezes na mesma tabela.`);
     }
-    atual.set(chave, nota);
+    if (!comSelo) {
+      atual.set(chave, nota);
+      continue;
+    }
+    const selo = celulas[1];
+    if (!SELOS_DA_NOTA.includes(selo)) {
+      throw new Error(
+        `${onde}: "${chave}" com selo "${selo}" — vale ${SELOS_DA_NOTA.join(', ')}.`
+      );
+    }
+    atual.set(chave, { selo, nota });
   }
   const imagem = [...tabelas].find(([t]) => t.startsWith('a imagem'))?.[1];
   const forma = [...tabelas].find(([t]) => t.startsWith('a forma'))?.[1];

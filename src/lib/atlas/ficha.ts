@@ -560,6 +560,17 @@ const TIER_DA_IMAGEM: Record<
 };
 
 /**
+ * O TIER DA CONFISSÃO na língua do selo: `inventado` é o artístico. Nota
+ * sem selo é manifesto malformado e cai no mesmo tier, pelo motivo do
+ * `nao-resolvida` acima — quem não fechou o selo não chama a frase de medida.
+ */
+const TIER_DA_NOTA: Record<NonNullable<EntradaDeTextura['seloDaNota']>, Procedencia> = {
+  medido: 'medido',
+  derivado: 'derivado',
+  inventado: 'artistico',
+};
+
+/**
  * A IMAGEM CONFESSA (item 74 parte B; fecha os itens 19 e 20).
  *
  * `texturas.json` guardava `origem{fonte,url,licenca,atribuicao}` e
@@ -568,10 +579,11 @@ const TIER_DA_IMAGEM: Record<
  * visitante tem direito de saber sobre a foto que está olhando: de onde
  * veio, sob que licença, a quem creditar, e QUAL É O DEFEITO dela.
  *
- * O DEFEITO É MEDIDO, e por isso leva o selo `medido`: a frase nasce na
- * bancada de texturas (`docs/reference/ASSETS.md`), o gerador do manifesto a
- * lê de lá, e ela chega aqui como dado. Ausência de nota quer dizer "a
- * bancada não achou defeito", nunca "ninguém olhou".
+ * O DEFEITO LEVA O SELO DO QUE CONFESSA: a frase e o tier dela (`seloDaNota`,
+ * o mais fraco que ela admite) nascem na bancada de texturas
+ * (`docs/reference/ASSETS.md`), e uma nota que diz INVENTADO não sai com o
+ * selo de medido. Ausência de nota quer dizer "a bancada não achou defeito",
+ * nunca "ninguém olhou".
  *
  * SEM MAPA, A SUPERFÍCIE É INVENTADA: Palas, Haumea, Makemake, Éris e Quaoar
  * não têm textura licenciada e `rochoso.ts` os desenha com o `−3` procedural.
@@ -620,7 +632,12 @@ function secaoImagem(
     );
     if (mapa.nota) {
       linhas.push(
-        linha(t('ficha.campo.oDefeito'), noIdioma(mapa.nota), 'medido', t('ficha.fonte.bancada'))
+        linha(
+          t('ficha.campo.oDefeito'),
+          noIdioma(mapa.nota),
+          TIER_DA_NOTA[mapa.seloDaNota ?? 'inventado'],
+          t('ficha.fonte.bancada')
+        )
       );
     }
   } else {
@@ -676,7 +693,7 @@ function secaoImagem(
         linha(
           t('ficha.campo.oRelevoAdmite'),
           noIdioma(relevo.nota),
-          'medido',
+          TIER_DA_NOTA[relevo.seloDaNota ?? 'inventado'],
           t('ficha.fonte.bancada')
         )
       );

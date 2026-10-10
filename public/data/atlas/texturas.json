@@ -84,7 +84,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "ariel",
@@ -113,7 +114,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "ariel",
@@ -142,7 +144,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "callisto",
@@ -246,7 +249,8 @@
       "nota": {
         "pt": "mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha",
         "en": "a real Dawn mosaic, but shot through the clear filter: the color is a uniform tint applied in this house, and the south pole, which the spacecraft caught in polar night, was filled in with the average of the neighboring latitude band"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "ceres",
@@ -275,7 +279,8 @@
       "nota": {
         "pt": "mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha",
         "en": "a real Dawn mosaic, but shot through the clear filter: the color is a uniform tint applied in this house, and the south pole, which the spacecraft caught in polar night, was filled in with the average of the neighboring latitude band"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "ceres",
@@ -304,7 +309,8 @@
       "nota": {
         "pt": "mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha",
         "en": "a real Dawn mosaic, but shot through the clear filter: the color is a uniform tint applied in this house, and the south pole, which the spacecraft caught in polar night, was filled in with the average of the neighboring latitude band"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "ceres",
@@ -333,7 +339,8 @@
       "nota": {
         "pt": "mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha",
         "en": "a real Dawn mosaic, but shot through the clear filter: the color is a uniform tint applied in this house, and the south pole, which the spacecraft caught in polar night, was filled in with the average of the neighboring latitude band"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "ceres",
@@ -362,7 +369,8 @@
       "nota": {
         "pt": "mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha",
         "en": "a real Dawn mosaic, but shot through the clear filter: the color is a uniform tint applied in this house, and the south pole, which the spacecraft caught in polar night, was filled in with the average of the neighboring latitude band"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "ceres",
@@ -391,7 +399,8 @@
       "nota": {
         "pt": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem",
         "en": "real Dawn topography resampled from 137 m to 4096 px: each texel covers 0.73 km, the finest in the house, and the latitude average used 2 of the 5.3 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "ceres",
@@ -420,7 +429,8 @@
       "nota": {
         "pt": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem",
         "en": "real Dawn topography resampled from 137 m to 4096 px: each texel covers 0.73 km, the finest in the house, and the latitude average used 2 of the 5.3 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "ceres",
@@ -449,7 +459,8 @@
       "nota": {
         "pt": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem",
         "en": "real Dawn topography resampled from 137 m to 4096 px: each texel covers 0.73 km, the finest in the house, and the latitude average used 2 of the 5.3 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "ceres",
@@ -478,7 +489,8 @@
       "nota": {
         "pt": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem",
         "en": "real Dawn topography resampled from 137 m to 4096 px: each texel covers 0.73 km, the finest in the house, and the latitude average used 2 of the 5.3 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "ceres",
@@ -507,7 +519,8 @@
       "nota": {
         "pt": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem",
         "en": "real Dawn topography resampled from 137 m to 4096 px: each texel covers 0.73 km, the finest in the house, and the latitude average used 2 of the 5.3 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "ceres",
@@ -536,7 +549,8 @@
       "nota": {
         "pt": "topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem",
         "en": "real Dawn topography resampled from 137 m to 4096 px: each texel covers 0.73 km, the finest in the house, and the latitude average used 2 of the 5.3 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "charon",
@@ -565,7 +579,8 @@
       "nota": {
         "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "charon",
@@ -594,7 +609,8 @@
       "nota": {
         "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "charon",
@@ -623,7 +639,8 @@
       "nota": {
         "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "charon",
@@ -652,7 +669,8 @@
       "nota": {
         "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "charon",
@@ -681,7 +699,8 @@
       "nota": {
         "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "charon",
@@ -710,7 +729,8 @@
       "nota": {
         "pt": "mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "charon",
@@ -739,7 +759,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "charon",
@@ -768,7 +789,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "charon",
@@ -797,7 +819,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "charon",
@@ -826,7 +849,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "charon",
@@ -855,7 +879,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "charon",
@@ -884,7 +909,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1009,7 +1035,12 @@
           "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "DTM SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel",
+        "en": "an SPC DTM baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -1034,7 +1065,12 @@
           "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "DTM SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel",
+        "en": "an SPC DTM baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -1388,7 +1424,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -1417,7 +1454,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -1446,7 +1484,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -1475,7 +1514,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -1504,7 +1544,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -1533,7 +1574,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -1562,7 +1604,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -1591,7 +1634,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -1620,7 +1664,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -1649,7 +1694,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -1678,7 +1724,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -1707,7 +1754,8 @@
       "nota": {
         "pt": "a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água",
         "en": "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "earth",
@@ -2136,7 +2184,8 @@
       "nota": {
         "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
         "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "earth",
@@ -2165,7 +2214,8 @@
       "nota": {
         "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
         "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "earth",
@@ -2194,7 +2244,8 @@
       "nota": {
         "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
         "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "earth",
@@ -2223,7 +2274,8 @@
       "nota": {
         "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
         "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "earth",
@@ -2252,7 +2304,8 @@
       "nota": {
         "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
         "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "earth",
@@ -2281,7 +2334,8 @@
       "nota": {
         "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
         "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "earth",
@@ -2310,7 +2364,8 @@
       "nota": {
         "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
         "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "earth",
@@ -2339,7 +2394,8 @@
       "nota": {
         "pt": "relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água",
         "en": "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "earth",
@@ -2568,7 +2624,8 @@
       "nota": {
         "pt": "DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul",
         "en": "a 200 m DEM resampled to 1024 px: what you see is the overall shape, not the individual fracture at the south pole"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "enceladus",
@@ -2597,7 +2654,8 @@
       "nota": {
         "pt": "DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul",
         "en": "a 200 m DEM resampled to 1024 px: what you see is the overall shape, not the individual fracture at the south pole"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "enceladus",
@@ -2826,7 +2884,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "eris",
@@ -2855,7 +2914,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "eris",
@@ -2884,7 +2944,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "eris",
@@ -2913,7 +2974,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "europa",
@@ -2942,7 +3004,8 @@
       "nota": {
         "pt": "mosaico real da Voyager e da Galileo a 500 m, mas em cinza: o brilho é medido e a cor não — não existe mapa global em cor de Europa; a cor é INFERIDA do brilho nesta casa: o gelo claro quase neutro e o material escuro avermelhado das linhas, os dois medidos na foto em cor da Galileo de um hemisfério, misturados conforme o brilho de cada ponto, mais o amarelado do hemisfério que vem atrás na órbita; o hemisfério da frente nunca foi fotografado em cor, e a calota sul sem imagem (a partir de 77 a 84° sul) foi preenchida com o tom da faixa vizinha",
         "en": "real Voyager and Galileo mosaic at 500 m, but in gray: the brightness is measured and the color is not — no global color map of Europa exists; the color is INFERRED from the brightness here: the nearly neutral bright ice and the reddish dark material of the lines, both measured in a Galileo color image of one hemisphere, blended according to the brightness of each point, plus the yellowish tint of the hemisphere that trails in its orbit; the leading hemisphere was never imaged in color, and the south cap with no images (from 77 to 84° south) was filled with the tone of the neighboring band"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "europa",
@@ -2971,7 +3034,8 @@
       "nota": {
         "pt": "mosaico real da Voyager e da Galileo a 500 m, mas em cinza: o brilho é medido e a cor não — não existe mapa global em cor de Europa; a cor é INFERIDA do brilho nesta casa: o gelo claro quase neutro e o material escuro avermelhado das linhas, os dois medidos na foto em cor da Galileo de um hemisfério, misturados conforme o brilho de cada ponto, mais o amarelado do hemisfério que vem atrás na órbita; o hemisfério da frente nunca foi fotografado em cor, e a calota sul sem imagem (a partir de 77 a 84° sul) foi preenchida com o tom da faixa vizinha",
         "en": "real Voyager and Galileo mosaic at 500 m, but in gray: the brightness is measured and the color is not — no global color map of Europa exists; the color is INFERRED from the brightness here: the nearly neutral bright ice and the reddish dark material of the lines, both measured in a Galileo color image of one hemisphere, blended according to the brightness of each point, plus the yellowish tint of the hemisphere that trails in its orbit; the leading hemisphere was never imaged in color, and the south cap with no images (from 77 to 84° south) was filled with the tone of the neighboring band"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "europa",
@@ -3000,7 +3064,8 @@
       "nota": {
         "pt": "mosaico real da Voyager e da Galileo a 500 m, mas em cinza: o brilho é medido e a cor não — não existe mapa global em cor de Europa; a cor é INFERIDA do brilho nesta casa: o gelo claro quase neutro e o material escuro avermelhado das linhas, os dois medidos na foto em cor da Galileo de um hemisfério, misturados conforme o brilho de cada ponto, mais o amarelado do hemisfério que vem atrás na órbita; o hemisfério da frente nunca foi fotografado em cor, e a calota sul sem imagem (a partir de 77 a 84° sul) foi preenchida com o tom da faixa vizinha",
         "en": "real Voyager and Galileo mosaic at 500 m, but in gray: the brightness is measured and the color is not — no global color map of Europa exists; the color is INFERRED from the brightness here: the nearly neutral bright ice and the reddish dark material of the lines, both measured in a Galileo color image of one hemisphere, blended according to the brightness of each point, plus the yellowish tint of the hemisphere that trails in its orbit; the leading hemisphere was never imaged in color, and the south cap with no images (from 77 to 84° south) was filled with the tone of the neighboring band"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "europa",
@@ -3029,7 +3094,8 @@
       "nota": {
         "pt": "mosaico real da Voyager e da Galileo a 500 m, mas em cinza: o brilho é medido e a cor não — não existe mapa global em cor de Europa; a cor é INFERIDA do brilho nesta casa: o gelo claro quase neutro e o material escuro avermelhado das linhas, os dois medidos na foto em cor da Galileo de um hemisfério, misturados conforme o brilho de cada ponto, mais o amarelado do hemisfério que vem atrás na órbita; o hemisfério da frente nunca foi fotografado em cor, e a calota sul sem imagem (a partir de 77 a 84° sul) foi preenchida com o tom da faixa vizinha",
         "en": "real Voyager and Galileo mosaic at 500 m, but in gray: the brightness is measured and the color is not — no global color map of Europa exists; the color is INFERRED from the brightness here: the nearly neutral bright ice and the reddish dark material of the lines, both measured in a Galileo color image of one hemisphere, blended according to the brightness of each point, plus the yellowish tint of the hemisphere that trails in its orbit; the leading hemisphere was never imaged in color, and the south cap with no images (from 77 to 84° south) was filled with the tone of the neighboring band"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "europa",
@@ -3058,7 +3124,8 @@
       "nota": {
         "pt": "mosaico real da Voyager e da Galileo a 500 m, mas em cinza: o brilho é medido e a cor não — não existe mapa global em cor de Europa; a cor é INFERIDA do brilho nesta casa: o gelo claro quase neutro e o material escuro avermelhado das linhas, os dois medidos na foto em cor da Galileo de um hemisfério, misturados conforme o brilho de cada ponto, mais o amarelado do hemisfério que vem atrás na órbita; o hemisfério da frente nunca foi fotografado em cor, e a calota sul sem imagem (a partir de 77 a 84° sul) foi preenchida com o tom da faixa vizinha",
         "en": "real Voyager and Galileo mosaic at 500 m, but in gray: the brightness is measured and the color is not — no global color map of Europa exists; the color is INFERRED from the brightness here: the nearly neutral bright ice and the reddish dark material of the lines, both measured in a Galileo color image of one hemisphere, blended according to the brightness of each point, plus the yellowish tint of the hemisphere that trails in its orbit; the leading hemisphere was never imaged in color, and the south cap with no images (from 77 to 84° south) was filled with the tone of the neighboring band"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "europa",
@@ -3087,7 +3154,8 @@
       "nota": {
         "pt": "mosaico real da Voyager e da Galileo a 500 m, mas em cinza: o brilho é medido e a cor não — não existe mapa global em cor de Europa; a cor é INFERIDA do brilho nesta casa: o gelo claro quase neutro e o material escuro avermelhado das linhas, os dois medidos na foto em cor da Galileo de um hemisfério, misturados conforme o brilho de cada ponto, mais o amarelado do hemisfério que vem atrás na órbita; o hemisfério da frente nunca foi fotografado em cor, e a calota sul sem imagem (a partir de 77 a 84° sul) foi preenchida com o tom da faixa vizinha",
         "en": "real Voyager and Galileo mosaic at 500 m, but in gray: the brightness is measured and the color is not — no global color map of Europa exists; the color is INFERRED from the brightness here: the nearly neutral bright ice and the reddish dark material of the lines, both measured in a Galileo color image of one hemisphere, blended according to the brightness of each point, plus the yellowish tint of the hemisphere that trails in its orbit; the leading hemisphere was never imaged in color, and the south cap with no images (from 77 to 84° south) was filled with the tone of the neighboring band"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "ganymede",
@@ -3191,7 +3259,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "haumea",
@@ -3220,7 +3289,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "haumea",
@@ -3249,7 +3319,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "haumea",
@@ -3278,7 +3349,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hygiea",
@@ -3307,7 +3379,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hygiea",
@@ -3336,7 +3409,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hygiea",
@@ -3365,7 +3439,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3394,7 +3469,8 @@
       "nota": {
         "pt": "a forma é medida pela Cassini, mas os 3.488 poços cavados nela não são: saem das manchas escuras da pintura por IA",
         "en": "the shape is measured by Cassini, but the 3,488 pits carved into it are not: they come from the dark spots of the AI painting"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3423,7 +3499,8 @@
       "nota": {
         "pt": "a forma é medida pela Cassini, mas os 3.488 poços cavados nela não são: saem das manchas escuras da pintura por IA",
         "en": "the shape is measured by Cassini, but the 3,488 pits carved into it are not: they come from the dark spots of the AI painting"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3452,7 +3529,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini, but that of the 3,488 pits is not measured: they come from the dark spots of the AI painting"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3481,7 +3559,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini, but that of the 3,488 pits is not measured: they come from the dark spots of the AI painting"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3510,7 +3589,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini, but that of the 3,488 pits is not measured: they come from the dark spots of the AI painting"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3539,7 +3619,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini, but that of the 3,488 pits is not measured: they come from the dark spots of the AI painting"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3568,7 +3649,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini, but that of the 3,488 pits is not measured: they come from the dark spots of the AI painting"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3597,7 +3679,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini, but that of the 3,488 pits is not measured: they come from the dark spots of the AI painting"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3626,7 +3709,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini, but that of the 3,488 pits is not measured: they come from the dark spots of the AI painting"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3655,7 +3739,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini, but that of the 3,488 pits is not measured: they come from the dark spots of the AI painting"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3684,7 +3769,8 @@
       "nota": {
         "pt": "não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido, com uma mancha em estrela apagada e as encostas íngremes clareadas nesta casa — nada na cor é medida",
         "en": "there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief, with one star-shaped blotch erased and the steep slopes brightened here — nothing in the color is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3713,7 +3799,8 @@
       "nota": {
         "pt": "não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido, com uma mancha em estrela apagada e as encostas íngremes clareadas nesta casa — nada na cor é medida",
         "en": "there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief, with one star-shaped blotch erased and the steep slopes brightened here — nothing in the color is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3742,7 +3829,8 @@
       "nota": {
         "pt": "não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido, com uma mancha em estrela apagada e as encostas íngremes clareadas nesta casa — nada na cor é medida",
         "en": "there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief, with one star-shaped blotch erased and the steep slopes brightened here — nothing in the color is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3771,7 +3859,8 @@
       "nota": {
         "pt": "não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido, com uma mancha em estrela apagada e as encostas íngremes clareadas nesta casa — nada na cor é medida",
         "en": "there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief, with one star-shaped blotch erased and the steep slopes brightened here — nothing in the color is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "hyperion",
@@ -3900,7 +3989,8 @@
       "nota": {
         "pt": "não existe mapa de altura medido de Jápeto: este relevo é INVENTADO por código nesta casa, ancorado no que foi medido — a crista do equador está nas longitudes do catálogo da IAU e no caminho que a foto da Cassini mostra, com até 20 km, a altura medida pelas sondas; as 55 crateras com nome estão no lugar e no tamanho do catálogo, e as outras onde a foto da Cassini as mostra; o perfil da crista, a profundidade de cada cratera (dada por uma regra pelo tamanho) e o chão liso entre elas são inventados",
         "en": "no measured height map of Iapetus exists: this relief is INVENTED by code here, anchored on what was measured — the equatorial ridge sits at the longitudes of the IAU catalog and along the path the Cassini image shows, up to 20 km high, the height the spacecraft measured; the 55 named craters sit at the place and size given by the catalog, and the others where the Cassini image shows them; the ridge profile, the depth of each crater (set by a rule from its size), and the smooth ground between them are invented"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "iapetus",
@@ -3929,7 +4019,8 @@
       "nota": {
         "pt": "não existe mapa de altura medido de Jápeto: este relevo é INVENTADO por código nesta casa, ancorado no que foi medido — a crista do equador está nas longitudes do catálogo da IAU e no caminho que a foto da Cassini mostra, com até 20 km, a altura medida pelas sondas; as 55 crateras com nome estão no lugar e no tamanho do catálogo, e as outras onde a foto da Cassini as mostra; o perfil da crista, a profundidade de cada cratera (dada por uma regra pelo tamanho) e o chão liso entre elas são inventados",
         "en": "no measured height map of Iapetus exists: this relief is INVENTED by code here, anchored on what was measured — the equatorial ridge sits at the longitudes of the IAU catalog and along the path the Cassini image shows, up to 20 km high, the height the spacecraft measured; the 55 named craters sit at the place and size given by the catalog, and the others where the Cassini image shows them; the ridge profile, the depth of each crater (set by a rule from its size), and the smooth ground between them are invented"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "iapetus",
@@ -4108,7 +4199,8 @@
       "nota": {
         "pt": "não existe mapa de altura medido de Jápeto: este relevo é INVENTADO por código nesta casa, ancorado no que foi medido — a crista do equador está nas longitudes do catálogo da IAU e no caminho que a foto da Cassini mostra, com até 20 km, a altura medida pelas sondas; as 55 crateras com nome estão no lugar e no tamanho do catálogo, e as outras onde a foto da Cassini as mostra; o perfil da crista, a profundidade de cada cratera (dada por uma regra pelo tamanho) e o chão liso entre elas são inventados",
         "en": "no measured height map of Iapetus exists: this relief is INVENTED by code here, anchored on what was measured — the equatorial ridge sits at the longitudes of the IAU catalog and along the path the Cassini image shows, up to 20 km high, the height the spacecraft measured; the 55 named craters sit at the place and size given by the catalog, and the others where the Cassini image shows them; the ridge profile, the depth of each crater (set by a rule from its size), and the smooth ground between them are invented"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "iapetus",
@@ -4137,7 +4229,8 @@
       "nota": {
         "pt": "não existe mapa de altura medido de Jápeto: este relevo é INVENTADO por código nesta casa, ancorado no que foi medido — a crista do equador está nas longitudes do catálogo da IAU e no caminho que a foto da Cassini mostra, com até 20 km, a altura medida pelas sondas; as 55 crateras com nome estão no lugar e no tamanho do catálogo, e as outras onde a foto da Cassini as mostra; o perfil da crista, a profundidade de cada cratera (dada por uma regra pelo tamanho) e o chão liso entre elas são inventados",
         "en": "no measured height map of Iapetus exists: this relief is INVENTED by code here, anchored on what was measured — the equatorial ridge sits at the longitudes of the IAU catalog and along the path the Cassini image shows, up to 20 km high, the height the spacecraft measured; the 55 named craters sit at the place and size given by the catalog, and the others where the Cassini image shows them; the ridge profile, the depth of each crater (set by a rule from its size), and the smooth ground between them are invented"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "io",
@@ -4416,7 +4509,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "makemake",
@@ -4445,7 +4539,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "makemake",
@@ -4474,7 +4569,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "makemake",
@@ -4503,7 +4599,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "mars",
@@ -4732,7 +4829,8 @@
       "nota": {
         "pt": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna",
         "en": "real MOLA topography at 16 pixels per degree: each texel covers ~5.2 km, so what the light draws is the volcano and the canyon, never the dune"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mars",
@@ -4761,7 +4859,8 @@
       "nota": {
         "pt": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna",
         "en": "real MOLA topography at 16 pixels per degree: each texel covers ~5.2 km, so what the light draws is the volcano and the canyon, never the dune"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mars",
@@ -4790,7 +4889,8 @@
       "nota": {
         "pt": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna",
         "en": "real MOLA topography at 16 pixels per degree: each texel covers ~5.2 km, so what the light draws is the volcano and the canyon, never the dune"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mars",
@@ -4819,7 +4919,8 @@
       "nota": {
         "pt": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna",
         "en": "real MOLA topography at 16 pixels per degree: each texel covers ~5.2 km, so what the light draws is the volcano and the canyon, never the dune"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mars",
@@ -4848,7 +4949,8 @@
       "nota": {
         "pt": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna",
         "en": "real MOLA topography at 16 pixels per degree: each texel covers ~5.2 km, so what the light draws is the volcano and the canyon, never the dune"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mars",
@@ -4877,7 +4979,8 @@
       "nota": {
         "pt": "topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna",
         "en": "real MOLA topography at 16 pixels per degree: each texel covers ~5.2 km, so what the light draws is the volcano and the canyon, never the dune"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mercury",
@@ -5056,7 +5159,8 @@
       "nota": {
         "pt": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem",
         "en": "real MESSENGER topography resampled from 665 m to 4096 px: each texel covers ~3.7 km, and the latitude average used 2 of the 5.6 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mercury",
@@ -5085,7 +5189,8 @@
       "nota": {
         "pt": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem",
         "en": "real MESSENGER topography resampled from 665 m to 4096 px: each texel covers ~3.7 km, and the latitude average used 2 of the 5.6 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mercury",
@@ -5114,7 +5219,8 @@
       "nota": {
         "pt": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem",
         "en": "real MESSENGER topography resampled from 665 m to 4096 px: each texel covers ~3.7 km, and the latitude average used 2 of the 5.6 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mercury",
@@ -5143,7 +5249,8 @@
       "nota": {
         "pt": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem",
         "en": "real MESSENGER topography resampled from 665 m to 4096 px: each texel covers ~3.7 km, and the latitude average used 2 of the 5.6 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mercury",
@@ -5172,7 +5279,8 @@
       "nota": {
         "pt": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem",
         "en": "real MESSENGER topography resampled from 665 m to 4096 px: each texel covers ~3.7 km, and the latitude average used 2 of the 5.6 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mercury",
@@ -5201,7 +5309,8 @@
       "nota": {
         "pt": "topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem",
         "en": "real MESSENGER topography resampled from 665 m to 4096 px: each texel covers ~3.7 km, and the latitude average used 2 of the 5.6 source rows"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -5226,7 +5335,12 @@
           "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, como a bacia de Herschel, não o detalhe menor que um texel",
+        "en": "an SPC shape model baked into a 1024 px map: what you see is the overall shape, such as the Herschel basin, not detail smaller than a texel"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -5251,7 +5365,12 @@
           "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, como a bacia de Herschel, não o detalhe menor que um texel",
+        "en": "an SPC shape model baked into a 1024 px map: what you see is the overall shape, such as the Herschel basin, not detail smaller than a texel"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -5480,7 +5599,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "miranda",
@@ -5509,7 +5629,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "miranda",
@@ -5538,7 +5659,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "moon",
@@ -5692,7 +5814,8 @@
       "nota": {
         "pt": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela",
         "en": "real LRO topography resampled to 4096 px: each texel covers ~2.7 km, so what the light draws is the crater, not the rock inside it"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "moon",
@@ -5721,7 +5844,8 @@
       "nota": {
         "pt": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela",
         "en": "real LRO topography resampled to 4096 px: each texel covers ~2.7 km, so what the light draws is the crater, not the rock inside it"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "moon",
@@ -5750,7 +5874,8 @@
       "nota": {
         "pt": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela",
         "en": "real LRO topography resampled to 4096 px: each texel covers ~2.7 km, so what the light draws is the crater, not the rock inside it"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "moon",
@@ -5779,7 +5904,8 @@
       "nota": {
         "pt": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela",
         "en": "real LRO topography resampled to 4096 px: each texel covers ~2.7 km, so what the light draws is the crater, not the rock inside it"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "moon",
@@ -5808,7 +5934,8 @@
       "nota": {
         "pt": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela",
         "en": "real LRO topography resampled to 4096 px: each texel covers ~2.7 km, so what the light draws is the crater, not the rock inside it"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "moon",
@@ -5837,7 +5964,8 @@
       "nota": {
         "pt": "topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela",
         "en": "real LRO topography resampled to 4096 px: each texel covers ~2.7 km, so what the light draws is the crater, not the rock inside it"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "neptune",
@@ -5966,7 +6094,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "oberon",
@@ -5995,7 +6124,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "oberon",
@@ -6024,7 +6154,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pallas",
@@ -6053,7 +6184,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pallas",
@@ -6082,7 +6214,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pallas",
@@ -6111,7 +6244,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6140,7 +6274,8 @@
       "nota": {
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6169,7 +6304,8 @@
       "nota": {
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6198,7 +6334,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6227,7 +6364,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6256,7 +6394,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6285,7 +6424,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6314,7 +6454,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6343,7 +6484,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6372,7 +6514,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6401,7 +6544,8 @@
       "nota": {
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6430,7 +6574,8 @@
       "nota": {
         "pt": "não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa sobre o relevo medido, calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019; o detalhe claro e escuro vem de 28 fotos da Cassini só nos 40,5 % da superfície que elas veem — no resto, é o da pintura",
         "en": "there is no published color map of Pan: the color is a generative-AI painting over the measured relief, calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019; the light and dark detail comes from 28 Cassini images only on the 40.5% of the surface they see — elsewhere, it is the painting's"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6459,7 +6604,8 @@
       "nota": {
         "pt": "não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa sobre o relevo medido, calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019; o detalhe claro e escuro vem de 28 fotos da Cassini só nos 40,5 % da superfície que elas veem — no resto, é o da pintura",
         "en": "there is no published color map of Pan: the color is a generative-AI painting over the measured relief, calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019; the light and dark detail comes from 28 Cassini images only on the 40.5% of the surface they see — elsewhere, it is the painting's"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6488,7 +6634,8 @@
       "nota": {
         "pt": "não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa sobre o relevo medido, calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019; o detalhe claro e escuro vem de 28 fotos da Cassini só nos 40,5 % da superfície que elas veem — no resto, é o da pintura",
         "en": "there is no published color map of Pan: the color is a generative-AI painting over the measured relief, calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019; the light and dark detail comes from 28 Cassini images only on the 40.5% of the surface they see — elsewhere, it is the painting's"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6517,7 +6664,8 @@
       "nota": {
         "pt": "não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa sobre o relevo medido, calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019; o detalhe claro e escuro vem de 28 fotos da Cassini só nos 40,5 % da superfície que elas veem — no resto, é o da pintura",
         "en": "there is no published color map of Pan: the color is a generative-AI painting over the measured relief, calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019; the light and dark detail comes from 28 Cassini images only on the 40.5% of the surface they see — elsewhere, it is the painting's"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6546,7 +6694,8 @@
       "nota": {
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6575,7 +6724,8 @@
       "nota": {
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6604,7 +6754,8 @@
       "nota": {
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pan",
@@ -6633,7 +6784,8 @@
       "nota": {
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -6762,7 +6914,8 @@
       "nota": {
         "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -6791,7 +6944,8 @@
       "nota": {
         "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -6820,7 +6974,8 @@
       "nota": {
         "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -6849,7 +7004,8 @@
       "nota": {
         "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -6878,7 +7034,8 @@
       "nota": {
         "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -6907,7 +7064,8 @@
       "nota": {
         "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -6936,7 +7094,8 @@
       "nota": {
         "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -6965,7 +7124,8 @@
       "nota": {
         "pt": "mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto",
         "en": "real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app's light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -6994,7 +7154,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -7023,7 +7184,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -7052,7 +7214,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -7081,7 +7244,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -7110,7 +7274,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",
@@ -7139,7 +7304,8 @@
       "nota": {
         "pt": "topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado",
         "en": "real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "quaoar",
@@ -7168,7 +7334,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "quaoar",
@@ -7197,7 +7364,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "quaoar",
@@ -7226,7 +7394,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "quaoar",
@@ -7255,7 +7424,8 @@
       "nota": {
         "pt": "não existe foto da superfície: o mapa é uma ilustração por IA generativa a partir dos fatos conhecidos (tamanho, albedo, cor, crateras vistas de longe) — nada aqui é medida",
         "en": "there is no photo of the surface: the map is a generative-AI illustration from the known facts (size, albedo, color, craters seen from afar) — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "rhea",
@@ -7284,7 +7454,8 @@
       "nota": {
         "pt": "relevo MEDIDO pelo modelo de forma da Cassini (Weirich, Gaskell, Palmer & Domingue 2025) nas escalas acima de ~30 km — as bacias, as crateras grandes e os vales largos do terreno claro; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho (Aponte-Hernández et al. 2021), não medidos; as escarpas finas do terreno claro não estão no relevo, só na cor",
         "en": "relief MEASURED by the Cassini shape model (Weirich, Gaskell, Palmer & Domingue 2025) at scales above ~30 km — the basins, the large craters, and the broad valleys of the bright terrain; the smaller craters sit where the Cassini image shows them, but their depth, rim, and wear are ESTIMATED by a rule from their size (Aponte-Hernández et al. 2021), not measured; the fine scarps of the bright terrain are not in the relief, only in the color"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "rhea",
@@ -7313,7 +7484,8 @@
       "nota": {
         "pt": "relevo MEDIDO pelo modelo de forma da Cassini (Weirich, Gaskell, Palmer & Domingue 2025) nas escalas acima de ~30 km — as bacias, as crateras grandes e os vales largos do terreno claro; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho (Aponte-Hernández et al. 2021), não medidos; as escarpas finas do terreno claro não estão no relevo, só na cor",
         "en": "relief MEASURED by the Cassini shape model (Weirich, Gaskell, Palmer & Domingue 2025) at scales above ~30 km — the basins, the large craters, and the broad valleys of the bright terrain; the smaller craters sit where the Cassini image shows them, but their depth, rim, and wear are ESTIMATED by a rule from their size (Aponte-Hernández et al. 2021), not measured; the fine scarps of the bright terrain are not in the relief, only in the color"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "rhea",
@@ -7492,7 +7664,8 @@
       "nota": {
         "pt": "relevo MEDIDO pelo modelo de forma da Cassini (Weirich, Gaskell, Palmer & Domingue 2025) nas escalas acima de ~30 km — as bacias, as crateras grandes e os vales largos do terreno claro; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho (Aponte-Hernández et al. 2021), não medidos; as escarpas finas do terreno claro não estão no relevo, só na cor",
         "en": "relief MEASURED by the Cassini shape model (Weirich, Gaskell, Palmer & Domingue 2025) at scales above ~30 km — the basins, the large craters, and the broad valleys of the bright terrain; the smaller craters sit where the Cassini image shows them, but their depth, rim, and wear are ESTIMATED by a rule from their size (Aponte-Hernández et al. 2021), not measured; the fine scarps of the bright terrain are not in the relief, only in the color"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "rhea",
@@ -7521,7 +7694,8 @@
       "nota": {
         "pt": "relevo MEDIDO pelo modelo de forma da Cassini (Weirich, Gaskell, Palmer & Domingue 2025) nas escalas acima de ~30 km — as bacias, as crateras grandes e os vales largos do terreno claro; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho (Aponte-Hernández et al. 2021), não medidos; as escarpas finas do terreno claro não estão no relevo, só na cor",
         "en": "relief MEASURED by the Cassini shape model (Weirich, Gaskell, Palmer & Domingue 2025) at scales above ~30 km — the basins, the large craters, and the broad valleys of the bright terrain; the smaller craters sit where the Cassini image shows them, but their depth, rim, and wear are ESTIMATED by a rule from their size (Aponte-Hernández et al. 2021), not measured; the fine scarps of the bright terrain are not in the relief, only in the color"
-      }
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "saturn",
@@ -7696,7 +7870,12 @@
           "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel",
+        "en": "an SPC shape model baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -7721,7 +7900,12 @@
           "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel",
+        "en": "an SPC shape model baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -7950,7 +8134,8 @@
       "nota": {
         "pt": "720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou",
         "en": "720×360, the orange haze and nothing else: the higher-resolution Cassini mosaic shows longitude seams on the sphere and did not make it in"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "titan",
@@ -7979,7 +8164,8 @@
       "nota": {
         "pt": "720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou",
         "en": "720×360, the orange haze and nothing else: the higher-resolution Cassini mosaic shows longitude seams on the sphere and did not make it in"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "titania",
@@ -8008,7 +8194,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "titania",
@@ -8037,7 +8224,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "titania",
@@ -8066,7 +8254,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "triton",
@@ -8095,7 +8284,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: a parte fotografada segue o mapa da Voyager 2 (1989), o resto, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the photographed part follows the Voyager 2 map (1989), the rest, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "triton",
@@ -8124,7 +8314,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: a parte fotografada segue o mapa da Voyager 2 (1989), o resto, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the photographed part follows the Voyager 2 map (1989), the rest, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "triton",
@@ -8153,7 +8344,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: a parte fotografada segue o mapa da Voyager 2 (1989), o resto, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the photographed part follows the Voyager 2 map (1989), the rest, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "triton",
@@ -8182,7 +8374,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: a parte fotografada segue o mapa da Voyager 2 (1989), o resto, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the photographed part follows the Voyager 2 map (1989), the rest, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "umbriel",
@@ -8211,7 +8404,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "umbriel",
@@ -8240,7 +8434,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "umbriel",
@@ -8269,7 +8464,8 @@
       "nota": {
         "pt": "o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida",
         "en": "the whole map is a generative-AI redraw: the south follows the Voyager 2 mosaic (1986), the north, never seen, is invented — nothing here is a measurement"
-      }
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "uranus",
@@ -8398,7 +8594,8 @@
       "nota": {
         "pt": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor",
         "en": "this is the cloud tops, not the ground: the surface of Venus has no photograph in visible light — what exists is radar, and radar is not color"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "venus",
@@ -8427,7 +8624,8 @@
       "nota": {
         "pt": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor",
         "en": "this is the cloud tops, not the ground: the surface of Venus has no photograph in visible light — what exists is radar, and radar is not color"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "venus",
@@ -8456,7 +8654,8 @@
       "nota": {
         "pt": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor",
         "en": "this is the cloud tops, not the ground: the surface of Venus has no photograph in visible light — what exists is radar, and radar is not color"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "venus",
@@ -8485,7 +8684,8 @@
       "nota": {
         "pt": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor",
         "en": "this is the cloud tops, not the ground: the surface of Venus has no photograph in visible light — what exists is radar, and radar is not color"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "venus",
@@ -8514,7 +8714,8 @@
       "nota": {
         "pt": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor",
         "en": "this is the cloud tops, not the ground: the surface of Venus has no photograph in visible light — what exists is radar, and radar is not color"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "venus",
@@ -8543,7 +8744,8 @@
       "nota": {
         "pt": "é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor",
         "en": "this is the cloud tops, not the ground: the surface of Venus has no photograph in visible light — what exists is radar, and radar is not color"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "vesta",
@@ -8647,7 +8849,8 @@
       "nota": {
         "pt": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave",
         "en": "real Dawn topography over an ellipsoid of revolution: Vesta has three different axes, and the 9 km between the two equatorial ones sit in the light as a gentle ramp"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "vesta",
@@ -8676,7 +8879,8 @@
       "nota": {
         "pt": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave",
         "en": "real Dawn topography over an ellipsoid of revolution: Vesta has three different axes, and the 9 km between the two equatorial ones sit in the light as a gentle ramp"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "vesta",
@@ -8705,7 +8909,8 @@
       "nota": {
         "pt": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave",
         "en": "real Dawn topography over an ellipsoid of revolution: Vesta has three different axes, and the 9 km between the two equatorial ones sit in the light as a gentle ramp"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "vesta",
@@ -8734,7 +8939,8 @@
       "nota": {
         "pt": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave",
         "en": "real Dawn topography over an ellipsoid of revolution: Vesta has three different axes, and the 9 km between the two equatorial ones sit in the light as a gentle ramp"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "vesta",
@@ -8763,7 +8969,8 @@
       "nota": {
         "pt": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave",
         "en": "real Dawn topography over an ellipsoid of revolution: Vesta has three different axes, and the 9 km between the two equatorial ones sit in the light as a gentle ramp"
-      }
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "vesta",
@@ -8792,7 +8999,8 @@
       "nota": {
         "pt": "topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave",
         "en": "real Dawn topography over an ellipsoid of revolution: Vesta has three different axes, and the 9 km between the two equatorial ones sit in the light as a gentle ramp"
-      }
+      },
+      "seloDaNota": "medido"
     }
   ]
 }
