@@ -35,9 +35,15 @@ Palavras dele (08/10): *"precisamos ter uma regra única que trate todos os obje
     (2) a galáxia e a gradação do filme (`galaxyShaders.ts` chromsat/corte/cor do disco, joelhos de `post.ts` da
     rodada 20, `dustShaders.ts` lift e grão); (3) a lente e o eclipse (`passeDaLente.ts` fatores 1,1/1,1/1,2 e o
     limiar tirado da fórmula do ACES; `eclipse.ts`; a σ da luz em `luz.ts`).
-  - **EM CURSO (09/10)** R1c — conferir o realçado 3× da Terra, rodar os juízes visuais (podem ter limiares do ACES), `npm run done`,
+  - **FEITA (09–10/10, aprovada por ele: *"Aprovo, pode juntar"*)** R1c — conferir o realçado 3× da Terra, rodar os juízes visuais (podem ter limiares do ACES), `npm run done`,
     prancha final hoje × novo do app inteiro e vídeo dos dois filmes; ele aprova; juntar e publicar é dele.
   - Fora da R1: os ganhos à mão das luas (`rochoso.ts`) — saem na R2.
+  - **Resultado da R1c:** `npm run done` verde (140 arquivos, 3.632 testes); o juiz `atlas-smoke` lê a exposição na língua
+    do ACES (nada afrouxado); o realçado 3× lê igual nos dois tons; dois restos consertados (o croma da luz da Hollywood
+    a 0,75, a cor do halo da galáxia de perfil). O céu do Atlas mostra as nuvens fracas do gás local que o ACES apagava;
+    ele preferiu não criar regra nova (*"nao criamos settings específicos para isso, porque devemos criar algo novo?"*) —
+    fica como está; se um dia parecer cheio, revisa-se o brilho do próprio gás, igual para tudo. Provas:
+    `capturas/regua-r1/r1c/` (pranchas finais, `residuos-v2.jpg`, `jupiter-brilho-normal-e-x4.jpg`, vídeos `-v2`).
 - **R2 — Cor dos mapas** (opus + a cadeia no terminal dele): a função única; "retrato de família" de todos os corpos na mesma luz e na mesma escala, com os números ao lado (Encélado o mais claro, a Lua e Febe escuras, Pã abaixo de Encélado). Os que ele já aprovou (Europa, Reia, Hipérion) voltam para ele se mudarem.
 - **R3 — Confissão** (sonnet, mecânico): um formato, o selo certo na ficha, as lacunas preenchidas.
 - **R4 — Relevo** (opus, corpo a corpo, a fila de assets): a ordem única de fontes; o relevo falso da cor sai; a rodada das luas pequenas volta aqui (Pã primeiro, pela versão F).

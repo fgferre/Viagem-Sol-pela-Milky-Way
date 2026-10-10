@@ -4,7 +4,31 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (09/10) — O SOL EM CADA DISTÂNCIA: A REGRA NOVA PUBLICADA (`main` `d89e684c`, enviada por ele no terminal)
+## O BASTÃO — onde a rodada parou (10/10) — A R1 DA RÉGUA ÚNICA (O TOM NEUTRO) NO `main`, NÃO PUBLICADA (publicar é dele)
+
+**Feito em 09–10/10 (conversa "Coordenação de trabalhos em fila"):** a R0 (tabela de medidas,
+`docs/reference/MEDIDAS-DOS-CORPOS.md`) e a R1 de `PLAN-REGUA-UNICA.md` — o tom neutro da Khronos é o padrão, com a
+exposição casada no cinza médio em cada exposição; tudo o que foi ajustado a olho sobre o ACES (o Sol, a galáxia, a
+nebulosa e o céu de fundo, as lentes, o eclipse da Lua) foi recalibrado contra a foto aprovada, por `porCurva`
+(`engine.ts`), e o ACES segue em Ajustes e em `?tone=aces` com a imagem de antes, bit a bit. Ganho: a cor das
+superfícies claras (Pã no alvo medido, Saturno, Io, Júpiter); a Terra um pouco mais rica; as escuras iguais. Palavras
+dele: *"Adotar o tom novo"*, *"Aprovo, pode juntar"*. `npm run done` verde (140 arquivos, 3.632 testes). Provas:
+`capturas/regua-r1/` (`prancha-*.jpg`, `r1a/`, `r1b-*/`, `r1c/`).
+
+**Publicar é dele:** `git push origin main`; depois conferir no ar por imagem e sha256.
+
+**Restos pequenos, vistos por ele:** as manchas do Sol um pouco mais marrons; o bojo da galáxia um pouco mais amarelo;
+um âmbar leve dentro do anel da Hollywood; o cobre do eclipse um pouco mais amarelo; as nuvens fracas do gás local no céu
+do Atlas (ele não quis regra nova). **Achados, não feitos:** os juízes `a11y` e `voo` esperam 4 passos no tutorial do
+Atlas (são 5 desde bfe3a929, 08/10) e o `busca` espera a gaveta do celular com 390 px (tem 366) — falhas de antes da
+R1; o segmentado "Curva de tom" tem botões de larguras desiguais; não olhado num iPhone de verdade.
+
+**A próxima rodada — a ordem é dele:** a R2 da régua (a cor dos mapas por uma função só, com o "retrato de família"
+de todos os corpos; a tabela da R0 é a âncora e diz que o albedo geométrico tem o pico de oposição); depois a R3
+(confissão) e a R4 (relevo, com a fila de assets). As cópias `../Viagem-tom-*` e `../Viagem-sol-estudo` podem ser
+apagadas quando ele quiser (os ramos ficam inteiros no `main`).
+
+## O BASTÃO anterior (09/10) — O SOL EM CADA DISTÂNCIA: A REGRA NOVA PUBLICADA (`main` `d89e684c`, enviada por ele no terminal)
 
 **Feito em 09/10 (conversa "Coordenação de trabalhos em fila"), o assunto 0 de `PLAN-ESTRELAS-E-INSTRUMENTO.md`:**
 entre ~0,2 e ~1 UA o Sol era um pontinho laranja sem brilho, mais fraco que visto de Júpiter — o filtro entrava a
