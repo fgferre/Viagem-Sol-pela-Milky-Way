@@ -28,6 +28,12 @@ import {
   glslNucleoEHalo,
 } from '../shaders/common';
 import { BV_MEDIDO, SOL_BV } from './clarao';
+import {
+  ESTRELAS_SEGUEM_A_LENTE,
+  UNIFORMES_DA_ASSINATURA,
+  receitaSegueALente,
+  seguirALente,
+} from '../shaders/estrelasDaLente';
 
 /** A lente de referência do `uZoom`: tan(29°), a metade do fov padrão
  *  (58°). Era `HERO_ZOOM_TAN_REF` em lodStellar (morta no M2); a
@@ -97,6 +103,9 @@ void main() {
 }
 `;
 
+/** `FRAG` com os braços trocados pela assinatura da lente de Ajustes (`estrelasDaLente.ts`). */
+const FRAG_DA_LENTE = ESTRELAS_SEGUEM_A_LENTE ? receitaSegueALente(FRAG, 'abs(dFdx(vUv.x))') : FRAG;
+
 // A tabela de B−V MEDIDO das 16 (Onda 1b, SIMBAD/Hipparcos) e o B−V do
 // Sol vêm de `clarao.ts`, ENDEREÇO ÚNICO desde 21/08. Ela morava aqui
 // também, redigitada como `HERO_BV` — as duas cópias tinham diff vazio
@@ -154,11 +163,13 @@ export class HeroStars {
           uZoom: { value: 1 },
           uCamDist: { value: 100 },
           uGain: { value: 1 },
+          ...UNIFORMES_DA_ASSINATURA,
         },
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         transparent: true,
       });
+      seguirALente(mat, FRAG, FRAG_DA_LENTE);
       this.mats.push(mat);
       const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
       quad.position.set(s.x, s.y, s.z);

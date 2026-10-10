@@ -59,6 +59,12 @@ import {
   glslNucleoEHalo,
 } from '../shaders/common';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
+import {
+  ESTRELAS_SEGUEM_A_LENTE,
+  UNIFORMES_DA_ASSINATURA,
+  receitaSegueALente,
+  seguirALente,
+} from '../shaders/estrelasDaLente';
 import { alcanceDoEspinhoPx, ganhoDeEntradaDoFlare, raioVisivelDaAsaPx } from '../estrela';
 import { M_V_SOL_DO_CAMPO, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS, stepRampToward } from './lodStellar';
@@ -305,6 +311,9 @@ void main() {
 }
 `;
 
+/** `FRAG` com os braços trocados pela assinatura da lente de Ajustes (`estrelasDaLente.ts`). */
+const FRAG_DA_LENTE = ESTRELAS_SEGUEM_A_LENTE ? receitaSegueALente(FRAG, '1.0 / max(uMeiaPx, 1e-6)') : FRAG;
+
 // ─── A SONDA DE OCLUSÃO — outro corpo tapou o CENTRO do Sol? ─────────────
 // A §5.15 acima só promete que o clarão nunca é ocluído pelo SOL — nunca
 // disse nada sobre um corpo DIFERENTE (Hipérion, um planeta) na frente,
@@ -529,6 +538,7 @@ export class ClaraoDeAsas {
           uScreenH: { value: 1080 },
           uBeta: { value: BETA_DA_EMISSAO },
           uTransmitancia: { value: new THREE.Vector3(1, 1, 1) },
+          ...UNIFORMES_DA_ASSINATURA,
         },
         blending: THREE.AdditiveBlending,
         // §5.15: o clarão NUNCA é ocluído pelo corpo que o causa — estado
@@ -537,6 +547,7 @@ export class ClaraoDeAsas {
         depthWrite: false,
         transparent: true,
       });
+      seguirALente(mat, FRAG, FRAG_DA_LENTE);
       this.mats.push(mat);
       const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
       quad.visible = false;

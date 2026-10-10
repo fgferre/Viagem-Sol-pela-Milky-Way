@@ -137,9 +137,9 @@ const SUJEIRA_LARGURA = 1024;
 const SUJEIRA_ALTURA = 512;
 /** Linhas do alvo da luz da sujeira (a largura segue o aspecto). */
 const LINHAS_DA_LUZ = 128;
-const MAX_RAIOS = 64;
+export const MAX_RAIOS = 64;
 /** A linha fina mais estreita no quadro, em px: abaixo disto ela some entre os pixels. */
-const LARGURA_MINIMA_PX = 0.7;
+export const LARGURA_MINIMA_PX = 0.7;
 
 // ---------- o hash e o ruído do renderizador de referência, na CPU ----------
 const fract = (x: number) => x - Math.floor(x);
@@ -149,6 +149,13 @@ const suave = (a: number, b: number, x: number) => {
   return t * t * (3 - 2 * t);
 };
 const hash1 = (x: number) => fract(Math.sin(x * 127.1 + 11.3) * 43758.5453);
+/** A variação de UM raio da receita (desvio do ângulo em setores, comprimento e brilho
+ *  relativos): a mesma tabela para o Sol e para as estrelas que seguem a lente. */
+export const variacaoDoRaio = (r: Raios, k: number): [number, number, number] => [
+  r.jitterAngulo * (hash1(k + r.semente) - 0.5),
+  1 - r.jitterComprimento * hash1(k + 17.3 + r.semente),
+  1 - r.jitterBrilho * hash1(k + 41.9 + r.semente),
+];
 const hash2 = (x: number, y: number) => fract(Math.sin(x * 127.1 + y * 311.7) * 43758.5453);
 function ruido(x: number, y: number) {
   const ix = Math.floor(x);
@@ -860,13 +867,7 @@ export class PasseDaLente extends Pass {
       v3('uRaiosCroma', r.croma);
       v3('uRaiosCor', r.cor);
       const tabela = u.uRaiosTabela.value as THREE.Vector3[];
-      for (let k = 0; k < n; k++) {
-        tabela[k].set(
-          r.jitterAngulo * (hash1(k + r.semente) - 0.5),
-          1 - r.jitterComprimento * hash1(k + 17.3 + r.semente),
-          1 - r.jitterBrilho * hash1(k + 41.9 + r.semente)
-        );
-      }
+      for (let k = 0; k < n; k++) tabela[k].set(...variacaoDoRaio(r, k));
     }
     const s: Risco | undefined = unico(p, 'risco');
     u.uTemRisco.value = !!s;

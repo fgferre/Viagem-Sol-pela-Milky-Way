@@ -39,7 +39,8 @@ import {
   GLSL_STAR_PSF,
 } from '../shaders/common';
 import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from '../shaders/pontoNaBorda';
-import { STAR_FRAG, BETA_DA_EMISSAO } from '../shaders/starShaders';
+import { STAR_FRAG, STAR_FRAG_DA_LENTE, BETA_DA_EMISSAO } from '../shaders/starShaders';
+import { UNIFORMES_DA_ASSINATURA, seguirALente } from '../shaders/estrelasDaLente';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
 import { GALACTIC_MODEL, LUT_DISK } from '../cartography/galacticModel';
 import { glslNumber } from '../glslNumber';
@@ -517,6 +518,7 @@ export class WrappedStars {
         uBeta: { value: BETA_DA_EMISSAO },
         uArteDaCruz: { value: 1 },
         uPr2: { value: 1 },
+        ...UNIFORMES_DA_ASSINATURA,
         uCell: { value: new Float32Array(cells) },
         uProb: { value: new Float32Array(probs) },
         uMagLo: { value: new Float32Array(magLo) },
@@ -535,6 +537,7 @@ export class WrappedStars {
       depthWrite: false,
       transparent: true,
     });
+    seguirALente(this.material, STAR_FRAG, STAR_FRAG_DA_LENTE);
 
     this.points = new THREE.Points(geo, this.material);
     this.points.frustumCulled = false;

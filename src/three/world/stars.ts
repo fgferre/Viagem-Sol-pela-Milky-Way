@@ -3,7 +3,8 @@
 // Serve tanto para o catálogo HYG quanto para o halo procedural.
 // ============================================================
 import * as THREE from 'three';
-import { STAR_VERT, STAR_FRAG, BETA_DA_EMISSAO } from '../shaders/starShaders';
+import { STAR_VERT, STAR_FRAG, STAR_FRAG_DA_LENTE, BETA_DA_EMISSAO } from '../shaders/starShaders';
+import { UNIFORMES_DA_ASSINATURA, seguirALente } from '../shaders/estrelasDaLente';
 import type { StarArrays } from '../config';
 import { FOCUS_OFF, clearFocus, needsAttributeWrite } from './lodStellar';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
@@ -122,12 +123,14 @@ export class StarField {
         uCavityGate: { value: 0 },
         // 0 = esta passada desenha quem tem nuvem na frente (item 37)
         uLado: { value: 0 },
+        ...UNIFORMES_DA_ASSINATURA,
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       transparent: true,
     });
 
+    seguirALente(this.material, STAR_FRAG, STAR_FRAG_DA_LENTE);
     this.points = new THREE.Points(geo, this.material);
     this.points.frustumCulled = false;
     this.points.renderOrder = ORDEM_ATRAS_DAS_NUVENS;
@@ -137,6 +140,9 @@ export class StarField {
     // O que ela tem de próprio é o material, por causa de `uLado`; os
     // outros uniforms viajam pelos dois em `update`/`setFade`/`setCavity`.
     this.materialNaFrente = this.material.clone();
+    // o clone copiou os uniformes da assinatura; ela é um objeto só (estrelasDaLente.ts)
+    Object.assign(this.materialNaFrente.uniforms, UNIFORMES_DA_ASSINATURA);
+    seguirALente(this.materialNaFrente, STAR_FRAG, STAR_FRAG_DA_LENTE);
     this.materialNaFrente.uniforms.uLado.value = 1;
     this.pontosNaFrente = new THREE.Points(geo, this.materialNaFrente);
     this.pontosNaFrente.frustumCulled = false;

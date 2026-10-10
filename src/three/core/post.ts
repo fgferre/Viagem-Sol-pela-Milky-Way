@@ -10,6 +10,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { FILM_SHADER } from '../shaders/dustShaders';
 import { GLSL_COMPRESSAO } from '../shaders/common';
+import { definirLenteDasEstrelas } from '../shaders/estrelasDaLente';
 import { BETA_DA_ASA, FRACAO_DA_ASA } from '../estrela';
 import type { ModoDaLente, QualityLevel } from './engine';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
@@ -1277,6 +1278,7 @@ export class Post {
   definirLente(modo: ModoDaLente) {
     this.lente = modo;
     this.passeDaLente.definirLente(modo);
+    definirLenteDasEstrelas(modo);
   }
 
   /** a força da lente escolhida em Ajustes, em % (o passe a multiplica no reflexo inteiro) */

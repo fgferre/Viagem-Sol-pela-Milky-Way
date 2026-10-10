@@ -13,6 +13,7 @@ import {
 import { lerBetaDaEmissao } from '../luzDaCasa';
 import { BRANQUEAMENTO_MEIA_ALTURA, FRACAO_DOS_ESPINHOS, LIMIAR_DO_CLARAO } from '../estrela';
 import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from './pontoNaBorda';
+import { ESTRELAS_SEGUEM_A_LENTE, pontoSegueALente } from './estrelasDaLente';
 
 /**
  * O β da compressão na emissão, resolvido UMA vez — e aqui, que é o módulo
@@ -218,3 +219,7 @@ void main() {
   gl_FragColor = vec4(comprimir3(col, uBeta), 1.0);
 }
 `;
+
+/** O fragment do ponto com a cruz trocada pela assinatura da lente de Ajustes
+ *  (`estrelasDaLente.ts`): cada material troca de um para o outro com a lente. */
+export const STAR_FRAG_DA_LENTE = ESTRELAS_SEGUEM_A_LENTE ? pontoSegueALente(STAR_FRAG) : STAR_FRAG;

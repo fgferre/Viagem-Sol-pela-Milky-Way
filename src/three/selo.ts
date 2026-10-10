@@ -607,6 +607,11 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   // lente ligada a linha `lente` acima já declara o reflexo, e com `nenhuma`
   // ela não desenha nada. O clique em BRILHO desliga a lente e a força fica.
   neutra('forcadalente', 'força da lente de cinema (só vale com a lente ligada)'),
+  // `?estrelaslente=` — as estrelas seguindo a lente (09/10), lida em
+  // `shaders/estrelasDaLente.ts`: pelo mesmo motivo da força, não é desvio
+  // por si. Com a lente ligada a linha `lente` já declara; com `nenhuma` a
+  // estrela tem a cruz de hoje com ou sem a porta.
+  neutra('estrelaslente', 'estrelas seguindo a lente de cinema (só vale com a lente ligada)'),
   /**
    * A DOSE DO SOL NO ARRANQUE (item 5). A linha que faz da dramaturgia
    * uma ASSISTÊNCIA DECLARADA em vez de um segundo universo: o filme não

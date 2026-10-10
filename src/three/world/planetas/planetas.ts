@@ -177,7 +177,8 @@ import { GLSL_STAR_PSF } from '../../shaders/common';
 import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from '../../shaders/pontoNaBorda';
 import { fluxoDeMagnitude, picoDaPsf } from '../../luzDaCasa';
 import type { CalibracaoDaCasa } from '../../estrela';
-import { STAR_FRAG } from '../../shaders/starShaders';
+import { STAR_FRAG, STAR_FRAG_DA_LENTE } from '../../shaders/starShaders';
+import { UNIFORMES_DA_ASSINATURA, seguirALente } from '../../shaders/estrelasDaLente';
 import { needsAttributeWrite } from '../lodStellar';
 import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
 import { baseCorpoEquatorial } from '../../../lib/atlas/orientacao';
@@ -527,6 +528,7 @@ export class Planetas {
         // lei do fluxo PURA: planeta não ganha a cruz de arte do filme
         uArteDaCruz: { value: 0 },
         uPr2: { value: 1 },
+        ...UNIFORMES_DA_ASSINATURA,
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -542,6 +544,7 @@ export class Planetas {
       depthTest: true,
       transparent: true,
     });
+    seguirALente(this.material, STAR_FRAG, STAR_FRAG_DA_LENTE);
 
     this.points = new THREE.Points(geo, this.material);
     this.points.frustumCulled = false;
