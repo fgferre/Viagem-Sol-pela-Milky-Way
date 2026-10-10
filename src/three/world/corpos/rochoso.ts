@@ -562,8 +562,9 @@ void main() {
  * o disco chato de LS é o fato que se confere contra uma fotografia, e
  * o Eyes, que usa Phong até na Lua, é PIOR nisto. Entra só a LANTERNA
  * DE LEITURA, e ela chega junto com o teto de 1 — que não morde o
- * realce de limbo do LS (`luzDoGlobo`), então o disco não perde a borda
- * dura que o define.
+ * realce de limbo do LS, então o disco não perde a borda
+ * dura que o define. O Sol do LS fica FORA da tradução (`luzDoRegolito`,
+ * R2): ele já é luz linear, e traduzido saía 1,41× mais escuro que o Lambert.
  */
 export const ROCHOSO_LS_FRAG = /* glsl */ `
 uniform sampler2D uMapaDia;
@@ -603,7 +604,7 @@ void main() {
   vec3 sombras = fatorDeEclipse(pElip, n, mu0);
   vec3 luzSol = vec3(ls * uLuzGanho) * sombras;
   gl_FragColor = vec4(
-    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam, sombras)), 1.0
+    albedo * luzDoRegolito(luzSol, lanternaDeLeitura(n, dirCam, sombras)), 1.0
   );
 }
 `;
@@ -674,7 +675,7 @@ void main() {
   vec3 sombras = fatorDeEclipse(pElip, n, mu0);
   vec3 luzSol = vec3(ls * uLuzGanho) * sombras;
   gl_FragColor = vec4(
-    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam, sombras)), 1.0
+    albedo * luzDoRegolito(luzSol, lanternaDeLeitura(n, dirCam, sombras)), 1.0
   );
 }
 `;
