@@ -30,10 +30,10 @@
 //
 // A CONFISSÃO SAI DO ASSETS.md (item 74 parte B, 2026-08-22, que
 // fecha os itens 19 e 20). A ficha do objeto imprime, na seção "a
-// imagem", o defeito MEDIDO de cada mapa — a cor de Ceres que não é
-// medida, as emendas de Titã, a cor inferida de Europa, Vênus sem foto
-// em luz visível — e a forma dos quatro corpos que são elipsoide
-// tendo malha publicada. Esses vereditos já moram, inteiros, em
+// imagem", o defeito de cada mapa, com o selo do que ele confessa —
+// a cor de Ceres que não é medida, as emendas de Titã, a cor inferida
+// de Europa, Vênus sem foto em luz visível — e a forma dos quatro
+// corpos que são elipsoide tendo malha publicada. Esses vereditos já moram, inteiros, em
 // `docs/reference/ASSETS.md`; então é ELE que este gerador lê, numa
 // seção de tabelas com título fixo. Copiá-los para cá criaria a
 // segunda cópia que o próprio ASSETS existe para não ter — e seria a
@@ -808,7 +808,7 @@ async function main() {
     // Dimensões MEDIDAS — o nome do arquivo nunca é fonte de verdade.
     const meta = await sharp(arquivo).metadata();
     const { size } = await stat(arquivo);
-    const nota = confissao.imagem.get(`${corpo}/${canal}`);
+    const confessada = confissao.imagem.get(`${corpo}/${canal}`);
     entradas.push({
       corpo,
       canal,
@@ -836,7 +836,14 @@ async function main() {
       // webp saem do MESMO mapa, e o polo preenchido de Ceres continua
       // preenchido em 512 px. A nota acompanha todas as variantes, e a
       // ausência dela é a declaração de que a bancada não achou defeito.
-      ...(nota ? { nota: bilingue(nota, `a nota de ${corpo}/${canal}`) } : {}),
+      // O selo vai junto: é o tier do que a nota confessa (coluna `selo`
+      // do ASSETS.md), e é ele que a ficha põe na linha da confissão.
+      ...(confessada
+        ? {
+            nota: bilingue(confessada.nota, `a nota de ${corpo}/${canal}`),
+            seloDaNota: confessada.selo,
+          }
+        : {}),
     });
   }
 

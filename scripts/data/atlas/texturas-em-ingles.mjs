@@ -554,6 +554,19 @@ export const EM_INGLES = new Map([
     'DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul',
     'a 200 m DEM resampled to 1024 px: what you see is the overall shape, not the individual fracture at the south pole',
   ],
+  // 10/10/2026 — Mimas, Tétis e Dione ganham a nota do relevo (R3)
+  [
+    'modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, como a bacia de Herschel, não o detalhe menor que um texel',
+    'an SPC shape model baked into a 1024 px map: what you see is the overall shape, such as the Herschel basin, not detail smaller than a texel',
+  ],
+  [
+    'modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel',
+    'an SPC shape model baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel',
+  ],
+  [
+    'DTM SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel',
+    'an SPC DTM baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel',
+  ],
   [
     'relevo MEDIDO pelo modelo de forma da Cassini (Weirich, Gaskell, Palmer & Domingue 2025) nas escalas acima de ~30 km — as bacias, as crateras grandes e os vales largos do terreno claro; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho (Aponte-Hernández et al. 2021), não medidos; as escarpas finas do terreno claro não estão no relevo, só na cor',
     'relief MEASURED by the Cassini shape model (Weirich, Gaskell, Palmer & Domingue 2025) at scales above ~30 km — the basins, the large craters, and the broad valleys of the bright terrain; the smaller craters sit where the Cassini image shows them, but their depth, rim, and wear are ESTIMATED by a rule from their size (Aponte-Hernández et al. 2021), not measured; the fine scarps of the bright terrain are not in the relief, only in the color',
