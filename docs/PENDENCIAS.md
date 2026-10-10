@@ -25,6 +25,18 @@ da galáxia deixam de estourar; os corpos e a Terra saem iguais.
 **233 (Anamórfica "pobre") — fechado em 10/10 sem mudar o app:** pesquisa de cinema/VFX e prancha com duas versões novas
 (`capturas/anamorfica-nova/`; ramo local `anamorfica` guardado como registro, não juntado); ele escolheu *"Fica a de hoje"*.
 
+**Selo da confissão (parte da R3, 10/10, bc2e8938):** a tabela "a imagem" do `ASSETS.md` ganhou a coluna `selo`
+(medido|derivado|inventado, o mais fraco que a nota confessa) e a ficha a imprime, com inventado como "artístico"; Mimas,
+Tétis e Dione confessam o relevo (SPC assado em 1024 px). Inventado: Plutão/Caronte, Jápeto, Hipérion, Pã, as luas de
+Urano e Tritão, as 6 ilustrações por IA; derivado: Ceres, Europa, Reia, horizonte da Terra; o resto medido.
+
+**R2 da régua em curso (10/10, ramo `regua-r2`, cópia `../Viagem-regua-r2`):** a lei da luz assistida consertada (a
+Lommel-Seeliger saía 1,41× mais escura que a Lambert), a regra única dos mapas (`src/lib/atlas/reguaDosMapas.ts` +
+`scripts/data/atlas/regua-dos-mapas.mjs`) e a graduação por lua tirada do shader; falta rodar a cadeia (pede a palavra
+dele) e o retrato "depois". Estudo: `capturas/regua-r2/estudo-da-regra.md`; retrato de hoje: `retrato-antes-v2.jpg`
+(ferramenta `scripts/visual/retrato-de-familia.mjs`). Achados do retrato, fora da R2: Vesta com a face quase toda preta
+(falta dado no mapa); Deimos uma mancha branca com costura; Titã é a casca de névoa, não o mapa (B/G 0,07 × 0,55).
+
 **Restos pequenos, vistos por ele:** as manchas do Sol um pouco mais marrons; o bojo da galáxia um pouco mais amarelo;
 um âmbar leve dentro do anel da Hollywood; o cobre do eclipse um pouco mais amarelo; as nuvens fracas do gás local no céu
 do Atlas (ele não quis regra nova). **Achados:** os juízes `a11y`, `voo` e `busca` voltaram a passar em 10/10
