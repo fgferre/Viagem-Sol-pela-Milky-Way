@@ -27,9 +27,10 @@ da galáxia deixam de estourar; os corpos e a Terra saem iguais.
 
 **Restos pequenos, vistos por ele:** as manchas do Sol um pouco mais marrons; o bojo da galáxia um pouco mais amarelo;
 um âmbar leve dentro do anel da Hollywood; o cobre do eclipse um pouco mais amarelo; as nuvens fracas do gás local no céu
-do Atlas (ele não quis regra nova). **Achados, não feitos:** os juízes `a11y` e `voo` esperam 4 passos no tutorial do
-Atlas (são 5 desde bfe3a929, 08/10) e o `busca` espera a gaveta do celular com 390 px (tem 366) — falhas de antes da
-R1; o segmentado "Curva de tom" tem botões de larguras desiguais; não olhado num iPhone de verdade.
+do Atlas (ele não quis regra nova). **Achados:** os juízes `a11y`, `voo` e `busca` voltaram a passar em 10/10
+(b4b5dd99: os passos do convite e os controles do Avançado agora são lidos da fonte; a folha flutua desde 0d5b3db8); o
+segmentado "Curva de tom" tem botões de larguras desiguais (13 das 14 fileiras de Ajustes medem pelo rótulo — espera a
+escolha dele); não olhado num iPhone de verdade.
 
 **A próxima rodada — a ordem é dele:** a R2 da régua (a cor dos mapas por uma função só, com o "retrato de família"
 de todos os corpos; a tabela da R0 é a âncora e diz que o albedo geométrico tem o pico de oposição); depois a R3
