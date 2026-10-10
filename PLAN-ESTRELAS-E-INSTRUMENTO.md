@@ -49,7 +49,12 @@ Mais os dois blooms (`core/post.ts`) e a lente nova (`src/three/lente/`).
    por dentro não muda nada que o usuário veja e arrisca um visual aprovado em muitas
    rodadas; fazer quando uma incoerência aparecer na tela ou junto do item 227 (toda
    estrela com corpo ao se aproximar). Falta ele decidir quando.
-2. **As estrelas seguem a lente escolhida?** Hoje a lente muda só o Sol (reflexos e brilho;
+2. **FEITO em 09/10 (`352660be`).** Pela prancha (`capturas/estrelas-lente/`) ele escolheu
+   *"Sim na Redonda e Anamórfica"*: com elas, Sirius, o catálogo, os pontos dos planetas e o
+   clarão trocam a cruz pelos raios/risco da própria lente, com a mesma luz (54/54
+   bit-idêntico sem lente; custo ≤ +0,3 ms). Na Hollywood fica a cruz — ele viu a v2 (raios fora
+   do miolo) e disse não; `?estrelaslente=1` ainda a mostra, `=0` volta à cruz em todas.
+   **As estrelas seguem a lente escolhida?** Hoje a lente muda só o Sol (reflexos e brilho;
    os raios dela saíram em 08/10); Sirius e as outras continuam com a cruz. O coerente seria o instrumento valer
    para todas (raios finos das lâminas no lugar da cruz). **Decidido 09/10:** ele quer ver
    antes ("Sim, me mostra a foto"): prancha de Sirius e do céu com cada lente, hoje × seguindo
@@ -58,17 +63,20 @@ Mais os dois blooms (`core/post.ts`) e a lente nova (`src/three/lente/`).
    brilho, risco, sujeira). Crítica do assistente: controle demais piora para quem visita;
    recomendou os estilos prontos e no máximo um controle de intensidade, com uma gaveta
    avançada só se ele insistir (o molde já existe: Qualidade + Avançado + "Personalizado").
-   **Decidido 09/10:** os quatro estilos + uma barra só de força (fraca → forte; 100 % = hoje),
-   sem gaveta avançada. Em obra no ramo `lente-forca`.
+   **FEITO em 09/10 (`a501009e`):** os quatro estilos + uma barra só de força (25–200 %,
+   100 % = a lente aprovada, bit a bit), sem gaveta avançada.
 4. **A lente como ferramenta do diretor nos filmes.** Em 23/08 ele proibiu diferença
    entre Atlas e filme para o clarão. Crítica do assistente: o filme é a experiência de
    cinema e quem dirige escolhe a lente de cada cena, como já faz com os nomes ("os
    elementos de label... ferramentas que o diretor da cena usa"). Proposta: uma chave por
    cena nos roteiros (`src/three/cinematic/roteiros/*.json`; hoje `lente` é o campo de
    ângulo de visão, então o nome precisa ser outro), com o Atlas limpo por padrão.
-   **Decidido 09/10:** o diretor escolhe, cena por cena; o Atlas segue limpo. Primeiro o motor
-   (a chave no plano do roteiro, lida como `assuntos`), depois a escolha de cada cena dos dois
-   filmes, mostrada a ele em vídeo.
+   **FEITO em 09/10:** o motor (`6e76b071`, `lenteDeCinema` por plano; cena sem chave vai sem
+   lente; fora do filme volta a do visitante) e a Hollywood em 11 cenas — partida, despedida e
+   volta dos dois filmes (`0f80822a`, proposta e vídeos em `capturas/lente-filme/`). Ele viu a
+   Redonda/Anamórfica nos vídeos e trocou: *"essa lente realmente é pobre, ela é elíptica... a
+   Hollywood ela é incrível"*; os raios da Hollywood em volta do Sol, *"um pouco exagerados"*,
+   foram à metade em todo lugar (`b0cb6128`, candidato B de `capturas/hollywood-raios/`).
 5. **FEITO em 09/10 (ramo `limpeza-estrelas`, 54/54 vistas bit-idênticas; brancos, os dois β e `?noplan` ficaram como estão).**
    **Incoerências achadas no mapa (limpeza, sem mudança de imagem):** `clarao.ts:1-3` diz
    que "substitui as 16 heroes" (elas voltaram em 16/08); `uCore` das heroes nunca é
