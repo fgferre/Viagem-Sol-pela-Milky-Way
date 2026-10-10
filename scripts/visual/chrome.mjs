@@ -226,6 +226,21 @@ export async function esperarPor(s, expressao, teto = 3000) {
 export const APP_PADRAO = 'http://127.0.0.1:5173';
 
 /**
+ * QUANTOS PASSOS TEM UM ROTEIRO DO CONVITE (`PASSOS_DO_CONVITE_DO_ATLAS`,
+ * `..._TOQUE`), lido do MESMO arquivo que o app consome — o juiz cobrava
+ * "4 de 4" escrito à mão e ficou velho em 08/10 (bfe3a929 pôs o passo da
+ * inclinação). Mesmo molde do `N_CAMADAS` do a11y: conta as entradas do
+ * bloco, e quebra alto se o bloco não for achado.
+ */
+export function passosDoConvite(nome) {
+  const fonte = readFileSync(new URL('../../src/components/passosDoConvite.ts', import.meta.url), 'utf8');
+  const bloco = fonte.match(new RegExp(`export const ${nome}:[\\s\\S]*?\\n\\];`))?.[0];
+  const n = (bloco?.match(/\balvo:/g) || []).length;
+  if (n < 1) throw new Error(`${nome} não achado em passosDoConvite.ts`);
+  return n;
+}
+
+/**
  * A LÍNGUA DO JUIZ (item 130). O app abre em INGLÊS por padrão (decisão
  * do dono, 03/09) e toda referência pinada dos juízes é em português —
  * então quem captura pede `lang=pt-BR` pela porta de instrumento quando

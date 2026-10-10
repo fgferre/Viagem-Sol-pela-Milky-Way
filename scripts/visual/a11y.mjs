@@ -34,7 +34,7 @@
 // a mais aqui. Diálogo que nasça FORA do módulo não se declara e não é
 // julgado — e é por isso que todo diálogo do Atlas nasce nele.
 import { readFileSync } from 'node:fs';
-import { abrirSessao, APP_PADRAO, dorme, esperarPor } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme, esperarPor, passosDoConvite } from './chrome.mjs';
 // A PERNA DO CELULAR mora em arquivo próprio desde 23/08 (§11 do AGENTS):
 // eram 546 linhas com seis partes e constantes próprias dentro deste juiz.
 // Ela recebe daqui as ferramentas comuns — `conferir`, `medirCobertura` e o
@@ -62,6 +62,16 @@ const N_CAMADAS = (() => {
   return n;
 })();
 
+// QUANTOS CONTROLES A GAVETA "AVANÇADO" TEM, lido do mesmo arquivo que o app
+// monta: eram 7 escritos à mão, e ficaram velhos com a linha da Terra
+// (914c853b, 07/10) e a do relevo realçado (8c8fb17b, 08/10).
+const N_AVANCADO = (() => {
+  const bloco = readFileSync(new URL('../../src/components/Ajustes.tsx', import.meta.url), 'utf8')
+    .match(/<Sanfona id="ajustes-avancado"[\s\S]*?<\/Sanfona>/)?.[0];
+  const n = (bloco?.match(/<LinhaDeAjuste\b/g) || []).length;
+  if (n < 1) throw new Error('gaveta avançado não achada em Ajustes.tsx');
+  return n;
+})();
 
 const falhas = [];
 const conferir = (ok, texto) => {
@@ -1760,14 +1770,16 @@ try {
   // ---- O CONVITE DO ATLAS (item 73, 22/08) ------------------------
   // Ele é IRMÃO do convite do voo livre — a mecânica é a mesma peça
   // (`Spotlight`), e o `voo-smoke` já a julga inteira lá. O que muda, e
-  // é o que se mede aqui, é o CONTEÚDO e a CHAVE: quatro passos com os
-  // gestos do Atlas, e `conviteAtlasVisto` própria, para que ver um
-  // convite não faça o visitante pular o outro.
+  // é o que se mede aqui, é o CONTEÚDO e a CHAVE: os passos com os
+  // gestos do Atlas (quantos são, lê-se de `passosDoConvite.ts` — eram
+  // quatro até bfe3a929, 08/10), e `conviteAtlasVisto` própria, para que
+  // ver um convite não faça o visitante pular o outro.
   //
   // A prova começa com o storage LIMPO: convite é marca de primeira
   // visita, e as provas acima já entraram no modo várias vezes.
   await sessao.js("window.localStorage.removeItem('viagem-prefs')");
   await sessao.ir(`atlas=1&${PIN}`);
+  const N_PASSOS = passosDoConvite('PASSOS_DO_CONVITE_DO_ATLAS');
   const convite = JSON.parse(await sessao.js(`JSON.stringify((() => {
     const spot = document.querySelector('.spotlight');
     const furo = [...document.querySelectorAll('.spotlight-mascara rect')]
@@ -1789,8 +1801,8 @@ try {
   );
   conferir(
     // o `innerText` volta MAIÚSCULO: a caixa alta é do CSS do cartão
-    /^1 de 4$/i.test(convite.conta.trim()) && /girar/i.test(convite.texto),
-    `atlas: o convite tem os QUATRO gestos do modo ("${convite.conta.trim()}" ·`
+    new RegExp(`^1 de ${N_PASSOS}$`, 'i').test(convite.conta.trim()) && /girar/i.test(convite.texto),
+    `atlas: o convite tem os ${N_PASSOS} gestos do modo ("${convite.conta.trim()}" ·`
       + ` "${convite.texto}")`
   );
   // A DICA PERMANENTE SAIU DO ATLAS (item A1.3, relatório de UI de
@@ -1806,14 +1818,14 @@ try {
       + ` segue só pelo texto de cada passo (furo ${convite.furoLargura},`
       + ` alvo ${convite.alvoLargura})`
   );
-  // "continuar" três vezes chega ao último passo, e "entendi" fecha e
-  // grava a chave PRÓPRIA — não a do voo livre
-  for (let i = 0; i < 3; i++) {
+  // "continuar" até o penúltimo clique chega ao último passo, e "entendi"
+  // fecha e grava a chave PRÓPRIA — não a do voo livre
+  for (let i = 0; i < N_PASSOS - 1; i++) {
     await sessao.js(`[...document.querySelectorAll('.convite-linha button')]
       .find((b) => b.textContent.trim() === 'continuar').click()`);
     await dorme(120);
   }
-  const noQuarto = await sessao.js(
+  const noUltimo = await sessao.js(
     "(document.querySelector('.convite-conta')||{}).innerText||''"
   );
   await sessao.js(`[...document.querySelectorAll('.convite-linha button')]
@@ -1821,7 +1833,7 @@ try {
   await dorme(200);
   const prefs = await sessao.js("window.localStorage.getItem('viagem-prefs') || ''");
   conferir(
-    /^4 de 4$/i.test(noQuarto.trim())
+    new RegExp(`^${N_PASSOS} de ${N_PASSOS}$`, 'i').test(noUltimo.trim())
       && (await sessao.js("!!document.querySelector('.spotlight')")) === false
       && /"conviteAtlasVisto":true/.test(prefs)
       && !/"conviteVisto":true/.test(prefs),
@@ -1871,9 +1883,10 @@ try {
   await sessao.ir(`atlas=1&ajustes=1&${PIN}`);
 
   // A GAVETA "AVANÇADO" É RECOLHÍVEL E FECHADA POR PADRÃO (Lote 7) — os
-  // sete controles (curva de tom, MSAA/amostras, nebulosa, gás, poeira
-  // perto de casa — pedido do dono, 27/09 —, partículas, escala, um
-  // `.ajustes-item` cada dentro de `#ajustes-avancado`) NÃO estão no DOM
+  // controles (curva de tom, MSAA/amostras, nebulosa, gás, Terra, relevo,
+  // poeira perto de casa — pedido do dono, 27/09 —, partículas, escala,
+  // um `.ajustes-item` cada dentro de `#ajustes-avancado`; quantos são,
+  // lê-se de `Ajustes.tsx`) NÃO estão no DOM
   // até o "?" abrir; um juiz que só olhasse `aria-expanded` não veria
   // que a MONTAGEM também muda.
   const contarAvancado = () => sessao.js(
@@ -1895,10 +1908,10 @@ try {
   const fechadoDeNovo = await contarAvancado();
   conferir(
     expandidoAntes === 'false' && fechadoAntes === 0
-      && expandidoDepois === 'true' && abertoDepois === 7
+      && expandidoDepois === 'true' && abertoDepois === N_AVANCADO
       && fechadoDeNovo === 0,
     'ajustes · avançado: fechado por padrão (0 controles em #ajustes-avancado),'
-      + ` abre os 7 (achado ${abertoDepois}) e desmonta ao recolher (achado ${fechadoDeNovo})`
+      + ` abre os ${N_AVANCADO} (achado ${abertoDepois}) e desmonta ao recolher (achado ${fechadoDeNovo})`
   );
 
   // A MEDIDA DE QUALIDADE É `aria-live` DE VERDADE — muda sozinha quando

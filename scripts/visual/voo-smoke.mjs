@@ -33,7 +33,7 @@
 // dispararia (`pointerlockerror`, `pointerlockchange`) em vez de fingir
 // que o lock aconteceu: o que se cobra é a reação do app, que é a parte
 // que é nossa.
-import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme, passosDoConvite } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
@@ -173,7 +173,8 @@ try {
   })()`);
   const doAtlas = JSON.parse(noAtlas);
   conferir(
-    doAtlas.existe && !/w a s d/i.test(doAtlas.texto) && /4/.test(doAtlas.conta),
+    doAtlas.existe && !/w a s d/i.test(doAtlas.texto)
+      && new RegExp(`de ${passosDoConvite('PASSOS_DO_CONVITE_DO_ATLAS')}$`, 'i').test(doAtlas.conta.trim()),
     `o convite do voo livre não invade o Atlas — lá o roteiro é outro`
       + ` ("${doAtlas.conta.trim()}" · "${doAtlas.texto}")`
   );

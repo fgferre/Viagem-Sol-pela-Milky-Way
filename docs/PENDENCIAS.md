@@ -17,11 +17,20 @@ dele: *"Adotar o tom novo"*, *"Aprovo, pode juntar"*. `npm run done` verde (140 
 
 **Publicar é dele:** `git push origin main`; depois conferir no ar por imagem e sha256.
 
+**AgX e Linear (10/10, a pedido dele):** com a R1 essas duas opções de Ajustes recebem a calibração do tom novo no Sol, na
+galáxia, na lente e no eclipse; a prancha antes × agora (`capturas/regua-r1/agx-linear/prancha-agx-linear.jpg`) mostra
+só diferença, nada quebrado: no AgX o halo do Sol de perto fica cinza-claro em vez de laranja; no Linear o Sol e o bojo
+da galáxia deixam de estourar; os corpos e a Terra saem iguais.
+
+**233 (Anamórfica "pobre") — fechado em 10/10 sem mudar o app:** pesquisa de cinema/VFX e prancha com duas versões novas
+(`capturas/anamorfica-nova/`; ramo local `anamorfica` guardado como registro, não juntado); ele escolheu *"Fica a de hoje"*.
+
 **Restos pequenos, vistos por ele:** as manchas do Sol um pouco mais marrons; o bojo da galáxia um pouco mais amarelo;
 um âmbar leve dentro do anel da Hollywood; o cobre do eclipse um pouco mais amarelo; as nuvens fracas do gás local no céu
-do Atlas (ele não quis regra nova). **Achados, não feitos:** os juízes `a11y` e `voo` esperam 4 passos no tutorial do
-Atlas (são 5 desde bfe3a929, 08/10) e o `busca` espera a gaveta do celular com 390 px (tem 366) — falhas de antes da
-R1; o segmentado "Curva de tom" tem botões de larguras desiguais; não olhado num iPhone de verdade.
+do Atlas (ele não quis regra nova). **Achados:** os juízes `a11y`, `voo` e `busca` voltaram a passar em 10/10
+(b4b5dd99: os passos do convite e os controles do Avançado agora são lidos da fonte; a folha flutua desde 0d5b3db8); o
+segmentado "Curva de tom" tem botões de larguras desiguais (13 das 14 fileiras de Ajustes medem pelo rótulo — espera a
+escolha dele); não olhado num iPhone de verdade.
 
 **A próxima rodada — a ordem é dele:** a R2 da régua (a cor dos mapas por uma função só, com o "retrato de família"
 de todos os corpos; a tabela da R0 é a âncora e diz que o albedo geométrico tem o pico de oposição); depois a R3
@@ -844,13 +853,6 @@ Europa (cor real inferida da Galileo sobre o mosaico USGS de 500 m, 4096 px,
 tom meio-termo dele) e Jápeto (relevo gerado: crista no lugar com 20 km,
 55 crateras com nome, as demais pela foto). Ficam na fila: Urano, Netuno,
 Vesta, Deimos, Tritão (pausado), Ariel, Titã, Vênus.**
-
-**233. A lente Anamórfica parece pobre.**
-Palavras dele, 09/10, ao ver os vídeos da lente nos filmes (a Anamórfica na saída e na
-volta do filme da galáxia): *"essa lente realmente é pobre ela é elíptica o formato do
-efeito tenho algo estranho com essa"*. Na mesma fala: *"a Hollywood ela é incrível"* — os
-filmes ficaram com a Hollywood (`0f80822a`); a Anamórfica segue como escolha em Ajustes, e
-as estrelas a seguem (`352660be`). Vídeos: `capturas/lente-filme/video/galactico-*-lado-a-lado.mp4`.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 

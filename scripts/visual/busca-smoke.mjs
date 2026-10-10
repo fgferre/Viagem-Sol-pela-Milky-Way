@@ -945,10 +945,13 @@ try {
           Math.round(r.width), Math.round(r.height)] : null,
         campo: c ? { x: Math.round(c.left + c.width / 2), y: Math.round(c.top + c.height / 2) } : null };
     })())`));
+    // A FOLHA FLUTUA desde 13/09 (0d5b3db8, decisão do dono com as duas
+    // fotos na mão): 12 px de margem lateral em cada lado, não mais de
+    // borda a borda — daí a largura ser a do aparelho menos 24.
     conferir(
-      aberta.aberta && aberta.dentro && !aberta.focada && aberta.folha[2] === 390,
+      aberta.aberta && aberta.dentro && !aberta.focada && aberta.folha[2] === APARELHO.width - 24,
       `o DEDO abre a paleta pela alça ⌕ (alvo de ${p.alto} px de alto):`
-        + ` folha [${aberta.folha ?? 'ausente'}] de borda a borda, foco dentro da folha`
+        + ` folha [${aberta.folha ?? 'ausente'}] flutuante, 12 px de margem de cada lado, foco dentro da folha`
         + ` (${aberta.dentro}) e FORA do campo — o teclado não sobe sozinho (campo focado ${aberta.focada})`
     );
     // ...E O TOQUE NO CAMPO É QUEM CHAMA O TECLADO: o mesmo dedo, agora
