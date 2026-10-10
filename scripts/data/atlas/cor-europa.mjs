@@ -16,9 +16,9 @@
 //     POR COLUNA abaixo da última linha válida com a média da última faixa
 //     de 1°, suavizada ao longo da longitude, indo à média do anel no polo
 //     (sem cata-vento). INVENTADO, marcado em `preenchido`.
-//  2. OS NÍVEIS: um ganho só, em luz linear, que leva a média global (por
-//     área) à do mapa antigo do app (`Y_MEDIO_ALVO`, pinada) — a exposição
-//     não muda e o contraste é o nativo do mosaico (offset 0).
+//  2. O NÍVEL NÃO É DAQUI: a cor é pintada no brilho do próprio mosaico, e
+//     a média e a cor média do mapa são as da régua (`regua-dos-mapas.mjs`,
+//     PLAN-REGUA-UNICA.md, R2), que a cadeia aplica depois do portão.
 //  3. A CROMA, receita (a) "mistura" (Clark 1998: manchas, lineae e margens
 //     de banda são UM componente escuro avermelhado misturado à planície
 //     clara): f = (Lp − L)/(Lp − Le) preso a [0, 1], pelo L* do cinza;
@@ -92,17 +92,6 @@ export const TONS = Object.freeze({
   T3: Object.freeze({ nome: 'natural-suave', ganho: 1.1, giroGraus: -8.6, desloc: Object.freeze([-0.73, 2.94]) }),
   meio: Object.freeze({ nome: 'meio-termo', ganho: Math.sqrt(1.277), giroGraus: -12.9 / 2, desloc: Object.freeze([0.03 / 2, 8.55 / 2]) }),
 });
-
-/**
- * A EXPOSIÇÃO: a média linear por área (peso cos lat, Y = 0,2126 R + 0,7152 G
- * + 0,0722 B) do `map.jpg` NASA 3D que o app mostrava até o item 230 (1440×720,
- * sha256 50d01ca5c01352d1c507bb17fefd1c46ba11260305656250062c6cdac89c8ebf),
- * medida pela prévia do E1. PINADA, e não medida na cadeia: a cadeia grava em
- * cima daquele arquivo, e o mapa aprovado tem de sair só do USGS e destes
- * números (a prova `capturas/europa-japeto/ferramentas/prova-cadeia-europa.mjs`
- * remede enquanto o arquivo antigo existir).
- */
-export const Y_MEDIO_ALVO = 0.4445987364168945;
 
 /** A costura da receita (b): passa-baixa da diferença e largura da faixa. */
 export const COSTURA = Object.freeze({ sigmaDiferencaKm: 5, larguraGraus: 10 });
@@ -336,38 +325,6 @@ export function preencheSul(cinza, largura, altura, { faixaGraus = SUL.faixaGrau
 }
 
 // ------------------------------------------------------------
-// 2. OS NÍVEIS
-// ------------------------------------------------------------
-
-/**
- * O ganho em luz linear que leva a média por área (peso cos lat) de
- * min(1, ganho·Y(cinza)) a `yMedioAlvo`. Bissecção sobre o histograma.
- */
-export function ganhoDosNiveis(cinza, largura, altura, yMedioAlvo) {
-  const hist = new Float64Array(256);
-  let area = 0;
-  for (let j = 0; j < altura; j += 1) {
-    const w = Math.cos(latitudeDaLinha(j, altura));
-    area += w * largura;
-    for (let i = 0; i < largura; i += 1) hist[cinza[j * largura + i]] += w;
-  }
-  const media = (g) => {
-    let s = 0;
-    for (let v = 0; v < 256; v += 1) s += hist[v] * Math.min(1, g * LINEAR_DO_BYTE[v]);
-    return s / area;
-  };
-  let lo = 0;
-  let hi = 20;
-  if (media(hi) < yMedioAlvo) throw new Error('ganhoDosNiveis: alvo inalcançável.');
-  for (let i = 0; i < 60; i += 1) {
-    const m = (lo + hi) / 2;
-    if (media(m) < yMedioAlvo) lo = m;
-    else hi = m;
-  }
-  return (lo + hi) / 2;
-}
-
-// ------------------------------------------------------------
 // 3. A CROMA
 // ------------------------------------------------------------
 
@@ -503,30 +460,32 @@ export function aplicaTom(a, b, tom) {
 /**
  * O mapa de cor de Europa. `cinza`: Uint8Array largura×altura na convenção da
  * casa, 0 = sem dado. `receita`: 'a' | 'b' ('b' exige `real`). `tom`: chave de
- * TONS. `yMedioAlvo`: a média linear por área do mapa de hoje.
- * Devolve { rgb (Uint8Array RGB), preenchido, pesoReal, ganho, f, ... }.
+ * TONS. O L* de cada texel é o do cinza do mosaico (o nível é o da régua).
+ * Devolve { rgb (Uint8Array RGB), preenchido, pesoReal, f, ... }.
  */
-export function corDeEuropa({ cinza, largura, altura, receita = 'a', tom = 'T1', yMedioAlvo, real = null, medidas = MEDIDAS }) {
+export function corDeEuropa({ cinza, largura, altura, receita = 'a', tom = 'T1', real = null, medidas = MEDIDAS }) {
   if (!TONS[tom]) throw new Error(`corDeEuropa: tom desconhecido ${tom}`);
   if (receita === 'b' && !real) throw new Error('corDeEuropa: a receita (b) exige `real`.');
   const sul = preencheSul(cinza, largura, altura);
-  const ganho = ganhoDosNiveis(sul.cinza, largura, altura, yMedioAlvo);
   const { a, b, f } = cromaDaMistura(sul.cinza, largura, altura, medidas);
   let pesoReal = null;
   let salto = null;
   if (receita === 'b') ({ peso: pesoReal, salto } = costuraDoHemisferio(a, b, real, largura, altura));
   aplicaTom(a, b, TONS[tom]);
-  const LDoByte = Float64Array.from(LINEAR_DO_BYTE, (y) => lDeY(Math.min(1, ganho * y)));
+  const LDoByte = Float64Array.from(LINEAR_DO_BYTE, lDeY);
   const n = largura * altura;
   const rgb = new Uint8Array(3 * n);
   let encolhidos = 0;
-  let saturados = 0;
   for (let k = 0; k < n; k += 1) {
-    const g = sul.cinza[k];
-    if (ganho * LINEAR_DO_BYTE[g] >= 1) saturados += 1;
-    if (escreveRgb(LDoByte[g], a[k], b[k], rgb, k)) encolhidos += 1;
+    if (escreveRgb(LDoByte[sul.cinza[k]], a[k], b[k], rgb, k)) encolhidos += 1;
   }
-  return { rgb, preenchido: sul.preenchido, ultima: sul.ultima, pesoReal, salto, ganho, f, a, b, encolhidos, saturados };
+  return { rgb, preenchido: sul.preenchido, ultima: sul.ultima, pesoReal, salto, f, a, b, encolhidos };
 }
+
+/**
+ * A chave do PORTÃO da cor de Europa na cadeia (`corEuropa.sha256Aprovado`):
+ * a receita (a), o tom e o nível — o do mosaico, desde que o nível é da régua.
+ */
+export const chaveDaCorDeEuropa = (tom) => `receita:a,tom:${tom},nivel:do-mosaico`;
 
 export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');

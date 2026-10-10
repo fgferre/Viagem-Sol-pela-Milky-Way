@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { FONTES, conferirArquivoDoCache, portaoDaCor } from './baixa-texturas.mjs';
-import { MEDIDAS, corDeEuropa, costuraDoHemisferio, fracaoEscura, preencheSul, reduzPorMediaDeArea, sha256 } from './cor-europa.mjs';
+import { MEDIDAS, chaveDaCorDeEuropa, corDeEuropa, costuraDoHemisferio, fracaoEscura, preencheSul, reduzPorMediaDeArea, sha256 } from './cor-europa.mjs';
 
 function cinzaSintetico(W, H, semente = 7) {
   let s = semente;
@@ -99,7 +99,7 @@ describe('cor de Europa', () => {
     const g = cinzaSintetico(W, H);
     const real = { a: new Float32Array(W * H).fill(4), b: new Float32Array(W * H).fill(-3), confianca: new Float32Array(W * H) };
     for (let k = 0; k < W * H; k += 1) if (Math.abs((k % W) - W / 2) < 30 && Math.abs(Math.floor(k / W) - H / 2) < 30) real.confianca[k] = 0.8;
-    const mapa = (tom) => corDeEuropa({ cinza: g, largura: W, altura: H, receita: 'b', tom, yMedioAlvo: 0.44, real });
+    const mapa = (tom) => corDeEuropa({ cinza: g, largura: W, altura: H, receita: 'b', tom, real });
     const um = sha256(mapa('meio').rgb);
     expect(sha256(mapa('meio').rgb)).toBe(um);
     expect(sha256(mapa('T1').rgb)).not.toBe(um);
@@ -142,17 +142,18 @@ describe('a entrada de Europa na cadeia (item 230, F)', () => {
     }
   });
 
-  it('o portão grava só o RGB aprovado para receita e tom; outro hash recusa, e a mensagem aponta corEuropa', () => {
+  it('o portão grava só o RGB aprovado para receita, tom e nível; outro hash recusa, e a mensagem aponta corEuropa', () => {
     const rgb = Uint8Array.from({ length: 4 * 2 * 3 }, (_, k) => (k * 53) % 256);
     const certo = createHash('sha256').update(rgb).digest('hex');
-    const chave = 'receita:a,tom:meio';
-    expect(Object.keys(europa.corEuropa.sha256Aprovado)).toEqual([chave]);
+    const chave = chaveDaCorDeEuropa(europa.corEuropa.tom);
+    expect(chave).toBe('receita:a,tom:meio,nivel:do-mosaico');
+    for (const k of Object.keys(europa.corEuropa.sha256Aprovado)) expect(k).toBe(chave);
     const comAprovados = (aprovados) => portaoDaCor({ rotulo: 'europa/map', chave, rgb, aprovados, campo: 'corEuropa' });
     expect(comAprovados({ [chave]: certo }).grava).toBe(true);
     const diferente = comAprovados({ [chave]: 'f'.repeat(64) });
     expect(diferente.grava).toBe(false);
     expect(diferente.mensagem).toMatch(/o map\.jpg NÃO foi gravado/);
-    const semEntrada = comAprovados({ 'receita:a,tom:T1': certo });
+    const semEntrada = comAprovados({ 'receita:a,tom:meio': certo });
     expect(semEntrada.grava).toBe(false);
     expect(semEntrada.mensagem).toContain(`corEuropa.sha256Aprovado["${chave}"]`);
   });

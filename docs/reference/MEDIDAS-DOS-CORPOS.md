@@ -2,9 +2,11 @@
 
 O que a régua (`PLAN-REGUA-UNICA.md`, parte 1) chama de "Medidas": o brilho (albedo) e a cor MEDIDOS dos 47 corpos que
 refletem luz no app, com fonte e confiança, e o que o app usa hoje ao lado. Pesquisa de 09/10 (três frentes, só
-leitura da literatura; nenhum código mudou). A R2 decide como estes números entram na cadeia de dados; até lá esta é a
-tabela única, e `src/three/world/planetas/fotometria.ts` (`FOTOMETRIA`, planetas, Plutão e Lua) é o único lugar do código que já
-guarda medidas com fonte.
+leitura da literatura; nenhum código mudou). Desde a R2 (10/10/2026), os números que os MAPAS usam — o nível sem o pico
+de oposição (p0 = valor / S), B/G e R/G, a política de matiz e a segunda âncora de cada corpo — moram numa tabela só,
+`src/lib/atlas/reguaDosMapas.ts`, que a cadeia de dados e o app leem; o γ e a área comprimida de cada mapa ficam em
+`src/lib/atlas/reguaDosMapas.relatorio.json`, ao lado. Este documento segue como o registro da literatura de onde eles
+saem; `src/three/world/planetas/fotometria.ts` (`FOTOMETRIA`) guarda as medidas do ponto de luz.
 
 ## Como ler
 

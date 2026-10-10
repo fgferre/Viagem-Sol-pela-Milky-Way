@@ -49,6 +49,7 @@ import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLSL_BUMP_DO_ALBEDO, GLSL_RUIDO_DE_VALOR } from './corpos';
 import { GLSL_SOMBRA_ECLIPSE } from '../../../lib/atlas/eclipse';
 import { GLSL_LUZ_DA_VISITA } from '../../../lib/atlas/luzDaVisita';
+import { alvoDoMapa } from '../../../lib/atlas/reguaDosMapas';
 
 // ------------------------------------------------------------
 // RUÍDO — o ramo 3D de `utils/noise.ts` dele, verbatim na conta.
@@ -377,6 +378,8 @@ export function criaGeometriaEsculpida(id: string): THREE.BufferGeometry {
   geo.dispose();
   soldada.computeVertexNormals();
   soldada.computeBoundingSphere();
+  // a média do regolito sai desta malha, de graça, para `coresNaRegua`
+  if (!MEDIAS_DO_REGOLITO.has(id)) MEDIAS_DO_REGOLITO.set(id, mediaDoRegolito(soldada, FAMILIAS_DE_REGOLITO[id]));
   return soldada;
 }
 
@@ -404,9 +407,10 @@ export interface FamiliaDeRegolito {
 }
 
 /**
- * As sete famílias dele. Febe é a única quase preta (albedo ~0,08) e é por
- * isso que a base dela vale um oitavo das outras — é dado medido, não
- * gradação de gosto.
+ * As sete famílias dele. Desde a régua (PLAN-REGUA-UNICA.md, R2) só as
+ * PROPORÇÕES entre base, fundo, borda e crista valem: o nível e a cor média
+ * de cada corpo são os medidos da tabela única (`reguaDosMapas.ts`), postos
+ * por `coresNaRegua` — os números absolutos daqui não chegam ao shader.
  */
 export const FAMILIAS_DE_REGOLITO: Record<string, FamiliaDeRegolito> = {
   daphnis: {
@@ -459,6 +463,84 @@ export const FAMILIAS_DE_REGOLITO: Record<string, FamiliaDeRegolito> = {
     escurecerCavidade: 0.075, oclusao: 0.18, forcaBump: 0.016,
   },
 };
+
+// ------------------------------------------------------------
+// A RÉGUA (PLAN-REGUA-UNICA.md, R2) — o nível e a cor média da família
+// ------------------------------------------------------------
+
+type CoresDoRegolito = Pick<FamiliaDeRegolito, 'base' | 'fundo' | 'borda' | 'crista'>;
+
+/**
+ * A MÉDIA DO ALBEDO da superfície esculpida, canal a canal [R, G, B], por
+ * ÁREA da malha (`geo`, a de `criaGeometriaEsculpida`): em cada vértice, o
+ * encadeamento do `ESCULPIDO_FRAG` com as quatro máscaras dele e o ruído na
+ * ESPERANÇA; em cada triângulo, a média dos três vértices.
+ *
+ * O RUÍDO NA ESPERANÇA, e por que é honesto: as duas bandas de fbm do shader
+ * são simétricas em torno de ½ e o albedo é afim em cada uma (o fator macro
+ * vale 1 + contraste·(2·macro − 1), o micro 0,08·micro + 0,96), e o que vem
+ * depois (crista, cavidade, fundo, borda) é afim no albedo — então a média do
+ * albedo é a desta conta com os dois fatores em 1. O que fica de fora é a
+ * REALIZAÇÃO do ruído nesta superfície (umas centenas de células de fbm:
+ * estimado em menos de 1 % da média), que o JS não reproduz — o hash do
+ * shader é o `sin` em float32 da GPU.
+ */
+export function mediaDoRegolito(
+  geo: THREE.BufferGeometry,
+  f: FamiliaDeRegolito
+): [number, number, number] {
+  const pos = geo.getAttribute('position');
+  const indice = geo.getIndex();
+  const mascaras = ['aFundoDeCratera', 'aBordaDeCratera', 'aCavidade', 'aCrista'].map((n) => geo.getAttribute(n));
+  const [mFundo, mBorda, mCavidade, mCrista] = mascaras;
+  const albedo = new Float64Array(3 * pos.count);
+  for (let v = 0; v < pos.count; v++) {
+    for (let c = 0; c < 3; c++) {
+      let a = interp(f.base[c], f.crista[c], mCrista.getX(v) * f.misturaCrista);
+      a *= 1 - mCavidade.getX(v) * f.escurecerCavidade;
+      a = interp(a, f.fundo[c], mFundo.getX(v) * f.misturaFundo);
+      a = interp(a, f.borda[c], mBorda.getX(v) * f.misturaBorda);
+      albedo[3 * v + c] = trava01(a);
+    }
+  }
+  const vertice = (k: number): number => (indice ? indice.getX(k) : k);
+  const [a, b, c] = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  const soma: [number, number, number] = [0, 0, 0];
+  let area = 0;
+  for (let t = 0; t < (indice ? indice.count : pos.count); t += 3) {
+    const v = [vertice(t), vertice(t + 1), vertice(t + 2)];
+    a.fromBufferAttribute(pos, v[0]);
+    b.fromBufferAttribute(pos, v[1]).sub(a);
+    c.fromBufferAttribute(pos, v[2]).sub(a);
+    const s = b.cross(c).length() / 2;
+    area += s;
+    for (let k = 0; k < 3; k++) soma[k] += (s * (albedo[3 * v[0] + k] + albedo[3 * v[1] + k] + albedo[3 * v[2] + k])) / 3;
+  }
+  return [soma[0] / area, soma[1] / area, soma[2] / area];
+}
+
+/** A média do regolito de cada corpo com as cores DELE, medida na primeira malha que `criaGeometriaEsculpida` faz. */
+const MEDIAS_DO_REGOLITO = new Map<string, readonly [number, number, number]>();
+
+/**
+ * AS CORES DA FAMÍLIA NA RÉGUA: base, fundo, borda e crista escaladas JUNTAS,
+ * um fator por canal, até a média por área da superfície (`mediaDoRegolito`)
+ * dar p0 em G e p0·R/G, p0·B/G em R e B (`alvoDoMapa`, a tabela única) — o
+ * nível e a tinta medidos, com o desenho da família (as proporções) intacto. O
+ * albedo é linear nas quatro cores juntas, então o fator acerta a média em
+ * uma conta.
+ */
+export function coresNaRegua(id: string): CoresDoRegolito {
+  if (!MEDIAS_DO_REGOLITO.has(id)) criaGeometriaEsculpida(id).dispose();
+  const media = MEDIAS_DO_REGOLITO.get(id);
+  if (!media) throw new Error(`régua: ${id} não é esculpida.`);
+  const f = FAMILIAS_DE_REGOLITO[id];
+  const { p0, BG, RG } = alvoDoMapa(id);
+  const fator = [p0 * RG, p0, p0 * BG].map((alvo, c) => alvo / media[c]);
+  const escala = (cor: readonly [number, number, number]) =>
+    [cor[0] * fator[0], cor[1] * fator[1], cor[2] * fator[2]] as const;
+  return { base: escala(f.base), fundo: escala(f.fundo), borda: escala(f.borda), crista: escala(f.crista) };
+}
 
 // ------------------------------------------------------------
 // GLSL
@@ -580,14 +662,15 @@ void main() {
 }
 `;
 
-/** Os uniformes de família de um corpo esculpido — dado virando uniform. */
+/** Os uniformes de família de um corpo esculpido — dado virando uniform, as cores na régua. */
 export function uniformsDoEsculpido(id: string): Record<string, { value: unknown }> {
   const f = FAMILIAS_DE_REGOLITO[id];
+  const cores = coresNaRegua(id);
   return {
-    uCorBase: { value: new THREE.Vector3(...f.base) },
-    uCorFundo: { value: new THREE.Vector3(...f.fundo) },
-    uCorBorda: { value: new THREE.Vector3(...f.borda) },
-    uCorCrista: { value: new THREE.Vector3(...f.crista) },
+    uCorBase: { value: new THREE.Vector3(...cores.base) },
+    uCorFundo: { value: new THREE.Vector3(...cores.fundo) },
+    uCorBorda: { value: new THREE.Vector3(...cores.borda) },
+    uCorCrista: { value: new THREE.Vector3(...cores.crista) },
     uMisturas: {
       value: new THREE.Vector4(
         f.misturaFundo, f.misturaBorda, f.misturaCrista, f.escurecerCavidade
