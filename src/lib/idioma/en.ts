@@ -162,9 +162,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.tom': 'Tone curve',
   'ajustes.tomNota':
     'Decides what happens to everything above 1. It changes chroma and dynamic range — a choice, not a measurement.',
-  'ajustes.tom.aces': 'compresses and desaturates the highlights',
+  'ajustes.tom.aces': 'the previous tone; fades the highlights',
   'ajustes.tom.agx': 'keeps chroma, darkens',
-  'ajustes.tom.neutral': 'middle ground',
+  'ajustes.tom.neutral': 'the default; keeps the bodies’ colour',
   'ajustes.tom.linear': 'no curve — clips, shows the raw frame',
   'ajustes.exposicao': 'Exposure',
   'ajustes.lente': 'Lens',

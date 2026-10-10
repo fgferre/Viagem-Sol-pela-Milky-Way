@@ -161,9 +161,9 @@ export const PT = {
   'ajustes.tom': 'Curva de tom',
   'ajustes.tomNota':
     'Decide o que acontece com o que passa de 1. Muda croma e faixa dinâmica — é escolha, não medida.',
-  'ajustes.tom.aces': 'comprime e dessatura os altos',
+  'ajustes.tom.aces': 'o tom de antes; desbota os altos',
   'ajustes.tom.agx': 'preserva croma, escurece',
-  'ajustes.tom.neutral': 'meio-termo',
+  'ajustes.tom.neutral': 'o padrão; guarda a cor dos corpos',
   'ajustes.tom.linear': 'sem curva — estoura, mostra o cru',
   'ajustes.exposicao': 'Exposição',
   'ajustes.lente': 'Lente',
