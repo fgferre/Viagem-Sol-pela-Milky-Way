@@ -58,6 +58,18 @@ export function exposicaoNoRenderer(tom: ToneMapMode, exposicao: number): number
 }
 
 /**
+ * A CALIBRAÇÃO DE ARTE POR CURVA (R1b): o que foi ajustado a olho sobre o
+ * ACES (níveis do Sol, cor da galáxia, ganhos da lente...) guarda o valor de
+ * antes quando a curva viva é o ACES — `?tone=aces` e a opção de Ajustes
+ * continuam a imagem aprovada, bit a bit — e as outras curvas recebem o
+ * valor recalibrado. Lido na hora de escrever o uniform, com a curva do
+ * próprio renderer.
+ */
+export function porCurva<T>(toneMapping: THREE.ToneMapping, noAces: T, nasOutras: T): T {
+  return toneMapping === THREE.ACESFilmicToneMapping ? noAces : nasOutras;
+}
+
+/**
  * O inverso do mapa acima: qual curva está viva no renderer. Existe
  * para o selo de honestidade poder LER o estado do instrumento em vez
  * de guardar uma segunda cópia dele — o dia em que as duas divergissem,
