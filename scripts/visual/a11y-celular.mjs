@@ -25,7 +25,7 @@
 // somam-se aos do resto no mesmo `a11y`, e o preço
 // (4,5 min desde a F5 do item 113) é o da sessão única — dividir a
 // CHAMADA em duas custaria dois boots de Chrome para medir a mesma coisa.
-import { dorme, esperarPor } from './chrome.mjs';
+import { dorme, esperarPor, passosDoConvite } from './chrome.mjs';
 
 /** os aparelhos que este juiz abre — o comum e o pequeno */
 const APARELHOS = [[390, 844], [320, 568]];
@@ -232,8 +232,8 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
   // Até 2026-08-23 o convite do Atlas era PULADO em `pointer: coarse`, e
   // a razão escrita era verdadeira: "o gesto do meio é a RODA, que não
   // existe em tela de toque". Com a PINÇA existindo ela deixou de ser, e
-  // o modo passa a se apresentar a quem chega de telefone. Os quatro
-  // passos falam a língua do dedo, e cada um aponta um pedaço REAL da
+  // o modo passa a se apresentar a quem chega de telefone. Os passos
+  // (quatro até bfe3a929, 08/10; hoje lidos de `passosDoConvite.ts`) falam a língua do dedo, e cada um aponta um pedaço REAL da
   // dica do rodapé — que também trocou de gestos.
   //
   // ELE VEM PRIMEIRO de propósito: o convite abre na PRIMEIRA entrada, e
@@ -246,7 +246,8 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
   await s.ir(`atlas=1&${PIN}`);
   await dorme(300);
   const passos = [];
-  for (let i = 0; i < 4; i++) {
+  const N_PASSOS = passosDoConvite('PASSOS_DO_CONVITE_DO_ATLAS_TOQUE');
+  for (let i = 0; i < N_PASSOS; i++) {
     passos.push(JSON.parse(await s.js(`JSON.stringify({
       texto: (document.querySelector('.convite-texto') || {}).innerText || '',
       conta: (document.querySelector('.convite-conta') || {}).innerText || '',
@@ -270,13 +271,13 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
   // quatro passos, e é isso que a prova abaixo passa a cobrar.
   conferir(
     passos.every((p) => p.texto && p.alvo === null),
-    `convite no telefone: os 4 passos abrem com texto, sem furo real (a`
+    `convite no telefone: os ${N_PASSOS} passos abrem com texto, sem furo real (a`
       + ` dica que o furo mirava saiu do Atlas) — `
       + `${passos.map((p) => `${p.conta.trim()}:${p.alvo}`).join(' · ')}`
   );
   conferir(
-    /pinça/i.test(passos[1].texto) && /toque num nome/i.test(passos[2].texto)
-      && /duas vezes/i.test(passos[3].texto),
+    /pinça/i.test(passos[1].texto) && /inclinam/i.test(passos[2].texto)
+      && /toque num nome/i.test(passos[3].texto) && /duas vezes/i.test(passos[4].texto),
     `convite no telefone: os gestos são os do DEDO — "${passos.map((p) => p.texto).join('" · "')}"`
   );
   conferir(
