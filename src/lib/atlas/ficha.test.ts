@@ -468,11 +468,27 @@ describe('a imagem confessa — itens 19 e 20', () => {
     expect(realcado).toHaveLength(imagem().length + 1);
   });
 
-  it('o defeito leva o selo de MEDIDO: quem o mediu foi a bancada', () => {
-    const linhas = ficha('ceres')!.secoes.find((s) => s.id === 'imagem')!.linhas;
-    const defeito = linhas.find((l) => l.rotulo === 'o defeito')!;
-    expect(defeito.procedencia).toBe('medido');
-    expect(defeito.fonte).toBe('bancada de texturas');
+  it('o defeito leva o selo do que confessa: Vênus sem luz visível é MEDIDO, o tingimento de Ceres é DERIVADO', () => {
+    const defeito = (id: string) =>
+      ficha(id)!.secoes.find((s) => s.id === 'imagem')!.linhas.find((l) => l.rotulo === 'o defeito')!;
+    expect(defeito('venus').procedencia).toBe('medido');
+    expect(defeito('venus').fonte).toBe('bancada de texturas');
+    expect(defeito('ceres').procedencia).toBe('derivado');
+  });
+
+  it('a nota que confessa INVENTADO sai com o selo artístico, nunca o de medido (10/10)', () => {
+    const linhas = (id: string) => ficha(id)!.secoes.find((s) => s.id === 'imagem')!.linhas;
+    expect(linhas('iapetus').find((l) => l.rotulo === 'o relevo admite')!.procedencia).toBe('artistico');
+    expect(linhas('pluto').find((l) => l.rotulo === 'o defeito')!.procedencia).toBe('artistico');
+  });
+
+  it('Mimas, Tétis e Dione admitem o limite do relevo medido (10/10)', () => {
+    for (const id of ['mimas', 'tethys', 'dione']) {
+      const linhas = ficha(id)!.secoes.find((s) => s.id === 'imagem')!.linhas;
+      const admite = linhas.find((l) => l.rotulo === 'o relevo admite');
+      expect(admite?.valor, id).toContain('1024 px');
+      expect(admite?.procedencia, id).toBe('medido');
+    }
   });
 
   it('os quatro elipsoides e as sete esculpidas confessam a forma, e ninguém mais (item 20)', () => {

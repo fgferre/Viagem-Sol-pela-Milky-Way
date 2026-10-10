@@ -109,6 +109,11 @@ export interface EntradaDeTextura {
    * defeito" — nunca "ninguém olhou".
    */
   nota?: TextoBilingue;
+  /**
+   * O SELO DO QUE A NOTA CONFESSA — o tier mais fraco dela, da coluna
+   * `selo` da mesma tabela do ASSETS.md. Vem sempre junto da `nota`.
+   */
+  seloDaNota?: 'medido' | 'derivado' | 'inventado';
 }
 export interface ManifestDeTexturas {
   entradas: EntradaDeTextura[];

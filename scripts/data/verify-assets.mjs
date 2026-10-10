@@ -1225,7 +1225,7 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
   );
   const notasNoManifesto = new Map();
   for (const e of texturasDoc.entradas) {
-    if (e.nota) notasNoManifesto.set(`${e.corpo}/${e.canal}`, e.nota);
+    if (e.nota) notasNoManifesto.set(`${e.corpo}/${e.canal}`, e);
   }
   // AS DUAS LISTAS SAEM DO DOCUMENTO, e pela MESMA função que o gerador usa
   // (`lerTabelasDaConfissao`). Estavam escritas à mão aqui — quatro chaves de
@@ -1236,17 +1236,26 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
   const confissao = lerTabelasDaConfissao(assetsMd, 'docs/reference/ASSETS.md');
   const CONFESSAM = [...confissao.imagem.keys()].sort();
   for (const chave of CONFESSAM) {
-    const nota = notasNoManifesto.get(chave);
-    if (!nota) {
+    const entrada = notasNoManifesto.get(chave);
+    if (!entrada) {
       throw new Error(
         `atlas/texturas: "${chave}" perdeu a nota de defeito (item 19) — ` +
           'rode npm run data:texturas.'
       );
     }
-    if (nota.pt !== confissao.imagem.get(chave)) {
+    const { nota } = entrada;
+    const confessada = confissao.imagem.get(chave);
+    if (nota.pt !== confessada.nota) {
       throw new Error(
         `atlas/texturas: a nota de "${chave}" no manifesto não é a do ASSETS.md — ` +
           'o documento é a fonte; rode npm run data:texturas.'
+      );
+    }
+    if (entrada.seloDaNota !== confessada.selo) {
+      throw new Error(
+        `atlas/texturas: o selo da nota de "${chave}" no manifesto é ` +
+          `"${entrada.seloDaNota}", e o ASSETS.md diz "${confessada.selo}" — ` +
+          'rode npm run data:texturas.'
       );
     }
     if (typeof nota.en !== 'string' || nota.en === '') {
