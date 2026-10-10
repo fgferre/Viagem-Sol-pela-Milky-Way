@@ -128,6 +128,7 @@ import type { OpcoesDeTextura } from './texturas';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import {
   escreverSombraDeEclipse,
+  ligarGanhoDoObservador,
   uniformsDeEclipseNeutros,
 } from './eclipseNoMaterial';
 
@@ -559,6 +560,8 @@ export class LuaResolvida {
       depthTest: true,
       transparent: false,
     });
+    // o cobre do eclipse lunar com a exposição do observador da curva viva (R1b)
+    ligarGanhoDoObservador(this.matSuperficie);
     this.superficie = new THREE.Mesh(this.geometria, this.matSuperficie);
     // globo opaco = ocultador do rascunho do campo (item 47): estrela
     // atrás dele não deposita clarão. Anel/atmosfera/nuvens ficam fora.

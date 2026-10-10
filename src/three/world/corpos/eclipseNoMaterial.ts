@@ -6,7 +6,8 @@
 // dos corpos (a Lua foi o segundo consumidor).
 // ============================================================
 import * as THREE from 'three';
-import type { SombraNaCena } from '../../../lib/atlas/eclipse';
+import { GANHO_OBSERVADOR_ECLIPSE_LUNAR, type SombraNaCena } from '../../../lib/atlas/eclipse';
+import { porCurva } from '../../core/engine';
 
 /**
  * OS UNIFORMS DO ECLIPSE num material de corpo resolvido (F2c/D3) — a
@@ -68,5 +69,24 @@ export function uniformsDeEclipseNeutros(): Record<string, THREE.IUniform> {
     uEclipseCone: { value: new THREE.Vector3(0, 0, 0) },
     uEclipsePisoCor: { value: new THREE.Vector3(0, 0, 0) },
     uEclipsePisoEscalar: { value: 1 },
+    uEclipseGanhoObservador: { value: GANHO_OBSERVADOR_ECLIPSE_LUNAR[0] },
+  };
+}
+
+/**
+ * A EXPOSIÇÃO DO OBSERVADOR pela curva viva (R1b): o three chama o
+ * `onBeforeRender` do material antes de subir os uniforms do desenho, com o
+ * renderer — a curva é lida dele, nunca guardada. Só o material da Lua a
+ * liga: o ganho multiplica só o piso cobre, e só a Terra o projeta
+ * (`PARES_DE_ECLIPSE`: a Lua é o único receptor da sombra dela); nos
+ * outros corpos o piso é 0 e o valor do ACES que nasce acima multiplica 0.
+ */
+export function ligarGanhoDoObservador(m: THREE.ShaderMaterial) {
+  m.onBeforeRender = (renderer) => {
+    m.uniforms.uEclipseGanhoObservador.value = porCurva(
+      renderer.toneMapping,
+      GANHO_OBSERVADOR_ECLIPSE_LUNAR[0],
+      GANHO_OBSERVADOR_ECLIPSE_LUNAR[1]
+    );
   };
 }

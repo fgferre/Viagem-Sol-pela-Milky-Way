@@ -42,7 +42,7 @@ import * as THREE from 'three';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { ganhoDoGlobo } from '../../lib/atlas/luzDaVisita';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
-import { FORCA_DA_LENTE, type ModoDaLente } from '../core/engine';
+import { FORCA_DA_LENTE, porCurva, type ModoDaLente } from '../core/engine';
 import { RAIO_DO_SOL_NA_CENA } from '../escala';
 import {
   presetDaLente,
@@ -77,11 +77,19 @@ export const UA_DO_FIM_DA_LENTE = 50;
  * (redonda), 0,94 (anamórfica) e 0,875 (hollywood) do look development em
  * valor de tela, fora do disco; com estes, ≈ 1. O ACES do three.js puxa um
  * pouco para o azul — isso nenhum fator único corrige.
+ *
+ * [no ACES, nas outras curvas] (`porCurva`, R1b da régua única): o segundo
+ * número foi medido no tom neutro contra o primeiro no ACES — o L* que o
+ * reflexo soma, perto do Sol e nos fantasmas, nas cenas P1, P2, P3, perto do
+ * Sol e o Sol atrás da Terra (capturas/regua-r1/r1b-lente/). O neutro não
+ * esmaga o pé das cores como o ACES: com o mesmo fator, os fantasmas sobre
+ * céu preto saíam 20–50 % mais claros. A cor mais viva que ele guarda nos
+ * fantasmas, nenhum fator corrige.
  */
-const FATOR_DA_RECEITA: Record<NomeDoPreset, number> = {
-  redonda: 1.1,
-  anamorfica: 1.1,
-  hollywood: 1.2,
+const FATOR_DA_RECEITA: Record<NomeDoPreset, readonly [number, number]> = {
+  redonda: [1.1, 0.92],
+  anamorfica: [1.1, 1.06],
+  hollywood: [1.2, 0.94],
 };
 
 /**
@@ -89,11 +97,15 @@ const FATOR_DA_RECEITA: Record<NomeDoPreset, number> = {
  * quadro). Quando o pico do reflexo inteiro — a soma dos picos dos
  * elementos, um teto do que um pixel soma — fica abaixo disto, ele somaria
  * menos de 0,003 de valor de tela num céu preto, e o passe não desenha.
- * Derivado para o ACES do OutputPass (three.js): x·exposição/0,6 →
- * RRTAndODTFit → sRGB, com cinza. Tela 0,003 = linear 2,32e-4, que a curva
- * alcança em v = 4,955e-3; x = v·0,6 = 2,973e-3.
+ * [no ACES, nas outras curvas] (`porCurva`). Tela 0,003 = linear 2,32e-4.
+ * ACES do OutputPass (three.js): x·exposição/0,6 → RRTAndODTFit → sRGB, com
+ * cinza; a curva alcança 2,32e-4 em v = 4,955e-3; x = v·0,6 = 2,973e-3.
+ * Neutral da Khronos: abaixo do ombro ele tira de cada canal o desconto do
+ * menor (≥ 0) e não comprime, então nenhum canal passa de x·exposição, de
+ * qualquer cor — x = 2,32e-4 (o cinza daria 6,09e-3, mas uma cor viva
+ * atravessa o pé em linha reta e saltaria à vista no corte).
  */
-const LIMIAR_NA_EXPOSICAO_1 = 2.973e-3;
+const LIMIAR_NA_EXPOSICAO_1: readonly [number, number] = [2.973e-3, 2.322e-4];
 
 /**
  * A LEI DA INTENSIDADE, num lugar só:
@@ -660,7 +672,7 @@ function fantasmasNaGpu(fantasmas: readonly Fantasma[]) {
 
 interface NaGpu {
   readonly preset: Preset;
-  readonly fator: number;
+  readonly fator: readonly [number, number];
   readonly pico: number;
   readonly fantasmas: THREE.InstancedBufferGeometry;
   readonly ladrilhos: THREE.Vector2;
@@ -937,7 +949,7 @@ export class PasseDaLente extends Pass {
    * quando o Sol está atrás, saiu da margem, a câmera não é perspectiva, ou
    * o reflexo inteiro ficaria abaixo do limiar de desenho.
    */
-  private prepararQuadro(gpu: NaGpu, exposicao: number): boolean {
+  private prepararQuadro(gpu: NaGpu, exposicao: number, curva: THREE.ToneMapping): boolean {
     const cam = this.camera;
     if (!(cam instanceof THREE.PerspectiveCamera)) return false;
     this.sol.set(0, 0, 0).applyMatrix4(cam.matrixWorldInverse);
@@ -955,10 +967,12 @@ export class PasseDaLente extends Pass {
     if (!(sai > 0)) return false;
     const perto = 1 - suave(0, b.zona, db);
     const borda = (1 + (b.ganhoBrilho - 1) * perto) * sai;
-    const g = (this.amplitude / G_DA_LENTE) * borda * gpu.fator * this.multiplicador;
+    const fator = porCurva(curva, gpu.fator[0], gpu.fator[1]);
+    const g = (this.amplitude / G_DA_LENTE) * borda * fator * this.multiplicador;
     const t = this.u.uTransmitancia.value as THREE.Vector3;
     const ar = Math.max(t.x, t.y, t.z);
-    if (!(g * gpu.pico * ar >= LIMIAR_NA_EXPOSICAO_1 / Math.max(exposicao, 1e-6))) return false;
+    const limiar = porCurva(curva, LIMIAR_NA_EXPOSICAO_1[0], LIMIAR_NA_EXPOSICAO_1[1]);
+    if (!(g * gpu.pico * ar >= limiar / Math.max(exposicao, 1e-6))) return false;
     // o disco do Sol: o raio angular e, para as formas, o raio no eixo em frações da altura; abaixo
     // de ~1 px ele é ponto (como no look development) e entre 1 e 3 px de raio o disco entra em
     // rampa — um degrau aqui fazia o miolo saltar ~16 % (~3 UA)
@@ -984,7 +998,7 @@ export class PasseDaLente extends Pass {
   ) {
     if (this.modo === 'nenhuma') return;
     const gpu = this.naGpu.get(this.modo);
-    if (!gpu || !this.prepararQuadro(gpu, renderer.toneMappingExposure)) return;
+    if (!gpu || !this.prepararQuadro(gpu, renderer.toneMappingExposure, renderer.toneMapping)) return;
     const limpavaSozinho = renderer.autoClear;
     renderer.autoClear = false;
     renderer.getClearColor(this.corDeLimpezaVelha);
