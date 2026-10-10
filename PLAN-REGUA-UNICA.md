@@ -27,15 +27,15 @@ Palavras dele (08/10): *"precisamos ter uma regra única que trate todos os obje
   solar fica laranja forte, a galáxia ganha halo lilás). Palavra dele: *"Adotar o tom novo"* — recalibrar o que foi
   ajustado sobre o ACES até voltar ao visual aprovado, com foto de cada um antes de virar o padrão.
   **Execução (cópia `../Viagem-tom-unico`, ramo `tom-unico`, porta 5280; `?tone=aces` fica como caminho de volta):**
-  - R1a — o padrão vira o Neutral com a exposição casada no cinza médio para CADA exposição (o modo "real", +3 stops,
+  - **FEITA (09/10, `tom-unico` 0e10da61 + `porCurva` 79afd42b)** R1a — o padrão vira o Neutral com a exposição casada no cinza médio para CADA exposição (o modo "real", +3 stops,
     não casa com fator constante: 8,16 pediria 5,13); testes que fixam o ACES; a prancha recapturada sai igual à
     coluna "tom neutro" (sha256), menos o modo real.
-  - R1b — recalibrar, cada um contra a sua foto de hoje no ACES (alvo: a mesma imagem), em cópias separadas e arquivos
+  - **FEITA (09/10; ramos `tom-sol` 188c4078, `tom-galaxia` f796b707, `tom-lente` ce640318 + eclipse c434dc97, juntos em `tom-unico` df09d556; provas em `capturas/regua-r1/r1b-*/`; restos: manchas do Sol menos vermelhas, brilho do ponto a 84 R☉, nuvens tênues do gás local, bojo um pouco mais amarelo, cobre do eclipse um pouco mais amarelo, cor dos fantasmas da lente)** R1b — recalibrar, cada um contra a sua foto de hoje no ACES (alvo: a mesma imagem), em cópias separadas e arquivos
     disjuntos, uma gravação de Chrome por vez: (1) o Sol (`sun.js` níveis HDR, doses da coroa em `stellarBody.ts`);
     (2) a galáxia e a gradação do filme (`galaxyShaders.ts` chromsat/corte/cor do disco, joelhos de `post.ts` da
     rodada 20, `dustShaders.ts` lift e grão); (3) a lente e o eclipse (`passeDaLente.ts` fatores 1,1/1,1/1,2 e o
     limiar tirado da fórmula do ACES; `eclipse.ts`; a σ da luz em `luz.ts`).
-  - R1c — conferir o realçado 3× da Terra, rodar os juízes visuais (podem ter limiares do ACES), `npm run done`,
+  - **EM CURSO (09/10)** R1c — conferir o realçado 3× da Terra, rodar os juízes visuais (podem ter limiares do ACES), `npm run done`,
     prancha final hoje × novo do app inteiro e vídeo dos dois filmes; ele aprova; juntar e publicar é dele.
   - Fora da R1: os ganhos à mão das luas (`rochoso.ts`) — saem na R2.
 - **R2 — Cor dos mapas** (opus + a cadeia no terminal dele): a função única; "retrato de família" de todos os corpos na mesma luz e na mesma escala, com os números ao lado (Encélado o mais claro, a Lua e Febe escuras, Pã abaixo de Encélado). Os que ele já aprovou (Europa, Reia, Hipérion) voltam para ele se mudarem.
