@@ -2,6 +2,7 @@
   "planos": [
     {
       "nome": "mesmaLuz",
+      "lenteDeCinema": "hollywood",
       "qa": {"mesmaLuz": 0.5},
       "camera": {
         "duracao": 16,

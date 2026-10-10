@@ -167,6 +167,7 @@
     },
     {
       "nome": "jupiterArco",
+      "lenteDeCinema": "hollywood",
       "preload": {"corpos": ["saturn", "enceladus", "hyperion", "mimas", "titan"]},
       "qa": {"quaseSol": 0.98},
       "camera": {
@@ -206,6 +207,7 @@
     },
     {
       "nome": "jupiterRumoDeSaturno",
+      "lenteDeCinema": "hollywood",
       "camera": {
         "duracao": 8,
         "movimento": {"tipo": "fixo", "ponto": "fimDoArco"},
