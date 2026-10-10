@@ -41,8 +41,10 @@ dele) e o retrato "depois". Estudo: `capturas/regua-r2/estudo-da-regra.md`; retr
 um âmbar leve dentro do anel da Hollywood; o cobre do eclipse um pouco mais amarelo; as nuvens fracas do gás local no céu
 do Atlas (ele não quis regra nova). **Achados:** os juízes `a11y`, `voo` e `busca` voltaram a passar em 10/10
 (b4b5dd99: os passos do convite e os controles do Avançado agora são lidos da fonte; a folha flutua desde 0d5b3db8); o
-segmentado "Curva de tom" tem botões de larguras desiguais (13 das 14 fileiras de Ajustes medem pelo rótulo — espera a
-escolha dele); não olhado num iPhone de verdade.
+segmentado "Curva de tom" fica como está: ele viu a prancha hoje × todos iguais
+(`capturas/curva-de-tom/prancha-hoje-x-iguais.jpg`) e disse *"deixa a curva de tom como está"* — as fileiras de Ajustes
+seguem largura pelo nome, como as outras 12; botões iguais pediriam a gaveta ~96 px mais larga; não olhado num iPhone de
+verdade.
 
 **A próxima rodada — a ordem é dele:** a R2 da régua (a cor dos mapas por uma função só, com o "retrato de família"
 de todos os corpos; a tabela da R0 é a âncora e diz que o albedo geométrico tem o pico de oposição); depois a R3
