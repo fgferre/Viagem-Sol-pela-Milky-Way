@@ -22,6 +22,9 @@ galáxia, na lente e no eclipse; a prancha antes × agora (`capturas/regua-r1/ag
 só diferença, nada quebrado: no AgX o halo do Sol de perto fica cinza-claro em vez de laranja; no Linear o Sol e o bojo
 da galáxia deixam de estourar; os corpos e a Terra saem iguais.
 
+**233 (Anamórfica "pobre") — fechado em 10/10 sem mudar o app:** pesquisa de cinema/VFX e prancha com duas versões novas
+(`capturas/anamorfica-nova/`; ramo local `anamorfica` guardado como registro, não juntado); ele escolheu *"Fica a de hoje"*.
+
 **Restos pequenos, vistos por ele:** as manchas do Sol um pouco mais marrons; o bojo da galáxia um pouco mais amarelo;
 um âmbar leve dentro do anel da Hollywood; o cobre do eclipse um pouco mais amarelo; as nuvens fracas do gás local no céu
 do Atlas (ele não quis regra nova). **Achados, não feitos:** os juízes `a11y` e `voo` esperam 4 passos no tutorial do
@@ -849,13 +852,6 @@ Europa (cor real inferida da Galileo sobre o mosaico USGS de 500 m, 4096 px,
 tom meio-termo dele) e Jápeto (relevo gerado: crista no lugar com 20 km,
 55 crateras com nome, as demais pela foto). Ficam na fila: Urano, Netuno,
 Vesta, Deimos, Tritão (pausado), Ariel, Titã, Vênus.**
-
-**233. A lente Anamórfica parece pobre.**
-Palavras dele, 09/10, ao ver os vídeos da lente nos filmes (a Anamórfica na saída e na
-volta do filme da galáxia): *"essa lente realmente é pobre ela é elíptica o formato do
-efeito tenho algo estranho com essa"*. Na mesma fala: *"a Hollywood ela é incrível"* — os
-filmes ficaram com a Hollywood (`0f80822a`); a Anamórfica segue como escolha em Ajustes, e
-as estrelas a seguem (`352660be`). Vídeos: `capturas/lente-filme/video/galactico-*-lado-a-lado.mp4`.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
