@@ -9,6 +9,8 @@ import {
   nebulaBakeFrag,
   nebulaLutFrag,
   NEBULA_BLUR_FRAG,
+  PONTA_FRIA_DA_FAIXA,
+  PONTA_QUENTE_DA_FAIXA,
 } from '../shaders/nebulaShaders';
 import { makeBlueNoiseTexture } from './blueNoise';
 import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
@@ -18,7 +20,7 @@ import {
   VOXEL_DO_DETALHE_REAL_PC,
 } from '../shaders/common';
 import { diagnosticoDaPoeira } from '../../lib/diagnosticoDaPoeira';
-import type { GasVolumetrico } from '../core/engine';
+import { porCurva, type GasVolumetrico } from '../core/engine';
 import type { VolumeDePoeira } from '../cartography/galacticAssets';
 import {
   LADO_DA_VAGA,
@@ -386,6 +388,22 @@ export class Nebula {
   // anterior — 786k integrações economizadas por frame parado
   private lutCamPos = new THREE.Vector3(Infinity, Infinity, Infinity);
   private lutDirty = true;
+  /**
+   * AS PONTAS DA COR DO DISCO NA FAIXA, pela curva de tela (R1b da régua
+   * única). No ACES, as de antes. Fora dele, 85% do croma com a luminância
+   * Rec. 709 guardada: o ACES tirava esse tanto da cor da faixa, e sem ele
+   * a névoa vista de dentro do disco saía marrom (t=110: ΔE2000 da névoa
+   * 2,3 → 1,1 contra a foto aprovada; t=140 1,5 → 1,0). A curva vista por
+   * último fica em `curvaDaFaixa`: trocá-la em Ajustes refaz a LUT.
+   */
+  private readonly pontasDaFaixa = {
+    aces: [PONTA_FRIA_DA_FAIXA, PONTA_QUENTE_DA_FAIXA].map((c) => new THREE.Vector3(...c)),
+    fora: [PONTA_FRIA_DA_FAIXA, PONTA_QUENTE_DA_FAIXA].map((c) => {
+      const y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+      return new THREE.Vector3(...c.map((v) => y + 0.85 * (v - y)));
+    }),
+  };
+  private curvaDaFaixa: THREE.ToneMapping | null = null;
   /** 1×1 sem cobertura (A=128: warp neutro) — sampler válido antes dos dados. */
   private fallbackDustMap = new THREE.DataTexture(
     new Uint8Array([0, 0, 0, 128]),
@@ -517,6 +535,8 @@ export class Nebula {
         uDustMap: { value: this.fallbackDustMap },
         uCartBlend: { value: 0 },
         uCatFade: { value: 0 },
+        uCorFria: { value: this.pontasDaFaixa.aces[0].clone() },
+        uCorQuente: { value: this.pontasDaFaixa.aces[1].clone() },
       },
       depthWrite: false,
       depthTest: false,
@@ -1744,6 +1764,18 @@ export class Nebula {
     u.uAspect.value = camera.aspect;
     // depois do tanHalfFov: sunCone lê o uniform para converter texel em ângulo
     u.uSunCos.value = this.sunCone(camera);
+    if (renderer.toneMapping !== this.curvaDaFaixa) {
+      this.curvaDaFaixa = renderer.toneMapping;
+      const [fria, quente] = porCurva(
+        renderer.toneMapping,
+        this.pontasDaFaixa.aces,
+        this.pontasDaFaixa.fora
+      );
+      (this.lutMaterial.uniforms.uCorFria.value as THREE.Vector3).copy(fria);
+      (this.lutMaterial.uniforms.uCorQuente.value as THREE.Vector3).copy(quente);
+      this.lutDirty = true;
+      this.sujo = true;
+    }
     // o quadro congelado: mesma câmera, mesmos uniforms, mesma LUT — o
     // céu de antes continua valendo, e o raymarch inteiro fica parado
     if (this.cameraParada() && !this.sujo && !this.lutDirty) return;

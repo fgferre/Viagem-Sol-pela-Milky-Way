@@ -192,9 +192,20 @@ const coldRGB = (): [number, number, number] => {
   const b = 0.4276 / (0.2126 * k + 0.7152 * g + 0.0722); // Y conservada
   return [k * b, g * b, b];
 };
-const COLD = coldRGB()
-  .map((v) => v.toFixed(4))
-  .join(', ');
+/**
+ * AS DUAS PONTAS DE `diskColor` viraram uniforms (`uCorFria`/`uCorQuente`)
+ * na R1b da régua única, para a curva de tela poder escolher: a fria na
+ * casa decimal que o texto do shader imprimia, a quente o
+ * `vec3(1.00, 0.72, 0.42)` de antes. No ACES o shader recebe estes
+ * números (`?tone=aces` bit a bit); fora dele, `nebula.ts` os passa com
+ * menos croma.
+ */
+export const PONTA_FRIA_DA_FAIXA = coldRGB().map((v) => Number(v.toFixed(4))) as [
+  number,
+  number,
+  number,
+];
+export const PONTA_QUENTE_DA_FAIXA: [number, number, number] = [1.0, 0.72, 0.42];
 const RIFT_CLOUDS: ReadonlyArray<readonly [number, number, number, number, number]> = [
   [13.0, 7.0, 260, 30, 1.2],
   [23.0, 5.0, 250, 26, 1.5],
@@ -440,8 +451,8 @@ ${NOTHICK ? '    thickDisk = 0.0;\n' : ''}
 
     float towardCenter = clamp(bulge * 0.6 + exp(-radius / 2600.0), 0.0, 1.0);
     vec3 diskColor = mix(
-      vec3(${COLD}),
-      vec3(1.00, 0.72, 0.42),
+      uCorFria,
+      uCorQuente,
       towardCenter * 0.82 + broad * 0.18
     );
 
@@ -533,6 +544,9 @@ uniform sampler2D uDustMap;
 uniform float uCartBlend;
 // o quanto do catálogo está VISÍVEL agora (localFade; 0 com ?nocat=1)
 uniform float uCatFade;
+// as pontas da cor do disco, pela curva de tela (PONTA_FRIA/QUENTE_DA_FAIXA)
+uniform vec3 uCorFria;
+uniform vec3 uCorQuente;
 
 ${GLSL_NOISE}
 ${GLSL_GALAXY}

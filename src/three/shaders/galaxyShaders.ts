@@ -247,6 +247,9 @@ void main() {
   // primitiva; o discard no fragmento com o mesmo limiar não poupou nada
   // (medido), e o corte antes da extinção só pegaria os fracos de
   // nascença, poucos, somando divergência ao laço (medido: pior).
+  // Sob o tom neutro, que não tem o pé do ACES (R1b, 09/10), o limiar
+  // segue valendo: sem ele, no máximo 1 nível em 0,21% dos pixels em
+  // t=150 (0,12% no ACES) e em menos de 0,002% em t=140/168.
   if (max(vColor.r, max(vColor.g, vColor.b)) * vAlpha < 1e-4)
     gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 }
