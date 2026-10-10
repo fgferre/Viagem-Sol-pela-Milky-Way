@@ -2,7 +2,7 @@
 
 Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BASTÃO e o item da vez; o resto, por `grep`.
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
-Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 233.**
+Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
 ## O BASTÃO — onde a rodada parou (09/10) — O SOL EM CADA DISTÂNCIA: A REGRA NOVA PUBLICADA (`main` `d89e684c`, enviada por ele no terminal)
 
@@ -22,6 +22,13 @@ verde (138 arquivos, 3.624 testes). Provas: `capturas/sol-estudo/` (`hoje/pranch
 `proposta/ab-*.jpg`, `filme/seg*-lado-a-lado.mp4`, `regra-a/`).
 
 **Conferido no ar (09/10):** as quatro distâncias de `capturas/sol-estudo/regra-a/` saem do site com o mesmo sha256 (`capturas/sol-estudo/no-ar/`), sem erro de GL.
+
+**Lentes (09/10, conversa "Continuação de pendências"; no `main` local, nada publicado):** barra de força da lente
+(`a501009e`); lente do diretor por cena nos filmes (`6e76b071`), com a Hollywood nas 11 cenas de partida, despedida e
+volta (`0f80822a`); estrelas seguem a Redonda e a Anamórfica, a Hollywood fica com a cruz, escolha dele (`352660be`);
+raios da Hollywood na metade em todo lugar (*"um pouco exagerados"*, candidato B, `b0cb6128`). Provas em
+`capturas/lente-forca/`, `estrelas-lente/`, `hollywood-raios/`, `lente-filme/`. Tudo feito sob ACES. A R1 (tom neutro)
+está em obra na conversa "Coordenação de trabalhos em fila" (ramo tom-unico); ela recalibra os fatores por receita da lente.
 
 **Não feito e achados:** não olhado num iPhone de verdade (a regra é fração da altura; o retrato segue a do Mac);
 de longe, com lente, três cruzes no mesmo ponto (clarão, raios da lente, a cruz do sprite) — assunto 2 do plano;
@@ -813,6 +820,13 @@ Europa (cor real inferida da Galileo sobre o mosaico USGS de 500 m, 4096 px,
 tom meio-termo dele) e Jápeto (relevo gerado: crista no lugar com 20 km,
 55 crateras com nome, as demais pela foto). Ficam na fila: Urano, Netuno,
 Vesta, Deimos, Tritão (pausado), Ariel, Titã, Vênus.**
+
+**233. A lente Anamórfica parece pobre.**
+Palavras dele, 09/10, ao ver os vídeos da lente nos filmes (a Anamórfica na saída e na
+volta do filme da galáxia): *"essa lente realmente é pobre ela é elíptica o formato do
+efeito tenho algo estranho com essa"*. Na mesma fala: *"a Hollywood ela é incrível"* — os
+filmes ficaram com a Hollywood (`0f80822a`); a Anamórfica segue como escolha em Ajustes, e
+as estrelas a seguem (`352660be`). Vídeos: `capturas/lente-filme/video/galactico-*-lado-a-lado.mp4`.
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
