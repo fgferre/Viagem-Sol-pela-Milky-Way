@@ -64,7 +64,7 @@ import { GLSL_COMPRESSAO } from '../shaders/common';
 // leitura da URL: `starShaders.ts` já resolve `?bemis=` uma vez e os
 // três materiais de ponto estelar bebem de lá. A malha é o quarto.
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
-import type { QualityLevel } from '../core/engine';
+import { porCurva, type QualityLevel } from '../core/engine';
 import { EPOCA_JD_TDB } from './planetas/retrato2026';
 import { NOISE_GLSL } from './sol/common.js';
 import { createGranulation } from './sol/granulation.js';
@@ -120,6 +120,47 @@ const SOL_KNOBS: Record<string, number> = {
   // 0,418 do pipeline de lá; no nosso ACES ela compete com a coroa
   // mais clara — 0,9 mal aparecia, 1,4 lê a estrutura de 3 partes
   loops: 0.55, fprom: 0.55, cvol: 0.5, cme: 1.4, edu: 0,
+};
+
+/**
+ * O SOL FORA DO ACES (R1b da régua única; o dono, 09/10: *"Adotar o tom
+ * novo"*). A paleta H-alfa e a coroa foram afinadas a olho sobre o ACES,
+ * que dessatura os altos e esmaga o pé: sob o Neutral da Khronos o mesmo
+ * Sol saía laranja forte, de borda rosada, com um halo largo e opaco até
+ * ~3 raios (o sprite da coroa externa, que o pé do ACES apagava). O ACES
+ * guarda os de antes (`porCurva`: `?tone=aces` sai bit a bit a foto
+ * aprovada); as outras curvas recebem estes, medidos contra essa foto em
+ * L*a*b* por região — disco, borda, anel interno e brilho externo, no
+ * Atlas a 10/18/27 raios e no filme solar (`capturas/regua-r1/r1b-sol/`).
+ * A rampa abre (ponta fria mais vermelha, quente mais creme) porque o ACES
+ * aprofunda os fracos e desbota os fortes, e o Neutral guarda a matiz. O
+ * resto que a rampa de duas pontas não alcança: as manchas saem um pouco
+ * menos vermelhas que no ACES (a* ~15 contra 20–25).
+ */
+const SOL_NO_ACES = {
+  ganho: new THREE.Vector3(1, 1, 1),
+  corFria: new THREE.Vector3(1.0, 0.34, 0.06),
+  corQuente: new THREE.Vector3(1.0, 0.62, 0.24),
+  limbo: new THREE.Vector3(1.0, 0.3, 0.1),
+  coroaExterna: new THREE.Color(1, 1, 1),
+};
+const SOL_FORA_DO_ACES = {
+  /** ganho por canal da cor final da fotosfera */
+  paleta: new THREE.Vector3(0.76, 1.02, 1.36),
+  /** as duas pontas da rampa H-alfa da fotosfera (`sol/sun.js`), antes do ganho acima */
+  corFria: new THREE.Vector3(1.18, 0.39, 0.058),
+  corQuente: new THREE.Vector3(0.64, 0.5, 0.235),
+  /** a cromosfera do limbo (`sol/sun.js`), antes do ganho acima */
+  limbo: new THREE.Vector3(0.75, 0.36, 0.11),
+  /** a tinta da absorção dos filamentos no disco (`sol/prominences.js`):
+   *  o cinza escurecia a fotosfera recalibrada para oliva; tirar menos
+   *  vermelho devolve o marrom-alaranjado que o ACES dava. No ACES o
+   *  material é o de sempre, sem tinta (`porCurva` escolhe o material) */
+  absorcao: new THREE.Vector3(0.67, 0.93, 0.93),
+  /** ganho por canal da coroa: o plano de raias e o volume */
+  coroa: new THREE.Vector3(0.9, 1.0, 1.5),
+  /** a cor do sprite da coroa externa: o ganho da coroa × 0,22 de dose */
+  coroaExterna: new THREE.Color(0.198, 0.22, 0.33),
 };
 
 // ------------------------------------------------------------
@@ -736,6 +777,14 @@ export class StellarBody {
       loopRand: mulberry32(params.seed ^ 0x5eedc0de),
       cmeRand: mulberry32(params.seed ^ 0x00c0e5ed),
       knob: (name: string) => kn[name] ?? 0,
+      // R1b: os uniforms da calibração por curva, partilhados pelos
+      // materiais do Sol e escritos por quadro em `update`
+      paleta: { value: SOL_NO_ACES.ganho.clone() },
+      corFria: { value: SOL_NO_ACES.corFria.clone() },
+      corQuente: { value: SOL_NO_ACES.corQuente.clone() },
+      corDoLimbo: { value: SOL_NO_ACES.limbo.clone() },
+      tintaDaAbsorcao: { value: SOL_FORA_DO_ACES.absorcao.clone() },
+      paletaDaCoroa: { value: SOL_NO_ACES.ganho.clone() },
       getControl: (name: string) => kn[name] ?? 0,
       getAppliedControl: (name: string) => kn[name] ?? 0,
       TIME_SCALE: 1, EDU_K: 0, CYCLE_K: kn.cycle, LAPSE_K: 0,
@@ -1240,6 +1289,15 @@ export class StellarBody {
     ctx.spiculeUniforms.uWorldFade.value = this.pesoDaLei;
     ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray;
     ctx.coronaRaysUniforms.uHalo.value = this.kn.halo;
+    // R1b: a calibração de arte pela curva viva do renderer (`SOL_FORA_DO_ACES`)
+    const tom = ctx.renderer.toneMapping;
+    ctx.paleta.value.copy(porCurva(tom, SOL_NO_ACES.ganho, SOL_FORA_DO_ACES.paleta));
+    ctx.corFria.value.copy(porCurva(tom, SOL_NO_ACES.corFria, SOL_FORA_DO_ACES.corFria));
+    ctx.corQuente.value.copy(porCurva(tom, SOL_NO_ACES.corQuente, SOL_FORA_DO_ACES.corQuente));
+    ctx.corDoLimbo.value.copy(porCurva(tom, SOL_NO_ACES.limbo, SOL_FORA_DO_ACES.limbo));
+    ctx.absMesh.material = porCurva(tom, ctx.absMat, ctx.absMatTingido);
+    ctx.paletaDaCoroa.value.copy(porCurva(tom, SOL_NO_ACES.ganho, SOL_FORA_DO_ACES.coroa));
+    ctx.coronaOuter.material.color.copy(porCurva(tom, SOL_NO_ACES.coroaExterna, SOL_FORA_DO_ACES.coroaExterna));
     if (!this.group.visible) return;
 
     // O RELÓGIO RÁPIDO, aqui e não lá em cima (item 16): corpo fora de
@@ -1512,6 +1570,9 @@ export class StellarBody {
     // `transplante:` em pil.js e chromo.js).
     free(ctx.pilRT);
     free(ctx.bakeSimRT);
+    // os dois materiais da absorção (R1b): só um está pendurado na malha
+    free(ctx.absMat);
+    free(ctx.absMatTingido);
     // as cenas de quad vivem fora do `group` — só esta lista as alcança
     for (const g of this.geoDosQuads) g.dispose();
     this.geoDosQuads.length = 0;

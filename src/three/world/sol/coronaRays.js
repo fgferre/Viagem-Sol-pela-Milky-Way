@@ -66,7 +66,10 @@ export function createCoronaRays(ctx){
     // FASE 4: com a coroa volumétrica ligada o plano de raias cede o
     // protagonismo (fica como base suave de halo). 0.0 default =
     // multiplicação por 1.0 no shader, bit-exata — baseline intocado.
-    uCvolMix: { value: 0.0 }
+    uCvolMix: { value: 0.0 },
+    // R1b da régua única: o ganho por canal da paleta, pela curva viva
+    // (`stellarBody.ts`, `porCurva`); 1,1,1 no ACES
+    uPaleta: ctx.paletaDaCoroa
   };
   var coronaRaysMat = new THREE.ShaderMaterial({
     uniforms: coronaRaysUniforms,
@@ -82,6 +85,7 @@ export function createCoronaRays(ctx){
       'uniform float uActGain;',
       'uniform float uRayBoost;',
       'uniform float uCvolMix;',
+      'uniform vec3 uPaleta;',
       'varying vec2 vUv;',
       'void main(){',
       '  vec2 c = vUv - 0.5;',
@@ -142,6 +146,7 @@ export function createCoronaRays(ctx){
       // mesma curva pela simetria S(1-t)=1-S(t).
       '  fall *= 1.0 - smoothstep(0.55, 0.85, r);',  // some bem antes da borda do plano
       '  vec3 col = mix(vec3(1.0,0.45,0.16), vec3(1.0,0.72,0.38), clamp((r-diskR)*2.2,0.0,1.0));',
+      '  col *= uPaleta;',
       // amplitude respira com a atividade global do ciclo
       '  gl_FragColor = vec4(col * fall * rays * 0.16 * (1.0 + uActGain*uActivity) * (1.0 - 0.62*uCvolMix), 1.0);',
       '}'
