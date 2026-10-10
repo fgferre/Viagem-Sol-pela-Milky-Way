@@ -84,12 +84,32 @@ export const UA_DO_FIM_DA_LENTE = 50;
  * Sol e o Sol atrás da Terra (capturas/regua-r1/r1b-lente/). O neutro não
  * esmaga o pé das cores como o ACES: com o mesmo fator, os fantasmas sobre
  * céu preto saíam 20–50 % mais claros. A cor mais viva que ele guarda nos
- * fantasmas, nenhum fator corrige.
+ * fantasmas, nenhum fator corrige — ela é o `CROMA_DA_RECEITA`, abaixo, e a
+ * Hollywood, com o croma dela, voltou a 1,06 (R1c: 0,94 deixava o brilho
+ * perto do Sol 2–4 L* abaixo do ACES).
  */
 const FATOR_DA_RECEITA: Record<NomeDoPreset, readonly [number, number]> = {
   redonda: [1.1, 0.92],
   anamorfica: [1.1, 1.06],
-  hollywood: [1.2, 0.94],
+  hollywood: [1.2, 1.06],
+};
+
+/**
+ * O CROMA DE CADA RECEITA, [no ACES, nas outras curvas] (`porCurva`, R1c da
+ * régua única): a fração da cor que o reflexo inteiro guarda em volta do
+ * seu cinza de mesma luminância (Rec. 709), no fim do passe. O ACES do
+ * three.js mistura os canais na entrada e deixa o pé cinzento; o neutro tira
+ * de cada pixel escuro o canal menor e devolve a cor quase pura — a névoa
+ * âmbar da Hollywood dentro do anel saía com o mesmo L* e ~1,3× o croma
+ * (filme solar, t=29). 1 é a receita sem toque. O 0,75 da Hollywood é o
+ * meio-termo de um número só: o pé do neutro aviva mais quanto mais escuro,
+ * então a névoa fraca de fora do anel pedia ~0,5 e o brilho perto do Sol ~0,85
+ * (capturas/regua-r1/r1c/residuos-v2.jpg). As outras duas não foram medidas.
+ */
+const CROMA_DA_RECEITA: Record<NomeDoPreset, readonly [number, number]> = {
+  redonda: [1, 1],
+  anamorfica: [1, 1],
+  hollywood: [1, 0.75],
 };
 
 /**
@@ -489,6 +509,7 @@ const FRAGMENTO_FINOS = /* glsl */ `
   uniform bool uTemSujeira;
   uniform vec3 uSujeiraCor; // cor × intensidade
   uniform vec3 uTransmitancia; // a luz do Sol através do ar da Terra, por canal
+  uniform float uCroma; // a fração da cor que o reflexo guarda (CROMA_DA_RECEITA, pela curva)
 #endif
   in vec2 vUv;
   layout(location = 0) out highp vec4 saida;
@@ -592,6 +613,11 @@ const FRAGMENTO_FINOS = /* glsl */ `
     }
     // só aqui: a luz da sujeira (tLuz) já entra nesta soma, e passaria duas vezes pelo ar
     c *= uTransmitancia;
+    // o croma da receita pela curva (CROMA_DA_RECEITA); 1 no ACES, e então o quadro é o de antes
+    if (uCroma != 1.0) {
+      float y = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      c = vec3(y) + (c - vec3(y)) * uCroma;
+    }
 #endif
     saida = vec4(clamp(c, 0.0, 1.0e3), 0.0);
   }
@@ -673,6 +699,7 @@ function fantasmasNaGpu(fantasmas: readonly Fantasma[]) {
 interface NaGpu {
   readonly preset: Preset;
   readonly fator: readonly [number, number];
+  readonly croma: readonly [number, number];
   readonly pico: number;
   readonly fantasmas: THREE.InstancedBufferGeometry;
   readonly ladrilhos: THREE.Vector2;
@@ -687,6 +714,7 @@ function naGpu(nome: NomeDoPreset): NaGpu {
   return {
     preset,
     fator: FATOR_DA_RECEITA[nome],
+    croma: CROMA_DA_RECEITA[nome],
     pico: picoDoPreset(preset),
     fantasmas: fantasmasNaGpu(fantasmas),
     ladrilhos: new THREE.Vector2(COLUNAS_DE_LADRILHOS, Math.max(1, Math.ceil(fantasmas.length / COLUNAS_DE_LADRILHOS))),
@@ -777,6 +805,7 @@ export class PasseDaLente extends Pass {
       uTemSujeira: { value: false },
       uSujeiraCor: v3(),
       uTransmitancia: { value: new THREE.Vector3(1, 1, 1) },
+      uCroma: { value: 1 },
       tMacio: { value: this.alvoMacio.texture },
       tLuz: { value: this.alvoLuz.texture },
       tSujeira: { value: null },
@@ -988,6 +1017,7 @@ export class PasseDaLente extends Pass {
     u.uAlfaDisco.value = alfa;
     u.uForcaDisco.value = forca;
     u.uRaioDisco.value = raio * forca;
+    u.uCroma.value = porCurva(curva, gpu.croma[0], gpu.croma[1]);
     return true;
   }
 

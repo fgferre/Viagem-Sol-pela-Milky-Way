@@ -193,10 +193,19 @@ export class Galaxy {
     // brilho central do perfil não depende do tamanho) e devolve as asas
     // ao aprovado (t=150: ΔE2000 em volta do bojo 4,4 → 0,8). `?halosize=`
     // vence as duas curvas.
+    // A COR TAMBÉM (R1c): no mesmo L*, o pé do neutro tira o canal menor e
+    // deixava o clarão do perfil ~1,5× mais vivo e mais amarelo (h 74 contra
+    // 67). Fora do ACES o halo é mais cinzento e mais forte, para o que
+    // sobra do pé ser o âmbar aprovado (t=150/152, anéis de 40 a 240 px em
+    // volta do bojo fora do disco: ΔE2000 3,5 → 0,8). O halo só existe na
+    // vista externa de raspão; o glow, que também vive dentro do disco, fica.
     const tamanhoNoAces = tune('halosize', 6000);
     const tamanhoFora = tune('halosize', 4000);
+    const corNoAces = (this.haloMat.uniforms.uColor.value as THREE.Vector3).clone();
+    const corFora = new THREE.Vector3(1.14, 0.865, 0.775).multiplyScalar(this.haloGain);
     halo.onBeforeRender = (renderer) => {
       this.haloMat.uniforms.uSize.value = porCurva(renderer.toneMapping, tamanhoNoAces, tamanhoFora);
+      (this.haloMat.uniforms.uColor.value as THREE.Vector3).copy(porCurva(renderer.toneMapping, corNoAces, corFora));
     };
     this.group.add(halo);
     this.haloMesh = halo;
