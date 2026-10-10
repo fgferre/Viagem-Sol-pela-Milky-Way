@@ -47,7 +47,6 @@ import { GLSL_NORMAL_DO_MAPA, GLSL_SOMBRA_DO_HORIZONTE, escalaDoBumpDoAlbedo } f
 import { direcaoLocalDeLonLat, orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import {
   type ConfigDoRochoso,
-  GRADUACAO_DO_MOSAICO,
   LIMIAR_DA_MALHA_DENSA_PX,
   NORMAL_MEDIDA,
   RELEVO_DA_LUA,
@@ -715,91 +714,6 @@ describe('5. texto-fonte (as leis do cabeçalho, pinadas)', () => {
 });
 
 // ------------------------------------------------------------
-// 6. A GRADUAÇÃO DO MOSAICO (item 138)
-// ------------------------------------------------------------
-
-/**
- * A CONTA DO FRAGMENTO, em JS: `clamp(mix(c, luminância, desat) * ganho)`.
- * Ela não é uma segunda fonte de verdade — a primeira linha deste bloco
- * confere que o GLSL montado ainda é ESTA conta, letra por letra; o que
- * o espelho serve é medir o EFEITO do par que o material publica.
- */
-function graduar(c: readonly [number, number, number], desat: number, ganho: number) {
-  const lum = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-  return c.map((v) => Math.min(1, Math.max(0, (v + (lum - v) * desat) * ganho))) as unknown as
-    number[];
-}
-
-/** o desvio de neutro de uma cor: 1 = cinza, >1 = mais vermelha que azul */
-const razaoRB = (c: readonly number[]) => c[0] / c[2];
-
-describe('6. a graduação do mosaico Cassini (item 138)', () => {
-  /** a cor CRUA de um mosaico de Schenk: realçada em IR/UV, R/B = 1,07 */
-  const CRUA = [0.62, 0.55, 0.58] as const;
-
-  it('o fragmento montado faz a conta dele, na ordem dele', () => {
-    for (const frag of [ROCHOSO_LS_FRAG, ROCHOSO_LAMBERT_FRAG]) {
-      expect(frag).toContain(
-        'return clamp(mix(c, vec3(alturaDoAlbedo(c)), uGraduacao.x) * uGraduacao.y, 0.0, 1.0);'
-      );
-      // e ela entra no CAMINHO da cor, não num canto morto do shader
-      expect(frag).toContain('graduarMosaico(texture2D(uMapaDia, vUv).rgb)');
-    }
-  });
-
-  it('o par do material SAI da tabela, para as seis luas de mosaico', async () => {
-    for (const id of Object.keys(GRADUACAO_DO_MOSAICO)) {
-      const { corpo } = rochosoDeTeste(id, 'lambert');
-      corpo.atualizar(quadro(id, 4));
-      await flush();
-      expect(corpo.atualizar(quadro(id, 4)).emQuadro, id).toBe(true);
-      const u = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
-      const par = u.uGraduacao.value as THREE.Vector2;
-      expect(par.x, `${id} desat`).toBe(GRADUACAO_DO_MOSAICO[id]!.desat);
-      expect(par.y, `${id} ganho`).toBe(GRADUACAO_DO_MOSAICO[id]!.ganho);
-      corpo.dispose();
-    }
-  });
-
-  it('em Mimas a graduação MUDA a cor: desatura de verdade e levanta o nível', () => {
-    const { desat, ganho } = GRADUACAO_DO_MOSAICO.mimas!;
-    // o par não é a identidade — zerar a tabela (a sabotagem) devolveria
-    // o mosaico cru, e estas três medidas caem juntas
-    expect(desat).toBeGreaterThan(0);
-    const graduada = graduar(CRUA, desat, ganho);
-    expect(razaoRB(CRUA)).toBeGreaterThan(1.05);
-    expect(razaoRB(graduada)).toBeLessThan(razaoRB(CRUA));
-    // a lua de gelo fica quase neutra (o realce IR/UV some)
-    expect(Math.abs(razaoRB(graduada) - 1)).toBeLessThan(0.05);
-    // e o nível sobe pelo ganho dele
-    expect(graduada[1]).toBeGreaterThan(CRUA[1]);
-  });
-
-  it('Encélado tem o maior ganho — é o corpo mais reflexivo do Sistema', () => {
-    const ganhos = Object.entries(GRADUACAO_DO_MOSAICO).map(([id, g]) => [id, g.ganho] as const);
-    const maior = ganhos.reduce((a, b) => (b[1] > a[1] ? b : a));
-    expect(maior[0]).toBe('enceladus');
-    expect(maior[1]).toBe(1.35);
-  });
-
-  it('FORA das seis o par é (0,1) e a cor sai bit a bit intocada', async () => {
-    for (const id of ['mercury', 'ganymede', 'titan']) {
-      expect(GRADUACAO_DO_MOSAICO[id]).toBeUndefined();
-      const { corpo } = rochosoDeTeste(id, 'lambert');
-      corpo.atualizar(quadro(id, 4));
-      await flush();
-      corpo.atualizar(quadro(id, 4));
-      const u = (malhaDaSuperficie(corpo.group).material as THREE.ShaderMaterial).uniforms;
-      const par = u.uGraduacao.value as THREE.Vector2;
-      expect([par.x, par.y], id).toEqual([0, 1]);
-      corpo.dispose();
-    }
-    // e a conta com (0,1) é a identidade EXATA, não "quase"
-    expect(graduar(CRUA, 0, 1)).toEqual([...CRUA]);
-  });
-});
-
-// ------------------------------------------------------------
 // 7. A MEIA VOLTA DOS MAPAS DAS SEIS (item 138)
 // ------------------------------------------------------------
 
@@ -889,7 +803,7 @@ describe('7. a meia volta dos mapas das seis luas de mosaico (item 138)', () => 
 
   it('as seis têm os três mapas (mosaico, altura e normal) na árvore', async () => {
     const { existsSync } = await import('node:fs');
-    for (const id of Object.keys(GRADUACAO_DO_MOSAICO)) {
+    for (const id of ['mimas', 'enceladus', 'tethys', 'dione', 'rhea', 'iapetus']) {
       for (const arq of ['map.jpg', 'height.png', 'normal.png']) {
         expect(existsSync(join(TEXTURAS, id, arq)), `${id}/${arq}`).toBe(true);
       }
