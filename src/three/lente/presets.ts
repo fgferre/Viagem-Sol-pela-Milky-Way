@@ -318,9 +318,10 @@ function montar(nome: NomeDoPreset): Preset {
     borda: { zona: 0.25, ganhoBrilho: 1.8, ganhoTamanho: 1.3, margem: 0.15 },
     elementos: [
       { tipo: 'brilho', int1: 2.2, raio1: 0.013, cor1: [1, 0.8, 0.5], int2: 0.14, raio2: 0.1, cor2: [1, 0.62, 0.28], esticar: 1 },
-      // muitos raios finos de comprimentos variados
+      // muitos raios finos de comprimentos variados — curtos e fracos desde 09/10 (ele, pela
+      // prancha `capturas/hollywood-raios/`: "B — bem menos"; antes 0,42 e 0,7, "um pouco exagerados")
       {
-        tipo: 'raios', numero: 64, comprimento: 0.42, largura: 0.0011, alargar: 1, queda: 2, intensidade: 0.7,
+        tipo: 'raios', numero: 64, comprimento: 0.21, largura: 0.0011, alargar: 1, queda: 2, intensidade: 0.35,
         atenuacaoDisco: 0.08, jitterComprimento: 0.8, jitterAngulo: 0.7, jitterBrilho: 0.7,
         croma: [1.06, 1, 0.94], cor: [1, 0.85, 0.6], rotacao: 0, semente: 7,
       },
