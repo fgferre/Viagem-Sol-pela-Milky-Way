@@ -34,7 +34,10 @@ Urano e Tritão, as 6 ilustrações por IA; derivado: Ceres, Europa, Reia, horiz
 Lommel-Seeliger saía 1,41× mais escura que a Lambert), a regra única dos mapas (`src/lib/atlas/reguaDosMapas.ts` +
 `scripts/data/atlas/regua-dos-mapas.mjs`) e a graduação por lua tirada do shader; falta rodar a cadeia (pede a palavra
 dele) e o retrato "depois". Estudo: `capturas/regua-r2/estudo-da-regra.md`; retrato de hoje: `retrato-antes-v2.jpg`
-(ferramenta `scripts/visual/retrato-de-familia.mjs`). Achados do retrato, fora da R2: Vesta com a face quase toda preta
+(ferramenta `scripts/visual/retrato-de-familia.mjs`). Ordem dele: primeiro a luz, depois os mapas — o retrato
+`retrato-antes-luz.jpg` (ramo `luz-r2` = main + só o conserto da luz) mostra os Lambert idênticos e os LS 1,16–1,43× mais
+claros; os galileanos chegam perto do alvo; a Lua (+410 %), Mercúrio, Calisto, Palas e Hígia ficam claros demais de
+verdade, isto é, nos mapas. Achados do retrato, fora da R2: Vesta com a face quase toda preta
 (falta dado no mapa); Deimos uma mancha branca com costura; Titã é a casca de névoa, não o mapa (B/G 0,07 × 0,55).
 
 **Restos pequenos, vistos por ele:** as manchas do Sol um pouco mais marrons; o bojo da galáxia um pouco mais amarelo;
