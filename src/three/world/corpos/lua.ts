@@ -218,9 +218,10 @@ void main() {
   // 4.3). O disco chato de LS e' o fato da foto, e o teto de 1 nao
   // morde o realce de limbo — a borda dura continua dura. A lanterna
   // leva as SOMBRAS junto: sem isso o cobre de Danjon do eclipse lunar
-  // viraria um cinza de 15 %.
+  // viraria um cinza de 15 %. O Sol do LS fica FORA da tradução
+  // (luzDoRegolito, R2): já é luz linear, e traduzido escurecia 1,41×.
   gl_FragColor = vec4(
-    albedo * luzDoGlobo(luzSol, lanternaDeLeitura(n, dirCam, sombras)), 1.0
+    albedo * luzDoRegolito(luzSol, lanternaDeLeitura(n, dirCam, sombras)), 1.0
   );
 }
 `;
