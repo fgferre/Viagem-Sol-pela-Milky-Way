@@ -63,8 +63,8 @@ sul: sem preenchimento, o WRAP faria um anel negro no polo. Agora entra, a
   extrapolação pura. A mistura guiada pelo brilho explica cerca de metade da
   cor real medida (RMS de a*b* 5,9 contra 8,4 da cor constante).
 
-O map.jpg só é gravado com o sha256 do RGB aprovado (`9d2b9b09…1a0e`, o
-candidato `a-meio` do E1); a prova por hash é
+O map.jpg só é gravado com o sha256 do RGB aprovado (`7fdfde13…6f88`, o
+candidato `a-meio` do E1 com o nível da régua, R2, 10/10); a prova por hash é
 `capturas/europa-japeto/ferramentas/prova-cadeia-europa.mjs`.
 
 ## Ceres — o inventado saiu (item 141, 3ª fase)
@@ -994,20 +994,21 @@ existe publicado e **não** é carregado: a casa não tem
 elipsoide de `BODY_AXES`. Depois, as sete luas de Saturno da S3 que seguem
 esculpidas, o caso oposto — têm malha, e a malha é INVENTADA a partir das
 dimensões publicadas (item 134/S3, seção acima); Hipérion e Pã saíram (forma
-medida, tabela de cima). O selo segue a regra da tabela de cima: o elipsoide
-dos eixos medidos é `medido` — o modelo irregular que falta é resolução,
-como o mosaico de Titã que não entrou —, e a malha esculpida, com crateras
-procedurais, é `inventado`. Corpo sem linha aqui é o elipsoide dos eixos
-medidos, `medido`.
+medida, tabela de cima). O selo segue a regra da tabela de cima: o corpo
+redondo de verdade, desenhado pelo elipsoide dos eixos medidos, é `medido`; o
+elipsoide ou a esfera no lugar de uma forma irregular medida que a casa ainda
+não carrega é `derivado` (um ajuste das medidas, não a forma); a malha
+esculpida, com crateras procedurais, é `inventado`. Corpo sem linha aqui é o
+elipsoide dos eixos medidos, `medido`.
 
 | corpo | selo | nota |
 | --- | --- | --- |
-| vesta | medido | elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e esta casa ainda não a carrega |
-| pallas | medido | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
-| hygiea | medido | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
-| haumea | medido | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega |
-| phobos | medido | elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
-| deimos | medido | elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
+| vesta | derivado | elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e esta casa ainda não a carrega |
+| pallas | derivado | esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
+| hygiea | derivado | esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
+| haumea | derivado | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega |
+| phobos | derivado | elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
+| deimos | derivado | elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
 | daphnis | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | atlas | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | prometheus | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |

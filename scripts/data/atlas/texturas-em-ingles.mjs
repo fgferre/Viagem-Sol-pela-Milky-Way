@@ -640,8 +640,8 @@ export const EM_INGLES = new Map([
     'an ellipsoid, no mesh: the irregular shape measured by Dawn is published, and this house does not load it yet',
   ],
   [
-    'elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega',
-    'an ellipsoid, no mesh: the irregular shape from DAMIT is published, and this house does not load it yet',
+    'esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega',
+    'a sphere of the mean radius, no mesh: the irregular shape from DAMIT is published, and this house does not load it yet',
   ],
   [
     'elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega',
