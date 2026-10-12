@@ -456,6 +456,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.brilho.medido': 'measured albedo p0 = {p0} ({fonte})',
   'ficha.brilho.picoPorModelo':
     'albedo p0 = {p0}, with the opposition surge removed by a model ({fonte})',
+  'ficha.brilho.estimado': 'albedo p0 = {p0}, estimated from the measurements ({fonte})',
   'ficha.brilho.mediaEstimada': '; the regolith family reaches it through an estimated mean',
   'ficha.brilho.gama': '; map contrast ×{gama} so it does not blow out',
   'ficha.brilho.foraDaRegua':

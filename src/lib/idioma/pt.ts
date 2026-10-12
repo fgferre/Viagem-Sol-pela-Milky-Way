@@ -484,6 +484,7 @@ export const PT = {
   'ficha.brilho.medido': 'albedo medido p0 = {p0} ({fonte})',
   'ficha.brilho.picoPorModelo':
     'albedo p0 = {p0}, com o pico de oposição tirado por modelo ({fonte})',
+  'ficha.brilho.estimado': 'albedo p0 = {p0}, estimado a partir das medidas ({fonte})',
   'ficha.brilho.mediaEstimada': '; a família de regolito chega a ele por uma média estimada',
   'ficha.brilho.gama': '; contraste do mapa ×{gama} para não estourar',
   'ficha.brilho.foraDaRegua':

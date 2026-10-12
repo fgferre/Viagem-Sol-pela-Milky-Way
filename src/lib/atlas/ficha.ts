@@ -682,7 +682,12 @@ function linhaDoBrilho(id: string, regua: MedidaDoCorpo | undefined): LinhaDaFic
   if (!regua) return linha(rotulo, t('ficha.brilho.foraDaRegua'), null);
   const picoPorModelo = PICO_POR_MODELO.test(regua.fonteDoNivel);
   const esculpida = regua.matiz === 'esculpido';
-  let frase = t(picoPorModelo ? 'ficha.brilho.picoPorModelo' : 'ficha.brilho.medido', {
+  const chave = picoPorModelo
+    ? 'ficha.brilho.picoPorModelo'
+    : regua.nivelDerivado
+      ? 'ficha.brilho.estimado'
+      : 'ficha.brilho.medido';
+  let frase = t(chave, {
     p0: decimalDoIdioma(alvoDoMapa(id).p0.toPrecision(2)),
     fonte: regua.fonteDoNivel,
   });
