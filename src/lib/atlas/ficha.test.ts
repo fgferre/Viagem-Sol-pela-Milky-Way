@@ -91,12 +91,6 @@ function ficha(id: string): Ficha | null {
   });
 }
 
-/** As linhas de uma seção, por rótulo — o atalho de meia dúzia de provas. */
-function porRotulo(id: string, secao: string): Map<string, string> {
-  const s = ficha(id)!.secoes.find((x) => x.id === secao);
-  return new Map((s?.linhas ?? []).map((l) => [l.rotulo, l.valor]));
-}
-
 const todasAsLinhas = (f: Ficha) => f.secoes.flatMap((s) => s.linhas);
 
 describe('completude — todo alvo do Atlas monta ficha', () => {
@@ -155,11 +149,17 @@ describe('completude — todo alvo do Atlas monta ficha', () => {
 });
 
 describe('honestidade — o vocabulário é o do selo, e só ele', () => {
-  it('todo rótulo de procedência sai de PROCEDENCIA', () => {
+  it('todo rótulo de procedência sai de PROCEDENCIA — e só a seção da imagem tem linha sem selo', () => {
     const permitidos = new Set(Object.keys(PROCEDENCIA));
     for (const id of ALVOS) {
-      for (const l of todasAsLinhas(ficha(id)!)) {
-        expect(permitidos.has(l.procedencia), `${id}/${l.rotulo}`).toBe(true);
+      for (const secao of ficha(id)!.secoes) {
+        for (const l of secao.linhas) {
+          if (l.procedencia === undefined) {
+            expect(secao.id, `${id}/${l.rotulo}`).toBe('imagem');
+            continue;
+          }
+          expect(permitidos.has(l.procedencia), `${id}/${l.rotulo}`).toBe(true);
+        }
       }
     }
   });
@@ -350,8 +350,8 @@ describe('a língua — o texto é pt-BR e a tela não tem inglês (item 74, par
     // guidelines") e a frase de crédito que ele exige verbatim. Traduzi-las
     // não seria zelo com a língua — seria descumprir a licença que permite a
     // foto estar aqui, e apagar o nome pelo qual o arquivo é procurável.
-    // O que a CASA escreveu na mesma seção — o defeito, a forma, a
-    // superfície inventada — continua no varredor.
+    // O que a CASA escreveu na mesma seção — as quatro linhas da confissão
+    // e a fonte do relevo — continua no varredor.
     const CITACAO_DE_LICENCA = new Set(['fonte', 'licença', 'atribuição']);
     for (const id of ALVOS) {
       for (const l of todasAsLinhas(ficha(id)!)) {
@@ -402,54 +402,164 @@ describe('a língua — o texto é pt-BR e a tela não tem inglês (item 74, par
   });
 });
 
-describe('a imagem confessa — itens 19 e 20', () => {
-  it('todo corpo com mesh tem a seção, e ela diz fonte, licença e crédito', () => {
+describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3)', () => {
+  afterEach(() => definirIdioma('pt-BR'));
+
+  const linhasDaImagem = (id: string, manifest: ManifestDeTexturas = texturas) =>
+    montarFicha({ id, jd: JD, fonte: motor, editorial: porId.get(id), texturas: manifest })!
+      .secoes.find((s) => s.id === 'imagem')!.linhas;
+  const linhaDe = (id: string, rotulo: string) =>
+    linhasDaImagem(id).find((l) => l.rotulo === rotulo)!;
+  const QUATRO = ['forma', 'relevo', 'cor', 'brilho'];
+  const CREDITO = ['fonte', 'licença', 'atribuição', 'fonte do relevo'];
+  const SO_ATMOSFERA = ['jupiter', 'saturn', 'uranus', 'neptune', 'venus', 'titan'];
+
+  it('todo corpo abre com forma, relevo, cor e brilho, e o crédito vem depois, sem selo', () => {
     // 47 dos 48: o Sol não entra (a imagem dele é a Lei da Estrela).
     for (const id of ALVOS.filter((i) => i !== 'sun')) {
-      const imagem = porRotulo(id, 'imagem');
-      expect(imagem.size, id).toBeGreaterThan(0);
-      // ou tem mapa com licença, ou confessa que a superfície é inventada
-      expect(imagem.has('licença') || imagem.has('superfície'), id).toBe(true);
-      if (imagem.has('licença')) {
-        expect(imagem.get('licença'), id).not.toBe('nao-resolvida');
-        expect(imagem.get('fonte'), id).toBeTruthy();
-        expect(imagem.get('atribuição'), id).toBeTruthy();
+      const linhas = linhasDaImagem(id);
+      expect(linhas.slice(0, 4).map((l) => l.rotulo), id).toEqual(QUATRO);
+      expect(linhas.slice(4).every((l) => CREDITO.includes(l.rotulo)), id).toBe(true);
+      for (const l of linhas.slice(4)) expect(l.procedencia, `${id}/${l.rotulo}`).toBeUndefined();
+      const temMapa = texturas.entradas.some((e) => e.corpo === id && e.canal === 'map');
+      if (temMapa) {
+        for (const rotulo of ['fonte', 'licença', 'atribuição']) {
+          expect(linhas.find((l) => l.rotulo === rotulo)?.valor, `${id}/${rotulo}`).toBeTruthy();
+        }
       }
     }
   });
 
-  it('Ceres confessa o tingimento e a noite polar do mosaico real (item 141; era o mapa inventado do 19)', () => {
-    const defeito = porRotulo('ceres', 'imagem').get('o defeito');
-    expect(defeito).toContain('tingimento');
-    expect(defeito).toContain('noite polar');
-    expect(defeito).not.toContain('inventado');
-  });
-
-  it('Ceres e Vesta trazem a linha «relevo», citando o DTM da Dawn (item 141)', () => {
-    // Os dois ganharam relevo MEDIDO por baixo da cor, e a ficha tem de
-    // dizê-lo: sem esta linha o visitante leria só a origem do mosaico e
-    // não saberia que a forma vem de outro produto, de outra fonte.
-    for (const id of ['ceres', 'vesta']) {
-      const relevo = porRotulo(id, 'imagem').get('relevo');
-      expect(relevo, `${id} sem linha de relevo`).toBeTruthy();
-      expect(relevo, id).toContain('Dawn');
-      expect(relevo, id).toContain('DTM');
+  it('forma: sem linha na tabela é o elipsoide dos eixos medidos; com linha, o selo é o da tabela', () => {
+    // A tabela "a forma" do ASSETS.md: os seis elipsoides (ou esferas) no
+    // lugar da malha publicada e as sete esculpidas por código.
+    const COM_MALHA_PUBLICADA = ['vesta', 'pallas', 'hygiea', 'haumea', 'phobos', 'deimos'];
+    const ESCULPIDAS = ['daphnis', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus', 'phoebe'];
+    for (const id of ALVOS.filter((i) => i !== 'sun')) {
+      const forma = linhaDe(id, 'forma');
+      if (COM_MALHA_PUBLICADA.includes(id)) expect(forma.valor, id).toContain('sem malha');
+      else if (ESCULPIDAS.includes(id)) {
+        expect(forma.valor, id).toContain('geometria esculpida por código');
+      } else {
+        expect(forma.valor, id).toMatch(/^elipsoide dos eixos medidos/);
+        expect(forma.procedencia, id).toBe('medido');
+      }
     }
-    // e a nota da bancada continua saindo na linha que admite o limite
-    expect(porRotulo('ceres', 'imagem').get('o relevo admite')).toContain('137 m');
-    expect(porRotulo('vesta', 'imagem').get('o relevo admite')).toContain('três eixos');
+    // Hipérion e Pã têm a forma medida por mapa de altura: a frase diz isso
+    expect(linhaDe('hyperion', 'forma').valor).toContain('mapa de altura');
+    expect(linhaDe('mars', 'forma').valor).toBe('elipsoide dos eixos medidos');
+    // o selo vem da coluna `selo` (manifesto regenerado); sem ela, o piso
+    const vesta = texturas.formas!.vesta;
+    const comSelo: ManifestDeTexturas = {
+      ...texturas,
+      formas: { ...texturas.formas, vesta: { ...vesta, seloDaNota: 'derivado' } },
+    };
+    expect(linhasDaImagem('vesta', comSelo).find((l) => l.rotulo === 'forma')!.procedencia).toBe(
+      'derivado'
+    );
+    const semSelo: ManifestDeTexturas = {
+      ...texturas,
+      formas: { ...texturas.formas, vesta: { pt: vesta.pt, en: vesta.en } },
+    };
+    expect(linhasDaImagem('vesta', semSelo).find((l) => l.rotulo === 'forma')!.procedencia).toBe(
+      'artistico'
+    );
   });
 
-  it('Titã confessa as emendas, Europa a cor inferida, Vênus a falta de luz visível', () => {
-    expect(porRotulo('titan', 'imagem').get('o defeito')).toContain('emendas');
-    expect(porRotulo('europa', 'imagem').get('o defeito')).toContain('INFERIDA');
-    expect(porRotulo('venus', 'imagem').get('o defeito')).toContain('luz visível');
+  it('relevo: atmosfera não se aplica e não leva selo; sem mapa de relevo é liso, artístico', () => {
+    for (const id of SO_ATMOSFERA) {
+      const relevo = linhaDe(id, 'relevo');
+      expect(relevo.valor, id).toBe('não se aplica: o que se vê é atmosfera');
+      expect(relevo.procedencia, id).toBeUndefined();
+    }
+    expect(linhaDe('miranda', 'relevo')).toMatchObject({
+      valor: 'liso: falta um mapa de relevo',
+      procedencia: 'artistico',
+    });
+    // a esculpida não tem mapa nenhum: o relevo é o da malha feita por código
+    expect(linhaDe('daphnis', 'relevo').valor).toContain('malha feita por código');
+    expect(linhaDe('daphnis', 'relevo').procedencia).toBe('artistico');
+    // com imagem, o selo é o da nota mais fraca; Mimas, Tétis e Dione admitem o texel
+    for (const id of ['mimas', 'tethys', 'dione']) {
+      expect(linhaDe(id, 'relevo').valor, id).toContain('1024 px');
+      expect(linhaDe(id, 'relevo').procedencia, id).toBe('medido');
+    }
+    expect(linhaDe('iapetus', 'relevo').procedencia).toBe('artistico');
+    expect(linhaDe('ceres', 'relevo').valor).toContain('137 m');
+    expect(linhaDe('vesta', 'fonte do relevo').valor).toContain('DTM');
   });
 
-  it('a Terra NÃO tem defeito — ausência de nota não é falta de conferência', () => {
-    const imagem = porRotulo('earth', 'imagem');
-    expect(imagem.has('o defeito')).toBe(false);
-    expect(imagem.get('fonte')).toContain('Solar System Scope');
+  it('cor: o mais fraco entre a nota do mapa e a política da régua', () => {
+    // Vênus: a nota mede (topo de nuvens), a tinta deriva — vence a tinta,
+    // e a frase dela entra junto, para o selo ter quem o explique
+    const venus = linhaDe('venus', 'cor');
+    expect(venus.procedencia).toBe('derivado');
+    expect(venus.valor).toContain('luz visível');
+    expect(venus.valor).toContain('tingido com a cor medida (Mallama+2017)');
+    // Europa: a nota deriva (cor inferida), a foto mede — vence a nota, sozinha
+    const europa = linhaDe('europa', 'cor');
+    expect(europa.procedencia).toBe('derivado');
+    expect(europa.valor).toContain('INFERIDA');
+    expect(europa.valor).not.toContain('foto em cor verdadeira');
+    // sem nota, só a régua, citando a fonte da cor
+    expect(linhaDe('jupiter', 'cor')).toMatchObject({
+      valor: 'foto em cor verdadeira, média medida (Mallama+2017)',
+      procedencia: 'medido',
+    });
+    expect(linhaDe('daphnis', 'cor').procedencia).toBe('artistico');
+    expect(linhaDe('pluto', 'cor').procedencia).toBe('artistico');
+    for (const id of ['hygiea', 'pallas', 'haumea', 'makemake', 'eris', 'quaoar']) {
+      expect(linhaDe(id, 'fonte').valor, id).toContain('IA');
+      expect(linhaDe(id, 'cor').valor, id).toContain('não existe foto');
+      expect(linhaDe(id, 'cor').procedencia, id).toBe('artistico');
+    }
+  });
+
+  it('brilho: o p0 da régua, derivado quando o pico é modelo ou a média é estimada, e o γ < 1 dito', () => {
+    expect(linhaDe('enceladus', 'brilho')).toMatchObject({
+      valor:
+        'albedo medido p0 = 0,89 (equigonal VIMS 0,55 µm (Filacchione+2022)); contraste do mapa ×0,07 para não estourar',
+      procedencia: 'medido',
+    });
+    const vesta = linhaDe('vesta', 'brilho');
+    expect(vesta.procedencia).toBe('derivado');
+    expect(vesta.valor).toContain('pico de oposição tirado por modelo');
+    expect(vesta.valor).toContain('×0,68');
+    // γ = 1 não confessa contraste nenhum
+    expect(linhaDe('callisto', 'brilho').valor).not.toContain('contraste');
+    const dafnis = linhaDe('daphnis', 'brilho');
+    expect(dafnis.procedencia).toBe('derivado');
+    expect(dafnis.valor).toContain('média estimada');
+    // a Terra composta fica fora da régua: cor e brilho dizem isso, sem selo
+    for (const rotulo of ['cor', 'brilho']) {
+      expect(linhaDe('earth', rotulo).valor, rotulo).toContain('fora da régua');
+      expect(linhaDe('earth', rotulo).procedencia, rotulo).toBeUndefined();
+    }
+  });
+
+  it('nenhuma nota some: tudo o que a bancada e o crédito escrevem chega a uma linha, nas duas línguas', () => {
+    for (const idioma of ['pt-BR', 'en'] as const) {
+      definirIdioma(idioma);
+      const na = (texto: { pt: string; en?: string } | null | undefined) =>
+        texto && (idioma === 'en' ? (texto.en ?? texto.pt) : texto.pt);
+      for (const id of ALVOS.filter((i) => i !== 'sun')) {
+        const valores = linhasDaImagem(id).map((l) => l.valor);
+        const doCanal = (canal: string) =>
+          texturas.entradas.filter((e) => e.corpo === id && e.canal === canal);
+        const [mapa, altura, normal] = [doCanal('map'), doCanal('height'), doCanal('normal')];
+        const esperadas = [na(texturas.formas?.[id])];
+        for (const e of [...mapa, ...altura, ...normal]) esperadas.push(na(e.nota));
+        for (const e of mapa) {
+          esperadas.push(na(e.origem?.fonte), na(e.origem?.licenca), na(e.origem?.atribuicao));
+        }
+        // a fonte do relevo é a da altura, e a das normais só sem altura — como sempre foi
+        for (const e of altura.length > 0 ? altura : normal) esperadas.push(na(e.origem?.fonte));
+        for (const frase of esperadas) {
+          if (!frase) continue;
+          expect(valores.some((v) => v.includes(frase)), `${idioma} ${id}: ${frase.slice(0, 50)}`).toBe(true);
+        }
+      }
+    }
   });
 
   it('o relevo realçado da Terra (item 232) se confessa SÓ quando ligado, antes da nota «sem exagero»', () => {
@@ -463,90 +573,22 @@ describe('a imagem confessa — itens 19 e 20', () => {
     const i = realcado.findIndex((l) => l.rotulo === 'relevo realçado');
     expect(realcado[i]!.valor).toContain('3× maiores que as medidas');
     expect(realcado[i]!.procedencia).toBe('artistico');
-    // a nota da bancada vem depois, e continua descrevendo o MAPA
-    expect(realcado.findIndex((l) => l.rotulo === 'o relevo admite')).toBeGreaterThan(i);
+    // a nota da bancada vem logo depois, na linha do relevo, e continua descrevendo o MAPA
+    expect(realcado[i + 1]!.rotulo).toBe('relevo');
+    expect(realcado[i + 1]!.valor).toContain('sem exagero');
     expect(realcado).toHaveLength(imagem().length + 1);
   });
 
-  it('o defeito leva o selo do que confessa: Vênus sem luz visível é MEDIDO, o tingimento de Ceres é DERIVADO', () => {
-    const defeito = (id: string) =>
-      ficha(id)!.secoes.find((s) => s.id === 'imagem')!.linhas.find((l) => l.rotulo === 'o defeito')!;
-    expect(defeito('venus').procedencia).toBe('medido');
-    expect(defeito('venus').fonte).toBe('bancada de texturas');
-    expect(defeito('ceres').procedencia).toBe('derivado');
-  });
-
-  it('a nota que confessa INVENTADO sai com o selo artístico, nunca o de medido (10/10)', () => {
-    const linhas = (id: string) => ficha(id)!.secoes.find((s) => s.id === 'imagem')!.linhas;
-    expect(linhas('iapetus').find((l) => l.rotulo === 'o relevo admite')!.procedencia).toBe('artistico');
-    expect(linhas('pluto').find((l) => l.rotulo === 'o defeito')!.procedencia).toBe('artistico');
-  });
-
-  it('Mimas, Tétis e Dione admitem o limite do relevo medido (10/10)', () => {
-    for (const id of ['mimas', 'tethys', 'dione']) {
-      const linhas = ficha(id)!.secoes.find((s) => s.id === 'imagem')!.linhas;
-      const admite = linhas.find((l) => l.rotulo === 'o relevo admite');
-      expect(admite?.valor, id).toContain('1024 px');
-      expect(admite?.procedencia, id).toBe('medido');
+  it('Hipérion e Pã: a pintura por IA na cor, o relevo fino inventado no relevo', () => {
+    for (const id of ['hyperion', 'pan']) {
+      expect(linhaDe(id, 'fonte').valor, id).toContain('IA');
+      expect(linhaDe(id, 'fonte do relevo').valor, id).toContain('Thomas');
     }
-  });
-
-  it('os quatro elipsoides e as sete esculpidas confessam a forma, e ninguém mais (item 20)', () => {
-    // 01/10/2026: Fobos e Deimos entram — o elipsoide dos eixos medidos
-    // confessa que o modelo de forma Viking/MRO existe e não é carregado.
-    const COM_MALHA_PUBLICADA = ['vesta', 'pallas', 'hygiea', 'haumea', 'phobos', 'deimos'];
-    // item 134/S3: a malha das sete é ESCULPIDA por código (o roteiro é
-    // `IDS_ESCULPIDOS`, em `world/corpos/esculpido.ts`) — forma inventada
-    // confessa igual a elipsoide no lugar de malha medida. Hipérion saiu
-    // em 23/09/2026 e Pã em 08/10/2026: a forma delas agora é MEDIDA (mapa
-    // de altura), e `manifest.formas` não tem mais linha para elas.
-    const ESCULPIDAS = [
-      'daphnis', 'atlas', 'prometheus', 'pandora',
-      'janus', 'epimetheus', 'phoebe',
-    ];
-    for (const id of ALVOS.filter((i) => i !== 'sun')) {
-      const forma = porRotulo(id, 'imagem').get('forma');
-      if (COM_MALHA_PUBLICADA.includes(id)) {
-        expect(forma, id).toContain('elipsoide, sem malha');
-      } else if (ESCULPIDAS.includes(id)) {
-        expect(forma, id).toContain('geometria esculpida por código');
-      } else {
-        expect(forma, id).toBeUndefined();
-      }
-    }
-    // O elipsoide no lugar da malha medida é ARTIFÍCIO, e leva o tier que
-    // diz isso — a mesma palavra que o selo usa para a cruz de luz.
-    const linhas = ficha('vesta')!.secoes.find((s) => s.id === 'imagem')!.linhas;
-    expect(linhas.find((l) => l.rotulo === 'forma')!.procedencia).toBe('artistico');
-  });
-
-  it('Hipérion confessa a pintura por IA na cor e os poços na linha do relevo (23/09)', () => {
-    const imagem = porRotulo('hyperion', 'imagem');
-    expect(imagem.get('fonte')).toContain('IA');
-    expect(imagem.get('relevo')).toContain('Thomas');
-    expect(imagem.get('o relevo admite')).toContain('poços');
-  });
-
-  it('Pã confessa a pintura na cor e o relevo fino inventado onde nenhuma foto vê (08/10)', () => {
-    const imagem = porRotulo('pan', 'imagem');
-    expect(imagem.get('fonte')).toContain('IA');
-    expect(imagem.get('o defeito')).toContain('espectro medido');
-    expect(imagem.get('relevo')).toContain('Thomas');
-    expect(imagem.get('o relevo admite')).toContain('INVENTADO');
-    expect(imagem.get('forma')).toBeUndefined();
-  });
-
-  it('os seis sem foto confessam a ilustração por IA (item 151)', () => {
-    // Hígia, Palas, Haumea, Makemake, Éris e Quaoar não têm foto de
-    // superfície: o mapa é ilustração por IA a partir dos fatos conhecidos,
-    // e a ficha tem de dizer isso na fonte E no defeito — nunca "medido".
-    for (const id of ['hygiea', 'pallas', 'haumea', 'makemake', 'eris', 'quaoar']) {
-      const imagem = porRotulo(id, 'imagem');
-      expect(imagem.get('fonte'), id).toContain('IA');
-      expect(imagem.get('o defeito'), id).toContain('não existe foto');
-      const linhas = ficha(id)!.secoes.find((s) => s.id === 'imagem')!.linhas;
-      expect(linhas.find((l) => l.rotulo === 'fonte')!.procedencia, id).not.toBe('medido');
-    }
+    expect(linhaDe('hyperion', 'relevo').valor).toContain('poços');
+    expect(linhaDe('pan', 'relevo').valor).toContain('INVENTADO');
+    expect(linhaDe('pan', 'cor').valor).toContain('espectro medido');
+    expect(linhaDe('ceres', 'cor').valor).toContain('tingimento');
+    expect(linhaDe('titan', 'cor').valor).toContain('emendas');
   });
 
   it('sem o manifesto a seção some inteira, sem uma linha a explicar', () => {
@@ -560,21 +602,14 @@ describe('a imagem confessa — itens 19 e 20', () => {
     expect(f.secoes.map((s) => s.id)).not.toContain('imagem');
   });
 
-  it('a fonte de um canal é a variante MAIS LARGA, e não o webp reencodado', () => {
-    // A Terra tem `map.jpg` e `map.webp` com a MESMA largura, e só o
-    // primeiro carrega a procedência da fonte declarada: o webp é reencode
-    // nosso. Escolher pela largura sozinha daria 'derivado' na metade das
-    // vezes, conforme a ordem em que o manifesto foi varrido.
-    const variantes = texturas.entradas.filter(
-      (e) => e.corpo === 'earth' && e.canal === 'map'
-    );
+  it('o crédito cita a variante MAIS LARGA, com a largura dela', () => {
+    const variantes = texturas.entradas.filter((e) => e.corpo === 'earth' && e.canal === 'map');
     const maisLarga = Math.max(...variantes.map((e) => e.larguraPx));
-    expect(variantes.filter((e) => e.larguraPx === maisLarga).length).toBeGreaterThan(1);
-    const fonteDaLinha = ficha('earth')!
-      .secoes.find((s) => s.id === 'imagem')!
-      .linhas.find((l) => l.rotulo === 'fonte')!;
-    expect(fonteDaLinha.procedencia).toBe('medido');
-    expect(fonteDaLinha.fonte).toMatch(/px de largura$/);
+    expect(maisLarga).toBe(8192);
+    expect(variantes.some((e) => e.larguraPx < maisLarga)).toBe(true);
+    const fonte = linhaDe('earth', 'fonte');
+    expect(fonte.valor).toContain('Solar System Scope');
+    expect(fonte.valor).toMatch(/· 8192 px de largura$/);
   });
 });
 

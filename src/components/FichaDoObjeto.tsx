@@ -738,14 +738,18 @@ export function FichaDoObjeto({
                           mouse na gravidade, na massa e no escape de um
                           PLANETA, que saem de GM e do raio. Cada linha já
                           declara de onde veio; é essa frase que o ponteiro
-                          tem de repetir. */}
-                      <span
-                        className={`atlas-ficha-proc ${l.procedencia}`}
-                        title={l.fonte}
-                      >
-                        {PROCEDENCIA[l.procedencia].rotulo}
-                        {l.fonte ? ` · ${l.fonte}` : ''}
-                      </span>
+                          tem de repetir. LINHA SEM SELO (o crédito da
+                          imagem, e o relevo que não se aplica) não desenha
+                          o selo: um ponto neutro ali se leria "artístico". */}
+                      {l.procedencia && (
+                        <span
+                          className={`atlas-ficha-proc ${l.procedencia}`}
+                          title={l.fonte}
+                        >
+                          {PROCEDENCIA[l.procedencia].rotulo}
+                          {l.fonte ? ` · ${l.fonte}` : ''}
+                        </span>
+                      )}
                     </div>
                   );
                     })}

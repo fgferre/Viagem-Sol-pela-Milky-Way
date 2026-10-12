@@ -65,6 +65,8 @@ import { REGISTRO_ORBITAL } from './registroOrbital';
 import { designacaoDeBayer } from './constelacoes';
 import { temperatureFromBV } from './stellarPhysics';
 import type { NamedStar } from '../../three/config';
+import { REGUA_DOS_MAPAS, alvoDoMapa, type Matiz, type MedidaDoCorpo } from './reguaDosMapas';
+import RELATORIO_DA_REGUA from './reguaDosMapas.relatorio.json';
 import type {
   EntradaDeTextura,
   ManifestDeTexturas,
@@ -79,7 +81,11 @@ export interface LinhaDaFicha {
   valor: string;
   /** o "×Terra", quando ele carrega informação (ver `razaoTerra`) */
   badge?: string;
-  procedencia: Procedencia;
+  /**
+   * o selo; AUSENTE só na seção da imagem — no crédito (fonte, licença,
+   * atribuição), que não confessa nada, e na linha que não se aplica
+   */
+  procedencia?: Procedencia;
   /** de onde veio o número, em quatro ou cinco palavras */
   fonte?: string;
 }
@@ -224,12 +230,13 @@ const KM_POR_S_POR_UA_DIA = AU_KM / 86_400;
 function linha(
   rotulo: string,
   valor: string | null | undefined,
-  procedencia: Procedencia,
+  procedencia: Procedencia | null,
   fonte?: string,
   badge?: string | null
 ): LinhaDaFicha | null {
   if (valor === null || valor === undefined || valor === '') return null;
-  const feita: LinhaDaFicha = { rotulo, valor, procedencia };
+  const feita: LinhaDaFicha = { rotulo, valor };
+  if (procedencia) feita.procedencia = procedencia;
   if (fonte) feita.fonte = fonte;
   if (badge) feita.badge = badge;
   return feita;
@@ -512,14 +519,11 @@ function secaoCuriosidades(pt: EditorialDoCorpo | undefined): LinhaDaFicha[] {
 }
 
 /**
- * A FONTE DE UM CANAL, entre as variantes que o manifesto lista. A regra é
- * de uma linha: a mais LARGA, e no empate a que não é reencode nosso — o
- * `map.jpg` de 8192 px e o `map.webp` de 8192 px são a mesma imagem, e só o
- * primeiro carrega a procedência da fonte declarada.
- *
- * `origem` e `nota` são idênticos em todas as variantes (o mapa de Ceres
- * continua inventado em 512 px); quem varia é a `proveniencia`, e é por ela
- * que a escolha existe.
+ * A FONTE DE UM CANAL, entre as variantes que o manifesto lista: a mais
+ * LARGA, que é a que o crédito cita. `origem`, `nota` e `seloDaNota` são
+ * idênticos em todas as variantes (o mapa de Ceres confessa o tingimento
+ * também em 512 px); quem varia é a `proveniencia` do reencode, e ela não
+ * sai mais na ficha — desde a R3 o crédito não leva selo.
  */
 function fonteDoCanal(
   entradas: readonly EntradaDeTextura[],
@@ -529,40 +533,16 @@ function fonteDoCanal(
   let melhor: EntradaDeTextura | null = null;
   for (const e of entradas) {
     if (e.corpo !== corpo || e.canal !== canal) continue;
-    if (
-      !melhor ||
-      e.larguraPx > melhor.larguraPx ||
-      (e.larguraPx === melhor.larguraPx &&
-        melhor.proveniencia === 'derivado' &&
-        e.proveniencia !== 'derivado')
-    ) {
-      melhor = e;
-    }
+    if (!melhor || e.larguraPx > melhor.larguraPx) melhor = e;
   }
   return melhor;
 }
 
 /**
- * O TIER DA IMAGEM na língua do selo. `medido` e `derivado` casam nome a
- * nome; `nao-resolvida` é a política do dono (a imagem entra MARCADA em vez
- * de ficar de fora) e não tem par entre os três — quem não conseguiu fechar
- * a fonte não pode chamar a foto de medida, então ela cai no tier que diz
- * "não tome isto por observação". Hoje são ZERO entradas assim, e o
- * `data:verify` cobra que continuem zero.
- */
-const TIER_DA_IMAGEM: Record<
-  NonNullable<EntradaDeTextura['proveniencia']>,
-  Procedencia
-> = {
-  medido: 'medido',
-  derivado: 'derivado',
-  'nao-resolvida': 'artistico',
-};
-
-/**
  * O TIER DA CONFISSÃO na língua do selo: `inventado` é o artístico. Nota
- * sem selo é manifesto malformado e cai no mesmo tier, pelo motivo do
- * `nao-resolvida` acima — quem não fechou o selo não chama a frase de medida.
+ * sem selo é manifesto malformado (ou anterior ao selo, como a forma até a
+ * R3) e cai no mesmo tier — quem não fechou o selo não chama a frase de
+ * medida.
  */
 const TIER_DA_NOTA: Record<NonNullable<EntradaDeTextura['seloDaNota']>, Procedencia> = {
   medido: 'medido',
@@ -570,31 +550,47 @@ const TIER_DA_NOTA: Record<NonNullable<EntradaDeTextura['seloDaNota']>, Proceden
   inventado: 'artistico',
 };
 
+/** Do mais fraco ao mais forte: o selo de uma linha é o do mais fraco que ela confessa. */
+const FORCA_DO_TIER: Record<Procedencia, number> = { artistico: 0, derivado: 1, medido: 2 };
+
+/** O mais fraco de uma lista de tiers; a lista vazia não confessa defeito nenhum. */
+function oMaisFraco(tiers: readonly Procedencia[]): Procedencia {
+  return tiers.reduce<Procedencia>(
+    (fraco, tier) => (FORCA_DO_TIER[tier] < FORCA_DO_TIER[fraco] ? tier : fraco),
+    'medido'
+  );
+}
+
 /**
- * A IMAGEM CONFESSA (item 74 parte B; fecha os itens 19 e 20).
- *
- * `texturas.json` guardava `origem{fonte,url,licenca,atribuicao}` e
- * `proveniencia` por entrada desde a Onda 6 — e nada no app lia esses
- * campos. A ficha é o primeiro leitor, e ela imprime as quatro coisas que o
- * visitante tem direito de saber sobre a foto que está olhando: de onde
- * veio, sob que licença, a quem creditar, e QUAL É O DEFEITO dela.
- *
- * O DEFEITO LEVA O SELO DO QUE CONFESSA: a frase e o tier dela (`seloDaNota`,
- * o mais fraco que ela admite) nascem na bancada de texturas
- * (`docs/reference/ASSETS.md`), e uma nota que diz INVENTADO não sai com o
- * selo de medido. Ausência de nota quer dizer "a bancada não achou defeito",
- * nunca "ninguém olhou".
- *
- * SEM MAPA, A SUPERFÍCIE É INVENTADA: Palas, Haumea, Makemake, Éris e Quaoar
- * não têm textura licenciada e `rochoso.ts` os desenha com o `−3` procedural.
- * A ficha diz isso na cara, com o terceiro tier do selo — que até aqui não
- * tinha nenhum uso nesta peça.
- *
- * O SOL FICA DE FORA, e é decisão declarada: a imagem dele não é textura
- * nenhuma, é a `LEI-DA-ESTRELA` inteira (forma assada, tinta por cor,
- * granulação). Uma linha aqui seria a segunda fonte de verdade sobre um
- * assunto que tem contrato próprio.
+ * A POLÍTICA DA RÉGUA (`matiz`, reguaDosMapas.ts) na língua do selo: a foto
+ * em cor verdadeira só tem a média movida para a medida; a tinta é o
+ * desenho da foto em cinza tingido pela cor medida, um método declarado;
+ * a família esculpida não tem mapa nenhum por baixo.
  */
+const TIER_DA_POLITICA: Record<Matiz, Procedencia> = {
+  foto: 'medido',
+  tinta: 'derivado',
+  esculpido: 'artistico',
+};
+
+/** O γ que a cadeia mediu em cada mapa; as esculpidas não têm mapa, nem γ. */
+const GAMA_DA_REGUA: Readonly<Partial<Record<string, { gama: number }>>> = RELATORIO_DA_REGUA;
+
+/**
+ * O FATOR DO PICO POR MODELO: a tabela da régua marca no texto da fonte os
+ * S de H,G (Bowell 1989), que são modelo e não medida — "S de rocha escura
+ * (H,G, modelo)", "S de H,G com G = 0,32 (modelo)".
+ */
+const PICO_POR_MODELO = /H,G/;
+
+/**
+ * ONDE O QUE SE VÊ É ATMOSFERA: os quatro gigantes, o topo de nuvens de
+ * Vênus e a névoa de Titã. Para eles a linha do relevo não se aplica — o
+ * chão, mesmo onde o radar o mediu, não aparece na imagem —, e dizer
+ * "liso" confessaria a falta de um mapa que nada mudaria na tela.
+ */
+const SO_ATMOSFERA = new Set(['jupiter', 'saturn', 'uranus', 'neptune', 'venus', 'titan']);
+
 /**
  * A FRASE DO MANIFESTO NA LÍNGUA DE AGORA (item 130/F4), com o pt-BR de
  * PISO — o mesmo molde de `editorialDoIdioma`. Fonte, licença, atribuição,
@@ -609,101 +605,176 @@ function noIdioma(texto: TextoBilingue | null | undefined): string | null {
   return idiomaAtual() === 'en' ? (texto.en ?? texto.pt) : texto.pt;
 }
 
+/** O crédito de uma imagem: a fonte e a largura da variante citada. */
+function comLargura(fonte: string | null, px: number): string | null {
+  return fonte && `${fonte} · ${t('ficha.fonte.larguraPx', { px: numeroDoIdioma(px) })}`;
+}
+
+/**
+ * O RELEVO: as imagens `height` e `normal` do corpo, com o selo da mais
+ * fraca das notas da bancada e as notas juntas (a mesma frase nos dois
+ * canais sai uma vez). O canal é `height` onde ele desloca vértice e
+ * `normal` onde só gira a luz (item 140: a Lua) — a linha é sobre a IMAGEM
+ * de onde o relevo vem, não sobre o que o shader faz com ela.
+ */
+function linhaDoRelevo(
+  id: string,
+  mapa: EntradaDeTextura | null,
+  imagens: readonly (EntradaDeTextura | null)[]
+): LinhaDaFicha | null {
+  const rotulo = t('ficha.campo.relevo');
+  if (SO_ATMOSFERA.has(id)) return linha(rotulo, t('ficha.relevo.naoSeAplica'), null);
+  const presentes = imagens.filter((e): e is EntradaDeTextura => e !== null);
+  // SEM IMAGEM DE RELEVO o chão é liso — ou, sem mapa nenhum (as
+  // esculpidas), é o da malha feita por código.
+  if (presentes.length === 0) {
+    return linha(rotulo, t(mapa ? 'ficha.relevo.liso' : 'ficha.relevo.semMapa'), 'artistico');
+  }
+  const notas = presentes.flatMap((e) =>
+    e.nota ? [{ frase: noIdioma(e.nota), tier: TIER_DA_NOTA[e.seloDaNota ?? 'inventado'] }] : []
+  );
+  if (notas.length === 0) return linha(rotulo, t('ficha.relevo.semDefeito'), 'medido');
+  return linha(
+    rotulo,
+    [...new Set(notas.map((n) => n.frase))].join('; '),
+    oMaisFraco(notas.map((n) => n.tier)),
+    t('ficha.fonte.bancada')
+  );
+}
+
+/**
+ * A COR: o mais fraco entre a nota do `map` e a política da régua. A frase
+ * é a da nota, quando há; a da régua (gerada, citando a fonte da cor) entra
+ * quando não há nota — ou junto dela, quando é a régua que enfraquece o
+ * selo (Vênus e Titã: a nota mede, a tinta deriva). Fora da régua (a
+ * Terra) e sem nota, a frase diz isso, sem selo.
+ */
+function linhaDaCor(
+  mapa: EntradaDeTextura | null,
+  regua: MedidaDoCorpo | undefined
+): LinhaDaFicha | null {
+  const rotulo = t('ficha.campo.cor');
+  const nota = mapa?.nota
+    ? { frase: noIdioma(mapa.nota), tier: TIER_DA_NOTA[mapa.seloDaNota ?? 'inventado'] }
+    : null;
+  if (!regua) {
+    return nota
+      ? linha(rotulo, nota.frase, nota.tier, t('ficha.fonte.bancada'))
+      : linha(rotulo, t('ficha.cor.foraDaRegua'), null);
+  }
+  const politica = TIER_DA_POLITICA[regua.matiz];
+  const daRegua = t(`ficha.cor.${regua.matiz}` as 'ficha.cor.foto', { fonte: regua.fonteDaCor });
+  if (!nota) return linha(rotulo, daRegua, politica);
+  const frase =
+    FORCA_DO_TIER[politica] < FORCA_DO_TIER[nota.tier] ? `${nota.frase}; ${daRegua}` : nota.frase;
+  return linha(rotulo, frase, oMaisFraco([nota.tier, politica]), t('ficha.fonte.bancada'));
+}
+
+/**
+ * O BRILHO: o p0 da régua, com a fonte do nível. DERIVADO quando o fator do
+ * pico é modelo (H,G) ou quando a média desenhada é estimada (as
+ * esculpidas escalam a família de regolito até o p0); o γ < 1 que a cadeia
+ * aplicou para o mapa caber no alvo sem estourar é confessado junto.
+ */
+function linhaDoBrilho(id: string, regua: MedidaDoCorpo | undefined): LinhaDaFicha | null {
+  const rotulo = t('ficha.campo.brilho');
+  if (!regua) return linha(rotulo, t('ficha.brilho.foraDaRegua'), null);
+  const picoPorModelo = PICO_POR_MODELO.test(regua.fonteDoNivel);
+  const esculpida = regua.matiz === 'esculpido';
+  let frase = t(picoPorModelo ? 'ficha.brilho.picoPorModelo' : 'ficha.brilho.medido', {
+    p0: decimalDoIdioma(alvoDoMapa(id).p0.toPrecision(2)),
+    fonte: regua.fonteDoNivel,
+  });
+  if (esculpida) frase += t('ficha.brilho.mediaEstimada');
+  const gama = GAMA_DA_REGUA[id]?.gama;
+  if (gama !== undefined && gama < 1) frase += t('ficha.brilho.gama', { gama: comCasas(gama, 2) });
+  return linha(rotulo, frase, picoPorModelo || esculpida ? 'derivado' : 'medido');
+}
+
+/**
+ * A IMAGEM CONFESSA (item 74 parte B; itens 19 e 20; o formato da R3,
+ * PLAN-REGUA-UNICA.md).
+ *
+ * QUATRO LINHAS FIXAS, uma por canal do que se vê — forma, relevo, cor,
+ * brilho —, cada uma com UM selo, o do mais fraco que ela confessa, e uma
+ * frase. Uma fonte por canal: a forma é a tabela "a forma" do ASSETS.md
+ * (sem linha, o elipsoide dos eixos medidos); o relevo, as notas dos mapas
+ * de altura e de normais; a cor, a nota do `map` e a política da régua; o
+ * brilho, a régua (`reguaDosMapas.ts`). As notas nascem na bancada de
+ * texturas (`docs/reference/ASSETS.md`) e chegam aqui pelo manifesto;
+ * ausência de nota quer dizer "a bancada não achou defeito", nunca
+ * "ninguém olhou". As frases geradas moram nas tabelas de idioma.
+ *
+ * DEPOIS, O CRÉDITO SEM SELO: de onde veio o mapa, sob que licença, a quem
+ * creditar, e de onde veio o relevo. Crédito não confessa nada — o selo
+ * que ele levava (a `proveniencia` do arquivo) brigava com o da nota.
+ *
+ * O SOL FICA DE FORA, e é decisão declarada: a imagem dele não é textura
+ * nenhuma, é a `LEI-DA-ESTRELA` inteira (forma assada, tinta por cor,
+ * granulação). Uma linha aqui seria a segunda fonte de verdade sobre um
+ * assunto que tem contrato próprio.
+ */
 function secaoImagem(
   id: string,
   manifest: ManifestDeTexturas | null | undefined,
   realceDoRelevo = 1
 ): LinhaDaFicha[] {
   if (!manifest || id === 'sun') return [];
-  const linhas: (LinhaDaFicha | null)[] = [];
   const mapa = fonteDoCanal(manifest.entradas, id, 'map');
-
-  if (mapa?.origem) {
-    const tier = TIER_DA_IMAGEM[mapa.proveniencia ?? 'nao-resolvida'];
-    linhas.push(
-      linha(
-        t('ficha.campo.fonte'),
-        noIdioma(mapa.origem.fonte),
-        tier,
-        t('ficha.fonte.larguraPx', { px: numeroDoIdioma(mapa.larguraPx) })
-      ),
-      linha(t('ficha.campo.licenca'), noIdioma(mapa.origem.licenca), tier),
-      linha(t('ficha.campo.atribuicao'), noIdioma(mapa.origem.atribuicao), tier)
-    );
-    if (mapa.nota) {
-      linhas.push(
-        linha(
-          t('ficha.campo.oDefeito'),
-          noIdioma(mapa.nota),
-          TIER_DA_NOTA[mapa.seloDaNota ?? 'inventado'],
-          t('ficha.fonte.bancada')
-        )
-      );
-    }
-  } else {
-    linhas.push(
-      linha(
-        t('ficha.campo.superficie'),
-        t('ficha.semMapa'),
-        'artistico',
-        t('ficha.fonte.semLicenca')
-      )
-    );
-  }
-
-  // O RELEVO É UMA SEGUNDA IMAGEM (item 134/S2), e ela precisa de linha
-  // própria: quatro luas de Saturno ganharam topografia de modelo de forma
-  // MEDIDO e duas — Reia e Jápeto, na S2b — relevo SINTÉTICO, gerado por
-  // código. Para essas a nota da bancada (`ASSETS.md`) chega aqui como
-  // dado, pelo mesmo caminho da nota do `map`, e sai na linha "o relevo
-  // admite" — desenhar montanha fabricada sem dizer seria exatamente a
-  // mentira que esta seção existe para não contar.
-  // O canal do relevo é `height` onde ele desloca vértice e `normal`
-  // onde ele só gira a luz (item 140: a Lua) — a linha é sobre a IMAGEM
-  // de onde o relevo vem, não sobre o que o shader faz com ela.
-  const relevo =
-    fonteDoCanal(manifest.entradas, id, 'height') ??
-    fonteDoCanal(manifest.entradas, id, 'normal');
-  if (relevo?.origem) {
-    const tier = TIER_DA_IMAGEM[relevo.proveniencia ?? 'nao-resolvida'];
-    // O RELEVO REALÇADO (item 232) CONFESSA-SE PRIMEIRO: as alturas na tela
-    // não são as do mapa, e a nota da bancada logo abaixo ("sem exagero")
-    // descreve o mapa — a linha diz as duas coisas, e o tier é o artístico,
-    // o de "não tome isto por observação".
-    if (realceDoRelevo !== 1) {
-      linhas.push(
-        linha(
-          t('ficha.campo.relevoRealcado'),
-          t('ficha.relevoRealcado', { fator: decimalDoIdioma(String(realceDoRelevo)) }),
-          'artistico',
-          t('ficha.fonte.modoDeclarado')
-        )
-      );
-    }
-    linhas.push(
-      linha(
-        t('ficha.campo.relevo'),
-        noIdioma(relevo.origem.fonte),
-        tier,
-        t('ficha.fonte.larguraPx', { px: numeroDoIdioma(relevo.larguraPx) })
-      )
-    );
-    if (relevo.nota) {
-      linhas.push(
-        linha(
-          t('ficha.campo.oRelevoAdmite'),
-          noIdioma(relevo.nota),
-          TIER_DA_NOTA[relevo.seloDaNota ?? 'inventado'],
-          t('ficha.fonte.bancada')
-        )
-      );
-    }
-  }
+  const altura = fonteDoCanal(manifest.entradas, id, 'height');
+  const normal = fonteDoCanal(manifest.entradas, id, 'normal');
+  const relevo = altura ?? normal;
+  const regua: MedidaDoCorpo | undefined = REGUA_DOS_MAPAS[id];
 
   const forma = manifest.formas?.[id];
-  if (forma) {
+  const linhas: (LinhaDaFicha | null)[] = [
+    forma
+      ? linha(
+          t('ficha.campo.forma'),
+          noIdioma(forma),
+          TIER_DA_NOTA[forma.seloDaNota ?? 'inventado'],
+          t('ficha.fonte.bancada')
+        )
+      : linha(
+          t('ficha.campo.forma'),
+          t(altura ? 'ficha.forma.elipsoideComAltura' : 'ficha.forma.elipsoide'),
+          'medido'
+        ),
+  ];
+  // O RELEVO REALÇADO (item 232) CONFESSA-SE ANTES DO RELEVO: as alturas na
+  // tela não são as do mapa, e a nota da bancada logo abaixo ("sem
+  // exagero") descreve o mapa — a linha diz as duas coisas, e o tier é o
+  // artístico, o de "não tome isto por observação".
+  if (relevo?.origem && realceDoRelevo !== 1) {
     linhas.push(
-      linha(t('ficha.campo.forma'), noIdioma(forma), 'artistico', t('ficha.fonte.bancada'))
+      linha(
+        t('ficha.campo.relevoRealcado'),
+        t('ficha.relevoRealcado', { fator: decimalDoIdioma(String(realceDoRelevo)) }),
+        'artistico',
+        t('ficha.fonte.modoDeclarado')
+      )
+    );
+  }
+  linhas.push(
+    linhaDoRelevo(id, mapa, [altura, normal]),
+    linhaDaCor(mapa, regua),
+    linhaDoBrilho(id, regua)
+  );
+
+  if (mapa?.origem) {
+    linhas.push(
+      linha(t('ficha.campo.fonte'), comLargura(noIdioma(mapa.origem.fonte), mapa.larguraPx), null),
+      linha(t('ficha.campo.licenca'), noIdioma(mapa.origem.licenca), null),
+      linha(t('ficha.campo.atribuicao'), noIdioma(mapa.origem.atribuicao), null)
+    );
+  }
+  if (relevo?.origem) {
+    linhas.push(
+      linha(
+        t('ficha.campo.fonteDoRelevo'),
+        comLargura(noIdioma(relevo.origem.fonte), relevo.larguraPx),
+        null
+      )
     );
   }
 

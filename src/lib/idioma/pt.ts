@@ -458,14 +458,36 @@ export const PT = {
   'ficha.campo.fonte': 'fonte',
   'ficha.campo.licenca': 'licença',
   'ficha.campo.atribuicao': 'atribuição',
-  'ficha.campo.oDefeito': 'o defeito',
-  'ficha.campo.superficie': 'superfície',
+  'ficha.campo.fonteDoRelevo': 'fonte do relevo',
   'ficha.campo.relevo': 'relevo',
-  'ficha.campo.oRelevoAdmite': 'o relevo admite',
   'ficha.campo.relevoRealcado': 'relevo realçado',
   'ficha.relevoRealcado':
     'as alturas aparecem {fator}× maiores que as medidas — nas encostas que pegam luz e na sombra das montanhas; o mar fica plano. O mapa descrito abaixo continua o medido, sem exagero: o realce é só do desenho, e desliga em Ajustes.',
   'ficha.campo.forma': 'forma',
+  'ficha.campo.cor': 'cor',
+  'ficha.campo.brilho': 'brilho',
+  // AS FRASES GERADAS das quatro linhas da imagem (R3, `secaoImagem`):
+  // onde a bancada não escreveu nota, a ficha diz o que a régua e os
+  // eixos dizem. `{fonte}` é a fonte da tabela da régua, citada como está.
+  'ficha.forma.elipsoide': 'elipsoide dos eixos medidos',
+  'ficha.forma.elipsoideComAltura':
+    'elipsoide dos eixos medidos, deformado pelo mapa de altura do relevo',
+  'ficha.relevo.naoSeAplica': 'não se aplica: o que se vê é atmosfera',
+  'ficha.relevo.liso': 'liso: falta um mapa de relevo',
+  'ficha.relevo.semMapa': 'sem mapa de relevo: o que se vê é a malha feita por código, sem medida',
+  'ficha.relevo.semDefeito': 'mapa de relevo medido; a bancada não achou defeito',
+  'ficha.cor.foto': 'foto em cor verdadeira, média medida ({fonte})',
+  'ficha.cor.tinta': 'desenho da foto em cinza, tingido com a cor medida ({fonte})',
+  'ficha.cor.esculpido': 'cor da família de regolito, sem mapa ({fonte})',
+  'ficha.cor.foraDaRegua':
+    'a cor das fotos, sem nivelar: a Terra composta (superfície, nuvens, mar) fica fora da régua que nivela os outros corpos',
+  'ficha.brilho.medido': 'albedo medido p0 = {p0} ({fonte})',
+  'ficha.brilho.picoPorModelo':
+    'albedo p0 = {p0}, com o pico de oposição tirado por modelo ({fonte})',
+  'ficha.brilho.mediaEstimada': '; a família de regolito chega a ele por uma média estimada',
+  'ficha.brilho.gama': '; contraste do mapa ×{gama} para não estourar',
+  'ficha.brilho.foraDaRegua':
+    'sem albedo-alvo: a Terra composta (superfície, nuvens, mar) fica fora da régua que nivela os outros corpos',
   'ficha.campo.designacao': 'designação',
   'ficha.campo.distancia': 'distância',
   'ficha.campo.magnitude': 'magnitude aparente',
@@ -484,13 +506,11 @@ export const PT = {
   'ficha.fonte.editorial': 'texto editorial, sem fonte citada',
   'ficha.fonte.bancada': 'bancada de texturas',
   'ficha.fonte.modoDeclarado': 'modo declarado, em Ajustes',
-  'ficha.fonte.semLicenca': 'não há textura com licença fechada',
   'ficha.fonte.larguraPx': '{px} px de largura',
   'ficha.fonte.catalogoHyg': 'catálogo HYG/AT-HYG',
   'ficha.fonte.bayerIau': 'Bayer, sigla IAU',
   'ficha.fonte.paralaxe': 'paralaxe Gaia DR3',
   'ficha.fonte.ballesteros': 'de B−V, por Ballesteros',
-  'ficha.semMapa': 'sem mapa: a cor e o relevo deste corpo são inventados',
   'ficha.hora': 'hora',
   'ficha.horas': 'horas',
   'ficha.dia': 'dia',
