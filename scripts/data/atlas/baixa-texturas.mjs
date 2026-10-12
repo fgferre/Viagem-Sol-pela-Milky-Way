@@ -440,7 +440,10 @@ export const FONTES = [
     larguraDoDestino: 4096,
     corEuropa: {
       tom: 'meio',
-      sha256Aprovado: {},
+      // R2 (10/10): a régua única pôs a média na medida (×1,5); volta a ele no retrato "depois".
+      sha256Aprovado: {
+        'receita:a,tom:meio,nivel:do-mosaico': '7fdfde1342d0c3bad33db429b039b6eb1018ea44ebcca3579c5576d7e6426f88',
+      },
     },
   },
   // Ganimedes, Calisto e Titã (abaixo): os mapas NASA 3D não estão no doador
