@@ -98,13 +98,33 @@
 // pela MESMA `corDeEuropa` (`cor-europa.mjs`) da prévia; o map.jpg só é
 // gravado se o sha256 do RGB for o aprovado (`portaoDaCor`).
 //
+// A RÉGUA DOS MAPAS (PLAN-REGUA-UNICA.md, R2, 10/10/2026): todo `map` de um
+// corpo da tabela única (`src/lib/atlas/reguaDosMapas.ts`) passa, por último,
+// pela MESMA função (`nivelaMapa`, `regua-dos-mapas.mjs`): a média de G no
+// albedo medido sem o pico de oposição, as razões B/G e R/G medidas, o γ do
+// teto ou da segunda âncora (`gravaMapaNaRegua`). Ela substitui os níveis por
+// corpo que moravam aqui (o ganho das ilustrações por IA, a tinta de Ceres) e
+// em `cor-europa.mjs`. Os portões da cor (Plutão, Caronte, Europa) guardam o
+// RGB de ANTES da régua — o desenho que ele aprovou por foto —, e o γ e a área
+// comprimida de cada corpo vão para `reguaDosMapas.relatorio.json`, ao lado da
+// tabela. A Terra fica fora desta etapa.
+//
+// AS FONTES QUE NÃO SE REFAZEM: o doador Saturn não está no disco, e
+// Ganimedes, Calisto e Titã não estão no doador atlas-orbital. O mapa dessas
+// nove entra pelo RETRATO do map.jpg de public/ de antes da régua
+// (`fonte/<corpo>-cor.jpg`, cópia byte a byte da árvore 7012a782; as seis do
+// Saturn já com a meia volta e a largura da casa): reaplicar a régua num jpg
+// que ela mesma gravou somaria perda a cada corrida.
+//
 // O RELEVO DE JÁPETO (PLAN-EUROPA-JAPETO.md, item 230): as entradas
 // `iapetus/height` e `iapetus/normal` não adquirem nada — o mapa de altura
 // e o de normais saem do gerador `relevo-japeto.mjs` (crista do Gazetteer
 // traçada na foto, crateras com nome e crateras detectadas no mapa de cor
 // por `crateras-pela-foto.mjs`), pela MESMA sequência de chamadas da
-// prévia, a partir do map.jpg da casa e do Gazetteer do cache, os dois
-// conferidos por sha256. O PORTÃO aprova o CONJUNTO (`portaoDoRelevo`):
+// prévia, a partir do mapa de cor de antes da régua (o retrato
+// `fonte/iapetus-cor.jpg`, os bytes do map.jpg que ele aprovou) e do
+// Gazetteer do cache, os dois conferidos por sha256. O PORTÃO aprova o
+// CONJUNTO (`portaoDoRelevo`):
 // altura, normal e os números (escala, viés, semente, leis), e a escala e o
 // viés de `rochoso.ts` têm de ser os do candidato — senão nada é gravado.
 //
@@ -112,9 +132,9 @@
 // `rhea/normal` também não adquirem nada — saem do gerador `relevo-reia.mjs`
 // pela MESMA sequência de chamadas da prévia (`previa-reia.mjs`): a BASE é o
 // modelo de forma da Cassini (Weirich et al. 2025, o TIFF do cache conferido
-// por sha256) e, por cima, as crateras finas detectadas no map.jpg da casa
-// (pinado), completadas pela lei. O mesmo portão do conjunto, e os DOIS
-// canais são gravados juntos pela primeira das duas entradas que a corrida
+// por sha256) e, por cima, as crateras finas detectadas no mapa de cor de
+// antes da régua (o retrato `fonte/rhea-cor.jpg`, pinado), completadas pela
+// lei. O mesmo portão do conjunto, e os DOIS canais são gravados juntos pela primeira das duas entradas que a corrida
 // encontra (`gravaRelevoDeReia`): nunca a altura de uma versão com a normal
 // de outra.
 //
@@ -151,13 +171,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { Y_MEDIO_ALVO, corDeEuropa, reduzPorMediaDeArea } from './cor-europa.mjs';
+import { REGUA_DOS_MAPAS, alvoDoMapa } from '../../../src/lib/atlas/reguaDosMapas.ts';
+import { chaveDaCorDeEuropa, corDeEuropa, reduzPorMediaDeArea } from './cor-europa.mjs';
 import { inventaCorDoCorpo } from './cor-inventada.mjs';
 import { PARAMETROS_DA_DETECCAO, detectaCrateras, luminanciaDoRgb } from './crateras-pela-foto.mjs';
 import { decideGravacao, lerCacheDeAlturas } from './gera-normal-de-dem.mjs';
 import {
   CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido, preencherVazioSemDado,
 } from './lib-texturas.mjs';
+import { nivelaMapa } from './regua-dos-mapas.mjs';
 import {
   CRISTA_DO_GAZETTEER, ESCOLHAS_DA_CRISTA, FAIXA_KM, FREQUENCIA_DOS_PERFIS, MONTES_DO_GAZETTEER,
   MORFOLOGIA_DAS_COM_NOME, MORFOLOGIA_DAS_DETECTADAS, RAIO_KM, RAREAMENTO_POR_LATITUDE, caminhoDaCristaPeloMapa,
@@ -186,15 +208,17 @@ const USGS_BYTES = 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic';
 // `iapetus/normal` dividem (um conjunto só: as duas gravam ou nenhuma).
 // `candidato` é a pasta da prévia que ele escolheu, com o `parametros.json`
 // que o portão confronta; `mapaDeCor` e `gazetteer` são as entradas do
-// gerador, pinadas por sha256 (outro map.jpg daria outra crista e outras
-// crateras); `sha256Aprovado`: os pixels decodificados da altura (1 canal),
-// o RGB da normal e o JSON canônico dos números (`numerosDoRelevoDeJapeto`).
+// gerador, pinadas por sha256 (outro mapa daria outra crista e outras
+// crateras) — o mapa é o retrato de ANTES da régua, os mesmos bytes do
+// map.jpg da prévia, para a régua nunca mudar o relevo; `sha256Aprovado`: os
+// pixels decodificados da altura (1 canal), o RGB da normal e o JSON canônico
+// dos números (`numerosDoRelevoDeJapeto`).
 const RELEVO_DE_JAPETO = {
   candidato: 'capturas/europa-japeto/j1c/b-20km',
   semente: 230,
   alturaMaximaKm: 20,
   mapaDeCor: {
-    arquivo: 'public/textures/atlas/iapetus/map.jpg',
+    arquivo: 'scripts/data/atlas/fonte/iapetus-cor.jpg',
     sha256: '104a1d8780e0d8dad58c2d617ed554680774cefdb65cce8f2149d1c7886468fb',
   },
   gazetteer: {
@@ -214,7 +238,8 @@ const RELEVO_DE_JAPETO = {
 // (1024×512), ou B, `…/b-2048` (2048×1024); `largura`/`altura`: a grade dele (outra
 // grade, outros números: o portão recusa). `dtm`: o modelo de forma da
 // Cassini no cache (o sha256 de `.cache/reia/FONTES.json`); `mapaDeCor`: de
-// onde saem as crateras finas (outro mapa, outras crateras); os dois
+// onde saem as crateras finas (outro mapa, outras crateras) — o retrato de
+// ANTES da régua, os mesmos bytes do map.jpg da prévia; os dois
 // pinados. `sha256Aprovado`: os pixels da altura (1 canal), o RGB da normal e
 // o JSON canônico dos números (`numerosDoRelevoDeReia`).
 const RELEVO_DE_REIA = {
@@ -226,7 +251,7 @@ const RELEVO_DE_REIA = {
     sha256: 'a4d49eb12bfe5c0d97513d3d4692c78c7b5dd7179f8c2097203a37a4834bb51d',
   },
   mapaDeCor: {
-    arquivo: 'public/textures/atlas/rhea/map.jpg',
+    arquivo: 'scripts/data/atlas/fonte/rhea-cor.jpg',
     sha256: 'be6556d01ce5d02fca72895e72e45d591833b19345c9e96b554a52b82ebf0212',
   },
   sha256Aprovado: {
@@ -381,7 +406,9 @@ export const FONTES = [
     corpo: 'io',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/jupiter-io-b/',
-    nomeNoDoador: 'io_nasa_3d_resource.jpg',
+    // o nome que o arquivo tem no doador (o sha256 é o do map.jpg de antes da
+    // régua); `io_nasa_3d_resource.jpg` não existe lá
+    nomeNoDoador: 'jupiter_nasa_io_b_3d_resource.jpg',
   },
   // EUROPA (item 230, PLAN-EUROPA-JAPETO.md): o mosaico USGS Voyager–Galileo
   // de 500 m (19631×9816, um canal, 0 = sem dado) no lugar do mapa NASA 3D,
@@ -395,6 +422,12 @@ export const FONTES = [
   // tapa-buraco por valor), e o sul sem dado é preenchido por coluna dentro
   // de `corDeEuropa`. A palavra dele (07/10/2026, prancha do E0): o tom
   // meio-termo; a receita (a) é a do E1 (candidato `a-meio`).
+  // A RÉGUA (R2): o nível próprio de `corDeEuropa` (a exposição pinada do
+  // mapa antigo) saiu — a cor é pintada no brilho do mosaico e o nível vem da
+  // régua, depois do portão. O RGB do portão mudou com isso, e a chave diz
+  // (`chaveDaCorDeEuropa`); o aprovado de 07/10 era o de `receita:a,tom:meio`.
+  // Sem hash, a primeira corrida imprime o novo e não grava: ele entra aqui
+  // de propósito, e o mapa volta ao dono na prancha da R2.
   {
     corpo: 'europa',
     canal: 'map',
@@ -407,89 +440,64 @@ export const FONTES = [
     larguraDoDestino: 4096,
     corEuropa: {
       tom: 'meio',
+      // R2 (10/10): a régua única pôs a média na medida (×1,5); volta a ele no retrato "depois".
       sha256Aprovado: {
-        'receita:a,tom:meio': '9d2b9b096e366372fdc5ad3ea0235595e400b22a3fd950b89f75752066fb1a0e',
+        'receita:a,tom:meio,nivel:do-mosaico': '7fdfde1342d0c3bad33db429b039b6eb1018ea44ebcca3579c5576d7e6426f88',
       },
     },
   },
+  // Ganimedes, Calisto e Titã (abaixo): os mapas NASA 3D não estão no doador
+  // atlas-orbital — entram pelo retrato de antes da régua (cabeçalho).
   {
     corpo: 'ganymede',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/',
-    nomeNoDoador: 'ganymede_nasa_3d_resource.jpg',
+    arquivoLocal: 'fonte/ganymede-cor.jpg',
   },
   {
     corpo: 'callisto',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/',
-    nomeNoDoador: 'callisto_nasa_3d_resource.jpg',
+    arquivoLocal: 'fonte/callisto-cor.jpg',
   },
   // ---- AS SEIS DO PROJETO SATURN (item 138) e o RELEVO delas (item
   // 134/S2). Tudo o que sai de lá — os seis mosaicos e os doze mapas de
   // altura/normal — vem no layout Schenk, com o sub-Saturno na EMENDA; as
   // texturas desta casa são centradas em 0°, ou seja borda esquerda em
-  // 180°. Daí `giroDeLongitudeGraus: 180` nas dezoito: é a MEIA VOLTA que
-  // o 138 aplicou aos arquivos à mão (`np.roll` de W/2) e que a tabela
-  // não declarava — sem ela, reaquirir devolvia o relevo no antípoda do
-  // albedo, que foi o defeito daquele item.
+  // 180°. Daí `giroDeLongitudeGraus: 180` nos mapas de relevo: é a MEIA
+  // VOLTA que o 138 aplicou aos arquivos à mão (`np.roll` de W/2) e que a
+  // tabela não declarava — sem ela, reaquirir devolvia o relevo no antípoda
+  // do albedo, que foi o defeito daquele item.
   //
   // DECLARADO, e não re-medido: os arquivos que estão na árvore hoje
   // nasceram da aquisição à mão da S2 mais o giro do 138, não deste
-  // caminho. As entradas abaixo reconstroem o procedimento (arquivo do
+  // caminho. As entradas de relevo reconstroem o procedimento (arquivo do
   // doador → meia volta → largura da casa); o sha do manifest é prova dos
   // bytes em disco, não de que este caminho os reproduz byte a byte.
-  {
-    corpo: 'mimas',
+  //
+  // OS SEIS MAPAS DE COR (a régua, R2): o doador não está no disco, e eles
+  // entram pelo retrato do map.jpg de antes da régua (`fonte/<lua>-cor.jpg`,
+  // cabeçalho), que JÁ traz a meia volta e a largura da casa — o mosaico de
+  // Mimas, o único fora dela, veio de 6356 px a 4096 (108 MB de VRAM contra
+  // 45; a 1080 px de disco o 4096 já dá 1,9 texel por pixel, ASSETS.md).
+  ...['mimas', 'enceladus', 'tethys', 'dione', 'rhea'].map((corpo) => ({
+    corpo,
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
-    nomeNoDoador: 'mimas.jpg',
-    giroDeLongitudeGraus: 180,
-    // a única cujo mosaico não vem na largura da casa: 6356 px custariam
-    // 108 MB de VRAM contra 45, e a 1080 px de disco o 4096 já dá 1,9
-    // texel por pixel (ASSETS.md, "alvo de pixels")
-    larguraDoDestino: 4096,
-  },
-  {
-    corpo: 'enceladus',
-    canal: 'map',
-    url: 'https://github.com/fgferre/Saturn',
-    nomeNoDoador: 'enceladus.jpg',
-    giroDeLongitudeGraus: 180,
-  },
-  {
-    corpo: 'tethys',
-    canal: 'map',
-    url: 'https://github.com/fgferre/Saturn',
-    nomeNoDoador: 'tethys.jpg',
-    giroDeLongitudeGraus: 180,
-  },
-  {
-    corpo: 'dione',
-    canal: 'map',
-    url: 'https://github.com/fgferre/Saturn',
-    nomeNoDoador: 'dione.jpg',
-    giroDeLongitudeGraus: 180,
-  },
-  {
-    corpo: 'rhea',
-    canal: 'map',
-    url: 'https://github.com/fgferre/Saturn',
-    nomeNoDoador: 'rhea.jpg',
-    giroDeLongitudeGraus: 180,
-  },
+    arquivoLocal: `fonte/${corpo}-cor.jpg`,
+  })),
   {
     corpo: 'titan',
     canal: 'map',
     url: 'https://science.nasa.gov/3d-resources/',
-    nomeNoDoador: 'titan_nasa_3d_resource.jpg',
+    arquivoLocal: 'fonte/titan-cor.jpg',
     minimoBytes: 40_000,
   },
   {
     corpo: 'iapetus',
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
-    nomeNoDoador: 'iapetus.jpg',
-    giroDeLongitudeGraus: 180,
+    arquivoLocal: 'fonte/iapetus-cor.jpg',
   },
   // O RELEVO DAS SEIS (item 134/S2): `height` e `normal` de cada uma, em
   // 1024×512 — o mesmo `public/textures/relief/` do projeto Saturn, a
@@ -513,7 +521,7 @@ export const FONTES = [
   // canais saem do gerador `relevo-japeto.mjs` (`relevoDeJapeto`), na
   // grade e na convenção da casa — sem giro: a coluna i já cai em
   // (180 + (i+½)·360/W) °E, e o mapa de cor de onde saem o caminho da crista
-  // e as crateras detectadas é o map.jpg da casa, já girado. A palavra dele
+  // e as crateras detectadas é o retrato de antes da régua, já girado. A palavra dele
   // (07/10/2026, prancha da J1): a crista de vinte quilômetros, candidato B —
   // o da passada J1c (crateras da foto, com nome gastas, detectadas rareadas
   // acima de 45°), em `RELEVO_DE_JAPETO`.
@@ -684,64 +692,57 @@ export const FONTES = [
   // `superficie: 'procedural'` (rochoso.ts). Cada um agora é uma
   // ILUSTRAÇÃO gerada por IA (ChatGPT do dono) a partir dos fatos
   // conhecidos — tamanho, albedo, cor, crateras vistas de longe —, fonte
-  // LOCAL (`arquivoLocal`), com o brilho casado ao albedo geométrico pelo
-  // bake `ilustracao-ia` (a receita e o ganho de cada corpo moram acima,
-  // `ALBEDO_DA_ILUSTRACAO`). `url` é a página da NASA sobre o corpo (ou o
-  // JPL Small-Body Database quando não há página dedicada) — não a fonte
-  // do mapa, que não existe.
+  // LOCAL (`arquivoLocal`); o brilho e a cor vêm da régua (luminância × a
+  // tinta medida, `matiz: 'tinta'` na tabela). `url` é a página da NASA sobre
+  // o corpo (ou o JPL Small-Body Database quando não há página dedicada) —
+  // não a fonte do mapa, que não existe.
   {
     corpo: 'hygiea',
     canal: 'map',
     url: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Hygiea',
     arquivoLocal: 'fonte/hygiea-ia.png',
-    bake: 'ilustracao-ia',
   },
   {
     corpo: 'pallas',
     canal: 'map',
     url: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Pallas',
     arquivoLocal: 'fonte/pallas-ia.png',
-    bake: 'ilustracao-ia',
   },
   {
     corpo: 'haumea',
     canal: 'map',
     url: 'https://science.nasa.gov/dwarf-planets/haumea/',
     arquivoLocal: 'fonte/haumea-ia.png',
-    bake: 'ilustracao-ia',
   },
   {
     corpo: 'makemake',
     canal: 'map',
     url: 'https://science.nasa.gov/dwarf-planets/makemake/',
     arquivoLocal: 'fonte/makemake-ia.png',
-    bake: 'ilustracao-ia',
   },
   {
     corpo: 'eris',
     canal: 'map',
     url: 'https://science.nasa.gov/dwarf-planets/eris/',
     arquivoLocal: 'fonte/eris-ia.png',
-    bake: 'ilustracao-ia',
   },
   {
     corpo: 'quaoar',
     canal: 'map',
     url: 'https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=Quaoar',
     arquivoLocal: 'fonte/quaoar-ia.png',
-    bake: 'ilustracao-ia',
   },
   // ---- Hipérion sai das esculpidas em 23/09/2026 (item 134/S3 → relevo
   // medido): a forma inteira (Cassini, Thomas/Joseph/Ansty 2018) vira mapa
   // de ALTURA, com o mapa de NORMAIS derivado dela — as duas fontes LOCAIS
   // já nascem na convenção da casa (sem giro). A cor é a pintura por IA do
-  // dono sobre o relevo medido, como as ilustradas de `ilustracao-ia`.
+  // dono sobre o relevo medido; o brilho e a tinta, os da régua, como nas
+  // ilustradas.
   {
     corpo: 'hyperion',
     canal: 'map',
     url: 'https://science.nasa.gov/saturn/moons/hyperion/',
     arquivoLocal: 'fonte/hyperion-ia.png',
-    bake: 'ilustracao-ia',
   },
   {
     corpo: 'hyperion',
@@ -774,8 +775,9 @@ export const FONTES = [
   // como mapa de ALTURA, com o relevo fino das fotos calibradas da Cassini,
   // a NORMAL e os dois HORIZONTES dela — as fontes LOCAIS são os bytes
   // aprovados (`capturas/luas-pequenas/pa/f/gera-f.mjs`), já na convenção da
-  // casa (sem giro). A COR já vem nivelada e calibrada pelo espectro medido:
-  // entra SEM bake (o `ilustracao-ia` a nivelaria de novo), só reencodada.
+  // casa (sem giro). A COR é a pintura recolorida pelo espectro medido (núcleo
+  // e crista); o nível e a cor média, os da régua (`matiz: 'foto'`: a
+  // diferença medida entre núcleo e crista fica).
   {
     corpo: 'pan',
     canal: 'map',
@@ -929,10 +931,11 @@ async function assarRoughness(tiffPath, destino) {
 }
 
 /**
- * O MOSAICO DA DAWN VIRA O MAPA DE COR DE CERES (item 141, 3ª fase).
- * O produto do USGS é 7383×3691 em UM canal (a Framing Camera fotografou
- * Ceres no filtro claro — não existe cor de Ceres em imagem, e inventá-la
- * seria voltar ao `2k_ceres_fictional` que este mosaico substitui).
+ * O MOSAICO DA DAWN DE CERES (item 141, 3ª fase), antes da régua. O produto
+ * do USGS é 7383×3691 em UM canal (a Framing Camera fotografou Ceres no
+ * filtro claro — não existe cor de Ceres em imagem, e inventá-la seria voltar
+ * ao `2k_ceres_fictional` que este mosaico substitui). O nível e a cor são os
+ * da régua: luminância × a tinta medida, a receita que nasceu aqui.
  *
  * Duas coisas são feitas aqui, e só duas:
  *
@@ -942,26 +945,15 @@ async function assarRoughness(tiffPath, destino) {
  *      centradas em 0°, ou seja borda esquerda em 180°: o giro é 180°, o
  *      MESMO que `gera-normal-de-dem.mjs` aplica ao DTM. É isto que faz o
  *      relevo medido e a mancha caírem no mesmo lugar.
- *   2. O TINGIMENTO UNIFORME, declarado. O cinza vira cor por um fator
- *      por canal tirado dos índices de cor publicados de Ceres contra os
- *      do Sol (B−V 0,71 contra 0,65; V−R 0,375 contra 0,352), que é o
- *      quanto o corpo é mais vermelho que a luz que o ilumina:
- *      R 1,021 / G 1,000 / B 0,946. É pouco de propósito — Ceres é quase
- *      neutro, e o marrom vistoso do mapa antigo era invenção.
- *
- * O NÍVEL NÃO É MEXIDO: o mosaico entra com o brilho que o USGS publicou
- * (média 118/255), sem esticar nem escurecer para "parecer" albedo 0,09.
- *
- * O TERCEIRO PASSO, que só o polo sul exige: a Dawn mapeou Ceres com o
- * polo sul em NOITE POLAR, e o mosaico traz 3,6 % de texels sem dado ali
- * (abaixo de −84°, pretos). Deixá-los seria a mancha negra no polo que fez
- * a bancada RECUSAR o mosaico de Europa (ASSETS.md); por isso o buraco é
- * preenchido — e o preenchimento é POLAR e declarado: só acima de |80°| de
- * latitude, e só com a MÉDIA da última faixa de latitude que tem dado.
- * Fora dos polos nada é tocado: os 0,04 % de texels escuros que sobram no
- * resto do globo são sombra de cratera, que é medida.
+ *   2. O POLO SUL: a Dawn mapeou Ceres com o polo sul em NOITE POLAR, e o
+ *      mosaico traz 3,6 % de texels sem dado ali (abaixo de −84°, pretos).
+ *      Deixá-los seria a mancha negra no polo que fez a bancada RECUSAR o
+ *      mosaico de Europa (ASSETS.md); por isso o buraco é preenchido — e o
+ *      preenchimento é POLAR e declarado: só acima de |80°| de latitude, e
+ *      só com a MÉDIA da última faixa de latitude que tem dado. Fora dos
+ *      polos nada é tocado: os 0,04 % de texels escuros que sobram no resto
+ *      do globo são sombra de cratera, que é medida.
  */
-const TINTA_DE_CERES = [1.021, 1.0, 0.946];
 const LARGURA_DO_MAPA_DE_CERES = 4096;
 const SEM_DADO_ATE = 4;
 const LATITUDE_DO_PREENCHIMENTO = 80;
@@ -994,7 +986,8 @@ function preencherPolosSemDado(cinza, largura, altura) {
   }
 }
 
-async function assarMosaicoDeCeres(tifPath, destino) {
+/** O cinza de Ceres na grade da casa, girado e com o polo tapado: `{ pixels, info }` de um canal. */
+async function pixelsDoMosaicoDeCeres(tifPath) {
   const largura = LARGURA_DO_MAPA_DE_CERES;
   const altura = largura / 2;
   const cinza = await sharp(tifPath, { limitInputPixels: false })
@@ -1004,80 +997,77 @@ async function assarMosaicoDeCeres(tifPath, destino) {
     .toBuffer();
   preencherPolosSemDado(cinza, largura, altura);
   // 180° de 4096 são 2048 colunas exatas — o giro não arredonda nada
-  const girado = giraColunasDeImagem(cinza, largura, altura, 1, 180);
-  const rgb = Buffer.allocUnsafe(girado.length * 3);
-  for (let k = 0; k < girado.length; k += 1) {
-    for (let c = 0; c < 3; c += 1) {
-      rgb[k * 3 + c] = Math.min(255, Math.round(girado[k] * TINTA_DE_CERES[c]));
-    }
+  const pixels = giraColunasDeImagem(cinza, largura, altura, 1, 180);
+  return { pixels, info: { width: largura, height: altura, channels: 1 } };
+}
+
+// ---- A RÉGUA DOS MAPAS (PLAN-REGUA-UNICA.md, R2) ----------------------
+
+/** O relatório da régua, ao lado da tabela: o γ e a área comprimida de cada corpo, que a ficha confessa. */
+const RELATORIO_DA_REGUA = path.join(rootDirectory, 'src', 'lib', 'atlas', 'reguaDosMapas.relatorio.json');
+
+/** A entrada passa pela régua: o mapa de cor de um corpo da tabela que não é esculpido. */
+function naRegua(fonte) {
+  const medida = REGUA_DOS_MAPAS[fonte.corpo];
+  return fonte.canal === 'map' && medida !== undefined && medida.matiz !== 'esculpido';
+}
+
+/** A linha de um corpo no relatório: o alvo e o que a régua fez, arredondados (o arquivo não muda à toa). */
+function linhaDoRelatorio(alvo, r) {
+  const casas = (v, n) => Number(v.toFixed(n));
+  return {
+    alvo: { p0: casas(alvo.p0, 4), BG: casas(alvo.BG, 4), RG: casas(alvo.RG, 4), matiz: alvo.matiz },
+    gama: casas(r.gama, 4),
+    gamaAntesDoTeto: casas(r.gamaAntesDoTeto, 4),
+    fracaoComprimida: casas(r.fracaoComprimida, 5),
+    fracaoNoTeto: casas(r.fracaoNoTeto, 5),
+    g: r.g.map((v) => casas(v, 4)),
+    medias: r.medias.map((v) => casas(v, 4)),
+    ...(r.razaoDaAncora !== undefined ? { razaoDaAncora: casas(r.razaoDaAncora, 3), razaoMedida: casas(alvo.ancora.razao, 3) } : {}),
+  };
+}
+
+/** Grava a linha do corpo no relatório, com os outros corpos como estavam, em ordem. */
+async function registraNoRelatorio(corpo, linha) {
+  let relatorio = {};
+  try {
+    relatorio = JSON.parse(await readFile(RELATORIO_DA_REGUA, 'utf8'));
+  } catch (erro) {
+    if (erro.code !== 'ENOENT') throw erro;
   }
-  await sharp(rgb, { raw: { width: largura, height: altura, channels: 3 } })
-    .jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true })
-    .toFile(destino);
+  relatorio[corpo] = linha;
+  const ordenado = Object.fromEntries(Object.keys(relatorio).sort().map((k) => [k, relatorio[k]]));
+  await writeFile(RELATORIO_DA_REGUA, `${JSON.stringify(ordenado, null, 2)}\n`);
 }
 
 /**
- * O NÍVEL CASADO COM O ALBEDO (item 151). Hígia, Palas, Haumea, Makemake,
- * Éris e Quaoar não têm foto de superfície nenhuma: o mapa inteiro é uma
- * ILUSTRAÇÃO gerada por IA (ChatGPT do dono) a partir dos fatos conhecidos
- * (tamanho, albedo, cor, crateras vistas de longe). A IA não sabe o albedo
- * geométrico do corpo — o brilho que ela escolhe é estético, não físico —
- * e por isso a média do mapa é MEDIDA em linear (a luz soma em linear, não
- * em sRGB) e escalada por um ganho até bater no albedo declarado: mesmo
- * raciocínio do tingimento uniforme de Ceres (`assarMosaicoDeCeres`), mas
- * em BRILHO, não em matiz. O ganho não é aplicado à mão (edição de
- * imagem): é medido e gravado no log a cada corrida, e o `ASSETS.md`
- * confessa o número.
+ * O PASSO DA RÉGUA de uma entrada `naRegua`: os pixels de antes dela — o
+ * mosaico de Ceres, ou os de `pixelsDoMapa` com as opções da entrada (o
+ * giro, a largura, o tapa-buraco, a cor inventada e a de Europa, com os
+ * portões delas) —, `nivelaMapa` com o alvo da tabela, o jpg e a linha do
+ * corpo no relatório.
  */
-const ALBEDO_DA_ILUSTRACAO = {
-  hygiea: 0.07,
-  pallas: 0.16,
-  haumea: 0.7,
-  makemake: 0.8,
-  // 0,96 medido é o mais brilhante do Sistema Solar depois de Encélado;
-  // grampeado em 0,9 para o mapa não estourar em branco puro (item 151).
-  eris: 0.9,
-  quaoar: 0.11,
-  // 0,30 medido, grampeado em 0,26 para o percentil 99 do mapa não estourar
-  // — o mesmo cuidado de Éris (23/09/2026).
-  hyperion: 0.26,
-};
-
-function srgbParaLinear(canal) {
-  const c = canal / 255;
-  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-}
-function linearParaSrgb(linear) {
-  const c = linear <= 0.0031308 ? linear * 12.92 : 1.055 * linear ** (1 / 2.4) - 0.055;
-  return Math.max(0, Math.min(255, Math.round(c * 255)));
-}
-
-async function assarIlustracaoIA(origem, destino, corpo) {
-  const albedoAlvo = ALBEDO_DA_ILUSTRACAO[corpo];
-  if (albedoAlvo === undefined) {
-    throw new Error(`assarIlustracaoIA: sem albedo declarado para ${corpo} (item 151)`);
-  }
-  const { data, info } = await sharp(origem, { limitInputPixels: false })
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  let somaLinear = 0;
-  for (let i = 0; i < data.length; i += 1) somaLinear += srgbParaLinear(data[i]);
-  const medioLinear = somaLinear / data.length;
-  const ganho = albedoAlvo / Math.max(medioLinear, 1e-6);
-  const saida = Buffer.allocUnsafe(data.length);
-  for (let i = 0; i < data.length; i += 1) {
-    saida[i] = linearParaSrgb(srgbParaLinear(data[i]) * ganho);
-  }
+async function gravaMapaNaRegua(cru, destino, fonte) {
+  const rotulo = `${fonte.corpo}/${fonte.canal}`;
+  const { pixels, info } = fonte.bake === 'mosaico-ceres'
+    ? await pixelsDoMosaicoDeCeres(cru)
+    : await pixelsDoMapa(cru, opcoesDoMapa(fonte));
+  const alvo = alvoDoMapa(fonte.corpo);
+  const r = nivelaMapa({ pixels, largura: info.width, altura: info.height, canais: info.channels, alvo, rotulo });
+  const linha = linhaDoRelatorio(alvo, r);
   console.log(
-    `${corpo}/map (ilustração IA): média linear ${medioLinear.toFixed(4)} → ganho ` +
-      `${ganho.toFixed(3)} → albedo-alvo ${albedoAlvo}.`
+    `${rotulo}: régua (${alvo.matiz}) — p0 ${linha.alvo.p0}, B/G ${linha.alvo.BG}, R/G ${linha.alvo.RG}; ` +
+      `γ ${linha.gama} (antes do teto ${linha.gamaAntesDoTeto}), g ${linha.g.join('/')}, ` +
+      `área comprimida ${(100 * r.fracaoComprimida).toFixed(2)} %, acima de 1 ${(100 * r.fracaoNoTeto).toFixed(3)} %` +
+      (linha.razaoDaAncora !== undefined ? `; âncora ${linha.razaoDaAncora} (medida ${linha.razaoMedida})` : '') +
+      `; médias R/G/B ${linha.medias.join('/')}.`
   );
-  await sharp(saida, {
-    raw: { width: info.width, height: info.height, channels: info.channels },
+  await sharp(Buffer.from(r.pixels.buffer, r.pixels.byteOffset, r.pixels.length), {
+    raw: { width: info.width, height: info.height, channels: 3 },
   })
     .jpeg({ quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true })
     .toFile(destino);
+  await registraNoRelatorio(fonte.corpo, linha);
 }
 
 /**
@@ -1118,6 +1108,9 @@ async function assarIlustracaoIA(origem, destino, corpo) {
  *
  * A COR DE EUROPA (`corEuropa`, item 230) entra no mesmo ponto, por
  * `pintaEuropa`, que tem a redução própria antes do giro.
+ *
+ * Os mapas de cor da RÉGUA (`naRegua`) não saem por aqui: a cadeia os grava
+ * por `gravaMapaNaRegua`, com os MESMOS `pixelsDoMapa` e a régua depois.
  */
 const GRAUS_DA_JANELA_DO_VAZIO = 14;
 export async function girarMapa(origem, destino, canal, opcoes = {}) {
@@ -1179,13 +1172,13 @@ export async function pixelsDoMapa(
  * O PASSO DA COR DE EUROPA de `pixelsDoMapa` (item 230): o mosaico de UM
  * canal reduzido por `reduzPorMediaDeArea` (a média de área só do que tem
  * dado — o lanczos misturaria o 0 do vazio na borda dele), girado como
- * qualquer mapa da tabela e pintado por `corDeEuropa` com a receita (a), o
- * tom da entrada e a exposição pinada (`Y_MEDIO_ALVO`): a MESMA função das
- * prévias do E1, que esta cadeia reproduz byte a byte
- * (`capturas/europa-japeto/ferramentas/prova-cadeia-europa.mjs`). O sul sem
- * dado é preenchido por coluna lá dentro. Imprime versões e contas e passa
- * pelo PORTÃO (`portaoDaCor`, chave `receita:a,tom:<tom>`): recusado, o erro
- * leva a mensagem e o map.jpg NÃO é gravado.
+ * qualquer mapa da tabela e pintado por `corDeEuropa` com a receita (a) e o
+ * tom da entrada, no brilho do próprio mosaico: a MESMA função das prévias
+ * do E1 — o nível, que até a régua era a exposição pinada do mapa antigo, é
+ * agora o da régua, depois. O sul sem dado é preenchido por coluna lá dentro.
+ * Imprime versões e contas e passa pelo PORTÃO (`portaoDaCor`, chave
+ * `chaveDaCorDeEuropa(tom)`): recusado, o erro leva a mensagem e o map.jpg
+ * NÃO é gravado.
  */
 async function pintaEuropa(origem, { giroGraus, larguraDoDestino, rotulo, corEuropa }) {
   if (!larguraDoDestino) throw new Error(`${rotulo}: a cor de Europa pede larguraDoDestino.`);
@@ -1198,18 +1191,15 @@ async function pintaEuropa(origem, { giroGraus, larguraDoDestino, rotulo, corEur
   const altura = largura / 2;
   const reduzido = reduzPorMediaDeArea(data, info.width, info.height, largura);
   const cinza = giraColunasDeImagem(reduzido, largura, altura, 1, giroGraus);
-  const chave = `receita:a,tom:${corEuropa.tom}`;
+  const chave = chaveDaCorDeEuropa(corEuropa.tom);
   console.log(
     `${rotulo}: cor de Europa, ${chave}, mosaico ${info.width}×${info.height} → ${largura}×${altura}; ` +
       `versões: node ${process.version}, V8 ${process.versions.v8}, sharp ${sharp.versions.sharp}, ` +
       `libvips ${sharp.versions.vips}`
   );
-  const r = corDeEuropa({ cinza, largura, altura, receita: 'a', tom: corEuropa.tom, yMedioAlvo: Y_MEDIO_ALVO });
+  const r = corDeEuropa({ cinza, largura, altura, receita: 'a', tom: corEuropa.tom });
   const preenchidos = r.preenchido.reduce((s, v) => s + v, 0);
-  console.log(
-    `  ganho linear ${r.ganho.toFixed(4)}, ${r.saturados} texels saturados, ` +
-      `${preenchidos} preenchidos no sul, ${r.encolhidos} com a croma encolhida pela gama`
-  );
+  console.log(`  ${preenchidos} preenchidos no sul, ${r.encolhidos} com a croma encolhida pela gama`);
   const portao = portaoDaCor({ rotulo, chave, rgb: r.rgb, aprovados: corEuropa.sha256Aprovado, campo: 'corEuropa' });
   if (!portao.grava) throw new Error(portao.mensagem);
   console.log(portao.mensagem);
@@ -1997,8 +1987,10 @@ async function main() {
     // extensão do nome no doador.
     // Fonte LOCAL (item 148): o arquivo já mora no repositório
     // (`scripts/data/atlas/fonte/`) e só é reencodado no formato do canal.
+    // Todo mapa de cor da RÉGUA tem passo da casa: ela é o último passo.
+    const regua = naRegua(fonte);
     const passoDaCasa =
-      fonte.bake || fonte.giroDeLongitudeGraus !== undefined || fonte.arquivoLocal
+      regua || fonte.bake || fonte.giroDeLongitudeGraus !== undefined || fonte.arquivoLocal
       || fonte.preencherVazio || fonte.relevoJapeto || fonte.relevoReia || fonte.relevoTerra;
     const extensao = passoDaCasa
       ? (CANAIS_DE_DADO.has(fonte.canal) ? 'png' : 'jpg')
@@ -2024,7 +2016,7 @@ async function main() {
     // (item 230) não baixa nunca, nem copia do doador: confere e copia.
     if (fonte.relevoJapeto || fonte.relevoReia || fonte.relevoTerra) {
       // nada a adquirir (item 230, PLAN-REIA.md, relevo da Terra): o gerador
-      // lê o map.jpg da casa e o Gazetteer, o DTM ou o ETOPO do cache,
+      // lê o retrato do mapa de cor e o Gazetteer, o DTM ou o ETOPO do cache,
       // conferidos por sha256 no passo
     } else if (fonte.arquivoDoCache) {
       await copyFile(await conferirArquivoDoCache(fonte), cru);
@@ -2046,20 +2038,24 @@ async function main() {
         if (fonte.relevoJapeto) await gravaRelevoDeJapeto(fonte, destino);
         else if (fonte.relevoReia) await gravaRelevoDeReia(fonte, destino);
         else if (fonte.relevoTerra) await gravaRelevoDaTerra(fonte, destino);
-        else if (fonte.arquivoLocal && !fonte.bake) {
+        else if (regua) {
+          // o piso de bytes é da AQUISIÇÃO (página de erro, truncamento) e se
+          // mede no arquivo adquirido: o mapa nivelado de um corpo liso (Titã,
+          // Urano) comprime abaixo dele
+          await validarImagem(cru, fonte.minimoBytes ?? MINIMO_DE_BYTES);
+          await gravaMapaNaRegua(cru, destino, fonte);
+        } else if (fonte.arquivoLocal && !fonte.bake) {
           await girarMapa(cru, destino, fonte.canal, {
             larguraDoDestino: fonte.larguraDoDestino,
           });
-        } else if (fonte.bake === 'mosaico-ceres') await assarMosaicoDeCeres(cru, destino);
-        else if (fonte.bake === 'ilustracao-ia') await assarIlustracaoIA(cru, destino, fonte.corpo);
-        else if (fonte.bake === 'roughness') await assarRoughness(cru, destino);
+        } else if (fonte.bake === 'roughness') await assarRoughness(cru, destino);
         else await girarMapa(cru, destino, fonte.canal, opcoesDoMapa(fonte));
       } finally {
         await unlink(cru).catch(() => {});
       }
     }
 
-    const medido = await validarImagem(destino, fonte.minimoBytes ?? MINIMO_DE_BYTES);
+    const medido = await validarImagem(destino, regua ? 1 : (fonte.minimoBytes ?? MINIMO_DE_BYTES));
     totalBytes += medido.bytes;
     adquiridas += 1;
     console.log(
