@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (10/10) — A R1 DA RÉGUA ÚNICA (O TOM NEUTRO) NO `main`, NÃO PUBLICADA (publicar é dele)
+## O BASTÃO — onde a rodada parou (12/10) — A R1 E A R2 DA RÉGUA ÚNICA (O TOM NEUTRO E A COR DOS MAPAS) NO `main`, NÃO PUBLICADAS (publicar é dele)
 
 **Feito em 09–10/10 (conversa "Coordenação de trabalhos em fila"):** a R0 (tabela de medidas,
 `docs/reference/MEDIDAS-DOS-CORPOS.md`) e a R1 de `PLAN-REGUA-UNICA.md` — o tom neutro da Khronos é o padrão, com a
@@ -30,15 +30,21 @@ da galáxia deixam de estourar; os corpos e a Terra saem iguais.
 Tétis e Dione confessam o relevo (SPC assado em 1024 px). Inventado: Plutão/Caronte, Jápeto, Hipérion, Pã, as luas de
 Urano e Tritão, as 6 ilustrações por IA; derivado: Ceres, Europa, Reia, horizonte da Terra; o resto medido.
 
-**R2 da régua em curso (10/10, ramo `regua-r2`, cópia `../Viagem-regua-r2`):** a lei da luz assistida consertada (a
-Lommel-Seeliger saía 1,41× mais escura que a Lambert), a regra única dos mapas (`src/lib/atlas/reguaDosMapas.ts` +
-`scripts/data/atlas/regua-dos-mapas.mjs`) e a graduação por lua tirada do shader; falta rodar a cadeia (pede a palavra
-dele) e o retrato "depois". Estudo: `capturas/regua-r2/estudo-da-regra.md`; retrato de hoje: `retrato-antes-v2.jpg`
-(ferramenta `scripts/visual/retrato-de-familia.mjs`). Ordem dele: primeiro a luz, depois os mapas — o retrato
-`retrato-antes-luz.jpg` (ramo `luz-r2` = main + só o conserto da luz) mostra os Lambert idênticos e os LS 1,16–1,43× mais
-claros; os galileanos chegam perto do alvo; a Lua (+410 %), Mercúrio, Calisto, Palas e Hígia ficam claros demais de
-verdade, isto é, nos mapas. Achados do retrato, fora da R2: Vesta com a face quase toda preta
-(falta dado no mapa); Deimos uma mancha branca com costura; Titã é a casca de névoa, não o mapa (B/G 0,07 × 0,55).
+**R2 da régua FEITA (10–12/10, conversa "Coordenação entre agentes", `main` 375d6217, NÃO PUBLICADA):** na ordem
+dele (*"a luminosidade assistida não deveria ser igual para todos?"*), primeiro a luz — a assistida decodificava a
+Lommel-Seeliger como Lambert (Mercúrio, Lua, galileanos, Encélado, Vesta, Palas, Hígia, Haumea saíam 1,41× mais
+escuros); depois os mapas — uma tabela só (`src/lib/atlas/reguaDosMapas.ts`, fonte e confiança por corpo) e um
+nivelador só (`scripts/data/atlas/regua-dos-mapas.mjs`, média de G = p0 sem o pico de oposição, cor = razões medidas,
+o teto baixa o contraste e nunca a média); saíram a graduação por lua do shader, o nível das ilustrações, a tinta de
+Ceres e o nível próprio da Europa. Retrato de família (`scripts/visual/retrato-de-familia.mjs`; provas em
+`capturas/regua-r2/`: `retrato-antes-v2`, `retrato-antes-luz`, `retrato-depois`, `retrato-antes-luz-x-depois`,
+`perto-*`): corpos a menos de 20 % da medida, 10 → 37 de 46. Palavras dele: *"aprovo a Lua e Netuno, pode juntar"*.
+Encélado: brilho e cor certos, superfície lisa — o desenho de antes era sombra gravada na foto e o relevo medido é
+fraco; ele escolheu esperar a R4 (*"caminho 1"*): **Encélado é a primeira da fila do relevo**. Restos, fora da R2:
+a Lua ainda +46 %, Plutão +37 % e Caronte −36 %; Vesta com a face quase toda preta (falta dado no mapa); Deimos com
+costura; Titã é a casca de névoa; a cor das órbitas (`corDaTextura.ts`) e o ponto (`fotometria.ts`: H da Terra, V−R da
+Lua, cor de Plutão sozinho) ainda vêm dos mapas velhos; a ficha/`ASSETS.md` ainda descrevem os níveis antigos (é a R3).
+**Publicar é dele:** `git push origin main`.
 
 **Restos pequenos, vistos por ele:** as manchas do Sol um pouco mais marrons; o bojo da galáxia um pouco mais amarelo;
 um âmbar leve dentro do anel da Hollywood; o cobre do eclipse um pouco mais amarelo; as nuvens fracas do gás local no céu
@@ -49,10 +55,10 @@ segmentado "Curva de tom" fica como está: ele viu a prancha hoje × todos iguai
 seguem largura pelo nome, como as outras 12; botões iguais pediriam a gaveta ~96 px mais larga; não olhado num iPhone de
 verdade.
 
-**A próxima rodada — a ordem é dele:** a R2 da régua (a cor dos mapas por uma função só, com o "retrato de família"
-de todos os corpos; a tabela da R0 é a âncora e diz que o albedo geométrico tem o pico de oposição); depois a R3
-(confissão) e a R4 (relevo, com a fila de assets). As cópias `../Viagem-tom-*` e `../Viagem-sol-estudo` podem ser
-apagadas quando ele quiser (os ramos ficam inteiros no `main`).
+**A próxima rodada — a ordem é dele:** a R3 da régua (confissão: um formato por canal — forma, relevo, cor, brilho —
+crescendo da coluna `selo`; a ficha conta o γ e o 2/3 global da R2), depois a R4 (relevo, Encélado primeiro, com a fila
+de assets). As cópias `../Viagem-tom-*`, `../Viagem-sol-estudo` e `../Viagem-antes-r1` podem ser apagadas quando ele
+quiser (os ramos ficam inteiros no `main`).
 
 ## O BASTÃO anterior (09/10) — O SOL EM CADA DISTÂNCIA: A REGRA NOVA PUBLICADA (`main` `d89e684c`, enviada por ele no terminal)
 

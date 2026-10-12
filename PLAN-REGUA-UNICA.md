@@ -45,7 +45,7 @@ Palavras dele (08/10): *"precisamos ter uma regra única que trate todos os obje
     fica como está; se um dia parecer cheio, revisa-se o brilho do próprio gás, igual para tudo. Provas:
     `capturas/regua-r1/r1c/` (pranchas finais, `residuos-v2.jpg`, `jupiter-brilho-normal-e-x4.jpg`, vídeos `-v2`).
 - **R2 — Cor dos mapas** (opus + a cadeia no terminal dele): a função única; "retrato de família" de todos os corpos na mesma luz e na mesma escala, com os números ao lado (Encélado o mais claro, a Lua e Febe escuras, Pã abaixo de Encélado). Os que ele já aprovou (Europa, Reia, Hipérion) voltam para ele se mudarem.
-  **Em curso (10/10, conversa "Coordenação entre agentes"; estudo em `capturas/regua-r2/estudo-da-regra.md`).** Regra: média de G
+  **FEITA e aprovada (10–12/10, `main` 375d6217; detalhes e restos no bastão; estudo em `capturas/regua-r2/estudo-da-regra.md`).** Regra: média de G
   do mapa (ponderada por cos(lat)) = p0, o albedo geométrico sem o pico de oposição; cor = razões medidas; tex' = g·tex^γ,
   o teto baixa γ (contraste), nunca a média; o 2/3 global do app (p_app = 2/3·tex) fica confessado, não compensado; a Terra
   fica de fora. Ordem dada por ele (*"a luminosidade assistida não deveria ser igual para todos?"*): **primeiro a luz,
@@ -53,12 +53,12 @@ Palavras dele (08/10): *"precisamos ter uma regra única que trate todos os obje
   - **R2a — FEITA no ramo:** a luz assistida decodificava a Lommel-Seeliger como se fosse Lambert (Mercúrio, Lua,
     galileanos, Encélado, Vesta, Palas, Hígia, Haumea saíam 1,41× mais escuros com o mesmo mapa); conserto na lei
     (`luzDaVisita.ts`, `luzDoRegolito`), modo real idêntico. Ramo `luz-r2` (cópia `../Viagem-luz-r2`) = main + só isso.
-  - **R2b:** retrato "antes" com a luz consertada (`retrato-antes-luz`), para ler os desvios dos mapas sobre luz certa.
-  - **R2c — código FEITO no ramo `regua-r2`:** a tabela única `src/lib/atlas/reguaDosMapas.ts`, o nivelador
-    `scripts/data/atlas/regua-dos-mapas.mjs`, a graduação por lua tirada do shader; falta rodar a cadeia no terminal dele
-    (pede a palavra dele por extenso) e o retrato "depois".
+  - **R2b — FEITA:** retrato "antes" com a luz consertada (`retrato-antes-luz`), para ler os desvios dos mapas sobre luz certa.
+  - **R2c — FEITA:** a tabela única `src/lib/atlas/reguaDosMapas.ts`, o nivelador `scripts/data/atlas/regua-dos-mapas.mjs`,
+    a graduação por lua tirada do shader, a cadeia rodada no terminal dele; corpos a menos de 20 % da medida, 10 → 37 de 46.
+    Encélado ficou lisa (o desenho era sombra gravada na foto; o relevo medido é fraco): ele escolheu consertar na R4.
 - **R3 — Confissão** (sonnet, mecânico): um formato, o selo certo na ficha, as lacunas preenchidas.
-- **R4 — Relevo** (opus, corpo a corpo, a fila de assets): a ordem única de fontes; o relevo falso da cor sai; a rodada das luas pequenas volta aqui (Pã primeiro, pela versão F).
+- **R4 — Relevo** (opus, corpo a corpo, a fila de assets): a ordem única de fontes; o relevo falso da cor sai; a rodada das luas pequenas volta aqui (Pã primeiro, pela versão F). **Encélado abre a fila** (escolha dele, 12/10): com a R2 o mapa ficou certo e liso, e o relevo medido não mostra as crateras e as listras de tigre — derivar o detalhe das fotos.
 
 ## Fora deste plano
 O Sol, as estrelas, a galáxia, as órbitas e o eclipse (emissores e guias, já com regra física própria); a Terra com nuvens e luzes entra na régua de cor só se a prancha da R2 mostrar desvio.
