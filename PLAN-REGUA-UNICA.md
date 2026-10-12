@@ -58,6 +58,21 @@ Palavras dele (08/10): *"precisamos ter uma regra única que trate todos os obje
     a graduação por lua tirada do shader, a cadeia rodada no terminal dele; corpos a menos de 20 % da medida, 10 → 37 de 46.
     Encélado ficou lisa (o desenho era sombra gravada na foto; o relevo medido é fraco): ele escolheu consertar na R4.
 - **R3 — Confissão** (sonnet, mecânico): um formato, o selo certo na ficha, as lacunas preenchidas.
+  **Em curso (12/10, conversa "Coordenação entre agentes"; ramo `r3-confissao`, cópia `../Viagem-r3`).** Já feito antes:
+  a coluna `selo` da tabela "a imagem" (bc2e8938). Decisões:
+  - A ficha mostra quatro linhas fixas — forma, relevo, cor, brilho — cada uma com UM selo (medido / derivado /
+    artístico) e uma frase (pt/en); o selo é o do mais fraco que a linha confessa. A fonte, a licença e a atribuição
+    ficam como crédito, sem selo (hoje o selo da "fonte" vem da `proveniencia` e briga com o `selo` em 37 linhas).
+  - Uma fonte por canal: **forma** = a tabela "a forma" do `ASSETS.md` com coluna `selo`; sem linha = o elipsoide dos
+    eixos medidos ("medido"). **Relevo** = as linhas height/normal da tabela "a imagem"; sem relevo = "liso, falta mapa
+    de relevo" (artístico); gigantes, Vênus e Titã = "não se aplica: atmosfera" (sem selo). **Cor** = o mais fraco entre
+    a linha do map na tabela "a imagem" e a política da régua (`matiz`: foto → medido, tinta → derivado, esculpido →
+    artístico). **Brilho** = da régua (`reguaDosMapas.ts`): medido, ou derivado quando o fator do pico é modelo (H,G)
+    ou a média é estimada (esculpidas); com γ < 1 a frase diz "contraste da foto ×γ". Frases de cor e brilho são
+    geradas da régua, não escritas à mão (uma fonte só); o 2/3 global fica confessado uma vez no `ASSETS.md`.
+  - Sai o texto velho dos níveis (`ASSETS.md`: "A GRADUAÇÃO", "O NÍVEL não é mexido", a tabela de ganho/albedo-alvo, o
+    bake `ilustracao-ia`) e os comentários que contam "quatro corpos" de forma.
+  - Fora da R3: a chave "relevo realçado"/relevo falso da cor (item 144) sai na R4.
 - **R4 — Relevo** (opus, corpo a corpo, a fila de assets): a ordem única de fontes; o relevo falso da cor sai; a rodada das luas pequenas volta aqui (Pã primeiro, pela versão F). **Encélado abre a fila** (escolha dele, 12/10): com a R2 o mapa ficou certo e liso, e o relevo medido não mostra as crateras e as listras de tigre — derivar o detalhe das fotos.
 
 ## Fora deste plano
