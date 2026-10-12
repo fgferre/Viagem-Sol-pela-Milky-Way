@@ -63,6 +63,8 @@ export interface MedidaDoCorpo {
   /** o pico de oposição que `valor` carrega (p0 = valor / S) */
   S: number;
   fonteDoNivel: string;
+  /** o nível repousa numa suposição ou numa média, não numa medida direta (a ficha o sela como derivado) */
+  nivelDerivado?: true;
   /** B/G como razão, pelo B−V (Johnson) ou pela razão de filtros Cassini 420/568 nm */
   BG: number | { BV: number } | { r420: number };
   /** R/G como razão (inclusive Cassini 647/568 nm) ou pelo V−Rc (Cousins) */
@@ -75,123 +77,140 @@ export interface MedidaDoCorpo {
   ancora?: SegundaAncora;
 }
 
-const SCHENK = 'mosaico global Cassini de Paul Schenk (realçado em IV/UV)';
-const IA = 'pintura por IA na conta do dono (nada aqui é foto)';
+// As três fontes (`fonteDoNivel`, `fonteDaCor`, `fonteDoMapa`) saem na ficha dos dois idiomas: são
+// citações neutras (autor+ano, missão, grandeza, símbolo), sem prosa. O que a prosa dizia mora aqui, em
+// comentário. `fonteDoMapa` não diz "em cinza" nem "em cor": isso é o `matiz` (tinta = fonte cinza).
+// `S(H,G)` marca o pico de oposição tirado por modelo (Bowell 1989); a ficha o procura (`PICO_POR_MODELO`).
+
+// mosaico global de Paul Schenk, realçado em IV/UV
+const SCHENK = 'Cassini mosaic (Schenk)';
+// pintura por IA na conta do dono; nada aqui é foto
+const IA = 'AI painting';
+// a família de regolito procedural de `esculpido.ts`
+const ESCULPIDO = 'procedural regolith';
 
 export const REGUA_DOS_MAPAS: Readonly<Record<string, MedidaDoCorpo>> = {
   // ---- planetas, a Lua e Marte
   mercury: {
-    valor: 0.142, S: 1.28, fonteDoNivel: 'p V Mallama+2017; S de rocha escura (H,G, modelo)',
-    BG: { BV: 0.97 }, RG: { VRc: 0.52 }, fonteDaCor: 'Mallama+2017 (B sintético MESSENGER)',
-    matiz: 'tinta', fonteDoMapa: 'SSS 8k, mosaico MESSENGER em cinza', confianca: 'p alta, S média',
+    valor: 0.142, S: 1.28, fonteDoNivel: 'Mallama+2017 (p V); S(H,G)',
+    BG: { BV: 0.97 }, RG: { VRc: 0.52 }, fonteDaCor: 'Mallama+2017 (B−V, MESSENGER)', // o B é sintético, do MESSENGER
+    matiz: 'tinta', fonteDoMapa: 'Solar System Scope 8k (MESSENGER mosaic)', confianca: 'p alta, S média',
   },
   venus: {
-    valor: 0.689, S: 1, fonteDoNivel: 'p V Mallama+2017 (topo de nuvens, sem pico de regolito)',
+    valor: 0.689, S: 1, fonteDoNivel: 'Mallama+2017 (p V)', // topo de nuvens, sem pico de regolito
     BG: { BV: 0.7 }, RG: { VRc: 0.35 }, fonteDaCor: 'Mallama+2017',
-    matiz: 'tinta', fonteDoMapa: 'SSS 4k "atmosphere": feições do UV, não do visível', confianca: 'alta',
+    matiz: 'tinta', fonteDoMapa: 'Solar System Scope 4k (atmosphere)', confianca: 'alta', // feições do UV, não do visível
   },
   moon: {
-    valor: 0.113, S: 1, fonteDoNivel: 'Lane & Irvine 1973, fase zero sem o surto',
+    valor: 0.113, S: 1, fonteDoNivel: 'Lane & Irvine 1973', // fase zero, sem o surto
     BG: { BV: 0.88 }, RG: { VRc: 0.538 },
-    fonteDaCor: 'B−V Thejll+2014; V−Rc DERIVADO (a inclinação do B−V estendida até Rc, fotometria.ts), não medido',
-    matiz: 'tinta', fonteDoMapa: 'SSS 8k, mosaico LRO em cinza', confianca: 'p alta, cor média/baixa',
+    // o V−Rc é derivado (a inclinação do B−V estendida até Rc, fotometria.ts), não medido
+    fonteDaCor: 'Thejll+2014 (B−V); V−Rc ≈ f(B−V)',
+    matiz: 'tinta', fonteDoMapa: 'Solar System Scope 8k (LRO mosaic)', confianca: 'p alta, cor média/baixa',
   },
   mars: {
-    valor: 0.17, S: 1, fonteDoNivel: 'p V Mallama+2017',
+    valor: 0.17, S: 1, fonteDoNivel: 'Mallama+2017 (p V)',
     BG: { BV: 1.36 }, RG: { VRc: 0.82 }, fonteDaCor: 'Mallama+2017',
-    matiz: 'foto', fonteDoMapa: 'SSS 8k em cor (Viking)', confianca: 'alta',
+    matiz: 'foto', fonteDoMapa: 'Solar System Scope 8k (Viking)', confianca: 'alta',
   },
   phobos: {
-    valor: 0.068, S: 1.28, fonteDoNivel: 'p HRSC 538 nm; S de rocha escura (H,G, modelo)',
-    BG: 0.91, RG: 1.07, fonteDaCor: 'inclinação 7,9 %/100 nm (Fornasier+2024)',
-    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources, cinza', confianca: 'média',
+    valor: 0.068, S: 1.28, fonteDoNivel: 'HRSC 538 nm (p); S(H,G)',
+    BG: 0.91, RG: 1.07, fonteDaCor: 'Fornasier+2024 (7.9 %/100 nm)', // inclinação espectral
+    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources', confianca: 'média',
   },
   deimos: {
-    valor: 0.068, S: 1.28, fonteDoNivel: 'p Thomas+1996; S de rocha escura (H,G, modelo)',
-    BG: 0.89, RG: 1.09, fonteDaCor: 'inclinação 9,6 %/100 nm',
-    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources, cinza', confianca: 'média',
+    valor: 0.068, S: 1.28, fonteDoNivel: 'Thomas+1996 (p); S(H,G)',
+    BG: 0.89, RG: 1.09, fonteDaCor: '9.6 %/100 nm', // inclinação espectral
+    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources', confianca: 'média',
   },
   jupiter: {
-    valor: 0.538, S: 1, fonteDoNivel: 'p V Mallama+2017',
+    valor: 0.538, S: 1, fonteDoNivel: 'Mallama+2017 (p V)',
     BG: { BV: 0.86 }, RG: { VRc: 0.35 }, fonteDaCor: 'Mallama+2017',
-    matiz: 'foto', fonteDoMapa: 'SSS 8k em cor (Cassini)', confianca: 'alta',
+    matiz: 'foto', fonteDoMapa: 'Solar System Scope 8k (Cassini)', confianca: 'alta',
   },
   saturn: {
-    valor: 0.517, S: 1, fonteDoNivel: 'p V só do globo (Mallama & Pavlov 2017)',
-    BG: { BV: 1.07 }, RG: 1.08, fonteDaCor: 'B−V Mallama+2017; R/G do V−R Johnson 0,68 (estudo §3)',
-    matiz: 'foto', fonteDoMapa: 'SSS 8k em cor', confianca: 'média-alta',
+    valor: 0.517, S: 1, fonteDoNivel: 'Mallama & Pavlov 2017 (p V)', // só do globo, sem os anéis
+    BG: { BV: 1.07 }, RG: 1.08, fonteDaCor: 'Mallama+2017 (B−V); R/G (V−R Johnson 0.68)',
+    matiz: 'foto', fonteDoMapa: 'Solar System Scope 8k', confianca: 'média-alta',
   },
   uranus: {
-    valor: 0.488, S: 1, fonteDoNivel: 'p V Mallama+2017',
+    valor: 0.488, S: 1, fonteDoNivel: 'Mallama+2017 (p V)',
     BG: { BV: 0.5 }, RG: { VRc: -0.27 }, fonteDaCor: 'Mallama+2017',
-    matiz: 'foto', fonteDoMapa: 'SSS 2k em cor', confianca: 'alta',
+    matiz: 'foto', fonteDoMapa: 'Solar System Scope 2k', confianca: 'alta',
   },
   neptune: {
-    valor: 0.442, S: 1, fonteDoNivel: 'p V Mallama+2017',
+    valor: 0.442, S: 1, fonteDoNivel: 'Mallama+2017 (p V)',
     BG: { BV: 0.39 }, RG: { VRc: -0.33 }, fonteDaCor: 'Mallama+2017',
-    matiz: 'foto', fonteDoMapa: 'SSS 2k em cor (Voyager)', confianca: 'alta',
+    matiz: 'foto', fonteDoMapa: 'Solar System Scope 2k (Voyager)', confianca: 'alta',
   },
   // ---- os galileanos (S = 1 suposto: se o p trouxer o pico, caem 20–30 %)
   io: {
-    valor: 0.63, S: 1, fonteDoNivel: 'Simonelli & Veverka 1984 (pico suposto ausente)',
-    BG: { r420: 0.55 }, RG: 1.08, fonteDaCor: 'Cassini 420/568 e 647/568 nm (Mayorga+2020)',
-    matiz: 'foto', fonteDoMapa: 'NASA 3D Resources em cor (Galileo)', confianca: 'média',
+    valor: 0.63, S: 1, fonteDoNivel: 'Simonelli & Veverka 1984; S = 1',
+    nivelDerivado: true, // pico de oposição suposto ausente
+    BG: { r420: 0.55 }, RG: 1.08, fonteDaCor: 'Mayorga+2020 (Cassini 420/568, 647/568 nm)',
+    matiz: 'foto', fonteDoMapa: 'NASA 3D Resources (Galileo)', confianca: 'média',
   },
   europa: {
-    valor: 0.67, S: 1, fonteDoNivel: 'Buratti & Veverka 1983 (pico suposto ausente)',
-    BG: { r420: 0.84 }, RG: 1.02, fonteDaCor: 'Cassini 420/568 e 647/568 nm (Mayorga+2020)',
-    matiz: 'foto', fonteDoMapa: 'mosaico USGS em cinza com a croma medida nas fotos PIA19048/PIA00502 (cor-europa.mjs)', confianca: 'média',
+    valor: 0.67, S: 1, fonteDoNivel: 'Buratti & Veverka 1983; S = 1',
+    nivelDerivado: true, // pico de oposição suposto ausente
+    BG: { r420: 0.84 }, RG: 1.02, fonteDaCor: 'Mayorga+2020 (Cassini 420/568, 647/568 nm)',
+    // o mosaico USGS em cinza, com a croma medida nas fotos PIA19048/PIA00502 (cor-europa.mjs)
+    matiz: 'foto', fonteDoMapa: 'USGS mosaic; PIA19048, PIA00502', confianca: 'média',
   },
   ganymede: {
-    valor: 0.43, S: 1, fonteDoNivel: 'Morrison & Morrison 1977 (pico suposto ausente)',
-    BG: { r420: 0.86 }, RG: 1.01, fonteDaCor: 'Cassini 420/568 e 647/568 nm (Mayorga+2020)',
-    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources, cinza', confianca: 'média',
+    valor: 0.43, S: 1, fonteDoNivel: 'Morrison & Morrison 1977; S = 1',
+    nivelDerivado: true, // pico de oposição suposto ausente
+    BG: { r420: 0.86 }, RG: 1.01, fonteDaCor: 'Mayorga+2020 (Cassini 420/568, 647/568 nm)',
+    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources', confianca: 'média',
   },
   callisto: {
-    valor: 0.17, S: 1, fonteDoNivel: 'Morrison & Morrison 1977 (pico suposto ausente)',
-    BG: { r420: 0.82 }, RG: 1.0, fonteDaCor: 'Cassini 420/568 e 647/568 nm (Mayorga+2020)',
-    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources, cinza', confianca: 'média',
+    valor: 0.17, S: 1, fonteDoNivel: 'Morrison & Morrison 1977; S = 1',
+    nivelDerivado: true, // pico de oposição suposto ausente
+    BG: { r420: 0.82 }, RG: 1.0, fonteDaCor: 'Mayorga+2020 (Cassini 420/568, 647/568 nm)',
+    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources', confianca: 'média',
   },
   // ---- Saturno: as luas médias (nível alto, cor média-baixa: inclinações VIMS)
   mimas: {
-    valor: 0.63, S: 1, fonteDoNivel: 'equigonal VIMS 0,55 µm (Filacchione+2022)',
-    BG: 0.89, RG: 0.98, fonteDaCor: 'inclinações VIMS (estudo §3)',
+    valor: 0.63, S: 1, fonteDoNivel: 'Filacchione+2022, VIMS equigonal 0.55 µm',
+    BG: 0.89, RG: 0.98, fonteDaCor: 'VIMS',
     matiz: 'tinta', fonteDoMapa: SCHENK, confianca: 'nível alto, cor média-baixa',
   },
   enceladus: {
-    valor: 0.89, S: 1, fonteDoNivel: 'equigonal VIMS 0,55 µm (Filacchione+2022)',
-    BG: 0.92, RG: 1.0, fonteDaCor: 'inclinações VIMS e IR3/UV3 (estudo §3)',
+    valor: 0.89, S: 1, fonteDoNivel: 'Filacchione+2022, VIMS equigonal 0.55 µm',
+    BG: 0.92, RG: 1.0, fonteDaCor: 'VIMS; IR3/UV3',
     matiz: 'tinta', fonteDoMapa: SCHENK, confianca: 'nível alto, cor média-baixa',
   },
   tethys: {
-    valor: 0.74, S: 1, fonteDoNivel: 'equigonal VIMS 0,55 µm (Filacchione+2022)',
-    BG: 0.93, RG: 1.0, fonteDaCor: 'inclinações VIMS (estudo §3)',
+    valor: 0.74, S: 1, fonteDoNivel: 'Filacchione+2022, VIMS equigonal 0.55 µm',
+    BG: 0.93, RG: 1.0, fonteDaCor: 'VIMS',
     matiz: 'tinta', fonteDoMapa: SCHENK, confianca: 'nível alto, cor média-baixa',
   },
   dione: {
-    valor: 0.65, S: 1, fonteDoNivel: 'equigonal VIMS 0,55 µm (Filacchione+2022)',
-    BG: 0.92, RG: 1.0, fonteDaCor: 'inclinações VIMS (estudo §3)',
+    valor: 0.65, S: 1, fonteDoNivel: 'Filacchione+2022, VIMS equigonal 0.55 µm',
+    BG: 0.92, RG: 1.0, fonteDaCor: 'VIMS',
     matiz: 'tinta', fonteDoMapa: SCHENK, confianca: 'nível alto, cor média-baixa',
   },
   rhea: {
-    valor: 0.6, S: 1, fonteDoNivel: 'equigonal VIMS 0,55 µm (Filacchione+2022)',
-    BG: 0.9, RG: 1.0, fonteDaCor: 'inclinações VIMS (estudo §3)',
+    valor: 0.6, S: 1, fonteDoNivel: 'Filacchione+2022, VIMS equigonal 0.55 µm',
+    BG: 0.9, RG: 1.0, fonteDaCor: 'VIMS',
     matiz: 'tinta', fonteDoMapa: SCHENK, confianca: 'nível alto, cor média-baixa',
   },
   titan: {
-    valor: 0.215, S: 1, fonteDoNivel: 'p V da névoa (Harris; NSSDC), sem pico de regolito',
-    BG: { BV: 1.3 }, RG: 1.46, fonteDaCor: 'B−V Harris (resenha NASA 1974); R/G aproximado (estudo §3)',
-    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources: a superfície no IV (938 nm), cor falsa', confianca: 'média',
+    valor: 0.215, S: 1, fonteDoNivel: 'Harris; NSSDC (p V)', // p V da névoa, sem pico de regolito
+    BG: { BV: 1.3 }, RG: 1.46, fonteDaCor: 'Harris 1974 (B−V); R/G ≈', // B−V da resenha da NASA de 1974; R/G aproximado
+    // o mapa é só a névoa laranja, 720×360 (ASSETS.md, titan/map), não a superfície no IV
+    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources (haze, 720×360)', confianca: 'média',
   },
   hyperion: {
-    valor: 0.44, S: 1.57, fonteDoNivel: 'p V18 (só Wikipédia); S das luas de gelo do HST',
-    BG: 0.87, RG: 1.07, fonteDaCor: 'inclinações VIMS (estudo §3)',
+    valor: 0.44, S: 1.57, fonteDoNivel: 'Verbiscer+2018 (p); S: HST', // p só pela Wikipédia; S das luas de gelo do HST
+    BG: 0.87, RG: 1.07, fonteDaCor: 'VIMS',
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'baixa',
   },
   iapetus: {
     // as metades do mapa têm a mesma área: a média das duas âncoras é a média do corpo
-    valor: (0.04 + 0.38) / 2, S: 1, fonteDoNivel: 'a média das duas âncoras (abaixo)',
-    BG: 0.9, RG: 1.03, fonteDaCor: 'inclinações VIMS (estudo §3)',
+    valor: (0.04 + 0.38) / 2, S: 1, fonteDoNivel: 'mean(Blackburn+2011, Buratti 2005)',
+    nivelDerivado: true, // a média de duas âncoras de terreno, não uma medida do corpo
+    BG: 0.9, RG: 1.03, fonteDaCor: 'VIMS',
     matiz: 'tinta', fonteDoMapa: SCHENK, confianca: 'baixa-média',
     ancora: {
       razao: 0.38 / 0.04,
@@ -202,84 +221,87 @@ export const REGUA_DOS_MAPAS: Readonly<Record<string, MedidaDoCorpo>> = {
   },
   // ---- Saturno: as pequenas (B0 do ISS a 30°, Hedman 2020, salvo Dáfnis)
   phoebe: {
-    valor: 0.0856, S: 1.28, fonteDoNivel: 'p V Miller+2011 (só Wikipédia); S de rocha escura (H,G, modelo)',
-    BG: 1.03, RG: 0.98, fonteDaCor: 'inclinação −2,5 %/100 nm (Grav & Bauer 2007)',
-    matiz: 'esculpido', fonteDoMapa: 'família de regolito procedural (esculpido.ts)', confianca: 'média',
+    valor: 0.0856, S: 1.28, fonteDoNivel: 'Miller+2011 (p V); S(H,G)', // p só pela Wikipédia
+    BG: 1.03, RG: 0.98, fonteDaCor: 'Grav & Bauer 2007 (−2.5 %/100 nm)', // inclinação espectral
+    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'média',
   },
   pan: {
-    valor: 0.649, S: 1.2, fonteDoNivel: 'B0 a 30° (Hedman+2020)',
-    BG: 0.76, RG: 1.04, fonteDaCor: 'espectro medido (cor-alvo da versão F, estudo §3)',
-    matiz: 'foto',
-    fonteDoMapa: 'pintura por IA recolorida pela medida: núcleo e crista com as cores medidas (Buratti+2019, Hedman+2020)',
+    valor: 0.649, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
+    BG: 0.76, RG: 1.04, fonteDaCor: 'Buratti+2019, Hedman+2020', // o espectro medido (cor-alvo da versão F)
+    // pintura por IA recolorida pela medida: o núcleo e a crista com as cores medidas
+    matiz: 'foto', fonteDoMapa: 'AI painting; Buratti+2019, Hedman+2020 (color)',
     confianca: 'média',
   },
   daphnis: {
-    valor: 0.91, S: 1.57, fonteDoNivel: 'p V18 (só Wikipédia); S das luas de gelo do HST',
-    BG: 0.84, RG: 1.03, fonteDaCor: 'IR3/UV3 Buratti+2019 (estudo §3)',
-    matiz: 'esculpido', fonteDoMapa: 'família de regolito procedural (esculpido.ts)', confianca: 'baixa',
+    valor: 0.91, S: 1.57, fonteDoNivel: 'Verbiscer+2018 (p); S: HST', // p só pela Wikipédia; S das luas de gelo do HST
+    BG: 0.84, RG: 1.03, fonteDaCor: 'Buratti+2019 (IR3/UV3)',
+    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'baixa',
   },
   atlas: {
-    valor: 0.625, S: 1.2, fonteDoNivel: 'B0 a 30° (Hedman+2020)',
-    BG: 0.83, RG: 1.03, fonteDaCor: 'IR3/UV3 e VIMS (estudo §3)',
-    matiz: 'esculpido', fonteDoMapa: 'família de regolito procedural (esculpido.ts)', confianca: 'média',
+    valor: 0.625, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
+    BG: 0.83, RG: 1.03, fonteDaCor: 'IR3/UV3; VIMS',
+    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'média',
   },
   prometheus: {
-    valor: 0.793, S: 1.2, fonteDoNivel: 'B0 a 30° (Hedman+2020)',
-    BG: 0.74, RG: 1.04, fonteDaCor: 'inclinação VIMS (estudo §3)',
-    matiz: 'esculpido', fonteDoMapa: 'família de regolito procedural (esculpido.ts)', confianca: 'média',
+    valor: 0.793, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
+    BG: 0.74, RG: 1.04, fonteDaCor: 'VIMS',
+    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'média',
   },
   pandora: {
-    valor: 0.76, S: 1.2, fonteDoNivel: 'B0 a 30° (Hedman+2020)',
-    BG: 0.81, RG: 1.03, fonteDaCor: 'IR3/UV3 e VIMS (estudo §3)',
-    matiz: 'esculpido', fonteDoMapa: 'família de regolito procedural (esculpido.ts)', confianca: 'média',
+    valor: 0.76, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
+    BG: 0.81, RG: 1.03, fonteDaCor: 'IR3/UV3; VIMS',
+    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'média',
   },
   janus: {
-    valor: 0.531, S: 1.2, fonteDoNivel: 'B0 a 30° (Hedman+2020)',
-    BG: 0.87, RG: 1.04, fonteDaCor: 'inclinação VIMS (estudo §3)',
-    matiz: 'esculpido', fonteDoMapa: 'família de regolito procedural (esculpido.ts)', confianca: 'média',
+    valor: 0.531, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
+    BG: 0.87, RG: 1.04, fonteDaCor: 'VIMS',
+    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'média',
   },
   epimetheus: {
-    valor: 0.463, S: 1.2, fonteDoNivel: 'B0 a 30° (Hedman+2020)',
-    BG: 0.9, RG: 1.03, fonteDaCor: 'IR3/UV3 VIMS-equivalente (estudo §3)',
-    matiz: 'esculpido', fonteDoMapa: 'família de regolito procedural (esculpido.ts)', confianca: 'média',
+    valor: 0.463, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
+    BG: 0.9, RG: 1.03, fonteDaCor: 'IR3/UV3 (VIMS-equiv.)',
+    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'média',
   },
   // ---- Urano: as cinco (HST, Karkoschka 2001 via DeColibus+2026; Miranda baixa)
   miranda: {
-    valor: 0.33, S: 1, fonteDoNivel: 'refletância normal 0,30–0,37 (Buratti & Mosher 1991, de 2ª mão), o meio',
-    BG: 1, RG: 1, fonteDaCor: 'não medida (Karkoschka: levemente azulada, sem número)',
+    // refletância normal 0,30–0,37 (de 2ª mão), o meio da faixa
+    valor: 0.33, S: 1, fonteDoNivel: 'Buratti & Mosher 1991 (0.30–0.37)',
+    nivelDerivado: true, // o meio de uma faixa publicada, não uma medida
+    // a cor não é medida: Karkoschka a diz levemente azulada, sem número
+    BG: 1, RG: 1, fonteDaCor: 'Karkoschka 2001 (qualitative); B/G = R/G = 1',
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'baixa',
   },
   ariel: {
-    valor: 0.532, S: 1.3, fonteDoNivel: 'p HST F547M; S das luas de Urano',
-    BG: 1 / 1.025, RG: 1.024, fonteDaCor: 'V/B e R/V do HST',
+    valor: 0.532, S: 1.3, fonteDoNivel: 'HST F547M (p); S: HST', // S das luas de Urano
+    BG: 1 / 1.025, RG: 1.024, fonteDaCor: 'HST (V/B, R/V)',
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'média',
   },
   umbriel: {
-    valor: 0.259, S: 1.3, fonteDoNivel: 'p HST F547M; S das luas de Urano',
-    BG: 1 / 1.028, RG: 1.012, fonteDaCor: 'V/B e R/V do HST',
+    valor: 0.259, S: 1.3, fonteDoNivel: 'HST F547M (p); S: HST', // S das luas de Urano
+    BG: 1 / 1.028, RG: 1.012, fonteDaCor: 'HST (V/B, R/V)',
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'média',
   },
   titania: {
-    valor: 0.347, S: 1.3, fonteDoNivel: 'p HST F547M; S das luas de Urano',
-    BG: 1 / 1.044, RG: 1.03, fonteDaCor: 'V/B e R/V do HST',
+    valor: 0.347, S: 1.3, fonteDoNivel: 'HST F547M (p); S: HST', // S das luas de Urano
+    BG: 1 / 1.044, RG: 1.03, fonteDaCor: 'HST (V/B, R/V)',
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'média',
   },
   oberon: {
-    valor: 0.314, S: 1.3, fonteDoNivel: 'p HST F547M; S das luas de Urano',
-    BG: 1 / 1.052, RG: 1.036, fonteDaCor: 'V/B e R/V do HST',
+    valor: 0.314, S: 1.3, fonteDoNivel: 'HST F547M (p); S: HST', // S das luas de Urano
+    BG: 1 / 1.052, RG: 1.036, fonteDaCor: 'HST (V/B, R/V)',
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'média',
   },
   // ---- Netuno e Plutão
   triton: {
-    valor: 0.72, S: 1, fonteDoNivel: 'p V sem o pico estreito (Hicks & Buratti 2004, de 2ª mão)',
-    BG: { BV: 0.7 }, RG: 1, fonteDaCor: 'B−V Pascu+2006; R/G não medido',
+    valor: 0.72, S: 1, fonteDoNivel: 'Hicks & Buratti 2004 (p V)', // sem o pico estreito; de 2ª mão
+    BG: { BV: 0.7 }, RG: 1, fonteDaCor: 'Pascu+2006 (B−V); R/G = 1', // R/G não medido
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'média',
   },
   pluto: {
-    valor: 0.51, S: 1.19, fonteDoNivel: 'p V Verbiscer+2022; S dos TNOs (Tritão)',
-    BG: { BV: 0.954 }, RG: { VRc: 0.515 }, fonteDaCor: 'B−V Buie+2010 (só Plutão), V−R Hainaut+2012',
-    matiz: 'foto',
-    fonteDoMapa: 'PIA11707, a cor da Ralph/MVIC; o sul e o lado de trás inventados com retalhos e o tom dessa mesma cor (cor-inventada.mjs)',
+    valor: 0.51, S: 1.19, fonteDoNivel: 'Verbiscer+2022 (p V); S: TNO', // S dos TNOs (Tritão)
+    BG: { BV: 0.954 }, RG: { VRc: 0.515 }, fonteDaCor: 'Buie+2010 (B−V); Hainaut+2012 (V−R)', // o B−V de Buie é só de Plutão
+    // a cor da Ralph/MVIC; o sul e o lado de trás, inventados com retalhos e o tom dessa mesma cor (cor-inventada.mjs)
+    matiz: 'foto', fonteDoMapa: 'PIA11707 (Ralph/MVIC)',
     confianca: 'média',
     ancora: {
       razao: 0.8 / 0.12,
@@ -289,48 +311,49 @@ export const REGUA_DOS_MAPAS: Readonly<Record<string, MedidaDoCorpo>> = {
     },
   },
   charon: {
-    valor: 0.41, S: 1.19, fonteDoNivel: 'p V Verbiscer+2022; S dos TNOs (Tritão)',
-    BG: { BV: 0.7315 }, RG: 1, fonteDaCor: 'B−V Buie+2010; R/G não medido',
-    matiz: 'tinta', fonteDoMapa: 'mosaico USGS de 300 m (LORRI+MVIC) em cinza; o sul inventado também cinza', confianca: 'média',
+    valor: 0.41, S: 1.19, fonteDoNivel: 'Verbiscer+2022 (p V); S: TNO', // S dos TNOs (Tritão)
+    BG: { BV: 0.7315 }, RG: 1, fonteDaCor: 'Buie+2010 (B−V); R/G = 1', // R/G não medido
+    // o mosaico em cinza; o sul, inventado, também em cinza
+    matiz: 'tinta', fonteDoMapa: 'USGS mosaic 300 m (LORRI+MVIC)', confianca: 'média',
   },
   // ---- asteroides e anões de fora
   ceres: {
-    valor: 0.09, S: 1.28, fonteDoNivel: 'p V Li+2006 (SBDB); S de rocha escura (H,G, modelo)',
-    BG: { BV: 0.713 }, RG: { VRc: 0.375 }, fonteDaCor: 'B−V SBDB; V−R 0,375 (o da tinta antiga do item 141)',
-    matiz: 'tinta', fonteDoMapa: 'mosaico Dawn FC do USGS, cinza', confianca: 'alta',
+    valor: 0.09, S: 1.28, fonteDoNivel: 'Li+2006 (p V, SBDB); S(H,G)',
+    BG: { BV: 0.713 }, RG: { VRc: 0.375 }, fonteDaCor: 'SBDB (B−V); V−R 0.375', // o V−R da tinta antiga (item 141)
+    matiz: 'tinta', fonteDoMapa: 'USGS (Dawn FC mosaic)', confianca: 'alta',
   },
   vesta: {
-    valor: 0.38, S: 1.21, fonteDoNivel: 'p Dawn FC 554 nm (Li+2013); S de H,G com G = 0,32 (modelo)',
-    BG: { BV: 0.782 }, RG: 1.1, fonteDaCor: 'B−V SBDB; R/G DERIVADO pela inclinação do B−V',
-    matiz: 'tinta', fonteDoMapa: 'mosaico Dawn do modelo 3D da NASA, cinza', confianca: 'alta',
+    valor: 0.38, S: 1.21, fonteDoNivel: 'Li+2013 (p, Dawn FC 554 nm); S(H,G), G = 0.32',
+    BG: { BV: 0.782 }, RG: 1.1, fonteDaCor: 'SBDB (B−V); R/G ≈ f(B−V)', // R/G derivado pela inclinação do B−V
+    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources (Dawn mosaic)', confianca: 'alta',
   },
   pallas: {
-    valor: 0.155, S: 1.28, fonteDoNivel: 'p Vernazza+2021 (SBDB); S de rocha escura (H,G, modelo)',
-    BG: { BV: 0.635 }, RG: 0.99, fonteDaCor: 'B−V SBDB; R/G DERIVADO pela inclinação do B−V',
+    valor: 0.155, S: 1.28, fonteDoNivel: 'Vernazza+2021 (p, SBDB); S(H,G)',
+    BG: { BV: 0.635 }, RG: 0.99, fonteDaCor: 'SBDB (B−V); R/G ≈ f(B−V)', // R/G derivado pela inclinação do B−V
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'média',
   },
   hygiea: {
-    valor: 0.0717, S: 1.28, fonteDoNivel: 'p IRAS (SBDB); S de rocha escura (H,G, modelo)',
-    BG: { BV: 0.696 }, RG: 1.03, fonteDaCor: 'B−V SBDB; R/G DERIVADO pela inclinação do B−V',
+    valor: 0.0717, S: 1.28, fonteDoNivel: 'IRAS (p, SBDB); S(H,G)',
+    BG: { BV: 0.696 }, RG: 1.03, fonteDaCor: 'SBDB (B−V); R/G ≈ f(B−V)', // R/G derivado pela inclinação do B−V
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'média',
   },
   haumea: {
-    valor: 0.51, S: 1.19, fonteDoNivel: 'p Ortiz+2017 (a forma que o app desenha); S dos TNOs',
+    valor: 0.51, S: 1.19, fonteDoNivel: 'Ortiz+2017 (p); S: TNO', // p da forma que o app desenha
     BG: { BV: 0.631 }, RG: { VRc: 0.37 }, fonteDaCor: 'Hainaut+2012',
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'média',
   },
   makemake: {
-    valor: 0.81, S: 1.19, fonteDoNivel: 'p Brown 2013; S dos TNOs',
-    BG: { BV: 0.868 }, RG: { VRc: 0.449 }, fonteDaCor: 'do espectro (Alvarez-Candal+2020)',
+    valor: 0.81, S: 1.19, fonteDoNivel: 'Brown 2013 (p); S: TNO',
+    BG: { BV: 0.868 }, RG: { VRc: 0.449 }, fonteDaCor: 'Alvarez-Candal+2020', // do espectro
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'média',
   },
   eris: {
-    valor: 0.96, S: 1.19, fonteDoNivel: 'p Sicardy+2011; S dos TNOs',
-    BG: 0.97, RG: 1.03, fonteDaCor: 'espectro ~3 %/100 nm (Alvarez-Candal+2011; os índices brigam com ele)',
+    valor: 0.96, S: 1.19, fonteDoNivel: 'Sicardy+2011 (p); S: TNO',
+    BG: 0.97, RG: 1.03, fonteDaCor: 'Alvarez-Candal+2011 (≈3 %/100 nm)', // do espectro; os índices brigam com ele
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'média-alta',
   },
   quaoar: {
-    valor: 0.109, S: 1.19, fonteDoNivel: 'p Braga-Ribas+2013; S dos TNOs',
+    valor: 0.109, S: 1.19, fonteDoNivel: 'Braga-Ribas+2013 (p); S: TNO',
     BG: { BV: 0.958 }, RG: { VRc: 0.65 }, fonteDaCor: 'Hainaut+2012',
     matiz: 'tinta', fonteDoMapa: IA, confianca: 'média',
   },

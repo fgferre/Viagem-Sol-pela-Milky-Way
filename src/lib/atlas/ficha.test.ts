@@ -518,7 +518,7 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
   it('brilho: o p0 da régua, derivado quando o pico é modelo ou a média é estimada, e o γ < 1 dito', () => {
     expect(linhaDe('enceladus', 'brilho')).toMatchObject({
       valor:
-        'albedo medido p0 = 0,89 (equigonal VIMS 0,55 µm (Filacchione+2022)); contraste do mapa ×0,07 para não estourar',
+        'albedo medido p0 = 0,89 (Filacchione+2022, VIMS equigonal 0.55 µm); contraste do mapa ×0,07 para não estourar',
       procedencia: 'medido',
     });
     const vesta = linhaDe('vesta', 'brilho');
@@ -535,6 +535,13 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
       expect(linhaDe('earth', rotulo).valor, rotulo).toContain('fora da régua');
       expect(linhaDe('earth', rotulo).procedencia, rotulo).toBeUndefined();
     }
+  });
+
+  it('brilho: o nível que repousa numa suposição ou numa média (nivelDerivado) é derivado; o medido segue medido', () => {
+    for (const id of ['iapetus', 'miranda', 'io', 'europa', 'ganymede', 'callisto']) {
+      expect(linhaDe(id, 'brilho').procedencia, id).toBe('derivado');
+    }
+    expect(linhaDe('mimas', 'brilho').procedencia).toBe('medido');
   });
 
   it('nenhuma nota some: tudo o que a bancada e o crédito escrevem chega a uma linha, nas duas línguas', () => {

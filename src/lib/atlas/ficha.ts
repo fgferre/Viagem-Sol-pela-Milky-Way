@@ -578,8 +578,8 @@ const GAMA_DA_REGUA: Readonly<Partial<Record<string, { gama: number }>>> = RELAT
 
 /**
  * O FATOR DO PICO POR MODELO: a tabela da régua marca no texto da fonte os
- * S de H,G (Bowell 1989), que são modelo e não medida — "S de rocha escura
- * (H,G, modelo)", "S de H,G com G = 0,32 (modelo)".
+ * S de H,G (Bowell 1989), que são modelo e não medida — "S(H,G)",
+ * "S(H,G), G = 0.32".
  */
 const PICO_POR_MODELO = /H,G/;
 
@@ -672,7 +672,8 @@ function linhaDaCor(
 
 /**
  * O BRILHO: o p0 da régua, com a fonte do nível. DERIVADO quando o fator do
- * pico é modelo (H,G) ou quando a média desenhada é estimada (as
+ * pico é modelo (H,G), quando o nível repousa numa suposição ou numa média
+ * (`nivelDerivado`) ou quando a média desenhada é estimada (as
  * esculpidas escalam a família de regolito até o p0); o γ < 1 que a cadeia
  * aplicou para o mapa caber no alvo sem estourar é confessado junto.
  */
@@ -688,7 +689,11 @@ function linhaDoBrilho(id: string, regua: MedidaDoCorpo | undefined): LinhaDaFic
   if (esculpida) frase += t('ficha.brilho.mediaEstimada');
   const gama = GAMA_DA_REGUA[id]?.gama;
   if (gama !== undefined && gama < 1) frase += t('ficha.brilho.gama', { gama: comCasas(gama, 2) });
-  return linha(rotulo, frase, picoPorModelo || esculpida ? 'derivado' : 'medido');
+  return linha(
+    rotulo,
+    frase,
+    picoPorModelo || esculpida || regua.nivelDerivado ? 'derivado' : 'medido'
+  );
 }
 
 /**
