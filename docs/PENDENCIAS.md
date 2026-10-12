@@ -57,8 +57,7 @@ verdade.
 
 **A próxima rodada — a ordem é dele:** a R3 da régua (confissão: um formato por canal — forma, relevo, cor, brilho —
 crescendo da coluna `selo`; a ficha conta o γ e o 2/3 global da R2), depois a R4 (relevo, Encélado primeiro, com a fila
-de assets). As cópias `../Viagem-tom-*`, `../Viagem-sol-estudo` e `../Viagem-antes-r1` podem ser apagadas quando ele
-quiser (os ramos ficam inteiros no `main`).
+de assets). As cópias de trabalho já foram apagadas (sobra `../Viagem-por-do-sol`); os ramos seguem no git.
 
 ## O BASTÃO anterior (09/10) — O SOL EM CADA DISTÂNCIA: A REGRA NOVA PUBLICADA (`main` `d89e684c`, enviada por ele no terminal)
 
