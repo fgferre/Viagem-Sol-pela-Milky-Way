@@ -115,15 +115,27 @@ export interface EntradaDeTextura {
    */
   seloDaNota?: 'medido' | 'derivado' | 'inventado';
 }
+
+/**
+ * A CONFISSÃO DA FORMA de um corpo: a frase bilíngue de sempre — quem lê só
+ * `pt`/`en` continua lendo — com o selo ao lado, no mesmo nome e vocabulário
+ * da imagem, da coluna `selo` da tabela "a forma" do ASSETS.md. Opcional só
+ * para o manifesto anterior ao selo.
+ */
+export interface FormaConfessada extends TextoBilingue {
+  seloDaNota?: EntradaDeTextura['seloDaNota'];
+}
+
 export interface ManifestDeTexturas {
   entradas: EntradaDeTextura[];
   /**
-   * A FORMA, por corpo: os quatro que têm malha irregular publicada e são
-   * desenhados como elipsoide de `BODY_AXES` (item 20). Fica no topo e não
-   * na entrada porque Palas e Haumea não têm textura nenhuma — a superfície
-   * deles é procedural — e não teriam onde pendurar a confissão.
+   * A FORMA, por corpo (item 20; tabela "a forma" do ASSETS.md): os que têm
+   * malha irregular publicada e são desenhados como elipsoide de
+   * `BODY_AXES`, e as luas esculpidas por código. Fica no topo e não na
+   * entrada porque a forma é do corpo, não de um mapa — as esculpidas não
+   * têm textura nenhuma onde pendurar a confissão.
    */
-  formas?: Record<string, TextoBilingue>;
+  formas?: Record<string, FormaConfessada>;
 }
 
 /** Teto de cinema para os canais de APOIO (tudo que não é `map`) —

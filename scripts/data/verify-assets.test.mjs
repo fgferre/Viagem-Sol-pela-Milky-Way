@@ -18,10 +18,10 @@
 //
 // Cada caso roda o gate INTEIRO (242 texturas, 328 mil estrelas) e
 // custa ~0,3 s, porque as texturas entram por atalho e o sha delas sai
-// dos mesmos bytes. Quatro casos: o gate verde no artefato de verdade
+// dos mesmos bytes. Cinco casos: o gate verde no artefato de verdade
 // (sem ele o espelho podia estar reprovando por outro motivo), o inglês
-// da FICHA reescrito, o inglês da ficha APAGADO e o inglês do
-// MANIFESTO apagado.
+// da FICHA reescrito, o inglês da ficha APAGADO, o inglês do
+// MANIFESTO apagado e o selo da FORMA trocado.
 // ============================================================
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
@@ -155,6 +155,15 @@ describe('verify-assets — o cadeado do inglês', () => {
     });
     expect(r.ok).toBe(false);
     expect(r.saida).toContain('sem o inglês (item 130/F4)');
+  }, 180_000);
+
+  it('reprova o SELO DA FORMA que não é o do ASSETS.md (item 20)', () => {
+    const r = rodar((corpos, texturas) => {
+      texturas.formas.atlas.seloDaNota = 'medido'; // o ASSETS.md diz inventado
+      return { corpos, texturas };
+    });
+    expect(r.ok).toBe(false);
+    expect(r.saida).toContain('o selo da forma de "atlas"');
   }, 180_000);
 });
 

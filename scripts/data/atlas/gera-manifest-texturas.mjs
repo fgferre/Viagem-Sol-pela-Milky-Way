@@ -32,14 +32,16 @@
 // fecha os itens 19 e 20). A ficha do objeto imprime, na seção "a
 // imagem", o defeito de cada mapa, com o selo do que ele confessa —
 // a cor de Ceres que não é medida, as emendas de Titã, a cor inferida
-// de Europa, Vênus sem foto em luz visível — e a forma dos quatro
-// corpos que são elipsoide tendo malha publicada. Esses vereditos já moram, inteiros, em
+// de Europa, Vênus sem foto em luz visível — e a forma, também com
+// selo, dos corpos que são elipsoide tendo malha publicada ou malha
+// esculpida por código. Esses vereditos já moram, inteiros, em
 // `docs/reference/ASSETS.md`; então é ELE que este gerador lê, numa
 // seção de tabelas com título fixo. Copiá-los para cá criaria a
 // segunda cópia que o próprio ASSETS existe para não ter — e seria a
 // cópia que envelhece calada, porque quem edita o veredito edita o
 // documento. O gerador FALHA se a seção sumir, se uma linha vier
-// malformada ou se citar um corpo/canal fora de `ORIGENS`.
+// malformada, se citar um corpo/canal fora de `ORIGENS` ou uma forma de
+// corpo fora de `fonte/corpos-fonte.json`.
 //
 // DETERMINÍSTICO: sem timestamp, entradas ordenadas por
 // (corpo, canal, arquivo); rodar de novo com a árvore parada
@@ -53,7 +55,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { sha256 } from '../lib/binary.mjs';
-import { analisarNomeDeTextura, lerTabelasDaConfissao } from './lib-texturas.mjs';
+import {
+  analisarNomeDeTextura,
+  conferirCorposDaForma,
+  lerTabelasDaConfissao,
+} from './lib-texturas.mjs';
 import { bilingue } from './texturas-em-ingles.mjs';
 
 const rootDirectory = path.resolve(
@@ -778,6 +784,17 @@ for (const chave of confissao.imagem.keys()) {
     );
   }
 }
+const corposFonte = JSON.parse(
+  await readFile(
+    path.join(rootDirectory, 'scripts', 'data', 'atlas', 'fonte', 'corpos-fonte.json'),
+    'utf8'
+  )
+);
+conferirCorposDaForma(
+  confissao.forma,
+  new Set(corposFonte.corpos.map((c) => c.id)),
+  assetsPath
+);
 
 async function listarArquivos(diretorio) {
   const resultado = [];
@@ -859,14 +876,19 @@ async function main() {
     geradoPor: 'scripts/data/atlas/gera-manifest-texturas.mjs',
     confissao: 'docs/reference/ASSETS.md § A CONFISSÃO NA TELA',
     // A FORMA NÃO É UMA VARIANTE, e por isso ela é chave de topo e não
-    // campo de entrada: Palas e Haumea não têm textura nenhuma (superfície
-    // procedural em `rochoso.ts`) e não teriam onde pendurar a nota. O que
-    // se confessa aqui é o MESH — o elipsoide de BODY_AXES no lugar da
-    // malha irregular que existe publicada (item 20).
+    // campo de entrada: as luas esculpidas não têm textura nenhuma e não
+    // teriam onde pendurar a nota. O que se confessa aqui é o MESH — o
+    // elipsoide de BODY_AXES no lugar da malha irregular que existe
+    // publicada, ou a malha esculpida por código (item 20). Cada forma é a
+    // frase bilíngue de sempre (`pt`/`en`, que a ficha já lê) com o selo
+    // ao lado, no mesmo nome da imagem: `seloDaNota`.
     formas: Object.fromEntries(
       [...confissao.forma]
         .sort(([a], [b]) => a.localeCompare(b, 'en'))
-        .map(([id, nota]) => [id, bilingue(nota, `a forma de ${id}`)])
+        .map(([id, { selo, nota }]) => [
+          id,
+          { ...bilingue(nota, `a forma de ${id}`), seloDaNota: selo },
+        ])
     ),
     entradas,
   };
@@ -882,7 +904,7 @@ async function main() {
       `${(totalBytes / 1048576).toFixed(2)} MB em disco, ` +
       `${naoResolvidas} com origem não resolvida, ` +
       `${comNota.size} canais com defeito confessado (${[...comNota].join(', ')}), ` +
-      `${Object.keys(manifest.formas).length} corpos elipsoide sem malha.`
+      `${Object.keys(manifest.formas).length} corpos com a forma confessada.`
   );
 }
 

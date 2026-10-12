@@ -271,7 +271,8 @@ export function preencherVazioSemDado(
 // As frases que a ficha do objeto imprime na seção "a imagem" — Ceres
 // inventado pela fonte, as emendas de Titã, a cor inferida de Europa,
 // Vênus sem foto em luz visível — e a forma dos corpos que são
-// elipsoide tendo malha publicada nascem em `docs/reference/ASSETS.md`,
+// elipsoide tendo malha publicada ou malha esculpida por código, cada
+// uma com o seu selo, nascem em `docs/reference/ASSETS.md`,
 // onde os vereditos da bancada moram inteiros. Uma segunda cópia num
 // `.mjs` é a que envelhece calada, porque quem edita o veredito edita o
 // documento. Por isso o gerador LÊ o documento — e por isso o verify o
@@ -285,17 +286,17 @@ export function preencherVazioSemDado(
 /** O título que abre a seção legível por máquina. */
 export const TITULO_DA_CONFISSAO = '## A CONFISSÃO NA TELA';
 
-/** O selo do que a nota da imagem confessa — o tier mais fraco dela. */
+/** O selo do que a nota confessa (da imagem ou da forma) — o tier mais fraco dela. */
 const SELOS_DA_NOTA = ['medido', 'derivado', 'inventado'];
 
 /**
  * As duas tabelas da seção de confissão, lidas com rigor: o título tem de
- * existir, a seção tem de ir até o fim do arquivo, cada linha da forma tem
- * de ser `| chave | frase |` e cada linha da imagem `| chave | selo | frase |`,
- * com o selo dentro de `SELOS_DA_NOTA`; o resultado é um par de Maps (a
- * imagem dá `{ selo, nota }`, a forma dá a frase). Sem tolerância a
- * "quase" — nota que sumir por causa de um pipe a menos some da TELA, e
- * ninguém repara na falta de uma frase.
+ * existir, a seção tem de ir até o fim do arquivo, cada linha das duas tem
+ * de ser `| chave | selo | frase |`, com o selo dentro de `SELOS_DA_NOTA`;
+ * o resultado é um par de Maps de `{ selo, nota }` (a imagem por
+ * `corpo/canal`, a forma por corpo). Sem tolerância a "quase" — nota que
+ * sumir por causa de um pipe a menos some da TELA, e ninguém repara na
+ * falta de uma frase.
  *
  * `onde` entra só para a mensagem de erro apontar o arquivo certo.
  */
@@ -310,7 +311,6 @@ export function lerTabelasDaConfissao(markdown, onde = 'docs/reference/ASSETS.md
   const secao = markdown.slice(inicio);
   const tabelas = new Map();
   let atual = null;
-  let comSelo = false;
   for (const linha of secao.split('\n')) {
     // A SEÇÃO É A ÚLTIMA DO ARQUIVO, e isto é o que torna a regra
     // verdadeira em vez de esperançosa: a leitura vai daqui até o fim,
@@ -325,26 +325,19 @@ export function lerTabelasDaConfissao(markdown, onde = 'docs/reference/ASSETS.md
     if (sub) {
       atual = new Map();
       tabelas.set(sub[1], atual);
-      comSelo = sub[1].startsWith('a imagem');
       continue;
     }
     if (!atual || !linha.startsWith('|')) continue;
     const celulas = linha.split('|').slice(1, -1).map((c) => c.trim());
-    if (celulas.length !== (comSelo ? 3 : 2)) {
+    if (celulas.length !== 3) {
       throw new Error(`${onde}: linha de tabela malformada — "${linha}".`);
     }
-    const chave = celulas[0];
-    const nota = celulas.at(-1);
+    const [chave, selo, nota] = celulas;
     if (/^-+$/.test(chave) || chave === 'corpo/canal' || chave === 'corpo') continue;
     if (!nota) throw new Error(`${onde}: "${chave}" sem nota.`);
     if (atual.has(chave)) {
       throw new Error(`${onde}: "${chave}" aparece duas vezes na mesma tabela.`);
     }
-    if (!comSelo) {
-      atual.set(chave, nota);
-      continue;
-    }
-    const selo = celulas[1];
     if (!SELOS_DA_NOTA.includes(selo)) {
       throw new Error(
         `${onde}: "${chave}" com selo "${selo}" — vale ${SELOS_DA_NOTA.join(', ')}.`
@@ -361,4 +354,22 @@ export function lerTabelasDaConfissao(markdown, onde = 'docs/reference/ASSETS.md
     );
   }
   return { imagem, forma };
+}
+
+/**
+ * A tabela "a forma" fala de CORPOS, e um id que não é corpo nenhum (um
+ * erro de digitação, um corpo que saiu) publicaria calado: a ficha procura
+ * a forma pelo id e nunca a acharia. A imagem é cobrada contra `ORIGENS`
+ * no gerador; a forma, aqui, contra os ids de `corpos-fonte.json` — no
+ * gerador e no verify pela mesma função.
+ */
+export function conferirCorposDaForma(forma, idsDosCorpos, onde = 'docs/reference/ASSETS.md') {
+  for (const id of forma.keys()) {
+    if (!idsDosCorpos.has(id)) {
+      throw new Error(
+        `${onde}: a forma de "${id}" não casa com nenhum corpo de ` +
+          'scripts/data/atlas/fonte/corpos-fonte.json.'
+      );
+    }
+  }
 }

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sha256 } from './lib/binary.mjs';
 import { heliocentricGalacticToProject } from './lib/galactic.mjs';
-import { lerTabelasDaConfissao } from './atlas/lib-texturas.mjs';
+import { conferirCorposDaForma, lerTabelasDaConfissao } from './atlas/lib-texturas.mjs';
 import {
   decodeSpiralAnchors,
   evaluateSpiralModel,
@@ -1265,6 +1265,11 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
       );
     }
   }
+  conferirCorposDaForma(
+    confissao.forma,
+    new Set(corposFonte.corpos.map((c) => c.id)),
+    'docs/reference/ASSETS.md'
+  );
   const ELIPSOIDES = [...confissao.forma.keys()].sort();
   const formas = texturasDoc.formas ?? {};
   if (Object.keys(formas).sort().join(',') !== ELIPSOIDES.join(',')) {
@@ -1274,9 +1279,17 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
     );
   }
   for (const [id, nota] of Object.entries(formas)) {
-    if (nota.pt !== confissao.forma.get(id)) {
+    const confessada = confissao.forma.get(id);
+    if (nota.pt !== confessada.nota) {
       throw new Error(
         `atlas/texturas: a forma de "${id}" não confere com o ASSETS.md ("${nota.pt}").`
+      );
+    }
+    if (nota.seloDaNota !== confessada.selo) {
+      throw new Error(
+        `atlas/texturas: o selo da forma de "${id}" no manifesto é ` +
+          `"${nota.seloDaNota}", e o ASSETS.md diz "${confessada.selo}" — ` +
+          'rode npm run data:texturas.'
       );
     }
     if (typeof nota.en !== 'string' || nota.en === '') {

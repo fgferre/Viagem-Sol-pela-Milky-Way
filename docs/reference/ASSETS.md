@@ -4,6 +4,24 @@ Fonte única dos vereditos da bancada (`scripts/visual/bancada-assets.html`,
 D4). Textura que perdeu fica aqui para não renascer. Resolução é o pixel
 contado, nunca o nome do arquivo.
 
+## O brilho e a cor de todo mapa — a régua (R2, 10/10/2026)
+
+Todo `map` de corpo que reflete luz, menos a Terra, sai da cadeia pela
+MESMA função, e os níveis por corpo que as seções abaixo contavam (a
+graduação das luas de Saturno, o ganho das ilustrações por IA, a tinta de
+Ceres, o nível de Europa) não existem mais. A conta mora em
+`scripts/data/atlas/regua-dos-mapas.mjs`, os números em
+`src/lib/atlas/reguaDosMapas.ts` e a literatura deles em
+`MEDIDAS-DOS-CORPOS.md`: a média de G do mapa, ponderada pela área, é p0 —
+o albedo geométrico sem o pico de oposição —; a cor são as razões B/G e R/G
+medidas (`matiz: 'foto'` guarda a variação de cor da foto e só move a
+média; `'tinta'` faz o mapa virar luminância × uma tinta medida); e, onde o
+mapa estouraria, o contraste se comprime por γ (`tex' = g·tex^γ`), nunca a
+média. **Confessado, uma vez e para todos:** o app desenha o disco em fase
+cheia com 2/3 do albedo geométrico, porque as superfícies dele são Lambert
+ou Lommel-Seeliger com a textura como albedo; a razão entre dois corpos é
+exata.
+
 ## Titã — mosaico Cassini não entra
 
 Incumbente da casa: NASA 3D Resources, **720×360**, 49 KB, névoa
@@ -30,8 +48,8 @@ sul: sem preenchimento, o WRAP faria um anel negro no polo. Agora entra, a
   coluna a coluna com a média da última faixa de 1° com dado, indo à média
   do anel no polo — inventada e confessada; sai acastanhada, porque a
   última faixa é mais escura;
-- o brilho com um ganho só, em luz linear, que leva a média à do mapa
-  antigo (a exposição não muda; o contraste é o nativo do mosaico);
+- o nível e a cor média, os da régua (§ no topo), depois da cor inferida —
+  o ganho que levava a média à do mapa antigo saiu na R2;
 - a **cor inferida do brilho** (`cor-europa.mjs`, receita (a), tom
   meio-termo — a palavra do dono em 07/10/2026, pela prancha do E0): não
   existe mapa global em cor de Europa com licença livre (busca de
@@ -141,16 +159,13 @@ convenção e nenhum corpo precisa de bandeira de layout. Depois do giro o
 mínimo da altura de Mimas está em u = 0,197, e as duas Herschel (a do
 mosaico e a da altura) coincidem no mesmo x quando as folhas se empilham.
 
-**A GRADUAÇÃO.** Os mosaicos Schenk são de cor realçada em IR/UV: o detalhe
-é o melhor que existe, o matiz é exagerado e o nível é baixo. A tabela
-`MAP_GRADING` dele atravessou letra por letra para `GRADUACAO_DO_MOSAICO`
-(`world/corpos/rochoso.ts`) — desatura rumo à luminância e multiplica por um
-ganho, com Encélado em 1,35 por ser o corpo mais reflexivo do Sistema Solar.
-**Declarado:** os ganhos dele foram calibrados para a exposição DELE (AgX
-1,4, Sol 3,4); na exposição da casa (ACES 1,05) o nível linear dos seis
-mosaicos é 1,7× a 3,4× mais baixo que o dos mapas NASA 3D que saíram, e o
-disco renderizado sai 1,2× a 1,7× mais escuro que antes. Subir os ganhos até
-igualar estouraria de 1,4 % a 15 % do mapa — é decisão do dono, não conserto.
+**O NÍVEL E A COR.** Os mosaicos Schenk são de cor realçada em IR/UV: o
+detalhe é o melhor que existe, o matiz é exagerado e o nível é baixo. Por
+isso entram pela régua (§ no topo) como `tinta`: a luminância do mosaico
+vezes a cor medida de cada lua, com a média no albedo medido; em Jápeto o γ
+vem da razão medida entre as duas metades. A graduação por lua do projeto
+dele (`GRADUACAO_DO_MOSAICO`, ganhos calibrados para outra exposição) saiu
+do shader na R2.
 
 ## Relevo das seis luas de Saturno (item 134, S2)
 
@@ -451,11 +466,11 @@ só isto:
   em 239,3°E / 19,9°N, o que a IAU publica.
 - **tingimento uniforme, declarado**: a Framing Camera fotografou no filtro
   claro, então o mosaico é CINZA — não existe cor de Ceres em imagem. O
-  cinza vira cor por um fator fixo por canal, **R 1,021 / G 1,000 / B 0,946**,
-  tirado dos índices de cor publicados contra os do Sol (B−V 0,71 contra
-  0,65; V−R 0,375 contra 0,352). É pouco de propósito: Ceres é quase neutro,
-  e o marrom vistoso do mapa antigo era invenção. O NÍVEL não é mexido — o
-  mosaico entra com o brilho que o USGS publicou (média 118/255).
+  cinza vira cor pela régua (§ no topo, `tinta`): a luminância do mosaico
+  vezes uma tinta uniforme tirada dos índices de cor publicados (B−V 0,713,
+  V−R 0,375), com a média no albedo medido — não mais no brilho que o USGS
+  publicou. É pouco de propósito: Ceres é quase neutro, e o marrom vistoso
+  do mapa antigo era invenção.
 - **preenchimento do polo sul**: a Dawn mapeou Ceres com o polo sul em NOITE
   POLAR, e 3,6 % dos texels do mosaico são vazio preto abaixo de −84°.
   Deixá-los seria a mancha negra no polo que fez esta mesma bancada RECUSAR o
@@ -658,13 +673,10 @@ de Caronte** continua escuro de propósito. A foto boa é a `-depois-v2`.
 borda de cada buraco, um degrau de lanczos que já não conta como "sem dado"
 e por isso nunca seria tapado — um fio escuro em volta do remendo.
 
-**O nível não foi mexido**, e isto está medido por faixa de latitude em
-Caronte (média do canal na fonte → no mapa, os dois lidos a 1440×720):
-+90..+60 `54 → 53`, +60..+30 `131 → 131`, +30..0 `143 → 142`,
-0..−30 `125 → 135`. Só muda onde não havia dado — a faixa 0..−30 já toca a
-borda dentada da calota, e −30..−60 vai de `6 → 118`. A **Mordor Macula
-continua escura** (a faixa do polo norte não subiu), e nada foi esticado
-nem escurecido.
+**O nível e a cor são os da régua** (§ no topo): o preenchimento só muda
+onde não havia dado, e depois dele a média de cada mapa vai ao albedo
+medido — Caronte, cinza, vira luminância × a tinta medida; Plutão guarda a
+cor da foto, com o γ tirado da razão medida entre a Sputnik e a Cthulhu.
 
 Em 2026 o Sol ilumina o **norte** do sistema de Plutão (a obliquidade é de
 ~120° e a latitude subsolar era +51,6° em 2015, subindo), ou seja o lado
@@ -735,21 +747,10 @@ mandar uma incumbente inventada (o gráfico do ESO, o cinza procedural)
 teria ensinado a IA a copiar erro. Cada imagem voltou em 1774×887, fonte
 LOCAL da aquisição (`scripts/data/atlas/fonte/<corpo>-ia.png`).
 
-**O nível casado com o albedo.** A IA escolhe brilho por estética, não por
-física — o mapa de Hígia saiu cinza médio, não carvão. O passo `bake:
-'ilustracao-ia'` (`baixa-texturas.mjs`) mede a média do mapa em **linear**
-(sRGB→linear; a luz soma em linear) e aplica um ganho até essa média bater
-no albedo geométrico do corpo — o mesmo raciocínio do tingimento uniforme
-de Ceres, mas em brilho, e não à mão:
-
-| corpo | média linear da IA | ganho aplicado | albedo-alvo |
-| --- | --- | --- | --- |
-| Hígia | 0,0296 | ×2,367 | 0,07 |
-| Palas | 0,1991 | ×0,804 | 0,16 |
-| Haumea | 0,5744 | ×1,219 | 0,70 |
-| Makemake | 0,2172 | ×3,683 | 0,80 |
-| Éris | 0,8178 | ×1,101 | 0,90 (grampeado do medido 0,96, para não estourar em branco puro) |
-| Quaoar | 0,0570 | ×1,931 | 0,11 |
+**O nível e a cor são os da régua** (§ no topo, `tinta`). A IA escolhe
+brilho e cor por estética, não por física — o mapa de Hígia saiu cinza
+médio, não carvão —, e por isso o mapa vira a luminância dele vezes a tinta
+medida do corpo, com a média no albedo medido.
 
 **Nada aqui é medida.** Tamanho, forma (a malha da casa, já triaxial em
 Haumea) e a cor média vêm dos fatos publicados; o terreno — cratera,
@@ -778,8 +779,9 @@ raio médio.
 publicado (a rotação caótica complica montá-lo). O dono pintou por IA em
 22/09 sobre o relevo medido, com a foto
 Cassini PIA07740 só como referência; graduada (polos desesticados, 40 %
-menos saturada) e nivelada pelo bake `ilustracao-ia` — albedo medido 0,30,
-grampeado em 0,26. Dois retoques de cor, invenção sobre a invenção (item
+menos saturada), com o nível e a cor da régua (§ no topo, `tinta`: a
+luminância da pintura vezes a tinta medida, a média no albedo medido). Dois
+retoques de cor, invenção sobre a invenção (item
 226, 29/09): a flor de raios brancos no texel (900, 333) é coberta pelo
 trecho 280 texels a leste, na mesma latitude, e a cor clareia até 35 % com
 o declive da forma medida em escala grande sobre o elipsoide ajustado a
@@ -903,12 +905,14 @@ deles num arquivo `.mjs` envelheceria calada — que é exatamente o defeito
 que este documento existe para não ter. Os parágrafos acima são o veredito
 completo; a tabela é a UMA FRASE que cabe na tela.
 
-O gerador **falha** se este título sumir, se uma linha vier malformada ou se
-citar um `corpo/canal` que não existe em `ORIGENS`. Frase curta, sem ponto
-final, na voz de quem admite — o visitante lê isto ao lado da foto. Na
-tabela *a imagem*, a coluna `selo` (`medido`, `derivado` ou `inventado`, e
-o gerador falha com outro valor ou sem nenhum) é o tier mais fraco do que a
-nota confessa sobre o que se vê naquele canal — `inventado` se alguma parte
+O gerador **falha** se este título sumir, se uma linha vier malformada, se
+citar um `corpo/canal` que não existe em `ORIGENS` ou, na *a forma*, um
+corpo que não existe em `scripts/data/atlas/fonte/corpos-fonte.json`. Frase
+curta, sem ponto final, na voz de quem admite — o visitante lê isto ao lado
+da foto. Nas duas tabelas, a coluna `selo` (`medido`, `derivado` ou
+`inventado`, e o gerador falha com outro valor ou sem nenhum) é o tier mais
+fraco do que a nota confessa sobre o que se vê naquele canal ou naquela
+forma — `inventado` se alguma parte
 foi feita por código ou IA onde nada a observou, `derivado` se alguma parte
 foi estimada, inferida, preenchida ou tingida a partir de medidas por método
 declarado, `medido` nos outros casos (resolução, emenda, topo de nuvem, o
@@ -990,20 +994,24 @@ existe publicado e **não** é carregado: a casa não tem
 elipsoide de `BODY_AXES`. Depois, as sete luas de Saturno da S3 que seguem
 esculpidas, o caso oposto — têm malha, e a malha é INVENTADA a partir das
 dimensões publicadas (item 134/S3, seção acima); Hipérion e Pã saíram (forma
-medida, tabela de cima).
+medida, tabela de cima). O selo segue a regra da tabela de cima: o elipsoide
+dos eixos medidos é `medido` — o modelo irregular que falta é resolução,
+como o mosaico de Titã que não entrou —, e a malha esculpida, com crateras
+procedurais, é `inventado`. Corpo sem linha aqui é o elipsoide dos eixos
+medidos, `medido`.
 
-| corpo | nota |
-| --- | --- |
-| vesta | elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e esta casa ainda não a carrega |
-| pallas | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
-| hygiea | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
-| haumea | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega |
-| phobos | elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
-| deimos | elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
-| daphnis | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| atlas | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| prometheus | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| pandora | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| janus | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| epimetheus | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| phoebe | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| corpo | selo | nota |
+| --- | --- | --- |
+| vesta | medido | elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e esta casa ainda não a carrega |
+| pallas | medido | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
+| hygiea | medido | elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega |
+| haumea | medido | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega |
+| phobos | medido | elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
+| deimos | medido | elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega |
+| daphnis | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| atlas | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| prometheus | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| pandora | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| janus | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| epimetheus | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
+| phoebe | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |

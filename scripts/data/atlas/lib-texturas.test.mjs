@@ -8,8 +8,10 @@ import { describe, expect, it } from 'vitest';
 import {
   alturaProporcional,
   analisarNomeDeTextura,
+  conferirCorposDaForma,
   degrausDaEscada,
   hostPermitido,
+  lerTabelasDaConfissao,
   preencherVazioSemDado,
   webpCompensa,
 } from './lib-texturas.mjs';
@@ -135,5 +137,33 @@ describe('preencherVazioSemDado (item 147: o hemisfério que a Voyager não viu)
     const conta = preencherVazioSemDado(px, largura, altura, 3);
     expect(conta.preenchidos).toBe(0);
     expect(px.equals(antes)).toBe(true);
+  });
+});
+
+describe('lerTabelasDaConfissao (itens 19 e 20: a nota e o selo saem do ASSETS.md)', () => {
+  const doc = [
+    '## A CONFISSÃO NA TELA — lido por máquina',
+    '### a imagem (item 19)',
+    '| corpo/canal | selo | nota |',
+    '| --- | --- | --- |',
+    '| titan/map | medido | só a névoa |',
+    '### a forma (item 20)',
+    '| corpo | selo | nota |',
+    '| --- | --- | --- |',
+    '| phobos | medido | elipsoide, sem malha |',
+    '| janus | inventado | geometria esculpida por código |',
+  ].join('\n');
+
+  it('a forma traz o selo ao lado da nota, como a imagem', () => {
+    const { imagem, forma } = lerTabelasDaConfissao(doc);
+    expect(imagem.get('titan/map')).toEqual({ selo: 'medido', nota: 'só a névoa' });
+    expect(forma.get('phobos')).toEqual({ selo: 'medido', nota: 'elipsoide, sem malha' });
+    expect(forma.get('janus')).toEqual({ selo: 'inventado', nota: 'geometria esculpida por código' });
+  });
+
+  it('a forma de um corpo que não existe falha, em vez de publicar calada', () => {
+    const { forma } = lerTabelasDaConfissao(doc.replace('| janus |', '| jnaus |'));
+    expect(() => conferirCorposDaForma(forma, new Set(['phobos', 'janus']))).toThrow(/"jnaus"/);
+    expect(() => conferirCorposDaForma(forma, new Set(['phobos', 'jnaus']))).not.toThrow();
   });
 });
