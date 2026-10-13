@@ -539,12 +539,14 @@ export const CORPOS = {
     // o DEM é colcha: ladrilhos de bolhas de estéreo e lisos ao lado do polo
     // sul, as listras de tigre dentro deles. `conserto-do-dem.mjs` os acha
     // contra o retrato da cor (o mosaico de Schenk, ainda com a sombra), deixa
-    // neles só o que tem ≥ 8 km, devolve o fino com a estatística dos
-    // ladrilhos bons de Encélado e as listras e crateras do traço na foto;
-    // os ladrilhos bons saem byte a byte (13/10/2026)
+    // neles só o que tem ≥ 8 km, devolve o fino POR EXEMPLO (retalhos dos
+    // ladrilhos bons de Encélado) e as listras e crateras do traço na foto;
+    // os ladrilhos bons saem byte a byte (13/10/2026). `fino`: 'exemplo' (o
+    // padrão) ou 'liso' (o ruim fica só com o largo medido, listras e crateras)
     consertoDoDem: {
       foto: 'scripts/data/atlas/fonte/enceladus-cor.jpg',
       sha256: '1bacd2c1dcf5581ecf60fde29e02bbb4b31b551733d1887ee7ea2fa2b976ddca',
+      fino: 'exemplo',
     },
     fonte: {
       tipo: 'tif-local',
@@ -1651,7 +1653,7 @@ function encostaPorFaixa(rgb, largura, altura, ganho, faixas) {
  * frações medido / derivado / inventado.
  */
 async function consertarODem(corpo, fina) {
-  const { foto, sha256: pinado } = corpo.consertoDoDem;
+  const { foto, sha256: pinado, fino } = corpo.consertoDoDem;
   const bytes = await readFile(path.join(rootDirectory, foto));
   if (sha256(bytes) !== pinado) throw new Error(`o retrato ${foto} não é o pinado (${pinado}) — não conserto.`);
   const { data, info } = await sharp(bytes).removeAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -1659,11 +1661,11 @@ async function consertarODem(corpo, fina) {
   const giro = LONGITUDE_ESQUERDA_DA_CASA - corpo.longitudeDaBordaEsquerdaGraus;
   const { largura, altura } = fina;
   const casa = giraColunasDeImagem(fina.metros, largura, altura, 1, giro);
-  const r = consertaDem({ metros: casa, largura, altura, luminancia, raioM: corpo.raioM });
+  const r = consertaDem({ metros: casa, largura, altura, luminancia, raioM: corpo.raioM, fino });
   const pct = (x) => `${(100 * x).toFixed(1)} %`;
   const { cobertura: c, classes, lei, crateras, listras } = r.relatorio;
   console.log(
-    `conserto: ruído ${pct(classes[RUIDO])}, liso ${pct(classes[LISO])} da área; ` +
+    `conserto (fino ${fino}): ruído ${pct(classes[RUIDO])}, liso ${pct(classes[LISO])} da área; ` +
       `medido ${pct(c[MEDIDO])}, derivado da foto ${pct(c[DERIVADO])}, inventado ${pct(c[INVENTADO])}.`
   );
   console.log(

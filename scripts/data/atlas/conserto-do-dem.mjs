@@ -20,7 +20,12 @@
 //     60–70° ela some: ali o DEM e a foto foram reamostrados de mosaicos
 //     polares e dividem o mesmo arrasto (concordância 0,90 sobre as bolhas).
 // nota = excesso − `pesoDaOrientacao`·(razão − `orientacaoTipica`), média
-// de 12 km; ruído acima de `limiarDoRuido` (o meio dos patamares). A borda da
+// de 12 km; ruído acima de `limiarDoRuido` (o meio dos patamares). Além de
+// `continuacao.desdeGraus` o termo da orientação some e a nota perde metade da
+// prova: lá o ladrilho de bolhas CONTINUA (histerese) sobre a nota acima de
+// `continuacao.limiar` ligada a ele (medido, conserto2/: 60–75°S, 210–250°E,
+// de 23 % a 73 % marcado; as caixas boas do equador não mudam). Validada
+// região a região contra a foto (conserto2/regioes-v1.jpg). A borda da
 // média erra a borda reta do ladrilho por alguns km: na faixa de ±`bordaKm`
 // cada texel vai para o lado cuja energia fina (janela de 1,5 km) ele tem.
 // Liso: a encosta da banda 1 abaixo de `fracaoDoLiso` da do terreno bom
@@ -34,12 +39,13 @@
 //     (1,6 km: ondas ≳ 8 km), tirada SÓ dos texels ruins — a banda 3 do
 //     remendo já tem a encosta do terreno bom (1,06° × 1,04°), a banda 2 ainda
 //     tem 30–45 % a mais (o ruído).
-//  2. INVENTADO: as bandas 0–2 que saíram voltam sintéticas — ruído de Gabor
-//     esparso (ondas de 1,2, 2,4 e 4,8 km), metade alinhada com a direção que
-//     a FOTO mostra ali (só abaixo de 60–70°), com os ganhos que dão, banda
-//     DoG a banda DoG (as três se sobrepõem: mínimos quadrados sem negativo),
-//     a encosta do terreno bom vizinho (média com máscara a 30 km, depois
-//     120 km, depois a do corpo): a estatística é a de Encélado.
+//  2. INVENTADO POR EXEMPLO: o fino que saiu (< σ `corteKm`) volta copiado
+//     dos ladrilhos BONS do próprio Encélado (`bandaFinaPorExemplo`): retalhos
+//     de 16 km da banda fina medida, da mesma faixa de latitude e de encosta
+//     larga parecida, girados para o rumo que a FOTO mostra ali, escolhidos
+//     pelo menor erro na sobreposição e emendados em rampa — o caráter vem do
+//     terreno medido, não de ruído sintético. Com `fino:
+//     'liso'` nada volta: o ruim fica só com o largo medido.
 //  3. DERIVADO: crateras que a foto vê (`detectaCrateras`, rareadas pela regra
 //     de Reia na mesma grade) entram por `completaCratera` — só a profundidade
 //     que falta —, com o d/D medido nas crateras dos ladrilhos bons
@@ -52,10 +58,33 @@
 // A cobertura (medido / inventado / derivado) sai junto, com as frações.
 // ============================================================
 
-import { detectaCrateras, PARAMETROS_DA_DETECCAO } from './crateras-pela-foto.mjs';
-import { amostraBilinear, desfocaComMascara, latitudeDaLinha, longitudeDaColuna, membranaHarmonica, recentraCratera } from './relevo-inventado.mjs';
-import { completaCratera, morfologia, perfilGasto, profundidadeBordaFundo, rareiaPorLatitude, suave, texelEDiametroMinimo } from './relevo-por-foto.mjs';
-import { RAREAMENTO_POR_LATITUDE, reamostraParaACasa } from './relevo-reia.mjs';
+import {
+  detectaCrateras,
+  PARAMETROS_DA_DETECCAO,
+} from "./crateras-pela-foto.mjs";
+import {
+  amostraBilinear,
+  desfocaComMascara,
+  distanciaAoVazioKm,
+  latitudeDaLinha,
+  longitudeDaColuna,
+  membranaHarmonica,
+  noPlano,
+  planoTangente,
+  pontoDoPlano,
+  recentraCratera,
+  repeticaoMaisPerto,
+} from "./relevo-inventado.mjs";
+import {
+  completaCratera,
+  morfologia,
+  perfilGasto,
+  profundidadeBordaFundo,
+  rareiaPorLatitude,
+  suave,
+  texelEDiametroMinimo,
+} from "./relevo-por-foto.mjs";
+import { RAREAMENTO_POR_LATITUDE, reamostraParaACasa } from "./relevo-reia.mjs";
 
 const RADIANOS = Math.PI / 180;
 
@@ -79,14 +108,30 @@ export const CONSERTO_DE_ENCELADO = Object.freeze({
   orientacaoTipica: 0.45,
   orientacaoAteGraus: Object.freeze([60, 70]),
   limiarDoRuido: 1.45,
+  continuacao: Object.freeze({ limiar: 1.25, desdeGraus: 50 }),
   fracaoDoLiso: 0.25,
   ilhaMinimaKm2: 1000,
   bordaKm: 8,
   bordaJanelaKm: 1.5,
   corteKm: 1.6,
   vizinhancaKm: Object.freeze([30, 120]),
-  /** o ruído de Gabor de cada banda sintetizada (0, 1, 2): comprimento de onda e quantos núcleos se sobrepõem */
-  gabor: Object.freeze({ lambdaKm: Object.freeze([1.2, 2.4, 4.8]), alongamento: 3, alinhamento: 0.5, sobreposicao: 8, ganhoMax: 4 }),
+  /** a colcha do fino por exemplo (`bandaFinaPorExemplo`) */
+  exemplo: Object.freeze({
+    larguraKm: 16,
+    sobreposicaoKm: 4,
+    rampaKm: 2.5,
+    folgaKm: 5,
+    rumoKm: 8,
+    passoDasOrigensKm: 3,
+    origemAteGraus: 80,
+    origensMaisLimpas: 0.33,
+    vizinhancaKm: 80,
+    repeticaoKm: 8,
+    faixaGraus: 15,
+    candidatos: 160,
+    preSelecao: 24,
+    melhores: 3,
+  }),
   semente: 20261013,
   margemKm: 4,
   membranaSigmaKm: 64,
@@ -104,7 +149,11 @@ export const CONSERTO_DE_ENCELADO = Object.freeze({
     completar: Object.freeze({
       completaDesdeKm: 8,
       corteRR: Object.freeze([1.2, 1.5]),
-      instrumento: Object.freeze({ bordaRR: Object.freeze([0.7, 1.2]), fundoAteRR: 0.3, azimutes: 36 }),
+      instrumento: Object.freeze({
+        bordaRR: Object.freeze([0.7, 1.2]),
+        fundoAteRR: 0.3,
+        azimutes: 36,
+      }),
     }),
   }),
   listras: Object.freeze({
@@ -267,7 +316,12 @@ function engoleIlhas(classe, W, H, raioM, ehAlvo, outro, minKm2) {
       const j = (k / W) | 0;
       const i = k - j * W;
       km2 += area[j];
-      const viz = [j * W + (i + 1 === W ? 0 : i + 1), j * W + (i === 0 ? W - 1 : i - 1), j > 0 ? k - W : -1, j < H - 1 ? k + W : -1];
+      const viz = [
+        j * W + (i + 1 === W ? 0 : i + 1),
+        j * W + (i === 0 ? W - 1 : i - 1),
+        j > 0 ? k - W : -1,
+        j < H - 1 ? k + W : -1,
+      ];
       for (const q of viz) {
         if (q >= 0 && !visto[q] && ehAlvo(classe[q])) {
           visto[q] = 1;
@@ -276,6 +330,42 @@ function engoleIlhas(classe, W, H, raioM, ehAlvo, outro, minKm2) {
       }
     }
     if (km2 < minKm2) for (let t = 0; t < fim; t += 1) classe[fila[t]] = outro;
+  }
+}
+
+/**
+ * A CONTINUAÇÃO DO LADRILHO (histerese): o ruído cresce, por 4-vizinhos com a
+ * volta em longitude, sobre os texels de `nota` acima de `limiar` ligados a
+ * ele — o ladrilho de bolhas segue mais fraco junto do forte até a borda dele.
+ * No lugar.
+ */
+function continuaOLadrilho(classe, nota, W, H, { limiar, desdeGraus }) {
+  const longe = Uint8Array.from({ length: H }, (_, j) =>
+    Math.abs(latitudeDaLinha(j, H)) >= desdeGraus * RADIANOS ? 1 : 0,
+  );
+  const fila = new Int32Array(W * H);
+  let fim = 0;
+  for (let k = 0; k < W * H; k += 1) if (classe[k] === RUIDO) fila[fim++] = k;
+  for (let ini = 0; ini < fim; ini += 1) {
+    const k = fila[ini];
+    const j = (k / W) | 0;
+    const i = k - j * W;
+    for (const q of [
+      j * W + (i + 1 === W ? 0 : i + 1),
+      j * W + (i === 0 ? W - 1 : i - 1),
+      j > 0 ? k - W : -1,
+      j < H - 1 ? k + W : -1,
+    ]) {
+      if (
+        q >= 0 &&
+        classe[q] === BOM &&
+        longe[(q / W) | 0] &&
+        nota[q] > limiar
+      ) {
+        classe[q] = RUIDO;
+        fila[fim++] = q;
+      }
+    }
   }
 }
 
@@ -301,7 +391,9 @@ export function estatisticaVizinha(campo, bom, W, H, raioM, vizinhancaKm) {
     }
   }
   const global = peso > 0 ? soma / peso : 0;
-  const [perto, longe] = vizinhancaKm.map((s) => desfocaComMascara(campo, bom, W, H, raioM, s));
+  const [perto, longe] = vizinhancaKm.map((s) =>
+    desfocaComMascara(campo, bom, W, H, raioM, s),
+  );
   const o = new Float32Array(campo.length);
   for (let k = 0; k < o.length; k += 1) {
     const l = Number.isFinite(longe.valor[k]) ? longe.valor[k] : global;
@@ -320,7 +412,15 @@ export function estatisticaVizinha(campo, bom, W, H, raioM, vizinhancaKm) {
  * onde `vazio`), a `nota` do ruído e a orientação da foto na banda 1 (`foto`,
  * de `tensor`), que a síntese reaproveita. Ver o cabeçalho.
  */
-export function mascaraDeQualidade({ h, fotoLog, W, H, raioM, vazio = null, p = CONSERTO_DE_ENCELADO }) {
+export function mascaraDeQualidade({
+  h,
+  fotoLog,
+  W,
+  H,
+  raioM,
+  vazio = null,
+  p = CONSERTO_DE_ENCELADO,
+}) {
   const n = W * H;
   const [, b1, , b3] = bandas(h, W, H, raioM, p.sigmasKm);
   const dem = tensor(b1, W, H, raioM, p.janelaKm);
@@ -331,22 +431,39 @@ export function mascaraDeQualidade({ h, fotoLog, W, H, raioM, vazio = null, p = 
   for (let j = 0; j < H; j += 1) {
     // perto dos polos o DEM e a foto foram reamostrados de mosaicos polares e
     // dividem o mesmo arrasto leste–oeste: a orientação deixa de dizer algo
-    const w = 1 - suave(p.orientacaoAteGraus[0], p.orientacaoAteGraus[1], Math.abs(latitudeDaLinha(j, H)) / RADIANOS);
+    const w =
+      1 -
+      suave(
+        p.orientacaoAteGraus[0],
+        p.orientacaoAteGraus[1],
+        Math.abs(latitudeDaLinha(j, H)) / RADIANOS,
+      );
     for (let i = 0; i < W; i += 1) {
       const k = j * W + i;
-      const excesso = 0.5 * Math.log(Math.max(dem.E[k], 1e-12) / Math.max(E3[k], 1e-12));
-      bruta[k] = excesso - w * p.pesoDaOrientacao * (dem.coh[k] / Math.max(foto.coh[k], 0.2) - p.orientacaoTipica);
+      const excesso =
+        0.5 * Math.log(Math.max(dem.E[k], 1e-12) / Math.max(E3[k], 1e-12));
+      bruta[k] =
+        excesso -
+        w *
+          p.pesoDaOrientacao *
+          (dem.coh[k] / Math.max(foto.coh[k], 0.2) - p.orientacaoTipica);
     }
   }
   const nota = media(bruta, W, H, raioM, p.suavizaKm);
   const classe = new Uint8Array(n);
-  for (let k = 0; k < n; k += 1) classe[k] = nota[k] > p.limiarDoRuido ? RUIDO : BOM;
+  for (let k = 0; k < n; k += 1)
+    classe[k] = nota[k] > p.limiarDoRuido ? RUIDO : BOM;
+  continuaOLadrilho(classe, nota, W, H, p.continuacao);
   // o liso: a encosta da banda 1 bem abaixo da do terreno bom em volta
   const bom = new Uint8Array(n);
   for (let k = 0; k < n; k += 1) bom[k] = classe[k] === BOM ? 1 : 0;
   const alvo = estatisticaVizinha(dem.E, bom, W, H, raioM, p.vizinhancaKm);
   for (let k = 0; k < n; k += 1) {
-    if (classe[k] === BOM && dem.E[k] < p.fracaoDoLiso * p.fracaoDoLiso * alvo[k]) classe[k] = LISO;
+    if (
+      classe[k] === BOM &&
+      dem.E[k] < p.fracaoDoLiso * p.fracaoDoLiso * alvo[k]
+    )
+      classe[k] = LISO;
   }
   engoleIlhas(classe, W, H, raioM, (c) => c !== BOM, BOM, p.ilhaMinimaKm2);
   engoleIlhas(classe, W, H, raioM, (c) => c === BOM, RUIDO, p.ilhaMinimaKm2);
@@ -357,12 +474,31 @@ export function mascaraDeQualidade({ h, fotoLog, W, H, raioM, vazio = null, p = 
   for (let k = 0; k < n; k += 1) lE[k] = Math.log(Math.max(lE[k], 1e-14));
   const ruimAgora = Uint8Array.from(classe, (c) => (c === RUIDO ? 1 : 0));
   const bomAgora = Uint8Array.from(classe, (c) => (c === BOM ? 1 : 0));
-  const dentro = desfocaComMascara(lE, ruimAgora, W, H, raioM, p.vizinhancaKm[0]).valor;
-  const fora = desfocaComMascara(lE, bomAgora, W, H, raioM, p.vizinhancaKm[0]).valor;
+  const dentro = desfocaComMascara(
+    lE,
+    ruimAgora,
+    W,
+    H,
+    raioM,
+    p.vizinhancaKm[0],
+  ).valor;
+  const fora = desfocaComMascara(
+    lE,
+    bomAgora,
+    W,
+    H,
+    raioM,
+    p.vizinhancaKm[0],
+  ).valor;
   const faixa = media(Float32Array.from(ruimAgora), W, H, raioM, p.bordaKm / 2);
   for (let k = 0; k < n; k += 1) {
     if (!(faixa[k] > 0.02 && faixa[k] < 0.98) || classe[k] === LISO) continue;
-    if (!Number.isFinite(dentro[k]) || !Number.isFinite(fora[k]) || dentro[k] <= fora[k]) continue;
+    if (
+      !Number.isFinite(dentro[k]) ||
+      !Number.isFinite(fora[k]) ||
+      dentro[k] <= fora[k]
+    )
+      continue;
     classe[k] = lE[k] > 0.5 * (dentro[k] + fora[k]) ? RUIDO : BOM;
   }
   engoleIlhas(classe, W, H, raioM, (c) => c !== BOM, BOM, p.ilhaMinimaKm2);
@@ -372,7 +508,7 @@ export function mascaraDeQualidade({ h, fotoLog, W, H, raioM, vazio = null, p = 
 }
 
 // ------------------------------------------------------------
-// O ruído de Gabor orientado (o fino inventado)
+// O fino por exemplo (a colcha dos ladrilhos bons)
 // ------------------------------------------------------------
 
 /** Gerador pseudoaleatório determinístico (mulberry32): () → [0, 1). */
@@ -387,202 +523,250 @@ export function sorteador(semente) {
   };
 }
 
-/** Os vetores unitários dos centros dos texels: por linha (cos φ, sin φ), por coluna (cos λ, sin λ). */
-function geometria(W, H) {
-  const cf = new Float64Array(H);
-  const sf = new Float64Array(H);
-  for (let j = 0; j < H; j += 1) {
-    const f = latitudeDaLinha(j, H);
-    cf[j] = Math.cos(f);
-    sf[j] = Math.sin(f);
-  }
-  const cl = new Float64Array(W);
-  const sl = new Float64Array(W);
-  for (let i = 0; i < W; i += 1) {
-    const l = longitudeDaColuna(i, W) * RADIANOS;
-    cl[i] = Math.cos(l);
-    sl[i] = Math.sin(l);
-  }
-  return { cf, sf, cl, sl };
-}
-
-/**
- * RUÍDO DE GABOR ESPARSO na `regiao` (1 = entra): núcleos
- * exp(−u²/2Lu² − v²/2Lv²)·cos(2πv/λ + fase), Lv = λ/2, Lu = `alongamento`·Lv,
- * sorteados por Poisson com `sobreposicao` núcleos cobrindo cada ponto; uma
- * fração `alinhamento[j]` (por linha) deles tem o v (através das cristas) no rumo do
- * gradiente da foto (`c2`, `s2` = cos 2θ, sin 2θ), o resto em rumo sorteado.
- * Medido no plano tangente de cada núcleo (vale no polo). Determinístico.
- */
-export function ruidoDeGabor({ W, H, raioM, regiao, lambdaKm, alongamento, alinhamento, sobreposicao, c2, s2, semente }) {
-  const R = raioM / 1000;
-  const { cf, sf, cl, sl } = geometria(W, H);
-  const area = areaDaLinha(W, H, raioM);
-  const Lv = lambdaKm / 2;
-  const Lu = alongamento * Lv;
-  const densidade = sobreposicao / (2 * Math.PI * Lu * Lv);
-  const alcance = 3 * Lu;
-  const dLat = Math.PI / H;
-  const dLon = (2 * Math.PI) / W;
-  const sorteia = sorteador(semente);
-  const campo = new Float32Array(W * H);
-  for (let j = 0; j < H; j += 1) {
-    const chance = densidade * area[j];
-    for (let i = 0; i < W; i += 1) {
-      const k = j * W + i;
-      if (!regiao[k]) continue;
-      const u0 = sorteia();
-      if (u0 >= chance) continue;
-      // o núcleo: o centro do texel, o rumo, o sinal e a fase
-      const P = [cf[j] * cl[i], cf[j] * sl[i], sf[j]];
-      const e = [-sl[i], cl[i], 0];
-      const nn = [-sf[j] * cl[i], -sf[j] * sl[i], cf[j]];
-      const teta = sorteia() < alinhamento[j] ? 0.5 * Math.atan2(s2[k], c2[k]) : sorteia() * Math.PI;
-      const [ct, st] = [Math.cos(teta), Math.sin(teta)];
-      const a = [ct * e[0] + st * nn[0], ct * e[1] + st * nn[1], ct * e[2] + st * nn[2]];
-      const b = [-st * e[0] + ct * nn[0], -st * e[1] + ct * nn[1], -st * e[2] + ct * nn[2]];
-      const fase = sorteia() * 2 * Math.PI;
-      const sinal = sorteia() < 0.5 ? -1 : 1;
-      const dj = Math.ceil(alcance / (R * dLat)) + 1;
-      for (let q = Math.max(0, j - dj); q <= Math.min(H - 1, j + dj); q += 1) {
-        const meia = Math.ceil(alcance / (R * Math.max(cf[q], 1e-9) * dLon)) + 1;
-        const [t0, t1] = 2 * meia >= W ? [-W / 2, W / 2 - 1] : [-meia, meia];
-        for (let t = t0; t <= t1; t += 1) {
-          const c = (((i + t) % W) + W) % W;
-          const Q0 = cf[q] * cl[c] - P[0];
-          const Q1 = cf[q] * sl[c] - P[1];
-          const Q2 = sf[q] - P[2];
-          const u = R * (Q0 * b[0] + Q1 * b[1] + Q2 * b[2]);
-          const v = R * (Q0 * a[0] + Q1 * a[1] + Q2 * a[2]);
-          if (Math.abs(u) > alcance || Math.abs(v) > alcance) continue;
-          campo[q * W + c] += sinal * Math.exp(-0.5 * ((u * u) / (Lu * Lu) + (v * v) / (Lv * Lv))) * Math.cos((2 * Math.PI * v) / lambdaKm + fase);
-        }
-      }
-    }
-  }
-  return campo;
-}
-
 /** A dilatação de `mascara` por `km` (média gaussiana > 0,02 a σ km/2, mais a própria). */
 function dilata(mascara, W, H, raioM, km) {
   const f = new Float32Array(mascara.length);
   for (let k = 0; k < f.length; k += 1) f[k] = mascara[k] ? 1 : 0;
   const m = media(f, W, H, raioM, km / 2);
   const o = new Uint8Array(mascara.length);
-  for (let k = 0; k < o.length; k += 1) o[k] = mascara[k] || m[k] > 0.02 ? 1 : 0;
+  for (let k = 0; k < o.length; k += 1)
+    o[k] = mascara[k] || m[k] > 0.02 ? 1 : 0;
   return o;
 }
 
 /**
- * AS BANDAS FINAS INVENTADAS (0 a `corte` − 1): um ruído de Gabor por banda,
- * com os ganhos texel a texel que fazem a encosta² medida em cada banda DoG
- * (janela `janelaKm`, somadas as sobras da `base` que fica) igual a
- * `alvos[b]` (a do terreno bom vizinho). Devolve a soma, em metros.
+ * O FINO POR EXEMPLO — a colcha de Efros & Freeman (2001), como `colcha`
+ * (relevo-inventado.mjs), só sobre a `regiao` ruim: retalhos quadrados de
+ * `larguraKm` no plano tangente (gnomônico) de cada centro, a cada `larguraKm
+ * − sobreposicaoKm`, em faixas de latitude do norte ao sul. Cada um copia, por
+ * uma rotação da esfera, a BANDA FINA (h − média de σ `corteKm`) de uma
+ * ORIGEM em ladrilho bom: o retalho inteiro mais `folgaKm` de borda longe de
+ * todo texel ruim (a banda fina da origem não vê o ruído), e só no terço
+ * (`origensMaisLimpas`) dos bons de nota de ruído mais baixa: mesmo o ladrilho
+ * bom traz picadas de estéreo no fino, e a cópia as levaria junto.
+ *  - Rumo: o retalho gira para que o rumo das feições da FOTO na origem caia
+ *    no da foto no alvo (o tensor da banda 1, médio a σ `rumoKm`; o eixo, com
+ *    meia volta sorteada). Acima de 60–70° a foto não diz rumo (o arrasto
+ *    polar): giro sorteado.
+ *  - Escolha: `candidatos` origens sorteadas na faixa de ±`faixaGraus` de
+ *    latitude do alvo; delas, as `preSelecao` de encosta LARGA (a da base que
+ *    fica, σ `corteKm`, média a σ `rumoKm`) mais parecida com a do alvo; delas,
+ *    a de menor erro na sobreposição com o já posto (soma dos quadrados ÷ soma
+ *    das energias dos dois lados, como na colcha), sorteada entre as `melhores`.
+ *  - Emenda: peso em rampa de `rampaKm` da borda do retalho para dentro (o
+ *    novo cobre o velho aos poucos: sem degrau); a borda com o medido é da
+ *    membrana, depois, com o fino em rampa a partir dela.
+ * Devolve `{ fina (m), retalhos: [{ alvo: [lat, lon], origem: [lat, lon], giro }], rampa (1 = texel misturado) }`.
  */
-export function bandaFinaInventada({ W, H, raioM, regiao, alvos, base, foto, p = CONSERTO_DE_ENCELADO }) {
+export function bandaFinaPorExemplo({
+  h,
+  W,
+  H,
+  raioM,
+  regiao,
+  ruim,
+  base,
+  foto,
+  nota,
+  p = CONSERTO_DE_ENCELADO,
+}) {
   const n = W * H;
-  const soma = new Float32Array(n);
-  const nb = alvos.length;
-  // a direção da foto só vale onde a máscara confia nela (o arrasto polar a anula)
-  const alinhamento = Float32Array.from({ length: H }, (_, j) =>
-    p.gabor.alinhamento * (1 - suave(p.orientacaoAteGraus[0], p.orientacaoAteGraus[1], Math.abs(latitudeDaLinha(j, H)) / RADIANOS))
+  const e = p.exemplo;
+  const R = raioM / 1000;
+  const texelKm = (R * Math.PI) / H;
+  const meio = e.larguraKm / 2;
+  const sorteia = sorteador(p.semente);
+  // a banda fina de todo o campo (só lida nas origens) e a encosta larga
+  const lisa = media(h, W, H, raioM, p.corteKm);
+  const fino = Float32Array.from(h, (v, k) => v - lisa[k]);
+  const larga = Float32Array.from(lisa, (v, k) => (ruim[k] ? base[k] : v));
+  const encLarga = media(encosta2(larga, W, H, raioM), W, H, raioM, e.rumoKm);
+  // o rumo da foto, médio no tamanho do retalho
+  const oc = media(
+    Float32Array.from(foto.c2, (v, k) => v * foto.coh[k]),
+    W,
+    H,
+    raioM,
+    e.rumoKm,
   );
-  const ruidos = alvos.map((_, b) => {
-    const bruto = ruidoDeGabor({
-      W, H, raioM, regiao,
-      lambdaKm: p.gabor.lambdaKm[b],
-      alongamento: p.gabor.alongamento,
-      alinhamento,
-      sobreposicao: p.gabor.sobreposicao,
-      c2: foto.c2,
-      s2: foto.s2,
-      semente: p.semente + 7919 * b,
-    });
-    // o Gabor já é de banda estreita (±1/π da frequência): passado pela DoG,
-    // ganharia a cauda fina dela, que a banda 0 mede e o terreno bom não tem
-    return bruto;
-  });
-  // as bandas DoG se sobrepõem: a encosta medida na banda b é a soma das que
-  // cada ruído c (e a base que fica) deixa nela. Os ganhos² saem do sistema
-  // nb × nb, sem negativos, texel a texel
-  const energias = (f) => bandas(f, W, H, raioM, p.sigmasKm.slice(0, nb)).map((bd) => media(encosta2(bd, W, H, raioM), W, H, raioM, p.janelaKm));
-  const A = ruidos.map(energias);
-  const B = energias(base);
-  const ganhos = ruidos.map(() => new Float32Array(n));
-  const M = Array.from({ length: nb }, () => new Float64Array(nb));
-  const t = new Float64Array(nb);
-  for (let k = 0; k < n; k += 1) {
-    if (!regiao[k]) continue;
-    // cada banda pesa pelo próprio alvo: o erro que conta é o relativo
-    for (let b = 0; b < nb; b += 1) {
-      const alvo = Math.max(0, alvos[b][k] - B[b][k]);
-      const w = alvo > 0 ? 1 / alvo : 0;
-      t[b] = alvo * w;
-      for (let c = 0; c < nb; c += 1) M[b][c] = A[c][b][k] * w;
+  const os = media(
+    Float32Array.from(foto.s2, (v, k) => v * foto.coh[k]),
+    W,
+    H,
+    raioM,
+    e.rumoKm,
+  );
+  const temRumo = (latRad) =>
+    suave(
+      p.orientacaoAteGraus[0],
+      p.orientacaoAteGraus[1],
+      Math.abs(latRad) / RADIANOS,
+    ) < 0.5;
+  const rumo = (k) => 0.5 * Math.atan2(os[k], oc[k]);
+  // as origens: centros a cada `passoDasOrigensKm`, o retalho girado inteiro + folga em bom
+  const doRuim = distanciaAoVazioKm(ruim, W, H, raioM);
+  // só as origens mais limpas: a nota do ruído na fração `origensMaisLimpas` de baixo dos bons
+  const notas = [];
+  for (let k = 0; k < n; k += 7) if (!ruim[k]) notas.push(nota[k]);
+  notas.sort((a, b) => a - b);
+  const notaMax = notas.length
+    ? notas[Math.floor(e.origensMaisLimpas * (notas.length - 1))]
+    : Infinity;
+  const origens = [];
+  const passoJ = Math.max(1, Math.round(e.passoDasOrigensKm / texelKm));
+  for (let j = 0; j < H; j += passoJ) {
+    const f = latitudeDaLinha(j, H);
+    if (Math.abs(f) > e.origemAteGraus * RADIANOS) continue;
+    const passoI = Math.max(1, Math.round(passoJ / Math.cos(f)));
+    for (let i = 0; i < W; i += passoI) {
+      const k = j * W + i;
+      if (doRuim[k] >= meio * Math.SQRT2 + e.folgaKm && nota[k] <= notaMax)
+        origens.push({
+          k,
+          lat: f / RADIANOS,
+          lon: longitudeDaColuna(i, W),
+          s: Math.log(Math.max(encLarga[k], 1e-14)),
+        });
     }
-    const x = minimosQuadradosPositivos(M, t);
-    for (let c = 0; c < nb; c += 1) ganhos[c][k] = Math.sqrt(x[c]);
   }
-  ganhos.forEach((g, c) => {
-    const amostras = [];
-    for (let k = 0; k < n; k += 31) if (g[k] > 0) amostras.push(g[k]);
-    amostras.sort((x, y) => x - y);
-    // na beira da região o ruído afina e o ganho subiria sem teto
-    const teto = p.gabor.ganhoMax * (amostras[amostras.length >> 1] ?? 1);
-    for (let k = 0; k < n; k += 1) if (g[k] > 0) soma[k] += ruidos[c][k] * Math.min(teto, g[k]);
-  });
-  return soma;
-}
-
-/**
- * Mínimos quadrados com x ≥ 0 para um sistema pequeno M·x ≈ t (M quadrada,
- * nb ≤ 4): todos os conjuntos ativos, o viável de menor resíduo.
- */
-export function minimosQuadradosPositivos(M, t) {
-  const m = t.length;
-  let melhor = new Float64Array(m);
-  let menor = t.reduce((s, v) => s + v * v, 0);
-  for (let S = 1; S < 1 << m; S += 1) {
-    const cols = [];
-    for (let c = 0; c < m; c += 1) if (S & (1 << c)) cols.push(c);
-    const q = cols.length;
-    // as equações normais (MᵀM)·x = Mᵀt nas colunas do conjunto
-    const N = Array.from({ length: q }, (_, a) => {
-      const linha = new Float64Array(q + 1);
-      for (let b = 0; b < q; b += 1) for (let r = 0; r < m; r += 1) linha[b] += M[r][cols[a]] * M[r][cols[b]];
-      for (let r = 0; r < m; r += 1) linha[q] += M[r][cols[a]] * t[r];
-      return linha;
-    });
-    let ok = true;
-    for (let a = 0; a < q && ok; a += 1) {
-      let piv = a;
-      for (let b = a + 1; b < q; b += 1) if (Math.abs(N[b][a]) > Math.abs(N[piv][a])) piv = b;
-      [N[a], N[piv]] = [N[piv], N[a]];
-      if (!(Math.abs(N[a][a]) > 1e-300)) ok = false;
-      for (let b = 0; b < q && ok; b += 1) {
-        if (b === a) continue;
-        const f = N[b][a] / N[a][a];
-        for (let c = a; c <= q; c += 1) N[b][c] -= f * N[a][c];
+  const fina = new Float32Array(n);
+  const peso = new Float32Array(n);
+  const rampa = new Uint8Array(n);
+  const retalhos = [];
+  const postos = [];
+  if (!origens.length) return { fina, retalhos, rampa };
+  const perto = dilata(regiao, W, H, raioM, meio * Math.SQRT2);
+  const passo = e.larguraKm - e.sobreposicaoKm;
+  const ponto = (lat, lon) => {
+    const [f, l] = [lat * RADIANOS, lon * RADIANOS];
+    return [Math.cos(f) * Math.cos(l), Math.cos(f) * Math.sin(l), Math.sin(f)];
+  };
+  const latLon = (q) => [
+    Math.asin(Math.max(-1, Math.min(1, q[2]))) / RADIANOS,
+    (((Math.atan2(q[1], q[0]) / RADIANOS) % 360) + 360) % 360,
+  ];
+  /** um retalho no centro (lat, lon) graus */
+  const poe = (lat, lon) => {
+    const kc = texelDe(lat, lon, W, H);
+    // a pegada: os texels da região dentro do quadrado do plano tangente
+    const alvo = planoTangente(lat, lon);
+    const pegada = [];
+    const raio = meio * Math.SQRT2;
+    const jc = (kc / W) | 0;
+    const dj = Math.ceil(raio / texelKm) + 1;
+    for (let j = Math.max(0, jc - dj); j <= Math.min(H - 1, jc + dj); j += 1) {
+      const f = latitudeDaLinha(j, H);
+      const di =
+        Math.cos(f) * W < 4 * (raio / texelKm)
+          ? W / 2
+          : Math.ceil(raio / (texelKm * Math.cos(f))) + 1;
+      const ic = kc - jc * W;
+      for (let t = -di; t < di; t += 1) {
+        const i = (((ic + t) % W) + W) % W;
+        const k = j * W + i;
+        if (!regiao[k]) continue;
+        const xy = noPlano(
+          alvo,
+          ponto(f / RADIANOS, longitudeDaColuna(i, W)),
+          R,
+        );
+        if (!xy || Math.abs(xy[0]) > meio || Math.abs(xy[1]) > meio) continue;
+        pegada.push(k, xy[0], xy[1]);
       }
     }
-    if (!ok) continue;
-    const x = new Float64Array(m);
-    cols.forEach((c, a) => {
-      x[c] = N[a][q] / N[a][a];
+    if (!pegada.length) return;
+    // os candidatos: faixa de latitude, depois a encosta larga mais parecida
+    const st = Math.log(Math.max(encLarga[kc], 1e-14));
+    const naFaixa = origens.filter(
+      (o) => Math.abs(o.lat - lat) <= e.faixaGraus,
+    );
+    const lista = naFaixa.length ? naFaixa : origens;
+    const sorteadas = Array.from(
+      { length: e.candidatos },
+      () => lista[Math.floor(sorteia() * lista.length)],
+    );
+    // a regra de repetição da colcha: nenhuma origem a menos de `repeticaoKm` de uma usada a menos de `vizinhancaKm` daqui
+    const vAlvo = ponto(lat, lon);
+    const livres = sorteadas.filter(
+      (o) =>
+        repeticaoMaisPerto(
+          postos,
+          vAlvo,
+          ponto(o.lat, o.lon),
+          e.vizinhancaKm / R,
+          e.repeticaoKm / R,
+        ) === Infinity,
+    );
+    const usaveis = livres.length >= e.preSelecao ? livres : sorteadas;
+    usaveis.sort((x, y) => Math.abs(x.s - st) - Math.abs(y.s - st));
+    const alinha = temRumo(lat * RADIANOS);
+    const opcoes = usaveis.slice(0, e.preSelecao).map((o) => {
+      const meiaVolta = sorteia() < 0.5 ? Math.PI : 0;
+      const giro =
+        alinha && temRumo(o.lat * RADIANOS)
+          ? rumo(o.k) - rumo(kc) + meiaVolta
+          : sorteia() * 2 * Math.PI;
+      const plano = planoTangente(o.lat, o.lon, giro);
+      const valor = (x, y) => {
+        const [la, lo] = latLon(pontoDoPlano(plano, x, y, R));
+        return amostra(fino, W, H, la, lo);
+      };
+      let erro = 0;
+      let energia = 0;
+      for (let q = 0; q < pegada.length; q += 6) {
+        const k = pegada[q];
+        if (!(peso[k] > 0)) continue;
+        const v = valor(pegada[q + 1], pegada[q + 2]);
+        erro += (v - fina[k]) ** 2;
+        energia += v * v + fina[k] * fina[k];
+      }
+      return { o, giro, valor, custo: energia > 0 ? erro / energia : 0 };
     });
-    if (x.some((v) => v < 0)) continue;
-    let res = 0;
-    for (let r = 0; r < m; r += 1) {
-      let s = -t[r];
-      for (let c = 0; c < m; c += 1) s += M[r][c] * x[c];
-      res += s * s;
+    opcoes.sort((x, y) => x.custo - y.custo);
+    const escolha =
+      opcoes[Math.floor(sorteia() * Math.min(e.melhores, opcoes.length))];
+    for (let q = 0; q < pegada.length; q += 3) {
+      const k = pegada[q];
+      const borda =
+        meio - Math.max(Math.abs(pegada[q + 1]), Math.abs(pegada[q + 2]));
+      const v = escolha.valor(pegada[q + 1], pegada[q + 2]);
+      if (!(peso[k] > 0)) {
+        fina[k] = v;
+        peso[k] = 1;
+        continue;
+      }
+      const w = suave(0, e.rampaKm, borda);
+      if (w > 0 && w < 1) rampa[k] = 1;
+      fina[k] = fina[k] * (1 - w) + v * w;
     }
-    if (res < menor) {
-      menor = res;
-      melhor = x;
+    retalhos.push({
+      alvo: [lat, lon],
+      origem: [escolha.o.lat, escolha.o.lon],
+      giro: escolha.giro,
+    });
+    postos.push({ alvo: vAlvo, origem: ponto(escolha.o.lat, escolha.o.lon) });
+  };
+  const faixas = Math.ceil((Math.PI * R) / passo);
+  for (let b = 0; b <= faixas; b += 1) {
+    const lat = 90 - (180 * b) / faixas;
+    const nLon = Math.max(
+      1,
+      Math.ceil((2 * Math.PI * R * Math.cos(lat * RADIANOS)) / passo),
+    );
+    const lon0 = sorteia() * 360;
+    for (let a = 0; a < nLon; a += 1) {
+      const lon = (lon0 + (360 * a) / nLon) % 360;
+      if (perto[texelDe(lat, lon, W, H)]) poe(lat, lon);
     }
   }
-  return melhor;
+  // no fim, como na colcha: um retalho em cada texel da região que ficou descoberto
+  for (let k = 0; k < n; k += 1)
+    if (regiao[k] && !(peso[k] > 0))
+      poe(
+        latitudeDaLinha((k / W) | 0, H) / RADIANOS,
+        longitudeDaColuna(k % W, W),
+      );
+  return { fina, retalhos, rampa };
 }
 
 // ------------------------------------------------------------
@@ -593,15 +777,20 @@ export function minimosQuadradosPositivos(M, t) {
 function destino(lat, lonE, distKm, rumo, raioKm) {
   const d = distKm / raioKm;
   const f1 = lat * RADIANOS;
-  const f2 = Math.asin(Math.sin(f1) * Math.cos(d) + Math.cos(f1) * Math.sin(d) * Math.cos(rumo));
-  const dl = Math.atan2(Math.sin(rumo) * Math.sin(d) * Math.cos(f1), Math.cos(d) - Math.sin(f1) * Math.sin(f2));
+  const f2 = Math.asin(
+    Math.sin(f1) * Math.cos(d) + Math.cos(f1) * Math.sin(d) * Math.cos(rumo),
+  );
+  const dl = Math.atan2(
+    Math.sin(rumo) * Math.sin(d) * Math.cos(f1),
+    Math.cos(d) - Math.sin(f1) * Math.sin(f2),
+  );
   return [f2, lonE + dl / RADIANOS];
 }
 
 /** O texel (j, i) do centro (lat, lonE em graus) na grade da casa. */
 function texelDe(lat, lonE, W, H) {
   const j = Math.min(H - 1, Math.max(0, Math.floor(((90 - lat) / 180) * H)));
-  const i = Math.floor(((((lonE - 180) % 360) + 360) % 360) / 360 * W) % W;
+  const i = Math.floor((((((lonE - 180) % 360) + 360) % 360) / 360) * W) % W;
   return j * W + i;
 }
 
@@ -612,22 +801,45 @@ function texelDe(lat, lonE, W, H) {
  * crateras, a padrão.
  */
 export function leiDasCraterasBoas(crateras, km, classe, W, H, raioKm, pc) {
-  const grade = { metros: km, vazio: new Uint8Array(0), largura: W, altura: H, raioM: raioKm * 1000 };
+  const grade = {
+    metros: km,
+    vazio: new Uint8Array(0),
+    largura: W,
+    altura: H,
+    raioM: raioKm * 1000,
+  };
   const razoes = [];
   const desvios = [];
   for (const c of crateras) {
     const D = c.diametro_km;
-    if (D < pc.leiEntreKm[0] || D > pc.leiEntreKm[1] || c.confianca < pc.confiancaDaLei) continue;
+    if (
+      D < pc.leiEntreKm[0] ||
+      D > pc.leiEntreKm[1] ||
+      c.confianca < pc.confiancaDaLei
+    )
+      continue;
     if (classe[texelDe(c.lat, c.lonE, W, H)] !== BOM) continue;
     // a foto e o DEM não se registram ao km: o centro vem da simetria no DEM (até 0,25·D)
     const centro = recentraCratera(grade, c.lat, c.lonE, D / 2);
     if (!centro) continue;
     desvios.push(centro.desvioKm);
-    const d = profundidadeBordaFundo((rho, rumo) => amostraBilinear(grade, ...destino(centro.lat, centro.lon, (rho * D) / 2, rumo, raioKm)), pc.completar.instrumento);
+    const d = profundidadeBordaFundo(
+      (rho, rumo) =>
+        amostraBilinear(
+          grade,
+          ...destino(centro.lat, centro.lon, (rho * D) / 2, rumo, raioKm),
+        ),
+      pc.completar.instrumento,
+    );
     razoes.push(d / D);
   }
   const mediana = (v) => [...v].sort((a, b) => a - b)[v.length >> 1];
-  if (razoes.length < pc.leiMinimo) return { dD: pc.dDPadrao, n: razoes.length, desvioKm: desvios.length ? mediana(desvios) : null };
+  if (razoes.length < pc.leiMinimo)
+    return {
+      dD: pc.dDPadrao,
+      n: razoes.length,
+      desvioKm: desvios.length ? mediana(desvios) : null,
+    };
   return { dD: mediana(razoes), n: razoes.length, desvioKm: mediana(desvios) };
 }
 
@@ -637,7 +849,13 @@ function fracaoRuimNoDisco(c, ruim, W, H, raioKm) {
   let t = 0;
   for (let r = 0; r <= 1; r += 0.25) {
     for (let a = 0; a < 16; a += 1) {
-      const [f, l] = destino(c.lat, c.lonE, (r * c.diametro_km) / 2, (a * Math.PI) / 8, raioKm);
+      const [f, l] = destino(
+        c.lat,
+        c.lonE,
+        (r * c.diametro_km) / 2,
+        (a * Math.PI) / 8,
+        raioKm,
+      );
       s += ruim[texelDe(f / RADIANOS, l, W, H)];
       t += 1;
     }
@@ -650,7 +868,10 @@ function fracaoRuimNoDisco(c, ruim, W, H, raioKm) {
  * ρ·sen λ, y = ρ·cos λ, ρ a distância ao polo pela superfície.
  */
 function doPlano(x, y, raioKm) {
-  return { lat: -90 + Math.hypot(x, y) / raioKm / RADIANOS, lonE: ((Math.atan2(x, y) / RADIANOS) % 360 + 360) % 360 };
+  return {
+    lat: -90 + Math.hypot(x, y) / raioKm / RADIANOS,
+    lonE: (((Math.atan2(x, y) / RADIANOS) % 360) + 360) % 360,
+  };
 }
 
 /** Amostra bilinear de um campo da casa em (lat, lonE) graus. */
@@ -671,21 +892,25 @@ function amostra(campo, W, H, lat, lonE) {
 /** Borrão gaussiano separável num plano N×N (bordas presas). */
 function borraPlano(f, N, sigmaPx) {
   const r = Math.ceil(3 * sigmaPx);
-  const w = Array.from({ length: 2 * r + 1 }, (_, q) => Math.exp(-0.5 * ((q - r) / sigmaPx) ** 2));
+  const w = Array.from({ length: 2 * r + 1 }, (_, q) =>
+    Math.exp(-0.5 * ((q - r) / sigmaPx) ** 2),
+  );
   const s = w.reduce((x, y) => x + y, 0);
   const tmp = new Float32Array(N * N);
   const out = new Float32Array(N * N);
   for (let y = 0; y < N; y += 1) {
     for (let x = 0; x < N; x += 1) {
       let a = 0;
-      for (let q = -r; q <= r; q += 1) a += w[q + r] * f[y * N + Math.min(N - 1, Math.max(0, x + q))];
+      for (let q = -r; q <= r; q += 1)
+        a += w[q + r] * f[y * N + Math.min(N - 1, Math.max(0, x + q))];
       tmp[y * N + x] = a / s;
     }
   }
   for (let y = 0; y < N; y += 1) {
     for (let x = 0; x < N; x += 1) {
       let a = 0;
-      for (let q = -r; q <= r; q += 1) a += w[q + r] * tmp[Math.min(N - 1, Math.max(0, y + q)) * N + x];
+      for (let q = -r; q <= r; q += 1)
+        a += w[q + r] * tmp[Math.min(N - 1, Math.max(0, y + q)) * N + x];
       out[y * N + x] = a / s;
     }
   }
@@ -702,7 +927,13 @@ function borraPlano(f, N, sigmaPx) {
  * o vale cair abaixo de `fimRelativo` do dele. Devolve
  * `{ linhas: [[{ x, y, lat, lonE }]], rumoGraus }`.
  */
-export function tracaListras({ fotoLog, W, H, raioM, p = CONSERTO_DE_ENCELADO }) {
+export function tracaListras({
+  fotoLog,
+  W,
+  H,
+  raioM,
+  p = CONSERTO_DE_ENCELADO,
+}) {
   const L = p.listras;
   const R = raioM / 1000;
   const N = 2 * Math.ceil(L.raioDoPlanoKm / L.passoKm);
@@ -724,7 +955,8 @@ export function tracaListras({ fotoLog, W, H, raioM, p = CONSERTO_DE_ENCELADO })
       const k = y * N + x;
       const hxx = s[k + 1] - 2 * s[k] + s[k - 1];
       const hyy = s[k + N] - 2 * s[k] + s[k - N];
-      const hxy = 0.25 * (s[k + N + 1] - s[k + N - 1] - s[k - N + 1] + s[k - N - 1]);
+      const hxy =
+        0.25 * (s[k + N + 1] - s[k + N - 1] - s[k - N + 1] + s[k - N - 1]);
       const m = 0.5 * (hxx + hyy);
       const d = Math.hypot(0.5 * (hxx - hyy), hxy);
       const l1 = m + d;
@@ -751,9 +983,14 @@ export function tracaListras({ fotoLog, W, H, raioM, p = CONSERTO_DE_ENCELADO })
       const u = -xy(x) * sr + xy(y) * cr;
       if (Math.abs(v) > L.faixaKm) continue;
       const iv = Math.round((v + L.faixaKm) / L.passoKm);
-      const lo = Math.ceil((u - L.meiaFatiaKm + L.maxAoLongoKm) / L.passoAoLongoKm);
-      const hi = Math.floor((u + L.meiaFatiaKm + L.maxAoLongoKm) / L.passoAoLongoKm);
-      for (let iu = Math.max(0, lo); iu <= Math.min(nu - 1, hi); iu += 1) soma[iu * nv + iv] += vale[k];
+      const lo = Math.ceil(
+        (u - L.meiaFatiaKm + L.maxAoLongoKm) / L.passoAoLongoKm,
+      );
+      const hi = Math.floor(
+        (u + L.meiaFatiaKm + L.maxAoLongoKm) / L.passoAoLongoKm,
+      );
+      for (let iu = Math.max(0, lo); iu <= Math.min(nu - 1, hi); iu += 1)
+        soma[iu * nv + iv] += vale[k];
     }
   }
   // o perfil suavizado de cada fatia (±1 km através)
@@ -762,7 +999,8 @@ export function tracaListras({ fotoLog, W, H, raioM, p = CONSERTO_DE_ENCELADO })
     const r = Math.round(1 / L.passoKm);
     for (let iv = 0; iv < nv; iv += 1) {
       let a = 0;
-      for (let q = -r; q <= r; q += 1) a += soma[iu * nv + Math.min(nv - 1, Math.max(0, iv + q))];
+      for (let q = -r; q <= r; q += 1)
+        a += soma[iu * nv + Math.min(nv - 1, Math.max(0, iv + q))];
       o[iv] = a;
     }
     return o;
@@ -770,11 +1008,14 @@ export function tracaListras({ fotoLog, W, H, raioM, p = CONSERTO_DE_ENCELADO })
   const meio = (nu - 1) >> 1;
   const central = perfil(meio);
   const picos = [];
-  for (let iv = 1; iv < nv - 1; iv += 1) if (central[iv] >= central[iv - 1] && central[iv] > central[iv + 1]) picos.push(iv);
+  for (let iv = 1; iv < nv - 1; iv += 1)
+    if (central[iv] >= central[iv - 1] && central[iv] > central[iv + 1])
+      picos.push(iv);
   picos.sort((a, b) => central[b] - central[a]);
   const escolhidos = [];
   for (const iv of picos) {
-    if (escolhidos.every((e) => Math.abs(e - iv) * L.passoKm >= L.separacaoKm)) escolhidos.push(iv);
+    if (escolhidos.every((e) => Math.abs(e - iv) * L.passoKm >= L.separacaoKm))
+      escolhidos.push(iv);
     if (escolhidos.length === L.quantas) break;
   }
   escolhidos.sort((a, b) => a - b);
@@ -788,7 +1029,12 @@ export function tracaListras({ fotoLog, W, H, raioM, p = CONSERTO_DE_ENCELADO })
       for (let iu = meio + passo; iu >= 0 && iu < nu; iu += passo) {
         const pf = perfil(iu);
         let melhor = iv;
-        for (let q = Math.max(0, iv - busca); q <= Math.min(nv - 1, iv + busca); q += 1) if (pf[q] > pf[melhor]) melhor = q;
+        for (
+          let q = Math.max(0, iv - busca);
+          q <= Math.min(nv - 1, iv + busca);
+          q += 1
+        )
+          if (pf[q] > pf[melhor]) melhor = q;
         if (pf[melhor] < L.fimRelativo * forca) {
           fracos += 1;
           if (fracos >= 3) break;
@@ -805,7 +1051,9 @@ export function tracaListras({ fotoLog, W, H, raioM, p = CONSERTO_DE_ENCELADO })
     return pontos.map(([iu], q) => {
       const viz = pontos.slice(Math.max(0, q - m), q + m + 1);
       const u = iu * L.passoAoLongoKm - L.maxAoLongoKm;
-      const v = (viz.reduce((s, [, iv]) => s + iv, 0) / viz.length) * L.passoKm - L.faixaKm;
+      const v =
+        (viz.reduce((s, [, iv]) => s + iv, 0) / viz.length) * L.passoKm -
+        L.faixaKm;
       const x = v * cr - u * sr;
       const y = v * sr + u * cr;
       return { x, y, ...doPlano(x, y, R) };
@@ -838,7 +1086,13 @@ export function perfilDaListra(L) {
  * mais próximo (no plano polar), afinado nas pontas em `pontaKm`, e o
  * `corredor` (1 onde o perfil passa de 1 m).
  */
-export function relevoDasListras(linhas, W, H, raioM, p = CONSERTO_DE_ENCELADO) {
+export function relevoDasListras(
+  linhas,
+  W,
+  H,
+  raioM,
+  p = CONSERTO_DE_ENCELADO,
+) {
   const L = p.listras;
   const R = raioM / 1000;
   const perfil = perfilDaListra(L);
@@ -846,7 +1100,12 @@ export function relevoDasListras(linhas, W, H, raioM, p = CONSERTO_DE_ENCELADO) 
   const segmentos = [];
   for (const linha of linhas) {
     let s0 = 0;
-    const total = linha.slice(1).reduce((t, q, k) => t + Math.hypot(q.x - linha[k].x, q.y - linha[k].y), 0);
+    const total = linha
+      .slice(1)
+      .reduce(
+        (t, q, k) => t + Math.hypot(q.x - linha[k].x, q.y - linha[k].y),
+        0,
+      );
     for (let k = 0; k + 1 < linha.length; k += 1) {
       const [a, b] = [linha[k], linha[k + 1]];
       const len = Math.hypot(b.x - a.x, b.y - a.y);
@@ -856,7 +1115,14 @@ export function relevoDasListras(linhas, W, H, raioM, p = CONSERTO_DE_ENCELADO) 
   }
   const campo = new Float32Array(W * H);
   const corredor = new Uint8Array(W * H);
-  for (let j = Math.max(0, Math.floor(H * (1 - L.raioDoPlanoKm / (Math.PI * R))) - 1); j < H; j += 1) {
+  for (
+    let j = Math.max(
+      0,
+      Math.floor(H * (1 - L.raioDoPlanoKm / (Math.PI * R))) - 1,
+    );
+    j < H;
+    j += 1
+  ) {
     const lat = 90 - ((j + 0.5) / H) * 180;
     const rho = (90 + lat) * RADIANOS * R;
     if (rho > L.raioDoPlanoKm) continue;
@@ -868,10 +1134,31 @@ export function relevoDasListras(linhas, W, H, raioM, p = CONSERTO_DE_ENCELADO) 
       let ponta = 0;
       for (const sg of segmentos) {
         const { a, b, len } = sg;
-        if (x < Math.min(a.x, b.x) - alcance || x > Math.max(a.x, b.x) + alcance) continue;
-        if (y < Math.min(a.y, b.y) - alcance || y > Math.max(a.y, b.y) + alcance) continue;
-        const t = len > 0 ? Math.min(1, Math.max(0, ((x - a.x) * (b.x - a.x) + (y - a.y) * (b.y - a.y)) / (len * len))) : 0;
-        const d = Math.hypot(x - a.x - t * (b.x - a.x), y - a.y - t * (b.y - a.y));
+        if (
+          x < Math.min(a.x, b.x) - alcance ||
+          x > Math.max(a.x, b.x) + alcance
+        )
+          continue;
+        if (
+          y < Math.min(a.y, b.y) - alcance ||
+          y > Math.max(a.y, b.y) + alcance
+        )
+          continue;
+        const t =
+          len > 0
+            ? Math.min(
+                1,
+                Math.max(
+                  0,
+                  ((x - a.x) * (b.x - a.x) + (y - a.y) * (b.y - a.y)) /
+                    (len * len),
+                ),
+              )
+            : 0;
+        const d = Math.hypot(
+          x - a.x - t * (b.x - a.x),
+          y - a.y - t * (b.y - a.y),
+        );
         if (d < melhor) {
           melhor = d;
           const s = sg.s0 + t * len;
@@ -898,10 +1185,29 @@ export function relevoDasListras(linhas, W, H, raioM, p = CONSERTO_DE_ENCELADO) 
  * (igual a `h` nos texels BOM), a `classe`, a `cobertura` (MEDIDO /
  * INVENTADO / DERIVADO) e o relatório das escolhas medidas.
  */
-export function consertaNaGrade({ h, fotoLog, luminancia, W, H, raioM, vazio = null, p = CONSERTO_DE_ENCELADO, listras = true }) {
+export function consertaNaGrade({
+  h,
+  fotoLog,
+  luminancia,
+  W,
+  H,
+  raioM,
+  vazio = null,
+  p = CONSERTO_DE_ENCELADO,
+  listras = true,
+  fino = "exemplo",
+}) {
   const n = W * H;
   const raioKm = raioM / 1000;
-  const { classe, foto } = mascaraDeQualidade({ h, fotoLog, W, H, raioM, vazio, p });
+  const { classe, nota, foto } = mascaraDeQualidade({
+    h,
+    fotoLog,
+    W,
+    H,
+    raioM,
+    vazio,
+    p,
+  });
   const ruim = new Uint8Array(n);
   const bom = new Uint8Array(n);
   for (let k = 0; k < n; k += 1) {
@@ -910,13 +1216,30 @@ export function consertaNaGrade({ h, fotoLog, luminancia, W, H, raioM, vazio = n
   }
   // 1. o medido que fica: a média de σ `corteKm` só dos texels ruins
   const base = desfocaComMascara(h, ruim, W, H, raioM, p.corteKm).valor;
-  // 2. o fino inventado com a estatística do terreno bom vizinho
-  const corte = p.sigmasKm.indexOf(p.corteKm);
-  const finas = bandas(h, W, H, raioM, p.sigmasKm.slice(0, corte + 1));
-  const alvos = finas.map((b) => estatisticaVizinha(encosta2(b, W, H, raioM), bom, W, H, raioM, p.vizinhancaKm));
+  // 2. o fino inventado POR EXEMPLO dos ladrilhos bons (ou nenhum, `fino: 'liso'`)
   const regiao = dilata(ruim, W, H, raioM, p.margemKm);
   for (let k = 0; k < n; k += 1) if (!Number.isFinite(base[k])) base[k] = h[k];
-  const fina = bandaFinaInventada({ W, H, raioM, regiao, alvos, base, foto, p });
+  const colcha =
+    fino === "liso"
+      ? { fina: new Float32Array(n), retalhos: [], rampa: new Uint8Array(n) }
+      : bandaFinaPorExemplo({
+          h,
+          W,
+          H,
+          raioM,
+          regiao,
+          ruim,
+          base,
+          foto,
+          nota,
+          p,
+        });
+  const { fina } = colcha;
+  // o fino entra em rampa de `rampaKm` a partir da borda com o medido: lá quem
+  // emenda é a membrana, e o fino de lá não briga com o medido do lado
+  const doBom = distanciaAoVazioKm(bom, W, H, raioM);
+  for (let k = 0; k < n; k += 1)
+    fina[k] *= ruim[k] ? suave(0, p.exemplo.rampaKm, doBom[k]) : 0;
   const R = new Float32Array(n);
   for (let k = 0; k < n; k += 1) R[k] = regiao[k] ? base[k] + fina[k] : h[k];
   const cobertura = new Uint8Array(n);
@@ -924,21 +1247,52 @@ export function consertaNaGrade({ h, fotoLog, luminancia, W, H, raioM, vazio = n
   // 3a. as crateras que a foto vê, sobre o ruim
   const pc = p.crateras;
   // o detector infla a contagem acima de 30° nesta grade (4096 × 2048, medido em Reia): rareadas antes de tudo
-  const vistas = rareiaPorLatitude(detectaCrateras(luminancia, { W, H, raioKm }).crateras, RAREAMENTO_POR_LATITUDE, raioKm).mantidas;
-  const lei = leiDasCraterasBoas(vistas, Float32Array.from(h, (m) => m / 1000), classe, W, H, raioKm, pc);
+  const vistas = rareiaPorLatitude(
+    detectaCrateras(luminancia, { W, H, raioKm }).crateras,
+    RAREAMENTO_POR_LATITUDE,
+    raioKm,
+  ).mantidas;
+  const lei = leiDasCraterasBoas(
+    vistas,
+    Float32Array.from(h, (m) => m / 1000),
+    classe,
+    W,
+    H,
+    raioKm,
+    pc,
+  );
   const leiDeForma = {
-    simplesAteKm: Infinity, simplesProfundidadePorD: lei.dD, complexaProfundidadeKm: 0, complexaExpoente: 1,
-    bordaPorProfundidade: pc.bordaPorProfundidade, fundoRR: { base: 0, porDecada: 0, max: 0 },
-    picoAcimaDeKm: Infinity, picoPorProfundidade: 0, picoRR: 0.15, terracosAcimaDeKm: Infinity, terracos: 0,
+    simplesAteKm: Infinity,
+    simplesProfundidadePorD: lei.dD,
+    complexaProfundidadeKm: 0,
+    complexaExpoente: 1,
+    bordaPorProfundidade: pc.bordaPorProfundidade,
+    fundoRR: { base: 0, porDecada: 0, max: 0 },
+    picoAcimaDeKm: Infinity,
+    picoPorProfundidade: 0,
+    picoRR: 0.15,
+    terracosAcimaDeKm: Infinity,
+    terracos: 0,
   };
   const { dMinKm } = texelEDiametroMinimo(W, raioKm);
   const noRuim = vistas
-    .filter((c) => c.diametro_km >= dMinKm && c.confianca >= pc.confiancaMin && fracaoRuimNoDisco(c, ruim, W, H, raioKm) >= pc.fracaoRuimMin)
+    .filter(
+      (c) =>
+        c.diametro_km >= dMinKm &&
+        c.confianca >= pc.confiancaMin &&
+        fracaoRuimNoDisco(c, ruim, W, H, raioKm) >= pc.fracaoRuimMin,
+    )
     .sort((a, b) => b.diametro_km - a.diametro_km);
   const km = Float64Array.from(R, (m) => m / 1000);
   const completadas = noRuim.map((d) => {
     const m = morfologia(d.diametro_km, 1, leiDeForma);
-    const c = { lat: d.lat, lonE: d.lonE, diametroKm: d.diametro_km, morfologia: m, perfil: perfilGasto(m, pc.desfoqueSigmaPorD) };
+    const c = {
+      lat: d.lat,
+      lonE: d.lonE,
+      diametroKm: d.diametro_km,
+      morfologia: m,
+      perfil: perfilGasto(m, pc.desfoqueSigmaPorD),
+    };
     return { ...d, ...completaCratera(km, W, H, c, raioKm, pc.completar) };
   });
   for (let k = 0; k < n; k += 1) if (ruim[k]) R[k] = km[k] * 1000;
@@ -947,13 +1301,19 @@ export function consertaNaGrade({ h, fotoLog, luminancia, W, H, raioM, vazio = n
     const rr = (pc.completar.corteRR[1] * c.diametro_km) / 2;
     const dj = Math.ceil((rr / raioKm / Math.PI) * H) + 1;
     const j0 = texelDe(c.lat, c.lonE, W, H);
-    for (let q = Math.max(0, ((j0 / W) | 0) - dj); q <= Math.min(H - 1, ((j0 / W) | 0) + dj); q += 1) {
+    for (
+      let q = Math.max(0, ((j0 / W) | 0) - dj);
+      q <= Math.min(H - 1, ((j0 / W) | 0) + dj);
+      q += 1
+    ) {
       const fq = latitudeDaLinha(q, H);
       for (let i = 0; i < W; i += 1) {
         const k = q * W + i;
         if (!ruim[k]) continue;
         const lq = longitudeDaColuna(i, W) * RADIANOS;
-        const cos = Math.sin(fq) * Math.sin(f0) + Math.cos(fq) * Math.cos(f0) * Math.cos(lq - c.lonE * RADIANOS);
+        const cos =
+          Math.sin(fq) * Math.sin(f0) +
+          Math.cos(fq) * Math.cos(f0) * Math.cos(lq - c.lonE * RADIANOS);
         if (Math.acos(Math.min(1, cos)) * raioKm < rr) cobertura[k] = DERIVADO;
       }
     }
@@ -985,26 +1345,54 @@ export function consertaNaGrade({ h, fotoLog, luminancia, W, H, raioM, vazio = n
       dif[k] = h[k] - R[k];
     }
   }
-  const fundo = desfocaComMascara(dif, noAnel, W, H, raioM, p.membranaSigmaKm / 2).valor;
-  for (let k = 0; k < n; k += 1) if (bom[k] && !noAnel[k]) dif[k] = Number.isFinite(fundo[k]) ? fundo[k] : 0;
+  const fundo = desfocaComMascara(
+    dif,
+    noAnel,
+    W,
+    H,
+    raioM,
+    p.membranaSigmaKm / 2,
+  ).valor;
+  for (let k = 0; k < n; k += 1)
+    if (bom[k] && !noAnel[k]) dif[k] = Number.isFinite(fundo[k]) ? fundo[k] : 0;
   const c = membranaHarmonica(dif, bom, W, H, raioM, p.membranaSigmaKm);
   // a membrana em níveis acerta a emenda só a ~8 texels; na faixa de
   // `faixaDaCosturaKm` dentro do ruim, Gauss–Seidel até a borda valer exata
-  const perto = media(Float32Array.from(bom), W, H, raioM, p.faixaDaCosturaKm / 2);
+  const perto = media(
+    Float32Array.from(bom),
+    W,
+    H,
+    raioM,
+    p.faixaDaCosturaKm / 2,
+  );
   const faixa = [];
   for (let k = 0; k < n; k += 1) if (ruim[k] && perto[k] > 0.005) faixa.push(k);
-  const [le, no, su] = [new Float64Array(H), new Float64Array(H), new Float64Array(H)];
+  const [le, no, su] = [
+    new Float64Array(H),
+    new Float64Array(H),
+    new Float64Array(H),
+  ];
   for (let j = 0; j < H; j += 1) {
     const cf = Math.max(Math.cos(latitudeDaLinha(j, H)), 1e-6);
     le[j] = 1 / (cf * cf * ((2 * Math.PI) / W) ** 2);
-    no[j] = j > 0 ? Math.cos(Math.PI / 2 - (j * Math.PI) / H) / (cf * (Math.PI / H) ** 2) : 0;
-    su[j] = j < H - 1 ? Math.cos(Math.PI / 2 - ((j + 1) * Math.PI) / H) / (cf * (Math.PI / H) ** 2) : 0;
+    no[j] =
+      j > 0
+        ? Math.cos(Math.PI / 2 - (j * Math.PI) / H) / (cf * (Math.PI / H) ** 2)
+        : 0;
+    su[j] =
+      j < H - 1
+        ? Math.cos(Math.PI / 2 - ((j + 1) * Math.PI) / H) /
+          (cf * (Math.PI / H) ** 2)
+        : 0;
   }
   for (let passada = 0; passada < p.passadasDaCostura; passada += 1) {
     for (const k of faixa) {
       const j = (k / W) | 0;
       const i = k - j * W;
-      let s = le[j] * (c[j * W + (i + 1 === W ? 0 : i + 1)] + c[j * W + (i === 0 ? W - 1 : i - 1)]);
+      let s =
+        le[j] *
+        (c[j * W + (i + 1 === W ? 0 : i + 1)] +
+          c[j * W + (i === 0 ? W - 1 : i - 1)]);
       if (no[j]) s += no[j] * c[k - W];
       if (su[j]) s += su[j] * c[k + W];
       c[k] = s / (2 * le[j] + no[j] + su[j]);
@@ -1016,12 +1404,29 @@ export function consertaNaGrade({ h, fotoLog, luminancia, W, H, raioM, vazio = n
     campo,
     classe,
     cobertura,
+    colcha: { retalhos: colcha.retalhos, rampa: colcha.rampa },
     relatorio: {
+      fino,
+      retalhos: colcha.retalhos.length,
       lei,
-      crateras: { vistas: vistas.length, noRuim: completadas.length, completadas },
-      listras: traco ? { rumoGraus: traco.rumoGraus, linhas: traco.linhas.map((l) => l.length), fracaoNoRuim: listrasNoRuim } : null,
+      crateras: {
+        vistas: vistas.length,
+        noRuim: completadas.length,
+        completadas,
+      },
+      listras: traco
+        ? {
+            rumoGraus: traco.rumoGraus,
+            linhas: traco.linhas.map((l) => l.length),
+            fracaoNoRuim: listrasNoRuim,
+          }
+        : null,
       classes: fracoesDeArea(classe, W, H, raioM, [BOM, RUIDO, LISO, VAZIO]),
-      cobertura: fracoesDeArea(cobertura, W, H, raioM, [MEDIDO, INVENTADO, DERIVADO]),
+      cobertura: fracoesDeArea(cobertura, W, H, raioM, [
+        MEDIDO,
+        INVENTADO,
+        DERIVADO,
+      ]),
     },
     traco,
   };
@@ -1034,12 +1439,31 @@ export function consertaNaGrade({ h, fotoLog, luminancia, W, H, raioM, vazio = n
  * outros recebem o campo consertado por interpolação bilinear. `luminancia`
  * já na grade de trabalho. Devolve `{ metros, ...consertaNaGrade }`.
  */
-export function consertaDem({ metros, largura: Wf, altura: Hf, luminancia, raioM, p = CONSERTO_DE_ENCELADO, listras = true }) {
+export function consertaDem({
+  metros,
+  largura: Wf,
+  altura: Hf,
+  luminancia,
+  raioM,
+  p = CONSERTO_DE_ENCELADO,
+  listras = true,
+  fino = "exemplo",
+}) {
   const W = p.larguraDeTrabalho;
   const H = W / 2;
   const h = Float32Array.from(reamostraParaACasa(metros, Wf, Hf, W, H, 180));
   const fotoLog = Float32Array.from(luminancia, (l) => Math.log(l + 0.003));
-  const r = consertaNaGrade({ h, fotoLog, luminancia, W, H, raioM, p, listras });
+  const r = consertaNaGrade({
+    h,
+    fotoLog,
+    luminancia,
+    W,
+    H,
+    raioM,
+    p,
+    listras,
+    fino,
+  });
   const saida = Float32Array.from(metros);
   for (let j = 0; j < Hf; j += 1) {
     const y = ((j + 0.5) * H) / Hf;
@@ -1055,7 +1479,8 @@ export function consertaDem({ metros, largura: Wf, altura: Hf, luminancia, raioM
       const b = (a + 1) % W;
       const c = r.campo;
       saida[j * Wf + i] =
-        (c[y0 * W + a] * (1 - fx) + c[y0 * W + b] * fx) * (1 - fy) + (c[(y0 + 1) * W + a] * (1 - fx) + c[(y0 + 1) * W + b] * fx) * fy;
+        (c[y0 * W + a] * (1 - fx) + c[y0 * W + b] * fx) * (1 - fy) +
+        (c[(y0 + 1) * W + a] * (1 - fx) + c[(y0 + 1) * W + b] * fx) * fy;
     }
   }
   return { metros: saida, ...r };

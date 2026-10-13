@@ -1,13 +1,20 @@
-// Serve: lei — o conserto do DEM (Encélado, R4): os ladrilhos bons saem byte a byte, o remendo de bolhas ganha o fino com a estatística dos bons, e a membrana não deixa degrau na emenda
+// Serve: lei — o conserto do DEM (Encélado, R4): os ladrilhos bons saem byte a byte, o remendo de bolhas ganha o fino POR EXEMPLO dos bons (retalhos só de ladrilho bom, sem degrau entre eles), a opção só-liso não põe fino, e a membrana não deixa degrau na emenda
 // ============================================================
 // Um corpo pequeno (texel de 0,39 km como o de Encélado na grade de 4096) com
 // terreno de cristas paralelas em toda parte e, no meio, um ladrilho de
 // "bolhas": ruído isotrópico forte de 2–3,5 km, 300 m acima do resto (o
 // desnível de ladrilho). A foto é o sombreado das cristas verdadeiras.
 // ============================================================
-import { beforeAll, describe, expect, it } from 'vitest';
-import { BOM, CONSERTO_DE_ENCELADO, consertaDem, gradiente, media, sorteador } from './conserto-do-dem.mjs';
-import { latitudeDaLinha, longitudeDaColuna } from './relevo-inventado.mjs';
+import { beforeAll, describe, expect, it } from "vitest";
+import {
+  BOM,
+  CONSERTO_DE_ENCELADO,
+  consertaDem,
+  gradiente,
+  media,
+  sorteador,
+} from "./conserto-do-dem.mjs";
+import { latitudeDaLinha, longitudeDaColuna } from "./relevo-inventado.mjs";
 
 const W = 512;
 const H = 256;
@@ -43,17 +50,26 @@ function cristas(lat, lon) {
   const [x, y] = xy(lat, lon);
   const s = x * Math.cos(0.52) + y * Math.sin(0.52);
   let h = 0;
-  for (const [k, l] of [16, 8, 4, 2, 1].entries()) h += ((0.1 * l * 1000) / (2 * Math.PI)) * Math.sin((2 * Math.PI * s) / l + k);
+  for (const [k, l] of [16, 8, 4, 2, 1].entries())
+    h +=
+      ((0.1 * l * 1000) / (2 * Math.PI)) * Math.sin((2 * Math.PI * s) / l + k);
   return h;
 }
 
 const sorteia = sorteador(7);
-const BOLHAS = Array.from({ length: 40 }, () => [sorteia() * Math.PI, 2 + 1.5 * sorteia(), sorteia() * 2 * Math.PI]);
+const BOLHAS = Array.from({ length: 40 }, () => [
+  sorteia() * Math.PI,
+  2 + 1.5 * sorteia(),
+  sorteia() * 2 * Math.PI,
+]);
 /** o ruído isotrópico de 2–3,5 km, encosta ~0,6 */
 function bolhas(lat, lon) {
   const [x, y] = xy(lat, lon);
   let h = 0;
-  for (const [a, l, f] of BOLHAS) h += ((0.6 / Math.sqrt(BOLHAS.length / 2)) * l * 1000 / (2 * Math.PI)) * Math.sin((2 * Math.PI * (x * Math.cos(a) + y * Math.sin(a))) / l + f);
+  for (const [a, l, f] of BOLHAS)
+    h +=
+      (((0.6 / Math.sqrt(BOLHAS.length / 2)) * l * 1000) / (2 * Math.PI)) *
+      Math.sin((2 * Math.PI * (x * Math.cos(a) + y * Math.sin(a))) / l + f);
   return h;
 }
 
@@ -61,7 +77,8 @@ function gradeFina(f) {
   const o = new Float32Array(Wf * Hf);
   for (let j = 0; j < Hf; j += 1) {
     const lat = latitudeDaLinha(j, Hf) * GRAUS;
-    for (let i = 0; i < Wf; i += 1) o[j * Wf + i] = f(lat, longitudeDaColuna(i, Wf));
+    for (let i = 0; i < Wf; i += 1)
+      o[j * Wf + i] = f(lat, longitudeDaColuna(i, Wf));
   }
   return o;
 }
@@ -80,7 +97,8 @@ function encostaDaBanda(campo, sa, sb, texels) {
 /** os texels de trabalho em |lat| < 20° a mais de `m` graus DENTRO do remendo, ou (m < 0) de |m| a |m| + 12 graus a leste e a oeste dele */
 function texels(m) {
   const o = [];
-  const naCaixa = (lat, lon, d) => Math.abs(lat) < 25 + d && lon > 30 - d && lon < 100 + d;
+  const naCaixa = (lat, lon, d) =>
+    Math.abs(lat) < 25 + d && lon > 30 - d && lon < 100 + d;
   for (let j = 0; j < H; j += 1) {
     const lat = latitudeDaLinha(j, H) * GRAUS;
     for (let i = 0; i < W; i += 1) {
@@ -94,34 +112,63 @@ function texels(m) {
   return o;
 }
 
-describe('o conserto do DEM (Encélado, R4)', () => {
+describe("o conserto do DEM (Encélado, R4)", () => {
   let dem;
   let r;
+  let liso;
   let antes;
   beforeAll(() => {
-    dem = gradeFina((lat, lon) => cristas(lat, lon) + (noRemendo(lat, lon) ? DEGRAU_M + bolhas(lat, lon) : 0));
+    dem = gradeFina(
+      (lat, lon) =>
+        cristas(lat, lon) +
+        (noRemendo(lat, lon) ? DEGRAU_M + bolhas(lat, lon) : 0),
+    );
     // a foto: o sombreado das cristas verdadeiras, sol do leste
     const verdade = gradeFina(cristas);
     const luminancia = new Float32Array(W * H);
     for (let j = 0; j < H; j += 1) {
       for (let i = 0; i < W; i += 1) {
         const k = 2 * j * Wf + 2 * i;
-        const encosta = (verdade[k + 1] - verdade[k]) / ((2 * Math.PI * RAIO_M * Math.cos(latitudeDaLinha(2 * j, Hf))) / Wf);
+        const encosta =
+          (verdade[k + 1] - verdade[k]) /
+          ((2 * Math.PI * RAIO_M * Math.cos(latitudeDaLinha(2 * j, Hf))) / Wf);
         luminancia[j * W + i] = 0.3 + 0.25 * Math.tanh(3 * encosta);
       }
     }
     antes = Float32Array.from(dem);
-    r = consertaDem({ metros: dem, largura: Wf, altura: Hf, luminancia, raioM: RAIO_M, p: P, listras: false });
-  }, 120_000);
+    r = consertaDem({
+      metros: dem,
+      largura: Wf,
+      altura: Hf,
+      luminancia,
+      raioM: RAIO_M,
+      p: P,
+      listras: false,
+    });
+    liso = consertaDem({
+      metros: dem,
+      largura: Wf,
+      altura: Hf,
+      luminancia,
+      raioM: RAIO_M,
+      p: P,
+      listras: false,
+      fino: "liso",
+    });
+  }, 240_000);
 
-  it('a máscara acha o remendo e deixa o terreno bom de fora', () => {
+  it("a máscara acha o remendo e deixa o terreno bom de fora", () => {
     const dentro = texels(5);
     const fora = texels(-8);
-    expect(dentro.filter((k) => r.classe[k] !== BOM).length / dentro.length).toBeGreaterThan(0.95);
-    expect(fora.filter((k) => r.classe[k] === BOM).length / fora.length).toBeGreaterThan(0.95);
+    expect(
+      dentro.filter((k) => r.classe[k] !== BOM).length / dentro.length,
+    ).toBeGreaterThan(0.95);
+    expect(
+      fora.filter((k) => r.classe[k] === BOM).length / fora.length,
+    ).toBeGreaterThan(0.95);
   });
 
-  it('os ladrilhos bons saem BYTE A BYTE iguais, e o remendo muda', () => {
+  it("os ladrilhos bons saem BYTE A BYTE iguais, e o remendo muda", () => {
     expect(dem).toEqual(antes);
     let bons = 0;
     let mudados = 0;
@@ -137,30 +184,43 @@ describe('o conserto do DEM (Encélado, R4)', () => {
     }
     expect(bons).toBeGreaterThan(0.8 * Wf * Hf);
     expect(mudados).toBe(0);
-    expect(Buffer.from(r.metros.buffer).equals(Buffer.from(antes.buffer))).toBe(false);
+    expect(Buffer.from(r.metros.buffer).equals(Buffer.from(antes.buffer))).toBe(
+      false,
+    );
     expect(ruins).toBeGreaterThan(0);
   });
 
-  it('o fino do remendo troca a estatística das bolhas pela do terreno bom, banda a banda', () => {
+  it("o fino do remendo troca a estatística das bolhas pela do terreno bom, banda a banda", () => {
     const h = r.campo;
     const dentro = texels(6);
     const fora = texels(-6);
     const original = Float32Array.from({ length: W * H }, (_, k) => {
       const j = (k / W) | 0;
       const i = k - j * W;
-      return 0.25 * (antes[2 * j * Wf + 2 * i] + antes[2 * j * Wf + 2 * i + 1] + antes[(2 * j + 1) * Wf + 2 * i] + antes[(2 * j + 1) * Wf + 2 * i + 1]);
+      return (
+        0.25 *
+        (antes[2 * j * Wf + 2 * i] +
+          antes[2 * j * Wf + 2 * i + 1] +
+          antes[(2 * j + 1) * Wf + 2 * i] +
+          antes[(2 * j + 1) * Wf + 2 * i + 1])
+      );
     });
-    for (const [sa, sb] of [[0, 0.4], [0.4, 0.8], [0.8, 1.6]]) {
+    for (const [sa, sb] of [
+      [0, 0.4],
+      [0.4, 0.8],
+      [0.8, 1.6],
+    ]) {
       const bom = encostaDaBanda(original, sa, sb, fora);
       const bolha = encostaDaBanda(original, sa, sb, dentro);
       const depois = encostaDaBanda(h, sa, sb, dentro);
-      if (sa === 0.4) expect(bolha / bom, 'as bolhas, antes').toBeGreaterThan(2);
+      if (sa === 0.4)
+        expect(bolha / bom, "as bolhas, antes").toBeGreaterThan(2);
       expect(depois / bom, `banda σ ${sa}–${sb} km`).toBeGreaterThan(0.75);
       expect(depois / bom, `banda σ ${sa}–${sb} km`).toBeLessThan(1.3);
     }
   });
 
-  it('a membrana costura: nenhum degrau na borda da máscara, e o desnível de ladrilho some na emenda', () => {
+  it("a membrana costura: nenhum degrau na borda da máscara, e o desnível de ladrilho some na emenda", () => {
     const h = r.campo;
     const saltos = [];
     const naBorda = [];
@@ -169,7 +229,8 @@ describe('o conserto do DEM (Encélado, R4)', () => {
       for (let i = 0; i < W; i += 1) {
         const [a, b] = [j * W + i, j * W + ((i + 1) % W)];
         const salto = Math.abs(h[b] - h[a]);
-        if ((r.classe[a] === BOM) !== (r.classe[b] === BOM)) naBorda.push(salto);
+        if ((r.classe[a] === BOM) !== (r.classe[b] === BOM))
+          naBorda.push(salto);
         else if (r.classe[a] === BOM) saltos.push(salto);
       }
     }
@@ -186,7 +247,9 @@ describe('o conserto do DEM (Encélado, R4)', () => {
         if (Math.abs(latitudeDaLinha(j, H) * GRAUS) > 15) continue;
         for (let i = 1; i < W - 1; i += 1) {
           const k = j * W + i;
-          const borda = (r.classe[k] === BOM) !== (r.classe[k - 1] === BOM) || (r.classe[k] === BOM) !== (r.classe[k + 1] === BOM);
+          const borda =
+            (r.classe[k] === BOM) !== (r.classe[k - 1] === BOM) ||
+            (r.classe[k] === BOM) !== (r.classe[k + 1] === BOM);
           if (borda && (r.classe[k] !== BOM) === dentro) {
             s += h[k];
             n += 1;
@@ -196,5 +259,65 @@ describe('o conserto do DEM (Encélado, R4)', () => {
       return s / n;
     };
     expect(Math.abs(anel(true) - anel(false))).toBeLessThan(40);
+  });
+
+  it("os retalhos vêm só de ladrilho bom: o quadrado girado inteiro e a folga", () => {
+    const { retalhos } = r.colcha;
+    expect(retalhos.length).toBeGreaterThan(10);
+    const alcance = (P.exemplo.larguraKm / 2) * Math.SQRT2 + P.exemplo.folgaKm;
+    for (const {
+      origem: [la, lo],
+    } of retalhos) {
+      const [f0, l0] = [la / GRAUS, lo / GRAUS];
+      let ruins = 0;
+      for (let j = 0; j < H; j += 1) {
+        const f = latitudeDaLinha(j, H);
+        for (let i = 0; i < W; i += 1) {
+          const c =
+            Math.sin(f) * Math.sin(f0) +
+            Math.cos(f) *
+              Math.cos(f0) *
+              Math.cos(longitudeDaColuna(i, W) / GRAUS - l0);
+          if (
+            Math.acos(Math.min(1, c)) * RKM < alcance &&
+            r.classe[j * W + i] !== BOM
+          )
+            ruins += 1;
+        }
+      }
+      expect(ruins, `origem ${la.toFixed(1)}, ${lo.toFixed(1)}`).toBe(0);
+    }
+  });
+
+  it("nenhum degrau na emenda entre retalhos: o salto na rampa é o de dentro deles", () => {
+    const h = r.campo;
+    const salto = (naRampa) => {
+      let s = 0;
+      let n = 0;
+      for (const k of texels(6)) {
+        if (Boolean(r.colcha.rampa[k]) !== naRampa) continue;
+        const j = (k / W) | 0;
+        s +=
+          Math.abs(h[j * W + ((k - j * W + 1) % W)] - h[k]) +
+          Math.abs(h[k + W] - h[k]);
+        n += 1;
+      }
+      return s / n;
+    };
+    expect(salto(true) / salto(false)).toBeLessThan(1.25);
+  });
+
+  it("a opção só-liso deixa o ruim sem banda fina: só o largo medido e a costura", () => {
+    expect(liso.relatorio.retalhos).toBe(0);
+    expect(
+      Buffer.from(liso.metros.buffer).equals(Buffer.from(r.metros.buffer)),
+    ).toBe(false);
+    const fino = (h, ks) => encostaDaBanda(h, 0, 0.8, ks);
+    expect(
+      fino(liso.campo, texels(6)) / fino(liso.campo, texels(-6)),
+    ).toBeLessThan(0.15);
+    expect(
+      fino(r.campo, texels(6)) / fino(r.campo, texels(-6)),
+    ).toBeGreaterThan(0.75);
   });
 });
