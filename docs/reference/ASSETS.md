@@ -179,18 +179,18 @@ de normais, 51/255. A regra vive em `scripts/data/atlas/otimiza-texturas.mjs`
 normal da Terra, que nasce PNG do relevo medido (seção própria, abaixo).
 
 Todos vêm do **projeto Saturn do dono** (https://github.com/fgferre/Saturn,
-`public/textures/relief/`) — menos o de Jápeto desde o item 230 e o de Reia
-desde o PLAN-REIA.md, que nascem nesta casa (parágrafos no fim desta seção) —,
+`public/textures/relief/`) — menos o de Jápeto desde o item 230, o de Reia
+desde o PLAN-REIA.md e o de Encélado desde a R4 da régua, que nascem nesta
+casa (parágrafos no fim desta seção) —,
 que os assou a partir dos modelos abaixo; as
 escalas de deslocamento (`span`/`bias` como fração do raio) vêm do
 `relief.json` dele e moram em `RELEVO_DA_LUA` (`world/corpos/rochoso.ts`).
-Encélado veio em 2048 e foi reamostrado para 1024 (lanczos3).
 
 | lua | topografia | licença | webp (altura + normal) |
 | --- | --- | --- | --- |
 | Mimas | modelo de forma SPC V2.0 (R. Gaskell), NASA PDS | domínio público | 103 + 477 KB |
 | Tétis | modelo de forma SPC V1.0 (R. Gaskell), NASA PDS | domínio público | 143 + 492 KB |
-| Encélado | DEM global 200 m — Schenk & McKinnon 2024, USGS Astropedia | domínio público, **citação obrigatória**: *Icarus* 408, 115827 | 296 + 728 KB |
+| Encélado | **DEM medido, assado nesta casa** (R4) — DEM global 200 m, Schenk & McKinnon 2024, USGS Astropedia; altura em 1024 px, normal em 4096 (parágrafo abaixo) | domínio público, **citação obrigatória**: *Icarus* 408, 115827, doi 10.1016/j.icarus.2023.115827 | a medir ao regenerar (o do Saturn tinha 296 + 728 KB) |
 | Dione | DTM SPC — Weirich et al. 2025, NASA PDS SBN | domínio público | 228 + 512 KB |
 | Reia | **relevo MEDIDO, completado** (PLAN-REIA.md) — modelo de forma SPC da Cassini (Weirich, Gaskell, Palmer & Domingue 2025, NASA PDS SBN, doi 10.26033/tqxb-q714) acima de ~30 km; abaixo, crateras onde a foto as mostra, com perfis ESTIMADOS (parágrafo abaixo) | dado NASA PDS, **citação obrigatória**; montagem: código do autor | a medir ao regenerar (o sintético tinha 108 + 232 KB) |
 | Jápeto | **relevo INVENTADO ancorado no medido** (item 230) — não existe DTM público de Jápeto; gerado nesta casa: crista e crateras no lugar medido, perfis e profundidades inventados (parágrafo abaixo) | código do autor; posições do Gazetteer da IAU e mosaico Cassini, domínio público | 55 + 135 KB |
@@ -260,6 +260,19 @@ degrau; escala 0,0170 e viés −0,0092 em `RELEVO_DA_LUA`), normal do mesmo
 campo; o portão da cadeia aprova o conjunto — altura, normal e esses números
 — por sha256, e os dois canais são gravados juntos. O `parametros.json` do
 candidato em `capturas/reia/r2b/a-1024/` lista cada escolha.
+
+**Encélado refeito nesta casa (R4 da régua, 13/10/2026, PLAN-REGUA-UNICA.md).**
+O do Saturn era o mesmo DEM reduzido a 1024 px (1,57 km por texel), o que
+apagava as listras de tigre (~2 km) e as crateras abaixo de ~5 km. Agora
+altura e normal saem de `scripts/data/atlas/gera-normal-de-dem.mjs` direto
+do DEM global de 200 m (Schenk & McKinnon 2024, 8049×4025 float32, altura em
+km sobre o elipsoide de Thomas 2016 — nada é subtraído; o do app difere dele
+em até 0,4 km): a altura em 1024 px com a faixa inteira, −2,73 a +2,34 km em
+8 bits (20 m por degrau; escala 0,0198 e viés −0,0106 em `RELEVO_DA_LUA`), e
+a normal em 4096 px (0,39 km por texel) pela média de área da grade fina,
+com a encosta física (a altura ÷ 1,2 contra o ganho do shader) e sem a trava
+de 80° no sul, onde estão as listras. Quanto do detalhe fino o DEM tem de
+verdade é a medida de `capturas/r4-encelado/` (a confirmar).
 
 ## As nove luas esculpidas de Saturno (item 134, S3)
 
@@ -948,7 +961,8 @@ tocar num `.mjs`.
 | titan/map | medido | 720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou |
 | europa/map | derivado | mosaico real da Voyager e da Galileo, em cinza: não existe mapa global em cor de Europa, e a cor é INFERIDA do brilho pelo app, com os tons medidos numa foto em cor da Galileo de um só hemisfério; a calota sul sem imagem leva o tom da faixa vizinha |
 | venus/map | medido | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |
-| enceladus/height | medido | DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul |
+| enceladus/height | medido | relevo medido pelo DEM de 200 m, com a altura em 1024 px e a luz em 4096 px (~0,4 km por texel): o detalhe menor que ~1 km sai liso (a confirmar pela medida) |
+| enceladus/normal | medido | relevo medido pelo DEM de 200 m, com a altura em 1024 px e a luz em 4096 px (~0,4 km por texel): o detalhe menor que ~1 km sai liso (a confirmar pela medida) |
 | mimas/height | medido | modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, como a bacia de Herschel, não o detalhe menor que um texel |
 | tethys/height | medido | modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel |
 | dione/height | medido | DTM SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel |

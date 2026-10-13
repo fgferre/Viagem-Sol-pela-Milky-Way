@@ -177,6 +177,21 @@
 // (arquivo trocado ou cortado, outra fonte, outro filtro). A guarda reroda
 // sobre a MESMA grade de 720 guardada, e o normal.png sai byte a byte o mesmo
 // pelos dois caminhos. `--rede` força a leitura remota e regrava o cache.
+//
+// ENCÉLADO (R4 da régua, 13/10/2026, PLAN-REGUA-UNICA.md). O DEM global de
+// 200 m (Schenk & McKinnon 2024) é o primeiro da tabela lido INTEIRO de um
+// arquivo local (`tif-local`): 124 MB baixados para `.cache/relevo/` pelo
+// terminal dele, lidos por `leTiffFloat32` (`relevo-reia.mjs`) e conferidos
+// pela georreferência do próprio GeoTIFF (borda esquerda, topo e os 360°,
+// `georreferenciaDoTiff`). É também o único que assa a ALTURA além da
+// normal, porque Encélado desloca vértice (`RELEVO_DA_LUA`): 1024 px com a
+// faixa inteira do DEM em 8 bits; a normal sai em 4096 pela MÉDIA DE ÁREA da
+// grade fina (a conta da Terra), com a altura ÷ 1,2 — o ganho tangencial do
+// shader devolve a encosta física, como em Reia. O que a tabela declara de
+// diferente: nada a subtrair (o dado já é altura sobre o elipsoide triaxial
+// de Thomas 2016, ≤ 0,4 km do da casa), a trava de 80° desligada no sul (as
+// listras de tigre passam de 80°S) e, além da meia volta, a guarda recusa o
+// DEM ESPELHADO (a longitude crescendo para o outro lado).
 // ============================================================
 
 import { createHash } from 'node:crypto';
@@ -189,6 +204,8 @@ import sharp from 'sharp';
 import { pesosDaCaixa } from './gera-horizonte.mjs';
 import { giraColunasDeImagem } from './lib-texturas.mjs';
 import { inventaRelevoDoCorpo } from './relevo-inventado.mjs';
+import { escalaEViesDaFaixa, quantizaNaFaixa } from './relevo-por-foto.mjs';
+import { leTiffFloat32, reamostraParaACasa } from './relevo-reia.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -223,6 +240,11 @@ const rootDirectory = path.resolve(
  * MiB (Plutão, Caronte): as alturas lidas ficam em `.cache/relevo/` e as
  * rodadas seguintes as releem de lá, conferidas por sha256 (ver o
  * cabeçalho).
+ *
+ * `mapaDeAltura`, `ganhoDoShader` e `travaNoSul` só existem em Encélado (ver
+ * o cabeçalho): a altura do vértice (largura, faixa do byte em km e o raio
+ * que dá a escala e o viés de `RELEVO_DA_LUA`), o ganho tangencial que o
+ * shader aplica à normal e a trava de 80° no hemisfério sul.
  */
 export const CORPOS = {
   moon: {
@@ -457,6 +479,50 @@ export const CORPOS = {
       descricao: 'New Horizons LORRI–MVIC Global DEM 300 m de Caronte (USGS Astrogeology)',
       linhasPorSaida: 2,
       semDado: -32768,
+    },
+  },
+
+  // ENCÉLADO (R4, 13/10/2026): o DEM global de 200 m de Schenk & McKinnon
+  // 2024 (Icarus 408, 115827, doi:10.1016/j.icarus.2023.115827), inteiro do
+  // cache local (ver o cabeçalho). Até aqui o relevo dele vinha assado no
+  // projeto Saturn e reduzido a 1024 px, o que apagava as listras de tigre.
+  enceladus: {
+    nome: 'Encélado',
+    diretorio: 'enceladus',
+    // o PASSO horizontal da normal: o raio médio (a·b·c)^⅓ de
+    // BODY_AXES.enceladus (256,6 × 251,4 × 248,3), a ±3 % do arco real em
+    // todo o corpo (o `a` erraria até 3 % só para cima)
+    raioM: 252100,
+    // o float32 é a ALTURA em km sobre o elipsoide triaxial de Thomas 2016
+    // (256,2 × 251,4 × 248,6): nada a subtrair (sem `eixosDaCasaKm`), e o km
+    // vira metro aqui
+    offsetDoDado: 0,
+    metrosPorUnidade: 1000,
+    // −180…180 (meridiano central 0°), a convenção da casa: giro 0. É a
+    // DECLARAÇÃO; a georreferência do GeoTIFF a confere e recusa se divergir
+    longitudeDaBordaEsquerdaGraus: 180,
+    // as listras de tigre passam de 80°S: a trava subestimaria a encosta
+    // leste-oeste delas (metade a 85°S, um décimo a 89°S)
+    travaNoSul: false,
+    // `ESCALA_DA_NORMAL_DO_RELEVO` (rochoso.ts): a altura entra ÷ 1,2 na
+    // normal e a encosta na tela volta a ser a física, como em Reia
+    ganhoDoShader: 1.2,
+    // o vértice: 1024 px com a faixa INTEIRA do DEM em 8 bits (20 m por
+    // degrau), em raios equatoriais de 256,6 km (BODY_AXES.enceladus[0])
+    mapaDeAltura: { largura: 1024, faixaKm: { min: -2.73, max: 2.34 }, raioDoVerticeKm: 256.6 },
+    fonte: {
+      tipo: 'tif-local',
+      nome: 'Enceladus_Cassini_DEM_global_200m_schenk2024.tif',
+      url: 'https://asc-astropedia.s3.us-west-2.amazonaws.com/Enceladus/Cassini/Enceladus_Cassini_DEM_global_200m_schenk2024.tif',
+      arquivo: '.cache/relevo/Enceladus_Cassini_DEM_global_200m_schenk2024.tif',
+      descricao: 'DEM global de Encélado a 200 m (Schenk & McKinnon 2024, USGS Astropedia)',
+      largura: 8049,
+      altura: 4025,
+      // o sem-dado de float do GDAL é o menor negativo; NaN também conta
+      semDado: -1e30,
+      // nulo até a primeira corrida: o gerador imprime o sha256 e, com a
+      // palavra dele, o número entra aqui e passa a ser cobrado
+      sha256: null,
     },
   },
 };
@@ -931,25 +997,54 @@ export function conferirAlinhamento(corpo, medidas) {
 }
 
 /**
+ * O ALBEDO DA GUARDA em 720x360. É o MAPA ENTREGUE, que já está na
+ * convenção da casa: a aquisição (`baixa-texturas.mjs`) é quem gira mapa de
+ * cor que nasce em outro sistema de longitude, e o que chega aqui é o que a
+ * tela mostra.
+ */
+async function albedoDaGuarda(mapaDeCor) {
+  const L = LARGURA_DA_GUARDA;
+  return Float64Array.from(
+    await sharp(mapaDeCor, { limitInputPixels: false })
+      .resize(L, L / 2, { fit: 'fill' })
+      .greyscale()
+      .raw()
+      .toBuffer()
+  );
+}
+
+/**
+ * O ESPELHO (Encélado): a melhor energia de borda do DEM com as colunas
+ * invertidas — a longitude crescendo para o outro lado — nas 72 defasagens.
+ * A meia volta não pega este defeito; a varredura também não, porque só
+ * gira. `grade` na orientação da FONTE, como a da guarda. Pura.
+ */
+export function melhorBordaDoEspelho(corpo, grade, albedo) {
+  const { largura: L, altura: A, metros } = grade;
+  const espelhada = new Float64Array(metros.length);
+  for (let j = 0; j < A; j += 1) {
+    for (let i = 0; i < L; i += 1) espelhada[j * L + i] = metros[j * L + L - 1 - i];
+  }
+  const bordaAlb = energiaDeBorda(albedo, L, A);
+  let melhor = -Infinity;
+  for (let d = 0; d < 360; d += PASSO_DA_VARREDURA_GRAUS) {
+    const girada = orientar(corpo, grade, d, espelhada);
+    melhor = Math.max(melhor, pearson(energiaDeBorda(girada, L, A), bordaAlb));
+  }
+  return melhor;
+}
+
+/**
  * `gradeDaGuarda` é `{ metros, largura, altura }` de 720x360, NA ORIENTAÇÃO
  * DA FONTE: quem chama a lê da fonte ou do cache das alturas, e a guarda
- * mede os mesmos números nos dois casos.
+ * mede os mesmos números nos dois casos. Devolve as medidas.
  */
 async function guardaDeAlinhamento(corpo, gradeDaGuarda, mapaDeCor, varredura) {
   const L = LARGURA_DA_GUARDA;
   const A = L / 2;
   const declarada = orientar(corpo, gradeDaGuarda);
   const outra = orientar(corpo, gradeDaGuarda, 180);
-  // O albedo é o MAPA ENTREGUE, que já está na convenção da casa: a
-  // aquisição (`baixa-texturas.mjs`) é quem gira mapa de cor que nasce em
-  // outro sistema de longitude, e o que chega aqui é o que a tela mostra.
-  const alb = Float64Array.from(
-    await sharp(mapaDeCor, { limitInputPixels: false })
-      .resize(L, A, { fit: 'fill' })
-      .greyscale()
-      .raw()
-      .toBuffer()
-  );
+  const alb = await albedoDaGuarda(mapaDeCor);
   const medidas = medirAlinhamento(declarada, outra, alb, L, A);
   const { bordaDeclarada, bordaOutra, comSinal } = medidas;
   const bordaAlb = energiaDeBorda(alb, L, A);
@@ -976,6 +1071,7 @@ async function guardaDeAlinhamento(corpo, gradeDaGuarda, mapaDeCor, varredura) {
     );
   }
   conferirAlinhamento(corpo, medidas);
+  return medidas;
 }
 
 // ------------------------------------------------------------
@@ -1086,8 +1182,12 @@ export function assaNormais(metros, largura, altura, raioM, vazio, { travaNoSul 
  * apoiava nas médias das vizinhas e saía alisada; aqui ela é a da célula
  * (no ETOPO, declive RMS da terra 1,99° contra 1,43° do 8192 reduzido —
  * `capturas/efeitos-timidos/relevo/numeros.md`). `{ rgb, rmsGraus, maxGraus }`.
+ *
+ * `travaNoSul: false` (Encélado) tira a trava das linhas do sul, como em
+ * `assaNormais`: o passo leste é a média de cos φ na célula, que não zera nem
+ * na linha do polo (vale Δφ/2). Sem a opção, os bytes são os de sempre.
  */
-export function assaNormaisPorMediaDeArea(alturaM, Wf, Hf, W, H, raioM) {
+export function assaNormaisPorMediaDeArea(alturaM, Wf, Hf, W, H, raioM, { travaNoSul = true } = {}) {
   const h = alturaM;
   const rx = Wf / W;
   const ry = Hf / H;
@@ -1142,7 +1242,8 @@ export function assaNormaisPorMediaDeArea(alturaM, Wf, Hf, W, H, raioM) {
     }
     const sul = bordaHorizontal(j + 1);
     const fiN = Math.PI / 2 - j * dLat;
-    const cj = Math.max((Math.sin(fiN) - Math.sin(fiN - dLat)) / dLat, cosTrava);
+    const mediaDoCos = (Math.sin(fiN) - Math.sin(fiN - dLat)) / dLat;
+    const cj = travaNoSul || fiN - dLat / 2 >= 0 ? Math.max(mediaDoCos, cosTrava) : mediaDoCos;
     const passoLeste = raioM * dLon * cj;
     const passoNorte = raioM * dLat;
     for (let i = 0; i < W; i += 1) {
@@ -1165,6 +1266,295 @@ export function assaNormaisPorMediaDeArea(alturaM, Wf, Hf, W, H, raioM) {
     rmsGraus: (Math.atan(Math.sqrt(somaDeclive2 / (W * H))) * 180) / Math.PI,
     maxGraus: (Math.atan(Math.sqrt(maiorDeclive)) * 180) / Math.PI,
   };
+}
+
+// ------------------------------------------------------------
+// O DEM LOCAL (Encélado, R4)
+// ------------------------------------------------------------
+
+/**
+ * A GEORREFERÊNCIA de um GeoTIFF clássico little-endian, em graus: onde cai
+ * a borda esquerda e o topo, e quanto a grade cobre. Lê ModelPixelScale
+ * (33550), ModelTiepoint (33922) e as chaves do GeoKeyDirectory (34735, com
+ * os duplos de 34736): modelo (1024: 2 = geográfico, em graus; senão
+ * equirretangular em metros), PixelIsPoint (1025 = 2, meio pixel), o raio
+ * (2057), o meridiano central (3088 ou 3080), o paralelo de escala (3078) e
+ * o falso leste/norte (3082/3083). Sem o raio, a grade cobre 360° por
+ * hipótese. Sem as duas tags, `null`. Pura.
+ */
+export function georreferenciaDoTiff(bytes, largura, altura) {
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const ifd = v.getUint32(4, true);
+  const tags = new Map();
+  for (let n = 0, e = ifd + 2; n < v.getUint16(ifd, true); n += 1, e += 12) {
+    const tipo = v.getUint16(e + 2, true);
+    const tam = { 3: 2, 4: 4, 12: 8 }[tipo];
+    if (!tam) continue;
+    const conta = v.getUint32(e + 4, true);
+    const ini = conta * tam <= 4 ? e + 8 : v.getUint32(e + 8, true);
+    const le = (k) =>
+      tipo === 3
+        ? v.getUint16(ini + 2 * k, true)
+        : tipo === 4
+          ? v.getUint32(ini + 4 * k, true)
+          : v.getFloat64(ini + 8 * k, true);
+    tags.set(v.getUint16(e, true), Array.from({ length: conta }, (_, k) => le(k)));
+  }
+  const escala = tags.get(33550);
+  const ancora = tags.get(33922);
+  if (!escala || !ancora) return null;
+  const chave = new Map();
+  const dir = tags.get(34735) ?? [0, 0, 0, 0];
+  const duplos = tags.get(34736) ?? [];
+  for (let k = 0; k < dir[3]; k += 1) {
+    const [id, onde, , valor] = dir.slice(4 + 4 * k, 8 + 4 * k);
+    if (onde === 0) chave.set(id, valor);
+    else if (onde === 34736) chave.set(id, duplos[valor]);
+  }
+  const [sx, sy] = escala;
+  const [i0, j0, , x0, y0] = ancora;
+  const meio = chave.get(1025) === 2 ? 0.5 : 0;
+  const geografica = chave.get(1024) === 2;
+  const raioM = geografica ? null : (chave.get(2057) ?? null);
+  const centralGraus = geografica ? 0 : (chave.get(3088) ?? chave.get(3080) ?? 0);
+  const cosParalelo = Math.cos(((chave.get(3078) ?? 0) * Math.PI) / 180);
+  const grausLat = geografica ? 1 : raioM ? 180 / (Math.PI * raioM) : 360 / (largura * sx);
+  const grausLon = geografica ? 1 : grausLat / cosParalelo;
+  const falso = (k) => (geografica ? 0 : (chave.get(k) ?? 0));
+  return {
+    bordaEsquerdaGraus: centralGraus + (x0 - (i0 + meio) * sx - falso(3082)) * grausLon,
+    topoGraus: (y0 + (j0 + meio) * sy - falso(3083)) * grausLat,
+    larguraGraus: largura * sx * grausLon,
+    alturaGraus: altura * sy * grausLat,
+    raioM,
+    centralGraus,
+    pixelEPonto: meio > 0,
+    geografica,
+  };
+}
+
+/** Diferença de longitudes em (−180, 180]. */
+const difLon = (a, b) => ((((a - b) % 360) + 540) % 360) - 180;
+
+/**
+ * O VEREDITO DA GEORREFERÊNCIA, sem I/O: a borda esquerda do GeoTIFF tem de
+ * ser a declarada a menos de um pixel da fonte, e a grade tem de ser a global
+ * (360° de largura, topo em +90°, 180° de altura, à mesma tolerância).
+ * Recusa dizendo o número que a tabela pediria.
+ */
+export function conferirGeorreferencia(corpo, geo, largura, altura) {
+  const pxLon = 360 / largura;
+  const pxLat = 180 / altura;
+  if (Math.abs(difLon(geo.bordaEsquerdaGraus, corpo.longitudeDaBordaEsquerdaGraus)) > pxLon) {
+    const proposta = ((Math.round(geo.bordaEsquerdaGraus) % 360) + 360) % 360;
+    throw new Error(
+      `o GeoTIFF põe a borda esquerda em ${geo.bordaEsquerdaGraus.toFixed(3)}°E e a tabela ` +
+        `diz ${corpo.longitudeDaBordaEsquerdaGraus}° — com a guarda de acordo, a declaração é ` +
+        `longitudeDaBordaEsquerdaGraus: ${proposta}. Não asso.`
+    );
+  }
+  if (
+    Math.abs(geo.larguraGraus - 360) > pxLon ||
+    Math.abs(geo.topoGraus - 90) > pxLat ||
+    Math.abs(geo.alturaGraus - 180) > 2 * pxLat
+  ) {
+    throw new Error(
+      `o GeoTIFF não é a grade global: ${geo.larguraGraus.toFixed(3)}° de largura, topo em ` +
+        `${geo.topoGraus.toFixed(3)}°, ${geo.alturaGraus.toFixed(3)}° de altura. Não asso.`
+    );
+  }
+}
+
+/**
+ * O DEM LOCAL EM METROS, na grade e na orientação da FONTE. `bytes` é o
+ * GeoTIFF inteiro: `leTiffFloat32` o lê, a largura e a altura têm de ser as
+ * declaradas, a georreferência (se houver) é conferida, e cada valor vira
+ * metro pela conversão da tabela. Sem dado (≤ `semDado`, ou NaN) vira 0 m —
+ * o nível do elipsoide — e é contado. Um DEM que passa do DOBRO da faixa do
+ * byte não está na unidade declarada, e é recusado. Pura.
+ */
+export function lerDemLocal(bytes, corpo) {
+  const { fonte, mapaDeAltura } = corpo;
+  const { largura, altura, valores } = leTiffFloat32(bytes);
+  if (largura !== fonte.largura || altura !== fonte.altura) {
+    throw new Error(`o DEM tem ${largura}x${altura}, a tabela declara ${fonte.largura}x${fonte.altura} — não asso.`);
+  }
+  const geo = georreferenciaDoTiff(bytes, largura, altura);
+  if (geo) conferirGeorreferencia(corpo, geo, largura, altura);
+  let semDado = 0;
+  let minM = Infinity;
+  let maxM = -Infinity;
+  for (let k = 0; k < valores.length; k += 1) {
+    const v = valores[k];
+    if (!(v > fonte.semDado) || !Number.isFinite(v)) {
+      valores[k] = 0;
+      semDado += 1;
+      continue;
+    }
+    const m = v * corpo.metrosPorUnidade + corpo.offsetDoDado;
+    valores[k] = m;
+    if (m < minM) minM = m;
+    if (m > maxM) maxM = m;
+  }
+  const { min, max } = mapaDeAltura.faixaKm;
+  if (minM < 2000 * min || maxM > 2000 * max) {
+    throw new Error(
+      `o DEM vai de ${(minM / 1000).toFixed(2)} a ${(maxM / 1000).toFixed(2)} km, além do dobro da ` +
+        `faixa (${min} a ${max} km) — o dado não está na unidade declarada. Não asso.`
+    );
+  }
+  return { metros: valores, largura, altura, semDado, minM, maxM, geo };
+}
+
+/**
+ * A ALTURA E A NORMAL do DEM local (`lerDemLocal`), na convenção da casa:
+ * a grade fina girada pela borda declarada; a ALTURA, a média de área dela
+ * em `larguraDaAltura` px, em km, no byte da faixa (`quantizaNaFaixa`); a
+ * NORMAL, `assaNormaisPorMediaDeArea` em `larguraDaNormal` px sobre a mesma
+ * grade presa à faixa e ÷ `ganhoDoShader`, no passo de `raioM`, com a trava
+ * do sul da tabela. `presos` conta as amostras finas fora da faixa. Pura.
+ */
+export function relevoDoDem(fina, corpo, { larguraDaNormal = LARGURA_ALVO, larguraDaAltura = corpo.mapaDeAltura.largura } = {}) {
+  const { metros, largura: Wf, altura: Hf } = fina;
+  const { faixaKm, raioDoVerticeKm } = corpo.mapaDeAltura;
+  const giro = LONGITUDE_ESQUERDA_DA_CASA - corpo.longitudeDaBordaEsquerdaGraus;
+  const casa = giraColunasDeImagem(metros, Wf, Hf, 1, giro);
+
+  const Wa = larguraDaAltura;
+  const km = reamostraParaACasa(casa, Wf, Hf, Wa, Wa / 2, LONGITUDE_ESQUERDA_DA_CASA).map((m) => m / 1000);
+  const { bytes, abaixo, acima } = quantizaNaFaixa(km, faixaKm);
+
+  const [lo, hi] = [faixaKm.min * 1000, faixaKm.max * 1000];
+  const presa = new Float32Array(casa.length);
+  let presos = 0;
+  for (let k = 0; k < casa.length; k += 1) {
+    const m = casa[k];
+    if (m < lo || m > hi) presos += 1;
+    presa[k] = Math.min(hi, Math.max(lo, m)) / corpo.ganhoDoShader;
+  }
+  const Wn = larguraDaNormal;
+  const normal = assaNormaisPorMediaDeArea(presa, Wf, Hf, Wn, Wn / 2, corpo.raioM, { travaNoSul: corpo.travaNoSul });
+  return {
+    altura: { bytes, largura: Wa, altura: Wa / 2, abaixo, acima },
+    normal: { ...normal, largura: Wn, altura: Wn / 2 },
+    presos,
+    escalaEVies: escalaEViesDaFaixa(faixaKm, raioDoVerticeKm),
+  };
+}
+
+/**
+ * A ENCOSTA FÍSICA por faixa de latitude, lida do RGB assado (`ganho` é o
+ * do shader): `[{ faixa, rmsGraus, maxGraus }]`. É a conta que diz se o polo
+ * sem trava saiu com parede.
+ */
+function encostaPorFaixa(rgb, largura, altura, ganho, faixas) {
+  return faixas.map(([de, ate]) => {
+    let soma = 0;
+    let n = 0;
+    let max = 0;
+    for (let j = 0; j < altura; j += 1) {
+      const lat = 90 - ((j + 0.5) / altura) * 180;
+      if (lat > Math.max(de, ate) || lat < Math.min(de, ate)) continue;
+      for (let i = 0; i < largura; i += 1) {
+        const k = (j * largura + i) * 3;
+        const [x, y, z] = [rgb[k], rgb[k + 1], rgb[k + 2]].map((b) => (b / 255) * 2 - 1);
+        const s = (ganho * Math.hypot(x, y)) / z;
+        soma += s * s;
+        n += 1;
+        if (s > max) max = s;
+      }
+    }
+    const graus = (s) => (Math.atan(s) * 180) / Math.PI;
+    return { faixa: `${de}…${ate}°`, rmsGraus: graus(Math.sqrt(soma / n)), maxGraus: graus(max) };
+  });
+}
+
+/**
+ * ASSA ENCÉLADO (ver o cabeçalho): lê o DEM do cache (ou de `--dem`),
+ * confere o sha256 pinado, a georreferência, a guarda (meia volta e, aqui,
+ * o espelho) e grava `height.png` (cinza, 8 bits) e `normal.png` (RGB) em
+ * `destino`.
+ */
+export async function assaDoDemLocal(corpo, destino, mapaDeCor, { varredura, caminhoDado }) {
+  const { fonte } = corpo;
+  const caminho = caminhoDado || path.join(rootDirectory, fonte.arquivo);
+  const relativo = path.relative(rootDirectory, caminho);
+  if (!existsSync(caminho)) {
+    throw new Error(`sem o DEM em ${relativo} — baixe-o antes: curl -L --fail -o ${relativo} ${fonte.url}`);
+  }
+  const bytes = await readFile(caminho);
+  const hash = sha256(bytes);
+  console.log(`${fonte.descricao}: ${relativo} (${megabytes(bytes.length)}), sha256 ${hash}.`);
+  if (fonte.sha256 && hash !== fonte.sha256) {
+    throw new Error(`o sha256 do DEM não é o pinado (${fonte.sha256}) — outro arquivo, não asso.`);
+  }
+  if (!fonte.sha256) console.log('  sha256 ainda não pinado: com a palavra dele, entra em CORPOS.enceladus.fonte.sha256.');
+
+  const fina = lerDemLocal(bytes, corpo);
+  const { geo } = fina;
+  console.log(
+    geo
+      ? `georreferência: borda esquerda ${geo.bordaEsquerdaGraus.toFixed(4)}°E, topo ${geo.topoGraus.toFixed(4)}°, ` +
+          `${geo.larguraGraus.toFixed(4)}° × ${geo.alturaGraus.toFixed(4)}°, raio ${geo.raioM ?? 'ausente'} m, ` +
+          `meridiano central ${geo.centralGraus}°${geo.pixelEPonto ? ', PixelIsPoint' : ''} — confere com a tabela.`
+      : 'georreferência: o TIFF não traz ModelPixelScale/ModelTiepoint — quem decide a borda é a guarda.'
+  );
+  console.log(
+    `alturas: ${(fina.minM / 1000).toFixed(3)} a ${(fina.maxM / 1000).toFixed(3)} km; ` +
+      `${fina.semDado} amostras sem dado (postas em 0 m).`
+  );
+
+  // ---- a guarda: a meia volta (a de sempre) e o espelho
+  const L = LARGURA_DA_GUARDA;
+  // na orientação da FONTE: a borda da casa como borda da fonte é giro nenhum
+  const gradeDaGuarda = {
+    metros: reamostraParaACasa(fina.metros, fina.largura, fina.altura, L, L / 2, LONGITUDE_ESQUERDA_DA_CASA),
+    largura: L,
+    altura: L / 2,
+  };
+  const { bordaDeclarada } = await guardaDeAlinhamento(corpo, gradeDaGuarda, mapaDeCor, varredura);
+  const espelho = melhorBordaDoEspelho(corpo, gradeDaGuarda, await albedoDaGuarda(mapaDeCor));
+  console.log(`espelho: melhor energia de borda ${espelho.toFixed(4)} nas 72 defasagens.`);
+  if (!(bordaDeclarada > espelho)) {
+    throw new Error(
+      `o DEM ESPELHADO casa melhor com a cor (${espelho.toFixed(4)} contra ${bordaDeclarada.toFixed(4)}) — ` +
+        'a longitude cresce para o outro lado. Não asso.'
+    );
+  }
+
+  // ---- a altura e a normal
+  const r = relevoDoDem(fina, corpo);
+  const { altura: alt, normal } = r;
+  const fisico = (graus) => (Math.atan(corpo.ganhoDoShader * Math.tan((graus * Math.PI) / 180)) * 180) / Math.PI;
+  console.log(
+    `altura: ${alt.largura}x${alt.altura}, faixa ${corpo.mapaDeAltura.faixaKm.min} a ` +
+      `${corpo.mapaDeAltura.faixaKm.max} km, ${alt.abaixo + alt.acima} texels saturados; ` +
+      `${r.presos} amostras finas presas à faixa na normal.`
+  );
+  console.log(
+    `RELEVO_DA_LUA.${corpo.diretorio} (rochoso.ts) tem de ser { escala: ${r.escalaEVies.escala}, ` +
+      `vies: ${r.escalaEVies.vies} } — o juiz do gerador cobra.`
+  );
+  console.log(
+    `normal: ${normal.largura}x${normal.altura}, inclinação física RMS ${fisico(normal.rmsGraus).toFixed(2)}°, ` +
+      `máxima ${fisico(normal.maxGraus).toFixed(2)}° (mapa ÷ ${corpo.ganhoDoShader}, ganho do shader).`
+  );
+  const faixas = [[-80, -85], [-85, -89], [-89, -90], [80, 85]];
+  for (const f of encostaPorFaixa(normal.rgb, normal.largura, normal.altura, corpo.ganhoDoShader, faixas)) {
+    console.log(`  ${f.faixa}: RMS ${f.rmsGraus.toFixed(2)}°, máxima ${f.maxGraus.toFixed(2)}°`);
+  }
+
+  await mkdir(destino, { recursive: true });
+  const opcoes = { compressionLevel: 9, adaptiveFiltering: false };
+  for (const [nome, dados, canais, l, a] of [
+    ['height.png', Buffer.from(alt.bytes), 1, alt.largura, alt.altura],
+    ['normal.png', normal.rgb, 3, normal.largura, normal.altura],
+  ]) {
+    const saida = path.join(destino, nome);
+    await sharp(dados, { raw: { width: l, height: a, channels: canais } }).png(opcoes).toFile(saida);
+    const { size } = await stat(saida);
+    console.log(`assado: ${path.relative(rootDirectory, saida)} ${l}x${a} (${megabytes(size)}).`);
+  }
 }
 
 // ------------------------------------------------------------
@@ -1334,6 +1724,16 @@ async function main() {
     .find((p) => existsSync(p));
   if (!mapaDeCor) {
     throw new Error(`sem o mapa de cor em ${destino} — a guarda de alinhamento precisa dele.`);
+  }
+
+  // Encélado: o DEM inteiro do arquivo local, altura e normal (ver o cabeçalho)
+  if (corpo.fonte.tipo === 'tif-local') {
+    await assaDoDemLocal(corpo, destino, mapaDeCor, { varredura, caminhoDado });
+    console.log(
+      `agora: node scripts/data/atlas/otimiza-texturas.mjs ${corpo.diretorio} && ` +
+        'node scripts/data/atlas/gera-manifest-texturas.mjs'
+    );
+    return;
   }
 
   // o cache das alturas (ver o cabeçalho): achado e conferido, dispensa a rede

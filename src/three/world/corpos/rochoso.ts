@@ -219,7 +219,8 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
 
 /**
  * O RELEVO POR LUA (item 134/S2) — `span`/`bias` como FRAÇÃO DO RAIO,
- * copiados do `relief.json` do projeto Saturn do dono. O raio do vértice
+ * copiados do `relief.json` do projeto Saturn do dono (menos os que já
+ * nascem nesta casa, cada um com a sua nota abaixo). O raio do vértice
  * vira `1 + vies + altura·escala`: o viés é negativo para que a média
  * fique no raio nominal de `BODY_AXES` (a esfera não engorda).
  *
@@ -243,7 +244,10 @@ export const RELEVO_DA_LUA: Readonly<
   Record<string, { escala: number; vies: number; horizonte?: true | 'soDoRelevo' }>
 > = {
   mimas: { escala: 0.10200225260766879, vies: -0.04611062610562858 },
-  enceladus: { escala: 0.009472107707579332, vies: -0.005141926965558401 },
+  // Encélado (R4, 13/10/2026): assado nesta casa do DEM de 200 m
+  // (`gera-normal-de-dem.mjs`), a faixa inteira dele, −2,73 a +2,34 km, ÷ 256,6 km
+  // (`escalaEViesDaFaixa`; o juiz do gerador cobra este par).
+  enceladus: { escala: 0.01975837879968823, vies: -0.01063912704598597 },
   tethys: { escala: 0.03387224437534385, vies: -0.016188330361680364 },
   dione: { escala: 0.01065032313122289, vies: -0.005189992373296278 },
   // S2b — Reia e Jápeto entram por ORDEM DELE (02/09): "queremos o relevo

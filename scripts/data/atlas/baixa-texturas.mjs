@@ -44,8 +44,9 @@
 //     graduados por ele, MAIS os mapas de altura/normal das mesmas
 //     seis (item 134/S2, `public/textures/relief/<lua>_<canal>.png`) —
 //     menos os de Jápeto (item 230) e os de Reia (PLAN-REIA.md), que
-//     nascem nesta casa (ver `relevoJapeto` e `relevoReia`, abaixo). São
-//     CATORZE entradas, e o `--offline` delas quer o diretório do
+//     nascem nesta casa (ver `relevoJapeto` e `relevoReia`, abaixo), e os
+//     de Encélado (R4), que saem do DEM por `gera-normal-de-dem.mjs`. São
+//     DOZE entradas, e o `--offline` delas quer o diretório do
 //     SATURN, não o do atlas-orbital: os mosaicos são
 //     `public/textures/<lua>.jpg`. Todas levam
 //     `giroDeLongitudeGraus: 180` — o layout Schenk põe o sub-Saturno
@@ -501,12 +502,12 @@ export const FONTES = [
   },
   // O RELEVO DAS SEIS (item 134/S2): `height` e `normal` de cada uma, em
   // 1024×512 — o mesmo `public/textures/relief/` do projeto Saturn, a
-  // mesma meia volta. Encélado é o único que vem em 2048 e desce para a
-  // largura da casa. A proveniência de cada modelo (Gaskell, Schenk &
-  // McKinnon, Weirich) mora em docs/reference/ASSETS.md e no manifest, não
-  // aqui. Jápeto saiu desta lista no item 230 e Reia no PLAN-REIA.md: o
-  // relevo das duas nasce nesta casa (logo abaixo).
-  ...['mimas', 'enceladus', 'tethys', 'dione'].flatMap((corpo) =>
+  // mesma meia volta. A proveniência de cada modelo (Gaskell, Weirich) mora
+  // em docs/reference/ASSETS.md e no manifest, não aqui. Jápeto saiu desta
+  // lista no item 230 e Reia no PLAN-REIA.md: o relevo das duas nasce nesta
+  // casa (logo abaixo). Encélado saiu na R4 da régua: altura e normal saem
+  // do DEM de 200 m por `gera-normal-de-dem.mjs`, não daqui.
+  ...['mimas', 'tethys', 'dione'].flatMap((corpo) =>
     ['height', 'normal'].map((canal) => ({
       corpo,
       canal,

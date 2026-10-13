@@ -469,8 +469,8 @@ export const EM_INGLES = new Map([
     'Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira).',
   ],
   [
-    'Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira).',
-    'Topography: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Map baked in the Saturn project (Felipe Ferreira).',
+    'Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.',
+    'Topography: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distributed by USGS Astrogeology (Astropedia). Map baked by the app.',
   ],
   [
     'Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).',
@@ -550,9 +550,10 @@ export const EM_INGLES = new Map([
     'é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor',
     'this is the cloud tops, not the ground: the surface of Venus has no photograph in visible light — what exists is radar, and radar is not color',
   ],
+  // 13/10/2026 — Encélado com o relevo assado do DEM de 200 m (R4)
   [
-    'DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul',
-    'a 200 m DEM resampled to 1024 px: what you see is the overall shape, not the individual fracture at the south pole',
+    'relevo medido pelo DEM de 200 m, com a altura em 1024 px e a luz em 4096 px (~0,4 km por texel): o detalhe menor que ~1 km sai liso (a confirmar pela medida)',
+    'relief measured by the 200 m DEM, with the height at 1024 px and the light at 4096 px (~0.4 km per texel): detail smaller than ~1 km comes out smooth (to be confirmed by the measurement)',
   ],
   // 10/10/2026 — Mimas, Tétis e Dione ganham a nota do relevo (R3)
   [

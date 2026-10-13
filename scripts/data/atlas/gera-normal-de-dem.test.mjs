@@ -24,6 +24,9 @@
 //     silêncio.
 //  8. O PORTÃO DO RELEVO INVENTADO. Plutão e Caronte só gravam o RGB que o
 //     dono aprovou para as escolhas do JSON; o resto imprime o hash e recusa.
+//  9. ENCÉLADO (R4). O DEM local: a trava do sul desligada, o par escala/viés
+//     do vértice sobre a faixa inteira, e um GeoTIFF float32 sintético que
+//     volta como a normal e a altura esperadas, com a borda conferida.
 //
 // Nada aqui toca rede ou o DEM (o único disco é a pasta temporária que a
 // seção 7 cria e apaga, para o cache das alturas): o script foi partido
@@ -38,7 +41,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BODY_AXES } from '../../../src/lib/atlas/iauOrientation.ts';
-import { NORMAL_MEDIDA } from '../../../src/three/world/corpos/rochoso.ts';
+import { NORMAL_MEDIDA, RELEVO_DA_LUA } from '../../../src/three/world/corpos/rochoso.ts';
 import { giraColunasDeImagem } from './lib-texturas.mjs';
 import {
   CORPOS,
@@ -49,10 +52,13 @@ import {
   decideGravacao,
   gravarCacheDeAlturas,
   lerCacheDeAlturas,
+  lerDemLocal,
   mediaDeCaixa,
   medirAlinhamento,
+  relevoDoDem,
 } from './gera-normal-de-dem.mjs';
 import { chaveDasEscolhas } from './relevo-inventado.mjs';
+import { escalaEViesDaFaixa, quantizaNaFaixa } from './relevo-por-foto.mjs';
 
 const L = 64;
 const A = 32;
@@ -299,6 +305,10 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     // 0°, a meia volta do mapa de cor), Caronte com 0° (borda em 180°)
     expect(CORPOS.pluto).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 0 });
     expect(CORPOS.charon).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 180 });
+    // Encélado (R4): o float32 é altura em KM sobre o elipsoide de Thomas
+    // 2016, e o GeoTIFF vai de −180 a 180° (giro 0) — a georreferência confere
+    expect(CORPOS.enceladus).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1000, longitudeDaBordaEsquerdaGraus: 180 });
+    expect(CORPOS.enceladus.eixosDaCasaKm).toBeUndefined();
     // e só os dois DEMs parciais ligam a máscara do vazio e o relevo
     // inventado nela: os cinco de antes assam sem ela, byte a byte como antes
     expect(Object.keys(CORPOS).filter((id) => CORPOS[id].vazioInventado)).toEqual(['pluto', 'charon']);
@@ -317,7 +327,7 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     expect(Object.keys(CORPOS).filter((id) => CORPOS[id].cacheDeAlturas)).toEqual(['pluto', 'charon']);
     // e NINGUÉM fica de fora do pino: corpo novo entra na tabela com as
     // três declarações ou reprova aqui, em vez de assar por padrão mudo
-    expect(Object.keys(CORPOS)).toEqual(['moon', 'mercury', 'mars', 'ceres', 'vesta', 'pluto', 'charon']);
+    expect(Object.keys(CORPOS)).toEqual(['moon', 'mercury', 'mars', 'ceres', 'vesta', 'pluto', 'charon', 'enceladus']);
     for (const [id, c] of Object.entries(CORPOS)) {
       expect(Number.isFinite(c.offsetDoDado), `${id} offset`).toBe(true);
       expect(Number.isFinite(c.metrosPorUnidade), `${id} escala`).toBe(true);
@@ -340,15 +350,18 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     expect(CORPOS.vesta.eixosDaCasaKm).toEqual({ a: (aVesta + bVesta) / 2, c: cVesta });
   });
 
-  it('quem o gerador assa é quem o `rochoso.ts` lê como NORMAL_MEDIDA (+ a Lua)', () => {
+  it('quem o gerador assa é quem o `rochoso.ts` lê como NORMAL_MEDIDA (+ a Lua e Encélado)', () => {
     // as duas listas se desencontram calado: um corpo assado e fora da
     // `NORMAL_MEDIDA` gasta disco que o shader nunca lê, e um corpo na
     // `NORMAL_MEDIDA` sem entrada aqui pede um normal.png que ninguém
-    // assa. A Lua é a exceção declarada: ela lê a normal por outro
-    // caminho (`RELEVO_DA_LUA`/mapa), não pelo interruptor do bump.
+    // assa. As exceções declaradas leem a normal por outro caminho: a Lua
+    // (o mapa dela), e Encélado, que desloca vértice e por isso está em
+    // `RELEVO_DA_LUA` — e só ele assa a altura aqui.
     expect(Object.keys(CORPOS).sort()).toEqual(
-      [...Object.keys(NORMAL_MEDIDA), 'moon'].sort()
+      [...Object.keys(NORMAL_MEDIDA), 'moon', 'enceladus'].sort()
     );
+    expect(Object.keys(CORPOS).filter((id) => CORPOS[id].mapaDeAltura)).toEqual(['enceladus']);
+    expect(RELEVO_DA_LUA.enceladus).toBeDefined();
   });
 });
 
@@ -551,5 +564,135 @@ describe('8. o portão do relevo inventado (Plutão e Caronte, E8)', () => {
       expect(semEntrada.mensagem).toMatch(/ainda não aprovado/);
       expect(semEntrada.mensagem).toContain(a);
     }
+  });
+});
+
+describe('9. Encélado (R4): o DEM local vira altura e normal', () => {
+  /** a encosta física da rampa, alta de propósito (as alturas da seção 1) */
+  const S = Math.tan((20 * Math.PI) / 180);
+  /** um corpo de 1 km de raio: a rampa de 20° cabe na faixa do byte (±1,14 km) */
+  const R = 1000;
+  const [Wf, Hf] = [64, 32];
+  const ENCELADO = { ...CORPOS.enceladus, raioM: R, fonte: { ...CORPOS.enceladus.fonte, largura: Wf, altura: Hf } };
+  const opcoes = { larguraDaNormal: 32, larguraDaAltura: 16 };
+
+  /** a rampa LESTE de encosta física S, em metros, na grade da casa (a coluna 0 em −180°) */
+  const rampa = () =>
+    grade((i, j) => S * R * Math.cos(latDe(j, Hf)) * (((i + 0.5) / Wf) * 2 * Math.PI - Math.PI), Wf, Hf);
+
+  /** a encosta leste FÍSICA que a tela vê: o mapa × o ganho do shader */
+  const leste = (rgb, i, j, largura = 32) => {
+    const n = normalEm(rgb, i, j, largura);
+    return (-n.x / n.z) * CORPOS.enceladus.ganhoDoShader;
+  };
+
+  /**
+   * UM GeoTIFF float32 MÍNIMO, por tiras de uma linha, clássico little-endian:
+   * as tags que `leTiffFloat32` e `georreferenciaDoTiff` leem, equirretangular
+   * em metros na esfera de `raioM`, PixelIsArea, meridiano central 0° e a
+   * borda esquerda em `bordaGraus`.
+   */
+  function geoTiff(valores, { raioM = R, bordaGraus = 180 } = {}) {
+    const tam = { 3: 2, 4: 4, 12: 8 };
+    const x0 = ((((bordaGraus + 180) % 360) - 180) * Math.PI * raioM) / 180;
+    const tags = [
+      [256, 4, [Wf]], [257, 4, [Hf]], [258, 3, [32]], [259, 3, [1]], [262, 3, [1]],
+      [273, 4, new Array(Hf).fill(0)], [277, 3, [1]], [278, 4, [1]], [279, 4, new Array(Hf).fill(4 * Wf)],
+      [339, 3, [3]],
+      [33550, 12, [(2 * Math.PI * raioM) / Wf, (Math.PI * raioM) / Hf, 0]],
+      [33922, 12, [0, 0, 0, x0, (Math.PI * raioM) / 2, 0]],
+      [34735, 3, [1, 1, 0, 4, 1024, 0, 1, 1, 1025, 0, 1, 1, 2057, 34736, 1, 0, 3088, 34736, 1, 1]],
+      [34736, 12, [raioM, 0]],
+    ];
+    let fim = 8 + 2 + 12 * tags.length + 4;
+    const fora = tags.map(([, tipo, v]) => {
+      const n = tam[tipo] * v.length;
+      if (n <= 4) return null;
+      const p = fim;
+      fim += n;
+      return p;
+    });
+    tags.find(([id]) => id === 273)[2] = Array.from({ length: Hf }, (_, j) => fim + j * 4 * Wf);
+    const b = Buffer.alloc(fim + 4 * Wf * Hf);
+    b.write('II', 0, 'ascii');
+    b.writeUInt16LE(42, 2);
+    b.writeUInt32LE(8, 4);
+    b.writeUInt16LE(tags.length, 8);
+    tags.forEach(([id, tipo, v], n) => {
+      const e = 10 + 12 * n;
+      b.writeUInt16LE(id, e);
+      b.writeUInt16LE(tipo, e + 2);
+      b.writeUInt32LE(v.length, e + 4);
+      if (fora[n] !== null) b.writeUInt32LE(fora[n], e + 8);
+      const o = fora[n] ?? e + 8;
+      v.forEach((x, k) => {
+        if (tipo === 3) b.writeUInt16LE(x, o + 2 * k);
+        else if (tipo === 4) b.writeUInt32LE(x, o + 4 * k);
+        else b.writeDoubleLE(x, o + 8 * k);
+      });
+    });
+    valores.forEach((x, k) => b.writeFloatLE(x, fim + 4 * k));
+    return b;
+  }
+
+  it('a trava do sul está DESLIGADA: a encosta leste perto do polo sul sai física, a do norte segue presa', () => {
+    expect(CORPOS.enceladus.travaNoSul).toBe(false);
+    const { normal } = relevoDoDem({ metros: rampa(), largura: Wf, altura: Hf }, ENCELADO, opcoes);
+    // a coluna 16 cai em ~6°E, onde a rampa quase não inclina para o norte
+    for (const j of [4, 8, 11]) expect(leste(normal.rgb, 16, j), `linha ${j}`).toBeCloseTo(S, 1);
+    // a última linha (78,75–90°S): o passo leste é a média de cos φ da célula
+    expect(leste(normal.rgb, 16, 15)).toBeCloseTo(S, 1);
+    // a primeira (78,75–90°N) segue presa em 80°: a mesma rampa sai quase pela metade
+    expect(leste(normal.rgb, 16, 0)).toBeLessThan(0.7 * S);
+    // e a conta da Terra, sem a opção, prende os dois polos como sempre
+    const terra = assaNormaisPorMediaDeArea(rampa().map((m) => m / 1.2), Wf, Hf, 32, 16, R);
+    expect(leste(terra.rgb, 16, 15)).toBeLessThan(0.7 * S);
+  });
+
+  it('a escala e o viés de RELEVO_DA_LUA.enceladus cobrem −2,73…+2,34 km em raios de BODY_AXES', () => {
+    const { faixaKm, raioDoVerticeKm } = CORPOS.enceladus.mapaDeAltura;
+    expect(faixaKm).toEqual({ min: -2.73, max: 2.34 });
+    expect(raioDoVerticeKm).toBe(BODY_AXES.enceladus[0]);
+    expect(RELEVO_DA_LUA.enceladus).toEqual(escalaEViesDaFaixa(faixaKm, raioDoVerticeKm));
+    // o vértice é 1 + viés + (byte/255)·escala: o byte 0 é o fundo do DEM e o 255 o topo
+    const { escala, vies } = RELEVO_DA_LUA.enceladus;
+    expect(vies * raioDoVerticeKm).toBeCloseTo(-2.73, 9);
+    expect((vies + escala) * raioDoVerticeKm).toBeCloseTo(2.34, 9);
+    // e a altura zero (o elipsoide) cai no raio nominal, a meio degrau do byte
+    const zero = quantizaNaFaixa([0], faixaKm).bytes[0];
+    expect(Math.abs(vies + (zero / 255) * escala) * raioDoVerticeKm).toBeLessThan(5.07 / 255 / 2);
+  });
+
+  it('um GeoTIFF float32 sintético volta como a normal e a altura esperadas, e a borda errada é recusada', () => {
+    const casa = rampa();
+    const km = casa.map((m) => m / 1000);
+    const fina = lerDemLocal(geoTiff(km), ENCELADO);
+    expect(fina).toMatchObject({ largura: Wf, altura: Hf, semDado: 0 });
+    expect(fina.geo.bordaEsquerdaGraus).toBeCloseTo(-180, 9);
+    const r = relevoDoDem(fina, ENCELADO, opcoes);
+    // A NORMAL: longe da emenda, a encosta física da rampa, no mapa ÷ 1,2
+    for (const j of [4, 8, 11]) {
+      for (const i of [8, 16, 24]) expect(leste(r.normal.rgb, i, j), `(${i},${j})`).toBeCloseTo(S, 1);
+    }
+    // A ALTURA: cada texel é a média das 4×4 amostras finas, no byte da faixa
+    const { faixaKm } = CORPOS.enceladus.mapaDeAltura;
+    for (const [I, J] of [[2, 1], [8, 4], [13, 6]]) {
+      let soma = 0;
+      for (let j = 4 * J; j < 4 * J + 4; j += 1) for (let i = 4 * I; i < 4 * I + 4; i += 1) soma += km[j * Wf + i];
+      const esperado = quantizaNaFaixa([soma / 16], faixaKm).bytes[0];
+      expect(Math.abs(r.altura.bytes[J * 16 + I] - esperado), `(${I},${J})`).toBeLessThanOrEqual(1);
+    }
+    expect(r.altura.abaixo + r.altura.acima).toBe(0);
+
+    // O MESMO DEM com a borda em 0° (meia volta): declarado, sai byte a byte igual
+    const meia = giraColunasDeImagem(km, Wf, Hf, 1, 180);
+    const em0 = { ...ENCELADO, longitudeDaBordaEsquerdaGraus: 0 };
+    const r0 = relevoDoDem(lerDemLocal(geoTiff(meia, { bordaGraus: 0 }), em0), em0, opcoes);
+    expect(Buffer.from(r0.normal.rgb).equals(Buffer.from(r.normal.rgb))).toBe(true);
+    expect(Buffer.from(r0.altura.bytes).equals(Buffer.from(r.altura.bytes))).toBe(true);
+    // e NÃO declarado: a georreferência recusa e diz o número
+    expect(() => lerDemLocal(geoTiff(meia, { bordaGraus: 0 }), ENCELADO)).toThrow(/longitudeDaBordaEsquerdaGraus: 0\b/);
+    // e o dado em metros no lugar de km também não passa
+    expect(() => lerDemLocal(geoTiff(casa), ENCELADO)).toThrow(/unidade declarada/);
   });
 });

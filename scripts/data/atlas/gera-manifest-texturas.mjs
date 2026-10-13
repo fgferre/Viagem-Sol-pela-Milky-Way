@@ -484,18 +484,24 @@ const ORIGENS = {
     atribuicao: 'Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).',
     proveniencia: 'derivado',
   },
+  // R4 da régua (13/10/2026): o relevo de Encélado deixa o projeto Saturn e
+  // nasce nesta casa do mesmo DEM (`gera-normal-de-dem.mjs`): a altura em
+  // 1024 px com a faixa inteira e a normal em 4096. A página antiga do
+  // Astropedia (`enceladus_dem_global_200m`) devolve 404.
   'enceladus/height': {
     fonte: 'DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de ALTURA',
-    url: 'https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m',
+    url: 'https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-dem-200m-schenk',
     licenca: 'domínio público, com citação obrigatória',
-    atribuicao: 'Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira).',
+    atribuicao:
+      'Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.',
     proveniencia: 'derivado',
   },
   'enceladus/normal': {
     fonte: 'DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura',
-    url: 'https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m',
+    url: 'https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-dem-200m-schenk',
     licenca: 'domínio público, com citação obrigatória',
-    atribuicao: 'Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira).',
+    atribuicao:
+      'Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.',
     proveniencia: 'derivado',
   },
   'dione/height': {
