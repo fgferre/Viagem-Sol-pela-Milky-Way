@@ -24,9 +24,12 @@
 //     silêncio.
 //  8. O PORTÃO DO RELEVO INVENTADO. Plutão e Caronte só gravam o RGB que o
 //     dono aprovou para as escolhas do JSON; o resto imprime o hash e recusa.
-//  9. ENCÉLADO (R4). O DEM local: a trava do sul desligada, o par escala/viés
-//     do vértice sobre a faixa inteira, e um GeoTIFF float32 sintético que
-//     volta como a normal e a altura esperadas, com a borda conferida.
+//  9. ENCÉLADO (R4). O DEM local: as calotas polares (a encosta conhecida
+//     de 85° ao polo, nos dois polos, mesmo com serrilhado entre colunas), a
+//     emenda 0°/360° sem costura com a margem sem dado do arquivo, o par
+//     escala/viés do vértice sobre a faixa inteira, um GeoTIFF float32
+//     sintético que volta como a normal e a altura esperadas, com a borda
+//     conferida, e Vesta, a Lua e a Terra pinadas byte a byte.
 //
 // Nada aqui toca rede ou o DEM (o único disco é a pasta temporária que a
 // seção 7 cria e apaga, para o cache das alturas): o script foi partido
@@ -36,6 +39,7 @@
 // DEM é `giraColunasDeImagem` (`lib-texturas.mjs`), a MESMA função que
 // gira imagem na aquisição.
 // ============================================================
+import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -576,7 +580,8 @@ describe('9. Encélado (R4): o DEM local vira altura e normal', () => {
   /** um corpo de 1 km de raio: a rampa de 20° cabe na faixa do byte (±1,14 km) */
   const R = 1000;
   const [Wf, Hf] = [64, 32];
-  const ENCELADO = { ...CORPOS.enceladus, raioM: R, fonte: { ...CORPOS.enceladus.fonte, largura: Wf, altura: Hf } };
+  // o arquivo traz a margem sem dado da tabela: uma coluna e uma linha a mais
+  const ENCELADO = { ...CORPOS.enceladus, raioM: R, fonte: { ...CORPOS.enceladus.fonte, largura: Wf + 1, altura: Hf + 1 } };
   const opcoes = { larguraDaNormal: 32, larguraDaAltura: 16 };
 
   /** a borda que a tabela declara (0°: o layout Schenk, a meia volta da casa) */
@@ -595,22 +600,28 @@ describe('9. Encélado (R4): o DEM local vira altura e normal', () => {
     return (-n.x / n.z) * CORPOS.enceladus.ganhoDoShader;
   };
 
+  /** o sem-dado de float do GDAL: o menor float32 */
+  const SEM_DADO = -3.4028234663852886e38;
+
   /**
    * UM GeoTIFF float32 MÍNIMO, por tiras de uma linha, clássico little-endian:
    * as tags que `leTiffFloat32` e `georreferenciaDoTiff` leem, equirretangular
    * em metros na esfera de `raioM`, PixelIsArea. Como o arquivo real: o
-   * meridiano central a meia volta da borda esquerda (`bordaGraus` + 180°) e
-   * a âncora em −π·raio.
+   * meridiano central a meia volta da borda esquerda (`bordaGraus` + 180°), e
+   * a 1ª coluna e a 1ª linha são margem sem dado (`margemComDado` põe 0 m
+   * nelas), com a âncora um pixel a oeste e ao norte de −π·raio, π·raio/2.
    */
-  function geoTiff(valores, { raioM = R, bordaGraus = BORDA } = {}) {
+  function geoTiff(valores, { raioM = R, bordaGraus = BORDA, margemComDado = false } = {}) {
     const tam = { 3: 2, 4: 4, 12: 8 };
     const central = (bordaGraus + 180) % 360;
+    const [Wt, Ht] = [Wf + 1, Hf + 1];
+    const [sx, sy] = [(2 * Math.PI * raioM) / Wf, (Math.PI * raioM) / Hf];
     const tags = [
-      [256, 4, [Wf]], [257, 4, [Hf]], [258, 3, [32]], [259, 3, [1]], [262, 3, [1]],
-      [273, 4, new Array(Hf).fill(0)], [277, 3, [1]], [278, 4, [1]], [279, 4, new Array(Hf).fill(4 * Wf)],
+      [256, 4, [Wt]], [257, 4, [Ht]], [258, 3, [32]], [259, 3, [1]], [262, 3, [1]],
+      [273, 4, new Array(Ht).fill(0)], [277, 3, [1]], [278, 4, [1]], [279, 4, new Array(Ht).fill(4 * Wt)],
       [339, 3, [3]],
-      [33550, 12, [(2 * Math.PI * raioM) / Wf, (Math.PI * raioM) / Hf, 0]],
-      [33922, 12, [0, 0, 0, -Math.PI * raioM, (Math.PI * raioM) / 2, 0]],
+      [33550, 12, [sx, sy, 0]],
+      [33922, 12, [0, 0, 0, -Math.PI * raioM - sx, (Math.PI * raioM) / 2 + sy, 0]],
       [34735, 3, [1, 1, 0, 4, 1024, 0, 1, 1, 1025, 0, 1, 1, 2057, 34736, 1, 0, 3088, 34736, 1, 1]],
       [34736, 12, [raioM, central]],
     ];
@@ -622,8 +633,8 @@ describe('9. Encélado (R4): o DEM local vira altura e normal', () => {
       fim += n;
       return p;
     });
-    tags.find(([id]) => id === 273)[2] = Array.from({ length: Hf }, (_, j) => fim + j * 4 * Wf);
-    const b = Buffer.alloc(fim + 4 * Wf * Hf);
+    tags.find(([id]) => id === 273)[2] = Array.from({ length: Ht }, (_, j) => fim + j * 4 * Wt);
+    const b = Buffer.alloc(fim + 4 * Wt * Ht);
     b.write('II', 0, 'ascii');
     b.writeUInt16LE(42, 2);
     b.writeUInt32LE(8, 4);
@@ -641,22 +652,103 @@ describe('9. Encélado (R4): o DEM local vira altura e normal', () => {
         else b.writeDoubleLE(x, o + 8 * k);
       });
     });
-    valores.forEach((x, k) => b.writeFloatLE(x, fim + 4 * k));
+    for (let j = 0; j < Ht; j += 1) {
+      for (let i = 0; i < Wt; i += 1) {
+        const x = j && i ? valores[(j - 1) * Wf + i - 1] : margemComDado ? 0 : SEM_DADO;
+        b.writeFloatLE(x, fim + 4 * (j * Wt + i));
+      }
+    }
     return b;
   }
 
-  it('a trava do sul está DESLIGADA: a encosta leste perto do polo sul sai física, a do norte segue presa', () => {
-    expect(CORPOS.enceladus.travaNoSul).toBe(false);
-    const { normal } = relevoDoDem({ metros: naFonte(rampa()), largura: Wf, altura: Hf }, ENCELADO, opcoes);
-    // a coluna 16 cai em ~6°E, onde a rampa quase não inclina para o norte
-    for (const j of [4, 8, 11]) expect(leste(normal.rgb, 16, j), `linha ${j}`).toBeCloseTo(S, 1);
-    // a última linha (78,75–90°S): o passo leste é a média de cos φ da célula
-    expect(leste(normal.rgb, 16, 15)).toBeCloseTo(S, 1);
-    // a primeira (78,75–90°N) segue presa em 80°: a mesma rampa sai quase pela metade
-    expect(leste(normal.rgb, 16, 0)).toBeLessThan(0.7 * S);
-    // e a conta da Terra, sem a opção, prende os dois polos como sempre
-    const terra = assaNormaisPorMediaDeArea(rampa().map((m) => m / 1.2), Wf, Hf, 32, 16, R);
-    expect(leste(terra.rgb, 16, 15)).toBeLessThan(0.7 * S);
+  it('as calotas polares: uma encosta conhecida sai com essa encosta de 85° a 89,9° nos dois polos, mesmo com serrilhado entre colunas', () => {
+    // um plano na grade azimutal de cada polo, h = S·ρ·cos(λ − α) (ρ = R·θ, θ a
+    // colatitude daquele polo), e ±0,5 m alternados entre colunas finas a menos
+    // de 10° do polo — o serrilhado da reprojeção, que a 89,9° virava parede
+    const [W2, H2, Wc, Hc, Rc, alfa] = [2048, 1024, 1024, 512, 100000, 0.7];
+    const fina = grade(
+      (i, j) => {
+        const colat = Math.PI / 2 - Math.abs(Math.PI / 2 - ((j + 0.5) / H2) * Math.PI);
+        const lambda = -Math.PI + ((i + 0.5) / W2) * 2 * Math.PI;
+        return S * Rc * colat * Math.cos(lambda - alfa) + (colat < 0.17 ? 0.5 * (-1) ** i : 0);
+      },
+      W2,
+      H2
+    );
+    const comCalotas = assaNormaisPorMediaDeArea(fina, W2, H2, Wc, Hc, Rc, { calotas: CORPOS.enceladus.calotasPolares });
+    const semCalotas = assaNormaisPorMediaDeArea(fina, W2, H2, Wc, Hc, Rc);
+    let [pior, piorSem, linhas] = [0, 0, 0];
+    for (let j = 0; j < Hc; j += 1) {
+      const fi = Math.PI / 2 - ((j + 0.5) / Hc) * Math.PI;
+      if (Math.abs(fi) < (85 * Math.PI) / 180) continue;
+      linhas += 1;
+      const colat = Math.PI / 2 - Math.abs(fi);
+      for (let i = 0; i < Wc; i += 1) {
+        const lambda = -Math.PI + ((i + 0.5) / Wc) * 2 * Math.PI;
+        // o norte se afasta do polo sul e se aproxima do norte; o leste do
+        // plano estica θ/sen θ contra o chão
+        const leste = -S * (colat / Math.sin(colat)) * Math.sin(lambda - alfa);
+        const norte = (fi < 0 ? 1 : -1) * S * Math.cos(lambda - alfa);
+        const erro = (rgb) => {
+          const n = normalEm(rgb, i, j, Wc);
+          return Math.hypot(-n.x / n.z - leste, -n.y / n.z - norte);
+        };
+        pior = Math.max(pior, erro(comCalotas.rgb));
+        piorSem = Math.max(piorSem, erro(semCalotas.rgb));
+      }
+    }
+    // 14 linhas por polo, a última a 89,82°
+    expect(linhas).toBe(28);
+    // a quantização de 8 bits sozinha erra até ~0,007
+    expect(pior).toBeLessThan(0.02);
+    // e a mesma grade sem as calotas (a conta da Terra, presa em 80°) sai errada
+    expect(piorSem).toBeGreaterThan(0.2);
+  });
+
+  it('a emenda 0°/360°: um relevo liso que atravessa a borda da fonte sai sem costura, e a margem sem dado é recortada', () => {
+    // h = A·sen(λ + 0,4)·cos φ na casa: a encosta leste é A·cos(λ + 0,4)/R em toda latitude
+    const A = 600;
+    const km = grade(
+      (i, j) => (A / 1000) * Math.sin(-Math.PI + ((i + 0.5) / Wf) * 2 * Math.PI + 0.4) * Math.cos(latDe(j, Hf)),
+      Wf,
+      Hf
+    );
+    const fina = lerDemLocal(geoTiff(naFonte(km)), ENCELADO);
+    expect(fina).toMatchObject({ largura: Wf, altura: Hf, semDado: 0 });
+    const { normal } = relevoDoDem(fina, ENCELADO, opcoes);
+    // a borda da fonte (0°) cai entre as colunas 15 e 16 da casa, e a da casa
+    // (±180°) entre a 31 e a 0: elas e as vizinhas saem com a encosta do relevo
+    // em toda linha, as das calotas também (a quantização de 8 bits e a média
+    // da célula de 11,25° erram até 0,008; a volta da calota quebrada, 0,054)
+    let pior = 0;
+    for (let j = 0; j < 16; j += 1) {
+      for (const i of [30, 31, 0, 1, 14, 15, 16, 17]) {
+        const lambda = -Math.PI + ((i + 0.5) / 32) * 2 * Math.PI;
+        pior = Math.max(pior, Math.abs(leste(normal.rgb, i, j) - (A * Math.cos(lambda + 0.4)) / R));
+      }
+    }
+    expect(pior).toBeLessThan(0.015);
+    // a margem com dado não é margem: recusa
+    expect(() => lerDemLocal(geoTiff(naFonte(km), { margemComDado: true }), ENCELADO)).toThrow(/margem/);
+  });
+
+  it('Vesta, a Lua e a Terra saem byte a byte como antes da R4 (o RGB de um relevo qualquer, pinado)', () => {
+    // senos e um serrilhado: nenhuma simetria que esconda uma conta trocada
+    const relevoQualquer = (Wq, Hq) =>
+      grade((i, j) => 900 * Math.sin(i * 0.7) * Math.cos(j * 0.45) + 37 * ((i * 7 + j * 13) % 11), Wq, Hq);
+    const sha = (rgb) => createHash('sha256').update(rgb).digest('hex');
+    // Vesta e a Lua assam por `assaNormais` (Vesta no passo do elipsoide da casa)
+    const { a, c } = CORPOS.vesta.eixosDaCasaKm;
+    expect(sha(assaNormais(relevoQualquer(L, A), L, A, ((2 * a + c) / 3) * 1000).rgb)).toBe(
+      '7321dc47fb8235058dcebc896967ba978e2e1b8940af6e4f50f77b0ce4a17155'
+    );
+    expect(sha(assaNormais(relevoQualquer(L, A), L, A, CORPOS.moon.raioM).rgb)).toBe(
+      'ee2060f19529cfcfd77053af36f519371e2e99904d30283abf5cdb7c6232c07e'
+    );
+    // a Terra pela média de área, sem as calotas
+    expect(sha(assaNormaisPorMediaDeArea(relevoQualquer(180, 90), 180, 90, L, A, RAIO_M).rgb)).toBe(
+      'e2dad74e384632690ef19ad7e94ae8eca0e2b206fa44a458d728cca32cf249ff'
+    );
   });
 
   it('a escala e o viés de RELEVO_DA_LUA.enceladus cobrem −2,73…+2,34 km em raios de BODY_AXES', () => {

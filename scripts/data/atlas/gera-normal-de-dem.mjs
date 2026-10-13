@@ -189,9 +189,26 @@
 // grade fina (a conta da Terra), com a altura ÷ 1,2 — o ganho tangencial do
 // shader devolve a encosta física, como em Reia. O que a tabela declara de
 // diferente: nada a subtrair (o dado já é altura sobre o elipsoide triaxial
-// de Thomas 2016, ≤ 0,4 km do da casa), a trava de 80° desligada no sul (as
-// listras de tigre passam de 80°S) e, além da meia volta, a guarda recusa o
-// DEM ESPELHADO (a longitude crescendo para o outro lado).
+// de Thomas 2016, ≤ 0,4 km do da casa), a margem sem dado do arquivo
+// (`margemSemDado`: a 1ª coluna e a 1ª linha, recortadas — em 0 m eram a
+// parede da emenda 0°/360° e a do polo norte), as CALOTAS POLARES (abaixo) e,
+// além da meia volta, a guarda recusa o DEM ESPELHADO (a longitude crescendo
+// para o outro lado).
+//
+// AS CALOTAS POLARES (Encélado, R4). Perto do polo a coluna equiretangular
+// mede R·cos φ·Δλ: a 89,9° são 30 cm, e o serrilhado de centímetros que a
+// reprojeção do produtor deixa entre colunas vizinhas virava parede — faixas
+// e riscos de 80°S ao polo, logo onde as listras de tigre o atravessam. A
+// trava de 80° esconderia a parede jogando fora a encosta leste-oeste delas.
+// Acima de `calotasPolares.deGraus` a normal sai de uma grade AZIMUTAL
+// EQUIDISTANTE centrada no polo, no passo do próprio DEM (R·π/Hf, 197 m):
+// a altura é lida ali uma vez (bilinear na grade fina; dentro do meio texel
+// do polo, linear até a média da última linha), e a encosta de cada texel é
+// a média do gradiente num retângulo em volta do centro dele — R·Δφ ao
+// norte, a largura da célula a leste mas nunca menos que o passo do DEM —,
+// pelo fluxo da altura nas quatro bordas, na direção leste/norte do texel
+// (o leste corrigido pelo esticamento θ/sen θ da projeção). Entre
+// `deGraus` e `ateGraus` as duas encostas se misturam por smoothstep.
 // ============================================================
 
 import { createHash } from 'node:crypto';
@@ -241,10 +258,11 @@ const rootDirectory = path.resolve(
  * rodadas seguintes as releem de lá, conferidas por sha256 (ver o
  * cabeçalho).
  *
- * `mapaDeAltura`, `ganhoDoShader` e `travaNoSul` só existem em Encélado (ver
+ * `mapaDeAltura`, `ganhoDoShader` e `calotasPolares` só existem em Encélado (ver
  * o cabeçalho): a altura do vértice (largura, faixa do byte em km e o raio
  * que dá a escala e o viés de `RELEVO_DA_LUA`), o ganho tangencial que o
- * shader aplica à normal e a trava de 80° no hemisfério sul.
+ * shader aplica à normal e a faixa de latitude em que a normal passa da conta
+ * equiretangular para a das calotas polares.
  */
 export const CORPOS = {
   moon: {
@@ -503,11 +521,13 @@ export const CORPOS = {
     // antes (correlação 0,997 com a meia volta, 0,303 sem) e contra a borda
     // da foto (0,221 × 0,024). É a DECLARAÇÃO; a georreferência do GeoTIFF a
     // confere e recusa se divergir — e diz o mesmo: meridiano central 180°,
-    // âncora em −805 000 m na esfera de 256,2 km, borda em −0,03° (0,6 px)
+    // âncora em −805 000 m na esfera de 256,2 km; tirada a margem sem dado
+    // (`fonte.margemSemDado`), a borda cai em +0,017° (0,4 px)
     longitudeDaBordaEsquerdaGraus: 0,
-    // as listras de tigre passam de 80°S: a trava subestimaria a encosta
-    // leste-oeste delas (metade a 85°S, um décimo a 89°S)
-    travaNoSul: false,
+    // as listras de tigre passam de 80°S e atravessam o polo: acima de 60° a
+    // normal sai da calota azimutal equidistante, inteira acima de 70° (ver
+    // `assaNormaisPorMediaDeArea`), sem trava e sem parede
+    calotasPolares: { deGraus: 60, ateGraus: 70 },
     // `ESCALA_DA_NORMAL_DO_RELEVO` (rochoso.ts): a altura entra ÷ 1,2 na
     // normal e a encosta na tela volta a ser a física, como em Reia
     ganhoDoShader: 1.2,
@@ -524,6 +544,12 @@ export const CORPOS = {
       altura: 4025,
       // o sem-dado de float do GDAL é o menor negativo; NaN também conta
       semDado: -1e30,
+      // a 1ª coluna e a 1ª linha do arquivo são MARGEM, inteiras sem dado (as
+      // 12 073 amostras: 8049 + 4025 − 1): a coluna se sobrepõe à última (as
+      // duas caem em 0°/360°) e o centro da linha fica além do polo norte. Em
+      // 0 m, viravam uma parede na emenda e outra no polo; recortadas, sobra a
+      // grade 8048 × 4024 de 0,0447°, com o 2:1 exato
+      margemSemDado: { esquerda: 1, topo: 1 },
       // o arquivo baixado em 13/10/2026 (129 613 723 B): outro é recusado
       sha256: '7c08c46238cde6528c9143f0c667d42cd3bc6ac60c572595a7e6cad2d6775f91',
     },
@@ -1169,6 +1195,93 @@ export function assaNormais(metros, largura, altura, raioM, vazio, { travaNoSul 
   };
 }
 
+/** Amostras da altura em cada borda do retângulo da calota (bilinear: 4 bastam). */
+const AMOSTRAS_POR_BORDA = 4;
+
+/**
+ * A CALOTA POLAR (Encélado, ver o cabeçalho). A altura da grade fina
+ * `alturaM` (Wf·Hf metros, coluna 0 em −180°, linha 0 no norte) é lida uma
+ * vez numa grade AZIMUTAL EQUIDISTANTE centrada no polo (`sul` escolhe qual),
+ * no passo do DEM (R·π/Hf), até a colatitude `ateColatitudeRad`, com x = ρ·cos λ
+ * e y = ρ·sen λ: bilinear na grade fina, com volta em longitude; entre o polo
+ * e o centro da linha fina mais perto dele (meio texel), linear em ρ até a
+ * média dessa linha, que é a altura do polo. Devolve `(fi, lambda,
+ * larguraLesteM, alturaNorteM) → [dh/dLeste, dh/dNorte]`, em metros por metro:
+ * a média do gradiente no retângulo leste × norte em volta de (fi, lambda),
+ * pelo fluxo da altura nas quatro bordas (`AMOSTRAS_POR_BORDA` em cada,
+ * bilinear na grade da calota). No plano o leste estica θ/sen θ (θ, a
+ * colatitude), e o retângulo é desenhado esticado para cobrir a largura
+ * verdadeira. Pura.
+ */
+export function calotaPolar(alturaM, Wf, Hf, raioM, { sul, ateColatitudeRad }) {
+  const h = alturaM;
+  const passo = (raioM * Math.PI) / Hf;
+  const mediaDaLinha = (r) => {
+    let s = 0;
+    for (let i = 0; i < Wf; i += 1) s += h[r * Wf + i];
+    return s / Wf;
+  };
+  const [poloNorte, poloSul] = [mediaDaLinha(0), mediaDaLinha(Hf - 1)];
+  const naFina = (fi, lambda) => {
+    const u = ((lambda + Math.PI) / (2 * Math.PI)) * Wf - 0.5;
+    const u0 = Math.floor(u);
+    const fu = u - u0;
+    const i0 = ((u0 % Wf) + Wf) % Wf;
+    const i1 = (i0 + 1) % Wf;
+    const linha = (r) => h[r * Wf + i0] * (1 - fu) + h[r * Wf + i1] * fu;
+    const v = ((Math.PI / 2 - fi) / Math.PI) * Hf - 0.5;
+    if (v < 0) return poloNorte + (linha(0) - poloNorte) * (2 * v + 1);
+    if (v > Hf - 1) return poloSul + (linha(Hf - 1) - poloSul) * (2 * (Hf - 1 - v) + 1);
+    const r0 = Math.min(Hf - 2, Math.floor(v));
+    const fv = v - r0;
+    return linha(r0) * (1 - fv) + linha(r0 + 1) * fv;
+  };
+  const M = Math.ceil((raioM * ateColatitudeRad) / passo) + 2;
+  const N = 2 * M + 1;
+  const grade = new Float64Array(N * N);
+  for (let b = 0; b < N; b += 1) {
+    const y = (b - M) * passo;
+    for (let a = 0; a < N; a += 1) {
+      const x = (a - M) * passo;
+      const colat = Math.hypot(x, y) / raioM;
+      grade[b * N + a] = naFina(sul ? colat - Math.PI / 2 : Math.PI / 2 - colat, Math.atan2(y, x));
+    }
+  }
+  const naCalota = (x, y) => {
+    const a = Math.min(N - 1, Math.max(0, x / passo + M));
+    const b = Math.min(N - 1, Math.max(0, y / passo + M));
+    const a0 = Math.min(N - 2, Math.floor(a));
+    const b0 = Math.min(N - 2, Math.floor(b));
+    const [fa, fb] = [a - a0, b - b0];
+    const k = b0 * N + a0;
+    return (grade[k] * (1 - fa) + grade[k + 1] * fa) * (1 - fb) + (grade[k + N] * (1 - fa) + grade[k + N + 1] * fa) * fb;
+  };
+  return (fi, lambda, larguraLesteM, alturaNorteM) => {
+    const colat = sul ? fi + Math.PI / 2 : Math.PI / 2 - fi;
+    const [c, s] = [Math.cos(lambda), Math.sin(lambda)];
+    const [px, py] = [raioM * colat * c, raioM * colat * s];
+    // o leste e o norte do texel no plano: o norte se afasta do polo sul e
+    // se aproxima do norte
+    const [ex, ey] = [-s, c];
+    const [nx, ny] = sul ? [c, s] : [-c, -s];
+    const larguraNoPlano = (larguraLesteM * colat) / Math.sin(colat);
+    let [leste, oeste, norte, doSul] = [0, 0, 0, 0];
+    for (let k = 0; k < AMOSTRAS_POR_BORDA; k += 1) {
+      const f = (k + 0.5) / AMOSTRAS_POR_BORDA - 0.5;
+      const [ax, ay] = [px + f * alturaNorteM * nx, py + f * alturaNorteM * ny];
+      leste += naCalota(ax + (larguraNoPlano / 2) * ex, ay + (larguraNoPlano / 2) * ey);
+      oeste += naCalota(ax - (larguraNoPlano / 2) * ex, ay - (larguraNoPlano / 2) * ey);
+      const [bx, by] = [px + f * larguraNoPlano * ex, py + f * larguraNoPlano * ey];
+      norte += naCalota(bx + (alturaNorteM / 2) * nx, by + (alturaNorteM / 2) * ny);
+      doSul += naCalota(bx - (alturaNorteM / 2) * nx, by - (alturaNorteM / 2) * ny);
+    }
+    return [
+      (leste - oeste) / AMOSTRAS_POR_BORDA / larguraLesteM,
+      (norte - doSul) / AMOSTRAS_POR_BORDA / alturaNorteM,
+    ];
+  };
+}
+
 /**
  * A NORMAL PELA MÉDIA DE ÁREA DO GRADIENTE (a Terra, item 232, 08/10) —
  * a normal de cada texel W×H sai da grade FINA de alturas (`alturaM`,
@@ -1186,17 +1299,27 @@ export function assaNormais(metros, largura, altura, raioM, vazio, { travaNoSul 
  * (no ETOPO, declive RMS da terra 1,99° contra 1,43° do 8192 reduzido —
  * `capturas/efeitos-timidos/relevo/numeros.md`). `{ rgb, rmsGraus, maxGraus }`.
  *
- * `travaNoSul: false` (Encélado) tira a trava das linhas do sul, como em
- * `assaNormais`: o passo leste é a média de cos φ na célula, que não zera nem
- * na linha do polo (vale Δφ/2). Sem a opção, os bytes são os de sempre.
+ * `calotas: { deGraus, ateGraus }` (Encélado) leva as linhas acima de `deGraus`
+ * para a conta das CALOTAS POLARES (`calotaPolar`, ver o cabeçalho): a encosta
+ * do texel é a média do gradiente na grade azimutal equidistante, misturada à
+ * de cá por smoothstep até `ateGraus`, inteira dali ao polo — onde a trava
+ * deixa de valer. Sem a opção, os bytes são os de sempre.
  */
-export function assaNormaisPorMediaDeArea(alturaM, Wf, Hf, W, H, raioM, { travaNoSul = true } = {}) {
+export function assaNormaisPorMediaDeArea(alturaM, Wf, Hf, W, H, raioM, { calotas } = {}) {
   const h = alturaM;
   const rx = Wf / W;
   const ry = Hf / H;
   const dLon = (2 * Math.PI) / W;
   const dLat = Math.PI / H;
   const cosTrava = Math.cos(LATITUDE_DO_CLAMP_RAD);
+  // as duas calotas cobrem até `deGraus` mais a borda do retângulo do texel
+  const doPolo = calotas && {
+    de: (calotas.deGraus * Math.PI) / 180,
+    ate: (calotas.ateGraus * Math.PI) / 180,
+    norte: calotaPolar(h, Wf, Hf, raioM, { sul: false, ateColatitudeRad: ((90 - calotas.deGraus) * Math.PI) / 180 + 2 * dLat }),
+    sul: calotaPolar(h, Wf, Hf, raioM, { sul: true, ateColatitudeRad: ((90 - calotas.deGraus) * Math.PI) / 180 + 2 * dLat }),
+  };
+  const passoDoDem = (raioM * Math.PI) / Hf;
   // a borda OESTE da coluna e, em coordenada de centro fino (o centro k em k + 0,5)
   const k0 = new Int32Array(W);
   const k1 = new Int32Array(W);
@@ -1245,14 +1368,26 @@ export function assaNormaisPorMediaDeArea(alturaM, Wf, Hf, W, H, raioM, { travaN
     }
     const sul = bordaHorizontal(j + 1);
     const fiN = Math.PI / 2 - j * dLat;
-    const mediaDoCos = (Math.sin(fiN) - Math.sin(fiN - dLat)) / dLat;
-    const cj = travaNoSul || fiN - dLat / 2 >= 0 ? Math.max(mediaDoCos, cosTrava) : mediaDoCos;
+    const cj = Math.max((Math.sin(fiN) - Math.sin(fiN - dLat)) / dLat, cosTrava);
     const passoLeste = raioM * dLon * cj;
     const passoNorte = raioM * dLat;
+    // o peso da calota na linha (0 aquém de `de`, 1 além de `ate`) e o
+    // retângulo do texel: R·Δφ ao norte, a largura da célula a leste, nunca
+    // menos que o passo do DEM
+    const fi = fiN - dLat / 2;
+    const t = doPolo ? Math.min(1, Math.max(0, (Math.abs(fi) - doPolo.de) / (doPolo.ate - doPolo.de))) : 0;
+    const pesoDaCalota = t * t * (3 - 2 * t);
+    const calota = fi > 0 ? doPolo?.norte : doPolo?.sul;
+    const larguraLeste = Math.max(raioM * dLon * Math.cos(fi), passoDoDem);
     for (let i = 0; i < W; i += 1) {
       // a borda leste da coluna i é a oeste da seguinte, com a volta
-      const x = -(oeste[(i + 1) % W] - oeste[i]) / passoLeste;
-      const y = -(norte[i] - sul[i]) / passoNorte;
+      let x = -(oeste[(i + 1) % W] - oeste[i]) / passoLeste;
+      let y = -(norte[i] - sul[i]) / passoNorte;
+      if (pesoDaCalota > 0) {
+        const [dhLeste, dhNorte] = calota(fi, -Math.PI + (i + 0.5) * dLon, larguraLeste, passoNorte);
+        x += pesoDaCalota * (-dhLeste - x);
+        y += pesoDaCalota * (-dhNorte - y);
+      }
       const declive2 = x * x + y * y;
       somaDeclive2 += declive2;
       if (declive2 > maiorDeclive) maiorDeclive = declive2;
@@ -1371,19 +1506,44 @@ export function conferirGeorreferencia(corpo, geo, largura, altura) {
 /**
  * O DEM LOCAL EM METROS, na grade e na orientação da FONTE. `bytes` é o
  * GeoTIFF inteiro: `leTiffFloat32` o lê, a largura e a altura têm de ser as
- * declaradas, a georreferência (se houver) é conferida, e cada valor vira
+ * declaradas, a margem `fonte.margemSemDado` (as primeiras colunas e linhas)
+ * tem de ser TODA sem dado e é recortada — a georreferência anda junto —, a
+ * georreferência (se houver) é conferida na grade recortada, e cada valor vira
  * metro pela conversão da tabela. Sem dado (≤ `semDado`, ou NaN) vira 0 m —
  * o nível do elipsoide — e é contado. Um DEM que passa do DOBRO da faixa do
  * byte não está na unidade declarada, e é recusado. Pura.
  */
 export function lerDemLocal(bytes, corpo) {
   const { fonte, mapaDeAltura } = corpo;
-  const { largura, altura, valores } = leTiffFloat32(bytes);
-  if (largura !== fonte.largura || altura !== fonte.altura) {
-    throw new Error(`o DEM tem ${largura}x${altura}, a tabela declara ${fonte.largura}x${fonte.altura} — não asso.`);
+  const lido = leTiffFloat32(bytes);
+  if (lido.largura !== fonte.largura || lido.altura !== fonte.altura) {
+    throw new Error(`o DEM tem ${lido.largura}x${lido.altura}, a tabela declara ${fonte.largura}x${fonte.altura} — não asso.`);
   }
-  const geo = georreferenciaDoTiff(bytes, largura, altura);
-  if (geo) conferirGeorreferencia(corpo, geo, largura, altura);
+  const { esquerda = 0, topo = 0 } = fonte.margemSemDado ?? {};
+  const largura = lido.largura - esquerda;
+  const altura = lido.altura - topo;
+  const valores = new Float32Array(largura * altura);
+  for (let j = 0; j < lido.altura; j += 1) {
+    for (let i = 0; i < lido.largura; i += 1) {
+      const v = lido.valores[j * lido.largura + i];
+      if (j >= topo && i >= esquerda) valores[(j - topo) * largura + i - esquerda] = v;
+      else if (v > fonte.semDado && Number.isFinite(v)) {
+        throw new Error(`a margem declarada sem dado tem dado na coluna ${i}, linha ${j} — não asso.`);
+      }
+    }
+  }
+  let geo = georreferenciaDoTiff(bytes, lido.largura, lido.altura);
+  if (geo) {
+    const [pxLon, pxLat] = [geo.larguraGraus / lido.largura, geo.alturaGraus / lido.altura];
+    geo = {
+      ...geo,
+      bordaEsquerdaGraus: geo.bordaEsquerdaGraus + esquerda * pxLon,
+      topoGraus: geo.topoGraus - topo * pxLat,
+      larguraGraus: largura * pxLon,
+      alturaGraus: altura * pxLat,
+    };
+    conferirGeorreferencia(corpo, geo, largura, altura);
+  }
   let semDado = 0;
   let minM = Infinity;
   let maxM = -Infinity;
@@ -1414,8 +1574,8 @@ export function lerDemLocal(bytes, corpo) {
  * a grade fina girada pela borda declarada; a ALTURA, a média de área dela
  * em `larguraDaAltura` px, em km, no byte da faixa (`quantizaNaFaixa`); a
  * NORMAL, `assaNormaisPorMediaDeArea` em `larguraDaNormal` px sobre a mesma
- * grade presa à faixa e ÷ `ganhoDoShader`, no passo de `raioM`, com a trava
- * do sul da tabela. `presos` conta as amostras finas fora da faixa. Pura.
+ * grade presa à faixa e ÷ `ganhoDoShader`, no passo de `raioM`, com as
+ * calotas polares da tabela. `presos` conta as amostras finas fora da faixa. Pura.
  */
 export function relevoDoDem(fina, corpo, { larguraDaNormal = LARGURA_ALVO, larguraDaAltura = corpo.mapaDeAltura.largura } = {}) {
   const { metros, largura: Wf, altura: Hf } = fina;
@@ -1436,7 +1596,7 @@ export function relevoDoDem(fina, corpo, { larguraDaNormal = LARGURA_ALVO, largu
     presa[k] = Math.min(hi, Math.max(lo, m)) / corpo.ganhoDoShader;
   }
   const Wn = larguraDaNormal;
-  const normal = assaNormaisPorMediaDeArea(presa, Wf, Hf, Wn, Wn / 2, corpo.raioM, { travaNoSul: corpo.travaNoSul });
+  const normal = assaNormaisPorMediaDeArea(presa, Wf, Hf, Wn, Wn / 2, corpo.raioM, { calotas: corpo.calotasPolares });
   return {
     altura: { bytes, largura: Wa, altura: Wa / 2, abaixo, acima },
     normal: { ...normal, largura: Wn, altura: Wn / 2 },
@@ -1542,7 +1702,7 @@ export async function assaDoDemLocal(corpo, destino, mapaDeCor, { varredura, cam
     `normal: ${normal.largura}x${normal.altura}, inclinação física RMS ${fisico(normal.rmsGraus).toFixed(2)}°, ` +
       `máxima ${fisico(normal.maxGraus).toFixed(2)}° (mapa ÷ ${corpo.ganhoDoShader}, ganho do shader).`
   );
-  const faixas = [[-80, -85], [-85, -89], [-89, -90], [80, 85]];
+  const faixas = [[-30, 30], [-60, -70], [-70, -80], [-80, -85], [-85, -89], [-89, -90], [60, 70], [80, 85], [89, 90]];
   for (const f of encostaPorFaixa(normal.rgb, normal.largura, normal.altura, corpo.ganhoDoShader, faixas)) {
     console.log(`  ${f.faixa}: RMS ${f.rmsGraus.toFixed(2)}°, máxima ${f.maxGraus.toFixed(2)}°`);
   }
