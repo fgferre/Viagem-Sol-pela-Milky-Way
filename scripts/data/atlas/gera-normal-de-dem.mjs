@@ -218,6 +218,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { DERIVADO, INVENTADO, LISO, MEDIDO, RUIDO, consertaDem } from './conserto-do-dem.mjs';
+import { luminanciaDoRgb } from './crateras-pela-foto.mjs';
 import { pesosDaCaixa } from './gera-horizonte.mjs';
 import { giraColunasDeImagem } from './lib-texturas.mjs';
 import { inventaRelevoDoCorpo } from './relevo-inventado.mjs';
@@ -534,6 +536,16 @@ export const CORPOS = {
     // o vértice: 1024 px com a faixa INTEIRA do DEM em 8 bits (20 m por
     // degrau), em raios equatoriais de 256,6 km (BODY_AXES.enceladus[0])
     mapaDeAltura: { largura: 1024, faixaKm: { min: -2.73, max: 2.34 }, raioDoVerticeKm: 256.6 },
+    // o DEM é colcha: ladrilhos de bolhas de estéreo e lisos ao lado do polo
+    // sul, as listras de tigre dentro deles. `conserto-do-dem.mjs` os acha
+    // contra o retrato da cor (o mosaico de Schenk, ainda com a sombra), deixa
+    // neles só o que tem ≥ 8 km, devolve o fino com a estatística dos
+    // ladrilhos bons de Encélado e as listras e crateras do traço na foto;
+    // os ladrilhos bons saem byte a byte (13/10/2026)
+    consertoDoDem: {
+      foto: 'scripts/data/atlas/fonte/enceladus-cor.jpg',
+      sha256: '1bacd2c1dcf5581ecf60fde29e02bbb4b31b551733d1887ee7ea2fa2b976ddca',
+    },
     fonte: {
       tipo: 'tif-local',
       nome: 'Enceladus_Cassini_DEM_global_200m_schenk2024.tif',
@@ -1633,6 +1645,35 @@ function encostaPorFaixa(rgb, largura, altura, ganho, faixas) {
 }
 
 /**
+ * O DEM CONSERTADO (`consertaDem`, `conserto-do-dem.mjs`): lê o retrato da
+ * cor pinado em `consertoDoDem`, leva a grade fina à casa, conserta e a traz
+ * de volta à orientação da fonte — o resto da cadeia não muda. Conta as
+ * frações medido / derivado / inventado.
+ */
+async function consertarODem(corpo, fina) {
+  const { foto, sha256: pinado } = corpo.consertoDoDem;
+  const bytes = await readFile(path.join(rootDirectory, foto));
+  if (sha256(bytes) !== pinado) throw new Error(`o retrato ${foto} não é o pinado (${pinado}) — não conserto.`);
+  const { data, info } = await sharp(bytes).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const luminancia = luminanciaDoRgb(data, info.width, info.height, info.channels);
+  const giro = LONGITUDE_ESQUERDA_DA_CASA - corpo.longitudeDaBordaEsquerdaGraus;
+  const { largura, altura } = fina;
+  const casa = giraColunasDeImagem(fina.metros, largura, altura, 1, giro);
+  const r = consertaDem({ metros: casa, largura, altura, luminancia, raioM: corpo.raioM });
+  const pct = (x) => `${(100 * x).toFixed(1)} %`;
+  const { cobertura: c, classes, lei, crateras, listras } = r.relatorio;
+  console.log(
+    `conserto: ruído ${pct(classes[RUIDO])}, liso ${pct(classes[LISO])} da área; ` +
+      `medido ${pct(c[MEDIDO])}, derivado da foto ${pct(c[DERIVADO])}, inventado ${pct(c[INVENTADO])}.`
+  );
+  console.log(
+    `  crateras: d/D ${lei.dD.toFixed(3)} (${lei.n} nos ladrilhos bons), ${crateras.noRuim} completadas no ruim; ` +
+      `listras: ${listras.linhas.length} traços, ${pct(listras.fracaoNoRuim)} no ruim.`
+  );
+  return { ...fina, metros: giraColunasDeImagem(r.metros, largura, altura, 1, -giro) };
+}
+
+/**
  * ASSA ENCÉLADO (ver o cabeçalho): lê o DEM do cache (ou de `--dem`),
  * confere o sha256 pinado, a georreferência, a guarda (meia volta e, aqui,
  * o espelho) e grava `height.png` (cinza, 8 bits) e `normal.png` (RGB) em
@@ -1685,8 +1726,11 @@ export async function assaDoDemLocal(corpo, destino, mapaDeCor, { varredura, cam
     );
   }
 
+  // ---- o conserto dos ladrilhos ruins (ver `consertoDoDem` na tabela)
+  const medida = corpo.consertoDoDem ? await consertarODem(corpo, fina) : fina;
+
   // ---- a altura e a normal
-  const r = relevoDoDem(fina, corpo);
+  const r = relevoDoDem(medida, corpo);
   const { altura: alt, normal } = r;
   const fisico = (graus) => (Math.atan(corpo.ganhoDoShader * Math.tan((graus * Math.PI) / 180)) * 180) / Math.PI;
   console.log(
