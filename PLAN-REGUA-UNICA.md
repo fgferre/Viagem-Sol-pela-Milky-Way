@@ -74,6 +74,17 @@ Palavras dele (08/10): *"precisamos ter uma regra única que trate todos os obje
     bake `ilustracao-ia`) e os comentários que contam "quatro corpos" de forma.
   - Fora da R3: a chave "relevo realçado"/relevo falso da cor (item 144) sai na R4.
 - **R4 — Relevo** (opus, corpo a corpo, a fila de assets): a ordem única de fontes; o relevo falso da cor sai; a rodada das luas pequenas volta aqui (Pã primeiro, pela versão F). **Encélado abre a fila** (escolha dele, 12/10): com a R2 o mapa ficou certo e liso, e o relevo medido não mostra as crateras e as listras de tigre — derivar o detalhe das fotos.
+  **Encélado — em curso (13/10, conversa "Coordenação entre agentes").** O estudo achou que o limite não é o dado: o DEM
+  global de 200 m (Schenk & McKinnon 2024, Icarus 408, 115827; USGS Astropedia, 8049×4025 float32, 124 MB) é ~8× mais
+  fino do que o app mostra — o relevo de hoje vem assado no projeto Saturn e reduzido a 1024 px (1,57 km/px), o que apaga
+  as listras (~2 km) e as crateras abaixo de ~5 km. Decisões: (1) assar altura e normal do DEM neste repo
+  (`gera-normal-de-dem.mjs`, como Vesta; sem subtrair elipsoide; declividade física com o ÷1,2 da Reia; sem a trava polar
+  de 80° no sul); a altura fica 1024 com a faixa inteira −2,73…+2,34 km, a normal sobe a 4096 px (0,39 km/px) se a
+  medida mostrar detalhe até ~0,8 km (o marco visual estreia na qualidade-alvo); (2) MEDIR antes de inventar: o espectro
+  local do DEM contra o mosaico, ladrilho a ladrilho, e os perfis das listras contra a PIA10352; (3) só onde o DEM for
+  liso, crateras pela foto com a lei tirada do próprio DEM (selo "derivado"); (4) prancha: a pose dele (fase 30°), o
+  terminador e o polo sul — no centro do disco a 30° Encélado segue quase branca, que é o real. Abertos para depois: a
+  lei de luz (LS × Lambert) em corpo de gelo muito claro; rever o γ da R2 quando o relevo estiver certo.
 
 ## Fora deste plano
 O Sol, as estrelas, a galáxia, as órbitas e o eclipse (emissores e guias, já com regra física própria); a Terra com nuvens e luzes entra na régua de cor só se a prancha da R2 mostrar desvio.
